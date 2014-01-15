@@ -1,0 +1,69 @@
+/*
+ * This file is part of the libsigrok project.
+ *
+ * Copyright (C) 2010-2012 Bert Vermeulen <bert@biot.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef LIBSIGROK_VERSION_H
+#define LIBSIGROK_VERSION_H
+
+/**
+ * @file
+ *
+ * Version number definitions and macros.
+ */
+
+/**
+ * @ingroup grp_versions
+ *
+ * @{
+ */
+
+/*
+ * Package version macros (can be used for conditional compilation).
+ */
+
+/** The libsigrok package 'major' version number. */
+#define SR_PACKAGE_VERSION_MAJOR @SR_PACKAGE_VERSION_MAJOR@
+
+/** The libsigrok package 'minor' version number. */
+#define SR_PACKAGE_VERSION_MINOR @SR_PACKAGE_VERSION_MINOR@
+
+/** The libsigrok package 'micro' version number. */
+#define SR_PACKAGE_VERSION_MICRO @SR_PACKAGE_VERSION_MICRO@
+
+/** The libsigrok package version ("major.minor.micro") as string. */
+#define SR_PACKAGE_VERSION_STRING "@SR_PACKAGE_VERSION@"
+
+/*
+ * Library/libtool version macros (can be used for conditional compilation).
+ */
+
+/** The libsigrok libtool 'current' version number. */
+#define SR_LIB_VERSION_CURRENT @SR_LIB_VERSION_CURRENT@
+
+/** The libsigrok libtool 'revision' version number. */
+#define SR_LIB_VERSION_REVISION @SR_LIB_VERSION_REVISION@
+
+/** The libsigrok libtool 'age' version number. */
+#define SR_LIB_VERSION_AGE @SR_LIB_VERSION_AGE@
+
+/** The libsigrok libtool version ("current:revision:age") as string. */
+#define SR_LIB_VERSION_STRING "@SR_LIB_VERSION@"
+
+/** @} */
+
+#endif

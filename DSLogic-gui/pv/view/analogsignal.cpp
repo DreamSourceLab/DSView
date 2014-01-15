@@ -1,0 +1,226 @@
+/*
+ * This file is part of the DSLogic-gui project.
+ * DSLogic-gui is based on PulseView.
+ *
+ * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
+ * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ */
+
+
+#include <extdef.h>
+
+#include <math.h>
+
+#include "analogsignal.h"
+#include "pv/data/analog.h"
+#include "pv/data/analogsnapshot.h"
+
+using namespace boost;
+using namespace std;
+
+namespace pv {
+namespace view {
+
+//const QColor AnalogSignal::SignalColours[4] = {
+//	QColor(0xC4, 0xA0, 0x00),	// Yellow
+//	QColor(0x87, 0x20, 0x7A),	// Magenta
+//	QColor(0x20, 0x4A, 0x87),	// Blue
+//	QColor(0x4E, 0x9A, 0x06)	// Green
+//};
+const QColor AnalogSignal::SignalColours[4] = {
+    QColor(17, 133, 209,  255), // dsBlue
+    QColor(238, 178, 17, 255),  // dsYellow
+    QColor(213, 15, 37, 255),   // dsRed
+    QColor(0, 153, 37, 255)     // dsGreen
+};
+
+const float AnalogSignal::EnvelopeThreshold = 256.0f;
+
+AnalogSignal::AnalogSignal(QString name, shared_ptr<data::Analog> data,
+    int probe_index, int order) :
+    Signal(name, probe_index, DS_ANALOG, order),
+    _data(data)
+{
+	_colour = SignalColours[probe_index % countof(SignalColours)];
+    _scale = _signalHeight * 1.0f / 65536;
+}
+
+AnalogSignal::~AnalogSignal()
+{
+}
+
+void AnalogSignal::set_data(boost::shared_ptr<data::Logic> _logic_data,
+                            boost::shared_ptr<pv::data::Analog> _analog_data,
+                            boost::shared_ptr<data::Group> _group_data)
+{
+    (void)_logic_data;
+    (void)_group_data;
+
+    assert(_analog_data);
+
+    _data = _analog_data;
+}
+
+void AnalogSignal::set_scale(float scale)
+{
+	_scale = scale;
+}
+
+void AnalogSignal::paint(QPainter &p, int y, int left, int right, double scale,
+	double offset)
+{
+	assert(scale > 0);
+	assert(_data);
+	assert(right >= left);
+
+    //paint_axis(p, y, left, right);
+
+	const deque< shared_ptr<pv::data::AnalogSnapshot> > &snapshots =
+		_data->get_snapshots();
+	if (snapshots.empty())
+		return;
+
+    _scale = _signalHeight * 1.0f / 65536;
+	const shared_ptr<pv::data::AnalogSnapshot> &snapshot =
+		snapshots.front();
+
+    if (get_index() >= (int)snapshot->get_channel_num())
+        return;
+
+	const double pixels_offset = offset / scale;
+	const double samplerate = _data->get_samplerate();
+	const double start_time = _data->get_start_time();
+    const int64_t last_sample = max((int64_t)(snapshot->get_sample_count() - 1), (int64_t)0);
+	const double samples_per_pixel = samplerate * scale;
+	const double start = samplerate * (offset - start_time);
+	const double end = start + samples_per_pixel * (right - left);
+
+	const int64_t start_sample = min(max((int64_t)floor(start),
+		(int64_t)0), last_sample);
+	const int64_t end_sample = min(max((int64_t)ceil(end) + 1,
+		(int64_t)0), last_sample);
+
+	if (samples_per_pixel < EnvelopeThreshold)
+		paint_trace(p, snapshot, y, left,
+			start_sample, end_sample,
+			pixels_offset, samples_per_pixel);
+	else
+		paint_envelope(p, snapshot, y, left,
+			start_sample, end_sample,
+			pixels_offset, samples_per_pixel);
+}
+
+void AnalogSignal::paint_trace(QPainter &p,
+	const shared_ptr<pv::data::AnalogSnapshot> &snapshot,
+	int y, int left, const int64_t start, const int64_t end,
+	const double pixels_offset, const double samples_per_pixel)
+{
+	const int64_t sample_count = end - start;
+    const int64_t channel_num = snapshot->get_channel_num();
+
+    if (sample_count > 0) {
+        const uint16_t *const samples = snapshot->get_samples(start, end);
+        assert(samples);
+
+        p.setPen(_colour);
+        //p.setPen(QPen(_colour, 2, Qt::SolidLine));
+
+        QPointF *points = new QPointF[sample_count];
+        QPointF *point = points;
+
+        for (int64_t sample = start; sample != end; sample++) {
+            const float x = (sample / samples_per_pixel -
+                pixels_offset) + left;
+            *point++ = QPointF(x,
+                               y - samples[(sample - start) * channel_num + get_index()] * _scale);
+        }
+
+        p.drawPolyline(points, point - points);
+
+        //delete[] samples;
+        delete[] points;
+    }
+}
+
+void AnalogSignal::paint_envelope(QPainter &p,
+	const shared_ptr<pv::data::AnalogSnapshot> &snapshot,
+	int y, int left, const int64_t start, const int64_t end,
+	const double pixels_offset, const double samples_per_pixel)
+{
+	using namespace Qt;
+	using pv::data::AnalogSnapshot;
+
+	AnalogSnapshot::EnvelopeSection e;
+    snapshot->get_envelope_section(e, start, end, samples_per_pixel, get_index());
+
+	if (e.length < 2)
+		return;
+
+    p.setPen(QPen(NoPen));
+    //p.setPen(QPen(_colour, 2, Qt::SolidLine));
+    p.setBrush(_colour);
+
+	QRectF *const rects = new QRectF[e.length];
+	QRectF *rect = rects;
+
+	for(uint64_t sample = 0; sample < e.length-1; sample++) {
+		const float x = ((e.scale * sample + e.start) /
+			samples_per_pixel - pixels_offset) + left;
+		const AnalogSnapshot::EnvelopeSample *const s =
+			e.samples + sample;
+
+		// We overlap this sample with the next so that vertical
+		// gaps do not appear during steep rising or falling edges
+		const float b = y - max(s->max, (s+1)->min) * _scale;
+		const float t = y - min(s->min, (s+1)->max) * _scale;
+
+		float h = b - t;
+		if(h >= 0.0f && h <= 1.0f)
+			h = 1.0f;
+		if(h <= 0.0f && h >= -1.0f)
+			h = -1.0f;
+
+		*rect++ = QRectF(x, t, 1.0f, h);
+	}
+
+	p.drawRects(rects, e.length);
+
+	delete[] rects;
+    //delete[] e.samples;
+}
+
+const std::vector< std::pair<uint64_t, bool> > AnalogSignal::cur_edges() const
+{
+
+}
+
+void AnalogSignal::set_decoder(pv::decoder::Decoder *decoder)
+{
+    (void)decoder;
+}
+
+decoder::Decoder *AnalogSignal::get_decoder()
+{
+    return NULL;
+}
+
+void AnalogSignal::del_decoder()
+{
+}
+
+} // namespace view
+} // namespace pv

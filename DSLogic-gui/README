@@ -1,0 +1,72 @@
+-------------------------------------------------------------------------------
+README
+-------------------------------------------------------------------------------
+DSLogic-gui is GUI for DSLogic software, it's based on PulseView
+from the sigrok project.
+
+The sigrok project aims at creating a portable, cross-platform,
+Free/Libre/Open-Source signal analysis software suite that supports various
+device types (such as logic analyzers, oscilloscopes, multimeters, and more).
+
+PulseView is a Qt-based LA/scope/MSO GUI for sigrok.
+
+
+Status
+------
+
+DSLogic-gui is in a usable state and has had official tarball releases.
+
+However, it is still work in progress. Some basic functionality
+is available and working, but other things are still on the TODO list.
+
+
+Copyright and license
+---------------------
+
+DSLogic-gui is licensed under the terms of the GNU General Public License
+(GPL), version 3 or later.
+
+While some individual source code files are licensed under the GPLv2+, and
+some files are licensed under the GPLv3+, this doesn't change the fact that
+the program as a whole is licensed under the terms of the GPLv3+ (e.g. also
+due to the fact that it links against GPLv3+ libraries).
+
+Please see the individual source files for the full list of copyright holders.
+
+
+Copyright notices
+-----------------
+
+A copyright notice indicating a range of years, must be interpreted as having
+had copyrightable material added in each of those years.
+
+Example:
+
+ Copyright (C) 2010-2013 Contributor Name
+
+is to be interpreted as
+
+ Copyright (C) 2010,2011,2012,2013 Contributor Name
+
+
+Mailing lists
+-------------
+
+There are two mailing lists for sigrok/PulseView:
+
+ https://lists.sourceforge.net/lists/listinfo/sigrok-devel
+ https://lists.sourceforge.net/lists/listinfo/sigrok-commits
+
+
+IRC
+---
+
+You can find the sigrok developers in the #sigrok IRC channel on Freenode.
+
+
+Website
+-------
+
+ http://sigrok.org/wiki/PulseView
+ http://dreamsourcelab.com
+

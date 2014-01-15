@@ -1,0 +1,86 @@
+-------------------------------------------------------------------------------
+INSTALL
+-------------------------------------------------------------------------------
+
+Requirements
+------------
+
+libsigrok4DSLoigc
+ - gcc (>= 4.0)
+ - make
+ - autoconf >= 2.63
+ - automake >= 1.11
+ - libtool
+ - pkg-config >= 0.22
+	This is part of the standard OpenBSD install (not an extra package), apparently.
+ - libglib >= 2.32.0
+ - libzip >= 0.10
+ - libusb-1.0 >= 1.0.9 (optional, used by most drivers)
+	On FreeBSD, this is an integral part of the FreeBSD libc, not an extra package/library.
+	This is part of the standard OpenBSD install (not an extra package), apparently.
+ - check >= 0.9.4 (optional, only needed to run unit tests)
+
+DSLgoic-gui
+ - git
+ - g++
+ - make
+ - libtool
+ - pkg-config >= 0.22
+ - cmake >= 2.6
+ - libglib >= 2.28.0
+ - Qt >= 4.5
+ - libboost >= 1.42 (including the following libs):
+    - libboost-system
+    - libboost-thread
+ - libsigrok4DSLogic >= 0.2.0
+
+Building and installing
+-----------------------
+Get the DSLogic source code from: www.dreamsourcelab.com/download.html
+
+Step1: Build libsigrok4DSLogic
+
+Installing the requirements:
+
+Example on Debian/Ubuntu (please check your respective distro's package manager tool if you use other distros):
+ $ sudo apt-get install git-core gcc make autoconf automake libtool pkg-config \
+   libglib2.0-dev libzip-dev libusb-1.0-0-dev libftdi-dev libudev-dev libasound2-dev check
+
+Fedora (18, 19):
+ $ sudo yum install git gcc make autoconf automake libtool pkgconfig glib2-devel \
+   libzip-devel libusb1-devel libftdi-devel libudev-devel alsa-lib-devel check
+
+OpenSuSE (12.2):
+ $ zypper install git gcc make autoconf automake libtool pkg-config glib2-devel \
+   libzip-devel libusb-1_0-devel libftdi1-devel libudev-devel alsa-devel check
+
+Building:
+ 
+ $ cd libsigrok4DSLogic
+ $ ./autogen.sh
+ $ ./configure
+ $ make
+ $ sudo make install
+
+Step2: Build DSLogic-gui
+
+Installing the requirements:
+
+Example on Debian/Ubuntu (please check your respective distro's package manager tool if you use other distros):
+$ sudo apt-get install git-core g++ make cmake libtool pkg-config \
+  libglib2.0-dev libqt4-dev libboost-dev libboost-test-dev libboost-thread-dev libboost-system-dev
+
+Fedora (18, 19):
+$ sudo yum install git gcc cmake libtool pkgconfig glib2-devel \
+  boost-devel qt-devel boost-devel
+
+Building:
+
+$ cd DSLogic-gui
+$ cmake .
+$ make
+$ sudo make install
+
+See the following wiki page for more (OS-specific) instructions:
+
+ http://sigrok.org/wiki/Building

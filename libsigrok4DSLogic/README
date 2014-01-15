@@ -1,0 +1,100 @@
+-------------------------------------------------------------------------------
+README
+-------------------------------------------------------------------------------
+libsigrok4DSLogic is a shared library which provides the basic API
+for DSLogic hardware.
+libsigrok4DSLogic is based on libsigrok, a shared library from the sigrok project.
+
+The sigrok project aims at creating a portable, cross-platform,
+Free/Libre/Open-Source signal analysis software suite that supports various
+device types (such as logic analyzers, oscilloscopes, multimeters, and more).
+
+libsigrok is a shared library written in C which provides the basic API
+for talking to hardware and reading/writing the acquired data into various
+input/output file formats.
+
+
+Status
+------
+
+libsigrok is in a usable state and has had official tarball releases.
+
+While the API can change from release to release, this will always be
+properly documented and reflected in the package version number and
+in the shared library / libtool / .so-file version numbers.
+
+However, there are _NO_ guarantees at all for stable APIs in git snapshots!
+Distro packagers should only use released tarballs (no git snapshots).
+
+
+Requirements
+------------
+
+ - git
+ - gcc (>= 4.0)
+ - make
+ - autoconf >= 2.63
+ - automake >= 1.11
+ - libtool
+ - pkg-config >= 0.22
+ - libglib >= 2.32.0
+ - libzip >= 0.8
+ - libusb-1.0 >= 1.0.9 (optional, used by most drivers)
+ - libftdi >= 0.16 (optional, used by some drivers)
+ - libasound / alsa-lib >= 1.0 (optional, only used by the alsa driver)
+ - check >= 0.9.4 (optional, only needed to run unit tests)
+
+
+Building and installing
+-----------------------
+Get the libsigrok4DSLogic source code from: www.dreamsourcelab.com/download.html
+In order to build it, run:
+
+ $ cd libsigrok
+ $ ./autogen.sh
+ $ ./configure
+ $ make
+
+For installing libsigrok4DSLogic:
+
+ $ make install
+
+See INSTALL or the following wiki page for more (OS-specific) instructions:
+
+ http://sigrok.org/wiki/Building
+
+
+Copyright and license
+---------------------
+
+libsigrok4DSLogic is licensed under the terms of the GNU General Public License
+(GPL), version 3 or later.
+
+While some individual source code files are licensed under the GPLv2+, and
+some files are licensed under the GPLv3+, this doesn't change the fact that
+the library as a whole is licensed under the terms of the GPLv3+.
+
+Please see the individual source files for the full list of copyright holders.
+
+
+Mailing lists
+-------------
+
+There are two mailing lists for sigrok/libsigrok:
+
+ https://lists.sourceforge.net/lists/listinfo/sigrok-devel
+ https://lists.sourceforge.net/lists/listinfo/sigrok-commits
+
+
+IRC
+---
+
+You can find the sigrok developers in the #sigrok IRC channel on Freenode.
+
+
+Website
+-------
+
+ http://sigrok.org/wiki/Libsigrok
+ http://dreamsourcelab.com
+

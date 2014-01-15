@@ -1,0 +1,15 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libsigrok4DSLogic
+Description: Backend library of DSLogic software based on libsigrok
+URL: http://www.dreamsourcelab.com
+Requires: glib-2.0
+Requires.private: @SR_PKGLIBS@
+Version: @VERSION@
+Libs: -L${libdir} -lsigrok4DSLogic
+Libs.private: -lm
+Cflags: -I${includedir}
+

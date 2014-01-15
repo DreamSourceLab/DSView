@@ -1,0 +1,106 @@
+/*
+ * This file is part of the DSLogic-gui project.
+ * DSLogic-gui is based on PulseView.
+ *
+ * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
+ * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ */
+
+
+#include <boost/bind.hpp>
+#include <boost/foreach.hpp>
+
+#include <QMetaObject>
+#include <QMessageBox>
+#include <QFileDialog>
+#include <QApplication>
+
+#include "logobar.h"
+#include "../dialogs/about.h"
+
+namespace pv {
+namespace toolbars {
+
+LogoBar::LogoBar(SigSession &session, QWidget *parent) :
+    QToolBar("File Bar", parent),
+    _enable(true),
+    _session(session),
+    _logo_button(this)
+{
+    setMovable(false);
+
+    _about = new QAction(this);
+    _about->setText(QApplication::translate(
+        "File", "&About...", 0, QApplication::UnicodeUTF8));
+    _about->setIcon(QIcon::fromTheme("file",
+        QIcon(":/icons/about.png")));
+    _about->setObjectName(QString::fromUtf8("actionAbout"));
+    _logo_button.addAction(_about);
+    connect(_about, SIGNAL(triggered()), this, SLOT(on_actionAbout_triggered()));
+
+    _logo_button.setPopupMode(QToolButton::InstantPopup);
+    _logo_button.setIcon(QIcon(":/icons/logo_noColor.png"));
+
+    QWidget *spacer = new QWidget(this);
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    addWidget(spacer);
+    addWidget(&_logo_button);
+    QWidget *margin = new QWidget(this);
+    margin->setMinimumWidth(20);
+    addWidget(margin);
+}
+
+void LogoBar::dslogic_connected(bool conn)
+{
+    if (conn)
+        _logo_button.setIcon(QIcon(":/icons/logo_color.png"));
+    else
+        _logo_button.setIcon(QIcon(":/icons/logo_noColor.png"));
+}
+
+void LogoBar::session_error(
+    const QString text, const QString info_text)
+{
+    QMetaObject::invokeMethod(this, "show_session_error",
+        Qt::QueuedConnection, Q_ARG(QString, text),
+        Q_ARG(QString, info_text));
+}
+
+void LogoBar::show_session_error(
+    const QString text, const QString info_text)
+{
+    QMessageBox msg(this);
+    msg.setText(text);
+    msg.setInformativeText(info_text);
+    msg.setStandardButtons(QMessageBox::Ok);
+    msg.setIcon(QMessageBox::Warning);
+    msg.exec();
+}
+
+void LogoBar::on_actionAbout_triggered()
+{
+    dialogs::About dlg(this);
+    dlg.exec();
+}
+
+void LogoBar::enable_toggle(bool enable)
+{
+    _logo_button.setDisabled(!enable);
+}
+
+} // namespace toolbars
+} // namespace pv

@@ -1,0 +1,176 @@
+0.2.0 (2013-05-04)
+------------------
+
+Note: This release DOES change the libsigrok API. That means it is NOT
+      backwards-compatible and frontends will need updates.
+
+ * Support for analog sources (oscilloscopes, DMMs, data loggers) was added.
+ * New supported hardware:
+   - Logic analyzers:
+     - CWAV USBee DX
+     - ZEROPLUS LAP-16128U
+   - Oscilloscopes:
+     - Hantek DSO-2090 (USB scope)
+     - Rigol DS1052D
+     - Rigol DS1052E
+     - Rigol DS1102D
+     - Rigol DS1102E
+   - Multimeters:
+     - Agilent U1231A
+     - Agilent U1232A
+     - Agilent U1233A
+     - Brymen BM857
+     - Digitek DT4000ZC
+     - Fluke 187
+     - Fluke 189
+     - Fluke 287
+     - Fluke 289
+     - Fluke ScopeMeter 199B
+     - MASTECH MAS345
+     - Metex ME-31
+     - Metex M-3640D
+     - PCE PCE-DM32
+     - PeakTech 3410
+     - PeakTech 4370
+     - RadioShack 22-168
+     - RadioShack 22-805
+     - RadioShack 22-812
+     - Tecpel DMM-8060
+     - Tecpel DMM-8061
+     - TekPower TP4000ZC
+     - UNI-T UT61D
+     - UNI-T UT61E
+     - V&A VA18B
+     - Victor 70C
+     - Victor 86C
+     - Voltcraft VC-820
+     - Voltcraft VC-840
+   - Sound level meters:
+     - Colead SL-5868P
+     - Tondaj SL-814
+   - Temperature/humidity/CO loggers:
+     - Lascar EL-USB and EL-USB CO series (various models)
+     - MIC 98581
+     - MIC 98583
+ * The limitation of max. 64 digital probes has been removed in many places.
+ * Added generic DMM protocol parsers usable for various DMMs, over various
+   cables and/or transports (e.g. same protocol over serial or USB/HID):
+   - Cyrustek ES51922 binary protocol.
+   - Fortune Semiconductor FS9721_LP3/FS9721B binary protocol.
+   - Fortune Semiconductor FS9922-DMM3/DMM4 binary protocol.
+   - Metex 14-byte ASCII protocol.
+   - RadioShack 22-812 binary protocol.
+ * zeroplus-logic-cube driver:
+   - Fix acquisition at some specific samplerates. Only report valid ones.
+   - Default to a samplerate of 1MHz.
+   - Fix trigger code.
+   - Add pre-trigger (capture ratio) setting.
+   - Add support for the ZEROPLUS LAP-16128U.
+ * fx2lafw driver:
+   - Add support for the CWAV USBee DX. This requires the latest version of
+     the fx2lafw firmware files.
+   - Add support for wide sampling (i.e. 16 probes instead of just 8).
+   - Fix multi-stage (software) triggers.
+   - Fix various memory leaks, firmware upload timeout bugs, and other issues.
+   - Various performance and memory usage improvements in the driver.
+ * chronovu-la8 driver:
+   - Add support for newer LA8 versions with USB VID/PID 0403:8867.
+ * demo driver:
+   - Various bugfixes when setting time/sample limits.
+ * openbench-logic-sniffer driver:
+   - Don't try to scan all available serial ports for OLS devices. Instead,
+     the serial port to use now has to be specified by the user.
+   - Allow disabling RLE.
+ * udev rules file: Add many new entries for additional devices.
+ * New output formats:
+   - analog: Prints analog values and their unit (e.g. from scopes or DMMs).
+ * New input formats:
+   - vcd: Value Change Dump format
+   - wav: Waveform audio file format (for analog data)
+ * 'binary' input format: Add support for a 'samplerate' option.
+ * API related changes:
+   - There is generated Doxygen API documentation now.
+   - The header that frontends should include is: <libsigrok/libsigrok.h>.
+     There are other headers which are installed, but those are not meant to
+     be included directly by the frontends.
+   - There were numerous API changes, additions and removals, too many to list
+     here. Please check the source code or Doxygen API documentation for the
+     current set of API functions.
+ * Serial port code:
+    - Various improvements and fixes related to multiple parameters such as
+      directions, baudrate, flow control, and others.
+    - Add support for more baudrates (e.g. very low ones such as 600/1200)
+      that are used in some devices.
+    - Add support for setting DTR/RTS.
+ * gnuplot files: Add sample files for CWAV USBee DX (for 8/16 bit sampling).
+ * Documentation updates:
+   - Add a README.devices file which contains various notes for users of
+     libsigrok about device- and/or driver-specific issues.
+   - Update README, HACKING, and other documents.
+   - Updated build dependencies list.
+     - The following libs are needed in more recent versions now:
+       - glib (required): Now must be >= 2.32.0.
+       - libusb-1.0 (optional): Now must be >= 1.0.9.
+     - The following new libs were added as (optional) dependencies:
+       - libasound / alsa-lib (optional): >= 1.0
+       - check (optional, only needed for unit tests): >= 0.9.4
+ * Portability:
+   - Various compile fixes for Windows, FreeBSD/NetBSD/OpenBSD, and Mac OS X.
+   - Simplify/allow/fix cross-compilation of libsigrok.
+   - Various bugfixes for 32bit systems.
+   - Various endianness fixes.
+ * configure:
+    - Add a --disable-all-drivers option. This can be overridden by
+      additional --enable-<drivername> options to selectively enable only some.
+    - Improve autodetection of libraries, and only enable drivers for which
+      all required libraries were found.
+ * Add a test suite for libsigrok with a few unit tests (the list will grow).
+
+0.1.1 (2012-05-30)
+------------------
+
+Note: This release does NOT change the libsigrok API.
+
+ * The 'saleae-logic' driver (which depends on the Saleae firmware), has
+   been replaced with the new 'fx2lafw' driver, which uses an open-source
+   firmware for Cypress FX2 chips which is also named 'fx2lafw'.
+   Details: http://sigrok.org/wiki/Fx2lafw
+   This new driver (+ firmware) currently supports the following devices:
+     - ARMFLY AX-Pro
+     - Braintechnology USB-LPS
+     - EE Electronics ESLA100
+     - EE Electronics ESLA201A
+     - Robomotic MiniLogic
+     - Robomotic BugLogic 3
+     - Saleae Logic
+     - USBee AX
+     - USBee SX
+     - All Cypress FX2 eval boards with stock Cypress VID/PID, including:
+       - Lcsoft Mini Board
+       - Braintechnology USB Interface V2.x
+   Only acquisition with 8 probes is supported so far. Support for 16 probes
+   and support for analog signal acquisition (on devices which have these
+   capabilities) will be added later.
+ * ASIX SIGMA driver:
+   - Add support for the ASIX SIGMA2. This requires the latest version of
+     the SIGMA/SIGMA2 firmware files.
+     Details: http://sigrok.org/wiki/Firmware
+   - Various bugfixes.
+ * ZEROPLUS Logic Cube LAP-C (16032): Fix a segfault.
+ * udev file: Add entries for Robomotic BugLogic 3, Velleman PCSU1000,
+   Ideofy LA-08, ARMFLY AX-Pro, and Braintechnology USB Interface V2.x.
+ * The zlib dependency has been removed (no longer needed).
+ * Fix compiling with "Homebrew" (Mac OS X).
+ * libsigrok now expects firmware files in $prefix/share/sigrok-firmware by
+   default (was $prefix/share/libsigrok/firmware before).
+ * Fix a Makefile.am bug which caused the generated ChangeLog files being
+   accidentally deleted upon 'make distclean'.
+ * ChronoVu LA8 input file format: Improve autodetection of the file format.
+   We now only accept files of the size 8388613 bytes (all LA8 files have
+   exactly this amount of bytes).
+
+0.1.0 (2012-04-17)
+------------------
+
+ * Initial release.
+
