@@ -992,7 +992,7 @@ void SigSession::rst_protocol_analyzer(int rst_index, std::list <int > _sel_prob
 void SigSession::del_protocol_analyzer(int protocol_index)
 {
     assert(protocol_index < _decoders.size());
-    delete (_decoders.at(protocol_index)).first;
+    //delete (_decoders.at(protocol_index)).first;
 
 //    BOOST_FOREACH(const int _index, (_decoders.at(protocol_index)).second) {
 //        _signals.at(_index)->del_decoder();

@@ -117,7 +117,7 @@ void dsSerial::decode()
     uint64_t left = 0;
     uint64_t right = snapshot->get_sample_count() - 1;
     float samplesPerBit;
-    int sampleOffset;
+    //int sampleOffset;
     int i;
     _max_width = 0;
     _min_width = right;
@@ -127,7 +127,7 @@ void dsSerial::decode()
         samplesPerBit = _data->get_samplerate() * 1.0f / _baudrate;
     else
         samplesPerBit = snapshot->get_min_pulse(left, right, _serial_index);
-    sampleOffset = samplesPerBit / 2;
+    //sampleOffset = samplesPerBit / 2;
 
     if (!_state_index.empty())
         _state_index.clear();

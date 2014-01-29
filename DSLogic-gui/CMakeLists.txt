@@ -28,7 +28,7 @@ project(DSLogic-gui)
 #= User Options
 #-------------------------------------------------------------------------------
 
-option(DISABLE_WERROR "Build without -Werror" FALSE)
+option(DISABLE_WERROR "Build without -Werror" TRUE)
 option(ENABLE_SIGNALS "Build with UNIX signals" TRUE)
 option(ENABLE_TESTS "Enable unit tests" FALSE)
 option(STATIC_PKGDEPS_LIBS "Statically link to (pkgconfig) libraries" FALSE)

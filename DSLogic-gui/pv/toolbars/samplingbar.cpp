@@ -174,7 +174,7 @@ void SamplingBar::update_sample_rate_selector()
 	GVariant *gvar_dict, *gvar_list;
 	const uint64_t *elements = NULL;
 	gsize num_elements;
-	QAction *selector_action = NULL;
+	//QAction *selector_action = NULL;
 
 	assert(_sample_rate_list_action);
 
@@ -205,7 +205,7 @@ void SamplingBar::update_sample_rate_selector()
 		_sample_rate_list.show();
 		g_variant_unref(gvar_list);
 
-		selector_action = _sample_rate_list_action;
+		//selector_action = _sample_rate_list_action;
 	}
 
 	g_variant_unref(gvar_dict);
