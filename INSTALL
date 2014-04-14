@@ -15,7 +15,7 @@ libsigrok4DSLoigc
 	This is part of the standard OpenBSD install (not an extra package), apparently.
  - libglib >= 2.32.0
  - libzip >= 0.10
- - libusb-1.0 >= 1.0.9 (optional, used by most drivers)
+ - libusb-1.0 >= 1.0.16
 	On FreeBSD, this is an integral part of the FreeBSD libc, not an extra package/library.
 	This is part of the standard OpenBSD install (not an extra package), apparently.
  - check >= 0.9.4 (optional, only needed to run unit tests)
@@ -38,21 +38,33 @@ Building and installing
 -----------------------
 Get the DSLogic source code from: www.dreamsourcelab.com/download.html
 
-Step1: Build libsigrok4DSLogic
+
+
+Step1: Build libusbx-1.0.18
+Building:
+
+ $ cd libusbx-1.0.18
+ $ ./configure
+ $ make
+ $ sudo make install
+
+
+
+Step2: Build libsigrok4DSLogic
 
 Installing the requirements:
 
 Example on Debian/Ubuntu (please check your respective distro's package manager tool if you use other distros):
  $ sudo apt-get install git-core gcc make autoconf automake libtool pkg-config \
-   libglib2.0-dev libzip-dev libusb-1.0-0-dev libftdi-dev libudev-dev libasound2-dev check
+   libglib2.0-dev libzip-dev libudev-dev libasound2-dev check
 
 Fedora (18, 19):
  $ sudo yum install git gcc make autoconf automake libtool pkgconfig glib2-devel \
-   libzip-devel libusb1-devel libftdi-devel libudev-devel alsa-lib-devel check
+   libzip-devel libudev-devel alsa-lib-devel check
 
 OpenSuSE (12.2):
  $ zypper install git gcc make autoconf automake libtool pkg-config glib2-devel \
-   libzip-devel libusb-1_0-devel libftdi1-devel libudev-devel alsa-devel check
+   libzip-devel libudev-devel alsa-devel check
 
 Building:
  
@@ -62,7 +74,9 @@ Building:
  $ make
  $ sudo make install
 
-Step2: Build DSLogic-gui
+
+
+Step3: Build DSLogic-gui
 
 Installing the requirements:
 

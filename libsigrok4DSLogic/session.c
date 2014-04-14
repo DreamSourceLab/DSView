@@ -84,6 +84,7 @@ SR_API struct sr_session *sr_session_new(void)
 	}
 
 	session->source_timeout = -1;
+        session->running = FALSE;
 	session->abort_session = FALSE;
 //	g_mutex_init(&session->stop_mutex);
 
@@ -160,6 +161,7 @@ SR_API int sr_session_dev_remove_all(void)
  */
 SR_API int sr_session_dev_add(const struct sr_dev_inst *sdi)
 {
+        int ret;
 
 	if (!sdi) {
 		sr_err("%s: sdi was NULL", __func__);
@@ -187,6 +189,15 @@ SR_API int sr_session_dev_add(const struct sr_dev_inst *sdi)
 	}
 
 	session->devs = g_slist_append(session->devs, (gpointer)sdi);
+
+        if (session->running) {
+		/* Adding a device to a running session. Start acquisition
+		 * on that device now. */
+		if ((ret = sdi->driver->dev_acquisition_start(sdi,
+						(void *)sdi)) != SR_OK)
+			sr_err("Failed to start acquisition of device in "
+					"running session: %d", ret);
+	}
 
 	return SR_OK;
 }
@@ -244,41 +255,55 @@ SR_API int sr_session_datafeed_callback_add(sr_datafeed_callback_t cb, void *cb_
 	return SR_OK;
 }
 
-static int sr_session_run_poll(void)
+/**
+ * Call every device in the session's callback.
+ *
+ * For sessions not driven by select loops such as sr_session_run(),
+ * but driven by another scheduler, this can be used to poll the devices
+ * from within that scheduler.
+ *
+ * @param block If TRUE, this call will wait for any of the session's
+ *              sources to fire an event on the file descriptors, or
+ *              any of their timeouts to activate. In other words, this
+ *              can be used as a select loop.
+ *              If FALSE, all sources have their callback run, regardless
+ *              of file descriptor or timeout status.
+ *
+ * @return SR_OK upon success, SR_ERR on errors.
+ */
+static int sr_session_iteration(gboolean block)
 {
 	unsigned int i;
 	int ret;
 
-	while (session->num_sources > 0) {
-		ret = g_poll(session->pollfds, session->num_sources,
-				session->source_timeout);
-		for (i = 0; i < session->num_sources; i++) {
-			if (session->pollfds[i].revents > 0 || (ret == 0
-				&& session->source_timeout == session->sources[i].timeout)) {
-				/*
-				 * Invoke the source's callback on an event,
-				 * or if the poll timed out and this source
-				 * asked for that timeout.
-				 */
-				if (!session->sources[i].cb(session->pollfds[i].fd,
-						session->pollfds[i].revents,
-						session->sources[i].cb_data))
-					sr_session_source_remove(session->sources[i].poll_object);
-			}
+	ret = g_poll(session->pollfds, session->num_sources,
+			block ? session->source_timeout : 0);
+	for (i = 0; i < session->num_sources; i++) {
+		if (session->pollfds[i].revents > 0 || (ret == 0
+			&& session->source_timeout == session->sources[i].timeout)) {
 			/*
-			 * We want to take as little time as possible to stop
-			 * the session if we have been told to do so. Therefore,
-			 * we check the flag after processing every source, not
-			 * just once per main event loop.
+			 * Invoke the source's callback on an event,
+			 * or if the poll timed out and this source
+			 * asked for that timeout.
 			 */
-//			g_mutex_lock(&session->stop_mutex);
-			if (session->abort_session) {
-				sr_session_stop_sync();
-				/* But once is enough. */
-				session->abort_session = FALSE;
-			}
-//			g_mutex_unlock(&session->stop_mutex);
+			if (!session->sources[i].cb(session->pollfds[i].fd,
+					session->pollfds[i].revents,
+					session->sources[i].cb_data))
+				sr_session_source_remove(session->sources[i].poll_object);
 		}
+		/*
+		 * We want to take as little time as possible to stop
+		 * the session if we have been told to do so. Therefore,
+		 * we check the flag after processing every source, not
+		 * just once per main event loop.
+		 */
+		//g_mutex_lock(&session->stop_mutex);
+		if (session->abort_session) {
+			sr_session_stop_sync();
+			/* But once is enough. */
+			session->abort_session = FALSE;
+		}
+		//g_mutex_unlock(&session->stop_mutex);
 	}
 
 	return SR_OK;
@@ -309,14 +334,14 @@ SR_API int sr_session_start(void)
 		return SR_ERR_BUG;
 	}
 
-	sr_info("Starting.");
+	sr_info("Starting...");
 
 	ret = SR_OK;
 	for (l = session->devs; l; l = l->next) {
 		sdi = l->data;
 		if ((ret = sdi->driver->dev_acquisition_start(sdi, sdi)) != SR_OK) {
 			sr_err("%s: could not start an acquisition "
-			       "(%d)", __func__, ret);
+			       "(%d)", __func__, sr_strerror(ret));
 			break;
 		}
 	}
@@ -345,8 +370,9 @@ SR_API int sr_session_run(void)
 		       "cannot be run without devices.", __func__);
 		return SR_ERR_BUG;
 	}
+        session->running = TRUE;
 
-	sr_info("Running.");
+	sr_info("Running...");
 
 	/* Do we have real sources? */
 	if (session->num_sources == 1 && session->pollfds[0].fd == -1) {
@@ -355,7 +381,8 @@ SR_API int sr_session_run(void)
 			session->sources[0].cb(-1, 0, session->sources[0].cb_data);
 	} else {
 		/* Real sources, use g_poll() main loop. */
-		sr_session_run_poll();
+                while (session->num_sources)
+			sr_session_iteration(TRUE);
 	}
 
 	return SR_OK;
@@ -391,6 +418,7 @@ SR_PRIV int sr_session_stop_sync(void)
                 sdi->driver->dev_acquisition_stop(sdi, NULL);
 		}
 	}
+        session->running = FALSE;
 
 	return SR_OK;
 }
@@ -429,8 +457,9 @@ SR_API int sr_session_stop(void)
  */
 static void datafeed_dump(const struct sr_datafeed_packet *packet)
 {
-	const struct sr_datafeed_logic *logic;
-	const struct sr_datafeed_analog *analog;
+    const struct sr_datafeed_logic *logic;
+    const struct sr_datafeed_dso *dso;
+    const struct sr_datafeed_analog *analog;
 
 	switch (packet->type) {
 	case SR_DF_HEADER:
@@ -447,7 +476,12 @@ static void datafeed_dump(const struct sr_datafeed_packet *packet)
 		sr_dbg("bus: Received SR_DF_LOGIC packet (%" PRIu64 " bytes).",
 		       logic->length);
 		break;
-	case SR_DF_ANALOG:
+    case SR_DF_DSO:
+        dso = packet->payload;
+        sr_dbg("bus: Received SR_DF_DSO packet (%d samples).",
+               dso->num_samples);
+        break;
+    case SR_DF_ANALOG:
 		analog = packet->payload;
 		sr_dbg("bus: Received SR_DF_ANALOG packet (%d samples).",
 		       analog->num_samples);

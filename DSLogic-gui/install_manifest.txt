@@ -1,0 +1,3 @@
+/usr/local/bin/DSLogic
+/usr/local/bin/res/DSLogic.fw
+/usr/local/bin/res/DSLogic.bin

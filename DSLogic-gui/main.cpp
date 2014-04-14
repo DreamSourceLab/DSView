@@ -1,7 +1,9 @@
 /*
- * This file is part of the PulseView project.
+ * This file is part of the DSLogic-gui project.
+ * DSLogic-gui is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
+ * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,6 +19,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
+
 
 #ifdef ENABLE_SIGROKDECODE
 #include <libsigrokdecode/libsigrokdecode.h> /* First, so we avoid a _POSIX_C_SOURCE warning. */
@@ -59,7 +62,7 @@ int main(int argc, char *argv[])
 
 	// Set some application metadata
     QApplication::setApplicationVersion(DS_VERSION_STRING);
-    QApplication::setApplicationName("DSLogic");
+    QApplication::setApplicationName("DSLogic(Beta)");
     QApplication::setOrganizationDomain("http://www.DreamSourceLab.com");
 
 	// Parse arguments
@@ -132,7 +135,6 @@ int main(int argc, char *argv[])
 
 			// Initialise the main window
             pv::MainWindow w(device_manager, open_file);
-            //QFile qss(":/levelfour.qss");
             QFile qss(":/stylesheet.qss");
             qss.open(QFile::ReadOnly);
             a.setStyleSheet(qss.readAll());

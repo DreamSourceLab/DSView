@@ -57,6 +57,7 @@ public:
     virtual ~ProtocolSignal();
 
     void set_data(boost::shared_ptr<pv::data::Logic> _logic_data,
+                  boost::shared_ptr<pv::data::Dso> _dso_data,
                   boost::shared_ptr<pv::data::Analog> _analog_data,
                   boost::shared_ptr<pv::data::Group> _group_data);
 

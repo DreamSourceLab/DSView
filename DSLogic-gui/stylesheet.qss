@@ -223,6 +223,13 @@ QLabel {
     margin: 0px;
 }
 
+QCheckBox::indicator:checked {
+    image: url(:icons/checkbox.png);
+}
+QRadioButton::indicator:checked {
+    image: url(:icons/radiobutton.png);
+}
+
 QLabel:disabled {
     color: rgb(232, 232, 230, 255);
 }

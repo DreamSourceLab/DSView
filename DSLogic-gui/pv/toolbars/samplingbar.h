@@ -66,6 +66,7 @@ public:
 
 signals:
 	void run_stop();
+    void device_reload();
 
 private:
 	void update_sample_rate_selector_value();

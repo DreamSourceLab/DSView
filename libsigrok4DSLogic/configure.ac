@@ -44,7 +44,7 @@ AH_BOTTOM([#endif /* SR_CONFIG_H */])
 
 # Enable more compiler warnings via -Wall and -Wextra. Add -fvisibility=hidden
 # and enforce use of SR_API to explicitly mark all public API functions.
-CFLAGS="$CFLAGS -Wall -Wextra -fvisibility=hidden"
+CFLAGS="$CFLAGS -Wall -Wextra -fvisibility=hidden -ludev -Wl,--rpath=/usr/local/lib"
 
 # Checks for programs.
 AC_PROG_CC
@@ -86,6 +86,10 @@ AC_ARG_ENABLE(demo, AC_HELP_STRING([--enable-demo],
 	[enable demo driver support [default=yes]]),
 	[HW_DEMO="$enableval"],
 	[HW_DEMO=$HW_ENABLED_DEFAULT])
+AC_ARG_ENABLE(DSLogic, AC_HELP_STRING([--enable-DSLogic],
+        [enable DSLogic support [default=yes]]),
+        [HW_DSLOGIC="$enableval"],
+        [HW_DSLOGIC=$HW_ENABLED_DEFAULT])
 # Checks for libraries.
 
 case "$host" in
@@ -178,7 +182,10 @@ if test "x$HW_DEMO" = "xyes"; then
 	AC_DEFINE(HAVE_LA_DEMO, 1, [Demo driver support])
 fi
 
-
+AM_CONDITIONAL(HW_DSLOGIC, test x$HW_DSLOGIC = xyes)
+if test "x$HW_DSLOGIC" = "xyes"; then
+	AC_DEFINE(HAVE_LA_DSLOGIC, 1, [DSLogic driver support])
+fi
 
 # Checks for header files.
 # These are already checked: inttypes.h stdint.h stdlib.h string.h unistd.h.
@@ -216,6 +223,8 @@ AC_SUBST(SR_PACKAGE_VERSION)
 
 AC_CONFIG_FILES([Makefile version.h hardware/Makefile
 		 hardware/demo/Makefile
+		 hardware/common/Makefile
+		 hardware/DSLogic/Makefile
 		 input/Makefile
 		 output/Makefile
 		 output/text/Makefile
@@ -250,5 +259,6 @@ done
 
 echo -e "\nEnabled hardware drivers:\n"
 echo "  - demo............................ $HW_DEMO"
+echo "  - DSLogic......................... $HW_DSLOGIC"
 echo
 

@@ -3,6 +3,7 @@
 ##
 ## Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
 ## Copyright (C) 2012-2013 Alexandru Gagniuc <mr.nuke.me@gmail.com>
+## Copyright (C) 2013-2014 DreamSourceLab <support@dreamsourcelab.com>
 ##
 ## This program is free software: you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -22,7 +23,7 @@ cmake_minimum_required(VERSION 2.6)
 include(FindPkgConfig)
 include(GNUInstallDirs)
 
-project(DSLogic-gui)
+project(DSLogic)
 
 #===============================================================================
 #= User Options
@@ -52,8 +53,11 @@ endif()
 
 list(APPEND PKGDEPS
 	libsigrok4DSLogic>=0.2.0
+	libusb-1.0>=1.0.16
 )
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/")
+ 
 find_package(PkgConfig)
 pkg_check_modules(PKGDEPS REQUIRED ${PKGDEPS})
 
@@ -71,6 +75,8 @@ else()
 find_package(Boost 1.42 COMPONENTS system thread REQUIRED)
 endif()
 
+find_package(libusb-1.0 REQUIRED)
+
 #===============================================================================
 #= Config Header
 #-------------------------------------------------------------------------------
@@ -79,7 +85,7 @@ set(DS_TITLE DSLogic)
 set(DS_DESCRIPTION "A GUI for DSLogic")
 
 set(DS_VERSION_MAJOR 0)
-set(DS_VERSION_MINOR 1)
+set(DS_VERSION_MINOR 2)
 set(DS_VERSION_MICRO 0)
 set(DS_VERSION_STRING
 	${DS_VERSION_MAJOR}.${DS_VERSION_MINOR}.${DS_VERSION_MICRO}
@@ -107,6 +113,8 @@ set(DSLogic_SOURCES
 	pv/data/logicsnapshot.cpp
 	pv/data/signaldata.cpp
 	pv/data/snapshot.cpp
+        pv/data/dso.cpp
+        pv/data/dsosnapshot.cpp
 	pv/decoder/decoder.cpp
 	pv/decoder/decoderfactory.cpp
 	pv/decoder/democonfig.cpp
@@ -147,6 +155,7 @@ set(DSLogic_SOURCES
 	pv/view/timemarker.cpp
 	pv/view/view.cpp
 	pv/view/viewport.cpp
+        pv/view/dsosignal.cpp
 )
 
 set(DSLogic_HEADERS
@@ -167,6 +176,8 @@ set(DSLogic_HEADERS
 	pv/toolbars/filebar.h
 	pv/toolbars/logobar.h
 	pv/toolbars/trigbar.h
+        pv/data/dso.h
+        pv/data/dsosnapshot.h
 	pv/view/cursor.h
 	pv/view/header.h
 	pv/view/ruler.h
@@ -174,6 +185,7 @@ set(DSLogic_HEADERS
 	pv/view/groupsignal.h
 	pv/view/protocolsignal.h
 	pv/view/view.h
+        pv/view/dsosignal.h
 	pv/view/viewport.h
 )
 
@@ -234,6 +246,7 @@ set(DSLOGIC_LINK_LIBS
 	${Boost_LIBRARIES}
 	${CMAKE_THREAD_LIBS_INIT}
 	${QT_LIBRARIES}
+        ${LIBUSB_1_LIBRARIES}
 )
 
 if(STATIC_PKGDEPS_LIBS)
@@ -257,6 +270,7 @@ if(WIN32)
 # Pass -mwindows so that no "DOS box" will open when PulseView is started.
 set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "-mwindows")
 endif()
+set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "/usr/local/lib")
 
 #===============================================================================
 #= Installation
@@ -264,9 +278,8 @@ endif()
 
 # Install the executable.
 install(TARGETS ${PROJECT_NAME} DESTINATION bin/)
-
-# Install the manpage.
-install(FILES doc/DSLogic.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1 COMPONENT doc)
+install(FILES res/DSLogic.fw DESTINATION bin/res/)
+install(FILES res/DSLogic.bin DESTINATION bin/res/)
 
 #===============================================================================
 #= Packaging (handled by CPack)

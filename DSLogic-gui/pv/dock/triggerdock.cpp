@@ -31,6 +31,8 @@
 #include <QRegExpValidator>
 #include <QMessageBox>
 
+#include "libsigrok4DSLogic/libsigrok.h"
+
 namespace pv {
 namespace dock {
 

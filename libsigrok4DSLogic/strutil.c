@@ -93,6 +93,51 @@ SR_API char *sr_si_string_u64(uint64_t x, const char *unit)
 }
 
 /**
+ * Convert a numeric value value to its "natural" string representation.
+ * in IEC units
+ *
+ * E.g. a value of 1024, with units set to "B", would be converted
+ * to "1 kB", 16384 to "16 kB".
+ *
+ * @param x The value to convert.
+ * @param unit The unit to append to the string, or NULL if the string
+ *             has no units.
+ *
+ * @return A g_try_malloc()ed string representation of the samplerate value,
+ *         or NULL upon errors. The caller is responsible to g_free() the
+ *         memory.
+ */
+SR_API char *sr_iec_string_u64(uint64_t x, const char *unit)
+{
+    if (unit == NULL)
+        unit = "";
+
+    if ((x >= SR_GB(1)) && (x % SR_GB(1) == 0)) {
+        return g_strdup_printf("%" PRIu64 " G%s", x / SR_GB(1), unit);
+    } else if ((x >= SR_GB(1)) && (x % SR_GB(1) != 0)) {
+        return g_strdup_printf("%" PRIu64 ".%" PRIu64 " G%s",
+                       x / SR_GB(1), x % SR_GB(1), unit);
+    } else if ((x >= SR_MB(1)) && (x % SR_MB(1) == 0)) {
+        return g_strdup_printf("%" PRIu64 " M%s",
+                       x / SR_MB(1), unit);
+    } else if ((x >= SR_MB(1)) && (x % SR_MB(1) != 0)) {
+        return g_strdup_printf("%" PRIu64 ".%" PRIu64 " M%s",
+                    x / SR_MB(1), x % SR_MB(1), unit);
+    } else if ((x >= SR_KB(1)) && (x % SR_KB(1) == 0)) {
+        return g_strdup_printf("%" PRIu64 " k%s",
+                    x / SR_KB(1), unit);
+    } else if ((x >= SR_KB(1)) && (x % SR_KB(1) != 0)) {
+        return g_strdup_printf("%" PRIu64 ".%" PRIu64 " k%s",
+                    x / SR_KB(1), x % SR_KB(1), unit);
+    } else {
+        return g_strdup_printf("%" PRIu64 " %s", x, unit);
+    }
+
+    sr_err("%s: Error creating SI units string.", __func__);
+    return NULL;
+}
+
+/**
  * Convert a numeric samplerate value to its "natural" string representation.
  *
  * E.g. a value of 3000000 would be converted to "3 MHz", 20000 to "20 kHz",

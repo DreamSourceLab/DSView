@@ -242,12 +242,14 @@ void MainWindow::setup_ui()
 	// Populate the device list and select the initially selected device
 	update_device_list();
 
-//    connect(_device_bar, SIGNAL(device_selected()), this,
-//        SLOT(device_selected()));
     connect(_device_bar, SIGNAL(device_selected()), this,
-            SLOT(init()));
+        SLOT(device_selected()));
+//    connect(_device_bar, SIGNAL(device_selected()), this,
+//            SLOT(init()));
     connect(_device_bar, SIGNAL(device_updated()), this,
         SLOT(update()));
+    connect(_sampling_bar, SIGNAL(device_reload()), this,
+        SLOT(init()));
 	connect(_sampling_bar, SIGNAL(run_stop()), this,
 		SLOT(run_stop()));
 	addToolBar(_sampling_bar);
@@ -298,7 +300,7 @@ void MainWindow::setup_ui()
     addDockWidget(Qt::BottomDockWidgetArea, _search_dock);
 
 	// Set the title
-	setWindowTitle(QApplication::translate("MainWindow", "DSLogic", 0,
+    setWindowTitle(QApplication::translate("MainWindow", "DSLogic(Beta)", 0,
 		QApplication::UnicodeUTF8));
 
 	// Setup _session events
@@ -372,10 +374,10 @@ void MainWindow::update_device_list(struct sr_dev_inst *selected_device)
         }
     }
 
-    #ifdef HAVE_LA_DSLOGIC
-    _session.start_hot_plug_proc(boost::bind(&MainWindow::session_error, this,
+//    #ifdef HAVE_LA_DSLOGIC
+    _session.start_hotplug_proc(boost::bind(&MainWindow::session_error, this,
                                              QString("Hotplug failed"), _1));
-    #endif
+//    #endif
 }
 
 void MainWindow::device_change()
@@ -408,11 +410,11 @@ void MainWindow::device_change()
         device_detach();
     }
 
-    #ifdef HAVE_LA_DSLOGIC
-    _session.stop_hot_plug_proc();
-    _session.start_hot_plug_proc(boost::bind(&MainWindow::session_error, this,
+//    #ifdef HAVE_LA_DSLOGIC
+    _session.stop_hotplug_proc();
+    _session.start_hotplug_proc(boost::bind(&MainWindow::session_error, this,
                                              QString("Hotplug failed"), _1));
-    #endif
+//    #endif
 
 
 }
@@ -453,7 +455,7 @@ void MainWindow::device_selected()
 
 void MainWindow::device_attach()
 {
-    _session.stop_hot_plug_proc();
+    _session.stop_hotplug_proc();
 
     if (_session.get_capture_state() == SigSession::Running)
         _session.stop_capture();
@@ -470,7 +472,7 @@ void MainWindow::device_attach()
 
 void MainWindow::device_detach()
 {
-    _session.stop_hot_plug_proc();
+    _session.stop_hotplug_proc();
 
     if (_session.get_capture_state() == SigSession::Running)
         _session.stop_capture();
@@ -508,6 +510,7 @@ void MainWindow::run_stop()
 
 void MainWindow::test_data_error()
 {
+    _session.stop_capture();
     QMessageBox msg(this);
     msg.setText("Data Error");
     msg.setInformativeText("the receive data are not consist with pre-defined test data");

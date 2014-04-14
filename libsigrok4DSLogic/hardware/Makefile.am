@@ -19,7 +19,9 @@
 ##
 
 SUBDIRS = \
-	demo
+	demo \
+	common \
+	DSLogic
 
 noinst_LTLIBRARIES = libsigrok4DSLogichardware.la
 
@@ -30,3 +32,6 @@ libsigrok4DSLogichardware_la_LIBADD =
 if HW_DEMO
 libsigrok4DSLogichardware_la_LIBADD += demo/libsigrok4DSLogic_hw_demo.la
 endif
+
+libsigrok4DSLogichardware_la_LIBADD += common/libsigrok4DSLogic_hw_common.la
+libsigrok4DSLogichardware_la_LIBADD += DSLogic/libsigrok4DSLogic_hw_dslogic.la

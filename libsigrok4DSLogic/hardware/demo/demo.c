@@ -202,6 +202,13 @@ static GSList *hw_scan(GSList *options)
                 return NULL;
             sdi->probes = g_slist_append(sdi->probes, probe);
         }
+    } else if (sdi->mode == DSO) {
+        for (i = 0; i < DS_MAX_DSO_PROBES_NUM; i++) {
+            if (!(probe = sr_probe_new(i, SR_PROBE_DSO, TRUE,
+                    probe_names[i])))
+                return NULL;
+            sdi->probes = g_slist_append(sdi->probes, probe);
+        }
     } else if (sdi->mode == ANALOG) {
         for (i = 0; i < DS_MAX_ANALOG_PROBES_NUM; i++) {
             if (!(probe = sr_probe_new(i, SR_PROBE_ANALOG, TRUE,
@@ -326,6 +333,16 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi)
             sr_dev_probes_free(sdi);
             for (i = 0; probe_names[i]; i++) {
                 if (!(probe = sr_probe_new(i, SR_PROBE_LOGIC, TRUE,
+                        probe_names[i])))
+                    ret = SR_ERR;
+                else
+                    sdi->probes = g_slist_append(sdi->probes, probe);
+            }
+        } else if (!strcmp(stropt, mode_strings[DSO])) {
+            sdi->mode = DSO;
+            sr_dev_probes_free(sdi);
+            for (i = 0; i < DS_MAX_DSO_PROBES_NUM; i++) {
+                if (!(probe = sr_probe_new(i, SR_PROBE_DSO, TRUE,
                         probe_names[i])))
                     ret = SR_ERR;
                 else
@@ -476,6 +493,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
     struct dev_context *devc = sdi->priv;
     struct sr_datafeed_packet packet;
     struct sr_datafeed_logic logic;
+    struct sr_datafeed_dso dso;
     struct sr_datafeed_analog analog;
     //uint16_t buf[BUFSIZE];
     uint16_t *buf;
@@ -506,7 +524,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
         if (sdi->mode == LOGIC)
             samples_to_send = MIN(samples_to_send,
                      devc->limit_samples - devc->samples_counter);
-        else if (sdi->mode == ANALOG)
+        else
             samples_to_send = MIN(samples_to_send,
                      devc->limit_samples);
     }
@@ -554,7 +572,16 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
                 logic.length = sending_now * (NUM_PROBES >> 3);
                 logic.unitsize = (NUM_PROBES >> 3);
                 logic.data = buf;
-            } else if (sdi->mode == ANALOG) {
+            } else if (sdi->mode == DSO) {
+                packet.type = SR_DF_DSO;
+                packet.payload = &dso;
+                dso.probes = sdi->probes;
+                dso.num_samples = sending_now;
+                dso.mq = SR_MQ_VOLTAGE;
+                dso.unit = SR_UNIT_VOLT;
+                dso.mqflags = SR_MQFLAG_AC;
+                dso.data = buf;
+            }else {
                 packet.type = SR_DF_ANALOG;
                 packet.payload = &analog;
                 analog.probes = sdi->probes;
@@ -568,7 +595,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
             sr_session_send(sdi, &packet);
             if (sdi->mode == LOGIC)
                 devc->samples_counter += sending_now;
-            else if (sdi->mode == ANALOG)
+            else
                 devc->samples_counter = (devc->samples_counter + sending_now) % devc->limit_samples;
         } else {
             break;
@@ -606,7 +633,7 @@ static int hw_dev_acquisition_start(const struct sr_dev_inst *sdi,
     /*
      * trigger setting
      */
-    if (!trigger->trigger_en || sdi->mode == ANALOG) {
+    if (!trigger->trigger_en || sdi->mode != LOGIC) {
         devc->trigger_stage = 0;
     } else {
         devc->trigger_mask = ds_trigger_get_mask0(TriggerStages);

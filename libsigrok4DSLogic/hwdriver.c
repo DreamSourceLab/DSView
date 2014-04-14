@@ -87,6 +87,8 @@ static struct sr_config_info sr_config_info_data[] = {
 		"Coupling", NULL},
 	{SR_CONF_DATALOG, SR_T_BOOL, "datalog",
 		"Datalog", NULL},
+    {SR_CONF_OPERATION_MODE, SR_T_CHAR, "operation",
+        "Operation Mode", NULL},
 	{0, 0, NULL, NULL, NULL},
 };
 

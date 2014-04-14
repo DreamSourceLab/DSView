@@ -82,9 +82,11 @@ LogicSignal::~LogicSignal()
 }
 
 void LogicSignal::set_data(boost::shared_ptr<data::Logic> _logic_data,
+                           boost::shared_ptr<data::Dso> _dso_data,
                            boost::shared_ptr<pv::data::Analog> _analog_data,
                            boost::shared_ptr<data::Group> _group_data)
 {
+    (void)_dso_data;
     (void)_analog_data;
     (void)_group_data;
 

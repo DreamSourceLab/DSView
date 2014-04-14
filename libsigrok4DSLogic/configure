@@ -622,6 +622,8 @@ SR_PACKAGE_VERSION_MAJOR
 AM_LIBTOOLFLAGS
 MAKEFLAGS
 FIRMWARE_DIR
+HW_DSLOGIC_FALSE
+HW_DSLOGIC_TRUE
 HW_DEMO_FALSE
 HW_DEMO_TRUE
 SR_PKGLIBS
@@ -777,6 +779,7 @@ with_sysroot
 enable_libtool_lock
 enable_all_drivers
 enable_demo
+enable_DSLogic
 enable_glibtest
 '
       ac_precious_vars='build_alias
@@ -1431,6 +1434,7 @@ Optional Features:
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --enable-all-drivers    enable all drivers by default [default=yes]
   --enable-demo           enable demo driver support [default=yes]
+  --enable-DSLogic        enable DSLogic support [default=yes]
   --disable-glibtest      do not try to compile and run a test GLIB program
 
 Optional Packages:
@@ -4134,7 +4138,7 @@ esac
 
 # Enable more compiler warnings via -Wall and -Wextra. Add -fvisibility=hidden
 # and enforce use of SR_API to explicitly mark all public API functions.
-CFLAGS="$CFLAGS -Wall -Wextra -fvisibility=hidden"
+CFLAGS="$CFLAGS -Wall -Wextra -fvisibility=hidden -ludev -Wl,--rpath=/usr/local/lib"
 
 # Checks for programs.
 ac_ext=c
@@ -12683,6 +12687,13 @@ else
   HW_DEMO=$HW_ENABLED_DEFAULT
 fi
 
+# Check whether --enable-DSLogic was given.
+if test "${enable_DSLogic+set}" = set; then :
+  enableval=$enable_DSLogic; HW_DSLOGIC="$enableval"
+else
+  HW_DSLOGIC=$HW_ENABLED_DEFAULT
+fi
+
 # Checks for libraries.
 
 case "$host" in
@@ -13510,7 +13521,19 @@ $as_echo "#define HAVE_LA_DEMO 1" >>confdefs.h
 
 fi
 
+ if test x$HW_DSLOGIC = xyes; then
+  HW_DSLOGIC_TRUE=
+  HW_DSLOGIC_FALSE='#'
+else
+  HW_DSLOGIC_TRUE='#'
+  HW_DSLOGIC_FALSE=
+fi
 
+if test "x$HW_DSLOGIC" = "xyes"; then
+
+$as_echo "#define HAVE_LA_DSLOGIC 1" >>confdefs.h
+
+fi
 
 # Checks for header files.
 # These are already checked: inttypes.h stdint.h stdlib.h string.h unistd.h.
@@ -13936,7 +13959,7 @@ SR_PACKAGE_VERSION=0.2.0
 
 
 
-ac_config_files="$ac_config_files Makefile version.h hardware/Makefile hardware/demo/Makefile input/Makefile output/Makefile output/text/Makefile libsigrok4DSLogic.pc tests/Makefile"
+ac_config_files="$ac_config_files Makefile version.h hardware/Makefile hardware/demo/Makefile hardware/common/Makefile hardware/DSLogic/Makefile input/Makefile output/Makefile output/text/Makefile libsigrok4DSLogic.pc tests/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -14078,6 +14101,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HW_DEMO_TRUE}" && test -z "${HW_DEMO_FALSE}"; then
   as_fn_error $? "conditional \"HW_DEMO\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${HW_DSLOGIC_TRUE}" && test -z "${HW_DSLOGIC_FALSE}"; then
+  as_fn_error $? "conditional \"HW_DSLOGIC\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 
@@ -14970,6 +14997,8 @@ do
     "version.h") CONFIG_FILES="$CONFIG_FILES version.h" ;;
     "hardware/Makefile") CONFIG_FILES="$CONFIG_FILES hardware/Makefile" ;;
     "hardware/demo/Makefile") CONFIG_FILES="$CONFIG_FILES hardware/demo/Makefile" ;;
+    "hardware/common/Makefile") CONFIG_FILES="$CONFIG_FILES hardware/common/Makefile" ;;
+    "hardware/DSLogic/Makefile") CONFIG_FILES="$CONFIG_FILES hardware/DSLogic/Makefile" ;;
     "input/Makefile") CONFIG_FILES="$CONFIG_FILES input/Makefile" ;;
     "output/Makefile") CONFIG_FILES="$CONFIG_FILES output/Makefile" ;;
     "output/text/Makefile") CONFIG_FILES="$CONFIG_FILES output/text/Makefile" ;;
@@ -16359,5 +16388,6 @@ done
 
 echo -e "\nEnabled hardware drivers:\n"
 echo "  - demo............................ $HW_DEMO"
+echo "  - DSLogic......................... $HW_DSLOGIC"
 echo
 

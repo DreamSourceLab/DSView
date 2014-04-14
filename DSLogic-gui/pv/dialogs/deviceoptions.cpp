@@ -51,6 +51,7 @@ DeviceOptions::DeviceOptions(QWidget *parent, struct sr_dev_inst *sdi) :
 	setLayout(&_layout);
 
     _mode_comboBox.addItem(mode_strings[LOGIC]);
+    _mode_comboBox.addItem(mode_strings[DSO]);
     _mode_comboBox.addItem(mode_strings[ANALOG]);
     _mode_comboBox.setCurrentIndex(_sdi->mode);
     _props_box.setLayout(&_props_box_layout);

@@ -123,6 +123,7 @@ SR_API struct sr_output_format **sr_output_list(void);
 /*--- strutil.c -------------------------------------------------------------*/
 
 SR_API char *sr_si_string_u64(uint64_t x, const char *unit);
+SR_API char *sr_iec_string_u64(uint64_t x, const char *unit);
 SR_API char *sr_samplerate_string(uint64_t samplerate);
 SR_API char *sr_period_string(uint64_t frequency);
 SR_API char *sr_voltage_string(uint64_t v_p, uint64_t v_q);
@@ -150,18 +151,6 @@ SR_API const char *sr_lib_version_string_get(void);
 
 SR_API const char *sr_strerror(int error_code);
 SR_API const char *sr_strerror_name(int error_code);
-
-/*--- libusbhp.c ------------------------------------------------------------*/
-SR_API int libusbhp_init(struct libusbhp_t **handle);
-
-SR_API void libusbhp_exit(struct libusbhp_t *handle);
-
-SR_API int libusbhp_handle_events_timeout(struct libusbhp_t *handle, struct timeval *tv);
-
-SR_API void libusbhp_register_hotplug_listeners(struct libusbhp_t *handle,
-                                        libusbhp_hotplug_cb_fn connected_cb,
-                                        libusbhp_hotplug_cb_fn disconnected_cb,
-                                        void *user_data);
 
 /*--- trigger.c ------------------------------------------------------------*/
 SR_API int ds_trigger_init(void);

@@ -26,11 +26,14 @@
 #include "devicemanager.h"
 #include "data/analog.h"
 #include "data/analogsnapshot.h"
+#include "data/dso.h"
+#include "data/dsosnapshot.h"
 #include "data/logic.h"
 #include "data/logicsnapshot.h"
 #include "data/group.h"
 #include "data/groupsnapshot.h"
 #include "view/analogsignal.h"
+#include "view/dsosignal.h"
 #include "view/logicsignal.h"
 #include "view/groupsignal.h"
 #include "view/protocolsignal.h"
@@ -59,11 +62,10 @@ SigSession::SigSession(DeviceManager &device_manager) :
 	_sdi(NULL),
     _capture_state(Init),
     _last_sample_rate(1),
-    _total_sample_len(1),
-    _hot_plug_handle(NULL)
+    _total_sample_len(1)
 {
 	// TODO: This should not be necessary
-	_session = this;
+    _session = this;
     _hot_attach = false;
     _hot_detach = false;
     _adv_trigger = false;
@@ -71,23 +73,26 @@ SigSession::SigSession(DeviceManager &device_manager) :
     _protocol_cnt = 0;
     _decoderFactory = new decoder::DecoderFactory();
     ds_trigger_init();
+    register_hotplug_callback();
 }
 
 SigSession::~SigSession()
 {
-	stop_capture();
+    stop_capture();
 
-	if (_sampling_thread.get())
-		_sampling_thread->join();
-	_sampling_thread.reset();
+    if (_sampling_thread.get())
+	_sampling_thread->join();
+    _sampling_thread.reset();
 
-    if (_hot_plug_handle)
-        stop_hot_plug_proc();
+    if (_hotplug_handle) {
+        stop_hotplug_proc();
+        deregister_hotplug_callback();
+    }
 
     ds_trigger_destroy();
 
-	// TODO: This should not be necessary
-	_session = NULL;
+    // TODO: This should not be necessary
+    _session = NULL;
 }
 
 quint64 SigSession::get_last_sample_rate() const
@@ -102,7 +107,10 @@ quint64 SigSession::get_total_sample_len() const
 
 void SigSession::set_total_sample_len(quint64 length)
 {
-    _total_sample_len = length;
+    if (_sdi->mode == DSO)
+        _total_sample_len = 8 * 1024;
+    else
+        _total_sample_len = length;
 }
 
 struct sr_dev_inst* SigSession::get_device() const
@@ -143,6 +151,19 @@ void SigSession::save_file(const std::string &name){
             return;
 
         const shared_ptr<pv::data::LogicSnapshot> &snapshot =
+            snapshots.front();
+
+        sr_session_save(name.c_str(), _sdi,
+                        (unsigned char*)snapshot->get_data(),
+                        snapshot->get_unit_size(),
+                        snapshot->get_sample_count());
+    } else if (_sdi->mode == DSO){
+        const deque< shared_ptr<pv::data::DsoSnapshot> > &snapshots =
+            _dso_data->get_snapshots();
+        if (snapshots.empty())
+            return;
+
+        const shared_ptr<pv::data::DsoSnapshot> &snapshot =
             snapshots.front();
 
         sr_session_save(name.c_str(), _sdi,
@@ -215,7 +236,6 @@ void SigSession::stop_capture()
 {
 	if (get_capture_state() == Stopped)
 		return;
-
 	sr_session_stop();
 
 	// Check that sampling stopped
@@ -255,6 +275,24 @@ int SigSession::get_logic_probe_cnt(const sr_dev_inst *sdi)
     return logic_probe_cnt;
 }
 
+int SigSession::get_dso_probe_cnt(const sr_dev_inst *sdi)
+{
+    unsigned int dso_probe_cnt = 0;
+    for (const GSList *l = sdi->probes; l; l = l->next) {
+        const sr_probe *const probe = (const sr_probe *)l->data;
+        if (!probe->enabled)
+            continue;
+
+        switch(probe->type) {
+        case SR_PROBE_DSO:
+            dso_probe_cnt++;
+            break;
+        }
+    }
+
+    return dso_probe_cnt;
+}
+
 int SigSession::get_analog_probe_cnt(const sr_dev_inst *sdi)
 {
     unsigned int analog_probe_cnt = 0;
@@ -287,6 +325,18 @@ void* SigSession::get_buf(int& unit_size, uint64_t &length)
             return NULL;
 
         const shared_ptr<pv::data::LogicSnapshot> &snapshot =
+            snapshots.front();
+
+        unit_size = snapshot->get_unit_size();
+        length = snapshot->get_sample_count();
+        return snapshot->get_data();
+    } else if (_sdi->mode == DSO) {
+        const deque< shared_ptr<pv::data::DsoSnapshot> > &snapshots =
+            _dso_data->get_snapshots();
+        if (snapshots.empty())
+            return NULL;
+
+        const shared_ptr<pv::data::DsoSnapshot> &snapshot =
             snapshots.front();
 
         unit_size = snapshot->get_unit_size();
@@ -339,6 +389,7 @@ void SigSession::load_thread_proc(const string name,
 
 	// Confirm that SR_DF_END was received
 	assert(!_cur_logic_snapshot);
+    assert(!_cur_dso_snapshot);
 	assert(!_cur_analog_snapshot);
 }
 
@@ -346,64 +397,61 @@ void SigSession::sample_thread_proc(struct sr_dev_inst *sdi,
 	uint64_t record_length,
 	function<void (const QString)> error_handler)
 {
-//    while(1) {
-        assert(sdi);
-        assert(error_handler);
+    assert(sdi);
+    assert(error_handler);
 
-        if (!_adv_trigger) {
-            /* simple trigger check trigger_enable */
-            ds_trigger_set_en(false);
-            BOOST_FOREACH(const shared_ptr<view::Signal> s, _signals)
-            {
-                assert(s);
-                if (s->get_trig() != 0) {
-                    ds_trigger_set_en(true);
-                    s->set_trig(s->get_trig());
-                }
+    if (!_adv_trigger) {
+        /* simple trigger check trigger_enable */
+        ds_trigger_set_en(false);
+        BOOST_FOREACH(const shared_ptr<view::Signal> s, _signals)
+        {
+            assert(s);
+            if (s->get_trig() != 0) {
+                ds_trigger_set_en(true);
+                s->set_trig(s->get_trig());
             }
-        } else {
-            /* advanced trigger check trigger_enable */
-            ds_trigger_set_en(true);
         }
+    } else {
+        /* advanced trigger check trigger_enable */
+        ds_trigger_set_en(true);
+    }
 
-        sr_session_new();
-        sr_session_datafeed_callback_add(data_feed_in_proc, NULL);
+    sr_session_new();
+    sr_session_datafeed_callback_add(data_feed_in_proc, NULL);
 
-        if (sr_session_dev_add(sdi) != SR_OK) {
-            error_handler(tr("Failed to use device."));
-            sr_session_destroy();
-            return;
-        }
-
-        // Set the sample limit
-        if (sr_config_set(sdi, SR_CONF_LIMIT_SAMPLES,
-            g_variant_new_uint64(record_length)) != SR_OK) {
-            error_handler(tr("Failed to configure "
-                "time-based sample limit."));
-            sr_session_destroy();
-            return;
-        }
-
-        receive_data(0);
-        set_capture_state(Running);
-
-        if (sr_session_start() != SR_OK) {
-            error_handler(tr("Failed to start session."));
-            set_capture_state(Stopped);
-            return;
-        }
-
-        sr_session_run();
+    if (sr_session_dev_add(sdi) != SR_OK) {
+        error_handler(tr("Failed to use device."));
         sr_session_destroy();
+        return;
+    }
 
+    // Set the sample limit
+    if (sr_config_set(sdi, SR_CONF_LIMIT_SAMPLES,
+        g_variant_new_uint64(record_length)) != SR_OK) {
+        error_handler(tr("Failed to configure "
+            "time-based sample limit."));
+        sr_session_destroy();
+        return;
+    }
+
+    receive_data(0);
+    set_capture_state(Running);
+
+    if (sr_session_start() != SR_OK) {
+        error_handler(tr("Failed to start session."));
         set_capture_state(Stopped);
+        return;
+    }
 
-        // Confirm that SR_DF_END was received
-        assert(!_cur_logic_snapshot);
-        assert(!_cur_analog_snapshot);
+    sr_session_run();
+    sr_session_destroy();
 
-//        g_usleep(3000*1000);
-//    }
+    set_capture_state(Stopped);
+
+    // Confirm that SR_DF_END was received
+    assert(!_cur_logic_snapshot);
+    assert(!_cur_dso_snapshot);
+    assert(!_cur_analog_snapshot);
 }
 
 void SigSession::feed_in_header(const sr_dev_inst *sdi)
@@ -412,6 +460,7 @@ void SigSession::feed_in_header(const sr_dev_inst *sdi)
 	GVariant *gvar;
 	uint64_t sample_rate = 0;
 	unsigned int logic_probe_count = 0;
+    unsigned int dso_probe_count = 0;
 	unsigned int analog_probe_count = 0;
 
 	// Detect what data types we will receive
@@ -424,6 +473,10 @@ void SigSession::feed_in_header(const sr_dev_inst *sdi)
 		case SR_PROBE_LOGIC:
 			logic_probe_count++;
 			break;
+
+        case SR_PROBE_DSO:
+            dso_probe_count++;
+            break;
 
 		case SR_PROBE_ANALOG:
 			analog_probe_count++;
@@ -471,6 +524,11 @@ void SigSession::feed_in_header(const sr_dev_inst *sdi)
             assert(_group_data);
 		}
 
+        if (dso_probe_count != 0) {
+            _dso_data.reset(new data::Dso(dso_probe_count, sample_rate));
+            assert(_dso_data);
+        }
+
 		if (analog_probe_count != 0) {
             _analog_data.reset(new data::Analog(analog_probe_count, sample_rate));
 			assert(_analog_data);
@@ -482,7 +540,7 @@ void SigSession::feed_in_header(const sr_dev_inst *sdi)
         BOOST_FOREACH(const shared_ptr<view::Signal> s, _signals)
         {
             assert(s);
-            s->set_data(_logic_data, _analog_data, _group_data);
+            s->set_data(_logic_data, _dso_data, _analog_data, _group_data);
         }
 
         receive_data(0);
@@ -631,6 +689,7 @@ void SigSession::init_signals(const sr_dev_inst *sdi)
     GVariant *gvar;
     uint64_t sample_rate = 0;
     unsigned int logic_probe_count = 0;
+    unsigned int dso_probe_count = 0;
     unsigned int analog_probe_count = 0;
 
     // Detect what data types we will receive
@@ -642,6 +701,10 @@ void SigSession::init_signals(const sr_dev_inst *sdi)
         switch(probe->type) {
         case SR_PROBE_LOGIC:
             logic_probe_count++;
+            break;
+
+        case SR_PROBE_DSO:
+            dso_probe_count++;
             break;
 
         case SR_PROBE_ANALOG:
@@ -680,6 +743,11 @@ void SigSession::init_signals(const sr_dev_inst *sdi)
             _group_cnt = 0;
         }
 
+        if (dso_probe_count != 0) {
+            _dso_data.reset(new data::Dso(dso_probe_count, sample_rate));
+            assert(_dso_data);
+        }
+
         if (analog_probe_count != 0) {
             _analog_data.reset(new data::Analog(analog_probe_count, sample_rate));
             assert(_analog_data);
@@ -702,6 +770,12 @@ void SigSession::init_signals(const sr_dev_inst *sdi)
                 signal = shared_ptr<view::Signal>(
                     new view::LogicSignal(probe->name,
                         _logic_data, probe->index, _signals.size()));
+                break;
+
+            case SR_PROBE_DSO:
+                signal = shared_ptr<view::Signal>(
+                    new view::DsoSignal(probe->name,
+                        _dso_data, probe->index, _signals.size()));
                 break;
 
             case SR_PROBE_ANALOG:
@@ -728,7 +802,8 @@ void SigSession::update_signals(const sr_dev_inst *sdi)
     std::vector< boost::shared_ptr<view::Signal> >::iterator i = _signals.begin();
     while (i != _signals.end()) {
         if (((*i)->get_type() == view::Signal::DS_LOGIC ||
-            (*i)->get_type() == view::Signal::DS_ANALOG))
+             (*i)->get_type() == view::Signal::DS_DSO ||
+             (*i)->get_type() == view::Signal::DS_ANALOG))
             signals_en_table.insert((*i)->get_index(), 1);
         i++;
     }
@@ -753,6 +828,12 @@ void SigSession::update_signals(const sr_dev_inst *sdi)
                         _logic_data, probe->index, 0));
                 break;
 
+            case SR_PROBE_DSO:
+                signal = shared_ptr<view::Signal>(
+                    new view::DsoSignal(probe->name,
+                        _dso_data, probe->index, _signals.size()));
+                break;
+
             case SR_PROBE_ANALOG:
                 signal = shared_ptr<view::Signal>(
                     new view::AnalogSignal(probe->name,
@@ -767,7 +848,8 @@ void SigSession::update_signals(const sr_dev_inst *sdi)
     i = _signals.begin();
     while (i != _signals.end()) {
         if (((*i)->get_type() == view::Signal::DS_LOGIC ||
-            (*i)->get_type() == view::Signal::DS_ANALOG) &&
+             (*i)->get_type() == view::Signal::DS_DSO ||
+             (*i)->get_type() == view::Signal::DS_ANALOG) &&
             probes_en_table.value((*i)->get_index()) == false) {
             std::vector< boost::shared_ptr<view::Signal> >::iterator j = _signals.begin();
             while(j != _signals.end()) {
@@ -845,6 +927,36 @@ void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
     //data_updated();
 }
 
+void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
+{
+    lock_guard<mutex> lock(_data_mutex);
+
+    if(!_dso_data)
+    {
+        qDebug() << "Unexpected dso packet";
+        return;	// This dso packet was not expected.
+    }
+
+    if (!_cur_dso_snapshot)
+    {
+        // Create a new data snapshot
+        _cur_dso_snapshot = shared_ptr<data::DsoSnapshot>(
+            new data::DsoSnapshot(dso, _total_sample_len, _dso_data->get_num_probes()));
+        if (_cur_dso_snapshot->buf_null())
+            stop_capture();
+        else
+            _dso_data->push_snapshot(_cur_dso_snapshot);
+    }
+    else
+    {
+        // Append to the existing data snapshot
+        _cur_dso_snapshot->append_payload(dso);
+    }
+
+    receive_data(dso.num_samples);
+    data_updated();
+}
+
 void SigSession::feed_in_analog(const sr_datafeed_analog &analog)
 {
 	lock_guard<mutex> lock(_data_mutex);
@@ -902,6 +1014,11 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
         feed_in_logic(*(const sr_datafeed_logic*)packet->payload);
 		break;
 
+    case SR_DF_DSO:
+        assert(packet->payload);
+        feed_in_dso(*(const sr_datafeed_dso*)packet->payload);
+        break;
+
 	case SR_DF_ANALOG:
 		assert(packet->payload);
         feed_in_analog(*(const sr_datafeed_analog*)packet->payload);
@@ -926,6 +1043,7 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
                 }
             }
 			_cur_logic_snapshot.reset();
+            _cur_dso_snapshot.reset();
             _cur_analog_snapshot.reset();
 		}
 		break;
@@ -1019,64 +1137,50 @@ QMap<QString, int> SigSession::get_decode_options_index(int decode_index)
 /*
  * hotplug function
  */
-void SigSession::start_hot_plug_proc(boost::function<void (const QString)> error_handler)
-{
-#ifdef HAVE_LA_DSLOGIC
-    if (_hot_plug_handle) {
-        error_handler("Hotplug proc have started!");
-        return;
+int SigSession::hotplug_callback(struct libusb_context *ctx, struct libusb_device *dev, 
+                                  libusb_hotplug_event event, void *user_data) {
+
+    (void)ctx;
+    (void)dev;
+    (void)user_data;
+
+    if (LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED == event) {
+        _session->_hot_attach = true;
+        qDebug("DSLogic attaced!\n");
+    }else if (LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT == event) {
+        _session->_hot_detach = true;
+        qDebug("DSLogic dettaced!\n");
+    }else{
+        qDebug("Unhandled event %d\n", event);
     }
 
-    int ret = libusbhp_init(&_hot_plug_handle);
-    if(ret != 0) {
-      error_handler("Could not initialize hotplug handle.");
-      return;
-    }
-
-    libusbhp_register_hotplug_listeners(_hot_plug_handle,
-                                        dev_attach_callback,
-                                        dev_detach_callback,
-                                        NULL);
-
-    // Begin the session
-    _hot_plug.reset(new boost::thread(
-        &SigSession::hot_plug_proc, this, error_handler));
-#else
-      error_handler("No hotplug device.");
-#endif
+    return 0;
 }
 
-void SigSession::stop_hot_plug_proc()
+void SigSession::hotplug_proc(boost::function<void (const QString)> error_handler)
 {
-#ifdef HAVE_LA_DSLOGIC
-    if (_hot_plug.get()) {
-        _hot_plug->interrupt();
-        _hot_plug->join();
-    }
-    _hot_plug.reset();
+    struct timeval tv;
 
-    if(_hot_plug_handle) {
-        libusbhp_exit(_hot_plug_handle);
-        _hot_plug_handle = NULL;
-    }
-#endif
-}
+    (void)error_handler;
 
-void SigSession::hot_plug_proc(boost::function<void (const QString)> error_handler)
-{
     if (!_sdi)
         return;
 
+    tv.tv_sec = tv.tv_usec = 0;
     try {
         while(_session) {
+            libusb_handle_events_timeout(NULL, &tv);
             if (_hot_attach) {
+                qDebug("DSLogic hardware attached!");
                 device_attach();
                 _hot_attach = false;
                 break;
             }
             if (_hot_detach) {
+                qDebug("DSLogic hardware detached!");
                 device_detach();
                 _logic_data.reset();
+                _dso_data.reset();
                 _analog_data.reset();
                 _hot_detach = false;
                 break;
@@ -1085,38 +1189,50 @@ void SigSession::hot_plug_proc(boost::function<void (const QString)> error_handl
         }
     } catch(...) {
         qDebug("Interrupt exception for hotplug thread was thrown.");
-        error_handler("Interrupt exception for hotplug thread was thrown.");
     }
     qDebug("Hotplug thread exit!");
 }
 
-void SigSession::dev_attach_callback(struct libusbhp_device_t *device, void *user_data)
+void SigSession::register_hotplug_callback()
 {
-    (void)user_data;
+    int ret;
 
-    if (device)
-      qDebug("Attach: (%04x/%04x)", device->idVendor, device->idProduct);
-
-    _session->_hot_attach = true;
+    ret = libusb_hotplug_register_callback(NULL, (libusb_hotplug_event)(LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED |
+                                           LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT), 
+                                           (libusb_hotplug_flag)LIBUSB_HOTPLUG_ENUMERATE, 0x2A0E, 0x0001,
+                                           LIBUSB_HOTPLUG_MATCH_ANY, hotplug_callback, NULL,
+                                           &_hotplug_handle);
+    if (LIBUSB_SUCCESS != ret){
+	qDebug() << "Error creating a hotplug callback\n";
+    }
 }
 
-void SigSession::dev_detach_callback(struct libusbhp_device_t *device, void *user_data)
+void SigSession::deregister_hotplug_callback()
 {
-    (void)user_data;
-
-    if (device)
-      qDebug("Detach: (%04x/%04x)", device->idVendor, device->idProduct);
-
-    _session->_hot_detach = true;
+    libusb_hotplug_deregister_callback(NULL, _hotplug_handle);
 }
 
-int SigSession::hot_plug_active()
+void SigSession::start_hotplug_proc(boost::function<void (const QString)> error_handler)
 {
-    if (_hot_plug_handle)
-        return 1;
-    else
-        return 0;
+
+    // Begin the session
+    qDebug() << "Starting a hotplug thread...\n";
+    _hot_attach = false;
+    _hot_detach = false;
+    _hotplug.reset(new boost::thread(
+        &SigSession::hotplug_proc, this, error_handler));
+
 }
+
+void SigSession::stop_hotplug_proc()
+{
+    if (_hotplug.get()) {
+        _hotplug->interrupt();
+        _hotplug->join();
+    }
+    _hotplug.reset();
+}
+
 
 /*
  * Tigger

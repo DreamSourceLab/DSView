@@ -41,6 +41,7 @@
 #include <QVariant>
 
 #include <libsigrok4DSLogic/libsigrok.h>
+#include <libusb.h>
 
 namespace pv {
 
@@ -49,6 +50,8 @@ class DeviceManager;
 namespace data {
 class Analog;
 class AnalogSnapshot;
+class Dso;
+class DsoSnapshot;
 class Logic;
 class LogicSnapshot;
 class Group;
@@ -110,7 +113,7 @@ public:
         get_pro_signals();
 
     int get_logic_probe_cnt(const struct sr_dev_inst *sdi);
-
+    int get_dso_probe_cnt(const struct sr_dev_inst *sdi);
     int get_analog_probe_cnt(const struct sr_dev_inst *sdi);
 
     void init_signals(const struct sr_dev_inst *sdi);
@@ -147,9 +150,10 @@ public:
     std::list<int> get_decode_probes(int decode_index);
     QMap<QString, int> get_decode_options_index(int decode_index);
 
-    void start_hot_plug_proc(boost::function<void (const QString)> error_handler);
-    void stop_hot_plug_proc();
-    int hot_plug_active();
+    void start_hotplug_proc(boost::function<void (const QString)> error_handler);
+    void stop_hotplug_proc();
+    void register_hotplug_callback();
+    void deregister_hotplug_callback();
 
     void set_adv_trigger(bool adv_trigger);
 
@@ -169,23 +173,21 @@ private:
 	void feed_in_meta(const sr_dev_inst *sdi,
 		const sr_datafeed_meta &meta);
 
-    void feed_in_trigger(const ds_trigger_pos &trigger_pos);
+        void feed_in_trigger(const ds_trigger_pos &trigger_pos);
 
 	void feed_in_logic(const sr_datafeed_logic &logic);
-
+        void feed_in_dso(const sr_datafeed_dso &dso);
 	void feed_in_analog(const sr_datafeed_analog &analog);
 
 	void data_feed_in(const struct sr_dev_inst *sdi,
-		const struct sr_datafeed_packet *packet);
+        const struct sr_datafeed_packet *packet);
 
-	static void data_feed_in_proc(const struct sr_dev_inst *sdi,
-		const struct sr_datafeed_packet *packet, void *cb_data);
+        static void data_feed_in_proc(const struct sr_dev_inst *sdi,
+        const struct sr_datafeed_packet *packet, void *cb_data);
 
-    void hot_plug_proc(boost::function<void (const QString)> error_handler);
-
-    static void dev_attach_callback(struct libusbhp_device_t *device, void *user_data);
-
-    static void dev_detach_callback(struct libusbhp_device_t *device, void *user_data);
+        void hotplug_proc(boost::function<void (const QString)> error_handler);
+        static int hotplug_callback(struct libusb_context *ctx, struct libusb_device *dev, 
+                         libusb_hotplug_event event, void *user_data);
 
 private:
 	DeviceManager &_device_manager;
@@ -208,6 +210,8 @@ private:
 	mutable boost::mutex _data_mutex;
 	boost::shared_ptr<data::Logic> _logic_data;
 	boost::shared_ptr<data::LogicSnapshot> _cur_logic_snapshot;
+    boost::shared_ptr<data::Dso> _dso_data;
+    boost::shared_ptr<data::DsoSnapshot> _cur_dso_snapshot;
 	boost::shared_ptr<data::Analog> _analog_data;
 	boost::shared_ptr<data::AnalogSnapshot> _cur_analog_snapshot;
     boost::shared_ptr<data::Group> _group_data;
@@ -221,8 +225,8 @@ private:
 
     quint64 _total_sample_len;
 
-    struct libusbhp_t *_hot_plug_handle;
-    std::auto_ptr<boost::thread> _hot_plug;
+    libusb_hotplug_callback_handle _hotplug_handle;
+    std::auto_ptr<boost::thread> _hotplug;
     bool _hot_attach;
     bool _hot_detach;
 

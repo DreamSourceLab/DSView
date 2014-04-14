@@ -27,6 +27,8 @@
 
 #include <boost/foreach.hpp>
 
+#include <libsigrok4DSLogic/libsigrok.h>
+
 #include <QAction>
 #include <QDebug>
 #include <QLabel>
@@ -63,24 +65,24 @@ const uint64_t SamplingBar::RecordLengths[19] = {
 const uint64_t SamplingBar::DefaultRecordLength = 1000000;
 
 const uint64_t SamplingBar::DSLogic_RecordLengths[15] = {
-    1000,
-    2000,
-    5000,
-    10000,
-    20000,
-    50000,
-    100000,
-    200000,
-    500000,
-    1000000,
-    2000000,
-    5000000,
-    10000000,
-    16000000,
-    100000000,
+    1024,
+    2048,
+    4096,
+    8192,
+    16384,
+    32768,
+    65536,
+    131072,
+    262144,
+    524288,
+    1048576,
+    2097152,
+    4194304,
+    8388608,
+    16777216,
 };
 
-const uint64_t SamplingBar::DSLogic_DefaultRecordLength = 16000000;
+const uint64_t SamplingBar::DSLogic_DefaultRecordLength = 16777216;
 
 SamplingBar::SamplingBar(QWidget *parent) :
 	QToolBar("Sampling Bar", parent),
@@ -131,7 +133,7 @@ void SamplingBar::set_device(struct sr_dev_inst *sdi)
         for (size_t i = 0; i < countof(DSLogic_RecordLengths); i++)
         {
             const uint64_t &l = DSLogic_RecordLengths[i];
-            char *const text = sr_si_string_u64(l, " samples");
+            char *const text = sr_iec_string_u64(l, " samples");
             _record_length_selector.addItem(QString(text),
                 qVariantFromValue(l));
             g_free(text);
@@ -242,7 +244,9 @@ void SamplingBar::update_sample_rate_selector_value()
 
 void SamplingBar::commit_sample_rate()
 {
+    GVariant *gvar;
 	uint64_t sample_rate = 0;
+    uint64_t last_sample_rate = 0;
 
     assert(_sdi);
 
@@ -259,12 +263,30 @@ void SamplingBar::commit_sample_rate()
 	if (sample_rate == 0)
 		return;
 
+    // Get last samplerate
+    if (sr_config_get(_sdi->driver, SR_CONF_SAMPLERATE,
+        &gvar, _sdi) != SR_OK) {
+        qDebug() <<
+                "WARNING: Failed to get value of sample rate";
+        return;
+    }
+    last_sample_rate = g_variant_get_uint64(gvar);
+    g_variant_unref(gvar);
+
 	// Set the samplerate
     if (sr_config_set(_sdi, SR_CONF_SAMPLERATE,
         g_variant_new_uint64(sample_rate)) != SR_OK) {
 		qDebug() << "Failed to configure samplerate.";
 		return;
 	}
+
+    if (strcmp(_sdi->driver->name, "DSLogic") == 0) {
+        if ((last_sample_rate == SR_MHZ(200)&& sample_rate != SR_MHZ(200)) ||
+            (last_sample_rate != SR_MHZ(200) && sample_rate == SR_MHZ(200)) ||
+            (last_sample_rate == SR_MHZ(400)&& sample_rate != SR_MHZ(400)) ||
+            (last_sample_rate != SR_MHZ(400) && sample_rate == SR_MHZ(400)))
+            device_reload();
+    }
 }
 
 void SamplingBar::on_sample_rate_changed()

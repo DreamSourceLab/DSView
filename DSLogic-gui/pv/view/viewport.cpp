@@ -95,7 +95,7 @@ void Viewport::paintEvent(QPaintEvent *event)
     (void)event;
 
     using pv::view::Signal;
-
+    int i, j;
     QStyleOption o;
     o.initFrom(this);
     QPainter p(this);
@@ -118,7 +118,7 @@ void Viewport::paintEvent(QPaintEvent *event)
         paintProgress(p);
         break;
     }
-    } else if (_view.session().get_device()->mode == ANALOG) {
+    } else {
         paintSignals(p);
     }
 
@@ -134,7 +134,6 @@ void Viewport::paintEvent(QPaintEvent *event)
         p.setPen(Signal::dsGray);
         const double sigY = s->get_v_offset() - _view.v_offset();
 
-    	int i, j;
         if (s->get_type() == Signal::DS_ANALOG) {
             p.drawLine(0, sigY, width(), sigY);
             const double spanY = (s->get_signalHeight()) * 1.0f / NumSpanY;
@@ -152,8 +151,36 @@ void Viewport::paintEvent(QPaintEvent *event)
                 p.drawLine(0 + spanX * i, sigY,
                            0 + spanX * i, sigY - s->get_signalHeight());
             }
-        } else {
+        } else if (s->get_type() == Signal::DS_LOGIC) {
             p.drawLine(0, sigY + 10, width(), sigY + 10);
+        }
+    }
+
+    if (_view.session().get_device()->mode == DSO) {
+
+        p.setPen(Signal::dsGray);
+        p.setPen(Qt::DotLine);
+
+        const double spanY =height() * 1.0f / 8;
+        for (i = 1; i < 9; i++) {
+            const double posY = spanY * i;
+            p.drawLine(0, posY, width(), posY);
+            const double miniSpanY = spanY / 5;
+            for (j = 1; j < 5; j++) {
+                p.drawLine(width() / 2.0f - 10, posY - miniSpanY * j,
+                           width() / 2.0f + 10, posY - miniSpanY * j);
+            }
+        }
+        const double spanX = width() * 1.0f / 10;
+        for (i = 1; i < 11; i++) {
+            const double posX = spanX * i;
+            p.drawLine(posX, 0,
+                       posX, height());
+            const double miniSpanX = spanX / 5;
+            for (j = 1; j < 5; j++) {
+                p.drawLine(posX - miniSpanX * j, height() / 2.0f - 10,
+                           posX - miniSpanX * j, height() / 2.0f + 10);
+            }
         }
     }
 

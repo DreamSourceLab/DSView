@@ -147,7 +147,7 @@ void Header::paintEvent(QPaintEvent*)
                              w, s->get_old_v_offset() - v_offset - s->get_signalHeight());
                 painter.drawLine(0, s->get_old_v_offset() - v_offset,
                              w, s->get_old_v_offset() - v_offset);
-            } else {
+            } else if (s->get_type() == Signal::DS_LOGIC){
                 painter.drawLine(0, s->get_old_v_offset() - v_offset + 10,
                              w, s->get_old_v_offset() - v_offset + 10);
             }
@@ -157,7 +157,7 @@ void Header::paintEvent(QPaintEvent*)
                              w, s->get_v_offset() - v_offset);
                 painter.drawLine(0, s->get_v_offset() - v_offset - s->get_signalHeight(),
                              w, s->get_v_offset() - v_offset - s->get_signalHeight());
-            } else {
+            } else if (s->get_type() == Signal::DS_LOGIC) {
                 painter.drawLine(0, s->get_v_offset() - v_offset + 10,
                              w, s->get_v_offset() - v_offset + 10);
             }

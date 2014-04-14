@@ -32,6 +32,8 @@
 #include <QPainter>
 #include <QRegExpValidator>
 
+#include "libsigrok4DSLogic/libsigrok.h"
+
 namespace pv {
 namespace dock {
 

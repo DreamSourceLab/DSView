@@ -29,12 +29,15 @@
 #include <stdexcept>
 #include <string>
 
+#include <QtGui/QApplication>
 #include <QObject>
 #include <QDebug>
+#include <QDir>
 
 #include <libsigrok4DSLogic/libsigrok.h>
 
 using namespace std;
+char config_path[256];
 
 namespace pv {
 
@@ -97,6 +100,15 @@ list<sr_dev_inst*> DeviceManager::driver_scan(
 
 	// Release this driver and all it's attached devices
 	release_driver(driver);
+
+    // Check If DSLogic driver
+    if (strcmp(driver->name, "DSLogic") == 0) {
+        QDir dir(QApplication::applicationDirPath());
+        if (!dir.cd("res"))
+            return driver_devices;
+        std::string str = dir.absolutePath().toStdString() + "/";
+        strcpy(config_path, str.c_str());
+    }
 
 	// Do the scan
 	GSList *const devices = sr_driver_scan(driver, drvopts);

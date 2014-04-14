@@ -21,6 +21,9 @@
 /* Demo driver support */
 #undef HAVE_LA_DEMO
 
+/* DSLogic driver support */
+#undef HAVE_LA_DSLOGIC
+
 /* Specifies whether we have libserialport. */
 #undef HAVE_LIBSERIALPORT
 

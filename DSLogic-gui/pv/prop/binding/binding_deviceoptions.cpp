@@ -84,6 +84,7 @@ DeviceOptions::DeviceOptions(struct sr_dev_inst *sdi) :
 		case SR_CONF_TRIGGER_SOURCE:
 		case SR_CONF_FILTER:
 		case SR_CONF_COUPLING:
+        case SR_CONF_OPERATION_MODE:
 			bind_enum(name, key, gvar_list);
 			break;
 

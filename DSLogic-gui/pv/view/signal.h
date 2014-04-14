@@ -42,6 +42,7 @@ namespace pv {
 namespace data {
 class SignalData;
 class Logic;
+class Dso;
 class Analog;
 class Group;
 }
@@ -76,7 +77,7 @@ public:
     static const QColor dsLightRed;
 	static const QPen SignalAxisPen;
 
-    enum {DS_LOGIC = 0, DS_ANALOG, DS_GROUP, DS_PROTOCOL};
+    enum {DS_LOGIC = 0, DS_ANALOG, DS_GROUP, DS_PROTOCOL, DS_DSO};
 
 protected:
     Signal(QString name, int index, int type, int order);
@@ -187,6 +188,7 @@ public:
     virtual void del_decoder() = 0;
 
     virtual void set_data(boost::shared_ptr<pv::data::Logic> _logic_data,
+                          boost::shared_ptr<pv::data::Dso> _dso_data,
                           boost::shared_ptr<pv::data::Analog> _analog_data,
                           boost::shared_ptr<pv::data::Group> _group_data) = 0;
 

@@ -26,7 +26,7 @@
 #include <inttypes.h>
 #include <glib.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #define WINVER 0x0500
 #define _WIN32_WINNT WINVER
 #include <Winsock2.h>
@@ -89,6 +89,7 @@ enum {
 
 #define SR_MAX_PROBENAME_LEN 32
 #define DS_MAX_ANALOG_PROBES_NUM 8
+#define DS_MAX_DSO_PROBES_NUM 2
 #define TriggerStages 16
 #define TriggerProbes 16
 #define TriggerCountBits 16
@@ -100,6 +101,11 @@ enum {
 #define SR_GHZ(n) ((n) * (uint64_t)(1000000000ULL))
 
 #define SR_HZ_TO_NS(n) ((uint64_t)(1000000000ULL) / (n))
+
+#define SR_B(n)  (n)
+#define SR_KB(n) ((n) * (uint64_t)(1024ULL))
+#define SR_MB(n) ((n) * (uint64_t)(1048576ULL))
+#define SR_GB(n) ((n) * (uint64_t)(1073741824ULL))
 
 /** libsigrok loglevels. */
 enum {
@@ -161,6 +167,7 @@ enum {
 	SR_DF_META,
 	SR_DF_TRIGGER,
 	SR_DF_LOGIC,
+    SR_DF_DSO,
 	SR_DF_ANALOG,
 	SR_DF_FRAME_BEGIN,
 	SR_DF_FRAME_END,
@@ -298,6 +305,21 @@ struct sr_datafeed_logic {
 
 struct sr_datafeed_trigger {
 
+};
+
+struct sr_datafeed_dso {
+    /** The probes for which data is included in this packet. */
+    GSList *probes;
+    int num_samples;
+    /** Measured quantity (voltage, current, temperature, and so on). */
+    int mq;
+    /** Unit in which the MQ is measured. */
+    int unit;
+    /** Bitmap with extra information about the MQ. */
+    uint64_t mqflags;
+    /** The analog value(s). The data is interleaved according to
+     * the probes list. */
+    float *data;
 };
 
 struct sr_datafeed_analog {
@@ -547,17 +569,20 @@ struct sr_output_format {
 
 enum {
 	SR_PROBE_LOGIC = 10000,
+    SR_PROBE_DSO,
 	SR_PROBE_ANALOG,
 };
 
 enum {
     LOGIC = 0,
-    ANALOG = 1,
+    DSO = 1,
+    ANALOG = 2,
 };
 
 static const char *mode_strings[] = {
     "Logic Analyzer",
     "Oscilloscope",
+    "Data Acquisition",
 };
 
 struct sr_probe {
@@ -697,6 +722,9 @@ enum {
     /** clock type (internal/external) */
     SR_CONF_CLOCK_TYPE,
 
+    /** Device operation mode */
+    SR_CONF_OPERATION_MODE,
+
 	/*--- Special stuff -------------------------------------------------*/
 
 	/** Scan options supported by the driver. */
@@ -786,6 +814,27 @@ enum {
 	SR_ST_STOPPING,
 };
 
+/** Device operation modes. */
+enum {
+    /** Normal */
+    SR_OP_NORMAL = 0,
+    /** Internal pattern test mode */
+    SR_OP_INTERNAL_TEST = 1,
+    /** External pattern test mode */
+    SR_OP_EXTERNAL_TEST = 2,
+    /** SDRAM loopback test mode */
+    SR_OP_LOOPBACK_TEST = 3,
+};
+
+static const char *opmodes[] = {
+    "Normal",
+    "Internal Test",
+    "External Test",
+    "DRAM Loopback Test",
+};
+
+extern char config_path[256];
+
 struct sr_dev_driver {
 	/* Driver-specific */
 	char *name;
@@ -822,6 +871,7 @@ struct sr_session {
 	/** List of struct datafeed_callback pointers. */
 	GSList *datafeed_callbacks;
 	GTimeVal starttime;
+        gboolean running;
 
 	unsigned int num_sources;
 
@@ -867,41 +917,6 @@ struct ds_trigger_pos {
     uint32_t real_pos;
     uint32_t ram_saddr;
     unsigned char first_block[504];
-};
-
-//struct libusbhp_t;
-typedef void (*libusbhp_hotplug_cb_fn)(struct libusbhp_device_t *device,
-                                     void *user_data);
-#ifdef __linux__
-#include <libudev.h>
-
-struct dev_list_t {
-  char *path;
-  unsigned short vid;
-  unsigned short pid;
-  struct dev_list_t *next;
-};
-#endif/*__linux__*/
-
-struct libusbhp_t {
-#ifdef __linux__
-  struct udev* hotplug;
-  struct udev_monitor* hotplug_monitor;
-  struct dev_list_t *devlist;
-#endif/*__linux__*/
-#ifdef _WIN32
-  HWND hwnd;
-  HDEVNOTIFY hDeviceNotify;
-  WNDCLASSEX wcex;
-#endif/*_WIN32*/
-  libusbhp_hotplug_cb_fn attach;
-  libusbhp_hotplug_cb_fn detach;
-  void *user_data;
-};
-
-struct libusbhp_device_t {
-    unsigned short idVendor;
-    unsigned short idProduct;
 };
 
 #include "proto.h"
