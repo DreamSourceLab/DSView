@@ -35,12 +35,12 @@ Group::Group(unsigned int num_probes, uint64_t samplerate) :
 {
 }
 
-void Group::push_snapshot(shared_ptr<GroupSnapshot> &snapshot)
+void Group::push_snapshot(boost::shared_ptr<GroupSnapshot> &snapshot)
 {
     _snapshots.push_back(snapshot);
 }
 
-deque< shared_ptr<GroupSnapshot> >& Group::get_snapshots()
+deque< boost::shared_ptr<GroupSnapshot> >& Group::get_snapshots()
 {
 	return _snapshots;
 }

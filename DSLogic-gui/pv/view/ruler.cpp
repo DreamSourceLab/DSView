@@ -99,7 +99,7 @@ QString Ruler::format_freq(double period, unsigned precision)
         assert(order >= FirstSIPrefixPower);
         const unsigned int prefix = ceil((order - FirstSIPrefixPower) / 3.0f);
         const double multiplier = pow(10.0,
-            - prefix * 3 - FirstSIPrefixPower);
+            static_cast<double>(- prefix * 3 - FirstSIPrefixPower));
 
         QString s;
         QTextStream ts(&s);
@@ -114,7 +114,7 @@ QString Ruler::format_time(double t, unsigned int prefix,
     unsigned int precision)
 {
 	const double multiplier = pow(10.0,
-		- prefix * 3 - FirstSIPrefixPower);
+		static_cast<double>(- prefix * 3 - FirstSIPrefixPower));
 
 	QString s;
 	QTextStream ts(&s);
@@ -318,7 +318,7 @@ void Ruler::draw_tick_mark(QPainter &p)
 
         //const int order = (int)floorf(log10f(_min_period));
         const int order = ceil(log10f(_min_period));
-        const double order_decimal = pow(10, order);
+        const double order_decimal = pow(10.0, static_cast<double>(order));
 
         unsigned int unit = 0;
 

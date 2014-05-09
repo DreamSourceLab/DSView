@@ -51,6 +51,7 @@ public:
 
 protected:
 	void accept();
+    void reject();
 
 private:
 
@@ -67,6 +68,7 @@ private slots:
 
 private:
 	struct sr_dev_inst *const _sdi;
+    int _last_mode;
 
 	QVBoxLayout _layout;
 

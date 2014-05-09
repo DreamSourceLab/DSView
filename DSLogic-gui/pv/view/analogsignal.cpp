@@ -50,7 +50,7 @@ const QColor AnalogSignal::SignalColours[4] = {
 
 const float AnalogSignal::EnvelopeThreshold = 256.0f;
 
-AnalogSignal::AnalogSignal(QString name, shared_ptr<data::Analog> data,
+AnalogSignal::AnalogSignal(QString name, boost::shared_ptr<data::Analog> data,
     int probe_index, int order) :
     Signal(name, probe_index, DS_ANALOG, order),
     _data(data)
@@ -91,13 +91,13 @@ void AnalogSignal::paint(QPainter &p, int y, int left, int right, double scale,
 
     //paint_axis(p, y, left, right);
 
-	const deque< shared_ptr<pv::data::AnalogSnapshot> > &snapshots =
+	const deque< boost::shared_ptr<pv::data::AnalogSnapshot> > &snapshots =
 		_data->get_snapshots();
 	if (snapshots.empty())
 		return;
 
     _scale = _signalHeight * 1.0f / 65536;
-	const shared_ptr<pv::data::AnalogSnapshot> &snapshot =
+	const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot =
 		snapshots.front();
 
     if (get_index() >= (int)snapshot->get_channel_num())
@@ -127,7 +127,7 @@ void AnalogSignal::paint(QPainter &p, int y, int left, int right, double scale,
 }
 
 void AnalogSignal::paint_trace(QPainter &p,
-	const shared_ptr<pv::data::AnalogSnapshot> &snapshot,
+	const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot,
 	int y, int left, const int64_t start, const int64_t end,
 	const double pixels_offset, const double samples_per_pixel)
 {
@@ -159,7 +159,7 @@ void AnalogSignal::paint_trace(QPainter &p,
 }
 
 void AnalogSignal::paint_envelope(QPainter &p,
-	const shared_ptr<pv::data::AnalogSnapshot> &snapshot,
+	const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot,
 	int y, int left, const int64_t start, const int64_t end,
 	const double pixels_offset, const double samples_per_pixel)
 {

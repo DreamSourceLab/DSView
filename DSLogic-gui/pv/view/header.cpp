@@ -95,11 +95,11 @@ boost::shared_ptr<pv::view::Signal> Header::get_mouse_over_signal(
     const QPoint &pt)
 {
     const int w = width();
-    const vector< shared_ptr<Signal> > sigs(
+    const vector< boost::shared_ptr<Signal> > sigs(
         _view.session().get_signals());
 
     const int v_offset = _view.v_offset();
-    BOOST_FOREACH(const shared_ptr<Signal> s, sigs)
+    BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs)
     {
         assert(s);
 
@@ -108,7 +108,7 @@ boost::shared_ptr<pv::view::Signal> Header::get_mouse_over_signal(
             return s;
     }
 
-    return shared_ptr<Signal>();
+    return boost::shared_ptr<Signal>();
 }
 
 void Header::paintEvent(QPaintEvent*)
@@ -122,7 +122,7 @@ void Header::paintEvent(QPaintEvent*)
 
 	const int w = width();
     int action;
-	const vector< shared_ptr<Signal> > sigs(
+	const vector< boost::shared_ptr<Signal> > sigs(
 		_view.session().get_signals());
 
     //QPainter painter(this);
@@ -130,7 +130,7 @@ void Header::paintEvent(QPaintEvent*)
 
 	const int v_offset = _view.v_offset();
 	const bool dragging = !_drag_sigs.empty();
-	BOOST_FOREACH(const shared_ptr<Signal> s, sigs)
+	BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs)
 	{
 		assert(s);
 
@@ -171,7 +171,7 @@ void Header::mousePressEvent(QMouseEvent *event)
 {
 	assert(event);
 
-	const vector< shared_ptr<Signal> > sigs(
+	const vector< boost::shared_ptr<Signal> > sigs(
 		_view.session().get_signals());
     int action;
 
@@ -179,13 +179,13 @@ void Header::mousePressEvent(QMouseEvent *event)
 		_mouse_down_point = event->pos();
 
 		// Save the offsets of any signals which will be dragged
-		BOOST_FOREACH(const shared_ptr<Signal> s, sigs)
+		BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs)
 			if (s->selected())
 				_drag_sigs.push_back(
 					make_pair(s, s->get_v_offset()));
 
         // Select the signal if it has been clicked
-        const shared_ptr<Signal> mouse_over_signal =
+        const boost::shared_ptr<Signal> mouse_over_signal =
             get_mouse_over_signal(action, event->pos());
         if (action == COLOR && mouse_over_signal) {
             _colorFlag = true;
@@ -233,7 +233,7 @@ void Header::mousePressEvent(QMouseEvent *event)
         if (~QApplication::keyboardModifiers() & Qt::ControlModifier) {
             // Unselect all other signals because the Ctrl is not
             // pressed
-            BOOST_FOREACH(const shared_ptr<Signal> s, sigs)
+            BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs)
                 if (s != mouse_over_signal)
                     s->select(false);
         }
@@ -247,7 +247,7 @@ void Header::mouseReleaseEvent(QMouseEvent *event)
 
     // judge for color / name / trigger / move
     int action;
-    const shared_ptr<Signal> mouse_over_signal =
+    const boost::shared_ptr<Signal> mouse_over_signal =
         get_mouse_over_signal(action, event->pos());
     if (mouse_over_signal){
         if (action == COLOR && _colorFlag) {
@@ -275,7 +275,7 @@ void Header::move(QMouseEvent *event)
     bool _moveValid = false;
     bool _moveUp = false;
     bool firstCheck = true;
-    const vector< shared_ptr<Signal> > sigs(
+    const vector< boost::shared_ptr<Signal> > sigs(
         _view.session().get_signals());
     boost::shared_ptr<Signal> minDragSig;
     boost::shared_ptr<Signal> maxDragSig;
@@ -323,7 +323,7 @@ void Header::move(QMouseEvent *event)
             }
             if (!_moveValid && firstCheck){
                 firstCheck = false;
-                BOOST_FOREACH(const shared_ptr<Signal> s, sigs) {
+                BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
                     if (_moveUp) {
                         if (s->selected()) {
                             if ((minOffset <= s->get_old_v_offset()) && (minOffset > (s->get_old_v_offset() - _view.get_spanY()))) {
@@ -360,7 +360,7 @@ void Header::move(QMouseEvent *event)
                 }
             }
             if (_moveValid) {
-                BOOST_FOREACH(const shared_ptr<Signal> s, sigs) {
+                BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
                     if (_moveUp) {
                         if (s->selected() && s == minDragSig) {
                             s->set_v_offset(targetOffset);
@@ -393,7 +393,7 @@ void Header::move(QMouseEvent *event)
         if (_moveValid) {
             signals_moved();
         } else {
-            BOOST_FOREACH(const shared_ptr<Signal> s, sigs) {
+            BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
                 if (s->selected()) {
                     s->set_v_offset(s->get_old_v_offset());
                     s->select(false);
@@ -470,7 +470,7 @@ void Header::contextMenuEvent(QContextMenuEvent *event)
 {
     int action;
 
-    const shared_ptr<Signal> s = get_mouse_over_signal(action, _mouse_point);
+    const boost::shared_ptr<Signal> s = get_mouse_over_signal(action, _mouse_point);
 
     //if (!s || action != LABEL)
     if (!s || !s->selected() || action != LABEL)
@@ -489,7 +489,7 @@ void Header::contextMenuEvent(QContextMenuEvent *event)
 
 void Header::on_action_set_name_triggered()
 {
-	shared_ptr<view::Signal> context_signal = _context_signal;
+	boost::shared_ptr<view::Signal> context_signal = _context_signal;
 	if (!context_signal)
 		return;
 

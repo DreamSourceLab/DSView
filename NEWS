@@ -8,3 +8,11 @@
 ------------------
 
  * Add DSLogic hardware support.
+0.2.1 (2014-05-08)
+------------------
+
+ * Add wireless extension hardware support.
+ * Fix libusb_error_io issue on Linux when sample rate >= 100MHz.
+ * Fix channel enable/disable bug.
+ * Fix device options config issue.
+ * Fix some display issues of UI.

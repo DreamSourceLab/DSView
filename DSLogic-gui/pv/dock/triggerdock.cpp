@@ -42,6 +42,10 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
 {
     int i;
 
+    QFont font("Monaco");
+    font.setStyleHint(QFont::Monospace);
+    font.setFixedPitch(true);
+
     simple_radioButton = new QRadioButton("Simple Trigger", this);
     simple_radioButton->setChecked(true);
     adv_radioButton = new QRadioButton("Advanced Trigger", this);
@@ -77,6 +81,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
         _logic_comboBox_list.push_back(_logic_comboBox);
 
         QLineEdit *_value0_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", this);
+        _value0_lineEdit->setFont(font);
         _value0_lineEdit->setValidator(value_validator);
         _value0_lineEdit->setMaxLength(TriggerProbes * 2 - 1);
         _value0_lineEdit->setInputMask("X X X X X X X X X X X X X X X X");
@@ -91,6 +96,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
         _inv0_comboBox_list.push_back(_inv0_comboBox);
 
         QLineEdit *_value1_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", this);
+        _value1_lineEdit->setFont(font);
         _value1_lineEdit->setValidator(value_validator);
         _value1_lineEdit->setMaxLength(TriggerProbes * 2 - 1);
         _value1_lineEdit->setInputMask("X X X X X X X X X X X X X X X X");
@@ -104,15 +110,14 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
         _inv1_comboBox->addItem(tr("!="));
         _inv1_comboBox_list.push_back(_inv1_comboBox);
 
-        QLabel *value_exp0_label = new QLabel("1 1 1 1 1 1", this);
-        QLabel *value_exp1_label = new QLabel("5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0", this);
+        QLabel *value_exp_label = new QLabel("1 1 1 1 1 1\n5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0", this);
         QLabel *inv_exp_label = new QLabel("Inv", this);
         QLabel *count_exp_label = new QLabel("Counter", this);
+        value_exp_label->setFont(font);
 
         QVBoxLayout *stage_layout = new QVBoxLayout();
         QGridLayout *stage_glayout = new QGridLayout();
-        stage_glayout->addWidget(value_exp0_label, 0, 0);
-        stage_glayout->addWidget(value_exp1_label, 1, 0);
+        stage_glayout->addWidget(value_exp_label, 1, 0);
         stage_glayout->addWidget(inv_exp_label, 1, 1);
         stage_glayout->addWidget(count_exp_label, 1, 2);
         stage_glayout->addWidget(_value0_lineEdit, 2, 0);
@@ -123,13 +128,8 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
         stage_glayout->addWidget(_inv1_comboBox, 3, 1);
         stage_glayout->addWidget(_count1_spinBox, 3, 2);
         stage_layout->addLayout(stage_glayout);
-        stage_layout->addSpacing(124);
-        stage_layout->addWidget(new QLabel("X: Don't care"));
-        stage_layout->addWidget(new QLabel("0: Low level"));
-        stage_layout->addWidget(new QLabel("1: High level"));
-        stage_layout->addWidget(new QLabel("R: Rising edge"));
-        stage_layout->addWidget(new QLabel("F: Falling edge"));
-        stage_layout->addWidget(new QLabel("C: Rising/Falling edge"));
+        stage_layout->addSpacing(160);
+        stage_layout->addWidget(new QLabel("X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge"));
         stage_layout->addStretch(1);
 
         QGroupBox *_stage_groupBox = new QGroupBox("Stage"+QString::number(i), this);

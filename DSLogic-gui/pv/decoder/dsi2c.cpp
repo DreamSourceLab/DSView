@@ -52,7 +52,7 @@ const QString dsI2c::StateTable[TableSize] = {
     "DATA"
 };
 
-dsI2c::dsI2c(shared_ptr<data::Logic> data, std::list <int > _sel_probes, QMap<QString, QVariant> &_options, QMap<QString, int> _options_index) :
+dsI2c::dsI2c(boost::shared_ptr<data::Logic> data, std::list <int > _sel_probes, QMap<QString, QVariant> &_options, QMap<QString, int> _options_index) :
     Decoder(data, _sel_probes, _options_index)
 {
     (void)_options;
@@ -91,12 +91,12 @@ void dsI2c::decode()
     _max_width = 0;
     uint8_t cur_state = Unknown;
 
-    const deque< shared_ptr<pv::data::LogicSnapshot> > &snapshots =
+    const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
         _data->get_snapshots();
     if (snapshots.empty())
         return;
 
-    const shared_ptr<pv::data::LogicSnapshot> &snapshot =
+    const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
         snapshots.front();
 
     uint64_t flag_index;
@@ -185,7 +185,7 @@ void dsI2c::cmd_decode(const boost::shared_ptr<data::LogicSnapshot> &snapshot)
     }
 }
 
-void dsI2c::data_decode(const shared_ptr<data::LogicSnapshot> &snapshot)
+void dsI2c::data_decode(const boost::shared_ptr<data::LogicSnapshot> &snapshot)
 {
     uint8_t cur_state;
     const uint8_t *src_ptr;
@@ -246,11 +246,11 @@ void dsI2c::get_subsampled_states(std::vector<struct ds_view_state> &states,
 {
     ds_view_state view_state;
 
-    const deque< shared_ptr<pv::data::LogicSnapshot> > &snapshots =
+    const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
         _data->get_snapshots();
     if (snapshots.empty())
         return;
-    const shared_ptr<pv::data::LogicSnapshot> &snapshot =
+    const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
         snapshots.front();
 
     assert(end <= snapshot->get_sample_count());

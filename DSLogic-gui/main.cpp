@@ -61,9 +61,9 @@ int main(int argc, char *argv[])
 	QApplication a(argc, argv);
 
 	// Set some application metadata
-    QApplication::setApplicationVersion(DS_VERSION_STRING);
-    QApplication::setApplicationName("DSLogic(Beta)");
-    QApplication::setOrganizationDomain("http://www.DreamSourceLab.com");
+    	QApplication::setApplicationVersion(DS_VERSION_STRING);
+    	QApplication::setApplicationName("DSLogic(Beta)");
+    	QApplication::setOrganizationDomain("http://www.DreamSourceLab.com");
 
 	// Parse arguments
 	while (1) {
@@ -134,11 +134,11 @@ int main(int argc, char *argv[])
 			pv::DeviceManager device_manager(sr_ctx);
 
 			// Initialise the main window
-            pv::MainWindow w(device_manager, open_file);
-            QFile qss(":/stylesheet.qss");
-            qss.open(QFile::ReadOnly);
-            a.setStyleSheet(qss.readAll());
-            qss.close();
+            		pv::MainWindow w(device_manager, open_file);
+            		QFile qss(":/stylesheet.qss");
+            		qss.open(QFile::ReadOnly);
+            		a.setStyleSheet(qss.readAll());
+            		qss.close();
 			w.show();
 
 			// Run the application

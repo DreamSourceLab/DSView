@@ -34,12 +34,12 @@ Dso::Dso(unsigned int num_probes, uint64_t samplerate) :
 {
 }
 
-void Dso::push_snapshot(shared_ptr<DsoSnapshot> &snapshot)
+void Dso::push_snapshot(boost::shared_ptr<DsoSnapshot> &snapshot)
 {
 	_snapshots.push_front(snapshot);
 }
 
-deque< shared_ptr<DsoSnapshot> >& Dso::get_snapshots()
+deque< boost::shared_ptr<DsoSnapshot> >& Dso::get_snapshots()
 {
 	return _snapshots;
 }

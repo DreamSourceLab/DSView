@@ -53,7 +53,7 @@ const QString dsSerial::StateTable[TableSize] = {
     "DATA"
 };
 
-dsSerial::dsSerial(shared_ptr<data::Logic> data, std::list <int > _sel_probes, QMap<QString, QVariant> &_options, QMap<QString, int> _options_index) :
+dsSerial::dsSerial(boost::shared_ptr<data::Logic> data, std::list <int > _sel_probes, QMap<QString, QVariant> &_options, QMap<QString, int> _options_index) :
     Decoder(data, _sel_probes, _options_index)
 {
     assert(_sel_probes.size() == 1);
@@ -102,12 +102,12 @@ void dsSerial::decode()
     assert(_data);
     uint8_t cur_state = Unknown;
 
-    const deque< shared_ptr<pv::data::LogicSnapshot> > &snapshots =
+    const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
         _data->get_snapshots();
     if (snapshots.empty())
         return;
 
-    const shared_ptr<pv::data::LogicSnapshot> &snapshot =
+    const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
         snapshots.front();
 
     uint64_t flag_index;
@@ -174,7 +174,7 @@ void dsSerial::decode()
 
 }
 
-void dsSerial::data_decode(const shared_ptr<data::LogicSnapshot> &snapshot, uint64_t start, uint64_t stop, float samplesPerBit)
+void dsSerial::data_decode(const boost::shared_ptr<data::LogicSnapshot> &snapshot, uint64_t start, uint64_t stop, float samplesPerBit)
 {
     (void)stop;
 
@@ -238,11 +238,11 @@ void dsSerial::get_subsampled_states(std::vector<struct ds_view_state> &states,
 {
     ds_view_state view_state;
 
-    const deque< shared_ptr<pv::data::LogicSnapshot> > &snapshots =
+    const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
         _data->get_snapshots();
     if (snapshots.empty())
         return;
-    const shared_ptr<pv::data::LogicSnapshot> &snapshot =
+    const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
         snapshots.front();
 
     assert(end <= snapshot->get_sample_count());

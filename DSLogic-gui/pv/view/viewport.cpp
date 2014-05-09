@@ -79,9 +79,9 @@ Viewport::Viewport(View &parent) :
 int Viewport::get_total_height() const
 {
 	int h = 0;
-	const vector< shared_ptr<Signal> > sigs(
+	const vector< boost::shared_ptr<Signal> > sigs(
 		_view.session().get_signals());
-	BOOST_FOREACH(const shared_ptr<Signal> s, sigs) {
+	BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
 		assert(s);
         //h = max(s->get_v_offset() + _view.get_signalHeight(), h);
         h = max(s->get_v_offset(), h);
@@ -125,10 +125,10 @@ void Viewport::paintEvent(QPaintEvent *event)
     p.setRenderHint(QPainter::Antialiasing, false);
     if (_view.get_signalHeight() != _curSignalHeight)
             _curSignalHeight = _view.get_signalHeight();
-    const vector< shared_ptr<Signal> > sigs(
+    const vector< boost::shared_ptr<Signal> > sigs(
         _view.session().get_signals());
 
-    BOOST_FOREACH(const shared_ptr<Signal> s, sigs) {
+    BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
         assert(s);
         //paint_axis(p, y, left, right);
         p.setPen(Signal::dsGray);
@@ -189,9 +189,9 @@ void Viewport::paintEvent(QPaintEvent *event)
 
 void Viewport::paintSignals(QPainter &p)
 {
-    const vector< shared_ptr<Signal> > sigs(
+    const vector< boost::shared_ptr<Signal> > sigs(
         _view.session().get_signals());
-//    const vector< shared_ptr<Signal> > pro_sigs(
+//    const vector< boost::shared_ptr<Signal> > pro_sigs(
 //        _view.session().get_pro_signals());
     // Plot the signal
     const int v_offset = _view.v_offset();
@@ -208,13 +208,13 @@ void Viewport::paintSignals(QPainter &p)
         QPainter dbp(&pixmap);
         dbp.initFrom(this);
         p.setRenderHint(QPainter::Antialiasing, false);
-        BOOST_FOREACH(const shared_ptr<Signal> s, sigs) {
+        BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
             assert(s);
             s->paint(dbp, s->get_v_offset() - v_offset, 0, width(),
                 _view.scale(), _view.offset());
         }
 //        p.setRenderHint(QPainter::Antialiasing);
-//        BOOST_FOREACH(const shared_ptr<Signal> s, pro_sigs) {
+//        BOOST_FOREACH(const boost::shared_ptr<Signal> s, pro_sigs) {
 //            assert(s);
 //            s->paint(dbp, s->get_v_offset() - v_offset, 0, width(),
 //                _view.scale(), _view.offset());
@@ -498,8 +498,8 @@ void Viewport::set_receive_len(quint64 length)
 
 void Viewport::measure()
 {
-    const vector< shared_ptr<Signal> > sigs(_view.session().get_signals());
-    BOOST_FOREACH(const shared_ptr<Signal> s, sigs) {
+    const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
+    BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
         assert(s);
         const int curY = _view.hover_point().y();
         const double curX = _view.hover_point().x();

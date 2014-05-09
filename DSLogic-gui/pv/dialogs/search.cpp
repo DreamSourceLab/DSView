@@ -22,33 +22,55 @@
 
 
 #include "search.h"
-#include "ui_search.h"
 #include <assert.h>
+#include <QRegExpValidator>
 
 namespace pv {
 namespace dialogs {
 
 Search::Search(QWidget *parent, struct sr_dev_inst *sdi, QString pattern) :
     QDialog(parent),
-    ui(new Ui::Search),
     _sdi(sdi)
 {
     assert(_sdi);
-    ui->setupUi(this);
+
+    QFont font("Monaco");
+    font.setStyleHint(QFont::Monospace);
+    font.setFixedPitch(true);
 
     QRegExp value_rx("[10XRFCxrfc ]+");
     QValidator *value_validator = new QRegExpValidator(value_rx, this);
 
-    //ui->_value_lineEdit->setText("X X X X X X X X X X X X X X X X");
-    ui->_value_lineEdit->setText(pattern);
-    ui->_value_lineEdit->setValidator(value_validator);
-    ui->_value_lineEdit->setMaxLength(16 * 2 - 1);
-    ui->_value_lineEdit->setInputMask("X X X X X X X X X X X X X X X X");
+
+    search_lineEdit.setText(pattern);
+    search_lineEdit.setValidator(value_validator);
+    search_lineEdit.setMaxLength(16 * 2 - 1);
+    search_lineEdit.setInputMask("X X X X X X X X X X X X X X X X");
+    search_lineEdit.setFont(font);
+
+    QLabel *search_label = new QLabel("1 1 1 1 1\n5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0");
+    search_label->setFont(font);
+
+    search_buttonBox.addButton(QDialogButtonBox::Ok);
+    search_buttonBox.addButton(QDialogButtonBox::Cancel);
+
+    QGridLayout *search_layout = new QGridLayout();
+    search_layout->addWidget(search_label, 0, 1);
+    search_layout->addWidget(new QLabel("Search Value: "), 1,0, Qt::AlignRight);
+    search_layout->addWidget(&search_lineEdit, 1, 1);
+    search_layout->addWidget(new QLabel(" "), 2,0);
+    search_layout->addWidget(new QLabel("X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge"), 3, 0);
+    search_layout->addWidget(&search_buttonBox, 4, 2);
+    //search_layout->addStretch(1);
+
+    setLayout(search_layout);
+
+    connect(&search_buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
+    connect(&search_buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
 }
 
 Search::~Search()
 {
-    delete ui;
 }
 
 void Search::accept()
@@ -60,7 +82,7 @@ void Search::accept()
 
 QString Search::get_pattern()
 {
-    QString pattern = ui->_value_lineEdit->text();
+    QString pattern = search_lineEdit.text();
     //pattern.remove(QChar('/r'), Qt::CaseInsensitive);
     return pattern;
 }

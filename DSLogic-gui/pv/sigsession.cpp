@@ -122,15 +122,18 @@ int SigSession::set_device(struct sr_dev_inst *sdi)
 {
     int ret = SR_ERR;
 
-    if (sdi)
+    if (_sdi == NULL) {
         ret = _device_manager.use_device(sdi, this);
-    if (ret == SR_OK && (sdi != _sdi) && _sdi) {
-		_device_manager.release_device(_sdi);
-    }
-    if (ret == SR_OK)
         _sdi = sdi;
-
-    set_capture_state(Init);
+        set_capture_state(Init);
+    } else if (sdi != _sdi) {
+        ret = _device_manager.use_device(sdi, this);
+        _device_manager.release_device(_sdi);
+        _sdi = sdi;
+        set_capture_state(Init);
+    } else {
+        ret = SR_OK;
+    }
 
     return ret;
 }
@@ -145,12 +148,12 @@ void SigSession::release_device(struct sr_dev_inst *sdi)
 
 void SigSession::save_file(const std::string &name){
     if (_sdi->mode == LOGIC) {
-        const deque< shared_ptr<pv::data::LogicSnapshot> > &snapshots =
+        const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
             _logic_data->get_snapshots();
         if (snapshots.empty())
             return;
 
-        const shared_ptr<pv::data::LogicSnapshot> &snapshot =
+        const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
             snapshots.front();
 
         sr_session_save(name.c_str(), _sdi,
@@ -158,12 +161,12 @@ void SigSession::save_file(const std::string &name){
                         snapshot->get_unit_size(),
                         snapshot->get_sample_count());
     } else if (_sdi->mode == DSO){
-        const deque< shared_ptr<pv::data::DsoSnapshot> > &snapshots =
+        const deque< boost::shared_ptr<pv::data::DsoSnapshot> > &snapshots =
             _dso_data->get_snapshots();
         if (snapshots.empty())
             return;
 
-        const shared_ptr<pv::data::DsoSnapshot> &snapshot =
+        const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
             snapshots.front();
 
         sr_session_save(name.c_str(), _sdi,
@@ -171,12 +174,12 @@ void SigSession::save_file(const std::string &name){
                         snapshot->get_unit_size(),
                         snapshot->get_sample_count());
     } else {
-        const deque< shared_ptr<pv::data::AnalogSnapshot> > &snapshots =
+        const deque< boost::shared_ptr<pv::data::AnalogSnapshot> > &snapshots =
             _analog_data->get_snapshots();
         if (snapshots.empty())
             return;
 
-        const shared_ptr<pv::data::AnalogSnapshot> &snapshot =
+        const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot =
             snapshots.front();
 
         sr_session_save(name.c_str(), _sdi,
@@ -187,7 +190,7 @@ void SigSession::save_file(const std::string &name){
 }
 
 void SigSession::load_file(const string &name,
-	function<void (const QString)> error_handler)
+	boost::function<void (const QString)> error_handler)
 {
 	stop_capture();
 	_sampling_thread.reset(new boost::thread(
@@ -197,12 +200,12 @@ void SigSession::load_file(const string &name,
 
 SigSession::capture_state SigSession::get_capture_state() const
 {
-	lock_guard<mutex> lock(_sampling_mutex);
+	boost::lock_guard<boost::mutex> lock(_sampling_mutex);
 	return _capture_state;
 }
 
 void SigSession::start_capture(uint64_t record_length,
-	function<void (const QString)> error_handler)
+	boost::function<void (const QString)> error_handler)
 {
 	stop_capture();
 
@@ -244,15 +247,15 @@ void SigSession::stop_capture()
 	_sampling_thread.reset();
 }
 
-vector< shared_ptr<view::Signal> > SigSession::get_signals()
+vector< boost::shared_ptr<view::Signal> > SigSession::get_signals()
 {
-	lock_guard<mutex> lock(_signals_mutex);
+	boost::lock_guard<boost::mutex> lock(_signals_mutex);
 	return _signals;
 }
 
-vector< shared_ptr<view::Signal> > SigSession::get_pro_signals()
+vector< boost::shared_ptr<view::Signal> > SigSession::get_pro_signals()
 {
-    lock_guard<mutex> lock(_signals_mutex);
+    boost::lock_guard<boost::mutex> lock(_signals_mutex);
     return _protocol_signals;
 }
 
@@ -319,36 +322,36 @@ boost::shared_ptr<data::Logic> SigSession::get_data()
 void* SigSession::get_buf(int& unit_size, uint64_t &length)
 {
     if (_sdi->mode == LOGIC) {
-        const deque< shared_ptr<pv::data::LogicSnapshot> > &snapshots =
+        const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
             _logic_data->get_snapshots();
         if (snapshots.empty())
             return NULL;
 
-        const shared_ptr<pv::data::LogicSnapshot> &snapshot =
+        const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
             snapshots.front();
 
         unit_size = snapshot->get_unit_size();
         length = snapshot->get_sample_count();
         return snapshot->get_data();
     } else if (_sdi->mode == DSO) {
-        const deque< shared_ptr<pv::data::DsoSnapshot> > &snapshots =
+        const deque< boost::shared_ptr<pv::data::DsoSnapshot> > &snapshots =
             _dso_data->get_snapshots();
         if (snapshots.empty())
             return NULL;
 
-        const shared_ptr<pv::data::DsoSnapshot> &snapshot =
+        const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
             snapshots.front();
 
         unit_size = snapshot->get_unit_size();
         length = snapshot->get_sample_count();
         return snapshot->get_data();
     } else {
-        const deque< shared_ptr<pv::data::AnalogSnapshot> > &snapshots =
+        const deque< boost::shared_ptr<pv::data::AnalogSnapshot> > &snapshots =
             _analog_data->get_snapshots();
         if (snapshots.empty())
             return NULL;
 
-        const shared_ptr<pv::data::AnalogSnapshot> &snapshot =
+        const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot =
             snapshots.front();
 
         unit_size = snapshot->get_unit_size();
@@ -359,14 +362,14 @@ void* SigSession::get_buf(int& unit_size, uint64_t &length)
 
 void SigSession::set_capture_state(capture_state state)
 {
-	lock_guard<mutex> lock(_sampling_mutex);
+	boost::lock_guard<boost::mutex> lock(_sampling_mutex);
 	_capture_state = state;
     data_updated();
 	capture_state_changed(state);
 }
 
 void SigSession::load_thread_proc(const string name,
-	function<void (const QString)> error_handler)
+	boost::function<void (const QString)> error_handler)
 {
     if (sr_session_load(name.c_str()) != SR_OK) {
         error_handler(tr("Failed to load file."));
@@ -395,7 +398,7 @@ void SigSession::load_thread_proc(const string name,
 
 void SigSession::sample_thread_proc(struct sr_dev_inst *sdi,
 	uint64_t record_length,
-	function<void (const QString)> error_handler)
+	boost::function<void (const QString)> error_handler)
 {
     assert(sdi);
     assert(error_handler);
@@ -403,7 +406,7 @@ void SigSession::sample_thread_proc(struct sr_dev_inst *sdi,
     if (!_adv_trigger) {
         /* simple trigger check trigger_enable */
         ds_trigger_set_en(false);
-        BOOST_FOREACH(const shared_ptr<view::Signal> s, _signals)
+        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
         {
             assert(s);
             if (s->get_trig() != 0) {
@@ -456,7 +459,7 @@ void SigSession::sample_thread_proc(struct sr_dev_inst *sdi,
 
 void SigSession::feed_in_header(const sr_dev_inst *sdi)
 {
-	shared_ptr<view::Signal> signal;
+	boost::shared_ptr<view::Signal> signal;
 	GVariant *gvar;
 	uint64_t sample_rate = 0;
 	unsigned int logic_probe_count = 0;
@@ -513,7 +516,7 @@ void SigSession::feed_in_header(const sr_dev_inst *sdi)
 
 	// Create data containers for the coming data snapshots
 	{
-		lock_guard<mutex> data_lock(_data_mutex);
+		boost::lock_guard<boost::mutex> data_lock(_data_mutex);
 
 		if (logic_probe_count != 0) {
 			_logic_data.reset(new data::Logic(
@@ -537,7 +540,7 @@ void SigSession::feed_in_header(const sr_dev_inst *sdi)
 
     // Set Signal data
     {
-        BOOST_FOREACH(const shared_ptr<view::Signal> s, _signals)
+        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
         {
             assert(s);
             s->set_data(_logic_data, _dso_data, _analog_data, _group_data);
@@ -561,7 +564,7 @@ void SigSession::add_group()
 
     if (probe_index_list.size() > 1) {
         //_group_data.reset(new data::Group(_last_sample_rate));
-        const shared_ptr<view::Signal> signal = shared_ptr<view::Signal>(
+        const boost::shared_ptr<view::Signal> signal = boost::shared_ptr<view::Signal>(
                     new view::GroupSignal("New Group",
                                           _group_data, probe_index_list, _signals.size(), _group_cnt));
         _signals.push_back(signal);
@@ -571,7 +574,7 @@ void SigSession::add_group()
             if (!_cur_group_snapshot)
             {
                 // Create a new data snapshot
-                _cur_group_snapshot = shared_ptr<data::GroupSnapshot>(
+                _cur_group_snapshot = boost::shared_ptr<data::GroupSnapshot>(
                             new data::GroupSnapshot(_logic_data->get_snapshots().front(), signal->get_index_list()));
                 //_cur_group_snapshot->append_payload();
                 _group_data->push_snapshot(_cur_group_snapshot);
@@ -630,7 +633,7 @@ void SigSession::add_protocol(std::list<int> probe_index_list, decoder::Decoder 
 
     if (probe_index_list.size() > 0) {
         //_group_data.reset(new data::Group(_last_sample_rate));
-        const shared_ptr<view::Signal> signal = shared_ptr<view::Signal>(
+        const boost::shared_ptr<view::Signal> signal = boost::shared_ptr<view::Signal>(
                     new view::ProtocolSignal(decoder->get_decode_name(),
                                           _logic_data, decoder, probe_index_list, 0, _protocol_cnt));
         _signals.push_back(signal);
@@ -685,7 +688,7 @@ void SigSession::del_signal(std::vector< boost::shared_ptr<view::Signal> >::iter
 
 void SigSession::init_signals(const sr_dev_inst *sdi)
 {
-    shared_ptr<view::Signal> signal;
+    boost::shared_ptr<view::Signal> signal;
     GVariant *gvar;
     uint64_t sample_rate = 0;
     unsigned int logic_probe_count = 0;
@@ -767,19 +770,19 @@ void SigSession::init_signals(const sr_dev_inst *sdi)
 
             switch(probe->type) {
             case SR_PROBE_LOGIC:
-                signal = shared_ptr<view::Signal>(
+                signal = boost::shared_ptr<view::Signal>(
                     new view::LogicSignal(probe->name,
                         _logic_data, probe->index, _signals.size()));
                 break;
 
             case SR_PROBE_DSO:
-                signal = shared_ptr<view::Signal>(
+                signal = boost::shared_ptr<view::Signal>(
                     new view::DsoSignal(probe->name,
                         _dso_data, probe->index, _signals.size()));
                 break;
 
             case SR_PROBE_ANALOG:
-                signal = shared_ptr<view::Signal>(
+                signal = boost::shared_ptr<view::Signal>(
                     new view::AnalogSignal(probe->name,
                         _analog_data, probe->index, _signals.size()));
                 break;
@@ -794,7 +797,7 @@ void SigSession::init_signals(const sr_dev_inst *sdi)
 
 void SigSession::update_signals(const sr_dev_inst *sdi)
 {
-    shared_ptr<view::Signal> signal;
+    boost::shared_ptr<view::Signal> signal;
     QMap<int, bool> probes_en_table;
     QMap<int, bool> signals_en_table;
     int index = 0;
@@ -823,19 +826,19 @@ void SigSession::update_signals(const sr_dev_inst *sdi)
 
             switch(probe->type) {
             case SR_PROBE_LOGIC:
-                signal = shared_ptr<view::Signal>(
+                signal = boost::shared_ptr<view::Signal>(
                     new view::LogicSignal(probe->name,
                         _logic_data, probe->index, 0));
                 break;
 
             case SR_PROBE_DSO:
-                signal = shared_ptr<view::Signal>(
+                signal = boost::shared_ptr<view::Signal>(
                     new view::DsoSignal(probe->name,
                         _dso_data, probe->index, _signals.size()));
                 break;
 
             case SR_PROBE_ANALOG:
-                signal = shared_ptr<view::Signal>(
+                signal = boost::shared_ptr<view::Signal>(
                     new view::AnalogSignal(probe->name,
                         _analog_data, probe->index, 0));
                 break;
@@ -895,7 +898,7 @@ void SigSession::feed_in_trigger(const ds_trigger_pos &trigger_pos)
 
 void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
 {
-	lock_guard<mutex> lock(_data_mutex);
+	boost::lock_guard<boost::mutex> lock(_data_mutex);
 
 	if (!_logic_data)
 	{
@@ -910,7 +913,7 @@ void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
 	if (!_cur_logic_snapshot)
 	{
 		// Create a new data snapshot
-		_cur_logic_snapshot = shared_ptr<data::LogicSnapshot>(
+		_cur_logic_snapshot = boost::shared_ptr<data::LogicSnapshot>(
             new data::LogicSnapshot(logic, _total_sample_len, 1));
         if (_cur_logic_snapshot->buf_null())
             stop_capture();
@@ -929,7 +932,7 @@ void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
 
 void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
 {
-    lock_guard<mutex> lock(_data_mutex);
+    boost::lock_guard<boost::mutex> lock(_data_mutex);
 
     if(!_dso_data)
     {
@@ -940,7 +943,7 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
     if (!_cur_dso_snapshot)
     {
         // Create a new data snapshot
-        _cur_dso_snapshot = shared_ptr<data::DsoSnapshot>(
+        _cur_dso_snapshot = boost::shared_ptr<data::DsoSnapshot>(
             new data::DsoSnapshot(dso, _total_sample_len, _dso_data->get_num_probes()));
         if (_cur_dso_snapshot->buf_null())
             stop_capture();
@@ -959,7 +962,7 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
 
 void SigSession::feed_in_analog(const sr_datafeed_analog &analog)
 {
-	lock_guard<mutex> lock(_data_mutex);
+	boost::lock_guard<boost::mutex> lock(_data_mutex);
 
 	if(!_analog_data)
 	{
@@ -970,7 +973,7 @@ void SigSession::feed_in_analog(const sr_datafeed_analog &analog)
 	if (!_cur_analog_snapshot)
 	{
 		// Create a new data snapshot
-		_cur_analog_snapshot = shared_ptr<data::AnalogSnapshot>(
+		_cur_analog_snapshot = boost::shared_ptr<data::AnalogSnapshot>(
             new data::AnalogSnapshot(analog, _total_sample_len, _analog_data->get_num_probes()));
         if (_cur_analog_snapshot->buf_null())
             stop_capture();
@@ -1027,12 +1030,12 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
 	case SR_DF_END:
 	{
 		{
-            lock_guard<mutex> lock(_data_mutex);
-            BOOST_FOREACH(const shared_ptr<view::Signal> s, _signals)
+            boost::lock_guard<boost::mutex> lock(_data_mutex);
+            BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
             {
                 assert(s);
                 if (s->get_type() == view::Signal::DS_GROUP) {
-                    _cur_group_snapshot = shared_ptr<data::GroupSnapshot>(
+                    _cur_group_snapshot = boost::shared_ptr<data::GroupSnapshot>(
                                 new data::GroupSnapshot(_logic_data->get_snapshots().front(), s->get_index_list()));
                     //_cur_group_snapshot->append_payload();
                     _group_data->push_snapshot(_cur_group_snapshot);
@@ -1093,7 +1096,7 @@ void SigSession::rst_protocol_analyzer(int rst_index, std::list <int > _sel_prob
     if (_logic_data)
         _decoders.at(rst_index).first->recode(_sel_probes, _options, _options_index);
 
-    BOOST_FOREACH(const shared_ptr<view::Signal> s, _signals)
+    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
     {
         assert(s);
         if (s->get_decoder() == _decoders.at(rst_index).first) {

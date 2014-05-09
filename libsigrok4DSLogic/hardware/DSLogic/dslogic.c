@@ -23,6 +23,7 @@
 #include <string.h>
 #include <math.h>
 #include <errno.h>
+#include <assert.h>
 
 #include <inttypes.h>
 #include <libusb.h>
@@ -36,7 +37,7 @@
 #define min(a,b) ((a)<(b)?(a):(b))
 #endif
 
-static const int cons_buffer_size = 128;
+static const int cons_buffer_size = 1024 * 16;
 static const int dso_buffer_size = 1024 * 16;
 
 static const int32_t hwopts[] = {
@@ -262,7 +263,7 @@ static int fpga_setting(const struct sr_dev_inst *sdi)
     }
 
     if (result == SR_OK)
-        sr_info("FPGA setting done. trigger_mode = %d; trigger_stages = %d; trigger_mask0 = %d; trigger_value0 = %d; trigger_edge0 = %d", trigger->trigger_mode, trigger->trigger_stages, setting.trig_mask0[0], setting.trig_value0[0], setting.trig_edge0[0]);
+        sr_info("FPGA setting done");
 
     return result;
 }
@@ -451,7 +452,7 @@ static int configure_probes(const struct sr_dev_inst *sdi)
 			continue;
 
         if ((probe->index > 7 && probe->type == SR_PROBE_LOGIC) ||
-            (probe->index > 0 && (probe->type == SR_PROBE_ANALOG || probe->type == SR_PROBE_DSO)))
+            (probe->type == SR_PROBE_ANALOG || probe->type == SR_PROBE_DSO))
 			devc->sample_wide = TRUE;
         else
             devc->sample_wide = FALSE;
@@ -524,6 +525,32 @@ static int set_probes(struct sr_dev_inst *sdi, int num_probes)
             return SR_ERR;
         sdi->probes = g_slist_append(sdi->probes, probe);
     }
+    return SR_OK;
+}
+
+static int adjust_probes(struct sr_dev_inst *sdi, int num_probes)
+{
+    int j;
+    GSList *l;
+    struct sr_probe *probe;
+    GSList *p;
+
+    assert(num_probes > 0);
+
+    j = g_slist_length(sdi->probes);
+    while(j < num_probes) {
+        if (!(probe = sr_probe_new(j, (sdi->mode == LOGIC) ? SR_PROBE_LOGIC : ((sdi->mode == DSO) ? SR_PROBE_DSO : SR_PROBE_ANALOG),
+                                   TRUE, probe_names[j])))
+            return SR_ERR;
+        sdi->probes = g_slist_append(sdi->probes, probe);
+        j++;
+    }
+
+    while(j > num_probes) {
+        g_slist_delete_link(sdi->probes, g_slist_last(sdi->probes));
+        j--;
+    }
+
     return SR_OK;
 }
 
@@ -829,11 +856,9 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi)
 		devc->cur_samplerate = g_variant_get_uint64(data);
         if (sdi->mode == LOGIC) {
             if (devc->cur_samplerate >= SR_MHZ(200)) {
-                sr_dev_probes_free(sdi);
-                set_probes(sdi, SR_MHZ(1600)/devc->cur_samplerate);
+                adjust_probes(sdi, SR_MHZ(1600)/devc->cur_samplerate);
             } else {
-                sr_dev_probes_free(sdi);
-                set_probes(sdi, 16);
+                adjust_probes(sdi, 16);
             }
         }
         ret = SR_OK;
@@ -1245,7 +1270,10 @@ static void receive_transfer(struct libusb_transfer *transfer)
 
 static unsigned int to_bytes_per_ms(struct dev_context *devc)
 {
-    return devc->cur_samplerate / 1000 * (devc->sample_wide ? 2 : 1);
+    if (devc->cur_samplerate > SR_MHZ(100))
+        return SR_MHZ(100) / 1000 * (devc->sample_wide ? 2 : 1);
+    else
+        return devc->cur_samplerate / 1000 * (devc->sample_wide ? 2 : 1);
 }
 
 static size_t get_buffer_size(struct dev_context *devc)
@@ -1253,17 +1281,17 @@ static size_t get_buffer_size(struct dev_context *devc)
     size_t s;
 
     /*
-     * The buffer should be large enough to hold 10ms of data and
+     * The buffer should be large enough to hold 20ms of data and
      * a multiple of 512.
      */
-    s = 10 * to_bytes_per_ms(devc);
+    s = 20 * to_bytes_per_ms(devc);
     return (s + 511) & ~511;
 }
 
 static unsigned int get_number_of_transfers(struct dev_context *devc)
 {
 	unsigned int n;
-    /* Total buffer size should be able to hold about 500ms of data. */
+    /* Total buffer size should be able to hold about 100ms of data. */
     n = 100 * to_bytes_per_ms(devc) / get_buffer_size(devc);
 
     if (n > NUM_SIMUL_TRANSFERS)
@@ -1416,7 +1444,7 @@ static void receive_trigger_pos(struct libusb_transfer *transfer)
         if (devc->status == DSLOGIC_TRIGGERED) {
             if ((ret = dev_transfer_start(devc->cb_data)) != SR_OK) {
                 sr_err("%s: could not start data transfer"
-                       "(%d)", __func__, ret);
+                       "(%d)%d", __func__, ret, errno);
             }
         }
     }

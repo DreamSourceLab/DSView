@@ -132,13 +132,13 @@ void DeviceOptions::config_setter(
 
 void DeviceOptions::bind_bool(const QString &name, int key)
 {
-	_properties.push_back(shared_ptr<Property>(
+	_properties.push_back(boost::shared_ptr<Property>(
 		new Bool(name, bind(config_getter, _sdi, key),
 			bind(config_setter, _sdi, key, _1))));
 }
 
 void DeviceOptions::bind_enum(const QString &name, int key,
-	GVariant *const gvar_list, function<QString (GVariant*)> printer)
+	GVariant *const gvar_list, boost::function<QString (GVariant*)> printer)
 {
 	GVariant *gvar;
 	GVariantIter iter;
@@ -150,7 +150,7 @@ void DeviceOptions::bind_enum(const QString &name, int key,
 	while ((gvar = g_variant_iter_next_value (&iter)))
 		values.push_back(make_pair(gvar, printer(gvar)));
 
-	_properties.push_back(shared_ptr<Property>(
+	_properties.push_back(boost::shared_ptr<Property>(
 		new Enum(name, values,
 			bind(config_getter, _sdi, key),
 			bind(config_setter, _sdi, key, _1))));
@@ -159,7 +159,7 @@ void DeviceOptions::bind_enum(const QString &name, int key,
 void DeviceOptions::bind_int(const QString &name, int key, QString suffix,
 	optional< std::pair<int64_t, int64_t> > range)
 {
-	_properties.push_back(shared_ptr<Property>(
+	_properties.push_back(boost::shared_ptr<Property>(
 		new Int(name, suffix, range,
 			bind(config_getter, _sdi, key),
 			bind(config_setter, _sdi, key, _1))));
@@ -198,7 +198,7 @@ void DeviceOptions::bind_samplerate(const QString &name,
 
 		assert(num_elements == 3);
 
-		_properties.push_back(shared_ptr<Property>(
+		_properties.push_back(boost::shared_ptr<Property>(
 			new Double(name, 0, QObject::tr("Hz"),
 				make_pair((double)elements[0], (double)elements[1]),
 						(double)elements[2],

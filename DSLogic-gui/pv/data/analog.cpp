@@ -35,12 +35,12 @@ Analog::Analog(unsigned int num_probes, uint64_t samplerate) :
 {
 }
 
-void Analog::push_snapshot(shared_ptr<AnalogSnapshot> &snapshot)
+void Analog::push_snapshot(boost::shared_ptr<AnalogSnapshot> &snapshot)
 {
 	_snapshots.push_front(snapshot);
 }
 
-deque< shared_ptr<AnalogSnapshot> >& Analog::get_snapshots()
+deque< boost::shared_ptr<AnalogSnapshot> >& Analog::get_snapshots()
 {
 	return _snapshots;
 }

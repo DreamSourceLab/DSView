@@ -37,12 +37,12 @@ Logic::Logic(unsigned int num_probes, uint64_t samplerate) :
 }
 
 void Logic::push_snapshot(
-	shared_ptr<LogicSnapshot> &snapshot)
+	boost::shared_ptr<LogicSnapshot> &snapshot)
 {
 	_snapshots.push_front(snapshot);
 }
 
-deque< shared_ptr<LogicSnapshot> >& Logic::get_snapshots()
+deque< boost::shared_ptr<LogicSnapshot> >& Logic::get_snapshots()
 {
 	return _snapshots;
 }

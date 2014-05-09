@@ -114,16 +114,16 @@ void DeviceBar::on_device_selected()
 
 void DeviceBar::on_configure()
 {
-    int  dev_mode;
+    int  dev_mode, ret;
     sr_dev_inst *const sdi = get_selected_device();
     assert(sdi);
 
     dev_mode = sdi->mode;
 
     pv::dialogs::DeviceOptions dlg(this, sdi);
-    //ret = dlg.exec();
-    //if (ret == QDialog::Accepted) {
-    if (dlg.exec()) {
+    ret = dlg.exec();
+    if (ret == QDialog::Accepted) {
+    //if (dlg.exec()) {
         if (dev_mode != sdi->mode)
                 device_selected();
             else

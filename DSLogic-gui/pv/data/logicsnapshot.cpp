@@ -47,7 +47,7 @@ LogicSnapshot::LogicSnapshot(const sr_datafeed_logic &logic, uint64_t _total_sam
     Snapshot(logic.unitsize, _total_sample_len, channel_num),
 	_last_append_sample(0)
 {
-	lock_guard<recursive_mutex> lock(_mutex);
+	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 	memset(_mip_map, 0, sizeof(_mip_map));
     if (init(_total_sample_len * channel_num) == SR_OK)
         append_payload(logic);
@@ -55,7 +55,7 @@ LogicSnapshot::LogicSnapshot(const sr_datafeed_logic &logic, uint64_t _total_sam
 
 LogicSnapshot::~LogicSnapshot()
 {
-	lock_guard<recursive_mutex> lock(_mutex);
+	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 	BOOST_FOREACH(MipMapLevel &l, _mip_map)
 		free(l.data);
 }
@@ -66,7 +66,7 @@ void LogicSnapshot::append_payload(
 	assert(_unit_size == logic.unitsize);
 	assert((logic.length % _unit_size) == 0);
 
-	lock_guard<recursive_mutex> lock(_mutex);
+	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 
 	append_data(logic.data, logic.length / _unit_size);
 
@@ -194,7 +194,7 @@ void LogicSnapshot::get_subsampled_edges(
 	assert(sig_index >= 0);
 	assert(sig_index < 64);
 
-	lock_guard<recursive_mutex> lock(_mutex);
+	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 
 	const uint64_t block_length = (uint64_t)max(min_length, 1.0f);
 	const unsigned int min_level = max((int)floorf(logf(min_length) /
@@ -378,7 +378,7 @@ int LogicSnapshot::get_first_edge(
     assert(sig_index >= 0);
     assert(sig_index < 64);
 
-    lock_guard<recursive_mutex> lock(_mutex);
+    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 
     const uint64_t block_length = 1;
     const unsigned int min_level = 0;
@@ -550,7 +550,7 @@ void LogicSnapshot::get_edges(
     assert(sig_index >= 0);
     assert(sig_index < 64);
 
-    lock_guard<recursive_mutex> lock(_mutex);
+    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 
     const uint64_t block_length = 1;
     const unsigned int min_level = 0;
@@ -706,7 +706,7 @@ uint64_t LogicSnapshot::get_min_pulse(uint64_t start, uint64_t end, int sig_inde
     assert(sig_index >= 0);
     assert(sig_index < 64);
 
-    lock_guard<recursive_mutex> lock(_mutex);
+    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 
     const uint64_t block_length = 1;
     const unsigned int min_level = 0;

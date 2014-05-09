@@ -108,7 +108,7 @@ SamplingBar::SamplingBar(QWidget *parent) :
 //		if (l == DefaultRecordLength)
 //			_record_length_selector.setCurrentIndex(i);
 //	}
-
+    _record_length_selector.setSizeAdjustPolicy(QComboBox::AdjustToContents);
 	set_sampling(false);
 
     //_run_stop_button.setToolButtonStyle(Qt::ToolButtonTextBesideIcon);

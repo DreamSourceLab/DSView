@@ -51,11 +51,11 @@ const uint16_t GroupSnapshot::value_mask[16] = {0x1, 0x2, 0x4, 0x8,
                                                 0x100, 0x200, 0x400, 0x800,
                                                 0x1000, 0x2000, 0x4000, 0x8000};
 
-GroupSnapshot::GroupSnapshot(const shared_ptr<LogicSnapshot> &_logic_snapshot, std::list<int> index_list)
+GroupSnapshot::GroupSnapshot(const boost::shared_ptr<LogicSnapshot> &_logic_snapshot, std::list<int> index_list)
 {
     assert(_logic_snapshot);
 
-	lock_guard<recursive_mutex> lock(_mutex);
+	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 	memset(_envelope_levels, 0, sizeof(_envelope_levels));
     _data = _logic_snapshot->get_data();
     _sample_count = _logic_snapshot->get_sample_count();
@@ -66,20 +66,20 @@ GroupSnapshot::GroupSnapshot(const shared_ptr<LogicSnapshot> &_logic_snapshot, s
 
 GroupSnapshot::~GroupSnapshot()
 {
-	lock_guard<recursive_mutex> lock(_mutex);
+	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 	BOOST_FOREACH(Envelope &e, _envelope_levels)
 		free(e.samples);
 }
 
 uint64_t GroupSnapshot::get_sample_count() const
 {
-    lock_guard<recursive_mutex> lock(_mutex);
+    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
     return _sample_count;
 }
 
 void GroupSnapshot::append_payload()
 {
-	lock_guard<recursive_mutex> lock(_mutex);
+	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 
 	// Generate the first mip-map from the data
 	append_payload_to_envelope_levels();
@@ -96,7 +96,7 @@ const uint16_t* GroupSnapshot::get_samples(
 
     int64_t i;
     uint64_t pow;
-	lock_guard<recursive_mutex> lock(_mutex);
+	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 
     uint16_t *const data = new uint16_t[end_sample - start_sample];
 //    memcpy(data, (uint16_t*)_data + start_sample, sizeof(uint16_t) *
@@ -121,7 +121,7 @@ void GroupSnapshot::get_envelope_section(EnvelopeSection &s,
 	assert(start <= end);
 	assert(min_length > 0);
 
-	lock_guard<recursive_mutex> lock(_mutex);
+	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 
 	const unsigned int min_level = max((int)floorf(logf(min_length) /
 		LogEnvelopeScaleFactor) - 1, 0);

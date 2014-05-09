@@ -43,7 +43,7 @@ const QColor DsoSignal::SignalColours[4] = {
 
 const float DsoSignal::EnvelopeThreshold = 256.0f;
 
-DsoSignal::DsoSignal(QString name, shared_ptr<data::Dso> data,
+DsoSignal::DsoSignal(QString name, boost::shared_ptr<data::Dso> data,
     int probe_index, int order) :
     Signal(name, probe_index, DS_DSO, order),
     _data(data)
@@ -84,13 +84,13 @@ void DsoSignal::paint(QPainter &p, int y, int left, int right, double scale,
 
     //paint_axis(p, y, left, right);
 
-    const deque< shared_ptr<pv::data::DsoSnapshot> > &snapshots =
+    const deque< boost::shared_ptr<pv::data::DsoSnapshot> > &snapshots =
 		_data->get_snapshots();
 	if (snapshots.empty())
 		return;
 
     _scale = _signalHeight * 1.0f / 256;
-    const shared_ptr<pv::data::DsoSnapshot> &snapshot =
+    const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
 		snapshots.front();
 
     if ((unsigned int)get_index() >= snapshot->get_channel_num())
@@ -120,7 +120,7 @@ void DsoSignal::paint(QPainter &p, int y, int left, int right, double scale,
 }
 
 void DsoSignal::paint_trace(QPainter &p,
-    const shared_ptr<pv::data::DsoSnapshot> &snapshot,
+    const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot,
 	int y, int left, const int64_t start, const int64_t end,
 	const double pixels_offset, const double samples_per_pixel)
 {
@@ -151,7 +151,7 @@ void DsoSignal::paint_trace(QPainter &p,
 }
 
 void DsoSignal::paint_envelope(QPainter &p,
-    const shared_ptr<pv::data::DsoSnapshot> &snapshot,
+    const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot,
 	int y, int left, const int64_t start, const int64_t end,
 	const double pixels_offset, const double samples_per_pixel)
 {

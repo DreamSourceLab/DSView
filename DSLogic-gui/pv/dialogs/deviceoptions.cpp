@@ -50,6 +50,7 @@ DeviceOptions::DeviceOptions(QWidget *parent, struct sr_dev_inst *sdi) :
 	setWindowTitle(tr("Configure Device"));
 	setLayout(&_layout);
 
+    _last_mode = sdi->mode;
     _mode_comboBox.addItem(mode_strings[LOGIC]);
     _mode_comboBox.addItem(mode_strings[DSO]);
     _mode_comboBox.addItem(mode_strings[ANALOG]);
@@ -78,10 +79,11 @@ void DeviceOptions::accept()
 
 	QDialog::accept();
 
+    _last_mode = _sdi->mode;
 	// Commit the properties
-	const vector< shared_ptr<pv::prop::Property> > &properties =
+	const vector< boost::shared_ptr<pv::prop::Property> > &properties =
 		_device_options_binding.properties();
-	BOOST_FOREACH(shared_ptr<pv::prop::Property> p, properties) {
+	BOOST_FOREACH(boost::shared_ptr<pv::prop::Property> p, properties) {
 		assert(p);
 		p->commit();
 	}
@@ -97,6 +99,15 @@ void DeviceOptions::accept()
     }
 }
 
+void DeviceOptions::reject()
+{
+    using namespace Qt;
+    QDialog::reject();
+
+    // Mode Recovery
+    sr_config_set(_sdi, SR_CONF_DEVICE_MODE, g_variant_new_string(_mode_comboBox.itemText(_last_mode).toLocal8Bit()));
+}
+
 QWidget* DeviceOptions::get_property_form()
 {
 	QWidget *const form = new QWidget(this);
@@ -104,9 +115,9 @@ QWidget* DeviceOptions::get_property_form()
 	form->setLayout(layout);
 
     layout->addRow("Device Mode", &_mode_comboBox);
-	const vector< shared_ptr<pv::prop::Property> > &properties =
+	const vector< boost::shared_ptr<pv::prop::Property> > &properties =
 		_device_options_binding.properties();
-	BOOST_FOREACH(shared_ptr<pv::prop::Property> p, properties)
+	BOOST_FOREACH(boost::shared_ptr<pv::prop::Property> p, properties)
 	{
 		assert(p);
 		const QString label = p->labeled_widget() ? QString() : p->name();
@@ -183,7 +194,8 @@ void DeviceOptions::disable_all_probes()
 
 void DeviceOptions::mode_changed(QString mode)
 {
-    sr_config_set(_sdi, SR_CONF_DEVICE_MODE, g_variant_new_string(mode.toLocal8Bit()));
+    // Commit mode
+    sr_config_set(_sdi, SR_CONF_DEVICE_MODE, g_variant_new_string(_mode_comboBox.currentText().toLocal8Bit()));
     setup_probes();
 }
 

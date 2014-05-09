@@ -86,7 +86,7 @@ set(DS_DESCRIPTION "A GUI for DSLogic")
 
 set(DS_VERSION_MAJOR 0)
 set(DS_VERSION_MINOR 2)
-set(DS_VERSION_MICRO 0)
+set(DS_VERSION_MICRO 1)
 set(DS_VERSION_STRING
 	${DS_VERSION_MAJOR}.${DS_VERSION_MINOR}.${DS_VERSION_MICRO}
 )
@@ -191,7 +191,6 @@ set(DSLogic_HEADERS
 
 set(DSLogic_FORMS
 	pv/dialogs/about.ui
-	pv/dialogs/search.ui
 	pv/decoder/dmx512config.ui
 	pv/decoder/i2cconfig.ui
 	pv/decoder/serialconfig.ui

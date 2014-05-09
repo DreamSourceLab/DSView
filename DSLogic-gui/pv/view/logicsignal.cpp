@@ -65,7 +65,7 @@ const QColor LogicSignal::SignalColours[8] = {
 const int LogicSignal::StateHeight = 12;
 const int LogicSignal::StateRound = 5;
 
-LogicSignal::LogicSignal(QString name, shared_ptr<data::Logic> data,
+LogicSignal::LogicSignal(QString name, boost::shared_ptr<data::Logic> data,
     int probe_index, int order) :
     Signal(name, probe_index, DS_LOGIC, order),
     _probe_index(probe_index),
@@ -112,12 +112,12 @@ void LogicSignal::paint(QPainter &p, int y, int left, int right,
     const float high_offset = y - _signalHeight + 0.5f;
 	const float low_offset = y + 0.5f;
 
-	const deque< shared_ptr<pv::data::LogicSnapshot> > &snapshots =
+	const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
 		_data->get_snapshots();
 	if (snapshots.empty())
 		return;
 
-	const shared_ptr<pv::data::LogicSnapshot> &snapshot =
+	const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
 		snapshots.front();
 
 	double samplerate = _data->get_samplerate();

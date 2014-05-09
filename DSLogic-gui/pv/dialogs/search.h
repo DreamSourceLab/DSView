@@ -27,12 +27,11 @@
 #include <QDialog>
 #include <QLabel>
 #include <QLineEdit>
+#include <QVBoxLayout>
+#include <QGridLayout>
+#include <QDialogButtonBox>
 #include "../sigsession.h"
 #include <libsigrok4DSLogic/libsigrok.h>
-
-namespace Ui {
-class Search;
-}
 
 namespace pv {
 namespace dialogs {
@@ -56,7 +55,8 @@ signals:
 public slots:
     
 private:
-    Ui::Search *ui;
+    QLineEdit search_lineEdit;
+    QDialogButtonBox search_buttonBox;
     sr_dev_inst *_sdi;
 };
 

@@ -27,6 +27,7 @@
 
 #include <boost/foreach.hpp>
 
+#include <QtGui/QApplication>
 #include <QEvent>
 #include <QMouseEvent>
 #include <QScrollBar>
@@ -297,14 +298,14 @@ const QPointF& View::hover_point() const
 
 void View::normalize_layout()
 {
-	const vector< shared_ptr<Signal> > sigs(_session.get_signals());
+	const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
 
 	int v_min = INT_MAX;
-	BOOST_FOREACH(const shared_ptr<Signal> s, sigs)
+	BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs)
 		v_min = min(s->get_v_offset(), v_min);
 
 	const int delta = -min(v_min, 0);
-	BOOST_FOREACH(shared_ptr<Signal> s, sigs)
+	BOOST_FOREACH(boost::shared_ptr<Signal> s, sigs)
 		s->set_v_offset(s->get_v_offset() + delta);
 
 	verticalScrollBar()->setSliderPosition(_v_offset + delta);
@@ -324,7 +325,7 @@ int View::get_signalHeight()
 
 void View::get_scroll_layout(double &length, double &offset) const
 {
-	const shared_ptr<data::SignalData> sig_data = _session.get_data();
+	const boost::shared_ptr<data::SignalData> sig_data = _session.get_data();
 	if (!sig_data)
 		return;
 
@@ -376,8 +377,8 @@ void View::reset_signal_layout()
 	int offset = SignalMargin + SignalHeight;
     _spanY = SignalHeight + 2 * SignalMargin;
 
-	const vector< shared_ptr<Signal> > sigs(_session.get_signals());
-	BOOST_FOREACH(shared_ptr<Signal> s, sigs) {
+	const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
+	BOOST_FOREACH(boost::shared_ptr<Signal> s, sigs) {
         s->set_signalHeight(SignalHeight);
         //s->set_v_offset(offset);
         //offset += SignalHeight + 2 * SignalMargin;
@@ -438,10 +439,15 @@ int View::headerWidth()
     int maxNameWidth = 0;
     int maxLeftWidth = 0;
     int maxRightWidth = 0;
+    
+    QFont font = QApplication::font();
+    QFontMetrics fm(font);
+    int fontWidth=fm.width("A");
+
     const vector< shared_ptr<Signal> > sigs(_session.get_signals());
     if (!sigs.empty()){
         BOOST_FOREACH(const shared_ptr<Signal> s, sigs) {
-            maxNameWidth = max(s->get_name().length() * 6, maxNameWidth);
+            maxNameWidth = max(s->get_name().length() * fontWidth, maxNameWidth);
             maxLeftWidth = max(s->get_leftWidth(), maxLeftWidth);
             maxRightWidth = max(s->get_rightWidth(), maxRightWidth);
         }

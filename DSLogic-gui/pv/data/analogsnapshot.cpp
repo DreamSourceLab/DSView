@@ -49,7 +49,7 @@ const uint64_t AnalogSnapshot::EnvelopeDataUnit = 64*1024;	// bytes
 AnalogSnapshot::AnalogSnapshot(const sr_datafeed_analog &analog, uint64_t _total_sample_len, unsigned int channel_num) :
     Snapshot(sizeof(uint16_t), _total_sample_len, channel_num)
 {
-	lock_guard<recursive_mutex> lock(_mutex);
+	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 	memset(_envelope_levels, 0, sizeof(_envelope_levels));
     init(_total_sample_len * channel_num);
 	append_payload(analog);
@@ -57,7 +57,7 @@ AnalogSnapshot::AnalogSnapshot(const sr_datafeed_analog &analog, uint64_t _total
 
 AnalogSnapshot::~AnalogSnapshot()
 {
-	lock_guard<recursive_mutex> lock(_mutex);
+	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
     BOOST_FOREACH(Envelope &e, _envelope_levels[0])
 		free(e.samples);
 }
@@ -65,7 +65,7 @@ AnalogSnapshot::~AnalogSnapshot()
 void AnalogSnapshot::append_payload(
 	const sr_datafeed_analog &analog)
 {
-	lock_guard<recursive_mutex> lock(_mutex);
+	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 	append_data(analog.data, analog.num_samples);
 
 	// Generate the first mip-map from the data
@@ -81,7 +81,7 @@ const uint16_t* AnalogSnapshot::get_samples(
     assert(end_sample < (int64_t)get_sample_count());
 	assert(start_sample <= end_sample);
 
-	lock_guard<recursive_mutex> lock(_mutex);
+	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 
 //    uint16_t *const data = new uint16_t[end_sample - start_sample];
 //    memcpy(data, (uint16_t*)_data + start_sample, sizeof(uint16_t) *
@@ -97,7 +97,7 @@ void AnalogSnapshot::get_envelope_section(EnvelopeSection &s,
 	assert(start <= end);
 	assert(min_length > 0);
 
-	lock_guard<recursive_mutex> lock(_mutex);
+	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 
 	const unsigned int min_level = max((int)floorf(logf(min_length) /
 		LogEnvelopeScaleFactor) - 1, 0);

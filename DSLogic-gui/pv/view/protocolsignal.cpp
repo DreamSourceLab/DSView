@@ -41,7 +41,7 @@ namespace view {
 const int ProtocolSignal::StateHeight = 16;
 const int ProtocolSignal::StateRound = 3;
 
-ProtocolSignal::ProtocolSignal(QString name, shared_ptr<data::Logic> data,
+ProtocolSignal::ProtocolSignal(QString name, boost::shared_ptr<data::Logic> data,
                                pv::decoder::Decoder *decoder, std::list<int> probe_index_list, int order, int protocol_index) :
     Signal(name, probe_index_list, DS_PROTOCOL, order, protocol_index),
     _probe_index_list(probe_index_list),
@@ -87,12 +87,12 @@ void ProtocolSignal::paint(QPainter &p, int y, int left, int right, double scale
     const float middle_offset = y - _signalHeight / 2 + 0.5f;
     //const float low_offset = y + 0.5f;
 
-    const deque< shared_ptr<pv::data::LogicSnapshot> > &snapshots =
+    const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
         _data->get_snapshots();
     if (snapshots.empty())
         return;
 
-    const shared_ptr<pv::data::LogicSnapshot> &snapshot =
+    const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
         snapshots.front();
 
     double samplerate = _data->get_samplerate();
