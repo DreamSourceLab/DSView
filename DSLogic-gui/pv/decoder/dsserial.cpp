@@ -148,11 +148,9 @@ void dsSerial::decode()
             stop_index = flag_index + ceil((_bits + (_parity != -1) + 1) * samplesPerBit);
 
             if (left < right) {
-                for (i = 0; i < _stopbits * samplesPerBit; i++) {
-                    if (_idle_level != ((snapshot->get_sample(stop_index + i) & 1ULL << _serial_index) != 0)) {
-                        stop_err = true;
-                        break;
-                    }
+		left -= 0.5*samplesPerBit;
+                if (_idle_level != ((snapshot->get_sample(stop_index + 0.5*samplesPerBit) & 1ULL << _serial_index) != 0)) {
+                    stop_err = true;
                 }
                 if (stop_err) {
                     cur_state = StopErr;
