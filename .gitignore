@@ -29,3 +29,7 @@ aclocal.m4
 DSLogic-gui/ui_*.h
 DSLogic-gui/DSLogic
 
+moc_*.cxx
+moc_*.cxx_parameters
+
+libusbx-1.0.18/doc/doxygen.cfg
