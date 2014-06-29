@@ -61,16 +61,16 @@ private:
     static const int Margin = 3;
     static const int SquareNum = 5;
 
-    static const uint64_t vDialValueCount = 10;
-    static const uint64_t vDialValueStep = 1000;
-    static const uint64_t vDialUnitCount = 2;
-    static const uint64_t hDialValueCount = 25;
-    static const uint64_t hDialValueStep = 1000;
-    static const uint64_t hDialUnitCount = 4;
-    static const uint64_t vDialValue[vDialValueCount];
+    static const quint64 vDialValueCount = 10;
+    static const quint64 vDialValueStep = 1000;
+    static const quint64 vDialUnitCount = 2;
+    static const quint64 hDialValueCount = 25;
+    static const quint64 hDialValueStep = 1000;
+    static const quint64 hDialUnitCount = 4;
+    static const quint64 vDialValue[vDialValueCount];
     static const QString vDialUnit[vDialUnitCount];
 
-    static const uint64_t hDialValue[hDialValueCount];
+    static const quint64 hDialValue[hDialValueCount];
     static const QString hDialUnit[hDialUnitCount];
 
 public:
@@ -199,8 +199,8 @@ public:
     bool go_vDialNext();
     bool go_hDialPre();
     bool go_hDialNext();
-    uint64_t get_vDialValue() const;
-    uint64_t get_hDialValue() const;
+    quint64 get_vDialValue() const;
+    quint64 get_hDialValue() const;
     uint16_t get_vDialSel() const;
     uint16_t get_hDialSel() const;
     bool get_acCoupling() const;
