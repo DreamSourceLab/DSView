@@ -105,6 +105,14 @@ View::View(SigSession &session, QWidget *parent) :
 		this, SLOT(on_signals_moved()));
     connect(_header, SIGNAL(header_updated()),
         this, SLOT(header_updated()));
+    connect(_header, SIGNAL(vDial_changed(quint16)),
+        this, SLOT(vDial_changed(quint16)));
+    connect(_header, SIGNAL(hDial_changed(quint16)),
+        this, SLOT(hDial_changed(quint16)));
+    connect(_header, SIGNAL(acdc_changed(quint16)),
+        this, SLOT(acdc_changed(quint16)));
+    connect(_header, SIGNAL(ch_changed(quint16)),
+        this, SLOT(ch_changed(quint16)));
 
     setViewportMargins(headerWidth(), RulerHeight, 0, 0);
 	setViewport(_viewport);
@@ -176,8 +184,20 @@ void View::zoom(double steps, int offset)
         _preOffset = _offset;
 
         const double cursor_offset = _offset + _scale * offset;
-        _scale *= pow(3.0/2.0, -steps);
-        _scale = max(min(_scale, _maxscale), _minscale);
+        if (_session.get_device()->mode != DSO) {
+            _scale *= pow(3.0/2.0, -steps);
+            _scale = max(min(_scale, _maxscale), _minscale);
+        } else {
+            const vector< shared_ptr<Signal> > sigs(_session.get_signals());
+            if (steps > 0.5) {
+                BOOST_FOREACH(const shared_ptr<Signal> s, sigs)
+                    s->go_hDialNext();
+            } else if(steps < -0.5) {
+                BOOST_FOREACH(const shared_ptr<Signal> s, sigs)
+                    s->go_hDialPre();
+            }
+            _scale = sigs.at(0)->get_hDialValue() * pow(10, -9) * Viewport::NumSpanX / _viewport->width();
+        }
         _offset = cursor_offset - _scale * offset;
         const double MinOffset = -(_scale * (_viewport->width() * (1 - MaxViewRate)));
         const double MaxOffset = _data_length * 1.0f / _session.get_last_sample_rate() -
@@ -185,6 +205,7 @@ void View::zoom(double steps, int offset)
         _offset = max(min(_offset, MaxOffset), MinOffset);
 
         if (_scale != _preScale || _offset != _preOffset) {
+            _header->update();
             _ruler->update();
             _viewport->update();
             update_scroll();
@@ -199,7 +220,9 @@ void View::set_scale_offset(double scale, double offset)
         _preScale = _scale;
         _preOffset = _offset;
 
-        _scale = max(min(scale, _maxscale), _minscale);
+        if (_session.get_device()->mode != DSO)
+            _scale = max(min(scale, _maxscale), _minscale);
+
         const double MinOffset = -(_scale * (_viewport->width() * (1 - MaxViewRate)));
         const double MaxOffset = _data_length * 1.0f / _session.get_last_sample_rate()
                 - _scale * (_viewport->width() * MaxViewRate);
@@ -380,9 +403,11 @@ void View::reset_signal_layout()
 	const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
 	BOOST_FOREACH(boost::shared_ptr<Signal> s, sigs) {
         s->set_signalHeight(SignalHeight);
+        s->set_windowHeight(_viewport->height());
         //s->set_v_offset(offset);
         //offset += SignalHeight + 2 * SignalMargin;
         s->set_v_offset(offset + s->get_order() * _spanY);
+        s->set_zeroPos(_viewport->height()*0.5);
 	}
 	normalize_layout();
 }
@@ -439,7 +464,7 @@ int View::headerWidth()
     int maxNameWidth = 0;
     int maxLeftWidth = 0;
     int maxRightWidth = 0;
-    
+
     QFont font = QApplication::font();
     QFontMetrics fm(font);
     int fontWidth=fm.width("A");
@@ -518,7 +543,8 @@ void View::data_updated()
 	// Get the new data length
     _data_length = max(_session.get_total_sample_len(), (quint64)1000);
     _maxscale = (_data_length * 1.0f / _session.get_last_sample_rate()) / (_viewport->width() * MaxViewRate);
-    _scale = min(_scale, _maxscale);
+    if(_session.get_device()->mode != DSO)
+        _scale = min(_scale, _maxscale);
 
     setViewportMargins(headerWidth(), RulerHeight, 0, 0);
     update_margins();
@@ -555,7 +581,9 @@ void View::sample_rate_changed(quint64 sample_rate)
 {
     assert(sample_rate > 0);
 
-    _scale = (1.0f / sample_rate) / WellPixelsPerSample;
+    if (_session.get_device()->mode != DSO)
+        _scale = (1.0f / sample_rate) / WellPixelsPerSample;
+
     _minscale = (1.0f / sample_rate) / (_viewport->width() * MaxViewRate);
     _offset = 0;
     _preScale = _scale;
@@ -574,7 +602,8 @@ void View::marker_time_changed()
 void View::on_signals_moved()
 {
 	update_scroll();
-	signals_moved();
+    _viewport->update();
+    //signals_moved();
 }
 
 /*
@@ -702,6 +731,40 @@ void View::on_state_changed(bool stop)
 {
     if (stop)
         _viewport->stop_trigger_timer();
+}
+
+void View::vDial_changed(uint16_t channel)
+{
+    if (channel == 0)
+        _session.set_dso_ctrl(SR_CONF_VDIV0);
+    else
+        _session.set_dso_ctrl(SR_CONF_VDIV1);
+}
+
+void View::hDial_changed(uint16_t channel)
+{
+    const vector< shared_ptr<Signal> > sigs(_session.get_signals());
+    _session.set_dso_ctrl(SR_CONF_TIMEBASE);
+    _scale = sigs.at(channel)->get_hDialValue() * pow(10, -9) * Viewport::NumSpanX / _viewport->width();
+    _ruler->update();
+    _viewport->update();
+    update_scroll();
+}
+
+void View::acdc_changed(uint16_t channel)
+{
+    if (channel == 0)
+        _session.set_dso_ctrl(SR_CONF_COUPLING0);
+    else
+        _session.set_dso_ctrl(SR_CONF_COUPLING1);
+}
+
+void View::ch_changed(uint16_t channel)
+{
+    if (channel == 0)
+        _session.set_dso_ctrl(SR_CONF_EN_CH0);
+    else
+        _session.set_dso_ctrl(SR_CONF_EN_CH1);
 }
 
 } // namespace view

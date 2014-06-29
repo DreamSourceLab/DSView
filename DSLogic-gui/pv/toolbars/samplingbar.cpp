@@ -165,10 +165,39 @@ uint64_t SamplingBar::get_record_length() const
 	return _record_length_selector.itemData(index).value<uint64_t>();
 }
 
+void SamplingBar::set_record_length(uint64_t length)
+{
+    for (int i = 0; i < _record_length_selector.count(); i++) {
+        if (length == _record_length_selector.itemData(
+            i).value<uint64_t>()) {
+            _record_length_selector.setCurrentIndex(i);
+            break;
+        }
+    }
+}
+
 void SamplingBar::set_sampling(bool sampling)
 {
     _run_stop_button.setIcon(sampling ? _icon_stop : _icon_start);
     //_run_stop_button.setText(sampling ? " Stop" : "Start");
+}
+
+void SamplingBar::set_sample_rate(uint64_t sample_rate)
+{
+    for (int i = 0; i < _sample_rate_list.count(); i++) {
+        if (sample_rate == _sample_rate_list.itemData(
+            i).value<uint64_t>()) {
+            _sample_rate_list.setCurrentIndex(i);
+            // Set the samplerate
+            if (sr_config_set(_sdi, SR_CONF_SAMPLERATE,
+                g_variant_new_uint64(sample_rate)) != SR_OK) {
+                qDebug() << "Failed to configure samplerate.";
+                return;
+            }
+            break;
+        }
+    }
+
 }
 
 void SamplingBar::update_sample_rate_selector()
@@ -280,7 +309,7 @@ void SamplingBar::commit_sample_rate()
 		return;
 	}
 
-    if (strcmp(_sdi->driver->name, "DSLogic") == 0) {
+    if (strcmp(_sdi->driver->name, "DSLogic") == 0 && _sdi->mode != DSO) {
         if ((last_sample_rate == SR_MHZ(200)&& sample_rate != SR_MHZ(200)) ||
             (last_sample_rate != SR_MHZ(200) && sample_rate == SR_MHZ(200)) ||
             (last_sample_rate == SR_MHZ(400)&& sample_rate != SR_MHZ(400)) ||

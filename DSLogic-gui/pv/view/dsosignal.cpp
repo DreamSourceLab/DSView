@@ -35,21 +35,26 @@ namespace pv {
 namespace view {
 
 const QColor DsoSignal::SignalColours[4] = {
-    QColor(17, 133, 209,  255), // dsBlue
-    QColor(238, 178, 17, 255),  // dsYellow
-    QColor(213, 15, 37, 255),   // dsRed
-    QColor(0, 153, 37, 255)     // dsGreen
+    QColor(238, 178, 17, 200),  // dsYellow
+    QColor(0, 153, 37, 200),    // dsGreen
+    QColor(213, 15, 37, 200),   // dsRed
+    QColor(17, 133, 209, 200)  // dsBlue
+
 };
 
 const float DsoSignal::EnvelopeThreshold = 256.0f;
 
 DsoSignal::DsoSignal(QString name, boost::shared_ptr<data::Dso> data,
-    int probe_index, int order) :
+    int probe_index, int order, uint64_t vdiv, uint64_t timebase, bool coupling, bool active) :
     Signal(name, probe_index, DS_DSO, order),
     _data(data)
 {
 	_colour = SignalColours[probe_index % countof(SignalColours)];
-    _scale = _signalHeight * 1.0f / 256;
+    _scale = _windowHeight * 1.0f / 256;
+    _vDial->set_value(vdiv);
+    _hDial->set_value(timebase);
+    _acCoupling = coupling;
+    _active = active;
 }
 
 DsoSignal::~DsoSignal()
@@ -76,28 +81,27 @@ void DsoSignal::set_scale(float scale)
 }
 
 void DsoSignal::paint(QPainter &p, int y, int left, int right, double scale,
-	double offset)
+    double offset)
 {
 	assert(scale > 0);
 	assert(_data);
 	assert(right >= left);
-
-    //paint_axis(p, y, left, right);
 
     const deque< boost::shared_ptr<pv::data::DsoSnapshot> > &snapshots =
 		_data->get_snapshots();
 	if (snapshots.empty())
 		return;
 
-    _scale = _signalHeight * 1.0f / 256;
+    _scale = _windowHeight * 1.0f / 256;
     const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
 		snapshots.front();
 
-    if ((unsigned int)get_index() >= snapshot->get_channel_num())
+    const uint16_t number_channels = snapshot->get_channel_num();
+    if ((unsigned int)get_index() >= number_channels)
         return;
 
 	const double pixels_offset = offset / scale;
-	const double samplerate = _data->get_samplerate();
+    const double samplerate = _data->get_samplerate();
 	const double start_time = _data->get_start_time();
     const int64_t last_sample = max((int64_t)(snapshot->get_sample_count() - 1), (int64_t)0);
 	const double samples_per_pixel = samplerate * scale;
@@ -112,7 +116,7 @@ void DsoSignal::paint(QPainter &p, int y, int left, int right, double scale,
 	if (samples_per_pixel < EnvelopeThreshold)
 		paint_trace(p, snapshot, y, left,
 			start_sample, end_sample,
-			pixels_offset, samples_per_pixel);
+            pixels_offset, samples_per_pixel, number_channels);
 	else
 		paint_envelope(p, snapshot, y, left,
 			start_sample, end_sample,
@@ -121,13 +125,13 @@ void DsoSignal::paint(QPainter &p, int y, int left, int right, double scale,
 
 void DsoSignal::paint_trace(QPainter &p,
     const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot,
-	int y, int left, const int64_t start, const int64_t end,
-	const double pixels_offset, const double samples_per_pixel)
+    int y, int left, const int64_t start, const int64_t end,
+    const double pixels_offset, const double samples_per_pixel, uint64_t num_channels)
 {
     const int64_t sample_count = end - start;
 
     if (sample_count > 0) {
-        const uint16_t *const samples = snapshot->get_samples(start, end);
+        const uint8_t *const samples = snapshot->get_samples(start, end, get_index());
         assert(samples);
 
         p.setPen(_colour);
@@ -136,11 +140,11 @@ void DsoSignal::paint_trace(QPainter &p,
         QPointF *points = new QPointF[sample_count];
         QPointF *point = points;
 
-        for (int64_t sample = start; sample != end; sample++) {
+        for (int64_t sample = start; sample < end; sample++) {
             const float x = (sample / samples_per_pixel - pixels_offset) + left;
-            uint16_t offset = samples[sample - start];
+            uint8_t offset = samples[(sample - start)*num_channels];
             *point++ = QPointF(x,
-                               y - ((get_index() == 0) ? offset & 0x00ff : offset >> 8) * _scale);
+                               y - offset * _scale);
         }
 
         p.drawPolyline(points, point - points);

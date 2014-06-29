@@ -194,6 +194,7 @@ void DeviceOptions::disable_all_probes()
 
 void DeviceOptions::mode_changed(QString mode)
 {
+    (void)mode;
     // Commit mode
     sr_config_set(_sdi, SR_CONF_DEVICE_MODE, g_variant_new_string(_mode_comboBox.currentText().toLocal8Bit()));
     setup_probes();

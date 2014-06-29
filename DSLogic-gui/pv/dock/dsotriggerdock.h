@@ -21,52 +21,56 @@
  */
 
 
-#ifndef DSLOGIC_PV_TOOLBARS_DEVICEBAR_H
-#define DSLOGIC_PV_TOOLBARS_DEVICEBAR_H
+#ifndef DSLOGIC_PV_DSOTRIGGERDOCK_H
+#define DSLOGIC_PV_DSOTRIGGERDOCK_H
 
-#include <stdint.h>
+#include <QDockWidget>
+#include <QSlider>
+#include <QSpinBox>
+#include <QButtonGroup>
 
-#include <list>
+#include <vector>
 
-#include <QComboBox>
-#include <QToolBar>
-#include <QToolButton>
-
-struct st_dev_inst;
-class QAction;
+#include <libsigrok4DSLogic/libsigrok.h>
 
 namespace pv {
-namespace toolbars {
 
-class DeviceBar : public QToolBar
+class SigSession;
+
+namespace dock {
+
+class DsoTriggerDock : public QWidget
 {
     Q_OBJECT
 
 public:
-    DeviceBar(QWidget *parent);
+    DsoTriggerDock(QWidget *parent, SigSession &session);
+    ~DsoTriggerDock();
 
-    void set_device_list(const std::list<struct sr_dev_inst*> &devices);
+    void paintEvent(QPaintEvent *);
 
-    struct sr_dev_inst* get_selected_device() const;
-    void set_selected_device(struct sr_dev_inst *const sdi, bool discon);
-
-    void enable_toggle(bool enable);
+    void device_change();
 
 signals:
-    void device_selected();
-    void device_updated();
 
 private slots:
-    void on_device_selected();
-    void on_configure();
+    void pos_changed(int pos);
+    void source_changed();
+    void type_changed();
 
 private:
-    bool _enable;
-    QComboBox _device_selector;
-    QToolButton _configure_button;
+
+private:
+    SigSession &_session;
+
+    QSpinBox *position_spinBox;
+    QSlider *position_slider;
+
+    QButtonGroup *source_group;
+    QButtonGroup *type_group;
 };
 
-} // namespace toolbars
+} // namespace dock
 } // namespace pv
 
-#endif // DSLOGIC_PV_TOOLBARS_DEVICEBAR_H
+#endif // DSLOGIC_PV_DSOTRIGGERDOCK_H

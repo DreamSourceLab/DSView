@@ -187,7 +187,8 @@ private:
 	void resizeEvent(QResizeEvent *e);
 
 public slots:
-        void set_measure_en(int enable);
+    void set_measure_en(int enable);
+    void hDial_changed(quint16 channel);
 
 private slots:
 
@@ -208,6 +209,10 @@ private slots:
     void receive_data(quint64 length);
 
     void set_trig_pos(quint64 trig_pos);
+
+    void vDial_changed(quint16 channel);
+    void acdc_changed(quint16 channel);
+    void ch_changed(quint16 channel);
 
 private:
 

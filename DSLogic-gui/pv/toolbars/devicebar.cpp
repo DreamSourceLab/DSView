@@ -31,6 +31,7 @@
 
 #include <QAction>
 #include <QDebug>
+#include <QMessageBox>
 
 #include "devicebar.h"
 
@@ -123,11 +124,11 @@ void DeviceBar::on_configure()
     pv::dialogs::DeviceOptions dlg(this, sdi);
     ret = dlg.exec();
     if (ret == QDialog::Accepted) {
-    //if (dlg.exec()) {
-        if (dev_mode != sdi->mode)
-                device_selected();
-            else
-                device_updated();
+        if (dev_mode != sdi->mode) {
+            device_selected();
+        } else {
+            device_updated();
+        }
     }
 }
 

@@ -65,7 +65,7 @@ SigSession::SigSession(DeviceManager &device_manager) :
     _total_sample_len(1)
 {
 	// TODO: This should not be necessary
-    _session = this;
+	_session = this;
     _hot_attach = false;
     _hot_detach = false;
     _adv_trigger = false;
@@ -73,7 +73,11 @@ SigSession::SigSession(DeviceManager &device_manager) :
     _protocol_cnt = 0;
     _decoderFactory = new decoder::DecoderFactory();
     ds_trigger_init();
-    register_hotplug_callback();
+
+    _vDial_changed = false;
+    _hDial_changed = false;
+    _dso_ctrl_channel = 0;
+	register_hotplug_callback();
 }
 
 SigSession::~SigSession()
@@ -90,9 +94,10 @@ SigSession::~SigSession()
     }
 
     ds_trigger_destroy();
+    stop_dso_ctrl_proc();
 
-    // TODO: This should not be necessary
-    _session = NULL;
+	// TODO: This should not be necessary
+	_session = NULL;
 }
 
 quint64 SigSession::get_last_sample_rate() const
@@ -107,10 +112,7 @@ quint64 SigSession::get_total_sample_len() const
 
 void SigSession::set_total_sample_len(quint64 length)
 {
-    if (_sdi->mode == DSO)
-        _total_sample_len = 8 * 1024;
-    else
-        _total_sample_len = length;
+    _total_sample_len = length;
 }
 
 struct sr_dev_inst* SigSession::get_device() const
@@ -223,11 +225,27 @@ void SigSession::start_capture(uint64_t record_length,
 		if (probe->enabled)
 			break;
 	}
-
 	if (!l) {
 		error_handler(tr("No probes enabled."));
 		return;
 	}
+
+    // Check that at least one signal channel is active under DSO mode
+    if (_sdi->mode == DSO) {
+        bool active = false;
+        BOOST_FOREACH(const shared_ptr<view::Signal> s, _signals)
+        {
+            assert(s);
+            if (s->get_active()) {
+                active = true;
+                break;
+            }
+        }
+        if (!active) {
+            error_handler(tr("No channels enabled."));
+            return;
+        }
+    }
 
 	// Begin the session
 	_sampling_thread.reset(new boost::thread(
@@ -464,6 +482,7 @@ void SigSession::feed_in_header(const sr_dev_inst *sdi)
 	uint64_t sample_rate = 0;
 	unsigned int logic_probe_count = 0;
     unsigned int dso_probe_count = 0;
+    unsigned int dso_channel_count = 0;
 	unsigned int analog_probe_count = 0;
 
 	// Detect what data types we will receive
@@ -499,20 +518,35 @@ void SigSession::feed_in_header(const sr_dev_inst *sdi)
 	sample_rate = g_variant_get_uint64(gvar);
 	g_variant_unref(gvar);
 
-    ret = sr_config_get(sdi->driver, SR_CONF_LIMIT_SAMPLES,
-        &gvar, sdi);
-    if (ret != SR_OK) {
-        qDebug("Failed to get total samples");
-        return;
-    }
-    if (g_variant_get_uint64(gvar) != 0)
-        _total_sample_len = g_variant_get_uint64(gvar);
-    g_variant_unref(gvar);
+//    ret = sr_config_get(sdi->driver, SR_CONF_LIMIT_SAMPLES,
+//        &gvar, sdi);
+//    if (ret != SR_OK) {
+//        qDebug("Failed to get total samples");
+//        return;
+//    }
+//    if (g_variant_get_uint64(gvar) != 0)
+//        _total_sample_len = g_variant_get_uint64(gvar);
+//    g_variant_unref(gvar);
 
     if (sample_rate != _last_sample_rate) {
         _last_sample_rate = sample_rate;
         sample_rate_changed(sample_rate);
     }
+    ret = sr_config_get(sdi->driver, SR_CONF_EN_CH0,
+        &gvar, sdi);
+    if (ret != SR_OK) {
+        qDebug("Failed to get ENABLE of DSO channel 0\n");
+        return;
+    }
+    dso_channel_count += g_variant_get_boolean(gvar);
+    ret = sr_config_get(sdi->driver, SR_CONF_EN_CH1,
+        &gvar, sdi);
+    if (ret != SR_OK) {
+        qDebug("Failed to get ENABLE of DSO channel 1\n");
+        return;
+    }
+    dso_channel_count += g_variant_get_boolean(gvar);
+
 
 	// Create data containers for the coming data snapshots
 	{
@@ -528,7 +562,7 @@ void SigSession::feed_in_header(const sr_dev_inst *sdi)
 		}
 
         if (dso_probe_count != 0) {
-            _dso_data.reset(new data::Dso(dso_probe_count, sample_rate));
+            _dso_data.reset(new data::Dso(dso_channel_count, sample_rate));
             assert(_dso_data);
         }
 
@@ -693,7 +727,13 @@ void SigSession::init_signals(const sr_dev_inst *sdi)
     uint64_t sample_rate = 0;
     unsigned int logic_probe_count = 0;
     unsigned int dso_probe_count = 0;
+    unsigned int dso_channel_count = 0;
     unsigned int analog_probe_count = 0;
+    uint64_t vdiv;
+    uint64_t timebase;
+    bool coupling;
+    bool active;
+    int ret;
 
     // Detect what data types we will receive
     for (const GSList *l = sdi->probes; l; l = l->next) {
@@ -719,20 +759,33 @@ void SigSession::init_signals(const sr_dev_inst *sdi)
     // Read out the sample rate
     assert(sdi->driver);
 
-    const int ret = sr_config_get(sdi->driver, SR_CONF_SAMPLERATE,
+    ret = sr_config_get(sdi->driver, SR_CONF_SAMPLERATE,
         &gvar, sdi);
     if (ret != SR_OK) {
         qDebug("Failed to get samplerate\n");
         return;
     }
-
     sample_rate = g_variant_get_uint64(gvar);
-    g_variant_unref(gvar);
 
     if (sample_rate != _last_sample_rate) {
         _last_sample_rate = sample_rate;
         sample_rate_changed(sample_rate);
     }
+
+    ret = sr_config_get(sdi->driver, SR_CONF_EN_CH0,
+        &gvar, sdi);
+    if (ret != SR_OK) {
+        qDebug("Failed to get ENABLE of DSO channel 0\n");
+        return;
+    }
+    dso_channel_count += g_variant_get_boolean(gvar);
+    ret = sr_config_get(sdi->driver, SR_CONF_EN_CH1,
+        &gvar, sdi);
+    if (ret != SR_OK) {
+        qDebug("Failed to get ENABLE of DSO channel 1\n");
+        return;
+    }
+    dso_channel_count += g_variant_get_boolean(gvar);
 
     // Create data containers for the coming data snapshots
     {
@@ -747,7 +800,7 @@ void SigSession::init_signals(const sr_dev_inst *sdi)
         }
 
         if (dso_probe_count != 0) {
-            _dso_data.reset(new data::Dso(dso_probe_count, sample_rate));
+            _dso_data.reset(new data::Dso(dso_channel_count, sample_rate));
             assert(_dso_data);
         }
 
@@ -776,9 +829,68 @@ void SigSession::init_signals(const sr_dev_inst *sdi)
                 break;
 
             case SR_PROBE_DSO:
+                if (probe->index == 0) {
+                    ret = sr_config_get(sdi->driver, SR_CONF_VDIV0,
+                        &gvar, sdi);
+                    if (ret != SR_OK) {
+                        qDebug("Failed to get VDIV of channel 0\n");
+                        return;
+                    }
+                    vdiv = g_variant_get_uint64(gvar);
+                    ret = sr_config_get(sdi->driver, SR_CONF_TIMEBASE,
+                        &gvar, sdi);
+                    if (ret != SR_OK) {
+                        qDebug("Failed to get TIMEBASE\n");
+                        return;
+                    }
+                    timebase = g_variant_get_uint64(gvar);
+                    ret = sr_config_get(sdi->driver, SR_CONF_COUPLING0,
+                        &gvar, sdi);
+                    if (ret != SR_OK) {
+                        qDebug("Failed to get AC COUPLING of channel 0\n");
+                        return;
+                    }
+                    coupling = g_variant_get_boolean(gvar);
+                    ret = sr_config_get(sdi->driver, SR_CONF_EN_CH0,
+                        &gvar, sdi);
+                    if (ret != SR_OK) {
+                        qDebug("Failed to get ENABLE of channel 0\n");
+                        return;
+                    }
+                    active = g_variant_get_boolean(gvar);
+                } else if (probe->index == 1) {
+                    ret = sr_config_get(sdi->driver, SR_CONF_VDIV1,
+                        &gvar, sdi);
+                    if (ret != SR_OK) {
+                        qDebug("Failed to get VDIV of channel 1\n");
+                        return;
+                    }
+                    vdiv = g_variant_get_uint64(gvar);
+                    ret = sr_config_get(sdi->driver, SR_CONF_TIMEBASE,
+                        &gvar, sdi);
+                    if (ret != SR_OK) {
+                        qDebug("Failed to get TIMEBASE\n");
+                        return;
+                    }
+                    timebase = g_variant_get_uint64(gvar);
+                    ret = sr_config_get(sdi->driver, SR_CONF_COUPLING1,
+                        &gvar, sdi);
+                    if (ret != SR_OK) {
+                        qDebug("Failed to get AC COUPLING of channel 1\n");
+                        return;
+                    }
+                    coupling = g_variant_get_boolean(gvar);
+                    ret = sr_config_get(sdi->driver, SR_CONF_EN_CH1,
+                        &gvar, sdi);
+                    if (ret != SR_OK) {
+                        qDebug("Failed to get ENABLE of channel 1\n");
+                        return;
+                    }
+                    active = g_variant_get_boolean(gvar);
+                }
                 signal = boost::shared_ptr<view::Signal>(
                     new view::DsoSignal(probe->name,
-                        _dso_data, probe->index, _signals.size()));
+                        _dso_data, probe->index, _signals.size(), vdiv, timebase, coupling, active));
                 break;
 
             case SR_PROBE_ANALOG:
@@ -793,6 +905,7 @@ void SigSession::init_signals(const sr_dev_inst *sdi)
         signals_changed();
         data_updated();
     }
+    g_variant_unref(gvar);
 }
 
 void SigSession::update_signals(const sr_dev_inst *sdi)
@@ -801,6 +914,12 @@ void SigSession::update_signals(const sr_dev_inst *sdi)
     QMap<int, bool> probes_en_table;
     QMap<int, bool> signals_en_table;
     int index = 0;
+    GVariant *gvar;
+    uint64_t vdiv;
+    uint64_t timebase;
+    bool coupling;
+    bool active;
+    int ret;
 
     std::vector< boost::shared_ptr<view::Signal> >::iterator i = _signals.begin();
     while (i != _signals.end()) {
@@ -832,9 +951,68 @@ void SigSession::update_signals(const sr_dev_inst *sdi)
                 break;
 
             case SR_PROBE_DSO:
+                if (probe->index == 0) {
+                    ret = sr_config_get(sdi->driver, SR_CONF_VDIV0,
+                        &gvar, sdi);
+                    if (ret != SR_OK) {
+                        qDebug("Failed to get VDIV of channel 0\n");
+                        return;
+                    }
+                    vdiv = g_variant_get_uint64(gvar);
+                    ret = sr_config_get(sdi->driver, SR_CONF_TIMEBASE,
+                        &gvar, sdi);
+                    if (ret != SR_OK) {
+                        qDebug("Failed to get TIMEBASE\n");
+                        return;
+                    }
+                    timebase = g_variant_get_uint64(gvar);
+                    ret = sr_config_get(sdi->driver, SR_CONF_COUPLING0,
+                        &gvar, sdi);
+                    if (ret != SR_OK) {
+                        qDebug("Failed to get AC COUPLING of channel 0\n");
+                        return;
+                    }
+                    coupling = g_variant_get_boolean(gvar);
+                    ret = sr_config_get(sdi->driver, SR_CONF_EN_CH0,
+                        &gvar, sdi);
+                    if (ret != SR_OK) {
+                        qDebug("Failed to get ENABLE of channel 0\n");
+                        return;
+                    }
+                    active = g_variant_get_boolean(gvar);
+                } else if (probe->index == 1) {
+                    ret = sr_config_get(sdi->driver, SR_CONF_VDIV1,
+                        &gvar, sdi);
+                    if (ret != SR_OK) {
+                        qDebug("Failed to get VDIV of channel 1\n");
+                        return;
+                    }
+                    vdiv = g_variant_get_uint64(gvar);
+                    ret = sr_config_get(sdi->driver, SR_CONF_TIMEBASE,
+                        &gvar, sdi);
+                    if (ret != SR_OK) {
+                        qDebug("Failed to get TIMEBASE\n");
+                        return;
+                    }
+                    timebase = g_variant_get_uint64(gvar);
+                    ret = sr_config_get(sdi->driver, SR_CONF_COUPLING1,
+                        &gvar, sdi);
+                    if (ret != SR_OK) {
+                        qDebug("Failed to get AC COUPLING of channel 1\n");
+                        return;
+                    }
+                    coupling = g_variant_get_boolean(gvar);
+                    ret = sr_config_get(sdi->driver, SR_CONF_EN_CH1,
+                        &gvar, sdi);
+                    if (ret != SR_OK) {
+                        qDebug("Failed to get ENABLE of channel 1\n");
+                        return;
+                    }
+                    active = g_variant_get_boolean(gvar);
+                }
                 signal = boost::shared_ptr<view::Signal>(
                     new view::DsoSignal(probe->name,
-                        _dso_data, probe->index, _signals.size()));
+                        _dso_data, probe->index, _signals.size(), vdiv, timebase, coupling, active));
                 break;
 
             case SR_PROBE_ANALOG:
@@ -1243,6 +1421,94 @@ void SigSession::stop_hotplug_proc()
 void SigSession::set_adv_trigger(bool adv_trigger)
 {
     _adv_trigger = adv_trigger;
+}
+
+
+/*
+ * oscilloscope control
+ */
+void SigSession::start_dso_ctrl_proc(boost::function<void (const QString)> error_handler)
+{
+
+    // Begin the dso control thread
+    _dso_ctrl_thread.reset(new boost::thread(
+        &SigSession::dso_ctrl_proc, this, error_handler));
+
+}
+
+void SigSession::stop_dso_ctrl_proc()
+{
+
+    if (_dso_ctrl_thread.get()) {
+        _dso_ctrl_thread->interrupt();
+        _dso_ctrl_thread->join();
+    }
+    _dso_ctrl_thread.reset();
+}
+
+int SigSession::set_dso_ctrl(int key)
+{
+    int ret;
+
+    if (key== SR_CONF_TIMEBASE) {
+        uint64_t timebase = _signals.at(0)->get_hDialValue();
+        ret = sr_config_set(_sdi, key, g_variant_new_uint64(timebase));
+    } else if (key == SR_CONF_VDIV0) {
+        uint64_t vdiv = _signals.at(0)->get_vDialValue();
+        ret = sr_config_set(_sdi, key, g_variant_new_uint64(vdiv));
+    } else if (key == SR_CONF_VDIV1) {
+        uint64_t vdiv = _signals.at(1)->get_vDialValue();
+        ret = sr_config_set(_sdi, key, g_variant_new_uint64(vdiv));
+    } else if (key == SR_CONF_COUPLING0) {
+        bool acdc = _signals.at(0)->get_acCoupling();
+        ret = sr_config_set(_sdi, key, g_variant_new_boolean(acdc));
+    } else if (key == SR_CONF_COUPLING1) {
+        bool acdc = _signals.at(1)->get_acCoupling();
+        ret = sr_config_set(_sdi, key, g_variant_new_boolean(acdc));
+    } else if (key == SR_CONF_EN_CH0) {
+        bool enable = _signals.at(0)->get_active();
+        ret = sr_config_set(_sdi, key, g_variant_new_boolean(enable));
+        dso_ch_changed(get_dso_ch_num());
+    } else if (key == SR_CONF_EN_CH1) {
+        bool enable = _signals.at(1)->get_active();
+        ret = sr_config_set(_sdi, key, g_variant_new_boolean(enable));
+        dso_ch_changed(get_dso_ch_num());
+    }
+
+    return ret;
+}
+
+uint16_t SigSession::get_dso_ch_num()
+{
+    uint16_t num_channels = 0;
+    BOOST_FOREACH(const shared_ptr<view::Signal> s, _signals)
+    {
+        assert(s);
+        if (s->get_active()) {
+            num_channels++;
+        }
+    }
+    return num_channels;
+}
+
+void SigSession::dso_ctrl_proc(boost::function<void (const QString)> error_handler)
+{
+    (void)error_handler;
+    try {
+        while(_session) {
+            if (!_sdi) {
+                // do nothing
+            } else if (strcmp(_sdi->driver->name, "Demo") == 0) {
+
+            } else if (strcmp(_sdi->driver->name, "DSLogic") == 0) {
+
+            }
+            boost::this_thread::sleep(boost::posix_time::millisec(100));
+        }
+    } catch(...) {
+        qDebug("Interrupt exception for oscilloscope control thread was thrown.");
+    }
+    qDebug("Oscilloscope control thread exit!");
 }
 
 } // namespace pv

@@ -24,6 +24,9 @@
 #ifndef DSLOGIC_PV_VIEW_VIEWPORT_H
 #define DSLOGIC_PV_VIEW_VIEWPORT_H
 
+#include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
+
 #include <QTimer>
 #include <QWidget>
 #include <stdint.h>
@@ -35,13 +38,14 @@ class SigSession;
 namespace pv {
 namespace view {
 
+class Signal;
 class View;
 
 class Viewport : public QWidget
 {
 	Q_OBJECT
 
-private:
+public:
     static const int HitCursorMargin;
     static const int NumSpanY;
     static const int NumMiniSpanY;
@@ -88,6 +92,7 @@ private:
 	View &_view;
 
     quint64 _total_receive_len;
+    QPoint _mouse_point;
 	QPoint _mouse_down_point;
 	double _mouse_down_offset;
     double _curScale;
@@ -115,6 +120,8 @@ private:
     QTimer trigger_timer;
     bool triggered;
     int timer_cnt;
+
+    boost::shared_ptr<Signal> _drag_sig;
 };
 
 } // namespace view

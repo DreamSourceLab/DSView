@@ -40,8 +40,8 @@ class DsoSnapshot : public Snapshot
 public:
 	struct EnvelopeSample
 	{
-        uint16_t min;
-        uint16_t max;
+        uint8_t min;
+        uint8_t max;
 	};
 
 	struct EnvelopeSection
@@ -74,8 +74,8 @@ public:
 
     void append_payload(const sr_datafeed_dso &dso);
 
-    const uint16_t* get_samples(int64_t start_sample,
-		int64_t end_sample) const;
+    const uint8_t* get_samples(int64_t start_sample,
+        int64_t end_sample, uint16_t index) const;
 
 	void get_envelope_section(EnvelopeSection &s,
         uint64_t start, uint64_t end, float min_length, int probe_index) const;

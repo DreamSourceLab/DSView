@@ -3,11 +3,11 @@
 
  * Initial release.
 
-
 0.2.0 (2014-04-13)
 ------------------
 
  * Add DSLogic hardware support.
+
 0.2.1 (2014-05-08)
 ------------------
 
@@ -16,3 +16,15 @@
  * Fix channel enable/disable bug.
  * Fix device options config issue.
  * Fix some display issues of UI.
+ 
+ 0.3 (2014-06-29)
+ -----------------
+ * Add DSLogic Oscilloscope module support.
+ * Fix data display issue when not all channels be enabled.
+ * Fix issue of data mirrored to other channels.
+ * Fix radiobutton/checkbox display issue under certain windows theme.
+ * Add new simple trigger type
+ * Fix bugs of trigger setting and detection
+ * Fix other minior issues.
+ * Clean up the git repository
+ 

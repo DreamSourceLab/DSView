@@ -85,6 +85,13 @@ struct dev_context {
 	void *cb_data;
 	int64_t starttime;
     int stop;
+    gboolean en_ch0;
+    gboolean en_ch1;
+    uint64_t vdiv0;
+    uint64_t vdiv1;
+    uint64_t timebase;
+    gboolean coupling0;
+    gboolean coupling1;
 
     int trigger_stage;
     uint16_t trigger_mask;
@@ -192,6 +199,11 @@ static GSList *hw_scan(GSList *options)
 	devc->limit_samples = 0;
 	devc->limit_msec = 0;
     devc->sample_generator = PATTERN_SINE;
+    devc->vdiv0 = 1000;
+    devc->vdiv1 = 1000;
+    devc->timebase = 100;
+    devc->coupling0 = FALSE;
+    devc->coupling1 = FALSE;
 
 	sdi->priv = devc;
 
@@ -290,6 +302,27 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi)
     case SR_CONF_PATTERN_MODE:
         *data = g_variant_new_string(pattern_strings[devc->sample_generator]);
 		break;
+    case SR_CONF_VDIV0:
+        *data = g_variant_new_uint64(devc->vdiv0);
+        break;
+    case SR_CONF_VDIV1:
+        *data = g_variant_new_uint64(devc->vdiv1);
+        break;
+    case SR_CONF_TIMEBASE:
+        *data = g_variant_new_uint64(devc->timebase);
+        break;
+    case SR_CONF_COUPLING0:
+        *data = g_variant_new_uint64(devc->coupling0);
+        break;
+    case SR_CONF_COUPLING1:
+        *data = g_variant_new_uint64(devc->coupling1);
+        break;
+    case SR_CONF_EN_CH0:
+        *data = g_variant_new_uint64(devc->en_ch0);
+        break;
+    case SR_CONF_EN_CH1:
+        *data = g_variant_new_uint64(devc->en_ch1);
+        break;
 	default:
 		return SR_ERR_NA;
 	}
@@ -380,7 +413,42 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi)
 		}
         sr_dbg("%s: setting pattern to %d",
 			__func__, devc->sample_generator);
-	} else {
+    } else if (id == SR_CONF_EN_CH0) {
+        devc->en_ch0 = g_variant_get_boolean(data);
+        sr_dbg("%s: setting ENABLE of channel 0 to %d", __func__,
+               devc->en_ch0);
+        ret = SR_OK;
+    } else if (id == SR_CONF_EN_CH1) {
+        devc->en_ch1 = g_variant_get_boolean(data);
+        sr_dbg("%s: setting ENABLE of channel 1 to %d", __func__,
+               devc->en_ch1);
+        ret = SR_OK;
+    } else if (id == SR_CONF_VDIV0) {
+        devc->vdiv0 = g_variant_get_uint64(data);
+        sr_dbg("%s: setting VDIV of channel 0 to %" PRIu64, __func__,
+               devc->vdiv0);
+        ret = SR_OK;
+    } else if (id == SR_CONF_VDIV1) {
+        devc->vdiv1 = g_variant_get_uint64(data);
+        sr_dbg("%s: setting VDIV of channel 1 to %" PRIu64, __func__,
+               devc->vdiv1);
+        ret = SR_OK;
+    } else if (id == SR_CONF_TIMEBASE) {
+        devc->timebase = g_variant_get_uint64(data);
+        sr_dbg("%s: setting TIMEBASE to %" PRIu64, __func__,
+               devc->timebase);
+        ret = SR_OK;
+    } else if (id == SR_CONF_COUPLING0) {
+        devc->coupling0 = g_variant_get_boolean(data);
+        sr_dbg("%s: setting AC COUPLING of channel 0 to %d", __func__,
+               devc->coupling0);
+        ret = SR_OK;
+    } else if (id == SR_CONF_COUPLING1) {
+        devc->coupling1 = g_variant_get_boolean(data);
+        sr_dbg("%s: setting AC COUPLING of channel 1 to %d", __func__,
+               devc->coupling1);
+        ret = SR_OK;
+    } else {
         ret = SR_ERR_NA;
 	}
 

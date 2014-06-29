@@ -83,8 +83,12 @@ DeviceOptions::DeviceOptions(struct sr_dev_inst *sdi) :
 		case SR_CONF_BUFFERSIZE:
 		case SR_CONF_TRIGGER_SOURCE:
 		case SR_CONF_FILTER:
-		case SR_CONF_COUPLING:
+        case SR_CONF_COUPLING0:
+        case SR_CONF_COUPLING1:
+        case SR_CONF_EN_CH0:
+        case SR_CONF_EN_CH1:
         case SR_CONF_OPERATION_MODE:
+        case SR_CONF_ZERO:
 			bind_enum(name, key, gvar_list);
 			break;
 
@@ -100,9 +104,12 @@ DeviceOptions::DeviceOptions(struct sr_dev_inst *sdi) :
 			bind_enum(name, key, gvar_list, print_timebase);
 			break;
 
-		case SR_CONF_VDIV:
+        case SR_CONF_VDIV0:
+        case SR_CONF_VDIV1:
 			bind_enum(name, key, gvar_list, print_vdiv);
-			break;
+            break;
+        default:
+            gvar_list = NULL;
 		}
 
 		if (gvar_list)

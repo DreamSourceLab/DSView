@@ -138,12 +138,18 @@ SR_PRIV int command_stop_acquisition(libusb_device_handle *devhdl)
 
 SR_PRIV int command_fpga_config(libusb_device_handle *devhdl)
 {
+    struct cmd_cfg_count cmd;
     int ret;
+
+    /* ... */
+    cmd.byte0 = (uint8_t)XC6SLX9_BYTE_CNT;
+    cmd.byte1 = (uint8_t)(XC6SLX9_BYTE_CNT >> 8);
+    cmd.byte2 = (uint8_t)(XC6SLX9_BYTE_CNT >> 16);
 
     /* Send the control message. */
     ret = libusb_control_transfer(devhdl, LIBUSB_REQUEST_TYPE_VENDOR |
             LIBUSB_ENDPOINT_OUT, CMD_CONFIG, 0x0000, 0x0000,
-            NULL, 0, 3000);
+            (unsigned char *)&cmd, sizeof(cmd), 3000);
     if (ret < 0) {
         sr_err("Unable to send FPGA configure command: %s.",
                libusb_error_name(ret));
@@ -166,9 +172,34 @@ SR_PRIV int command_fpga_setting(libusb_device_handle *devhdl, uint32_t setting_
     /* Send the control message. */
     ret = libusb_control_transfer(devhdl, LIBUSB_REQUEST_TYPE_VENDOR |
             LIBUSB_ENDPOINT_OUT, CMD_SETTING, 0x0000, 0x0000,
-            (unsigned char *)&cmd, sizeof(cmd), 100);
+            (unsigned char *)&cmd, sizeof(cmd), 3000);
     if (ret < 0) {
         sr_err("Unable to send FPGA setting command: %s.",
+               libusb_error_name(ret));
+        return SR_ERR;
+    }
+
+    return SR_OK;
+}
+
+SR_PRIV int command_dso_ctrl(libusb_device_handle *devhdl, uint32_t command)
+{
+    struct cmd_control cmd;
+    int ret;
+
+    /* ... */
+    cmd.byte0 = (uint8_t)command;
+    cmd.byte1 = (uint8_t)(command >> 8);
+    cmd.byte2 = (uint8_t)(command >> 16);
+    cmd.byte3 = (uint8_t)(command >> 24);
+
+
+    /* Send the control command. */
+    ret = libusb_control_transfer(devhdl, LIBUSB_REQUEST_TYPE_VENDOR |
+            LIBUSB_ENDPOINT_OUT, CMD_CONTROL, 0x0000, 0x0000,
+            (unsigned char *)&cmd, sizeof(cmd), 3000);
+    if (ret < 0) {
+        sr_err("Unable to send oscilloscope control command: %s.",
                libusb_error_name(ret));
         return SR_ERR;
     }

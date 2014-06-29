@@ -105,19 +105,19 @@ void Viewport::paintEvent(QPaintEvent *event)
     p.setRenderHint(QPainter::Antialiasing);
 
     if (_view.session().get_device()->mode == LOGIC) {
-    switch(_view.session().get_capture_state()) {
-    case SigSession::Init:
-        break;
+        switch(_view.session().get_capture_state()) {
+        case SigSession::Init:
+            break;
 
-    case SigSession::Stopped:
-        paintSignals(p);
-        break;
+        case SigSession::Stopped:
+            paintSignals(p);
+            break;
 
-    case SigSession::Running:
-        //p.setRenderHint(QPainter::Antialiasing);
-        paintProgress(p);
-        break;
-    }
+        case SigSession::Running:
+            //p.setRenderHint(QPainter::Antialiasing);
+            paintProgress(p);
+            break;
+        }
     } else {
         paintSignals(p);
     }
@@ -161,8 +161,8 @@ void Viewport::paintEvent(QPaintEvent *event)
         p.setPen(Signal::dsGray);
         p.setPen(Qt::DotLine);
 
-        const double spanY =height() * 1.0f / 8;
-        for (i = 1; i < 9; i++) {
+        const double spanY =height() * 1.0f / 10;
+        for (i = 1; i < 11; i++) {
             const double posY = spanY * i;
             p.drawLine(0, posY, width(), posY);
             const double miniSpanY = spanY / 5;
@@ -210,8 +210,9 @@ void Viewport::paintSignals(QPainter &p)
         p.setRenderHint(QPainter::Antialiasing, false);
         BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
             assert(s);
-            s->paint(dbp, s->get_v_offset() - v_offset, 0, width(),
-                _view.scale(), _view.offset());
+            if (s->get_active())
+                s->paint(dbp, ((s->get_type() == Signal::DS_DSO) ? s->get_zeroPos() + height()*0.5 : s->get_v_offset() - v_offset), 0, width(),
+                    _view.scale(), _view.offset());
         }
 //        p.setRenderHint(QPainter::Antialiasing);
 //        BOOST_FOREACH(const boost::shared_ptr<Signal> s, pro_sigs) {
@@ -222,6 +223,13 @@ void Viewport::paintSignals(QPainter &p)
         _view.set_need_update(false);
     }
     p.drawPixmap(0, 0, pixmap);
+
+    // plot trig line in DSO mode
+    BOOST_FOREACH(const shared_ptr<Signal> s, sigs) {
+        assert(s);
+        if (s->get_active() && s->get_type() == Signal::DS_DSO)
+            s->paint_trig(p, 0, width(), qAbs(_mouse_point.y() - s->get_trig_vpos()) <= HitCursorMargin );
+    }
 
     // plot cursors
     if (_view.cursors_shown()) {
@@ -391,6 +399,20 @@ void Viewport::mousePressEvent(QMouseEvent *event)
 //        if (!_view.get_ruler()->get_grabbed_cursor()) {
 //            _zoom_rect_visible = true;
 //        }
+
+        const vector< shared_ptr<Signal> > sigs(_view.session().get_signals());
+        BOOST_FOREACH(const shared_ptr<Signal> s, sigs) {
+            assert(s);
+            if (s->get_active() &&
+                s->get_type() == Signal::DS_DSO &&
+                qAbs(_mouse_point.y() - s->get_trig_vpos()) <= HitCursorMargin) {
+                if (_drag_sig)
+                    _drag_sig.reset();
+                else
+                    _drag_sig = s;
+                break;
+            }
+        }
         update();
     }
 }
@@ -398,7 +420,7 @@ void Viewport::mousePressEvent(QMouseEvent *event)
 void Viewport::mouseMoveEvent(QMouseEvent *event)
 {
 	assert(event);
-
+    _mouse_point = event->pos();
     if (event->buttons() & Qt::RightButton) {
         _zoom_rect = QRectF(_mouse_down_point, event->pos());
         _zoom_rect_visible = true;
@@ -409,16 +431,35 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
             _mouse_down_offset +
             (_mouse_down_point - event->pos()).x() *
             _view.scale());
-
         measure();
     }
 
     if (!(event->buttons() || Qt::NoButton)) {
+        if (_drag_sig) {
+            uint16_t trig_value = 0;
+            int vpos = _mouse_point.y();
+            if (vpos < 0)
+                vpos = 0;
+            else if (vpos > height())
+                vpos = height();
+            _drag_sig->set_trig_vpos(vpos);
+
+            const vector< shared_ptr<Signal> > sigs(_view.session().get_signals());
+            BOOST_FOREACH(const shared_ptr<Signal> s, sigs) {
+                assert(s);
+                if (s->get_active() &&
+                    s->get_type() == Signal::DS_DSO) {
+                    trig_value += (((uint16_t)(255 - s->get_trig_vpos()*1.0/height()*255)) << 8*s->get_index());
+                }
+            }
+            sr_config_set(_view.session().get_device(),
+                          SR_CONF_TRIGGER_VALUE, g_variant_new_uint16(trig_value));
+        }
+
         TimeMarker* grabbed_marker = _view.get_ruler()->get_grabbed_cursor();
         if (_view.cursors_shown() && grabbed_marker) {
             grabbed_marker->set_time(_view.offset() + _view.hover_point().x() * _view.scale());
         }
-
         measure();
     }
 
@@ -472,6 +513,7 @@ void Viewport::wheelEvent(QWheelEvent *event)
 void Viewport::leaveEvent(QEvent *)
 {
     _measure_shown = false;
+    _mouse_point = QPoint(-1, -1);
     //_view.show_cursors(false);
     update();
 }

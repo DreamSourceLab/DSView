@@ -689,6 +689,9 @@ enum {
 	/** Trigger source. */
 	SR_CONF_TRIGGER_SOURCE,
 
+    /** Trigger Value. */
+    SR_CONF_TRIGGER_VALUE,
+
 	/** Horizontal trigger position. */
 	SR_CONF_HORIZ_TRIGGERPOS,
 
@@ -701,11 +704,23 @@ enum {
 	/** Filter. */
 	SR_CONF_FILTER,
 
+    /** DSO configure sync */
+    SR_CONF_DSO_SYNC,
+
+    /** Zero */
+    SR_CONF_ZERO,
+
 	/** Volts/div. */
-	SR_CONF_VDIV,
+    SR_CONF_VDIV0,
+    SR_CONF_VDIV1,
 
 	/** Coupling. */
-	SR_CONF_COUPLING,
+    SR_CONF_COUPLING0,
+    SR_CONF_COUPLING1,
+
+    /** Channel enable*/
+    SR_CONF_EN_CH0,
+    SR_CONF_EN_CH1,
 
 	/** Trigger types.  */
 	SR_CONF_TRIGGER_TYPE,
@@ -871,7 +886,7 @@ struct sr_session {
 	/** List of struct datafeed_callback pointers. */
 	GSList *datafeed_callbacks;
 	GTimeVal starttime;
-        gboolean running;
+	gboolean running;
 
 	unsigned int num_sources;
 
@@ -897,6 +912,18 @@ struct sr_session {
 enum {
     SIMPLE_TRIGGER = 0,
     ADV_TRIGGER,
+};
+
+enum {
+    DSO_TRIGGER_AUTO = 0,
+    DSO_TRIGGER_CH0,
+    DSO_TRIGGER_CH1,
+    DSO_TRIGGER_CH0A1,
+    DSO_TRIGGER_CH0O1,
+};
+enum {
+    DSO_TRIGGER_RISING = 0,
+    DSO_TRIGGER_FALLING,
 };
 
 struct ds_trigger {

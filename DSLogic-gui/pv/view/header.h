@@ -47,16 +47,7 @@ public:
 	Header(View &parent);
 
 private:
-    static const int COLOR;
-    static const int NAME;
-    static const int POSTRIG;
-    static const int HIGTRIG;
-    static const int NEGTRIG;
-    static const int LOWTRIG;
-    static const int LABEL;
-
-private:
-    boost::shared_ptr<pv::view::Signal> get_mouse_over_signal(
+    boost::shared_ptr<pv::view::Signal> get_mSig(
         int &action,
 		const QPoint &pt);
 
@@ -65,13 +56,10 @@ private:
 
 private:
 	void mousePressEvent(QMouseEvent * event);
-
 	void mouseReleaseEvent(QMouseEvent *event);
-
 	void mouseMoveEvent(QMouseEvent *event);
-
 	void leaveEvent(QEvent *event);
-
+    void wheelEvent(QWheelEvent *event);
     void contextMenuEvent(QContextMenuEvent *event);
 
     void move(QMouseEvent *event);
@@ -93,8 +81,11 @@ private slots:
 
 signals:
 	void signals_moved();
-
     void header_updated();
+    void vDial_changed(quint16);
+    void hDial_changed(quint16);
+    void acdc_changed(quint16);
+    void ch_changed(quint16);
 
 private:
 	View &_view;

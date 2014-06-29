@@ -70,8 +70,8 @@ void DsoSnapshot::append_payload(const sr_datafeed_dso &dso)
 	append_payload_to_envelope_levels();
 }
 
-const uint16_t* DsoSnapshot::get_samples(
-	int64_t start_sample, int64_t end_sample) const
+const uint8_t *DsoSnapshot::get_samples(
+    int64_t start_sample, int64_t end_sample, uint16_t index) const
 {
 	assert(start_sample >= 0);
     assert(start_sample < (int64_t)get_sample_count());
@@ -85,7 +85,7 @@ const uint16_t* DsoSnapshot::get_samples(
 //    memcpy(data, (uint16_t*)_data + start_sample, sizeof(uint16_t) *
 //		(end_sample - start_sample));
 //	return data;
-    return (uint16_t*)_data + start_sample;
+    return (uint8_t*)_data + start_sample * _channel_num + index;
 }
 
 void DsoSnapshot::get_envelope_section(EnvelopeSection &s,
@@ -150,7 +150,7 @@ void DsoSnapshot::append_payload_to_envelope_levels()
         dest_ptr = e0.samples + prev_length;
 
         // Iterate through the samples to populate the first level mipmap
-        const uint16_t *const stop_src_ptr = (uint16_t*)_data +
+        const uint8_t *const stop_src_ptr = (uint8_t*)_data +
             e0.length * EnvelopeScaleFactor * _channel_num;
 //        for (const uint16_t *src_ptr = (uint16_t*)_data +
 //            prev_length * EnvelopeScaleFactor;
@@ -163,13 +163,13 @@ void DsoSnapshot::append_payload_to_envelope_levels()
 
 //            *dest_ptr++ = sub_sample;
 //        }
-        for (const uint16_t *src_ptr = (uint16_t*)_data +
+        for (const uint8_t *src_ptr = (uint8_t*)_data +
             prev_length * EnvelopeScaleFactor * _channel_num + i;
             src_ptr < stop_src_ptr; src_ptr += EnvelopeScaleFactor * _channel_num)
         {
-            const uint16_t * begin_src_ptr =
+            const uint8_t * begin_src_ptr =
                 src_ptr;
-            const uint16_t *const end_src_ptr =
+            const uint8_t *const end_src_ptr =
                 src_ptr + EnvelopeScaleFactor * _channel_num;
 
             EnvelopeSample sub_sample;

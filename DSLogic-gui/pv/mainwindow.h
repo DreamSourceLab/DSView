@@ -54,6 +54,7 @@ class LogoBar;
 namespace dock{
 class ProtocolDock;
 class TriggerDock;
+class DsoTriggerDock;
 class MeasureDock;
 class SearchDock;
 }
@@ -65,6 +66,10 @@ class View;
 class MainWindow : public QMainWindow
 {
 	Q_OBJECT
+
+private:
+    static const int DefaultDSODepth = 8192;
+    static const int DefaultDSORate = 100000000;
 
 public:
 	explicit MainWindow(DeviceManager &device_manager,
@@ -122,6 +127,9 @@ private slots:
     void device_attach();
     void device_detach();
 
+    /* */
+    void dso_ch_changed(uint16_t num);
+
 private:
 	DeviceManager &_device_manager;
 
@@ -155,7 +163,9 @@ private:
     QDockWidget *_protocol_dock;
     dock::ProtocolDock *_protocol_widget;
     QDockWidget *_trigger_dock;
+    QDockWidget *_dso_trigger_dock;
     dock::TriggerDock *_trigger_widget;
+    dock::DsoTriggerDock *_dso_trigger_widget;
     QDockWidget *_measure_dock;
     QDockWidget *_search_dock;
     dock::SearchDock * _search_widget;

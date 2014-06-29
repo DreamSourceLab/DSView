@@ -54,9 +54,11 @@ public:
 	SamplingBar(QWidget *parent);
 
 	uint64_t get_record_length() const;
+    void set_record_length(uint64_t length);
 
 	void set_sampling(bool sampling);
     void update_sample_rate_selector();
+    void set_sample_rate(uint64_t sample_rate);
 
     void set_device(struct sr_dev_inst *sdi);
 

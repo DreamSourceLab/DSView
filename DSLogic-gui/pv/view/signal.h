@@ -36,6 +36,7 @@
 #include <list>
 
 #include "libsigrok4DSLogic/libsigrok.h"
+#include "dsldial.h"
 
 namespace pv {
 
@@ -56,26 +57,47 @@ namespace view {
 class Signal
 {
 private:
-    static const int SquareWidth;
-    static const int Margin;
+    static const int SquareWidth = 20;
+    static const int Margin = 3;
+    static const int SquareNum = 5;
 
-    static const int COLOR;
-    static const int NAME;
-    static const int POSTRIG;
-    static const int HIGTRIG;
-    static const int NEGTRIG;
-    static const int LOWTRIG;
-    static const int LABEL;
+    static const uint64_t vDialValueCount = 10;
+    static const uint64_t vDialValueStep = 1000;
+    static const uint64_t vDialUnitCount = 2;
+    static const uint64_t hDialValueCount = 25;
+    static const uint64_t hDialValueStep = 1000;
+    static const uint64_t hDialUnitCount = 4;
+    static const uint64_t vDialValue[vDialValueCount];
+    static const QString vDialUnit[vDialUnitCount];
+
+    static const uint64_t hDialValue[hDialValueCount];
+    static const QString hDialUnit[hDialUnitCount];
 
 public:
+    static const int COLOR = 1;
+    static const int NAME = 2;
+    static const int POSTRIG = 3;
+    static const int HIGTRIG = 4;
+    static const int NEGTRIG = 5;
+    static const int LOWTRIG = 6;
+    static const int EDGETRIG = 7;
+    static const int LABEL = 8;
+    static const int VDIAL = 9;
+    static const int HDIAL = 10;
+    static const int CHEN = 11;
+    static const int ACDC = 12;
+    static const int DSOTRIG = 13;
+
     static const QColor dsBlue;
     static const QColor dsYellow;
     static const QColor dsRed;
     static const QColor dsGreen;
     static const QColor dsGray;
+    static const QColor dsDisable;
+    static const QColor dsActive;
     static const QColor dsLightBlue;
     static const QColor dsLightRed;
-	static const QPen SignalAxisPen;
+    static const QPen SignalAxisPen;
 
     enum {DS_LOGIC = 0, DS_ANALOG, DS_GROUP, DS_PROTOCOL, DS_DSO};
 
@@ -166,6 +188,32 @@ public:
     int get_trig() const;
     void set_trig(int trig);
 
+    /*
+     *
+     */
+    bool get_vDialActive() const;
+    void set_vDialActive(bool active);
+    bool get_hDialActive() const;
+    void set_hDialActive(bool active);
+    bool go_vDialPre();
+    bool go_vDialNext();
+    bool go_hDialPre();
+    bool go_hDialNext();
+    uint64_t get_vDialValue() const;
+    uint64_t get_hDialValue() const;
+    uint16_t get_vDialSel() const;
+    uint16_t get_hDialSel() const;
+    bool get_acCoupling() const;
+    void set_acCoupling(bool coupling);
+    bool get_active() const;
+    void set_active(bool active);
+    int get_zeroPos() const;
+    void set_zeroPos(int pos);
+    int get_windowHeight() const;
+    void set_windowHeight(int height);
+    void set_trig_vpos(int value);
+    int get_trig_vpos() const;
+
 	/**
 	 * Paints the signal with a QPainter
 	 * @param p the QPainter to paint into.
@@ -177,7 +225,7 @@ public:
 	 *   the view in seconds.
 	 **/
 	virtual void paint(QPainter &p, int y, int left, int right,
-		double scale, double offset) = 0;
+        double scale, double offset) = 0;
 
     virtual const std::vector< std::pair<uint64_t, bool> > cur_edges() const = 0;
 
@@ -200,8 +248,11 @@ public:
 	 * 	area.
 	 * @param hover true if the label is being hovered over by the mouse.
 	 */
-	virtual void paint_label(QPainter &p, int y, int right,
+    virtual void paint_label(QPainter &p, int y, int right,
         bool hover, int action);
+
+    virtual void paint_trig(QPainter &p, int left, int right,
+        bool hover);
 
     /**
      * Determines if a point is in the header rect.
@@ -221,6 +272,16 @@ public:
     int pt_in_rect(int y, int right,
         const QPoint &point);
 
+    /**
+     * Computes the outline rectangle of a label.
+     * @param p the QPainter to lay out text with.
+     * @param y the y-coordinate of the signal.
+     * @param right the x-coordinate of the right edge of the header
+     * 	area.
+     * @return Returns the rectangle of the signal label.
+     */
+    QRectF get_rect(const char *s, int y, int right);
+
 protected:
 
 	/**
@@ -239,16 +300,6 @@ private:
 	 */
 	void compute_text_size(QPainter &p);
 
-    /**
-     * Computes the outline rectangle of a label.
-     * @param p the QPainter to lay out text with.
-     * @param y the y-coordinate of the signal.
-     * @param right the x-coordinate of the right edge of the header
-     * 	area.
-     * @return Returns the rectangle of the signal label.
-     */
-    QRectF get_rect(const char *s, int y, int right);
-
 protected:
     int _type;
     std::list<int> _index_list;
@@ -266,6 +317,17 @@ protected:
     int _trig;
 
 	QSizeF _text_size;
+    dslDial *_vDial;
+    dslDial *_hDial;
+    bool _vDialActive;
+    bool _hDialActive;
+    bool _acCoupling;
+    bool _active;
+    int _zeroPos;
+    int _windowHeight;
+
+    int _trig_vpos;
+    bool _trig_en;
 };
 
 } // namespace view

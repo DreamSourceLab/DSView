@@ -39,20 +39,13 @@
 #include <QPainter>
 #include <QRect>
 #include <QStyleOption>
+#include <QMessageBox>
 
 using namespace boost;
 using namespace std;
 
 namespace pv {
 namespace view {
-
-const int Header::COLOR = 1;
-const int Header::NAME = 2;
-const int Header::POSTRIG = 3;
-const int Header::HIGTRIG = 4;
-const int Header::NEGTRIG = 5;
-const int Header::LOWTRIG = 6;
-const int Header::LABEL = 7;
 
 Header::Header(View &parent) :
 	QWidget(&parent),
@@ -90,7 +83,7 @@ int Header::get_nameEditWidth()
         return 0;
 }
 
-boost::shared_ptr<pv::view::Signal> Header::get_mouse_over_signal(
+boost::shared_ptr<pv::view::Signal> Header::get_mSig(
     int &action,
     const QPoint &pt)
 {
@@ -185,17 +178,18 @@ void Header::mousePressEvent(QMouseEvent *event)
 					make_pair(s, s->get_v_offset()));
 
         // Select the signal if it has been clicked
-        const boost::shared_ptr<Signal> mouse_over_signal =
-            get_mouse_over_signal(action, event->pos());
-        if (action == COLOR && mouse_over_signal) {
+        const boost::shared_ptr<Signal> mSig =
+            get_mSig(action, event->pos());
+        if (action == Signal::COLOR && mSig) {
             _colorFlag = true;
-        } else if (action == NAME && mouse_over_signal) {
+        } else if (action == Signal::NAME && mSig) {
             _nameFlag = true;
-        } else if (action == LABEL && mouse_over_signal) {
-            if (mouse_over_signal->selected())
-                mouse_over_signal->select(false);
+        } else if (action == Signal::LABEL && mSig) {
+            if (mSig->selected())
+                mSig->select(false);
             else {
-                mouse_over_signal->select(true);
+                if (mSig->get_type() != Signal::DS_DSO)
+                    mSig->select(true);
 
                 if (~QApplication::keyboardModifiers() &
                     Qt::ControlModifier)
@@ -204,37 +198,91 @@ void Header::mousePressEvent(QMouseEvent *event)
                 // Add the signal to the drag list
                 if (event->button() & Qt::LeftButton)
                     _drag_sigs.push_back(
-                        make_pair(mouse_over_signal,
-                        mouse_over_signal->get_v_offset()));
+                        make_pair(mSig,
+                                  (mSig->get_type() == Signal::DS_DSO) ? mSig->get_zeroPos() : mSig->get_v_offset()));
             }
-            mouse_over_signal->set_old_v_offset(mouse_over_signal->get_v_offset());
-        } else if (action == POSTRIG && mouse_over_signal) {
-            if (mouse_over_signal->get_trig() == POSTRIG)
-                mouse_over_signal->set_trig(0);
+            mSig->set_old_v_offset(mSig->get_v_offset());
+        } else if (action == Signal::POSTRIG && mSig) {
+            if (mSig->get_trig() == Signal::POSTRIG)
+                mSig->set_trig(0);
             else
-                mouse_over_signal->set_trig(POSTRIG);
-        } else if (action == HIGTRIG && mouse_over_signal) {
-            if (mouse_over_signal->get_trig() == HIGTRIG)
-                mouse_over_signal->set_trig(0);
+                mSig->set_trig(Signal::POSTRIG);
+        } else if (action == Signal::HIGTRIG && mSig) {
+            if (mSig->get_trig() == Signal::HIGTRIG)
+                mSig->set_trig(0);
             else
-                mouse_over_signal->set_trig(HIGTRIG);
-        } else if (action == NEGTRIG && mouse_over_signal) {
-            if (mouse_over_signal->get_trig() == NEGTRIG)
-                mouse_over_signal->set_trig(0);
+                mSig->set_trig(Signal::HIGTRIG);
+        } else if (action == Signal::NEGTRIG && mSig) {
+            if (mSig->get_trig() == Signal::NEGTRIG)
+                mSig->set_trig(0);
             else
-                mouse_over_signal->set_trig(NEGTRIG);
-        } else if (action == LOWTRIG && mouse_over_signal) {
-            if (mouse_over_signal->get_trig() == LOWTRIG)
-                mouse_over_signal->set_trig(0);
+                mSig->set_trig(Signal::NEGTRIG);
+        } else if (action == Signal::LOWTRIG && mSig) {
+            if (mSig->get_trig() == Signal::LOWTRIG)
+                mSig->set_trig(0);
             else
-                mouse_over_signal->set_trig(LOWTRIG);
+                mSig->set_trig(Signal::LOWTRIG);
+        } else if (action == Signal::EDGETRIG && mSig) {
+            if (mSig->get_trig() == Signal::EDGETRIG)
+                mSig->set_trig(0);
+            else
+                mSig->set_trig(Signal::EDGETRIG);
+        } else if (action == Signal::VDIAL && mSig) {
+            BOOST_FOREACH(const shared_ptr<Signal> s, sigs) {
+                s->set_hDialActive(false);
+                if (s != mSig) {
+                    s->set_vDialActive(false);
+                }
+            }
+            mSig->set_vDialActive(!mSig->get_vDialActive());
+        } else if (action == Signal::HDIAL && mSig) {
+            if (mSig->get_hDialActive()) {
+                BOOST_FOREACH(const shared_ptr<Signal> s, sigs) {
+                    s->set_vDialActive(false);
+                    s->set_hDialActive(false);
+                }
+            } else {
+                BOOST_FOREACH(const shared_ptr<Signal> s, sigs) {
+                    s->set_vDialActive(false);
+                    s->set_hDialActive(true);
+                }
+            }
+        } else if (action == Signal::CHEN && mSig) {
+            int channel;
+            if (mSig->get_index() == 0) {
+                bool last = 1;
+                channel = 0;
+                BOOST_FOREACH(const shared_ptr<Signal> s, sigs) {
+                    if (s->get_index() != 0 && s->get_active()) {
+                        QMessageBox msg(this);
+                        msg.setText("Tips");
+                        msg.setInformativeText("If only one channel want, Channel0 has a higher maximum sample rate!");
+                        msg.setStandardButtons(QMessageBox::Ok);
+                        msg.setIcon(QMessageBox::Information);
+                        msg.exec();
+                        s->set_active(!s->get_active());
+                        last = 0;
+                        channel = s->get_index();
+                        break;
+                    }
+                }
+                if (last)
+                    mSig->set_active(!mSig->get_active());
+            } else {
+                mSig->set_active(!mSig->get_active());
+                channel = mSig->get_index();
+            }
+            ch_changed(channel);
+        } else if (action == Signal::ACDC && mSig) {
+            mSig->set_acCoupling(!mSig->get_acCoupling());
+            acdc_changed(mSig->get_index());
         }
 
         if (~QApplication::keyboardModifiers() & Qt::ControlModifier) {
             // Unselect all other signals because the Ctrl is not
             // pressed
             BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs)
-                if (s != mouse_over_signal)
+                if (s != mSig)
                     s->select(false);
         }
         update();
@@ -247,15 +295,15 @@ void Header::mouseReleaseEvent(QMouseEvent *event)
 
     // judge for color / name / trigger / move
     int action;
-    const boost::shared_ptr<Signal> mouse_over_signal =
-        get_mouse_over_signal(action, event->pos());
-    if (mouse_over_signal){
-        if (action == COLOR && _colorFlag) {
-            _context_signal = mouse_over_signal;
+    const boost::shared_ptr<Signal> mSig =
+        get_mSig(action, event->pos());
+    if (mSig){
+        if (action == Signal::COLOR && _colorFlag) {
+            _context_signal = mSig;
             changeColor(event);
             _view.set_need_update(true);
-        } else if (action == NAME && _nameFlag) {
-            _context_signal = mouse_over_signal;
+        } else if (action == Signal::NAME && _nameFlag) {
+            _context_signal = mSig;
             changeName(event);
         }
     }
@@ -268,6 +316,42 @@ void Header::mouseReleaseEvent(QMouseEvent *event)
     _moveFlag = false;
     _drag_sigs.clear();
     _view.normalize_layout();
+}
+
+void Header::wheelEvent(QWheelEvent *event)
+{
+    assert(event);
+
+    if (event->orientation() == Qt::Vertical) {
+        const vector< shared_ptr<Signal> > sigs(
+            _view.session().get_signals());
+        // Vertical scrolling
+        double shift = event->delta() / 20.0;
+        if (shift > 1.0) {
+            BOOST_FOREACH(const shared_ptr<Signal> s, sigs) {
+                if (s->get_vDialActive()) {
+                    if(s->go_vDialNext())
+                        vDial_changed(s->get_index());
+                    break;
+                } else if (s->get_hDialActive()) {
+                    if(s->go_hDialNext())
+                        hDial_changed(0);
+                }
+            }
+        } else if (shift < -1.0) {
+            BOOST_FOREACH(const shared_ptr<Signal> s, sigs) {
+                if (s->get_vDialActive()) {
+                    if(s->go_vDialPre())
+                        vDial_changed(s->get_index());
+                    break;
+                } else if (s->get_hDialActive()) {
+                    if(s->go_hDialPre())
+                        hDial_changed(0);
+                }
+            }
+        }
+        update();
+    }
 }
 
 void Header::move(QMouseEvent *event)
@@ -439,24 +523,31 @@ void Header::mouseMoveEvent(QMouseEvent *event)
 			i != _drag_sigs.end(); i++) {
 			const boost::shared_ptr<Signal> sig((*i).first);
 			if (sig) {
-				const int y = (*i).second + delta;
-				const int y_snap =
-					((y + View::SignalSnapGridSize / 2) /
-						View::SignalSnapGridSize) *
-						View::SignalSnapGridSize;
-                if (y_snap != sig->get_v_offset()) {
-                    _moveFlag = true;
-                    sig->set_v_offset(y_snap);
+                int y = (*i).second + delta;
+                if (sig->get_type() != Signal::DS_DSO) {
+                    const int y_snap =
+                        ((y + View::SignalSnapGridSize / 2) /
+                            View::SignalSnapGridSize) *
+                            View::SignalSnapGridSize;
+                    if (y_snap != sig->get_v_offset()) {
+                        _moveFlag = true;
+                        sig->set_v_offset(y_snap);
+                    }
+                    // Ensure the signal is selected
+                    sig->select(true);
+                } else {
+                    if (y < 0)
+                        y = 0;
+                    else if (y > height())
+                        y = height();
+                    sig->set_zeroPos(y);
+                    sig->select(false);
+                    signals_moved();
                 }
-				// Ensure the signal is selected
-                sig->select(true);
 			}
-			
 		}
-
         //signals_moved();
 	}
-
 	update();
 }
 
@@ -470,10 +561,9 @@ void Header::contextMenuEvent(QContextMenuEvent *event)
 {
     int action;
 
-    const boost::shared_ptr<Signal> s = get_mouse_over_signal(action, _mouse_point);
+    const boost::shared_ptr<Signal> s = get_mSig(action, _mouse_point);
 
-    //if (!s || action != LABEL)
-    if (!s || !s->selected() || action != LABEL)
+    if (!s || !s->selected() || action != Signal::LABEL)
         return;
 
     QMenu menu(this);

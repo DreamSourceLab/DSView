@@ -157,37 +157,40 @@ public:
 
     void set_adv_trigger(bool adv_trigger);
 
+    void start_dso_ctrl_proc(boost::function<void (const QString)> error_handler);
+    void stop_dso_ctrl_proc();
+    int set_dso_ctrl(int key);
+    uint16_t get_dso_ch_num();
+
 private:
 	void set_capture_state(capture_state state);
 
 private:
+    // thread for sample/load
 	void load_thread_proc(const std::string name,
 		boost::function<void (const QString)> error_handler);
-
 	void sample_thread_proc(struct sr_dev_inst *sdi,
 		uint64_t record_length,
 		boost::function<void (const QString)> error_handler);
 
+    // data feed
 	void feed_in_header(const sr_dev_inst *sdi);
-
 	void feed_in_meta(const sr_dev_inst *sdi,
 		const sr_datafeed_meta &meta);
-
-        void feed_in_trigger(const ds_trigger_pos &trigger_pos);
-
+    void feed_in_trigger(const ds_trigger_pos &trigger_pos);
 	void feed_in_logic(const sr_datafeed_logic &logic);
-        void feed_in_dso(const sr_datafeed_dso &dso);
+    void feed_in_dso(const sr_datafeed_dso &dso);
 	void feed_in_analog(const sr_datafeed_analog &analog);
-
 	void data_feed_in(const struct sr_dev_inst *sdi,
-        const struct sr_datafeed_packet *packet);
-
-        static void data_feed_in_proc(const struct sr_dev_inst *sdi,
-        const struct sr_datafeed_packet *packet, void *cb_data);
+		const struct sr_datafeed_packet *packet);
+	static void data_feed_in_proc(const struct sr_dev_inst *sdi,
+		const struct sr_datafeed_packet *packet, void *cb_data);
 
         void hotplug_proc(boost::function<void (const QString)> error_handler);
         static int hotplug_callback(struct libusb_context *ctx, struct libusb_device *dev, 
                          libusb_hotplug_event event, void *user_data);
+
+	void dso_ctrl_proc(boost::function<void (const QString)> error_handler);
 
 private:
 	DeviceManager &_device_manager;
@@ -232,6 +235,11 @@ private:
 
     bool _adv_trigger;
 
+    bool _vDial_changed;
+    bool _hDial_changed;
+    uint16_t _dso_ctrl_channel;
+    std::auto_ptr<boost::thread> _dso_ctrl_thread;
+
 signals:
 	void capture_state_changed(int state);
 
@@ -249,6 +257,8 @@ signals:
     void test_data_error();
 
     void receive_trigger(quint64 trigger_pos);
+
+    void dso_ch_changed(uint16_t num);
 
 public slots:
 

@@ -29,7 +29,7 @@
 #define CMD_START               0xb2
 #define CMD_CONFIG              0xb3
 #define CMD_SETTING             0xb4
-
+#define CMD_CONTROL             0xb5
 
 #define CMD_START_FLAGS_WIDE_POS	5
 #define CMD_START_FLAGS_CLK_SRC_POS	6
@@ -62,6 +62,19 @@ struct cmd_setting_count {
     uint8_t byte2;
 };
 
+struct cmd_cfg_count {
+    uint8_t byte0;
+    uint8_t byte1;
+    uint8_t byte2;
+};
+
+struct cmd_control {
+    uint8_t byte0;
+    uint8_t byte1;
+    uint8_t byte2;
+    uint8_t byte3;
+};
+
 #pragma pack(pop)
 
 SR_PRIV int command_get_fw_version(libusb_device_handle *devhdl,
@@ -73,7 +86,8 @@ SR_PRIV int command_start_acquisition(libusb_device_handle *devhdl,
 SR_PRIV int command_stop_acquistition(libusb_device_handle *devhdl);
 
 SR_PRIV int command_fpga_config(libusb_device_handle *devhdl);
-
 SR_PRIV int command_fpga_setting(libusb_device_handle *devhdl, uint32_t setting_count);
+
+SR_PRIV int command_dso_ctrl(libusb_device_handle *devhdl, uint32_t command);
 
 #endif

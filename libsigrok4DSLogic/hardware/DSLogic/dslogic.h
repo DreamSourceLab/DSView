@@ -57,8 +57,9 @@
 #define DEV_CAPS_16BIT		(1 << DEV_CAPS_16BIT_POS)
 
 #define XC3S250E_BYTE_CNT   169216
-//#define XC6SLX9_BYTE_CNT   340884
-#define XC6SLX9_BYTE_CNT   340604
+//#define XC6SLX9_BYTE_CNT   341160
+#define XC6SLX9_BYTE_CNT   340884
+//#define XC6SLX9_BYTE_CNT   340604
 
 #define MAX_ANALOG_PROBES_NUM 9
 #define MAX_DSO_PROBES_NUM 2
@@ -103,33 +104,48 @@ struct dev_context {
     const struct DSLogic_profile *profile;
     /*
      * Since we can't keep track of an DSLogic device after upgrading
-     * the firmware (it renumerates into a different device address
-     * after the upgrade) this is like a global lock. No device will open
-     * until a proper delay after the last device was upgraded.
-     */
-    int64_t fw_updated;
-    
-    /* Device/capture settings */
-    uint64_t cur_samplerate;
-    uint64_t limit_samples;
-    
-    /* Operational settings */
-    gboolean sample_wide;
+	 * the firmware (it renumerates into a different device address
+	 * after the upgrade) this is like a global lock. No device will open
+	 * until a proper delay after the last device was upgraded.
+	 */
+	int64_t fw_updated;
+
+	/* Device/capture settings */
+	uint64_t cur_samplerate;
+	uint64_t limit_samples;
+
+	/* Operational settings */
+	gboolean sample_wide;
     gboolean clock_type;
     uint16_t op_mode;
-    uint16_t trigger_mask[NUM_TRIGGER_STAGES];
-    uint16_t trigger_value[NUM_TRIGGER_STAGES];
-    int trigger_stage;
-    uint16_t trigger_buffer[NUM_TRIGGER_STAGES];
-    
-    int num_samples;
-    int submitted_transfers;
-    int empty_transfer_count;
-    
-    void *cb_data;
-    unsigned int num_transfers;
-    struct libusb_transfer **transfers;
-    int *usbfd;
+	uint16_t trigger_mask[NUM_TRIGGER_STAGES];
+	uint16_t trigger_value[NUM_TRIGGER_STAGES];
+	int trigger_stage;
+	uint16_t trigger_buffer[NUM_TRIGGER_STAGES];
+    uint64_t vdiv0;
+    uint64_t vdiv1;
+    uint64_t timebase;
+    gboolean coupling0;
+    gboolean coupling1;
+    gboolean en_ch0;
+    gboolean en_ch1;
+    uint8_t trigger_slope;
+    uint8_t trigger_source;
+    uint16_t trigger_vpos;
+    uint32_t trigger_hpos;
+    gboolean zero;
+
+	int num_samples;
+	int submitted_transfers;
+	int empty_transfer_count;
+
+	void *cb_data;
+	unsigned int num_transfers;
+	struct libusb_transfer **transfers;
+	int *usbfd;
+
+    int pipe_fds[2];
+    GIOChannel *channel;
 
     int status;
 };

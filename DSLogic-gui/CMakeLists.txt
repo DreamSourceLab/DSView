@@ -85,8 +85,8 @@ set(DS_TITLE DSLogic)
 set(DS_DESCRIPTION "A GUI for DSLogic")
 
 set(DS_VERSION_MAJOR 0)
-set(DS_VERSION_MINOR 2)
-set(DS_VERSION_MICRO 1)
+set(DS_VERSION_MINOR 3)
+set(DS_VERSION_MICRO 0)
 set(DS_VERSION_STRING
 	${DS_VERSION_MAJOR}.${DS_VERSION_MINOR}.${DS_VERSION_MICRO}
 )
@@ -156,6 +156,8 @@ set(DSLogic_SOURCES
 	pv/view/view.cpp
 	pv/view/viewport.cpp
         pv/view/dsosignal.cpp
+	pv/view/dsldial.cpp
+	pv/dock/dsotriggerdock.cpp
 )
 
 set(DSLogic_HEADERS
@@ -187,6 +189,8 @@ set(DSLogic_HEADERS
 	pv/view/view.h
         pv/view/dsosignal.h
 	pv/view/viewport.h
+	pv/view/dsldial.h
+	pv/dock/dsotriggerdock.h
 )
 
 set(DSLogic_FORMS

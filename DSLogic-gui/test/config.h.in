@@ -1,0 +1,34 @@
+/*
+ * This file is part of the PulseView project.
+ *
+ * Copyright (C) 2012 Alexandru Gagniuc <mr.nuke.me@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef _DSLOGIC_CONFIG_H
+#define _DSLOGIC_CONFIG_H
+
+/* Application details */
+#define DS_TITLE "@DS_TITLE@"
+#define DS_DESCRIPTION "@DS_DESCRIPTION@"
+#define DS_BIN_NAME "@PROJECT_NAME@"
+
+/* DSLogic version information */
+#define DS_VERSION_MAJOR @DS_VERSION_MAJOR@
+#define DS_VERSION_MINOR @DS_VERSION_MINOR@
+#define DS_VERSION_MICRO @DS_VERSION_MICRO@
+#define DS_VERSION_STRING "@DS_VERSION_STRING@"
+
+#endif

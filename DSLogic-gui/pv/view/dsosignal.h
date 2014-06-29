@@ -47,7 +47,8 @@ private:
 
 public:
     DsoSignal(QString name,
-        boost::shared_ptr<pv::data::Dso> data, int probe_index, int order);
+        boost::shared_ptr<pv::data::Dso> data, int probe_index, int order,
+              uint64_t vdiv, uint64_t timebase, bool coupling, bool active);
 
     virtual ~DsoSignal();
 
@@ -63,8 +64,8 @@ public:
 	 * @param offset the time to show at the left hand edge of
 	 *   the view in seconds.
 	 **/
-	void paint(QPainter &p, int y, int left, int right, double scale,
-		double offset);
+    void paint(QPainter &p, int y, int left, int right, double scale,
+        double offset);
 
     const std::vector< std::pair<uint64_t, bool> > cur_edges() const;
 
@@ -83,7 +84,8 @@ private:
 	void paint_trace(QPainter &p,
         const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot,
 		int y, int left, const int64_t start, const int64_t end,
-		const double pixels_offset, const double samples_per_pixel);
+        const double pixels_offset, const double samples_per_pixel,
+        uint64_t num_channels);
 
 	void paint_envelope(QPainter &p,
         const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot,

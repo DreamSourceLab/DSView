@@ -57,6 +57,7 @@
 
 #include "dock/protocoldock.h"
 #include "dock/triggerdock.h"
+#include "dock/dsotriggerdock.h"
 #include "dock/measuredock.h"
 #include "dock/searchdock.h"
 
@@ -235,6 +236,14 @@ void MainWindow::setup_ui()
     _trigger_widget = new dock::TriggerDock(_trigger_dock, _session);
     _trigger_dock->setWidget(_trigger_widget);
 
+    _dso_trigger_dock=new QDockWidget(tr("Trigger Setting..."),this);
+    _dso_trigger_dock->setFeatures(QDockWidget::NoDockWidgetFeatures);
+    _dso_trigger_dock->setAllowedAreas(Qt::RightDockWidgetArea);
+    _dso_trigger_dock->setVisible(false);
+    _dso_trigger_widget = new dock::DsoTriggerDock(_dso_trigger_dock, _session);
+    _dso_trigger_dock->setWidget(_dso_trigger_widget);
+
+
     // Setup _view widget
     _view = new pv::view::View(_session, this);
     _vertical_layout->addWidget(_view);
@@ -250,9 +259,9 @@ void MainWindow::setup_ui()
         SLOT(update()));
     connect(_sampling_bar, SIGNAL(device_reload()), this,
         SLOT(init()));
-	connect(_sampling_bar, SIGNAL(run_stop()), this,
-		SLOT(run_stop()));
-	addToolBar(_sampling_bar);
+    connect(_sampling_bar, SIGNAL(run_stop()), this,
+        SLOT(run_stop()));
+    addToolBar(_sampling_bar);
     addToolBar(_trig_bar);
     addToolBar(_device_bar);
     addToolBar(_file_bar);
@@ -296,6 +305,7 @@ void MainWindow::setup_ui()
     _trigger_dock->setObjectName(tr("triggerDock"));
     addDockWidget(Qt::RightDockWidgetArea,_protocol_dock);
     addDockWidget(Qt::RightDockWidgetArea,_trigger_dock);
+    addDockWidget(Qt::RightDockWidgetArea,_dso_trigger_dock);
     addDockWidget(Qt::RightDockWidgetArea, _measure_dock);
     addDockWidget(Qt::BottomDockWidgetArea, _search_dock);
 
@@ -312,6 +322,8 @@ void MainWindow::setup_ui()
             SLOT(device_detach()));
     connect(&_session, SIGNAL(test_data_error()), this,
             SLOT(test_data_error()));
+    connect(&_session, SIGNAL(dso_ch_changed(uint16_t)), this,
+            SLOT(dso_ch_changed(uint16_t)));
 
     connect(_view, SIGNAL(cursor_update()), _measure_widget,
             SLOT(cursor_update()));
@@ -327,6 +339,14 @@ void MainWindow::init()
     _trigger_widget->device_change();
     if (_session.get_device())
         _session.init_signals(_session.get_device());
+    if (_session.get_device()->mode == DSO) {
+        _sampling_bar->set_record_length(DefaultDSODepth*2);
+        _sampling_bar->set_sample_rate(DefaultDSORate*2);
+        _sampling_bar->enable_toggle(false);
+        _view->hDial_changed(0);
+    } else if(_session.get_device()->mode == LOGIC) {
+        _sampling_bar->enable_toggle(true);
+    }
 }
 
 void MainWindow::update()
@@ -376,6 +396,8 @@ void MainWindow::update_device_list(struct sr_dev_inst *selected_device)
 
 //    #ifdef HAVE_LA_DSLOGIC
     _session.start_hotplug_proc(boost::bind(&MainWindow::session_error, this,
+                                             QString("Hotplug failed"), _1));
+    _session.start_dso_ctrl_proc(boost::bind(&MainWindow::session_error, this,
                                              QString("Hotplug failed"), _1));
 //    #endif
 }
@@ -446,10 +468,38 @@ void MainWindow::device_selected()
         _sampling_bar->set_device(_device_bar->get_selected_device());
         _sampling_bar->update_sample_rate_selector();
         _view->show_trig_cursor(false);
+        _trigger_dock->setVisible(false);
+        _dso_trigger_dock->setVisible(false);
+        _protocol_dock->setVisible(false);
+        _measure_dock->setVisible(false);
+        _search_dock->setVisible(false);
         init();
     } else {
         show_session_error("Open Device Failed",
                            "the selected device can't be opened!");
+    }
+
+    if (_device_bar->get_selected_device()->mode == DSO) {
+       QMessageBox msg(this);
+       msg.setText("Zero Adjustment");
+       msg.setInformativeText("Please left both of channels unconnect for zero adjustment!");
+       msg.setStandardButtons(QMessageBox::Ok);
+       msg.setIcon(QMessageBox::Warning);
+       msg.exec();
+
+       int ret = sr_config_set(_device_bar->get_selected_device(), SR_CONF_ZERO, g_variant_new_boolean(TRUE));
+       if (ret != SR_OK) {
+            QMessageBox msg(this);
+            msg.setText("Zero Adjustment Issue");
+            msg.setInformativeText("Can't send out the command of zero adjustment!");
+            msg.setStandardButtons(QMessageBox::Ok);
+            msg.setIcon(QMessageBox::Warning);
+            msg.exec();
+        } else {
+           run_stop();
+           g_usleep(100000);
+           run_stop();
+       }
     }
 }
 
@@ -508,6 +558,31 @@ void MainWindow::run_stop()
     _sampling_bar->enable_run_stop(true);
 }
 
+void MainWindow::dso_ch_changed(uint16_t num)
+{
+    if(num == 1) {
+        _sampling_bar->set_record_length(DefaultDSODepth*2);
+        _sampling_bar->set_sample_rate(DefaultDSORate*2);
+        _session.set_total_sample_len(_sampling_bar->get_record_length());
+        if (_session.get_capture_state() == SigSession::Running) {
+            _session.stop_capture();
+            _session.start_capture(_sampling_bar->get_record_length(),
+                boost::bind(&MainWindow::session_error, this,
+                    QString("Capture failed"), _1));
+        }
+    } else {
+        _sampling_bar->set_record_length(DefaultDSODepth);
+        _sampling_bar->set_sample_rate(DefaultDSORate);
+        _session.set_total_sample_len(_sampling_bar->get_record_length());
+        if (_session.get_capture_state() == SigSession::Running) {
+            _session.stop_capture();
+            _session.start_capture(_sampling_bar->get_record_length(),
+                boost::bind(&MainWindow::session_error, this,
+                    QString("Capture failed"), _1));
+        }
+    }
+}
+
 void MainWindow::test_data_error()
 {
     _session.stop_capture();
@@ -521,12 +596,14 @@ void MainWindow::test_data_error()
 
 void MainWindow::capture_state_changed(int state)
 {
-    _sampling_bar->enable_toggle(state != SigSession::Running);
-    _trig_bar->enable_toggle(state != SigSession::Running);
+    if (_session.get_device()->mode != DSO) {
+        _sampling_bar->enable_toggle(state != SigSession::Running);
+        _trig_bar->enable_toggle(state != SigSession::Running);
+        _measure_dock->widget()->setEnabled(state != SigSession::Running);
+    }
     _device_bar->enable_toggle(state != SigSession::Running);
     _file_bar->enable_toggle(state != SigSession::Running);
     _sampling_bar->set_sampling(state == SigSession::Running);
-    _measure_dock->widget()->setEnabled(state != SigSession::Running);
     _view->on_state_changed(state != SigSession::Running);
 }
 
@@ -537,7 +614,10 @@ void MainWindow::on_protocol(bool visible)
 
 void MainWindow::on_trigger(bool visible)
 {
-    _trigger_dock->setVisible(visible);
+    if (_session.get_device()->mode != DSO)
+        _trigger_dock->setVisible(visible);
+    else
+        _dso_trigger_dock->setVisible(visible);
 }
 
 void MainWindow::on_measure(bool visible)
