@@ -44,7 +44,7 @@ const QColor Signal::dsLightBlue = QColor(17, 133, 209,  150);
 const QColor Signal::dsLightRed = QColor(213, 15, 37, 150);
 const QPen Signal::SignalAxisPen = QColor(128, 128, 128, 64);
 
-const uint64_t Signal::vDialValue[Signal::vDialValueCount] = {
+const quint64 Signal::vDialValue[Signal::vDialValueCount] = {
     5,
     10,
     20,
@@ -61,7 +61,7 @@ const QString Signal::vDialUnit[Signal::vDialUnitCount] = {
     "v",
 };
 
-const uint64_t Signal::hDialValue[Signal::hDialValueCount] = {
+const quint64 Signal::hDialValue[Signal::hDialValueCount] = {
     10,
     20,
     50,
@@ -112,14 +112,14 @@ Signal::Signal(QString name, int index, int type, int order) :
 {
     _index_list.push_back(index);
     if (_type == DS_DSO) {
-        QVector<uint64_t> vValue;
-        QVector<QString> vUnit;
-        QVector<uint64_t> hValue;
-        QVector<QString> hUnit;
-        for(quint64 i = 0; i < Signal::vDialValueCount; i++)
-            vValue.append(Signal::vDialValue[i]);
-        for(quint64 i = 0; i < Signal::vDialUnitCount; i++)
-            vUnit.append(Signal::vDialUnit[i]);
+	QVector<quint64> vValue;
+	QVector<QString> vUnit;
+	QVector<quint64> hValue;
+	QVector<QString> hUnit;
+	for(quint64 i = 0; i < Signal::vDialValueCount; i++)
+	    vValue.append(Signal::vDialValue[i]);
+	for(quint64 i = 0; i < Signal::vDialUnitCount; i++)
+	    vUnit.append(Signal::vDialUnit[i]);
 
         for(quint64 i = 0; i < Signal::hDialValueCount; i++)
             hValue.append(Signal::hDialValue[i]);
@@ -152,9 +152,9 @@ Signal::Signal(QString name, std::list<int> index_list, int type, int order, int
     _active(true)
 {
     if (_type == DS_DSO) {
-        QVector<uint64_t> vValue;
+        QVector<quint64> vValue;
         QVector<QString> vUnit;
-        QVector<uint64_t> hValue;
+        QVector<quint64> hValue;
         QVector<QString> hUnit;
         for(quint64 i = 0; i < Signal::vDialValueCount; i++)
             vValue.append(Signal::vDialValue[i]);
@@ -382,12 +382,12 @@ bool Signal::go_hDialNext()
     }
 }
 
-uint64_t Signal::get_vDialValue() const
+quint64 Signal::get_vDialValue() const
 {
     return _vDial->get_value();
 }
 
-uint64_t Signal::get_hDialValue() const
+quint64 Signal::get_hDialValue() const
 {
     return _hDial->get_value();
 }
