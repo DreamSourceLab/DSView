@@ -44,6 +44,7 @@ Step1: Build libusbx-1.0.18
 Building:
 
  $ cd libusbx-1.0.18
+ $ ./autogen.sh
  $ ./configure
  $ make
  $ sudo make install
