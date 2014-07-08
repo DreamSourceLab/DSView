@@ -52,8 +52,8 @@ endif()
 #-------------------------------------------------------------------------------
 
 list(APPEND PKGDEPS
-	libsigrok4DSLogic>=0.2.0
-	libusb-1.0>=1.0.16
+	"libsigrok4DSLogic >= 0.2.0"
+	"libusb-1.0 >= 1.0.16"
 )
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/")
