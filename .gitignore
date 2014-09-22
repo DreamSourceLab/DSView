@@ -13,11 +13,16 @@ autom4te.cache
 !cmake_modules
 Makefile
 *.cxx
+config.guess
 config.h
+config.h.in
 config.log
+config.sub
 config.status
 .libs
 .deps
+*.depends
+install-sh
 libtool
 stamp-h1
 .dirstamp
@@ -28,8 +33,14 @@ aclocal.m4
 
 DSLogic-gui/ui_*.h
 DSLogic-gui/DSLogic
+DSLogic-gui/install_manifest.txt
 
 moc_*.cxx
 moc_*.cxx_parameters
 
+libsigrok4DSLogic/version.h
+
 libusbx-1.0.18/doc/doxygen.cfg
+libusbx-1.0.18/m4/
+
+
