@@ -76,8 +76,29 @@ Building:
  $ sudo make install
 
 
+Step3: Build libsigrokdecode
 
-Step3: Build DSLogic-gui
+Installing the requirements:
+
+Example on Debian/Ubuntu (please check your respective distro's package manager tool if you use other distros):
+
+$ sudo apt-get install git-core gcc make autoconf automake libtool pkg-config libglib2.0-dev python3-dev
+
+Fedora (18, 19, 20):
+
+$ sudo yum install git gcc make autoconf automake libtool pkgconfig glib2-devel python3-devel check-devel
+
+Building:
+
+$ git clone git://sigrok.org/libsigrokdecode
+$ cd libsigrokdecode
+$ ./autogen.sh
+$ ./configure
+$ make
+$ sudo make install
+
+
+Step4: Build DSLogic-gui
 
 Installing the requirements:
 

@@ -56,13 +56,11 @@
 
 #define DEV_CAPS_16BIT		(1 << DEV_CAPS_16BIT_POS)
 
-#define XC3S250E_BYTE_CNT   169216
-//#define XC6SLX9_BYTE_CNT   341160
-#define XC6SLX9_BYTE_CNT   340884
-//#define XC6SLX9_BYTE_CNT   340604
-
 #define MAX_ANALOG_PROBES_NUM 9
 #define MAX_DSO_PROBES_NUM 2
+
+#define DEFAULT_SAMPLERATE SR_MHZ(100)
+#define DEFAULT_SAMPLELIMIT SR_MB(16)
 
 struct DSLogic_profile {
     uint16_t vid;
@@ -74,7 +72,8 @@ struct DSLogic_profile {
 
     const char *firmware;
 
-    const char *fpga_bit;
+    const char *fpga_bit33;
+    const char *fpga_bit50;
 
     uint32_t dev_caps;
 };
@@ -85,10 +84,11 @@ static const struct DSLogic_profile supported_fx2[3] = {
      */
     {0x2A0E, 0x0001, NULL, "DSLogic", NULL,
      "DSLogic.fw",
-     "DSLogic.bin",
+     "DSLogic33.bin",
+     "DSLogic50.bin",
      DEV_CAPS_16BIT},
 
-    { 0, 0, 0, 0, 0, 0, 0 }
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 };
 
 enum {
@@ -102,7 +102,7 @@ enum {
 
 struct dev_context {
     const struct DSLogic_profile *profile;
-    /*
+	/*
      * Since we can't keep track of an DSLogic device after upgrading
 	 * the firmware (it renumerates into a different device address
 	 * after the upgrade) this is like a global lock. No device will open
@@ -117,21 +117,17 @@ struct dev_context {
 	/* Operational settings */
 	gboolean sample_wide;
     gboolean clock_type;
+    gboolean clock_edge;
     uint16_t op_mode;
+    uint16_t th_level;
+    uint16_t filter;
 	uint16_t trigger_mask[NUM_TRIGGER_STAGES];
 	uint16_t trigger_value[NUM_TRIGGER_STAGES];
 	int trigger_stage;
 	uint16_t trigger_buffer[NUM_TRIGGER_STAGES];
-    uint64_t vdiv0;
-    uint64_t vdiv1;
     uint64_t timebase;
-    gboolean coupling0;
-    gboolean coupling1;
-    gboolean en_ch0;
-    gboolean en_ch1;
     uint8_t trigger_slope;
     uint8_t trigger_source;
-    uint16_t trigger_vpos;
     uint32_t trigger_hpos;
     gboolean zero;
 

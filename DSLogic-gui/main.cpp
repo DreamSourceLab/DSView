@@ -21,7 +21,7 @@
  */
 
 
-#ifdef ENABLE_SIGROKDECODE
+#ifdef ENABLE_DECODE
 #include <libsigrokdecode/libsigrokdecode.h> /* First, so we avoid a _POSIX_C_SOURCE warning. */
 #endif
 
@@ -33,11 +33,14 @@
 #include <QtGui/QApplication>
 #include <QDebug>
 #include <QFile>
+#include <QDir>
 
 #include "pv/devicemanager.h"
 #include "pv/mainwindow.h"
 
 #include "config.h"
+
+char decoders_path[256];
 
 void usage()
 {
@@ -85,7 +88,7 @@ int main(int argc, char *argv[])
 			const int loglevel = atoi(optarg);
 			sr_log_loglevel_set(loglevel);
 
-#ifdef ENABLE_SIGROKDECODE
+#ifdef ENABLE_DECODE
 			srd_log_loglevel_set(loglevel);
 #endif
 
@@ -118,7 +121,12 @@ int main(int argc, char *argv[])
 
 	do {
 
-#ifdef ENABLE_SIGROKDECODE
+#ifdef ENABLE_DECODE
+        QDir dir(QCoreApplication::applicationDirPath());
+        assert(dir.cd("decoders"));
+        std::string str = dir.absolutePath().toStdString() + "/";
+        strcpy(decoders_path, str.c_str());
+
 		// Initialise libsigrokdecode
 		if (srd_init(NULL) != SRD_OK) {
 			qDebug() << "ERROR: libsigrokdecode init failed.";
@@ -148,7 +156,7 @@ int main(int argc, char *argv[])
 			qDebug() << e.what();
 		}
 
-#ifdef ENABLE_SIGROKDECODE
+#ifdef ENABLE_DECODE
 		// Destroy libsigrokdecode
 		srd_exit();
 #endif

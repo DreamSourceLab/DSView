@@ -28,6 +28,8 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QApplication>
+#include <QDesktopServices>
+#include <QUrl>
 
 #include "logobar.h"
 #include "../dialogs/about.h"
@@ -51,6 +53,15 @@ LogoBar::LogoBar(SigSession &session, QWidget *parent) :
     _about->setObjectName(QString::fromUtf8("actionAbout"));
     _logo_button.addAction(_about);
     connect(_about, SIGNAL(triggered()), this, SLOT(on_actionAbout_triggered()));
+
+    _wiki = new QAction(this);
+    _wiki->setText(QApplication::translate(
+        "File", "&Wiki", 0, QApplication::UnicodeUTF8));
+    _wiki->setIcon(QIcon::fromTheme("file",
+        QIcon(":/icons/wiki.png")));
+    _wiki->setObjectName(QString::fromUtf8("actionWiki"));
+    _logo_button.addAction(_wiki);
+    connect(_wiki, SIGNAL(triggered()), this, SLOT(on_actionWiki_triggered()));
 
     _logo_button.setPopupMode(QToolButton::InstantPopup);
     _logo_button.setIcon(QIcon(":/icons/logo_noColor.png"));
@@ -95,6 +106,12 @@ void LogoBar::on_actionAbout_triggered()
 {
     dialogs::About dlg(this);
     dlg.exec();
+}
+
+void LogoBar::on_actionWiki_triggered()
+{
+    QDesktopServices::openUrl(
+                QUrl(QLatin1String("http://www.dreamsourcelab.com/wiki")));
 }
 
 void LogoBar::enable_toggle(bool enable)

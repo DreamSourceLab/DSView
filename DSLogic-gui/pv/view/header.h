@@ -36,7 +36,7 @@
 namespace pv {
 namespace view {
 
-class Signal;
+class Trace;
 class View;
 
 class Header : public QWidget
@@ -47,7 +47,7 @@ public:
 	Header(View &parent);
 
 private:
-    boost::shared_ptr<pv::view::Signal> get_mSig(
+    boost::shared_ptr<pv::view::Trace> get_mTrace(
         int &action,
 		const QPoint &pt);
 
@@ -62,7 +62,6 @@ private:
     void wheelEvent(QWheelEvent *event);
     void contextMenuEvent(QContextMenuEvent *event);
 
-    void move(QMouseEvent *event);
     void changeName(QMouseEvent *event);
     void changeColor(QMouseEvent *event);
 
@@ -77,13 +76,12 @@ private slots:
 
     void on_action_del_group_triggered();
 
-	void on_signals_moved();
+    void on_traces_moved();
 
 signals:
-	void signals_moved();
+    void traces_moved();
     void header_updated();
     void vDial_changed(quint16);
-    void hDial_changed(quint16);
     void acdc_changed(quint16);
     void ch_changed(quint16);
 
@@ -99,10 +97,10 @@ private:
 
     QLineEdit *nameEdit;
 
-	std::list<std::pair<boost::weak_ptr<Signal>, int> >
-		_drag_sigs;
+    std::list<std::pair<boost::weak_ptr<Trace>, int> >
+        _drag_traces;
 
-	boost::shared_ptr<Signal> _context_signal;
+    boost::shared_ptr<Trace> _context_trace;
 
     QAction *_action_add_group;
     QAction *_action_del_group;

@@ -32,17 +32,24 @@ namespace data {
 class SignalData
 {
 public:
-    SignalData(unsigned int num_probes, double samplerate);
+    SignalData(int num_probes = 1);
 
 public:
-	double get_samplerate() const;
+    double samplerate() const;
+    void set_samplerate(double samplerate);
+
+    virtual void clear() = 0;
+
 	double get_start_time() const;
+
     int get_num_probes() const;
 
+    void set_num_probes(int num);
+
 protected:
-    const unsigned int _num_probes;
-	const double _samplerate;
-	const double _start_time;
+    double _samplerate;
+    double _start_time;
+    int _num_probes;
 };
 
 } // namespace data

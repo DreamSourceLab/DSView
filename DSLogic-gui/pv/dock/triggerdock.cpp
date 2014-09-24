@@ -23,6 +23,7 @@
 
 #include "triggerdock.h"
 #include "../sigsession.h"
+#include "../device/devinst.h"
 
 #include <QObject>
 #include <QGridLayout>
@@ -209,7 +210,7 @@ void TriggerDock::simple_trigger()
 
 void TriggerDock::adv_trigger()
 {
-    if (strcmp(_session.get_device()->driver->name, "DSLogic") == 0) {
+    if (strcmp(_session.get_device()->dev_inst()->driver->name, "DSLogic") == 0) {
         widget_enable();
         ds_trigger_set_mode(ADV_TRIGGER);
         _session.set_adv_trigger(true);
@@ -341,7 +342,7 @@ void TriggerDock::pos_changed(int pos)
 
 void TriggerDock::device_change()
 {
-    if (strcmp(_session.get_device()->driver->name, "DSLogic") != 0) {
+    if (strcmp(_session.get_device()->dev_inst()->driver->name, "DSLogic") != 0) {
         position_spinBox->setDisabled(true);
         position_slider->setDisabled(true);
     } else {

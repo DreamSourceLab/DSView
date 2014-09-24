@@ -64,12 +64,9 @@ private:
 private slots:
 	void enable_all_probes();
 	void disable_all_probes();
-    void mode_changed(QString mode);
 
 private:
 	struct sr_dev_inst *const _sdi;
-    int _last_mode;
-
 	QVBoxLayout _layout;
 
 	QGroupBox _probes_box;
@@ -78,7 +75,6 @@ private:
     QVector <QCheckBox *> _probes_checkBox_list;
 
 	QGroupBox _props_box;
-    QComboBox _mode_comboBox;
     QVBoxLayout _props_box_layout;
 
 	QDialogButtonBox _button_box;

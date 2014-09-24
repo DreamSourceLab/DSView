@@ -45,7 +45,7 @@
 
 #include <libsigrok4DSLogic/libsigrok.h>
 
-#include "fakelineedit.h"
+#include "../widgets/fakelineedit.h"
 
 namespace pv {
 
@@ -53,6 +53,10 @@ class SigSession;
 
 namespace view {
     class View;
+}
+
+namespace widgets {
+    class FakeLineEdit;
 }
 
 namespace dock {
@@ -86,7 +90,7 @@ private:
 
     QPushButton _pre_button;
     QPushButton _nxt_button;
-    FakeLineEdit* _search_value;
+    widgets::FakeLineEdit* _search_value;
 };
 
 } // namespace dock

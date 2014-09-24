@@ -30,6 +30,7 @@
 #include "../dialogs/search.h"
 #include "../data/snapshot.h"
 #include "../data/logicsnapshot.h"
+#include "../device/devinst.h"
 
 #include <QObject>
 #include <QPainter>
@@ -45,6 +46,7 @@ namespace pv {
 namespace dock {
 
 using namespace pv::view;
+using namespace pv::widgets;
 
 SearchDock::SearchDock(QWidget *parent, View &view, SigSession &session) :
     QWidget(parent),
@@ -197,7 +199,7 @@ void SearchDock::on_next()
 
 void SearchDock::on_set()
 {
-    dialogs::Search dlg(this, _session.get_device(), _pattern);
+    dialogs::Search dlg(this, _session.get_device()->dev_inst(), _pattern);
     if (dlg.exec()) {
         _pattern = dlg.get_pattern();
         _pattern.remove(QChar(' '), Qt::CaseInsensitive);

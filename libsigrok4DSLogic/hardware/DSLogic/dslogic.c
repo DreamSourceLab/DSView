@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include <string.h>
 #include <math.h>
 #include <errno.h>
@@ -38,7 +39,29 @@
 #endif
 
 static const int cons_buffer_size = 1024 * 16;
-static const int dso_buffer_size = 1024 * 16;
+static const int dso_buffer_size = SR_KB(32);
+static struct sr_dev_mode mode_list[] = {
+    {"LA", LOGIC},
+    {"DAQ", ANALOG},
+    {"OSC", DSO},
+};
+
+static const char *opmodes[] = {
+    "Normal",
+    "Internal Test",
+    "External Test",
+    "DRAM Loopback Test",
+};
+
+static const char *thresholds[] = {
+    "1.8/2.5/3.3V Level",
+    "5.0V Level",
+};
+
+static const char *filters[] = {
+    "None",
+    "1 Sample Clock",
+};
 
 static const int32_t hwopts[] = {
     SR_CONF_CONN,
@@ -55,8 +78,11 @@ static const int32_t hwcaps[] = {
 };
 
 static const int32_t hwoptions[] = {
-    SR_CONF_CLOCK_TYPE,
     SR_CONF_OPERATION_MODE,
+    SR_CONF_THRESHOLD,
+    SR_CONF_FILTER,
+    SR_CONF_CLOCK_TYPE,
+    SR_CONF_CLOCK_EDGE,
 };
 
 static const char *probe_names[] = {
@@ -85,6 +111,41 @@ static const uint64_t samplerates[] = {
     SR_MHZ(100),
     SR_MHZ(200),
     SR_MHZ(400),
+};
+
+//static const uint64_t samplecounts[] = {
+//    SR_KB(1),
+//    SR_KB(2),
+//    SR_KB(5),
+//    SR_KB(10),
+//    SR_KB(20),
+//    SR_KB(50),
+//    SR_KB(100),
+//    SR_KB(200),
+//    SR_KB(500),
+//    SR_MB(1),
+//    SR_MB(2),
+//    SR_MB(5),
+//    SR_MB(10),
+//    SR_MB(16),
+//};
+
+static const uint64_t samplecounts[] = {
+    SR_KB(1),
+    SR_KB(2),
+    SR_KB(8),
+    SR_KB(8),
+    SR_KB(16),
+    SR_KB(32),
+    SR_KB(64),
+    SR_KB(128),
+    SR_KB(256),
+    SR_KB(512),
+    SR_MB(1),
+    SR_MB(2),
+    SR_MB(4),
+    SR_MB(8),
+    SR_MB(16),
 };
 
 SR_PRIV struct sr_dev_driver DSLogic_driver_info;
@@ -186,10 +247,11 @@ static int fpga_setting(const struct sr_dev_inst *sdi)
                    ((devc->op_mode == SR_OP_EXTERNAL_TEST) << 14) +
                    ((devc->op_mode == SR_OP_LOOPBACK_TEST) << 13) +
                    trigger->trigger_en +
-                   ((sdi->mode > 0) << 4) + (devc->clock_type << 1) +
+                   ((sdi->mode > 0) << 4) + (devc->clock_type << 1) + (devc->clock_edge << 1) +
                    (((devc->cur_samplerate == SR_MHZ(200) && sdi->mode != DSO) || (sdi->mode == ANALOG)) << 5) +
                    ((devc->cur_samplerate == SR_MHZ(400)) << 6) +
-                   ((sdi->mode == ANALOG) << 7);
+                   ((sdi->mode == ANALOG) << 7) +
+                   ((devc->filter == SR_FILTER_1T) << 8);
     setting.divider = (uint32_t)ceil(SR_MHZ(100) * 1.0 / devc->cur_samplerate);
     setting.count = (uint32_t)(devc->limit_samples);
     setting.trig_pos = (uint32_t)(trigger->trigger_pos / 100.0f * devc->limit_samples);
@@ -213,8 +275,8 @@ static int fpga_setting(const struct sr_dev_inst *sdi)
         setting.trig_logic1[0] = (trigger->trigger_logic[TriggerStages] << 1) + trigger->trigger1_inv[TriggerStages];
 
         for (i = 1; i < NUM_TRIGGER_STAGES; i++) {
-            setting.trig_mask0[i] = 1;
-            setting.trig_mask1[i] = 1;
+            setting.trig_mask0[i] = 0xff;
+            setting.trig_mask1[i] = 0xff;
 
             setting.trig_value0[i] = 0;
             setting.trig_value1[i] = 0;
@@ -274,22 +336,28 @@ static int fpga_config(struct libusb_device_handle *hdl, const char *filename)
     int offset, chunksize, ret, result;
     unsigned char *buf;
     int transferred;
+    uint64_t filesize;
+    struct stat f_stat;
 
-    if (!(buf = g_try_malloc(XC6SLX9_BYTE_CNT))) {
-            sr_err("FPGA configure bit malloc failed.");
-            return SR_ERR;
-    }
     sr_info("Configure FPGA using %s", filename);
     if ((fw = g_fopen(filename, "rb")) == NULL) {
         sr_err("Unable to open FPGA bit file %s for reading: %s",
                filename, strerror(errno));
         return SR_ERR;
     }
+    if (stat(filename, &f_stat) == -1)
+        return SR_ERR;
+
+    filesize = (uint64_t)f_stat.st_size;
+    if (!(buf = g_try_malloc(filesize))) {
+            sr_err("FPGA configure bit malloc failed.");
+            return SR_ERR;
+    }
 
     result = SR_OK;
     offset = 0;
     while (1) {
-        chunksize = fread(buf, 1, XC6SLX9_BYTE_CNT, fw);
+        chunksize = fread(buf, 1, filesize, fw);
         if (chunksize == 0)
             break;
 
@@ -434,7 +502,7 @@ static int DSLogic_dev_open(struct sr_dev_inst *sdi)
 static int configure_probes(const struct sr_dev_inst *sdi)
 {
 	struct dev_context *devc;
-    struct sr_probe *probe;
+    struct sr_channel *probe;
 	GSList *l;
 	int probe_bit, stage, i;
 	char *tc;
@@ -446,13 +514,13 @@ static int configure_probes(const struct sr_dev_inst *sdi)
 	}
 
 	stage = -1;
-	for (l = sdi->probes; l; l = l->next) {
-        probe = (struct sr_probe *)l->data;
+    for (l = sdi->channels; l; l = l->next) {
+        probe = (struct sr_channel *)l->data;
 		if (probe->enabled == FALSE)
 			continue;
 
-        if ((probe->index > 7 && probe->type == SR_PROBE_LOGIC) ||
-            (probe->type == SR_PROBE_ANALOG || probe->type == SR_PROBE_DSO))
+        if ((probe->index > 7 && probe->type == SR_CHANNEL_LOGIC) ||
+            (probe->type == SR_CHANNEL_ANALOG || probe->type == SR_CHANNEL_DSO))
 			devc->sample_wide = TRUE;
         else
             devc->sample_wide = FALSE;
@@ -495,22 +563,18 @@ static struct dev_context *DSLogic_dev_new(void)
 
 	devc->profile = NULL;
 	devc->fw_updated = 0;
-	devc->cur_samplerate = 0;
-	devc->limit_samples = 0;
+    devc->cur_samplerate = DEFAULT_SAMPLERATE;
+    devc->limit_samples = DEFAULT_SAMPLELIMIT;
 	devc->sample_wide = 0;
     devc->clock_type = FALSE;
+    devc->clock_edge = FALSE;
     devc->op_mode = SR_OP_NORMAL;
-    devc->vdiv0 = 1000;
-    devc->vdiv1 = 1000;
-    devc->timebase = 100;
-    devc->coupling0 = FALSE;
-    devc->coupling1 = FALSE;
-    devc->en_ch0 = TRUE;
-    devc->en_ch1 = FALSE;
+    devc->th_level = SR_TH_3V3;
+    devc->filter = SR_FILTER_NONE;
+    devc->timebase = 10000;
     devc->trigger_slope = DSO_TRIGGER_RISING;
     devc->trigger_source = DSO_TRIGGER_AUTO;
-    devc->trigger_vpos = 0xffff;
-    devc->trigger_hpos = 0x80;
+    devc->trigger_hpos = 0x0;
     devc->zero = FALSE;
 
 	return devc;
@@ -529,13 +593,18 @@ static int init(struct sr_context *sr_ctx)
 static int set_probes(struct sr_dev_inst *sdi, int num_probes)
 {
     int j;
-    struct sr_probe *probe;
+    struct sr_channel *probe;
 
     for (j = 0; j < num_probes; j++) {
-        if (!(probe = sr_probe_new(j, (sdi->mode == LOGIC) ? SR_PROBE_LOGIC : ((sdi->mode == DSO) ? SR_PROBE_DSO : SR_PROBE_ANALOG),
+        if (!(probe = sr_channel_new(j, (sdi->mode == LOGIC) ? SR_CHANNEL_LOGIC : ((sdi->mode == DSO) ? SR_CHANNEL_DSO : SR_CHANNEL_ANALOG),
                                    TRUE, probe_names[j])))
             return SR_ERR;
-        sdi->probes = g_slist_append(sdi->probes, probe);
+        if (sdi->mode == DSO) {
+            probe->vdiv = 1000;
+            probe->coupling = FALSE;
+            probe->trig_value = 0x80;
+        }
+        sdi->channels = g_slist_append(sdi->channels, probe);
     }
     return SR_OK;
 }
@@ -544,22 +613,22 @@ static int adjust_probes(struct sr_dev_inst *sdi, int num_probes)
 {
     int j;
     GSList *l;
-    struct sr_probe *probe;
+    struct sr_channel *probe;
     GSList *p;
 
     assert(num_probes > 0);
 
-    j = g_slist_length(sdi->probes);
+    j = g_slist_length(sdi->channels);
     while(j < num_probes) {
-        if (!(probe = sr_probe_new(j, (sdi->mode == LOGIC) ? SR_PROBE_LOGIC : ((sdi->mode == DSO) ? SR_PROBE_DSO : SR_PROBE_ANALOG),
+        if (!(probe = sr_channel_new(j, (sdi->mode == LOGIC) ? SR_CHANNEL_LOGIC : ((sdi->mode == DSO) ? SR_CHANNEL_DSO : SR_CHANNEL_ANALOG),
                                    TRUE, probe_names[j])))
             return SR_ERR;
-        sdi->probes = g_slist_append(sdi->probes, probe);
+        sdi->channels = g_slist_append(sdi->channels, probe);
         j++;
     }
 
     while(j > num_probes) {
-        g_slist_delete_link(sdi->probes, g_slist_last(sdi->probes));
+        g_slist_delete_link(sdi->channels, g_slist_last(sdi->channels));
         j--;
     }
 
@@ -684,6 +753,18 @@ static GSList *dev_list(void)
 	return ((struct drv_context *)(di->priv))->instances;
 }
 
+static GSList *dev_mode_list(void)
+{
+    GSList *l = NULL;
+    int i;
+
+    for(i = 0; i < ARRAY_SIZE(mode_list); i++) {
+        l = g_slist_append(l, &mode_list[i]);
+    }
+
+    return l;
+}
+
 static int dev_open(struct sr_dev_inst *sdi)
 {
     struct sr_usb_dev_inst *usb;
@@ -753,19 +834,22 @@ static int dev_open(struct sr_dev_inst *sdi)
         /* Takes >= 10ms for the FX2 to be ready for FPGA configure. */
         g_usleep(10 * 1000);
         char filename[256];
-        sprintf(filename,"%s%s",config_path,devc->profile->fpga_bit);
+        switch(devc->th_level) {
+        case SR_TH_3V3:
+            sprintf(filename,"%s%s",config_path,devc->profile->fpga_bit33);
+            break;
+        case SR_TH_5V0:
+            sprintf(filename,"%s%s",config_path,devc->profile->fpga_bit50);
+            break;
+        default:
+            return SR_ERR;
+        }
         const char *fpga_bit = filename;
         ret = fpga_config(usb->devhdl, fpga_bit);
         if (ret != SR_OK) {
             sr_err("Configure FPGA failed!");
         }
     }
-
-	if (devc->cur_samplerate == 0) {
-		/* Samplerate hasn't been set; default to the slowest one. */
-        //devc->cur_samplerate = samplerates[0];
-        devc->cur_samplerate = samplerates[sizeof(samplerates)/sizeof(uint64_t) - 3];
-	}
 
     return SR_OK;
 }
@@ -804,11 +888,15 @@ static int cleanup(void)
 	return ret;
 }
 
-static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi)
+static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
+                      const struct sr_channel *ch,
+                      const struct sr_channel_group *cg)
 {
 	struct dev_context *devc;
     struct sr_usb_dev_inst *usb;
 	char str[128];
+
+    (void)cg;
 
 	switch (id) {
     case SR_CONF_CONN:
@@ -840,23 +928,34 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi)
         devc = sdi->priv;
         *data = g_variant_new_boolean(devc->clock_type);
         break;
+    case SR_CONF_CLOCK_EDGE:
+        if (!sdi)
+            return SR_ERR;
+        devc = sdi->priv;
+        *data = g_variant_new_boolean(devc->clock_edge);
+        break;
     case SR_CONF_OPERATION_MODE:
         if (!sdi)
             return SR_ERR;
         devc = sdi->priv;
         *data = g_variant_new_string(opmodes[devc->op_mode]);
         break;
-    case SR_CONF_VDIV0:
+    case SR_CONF_FILTER:
         if (!sdi)
             return SR_ERR;
         devc = sdi->priv;
-        *data = g_variant_new_uint64(devc->vdiv0);
+        *data = g_variant_new_string(filters[devc->filter]);
         break;
-    case SR_CONF_VDIV1:
+    case SR_CONF_THRESHOLD:
         if (!sdi)
             return SR_ERR;
         devc = sdi->priv;
-        *data = g_variant_new_uint64(devc->vdiv1);
+        *data = g_variant_new_string(thresholds[devc->th_level]);
+        break;
+    case SR_CONF_VDIV:
+        if (!ch)
+            return SR_ERR;
+        *data = g_variant_new_uint64(ch->vdiv);
         break;
     case SR_CONF_TIMEBASE:
         if (!sdi)
@@ -864,29 +963,15 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi)
         devc = sdi->priv;
         *data = g_variant_new_uint64(devc->timebase);
         break;
-    case SR_CONF_COUPLING0:
-        if (!sdi)
+    case SR_CONF_COUPLING:
+        if (!ch)
             return SR_ERR;
-        devc = sdi->priv;
-        *data = g_variant_new_boolean(devc->coupling0);
+        *data = g_variant_new_boolean(ch->coupling);
         break;
-    case SR_CONF_COUPLING1:
-        if (!sdi)
+    case SR_CONF_EN_CH:
+        if (!ch)
             return SR_ERR;
-        devc = sdi->priv;
-        *data = g_variant_new_boolean(devc->coupling1);
-        break;
-    case SR_CONF_EN_CH0:
-        if (!sdi)
-            return SR_ERR;
-        devc = sdi->priv;
-        *data = g_variant_new_boolean(devc->en_ch0);
-        break;
-    case SR_CONF_EN_CH1:
-        if (!sdi)
-            return SR_ERR;
-        devc = sdi->priv;
-        *data = g_variant_new_boolean(devc->en_ch1);
+        *data = g_variant_new_boolean(ch->enabled);
         break;
     case SR_CONF_TRIGGER_SLOPE:
         if (!sdi)
@@ -901,16 +986,21 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi)
         *data = g_variant_new_byte(devc->trigger_source);
         break;
     case SR_CONF_TRIGGER_VALUE:
-        if (!sdi)
+        if (!ch)
             return SR_ERR;
-        devc = sdi->priv;
-        *data = g_variant_new_uint16(devc->trigger_vpos);
+        *data = g_variant_new_uint16(ch->trig_value);
         break;
     case SR_CONF_HORIZ_TRIGGERPOS:
         if (!sdi)
             return SR_ERR;
         devc = sdi->priv;
         *data = g_variant_new_uint16(devc->trigger_hpos);
+        break;
+    case SR_CONF_ZERO:
+        if (!sdi)
+            return SR_ERR;
+        devc = sdi->priv;
+        *data = g_variant_new_boolean(devc->zero);
         break;
 	default:
         return SR_ERR_NA;
@@ -919,29 +1009,30 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi)
     return SR_OK;
 }
 
-static uint32_t dso_cmd_gen(struct sr_dev_inst *sdi, int channel, int id)
+static uint32_t dso_cmd_gen(struct sr_dev_inst *sdi, struct sr_channel* ch, int id)
 {
     struct dev_context *devc;
     uint32_t cmd = 0;
-    int cmd_channel;
+    int channel_cnt = 0;
+    GSList *l;
 
     devc = sdi->priv;
 
     switch (id) {
-    case SR_CONF_VDIV0:
-    case SR_CONF_VDIV1:
-    case SR_CONF_EN_CH0:
-    case SR_CONF_EN_CH1:
+    case SR_CONF_VDIV:
+    case SR_CONF_EN_CH:
     case SR_CONF_TIMEBASE:
-    case SR_CONF_COUPLING0:
-    case SR_CONF_COUPLING1:
-        if (devc->en_ch0 && !devc->en_ch1)
-            cmd_channel = -1;
-        else if (devc->en_ch0 && devc->en_ch1)
-            cmd_channel = channel;
+    case SR_CONF_COUPLING:
+        for (l = sdi->channels; l; l = l->next) {
+            struct sr_channel *probe = (struct sr_channel *)l->data;
+            if (probe->enabled)
+                channel_cnt += probe->index + 0x1;
+        }
+        if (channel_cnt == 0)
+            return 0x0;
 
         //  --VDBS
-        switch((cmd_channel == 1) ? devc->vdiv1 : devc->vdiv0){
+        switch(ch->vdiv){
         case 5:     cmd += 0x247000; break;
         case 10:    cmd += 0x23D000; break;
         case 20:    cmd += 0x22F000; break;
@@ -955,21 +1046,32 @@ static uint32_t dso_cmd_gen(struct sr_dev_inst *sdi, int channel, int id)
         default: cmd += 0x21100; break;
         }
         // --DC/AC
-        if(((cmd_channel == 1) ? devc->coupling1 : devc->coupling0))
+        if(ch->coupling)
             cmd += 0x100000;
 
         // --Channel
-        if(cmd_channel == 0)
+//        if(channel_cnt == 1)
+//            cmd += 0xC00000;
+//        else if(ch->index == 0)
+//            cmd += 0x400000;
+//        else if(ch->index == 1)
+//            cmd += 0x800000;
+//        else
+//            cmd += 0x000000;
+        if(ch->index == 0)
             cmd += 0x400000;
-        else if(cmd_channel == 1)
+        else if(ch->index == 1)
             cmd += 0x800000;
-        else if(cmd_channel == -1)
-            cmd += 0xC00000;
         else
             cmd += 0x000000;
 
         // --Header
         cmd += 0x55000000;
+        break;
+    case SR_CONF_SAMPLERATE:
+        cmd += 0x4;
+        uint32_t divider = (uint32_t)ceil(SR_MHZ(100) * 1.0 / devc->cur_samplerate - 1);
+        cmd += divider << 8;
         break;
     case SR_CONF_HORIZ_TRIGGERPOS:
         cmd += 0x8;
@@ -985,7 +1087,10 @@ static uint32_t dso_cmd_gen(struct sr_dev_inst *sdi, int channel, int id)
         break;
     case SR_CONF_TRIGGER_VALUE:
         cmd += 0x14;
-        cmd += devc->trigger_vpos << 8;
+        for (l = sdi->channels; l; l = l->next) {
+            struct sr_channel *probe = (struct sr_channel *)l->data;
+            cmd += probe->trig_value << (8 * (probe->index + 1));
+        }
         break;
     case SR_CONF_ZERO:
         cmd += 0x18;
@@ -1000,12 +1105,16 @@ static uint32_t dso_cmd_gen(struct sr_dev_inst *sdi, int channel, int id)
     return cmd;
 }
 
-static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi)
+static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
+                      struct sr_channel *ch,
+                      const struct sr_channel_group *cg )
 {
 	struct dev_context *devc;
     const char *stropt;
     int ret, num_probes;
     struct sr_usb_dev_inst *usb;
+
+    (void)cg;
 
     if (sdi->status != SR_ST_ACTIVE)
         return SR_ERR;
@@ -1021,33 +1130,39 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi)
             } else {
                 adjust_probes(sdi, 16);
             }
+            ret = SR_OK;
+        } else if(sdi->mode == DSO) {
+            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 0, SR_CONF_SAMPLERATE));
         }
-        ret = SR_OK;
+
     } else if (id == SR_CONF_CLOCK_TYPE) {
         devc->clock_type = g_variant_get_boolean(data);
         ret = SR_OK;
-    }else if (id == SR_CONF_LIMIT_SAMPLES) {
+    } else if (id == SR_CONF_CLOCK_EDGE) {
+        devc->clock_edge = g_variant_get_boolean(data);
+        ret = SR_OK;
+    } else if (id == SR_CONF_LIMIT_SAMPLES) {
 		devc->limit_samples = g_variant_get_uint64(data);
         ret = SR_OK;
     } else if (id == SR_CONF_DEVICE_MODE) {
-        stropt = g_variant_get_string(data, NULL);
+        sdi->mode = g_variant_get_int16(data);
         ret = SR_OK;
-        if (!strcmp(stropt, mode_strings[LOGIC])) {
-            sdi->mode = LOGIC;
+        if (sdi->mode == LOGIC) {
             num_probes = devc->profile->dev_caps & DEV_CAPS_16BIT ? 16 : 8;
-        } else if (!strcmp(stropt, mode_strings[DSO])) {
+        } else if (sdi->mode == DSO) {
             sdi->mode = DSO;
             num_probes = devc->profile->dev_caps & DEV_CAPS_16BIT ? MAX_DSO_PROBES_NUM : 1;
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 0, SR_CONF_DSO_SYNC));
+            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_DSO_SYNC));
             if (ret != SR_OK)
                 sr_dbg("%s: DSO configuration sync failed", __func__);
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 0, SR_CONF_VDIV0));
+            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, sdi->channels->data, SR_CONF_VDIV));
             if (ret == SR_OK)
                 sr_dbg("%s: Initial setting for DSO mode", __func__);
             else
                 sr_dbg("%s: Initial setting for DSO mode failed", __func__);
-        } else {
-            sdi->mode = ANALOG;
+            devc->cur_samplerate = DS_MAX_DSO_SAMPLERATE / num_probes;
+            devc->limit_samples = DS_MAX_DSO_DEPTH / num_probes;
+        } else if (sdi->mode == ANALOG){
             num_probes = devc->profile->dev_caps & DEV_CAPS_16BIT ? MAX_ANALOG_PROBES_NUM : 1;
         }
         sr_dev_probes_free(sdi);
@@ -1069,78 +1184,91 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi)
         }
         sr_dbg("%s: setting pattern to %d",
             __func__, devc->op_mode);
-    } else if (id == SR_CONF_EN_CH0) {
-        devc->en_ch0 = g_variant_get_boolean(data);
+    } else if (id == SR_CONF_THRESHOLD) {
+        stropt = g_variant_get_string(data, NULL);
+        ret = SR_OK;
+        if (!strcmp(stropt, thresholds[SR_TH_3V3])) {
+            devc->th_level = SR_TH_3V3;
+        } else if (!strcmp(stropt, thresholds[SR_TH_5V0])) {
+            devc->th_level = SR_TH_5V0;
+        } else {
+            ret = SR_ERR;
+        }
+        if ((ret = command_fpga_config(usb->devhdl)) != SR_OK) {
+            sr_err("Send FPGA configure command failed!");
+        } else {
+            /* Takes >= 10ms for the FX2 to be ready for FPGA configure. */
+            g_usleep(10 * 1000);
+            char filename[256];
+            switch(devc->th_level) {
+            case SR_TH_3V3:
+                sprintf(filename,"%s%s",config_path,devc->profile->fpga_bit33);
+                break;
+            case SR_TH_5V0:
+                sprintf(filename,"%s%s",config_path,devc->profile->fpga_bit50);
+                break;
+            default:
+                return SR_ERR;
+            }
+            const char *fpga_bit = filename;
+            ret = fpga_config(usb->devhdl, fpga_bit);
+            if (ret != SR_OK) {
+                sr_err("Configure FPGA failed!");
+            }
+        }
+        sr_dbg("%s: setting threshold to %d",
+            __func__, devc->th_level);
+    }  else if (id == SR_CONF_FILTER) {
+        stropt = g_variant_get_string(data, NULL);
+        ret = SR_OK;
+        if (!strcmp(stropt, filters[SR_FILTER_NONE])) {
+            devc->filter = SR_FILTER_NONE;
+        } else if (!strcmp(stropt, filters[SR_FILTER_1T])) {
+            devc->filter = SR_FILTER_1T;
+        } else {
+            ret = SR_ERR;
+        }
+        sr_dbg("%s: setting threshold to %d",
+            __func__, devc->th_level);
+    } else if (id == SR_CONF_EN_CH) {
+        ch->enabled = g_variant_get_boolean(data);
         if (sdi->mode == DSO) {
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 0, SR_CONF_EN_CH0));
+            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, ch, SR_CONF_EN_CH));
         }
         if (ret == SR_OK)
-            sr_dbg("%s: setting ENABLE of channel 0 to %d",
-                __func__, devc->en_ch0);
+            sr_dbg("%s: setting ENABLE of channel %d to %d",
+                __func__, ch->index, ch->enabled);
         else
-            sr_dbg("%s: setting ENABLE of channel 0 to %d",
-                __func__, devc->en_ch0);
-    } else if (id == SR_CONF_EN_CH1) {
-        devc->en_ch1 = g_variant_get_boolean(data);
+            sr_dbg("%s: setting ENABLE of channel %d to %d",
+                __func__, ch->index, ch->enabled);
+    } else if (id == SR_CONF_VDIV) {
+        ch->vdiv = g_variant_get_uint64(data);
         if (sdi->mode == DSO) {
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 1, SR_CONF_EN_CH1));
+            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, ch, SR_CONF_VDIV));
         }
         if (ret == SR_OK)
-            sr_dbg("%s: setting ENABLE of channel 1 to %d",
-                __func__, devc->en_ch1);
+            sr_dbg("%s: setting VDIV of channel %d to %d mv",
+                __func__, ch->index, ch->vdiv);
         else
-            sr_dbg("%s: setting ENABLE of channel 1 to %d",
-                __func__, devc->en_ch1);
-    } else if (id == SR_CONF_VDIV0) {
-        devc->vdiv0 = g_variant_get_uint64(data);
-        if (sdi->mode == DSO) {
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 0, SR_CONF_VDIV0));
-        }
-        if (ret == SR_OK)
-            sr_dbg("%s: setting VDIV of channel 0 to %d mv",
-                __func__, devc->vdiv0);
-        else
-            sr_dbg("%s: setting VDIV of channel 0 to %d mv failed",
-                __func__, devc->vdiv0);
-    } else if (id == SR_CONF_VDIV1) {
-        devc->vdiv1 = g_variant_get_uint64(data);
-        if (sdi->mode == DSO) {
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 1, SR_CONF_VDIV1));
-        }
-        if (ret == SR_OK)
-            sr_dbg("%s: setting VDIV of channel 1 to %d mv",
-                __func__, devc->vdiv1);
-        else
-            sr_dbg("%s: setting VDIV of channel 1 to %d mv failed",
-                __func__, devc->vdiv1);
-    }  else if (id == SR_CONF_TIMEBASE) {
+            sr_dbg("%s: setting VDIV of channel %d to %d mv failed",
+                __func__, ch->index, ch->vdiv);
+    } else if (id == SR_CONF_TIMEBASE) {
         devc->timebase = g_variant_get_uint64(data);
-    } else if (id == SR_CONF_COUPLING0) {
-        devc->coupling0 = g_variant_get_boolean(data);
+    } else if (id == SR_CONF_COUPLING) {
+        ch->coupling = g_variant_get_boolean(data);
         if (sdi->mode == DSO) {
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 0, SR_CONF_COUPLING0));
+            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, ch, SR_CONF_COUPLING));
         }
         if (ret == SR_OK)
-            sr_dbg("%s: setting AC COUPLING of channel 0 to %d",
-                __func__, devc->coupling0);
+            sr_dbg("%s: setting AC COUPLING of channel %d to %d",
+                __func__, ch->index, ch->coupling);
         else
-            sr_dbg("%s: setting AC COUPLING of channel 0 to %d failed",
-                __func__, devc->coupling0);
-    } else if (id == SR_CONF_COUPLING1) {
-        devc->coupling1 = g_variant_get_boolean(data);
-        if (sdi->mode == DSO) {
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 1, SR_CONF_COUPLING0));
-        }
-        if (ret == SR_OK)
-            sr_dbg("%s: setting AC COUPLING of channel 1 to %d",
-                __func__, devc->coupling1);
-        else
-            sr_dbg("%s: setting AC COUPLING of channel 1 to %d failed",
-                __func__, devc->coupling1);
-    }  else if (id == SR_CONF_TRIGGER_SLOPE) {
+            sr_dbg("%s: setting AC COUPLING of channel %d to %d failed",
+                __func__, ch->index, ch->coupling);
+    } else if (id == SR_CONF_TRIGGER_SLOPE) {
         devc->trigger_slope = g_variant_get_byte(data);
         if (sdi->mode == DSO) {
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 1, SR_CONF_TRIGGER_SLOPE));
+            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_SLOPE));
         }
         if (ret == SR_OK)
             sr_dbg("%s: setting DSO Trigger Slope to %d",
@@ -1151,7 +1279,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi)
     } else if (id == SR_CONF_TRIGGER_SOURCE) {
         devc->trigger_source = g_variant_get_byte(data);
         if (sdi->mode == DSO) {
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 1, SR_CONF_TRIGGER_SOURCE));
+            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_SOURCE));
         }
         if (ret == SR_OK)
             sr_dbg("%s: setting DSO Trigger Source to %d",
@@ -1160,18 +1288,18 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi)
             sr_dbg("%s: setting DSO Trigger Source to %d failed",
                 __func__, devc->trigger_source);
     } else if (id == SR_CONF_TRIGGER_VALUE) {
-        devc->trigger_vpos = g_variant_get_uint16(data);
+        ch->trig_value = g_variant_get_uint16(data);
         if (sdi->mode == DSO) {
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 1, SR_CONF_TRIGGER_VALUE));
+            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, ch, SR_CONF_TRIGGER_VALUE));
         }
         if (ret == SR_OK)
-            sr_dbg("%s: setting DSO Trigger Value to %d",
-                __func__, devc->trigger_vpos);
+            sr_dbg("%s: setting channel %d Trigger Value to %d",
+                __func__, ch->index, ch->trig_value);
         else
             sr_dbg("%s: setting DSO Trigger Value to %d failed",
-                __func__, devc->trigger_vpos);
+                __func__, ch->index, ch->trig_value);
     } else if (id == SR_CONF_HORIZ_TRIGGERPOS) {
-        devc->trigger_hpos = g_variant_get_uint32(data);
+        devc->trigger_hpos = g_variant_get_uint16(data) * devc->limit_samples / 100.0f;
         if (sdi->mode == DSO) {
             ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 1, SR_CONF_HORIZ_TRIGGERPOS));
         }
@@ -1199,12 +1327,14 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi)
 	return ret;
 }
 
-static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi)
+static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
+                       const struct sr_channel_group *cg)
 {
 	GVariant *gvar;
 	GVariantBuilder gvb;
 
 	(void)sdi;
+    (void)cg;
 
 	switch (key) {
     case SR_CONF_SCAN_OPTIONS:
@@ -1234,11 +1364,24 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi)
         g_variant_builder_add(&gvb, "{sv}", "samplerates", gvar);
 		*data = g_variant_builder_end(&gvb);
 		break;
+    case SR_CONF_LIMIT_SAMPLES:
+        g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));
+        gvar = g_variant_new_from_data(G_VARIANT_TYPE("at"),
+                samplecounts, ARRAY_SIZE(samplecounts)*sizeof(uint64_t), TRUE, NULL, NULL);
+        g_variant_builder_add(&gvb, "{sv}", "samplecounts", gvar);
+        *data = g_variant_builder_end(&gvb);
+        break;
     case SR_CONF_TRIGGER_TYPE:
 		*data = g_variant_new_string(TRIGGER_TYPE);
 		break;
     case SR_CONF_OPERATION_MODE:
         *data = g_variant_new_strv(opmodes, ARRAY_SIZE(opmodes));
+        break;
+    case SR_CONF_THRESHOLD:
+        *data = g_variant_new_strv(thresholds, ARRAY_SIZE(thresholds));
+        break;
+    case SR_CONF_FILTER:
+        *data = g_variant_new_strv(filters, ARRAY_SIZE(filters));
         break;
 	default:
         return SR_ERR_NA;
@@ -1495,7 +1638,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
         } else if ((*(struct sr_dev_inst *)(devc->cb_data)).mode == DSO) {
             packet.type = SR_DF_DSO;
             packet.payload = &dso;
-            dso.probes = (*(struct sr_dev_inst *)(devc->cb_data)).probes;
+            dso.probes = (*(struct sr_dev_inst *)(devc->cb_data)).channels;
             dso.num_samples = transfer->actual_length / sample_width;
             dso.mq = SR_MQ_VOLTAGE;
             dso.unit = SR_UNIT_VOLT;
@@ -1504,7 +1647,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
         } else {
             packet.type = SR_DF_ANALOG;
             packet.payload = &analog;
-            analog.probes = (*(struct sr_dev_inst *)(devc->cb_data)).probes;
+            analog.probes = (*(struct sr_dev_inst *)(devc->cb_data)).channels;
             analog.num_samples = transfer->actual_length / sample_width;
             analog.mq = SR_MQ_VOLTAGE;
             analog.unit = SR_UNIT_VOLT;
@@ -1813,32 +1956,31 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi, void *cb_data)
         }
     }
     if (sdi->mode == DSO) {
-        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 0, SR_CONF_VDIV0));
-        if (ret != SR_OK) {
-            sr_err("Set VDIV of channel 0 command failed!");
-            return ret;
+        GSList *l;
+        for(l = sdi->channels; l; l = l->next) {
+            struct sr_channel *probe = (struct sr_channel *)l->data;
+            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe, SR_CONF_VDIV));
+            if (ret != SR_OK) {
+                sr_err("Set VDIV of channel %d command failed!", probe->index);
+                return ret;
+            }
         }
-        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 1, SR_CONF_VDIV1));
-        if (ret != SR_OK) {
-            sr_err("Set VDIV of channel 1 command failed!");
-            return ret;
-        }
-        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 0, SR_CONF_HORIZ_TRIGGERPOS));
+        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_HORIZ_TRIGGERPOS));
         if (ret != SR_OK) {
             sr_err("Set Horiz Trigger Position command failed!");
             return ret;
         }
-        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 0, SR_CONF_TRIGGER_SLOPE));
+        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_SLOPE));
         if (ret != SR_OK) {
             sr_err("Set Trigger Slope command failed!");
             return ret;
         }
-        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 0, SR_CONF_TRIGGER_SOURCE));
+        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_SOURCE));
         if (ret != SR_OK) {
             sr_err("Set Trigger Source command failed!");
             return ret;
         }
-        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 0, SR_CONF_TRIGGER_VALUE));
+        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_VALUE));
         if (ret != SR_OK) {
             sr_err("Set Trigger Value command failed!");
             return ret;
@@ -1846,7 +1988,7 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi, void *cb_data)
     }
 
     if ((ret = command_start_acquisition (usb->devhdl,
-        devc->cur_samplerate, devc->sample_wide)) != SR_OK) {
+        devc->cur_samplerate, devc->sample_wide, (sdi->mode == LOGIC))) != SR_OK) {
         abort_acquisition(devc);
         return ret;
     }
@@ -1935,6 +2077,25 @@ static int dev_test(struct sr_dev_inst *sdi)
     }
 }
 
+static int dev_status_get(struct sr_dev_inst *sdi, struct sr_status *status)
+{
+    if (sdi) {
+        struct sr_usb_dev_inst *usb;
+        int ret;
+
+        usb = sdi->conn;
+        ret = command_get_status(usb->devhdl, status);
+        if (ret != SR_OK) {
+            sr_err("Device don't exist!");
+            return SR_ERR;
+        } else {
+            return SR_OK;
+        }
+    } else {
+        return SR_ERR;
+    }
+}
+
 SR_PRIV struct sr_dev_driver DSLogic_driver_info = {
     .name = "DSLogic",
     .longname = "DSLogic (generic driver for DSLogic LA)",
@@ -1943,13 +2104,15 @@ SR_PRIV struct sr_dev_driver DSLogic_driver_info = {
 	.cleanup = cleanup,
 	.scan = scan,
 	.dev_list = dev_list,
+    .dev_mode_list = dev_mode_list,
 	.dev_clear = dev_clear,
 	.config_get = config_get,
 	.config_set = config_set,
 	.config_list = config_list,
 	.dev_open = dev_open,
 	.dev_close = dev_close,
-        .dev_test = dev_test,
+    .dev_test = dev_test,
+    .dev_status_get = dev_status_get,
 	.dev_acquisition_start = dev_acquisition_start,
 	.dev_acquisition_stop = dev_acquisition_stop,
 	.priv = NULL,

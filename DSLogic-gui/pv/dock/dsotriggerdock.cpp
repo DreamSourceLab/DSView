@@ -23,6 +23,7 @@
 
 #include "dsotriggerdock.h"
 #include "../sigsession.h"
+#include "../device/devinst.h"
 
 #include <QObject>
 #include <QLabel>
@@ -135,11 +136,10 @@ void DsoTriggerDock::paintEvent(QPaintEvent *)
 void DsoTriggerDock::pos_changed(int pos)
 {
     int ret;
-    quint32 real_pos;
-    real_pos = pos*_session.get_total_sample_len()/100.0f;
-    real_pos = (_session.get_last_sample_rate() > SR_MHZ(100)) ? real_pos/2 : real_pos;
-    ret = sr_config_set(_session.get_device(), SR_CONF_HORIZ_TRIGGERPOS, g_variant_new_uint32(real_pos));
-    if (ret != SR_OK) {
+    ret = _session.get_device()->set_config(NULL, NULL,
+                                            SR_CONF_HORIZ_TRIGGERPOS,
+                                            g_variant_new_uint16((uint16_t)pos));
+    if (!ret) {
         QMessageBox msg(this);
         msg.setText("Trigger Setting Issue");
         msg.setInformativeText("Change horiz trigger position failed!");
@@ -147,6 +147,10 @@ void DsoTriggerDock::pos_changed(int pos)
         msg.setIcon(QMessageBox::Warning);
         msg.exec();
     }
+
+    uint64_t sample_limit = _session.get_device()->get_sample_limit();
+    uint64_t trig_pos = sample_limit * pos / 100;
+    set_trig_pos(trig_pos);
 }
 
 void DsoTriggerDock::source_changed()
@@ -154,8 +158,10 @@ void DsoTriggerDock::source_changed()
     int id = source_group->checkedId();
     int ret;
 
-    ret = sr_config_set(_session.get_device(), SR_CONF_TRIGGER_SOURCE, g_variant_new_byte(id));
-    if (ret != SR_OK) {
+    ret = _session.get_device()->set_config(NULL, NULL,
+                                            SR_CONF_TRIGGER_SOURCE,
+                                            g_variant_new_byte(id));
+    if (!ret) {
         QMessageBox msg(this);
         msg.setText("Trigger Setting Issue");
         msg.setInformativeText("Change trigger source failed!");
@@ -170,8 +176,10 @@ void DsoTriggerDock::type_changed()
     int id = type_group->checkedId();
     int ret;
 
-    ret = sr_config_set(_session.get_device(), SR_CONF_TRIGGER_SLOPE, g_variant_new_byte(id));
-    if (ret != SR_OK) {
+    ret = _session.get_device()->set_config(NULL, NULL,
+                                            SR_CONF_TRIGGER_SLOPE,
+                                            g_variant_new_byte(id));
+    if (!ret) {
         QMessageBox msg(this);
         msg.setText("Trigger Setting Issue");
         msg.setInformativeText("Change trigger type failed!");
@@ -183,7 +191,7 @@ void DsoTriggerDock::type_changed()
 
 void DsoTriggerDock::device_change()
 {
-    if (strcmp(_session.get_device()->driver->name, "DSLogic") != 0) {
+    if (strcmp(_session.get_device()->dev_inst()->driver->name, "DSLogic") != 0) {
         position_spinBox->setDisabled(true);
         position_slider->setDisabled(true);
     } else {

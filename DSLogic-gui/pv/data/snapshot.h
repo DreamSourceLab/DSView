@@ -44,11 +44,13 @@ public:
 
     void * get_data() const;
 
-    int get_unit_size() const;
+    int unit_size() const;
 
     bool buf_null() const;
 
     unsigned int get_channel_num() const;
+
+    uint64_t get_sample(uint64_t index) const;
 
 protected:
 	void append_data(void *data, uint64_t samples);

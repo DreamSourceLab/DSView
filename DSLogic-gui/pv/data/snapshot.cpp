@@ -54,6 +54,7 @@ Snapshot::~Snapshot()
 
 int Snapshot::init(uint64_t _total_sample_len)
 {
+    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
     _data = malloc(_total_sample_len * _unit_size +
         sizeof(uint64_t));
 
@@ -83,7 +84,7 @@ void* Snapshot::get_data() const
     return _data;
 }
 
-int Snapshot::get_unit_size() const
+int Snapshot::unit_size() const
 {
     boost::lock_guard<boost::recursive_mutex> lock(_mutex);
     return _unit_size;
@@ -93,6 +94,16 @@ unsigned int Snapshot::get_channel_num() const
 {
     boost::lock_guard<boost::recursive_mutex> lock(_mutex);
     return _channel_num;
+}
+
+uint64_t Snapshot::get_sample(uint64_t index) const
+{
+    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+
+    assert(_data);
+    assert(index < _sample_count);
+
+    return *(uint64_t*)((uint8_t*)_data + index * _unit_size);
 }
 
 void Snapshot::append_data(void *data, uint64_t samples)

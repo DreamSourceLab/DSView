@@ -24,6 +24,8 @@
 #ifndef DSLOGIC_PV_PROTOCOLDOCK_H
 #define DSLOGIC_PV_PROTOCOLDOCK_H
 
+#include <libsigrokdecode/libsigrokdecode.h>
+
 #include <QDockWidget>
 #include <QPushButton>
 #include <QComboBox>
@@ -35,8 +37,6 @@
 #include <vector>
 
 #include <libsigrok4DSLogic/libsigrok.h>
-
-#include "../decoder/decoder.h"
 
 namespace pv {
 
@@ -64,6 +64,7 @@ private slots:
     void del_protocol();
 
 private:
+    static int decoder_name_cmp(const void *a, const void *b);
 
 private:
     SigSession &_session;

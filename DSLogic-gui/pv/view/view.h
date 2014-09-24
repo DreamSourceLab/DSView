@@ -26,9 +26,16 @@
 
 #include <stdint.h>
 
+#include <set>
+#include <vector>
+
+#include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
+
 #include <QAbstractScrollArea>
 #include <QSizeF>
 
+#include "../data/signaldata.h"
 #include "cursor.h"
 #include "signal.h"
 
@@ -39,7 +46,9 @@ class SigSession;
 namespace view {
 
 class Header;
+class DevMode;
 class Ruler;
+class Trace;
 class Viewport;
 
 class View : public QAbstractScrollArea {
@@ -60,9 +69,9 @@ public:
 
 	static const QSizeF LabelPadding;
 
-    static const int WellPixelsPerSample;
-
-    static const double MaxViewRate;
+    static const int WellPixelsPerSample = 10.0f;
+    static const double MaxViewRate = 1.0f;
+    static const int MaxPixelsPerSample = 100.0f;
 
 public:
 	explicit View(SigSession &session, QWidget *parent = 0);
@@ -91,6 +100,8 @@ public:
 	 */
 	void set_scale_offset(double scale, double offset);
     void set_preScale_preOffset();
+
+    std::vector< boost::shared_ptr<Trace> > get_traces() const;
 
 	/**
 	 * Returns true if cursors are displayed. false otherwise.
@@ -146,38 +157,44 @@ public:
     void set_need_update(bool need_update);
     bool need_update() const;
 
+    uint64_t get_cursor_samples(int index);
     QString get_mm_width();
     QString get_mm_period();
     QString get_mm_freq();
     QString get_cm_time(int index);
     QString get_cm_delta(int index1, int index2);
-    QString get_cm_delta_cnt(int index1, int index2);
 
     void on_mouse_moved();
     void on_cursor_moved();
 
     void on_state_changed(bool stop);
 
+    int get_max_width();
+
 signals:
 	void hover_point_changed();
 
-	void signals_moved();
+    void traces_moved();
 
     void cursor_update();
 
     void mouse_moved();
     void cursor_moved();
 
+    void mode_changed();
+
 private:
 	void get_scroll_layout(double &length, double &offset) const;
 	
 	void update_scroll();
 
-	void reset_signal_layout();
-
     void update_margins();
 
     double get_cursor_time(int index);
+
+    static bool compare_trace_v_offsets(
+        const boost::shared_ptr<pv::view::Trace> &a,
+        const boost::shared_ptr<pv::view::Trace> &b);
 
 private:
 	bool eventFilter(QObject *object, QEvent *event);
@@ -188,31 +205,24 @@ private:
 
 public slots:
     void set_measure_en(int enable);
-    void hDial_changed(quint16 channel);
+    void signals_changed();
+    void data_updated();
+    void update_scale();
 
 private slots:
 
 	void h_scroll_value_changed(int value);
 	void v_scroll_value_changed(int value);
 
-	void signals_changed();
-	void data_updated();
-
 	void marker_time_changed();
 
-	void on_signals_moved();
+    void on_traces_moved();
 
     void header_updated();
-
-    void sample_rate_changed(quint64 sample_rate);
 
     void receive_data(quint64 length);
 
     void set_trig_pos(quint64 trig_pos);
-
-    void vDial_changed(quint16 channel);
-    void acdc_changed(quint16 channel);
-    void ch_changed(quint16 channel);
 
 private:
 
@@ -221,8 +231,7 @@ private:
 	Viewport *_viewport;
 	Ruler *_ruler;
 	Header *_header;
-
-	uint64_t _data_length;
+    DevMode *_devmode;
 
 	/// The view time scale in seconds per pixel.
 	double _scale;
@@ -235,7 +244,7 @@ private:
         double _preOffset;
 
         int _spanY;
-        int SignalHeight;
+        int _signalHeight;
 
 	int _v_offset;
 	bool _updating_scroll;

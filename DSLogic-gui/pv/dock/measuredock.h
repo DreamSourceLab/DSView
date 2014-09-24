@@ -91,13 +91,19 @@ private:
     QGroupBox *_cursor_groupBox;
     QComboBox *_t1_comboBox;
     QComboBox *_t2_comboBox;
-    QLabel *_delta_label;
-    QLabel *_cnt_label;
+    QComboBox *_t3_comboBox;
+    QLabel *_delta_label_t1t2;
+    QLabel *_cnt_label_t1t2;
+    QLabel *_delta_label_t2t3;
+    QLabel *_cnt_label_t2t3;
+    QLabel *_delta_label_t1t3;
+    QLabel *_cnt_label_t1t3;
+    int _t1_last_index;
+    int _t2_last_index;
+    int _t3_last_index;
 
     QVector <QPushButton *> _cursor_pushButton_list;
     QVector <QLabel *> _curpos_label_list;
-    QVector <QLabel *> _curvalue_label_list;
-    QVector <QComboBox *> _radix_comboBox_list;
     QVector <QLabel *> _space_label_list;
 };
 

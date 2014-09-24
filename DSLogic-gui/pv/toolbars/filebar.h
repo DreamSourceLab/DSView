@@ -43,13 +43,15 @@ public:
     void enable_toggle(bool enable);
 
 private:
-    void load_file(QString file_name);
+
     void session_error(
         const QString text, const QString info_text);
     void show_session_error(
         const QString text, const QString info_text);
 
 signals:
+    void load_file(QString);
+    void save();
     void on_screenShot();
 
 private slots:

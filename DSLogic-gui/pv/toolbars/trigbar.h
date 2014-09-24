@@ -38,6 +38,8 @@ public:
 
     void enable_toggle(bool enable);
 
+    void close_all();
+
 signals:
     void on_protocol(bool visible);
     void on_trigger(bool visible);

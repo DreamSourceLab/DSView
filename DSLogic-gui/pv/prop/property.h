@@ -36,8 +36,10 @@ class QWidget;
 namespace pv {
 namespace prop {
 
-class Property
+class Property : public QObject
 {
+    Q_OBJECT;
+
 public:
 	typedef boost::function<GVariant* ()> Getter;
 	typedef boost::function<void (GVariant*)> Setter;
@@ -48,7 +50,8 @@ protected:
 public:
 	const QString& name() const;
 
-	virtual QWidget* get_widget(QWidget *parent) = 0;
+    virtual QWidget* get_widget(QWidget *parent,
+        bool auto_commit = false) = 0;
 	virtual bool labeled_widget() const;
 
 	virtual void commit() = 0;

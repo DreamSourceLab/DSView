@@ -36,13 +36,15 @@ class DsoSnapshot;
 class Dso : public SignalData
 {
 public:
-    Dso(unsigned int num_probes, uint64_t samplerate);
+    Dso(int num_probes);
 
 	void push_snapshot(
         boost::shared_ptr<DsoSnapshot> &snapshot);
 
     std::deque< boost::shared_ptr<DsoSnapshot> >&
 		get_snapshots();
+
+    void clear();
 
 private:
     std::deque< boost::shared_ptr<DsoSnapshot> > _snapshots;

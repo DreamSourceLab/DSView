@@ -130,6 +130,34 @@ SR_API int sr_session_destroy(void)
 }
 
 /**
+ * List all device instances attached to the current session.
+ *
+ * @param devlist A pointer where the device instance list will be
+ *                stored on return. If no devices are in the session,
+ *                this will be NULL. Each element in the list points
+ *                to a struct sr_dev_inst *.
+ *                The list must be freed by the caller, but not the
+ *                elements pointed to.
+ *
+ * @retval SR_OK Success.
+ * @retval SR_ERR Invalid argument.
+ *
+ * @since 0.3.0
+ */
+SR_API int sr_session_dev_list(GSList **devlist)
+{
+
+    *devlist = NULL;
+
+    if (!session)
+        return SR_ERR;
+
+    *devlist = g_slist_copy(session->devs);
+
+    return SR_OK;
+}
+
+/**
  * Remove all the devices from the current session.
  *
  * The session itself (i.e., the struct sr_session) is not free'd and still

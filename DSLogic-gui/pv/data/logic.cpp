@@ -30,10 +30,9 @@ using namespace std;
 namespace pv {
 namespace data {
 
-Logic::Logic(unsigned int num_probes, uint64_t samplerate) :
-    SignalData(num_probes, samplerate)
+Logic::Logic(int num_probes) :
+    SignalData(num_probes)
 {
-	assert(_num_probes > 0);
 }
 
 void Logic::push_snapshot(
@@ -45,6 +44,11 @@ void Logic::push_snapshot(
 deque< boost::shared_ptr<LogicSnapshot> >& Logic::get_snapshots()
 {
 	return _snapshots;
+}
+
+void Logic::clear()
+{
+    _snapshots.clear();
 }
 
 } // namespace data

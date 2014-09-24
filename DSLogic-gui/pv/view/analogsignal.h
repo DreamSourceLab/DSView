@@ -42,42 +42,30 @@ class AnalogSignal : public Signal
 {
 private:
 	static const QColor SignalColours[4];
-
 	static const float EnvelopeThreshold;
-
+    static const int NumSpanY = 5;
+    static const int NumMiniSpanY = 5;
+    static const int NumSpanX = 10;
 public:
-	AnalogSignal(QString name,
-        boost::shared_ptr<pv::data::Analog> data, int probe_index, int order);
+    AnalogSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
+                 boost::shared_ptr<pv::data::Analog> data,
+                 const sr_channel * const probe);
 
 	virtual ~AnalogSignal();
+
+    boost::shared_ptr<pv::data::SignalData> data() const;
 
 	void set_scale(float scale);
 
 	/**
 	 * Paints the signal with a QPainter
 	 * @param p the QPainter to paint into.
-	 * @param y the y-coordinate to draw the signal at.
 	 * @param left the x-coordinate of the left edge of the signal.
 	 * @param right the x-coordinate of the right edge of the signal.
-	 * @param scale the scale in seconds per pixel.
-	 * @param offset the time to show at the left hand edge of
-	 *   the view in seconds.
 	 **/
-	void paint(QPainter &p, int y, int left, int right, double scale,
-		double offset);
+    void paint_mid(QPainter &p, int left, int right);
 
     const std::vector< std::pair<uint64_t, bool> > cur_edges() const;
-
-    void set_decoder(pv::decoder::Decoder *decoder);
-
-    pv::decoder::Decoder* get_decoder();
-
-    void del_decoder();
-
-    void set_data(boost::shared_ptr<pv::data::Logic> _logic_data,
-                  boost::shared_ptr<pv::data::Dso> _dso_data,
-                  boost::shared_ptr<pv::data::Analog> _analog_data,
-                  boost::shared_ptr<pv::data::Group> _group_data);
 
 private:
 	void paint_trace(QPainter &p,

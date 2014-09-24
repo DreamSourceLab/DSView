@@ -22,6 +22,8 @@
 
 
 #include "devicemanager.h"
+#include "device/devinst.h"
+#include "device/device.h"
 #include "sigsession.h"
 
 #include <cassert>
@@ -34,9 +36,17 @@
 #include <QDebug>
 #include <QDir>
 
+#include <boost/foreach.hpp>
+
 #include <libsigrok4DSLogic/libsigrok.h>
 
-using namespace std;
+using boost::shared_ptr;
+using std::list;
+using std::map;
+using std::ostringstream;
+using std::runtime_error;
+using std::string;
+
 char config_path[256];
 
 namespace pv {
@@ -53,57 +63,47 @@ DeviceManager::~DeviceManager()
 	release_devices();
 }
 
-const std::list<sr_dev_inst*>& DeviceManager::devices() const
+const std::list<boost::shared_ptr<device::DevInst> > &DeviceManager::devices() const
 {
 	return _devices;
 }
 
-int DeviceManager::use_device(sr_dev_inst *sdi, SigSession *owner)
+void DeviceManager::add_device(boost::shared_ptr<pv::device::DevInst> device)
 {
-	assert(sdi);
-	assert(owner);
+    assert(device);
 
-    if (sr_dev_open(sdi) != SR_OK)
-        return SR_ERR;
-
-    _used_devices[sdi] = owner;
-    return SR_OK;
+    if (std::find(_devices.begin(), _devices.end(), device) ==
+        _devices.end())
+        _devices.push_front(device);
 }
 
-void DeviceManager::release_device(sr_dev_inst *sdi)
-{
-	assert(sdi);
-
-	// Notify the owner, and removed the device from the used device list
-	_used_devices[sdi]->release_device(sdi);
-	_used_devices.erase(sdi);
-
-	sr_dev_close(sdi);
-}
-
-list<sr_dev_inst*> DeviceManager::driver_scan(
+std::list<boost::shared_ptr<device::DevInst> > DeviceManager::driver_scan(
 	struct sr_dev_driver *const driver, GSList *const drvopts)
 {
-	list<sr_dev_inst*> driver_devices;
+    list< shared_ptr<device::DevInst> > driver_devices;
 
 	assert(driver);
 
 	// Remove any device instances from this driver from the device
 	// list. They will not be valid after the scan.
-	list<sr_dev_inst*>::iterator i = _devices.begin();
+    list< shared_ptr<device::DevInst> >::iterator i = _devices.begin();
 	while (i != _devices.end()) {
-		if ((*i)->driver == driver)
+        if ((*i)->dev_inst() &&
+            (*i)->dev_inst()->driver == driver) {
+            (*i)->release();
 			i = _devices.erase(i);
-		else
+        } else {
 			i++;
+        }
 	}
 
-	// Release this driver and all it's attached devices
-	release_driver(driver);
+    // Clear all the old device instances from this driver
+    sr_dev_clear(driver);
+    //release_driver(driver);
 
     // Check If DSLogic driver
     if (strcmp(driver->name, "DSLogic") == 0) {
-        QDir dir(QApplication::applicationDirPath());
+        QDir dir(QCoreApplication::applicationDirPath());
         if (!dir.cd("res"))
             return driver_devices;
         std::string str = dir.absolutePath().toStdString() + "/";
@@ -113,41 +113,17 @@ list<sr_dev_inst*> DeviceManager::driver_scan(
 	// Do the scan
 	GSList *const devices = sr_driver_scan(driver, drvopts);
 	for (GSList *l = devices; l; l = l->next)
-		driver_devices.push_back((sr_dev_inst*)l->data);
+        driver_devices.push_front(shared_ptr<device::DevInst>(
+                                     new device::Device((sr_dev_inst*)l->data)));
 	g_slist_free(devices);
-	driver_devices.sort(compare_devices);
+    //driver_devices.sort(compare_devices);
 
 	// Add the scanned devices to the main list
 	_devices.insert(_devices.end(), driver_devices.begin(),
 		driver_devices.end());
-	_devices.sort(compare_devices);
+    //_devices.sort(compare_devices);
 
 	return driver_devices;
-}
-
-string DeviceManager::format_device_title(const sr_dev_inst *const sdi)
-{
-	ostringstream s;
-
-	assert(sdi);
-
-	if (sdi->vendor && sdi->vendor[0]) {
-		s << sdi->vendor;
-		if ((sdi->model && sdi->model[0]) ||
-			(sdi->version && sdi->version[0]))
-			s << ' ';
-	}
-
-	if (sdi->model && sdi->model[0]) {
-		s << sdi->model;
-		if (sdi->version && sdi->version[0])
-			s << ' ';
-	}
-
-	if (sdi->version && sdi->version[0])
-		s << sdi->version;
-
-	return s.str();
 }
 
 void DeviceManager::init_drivers()
@@ -165,17 +141,16 @@ void DeviceManager::init_drivers()
 
 void DeviceManager::release_devices()
 {
-	// Release all the used devices
-	for (map<sr_dev_inst*, SigSession*>::iterator i = _used_devices.begin();
-        i != _used_devices.end();)
-        release_device((*i++).first);
+    // Release all the used devices
+    BOOST_FOREACH(shared_ptr<device::DevInst> dev, _devices) {
+        assert(dev);
+        dev->release();
+    }
 
-	_used_devices.clear();
-
-	// Clear all the drivers
-	sr_dev_driver **const drivers = sr_driver_list();
-	for (sr_dev_driver **driver = drivers; *driver; driver++)
-		sr_dev_clear(*driver);
+    // Clear all the drivers
+    sr_dev_driver **const drivers = sr_driver_list();
+    for (sr_dev_driver **driver = drivers; *driver; driver++)
+        sr_dev_clear(*driver);
 }
 
 void DeviceManager::scan_all_drivers()
@@ -188,53 +163,22 @@ void DeviceManager::scan_all_drivers()
 
 void DeviceManager::release_driver(struct sr_dev_driver *const driver)
 {
-	assert(driver);
-//    map<sr_dev_inst*, SigSession*>::iterator i = _used_devices.begin();
-//    while(i != _used_devices.end()) {
-//        if((*i).first->driver == driver)
-//        {
-//            // Notify the current owner of the device
-//            (*i).second->release_device((*i).first);
+    BOOST_FOREACH(shared_ptr<device::DevInst> dev, _devices) {
+        assert(dev);
+        if(dev->dev_inst()->driver == driver)
+            dev->release();
+    }
 
-//            // Close the device instance
-//            sr_dev_close((*i).first);
-
-//            // Remove it from the used device list
-//            i = _used_devices.erase(i);
-//        } else {
-//            i++;
-//        }
-//    }
-    for (map<sr_dev_inst*, SigSession*>::iterator i = _used_devices.begin();
-        i != _used_devices.end();)
-        if((*i).first->driver == driver)
-        {
-            // Notify the current owner of the device
-            (*i).second->release_device((*i).first);
-
-            // Close the device instance
-            sr_dev_close((*i).first);
-
-            // Remove it from the used device list
-            _used_devices.erase(i++);
-        } else {
-            i++;
-        }
-
-	// Clear all the old device instances from this driver
-	sr_dev_clear(driver);
+    // Clear all the old device instances from this driver
+    sr_dev_clear(driver);
 }
 
-bool DeviceManager::compare_devices(const sr_dev_inst *const a,
-	const sr_dev_inst *const b)
+bool DeviceManager::compare_devices(boost::shared_ptr<device::DevInst> a,
+    boost::shared_ptr<device::DevInst> b)
 {
-	return format_device_title(a).compare(format_device_title(b)) < 0;
-}
-
-int DeviceManager::test_device(sr_dev_inst *sdi)
-{
-    assert(sdi);
-    return sdi->driver->dev_test(sdi);
+    assert(a);
+    assert(b);
+    return a->format_device_title().compare(b->format_device_title()) <= 0;
 }
 
 } // namespace pv

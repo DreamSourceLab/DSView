@@ -50,7 +50,9 @@ TrigBar::TrigBar(QWidget *parent) :
     _trig_button.setCheckable(true);
     _protocol_button.setIcon(QIcon::fromTheme("trig",
         QIcon(":/icons/protocol.png")));
+#ifdef ENABLE_DECODE
     _protocol_button.setCheckable(true);
+#endif
     _measure_button.setIcon(QIcon::fromTheme("trig",
         QIcon(":/icons/measure.png")));
     _measure_button.setCheckable(true);
@@ -90,6 +92,35 @@ void TrigBar::enable_toggle(bool enable)
     _protocol_button.setDisabled(!enable);
     _measure_button.setDisabled(!enable);
     _search_button.setDisabled(!enable);
+
+    _trig_button.setIcon(enable ? QIcon::fromTheme("trig", QIcon(":/icons/trigger.png")) :
+                                  QIcon::fromTheme("trig", QIcon(":/icons/trigger_dis.png")));
+    _protocol_button.setIcon(enable ? QIcon::fromTheme("trig", QIcon(":/icons/protocol.png")) :
+                                  QIcon::fromTheme("trig", QIcon(":/icons/protocol_dis.png")));
+    _measure_button.setIcon(enable ? QIcon::fromTheme("trig", QIcon(":/icons/measure.png")) :
+                                  QIcon::fromTheme("trig", QIcon(":/icons/measure_dis.png")));
+    _search_button.setIcon(enable ? QIcon::fromTheme("trig", QIcon(":/icons/search-bar.png")) :
+                                  QIcon::fromTheme("trig", QIcon(":/icons/search-bar_dis.png")));
+}
+
+void TrigBar::close_all()
+{
+    if (_trig_button.isChecked()) {
+        _trig_button.setChecked(false);
+        on_trigger(false);
+    }
+    if (_protocol_button.isChecked()) {
+        _protocol_button.setChecked(false);
+        on_protocol(false);
+    }
+    if (_measure_button.isChecked()) {
+        _measure_button.setChecked(false);
+        on_measure(false);
+    }
+    if(_search_button.isChecked()) {
+        _search_button.setChecked(false);
+        on_search(false);
+    }
 }
 
 } // namespace toolbars

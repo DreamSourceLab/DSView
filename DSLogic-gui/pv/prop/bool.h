@@ -33,15 +33,20 @@ namespace prop {
 
 class Bool : public Property
 {
+    Q_OBJECT;
+
 public:
 	Bool(QString name, Getter getter, Setter setter);
 
 	virtual ~Bool();
 
-	QWidget* get_widget(QWidget *parent);
+    QWidget* get_widget(QWidget *parent, bool auto_commit);
 	bool labeled_widget() const;
 
 	void commit();
+
+private slots:
+    void on_state_changed(int);
 
 private:
 	QCheckBox *_check_box;

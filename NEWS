@@ -1,24 +1,21 @@
-0.1.0 (2013-12-15)
-------------------
+0.4 (2014-09-24)
+-----------------
+ * Add protocol decoders (38) support
+ * Improve the hardware configuration under various platforms
+ * Add different thresholds support
+ * Add options for input filter under logic analyzer mode
+ * Add instant capture(trigger ignore) under logic analyzer mode
+ * Add detail capture status display under logic analyzer mode
+ * Add quick button for mode shift
+ * Redesign the GUI for oscilloscope
+ * Add flexible sample rate support under oscilloscope mode
+ * Fix trigger value setting issue
+ * Improve trigger method under oscilloscope mode
+ * Add shortcut keys for major operations
+ * Fix other bugs
 
- * Initial release.
-
-0.2.0 (2014-04-13)
-------------------
-
- * Add DSLogic hardware support.
-
-0.2.1 (2014-05-08)
-------------------
-
- * Add wireless extension hardware support.
- * Fix libusb_error_io issue on Linux when sample rate >= 100MHz.
- * Fix channel enable/disable bug.
- * Fix device options config issue.
- * Fix some display issues of UI.
- 
- 0.3 (2014-06-29)
- -----------------
+0.3 (2014-06-29)
+-----------------
  * Add DSLogic Oscilloscope module support.
  * Fix data display issue when not all channels be enabled.
  * Fix issue of data mirrored to other channels.
@@ -27,4 +24,23 @@
  * Fix bugs of trigger setting and detection
  * Fix other minior issues.
  * Clean up the git repository
+
+0.2.1 (2014-05-08)
+------------------
+ * Add wireless extension hardware support.
+ * Fix libusb_error_io issue on Linux when sample rate >= 100MHz.
+ * Fix channel enable/disable bug.
+ * Fix device options config issue.
+ * Fix some display issues of UI.
+
+0.2.0 (2014-04-13)
+------------------
+ * Add DSLogic hardware support.
+
+0.1.0 (2013-12-15)
+------------------
+ * Initial release.
+
+
+ 
  

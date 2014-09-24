@@ -92,7 +92,7 @@ static int format_match(const char *filename)
 
 static int init(struct sr_input *in, const char *filename)
 {
-	struct sr_probe *probe;
+	struct sr_channel *probe;
 	struct context *ctx;
 	char buf[40], probename[8];
 	int i;
@@ -121,9 +121,9 @@ static int init(struct sr_input *in, const char *filename)
 
 	for (i = 0; i < ctx->num_channels; i++) {
 		snprintf(probename, 8, "CH%d", i + 1);
-		if (!(probe = sr_probe_new(0, SR_PROBE_ANALOG, TRUE, probename)))
+		if (!(probe = sr_channel_new(0, SR_CHANNEL_ANALOG, TRUE, probename)))
 			return SR_ERR;
-		in->sdi->probes = g_slist_append(in->sdi->probes, probe);
+		in->sdi->channels = g_slist_append(in->sdi->channels, probe);
 	}
 
 	return SR_OK;
@@ -185,7 +185,7 @@ static int loadfile(struct sr_input *in, const char *filename)
 		}
 		packet.type = SR_DF_ANALOG;
 		packet.payload = &analog;
-		analog.probes = in->sdi->probes;
+		analog.probes = in->sdi->channels;
 		analog.num_samples = chunk_samples;
 		analog.mq = 0;
 		analog.unit = 0;

@@ -40,6 +40,9 @@ Enum::Enum(QString name,
 	_values(values),
 	_selector(NULL)
 {
+    for (vector< pair<GVariant*, QString> >::const_iterator i =
+        _values.begin(); i != _values.end(); i++)
+        g_variant_ref((*i).first);
 }
 
 Enum::~Enum()
@@ -48,12 +51,14 @@ Enum::~Enum()
 		g_variant_unref(_values[i].first);
 }
 
-QWidget* Enum::get_widget(QWidget *parent)
+QWidget* Enum::get_widget(QWidget *parent, bool auto_commit)
 {
 	if (_selector)
 		return _selector;
 
 	GVariant *const value = _getter ? _getter() : NULL;
+    if (!value)
+        return NULL;
 
 	_selector = new QComboBox(parent);
 	for (unsigned int i = 0; i < _values.size(); i++) {
@@ -64,6 +69,10 @@ QWidget* Enum::get_widget(QWidget *parent)
 	}
 
 	g_variant_unref(value);
+
+    if (auto_commit)
+        connect(_selector, SIGNAL(currentIndexChanged(int)),
+            this, SLOT(on_current_item_changed(int)));
 
 	return _selector;
 }
@@ -80,6 +89,11 @@ void Enum::commit()
 		return;
 
 	_setter((GVariant*)_selector->itemData(index).value<void*>());
+}
+
+void Enum::on_current_item_changed(int)
+{
+    commit();
 }
 
 } // prop

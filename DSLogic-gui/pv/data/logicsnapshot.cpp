@@ -74,6 +74,22 @@ void LogicSnapshot::append_payload(
     append_payload_to_mipmap();
 }
 
+void LogicSnapshot::get_samples(uint8_t *const data,
+    int64_t start_sample, int64_t end_sample) const
+{
+    assert(data);
+    assert(start_sample >= 0);
+    assert(start_sample <= (int64_t)_sample_count);
+    assert(end_sample >= 0);
+    assert(end_sample <= (int64_t)_sample_count);
+    assert(start_sample <= end_sample);
+
+    //lock_guard<recursive_mutex> lock(_mutex);
+
+    const size_t size = (end_sample - start_sample) * _unit_size;
+    memcpy(data, (const uint8_t*)_data + start_sample * _unit_size, size);
+}
+
 void LogicSnapshot::reallocate_mipmap_level(MipMapLevel &m)
 {
 	const uint64_t new_data_length = ((m.length + MipMapDataUnit - 1) /
@@ -170,14 +186,6 @@ void LogicSnapshot::append_payload_to_mipmap()
 	}
 }
 
-uint64_t LogicSnapshot::get_sample(uint64_t index) const
-{
-	assert(_data);
-	assert(index < _sample_count);
-
-	return *(uint64_t*)((uint8_t*)_data + index * _unit_size);
-}
-
 void LogicSnapshot::get_subsampled_edges(
 	std::vector<EdgePair> &edges,
 	uint64_t start, uint64_t end,
@@ -193,6 +201,9 @@ void LogicSnapshot::get_subsampled_edges(
 	assert(min_length > 0);
 	assert(sig_index >= 0);
 	assert(sig_index < 64);
+
+    if (!_data)
+        return;
 
 	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 

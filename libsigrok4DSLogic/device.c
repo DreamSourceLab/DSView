@@ -47,12 +47,12 @@
  */
 
 /** @private */
-SR_PRIV struct sr_probe *sr_probe_new(int index, int type,
-		gboolean enabled, const char *name)
+SR_PRIV struct sr_channel *sr_channel_new(int index, int type,
+        gboolean enabled, const char *name)
 {
-	struct sr_probe *probe;
+	struct sr_channel *probe;
 
-	if (!(probe = g_try_malloc0(sizeof(struct sr_probe)))) {
+	if (!(probe = g_try_malloc0(sizeof(struct sr_channel)))) {
 		sr_err("Probe malloc failed.");
 		return NULL;
 	}
@@ -86,7 +86,7 @@ SR_API int sr_dev_probe_name_set(const struct sr_dev_inst *sdi,
 		int probenum, const char *name)
 {
 	GSList *l;
-	struct sr_probe *probe;
+	struct sr_channel *probe;
 	int ret;
 
 	if (!sdi) {
@@ -95,7 +95,7 @@ SR_API int sr_dev_probe_name_set(const struct sr_dev_inst *sdi,
 	}
 
 	ret = SR_ERR_ARG;
-	for (l = sdi->probes; l; l = l->next) {
+	for (l = sdi->channels; l; l = l->next) {
 		probe = l->data;
 		if (probe->index == probenum) {
 			g_free(probe->name);
@@ -123,14 +123,14 @@ SR_API int sr_dev_probe_enable(const struct sr_dev_inst *sdi, int probenum,
 		gboolean state)
 {
 	GSList *l;
-	struct sr_probe *probe;
+	struct sr_channel *probe;
 	int ret;
 
 	if (!sdi)
 		return SR_ERR_ARG;
 
 	ret = SR_ERR_ARG;
-	for (l = sdi->probes; l; l = l->next) {
+	for (l = sdi->channels; l; l = l->next) {
 		probe = l->data;
 		if (probe->index == probenum) {
 			probe->enabled = state;
@@ -160,14 +160,14 @@ SR_API int sr_dev_trigger_set(const struct sr_dev_inst *sdi, int probenum,
 		const char *trigger)
 {
 	GSList *l;
-	struct sr_probe *probe;
+	struct sr_channel *probe;
 	int ret;
 
 	if (!sdi)
 		return SR_ERR_ARG;
 
 	ret = SR_ERR_ARG;
-	for (l = sdi->probes; l; l = l->next) {
+	for (l = sdi->channels; l; l = l->next) {
 		probe = l->data;
 		if (probe->index == probenum) {
 			/* If the probe already has a trigger, kill it first. */
@@ -208,7 +208,7 @@ SR_API gboolean sr_dev_has_option(const struct sr_dev_inst *sdi, int key)
 	if (!sdi || !sdi->driver || !sdi->driver->config_list)
 		return FALSE;
 
-	if (sdi->driver->config_list(SR_CONF_DEVICE_OPTIONS, &gvar, NULL) != SR_OK)
+    if (sdi->driver->config_list(SR_CONF_DEVICE_OPTIONS, &gvar, NULL, NULL) != SR_OK)
 		return FALSE;
 
 	ret = FALSE;
@@ -243,7 +243,7 @@ SR_PRIV struct sr_dev_inst *sr_dev_inst_new(int mode, int index, int status,
 	sdi->vendor = vendor ? g_strdup(vendor) : NULL;
 	sdi->model = model ? g_strdup(model) : NULL;
 	sdi->version = version ? g_strdup(version) : NULL;
-	sdi->probes = NULL;
+	sdi->channels = NULL;
 	sdi->conn = NULL;
 	sdi->priv = NULL;
 
@@ -253,24 +253,24 @@ SR_PRIV struct sr_dev_inst *sr_dev_inst_new(int mode, int index, int status,
 /** @private */
 SR_PRIV void sr_dev_probes_free(struct sr_dev_inst *sdi)
 {
-    struct sr_probe *probe;
+    struct sr_channel *probe;
     GSList *l;
 
-    for (l = sdi->probes; l; l = l->next) {
+    for (l = sdi->channels; l; l = l->next) {
         probe = l->data;
         g_free(probe->name);
         g_free(probe);
     }
 
-    sdi->probes = NULL;
+    sdi->channels = NULL;
 }
 
 SR_PRIV void sr_dev_inst_free(struct sr_dev_inst *sdi)
 {
-	struct sr_probe *probe;
+	struct sr_channel *probe;
 	GSList *l;
 
-	for (l = sdi->probes; l; l = l->next) {
+	for (l = sdi->channels; l; l = l->next) {
 		probe = l->data;
 		g_free(probe->name);
 		g_free(probe);
@@ -366,6 +366,14 @@ SR_API GSList *sr_dev_list(const struct sr_dev_driver *driver)
 		return driver->dev_list();
 	else
 		return NULL;
+}
+
+SR_API GSList *sr_dev_mode_list(const struct sr_dev_driver *driver)
+{
+    if (driver && driver->dev_mode_list)
+        return driver->dev_mode_list();
+    else
+        return NULL;
 }
 
 SR_API int sr_dev_clear(const struct sr_dev_driver *driver)

@@ -31,6 +31,9 @@
 
 #include <string>
 #include <utility>
+#include <map>
+#include <set>
+#include <string>
 #include <vector>
 
 #include <QObject>
@@ -43,11 +46,15 @@
 #include <libsigrok4DSLogic/libsigrok.h>
 #include <libusb.h>
 
+struct srd_decoder;
+struct srd_channel;
+
 namespace pv {
 
 class DeviceManager;
 
 namespace data {
+class SignalData;
 class Analog;
 class AnalogSnapshot;
 class Dso;
@@ -58,8 +65,14 @@ class Group;
 class GroupSnapshot;
 }
 
+namespace device {
+class DevInst;
+}
+
 namespace view {
 class Signal;
+class GroupSignal;
+class DecodeTrace;
 }
 
 namespace decoder {
@@ -86,69 +99,61 @@ public:
 
 	~SigSession();
 
-	struct sr_dev_inst* get_device() const;
+    boost::shared_ptr<device::DevInst> get_device() const;
 
 	/**
 	 * Sets device instance that will be used in the next capture session.
 	 */
-    int set_device(struct sr_dev_inst *sdi);
+    void set_device(boost::shared_ptr<device::DevInst> dev_inst)
+        throw(QString);
 
-	void release_device(struct sr_dev_inst *sdi);
-
-	void load_file(const std::string &name,
-		boost::function<void (const QString)> error_handler);
+    void set_file(const std::string &name)
+        throw(QString);
 
     void save_file(const std::string &name);
 
+    void set_default_device();
+
+    void release_device(device::DevInst *dev_inst);
+
 	capture_state get_capture_state() const;
 
-	void start_capture(uint64_t record_length,
+    void start_capture(bool instant,
 		boost::function<void (const QString)> error_handler);
 
 	void stop_capture();
 
+    std::set< boost::shared_ptr<data::SignalData> > get_data() const;
+
 	std::vector< boost::shared_ptr<view::Signal> >
 		get_signals();
-    std::vector< boost::shared_ptr<view::Signal> >
-        get_pro_signals();
 
-    int get_logic_probe_cnt(const struct sr_dev_inst *sdi);
-    int get_dso_probe_cnt(const struct sr_dev_inst *sdi);
-    int get_analog_probe_cnt(const struct sr_dev_inst *sdi);
+    std::vector< boost::shared_ptr<view::GroupSignal> >
+        get_group_signals();
 
-    void init_signals(const struct sr_dev_inst *sdi);
+#ifdef ENABLE_DECODE
+    bool add_decoder(srd_decoder *const dec);
 
-    void update_signals(const struct sr_dev_inst *sdi);
+    std::vector< boost::shared_ptr<view::DecodeTrace> >
+        get_decode_signals() const;
+
+    void remove_decode_signal(view::DecodeTrace *signal);
+
+    void remove_decode_signal(int index);
+
+    void rst_decoder(int index);
+
+    void rst_decoder(view::DecodeTrace *signal);
+
+#endif
+
+    void init_signals();
 
     void add_group();
 
     void del_group();
 
-    void add_protocol(std::list<int> probe_index_list, decoder::Decoder *decoder);
-
-    void del_protocol(int protocol_index);
-
-    void del_signal(std::vector< boost::shared_ptr<view::Signal> >::iterator i);
-
-	boost::shared_ptr<data::Logic> get_data();
-
     void* get_buf(int& unit_size, uint64_t& length);
-
-    quint64 get_last_sample_rate() const;
-
-    quint64 get_total_sample_len() const;
-    void set_total_sample_len(quint64 length);
-
-    QVector<std::pair<decoder::Decoder *, std::list<int> > > get_decoders() const;
-
-    void add_protocol_analyzer(int decoder_index, std::list<int> _sel_probes,
-                               QMap<QString, QVariant> &_options, QMap<QString, int> _options_index);
-    void rst_protocol_analyzer(int rst_index, std::list<int> _sel_probes,
-                               QMap<QString, QVariant> &_options, QMap<QString, int> _options_index);
-    void del_protocol_analyzer(int protocol_index);
-
-    std::list<int> get_decode_probes(int decode_index);
-    QMap<QString, int> get_decode_options_index(int decode_index);
 
     void start_hotplug_proc(boost::function<void (const QString)> error_handler);
     void stop_hotplug_proc();
@@ -157,21 +162,33 @@ public:
 
     void set_adv_trigger(bool adv_trigger);
 
-    void start_dso_ctrl_proc(boost::function<void (const QString)> error_handler);
-    void stop_dso_ctrl_proc();
-    int set_dso_ctrl(int key);
     uint16_t get_dso_ch_num();
+    
+    void set_sample_rate(uint64_t sample_rate);
 
 private:
 	void set_capture_state(capture_state state);
 
+    void read_sample_rate(const sr_dev_inst *const sdi);
+
 private:
-    // thread for sample/load
-	void load_thread_proc(const std::string name,
-		boost::function<void (const QString)> error_handler);
-	void sample_thread_proc(struct sr_dev_inst *sdi,
-		uint64_t record_length,
-		boost::function<void (const QString)> error_handler);
+    /**
+     * Attempts to autodetect the format. Failing that
+     * @param filename The filename of the input file.
+     * @return A pointer to the 'struct sr_input_format' that should be
+     * 	used, or NULL if no input format was selected or
+     * 	auto-detected.
+     */
+    static sr_input_format* determine_input_file_format(
+        const std::string &filename);
+
+    static sr_input* load_input_file_format(
+        const std::string &filename,
+        boost::function<void (const QString)> error_handler,
+        sr_input_format *format = NULL);
+
+    void sample_thread_proc(boost::shared_ptr<device::DevInst> dev_inst,
+                            boost::function<void (const QString)> error_handler);
 
     // data feed
 	void feed_in_header(const sr_dev_inst *sdi);
@@ -186,11 +203,9 @@ private:
 	static void data_feed_in_proc(const struct sr_dev_inst *sdi,
 		const struct sr_datafeed_packet *packet, void *cb_data);
 
-        void hotplug_proc(boost::function<void (const QString)> error_handler);
-        static int hotplug_callback(struct libusb_context *ctx, struct libusb_device *dev, 
-                         libusb_hotplug_event event, void *user_data);
-
-	void dso_ctrl_proc(boost::function<void (const QString)> error_handler);
+    void hotplug_proc(boost::function<void (const QString)> error_handler);
+    static int hotplug_callback(struct libusb_context *ctx, struct libusb_device *dev,
+                                libusb_hotplug_event event, void *user_data);
 
 private:
 	DeviceManager &_device_manager;
@@ -198,19 +213,18 @@ private:
 	/**
 	 * The device instance that will be used in the next capture session.
 	 */
-	struct sr_dev_inst *_sdi;
+    boost::shared_ptr<device::DevInst> _dev_inst;
 
 	mutable boost::mutex _sampling_mutex;
 	capture_state _capture_state;
+    bool _instant;
 
 	mutable boost::mutex _signals_mutex;
 	std::vector< boost::shared_ptr<view::Signal> > _signals;
+    std::vector< boost::shared_ptr<view::GroupSignal> > _group_traces;
+    std::vector< boost::shared_ptr<view::DecodeTrace> > _decode_traces;
 
-    decoder::DecoderFactory *_decoderFactory;
-    QVector< std::pair<decoder::Decoder* , std::list<int> > > _decoders;
-    std::vector< boost::shared_ptr<view::Signal> > _protocol_signals;
-
-	mutable boost::mutex _data_mutex;
+    mutable boost::mutex _data_mutex;
 	boost::shared_ptr<data::Logic> _logic_data;
 	boost::shared_ptr<data::LogicSnapshot> _cur_logic_snapshot;
     boost::shared_ptr<data::Dso> _dso_data;
@@ -220,13 +234,8 @@ private:
     boost::shared_ptr<data::Group> _group_data;
     boost::shared_ptr<data::GroupSnapshot> _cur_group_snapshot;
     int _group_cnt;
-    int _protocol_cnt;
 
 	std::auto_ptr<boost::thread> _sampling_thread;
-
-    quint64 _last_sample_rate;
-
-    quint64 _total_sample_len;
 
     libusb_hotplug_callback_handle _hotplug_handle;
     std::auto_ptr<boost::thread> _hotplug;
@@ -235,11 +244,6 @@ private:
 
     bool _adv_trigger;
 
-    bool _vDial_changed;
-    bool _hDial_changed;
-    uint16_t _dso_ctrl_channel;
-    std::auto_ptr<boost::thread> _dso_ctrl_thread;
-
 signals:
 	void capture_state_changed(int state);
 
@@ -247,7 +251,7 @@ signals:
 
 	void data_updated();
 
-    void sample_rate_changed(quint64 sample_rate);
+    void sample_rate_changed(uint64_t sample_rate);
 
     void receive_data(quint64 length);
 
@@ -260,8 +264,16 @@ signals:
 
     void dso_ch_changed(uint16_t num);
 
-public slots:
+    void frame_began();
 
+    void data_received();
+
+    void frame_ended();
+
+    void device_setted();
+
+public slots:
+    void reload();
 
 private:
 	// TODO: This should not be necessary. Multiple concurrent

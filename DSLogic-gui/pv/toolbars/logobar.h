@@ -45,7 +45,6 @@ public:
     void dslogic_connected(bool conn);
 
 private:
-    void load_file(QString file_name);
     void session_error(
         const QString text, const QString info_text);
     void show_session_error(
@@ -55,6 +54,7 @@ signals:
 
 private slots:
     void on_actionAbout_triggered();
+    void on_actionWiki_triggered();
 
 private:
     bool _enable;
@@ -63,6 +63,7 @@ private:
     QToolButton _logo_button;
 
     QAction *_about;
+    QAction *_wiki;
 
 };
 

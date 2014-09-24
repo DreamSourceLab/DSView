@@ -40,6 +40,9 @@
 #define CHUNKSIZE (512 * 1024)
 /** @endcond */
 
+static uint64_t samplerates[1];
+static uint64_t samplecounts[1];
+
 struct session_vdev {
 	char *sessionfile;
 	char *capturefile;
@@ -100,9 +103,9 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
 		} else {
 			/* done with this capture file */
 			zip_fclose(vdev->capfile);
-			g_free(vdev->capturefile);
-			g_free(vdev);
-			sdi->priv = NULL;
+            //g_free(vdev->capturefile);
+            //g_free(vdev);
+            //sdi->priv = NULL;
 		}
 	}
 
@@ -116,16 +119,16 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
 }
 
 /* driver callbacks */
-static int hw_cleanup(void);
+static int dev_clear(void);
 
-static int hw_init(struct sr_context *sr_ctx)
+static int init(struct sr_context *sr_ctx)
 {
 	(void)sr_ctx;
 
 	return SR_OK;
 }
 
-static int hw_cleanup(void)
+static int dev_clear(void)
 {
 	GSList *l;
 
@@ -137,7 +140,7 @@ static int hw_cleanup(void)
 	return SR_OK;
 }
 
-static int hw_dev_open(struct sr_dev_inst *sdi)
+static int dev_open(struct sr_dev_inst *sdi)
 {
 	if (!(sdi->priv = g_try_malloc0(sizeof(struct session_vdev)))) {
 		sr_err("%s: sdi->priv malloc failed", __func__);
@@ -147,6 +150,18 @@ static int hw_dev_open(struct sr_dev_inst *sdi)
 	dev_insts = g_slist_append(dev_insts, sdi);
 
 	return SR_OK;
+}
+
+static int dev_close(struct sr_dev_inst *sdi)
+{
+    const struct session_vdev *const vdev = sdi->priv;
+    g_free(vdev->sessionfile);
+    g_free(vdev->capturefile);
+
+    g_free(sdi->priv);
+    sdi->priv = NULL;
+
+    return SR_OK;
 }
 
 static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi)
@@ -184,6 +199,7 @@ static int config_set(int id, GVariant *data, const struct sr_dev_inst *sdi)
 	switch (id) {
 	case SR_CONF_SAMPLERATE:
 		vdev->samplerate = g_variant_get_uint64(data);
+        samplerates[0] = vdev->samplerate;
 		sr_info("Setting samplerate to %" PRIu64 ".", vdev->samplerate);
 		break;
 	case SR_CONF_SESSIONFILE:
@@ -199,6 +215,8 @@ static int config_set(int id, GVariant *data, const struct sr_dev_inst *sdi)
 		break;
     case SR_CONF_LIMIT_SAMPLES:
         vdev->total_samples = g_variant_get_uint64(data);
+        samplecounts[0] = vdev->total_samples;
+        sr_info("Setting limit samples to %" PRIu64 ".", vdev->total_samples);
         break;
 	case SR_CONF_CAPTURE_NUM_PROBES:
 		vdev->num_probes = g_variant_get_uint64(data);
@@ -213,6 +231,8 @@ static int config_set(int id, GVariant *data, const struct sr_dev_inst *sdi)
 
 static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi)
 {
+    GVariant *gvar;
+    GVariantBuilder gvb;
 
 	(void)sdi;
 
@@ -223,6 +243,22 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi)
 		*data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
 				hwcaps, ARRAY_SIZE(hwcaps)*sizeof(int32_t), TRUE, NULL, NULL);
 		break;
+    case SR_CONF_SAMPLERATE:
+        g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));
+//		gvar = g_variant_new_fixed_array(G_VARIANT_TYPE("t"), samplerates,
+//				ARRAY_SIZE(samplerates), sizeof(uint64_t));
+        gvar = g_variant_new_from_data(G_VARIANT_TYPE("at"),
+                samplerates, ARRAY_SIZE(samplerates)*sizeof(uint64_t), TRUE, NULL, NULL);
+        g_variant_builder_add(&gvb, "{sv}", "samplerates", gvar);
+        *data = g_variant_builder_end(&gvb);
+        break;
+    case SR_CONF_LIMIT_SAMPLES:
+        g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));
+        gvar = g_variant_new_from_data(G_VARIANT_TYPE("at"),
+                samplecounts, ARRAY_SIZE(samplecounts)*sizeof(uint64_t), TRUE, NULL, NULL);
+        g_variant_builder_add(&gvb, "{sv}", "samplecounts", gvar);
+        *data = g_variant_builder_end(&gvb);
+        break;
 	default:
 		return SR_ERR_ARG;
 	}
@@ -230,7 +266,7 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi)
 	return SR_OK;
 }
 
-static int hw_dev_acquisition_start(const struct sr_dev_inst *sdi,
+static int dev_acquisition_start(const struct sr_dev_inst *sdi,
 		void *cb_data)
 {
 	struct zip_stat zs;
@@ -271,16 +307,23 @@ static int hw_dev_acquisition_start(const struct sr_dev_inst *sdi,
 
 /** @private */
 SR_PRIV struct sr_dev_driver session_driver = {
-	.name = "virtual-session",
-	.longname = "Session-emulating driver",
-	.api_version = 1,
-	.init = hw_init,
-	.cleanup = hw_cleanup,
-	.config_get = config_get,
-	.config_set = config_set,
-	.config_list = config_list,
-	.dev_open = hw_dev_open,
-	.dev_close = NULL,
-	.dev_acquisition_start = hw_dev_acquisition_start,
-	.dev_acquisition_stop = NULL,
+    .name = "virtual-session",
+    .longname = "Session-emulating driver",
+    .api_version = 1,
+    .init = init,
+    .cleanup = dev_clear,
+    .scan = NULL,
+    .dev_list = NULL,
+    .dev_mode_list = NULL,
+    .dev_clear = dev_clear,
+    .config_get = config_get,
+    .config_set = config_set,
+    .config_list = config_list,
+    .dev_open = dev_open,
+    .dev_close = dev_close,
+    .dev_test = NULL,
+    .dev_status_get = NULL,
+    .dev_acquisition_start = dev_acquisition_start,
+    .dev_acquisition_stop = NULL,
+    .priv = NULL,
 };

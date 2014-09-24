@@ -57,7 +57,7 @@ struct context {
 static int init(struct sr_output *o)
 {
 	struct context *ctx;
-	struct sr_probe *probe;
+	struct sr_channel *probe;
 	GSList *l;
 	GVariant *gvar;
 	int num_probes;
@@ -81,7 +81,7 @@ static int init(struct sr_output *o)
 	o->internal = ctx;
 
 	/* Get the number of probes, and the unitsize. */
-	for (l = o->sdi->probes; l; l = l->next) {
+	for (l = o->sdi->channels; l; l = l->next) {
 		probe = l->data;
 		if (probe->enabled)
 			ctx->num_enabled_probes++;
@@ -89,10 +89,10 @@ static int init(struct sr_output *o)
 
 	ctx->unitsize = (ctx->num_enabled_probes + 7) / 8;
 
-	num_probes = g_slist_length(o->sdi->probes);
+	num_probes = g_slist_length(o->sdi->channels);
 
-	if (sr_config_get(o->sdi->driver, SR_CONF_SAMPLERATE, &gvar,
-			o->sdi) == SR_OK) {
+    if (sr_config_get(o->sdi->driver, o->sdi, NULL, NULL,
+                      SR_CONF_SAMPLERATE, &gvar) == SR_OK) {
 		ctx->samplerate = g_variant_get_uint64(gvar);
 		g_variant_unref(gvar);
 	} else
@@ -112,7 +112,7 @@ static int init(struct sr_output *o)
 	/* Columns / channels */
 	g_string_append_printf(ctx->header, "; Channels (%d/%d): ",
 			       ctx->num_enabled_probes, num_probes);
-	for (l = o->sdi->probes; l; l = l->next) {
+	for (l = o->sdi->channels; l; l = l->next) {
 		probe = l->data;
 		if (probe->enabled)
 			g_string_append_printf(ctx->header, "%s, ", probe->name);

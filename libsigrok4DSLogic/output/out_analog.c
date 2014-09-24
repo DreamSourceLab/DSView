@@ -41,7 +41,7 @@ struct context {
 static int init(struct sr_output *o)
 {
 	struct context *ctx;
-	struct sr_probe *probe;
+	struct sr_channel *probe;
 	GSList *l;
 
 	sr_spew("Initializing output module.");
@@ -57,7 +57,7 @@ static int init(struct sr_output *o)
 
 	/* Get the number of probes and their names. */
 	ctx->probelist = g_ptr_array_new();
-	for (l = o->sdi->probes; l; l = l->next) {
+	for (l = o->sdi->channels; l; l = l->next) {
 		probe = l->data;
 		if (!probe || !probe->enabled)
 			continue;
@@ -190,7 +190,7 @@ static int receive(struct sr_output *o, const struct sr_dev_inst *sdi,
 		const struct sr_datafeed_packet *packet, GString **out)
 {
 	const struct sr_datafeed_analog *analog;
-	struct sr_probe *probe;
+	struct sr_channel *probe;
 	GSList *l;
 	const float *fdata;
 	int i, p;

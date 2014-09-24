@@ -51,7 +51,7 @@ $comment\n  Acquisition with %d/%d probes at %s\n$end\n";
 static int init(struct sr_output *o)
 {
 	struct context *ctx;
-	struct sr_probe *probe;
+	struct sr_channel *probe;
 	GSList *l;
 	GVariant *gvar;
 	int num_probes, i;
@@ -67,7 +67,7 @@ static int init(struct sr_output *o)
 	ctx->num_enabled_probes = 0;
 	ctx->probeindices = g_array_new(FALSE, FALSE, sizeof(int));
 
-	for (l = o->sdi->probes; l; l = l->next) {
+	for (l = o->sdi->channels; l; l = l->next) {
 		probe = l->data;
 		if (!probe->enabled)
 			continue;
@@ -82,7 +82,7 @@ static int init(struct sr_output *o)
 
 	ctx->unitsize = (ctx->num_enabled_probes + 7) / 8;
 	ctx->header = g_string_sized_new(512);
-	num_probes = g_slist_length(o->sdi->probes);
+	num_probes = g_slist_length(o->sdi->channels);
 
 	/* timestamp */
 	t = time(NULL);
@@ -95,8 +95,8 @@ static int init(struct sr_output *o)
 	g_string_append_printf(ctx->header, "$version %s %s $end\n",
 			PACKAGE, PACKAGE_VERSION);
 
-	if (sr_config_get(o->sdi->driver, SR_CONF_SAMPLERATE, &gvar,
-			o->sdi) == SR_OK) {
+    if (sr_config_get(o->sdi->driver, o->sdi, NULL, NULL,
+                      SR_CONF_SAMPLERATE, &gvar) == SR_OK) {
 		ctx->samplerate = g_variant_get_uint64(gvar);
 		g_variant_unref(gvar);
 		if (!((samplerate_s = sr_samplerate_string(ctx->samplerate)))) {
@@ -129,7 +129,7 @@ static int init(struct sr_output *o)
 	g_string_append_printf(ctx->header, "$scope module %s $end\n", PACKAGE);
 
 	/* Wires / channels */
-	for (i = 0, l = o->sdi->probes; l; l = l->next, i++) {
+	for (i = 0, l = o->sdi->channels; l; l = l->next, i++) {
 		probe = l->data;
 		if (!probe->enabled)
 			continue;

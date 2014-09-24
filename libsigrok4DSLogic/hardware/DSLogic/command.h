@@ -30,12 +30,16 @@
 #define CMD_CONFIG              0xb3
 #define CMD_SETTING             0xb4
 #define CMD_CONTROL             0xb5
+#define CMD_STATUS              0xb6
 
+#define CMD_START_FLAGS_MODE_POS    4
 #define CMD_START_FLAGS_WIDE_POS	5
 #define CMD_START_FLAGS_CLK_SRC_POS	6
 #define CMD_START_FLAGS_STOP_POS	7
 
-#define CMD_START_FLAGS_SAMPLE_8BIT	(0 << CMD_START_FLAGS_WIDE_POS)
+#define CMD_START_FLAGS_MODE_LA         (1 << CMD_START_FLAGS_MODE_POS)
+
+#define CMD_START_FLAGS_SAMPLE_8BIT     (0 << CMD_START_FLAGS_WIDE_POS)
 #define CMD_START_FLAGS_SAMPLE_16BIT	(1 << CMD_START_FLAGS_WIDE_POS)
 
 #define CMD_START_FLAGS_CLK_30MHZ	(0 << CMD_START_FLAGS_CLK_SRC_POS)
@@ -82,12 +86,15 @@ SR_PRIV int command_get_fw_version(libusb_device_handle *devhdl,
 SR_PRIV int command_get_revid_version(libusb_device_handle *devhdl,
 				      uint8_t *revid);
 SR_PRIV int command_start_acquisition(libusb_device_handle *devhdl,
-				      uint64_t samplerate, gboolean samplewide);
+                      uint64_t samplerate, gboolean samplewide, gboolean la_mode);
 SR_PRIV int command_stop_acquistition(libusb_device_handle *devhdl);
 
 SR_PRIV int command_fpga_config(libusb_device_handle *devhdl);
 SR_PRIV int command_fpga_setting(libusb_device_handle *devhdl, uint32_t setting_count);
 
 SR_PRIV int command_dso_ctrl(libusb_device_handle *devhdl, uint32_t command);
+
+SR_PRIV int command_get_status(libusb_device_handle *devhdl,
+                   struct sr_status *status);
 
 #endif

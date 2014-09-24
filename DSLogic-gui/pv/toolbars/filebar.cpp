@@ -31,6 +31,7 @@
 #include <QApplication>
 
 #include "filebar.h"
+#include "../device/devinst.h"
 
 #include <deque>
 
@@ -80,21 +81,12 @@ FileBar::FileBar(SigSession &session, QWidget *parent) :
 
 void FileBar::on_actionOpen_triggered()
 {
+    // Show the dialog
     const QString file_name = QFileDialog::getOpenFileName(
-        this, tr("Open File"), "",
-        tr("DSLogic Sessions (*.dsl)"));
+        this, tr("Open File"), "", tr(
+            "DSLogic Sessions (*.dsl)"));
     if (!file_name.isEmpty())
         load_file(file_name);
-}
-
-void FileBar::load_file(QString file_name)
-{
-    const QString errorMessage(
-        QString("Failed to load file %1").arg(file_name));
-    const QString infoMessage;
-    _session.load_file(file_name.toStdString(),
-        boost::bind(&FileBar::session_error, this,
-            errorMessage, infoMessage));
 }
 
 void FileBar::session_error(
@@ -118,23 +110,31 @@ void FileBar::show_session_error(
 
 void FileBar::on_actionSave_triggered()
 {
+    //save();
     int unit_size;
     uint64_t length;
     void* buf = _session.get_buf(unit_size, length);
-    if (buf != NULL) {
-        const QString file_name = QFileDialog::getSaveFileName(
-                    this, tr("Save File"), "",
-                    tr("DSLogic Session (*.dsl)"));
-        if (!file_name.isEmpty()) {
-            _session.save_file(file_name.toStdString());
-        }
-    } else {
+    if (!buf) {
         QMessageBox msg(this);
         msg.setText("File Save");
         msg.setInformativeText("No Data to Save!");
         msg.setStandardButtons(QMessageBox::Ok);
         msg.setIcon(QMessageBox::Warning);
         msg.exec();
+    } else if (_session.get_device()->dev_inst()->mode != LOGIC) {
+        QMessageBox msg(this);
+        msg.setText("File Save");
+        msg.setInformativeText("DSLogic currently only support saving logic data to file!");
+        msg.setStandardButtons(QMessageBox::Ok);
+        msg.setIcon(QMessageBox::Warning);
+        msg.exec();
+    }else {
+        const QString file_name = QFileDialog::getSaveFileName(
+                    this, tr("Save File"), "",
+                    tr("DSLogic Session (*.dsl)"));
+        if (!file_name.isEmpty()) {
+            _session.save_file(file_name.toStdString());
+        }
     }
 }
 
@@ -146,6 +146,8 @@ void FileBar::on_actionCapture_triggered()
 void FileBar::enable_toggle(bool enable)
 {
     _file_button.setDisabled(!enable);
+    _file_button.setIcon(enable ? QIcon(":/icons/file.png") :
+                                  QIcon(":/icons/file_dis.png"));
 }
 
 } // namespace toolbars

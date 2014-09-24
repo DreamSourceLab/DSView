@@ -37,6 +37,8 @@ namespace prop {
 
 class Double : public Property
 {
+    Q_OBJECT;
+
 public:
 	Double(QString name, int decimals, QString suffix,
 		boost::optional< std::pair<double, double> > range,
@@ -46,9 +48,12 @@ public:
 
 	virtual ~Double();
 
-	QWidget* get_widget(QWidget *parent);
+    QWidget* get_widget(QWidget *parent, bool auto_commit);
 
 	void commit();
+
+private slots:
+    void on_value_changed(double);
 
 private:
 	const int _decimals;

@@ -20,8 +20,15 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
+#include <boost/foreach.hpp>
+
+#include <QFormLayout>
+
+#include <pv/prop/property.h>
 
 #include "binding.h"
+
+using boost::shared_ptr;
 
 namespace pv {
 namespace prop {
@@ -30,6 +37,58 @@ namespace binding {
 const std::vector< boost::shared_ptr<Property> >& Binding::properties()
 {
 	return _properties;
+}
+
+void Binding::commit()
+{
+    BOOST_FOREACH(shared_ptr<pv::prop::Property> p, _properties) {
+        assert(p);
+        p->commit();
+    }
+}
+
+void Binding::add_properties_to_form(QFormLayout *layout,
+    bool auto_commit) const
+{
+    assert(layout);
+
+    BOOST_FOREACH(shared_ptr<pv::prop::Property> p, _properties)
+    {
+        assert(p);
+
+        QWidget *const widget = p->get_widget(layout->parentWidget(),
+            auto_commit);
+        if (p->labeled_widget())
+            layout->addRow(widget);
+        else
+            layout->addRow(p->name(), widget);
+    }
+}
+
+QWidget* Binding::get_property_form(QWidget *parent,
+    bool auto_commit) const
+{
+    QWidget *const form = new QWidget(parent);
+    QFormLayout *const layout = new QFormLayout(form);
+    form->setLayout(layout);
+    add_properties_to_form(layout, auto_commit);
+    return form;
+}
+
+QString Binding::print_gvariant(GVariant *const gvar)
+{
+    QString s;
+
+    if (g_variant_is_of_type(gvar, G_VARIANT_TYPE("s")))
+        s = QString::fromUtf8(g_variant_get_string(gvar, NULL));
+    else
+    {
+        gchar *const text = g_variant_print(gvar, FALSE);
+        s = QString::fromUtf8(text);
+        g_free(text);
+    }
+
+    return s;
 }
 
 } // binding

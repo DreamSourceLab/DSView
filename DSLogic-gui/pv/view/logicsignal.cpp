@@ -29,6 +29,7 @@
 #include "view.h"
 #include "pv/data/logic.h"
 #include "pv/data/logicsnapshot.h"
+#include "view.h"
 
 using namespace boost;
 using namespace std;
@@ -65,49 +66,49 @@ const QColor LogicSignal::SignalColours[8] = {
 const int LogicSignal::StateHeight = 12;
 const int LogicSignal::StateRound = 5;
 
-LogicSignal::LogicSignal(QString name, boost::shared_ptr<data::Logic> data,
-    int probe_index, int order) :
-    Signal(name, probe_index, DS_LOGIC, order),
-    _probe_index(probe_index),
-    _data(data),
-    _need_decode(false),
-    _decoder(NULL)
+LogicSignal::LogicSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
+                         boost::shared_ptr<data::Logic> data,
+                         const sr_channel * const probe) :
+    Signal(dev_inst, probe, DS_LOGIC),
+    _data(data)
 {
-	assert(_probe_index >= 0);
-	_colour = SignalColours[_probe_index % countof(SignalColours)];
+    assert(probe->index >= 0);
+    _colour = SignalColours[probe->index % countof(SignalColours)];
 }
 
 LogicSignal::~LogicSignal()
 {
 }
 
-void LogicSignal::set_data(boost::shared_ptr<data::Logic> _logic_data,
-                           boost::shared_ptr<data::Dso> _dso_data,
-                           boost::shared_ptr<pv::data::Analog> _analog_data,
-                           boost::shared_ptr<data::Group> _group_data)
+const sr_channel* LogicSignal::probe() const
 {
-    (void)_dso_data;
-    (void)_analog_data;
-    (void)_group_data;
-
-    assert(_logic_data);
-
-    if (!_cur_edges.empty())
-        _cur_edges.clear();
-
-    _data = _logic_data;
+    return _probe;
 }
 
-void LogicSignal::paint(QPainter &p, int y, int left, int right,
-		double scale, double offset)
+shared_ptr<pv::data::SignalData> LogicSignal::data() const
+{
+    return _data;
+}
+
+shared_ptr<pv::data::Logic> LogicSignal::logic_data() const
+{
+    return _data;
+}
+
+void LogicSignal::paint_mid(QPainter &p, int left, int right)
 {
 	using pv::view::View;
 
 	QLineF *line;
 
-	assert(scale > 0);
 	assert(_data);
+    assert(_view);
 	assert(right >= left);
+
+    const int y = get_y() + _signalHeight * 0.5;
+    const double scale = _view->scale();
+    assert(scale > 0);
+    const double offset = _view->offset();
 
     const float high_offset = y - _signalHeight + 0.5f;
 	const float low_offset = y + 0.5f;
@@ -119,8 +120,10 @@ void LogicSignal::paint(QPainter &p, int y, int left, int right,
 
 	const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
 		snapshots.front();
+    if (snapshot->buf_null())
+        return;
 
-	double samplerate = _data->get_samplerate();
+    double samplerate = _data->samplerate();
 
 	// Show sample rate as 1Hz when it is unknown
 	if (samplerate == 0.0)
@@ -136,8 +139,9 @@ void LogicSignal::paint(QPainter &p, int y, int left, int right,
     snapshot->get_subsampled_edges(_cur_edges,
 		min(max((int64_t)floor(start), (int64_t)0), last_sample),
 		min(max((int64_t)ceil(end), (int64_t)0), last_sample),
-		samples_per_pixel / Oversampling, _probe_index);
-    assert(_cur_edges.size() >= 2);
+        samples_per_pixel / Oversampling, _probe->index);
+    if (_cur_edges.size() < 2)
+        return;
 
     // Paint the edges
     const unsigned int edge_count = 2 * _cur_edges.size() - 3;
@@ -163,61 +167,6 @@ void LogicSignal::paint(QPainter &p, int y, int left, int right,
     p.setPen(_colour);
     p.drawLines(edge_lines, edge_count);
     delete[] edge_lines;
-
-    if (_need_decode) {
-        assert(_decoder);
-        _decoder->get_subsampled_states(_cur_states,
-                                       min(max((int64_t)floor(start), (int64_t)0), last_sample),
-                                       min(max((int64_t)ceil(end), (int64_t)0), last_sample),
-                                       samples_per_pixel);
-
-        const float top_offset = y - (_signalHeight + StateHeight) / 2.0f;
-        const uint64_t sig_mask = 1ULL << _probe_index;
-        const uint8_t *const init_ptr = (uint8_t*)snapshot->get_data();
-        const uint8_t *src_ptr;
-        const int unit_size = snapshot->get_unit_size();
-        uint64_t value;
-        uint64_t finalValue = 0;
-
-        if (!_cur_states.empty()) {
-            _decoder->fill_color_table(_color_table);
-            _decoder->fill_state_table(_state_table);
-
-            vector<pv::decoder::ds_view_state>::const_iterator i;
-            for ( i = _cur_states.begin(); i != _cur_states.end(); i++) {
-                finalValue = 0;
-                const uint64_t index = (*i).index;
-                const uint64_t samples = (*i).samples;
-                const int64_t x = (index / samples_per_pixel -
-                    pixels_offset) + left;
-                const int64_t width = samples / samples_per_pixel;
-
-                if ((*i).type == decoder::DEC_DATA) {
-                    src_ptr = init_ptr + index * unit_size;
-                    for (uint64_t j = 0; j < samples; j++) {
-                        value = (*(uint64_t*)src_ptr & sig_mask);
-                        if (_probe_index - j > 0)
-                            value = value >> (_probe_index - j);
-                        else
-                            value = value << (j - _probe_index);
-                        finalValue |= value;
-                        src_ptr += unit_size;
-                    }
-                }
-
-                p.setBrush(_color_table.at((*i).state));
-                const QRectF state_rect = QRectF(x, top_offset, width, StateHeight);
-                p.drawRoundedRect(state_rect, StateRound, StateRound);
-                p.setPen(Qt::black);
-                if ((*i).type == decoder::DEC_CMD)
-                    p.drawText(state_rect, Qt::AlignCenter | Qt::AlignVCenter,
-                               _state_table.at((*i).state));
-                else if ((*i).type == decoder::DEC_DATA)
-                    p.drawText(state_rect, Qt::AlignCenter | Qt::AlignVCenter,
-                               _state_table.at((*i).state) + "0x" + QString::number(finalValue, 16).toUpper());
-            }
-        }
-    }
 }
 
 void LogicSignal::paint_caps(QPainter &p, QLineF *const lines,
@@ -248,22 +197,80 @@ const std::vector< std::pair<uint64_t, bool> > LogicSignal::cur_edges() const
     return _cur_edges;
 }
 
-void LogicSignal::set_decoder(pv::decoder::Decoder *decoder)
+void LogicSignal::paint_type_options(QPainter &p, int right, bool hover, int action)
 {
-    assert(decoder);
-    _need_decode = true;
-    _decoder = decoder;
-}
+    int y = get_y();
+    const QRectF posTrig_rect  = get_rect("posTrig",  y, right);
+    const QRectF higTrig_rect  = get_rect("higTrig",  y, right);
+    const QRectF negTrig_rect  = get_rect("negTrig",  y, right);
+    const QRectF lowTrig_rect  = get_rect("lowTrig",  y, right);
+    const QRectF edgeTrig_rect = get_rect("edgeTrig", y, right);
 
-decoder::Decoder *LogicSignal::get_decoder()
-{
-    return _decoder;
-}
+    p.setPen(Qt::transparent);
+    p.setBrush(((hover && action == POSTRIG) || (_trig == POSTRIG)) ?
+                   dsYellow :
+                   dsBlue);
+    p.drawRect(posTrig_rect);
+    p.setBrush(((hover && action == HIGTRIG) || (_trig == HIGTRIG)) ?
+                   dsYellow :
+                   dsBlue);
+    p.drawRect(higTrig_rect);
+    p.setBrush(((hover && action == NEGTRIG) || (_trig == NEGTRIG)) ?
+                   dsYellow :
+                   dsBlue);
+    p.drawRect(negTrig_rect);
+    p.setBrush(((hover && action == LOWTRIG) || (_trig == LOWTRIG)) ?
+                   dsYellow :
+                   dsBlue);
+    p.drawRect(lowTrig_rect);
+    p.setBrush(((hover && action == EDGETRIG) || (_trig == EDGETRIG)) ?
+                   dsYellow :
+                   dsBlue);
+    p.drawRect(edgeTrig_rect);
 
-void LogicSignal::del_decoder()
-{
-    _need_decode = false;
-    _decoder = NULL;
+    p.setPen(QPen(Qt::blue, 1, Qt::DotLine));
+    p.setBrush(Qt::transparent);
+    p.drawLine(posTrig_rect.right(), posTrig_rect.top() + 3,
+               posTrig_rect.right(), posTrig_rect.bottom() - 3);
+    p.drawLine(higTrig_rect.right(), higTrig_rect.top() + 3,
+               higTrig_rect.right(), higTrig_rect.bottom() - 3);
+    p.drawLine(negTrig_rect.right(), negTrig_rect.top() + 3,
+               negTrig_rect.right(), negTrig_rect.bottom() - 3);
+    p.drawLine(lowTrig_rect.right(), lowTrig_rect.top() + 3,
+               lowTrig_rect.right(), lowTrig_rect.bottom() - 3);
+
+    p.setPen(QPen(Qt::white, 2, Qt::SolidLine));
+    p.setBrush(Qt::transparent);
+    p.drawLine(posTrig_rect.left() + 5, posTrig_rect.bottom() - 5,
+               posTrig_rect.center().x(), posTrig_rect.bottom() - 5);
+    p.drawLine(posTrig_rect.center().x(), posTrig_rect.bottom() - 5,
+               posTrig_rect.center().x(), posTrig_rect.top() + 5);
+    p.drawLine(posTrig_rect.center().x(), posTrig_rect.top() + 5,
+               posTrig_rect.right() - 5, posTrig_rect.top() + 5);
+
+    p.drawLine(higTrig_rect.left() + 5, higTrig_rect.top() + 5,
+               higTrig_rect.right() - 5, higTrig_rect.top() + 5);
+
+    p.drawLine(negTrig_rect.left() + 5, negTrig_rect.top() + 5,
+               negTrig_rect.center().x(), negTrig_rect.top() + 5);
+    p.drawLine(negTrig_rect.center().x(), negTrig_rect.top() + 5,
+               negTrig_rect.center().x(), negTrig_rect.bottom() - 5);
+    p.drawLine(negTrig_rect.center().x(), negTrig_rect.bottom() - 5,
+               negTrig_rect.right() - 5, negTrig_rect.bottom() - 5);
+
+    p.drawLine(lowTrig_rect.left() + 5, lowTrig_rect.bottom() - 5,
+               lowTrig_rect.right() - 5, lowTrig_rect.bottom() - 5);
+
+    p.drawLine(edgeTrig_rect.left() + 5, edgeTrig_rect.top() + 5,
+               edgeTrig_rect.center().x() - 2, edgeTrig_rect.top() + 5);
+    p.drawLine(edgeTrig_rect.center().x() + 2 , edgeTrig_rect.top() + 5,
+               edgeTrig_rect.right() - 5, edgeTrig_rect.top() + 5);
+    p.drawLine(edgeTrig_rect.center().x(), edgeTrig_rect.top() + 7,
+               edgeTrig_rect.center().x(), edgeTrig_rect.bottom() - 7);
+    p.drawLine(edgeTrig_rect.left() + 5, edgeTrig_rect.bottom() - 5,
+               edgeTrig_rect.center().x() - 2, edgeTrig_rect.bottom() - 5);
+    p.drawLine(edgeTrig_rect.center().x() + 2, edgeTrig_rect.bottom() - 5,
+               edgeTrig_rect.right() - 5, edgeTrig_rect.bottom() - 5);
 }
 
 } // namespace view

@@ -37,13 +37,17 @@ class LogicSnapshot;
 class Logic : public SignalData
 {
 public:
-	Logic(unsigned int num_probes, uint64_t samplerate);
+    Logic(int num_probes);
+
+    int get_num_probes() const;
 
 	void push_snapshot(
 		boost::shared_ptr<LogicSnapshot> &snapshot);
 
 	std::deque< boost::shared_ptr<LogicSnapshot> >&
 		get_snapshots();
+
+    void clear();
 
 private:
 	std::deque< boost::shared_ptr<LogicSnapshot> > _snapshots;

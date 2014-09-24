@@ -59,30 +59,16 @@ SR_PRIV int command_get_revid_version(libusb_device_handle *devhdl,
 }
 
 SR_PRIV int command_start_acquisition(libusb_device_handle *devhdl,
-				      uint64_t samplerate, gboolean samplewide)
+                      uint64_t samplerate, gboolean samplewide, gboolean la_mode)
 {
 	struct cmd_start_acquisition cmd;
 	int delay = 0, ret;
 
-	/* Compute the sample rate. */
-//	if (samplewide && samplerate > MAX_16BIT_SAMPLE_RATE) {
-//        sr_err("Unable to sample at %" PRIu64 "Hz "
-//		       "when collecting 16-bit samples.", samplerate);
-//        return SR_ERR;
-//	}
+    (void) samplerate;
 
-//    if ((SR_MHZ(48) % samplerate) == 0) {
-//		cmd.flags = CMD_START_FLAGS_CLK_48MHZ;
-//        delay = SR_MHZ(48) / samplerate - 1;
-//		if (delay > MAX_SAMPLE_DELAY)
-//			delay = 0;
-//	}
+    cmd.flags = la_mode ? CMD_START_FLAGS_MODE_LA : 0;
 
-//    if (delay == 0 && (SR_MHZ(30) % samplerate) == 0) {
-//		cmd.flags = CMD_START_FLAGS_CLK_30MHZ;
-//        delay = SR_MHZ(30) / samplerate - 1;
-//	}
-    cmd.flags = CMD_START_FLAGS_CLK_30MHZ;
+    cmd.flags |= CMD_START_FLAGS_CLK_30MHZ;
     delay = 0;
 
     sr_info("GPIF delay = %d, clocksource = %sMHz.", delay,
@@ -142,9 +128,9 @@ SR_PRIV int command_fpga_config(libusb_device_handle *devhdl)
     int ret;
 
     /* ... */
-    cmd.byte0 = (uint8_t)XC6SLX9_BYTE_CNT;
-    cmd.byte1 = (uint8_t)(XC6SLX9_BYTE_CNT >> 8);
-    cmd.byte2 = (uint8_t)(XC6SLX9_BYTE_CNT >> 16);
+    cmd.byte0 = (uint8_t)0;
+    cmd.byte1 = (uint8_t)0;
+    cmd.byte2 = (uint8_t)0;
 
     /* Send the control message. */
     ret = libusb_control_transfer(devhdl, LIBUSB_REQUEST_TYPE_VENDOR |
@@ -200,6 +186,24 @@ SR_PRIV int command_dso_ctrl(libusb_device_handle *devhdl, uint32_t command)
             (unsigned char *)&cmd, sizeof(cmd), 3000);
     if (ret < 0) {
         sr_err("Unable to send oscilloscope control command: %s.",
+               libusb_error_name(ret));
+        return SR_ERR;
+    }
+
+    return SR_OK;
+}
+
+SR_PRIV int command_get_status(libusb_device_handle *devhdl,
+                   struct sr_status *status)
+{
+    int ret;
+
+    ret = libusb_control_transfer(devhdl, LIBUSB_REQUEST_TYPE_VENDOR |
+        LIBUSB_ENDPOINT_IN, CMD_STATUS, 0x0000, 0x0000,
+        (unsigned char *)status, sizeof(struct sr_status), 3000);
+
+    if (ret < 0) {
+        sr_err("Unable to get version info: %s.",
                libusb_error_name(ret));
         return SR_ERR;
     }

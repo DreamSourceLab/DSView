@@ -36,15 +36,20 @@ namespace prop {
 
 class Enum : public Property
 {
+    Q_OBJECT;
+
 public:
 	Enum(QString name, std::vector<std::pair<GVariant*, QString> > values,
 		Getter getter, Setter setter);
 
 	virtual ~Enum();
 
-	QWidget* get_widget(QWidget *parent);
+    QWidget* get_widget(QWidget *parent, bool auto_commit);
 
 	void commit();
+
+private slots:
+    void on_current_item_changed(int);
 
 private:
 	const std::vector< std::pair<GVariant*, QString> > _values;

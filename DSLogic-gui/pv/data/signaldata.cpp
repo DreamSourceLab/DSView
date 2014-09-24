@@ -20,17 +20,36 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
+#include <assert.h>
 
 #include "signaldata.h"
 
 namespace pv {
 namespace data {
 
-SignalData::SignalData(unsigned int num_probes, double samplerate) :
-    _num_probes(num_probes),
-    _samplerate(samplerate),
-    _start_time(0)
+SignalData::SignalData(int num_probes) :
+    _samplerate(0),
+    _start_time(0),
+    _num_probes(num_probes)
 {
+    assert(num_probes >= 0);
+}
+
+double SignalData::samplerate() const
+{
+	return _samplerate;
+}
+
+void SignalData::set_samplerate(double samplerate)
+{
+    assert(samplerate > 0);
+    _samplerate = samplerate;
+    clear();
+}
+
+double SignalData::get_start_time() const
+{
+	return _start_time;
 }
 
 int SignalData::get_num_probes() const
@@ -38,14 +57,10 @@ int SignalData::get_num_probes() const
     return _num_probes;
 }
 
-double SignalData::get_samplerate() const
+void SignalData::set_num_probes(int num)
 {
-	return _samplerate;
-}
-
-double SignalData::get_start_time() const
-{
-	return _start_time;
+    assert(num >= 0);
+    _num_probes = num;
 }
 
 } // namespace data

@@ -82,7 +82,7 @@ SR_API char *sr_si_string_u64(uint64_t x, const char *unit)
 		return g_strdup_printf("%" PRIu64 " k%s",
 				    x / SR_KHZ(1), unit);
 	} else if ((x >= SR_KHZ(1)) && (x % SR_KHZ(1) != 0)) {
-		return g_strdup_printf("%" PRIu64 ".%" PRIu64 " k%s",
+        return g_strdup_printf("%" PRIu64 ".%" PRIu64 " K%s",
 				    x / SR_KHZ(1), x % SR_KHZ(1), unit);
 	} else {
 		return g_strdup_printf("%" PRIu64 " %s", x, unit);
@@ -115,19 +115,19 @@ SR_API char *sr_iec_string_u64(uint64_t x, const char *unit)
     if ((x >= SR_GB(1)) && (x % SR_GB(1) == 0)) {
         return g_strdup_printf("%" PRIu64 " G%s", x / SR_GB(1), unit);
     } else if ((x >= SR_GB(1)) && (x % SR_GB(1) != 0)) {
-        return g_strdup_printf("%" PRIu64 ".%" PRIu64 " G%s",
+        return g_strdup_printf("%" PRIu64 ".%" PRIu64 "G%s",
                        x / SR_GB(1), x % SR_GB(1), unit);
     } else if ((x >= SR_MB(1)) && (x % SR_MB(1) == 0)) {
         return g_strdup_printf("%" PRIu64 " M%s",
                        x / SR_MB(1), unit);
     } else if ((x >= SR_MB(1)) && (x % SR_MB(1) != 0)) {
-        return g_strdup_printf("%" PRIu64 ".%" PRIu64 " M%s",
+        return g_strdup_printf("%" PRIu64 ".%" PRIu64 "M%s",
                     x / SR_MB(1), x % SR_MB(1), unit);
     } else if ((x >= SR_KB(1)) && (x % SR_KB(1) == 0)) {
         return g_strdup_printf("%" PRIu64 " k%s",
                     x / SR_KB(1), unit);
     } else if ((x >= SR_KB(1)) && (x % SR_KB(1) != 0)) {
-        return g_strdup_printf("%" PRIu64 ".%" PRIu64 " k%s",
+        return g_strdup_printf("%" PRIu64 ".%" PRIu64 "K%s",
                     x / SR_KB(1), x % SR_KB(1), unit);
     } else {
         return g_strdup_printf("%" PRIu64 " %s", x, unit);
@@ -152,6 +152,22 @@ SR_API char *sr_iec_string_u64(uint64_t x, const char *unit)
 SR_API char *sr_samplerate_string(uint64_t samplerate)
 {
 	return sr_si_string_u64(samplerate, "Hz");
+}
+
+/**
+ * Convert a numeric samplecount value to its "natural" string representation.
+ *
+ * E.g. a value of 16384 would be converted to "16 K"
+ *
+ * @param samplecount.
+ *
+ * @return A g_try_malloc()ed string representation of the samplecount value,
+ *         or NULL upon errors. The caller is responsible to g_free() the
+ *         memory.
+ */
+SR_API char *sr_samplecount_string(uint64_t samplecount)
+{
+    return sr_iec_string_u64(samplecount, " Samples");
 }
 
 /**
@@ -263,13 +279,13 @@ SR_API char **sr_parse_triggerstring(const struct sr_dev_inst *sdi,
 {
 	GSList *l;
 	GVariant *gvar;
-	struct sr_probe *probe;
+	struct sr_channel *probe;
 	int max_probes, probenum, i;
 	char **tokens, **triggerlist, *trigger, *tc;
 	const char *trigger_types;
 	gboolean error;
 
-	max_probes = g_slist_length(sdi->probes);
+    max_probes = g_slist_length(sdi->channels);
 	error = FALSE;
 
 	if (!(triggerlist = g_try_malloc0(max_probes * sizeof(char *)))) {
@@ -277,7 +293,7 @@ SR_API char **sr_parse_triggerstring(const struct sr_dev_inst *sdi,
 		return NULL;
 	}
 
-	if (sdi->driver->config_list(SR_CONF_TRIGGER_TYPE, &gvar, sdi) != SR_OK) {
+    if (sdi->driver->config_list(SR_CONF_TRIGGER_TYPE, &gvar, sdi, NULL) != SR_OK) {
 		sr_err("%s: Device doesn't support any triggers.", __func__);
 		return NULL;
 	}
@@ -286,8 +302,8 @@ SR_API char **sr_parse_triggerstring(const struct sr_dev_inst *sdi,
 	tokens = g_strsplit(triggerstring, ",", max_probes);
 	for (i = 0; tokens[i]; i++) {
 		probenum = -1;
-		for (l = sdi->probes; l; l = l->next) {
-			probe = (struct sr_probe *)l->data;
+        for (l = sdi->channels; l; l = l->next) {
+			probe = (struct sr_channel *)l->data;
 			if (probe->enabled
 				&& !strncmp(probe->name, tokens[i],
 					strlen(probe->name))) {

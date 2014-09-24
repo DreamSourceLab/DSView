@@ -87,13 +87,6 @@ enum {
 	 */
 };
 
-#define SR_MAX_PROBENAME_LEN 32
-#define DS_MAX_ANALOG_PROBES_NUM 8
-#define DS_MAX_DSO_PROBES_NUM 2
-#define TriggerStages 16
-#define TriggerProbes 16
-#define TriggerCountBits 16
-
 /* Handy little macros */
 #define SR_HZ(n)  (n)
 #define SR_KHZ(n) ((n) * (uint64_t)(1000ULL))
@@ -106,6 +99,19 @@ enum {
 #define SR_KB(n) ((n) * (uint64_t)(1024ULL))
 #define SR_MB(n) ((n) * (uint64_t)(1048576ULL))
 #define SR_GB(n) ((n) * (uint64_t)(1073741824ULL))
+
+#define SR_MAX_PROBENAME_LEN 32
+#define DS_MAX_ANALOG_PROBES_NUM 8
+#define DS_MAX_DSO_PROBES_NUM 2
+#define TriggerStages 16
+#define TriggerProbes 16
+#define TriggerCountBits 16
+
+#define DS_MAX_DSO_SAMPLERATE SR_MHZ(200)
+#define DS_MAX_DSO_DEPTH SR_KB(32)
+
+#define DS_CONF_DSO_HDIVS 10
+#define DS_CONF_DSO_VDIVS 10
 
 /** libsigrok loglevels. */
 enum {
@@ -568,9 +574,9 @@ struct sr_output_format {
 };
 
 enum {
-	SR_PROBE_LOGIC = 10000,
-    SR_PROBE_DSO,
-	SR_PROBE_ANALOG,
+    SR_CHANNEL_LOGIC = 10000,
+    SR_CHANNEL_DSO,
+    SR_CHANNEL_ANALOG,
 };
 
 enum {
@@ -579,19 +585,26 @@ enum {
     ANALOG = 2,
 };
 
-static const char *mode_strings[] = {
-    "Logic Analyzer",
-    "Oscilloscope",
-    "Data Acquisition",
-};
-
-struct sr_probe {
-	/* The index field will go: use g_slist_length(sdi->probes) instead. */
+struct sr_channel {
+    /* The index field will go: use g_slist_length(sdi->channels) instead. */
 	int index;
 	int type;
 	gboolean enabled;
 	char *name;
 	char *trigger;
+    uint64_t vdiv;
+    gboolean coupling;
+    uint8_t trig_value;
+};
+
+/** Structure for groups of channels that have common properties. */
+struct sr_channel_group {
+    /** Name of the channel group. */
+    char *name;
+    /** List of sr_channel structs of the channels belonging to this group. */
+    GSList *channels;
+    /** Private data for driver use. */
+    void *priv;
 };
 
 struct sr_config {
@@ -605,6 +618,14 @@ struct sr_config_info {
 	char *id;
 	char *name;
 	char *description;
+};
+
+struct sr_status {
+    uint8_t trig_hit;
+    uint8_t captured_cnt3;
+    uint8_t captured_cnt2;
+    uint8_t captured_cnt1;
+    uint8_t captured_cnt0;
 };
 
 enum {
@@ -710,17 +731,14 @@ enum {
     /** Zero */
     SR_CONF_ZERO,
 
-	/** Volts/div. */
-    SR_CONF_VDIV0,
-    SR_CONF_VDIV1,
+    /** Volts/div for dso channel. */
+    SR_CONF_VDIV,
 
-	/** Coupling. */
-    SR_CONF_COUPLING0,
-    SR_CONF_COUPLING1,
+    /** Coupling for dso channel. */
+    SR_CONF_COUPLING,
 
-    /** Channel enable*/
-    SR_CONF_EN_CH0,
-    SR_CONF_EN_CH1,
+    /** Channel enable for dso channel. */
+    SR_CONF_EN_CH,
 
 	/** Trigger types.  */
 	SR_CONF_TRIGGER_TYPE,
@@ -737,8 +755,14 @@ enum {
     /** clock type (internal/external) */
     SR_CONF_CLOCK_TYPE,
 
+    /** clock edge (posedge/negedge) */
+    SR_CONF_CLOCK_EDGE,
+
     /** Device operation mode */
     SR_CONF_OPERATION_MODE,
+
+    /** Device sample threshold */
+    SR_CONF_THRESHOLD,
 
 	/*--- Special stuff -------------------------------------------------*/
 
@@ -794,17 +818,30 @@ enum {
 };
 
 struct sr_dev_inst {
-	struct sr_dev_driver *driver;
-	int index;
-	int status;
-	int inst_type;
+    /** Device driver. */
+    struct sr_dev_driver *driver;
+    /** Index of device in driver. */
+    int index;
+    /** Device instance status. SR_ST_NOT_FOUND, etc. */
+    int status;
+    /** Device instance type. SR_INST_USB, etc. */
+    int inst_type;
+    /** Device mode. LA/DAQ/OSC, etc. */
     int mode;
-	char *vendor;
-	char *model;
-	char *version;
-	GSList *probes;
-	void *conn;
-	void *priv;
+    /** Device vendor. */
+    char *vendor;
+    /** Device model. */
+    char *model;
+    /** Device version. */
+    char *version;
+    /** List of channels. */
+    GSList *channels;
+    /** List of sr_channel_group structs */
+    GSList *channel_groups;
+    /** Device instance connection data (used?) */
+    void *conn;
+    /** Device instance private data (used?) */
+    void *priv;
 };
 
 /** Types of device instances (sr_dev_inst). */
@@ -841,14 +878,28 @@ enum {
     SR_OP_LOOPBACK_TEST = 3,
 };
 
-static const char *opmodes[] = {
-    "Normal",
-    "Internal Test",
-    "External Test",
-    "DRAM Loopback Test",
+/** Device threshold level. */
+enum {
+    /** 1.8/2.5/3.3 level */
+    SR_TH_3V3 = 0,
+    /** 5.0 level */
+    SR_TH_5V0 = 1,
+};
+
+/** Device input filter. */
+enum {
+    /** None */
+    SR_FILTER_NONE = 0,
+    /** One clock cycle */
+    SR_FILTER_1T = 1,
 };
 
 extern char config_path[256];
+
+struct sr_dev_mode {
+    char *name;
+    int mode;
+};
 
 struct sr_dev_driver {
 	/* Driver-specific */
@@ -859,18 +910,27 @@ struct sr_dev_driver {
 	int (*cleanup) (void);
 	GSList *(*scan) (GSList *options);
 	GSList *(*dev_list) (void);
-	int (*dev_clear) (void);
-	int (*config_get) (int id, GVariant **data,
-			const struct sr_dev_inst *sdi);
-	int (*config_set) (int id, GVariant *data,
-			const struct sr_dev_inst *sdi);
-	int (*config_list) (int info_id, GVariant **data,
-			const struct sr_dev_inst *sdi);
+    GSList *(*dev_mode_list) (void);
+    int (*dev_clear) (void);
+
+    int (*config_get) (int id, GVariant **data,
+                       const struct sr_dev_inst *sdi,
+                       const struct sr_channel *ch,
+                       const struct sr_channel_group *cg);
+    int (*config_set) (int id, GVariant *data,
+                       const struct sr_dev_inst *sdi,
+                       const struct sr_channel *ch,
+                       const struct sr_channel_group *cg);
+    int (*config_list) (int info_id, GVariant **data,
+                        const struct sr_dev_inst *sdi,
+                        const struct sr_channel_group *cg);
 
 	/* Device-specific */
 	int (*dev_open) (struct sr_dev_inst *sdi);
 	int (*dev_close) (struct sr_dev_inst *sdi);
     int (*dev_test) (struct sr_dev_inst *sdi);
+    int (*dev_status_get) (struct sr_dev_inst *sdi,
+                           struct sr_status *status);
 	int (*dev_acquisition_start) (const struct sr_dev_inst *sdi,
 			void *cb_data);
 	int (*dev_acquisition_stop) (struct sr_dev_inst *sdi,

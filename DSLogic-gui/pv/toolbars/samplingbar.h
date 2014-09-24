@@ -27,6 +27,9 @@
 #include <stdint.h>
 
 #include <list>
+#include <map>
+
+#include <boost/shared_ptr.hpp>
 
 #include <QComboBox>
 #include <QToolBar>
@@ -34,10 +37,23 @@
 
 #include <libsigrok4DSLogic/libsigrok.h>
 
+#include "../sigsession.h"
+
 struct st_dev_inst;
 class QAction;
 
 namespace pv {
+
+class SigSession;
+
+namespace device {
+class DevInst;
+}
+
+namespace dialogs {
+class deviceoptions;
+}
+
 namespace toolbars {
 
 class SamplingBar : public QToolBar
@@ -51,46 +67,76 @@ private:
     static const uint64_t DSLogic_DefaultRecordLength;
 
 public:
-	SamplingBar(QWidget *parent);
+    SamplingBar(SigSession &session, QWidget *parent);
+
+    void set_device_list(const std::list< boost::shared_ptr<pv::device::DevInst> > &devices,
+                         boost::shared_ptr<pv::device::DevInst> selected);
+
+    boost::shared_ptr<pv::device::DevInst> get_selected_device() const;
 
 	uint64_t get_record_length() const;
     void set_record_length(uint64_t length);
 
 	void set_sampling(bool sampling);
-    void update_sample_rate_selector();
-    void set_sample_rate(uint64_t sample_rate);
-
-    void set_device(struct sr_dev_inst *sdi);
 
     void enable_toggle(bool enable);
 
     void enable_run_stop(bool enable);
 
+    void enable_instant(bool enable);
+
+public slots:
+    void set_sample_rate(uint64_t sample_rate);
+    void set_sample_limit(uint64_t sample_limit);
+
 signals:
 	void run_stop();
-    void device_reload();
+    void instant_stop();
+    void device_selected();
+    void device_updated();
+    void update_scale();
 
 private:
+    void update_sample_rate_selector();
 	void update_sample_rate_selector_value();
+    void update_sample_count_selector();
+    void update_sample_count_selector_value();
 	void commit_sample_rate();
+    void commit_sample_count();
 
 private slots:
-	void on_sample_rate_changed();
 	void on_run_stop();
+    void on_instant_stop();
+    void on_device_selected();
+    void on_samplerate_sel(int index);
+
+public slots:
+    void on_configure();
 
 private:
+    SigSession &_session;
+
     bool _enable;
 
-    struct sr_dev_inst *_sdi;
+    QComboBox _device_selector;
+    std::map<const void*, boost::weak_ptr<device::DevInst> >
+        _device_selector_map;
+    bool _updating_device_selector;
 
-	QComboBox _record_length_selector;
+    QToolButton _configure_button;
 
-	QComboBox _sample_rate_list;
-	QAction *_sample_rate_list_action;
+    QComboBox _sample_count;
+    QComboBox _sample_rate;
+    bool _updating_sample_rate;
+    bool _updating_sample_count;
 
     QIcon _icon_stop;
     QIcon _icon_start;
+    QIcon _icon_instant;
 	QToolButton _run_stop_button;
+    QToolButton _instant_button;
+
+    bool _instant;
 };
 
 } // namespace toolbars

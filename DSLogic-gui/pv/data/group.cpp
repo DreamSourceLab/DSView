@@ -30,8 +30,8 @@ using namespace std;
 namespace pv {
 namespace data {
 
-Group::Group(unsigned int num_probes, uint64_t samplerate) :
-    SignalData(num_probes, samplerate)
+Group::Group() :
+    SignalData()
 {
 }
 
@@ -43,6 +43,11 @@ void Group::push_snapshot(boost::shared_ptr<GroupSnapshot> &snapshot)
 deque< boost::shared_ptr<GroupSnapshot> >& Group::get_snapshots()
 {
 	return _snapshots;
+}
+
+void Group::clear()
+{
+    _snapshots.clear();
 }
 
 } // namespace data

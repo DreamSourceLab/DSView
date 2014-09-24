@@ -45,7 +45,6 @@ class DeviceManager;
 
 namespace toolbars {
 class SamplingBar;
-class DeviceBar;
 class TrigBar;
 class FileBar;
 class LogoBar;
@@ -67,10 +66,6 @@ class MainWindow : public QMainWindow
 {
 	Q_OBJECT
 
-private:
-    static const int DefaultDSODepth = 8192;
-    static const int DefaultDSORate = 100000000;
-
 public:
 	explicit MainWindow(DeviceManager &device_manager,
 		const char *open_file_name = NULL,
@@ -81,35 +76,29 @@ private:
 
 	void session_error(const QString text, const QString info_text);
 
-	/**
-	 * Updates the device list in the sampling bar, and updates the
-	 * selection.
-	 * @param selected_device The device to select, or NULL if the
-	 * first device in the device list should be selected.
-	 */
-	void update_device_list(
-        struct sr_dev_inst *selected_device = NULL);
-
-    void device_change();
+    bool eventFilter(QObject *object, QEvent *event);
 
 private slots:
 	void load_file(QString file_name);
 
+    /**
+     * Updates the device list in the sampling bar, and updates the
+     * selection.
+     * @param selected_device The device to select, or NULL if the
+     * first device in the device list should be selected.
+     */
+    void update_device_list();
 
 	void show_session_error(
 		const QString text, const QString info_text);
 
-	void device_selected();
-
 	void run_stop();
+
+    void instant_stop();
 
     void test_data_error();
 
-	void capture_state_changed(int state);
-
-    void init();
-
-    void update();
+    void capture_state_changed(int state);
 
     void on_protocol(bool visible);
 
@@ -121,14 +110,13 @@ private slots:
 
     void on_screenShot();
 
+    void on_save();
+
     /*
      * hotplug slot function
      */
     void device_attach();
     void device_detach();
-
-    /* */
-    void dso_ch_changed(uint16_t num);
 
 private:
 	DeviceManager &_device_manager;
@@ -155,13 +143,15 @@ private:
 	QVBoxLayout *_vertical_layout;
 
 	toolbars::SamplingBar *_sampling_bar;
-    toolbars::DeviceBar *_device_bar;
     toolbars::TrigBar *_trig_bar;
     toolbars::FileBar *_file_bar;
     toolbars::LogoBar *_logo_bar;
 
+#ifdef ENABLE_DECODE
     QDockWidget *_protocol_dock;
     dock::ProtocolDock *_protocol_widget;
+#endif
+
     QDockWidget *_trigger_dock;
     QDockWidget *_dso_trigger_dock;
     dock::TriggerDock *_trigger_widget;

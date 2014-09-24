@@ -37,13 +37,15 @@ class GroupSnapshot;
 class Group : public SignalData
 {
 public:
-    Group(unsigned int num_probes, uint64_t samplerate);
+    Group();
 
 	void push_snapshot(
         boost::shared_ptr<GroupSnapshot> &snapshot);
 
     std::deque< boost::shared_ptr<GroupSnapshot> >&
 		get_snapshots();
+
+    void clear();
 
 private:
     std::deque< boost::shared_ptr<GroupSnapshot> > _snapshots;

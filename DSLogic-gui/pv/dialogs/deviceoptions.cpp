@@ -42,7 +42,6 @@ DeviceOptions::DeviceOptions(QWidget *parent, struct sr_dev_inst *sdi) :
 	_layout(this),
     _probes_box(tr("Channels"), this),
     _props_box(tr("Mode"), this),
-    _mode_comboBox(this),
 	_button_box(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
 		Qt::Horizontal, this),
 	_device_options_binding(sdi)
@@ -50,11 +49,6 @@ DeviceOptions::DeviceOptions(QWidget *parent, struct sr_dev_inst *sdi) :
 	setWindowTitle(tr("Configure Device"));
 	setLayout(&_layout);
 
-    _last_mode = sdi->mode;
-    _mode_comboBox.addItem(mode_strings[LOGIC]);
-    _mode_comboBox.addItem(mode_strings[DSO]);
-    _mode_comboBox.addItem(mode_strings[ANALOG]);
-    _mode_comboBox.setCurrentIndex(_sdi->mode);
     _props_box.setLayout(&_props_box_layout);
     _props_box_layout.addWidget(get_property_form());
     _layout.addWidget(&_props_box);
@@ -68,9 +62,6 @@ DeviceOptions::DeviceOptions(QWidget *parent, struct sr_dev_inst *sdi) :
 
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
     connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
-
-    connect(&_mode_comboBox, SIGNAL(currentIndexChanged(QString)),
-            this, SLOT(mode_changed(QString)));
 }
 
 void DeviceOptions::accept()
@@ -79,7 +70,6 @@ void DeviceOptions::accept()
 
 	QDialog::accept();
 
-    _last_mode = _sdi->mode;
 	// Commit the properties
 	const vector< boost::shared_ptr<pv::prop::Property> > &properties =
 		_device_options_binding.properties();
@@ -90,8 +80,8 @@ void DeviceOptions::accept()
 
     // Commit the probes
     int index = 0;
-    for (const GSList *l = _sdi->probes; l; l = l->next) {
-        sr_probe *const probe = (sr_probe*)l->data;
+    for (const GSList *l = _sdi->channels; l; l = l->next) {
+        sr_channel *const probe = (sr_channel*)l->data;
         assert(probe);
 
         probe->enabled = (_probes_checkBox_list.at(index)->checkState() == Qt::Checked);
@@ -104,8 +94,6 @@ void DeviceOptions::reject()
     using namespace Qt;
     QDialog::reject();
 
-    // Mode Recovery
-    sr_config_set(_sdi, SR_CONF_DEVICE_MODE, g_variant_new_string(_mode_comboBox.itemText(_last_mode).toLocal8Bit()));
 }
 
 QWidget* DeviceOptions::get_property_form()
@@ -114,7 +102,6 @@ QWidget* DeviceOptions::get_property_form()
 	QFormLayout *const layout = new QFormLayout(form);
 	form->setLayout(layout);
 
-    layout->addRow("Device Mode", &_mode_comboBox);
 	const vector< boost::shared_ptr<pv::prop::Property> > &properties =
 		_device_options_binding.properties();
 	BOOST_FOREACH(boost::shared_ptr<pv::prop::Property> p, properties)
@@ -144,8 +131,8 @@ void DeviceOptions::setup_probes()
     _probes_label_list.clear();
     _probes_checkBox_list.clear();
 
-	for (const GSList *l = _sdi->probes; l; l = l->next) {
-		sr_probe *const probe = (sr_probe*)l->data;
+	for (const GSList *l = _sdi->channels; l; l = l->next) {
+		sr_channel *const probe = (sr_channel*)l->data;
 		assert(probe);
 
         QLabel *probe_label = new QLabel(QString::number(probe->index), this);
@@ -190,14 +177,6 @@ void DeviceOptions::enable_all_probes()
 void DeviceOptions::disable_all_probes()
 {
 	set_all_probes(false);
-}
-
-void DeviceOptions::mode_changed(QString mode)
-{
-    (void)mode;
-    // Commit mode
-    sr_config_set(_sdi, SR_CONF_DEVICE_MODE, g_variant_new_string(_mode_comboBox.currentText().toLocal8Bit()));
-    setup_probes();
 }
 
 } // namespace dialogs

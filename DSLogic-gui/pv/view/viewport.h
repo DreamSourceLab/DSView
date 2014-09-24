@@ -46,15 +46,15 @@ class Viewport : public QWidget
 	Q_OBJECT
 
 public:
-    static const int HitCursorMargin;
-    static const int NumSpanY;
-    static const int NumMiniSpanY;
-    static const int NumSpanX;
+    static const int HitCursorMargin = 10;
+    static const double HitCursorTimeMargin = 0.3;
 
 public:
 	explicit Viewport(View &parent);
 
 	int get_total_height() const;
+
+    QPoint get_mouse_point() const;
 
     void set_receive_len(quint64 length);
 
@@ -85,7 +85,7 @@ private:
     void measure();
 
 private slots:
-	void on_signals_moved();
+    void on_traces_moved();
     void on_trigger_timer();
 
 private:

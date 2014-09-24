@@ -29,8 +29,8 @@ using namespace std;
 namespace pv {
 namespace data {
 
-Dso::Dso(unsigned int num_probes, uint64_t samplerate) :
-    SignalData(num_probes, samplerate)
+Dso::Dso(int num_probes) :
+    SignalData(num_probes)
 {
 }
 
@@ -42,6 +42,11 @@ void Dso::push_snapshot(boost::shared_ptr<DsoSnapshot> &snapshot)
 deque< boost::shared_ptr<DsoSnapshot> >& Dso::get_snapshots()
 {
 	return _snapshots;
+}
+
+void Dso::clear()
+{
+    _snapshots.clear();
 }
 
 } // namespace data

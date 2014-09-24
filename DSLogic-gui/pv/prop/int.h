@@ -37,6 +37,8 @@ namespace prop {
 
 class Int : public Property
 {
+    Q_OBJECT;
+
 public:
 	Int(QString name, QString suffix,
 		boost::optional< std::pair<int64_t, int64_t> > range,
@@ -44,14 +46,18 @@ public:
 
 	virtual ~Int();
 
-	QWidget* get_widget(QWidget *parent);
+    QWidget* get_widget(QWidget *parent, bool auto_commit);
 
 	void commit();
+
+private slots:
+    void on_value_changed(int);
 
 private:
 	const QString _suffix;
 	const boost::optional< std::pair<int64_t, int64_t> > _range;
 
+    GVariant *_value;
 	QSpinBox *_spin_box;
 };
 

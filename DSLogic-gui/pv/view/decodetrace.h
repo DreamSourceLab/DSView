@@ -1,0 +1,204 @@
+/*
+ * This file is part of the PulseView project.
+ *
+ * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ */
+
+#ifndef DSLOGIC_PV_VIEW_DECODETRACE_H
+#define DSLOGIC_PV_VIEW_DECODETRACE_H
+
+#include "trace.h"
+
+#include <list>
+#include <map>
+
+#include <QSignalMapper>
+#include <QFormLayout>
+#include <QDialog>
+
+#include <boost/shared_ptr.hpp>
+
+#include <pv/prop/binding/decoderoptions.h>
+
+struct srd_channel;
+struct srd_decoder;
+
+class QComboBox;
+
+namespace pv {
+
+class SigSession;
+
+namespace data {
+class DecoderStack;
+
+namespace decode {
+class Annotation;
+class Decoder;
+class Row;
+}
+}
+
+namespace widgets {
+class DecoderGroupBox;
+}
+
+namespace view {
+
+class DecodeTrace : public Trace
+{
+	Q_OBJECT
+
+private:
+	struct ProbeSelector
+	{
+		const QComboBox *_combo;
+		const boost::shared_ptr<pv::data::decode::Decoder> _decoder;
+		const srd_channel *_pdch;
+	};
+
+private:
+	static const QColor DecodeColours[4];
+	static const QColor ErrorBgColour;
+	static const QColor NoDecodeColour;
+
+	static const int ArrowSize;
+	static const double EndCapWidth;
+	static const int DrawPadding;
+
+	static const QColor Colours[16];
+	static const QColor OutlineColours[16];
+
+    static const int DefaultFontSize = 8;
+
+public:
+	DecodeTrace(pv::SigSession &session,
+		boost::shared_ptr<pv::data::DecoderStack> decoder_stack,
+		int index);
+
+	bool enabled() const;
+
+	const boost::shared_ptr<pv::data::DecoderStack>& decoder() const;
+
+	void set_view(pv::view::View *view);
+
+	/**
+	 * Paints the background layer of the trace with a QPainter
+	 * @param p the QPainter to paint into.
+	 * @param left the x-coordinate of the left edge of the signal.
+	 * @param right the x-coordinate of the right edge of the signal.
+	 **/
+	void paint_back(QPainter &p, int left, int right);
+
+	/**
+	 * Paints the mid-layer of the trace with a QPainter
+	 * @param p the QPainter to paint into.
+	 * @param left the x-coordinate of the left edge of the signal
+	 * @param right the x-coordinate of the right edge of the signal
+	 **/
+	void paint_mid(QPainter &p, int left, int right);
+
+	/**
+	 * Paints the foreground layer of the trace with a QPainter
+	 * @param p the QPainter to paint into.
+	 * @param left the x-coordinate of the left edge of the signal
+	 * @param right the x-coordinate of the right edge of the signal
+	 **/
+	void paint_fore(QPainter &p, int left, int right);
+
+    bool create_popup();
+
+    int rows_size();
+
+protected:
+    void paint_type_options(QPainter &p, int right, bool hover, int action);
+
+private:
+	void populate_popup_form(QWidget *parent, QFormLayout *form);
+
+	void draw_annotation(const pv::data::decode::Annotation &a, QPainter &p,
+		QColor text_colour, int text_height, int left, int right,
+		double samples_per_pixel, double pixels_offset, int y,
+		size_t base_colour) const;
+    void draw_nodetail(QPainter &p,
+        int text_height, int left, int right, int y,
+        size_t base_colour) const;
+
+	void draw_instant(const pv::data::decode::Annotation &a, QPainter &p,
+		QColor fill, QColor outline, QColor text_color, int h, double x,
+		int y) const;
+
+	void draw_range(const pv::data::decode::Annotation &a, QPainter &p,
+		QColor fill, QColor outline, QColor text_color, int h, double start,
+		double end, int y) const;
+
+	void draw_error(QPainter &p, const QString &message,
+		int left, int right);
+
+    bool draw_unresolved_period(QPainter &p, int h, int left,
+        int right);
+
+    void draw_unshown_row(QPainter &p, int y, int h, int left,
+                          int right);
+
+	void create_decoder_form(int index,
+		boost::shared_ptr<pv::data::decode::Decoder> &dec,
+		QWidget *parent, QFormLayout *form);
+
+	QComboBox* create_probe_selector(QWidget *parent,
+		const boost::shared_ptr<pv::data::decode::Decoder> &dec,
+		const srd_channel *const pdch);
+
+	void commit_decoder_probes(
+		boost::shared_ptr<data::decode::Decoder> &dec);
+
+	void commit_probes();
+
+private slots:
+	void on_new_decode_data();
+
+	void on_delete();
+
+	void on_probe_selected(int);
+
+	void on_stack_decoder(srd_decoder *decoder);
+
+	void on_show_hide_decoder(int index);
+
+    void on_decode_done();
+
+private:
+	pv::SigSession &_session;
+	boost::shared_ptr<pv::data::DecoderStack> _decoder_stack;
+
+	uint64_t _decode_start, _decode_end;
+
+	std::list< boost::shared_ptr<pv::prop::binding::DecoderOptions> >
+		_bindings;
+
+	std::list<ProbeSelector> _probe_selectors;
+	std::vector<pv::widgets::DecoderGroupBox*> _decoder_forms;
+
+	std::vector<QString> _cur_row_headings;
+
+    QSignalMapper  _show_hide_mapper;
+};
+
+} // namespace view
+} // namespace pv
+
+#endif // DSLOGIC_PV_VIEW_DECODETRACE_H

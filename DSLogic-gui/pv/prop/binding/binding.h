@@ -24,9 +24,14 @@
 #ifndef DSLOGIC_PV_PROP_BINDING_BINDING_H
 #define DSLOGIC_PV_PROP_BINDING_BINDING_H
 
+#include <glib.h>
+
 #include <vector>
 #include <boost/shared_ptr.hpp>
 
+#include <QString>
+
+class QFormLayout;
 class QWidget;
 
 namespace pv {
@@ -40,6 +45,16 @@ class Binding
 {
 public:
 	const std::vector< boost::shared_ptr<Property> >& properties();
+
+    void commit();
+
+    void add_properties_to_form(QFormLayout *layout,
+        bool auto_commit = false) const;
+
+    QWidget* get_property_form(QWidget *parent,
+        bool auto_commit = false) const;
+
+    static QString print_gvariant(GVariant *const gvar);
 
 protected:
 	std::vector< boost::shared_ptr<Property> > _properties;

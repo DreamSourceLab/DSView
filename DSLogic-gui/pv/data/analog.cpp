@@ -30,9 +30,15 @@ using namespace std;
 namespace pv {
 namespace data {
 
-Analog::Analog(unsigned int num_probes, uint64_t samplerate) :
-    SignalData(num_probes, samplerate)
+Analog::Analog(unsigned int num_probes) :
+    SignalData(),
+    _num_probes(num_probes)
 {
+}
+
+int Analog::get_num_probes() const
+{
+    return _num_probes;
 }
 
 void Analog::push_snapshot(boost::shared_ptr<AnalogSnapshot> &snapshot)
@@ -43,6 +49,11 @@ void Analog::push_snapshot(boost::shared_ptr<AnalogSnapshot> &snapshot)
 deque< boost::shared_ptr<AnalogSnapshot> >& Analog::get_snapshots()
 {
 	return _snapshots;
+}
+
+void Analog::clear()
+{
+    _snapshots.clear();
 }
 
 } // namespace data

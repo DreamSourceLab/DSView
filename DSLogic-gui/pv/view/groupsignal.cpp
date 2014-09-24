@@ -28,6 +28,7 @@
 #include "groupsignal.h"
 #include "pv/data/group.h"
 #include "pv/data/groupsnapshot.h"
+#include "view.h"
 
 using namespace boost;
 using namespace std;
@@ -45,8 +46,8 @@ const QColor GroupSignal::SignalColours[4] = {
 const float GroupSignal::EnvelopeThreshold = 256.0f;
 
 GroupSignal::GroupSignal(QString name, boost::shared_ptr<data::Group> data,
-                         std::list<int> probe_index_list, int order, int group_index) :
-    Signal(name, probe_index_list, DS_GROUP, order, group_index),
+                         std::list<int> probe_index_list, int group_index) :
+    Trace(name, probe_index_list, DS_GROUP, group_index),
     _data(data)
 {
     _colour = SignalColours[probe_index_list.front() % countof(SignalColours)];
@@ -57,18 +58,14 @@ GroupSignal::~GroupSignal()
 {
 }
 
-void GroupSignal::set_data(boost::shared_ptr<data::Logic> _logic_data,
-                           boost::shared_ptr<data::Dso> _dso_data,
-                           boost::shared_ptr<pv::data::Analog> _analog_data,
-                           boost::shared_ptr<data::Group> _group_data)
+bool GroupSignal::enabled() const
 {
-    (void)_logic_data;
-    (void)_dso_data;
-    (void)_analog_data;
+    return true;
+}
 
-    assert(_group_data);
-
-    _data = _group_data;
+shared_ptr<pv::data::SignalData> GroupSignal::data() const
+{
+    return _data;
 }
 
 void GroupSignal::set_scale(float scale)
@@ -76,15 +73,18 @@ void GroupSignal::set_scale(float scale)
 	_scale = scale;
 }
 
-void GroupSignal::paint(QPainter &p, int y, int left, int right, double scale,
-    double offset)
+void GroupSignal::paint_mid(QPainter &p, int left, int right)
 {
-	assert(scale > 0);
-	assert(_data);
-	assert(right >= left);
+    assert(_data);
+    assert(_view);
+    assert(right >= left);
+
+    const int y = get_y() + _signalHeight * 0.5;
+    const double scale = _view->scale();
+    assert(scale > 0);
+    const double offset = _view->offset();
 
     _scale = _signalHeight * 1.0f / pow(2, _index_list.size());
-	paint_axis(p, y, left, right);
 
     const deque< boost::shared_ptr<pv::data::GroupSnapshot> > &snapshots =
 		_data->get_snapshots();
@@ -95,7 +95,7 @@ void GroupSignal::paint(QPainter &p, int y, int left, int right, double scale,
             snapshots.at(_sec_index);
 
 	const double pixels_offset = offset / scale;
-	const double samplerate = _data->get_samplerate();
+    const double samplerate = _data->samplerate();
 	const double start_time = _data->get_start_time();
     const int64_t last_sample = snapshot->get_sample_count() - 1;
 	const double samples_per_pixel = samplerate * scale;
@@ -196,18 +196,32 @@ const std::vector< std::pair<uint64_t, bool> > GroupSignal::cur_edges() const
 
 }
 
-void GroupSignal::set_decoder(pv::decoder::Decoder *decoder)
+void GroupSignal::paint_type_options(QPainter &p, int right, bool hover, int action)
 {
-    (void)decoder;
-}
+    (void)hover;
+    (void)action;
 
-decoder::Decoder *GroupSignal::get_decoder()
-{
-    return NULL;
-}
-
-void GroupSignal::del_decoder()
-{
+    int y = get_y();
+    const QRectF group_index_rect = get_rect("groupIndex", y, right);
+    QString index_string;
+    int last_index;
+    p.setPen(Qt::transparent);
+    p.setBrush(dsBlue);
+    p.drawRect(group_index_rect);
+    std::list<int>::iterator i = _index_list.begin();
+    last_index = (*i);
+    index_string = QString::number(last_index);
+    while (++i != _index_list.end()) {
+        if ((*i) == last_index + 1 && index_string.indexOf("-") < 3 && index_string.indexOf("-") > 0)
+            index_string.replace(QString::number(last_index), QString::number((*i)));
+        else if ((*i) == last_index + 1)
+            index_string = QString::number((*i)) + "-" + index_string;
+        else
+            index_string = QString::number((*i)) + "," + index_string;
+        last_index = (*i);
+    }
+    p.setPen(Qt::white);
+    p.drawText(group_index_rect, Qt::AlignRight | Qt::AlignVCenter, index_string);
 }
 
 } // namespace view

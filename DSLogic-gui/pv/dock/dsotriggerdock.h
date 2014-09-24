@@ -52,6 +52,7 @@ public:
     void device_change();
 
 signals:
+    void set_trig_pos(quint64 trig_pos);
 
 private slots:
     void pos_changed(int pos);

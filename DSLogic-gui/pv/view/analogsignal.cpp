@@ -28,6 +28,7 @@
 #include "analogsignal.h"
 #include "pv/data/analog.h"
 #include "pv/data/analogsnapshot.h"
+#include "view.h"
 
 using namespace boost;
 using namespace std;
@@ -50,12 +51,13 @@ const QColor AnalogSignal::SignalColours[4] = {
 
 const float AnalogSignal::EnvelopeThreshold = 256.0f;
 
-AnalogSignal::AnalogSignal(QString name, boost::shared_ptr<data::Analog> data,
-    int probe_index, int order) :
-    Signal(name, probe_index, DS_ANALOG, order),
+AnalogSignal::AnalogSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
+                           boost::shared_ptr<data::Analog> data,
+                           const sr_channel * const probe) :
+    Signal(dev_inst, probe, DS_ANALOG),
     _data(data)
 {
-	_colour = SignalColours[probe_index % countof(SignalColours)];
+    _colour = SignalColours[probe->index % countof(SignalColours)];
     _scale = _signalHeight * 1.0f / 65536;
 }
 
@@ -63,18 +65,9 @@ AnalogSignal::~AnalogSignal()
 {
 }
 
-void AnalogSignal::set_data(boost::shared_ptr<data::Logic> _logic_data,
-                            boost::shared_ptr<data::Dso> _dso_data,
-                            boost::shared_ptr<pv::data::Analog> _analog_data,
-                            boost::shared_ptr<data::Group> _group_data)
+shared_ptr<pv::data::SignalData> AnalogSignal::data() const
 {
-    (void)_dso_data;
-    (void)_logic_data;
-    (void)_group_data;
-
-    assert(_analog_data);
-
-    _data = _analog_data;
+    return _data;
 }
 
 void AnalogSignal::set_scale(float scale)
@@ -82,16 +75,18 @@ void AnalogSignal::set_scale(float scale)
 	_scale = scale;
 }
 
-void AnalogSignal::paint(QPainter &p, int y, int left, int right, double scale,
-	double offset)
+void AnalogSignal::paint_mid(QPainter &p, int left, int right)
 {
-	assert(scale > 0);
-	assert(_data);
-	assert(right >= left);
+    assert(_data);
+    assert(_view);
+    assert(right >= left);
 
-    //paint_axis(p, y, left, right);
+    const int y = get_y() + _signalHeight * 0.5;
+    const double scale = _view->scale();
+    assert(scale > 0);
+    const double offset = _view->offset();
 
-	const deque< boost::shared_ptr<pv::data::AnalogSnapshot> > &snapshots =
+	const deque< shared_ptr<pv::data::AnalogSnapshot> > &snapshots =
 		_data->get_snapshots();
 	if (snapshots.empty())
 		return;
@@ -104,7 +99,7 @@ void AnalogSignal::paint(QPainter &p, int y, int left, int right, double scale,
         return;
 
 	const double pixels_offset = offset / scale;
-	const double samplerate = _data->get_samplerate();
+    const double samplerate = _data->samplerate();
 	const double start_time = _data->get_start_time();
     const int64_t last_sample = max((int64_t)(snapshot->get_sample_count() - 1), (int64_t)0);
 	const double samples_per_pixel = samplerate * scale;
@@ -208,20 +203,6 @@ void AnalogSignal::paint_envelope(QPainter &p,
 const std::vector< std::pair<uint64_t, bool> > AnalogSignal::cur_edges() const
 {
 
-}
-
-void AnalogSignal::set_decoder(pv::decoder::Decoder *decoder)
-{
-    (void)decoder;
-}
-
-decoder::Decoder *AnalogSignal::get_decoder()
-{
-    return NULL;
-}
-
-void AnalogSignal::del_decoder()
-{
 }
 
 } // namespace view

@@ -22,13 +22,17 @@
 
 
 #include "protocoldock.h"
-#include "../decoder/democonfig.h"
 #include "../sigsession.h"
+#include "../view/decodetrace.h"
+#include "../device/devinst.h"
 
 #include <QObject>
 #include <QHBoxLayout>
 #include <QPainter>
 #include <QMessageBox>
+#include <QFormLayout>
+
+#include <boost/shared_ptr.hpp>
 
 namespace pv {
 namespace dock {
@@ -49,10 +53,21 @@ ProtocolDock::ProtocolDock(QWidget *parent, SigSession &session) :
                              QIcon(":/icons/del.png")));
     _del_all_button->setCheckable(true);
     _protocol_combobox = new QComboBox(this);
-    for (int i = 0; decoder::protocol_list[i] != NULL;) {
-        _protocol_combobox->addItem(decoder::protocol_list[i]);
-        i++;
+
+    GSList *l = g_slist_sort(g_slist_copy(
+        (GSList*)srd_decoder_list()), decoder_name_cmp);
+    for(; l; l = l->next)
+    {
+        const srd_decoder *const d = (srd_decoder*)l->data;
+        assert(d);
+
+        const bool have_probes = (d->channels || d->opt_channels) != 0;
+        if (true == have_probes) {
+            _protocol_combobox->addItem(QString::fromUtf8(d->name), qVariantFromValue(l->data));
+        }
     }
+    g_slist_free(l);
+
     hori_layout->addWidget(_add_button);
     hori_layout->addWidget(_del_all_button);
     hori_layout->addWidget(_protocol_combobox);
@@ -74,6 +89,12 @@ ProtocolDock::~ProtocolDock()
 {
 }
 
+int ProtocolDock::decoder_name_cmp(const void *a, const void *b)
+{
+    return strcmp(((const srd_decoder*)a)->name,
+        ((const srd_decoder*)b)->name);
+}
+
 void ProtocolDock::paintEvent(QPaintEvent *)
 {
      QStyleOption opt;
@@ -84,7 +105,7 @@ void ProtocolDock::paintEvent(QPaintEvent *)
 
 void ProtocolDock::add_protocol()
 {
-    if (_session.get_device()->mode != LOGIC) {
+    if (_session.get_device()->dev_inst()->mode != LOGIC) {
         QMessageBox msg(this);
         msg.setText("Protocol Analyzer");
         msg.setInformativeText("Protocol Analyzer is only valid in Digital Mode!");
@@ -92,11 +113,12 @@ void ProtocolDock::add_protocol()
         msg.setIcon(QMessageBox::Warning);
         msg.exec();
     } else {
-        pv::decoder::DemoConfig dlg(this, _session.get_device(), _protocol_combobox->currentIndex());
-        if (dlg.exec()) {
-            std::list <int > _sel_probes = dlg.get_sel_probes();
-            QMap <QString, QVariant>& _options = dlg.get_options();
-            QMap <QString, int> _options_index = dlg.get_options_index();
+        srd_decoder *const decoder =
+            (srd_decoder*)(_protocol_combobox->itemData(_protocol_combobox->currentIndex())).value<void*>();
+        if (_session.add_decoder(decoder)) {
+            //std::list <int > _sel_probes = dlg.get_sel_probes();
+            //QMap <QString, QVariant>& _options = dlg.get_options();
+            //QMap <QString, int> _options_index = dlg.get_options_index();
 
             QPushButton *_del_button = new QPushButton(this);
             QPushButton *_set_button = new QPushButton(this);
@@ -105,7 +127,7 @@ void ProtocolDock::add_protocol()
                                  QIcon(":/icons/del.png")));
             _set_button->setFlat(true);
             _set_button->setIcon(QIcon::fromTheme("protocol",
-                                 QIcon(":/icons/set.png")));
+                                 QIcon(":/icons/gear.png")));
             QLabel *_protocol_label = new QLabel(this);
 
             _del_button->setCheckable(true);
@@ -129,7 +151,7 @@ void ProtocolDock::add_protocol()
             _hori_layout_list.push_back(hori_layout);
             _layout->insertLayout(_del_button_list.size(), hori_layout);
 
-            _session.add_protocol_analyzer(_protocol_combobox->currentIndex(), _sel_probes, _options, _options_index);
+            //_session.add_protocol_analyzer(_protocol_combobox->currentIndex(), _sel_probes, _options, _options_index);
         }
     }
 }
@@ -141,15 +163,16 @@ void ProtocolDock::rst_protocol()
          i != _set_button_list.end(); i++) {
         QPushButton *button = qobject_cast<QPushButton *>(sender());
         if ((*i) == button) {
-            pv::decoder::DemoConfig dlg(this, _session.get_device(), _protocol_index_list.at(rst_index));
-            dlg.set_config(_session.get_decode_probes(rst_index), _session.get_decode_options_index(rst_index));
-            if (dlg.exec()) {
-                std::list <int > _sel_probes = dlg.get_sel_probes();
-                QMap <QString, QVariant>& _options = dlg.get_options();
-                QMap <QString, int> _options_index = dlg.get_options_index();
+            //pv::decoder::DemoConfig dlg(this, _session.get_device(), _protocol_index_list.at(rst_index));
+            //dlg.set_config(_session.get_decode_probes(rst_index), _session.get_decode_options_index(rst_index));
+            //if (dlg.exec()) {
+                //std::list <int > _sel_probes = dlg.get_sel_probes();
+                //QMap <QString, QVariant>& _options = dlg.get_options();
+                //QMap <QString, int> _options_index = dlg.get_options_index();
 
-                _session.rst_protocol_analyzer(rst_index, _sel_probes, _options, _options_index);
-            }
+                //_session.rst_protocol_analyzer(rst_index, _sel_probes, _options, _options_index);
+            //}
+            _session.rst_decoder(rst_index);
             break;
         }
         rst_index++;
@@ -170,7 +193,7 @@ void ProtocolDock::del_protocol()
                 delete _set_button_list.at(del_index);
                 delete _protocol_label_list.at(del_index);
 
-                _session.del_protocol_analyzer(0);
+                _session.remove_decode_signal(0);
                 del_index++;
             }
             _hori_layout_list.clear();
@@ -204,7 +227,7 @@ void ProtocolDock::del_protocol()
                _protocol_label_list.remove(del_index);
                _protocol_index_list.remove(del_index);
 
-               _session.del_protocol_analyzer(del_index);
+               _session.remove_decode_signal(del_index);
 
                break;
            }
@@ -225,7 +248,7 @@ void ProtocolDock::del_all_protocol()
             delete _set_button_list.at(del_index);
             delete _protocol_label_list.at(del_index);
 
-            _session.del_protocol_analyzer(0);
+            _session.remove_decode_signal(0);
             del_index++;
         }
         _hori_layout_list.clear();

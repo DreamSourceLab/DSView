@@ -27,6 +27,8 @@
 #include "view.h"
 #include "viewport.h"
 #include "../sigsession.h"
+#include "../device/devinst.h"
+#include "dsosignal.h"
 
 #include <extdef.h>
 
@@ -39,6 +41,9 @@
 #include <QTextStream>
 #include <QStyleOption>
 
+#include <boost/shared_ptr.hpp>
+
+using namespace boost;
 using namespace std;
 
 namespace pv {
@@ -63,7 +68,7 @@ const QColor Ruler::CursorColor[8] =
      QColor(46, 205, 113, 200),
      QColor(53, 152, 220, 200),
      QColor(154, 89, 181, 200),
-     QColor(52, 73, 94    , 200),
+     QColor(52, 73, 94, 200),
      QColor(242, 196, 15, 200),
      QColor(231, 126, 34, 200),
      QColor(232, 76, 61, 200)};
@@ -405,7 +410,7 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
     const double MinValueSpacing = 16.0f;
     const int ValueMargin = 5;
 
-    const double abs_min_period = 10.0f / _view.session().get_last_sample_rate();
+    const double abs_min_period = 10.0f / _view.session().get_device()->get_sample_rate();
 
     double min_width = SpacingIncrement;
     double typical_width;
@@ -415,7 +420,11 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
 
     // Find tick spacing, and number formatting that does not cause
     // value to collide.
-    _min_period = cur_period_scale * abs_min_period;
+    if (_view.session().get_device()->dev_inst()->mode == DSO) {
+        _min_period = _view.session().get_device()->get_time_base() * pow(10, -9);
+    } else {
+        _min_period = cur_period_scale * abs_min_period;
+    }
     const int order = (int)floorf(log10f(_min_period));
     //const double order_decimal = pow(10, order);
     const unsigned int prefix = (order - FirstSIPrefixPower) / 3;
@@ -459,7 +468,7 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
 
     const double inc_text_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
                                                  AlignLeft | AlignTop,
-                                                 format_time(tick_period - minor_tick_period,
+                                                 format_time(minor_tick_period,
                                                              minor_prefix)).width() + MinValueSpacing;
     do {
         const double t = t0 + division * minor_tick_period;
@@ -485,7 +494,7 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
                     AlignCenter | AlignTop | TextDontClip,
                     format_time(t, prefix));
             //else if ((tick_period / _view.scale() > width() / 4) && (minor_tick_period / _view.scale() > inc_text_width))
-            else if (minor_tick_period / _view.scale() > 1.2 * inc_text_width)
+            else if (minor_tick_period / _view.scale() > 1.1 * inc_text_width)
                 p.drawText(x, 2 * ValueMargin, 0, minor_tick_y1 + ValueMargin,
                     AlignCenter | AlignTop | TextDontClip,
                     format_time(t - major_t, minor_prefix));
@@ -495,7 +504,7 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
 
         division++;
 
-    } while (x < width());
+    } while (x < _view.get_max_width());
 
     // Draw the cursors
     if (!_view.get_cursorList().empty()) {
@@ -509,10 +518,10 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
         _view.on_cursor_moved();
     }
     if (_view.trig_cursor_shown()) {
-        _view.get_trig_cursor()->paint_fix_label(p, rect(), prefix, 'T', Signal::dsLightRed);
+        _view.get_trig_cursor()->paint_fix_label(p, rect(), prefix, 'T', Trace::dsLightRed);
     }
     if (_view.search_cursor_shown()) {
-        _view.get_search_cursor()->paint_fix_label(p, rect(), prefix, 'S', Signal::dsLightBlue);
+        _view.get_search_cursor()->paint_fix_label(p, rect(), prefix, 'S', Trace::dsLightBlue);
     }
 }
 

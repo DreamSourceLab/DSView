@@ -81,7 +81,7 @@ SR_PRIV void flush_linebufs(struct context *ctx, uint8_t *outbuf)
 SR_PRIV int init(struct sr_output *o, int default_spl, enum outputmode mode)
 {
 	struct context *ctx;
-	struct sr_probe *probe;
+	struct sr_channel *probe;
 	GSList *l;
 	GVariant *gvar;
 	uint64_t samplerate;
@@ -97,7 +97,7 @@ SR_PRIV int init(struct sr_output *o, int default_spl, enum outputmode mode)
 	ctx->num_enabled_probes = 0;
 	ctx->probenames = NULL;
 
-	for (l = o->sdi->probes; l; l = l->next) {
+    for (l = o->sdi->channels; l; l = l->next) {
 		probe = l->data;
 		if (!probe->enabled)
 			continue;
@@ -128,9 +128,9 @@ SR_PRIV int init(struct sr_output *o, int default_spl, enum outputmode mode)
 	}
 
 	snprintf(ctx->header, 511, "%s\n", PACKAGE_STRING);
-	num_probes = g_slist_length(o->sdi->probes);
-	if (sr_config_get(o->sdi->driver, SR_CONF_SAMPLERATE, &gvar,
-			o->sdi) == SR_OK) {
+    num_probes = g_slist_length(o->sdi->channels);
+    if (sr_config_get(o->sdi->driver, o->sdi, NULL, NULL,
+                      SR_CONF_SAMPLERATE, &gvar) == SR_OK) {
 		samplerate = g_variant_get_uint64(gvar);
 		g_variant_unref(gvar);
 		if (!(samplerate_s = sr_samplerate_string(samplerate))) {

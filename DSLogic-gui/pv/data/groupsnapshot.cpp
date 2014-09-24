@@ -59,7 +59,7 @@ GroupSnapshot::GroupSnapshot(const boost::shared_ptr<LogicSnapshot> &_logic_snap
 	memset(_envelope_levels, 0, sizeof(_envelope_levels));
     _data = _logic_snapshot->get_data();
     _sample_count = _logic_snapshot->get_sample_count();
-    _unit_size = _logic_snapshot->get_unit_size();
+    _unit_size = _logic_snapshot->unit_size();
     _index_list = index_list;
     append_payload();
 }

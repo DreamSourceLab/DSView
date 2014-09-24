@@ -83,8 +83,8 @@ SR_PRIV int sr_err(const char *format, ...);
 
 /*--- device.c --------------------------------------------------------------*/
 
-SR_PRIV struct sr_probe *sr_probe_new(int index, int type,
-                                      gboolean enabled, const char *name);
+SR_PRIV struct sr_channel *sr_channel_new(int index, int type,
+                                          gboolean enabled, const char *name);
 SR_PRIV void sr_dev_probes_free(struct sr_dev_inst *sdi);
 
 /* Generic device instances */

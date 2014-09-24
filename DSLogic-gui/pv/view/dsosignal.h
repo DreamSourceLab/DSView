@@ -42,43 +42,99 @@ class DsoSignal : public Signal
 {
 private:
 	static const QColor SignalColours[4];
-
 	static const float EnvelopeThreshold;
 
+    static const int HitCursorMargin = 3;
+    static const uint64_t vDialValueCount = 10;
+    static const uint64_t vDialValueStep = 1000;
+    static const uint64_t vDialUnitCount = 2;
+    static const uint64_t hDialValueCount = 22;
+    static const uint64_t hDialValueStep = 1000;
+    static const uint64_t hDialUnitCount = 4;
+    static const uint64_t vDialValue[vDialValueCount];
+    static const QString vDialUnit[vDialUnitCount];
+
+    static const uint64_t hDialValue[hDialValueCount];
+    static const QString hDialUnit[hDialUnitCount];
+
+    static const int UpMargin;
+    static const int DownMargin;
+    static const int RightMargin;
+
 public:
-    DsoSignal(QString name,
-        boost::shared_ptr<pv::data::Dso> data, int probe_index, int order,
-              uint64_t vdiv, uint64_t timebase, bool coupling, bool active);
+    DsoSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
+              boost::shared_ptr<pv::data::Dso> data,
+              const sr_channel * const probe);
 
     virtual ~DsoSignal();
 
+    boost::shared_ptr<pv::data::SignalData> data() const;
+
 	void set_scale(float scale);
+
+    /**
+     *
+     */
+    void set_enable(bool enable);
+    bool get_vDialActive() const;
+    void set_vDialActive(bool active);
+    bool get_hDialActive() const;
+    void set_hDialActive(bool active);
+    bool go_vDialPre();
+    bool go_vDialNext();
+    bool go_hDialPre();
+    bool go_hDialNext();
+    uint64_t get_vDialValue() const;
+    uint64_t get_hDialValue() const;
+    uint16_t get_vDialSel() const;
+    uint16_t get_hDialSel() const;
+    bool get_acCoupling() const;
+    void set_acCoupling(bool coupling);
+    void set_trig_vpos(int pos);
+    int get_trig_vpos() const;
+
+    /**
+     * Gets the mid-Y position of this signal.
+     */
+    int get_zeroPos();
+
+    /**
+     * Sets the mid-Y position of this signal.
+     */
+    void set_zeroPos(int pos);
+
+    /**
+     * Paints the background layer of the trace with a QPainter
+     * @param p the QPainter to paint into.
+     * @param left the x-coordinate of the left edge of the signal
+     * @param right the x-coordinate of the right edge of the signal
+     **/
+    void paint_back(QPainter &p, int left, int right);
 
 	/**
 	 * Paints the signal with a QPainter
 	 * @param p the QPainter to paint into.
-	 * @param y the y-coordinate to draw the signal at.
 	 * @param left the x-coordinate of the left edge of the signal.
 	 * @param right the x-coordinate of the right edge of the signal.
-	 * @param scale the scale in seconds per pixel.
-	 * @param offset the time to show at the left hand edge of
-	 *   the view in seconds.
 	 **/
-    void paint(QPainter &p, int y, int left, int right, double scale,
-        double offset);
+    void paint_mid(QPainter &p, int left, int right);
+
+    /**
+     * Paints the signal with a QPainter
+     * @param p the QPainter to paint into.
+     * @param left the x-coordinate of the left edge of the signal.
+     * @param right the x-coordinate of the right edge of the signal.
+     **/
+    void paint_fore(QPainter &p, int left, int right);
 
     const std::vector< std::pair<uint64_t, bool> > cur_edges() const;
 
-    void set_decoder(pv::decoder::Decoder *decoder);
+    QRectF get_view_rect() const;
 
-    pv::decoder::Decoder* get_decoder();
+    QRectF get_trig_rect(int left, int right) const;
 
-    void del_decoder();
-
-    void set_data(boost::shared_ptr<pv::data::Logic> _logic_data,
-                  boost::shared_ptr<pv::data::Dso> _dso_data,
-                  boost::shared_ptr<pv::data::Analog> _analog_data,
-                  boost::shared_ptr<pv::data::Group> _group_data);
+protected:
+    void paint_type_options(QPainter &p, int right, bool hover, int action);
 
 private:
 	void paint_trace(QPainter &p,
@@ -95,6 +151,15 @@ private:
 private:
     boost::shared_ptr<pv::data::Dso> _data;
 	float _scale;
+
+    dslDial *_vDial;
+    dslDial *_hDial;
+    bool _vDialActive;
+    bool _hDialActive;
+    bool _acCoupling;
+
+    double _trig_vpos;
+    double _zeroPos;
 };
 
 } // namespace view

@@ -41,7 +41,7 @@ class GroupSnapshot;
 
 namespace view {
 
-class GroupSignal : public Signal
+class GroupSignal : public Trace
 {
 private:
 	static const QColor SignalColours[4];
@@ -51,37 +51,31 @@ private:
 public:
     GroupSignal(QString name,
         boost::shared_ptr<pv::data::Group> data,
-                std::list<int> probe_index_list, int order, int group_index);
+                std::list<int> probe_index_list, int group_index);
 
     virtual ~GroupSignal();
+
+    /**
+     * Returns true if the trace is visible and enabled.
+     */
+    bool enabled() const;
+
+    boost::shared_ptr<pv::data::SignalData> data() const;
 
 	void set_scale(float scale);
 
 	/**
 	 * Paints the signal with a QPainter
 	 * @param p the QPainter to paint into.
-	 * @param y the y-coordinate to draw the signal at.
 	 * @param left the x-coordinate of the left edge of the signal.
 	 * @param right the x-coordinate of the right edge of the signal.
-	 * @param scale the scale in seconds per pixel.
-	 * @param offset the time to show at the left hand edge of
-	 *   the view in seconds.
 	 **/
-	void paint(QPainter &p, int y, int left, int right, double scale,
-		double offset);
+    void paint_mid(QPainter &p, int left, int right);
 
     const std::vector< std::pair<uint64_t, bool> > cur_edges() const;
 
-    void set_decoder(pv::decoder::Decoder *decoder);
-
-    pv::decoder::Decoder* get_decoder();
-
-    void del_decoder();
-
-    void set_data(boost::shared_ptr<pv::data::Logic> _logic_data,
-                  boost::shared_ptr<pv::data::Dso> _dso_data,
-                  boost::shared_ptr<pv::data::Analog> _analog_data,
-                  boost::shared_ptr<pv::data::Group> _group_data);
+protected:
+    void paint_type_options(QPainter &p, int right, bool hover, int action);
 
 private:
 	void paint_trace(QPainter &p,
