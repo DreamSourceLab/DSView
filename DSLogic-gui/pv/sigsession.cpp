@@ -125,7 +125,9 @@ void SigSession::set_device(shared_ptr<device::DevInst> dev_inst) throw(QString)
     }
 
     _dev_inst = dev_inst;
+#ifdef ENABLE_DECODE
     _decode_traces.clear();
+#endif
     _group_traces.clear();
 
     if (_dev_inst) {
@@ -476,9 +478,10 @@ void SigSession::init_signals()
     unsigned int dso_probe_count = 0;
     unsigned int analog_probe_count = 0;
 
-
+#ifdef ENABLE_DECODE
     // Clear the decode traces
     _decode_traces.clear();
+#endif
 
     // Detect what data types we will receive
     if(_dev_inst) {
@@ -786,11 +789,13 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
             _cur_dso_snapshot.reset();
             _cur_analog_snapshot.reset();
 		}
+#ifdef ENABLE_DECODE
         for (vector< shared_ptr<view::DecodeTrace> >::iterator i =
             _decode_traces.begin();
             i != _decode_traces.end();
             i++)
-            (*i)->decoder()->stop_decode();
+		(*i)->decoder()->stop_decode();
+#endif
         frame_ended();
 		break;
 	}
