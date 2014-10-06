@@ -154,7 +154,6 @@ set(DSLogic_SOURCES
 	pv/prop/string.cpp
 	pv/prop/binding/binding.cpp
 	pv/prop/binding/deviceoptions.cpp
-	pv/prop/binding/decoderoptions.cpp
 	pv/toolbars/filebar.cpp
 	pv/toolbars/logobar.cpp
 	pv/toolbars/samplingbar.cpp

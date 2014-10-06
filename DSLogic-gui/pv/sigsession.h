@@ -222,7 +222,9 @@ private:
 	mutable boost::mutex _signals_mutex;
 	std::vector< boost::shared_ptr<view::Signal> > _signals;
     std::vector< boost::shared_ptr<view::GroupSignal> > _group_traces;
+#ifdef ENABLE_DECODE
     std::vector< boost::shared_ptr<view::DecodeTrace> > _decode_traces;
+#endif
 
     mutable boost::mutex _data_mutex;
 	boost::shared_ptr<data::Logic> _logic_data;
