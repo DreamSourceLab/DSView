@@ -10,8 +10,8 @@ namespace view {
 class dslDial
 {
 public:
-    dslDial(quint64 div, quint64 step,
-            QVector<quint64> value, QVector<QString> unit);
+    dslDial(const quint64 div,const quint64 step,
+            const QVector<quint64> value, const QVector<QString> unit);
     virtual ~dslDial();
 
 public:

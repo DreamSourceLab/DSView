@@ -5,8 +5,8 @@
 namespace pv {
 namespace view {
 
-dslDial::dslDial(quint64 div, quint64 step,
-                 QVector<quint64> value, QVector<QString> unit)
+dslDial::dslDial(const quint64 div,const quint64 step,
+                 const QVector<quint64> value, const QVector<QString> unit)
 {
     assert(div > 0);
     assert(step > 0);

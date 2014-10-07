@@ -455,7 +455,7 @@ void DecoderStack::annotation_callback(srd_proto_data *pdata, void *decoder)
 	
 	// Try looking up the sub-row of this class
 	const map<pair<const srd_decoder*, int>, Row>::const_iterator r =
-		d->_class_rows.find(make_pair(decc, a.format()));
+		d->_class_rows.find(make_pair(decc, 0));
 	if (r != d->_class_rows.end())
 		row_iter = d->_rows.find((*r).second);
 	else
@@ -467,7 +467,7 @@ void DecoderStack::annotation_callback(srd_proto_data *pdata, void *decoder)
 	assert(row_iter != d->_rows.end());
 	if (row_iter == d->_rows.end()) {
 		qDebug() << "Unexpected annotation: decoder = " << decc <<
-			", format = " << a.format();
+			", format = 0";
 		assert(0);
 		return;
 	}
