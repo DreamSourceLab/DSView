@@ -45,8 +45,8 @@ private:
 	static const float EnvelopeThreshold;
 
     static const int HitCursorMargin = 3;
-    static const uint64_t vDialValueCount = 10;
-    static const uint64_t vDialValueStep = 1000;
+    static const quint64 vDialValueCount = 10;
+    static const quint64 vDialValueStep = 1000;
     static const uint64_t vDialUnitCount = 2;
     static const uint64_t hDialValueCount = 22;
     static const uint64_t hDialValueStep = 1000;

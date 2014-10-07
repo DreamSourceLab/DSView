@@ -401,7 +401,7 @@ void DecodeTrace::draw_annotation(const pv::data::decode::Annotation &a,
     const double end = min(a.end_sample() / samples_per_pixel -
         pixels_offset, (double)right);
 
-	const size_t colour = (base_colour + a.format()) % countof(Colours);
+	const size_t colour = (base_colour + 0) % countof(Colours);
 	const QColor &fill = Colours[colour];
 	const QColor &outline = OutlineColours[colour];
 
