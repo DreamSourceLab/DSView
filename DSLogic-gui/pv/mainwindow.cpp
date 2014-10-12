@@ -521,9 +521,11 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
             else
                 on_trigger(!_trigger_dock->isVisible());
             break;
+#ifdef ENABLE_DECODE
         case Qt::Key_D:
             on_protocol(!_protocol_dock->isVisible());
             break;
+#endif
         case Qt::Key_M:
             on_measure(!_measure_dock->isVisible());
             break;

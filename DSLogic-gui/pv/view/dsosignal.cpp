@@ -113,9 +113,9 @@ DsoSignal::DsoSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
     _trig_vpos(probe->index * 0.5 + 0.25),
     _zeroPos(probe->index * 0.5 + 0.25)
 {
-    QVector<uint64_t> vValue;
+    QVector<quint64> vValue;
     QVector<QString> vUnit;
-    QVector<uint64_t> hValue;
+    QVector<quint64> hValue;
     QVector<QString> hUnit;
     for(quint64 i = 0; i < vDialValueCount; i++)
         vValue.append(vDialValue[i]);

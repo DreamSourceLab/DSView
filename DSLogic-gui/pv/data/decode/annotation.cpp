@@ -40,7 +40,7 @@ Annotation::Annotation(const srd_proto_data *const pdata) :
 		(const srd_proto_data_annotation*)pdata->data;
 	assert(pda);
 
-	_format = pda->ann_format;
+	_format = pda->ann_class;
 
 	const char *const *annotations = (char**)pda->ann_text;
 	while(*annotations) {
