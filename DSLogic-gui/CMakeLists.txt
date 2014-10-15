@@ -34,7 +34,7 @@ project(DSLogic)
 
 option(DISABLE_WERROR "Build without -Werror" TRUE)
 option(ENABLE_SIGNALS "Build with UNIX signals" TRUE)
-option(ENABLE_DECODE "Build with libsigrokdecode" FALSE)
+option(ENABLE_DECODE "Build with libsigrokdecode" TRUE)
 option(ENABLE_COTIRE "Enable cotire" FALSE)
 option(ENABLE_TESTS "Enable unit tests" FALSE)
 option(STATIC_PKGDEPS_LIBS "Statically link to (pkg-config) libraries" FALSE)

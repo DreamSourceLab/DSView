@@ -125,7 +125,9 @@ void SigSession::set_device(shared_ptr<device::DevInst> dev_inst) throw(QString)
     }
 
     _dev_inst = dev_inst;
+#ifdef ENABLE_DECODE
     _decode_traces.clear();
+#endif
     _group_traces.clear();
 
     if (_dev_inst) {
