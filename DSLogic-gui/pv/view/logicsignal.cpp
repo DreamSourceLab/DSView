@@ -85,12 +85,12 @@ const sr_channel* LogicSignal::probe() const
     return _probe;
 }
 
-boost::shared_ptr<pv::data::SignalData> LogicSignal::data() const
+shared_ptr<pv::data::SignalData> LogicSignal::data() const
 {
     return _data;
 }
 
-boost::shared_ptr<pv::data::Logic> LogicSignal::logic_data() const
+shared_ptr<pv::data::Logic> LogicSignal::logic_data() const
 {
     return _data;
 }

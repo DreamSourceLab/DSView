@@ -103,7 +103,7 @@ const int DsoSignal::DownMargin = 30;
 const int DsoSignal::RightMargin = 30;
 
 DsoSignal::DsoSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
-                     boost::shared_ptr<data::Dso> data,
+                     shared_ptr<data::Dso> data,
                      const sr_channel * const probe):
     Signal(dev_inst, probe, DS_DSO),
     _data(data),
@@ -163,7 +163,7 @@ DsoSignal::~DsoSignal()
 {
 }
 
-boost::shared_ptr<pv::data::SignalData> DsoSignal::data() const
+shared_ptr<pv::data::SignalData> DsoSignal::data() const
 {
     return _data;
 }
@@ -424,7 +424,7 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right)
             return;
 
         _scale = height * 1.0f / 256;
-        const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
+        const shared_ptr<pv::data::DsoSnapshot> &snapshot =
             snapshots.front();
 
         const uint16_t number_channels = snapshot->get_channel_num();
