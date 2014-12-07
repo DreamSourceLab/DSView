@@ -97,6 +97,10 @@ $ ./configure
 $ make
 $ sudo make install
 
+On Mac OS X:
+$ brew tap rene-dev/sigrok
+$ brew install python3
+$ brew install --HEAD libsigrokdecode
 
 Step4: Build DSLogic-gui
 
@@ -112,10 +116,19 @@ $ sudo yum install git gcc cmake libtool pkgconfig glib2-devel \
 
 Building:
 
+Linux:
 $ cd DSLogic-gui
 $ cmake .
 $ make
 $ sudo make install
+
+Mac OS X:
+$ cd DSLogic-gui
+$ mkdir build && cd build
+PKG_CONFIG_PATH=/usr/local/Cellar/python3/3.4.2_1/Frameworks/Python.framework/Versions/3.4/lib/pkgconfig:/usr/local/Cellar/libsigrokdecode/HEAD/lib/pkgconfig cmake . ..
+$ make
+
+
 
 See the following wiki page for more (OS-specific) instructions:
 

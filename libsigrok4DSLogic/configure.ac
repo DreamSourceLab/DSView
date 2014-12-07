@@ -44,7 +44,23 @@ AH_BOTTOM([#endif /* SR_CONFIG_H */])
 
 # Enable more compiler warnings via -Wall and -Wextra. Add -fvisibility=hidden
 # and enforce use of SR_API to explicitly mark all public API functions.
-CFLAGS="$CFLAGS -Wall -Wextra -fvisibility=hidden -ludev -Wl,--rpath=/usr/local/lib"
+CFLAGS="$CFLAGS -Wall -Wextra -fvisibility=hidden"
+
+# Platform specific CFLAGS
+#
+#############################
+AC_CANONICAL_HOST
+# Check for which host we are on and setup a few things
+# specifically based on the host
+case $host_os in
+  linux*)
+        CFLAGS="$CFLAGS -ludev -Wl,--rpath=/usr/local/lib"
+        ;;
+   *BSD*)
+        CFLAGS="$CFLAGS -ludev -Wl,--rpath=/usr/local/lib"
+        ;;
+esac
+
 
 # Checks for programs.
 AC_PROG_CC
