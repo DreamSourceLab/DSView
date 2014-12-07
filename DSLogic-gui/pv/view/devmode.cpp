@@ -68,7 +68,7 @@ void DevMode::set_device()
          l; l = l->next) {
         sr_dev_mode *mode = (sr_dev_mode *)l->data;
 
-        shared_ptr<QPushButton> mode_button = shared_ptr<QPushButton>(new QPushButton(NULL));
+        boost::shared_ptr<QPushButton> mode_button = boost::shared_ptr<QPushButton>(new QPushButton(NULL));
         mode_button->setFlat(true);
         mode_button->setText(mode->name);
 
@@ -97,7 +97,7 @@ void DevMode::paintEvent(QPaintEvent*)
 
     painter.setRenderHint(QPainter::Antialiasing);
     painter.setPen(Qt::NoPen);
-    for(std::map<shared_ptr<QPushButton>, sr_dev_mode *>::const_iterator i = _mode_button_list.begin();
+    for(std::map<boost::shared_ptr<QPushButton>, sr_dev_mode *>::const_iterator i = _mode_button_list.begin();
         i != _mode_button_list.end(); i++) {
         const boost::shared_ptr<device::DevInst> dev_inst = _view.session().get_device();
         assert(dev_inst);
@@ -118,7 +118,7 @@ void DevMode::on_mode_change()
     assert(dev_inst);
     QPushButton *button = qobject_cast<QPushButton *>(sender());
 
-    for(std::map<shared_ptr<QPushButton>, sr_dev_mode *>::const_iterator i = _mode_button_list.begin();
+    for(std::map<boost::shared_ptr<QPushButton>, sr_dev_mode *>::const_iterator i = _mode_button_list.begin();
         i != _mode_button_list.end(); i++) {
         if ((*i).first.get() == button) {
             if (dev_inst->dev_inst()->mode != (*i).second->mode) {

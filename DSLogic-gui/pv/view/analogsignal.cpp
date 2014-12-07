@@ -65,7 +65,7 @@ AnalogSignal::~AnalogSignal()
 {
 }
 
-shared_ptr<pv::data::SignalData> AnalogSignal::data() const
+boost::shared_ptr<pv::data::SignalData> AnalogSignal::data() const
 {
     return _data;
 }
@@ -86,7 +86,7 @@ void AnalogSignal::paint_mid(QPainter &p, int left, int right)
     assert(scale > 0);
     const double offset = _view->offset();
 
-	const deque< shared_ptr<pv::data::AnalogSnapshot> > &snapshots =
+	const deque< boost::shared_ptr<pv::data::AnalogSnapshot> > &snapshots =
 		_data->get_snapshots();
 	if (snapshots.empty())
 		return;
