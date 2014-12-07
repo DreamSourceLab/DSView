@@ -340,7 +340,7 @@ static int fpga_config(struct libusb_device_handle *hdl, const char *filename)
     struct stat f_stat;
 
     sr_info("Configure FPGA using %s", filename);
-    if ((fw = g_fopen(filename, "rb")) == NULL) {
+    if ((fw = fopen(filename, "rb")) == NULL) {
         sr_err("Unable to open FPGA bit file %s for reading: %s",
                filename, strerror(errno));
         return SR_ERR;
@@ -358,7 +358,7 @@ static int fpga_config(struct libusb_device_handle *hdl, const char *filename)
     offset = 0;
     while (1) {
         chunksize = fread(buf, 1, filesize, fw);
-        if (chunksize == 0)
+        if (chunksize <= 0)
             break;
 
         //do {
@@ -373,7 +373,7 @@ static int fpga_config(struct libusb_device_handle *hdl, const char *filename)
             result = SR_ERR;
             break;
         } else if (transferred != chunksize) {
-            sr_err("Configure FPGA error: expacted transfer size %d; actually %d",
+            sr_err("Configure FPGA error: expected transfer size %d; actually %d",
                     chunksize, transferred);
             result = SR_ERR;
             break;
