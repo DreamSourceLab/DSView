@@ -186,9 +186,9 @@ void View::zoom(double steps, int offset)
             _scale *= pow(3.0/2.0, -steps);
             _scale = max(min(_scale, _maxscale), _minscale);
         }else {
-            const vector< shared_ptr<Signal> > sigs(_session.get_signals());
-            BOOST_FOREACH(const shared_ptr<Signal> s, sigs) {
-                shared_ptr<DsoSignal> dsoSig;
+            const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
+            BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+                boost::shared_ptr<DsoSignal> dsoSig;
                 if (dsoSig = dynamic_pointer_cast<DsoSignal>(s)) {
                     if(steps > 0.5)
                         dsoSig->go_hDialPre();
@@ -244,19 +244,19 @@ void View::set_preScale_preOffset()
     set_scale_offset(_preScale, _preOffset);
 }
 
-vector< shared_ptr<Trace> > View::get_traces() const
+vector< boost::shared_ptr<Trace> > View::get_traces() const
 {
-    const vector< shared_ptr<Signal> > sigs(_session.get_signals());
+    const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
 #ifdef ENABLE_DECODE
-    const vector< shared_ptr<DecodeTrace> > decode_sigs(
+    const vector< boost::shared_ptr<DecodeTrace> > decode_sigs(
         _session.get_decode_signals());
-    vector< shared_ptr<Trace> > traces(
+    vector< boost::shared_ptr<Trace> > traces(
         sigs.size() + decode_sigs.size());
 #else
-    vector< shared_ptr<Trace> > traces(sigs.size());
+    vector< boost::shared_ptr<Trace> > traces(sigs.size());
 #endif
 
-    vector< shared_ptr<Trace> >::iterator i = traces.begin();
+    vector< boost::shared_ptr<Trace> >::iterator i = traces.begin();
     i = copy(sigs.begin(), sigs.end(), i);
 #ifdef ENABLE_DECODE
     i = copy(decode_sigs.begin(), decode_sigs.end(), i);
@@ -266,8 +266,8 @@ vector< shared_ptr<Trace> > View::get_traces() const
     return traces;
 }
 
-bool View::compare_trace_v_offsets(const shared_ptr<Trace> &a,
-    const shared_ptr<Trace> &b)
+bool View::compare_trace_v_offsets(const boost::shared_ptr<Trace> &a,
+    const boost::shared_ptr<Trace> &b)
 {
     assert(a);
     assert(b);
@@ -350,14 +350,14 @@ const QPointF& View::hover_point() const
 
 void View::normalize_layout()
 {
-    const vector< shared_ptr<Trace> > traces(get_traces());
+    const vector< boost::shared_ptr<Trace> > traces(get_traces());
 
 	int v_min = INT_MAX;
-    BOOST_FOREACH(const shared_ptr<Trace> t, traces)
+    BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
         v_min = min(t->get_v_offset(), v_min);
 
 	const int delta = -min(v_min, 0);
-    BOOST_FOREACH(shared_ptr<Trace> t, traces)
+    BOOST_FOREACH(boost::shared_ptr<Trace> t, traces)
         t->set_v_offset(t->get_v_offset() + delta);
 
 	verticalScrollBar()->setSliderPosition(_v_offset + delta);
@@ -377,7 +377,7 @@ int View::get_signalHeight()
 
 void View::get_scroll_layout(double &length, double &offset) const
 {
-    const set< shared_ptr<data::SignalData> > data_set = _session.get_data();
+    const set< boost::shared_ptr<data::SignalData> > data_set = _session.get_data();
     if (data_set.empty())
 		return;
 
@@ -445,8 +445,8 @@ void View::update_scale()
 void View::signals_changed()
 {
     int total_rows = 0;
-    const vector< shared_ptr<Trace> > traces(get_traces());
-    BOOST_FOREACH(const shared_ptr<Trace> t, traces)
+    const vector< boost::shared_ptr<Trace> > traces(get_traces());
+    BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
     {
         assert(t);
         if (dynamic_pointer_cast<DsoSignal>(t) ||
@@ -461,7 +461,7 @@ void View::signals_changed()
     _signalHeight = (int)((height <= 0) ? 1 : height);
     _spanY = _signalHeight + 2 * SignalMargin;
     int next_v_offset = SignalMargin;
-    BOOST_FOREACH(shared_ptr<Trace> t, traces) {
+    BOOST_FOREACH(boost::shared_ptr<Trace> t, traces) {
         t->set_view(this);
         const double traceHeight = _signalHeight*t->rows_size();
         t->set_signalHeight((int)traceHeight);
@@ -529,9 +529,9 @@ int View::headerWidth()
     QFont font = QApplication::font();
     QFontMetrics fm(font);
 
-    const vector< shared_ptr<Trace> > traces(get_traces());
+    const vector< boost::shared_ptr<Trace> > traces(get_traces());
     if (!traces.empty()){
-        BOOST_FOREACH(const shared_ptr<Trace> t, traces) {
+        BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces) {
             maxNameWidth = max(fm.boundingRect(t->get_name()).width(), maxNameWidth);
             maxLeftWidth = max(t->get_leftWidth(), maxLeftWidth);
             maxRightWidth = max(t->get_rightWidth(), maxRightWidth);
@@ -774,8 +774,8 @@ void View::on_state_changed(bool stop)
 int View::get_max_width()
 {
     int max_width = 0;
-    const vector< shared_ptr<Signal> > sigs(_session.get_signals());
-    BOOST_FOREACH(const shared_ptr<Signal> s, sigs) {
+    const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
+    BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
         max_width = max((double)max_width, s->get_view_rect().width());
     }
 
