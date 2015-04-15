@@ -31,7 +31,7 @@
 #include <stdexcept>
 #include <string>
 
-#include <QtGui/QApplication>
+#include <QApplication>
 #include <QObject>
 #include <QDebug>
 #include <QDir>
