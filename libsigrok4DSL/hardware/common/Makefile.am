@@ -20,13 +20,13 @@
 
 
 # Local lib, this is NOT meant to be installed!
-noinst_LTLIBRARIES = libsigrok4DSLogic_hw_common.la
+noinst_LTLIBRARIES = libsigrok4DSL_hw_common.la
 
-libsigrok4DSLogic_hw_common_la_SOURCES = \
+libsigrok4DSL_hw_common_la_SOURCES = \
 	ezusb.c \
 	usb.c
 
-libsigrok4DSLogic_hw_common_la_CFLAGS = \
+libsigrok4DSL_hw_common_la_CFLAGS = \
 	-I$(top_srcdir)
 
 

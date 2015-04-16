@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -21,8 +21,8 @@
  */
 
 
-#ifndef DSLOGIC_SV_GROUPSIGNAL_H
-#define DSLOGIC_SV_GROUPSIGNAL_H
+#ifndef DSVIEW_SV_GROUPSIGNAL_H
+#define DSVIEW_SV_GROUPSIGNAL_H
 
 #include "signal.h"
 #include "../data/groupsnapshot.h"
@@ -96,4 +96,4 @@ private:
 } // namespace view
 } // namespace pv
 
-#endif // DSLOGIC_PV_GROUPSIGNAL_H
+#endif // DSVIEW_PV_GROUPSIGNAL_H

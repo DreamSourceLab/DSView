@@ -1,9 +1,9 @@
 -------------------------------------------------------------------------------
 README
 -------------------------------------------------------------------------------
-DSLogic is an open source multi-function instrument for everyone.
-DSLogic software is based on sigrok project.
-You can find DSLogic on:
+DSView is an GUI programe for supporting various instruments from DreamSourceLab, including logic analyzer, oscilloscope, etc.
+DSView is based on sigrok project.
+You can find DreamSourceLab on:
 www.dreamsourcelab.com
 www.kickstarter.com/projects/dreamsourcelab/dslogic-multifunction-instruments-for-everyone
 
@@ -14,7 +14,7 @@ device types (such as logic analyzers, oscilloscopes, multimeters, and more).
 Status
 ------
 
-DSLogic software is in a usable state and has had official tarball releases.
+DSView software is in a usable state and has had official tarball releases.
 
 However, it is still work in progress. Some basic functionality
 is available and working, but other things are still on the TODO list.
@@ -23,7 +23,7 @@ is available and working, but other things are still on the TODO list.
 Copyright and license
 ---------------------
 
-DSLogic software is licensed under the terms of the GNU General Public License
+DSView software is licensed under the terms of the GNU General Public License
 (GPL), version 3 or later.
 
 While some individual source code files are licensed under the GPLv2+, and

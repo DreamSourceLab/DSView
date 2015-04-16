@@ -19,13 +19,14 @@
 
 
 # Local lib, this is NOT meant to be installed!
-noinst_LTLIBRARIES = libsigrok4DSLogic_hw_dslogic.la
+noinst_LTLIBRARIES = libsigrok4DSL_hw_dsl.la
 
-libsigrok4DSLogic_hw_dslogic_la_SOURCES = \
+libsigrok4DSL_hw_dsl_la_SOURCES = \
 	command.c \
-	dslogic.c
+	dslogic.c \
+	dscope.c
 
-libsigrok4DSLogic_hw_dslogic_la_CFLAGS = \
+libsigrok4DSL_hw_dsl_la_CFLAGS = \
 	-I$(top_srcdir)
 
 

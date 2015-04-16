@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -21,8 +21,8 @@
  */
 
 
-#ifndef DSLOGIC_PV_TOOLBARS_SAMPLINGBAR_H
-#define DSLOGIC_PV_TOOLBARS_SAMPLINGBAR_H
+#ifndef DSVIEW_PV_TOOLBARS_SAMPLINGBAR_H
+#define DSVIEW_PV_TOOLBARS_SAMPLINGBAR_H
 
 #include <stdint.h>
 
@@ -35,7 +35,7 @@
 #include <QToolBar>
 #include <QToolButton>
 
-#include <libsigrok4DSLogic/libsigrok.h>
+#include <libsigrok4DSL/libsigrok.h>
 
 #include "../sigsession.h"
 
@@ -63,8 +63,6 @@ class SamplingBar : public QToolBar
 private:
     static const uint64_t RecordLengths[19];
     static const uint64_t DefaultRecordLength;
-    static const uint64_t DSLogic_RecordLengths[15];
-    static const uint64_t DSLogic_DefaultRecordLength;
 
 public:
     SamplingBar(SigSession &session, QWidget *parent);
@@ -76,6 +74,9 @@ public:
 
 	uint64_t get_record_length() const;
     void set_record_length(uint64_t length);
+    void update_record_length();
+
+    void update_sample_rate();
 
 	void set_sampling(bool sampling);
 
@@ -103,15 +104,21 @@ private:
     void update_sample_count_selector_value();
 	void commit_sample_rate();
     void commit_sample_count();
+    void setting_adj();
 
 private slots:
 	void on_run_stop();
     void on_instant_stop();
     void on_device_selected();
     void on_samplerate_sel(int index);
+    void on_samplecount_sel(int index);
+
+    void show_session_error(
+        const QString text, const QString info_text);
 
 public slots:
     void on_configure();
+    void zero_adj();
 
 private:
     SigSession &_session;
@@ -142,4 +149,4 @@ private:
 } // namespace toolbars
 } // namespace pv
 
-#endif // DSLOGIC_PV_TOOLBARS_SAMPLINGBAR_H
+#endif // DSVIEW_PV_TOOLBARS_SAMPLINGBAR_H

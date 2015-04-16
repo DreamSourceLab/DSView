@@ -17,15 +17,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _DSLOGIC_CONFIG_H
-#define _DSLOGIC_CONFIG_H
+#ifndef _DSVIEW_CONFIG_H
+#define _DSVIEW_CONFIG_H
 
 /* Application details */
 #define DS_TITLE "@DS_TITLE@"
 #define DS_DESCRIPTION "@DS_DESCRIPTION@"
 #define DS_BIN_NAME "@PROJECT_NAME@"
 
-/* DSLogic version information */
+/* DSView version information */
 #define DS_VERSION_MAJOR @DS_VERSION_MAJOR@
 #define DS_VERSION_MINOR @DS_VERSION_MINOR@
 #define DS_VERSION_MICRO @DS_VERSION_MICRO@

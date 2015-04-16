@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2014 Joel Holdsworth <joel@airwebreathe.org.uk>
  *
@@ -27,7 +27,7 @@
 
 #include "inputfile.h"
 
-#include <libsigrok4DSLogic/libsigrok.h>
+#include <libsigrok4DSL/libsigrok.h>
 
 using std::string;
 

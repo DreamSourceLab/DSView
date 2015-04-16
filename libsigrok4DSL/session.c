@@ -84,7 +84,7 @@ SR_API struct sr_session *sr_session_new(void)
 	}
 
 	session->source_timeout = -1;
-        session->running = FALSE;
+    session->running = FALSE;
 	session->abort_session = FALSE;
 //	g_mutex_init(&session->stop_mutex);
 
@@ -398,7 +398,8 @@ SR_API int sr_session_run(void)
 		       "cannot be run without devices.", __func__);
 		return SR_ERR_BUG;
 	}
-        session->running = TRUE;
+
+    session->running = TRUE;
 
 	sr_info("Running...");
 
@@ -409,7 +410,7 @@ SR_API int sr_session_run(void)
 			session->sources[0].cb(-1, 0, session->sources[0].cb_data);
 	} else {
 		/* Real sources, use g_poll() main loop. */
-                while (session->num_sources)
+    	while (session->num_sources)
 			sr_session_iteration(TRUE);
 	}
 

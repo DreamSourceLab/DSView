@@ -26,12 +26,13 @@
 #include <inttypes.h>
 #include <glib.h>
 
-#ifdef _WIN32
-#define WINVER 0x0500
+#ifndef _WIN32
+#include <sys/time.h>
+#else
+#define WINVER 0x0501
 #define _WIN32_WINNT WINVER
 #include <Winsock2.h>
-#else
-#include <sys/time.h>
+#include <ddk/usbiodef.h>
 #endif
 
 #ifdef __cplusplus
@@ -106,9 +107,6 @@ enum {
 #define TriggerStages 16
 #define TriggerProbes 16
 #define TriggerCountBits 16
-
-#define DS_MAX_DSO_SAMPLERATE SR_MHZ(200)
-#define DS_MAX_DSO_DEPTH SR_KB(32)
 
 #define DS_CONF_DSO_HDIVS 10
 #define DS_CONF_DSO_VDIVS 10
@@ -593,8 +591,11 @@ struct sr_channel {
 	char *name;
 	char *trigger;
     uint64_t vdiv;
-    gboolean coupling;
+    double vpos;
+    uint8_t coupling;
     uint8_t trig_value;
+    uint16_t vpos_mid;
+    uint16_t voff_mid;
 };
 
 /** Structure for groups of channels that have common properties. */
@@ -620,12 +621,52 @@ struct sr_config_info {
 	char *description;
 };
 
+enum {
+    SR_STATUS_TRIG_BEGIN = 0,
+    SR_STATUS_TRIG_END = 4,
+    SR_STATUS_CH0_BEGIN = 5,
+    SR_STATUS_CH0_END = 14,
+    SR_STATUS_CH1_BEGIN = 15,
+    SR_STATUS_CH1_END = 24,
+    SR_STATUS_ZERO_BEGIN = 128,
+    SR_STATUS_ZERO_END = 135,
+};
+
 struct sr_status {
     uint8_t trig_hit;
     uint8_t captured_cnt3;
     uint8_t captured_cnt2;
     uint8_t captured_cnt1;
     uint8_t captured_cnt0;
+
+    uint8_t ch0_max;
+    uint8_t ch0_min;
+    uint32_t ch0_period;
+    uint32_t ch0_pcnt;
+    uint8_t ch1_max;
+    uint8_t ch1_min;
+    uint32_t ch1_period;
+    uint32_t ch1_pcnt;
+
+    uint32_t vlen;
+    gboolean stream_mode;
+    uint32_t sample_divider;
+
+    gboolean zeroing;
+    uint16_t ch0_vpos_mid;
+    uint16_t ch0_voff_mid;
+    uint16_t ch0_vcntr;
+    uint16_t ch1_vpos_mid;
+    uint16_t ch1_voff_mid;
+    uint16_t ch1_vcntr;
+    uint8_t ch0_adc_off;
+    uint8_t ch1_adc_off;
+    gboolean ch0_adc_sign;
+    gboolean ch1_adc_sign;
+
+    uint16_t comb0_off;
+    uint16_t comb1_off;
+    uint8_t comb_sign;
 };
 
 enum {
@@ -697,6 +738,8 @@ enum {
 
     /** */
     SR_CONF_DEVICE_MODE,
+    SR_CONF_INSTANT,
+    SR_CONF_STATUS,
 
 	/** The device supports setting a pattern (pattern generator mode). */
 	SR_CONF_PATTERN_MODE,
@@ -729,10 +772,25 @@ enum {
     SR_CONF_DSO_SYNC,
 
     /** Zero */
+    SR_CONF_ZERO_SET,
+    SR_CONF_COMB_SET,
     SR_CONF_ZERO,
+    SR_CONF_ZERO_OVER,
+
+    /** Stream */
+    SR_CONF_STREAM,
+
+    /** Test */
+    SR_CONF_TEST,
 
     /** Volts/div for dso channel. */
     SR_CONF_VDIV,
+
+    /** Vertical position */
+    SR_CONF_VPOS,
+
+    /** Vertical offset */
+    SR_CONF_VOFF,
 
     /** Coupling for dso channel. */
     SR_CONF_COUPLING,
@@ -763,6 +821,13 @@ enum {
 
     /** Device sample threshold */
     SR_CONF_THRESHOLD,
+    SR_CONF_VTH,
+
+    /** Device capacity **/
+    SR_CONF_MAX_DSO_SAMPLERATE,
+    SR_CONF_MAX_DSO_SAMPLELIMITS,
+    SR_CONF_MAX_LOGIC_SAMPLERATE,
+    SR_CONF_MAX_LOGIC_SAMPLELIMITS,
 
 	/*--- Special stuff -------------------------------------------------*/
 
@@ -894,6 +959,16 @@ enum {
     SR_FILTER_1T = 1,
 };
 
+/** Coupling. */
+enum {
+    /** DC */
+    SR_DC_COUPLING = 0,
+    /** AC */
+    SR_AC_COUPLING = 1,
+    /** Ground */
+    SR_GND_COUPLING = 2,
+};
+
 extern char config_path[256];
 
 struct sr_dev_mode {
@@ -930,7 +1005,8 @@ struct sr_dev_driver {
 	int (*dev_close) (struct sr_dev_inst *sdi);
     int (*dev_test) (struct sr_dev_inst *sdi);
     int (*dev_status_get) (struct sr_dev_inst *sdi,
-                           struct sr_status *status);
+                           struct sr_status *status,
+                           int begin, int end);
 	int (*dev_acquisition_start) (const struct sr_dev_inst *sdi,
 			void *cb_data);
 	int (*dev_acquisition_stop) (struct sr_dev_inst *sdi,

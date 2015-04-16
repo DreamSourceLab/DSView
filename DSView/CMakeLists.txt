@@ -1,5 +1,5 @@
 ##
-## This file is part of the PulseView project.
+## This file is part of the DSView project.
 ##
 ## Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
 ## Copyright (C) 2012-2013 Alexandru Gagniuc <mr.nuke.me@gmail.com>
@@ -26,7 +26,7 @@ include(GNUInstallDirs)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake")
 
-project(DSLogic)
+project(DSView)
 
 #===============================================================================
 #= User Options
@@ -60,7 +60,7 @@ endif()
 #-------------------------------------------------------------------------------
 
 list(APPEND PKGDEPS
-	"libsigrok4DSLogic >= 0.2.0"
+	"libsigrok4DSL >= 0.2.0"
 	"libusb-1.0 >= 1.0.16"
 )
 if(ENABLE_DECODE)
@@ -98,12 +98,12 @@ find_package(libusb-1.0 REQUIRED)
 #= Config Header
 #-------------------------------------------------------------------------------
 
-set(DS_TITLE DSLogic)
-set(DS_DESCRIPTION "A GUI for DSLogic")
+set(DS_TITLE DSView)
+set(DS_DESCRIPTION "A GUI for instruments of DreamSourceLab")
 
 set(DS_VERSION_MAJOR 0)
-set(DS_VERSION_MINOR 4)
-set(DS_VERSION_MICRO 0)
+set(DS_VERSION_MINOR 9)
+set(DS_VERSION_MICRO 2)
 set(DS_VERSION_STRING
 	${DS_VERSION_MAJOR}.${DS_VERSION_MINOR}.${DS_VERSION_MICRO}
 )
@@ -117,7 +117,7 @@ configure_file (
 #= Sources
 #-------------------------------------------------------------------------------
 
-set(DSLogic_SOURCES
+set(DSView_SOURCES
 	main.cpp
 	pv/devicemanager.cpp
 	pv/mainwindow.cpp
@@ -142,6 +142,8 @@ set(DSLogic_SOURCES
 	pv/dialogs/deviceoptions.cpp
 	pv/dialogs/search.cpp
 	pv/dialogs/storeprogress.cpp
+	pv/dialogs/streamoptions.cpp
+	pv/dialogs/waitingdialog.cpp
 	pv/dock/dsotriggerdock.cpp
 	pv/dock/measuredock.cpp
 	pv/dock/searchdock.cpp
@@ -153,7 +155,7 @@ set(DSLogic_SOURCES
 	pv/prop/property.cpp
 	pv/prop/string.cpp
 	pv/prop/binding/binding.cpp
-	pv/prop/binding/deviceoptions.cpp
+	pv/prop/binding/binding_deviceoptions.cpp
 	pv/toolbars/filebar.cpp
 	pv/toolbars/logobar.cpp
 	pv/toolbars/samplingbar.cpp
@@ -176,7 +178,7 @@ set(DSLogic_SOURCES
 	pv/widgets/fakelineedit.cpp
 )
 
-set(DSLogic_HEADERS
+set(DSView_HEADERS
 	pv/mainwindow.h
 	pv/sigsession.h
 	pv/storesession.h
@@ -185,6 +187,8 @@ set(DSLogic_HEADERS
 	pv/dialogs/deviceoptions.h
 	pv/dialogs/search.h
 	pv/dialogs/storeprogress.h
+	pv/dialogs/streamoptions.h
+	pv/dialogs/waitingdialog.h
 	pv/dock/dsotriggerdock.h
 	pv/dock/measuredock.h
 	pv/dock/searchdock.h
@@ -211,17 +215,17 @@ set(DSLogic_HEADERS
 	pv/widgets/fakelineedit.h
 )
 
-set(DSLogic_FORMS
+set(DSView_FORMS
 	pv/dialogs/about.ui
 )
 
-set(DSLogic_RESOURCES
-	DSLogic.qrc
+set(DSView_RESOURCES
+	DSView.qrc
 )
 
 
 if(ENABLE_DECODE)
-	list(APPEND DSLogic_SOURCES
+	list(APPEND DSView_SOURCES
 	        pv/dock/protocoldock.cpp
 		pv/data/decoderstack.cpp
 		pv/data/decode/annotation.cpp
@@ -234,7 +238,7 @@ if(ENABLE_DECODE)
 		pv/widgets/decodermenu.cpp
 	)
 
-	list(APPEND DSLogic_HEADERS
+	list(APPEND DSView_HEADERS
 	        pv/dock/protocoldock.h
 		pv/data/decoderstack.h
 		pv/view/decodetrace.h
@@ -244,20 +248,20 @@ if(ENABLE_DECODE)
 endif()
 
 if(WIN32)
-	# Use the DSLogic icon for the DSLogic.exe executable.
+	# Use the DSView icon for the DSView.exe executable.
 	set(CMAKE_RC_COMPILE_OBJECT "${CMAKE_RC_COMPILER} -O coff -I${CMAKE_CURRENT_SOURCE_DIR} <SOURCE> <OBJECT>")
 	enable_language(RC)
-	list(APPEND DSLogic_SOURCES DSLogic.rc)
+	list(APPEND DSView_SOURCES DSView.rc)
 endif()
 
 if(Qt5Core_FOUND)
-	qt5_wrap_cpp(DSLogic_HEADERS_MOC ${DSLogic_HEADERS})
-	qt5_wrap_ui(DSLogic_FORMS_HEADERS ${DSLogic_FORMS})
-	qt5_add_resources(DSLogic_RESOURCES_RCC ${DSLogic_RESOURCES})
+	qt5_wrap_cpp(DSView_HEADERS_MOC ${DSView_HEADERS})
+	qt5_wrap_ui(DSView_FORMS_HEADERS ${DSView_FORMS})
+	qt5_add_resources(DSView_RESOURCES_RCC ${DSView_RESOURCES})
 else()
-	qt4_wrap_cpp(DSLogic_HEADERS_MOC ${DSLogic_HEADERS})
-	qt4_wrap_ui(DSLogic_FORMS_HEADERS ${DSLogic_FORMS})
-	qt4_add_resources(DSLogic_RESOURCES_RCC ${DSLogic_RESOURCES})
+	qt4_wrap_cpp(DSView_HEADERS_MOC ${DSView_HEADERS})
+	qt4_wrap_ui(DSView_FORMS_HEADERS ${DSView_FORMS})
+	qt4_add_resources(DSView_RESOURCES_RCC ${DSView_RESOURCES})
 	include(${QT_USE_FILE})
 endif()
 
@@ -299,7 +303,7 @@ endif()
 
 link_directories(${Boost_LIBRARY_DIRS})
 
-set(DSLOGIC_LINK_LIBS
+set(DSVIEW_LINK_LIBS
 	${Boost_LIBRARIES}
 	${CMAKE_THREAD_LIBS_INIT}
 	${QT_LIBRARIES}
@@ -308,25 +312,25 @@ set(DSLOGIC_LINK_LIBS
 
 if(STATIC_PKGDEPS_LIBS)
 	link_directories(${PKGDEPS_STATIC_LIBRARY_DIRS})
-	list(APPEND DSLOGIC_LINK_LIBS ${PKGDEPS_STATIC_LIBRARIES})
+	list(APPEND DSVIEW_LINK_LIBS ${PKGDEPS_STATIC_LIBRARIES})
 if(WIN32)
 	# Workaround for a MinGW linking issue.
 	list(APPEND PULSEVIEW_LINK_LIBS "-llzma -llcms2")
 endif()
 else()
 	link_directories(${PKGDEPS_LIBRARY_DIRS})
-	list(APPEND DSLOGIC_LINK_LIBS ${PKGDEPS_LIBRARIES})
+	list(APPEND DSVIEW_LINK_LIBS ${PKGDEPS_LIBRARIES})
 endif()
 
 
 add_executable(${PROJECT_NAME}
-	${DSLogic_SOURCES}
-	${DSLogic_HEADERS_MOC}
-	${DSLogic_FORMS_HEADERS}
-	${DSLogic_RESOURCES_RCC}
+	${DSView_SOURCES}
+	${DSView_HEADERS_MOC}
+	${DSView_FORMS_HEADERS}
+	${DSView_RESOURCES_RCC}
 )
 
-target_link_libraries(${PROJECT_NAME} ${DSLOGIC_LINK_LIBS})
+target_link_libraries(${PROJECT_NAME} ${DSVIEW_LINK_LIBS})
 
 if(WIN32)
 # Pass -mwindows so that no "DOS box" will open when PulseView is started.
@@ -349,6 +353,10 @@ install(TARGETS ${PROJECT_NAME} DESTINATION bin/)
 install(FILES res/DSLogic.fw DESTINATION bin/res/)
 install(FILES res/DSLogic33.bin DESTINATION bin/res/)
 install(FILES res/DSLogic50.bin DESTINATION bin/res/)
+install(FILES res/DSLogicPro.fw DESTINATION bin/res/)
+install(FILES res/DSLogicPro.bin DESTINATION bin/res/)
+install(FILES res/DSCope.fw DESTINATION bin/res/)
+install(FILES res/DSCope.bin DESTINATION bin/res/)
 
 #===============================================================================
 #= Packaging (handled by CPack)
@@ -373,5 +381,5 @@ include(CPack)
 if(ENABLE_TESTS)
 	add_subdirectory(test)
 	enable_testing()
-	add_test(test ${CMAKE_CURRENT_BINARY_DIR}/test/DSLogic-test)
+	add_test(test ${CMAKE_CURRENT_BINARY_DIR}/test/DSView-test)
 endif(ENABLE_TESTS)

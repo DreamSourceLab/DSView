@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
  *
@@ -29,8 +29,8 @@ using namespace std;
 namespace pv {
 namespace data {
 
-Dso::Dso(int num_probes) :
-    SignalData(num_probes)
+Dso::Dso() :
+    SignalData()
 {
 }
 

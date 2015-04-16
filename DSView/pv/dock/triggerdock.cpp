@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -32,7 +32,7 @@
 #include <QRegExpValidator>
 #include <QMessageBox>
 
-#include "libsigrok4DSLogic/libsigrok.h"
+#include "libsigrok4DSL/libsigrok.h"
 
 namespace pv {
 namespace dock {
@@ -53,10 +53,10 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
 
     position_label = new QLabel("Trigger Position: ", this);
     position_spinBox = new QSpinBox(this);
-    position_spinBox->setRange(0, 100);
+    position_spinBox->setRange(0, 99);
     position_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     position_slider = new QSlider(Qt::Horizontal, this);
-    position_slider->setRange(0, 100);
+    position_slider->setRange(0, 99);
     connect(position_slider, SIGNAL(valueChanged(int)), position_spinBox, SLOT(setValue(int)));
     connect(position_spinBox, SIGNAL(valueChanged(int)), position_slider, SLOT(setValue(int)));
 
@@ -86,6 +86,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
         _value0_lineEdit->setValidator(value_validator);
         _value0_lineEdit->setMaxLength(TriggerProbes * 2 - 1);
         _value0_lineEdit->setInputMask("X X X X X X X X X X X X X X X X");
+		_value0_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
         _value0_lineEdit_list.push_back(_value0_lineEdit);
         QSpinBox *_count0_spinBox = new QSpinBox(this);
         _count0_spinBox->setRange(1, 1 << TriggerCountBits);
@@ -101,6 +102,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
         _value1_lineEdit->setValidator(value_validator);
         _value1_lineEdit->setMaxLength(TriggerProbes * 2 - 1);
         _value1_lineEdit->setInputMask("X X X X X X X X X X X X X X X X");
+		_value1_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
         _value1_lineEdit_list.push_back(_value1_lineEdit);
         QSpinBox *_count1_spinBox = new QSpinBox(this);
         _count1_spinBox->setRange(1, 1 << TriggerCountBits);
@@ -129,7 +131,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
         stage_glayout->addWidget(_inv1_comboBox, 3, 1);
         stage_glayout->addWidget(_count1_spinBox, 3, 2);
         stage_layout->addLayout(stage_glayout);
-        stage_layout->addSpacing(160);
+		stage_layout->addSpacing(100);
         stage_layout->addWidget(new QLabel("X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge"));
         stage_layout->addStretch(1);
 
@@ -211,9 +213,25 @@ void TriggerDock::simple_trigger()
 void TriggerDock::adv_trigger()
 {
     if (strcmp(_session.get_device()->dev_inst()->driver->name, "DSLogic") == 0) {
-        widget_enable();
-        ds_trigger_set_mode(ADV_TRIGGER);
-        _session.set_adv_trigger(true);
+        bool stream = false;
+        GVariant *gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_STREAM);
+        if (gvar != NULL) {
+            stream = g_variant_get_boolean(gvar);
+            g_variant_unref(gvar);
+        }
+        if (stream) {
+            QMessageBox msg(this);
+            msg.setText("Trigger");
+            msg.setInformativeText("Stram Mode Don't Support Advanced Trigger!");
+            msg.setStandardButtons(QMessageBox::Ok);
+            msg.setIcon(QMessageBox::Warning);
+            msg.exec();
+            simple_radioButton->setChecked(true);
+        } else {
+            widget_enable();
+            ds_trigger_set_mode(ADV_TRIGGER);
+            _session.set_adv_trigger(true);
+        }
     } else {
         QMessageBox msg(this);
         msg.setText("Trigger");
@@ -342,13 +360,28 @@ void TriggerDock::pos_changed(int pos)
 
 void TriggerDock::device_change()
 {
-    if (strcmp(_session.get_device()->dev_inst()->driver->name, "DSLogic") != 0) {
+    bool stream = false;
+    GVariant *gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_STREAM);
+    if (gvar != NULL) {
+        stream = g_variant_get_boolean(gvar);
+        g_variant_unref(gvar);
+    }
+
+    if (stream ||
+        strcmp(_session.get_device()->dev_inst()->driver->name, "DSLogic") != 0) {
         position_spinBox->setDisabled(true);
         position_slider->setDisabled(true);
     } else {
         position_spinBox->setDisabled(false);
         position_slider->setDisabled(false);
     }
+}
+
+void TriggerDock::init()
+{
+    // TRIGGERPOS
+    //uint16_t pos = ds_trigger_get_pos();
+    //position_slider->setValue(pos);
 }
 
 } // namespace dock

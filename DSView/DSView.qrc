@@ -35,5 +35,6 @@
         <file>icons/params_dis.png</file>
         <file>icons/gear.png</file>
         <file>icons/wiki.png</file>
+        <file>icons/wait.gif</file>
     </qresource>
 </RCC>

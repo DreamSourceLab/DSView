@@ -19,14 +19,14 @@
 ##
 
 # Local lib, this is NOT meant to be installed!
-noinst_LTLIBRARIES = libsigrok4DSLogicinput.la
+noinst_LTLIBRARIES = libsigrok4DSLinput.la
 
-libsigrok4DSLogicinput_la_SOURCES = \
+libsigrok4DSLinput_la_SOURCES = \
         in_binary.c \
         in_vcd.c \
         in_wav.c \
 	input.c 
 
-libsigrok4DSLogicinput_la_CFLAGS = \
+libsigrok4DSLinput_la_CFLAGS = \
 	-I$(top_srcdir)
 

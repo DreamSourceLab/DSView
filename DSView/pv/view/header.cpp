@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -139,6 +139,36 @@ void Header::paintEvent(QPaintEvent*)
 	painter.end();
 }
 
+void Header::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    assert(event);
+
+    const vector< boost::shared_ptr<Trace> > traces(
+        _view.get_traces());
+    int action;
+
+    if (event->button() & Qt::LeftButton) {
+        _mouse_down_point = event->pos();
+
+        // Save the offsets of any Traces which will be dragged
+        BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
+            if (t->selected())
+                _drag_traces.push_back(
+                    make_pair(t, t->get_v_offset()));
+
+        // Select the Trace if it has been clicked
+        const boost::shared_ptr<Trace> mTrace =
+            get_mTrace(action, event->pos());
+        if (action == Trace::LABEL && mTrace) {
+            shared_ptr<view::DsoSignal> dsoSig;
+            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(mTrace)) {
+                dsoSig->auto_set();
+            }
+        }
+    }
+
+}
+
 void Header::mousePressEvent(QMouseEvent *event)
 {
 	assert(event);
@@ -146,6 +176,9 @@ void Header::mousePressEvent(QMouseEvent *event)
     const vector< boost::shared_ptr<Trace> > traces(
         _view.get_traces());
     int action;
+    const bool instant = _view.session().get_instant();
+    if (instant && _view.session().get_capture_state() == SigSession::Running)
+        return;
 
 	if (event->button() & Qt::LeftButton) {
 		_mouse_down_point = event->pos();
@@ -243,8 +276,12 @@ void Header::mousePressEvent(QMouseEvent *event)
             }
         } else if (action == Trace::ACDC && mTrace) {
             shared_ptr<view::DsoSignal> dsoSig;
-            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(mTrace))
-                dsoSig->set_acCoupling(!dsoSig->get_acCoupling());
+            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(mTrace)) {
+                if (strcmp(_view.session().get_device()->dev_inst()->driver->name, "DSLogic") == 0)
+                    dsoSig->set_acCoupling((dsoSig->get_acCoupling()+1)%2);
+                else
+                    dsoSig->set_acCoupling((dsoSig->get_acCoupling()+1)%3);
+            }
         }
 
         if (~QApplication::keyboardModifiers() & Qt::ControlModifier) {
@@ -297,6 +334,7 @@ void Header::wheelEvent(QWheelEvent *event)
             _view.get_traces());
         // Vertical scrolling
         double shift = event->delta() / 20.0;
+        bool setted = false;
         BOOST_FOREACH(const shared_ptr<Trace> t, traces) {
             shared_ptr<view::DsoSignal> dsoSig;
             if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(t)) {
@@ -306,11 +344,14 @@ void Header::wheelEvent(QWheelEvent *event)
                     else if (shift < -1.0)
                         dsoSig->go_vDialPre();
                     break;
-                } else if (dsoSig->get_hDialActive()) {
+                } else if (dsoSig->get_hDialActive()){
                     if (shift > 1.0)
-                        dsoSig->go_hDialNext();
+                        dsoSig->go_hDialNext(setted);
                     else if (shift < -1.0)
-                        dsoSig->go_hDialPre();
+                        dsoSig->go_hDialPre(setted);
+                    else
+                        break;
+                    setted = true;
                 }
             }
         }

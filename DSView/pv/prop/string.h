@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#ifndef DSLOGIC_PV_PROP_STRING_H
-#define DSLOGIC_PV_PROP_STRING_H
+#ifndef DSVIEW_PV_PROP_STRING_H
+#define DSVIEW_PV_PROP_STRING_H
 
 #include "property.h"
 
@@ -49,4 +49,4 @@ private:
 } // prop
 } // pv
 
-#endif // DSLOGIC_PV_PROP_STRING_H
+#endif // DSVIEW_PV_PROP_STRING_H

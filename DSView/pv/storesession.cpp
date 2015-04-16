@@ -81,7 +81,7 @@ bool StoreSession::start()
 	}
 
 	if (data_set.size() > 1) {
-        _error = tr("DSLogic currently only has support for "
+        _error = tr("DSView currently only has support for "
 			"storing a single data stream.");
 		return false;
 	}
@@ -90,7 +90,7 @@ bool StoreSession::start()
 	//shared_ptr<data::SignalData
 	shared_ptr<data::Logic> data;
 	if (!(data = dynamic_pointer_cast<data::Logic>(*data_set.begin()))) {
-        _error = tr("DSLogic currently only has support for "
+        _error = tr("DSView currently only has support for "
 			"storing a logic data.");
 		return false;
 	}

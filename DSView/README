@@ -1,7 +1,7 @@
 -------------------------------------------------------------------------------
 README
 -------------------------------------------------------------------------------
-DSLogic-gui is GUI for DSLogic software, it's based on PulseView
+DSView is a GUI for instruments of DreamSourceLab, it's based on PulseView
 from the sigrok project.
 
 The sigrok project aims at creating a portable, cross-platform,
@@ -14,7 +14,7 @@ PulseView is a Qt-based LA/scope/MSO GUI for sigrok.
 Status
 ------
 
-DSLogic-gui is in a usable state and has had official tarball releases.
+DSView is in a usable state and has had official tarball releases.
 
 However, it is still work in progress. Some basic functionality
 is available and working, but other things are still on the TODO list.
@@ -23,7 +23,7 @@ is available and working, but other things are still on the TODO list.
 Copyright and license
 ---------------------
 
-DSLogic-gui is licensed under the terms of the GNU General Public License
+DSView is licensed under the terms of the GNU General Public License
 (GPL), version 3 or later.
 
 While some individual source code files are licensed under the GPLv2+, and

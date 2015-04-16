@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -30,15 +30,9 @@ using namespace std;
 namespace pv {
 namespace data {
 
-Analog::Analog(unsigned int num_probes) :
-    SignalData(),
-    _num_probes(num_probes)
+Analog::Analog() :
+    SignalData()
 {
-}
-
-int Analog::get_num_probes() const
-{
-    return _num_probes;
 }
 
 void Analog::push_snapshot(boost::shared_ptr<AnalogSnapshot> &snapshot)

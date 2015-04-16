@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -51,7 +51,7 @@ GroupSignal::GroupSignal(QString name, boost::shared_ptr<data::Group> data,
     _data(data)
 {
     _colour = SignalColours[probe_index_list.front() % countof(SignalColours)];
-    _scale = _signalHeight * 1.0f / pow(2, probe_index_list.size());
+    _scale = _signalHeight * 1.0f / std::pow(2.0, static_cast<double>(probe_index_list.size()));
 }
 
 GroupSignal::~GroupSignal()
@@ -84,7 +84,7 @@ void GroupSignal::paint_mid(QPainter &p, int left, int right)
     assert(scale > 0);
     const double offset = _view->offset();
 
-    _scale = _signalHeight * 1.0f / pow(2, _index_list.size());
+    _scale = _signalHeight * 1.0f / std::pow(2.0, static_cast<int>(_index_list.size()));
 
     const deque< boost::shared_ptr<pv::data::GroupSnapshot> > &snapshots =
 		_data->get_snapshots();

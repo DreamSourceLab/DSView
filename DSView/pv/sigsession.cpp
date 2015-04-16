@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -72,15 +72,13 @@ using std::min;
 
 namespace pv {
 
-const float SigSession::Oversampling = 2.0f;
-
 // TODO: This should not be necessary
 SigSession* SigSession::_session = NULL;
 
 SigSession::SigSession(DeviceManager &device_manager) :
 	_device_manager(device_manager),
     _capture_state(Init),
-    _instant(false)
+    _instant(false)    
 {
 	// TODO: This should not be necessary
 	_session = this;
@@ -89,16 +87,21 @@ SigSession::SigSession(DeviceManager &device_manager) :
     _adv_trigger = false;
     _group_cnt = 0;
     ds_trigger_init();
-    register_hotplug_callback();
+	register_hotplug_callback();
+    _view_timer.stop();
+    _view_timer.setSingleShot(true);
+    connect(this, SIGNAL(start_timer(int)), &_view_timer, SLOT(start(int)));
+    connect(&_view_timer, SIGNAL(timeout()), this, SLOT(refresh()));
 }
 
 SigSession::~SigSession()
 {
-	stop_capture();       
+	stop_capture();
     if (_hotplug_handle) {
         stop_hotplug_proc();
         deregister_hotplug_callback();
     }
+		       
     ds_trigger_destroy();
 
     _dev_inst->release();
@@ -131,7 +134,12 @@ void SigSession::set_device(shared_ptr<device::DevInst> dev_inst) throw(QString)
     _group_traces.clear();
 
     if (_dev_inst) {
-        _dev_inst->use(this);
+        try {
+            _dev_inst->use(this);
+        } catch(const QString e) {
+            throw(e);
+            return;
+        }
         sr_session_datafeed_callback_add(data_feed_in_proc, NULL);
         device_setted();
     }
@@ -142,8 +150,18 @@ void SigSession::set_file(const string &name) throw(QString)
 {
     // Deslect the old device, because file type detection in File::create
     // destorys the old session inside libsigrok.
-    set_device(shared_ptr<device::DevInst>());
-    set_device(shared_ptr<device::DevInst>(device::File::create(name)));
+    try {
+        set_device(shared_ptr<device::DevInst>());
+    } catch(const QString e) {
+        throw(e);
+        return;
+    }
+    try {
+        set_device(shared_ptr<device::DevInst>(device::File::create(name)));
+    } catch(const QString e) {
+        throw(e);
+        return;
+    }
 }
 
 void SigSession::save_file(const std::string &name){
@@ -161,7 +179,7 @@ void SigSession::save_file(const std::string &name){
                     snapshot->get_sample_count());
 }
 
-void SigSession::set_default_device()
+void SigSession::set_default_device(boost::function<void (const QString)> error_handler)
 {
     shared_ptr<pv::device::DevInst> default_device;
     const list< shared_ptr<device::DevInst> > &devices =
@@ -171,15 +189,20 @@ void SigSession::set_default_device()
         // Fall back to the first device in the list.
         default_device = devices.front();
 
-        // Try and find the DSLogic device and select that by default
+        // Try and find the DreamSourceLab device and select that by default
         BOOST_FOREACH (shared_ptr<pv::device::DevInst> dev, devices)
             if (dev->dev_inst() &&
                 strcmp(dev->dev_inst()->driver->name,
-                "DSLogic") == 0) {
+                "demo") != 0) {
                 default_device = dev;
                 break;
             }
-        set_device(default_device);
+        try {
+            set_device(default_device);
+        } catch(const QString e) {
+            error_handler(e);
+            return;
+        }
     }
 }
 
@@ -222,11 +245,17 @@ void SigSession::start_capture(bool instant,
 	}
 	if (!l) {
 		error_handler(tr("No probes enabled."));
+        capture_state_changed(_capture_state);
 		return;
 	}
 
-	// Begin the session
+    // update setting
     _instant = instant;
+    if (~_instant)
+        _view_timer.blockSignals(false);
+
+	// Begin the session
+
 	_sampling_thread.reset(new boost::thread(
         &SigSession::sample_thread_proc, this, _dev_inst,
         error_handler));
@@ -237,6 +266,7 @@ void SigSession::stop_capture()
     if (get_capture_state() != Running)
 		return;
 	sr_session_stop();
+    _view_timer.blockSignals(true);
 
 	// Check that sampling stopped
 	if (_sampling_thread.get())
@@ -266,6 +296,11 @@ set< shared_ptr<data::SignalData> > SigSession::get_data() const
     }
 
     return data;
+}
+
+bool SigSession::get_instant()
+{
+    return _instant;
 }
 
 void* SigSession::get_buf(int& unit_size, uint64_t &length)
@@ -307,12 +342,6 @@ void* SigSession::get_buf(int& unit_size, uint64_t &length)
         length = snapshot->get_sample_count();
         return snapshot->get_data();
     }
-}
-
-void SigSession::set_sample_rate(uint64_t sample_rate)
-{
-    if (_capture_state != Stopped)
-        sample_rate_changed(sample_rate);
 }
 
 void SigSession::set_capture_state(capture_state state)
@@ -511,7 +540,7 @@ void SigSession::init_signals()
     // Create data containers for the coming data snapshots
     {
         if (logic_probe_count != 0) {
-            _logic_data.reset(new data::Logic(logic_probe_count));
+            _logic_data.reset(new data::Logic());
             assert(_logic_data);
 
             _group_data.reset(new data::Group());
@@ -520,12 +549,12 @@ void SigSession::init_signals()
         }
 
         if (dso_probe_count != 0) {
-            _dso_data.reset(new data::Dso(dso_probe_count));
+            _dso_data.reset(new data::Dso());
             assert(_dso_data);
         }
 
         if (analog_probe_count != 0) {
-            _analog_data.reset(new data::Analog(analog_probe_count));
+            _analog_data.reset(new data::Analog());
             assert(_analog_data);
         }
     }
@@ -609,6 +638,23 @@ void SigSession::reload()
     signals_changed();
 }
 
+void SigSession::refresh()
+{
+    if (_logic_data) {
+        _logic_data->clear();
+        _cur_logic_snapshot.reset();
+    }
+    if (_dso_data) {
+        _dso_data->clear();
+        _cur_dso_snapshot.reset();
+    }
+    if (_analog_data) {
+        _analog_data->clear();
+        _cur_analog_snapshot.reset();
+    }
+    data_updated();
+}
+
 void SigSession::feed_in_meta(const sr_dev_inst *sdi,
     const sr_datafeed_meta &meta)
 {
@@ -654,7 +700,8 @@ void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
             new data::LogicSnapshot(logic, _dev_inst->get_sample_limit(), 1));
         if (_cur_logic_snapshot->buf_null())
         {
-            stop_capture();
+            malloc_error();
+            return;
         } else {
             _logic_data->push_snapshot(_cur_logic_snapshot);
         }
@@ -664,12 +711,12 @@ void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
         // frame_began is DecoderStack, but in future we need to signal
         // this after both analog and logic sweeps have begun.
         frame_began();
-	}
-	else
-	{
+    } else if(!_cur_logic_snapshot->buf_null()) {
 		// Append to the existing data snapshot
 		_cur_logic_snapshot->append_payload(logic);
-	}
+    } else {
+        return;
+    }
 
     receive_data(logic.length/logic.unitsize);
     data_received();
@@ -690,20 +737,25 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
     {
         // Create a new data snapshot
         _cur_dso_snapshot = boost::shared_ptr<data::DsoSnapshot>(
-            new data::DsoSnapshot(dso, _dev_inst->get_sample_limit(), _dso_data->get_num_probes()));
+                    new data::DsoSnapshot(dso, _dev_inst->get_sample_limit(), get_ch_num(SR_CHANNEL_DSO), _instant));
         if (_cur_dso_snapshot->buf_null())
-            stop_capture();
-        else
+        {
+            malloc_error();
+            return;
+        } else {
             _dso_data->push_snapshot(_cur_dso_snapshot);
-    }
-    else
-    {
+        }
+    } else if(!_cur_dso_snapshot->buf_null()) {
         // Append to the existing data snapshot
         _cur_dso_snapshot->append_payload(dso);
+    } else {
+        return;
     }
 
     receive_data(dso.num_samples);
     data_updated();
+    if (!_instant)
+        start_timer(ViewTime);
 }
 
 void SigSession::feed_in_analog(const sr_datafeed_analog &analog)
@@ -720,17 +772,19 @@ void SigSession::feed_in_analog(const sr_datafeed_analog &analog)
 	{
 		// Create a new data snapshot
 		_cur_analog_snapshot = boost::shared_ptr<data::AnalogSnapshot>(
-            new data::AnalogSnapshot(analog, _dev_inst->get_sample_limit(), _analog_data->get_num_probes()));
+                    new data::AnalogSnapshot(analog, _dev_inst->get_sample_limit(), get_ch_num(SR_CHANNEL_ANALOG)));
         if (_cur_analog_snapshot->buf_null())
-            stop_capture();
-        else
+        {
+            return;
+        } else if(!_cur_analog_snapshot->buf_null()) {
             _analog_data->push_snapshot(_cur_analog_snapshot);
-	}
-	else
-	{
+        }
+    } else if(!_cur_analog_snapshot->buf_null()) {
 		// Append to the existing data snapshot
 		_cur_analog_snapshot->append_payload(analog);
-	}
+    } else {
+        return;
+    }
 
     receive_data(analog.num_samples);
     data_updated();
@@ -822,10 +876,10 @@ int SigSession::hotplug_callback(struct libusb_context *ctx, struct libusb_devic
 
     if (LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED == event) {
         _session->_hot_attach = true;
-        qDebug("DSLogic attaced!\n");
+        qDebug("DreamSourceLab Hardware Attaced!\n");
     }else if (LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT == event) {
         _session->_hot_detach = true;
-        qDebug("DSLogic dettaced!\n");
+        qDebug("DreamSourceLab Hardware Dettaced!\n");
     }else{
         qDebug("Unhandled event %d\n", event);
     }
@@ -847,12 +901,12 @@ void SigSession::hotplug_proc(boost::function<void (const QString)> error_handle
         while(_session) {
             libusb_handle_events_timeout(NULL, &tv);
             if (_hot_attach) {
-                qDebug("DSLogic hardware attached!");
+                qDebug("DreamSourceLab hardware attached!");
                 device_attach();
                 _hot_attach = false;
             }
             if (_hot_detach) {
-                qDebug("DSLogic hardware detached!");
+                qDebug("DreamSourceLab hardware detached!");
                 device_detach();
                 _logic_data.reset();
                 _dso_data.reset();
@@ -873,7 +927,7 @@ void SigSession::register_hotplug_callback()
 
     ret = libusb_hotplug_register_callback(NULL, (libusb_hotplug_event)(LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED |
                                            LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT), 
-                                           (libusb_hotplug_flag)LIBUSB_HOTPLUG_ENUMERATE, 0x2A0E, 0x0001,
+                                           (libusb_hotplug_flag)LIBUSB_HOTPLUG_ENUMERATE, 0x2A0E, LIBUSB_HOTPLUG_MATCH_ANY,
                                            LIBUSB_HOTPLUG_MATCH_ANY, hotplug_callback, NULL,
                                            &_hotplug_handle);
     if (LIBUSB_SUCCESS != ret){
@@ -907,7 +961,6 @@ void SigSession::stop_hotplug_proc()
     _hotplug.reset();
 }
 
-
 /*
  * Tigger
  */
@@ -917,17 +970,42 @@ void SigSession::set_adv_trigger(bool adv_trigger)
 }
 
 
-uint16_t SigSession::get_dso_ch_num()
+uint16_t SigSession::get_ch_num(int type)
 {
     uint16_t num_channels = 0;
-    BOOST_FOREACH(const shared_ptr<view::Signal> s, _signals)
-    {
-        assert(s);
-        //if (dynamic_pointer_cast<view::DsoSignal>(s) && s->enabled()) {
-        if (dynamic_pointer_cast<view::DsoSignal>(s)) {
-            num_channels++;
+    uint16_t logic_ch_num = 0;
+    uint16_t dso_ch_num = 0;
+    uint16_t analog_ch_num = 0;
+    if (_dev_inst->dev_inst()) {
+        BOOST_FOREACH(const shared_ptr<view::Signal> s, _signals)
+        {
+            assert(s);
+            if (dynamic_pointer_cast<view::LogicSignal>(s) && s->enabled()) {
+            //if (dynamic_pointer_cast<view::LogicSignal>(s)) {
+                    logic_ch_num++;
+            }
+            if (dynamic_pointer_cast<view::DsoSignal>(s) && s->enabled()) {
+            //if (dynamic_pointer_cast<view::DsoSignal>(s)) {
+                    dso_ch_num++;
+            }
+            if (dynamic_pointer_cast<view::AnalogSignal>(s) && s->enabled()) {
+            //if (dynamic_pointer_cast<view::AnalogSignal>(s)) {
+                    analog_ch_num++;
+            }
         }
     }
+
+    switch(type) {
+        case SR_CHANNEL_LOGIC:
+            num_channels = logic_ch_num; break;
+        case SR_CHANNEL_DSO:
+            num_channels = dso_ch_num; break;
+        case SR_CHANNEL_ANALOG:
+            num_channels = analog_ch_num; break;
+        default:
+            num_channels = logic_ch_num+dso_ch_num+analog_ch_num; break;
+    }
+
     return num_channels;
 }
 

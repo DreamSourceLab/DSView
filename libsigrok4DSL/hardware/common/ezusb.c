@@ -21,7 +21,7 @@
  * Helper functions for the Cypress EZ-USB / FX2 series chips.
  */
 
-#include <libusb.h>
+//#include <libusb.h>
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <stdio.h>
@@ -48,7 +48,7 @@ SR_PRIV int ezusb_reset(struct libusb_device_handle *hdl, int set_clear)
 		set_clear ? "on" : "off");
 	buf[0] = set_clear ? 1 : 0;
 	ret = libusb_control_transfer(hdl, LIBUSB_REQUEST_TYPE_VENDOR, 0xa0,
-				      0xe600, 0x0000, buf, 1, 100);
+                      0xe600, 0x0000, buf, 1, 3000);
 	if (ret < 0)
         sr_err("Unable to send control request: %s.",
 				libusb_error_name(ret));
@@ -78,7 +78,7 @@ SR_PRIV int ezusb_install_firmware(libusb_device_handle *hdl,
 			break;
 		ret = libusb_control_transfer(hdl, LIBUSB_REQUEST_TYPE_VENDOR |
 					      LIBUSB_ENDPOINT_OUT, 0xa0, offset,
-					      0x0000, buf, chunksize, 100);
+                          0x0000, buf, chunksize, 3000);
 		if (ret < 0) {
             sr_err("Unable to send firmware to device: %s.",
 					libusb_error_name(ret));

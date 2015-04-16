@@ -20,7 +20,7 @@
 #ifndef LIBSIGROK_SIGROK_INTERNAL_H
 #define LIBSIGROK_SIGROK_INTERNAL_H
 
-#include <stdarg.h>
+//#include <stdarg.h>
 #include <glib.h>
 #include "config.h" /* Needed for HAVE_LIBUSB_1_0 and others. */
 #ifdef HAVE_LIBUSB_1_0

@@ -1,9 +1,9 @@
 -------------------------------------------------------------------------------
 README
 -------------------------------------------------------------------------------
-libsigrok4DSLogic is a shared library which provides the basic API
-for DSLogic hardware.
-libsigrok4DSLogic is based on libsigrok, a shared library from the sigrok project.
+libsigrok4DSL is a shared library which provides the basic API
+for DreamSourceLab hardware.
+libsigrok4DSL is based on libsigrok, a shared library from the sigrok project.
 
 The sigrok project aims at creating a portable, cross-platform,
 Free/Libre/Open-Source signal analysis software suite that supports various
@@ -47,7 +47,7 @@ Requirements
 
 Building and installing
 -----------------------
-Get the libsigrok4DSLogic source code from: www.dreamsourcelab.com/download.html
+Get the libsigrok4DSL source code from: www.dreamsourcelab.com/download.html
 In order to build it, run:
 
  $ cd libsigrok
@@ -55,7 +55,7 @@ In order to build it, run:
  $ ./configure
  $ make
 
-For installing libsigrok4DSLogic:
+For installing libsigrok4DSL:
 
  $ make install
 
@@ -67,7 +67,7 @@ See INSTALL or the following wiki page for more (OS-specific) instructions:
 Copyright and license
 ---------------------
 
-libsigrok4DSLogic is licensed under the terms of the GNU General Public License
+libsigrok4DSL is licensed under the terms of the GNU General Public License
 (GPL), version 3 or later.
 
 While some individual source code files are licensed under the GPLv2+, and

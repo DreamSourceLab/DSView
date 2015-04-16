@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -36,7 +36,7 @@
 #include <QPainter>
 #include <QRegExpValidator>
 
-#include "libsigrok4DSLogic/libsigrok.h"
+#include "libsigrok4DSL/libsigrok.h"
 
 using boost::shared_ptr;
 
@@ -64,7 +64,7 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession &session) :
     _mouse_layout->addWidget(_width_label, 1, 1);
     _mouse_layout->addWidget(new QLabel("Period: ", this), 2, 0);
     _mouse_layout->addWidget(_period_label, 2, 1);
-    _mouse_layout->addWidget(new QLabel("Freqency: ", this), 3, 0);
+    _mouse_layout->addWidget(new QLabel("Frequency: ", this), 3, 0);
     _mouse_layout->addWidget(_freq_label, 3, 1);
     _mouse_layout->addWidget(new QLabel(this), 0, 2);
     _mouse_layout->addWidget(new QLabel(this), 1, 2);

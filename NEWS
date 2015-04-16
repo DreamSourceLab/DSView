@@ -1,3 +1,13 @@
+0.92 (2015-04-15)
+-----------------
+ * Add DSLogic Pro and DSCope support
+ * Add Stream mode to DSLogic & DSLogic Pro
+ * Support up to 1G samples @ LA mode
+ * Add zero adjustment @ Oscilloscope mode
+ * Support zero skew parameters restore
+ * Enhance stbility
+ * Fix other bugs
+
 0.4 (2014-09-24)
 -----------------
  * Add protocol decoders (38) support

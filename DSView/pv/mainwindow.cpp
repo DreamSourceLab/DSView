@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -53,7 +53,9 @@
 #include "device/file.h"
 
 #include "dialogs/about.h"
+#include "dialogs/deviceoptions.h"
 #include "dialogs/storeprogress.h"
+#include "dialogs/waitingdialog.h"
 
 #include "toolbars/samplingbar.h"
 #include "toolbars/trigbar.h"
@@ -77,7 +79,7 @@
 #include <stdarg.h>
 #include <glib.h>
 #include <list>
-#include <libsigrok4DSLogic/libsigrok.h>
+#include <libsigrok4DSL/libsigrok.h>
 
 using boost::shared_ptr;
 using boost::dynamic_pointer_cast;
@@ -100,6 +102,9 @@ MainWindow::MainWindow(DeviceManager &device_manager,
 			Qt::QueuedConnection,
 			Q_ARG(QString, s));
 	}
+    test_timer_linked = false;
+    test_timer.stop();
+    test_timer.setSingleShot(true);
 }
 
 void MainWindow::setup_ui()
@@ -170,7 +175,7 @@ void MainWindow::setup_ui()
 
 
     // Setup _view widget
-    _view = new pv::view::View(_session, this);
+    _view = new pv::view::View(_session, _sampling_bar, this);
     _vertical_layout->addWidget(_view);
 
     connect(_sampling_bar, SIGNAL(device_selected()), this,
@@ -182,7 +187,7 @@ void MainWindow::setup_ui()
     connect(_sampling_bar, SIGNAL(instant_stop()), this,
         SLOT(instant_stop()));
     connect(_sampling_bar, SIGNAL(update_scale()), _view,
-        SLOT(update_scale()));
+        SLOT(update_scale()), Qt::DirectConnection);
     connect(_dso_trigger_widget, SIGNAL(set_trig_pos(quint64)), _view,
         SLOT(set_trig_pos(quint64)));
 
@@ -218,7 +223,9 @@ void MainWindow::setup_ui()
     addDockWidget(Qt::BottomDockWidgetArea, _search_dock);
 
 	// Set the title
-    setWindowTitle(QApplication::translate("MainWindow", "DSLogic(Beta)", 0,
+    QString title = QApplication::applicationName()+" v"+QApplication::applicationVersion();
+    std::string std_title = title.toStdString();
+    setWindowTitle(QApplication::translate("MainWindow", std_title.c_str(), 0,
 		QApplication::UnicodeUTF8));
 
 	// Setup _session events
@@ -230,8 +237,8 @@ void MainWindow::setup_ui()
             SLOT(device_detach()));
     connect(&_session, SIGNAL(test_data_error()), this,
             SLOT(test_data_error()));
-    connect(&_session, SIGNAL(sample_rate_changed(uint64_t)), _sampling_bar,
-            SLOT(set_sample_rate(uint64_t)));
+    connect(&_session, SIGNAL(malloc_error()), this,
+            SLOT(malloc_error()));
 
     connect(_view, SIGNAL(cursor_update()), _measure_widget,
             SLOT(cursor_update()));
@@ -257,7 +264,8 @@ void MainWindow::setup_ui()
     _search_dock->installEventFilter(this);
 
     // Populate the device list and select the initially selected device
-    _session.set_default_device();
+    _session.set_default_device(boost::bind(&MainWindow::session_error, this,
+                                            QString("Set Default Device failed"), _1));
     update_device_list();
     _session.start_hotplug_proc(boost::bind(&MainWindow::session_error, this,
                                              QString("Hotplug failed"), _1));
@@ -282,7 +290,11 @@ void MainWindow::update_device_list()
 #endif
     _trig_bar->close_all();
 
-
+    if (_session.get_device()->dev_inst()->mode == LOGIC) {
+        _trig_bar->enable_protocol(true);
+    } else {
+        _trig_bar->enable_protocol(false);
+    }
     if (_session.get_device()->dev_inst()->mode == DSO) {
         _sampling_bar->enable_toggle(false);
     } else {
@@ -302,10 +314,10 @@ void MainWindow::update_device_list()
             errorMessage, infoMessage));
     }
 
-    if (strcmp(selected_device->dev_inst()->driver->name, "DSLogic") == 0)
-        _logo_bar->dslogic_connected(true);
+    if (strcmp(selected_device->dev_inst()->driver->name, "demo") != 0)
+        _logo_bar->dsl_connected(true);
     else
-        _logo_bar->dslogic_connected(false);
+        _logo_bar->dsl_connected(false);
 }
 
 void MainWindow::load_file(QString file_name)
@@ -314,7 +326,8 @@ void MainWindow::load_file(QString file_name)
         _session.set_file(file_name.toStdString());
     } catch(QString e) {
         show_session_error(tr("Failed to load ") + file_name, e);
-        _session.set_default_device();
+        _session.set_default_device(boost::bind(&MainWindow::session_error, this,
+                                                QString("Set Default Device failed"), _1));
         update_device_list();
         return;
     }
@@ -342,12 +355,12 @@ void MainWindow::device_attach()
 
     struct sr_dev_driver **const drivers = sr_driver_list();
     struct sr_dev_driver **driver;
-    for (driver = drivers; strcmp(((struct sr_dev_driver *)*driver)->name, "DSLogic") != 0 && *driver; driver++);
+    for (driver = drivers; *driver; driver++)
+        if (*driver)
+            _device_manager.driver_scan(*driver);
 
-    if (*driver)
-        _device_manager.driver_scan(*driver);
-
-    _session.set_default_device();
+    _session.set_default_device(boost::bind(&MainWindow::session_error, this,
+                                            QString("Set Default Device failed"), _1));
     update_device_list();
 }
 
@@ -360,44 +373,52 @@ void MainWindow::device_detach()
 
     struct sr_dev_driver **const drivers = sr_driver_list();
     struct sr_dev_driver **driver;
-    for (driver = drivers; strcmp(((struct sr_dev_driver *)*driver)->name, "DSLogic") != 0 && *driver; driver++);
+    for (driver = drivers; *driver; driver++)
+        if (*driver)
+            _device_manager.driver_scan(*driver);
 
-    if (*driver)
-        _device_manager.driver_scan(*driver);
-
-    _session.set_default_device();
+    _session.set_default_device(boost::bind(&MainWindow::session_error, this,
+                                            QString("Set Default Device failed"), _1));
     update_device_list();
 }
 
 void MainWindow::run_stop()
 {
-    _sampling_bar->enable_run_stop(false);
-    _sampling_bar->enable_instant(false);
+#ifdef TEST_MODE
+    if (!test_timer_linked) {
+        connect(&test_timer, SIGNAL(timeout()),
+                this, SLOT(run_stop()));
+        test_timer_linked = true;
+    }
+#endif
     switch(_session.get_capture_state()) {
     case SigSession::Init:
 	case SigSession::Stopped:
         _view->show_trig_cursor(false);
+        _view->update_sample(false);
         _session.start_capture(false,
 			boost::bind(&MainWindow::session_error, this,
 				QString("Capture failed"), _1));
-		break;
+        break;
 
 	case SigSession::Running:
 		_session.stop_capture();
 		break;
 	}
-    g_usleep(1000);
-    _sampling_bar->enable_run_stop(true);
 }
 
 void MainWindow::instant_stop()
 {
-    _sampling_bar->enable_instant(false);
-    _sampling_bar->enable_run_stop(false);
+#ifdef TEST_MODE
+    disconnect(&test_timer, SIGNAL(timeout()),
+            this, SLOT(run_stop()));
+    test_timer_linked = false;
+#else
     switch(_session.get_capture_state()) {
     case SigSession::Init:
     case SigSession::Stopped:
         _view->show_trig_cursor(false);
+        _view->update_sample(true);
         _session.start_capture(true,
             boost::bind(&MainWindow::session_error, this,
                 QString("Capture failed"), _1));
@@ -407,12 +428,16 @@ void MainWindow::instant_stop()
         _session.stop_capture();
         break;
     }
-    g_usleep(1000);
-    _sampling_bar->enable_instant(true);
+#endif
 }
 
 void MainWindow::test_data_error()
 {
+#ifdef TEST_MODE
+    disconnect(&test_timer, SIGNAL(timeout()),
+            this, SLOT(run_stop()));
+    test_timer_linked = false;
+#endif
     _session.stop_capture();
     QMessageBox msg(this);
     msg.setText("Data Error");
@@ -422,31 +447,51 @@ void MainWindow::test_data_error()
     msg.exec();
 }
 
+void MainWindow::malloc_error()
+{
+    _session.stop_capture();
+    QMessageBox msg(this);
+    msg.setText("Malloc Error");
+    msg.setInformativeText("Memory is not enough for this sample!\nPlease reduce the sample depth!");
+    msg.setStandardButtons(QMessageBox::Ok);
+    msg.setIcon(QMessageBox::Warning);
+    msg.exec();
+}
+
 void MainWindow::capture_state_changed(int state)
 {
+    _file_bar->enable_toggle(state != SigSession::Running);
+    _sampling_bar->set_sampling(state == SigSession::Running);
+    _view->on_state_changed(state != SigSession::Running);
+
     if (_session.get_device()->dev_inst()->mode != DSO) {
         _sampling_bar->enable_toggle(state != SigSession::Running);
         _trig_bar->enable_toggle(state != SigSession::Running);
         _measure_dock->widget()->setEnabled(state != SigSession::Running);
+#ifdef TEST_MODE
+        if (state == SigSession::Stopped) {
+            test_timer.start(100);
+        }
+#endif
     }
-    _file_bar->enable_toggle(state != SigSession::Running);
-    _sampling_bar->set_sampling(state == SigSession::Running);
-    _view->on_state_changed(state != SigSession::Running);
 }
 
 void MainWindow::on_protocol(bool visible)
 {
 #ifdef ENABLE_DECODE
-    _protocol_dock->setVisible(visible);
+    if (_session.get_device()->dev_inst()->mode == LOGIC)
+        _protocol_dock->setVisible(visible);
 #endif
 }
 
 void MainWindow::on_trigger(bool visible)
 {
     if (_session.get_device()->dev_inst()->mode != DSO) {
+        _trigger_widget->init();
         _trigger_dock->setVisible(visible);
         _dso_trigger_dock->setVisible(false);
     } else {
+        _dso_trigger_widget->init();
         _trigger_dock->setVisible(false);
         _dso_trigger_dock->setVisible(visible);
     }
@@ -489,7 +534,7 @@ void MainWindow::on_save()
 
     // Show the dialog
     const QString file_name = QFileDialog::getSaveFileName(
-        this, tr("Save File"), "", tr("DSLogic Sessions (*.dsl)"));
+        this, tr("Save File"), "", tr("DSView Sessions (*.dsl)"));
 
     if (file_name.isEmpty())
         return;
@@ -537,11 +582,11 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
             break;
         case Qt::Key_PageUp:
             _view->set_scale_offset(_view->scale(),
-                                    _view->offset() - _view->scale()*_view->viewport()->width());
+                                    _view->offset() - _view->scale()*_view->get_view_width());
             break;
         case Qt::Key_PageDown:
             _view->set_scale_offset(_view->scale(),
-                                    _view->offset() + _view->scale()*_view->viewport()->width());
+                                    _view->offset() + _view->scale()*_view->get_view_width());
 
             break;
         case Qt::Key_Left:
@@ -549,6 +594,32 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
             break;
         case Qt::Key_Right:
             _view->zoom(-1);
+            break;
+        case Qt::Key_0:
+            BOOST_FOREACH(const shared_ptr<view::Signal> s, sigs) {
+                shared_ptr<view::DsoSignal> dsoSig;
+                if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
+                    if (dsoSig->get_index() == 0)
+                        dsoSig->set_vDialActive(!dsoSig->get_vDialActive());
+                    else
+                        dsoSig->set_vDialActive(false);
+                }
+            }
+            _view->setFocus();
+            update();
+            break;
+        case Qt::Key_1:
+            BOOST_FOREACH(const shared_ptr<view::Signal> s, sigs) {
+                shared_ptr<view::DsoSignal> dsoSig;
+                if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
+                    if (dsoSig->get_index() == 1)
+                        dsoSig->set_vDialActive(!dsoSig->get_vDialActive());
+                    else
+                        dsoSig->set_vDialActive(false);
+                }
+            }
+            _view->setFocus();
+            update();
             break;
         case Qt::Key_Up:
             BOOST_FOREACH(const shared_ptr<view::Signal> s, sigs) {

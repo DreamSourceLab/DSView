@@ -35,6 +35,6 @@ check_main_SOURCES = \
 
 check_main_CFLAGS = @check_CFLAGS@
 
-check_main_LDADD = $(top_builddir)/libsigrok4DSLogic.la @check_LIBS@
+check_main_LDADD = $(top_builddir)/libsigrok4DSL.la @check_LIBS@
 
 endif

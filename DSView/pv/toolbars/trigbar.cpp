@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -101,6 +101,13 @@ void TrigBar::enable_toggle(bool enable)
                                   QIcon::fromTheme("trig", QIcon(":/icons/measure_dis.png")));
     _search_button.setIcon(enable ? QIcon::fromTheme("trig", QIcon(":/icons/search-bar.png")) :
                                   QIcon::fromTheme("trig", QIcon(":/icons/search-bar_dis.png")));
+}
+
+void TrigBar::enable_protocol(bool enable)
+{
+    _protocol_button.setDisabled(!enable);
+    _protocol_button.setIcon(enable ? QIcon::fromTheme("trig", QIcon(":/icons/protocol.png")) :
+                                  QIcon::fromTheme("trig", QIcon(":/icons/protocol_dis.png")));
 }
 
 void TrigBar::close_all()

@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2014 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
  *
@@ -127,39 +127,6 @@ void DevMode::on_mode_change()
                                      g_variant_new_int16((*i).second->mode));
 
                 mode_changed();
-
-                if (dev_inst->dev_inst()->mode == DSO &&
-                        strcmp(dev_inst->dev_inst()->driver->name, "DSLogic") == 0) {
-                    bool zero_adjusted = false;
-                    GVariant *gvar = dev_inst->get_config(NULL, NULL, SR_CONF_ZERO);
-                    if (gvar != NULL) {
-                        zero_adjusted = g_variant_get_boolean(gvar);
-                        g_variant_unref(gvar);
-                    } else {
-                        qDebug() << "ERROR: config_get SR_CONF_ZERO failed.";
-                    }
-
-                    if (!zero_adjusted) {
-                        QMessageBox msg(this);
-                        msg.setText("Zero Adjustment");
-                        msg.setInformativeText("Please left both of channels unconnect for zero adjustment!");
-                        msg.setStandardButtons(QMessageBox::Ok);
-                        msg.setIcon(QMessageBox::Warning);
-                        msg.exec();
-
-                        int ret = dev_inst->set_config(NULL, NULL,
-                                                       SR_CONF_ZERO,
-                                                       g_variant_new_boolean(TRUE));
-                        if (!ret) {
-                             QMessageBox msg(this);
-                             msg.setText("Zero Adjustment Issue");
-                             msg.setInformativeText("Can't send out the command of zero adjustment!");
-                             msg.setStandardButtons(QMessageBox::Ok);
-                             msg.setIcon(QMessageBox::Warning);
-                             msg.exec();
-                         }
-                    }
-                }
             }
         }
     }

@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
  *
@@ -20,8 +20,8 @@
  */
 
 
-#ifndef DSLOGIC_PV_DATA_DSOSNAPSHOT_H
-#define DSLOGIC_PV_DATA_DSOSNAPSHOT_H
+#ifndef DSVIEW_PV_DATA_DSOSNAPSHOT_H
+#define DSVIEW_PV_DATA_DSOSNAPSHOT_H
 
 #include "snapshot.h"
 
@@ -68,7 +68,7 @@ private:
 	static const uint64_t EnvelopeDataUnit;
 
 public:
-    DsoSnapshot(const sr_datafeed_dso &dso, uint64_t _total_sample_len, unsigned int channel_num);
+    DsoSnapshot(const sr_datafeed_dso &dso, uint64_t _total_sample_len, unsigned int channel_num, bool instant);
 
     virtual ~DsoSnapshot();
 
@@ -80,6 +80,8 @@ public:
 	void get_envelope_section(EnvelopeSection &s,
         uint64_t start, uint64_t end, float min_length, int probe_index) const;
 
+    void enable_envelope(bool enable);
+
 private:
 	void reallocate_envelope(Envelope &l);
 
@@ -87,6 +89,9 @@ private:
 
 private:
     struct Envelope _envelope_levels[2*DS_MAX_DSO_PROBES_NUM][ScaleStepCount];
+    bool _envelope_en;
+    bool _envelope_done;
+    bool _instant;
 
     friend class DsoSnapshotTest::Basic;
 };
@@ -94,4 +99,4 @@ private:
 } // namespace data
 } // namespace pv
 
-#endif // DSLOGIC_PV_DATA_DSOSNAPSHOT_H
+#endif // DSVIEW_PV_DATA_DSOSNAPSHOT_H

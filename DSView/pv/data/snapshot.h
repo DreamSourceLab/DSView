@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -21,10 +21,10 @@
  */
 
 
-#ifndef DSLOGIC_PV_DATA_SNAPSHOT_H
-#define DSLOGIC_PV_DATA_SNAPSHOT_H
+#ifndef DSVIEW_PV_DATA_SNAPSHOT_H
+#define DSVIEW_PV_DATA_SNAPSHOT_H
 
-#include <libsigrok4DSLogic/libsigrok.h>
+#include <libsigrok4DSL/libsigrok.h>
 
 #include <boost/thread.hpp>
 
@@ -54,6 +54,7 @@ public:
 
 protected:
 	void append_data(void *data, uint64_t samples);
+    void refill_data(void *data, uint64_t samples, bool instant);
 
 protected:
 	mutable boost::recursive_mutex _mutex;
@@ -68,4 +69,4 @@ protected:
 } // namespace data
 } // namespace pv
 
-#endif // DSLOGIC_PV_DATA_SNAPSHOT_H
+#endif // DSVIEW_PV_DATA_SNAPSHOT_H

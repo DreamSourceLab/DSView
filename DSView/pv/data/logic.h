@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -21,8 +21,8 @@
  */
 
 
-#ifndef DSLOGIC_PV_DATA_LOGIC_H
-#define DSLOGIC_PV_DATA_LOGIC_H
+#ifndef DSVIEW_PV_DATA_LOGIC_H
+#define DSVIEW_PV_DATA_LOGIC_H
 
 #include "signaldata.h"
 
@@ -37,9 +37,7 @@ class LogicSnapshot;
 class Logic : public SignalData
 {
 public:
-    Logic(int num_probes);
-
-    int get_num_probes() const;
+    Logic();
 
 	void push_snapshot(
 		boost::shared_ptr<LogicSnapshot> &snapshot);
@@ -56,4 +54,4 @@ private:
 } // namespace data
 } // namespace pv
 
-#endif // DSLOGIC_PV_DATA_LOGIC_H
+#endif // DSVIEW_PV_DATA_LOGIC_H

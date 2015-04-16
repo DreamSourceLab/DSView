@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -36,7 +36,7 @@ Snapshot::Snapshot(int unit_size, uint64_t total_sample_count, unsigned int chan
     _data(NULL),
     _channel_num(channel_num),
     _sample_count(0),
-    _total_sample_count(total_sample_count * channel_num),
+    _total_sample_count(total_sample_count),
     _ring_sample_count(0),
     _unit_size(unit_size)
 {
@@ -75,7 +75,7 @@ bool Snapshot::buf_null() const
 uint64_t Snapshot::get_sample_count() const
 {
 	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
-    return _sample_count / _channel_num;
+    return _sample_count;
 }
 
 void* Snapshot::get_data() const
@@ -108,7 +108,7 @@ uint64_t Snapshot::get_sample(uint64_t index) const
 
 void Snapshot::append_data(void *data, uint64_t samples)
 {
-//	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 //	_data = realloc(_data, (_sample_count + samples) * _unit_size +
 //		sizeof(uint64_t));
     if (_sample_count + samples < _total_sample_count)
@@ -127,6 +127,20 @@ void Snapshot::append_data(void *data, uint64_t samples)
             data, samples * _unit_size);
         _ring_sample_count += samples;
     }
+}
+
+void Snapshot::refill_data(void *data, uint64_t samples, bool instant)
+{
+    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+
+    if (instant) {
+        memcpy((uint8_t*)_data + _sample_count * _channel_num, data, samples*_channel_num);
+        _sample_count = (_sample_count + samples) % (_total_sample_count + 1);
+    } else {
+        memcpy((uint8_t*)_data, data, samples*_channel_num);
+        _sample_count = samples;
+    }
+
 }
 
 } // namespace data

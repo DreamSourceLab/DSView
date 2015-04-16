@@ -259,6 +259,7 @@ SR_PRIV void sr_dev_probes_free(struct sr_dev_inst *sdi)
     for (l = sdi->channels; l; l = l->next) {
         probe = l->data;
         g_free(probe->name);
+        g_free(probe->trigger);
         g_free(probe);
     }
 

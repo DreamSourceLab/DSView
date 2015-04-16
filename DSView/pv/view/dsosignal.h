@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
  *
@@ -20,8 +20,8 @@
  */
 
 
-#ifndef DSLOGIC_PV_DSOSIGNAL_H
-#define DSLOGIC_PV_DSOSIGNAL_H
+#ifndef DSVIEW_PV_DSOSIGNAL_H
+#define DSVIEW_PV_DSOSIGNAL_H
 
 #include "signal.h"
 
@@ -45,10 +45,10 @@ private:
 	static const float EnvelopeThreshold;
 
     static const int HitCursorMargin = 3;
-    static const quint64 vDialValueCount = 10;
+    static const quint64 vDialValueCount = 8;
     static const quint64 vDialValueStep = 1000;
     static const uint64_t vDialUnitCount = 2;
-    static const uint64_t hDialValueCount = 22;
+    static const uint64_t hDialValueCount = 28;
     static const uint64_t hDialValueStep = 1000;
     static const uint64_t hDialUnitCount = 4;
     static const uint64_t vDialValue[vDialValueCount];
@@ -69,6 +69,7 @@ public:
     virtual ~DsoSignal();
 
     boost::shared_ptr<pv::data::SignalData> data() const;
+    void set_view(pv::view::View *view);
 
 	void set_scale(float scale);
 
@@ -82,16 +83,22 @@ public:
     void set_hDialActive(bool active);
     bool go_vDialPre();
     bool go_vDialNext();
-    bool go_hDialPre();
-    bool go_hDialNext();
+    bool go_hDialPre(bool setted);
+    bool go_hDialNext(bool setted);
+    bool go_hDialCur();
     uint64_t get_vDialValue() const;
     uint64_t get_hDialValue() const;
     uint16_t get_vDialSel() const;
     uint16_t get_hDialSel() const;
-    bool get_acCoupling() const;
-    void set_acCoupling(bool coupling);
+    uint8_t get_acCoupling() const;
+    void set_acCoupling(uint8_t coupling);
     void set_trig_vpos(int pos);
     int get_trig_vpos() const;
+
+    /**
+      * auto set the vertical and Horizontal scale
+      */
+    void auto_set();
 
     /**
      * Gets the mid-Y position of this signal.
@@ -102,6 +109,7 @@ public:
      * Sets the mid-Y position of this signal.
      */
     void set_zeroPos(int pos);
+    void update_zeroPos();
 
     /**
      * Paints the background layer of the trace with a QPainter
@@ -146,7 +154,10 @@ private:
 	void paint_envelope(QPainter &p,
         const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot,
 		int y, int left, const int64_t start, const int64_t end,
-		const double pixels_offset, const double samples_per_pixel);
+        const double pixels_offset, const double samples_per_pixel,
+        uint64_t num_channels);
+
+    void paint_measure(QPainter &p);
 
 private:
     boost::shared_ptr<pv::data::Dso> _data;
@@ -156,13 +167,19 @@ private:
     dslDial *_hDial;
     bool _vDialActive;
     bool _hDialActive;
-    bool _acCoupling;
+    uint8_t _acCoupling;
 
     double _trig_vpos;
     double _zeroPos;
+
+    uint8_t _max;
+    uint8_t _min;
+    double _period;
+    bool _autoV;
+    bool _autoH;
 };
 
 } // namespace view
 } // namespace pv
 
-#endif // DSLOGIC_PV_DSOSIGNAL_H
+#endif // DSVIEW_PV_DSOSIGNAL_H

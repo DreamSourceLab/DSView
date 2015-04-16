@@ -91,6 +91,8 @@ static struct sr_config_info sr_config_info_data[] = {
         "Operation Mode", NULL},
     {SR_CONF_THRESHOLD, SR_T_CHAR, "threshold",
         "Threshold Level", NULL},
+    {SR_CONF_VTH, SR_T_FLOAT, "threshold",
+        "Threshold Level", NULL},
 	{0, 0, NULL, NULL, NULL},
 };
 
@@ -98,8 +100,9 @@ static struct sr_config_info sr_config_info_data[] = {
 #ifdef HAVE_LA_DEMO
 extern SR_PRIV struct sr_dev_driver demo_driver_info;
 #endif
-#ifdef HAVE_LA_DSLOGIC
+#ifdef HAVE_DSL_DEVICE
 extern SR_PRIV struct sr_dev_driver DSLogic_driver_info;
+extern SR_PRIV struct sr_dev_driver DSCope_driver_info;
 #endif
 /** @endcond */
 
@@ -107,8 +110,9 @@ static struct sr_dev_driver *drivers_list[] = {
 #ifdef HAVE_LA_DEMO
 	&demo_driver_info,
 #endif
-#ifdef HAVE_LA_DSLOGIC
+#ifdef HAVE_DSL_DEVICE
     &DSLogic_driver_info,
+    &DSCope_driver_info,
 #endif
 	NULL,
 };
@@ -389,7 +393,8 @@ SR_API const struct sr_config_info *sr_config_info_get(int key)
  *         as an indication that it's not applicable.
  */
 SR_API int sr_status_get(const struct sr_dev_inst *sdi,
-                          struct sr_status *status)
+                         struct sr_status *status,
+                         int begin, int end)
 {
     int ret;
 
@@ -398,7 +403,7 @@ SR_API int sr_status_get(const struct sr_dev_inst *sdi,
     else if (!sdi->driver->dev_status_get)
         ret = SR_ERR_ARG;
     else
-        ret = sdi->driver->dev_status_get(sdi, status);
+        ret = sdi->driver->dev_status_get(sdi, status, begin, end);
 
     return ret;
 }

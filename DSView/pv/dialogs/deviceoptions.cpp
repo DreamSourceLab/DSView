@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -27,6 +27,7 @@
 
 #include <QFormLayout>
 #include <QListWidget>
+#include <QMessageBox>
 
 #include <pv/prop/property.h>
 
@@ -36,27 +37,33 @@ using namespace std;
 namespace pv {
 namespace dialogs {
 
-DeviceOptions::DeviceOptions(QWidget *parent, struct sr_dev_inst *sdi) :
+DeviceOptions::DeviceOptions(QWidget *parent, shared_ptr<pv::device::DevInst> dev_inst) :
 	QDialog(parent),
-	_sdi(sdi),
+    _dev_inst(dev_inst),
 	_layout(this),
-    _probes_box(tr("Channels"), this),
-    _props_box(tr("Mode"), this),
 	_button_box(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
 		Qt::Horizontal, this),
-	_device_options_binding(sdi)
+    _device_options_binding(_dev_inst->dev_inst())
 {
 	setWindowTitle(tr("Configure Device"));
 	setLayout(&_layout);
 
-    _props_box.setLayout(&_props_box_layout);
+    _props_box = new QGroupBox(tr("Mode"), this);
+    _props_box->setLayout(&_props_box_layout);
     _props_box_layout.addWidget(get_property_form());
-    _layout.addWidget(&_props_box);
+    _layout.addWidget(_props_box);
 
-	setup_probes();
-	_probes_box.setLayout(&_probes_box_layout);
+    if (_dev_inst->dev_inst()->mode != DSO) {
+        _probes_box = new QGroupBox(tr("Channels"), this);
+        setup_probes();
+        _probes_box->setLayout(&_probes_box_layout);
+        _layout.addWidget(_probes_box);
+    } else {
+        _config_button = new QPushButton(tr("Zero Adjustment"), this);
+        _layout.addWidget(_config_button);
+        connect(_config_button, SIGNAL(clicked()), this, SLOT(zero_adj()));
+    }
 
-    _layout.addWidget(&_probes_box);
     _layout.addStretch(1);
 	_layout.addWidget(&_button_box);
 
@@ -79,13 +86,15 @@ void DeviceOptions::accept()
 	}
 
     // Commit the probes
-    int index = 0;
-    for (const GSList *l = _sdi->channels; l; l = l->next) {
-        sr_channel *const probe = (sr_channel*)l->data;
-        assert(probe);
+    if (_dev_inst->dev_inst()->mode != DSO) {
+        int index = 0;
+        for (const GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next) {
+            sr_channel *const probe = (sr_channel*)l->data;
+            assert(probe);
 
-        probe->enabled = (_probes_checkBox_list.at(index)->checkState() == Qt::Checked);
-        index++;
+            probe->enabled = (_probes_checkBox_list.at(index)->checkState() == Qt::Checked);
+            index++;
+        }
     }
 }
 
@@ -131,7 +140,7 @@ void DeviceOptions::setup_probes()
     _probes_label_list.clear();
     _probes_checkBox_list.clear();
 
-	for (const GSList *l = _sdi->channels; l; l = l->next) {
+    for (const GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next) {
 		sr_channel *const probe = (sr_channel*)l->data;
 		assert(probe);
 
@@ -177,6 +186,24 @@ void DeviceOptions::enable_all_probes()
 void DeviceOptions::disable_all_probes()
 {
 	set_all_probes(false);
+}
+
+void DeviceOptions::zero_adj()
+{
+    using namespace Qt;
+    QDialog::reject();
+
+    QMessageBox msg(this);
+    msg.setText("Information");
+    msg.setInformativeText("Zero adjustment program will be started. This may take a few minutes!");
+    //msg.setStandardButtons(QMessageBox::);
+    msg.addButton(tr("Ok"), QMessageBox::AcceptRole);
+    msg.addButton(tr("Cancel"), QMessageBox::RejectRole);
+    msg.setIcon(QMessageBox::Information);
+    int ret = msg.exec();
+    if ( ret == QMessageBox::AcceptRole) {
+        _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO, g_variant_new_boolean(true));
+    }
 }
 
 } // namespace dialogs

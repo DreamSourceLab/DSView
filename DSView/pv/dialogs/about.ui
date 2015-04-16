@@ -34,7 +34,7 @@
         <string/>
        </property>
        <property name="pixmap">
-        <pixmap resource="../../DSLogic.qrc">:/icons/dsl_logo.png</pixmap>
+        <pixmap resource="../../DSView.qrc">:/icons/dsl_logo.png</pixmap>
        </property>
        <property name="alignment">
         <set>Qt::AlignCenter</set>
@@ -51,12 +51,19 @@
        </property>
       </widget>
      </item>
+     <item>
+      <widget class="QDialogButtonBox" name="buttonBox">
+       <property name="standardButtons">
+        <set>QDialogButtonBox::Ok</set>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
   </layout>
  </widget>
  <resources>
-  <include location="../../DSLogic.qrc"/>
+  <include location="../../DSView.qrc"/>
  </resources>
  <connections/>
 </ui>

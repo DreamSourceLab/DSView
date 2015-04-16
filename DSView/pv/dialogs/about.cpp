@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -29,7 +29,7 @@
 /* __STDC_FORMAT_MACROS is required for PRIu64 and friends (in C++). */
 #define __STDC_FORMAT_MACROS
 #include <glib.h>
-#include <libsigrok4DSLogic/libsigrok.h>
+#include <libsigrok4DSL/libsigrok.h>
 
 
 namespace pv {
@@ -47,11 +47,19 @@ About::About(QWidget *parent) :
 				 .arg(QApplication::applicationVersion())
 				 .arg(QApplication::organizationDomain()));
     ui->versionInfo->setOpenExternalLinks(true);
+
+	connect(ui->buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
 }
 
 About::~About()
 {
     delete ui;
+}
+
+void About::accept()
+{
+    using namespace Qt;
+    QDialog::accept();
 }
 
 } // namespace dialogs

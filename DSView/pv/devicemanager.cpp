@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -38,7 +38,7 @@
 
 #include <boost/foreach.hpp>
 
-#include <libsigrok4DSLogic/libsigrok.h>
+#include <libsigrok4DSL/libsigrok.h>
 
 using boost::shared_ptr;
 using std::list;
@@ -101,8 +101,8 @@ std::list<boost::shared_ptr<device::DevInst> > DeviceManager::driver_scan(
     sr_dev_clear(driver);
     //release_driver(driver);
 
-    // Check If DSLogic driver
-    if (strcmp(driver->name, "DSLogic") == 0) {
+    // Check If DSL hardware driver
+    if (strcmp(driver->name, "demo") != 0) {
         QDir dir(QCoreApplication::applicationDirPath());
         if (!dir.cd("res"))
             return driver_devices;

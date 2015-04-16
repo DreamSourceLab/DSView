@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -87,8 +87,15 @@ DeviceOptions::DeviceOptions(struct sr_dev_inst *sdi) :
         case SR_CONF_OPERATION_MODE:
         case SR_CONF_THRESHOLD:
         case SR_CONF_ZERO:
+        case SR_CONF_STREAM:
+        case SR_CONF_TEST:
+        case SR_CONF_STATUS:
 			bind_enum(name, key, gvar_list);
 			break;
+
+        case SR_CONF_VTH:
+            bind_double(name, key, "V", pair<double, double>(0.0, 5.0), 1, 0.1);
+            break;
 
 		case SR_CONF_RLE:
 			bind_bool(name, key);
@@ -96,6 +103,7 @@ DeviceOptions::DeviceOptions(struct sr_dev_inst *sdi) :
 
         case SR_CONF_CLOCK_TYPE:
         case SR_CONF_CLOCK_EDGE:
+        case SR_CONF_INSTANT:
             bind_bool(name, key);
             break;
 
@@ -168,6 +176,16 @@ void DeviceOptions::bind_int(const QString &name, int key, QString suffix,
 		new Int(name, suffix, range,
 			bind(config_getter, _sdi, key),
 			bind(config_setter, _sdi, key, _1))));
+}
+
+void DeviceOptions::bind_double(const QString &name, int key, QString suffix,
+    optional< std::pair<double, double> > range,
+    int decimals, boost::optional<double> step)
+{
+    _properties.push_back(boost::shared_ptr<Property>(
+        new Double(name, decimals, suffix, range, step,
+            bind(config_getter, _sdi, key),
+            bind(config_setter, _sdi, key, _1))));
 }
 
 QString DeviceOptions::print_gvariant(GVariant *const gvar)

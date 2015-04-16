@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
  *
@@ -39,18 +39,21 @@ using namespace std;
 namespace pv {
 namespace data {
 
-const int DsoSnapshot::EnvelopeScalePower = 4;
+const int DsoSnapshot::EnvelopeScalePower = 8;
 const int DsoSnapshot::EnvelopeScaleFactor = 1 << EnvelopeScalePower;
 const float DsoSnapshot::LogEnvelopeScaleFactor =
 	logf(EnvelopeScaleFactor);
-const uint64_t DsoSnapshot::EnvelopeDataUnit = 64*1024;	// bytes
+const uint64_t DsoSnapshot::EnvelopeDataUnit = 4*1024;	// bytes
 
-DsoSnapshot::DsoSnapshot(const sr_datafeed_dso &dso, uint64_t _total_sample_len, unsigned int channel_num) :
-    Snapshot(sizeof(uint16_t), _total_sample_len, channel_num)
+DsoSnapshot::DsoSnapshot(const sr_datafeed_dso &dso, uint64_t _total_sample_len, unsigned int channel_num, bool instant) :
+    Snapshot(sizeof(uint16_t), _total_sample_len, channel_num),
+    _envelope_en(false),
+    _envelope_done(false),
+    _instant(instant)
 {
 	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 	memset(_envelope_levels, 0, sizeof(_envelope_levels));
-    init(_total_sample_len * channel_num);
+    init(_total_sample_len);
     append_payload(dso);
 }
 
@@ -64,10 +67,21 @@ DsoSnapshot::~DsoSnapshot()
 void DsoSnapshot::append_payload(const sr_datafeed_dso &dso)
 {
 	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
-    append_data(dso.data, dso.num_samples);
 
-	// Generate the first mip-map from the data
-	append_payload_to_envelope_levels();
+    if (_channel_num > 0) {
+        refill_data(dso.data, dso.num_samples, _instant);
+
+        // Generate the first mip-map from the data
+        if (_envelope_en)
+            append_payload_to_envelope_levels();
+    }
+}
+
+void DsoSnapshot::enable_envelope(bool enable)
+{
+    if (!_envelope_done & enable)
+        append_payload_to_envelope_levels();
+    _envelope_en = enable;
 }
 
 const uint8_t *DsoSnapshot::get_samples(
@@ -87,7 +101,7 @@ const uint8_t *DsoSnapshot::get_samples(
 //    memcpy(data, (uint16_t*)_data + start_sample, sizeof(uint16_t) *
 //		(end_sample - start_sample));
 //	return data;
-    return (uint8_t*)_data + start_sample * _channel_num + index;
+    return (uint8_t*)_data + start_sample * _channel_num + index * (_channel_num != 1);
 }
 
 void DsoSnapshot::get_envelope_section(EnvelopeSection &s,
@@ -108,7 +122,10 @@ void DsoSnapshot::get_envelope_section(EnvelopeSection &s,
 
 	s.start = start << scale_power;
 	s.scale = 1 << scale_power;
-	s.length = end - start;
+    //if (_envelope_levels[probe_index][min_level].length < get_sample_count() / EnvelopeScaleFactor)
+    //    s.length = 0;
+    //else
+        s.length = end - start;
 //	s.samples = new EnvelopeSample[s.length];
 //	memcpy(s.samples, _envelope_levels[min_level].samples + start,
 //		s.length * sizeof(EnvelopeSample));
@@ -228,6 +245,7 @@ void DsoSnapshot::append_payload_to_envelope_levels()
             }
         }
     }
+    _envelope_done = true;
 }
 
 } // namespace data

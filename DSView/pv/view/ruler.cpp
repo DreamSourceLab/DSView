@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -119,12 +119,12 @@ QString Ruler::format_time(double t, unsigned int prefix,
     unsigned int precision)
 {
 	const double multiplier = pow(10.0,
-		static_cast<double>(- prefix * 3 - FirstSIPrefixPower));
+        static_cast<double>(- prefix * 3 - FirstSIPrefixPower + 6));
 
 	QString s;
 	QTextStream ts(&s);
 	ts.setRealNumberPrecision(precision);
-	ts << fixed << forcesign << (t  * multiplier) <<
+    ts << fixed << forcesign << (t  * multiplier) / 1000000.0 <<
 		SIPrefixes[prefix] << "s";
 	return s;
 }
@@ -309,7 +309,7 @@ void Ruler::draw_tick_mark(QPainter &p)
 
     const double SpacingIncrement = 32.0f;
     const double MinValueSpacing = 16.0f;
-    const int ValueMargin = 5;
+    const int ValueMargin = 15;
 
     double min_width = SpacingIncrement, typical_width;
     double tick_period;
@@ -388,7 +388,7 @@ void Ruler::draw_tick_mark(QPainter &p)
 
         division++;
 
-    } while (x < width());
+    } while (x < _view.get_view_width());
 
     // Draw the cursors
     if (!_view.get_cursorList().empty()) {
@@ -421,11 +421,11 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
     // Find tick spacing, and number formatting that does not cause
     // value to collide.
     if (_view.session().get_device()->dev_inst()->mode == DSO) {
-        _min_period = _view.session().get_device()->get_time_base() * pow(10, -9);
+        _min_period = _view.session().get_device()->get_time_base() * std::pow(10.0, -9.0);
     } else {
         _min_period = cur_period_scale * abs_min_period;
     }
-    const int order = (int)floorf(log10f(_min_period));
+    const int order = (int)floorf(log10f(_view.scale() * _view.get_view_width()));
     //const double order_decimal = pow(10, order);
     const unsigned int prefix = (order - FirstSIPrefixPower) / 3;
     _cur_prefix = prefix;
@@ -489,7 +489,7 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
         {
             // Draw a minor tick
             if (minor_tick_period / _view.scale() > 2 * typical_width ||
-                    tick_period / _view.scale() > width())
+                    tick_period / _view.scale() > _view.get_view_width())
                 p.drawText(x, 2 * ValueMargin, 0, text_height,
                     AlignCenter | AlignTop | TextDontClip,
                     format_time(t, prefix));
@@ -504,7 +504,7 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
 
         division++;
 
-    } while (x < _view.get_max_width());
+    } while (x < _view.get_view_width());
 
     // Draw the cursors
     if (!_view.get_cursorList().empty()) {

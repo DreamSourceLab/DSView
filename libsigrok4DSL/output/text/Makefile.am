@@ -19,15 +19,15 @@
 ##
 
 # Local lib, this is NOT meant to be installed!
-noinst_LTLIBRARIES = libsigrok4DSLogicoutputtext.la
+noinst_LTLIBRARIES = libsigrok4DSLoutputtext.la
 
-libsigrok4DSLogicoutputtext_la_SOURCES = \
+libsigrok4DSLoutputtext_la_SOURCES = \
 	text.c \
 	text.h \
 	bits.c \
 	hex.c \
 	ascii.c
 
-libsigrok4DSLogicoutputtext_la_CFLAGS = \
+libsigrok4DSLoutputtext_la_CFLAGS = \
 	-I$(top_srcdir)
 

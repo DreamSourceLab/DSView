@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -75,7 +75,7 @@ LogoBar::LogoBar(SigSession &session, QWidget *parent) :
     addWidget(margin);
 }
 
-void LogoBar::dslogic_connected(bool conn)
+void LogoBar::dsl_connected(bool conn)
 {
     if (conn)
         _logo_button.setIcon(QIcon(":/icons/logo_color.png"));

@@ -18,7 +18,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <libsigrok4DSLogic/libsigrok.h>
+#include <libsigrok4DSL/libsigrok.h>
 #include <libsigrokdecode/libsigrokdecode.h>
 
 #include "decoder.h"
@@ -37,8 +37,6 @@ namespace decode {
 Decoder::Decoder(const srd_decoder *const dec) :
 	_decoder(dec),
     _shown(true),
-    _shown_back(true),
-    _shown_setted(false),
     _setted(true)
 {
 }
@@ -62,16 +60,7 @@ bool Decoder::shown() const
 
 void Decoder::show(bool show)
 {
-    _shown_back = show;
-    _shown_setted = true;
-}
-
-void Decoder::commit_show()
-{
-    if (_shown_setted) {
-        _shown = _shown_back;
-        _shown_setted = false;
-    }
+    _shown = show;
 }
 
 const map<const srd_channel*, shared_ptr<view::LogicSignal> >&

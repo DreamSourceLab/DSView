@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -21,15 +21,15 @@
  */
 
 
-#ifndef DSLOGIC_PV_PROP_BINDING_DEVICEOPTIONS_H
-#define DSLOGIC_PV_PROP_BINDING_DEVICEOPTIONS_H
+#ifndef DSVIEW_PV_PROP_BINDING_DEVICEOPTIONS_H
+#define DSVIEW_PV_PROP_BINDING_DEVICEOPTIONS_H
 
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
 
 #include <QString>
 
-#include <libsigrok4DSLogic/libsigrok.h>
+#include <libsigrok4DSL/libsigrok.h>
 
 #include "binding.h"
 
@@ -56,6 +56,10 @@ private:
 	void bind_int(const QString &name, int key, QString suffix,
 		boost::optional< std::pair<int64_t, int64_t> > range);
 
+    void bind_double(const QString &name, int key, QString suffix,
+        boost::optional<std::pair<double, double> > range,
+        int decimals, boost::optional<double> step);
+
 	static QString print_gvariant(GVariant *const gvar);
 
 	void bind_samplerate(const QString &name,
@@ -77,4 +81,4 @@ protected:
 } // prop
 } // pv
 
-#endif // DSLOGIC_PV_PROP_BINDING_DEVICEOPTIONS_H
+#endif // DSVIEW_PV_PROP_BINDING_DEVICEOPTIONS_H

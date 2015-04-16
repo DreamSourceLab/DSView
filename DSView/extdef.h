@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -21,12 +21,12 @@
  */
 
 
-#ifndef DSLOGIC_EXTDEF_H
-#define DSLOGIC_EXTDEF_H
+#ifndef DSVIEW_EXTDEF_H
+#define DSVIEW_EXTDEF_H
 
 #define countof(x) (sizeof(x)/sizeof(x[0]))
 
 #define begin_element(x) (&x[0])
 #define end_element(x) (&x[countof(x)])
 
-#endif // DSLOGIC_EXTDEF_H
+#endif // DSVIEW_EXTDEF_H

@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -21,8 +21,8 @@
  */
 
 
-#ifndef DSLOGIC_PV_TOOLBARS_LOGOBAR_H
-#define DSLOGIC_PV_TOOLBARS_LOGOBAR_H
+#ifndef DSVIEW_PV_TOOLBARS_LOGOBAR_H
+#define DSVIEW_PV_TOOLBARS_LOGOBAR_H
 
 #include <QToolBar>
 #include <QToolButton>
@@ -42,7 +42,7 @@ public:
 
     void enable_toggle(bool enable);
 
-    void dslogic_connected(bool conn);
+    void dsl_connected(bool conn);
 
 private:
     void session_error(
@@ -70,4 +70,4 @@ private:
 } // namespace toolbars
 } // namespace pv
 
-#endif // DSLOGIC_PV_TOOLBARS_LOGOBAR_H
+#endif // DSVIEW_PV_TOOLBARS_LOGOBAR_H

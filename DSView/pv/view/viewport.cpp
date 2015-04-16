@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -107,11 +107,12 @@ void Viewport::paintEvent(QPaintEvent *event)
     BOOST_FOREACH(const shared_ptr<Trace> t, traces)
     {
         assert(t);
-        t->paint_back(p, 0, width());
+        t->paint_back(p, 0, _view.get_view_width());
     }
 
     p.setRenderHint(QPainter::Antialiasing);
-    if (_view.session().get_device()->dev_inst()->mode == LOGIC) {
+    if (_view.session().get_device()->dev_inst()->mode == LOGIC ||
+        _view.session().get_instant()) {
         switch(_view.session().get_capture_state()) {
         case SigSession::Init:
             break;
@@ -133,7 +134,7 @@ void Viewport::paintEvent(QPaintEvent *event)
     {
         assert(t);
         if (t->enabled())
-            t->paint_fore(p, 0, width());
+            t->paint_fore(p, 0, _view.get_view_width());
     }
 
     p.setRenderHint(QPainter::Antialiasing, false);
@@ -163,7 +164,7 @@ void Viewport::paintSignals(QPainter &p)
         {
             assert(t);
             if (t->enabled())
-                t->paint_mid(dbp, 0, width());
+                t->paint_mid(dbp, 0, _view.get_view_width());
         }
 
         _view.set_need_update(false);
@@ -213,8 +214,9 @@ void Viewport::paintProgress(QPainter &p)
     int captured_progress = 0;
 
     p.setPen(Qt::gray);
-    const QPoint cenPos = QPoint(width() / 2, height() / 2);
-    const int radius = min(0.3 * width(), 0.3 * height());
+    p.setBrush(Qt::NoBrush);
+    const QPoint cenPos = QPoint(_view.get_view_width() / 2, height() / 2);
+    const int radius = min(0.3 * _view.get_view_width(), 0.3 * height());
     p.drawEllipse(cenPos, radius - 2, radius - 2);
     p.setPen(QPen(Trace::dsGreen, 4, Qt::SolidLine));
     p.drawArc(cenPos.x() - radius, cenPos.y() - radius, 2* radius, 2 * radius, 180 * 16, progress);
@@ -275,10 +277,10 @@ void Viewport::paintProgress(QPainter &p)
             logoRadius, logoRadius);
 
     if (!triggered) {
-
-        const QPoint cenLeftPos = QPoint(width() / 2 - 0.05 * width(), height() / 2);
-        const QPoint cenRightPos = QPoint(width() / 2 + 0.05 * width(), height() / 2);
-        const int trigger_radius = min(0.02 * width(), 0.02 * height());
+        const int width = _view.get_view_width();
+        const QPoint cenLeftPos = QPoint(width / 2 - 0.05 * width, height() / 2);
+        const QPoint cenRightPos = QPoint(width / 2 + 0.05 * width, height() / 2);
+        const int trigger_radius = min(0.02 * width, 0.02 * height());
 
         p.setPen(Qt::NoPen);
         p.setBrush((timer_cnt % 3) == 0 ? Trace::dsLightBlue : Trace::dsGray);
@@ -289,7 +291,7 @@ void Viewport::paintProgress(QPainter &p)
         p.drawEllipse(cenRightPos, trigger_radius, trigger_radius);
 
         sr_status status;
-        if (sr_status_get(_view.session().get_device()->dev_inst(), &status) == SR_OK){
+        if (sr_status_get(_view.session().get_device()->dev_inst(), &status, SR_STATUS_TRIG_BEGIN, SR_STATUS_TRIG_END) == SR_OK){
             const bool triggred = status.trig_hit & 0x01;
             const uint32_t captured_cnt = (status.captured_cnt0 +
                                           (status.captured_cnt1 << 8) +
@@ -362,7 +364,7 @@ void Viewport::mousePressEvent(QMouseEvent *event)
             assert(s);
             shared_ptr<DsoSignal> dsoSig;
             if ((dsoSig = dynamic_pointer_cast<DsoSignal>(s)) &&
-                 dsoSig->get_trig_rect(0, width()).contains(_mouse_point)) {
+                 dsoSig->get_trig_rect(0, _view.get_view_width()).contains(_mouse_point)) {
                 _drag_sig = s;
                 break;
             }
@@ -422,7 +424,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
     if (_zoom_rect_visible) {
         _zoom_rect_visible = false;
         const double newOffset = _view.offset() + (min(event->pos().x(), _mouse_down_point.x()) + 0.5) * _view.scale();
-        const double newScale = max(min(_view.scale() * (event->pos().x() - _mouse_down_point.x()) / width(),
+        const double newScale = max(min(_view.scale() * (event->pos().x() - _mouse_down_point.x()) / _view.get_view_width(),
                                         _view.get_maxscale()), _view.get_minscale());
         if (newScale != _view.scale())
             _view.set_scale_offset(newScale, newOffset);
@@ -439,12 +441,14 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
     assert (event);
     (void)event;
 
-    if (_view.scale() == _view.get_maxscale())
-        _view.set_preScale_preOffset();
-    else
-        _view.set_scale_offset(_view.get_maxscale(), 0);
+    if (_view.session().get_device()->dev_inst()->mode == LOGIC) {
+        if (_view.scale() == _view.get_maxscale())
+            _view.set_preScale_preOffset();
+        else
+            _view.set_scale_offset(_view.get_maxscale(), 0);
 
-    update();
+        update();
+    }
 }
 
 void Viewport::wheelEvent(QWheelEvent *event)
@@ -453,7 +457,8 @@ void Viewport::wheelEvent(QWheelEvent *event)
 
 	if (event->orientation() == Qt::Vertical) {
 		// Vertical scrolling is interpreted as zooming in/out
-        _view.zoom(event->delta() / 80, event->x());
+        const double offset = (_view.session().get_capture_state() == SigSession::Running) ? 0 : event->x();
+        _view.zoom(event->delta() / 80, offset);
 	} else if (event->orientation() == Qt::Horizontal) {
 		// Horizontal scrolling is interpreted as moving left/right
 		_view.set_scale_offset(_view.scale(),
@@ -510,7 +515,7 @@ void Viewport::measure()
                 const double pixels_offset = _view.offset() / _view.scale();
                 const double samples_per_pixel = sample_rate * _view.scale();
 
-                uint64_t findIndex = curX / width() * s->cur_edges().size();
+                uint64_t findIndex = curX / _view.get_view_width() * s->cur_edges().size();
                 uint64_t left_findIndex = 0;
                 uint64_t right_findIndex = s->cur_edges().size() - 1;
                 int times = 0;

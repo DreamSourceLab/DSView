@@ -56,6 +56,12 @@
 
 #define CONST_LEN               50
 
+#define DEMO_MAX_LOGIC_DEPTH SR_MB(1)
+#define DEMO_MAX_LOGIC_SAMPLERATE SR_MHZ(100)
+#define DEMO_MAX_DSO_DEPTH SR_KB(32)
+#define DEMO_MAX_DSO_SAMPLERATE SR_MHZ(200)
+#define DEMO_MAX_DSO_PROBES_NUM 2
+
 /* Supported patterns which we can generate */
 enum {
     PATTERN_SINE = 0,
@@ -213,11 +219,11 @@ static GSList *hw_scan(GSList *options)
 	}
 
 	devc->sdi = sdi;
-    devc->cur_samplerate = SR_MHZ(100);
-    devc->limit_samples = SR_MB(1);
+    devc->cur_samplerate = DEMO_MAX_LOGIC_SAMPLERATE;
+    devc->limit_samples = DEMO_MAX_LOGIC_DEPTH;
 	devc->limit_msec = 0;
     devc->sample_generator = PATTERN_SINE;
-    devc->timebase = 100000;
+    devc->timebase = 10000;
 
 	sdi->priv = devc;
 
@@ -329,6 +335,9 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_DEVICE_MODE:
         *data = g_variant_new_int16(sdi->mode);
         break;
+    case SR_CONF_TEST:
+        *data = g_variant_new_boolean(FALSE);
+        break;
     case SR_CONF_PATTERN_MODE:
         *data = g_variant_new_string(pattern_strings[devc->sample_generator]);
 		break;
@@ -339,10 +348,22 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         *data = g_variant_new_uint64(devc->timebase);
         break;
     case SR_CONF_COUPLING:
-        *data = g_variant_new_uint64(ch->coupling);
+        *data = g_variant_new_byte(ch->coupling);
         break;
     case SR_CONF_EN_CH:
         *data = g_variant_new_uint64(ch->enabled);
+        break;
+    case SR_CONF_MAX_DSO_SAMPLERATE:
+        *data = g_variant_new_uint64(DEMO_MAX_DSO_SAMPLERATE);
+        break;
+    case SR_CONF_MAX_DSO_SAMPLELIMITS:
+        *data = g_variant_new_uint64(DEMO_MAX_DSO_DEPTH);
+        break;
+    case SR_CONF_MAX_LOGIC_SAMPLERATE:
+        *data = g_variant_new_uint64(DEMO_MAX_LOGIC_SAMPLERATE);
+        break;
+    case SR_CONF_MAX_LOGIC_SAMPLELIMITS:
+        *data = g_variant_new_uint64(DEMO_MAX_LOGIC_DEPTH);
         break;
 	default:
 		return SR_ERR_NA;
@@ -397,18 +418,19 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             }
         } else if (sdi->mode == DSO) {
             sr_dev_probes_free(sdi);
-            for (i = 0; i < DS_MAX_DSO_PROBES_NUM; i++) {
+            for (i = 0; i < DEMO_MAX_DSO_PROBES_NUM; i++) {
                 if (!(probe = sr_channel_new(i, SR_CHANNEL_DSO, TRUE,
                         probe_names[i])))
                     ret = SR_ERR;
                 else {
                     probe->vdiv = 1000;
-                    probe->coupling = FALSE;
+                    probe->coupling = SR_DC_COUPLING;
                     probe->trig_value = 0x80;
                     sdi->channels = g_slist_append(sdi->channels, probe);
                 }
             }
-            devc->limit_samples = SR_MB(1);
+            devc->cur_samplerate = DEMO_MAX_DSO_SAMPLERATE / DEMO_MAX_DSO_PROBES_NUM;
+            devc->limit_samples = DEMO_MAX_DSO_DEPTH / DEMO_MAX_DSO_PROBES_NUM;
         } else if (sdi->mode == ANALOG) {
             sr_dev_probes_free(sdi);
             for (i = 0; i < DS_MAX_ANALOG_PROBES_NUM; i++) {
@@ -456,7 +478,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                devc->timebase);
         ret = SR_OK;
     } else if (id == SR_CONF_COUPLING) {
-        ch->coupling = g_variant_get_boolean(data);
+        ch->coupling = g_variant_get_byte(data);
         sr_dbg("%s: setting AC COUPLING of channel %d to %d", __func__,
                ch->index, ch->coupling);
         ret = SR_OK;
@@ -535,14 +557,25 @@ static void samples_generator(uint16_t *buf, uint64_t size,
             struct sr_channel *probe;
             for (l = sdi->channels; l; l = l->next) {
                 probe = (struct sr_channel *)l->data;
-                *(buf + i) += ((probe->coupling ? 0x60 : 0x80) + demo_data) << (probe->index * 8);
+                if (probe->coupling == SR_DC_COUPLING)
+                    *(buf + i) += ((0x40 + demo_data) << (probe->index * 8));
+                else if (probe->coupling == SR_AC_COUPLING)
+                    *(buf + i) += ((0x60 + demo_data) << (probe->index * 8));
+                else
+                    if (probe->index == 0) {
+                        *(buf + i) &= 0xff00;
+                        *(buf + i) += 0x0080;
+                    }else {
+                        *(buf + i) &= 0x00ff;
+                        *(buf + i) += 0x8000;
+                    }
             }
         }
 		break;
     case PATTERN_SQUARE:
         for (i = 0; i < size; i++) {
             if (i%CONST_LEN == 0) {
-                demo_data = p > 0x7fff ? 0xa0a0 : 0x6060;
+                demo_data = p > 0x7fff ? 0x4040 : 0x0000;
                 p += CONST_LEN * 10;
             }
             *(buf + i) = demo_data;
@@ -550,7 +583,18 @@ static void samples_generator(uint16_t *buf, uint64_t size,
             struct sr_channel *probe;
             for (l = sdi->channels; l; l = l->next) {
                 probe = (struct sr_channel *)l->data;
-                *(buf + i) += (probe->coupling ? 0x00 : 0x20) << (probe->index * 8);
+                if (probe->coupling == SR_DC_COUPLING)
+                    *(buf + i) += (0x40 << (probe->index * 8));
+                else if (probe->coupling == SR_AC_COUPLING)
+                    *(buf + i) += (0x60 << (probe->index * 8));
+                else
+                    if (probe->index == 0) {
+                        *(buf + i) &= 0xff00;
+                        *(buf + i) += 0x0080;
+                    }else {
+                        *(buf + i) &= 0x00ff;
+                        *(buf + i) += 0x8000;
+                    }
             }
         }
         break;
@@ -566,7 +610,18 @@ static void samples_generator(uint16_t *buf, uint64_t size,
             struct sr_channel *probe;
             for (l = sdi->channels; l; l = l->next) {
                 probe = (struct sr_channel *)l->data;
-                *(buf + i) += (probe->coupling ? 0x60 : 0x80) << (probe->index * 8);
+                if (probe->coupling == SR_DC_COUPLING)
+                    *(buf + i) += (0x40 << (probe->index * 8));
+                else if (probe->coupling == SR_AC_COUPLING)
+                    *(buf + i) += (0x60 << (probe->index * 8));
+                else
+                    if (probe->index == 0) {
+                        *(buf + i) &= 0xff00;
+                        *(buf + i) += 0x0080;
+                    }else {
+                        *(buf + i) &= 0x00ff;
+                        *(buf + i) += 0x8000;
+                    }
             }
         }
         break;
@@ -581,7 +636,18 @@ static void samples_generator(uint16_t *buf, uint64_t size,
             struct sr_channel *probe;
             for (l = sdi->channels; l; l = l->next) {
                 probe = (struct sr_channel *)l->data;
-                *(buf + i) += (probe->coupling ? 0x60 : 0x80) << (probe->index * 8);
+                if (probe->coupling == SR_DC_COUPLING)
+                    *(buf + i) += (0x40 << (probe->index * 8));
+                else if (probe->coupling == SR_AC_COUPLING)
+                    *(buf + i) += (0x60 << (probe->index * 8));
+                else
+                    if (probe->index == 0) {
+                        *(buf + i) &= 0xff00;
+                        *(buf + i) += 0x0080;
+                    }else {
+                        *(buf + i) &= 0x00ff;
+                        *(buf + i) += 0x8000;
+                    }
             }
         }
         break;
@@ -594,7 +660,18 @@ static void samples_generator(uint16_t *buf, uint64_t size,
             struct sr_channel *probe;
             for (l = sdi->channels; l; l = l->next) {
                 probe = (struct sr_channel *)l->data;
-                *(buf + i) += (probe->coupling ? 0x60 : 0x80) << (probe->index * 8);
+                if (probe->coupling == SR_DC_COUPLING)
+                    *(buf + i) += (0x40 << (probe->index * 8));
+                else if (probe->coupling == SR_AC_COUPLING)
+                    *(buf + i) += (0x60 << (probe->index * 8));
+                else
+                    if (probe->index == 0) {
+                        *(buf + i) &= 0xff00;
+                        *(buf + i) += 0x0080;
+                    }else {
+                        *(buf + i) &= 0x00ff;
+                        *(buf + i) += 0x8000;
+                    }
             }
         }
 		break;
@@ -828,8 +905,10 @@ static int hw_dev_test(struct sr_dev_inst *sdi)
         return SR_ERR;
 }
 
-static int hw_dev_status_get(struct sr_dev_inst *sdi, struct sr_status *status)
+static int hw_dev_status_get(struct sr_dev_inst *sdi, struct sr_status *status, int begin, int end)
 {
+    (void)begin;
+    (void)end;
     if (sdi) {
         struct dev_context *const devc = sdi->priv;
         status->trig_hit = (devc->trigger_stage == 0);

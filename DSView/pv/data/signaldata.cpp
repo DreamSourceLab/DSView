@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -27,12 +27,10 @@
 namespace pv {
 namespace data {
 
-SignalData::SignalData(int num_probes) :
+SignalData::SignalData() :
     _samplerate(0),
-    _start_time(0),
-    _num_probes(num_probes)
+    _start_time(0)
 {
-    assert(num_probes >= 0);
 }
 
 double SignalData::samplerate() const
@@ -50,17 +48,6 @@ void SignalData::set_samplerate(double samplerate)
 double SignalData::get_start_time() const
 {
 	return _start_time;
-}
-
-int SignalData::get_num_probes() const
-{
-    return _num_probes;
-}
-
-void SignalData::set_num_probes(int num)
-{
-    assert(num >= 0);
-    _num_probes = num;
 }
 
 } // namespace data

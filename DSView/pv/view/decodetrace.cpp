@@ -316,7 +316,6 @@ bool DecodeTrace::create_popup()
         BOOST_FOREACH(shared_ptr<data::decode::Decoder> dec,
             _decoder_stack->stack())
         {
-            dec->commit_show();
             if (dec->commit()) {
                 _decoder_stack->options_changed(true);
                 ret = true;

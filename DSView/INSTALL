@@ -16,15 +16,15 @@ Requirements
  - libboost >= 1.42 (including the following libs):
     - libboost-system
     - libboost-thread
- - libsigrok4DSLogic >= 0.2.0
+ - libsigrok4DSL >= 0.2.0
 
 
 Building and installing
 -----------------------
-Get the DSLogic-gui source code from: www.dreamsourcelab.com/download.html
+Get the DSView source code from: www.dreamsourcelab.com/download.html
 In order to build it, run:
 
- $ cd DSLogic-gui
+ $ cd DSView
  $ cmake .
  $ make
 

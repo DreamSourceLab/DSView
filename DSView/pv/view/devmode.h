@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2014 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
  *
@@ -20,8 +20,8 @@
  */
 
 
-#ifndef DSLOGIC_PV_VIEW_DEVMODE_H
-#define DSLOGIC_PV_VIEW_DEVMODE_H
+#ifndef DSVIEW_PV_VIEW_DEVMODE_H
+#define DSVIEW_PV_VIEW_DEVMODE_H
 
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
@@ -36,7 +36,7 @@
 #include <QGridLayout>
 #include <QVector>
 
-#include <libsigrok4DSLogic/libsigrok.h>
+#include <libsigrok4DSL/libsigrok.h>
 
 namespace pv {
 
@@ -87,4 +87,4 @@ private:
 } // namespace view
 } // namespace pv
 
-#endif // DSLOGIC_PV_VIEW_DEVMODE_H
+#endif // DSVIEW_PV_VIEW_DEVMODE_H

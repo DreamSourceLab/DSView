@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -21,8 +21,8 @@
  */
 
 
-#ifndef DSLOGIC_PV_DATA_ANALOG_H
-#define DSLOGIC_PV_DATA_ANALOG_H
+#ifndef DSVIEW_PV_DATA_ANALOG_H
+#define DSVIEW_PV_DATA_ANALOG_H
 
 #include "signaldata.h"
 
@@ -37,9 +37,7 @@ class AnalogSnapshot;
 class Analog : public SignalData
 {
 public:
-    Analog(unsigned int num_probes);
-
-    int get_num_probes() const;
+    Analog();
 
 	void push_snapshot(
 		boost::shared_ptr<AnalogSnapshot> &snapshot);
@@ -50,11 +48,10 @@ public:
     void clear();
 
 private:
-    const unsigned int _num_probes;
 	std::deque< boost::shared_ptr<AnalogSnapshot> > _snapshots;
 };
 
 } // namespace data
 } // namespace pv
 
-#endif // DSLOGIC_PV_DATA_ANALOG_H
+#endif // DSVIEW_PV_DATA_ANALOG_H

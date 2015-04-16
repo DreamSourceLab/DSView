@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -84,7 +84,7 @@ void FileBar::on_actionOpen_triggered()
     // Show the dialog
     const QString file_name = QFileDialog::getOpenFileName(
         this, tr("Open File"), "", tr(
-            "DSLogic Sessions (*.dsl)"));
+            "DSView Sessions (*.dsl)"));
     if (!file_name.isEmpty())
         load_file(file_name);
 }
@@ -124,14 +124,14 @@ void FileBar::on_actionSave_triggered()
     } else if (_session.get_device()->dev_inst()->mode != LOGIC) {
         QMessageBox msg(this);
         msg.setText("File Save");
-        msg.setInformativeText("DSLogic currently only support saving logic data to file!");
+        msg.setInformativeText("DSView currently only support saving logic data to file!");
         msg.setStandardButtons(QMessageBox::Ok);
         msg.setIcon(QMessageBox::Warning);
         msg.exec();
     }else {
         const QString file_name = QFileDialog::getSaveFileName(
                     this, tr("Save File"), "",
-                    tr("DSLogic Session (*.dsl)"));
+                    tr("DSView Session (*.dsl)"));
         if (!file_name.isEmpty()) {
             _session.save_file(file_name.toStdString());
         }

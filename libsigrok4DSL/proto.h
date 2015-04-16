@@ -86,7 +86,7 @@ SR_API int sr_config_list(const struct sr_dev_driver *driver,
                           int key, GVariant **data);
 SR_API const struct sr_config_info *sr_config_info_get(int key);
 SR_API const struct sr_config_info *sr_config_info_name_get(const char *optname);
-SR_API int sr_status_get(const struct sr_dev_inst *sdi, struct sr_status *status);
+SR_API int sr_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, int begin, int end);
 
 /*--- session.c -------------------------------------------------------------*/
 
@@ -177,6 +177,7 @@ SR_API int ds_trigger_stage_set_count(uint16_t stage, uint16_t probes, uint16_t 
 SR_API int ds_trigger_probe_set(uint16_t probe, unsigned char trigger0, unsigned char trigger1);
 SR_API int ds_trigger_set_stage(uint16_t stages);
 SR_API int ds_trigger_set_pos(uint16_t position);
+SR_API uint16_t ds_trigger_get_pos();
 SR_API int ds_trigger_set_en(uint16_t enable);
 SR_API int ds_trigger_set_mode(uint16_t mode);
 

@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -21,8 +21,8 @@
  */
 
 
-#ifndef DSLOGIC_PV_PROP_INT_H
-#define DSLOGIC_PV_PROP_INT_H
+#ifndef DSVIEW_PV_PROP_INT_H
+#define DSVIEW_PV_PROP_INT_H
 
 #include <utility>
 
@@ -64,4 +64,4 @@ private:
 } // prop
 } // pv
 
-#endif // DSLOGIC_PV_PROP_INT_H
+#endif // DSVIEW_PV_PROP_INT_H

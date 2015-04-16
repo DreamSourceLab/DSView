@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -21,8 +21,8 @@
  */
 
 
-#ifndef DSLOGIC_PV_DEVICEMANAGER_H
-#define DSLOGIC_PV_DEVICEMANAGER_H
+#ifndef DSVIEW_PV_DEVICEMANAGER_H
+#define DSVIEW_PV_DEVICEMANAGER_H
 
 #include <glib.h>
 
@@ -85,4 +85,4 @@ private:
 
 } // namespace pv
 
-#endif // DSLOGIC_PV_DEVICEMANAGER_H
+#endif // DSVIEW_PV_DEVICEMANAGER_H

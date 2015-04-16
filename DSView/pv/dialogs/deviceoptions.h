@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -21,8 +21,8 @@
  */
 
 
-#ifndef DSLOGIC_PV_DEVICEOPTIONS_H
-#define DSLOGIC_PV_DEVICEOPTIONS_H
+#ifndef DSVIEW_PV_DEVICEOPTIONS_H
+#define DSVIEW_PV_DEVICEOPTIONS_H
 
 #include <QDialog>
 #include <QDialogButtonBox>
@@ -37,6 +37,9 @@
 #include <QComboBox>
 #include <QRadioButton>
 
+#include <boost/shared_ptr.hpp>
+
+#include <pv/device/devinst.h>
 #include <pv/prop/binding/deviceoptions.h>
 
 namespace pv {
@@ -47,7 +50,7 @@ class DeviceOptions : public QDialog
 	Q_OBJECT
 
 public:
-	DeviceOptions(QWidget *parent, struct sr_dev_inst *sdi);
+    DeviceOptions(QWidget *parent, boost::shared_ptr<pv::device::DevInst> dev_inst);
 
 protected:
 	void accept();
@@ -64,19 +67,21 @@ private:
 private slots:
 	void enable_all_probes();
 	void disable_all_probes();
+    void zero_adj();
 
 private:
-	struct sr_dev_inst *const _sdi;
+    boost::shared_ptr<pv::device::DevInst>  _dev_inst;
 	QVBoxLayout _layout;
 
-	QGroupBox _probes_box;
+    QGroupBox *_probes_box;
     QGridLayout _probes_box_layout;
     QVector <QLabel *> _probes_label_list;
     QVector <QCheckBox *> _probes_checkBox_list;
 
-	QGroupBox _props_box;
+    QGroupBox *_props_box;
     QVBoxLayout _props_box_layout;
 
+    QPushButton *_config_button;
 	QDialogButtonBox _button_box;
 
 	pv::prop::binding::DeviceOptions _device_options_binding;
@@ -85,4 +90,4 @@ private:
 } // namespace dialogs
 } // namespace pv
 
-#endif // DSLOGIC_PV_DEVICEOPTIONS_H
+#endif // DSVIEW_PV_DEVICEOPTIONS_H

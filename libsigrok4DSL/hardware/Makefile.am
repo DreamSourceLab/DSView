@@ -21,17 +21,17 @@
 SUBDIRS = \
 	demo \
 	common \
-	DSLogic
+	DSL
 
-noinst_LTLIBRARIES = libsigrok4DSLogichardware.la
+noinst_LTLIBRARIES = libsigrok4DSLhardware.la
 
-libsigrok4DSLogichardware_la_SOURCES =
+libsigrok4DSLhardware_la_SOURCES =
 
-libsigrok4DSLogichardware_la_LIBADD = 
+libsigrok4DSLhardware_la_LIBADD = 
 
 if HW_DEMO
-libsigrok4DSLogichardware_la_LIBADD += demo/libsigrok4DSLogic_hw_demo.la
+libsigrok4DSLhardware_la_LIBADD += demo/libsigrok4DSL_hw_demo.la
 endif
 
-libsigrok4DSLogichardware_la_LIBADD += common/libsigrok4DSLogic_hw_common.la
-libsigrok4DSLogichardware_la_LIBADD += DSLogic/libsigrok4DSLogic_hw_dslogic.la
+libsigrok4DSLhardware_la_LIBADD += common/libsigrok4DSL_hw_common.la
+libsigrok4DSLhardware_la_LIBADD += DSL/libsigrok4DSL_hw_dsl.la

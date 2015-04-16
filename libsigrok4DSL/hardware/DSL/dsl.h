@@ -18,13 +18,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBDSLOGIC_HARDWARE_DSLOGIC_H
-#define LIBDSLOGIC_HARDWARE_DSLOGIC_H
+#ifndef LIBDSL_HARDWARE_DSL_H
+#define LIBDSL_HARDWARE_DSL_H
 
 #include <glib.h>
+#include "libsigrok.h"
+#include "libsigrok-internal.h"
 
 /* Message logging helpers with subsystem-specific prefix string. */
-#define LOG_PREFIX "DSLogic Hardware: "
+#define LOG_PREFIX "DSL Hardware: "
 #define ds_log(l, s, args...) ds_log(l, LOG_PREFIX s, ## args)
 #define ds_spew(s, args...) ds_spew(LOG_PREFIX s, ## args)
 #define ds_dbg(s, args...) ds_dbg(LOG_PREFIX s, ## args)
@@ -41,7 +43,7 @@
 #define NUM_SIMUL_TRANSFERS	64
 #define MAX_EMPTY_TRANSFERS	(NUM_SIMUL_TRANSFERS * 2)
 
-#define DSLOGIC_REQUIRED_VERSION_MAJOR	1
+#define DSL_REQUIRED_VERSION_MAJOR	1
 
 #define MAX_8BIT_SAMPLE_RATE	DS_MHZ(24)
 #define MAX_16BIT_SAMPLE_RATE	DS_MHZ(12)
@@ -62,7 +64,21 @@
 #define DEFAULT_SAMPLERATE SR_MHZ(100)
 #define DEFAULT_SAMPLELIMIT SR_MB(16)
 
-struct DSLogic_profile {
+#define VPOS_MINISTEP 0.083
+#define VPOS_STEP 26.0
+
+#define DSLOGIC_MAX_DSO_DEPTH SR_MB(2)
+//#define DSLOGIC_MAX_DSO_DEPTH SR_KB(2)
+#define DSLOGIC_MAX_DSO_SAMPLERATE SR_MHZ(200)
+#define DSLOGIC_INSTANT_DEPTH SR_MB(32)
+#define DSLOGIC_MAX_LOGIC_DEPTH SR_MB(16)
+#define DSLOGIC_MAX_LOGIC_SAMPLERATE SR_MHZ(100)
+#define DSCOPE_MAX_DEPTH SR_MB(2)
+//#define DSCOPE_MAX_DEPTH SR_KB(512)
+#define DSCOPE_MAX_SAMPLERATE SR_MHZ(200)
+#define DSCOPE_INSTANT_DEPTH SR_MB(32)
+
+struct DSL_profile {
     uint16_t vid;
     uint16_t pid;
 
@@ -78,7 +94,7 @@ struct DSLogic_profile {
     uint32_t dev_caps;
 };
 
-static const struct DSLogic_profile supported_fx2[3] = {
+static const struct DSL_profile supported_DSLogic[3] = {
     /*
      * DSLogic
      */
@@ -88,22 +104,43 @@ static const struct DSLogic_profile supported_fx2[3] = {
      "DSLogic50.bin",
      DEV_CAPS_16BIT},
 
+    {0x2A0E, 0x0003, NULL, "DSLogic Pro", NULL,
+     "DSLogicPro.fw",
+     "DSLogicPro.bin",
+     "DSLogicPro.bin",
+     DEV_CAPS_16BIT},
+
     { 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 };
 
-enum {
-    DSLOGIC_ERROR = -1,
-    DSLOGIC_INIT = 0,
-    DSLOGIC_START = 1,
-    DSLOGIC_TRIGGERED = 2,
-    DSLOGIC_DATA = 3,
-    DSLOGIC_STOP = 4,
+static const struct DSL_profile supported_DSCope[2] = {
+    /*
+     * DSCope
+     */
+    {0x2A0E, 0x0002, NULL, "DSCope", NULL,
+     "DSCope.fw",
+     "DSCope.bin",
+     "DSCope.bin",
+     DEV_CAPS_16BIT},
+
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 };
 
-struct dev_context {
-    const struct DSLogic_profile *profile;
+
+enum {
+    DSL_ERROR = -1,
+    DSL_INIT = 0,
+    DSL_START = 1,
+    DSL_READY = 2,
+    DSL_TRIGGERED = 3,
+    DSL_DATA = 4,
+    DSL_STOP = 5,
+};
+
+struct DSL_context {
+    const struct DSL_profile *profile;
 	/*
-     * Since we can't keep track of an DSLogic device after upgrading
+     * Since we can't keep track of an DSL device after upgrading
 	 * the firmware (it renumerates into a different device address
 	 * after the upgrade) this is like a global lock. No device will open
 	 * until a proper delay after the last device was upgraded.
@@ -118,8 +155,10 @@ struct dev_context {
 	gboolean sample_wide;
     gboolean clock_type;
     gboolean clock_edge;
+    gboolean instant;
     uint16_t op_mode;
     uint16_t th_level;
+    double vth;
     uint16_t filter;
 	uint16_t trigger_mask[NUM_TRIGGER_STAGES];
 	uint16_t trigger_value[NUM_TRIGGER_STAGES];
@@ -130,6 +169,8 @@ struct dev_context {
     uint8_t trigger_source;
     uint32_t trigger_hpos;
     gboolean zero;
+    gboolean stream;
+    gboolean lock;
 
 	int num_samples;
 	int submitted_transfers;
@@ -144,9 +185,10 @@ struct dev_context {
     GIOChannel *channel;
 
     int status;
+    gboolean mstatus_valid;
 };
 
-struct DSLogic_setting {
+struct DSL_setting {
     uint32_t sync;
     uint16_t mode_header;                   // 0
     uint16_t mode;

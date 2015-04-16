@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -36,7 +36,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 
-#include "libsigrok4DSLogic/libsigrok.h"
+#include "libsigrok4DSL/libsigrok.h"
 
 namespace pv {
 namespace dock {
@@ -197,6 +197,34 @@ void DsoTriggerDock::device_change()
     } else {
         position_spinBox->setDisabled(false);
         position_slider->setDisabled(false);
+    }
+}
+
+void DsoTriggerDock::init()
+{
+    // TRIGGERPOS
+    GVariant* gvar = _session.get_device()->get_config(NULL, NULL,
+                                            SR_CONF_HORIZ_TRIGGERPOS);
+    if (gvar != NULL) {
+        uint16_t pos = g_variant_get_uint16(gvar);
+        g_variant_unref(gvar);
+        position_slider->setValue(pos);
+    }
+
+    gvar = _session.get_device()->get_config(NULL, NULL,
+                                                SR_CONF_TRIGGER_SOURCE);
+    if (gvar != NULL) {
+        uint8_t src = g_variant_get_byte(gvar);
+        g_variant_unref(gvar);
+        source_group->button(src)->setChecked(true);
+    }
+
+    gvar = _session.get_device()->get_config(NULL, NULL,
+                                                SR_CONF_TRIGGER_SLOPE);
+    if (gvar != NULL) {
+        uint8_t slope = g_variant_get_uint16(gvar);
+        g_variant_unref(gvar);
+        type_group->button(slope)->setChecked(true);
     }
 }
 

@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#ifndef DSLOGIC_PV_VIEW_DECODE_ANNOTATION_H
-#define DSLOGIC_PV_VIEW_DECODE_ANNOTATION_H
+#ifndef DSVIEW_PV_VIEW_DECODE_ANNOTATION_H
+#define DSVIEW_PV_VIEW_DECODE_ANNOTATION_H
 
 #include <stdint.h>
 
@@ -52,4 +52,4 @@ private:
 } // namespace data
 } // namespace pv
 
-#endif // DSLOGIC_PV_VIEW_DECODE_ANNOTATION_H
+#endif // DSVIEW_PV_VIEW_DECODE_ANNOTATION_H

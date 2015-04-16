@@ -27,8 +27,8 @@ m4_define([sr_package_version_minor], [2])
 m4_define([sr_package_version_micro], [0])
 m4_define([sr_package_version], [sr_package_version_major.sr_package_version_minor.sr_package_version_micro])
 
-AC_INIT([libsigrok4DSLogic], [sr_package_version], [support@dreamsourcelab.com],
-	[libsigrok4DSLogic], [http://www.dreamsourcelab.com])
+AC_INIT([libsigrok4DSL], [sr_package_version], [support@dreamsourcelab.com],
+	[libsigrok4DSL], [http://www.dreamsourcelab.com])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_MACRO_DIR([autostuff])
 AC_CONFIG_AUX_DIR([autostuff])
@@ -86,10 +86,10 @@ AC_ARG_ENABLE(demo, AC_HELP_STRING([--enable-demo],
 	[enable demo driver support [default=yes]]),
 	[HW_DEMO="$enableval"],
 	[HW_DEMO=$HW_ENABLED_DEFAULT])
-AC_ARG_ENABLE(DSLogic, AC_HELP_STRING([--enable-DSLogic],
-        [enable DSLogic support [default=yes]]),
-        [HW_DSLOGIC="$enableval"],
-        [HW_DSLOGIC=$HW_ENABLED_DEFAULT])
+AC_ARG_ENABLE(DSL, AC_HELP_STRING([--enable-DSL],
+        [enable DreamSourceLab hardware support [default=yes]]),
+        [HW_DSL="$enableval"],
+        [HW_DSL=$HW_ENABLED_DEFAULT])
 # Checks for libraries.
 
 case "$host" in
@@ -100,7 +100,7 @@ esac
 
 # This variable collects the pkg-config names of all detected libs.
 # It is then used to construct the "Requires.private:" field in the
-# libsigrok4DSLogic.pc file.
+# libsigrok4DSL.pc file.
 SR_PKGLIBS=""
 
 # libm (the standard math library) is always needed.
@@ -182,9 +182,9 @@ if test "x$HW_DEMO" = "xyes"; then
 	AC_DEFINE(HAVE_LA_DEMO, 1, [Demo driver support])
 fi
 
-AM_CONDITIONAL(HW_DSLOGIC, test x$HW_DSLOGIC = xyes)
-if test "x$HW_DSLOGIC" = "xyes"; then
-	AC_DEFINE(HAVE_LA_DSLOGIC, 1, [DSLogic driver support])
+AM_CONDITIONAL(HW_DSL, test x$HW_DSL = xyes)
+if test "x$HW_DSL" = "xyes"; then
+	AC_DEFINE(HAVE_DSL_DEVICE, 1, [DreamSourceLab hardware driver support])
 fi
 
 # Checks for header files.
@@ -224,11 +224,11 @@ AC_SUBST(SR_PACKAGE_VERSION)
 AC_CONFIG_FILES([Makefile version.h hardware/Makefile
 		 hardware/demo/Makefile
 		 hardware/common/Makefile
-		 hardware/DSLogic/Makefile
+		 hardware/DSL/Makefile
 		 input/Makefile
 		 output/Makefile
 		 output/text/Makefile
-		 libsigrok4DSLogic.pc
+		 libsigrok4DSL.pc
 		 tests/Makefile
 		])
 
@@ -259,6 +259,6 @@ done
 
 echo -e "\nEnabled hardware drivers:\n"
 echo "  - demo............................ $HW_DEMO"
-echo "  - DSLogic......................... $HW_DSLOGIC"
+echo "  - DreamSourceLab.................. $HW_DSL"
 echo
 

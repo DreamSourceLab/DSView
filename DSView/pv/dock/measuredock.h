@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -21,8 +21,8 @@
  */
 
 
-#ifndef DSLOGIC_PV_MEASUREDOCK_H
-#define DSLOGIC_PV_MEASUREDOCK_H
+#ifndef DSVIEW_PV_MEASUREDOCK_H
+#define DSVIEW_PV_MEASUREDOCK_H
 
 #include <QDockWidget>
 #include <QPushButton>
@@ -43,7 +43,7 @@
 
 #include <vector>
 
-#include <libsigrok4DSLogic/libsigrok.h>
+#include <libsigrok4DSL/libsigrok.h>
 
 namespace pv {
 
@@ -110,4 +110,4 @@ private:
 } // namespace dock
 } // namespace pv
 
-#endif // DSLOGIC_PV_MEASUREDOCK_H
+#endif // DSVIEW_PV_MEASUREDOCK_H

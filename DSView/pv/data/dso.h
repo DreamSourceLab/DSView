@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
  *
@@ -20,8 +20,8 @@
  */
 
 
-#ifndef DSLOGIC_PV_DATA_DSO_H
-#define DSLOGIC_PV_DATA_DSO_H
+#ifndef DSVIEW_PV_DATA_DSO_H
+#define DSVIEW_PV_DATA_DSO_H
 
 #include "signaldata.h"
 
@@ -36,7 +36,7 @@ class DsoSnapshot;
 class Dso : public SignalData
 {
 public:
-    Dso(int num_probes);
+    Dso();
 
 	void push_snapshot(
         boost::shared_ptr<DsoSnapshot> &snapshot);
@@ -53,4 +53,4 @@ private:
 } // namespace data
 } // namespace pv
 
-#endif // DSLOGIC_PV_DATA_DSO_H
+#endif // DSVIEW_PV_DATA_DSO_H

@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -65,9 +65,10 @@ const QColor View::CursorAreaColour(220, 231, 243);
 
 const QSizeF View::LabelPadding(4, 4);
 
-View::View(SigSession &session, QWidget *parent) :
+View::View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget *parent) :
 	QAbstractScrollArea(parent),
 	_session(session),
+    _sampling_bar(sampling_bar),
 	_viewport(new Viewport(*this)),
 	_ruler(new Ruler(*this)),
 	_header(new Header(*this)),
@@ -162,7 +163,7 @@ double View::get_maxscale() const
 
 void View::zoom(double steps)
 {
-    zoom(steps, (width() - headerWidth()) / 2);
+    zoom(steps, get_view_width() / 2);
 }
 
 void View::set_need_update(bool need_update)
@@ -175,6 +176,30 @@ bool View::need_update() const
     return _need_update;
 }
 
+void View::update_sample(bool instant)
+{
+    _session.get_device()->set_config(NULL, NULL, SR_CONF_INSTANT, g_variant_new_boolean(instant));
+    BOOST_FOREACH(const boost::shared_ptr<pv::view::Signal> s, _session.get_signals()) {
+        boost::shared_ptr<pv::view::DsoSignal> dsoSig;
+        if (dsoSig = dynamic_pointer_cast<pv::view::DsoSignal>(s)) {
+            dsoSig->go_hDialCur();
+            break;
+        }
+    }
+}
+
+void View::set_sample_rate(uint64_t sample_rate, bool force)
+{
+    if (_session.get_capture_state() != pv::SigSession::Stopped || force)
+        _sampling_bar->set_sample_rate(sample_rate);
+}
+
+void View::set_sample_limit(uint64_t sample_limit, bool force)
+{
+    if (_session.get_capture_state() != pv::SigSession::Stopped || force)
+        _sampling_bar->set_sample_limit(sample_limit);
+}
+
 void View::zoom(double steps, int offset)
 {
     //if (_session.get_capture_state() == SigSession::Stopped) {
@@ -183,24 +208,28 @@ void View::zoom(double steps, int offset)
 
         const double cursor_offset = _offset + _scale * offset;
         if (_session.get_device()->dev_inst()->mode != DSO) {
-            _scale *= pow(3.0/2.0, -steps);
+            _scale *= std::pow(3.0/2.0, -steps);
             _scale = max(min(_scale, _maxscale), _minscale);
         }else {
             const vector< shared_ptr<Signal> > sigs(_session.get_signals());
+            bool setted = false;
             BOOST_FOREACH(const shared_ptr<Signal> s, sigs) {
                 shared_ptr<DsoSignal> dsoSig;
                 if (dsoSig = dynamic_pointer_cast<DsoSignal>(s)) {
                     if(steps > 0.5)
-                        dsoSig->go_hDialPre();
+                        dsoSig->go_hDialPre(setted);
                     else if (steps < -0.5)
-                        dsoSig->go_hDialNext();
+                        dsoSig->go_hDialNext(setted);
+                    else
+                        break;
+                    setted = true;
                 }
             }
         }
         _offset = cursor_offset - _scale * offset;
-        const double MinOffset = -(_scale * (_viewport->width() * (1 - MaxViewRate)));
+        const double MinOffset = -(_scale * (get_view_width() * (1 - MaxViewRate)));
         const double MaxOffset = _session.get_device()->get_sample_time() -
-                _scale * (_viewport->width() * MaxViewRate);
+                _scale * (get_view_width() * MaxViewRate);
         _offset = max(min(_offset, MaxOffset), MinOffset);
 
         if (_scale != _preScale || _offset != _preOffset) {
@@ -221,9 +250,9 @@ void View::set_scale_offset(double scale, double offset)
 
         _scale = max(min(scale, _maxscale), _minscale);
 
-        const double MinOffset = -(_scale * (_viewport->width() * (1 - MaxViewRate)));
+        const double MinOffset = -(_scale * (get_view_width() * (1 - MaxViewRate)));
         const double MaxOffset = _session.get_device()->get_sample_time()
-                - _scale * (_viewport->width() * MaxViewRate);
+                - _scale * (get_view_width() * MaxViewRate);
         _offset = max(min(offset, MaxOffset), MinOffset);
 
         if (_scale != _preScale || _offset != _preOffset) {
@@ -316,7 +345,7 @@ void View::set_trig_pos(quint64 trig_pos)
     _trig_pos = trig_pos;
     _trig_cursor->set_time(time);
     _show_trig_cursor = true;
-    set_scale_offset(_scale,  time - _scale * _viewport->width() / 2);
+    set_scale_offset(_scale,  time - _scale * get_view_width() / 2);
     _ruler->update();
     _viewport->update();
 }
@@ -328,7 +357,7 @@ void View::set_search_pos(uint64_t search_pos)
     const double time = search_pos * 1.0f / _session.get_device()->get_sample_rate();
     _search_pos = search_pos;
     _search_cursor->set_time(time);
-    set_scale_offset(_scale,  time - _scale * _viewport->width() / 2);
+    set_scale_offset(_scale,  time - _scale * get_view_width() / 2);
     _ruler->update();
     _viewport->update();
 }
@@ -424,9 +453,9 @@ void View::update_scale()
 
     if (_session.get_device()->dev_inst()->mode != DSO) {
         _scale = (1.0f / sample_rate) / WellPixelsPerSample;
-        _maxscale = _session.get_device()->get_sample_time() / (get_max_width() * MaxViewRate);
+        _maxscale = _session.get_device()->get_sample_time() / (get_view_width() * MaxViewRate);
     } else {
-        _scale = _session.get_device()->get_time_base() * 10.0f / get_max_width() * pow(10, -9);
+        _scale = _session.get_device()->get_time_base() * 10.0f / get_view_width() * std::pow(10.0, -9.0);
         _maxscale = 1e9;
     }
 
@@ -550,9 +579,9 @@ void View::resizeEvent(QResizeEvent*)
     update_margins();
     update_scroll();
     if (_session.get_device()->dev_inst()->mode == DSO)
-        _scale = _session.get_device()->get_time_base() * pow(10, -9) * DS_CONF_DSO_HDIVS / get_max_width();
+        _scale = _session.get_device()->get_time_base() * std::pow(10.0, -9.0) * DS_CONF_DSO_HDIVS / get_view_width();
 
-    _maxscale = _session.get_device()->get_sample_time() / (get_max_width() * MaxViewRate);
+    _maxscale = _session.get_device()->get_sample_time() / (get_view_width() * MaxViewRate);
     _scale = min(_scale, _maxscale);
 
     signals_changed();
@@ -568,9 +597,9 @@ void View::h_scroll_value_changed(int value)
 
     _preOffset = _offset;
 
-    const double MinOffset = -(_scale * (_viewport->width() * (1 - MaxViewRate)));
+    const double MinOffset = -(_scale * (get_view_width() * (1 - MaxViewRate)));
     const double MaxOffset = _session.get_device()->get_sample_time()
-            - _scale * (_viewport->width() * MaxViewRate);
+            - _scale * (get_view_width() * MaxViewRate);
 
 	const int range = horizontalScrollBar()->maximum();
 	if (range < MaxScrollValue)
@@ -612,7 +641,7 @@ void View::data_updated()
 void View::update_margins()
 {
     _ruler->setGeometry(_viewport->x(), 0,
-        _viewport->width(), _viewport->y());
+        get_view_width(), _viewport->y());
     _header->setGeometry(0, _viewport->y(),
         _viewport->x(), _viewport->height());
     _devmode->setGeometry(0, 0,
@@ -691,7 +720,7 @@ void View::set_cursor_middle(int index)
     list<Cursor*>::iterator i = _cursorList.begin();
     while (index-- != 0)
             i++;
-    set_scale_offset(_scale, (*i)->time() - _scale * _viewport->width() / 2);
+    set_scale_offset(_scale, (*i)->time() - _scale * get_view_width() / 2);
 }
 
 void View::receive_data(quint64 length)
@@ -771,15 +800,19 @@ void View::on_state_changed(bool stop)
         _viewport->stop_trigger_timer();
 }
 
-int View::get_max_width()
+int View::get_view_width()
 {
-    int max_width = 0;
-    const vector< shared_ptr<Signal> > sigs(_session.get_signals());
-    BOOST_FOREACH(const shared_ptr<Signal> s, sigs) {
-        max_width = max((double)max_width, s->get_view_rect().width());
+    int view_width = 0;
+    if (_session.get_device()->dev_inst()->mode == DSO) {
+        const vector< shared_ptr<Signal> > sigs(_session.get_signals());
+        BOOST_FOREACH(const shared_ptr<Signal> s, sigs) {
+            view_width = max((double)view_width, s->get_view_rect().width());
+        }
+    } else {
+        view_width = _viewport->width();
     }
 
-    return max_width;
+    return view_width;
 }
 
 } // namespace view

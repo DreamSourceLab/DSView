@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -21,8 +21,8 @@
  */
 
 
-#ifndef DSLOGIC_PV_SIGSESSION_H
-#define DSLOGIC_PV_SIGSESSION_H
+#ifndef DSVIEW_PV_SIGSESSION_H
+#define DSVIEW_PV_SIGSESSION_H
 
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
@@ -42,8 +42,9 @@
 #include <QVector>
 #include <QMap>
 #include <QVariant>
+#include <QTimer>
 
-#include <libsigrok4DSLogic/libsigrok.h>
+#include <libsigrok4DSL/libsigrok.h>
 #include <libusb.h>
 
 struct srd_decoder;
@@ -85,7 +86,8 @@ class SigSession : public QObject
         Q_OBJECT
 
 private:
-    static const float Oversampling;
+    static const float Oversampling = 2.0f;
+    static const int ViewTime = 800;
 
 public:
 	enum capture_state {
@@ -112,7 +114,7 @@ public:
 
     void save_file(const std::string &name);
 
-    void set_default_device();
+    void set_default_device(boost::function<void (const QString)> error_handler);
 
     void release_device(device::DevInst *dev_inst);
 
@@ -157,14 +159,14 @@ public:
 
     void start_hotplug_proc(boost::function<void (const QString)> error_handler);
     void stop_hotplug_proc();
-    void register_hotplug_callback();
+	void register_hotplug_callback();
     void deregister_hotplug_callback();
 
     void set_adv_trigger(bool adv_trigger);
 
-    uint16_t get_dso_ch_num();
+    uint16_t get_ch_num(int type);
     
-    void set_sample_rate(uint64_t sample_rate);
+    bool get_instant();
 
 private:
 	void set_capture_state(capture_state state);
@@ -203,6 +205,7 @@ private:
 	static void data_feed_in_proc(const struct sr_dev_inst *sdi,
 		const struct sr_datafeed_packet *packet, void *cb_data);
 
+    // thread for hotplug
     void hotplug_proc(boost::function<void (const QString)> error_handler);
     static int hotplug_callback(struct libusb_context *ctx, struct libusb_device *dev,
                                 libusb_hotplug_event event, void *user_data);
@@ -239,12 +242,14 @@ private:
 
 	std::auto_ptr<boost::thread> _sampling_thread;
 
-    libusb_hotplug_callback_handle _hotplug_handle;
+	libusb_hotplug_callback_handle _hotplug_handle;
     std::auto_ptr<boost::thread> _hotplug;
     bool _hot_attach;
     bool _hot_detach;
 
     bool _adv_trigger;
+
+    QTimer _view_timer;
 
 signals:
 	void capture_state_changed(int state);
@@ -253,7 +258,7 @@ signals:
 
 	void data_updated();
 
-    void sample_rate_changed(uint64_t sample_rate);
+    void start_timer(int);
 
     void receive_data(quint64 length);
 
@@ -274,8 +279,13 @@ signals:
 
     void device_setted();
 
+    void malloc_error();
+
+    void zero_adj();
+
 public slots:
     void reload();
+    void refresh();
 
 private:
 	// TODO: This should not be necessary. Multiple concurrent
@@ -286,4 +296,4 @@ private:
 
 } // namespace pv
 
-#endif // DSLOGIC_PV_SIGSESSION_H
+#endif // DSVIEW_PV_SIGSESSION_H

@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2013 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2014 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -42,7 +42,7 @@ const QColor Trace::dsYellow = QColor(238, 178, 17, 255);
 const QColor Trace::dsRed = QColor(213, 15, 37, 255);
 const QColor Trace::dsGreen = QColor(0, 153, 37, 200);
 const QColor Trace::dsGray = QColor(0x88, 0x8A, 0x85, 60);
-const QColor Trace::dsFore = QColor(0xff, 0xff, 0xff, 255);
+const QColor Trace::dsFore = QColor(0xff, 0xff, 0xff, 100);
 const QColor Trace::dsBack = QColor(0x16, 0x18, 0x23, 255);
 const QColor Trace::dsDisable = QColor(0x88, 0x8A, 0x85, 200);
 const QColor Trace::dsActive = QColor(17, 133, 209, 255);

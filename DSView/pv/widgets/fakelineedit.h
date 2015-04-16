@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
  
-#ifndef DSLOGIC_PV_WIDGETS_FAKELINEEDIT_H
-#define DSLOGIC_PV_WIDGETS_FAKELINEEDIT_H
+#ifndef DSVIEW_PV_WIDGETS_FAKELINEEDIT_H
+#define DSVIEW_PV_WIDGETS_FAKELINEEDIT_H
 
 #include <QLineEdit>
 
@@ -50,4 +50,4 @@ public slots:
 } // namespace widgets
 } // namespace pv
 
-#endif // DSLOGIC_PV_WIDGETS_FAKELINEEDIT_H
+#endif // DSVIEW_PV_WIDGETS_FAKELINEEDIT_H

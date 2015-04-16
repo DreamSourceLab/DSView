@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -21,8 +21,8 @@
  */
 
 
-#ifndef DSLOGIC_PV_VIEW_VIEW_H
-#define DSLOGIC_PV_VIEW_VIEW_H
+#ifndef DSVIEW_PV_VIEW_VIEW_H
+#define DSVIEW_PV_VIEW_VIEW_H
 
 #include <stdint.h>
 
@@ -35,11 +35,16 @@
 #include <QAbstractScrollArea>
 #include <QSizeF>
 
+#include "../toolbars/samplingbar.h"
 #include "../data/signaldata.h"
 #include "cursor.h"
 #include "signal.h"
 
 namespace pv {
+
+namespace toolbars {
+    class SamplingBar;
+}
 
 class SigSession;
 
@@ -74,7 +79,7 @@ public:
     static const int MaxPixelsPerSample = 100.0f;
 
 public:
-	explicit View(SigSession &session, QWidget *parent = 0);
+    explicit View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget *parent = 0);
 
 	SigSession& session();
 
@@ -169,7 +174,13 @@ public:
 
     void on_state_changed(bool stop);
 
-    int get_max_width();
+    int get_view_width();
+
+    void update_sample(bool instant);
+
+    void set_sample_rate(uint64_t sample_rate, bool force = false);
+
+    void set_sample_limit(uint64_t sample_limit, bool force = false);
 
 signals:
 	void hover_point_changed();
@@ -227,6 +238,7 @@ private slots:
 private:
 
 	SigSession &_session;
+    pv::toolbars::SamplingBar *_sampling_bar;
 
 	Viewport *_viewport;
 	Ruler *_ruler;
@@ -268,4 +280,4 @@ private:
 } // namespace view
 } // namespace pv
 
-#endif // DSLOGIC_PV_VIEW_VIEW_H
+#endif // DSVIEW_PV_VIEW_VIEW_H

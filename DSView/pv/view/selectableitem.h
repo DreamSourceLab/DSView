@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2013 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2014 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#ifndef DSLOGIC_PV_SELECTABLEITEM_H
-#define DSLOGIC_PV_SELECTABLEITEM_H
+#ifndef DSVIEW_PV_SELECTABLEITEM_H
+#define DSVIEW_PV_SELECTABLEITEM_H
 
 #include <list>
 
@@ -66,4 +66,4 @@ private:
 } // namespace view
 } // namespace pv
 
-#endif // DSLOGIC_PV_SELECTABLEITEM_H
+#endif // DSVIEW_PV_SELECTABLEITEM_H

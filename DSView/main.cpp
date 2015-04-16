@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -26,7 +26,7 @@
 #endif
 
 #include <stdint.h>
-#include <libsigrok4DSLogic/libsigrok.h>
+#include <libsigrok4DSL/libsigrok.h>
 
 #include <getopt.h>
 
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
 
 	// Set some application metadata
     	QApplication::setApplicationVersion(DS_VERSION_STRING);
-    	QApplication::setApplicationName("DSLogic(Beta)");
+        QApplication::setApplicationName("DSView(Beta)");
     	QApplication::setOrganizationDomain("http://www.DreamSourceLab.com");
 
 	// Parse arguments

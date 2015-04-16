@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -27,18 +27,23 @@
 
 #include <boost/foreach.hpp>
 
-#include <libsigrok4DSLogic/libsigrok.h>
+#include <libsigrok4DSL/libsigrok.h>
 
 #include <QAction>
 #include <QDebug>
 #include <QLabel>
+#include <QMessageBox>
 
 #include "samplingbar.h"
 
 #include "../devicemanager.h"
 #include "../device/devinst.h"
 #include "../dialogs/deviceoptions.h"
+#include "../dialogs/waitingdialog.h"
+#include "../dialogs/streamoptions.h"
+#include "../view/dsosignal.h"
 
+using namespace boost;
 using boost::shared_ptr;
 using std::map;
 using std::max;
@@ -71,26 +76,6 @@ const uint64_t SamplingBar::RecordLengths[19] = {
 };
 
 const uint64_t SamplingBar::DefaultRecordLength = 1000000;
-
-const uint64_t SamplingBar::DSLogic_RecordLengths[15] = {
-    1024,
-    2048,
-    4096,
-    8192,
-    16384,
-    32768,
-    65536,
-    131072,
-    262144,
-    524288,
-    1048576,
-    2097152,
-    4194304,
-    8388608,
-    16777216,
-};
-
-const uint64_t SamplingBar::DSLogic_DefaultRecordLength = 16777216;
 
 SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
 	QToolBar("Sampling Bar", parent),
@@ -139,6 +124,8 @@ SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
 //	}
     _sample_count.setSizeAdjustPolicy(QComboBox::AdjustToContents);
 	set_sampling(false);
+    connect(&_sample_count, SIGNAL(currentIndexChanged(int)),
+        this, SLOT(on_samplecount_sel(int)));
 
     //_run_stop_button.setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     _run_stop_button.setObjectName(tr("run_stop_button"));
@@ -218,10 +205,51 @@ void SamplingBar::on_configure()
     shared_ptr<pv::device::DevInst> dev_inst = get_selected_device();
     assert(dev_inst);
 
-    pv::dialogs::DeviceOptions dlg(this, dev_inst->dev_inst());
+    pv::dialogs::DeviceOptions dlg(this, dev_inst);
     ret = dlg.exec();
     if (ret == QDialog::Accepted)
         device_updated();
+
+    GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_ZERO);
+    if (gvar != NULL) {
+        bool zero = g_variant_get_boolean(gvar);
+        g_variant_unref(gvar);
+        if (zero)
+            zero_adj();
+    }
+
+    gvar = dev_inst->get_config(NULL, NULL, SR_CONF_TEST);
+    if (gvar != NULL) {
+        bool test = g_variant_get_boolean(gvar);
+        g_variant_unref(gvar);
+        if (test) {
+            update_sample_count_selector_value();
+            update_sample_rate_selector_value();
+            #ifndef TEST_MODE
+            _sample_count.setDisabled(true);
+            _sample_rate.setDisabled(true);
+            #endif
+        } else if (dev_inst->dev_inst()->mode != DSO) {
+            _sample_count.setDisabled(false);
+            _sample_rate.setDisabled(false);
+        }
+    }
+}
+
+void SamplingBar::zero_adj()
+{
+    boost::shared_ptr<view::DsoSignal> dsoSig;
+    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals())
+    {
+        if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))
+            dsoSig->set_enable(true);
+    }
+    run_stop();
+
+    pv::dialogs::WaitingDialog wait(this, get_selected_device());
+    wait.start();
+
+    run_stop();
 }
 
 uint64_t SamplingBar::get_record_length() const
@@ -244,6 +272,16 @@ void SamplingBar::set_record_length(uint64_t length)
     }
 }
 
+void SamplingBar::update_record_length()
+{
+    update_sample_count_selector_value();
+}
+
+void SamplingBar::update_sample_rate()
+{
+    update_sample_rate_selector_value();
+}
+
 void SamplingBar::set_sampling(bool sampling)
 {
     if (_instant)
@@ -252,9 +290,31 @@ void SamplingBar::set_sampling(bool sampling)
         _run_stop_button.setIcon(sampling ? _icon_stop : _icon_start);
 
     if (!sampling) {
+        g_usleep(100000);
         _run_stop_button.setEnabled(true);
         _instant_button.setEnabled(true);
+    } else {
+//        bool running = false;
+//        boost::shared_ptr<pv::device::DevInst> dev_inst = get_selected_device();
+//        assert(dev_inst);
+//        while (!running) {
+//            GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_STATUS);
+//            if (gvar != NULL) {
+//                running = g_variant_get_boolean(gvar);
+//                g_variant_unref(gvar);
+//            }
+//            g_usleep(10000);
+//        }
+        g_usleep(100000);
+        if (_instant)
+            _instant_button.setEnabled(true);
+        else
+            _run_stop_button.setEnabled(true);
     }
+
+    _configure_button.setEnabled(!sampling);
+    _configure_button.setIcon(sampling ? QIcon(":/icons/params_dis.png") :
+                                  QIcon(":/icons/params.png"));
 }
 
 void SamplingBar::set_sample_rate(uint64_t sample_rate)
@@ -294,6 +354,8 @@ void SamplingBar::update_sample_rate_selector()
     if (_updating_sample_rate)
         return;
 
+    disconnect(&_sample_rate, SIGNAL(currentIndexChanged(int)),
+        this, SLOT(on_samplerate_sel(int)));
     const shared_ptr<device::DevInst> dev_inst = get_selected_device();
     if (!dev_inst)
         return;
@@ -328,8 +390,10 @@ void SamplingBar::update_sample_rate_selector()
 		g_variant_unref(gvar_list);
 	}
     _updating_sample_rate = false;
-
 	g_variant_unref(gvar_dict);
+
+    connect(&_sample_rate, SIGNAL(currentIndexChanged(int)),
+        this, SLOT(on_samplerate_sel(int)));
     update_sample_rate_selector_value();
 }
 
@@ -343,10 +407,14 @@ void SamplingBar::update_sample_rate_selector_value()
     assert(!_updating_sample_rate);
     _updating_sample_rate = true;
 
-    for (int i = 0; i < _sample_rate.count(); i++)
-        if (samplerate == _sample_rate.itemData(
-            i).value<uint64_t>())
+    //for (int i = 0; i < _sample_rate.count(); i++)
+    for (int i = _sample_rate.count() - 1; i >= 0; i--) {
+        if (samplerate >= _sample_rate.itemData(
+            i).value<uint64_t>()) {
             _sample_rate.setCurrentIndex(i);
+            break;
+        }
+    }
 
     _updating_sample_rate = false;
 }
@@ -373,21 +441,94 @@ void SamplingBar::commit_sample_rate()
     // Get last samplerate
     last_sample_rate = get_selected_device()->get_sample_rate();
 
-	// Set the samplerate
-    get_selected_device()->set_config(NULL, NULL,
-                                      SR_CONF_SAMPLERATE,
-                                      g_variant_new_uint64(sample_rate));
-
-    if (last_sample_rate != sample_rate)
+    if (last_sample_rate != sample_rate) {
+        // Set the samplerate
+        get_selected_device()->set_config(NULL, NULL,
+                                          SR_CONF_SAMPLERATE,
+                                          g_variant_new_uint64(sample_rate));
         update_scale();
+    }
 
     _updating_sample_rate = false;
+}
+
+void SamplingBar::on_samplecount_sel(int index)
+{
+    uint64_t sample_count = 0;
+    uint64_t max_sample_count = 0;
+    uint64_t last_sample_count = 0;
+    bool stream_mode = false;
+    bool buffer2stream = false;
+    bool stream2buffer = false;
+
+    if (index >= 0)
+        sample_count = _sample_count.itemData(
+            index).value<uint64_t>();
+
+    boost::shared_ptr<pv::device::DevInst> _devInst = get_selected_device();
+    assert(_devInst);
+
+    if (strcmp(_devInst->dev_inst()->driver->name, "DSLogic") == 0 && _devInst->dev_inst()->mode != DSO) {
+        GVariant* gvar = _devInst->get_config(NULL, NULL, SR_CONF_LIMIT_SAMPLES);
+        if (gvar != NULL) {
+            last_sample_count = g_variant_get_uint64(gvar);
+            g_variant_unref(gvar);
+        }
+        gvar = _devInst->get_config(NULL, NULL, SR_CONF_MAX_LOGIC_SAMPLELIMITS);
+        if (gvar != NULL) {
+            max_sample_count = g_variant_get_uint64(gvar);
+            g_variant_unref(gvar);
+        }
+        gvar = _devInst->get_config(NULL, NULL, SR_CONF_STREAM);
+        if (gvar != NULL) {
+            stream_mode = g_variant_get_boolean(gvar);
+            g_variant_unref(gvar);
+        }
+
+        if (((!stream_mode || (last_sample_count >= SR_GB(1))) && sample_count > max_sample_count) ||
+            (sample_count >= SR_GB(1) && _devInst->get_sample_rate() <= SR_MHZ(10))) {
+            stream_mode = sample_count > max_sample_count;
+            buffer2stream = true;
+        } else if (stream_mode && sample_count <= max_sample_count) {
+            stream_mode = sample_count > max_sample_count;
+            stream2buffer = true;
+        }
+
+        // Set the sample count
+        _devInst->set_config(NULL, NULL,
+                             SR_CONF_LIMIT_SAMPLES,
+                             g_variant_new_uint64(sample_count));
+
+
+
+        if (buffer2stream) {
+            pv::dialogs::StreamOptions stream(this, _devInst, sample_count, stream_mode);
+            stream.setFixedSize(300, 150);
+            stream.exec();
+            update_sample_rate_selector_value();
+            update_sample_count_selector_value();
+            _devInst->set_config(NULL, NULL,
+                                 SR_CONF_STREAM,
+                                 g_variant_new_boolean(true));
+        } else if (stream2buffer) {
+            QMessageBox msg(this);
+            pv::dialogs::StreamOptions stream(this, _devInst, sample_count, stream_mode);
+            stream.setFixedSize(300, 100);
+            stream.exec();
+            _devInst->set_config(NULL, NULL,
+                                 SR_CONF_STREAM,
+                                 g_variant_new_boolean(false));
+        }
+
+        device_updated();
+        update_scale();
+    }
 }
 
 void SamplingBar::on_samplerate_sel(int index)
 {
     uint64_t sample_rate = 0;
-    uint64_t last_sample_rate = 0;
+    //uint64_t last_sample_rate = 0;
 
     if (index >= 0)
         sample_rate = _sample_rate.itemData(
@@ -397,21 +538,16 @@ void SamplingBar::on_samplerate_sel(int index)
     assert(_sdi);
 
     // Get last samplerate
-    last_sample_rate = get_selected_device()->get_sample_rate();
+    //last_sample_rate = get_selected_device()->get_sample_rate();
 
     if (strcmp(_sdi->driver->name, "DSLogic") == 0 && _sdi->mode != DSO) {
-        if ((last_sample_rate == SR_MHZ(200)&& sample_rate != SR_MHZ(200)) ||
-            (last_sample_rate != SR_MHZ(200) && sample_rate == SR_MHZ(200)) ||
-            (last_sample_rate == SR_MHZ(400)&& sample_rate != SR_MHZ(400)) ||
-            (last_sample_rate != SR_MHZ(400) && sample_rate == SR_MHZ(400))) {
-
             // Set the samplerate
             get_selected_device()->set_config(NULL, NULL,
                                               SR_CONF_SAMPLERATE,
                                               g_variant_new_uint64(sample_rate));
+            update_sample_count_selector_value();
             device_updated();
             update_scale();
-        }
     }
 }
 
@@ -423,6 +559,9 @@ void SamplingBar::update_sample_count_selector()
 
     if (_updating_sample_count)
         return;
+
+    disconnect(&_sample_count, SIGNAL(currentIndexChanged(int)),
+        this, SLOT(on_samplecount_sel(int)));
 
     const shared_ptr<device::DevInst> dev_inst = get_selected_device();
     if (!dev_inst)
@@ -459,8 +598,10 @@ void SamplingBar::update_sample_count_selector()
     }
 
     _updating_sample_count = false;
-
     g_variant_unref(gvar_dict);
+
+    connect(&_sample_count, SIGNAL(currentIndexChanged(int)),
+        this, SLOT(on_samplecount_sel(int)));
     update_sample_count_selector_value();
 }
 
@@ -505,30 +646,73 @@ void SamplingBar::commit_sample_count()
     // Get last samplecount
     last_sample_count = get_selected_device()->get_sample_limit();
 
-    // Set the samplecount
-    get_selected_device()->set_config(NULL, NULL,
-                                      SR_CONF_LIMIT_SAMPLES,
-                                      g_variant_new_uint64(sample_count));
+    if (last_sample_count != sample_count) {
+        // Set the samplecount
+        get_selected_device()->set_config(NULL, NULL,
+                                          SR_CONF_LIMIT_SAMPLES,
+                                          g_variant_new_uint64(sample_count));
+        update_scale();
+    }
 
     _updating_sample_count = false;
-
-    if (sample_count != last_sample_count)
-        update_scale();
 }
 
 void SamplingBar::on_run_stop()
 {
+    enable_run_stop(false);
+    enable_instant(false);
 	commit_sample_rate();
     commit_sample_count();
     _instant = false;
-	run_stop();
+    const shared_ptr<device::DevInst> dev_inst = get_selected_device();
+    if (!dev_inst)
+        return;
+    GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_ZERO);
+    if (gvar != NULL) {
+        bool zero = g_variant_get_boolean(gvar);
+        g_variant_unref(gvar);
+        if (zero) {
+            QMessageBox msg(this);
+            msg.setText("Zero Adjustment");
+            msg.setInformativeText("Please adjust zero skew and save the result!");
+            msg.setStandardButtons(QMessageBox::Ok);
+            msg.setIcon(QMessageBox::Warning);
+            msg.exec();
+            zero_adj();
+            return;
+        }
+    }
+    run_stop();
 }
 
 void SamplingBar::on_instant_stop()
 {
+    enable_run_stop(false);
+    enable_instant(false);
     commit_sample_rate();
     commit_sample_count();
     _instant = true;
+    const shared_ptr<device::DevInst> dev_inst = get_selected_device();
+    if (!dev_inst)
+        return;
+    GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_ZERO);
+    if (gvar != NULL) {
+        bool zero = g_variant_get_boolean(gvar);
+        g_variant_unref(gvar);
+        if (zero) {
+            QMessageBox msg(this);
+            msg.setText("Zero Adjustment");
+            if(strcmp(dev_inst->dev_inst()->driver->name, "DSLogic") == 0)
+                msg.setInformativeText("Please adjust zero skew and save the result!\nPlease left both of channels unconnect for zero adjustment!");
+            else
+                msg.setInformativeText("Please adjust zero skew and save the result!");
+            msg.setStandardButtons(QMessageBox::Ok);
+            msg.setIcon(QMessageBox::Warning);
+            msg.exec();
+            zero_adj();
+            return;
+        }
+    }
     instant_stop();
 }
 
@@ -541,15 +725,29 @@ void SamplingBar::on_device_selected()
     if (!dev_inst)
         return;
 
-    _session.set_device(dev_inst);
-
+    try {
+        _session.set_device(dev_inst);
+    } catch(QString e) {
+        show_session_error(tr("Failed to Select ") + dev_inst->dev_inst()->model, e);
+    }
     device_selected();
 }
 
 void SamplingBar::enable_toggle(bool enable)
 {
-    _sample_count.setDisabled(!enable);
-    _sample_rate.setDisabled(!enable);
+    bool test = false;
+    const shared_ptr<device::DevInst> dev_inst = get_selected_device();
+    if (dev_inst && dev_inst->owner()) {
+        GVariant *gvar = dev_inst->get_config(NULL, NULL, SR_CONF_TEST);
+        if (gvar != NULL) {
+            test = g_variant_get_boolean(gvar);
+            g_variant_unref(gvar);
+        }
+    }
+    if (!test) {
+        _sample_count.setDisabled(!enable);
+        _sample_rate.setDisabled(!enable);
+    }
 }
 
 void SamplingBar::enable_run_stop(bool enable)
@@ -560,6 +758,17 @@ void SamplingBar::enable_run_stop(bool enable)
 void SamplingBar::enable_instant(bool enable)
 {
     _instant_button.setDisabled(!enable);
+}
+
+void SamplingBar::show_session_error(
+    const QString text, const QString info_text)
+{
+    QMessageBox msg(this);
+    msg.setText(text);
+    msg.setInformativeText(info_text);
+    msg.setStandardButtons(QMessageBox::Ok);
+    msg.setIcon(QMessageBox::Warning);
+    msg.exec();
 }
 
 } // namespace toolbars

@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -21,8 +21,8 @@
  */
 
 
-#ifndef DSLOGIC_PV_VIEW_RULER_H
-#define DSLOGIC_PV_VIEW_RULER_H
+#ifndef DSVIEW_PV_VIEW_RULER_H
+#define DSVIEW_PV_VIEW_RULER_H
 
 #include <QWidget>
 
@@ -115,4 +115,4 @@ private:
 } // namespace view
 } // namespace pv
 
-#endif // DSLOGIC_PV_VIEW_RULER_H
+#endif // DSVIEW_PV_VIEW_RULER_H

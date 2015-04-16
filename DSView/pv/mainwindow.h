@@ -1,6 +1,6 @@
 /*
- * This file is part of the DSLogic-gui project.
- * DSLogic-gui is based on PulseView.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
@@ -21,12 +21,13 @@
  */
 
 
-#ifndef DSLOGIC_PV_MAINWINDOW_H
-#define DSLOGIC_PV_MAINWINDOW_H
+#ifndef DSVIEW_PV_MAINWINDOW_H
+#define DSVIEW_PV_MAINWINDOW_H
 
 #include <list>
 
 #include <QMainWindow>
+#include <QTimer>
 
 #include "sigsession.h"
 
@@ -98,6 +99,8 @@ private slots:
 
     void test_data_error();
 
+    void malloc_error();
+
     void capture_state_changed(int state);
 
     void on_protocol(bool visible);
@@ -159,8 +162,11 @@ private:
     QDockWidget *_measure_dock;
     QDockWidget *_search_dock;
     dock::SearchDock * _search_widget;
+
+    QTimer test_timer;
+    bool test_timer_linked;
 };
 
 } // namespace pv
 
-#endif // DSLOGIC_PV_MAINWINDOW_H
+#endif // DSVIEW_PV_MAINWINDOW_H

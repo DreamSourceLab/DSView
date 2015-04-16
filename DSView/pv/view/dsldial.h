@@ -1,5 +1,5 @@
-#ifndef DSLOGIC_PV_VIEW_DSLDIAL_H
-#define DSLOGIC_PV_VIEW_DSLDIAL_H
+#ifndef DSVIEW_PV_VIEW_DSLDIAL_H
+#define DSVIEW_PV_VIEW_DSLDIAL_H
 
 #include <QRect>
 #include <QPainter>
@@ -45,4 +45,4 @@ private:
 } // namespace view
 } // namespace pv
 
-#endif // DSLOGIC_PV_VIEW_DSLDIAL_H
+#endif // DSVIEW_PV_VIEW_DSLDIAL_H

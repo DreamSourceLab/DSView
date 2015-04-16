@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#ifndef DSLOGIC_PV_DATA_DECODE_DECODER_H
-#define DSLOGIC_PV_DATA_DECODE_DECODER_H
+#ifndef DSVIEW_PV_DATA_DECODE_DECODER_H
+#define DSVIEW_PV_DATA_DECODE_DECODER_H
 
 #include <map>
 #include <set>
@@ -56,7 +56,6 @@ public:
 
 	bool shown() const;
 	void show(bool show = true);
-    void commit_show();
 
 	const std::map<const srd_channel*,
 		boost::shared_ptr<view::LogicSignal> >& channels() const;
@@ -80,10 +79,8 @@ private:
 	const srd_decoder *const _decoder;
 
 	bool _shown;
-    bool _shown_back;
-    bool _shown_setted;
 
-	std::map<const srd_channel*, boost::shared_ptr<pv::view::LogicSignal> >
+    std::map<const srd_channel*, boost::shared_ptr<pv::view::LogicSignal> >
 		_probes;
 	std::map<std::string, GVariant*> _options;
 
@@ -98,4 +95,4 @@ private:
 } // namespace data
 } // namespace pv
 
-#endif // DSLOGIC_PV_DATA_DECODE_DECODER_H
+#endif // DSVIEW_PV_DATA_DECODE_DECODER_H

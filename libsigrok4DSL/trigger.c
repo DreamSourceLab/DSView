@@ -173,6 +173,16 @@ SR_API int ds_trigger_set_pos(uint16_t position)
 }
 
 /**
+ * get trigger position
+ *
+ * @return uint16_t trigger_pos.
+ */
+SR_API uint16_t ds_trigger_get_pos()
+{
+    return trigger->trigger_pos;
+}
+
+/**
  * set trigger en
  *
  * @return SR_OK upon success.
