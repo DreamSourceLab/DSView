@@ -47,8 +47,7 @@ FileBar::FileBar(SigSession &session, QWidget *parent) :
     setMovable(false);
 
     _action_open = new QAction(this);
-    _action_open->setText(QApplication::translate(
-        "File", "&Open...", 0, QApplication::UnicodeUTF8));
+    _action_open->setText(QApplication::translate("File", "&Open...", 0));
     _action_open->setIcon(QIcon::fromTheme("file",
         QIcon(":/icons/open.png")));
     _action_open->setObjectName(QString::fromUtf8("actionOpen"));
@@ -56,8 +55,7 @@ FileBar::FileBar(SigSession &session, QWidget *parent) :
     connect(_action_open, SIGNAL(triggered()), this, SLOT(on_actionOpen_triggered()));
 
     _action_save = new QAction(this);
-    _action_save->setText(QApplication::translate(
-        "File", "&Save...", 0, QApplication::UnicodeUTF8));
+    _action_save->setText(QApplication::translate("File", "&Save...", 0));
     _action_save->setIcon(QIcon::fromTheme("file",
         QIcon(":/icons/save.png")));
     _action_save->setObjectName(QString::fromUtf8("actionSave"));
@@ -65,8 +63,7 @@ FileBar::FileBar(SigSession &session, QWidget *parent) :
     connect(_action_save, SIGNAL(triggered()), this, SLOT(on_actionSave_triggered()));
 
     _action_capture = new QAction(this);
-    _action_capture->setText(QApplication::translate(
-        "File", "&Capture...", 0, QApplication::UnicodeUTF8));
+    _action_capture->setText(QApplication::translate("File", "&Capture...", 0));
     _action_capture->setIcon(QIcon::fromTheme("file",
         QIcon(":/icons/capture.png")));
     _action_capture->setObjectName(QString::fromUtf8("actionCapture"));

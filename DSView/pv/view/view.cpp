@@ -27,7 +27,7 @@
 
 #include <boost/foreach.hpp>
 
-#include <QtGui/QApplication>
+#include <QApplication>
 #include <QEvent>
 #include <QMouseEvent>
 #include <QScrollBar>

@@ -46,8 +46,7 @@ LogoBar::LogoBar(SigSession &session, QWidget *parent) :
     setMovable(false);
 
     _about = new QAction(this);
-    _about->setText(QApplication::translate(
-        "File", "&About...", 0, QApplication::UnicodeUTF8));
+    _about->setText(QApplication::translate("File", "&About...", 0));
     _about->setIcon(QIcon::fromTheme("file",
         QIcon(":/icons/about.png")));
     _about->setObjectName(QString::fromUtf8("actionAbout"));
@@ -55,8 +54,7 @@ LogoBar::LogoBar(SigSession &session, QWidget *parent) :
     connect(_about, SIGNAL(triggered()), this, SLOT(on_actionAbout_triggered()));
 
     _wiki = new QAction(this);
-    _wiki->setText(QApplication::translate(
-        "File", "&Wiki", 0, QApplication::UnicodeUTF8));
+    _wiki->setText(QApplication::translate("File", "&Wiki", 0));
     _wiki->setIcon(QIcon::fromTheme("file",
         QIcon(":/icons/wiki.png")));
     _wiki->setObjectName(QString::fromUtf8("actionWiki"));
