@@ -31,14 +31,15 @@ Makefile.in
 configure
 aclocal.m4
 
-DSLogic-gui/ui_*.h
-DSLogic-gui/DSLogic
-DSLogic-gui/install_manifest.txt
+DSView/ui_*.h
+DSView/DSView
+DSView/install_manifest.txt
+DSView/qrc_DSView.cpp
 
-moc_*.cxx
-moc_*.cxx_parameters
+moc_*.cpp
+moc_*.cpp_parameters
 
-libsigrok4DSLogic/version.h
+libsigrok4DSL/version.h
 
 libusbx-1.0.18/doc/doxygen.cfg
 libusbx-1.0.18/m4/
