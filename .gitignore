@@ -34,10 +34,10 @@ aclocal.m4
 DSView/ui_*.h
 DSView/DSView
 DSView/install_manifest.txt
+DSView/qrc_DSView.cpp
 
-moc_*.cxx
-moc_*.cxx_parameters
-qrc_*.cxx
+moc_*.cpp
+moc_*.cpp_parameters
 
 libsigrok4DSL/version.h
 
