@@ -132,7 +132,7 @@ SR_API struct sr_input_format **sr_input_list(void);
 
 /*--- output/output.c -------------------------------------------------------*/
 
-SR_API struct sr_output_format **sr_output_list(void);
+SR_API const struct sr_output_module **sr_output_list(void);
 
 /*--- strutil.c -------------------------------------------------------------*/
 

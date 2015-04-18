@@ -109,7 +109,7 @@ const int DsoSignal::DownMargin = 30;
 const int DsoSignal::RightMargin = 30;
 
 DsoSignal::DsoSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
-                     shared_ptr<data::Dso> data,
+                     boost::shared_ptr<data::Dso> data,
                      const sr_channel * const probe):
     Signal(dev_inst, probe, DS_DSO),
     _data(data),
@@ -173,7 +173,7 @@ DsoSignal::~DsoSignal()
 {
 }
 
-shared_ptr<pv::data::SignalData> DsoSignal::data() const
+boost::shared_ptr<pv::data::SignalData> DsoSignal::data() const
 {
     return _data;
 }
@@ -582,7 +582,7 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right)
             return;
 
         _scale = height * 1.0f / 256;
-        const shared_ptr<pv::data::DsoSnapshot> &snapshot =
+        const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
             snapshots.front();
 
         const uint16_t number_channels = snapshot->get_channel_num();
@@ -846,8 +846,8 @@ void DsoSignal::paint_measure(QPainter &p)
             const double upPeriod = get_hDialValue() * DS_CONF_DSO_HDIVS * 0.8;
             const double dnPeriod = get_hDialValue() * DS_CONF_DSO_HDIVS * 0.2;
             if (_period > upPeriod) {
-                shared_ptr<view::DsoSignal> dsoSig;
-                BOOST_FOREACH(const shared_ptr<Trace> t, traces) {
+                boost::shared_ptr<view::DsoSignal> dsoSig;
+                BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces) {
                     if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(t)) {
                         dsoSig->go_hDialNext(setted);
                         setted = true;
@@ -856,8 +856,8 @@ void DsoSignal::paint_measure(QPainter &p)
             } else if (_period > dnPeriod) {
                 _autoH = false;
             } else {
-                shared_ptr<view::DsoSignal> dsoSig;
-                BOOST_FOREACH(const shared_ptr<Trace> t, traces) {
+                boost::shared_ptr<view::DsoSignal> dsoSig;
+                BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces) {
                     if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(t)) {
                         dsoSig->go_hDialPre(setted);
                         setted = true;

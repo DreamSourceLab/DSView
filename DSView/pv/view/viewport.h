@@ -47,6 +47,7 @@ class Viewport : public QWidget
 
 public:
     static const int HitCursorMargin = 10;
+    static constexpr double HitCursorTimeMargin;
 
 public:
 	explicit Viewport(View &parent);

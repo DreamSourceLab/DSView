@@ -37,7 +37,7 @@ using namespace std;
 namespace pv {
 namespace dialogs {
 
-DeviceOptions::DeviceOptions(QWidget *parent, shared_ptr<pv::device::DevInst> dev_inst) :
+DeviceOptions::DeviceOptions(QWidget *parent, boost::shared_ptr<pv::device::DevInst> dev_inst) :
 	QDialog(parent),
     _dev_inst(dev_inst),
 	_layout(this),
