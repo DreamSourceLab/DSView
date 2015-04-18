@@ -54,6 +54,9 @@
 
 #include <QDebug>
 #include <QMessageBox>
+#include <QProgressDialog>
+#include <QFile>
+#include <QtConcurrent/QtConcurrent>
 
 #include <boost/foreach.hpp>
 
@@ -177,6 +180,104 @@ void SigSession::save_file(const std::string &name){
                     (unsigned char*)snapshot->get_data(),
                     snapshot->unit_size(),
                     snapshot->get_sample_count());
+}
+
+QList<QString> SigSession::getSuportedExportFormats(){
+    // TODO: uncomment this
+    //const struct sr_output_module** supportedModules = sr_output_list();
+    QList<QString> list;
+    /*while(*supportedModules){
+        if(*supportedModules == NULL)
+            break;
+        QString format((*supportedModules)->desc);
+        format.append(" (*.");
+        format.append((*supportedModules)->id);
+        format.append(")");
+        list.append(format);
+        *supportedModules++;
+    }*/
+    return list;
+}
+
+void SigSession::cancelSaveFile(){
+    saveFileThreadRunning = false;
+}
+
+void SigSession::export_file(const std::string &name, QWidget* parent, const std::string &ext){
+    /*const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
+            _logic_data->get_snapshots();
+    if(snapshots.empty())
+        return;
+    const boost::shared_ptr<pv::data::LogicSnapshot> & snapshot =
+            snapshots.front();
+    const struct sr_output_module** supportedModules = sr_output_list();
+    const struct sr_output_module* outModule = NULL;
+    while(*supportedModules){
+        if(*supportedModules == NULL)
+            break;
+        if(!strcmp((*supportedModules)->id, ext.c_str())){
+            outModule = *supportedModules;
+            break;
+        }
+        *supportedModules++;
+    }
+    if(outModule == NULL)
+        return;
+    struct sr_output output;
+    GHashTable *params = g_hash_table_new(g_str_hash, g_str_equal);
+    GVariant* filenameGVariant = g_variant_new_string(name.c_str());
+    g_hash_table_insert(params, (char*)"filename", filenameGVariant);
+    output.module = (sr_output_module*) outModule;
+    output.sdi = _dev_inst->dev_inst();
+    output.param = NULL;
+    if(outModule->init)
+        outModule->init(&output, params);
+    QFile file(name.c_str());
+    file.open(QIODevice::WriteOnly | QIODevice::Text);
+    QTextStream out(&file);
+    QFuture<void> future = QtConcurrent::run([&]{
+        saveFileThreadRunning = true;
+        unsigned char* datat = (unsigned char*)snapshot->get_data();
+        int numsamples = snapshot->get_sample_count()*snapshot->unit_size();
+        GString *data_out;
+        int usize = 1024;
+        int size = usize;
+        struct sr_datafeed_logic lp;
+        struct sr_datafeed_packet p;
+        for(uint64_t i = 0; i < numsamples; i+=usize){
+            if(numsamples - i < usize)
+                size = numsamples - i;
+            lp.data = &datat[i];
+            lp.length = size;
+            lp.unitsize = snapshot->unit_size();
+            p.type = SR_DF_LOGIC;
+            p.payload = &lp;
+            outModule->receive(&output, &p, &data_out);
+            if(data_out){
+                out << (char*) data_out->str;
+                g_string_free(data_out,TRUE);
+            }
+            emit  progressValueChanged(i*100/numsamples);
+            if(!saveFileThreadRunning)
+                break;
+        }
+    });
+    QFutureWatcher<void> watcher;
+    Qt::WindowFlags flags = Qt::CustomizeWindowHint;
+    QProgressDialog dlg(QString::fromUtf8("Exporting data... It can take a while."),
+                        QString::fromUtf8("Cancel"),0,100,parent,flags);
+    dlg.setWindowModality(Qt::WindowModal);
+    watcher.setFuture(future);
+    connect(&watcher,SIGNAL(finished()),&dlg,SLOT(cancel()));
+    connect(this,SIGNAL(progressValueChanged(int)),&dlg,SLOT(setValue(int)));
+    connect(&dlg,SIGNAL(canceled()),this,SLOT(cancelSaveFile()));
+    dlg.exec();
+    future.waitForFinished();
+    // optional, as QFile destructor will already do it:
+    file.close();
+    outModule->cleanup(&output);
+    g_hash_table_destroy(params);
+    g_variant_unref(filenameGVariant);*/
 }
 
 void SigSession::set_default_device(boost::function<void (const QString)> error_handler)
