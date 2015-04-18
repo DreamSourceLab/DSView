@@ -261,7 +261,7 @@ static int sanity_check_all_input_modules(void)
 static int sanity_check_all_output_modules(void)
 {
 	int i, errors, ret = SR_OK;
-	struct sr_output_format **outputs;
+	struct sr_output_module **outputs;
 	const char *d;
 
 	sr_spew("Sanity-checking all output modules.");
@@ -276,18 +276,18 @@ static int sanity_check_all_output_modules(void)
 			sr_err("No ID in module %d ('%s').", i, d);
 			errors++;
 		}
-		if (!outputs[i]->description) {
+		if (!outputs[i]->desc) {
 			sr_err("No description in module %d ('%s').", i, d);
 			errors++;
 		}
-		if (outputs[i]->df_type < 10000 || outputs[i]->df_type > 10007) {
+		/*if (outputs[i]->df_type < 10000 || outputs[i]->df_type > 10007) {
 			sr_err("Invalid df_type %d in module %d ('%s').",
 			       outputs[i]->df_type, i, d);
 			errors++;
-		}
+		}*/
 
 		/* All modules must provide a data or recv API callback. */
-		if (!outputs[i]->data && !outputs[i]->receive) {
+		if (!outputs[i]->receive) {
 			sr_err("No data/receive in module %d ('%s').", i, d);
 			errors++;
 		}

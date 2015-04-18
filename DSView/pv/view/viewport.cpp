@@ -77,8 +77,8 @@ int Viewport::get_total_height() const
 {
 	int h = 0;
 
-    const vector< shared_ptr<Trace> > traces(_view.get_traces());
-    BOOST_FOREACH(const shared_ptr<Trace> t, traces) {
+    const vector< boost::shared_ptr<Trace> > traces(_view.get_traces());
+    BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces) {
         assert(t);
         h += (int)(t->get_signalHeight());
     }
@@ -103,8 +103,8 @@ void Viewport::paintEvent(QPaintEvent *event)
     QPainter p(this);
     style()->drawPrimitive(QStyle::PE_Widget, &o, &p, this);
 
-    const vector< shared_ptr<Trace> > traces(_view.get_traces());
-    BOOST_FOREACH(const shared_ptr<Trace> t, traces)
+    const vector< boost::shared_ptr<Trace> > traces(_view.get_traces());
+    BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
     {
         assert(t);
         t->paint_back(p, 0, _view.get_view_width());
@@ -130,7 +130,7 @@ void Viewport::paintEvent(QPaintEvent *event)
         paintSignals(p);
     }
 
-    BOOST_FOREACH(const shared_ptr<Trace> t, traces)
+    BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
     {
         assert(t);
         if (t->enabled())
@@ -146,7 +146,7 @@ void Viewport::paintEvent(QPaintEvent *event)
 
 void Viewport::paintSignals(QPainter &p)
 {
-    const vector< shared_ptr<Trace> > traces(_view.get_traces());
+    const vector< boost::shared_ptr<Trace> > traces(_view.get_traces());
     if (_view.scale() != _curScale ||
         _view.offset() != _curOffset ||
         _view.get_signalHeight() != _curSignalHeight ||
@@ -160,7 +160,7 @@ void Viewport::paintSignals(QPainter &p)
         QPainter dbp(&pixmap);
         dbp.initFrom(this);
         p.setRenderHint(QPainter::Antialiasing, false);
-        BOOST_FOREACH(const shared_ptr<Trace> t, traces)
+        BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
         {
             assert(t);
             if (t->enabled())
@@ -359,10 +359,10 @@ void Viewport::mousePressEvent(QMouseEvent *event)
 //            _zoom_rect_visible = true;
 //        }
 
-        const vector< shared_ptr<Signal> > sigs(_view.session().get_signals());
-        BOOST_FOREACH(const shared_ptr<Signal> s, sigs) {
+        const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
+        BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
             assert(s);
-            shared_ptr<DsoSignal> dsoSig;
+            boost::shared_ptr<DsoSignal> dsoSig;
             if ((dsoSig = dynamic_pointer_cast<DsoSignal>(s)) &&
                  dsoSig->get_trig_rect(0, _view.get_view_width()).contains(_mouse_point)) {
                 _drag_sig = s;
@@ -385,7 +385,7 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
 
     if (event->buttons() & Qt::LeftButton) {
         if (_drag_sig) {
-            shared_ptr<view::DsoSignal> dsoSig;
+            boost::shared_ptr<view::DsoSignal> dsoSig;
             if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(_drag_sig))
                 dsoSig->set_trig_vpos(_mouse_point.y());
         } else {

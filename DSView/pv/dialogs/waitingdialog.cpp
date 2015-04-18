@@ -39,7 +39,7 @@ namespace dialogs {
 
 const QString WaitingDialog::TIPS_INFO = "Waiting";
 
-WaitingDialog::WaitingDialog(QWidget *parent, shared_ptr<pv::device::DevInst> dev_inst) :
+WaitingDialog::WaitingDialog(QWidget *parent, boost::shared_ptr<pv::device::DevInst> dev_inst) :
 	QDialog(parent),
     _dev_inst(dev_inst),
     _button_box(QDialogButtonBox::Save | QDialogButtonBox::Abort,
