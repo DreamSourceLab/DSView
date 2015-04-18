@@ -237,7 +237,7 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
     QFuture<void> future = QtConcurrent::run([&]{
         saveFileThreadRunning = true;
         unsigned char* datat = (unsigned char*)snapshot->get_data();
-        int numsamples = snapshot->get_sample_count()*snapshot->unit_size();
+        unsigned int numsamples = snapshot->get_sample_count()*snapshot->unit_size();
         GString *data_out;
         int usize = 8192;
         int size = usize;
