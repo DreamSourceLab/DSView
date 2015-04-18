@@ -503,7 +503,7 @@ void Viewport::measure()
    const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
    BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
        assert(s);
-       shared_ptr<view::LogicSignal> logicSig;
+       boost::shared_ptr<view::LogicSignal> logicSig;
        if (logicSig = dynamic_pointer_cast<view::LogicSignal>(s)) {
            if (logicSig->measure(_view.hover_point(), _cur_sample, _nxt_sample, _thd_sample)) {
                _measure_shown = true;
