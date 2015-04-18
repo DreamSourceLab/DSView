@@ -76,6 +76,8 @@ public:
 
     const std::vector< std::pair<uint64_t, bool> > cur_edges() const;
 
+    bool measure(const QPointF &p, uint64_t &index0, uint64_t &index1, uint64_t &index2) const;
+
 protected:
     void paint_type_options(QPainter &p, int right, bool hover, int action);
 

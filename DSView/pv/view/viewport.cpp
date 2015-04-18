@@ -27,6 +27,7 @@
 
 #include "signal.h"
 #include "dsosignal.h"
+#include "logicsignal.h"
 #include "../device/devinst.h"
 #include "../data/logic.h"
 #include "../data/logicsnapshot.h"
@@ -63,6 +64,7 @@ Viewport::Viewport(View &parent) :
     _mm_width = "#####";
     _mm_period = "#####";
     _mm_freq = "#####";
+    _mm_duty = "#####";
     _measure_en = true;
     triggered = false;
     timer_cnt = 0;
@@ -110,7 +112,7 @@ void Viewport::paintEvent(QPaintEvent *event)
         t->paint_back(p, 0, _view.get_view_width());
     }
 
-    p.setRenderHint(QPainter::Antialiasing);
+    p.setRenderHint(QPainter::Antialiasing, false);
     if (_view.session().get_device()->dev_inst()->mode == LOGIC ||
         _view.session().get_instant()) {
         switch(_view.session().get_capture_state()) {
@@ -137,7 +139,7 @@ void Viewport::paintEvent(QPaintEvent *event)
             t->paint_fore(p, 0, _view.get_view_width());
     }
 
-    p.setRenderHint(QPainter::Antialiasing, false);
+    //p.setRenderHint(QPainter::Antialiasing, false);
     if (_view.get_signalHeight() != _curSignalHeight)
             _curSignalHeight = _view.get_signalHeight();
 
@@ -159,7 +161,7 @@ void Viewport::paintSignals(QPainter &p)
         pixmap.fill(Qt::transparent);
         QPainter dbp(&pixmap);
         dbp.initFrom(this);
-        p.setRenderHint(QPainter::Antialiasing, false);
+        //p.setRenderHint(QPainter::Antialiasing, false);
         BOOST_FOREACH(const shared_ptr<Trace> t, traces)
         {
             assert(t);
@@ -404,12 +406,10 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
             const double cur_time = _view.offset() + _view.hover_point().x() * _view.scale();
             const double pos = cur_time * sample_rate;
             const double pos_delta = pos - (int)pos;
-            if ( pos_delta < HitCursorTimeMargin)
-                grabbed_marker->set_time(1.0 / sample_rate * floor(pos));
-            else if (pos_delta > (1.0 - HitCursorTimeMargin))
-                grabbed_marker->set_time(1.0 / sample_rate * ceil(pos));
+            if ( pos_delta < 0.5)
+                grabbed_marker->set_index(floor(pos));
             else
-                grabbed_marker->set_time(cur_time);
+                grabbed_marker->set_index(ceil(pos));
         }
         measure();
     }
@@ -499,99 +499,42 @@ void Viewport::set_receive_len(quint64 length)
 
 void Viewport::measure()
 {
-    uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
+   const uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
+   const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
+   BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+       assert(s);
+       shared_ptr<view::LogicSignal> logicSig;
+       if (logicSig = dynamic_pointer_cast<view::LogicSignal>(s)) {
+           if (logicSig->measure(_view.hover_point(), _cur_sample, _nxt_sample, _thd_sample)) {
+               _measure_shown = true;
 
-    const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
-    BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
-        assert(s);
-        const int curY = _view.hover_point().y();
-        const double curX = _view.hover_point().x();
-        if (curY <= View::SignalMargin || s->get_type() != Trace::DS_LOGIC) {
-            _measure_shown = false;
-            break;
-        } else if ( curY < s->get_y() + _view.get_signalHeight() * 0.5 &&
-                    curY > (s->get_y() - _view.get_signalHeight() * 0.5)) {
-            if (s->cur_edges().size() > 2) {
-                const double pixels_offset = _view.offset() / _view.scale();
-                const double samples_per_pixel = sample_rate * _view.scale();
+               _mm_width = _view.get_ruler()->format_real_time(_nxt_sample - _cur_sample, sample_rate);
+               _mm_period = _thd_sample != 0 ? _view.get_ruler()->format_real_time(_thd_sample - _cur_sample, sample_rate) : "#####";
+               _mm_freq = _thd_sample != 0 ? _view.get_ruler()->format_real_freq(_thd_sample - _cur_sample, sample_rate) : "#####";
 
-                uint64_t findIndex = curX / _view.get_view_width() * s->cur_edges().size();
-                uint64_t left_findIndex = 0;
-                uint64_t right_findIndex = s->cur_edges().size() - 1;
-                int times = 0;
-                while(!s->cur_edges().empty() && times < 20) {
-                    findIndex = min(findIndex, (uint64_t)(s->cur_edges().size() - 2));
-                    const double pre_edge_x =
-                            s->cur_edges().at(findIndex).first / samples_per_pixel - pixels_offset;
-                    const double aft_edge_x =
-                            s->cur_edges().at(findIndex + 1).first / samples_per_pixel - pixels_offset;
-                    if ( curX >= pre_edge_x && curX <= aft_edge_x) {
-                        if (aft_edge_x - pre_edge_x < 2 ||
-                                findIndex == 0 ||
-                                findIndex == s->cur_edges().size() - 2) {
-                            _measure_shown = false;
-                            break;
-                        } else {
-                            _measure_shown = true;
-                            _cur_sample = s->cur_edges().at(findIndex).first;
-                            _nxt_sample = s->cur_edges().at(findIndex + 1).first;
-                            _cur_preX = pre_edge_x;
-                            _cur_aftX = aft_edge_x;
-                            //if (findIndex >= 0 && findIndex <= s->cur_edges().size() - 4) {
-                            if(findIndex <= s->cur_edges().size() - 4) {
-                                _thd_sample = s->cur_edges().at(findIndex + 2).first;
-                                _cur_thdX =
-                                        s->cur_edges().at(findIndex + 2).first / samples_per_pixel - pixels_offset;
-                            } else {
-                                _thd_sample = 0;
-                                _cur_thdX = 0;
+               const double pixels_offset =  _view.offset() / _view.scale();
+               const double samples_per_pixel = sample_rate * _view.scale();
+               _cur_preX = _cur_sample / samples_per_pixel - pixels_offset;
+               _cur_aftX = _nxt_sample / samples_per_pixel - pixels_offset;
+               _cur_thdX = _thd_sample / samples_per_pixel - pixels_offset;
+               _cur_midY = logicSig->get_y();
 
-                            }
-                            _cur_midY = s->get_y();
-                            break;
-                        }
-                    } else if (curX < pre_edge_x) {
-                        right_findIndex = findIndex;
-                        findIndex = (left_findIndex + findIndex) / 2;
-                    } else if (curX > aft_edge_x) {
-                        left_findIndex = findIndex;
-                        findIndex = (right_findIndex + findIndex) / 2;
-                    }
-                    times++;
-                }
-            }
-            break;
-        } else if (curY >= s->get_y() + _view.get_signalHeight() &&
-                   curY <= (s->get_y()  + _view.get_signalHeight() + 2 * View::SignalMargin)){
-            _measure_shown = false;
-            break;
-        }else {
-            _measure_shown = false;
-        }
+               _mm_duty = _thd_sample != 0 ? QString::number((_nxt_sample - _cur_sample) * 100.0f / (_thd_sample - _cur_sample), 'f', 2)+"%" :
+                                             "#####";
+               mouse_measure();
+               return;
+           } else {
+               _mm_width = "#####";
+               _mm_period = "#####";
+               _mm_freq = "#####";
+               _mm_duty = "#####";
+           }
+           mouse_measure();
+       }
     }
 
-    if (_measure_shown == true) {
-        const uint64_t delta_sample = _nxt_sample - _cur_sample;
-        const uint64_t delta1_sample = _thd_sample - _cur_sample;
-        //assert(delta_sample >= 0);
-        const double delta_time = delta_sample * 1.0f / sample_rate;
-        const double delta1_time = delta1_sample * 1.0f / sample_rate;
-        const int order = (int)floorf(log10f(delta_time));
-        unsigned int prefix = (15 + order) / 3;
-        assert(prefix < 9);
-
-        _mm_width = _view.get_ruler()->format_time(delta_time, prefix);
-        _mm_period = _thd_sample != 0 ? _view.get_ruler()->format_time(delta1_time, prefix) :
-                                        "#####";
-        _mm_freq = _thd_sample != 0 ? _view.get_ruler()->format_freq(delta1_time) :
-                                      "#####";
-    } else {
-        _mm_width = "#####";
-        _mm_period = "#####";
-        _mm_freq = "#####";
-    }
-
-    _view.on_mouse_moved();
+    _measure_shown = false;
+    return;
 }
 
 void Viewport::paintMeasure(QPainter &p)
@@ -614,12 +557,14 @@ void Viewport::paintMeasure(QPainter &p)
         double typical_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
             Qt::AlignLeft | Qt::AlignTop, _mm_width).width() + 150;
         QRectF measure_rect = QRectF(_view.hover_point().x(), _view.hover_point().y(),
-                                     (double)typical_width, 60.0);
+                                     (double)typical_width, 80.0);
         QRectF measure1_rect = QRectF(_view.hover_point().x(), _view.hover_point().y(),
                                      (double)typical_width, 20.0);
         QRectF measure2_rect = QRectF(_view.hover_point().x(), _view.hover_point().y() + 20,
                                      (double)typical_width, 20.0);
         QRectF measure3_rect = QRectF(_view.hover_point().x(), _view.hover_point().y() + 40,
+                                     (double)typical_width, 20.0);
+        QRectF measure4_rect = QRectF(_view.hover_point().x(), _view.hover_point().y() + 60,
                                      (double)typical_width, 20.0);
 
         p.setPen(Qt::NoPen);
@@ -633,22 +578,23 @@ void Viewport::paintMeasure(QPainter &p)
                    "Period: " + _mm_period);
         p.drawText(measure3_rect, Qt::AlignRight | Qt::AlignVCenter,
                    "Frequency: " + _mm_freq);
+        p.drawText(measure4_rect, Qt::AlignRight | Qt::AlignVCenter,
+                   "Duty Cycle: " + _mm_duty);
     }
 }
 
-QString Viewport::get_mm_width()
+QString Viewport::get_measure(QString option)
 {
-    return _mm_width;
-}
-
-QString Viewport::get_mm_period()
-{
-    return _mm_period;
-}
-
-QString Viewport::get_mm_freq()
-{
-    return _mm_freq;
+    if(option.compare("width") == 0)
+        return _mm_width;
+    else if (option.compare("period") == 0)
+        return _mm_period;
+    else if (option.compare("frequency") == 0)
+        return _mm_freq;
+    else if (option.compare("duty") == 0)
+        return _mm_duty;
+    else
+        return "#####";
 }
 
 void Viewport::set_measure_en(int enable)

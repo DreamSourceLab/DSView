@@ -134,6 +134,29 @@ QString Ruler::format_time(double t)
     return format_time(t, _cur_prefix);
 }
 
+QString Ruler::format_real_time(uint64_t delta_index, uint64_t sample_rate)
+{
+    uint64_t delta_time = delta_index * std::pow(10, 12) / sample_rate;
+
+    if (delta_time == 0)
+        return "0";
+
+    int zero = 0;
+    int prefix = (int)floor(log10(delta_time));
+    while(delta_time == (delta_time/10*10)) {
+        delta_time /= 10;
+        zero++;
+    }
+
+    return format_time(delta_time * 1.0f / std::pow(10, 12-zero), prefix/3+1, prefix/3*3 > zero ? prefix/3*3 - zero : 0);
+}
+
+QString Ruler::format_real_freq(uint64_t delta_index, uint64_t sample_rate)
+{
+    const double delta_period = delta_index * 1.0f / sample_rate;
+    return format_freq(delta_period);
+}
+
 TimeMarker* Ruler::get_grabbed_cursor()
 {
     return _grabbed_marker;
@@ -182,8 +205,8 @@ void Ruler::mouseMoveEvent(QMouseEvent *e)
     (void)e;
 
     if (_grabbed_marker) {
-        _grabbed_marker->set_time(_view.offset() +
-            _view.hover_point().x() * _view.scale());
+        _grabbed_marker->set_index((_view.offset() +
+            _view.hover_point().x() * _view.scale()) * _view.session().get_device()->get_sample_rate());
     }
 
     update();
@@ -242,19 +265,17 @@ void Ruler::mouseReleaseEvent(QMouseEvent *event)
                     _cursor_sel_visible = true;
                 } else {
                     int overCursor;
-                    double time = _view.offset() + (_cursor_sel_x + 0.5) * _view.scale();
+                    uint64_t index = (_view.offset() + (_cursor_sel_x + 0.5) * _view.scale()) * _view.session().get_device()->get_sample_rate();
                     overCursor = in_cursor_sel_rect(event->pos());
                     if (overCursor == 0) {
-                        //Cursor *newCursor = new Cursor(_view, CursorColor[_view.get_cursorList().size() % 8], time);
-                        //_view.get_cursorList().push_back(newCursor);
-                        _view.add_cursor(CursorColor[_view.get_cursorList().size() % 8], time);
+                        _view.add_cursor(CursorColor[_view.get_cursorList().size() % 8], index);
                         _view.show_cursors(true);
                         addCursor = true;
                     } else if (overCursor > 0) {
                         list<Cursor*>::iterator i = _view.get_cursorList().begin();
                         while (--overCursor != 0)
                                 i++;
-                        (*i)->set_time(time);
+                        (*i)->set_index(index);
                     }
                     _cursor_sel_visible = false;
                 }
@@ -262,10 +283,6 @@ void Ruler::mouseReleaseEvent(QMouseEvent *event)
                 int overCursor;
                 overCursor = in_cursor_sel_rect(event->pos());
                 if (overCursor > 0) {
-//                    list<Cursor*>::iterator i = _view.get_cursorList().begin();
-//                    while (--overCursor != 0)
-//                            i++;
-//                    _view.set_scale_offset(_view.scale(), (*i)->time() - _view.scale() * _view.viewport()->width() / 2);
                     _view.set_cursor_middle(overCursor - 1);
                 }
 

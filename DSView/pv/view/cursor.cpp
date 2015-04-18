@@ -51,8 +51,14 @@ const int Cursor::ArrowSize = 10;
 
 const int Cursor::CloseSize = 10;
 
-Cursor::Cursor(View &view, QColor color, double time) :
-    TimeMarker(view, color, time),
+Cursor::Cursor(View &view, QColor color, uint64_t index) :
+    TimeMarker(view, color, index),
+    _other(*this)
+{
+}
+
+Cursor::Cursor(View &view, QColor color) :
+    TimeMarker(view, color),
     _other(*this)
 {
 }

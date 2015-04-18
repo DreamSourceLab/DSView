@@ -74,7 +74,7 @@ private slots:
 public slots:
     void cursor_update();
     void cursor_moved();
-    void mouse_moved();
+    void mouse_measure();
 
 private:
     SigSession &_session;
@@ -86,6 +86,7 @@ private:
     QLabel *_width_label;
     QLabel *_period_label;
     QLabel *_freq_label;
+    QLabel *_duty_label;
 
     QGridLayout *_cursor_layout;
     QGroupBox *_cursor_groupBox;
