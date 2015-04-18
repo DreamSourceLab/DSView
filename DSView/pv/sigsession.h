@@ -87,7 +87,7 @@ class SigSession : public QObject
         Q_OBJECT
 
 private:
-    static const float Oversampling = 2.0f;
+    static constexpr float Oversampling = 2.0f;
     static const int ViewTime = 800;
 	bool saveFileThreadRunning = false;
 

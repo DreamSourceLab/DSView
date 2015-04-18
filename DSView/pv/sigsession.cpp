@@ -183,10 +183,9 @@ void SigSession::save_file(const std::string &name){
 }
 
 QList<QString> SigSession::getSuportedExportFormats(){
-    // TODO: uncomment this
-    //const struct sr_output_module** supportedModules = sr_output_list();
+    const struct sr_output_module** supportedModules = sr_output_list();
     QList<QString> list;
-    /*while(*supportedModules){
+    while(*supportedModules){
         if(*supportedModules == NULL)
             break;
         QString format((*supportedModules)->desc);
@@ -195,7 +194,7 @@ QList<QString> SigSession::getSuportedExportFormats(){
         format.append(")");
         list.append(format);
         *supportedModules++;
-    }*/
+    }
     return list;
 }
 
@@ -204,7 +203,7 @@ void SigSession::cancelSaveFile(){
 }
 
 void SigSession::export_file(const std::string &name, QWidget* parent, const std::string &ext){
-    /*const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
+    const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
             _logic_data->get_snapshots();
     if(snapshots.empty())
         return;
@@ -240,7 +239,7 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
         unsigned char* datat = (unsigned char*)snapshot->get_data();
         int numsamples = snapshot->get_sample_count()*snapshot->unit_size();
         GString *data_out;
-        int usize = 1024;
+        int usize = 8192;
         int size = usize;
         struct sr_datafeed_logic lp;
         struct sr_datafeed_packet p;
@@ -257,7 +256,7 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
                 out << (char*) data_out->str;
                 g_string_free(data_out,TRUE);
             }
-            emit  progressValueChanged(i*100/numsamples);
+            emit  progressSaveFileValueChanged(i*100/numsamples);
             if(!saveFileThreadRunning)
                 break;
         }
@@ -269,7 +268,7 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
     dlg.setWindowModality(Qt::WindowModal);
     watcher.setFuture(future);
     connect(&watcher,SIGNAL(finished()),&dlg,SLOT(cancel()));
-    connect(this,SIGNAL(progressValueChanged(int)),&dlg,SLOT(setValue(int)));
+    connect(this,SIGNAL(progressSaveFileValueChanged(int)),&dlg,SLOT(setValue(int)));
     connect(&dlg,SIGNAL(canceled()),this,SLOT(cancelSaveFile()));
     dlg.exec();
     future.waitForFinished();
@@ -277,7 +276,7 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
     file.close();
     outModule->cleanup(&output);
     g_hash_table_destroy(params);
-    g_variant_unref(filenameGVariant);*/
+    g_variant_unref(filenameGVariant);
 }
 
 void SigSession::set_default_device(boost::function<void (const QString)> error_handler)

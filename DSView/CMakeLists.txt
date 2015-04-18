@@ -270,7 +270,7 @@ endif()
 #-------------------------------------------------------------------------------
 
 add_definitions(${QT_DEFINITIONS})
-add_definitions(-Wall -Wextra -Wno-return-type -Wno-ignored-qualifiers)
+add_definitions(-std=c++11 -Wall -Wextra -Wno-return-type -Wno-ignored-qualifiers)
 
 if(ENABLE_DECODE)
         add_definitions(-DENABLE_DECODE)

@@ -75,7 +75,7 @@ public:
 	static const QSizeF LabelPadding;
 
     static const int WellPixelsPerSample = 10.0f;
-    static const double MaxViewRate = 1.0f;
+    static constexpr double MaxViewRate = 1.0f;
     static const int MaxPixelsPerSample = 100.0f;
 
 public:
