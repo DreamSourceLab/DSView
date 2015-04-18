@@ -129,10 +129,13 @@ void FileBar::on_actionSave_triggered()
         msg.setIcon(QMessageBox::Warning);
         msg.exec();
     }else {
-        const QString file_name = QFileDialog::getSaveFileName(
+        QString file_name = QFileDialog::getSaveFileName(
                     this, tr("Save File"), "",
                     tr("DSView Session (*.dsl)"));
         if (!file_name.isEmpty()) {
+            QFileInfo f(file_name);
+            if(f.suffix().compare("dsl"))
+                file_name.append(tr(".dsl"));
             _session.save_file(file_name.toStdString());
         }
     }
