@@ -125,10 +125,10 @@ View::View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     _header->setObjectName(tr("ViewArea_header"));
 
     _show_trig_cursor = false;
-    _trig_cursor = new Cursor(*this, Trace::dsLightRed, 0);
+    _trig_cursor = new Cursor(*this, Trace::dsLightRed);
     _show_search_cursor = false;
     _search_pos = 0;
-    _search_cursor = new Cursor(*this, Trace::dsLightBlue, _search_pos);
+    _search_cursor = new Cursor(*this, Trace::dsLightBlue);
 }
 
 SigSession& View::session()
@@ -343,7 +343,7 @@ void View::set_trig_pos(quint64 trig_pos)
 {
     const double time = trig_pos * 1.0f / _session.get_device()->get_sample_rate();
     _trig_pos = trig_pos;
-    _trig_cursor->set_time(time);
+    _trig_cursor->set_index(trig_pos);
     _show_trig_cursor = true;
     set_scale_offset(_scale,  time - _scale * get_view_width() / 2);
     _ruler->update();
@@ -356,7 +356,7 @@ void View::set_search_pos(uint64_t search_pos)
 
     const double time = search_pos * 1.0f / _session.get_device()->get_sample_rate();
     _search_pos = search_pos;
-    _search_cursor->set_time(time);
+    _search_cursor->set_index(search_pos);
     set_scale_offset(_scale,  time - _scale * get_view_width() / 2);
     _ruler->update();
     _viewport->update();
@@ -464,8 +464,7 @@ void View::update_scale()
     _preScale = _scale;
     _preOffset = _offset;
 
-    const double time = _trig_pos * 1.0f / sample_rate;
-    _trig_cursor->set_time(time);
+    _trig_cursor->set_index(_trig_pos);
 
     _ruler->update();
     _viewport->update();
@@ -697,9 +696,9 @@ Ruler* View::get_ruler()
     return _ruler;
 }
 
-void View::add_cursor(QColor color, double time)
+void View::add_cursor(QColor color, uint64_t index)
 {
-    Cursor *newCursor = new Cursor(*this, color, time);
+    Cursor *newCursor = new Cursor(*this, color, index);
     _cursorList.push_back(newCursor);
     cursor_update();
 }
@@ -728,24 +727,14 @@ void View::receive_data(quint64 length)
     _viewport->set_receive_len(length);
 }
 
-QString View::get_mm_width()
+Viewport * View::get_viewport()
 {
-    return _viewport->get_mm_width();
-}
-
-QString View::get_mm_period()
-{
-    return _viewport->get_mm_period();
-}
-
-QString View::get_mm_freq()
-{
-    return _viewport->get_mm_freq();
+    return _viewport;
 }
 
 QString View::get_cm_time(int index)
 {
-    return _ruler->format_time(get_cursor_time(index));
+    return _ruler->format_real_time(get_cursor_samples(index), _session.get_device()->get_sample_rate());
 }
 
 QString View::get_cm_delta(int index1, int index2)
@@ -753,8 +742,10 @@ QString View::get_cm_delta(int index1, int index2)
     if (index1 == index2)
         return "0";
 
-    return _ruler->format_time(abs(get_cursor_time(index1) -
-                                   get_cursor_time(index2)));
+    uint64_t samples1 = get_cursor_samples(index1);
+    uint64_t samples2 = get_cursor_samples(index2);
+    uint64_t delta_sample = (samples1 > samples2) ? samples1 - samples2 : samples2 - samples1;
+    return _ruler->format_real_time(delta_sample, _session.get_device()->get_sample_rate());
 }
 
 double View::get_cursor_time(int index)
@@ -773,17 +764,18 @@ double View::get_cursor_time(int index)
 
 uint64_t View::get_cursor_samples(int index)
 {
-    const double time = get_cursor_time(index);
-    const uint64_t sample_rate = _session.get_device()->get_sample_limit();
-    assert(sample_rate !=0);
+    assert(index < (int)_cursorList.size());
 
-    return time*sample_rate;
+    int curIndex = 0;
+    for (list<Cursor*>::iterator i = _cursorList.begin();
+         i != _cursorList.end(); i++) {
+        if (index == curIndex) {
+            return (*i)->index();
+        }
+        curIndex++;
+    }
 }
 
-void View::on_mouse_moved()
-{
-    mouse_moved();
-}
 void View::on_cursor_moved()
 {
     cursor_moved();

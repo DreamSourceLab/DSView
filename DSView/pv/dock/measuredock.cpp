@@ -26,6 +26,7 @@
 #include "../sigsession.h"
 #include "../view/cursor.h"
 #include "../view/view.h"
+#include "../view/viewport.h"
 #include "../view/timemarker.h"
 #include "../view/ruler.h"
 #include "../view/logicsignal.h"
@@ -54,9 +55,10 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession &session) :
     _mouse_groupBox = new QGroupBox("Mouse measurement", this);
     _fen_checkBox = new QCheckBox("Enable floating measurement", this);
     _fen_checkBox->setChecked(true);
-    _width_label = new QLabel(view.get_mm_width(), this);
-    _period_label = new QLabel(view.get_mm_period(), this);
-    _freq_label = new QLabel(view.get_mm_freq(), this);
+    _width_label = new QLabel("#####", this);
+    _period_label = new QLabel("#####", this);
+    _freq_label = new QLabel("#####", this);
+    _duty_label = new QLabel("#####", this);
 
     _mouse_layout = new QGridLayout();
     _mouse_layout->addWidget(_fen_checkBox, 0, 0, 1, 2);
@@ -66,10 +68,13 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession &session) :
     _mouse_layout->addWidget(_period_label, 2, 1);
     _mouse_layout->addWidget(new QLabel("Frequency: ", this), 3, 0);
     _mouse_layout->addWidget(_freq_label, 3, 1);
+    _mouse_layout->addWidget(new QLabel("Duty Cycle: ", this), 4, 0);
+    _mouse_layout->addWidget(_duty_label, 4, 1);
     _mouse_layout->addWidget(new QLabel(this), 0, 2);
     _mouse_layout->addWidget(new QLabel(this), 1, 2);
     _mouse_layout->addWidget(new QLabel(this), 2, 2);
     _mouse_layout->addWidget(new QLabel(this), 3, 2);
+    _mouse_layout->addWidget(new QLabel(this), 4, 2);
     _mouse_layout->setColumnStretch(2, 1);
     _mouse_groupBox->setLayout(_mouse_layout);
 
@@ -134,6 +139,7 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession &session) :
     connect(_t3_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(delta_update()));
 
     connect(_fen_checkBox, SIGNAL(stateChanged(int)), &_view, SLOT(set_measure_en(int)));
+    connect(_view.get_viewport(), SIGNAL(mouse_measure()), this, SLOT(mouse_measure()));
 }
 
 MeasureDock::~MeasureDock()
@@ -216,11 +222,12 @@ void MeasureDock::cursor_update()
     update();
 }
 
-void MeasureDock::mouse_moved()
+void MeasureDock::mouse_measure()
 {
-    _width_label->setText(_view.get_mm_width());
-    _period_label->setText(_view.get_mm_period());
-    _freq_label->setText(_view.get_mm_freq());
+    _width_label->setText(_view.get_viewport()->get_measure("width"));
+    _period_label->setText(_view.get_viewport()->get_measure("period"));
+    _freq_label->setText(_view.get_viewport()->get_measure("frequency"));
+    _duty_label->setText(_view.get_viewport()->get_measure("duty"));
 }
 
 void MeasureDock::cursor_moved()

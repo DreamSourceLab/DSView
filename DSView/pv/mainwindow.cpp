@@ -244,8 +244,6 @@ void MainWindow::setup_ui()
             SLOT(cursor_update()));
     connect(_view, SIGNAL(cursor_moved()), _measure_widget,
             SLOT(cursor_moved()));
-    connect(_view, SIGNAL(mouse_moved()), _measure_widget,
-            SLOT(mouse_moved()));
     connect(_view, SIGNAL(mode_changed()), this,
             SLOT(update_device_list()));
 

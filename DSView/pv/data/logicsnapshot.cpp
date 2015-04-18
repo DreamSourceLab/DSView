@@ -208,8 +208,6 @@ void LogicSnapshot::get_subsampled_edges(
 	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 
 	const uint64_t block_length = (uint64_t)max(min_length, 1.0f);
-	const unsigned int min_level = max((int)floorf(logf(min_length) /
-		LogMipMapScaleFactor) - 1, 0);
 	const uint64_t sig_mask = 1ULL << sig_index;
 
     if (!edges.empty())
@@ -220,132 +218,8 @@ void LogicSnapshot::get_subsampled_edges(
 
     while (index + block_length <= end)
 	{
-		//----- Continue to search -----//
-		level = min_level;
-
-		// We cannot fast-forward if there is no mip-map data at
-		// at the minimum level.
-		fast_forward = (_mip_map[level].data != NULL);
-
-		if (min_length < MipMapScaleFactor)
-		{
-			// Search individual samples up to the beginning of
-			// the next first level mip map block
-			const uint64_t final_index = min(end,
-				pow2_ceil(index, MipMapScalePower));
-
-			for (; index < final_index &&
-				(index & ~(~0 << MipMapScalePower)) != 0;
-				index++)
-			{
-				const bool sample =
-					(get_sample(index) & sig_mask) != 0;
-
-				// If there was a change we cannot fast forward
-				if (sample != last_sample) {
-					fast_forward = false;
-					break;
-				}
-			}
-		}
-		else
-		{
-			// If resolution is less than a mip map block,
-			// round up to the beginning of the mip-map block
-			// for this level of detail
-			const int min_level_scale_power =
-				(level + 1) * MipMapScalePower;
-			index = pow2_ceil(index, min_level_scale_power);
-            if (index >= end)
-				break;
-
-			// We can fast forward only if there was no change
-			const bool sample =
-				(get_sample(index) & sig_mask) != 0;
-			if (last_sample != sample)
-				fast_forward = false;
-		}
-
-		if (fast_forward) {
-
-			// Fast forward: This involves zooming out to higher
-			// levels of the mip map searching for changes, then
-			// zooming in on them to find the point where the edge
-			// begins.
-
-			// Slide right and zoom out at the beginnings of mip-map
-			// blocks until we encounter a change
-			while (1) {
-				const int level_scale_power =
-					(level + 1) * MipMapScalePower;
-				const uint64_t offset =
-					index >> level_scale_power;
-
-				// Check if we reached the last block at this
-				// level, or if there was a change in this block
-				if (offset >= _mip_map[level].length ||
-					(get_subsample(level, offset) &
-						sig_mask))
-					break;
-
-				if ((offset & ~(~0 << MipMapScalePower)) == 0) {
-					// If we are now at the beginning of a
-					// higher level mip-map block ascend one
-					// level
-					if (level + 1 >= ScaleStepCount ||
-						!_mip_map[level + 1].data)
-						break;
-
-					level++;
-				} else {
-					// Slide right to the beginning of the
-					// next mip map block
-					index = pow2_ceil(index + 1,
-						level_scale_power);
-				}
-			}
-
-			// Zoom in, and slide right until we encounter a change,
-			// and repeat until we reach min_level
-			while (1) {
-				assert(_mip_map[level].data);
-
-				const int level_scale_power =
-					(level + 1) * MipMapScalePower;
-				const uint64_t offset =
-					index >> level_scale_power;
-
-				// Check if we reached the last block at this
-				// level, or if there was a change in this block
-				if (offset >= _mip_map[level].length ||
-					(get_subsample(level, offset) &
-						sig_mask)) {
-					// Zoom in unless we reached the minimum
-					// zoom
-					if (level == min_level)
-						break;
-
-					level--;
-				} else {
-					// Slide right to the beginning of the
-					// next mip map block
-					index = pow2_ceil(index + 1,
-						level_scale_power);
-				}
-			}
-
-			// If individual samples within the limit of resolution,
-			// do a linear search for the next transition within the
-			// block
-			if (min_length < MipMapScaleFactor) {
-				for (; index < end; index++) {
-					const bool sample = (get_sample(index) &
-						sig_mask) != 0;
-					if (sample != last_sample)
-						break;
-				}
-			}
-		}
+        // search next edge
+        get_nxt_edge(index, last_sample, end, min_length, sig_index);
 
 		//----- Store the edge -----//
 
@@ -373,44 +247,34 @@ void LogicSnapshot::get_subsampled_edges(
         edges.push_back(pair<int64_t, bool>(end + 1, ~last_sample));
 }
 
-int LogicSnapshot::get_first_edge(
-    uint64_t &edge_index, bool &edge,
-    uint64_t start, uint64_t end,
-    int sig_index, int edge_type,
-    int flag_index, int flag)
+bool LogicSnapshot::get_nxt_edge(
+    uint64_t &index, bool last_sample, uint64_t end,
+    float min_length, int sig_index)
 {
-    uint64_t index = start;
     unsigned int level;
-    bool last_sample;
     bool fast_forward;
 
-    assert(end <= get_sample_count());
-    assert(start <= end);
-    assert(sig_index >= 0);
-    assert(sig_index < 64);
+    assert(index > 0);
 
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
-
-    const uint64_t block_length = 1;
-    const unsigned int min_level = 0;
+    const unsigned int min_level = max((int)floorf(logf(min_length) /
+        LogMipMapScaleFactor) - 1, 0);
     const uint64_t sig_mask = 1ULL << sig_index;
-    const uint64_t flag_mask = 1ULL << flag_index;
 
-    // Store the initial state
-    last_sample = (get_sample(start) & sig_mask) != 0;
+    if (index >= end)
+        return false;
 
-    while (index + block_length <= end)
+    //----- Continue to search -----//
+    level = min_level;
+
+    // We cannot fast-forward if there is no mip-map data at
+    // at the minimum level.
+    fast_forward = (_mip_map[level].data != NULL);
+
+    if (min_length < MipMapScaleFactor)
     {
-        //----- Continue to search -----//
-        level = min_level;
-
-        // We cannot fast-forward if there is no mip-map data at
-        // at the minimum level.
-        fast_forward = (_mip_map[level].data != NULL);
-
         // Search individual samples up to the beginning of
         // the next first level mip map block
-        uint64_t final_index = min(end,
+        const uint64_t final_index = min(end,
             pow2_ceil(index, MipMapScalePower));
 
         for (; index < final_index &&
@@ -426,78 +290,97 @@ int LogicSnapshot::get_first_edge(
                 break;
             }
         }
+    }
+    else
+    {
+        // If resolution is less than a mip map block,
+        // round up to the beginning of the mip-map block
+        // for this level of detail
+        const int min_level_scale_power =
+            (level + 1) * MipMapScalePower;
+        index = pow2_ceil(index, min_level_scale_power);
+        if (index >= end)
+            return false;
 
-        if (fast_forward) {
+        // We can fast forward only if there was no change
+        const bool sample =
+            (get_sample(index) & sig_mask) != 0;
+        if (last_sample != sample)
+            fast_forward = false;
+    }
 
-            // Fast forward: This involves zooming out to higher
-            // levels of the mip map searching for changes, then
-            // zooming in on them to find the point where the edge
-            // begins.
+    if (fast_forward) {
 
-            // Slide right and zoom out at the beginnings of mip-map
-            // blocks until we encounter a change
-            while (1) {
-                const int level_scale_power =
-                    (level + 1) * MipMapScalePower;
-                const uint64_t offset =
-                    index >> level_scale_power;
+        // Fast forward: This involves zooming out to higher
+        // levels of the mip map searching for changes, then
+        // zooming in on them to find the point where the edge
+        // begins.
 
-                // Check if we reached the last block at this
-                // level, or if there was a change in this block
-                if (offset >= _mip_map[level].length ||
-                    (get_subsample(level, offset) &
-                        sig_mask))
+        // Slide right and zoom out at the beginnings of mip-map
+        // blocks until we encounter a change
+        while (1) {
+            const int level_scale_power =
+                (level + 1) * MipMapScalePower;
+            const uint64_t offset =
+                index >> level_scale_power;
+
+            // Check if we reached the last block at this
+            // level, or if there was a change in this block
+            if (offset >= _mip_map[level].length ||
+                (get_subsample(level, offset) &
+                    sig_mask))
+                break;
+
+            if ((offset & ~(~0 << MipMapScalePower)) == 0) {
+                // If we are now at the beginning of a
+                // higher level mip-map block ascend one
+                // level
+                if (level + 1 >= ScaleStepCount ||
+                    !_mip_map[level + 1].data)
                     break;
 
-                if ((offset & ~(~0 << MipMapScalePower)) == 0) {
-                    // If we are now at the beginning of a
-                    // higher level mip-map block ascend one
-                    // level
-                    if (level + 1 >= ScaleStepCount ||
-                        !_mip_map[level + 1].data)
-                        break;
-
-                    level++;
-                } else {
-                    // Slide right to the beginning of the
-                    // next mip map block
-                    index = pow2_ceil(index + 1,
-                        level_scale_power);
-                }
+                level++;
+            } else {
+                // Slide right to the beginning of the
+                // next mip map block
+                index = pow2_ceil(index + 1,
+                    level_scale_power);
             }
+        }
 
-            // Zoom in, and slide right until we encounter a change,
-            // and repeat until we reach min_level
-            while (1) {
-                assert(_mip_map[level].data);
+        // Zoom in, and slide right until we encounter a change,
+        // and repeat until we reach min_level
+        while (1) {
+            assert(_mip_map[level].data);
 
-                const int level_scale_power =
-                    (level + 1) * MipMapScalePower;
-                const uint64_t offset =
-                    index >> level_scale_power;
+            const int level_scale_power =
+                (level + 1) * MipMapScalePower;
+            const uint64_t offset =
+                index >> level_scale_power;
 
-                // Check if we reached the last block at this
-                // level, or if there was a change in this block
-                if (offset >= _mip_map[level].length ||
-                    (get_subsample(level, offset) &
-                        sig_mask)) {
-                    // Zoom in unless we reached the minimum
-                    // zoom
-                    if (level == min_level)
-                        break;
+            // Check if we reached the last block at this
+            // level, or if there was a change in this block
+            if (offset >= _mip_map[level].length ||
+                (get_subsample(level, offset) &
+                    sig_mask)) {
+                // Zoom in unless we reached the minimum
+                // zoom
+                if (level == min_level)
+                    break;
 
-                    level--;
-                } else {
-                    // Slide right to the beginning of the
-                    // next mip map block
-                    index = pow2_ceil(index + 1,
-                        level_scale_power);
-                }
+                level--;
+            } else {
+                // Slide right to the beginning of the
+                // next mip map block
+                index = pow2_ceil(index + 1,
+                    level_scale_power);
             }
+        }
 
-            // If individual samples within the limit of resolution,
-            // do a linear search for the next transition within the
-            // block
+        // If individual samples within the limit of resolution,
+        // do a linear search for the next transition within the
+        // block
+        if (min_length < MipMapScaleFactor) {
             for (; index < end; index++) {
                 const bool sample = (get_sample(index) &
                     sig_mask) != 0;
@@ -505,90 +388,45 @@ int LogicSnapshot::get_first_edge(
                     break;
             }
         }
-
-        //----- Store the edge -----//
-
-        // Take the last sample of the quanization block
-        final_index = index + block_length;
-        if (index + block_length > end)
-            break;
-
-        // Store the final state
-        const bool final_sample =
-            (get_sample(final_index - 1) & sig_mask) != 0;
-        if (final_index > 1) {
-            const bool final_flag_sample = ((get_sample(final_index - 1) & flag_mask) != 0);
-            const bool final_pre_flag_sample = ((get_sample(final_index - 2) & flag_mask) != 0);
-            if (final_sample != last_sample &&
-                ((edge_type == -1) || final_sample == (edge_type != 0)) &&
-                ((flag == -1) || (final_flag_sample == (flag != 0) && final_flag_sample == final_pre_flag_sample))) {
-                edge_index = index;
-                edge = final_sample;
-                return SR_OK;
-            }
-        }
-
-        index = final_index;
-        last_sample = final_sample;
     }
 
-    // Add the final state
-    const bool end_sample = ((get_sample(end) & sig_mask) != 0);
-    const bool end_flag_sample = ((get_sample(end) & flag_mask) != 0);
-    const bool end_pre_flag_sample = ((get_sample(end - 1) & flag_mask) != 0);
-    if (end_sample != last_sample &&
-        ((edge_type == -1) || end_sample == (edge_type != 0)) &&
-        ((flag == -1) || (end_flag_sample == (flag != 0) && end_flag_sample == end_pre_flag_sample))) {
-        edge_index = end;
-        edge = end_sample;
-        return SR_OK;
-    } else {
-        return SR_ERR;
-    }
+    if (index >= end)
+        return false;
+    else
+        return true;
 }
 
-void LogicSnapshot::get_edges(
-    std::vector<EdgePair> &edges,
-    uint64_t start, uint64_t end, int sig_index, int edge_type)
+bool LogicSnapshot::get_pre_edge(
+    uint64_t &index, bool last_sample,
+    float min_length, int sig_index)
 {
-    uint64_t index = start;
     unsigned int level;
-    bool last_sample;
     bool fast_forward;
 
-    assert(end <= get_sample_count());
-    assert(start <= end);
-    assert(sig_index >= 0);
-    assert(sig_index < 64);
+    assert(index < get_sample_count());
 
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
-
-    const uint64_t block_length = 1;
-    const unsigned int min_level = 0;
+    const unsigned int min_level = max((int)floorf(logf(min_length) /
+        LogMipMapScaleFactor) - 1, 0);
     const uint64_t sig_mask = 1ULL << sig_index;
 
-    if (!edges.empty())
-        edges.clear();
-    // Store the initial state
-    last_sample = (get_sample(start) & sig_mask) != 0;
+    //----- Continue to search -----//
+    level = min_level;
 
-    while (index + block_length <= end)
+    // We cannot fast-forward if there is no mip-map data at
+    // at the minimum level.
+    fast_forward = (_mip_map[level].data != NULL);
+
+    if (min_length < MipMapScaleFactor)
     {
-        //----- Continue to search -----//
-        level = min_level;
+        // Search individual samples down to the ending of
+        // the previous first level mip map block
+        uint64_t final_index;
+        if (index < (1 << MipMapScalePower))
+            final_index = 0;
+        else
+            final_index = pow2_ceil(index + 1, MipMapScalePower) - (1 << MipMapScalePower) - 1;
 
-        // We cannot fast-forward if there is no mip-map data at
-        // at the minimum level.
-        fast_forward = (_mip_map[level].data != NULL);
-
-        // Search individual samples up to the beginning of
-        // the next first level mip map block
-        uint64_t final_index = min(end,
-            pow2_ceil(index, MipMapScalePower));
-
-        for (; index < final_index &&
-            (index & ~(~0 << MipMapScalePower)) != 0;
-            index++)
+        for (; index >= final_index; index--)
         {
             const bool sample =
                 (get_sample(index) & sig_mask) != 0;
@@ -596,267 +434,125 @@ void LogicSnapshot::get_edges(
             // If there was a change we cannot fast forward
             if (sample != last_sample) {
                 fast_forward = false;
-                break;
+                index++;
+                return true;
             }
+
+            if (index == 0)
+                return false;
         }
-
-        if (fast_forward) {
-
-            // Fast forward: This involves zooming out to higher
-            // levels of the mip map searching for changes, then
-            // zooming in on them to find the point where the edge
-            // begins.
-
-            // Slide right and zoom out at the beginnings of mip-map
-            // blocks until we encounter a change
-            while (1) {
-                const int level_scale_power =
-                    (level + 1) * MipMapScalePower;
-                const uint64_t offset =
-                    index >> level_scale_power;
-
-                // Check if we reached the last block at this
-                // level, or if there was a change in this block
-                if (offset >= _mip_map[level].length ||
-                    (get_subsample(level, offset) &
-                        sig_mask))
-                    break;
-
-                if ((offset & ~(~0 << MipMapScalePower)) == 0) {
-                    // If we are now at the beginning of a
-                    // higher level mip-map block ascend one
-                    // level
-                    if (level + 1 >= ScaleStepCount ||
-                        !_mip_map[level + 1].data)
-                        break;
-
-                    level++;
-                } else {
-                    // Slide right to the beginning of the
-                    // next mip map block
-                    index = pow2_ceil(index + 1,
-                        level_scale_power);
-                }
-            }
-
-            // Zoom in, and slide right until we encounter a change,
-            // and repeat until we reach min_level
-            while (1) {
-                assert(_mip_map[level].data);
-
-                const int level_scale_power =
-                    (level + 1) * MipMapScalePower;
-                const uint64_t offset =
-                    index >> level_scale_power;
-
-                // Check if we reached the last block at this
-                // level, or if there was a change in this block
-                if (offset >= _mip_map[level].length ||
-                    (get_subsample(level, offset) &
-                        sig_mask)) {
-                    // Zoom in unless we reached the minimum
-                    // zoom
-                    if (level == min_level)
-                        break;
-
-                    level--;
-                } else {
-                    // Slide right to the beginning of the
-                    // next mip map block
-                    index = pow2_ceil(index + 1,
-                        level_scale_power);
-                }
-            }
-
-            // If individual samples within the limit of resolution,
-            // do a linear search for the next transition within the
-            // block
-            for (; index < end; index++) {
-                const bool sample = (get_sample(index) &
-                    sig_mask) != 0;
-                if (sample != last_sample)
-                    break;
-            }
-        }
-
-        //----- Store the edge -----//
-
-        // Take the last sample of the quanization block
-        final_index = index + block_length;
-        if (index + block_length > end)
-            break;
-
-        // Store the final state
-        const bool final_sample =
-            (get_sample(final_index - 1) & sig_mask) != 0;
-        if ((edge_type == -1) || (final_sample == (edge_type != 0)))
-            edges.push_back(pair<int64_t, bool>(final_index - 1, final_sample));
-
-        index = final_index;
-        last_sample = final_sample;
     }
-
-    // Add the final state
-    const bool end_sample = ((get_sample(end) & sig_mask) != 0);
-    if ((end_sample != last_sample) &&
-        ((edge_type == -1) || (end_sample == (edge_type != 0))))
-        edges.push_back(pair<int64_t, bool>(end, end_sample));
-}
-
-uint64_t LogicSnapshot::get_min_pulse(uint64_t start, uint64_t end, int sig_index)
-{
-    uint64_t index = start;
-    unsigned int level;
-    bool last_sample;
-    bool fast_forward;
-    uint64_t last_index;
-    uint64_t min_pulse = end - start;
-
-    assert(end <= get_sample_count());
-    assert(start <= end);
-    assert(sig_index >= 0);
-    assert(sig_index < 64);
-
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
-
-    const uint64_t block_length = 1;
-    const unsigned int min_level = 0;
-    const uint64_t sig_mask = 1ULL << sig_index;
-
-    // Store the initial state
-    last_index = start;
-    last_sample = (get_sample(start) & sig_mask) != 0;
-
-    while (index + block_length <= end)
+    else
     {
-        //----- Continue to search -----//
-        level = min_level;
+        // If resolution is less than a mip map block,
+        // round up to the beginning of the mip-map block
+        // for this level of detail
+        const int min_level_scale_power =
+            (level + 1) * MipMapScalePower;
+        if (index < (1 << min_level_scale_power))
+            index = 0;
+        else
+            index = pow2_ceil(index, min_level_scale_power) - (1 << min_level_scale_power) - 1;
 
-        // We cannot fast-forward if there is no mip-map data at
-        // at the minimum level.
-        fast_forward = (_mip_map[level].data != NULL);
-
-        // Search individual samples up to the beginning of
-        // the next first level mip map block
-        uint64_t final_index = min(end,
-            pow2_ceil(index, MipMapScalePower));
-
-        for (; index < final_index &&
-            (index & ~(~0 << MipMapScalePower)) != 0;
-            index++)
-        {
-            const bool sample =
-                (get_sample(index) & sig_mask) != 0;
-
-            // If there was a change we cannot fast forward
-            if (sample != last_sample) {
-                fast_forward = false;
-                break;
-            }
+        // We can fast forward only if there was no change
+        const bool sample =
+            (get_sample(index) & sig_mask) != 0;
+        if (last_sample != sample) {
+            fast_forward = false;
+            index++;
+            return true;
         }
 
-        if (fast_forward) {
-
-            // Fast forward: This involves zooming out to higher
-            // levels of the mip map searching for changes, then
-            // zooming in on them to find the point where the edge
-            // begins.
-
-            // Slide right and zoom out at the beginnings of mip-map
-            // blocks until we encounter a change
-            while (1) {
-                const int level_scale_power =
-                    (level + 1) * MipMapScalePower;
-                const uint64_t offset =
-                    index >> level_scale_power;
-
-                // Check if we reached the last block at this
-                // level, or if there was a change in this block
-                if (offset >= _mip_map[level].length ||
-                    (get_subsample(level, offset) &
-                        sig_mask))
-                    break;
-
-                if ((offset & ~(~0 << MipMapScalePower)) == 0) {
-                    // If we are now at the beginning of a
-                    // higher level mip-map block ascend one
-                    // level
-                    if (level + 1 >= ScaleStepCount ||
-                        !_mip_map[level + 1].data)
-                        break;
-
-                    level++;
-                } else {
-                    // Slide right to the beginning of the
-                    // next mip map block
-                    index = pow2_ceil(index + 1,
-                        level_scale_power);
-                }
-            }
-
-            // Zoom in, and slide right until we encounter a change,
-            // and repeat until we reach min_level
-            while (1) {
-                assert(_mip_map[level].data);
-
-                const int level_scale_power =
-                    (level + 1) * MipMapScalePower;
-                const uint64_t offset =
-                    index >> level_scale_power;
-
-                // Check if we reached the last block at this
-                // level, or if there was a change in this block
-                if (offset >= _mip_map[level].length ||
-                    (get_subsample(level, offset) &
-                        sig_mask)) {
-                    // Zoom in unless we reached the minimum
-                    // zoom
-                    if (level == min_level)
-                        break;
-
-                    level--;
-                } else {
-                    // Slide right to the beginning of the
-                    // next mip map block
-                    index = pow2_ceil(index + 1,
-                        level_scale_power);
-                }
-            }
-
-            // If individual samples within the limit of resolution,
-            // do a linear search for the next transition within the
-            // block
-            for (; index < end; index++) {
-                const bool sample = (get_sample(index) &
-                    sig_mask) != 0;
-                if (sample != last_sample)
-                    break;
-            }
-        }
-
-        //----- Store the edge -----//
-
-        // Take the last sample of the quanization block
-        final_index = index + block_length;
-        if (index + block_length > end)
-            break;
-
-        // get pulse width
-        const bool final_sample =
-            (get_sample(final_index - 1) & sig_mask) != 0;
-        min_pulse = min(index - last_index, min_pulse);
-        last_index = index;
-        if (min_pulse == 1)
-            break;
-
-        index = final_index;
-        last_sample = final_sample;
+        if (index == 0)
+            return false;
     }
 
-    // Add the final state
-    min_pulse = min(end - last_index, min_pulse);
+    if (fast_forward) {
 
-    return min_pulse;
+        // Fast forward: This involves zooming out to higher
+        // levels of the mip map searching for changes, then
+        // zooming in on them to find the point where the edge
+        // begins.
+
+        // Slide left and zoom out at the endings of mip-map
+        // blocks until we encounter a change
+        while (1) {
+            const int level_scale_power =
+                (level + 1) * MipMapScalePower;
+            const uint64_t offset =
+                index >> level_scale_power;
+
+            // Check if we reached the first block at this
+            // level, or if there was a change in this block
+            if (offset == 0 ||
+                (get_subsample(level, offset) &
+                    sig_mask))
+                break;
+
+            if (((offset+1) & ~(~0 << MipMapScalePower)) == 0) {
+                // If we are now at the ending of a
+                // higher level mip-map block ascend one
+                // level
+                if (level + 1 >= ScaleStepCount ||
+                    !_mip_map[level + 1].data)
+                    break;
+
+                level++;
+            } else {
+                // Slide left to the beginning of the
+                // previous mip map block
+                index = pow2_ceil(index + 1,
+                    level_scale_power) - (1 << level_scale_power) - 1;
+            }
+        }
+
+        // Zoom in, and slide left until we encounter a change,
+        // and repeat until we reach min_level
+        while (1) {
+            assert(_mip_map[level].data);
+
+            const int level_scale_power =
+                (level + 1) * MipMapScalePower;
+            const uint64_t offset =
+                index >> level_scale_power;
+
+            // Check if we reached the first block at this
+            // level, or if there was a change in this block
+            if (offset == 0 ||
+                (get_subsample(level, offset) &
+                    sig_mask)) {
+                // Zoom in unless we reached the minimum
+                // zoom
+                if (level == min_level)
+                    break;
+
+                level--;
+            } else {
+                // Slide left to the ending of the
+                // previous mip map block
+                index = pow2_ceil(index + 1,
+                    level_scale_power) - (1 << level_scale_power) - 1;
+            }
+        }
+
+        // If individual samples within the limit of resolution,
+        // do a linear search for the next transition within the
+        // block
+        if (min_length < MipMapScaleFactor) {
+            for (; index >= 0; index--) {
+                const bool sample = (get_sample(index) &
+                    sig_mask) != 0;
+                if (sample != last_sample) {
+                    index++;
+                    return true;
+                }
+
+                if (index == 0)
+                    return false;
+            }
+        }
+    }
+    return false;
 }
 
 uint64_t LogicSnapshot::get_subsample(int level, uint64_t offset) const

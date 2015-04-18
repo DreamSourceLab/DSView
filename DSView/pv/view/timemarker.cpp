@@ -24,6 +24,7 @@
 #include "timemarker.h"
 
 #include "view.h"
+#include "../device/device.h"
 
 #include <QPainter>
 
@@ -31,11 +32,21 @@ namespace pv {
 namespace view {
 
 TimeMarker::TimeMarker(View &view, QColor &colour,
-	double time) :
+    uint64_t index) :
 	_view(view),
-	_time(time),
-        _grabbed(false),
+    _time(index * 1.0f / view.session().get_device()->get_sample_rate()),
+    _index(index),
+    _grabbed(false),
 	_colour(colour)
+{
+}
+
+TimeMarker::TimeMarker(View &view, QColor &colour) :
+    _view(view),
+    _time(0),
+    _index(0),
+    _grabbed(false),
+    _colour(colour)
 {
 }
 
@@ -43,6 +54,7 @@ TimeMarker::TimeMarker(const TimeMarker &s) :
 	QObject(),
 	_view(s._view),
 	_time(s._time),
+    _index(s._index),
 	_colour(s._colour)
 {
 }
@@ -61,10 +73,16 @@ double TimeMarker::time() const
 	return _time;
 }
 
-void TimeMarker::set_time(double time)
+uint64_t TimeMarker::index() const
 {
-	_time = time;
-	time_changed();
+    return _index;
+}
+
+void TimeMarker::set_index(uint64_t index)
+{
+    _index = index;
+    _time = index * 1.0f / _view.session().get_device()->get_sample_rate();
+    time_changed();
 }
 
 void TimeMarker::paint(QPainter &p, const QRect &rect, const bool highlight)
