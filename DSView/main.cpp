@@ -30,7 +30,7 @@
 
 #include <getopt.h>
 
-#include <QtGui/QApplication>
+#include <QApplication>
 #include <QDebug>
 #include <QFile>
 #include <QDir>

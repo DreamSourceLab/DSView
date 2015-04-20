@@ -48,7 +48,7 @@ FileBar::FileBar(SigSession &session, QWidget *parent) :
 
     _action_open = new QAction(this);
     _action_open->setText(QApplication::translate(
-        "File", "&Open...", 0, QApplication::UnicodeUTF8));
+        "File", "&Open...", 0));
     _action_open->setIcon(QIcon::fromTheme("file",
         QIcon(":/icons/open.png")));
     _action_open->setObjectName(QString::fromUtf8("actionOpen"));
@@ -57,16 +57,24 @@ FileBar::FileBar(SigSession &session, QWidget *parent) :
 
     _action_save = new QAction(this);
     _action_save->setText(QApplication::translate(
-        "File", "&Save...", 0, QApplication::UnicodeUTF8));
+        "File", "&Save...", 0));
     _action_save->setIcon(QIcon::fromTheme("file",
         QIcon(":/icons/save.png")));
     _action_save->setObjectName(QString::fromUtf8("actionSave"));
     _file_button.addAction(_action_save);
     connect(_action_save, SIGNAL(triggered()), this, SLOT(on_actionSave_triggered()));
 
+    _action_export = new QAction(this);
+    _action_export->setText(QApplication::translate("File", "&Export...", 0));
+    _action_export->setIcon(QIcon::fromTheme("file",QIcon(":/icons/instant.png")));
+    _action_export->setObjectName(QString::fromUtf8("actionExport"));
+    _file_button.addAction(_action_export);
+    connect(_action_export, SIGNAL(triggered()), this, SLOT(on_actionExport_triggered()));
+
+
     _action_capture = new QAction(this);
     _action_capture->setText(QApplication::translate(
-        "File", "&Capture...", 0, QApplication::UnicodeUTF8));
+        "File", "&Capture...", 0));
     _action_capture->setIcon(QIcon::fromTheme("file",
         QIcon(":/icons/capture.png")));
     _action_capture->setObjectName(QString::fromUtf8("actionCapture"));
@@ -84,7 +92,7 @@ void FileBar::on_actionOpen_triggered()
     // Show the dialog
     const QString file_name = QFileDialog::getOpenFileName(
         this, tr("Open File"), "", tr(
-            "DSView Sessions (*.dsl)"));
+            "DSView Sessions (*.dsl);;All Files (*.*)"));
     if (!file_name.isEmpty())
         load_file(file_name);
 }
@@ -108,6 +116,45 @@ void FileBar::show_session_error(
     msg.exec();
 }
 
+void FileBar::on_actionExport_triggered(){
+    int unit_size;
+    uint64_t length;
+    void* buf = _session.get_buf(unit_size, length);
+    if (!buf) {
+        QMessageBox msg(this);
+        msg.setText("Data Export");
+        msg.setInformativeText("No Data to Save!");
+        msg.setStandardButtons(QMessageBox::Ok);
+        msg.setIcon(QMessageBox::Warning);
+        msg.exec();
+    } else if (_session.get_device()->dev_inst()->mode != LOGIC) {
+        QMessageBox msg(this);
+        msg.setText("Export Data");
+        msg.setInformativeText("DSLogic currently only support exporting logic data to file!");
+        msg.setStandardButtons(QMessageBox::Ok);
+        msg.setIcon(QMessageBox::Warning);
+        msg.exec();
+    }else {
+        QList<QString> supportedFormats = _session.getSuportedExportFormats();
+        QString filter;
+        for(int i = 0; i < supportedFormats.count();i++){
+            filter.append(supportedFormats[i]);
+            if(i < supportedFormats.count() - 1)
+                filter.append(";;");
+        }
+        QString file_name = QFileDialog::getSaveFileName(
+                    this, tr("Export Data"), "",filter,&filter);
+        if (!file_name.isEmpty()) {
+            QFileInfo f(file_name);
+            QStringList list = filter.split('.').last().split(')');
+            QString ext = list.first();
+            if(f.suffix().compare(ext))
+                file_name+=tr(".")+ext;
+            _session.export_file(file_name.toStdString(), this, ext.toStdString());
+        }
+    }
+}
+
 void FileBar::on_actionSave_triggered()
 {
     //save();
@@ -129,10 +176,13 @@ void FileBar::on_actionSave_triggered()
         msg.setIcon(QMessageBox::Warning);
         msg.exec();
     }else {
-        const QString file_name = QFileDialog::getSaveFileName(
+        QString file_name = QFileDialog::getSaveFileName(
                     this, tr("Save File"), "",
                     tr("DSView Session (*.dsl)"));
         if (!file_name.isEmpty()) {
+            QFileInfo f(file_name);
+            if(f.suffix().compare("dsl"))
+                file_name.append(tr(".dsl"));
             _session.save_file(file_name.toStdString());
         }
     }
