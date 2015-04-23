@@ -33,6 +33,9 @@ struct context {
 	char separator;
 	gboolean header_done;
 	int *channel_index;
+    uint64_t mask;
+    uint64_t pre_data;
+    uint64_t index;
 };
 
 /*
@@ -62,6 +65,8 @@ static int init(struct sr_output *o, GHashTable *options)
 	ctx = g_malloc0(sizeof(struct context));
 	o->priv = ctx;
 	ctx->separator = ',';
+    ctx->mask = 0;
+    ctx->index = 0;
 
 	/* Get the number of channels, and the unitsize. */
 	for (l = o->sdi->channels; l; l = l->next) {
@@ -82,6 +87,7 @@ static int init(struct sr_output *o, GHashTable *options)
 		if (!ch->enabled)
 			continue;
 		ctx->channel_index[i++] = ch->index;
+        ctx->mask |= (1 << ch->index);
 	}
 
 	return SR_OK;
@@ -108,20 +114,8 @@ static GString *gen_header(const struct sr_output *o)
 
 	/* Columns / channels */
 	num_channels = g_slist_length(o->sdi->channels);
-	g_string_append_printf(header, "; Channels (%d/%d):",
+    g_string_append_printf(header, "; Channels (%d/%d)\n",
 			ctx->num_enabled_channels, num_channels);
-	for (i = 0, l = o->sdi->channels; l; l = l->next, i++) {
-		ch = l->data;
-		if (ch->type != SR_CHANNEL_LOGIC)
-			continue;
-		if (!ch->enabled)
-			continue;
-		g_string_append_printf(header, " %s,", ch->name);
-	}
-	if (o->sdi->channels)
-		/* Drop last separator. */
-		g_string_truncate(header, header->len - 1);
-	g_string_append_printf(header, "\n");
 
 	if (ctx->samplerate == 0) {
 		if (sr_config_get(o->sdi->driver, o->sdi, NULL, NULL, SR_CONF_SAMPLERATE,
@@ -135,6 +129,20 @@ static GString *gen_header(const struct sr_output *o)
 		g_string_append_printf(header, "; Samplerate: %s\n", samplerate_s);
 		g_free(samplerate_s);
 	}
+
+    g_string_append_printf(header, "Time(s),");
+    for (i = 0, l = o->sdi->channels; l; l = l->next, i++) {
+        ch = l->data;
+        if (ch->type != SR_CHANNEL_LOGIC)
+            continue;
+        if (!ch->enabled)
+            continue;
+        g_string_append_printf(header, " %s,", ch->name);
+    }
+    if (o->sdi->channels)
+        /* Drop last separator. */
+        g_string_truncate(header, header->len - 1);
+    g_string_append_printf(header, "\n");
 
 	return header;
 }
@@ -177,18 +185,19 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
 		}
 
 		for (i = 0; i <= logic->length - logic->unitsize; i += logic->unitsize) {
-			for (j = 0; j < ctx->num_enabled_channels; j++) {
+            ctx->index++;
+            if (ctx->index > 1 && (*(uint64_t *)(logic->data + i) & ctx->mask) == ctx->pre_data)
+                continue;
+            g_string_append_printf(*out, "%0.10g", (ctx->index-1)*1.0/ctx->samplerate);
+            for (j = 0; j < ctx->num_enabled_channels; j++) {
 				idx = ctx->channel_index[j];
 				p = logic->data + i + idx / 8;
 				c = *p & (1 << (idx % 8));
-				g_string_append_c(*out, c ? '1' : '0');
-				g_string_append_c(*out, ctx->separator);
-			}
-			if (j) {
-				/* Drop last separator. */
-				g_string_truncate(*out, (*out)->len - 1);
+                g_string_append_c(*out, ctx->separator);
+                g_string_append_c(*out, c ? '1' : '0');
 			}
 			g_string_append_printf(*out, "\n");
+            ctx->pre_data = (*(uint64_t *)(logic->data + i) & ctx->mask);
 		}
 		break;
 	}

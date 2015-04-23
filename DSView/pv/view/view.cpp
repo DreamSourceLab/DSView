@@ -125,10 +125,10 @@ View::View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     _header->setObjectName(tr("ViewArea_header"));
 
     _show_trig_cursor = false;
-    _trig_cursor = new Cursor(*this, Trace::dsLightRed);
+    _trig_cursor = new Cursor(*this, Trace::dsLightRed, 0);
     _show_search_cursor = false;
     _search_pos = 0;
-    _search_cursor = new Cursor(*this, Trace::dsLightBlue);
+    _search_cursor = new Cursor(*this, Trace::dsLightBlue, _search_pos);
 }
 
 SigSession& View::session()
@@ -341,7 +341,7 @@ void View::show_search_cursor(bool show)
 
 void View::set_trig_pos(quint64 trig_pos)
 {
-    const double time = trig_pos * 1.0f / _session.get_device()->get_sample_rate();
+    const double time = trig_pos * 1.0 / _session.get_device()->get_sample_rate();
     _trig_pos = trig_pos;
     _trig_cursor->set_index(trig_pos);
     _show_trig_cursor = true;
@@ -354,7 +354,7 @@ void View::set_search_pos(uint64_t search_pos)
 {
     //assert(search_pos >= 0);
 
-    const double time = search_pos * 1.0f / _session.get_device()->get_sample_rate();
+    const double time = search_pos * 1.0 / _session.get_device()->get_sample_rate();
     _search_pos = search_pos;
     _search_cursor->set_index(search_pos);
     set_scale_offset(_scale,  time - _scale * get_view_width() / 2);
@@ -452,14 +452,14 @@ void View::update_scale()
     assert(sample_rate > 0);
 
     if (_session.get_device()->dev_inst()->mode != DSO) {
-        _scale = (1.0f / sample_rate) / WellPixelsPerSample;
+        _scale = (1.0 / sample_rate) / WellPixelsPerSample;
         _maxscale = _session.get_device()->get_sample_time() / (get_view_width() * MaxViewRate);
     } else {
-        _scale = _session.get_device()->get_time_base() * 10.0f / get_view_width() * std::pow(10.0, -9.0);
+        _scale = _session.get_device()->get_time_base() * 10.0 / get_view_width() * std::pow(10.0, -9.0);
         _maxscale = 1e9;
     }
 
-    _minscale = (1.0f / sample_rate) / MaxPixelsPerSample;
+    _minscale = (1.0 / sample_rate) / MaxPixelsPerSample;
     _offset = 0;
     _preScale = _scale;
     _preOffset = _offset;
@@ -719,7 +719,7 @@ void View::set_cursor_middle(int index)
     list<Cursor*>::iterator i = _cursorList.begin();
     while (index-- != 0)
             i++;
-    set_scale_offset(_scale, (*i)->time() - _scale * get_view_width() / 2);
+    set_scale_offset(_scale, (*i)->index() * 1.0 / _session.get_device()->get_sample_rate() - _scale * get_view_width() / 2);
 }
 
 void View::receive_data(quint64 length)
@@ -746,20 +746,6 @@ QString View::get_cm_delta(int index1, int index2)
     uint64_t samples2 = get_cursor_samples(index2);
     uint64_t delta_sample = (samples1 > samples2) ? samples1 - samples2 : samples2 - samples1;
     return _ruler->format_real_time(delta_sample, _session.get_device()->get_sample_rate());
-}
-
-double View::get_cursor_time(int index)
-{
-    assert(index < (int)_cursorList.size());
-
-    int curIndex = 0;
-    for (list<Cursor*>::iterator i = _cursorList.begin();
-         i != _cursorList.end(); i++) {
-        if (index == curIndex) {
-            return (*i)->time();
-        }
-        curIndex++;
-    }
 }
 
 uint64_t View::get_cursor_samples(int index)

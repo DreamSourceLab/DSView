@@ -448,7 +448,7 @@ void DsoSignal::set_trig_vpos(int pos)
     assert(_view);
     int trig_value;
     if (enabled()) {
-        double delta = min((double)max(pos - UpMargin, 0), get_view_rect().height()) * 1.0f / get_view_rect().height();
+        double delta = min((double)max(pos - UpMargin, 0), get_view_rect().height()) * 1.0 / get_view_rect().height();
         bool isDSCope = (strcmp(_dev_inst->dev_inst()->driver->name, "DSCope") == 0);
         if (isDSCope) {
             _trig_vpos = delta;
@@ -475,7 +475,7 @@ void DsoSignal::set_zeroPos(int pos)
     if (enabled()) {
         double delta = _trig_vpos - _zeroPos;
         set_trig_vpos(get_trig_vpos() + pos - get_zeroPos());
-        _zeroPos = min((double)max(pos - UpMargin, 0), get_view_rect().height()) * 1.0f / get_view_rect().height();
+        _zeroPos = min((double)max(pos - UpMargin, 0), get_view_rect().height()) * 1.0 / get_view_rect().height();
         _trig_vpos = min(max(_zeroPos + delta, 0.0), 1.0);
 
         update_zeroPos();
@@ -486,7 +486,7 @@ void DsoSignal::update_zeroPos()
 {
     if (strcmp(_dev_inst->dev_inst()->driver->name, "DSCope") == 0) {
         //double vpos_off = (0.5 - _zeroPos) * _vDial->get_value() * DS_CONF_DSO_VDIVS;
-        double vpos_off = (0.5 - (get_zeroPos() - UpMargin) * 1.0f/get_view_rect().height()) * _vDial->get_value() * DS_CONF_DSO_VDIVS;
+        double vpos_off = (0.5 - (get_zeroPos() - UpMargin) * 1.0/get_view_rect().height()) * _vDial->get_value() * DS_CONF_DSO_VDIVS;
         _dev_inst->set_config(_probe, NULL, SR_CONF_VPOS,
                               g_variant_new_double(vpos_off));
     }
@@ -517,7 +517,7 @@ void DsoSignal::paint_back(QPainter &p, int left, int right)
     const uint64_t sample_len = _dev_inst->get_sample_limit();
     const double samplerate = _dev_inst->get_sample_rate();
     const double samples_per_pixel = samplerate * _view->scale();
-    const double shown_rate = min(samples_per_pixel * width * 1.0f / sample_len, 1.0);
+    const double shown_rate = min(samples_per_pixel * width * 1.0 / sample_len, 1.0);
     const double start_time = _data->get_start_time();
     const double start = samplerate * (_view->offset() - start_time);
     const double shown_offset = min(start / sample_len, 1.0) * width;
@@ -538,7 +538,7 @@ void DsoSignal::paint_back(QPainter &p, int left, int right)
     QPen pen(Signal::dsFore);
     pen.setStyle(Qt::DotLine);
     p.setPen(pen);
-    const double spanY =height * 1.0f / DS_CONF_DSO_VDIVS;
+    const double spanY =height * 1.0 / DS_CONF_DSO_VDIVS;
     for (i = 1; i <= DS_CONF_DSO_VDIVS; i++) {
         const double posY = spanY * i + UpMargin;
         p.drawLine(left, posY, right, posY);
@@ -548,7 +548,7 @@ void DsoSignal::paint_back(QPainter &p, int left, int right)
                        width / 2.0f + 5, posY - miniSpanY * j);
         }
     }
-    const double spanX = width * 1.0f / DS_CONF_DSO_HDIVS;
+    const double spanX = width * 1.0 / DS_CONF_DSO_HDIVS;
     for (i = 1; i <= DS_CONF_DSO_HDIVS; i++) {
         const double posX = spanX * i;
         p.drawLine(posX, UpMargin,
@@ -815,7 +815,7 @@ void DsoSignal::paint_measure(QPainter &p)
         _period = (count == 0) ? period * 10 : period * 10.0f / count;
         const int channel_count = _view->session().get_ch_num(SR_CHANNEL_DSO);
         uint64_t sample_rate = _dev_inst->get_sample_rate();
-        _period = _period * 200 / (channel_count * sample_rate * 1.0f/ SR_MHZ(1));
+        _period = _period * 200 / (channel_count * sample_rate * 1.0 / SR_MHZ(1));
         QString max_string = abs(value_max) > 1000 ? QString::number(value_max/1000.0) + "V" : QString::number(value_max) + "mV";
         QString min_string = abs(value_min) > 1000 ? QString::number(value_min/1000.0) + "V" : QString::number(value_min) + "mV";
         QString period_string = abs(_period) > 1000000000 ? QString::number(_period/1000000000) + "S" :

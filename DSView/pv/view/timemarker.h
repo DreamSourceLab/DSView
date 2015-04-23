@@ -50,7 +50,6 @@ protected:
 	 * @param time The time to set the flag to.
 	 */
     TimeMarker(View &view, QColor &colour, uint64_t index);
-    TimeMarker(View &view, QColor &colour);
 
 	/**
 	 * Copy constructor
@@ -107,7 +106,6 @@ signals:
 protected:
     View &_view;
 
-	double _time;
     uint64_t _index;
 
 	QSizeF _text_size;

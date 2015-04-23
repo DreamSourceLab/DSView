@@ -601,8 +601,8 @@ static void samples_generator(uint16_t *buf, uint64_t size,
     case PATTERN_TRIANGLE:
         for (i = 0; i < size; i++) {
             if (i%CONST_LEN == 0) {
-                demo_data = p > 0x7fff ? 0x40 * (1 + (0x8000 - p * 1.0f) / 0x8000) :
-                                         0x40 * (p * 1.0f / 0x8000);
+                demo_data = p > 0x7fff ? 0x40 * (1 + (0x8000 - p * 1.0) / 0x8000) :
+                                         0x40 * (p * 1.0 / 0x8000);
                 p += CONST_LEN * 10;
             }
             *(buf + i) = demo_data + (demo_data << 8);
@@ -654,7 +654,7 @@ static void samples_generator(uint16_t *buf, uint64_t size,
 	case PATTERN_RANDOM: /* Random */
         for (i = 0; i < size; i++) {
             if (i%CONST_LEN == 0)
-                demo_data = (uint16_t)(rand() * (0x40 * 1.0f / RAND_MAX));
+                demo_data = (uint16_t)(rand() * (0x40 * 1.0 / RAND_MAX));
             *(buf + i) = demo_data + (demo_data << 8);
             GSList *l;
             struct sr_channel *probe;

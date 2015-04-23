@@ -74,9 +74,9 @@ public:
 
 	static const QSizeF LabelPadding;
 
-    static const int WellPixelsPerSample = 10.0f;
-    static constexpr double MaxViewRate = 1.0f;
-    static const int MaxPixelsPerSample = 100.0f;
+    static const int WellPixelsPerSample = 10;
+    static constexpr double MaxViewRate = 1.0;
+    static const int MaxPixelsPerSample = 100;
 
 public:
     explicit View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget *parent = 0);
@@ -196,8 +196,6 @@ private:
 	void update_scroll();
 
     void update_margins();
-
-    double get_cursor_time(int index);
 
     static bool compare_trace_v_offsets(
         const boost::shared_ptr<pv::view::Trace> &a,

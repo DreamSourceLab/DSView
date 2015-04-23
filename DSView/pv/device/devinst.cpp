@@ -170,7 +170,7 @@ double DevInst::get_sample_time()
     if (sample_rate == 0)
         sample_time = 0;
     else
-        sample_time = sample_limit * 1.0f / sample_rate;
+        sample_time = sample_limit * 1.0 / sample_rate;
 
     return sample_time;
 }

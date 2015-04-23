@@ -25,6 +25,7 @@
 
 #include "ruler.h"
 #include "view.h"
+#include "../device/device.h"
 
 #include <QBrush>
 #include <QPainter>
@@ -57,15 +58,10 @@ Cursor::Cursor(View &view, QColor color, uint64_t index) :
 {
 }
 
-Cursor::Cursor(View &view, QColor color) :
-    TimeMarker(view, color),
-    _other(*this)
-{
-}
-
 QRectF Cursor::get_label_rect(const QRect &rect) const
 {
-	const float x = (_time - _view.offset()) / _view.scale();
+    const double samples_per_pixel = _view.session().get_device()->get_sample_rate() * _view.scale();
+    const double x = _index/samples_per_pixel - (_view.offset() / _view.scale());
 
 	const QSizeF label_size(
 		_text_size.width() + View::LabelPadding.width() * 2,
@@ -120,7 +116,7 @@ void Cursor::paint_label(QPainter &p, const QRect &rect,
     p.drawLine(close.left() + 2, close.bottom() - 2, close.right() - 2, close.top() + 2);
 
 	p.drawText(r, Qt::AlignCenter | Qt::AlignVCenter,
-		Ruler::format_time(_time, prefix, 2));
+        Ruler::format_real_time(_index, _view.session().get_device()->get_sample_rate()));
 
     const QRectF arrowRect = QRectF(r.bottomLeft().x(), r.bottomLeft().y(), r.width(), ArrowSize);
     p.drawText(arrowRect, Qt::AlignCenter | Qt::AlignVCenter, QString::number(index));
@@ -147,7 +143,7 @@ void Cursor::paint_fix_label(QPainter &p, const QRect &rect,
 
     p.setPen(Qt::white);
     p.drawText(r, Qt::AlignCenter | Qt::AlignVCenter,
-        Ruler::format_time(_time, prefix, 2));
+        Ruler::format_real_time(_index, _view.session().get_device()->get_sample_rate()));
 
     const QRectF arrowRect = QRectF(r.bottomLeft().x(), r.bottomLeft().y(), r.width(), ArrowSize);
     p.drawText(arrowRect, Qt::AlignCenter | Qt::AlignVCenter, label);
@@ -156,7 +152,7 @@ void Cursor::paint_fix_label(QPainter &p, const QRect &rect,
 void Cursor::compute_text_size(QPainter &p, unsigned int prefix)
 {
 	_text_size = p.boundingRect(QRectF(), 0,
-		Ruler::format_time(_time, prefix, 2)).size();
+        Ruler::format_real_time(_index, _view.session().get_device()->get_sample_rate())).size();
 }
 
 } // namespace view

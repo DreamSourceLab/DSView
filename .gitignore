@@ -37,6 +37,7 @@ DSView/install_manifest.txt
 
 moc_*.cxx
 moc_*.cxx_parameters
+qrc_*.cxx
 
 libsigrok4DSL/version.h
 
