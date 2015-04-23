@@ -289,7 +289,7 @@ static int fpga_setting(const struct sr_dev_inst *sdi)
                    (devc->instant << 9) + (devc->zero << 10);
     setting.divider = devc->zero ? 0x1 : (uint32_t)ceil(SR_MHZ(100) * 1.0 / devc->cur_samplerate);
     setting.count = (sdi->mode == DSO) ? (uint32_t)(devc->limit_samples / (channel_cnt / channel_en_cnt)) : (uint32_t)(devc->limit_samples);
-    setting.trig_pos = (uint32_t)(trigger->trigger_pos / 100.0f * devc->limit_samples);
+    setting.trig_pos = (uint32_t)(trigger->trigger_pos / 100.0 * devc->limit_samples);
     setting.trig_glb = trigger->trigger_stages;
     setting.trig_adp = setting.count - setting.trig_pos - 1;
     setting.trig_sda = 0x0;
@@ -1574,9 +1574,9 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 	            struct sr_channel *probe = (struct sr_channel *)l->data;
 	            channel_cnt += probe->enabled;
 	        }
-	        devc->trigger_hpos = g_variant_get_uint16(data) * channel_cnt * devc->limit_samples / 200.0f;
+            devc->trigger_hpos = g_variant_get_uint16(data) * channel_cnt * devc->limit_samples / 200.0;
 		} else {
-        	devc->trigger_hpos = g_variant_get_uint16(data) * devc->limit_samples / 100.0f;
+            devc->trigger_hpos = g_variant_get_uint16(data) * devc->limit_samples / 100.0;
         }
 		if (sdi->mode == DSO) {
             ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 1, SR_CONF_HORIZ_TRIGGERPOS));

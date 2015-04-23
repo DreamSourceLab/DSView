@@ -136,7 +136,7 @@ QString Ruler::format_time(double t)
 
 QString Ruler::format_real_time(uint64_t delta_index, uint64_t sample_rate)
 {
-    uint64_t delta_time = delta_index * std::pow(10, 12) / sample_rate;
+    uint64_t delta_time = std::pow(10, 12) / sample_rate * delta_index;
 
     if (delta_time == 0)
         return "0";
@@ -148,12 +148,12 @@ QString Ruler::format_real_time(uint64_t delta_index, uint64_t sample_rate)
         zero++;
     }
 
-    return format_time(delta_time * 1.0f / std::pow(10, 12-zero), prefix/3+1, prefix/3*3 > zero ? prefix/3*3 - zero : 0);
+    return format_time(delta_time / std::pow(10.0, 12-zero), prefix/3+1, prefix/3*3 > zero ? prefix/3*3 - zero : 0);
 }
 
 QString Ruler::format_real_freq(uint64_t delta_index, uint64_t sample_rate)
 {
-    const double delta_period = delta_index * 1.0f / sample_rate;
+    const double delta_period = delta_index * 1.0 / sample_rate;
     return format_freq(delta_period);
 }
 
@@ -324,8 +324,8 @@ void Ruler::draw_tick_mark(QPainter &p)
 {
     using namespace Qt;
 
-    const double SpacingIncrement = 32.0f;
-    const double MinValueSpacing = 16.0f;
+    const double SpacingIncrement = 32.0;
+    const double MinValueSpacing = 16.0;
     const int ValueMargin = 15;
 
     double min_width = SpacingIncrement, typical_width;
@@ -423,11 +423,11 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
 {
     using namespace Qt;
 
-    const double SpacingIncrement = 32.0f;
-    const double MinValueSpacing = 16.0f;
+    const double SpacingIncrement = 32.0;
+    const double MinValueSpacing = 16.0;
     const int ValueMargin = 5;
 
-    const double abs_min_period = 10.0f / _view.session().get_device()->get_sample_rate();
+    const double abs_min_period = 10.0 / _view.session().get_device()->get_sample_rate();
 
     double min_width = SpacingIncrement;
     double typical_width;
@@ -505,13 +505,13 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
         else
         {
             // Draw a minor tick
-            if (minor_tick_period / _view.scale() > 2 * typical_width ||
-                    tick_period / _view.scale() > _view.get_view_width())
+            if (minor_tick_period / _view.scale() > 2 * typical_width)
                 p.drawText(x, 2 * ValueMargin, 0, text_height,
                     AlignCenter | AlignTop | TextDontClip,
                     format_time(t, prefix));
             //else if ((tick_period / _view.scale() > width() / 4) && (minor_tick_period / _view.scale() > inc_text_width))
-            else if (minor_tick_period / _view.scale() > 1.1 * inc_text_width)
+            else if (minor_tick_period / _view.scale() > 1.1 * inc_text_width ||
+                     tick_period / _view.scale() > _view.get_view_width())
                 p.drawText(x, 2 * ValueMargin, 0, minor_tick_y1 + ValueMargin,
                     AlignCenter | AlignTop | TextDontClip,
                     format_time(t - major_t, minor_prefix));

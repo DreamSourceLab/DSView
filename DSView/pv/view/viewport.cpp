@@ -36,6 +36,8 @@
 #include <QMouseEvent>
 #include <QStyleOption>
 
+#include <math.h>
+
 #include <boost/foreach.hpp>
 
 using namespace boost;
@@ -177,8 +179,9 @@ void Viewport::paintSignals(QPainter &p)
     if (_view.cursors_shown()) {
         list<Cursor*>::iterator i = _view.get_cursorList().begin();
         double cursorX;
+        const double samples_per_pixel = _view.session().get_device()->get_sample_rate() * _view.scale();
         while (i != _view.get_cursorList().end()) {
-            cursorX = ((*i)->time() - _view.offset()) / _view.scale();
+            cursorX = (*i)->index()/samples_per_pixel - (_view.offset() / _view.scale());
             if (rect().contains(_view.hover_point().x(), _view.hover_point().y()) &&
                     qAbs(cursorX - _view.hover_point().x()) <= HitCursorMargin)
                 (*i)->paint(p, rect(), 1);
@@ -212,7 +215,7 @@ void Viewport::paintProgress(QPainter &p)
     using pv::view::Signal;
 
     const quint64 _total_sample_len = _view.session().get_device()->get_sample_limit();
-    double progress = -(_total_receive_len * 1.0f / _total_sample_len * 360 * 16);
+    double progress = -(_total_receive_len * 1.0 / _total_sample_len * 360 * 16);
     int captured_progress = 0;
 
     p.setPen(Qt::gray);
@@ -345,8 +348,9 @@ void Viewport::mousePressEvent(QMouseEvent *event)
         if (_view.cursors_shown()) {
             list<Cursor*>::iterator i = _view.get_cursorList().begin();
             double cursorX;
+            const double samples_per_pixel = _view.session().get_device()->get_sample_rate() * _view.scale();
             while (i != _view.get_cursorList().end()) {
-                cursorX = ((*i)->time() - _view.offset()) / _view.scale();
+                cursorX = (*i)->index()/samples_per_pixel - (_view.offset() / _view.scale());
                 if ((*i)->grabbed())
                     _view.get_ruler()->rel_grabbed_cursor();
                 else if (qAbs(cursorX - event->pos().x()) <= HitCursorMargin) {
@@ -405,11 +409,11 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
         if (_view.cursors_shown() && grabbed_marker) {
             const double cur_time = _view.offset() + _view.hover_point().x() * _view.scale();
             const double pos = cur_time * sample_rate;
-            const double pos_delta = pos - (int)pos;
+            const double pos_delta = pos - (uint64_t)pos;
             if ( pos_delta < 0.5)
-                grabbed_marker->set_index(floor(pos));
+                grabbed_marker->set_index((uint64_t)floor(pos));
             else
-                grabbed_marker->set_index(ceil(pos));
+                grabbed_marker->set_index((uint64_t)ceil(pos));
         }
         measure();
     }
@@ -519,7 +523,7 @@ void Viewport::measure()
                _cur_thdX = _thd_sample / samples_per_pixel - pixels_offset;
                _cur_midY = logicSig->get_y();
 
-               _mm_duty = _thd_sample != 0 ? QString::number((_nxt_sample - _cur_sample) * 100.0f / (_thd_sample - _cur_sample), 'f', 2)+"%" :
+               _mm_duty = _thd_sample != 0 ? QString::number((_nxt_sample - _cur_sample) * 100.0 / (_thd_sample - _cur_sample), 'f', 2)+"%" :
                                              "#####";
                mouse_measure();
                return;
@@ -554,18 +558,28 @@ void Viewport::paintMeasure(QPainter &p)
     }
 
     if (_measure_en) {
-        double typical_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
-            Qt::AlignLeft | Qt::AlignTop, _mm_width).width() + 150;
-        QRectF measure_rect = QRectF(_view.hover_point().x(), _view.hover_point().y(),
-                                     (double)typical_width, 80.0);
-        QRectF measure1_rect = QRectF(_view.hover_point().x(), _view.hover_point().y(),
-                                     (double)typical_width, 20.0);
-        QRectF measure2_rect = QRectF(_view.hover_point().x(), _view.hover_point().y() + 20,
-                                     (double)typical_width, 20.0);
-        QRectF measure3_rect = QRectF(_view.hover_point().x(), _view.hover_point().y() + 40,
-                                     (double)typical_width, 20.0);
-        QRectF measure4_rect = QRectF(_view.hover_point().x(), _view.hover_point().y() + 60,
-                                     (double)typical_width, 20.0);
+        int typical_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
+            Qt::AlignLeft | Qt::AlignTop, _mm_width).width();
+        typical_width = max(typical_width, p.boundingRect(0, 0, INT_MAX, INT_MAX,
+            Qt::AlignLeft | Qt::AlignTop, _mm_period).width());
+        typical_width = max(typical_width, p.boundingRect(0, 0, INT_MAX, INT_MAX,
+            Qt::AlignLeft | Qt::AlignTop, _mm_freq).width());
+        typical_width = max(typical_width, p.boundingRect(0, 0, INT_MAX, INT_MAX,
+            Qt::AlignLeft | Qt::AlignTop, _mm_duty).width());
+        typical_width = typical_width + 100;
+
+        const double width = _view.get_view_width();
+        const double height = _view.viewport()->height();
+        const double left = _view.hover_point().x();
+        const double top = _view.hover_point().y();
+        const double right = left + typical_width;
+        const double bottom = top + 80;
+        QPointF org_pos = QPointF(right > width ? left - typical_width : left, bottom > height ? top - 80 : top);
+        QRectF measure_rect = QRectF(org_pos.x(), org_pos.y(), (double)typical_width, 80.0);
+        QRectF measure1_rect = QRectF(org_pos.x(), org_pos.y(), (double)typical_width, 20.0);
+        QRectF measure2_rect = QRectF(org_pos.x(), org_pos.y()+20, (double)typical_width, 20.0);
+        QRectF measure3_rect = QRectF(org_pos.x(), org_pos.y()+40, (double)typical_width, 20.0);
+        QRectF measure4_rect = QRectF(org_pos.x(), org_pos.y()+60, (double)typical_width, 20.0);
 
         p.setPen(Qt::NoPen);
         p.setBrush(QColor(17, 133, 209,  150));
