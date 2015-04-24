@@ -601,6 +601,7 @@ static int set_probes(struct sr_dev_inst *sdi, int num_probes)
             return SR_ERR;
         if (sdi->mode == DSO) {
             probe->vdiv = 1000;
+            probe->vfactor = 1;
             probe->vpos = 0;
             probe->coupling = SR_DC_COUPLING;
             probe->trig_value = 0x80;

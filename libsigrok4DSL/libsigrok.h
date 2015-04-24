@@ -323,7 +323,7 @@ struct sr_datafeed_dso {
     uint64_t mqflags;
     /** The analog value(s). The data is interleaved according to
      * the probes list. */
-    float *data;
+    void *data;
 };
 
 struct sr_datafeed_analog {
@@ -559,6 +559,7 @@ struct sr_channel {
 	char *name;
 	char *trigger;
     uint64_t vdiv;
+    uint16_t vfactor;
     double vpos;
     uint8_t coupling;
     uint8_t trig_value;
