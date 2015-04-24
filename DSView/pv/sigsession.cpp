@@ -188,6 +188,8 @@ QList<QString> SigSession::getSuportedExportFormats(){
     while(*supportedModules){
         if(*supportedModules == NULL)
             break;
+        if (_dev_inst->dev_inst()->mode == DSO && strcmp((*supportedModules)->id, "csv"))
+            break;
         QString format((*supportedModules)->desc);
         format.append(" (*.");
         format.append((*supportedModules)->id);
@@ -203,12 +205,27 @@ void SigSession::cancelSaveFile(){
 }
 
 void SigSession::export_file(const std::string &name, QWidget* parent, const std::string &ext){
-    const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
-            _logic_data->get_snapshots();
-    if(snapshots.empty())
+    boost::shared_ptr<pv::data::Snapshot> snapshot;
+    int channel_type;
+
+    if (_dev_inst->dev_inst()->mode == LOGIC) {
+        const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
+                _logic_data->get_snapshots();
+        if(snapshots.empty())
+            return;
+        snapshot = snapshots.front();
+        channel_type = SR_CHANNEL_LOGIC;
+    } else if (_dev_inst->dev_inst()->mode == DSO) {
+        const deque< boost::shared_ptr<pv::data::DsoSnapshot> > &snapshots =
+                _dso_data->get_snapshots();
+        if(snapshots.empty())
+            return;
+        snapshot = snapshots.front();
+        channel_type = SR_CHANNEL_DSO;
+    } else {
         return;
-    const boost::shared_ptr<pv::data::LogicSnapshot> & snapshot =
-            snapshots.front();
+    }
+
     const struct sr_output_module** supportedModules = sr_output_list();
     const struct sr_output_module* outModule = NULL;
     while(*supportedModules){
@@ -222,10 +239,23 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
     }
     if(outModule == NULL)
         return;
-    struct sr_output output;
+
+
     GHashTable *params = g_hash_table_new(g_str_hash, g_str_equal);
     GVariant* filenameGVariant = g_variant_new_string(name.c_str());
     g_hash_table_insert(params, (char*)"filename", filenameGVariant);
+    GVariant* typeGVariant = g_variant_new_int16(channel_type);
+    g_hash_table_insert(params, (char*)"type", typeGVariant);
+    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals) {
+        boost::shared_ptr<view::DsoSignal> dsoSig;
+        if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
+            GVariant* timebaseGVariant = g_variant_new_uint64(dsoSig->get_hDialValue());
+            g_hash_table_insert(params, (char*)"timebase", timebaseGVariant);
+            break;
+        }
+    }
+
+    struct sr_output output;
     output.module = (sr_output_module*) outModule;
     output.sdi = _dev_inst->dev_inst();
     output.param = NULL;
@@ -234,33 +264,64 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
     QFile file(name.c_str());
     file.open(QIODevice::WriteOnly | QIODevice::Text);
     QTextStream out(&file);
-    QFuture<void> future = QtConcurrent::run([&]{
-        saveFileThreadRunning = true;
-        unsigned char* datat = (unsigned char*)snapshot->get_data();
-        unsigned int numsamples = snapshot->get_sample_count()*snapshot->unit_size();
-        GString *data_out;
-        int usize = 8192;
-        int size = usize;
-        struct sr_datafeed_logic lp;
-        struct sr_datafeed_packet p;
-        for(uint64_t i = 0; i < numsamples; i+=usize){
-            if(numsamples - i < usize)
-                size = numsamples - i;
-            lp.data = &datat[i];
-            lp.length = size;
-            lp.unitsize = snapshot->unit_size();
-            p.type = SR_DF_LOGIC;
-            p.payload = &lp;
-            outModule->receive(&output, &p, &data_out);
-            if(data_out){
-                out << (char*) data_out->str;
-                g_string_free(data_out,TRUE);
+    QFuture<void> future;
+    if (_dev_inst->dev_inst()->mode == LOGIC) {
+        future = QtConcurrent::run([&]{
+            saveFileThreadRunning = true;
+            unsigned char* datat = (unsigned char*)snapshot->get_data();
+            unsigned int numsamples = snapshot->get_sample_count()*snapshot->unit_size();
+            GString *data_out;
+            int usize = 8192;
+            int size = usize;
+            struct sr_datafeed_logic lp;
+            struct sr_datafeed_packet p;
+            for(uint64_t i = 0; i < numsamples; i+=usize){
+                if(numsamples - i < usize)
+                    size = numsamples - i;
+                lp.data = &datat[i];
+                lp.length = size;
+                lp.unitsize = snapshot->unit_size();
+                p.type = SR_DF_LOGIC;
+                p.payload = &lp;
+                outModule->receive(&output, &p, &data_out);
+                if(data_out){
+                    out << (char*) data_out->str;
+                    g_string_free(data_out,TRUE);
+                }
+                emit  progressSaveFileValueChanged(i*100/numsamples);
+                if(!saveFileThreadRunning)
+                    break;
             }
-            emit  progressSaveFileValueChanged(i*100/numsamples);
-            if(!saveFileThreadRunning)
-                break;
-        }
-    });
+        });
+    } else if (_dev_inst->dev_inst()->mode == DSO) {
+        future = QtConcurrent::run([&]{
+            saveFileThreadRunning = true;
+            unsigned char* datat = (unsigned char*)snapshot->get_data();
+            unsigned int numsamples = snapshot->get_sample_count();
+            GString *data_out;
+            int usize = 8192;
+            int size = usize;
+            struct sr_datafeed_dso dp;
+            struct sr_datafeed_packet p;
+            for(uint64_t i = 0; i < numsamples; i+=usize){
+                if(numsamples - i < usize)
+                    size = numsamples - i;
+                dp.data = &datat[i*snapshot->get_channel_num()];
+                dp.num_samples = size;
+                p.type = SR_DF_DSO;
+                p.payload = &dp;
+                outModule->receive(&output, &p, &data_out);
+                if(data_out){
+                    out << (char*) data_out->str;
+                    g_string_free(data_out,TRUE);
+                }
+                emit  progressSaveFileValueChanged(i*100/numsamples);
+                if(!saveFileThreadRunning)
+                    break;
+            }
+        });
+    }
+
     QFutureWatcher<void> watcher;
     Qt::WindowFlags flags = Qt::CustomizeWindowHint;
     QProgressDialog dlg(QString::fromUtf8("Exporting data... It can take a while."),

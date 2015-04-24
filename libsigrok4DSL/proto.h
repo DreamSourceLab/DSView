@@ -141,6 +141,7 @@ SR_API char *sr_iec_string_u64(uint64_t x, const char *unit);
 SR_API char *sr_samplerate_string(uint64_t samplerate);
 SR_API char *sr_samplecount_string(uint64_t samplecount);
 SR_API char *sr_period_string(uint64_t frequency);
+SR_API char *sr_time_string(uint64_t time);
 SR_API char *sr_voltage_string(uint64_t v_p, uint64_t v_q);
 SR_API char **sr_parse_triggerstring(const struct sr_dev_inst *sdi,
 		const char *triggerstring);

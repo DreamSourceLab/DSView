@@ -503,6 +503,8 @@ void Viewport::set_receive_len(quint64 length)
 
 void Viewport::measure()
 {
+   if (_view.session().get_capture_state() == SigSession::Running)
+       return;
    const uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
    const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
    BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {

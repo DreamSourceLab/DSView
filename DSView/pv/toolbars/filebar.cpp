@@ -127,14 +127,7 @@ void FileBar::on_actionExport_triggered(){
         msg.setStandardButtons(QMessageBox::Ok);
         msg.setIcon(QMessageBox::Warning);
         msg.exec();
-    } else if (_session.get_device()->dev_inst()->mode != LOGIC) {
-        QMessageBox msg(this);
-        msg.setText("Export Data");
-        msg.setInformativeText("DSLogic currently only support exporting logic data to file!");
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.setIcon(QMessageBox::Warning);
-        msg.exec();
-    }else {
+    } else {
         QList<QString> supportedFormats = _session.getSuportedExportFormats();
         QString filter;
         for(int i = 0; i < supportedFormats.count();i++){
