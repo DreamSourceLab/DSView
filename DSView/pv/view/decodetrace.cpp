@@ -547,7 +547,8 @@ bool DecodeTrace::draw_unresolved_period(QPainter &p, int h, int left,
 	shared_ptr<Logic> data;
 	shared_ptr<LogicSignal> logic_signal;
 
-    const int64_t sample_count = _session.get_device()->get_sample_limit();
+    //const int64_t sample_count = _session.get_device()->get_sample_limit();
+    const int64_t sample_count = _decoder_stack->sample_count();
 	if (sample_count == 0)
         return true;
 
