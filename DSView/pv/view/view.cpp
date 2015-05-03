@@ -96,12 +96,10 @@ View::View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     setViewportMargins(headerWidth(), RulerHeight, 0, 0);
     setViewport(_viewport);
 
-	connect(&_session, SIGNAL(signals_changed()),
-		this, SLOT(signals_changed()));
-	connect(&_session, SIGNAL(data_updated()),
-		this, SLOT(data_updated()));
-    connect(&_session, SIGNAL(receive_data(quint64)),
-            this, SLOT(receive_data(quint64)));
+    connect(&_session, SIGNAL(signals_changed()),
+        this, SLOT(signals_changed()));
+    connect(&_session, SIGNAL(data_updated()),
+        this, SLOT(data_updated()));
     connect(&_session, SIGNAL(receive_trigger(quint64)),
             this, SLOT(set_trig_pos(quint64)));
 
@@ -550,7 +548,7 @@ bool View::viewportEvent(QEvent *e)
 int View::headerWidth()
 {
     int headerWidth;
-    int maxNameWidth = 0;
+    int maxNameWidth = 25;
     int maxLeftWidth = 0;
     int maxRightWidth = 0;
 
@@ -580,7 +578,11 @@ void View::resizeEvent(QResizeEvent*)
     if (_session.get_device()->dev_inst()->mode == DSO)
         _scale = _session.get_device()->get_time_base() * std::pow(10.0, -9.0) * DS_CONF_DSO_HDIVS / get_view_width();
 
-    _maxscale = _session.get_device()->get_sample_time() / (get_view_width() * MaxViewRate);
+    if (_session.get_device()->dev_inst()->mode != DSO)
+        _maxscale = _session.get_device()->get_sample_time() / (get_view_width() * MaxViewRate);
+    else
+        _maxscale = 1e9;
+
     _scale = min(_scale, _maxscale);
 
     signals_changed();
@@ -720,11 +722,6 @@ void View::set_cursor_middle(int index)
     while (index-- != 0)
             i++;
     set_scale_offset(_scale, (*i)->index() * 1.0 / _session.get_device()->get_sample_rate() - _scale * get_view_width() / 2);
-}
-
-void View::receive_data(quint64 length)
-{
-    _viewport->set_receive_len(length);
 }
 
 Viewport * View::get_viewport()

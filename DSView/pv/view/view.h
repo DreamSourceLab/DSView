@@ -225,8 +225,6 @@ private slots:
 
     void header_updated();
 
-    void receive_data(quint64 length);
-
     void set_trig_pos(quint64 trig_pos);
 
 private:

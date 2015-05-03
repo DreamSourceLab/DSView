@@ -35,6 +35,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <stdint.h>
 
 #include <QObject>
 #include <QString>

@@ -32,7 +32,7 @@
 #define WINVER 0x0501
 #define _WIN32_WINNT WINVER
 #include <Winsock2.h>
-#include <ddk/usbiodef.h>
+#include <usbiodef.h>
 #endif
 
 #ifdef __cplusplus
@@ -389,7 +389,7 @@ struct sr_input_format {
 
 	/**
 	 * Load a file, parsing the input according to the file's format.
-	 *
+     *
 	 * This function will send datafeed packets to the session bus, so
 	 * the calling frontend must have registered its session callbacks
 	 * beforehand.
@@ -404,7 +404,7 @@ struct sr_input_format {
 	 *           the responsibility of the caller to free it later.
 	 * @param filename The name (and path) of the file to use.
 	 *
-	 * @return SR_OK upon success, a negative error code upon failure.
+     * @return SR_OK upon succcess, a negative error code upon failure.
 	 */
 	int (*loadfile) (struct sr_input *in, const char *filename);
 };
@@ -610,11 +610,11 @@ struct sr_status {
 
     uint8_t ch0_max;
     uint8_t ch0_min;
-    uint32_t ch0_period;
+    uint64_t ch0_period;
     uint32_t ch0_pcnt;
     uint8_t ch1_max;
     uint8_t ch1_min;
-    uint32_t ch1_period;
+    uint64_t ch1_period;
     uint32_t ch1_pcnt;
 
     uint32_t vlen;
@@ -766,6 +766,9 @@ enum {
 
     /** Channel enable for dso channel. */
     SR_CONF_EN_CH,
+
+    /** probe factor for dso channel. */
+    SR_CONF_FACTOR,
 
 	/** Trigger types.  */
 	SR_CONF_TRIGGER_TYPE,

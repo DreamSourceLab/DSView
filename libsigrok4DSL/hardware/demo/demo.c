@@ -344,6 +344,9 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_VDIV:
         *data = g_variant_new_uint64(ch->vdiv);
         break;
+    case SR_CONF_FACTOR:
+        *data = g_variant_new_uint64(ch->vfactor);
+        break;
     case SR_CONF_TIMEBASE:
         *data = g_variant_new_uint64(devc->timebase);
         break;
@@ -424,6 +427,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                     ret = SR_ERR;
                 else {
                     probe->vdiv = 1000;
+                    probe->vfactor = 1;
                     probe->coupling = SR_DC_COUPLING;
                     probe->trig_value = 0x80;
                     sdi->channels = g_slist_append(sdi->channels, probe);
@@ -471,6 +475,11 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         ch->vdiv = g_variant_get_uint64(data);
         sr_dbg("%s: setting VDIV of channel %d to %" PRIu64, __func__,
                ch->index, ch->vdiv);
+        ret = SR_OK;
+    } else if (id == SR_CONF_FACTOR) {
+        ch->vfactor = g_variant_get_uint64(data);
+        sr_dbg("%s: setting FACTOR of channel %d to %" PRIu64, __func__,
+               ch->index, ch->vfactor);
         ret = SR_OK;
     } else if (id == SR_CONF_TIMEBASE) {
         devc->timebase = g_variant_get_uint64(data);

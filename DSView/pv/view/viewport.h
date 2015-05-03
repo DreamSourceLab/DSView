@@ -56,8 +56,6 @@ public:
 
     QPoint get_mouse_point() const;
 
-    void set_receive_len(quint64 length);
-
     QString get_measure(QString option);
 
     void set_measure_en(int enable);
@@ -85,6 +83,7 @@ private:
 private slots:
     void on_traces_moved();
     void on_trigger_timer();
+    void set_receive_len(quint64 length);
 
 signals:
     void mouse_measure();
@@ -92,7 +91,7 @@ signals:
 private:
 	View &_view;
 
-    quint64 _total_receive_len;
+    uint64_t _total_receive_len;
     QPoint _mouse_point;
 	QPoint _mouse_down_point;
 	double _mouse_down_offset;
@@ -107,6 +106,7 @@ private:
 
     bool _measure_en;
     bool _measure_shown;
+    int _measure_type;
     uint64_t _cur_sample;
     uint64_t _nxt_sample;
     uint64_t _thd_sample;
@@ -124,6 +124,9 @@ private:
     int timer_cnt;
 
     boost::shared_ptr<Signal> _drag_sig;
+
+    uint64_t _hover_index;
+    bool _hover_hit;
 };
 
 } // namespace view

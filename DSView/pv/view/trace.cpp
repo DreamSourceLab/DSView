@@ -300,6 +300,9 @@ int Trace::pt_in_rect(int y, int right, const QPoint &point)
     const QRectF edgeTrig = get_rect("edgeTrig", y, right);
     const QRectF label = get_rect("label", get_zeroPos(), right);
     const QRectF vDial = get_rect("vDial", y, right);
+    const QRectF x1 = get_rect("x1", y, right);
+    const QRectF x10 = get_rect("x10", y, right);
+    const QRectF x100 = get_rect("x100", y, right);
     const QRectF hDial = get_rect("hDial", y, right);
     const QRectF chEn = get_rect("chEn", y, right);
     const QRectF acdc = get_rect("acdc", y, right);
@@ -323,6 +326,12 @@ int Trace::pt_in_rect(int y, int right, const QPoint &point)
         return LABEL;
     else if (vDial.contains(point) && _type == DS_DSO && enabled())
         return VDIAL;
+    else if (x1.contains(point) && _type == DS_DSO && enabled())
+        return X1;
+    else if (x10.contains(point) && _type == DS_DSO && enabled())
+        return X10;
+    else if (x100.contains(point) && _type == DS_DSO && enabled())
+        return X100;
     else if (hDial.contains(point) && _type == DS_DSO && enabled())
         return HDIAL;
     else if (chEn.contains(point) && _type == DS_DSO)
@@ -400,6 +409,21 @@ QRectF Trace::get_rect(const char *s, int y, int right)
             get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin,
             y - SquareWidth * SquareNum,
             SquareWidth * (SquareNum-1), SquareWidth * (SquareNum-1));
+    else if (!strcmp(s, "x1"))
+        return QRectF(
+            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin - 45,
+            y - SquareWidth - SquareWidth * (SquareNum-1) * 0.85,
+            SquareWidth * 1.75, SquareWidth);
+    else if (!strcmp(s, "x10"))
+        return QRectF(
+            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin - 45,
+            y - SquareWidth - SquareWidth * (SquareNum-1) * 0.55,
+            SquareWidth * 1.75, SquareWidth);
+    else if (!strcmp(s, "x100"))
+        return QRectF(
+            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin - 45,
+            y - SquareWidth - SquareWidth * (SquareNum-1) * 0.25,
+            SquareWidth * 1.75, SquareWidth);
     else if (!strcmp(s, "hDial"))
         return QRectF(
             get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin,
