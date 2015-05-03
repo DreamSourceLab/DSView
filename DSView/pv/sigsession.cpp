@@ -60,18 +60,21 @@
 
 #include <boost/foreach.hpp>
 
-using boost::dynamic_pointer_cast;
-using boost::function;
-using boost::lock_guard;
-using boost::mutex;
-using boost::shared_ptr;
-using std::list;
-using std::map;
-using std::set;
-using std::string;
-using std::vector;
-using std::deque;
-using std::min;
+//using boost::dynamic_pointer_cast;
+//using boost::function;
+//using boost::lock_guard;
+//using boost::mutex;
+//using boost::shared_ptr;
+//using std::list;
+//using std::map;
+//using std::set;
+//using std::string;
+//using std::vector;
+//using std::deque;
+//using std::min;
+
+using namespace boost;
+using namespace std;
 
 namespace pv {
 
@@ -100,10 +103,6 @@ SigSession::SigSession(DeviceManager &device_manager) :
 SigSession::~SigSession()
 {
 	stop_capture();
-    if (_hotplug_handle) {
-        stop_hotplug_proc();
-        deregister_hotplug_callback();
-    }
 		       
     ds_trigger_destroy();
 
@@ -111,6 +110,11 @@ SigSession::~SigSession()
 
 	// TODO: This should not be necessary
 	_session = NULL;
+
+    if (_hotplug_handle) {
+        stop_hotplug_proc();
+        deregister_hotplug_callback();
+    }
 }
 
 boost::shared_ptr<device::DevInst> SigSession::get_device() const
@@ -118,7 +122,7 @@ boost::shared_ptr<device::DevInst> SigSession::get_device() const
     return _dev_inst;
 }
 
-void SigSession::set_device(shared_ptr<device::DevInst> dev_inst) throw(QString)
+void SigSession::set_device(boost::shared_ptr<device::DevInst> dev_inst) throw(QString)
 {
     using pv::device::Device;
 
@@ -154,13 +158,13 @@ void SigSession::set_file(const string &name) throw(QString)
     // Deslect the old device, because file type detection in File::create
     // destorys the old session inside libsigrok.
     try {
-        set_device(shared_ptr<device::DevInst>());
+        set_device(boost::shared_ptr<device::DevInst>());
     } catch(const QString e) {
         throw(e);
         return;
     }
     try {
-        set_device(shared_ptr<device::DevInst>(device::File::create(name)));
+        set_device(boost::shared_ptr<device::DevInst>(device::File::create(name)));
     } catch(const QString e) {
         throw(e);
         return;
@@ -342,8 +346,8 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
 
 void SigSession::set_default_device(boost::function<void (const QString)> error_handler)
 {
-    shared_ptr<pv::device::DevInst> default_device;
-    const list< shared_ptr<device::DevInst> > &devices =
+    boost::shared_ptr<pv::device::DevInst> default_device;
+    const list<boost::shared_ptr<device::DevInst> > &devices =
         _device_manager.devices();
 
     if (!devices.empty()) {
@@ -351,7 +355,7 @@ void SigSession::set_default_device(boost::function<void (const QString)> error_
         default_device = devices.front();
 
         // Try and find the DreamSourceLab device and select that by default
-        BOOST_FOREACH (shared_ptr<pv::device::DevInst> dev, devices)
+        BOOST_FOREACH (boost::shared_ptr<pv::device::DevInst> dev, devices)
             if (dev->dev_inst() &&
                 strcmp(dev->dev_inst()->driver->name,
                 "demo") != 0) {
@@ -373,7 +377,7 @@ void SigSession::release_device(device::DevInst *dev_inst)
     assert(_dev_inst.get() == dev_inst);
 
     assert(_capture_state != Running);
-    _dev_inst = shared_ptr<device::DevInst>();
+    _dev_inst = boost::shared_ptr<device::DevInst>();
     //_dev_inst.reset();
 }
 
@@ -447,11 +451,11 @@ vector< boost::shared_ptr<view::GroupSignal> > SigSession::get_group_signals()
     return _group_traces;
 }
 
-set< shared_ptr<data::SignalData> > SigSession::get_data() const
+set< boost::shared_ptr<data::SignalData> > SigSession::get_data() const
 {
     lock_guard<mutex> lock(_signals_mutex);
-    set< shared_ptr<data::SignalData> > data;
-    BOOST_FOREACH(const shared_ptr<view::Signal> sig, _signals) {
+    set< boost::shared_ptr<data::SignalData> > data;
+    BOOST_FOREACH(const boost::shared_ptr<view::Signal> sig, _signals) {
         assert(sig);
         data.insert(sig->data());
     }
@@ -513,7 +517,7 @@ void SigSession::set_capture_state(capture_state state)
 	capture_state_changed(state);
 }
 
-void SigSession::sample_thread_proc(shared_ptr<device::DevInst> dev_inst,
+void SigSession::sample_thread_proc(boost::shared_ptr<device::DevInst> dev_inst,
                                     boost::function<void (const QString)> error_handler)
 {
     assert(dev_inst);
@@ -577,8 +581,8 @@ void SigSession::read_sample_rate(const sr_dev_inst *const sdi)
     }
 
     // Set the sample rate of all data
-    const set< shared_ptr<data::SignalData> > data_set = get_data();
-    BOOST_FOREACH(shared_ptr<data::SignalData> data, data_set) {
+    const set< boost::shared_ptr<data::SignalData> > data_set = get_data();
+    BOOST_FOREACH(boost::shared_ptr<data::SignalData> data, data_set) {
         assert(data);
         data->set_samplerate(sample_rate);
     }
@@ -737,13 +741,13 @@ void SigSession::init_signals()
                 break;
 
             case SR_CHANNEL_DSO:
-                signal = shared_ptr<view::Signal>(
+                signal = boost::shared_ptr<view::Signal>(
                     new view::DsoSignal(_dev_inst, _dso_data, probe));
                 break;
 
             case SR_CHANNEL_ANALOG:
                 if (probe->enabled)
-                    signal = shared_ptr<view::Signal>(
+                    signal = boost::shared_ptr<view::Signal>(
                         new view::AnalogSignal(_dev_inst, _analog_data, probe));
                 break;
             }
@@ -781,13 +785,13 @@ void SigSession::reload()
                 break;
 
             case SR_CHANNEL_DSO:
-                signal = shared_ptr<view::Signal>(
+                signal = boost::shared_ptr<view::Signal>(
                     new view::DsoSignal(_dev_inst,_dso_data, probe));
                 break;
 
             case SR_CHANNEL_ANALOG:
                 if (probe->enabled)
-                    signal = shared_ptr<view::Signal>(
+                    signal = boost::shared_ptr<view::Signal>(
                         new view::AnalogSignal(_dev_inst, _analog_data, probe));
                 break;
             }
@@ -879,7 +883,7 @@ void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
         return;
     }
 
-    receive_data(logic.length/logic.unitsize);
+    emit receive_data(logic.length/logic.unitsize);
     data_received();
     //data_updated();
 }
@@ -1005,7 +1009,7 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
             _cur_analog_snapshot.reset();
 		}
 #ifdef ENABLE_DECODE
-        for (vector< shared_ptr<view::DecodeTrace> >::iterator i =
+        for (vector< boost::shared_ptr<view::DecodeTrace> >::iterator i =
             _decode_traces.begin();
             i != _decode_traces.end();
             i++)
@@ -1138,7 +1142,7 @@ uint16_t SigSession::get_ch_num(int type)
     uint16_t dso_ch_num = 0;
     uint16_t analog_ch_num = 0;
     if (_dev_inst->dev_inst()) {
-        BOOST_FOREACH(const shared_ptr<view::Signal> s, _signals)
+        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
         {
             assert(s);
             if (dynamic_pointer_cast<view::LogicSignal>(s) && s->enabled()) {
@@ -1174,15 +1178,15 @@ uint16_t SigSession::get_ch_num(int type)
 bool SigSession::add_decoder(srd_decoder *const dec)
 {
     bool ret = false;
-    map<const srd_channel*, shared_ptr<view::LogicSignal> > probes;
-    shared_ptr<data::DecoderStack> decoder_stack;
+    map<const srd_channel*, boost::shared_ptr<view::LogicSignal> > probes;
+    boost::shared_ptr<data::DecoderStack> decoder_stack;
 
     try
     {
         //lock_guard<mutex> lock(_signals_mutex);
 
         // Create the decoder
-        decoder_stack = shared_ptr<data::DecoderStack>(
+        decoder_stack = boost::shared_ptr<data::DecoderStack>(
             new data::DecoderStack(*this, dec));
 
         // Make a list of all the probes
@@ -1198,7 +1202,7 @@ bool SigSession::add_decoder(srd_decoder *const dec)
         decoder_stack->stack().front()->set_probes(probes);
 
         // Create the decode signal
-        shared_ptr<view::DecodeTrace> d(
+        boost::shared_ptr<view::DecodeTrace> d(
             new view::DecodeTrace(*this, decoder_stack,
                 _decode_traces.size()));
         if (d->create_popup()) {
@@ -1221,7 +1225,7 @@ bool SigSession::add_decoder(srd_decoder *const dec)
     return ret;
 }
 
-vector< shared_ptr<view::DecodeTrace> > SigSession::get_decode_signals() const
+vector< boost::shared_ptr<view::DecodeTrace> > SigSession::get_decode_signals() const
 {
     lock_guard<mutex> lock(_signals_mutex);
     return _decode_traces;
@@ -1229,7 +1233,7 @@ vector< shared_ptr<view::DecodeTrace> > SigSession::get_decode_signals() const
 
 void SigSession::remove_decode_signal(view::DecodeTrace *signal)
 {
-    for (vector< shared_ptr<view::DecodeTrace> >::iterator i =
+    for (vector< boost::shared_ptr<view::DecodeTrace> >::iterator i =
         _decode_traces.begin();
         i != _decode_traces.end();
         i++)
@@ -1244,7 +1248,7 @@ void SigSession::remove_decode_signal(view::DecodeTrace *signal)
 void SigSession::remove_decode_signal(int index)
 {
     int cur_index = 0;
-    for (vector< shared_ptr<view::DecodeTrace> >::iterator i =
+    for (vector< boost::shared_ptr<view::DecodeTrace> >::iterator i =
         _decode_traces.begin();
         i != _decode_traces.end();
         i++)
@@ -1262,7 +1266,7 @@ void SigSession::remove_decode_signal(int index)
 void SigSession::rst_decoder(int index)
 {
     int cur_index = 0;
-    for (vector< shared_ptr<view::DecodeTrace> >::iterator i =
+    for (vector< boost::shared_ptr<view::DecodeTrace> >::iterator i =
         _decode_traces.begin();
         i != _decode_traces.end();
         i++)
@@ -1283,7 +1287,7 @@ void SigSession::rst_decoder(int index)
 
 void SigSession::rst_decoder(view::DecodeTrace *signal)
 {
-    for (vector< shared_ptr<view::DecodeTrace> >::iterator i =
+    for (vector< boost::shared_ptr<view::DecodeTrace> >::iterator i =
         _decode_traces.begin();
         i != _decode_traces.end();
         i++)

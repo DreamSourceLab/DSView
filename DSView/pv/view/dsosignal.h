@@ -45,8 +45,8 @@ private:
 	static const float EnvelopeThreshold;
 
     static const int HitCursorMargin = 3;
-    static const quint64 vDialValueCount = 8;
-    static const quint64 vDialValueStep = 1000;
+    static const uint64_t vDialValueCount = 8;
+    static const uint64_t vDialValueStep = 1000;
     static const uint64_t vDialUnitCount = 2;
     static const uint64_t hDialValueCount = 28;
     static const uint64_t hDialValueStep = 1000;
@@ -94,6 +94,13 @@ public:
     void set_acCoupling(uint8_t coupling);
     void set_trig_vpos(int pos);
     int get_trig_vpos() const;
+    void set_factor(uint64_t factor);
+
+    /**
+      *
+      */
+    bool measure(const QPointF &p);
+    bool get_hover(uint64_t &index, QPointF &p, double &value);
 
     /**
       * auto set the vertical and Horizontal scale
@@ -171,12 +178,18 @@ private:
 
     double _trig_vpos;
     double _zeroPos;
+    float _zero_off;
 
     uint8_t _max;
     uint8_t _min;
     double _period;
     bool _autoV;
     bool _autoH;
+
+    bool _hover_en;
+    uint64_t _hover_index;
+    QPointF _hover_point;
+    double _hover_value;
 };
 
 } // namespace view

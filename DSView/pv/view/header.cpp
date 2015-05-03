@@ -282,6 +282,21 @@ void Header::mousePressEvent(QMouseEvent *event)
                 else
                     dsoSig->set_acCoupling((dsoSig->get_acCoupling()+1)%3);
             }
+        } else if (action == Trace::X1 && mTrace) {
+            boost::shared_ptr<view::DsoSignal> dsoSig;
+            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(mTrace)) {
+                dsoSig->set_factor(1);
+            }
+        } else if (action == Trace::X10 && mTrace) {
+            boost::shared_ptr<view::DsoSignal> dsoSig;
+            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(mTrace)) {
+                dsoSig->set_factor(10);
+            }
+        } else if (action == Trace::X100 && mTrace) {
+            boost::shared_ptr<view::DsoSignal> dsoSig;
+            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(mTrace)) {
+                dsoSig->set_factor(100);
+            }
         }
 
         if (~QApplication::keyboardModifiers() & Qt::ControlModifier) {

@@ -83,6 +83,8 @@ static struct sr_config_info sr_config_info_data[] = {
         "Filter Targets", NULL},
     {SR_CONF_VDIV, SR_T_RATIONAL_VOLT, "vdiv",
 		"Volts/div", NULL},
+    {SR_CONF_VDIV, SR_T_RATIONAL_VOLT, "factor",
+        "Probe Factor", NULL},
     {SR_CONF_COUPLING, SR_T_CHAR, "coupling",
         "Coupling", NULL},
 	{SR_CONF_DATALOG, SR_T_BOOL, "datalog",
