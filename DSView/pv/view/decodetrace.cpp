@@ -117,7 +117,7 @@ const QColor DecodeTrace::OutlineColours[16] = {
 DecodeTrace::DecodeTrace(pv::SigSession &session,
 	boost::shared_ptr<pv::data::DecoderStack> decoder_stack, int index) :
 	Trace(QString::fromUtf8(
-        decoder_stack->stack().front()->decoder()->name), Trace::DS_DECODER),
+        decoder_stack->stack().front()->decoder()->name), index, Trace::DS_DECODER),
 	_session(session),
 	_decoder_stack(decoder_stack),
     _show_hide_mapper(this)

@@ -298,7 +298,10 @@ bool View::compare_trace_v_offsets(const boost::shared_ptr<Trace> &a,
 {
     assert(a);
     assert(b);
-    return a->get_v_offset() < b->get_v_offset();
+    if (a->get_type() != b->get_type())
+        return a->get_type() > b->get_type();
+    else
+        return a->get_v_offset() < b->get_v_offset();
 }
 
 bool View::cursors_shown() const

@@ -42,6 +42,13 @@ Signal::Signal(boost::shared_ptr<pv::device::DevInst> dev_inst,
 {
 }
 
+Signal::Signal(const Signal &s, const sr_channel * const probe) :
+    Trace((const Trace &)s),
+    _dev_inst(s._dev_inst),
+    _probe(probe)
+{
+}
+
 bool Signal::enabled() const
 {
     return _probe->enabled;
