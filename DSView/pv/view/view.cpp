@@ -32,6 +32,7 @@
 #include <QMouseEvent>
 #include <QScrollBar>
 
+#include "groupsignal.h"
 #include "decodetrace.h"
 #include "header.h"
 #include "devmode.h"
@@ -274,13 +275,14 @@ void View::set_preScale_preOffset()
 vector< boost::shared_ptr<Trace> > View::get_traces() const
 {
     const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
+    const vector< boost::shared_ptr<GroupSignal> > groups(_session.get_group_signals());
 #ifdef ENABLE_DECODE
     const vector< boost::shared_ptr<DecodeTrace> > decode_sigs(
         _session.get_decode_signals());
     vector< boost::shared_ptr<Trace> > traces(
-        sigs.size() + decode_sigs.size());
+        sigs.size() + groups.size() + decode_sigs.size());
 #else
-    vector< boost::shared_ptr<Trace> > traces(sigs.size());
+    vector< boost::shared_ptr<Trace> > traces(sigs.size() + groups.size());
 #endif
 
     vector< boost::shared_ptr<Trace> >::iterator i = traces.begin();
@@ -288,6 +290,7 @@ vector< boost::shared_ptr<Trace> > View::get_traces() const
 #ifdef ENABLE_DECODE
     i = copy(decode_sigs.begin(), decode_sigs.end(), i);
 #endif
+    i = copy(groups.begin(), groups.end(), i);
 
     stable_sort(traces.begin(), traces.end(), compare_trace_v_offsets);
     return traces;
