@@ -128,6 +128,8 @@ protected:
     void paint_type_options(QPainter &p, int right, bool hover, int action);
 
 private:
+    void create_popup_form();
+
 	void populate_popup_form(QWidget *parent, QFormLayout *form);
 
 	void draw_annotation(const pv::data::decode::Annotation &a, QPainter &p,
@@ -196,6 +198,8 @@ private:
 	std::vector<QString> _cur_row_headings;
 
     QSignalMapper  _show_hide_mapper;
+    QFormLayout *_popup_form;
+    QDialog *_popup;
 };
 
 } // namespace view

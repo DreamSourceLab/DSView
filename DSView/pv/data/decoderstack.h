@@ -120,6 +120,8 @@ public:
 
     void options_changed(bool changed);
 
+    uint64_t sample_count() const;
+
 private:
     boost::optional<uint64_t> wait_for_data() const;
 

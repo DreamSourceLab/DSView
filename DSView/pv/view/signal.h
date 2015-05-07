@@ -59,6 +59,11 @@ protected:
     Signal(boost::shared_ptr<pv::device::DevInst> dev_inst,
            const sr_channel * const probe, int type);
 
+    /**
+     * Copy constructor
+     */
+    Signal(const Signal &s, const sr_channel * const probe);
+
 public:
     virtual boost::shared_ptr<pv::data::SignalData> data() const = 0;
 

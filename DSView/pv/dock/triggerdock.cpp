@@ -369,11 +369,12 @@ void TriggerDock::device_change()
 
     if (stream ||
         strcmp(_session.get_device()->dev_inst()->driver->name, "DSLogic") != 0) {
-        position_spinBox->setDisabled(true);
-        position_slider->setDisabled(true);
+        const int maxRange = SR_MB(11)*100/_session.get_device()->get_sample_limit();
+        position_spinBox->setRange(0, maxRange);
+        position_slider->setRange(0, maxRange);
     } else {
-        position_spinBox->setDisabled(false);
-        position_slider->setDisabled(false);
+        position_spinBox->setRange(0, 99);
+        position_slider->setRange(0, 99);
     }
 }
 

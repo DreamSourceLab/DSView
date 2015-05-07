@@ -76,6 +76,15 @@ LogicSignal::LogicSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
     _colour = SignalColours[probe->index % countof(SignalColours)];
 }
 
+LogicSignal::LogicSignal(const Signal &s,
+                         boost::shared_ptr<pv::data::Logic> data,
+                         const sr_channel * const probe) :
+    Signal(s, probe),
+    _data(data)
+{
+    assert(probe->index >= 0);
+}
+
 LogicSignal::~LogicSignal()
 {
 }
@@ -288,7 +297,7 @@ bool LogicSignal::measure(const QPointF &p, uint64_t &index0, uint64_t &index1, 
             return false;
 
         uint64_t index = _data->samplerate() * (_view->offset() - _data->get_start_time() + p.x() * _view->scale());
-        if (index == 0)
+        if (index == 0 || index >= (snapshot->get_sample_count() - 1))
             return false;
 
         const uint64_t sig_mask = 1ULL << get_index();

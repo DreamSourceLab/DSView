@@ -180,7 +180,7 @@ void MainWindow::setup_ui()
 
     connect(_sampling_bar, SIGNAL(device_selected()), this,
             SLOT(update_device_list()));
-    connect(_sampling_bar, SIGNAL(device_updated()), &_session,
+    connect(_sampling_bar, SIGNAL(device_updated()), this,
         SLOT(reload()));
     connect(_sampling_bar, SIGNAL(run_stop()), this,
         SLOT(run_stop()));
@@ -315,6 +315,12 @@ void MainWindow::update_device_list()
         _logo_bar->dsl_connected(true);
     else
         _logo_bar->dsl_connected(false);
+}
+
+void MainWindow::reload()
+{
+    _trigger_widget->device_change();
+    _session.reload();
 }
 
 void MainWindow::load_file(QString file_name)

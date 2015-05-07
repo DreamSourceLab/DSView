@@ -58,6 +58,10 @@ public:
                 boost::shared_ptr<pv::data::Logic> data,
                 const sr_channel * const probe);
 
+    LogicSignal(const Signal &s,
+                boost::shared_ptr<pv::data::Logic> data,
+                const sr_channel * const probe);
+
 	virtual ~LogicSignal();
 
     const sr_channel* probe() const;

@@ -667,6 +667,7 @@ void SigSession::init_signals()
     assert(_dev_inst);
     stop_capture();
 
+    vector< boost::shared_ptr<view::Signal> > sigs;
     boost::shared_ptr<view::Signal> signal;
     unsigned int logic_probe_count = 0;
     unsigned int dso_probe_count = 0;
@@ -726,8 +727,6 @@ void SigSession::init_signals()
 
     // Make the logic probe list
     {
-        _signals.clear();
-
         for (const GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next) {
             const sr_channel *const probe =
                 (const sr_channel *)l->data;
@@ -752,8 +751,13 @@ void SigSession::init_signals()
                 break;
             }
             if(signal.get())
-                _signals.push_back(signal);
+                sigs.push_back(signal);
         }
+
+        _signals.clear();
+        vector< boost::shared_ptr<view::Signal> >().swap(_signals);
+        _signals = sigs;
+
         signals_changed();
         data_updated();
     }
@@ -766,12 +770,11 @@ void SigSession::reload()
     if (_capture_state == Running)
         stop_capture();
 
+    vector< boost::shared_ptr<view::Signal> > sigs;
     boost::shared_ptr<view::Signal> signal;
 
     // Make the logic probe list
     {
-        _signals.clear();
-
         for (const GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next) {
             const sr_channel *const probe =
                 (const sr_channel *)l->data;
@@ -779,7 +782,10 @@ void SigSession::reload()
             signal.reset();
             switch(probe->type) {
             case SR_CHANNEL_LOGIC:
-                if (probe->enabled)
+                if (probe->enabled && probe->index < _signals.size())
+                    signal = boost::shared_ptr<view::Signal>(
+                        new view::LogicSignal(*_signals[probe->index].get(), _logic_data, probe));
+                else if (probe->enabled)
                     signal = boost::shared_ptr<view::Signal>(
                         new view::LogicSignal(_dev_inst, _logic_data, probe));
                 break;
@@ -796,8 +802,12 @@ void SigSession::reload()
                 break;
             }
             if (signal.get())
-                _signals.push_back(signal);
+                sigs.push_back(signal);
         }
+
+        _signals.clear();
+        vector< boost::shared_ptr<view::Signal> >().swap(_signals);
+        _signals = sigs;
     }
 
     signals_changed();

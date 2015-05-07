@@ -433,6 +433,11 @@ void DecoderStack::decode_proc()
     _decode_state = Stopped;
 }
 
+uint64_t DecoderStack::sample_count() const
+{
+    return _sample_count;
+}
+
 void DecoderStack::annotation_callback(srd_proto_data *pdata, void *decoder)
 {
 	assert(pdata);

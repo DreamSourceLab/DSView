@@ -308,7 +308,10 @@ void Viewport::paintProgress(QPainter &p)
                                           (status.captured_cnt1 << 8) +
                                           (status.captured_cnt2 << 16) +
                                           (status.captured_cnt3 << 24));
-            captured_progress = captured_cnt * 100.0 / _total_sample_len;
+            if (triggred)
+                captured_progress = (_total_sample_len - captured_cnt) * 100.0 / _total_sample_len;
+            else
+                captured_progress = captured_cnt * 100.0 / _total_sample_len;
 
 
             p.setPen(Trace::dsLightBlue);

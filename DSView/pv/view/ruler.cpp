@@ -102,9 +102,8 @@ QString Ruler::format_freq(double period, unsigned precision)
     } else {
         const int order = ceil(log10f(period));
         assert(order >= FirstSIPrefixPower);
-        const unsigned int prefix = ceil((order - FirstSIPrefixPower) / 3.0f);
-        const double multiplier = pow(10.0,
-            static_cast<double>(- prefix * 3 - FirstSIPrefixPower));
+        const int prefix = ceil((order - FirstSIPrefixPower) / 3.0f);
+        const double multiplier = pow(10.0, max(-prefix * 3.0 - FirstSIPrefixPower, 0.0));
 
         QString s;
         QTextStream ts(&s);
@@ -115,11 +114,10 @@ QString Ruler::format_freq(double period, unsigned precision)
     }
 }
 
-QString Ruler::format_time(double t, unsigned int prefix,
+QString Ruler::format_time(double t, int prefix,
     unsigned int precision)
 {
-	const double multiplier = pow(10.0,
-        static_cast<double>(- prefix * 3 - FirstSIPrefixPower + 6));
+    const double multiplier = pow(10.0, -prefix * 3 - FirstSIPrefixPower + 6.0);
 
 	QString s;
 	QTextStream ts(&s);

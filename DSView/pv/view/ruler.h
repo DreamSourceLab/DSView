@@ -63,7 +63,7 @@ public:
 public:
 	Ruler(View &parent);
 
-	static QString format_time(double t, unsigned int prefix,
+    static QString format_time(double t, int prefix,
         unsigned precision = pricision);
     static QString format_freq(double period, unsigned precision = pricision);
     QString format_time(double t);
