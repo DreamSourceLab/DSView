@@ -320,7 +320,7 @@ void Viewport::paintProgress(QPainter &p)
             if (triggred)
                 p.drawText(status_rect,
                            Qt::AlignCenter | Qt::AlignVCenter,
-                           "Triggered! " + QString::number(captured_progress)+"% Captured");
+                           "Triggered! " + QString::number(1-captured_progress)+"% Captured");
             else
                 p.drawText(status_rect,
                            Qt::AlignCenter | Qt::AlignVCenter,

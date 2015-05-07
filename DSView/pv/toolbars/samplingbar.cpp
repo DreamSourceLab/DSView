@@ -667,19 +667,21 @@ void SamplingBar::on_run_stop()
     const shared_ptr<device::DevInst> dev_inst = get_selected_device();
     if (!dev_inst)
         return;
-    GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_ZERO);
-    if (gvar != NULL) {
-        bool zero = g_variant_get_boolean(gvar);
-        g_variant_unref(gvar);
-        if (zero) {
-            QMessageBox msg(this);
-            msg.setText("Zero Adjustment");
-            msg.setInformativeText("Please adjust zero skew and save the result!");
-            msg.setStandardButtons(QMessageBox::Ok);
-            msg.setIcon(QMessageBox::Warning);
-            msg.exec();
-            zero_adj();
-            return;
+    if (dev_inst->dev_inst()->mode == DSO) {
+        GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_ZERO);
+        if (gvar != NULL) {
+            bool zero = g_variant_get_boolean(gvar);
+            g_variant_unref(gvar);
+            if (zero) {
+                QMessageBox msg(this);
+                msg.setText("Zero Adjustment");
+                msg.setInformativeText("Please adjust zero skew and save the result!");
+                msg.setStandardButtons(QMessageBox::Ok);
+                msg.setIcon(QMessageBox::Warning);
+                msg.exec();
+                zero_adj();
+                return;
+            }
         }
     }
     run_stop();
@@ -695,22 +697,24 @@ void SamplingBar::on_instant_stop()
     const shared_ptr<device::DevInst> dev_inst = get_selected_device();
     if (!dev_inst)
         return;
-    GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_ZERO);
-    if (gvar != NULL) {
-        bool zero = g_variant_get_boolean(gvar);
-        g_variant_unref(gvar);
-        if (zero) {
-            QMessageBox msg(this);
-            msg.setText("Zero Adjustment");
-            if(strcmp(dev_inst->dev_inst()->driver->name, "DSLogic") == 0)
-                msg.setInformativeText("Please adjust zero skew and save the result!\nPlease left both of channels unconnect for zero adjustment!");
-            else
-                msg.setInformativeText("Please adjust zero skew and save the result!");
-            msg.setStandardButtons(QMessageBox::Ok);
-            msg.setIcon(QMessageBox::Warning);
-            msg.exec();
-            zero_adj();
-            return;
+    if (dev_inst->dev_inst()->mode == DSO) {
+        GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_ZERO);
+        if (gvar != NULL) {
+            bool zero = g_variant_get_boolean(gvar);
+            g_variant_unref(gvar);
+            if (zero) {
+                QMessageBox msg(this);
+                msg.setText("Zero Adjustment");
+                if(strcmp(dev_inst->dev_inst()->driver->name, "DSLogic") == 0)
+                    msg.setInformativeText("Please adjust zero skew and save the result!\nPlease left both of channels unconnect for zero adjustment!");
+                else
+                    msg.setInformativeText("Please adjust zero skew and save the result!");
+                msg.setStandardButtons(QMessageBox::Ok);
+                msg.setIcon(QMessageBox::Warning);
+                msg.exec();
+                zero_adj();
+                return;
+            }
         }
     }
     instant_stop();

@@ -90,6 +90,8 @@ private slots:
      */
     void update_device_list();
 
+    void reload();
+
 	void show_session_error(
 		const QString text, const QString info_text);
 
