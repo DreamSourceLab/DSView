@@ -308,7 +308,10 @@ void Viewport::paintProgress(QPainter &p)
                                           (status.captured_cnt1 << 8) +
                                           (status.captured_cnt2 << 16) +
                                           (status.captured_cnt3 << 24));
-            captured_progress = captured_cnt * 100.0 / _total_sample_len;
+            if (triggred)
+                captured_progress = (_total_sample_len - captured_cnt) * 100.0 / _total_sample_len;
+            else
+                captured_progress = captured_cnt * 100.0 / _total_sample_len;
 
 
             p.setPen(Trace::dsLightBlue);
@@ -320,7 +323,7 @@ void Viewport::paintProgress(QPainter &p)
             if (triggred)
                 p.drawText(status_rect,
                            Qt::AlignCenter | Qt::AlignVCenter,
-                           "Triggered! " + QString::number(1-captured_progress)+"% Captured");
+                           "Triggered! " + QString::number(captured_progress)+"% Captured");
             else
                 p.drawText(status_rect,
                            Qt::AlignCenter | Qt::AlignVCenter,

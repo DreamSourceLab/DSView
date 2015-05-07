@@ -120,7 +120,9 @@ DecodeTrace::DecodeTrace(pv::SigSession &session,
         decoder_stack->stack().front()->decoder()->name), index, Trace::DS_DECODER),
 	_session(session),
 	_decoder_stack(decoder_stack),
-    _show_hide_mapper(this)
+    _show_hide_mapper(this),
+    _popup_form(NULL),
+    _popup()
 {
 	assert(_decoder_stack);
 
@@ -297,21 +299,11 @@ void DecodeTrace::paint_fore(QPainter &p, int left, int right)
 
 bool DecodeTrace::create_popup()
 {
-    // Clear the layout
-
-    // Transfer the layout and the child widgets to a temporary widget
-    // which then goes out of scope destroying the layout and all the child
-    // widgets.
-    //if (_popup_form)
-    //    QWidget().setLayout(_popup_form);
-
     int ret = false;
-    QDialog popup;
-    QFormLayout popup_form;
-    popup.setLayout(&popup_form);
-    populate_popup_form(&popup, &popup_form);
+    _popup = new QDialog();
+    create_popup_form();
 
-    if (QDialog::Accepted == popup.exec())
+    if (QDialog::Accepted == _popup->exec())
     {
         BOOST_FOREACH(shared_ptr<data::decode::Decoder> dec,
             _decoder_stack->stack())
@@ -321,12 +313,28 @@ bool DecodeTrace::create_popup()
                 ret = true;
             }
         }
-        return ret;
     }
-    else
-        return false;
+
+    _popup = NULL;
+    _popup_form = NULL;
+
+    return ret;
 }
 
+void DecodeTrace::create_popup_form()
+{
+    // Clear the layout
+
+    // Transfer the layout and the child widgets to a temporary widget
+    // which then goes out of scope destroying the layout and all the child
+    // widgets.
+    if (_popup_form)
+        QWidget().setLayout(_popup_form);
+
+    _popup_form = new QFormLayout(_popup);
+    _popup->setLayout(_popup_form);
+    populate_popup_form(_popup, _popup_form);
+}
 
 void DecodeTrace::populate_popup_form(QWidget *parent, QFormLayout *form)
 {
@@ -368,8 +376,8 @@ void DecodeTrace::populate_popup_form(QWidget *parent, QFormLayout *form)
 		new pv::widgets::DecoderMenu(parent);
 	connect(decoder_menu, SIGNAL(decoder_selected(srd_decoder*)),
 		this, SLOT(on_stack_decoder(srd_decoder*)));
-    connect(decoder_menu, SIGNAL(selected()),
-            parent, SLOT(accept()));
+    //connect(decoder_menu, SIGNAL(selected()),
+    //        parent, SLOT(accept()));
 
 	QPushButton *const stack_button =
 		new QPushButton(tr("Stack Decoder"), parent);
@@ -769,7 +777,7 @@ void DecodeTrace::on_stack_decoder(srd_decoder *decoder)
 		new data::decode::Decoder(decoder)));
     //_decoder_stack->begin_decode();
 
-    create_popup();
+    create_popup_form();
 }
 
 void DecodeTrace::on_show_hide_decoder(int index)
