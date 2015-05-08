@@ -132,8 +132,9 @@ void Viewport::paintEvent(QPaintEvent *event)
             break;
 
         case SigSession::Running:
-            //p.setRenderHint(QPainter::Antialiasing);
+            p.setRenderHint(QPainter::Antialiasing);
             paintProgress(p);
+            p.setRenderHint(QPainter::Antialiasing, false);
             break;
         }
     } else {
@@ -352,6 +353,7 @@ void Viewport::mousePressEvent(QMouseEvent *event)
 
 	_mouse_down_point = event->pos();
 	_mouse_down_offset = _view.offset();
+    _measure_shown = false;
 
     if (event->buttons() & Qt::LeftButton) {
         if (_view.cursors_shown()) {
@@ -435,7 +437,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
     if (_zoom_rect_visible) {
         _zoom_rect_visible = false;
         const double newOffset = _view.offset() + (min(event->pos().x(), _mouse_down_point.x()) + 0.5) * _view.scale();
-        const double newScale = max(min(_view.scale() * (event->pos().x() - _mouse_down_point.x()) / _view.get_view_width(),
+        const double newScale = max(min(_view.scale() * abs(event->pos().x() - _mouse_down_point.x()) / _view.get_view_width(),
                                         _view.get_maxscale()), _view.get_minscale());
         if (newScale != _view.scale())
             _view.set_scale_offset(newScale, newOffset);
@@ -475,7 +477,7 @@ void Viewport::wheelEvent(QWheelEvent *event)
 
 	if (event->orientation() == Qt::Vertical) {
 		// Vertical scrolling is interpreted as zooming in/out
-        const double offset = (_view.session().get_capture_state() == SigSession::Running) ? 0 : event->x();
+        const double offset = event->x();
         _view.zoom(event->delta() / 80, offset);
 	} else if (event->orientation() == Qt::Horizontal) {
 		// Horizontal scrolling is interpreted as moving left/right

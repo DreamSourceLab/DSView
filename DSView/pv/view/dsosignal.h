@@ -43,6 +43,7 @@ class DsoSignal : public Signal
 private:
 	static const QColor SignalColours[4];
 	static const float EnvelopeThreshold;
+    static const double TrigMargin;
 
     static const int HitCursorMargin = 3;
     static const uint64_t vDialValueCount = 8;

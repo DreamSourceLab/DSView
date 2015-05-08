@@ -103,6 +103,7 @@ const QColor DsoSignal::SignalColours[4] = {
 };
 
 const float DsoSignal::EnvelopeThreshold = 256.0f;
+const double DsoSignal::TrigMargin = 0.02;
 
 const int DsoSignal::UpMargin = 30;
 const int DsoSignal::DownMargin = 30;
@@ -466,13 +467,13 @@ void DsoSignal::set_trig_vpos(int pos)
         double delta = min((double)max(pos - UpMargin, 0), get_view_rect().height()) * 1.0 / get_view_rect().height();
         bool isDSCope = (strcmp(_dev_inst->dev_inst()->driver->name, "DSCope") == 0);
         if (isDSCope) {
-            _trig_vpos = delta;
+            _trig_vpos = min(max(delta, 0+TrigMargin), 1-TrigMargin);
             trig_value = delta * 255;
         } else {
             delta = delta - _zeroPos;
             delta = min(delta, 0.5);
             delta = max(delta, -0.5);
-            _trig_vpos = _zeroPos + delta;
+            _trig_vpos = min(max(_zeroPos + delta, 0+TrigMargin), 1-TrigMargin);
             trig_value = (delta * 255.0f + 0x80);
         }
         _dev_inst->set_config(_probe, NULL, SR_CONF_TRIGGER_VALUE,
@@ -491,7 +492,7 @@ void DsoSignal::set_zeroPos(int pos)
         double delta = _trig_vpos - _zeroPos;
         set_trig_vpos(get_trig_vpos() + pos - get_zeroPos());
         _zeroPos = min((double)max(pos - UpMargin, 0), get_view_rect().height()) * 1.0 / get_view_rect().height();
-        _trig_vpos = min(max(_zeroPos + delta, 0.0), 1.0);
+        _trig_vpos = min(max(_zeroPos + delta, 0+TrigMargin), 1-TrigMargin);
 
         update_zeroPos();
     }
