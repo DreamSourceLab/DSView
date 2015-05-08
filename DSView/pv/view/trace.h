@@ -66,6 +66,9 @@ public:
     static const int CHEN = 11;
     static const int ACDC = 12;
     static const int DSOTRIG = 13;
+    static const int X1 = 14;
+    static const int X10 = 15;
+    static const int X100 = 16;
 
     static const QColor dsBlue;
     static const QColor dsYellow;
@@ -81,12 +84,16 @@ public:
     static const QPen SignalAxisPen;
 
 protected:
-    Trace(QString name, int type);
     Trace(QString name, int index, int type);
     Trace(QString name, std::list<int> index_list, int type, int sec_index);
 
+    /**
+     * Copy constructor
+     */
+    Trace(const Trace &t);
+
 public:
-    enum {DS_LOGIC = 0, DS_ANALOG, DS_GROUP, DS_DSO, DS_DECODER};
+    enum {DS_LOGIC = 0, DS_ANALOG, DS_DSO, DS_GROUP, DS_DECODER};
 
 public:
 	/**

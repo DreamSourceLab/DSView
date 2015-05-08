@@ -35,6 +35,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <stdint.h>
 
 #include <QObject>
 #include <QString>
@@ -43,6 +44,7 @@
 #include <QMap>
 #include <QVariant>
 #include <QTimer>
+#include <QtConcurrent/QtConcurrent>
 
 #include <libsigrok4DSL/libsigrok.h>
 #include <libusb.h>
@@ -86,8 +88,9 @@ class SigSession : public QObject
         Q_OBJECT
 
 private:
-    static const float Oversampling = 2.0f;
+    static constexpr float Oversampling = 2.0f;
     static const int ViewTime = 800;
+	bool saveFileThreadRunning = false;
 
 public:
 	enum capture_state {
@@ -115,6 +118,9 @@ public:
     void save_file(const std::string &name);
 
     void set_default_device(boost::function<void (const QString)> error_handler);
+    void export_file(const std::string &name, QWidget* parent, const std::string &ext);
+
+    void set_default_device();
 
     void release_device(device::DevInst *dev_inst);
 
@@ -132,6 +138,7 @@ public:
 
     std::vector< boost::shared_ptr<view::GroupSignal> >
         get_group_signals();
+    QList<QString> getSuportedExportFormats();
 
 #ifdef ENABLE_DECODE
     bool add_decoder(srd_decoder *const dec);
@@ -282,10 +289,14 @@ signals:
     void malloc_error();
 
     void zero_adj();
+    void progressSaveFileValueChanged(int percent);
 
 public slots:
     void reload();
     void refresh();
+
+private slots:
+    void cancelSaveFile();
 
 private:
 	// TODO: This should not be necessary. Multiple concurrent

@@ -90,15 +90,11 @@ public:
 		uint64_t start, uint64_t end,
 		float min_length, int sig_index);
 
-    int get_first_edge(uint64_t &edge_index, bool &edge,
-                       uint64_t start, uint64_t end,
-                       int sig_index, int edge_type,
-                       int flag_index, int flag);
+    bool get_nxt_edge(uint64_t &index, bool last_sample, uint64_t end,
+                      float min_length, int sig_index);
 
-    void get_edges(std::vector<EdgePair> &edges,
-        uint64_t start, uint64_t end, int sig_index, int edge_type);
-
-    uint64_t get_min_pulse(uint64_t start, uint64_t end, int sig_index);
+    bool get_pre_edge(uint64_t &index, bool last_sample,
+                      float min_length, int sig_index);
 
 private:
 	uint64_t get_subsample(int level, uint64_t offset) const;

@@ -53,19 +53,9 @@ const QPen Trace::SignalAxisPen = QColor(128, 128, 128, 64);
 const QPen Trace::AxisPen(QColor(128, 128, 128, 64));
 const int Trace::LabelHitPadding = 2;
 
-Trace::Trace(QString name, int type) :
-    _name(name),
-    _v_offset(0),
-    _type(type),
-    _sec_index(0),
-    _signalHeight(30),
-    _trig(0)
-{
-}
-
 Trace::Trace(QString name, int index, int type) :
 	_name(name),
-    _v_offset(0),
+    _v_offset(INT_MAX),
     _type(type),
     _sec_index(0),
     _signalHeight(30),
@@ -76,12 +66,27 @@ Trace::Trace(QString name, int index, int type) :
 
 Trace::Trace(QString name, std::list<int> index_list, int type, int sec_index) :
     _name(name),
-    _v_offset(0),
+    _v_offset(INT_MAX),
     _type(type),
     _index_list(index_list),
     _sec_index(sec_index),
     _signalHeight(30),
     _trig(0)
+{
+}
+
+Trace::Trace(const Trace &t) :
+    _view(t._view),
+    _name(t._name),
+    _colour(t._colour),
+    _v_offset(t._v_offset),
+    _type(t._type),
+    _index_list(t._index_list),
+    _sec_index(t._sec_index),
+    _old_v_offset(t._old_v_offset),
+    _signalHeight(t._signalHeight),
+    _trig(t._trig),
+    _text_size(t._text_size)
 {
 }
 
@@ -300,6 +305,9 @@ int Trace::pt_in_rect(int y, int right, const QPoint &point)
     const QRectF edgeTrig = get_rect("edgeTrig", y, right);
     const QRectF label = get_rect("label", get_zeroPos(), right);
     const QRectF vDial = get_rect("vDial", y, right);
+    const QRectF x1 = get_rect("x1", y, right);
+    const QRectF x10 = get_rect("x10", y, right);
+    const QRectF x100 = get_rect("x100", y, right);
     const QRectF hDial = get_rect("hDial", y, right);
     const QRectF chEn = get_rect("chEn", y, right);
     const QRectF acdc = get_rect("acdc", y, right);
@@ -323,6 +331,12 @@ int Trace::pt_in_rect(int y, int right, const QPoint &point)
         return LABEL;
     else if (vDial.contains(point) && _type == DS_DSO && enabled())
         return VDIAL;
+    else if (x1.contains(point) && _type == DS_DSO && enabled())
+        return X1;
+    else if (x10.contains(point) && _type == DS_DSO && enabled())
+        return X10;
+    else if (x100.contains(point) && _type == DS_DSO && enabled())
+        return X100;
     else if (hDial.contains(point) && _type == DS_DSO && enabled())
         return HDIAL;
     else if (chEn.contains(point) && _type == DS_DSO)
@@ -400,6 +414,21 @@ QRectF Trace::get_rect(const char *s, int y, int right)
             get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin,
             y - SquareWidth * SquareNum,
             SquareWidth * (SquareNum-1), SquareWidth * (SquareNum-1));
+    else if (!strcmp(s, "x1"))
+        return QRectF(
+            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin - 45,
+            y - SquareWidth - SquareWidth * (SquareNum-1) * 0.85,
+            SquareWidth * 1.75, SquareWidth);
+    else if (!strcmp(s, "x10"))
+        return QRectF(
+            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin - 45,
+            y - SquareWidth - SquareWidth * (SquareNum-1) * 0.55,
+            SquareWidth * 1.75, SquareWidth);
+    else if (!strcmp(s, "x100"))
+        return QRectF(
+            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin - 45,
+            y - SquareWidth - SquareWidth * (SquareNum-1) * 0.25,
+            SquareWidth * 1.75, SquareWidth);
     else if (!strcmp(s, "hDial"))
         return QRectF(
             get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin,

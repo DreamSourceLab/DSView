@@ -344,6 +344,9 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_VDIV:
         *data = g_variant_new_uint64(ch->vdiv);
         break;
+    case SR_CONF_FACTOR:
+        *data = g_variant_new_uint64(ch->vfactor);
+        break;
     case SR_CONF_TIMEBASE:
         *data = g_variant_new_uint64(devc->timebase);
         break;
@@ -424,6 +427,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                     ret = SR_ERR;
                 else {
                     probe->vdiv = 1000;
+                    probe->vfactor = 1;
                     probe->coupling = SR_DC_COUPLING;
                     probe->trig_value = 0x80;
                     sdi->channels = g_slist_append(sdi->channels, probe);
@@ -471,6 +475,11 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         ch->vdiv = g_variant_get_uint64(data);
         sr_dbg("%s: setting VDIV of channel %d to %" PRIu64, __func__,
                ch->index, ch->vdiv);
+        ret = SR_OK;
+    } else if (id == SR_CONF_FACTOR) {
+        ch->vfactor = g_variant_get_uint64(data);
+        sr_dbg("%s: setting FACTOR of channel %d to %" PRIu64, __func__,
+               ch->index, ch->vfactor);
         ret = SR_OK;
     } else if (id == SR_CONF_TIMEBASE) {
         devc->timebase = g_variant_get_uint64(data);
@@ -601,8 +610,8 @@ static void samples_generator(uint16_t *buf, uint64_t size,
     case PATTERN_TRIANGLE:
         for (i = 0; i < size; i++) {
             if (i%CONST_LEN == 0) {
-                demo_data = p > 0x7fff ? 0x40 * (1 + (0x8000 - p * 1.0f) / 0x8000) :
-                                         0x40 * (p * 1.0f / 0x8000);
+                demo_data = p > 0x7fff ? 0x40 * (1 + (0x8000 - p * 1.0) / 0x8000) :
+                                         0x40 * (p * 1.0 / 0x8000);
                 p += CONST_LEN * 10;
             }
             *(buf + i) = demo_data + (demo_data << 8);
@@ -654,7 +663,7 @@ static void samples_generator(uint16_t *buf, uint64_t size,
 	case PATTERN_RANDOM: /* Random */
         for (i = 0; i < size; i++) {
             if (i%CONST_LEN == 0)
-                demo_data = (uint16_t)(rand() * (0x40 * 1.0f / RAND_MAX));
+                demo_data = (uint16_t)(rand() * (0x40 * 1.0 / RAND_MAX));
             *(buf + i) = demo_data + (demo_data << 8);
             GSList *l;
             struct sr_channel *probe;

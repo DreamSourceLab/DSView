@@ -76,6 +76,15 @@ LogicSignal::LogicSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
     _colour = SignalColours[probe->index % countof(SignalColours)];
 }
 
+LogicSignal::LogicSignal(const Signal &s,
+                         boost::shared_ptr<pv::data::Logic> data,
+                         const sr_channel * const probe) :
+    Signal(s, probe),
+    _data(data)
+{
+    assert(probe->index >= 0);
+}
+
 LogicSignal::~LogicSignal()
 {
 }
@@ -85,12 +94,12 @@ const sr_channel* LogicSignal::probe() const
     return _probe;
 }
 
-shared_ptr<pv::data::SignalData> LogicSignal::data() const
+boost::shared_ptr<pv::data::SignalData> LogicSignal::data() const
 {
     return _data;
 }
 
-shared_ptr<pv::data::Logic> LogicSignal::logic_data() const
+boost::shared_ptr<pv::data::Logic> LogicSignal::logic_data() const
 {
     return _data;
 }
@@ -271,6 +280,49 @@ void LogicSignal::paint_type_options(QPainter &p, int right, bool hover, int act
                edgeTrig_rect.center().x() - 2, edgeTrig_rect.bottom() - 5);
     p.drawLine(edgeTrig_rect.center().x() + 2, edgeTrig_rect.bottom() - 5,
                edgeTrig_rect.right() - 5, edgeTrig_rect.bottom() - 5);
+}
+
+bool LogicSignal::measure(const QPointF &p, uint64_t &index0, uint64_t &index1, uint64_t &index2) const
+{
+    const float gap = abs(p.y() - get_y());
+    if (gap < get_signalHeight() * 0.5) {
+        const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
+            _data->get_snapshots();
+        if (snapshots.empty())
+            return false;
+
+        const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
+            snapshots.front();
+        if (snapshot->buf_null())
+            return false;
+
+        uint64_t index = _data->samplerate() * (_view->offset() - _data->get_start_time() + p.x() * _view->scale());
+        if (index == 0 || index >= (snapshot->get_sample_count() - 1))
+            return false;
+
+        const uint64_t sig_mask = 1ULL << get_index();
+        bool sample = snapshot->get_sample(index) & sig_mask;
+        index--;
+        if (!snapshot->get_pre_edge(index, sample, 1, get_index()))
+            return false;
+
+        index0 = index;
+        sample = snapshot->get_sample(index) & sig_mask;
+        index++;
+        if (!snapshot->get_nxt_edge(index, sample, snapshot->get_sample_count(), 1, get_index()))
+            return false;
+
+        index1 = index;
+        sample = snapshot->get_sample(index) & sig_mask;
+        index++;
+        if (!snapshot->get_nxt_edge(index, sample, snapshot->get_sample_count(), 1, get_index()))
+            index2 = 0;
+        else
+            index2 = index;
+
+        return true;
+    }
+    return false;
 }
 
 } // namespace view

@@ -24,6 +24,7 @@
 #include "timemarker.h"
 
 #include "view.h"
+#include "../device/device.h"
 
 #include <QPainter>
 
@@ -31,10 +32,10 @@ namespace pv {
 namespace view {
 
 TimeMarker::TimeMarker(View &view, QColor &colour,
-	double time) :
+    uint64_t index) :
 	_view(view),
-	_time(time),
-        _grabbed(false),
+    _index(index),
+    _grabbed(false),
 	_colour(colour)
 {
 }
@@ -42,7 +43,7 @@ TimeMarker::TimeMarker(View &view, QColor &colour,
 TimeMarker::TimeMarker(const TimeMarker &s) :
 	QObject(),
 	_view(s._view),
-	_time(s._time),
+    _index(s._index),
 	_colour(s._colour)
 {
 }
@@ -56,20 +57,21 @@ void TimeMarker::set_grabbed(bool grabbed)
     _grabbed = grabbed;
 }
 
-double TimeMarker::time() const
+uint64_t TimeMarker::index() const
 {
-	return _time;
+    return _index;
 }
 
-void TimeMarker::set_time(double time)
+void TimeMarker::set_index(uint64_t index)
 {
-	_time = time;
-	time_changed();
+    _index = index;
+    time_changed();
 }
 
 void TimeMarker::paint(QPainter &p, const QRect &rect, const bool highlight)
 {
-	const float x = (_time - _view.offset()) / _view.scale();
+    const double samples_per_pixel = _view.session().get_device()->get_sample_rate() * _view.scale();
+    const double x = _index/samples_per_pixel - (_view.offset() / _view.scale());
     p.setPen((_grabbed | highlight) ? QPen(_colour.lighter(), 2, Qt::DashLine) : QPen(_colour, 1, Qt::DashLine));
     p.drawLine(QPointF(x, rect.top()), QPointF(x, rect.bottom()));
 }

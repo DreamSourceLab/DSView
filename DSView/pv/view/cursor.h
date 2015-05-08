@@ -55,7 +55,8 @@ public:
 	 * @param time The time to set the flag to.
 	 * @param other A reference to the other cursor.
 	 */
-    Cursor(View &view, QColor color, double time);
+    Cursor(View &view, QColor color, uint64_t index);
+
 
 public:
 	/**

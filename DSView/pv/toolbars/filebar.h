@@ -58,6 +58,7 @@ private slots:
     void on_actionOpen_triggered();
     void on_actionSave_triggered();
     void on_actionCapture_triggered();
+    void on_actionExport_triggered();
 
 private:
     bool _enable;
@@ -67,6 +68,7 @@ private:
 
     QAction *_action_open;
     QAction *_action_save;
+    QAction *_action_export;
     QAction *_action_capture;
 
 };

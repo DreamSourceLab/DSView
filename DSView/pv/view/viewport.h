@@ -47,7 +47,7 @@ class Viewport : public QWidget
 
 public:
     static const int HitCursorMargin = 10;
-    static const double HitCursorTimeMargin = 0.3;
+    static const double HitCursorTimeMargin;
 
 public:
 	explicit Viewport(View &parent);
@@ -56,11 +56,7 @@ public:
 
     QPoint get_mouse_point() const;
 
-    void set_receive_len(quint64 length);
-
-    QString get_mm_width();
-    QString get_mm_period();
-    QString get_mm_freq();
+    QString get_measure(QString option);
 
     void set_measure_en(int enable);
 
@@ -87,11 +83,15 @@ private:
 private slots:
     void on_traces_moved();
     void on_trigger_timer();
+    void set_receive_len(quint64 length);
+
+signals:
+    void mouse_measure();
 
 private:
 	View &_view;
 
-    quint64 _total_receive_len;
+    uint64_t _total_receive_len;
     QPoint _mouse_point;
 	QPoint _mouse_down_point;
 	double _mouse_down_offset;
@@ -106,22 +106,27 @@ private:
 
     bool _measure_en;
     bool _measure_shown;
+    int _measure_type;
     uint64_t _cur_sample;
     uint64_t _nxt_sample;
     uint64_t _thd_sample;
-    int64_t _cur_preX;
-    int64_t _cur_aftX;
-    int64_t _cur_thdX;
-    int64_t _cur_midY;
+    double _cur_preX;
+    double _cur_aftX;
+    double _cur_thdX;
+    double _cur_midY;
     QString _mm_width;
     QString _mm_period;
     QString _mm_freq;
+    QString _mm_duty;
 
     QTimer trigger_timer;
     bool triggered;
     int timer_cnt;
 
     boost::shared_ptr<Signal> _drag_sig;
+
+    uint64_t _hover_index;
+    bool _hover_hit;
 };
 
 } // namespace view

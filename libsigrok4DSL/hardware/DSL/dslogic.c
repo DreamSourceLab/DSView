@@ -287,9 +287,12 @@ static int fpga_setting(const struct sr_dev_inst *sdi)
                    ((sdi->mode == ANALOG) << 7) +
                    ((devc->filter == SR_FILTER_1T) << 8) +
                    (devc->instant << 9) + (devc->zero << 10);
-    setting.divider = devc->zero ? 0x1 : (uint32_t)ceil(SR_MHZ(100) * 1.0 / devc->cur_samplerate);
+    if (sdi->mode == DSO)
+        setting.divider = devc->zero ? 0x1 : (uint32_t)ceil(DSLOGIC_MAX_DSO_SAMPLERATE * 1.0 / devc->cur_samplerate / channel_en_cnt);
+    else
+        setting.divider = devc->zero ? 0x1 : (uint32_t)ceil(DSLOGIC_MAX_LOGIC_SAMPLERATE * 1.0 / devc->cur_samplerate);
     setting.count = (sdi->mode == DSO) ? (uint32_t)(devc->limit_samples / (channel_cnt / channel_en_cnt)) : (uint32_t)(devc->limit_samples);
-    setting.trig_pos = (uint32_t)(trigger->trigger_pos / 100.0f * devc->limit_samples);
+    setting.trig_pos = (uint32_t)(trigger->trigger_pos / 100.0 * devc->limit_samples);
     setting.trig_glb = trigger->trigger_stages;
     setting.trig_adp = setting.count - setting.trig_pos - 1;
     setting.trig_sda = 0x0;
@@ -642,6 +645,7 @@ static int set_probes(struct sr_dev_inst *sdi, int num_probes)
             return SR_ERR;
         if (sdi->mode == DSO) {
             probe->vdiv = 1000;
+            probe->vfactor = 1;
             probe->coupling = SR_DC_COUPLING;
             probe->trig_value = 0x80;
         }
@@ -881,7 +885,7 @@ static uint64_t dso_cmd_gen(struct sr_dev_inst *sdi, struct sr_channel* ch, int 
             channel_cnt += probe->enabled;
         }
         cmd += 0x18;
-        uint32_t divider = devc->zero ? 0x1 : (uint32_t)ceil(SR_MHZ(100) * 1.0  / devc->cur_samplerate);
+        uint32_t divider = devc->zero ? 0x1 : (uint32_t)ceil(DSLOGIC_MAX_DSO_SAMPLERATE * 1.0  / devc->cur_samplerate / channel_cnt);
         cmd += divider << 8;
         break;
     case SR_CONF_HORIZ_TRIGGERPOS:
@@ -1155,6 +1159,11 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         if (!ch)
             return SR_ERR;
         *data = g_variant_new_uint64(ch->vdiv);
+        break;
+    case SR_CONF_FACTOR:
+        if (!ch)
+            return SR_ERR;
+        *data = g_variant_new_uint64(ch->vfactor);
         break;
     case SR_CONF_TIMEBASE:
         if (!sdi)
@@ -1518,6 +1527,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         else
             sr_dbg("%s: setting VDIV of channel %d to %d mv failed",
                 __func__, ch->index, ch->vdiv);
+    } else if (id == SR_CONF_FACTOR) {
+        ch->vfactor = g_variant_get_uint64(data);
     } else if (id == SR_CONF_TIMEBASE) {
         devc->timebase = g_variant_get_uint64(data);
     } else if (id == SR_CONF_COUPLING) {
@@ -1574,9 +1585,9 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 	            struct sr_channel *probe = (struct sr_channel *)l->data;
 	            channel_cnt += probe->enabled;
 	        }
-	        devc->trigger_hpos = g_variant_get_uint16(data) * channel_cnt * devc->limit_samples / 200.0f;
+            devc->trigger_hpos = g_variant_get_uint16(data) * channel_cnt * devc->limit_samples / 200.0;
 		} else {
-        	devc->trigger_hpos = g_variant_get_uint16(data) * devc->limit_samples / 100.0f;
+            devc->trigger_hpos = g_variant_get_uint16(data) * devc->limit_samples / 100.0;
         }
 		if (sdi->mode == DSO) {
             ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 1, SR_CONF_HORIZ_TRIGGERPOS));
@@ -1935,11 +1946,13 @@ static void receive_transfer(struct libusb_transfer *transfer)
                 mstatus.ch0_max = *((const uint8_t*)cur_buf + mstatus_offset*2 + 1*2);
                 mstatus.ch0_min = *((const uint8_t*)cur_buf + mstatus_offset*2 + 3);
                 mstatus.ch0_period = *((const uint32_t*)cur_buf + mstatus_offset/2 + 2/2);
-                mstatus.ch0_pcnt = *((const uint32_t*)cur_buf + mstatus_offset/2 + 4/2);
-                mstatus.ch1_max = *((const uint8_t*)cur_buf + mstatus_offset*2 + 7*2);
-                mstatus.ch1_min = *((const uint8_t*)cur_buf + mstatus_offset*2 + 15);
-                mstatus.ch1_period = *((const uint32_t*)cur_buf + mstatus_offset/2 + 8/2);
-                mstatus.ch1_pcnt = *((const uint32_t*)cur_buf + mstatus_offset/2 + 10/2);
+                mstatus.ch0_period += *((const uint32_t*)cur_buf + mstatus_offset/2 + 4/2) << 32;
+                mstatus.ch0_pcnt = *((const uint32_t*)cur_buf + mstatus_offset/2 + 6/2);
+                mstatus.ch1_max = *((const uint8_t*)cur_buf + mstatus_offset*2 + 9*2);
+                mstatus.ch1_min = *((const uint8_t*)cur_buf + mstatus_offset*2 + 19);
+                mstatus.ch1_period = *((const uint32_t*)cur_buf + mstatus_offset/2 + 10/2);
+                mstatus.ch1_period += *((const uint32_t*)cur_buf + mstatus_offset/2 + 12/2) << 32;
+                mstatus.ch1_pcnt = *((const uint32_t*)cur_buf + mstatus_offset/2 + 14/2);
                 mstatus.vlen = *((const uint32_t*)cur_buf + mstatus_offset/2 + 16/2) & 0x7fffffff;
                 mstatus.stream_mode = *((const uint32_t*)cur_buf + mstatus_offset/2 + 16/2) & 0x80000000;
                 mstatus.sample_divider = *((const uint32_t*)cur_buf + mstatus_offset/2 + 18/2);
@@ -1954,7 +1967,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
             } else {
                 mstatus.vlen = instant_buffer_size;
             }
-            const uint32_t divider = devc->zero ? 0x1 : (uint32_t)ceil(SR_MHZ(100) * 1.0 / devc->cur_samplerate);
+            const uint32_t divider = devc->zero ? 0x1 : (uint32_t)ceil(DSLOGIC_MAX_DSO_SAMPLERATE * 1.0 / devc->cur_samplerate / channel_en_cnt);
             if ((mstatus.sample_divider == divider &&
                 mstatus.vlen != 0 &&
                 mstatus.vlen <= (transfer->actual_length - 512) / sample_width) ||

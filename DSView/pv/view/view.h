@@ -74,9 +74,9 @@ public:
 
 	static const QSizeF LabelPadding;
 
-    static const int WellPixelsPerSample = 10.0f;
-    static const double MaxViewRate = 1.0f;
-    static const int MaxPixelsPerSample = 100.0f;
+    static const int WellPixelsPerSample = 10;
+    static constexpr double MaxViewRate = 1.0;
+    static const int MaxPixelsPerSample = 100;
 
 public:
     explicit View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget *parent = 0);
@@ -140,7 +140,7 @@ public:
      * cursorList
      */
     std::list<Cursor*>& get_cursorList();
-    void add_cursor(QColor color, double time);
+    void add_cursor(QColor color, uint64_t index);
     void del_cursor(Cursor* cursor);
     void set_cursor_middle(int index);
 
@@ -163,13 +163,10 @@ public:
     bool need_update() const;
 
     uint64_t get_cursor_samples(int index);
-    QString get_mm_width();
-    QString get_mm_period();
-    QString get_mm_freq();
+    Viewport * get_viewport();
     QString get_cm_time(int index);
     QString get_cm_delta(int index1, int index2);
 
-    void on_mouse_moved();
     void on_cursor_moved();
 
     void on_state_changed(bool stop);
@@ -189,7 +186,6 @@ signals:
 
     void cursor_update();
 
-    void mouse_moved();
     void cursor_moved();
 
     void mode_changed();
@@ -200,8 +196,6 @@ private:
 	void update_scroll();
 
     void update_margins();
-
-    double get_cursor_time(int index);
 
     static bool compare_trace_v_offsets(
         const boost::shared_ptr<pv::view::Trace> &a,
@@ -230,8 +224,6 @@ private slots:
     void on_traces_moved();
 
     void header_updated();
-
-    void receive_data(quint64 length);
 
     void set_trig_pos(quint64 trig_pos);
 

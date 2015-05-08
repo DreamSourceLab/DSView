@@ -10,8 +10,8 @@ namespace view {
 class dslDial
 {
 public:
-    dslDial(const quint64 div, const quint64 step,
-            const QVector<quint64> value, const QVector<QString> unit);
+    dslDial(const uint64_t div, const uint64_t step,
+            const QVector<uint64_t> value, const QVector<QString> unit);
     virtual ~dslDial();
 
 public:
@@ -23,23 +23,28 @@ public:
     void paint(QPainter &p, QRectF dialRect, QColor dialColor);
 
     // set/get current select
-    void set_sel(quint64 sel);
-    quint64 get_sel();
+    void set_sel(uint64_t sel);
+    uint64_t get_sel();
 
     // boundary detection
     bool isMin();
     bool isMax();
 
     // get current value
-    quint64 get_value();
-    bool set_value(quint64 value);
+    uint64_t get_value();
+    bool set_value(uint64_t value);
+
+    // set/get factor
+    void set_factor(uint64_t factor);
+    uint64_t get_factor();
 
 private:
-    quint64 _div;
-    quint64 _step;
-    QVector<quint64> _value;
+    uint64_t _div;
+    uint64_t _step;
+    QVector<uint64_t> _value;
     QVector<QString> _unit;
-    quint64 _sel;
+    uint64_t _sel;
+    uint64_t _factor;
 };
 
 } // namespace view

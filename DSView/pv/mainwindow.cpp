@@ -180,7 +180,7 @@ void MainWindow::setup_ui()
 
     connect(_sampling_bar, SIGNAL(device_selected()), this,
             SLOT(update_device_list()));
-    connect(_sampling_bar, SIGNAL(device_updated()), &_session,
+    connect(_sampling_bar, SIGNAL(device_updated()), this,
         SLOT(reload()));
     connect(_sampling_bar, SIGNAL(run_stop()), this,
         SLOT(run_stop()));
@@ -225,8 +225,7 @@ void MainWindow::setup_ui()
 	// Set the title
     QString title = QApplication::applicationName()+" v"+QApplication::applicationVersion();
     std::string std_title = title.toStdString();
-    setWindowTitle(QApplication::translate("MainWindow", std_title.c_str(), 0,
-		QApplication::UnicodeUTF8));
+    setWindowTitle(QApplication::translate("MainWindow", std_title.c_str(), 0));
 
 	// Setup _session events
 	connect(&_session, SIGNAL(capture_state_changed(int)), this,
@@ -244,8 +243,6 @@ void MainWindow::setup_ui()
             SLOT(cursor_update()));
     connect(_view, SIGNAL(cursor_moved()), _measure_widget,
             SLOT(cursor_moved()));
-    connect(_view, SIGNAL(mouse_moved()), _measure_widget,
-            SLOT(mouse_moved()));
     connect(_view, SIGNAL(mode_changed()), this,
             SLOT(update_device_list()));
 
@@ -318,6 +315,12 @@ void MainWindow::update_device_list()
         _logo_bar->dsl_connected(true);
     else
         _logo_bar->dsl_connected(false);
+}
+
+void MainWindow::reload()
+{
+    _trigger_widget->device_change();
+    _session.reload();
 }
 
 void MainWindow::load_file(QString file_name)
@@ -522,7 +525,7 @@ void MainWindow::on_screenShot()
                        tr("%1 Files (*.%2);;All Files (*)")
                        .arg(format.toUpper()).arg(format));
     if (!fileName.isEmpty())
-        pixmap.save(fileName, format.toAscii());
+        pixmap.save(fileName, format.toLatin1());
 }
 
 void MainWindow::on_save()

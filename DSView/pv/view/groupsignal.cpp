@@ -63,7 +63,7 @@ bool GroupSignal::enabled() const
     return true;
 }
 
-shared_ptr<pv::data::SignalData> GroupSignal::data() const
+boost::shared_ptr<pv::data::SignalData> GroupSignal::data() const
 {
     return _data;
 }

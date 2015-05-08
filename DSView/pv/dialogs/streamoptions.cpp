@@ -37,7 +37,7 @@ using namespace std;
 namespace pv {
 namespace dialogs {
 
-StreamOptions::StreamOptions(QWidget *parent, shared_ptr<pv::device::DevInst> dev_inst,
+StreamOptions::StreamOptions(QWidget *parent, boost::shared_ptr<pv::device::DevInst> dev_inst,
                              uint64_t sample_count, bool stream) :
 	QDialog(parent),
     _dev_inst(dev_inst),

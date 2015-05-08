@@ -25,6 +25,7 @@
 #define DSVIEW_PV_VIEW_RULER_H
 
 #include <QWidget>
+#include <stdint.h>
 
 namespace pv {
 namespace view {
@@ -62,10 +63,12 @@ public:
 public:
 	Ruler(View &parent);
 
-	static QString format_time(double t, unsigned int prefix,
+    static QString format_time(double t, int prefix,
         unsigned precision = pricision);
     static QString format_freq(double period, unsigned precision = pricision);
     QString format_time(double t);
+    static QString format_real_time(uint64_t delta_index, uint64_t sample_rate);
+    static QString format_real_freq(uint64_t delta_index, uint64_t sample_rate);
 
     TimeMarker* get_grabbed_cursor();
     void set_grabbed_cursor(TimeMarker* grabbed_marker);

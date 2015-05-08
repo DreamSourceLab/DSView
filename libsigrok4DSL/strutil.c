@@ -212,6 +212,47 @@ SR_API char *sr_period_string(uint64_t frequency)
 }
 
 /**
+ * Convert a numeric time(ns) value to the "natural" string representation
+ * of its period.
+ *
+ * E.g. a value of 3000000 would be converted to "3 ms", 20000 to "20 us".
+ *
+ * @param time The time in ns.
+ *
+ * @return A g_try_malloc()ed string representation of the time value,
+ *         or NULL upon errors. The caller is responsible to g_free() the
+ *         memory.
+ */
+SR_API char *sr_time_string(uint64_t time)
+{
+    char *o;
+    int r;
+
+    /* Allocate enough for a uint64_t as string + " ms". */
+    if (!(o = g_try_malloc0(30 + 1))) {
+        sr_err("%s: o malloc failed", __func__);
+        return NULL;
+    }
+
+    if (time >= 1000000000)
+        r = snprintf(o, 30, "%" PRIu64 " s", time / 1000000000);
+    else if (time >= 1000000)
+        r = snprintf(o, 30, "%" PRIu64 " ms", time / 1000000);
+    else if (time >= 1000)
+        r = snprintf(o, 30, "%" PRIu64 " us", time / 1000);
+    else
+        r = snprintf(o, 30, "%" PRIu64 " ns", time);
+
+    if (r < 0) {
+        /* Something went wrong... */
+        g_free(o);
+        return NULL;
+    }
+
+    return o;
+}
+
+/**
  * Convert a numeric voltage value to the "natural" string representation
  * of its voltage value. The voltage is specified as a rational number's
  * numerator and denominator.

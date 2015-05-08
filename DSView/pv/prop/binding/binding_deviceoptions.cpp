@@ -90,6 +90,7 @@ DeviceOptions::DeviceOptions(struct sr_dev_inst *sdi) :
         case SR_CONF_STREAM:
         case SR_CONF_TEST:
         case SR_CONF_STATUS:
+        case SR_CONF_FACTOR:
 			bind_enum(name, key, gvar_list);
 			break;
 

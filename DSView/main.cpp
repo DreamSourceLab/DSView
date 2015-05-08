@@ -30,7 +30,7 @@
 
 #include <getopt.h>
 
-#include <QtGui/QApplication>
+#include <QApplication>
 #include <QDebug>
 #include <QFile>
 #include <QDir>
@@ -39,8 +39,6 @@
 #include "pv/mainwindow.h"
 
 #include "config.h"
-
-char decoders_path[256];
 
 void usage()
 {
@@ -122,11 +120,6 @@ int main(int argc, char *argv[])
 	do {
 
 #ifdef ENABLE_DECODE
-        QDir dir(QCoreApplication::applicationDirPath());
-        assert(dir.cd("decoders"));
-        std::string str = dir.absolutePath().toStdString() + "/";
-        strcpy(decoders_path, str.c_str());
-
 		// Initialise libsigrokdecode
 		if (srd_init(NULL) != SRD_OK) {
 			qDebug() << "ERROR: libsigrokdecode init failed.";

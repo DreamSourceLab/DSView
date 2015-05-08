@@ -58,6 +58,10 @@ public:
                 boost::shared_ptr<pv::data::Logic> data,
                 const sr_channel * const probe);
 
+    LogicSignal(const Signal &s,
+                boost::shared_ptr<pv::data::Logic> data,
+                const sr_channel * const probe);
+
 	virtual ~LogicSignal();
 
     const sr_channel* probe() const;
@@ -75,6 +79,8 @@ public:
     void paint_mid(QPainter &p, int left, int right);
 
     const std::vector< std::pair<uint64_t, bool> > cur_edges() const;
+
+    bool measure(const QPointF &p, uint64_t &index0, uint64_t &index1, uint64_t &index2) const;
 
 protected:
     void paint_type_options(QPainter &p, int right, bool hover, int action);

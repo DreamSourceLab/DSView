@@ -102,9 +102,8 @@ QString Ruler::format_freq(double period, unsigned precision)
     } else {
         const int order = ceil(log10f(period));
         assert(order >= FirstSIPrefixPower);
-        const unsigned int prefix = ceil((order - FirstSIPrefixPower) / 3.0f);
-        const double multiplier = pow(10.0,
-            static_cast<double>(- prefix * 3 - FirstSIPrefixPower));
+        const int prefix = ceil((order - FirstSIPrefixPower) / 3.0f);
+        const double multiplier = pow(10.0, max(-prefix * 3.0 - FirstSIPrefixPower, 0.0));
 
         QString s;
         QTextStream ts(&s);
@@ -115,11 +114,10 @@ QString Ruler::format_freq(double period, unsigned precision)
     }
 }
 
-QString Ruler::format_time(double t, unsigned int prefix,
+QString Ruler::format_time(double t, int prefix,
     unsigned int precision)
 {
-	const double multiplier = pow(10.0,
-        static_cast<double>(- prefix * 3 - FirstSIPrefixPower + 6));
+    const double multiplier = pow(10.0, -prefix * 3 - FirstSIPrefixPower + 6.0);
 
 	QString s;
 	QTextStream ts(&s);
@@ -132,6 +130,29 @@ QString Ruler::format_time(double t, unsigned int prefix,
 QString Ruler::format_time(double t)
 {
     return format_time(t, _cur_prefix);
+}
+
+QString Ruler::format_real_time(uint64_t delta_index, uint64_t sample_rate)
+{
+    uint64_t delta_time = std::pow(10, 12) / sample_rate * delta_index;
+
+    if (delta_time == 0)
+        return "0";
+
+    int zero = 0;
+    int prefix = (int)floor(log10(delta_time));
+    while(delta_time == (delta_time/10*10)) {
+        delta_time /= 10;
+        zero++;
+    }
+
+    return format_time(delta_time / std::pow(10.0, 12-zero), prefix/3+1, prefix/3*3 > zero ? prefix/3*3 - zero : 0);
+}
+
+QString Ruler::format_real_freq(uint64_t delta_index, uint64_t sample_rate)
+{
+    const double delta_period = delta_index * 1.0 / sample_rate;
+    return format_freq(delta_period);
 }
 
 TimeMarker* Ruler::get_grabbed_cursor()
@@ -182,8 +203,8 @@ void Ruler::mouseMoveEvent(QMouseEvent *e)
     (void)e;
 
     if (_grabbed_marker) {
-        _grabbed_marker->set_time(_view.offset() +
-            _view.hover_point().x() * _view.scale());
+        _grabbed_marker->set_index((_view.offset() +
+            _view.hover_point().x() * _view.scale()) * _view.session().get_device()->get_sample_rate());
     }
 
     update();
@@ -242,19 +263,17 @@ void Ruler::mouseReleaseEvent(QMouseEvent *event)
                     _cursor_sel_visible = true;
                 } else {
                     int overCursor;
-                    double time = _view.offset() + (_cursor_sel_x + 0.5) * _view.scale();
+                    uint64_t index = (_view.offset() + (_cursor_sel_x + 0.5) * _view.scale()) * _view.session().get_device()->get_sample_rate();
                     overCursor = in_cursor_sel_rect(event->pos());
                     if (overCursor == 0) {
-                        //Cursor *newCursor = new Cursor(_view, CursorColor[_view.get_cursorList().size() % 8], time);
-                        //_view.get_cursorList().push_back(newCursor);
-                        _view.add_cursor(CursorColor[_view.get_cursorList().size() % 8], time);
+                        _view.add_cursor(CursorColor[_view.get_cursorList().size() % 8], index);
                         _view.show_cursors(true);
                         addCursor = true;
                     } else if (overCursor > 0) {
                         list<Cursor*>::iterator i = _view.get_cursorList().begin();
                         while (--overCursor != 0)
                                 i++;
-                        (*i)->set_time(time);
+                        (*i)->set_index(index);
                     }
                     _cursor_sel_visible = false;
                 }
@@ -262,10 +281,6 @@ void Ruler::mouseReleaseEvent(QMouseEvent *event)
                 int overCursor;
                 overCursor = in_cursor_sel_rect(event->pos());
                 if (overCursor > 0) {
-//                    list<Cursor*>::iterator i = _view.get_cursorList().begin();
-//                    while (--overCursor != 0)
-//                            i++;
-//                    _view.set_scale_offset(_view.scale(), (*i)->time() - _view.scale() * _view.viewport()->width() / 2);
                     _view.set_cursor_middle(overCursor - 1);
                 }
 
@@ -307,8 +322,8 @@ void Ruler::draw_tick_mark(QPainter &p)
 {
     using namespace Qt;
 
-    const double SpacingIncrement = 32.0f;
-    const double MinValueSpacing = 16.0f;
+    const double SpacingIncrement = 32.0;
+    const double MinValueSpacing = 16.0;
     const int ValueMargin = 15;
 
     double min_width = SpacingIncrement, typical_width;
@@ -406,11 +421,11 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
 {
     using namespace Qt;
 
-    const double SpacingIncrement = 32.0f;
-    const double MinValueSpacing = 16.0f;
+    const double SpacingIncrement = 32.0;
+    const double MinValueSpacing = 16.0;
     const int ValueMargin = 5;
 
-    const double abs_min_period = 10.0f / _view.session().get_device()->get_sample_rate();
+    const double abs_min_period = 10.0 / _view.session().get_device()->get_sample_rate();
 
     double min_width = SpacingIncrement;
     double typical_width;
@@ -488,13 +503,13 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
         else
         {
             // Draw a minor tick
-            if (minor_tick_period / _view.scale() > 2 * typical_width ||
-                    tick_period / _view.scale() > _view.get_view_width())
+            if (minor_tick_period / _view.scale() > 2 * typical_width)
                 p.drawText(x, 2 * ValueMargin, 0, text_height,
                     AlignCenter | AlignTop | TextDontClip,
                     format_time(t, prefix));
             //else if ((tick_period / _view.scale() > width() / 4) && (minor_tick_period / _view.scale() > inc_text_width))
-            else if (minor_tick_period / _view.scale() > 1.1 * inc_text_width)
+            else if (minor_tick_period / _view.scale() > 1.1 * inc_text_width ||
+                     tick_period / _view.scale() > _view.get_view_width())
                 p.drawText(x, 2 * ValueMargin, 0, minor_tick_y1 + ValueMargin,
                     AlignCenter | AlignTop | TextDontClip,
                     format_time(t - major_t, minor_prefix));

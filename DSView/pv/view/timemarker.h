@@ -28,6 +28,8 @@
 #include <QObject>
 #include <QRectF>
 
+#include <stdint.h>
+
 class QPainter;
 class QRect;
 
@@ -47,7 +49,7 @@ protected:
 	 * @param colour A reference to the colour of this cursor.
 	 * @param time The time to set the flag to.
 	 */
-    TimeMarker(View &view, QColor &colour, double time);
+    TimeMarker(View &view, QColor &colour, uint64_t index);
 
 	/**
 	 * Copy constructor
@@ -59,11 +61,12 @@ public:
 	 * Gets the time of the marker.
 	 */
 	double time() const;
+    uint64_t index() const;
 
 	/**
 	 * Sets the time of the marker.
 	 */
-	void set_time(double time);
+    void set_index(uint64_t index);
 
     /*
      *
@@ -103,7 +106,7 @@ signals:
 protected:
     View &_view;
 
-	double _time;
+    uint64_t _index;
 
 	QSizeF _text_size;
 
