@@ -48,8 +48,7 @@ WaitingDialog::WaitingDialog(QWidget *parent, boost::shared_ptr<pv::device::DevI
     this->setFixedSize((GIF_SIZE+TIP_WIDTH)*2, (GIF_SIZE+TIP_HEIGHT)*2);
     int midx = this->width() / 2;
     int midy = this->height() / 2;
-    this->setWindowOpacity(0.6);
-    this->setStyleSheet("background-color: rgb(255, 255, 255);");
+    this->setWindowOpacity(0.7);
     this->setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
 
     label = new QLabel(this);
@@ -60,7 +59,6 @@ WaitingDialog::WaitingDialog(QWidget *parent, boost::shared_ptr<pv::device::DevI
 
     tips = new QLabel(this);
     tips->setText(TIPS_INFO);
-    tips->setStyleSheet("color: rgb(17, 133, 209); background-color: transparent;");
     QFont font;
     font.setPointSize(10);
     font.setBold(true);
@@ -71,8 +69,6 @@ WaitingDialog::WaitingDialog(QWidget *parent, boost::shared_ptr<pv::device::DevI
     timer = new QTimer();
     connect(timer, SIGNAL(timeout()), this, SLOT(changeText()));
 
-    QString styleSheet = "* {color: rgb(255, 255, 255); background-color: rgb(17, 133, 209);} *:hover {background-color: rgb(238, 178, 17);}";
-    _button_box.setStyleSheet(styleSheet);
     _button_box.setGeometry(width()-_button_box.width()-30, height()-_button_box.height()-15,
                             _button_box.width(), _button_box.height());
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
