@@ -1867,6 +1867,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
                 mstatus.ch1_min = *((const uint8_t*)cur_buf + mstatus_offset*2 + 19);
                 mstatus.ch1_period = *((const uint32_t*)cur_buf + mstatus_offset/2 + 10/2);
                 mstatus.ch1_period += ((uint64_t)*((const uint32_t*)cur_buf + mstatus_offset/2 + 12/2)) << 32;
+                mstatus.ch1_pcnt = *((const uint32_t*)cur_buf + mstatus_offset/2 + 14/2);
                 mstatus.vlen = *((const uint32_t*)cur_buf + mstatus_offset/2 + 16/2) & 0x7fffffff;
                 mstatus.stream_mode = *((const uint32_t*)cur_buf + mstatus_offset/2 + 16/2) & 0x80000000;
                 mstatus.sample_divider = *((const uint32_t*)cur_buf + mstatus_offset/2 + 18/2);
