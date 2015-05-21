@@ -174,7 +174,7 @@ SR_API int ds_trigger_destroy(void);
 SR_API int ds_trigger_stage_set_value(uint16_t stage, uint16_t probes, char *trigger0, char *trigger1);
 SR_API int ds_trigger_stage_set_logic(uint16_t stage, uint16_t probes, unsigned char trigger_logic);
 SR_API int ds_trigger_stage_set_inv(uint16_t stage, uint16_t probes, unsigned char trigger0_inv, unsigned char trigger1_inv);
-SR_API int ds_trigger_stage_set_count(uint16_t stage, uint16_t probes, uint16_t trigger0_count, uint16_t trigger1_count);
+SR_API int ds_trigger_stage_set_count(uint16_t stage, uint16_t probes, uint32_t trigger0_count, uint32_t trigger1_count);
 SR_API int ds_trigger_probe_set(uint16_t probe, unsigned char trigger0, unsigned char trigger1);
 SR_API int ds_trigger_set_stage(uint16_t stages);
 SR_API int ds_trigger_set_pos(uint16_t position);

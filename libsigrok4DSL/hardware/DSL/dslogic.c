@@ -257,8 +257,8 @@ static int fpga_setting(const struct sr_dev_inst *sdi)
     setting.trig_edge1_header = 0x1910ffff;
     //setting.trig_edge2_header = 0x1a10ffff;
     //setting.trig_edge3_header = 0x1b10ffff;
-    setting.trig_count0_header = 0x1c10ffff;
-    setting.trig_count1_header = 0x1d10ffff;
+    setting.trig_count0_header = 0x1c20ffff;
+    setting.trig_count1_header = 0x1d20ffff;
     //setting.trig_count2_header = 0x1e10ffff;
     //setting.trig_count3_header = 0x1f10ffff;
     setting.trig_logic0_header = 0x2010ffff;

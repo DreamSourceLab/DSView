@@ -117,7 +117,7 @@ SR_API int ds_trigger_stage_set_inv(uint16_t stage, uint16_t probes, unsigned ch
 
     return SR_OK;
 }
-SR_API int ds_trigger_stage_set_count(uint16_t stage, uint16_t probes, uint16_t trigger0_count, uint16_t trigger1_count)
+SR_API int ds_trigger_stage_set_count(uint16_t stage, uint16_t probes, uint32_t trigger0_count, uint32_t trigger1_count)
 {
     assert(stage < TriggerStages);
     assert(probes <= TriggerProbes);

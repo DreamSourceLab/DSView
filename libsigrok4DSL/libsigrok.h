@@ -1044,8 +1044,8 @@ struct ds_trigger {
     unsigned char trigger1_inv[TriggerStages+1];
     char trigger0[TriggerStages+1][TriggerProbes];
     char trigger1[TriggerStages+1][TriggerProbes];
-    uint16_t trigger0_count[TriggerStages+1];
-    uint16_t trigger1_count[TriggerStages+1];
+    uint32_t trigger0_count[TriggerStages+1];
+    uint32_t trigger1_count[TriggerStages+1];
 };
 
 struct ds_trigger_pos {

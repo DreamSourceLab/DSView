@@ -89,7 +89,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
 		_value0_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
         _value0_lineEdit_list.push_back(_value0_lineEdit);
         QSpinBox *_count0_spinBox = new QSpinBox(this);
-        _count0_spinBox->setRange(1, 1 << TriggerCountBits);
+        _count0_spinBox->setRange(1, INT32_MAX);
         _count0_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
         _count0_spinBox_list.push_back(_count0_spinBox);
         QComboBox *_inv0_comboBox = new QComboBox(this);
@@ -105,7 +105,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
 		_value1_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
         _value1_lineEdit_list.push_back(_value1_lineEdit);
         QSpinBox *_count1_spinBox = new QSpinBox(this);
-        _count1_spinBox->setRange(1, 1 << TriggerCountBits);
+        _count1_spinBox->setRange(1, INT32_MAX);
         _count1_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
         _count1_spinBox_list.push_back(_count1_spinBox);
         QComboBox *_inv1_comboBox = new QComboBox(this);
