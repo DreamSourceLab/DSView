@@ -367,8 +367,8 @@ void TriggerDock::device_change()
         g_variant_unref(gvar);
     }
 
-    if (stream ||
-        strcmp(_session.get_device()->dev_inst()->driver->name, "DSLogic") != 0) {
+    if (stream &&
+        strcmp(_session.get_device()->dev_inst()->driver->name, "DSLogic") == 0) {
         const int maxRange = SR_MB(11)*100/_session.get_device()->get_sample_limit();
         position_spinBox->setRange(0, maxRange);
         position_slider->setRange(0, maxRange);
