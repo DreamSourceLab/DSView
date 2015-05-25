@@ -61,10 +61,21 @@ int main(int argc, char *argv[])
 
 	QApplication a(argc, argv);
 
-	// Set some application metadata
-    	QApplication::setApplicationVersion(DS_VERSION_STRING);
-        QApplication::setApplicationName("DSView(Beta)");
-    	QApplication::setOrganizationDomain("http://www.DreamSourceLab.com");
+    // Language
+#ifdef LANGUAGE_ZH_CN
+    QTranslator qtTrans;
+    qtTrans.load(":/qt_zh_CN");
+    a.installTranslator(&qtTrans);
+
+    QTranslator DSViewTrans;
+    DSViewTrans.load(":/DSView_zh");
+    a.installTranslator(&DSViewTrans);
+#endif
+
+    // Set some application metadata
+    QApplication::setApplicationVersion(DS_VERSION_STRING);
+    QApplication::setApplicationName("DSView(Beta)");
+    QApplication::setOrganizationDomain("http://www.DreamSourceLab.com");
 
 	// Parse arguments
 	while (1) {

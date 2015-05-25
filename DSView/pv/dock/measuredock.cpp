@@ -52,8 +52,8 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession &session) :
     _view(view)
 {
 
-    _mouse_groupBox = new QGroupBox("Mouse measurement", this);
-    _fen_checkBox = new QCheckBox("Enable floating measurement", this);
+    _mouse_groupBox = new QGroupBox(tr("Mouse measurement"), this);
+    _fen_checkBox = new QCheckBox(tr("Enable floating measurement"), this);
     _fen_checkBox->setChecked(true);
     _width_label = new QLabel("#####", this);
     _period_label = new QLabel("#####", this);
@@ -62,13 +62,13 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession &session) :
 
     _mouse_layout = new QGridLayout();
     _mouse_layout->addWidget(_fen_checkBox, 0, 0, 1, 2);
-    _mouse_layout->addWidget(new QLabel("Width: ", this), 1, 0);
+    _mouse_layout->addWidget(new QLabel(tr("Width: "), this), 1, 0);
     _mouse_layout->addWidget(_width_label, 1, 1);
-    _mouse_layout->addWidget(new QLabel("Period: ", this), 2, 0);
+    _mouse_layout->addWidget(new QLabel(tr("Period: "), this), 2, 0);
     _mouse_layout->addWidget(_period_label, 2, 1);
-    _mouse_layout->addWidget(new QLabel("Frequency: ", this), 3, 0);
+    _mouse_layout->addWidget(new QLabel(tr("Frequency: "), this), 3, 0);
     _mouse_layout->addWidget(_freq_label, 3, 1);
-    _mouse_layout->addWidget(new QLabel("Duty Cycle: ", this), 4, 0);
+    _mouse_layout->addWidget(new QLabel(tr("Duty Cycle: "), this), 4, 0);
     _mouse_layout->addWidget(_duty_label, 4, 1);
     _mouse_layout->addWidget(new QLabel(this), 0, 2);
     _mouse_layout->addWidget(new QLabel(this), 1, 2);
@@ -79,7 +79,7 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession &session) :
     _mouse_groupBox->setLayout(_mouse_layout);
 
 
-    _cursor_groupBox = new QGroupBox("Cursor measurement", this);
+    _cursor_groupBox = new QGroupBox(tr("Cursor measurement"), this);
     _t1_comboBox = new QComboBox(this);
     _t2_comboBox = new QComboBox(this);
     _t3_comboBox = new QComboBox(this);
@@ -94,30 +94,30 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession &session) :
     _t3_last_index = 0;
 
     _cursor_layout = new QGridLayout();
-    _cursor_layout->addWidget(new QLabel("T1: ", this), 0, 0);
+    _cursor_layout->addWidget(new QLabel(tr("T1: "), this), 0, 0);
     _cursor_layout->addWidget(_t1_comboBox, 0, 1);
-    _cursor_layout->addWidget(new QLabel("T2: ", this), 1, 0);
+    _cursor_layout->addWidget(new QLabel(tr("T2: "), this), 1, 0);
     _cursor_layout->addWidget(_t2_comboBox, 1, 1);
-    _cursor_layout->addWidget(new QLabel("T3: ", this), 2, 0);
+    _cursor_layout->addWidget(new QLabel(tr("T3: "), this), 2, 0);
     _cursor_layout->addWidget(_t3_comboBox, 2, 1);
 
-    _cursor_layout->addWidget(new QLabel("|T2 - T1|: ", this), 3, 0);
+    _cursor_layout->addWidget(new QLabel(tr("|T2 - T1|: "), this), 3, 0);
     _cursor_layout->addWidget(_delta_label_t1t2, 3, 1);
-    _cursor_layout->addWidget(new QLabel("Delta Samples: ", this), 3, 2);
+    _cursor_layout->addWidget(new QLabel(tr("Delta Samples: "), this), 3, 2);
     _cursor_layout->addWidget(_cnt_label_t1t2, 3, 3);
 
-    _cursor_layout->addWidget(new QLabel("|T3 - T2|: ", this), 4, 0);
+    _cursor_layout->addWidget(new QLabel(tr("|T3 - T2|: "), this), 4, 0);
     _cursor_layout->addWidget(_delta_label_t2t3, 4, 1);
-    _cursor_layout->addWidget(new QLabel("Delta Samples: ", this), 4, 2);
+    _cursor_layout->addWidget(new QLabel(tr("Delta Samples: "), this), 4, 2);
     _cursor_layout->addWidget(_cnt_label_t2t3, 4, 3);
 
-    _cursor_layout->addWidget(new QLabel("|T3 - T1|: ", this), 5, 0);
+    _cursor_layout->addWidget(new QLabel(tr("|T3 - T1|: "), this), 5, 0);
     _cursor_layout->addWidget(_delta_label_t1t3, 5, 1);
-    _cursor_layout->addWidget(new QLabel("Delta Samples: ", this), 5, 2);
+    _cursor_layout->addWidget(new QLabel(tr("Delta Samples: "), this), 5, 2);
     _cursor_layout->addWidget(_cnt_label_t1t3, 5, 3);
 
-    _cursor_layout->addWidget(new QLabel("Cursors", this), 6, 0);
-    _cursor_layout->addWidget(new QLabel("Time/Samples", this), 6, 1);
+    _cursor_layout->addWidget(new QLabel(tr("Cursors"), this), 6, 0);
+    _cursor_layout->addWidget(new QLabel(tr("Time/Samples"), this), 6, 1);
 
     _cursor_layout->addWidget(new QLabel(this), 0, 4);
     _cursor_layout->addWidget(new QLabel(this), 1, 4);
@@ -185,7 +185,7 @@ void MeasureDock::cursor_update()
 
     for(std::list<Cursor*>::iterator i = _view.get_cursorList().begin();
         i != _view.get_cursorList().end(); i++) {
-        QString curCursor = "Cursor "+QString::number(index);
+        QString curCursor = tr("Cursor ")+QString::number(index);
         _t1_comboBox->addItem(curCursor);
         _t2_comboBox->addItem(curCursor);
         _t3_comboBox->addItem(curCursor);

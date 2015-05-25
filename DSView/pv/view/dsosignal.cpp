@@ -844,14 +844,14 @@ void DsoSignal::paint_type_options(QPainter &p, int right, bool hover, int actio
     p.setBrush((hover && action == CHEN) ? _colour.darker() : _colour);
     p.drawRect(chEn_rect);
     p.setPen(Qt::white);
-    p.drawText(chEn_rect, Qt::AlignCenter | Qt::AlignVCenter, enabled() ? "EN" : "DIS");
+    p.drawText(chEn_rect, Qt::AlignCenter | Qt::AlignVCenter, enabled() ? tr("EN") : tr("DIS"));
 
     p.setPen(Qt::transparent);
     p.setBrush(enabled() ? ((hover && action == ACDC) ? _colour.darker() : _colour) : dsDisable);
     p.drawRect(acdc_rect);
     p.setPen(Qt::white);
-    p.drawText(acdc_rect, Qt::AlignCenter | Qt::AlignVCenter, (_acCoupling == SR_GND_COUPLING) ? "GND" :
-                                                              (_acCoupling == SR_DC_COUPLING) ? "DC" : "AC");
+    p.drawText(acdc_rect, Qt::AlignCenter | Qt::AlignVCenter, (_acCoupling == SR_GND_COUPLING) ? tr("GND") :
+                                                              (_acCoupling == SR_DC_COUPLING) ? tr("DC") : tr("AC"));
 
     // paint the probe factor selector
     GVariant* gvar;
@@ -904,10 +904,10 @@ void DsoSignal::paint_measure(QPainter &p)
         QString freq_string = abs(_period) > 1000000 ? QString::number(1000000000/_period, 'f', 2) + "Hz" :
                               abs(_period) > 1000 ? QString::number(1000000/_period, 'f', 2) + "kHz" : QString::number(1000/_period, 'f', 2) + "MHz";
         p.setPen(_colour);
-        p.drawText(QRectF(0, 100*index + UpMargin, get_view_rect().width()*0.9, 20), Qt::AlignRight | Qt::AlignVCenter, "Max: "+max_string+"        ");
-        p.drawText(QRectF(0, 100*index + UpMargin + 20, get_view_rect().width()*0.9, 20), Qt::AlignRight | Qt::AlignVCenter, "Min: "+min_string+"        ");
-        p.drawText(QRectF(0, 100*index + UpMargin + 40, get_view_rect().width()*0.9, 20), Qt::AlignRight | Qt::AlignVCenter, "Period: "+period_string+"        ");
-        p.drawText(QRectF(0, 100*index + UpMargin + 60, get_view_rect().width()*0.9, 20), Qt::AlignRight | Qt::AlignVCenter, "Frequency: "+freq_string+"        ");
+        p.drawText(QRectF(0, 100*index + UpMargin, get_view_rect().width()*0.9, 20), Qt::AlignRight | Qt::AlignVCenter, tr("Max: ")+max_string+"        ");
+        p.drawText(QRectF(0, 100*index + UpMargin + 20, get_view_rect().width()*0.9, 20), Qt::AlignRight | Qt::AlignVCenter, tr("Min: ")+min_string+"        ");
+        p.drawText(QRectF(0, 100*index + UpMargin + 40, get_view_rect().width()*0.9, 20), Qt::AlignRight | Qt::AlignVCenter, tr("Period: ")+period_string+"        ");
+        p.drawText(QRectF(0, 100*index + UpMargin + 60, get_view_rect().width()*0.9, 20), Qt::AlignRight | Qt::AlignVCenter, tr("Frequency: ")+freq_string+"        ");
 
         if (_autoV) {
             const uint8_t vscale = abs(_max - _min);

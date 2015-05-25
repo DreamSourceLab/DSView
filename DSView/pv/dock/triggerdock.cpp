@@ -47,11 +47,11 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
     font.setStyleHint(QFont::Monospace);
     font.setFixedPitch(true);
 
-    simple_radioButton = new QRadioButton("Simple Trigger", this);
+    simple_radioButton = new QRadioButton(tr("Simple Trigger"), this);
     simple_radioButton->setChecked(true);
-    adv_radioButton = new QRadioButton("Advanced Trigger", this);
+    adv_radioButton = new QRadioButton(tr("Advanced Trigger"), this);
 
-    position_label = new QLabel("Trigger Position: ", this);
+    position_label = new QLabel(tr("Trigger Position: "), this);
     position_spinBox = new QSpinBox(this);
     position_spinBox->setRange(0, 99);
     position_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
@@ -60,7 +60,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
     connect(position_slider, SIGNAL(valueChanged(int)), position_spinBox, SLOT(setValue(int)));
     connect(position_spinBox, SIGNAL(valueChanged(int)), position_slider, SLOT(setValue(int)));
 
-    stages_label = new QLabel("Total Trigger Stages: ", this);
+    stages_label = new QLabel(tr("Total Trigger Stages: "), this);
     stages_label->setDisabled(true);
     stages_comboBox = new QComboBox(this);
     for (i = 1; i <= TriggerStages; i++)
@@ -131,11 +131,11 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
         stage_glayout->addWidget(_inv1_comboBox, 3, 1);
         stage_glayout->addWidget(_count1_spinBox, 3, 2);
         stage_layout->addLayout(stage_glayout);
-		stage_layout->addSpacing(100);
-        stage_layout->addWidget(new QLabel("X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge"));
+        stage_layout->addSpacing(20);
+        stage_layout->addWidget(new QLabel(tr("X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge")));
         stage_layout->addStretch(1);
 
-        QGroupBox *_stage_groupBox = new QGroupBox("Stage"+QString::number(i), this);
+        QGroupBox *_stage_groupBox = new QGroupBox(tr("Stage")+QString::number(i), this);
         _stage_groupBox->setFlat(true);
         _stage_groupBox->setLayout(stage_layout);
         _stage_groupBox_list.push_back(_stage_groupBox);
@@ -221,8 +221,8 @@ void TriggerDock::adv_trigger()
         }
         if (stream) {
             QMessageBox msg(this);
-            msg.setText("Trigger");
-            msg.setInformativeText("Stram Mode Don't Support Advanced Trigger!");
+            msg.setText(tr("Trigger"));
+            msg.setInformativeText(tr("Stram Mode Don't Support Advanced Trigger!"));
             msg.setStandardButtons(QMessageBox::Ok);
             msg.setIcon(QMessageBox::Warning);
             msg.exec();
@@ -234,8 +234,8 @@ void TriggerDock::adv_trigger()
         }
     } else {
         QMessageBox msg(this);
-        msg.setText("Trigger");
-        msg.setInformativeText("Advanced Trigger need DSLogic Hardware Support!");
+        msg.setText(tr("Trigger"));
+        msg.setInformativeText(tr("Advanced Trigger need DSLogic Hardware Support!"));
         msg.setStandardButtons(QMessageBox::Ok);
         msg.setIcon(QMessageBox::Warning);
         msg.exec();

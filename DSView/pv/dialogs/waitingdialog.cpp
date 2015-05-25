@@ -37,7 +37,7 @@ using namespace std;
 namespace pv {
 namespace dialogs {
 
-const QString WaitingDialog::TIPS_INFO = "Waiting";
+const QString WaitingDialog::TIPS_INFO = tr("Waiting");
 
 WaitingDialog::WaitingDialog(QWidget *parent, boost::shared_ptr<pv::device::DevInst> dev_inst) :
 	QDialog(parent),

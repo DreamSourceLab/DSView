@@ -443,8 +443,8 @@ void MainWindow::test_data_error()
 #endif
     _session.stop_capture();
     QMessageBox msg(this);
-    msg.setText("Data Error");
-    msg.setInformativeText("the receive data are not consist with pre-defined test data");
+    msg.setText(tr("Data Error"));
+    msg.setInformativeText(tr("the receive data are not consist with pre-defined test data"));
     msg.setStandardButtons(QMessageBox::Ok);
     msg.setIcon(QMessageBox::Warning);
     msg.exec();
@@ -454,8 +454,8 @@ void MainWindow::malloc_error()
 {
     _session.stop_capture();
     QMessageBox msg(this);
-    msg.setText("Malloc Error");
-    msg.setInformativeText("Memory is not enough for this sample!\nPlease reduce the sample depth!");
+    msg.setText(tr("Malloc Error"));
+    msg.setInformativeText(tr("Memory is not enough for this sample!\nPlease reduce the sample depth!"));
     msg.setStandardButtons(QMessageBox::Ok);
     msg.setIcon(QMessageBox::Warning);
     msg.exec();
