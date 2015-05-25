@@ -56,10 +56,10 @@ Search::Search(QWidget *parent, struct sr_dev_inst *sdi, QString pattern) :
 
     QGridLayout *search_layout = new QGridLayout();
     search_layout->addWidget(search_label, 0, 1);
-    search_layout->addWidget(new QLabel("Search Value: "), 1,0, Qt::AlignRight);
+    search_layout->addWidget(new QLabel(tr("Search Value: ")), 1,0, Qt::AlignRight);
     search_layout->addWidget(&search_lineEdit, 1, 1);
     search_layout->addWidget(new QLabel(" "), 2,0);
-    search_layout->addWidget(new QLabel("X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge"), 3, 0);
+    search_layout->addWidget(new QLabel(tr("X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge")), 3, 0);
     search_layout->addWidget(&search_buttonBox, 4, 2);
     //search_layout->addStretch(1);
 

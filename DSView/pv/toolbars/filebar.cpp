@@ -82,7 +82,11 @@ FileBar::FileBar(SigSession &session, QWidget *parent) :
     connect(_action_capture, SIGNAL(triggered()), this, SLOT(on_actionCapture_triggered()));
 
     _file_button.setPopupMode(QToolButton::InstantPopup);
+#ifdef LANGUAGE_ZH_CN
+    _file_button.setIcon(QIcon(":/icons/file_cn.png"));
+#else
     _file_button.setIcon(QIcon(":/icons/file.png"));
+#endif
 
     addWidget(&_file_button);
 }
@@ -122,8 +126,8 @@ void FileBar::on_actionExport_triggered(){
     void* buf = _session.get_buf(unit_size, length);
     if (!buf) {
         QMessageBox msg(this);
-        msg.setText("Data Export");
-        msg.setInformativeText("No Data to Save!");
+        msg.setText(tr("Data Export"));
+        msg.setInformativeText(tr("No Data to Save!"));
         msg.setStandardButtons(QMessageBox::Ok);
         msg.setIcon(QMessageBox::Warning);
         msg.exec();
@@ -156,15 +160,15 @@ void FileBar::on_actionSave_triggered()
     void* buf = _session.get_buf(unit_size, length);
     if (!buf) {
         QMessageBox msg(this);
-        msg.setText("File Save");
-        msg.setInformativeText("No Data to Save!");
+        msg.setText(tr("File Save"));
+        msg.setInformativeText(tr("No Data to Save!"));
         msg.setStandardButtons(QMessageBox::Ok);
         msg.setIcon(QMessageBox::Warning);
         msg.exec();
     } else if (_session.get_device()->dev_inst()->mode != LOGIC) {
         QMessageBox msg(this);
-        msg.setText("File Save");
-        msg.setInformativeText("DSView currently only support saving logic data to file!");
+        msg.setText(tr("File Save"));
+        msg.setInformativeText(tr("DSView currently only support saving logic data to file!"));
         msg.setStandardButtons(QMessageBox::Ok);
         msg.setIcon(QMessageBox::Warning);
         msg.exec();
@@ -189,8 +193,13 @@ void FileBar::on_actionCapture_triggered()
 void FileBar::enable_toggle(bool enable)
 {
     _file_button.setDisabled(!enable);
+#ifdef LANGUAGE_ZH_CN
+    _file_button.setIcon(enable ? QIcon(":/icons/file_cn.png") :
+                                  QIcon(":/icons/file_dis_cn.png"));
+#else
     _file_button.setIcon(enable ? QIcon(":/icons/file.png") :
                                   QIcon(":/icons/file_dis.png"));
+#endif
 }
 
 } // namespace toolbars

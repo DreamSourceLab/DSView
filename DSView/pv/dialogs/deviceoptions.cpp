@@ -157,8 +157,8 @@ void DeviceOptions::setup_probes()
         row = index / 8;
 	}
 
-    QPushButton *_enable_all_probes = new QPushButton("Enable All", this);
-    QPushButton *_disable_all_probes = new QPushButton("Disable All", this);
+    QPushButton *_enable_all_probes = new QPushButton(tr("Enable All"), this);
+    QPushButton *_disable_all_probes = new QPushButton(tr("Disable All"), this);
 
     connect(_enable_all_probes, SIGNAL(clicked()),
         this, SLOT(enable_all_probes()));
@@ -194,8 +194,8 @@ void DeviceOptions::zero_adj()
     QDialog::reject();
 
     QMessageBox msg(this);
-    msg.setText("Information");
-    msg.setInformativeText("Zero adjustment program will be started. This may take a few minutes!");
+    msg.setText(tr("Information"));
+    msg.setInformativeText(tr("Zero adjustment program will be started. This may take a few minutes!"));
     //msg.setStandardButtons(QMessageBox::);
     msg.addButton(tr("Ok"), QMessageBox::AcceptRole);
     msg.addButton(tr("Cancel"), QMessageBox::RejectRole);

@@ -612,13 +612,13 @@ void Viewport::paintMeasure(QPainter &p)
 
             p.setPen(Qt::black);
             p.drawText(measure1_rect, Qt::AlignRight | Qt::AlignVCenter,
-                       "Width: " + _mm_width);
+                       tr("Width: ") + _mm_width);
             p.drawText(measure2_rect, Qt::AlignRight | Qt::AlignVCenter,
-                       "Period: " + _mm_period);
+                       tr("Period: ") + _mm_period);
             p.drawText(measure3_rect, Qt::AlignRight | Qt::AlignVCenter,
-                       "Frequency: " + _mm_freq);
+                       tr("Frequency: ") + _mm_freq);
             p.drawText(measure4_rect, Qt::AlignRight | Qt::AlignVCenter,
-                       "Duty Cycle: " + _mm_duty);
+                       tr("Duty Cycle: ") + _mm_duty);
         }
     } else if (_measure_type == DSO) {
         const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());

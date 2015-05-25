@@ -45,7 +45,7 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession &session) :
     QWidget(parent),
     _session(session)
 {
-    QLabel *position_label = new QLabel("Trigger Position: ", this);
+    QLabel *position_label = new QLabel(tr("Trigger Position: "), this);
     position_spinBox = new QSpinBox(this);
     position_spinBox->setRange(0, 99);
     position_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
@@ -55,23 +55,23 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession &session) :
     connect(position_spinBox, SIGNAL(valueChanged(int)), position_slider, SLOT(setValue(int)));
     connect(position_slider, SIGNAL(valueChanged(int)), this, SLOT(pos_changed(int)));
 
-    QLabel *tSource_labe = new QLabel("Trigger Sources: ", this);
-    QRadioButton *auto_radioButton = new QRadioButton("Auto");
+    QLabel *tSource_labe = new QLabel(tr("Trigger Sources: "), this);
+    QRadioButton *auto_radioButton = new QRadioButton(tr("Auto"));
     auto_radioButton->setChecked(true);
-    QRadioButton *ch0_radioButton = new QRadioButton("Channel 0");
-    QRadioButton *ch1_radioButton = new QRadioButton("Channel 1");
-    QRadioButton *ch0a1_radioButton = new QRadioButton("Channel 0 && Channel 1");
-    QRadioButton *ch0o1_radioButton = new QRadioButton("Channel 0 | Channel 1");
+    QRadioButton *ch0_radioButton = new QRadioButton(tr("Channel 0"));
+    QRadioButton *ch1_radioButton = new QRadioButton(tr("Channel 1"));
+    QRadioButton *ch0a1_radioButton = new QRadioButton(tr("Channel 0 && Channel 1"));
+    QRadioButton *ch0o1_radioButton = new QRadioButton(tr("Channel 0 | Channel 1"));
     connect(auto_radioButton, SIGNAL(clicked()), this, SLOT(source_changed()));
     connect(ch0_radioButton, SIGNAL(clicked()), this, SLOT(source_changed()));
     connect(ch1_radioButton, SIGNAL(clicked()), this, SLOT(source_changed()));
     connect(ch0a1_radioButton, SIGNAL(clicked()), this, SLOT(source_changed()));
     connect(ch0o1_radioButton, SIGNAL(clicked()), this, SLOT(source_changed()));
 
-    QLabel *tType_labe = new QLabel("Trigger Types: ", this);
-    QRadioButton *rising_radioButton = new QRadioButton("Rising Edge");
+    QLabel *tType_labe = new QLabel(tr("Trigger Types: "), this);
+    QRadioButton *rising_radioButton = new QRadioButton(tr("Rising Edge"));
     rising_radioButton->setChecked(true);
-    QRadioButton *falling_radioButton = new QRadioButton("Falling Edge");
+    QRadioButton *falling_radioButton = new QRadioButton(tr("Falling Edge"));
     connect(rising_radioButton, SIGNAL(clicked()), this, SLOT(type_changed()));
     connect(falling_radioButton, SIGNAL(clicked()), this, SLOT(type_changed()));
 
@@ -141,8 +141,8 @@ void DsoTriggerDock::pos_changed(int pos)
                                             g_variant_new_uint16((uint16_t)pos));
     if (!ret) {
         QMessageBox msg(this);
-        msg.setText("Trigger Setting Issue");
-        msg.setInformativeText("Change horiz trigger position failed!");
+        msg.setText(tr("Trigger Setting Issue"));
+        msg.setInformativeText(tr("Change horiz trigger position failed!"));
         msg.setStandardButtons(QMessageBox::Ok);
         msg.setIcon(QMessageBox::Warning);
         msg.exec();
@@ -163,8 +163,8 @@ void DsoTriggerDock::source_changed()
                                             g_variant_new_byte(id));
     if (!ret) {
         QMessageBox msg(this);
-        msg.setText("Trigger Setting Issue");
-        msg.setInformativeText("Change trigger source failed!");
+        msg.setText(tr("Trigger Setting Issue"));
+        msg.setInformativeText(tr("Change trigger source failed!"));
         msg.setStandardButtons(QMessageBox::Ok);
         msg.setIcon(QMessageBox::Warning);
         msg.exec();
@@ -181,8 +181,8 @@ void DsoTriggerDock::type_changed()
                                             g_variant_new_byte(id));
     if (!ret) {
         QMessageBox msg(this);
-        msg.setText("Trigger Setting Issue");
-        msg.setInformativeText("Change trigger type failed!");
+        msg.setText(tr("Trigger Setting Issue"));
+        msg.setInformativeText(tr("Change trigger type failed!"));
         msg.setStandardButtons(QMessageBox::Ok);
         msg.setIcon(QMessageBox::Warning);
         msg.exec();

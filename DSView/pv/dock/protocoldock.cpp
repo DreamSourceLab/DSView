@@ -107,8 +107,8 @@ void ProtocolDock::add_protocol()
 {
     if (_session.get_device()->dev_inst()->mode != LOGIC) {
         QMessageBox msg(this);
-        msg.setText("Protocol Analyzer");
-        msg.setInformativeText("Protocol Analyzer is only valid in Digital Mode!");
+        msg.setText(tr("Protocol Analyzer"));
+        msg.setInformativeText(tr("Protocol Analyzer is only valid in Digital Mode!"));
         msg.setStandardButtons(QMessageBox::Ok);
         msg.setIcon(QMessageBox::Warning);
         msg.exec();
@@ -203,8 +203,8 @@ void ProtocolDock::del_protocol()
             _protocol_index_list.clear();
         } else {
             QMessageBox msg(this);
-            msg.setText("Protocol Analyzer");
-            msg.setInformativeText("No Protocol Analyzer to delete!");
+            msg.setText(tr("Protocol Analyzer"));
+            msg.setInformativeText(tr("No Protocol Analyzer to delete!"));
             msg.setStandardButtons(QMessageBox::Ok);
             msg.setIcon(QMessageBox::Warning);
             msg.exec();
