@@ -280,6 +280,7 @@ static int fpga_setting(const struct sr_dev_inst *sdi)
                    ((devc->op_mode == SR_OP_EXTERNAL_TEST) << 14) +
                    ((devc->op_mode == SR_OP_LOOPBACK_TEST) << 13) +
                    ((devc->stream) << 12) +
+                   ((trigger->trigger_mode == SERIAL_TRIGGER) << 11) +
                    trigger->trigger_en +
                    ((sdi->mode > 0) << 4) + (devc->clock_type << 1) + (devc->clock_edge << 1) +
                    (((channel_cnt == 8 && sdi->mode != DSO) || (sdi->mode == ANALOG)) << 5) +
