@@ -1020,6 +1020,7 @@ struct sr_session {
 enum {
     SIMPLE_TRIGGER = 0,
     ADV_TRIGGER,
+    SERIAL_TRIGGER,
 };
 
 enum {

@@ -70,7 +70,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
 
     stage_tabWidget = new QTabWidget(this);
     stage_tabWidget->setTabPosition(QTabWidget::East);
-    stage_tabWidget->setDisabled(true);
+    //stage_tabWidget->setDisabled(true);
 
     QRegExp value_rx("[10XRFCxrfc ]+");
     QValidator *value_validator = new QRegExpValidator(value_rx, this);
@@ -151,10 +151,88 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
         connect(_count1_spinBox, SIGNAL(editingFinished()), this, SLOT(count_changed()));
     }
 
+    _serial_start_label = new QLabel(tr("Start Flag: "), this);
+    _serial_start_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", this);
+    _serial_start_lineEdit->setFont(font);
+    _serial_start_lineEdit->setValidator(value_validator);
+    _serial_start_lineEdit->setMaxLength(TriggerProbes * 2 - 1);
+    _serial_start_lineEdit->setInputMask("X X X X X X X X X X X X X X X X");
+    _serial_start_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+
+    _serial_stop_label = new QLabel(tr("Stop Flag: "), this);
+    _serial_stop_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", this);
+    _serial_stop_lineEdit->setFont(font);
+    _serial_stop_lineEdit->setValidator(value_validator);
+    _serial_stop_lineEdit->setMaxLength(TriggerProbes * 2 - 1);
+    _serial_stop_lineEdit->setInputMask("X X X X X X X X X X X X X X X X");
+    _serial_stop_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+
+    _serial_edge_label = new QLabel(tr("Clock Flag: "), this);
+    _serial_edge_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", this);
+    _serial_edge_lineEdit->setFont(font);
+    _serial_edge_lineEdit->setValidator(value_validator);
+    _serial_edge_lineEdit->setMaxLength(TriggerProbes * 2 - 1);
+    _serial_edge_lineEdit->setInputMask("X X X X X X X X X X X X X X X X");
+    _serial_edge_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+
+    _serial_data_lable = new QLabel(tr("Data Channel: "), this);
+    _serial_data_comboBox = new QComboBox(this);
+    for(i = 0; i < TriggerProbes; i++)
+        _serial_data_comboBox->addItem(QString::number(i));
+
+    _serial_value_lable = new QLabel(tr("Data Value: "), this);
+    _serial_value_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", this);
+    _serial_value_lineEdit->setFont(font);
+    _serial_value_lineEdit->setValidator(value_validator);
+    _serial_value_lineEdit->setMaxLength(TriggerProbes * 2 - 1);
+    _serial_value_lineEdit->setInputMask("X X X X X X X X X X X X X X X X");
+    _serial_value_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+
+    QLabel *serial_value_exp_label = new QLabel("1 1 1 1 1 1\n5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0", this);
+    serial_value_exp_label->setFont(font);
+
+    QVBoxLayout *serial_layout = new QVBoxLayout();
+    QGridLayout *serial_glayout = new QGridLayout();
+    serial_glayout->addWidget(serial_value_exp_label, 1, 1, 1, 4);
+    serial_glayout->addWidget(_serial_start_label, 2, 0);
+    serial_glayout->addWidget(_serial_start_lineEdit, 2, 1, 1, 4);
+    serial_glayout->addWidget(new QLabel(this), 2, 2);
+    serial_glayout->addWidget(_serial_stop_label, 3, 0);
+    serial_glayout->addWidget(_serial_stop_lineEdit, 3, 1, 1, 4);
+    serial_glayout->addWidget(_serial_edge_label, 4, 0);
+    serial_glayout->addWidget(_serial_edge_lineEdit, 4, 1, 1, 4);
+    serial_glayout->addWidget(_serial_data_lable, 5, 0);
+    serial_glayout->addWidget(_serial_data_comboBox, 5, 1);
+    serial_glayout->addWidget(_serial_value_lable, 6, 0);
+    serial_glayout->addWidget(_serial_value_lineEdit, 6, 1, 1, 4);
+    serial_layout->addLayout(serial_glayout);
+    serial_layout->addSpacing(20);
+    serial_layout->addWidget(new QLabel(tr("X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge")));
+    serial_layout->addStretch(1);
+
+    _serial_groupBox = new QGroupBox(tr("Serial Trigger"), this);
+    _serial_groupBox->setFlat(true);
+    _serial_groupBox->setLayout(serial_layout);
+    //_serial_groupBox->setDisabled(true);
+
+    connect(_serial_start_lineEdit, SIGNAL(editingFinished()), this, SLOT(value_changed()));
+    connect(_serial_stop_lineEdit, SIGNAL(editingFinished()), this, SLOT(value_changed()));
+    connect(_serial_edge_lineEdit, SIGNAL(editingFinished()), this, SLOT(value_changed()));
+    connect(_serial_data_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(serial_channel_changed(int)));
+    connect(_serial_value_lineEdit, SIGNAL(editingFinished()), this, SLOT(value_changed()));
+
+
+    _adv_tabWidget = new QTabWidget(this);
+    _adv_tabWidget->setTabPosition(QTabWidget::North);
+    _adv_tabWidget->setDisabled(true);
+    _adv_tabWidget->addTab((QWidget *)stage_tabWidget, tr("Stage Trigger"));
+    _adv_tabWidget->addTab((QWidget *)_serial_groupBox, tr("Serial Trigger"));
+
     connect(simple_radioButton, SIGNAL(clicked()), this, SLOT(simple_trigger()));
     connect(adv_radioButton, SIGNAL(clicked()), this, SLOT(adv_trigger()));
     connect(stages_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(trigger_stages_changed(int)));
     connect(position_slider, SIGNAL(valueChanged(int)), this, SLOT(pos_changed(int)));
+    connect(_adv_tabWidget, SIGNAL(currentChanged(int)), this, SLOT(adv_tog(int)));
 
     QVBoxLayout *layout = new QVBoxLayout(this);
     QGridLayout *gLayout = new QGridLayout();
@@ -170,7 +248,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
     gLayout->setColumnStretch(2, 1);
 
     layout->addLayout(gLayout);
-    layout->addWidget(stage_tabWidget);
+    layout->addWidget(_adv_tabWidget);
     layout->addStretch(1);
     setLayout(layout);
 }
@@ -192,7 +270,7 @@ void TriggerDock::simple_trigger()
     int i;
     stages_label->setDisabled(true);
     stages_comboBox->setDisabled(true);
-    stage_tabWidget->setDisabled(true);
+    _adv_tabWidget->setDisabled(true);
     for (i = 0; i < TriggerStages; i++) {
         stage_tabWidget->setTabEnabled(i, true);
 //        _mu_label_list.at(i)->setDisabled(true);
@@ -229,7 +307,10 @@ void TriggerDock::adv_trigger()
             simple_radioButton->setChecked(true);
         } else {
             widget_enable();
-            ds_trigger_set_mode(ADV_TRIGGER);
+            if (_adv_tabWidget->currentIndex() == 0)
+                ds_trigger_set_mode(ADV_TRIGGER);
+            else if (_adv_tabWidget->currentIndex() == 1)
+                ds_trigger_set_mode(SERIAL_TRIGGER);
             _session.set_adv_trigger(true);
         }
     } else {
@@ -260,7 +341,7 @@ void TriggerDock::widget_enable()
     stages_label->setDisabled(false);
     stages_comboBox->setVisible(true);
     stages_comboBox->setDisabled(false);
-    stage_tabWidget->setDisabled(false);
+    _adv_tabWidget->setDisabled(false);
     enable_stages = stages_comboBox->currentText().toInt();
     for (i = 0; i < enable_stages; i++) {
         stage_tabWidget->setTabEnabled(i, true);
@@ -302,19 +383,58 @@ void TriggerDock::value_changed()
 {
     int i;
 
-    for (i = 0; i < stages_comboBox->currentText().toInt(); i++) {
-        _value0_lineEdit_list.at(i)->setText(_value0_lineEdit_list.at(i)->text().toUpper());
-        while(_value0_lineEdit_list.at(i)->text().length() < TriggerProbes)
-            _value0_lineEdit_list.at(i)->setText("X" + _value0_lineEdit_list.at(i)->text());
+    if (_adv_tabWidget->currentIndex() == 0) {
+        for (i = 0; i < stages_comboBox->currentText().toInt(); i++) {
+            _value0_lineEdit_list.at(i)->setText(_value0_lineEdit_list.at(i)->text().toUpper());
+            while(_value0_lineEdit_list.at(i)->text().length() < TriggerProbes)
+                _value0_lineEdit_list.at(i)->setText("X" + _value0_lineEdit_list.at(i)->text());
 
-        _value1_lineEdit_list.at(i)->setText(_value1_lineEdit_list.at(i)->text().toUpper());
-        while(_value1_lineEdit_list.at(i)->text().length() < TriggerProbes)
-            _value1_lineEdit_list.at(i)->setText("X" + _value1_lineEdit_list.at(i)->text());
+            _value1_lineEdit_list.at(i)->setText(_value1_lineEdit_list.at(i)->text().toUpper());
+            while(_value1_lineEdit_list.at(i)->text().length() < TriggerProbes)
+                _value1_lineEdit_list.at(i)->setText("X" + _value1_lineEdit_list.at(i)->text());
 
-        ds_trigger_stage_set_value(i, TriggerProbes,
-                             _value0_lineEdit_list.at(i)->text().toLocal8Bit().data(),
-                             _value1_lineEdit_list.at(i)->text().toLocal8Bit().data());
+            ds_trigger_stage_set_value(i, TriggerProbes,
+                                 _value0_lineEdit_list.at(i)->text().toLocal8Bit().data(),
+                                 _value1_lineEdit_list.at(i)->text().toLocal8Bit().data());
+        }
+    } else if(_adv_tabWidget->currentIndex() == 1){
+        _serial_start_lineEdit->setText(_serial_start_lineEdit->text().toUpper());
+        ds_trigger_stage_set_value(0, TriggerProbes,
+                             _serial_start_lineEdit->text().toLocal8Bit().data(),
+                             _value1_lineEdit_list.at(0)->text().toLocal8Bit().data());
+        _serial_stop_lineEdit->setText(_serial_stop_lineEdit->text().toUpper());
+        ds_trigger_stage_set_value(1, TriggerProbes,
+                             _serial_stop_lineEdit->text().toLocal8Bit().data(),
+                             _value1_lineEdit_list.at(1)->text().toLocal8Bit().data());
+        _serial_edge_lineEdit->setText(_serial_edge_lineEdit->text().toUpper());
+        ds_trigger_stage_set_value(2, TriggerProbes,
+                             _serial_edge_lineEdit->text().toLocal8Bit().data(),
+                             _value1_lineEdit_list.at(2)->text().toLocal8Bit().data());
+        //_serial_data_comboBox
+        const int data_channel = _serial_data_comboBox->currentText().toInt();
+        char channel[31];
+        for(i = 0; i < 31; i++){
+            if (i == (30 - 2*data_channel))
+                channel[i] = '1';
+            else if (i%2 == 0)
+                channel[i] = '0';
+            else
+                channel[i] = ' ';
+        }
+        ds_trigger_stage_set_value(3, TriggerProbes,
+                             channel,
+                             _value1_lineEdit_list.at(3)->text().toLocal8Bit().data());
+        _serial_value_lineEdit->setText(_serial_value_lineEdit->text().toUpper());
+        ds_trigger_stage_set_value(4, TriggerProbes,
+                             _serial_value_lineEdit->text().toLocal8Bit().data(),
+                             _value1_lineEdit_list.at(4)->text().toLocal8Bit().data());
     }
+}
+
+void TriggerDock::serial_channel_changed(int index)
+{
+    (void)index;
+    value_changed();
 }
 
 void TriggerDock::logic_changed(int index)
@@ -376,6 +496,23 @@ void TriggerDock::device_change()
         position_spinBox->setRange(0, 99);
         position_slider->setRange(0, 99);
     }
+}
+
+void TriggerDock::adv_tog(int index)
+{
+    if(index == 0) {
+        stages_label->setDisabled(false);
+        stages_comboBox->setDisabled(false);
+        ds_trigger_set_mode(ADV_TRIGGER);
+    } else if (index == 1) {
+        stages_label->setDisabled(true);
+        stages_comboBox->setDisabled(true);
+        ds_trigger_set_mode(SERIAL_TRIGGER);
+    }
+    value_changed();
+    logic_changed(0);
+    inv_changed(0);
+    count_changed();
 }
 
 void TriggerDock::init()
