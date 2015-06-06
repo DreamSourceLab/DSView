@@ -171,6 +171,7 @@ SR_API const char *sr_strerror_name(int error_code);
 /*--- trigger.c ------------------------------------------------------------*/
 SR_API int ds_trigger_init(void);
 SR_API int ds_trigger_destroy(void);
+SR_API struct ds_trigger *ds_trigger_get(void);
 SR_API int ds_trigger_stage_set_value(uint16_t stage, uint16_t probes, char *trigger0, char *trigger1);
 SR_API int ds_trigger_stage_set_logic(uint16_t stage, uint16_t probes, unsigned char trigger_logic);
 SR_API int ds_trigger_stage_set_inv(uint16_t stage, uint16_t probes, unsigned char trigger0_inv, unsigned char trigger1_inv);

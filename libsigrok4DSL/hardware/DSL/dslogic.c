@@ -94,6 +94,36 @@ static const int32_t hwoptions_pro[] = {
     SR_CONF_CLOCK_EDGE,
 };
 
+static const int32_t sessions[] = {
+    SR_CONF_SAMPLERATE,
+    SR_CONF_LIMIT_SAMPLES,
+    SR_CONF_CLOCK_TYPE,
+    SR_CONF_CLOCK_EDGE,
+    SR_CONF_OPERATION_MODE,
+    SR_CONF_THRESHOLD,
+    SR_CONF_FILTER,
+    SR_CONF_TRIGGER_SLOPE,
+    SR_CONF_TRIGGER_SOURCE,
+    SR_CONF_HORIZ_TRIGGERPOS,
+};
+
+static const int32_t sessions_pro[] = {
+    SR_CONF_SAMPLERATE,
+    SR_CONF_LIMIT_SAMPLES,
+    SR_CONF_CLOCK_TYPE,
+    SR_CONF_CLOCK_EDGE,
+    SR_CONF_OPERATION_MODE,
+    SR_CONF_VTH,
+    SR_CONF_FILTER,
+    SR_CONF_TRIGGER_SLOPE,
+    SR_CONF_TRIGGER_SOURCE,
+    SR_CONF_HORIZ_TRIGGERPOS,
+};
+
+static const int32_t ch_sessions[] = {
+    SR_CONF_VDIV
+};
+
 static const char *probe_names[] = {
 	"0",  "1",  "2",  "3",  "4",  "5",  "6",  "7",
 	"8",  "9", "10", "11", "12", "13", "14", "15",
@@ -618,6 +648,7 @@ static struct DSL_context *DSLogic_dev_new(void)
     devc->trigger_slope = DSO_TRIGGER_RISING;
     devc->trigger_source = DSO_TRIGGER_AUTO;
     devc->trigger_hpos = 0x0;
+    devc->trigger_hrate = 0;
     devc->zero = FALSE;
     devc->stream = FALSE;
     devc->mstatus_valid = FALSE;
@@ -1197,23 +1228,16 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_TRIGGER_VALUE:
         if (!ch)
             return SR_ERR;
-        *data = g_variant_new_uint16(ch->trig_value);
+        *data = g_variant_new_byte(ch->trig_value);
         break;
     case SR_CONF_HORIZ_TRIGGERPOS:
         if (!sdi)
             return SR_ERR;
         devc = sdi->priv;
 		if (sdi->mode == DSO) {
-			uint16_t channel_cnt = 0;
-	        GSList *l;
-	        for (l = sdi->channels; l; l = l->next) {
-	            struct sr_channel *probe = (struct sr_channel *)l->data;
-	            channel_cnt += probe->enabled;
-	        }
-	        uint16_t pos = devc->trigger_hpos * channel_cnt * 100 / devc->limit_samples;
-	        *data = g_variant_new_uint16(pos);
+            *data = g_variant_new_byte(devc->trigger_hrate);
 		} else {
-        	*data = g_variant_new_uint16(devc->trigger_hpos);
+            *data = g_variant_new_byte(devc->trigger_hpos);
 		}
         break;
     case SR_CONF_ZERO:
@@ -1568,7 +1592,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             sr_dbg("%s: setting DSO Trigger Source to %d failed",
                 __func__, devc->trigger_source);
     } else if (id == SR_CONF_TRIGGER_VALUE) {
-        ch->trig_value = g_variant_get_uint16(data);
+        ch->trig_value = g_variant_get_byte(data);
         if (sdi->mode == DSO) {
             ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, ch, SR_CONF_TRIGGER_VALUE));
         }
@@ -1586,9 +1610,10 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 	            struct sr_channel *probe = (struct sr_channel *)l->data;
 	            channel_cnt += probe->enabled;
 	        }
-            devc->trigger_hpos = g_variant_get_uint16(data) * channel_cnt * devc->limit_samples / 200.0;
+            devc->trigger_hrate = g_variant_get_byte(data);
+            devc->trigger_hpos =  devc->trigger_hrate * channel_cnt * devc->limit_samples / 200.0;
 		} else {
-            devc->trigger_hpos = g_variant_get_uint16(data) * devc->limit_samples / 100.0;
+            devc->trigger_hpos = g_variant_get_byte(data) * devc->limit_samples / 100.0;
         }
 		if (sdi->mode == DSO) {
             ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 1, SR_CONF_HORIZ_TRIGGERPOS));
@@ -1662,6 +1687,14 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
         else
             *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
                     hwoptions, ARRAY_SIZE(hwoptions)*sizeof(int32_t), TRUE, NULL, NULL);
+        break;
+    case SR_CONF_DEVICE_SESSIONS:
+        if (strcmp(sdi->model, "DSLogic Pro") == 0)
+            *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
+                    sessions_pro, ARRAY_SIZE(sessions_pro)*sizeof(int32_t), TRUE, NULL, NULL);
+        else
+            *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
+                    sessions, ARRAY_SIZE(sessions)*sizeof(int32_t), TRUE, NULL, NULL);
         break;
     case SR_CONF_SAMPLERATE:
 		g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));

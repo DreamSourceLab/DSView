@@ -45,6 +45,7 @@
 #include <QVariant>
 #include <QTimer>
 #include <QtConcurrent/QtConcurrent>
+#include <QJsonObject>
 
 #include <libsigrok4DSL/libsigrok.h>
 #include <libusb.h>

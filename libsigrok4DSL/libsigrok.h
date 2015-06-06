@@ -156,7 +156,8 @@ typedef int (*sr_receive_data_callback_t)(int fd, int revents, const struct sr_d
 /** Data types used by sr_config_info(). */
 enum {
 	SR_T_UINT64 = 10000,
-	SR_T_CHAR,
+    SR_T_UINT8,
+    SR_T_CHAR,
 	SR_T_BOOL,
 	SR_T_FLOAT,
 	SR_T_RATIONAL_PERIOD,
@@ -543,6 +544,8 @@ enum {
     SR_CHANNEL_LOGIC = 10000,
     SR_CHANNEL_DSO,
     SR_CHANNEL_ANALOG,
+    SR_CHANNEL_GROUP,
+    SR_CHANNEL_DECODER,
 };
 
 enum {
@@ -809,6 +812,9 @@ enum {
 	/** Device options for a particular device. */
 	SR_CONF_DEVICE_OPTIONS,
     SR_CONF_DEVICE_CONFIGS,
+
+    /** Sessions */
+    SR_CONF_DEVICE_SESSIONS,
 
 	/** Session filename. */
 	SR_CONF_SESSIONFILE,

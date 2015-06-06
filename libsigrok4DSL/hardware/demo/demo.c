@@ -119,6 +119,13 @@ static const int hwoptions[] = {
     SR_CONF_PATTERN_MODE,
 };
 
+static const int32_t sessions[] = {
+    SR_CONF_SAMPLERATE,
+    SR_CONF_LIMIT_SAMPLES,
+    SR_CONF_PATTERN_MODE,
+};
+
+
 static const uint64_t samplerates[] = {
     SR_KHZ(10),
     SR_KHZ(20),
@@ -519,6 +526,10 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
 //				hwcaps, ARRAY_SIZE(hwcaps), sizeof(int32_t));
         *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
                 hwoptions, ARRAY_SIZE(hwoptions)*sizeof(int32_t), TRUE, NULL, NULL);
+        break;
+    case SR_CONF_DEVICE_SESSIONS:
+        *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
+                sessions, ARRAY_SIZE(sessions)*sizeof(int32_t), TRUE, NULL, NULL);
         break;
     case SR_CONF_SAMPLERATE:
 		g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));

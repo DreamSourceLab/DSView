@@ -46,6 +46,24 @@ FileBar::FileBar(SigSession &session, QWidget *parent) :
 {
     setMovable(false);
 
+    _action_load = new QAction(this);
+    _action_load->setText(QApplication::translate(
+        "File", "&Load Session...", 0));
+    _action_load->setIcon(QIcon::fromTheme("file",
+        QIcon(":/icons/open.png")));
+    _action_load->setObjectName(QString::fromUtf8("actionLoad"));
+    _file_button.addAction(_action_load);
+    connect(_action_load, SIGNAL(triggered()), this, SLOT(on_actionLoad_triggered()));
+
+    _action_store = new QAction(this);
+    _action_store->setText(QApplication::translate(
+        "File", "S&tore Session...", 0));
+    _action_store->setIcon(QIcon::fromTheme("file",
+        QIcon(":/icons/open.png")));
+    _action_store->setObjectName(QString::fromUtf8("actionStore"));
+    _file_button.addAction(_action_store);
+    connect(_action_store, SIGNAL(triggered()), this, SLOT(on_actionStore_triggered()));
+
     _action_open = new QAction(this);
     _action_open->setText(QApplication::translate(
         "File", "&Open...", 0));
@@ -96,7 +114,7 @@ void FileBar::on_actionOpen_triggered()
     // Show the dialog
     const QString file_name = QFileDialog::getOpenFileName(
         this, tr("Open File"), "", tr(
-            "DSView Sessions (*.dsl);;All Files (*.*)"));
+            "DSView Data (*.dsl);;All Files (*.*)"));
     if (!file_name.isEmpty())
         load_file(file_name);
 }
@@ -175,13 +193,38 @@ void FileBar::on_actionSave_triggered()
     }else {
         QString file_name = QFileDialog::getSaveFileName(
                     this, tr("Save File"), "",
-                    tr("DSView Session (*.dsl)"));
+                    tr("DSView Data (*.dsl)"));
         if (!file_name.isEmpty()) {
             QFileInfo f(file_name);
             if(f.suffix().compare("dsl"))
                 file_name.append(tr(".dsl"));
             _session.save_file(file_name.toStdString());
         }
+    }
+}
+
+
+void FileBar::on_actionLoad_triggered()
+{
+    // Show the dialog
+    const QString file_name = QFileDialog::getOpenFileName(
+        this, tr("Open Session"), "", tr(
+            "DSView Session (*.dsc)"));
+    if (!file_name.isEmpty())
+        load_session(file_name);
+}
+
+void FileBar::on_actionStore_triggered()
+{
+    QString default_name = _session.get_device()->dev_inst()->driver->name;
+    QString file_name = QFileDialog::getSaveFileName(
+                this, tr("Save Session"), default_name,
+                tr("DSView Session (*.dsc)"));
+    if (!file_name.isEmpty()) {
+        QFileInfo f(file_name);
+        if(f.suffix().compare("dsc"))
+            file_name.append(tr(".dsc"));
+        store_session(file_name);
     }
 }
 

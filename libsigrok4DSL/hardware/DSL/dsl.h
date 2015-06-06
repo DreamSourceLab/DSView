@@ -167,6 +167,7 @@ struct DSL_context {
     uint64_t timebase;
     uint8_t trigger_slope;
     uint8_t trigger_source;
+    uint8_t trigger_hrate;
     uint32_t trigger_hpos;
     gboolean zero;
     gboolean stream;

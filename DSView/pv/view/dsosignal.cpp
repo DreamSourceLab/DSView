@@ -112,7 +112,7 @@ const int DsoSignal::RightMargin = 30;
 DsoSignal::DsoSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
                      boost::shared_ptr<data::Dso> data,
                      const sr_channel * const probe):
-    Signal(dev_inst, probe, DS_DSO),
+    Signal(dev_inst, probe, SR_CHANNEL_DSO),
     _data(data),
     _scale(0),
     _vDialActive(false),
@@ -148,31 +148,34 @@ DsoSignal::DsoSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
 
     _colour = SignalColours[probe->index % countof(SignalColours)];
 
-    GVariant* gvar;
+//    GVariant* gvar;
 
-    gvar = dev_inst->get_config(probe, NULL, SR_CONF_VDIV);
-    if (gvar != NULL) {
-        _vDial->set_value(g_variant_get_uint64(gvar));
-        g_variant_unref(gvar);
-    } else {
-        qDebug() << "ERROR: config_get SR_CONF_VDIV failed.";
-    }
+//    gvar = dev_inst->get_config(probe, NULL, SR_CONF_VDIV);
+//    if (gvar != NULL) {
+//        _vDial->set_value(g_variant_get_uint64(gvar));
+//        g_variant_unref(gvar);
+//    } else {
+//        qDebug() << "ERROR: config_get SR_CONF_VDIV failed.";
+//    }
 
-    gvar = dev_inst->get_config(NULL, NULL, SR_CONF_TIMEBASE);
-    if (gvar != NULL) {
-        _hDial->set_value(g_variant_get_uint64(gvar));
-        g_variant_unref(gvar);
-    } else {
-        qDebug() << "ERROR: config_get SR_CONF_TIMEBASE failed.";
-    }
+//    gvar = dev_inst->get_config(NULL, NULL, SR_CONF_TIMEBASE);
+//    if (gvar != NULL) {
+//        _hDial->set_value(g_variant_get_uint64(gvar));
+//        g_variant_unref(gvar);
+//    } else {
+//        qDebug() << "ERROR: config_get SR_CONF_TIMEBASE failed.";
+//    }
 
-    gvar = dev_inst->get_config(probe, NULL, SR_CONF_COUPLING);
-    if (gvar != NULL) {
-        _acCoupling = g_variant_get_byte(gvar);
-        g_variant_unref(gvar);
-    } else {
-        qDebug() << "ERROR: config_get SR_CONF_COUPLING failed.";
-    }
+//    gvar = dev_inst->get_config(probe, NULL, SR_CONF_COUPLING);
+//    if (gvar != NULL) {
+//        _acCoupling = g_variant_get_byte(gvar);
+//        g_variant_unref(gvar);
+//    } else {
+//        qDebug() << "ERROR: config_get SR_CONF_COUPLING failed.";
+//    }
+    update_vDial();
+    update_hDial();
+    update_acCoupling();
 }
 
 DsoSignal::~DsoSignal()
@@ -420,6 +423,54 @@ bool DsoSignal::go_hDialNext(bool setted)
     }
 }
 
+bool DsoSignal::update_vDial()
+{
+    uint64_t vdiv;
+    //uint64_t pre_vdiv = _vDial->get_value();
+    GVariant* gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_VDIV);
+    if (gvar != NULL) {
+        vdiv = g_variant_get_uint64(gvar);
+        g_variant_unref(gvar);
+    } else {
+        qDebug() << "ERROR: config_get SR_CONF_TIMEBASE failed.";
+        return false;
+    }
+
+    _vDial->set_value(vdiv);
+    _dev_inst->set_config(_probe, NULL, SR_CONF_VDIV,
+                          g_variant_new_uint64(_vDial->get_value()));
+    if (_view) {
+        update_zeroPos();
+        _view->set_need_update(true);
+        _view->update();
+    }
+    return true;
+}
+
+bool DsoSignal::update_hDial()
+{
+    uint64_t hdiv;
+    GVariant* gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_TIMEBASE);
+    if (gvar != NULL) {
+        hdiv = g_variant_get_uint64(gvar);
+        g_variant_unref(gvar);
+    } else {
+        qDebug() << "ERROR: config_get SR_CONF_TIMEBASE failed.";
+        return false;
+    }
+
+    _hDial->set_value(hdiv);
+    _dev_inst->set_config(_probe, NULL, SR_CONF_TIMEBASE,
+                          g_variant_new_uint64(_hDial->get_value()));
+    if (_view) {
+        const double scale = _hDial->get_value() * std::pow(10.0, -9.0) * DS_CONF_DSO_HDIVS / get_view_rect().width();
+        _view->set_scale_offset(scale, _view->offset());
+        _view->set_need_update(true);
+        _view->update();
+    }
+    return true;
+}
+
 uint64_t DsoSignal::get_vDialValue() const
 {
     return _vDial->get_value();
@@ -454,9 +505,30 @@ void DsoSignal::set_acCoupling(uint8_t coupling)
     }
 }
 
+bool DsoSignal::update_acCoupling()
+{
+    GVariant* gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_COUPLING);
+    if (gvar != NULL) {
+        _acCoupling = g_variant_get_byte(gvar);
+        g_variant_unref(gvar);
+    } else {
+        qDebug() << "ERROR: config_get SR_CONF_COUPLING failed.";
+        return false;
+    }
+
+    _dev_inst->set_config(_probe, NULL, SR_CONF_COUPLING,
+                          g_variant_new_byte(_acCoupling));
+    return true;
+}
+
 int DsoSignal::get_trig_vpos() const
 {
     return _trig_vpos * get_view_rect().height() + UpMargin;
+}
+
+double DsoSignal::get_trigRate() const
+{
+    return _trig_vpos;
 }
 
 void DsoSignal::set_trig_vpos(int pos)
@@ -477,13 +549,37 @@ void DsoSignal::set_trig_vpos(int pos)
             trig_value = (delta * 255.0f + 0x80);
         }
         _dev_inst->set_config(_probe, NULL, SR_CONF_TRIGGER_VALUE,
-                              g_variant_new_uint16(trig_value));
+                              g_variant_new_byte(trig_value));
     }
+}
+
+void DsoSignal::set_trigRate(double rate)
+{
+    int trig_value;
+    double delta = rate;
+    bool isDSCope = (strcmp(_dev_inst->dev_inst()->driver->name, "DSCope") == 0);
+    if (isDSCope) {
+        _trig_vpos = min(max(delta, 0+TrigMargin), 1-TrigMargin);
+        trig_value = delta * 255;
+    } else {
+        delta = delta - _zeroPos;
+        delta = min(delta, 0.5);
+        delta = max(delta, -0.5);
+        _trig_vpos = min(max(_zeroPos + delta, 0+TrigMargin), 1-TrigMargin);
+        trig_value = (delta * 255.0f + 0x80);
+    }
+    _dev_inst->set_config(_probe, NULL, SR_CONF_TRIGGER_VALUE,
+                          g_variant_new_byte(trig_value));
 }
 
 int DsoSignal::get_zeroPos()
 {
     return _zeroPos * get_view_rect().height() + UpMargin;
+}
+
+double DsoSignal::get_zeroRate()
+{
+    return _zeroPos;
 }
 
 void DsoSignal::set_zeroPos(int pos)
@@ -496,6 +592,12 @@ void DsoSignal::set_zeroPos(int pos)
 
         update_zeroPos();
     }
+}
+
+void DsoSignal::set_zeroRate(double rate)
+{
+    _zeroPos = rate;
+    update_zeroPos();
 }
 
 void DsoSignal::set_factor(uint64_t factor)
@@ -518,6 +620,21 @@ void DsoSignal::set_factor(uint64_t factor)
             _view->set_need_update(true);
             _view->update();
         }
+    }
+}
+
+uint64_t DsoSignal::get_factor()
+{
+    GVariant* gvar;
+    uint64_t factor;
+    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_FACTOR);
+    if (gvar != NULL) {
+        factor = g_variant_get_uint64(gvar);
+        g_variant_unref(gvar);
+        return factor;
+    } else {
+        qDebug() << "ERROR: config_get SR_CONF_FACTOR failed.";
+        return 1;
     }
 }
 

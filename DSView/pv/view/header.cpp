@@ -200,7 +200,7 @@ void Header::mousePressEvent(QMouseEvent *event)
             if (mTrace->selected())
                 mTrace->select(false);
             else {
-                if (mTrace->get_type() != Trace::DS_DSO)
+                if (mTrace->get_type() != SR_CHANNEL_DSO)
                     mTrace->select(true);
 
                 if (~QApplication::keyboardModifiers() &
@@ -410,7 +410,7 @@ void Header::mouseMoveEvent(QMouseEvent *event)
             const boost::shared_ptr<Trace> sig((*i).first);
 			if (sig) {
                 int y = (*i).second + delta;
-                if (sig->get_type() != Trace::DS_DSO) {
+                if (sig->get_type() != SR_CHANNEL_DSO) {
                     const int y_snap =
                         ((y + View::SignalSnapGridSize / 2) /
                             View::SignalSnapGridSize) *
@@ -452,9 +452,9 @@ void Header::contextMenuEvent(QContextMenuEvent *event)
         return;
 
     QMenu menu(this);
-    if (t->get_type() == Trace::DS_LOGIC)
+    if (t->get_type() == SR_CHANNEL_LOGIC)
         menu.addAction(_action_add_group);
-    else if (t->get_type() == Trace::DS_GROUP)
+    else if (t->get_type() == SR_CHANNEL_GROUP)
         menu.addAction(_action_del_group);
 
     _context_trace = t;
@@ -470,8 +470,8 @@ void Header::on_action_set_name_triggered()
 
     if (nameEdit->isModified()) {
         context_Trace->set_name(nameEdit->text());
-        if (context_Trace->get_type() == Trace::DS_LOGIC ||
-                context_Trace->get_type() == Trace::DS_ANALOG)
+        if (context_Trace->get_type() == SR_CHANNEL_LOGIC ||
+                context_Trace->get_type() == SR_CHANNEL_ANALOG)
             sr_dev_probe_name_set(_view.session().get_device()->dev_inst(), context_Trace->get_index(), nameEdit->text().toUtf8().constData());
     }
 

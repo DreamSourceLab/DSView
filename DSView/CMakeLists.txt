@@ -357,6 +357,10 @@ install(FILES res/DSLogicPro.fw DESTINATION bin/res/)
 install(FILES res/DSLogicPro.bin DESTINATION bin/res/)
 install(FILES res/DSCope.fw DESTINATION bin/res/)
 install(FILES res/DSCope.bin DESTINATION bin/res/)
+install(FILES res/DSLogic_ini.dsc DESTINATION bin/res/)
+install(FILES res/DSLogic_ini.dsc.bak DESTINATION bin/res/)
+install(FILES res/DSCope_ini.dsc DESTINATION bin/res/)
+install(FILES res/DSCope_ini.dsc.bak DESTINATION bin/res/)
 
 #===============================================================================
 #= Packaging (handled by CPack)
