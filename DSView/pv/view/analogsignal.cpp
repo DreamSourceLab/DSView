@@ -54,7 +54,7 @@ const float AnalogSignal::EnvelopeThreshold = 256.0f;
 AnalogSignal::AnalogSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
                            boost::shared_ptr<data::Analog> data,
                            const sr_channel * const probe) :
-    Signal(dev_inst, probe, DS_ANALOG),
+    Signal(dev_inst, probe, SR_CHANNEL_ANALOG),
     _data(data)
 {
     _colour = SignalColours[probe->index % countof(SignalColours)];

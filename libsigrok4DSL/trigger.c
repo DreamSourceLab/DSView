@@ -80,6 +80,16 @@ SR_API int ds_trigger_destroy(void)
 }
 
 /**
+ *
+ *
+ */
+
+SR_API struct ds_trigger *ds_trigger_get(void)
+{
+    return trigger;
+}
+
+/**
  * set trigger based on stage
  *
  * @return SR_OK upon success.

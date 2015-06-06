@@ -300,7 +300,7 @@ void TriggerDock::adv_trigger()
         if (stream) {
             QMessageBox msg(this);
             msg.setText(tr("Trigger"));
-            msg.setInformativeText(tr("Stram Mode Don't Support Advanced Trigger!"));
+            msg.setInformativeText(tr("Stream Mode Don't Support Advanced Trigger!"));
             msg.setStandardButtons(QMessageBox::Ok);
             msg.setIcon(QMessageBox::Warning);
             msg.exec();
@@ -520,6 +520,79 @@ void TriggerDock::init()
     // TRIGGERPOS
     //uint16_t pos = ds_trigger_get_pos();
     //position_slider->setValue(pos);
+}
+
+QJsonObject TriggerDock::get_session()
+{
+    QJsonObject trigSes;
+    trigSes["triggerMode"] = adv_radioButton->isChecked() ? 1 : 0;
+    trigSes["triggerPos"] = position_slider->value();
+    trigSes["triggerStages"] = stages_comboBox->currentIndex();
+    trigSes["triggerSerial"] = _adv_tabWidget->currentIndex();
+
+    for (int i = 0; i < stages_comboBox->count(); i++) {
+        QString value0_str = "triggerValue0" + QString::number(i);
+        QString inv0_str = "triggerInv0" + QString::number(i);
+        QString count0_str = "triggerCount0" + QString::number(i);
+        QString value1_str = "triggerValue1" + QString::number(i);
+        QString inv1_str = "triggerInv1" + QString::number(i);
+        QString count1_str = "triggerCount1" + QString::number(i);
+        QString logic_str = "triggerLogic" + QString::number(i);
+        trigSes[value0_str] = _value0_lineEdit_list.at(i)->text();
+        trigSes[value1_str] = _value1_lineEdit_list.at(i)->text();
+        trigSes[inv0_str] = _inv0_comboBox_list.at(i)->currentIndex();
+        trigSes[inv1_str] = _inv1_comboBox_list.at(i)->currentIndex();
+        trigSes[count0_str] = _count0_spinBox_list.at(i)->value();
+        trigSes[count1_str] = _count1_spinBox_list.at(i)->value();
+        trigSes[logic_str] = _logic_comboBox_list.at(i)->currentIndex();
+    }
+
+    trigSes["triggerStart"] = _serial_start_lineEdit->text();
+    trigSes["triggerStop"] = _serial_stop_lineEdit->text();
+    trigSes["triggerClock"] = _serial_edge_lineEdit->text();
+    trigSes["triggerChannel"] = _serial_data_comboBox->currentIndex();
+    trigSes["triggerData"] = _serial_value_lineEdit->text();
+
+    return trigSes;
+}
+
+void TriggerDock::set_session(QJsonObject ses)
+{
+    position_slider->setValue(ses["triggerPos"].toDouble());
+    stages_comboBox->setCurrentIndex(ses["triggerStages"].toDouble());
+    _adv_tabWidget->setCurrentIndex(ses["triggerSerial"].toDouble());
+    if (ses["triggerMode"].toDouble() == 0)
+        simple_radioButton->click();
+    else
+        adv_radioButton->click();
+
+    for (int i = 0; i < stages_comboBox->count(); i++) {
+        QString value0_str = "triggerValue0" + QString::number(i);
+        QString inv0_str = "triggerInv0" + QString::number(i);
+        QString count0_str = "triggerCount0" + QString::number(i);
+        QString value1_str = "triggerValue1" + QString::number(i);
+        QString inv1_str = "triggerInv1" + QString::number(i);
+        QString count1_str = "triggerCount1" + QString::number(i);
+        QString logic_str = "triggerLogic" + QString::number(i);
+        _value0_lineEdit_list.at(i)->setText(ses[value0_str].toString());
+        _value1_lineEdit_list.at(i)->setText(ses[value1_str].toString());
+        _inv0_comboBox_list.at(i)->setCurrentIndex(ses[inv0_str].toDouble());
+        _inv1_comboBox_list.at(i)->setCurrentIndex(ses[inv1_str].toDouble());
+        _count0_spinBox_list.at(i)->setValue(ses[count0_str].toDouble());
+        _count1_spinBox_list.at(i)->setValue(ses[count1_str].toDouble());
+        _logic_comboBox_list.at(i)->setCurrentIndex(ses[logic_str].toDouble());
+    }
+
+    _serial_start_lineEdit->setText(ses["triggerStart"].toString());
+    _serial_stop_lineEdit->setText(ses["triggerStop"].toString());
+    _serial_edge_lineEdit->setText(ses["triggerClock"].toString());
+    _serial_data_comboBox->setCurrentIndex(ses["triggerChannel"].toDouble());
+    _serial_value_lineEdit->setText(ses["triggerData"].toString());
+
+    value_changed();
+    logic_changed(0);
+    inv_changed(0);
+    count_changed();
 }
 
 } // namespace dock

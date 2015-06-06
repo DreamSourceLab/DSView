@@ -117,6 +117,9 @@ private slots:
 
     void on_save();
 
+    bool load_session(QString name);
+    bool store_session(QString name);
+
     /*
      * hotplug slot function
      */

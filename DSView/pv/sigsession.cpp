@@ -56,6 +56,8 @@
 #include <QMessageBox>
 #include <QProgressDialog>
 #include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
 #include <QtConcurrent/QtConcurrent>
 
 #include <boost/foreach.hpp>
@@ -151,7 +153,6 @@ void SigSession::set_device(boost::shared_ptr<device::DevInst> dev_inst) throw(Q
         device_setted();
     }
 }
-
 
 void SigSession::set_file(const string &name) throw(QString)
 {
@@ -600,7 +601,7 @@ void SigSession::add_group()
 
     std::vector< boost::shared_ptr<view::Signal> >::iterator i = _signals.begin();
     while (i != _signals.end()) {
-        if ((*i)->get_type() == view::Trace::DS_LOGIC && (*i)->selected())
+        if ((*i)->get_type() == SR_CHANNEL_LOGIC && (*i)->selected())
             probe_index_list.push_back((*i)->get_index());
         i++;
     }
@@ -851,7 +852,22 @@ void SigSession::feed_in_meta(const sr_dev_inst *sdi,
 
 void SigSession::feed_in_trigger(const ds_trigger_pos &trigger_pos)
 {
-    receive_trigger(trigger_pos.real_pos);
+    if (_dev_inst->dev_inst()->mode != DSO) {
+        receive_trigger(trigger_pos.real_pos);
+    } else {
+        int probe_count = 0;
+        int probe_en_count = 0;
+        for (const GSList *l = _dev_inst->dev_inst()->channels;
+            l; l = l->next) {
+            const sr_channel *const probe = (const sr_channel *)l->data;
+            if (probe->type == SR_CHANNEL_DSO) {
+                probe_count++;
+                if (probe->enabled)
+                    probe_en_count++;
+            }
+        }
+        receive_trigger(trigger_pos.real_pos * probe_count / probe_en_count);
+    }
 }
 
 void SigSession::feed_in_logic(const sr_datafeed_logic &logic)

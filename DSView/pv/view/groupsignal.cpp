@@ -47,7 +47,7 @@ const float GroupSignal::EnvelopeThreshold = 256.0f;
 
 GroupSignal::GroupSignal(QString name, boost::shared_ptr<data::Group> data,
                          std::list<int> probe_index_list, int group_index) :
-    Trace(name, probe_index_list, DS_GROUP, group_index),
+    Trace(name, probe_index_list, SR_CHANNEL_GROUP, group_index),
     _data(data)
 {
     _colour = SignalColours[probe_index_list.front() % countof(SignalColours)];

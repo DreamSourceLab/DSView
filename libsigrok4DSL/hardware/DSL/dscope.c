@@ -80,6 +80,16 @@ static const int32_t hwoptions[] = {
     SR_CONF_OPERATION_MODE,
 };
 
+static const int32_t sessions[] = {
+    SR_CONF_SAMPLERATE,
+    SR_CONF_LIMIT_SAMPLES,
+    SR_CONF_OPERATION_MODE,
+    SR_CONF_TIMEBASE,
+    SR_CONF_TRIGGER_SLOPE,
+    SR_CONF_TRIGGER_SOURCE,
+    SR_CONF_HORIZ_TRIGGERPOS,
+};
+
 static const char *probe_names[] = {
 	"0",  "1",  "2",  "3",  "4",  "5",  "6",  "7",
 	"8",  "9", "10", "11", "12", "13", "14", "15",
@@ -575,6 +585,7 @@ static struct DSL_context *DSCope_dev_new(void)
     devc->trigger_slope = DSO_TRIGGER_RISING;
     devc->trigger_source = DSO_TRIGGER_AUTO;
     devc->trigger_hpos = 0x0;
+    devc->trigger_hrate = 0;
     devc->zero = FALSE;
 
 	return devc;
@@ -1215,20 +1226,13 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_TRIGGER_VALUE:
         if (!ch)
             return SR_ERR;
-        *data = g_variant_new_uint16(ch->trig_value);
+        *data = g_variant_new_byte(ch->trig_value);
         break;
     case SR_CONF_HORIZ_TRIGGERPOS:
         if (!sdi)
             return SR_ERR;
         devc = sdi->priv;
-        uint16_t channel_cnt = 0;
-        GSList *l;
-        for (l = sdi->channels; l; l = l->next) {
-            struct sr_channel *probe = (struct sr_channel *)l->data;
-            channel_cnt += probe->enabled;
-        }
-        uint16_t pos = devc->trigger_hpos * channel_cnt * 100 / devc->limit_samples;
-        *data = g_variant_new_uint16(pos);
+        *data = g_variant_new_byte(devc->trigger_hrate);
         break;
     case SR_CONF_ZERO:
         if (!sdi)
@@ -1409,6 +1413,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 
         if (sdi->mode == DSO) {
             ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, ch, SR_CONF_EN_CH));
+            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 0, SR_CONF_SAMPLERATE));
         }
         if (ret == SR_OK)
             sr_dbg("%s: setting ENABLE of channel %d to %d",
@@ -1476,7 +1481,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             sr_dbg("%s: setting DSO Trigger Source to %d failed",
                 __func__, devc->trigger_source);
     } else if (id == SR_CONF_TRIGGER_VALUE) {
-        ch->trig_value = g_variant_get_uint16(data);
+        ch->trig_value = g_variant_get_byte(data);
         if (sdi->mode == DSO) {
             ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, ch, SR_CONF_TRIGGER_VALUE));
         }
@@ -1493,7 +1498,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             struct sr_channel *probe = (struct sr_channel *)l->data;
             channel_cnt += probe->enabled;
         }
-        devc->trigger_hpos = g_variant_get_uint16(data) * channel_cnt * devc->limit_samples / 200.0;
+        devc->trigger_hrate = g_variant_get_byte(data);
+        devc->trigger_hpos = devc->trigger_hrate * channel_cnt * devc->limit_samples / 200.0;
         if (sdi->mode == DSO) {
             ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 1, SR_CONF_HORIZ_TRIGGERPOS));
         }
@@ -1566,6 +1572,10 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
 //				hwcaps, ARRAY_SIZE(hwcaps), sizeof(int32_t));
         *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
                 hwoptions, ARRAY_SIZE(hwoptions)*sizeof(int32_t), TRUE, NULL, NULL);
+        break;
+    case SR_CONF_DEVICE_SESSIONS:
+        *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
+                sessions, ARRAY_SIZE(sessions)*sizeof(int32_t), TRUE, NULL, NULL);
         break;
     case SR_CONF_SAMPLERATE:
 		g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));

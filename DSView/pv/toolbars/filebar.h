@@ -53,8 +53,12 @@ signals:
     void load_file(QString);
     void save();
     void on_screenShot();
+    void load_session(QString);
+    void store_session(QString);
 
 private slots:
+    void on_actionLoad_triggered();
+    void on_actionStore_triggered();
     void on_actionOpen_triggered();
     void on_actionSave_triggered();
     void on_actionCapture_triggered();
@@ -66,6 +70,8 @@ private:
 
     QToolButton _file_button;
 
+    QAction *_action_load;
+    QAction *_action_store;
     QAction *_action_open;
     QAction *_action_save;
     QAction *_action_export;

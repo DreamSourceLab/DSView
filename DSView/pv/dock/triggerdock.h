@@ -34,6 +34,7 @@
 #include <QSpinBox>
 #include <QGroupBox>
 #include <QTableWidget>
+#include <QJsonObject>
 
 #include <QVector>
 #include <QVBoxLayout>
@@ -63,9 +64,12 @@ public:
 
     void init();
 
+    QJsonObject get_session();
+    void set_session(QJsonObject ses);
+
 signals:
 
-private slots:
+public slots:
     void simple_trigger();
     void adv_trigger();
     void trigger_stages_changed(int index);

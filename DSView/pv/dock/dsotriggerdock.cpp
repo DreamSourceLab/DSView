@@ -138,7 +138,7 @@ void DsoTriggerDock::pos_changed(int pos)
     int ret;
     ret = _session.get_device()->set_config(NULL, NULL,
                                             SR_CONF_HORIZ_TRIGGERPOS,
-                                            g_variant_new_uint16((uint16_t)pos));
+                                            g_variant_new_byte((uint8_t)pos));
     if (!ret) {
         QMessageBox msg(this);
         msg.setText(tr("Trigger Setting Issue"));
@@ -206,7 +206,7 @@ void DsoTriggerDock::init()
     GVariant* gvar = _session.get_device()->get_config(NULL, NULL,
                                             SR_CONF_HORIZ_TRIGGERPOS);
     if (gvar != NULL) {
-        uint16_t pos = g_variant_get_uint16(gvar);
+        uint16_t pos = g_variant_get_byte(gvar);
         g_variant_unref(gvar);
         position_slider->setValue(pos);
     }
@@ -222,7 +222,7 @@ void DsoTriggerDock::init()
     gvar = _session.get_device()->get_config(NULL, NULL,
                                                 SR_CONF_TRIGGER_SLOPE);
     if (gvar != NULL) {
-        uint8_t slope = g_variant_get_uint16(gvar);
+        uint8_t slope = g_variant_get_byte(gvar);
         g_variant_unref(gvar);
         type_group->button(slope)->setChecked(true);
     }
