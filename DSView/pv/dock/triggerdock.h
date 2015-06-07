@@ -39,6 +39,7 @@
 #include <QVector>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QScrollArea>
 
 #include <vector>
 
@@ -50,7 +51,7 @@ class SigSession;
 
 namespace dock {
 
-class TriggerDock : public QWidget
+class TriggerDock : public QScrollArea
 {
     Q_OBJECT
 
@@ -89,6 +90,8 @@ private:
 
 private:
     SigSession &_session;
+
+    QWidget *_widget;
 
     QRadioButton *simple_radioButton;
     QRadioButton *adv_radioButton;

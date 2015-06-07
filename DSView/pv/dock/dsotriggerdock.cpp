@@ -42,20 +42,22 @@ namespace pv {
 namespace dock {
 
 DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession &session) :
-    QWidget(parent),
+    QScrollArea(parent),
     _session(session)
 {
-    QLabel *position_label = new QLabel(tr("Trigger Position: "), this);
-    position_spinBox = new QSpinBox(this);
+    _widget = new QWidget(this);
+
+    QLabel *position_label = new QLabel(tr("Trigger Position: "), _widget);
+    position_spinBox = new QSpinBox(_widget);
     position_spinBox->setRange(0, 99);
     position_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    position_slider = new QSlider(Qt::Horizontal, this);
+    position_slider = new QSlider(Qt::Horizontal, _widget);
     position_slider->setRange(0, 99);
     connect(position_slider, SIGNAL(valueChanged(int)), position_spinBox, SLOT(setValue(int)));
     connect(position_spinBox, SIGNAL(valueChanged(int)), position_slider, SLOT(setValue(int)));
-    connect(position_slider, SIGNAL(valueChanged(int)), this, SLOT(pos_changed(int)));
+    connect(position_slider, SIGNAL(valueChanged(int)), _widget, SLOT(pos_changed(int)));
 
-    QLabel *tSource_labe = new QLabel(tr("Trigger Sources: "), this);
+    QLabel *tSource_labe = new QLabel(tr("Trigger Sources: "), _widget);
     QRadioButton *auto_radioButton = new QRadioButton(tr("Auto"));
     auto_radioButton->setChecked(true);
     QRadioButton *ch0_radioButton = new QRadioButton(tr("Channel 0"));
@@ -68,15 +70,15 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession &session) :
     connect(ch0a1_radioButton, SIGNAL(clicked()), this, SLOT(source_changed()));
     connect(ch0o1_radioButton, SIGNAL(clicked()), this, SLOT(source_changed()));
 
-    QLabel *tType_labe = new QLabel(tr("Trigger Types: "), this);
+    QLabel *tType_labe = new QLabel(tr("Trigger Types: "), _widget);
     QRadioButton *rising_radioButton = new QRadioButton(tr("Rising Edge"));
     rising_radioButton->setChecked(true);
     QRadioButton *falling_radioButton = new QRadioButton(tr("Falling Edge"));
     connect(rising_radioButton, SIGNAL(clicked()), this, SLOT(type_changed()));
     connect(falling_radioButton, SIGNAL(clicked()), this, SLOT(type_changed()));
 
-    source_group=new QButtonGroup(this);
-    type_group=new QButtonGroup(this);
+    source_group=new QButtonGroup(_widget);
+    type_group=new QButtonGroup(_widget);
 
     source_group->addButton(auto_radioButton);
     source_group->addButton(ch0_radioButton);
@@ -94,14 +96,14 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession &session) :
     type_group->setId(rising_radioButton, DSO_TRIGGER_RISING);
     type_group->setId(falling_radioButton, DSO_TRIGGER_FALLING);
 
-    QVBoxLayout *layout = new QVBoxLayout(this);
+    QVBoxLayout *layout = new QVBoxLayout(_widget);
     QGridLayout *gLayout = new QGridLayout();
     gLayout->addWidget(position_label, 0, 0);
     gLayout->addWidget(position_spinBox, 0, 1);
-    gLayout->addWidget(new QLabel(this), 0, 2);
+    gLayout->addWidget(new QLabel(_widget), 0, 2);
     gLayout->addWidget(position_slider, 1, 0, 1, 3);
 
-    gLayout->addWidget(new QLabel(this), 2, 0);
+    gLayout->addWidget(new QLabel(_widget), 2, 0);
     gLayout->addWidget(tSource_labe, 3, 0);
     gLayout->addWidget(auto_radioButton, 4, 0);
     gLayout->addWidget(ch0_radioButton, 5, 0);
@@ -109,7 +111,7 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession &session) :
     gLayout->addWidget(ch0a1_radioButton, 6, 0);
     gLayout->addWidget(ch0o1_radioButton, 6, 1);
 
-    gLayout->addWidget(new QLabel(this), 7, 0);
+    gLayout->addWidget(new QLabel(_widget), 7, 0);
     gLayout->addWidget(tType_labe, 8, 0);
     gLayout->addWidget(rising_radioButton, 9, 0);
     gLayout->addWidget(falling_radioButton, 10, 0);
@@ -118,7 +120,11 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession &session) :
 
     layout->addLayout(gLayout);
     layout->addStretch(1);
-    setLayout(layout);
+    _widget->setLayout(layout);
+
+    this->setWidget(_widget);
+    _widget->setGeometry(0, 0, sizeHint().width(), 500);
+    _widget->setObjectName("dsoTriggerWidget");
 }
 
 DsoTriggerDock::~DsoTriggerDock()

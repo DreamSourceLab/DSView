@@ -126,7 +126,7 @@ QDockWidget {
     border: 0px;
     padding: 0px;
     color: rgb(17, 133, 209,  255);
-    font-size: 16px;
+    font-size: 15px;
     font-weight: bold;
 }
 
@@ -145,13 +145,23 @@ QDockWidget > QWidget{
     padding: 0px;
 }
 
+QScrollArea #measureWidget,
+QScrollArea #dsoTriggerWidget,
+QScrollArea #triggerWidget,
+QScrollArea #protocolWidget{
+    margin: 0px;
+    background-color: rgb(17, 133, 209,  255);
+    border: 0px;
+    padding: 0px;
+}
+
 QGroupBox {
     margin: 0px;
     background-color: rgb(17, 133, 209,  255);
     border: 0px;
     padding: 40px, 10px, 10px, 10px;
     color: white;
-    font-size: 20px;
+    font-size: 15px;
     font-weight: bold;
 }
 
@@ -166,14 +176,14 @@ QGroupBox:disabled
     color: rgb(200, 200, 200, 255);
 }
 
-QDockWidget > QWidget > QTabWidget::pane{
+#triggerWidget > QTabWidget::pane{
     margin: 0px;
     background-color: rgb(17, 133, 209,  255);
     border: 1px solid rgb(255, 255, 255);
     padding: 0px;
 }
 
-QDockWidget > QWidget > QTabWidget::pane:disabled{
+#triggerWidget > QTabWidget::pane:disabled{
     border: 1px solid rgb(200, 200, 200, 255);
 }
 

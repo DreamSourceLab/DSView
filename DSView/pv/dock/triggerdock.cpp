@@ -38,84 +38,87 @@ namespace pv {
 namespace dock {
 
 TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
-    QWidget(parent),
+    QScrollArea(parent),
     _session(session)
 {
     int i;
+
+    _widget = new QWidget(this);
 
     QFont font("Monaco");
     font.setStyleHint(QFont::Monospace);
     font.setFixedPitch(true);
 
-    simple_radioButton = new QRadioButton(tr("Simple Trigger"), this);
+    simple_radioButton = new QRadioButton(tr("Simple Trigger"), _widget);
     simple_radioButton->setChecked(true);
-    adv_radioButton = new QRadioButton(tr("Advanced Trigger"), this);
+    adv_radioButton = new QRadioButton(tr("Advanced Trigger"), _widget);
 
-    position_label = new QLabel(tr("Trigger Position: "), this);
-    position_spinBox = new QSpinBox(this);
+    position_label = new QLabel(tr("Trigger Position: "), _widget);
+    position_spinBox = new QSpinBox(_widget);
     position_spinBox->setRange(0, 99);
     position_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    position_slider = new QSlider(Qt::Horizontal, this);
+    position_slider = new QSlider(Qt::Horizontal, _widget);
     position_slider->setRange(0, 99);
     connect(position_slider, SIGNAL(valueChanged(int)), position_spinBox, SLOT(setValue(int)));
     connect(position_spinBox, SIGNAL(valueChanged(int)), position_slider, SLOT(setValue(int)));
 
-    stages_label = new QLabel(tr("Total Trigger Stages: "), this);
+    stages_label = new QLabel(tr("Total Trigger Stages: "), _widget);
     stages_label->setDisabled(true);
-    stages_comboBox = new QComboBox(this);
+    stages_comboBox = new QComboBox(_widget);
     for (i = 1; i <= TriggerStages; i++)
         stages_comboBox->addItem(QString::number(i));
     //stages_comboBox->setCurrentIndex(stages_comboBox->count() - 1);
     stages_comboBox->setDisabled(true);
 
-    stage_tabWidget = new QTabWidget(this);
+    stage_tabWidget = new QTabWidget(_widget);
     stage_tabWidget->setTabPosition(QTabWidget::East);
     //stage_tabWidget->setDisabled(true);
+    stage_tabWidget->setUsesScrollButtons(false);
 
     QRegExp value_rx("[10XRFCxrfc ]+");
-    QValidator *value_validator = new QRegExpValidator(value_rx, this);
+    QValidator *value_validator = new QRegExpValidator(value_rx, _widget);
     for (i = 0; i < TriggerStages; i++) {
-        QComboBox *_logic_comboBox = new QComboBox(this);
+        QComboBox *_logic_comboBox = new QComboBox(_widget);
         _logic_comboBox->addItem(tr("Or"));
         _logic_comboBox->addItem(tr("And"));
         _logic_comboBox->setCurrentIndex(1);
         _logic_comboBox_list.push_back(_logic_comboBox);
 
-        QLineEdit *_value0_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", this);
+        QLineEdit *_value0_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", _widget);
         _value0_lineEdit->setFont(font);
         _value0_lineEdit->setValidator(value_validator);
         _value0_lineEdit->setMaxLength(TriggerProbes * 2 - 1);
         _value0_lineEdit->setInputMask("X X X X X X X X X X X X X X X X");
 		_value0_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
         _value0_lineEdit_list.push_back(_value0_lineEdit);
-        QSpinBox *_count0_spinBox = new QSpinBox(this);
+        QSpinBox *_count0_spinBox = new QSpinBox(_widget);
         _count0_spinBox->setRange(1, INT32_MAX);
         _count0_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
         _count0_spinBox_list.push_back(_count0_spinBox);
-        QComboBox *_inv0_comboBox = new QComboBox(this);
+        QComboBox *_inv0_comboBox = new QComboBox(_widget);
         _inv0_comboBox->addItem(tr("=="));
         _inv0_comboBox->addItem(tr("!="));
         _inv0_comboBox_list.push_back(_inv0_comboBox);
 
-        QLineEdit *_value1_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", this);
+        QLineEdit *_value1_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", _widget);
         _value1_lineEdit->setFont(font);
         _value1_lineEdit->setValidator(value_validator);
         _value1_lineEdit->setMaxLength(TriggerProbes * 2 - 1);
         _value1_lineEdit->setInputMask("X X X X X X X X X X X X X X X X");
 		_value1_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
         _value1_lineEdit_list.push_back(_value1_lineEdit);
-        QSpinBox *_count1_spinBox = new QSpinBox(this);
+        QSpinBox *_count1_spinBox = new QSpinBox(_widget);
         _count1_spinBox->setRange(1, INT32_MAX);
         _count1_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
         _count1_spinBox_list.push_back(_count1_spinBox);
-        QComboBox *_inv1_comboBox = new QComboBox(this);
+        QComboBox *_inv1_comboBox = new QComboBox(_widget);
         _inv1_comboBox->addItem(tr("=="));
         _inv1_comboBox->addItem(tr("!="));
         _inv1_comboBox_list.push_back(_inv1_comboBox);
 
-        QLabel *value_exp_label = new QLabel("1 1 1 1 1 1\n5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0", this);
-        QLabel *inv_exp_label = new QLabel("Inv", this);
-        QLabel *count_exp_label = new QLabel("Counter", this);
+        QLabel *value_exp_label = new QLabel("1 1 1 1 1 1\n5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0", _widget);
+        QLabel *inv_exp_label = new QLabel("Inv", _widget);
+        QLabel *count_exp_label = new QLabel("Counter", _widget);
         value_exp_label->setFont(font);
 
         QVBoxLayout *stage_layout = new QVBoxLayout();
@@ -135,7 +138,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
         stage_layout->addWidget(new QLabel(tr("X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge")));
         stage_layout->addStretch(1);
 
-        QGroupBox *_stage_groupBox = new QGroupBox(tr("Stage")+QString::number(i), this);
+        QGroupBox *_stage_groupBox = new QGroupBox(tr("Stage")+QString::number(i), _widget);
         _stage_groupBox->setFlat(true);
         _stage_groupBox->setLayout(stage_layout);
         _stage_groupBox_list.push_back(_stage_groupBox);
@@ -151,44 +154,44 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
         connect(_count1_spinBox, SIGNAL(editingFinished()), this, SLOT(count_changed()));
     }
 
-    _serial_start_label = new QLabel(tr("Start Flag: "), this);
-    _serial_start_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", this);
+    _serial_start_label = new QLabel(tr("Start Flag: "), _widget);
+    _serial_start_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", _widget);
     _serial_start_lineEdit->setFont(font);
     _serial_start_lineEdit->setValidator(value_validator);
     _serial_start_lineEdit->setMaxLength(TriggerProbes * 2 - 1);
     _serial_start_lineEdit->setInputMask("X X X X X X X X X X X X X X X X");
     _serial_start_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
-    _serial_stop_label = new QLabel(tr("Stop Flag: "), this);
-    _serial_stop_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", this);
+    _serial_stop_label = new QLabel(tr("Stop Flag: "), _widget);
+    _serial_stop_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", _widget);
     _serial_stop_lineEdit->setFont(font);
     _serial_stop_lineEdit->setValidator(value_validator);
     _serial_stop_lineEdit->setMaxLength(TriggerProbes * 2 - 1);
     _serial_stop_lineEdit->setInputMask("X X X X X X X X X X X X X X X X");
     _serial_stop_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
-    _serial_edge_label = new QLabel(tr("Clock Flag: "), this);
-    _serial_edge_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", this);
+    _serial_edge_label = new QLabel(tr("Clock Flag: "), _widget);
+    _serial_edge_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", _widget);
     _serial_edge_lineEdit->setFont(font);
     _serial_edge_lineEdit->setValidator(value_validator);
     _serial_edge_lineEdit->setMaxLength(TriggerProbes * 2 - 1);
     _serial_edge_lineEdit->setInputMask("X X X X X X X X X X X X X X X X");
     _serial_edge_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
-    _serial_data_lable = new QLabel(tr("Data Channel: "), this);
-    _serial_data_comboBox = new QComboBox(this);
+    _serial_data_lable = new QLabel(tr("Data Channel: "), _widget);
+    _serial_data_comboBox = new QComboBox(_widget);
     for(i = 0; i < TriggerProbes; i++)
         _serial_data_comboBox->addItem(QString::number(i));
 
-    _serial_value_lable = new QLabel(tr("Data Value: "), this);
-    _serial_value_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", this);
+    _serial_value_lable = new QLabel(tr("Data Value: "), _widget);
+    _serial_value_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", _widget);
     _serial_value_lineEdit->setFont(font);
     _serial_value_lineEdit->setValidator(value_validator);
     _serial_value_lineEdit->setMaxLength(TriggerProbes * 2 - 1);
     _serial_value_lineEdit->setInputMask("X X X X X X X X X X X X X X X X");
     _serial_value_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
-    QLabel *serial_value_exp_label = new QLabel("1 1 1 1 1 1\n5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0", this);
+    QLabel *serial_value_exp_label = new QLabel("1 1 1 1 1 1\n5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0", _widget);
     serial_value_exp_label->setFont(font);
 
     QVBoxLayout *serial_layout = new QVBoxLayout();
@@ -196,7 +199,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
     serial_glayout->addWidget(serial_value_exp_label, 1, 1, 1, 4);
     serial_glayout->addWidget(_serial_start_label, 2, 0);
     serial_glayout->addWidget(_serial_start_lineEdit, 2, 1, 1, 4);
-    serial_glayout->addWidget(new QLabel(this), 2, 2);
+    serial_glayout->addWidget(new QLabel(_widget), 2, 2);
     serial_glayout->addWidget(_serial_stop_label, 3, 0);
     serial_glayout->addWidget(_serial_stop_lineEdit, 3, 1, 1, 4);
     serial_glayout->addWidget(_serial_edge_label, 4, 0);
@@ -210,7 +213,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
     serial_layout->addWidget(new QLabel(tr("X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge")));
     serial_layout->addStretch(1);
 
-    _serial_groupBox = new QGroupBox(tr("Serial Trigger"), this);
+    _serial_groupBox = new QGroupBox(tr("Serial Trigger"), _widget);
     _serial_groupBox->setFlat(true);
     _serial_groupBox->setLayout(serial_layout);
     //_serial_groupBox->setDisabled(true);
@@ -222,7 +225,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
     connect(_serial_value_lineEdit, SIGNAL(editingFinished()), this, SLOT(value_changed()));
 
 
-    _adv_tabWidget = new QTabWidget(this);
+    _adv_tabWidget = new QTabWidget(_widget);
     _adv_tabWidget->setTabPosition(QTabWidget::North);
     _adv_tabWidget->setDisabled(true);
     _adv_tabWidget->addTab((QWidget *)stage_tabWidget, tr("Stage Trigger"));
@@ -234,23 +237,27 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
     connect(position_slider, SIGNAL(valueChanged(int)), this, SLOT(pos_changed(int)));
     connect(_adv_tabWidget, SIGNAL(currentChanged(int)), this, SLOT(adv_tog(int)));
 
-    QVBoxLayout *layout = new QVBoxLayout(this);
+    QVBoxLayout *layout = new QVBoxLayout(_widget);
     QGridLayout *gLayout = new QGridLayout();
     gLayout->addWidget(simple_radioButton, 0, 0);
     gLayout->addWidget(adv_radioButton, 1, 0);
     gLayout->addWidget(position_label, 2, 0);
     gLayout->addWidget(position_spinBox, 2, 1);
-    gLayout->addWidget(new QLabel(this), 2, 2);
+    gLayout->addWidget(new QLabel(_widget), 2, 2);
     gLayout->addWidget(position_slider, 3, 0, 1, 3);
     gLayout->addWidget(stages_label, 4, 0);
     gLayout->addWidget(stages_comboBox, 4, 1);
-    gLayout->addWidget(new QLabel(this), 4, 2);
+    gLayout->addWidget(new QLabel(_widget), 4, 2);
     gLayout->setColumnStretch(2, 1);
 
     layout->addLayout(gLayout);
     layout->addWidget(_adv_tabWidget);
     layout->addStretch(1);
-    setLayout(layout);
+    _widget->setLayout(layout);
+
+    this->setWidget(_widget);
+    _widget->setGeometry(0, 0, sizeHint().width(), 1000);
+    _widget->setObjectName("triggerWidget");
 }
 
 TriggerDock::~TriggerDock()

@@ -154,7 +154,7 @@ void MainWindow::setup_ui()
 #ifdef ENABLE_DECODE
     // protocol dock
     _protocol_dock=new QDockWidget(tr("Protocol"),this);
-    _protocol_dock->setFeatures(QDockWidget::NoDockWidgetFeatures);
+    _protocol_dock->setFeatures(QDockWidget::DockWidgetMovable);
     _protocol_dock->setAllowedAreas(Qt::RightDockWidgetArea);
     _protocol_dock->setVisible(false);
     //dock::ProtocolDock *_protocol_widget = new dock::ProtocolDock(_protocol_dock, _session);
@@ -164,14 +164,14 @@ void MainWindow::setup_ui()
 #endif
     // trigger dock
     _trigger_dock=new QDockWidget(tr("Trigger Setting..."),this);
-    _trigger_dock->setFeatures(QDockWidget::NoDockWidgetFeatures);
+    _trigger_dock->setFeatures(QDockWidget::DockWidgetMovable);
     _trigger_dock->setAllowedAreas(Qt::RightDockWidgetArea);
     _trigger_dock->setVisible(false);
     _trigger_widget = new dock::TriggerDock(_trigger_dock, _session);
     _trigger_dock->setWidget(_trigger_widget);
 
     _dso_trigger_dock=new QDockWidget(tr("Trigger Setting..."),this);
-    _dso_trigger_dock->setFeatures(QDockWidget::NoDockWidgetFeatures);
+    _dso_trigger_dock->setFeatures(QDockWidget::DockWidgetMovable);
     _dso_trigger_dock->setAllowedAreas(Qt::RightDockWidgetArea);
     _dso_trigger_dock->setVisible(false);
     _dso_trigger_widget = new dock::DsoTriggerDock(_dso_trigger_dock, _session);
@@ -203,7 +203,7 @@ void MainWindow::setup_ui()
     // Setup the dockWidget
     // measure dock
     _measure_dock=new QDockWidget(tr("Measurement"),this);
-    _measure_dock->setFeatures(QDockWidget::NoDockWidgetFeatures);
+    _measure_dock->setFeatures(QDockWidget::DockWidgetMovable);
     _measure_dock->setAllowedAreas(Qt::RightDockWidgetArea);
     _measure_dock->setVisible(false);
     dock::MeasureDock *_measure_widget = new dock::MeasureDock(_measure_dock, *_view, _session);

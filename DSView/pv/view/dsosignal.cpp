@@ -985,15 +985,15 @@ void DsoSignal::paint_type_options(QPainter &p, int right, bool hover, int actio
     p.setPen(Qt::white);
     p.setBrush((enabled() && (factor == 100)) ? ((hover && action == X100) ? _colour.darker() : _colour)  : ((hover && action == X100) ? _colour.darker() : dsDisable));
     p.drawRect(x100_rect);
-    p.drawText(x100_rect, Qt::AlignLeft | Qt::AlignVCenter, "x100");
+    p.drawText(x100_rect, Qt::AlignCenter | Qt::AlignVCenter, "x100");
 
     p.setBrush((enabled() && (factor == 10)) ? ((hover && action == X10) ? _colour.darker() : _colour)  : ((hover && action == X10) ? _colour.darker() : dsDisable));
     p.drawRect(x10_rect);
-    p.drawText(x10_rect, Qt::AlignLeft | Qt::AlignVCenter, "x10");
+    p.drawText(x10_rect, Qt::AlignCenter | Qt::AlignVCenter, "x10");
 
     p.setBrush((enabled() && (factor == 1)) ? ((hover && action == X1) ? _colour.darker() : _colour)  : ((hover && action == X1) ? _colour.darker() : dsDisable));
     p.drawRect(x1_rect);
-    p.drawText(x1_rect, Qt::AlignLeft | Qt::AlignVCenter, "x1");
+    p.drawText(x1_rect, Qt::AlignCenter | Qt::AlignVCenter, "x1");
 }
 
 void DsoSignal::paint_measure(QPainter &p)

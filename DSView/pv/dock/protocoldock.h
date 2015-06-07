@@ -33,6 +33,7 @@
 #include <QVector>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QScrollArea>
 
 #include <vector>
 
@@ -44,7 +45,7 @@ class SigSession;
 
 namespace dock {
 
-class ProtocolDock : public QWidget
+class ProtocolDock : public QScrollArea
 {
     Q_OBJECT
 
@@ -68,6 +69,8 @@ private:
 
 private:
     SigSession &_session;
+
+    QWidget *_widget;
 
     QPushButton *_add_button;
     QPushButton *_del_all_button;

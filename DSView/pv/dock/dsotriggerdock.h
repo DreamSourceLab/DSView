@@ -28,6 +28,7 @@
 #include <QSlider>
 #include <QSpinBox>
 #include <QButtonGroup>
+#include <QScrollArea>
 
 #include <vector>
 
@@ -39,7 +40,7 @@ class SigSession;
 
 namespace dock {
 
-class DsoTriggerDock : public QWidget
+class DsoTriggerDock : public QScrollArea
 {
     Q_OBJECT
 
@@ -65,6 +66,8 @@ private:
 
 private:
     SigSession &_session;
+
+    QWidget *_widget;
 
     QSpinBox *position_spinBox;
     QSlider *position_slider;

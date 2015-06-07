@@ -38,21 +38,23 @@ namespace pv {
 namespace dock {
 
 ProtocolDock::ProtocolDock(QWidget *parent, SigSession &session) :
-    QWidget(parent),
+    QScrollArea(parent),
     _session(session)
 {
+    _widget = new QWidget(this);
+
     QHBoxLayout *hori_layout = new QHBoxLayout();
 
-    _add_button = new QPushButton(this);
+    _add_button = new QPushButton(_widget);
     _add_button->setFlat(true);
     _add_button->setIcon(QIcon::fromTheme("protocol",
                          QIcon(":/icons/add.png")));
-    _del_all_button = new QPushButton(this);
+    _del_all_button = new QPushButton(_widget);
     _del_all_button->setFlat(true);
     _del_all_button->setIcon(QIcon::fromTheme("protocol",
                              QIcon(":/icons/del.png")));
     _del_all_button->setCheckable(true);
-    _protocol_combobox = new QComboBox(this);
+    _protocol_combobox = new QComboBox(_widget);
 
     GSList *l = g_slist_sort(g_slist_copy(
         (GSList*)srd_decoder_list()), decoder_name_cmp);
@@ -82,7 +84,11 @@ ProtocolDock::ProtocolDock(QWidget *parent, SigSession &session) :
     _layout->addLayout(hori_layout);
     _layout->addStretch(1);
 
-    setLayout(_layout);
+    _widget->setLayout(_layout);
+
+    this->setWidget(_widget);
+    _widget->setGeometry(0, 0, sizeHint().width(), 500);
+    _widget->setObjectName("protocolWidget");
 }
 
 ProtocolDock::~ProtocolDock()
@@ -120,15 +126,15 @@ void ProtocolDock::add_protocol()
             //QMap <QString, QVariant>& _options = dlg.get_options();
             //QMap <QString, int> _options_index = dlg.get_options_index();
 
-            QPushButton *_del_button = new QPushButton(this);
-            QPushButton *_set_button = new QPushButton(this);
+            QPushButton *_del_button = new QPushButton(_widget);
+            QPushButton *_set_button = new QPushButton(_widget);
             _del_button->setFlat(true);
             _del_button->setIcon(QIcon::fromTheme("protocol",
                                  QIcon(":/icons/del.png")));
             _set_button->setFlat(true);
             _set_button->setIcon(QIcon::fromTheme("protocol",
                                  QIcon(":/icons/gear.png")));
-            QLabel *_protocol_label = new QLabel(this);
+            QLabel *_protocol_label = new QLabel(_widget);
 
             _del_button->setCheckable(true);
             _protocol_label->setText(_protocol_combobox->currentText());

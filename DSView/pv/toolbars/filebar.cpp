@@ -59,7 +59,7 @@ FileBar::FileBar(SigSession &session, QWidget *parent) :
     _action_store->setText(QApplication::translate(
         "File", "S&tore Session...", 0));
     _action_store->setIcon(QIcon::fromTheme("file",
-        QIcon(":/icons/open.png")));
+        QIcon(":/icons/save.png")));
     _action_store->setObjectName(QString::fromUtf8("actionStore"));
     _file_button.addAction(_action_store);
     connect(_action_store, SIGNAL(triggered()), this, SLOT(on_actionStore_triggered()));
