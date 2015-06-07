@@ -55,7 +55,7 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession &session) :
     position_slider->setRange(0, 99);
     connect(position_slider, SIGNAL(valueChanged(int)), position_spinBox, SLOT(setValue(int)));
     connect(position_spinBox, SIGNAL(valueChanged(int)), position_slider, SLOT(setValue(int)));
-    connect(position_slider, SIGNAL(valueChanged(int)), _widget, SLOT(pos_changed(int)));
+    connect(position_slider, SIGNAL(valueChanged(int)), this, SLOT(pos_changed(int)));
 
     QLabel *tSource_labe = new QLabel(tr("Trigger Sources: "), _widget);
     QRadioButton *auto_radioButton = new QRadioButton(tr("Auto"));

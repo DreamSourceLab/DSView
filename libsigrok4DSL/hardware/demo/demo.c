@@ -98,6 +98,7 @@ struct dev_context {
 	int64_t starttime;
     int stop;
     uint64_t timebase;
+    gboolean instant;
 
     int trigger_stage;
     uint16_t trigger_mask;
@@ -345,6 +346,9 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_TEST:
         *data = g_variant_new_boolean(FALSE);
         break;
+    case SR_CONF_INSTANT:
+        *data = g_variant_new_boolean(devc->instant);
+        break;
     case SR_CONF_PATTERN_MODE:
         *data = g_variant_new_string(pattern_strings[devc->sample_generator]);
 		break;
@@ -473,6 +477,11 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 		}
         sr_dbg("%s: setting pattern to %d",
 			__func__, devc->sample_generator);
+    } else if (id == SR_CONF_INSTANT) {
+        devc->instant = g_variant_get_boolean(data);
+        sr_dbg("%s: setting INSTANT mode to %d", __func__,
+               devc->instant);
+        ret = SR_OK;
     } else if (id == SR_CONF_EN_CH) {
         ch->enabled = g_variant_get_boolean(data);
         sr_dbg("%s: setting ENABLE of channel %d to %d", __func__,
@@ -735,7 +744,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
     samples_to_send = expected_samplenum / CONST_LEN * CONST_LEN;
 
     if (devc->limit_samples) {
-        if (sdi->mode == LOGIC)
+        if (sdi->mode == LOGIC || devc->instant)
             samples_to_send = MIN(samples_to_send,
                      devc->limit_samples - devc->samples_counter);
         else
@@ -807,7 +816,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
             }
 
             sr_session_send(sdi, &packet);
-            if (sdi->mode == LOGIC)
+            if (sdi->mode == LOGIC || devc->instant)
                 devc->samples_counter += sending_now;
             else
                 devc->samples_counter = (devc->samples_counter + sending_now) % devc->limit_samples;
@@ -816,8 +825,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
         }
 	}
 
-    if (sdi->mode == LOGIC &&
-        devc->limit_samples &&
+    if (devc->limit_samples &&
         devc->samples_counter >= devc->limit_samples) {
         sr_info("Requested number of samples reached.");
         hw_dev_acquisition_stop(sdi, NULL);
@@ -827,7 +835,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
 
     g_free(buf);
 
-	return TRUE;
+    return TRUE;
 }
 
 static int hw_dev_acquisition_start(const struct sr_dev_inst *sdi,

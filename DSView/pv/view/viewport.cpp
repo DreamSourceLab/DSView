@@ -344,7 +344,8 @@ void Viewport::paintProgress(QPainter &p)
     p.setPen(QPen(Trace::dsLightBlue, 4, Qt::SolidLine));
     const int int_radius = max(radius - 4, 0);
     p.drawArc(cenPos.x() - int_radius, cenPos.y() - int_radius, 2* int_radius, 2 * int_radius, 180 * 16, -captured_progress*3.6*16);
-
+    QFont font;
+    p.setFont(font);
 }
 
 void Viewport::mousePressEvent(QMouseEvent *event)
