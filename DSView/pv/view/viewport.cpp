@@ -46,6 +46,9 @@ using namespace std;
 namespace pv {
 namespace view {
 
+const double Viewport::DragDamping = 1.05;
+const double Viewport::MinorDragRateUp = 10;
+
 Viewport::Viewport(View &parent) :
 	QWidget(&parent),
         _view(parent),
@@ -74,10 +77,16 @@ Viewport::Viewport(View &parent) :
     triggered = false;
     timer_cnt = 0;
 
+    // drag inertial
+    _drag_strength = 0;
+    _drag_timer.setSingleShot(true);
+
     connect(&_view, SIGNAL(traces_moved()),
         this, SLOT(on_traces_moved()));
     connect(&trigger_timer, SIGNAL(timeout()),
             this, SLOT(on_trigger_timer()));
+    connect(&_drag_timer, SIGNAL(timeout()),
+            this, SLOT(on_drag_timer()));
 
     connect(&_view.session(), &SigSession::receive_data,
             this, &Viewport::set_receive_len);
@@ -355,6 +364,8 @@ void Viewport::mousePressEvent(QMouseEvent *event)
 	_mouse_down_point = event->pos();
 	_mouse_down_offset = _view.offset();
     _measure_shown = false;
+    _drag_strength = 0;
+    _time.start();
 
     if (event->buttons() & Qt::LeftButton) {
         if (_view.cursors_shown()) {
@@ -392,7 +403,6 @@ void Viewport::mousePressEvent(QMouseEvent *event)
 void Viewport::mouseMoveEvent(QMouseEvent *event)
 {
 	assert(event);
-    _mouse_point = event->pos();
     _hover_hit = false;
     if (event->buttons() & Qt::RightButton) {
         _zoom_rect = QRectF(_mouse_down_point, event->pos());
@@ -403,12 +413,13 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
         if (_drag_sig) {
             boost::shared_ptr<view::DsoSignal> dsoSig;
             if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(_drag_sig))
-                dsoSig->set_trig_vpos(_mouse_point.y());
+                dsoSig->set_trig_vpos(event->pos().y());
         } else {
             _view.set_scale_offset(_view.scale(),
                 _mouse_down_offset +
                 (_mouse_down_point - event->pos()).x() *
                 _view.scale());
+            _drag_strength = (_mouse_down_point - event->pos()).x();
             measure();
         }
     }
@@ -428,6 +439,7 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
         measure();
     }
 
+    _mouse_point = event->pos();
     update();
 }
 
@@ -452,6 +464,18 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
         _view.add_cursor(view::Ruler::CursorColor[_view.get_cursorList().size() % 8], _hover_index);
         _view.show_cursors(true);
         _hover_hit = false;
+    }
+
+    const double strength = _drag_strength*DragTimerInterval*1.0/_time.elapsed();
+    if (_drag_strength < MinorDragOffsetUp && abs(strength) > MinorDragRateUp) {
+        _drag_strength = _drag_strength;
+        _drag_timer.start(DragTimerInterval);
+    } else if (abs(strength) > 0.5*DragTimerInterval) {
+        _drag_strength = strength * 5;
+        _drag_timer.start(DragTimerInterval);
+    } else {
+        _drag_strength = 0;
+        _drag_timer.stop();
     }
 
     update();
@@ -520,7 +544,8 @@ void Viewport::set_receive_len(quint64 length)
 
 void Viewport::measure()
 {
-   if (_view.session().get_capture_state() == SigSession::Running)
+   if (_view.session().get_capture_state() == SigSession::Running ||
+       _drag_strength != 0)
        return;
    _measure_shown = false;
    const uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
@@ -721,6 +746,23 @@ void Viewport::on_trigger_timer()
 {
     timer_cnt++;
     update();
+}
+
+void Viewport::on_drag_timer()
+{
+    const double offset = _view.offset();
+    const double scale = _view.scale();
+    if (_view.session().get_capture_state() == SigSession::Stopped &&
+        _drag_strength != 0 &&
+        offset < _view.get_max_offset() &&
+        offset > _view.get_min_offset()) {
+        _view.set_scale_offset(scale, offset + _drag_strength * scale);
+        _drag_strength /= DragDamping;
+        if (_drag_strength != 0)
+            _drag_timer.start(DragTimerInterval);
+    } else {
+        _drag_timer.stop();
+    }
 }
 
 } // namespace view

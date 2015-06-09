@@ -27,6 +27,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 
+#include <QTime>
 #include <QTimer>
 #include <QWidget>
 #include <stdint.h>
@@ -48,6 +49,10 @@ class Viewport : public QWidget
 public:
     static const int HitCursorMargin = 10;
     static const double HitCursorTimeMargin;
+    static const int DragTimerInterval = 100;
+    static const int MinorDragOffsetUp = 100;
+    static const double MinorDragRateUp;
+    static const double DragDamping;
 
 public:
 	explicit Viewport(View &parent);
@@ -83,6 +88,7 @@ private:
 private slots:
     void on_traces_moved();
     void on_trigger_timer();
+    void on_drag_timer();
     void set_receive_len(quint64 length);
 
 signals:
@@ -127,6 +133,10 @@ private:
 
     uint64_t _hover_index;
     bool _hover_hit;
+
+    QTime _time;
+    QTimer _drag_timer;
+    int _drag_strength;
 };
 
 } // namespace view
