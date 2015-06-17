@@ -169,6 +169,7 @@ struct DSL_context {
     uint8_t trigger_source;
     uint8_t trigger_hrate;
     uint32_t trigger_hpos;
+    uint32_t trigger_holdoff;
     gboolean zero;
     gboolean stream;
     gboolean lock;

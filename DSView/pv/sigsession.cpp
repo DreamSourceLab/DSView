@@ -945,8 +945,8 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
 
     receive_data(dso.num_samples);
     data_updated();
-    if (!_instant)
-        start_timer(ViewTime);
+    //if (!_instant)
+    //    start_timer(ViewTime);
 }
 
 void SigSession::feed_in_analog(const sr_datafeed_analog &analog)

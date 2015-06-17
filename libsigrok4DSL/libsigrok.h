@@ -731,6 +731,9 @@ enum {
 	/** Horizontal trigger position. */
 	SR_CONF_HORIZ_TRIGGERPOS,
 
+    /** Trigger hold off time */
+    SR_CONF_TRIGGER_HOLDOFF,
+
 	/** Buffer size. */
 	SR_CONF_BUFFERSIZE,
 

@@ -105,6 +105,7 @@ static const int32_t sessions[] = {
     SR_CONF_TRIGGER_SLOPE,
     SR_CONF_TRIGGER_SOURCE,
     SR_CONF_HORIZ_TRIGGERPOS,
+    SR_CONF_TRIGGER_HOLDOFF,
 };
 
 static const int32_t sessions_pro[] = {
@@ -118,6 +119,7 @@ static const int32_t sessions_pro[] = {
     SR_CONF_TRIGGER_SLOPE,
     SR_CONF_TRIGGER_SOURCE,
     SR_CONF_HORIZ_TRIGGERPOS,
+    SR_CONF_TRIGGER_HOLDOFF,
 };
 
 static const int32_t ch_sessions[] = {
@@ -649,6 +651,7 @@ static struct DSL_context *DSLogic_dev_new(void)
     devc->trigger_source = DSO_TRIGGER_AUTO;
     devc->trigger_hpos = 0x0;
     devc->trigger_hrate = 0;
+    devc->trigger_holdoff = 0;
     devc->zero = FALSE;
     devc->stream = FALSE;
     devc->mstatus_valid = FALSE;
@@ -961,6 +964,10 @@ static uint64_t dso_cmd_gen(struct sr_dev_inst *sdi, struct sr_channel* ch, int 
     case SR_CONF_ZERO_OVER:
         cmd += 0x50;
         break;
+    case SR_CONF_TRIGGER_HOLDOFF:
+        cmd += 0x58;
+        cmd += devc->trigger_holdoff << 8;
+        break;
     case SR_CONF_DSO_SYNC:
         cmd = 0xa5a5a500;
         break;
@@ -1058,15 +1065,15 @@ static int dev_open(struct sr_dev_inst *sdi)
                 sr_err("Configure FPGA failed!");
             }
         }
-
-        ret = command_vth(usb->devhdl, devc->vth);
-        if (ret == SR_OK)
-            sr_dbg("%s: setting threshold voltage to %d",
-                __func__, devc->vth);
-        else
-            sr_dbg("%s: setting threshold voltage to %d failed",
-                __func__, devc->vth);
     }
+
+    ret = command_vth(usb->devhdl, devc->vth);
+    if (ret == SR_OK)
+        sr_dbg("%s: setting threshold voltage to %d",
+            __func__, devc->vth);
+    else
+        sr_dbg("%s: setting threshold voltage to %d failed",
+            __func__, devc->vth);
 
     return SR_OK;
 }
@@ -1239,6 +1246,12 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
 		} else {
             *data = g_variant_new_byte(devc->trigger_hpos);
 		}
+        break;
+    case SR_CONF_TRIGGER_HOLDOFF:
+        if (!sdi)
+            return SR_ERR;
+        devc = sdi->priv;
+        *data = g_variant_new_uint64(devc->trigger_holdoff);
         break;
     case SR_CONF_ZERO:
         if (!sdi)
@@ -1437,6 +1450,11 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 sr_err("Set Horiz Trigger Position command failed!");
                 return ret;
             }
+            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_HOLDOFF));
+            if (ret != SR_OK) {
+                sr_err("Set Trigger Holdoff Time command failed!");
+                return ret;
+            }
             ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_SLOPE));
             if (ret != SR_OK) {
                 sr_err("Set Trigger Slope command failed!");
@@ -1624,6 +1642,17 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         else
             sr_dbg("%s: setting DSO Horiz Trigger Position to %d failed",
                 __func__, devc->trigger_hpos);
+    } else if (id == SR_CONF_TRIGGER_HOLDOFF) {
+        devc->trigger_holdoff = g_variant_get_uint64(data);
+        if (sdi->mode == DSO) {
+            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_HOLDOFF));
+        }
+        if (ret == SR_OK)
+            sr_dbg("%s: setting Trigger Holdoff Time to %d",
+                __func__, devc->trigger_holdoff);
+        else
+            sr_dbg("%s: setting Trigger Holdoff Time to %d failed",
+                __func__, devc->trigger_holdoff);
     } else if (id == SR_CONF_ZERO) {
         devc->zero = g_variant_get_boolean(data);
     } else if (id == SR_CONF_ZERO_SET) {
@@ -2167,13 +2196,14 @@ static int dev_transfer_start(const struct sr_dev_inst *sdi)
     else
         dso_buffer_size = devc->limit_samples * channel_en_cnt + 512;
 
-	if (sdi->mode == DSO) {
-	    timeout = 500;
-	    num_transfers = buffer_cnt;
-	} else {
-	    timeout = get_timeout(devc);
-	    num_transfers = get_number_of_transfers(devc);
-    }
+//    if (sdi->mode == DSO) {
+//        timeout = 500;
+//        num_transfers = buffer_cnt;
+//    } else {
+//        timeout = get_timeout(devc);
+//        num_transfers = get_number_of_transfers(devc);
+//    }
+    num_transfers = 1;
     size = (sdi->mode == ANALOG) ? cons_buffer_size : ((sdi->mode == DSO) ? dso_buffer_size : get_buffer_size(devc));
 
     devc->submitted_transfers = 0;

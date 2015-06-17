@@ -57,13 +57,29 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession &session) :
     connect(position_spinBox, SIGNAL(valueChanged(int)), position_slider, SLOT(setValue(int)));
     connect(position_slider, SIGNAL(valueChanged(int)), this, SLOT(pos_changed(int)));
 
+    QLabel *holdoff_label = new QLabel(tr("Trigger Hold Off Time: "), _widget);
+    holdoff_comboBox = new QComboBox(_widget);
+    holdoff_comboBox->addItem(tr("uS"), qVariantFromValue(1000));
+    holdoff_comboBox->addItem(tr("mS"), qVariantFromValue(1000000));
+    holdoff_comboBox->addItem(tr("S"), qVariantFromValue(1000000000));
+    holdoff_spinBox = new QSpinBox(_widget);
+    holdoff_spinBox->setRange(0, 999);
+    holdoff_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
+    holdoff_slider = new QSlider(Qt::Horizontal, _widget);
+    holdoff_slider->setRange(0, 999);
+    connect(holdoff_slider, SIGNAL(valueChanged(int)), holdoff_spinBox, SLOT(setValue(int)));
+    connect(holdoff_spinBox, SIGNAL(valueChanged(int)), holdoff_slider, SLOT(setValue(int)));
+    connect(holdoff_slider, SIGNAL(valueChanged(int)), this, SLOT(hold_changed(int)));
+    connect(holdoff_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(hold_changed(int)));
+
+
     QLabel *tSource_labe = new QLabel(tr("Trigger Sources: "), _widget);
     QRadioButton *auto_radioButton = new QRadioButton(tr("Auto"));
     auto_radioButton->setChecked(true);
     QRadioButton *ch0_radioButton = new QRadioButton(tr("Channel 0"));
     QRadioButton *ch1_radioButton = new QRadioButton(tr("Channel 1"));
-    QRadioButton *ch0a1_radioButton = new QRadioButton(tr("Channel 0 && Channel 1"));
-    QRadioButton *ch0o1_radioButton = new QRadioButton(tr("Channel 0 | Channel 1"));
+    QRadioButton *ch0a1_radioButton = new QRadioButton(tr("Channel 0 && 1"));
+    QRadioButton *ch0o1_radioButton = new QRadioButton(tr("Channel 0 | 1"));
     connect(auto_radioButton, SIGNAL(clicked()), this, SLOT(source_changed()));
     connect(ch0_radioButton, SIGNAL(clicked()), this, SLOT(source_changed()));
     connect(ch1_radioButton, SIGNAL(clicked()), this, SLOT(source_changed()));
@@ -100,21 +116,27 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession &session) :
     QGridLayout *gLayout = new QGridLayout();
     gLayout->addWidget(position_label, 0, 0);
     gLayout->addWidget(position_spinBox, 0, 1);
-    gLayout->addWidget(new QLabel(_widget), 0, 2);
-    gLayout->addWidget(position_slider, 1, 0, 1, 3);
+    gLayout->addWidget(new QLabel(tr("%"), _widget), 0, 2);
+    gLayout->addWidget(position_slider, 1, 0, 1, 4);
 
     gLayout->addWidget(new QLabel(_widget), 2, 0);
     gLayout->addWidget(tSource_labe, 3, 0);
     gLayout->addWidget(auto_radioButton, 4, 0);
     gLayout->addWidget(ch0_radioButton, 5, 0);
-    gLayout->addWidget(ch1_radioButton, 5, 1);
+    gLayout->addWidget(ch1_radioButton, 5, 1, 1, 3);
     gLayout->addWidget(ch0a1_radioButton, 6, 0);
-    gLayout->addWidget(ch0o1_radioButton, 6, 1);
+    gLayout->addWidget(ch0o1_radioButton, 6, 1, 1, 3);
 
     gLayout->addWidget(new QLabel(_widget), 7, 0);
     gLayout->addWidget(tType_labe, 8, 0);
     gLayout->addWidget(rising_radioButton, 9, 0);
     gLayout->addWidget(falling_radioButton, 10, 0);
+
+    gLayout->addWidget(new QLabel(_widget), 11, 0);
+    gLayout->addWidget(holdoff_label, 12, 0);
+    gLayout->addWidget(holdoff_spinBox, 12, 1);
+    gLayout->addWidget(holdoff_comboBox, 12, 2);
+    gLayout->addWidget(holdoff_slider, 13, 0, 1, 4);
 
     gLayout->setColumnStretch(3, 1);
 
@@ -157,6 +179,31 @@ void DsoTriggerDock::pos_changed(int pos)
     uint64_t sample_limit = _session.get_device()->get_sample_limit();
     uint64_t trig_pos = sample_limit * pos / 100;
     set_trig_pos(trig_pos);
+}
+
+void DsoTriggerDock::hold_changed(int hold)
+{
+    (void)hold;
+    int ret;
+    uint64_t holdoff;
+    if (holdoff_comboBox->currentData().toDouble() == 1000000000) {
+        holdoff_slider->setRange(0, 10);
+    } else {
+        holdoff_slider->setRange(0, 999);
+    }
+    holdoff = holdoff_slider->value() * holdoff_comboBox->currentData().toDouble() / 10;
+    ret = _session.get_device()->set_config(NULL, NULL,
+                                            SR_CONF_TRIGGER_HOLDOFF,
+                                            g_variant_new_uint64(holdoff));
+
+    if (!ret) {
+        QMessageBox msg(this);
+        msg.setText(tr("Trigger Setting Issue"));
+        msg.setInformativeText(tr("Change trigger hold off time failed!"));
+        msg.setStandardButtons(QMessageBox::Ok);
+        msg.setIcon(QMessageBox::Warning);
+        msg.exec();
+    }
 }
 
 void DsoTriggerDock::source_changed()

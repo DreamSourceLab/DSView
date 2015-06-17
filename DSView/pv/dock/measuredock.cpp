@@ -120,7 +120,7 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession &session) :
     _cursor_layout->addWidget(_cnt_label_t1t3, 5, 3);
 
     _cursor_layout->addWidget(new QLabel(tr("Cursors"), _widget), 6, 0);
-    _cursor_layout->addWidget(new QLabel(tr("Time/Samples"), _widget), 6, 1);
+    _cursor_layout->addWidget(new QLabel(tr("Time/Samples"), _widget), 6, 1, 1, 4);
 
     _cursor_layout->addWidget(new QLabel(_widget), 0, 4);
     _cursor_layout->addWidget(new QLabel(_widget), 1, 4);
@@ -206,7 +206,7 @@ void MeasureDock::cursor_update()
         _space_label_list.push_back(_space_label);
 
         _cursor_layout->addWidget(_cursor_pushButton, 6 + index, 0);
-        _cursor_layout->addWidget(_curpos_label, 6 + index, 1);
+        _cursor_layout->addWidget(_curpos_label, 6 + index, 1, 1, 4);
         _cursor_layout->addWidget(_space_label, 6 + index, 2);
 
         connect(_cursor_pushButton, SIGNAL(clicked()), this, SLOT(goto_cursor()));

@@ -482,6 +482,10 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         sr_dbg("%s: setting INSTANT mode to %d", __func__,
                devc->instant);
         ret = SR_OK;
+    } else if (id == SR_CONF_HORIZ_TRIGGERPOS) {
+        ret = SR_OK;
+    } else if (id == SR_CONF_TRIGGER_HOLDOFF) {
+        ret = SR_OK;
     } else if (id == SR_CONF_EN_CH) {
         ch->enabled = g_variant_get_boolean(data);
         sr_dbg("%s: setting ENABLE of channel %d to %d", __func__,

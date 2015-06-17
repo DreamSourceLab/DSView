@@ -29,6 +29,7 @@
 #include <QSpinBox>
 #include <QButtonGroup>
 #include <QScrollArea>
+#include <QComboBox>
 
 #include <vector>
 
@@ -59,6 +60,7 @@ signals:
 
 private slots:
     void pos_changed(int pos);
+    void hold_changed(int hold);
     void source_changed();
     void type_changed();
 
@@ -68,6 +70,10 @@ private:
     SigSession &_session;
 
     QWidget *_widget;
+
+    QComboBox *holdoff_comboBox;
+    QSpinBox *holdoff_spinBox;
+    QSlider *holdoff_slider;
 
     QSpinBox *position_spinBox;
     QSlider *position_slider;
