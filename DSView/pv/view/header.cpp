@@ -272,7 +272,8 @@ void Header::mousePressEvent(QMouseEvent *event)
         } else if (action == Trace::CHEN && mTrace) {
             boost::shared_ptr<view::DsoSignal> dsoSig;
             if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(mTrace)) {
-                dsoSig->set_enable(!dsoSig->enabled());
+                if (!_view.session().get_data_lock())
+                    dsoSig->set_enable(!dsoSig->enabled());
             }
         } else if (action == Trace::ACDC && mTrace) {
             boost::shared_ptr<view::DsoSignal> dsoSig;

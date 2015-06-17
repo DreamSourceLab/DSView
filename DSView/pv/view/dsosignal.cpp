@@ -203,7 +203,7 @@ void DsoSignal::set_enable(bool enable)
     if ((strcmp(_dev_inst->dev_inst()->driver->name, "DSLogic") == 0) &&
          get_index() == 0)
         return;
-    _view->session().refresh();
+    _view->session().refresh(INT_MAX);
     set_vDialActive(false);
     _dev_inst->set_config(_probe, NULL, SR_CONF_EN_CH,
                           g_variant_new_boolean(enable));
@@ -237,6 +237,7 @@ void DsoSignal::set_enable(bool enable)
     _view->set_sample_limit(sample_limit, true);
     _view->set_need_update(true);
     _view->update();
+    _view->session().refresh(800);
 }
 
 bool DsoSignal::get_vDialActive() const
@@ -300,7 +301,8 @@ void DsoSignal::set_hDialActive(bool active)
 
 bool DsoSignal::go_hDialPre(bool setted)
 {
-    if (!_hDial->isMin()) {
+    int ch_num = _view->session().get_ch_num(SR_CHANNEL_DSO);
+    if (ch_num != 0 && !_hDial->isMin()) {
         uint64_t sample_rate = _view->session().get_device()->get_sample_rate();
         const uint64_t min_div = std::pow(10.0, 9.0) / sample_rate;
         if (_view->session().get_capture_state() != SigSession::Running &&
@@ -310,11 +312,10 @@ bool DsoSignal::go_hDialPre(bool setted)
         } else if ((_view->session().get_capture_state() == SigSession::Running ||
                     _data->get_snapshots().empty()) &&
                    !_view->session().get_instant()) {
-            _view->session().refresh();
+            _view->session().refresh(100);
             _hDial->set_sel(_hDial->get_sel() - 1);
 
             if (!setted) {
-                int ch_num = _view->session().get_ch_num(SR_CHANNEL_DSO);
                 uint64_t sample_limit = _view->session().get_device()->get_sample_limit();
                 GVariant* gvar;
                 uint64_t max_sample_rate;
@@ -349,9 +350,11 @@ bool DsoSignal::go_hDialPre(bool setted)
 
 bool DsoSignal::go_hDialCur()
 {
-    _view->session().refresh();
-
     int ch_num = _view->session().get_ch_num(SR_CHANNEL_DSO);
+    if (ch_num == 0)
+        return false;
+
+    _view->session().refresh(100);
     uint64_t sample_limit = _view->session().get_device()->get_sample_limit();
     GVariant* gvar;
     uint64_t max_sample_rate;
@@ -377,19 +380,18 @@ bool DsoSignal::go_hDialCur()
 
 bool DsoSignal::go_hDialNext(bool setted)
 {
-    if (!_hDial->isMax()) {
+    int ch_num = _view->session().get_ch_num(SR_CHANNEL_DSO);
+    if (ch_num != 0 && !_hDial->isMax()) {
         if (_view->session().get_capture_state() != SigSession::Running &&
             !_data->get_snapshots().empty()) {
             _hDial->set_sel(_hDial->get_sel() + 1);
         } else if ((_view->session().get_capture_state() == SigSession::Running ||
                     _data->get_snapshots().empty()) &&
                    !_view->session().get_instant()) {
-            _view->session().refresh();
+            _view->session().refresh(100);
             _hDial->set_sel(_hDial->get_sel() + 1);
 
             if (!setted) {
-                int ch_num = _view->session().get_ch_num(SR_CHANNEL_DSO);
-
                 uint64_t sample_limit = _view->session().get_device()->get_sample_limit();
 
                 GVariant* gvar;

@@ -98,8 +98,12 @@ SigSession::SigSession(DeviceManager &device_manager) :
 	register_hotplug_callback();
     _view_timer.stop();
     _view_timer.setSingleShot(true);
+    _refresh_timer.stop();
+    _refresh_timer.setSingleShot(true);
+    _data_lock = false;
     connect(this, SIGNAL(start_timer(int)), &_view_timer, SLOT(start(int)));
     connect(&_view_timer, SIGNAL(timeout()), this, SLOT(refresh()));
+    connect(&_refresh_timer, SIGNAL(timeout()), this, SLOT(data_unlock()));
 }
 
 SigSession::~SigSession()
@@ -814,7 +818,7 @@ void SigSession::reload()
     signals_changed();
 }
 
-void SigSession::refresh()
+void SigSession::refresh(int holdtime)
 {
     if (_logic_data) {
         _logic_data->clear();
@@ -829,6 +833,18 @@ void SigSession::refresh()
         _cur_analog_snapshot.reset();
     }
     data_updated();
+    _data_lock = true;
+    _refresh_timer.start(holdtime);
+}
+
+void SigSession::data_unlock()
+{
+    _data_lock = false;
+}
+
+bool SigSession::get_data_lock()
+{
+    return _data_lock;
 }
 
 void SigSession::feed_in_meta(const sr_dev_inst *sdi,
@@ -986,6 +1002,9 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
 {
 	assert(sdi);
 	assert(packet);
+
+    if (_data_lock)
+        return;
 
 	switch (packet->type) {
 	case SR_DF_HEADER:

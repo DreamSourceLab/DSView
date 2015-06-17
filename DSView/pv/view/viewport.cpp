@@ -388,6 +388,8 @@ void Viewport::mousePressEvent(QMouseEvent *event)
         const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
         BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
             assert(s);
+            if (!s->enabled())
+                continue;
             boost::shared_ptr<DsoSignal> dsoSig;
             if ((dsoSig = dynamic_pointer_cast<DsoSignal>(s)) &&
                  dsoSig->get_trig_rect(0, _view.get_view_width()).contains(_mouse_point)) {

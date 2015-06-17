@@ -1430,7 +1430,14 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 
         if (sdi->mode == DSO) {
             ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, ch, SR_CONF_EN_CH));
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 0, SR_CONF_SAMPLERATE));
+            uint16_t channel_cnt = 0;
+            GSList *l;
+            for (l = sdi->channels; l; l = l->next) {
+                struct sr_channel *probe = (struct sr_channel *)l->data;
+                channel_cnt += probe->enabled;
+            }
+            if (channel_cnt != 0)
+                ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 0, SR_CONF_SAMPLERATE));
         }
         if (ret == SR_OK)
             sr_dbg("%s: setting ENABLE of channel %d to %d",
