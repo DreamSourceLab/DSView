@@ -92,10 +92,14 @@ SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
     _icon_stop(":/icons/stop_cn.png"),
     _icon_start(":/icons/start_cn.png"),
     _icon_instant(":/icons/instant_cn.png"),
+    _icon_start_dis(":/icons/start_dis_cn.png"),
+    _icon_instant_dis(":/icons/instant_dis_cn.png"),
     #else
     _icon_stop(":/icons/stop.png"),
     _icon_start(":/icons/start.png"),
     _icon_instant(":/icons/instant.png"),
+    _icon_start_dis(":/icons/start_dis.png"),
+    _icon_instant_dis(":/icons/instant_dis.png"),
     #endif
     _run_stop_button(this),
     _instant_button(this),
@@ -295,10 +299,13 @@ void SamplingBar::update_sample_rate()
 
 void SamplingBar::set_sampling(bool sampling)
 {
-    if (_instant)
+    if (_instant) {
         _instant_button.setIcon(sampling ? _icon_stop : _icon_instant);
-    else
+        _run_stop_button.setIcon(sampling ? _icon_start_dis : _icon_start);
+    } else {
         _run_stop_button.setIcon(sampling ? _icon_stop : _icon_start);
+        _instant_button.setIcon(sampling ? _icon_instant_dis : _icon_instant);
+    }
 
     if (!sampling) {
         g_usleep(100000);

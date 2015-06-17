@@ -140,6 +140,8 @@ private:
     QIcon _icon_stop;
     QIcon _icon_start;
     QIcon _icon_instant;
+    QIcon _icon_start_dis;
+    QIcon _icon_instant_dis;
 	QToolButton _run_stop_button;
     QToolButton _instant_button;
 

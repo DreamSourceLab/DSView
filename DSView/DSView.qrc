@@ -51,5 +51,9 @@
         <file>icons/trigger_cn.png</file>
         <file>icons/trigger_dis_cn.png</file>
         <file>icons/protocol_cn.png</file>
+        <file>icons/instant_dis.png</file>
+        <file>icons/instant_dis_cn.png</file>
+        <file>icons/start_dis.png</file>
+        <file>icons/start_dis_cn.png</file>
     </qresource>
 </RCC>

@@ -942,6 +942,15 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
 
     if (!_cur_dso_snapshot)
     {
+        // reset scale of dso signal
+        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
+        {
+            assert(s);
+            boost::shared_ptr<view::DsoSignal> dsoSig;
+            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))
+                dsoSig->set_scale(dsoSig->get_view_rect().height() / 256.0f);
+        }
+
         // Create a new data snapshot
         _cur_dso_snapshot = boost::shared_ptr<data::DsoSnapshot>(
                     new data::DsoSnapshot(dso, _dev_inst->get_sample_limit(), get_ch_num(SR_CHANNEL_DSO), _instant));

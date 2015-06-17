@@ -738,9 +738,6 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right)
             _data->get_snapshots();
         if (snapshots.empty())
             return;
-
-        if (_view->session().get_capture_state() == SigSession::Running)
-            _scale = height * 1.0f / 256;
         const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
             snapshots.front();
 
