@@ -198,6 +198,11 @@ void DsoSignal::set_scale(float scale)
 	_scale = scale;
 }
 
+float DsoSignal::get_scale()
+{
+    return _scale;
+}
+
 void DsoSignal::set_enable(bool enable)
 {
     if ((strcmp(_dev_inst->dev_inst()->driver->name, "DSLogic") == 0) &&
@@ -845,7 +850,9 @@ void DsoSignal::paint_trace(QPainter &p,
         const uint8_t *const samples = snapshot->get_samples(start, end, get_index());
         assert(samples);
 
-        p.setPen(_colour);
+        QColor trace_colour = _colour;
+        trace_colour.setAlpha(100);
+        p.setPen(trace_colour);
         //p.setPen(QPen(_colour, 3, Qt::SolidLine));
 
         QPointF *points = new QPointF[sample_count];
@@ -899,7 +906,9 @@ void DsoSignal::paint_envelope(QPainter &p,
 
     p.setPen(QPen(NoPen));
     //p.setPen(QPen(_colour, 2, Qt::SolidLine));
-    p.setBrush(_colour);
+    QColor envelope_colour = _colour;
+    envelope_colour.setAlpha(150);
+    p.setBrush(envelope_colour);
 
 	QRectF *const rects = new QRectF[e.length];
 	QRectF *rect = rects;
@@ -1019,7 +1028,9 @@ void DsoSignal::paint_measure(QPainter &p)
                                 abs(_period) > 1000 ? QString::number(_period/1000, 'f', 2) + "uS" : QString::number(_period, 'f', 2) + "nS";
         QString freq_string = abs(_period) > 1000000 ? QString::number(1000000000/_period, 'f', 2) + "Hz" :
                               abs(_period) > 1000 ? QString::number(1000000/_period, 'f', 2) + "kHz" : QString::number(1000/_period, 'f', 2) + "MHz";
-        p.setPen(_colour);
+        QColor measure_colour = _colour;
+        measure_colour.setAlpha(180);
+        p.setPen(measure_colour);
         p.drawText(QRectF(0, 100*index + UpMargin, get_view_rect().width()*0.9, 20), Qt::AlignRight | Qt::AlignVCenter, tr("Max: ")+max_string+"        ");
         p.drawText(QRectF(0, 100*index + UpMargin + 20, get_view_rect().width()*0.9, 20), Qt::AlignRight | Qt::AlignVCenter, tr("Min: ")+min_string+"        ");
         p.drawText(QRectF(0, 100*index + UpMargin + 40, get_view_rect().width()*0.9, 20), Qt::AlignRight | Qt::AlignVCenter, tr("Period: ")+period_string+"        ");

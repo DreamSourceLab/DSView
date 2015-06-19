@@ -206,7 +206,7 @@ void MainWindow::setup_ui()
     _measure_dock->setFeatures(QDockWidget::DockWidgetMovable);
     _measure_dock->setAllowedAreas(Qt::RightDockWidgetArea);
     _measure_dock->setVisible(false);
-    dock::MeasureDock *_measure_widget = new dock::MeasureDock(_measure_dock, *_view, _session);
+    _measure_widget = new dock::MeasureDock(_measure_dock, *_view, _session);
     _measure_dock->setWidget(_measure_widget);
     // search dock
     _search_dock=new QDockWidget(tr("Search..."), this);

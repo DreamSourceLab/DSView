@@ -51,8 +51,14 @@ public:
     static const double HitCursorTimeMargin;
     static const int DragTimerInterval = 100;
     static const int MinorDragOffsetUp = 100;
+    static const int DsoMeasureStages = 3;
     static const double MinorDragRateUp;
     static const double DragDamping;
+    enum MeasureType {
+        NO_MEASURE,
+        LOGIC_FREQ,
+        DSO_FREQ
+    };
 
 public:
 	explicit Viewport(View &parent);
@@ -133,10 +139,25 @@ private:
 
     uint64_t _hover_index;
     bool _hover_hit;
+    uint16_t _hover_sig_index;
+    double _hover_sig_value;
 
     QTime _time;
     QTimer _drag_timer;
     int _drag_strength;
+
+    bool _dso_xm;
+    int _dso_xm_stage;
+    int _dso_xm_y;
+    uint64_t _dso_xm_index[DsoMeasureStages];
+
+    bool _dso_ym;
+    bool _dso_ym_done;
+    uint16_t _dso_ym_sig_index;
+    double _dso_ym_sig_value;
+    uint64_t _dso_ym_index;
+    int _dso_ym_start;
+    int _dso_ym_end;
 };
 
 } // namespace view

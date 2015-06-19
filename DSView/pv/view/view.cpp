@@ -785,6 +785,21 @@ int View::get_view_width()
     return view_width;
 }
 
+int View::get_view_height()
+{
+    int view_height = 0;
+    if (_session.get_device()->dev_inst()->mode == DSO) {
+        const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
+        BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+            view_height = max((double)view_height, s->get_view_rect().height());
+        }
+    } else {
+        view_height = _viewport->width();
+    }
+
+    return view_height;
+}
+
 double View::get_min_offset()
 {
     return -(_scale * (get_view_width() * (1 - MaxViewRate)));

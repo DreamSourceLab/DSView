@@ -65,7 +65,6 @@ public:
     ~MeasureDock();
 
     void paintEvent(QPaintEvent *);
-
 signals:
 
 private slots:

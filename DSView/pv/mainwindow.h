@@ -165,6 +165,7 @@ private:
     dock::TriggerDock *_trigger_widget;
     dock::DsoTriggerDock *_dso_trigger_widget;
     QDockWidget *_measure_dock;
+    dock::MeasureDock *_measure_widget;
     QDockWidget *_search_dock;
     dock::SearchDock * _search_widget;
 

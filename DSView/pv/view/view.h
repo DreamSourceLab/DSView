@@ -175,6 +175,7 @@ public:
     void on_state_changed(bool stop);
 
     int get_view_width();
+    int get_view_height();
 
     void update_sample(bool instant);
 

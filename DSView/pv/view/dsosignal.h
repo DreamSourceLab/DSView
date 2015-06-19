@@ -73,6 +73,7 @@ public:
     void set_view(pv::view::View *view);
 
 	void set_scale(float scale);
+    float get_scale();
 
     /**
      *
