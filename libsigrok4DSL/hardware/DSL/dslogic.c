@@ -47,6 +47,10 @@ static struct sr_dev_mode mode_list[] = {
     {"OSC", DSO},
 };
 
+static struct sr_dev_mode pro_mode_list[] = {
+    {"LA", LOGIC},
+};
+
 static const char *opmodes[] = {
     "Normal",
     "Internal Test",
@@ -833,15 +837,20 @@ static GSList *dev_list(void)
 	return ((struct drv_context *)(di->priv))->instances;
 }
 
-static GSList *dev_mode_list(void)
+static GSList *dev_mode_list(const struct sr_dev_inst *sdi)
 {
     GSList *l = NULL;
     int i;
 
-    for(i = 0; i < ARRAY_SIZE(mode_list); i++) {
-        l = g_slist_append(l, &mode_list[i]);
+    if (strcmp(sdi->model, "DSLogic Pro") == 0) {
+        for(i = 0; i < ARRAY_SIZE(pro_mode_list); i++) {
+            l = g_slist_append(l, &pro_mode_list[i]);
+        }
+    } else {
+        for(i = 0; i < ARRAY_SIZE(mode_list); i++) {
+            l = g_slist_append(l, &mode_list[i]);
+        }
     }
-
     return l;
 }
 

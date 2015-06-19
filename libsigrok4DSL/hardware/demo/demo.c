@@ -266,8 +266,9 @@ static GSList *hw_dev_list(void)
 	return ((struct drv_context *)(di->priv))->instances;
 }
 
-static GSList *hw_dev_mode_list(void)
+static GSList *hw_dev_mode_list(const struct sr_dev_inst *sdi)
 {
+    (void)sdi;
     GSList *l = NULL;
     int i;
 

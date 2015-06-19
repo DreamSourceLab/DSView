@@ -1,13 +1,17 @@
 {
-    "Device": "DSCope",
+    "Device": "DSLogic",
     "DeviceMode": 1,
+    "Filter Targets": "None",
     "Horizontal trigger position": "0",
     "Operation Mode": "Normal",
     "Sample count": "1048576",
     "Sample rate": "100000000",
-    "Time base": "10000",
+    "Threshold Level": "1.8/2.5/3.3V Level",
+    "Trigger hold off": "0",
     "Trigger slope": "0",
     "Trigger source": "0",
+    "Using Clock Negedge": 0,
+    "Using External Clock": 0,
     "channel": [
         {
             "colour": "#eeb211",

@@ -369,10 +369,10 @@ SR_API GSList *sr_dev_list(const struct sr_dev_driver *driver)
 		return NULL;
 }
 
-SR_API GSList *sr_dev_mode_list(const struct sr_dev_driver *driver)
+SR_API GSList *sr_dev_mode_list(const struct sr_dev_inst *sdi)
 {
-    if (driver && driver->dev_mode_list)
-        return driver->dev_mode_list();
+    if (sdi && sdi->driver && sdi->driver->dev_mode_list)
+        return sdi->driver->dev_mode_list(sdi);
     else
         return NULL;
 }

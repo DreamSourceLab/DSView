@@ -180,7 +180,7 @@ GSList* DevInst::get_dev_mode_list()
     assert(_owner);
     sr_dev_inst *const sdi = dev_inst();
     assert(sdi);
-    return sr_dev_mode_list(sdi->driver);
+    return sr_dev_mode_list(sdi);
 }
 
 bool DevInst::is_trigger_enabled() const

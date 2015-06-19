@@ -27,6 +27,7 @@
 #include <QToolBar>
 #include <QToolButton>
 #include <QAction>
+#include <QMenu>
 
 #include "../sigsession.h"
 
@@ -59,6 +60,7 @@ signals:
 private slots:
     void on_actionLoad_triggered();
     void on_actionStore_triggered();
+    void on_actionDefault_triggered();
     void on_actionOpen_triggered();
     void on_actionSave_triggered();
     void on_actionCapture_triggered();
@@ -70,8 +72,13 @@ private:
 
     QToolButton _file_button;
 
+    QMenu *_menu;
+
+    QMenu *_menu_session;
     QAction *_action_load;
     QAction *_action_store;
+    QAction *_action_default;
+
     QAction *_action_open;
     QAction *_action_save;
     QAction *_action_export;

@@ -102,7 +102,7 @@ SigSession::SigSession(DeviceManager &device_manager) :
     _refresh_timer.setSingleShot(true);
     _data_lock = false;
     connect(this, SIGNAL(start_timer(int)), &_view_timer, SLOT(start(int)));
-    connect(&_view_timer, SIGNAL(timeout()), this, SLOT(refresh()));
+    //connect(&_view_timer, SIGNAL(timeout()), this, SLOT(refresh()));
     connect(&_refresh_timer, SIGNAL(timeout()), this, SLOT(data_unlock()));
 }
 

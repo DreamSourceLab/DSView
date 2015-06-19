@@ -966,7 +966,7 @@ struct sr_dev_driver {
 	int (*cleanup) (void);
 	GSList *(*scan) (GSList *options);
 	GSList *(*dev_list) (void);
-    GSList *(*dev_mode_list) (void);
+    GSList *(*dev_mode_list) (const struct sr_dev_inst *sdi);
     int (*dev_clear) (void);
 
     int (*config_get) (int id, GVariant **data,

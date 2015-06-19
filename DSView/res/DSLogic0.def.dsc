@@ -7,6 +7,7 @@
     "Sample count": "16777216",
     "Sample rate": "100000000",
     "Threshold Level": 1,
+    "Trigger hold off": "0",
     "Trigger slope": "0",
     "Trigger source": "0",
     "Using Clock Negedge": 0,

@@ -767,8 +767,9 @@ static GSList *dev_list(void)
 	return ((struct drv_context *)(di->priv))->instances;
 }
 
-static GSList *dev_mode_list(void)
+static GSList *dev_mode_list(const struct sr_dev_inst *sdi)
 {
+    (void)sdi;
     GSList *l = NULL;
     int i;
 

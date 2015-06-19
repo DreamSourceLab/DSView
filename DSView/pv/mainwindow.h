@@ -72,6 +72,9 @@ public:
 		const char *open_file_name = NULL,
 		QWidget *parent = 0);
 
+protected:
+    void closeEvent(QCloseEvent *event);
+
 private:
 	void setup_ui();
 

@@ -6,52 +6,13 @@
     "Operation Mode": "Normal",
     "Sample count": "16777216",
     "Sample rate": "100000000",
-    "Threshold Level": 1,
+    "Threshold Level": "1.8/2.5/3.3V Level",
+    "Trigger hold off": "0",
     "Trigger slope": "0",
     "Trigger source": "0",
     "Using Clock Negedge": 0,
     "Using External Clock": 0,
     "channel": [
-        {
-            "colour": "#16191a",
-            "enabled": true,
-            "index": 0,
-            "name": "0",
-            "strigger": 0,
-            "type": 10000
-        },
-        {
-            "colour": "#8f5202",
-            "enabled": true,
-            "index": 1,
-            "name": "1",
-            "strigger": 0,
-            "type": 10000
-        },
-        {
-            "colour": "#cc0000",
-            "enabled": true,
-            "index": 2,
-            "name": "2",
-            "strigger": 0,
-            "type": 10000
-        },
-        {
-            "colour": "#f57900",
-            "enabled": true,
-            "index": 3,
-            "name": "3",
-            "strigger": 0,
-            "type": 10000
-        },
-        {
-            "colour": "#edd400",
-            "enabled": true,
-            "index": 4,
-            "name": "4",
-            "strigger": 0,
-            "type": 10000
-        },
         {
             "colour": "#73d216",
             "enabled": true,
@@ -61,82 +22,10 @@
             "type": 10000
         },
         {
-            "colour": "#3465a4",
-            "enabled": true,
-            "index": 6,
-            "name": "6",
-            "strigger": 0,
-            "type": 10000
-        },
-        {
-            "colour": "#75507b",
-            "enabled": true,
-            "index": 7,
-            "name": "7",
-            "strigger": 0,
-            "type": 10000
-        },
-        {
-            "colour": "#16191a",
-            "enabled": true,
-            "index": 8,
-            "name": "8",
-            "strigger": 0,
-            "type": 10000
-        },
-        {
-            "colour": "#8f5202",
-            "enabled": true,
-            "index": 9,
-            "name": "9",
-            "strigger": 0,
-            "type": 10000
-        },
-        {
-            "colour": "#cc0000",
-            "enabled": true,
-            "index": 10,
-            "name": "10",
-            "strigger": 0,
-            "type": 10000
-        },
-        {
-            "colour": "#f57900",
-            "enabled": true,
-            "index": 11,
-            "name": "11",
-            "strigger": 0,
-            "type": 10000
-        },
-        {
-            "colour": "#edd400",
-            "enabled": true,
-            "index": 12,
-            "name": "12",
-            "strigger": 0,
-            "type": 10000
-        },
-        {
             "colour": "#73d216",
             "enabled": true,
             "index": 13,
             "name": "13",
-            "strigger": 0,
-            "type": 10000
-        },
-        {
-            "colour": "#3465a4",
-            "enabled": true,
-            "index": 14,
-            "name": "14",
-            "strigger": 0,
-            "type": 10000
-        },
-        {
-            "colour": "#75507b",
-            "enabled": true,
-            "index": 15,
-            "name": "15",
             "strigger": 0,
             "type": 10000
         }

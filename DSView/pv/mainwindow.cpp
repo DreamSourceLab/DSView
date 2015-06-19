@@ -317,7 +317,10 @@ void MainWindow::update_device_list()
 
     if (strcmp(selected_device->dev_inst()->driver->name, "demo") != 0) {
         _logo_bar->dsl_connected(true);
-        QString ses_name = config_path + QString::fromLocal8Bit(selected_device->dev_inst()->driver->name) + "_ini.dsc";
+        QString ses_name = config_path +
+                           QString::fromLocal8Bit(selected_device->dev_inst()->driver->name) +
+                           QString::number(selected_device->dev_inst()->mode) +
+                           ".dsc";
         load_session(ses_name);
     } else {
         _logo_bar->dsl_connected(false);
@@ -484,6 +487,19 @@ void MainWindow::capture_state_changed(int state)
         }
 #endif
     }
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    QDir dir(QCoreApplication::applicationDirPath());
+    if (dir.cd("res")) {
+        QString driver_name = _session.get_device()->dev_inst()->driver->name;
+        QString mode_name = QString::number(_session.get_device()->dev_inst()->mode);
+        QString file_name = dir.absolutePath() + "/" + driver_name + mode_name + ".dsc";
+        if (!file_name.isEmpty())
+            store_session(file_name);
+    }
+    event->accept();
 }
 
 void MainWindow::on_protocol(bool visible)
