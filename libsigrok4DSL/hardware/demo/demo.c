@@ -99,6 +99,7 @@ struct dev_context {
     int stop;
     uint64_t timebase;
     gboolean instant;
+    gboolean data_lock;
 
     int trigger_stage;
     uint16_t trigger_mask;
@@ -232,6 +233,7 @@ static GSList *hw_scan(GSList *options)
 	devc->limit_msec = 0;
     devc->sample_generator = PATTERN_SINE;
     devc->timebase = 10000;
+    devc->data_lock = FALSE;
 
 	sdi->priv = devc;
 
@@ -368,6 +370,9 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_EN_CH:
         *data = g_variant_new_uint64(ch->enabled);
         break;
+    case SR_CONF_DATALOCK:
+        *data = g_variant_new_boolean(devc->data_lock);
+        break;
     case SR_CONF_MAX_DSO_SAMPLERATE:
         *data = g_variant_new_uint64(DEMO_MAX_DSO_SAMPLERATE);
         break;
@@ -461,7 +466,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         }
         sr_dbg("%s: setting mode to %d", __func__, sdi->mode);
     }else if (id == SR_CONF_PATTERN_MODE) {
-		stropt = g_variant_get_string(data, NULL);
+        stropt = g_variant_get_string(data, NULL);
         ret = SR_OK;
         if (!strcmp(stropt, pattern_strings[PATTERN_SINE])) {
             devc->sample_generator = PATTERN_SINE;
@@ -491,6 +496,11 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         ch->enabled = g_variant_get_boolean(data);
         sr_dbg("%s: setting ENABLE of channel %d to %d", __func__,
                ch->index, ch->enabled);
+        ret = SR_OK;
+    } else if (id == SR_CONF_DATALOCK) {
+        devc->data_lock = g_variant_get_boolean(data);
+        sr_dbg("%s: setting data lock to %d", __func__,
+               devc->data_lock);
         ret = SR_OK;
     } else if (id == SR_CONF_VDIV) {
         ch->vdiv = g_variant_get_uint64(data);

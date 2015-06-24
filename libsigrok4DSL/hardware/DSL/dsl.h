@@ -172,7 +172,7 @@ struct DSL_context {
     uint32_t trigger_holdoff;
     gboolean zero;
     gboolean stream;
-    gboolean lock;
+    gboolean data_lock;
 
 	int num_samples;
 	int submitted_transfers;

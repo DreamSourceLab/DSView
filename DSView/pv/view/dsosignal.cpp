@@ -209,6 +209,8 @@ void DsoSignal::set_enable(bool enable)
          get_index() == 0)
         return;
     _view->session().refresh(INT_MAX);
+    _dev_inst->set_config(_probe, NULL, SR_CONF_DATALOCK,
+                          g_variant_new_boolean(true));
     set_vDialActive(false);
     _dev_inst->set_config(_probe, NULL, SR_CONF_EN_CH,
                           g_variant_new_boolean(enable));
@@ -240,8 +242,9 @@ void DsoSignal::set_enable(bool enable)
 
     _view->set_sample_rate(sample_rate, true);
     _view->set_sample_limit(sample_limit, true);
-    _view->set_need_update(true);
-    _view->update();
+
+    _dev_inst->set_config(_probe, NULL, SR_CONF_DATALOCK,
+                          g_variant_new_boolean(false));
     _view->session().refresh(800);
 }
 
@@ -851,7 +854,7 @@ void DsoSignal::paint_trace(QPainter &p,
         assert(samples);
 
         QColor trace_colour = _colour;
-        trace_colour.setAlpha(100);
+        trace_colour.setAlpha(150);
         p.setPen(trace_colour);
         //p.setPen(QPen(_colour, 3, Qt::SolidLine));
 

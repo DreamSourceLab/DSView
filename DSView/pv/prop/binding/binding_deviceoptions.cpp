@@ -105,6 +105,7 @@ DeviceOptions::DeviceOptions(struct sr_dev_inst *sdi) :
         case SR_CONF_CLOCK_TYPE:
         case SR_CONF_CLOCK_EDGE:
         case SR_CONF_INSTANT:
+        case SR_CONF_DATALOCK:
             bind_bool(name, key);
             break;
 

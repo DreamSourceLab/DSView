@@ -659,6 +659,7 @@ static struct DSL_context *DSLogic_dev_new(void)
     devc->zero = FALSE;
     devc->stream = FALSE;
     devc->mstatus_valid = FALSE;
+    devc->data_lock = FALSE;
 
 	return devc;
 }
@@ -1233,6 +1234,12 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
             return SR_ERR;
         *data = g_variant_new_boolean(ch->enabled);
         break;
+    case SR_CONF_DATALOCK:
+        if (!sdi)
+            return SR_ERR;
+        devc = sdi->priv;
+        *data = g_variant_new_boolean(devc->data_lock);
+        break;
     case SR_CONF_TRIGGER_SLOPE:
         if (!sdi)
             return SR_ERR;
@@ -1582,6 +1589,9 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         else
             sr_dbg("%s: setting ENABLE of channel %d to %d",
                 __func__, ch->index, ch->enabled);
+    } else if (id == SR_CONF_DATALOCK) {
+        devc->data_lock = g_variant_get_boolean(data);
+        ret = SR_OK;
     } else if (id == SR_CONF_VDIV) {
         ch->vdiv = g_variant_get_uint64(data);
         if (sdi->mode == DSO) {
@@ -1931,7 +1941,9 @@ static void receive_transfer(struct libusb_transfer *transfer)
         break;
     }
 
-    if (transfer->actual_length == 0 || packet_has_error) {
+    if (transfer->actual_length == 0 ||
+        packet_has_error ||
+        devc->data_lock) {
         devc->empty_transfer_count++;
         if (devc->empty_transfer_count > MAX_EMPTY_TRANSFERS) {
             /*

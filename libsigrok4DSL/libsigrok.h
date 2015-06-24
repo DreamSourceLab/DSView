@@ -774,6 +774,9 @@ enum {
     /** Channel enable for dso channel. */
     SR_CONF_EN_CH,
 
+    /** Data lock */
+    SR_CONF_DATALOCK,
+
     /** probe factor for dso channel. */
     SR_CONF_FACTOR,
 
