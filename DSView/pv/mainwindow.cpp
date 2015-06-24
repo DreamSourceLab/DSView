@@ -315,7 +315,8 @@ void MainWindow::update_device_list()
             errorMessage, infoMessage));
     }
 
-    if (strcmp(selected_device->dev_inst()->driver->name, "demo") != 0) {
+    if (strcmp(selected_device->dev_inst()->driver->name, "demo") != 0 &&
+        strcmp(selected_device->dev_inst()->driver->name, "virtual-session") != 0) {
         _logo_bar->dsl_connected(true);
         QString ses_name = config_path +
                            QString::fromUtf8(selected_device->dev_inst()->driver->name) +
