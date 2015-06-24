@@ -590,6 +590,7 @@ struct sr_config_info {
 	int datatype;
 	char *id;
 	char *name;
+    char *label;
 	char *description;
 };
 

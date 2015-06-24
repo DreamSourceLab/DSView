@@ -34,7 +34,7 @@ using std::string;
 namespace pv {
 namespace device {
 
-InputFile::InputFile(const std::string &path) :
+InputFile::InputFile(QString path) :
 	File(path),
 	_input(NULL)
 {
@@ -71,8 +71,7 @@ void InputFile::release()
 	_input = NULL;
 }
 
-sr_input_format* InputFile::determine_input_file_format(
-	const string &filename)
+sr_input_format* InputFile::determine_input_file_format(const QString filename)
 {
 	int i;
 
@@ -85,7 +84,7 @@ sr_input_format* InputFile::determine_input_file_format(
 
 	/* Otherwise, try to find an input module that can handle this file. */
 	for (i = 0; inputs[i]; i++) {
-		if (inputs[i]->format_match(filename.c_str()))
+        if (inputs[i]->format_match(filename.toLocal8Bit().data()))
 			break;
 	}
 
@@ -98,19 +97,19 @@ sr_input_format* InputFile::determine_input_file_format(
 	return inputs[i];
 }
 
-sr_input* InputFile::load_input_file_format(const string &filename,
+sr_input* InputFile::load_input_file_format(const QString filename,
 	sr_input_format *format)
 {
 	struct stat st;
 	sr_input *in;
 
 	if (!format && !(format =
-		determine_input_file_format(filename.c_str()))) {
+        determine_input_file_format(filename))) {
 		/* The exact cause was already logged. */
 		throw tr("Failed to load file");
 	}
 
-	if (stat(filename.c_str(), &st) == -1)
+    if (stat(filename.toLocal8Bit().data(), &st) == -1)
 		throw tr("Failed to load file");
 
 	/* Initialize the input module. */
@@ -121,7 +120,7 @@ sr_input* InputFile::load_input_file_format(const string &filename,
 	in->format = format;
 	in->param = NULL;
 	if (in->format->init &&
-		in->format->init(in, filename.c_str()) != SR_OK) {
+        in->format->init(in, filename.toLocal8Bit().data()) != SR_OK) {
 		throw tr("Failed to load file");
 	}
 
@@ -137,7 +136,7 @@ void InputFile::run()
 	assert(_input);
 	assert(_input->format);
 	assert(_input->format->loadfile);
-	_input->format->loadfile(_input, _path.c_str());
+    _input->format->loadfile(_input, _path.toLocal8Bit().data());
 }
 
 } // device

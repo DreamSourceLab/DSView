@@ -35,7 +35,7 @@ namespace device {
 class InputFile : public File
 {
 public:
-	InputFile(const std::string &path);
+    InputFile(QString path);
 
 	sr_dev_inst* dev_inst() const;
 
@@ -55,9 +55,9 @@ private:
 	 *         or NULL if no input format was selected or auto-detected.
 	 */
 	static sr_input_format* determine_input_file_format(
-		const std::string &filename);
+        const QString filename);
 
-	static sr_input* load_input_file_format(const std::string &filename,
+    static sr_input* load_input_file_format(const QString filename,
 		sr_input_format *format);
 private:
 	sr_input *_input;

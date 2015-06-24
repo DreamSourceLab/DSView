@@ -318,7 +318,7 @@ void MainWindow::update_device_list()
     if (strcmp(selected_device->dev_inst()->driver->name, "demo") != 0) {
         _logo_bar->dsl_connected(true);
         QString ses_name = config_path +
-                           QString::fromLocal8Bit(selected_device->dev_inst()->driver->name) +
+                           QString::fromUtf8(selected_device->dev_inst()->driver->name) +
                            QString::number(selected_device->dev_inst()->mode) +
                            ".dsc";
         load_session(ses_name);
@@ -336,7 +336,8 @@ void MainWindow::reload()
 void MainWindow::load_file(QString file_name)
 {
     try {
-        _session.set_file(file_name.toStdString());
+        //_session.set_file(file_name.toStdString());
+        _session.set_file(file_name);
     } catch(QString e) {
         show_session_error(tr("Failed to load ") + file_name, e);
         _session.set_default_device(boost::bind(&MainWindow::session_error, this,
@@ -571,7 +572,7 @@ void MainWindow::on_save()
 
 bool MainWindow::load_session(QString name)
 {
-    QFile sessionFile(name.toStdString().c_str());
+    QFile sessionFile(name);
     if (!sessionFile.open(QIODevice::ReadOnly)) {
         QMessageBox msg(this);
         msg.setText(tr("File Error"));
@@ -582,8 +583,8 @@ bool MainWindow::load_session(QString name)
         return false;
     }
 
-    QByteArray sessionData = sessionFile.readAll();
-    QJsonDocument sessionDoc = QJsonDocument::fromJson(sessionData);
+    QString sessionData = QString::fromUtf8(sessionFile.readAll());
+    QJsonDocument sessionDoc = QJsonDocument::fromJson(sessionData.toUtf8());
     QJsonObject sessionObj = sessionDoc.object();
 
     // check device and mode
@@ -617,7 +618,7 @@ bool MainWindow::load_session(QString name)
             else if (info->datatype == SR_T_FLOAT)
                 _session.get_device()->set_config(NULL, NULL, info->key, g_variant_new_double(sessionObj[info->name].toDouble()));
             else if (info->datatype == SR_T_CHAR)
-                _session.get_device()->set_config(NULL, NULL, info->key, g_variant_new_string(sessionObj[info->name].toString().toLocal8Bit()));
+                _session.get_device()->set_config(NULL, NULL, info->key, g_variant_new_string(sessionObj[info->name].toString().toUtf8()));
         }
     }
     _sampling_bar->update_record_length();
@@ -680,8 +681,8 @@ bool MainWindow::load_session(QString name)
 
 bool MainWindow::store_session(QString name)
 {
-    QFile sessionFile(name.toStdString().c_str());
-    if (!sessionFile.open(QIODevice::WriteOnly)) {
+    QFile sessionFile(name);
+    if (!sessionFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QMessageBox msg(this);
         msg.setText(tr("File Error"));
         msg.setInformativeText(tr("Couldn't open session file to write!"));
@@ -690,6 +691,9 @@ bool MainWindow::store_session(QString name)
         msg.exec();
         return false;
     }
+    QTextStream outStream(&sessionFile);
+    outStream.setCodec("UTF-8");
+    outStream.setGenerateByteOrderMark(true);
 
     GVariant *gvar_opts;
     GVariant *gvar;
@@ -748,8 +752,11 @@ bool MainWindow::store_session(QString name)
         sessionVar["trigger"] = _trigger_widget->get_session();
     }
 
+
     QJsonDocument sessionDoc(sessionVar);
-    sessionFile.write(sessionDoc.toJson());
+    //sessionFile.write(QString::fromUtf8(sessionDoc.toJson()));
+    outStream << QString::fromUtf8(sessionDoc.toJson());
+    sessionFile.close();
     return true;
 }
 

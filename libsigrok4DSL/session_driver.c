@@ -203,11 +203,11 @@ static int config_set(int id, GVariant *data, const struct sr_dev_inst *sdi)
 		sr_info("Setting samplerate to %" PRIu64 ".", vdev->samplerate);
 		break;
 	case SR_CONF_SESSIONFILE:
-		vdev->sessionfile = g_strdup(g_variant_get_string(data, NULL));
+        vdev->sessionfile = g_strdup(g_variant_get_bytestring(data));
 		sr_info("Setting sessionfile to '%s'.", vdev->sessionfile);
 		break;
 	case SR_CONF_CAPTUREFILE:
-		vdev->capturefile = g_strdup(g_variant_get_string(data, NULL));
+        vdev->capturefile = g_strdup(g_variant_get_bytestring(data));
 		sr_info("Setting capturefile to '%s'.", vdev->capturefile);
 		break;
 	case SR_CONF_CAPTURE_UNITSIZE:

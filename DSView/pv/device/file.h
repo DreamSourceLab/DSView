@@ -32,16 +32,16 @@ namespace device {
 class File : public DevInst
 {
 protected:
-	File(const std::string path);
+    File(QString path);
 
 public:
-	static File* create(const std::string &name);
+    static File* create(QString name);
 
 public:
-	std::string format_device_title() const;
+    QString format_device_title() const;
 
 protected:
-	const std::string _path;
+    const QString _path;
 };
 
 } // device

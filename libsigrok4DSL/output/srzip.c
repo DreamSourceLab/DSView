@@ -41,7 +41,7 @@ static int init(struct sr_output *o, GHashTable *options)
 
 	outc = g_malloc0(sizeof(struct out_context));
 	o->priv = outc;
-	outc->filename = g_strdup(g_variant_get_string(g_hash_table_lookup(options, "filename"), NULL));
+    outc->filename = g_strdup(g_variant_get_bytestring(g_hash_table_lookup(options, "filename")));
 	if (strlen(outc->filename) == 0)
 		return SR_ERR_ARG;
 
@@ -303,7 +303,7 @@ static struct sr_option options[] = {
 static const struct sr_option *get_options(void)
 {
 	if (!options[0].def)
-		options[0].def = g_variant_ref_sink(g_variant_new_string(""));
+        options[0].def = g_variant_ref_sink(g_variant_new_string(""));
 
 	return options;
 }

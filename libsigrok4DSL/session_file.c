@@ -182,9 +182,9 @@ SR_API int sr_session_load(const char *filename)
 					sr_dev_open(sdi);
 					sr_session_dev_add(sdi);
 					sdi->driver->config_set(SR_CONF_SESSIONFILE,
-                            g_variant_new_string(filename), sdi, NULL, NULL);
+                            g_variant_new_bytestring(filename), sdi, NULL, NULL);
 					sdi->driver->config_set(SR_CONF_CAPTUREFILE,
-                            g_variant_new_string(val), sdi, NULL, NULL);
+                            g_variant_new_bytestring(val), sdi, NULL, NULL);
 					g_ptr_array_add(capturefiles, val);
 				} else if (!strcmp(keys[j], "samplerate")) {
 					sr_parse_sizestring(val, &tmp_u64);

@@ -338,7 +338,7 @@ SR_API char **sr_parse_triggerstring(const struct sr_dev_inst *sdi,
 		sr_err("%s: Device doesn't support any triggers.", __func__);
 		return NULL;
 	}
-	trigger_types = g_variant_get_string(gvar, NULL);
+    trigger_types = g_variant_get_string(gvar, NULL);
 
 	tokens = g_strsplit(triggerstring, ",", max_probes);
 	for (i = 0; tokens[i]; i++) {

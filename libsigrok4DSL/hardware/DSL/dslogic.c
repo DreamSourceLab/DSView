@@ -415,7 +415,7 @@ static int fpga_config(struct libusb_device_handle *hdl, const char *filename)
 	struct stat f_stat;
 
     sr_info("Configure FPGA using %s", filename);
-    if ((fw = fopen(filename, "rb")) == NULL) {
+    if ((fw = g_fopen(filename, "rb")) == NULL) {
         sr_err("Unable to open FPGA bit file %s for reading: %s",
                filename, strerror(errno));
         return SR_ERR;
@@ -740,7 +740,7 @@ static GSList *scan(GSList *options)
 		src = l->data;
 		switch (src->key) {
         case SR_CONF_CONN:
-			conn = g_variant_get_string(src->data, NULL);
+            conn = g_variant_get_string(src->data, NULL);
 			break;
 		}
 	}
@@ -811,9 +811,11 @@ static GSList *scan(GSList *options)
             sdi->conn = sr_usb_dev_inst_new(libusb_get_bus_number(devlist[i]),
 					libusb_get_device_address(devlist[i]), NULL);
 		} else {
-            char filename[256];
-            sprintf(filename,"%s%s",config_path,prof->firmware);
-            const char *firmware = filename;
+            char *firmware = malloc(strlen(config_path)+strlen(prof->firmware)+1);
+            if (firmware == NULL)
+                return NULL;
+            strcpy(firmware, config_path);
+            strcat(firmware, prof->firmware);
             if (ezusb_upload_firmware(devlist[i], USB_CONFIGURATION,
                 firmware) == SR_OK)
 				/* Store when this device's FW was updated. */
@@ -1057,18 +1059,20 @@ static int dev_open(struct sr_dev_inst *sdi)
         } else {
             /* Takes >= 10ms for the FX2 to be ready for FPGA configure. */
             g_usleep(10 * 1000);
-            char filename[256];
+            char *fpga_bit = malloc(strlen(config_path)+strlen(devc->profile->fpga_bit33)+1);
+            if (fpga_bit == NULL)
+                return SR_ERR_MALLOC;
+            strcpy(fpga_bit, config_path);
             switch(devc->th_level) {
             case SR_TH_3V3:
-                sprintf(filename,"%s%s",config_path,devc->profile->fpga_bit33);
+                strcat(fpga_bit, devc->profile->fpga_bit33);;
                 break;
             case SR_TH_5V0:
-                sprintf(filename,"%s%s",config_path,devc->profile->fpga_bit50);
+                strcat(fpga_bit, devc->profile->fpga_bit50);;
                 break;
             default:
                 return SR_ERR;
             }
-            const char *fpga_bit = filename;
             ret = fpga_config(usb->devhdl, fpga_bit);
             if (ret != SR_OK) {
                 sr_err("Configure FPGA failed!");
@@ -1141,7 +1145,7 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
 			 * upload, so we don't know its (future) address. */
             return SR_ERR;
 		snprintf(str, 128, "%d.%d", usb->bus, usb->address);
-		*data = g_variant_new_string(str);
+        *data = g_variant_new_string(str);
 		break;
     case SR_CONF_LIMIT_SAMPLES:
         if (!sdi)
@@ -1517,18 +1521,20 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         } else {
             /* Takes >= 10ms for the FX2 to be ready for FPGA configure. */
             g_usleep(10 * 1000);
-            char filename[256];
+            char *fpga_bit = malloc(strlen(config_path)+strlen(devc->profile->fpga_bit33)+1);
+            if (fpga_bit == NULL)
+                return SR_ERR_MALLOC;
+            strcpy(fpga_bit, config_path);
             switch(devc->th_level) {
             case SR_TH_3V3:
-                sprintf(filename,"%s%s",config_path,devc->profile->fpga_bit33);
+                strcat(fpga_bit, devc->profile->fpga_bit33);;
                 break;
             case SR_TH_5V0:
-                sprintf(filename,"%s%s",config_path,devc->profile->fpga_bit50);
+                strcat(fpga_bit, devc->profile->fpga_bit50);;
                 break;
             default:
                 return SR_ERR;
             }
-            const char *fpga_bit = filename;
             ret = fpga_config(usb->devhdl, fpga_bit);
             if (ret != SR_OK) {
                 sr_err("Configure FPGA failed!");
@@ -1545,7 +1551,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         else
             sr_dbg("%s: setting threshold voltage to %d failed",
                 __func__, devc->vth);
-    }  else if (id == SR_CONF_FILTER) {
+    } else if (id == SR_CONF_FILTER) {
         stropt = g_variant_get_string(data, NULL);
         ret = SR_OK;
         if (!strcmp(stropt, filters[SR_FILTER_NONE])) {
@@ -1589,8 +1595,10 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 __func__, ch->index, ch->vdiv);
     } else if (id == SR_CONF_FACTOR) {
         ch->vfactor = g_variant_get_uint64(data);
+        ret = SR_OK;
     } else if (id == SR_CONF_TIMEBASE) {
         devc->timebase = g_variant_get_uint64(data);
+        ret = SR_OK;
     } else if (id == SR_CONF_COUPLING) {
         ch->coupling = g_variant_get_byte(data);
         if (ch->coupling == SR_GND_COUPLING)
@@ -1672,6 +1680,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 __func__, devc->trigger_holdoff);
     } else if (id == SR_CONF_ZERO) {
         devc->zero = g_variant_get_boolean(data);
+        ret = SR_OK;
     } else if (id == SR_CONF_ZERO_SET) {
         GSList *l;
         for(l = sdi->channels; l; l = l->next) {
@@ -1759,7 +1768,7 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
         *data = g_variant_builder_end(&gvb);
         break;
     case SR_CONF_TRIGGER_TYPE:
-		*data = g_variant_new_string(TRIGGER_TYPE);
+        *data = g_variant_new_string(TRIGGER_TYPE);
 		break;
     case SR_CONF_OPERATION_MODE:
         *data = g_variant_new_strv(opmodes, ARRAY_SIZE(opmodes));
@@ -2535,9 +2544,6 @@ static int dev_status_get(struct sr_dev_inst *sdi, struct sr_status *status, int
         if (devc->status == DSL_START)
             ret = command_get_status(usb->devhdl, (unsigned char*)status, begin, end);
         }
-
-        if (ret != SR_OK)
-            sr_err("Device don't exist!");
 
         return ret;
     } else {

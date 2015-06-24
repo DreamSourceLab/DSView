@@ -158,7 +158,8 @@ void SigSession::set_device(boost::shared_ptr<device::DevInst> dev_inst) throw(Q
     }
 }
 
-void SigSession::set_file(const string &name) throw(QString)
+
+void SigSession::set_file(QString name) throw(QString)
 {
     // Deslect the old device, because file type detection in File::create
     // destorys the old session inside libsigrok.
@@ -176,7 +177,7 @@ void SigSession::set_file(const string &name) throw(QString)
     }
 }
 
-void SigSession::save_file(const std::string &name){
+void SigSession::save_file(const QString name){
     const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
         _logic_data->get_snapshots();
     if (snapshots.empty())
@@ -185,7 +186,7 @@ void SigSession::save_file(const std::string &name){
     const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
         snapshots.front();
 
-    sr_session_save(name.c_str(), _dev_inst->dev_inst(),
+    sr_session_save(name.toLocal8Bit().data(), _dev_inst->dev_inst(),
                     (unsigned char*)snapshot->get_data(),
                     snapshot->unit_size(),
                     snapshot->get_sample_count());
@@ -213,7 +214,7 @@ void SigSession::cancelSaveFile(){
     saveFileThreadRunning = false;
 }
 
-void SigSession::export_file(const std::string &name, QWidget* parent, const std::string &ext){
+void SigSession::export_file(const QString name, QWidget* parent, const QString ext){
     boost::shared_ptr<pv::data::Snapshot> snapshot;
     int channel_type;
 
@@ -240,7 +241,7 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
     while(*supportedModules){
         if(*supportedModules == NULL)
             break;
-        if(!strcmp((*supportedModules)->id, ext.c_str())){
+        if(!strcmp((*supportedModules)->id, ext.toLocal8Bit().data())){
             outModule = *supportedModules;
             break;
         }
@@ -251,7 +252,7 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
 
 
     GHashTable *params = g_hash_table_new(g_str_hash, g_str_equal);
-    GVariant* filenameGVariant = g_variant_new_string(name.c_str());
+    GVariant* filenameGVariant = g_variant_new_bytestring(name.toLocal8Bit().data());
     g_hash_table_insert(params, (char*)"filename", filenameGVariant);
     GVariant* typeGVariant = g_variant_new_int16(channel_type);
     g_hash_table_insert(params, (char*)"type", typeGVariant);
@@ -270,9 +271,11 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
     output.param = NULL;
     if(outModule->init)
         outModule->init(&output, params);
-    QFile file(name.c_str());
+    QFile file(name);
     file.open(QIODevice::WriteOnly | QIODevice::Text);
     QTextStream out(&file);
+    out.setCodec("UTF-8");
+    out.setGenerateByteOrderMark(true);
     QFuture<void> future;
     if (_dev_inst->dev_inst()->mode == LOGIC) {
         future = QtConcurrent::run([&]{
@@ -294,7 +297,7 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
                 p.payload = &lp;
                 outModule->receive(&output, &p, &data_out);
                 if(data_out){
-                    out << (char*) data_out->str;
+                    out << QString::fromUtf8((char*) data_out->str);
                     g_string_free(data_out,TRUE);
                 }
                 emit  progressSaveFileValueChanged(i*100/numsamples);
@@ -333,8 +336,8 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
 
     QFutureWatcher<void> watcher;
     Qt::WindowFlags flags = Qt::CustomizeWindowHint;
-    QProgressDialog dlg(QString::fromUtf8("Exporting data... It can take a while."),
-                        QString::fromUtf8("Cancel"),0,100,parent,flags);
+    QProgressDialog dlg(tr("Exporting data... It can take a while."),
+                        tr("Cancel"),0,100,parent,flags);
     dlg.setWindowModality(Qt::WindowModal);
     watcher.setFuture(future);
     connect(&watcher,SIGNAL(finished()),&dlg,SLOT(cancel()));
@@ -832,9 +835,9 @@ void SigSession::refresh(int holdtime)
         _analog_data->clear();
         _cur_analog_snapshot.reset();
     }
-    data_updated();
     _data_lock = true;
     _refresh_timer.start(holdtime);
+    data_updated();
 }
 
 void SigSession::data_unlock()

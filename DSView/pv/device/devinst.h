@@ -59,7 +59,7 @@ public:
 
 	SigSession* owner() const;
 
-	virtual std::string format_device_title() const = 0;
+    virtual QString format_device_title() const = 0;
 
     GVariant* get_config(const sr_channel *ch, const sr_channel_group *group, int key);
 

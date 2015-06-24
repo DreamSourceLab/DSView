@@ -173,7 +173,7 @@ void SamplingBar::set_device_list(
 
     BOOST_FOREACH (shared_ptr<pv::device::DevInst> dev_inst, devices) {
         assert(dev_inst);
-        const string title = dev_inst->format_device_title();
+        const QString title = dev_inst->format_device_title();
         const void *id = dev_inst->get_id();
         assert(id);
 
@@ -181,7 +181,7 @@ void SamplingBar::set_device_list(
             selected_index = _device_selector.count();
 
         _device_selector_map[id] = dev_inst;
-        _device_selector.addItem(title.c_str(),
+        _device_selector.addItem(title,
             qVariantFromValue((void*)id));
     }
 

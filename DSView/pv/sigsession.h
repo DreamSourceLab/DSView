@@ -114,13 +114,13 @@ public:
     void set_device(boost::shared_ptr<device::DevInst> dev_inst)
         throw(QString);
 
-    void set_file(const std::string &name)
+    void set_file(QString name)
         throw(QString);
 
-    void save_file(const std::string &name);
+    void save_file(const QString name);
 
     void set_default_device(boost::function<void (const QString)> error_handler);
-    void export_file(const std::string &name, QWidget* parent, const std::string &ext);
+    void export_file(const QString name, QWidget* parent, const QString ext);
 
     void set_default_device();
 

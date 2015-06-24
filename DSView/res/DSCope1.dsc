@@ -1,18 +1,18 @@
-{
+﻿{
     "Device": "DSCope",
     "DeviceMode": 1,
     "Horizontal trigger position": "0",
     "Operation Mode": "Normal",
     "Sample count": "1048576",
-    "Sample rate": "50000",
-    "Time base": "2000000000",
+    "Sample rate": "100000000",
+    "Time base": "10000",
     "Trigger hold off": "0",
     "Trigger slope": "0",
     "Trigger source": "0",
     "channel": [
         {
             "colour": "#eeb211",
-            "coupling": 1,
+            "coupling": 0,
             "enabled": true,
             "index": 0,
             "name": "0",

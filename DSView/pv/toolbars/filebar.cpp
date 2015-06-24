@@ -182,7 +182,7 @@ void FileBar::on_actionExport_triggered(){
             QString ext = list.first();
             if(f.suffix().compare(ext))
                 file_name+=tr(".")+ext;
-            _session.export_file(file_name.toStdString(), this, ext.toStdString());
+            _session.export_file(file_name, this, ext);
         }
     }
 }
@@ -215,7 +215,7 @@ void FileBar::on_actionSave_triggered()
             QFileInfo f(file_name);
             if(f.suffix().compare("dsl"))
                 file_name.append(tr(".dsl"));
-            _session.save_file(file_name.toStdString());
+            _session.save_file(file_name);
         }
     }
 }

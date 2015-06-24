@@ -32,19 +32,19 @@ using std::string;
 namespace pv {
 namespace device {
 
-File::File(const std::string path) :
+File::File(QString path) :
 	_path(path)
 {
 }
 
-std::string File::format_device_title() const
+QString File::format_device_title() const
 {
-	return boost::filesystem::path(_path).filename().string();
+    return _path;
 }
 
-File* File::create(const string &name)
+File* File::create(QString name)
 {
-	if (sr_session_load(name.c_str()) == SR_OK) {
+    if (sr_session_load(name.toLocal8Bit().data()) == SR_OK) {
 		GSList *devlist = NULL;
 		sr_session_dev_list(&devlist);
 		sr_session_destroy();

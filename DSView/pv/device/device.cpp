@@ -64,7 +64,7 @@ void Device::release()
 	sr_dev_close(_sdi);
 }
 
-std::string Device::format_device_title() const
+QString Device::format_device_title() const
 {
 	ostringstream s;
 
@@ -86,7 +86,7 @@ std::string Device::format_device_title() const
 	if (_sdi->version && _sdi->version[0])
 		s << _sdi->version;
 
-	return s.str();
+    return QString::fromStdString(s.str());
 }
 
 bool Device::is_trigger_enabled() const
