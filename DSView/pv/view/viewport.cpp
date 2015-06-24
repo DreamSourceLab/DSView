@@ -512,10 +512,10 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
         _drag_sig.reset();
 
     const double strength = _drag_strength*DragTimerInterval*1.0/_time.elapsed();
-    if (_drag_strength < MinorDragOffsetUp && abs(strength) > MinorDragRateUp) {
+    if (abs(_drag_strength) < MinorDragOffsetUp && abs(strength) > MinorDragRateUp) {
         _drag_strength = _drag_strength;
         _drag_timer.start(DragTimerInterval);
-    } else if (abs(strength) > 0.5*DragTimerInterval) {
+    } else if (abs(strength) > DragTimerInterval) {
         _drag_strength = strength * 5;
         _drag_timer.start(DragTimerInterval);
     } else {
