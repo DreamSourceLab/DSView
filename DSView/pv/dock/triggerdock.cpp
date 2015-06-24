@@ -499,6 +499,8 @@ void TriggerDock::device_change()
         const int maxRange = SR_MB(11)*100/_session.get_device()->get_sample_limit();
         position_spinBox->setRange(0, maxRange);
         position_slider->setRange(0, maxRange);
+        simple_radioButton->setChecked(true);
+        simple_trigger();
     } else {
         position_spinBox->setRange(0, 99);
         position_slider->setRange(0, 99);
