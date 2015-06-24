@@ -652,10 +652,13 @@ void SigSession::del_group()
                 j++;
             }
 
-            _group_data->get_snapshots().at((*i)->get_sec_index()).reset();
-            std::deque< boost::shared_ptr<data::GroupSnapshot> >::iterator k = _group_data->get_snapshots().begin();
-            k += (*i)->get_sec_index();
-            _group_data->get_snapshots().erase(k);
+            std::deque< boost::shared_ptr<data::GroupSnapshot> > &snapshots = _group_data->get_snapshots();
+            if (!snapshots.empty()) {
+                _group_data->get_snapshots().at((*i)->get_sec_index()).reset();
+                std::deque< boost::shared_ptr<data::GroupSnapshot> >::iterator k = snapshots.begin();
+                k += (*i)->get_sec_index();
+                _group_data->get_snapshots().erase(k);
+            }
 
             (*i).reset();
             i = _group_traces.erase(i);

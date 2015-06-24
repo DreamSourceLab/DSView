@@ -1916,7 +1916,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
             struct sr_dev_inst *sdi = devc->cb_data;
             for (l = sdi->channels; l; l = l->next) {
                 struct sr_channel *probe = (struct sr_channel *)l->data;
-                channel_cnt ++;
+                channel_cnt++;
                 channel_en_cnt += probe->enabled;
             }
             if (channel_en_cnt == 0)
