@@ -33,17 +33,17 @@ Step1: Installing the requirements:
 
 please check your respective distro's package manager tool if you use other distros
 Debian/Ubuntu:
- $ sudo apt-get install git-core gcc g++ make autoconf automake libtool pkg-config \
+ $ sudo apt-get install git-core gcc g++ make cmake autoconf automake libtool pkg-config \
    libglib2.0-dev libzip-dev libudev-dev libusb-1.0-0-dev \
-   python3-dev qt5-default libboost-dev libboost-test-dev libboost-thread-dev libboost-system-dev check
+   python3-dev qt5-default libboost-dev libboost-test-dev libboost-thread-dev libboost-system-dev libboost-filesystem-dev check
 
 Fedora (18, 19):
- $ sudo yum install git gcc g++ make autoconf automake libtool pkgconfig glib2-devel \
+ $ sudo yum install git gcc g++ make cmake autoconf automake libtool pkgconfig glib2-devel \
    libzip-devel libudev-devel libusb1-devel \
    python3-devel qt-devel boost-devel check
 
 Arch:
- $ pacman -S git gcc make autoconf autoconf-archive automake libtool \
+ $ pacman -S git gcc make cmake autoconf autoconf-archive automake libtool \
    pkg-config glib2 glibmm libzip libusb check 
    python boost qt5 qt5-base qt5-svg
 
