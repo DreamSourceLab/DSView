@@ -1,4 +1,4 @@
-﻿{
+{
     "Device": "DSLogic",
     "DeviceMode": 0,
     "Filter Targets": "None",
