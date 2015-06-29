@@ -1,4 +1,4 @@
-﻿{
+{
     "Device": "DSCope",
     "DeviceMode": 1,
     "Horizontal trigger position": "0",
