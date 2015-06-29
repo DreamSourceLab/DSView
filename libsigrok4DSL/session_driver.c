@@ -48,6 +48,7 @@ struct session_vdev {
 	char *capturefile;
 	struct zip *archive;
 	struct zip_file *capfile;
+    void *buf;
 	int bytes_read;
 	uint64_t samplerate;
     uint64_t total_samples;
@@ -69,9 +70,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
 	struct sr_datafeed_packet packet;
 	struct sr_datafeed_logic logic;
 	GSList *l;
-	void *buf;
 	int ret, got_data;
-
 	(void)fd;
 	(void)revents;
 
@@ -85,19 +84,14 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
 			/* already done with this instance */
 			continue;
 
-		if (!(buf = g_try_malloc(CHUNKSIZE))) {
-			sr_err("%s: buf malloc failed", __func__);
-			return FALSE;
-		}
-
-		ret = zip_fread(vdev->capfile, buf, CHUNKSIZE);
+        ret = zip_fread(vdev->capfile, vdev->buf, CHUNKSIZE);
 		if (ret > 0) {
 			got_data = TRUE;
 			packet.type = SR_DF_LOGIC;
 			packet.payload = &logic;
 			logic.length = ret;
 			logic.unitsize = vdev->unitsize;
-			logic.data = buf;
+            logic.data = vdev->buf;
 			vdev->bytes_read += ret;
 			sr_session_send(cb_sdi, &packet);
 		} else {
@@ -157,6 +151,7 @@ static int dev_close(struct sr_dev_inst *sdi)
     const struct session_vdev *const vdev = sdi->priv;
     g_free(vdev->sessionfile);
     g_free(vdev->capturefile);
+    g_free(vdev->buf);
 
     g_free(sdi->priv);
     sdi->priv = NULL;
@@ -203,11 +198,11 @@ static int config_set(int id, GVariant *data, const struct sr_dev_inst *sdi)
 		sr_info("Setting samplerate to %" PRIu64 ".", vdev->samplerate);
 		break;
 	case SR_CONF_SESSIONFILE:
-		vdev->sessionfile = g_strdup(g_variant_get_string(data, NULL));
+        vdev->sessionfile = g_strdup(g_variant_get_bytestring(data));
 		sr_info("Setting sessionfile to '%s'.", vdev->sessionfile);
 		break;
 	case SR_CONF_CAPTUREFILE:
-		vdev->capturefile = g_strdup(g_variant_get_string(data, NULL));
+        vdev->capturefile = g_strdup(g_variant_get_bytestring(data));
 		sr_info("Setting capturefile to '%s'.", vdev->capturefile);
 		break;
 	case SR_CONF_CAPTURE_UNITSIZE:
@@ -295,6 +290,11 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi,
 		       "session file '%s'.", vdev->capturefile, vdev->sessionfile);
 		return SR_ERR;
 	}
+
+    if (!(vdev->buf = g_try_malloc(CHUNKSIZE))) {
+        sr_err("%s: buf malloc failed", __func__);
+        return SR_ERR;
+    }
 
 	/* Send header packet to the session bus. */
     std_session_send_df_header(sdi, LOG_PREFIX);

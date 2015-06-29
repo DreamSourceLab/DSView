@@ -1,3 +1,25 @@
+0.94 (2015-06-29)
+-----------------
+ * add session load/store function
+ * add drag-and-drop effect in viewport window
+ * improve display effect of dock windows, add scroll bar
+ * fix other GUI issues
+
+ --for logic analyzer
+ * upgrade advance trigger counter from 16bit to 32bit
+ * add serial trigger function
+ * fix memory leakage issue when load *.dsl files
+ * fix delete group signal issue when no data captured
+
+ --for oscilloscope
+ * add measurement of width, period, frequency and duty cycle
+ * fix instant capture issue @ demo mode
+ * add trigger hold-off time function
+ * fix channels enable/disable issue
+ * fix data error issue of instant capture before normal capture
+ * fix trigger position issue when only one channel enabled
+ * fix trigger level can't be changed issue when only one channel enabled
+
 0.93 (2015-05-08)
 -----------------
  * Upgrade to qt5 library
@@ -34,7 +56,22 @@
  * Add different thresholds support
  * Add options for input filter under logic analyzer mode
  * Add instant capture(trigger ignore) under logic analyzer mode
- * Add detail capture status display under logic analyzer mode
+ * Ad detail capture status display under logic abrary
+ * Support stdc++11
+ * Improve measure function @ LA mode
+ * Add duty cycle measure @ LA mode
+ * Fix out of range issue @ LA mode
+ * Add export funtion, support csv/vcd/gnuplot/zip @ LA mode; and csv @ DSO mode
+ * Add x1/x10/x100 probe options @ DSO mode
+ * Add measure function @ DSO mode
+ * Add voltage display of trigger value @ DSO mode
+ * Fix wave disappear issue @ DSO mode
+ * Fix trigger issue @ DSO stream mode
+ * Fix data repeat when set trigger @ LA stream mode
+ * Keep channel settings when reload occured @ LA mode
+ * Fix decoder issue when capture part of data @ LA mode
+ * Fix stack decoder add issue @ LA mode
+ * Fix other bugsnalyzer mode
  * Add quick button for mode shift
  * Redesign the GUI for oscilloscope
  * Add flexible sample rate support under oscilloscope mode

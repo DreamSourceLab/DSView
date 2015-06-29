@@ -80,6 +80,17 @@ static const int32_t hwoptions[] = {
     SR_CONF_OPERATION_MODE,
 };
 
+static const int32_t sessions[] = {
+    SR_CONF_SAMPLERATE,
+    SR_CONF_LIMIT_SAMPLES,
+    SR_CONF_OPERATION_MODE,
+    SR_CONF_TIMEBASE,
+    SR_CONF_TRIGGER_SLOPE,
+    SR_CONF_TRIGGER_SOURCE,
+    SR_CONF_HORIZ_TRIGGERPOS,
+    SR_CONF_TRIGGER_HOLDOFF,
+};
+
 static const char *probe_names[] = {
 	"0",  "1",  "2",  "3",  "4",  "5",  "6",  "7",
 	"8",  "9", "10", "11", "12", "13", "14", "15",
@@ -221,8 +232,8 @@ static int fpga_setting(const struct sr_dev_inst *sdi)
     setting.trig_edge1_header = 0x1910ffff;
     //setting.trig_edge2_header = 0x1a10ffff;
     //setting.trig_edge3_header = 0x1b10ffff;
-    setting.trig_count0_header = 0x1c10ffff;
-    setting.trig_count1_header = 0x1d10ffff;
+    setting.trig_count0_header = 0x1c20ffff;
+    setting.trig_count1_header = 0x1d20ffff;
     //setting.trig_count2_header = 0x1e10ffff;
     //setting.trig_count3_header = 0x1f10ffff;
     setting.trig_logic0_header = 0x2010ffff;
@@ -337,7 +348,7 @@ static int fpga_config(struct libusb_device_handle *hdl, const char *filename)
 	struct stat f_stat;
 
     sr_info("Configure FPGA using %s", filename);
-    if ((fw = fopen(filename, "rb")) == NULL) {
+    if ((fw = g_fopen(filename, "rb")) == NULL) {
         sr_err("Unable to open FPGA bit file %s for reading: %s",
                filename, strerror(errno));
         return SR_ERR;
@@ -574,8 +585,11 @@ static struct DSL_context *DSCope_dev_new(void)
     devc->timebase = 10000;
     devc->trigger_slope = DSO_TRIGGER_RISING;
     devc->trigger_source = DSO_TRIGGER_AUTO;
+    devc->trigger_holdoff = 0;
     devc->trigger_hpos = 0x0;
+    devc->trigger_hrate = 0;
     devc->zero = FALSE;
+    devc->data_lock = FALSE;
 
 	return devc;
 }
@@ -658,7 +672,7 @@ static GSList *scan(GSList *options)
 		src = l->data;
 		switch (src->key) {
         case SR_CONF_CONN:
-			conn = g_variant_get_string(src->data, NULL);
+            conn = g_variant_get_string(src->data, NULL);
 			break;
 		}
 	}
@@ -728,9 +742,11 @@ static GSList *scan(GSList *options)
             sdi->conn = sr_usb_dev_inst_new(libusb_get_bus_number(devlist[i]),
 					libusb_get_device_address(devlist[i]), NULL);
 		} else {
-            char filename[256];
-            sprintf(filename,"%s%s",config_path,prof->firmware);
-            const char *firmware = filename;
+            char *firmware = malloc(strlen(config_path)+strlen(prof->firmware)+1);
+            if (firmware == NULL)
+                return NULL;
+            strcpy(firmware, config_path);
+            strcat(firmware, prof->firmware);
             if (ezusb_upload_firmware(devlist[i], USB_CONFIGURATION,
                 firmware) == SR_OK)
 				/* Store when this device's FW was updated. */
@@ -754,8 +770,9 @@ static GSList *dev_list(void)
 	return ((struct drv_context *)(di->priv))->instances;
 }
 
-static GSList *dev_mode_list(void)
+static GSList *dev_mode_list(const struct sr_dev_inst *sdi)
 {
+    (void)sdi;
     GSList *l = NULL;
     int i;
 
@@ -891,6 +908,10 @@ static uint64_t dso_cmd_gen(struct sr_dev_inst *sdi, struct sr_channel* ch, int 
     case SR_CONF_ZERO_OVER:
         cmd += 0x50;
         break;
+    case SR_CONF_TRIGGER_HOLDOFF:
+        cmd += 0x58;
+        cmd += ((uint64_t)devc->trigger_holdoff << 8);
+        break;
     case SR_CONF_DSO_SYNC:
         cmd = 0xa5a5a500;
         break;
@@ -969,10 +990,11 @@ static int dev_open(struct sr_dev_inst *sdi)
     } else {
         /* Takes >= 10ms for the FX2 to be ready for FPGA configure. */
         g_usleep(10 * 1000);
-        char filename[256];
-        sprintf(filename,"%s%s",config_path,devc->profile->fpga_bit33);
-
-        const char *fpga_bit = filename;
+        char *fpga_bit = malloc(strlen(config_path)+strlen(devc->profile->fpga_bit33)+1);
+        if (fpga_bit == NULL)
+            return SR_ERR_MALLOC;
+        strcpy(fpga_bit, config_path);
+        strcat(fpga_bit, devc->profile->fpga_bit33);
         ret = fpga_config(usb->devhdl, fpga_bit);
         if (ret != SR_OK) {
             sr_err("Configure FPGA failed!");
@@ -1007,6 +1029,11 @@ static int dev_open(struct sr_dev_inst *sdi)
         ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_HORIZ_TRIGGERPOS));
         if (ret != SR_OK) {
             sr_err("Set Horiz Trigger Position command failed!");
+            return ret;
+        }
+        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_HOLDOFF));
+        if (ret != SR_OK) {
+            sr_err("Set Trigger Holdoff Time command failed!");
             return ret;
         }
         ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_SLOPE));
@@ -1119,7 +1146,7 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
 			 * upload, so we don't know its (future) address. */
             return SR_ERR;
 		snprintf(str, 128, "%d.%d", usb->bus, usb->address);
-		*data = g_variant_new_string(str);
+        *data = g_variant_new_string(str);
 		break;
     case SR_CONF_LIMIT_SAMPLES:
         if (!sdi)
@@ -1200,6 +1227,12 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
             return SR_ERR;
         *data = g_variant_new_boolean(ch->enabled);
         break;
+    case SR_CONF_DATALOCK:
+        if (!sdi)
+            return SR_ERR;
+        devc = sdi->priv;
+        *data = g_variant_new_boolean(devc->data_lock);
+        break;
     case SR_CONF_TRIGGER_SLOPE:
         if (!sdi)
             return SR_ERR;
@@ -1215,20 +1248,19 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_TRIGGER_VALUE:
         if (!ch)
             return SR_ERR;
-        *data = g_variant_new_uint16(ch->trig_value);
+        *data = g_variant_new_byte(ch->trig_value);
         break;
     case SR_CONF_HORIZ_TRIGGERPOS:
         if (!sdi)
             return SR_ERR;
         devc = sdi->priv;
-        uint16_t channel_cnt = 0;
-        GSList *l;
-        for (l = sdi->channels; l; l = l->next) {
-            struct sr_channel *probe = (struct sr_channel *)l->data;
-            channel_cnt += probe->enabled;
-        }
-        uint16_t pos = devc->trigger_hpos * channel_cnt * 100 / devc->limit_samples;
-        *data = g_variant_new_uint16(pos);
+        *data = g_variant_new_byte(devc->trigger_hrate);
+        break;
+    case SR_CONF_TRIGGER_HOLDOFF:
+        if (!sdi)
+            return SR_ERR;
+        devc = sdi->priv;
+        *data = g_variant_new_uint64(devc->trigger_holdoff);
         break;
     case SR_CONF_ZERO:
         if (!sdi)
@@ -1382,9 +1414,14 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         } else {
             /* Takes >= 10ms for the FX2 to be ready for FPGA configure. */
             g_usleep(10 * 1000);
-            char filename[256];
-            sprintf(filename,"%s%s",config_path,devc->profile->fpga_bit33);
-            const char *fpga_bit = filename;
+            //char filename[256];
+            //sprintf(filename,"%s%s",config_path,devc->profile->fpga_bit33);
+            //const char *fpga_bit = filename;
+            char *fpga_bit = malloc(strlen(config_path)+strlen(devc->profile->fpga_bit33)+1);
+            if (fpga_bit == NULL)
+                return SR_ERR_MALLOC;
+            strcpy(fpga_bit, config_path);
+            strcat(fpga_bit, devc->profile->fpga_bit33);
             ret = fpga_config(usb->devhdl, fpga_bit);
             if (ret != SR_OK) {
                 sr_err("Configure FPGA failed!");
@@ -1409,6 +1446,14 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 
         if (sdi->mode == DSO) {
             ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, ch, SR_CONF_EN_CH));
+            uint16_t channel_cnt = 0;
+            GSList *l;
+            for (l = sdi->channels; l; l = l->next) {
+                struct sr_channel *probe = (struct sr_channel *)l->data;
+                channel_cnt += probe->enabled;
+            }
+            if (channel_cnt != 0)
+                ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 0, SR_CONF_SAMPLERATE));
         }
         if (ret == SR_OK)
             sr_dbg("%s: setting ENABLE of channel %d to %d",
@@ -1416,6 +1461,9 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         else
             sr_dbg("%s: setting ENABLE of channel %d to %d",
                 __func__, ch->index, ch->enabled);
+    } else if (id == SR_CONF_DATALOCK) {
+        devc->data_lock = g_variant_get_boolean(data);
+        ret = SR_OK;
     } else if (id == SR_CONF_VDIV) {
         ch->vdiv = g_variant_get_uint64(data);
         if (sdi->mode == DSO) {
@@ -1476,7 +1524,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             sr_dbg("%s: setting DSO Trigger Source to %d failed",
                 __func__, devc->trigger_source);
     } else if (id == SR_CONF_TRIGGER_VALUE) {
-        ch->trig_value = g_variant_get_uint16(data);
+        ch->trig_value = g_variant_get_byte(data);
         if (sdi->mode == DSO) {
             ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, ch, SR_CONF_TRIGGER_VALUE));
         }
@@ -1493,7 +1541,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             struct sr_channel *probe = (struct sr_channel *)l->data;
             channel_cnt += probe->enabled;
         }
-        devc->trigger_hpos = g_variant_get_uint16(data) * channel_cnt * devc->limit_samples / 200.0;
+        devc->trigger_hrate = g_variant_get_byte(data);
+        devc->trigger_hpos = devc->trigger_hrate * channel_cnt * devc->limit_samples / 200.0;
         if (sdi->mode == DSO) {
             ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 1, SR_CONF_HORIZ_TRIGGERPOS));
         }
@@ -1503,6 +1552,17 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         else
             sr_dbg("%s: setting DSO Horiz Trigger Position to %d failed",
                 __func__, devc->trigger_hpos);
+    } else if (id == SR_CONF_TRIGGER_HOLDOFF) {
+        devc->trigger_holdoff = g_variant_get_uint64(data);
+        if (sdi->mode == DSO) {
+            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_HOLDOFF));
+        }
+        if (ret == SR_OK)
+            sr_dbg("%s: setting Trigger Holdoff Time to %d",
+                __func__, devc->trigger_holdoff);
+        else
+            sr_dbg("%s: setting Trigger Holdoff Time to %d failed",
+                __func__, devc->trigger_holdoff);
     } else if (id == SR_CONF_ZERO) {
         devc->zero = g_variant_get_boolean(data);
     } else if (id == SR_CONF_ZERO_SET) {
@@ -1567,6 +1627,10 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
         *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
                 hwoptions, ARRAY_SIZE(hwoptions)*sizeof(int32_t), TRUE, NULL, NULL);
         break;
+    case SR_CONF_DEVICE_SESSIONS:
+        *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
+                sessions, ARRAY_SIZE(sessions)*sizeof(int32_t), TRUE, NULL, NULL);
+        break;
     case SR_CONF_SAMPLERATE:
 		g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));
 //		gvar = g_variant_new_fixed_array(G_VARIANT_TYPE("t"), samplerates,
@@ -1584,7 +1648,7 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
         *data = g_variant_builder_end(&gvb);
         break;
     case SR_CONF_TRIGGER_TYPE:
-		*data = g_variant_new_string(TRIGGER_TYPE);
+        *data = g_variant_new_string(TRIGGER_TYPE);
 		break;
     case SR_CONF_OPERATION_MODE:
         *data = g_variant_new_strv(opmodes, ARRAY_SIZE(opmodes));
@@ -1756,7 +1820,9 @@ static void receive_transfer(struct libusb_transfer *transfer)
         break;
     }
 
-    if (transfer->actual_length == 0 || packet_has_error) {
+    if (transfer->actual_length == 0 ||
+        packet_has_error ||
+        devc->data_lock) {
         devc->empty_transfer_count++;
         if (devc->empty_transfer_count > MAX_EMPTY_TRANSFERS) {
             /*
@@ -1850,7 +1916,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
             struct sr_dev_inst *sdi = devc->cb_data;
             for (l = sdi->channels; l; l = l->next) {
                 struct sr_channel *probe = (struct sr_channel *)l->data;
-                channel_cnt ++;
+                channel_cnt++;
                 channel_en_cnt += probe->enabled;
             }
             if (channel_en_cnt == 0)
@@ -1867,6 +1933,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
                 mstatus.ch1_min = *((const uint8_t*)cur_buf + mstatus_offset*2 + 19);
                 mstatus.ch1_period = *((const uint32_t*)cur_buf + mstatus_offset/2 + 10/2);
                 mstatus.ch1_period += ((uint64_t)*((const uint32_t*)cur_buf + mstatus_offset/2 + 12/2)) << 32;
+                mstatus.ch1_pcnt = *((const uint32_t*)cur_buf + mstatus_offset/2 + 14/2);
                 mstatus.vlen = *((const uint32_t*)cur_buf + mstatus_offset/2 + 16/2) & 0x7fffffff;
                 mstatus.stream_mode = *((const uint32_t*)cur_buf + mstatus_offset/2 + 16/2) & 0x80000000;
                 mstatus.sample_divider = *((const uint32_t*)cur_buf + mstatus_offset/2 + 18/2);
@@ -2048,7 +2115,11 @@ static int dev_transfer_start(const struct sr_dev_inst *sdi)
 //    num_transfers = get_number_of_transfers(devc);
 //    size = get_buffer_size(devc);
     timeout = 500;
+    #ifndef _WIN32
+    num_transfers = 1;
+    #else
     num_transfers = buffer_cnt;
+    #endif
     uint16_t channel_en_cnt = 0;
     uint16_t channel_cnt = 0;
     GSList *l;

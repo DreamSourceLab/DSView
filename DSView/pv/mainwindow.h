@@ -72,6 +72,9 @@ public:
 		const char *open_file_name = NULL,
 		QWidget *parent = 0);
 
+protected:
+    void closeEvent(QCloseEvent *event);
+
 private:
 	void setup_ui();
 
@@ -116,6 +119,9 @@ private slots:
     void on_screenShot();
 
     void on_save();
+
+    bool load_session(QString name);
+    bool store_session(QString name);
 
     /*
      * hotplug slot function
@@ -162,6 +168,7 @@ private:
     dock::TriggerDock *_trigger_widget;
     dock::DsoTriggerDock *_dso_trigger_widget;
     QDockWidget *_measure_dock;
+    dock::MeasureDock *_measure_widget;
     QDockWidget *_search_dock;
     dock::SearchDock * _search_widget;
 

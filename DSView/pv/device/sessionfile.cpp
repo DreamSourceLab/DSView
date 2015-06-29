@@ -26,7 +26,7 @@
 namespace pv {
 namespace device {
 
-SessionFile::SessionFile(const std::string &path) :
+SessionFile::SessionFile(QString path) :
 	File(path),
 	_sdi(NULL)
 {
@@ -41,7 +41,7 @@ void SessionFile::use(SigSession *owner) throw(QString)
 {
 	assert(!_sdi);
 
-	if (sr_session_load(_path.c_str()) != SR_OK)
+    if (sr_session_load(_path.toLocal8Bit().data()) != SR_OK)
 		throw tr("Failed to open file.\n");
 
 	GSList *devlist = NULL;

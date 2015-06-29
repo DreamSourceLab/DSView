@@ -52,17 +52,17 @@ StreamOptions::StreamOptions(QWidget *parent, boost::shared_ptr<pv::device::DevI
 
     QLabel *_info = new QLabel(this);
     if (_stream)
-        _info->setText("Stream Mode Active!");
+        _info->setText(tr("Stream Mode Active!"));
     else
-        _info->setText("Buffer Mode Active!");
+        _info->setText(tr("Buffer Mode Active!"));
 
     _layout.addWidget(_info);
 
     if (_stream) {
         _op0 = new QRadioButton(this);
         _op1 = new QRadioButton(this);
-        _op0->setText("16 Channels, Max 10MHz sample rate");
-        _op1->setText(" 8 Channels, Max 25MHz sample rate");
+        _op0->setText(tr("16 Channels, Max 10MHz sample rate"));
+        _op1->setText(tr(" 8 Channels, Max 25MHz sample rate"));
         _layout.addWidget(_op0);
         _layout.addWidget(_op1);
 

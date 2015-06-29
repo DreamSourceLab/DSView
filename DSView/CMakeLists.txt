@@ -103,7 +103,7 @@ set(DS_DESCRIPTION "A GUI for instruments of DreamSourceLab")
 
 set(DS_VERSION_MAJOR 0)
 set(DS_VERSION_MINOR 9)
-set(DS_VERSION_MICRO 3)
+set(DS_VERSION_MICRO 4)
 set(DS_VERSION_STRING
 	${DS_VERSION_MAJOR}.${DS_VERSION_MINOR}.${DS_VERSION_MICRO}
 )
@@ -357,6 +357,14 @@ install(FILES res/DSLogicPro.fw DESTINATION bin/res/)
 install(FILES res/DSLogicPro.bin DESTINATION bin/res/)
 install(FILES res/DSCope.fw DESTINATION bin/res/)
 install(FILES res/DSCope.bin DESTINATION bin/res/)
+install(FILES res/DSLogic0.dsc DESTINATION bin/res/)
+install(FILES res/DSLogic0.def.dsc DESTINATION bin/res/)
+install(FILES res/DSLogic1.dsc DESTINATION bin/res/)
+install(FILES res/DSLogic1.def.dsc DESTINATION bin/res/)
+install(FILES res/DSLogic2.dsc DESTINATION bin/res/)
+install(FILES res/DSLogic2.def.dsc DESTINATION bin/res/)
+install(FILES res/DSCope1.dsc DESTINATION bin/res/)
+install(FILES res/DSCope1.def.dsc DESTINATION bin/res/)
 
 #===============================================================================
 #= Packaging (handled by CPack)

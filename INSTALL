@@ -4,118 +4,74 @@ INSTALL
 
 Requirements
 ------------
-
-libsigrok4DSL
+ - git
  - gcc (>= 4.0)
+ - g++
  - make
+ - libtool
  - autoconf >= 2.63
  - automake >= 1.11
+ - cmake >= 2.6
+ - Qt >= 5.0
  - libtool
- - pkg-config >= 0.22
-	This is part of the standard OpenBSD install (not an extra package), apparently.
  - libglib >= 2.32.0
  - libzip >= 0.10
  - libusb-1.0 >= 1.0.16
 	On FreeBSD, this is an integral part of the FreeBSD libc, not an extra package/library.
 	This is part of the standard OpenBSD install (not an extra package), apparently.
- - check >= 0.9.4 (optional, only needed to run unit tests)
-
-DSLgoic-gui
- - git
- - g++
- - make
- - libtool
- - pkg-config >= 0.22
- - cmake >= 2.6
- - libglib >= 2.28.0
- - Qt >= 4.5
  - libboost >= 1.42 (including the following libs):
     - libboost-system
     - libboost-thread
- - libsigrok4DSL >= 0.2.0
+ - pkg-config >= 0.22
+	This is part of the standard OpenBSD install (not an extra package), apparently.
+ - check >= 0.9.4 (optional, only needed to run unit tests)
 
 Building and installing
 -----------------------
-Get the DSView source code from: www.dreamsourcelab.com/download.html
 
+Step1: Installing the requirements:
 
-
-Step1: Build libusbx-1.0.18
-Building:
-
- $ cd libusbx-1.0.18
- $ ./autogen.sh
- $ ./configure
- $ make
- $ sudo make install
-
-
-
-Step2: Build libsigrok4DSL
-
-Installing the requirements:
-
-Example on Debian/Ubuntu (please check your respective distro's package manager tool if you use other distros):
- $ sudo apt-get install git-core gcc make autoconf automake libtool pkg-config \
-   libglib2.0-dev libzip-dev libudev-dev libasound2-dev check
+please check your respective distro's package manager tool if you use other distros
+Debian/Ubuntu:
+ $ sudo apt-get install git-core gcc g++ make cmake autoconf automake libtool pkg-config \
+   libglib2.0-dev libzip-dev libudev-dev libusb-1.0-0-dev \
+   python3-dev qt5-default libboost-dev libboost-test-dev libboost-thread-dev libboost-system-dev libboost-filesystem-dev check
 
 Fedora (18, 19):
- $ sudo yum install git gcc make autoconf automake libtool pkgconfig glib2-devel \
-   libzip-devel libudev-devel alsa-lib-devel check
+ $ sudo yum install git gcc g++ make cmake autoconf automake libtool pkgconfig glib2-devel \
+   libzip-devel libudev-devel libusb1-devel \
+   python3-devel qt-devel boost-devel check
 
-OpenSuSE (12.2):
- $ zypper install git gcc make autoconf automake libtool pkg-config glib2-devel \
-   libzip-devel libudev-devel alsa-devel check
+Arch:
+ $ pacman -S git gcc make cmake autoconf autoconf-archive automake libtool \
+   pkg-config glib2 glibmm libzip libusb check 
+   python boost qt5 qt5-base qt5-svg
 
-Building:
+Step2: Get the DSView source code
+
+ $ clone git://github.com/DreamSourceLab/DSView
+
+Step3: Building
  
  $ cd libsigrok4DSL
  $ ./autogen.sh
  $ ./configure
  $ make
  $ sudo make install
+ $ cd ..
 
+ $ git clone git://sigrok.org/libsigrokdecode
+ $ cd libsigrokdecode
+ $ ./autogen.sh
+ $ ./configure
+ $ make
+ $ sudo make install
+ $ cd ..
 
-Step3: Build libsigrokdecode
-
-Installing the requirements:
-
-Example on Debian/Ubuntu (please check your respective distro's package manager tool if you use other distros):
-
-$ sudo apt-get install git-core gcc make autoconf automake libtool pkg-config libglib2.0-dev python3-dev
-
-Fedora (18, 19, 20):
-
-$ sudo yum install git gcc make autoconf automake libtool pkgconfig glib2-devel python3-devel check-devel
-
-Building:
-
-$ git clone git://sigrok.org/libsigrokdecode
-$ cd libsigrokdecode
-$ ./autogen.sh
-$ ./configure
-$ make
-$ sudo make install
-
-
-Step4: Build DSView
-
-Installing the requirements:
-
-Example on Debian/Ubuntu (please check your respective distro's package manager tool if you use other distros):
-$ sudo apt-get install git-core g++ make cmake libtool pkg-config \
-  libglib2.0-dev libqt4-dev libboost-dev libboost-test-dev libboost-thread-dev libboost-system-dev
-
-Fedora (18, 19):
-$ sudo yum install git gcc cmake libtool pkgconfig glib2-devel \
-  boost-devel qt-devel boost-devel
-
-Building:
-
-$ cd DSView
-$ cmake .
-$ make
-$ sudo make install
+ $ cd DSView
+ $ cmake .
+ $ make
+ $ sudo make install
 
 See the following wiki page for more (OS-specific) instructions:
 

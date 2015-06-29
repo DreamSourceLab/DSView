@@ -32,6 +32,9 @@
 #include "../view/logicsignal.h"
 #include "../data/signaldata.h"
 #include "../data/snapshot.h"
+#include "../devicemanager.h"
+#include "../device/device.h"
+#include "../device/file.h"
 
 #include <QObject>
 #include <QPainter>
@@ -47,92 +50,84 @@ namespace dock {
 using namespace pv::view;
 
 MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession &session) :
-    QWidget(parent),
+    QScrollArea(parent),
     _session(session),
     _view(view)
 {
 
-    _mouse_groupBox = new QGroupBox("Mouse measurement", this);
-    _fen_checkBox = new QCheckBox("Enable floating measurement", this);
+    _widget = new QWidget(this);
+    //_widget->setSizePolicy();
+
+    _mouse_groupBox = new QGroupBox(tr("Mouse measurement"), _widget);
+    _fen_checkBox = new QCheckBox(tr("Enable floating measurement"), _widget);
     _fen_checkBox->setChecked(true);
-    _width_label = new QLabel("#####", this);
-    _period_label = new QLabel("#####", this);
-    _freq_label = new QLabel("#####", this);
-    _duty_label = new QLabel("#####", this);
+    _width_label = new QLabel("#####", _widget);
+    _period_label = new QLabel("#####", _widget);
+    _freq_label = new QLabel("#####", _widget);
+    _duty_label = new QLabel("#####", _widget);
 
     _mouse_layout = new QGridLayout();
-    _mouse_layout->addWidget(_fen_checkBox, 0, 0, 1, 2);
-    _mouse_layout->addWidget(new QLabel("Width: ", this), 1, 0);
+    _mouse_layout->addWidget(_fen_checkBox, 0, 0, 1, 4);
+    _mouse_layout->addWidget(new QLabel(tr("W: "), _widget), 1, 0);
     _mouse_layout->addWidget(_width_label, 1, 1);
-    _mouse_layout->addWidget(new QLabel("Period: ", this), 2, 0);
-    _mouse_layout->addWidget(_period_label, 2, 1);
-    _mouse_layout->addWidget(new QLabel("Frequency: ", this), 3, 0);
-    _mouse_layout->addWidget(_freq_label, 3, 1);
-    _mouse_layout->addWidget(new QLabel("Duty Cycle: ", this), 4, 0);
-    _mouse_layout->addWidget(_duty_label, 4, 1);
-    _mouse_layout->addWidget(new QLabel(this), 0, 2);
-    _mouse_layout->addWidget(new QLabel(this), 1, 2);
-    _mouse_layout->addWidget(new QLabel(this), 2, 2);
-    _mouse_layout->addWidget(new QLabel(this), 3, 2);
-    _mouse_layout->addWidget(new QLabel(this), 4, 2);
-    _mouse_layout->setColumnStretch(2, 1);
+    _mouse_layout->addWidget(new QLabel(tr("P: "), _widget), 1, 2);
+    _mouse_layout->addWidget(_period_label, 1, 3);
+    _mouse_layout->addWidget(new QLabel(tr("F: "), _widget), 2, 2);
+    _mouse_layout->addWidget(_freq_label, 2, 3);
+    _mouse_layout->addWidget(new QLabel(tr("D: "), _widget), 2, 0);
+    _mouse_layout->addWidget(_duty_label, 2, 1);
+    _mouse_layout->addWidget(new QLabel(_widget), 0, 4);
+    _mouse_layout->addWidget(new QLabel(_widget), 1, 4);
+    _mouse_layout->addWidget(new QLabel(_widget), 2, 4);
+    _mouse_layout->setColumnStretch(5, 1);
     _mouse_groupBox->setLayout(_mouse_layout);
 
 
-    _cursor_groupBox = new QGroupBox("Cursor measurement", this);
-    _t1_comboBox = new QComboBox(this);
-    _t2_comboBox = new QComboBox(this);
-    _t3_comboBox = new QComboBox(this);
-    _delta_label_t1t2 = new QLabel("#####", this);
-    _cnt_label_t1t2 = new QLabel("#####", this);
-    _delta_label_t2t3 = new QLabel("#####", this);
-    _cnt_label_t2t3 = new QLabel("#####", this);
-    _delta_label_t1t3 = new QLabel("#####", this);
-    _cnt_label_t1t3 = new QLabel("#####", this);
+    _cursor_groupBox = new QGroupBox(tr("Cursor measurement"), _widget);
+    _t1_comboBox = new QComboBox(_widget);
+    _t2_comboBox = new QComboBox(_widget);
+    _t3_comboBox = new QComboBox(_widget);
+    _delta_label_t1t2 = new QLabel("##########/##########", _widget);
+    _delta_label_t2t3 = new QLabel("##########/##########", _widget);
+    _delta_label_t1t3 = new QLabel("##########/##########", _widget);
     _t1_last_index = 0;
     _t2_last_index = 0;
     _t3_last_index = 0;
 
-    _cursor_layout = new QGridLayout();
-    _cursor_layout->addWidget(new QLabel("T1: ", this), 0, 0);
+    _cursor_layout = new QGridLayout(_widget);
+    _cursor_layout->addWidget(new QLabel(tr("T1: "), _widget), 0, 0);
     _cursor_layout->addWidget(_t1_comboBox, 0, 1);
-    _cursor_layout->addWidget(new QLabel("T2: ", this), 1, 0);
+    _cursor_layout->addWidget(new QLabel(tr("T2: "), _widget), 1, 0);
     _cursor_layout->addWidget(_t2_comboBox, 1, 1);
-    _cursor_layout->addWidget(new QLabel("T3: ", this), 2, 0);
+    _cursor_layout->addWidget(new QLabel(tr("T3: "), _widget), 2, 0);
     _cursor_layout->addWidget(_t3_comboBox, 2, 1);
 
-    _cursor_layout->addWidget(new QLabel("|T2 - T1|: ", this), 3, 0);
-    _cursor_layout->addWidget(_delta_label_t1t2, 3, 1);
-    _cursor_layout->addWidget(new QLabel("Delta Samples: ", this), 3, 2);
-    _cursor_layout->addWidget(_cnt_label_t1t2, 3, 3);
+    _cursor_layout->addWidget(new QLabel(tr("Time/Samples"), _widget), 3, 1, 1, 2);
+    _cursor_layout->addWidget(new QLabel(tr("|T2 - T1|: "), _widget), 4, 0);
+    _cursor_layout->addWidget(_delta_label_t1t2, 4, 1, 1, 2);
 
-    _cursor_layout->addWidget(new QLabel("|T3 - T2|: ", this), 4, 0);
-    _cursor_layout->addWidget(_delta_label_t2t3, 4, 1);
-    _cursor_layout->addWidget(new QLabel("Delta Samples: ", this), 4, 2);
-    _cursor_layout->addWidget(_cnt_label_t2t3, 4, 3);
+    _cursor_layout->addWidget(new QLabel(tr("|T3 - T2|: "), _widget), 5, 0);
+    _cursor_layout->addWidget(_delta_label_t2t3, 5, 1, 1, 2);
 
-    _cursor_layout->addWidget(new QLabel("|T3 - T1|: ", this), 5, 0);
-    _cursor_layout->addWidget(_delta_label_t1t3, 5, 1);
-    _cursor_layout->addWidget(new QLabel("Delta Samples: ", this), 5, 2);
-    _cursor_layout->addWidget(_cnt_label_t1t3, 5, 3);
+    _cursor_layout->addWidget(new QLabel(tr("|T3 - T1|: "), _widget), 6, 0);
+    _cursor_layout->addWidget(_delta_label_t1t3, 6, 1, 1, 2);
 
-    _cursor_layout->addWidget(new QLabel("Cursors", this), 6, 0);
-    _cursor_layout->addWidget(new QLabel("Time/Samples", this), 6, 1);
+    _cursor_layout->addWidget(new QLabel(_widget), 7, 0);
+    _cursor_layout->addWidget(new QLabel(tr("Cursors"), _widget), 8, 0);
+    _cursor_layout->addWidget(new QLabel(tr("Time/Samples"), _widget), 8, 1, 1, 2);
 
-    _cursor_layout->addWidget(new QLabel(this), 0, 4);
-    _cursor_layout->addWidget(new QLabel(this), 1, 4);
-    _cursor_layout->addWidget(new QLabel(this), 2, 4);
-    _cursor_layout->addWidget(new QLabel(this), 3, 4);
-    _cursor_layout->addWidget(new QLabel(this), 4, 4);
+    _cursor_layout->addWidget(new QLabel(_widget), 0, 2);
+    _cursor_layout->addWidget(new QLabel(_widget), 1, 2);
+    _cursor_layout->addWidget(new QLabel(_widget), 2, 2);
+    _cursor_layout->setColumnStretch(2, 1);
 
-    _cursor_layout->setColumnStretch(4, 1);
     _cursor_groupBox->setLayout(_cursor_layout);
 
-    QVBoxLayout *layout = new QVBoxLayout(this);
+    QVBoxLayout *layout = new QVBoxLayout(_widget);
     layout->addWidget(_mouse_groupBox);
     layout->addWidget(_cursor_groupBox);
     layout->addStretch(1);
-    setLayout(layout);
+    _widget->setLayout(layout);
 
     connect(_t1_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(delta_update()));
     connect(_t2_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(delta_update()));
@@ -140,6 +135,10 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession &session) :
 
     connect(_fen_checkBox, SIGNAL(stateChanged(int)), &_view, SLOT(set_measure_en(int)));
     connect(_view.get_viewport(), SIGNAL(mouse_measure()), this, SLOT(mouse_measure()));
+
+    this->setWidget(_widget);
+    _widget->setGeometry(0, 0, sizeHint().width(), 2000);
+    _widget->setObjectName("measureWidget");
 }
 
 MeasureDock::~MeasureDock()
@@ -185,22 +184,21 @@ void MeasureDock::cursor_update()
 
     for(std::list<Cursor*>::iterator i = _view.get_cursorList().begin();
         i != _view.get_cursorList().end(); i++) {
-        QString curCursor = "Cursor "+QString::number(index);
+        QString curCursor = tr("Cursor ")+QString::number(index);
         _t1_comboBox->addItem(curCursor);
         _t2_comboBox->addItem(curCursor);
         _t3_comboBox->addItem(curCursor);
 
-        QPushButton *_cursor_pushButton = new QPushButton(curCursor, this);
+        QPushButton *_cursor_pushButton = new QPushButton(curCursor, _widget);
         QString _cur_text = _view.get_cm_time(index - 1) + "/" + QString::number(_view.get_cursor_samples(index - 1));
-        QLabel *_curpos_label = new QLabel(_cur_text, this);
-        QLabel *_space_label = new QLabel(this);
+        QLabel *_curpos_label = new QLabel(_cur_text, _widget);
+        QLabel *_space_label = new QLabel(_widget);
         _cursor_pushButton_list.push_back(_cursor_pushButton);
         _curpos_label_list.push_back(_curpos_label);
         _space_label_list.push_back(_space_label);
 
-        _cursor_layout->addWidget(_cursor_pushButton, 6 + index, 0);
-        _cursor_layout->addWidget(_curpos_label, 6 + index, 1);
-        _cursor_layout->addWidget(_space_label, 6 + index, 2);
+        _cursor_layout->addWidget(_cursor_pushButton, 8 + index, 0);
+        _cursor_layout->addWidget(_curpos_label, 8 + index, 1, 1, 2);
 
         connect(_cursor_pushButton, SIGNAL(clicked()), this, SLOT(goto_cursor()));
 
@@ -248,28 +246,32 @@ void MeasureDock::cursor_moved()
 
 void MeasureDock::delta_update()
 {
+    QString delta_text;
     _t1_last_index = std::max(_t1_comboBox->currentIndex(), 0);
     _t2_last_index = std::max(_t2_comboBox->currentIndex(), 0);
     _t3_last_index = std::max(_t3_comboBox->currentIndex(), 0);
     if (_t1_comboBox->count() != 0 && _t2_comboBox->count() != 0) {
         uint64_t delta = abs(_view.get_cursor_samples(_t1_last_index) -
                              _view.get_cursor_samples(_t2_last_index));
-        _delta_label_t1t2->setText(_view.get_cm_delta(_t1_last_index, _t2_last_index));
-        _cnt_label_t1t2->setText(QString::number(delta));
+        delta_text = _view.get_cm_delta(_t1_last_index, _t2_last_index) +
+                             "/" + QString::number(delta);
+        _delta_label_t1t2->setText(delta_text);
     }
 
     if (_t2_comboBox->count() != 0 && _t2_comboBox->count() != 0) {
         uint64_t delta = abs(_view.get_cursor_samples(_t2_last_index) -
                              _view.get_cursor_samples(_t3_last_index));
-        _delta_label_t2t3->setText(_view.get_cm_delta(_t2_last_index, _t3_last_index));
-        _cnt_label_t2t3->setText(QString::number(delta));
+        delta_text = _view.get_cm_delta(_t2_last_index, _t3_last_index) +
+                             "/" + QString::number(delta);
+        _delta_label_t2t3->setText(delta_text);
     }
 
     if (_t1_comboBox->count() != 0 && _t3_comboBox->count() != 0) {
         uint64_t delta = abs(_view.get_cursor_samples(_t1_last_index) -
                              _view.get_cursor_samples(_t3_last_index));
-        _delta_label_t1t3->setText(_view.get_cm_delta(_t1_last_index, _t3_last_index));
-        _cnt_label_t1t3->setText(QString::number(delta));
+        delta_text = _view.get_cm_delta(_t1_last_index, _t3_last_index) +
+                             "/" + QString::number(delta);
+        _delta_label_t1t3->setText(delta_text);
     }
 }
 

@@ -88,9 +88,19 @@ SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
     _sample_rate(this),
     _updating_sample_rate(false),
     _updating_sample_count(false),
+    #ifdef LANGUAGE_ZH_CN
+    _icon_stop(":/icons/stop_cn.png"),
+    _icon_start(":/icons/start_cn.png"),
+    _icon_instant(":/icons/instant_cn.png"),
+    _icon_start_dis(":/icons/start_dis_cn.png"),
+    _icon_instant_dis(":/icons/instant_dis_cn.png"),
+    #else
     _icon_stop(":/icons/stop.png"),
     _icon_start(":/icons/start.png"),
     _icon_instant(":/icons/instant.png"),
+    _icon_start_dis(":/icons/start_dis.png"),
+    _icon_instant_dis(":/icons/instant_dis.png"),
+    #endif
     _run_stop_button(this),
     _instant_button(this),
     _instant(false)
@@ -106,8 +116,13 @@ SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
     connect(&_instant_button, SIGNAL(clicked()),
         this, SLOT(on_instant_stop()));
 
+#ifdef LANGUAGE_ZH_CN
+    _configure_button.setIcon(QIcon::fromTheme("configure",
+        QIcon(":/icons/params_cn.png")));
+#else
     _configure_button.setIcon(QIcon::fromTheme("configure",
         QIcon(":/icons/params.png")));
+#endif
     _run_stop_button.setIcon(_icon_start);
     _instant_button.setIcon(_icon_instant);
 
@@ -158,7 +173,7 @@ void SamplingBar::set_device_list(
 
     BOOST_FOREACH (shared_ptr<pv::device::DevInst> dev_inst, devices) {
         assert(dev_inst);
-        const string title = dev_inst->format_device_title();
+        const QString title = dev_inst->format_device_title();
         const void *id = dev_inst->get_id();
         assert(id);
 
@@ -166,7 +181,7 @@ void SamplingBar::set_device_list(
             selected_index = _device_selector.count();
 
         _device_selector_map[id] = dev_inst;
-        _device_selector.addItem(title.c_str(),
+        _device_selector.addItem(title,
             qVariantFromValue((void*)id));
     }
 
@@ -284,10 +299,13 @@ void SamplingBar::update_sample_rate()
 
 void SamplingBar::set_sampling(bool sampling)
 {
-    if (_instant)
+    if (_instant) {
         _instant_button.setIcon(sampling ? _icon_stop : _icon_instant);
-    else
+        _run_stop_button.setIcon(sampling ? _icon_start_dis : _icon_start);
+    } else {
         _run_stop_button.setIcon(sampling ? _icon_stop : _icon_start);
+        _instant_button.setIcon(sampling ? _icon_instant_dis : _icon_instant);
+    }
 
     if (!sampling) {
         g_usleep(100000);
@@ -313,8 +331,13 @@ void SamplingBar::set_sampling(bool sampling)
     }
 
     _configure_button.setEnabled(!sampling);
+#ifdef LANGUAGE_ZH_CN
+    _configure_button.setIcon(sampling ? QIcon(":/icons/params_dis_cn.png") :
+                                  QIcon(":/icons/params_cn.png"));
+#else
     _configure_button.setIcon(sampling ? QIcon(":/icons/params_dis.png") :
                                   QIcon(":/icons/params.png"));
+#endif
 }
 
 void SamplingBar::set_sample_rate(uint64_t sample_rate)
@@ -674,8 +697,8 @@ void SamplingBar::on_run_stop()
             g_variant_unref(gvar);
             if (zero) {
                 QMessageBox msg(this);
-                msg.setText("Zero Adjustment");
-                msg.setInformativeText("Please adjust zero skew and save the result!");
+                msg.setText(tr("Zero Adjustment"));
+                msg.setInformativeText(tr("Please adjust zero skew and save the result!"));
                 msg.setStandardButtons(QMessageBox::Ok);
                 msg.setIcon(QMessageBox::Warning);
                 msg.exec();
@@ -704,11 +727,11 @@ void SamplingBar::on_instant_stop()
             g_variant_unref(gvar);
             if (zero) {
                 QMessageBox msg(this);
-                msg.setText("Zero Adjustment");
+                msg.setText(tr("Zero Adjustment"));
                 if(strcmp(dev_inst->dev_inst()->driver->name, "DSLogic") == 0)
-                    msg.setInformativeText("Please adjust zero skew and save the result!\nPlease left both of channels unconnect for zero adjustment!");
+                    msg.setInformativeText(tr("Please adjust zero skew and save the result!\nPlease left both of channels unconnect for zero adjustment!"));
                 else
-                    msg.setInformativeText("Please adjust zero skew and save the result!");
+                    msg.setInformativeText(tr("Please adjust zero skew and save the result!"));
                 msg.setStandardButtons(QMessageBox::Ok);
                 msg.setIcon(QMessageBox::Warning);
                 msg.exec();

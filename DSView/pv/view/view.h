@@ -95,6 +95,9 @@ public:
 	double offset() const;
 	int v_offset() const;
 
+    double get_min_offset();
+    double get_max_offset();
+
 	void zoom(double steps);
 	void zoom(double steps, int offset);
 
@@ -172,6 +175,7 @@ public:
     void on_state_changed(bool stop);
 
     int get_view_width();
+    int get_view_height();
 
     void update_sample(bool instant);
 

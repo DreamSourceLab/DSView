@@ -226,10 +226,7 @@ void View::zoom(double steps, int offset)
             }
         }
         _offset = cursor_offset - _scale * offset;
-        const double MinOffset = -(_scale * (get_view_width() * (1 - MaxViewRate)));
-        const double MaxOffset = _session.get_device()->get_sample_time() -
-                _scale * (get_view_width() * MaxViewRate);
-        _offset = max(min(_offset, MaxOffset), MinOffset);
+        _offset = max(min(_offset, get_max_offset()), get_min_offset());
 
         if (_scale != _preScale || _offset != _preOffset) {
             _header->update();
@@ -248,11 +245,7 @@ void View::set_scale_offset(double scale, double offset)
         _preOffset = _offset;
 
         _scale = max(min(scale, _maxscale), _minscale);
-
-        const double MinOffset = -(_scale * (get_view_width() * (1 - MaxViewRate)));
-        const double MaxOffset = _session.get_device()->get_sample_time()
-                - _scale * (get_view_width() * MaxViewRate);
-        _offset = max(min(offset, MaxOffset), MinOffset);
+        _offset = max(min(offset, get_max_offset()), get_min_offset());
 
         if (_scale != _preScale || _offset != _preOffset) {
             update_scroll();
@@ -604,10 +597,6 @@ void View::h_scroll_value_changed(int value)
 
     _preOffset = _offset;
 
-    const double MinOffset = -(_scale * (get_view_width() * (1 - MaxViewRate)));
-    const double MaxOffset = _session.get_device()->get_sample_time()
-            - _scale * (get_view_width() * MaxViewRate);
-
 	const int range = horizontalScrollBar()->maximum();
 	if (range < MaxScrollValue)
 		_offset = _scale * value;
@@ -617,7 +606,7 @@ void View::h_scroll_value_changed(int value)
 		_offset = _scale * length * value / MaxScrollValue;
 	}
 
-    _offset = max(min(_offset, MaxOffset), MinOffset);
+    _offset = max(min(_offset, get_max_offset()), get_min_offset());
 
     if (_offset != _preOffset) {
         _ruler->update();
@@ -794,6 +783,32 @@ int View::get_view_width()
     }
 
     return view_width;
+}
+
+int View::get_view_height()
+{
+    int view_height = 0;
+    if (_session.get_device()->dev_inst()->mode == DSO) {
+        const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
+        BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+            view_height = max((double)view_height, s->get_view_rect().height());
+        }
+    } else {
+        view_height = _viewport->width();
+    }
+
+    return view_height;
+}
+
+double View::get_min_offset()
+{
+    return -(_scale * (get_view_width() * (1 - MaxViewRate)));
+}
+
+double View::get_max_offset()
+{
+    return _session.get_device()->get_sample_time()
+            - _scale * (get_view_width() * MaxViewRate);
 }
 
 } // namespace view

@@ -66,7 +66,7 @@ DeviceOptions::DeviceOptions(struct sr_dev_inst *sdi) :
         if(sr_config_list(_sdi->driver, _sdi, NULL, key, &gvar_list) != SR_OK)
 			gvar_list = NULL;
 
-		const QString name(info->name);
+        const QString name(info->label);
 
 		switch(key)
 		{
@@ -105,6 +105,7 @@ DeviceOptions::DeviceOptions(struct sr_dev_inst *sdi) :
         case SR_CONF_CLOCK_TYPE:
         case SR_CONF_CLOCK_EDGE:
         case SR_CONF_INSTANT:
+        case SR_CONF_DATALOCK:
             bind_bool(name, key);
             break;
 
@@ -194,11 +195,11 @@ QString DeviceOptions::print_gvariant(GVariant *const gvar)
 	QString s;
 
 	if (g_variant_is_of_type(gvar, G_VARIANT_TYPE("s")))
-		s = QString(g_variant_get_string(gvar, NULL));
+        s = QString::fromUtf8(g_variant_get_string(gvar, NULL));
 	else
 	{
 		gchar *const text = g_variant_print(gvar, FALSE);
-		s = QString(text);
+        s = QString::fromUtf8(text);
 		g_free(text);
 	}
 

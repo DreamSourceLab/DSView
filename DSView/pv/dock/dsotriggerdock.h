@@ -28,6 +28,8 @@
 #include <QSlider>
 #include <QSpinBox>
 #include <QButtonGroup>
+#include <QScrollArea>
+#include <QComboBox>
 
 #include <vector>
 
@@ -39,7 +41,7 @@ class SigSession;
 
 namespace dock {
 
-class DsoTriggerDock : public QWidget
+class DsoTriggerDock : public QScrollArea
 {
     Q_OBJECT
 
@@ -58,6 +60,7 @@ signals:
 
 private slots:
     void pos_changed(int pos);
+    void hold_changed(int hold);
     void source_changed();
     void type_changed();
 
@@ -65,6 +68,12 @@ private:
 
 private:
     SigSession &_session;
+
+    QWidget *_widget;
+
+    QComboBox *holdoff_comboBox;
+    QSpinBox *holdoff_spinBox;
+    QSlider *holdoff_slider;
 
     QSpinBox *position_spinBox;
     QSlider *position_slider;

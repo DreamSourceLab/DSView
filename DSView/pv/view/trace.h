@@ -93,9 +93,6 @@ protected:
     Trace(const Trace &t);
 
 public:
-    enum {DS_LOGIC = 0, DS_ANALOG, DS_DSO, DS_GROUP, DS_DECODER};
-
-public:
 	/**
 	 * Gets the name of this signal.
 	 */

@@ -120,8 +120,8 @@ void SearchDock::on_previous()
     last_pos = _view.get_search_pos();
     if (last_pos == 0) {
         QMessageBox msg(this);
-        msg.setText("Search");
-        msg.setInformativeText("Search cursor at the start position!");
+        msg.setText(tr("Search"));
+        msg.setInformativeText(tr("Search cursor at the start position!"));
         msg.setStandardButtons(QMessageBox::Ok);
         msg.setIcon(QMessageBox::Warning);
         msg.exec();
@@ -130,8 +130,8 @@ void SearchDock::on_previous()
         data = (uint8_t*)_session.get_buf(unit_size, length);
         if (data == NULL) {
             QMessageBox msg(this);
-            msg.setText("Search");
-            msg.setInformativeText("No Sample data!");
+            msg.setText(tr("Search"));
+            msg.setInformativeText(tr("No Sample data!"));
             msg.setStandardButtons(QMessageBox::Ok);
             msg.setIcon(QMessageBox::Warning);
             msg.exec();
@@ -140,8 +140,8 @@ void SearchDock::on_previous()
             const bool ret = search_value(data, unit_size, length, last_pos, 1, value);
             if (!ret) {
                 QMessageBox msg(this);
-                msg.setText("Search");
-                msg.setInformativeText("Pattern " + value + " not found!");
+                msg.setText(tr("Search"));
+                msg.setInformativeText(tr("Pattern ") + value + tr(" not found!"));
                 msg.setStandardButtons(QMessageBox::Ok);
                 msg.setIcon(QMessageBox::Warning);
                 msg.exec();
@@ -165,8 +165,8 @@ void SearchDock::on_next()
     last_pos = _view.get_search_pos();
     if (last_pos == length - 1) {
         QMessageBox msg(this);
-        msg.setText("Search");
-        msg.setInformativeText("Search cursor at the end position!");
+        msg.setText(tr("Search"));
+        msg.setInformativeText(tr("Search cursor at the end position!"));
         msg.setStandardButtons(QMessageBox::Ok);
         msg.setIcon(QMessageBox::Warning);
         msg.exec();
@@ -174,8 +174,8 @@ void SearchDock::on_next()
     } else {
         if (data == NULL) {
             QMessageBox msg(this);
-            msg.setText("Search");
-            msg.setInformativeText("No Sample data!");
+            msg.setText(tr("Search"));
+            msg.setInformativeText(tr("No Sample data!"));
             msg.setStandardButtons(QMessageBox::Ok);
             msg.setIcon(QMessageBox::Warning);
             msg.exec();
@@ -184,8 +184,8 @@ void SearchDock::on_next()
             const int ret = search_value(data, unit_size, length, last_pos, 0, value);
             if (!ret) {
                 QMessageBox msg(this);
-                msg.setText("Search");
-                msg.setInformativeText("Pattern " + value + " not found!");
+                msg.setText(tr("Search"));
+                msg.setInformativeText(tr("Pattern ") + value + tr(" not found!"));
                 msg.setStandardButtons(QMessageBox::Ok);
                 msg.setIcon(QMessageBox::Warning);
                 msg.exec();

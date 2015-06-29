@@ -73,6 +73,7 @@ public:
     void set_view(pv::view::View *view);
 
 	void set_scale(float scale);
+    float get_scale();
 
     /**
      *
@@ -95,7 +96,14 @@ public:
     void set_acCoupling(uint8_t coupling);
     void set_trig_vpos(int pos);
     int get_trig_vpos() const;
+    void set_trigRate(double rate);
+    double get_trigRate() const;
     void set_factor(uint64_t factor);
+    uint64_t get_factor();
+
+    bool update_vDial();
+    bool update_hDial();
+    bool update_acCoupling();
 
     /**
       *
@@ -112,11 +120,12 @@ public:
      * Gets the mid-Y position of this signal.
      */
     int get_zeroPos();
-
+    double get_zeroRate();
     /**
      * Sets the mid-Y position of this signal.
      */
     void set_zeroPos(int pos);
+    void set_zeroRate(double rate);
     void update_zeroPos();
 
     /**

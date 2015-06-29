@@ -156,7 +156,8 @@ typedef int (*sr_receive_data_callback_t)(int fd, int revents, const struct sr_d
 /** Data types used by sr_config_info(). */
 enum {
 	SR_T_UINT64 = 10000,
-	SR_T_CHAR,
+    SR_T_UINT8,
+    SR_T_CHAR,
 	SR_T_BOOL,
 	SR_T_FLOAT,
 	SR_T_RATIONAL_PERIOD,
@@ -543,6 +544,8 @@ enum {
     SR_CHANNEL_LOGIC = 10000,
     SR_CHANNEL_DSO,
     SR_CHANNEL_ANALOG,
+    SR_CHANNEL_GROUP,
+    SR_CHANNEL_DECODER,
 };
 
 enum {
@@ -587,6 +590,7 @@ struct sr_config_info {
 	int datatype;
 	char *id;
 	char *name;
+    char *label;
 	char *description;
 };
 
@@ -728,6 +732,9 @@ enum {
 	/** Horizontal trigger position. */
 	SR_CONF_HORIZ_TRIGGERPOS,
 
+    /** Trigger hold off time */
+    SR_CONF_TRIGGER_HOLDOFF,
+
 	/** Buffer size. */
 	SR_CONF_BUFFERSIZE,
 
@@ -766,6 +773,9 @@ enum {
 
     /** Channel enable for dso channel. */
     SR_CONF_EN_CH,
+
+    /** Data lock */
+    SR_CONF_DATALOCK,
 
     /** probe factor for dso channel. */
     SR_CONF_FACTOR,
@@ -809,6 +819,9 @@ enum {
 	/** Device options for a particular device. */
 	SR_CONF_DEVICE_OPTIONS,
     SR_CONF_DEVICE_CONFIGS,
+
+    /** Sessions */
+    SR_CONF_DEVICE_SESSIONS,
 
 	/** Session filename. */
 	SR_CONF_SESSIONFILE,
@@ -957,7 +970,7 @@ struct sr_dev_driver {
 	int (*cleanup) (void);
 	GSList *(*scan) (GSList *options);
 	GSList *(*dev_list) (void);
-    GSList *(*dev_mode_list) (void);
+    GSList *(*dev_mode_list) (const struct sr_dev_inst *sdi);
     int (*dev_clear) (void);
 
     int (*config_get) (int id, GVariant **data,
@@ -1020,6 +1033,7 @@ struct sr_session {
 enum {
     SIMPLE_TRIGGER = 0,
     ADV_TRIGGER,
+    SERIAL_TRIGGER,
 };
 
 enum {
@@ -1044,8 +1058,8 @@ struct ds_trigger {
     unsigned char trigger1_inv[TriggerStages+1];
     char trigger0[TriggerStages+1][TriggerProbes];
     char trigger1[TriggerStages+1][TriggerProbes];
-    uint16_t trigger0_count[TriggerStages+1];
-    uint16_t trigger1_count[TriggerStages+1];
+    uint32_t trigger0_count[TriggerStages+1];
+    uint32_t trigger1_count[TriggerStages+1];
 };
 
 struct ds_trigger_pos {

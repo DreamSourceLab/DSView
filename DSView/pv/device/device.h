@@ -38,7 +38,7 @@ public:
 
 	void release();
 
-	std::string format_device_title() const;
+    QString format_device_title() const;
 
 	bool is_trigger_enabled() const;
 

@@ -98,6 +98,8 @@ struct dev_context {
 	int64_t starttime;
     int stop;
     uint64_t timebase;
+    gboolean instant;
+    gboolean data_lock;
 
     int trigger_stage;
     uint16_t trigger_mask;
@@ -118,6 +120,13 @@ static const int hwcaps[] = {
 static const int hwoptions[] = {
     SR_CONF_PATTERN_MODE,
 };
+
+static const int32_t sessions[] = {
+    SR_CONF_SAMPLERATE,
+    SR_CONF_LIMIT_SAMPLES,
+    SR_CONF_PATTERN_MODE,
+};
+
 
 static const uint64_t samplerates[] = {
     SR_KHZ(10),
@@ -224,6 +233,7 @@ static GSList *hw_scan(GSList *options)
 	devc->limit_msec = 0;
     devc->sample_generator = PATTERN_SINE;
     devc->timebase = 10000;
+    devc->data_lock = FALSE;
 
 	sdi->priv = devc;
 
@@ -258,8 +268,9 @@ static GSList *hw_dev_list(void)
 	return ((struct drv_context *)(di->priv))->instances;
 }
 
-static GSList *hw_dev_mode_list(void)
+static GSList *hw_dev_mode_list(const struct sr_dev_inst *sdi)
 {
+    (void)sdi;
     GSList *l = NULL;
     int i;
 
@@ -338,6 +349,9 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_TEST:
         *data = g_variant_new_boolean(FALSE);
         break;
+    case SR_CONF_INSTANT:
+        *data = g_variant_new_boolean(devc->instant);
+        break;
     case SR_CONF_PATTERN_MODE:
         *data = g_variant_new_string(pattern_strings[devc->sample_generator]);
 		break;
@@ -355,6 +369,9 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         break;
     case SR_CONF_EN_CH:
         *data = g_variant_new_uint64(ch->enabled);
+        break;
+    case SR_CONF_DATALOCK:
+        *data = g_variant_new_boolean(devc->data_lock);
         break;
     case SR_CONF_MAX_DSO_SAMPLERATE:
         *data = g_variant_new_uint64(DEMO_MAX_DSO_SAMPLERATE);
@@ -449,7 +466,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         }
         sr_dbg("%s: setting mode to %d", __func__, sdi->mode);
     }else if (id == SR_CONF_PATTERN_MODE) {
-		stropt = g_variant_get_string(data, NULL);
+        stropt = g_variant_get_string(data, NULL);
         ret = SR_OK;
         if (!strcmp(stropt, pattern_strings[PATTERN_SINE])) {
             devc->sample_generator = PATTERN_SINE;
@@ -466,10 +483,24 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 		}
         sr_dbg("%s: setting pattern to %d",
 			__func__, devc->sample_generator);
+    } else if (id == SR_CONF_INSTANT) {
+        devc->instant = g_variant_get_boolean(data);
+        sr_dbg("%s: setting INSTANT mode to %d", __func__,
+               devc->instant);
+        ret = SR_OK;
+    } else if (id == SR_CONF_HORIZ_TRIGGERPOS) {
+        ret = SR_OK;
+    } else if (id == SR_CONF_TRIGGER_HOLDOFF) {
+        ret = SR_OK;
     } else if (id == SR_CONF_EN_CH) {
         ch->enabled = g_variant_get_boolean(data);
         sr_dbg("%s: setting ENABLE of channel %d to %d", __func__,
                ch->index, ch->enabled);
+        ret = SR_OK;
+    } else if (id == SR_CONF_DATALOCK) {
+        devc->data_lock = g_variant_get_boolean(data);
+        sr_dbg("%s: setting data lock to %d", __func__,
+               devc->data_lock);
         ret = SR_OK;
     } else if (id == SR_CONF_VDIV) {
         ch->vdiv = g_variant_get_uint64(data);
@@ -519,6 +550,10 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
 //				hwcaps, ARRAY_SIZE(hwcaps), sizeof(int32_t));
         *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
                 hwoptions, ARRAY_SIZE(hwoptions)*sizeof(int32_t), TRUE, NULL, NULL);
+        break;
+    case SR_CONF_DEVICE_SESSIONS:
+        *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
+                sessions, ARRAY_SIZE(sessions)*sizeof(int32_t), TRUE, NULL, NULL);
         break;
     case SR_CONF_SAMPLERATE:
 		g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));
@@ -724,7 +759,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
     samples_to_send = expected_samplenum / CONST_LEN * CONST_LEN;
 
     if (devc->limit_samples) {
-        if (sdi->mode == LOGIC)
+        if (sdi->mode == LOGIC || devc->instant)
             samples_to_send = MIN(samples_to_send,
                      devc->limit_samples - devc->samples_counter);
         else
@@ -796,7 +831,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
             }
 
             sr_session_send(sdi, &packet);
-            if (sdi->mode == LOGIC)
+            if (sdi->mode == LOGIC || devc->instant)
                 devc->samples_counter += sending_now;
             else
                 devc->samples_counter = (devc->samples_counter + sending_now) % devc->limit_samples;
@@ -805,8 +840,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
         }
 	}
 
-    if (sdi->mode == LOGIC &&
-        devc->limit_samples &&
+    if (devc->limit_samples &&
         devc->samples_counter >= devc->limit_samples) {
         sr_info("Requested number of samples reached.");
         hw_dev_acquisition_stop(sdi, NULL);
@@ -816,7 +850,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
 
     g_free(buf);
 
-	return TRUE;
+    return TRUE;
 }
 
 static int hw_dev_acquisition_start(const struct sr_dev_inst *sdi,

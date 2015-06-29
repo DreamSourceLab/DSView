@@ -126,7 +126,7 @@ QDockWidget {
     border: 0px;
     padding: 0px;
     color: rgb(17, 133, 209,  255);
-    font-size: 16px;
+    font-size: 15px;
     font-weight: bold;
 }
 
@@ -145,13 +145,23 @@ QDockWidget > QWidget{
     padding: 0px;
 }
 
+QScrollArea #measureWidget,
+QScrollArea #dsoTriggerWidget,
+QScrollArea #triggerWidget,
+QScrollArea #protocolWidget{
+    margin: 0px;
+    background-color: rgb(17, 133, 209,  255);
+    border: 0px;
+    padding: 0px;
+}
+
 QGroupBox {
     margin: 0px;
     background-color: rgb(17, 133, 209,  255);
     border: 0px;
     padding: 40px, 10px, 10px, 10px;
     color: white;
-    font-size: 20px;
+    font-size: 15px;
     font-weight: bold;
 }
 
@@ -166,47 +176,22 @@ QGroupBox:disabled
     color: rgb(200, 200, 200, 255);
 }
 
-QDockWidget > QWidget > QTabWidget::pane{
+#triggerWidget > QTabWidget::pane{
     margin: 0px;
     background-color: rgb(17, 133, 209,  255);
     border: 1px solid rgb(255, 255, 255);
-    border-right-color: rgb(17, 133, 209,  255); /* same as the pane color */
     padding: 0px;
 }
 
-QDockWidget > QWidget > QTabWidget::pane:disabled{
+#triggerWidget > QTabWidget::pane:disabled{
     border: 1px solid rgb(200, 200, 200, 255);
-    border-right-color: rgb(17, 133, 209,  255); /* same as the pane color */
 }
 
-QDockWidget > QWidget >  QTabWidget > QTabBar::tab
-{
-    background: transparent;
-    color: white;
-    border: 2px solid rgb(238, 178, 17, 255);
-    border-left-color: rgb(17, 133, 209,  255); /* same as the pane color */
-    border-bottom-right-radius: 4px;
-    border-top-right-radius: 4px;
-    min-height: 8ex;
-    padding: 2px;
-}
-QDockWidget > QWidget > QTabWidget > QTabBar::tab:hover
-{
-    border: 3px solid rgb(238, 178, 17, 255);
-    border-left-color: rgb(17, 133, 209,  255); /* same as the pane color */
-}
-QDockWidget > QWidget > QTabWidget > QTabBar::tab:selected
-{
-    color: white;
-    background: rgb(238, 178, 17, 255);
-    border-left-color: rgb(17, 133, 209,  255); /* same as the pane color */
-}
-QDockWidget > QWidget > QTabWidget > QTabBar::tab:disabled
-{
-    color: rgb(200, 200, 200, 50);
-    border: 1px solid rgb(232, 232, 230, 255);
-    background: transparent;
-    border-left-color: rgb(17, 133, 209,  255); /* same as the pane color */
+QTabWidget::pane{
+    margin: 0px;
+    background-color: rgb(17, 133, 209,  255);
+    border: 0px solid rgb(255, 255, 255);
+    padding: 0px;
 }
 
 QCheckBox,

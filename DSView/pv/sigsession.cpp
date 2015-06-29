@@ -56,6 +56,8 @@
 #include <QMessageBox>
 #include <QProgressDialog>
 #include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
 #include <QtConcurrent/QtConcurrent>
 
 #include <boost/foreach.hpp>
@@ -96,8 +98,12 @@ SigSession::SigSession(DeviceManager &device_manager) :
 	register_hotplug_callback();
     _view_timer.stop();
     _view_timer.setSingleShot(true);
+    _refresh_timer.stop();
+    _refresh_timer.setSingleShot(true);
+    _data_lock = false;
     connect(this, SIGNAL(start_timer(int)), &_view_timer, SLOT(start(int)));
-    connect(&_view_timer, SIGNAL(timeout()), this, SLOT(refresh()));
+    //connect(&_view_timer, SIGNAL(timeout()), this, SLOT(refresh()));
+    connect(&_refresh_timer, SIGNAL(timeout()), this, SLOT(data_unlock()));
 }
 
 SigSession::~SigSession()
@@ -153,7 +159,7 @@ void SigSession::set_device(boost::shared_ptr<device::DevInst> dev_inst) throw(Q
 }
 
 
-void SigSession::set_file(const string &name) throw(QString)
+void SigSession::set_file(QString name) throw(QString)
 {
     // Deslect the old device, because file type detection in File::create
     // destorys the old session inside libsigrok.
@@ -171,7 +177,7 @@ void SigSession::set_file(const string &name) throw(QString)
     }
 }
 
-void SigSession::save_file(const std::string &name){
+void SigSession::save_file(const QString name){
     const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
         _logic_data->get_snapshots();
     if (snapshots.empty())
@@ -180,7 +186,7 @@ void SigSession::save_file(const std::string &name){
     const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
         snapshots.front();
 
-    sr_session_save(name.c_str(), _dev_inst->dev_inst(),
+    sr_session_save(name.toLocal8Bit().data(), _dev_inst->dev_inst(),
                     (unsigned char*)snapshot->get_data(),
                     snapshot->unit_size(),
                     snapshot->get_sample_count());
@@ -208,7 +214,7 @@ void SigSession::cancelSaveFile(){
     saveFileThreadRunning = false;
 }
 
-void SigSession::export_file(const std::string &name, QWidget* parent, const std::string &ext){
+void SigSession::export_file(const QString name, QWidget* parent, const QString ext){
     boost::shared_ptr<pv::data::Snapshot> snapshot;
     int channel_type;
 
@@ -235,7 +241,7 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
     while(*supportedModules){
         if(*supportedModules == NULL)
             break;
-        if(!strcmp((*supportedModules)->id, ext.c_str())){
+        if(!strcmp((*supportedModules)->id, ext.toLocal8Bit().data())){
             outModule = *supportedModules;
             break;
         }
@@ -246,7 +252,7 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
 
 
     GHashTable *params = g_hash_table_new(g_str_hash, g_str_equal);
-    GVariant* filenameGVariant = g_variant_new_string(name.c_str());
+    GVariant* filenameGVariant = g_variant_new_bytestring(name.toLocal8Bit().data());
     g_hash_table_insert(params, (char*)"filename", filenameGVariant);
     GVariant* typeGVariant = g_variant_new_int16(channel_type);
     g_hash_table_insert(params, (char*)"type", typeGVariant);
@@ -265,9 +271,11 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
     output.param = NULL;
     if(outModule->init)
         outModule->init(&output, params);
-    QFile file(name.c_str());
+    QFile file(name);
     file.open(QIODevice::WriteOnly | QIODevice::Text);
     QTextStream out(&file);
+    out.setCodec("UTF-8");
+    out.setGenerateByteOrderMark(true);
     QFuture<void> future;
     if (_dev_inst->dev_inst()->mode == LOGIC) {
         future = QtConcurrent::run([&]{
@@ -289,7 +297,7 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
                 p.payload = &lp;
                 outModule->receive(&output, &p, &data_out);
                 if(data_out){
-                    out << (char*) data_out->str;
+                    out << QString::fromUtf8((char*) data_out->str);
                     g_string_free(data_out,TRUE);
                 }
                 emit  progressSaveFileValueChanged(i*100/numsamples);
@@ -328,8 +336,8 @@ void SigSession::export_file(const std::string &name, QWidget* parent, const std
 
     QFutureWatcher<void> watcher;
     Qt::WindowFlags flags = Qt::CustomizeWindowHint;
-    QProgressDialog dlg(QString::fromUtf8("Exporting data... It can take a while."),
-                        QString::fromUtf8("Cancel"),0,100,parent,flags);
+    QProgressDialog dlg(tr("Exporting data... It can take a while."),
+                        tr("Cancel"),0,100,parent,flags);
     dlg.setWindowModality(Qt::WindowModal);
     watcher.setFuture(future);
     connect(&watcher,SIGNAL(finished()),&dlg,SLOT(cancel()));
@@ -600,7 +608,7 @@ void SigSession::add_group()
 
     std::vector< boost::shared_ptr<view::Signal> >::iterator i = _signals.begin();
     while (i != _signals.end()) {
-        if ((*i)->get_type() == view::Trace::DS_LOGIC && (*i)->selected())
+        if ((*i)->get_type() == SR_CHANNEL_LOGIC && (*i)->selected())
             probe_index_list.push_back((*i)->get_index());
         i++;
     }
@@ -644,10 +652,13 @@ void SigSession::del_group()
                 j++;
             }
 
-            _group_data->get_snapshots().at((*i)->get_sec_index()).reset();
-            std::deque< boost::shared_ptr<data::GroupSnapshot> >::iterator k = _group_data->get_snapshots().begin();
-            k += (*i)->get_sec_index();
-            _group_data->get_snapshots().erase(k);
+            std::deque< boost::shared_ptr<data::GroupSnapshot> > &snapshots = _group_data->get_snapshots();
+            if (!snapshots.empty()) {
+                _group_data->get_snapshots().at((*i)->get_sec_index()).reset();
+                std::deque< boost::shared_ptr<data::GroupSnapshot> >::iterator k = snapshots.begin();
+                k += (*i)->get_sec_index();
+                _group_data->get_snapshots().erase(k);
+            }
 
             (*i).reset();
             i = _group_traces.erase(i);
@@ -813,7 +824,7 @@ void SigSession::reload()
     signals_changed();
 }
 
-void SigSession::refresh()
+void SigSession::refresh(int holdtime)
 {
     if (_logic_data) {
         _logic_data->clear();
@@ -827,7 +838,19 @@ void SigSession::refresh()
         _analog_data->clear();
         _cur_analog_snapshot.reset();
     }
+    _data_lock = true;
+    _refresh_timer.start(holdtime);
     data_updated();
+}
+
+void SigSession::data_unlock()
+{
+    _data_lock = false;
+}
+
+bool SigSession::get_data_lock()
+{
+    return _data_lock;
 }
 
 void SigSession::feed_in_meta(const sr_dev_inst *sdi,
@@ -851,7 +874,22 @@ void SigSession::feed_in_meta(const sr_dev_inst *sdi,
 
 void SigSession::feed_in_trigger(const ds_trigger_pos &trigger_pos)
 {
-    receive_trigger(trigger_pos.real_pos);
+    if (_dev_inst->dev_inst()->mode != DSO) {
+        receive_trigger(trigger_pos.real_pos);
+    } else {
+        int probe_count = 0;
+        int probe_en_count = 0;
+        for (const GSList *l = _dev_inst->dev_inst()->channels;
+            l; l = l->next) {
+            const sr_channel *const probe = (const sr_channel *)l->data;
+            if (probe->type == SR_CHANNEL_DSO) {
+                probe_count++;
+                if (probe->enabled)
+                    probe_en_count++;
+            }
+        }
+        receive_trigger(trigger_pos.real_pos * probe_count / probe_en_count);
+    }
 }
 
 void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
@@ -910,6 +948,15 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
 
     if (!_cur_dso_snapshot)
     {
+        // reset scale of dso signal
+        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
+        {
+            assert(s);
+            boost::shared_ptr<view::DsoSignal> dsoSig;
+            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))
+                dsoSig->set_scale(dsoSig->get_view_rect().height() / 256.0f);
+        }
+
         // Create a new data snapshot
         _cur_dso_snapshot = boost::shared_ptr<data::DsoSnapshot>(
                     new data::DsoSnapshot(dso, _dev_inst->get_sample_limit(), get_ch_num(SR_CHANNEL_DSO), _instant));
@@ -929,8 +976,8 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
 
     receive_data(dso.num_samples);
     data_updated();
-    if (!_instant)
-        start_timer(ViewTime);
+    //if (!_instant)
+    //    start_timer(ViewTime);
 }
 
 void SigSession::feed_in_analog(const sr_datafeed_analog &analog)
@@ -970,6 +1017,9 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
 {
 	assert(sdi);
 	assert(packet);
+
+    if (_data_lock)
+        return;
 
 	switch (packet->type) {
 	case SR_DF_HEADER:

@@ -167,10 +167,12 @@ struct DSL_context {
     uint64_t timebase;
     uint8_t trigger_slope;
     uint8_t trigger_source;
+    uint8_t trigger_hrate;
     uint32_t trigger_hpos;
+    uint32_t trigger_holdoff;
     gboolean zero;
     gboolean stream;
-    gboolean lock;
+    gboolean data_lock;
 
 	int num_samples;
 	int submitted_transfers;
@@ -229,9 +231,9 @@ struct DSL_setting {
     //uint32_t trig_edge3_header;              // 27
     //uint16_t trig_edge3[NUM_TRIGGER_STAGES];
     uint32_t trig_count0_header;             // 28
-    uint16_t trig_count0[NUM_TRIGGER_STAGES];
+    uint32_t trig_count0[NUM_TRIGGER_STAGES];
     uint32_t trig_count1_header;             // 29
-    uint16_t trig_count1[NUM_TRIGGER_STAGES];
+    uint32_t trig_count1[NUM_TRIGGER_STAGES];
     //uint32_t trig_count2_header;             // 30
     //uint16_t trig_count2[NUM_TRIGGER_STAGES];
     //uint32_t trig_count3_header;             // 31

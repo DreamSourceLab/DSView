@@ -34,10 +34,12 @@
 #include <QSpinBox>
 #include <QGroupBox>
 #include <QTableWidget>
+#include <QJsonObject>
 
 #include <QVector>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QScrollArea>
 
 #include <vector>
 
@@ -49,7 +51,7 @@ class SigSession;
 
 namespace dock {
 
-class TriggerDock : public QWidget
+class TriggerDock : public QScrollArea
 {
     Q_OBJECT
 
@@ -63,9 +65,12 @@ public:
 
     void init();
 
+    QJsonObject get_session();
+    void set_session(QJsonObject ses);
+
 signals:
 
-private slots:
+public slots:
     void simple_trigger();
     void adv_trigger();
     void trigger_stages_changed(int index);
@@ -78,10 +83,15 @@ private slots:
 
     void pos_changed(int pos);
 
+    void adv_tog(int index);
+    void serial_channel_changed(int index);
+
 private:
 
 private:
     SigSession &_session;
+
+    QWidget *_widget;
 
     QRadioButton *simple_radioButton;
     QRadioButton *adv_radioButton;
@@ -104,6 +114,19 @@ private:
     QVector <QLineEdit *> _value1_lineEdit_list;
     QVector <QSpinBox *> _count1_spinBox_list;
     QVector <QComboBox *> _inv1_comboBox_list;
+
+    QTabWidget *_adv_tabWidget;
+    QGroupBox *_serial_groupBox;
+    QLabel *_serial_start_label;
+    QLineEdit *_serial_start_lineEdit;
+    QLabel *_serial_stop_label;
+    QLineEdit *_serial_stop_lineEdit;
+    QLabel *_serial_edge_label;
+    QLineEdit *_serial_edge_lineEdit;
+    QLabel *_serial_data_lable;
+    QComboBox *_serial_data_comboBox;
+    QLabel *_serial_value_lable;
+    QLineEdit *_serial_value_lineEdit;
 };
 
 } // namespace dock

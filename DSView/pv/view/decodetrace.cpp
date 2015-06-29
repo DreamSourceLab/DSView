@@ -117,7 +117,7 @@ const QColor DecodeTrace::OutlineColours[16] = {
 DecodeTrace::DecodeTrace(pv::SigSession &session,
 	boost::shared_ptr<pv::data::DecoderStack> decoder_stack, int index) :
 	Trace(QString::fromUtf8(
-        decoder_stack->stack().front()->decoder()->name), index, Trace::DS_DECODER),
+        decoder_stack->stack().front()->decoder()->name), index, SR_CHANNEL_DECODER),
 	_session(session),
 	_decoder_stack(decoder_stack),
     _show_hide_mapper(this),
@@ -278,7 +278,7 @@ void DecodeTrace::paint_fore(QPainter &p, int left, int right)
 		const QRect r(left + ArrowSize * 2, y - row_height / 2,
 			right - left, row_height);
 		const QString h(_cur_row_headings[i]);
-		const int f = Qt::AlignLeft | Qt::AlignVCenter |
+        const int f = Qt::AlignLeft | Qt::AlignBottom |
 			Qt::TextDontClip;
 
 		// Draw the outline

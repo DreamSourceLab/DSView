@@ -43,7 +43,7 @@ const QColor Trace::dsRed = QColor(213, 15, 37, 255);
 const QColor Trace::dsGreen = QColor(0, 153, 37, 200);
 const QColor Trace::dsGray = QColor(0x88, 0x8A, 0x85, 60);
 const QColor Trace::dsFore = QColor(0xff, 0xff, 0xff, 100);
-const QColor Trace::dsBack = QColor(0x16, 0x18, 0x23, 255);
+const QColor Trace::dsBack = QColor(0x16, 0x18, 0x23, 180);
 const QColor Trace::dsDisable = QColor(0x88, 0x8A, 0x85, 200);
 const QColor Trace::dsActive = QColor(17, 133, 209, 255);
 const QColor Trace::dsLightBlue = QColor(17, 133, 209,  150);
@@ -54,6 +54,7 @@ const QPen Trace::AxisPen(QColor(128, 128, 128, 64));
 const int Trace::LabelHitPadding = 2;
 
 Trace::Trace(QString name, int index, int type) :
+    _view(NULL),
 	_name(name),
     _v_offset(INT_MAX),
     _type(type),
@@ -65,6 +66,7 @@ Trace::Trace(QString name, int index, int type) :
 }
 
 Trace::Trace(QString name, std::list<int> index_list, int type, int sec_index) :
+    _view(NULL),
     _name(name),
     _v_offset(INT_MAX),
     _type(type),
@@ -262,7 +264,7 @@ void Trace::paint_label(QPainter &p, int right, bool hover, int action)
         };
 
         p.setPen(Qt::transparent);
-        if (_type == DS_DSO)
+        if (_type == SR_CHANNEL_DSO)
             p.setBrush(((hover && action == LABEL) || selected()) ? _colour.darker() : _colour);
         else
             p.setBrush(((hover && action == LABEL) || selected()) ? dsYellow : dsBlue);
@@ -275,11 +277,11 @@ void Trace::paint_label(QPainter &p, int right, bool hover, int action)
 
         // Paint the text
         p.setPen(Qt::white);
-        if (_type == DS_GROUP)
+        if (_type == SR_CHANNEL_GROUP)
             p.drawText(label_rect, Qt::AlignCenter | Qt::AlignVCenter, "G");
-        else if (_type == DS_ANALOG)
+        else if (_type == SR_CHANNEL_ANALOG)
             p.drawText(label_rect, Qt::AlignCenter | Qt::AlignVCenter, "A");
-        else if (_type == DS_DECODER)
+        else if (_type == SR_CHANNEL_DECODER)
             p.drawText(label_rect, Qt::AlignCenter | Qt::AlignVCenter, "D");
         else
             p.drawText(label_rect, Qt::AlignCenter | Qt::AlignVCenter, QString::number(_index_list.front()));
@@ -317,33 +319,33 @@ int Trace::pt_in_rect(int y, int right, const QPoint &point)
         return COLOR;
     else if (name.contains(point) && enabled())
         return NAME;
-    else if (posTrig.contains(point) && _type == DS_LOGIC)
+    else if (posTrig.contains(point) && _type == SR_CHANNEL_LOGIC)
         return POSTRIG;
-    else if (higTrig.contains(point) && _type == DS_LOGIC)
+    else if (higTrig.contains(point) && _type == SR_CHANNEL_LOGIC)
         return HIGTRIG;
-    else if (negTrig.contains(point) && _type == DS_LOGIC)
+    else if (negTrig.contains(point) && _type == SR_CHANNEL_LOGIC)
         return NEGTRIG;
-    else if (lowTrig.contains(point) && _type == DS_LOGIC)
+    else if (lowTrig.contains(point) && _type == SR_CHANNEL_LOGIC)
         return LOWTRIG;
-    else if (edgeTrig.contains(point) && _type == DS_LOGIC)
+    else if (edgeTrig.contains(point) && _type == SR_CHANNEL_LOGIC)
         return EDGETRIG;
     else if (label.contains(point) && enabled())
         return LABEL;
-    else if (vDial.contains(point) && _type == DS_DSO && enabled())
+    else if (vDial.contains(point) && _type == SR_CHANNEL_DSO && enabled())
         return VDIAL;
-    else if (x1.contains(point) && _type == DS_DSO && enabled())
+    else if (x1.contains(point) && _type == SR_CHANNEL_DSO && enabled())
         return X1;
-    else if (x10.contains(point) && _type == DS_DSO && enabled())
+    else if (x10.contains(point) && _type == SR_CHANNEL_DSO && enabled())
         return X10;
-    else if (x100.contains(point) && _type == DS_DSO && enabled())
+    else if (x100.contains(point) && _type == SR_CHANNEL_DSO && enabled())
         return X100;
-    else if (hDial.contains(point) && _type == DS_DSO && enabled())
+    else if (hDial.contains(point) && _type == SR_CHANNEL_DSO && enabled())
         return HDIAL;
-    else if (chEn.contains(point) && _type == DS_DSO)
+    else if (chEn.contains(point) && _type == SR_CHANNEL_DSO)
         return CHEN;
-    else if (acdc.contains(point) && _type == DS_DSO && enabled())
+    else if (acdc.contains(point) && _type == SR_CHANNEL_DSO && enabled())
         return ACDC;
-    else if (dsoTrig.contains(point) && _type == DS_DSO && enabled())
+    else if (dsoTrig.contains(point) && _type == SR_CHANNEL_DSO && enabled())
         return DSOTRIG;
     else
         return 0;

@@ -30,7 +30,7 @@ namespace device {
 class SessionFile : public File
 {
 public:
-	SessionFile(const std::string &path);
+    SessionFile(QString path);
 
 	sr_dev_inst* dev_inst() const;
 

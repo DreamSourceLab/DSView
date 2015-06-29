@@ -53,7 +53,7 @@ SR_API int sr_dev_trigger_set(const struct sr_dev_inst *sdi, int probenum,
 		const char *trigger);
 SR_API gboolean sr_dev_has_option(const struct sr_dev_inst *sdi, int key);
 SR_API GSList *sr_dev_list(const struct sr_dev_driver *driver);
-SR_API GSList *sr_dev_mode_list(const struct sr_dev_driver *driver);
+SR_API GSList *sr_dev_mode_list(const struct sr_dev_inst *sdi);
 SR_API int sr_dev_clear(const struct sr_dev_driver *driver);
 SR_API int sr_dev_open(struct sr_dev_inst *sdi);
 SR_API int sr_dev_close(struct sr_dev_inst *sdi);
@@ -171,10 +171,11 @@ SR_API const char *sr_strerror_name(int error_code);
 /*--- trigger.c ------------------------------------------------------------*/
 SR_API int ds_trigger_init(void);
 SR_API int ds_trigger_destroy(void);
+SR_API struct ds_trigger *ds_trigger_get(void);
 SR_API int ds_trigger_stage_set_value(uint16_t stage, uint16_t probes, char *trigger0, char *trigger1);
 SR_API int ds_trigger_stage_set_logic(uint16_t stage, uint16_t probes, unsigned char trigger_logic);
 SR_API int ds_trigger_stage_set_inv(uint16_t stage, uint16_t probes, unsigned char trigger0_inv, unsigned char trigger1_inv);
-SR_API int ds_trigger_stage_set_count(uint16_t stage, uint16_t probes, uint16_t trigger0_count, uint16_t trigger1_count);
+SR_API int ds_trigger_stage_set_count(uint16_t stage, uint16_t probes, uint32_t trigger0_count, uint32_t trigger1_count);
 SR_API int ds_trigger_probe_set(uint16_t probe, unsigned char trigger0, unsigned char trigger1);
 SR_API int ds_trigger_set_stage(uint16_t stages);
 SR_API int ds_trigger_set_pos(uint16_t position);
