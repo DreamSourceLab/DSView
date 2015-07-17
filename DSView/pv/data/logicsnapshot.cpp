@@ -192,9 +192,7 @@ void LogicSnapshot::get_subsampled_edges(
 	float min_length, int sig_index)
 {
 	uint64_t index = start;
-	unsigned int level;
 	bool last_sample;
-	bool fast_forward;
 
     assert(end <= get_sample_count());
 	assert(start <= end);
@@ -447,9 +445,9 @@ bool LogicSnapshot::get_pre_edge(
         // If resolution is less than a mip map block,
         // round up to the beginning of the mip-map block
         // for this level of detail
-        const int min_level_scale_power =
+        const unsigned int min_level_scale_power =
             (level + 1) * MipMapScalePower;
-        if (index < (1 << min_level_scale_power))
+        if (index < (uint64_t)(1 << min_level_scale_power))
             index = 0;
         else
             index = pow2_ceil(index, min_level_scale_power) - (1 << min_level_scale_power) - 1;
@@ -539,16 +537,13 @@ bool LogicSnapshot::get_pre_edge(
         // do a linear search for the next transition within the
         // block
         if (min_length < MipMapScaleFactor) {
-            for (; index >= 0; index--) {
+            for (; index > 0; index--) {
                 const bool sample = (get_sample(index) &
                     sig_mask) != 0;
                 if (sample != last_sample) {
                     index++;
                     return true;
                 }
-
-                if (index == 0)
-                    return false;
             }
         }
     }

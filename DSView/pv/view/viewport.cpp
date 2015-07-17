@@ -444,7 +444,7 @@ void Viewport::mousePressEvent(QMouseEvent *event)
                 _dso_xm_index[i-1] = min(_dso_xm_index[i-1], _dso_xm_index[i]);
                 _dso_xm_index[i] = max_index;
             }
-            _dso_xm_stage = (++_dso_xm_stage) % (DsoMeasureStages + 1);
+            _dso_xm_stage = (_dso_xm_stage + 1) % (DsoMeasureStages + 1);
         }
     }
 }

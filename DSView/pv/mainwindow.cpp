@@ -632,7 +632,6 @@ bool MainWindow::load_session(QString name)
         bool isEnabled = false;
         foreach (const QJsonValue &value, sessionObj["channel"].toArray()) {
             QJsonObject obj = value.toObject();
-            qDebug("obj.index = %d", obj["index"].toDouble());
             if ((probe->index == obj["index"].toDouble()) &&
                 (probe->type == obj["type"].toDouble())) {
                 isEnabled = true;

@@ -53,7 +53,7 @@ const QPen Trace::SignalAxisPen = QColor(128, 128, 128, 64);
 const QPen Trace::AxisPen(QColor(128, 128, 128, 64));
 const int Trace::LabelHitPadding = 2;
 
-Trace::Trace(QString name, int index, int type) :
+Trace::Trace(QString name, uint16_t index, int type) :
     _view(NULL),
 	_name(name),
     _v_offset(INT_MAX),

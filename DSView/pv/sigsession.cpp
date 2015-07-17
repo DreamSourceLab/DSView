@@ -205,7 +205,7 @@ QList<QString> SigSession::getSuportedExportFormats(){
         format.append((*supportedModules)->id);
         format.append(")");
         list.append(format);
-        *supportedModules++;
+        supportedModules++;
     }
     return list;
 }
@@ -245,7 +245,7 @@ void SigSession::export_file(const QString name, QWidget* parent, const QString 
             outModule = *supportedModules;
             break;
         }
-        *supportedModules++;
+        supportedModules++;
     }
     if(outModule == NULL)
         return;
@@ -283,8 +283,8 @@ void SigSession::export_file(const QString name, QWidget* parent, const QString 
             unsigned char* datat = (unsigned char*)snapshot->get_data();
             unsigned int numsamples = snapshot->get_sample_count()*snapshot->unit_size();
             GString *data_out;
-            int usize = 8192;
-            int size = usize;
+            unsigned int usize = 8192;
+            unsigned int size = usize;
             struct sr_datafeed_logic lp;
             struct sr_datafeed_packet p;
             for(uint64_t i = 0; i < numsamples; i+=usize){
@@ -311,8 +311,8 @@ void SigSession::export_file(const QString name, QWidget* parent, const QString 
             unsigned char* datat = (unsigned char*)snapshot->get_data();
             unsigned int numsamples = snapshot->get_sample_count();
             GString *data_out;
-            int usize = 8192;
-            int size = usize;
+            unsigned int usize = 8192;
+            unsigned int size = usize;
             struct sr_datafeed_dso dp;
             struct sr_datafeed_packet p;
             for(uint64_t i = 0; i < numsamples; i+=usize){

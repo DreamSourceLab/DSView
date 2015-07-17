@@ -72,7 +72,6 @@ LogicSignal::LogicSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
     Signal(dev_inst, probe, SR_CHANNEL_LOGIC),
     _data(data)
 {
-    assert(probe->index >= 0);
     _colour = SignalColours[probe->index % countof(SignalColours)];
 }
 
@@ -82,7 +81,6 @@ LogicSignal::LogicSignal(const Signal &s,
     Signal(s, probe),
     _data(data)
 {
-    assert(probe->index >= 0);
 }
 
 LogicSignal::~LogicSignal()

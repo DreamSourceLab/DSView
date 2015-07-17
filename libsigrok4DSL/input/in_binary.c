@@ -53,7 +53,7 @@ static int format_match(const char *filename)
 static int init(struct sr_input *in, const char *filename)
 {
 	struct sr_channel *probe;
-	int num_probes, i;
+    uint16_t num_probes, i;
 	char name[SR_MAX_PROBENAME_LEN + 1];
 	char *param;
 	struct context *ctx;

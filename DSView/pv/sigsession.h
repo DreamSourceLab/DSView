@@ -251,10 +251,10 @@ private:
     boost::shared_ptr<data::GroupSnapshot> _cur_group_snapshot;
     int _group_cnt;
 
-	std::auto_ptr<boost::thread> _sampling_thread;
+	std::unique_ptr<boost::thread> _sampling_thread;
 
 	libusb_hotplug_callback_handle _hotplug_handle;
-    std::auto_ptr<boost::thread> _hotplug;
+    std::unique_ptr<boost::thread> _hotplug;
     bool _hot_attach;
     bool _hot_detach;
 

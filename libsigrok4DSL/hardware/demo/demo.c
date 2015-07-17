@@ -204,7 +204,7 @@ static GSList *hw_scan(GSList *options)
 	struct drv_context *drvc;
 	struct dev_context *devc;
 	GSList *devices;
-	int i;
+    uint16_t i;
 
 	(void)options;
 
@@ -396,7 +396,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                       struct sr_channel *ch,
                       const struct sr_channel_group *cg)
 {
-    int i, ret;
+    uint16_t i;
+    int ret;
 	const char *stropt;
     struct sr_channel *probe;
 

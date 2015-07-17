@@ -556,7 +556,7 @@ enum {
 
 struct sr_channel {
     /* The index field will go: use g_slist_length(sdi->channels) instead. */
-	int index;
+    uint16_t index;
 	int type;
 	gboolean enabled;
 	char *name;

@@ -606,7 +606,7 @@ static int init(struct sr_context *sr_ctx)
 
 static int set_probes(struct sr_dev_inst *sdi, int num_probes)
 {
-    int j;
+    uint16_t j;
     struct sr_channel *probe;
 
     for (j = 0; j < num_probes; j++) {
@@ -627,7 +627,7 @@ static int set_probes(struct sr_dev_inst *sdi, int num_probes)
 
 static int adjust_probes(struct sr_dev_inst *sdi, int num_probes)
 {
-    int j;
+    uint16_t j;
     GSList *l;
     struct sr_channel *probe;
     GSList *p;
