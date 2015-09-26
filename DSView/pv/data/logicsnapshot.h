@@ -67,8 +67,7 @@ public:
 
 	void append_payload(const sr_datafeed_logic &logic);
 
-    void get_samples(uint8_t *const data,
-        int64_t start_sample, int64_t end_sample) const;
+    uint8_t * get_samples(int64_t start_sample, int64_t end_sample) const;
 
 private:
 	void reallocate_mipmap_level(MipMapLevel &m);

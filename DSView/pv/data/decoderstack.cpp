@@ -88,6 +88,8 @@ DecoderStack::~DecoderStack()
 //		_decode_thread.join();
 //	}
     stop_decode();
+    _stack.clear();
+    clear();
 }
 
 const std::list< boost::shared_ptr<decode::Decoder> >&
@@ -335,7 +337,7 @@ void DecoderStack::decode_data(
 {
     //uint8_t chunk[DecodeChunkLength];
     uint8_t *chunk = NULL;
-    chunk = (uint8_t *)realloc(chunk, DecodeChunkLength);
+    //chunk = (uint8_t *)realloc(chunk, DecodeChunkLength);
 
     const uint64_t chunk_sample_count =
 		DecodeChunkLength / _snapshot->unit_size();
@@ -349,10 +351,10 @@ void DecoderStack::decode_data(
 
         const uint64_t chunk_end = min(
 			i + chunk_sample_count, sample_count);
-		_snapshot->get_samples(chunk, i, chunk_end);
+        chunk = _snapshot->get_samples(i, chunk_end);
 
 		if (srd_session_send(session, i, i + sample_count, chunk,
-				(chunk_end - i) * unit_size) != SRD_OK) {
+                (chunk_end - i) * unit_size, unit_size) != SRD_OK) {
 			_error_message = tr("Decoder reported an error");
 			break;
 		}

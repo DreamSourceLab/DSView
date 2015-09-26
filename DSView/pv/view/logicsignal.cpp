@@ -85,6 +85,7 @@ LogicSignal::LogicSignal(const Signal &s,
 
 LogicSignal::~LogicSignal()
 {
+    _cur_edges.clear();
 }
 
 const sr_channel* LogicSignal::probe() const

@@ -29,7 +29,7 @@ namespace prop {
 Property::Property(QString name, Getter getter, Setter setter) :
 	_getter(getter),
 	_setter(setter),
-	_name(name)
+    _name(name)
 {
 }
 

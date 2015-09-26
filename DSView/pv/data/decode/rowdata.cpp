@@ -34,6 +34,11 @@ RowData::RowData() :
 {
 }
 
+RowData::~RowData()
+{
+    _annotations.clear();
+}
+
 uint64_t RowData::get_max_sample() const
 {
 	if (_annotations.empty())

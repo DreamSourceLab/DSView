@@ -222,8 +222,10 @@ void SamplingBar::on_configure()
 
     pv::dialogs::DeviceOptions dlg(this, dev_inst);
     ret = dlg.exec();
-    if (ret == QDialog::Accepted)
+    if (ret == QDialog::Accepted) {
         device_updated();
+        update_sample_rate_selector();
+    }
 
     GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_ZERO);
     if (gvar != NULL) {
@@ -479,10 +481,10 @@ void SamplingBar::on_samplecount_sel(int index)
 {
     uint64_t sample_count = 0;
     uint64_t max_sample_count = 0;
-    uint64_t last_sample_count = 0;
+    //uint64_t last_sample_count = 0;
     bool stream_mode = false;
-    bool buffer2stream = false;
-    bool stream2buffer = false;
+    //bool buffer2stream = false;
+    //bool stream2buffer = false;
 
     if (index >= 0)
         sample_count = _sample_count.itemData(
@@ -492,7 +494,7 @@ void SamplingBar::on_samplecount_sel(int index)
     assert(_devInst);
 
     if (strcmp(_devInst->dev_inst()->driver->name, "DSLogic") == 0 && _devInst->dev_inst()->mode != DSO) {
-        GVariant* gvar = _devInst->get_config(NULL, NULL, SR_CONF_LIMIT_SAMPLES);
+        /*GVariant* gvar = _devInst->get_config(NULL, NULL, SR_CONF_LIMIT_SAMPLES);
         if (gvar != NULL) {
             last_sample_count = g_variant_get_uint64(gvar);
             g_variant_unref(gvar);
@@ -515,7 +517,7 @@ void SamplingBar::on_samplecount_sel(int index)
         } else if (stream_mode && sample_count <= max_sample_count) {
             stream_mode = sample_count > max_sample_count;
             stream2buffer = true;
-        }
+        }*/
 
         // Set the sample count
         _devInst->set_config(NULL, NULL,
@@ -523,8 +525,29 @@ void SamplingBar::on_samplecount_sel(int index)
                              g_variant_new_uint64(sample_count));
 
 
+        GVariant* gvar = _devInst->get_config(NULL, NULL, SR_CONF_STREAM);
+        if (gvar != NULL) {
+            stream_mode = g_variant_get_boolean(gvar);
+            g_variant_unref(gvar);
+        }
+        gvar = _devInst->get_config(NULL, NULL, SR_CONF_MAX_LOGIC_SAMPLELIMITS);
+        if (gvar != NULL) {
+            max_sample_count = g_variant_get_uint64(gvar);
+            g_variant_unref(gvar);
+        }
+        if (!stream_mode) {
+            if (sample_count > max_sample_count) {
+                _devInst->set_config(NULL, NULL,
+                                     SR_CONF_RLE,
+                                     g_variant_new_boolean(true));
+            } else {
+                _devInst->set_config(NULL, NULL,
+                                     SR_CONF_RLE,
+                                     g_variant_new_boolean(false));
+            }
+        }
 
-        if (buffer2stream) {
+        /*if (buffer2stream) {
             pv::dialogs::StreamOptions stream(this, _devInst, sample_count, stream_mode);
             stream.setFixedSize(300, 150);
             stream.exec();
@@ -543,7 +566,7 @@ void SamplingBar::on_samplecount_sel(int index)
                                  g_variant_new_boolean(false));
         }
 
-        device_updated();
+        device_updated();*/
         update_scale();
     }
 }
@@ -552,24 +575,53 @@ void SamplingBar::on_samplerate_sel(int index)
 {
     uint64_t sample_rate = 0;
     //uint64_t last_sample_rate = 0;
+    uint64_t max_sample_count = 0;
+    uint64_t sample_count = 0;
+    bool stream_mode = false;
 
     if (index >= 0)
         sample_rate = _sample_rate.itemData(
             index).value<uint64_t>();
 
-    const sr_dev_inst* _sdi = get_selected_device()->dev_inst();
-    assert(_sdi);
+    boost::shared_ptr<pv::device::DevInst> _devInst = get_selected_device();
+    assert(_devInst);
 
     // Get last samplerate
     //last_sample_rate = get_selected_device()->get_sample_rate();
 
-    if (strcmp(_sdi->driver->name, "DSLogic") == 0 && _sdi->mode != DSO) {
+    if (strcmp(_devInst->dev_inst()->driver->name, "DSLogic") == 0 && _devInst->dev_inst()->mode != DSO) {
             // Set the samplerate
             get_selected_device()->set_config(NULL, NULL,
                                               SR_CONF_SAMPLERATE,
                                               g_variant_new_uint64(sample_rate));
-            update_sample_count_selector_value();
-            device_updated();
+
+            GVariant* gvar = _devInst->get_config(NULL, NULL, SR_CONF_STREAM);
+            if (gvar != NULL) {
+                stream_mode = g_variant_get_boolean(gvar);
+                g_variant_unref(gvar);
+            }
+            gvar = _devInst->get_config(NULL, NULL, SR_CONF_LIMIT_SAMPLES);
+            if (gvar != NULL) {
+                sample_count = g_variant_get_uint64(gvar);
+                g_variant_unref(gvar);
+            }
+            gvar = _devInst->get_config(NULL, NULL, SR_CONF_MAX_LOGIC_SAMPLELIMITS);
+            if (gvar != NULL) {
+                max_sample_count = g_variant_get_uint64(gvar);
+                g_variant_unref(gvar);
+            }
+            if (!stream_mode) {
+                if (sample_count > max_sample_count) {
+                    _devInst->set_config(NULL, NULL,
+                                         SR_CONF_RLE,
+                                         g_variant_new_boolean(true));
+                } else {
+                    _devInst->set_config(NULL, NULL,
+                                         SR_CONF_RLE,
+                                         g_variant_new_boolean(false));
+                }
+            }
+
             update_scale();
     }
 }
