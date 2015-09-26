@@ -801,6 +801,9 @@ enum {
     /** Device operation mode */
     SR_CONF_OPERATION_MODE,
 
+    /** Device channel mode */
+    SR_CONF_CHANNEL_MODE,
+
     /** Device sample threshold */
     SR_CONF_THRESHOLD,
     SR_CONF_VTH,
@@ -919,13 +922,14 @@ enum {
 /** Device operation modes. */
 enum {
     /** Normal */
-    SR_OP_NORMAL = 0,
+    SR_OP_BUFFER = 0,
+    SR_OP_STREAM = 1,
     /** Internal pattern test mode */
-    SR_OP_INTERNAL_TEST = 1,
+    SR_OP_INTERNAL_TEST = 2,
     /** External pattern test mode */
-    SR_OP_EXTERNAL_TEST = 2,
+    SR_OP_EXTERNAL_TEST = 3,
     /** SDRAM loopback test mode */
-    SR_OP_LOOPBACK_TEST = 3,
+    SR_OP_LOOPBACK_TEST = 4,
 };
 
 /** Device threshold level. */
@@ -1065,7 +1069,8 @@ struct ds_trigger {
 struct ds_trigger_pos {
     uint32_t real_pos;
     uint32_t ram_saddr;
-    unsigned char first_block[504];
+    uint32_t remain_cnt;
+    unsigned char first_block[500];
 };
 
 #include "proto.h"

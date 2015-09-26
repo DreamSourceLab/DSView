@@ -36,6 +36,7 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QRadioButton>
+#include <QTimer>
 
 #include <boost/shared_ptr.hpp>
 
@@ -68,6 +69,8 @@ private slots:
 	void enable_all_probes();
 	void disable_all_probes();
     void zero_adj();
+    void mode_check();
+    void channel_check();
 
 private:
     boost::shared_ptr<pv::device::DevInst>  _dev_inst;
@@ -83,6 +86,9 @@ private:
 
     QPushButton *_config_button;
 	QDialogButtonBox _button_box;
+
+    QTimer _mode_check;
+    QString _mode;
 
 	pv::prop::binding::DeviceOptions _device_options_binding;
 };

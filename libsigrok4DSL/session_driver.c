@@ -141,6 +141,13 @@ static int dev_open(struct sr_dev_inst *sdi)
 		return SR_ERR_MALLOC;
 	}
 
+    struct session_vdev *vdev;
+    vdev = sdi->priv;
+    if (!(vdev->buf = g_try_malloc(CHUNKSIZE))) {
+        sr_err("%s: vdev->buf malloc failed", __func__);
+        return SR_ERR_MALLOC;
+    }
+
 	dev_insts = g_slist_append(dev_insts, sdi);
 
 	return SR_OK;
@@ -290,11 +297,6 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi,
 		       "session file '%s'.", vdev->capturefile, vdev->sessionfile);
 		return SR_ERR;
 	}
-
-    if (!(vdev->buf = g_try_malloc(CHUNKSIZE))) {
-        sr_err("%s: buf malloc failed", __func__);
-        return SR_ERR;
-    }
 
 	/* Send header packet to the session bus. */
     std_session_send_df_header(sdi, LOG_PREFIX);

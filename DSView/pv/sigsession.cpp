@@ -793,12 +793,20 @@ void SigSession::reload()
             signal.reset();
             switch(probe->type) {
             case SR_CHANNEL_LOGIC:
-                if (probe->enabled && probe->index < _signals.size())
-                    signal = boost::shared_ptr<view::Signal>(
-                        new view::LogicSignal(*_signals[probe->index].get(), _logic_data, probe));
-                else if (probe->enabled)
-                    signal = boost::shared_ptr<view::Signal>(
-                        new view::LogicSignal(_dev_inst, _logic_data, probe));
+                if (probe->enabled) {
+                    std::vector< boost::shared_ptr<view::Signal> >::iterator i = _signals.begin();
+                    while (i != _signals.end()) {
+                        if ((*i)->get_index() == probe->index) {
+                            signal = boost::shared_ptr<view::Signal>(
+                                new view::LogicSignal(**i, _logic_data, probe));
+                            break;
+                        }
+                        i++;
+                    }
+                    if (!signal.get())
+                        signal = boost::shared_ptr<view::Signal>(
+                            new view::LogicSignal(_dev_inst, _logic_data, probe));
+                }
                 break;
 
             case SR_CHANNEL_DSO:

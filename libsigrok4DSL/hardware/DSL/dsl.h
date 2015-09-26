@@ -150,13 +150,17 @@ struct DSL_context {
 	/* Device/capture settings */
 	uint64_t cur_samplerate;
 	uint64_t limit_samples;
+    uint64_t actual_samples;
 
 	/* Operational settings */
 	gboolean sample_wide;
     gboolean clock_type;
     gboolean clock_edge;
+    gboolean rle_mode;
     gboolean instant;
     uint16_t op_mode;
+    uint16_t ch_mode;
+    uint16_t samplerates_size;
     uint16_t th_level;
     double vth;
     uint16_t filter;

@@ -136,6 +136,18 @@ DecodeTrace::DecodeTrace(pv::SigSession &session,
 		this, SLOT(on_show_hide_decoder(int)));
 }
 
+DecodeTrace::~DecodeTrace()
+{
+    if (_popup_form)
+        delete _popup_form;
+    if (_popup)
+        delete _popup;
+    _cur_row_headings.clear();
+    _decoder_forms.clear();
+    _probe_selectors.clear();
+    _bindings.clear();
+}
+
 bool DecodeTrace::enabled() const
 {
 	return true;

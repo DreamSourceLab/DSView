@@ -48,8 +48,6 @@ static struct sr_dev_mode mode_list[] = {
 static const char *opmodes[] = {
     "Normal",
     "Internal Test",
-    "External Test",
-    "DRAM Loopback Test",
 };
 
 static const char *thresholds[] = {
@@ -254,7 +252,7 @@ static int fpga_setting(const struct sr_dev_inst *sdi)
                    ((devc->op_mode == SR_OP_EXTERNAL_TEST) << 14) +
                    ((devc->op_mode == SR_OP_LOOPBACK_TEST) << 13) +
                    trigger->trigger_en +
-                   ((sdi->mode > 0) << 4) + (devc->clock_type << 1) + (devc->clock_edge << 1) +
+                   ((sdi->mode > 0) << 4) + (devc->clock_type << 1) + (devc->clock_edge << 2) +
                    (((devc->cur_samplerate == SR_MHZ(200) && sdi->mode != DSO) || (sdi->mode == ANALOG)) << 5) +
                    ((devc->cur_samplerate == SR_MHZ(400)) << 6) +
                    ((sdi->mode == ANALOG) << 7) +
@@ -579,7 +577,7 @@ static struct DSL_context *DSCope_dev_new(void)
     devc->clock_type = FALSE;
     devc->clock_edge = FALSE;
     devc->instant = FALSE;
-    devc->op_mode = SR_OP_NORMAL;
+    devc->op_mode = SR_OP_BUFFER;
     devc->th_level = SR_TH_3V3;
     devc->filter = SR_FILTER_NONE;
     devc->timebase = 10000;
@@ -1386,8 +1384,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     } else if (id == SR_CONF_OPERATION_MODE) {
         stropt = g_variant_get_string(data, NULL);
         ret = SR_OK;
-        if (!strcmp(stropt, opmodes[SR_OP_NORMAL])) {
-            devc->op_mode = SR_OP_NORMAL;
+        if (!strcmp(stropt, opmodes[SR_OP_BUFFER])) {
+            devc->op_mode = SR_OP_BUFFER;
         } else if (!strcmp(stropt, opmodes[SR_OP_INTERNAL_TEST])) {
             devc->op_mode = SR_OP_INTERNAL_TEST;
         } else if (!strcmp(stropt, opmodes[SR_OP_EXTERNAL_TEST])) {

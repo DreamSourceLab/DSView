@@ -52,10 +52,31 @@ static struct sr_dev_mode pro_mode_list[] = {
 };
 
 static const char *opmodes[] = {
-    "Normal",
+    "Buffer Mode",
+    "Stream Mode",
     "Internal Test",
-    "External Test",
-    "DRAM Loopback Test",
+};
+
+static const char *stream_ch_modes[] = {
+    "Use Channels 0~15 (Max 10MHz)",
+    "Use Channels 0~7 (Max 25MHz)",
+};
+
+static const uint16_t stream_ch_num[] = {
+    16,
+    8,
+};
+
+static const char *buffer_ch_modes[] = {
+    "Use Channels 0~15 (Max 100MHz)",
+    "Use Channels 0~7 (Max 200MHz)",
+    "Use Channels 0~3 (Max 400MHz)",
+};
+
+static const uint16_t buffer_ch_num[] = {
+    16,
+    8,
+    4,
 };
 
 static const char *thresholds[] = {
@@ -104,6 +125,7 @@ static const int32_t sessions[] = {
     SR_CONF_CLOCK_TYPE,
     SR_CONF_CLOCK_EDGE,
     SR_CONF_OPERATION_MODE,
+    SR_CONF_CHANNEL_MODE,
     SR_CONF_THRESHOLD,
     SR_CONF_FILTER,
     SR_CONF_TRIGGER_SLOPE,
@@ -118,6 +140,7 @@ static const int32_t sessions_pro[] = {
     SR_CONF_CLOCK_TYPE,
     SR_CONF_CLOCK_EDGE,
     SR_CONF_OPERATION_MODE,
+    SR_CONF_CHANNEL_MODE,
     SR_CONF_VTH,
     SR_CONF_FILTER,
     SR_CONF_TRIGGER_SLOPE,
@@ -318,9 +341,10 @@ static int fpga_setting(const struct sr_dev_inst *sdi)
                    ((devc->stream) << 12) +
                    ((trigger->trigger_mode == SERIAL_TRIGGER) << 11) +
                    trigger->trigger_en +
-                   ((sdi->mode > 0) << 4) + (devc->clock_type << 1) + (devc->clock_edge << 1) +
-                   (((channel_cnt == 8 && sdi->mode != DSO) || (sdi->mode == ANALOG)) << 5) +
-                   ((channel_cnt == 4) << 6) +
+                   ((sdi->mode > 0) << 4) + (devc->clock_type << 1) + (devc->clock_edge << 2) +
+                   (devc->rle_mode << 3) +
+                   ((((devc->cur_samplerate == (2 * DSLOGIC_MAX_LOGIC_SAMPLERATE)) && sdi->mode != DSO) || (sdi->mode == ANALOG)) << 5) +
+                   ((devc->cur_samplerate == (4 * DSLOGIC_MAX_LOGIC_SAMPLERATE)) << 6) +
                    ((sdi->mode == ANALOG) << 7) +
                    ((devc->filter == SR_FILTER_1T) << 8) +
                    (devc->instant << 9) + (devc->zero << 10);
@@ -459,6 +483,7 @@ static int fpga_config(struct libusb_device_handle *hdl, const char *filename)
         offset += chunksize;
     }
     fclose(fw);
+    g_free(buf);
     if (result == SR_OK)
         sr_info("FPGA configure done");
 
@@ -596,12 +621,6 @@ static int configure_probes(const struct sr_dev_inst *sdi)
 		if (probe->enabled == FALSE)
 			continue;
 
-        if ((probe->index > 7 && probe->type == SR_CHANNEL_LOGIC) ||
-            (probe->type == SR_CHANNEL_ANALOG || probe->type == SR_CHANNEL_DSO))
-			devc->sample_wide = TRUE;
-        else
-            devc->sample_wide = FALSE;
-
 		probe_bit = 1 << (probe->index);
 		if (!(probe->trigger))
 			continue;
@@ -642,11 +661,14 @@ static struct DSL_context *DSLogic_dev_new(void)
 	devc->fw_updated = 0;
     devc->cur_samplerate = DEFAULT_SAMPLERATE;
     devc->limit_samples = DEFAULT_SAMPLELIMIT;
-	devc->sample_wide = 0;
+    devc->sample_wide = TRUE;
     devc->clock_type = FALSE;
     devc->clock_edge = FALSE;
+    devc->rle_mode = FALSE;
     devc->instant = FALSE;
-    devc->op_mode = SR_OP_NORMAL;
+    devc->op_mode = SR_OP_BUFFER;
+    devc->ch_mode = 0;
+    devc->samplerates_size = 14;
     devc->th_level = SR_TH_3V3;
     devc->vth = 1.0;
     devc->filter = SR_FILTER_NONE;
@@ -812,9 +834,11 @@ static GSList *scan(GSList *options)
             sdi->conn = sr_usb_dev_inst_new(libusb_get_bus_number(devlist[i]),
 					libusb_get_device_address(devlist[i]), NULL);
 		} else {
-            char *firmware = malloc(strlen(config_path)+strlen(prof->firmware)+1);
-            if (firmware == NULL)
+            char *firmware;
+            if (!(firmware = g_try_malloc(strlen(config_path)+strlen(prof->firmware)+1))) {
+                sr_err("Firmware path malloc error!");
                 return NULL;
+            }
             strcpy(firmware, config_path);
             strcat(firmware, prof->firmware);
             if (ezusb_upload_firmware(devlist[i], USB_CONFIGURATION,
@@ -824,6 +848,7 @@ static GSList *scan(GSList *options)
 			else
                 sr_err("Firmware upload failed for "
 				       "device %d.", devcnt);
+            g_free(firmware);
             sdi->inst_type = SR_INST_USB;
             sdi->conn = sr_usb_dev_inst_new (libusb_get_bus_number(devlist[i]),
 					0xff, NULL);
@@ -1060,9 +1085,11 @@ static int dev_open(struct sr_dev_inst *sdi)
         } else {
             /* Takes >= 10ms for the FX2 to be ready for FPGA configure. */
             g_usleep(10 * 1000);
-            char *fpga_bit = malloc(strlen(config_path)+strlen(devc->profile->fpga_bit33)+1);
-            if (fpga_bit == NULL)
+            char *fpga_bit;
+            if (!(fpga_bit = g_try_malloc(strlen(config_path)+strlen(devc->profile->fpga_bit33)+1))) {
+                sr_err("fpag_bit path malloc error!");
                 return SR_ERR_MALLOC;
+            }
             strcpy(fpga_bit, config_path);
             switch(devc->th_level) {
             case SR_TH_3V3:
@@ -1078,6 +1105,7 @@ static int dev_open(struct sr_dev_inst *sdi)
             if (ret != SR_OK) {
                 sr_err("Configure FPGA failed!");
             }
+            g_free(fpga_bit);
         }
     }
 
@@ -1133,6 +1161,7 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     struct DSL_context *devc;
     struct sr_usb_dev_inst *usb;
 	char str[128];
+    uint64_t max_limits = DSLOGIC_MAX_LOGIC_DEPTH;
 
     (void)cg;
 
@@ -1172,6 +1201,12 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         devc = sdi->priv;
         *data = g_variant_new_boolean(devc->clock_edge);
         break;
+    case SR_CONF_RLE:
+        if (!sdi)
+            return SR_ERR;
+        devc = sdi->priv;
+        *data = g_variant_new_boolean(devc->rle_mode);
+        break;
     case SR_CONF_INSTANT:
         if (!sdi)
             return SR_ERR;
@@ -1184,11 +1219,18 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         devc = sdi->priv;
         *data = g_variant_new_string(opmodes[devc->op_mode]);
         break;
+    case SR_CONF_CHANNEL_MODE:
+        if (!sdi)
+            return SR_ERR;
+        devc = sdi->priv;
+        *data = g_variant_new_uint16(devc->ch_mode);
+        break;
     case SR_CONF_TEST:
         if (!sdi)
             return SR_ERR;
         devc = sdi->priv;
-        *data = g_variant_new_boolean(devc->op_mode != SR_OP_NORMAL);
+        *data = g_variant_new_boolean((devc->op_mode != SR_OP_BUFFER) &&
+                                      (devc->op_mode != SR_OP_STREAM));
         break;
     case SR_CONF_FILTER:
         if (!sdi)
@@ -1306,7 +1348,12 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_MAX_LOGIC_SAMPLELIMITS:
         if (!sdi)
             return SR_ERR;
-        *data = g_variant_new_uint64(DSLOGIC_MAX_LOGIC_DEPTH);
+        if (devc->cur_samplerate == 2*DSLOGIC_MAX_LOGIC_SAMPLERATE) {
+            max_limits = DSLOGIC_MAX_LOGIC_DEPTH * 2;
+        } else if (devc->cur_samplerate == 4*DSLOGIC_MAX_LOGIC_SAMPLERATE) {
+            max_limits = DSLOGIC_MAX_LOGIC_DEPTH * 4;
+        }
+        *data = g_variant_new_uint64(max_limits);
         break;
     case SR_CONF_STATUS:
         if (!sdi)
@@ -1328,6 +1375,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     const char *stropt;
     int ret, num_probes;
     struct sr_usb_dev_inst *usb;
+    int i;
 
     (void)cg;
 
@@ -1339,36 +1387,21 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 
     if (id == SR_CONF_SAMPLERATE) {
 		devc->cur_samplerate = g_variant_get_uint64(data);
-        if (sdi->mode == LOGIC) {
-            if (devc->limit_samples > DSLOGIC_MAX_LOGIC_DEPTH) {
-                if (devc->cur_samplerate > SR_MHZ(25)) {
-                    devc->limit_samples = DSLOGIC_MAX_LOGIC_DEPTH;
-                } else if (devc->cur_samplerate >= SR_MHZ(20) ||
-                           devc->limit_samples >= SR_GB(1)) {
-                    adjust_probes(sdi, 8);
-                } else {
-                    adjust_probes(sdi, 16);
-                }
-            }
-
-            if (devc->limit_samples <= DSLOGIC_MAX_LOGIC_DEPTH) {
-                if (devc->cur_samplerate >= SR_MHZ(200)) {
-                    adjust_probes(sdi, SR_MHZ(1600)/devc->cur_samplerate);
-                } else {
-                    adjust_probes(sdi, 16);
-                }
-            }
-
-            ret = SR_OK;
-        } else if(sdi->mode == DSO) {
+        if(sdi->mode == DSO) {
+            devc->sample_wide = (devc->cur_samplerate <= DSLOGIC_MAX_DSO_SAMPLERATE);
             ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 0, SR_CONF_SAMPLERATE));
+        } else {
+            devc->sample_wide = (devc->cur_samplerate <= DSLOGIC_MAX_LOGIC_SAMPLERATE);
+            ret = SR_OK;
         }
-
     } else if (id == SR_CONF_CLOCK_TYPE) {
         devc->clock_type = g_variant_get_boolean(data);
         ret = SR_OK;
     } else if (id == SR_CONF_CLOCK_EDGE) {
         devc->clock_edge = g_variant_get_boolean(data);
+        ret = SR_OK;
+    } else if (id == SR_CONF_RLE) {
+        devc->rle_mode = g_variant_get_boolean(data);
         ret = SR_OK;
     } else if (id == SR_CONF_INSTANT) {
         if (sdi->mode == DSO) {
@@ -1494,18 +1527,40 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     } else if (id == SR_CONF_OPERATION_MODE) {
         stropt = g_variant_get_string(data, NULL);
         ret = SR_OK;
-        if (!strcmp(stropt, opmodes[SR_OP_NORMAL])) {
-            devc->op_mode = SR_OP_NORMAL;
-        } else if (!strcmp(stropt, opmodes[SR_OP_INTERNAL_TEST])) {
+        if (!strcmp(stropt, opmodes[SR_OP_BUFFER]) && (devc->op_mode != SR_OP_BUFFER)) {
+            devc->op_mode = SR_OP_BUFFER;
+            devc->stream = FALSE;
+            devc->ch_mode = 0;
+            devc->samplerates_size = 14;
+            adjust_probes(sdi, buffer_ch_num[0]);
+        } else if (!strcmp(stropt, opmodes[SR_OP_STREAM]) && (devc->op_mode != SR_OP_STREAM)) {
+            devc->op_mode = SR_OP_STREAM;
+            devc->stream = TRUE;
+            devc->ch_mode = 0;
+            devc->samplerates_size = 10;
+            adjust_probes(sdi, stream_ch_num[0]);
+        } else if (!strcmp(stropt, opmodes[SR_OP_INTERNAL_TEST]) && (devc->op_mode != SR_OP_INTERNAL_TEST)) {
             devc->op_mode = SR_OP_INTERNAL_TEST;
+            devc->stream = FALSE;
+            devc->ch_mode = 0;
+            devc->samplerates_size = 14;
+            adjust_probes(sdi, buffer_ch_num[0]);
             devc->limit_samples = DSLOGIC_MAX_LOGIC_DEPTH;
             devc->cur_samplerate = DSLOGIC_MAX_LOGIC_SAMPLERATE;
-        } else if (!strcmp(stropt, opmodes[SR_OP_EXTERNAL_TEST])) {
+        } else if (!strcmp(stropt, opmodes[SR_OP_EXTERNAL_TEST]) && (devc->op_mode != SR_OP_EXTERNAL_TEST)) {
             devc->op_mode = SR_OP_EXTERNAL_TEST;
+            devc->stream = FALSE;
+            devc->ch_mode = 0;
+            devc->samplerates_size = 14;
+            adjust_probes(sdi, buffer_ch_num[0]);
             devc->limit_samples = DSLOGIC_MAX_LOGIC_DEPTH;
             devc->cur_samplerate = DSLOGIC_MAX_LOGIC_SAMPLERATE;
-        } else if (!strcmp(stropt, opmodes[SR_OP_LOOPBACK_TEST])) {
+        } else if (!strcmp(stropt, opmodes[SR_OP_LOOPBACK_TEST]) && (devc->op_mode != SR_OP_LOOPBACK_TEST)) {
             devc->op_mode = SR_OP_LOOPBACK_TEST;
+            devc->stream = FALSE;
+            devc->ch_mode = 0;
+            devc->samplerates_size = 14;
+            adjust_probes(sdi, buffer_ch_num[0]);
             devc->limit_samples = DSLOGIC_MAX_LOGIC_DEPTH;
             devc->cur_samplerate = DSLOGIC_MAX_LOGIC_SAMPLERATE;
         } else {
@@ -1513,6 +1568,28 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         }
         sr_dbg("%s: setting pattern to %d",
             __func__, devc->op_mode);
+    } else if (id == SR_CONF_CHANNEL_MODE) {
+        stropt = g_variant_get_string(data, NULL);
+        ret = SR_OK;
+        if (devc->stream) {
+            for (i = 0; i < ARRAY_SIZE(stream_ch_modes); i++)
+                if (!strcmp(stropt, stream_ch_modes[i])) {
+                    devc->ch_mode = i;
+                    devc->samplerates_size = 10 + i * 2;
+                    adjust_probes(sdi, stream_ch_num[i]);
+                    break;
+                }
+        } else {
+            for (i = 0; i < ARRAY_SIZE(buffer_ch_modes); i++)
+                if (!strcmp(stropt, buffer_ch_modes[i])) {
+                    devc->ch_mode = i;
+                    devc->samplerates_size = 14 + i;
+                    adjust_probes(sdi, buffer_ch_num[i]);
+                    break;
+                }
+        }
+        sr_dbg("%s: setting channel mode to %d",
+            __func__, devc->ch_mode);
     } else if (id == SR_CONF_THRESHOLD) {
         stropt = g_variant_get_string(data, NULL);
         ret = SR_OK;
@@ -1528,9 +1605,11 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         } else {
             /* Takes >= 10ms for the FX2 to be ready for FPGA configure. */
             g_usleep(10 * 1000);
-            char *fpga_bit = malloc(strlen(config_path)+strlen(devc->profile->fpga_bit33)+1);
-            if (fpga_bit == NULL)
+            char *fpga_bit;
+            if (!(fpga_bit = g_try_malloc(strlen(config_path)+strlen(devc->profile->fpga_bit33)+1))) {
+                sr_err("fpag_bit path malloc error!");
                 return SR_ERR_MALLOC;
+            }
             strcpy(fpga_bit, config_path);
             switch(devc->th_level) {
             case SR_TH_3V3:
@@ -1546,6 +1625,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             if (ret != SR_OK) {
                 sr_err("Configure FPGA failed!");
             }
+            g_free(fpga_bit);
         }
         sr_dbg("%s: setting threshold to %d",
             __func__, devc->th_level);
@@ -1724,11 +1804,13 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
                        const struct sr_channel_group *cg)
 {
+    struct DSL_context *devc;
 	GVariant *gvar;
 	GVariantBuilder gvb;
 
     //(void)sdi;
     (void)cg;
+    devc = sdi->priv;
 
 	switch (key) {
     case SR_CONF_SCAN_OPTIONS:
@@ -1766,7 +1848,7 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
 //		gvar = g_variant_new_fixed_array(G_VARIANT_TYPE("t"), samplerates,
 //				ARRAY_SIZE(samplerates), sizeof(uint64_t));
         gvar = g_variant_new_from_data(G_VARIANT_TYPE("at"),
-                samplerates, ARRAY_SIZE(samplerates)*sizeof(uint64_t), TRUE, NULL, NULL);
+                samplerates, devc->samplerates_size*sizeof(uint64_t), TRUE, NULL, NULL);
         g_variant_builder_add(&gvb, "{sv}", "samplerates", gvar);
 		*data = g_variant_builder_end(&gvb);
 		break;
@@ -1782,6 +1864,14 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
 		break;
     case SR_CONF_OPERATION_MODE:
         *data = g_variant_new_strv(opmodes, ARRAY_SIZE(opmodes));
+        break;
+    case SR_CONF_CHANNEL_MODE:
+        if (devc->stream)
+            *data = g_variant_new_strv(stream_ch_modes, ARRAY_SIZE(stream_ch_modes));
+        else if (devc->op_mode != SR_OP_BUFFER)
+            *data = g_variant_new_strv(buffer_ch_modes, 1);
+        else
+            *data = g_variant_new_strv(buffer_ch_modes, ARRAY_SIZE(buffer_ch_modes));
         break;
     case SR_CONF_THRESHOLD:
         *data = g_variant_new_strv(thresholds, ARRAY_SIZE(thresholds));
@@ -1919,12 +2009,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
     /* Save incoming transfer before reusing the transfer struct. */
     cur_buf = transfer->buffer;
 
-    GSList *l;
-    int channel_cnt = 0;
-    for (l = ((struct sr_dev_inst *)(devc->cb_data))->channels; l; l = l->next)
-            channel_cnt++;
-
-    sample_width = (channel_cnt > 8) ? 2 : 1;
+    sample_width = (devc->sample_wide) ? 2 : 1;
     cur_sample_count = transfer->actual_length / sample_width;
 
     switch (transfer->status) {
@@ -2098,9 +2183,9 @@ static void receive_transfer(struct libusb_transfer *transfer)
             analog.data = cur_buf + trigger_offset_bytes;
         }
 
-        if ((devc->limit_samples && devc->num_samples < devc->limit_samples) ||
+        if ((devc->limit_samples && devc->num_samples < devc->actual_samples) ||
             (*(struct sr_dev_inst *)(devc->cb_data)).mode != LOGIC ) {
-            const uint64_t remain_length= (devc->limit_samples - devc->num_samples) * sample_width;
+            const uint64_t remain_length= (devc->actual_samples - devc->num_samples) * sample_width;
             logic.length = min(logic.length, remain_length);
 
             /* in test mode, check data content*/
@@ -2145,9 +2230,9 @@ static void receive_transfer(struct libusb_transfer *transfer)
         }
 
         devc->num_samples += cur_sample_count;
-        if (((*(struct sr_dev_inst *)(devc->cb_data)).mode == LOGIC || devc->instant) &&
+            if (((*(struct sr_dev_inst *)(devc->cb_data)).mode == LOGIC || devc->instant) &&
             devc->limit_samples &&
-            (unsigned int)devc->num_samples >= devc->limit_samples) {
+            (unsigned int)devc->num_samples >= devc->actual_samples) {
             //abort_acquisition(devc);
             free_transfer(transfer);
             devc->status = DSL_STOP;
@@ -2327,14 +2412,21 @@ static void receive_trigger_pos(struct libusb_transfer *transfer)
     switch (transfer->status) {
     case LIBUSB_TRANSFER_COMPLETED:
         if (transfer->actual_length == sizeof(struct ds_trigger_pos)) {
-            packet.type = SR_DF_TRIGGER;
-            packet.payload = trigger_pos;
-            sr_session_send(devc->cb_data, &packet);
+            if (trigger_pos->remain_cnt < devc->limit_samples) {
+                devc->actual_samples = (devc->limit_samples - ceil(devc->cur_samplerate * 1.0 / DSLOGIC_MAX_LOGIC_SAMPLERATE) * (trigger_pos->remain_cnt + devc->rle_mode));
 
-            devc->status = DSL_TRIGGERED;
-            free_transfer(transfer);
-            devc->num_transfers = 0;
-            devc->empty_transfer_count = 0;
+                packet.type = SR_DF_TRIGGER;
+                packet.payload = trigger_pos;
+                sr_session_send(devc->cb_data, &packet);
+
+                devc->status = DSL_TRIGGERED;
+                free_transfer(transfer);
+                devc->num_transfers = 0;
+                devc->empty_transfer_count = 0;
+            } else {
+                free_transfer(transfer);
+                devc->status = DSL_ERROR;
+            }
         } else {
             free_transfer(transfer);
             devc->status = DSL_ERROR;
@@ -2447,7 +2539,7 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi, void *cb_data)
     }
 
     if ((ret = command_start_acquisition (usb->devhdl,
-        devc->cur_samplerate, devc->sample_wide, (sdi->mode == LOGIC))) != SR_OK) {
+        devc->cur_samplerate, 1, (sdi->mode == LOGIC))) != SR_OK) {
         abort_acquisition(devc);
         return ret;
     }

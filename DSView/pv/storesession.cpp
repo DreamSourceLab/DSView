@@ -150,8 +150,9 @@ void StoreSession::store_proc(shared_ptr<data::LogicSnapshot> snapshot)
 	uint64_t start_sample = 0;
 
 	/// TODO: Wrap this in a std::unique_ptr when we transition to C++11
-	uint8_t *const data = new uint8_t[BlockSize];
-	assert(data);
+    uint8_t *data =  NULL;
+    //uint8_t *const data = new uint8_t[BlockSize];
+    //assert(data);
 
 	const int unit_size = snapshot->unit_size();
 	assert(unit_size != 0);
@@ -170,7 +171,7 @@ void StoreSession::store_proc(shared_ptr<data::LogicSnapshot> snapshot)
 
 		const uint64_t end_sample = min(
 			start_sample + samples_per_block, _unit_count);
-		snapshot->get_samples(data, start_sample, end_sample);
+        data = snapshot->get_samples(start_sample, end_sample);
 
 		if(sr_session_append(_file_name.c_str(), data, unit_size,
 			end_sample - start_sample) != SR_OK)
@@ -189,7 +190,7 @@ void StoreSession::store_proc(shared_ptr<data::LogicSnapshot> snapshot)
 
 	progress_updated();
 
-	delete[] data;
+    //delete[] data;
 }
 
 } // pv
