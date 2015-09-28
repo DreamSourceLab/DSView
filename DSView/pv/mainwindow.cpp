@@ -284,6 +284,7 @@ void MainWindow::update_device_list()
 {
     assert(_sampling_bar);
 
+    _session.stop_capture();
     _view->show_trig_cursor(false);
     _trigger_widget->device_change();
 #ifdef ENABLE_DECODE

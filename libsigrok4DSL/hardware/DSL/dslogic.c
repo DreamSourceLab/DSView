@@ -89,6 +89,14 @@ static const char *filters[] = {
     "1 Sample Clock",
 };
 
+static const char *maxHeights[] = {
+    "1X",
+    "2X",
+    "3X",
+    "4X",
+    "5X",
+};
+
 static const int32_t hwopts[] = {
     SR_CONF_CONN,
 };
@@ -99,6 +107,7 @@ static const int32_t hwcaps[] = {
     SR_CONF_SAMPLERATE,
 
 	/* These are really implemented in the driver, not the hardware. */
+    SR_CONF_MAX_HEIGHT,
     SR_CONF_LIMIT_SAMPLES,
     SR_CONF_CONTINUOUS,
 };
@@ -107,6 +116,7 @@ static const int32_t hwoptions[] = {
     SR_CONF_OPERATION_MODE,
     SR_CONF_THRESHOLD,
     SR_CONF_FILTER,
+    SR_CONF_MAX_HEIGHT,
     SR_CONF_CLOCK_TYPE,
     SR_CONF_CLOCK_EDGE,
 };
@@ -115,6 +125,7 @@ static const int32_t hwoptions_pro[] = {
     SR_CONF_OPERATION_MODE,
     SR_CONF_VTH,
     SR_CONF_FILTER,
+    SR_CONF_MAX_HEIGHT,
     SR_CONF_CLOCK_TYPE,
     SR_CONF_CLOCK_EDGE,
 };
@@ -682,6 +693,7 @@ static struct DSL_context *DSLogic_dev_new(void)
     devc->stream = FALSE;
     devc->mstatus_valid = FALSE;
     devc->data_lock = FALSE;
+    devc->max_height = 1;
 
 	return devc;
 }
@@ -1238,6 +1250,18 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         devc = sdi->priv;
         *data = g_variant_new_string(filters[devc->filter]);
         break;
+    case SR_CONF_MAX_HEIGHT:
+        if (!sdi)
+            return SR_ERR;
+        devc = sdi->priv;
+        *data = g_variant_new_string(maxHeights[devc->max_height]);
+        break;
+    case SR_CONF_MAX_HEIGHT_VALUE:
+        if (!sdi)
+            return SR_ERR;
+        devc = sdi->priv;
+        *data = g_variant_new_byte(devc->max_height);
+        break;
     case SR_CONF_THRESHOLD:
         if (!sdi)
             return SR_ERR;
@@ -1650,6 +1674,17 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         }
         sr_dbg("%s: setting threshold to %d",
             __func__, devc->th_level);
+    } else if (id == SR_CONF_MAX_HEIGHT) {
+        stropt = g_variant_get_string(data, NULL);
+        ret = SR_OK;
+        for (i = 0; i < ARRAY_SIZE(maxHeights); i++) {
+            if (!strcmp(stropt, maxHeights[i])) {
+                devc->max_height = i;
+                break;
+            }
+        }
+        sr_dbg("%s: setting Signal Max Height to %d",
+            __func__, devc->max_height);
     } else if (id == SR_CONF_EN_CH) {
         ch->enabled = g_variant_get_boolean(data);
         if (sdi->mode == DSO) {
@@ -1878,6 +1913,9 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
         break;
     case SR_CONF_FILTER:
         *data = g_variant_new_strv(filters, ARRAY_SIZE(filters));
+        break;
+    case SR_CONF_MAX_HEIGHT:
+        *data = g_variant_new_strv(maxHeights, ARRAY_SIZE(maxHeights));
         break;
 	default:
         return SR_ERR_NA;

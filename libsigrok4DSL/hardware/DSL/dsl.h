@@ -169,6 +169,7 @@ struct DSL_context {
 	int trigger_stage;
 	uint16_t trigger_buffer[NUM_TRIGGER_STAGES];
     uint64_t timebase;
+    uint8_t max_height;
     uint8_t trigger_slope;
     uint8_t trigger_source;
     uint8_t trigger_hrate;

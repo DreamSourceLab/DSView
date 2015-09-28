@@ -122,10 +122,10 @@ void DevMode::on_mode_change()
         i != _mode_button_list.end(); i++) {
         if ((*i).first.get() == button) {
             if (dev_inst->dev_inst()->mode != (*i).second->mode) {
+                _view.session().stop_capture();
                 dev_inst->set_config(NULL, NULL,
                                      SR_CONF_DEVICE_MODE,
                                      g_variant_new_int16((*i).second->mode));
-
                 mode_changed();
             }
         }

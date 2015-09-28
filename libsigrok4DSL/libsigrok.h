@@ -804,6 +804,10 @@ enum {
     /** Device channel mode */
     SR_CONF_CHANNEL_MODE,
 
+    /** Signal max height **/
+    SR_CONF_MAX_HEIGHT,
+    SR_CONF_MAX_HEIGHT_VALUE,
+
     /** Device sample threshold */
     SR_CONF_THRESHOLD,
     SR_CONF_VTH,

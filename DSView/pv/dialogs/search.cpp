@@ -48,7 +48,7 @@ Search::Search(QWidget *parent, struct sr_dev_inst *sdi, QString pattern) :
     search_lineEdit.setInputMask("X X X X X X X X X X X X X X X X");
     search_lineEdit.setFont(font);
 
-    QLabel *search_label = new QLabel("1 1 1 1 1\n5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0");
+    QLabel *search_label = new QLabel("1 1 1 1 1 1\n5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0");
     search_label->setFont(font);
 
     search_buttonBox.addButton(QDialogButtonBox::Ok);

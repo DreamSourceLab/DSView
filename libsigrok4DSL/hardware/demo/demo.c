@@ -78,6 +78,14 @@ static const char *pattern_strings[] = {
     "Random",
 };
 
+static const char *maxHeights[] = {
+    "1X",
+    "2X",
+    "3X",
+    "4X",
+    "5X",
+};
+
 static struct sr_dev_mode mode_list[] = {
     {"LA", LOGIC},
     {"DAQ", ANALOG},
@@ -100,6 +108,7 @@ struct dev_context {
     uint64_t timebase;
     gboolean instant;
     gboolean data_lock;
+    uint8_t max_height;
 
     int trigger_stage;
     uint16_t trigger_mask;
@@ -112,6 +121,7 @@ static const int hwcaps[] = {
 	SR_CONF_DEMO_DEV,
 	SR_CONF_SAMPLERATE,
 	SR_CONF_PATTERN_MODE,
+    SR_CONF_MAX_HEIGHT,
 	SR_CONF_LIMIT_SAMPLES,
 	SR_CONF_LIMIT_MSEC,
 	SR_CONF_CONTINUOUS,
@@ -119,6 +129,7 @@ static const int hwcaps[] = {
 
 static const int hwoptions[] = {
     SR_CONF_PATTERN_MODE,
+    SR_CONF_MAX_HEIGHT,
 };
 
 static const int32_t sessions[] = {
@@ -234,6 +245,7 @@ static GSList *hw_scan(GSList *options)
     devc->sample_generator = PATTERN_SINE;
     devc->timebase = 10000;
     devc->data_lock = FALSE;
+    devc->max_height = 1;
 
 	sdi->priv = devc;
 
@@ -355,6 +367,12 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_PATTERN_MODE:
         *data = g_variant_new_string(pattern_strings[devc->sample_generator]);
 		break;
+    case SR_CONF_MAX_HEIGHT:
+        *data = g_variant_new_string(maxHeights[devc->max_height]);
+        break;
+    case SR_CONF_MAX_HEIGHT_VALUE:
+        *data = g_variant_new_byte(devc->max_height);
+        break;
     case SR_CONF_VDIV:
         *data = g_variant_new_uint64(ch->vdiv);
         break;
@@ -484,6 +502,17 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 		}
         sr_dbg("%s: setting pattern to %d",
 			__func__, devc->sample_generator);
+    } else if (id == SR_CONF_MAX_HEIGHT) {
+        stropt = g_variant_get_string(data, NULL);
+        ret = SR_OK;
+        for (i = 0; i < ARRAY_SIZE(maxHeights); i++) {
+            if (!strcmp(stropt, maxHeights[i])) {
+                devc->max_height = i;
+                break;
+            }
+        }
+        sr_dbg("%s: setting Signal Max Height to %d",
+            __func__, devc->max_height);
     } else if (id == SR_CONF_INSTANT) {
         devc->instant = g_variant_get_boolean(data);
         sr_dbg("%s: setting INSTANT mode to %d", __func__,
@@ -575,6 +604,9 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_PATTERN_MODE:
 		*data = g_variant_new_strv(pattern_strings, ARRAY_SIZE(pattern_strings));
 		break;
+    case SR_CONF_MAX_HEIGHT:
+        *data = g_variant_new_strv(maxHeights, ARRAY_SIZE(maxHeights));
+        break;
 	default:
         return SR_ERR_NA;
 	}
