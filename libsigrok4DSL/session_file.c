@@ -206,7 +206,7 @@ SR_API int sr_session_load(const char *filename)
                             g_variant_new_uint64(total_probes), sdi, NULL, NULL);
 					for (p = 0; p < total_probes; p++) {
 						snprintf(probename, SR_MAX_PROBENAME_LEN, "%" PRIu64, p);
-						if (!(probe = sr_channel_new(p, SR_CHANNEL_LOGIC, TRUE,
+                        if (!(probe = sr_channel_new(p, SR_CHANNEL_LOGIC, FALSE,
 								probename)))
 							return SR_ERR;
                         sdi->channels = g_slist_append(sdi->channels, probe);
@@ -217,17 +217,14 @@ SR_API int sr_session_load(const char *filename)
 					enabled_probes++;
 					tmp_u64 = strtoul(keys[j]+5, NULL, 10);
 					/* sr_session_save() */
-					sr_dev_probe_name_set(sdi, tmp_u64 - 1, val);
+                    sr_dev_probe_name_set(sdi, tmp_u64, val);
+                    sr_dev_probe_enable(sdi, tmp_u64, TRUE);
 				} else if (!strncmp(keys[j], "trigger", 7)) {
 					probenum = strtoul(keys[j]+7, NULL, 10);
 					sr_dev_trigger_set(sdi, probenum, val);
 				}
 			}
 			g_strfreev(keys);
-			/* Disable probes not specifically listed. */
-			if (total_probes)
-				for (p = enabled_probes; p < total_probes; p++)
-					sr_dev_probe_enable(sdi, p, FALSE);
 		}
 		devcnt++;
 	}
@@ -307,9 +304,9 @@ SR_API int sr_session_save(const char *filename, const struct sr_dev_inst *sdi,
         probe = l->data;
         if (probe->enabled) {
             if (probe->name)
-                fprintf(meta, "probe%d = %s\n", probecnt, probe->name);
+                fprintf(meta, "probe%d = %s\n", probe->index, probe->name);
             if (probe->trigger)
-                fprintf(meta, " trigger%d = %s\n", probecnt, probe->trigger);
+                fprintf(meta, " trigger%d = %s\n", probe->index, probe->trigger);
             probecnt++;
         }
     }

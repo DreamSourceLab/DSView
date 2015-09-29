@@ -107,7 +107,6 @@ static const int32_t hwcaps[] = {
     SR_CONF_SAMPLERATE,
 
 	/* These are really implemented in the driver, not the hardware. */
-    SR_CONF_MAX_HEIGHT,
     SR_CONF_LIMIT_SAMPLES,
     SR_CONF_CONTINUOUS,
 };
