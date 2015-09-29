@@ -68,7 +68,7 @@ private:
 	};
 
 private:
-	static const unsigned int ScaleStepCount = 10;
+    static const unsigned int ScaleStepCount = 16;
 	static const int EnvelopeScalePower;
 	static const int EnvelopeScaleFactor;
 	static const float LogEnvelopeScaleFactor;
@@ -103,6 +103,9 @@ private:
     int _unit_size;
     boost::shared_ptr<view::Signal> _signal;
     std::list<int> _index_list;
+    uint16_t _mask;
+    int _bubble_start[32];
+    int _bubble_end[32];
 
     friend class GroupSnapshotTest::Basic;
 };

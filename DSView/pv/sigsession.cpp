@@ -467,6 +467,7 @@ set< boost::shared_ptr<data::SignalData> > SigSession::get_data() const
         assert(sig);
         data.insert(sig->data());
     }
+    data.insert(_group_data);
 
     return data;
 }
@@ -624,15 +625,15 @@ void SigSession::add_group()
         _group_cnt++;
 
         if (_capture_state == Stopped) {
-            if (!_cur_group_snapshot)
-            {
+            //if (!_cur_group_snapshot)
+            //{
                 // Create a new data snapshot
                 _cur_group_snapshot = boost::shared_ptr<data::GroupSnapshot>(
                             new data::GroupSnapshot(_logic_data->get_snapshots().front(), signal->get_index_list()));
                 //_cur_group_snapshot->append_payload();
                 _group_data->push_snapshot(_cur_group_snapshot);
                 _cur_group_snapshot.reset();
-            }
+            //}
         }
 
         signals_changed();
@@ -1071,6 +1072,7 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
                 _cur_group_snapshot = boost::shared_ptr<data::GroupSnapshot>(
                             new data::GroupSnapshot(_logic_data->get_snapshots().front(), g->get_index_list()));
                 _group_data->push_snapshot(_cur_group_snapshot);
+                _cur_group_snapshot.reset();
             }
             _cur_logic_snapshot.reset();
             _cur_dso_snapshot.reset();
