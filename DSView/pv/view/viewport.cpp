@@ -532,14 +532,20 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
     (void)event;
 
     if (_view.session().get_device()->dev_inst()->mode == LOGIC) {
-        if (_view.scale() == _view.get_maxscale())
-            _view.set_preScale_preOffset();
-        else
-            _view.set_scale_offset(_view.get_maxscale(), 0);
-
+        if (event->button() & Qt::RightButton) {
+            if (_view.scale() == _view.get_maxscale())
+                _view.set_preScale_preOffset();
+            else
+                _view.set_scale_offset(_view.get_maxscale(), 0);
+        } else if (event->button() & Qt::LeftButton) {
+            uint64_t index = (_view.offset() + (event->pos().x() + 0.5) * _view.scale()) * _view.session().get_device()->get_sample_rate();
+            _view.add_cursor(view::Ruler::CursorColor[_view.get_cursorList().size() % 8], index);
+            _view.show_cursors(true);
+        }
         update();
     } else if (_view.session().get_device()->dev_inst()->mode == DSO &&
-               _view.session().get_capture_state() != SigSession::Init) {
+               _view.session().get_capture_state() != SigSession::Init &&
+               event->button() & Qt::LeftButton) {
         if (_dso_xm_stage == 0) {
             uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
             double scale = _view.scale();
