@@ -324,5 +324,49 @@ bool LogicSignal::measure(const QPointF &p, uint64_t &index0, uint64_t &index1, 
     return false;
 }
 
+
+bool LogicSignal::edges(const QPointF &p, uint64_t start, uint64_t &rising, uint64_t &falling) const
+{
+    uint64_t index, end;
+    const float gap = abs(p.y() - get_y());
+    if (gap < get_signalHeight() * 0.5) {
+        const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
+            _data->get_snapshots();
+        if (snapshots.empty())
+            return false;
+
+        const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
+            snapshots.front();
+        if (snapshot->buf_null())
+            return false;
+
+        end = _data->samplerate() * (_view->offset() - _data->get_start_time() + p.x() * _view->scale());
+        index = min(start, end);
+        end = max(start, end);
+        start = index;
+        if (end > (snapshot->get_sample_count() - 1))
+            return false;
+
+        const uint64_t sig_mask = 1ULL << get_index();
+        bool sample = snapshot->get_sample(start) & sig_mask;
+
+        rising = 0;
+        falling = 0;
+        do {
+            if (snapshot->get_nxt_edge(index, sample, snapshot->get_sample_count(), 1, get_index())) {
+                if (index > end)
+                    break;
+                rising += !sample;
+                falling += sample;
+                sample = !sample;
+            } else {
+                break;
+            }
+        } while(index <= end);
+        return true;
+    }
+    return false;
+}
+
 } // namespace view
 } // namespace pv

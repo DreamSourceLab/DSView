@@ -57,6 +57,8 @@ public:
     enum MeasureType {
         NO_MEASURE,
         LOGIC_FREQ,
+        LOGIC_EDGE,
+        LOGIC_MOVE,
         DSO_FREQ
     };
 
@@ -118,7 +120,7 @@ private:
 
     bool _measure_en;
     bool _measure_shown;
-    int _measure_type;
+    MeasureType _measure_type;
     uint64_t _cur_sample;
     uint64_t _nxt_sample;
     uint64_t _thd_sample;
@@ -130,6 +132,13 @@ private:
     QString _mm_period;
     QString _mm_freq;
     QString _mm_duty;
+
+    uint64_t _edge_rising;
+    uint64_t _edge_falling;
+    uint64_t _edge_start;
+    QString _em_rising;
+    QString _em_falling;
+    QString _em_edges;
 
     QTimer trigger_timer;
     bool triggered;

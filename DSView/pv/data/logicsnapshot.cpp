@@ -252,7 +252,7 @@ bool LogicSnapshot::get_nxt_edge(
     unsigned int level;
     bool fast_forward;
 
-    assert(index > 0);
+    //assert(index > 0);
 
     const unsigned int min_level = max((int)floorf(logf(min_length) /
         LogMipMapScaleFactor) - 1, 0);

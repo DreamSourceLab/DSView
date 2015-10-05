@@ -82,6 +82,8 @@ public:
 
     bool measure(const QPointF &p, uint64_t &index0, uint64_t &index1, uint64_t &index2) const;
 
+    bool edges(const QPointF &p, uint64_t start, uint64_t &rising, uint64_t &falling) const;
+
 protected:
     void paint_type_options(QPainter &p, int right, bool hover, int action);
 
