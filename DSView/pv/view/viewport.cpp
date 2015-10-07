@@ -32,9 +32,11 @@
 #include "../data/logic.h"
 #include "../data/logicsnapshot.h"
 #include "../sigsession.h"
+#include <../dialogs/dsomeasure.h>
 
 #include <QMouseEvent>
 #include <QStyleOption>
+
 
 #include <math.h>
 
@@ -396,10 +398,18 @@ void Viewport::mousePressEvent(QMouseEvent *event)
             if (!s->enabled())
                 continue;
             boost::shared_ptr<DsoSignal> dsoSig;
-            if ((dsoSig = dynamic_pointer_cast<DsoSignal>(s)) &&
-                 dsoSig->get_trig_rect(0, _view.get_view_width()).contains(_mouse_point)) {
-                _drag_sig = s;
-                break;
+            if (dsoSig = dynamic_pointer_cast<DsoSignal>(s)) {
+                if (dsoSig->get_trig_rect(0, _view.get_view_width()).contains(_mouse_point)) {
+                    _drag_sig = s;
+                    break;
+                } else if (dsoSig->get_ms_show_hover()) {
+                    dsoSig->set_ms_show(!dsoSig->get_ms_show());
+                    break;
+                } else if (dsoSig->get_ms_gear_hover()) {
+                    pv::dialogs::DsoMeasure dsoMeasureDialog(this, dsoSig);
+                    dsoMeasureDialog.exec();
+                    break;
+                }
             }
         }
 
@@ -511,7 +521,8 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
     if(_drag_sig)
         _drag_sig.reset();
 
-    if (_mouse_down_point.x() == event->pos().x() &&
+    if (_view.session().get_device()->dev_inst()->mode == LOGIC &&
+        _mouse_down_point.x() == event->pos().x() &&
         event->button() & Qt::LeftButton) {
         if (_measure_type == LOGIC_EDGE) {
             _measure_type = NO_MEASURE;
@@ -524,7 +535,8 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
         }
     }
 
-    if (_measure_type != LOGIC_EDGE) {
+    if (_view.session().get_device()->dev_inst()->mode == LOGIC &&
+        _measure_type != LOGIC_EDGE) {
         const double strength = _drag_strength*DragTimerInterval*1.0/_time.elapsed();
         if (abs(_drag_strength) < MinorDragOffsetUp && abs(strength) > MinorDragRateUp) {
             _drag_strength = _drag_strength;

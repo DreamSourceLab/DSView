@@ -63,6 +63,26 @@ private:
     static const int RightMargin;
 
 public:
+    enum DSO_MEASURE_TYPE {
+        DSO_MS_BEGIN = 0,
+        DSO_MS_FREQ,
+        DSO_MS_PERD,
+        DSO_MS_VMAX,
+        DSO_MS_VMIN,
+        DSO_MS_VRMS,
+        DSO_MS_VMEA,
+        DSO_MS_VP2P,
+        DSO_MS_END,
+    };
+
+private:
+    static const uint16_t MS_RectRad = 5;
+    static const uint16_t MS_IconSize = 16;
+    static const uint16_t MS_RectWidth = 120;
+    static const uint16_t MS_RectMargin = 10;
+    static const uint16_t MS_RectHeight = 25;
+
+public:
     DsoSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
               boost::shared_ptr<pv::data::Dso> data,
               const sr_channel * const probe);
@@ -158,6 +178,14 @@ public:
 
     QRectF get_trig_rect(int left, int right) const;
 
+    void set_ms_show(bool show);
+    bool get_ms_show() const;
+    bool get_ms_show_hover() const;
+    bool get_ms_gear_hover() const;
+    void set_ms_en(int index, bool en);
+    bool get_ms_en(int index) const;
+    QString get_ms_string(int index)  const;
+
 protected:
     void paint_type_options(QPainter &p, int right, bool hover, int action);
 
@@ -200,6 +228,15 @@ private:
     uint64_t _hover_index;
     QPointF _hover_point;
     double _hover_value;
+
+    QRect _ms_gear_rect;
+    QRect _ms_show_rect;
+    QRect _ms_rect[DSO_MS_END-DSO_MS_BEGIN];
+    bool _ms_gear_hover;
+    bool _ms_show_hover;
+    bool _ms_show;
+    bool _ms_en[DSO_MS_END-DSO_MS_BEGIN];
+    QString _ms_string[DSO_MS_END-DSO_MS_BEGIN];
 };
 
 } // namespace view

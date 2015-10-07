@@ -33,7 +33,7 @@ namespace widgets {
 DecoderGroupBox::DecoderGroupBox(QString title, QWidget *parent) :
 	QWidget(parent),
 	_layout(new QGridLayout),
-    _show_hide_button(QIcon(":/icons/decoder-shown.png"), QString(), this)
+    _show_hide_button(QIcon(":/icons/shown.png"), QString(), this)
 {
     _layout->setContentsMargins(0, 0, 0, 0);
 	setLayout(_layout);
@@ -61,8 +61,8 @@ void DecoderGroupBox::add_layout(QLayout *layout)
 void DecoderGroupBox::set_decoder_visible(bool visible)
 {
 	_show_hide_button.setIcon(QIcon(visible ?
-        ":/icons/decoder-shown.png" :
-        ":/icons/decoder-hidden.png"));
+        ":/icons/shown.png" :
+        ":/icons/hidden.png"));
 }
 
 } // widgets
