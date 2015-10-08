@@ -61,6 +61,7 @@ DsoMeasure::DsoMeasure(QWidget *parent, boost::shared_ptr<DsoSignal> dsoSig) :
 
 void DsoMeasure::set_measure(bool en)
 {
+    (void)en;
     QCheckBox* sc=dynamic_cast<QCheckBox*>(sender());
     if(sc != NULL) {
         QVariant id = sc->property("id");

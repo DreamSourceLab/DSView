@@ -134,6 +134,7 @@ set< shared_ptr<pv::data::Logic> > Decoder::get_data()
 
 srd_decoder_inst* Decoder::create_decoder_inst(srd_session *session, int unit_size) const
 {
+    (void)unit_size;
 	GHashTable *const opt_hash = g_hash_table_new_full(g_str_hash,
 		g_str_equal, g_free, (GDestroyNotify)g_variant_unref);
 

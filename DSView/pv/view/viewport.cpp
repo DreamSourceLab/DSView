@@ -32,7 +32,7 @@
 #include "../data/logic.h"
 #include "../data/logicsnapshot.h"
 #include "../sigsession.h"
-#include <../dialogs/dsomeasure.h>
+#include "../dialogs/dsomeasure.h"
 
 #include <QMouseEvent>
 #include <QStyleOption>

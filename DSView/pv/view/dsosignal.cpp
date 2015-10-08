@@ -428,6 +428,7 @@ bool DsoSignal::go_hDialNext(bool setted)
 bool DsoSignal::update_vDial()
 {
     uint64_t vdiv;
+    uint64_t vfactor;
     //uint64_t pre_vdiv = _vDial->get_value();
     GVariant* gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_VDIV);
     if (gvar != NULL) {
@@ -437,10 +438,18 @@ bool DsoSignal::update_vDial()
         qDebug() << "ERROR: config_get SR_CONF_TIMEBASE failed.";
         return false;
     }
+    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_FACTOR);
+    if (gvar != NULL) {
+        vfactor = g_variant_get_uint64(gvar);
+        g_variant_unref(gvar);
+    } else {
+        qDebug() << "ERROR: config_get SR_CONF_TIMEBASE failed.";
+        return false;
+    }
 
     _vDial->set_value(vdiv);
-    _dev_inst->set_config(_probe, NULL, SR_CONF_VDIV,
-                          g_variant_new_uint64(_vDial->get_value()));
+    _vDial->set_factor(vfactor);
+
     if (_view) {
         update_zeroPos();
         _view->set_need_update(true);
@@ -599,6 +608,7 @@ void DsoSignal::set_zeroPos(int pos)
 void DsoSignal::set_zeroRate(double rate)
 {
     _zeroPos = rate;
+    _zero_off = rate * 255;
     update_zeroPos();
 }
 

@@ -144,6 +144,7 @@ set(DSView_SOURCES
 	pv/dialogs/storeprogress.cpp
 	pv/dialogs/streamoptions.cpp
 	pv/dialogs/waitingdialog.cpp
+        pv/dialogs/dsomeasure.cpp
 	pv/dock/dsotriggerdock.cpp
 	pv/dock/measuredock.cpp
 	pv/dock/searchdock.cpp
@@ -189,6 +190,7 @@ set(DSView_HEADERS
 	pv/dialogs/storeprogress.h
 	pv/dialogs/streamoptions.h
 	pv/dialogs/waitingdialog.h
+        pv/dialogs/dsomeasure.h
 	pv/dock/dsotriggerdock.h
 	pv/dock/measuredock.h
 	pv/dock/searchdock.h

@@ -139,7 +139,7 @@ void DeviceOptions::setup_probes()
 
     int row0 = 0, row1 = 0, col = 0;
     int index = 0;
-    uint16_t ch_mode;
+    QString ch_mode;
 
     while(_probes_box_layout.count() > 0)
     {
@@ -159,16 +159,17 @@ void DeviceOptions::setup_probes()
             const char **const options = g_variant_get_strv(gvar_opts, &num_opts);
             GVariant* gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_CHANNEL_MODE);
             if (gvar != NULL) {
-                ch_mode = g_variant_get_uint16(gvar);
+                ch_mode = g_variant_get_string(gvar, NULL);
                 g_variant_unref(gvar);
-            }
-            for (int i=0; i<num_opts; i++){
-                QRadioButton *ch_opts = new QRadioButton(options[i]);
-                _probes_box_layout.addWidget(ch_opts, row0, col, 1, 8);
-                connect(ch_opts, SIGNAL(pressed()), this, SLOT(channel_check()));
-                row0++;
-                if (i == ch_mode)
-                    ch_opts->setChecked(true);
+
+                for (unsigned int i=0; i<num_opts; i++){
+                    QRadioButton *ch_opts = new QRadioButton(options[i]);
+                    _probes_box_layout.addWidget(ch_opts, row0, col, 1, 8);
+                    connect(ch_opts, SIGNAL(pressed()), this, SLOT(channel_check()));
+                    row0++;
+                    if (QString::fromLocal8Bit(options[i]) == ch_mode)
+                        ch_opts->setChecked(true);
+                }
             }
         }
         g_variant_unref(gvar_opts);

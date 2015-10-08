@@ -436,6 +436,7 @@ void SigSession::start_capture(bool instant,
 
 void SigSession::stop_capture()
 {
+    _instant = false;
     if (get_capture_state() != Running)
 		return;
 	sr_session_stop();

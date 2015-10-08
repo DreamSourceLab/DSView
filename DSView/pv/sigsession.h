@@ -122,8 +122,6 @@ public:
     void set_default_device(boost::function<void (const QString)> error_handler);
     void export_file(const QString name, QWidget* parent, const QString ext);
 
-    void set_default_device();
-
     void release_device(device::DevInst *dev_inst);
 
 	capture_state get_capture_state() const;

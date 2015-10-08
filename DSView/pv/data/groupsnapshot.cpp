@@ -126,8 +126,6 @@ const uint16_t* GroupSnapshot::get_samples(
 	assert(start_sample <= end_sample);
 
     int64_t i;
-    uint64_t pow;
-    uint16_t mask;
     uint16_t tmpl, tmpr;
 	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 
@@ -192,7 +190,6 @@ void GroupSnapshot::append_payload_to_envelope_levels()
 	Envelope &e0 = _envelope_levels[0];
 	uint64_t prev_length;
 	EnvelopeSample *dest_ptr;
-    uint16_t mask;
 
 	// Expand the data buffer to fit the new samples
 	prev_length = e0.length;
@@ -226,56 +223,8 @@ void GroupSnapshot::append_payload_to_envelope_levels()
                 group_value[i] <<= _bubble_start[j];
                 group_value[i] += tmpr;
             }
-//            group_value[i] = 0;
-//            std::list<int>::iterator j = _index_list.begin();
-//            pow = 0;
-//            while(j != _index_list.end()) {
-//                mask = value_mask[(*j)];
-//                if ( *(j+1) == (*j) + 1)
-//                    mask |= value_mask[*(j+1)];
-//                group_value[i] += ((*(src_ptr + i) & value_mask[(*j)]) >> ((*j) - pow));
-//                pow++;
-//                j++;
-//            }
         }
-//        group_value[0] = 0;
-//        group_value[1] = 0;
-//        group_value[2] = 0;
-//        group_value[3] = 0;
-//        group_value[4] = 0;
-//        group_value[5] = 0;
-//        group_value[6] = 0;
-//        group_value[7] = 0;
-//        group_value[8] = 0;
-//        group_value[9] = 0;
-//        group_value[10] = 0;
-//        group_value[11] = 0;
-//        group_value[12] = 0;
-//        group_value[13] = 0;
-//        group_value[14] = 0;
-//        group_value[15] = 0;
-//        std::list<int>::iterator j = _index_list.begin();
-//        pow = 0;
-//        while(j != _index_list.end()) {
-//            group_value[0] += ((*(src_ptr + 0) & value_mask[(*j)]) >> ((*j) - pow));
-//            group_value[1] += ((*(src_ptr + 1) & value_mask[(*j)]) >> ((*j) - pow));
-//            group_value[2] += ((*(src_ptr + 2) & value_mask[(*j)]) >> ((*j) - pow));
-//            group_value[3] += ((*(src_ptr + 3) & value_mask[(*j)]) >> ((*j) - pow));
-//            group_value[4] += ((*(src_ptr + 4) & value_mask[(*j)]) >> ((*j) - pow));
-//            group_value[5] += ((*(src_ptr + 5) & value_mask[(*j)]) >> ((*j) - pow));
-//            group_value[6] += ((*(src_ptr + 6) & value_mask[(*j)]) >> ((*j) - pow));
-//            group_value[7] += ((*(src_ptr + 7) & value_mask[(*j)]) >> ((*j) - pow));
-//            group_value[8] += ((*(src_ptr + 8) & value_mask[(*j)]) >> ((*j) - pow));
-//            group_value[9] += ((*(src_ptr + 9) & value_mask[(*j)]) >> ((*j) - pow));
-//            group_value[10] += ((*(src_ptr + 10) & value_mask[(*j)]) >> ((*j) - pow));
-//            group_value[11] += ((*(src_ptr + 11) & value_mask[(*j)]) >> ((*j) - pow));
-//            group_value[12] += ((*(src_ptr + 12) & value_mask[(*j)]) >> ((*j) - pow));
-//            group_value[13] += ((*(src_ptr + 13) & value_mask[(*j)]) >> ((*j) - pow));
-//            group_value[14] += ((*(src_ptr + 14) & value_mask[(*j)]) >> ((*j) - pow));
-//            group_value[15] += ((*(src_ptr + 15) & value_mask[(*j)]) >> ((*j) - pow));
-//            pow++;
-//            j++;
-//        }
+
 		const EnvelopeSample sub_sample = {
             *min_element(group_value, group_value + EnvelopeScaleFactor),
             *max_element(group_value, group_value + EnvelopeScaleFactor),

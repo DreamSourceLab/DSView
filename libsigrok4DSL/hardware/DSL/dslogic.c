@@ -55,7 +55,11 @@ static const char *opmodes[] = {
     "Buffer Mode",
     "Stream Mode",
     "Internal Test",
+    "External Test",
+    "DRAM Loopback Test",
 };
+
+static uint16_t opmodes_show_count = 3;
 
 static const char *stream_ch_modes[] = {
     "Use Channels 0~15 (Max 10MHz)",
@@ -229,7 +233,6 @@ static const uint64_t samplecounts[] = {
     SR_MB(128),
     SR_MB(256),
     SR_MB(512),
-    SR_GB(1),
 };
 
 static const uint8_t zero_base_addr = 0x80;
@@ -1172,7 +1175,6 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     struct DSL_context *devc;
     struct sr_usb_dev_inst *usb;
 	char str[128];
-    uint64_t max_limits = DSLOGIC_MAX_LOGIC_DEPTH;
 
     (void)cg;
 
@@ -1234,7 +1236,10 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         if (!sdi)
             return SR_ERR;
         devc = sdi->priv;
-        *data = g_variant_new_uint16(devc->ch_mode);
+        if (devc->stream)
+            *data = g_variant_new_string(stream_ch_modes[devc->ch_mode]);
+        else
+            *data = g_variant_new_string(buffer_ch_modes[devc->ch_mode]);
         break;
     case SR_CONF_TEST:
         if (!sdi)
@@ -1371,16 +1376,18 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_MAX_LOGIC_SAMPLELIMITS:
         if (!sdi)
             return SR_ERR;
-        if (devc->cur_samplerate == 2*DSLOGIC_MAX_LOGIC_SAMPLERATE) {
-            max_limits = DSLOGIC_MAX_LOGIC_DEPTH * 2;
-        } else if (devc->cur_samplerate == 4*DSLOGIC_MAX_LOGIC_SAMPLERATE) {
-            max_limits = DSLOGIC_MAX_LOGIC_DEPTH * 4;
-        }
-        *data = g_variant_new_uint64(max_limits);
+        sr_spew("dslogic:before");
+        devc = sdi->priv;
+        sr_spew("DSLOGIC_MAX_LOGIC_DEPTH: %d", DSLOGIC_MAX_LOGIC_DEPTH);
+        sr_spew("devc->cur_samplerate: %d", devc->cur_samplerate);
+        sr_spew("DSLOGIC_MAX_LOGIC_SAMPLERATE: %d", DSLOGIC_MAX_LOGIC_SAMPLERATE);
+        *data = g_variant_new_uint64(DSLOGIC_MAX_LOGIC_DEPTH*ceil(devc->cur_samplerate * 1.0 / DSLOGIC_MAX_LOGIC_SAMPLERATE));
+        sr_spew("dslogic:after");
         break;
     case SR_CONF_STATUS:
         if (!sdi)
             return SR_ERR;
+        devc = sdi->priv;
         *data = g_variant_new_boolean(devc->status != DSL_INIT);
         break;
     default:
@@ -1589,6 +1596,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         } else {
             ret = SR_ERR;
         }
+        if (devc->cur_samplerate > samplerates[devc->samplerates_size-1])
+            devc->cur_samplerate = samplerates[devc->samplerates_size-1];
         sr_dbg("%s: setting pattern to %d",
             __func__, devc->op_mode);
     } else if (id == SR_CONF_CHANNEL_MODE) {
@@ -1611,6 +1620,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                     break;
                 }
         }
+        if (devc->cur_samplerate > samplerates[devc->samplerates_size-1])
+            devc->cur_samplerate = samplerates[devc->samplerates_size-1];
         sr_dbg("%s: setting channel mode to %d",
             __func__, devc->ch_mode);
     } else if (id == SR_CONF_THRESHOLD) {
@@ -1897,7 +1908,7 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
         *data = g_variant_new_string(TRIGGER_TYPE);
 		break;
     case SR_CONF_OPERATION_MODE:
-        *data = g_variant_new_strv(opmodes, ARRAY_SIZE(opmodes));
+        *data = g_variant_new_strv(opmodes, opmodes_show_count);
         break;
     case SR_CONF_CHANNEL_MODE:
         if (devc->stream)
@@ -2356,13 +2367,6 @@ static int dev_transfer_start(const struct sr_dev_inst *sdi)
     else
         dso_buffer_size = devc->limit_samples * channel_en_cnt + 512;
 
-//    if (sdi->mode == DSO) {
-//        timeout = 500;
-//        num_transfers = buffer_cnt;
-//    } else {
-//        timeout = get_timeout(devc);
-//        num_transfers = get_number_of_transfers(devc);
-//    }
     num_transfers = 1;
     size = (sdi->mode == ANALOG) ? cons_buffer_size : ((sdi->mode == DSO) ? dso_buffer_size : get_buffer_size(devc));
 

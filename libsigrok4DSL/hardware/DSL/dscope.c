@@ -48,7 +48,11 @@ static struct sr_dev_mode mode_list[] = {
 static const char *opmodes[] = {
     "Normal",
     "Internal Test",
+    "External Test",
+    "DRAM Loopback Test",
 };
+
+static uint16_t opmodes_show_count = 2;
 
 static const char *thresholds[] = {
     "1.8/2.5/3.3V Level",
@@ -1649,7 +1653,7 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
         *data = g_variant_new_string(TRIGGER_TYPE);
 		break;
     case SR_CONF_OPERATION_MODE:
-        *data = g_variant_new_strv(opmodes, ARRAY_SIZE(opmodes));
+        *data = g_variant_new_strv(opmodes, opmodes_show_count);
         break;
     case SR_CONF_THRESHOLD:
         *data = g_variant_new_strv(thresholds, ARRAY_SIZE(thresholds));

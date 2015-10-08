@@ -83,6 +83,7 @@ uint8_t * LogicSnapshot::get_samples(int64_t start_sample, int64_t end_sample) c
     assert(end_sample <= (int64_t)_sample_count);
     assert(start_sample <= end_sample);
 
+    (void)end_sample;
     //lock_guard<recursive_mutex> lock(_mutex);
 
     //const size_t size = (end_sample - start_sample) * _unit_size;

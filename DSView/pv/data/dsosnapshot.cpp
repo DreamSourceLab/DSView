@@ -148,7 +148,7 @@ void DsoSnapshot::reallocate_envelope(Envelope &e)
 
 void DsoSnapshot::append_payload_to_envelope_levels()
 {
-    for (int i = 0; i < _channel_num; i++) {
+    for (unsigned int i = 0; i < _channel_num; i++) {
         Envelope &e0 = _envelope_levels[i][0];
         uint64_t prev_length;
         EnvelopeSample *dest_ptr;
