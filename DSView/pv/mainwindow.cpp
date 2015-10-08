@@ -192,6 +192,8 @@ void MainWindow::setup_ui()
         SLOT(instant_stop()));
     connect(_sampling_bar, SIGNAL(update_scale()), _view,
         SLOT(update_scale()), Qt::DirectConnection);
+    connect(_sampling_bar, SIGNAL(sample_count_changed()), _trigger_widget,
+        SLOT(device_change()));
     connect(_dso_trigger_widget, SIGNAL(set_trig_pos(quint64)), _view,
         SLOT(set_trig_pos(quint64)));
 

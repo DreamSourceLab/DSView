@@ -493,10 +493,7 @@ void SamplingBar::on_samplecount_sel(int index)
 {
     uint64_t sample_count = 0;
     uint64_t max_sample_count = 0;
-    //uint64_t last_sample_count = 0;
     bool stream_mode = false;
-    //bool buffer2stream = false;
-    //bool stream2buffer = false;
 
     qDebug() << "index: " << index;
     if (index >= 0)
@@ -505,52 +502,25 @@ void SamplingBar::on_samplecount_sel(int index)
 
     boost::shared_ptr<pv::device::DevInst> _devInst = get_selected_device();
     assert(_devInst);
-qDebug() << "1!\n";
-    if (strcmp(_devInst->dev_inst()->driver->name, "DSLogic") == 0 && _devInst->dev_inst()->mode != DSO) {
-        /*GVariant* gvar = _devInst->get_config(NULL, NULL, SR_CONF_LIMIT_SAMPLES);
-        if (gvar != NULL) {
-            last_sample_count = g_variant_get_uint64(gvar);
-            g_variant_unref(gvar);
-        }
-        gvar = _devInst->get_config(NULL, NULL, SR_CONF_MAX_LOGIC_SAMPLELIMITS);
-        if (gvar != NULL) {
-            max_sample_count = g_variant_get_uint64(gvar);
-            g_variant_unref(gvar);
-        }
-        gvar = _devInst->get_config(NULL, NULL, SR_CONF_STREAM);
-        if (gvar != NULL) {
-            stream_mode = g_variant_get_boolean(gvar);
-            g_variant_unref(gvar);
-        }
 
-        if (((!stream_mode || (last_sample_count >= SR_GB(1))) && sample_count > max_sample_count) ||
-            (sample_count >= SR_GB(1) && _devInst->get_sample_rate() <= SR_MHZ(10))) {
-            stream_mode = sample_count > max_sample_count;
-            buffer2stream = true;
-        } else if (stream_mode && sample_count <= max_sample_count) {
-            stream_mode = sample_count > max_sample_count;
-            stream2buffer = true;
-        }*/
-qDebug() << "2!\n";
+    if (strcmp(_devInst->dev_inst()->driver->name, "DSLogic") == 0 && _devInst->dev_inst()->mode != DSO) {
+
         // Set the sample count
         _devInst->set_config(NULL, NULL,
                              SR_CONF_LIMIT_SAMPLES,
                              g_variant_new_uint64(sample_count));
 
-qDebug() << "21!\n";
+
         GVariant* gvar = _devInst->get_config(NULL, NULL, SR_CONF_STREAM);
         if (gvar != NULL) {
             stream_mode = g_variant_get_boolean(gvar);
             g_variant_unref(gvar);
         }
-        qDebug() << "22!\n";
         gvar = _devInst->get_config(NULL, NULL, SR_CONF_MAX_LOGIC_SAMPLELIMITS);
-        qDebug() << "23!\n";
         if (gvar != NULL) {
             max_sample_count = g_variant_get_uint64(gvar);
             g_variant_unref(gvar);
         }
-        qDebug() << "3!\n";
         if (!stream_mode) {
             if (sample_count > max_sample_count) {
                 _devInst->set_config(NULL, NULL,
@@ -562,27 +532,8 @@ qDebug() << "21!\n";
                                      g_variant_new_boolean(false));
             }
         }
-qDebug() << "4!\n";
-        /*if (buffer2stream) {
-            pv::dialogs::StreamOptions stream(this, _devInst, sample_count, stream_mode);
-            stream.setFixedSize(300, 150);
-            stream.exec();
-            update_sample_rate_selector_value();
-            update_sample_count_selector_value();
-            _devInst->set_config(NULL, NULL,
-                                 SR_CONF_STREAM,
-                                 g_variant_new_boolean(true));
-        } else if (stream2buffer) {
-            QMessageBox msg(this);
-            pv::dialogs::StreamOptions stream(this, _devInst, sample_count, stream_mode);
-            stream.setFixedSize(300, 100);
-            stream.exec();
-            _devInst->set_config(NULL, NULL,
-                                 SR_CONF_STREAM,
-                                 g_variant_new_boolean(false));
-        }
 
-        device_updated();*/
+        sample_count_changed();
         update_scale();
     }
 }
@@ -712,6 +663,7 @@ void SamplingBar::update_sample_count_selector_value()
             _sample_count.setCurrentIndex(i);
 
     _updating_sample_count = false;
+    sample_count_changed();
 }
 
 void SamplingBar::commit_sample_count()

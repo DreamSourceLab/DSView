@@ -61,8 +61,6 @@ public:
 
     void paintEvent(QPaintEvent *);
 
-    void device_change();
-
     void init();
 
     QJsonObject get_session();
@@ -85,6 +83,8 @@ public slots:
 
     void adv_tog(int index);
     void serial_channel_changed(int index);
+
+    void device_change();
 
 private:
 

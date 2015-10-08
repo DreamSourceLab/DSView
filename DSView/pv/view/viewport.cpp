@@ -72,7 +72,7 @@ Viewport::Viewport(View &parent) :
 {
 	setMouseTracking(true);
 	setAutoFillBackground(true);
-	setBackgroundRole(QPalette::Base);
+    setBackgroundRole(QPalette::Base);
 
     //setFixedSize(QSize(600, 400));
     _mm_width = "#####";

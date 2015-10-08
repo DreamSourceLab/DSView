@@ -487,23 +487,33 @@ void TriggerDock::pos_changed(int pos)
 
 void TriggerDock::device_change()
 {
-    bool stream = false;
-    GVariant *gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_STREAM);
+    uint64_t max_hd_depth;
+    bool stream;
+    uint8_t maxRange;
+    uint64_t sample_limits;
+    GVariant *gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_MAX_LOGIC_SAMPLELIMITS);
     if (gvar != NULL) {
-        stream = g_variant_get_boolean(gvar);
+        max_hd_depth = g_variant_get_uint64(gvar);
         g_variant_unref(gvar);
-    }
 
-    if (stream &&
-        strcmp(_session.get_device()->dev_inst()->driver->name, "DSLogic") == 0) {
-        const int maxRange = SR_MB(11)*100/_session.get_device()->get_sample_limit();
-        position_spinBox->setRange(0, maxRange);
-        position_slider->setRange(0, maxRange);
-        simple_radioButton->setChecked(true);
-        simple_trigger();
-    } else {
-        position_spinBox->setRange(0, 99);
-        position_slider->setRange(0, 99);
+        if (_session.get_device()->dev_inst()->mode == LOGIC) {
+            sample_limits = _session.get_device()->get_sample_limit();
+            if (max_hd_depth >= sample_limits)
+                maxRange = 99;
+            else
+                maxRange = max_hd_depth*70 / sample_limits;
+            position_spinBox->setRange(0, maxRange);
+            position_slider->setRange(0, maxRange);
+            simple_radioButton->setChecked(true);
+
+            gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_STREAM);
+            if (gvar != NULL) {
+                stream = g_variant_get_boolean(gvar);
+                g_variant_unref(gvar);
+                if (stream)
+                    simple_trigger();
+            }
+        }
     }
 }
 

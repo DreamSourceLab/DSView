@@ -1376,13 +1376,8 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_MAX_LOGIC_SAMPLELIMITS:
         if (!sdi)
             return SR_ERR;
-        sr_spew("dslogic:before");
         devc = sdi->priv;
-        sr_spew("DSLOGIC_MAX_LOGIC_DEPTH: %d", DSLOGIC_MAX_LOGIC_DEPTH);
-        sr_spew("devc->cur_samplerate: %d", devc->cur_samplerate);
-        sr_spew("DSLOGIC_MAX_LOGIC_SAMPLERATE: %d", DSLOGIC_MAX_LOGIC_SAMPLERATE);
         *data = g_variant_new_uint64(DSLOGIC_MAX_LOGIC_DEPTH*ceil(devc->cur_samplerate * 1.0 / DSLOGIC_MAX_LOGIC_SAMPLERATE));
-        sr_spew("dslogic:after");
         break;
     case SR_CONF_STATUS:
         if (!sdi)
