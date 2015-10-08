@@ -59,6 +59,8 @@ static struct sr_config_info sr_config_info_data[] = {
         "Sample rate", "Sample rate", NULL},
     {SR_CONF_LIMIT_SAMPLES, SR_T_UINT64, "samplecount",
         "Sample count", "Sample count", NULL},
+    {SR_CONF_ACTUAL_SAMPLES, SR_T_UINT64, "samplecount",
+        "Sample count", "Sample count", NULL},
     {SR_CONF_CLOCK_TYPE, SR_T_BOOL, "clocktype",
         "Using External Clock", "Using External Clock", NULL},
     {SR_CONF_CLOCK_EDGE, SR_T_BOOL, "clockedge",

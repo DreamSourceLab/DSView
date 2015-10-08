@@ -856,6 +856,11 @@ enum {
 	 */
 	SR_CONF_LIMIT_SAMPLES,
 
+    /**
+     * The actual sample count received
+     */
+    SR_CONF_ACTUAL_SAMPLES,
+
 	/**
 	 * The device supports setting a frame limit (how many
 	 * frames should be acquired).

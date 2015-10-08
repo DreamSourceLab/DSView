@@ -1196,6 +1196,12 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         devc = sdi->priv;
         *data = g_variant_new_uint64(devc->limit_samples);
         break;
+    case SR_CONF_ACTUAL_SAMPLES:
+        if (!sdi)
+            return SR_ERR;
+        devc = sdi->priv;
+        *data = g_variant_new_uint64(devc->actual_samples);
+        break;
     case SR_CONF_SAMPLERATE:
 		if (!sdi)
             return SR_ERR;
@@ -2530,6 +2536,7 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi, void *cb_data)
     devc->status = DSL_INIT;
     devc->num_transfers = 0;
     devc->submitted_transfers = 0;
+    devc->actual_samples = devc->limit_samples;
 
 	/* Configures devc->trigger_* and devc->sample_wide */
     if (configure_probes(sdi) != SR_OK) {

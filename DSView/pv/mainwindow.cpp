@@ -486,6 +486,25 @@ void MainWindow::capture_state_changed(int state)
         _sampling_bar->enable_toggle(state != SigSession::Running);
         _trig_bar->enable_toggle(state != SigSession::Running);
         _measure_dock->widget()->setEnabled(state != SigSession::Running);
+        if (_session.get_device()->dev_inst()->mode == LOGIC &&
+            state == SigSession::Stopped) {
+            GVariant *gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_RLE);
+            if (gvar != NULL) {
+                bool rle = g_variant_get_boolean(gvar);
+                g_variant_unref(gvar);
+                if (rle) {
+                    gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_ACTUAL_SAMPLES);
+                    if (gvar != NULL) {
+                        uint64_t actual_samples = g_variant_get_uint64(gvar);
+                        g_variant_unref(gvar);
+                        if (actual_samples != _session.get_device()->get_sample_limit()) {
+                            show_session_error(tr("RLE Mode Warning"),
+                                               tr("Hardware buffer is full!\nActually received samples is less than setted sample depth!"));
+                        }
+                    }
+                }
+            }
+        }
 #ifdef TEST_MODE
         if (state == SigSession::Stopped) {
             test_timer.start(100);
