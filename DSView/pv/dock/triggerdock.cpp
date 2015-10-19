@@ -116,7 +116,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
         _inv1_comboBox->addItem(tr("!="));
         _inv1_comboBox_list.push_back(_inv1_comboBox);
 
-        QLabel *value_exp_label = new QLabel("1 1 1 1 1 1\n5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0", _widget);
+        QLabel *value_exp_label = new QLabel("1 1 1 1 1 1\n5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 ", _widget);
         QLabel *inv_exp_label = new QLabel("Inv", _widget);
         QLabel *count_exp_label = new QLabel("Counter", _widget);
         value_exp_label->setFont(font);
@@ -256,7 +256,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
     _widget->setLayout(layout);
 
     this->setWidget(_widget);
-    _widget->setGeometry(0, 0, sizeHint().width(), 1000);
+    //_widget->setGeometry(0, 0, sizeHint().width(), 1000);
     _widget->setObjectName("triggerWidget");
 }
 

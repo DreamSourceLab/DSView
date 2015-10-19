@@ -538,11 +538,14 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
     if (_view.session().get_device()->dev_inst()->mode == LOGIC &&
         _measure_type != LOGIC_EDGE) {
         const double strength = _drag_strength*DragTimerInterval*1.0/_time.elapsed();
-        if (abs(_drag_strength) < MinorDragOffsetUp && abs(strength) > MinorDragRateUp) {
+        if (_time.elapsed() < 200 &&
+            abs(_drag_strength) < MinorDragOffsetUp &&
+            abs(strength) > MinorDragRateUp) {
             _drag_strength = _drag_strength;
             _drag_timer.start(DragTimerInterval);
             _measure_type = LOGIC_MOVE;
-        } else if (abs(strength) > DragTimerInterval) {
+        } else if (_time.elapsed() < 200 &&
+                   abs(strength) > DragTimerInterval) {
             _drag_strength = strength * 5;
             _drag_timer.start(DragTimerInterval);
             _measure_type = LOGIC_MOVE;
@@ -623,7 +626,7 @@ void Viewport::leaveEvent(QEvent *)
     _measure_shown = _dso_xm || _dso_ym;
     _mouse_point = QPoint(-1, -1);
     //_view.show_cursors(false);
-    if (_measure_type == LOGIC_EDGE) {
+    if (_measure_type == LOGIC_EDGE || _measure_type == LOGIC_MOVE) {
         _measure_type = NO_MEASURE;
         _measure_shown = false;
     }

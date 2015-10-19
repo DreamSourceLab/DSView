@@ -121,9 +121,7 @@ public:
     void set_factor(uint64_t factor);
     uint64_t get_factor();
 
-    bool update_vDial();
-    bool update_hDial();
-    bool update_acCoupling();
+    bool load_settings();
 
     /**
       *

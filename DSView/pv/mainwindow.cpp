@@ -683,10 +683,8 @@ bool MainWindow::load_session(QString name)
                 s->set_trig(obj["strigger"].toDouble());
                 boost::shared_ptr<view::DsoSignal> dsoSig;
                 if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
-                    dsoSig->update_hDial();
-                    //dsoSig->update_vDial();
+                    dsoSig->load_settings();
                     dsoSig->set_zeroRate(obj["zeroPos"].toDouble());
-                    dsoSig->set_enable(obj["enabled"].toBool());
                     dsoSig->set_trigRate(obj["trigValue"].toDouble());
                 }
                 break;
