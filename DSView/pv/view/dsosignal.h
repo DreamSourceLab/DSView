@@ -75,6 +75,21 @@ public:
         DSO_MS_END,
     };
 
+    enum DsoSetRegions {
+        DSO_NONE = -1,
+        DSO_VDIAL,
+        DSO_HDIAL,
+        DSO_VDEC,
+        DSO_VINC,
+        DSO_HDEC,
+        DSO_HINC,
+        DSO_CHEN,
+        DSO_ACDC,
+        DSO_X1,
+        DSO_X10,
+        DSO_X100,
+    };
+
 private:
     static const uint16_t MS_RectRad = 5;
     static const uint16_t MS_IconSize = 16;
@@ -184,8 +199,16 @@ public:
     bool get_ms_en(int index) const;
     QString get_ms_string(int index)  const;
 
+    QRectF get_rect(DsoSetRegions type, int y, int right);
+
+    bool mouse_double_click(int right, const QPoint pt);
+
+    bool mouse_press(int right, const QPoint pt);
+
+    bool mouse_wheel(int right, const QPoint pt, const int shift);
+
 protected:
-    void paint_type_options(QPainter &p, int right, bool hover, int action);
+    void paint_type_options(QPainter &p, int right, const QPoint pt);
 
 private:
 	void paint_trace(QPainter &p,

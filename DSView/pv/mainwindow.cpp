@@ -71,6 +71,7 @@
 #include "view/trace.h"
 #include "view/signal.h"
 #include "view/dsosignal.h"
+#include "view/logicsignal.h"
 
 /* __STDC_FORMAT_MACROS is required for PRIu64 and friends (in C++). */
 #define __STDC_FORMAT_MACROS
@@ -680,7 +681,12 @@ bool MainWindow::load_session(QString name)
             if ((s->get_index() == obj["index"].toDouble()) &&
                 (s->get_type() == obj["type"].toDouble())) {
                 s->set_colour(QColor(obj["colour"].toString()));
-                s->set_trig(obj["strigger"].toDouble());
+
+                boost::shared_ptr<view::LogicSignal> logicSig;
+                if (logicSig = dynamic_pointer_cast<view::LogicSignal>(s)) {
+                    logicSig->set_trig(obj["strigger"].toDouble());
+                }
+
                 boost::shared_ptr<view::DsoSignal> dsoSig;
                 if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
                     dsoSig->load_settings();
@@ -755,7 +761,12 @@ bool MainWindow::store_session(QString name)
         s_obj["enabled"] = s->enabled();
         s_obj["name"] = s->get_name();
         s_obj["colour"] = QJsonValue::fromVariant(s->get_colour());
-        s_obj["strigger"] = s->get_trig();
+
+        boost::shared_ptr<view::LogicSignal> logicSig;
+        if (logicSig = dynamic_pointer_cast<view::LogicSignal>(s)) {
+            s_obj["strigger"] = logicSig->get_trig();
+        }
+
         boost::shared_ptr<view::DsoSignal> dsoSig;
         if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
             s_obj["vdiv"] = QJsonValue::fromVariant(static_cast<qulonglong>(dsoSig->get_vDialValue()));

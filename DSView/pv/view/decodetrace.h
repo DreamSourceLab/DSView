@@ -71,6 +71,11 @@ private:
 		const srd_channel *_pdch;
 	};
 
+    enum DecodeSetRegions{
+        NONEREG = -1,
+        CHNLREG,
+    };
+
 private:
 	static const QColor DecodeColours[4];
 	static const QColor ErrorBgColour;
@@ -125,8 +130,10 @@ public:
 
     int rows_size();
 
+    QRectF get_rect(DecodeSetRegions type, int y, int right);
+
 protected:
-    void paint_type_options(QPainter &p, int right, bool hover, int action);
+    void paint_type_options(QPainter &p, int right, const QPoint pt);
 
 private:
     void create_popup_form();

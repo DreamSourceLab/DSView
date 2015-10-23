@@ -95,10 +95,10 @@ const QString DsoSignal::hDialUnit[DsoSignal::hDialUnitCount] = {
 };
 
 const QColor DsoSignal::SignalColours[4] = {
-    QColor(238, 178, 17, 200),  // dsYellow
-    QColor(0, 153, 37, 200),    // dsGreen
-    QColor(213, 15, 37, 200),   // dsRed
-    QColor(17, 133, 209, 200)  // dsBlue
+    QColor(238, 178, 17, 255),  // dsYellow
+    QColor(0, 153, 37, 255),    // dsGreen
+    QColor(213, 15, 37, 255),   // dsRed
+    QColor(17, 133, 209, 255)  // dsBlue
 
 };
 
@@ -1011,30 +1011,31 @@ const std::vector< std::pair<uint64_t, bool> > DsoSignal::cur_edges() const
 
 }
 
-void DsoSignal::paint_type_options(QPainter &p, int right, bool hover, int action)
+void DsoSignal::paint_type_options(QPainter &p, int right, const QPoint pt)
 {
     int y = get_y();
-    const QRectF vDial_rect = get_rect("vDial", y, right);
-    const QRectF x1_rect = get_rect("x1", y, right);
-    const QRectF x10_rect = get_rect("x10", y, right);
-    const QRectF x100_rect = get_rect("x100", y, right);
-    const QRectF hDial_rect = get_rect("hDial", y, right);
-    const QRectF acdc_rect = get_rect("acdc", y, right);
-    const QRectF chEn_rect = get_rect("chEn", y, right);
+    const QRectF vDial_rect = get_rect(DSO_VDIAL, y, right);
+    const QRectF vInc_rect = get_rect(DSO_VINC, y, right);
+    const QRectF hDial_rect = get_rect(DSO_HDIAL, y, right);
+    const QRectF hInc_rect = get_rect(DSO_HINC, y, right);
 
-    QColor vDial_color = _vDialActive ? dsActive : dsDisable;
-    QColor hDial_color = _hDialActive ? dsActive : dsDisable;
-    _vDial->paint(p, vDial_rect, vDial_color);
-    _hDial->paint(p, hDial_rect, hDial_color);
+    const QRectF x1_rect = get_rect(DSO_X1, y, right);
+    const QRectF x10_rect = get_rect(DSO_X10, y, right);
+    const QRectF x100_rect = get_rect(DSO_X100, y, right);
+    const QRectF acdc_rect = get_rect(DSO_ACDC, y, right);
+    const QRectF chEn_rect = get_rect(DSO_CHEN, y, right);
+
+    _vDial->paint(p, vDial_rect, _colour, vDial_rect.contains(pt), vInc_rect.contains(pt));
+    _hDial->paint(p, hDial_rect, _colour, hDial_rect.contains(pt), hInc_rect.contains(pt));
 
     p.setPen(Qt::transparent);
-    p.setBrush((hover && action == CHEN) ? _colour.darker() : _colour);
+    p.setBrush(chEn_rect.contains(pt) ? _colour.darker() : _colour);
     p.drawRect(chEn_rect);
     p.setPen(Qt::white);
     p.drawText(chEn_rect, Qt::AlignCenter | Qt::AlignVCenter, enabled() ? tr("EN") : tr("DIS"));
 
     p.setPen(Qt::transparent);
-    p.setBrush(enabled() ? ((hover && action == ACDC) ? _colour.darker() : _colour) : dsDisable);
+    p.setBrush(enabled() ? (acdc_rect.contains(pt) ? _colour.darker() : _colour) : dsDisable);
     p.drawRect(acdc_rect);
     p.setPen(Qt::white);
     p.drawText(acdc_rect, Qt::AlignCenter | Qt::AlignVCenter, (_acCoupling == SR_GND_COUPLING) ? tr("GND") :
@@ -1053,17 +1054,184 @@ void DsoSignal::paint_type_options(QPainter &p, int right, bool hover, int actio
     }
 
     p.setPen(Qt::white);
-    p.setBrush((enabled() && (factor == 100)) ? ((hover && action == X100) ? _colour.darker() : _colour)  : ((hover && action == X100) ? _colour.darker() : dsDisable));
+    p.setBrush((enabled() && (factor == 100)) ? (x100_rect.contains(pt) ? _colour.darker() : _colour)  : (x100_rect.contains(pt) ? _colour.darker() : dsDisable));
     p.drawRect(x100_rect);
     p.drawText(x100_rect, Qt::AlignCenter | Qt::AlignVCenter, "x100");
 
-    p.setBrush((enabled() && (factor == 10)) ? ((hover && action == X10) ? _colour.darker() : _colour)  : ((hover && action == X10) ? _colour.darker() : dsDisable));
+    p.setBrush((enabled() && (factor == 10)) ? (x10_rect.contains(pt) ? _colour.darker() : _colour)  : (x10_rect.contains(pt) ? _colour.darker() : dsDisable));
     p.drawRect(x10_rect);
     p.drawText(x10_rect, Qt::AlignCenter | Qt::AlignVCenter, "x10");
 
-    p.setBrush((enabled() && (factor == 1)) ? ((hover && action == X1) ? _colour.darker() : _colour)  : ((hover && action == X1) ? _colour.darker() : dsDisable));
+    p.setBrush((enabled() && (factor == 1)) ? (x1_rect.contains(pt) ? _colour.darker() : _colour)  : (x1_rect.contains(pt) ? _colour.darker() : dsDisable));
     p.drawRect(x1_rect);
     p.drawText(x1_rect, Qt::AlignCenter | Qt::AlignVCenter, "x1");
+}
+
+bool DsoSignal::mouse_double_click(int right, const QPoint pt)
+{
+    int y = get_zeroPos();
+    const QRectF label_rect = Trace::get_rect("label", y, right);
+    if (label_rect.contains(pt)) {
+        this->auto_set();
+        return true;
+    }
+    return false;
+}
+
+bool DsoSignal::mouse_press(int right, const QPoint pt)
+{
+    int y = get_y();
+    bool setted = false;
+    const vector< boost::shared_ptr<Trace> > traces(_view->get_traces());
+    const QRectF vDec_rect = get_rect(DSO_VDEC, y, right);
+    const QRectF vInc_rect = get_rect(DSO_VINC, y, right);
+    const QRectF hDec_rect = get_rect(DSO_HDEC, y, right);
+    const QRectF hInc_rect = get_rect(DSO_HINC, y, right);
+    const QRectF chEn_rect = get_rect(DSO_CHEN, y, right);
+    const QRectF acdc_rect = get_rect(DSO_ACDC, y, right);
+    const QRectF x1_rect = get_rect(DSO_X1, y, right);
+    const QRectF x10_rect = get_rect(DSO_X10, y, right);
+    const QRectF x100_rect = get_rect(DSO_X100, y, right);
+
+    if (enabled()) {
+        if (vDec_rect.contains(pt)) {
+            go_vDialPre();
+        } else if (vInc_rect.contains(pt)) {
+            go_vDialNext();
+        } else if (hDec_rect.contains(pt)) {
+            boost::shared_ptr<view::DsoSignal> dsoSig;
+            BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces) {
+                if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(t)) {
+                    dsoSig->go_hDialPre(setted);
+                    setted = true;
+                }
+            }
+        } else if (hInc_rect.contains(pt)) {
+            boost::shared_ptr<view::DsoSignal> dsoSig;
+            BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces) {
+                if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(t)) {
+                    dsoSig->go_hDialNext(setted);
+                    setted = true;
+                }
+            }
+        } else if (chEn_rect.contains(pt)) {
+           if (!_view->session().get_data_lock())
+               set_enable(!enabled());
+        } else if (acdc_rect.contains(pt)) {
+           if (strcmp(_view->session().get_device()->dev_inst()->driver->name, "DSLogic") == 0)
+               set_acCoupling((get_acCoupling()+1)%2);
+           else
+               set_acCoupling((get_acCoupling()+1)%3);
+        } else if (x1_rect.contains(pt)) {
+           set_factor(1);
+        } else if (x10_rect.contains(pt)) {
+           set_factor(10);
+        } else if (x100_rect.contains(pt)) {
+           set_factor(100);
+        } else {
+            return false;
+        }
+        return true;
+    }
+    return false;
+}
+
+bool DsoSignal::mouse_wheel(int right, const QPoint pt, const int shift)
+{
+    int y = get_y();
+    const vector< boost::shared_ptr<Trace> > traces(
+        _view->get_traces());
+    bool setted = false;
+    const QRectF vDial_rect = get_rect(DSO_VDIAL, y, right);
+    const QRectF hDial_rect = get_rect(DSO_HDIAL, y, right);
+
+    if (vDial_rect.contains(pt)) {
+        if (shift > 1.0)
+            go_vDialNext();
+        else if (shift < -1.0)
+            go_vDialPre();
+        return true;
+    } else if (hDial_rect.contains(pt)) {
+        boost::shared_ptr<view::DsoSignal> dsoSig;
+        BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces) {
+            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(t)) {
+                if (shift > 1.0) {
+                    dsoSig->go_hDialNext(setted);
+                    setted = true;
+                } else if (shift < -1.0) {
+                    dsoSig->go_hDialPre(setted);
+                    setted = true;
+                }
+            }
+        }
+    } else {
+        return false;
+    }
+
+    return true;
+}
+
+QRectF DsoSignal::get_rect(DsoSetRegions type, int y, int right)
+{
+    const QSizeF name_size(right - get_leftWidth() - get_rightWidth(), SquareWidth);
+
+    if (type == DSO_VDIAL)
+        return QRectF(
+            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin,
+            y - SquareWidth * SquareNum,
+            SquareWidth * (SquareNum-1), SquareWidth * (SquareNum-1));
+    else if (type == DSO_VDEC)
+        return QRectF(
+            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin,
+            y - SquareWidth * SquareNum,
+            SquareWidth * (SquareNum-1) / 2, SquareWidth * (SquareNum-1));
+    else if (type == DSO_VINC)
+        return QRectF(
+            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin + SquareWidth * (SquareNum-1) / 2,
+            y - SquareWidth * SquareNum,
+            SquareWidth * (SquareNum-1) / 2, SquareWidth * (SquareNum-1));
+    else if (type == DSO_HDIAL)
+        return QRectF(
+            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin,
+            y + SquareWidth * 1.5,
+            SquareWidth * (SquareNum-1), SquareWidth * (SquareNum-1));
+    else if (type == DSO_HDEC)
+        return QRectF(
+            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin,
+            y + SquareWidth * 1.5,
+            SquareWidth * (SquareNum-1) / 2, SquareWidth * (SquareNum-1));
+    else if (type == DSO_HINC)
+        return QRectF(
+            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin + SquareWidth * (SquareNum-1) / 2,
+            y + SquareWidth * 1.5,
+            SquareWidth * (SquareNum-1) / 2, SquareWidth * (SquareNum-1));
+    else if (type == DSO_X1)
+        return QRectF(
+            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin - 45,
+            y - SquareWidth - SquareWidth * (SquareNum-1) * 0.85,
+            SquareWidth * 1.75, SquareWidth);
+    else if (type == DSO_X10)
+        return QRectF(
+            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin - 45,
+            y - SquareWidth - SquareWidth * (SquareNum-1) * 0.55,
+            SquareWidth * 1.75, SquareWidth);
+    else if (type == DSO_X100)
+        return QRectF(
+            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin - 45,
+            y - SquareWidth - SquareWidth * (SquareNum-1) * 0.25,
+            SquareWidth * 1.75, SquareWidth);
+    else if (type == DSO_CHEN)
+        return QRectF(
+            get_leftWidth() + name_size.width() + SquareWidth*0.75 + Margin,
+            y - SquareWidth / 2,
+            SquareWidth * 1.5, SquareWidth);
+    else if (type == DSO_ACDC)
+        return QRectF(
+            get_leftWidth() + name_size.width() + SquareWidth*2.75 + Margin,
+            y - SquareWidth / 2,
+            SquareWidth * 1.5, SquareWidth);
+    else
+        return QRectF(0, 0, 0, 0);
 }
 
 void DsoSignal::paint_measure(QPainter &p)

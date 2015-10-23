@@ -25,7 +25,7 @@ dslDial::~dslDial()
 {
 }
 
-void dslDial::paint(QPainter &p, QRectF dialRect, QColor dialColor)
+void dslDial::paint(QPainter &p, QRectF dialRect, QColor dialColor, bool hover, bool inc)
 {
     p.setRenderHint(QPainter::Antialiasing, true);
     p.setPen(dialColor);
@@ -64,8 +64,22 @@ void dslDial::paint(QPainter &p, QRectF dialRect, QColor dialColor)
     }
     QString pText = QString::number(displayValue) + _unit[displayIndex] + "/div";
     QFontMetrics fm(p.font());
-    p.drawText(QRectF(dialRect.left(), dialRect.bottom()-dialRect.width()*0.3+fm.height()*0.5, dialRect.width(), fm.height()), Qt::AlignCenter, pText);
+    const QRectF valueRect = QRectF(dialRect.left(), dialRect.bottom()-dialRect.width()*0.3+fm.height()*0.5, dialRect.width(), fm.height());
+    p.drawText(valueRect, Qt::AlignCenter, pText);
 
+    // draw +/-
+    if (hover) {
+        const int arcInc = 15;
+        const QRectF hoverRect = QRectF(dialRect.left()-arcInc, dialRect.top()-arcInc, dialRect.width()+arcInc*2, dialRect.height()+arcInc*2);
+        const double arcSpan = hoverRect.width()/(2*sqrt(2));
+        p.drawArc(hoverRect, 135 * 16, -90 * 16);
+        if (inc)
+            p.drawLine(hoverRect.center().x()+arcSpan, hoverRect.center().y()-arcSpan,
+                       hoverRect.center().x()+arcSpan-4, hoverRect.center().y()-arcSpan-10);
+        else
+            p.drawLine(hoverRect.center().x()-arcSpan, hoverRect.center().y()-arcSpan,
+                       hoverRect.center().x()-arcSpan+4, hoverRect.center().y()-arcSpan-10);
+    }
 }
 
 void dslDial::set_sel(uint64_t sel)

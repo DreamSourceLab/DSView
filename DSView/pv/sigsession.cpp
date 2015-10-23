@@ -543,9 +543,12 @@ void SigSession::sample_thread_proc(boost::shared_ptr<device::DevInst> dev_inst,
         BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
         {
             assert(s);
-            if (s->get_trig() != 0) {
-                ds_trigger_set_en(true);
-                s->set_trig(s->get_trig());
+            boost::shared_ptr<view::LogicSignal> logicSig;
+            if (logicSig = dynamic_pointer_cast<view::LogicSignal>(s)) {
+                if (logicSig->get_trig() != 0) {
+                    ds_trigger_set_en(true);
+                    logicSig->set_trig(logicSig->get_trig());
+                }
             }
         }
     } else {
@@ -799,8 +802,10 @@ void SigSession::reload()
                     std::vector< boost::shared_ptr<view::Signal> >::iterator i = _signals.begin();
                     while (i != _signals.end()) {
                         if ((*i)->get_index() == probe->index) {
-                            signal = boost::shared_ptr<view::Signal>(
-                                new view::LogicSignal(**i, _logic_data, probe));
+                            boost::shared_ptr<view::LogicSignal> logicSig;
+                            if (logicSig = dynamic_pointer_cast<view::LogicSignal>(*i))
+                                signal = boost::shared_ptr<view::Signal>(
+                                    new view::LogicSignal(logicSig, _logic_data, probe));
                             break;
                         }
                         i++;
