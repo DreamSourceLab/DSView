@@ -54,7 +54,7 @@ private:
     static const int StateRound;
 
     enum LogicSetRegions{
-        NONTRIG = -1,
+        NONTRIG = 0,
         POSTRIG,
         HIGTRIG,
         NEGTRIG,
@@ -82,6 +82,7 @@ public:
     /**
      *
      */
+    bool has_trig() const;
     LogicSetRegions get_trig() const;
     void set_trig(int trig);
 

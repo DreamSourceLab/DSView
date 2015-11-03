@@ -47,7 +47,7 @@ const float AnalogSnapshot::LogEnvelopeScaleFactor =
 const uint64_t AnalogSnapshot::EnvelopeDataUnit = 64*1024;	// bytes
 
 AnalogSnapshot::AnalogSnapshot(const sr_datafeed_analog &analog, uint64_t _total_sample_len, unsigned int channel_num) :
-    Snapshot(sizeof(uint16_t), _total_sample_len, channel_num)
+    Snapshot(sizeof(uint16_t)*channel_num, _total_sample_len, channel_num)
 {
 	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 	memset(_envelope_levels, 0, sizeof(_envelope_levels));
@@ -66,7 +66,7 @@ void AnalogSnapshot::append_payload(
 	const sr_datafeed_analog &analog)
 {
 	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
-	append_data(analog.data, analog.num_samples);
+    append_data(analog.data, analog.num_samples);
 
 	// Generate the first mip-map from the data
 	append_payload_to_envelope_levels();

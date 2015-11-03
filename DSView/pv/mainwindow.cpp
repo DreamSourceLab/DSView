@@ -319,8 +319,7 @@ void MainWindow::update_device_list()
             errorMessage, infoMessage));
     }
 
-    if (strcmp(selected_device->dev_inst()->driver->name, "demo") != 0 &&
-        strcmp(selected_device->dev_inst()->driver->name, "virtual-session") != 0) {
+    if (strncmp(selected_device->dev_inst()->driver->name, "virtual", 7)) {
         _logo_bar->dsl_connected(true);
         QString ses_name = config_path +
                            QString::fromUtf8(selected_device->dev_inst()->driver->name) +
@@ -521,7 +520,8 @@ void MainWindow::closeEvent(QCloseEvent *event)
         QString driver_name = _session.get_device()->dev_inst()->driver->name;
         QString mode_name = QString::number(_session.get_device()->dev_inst()->mode);
         QString file_name = dir.absolutePath() + "/" + driver_name + mode_name + ".dsc";
-        if (!file_name.isEmpty())
+        if (strncmp(driver_name.toLocal8Bit(), "virtual", 7) &&
+            !file_name.isEmpty())
             store_session(file_name);
     }
     event->accept();

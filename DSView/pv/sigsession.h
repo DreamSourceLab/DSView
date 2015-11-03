@@ -117,7 +117,7 @@ public:
     void set_file(QString name)
         throw(QString);
 
-    void save_file(const QString name);
+    void save_file(const QString name, int type);
 
     void set_default_device(boost::function<void (const QString)> error_handler);
     void export_file(const QString name, QWidget* parent, const QString ext);

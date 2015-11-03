@@ -54,6 +54,8 @@ struct session_vdev {
     uint64_t total_samples;
 	int unitsize;
 	int num_probes;
+    uint64_t timebase;
+    struct sr_status mstatus;
 };
 
 static GSList *dev_insts = NULL;
@@ -69,6 +71,8 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
 	struct session_vdev *vdev;
 	struct sr_datafeed_packet packet;
 	struct sr_datafeed_logic logic;
+    struct sr_datafeed_dso dso;
+    struct sr_datafeed_analog analog;
 	GSList *l;
 	int ret, got_data;
 	(void)fd;
@@ -87,11 +91,31 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
         ret = zip_fread(vdev->capfile, vdev->buf, CHUNKSIZE);
 		if (ret > 0) {
 			got_data = TRUE;
-			packet.type = SR_DF_LOGIC;
-			packet.payload = &logic;
-			logic.length = ret;
-			logic.unitsize = vdev->unitsize;
-            logic.data = vdev->buf;
+            if (sdi->mode == DSO) {
+                packet.type = SR_DF_DSO;
+                packet.payload = &dso;
+                dso.num_samples = ret / vdev->unitsize;
+                dso.data = vdev->buf;
+                dso.probes = sdi->channels;
+                dso.mq = SR_MQ_VOLTAGE;
+                dso.unit = SR_UNIT_VOLT;
+                dso.mqflags = SR_MQFLAG_AC;
+            } else if (sdi->mode == ANALOG){
+                packet.type = SR_DF_ANALOG;
+                packet.payload = &analog;
+                analog.probes = sdi->channels;
+                analog.num_samples = ret / vdev->unitsize;
+                analog.mq = SR_MQ_VOLTAGE;
+                analog.unit = SR_UNIT_VOLT;
+                analog.mqflags = SR_MQFLAG_AC;
+                analog.data = vdev->buf;
+            } else {
+                packet.type = SR_DF_LOGIC;
+                packet.payload = &logic;
+                logic.length = ret;
+                logic.unitsize = vdev->unitsize;
+                logic.data = vdev->buf;
+            }
 			vdev->bytes_read += ret;
 			sr_session_send(cb_sdi, &packet);
 		} else {
@@ -166,7 +190,9 @@ static int dev_close(struct sr_dev_inst *sdi)
     return SR_OK;
 }
 
-static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi)
+static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
+                      const struct sr_channel *ch,
+                      const struct sr_channel_group *cg)
 {
 	struct session_vdev *vdev;
 
@@ -185,14 +211,63 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi)
         } else
             return SR_ERR;
         break;
-	default:
+    case SR_CONF_TIMEBASE:
+        if (sdi) {
+            vdev = sdi->priv;
+            *data = g_variant_new_uint64(vdev->timebase);
+        } else
+            return SR_ERR;
+        break;
+    case SR_CONF_EN_CH:
+        if (sdi && ch) {
+            *data = g_variant_new_boolean(ch->enabled);
+        } else
+            return SR_ERR;
+        break;
+    case SR_CONF_COUPLING:
+        if (sdi && ch) {
+            *data = g_variant_new_byte(ch->coupling);
+        } else
+            return SR_ERR;
+        break;
+    case SR_CONF_VDIV:
+        if (sdi && ch) {
+            *data = g_variant_new_uint64(ch->vdiv);
+        } else
+            return SR_ERR;
+        break;
+    case SR_CONF_FACTOR:
+        if (sdi && ch) {
+            *data = g_variant_new_uint64(ch->vfactor);
+        } else
+            return SR_ERR;
+        break;
+    case SR_CONF_VPOS:
+        if (sdi && ch) {
+            *data = g_variant_new_double(ch->vpos);
+        } else
+            return SR_ERR;
+        break;
+    case SR_CONF_MAX_DSO_SAMPLERATE:
+        if (!sdi)
+            return SR_ERR;
+        *data = g_variant_new_uint64(vdev->samplerate);
+        break;
+    case SR_CONF_MAX_DSO_SAMPLELIMITS:
+        if (!sdi)
+            return SR_ERR;
+        *data = g_variant_new_uint64(vdev->total_samples);
+        break;
+    default:
 		return SR_ERR_ARG;
 	}
 
 	return SR_OK;
 }
 
-static int config_set(int id, GVariant *data, const struct sr_dev_inst *sdi)
+static int config_set(int id, GVariant *data, const struct sr_dev_inst *sdi,
+                      struct sr_channel *ch,
+                      const struct sr_channel_group *cg)
 {
 	struct session_vdev *vdev;
 
@@ -204,7 +279,11 @@ static int config_set(int id, GVariant *data, const struct sr_dev_inst *sdi)
         samplerates[0] = vdev->samplerate;
 		sr_info("Setting samplerate to %" PRIu64 ".", vdev->samplerate);
 		break;
-	case SR_CONF_SESSIONFILE:
+    case SR_CONF_TIMEBASE:
+        vdev->timebase = g_variant_get_uint64(data);
+        sr_info("Setting timebase to %" PRIu64 ".", vdev->timebase);
+        break;
+    case SR_CONF_SESSIONFILE:
         vdev->sessionfile = g_strdup(g_variant_get_bytestring(data));
 		sr_info("Setting sessionfile to '%s'.", vdev->sessionfile);
 		break;
@@ -223,7 +302,46 @@ static int config_set(int id, GVariant *data, const struct sr_dev_inst *sdi)
 	case SR_CONF_CAPTURE_NUM_PROBES:
 		vdev->num_probes = g_variant_get_uint64(data);
 		break;
-	default:
+    case SR_CONF_EN_CH:
+        ch->enabled = g_variant_get_boolean(data);
+        break;
+    case SR_CONF_COUPLING:
+        ch->coupling = g_variant_get_byte(data);
+        break;
+    case SR_CONF_VDIV:
+        ch->vdiv = g_variant_get_uint64(data);
+        break;
+    case SR_CONF_FACTOR:
+        ch->vfactor = g_variant_get_uint64(data);
+        break;
+    case SR_CONF_VPOS:
+        ch->vpos = g_variant_get_double(data);
+        break;
+    case SR_CONF_STATUS_PERIOD:
+        if (ch->index == 0)
+            vdev->mstatus.ch0_period = g_variant_get_uint64(data);
+        else
+            vdev->mstatus.ch1_period = g_variant_get_uint64(data);
+        break;
+    case SR_CONF_STATUS_PCNT:
+        if (ch->index == 0)
+            vdev->mstatus.ch0_pcnt = g_variant_get_uint64(data);
+        else
+            vdev->mstatus.ch1_pcnt = g_variant_get_uint64(data);
+        break;
+    case SR_CONF_STATUS_MAX:
+        if (ch->index == 0)
+            vdev->mstatus.ch0_max = g_variant_get_uint64(data);
+        else
+            vdev->mstatus.ch1_max = g_variant_get_uint64(data);
+        break;
+    case SR_CONF_STATUS_MIN:
+        if (ch->index == 0)
+            vdev->mstatus.ch0_min = g_variant_get_uint64(data);
+        else
+            vdev->mstatus.ch1_min = g_variant_get_uint64(data);
+        break;
+    default:
 		sr_err("Unknown capability: %d.", id);
 		return SR_ERR;
 	}
@@ -266,6 +384,22 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi)
 	}
 
 	return SR_OK;
+}
+
+static int dev_status_get(struct sr_dev_inst *sdi, struct sr_status *status, int begin, int end)
+{
+    (void)begin;
+    (void)end;
+
+    struct session_vdev *vdev;
+
+    if (sdi) {
+        vdev = sdi->priv;
+        *status = vdev->mstatus;
+        return SR_OK;
+    } else {
+        return SR_ERR;
+    }
 }
 
 static int dev_acquisition_start(const struct sr_dev_inst *sdi,
@@ -324,7 +458,7 @@ SR_PRIV struct sr_dev_driver session_driver = {
     .dev_open = dev_open,
     .dev_close = dev_close,
     .dev_test = NULL,
-    .dev_status_get = NULL,
+    .dev_status_get = dev_status_get,
     .dev_acquisition_start = dev_acquisition_start,
     .dev_acquisition_stop = NULL,
     .priv = NULL,

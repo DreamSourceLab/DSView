@@ -722,6 +722,7 @@ static int set_probes(struct sr_dev_inst *sdi, int num_probes)
         if (sdi->mode == DSO) {
             probe->vdiv = 1000;
             probe->vfactor = 1;
+            probe->vpos = 0;
             probe->coupling = SR_DC_COUPLING;
             probe->trig_value = 0x80;
         }
@@ -1294,6 +1295,11 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
             return SR_ERR;
         *data = g_variant_new_uint64(ch->vfactor);
         break;
+    case SR_CONF_VPOS:
+        if (!ch)
+            return SR_ERR;
+        *data = g_variant_new_double(ch->vpos);
+        break;
     case SR_CONF_TIMEBASE:
         if (!sdi)
             return SR_ERR;
@@ -1558,71 +1564,75 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     } else if (id == SR_CONF_OPERATION_MODE) {
         stropt = g_variant_get_string(data, NULL);
         ret = SR_OK;
-        if (!strcmp(stropt, opmodes[SR_OP_BUFFER]) && (devc->op_mode != SR_OP_BUFFER)) {
-            devc->op_mode = SR_OP_BUFFER;
-            devc->stream = FALSE;
-            devc->ch_mode = 0;
-            devc->samplerates_size = 14;
-            adjust_probes(sdi, buffer_ch_num[0]);
-        } else if (!strcmp(stropt, opmodes[SR_OP_STREAM]) && (devc->op_mode != SR_OP_STREAM)) {
-            devc->op_mode = SR_OP_STREAM;
-            devc->stream = TRUE;
-            devc->ch_mode = 0;
-            devc->samplerates_size = 10;
-            adjust_probes(sdi, stream_ch_num[0]);
-        } else if (!strcmp(stropt, opmodes[SR_OP_INTERNAL_TEST]) && (devc->op_mode != SR_OP_INTERNAL_TEST)) {
-            devc->op_mode = SR_OP_INTERNAL_TEST;
-            devc->stream = FALSE;
-            devc->ch_mode = 0;
-            devc->samplerates_size = 14;
-            adjust_probes(sdi, buffer_ch_num[0]);
-            devc->limit_samples = DSLOGIC_MAX_LOGIC_DEPTH;
-            devc->cur_samplerate = DSLOGIC_MAX_LOGIC_SAMPLERATE;
-        } else if (!strcmp(stropt, opmodes[SR_OP_EXTERNAL_TEST]) && (devc->op_mode != SR_OP_EXTERNAL_TEST)) {
-            devc->op_mode = SR_OP_EXTERNAL_TEST;
-            devc->stream = FALSE;
-            devc->ch_mode = 0;
-            devc->samplerates_size = 14;
-            adjust_probes(sdi, buffer_ch_num[0]);
-            devc->limit_samples = DSLOGIC_MAX_LOGIC_DEPTH;
-            devc->cur_samplerate = DSLOGIC_MAX_LOGIC_SAMPLERATE;
-        } else if (!strcmp(stropt, opmodes[SR_OP_LOOPBACK_TEST]) && (devc->op_mode != SR_OP_LOOPBACK_TEST)) {
-            devc->op_mode = SR_OP_LOOPBACK_TEST;
-            devc->stream = FALSE;
-            devc->ch_mode = 0;
-            devc->samplerates_size = 14;
-            adjust_probes(sdi, buffer_ch_num[0]);
-            devc->limit_samples = DSLOGIC_MAX_LOGIC_DEPTH;
-            devc->cur_samplerate = DSLOGIC_MAX_LOGIC_SAMPLERATE;
-        } else {
-            ret = SR_ERR;
+        if (sdi->mode == LOGIC) {
+            if (!strcmp(stropt, opmodes[SR_OP_BUFFER]) && (devc->op_mode != SR_OP_BUFFER)) {
+                devc->op_mode = SR_OP_BUFFER;
+                devc->stream = FALSE;
+                devc->ch_mode = 0;
+                devc->samplerates_size = 14;
+                adjust_probes(sdi, buffer_ch_num[0]);
+            } else if (!strcmp(stropt, opmodes[SR_OP_STREAM]) && (devc->op_mode != SR_OP_STREAM)) {
+                devc->op_mode = SR_OP_STREAM;
+                devc->stream = TRUE;
+                devc->ch_mode = 0;
+                devc->samplerates_size = 10;
+                adjust_probes(sdi, stream_ch_num[0]);
+            } else if (!strcmp(stropt, opmodes[SR_OP_INTERNAL_TEST]) && (devc->op_mode != SR_OP_INTERNAL_TEST)) {
+                devc->op_mode = SR_OP_INTERNAL_TEST;
+                devc->stream = FALSE;
+                devc->ch_mode = 0;
+                devc->samplerates_size = 14;
+                adjust_probes(sdi, buffer_ch_num[0]);
+                devc->limit_samples = DSLOGIC_MAX_LOGIC_DEPTH;
+                devc->cur_samplerate = DSLOGIC_MAX_LOGIC_SAMPLERATE;
+            } else if (!strcmp(stropt, opmodes[SR_OP_EXTERNAL_TEST]) && (devc->op_mode != SR_OP_EXTERNAL_TEST)) {
+                devc->op_mode = SR_OP_EXTERNAL_TEST;
+                devc->stream = FALSE;
+                devc->ch_mode = 0;
+                devc->samplerates_size = 14;
+                adjust_probes(sdi, buffer_ch_num[0]);
+                devc->limit_samples = DSLOGIC_MAX_LOGIC_DEPTH;
+                devc->cur_samplerate = DSLOGIC_MAX_LOGIC_SAMPLERATE;
+            } else if (!strcmp(stropt, opmodes[SR_OP_LOOPBACK_TEST]) && (devc->op_mode != SR_OP_LOOPBACK_TEST)) {
+                devc->op_mode = SR_OP_LOOPBACK_TEST;
+                devc->stream = FALSE;
+                devc->ch_mode = 0;
+                devc->samplerates_size = 14;
+                adjust_probes(sdi, buffer_ch_num[0]);
+                devc->limit_samples = DSLOGIC_MAX_LOGIC_DEPTH;
+                devc->cur_samplerate = DSLOGIC_MAX_LOGIC_SAMPLERATE;
+            } else {
+                ret = SR_ERR;
+            }
+            if (devc->cur_samplerate > samplerates[devc->samplerates_size-1])
+                devc->cur_samplerate = samplerates[devc->samplerates_size-1];
         }
-        if (devc->cur_samplerate > samplerates[devc->samplerates_size-1])
-            devc->cur_samplerate = samplerates[devc->samplerates_size-1];
         sr_dbg("%s: setting pattern to %d",
             __func__, devc->op_mode);
     } else if (id == SR_CONF_CHANNEL_MODE) {
         stropt = g_variant_get_string(data, NULL);
         ret = SR_OK;
-        if (devc->stream) {
-            for (i = 0; i < ARRAY_SIZE(stream_ch_modes); i++)
-                if (!strcmp(stropt, stream_ch_modes[i])) {
-                    devc->ch_mode = i;
-                    devc->samplerates_size = 10 + i * 2;
-                    adjust_probes(sdi, stream_ch_num[i]);
-                    break;
-                }
-        } else {
-            for (i = 0; i < ARRAY_SIZE(buffer_ch_modes); i++)
-                if (!strcmp(stropt, buffer_ch_modes[i])) {
-                    devc->ch_mode = i;
-                    devc->samplerates_size = 14 + i;
-                    adjust_probes(sdi, buffer_ch_num[i]);
-                    break;
-                }
+        if (sdi->mode == LOGIC) {
+            if (devc->stream) {
+                for (i = 0; i < ARRAY_SIZE(stream_ch_modes); i++)
+                    if (!strcmp(stropt, stream_ch_modes[i])) {
+                        devc->ch_mode = i;
+                        devc->samplerates_size = 10 + i * 2;
+                        adjust_probes(sdi, stream_ch_num[i]);
+                        break;
+                    }
+            } else {
+                for (i = 0; i < ARRAY_SIZE(buffer_ch_modes); i++)
+                    if (!strcmp(stropt, buffer_ch_modes[i])) {
+                        devc->ch_mode = i;
+                        devc->samplerates_size = 14 + i;
+                        adjust_probes(sdi, buffer_ch_num[i]);
+                        break;
+                    }
+            }
+            if (devc->cur_samplerate > samplerates[devc->samplerates_size-1])
+                devc->cur_samplerate = samplerates[devc->samplerates_size-1];
         }
-        if (devc->cur_samplerate > samplerates[devc->samplerates_size-1])
-            devc->cur_samplerate = samplerates[devc->samplerates_size-1];
         sr_dbg("%s: setting channel mode to %d",
             __func__, devc->ch_mode);
     } else if (id == SR_CONF_THRESHOLD) {
@@ -1635,32 +1645,34 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         } else {
             ret = SR_ERR;
         }
-        if ((ret = command_fpga_config(usb->devhdl)) != SR_OK) {
-            sr_err("Send FPGA configure command failed!");
-        } else {
-            /* Takes >= 10ms for the FX2 to be ready for FPGA configure. */
-            g_usleep(10 * 1000);
-            char *fpga_bit;
-            if (!(fpga_bit = g_try_malloc(strlen(config_path)+strlen(devc->profile->fpga_bit33)+1))) {
-                sr_err("fpag_bit path malloc error!");
-                return SR_ERR_MALLOC;
+        if (sdi->mode == LOGIC) {
+            if ((ret = command_fpga_config(usb->devhdl)) != SR_OK) {
+                sr_err("Send FPGA configure command failed!");
+            } else {
+                /* Takes >= 10ms for the FX2 to be ready for FPGA configure. */
+                g_usleep(10 * 1000);
+                char *fpga_bit;
+                if (!(fpga_bit = g_try_malloc(strlen(config_path)+strlen(devc->profile->fpga_bit33)+1))) {
+                    sr_err("fpag_bit path malloc error!");
+                    return SR_ERR_MALLOC;
+                }
+                strcpy(fpga_bit, config_path);
+                switch(devc->th_level) {
+                case SR_TH_3V3:
+                    strcat(fpga_bit, devc->profile->fpga_bit33);;
+                    break;
+                case SR_TH_5V0:
+                    strcat(fpga_bit, devc->profile->fpga_bit50);;
+                    break;
+                default:
+                    return SR_ERR;
+                }
+                ret = fpga_config(usb->devhdl, fpga_bit);
+                if (ret != SR_OK) {
+                    sr_err("Configure FPGA failed!");
+                }
+                g_free(fpga_bit);
             }
-            strcpy(fpga_bit, config_path);
-            switch(devc->th_level) {
-            case SR_TH_3V3:
-                strcat(fpga_bit, devc->profile->fpga_bit33);;
-                break;
-            case SR_TH_5V0:
-                strcat(fpga_bit, devc->profile->fpga_bit50);;
-                break;
-            default:
-                return SR_ERR;
-            }
-            ret = fpga_config(usb->devhdl, fpga_bit);
-            if (ret != SR_OK) {
-                sr_err("Configure FPGA failed!");
-            }
-            g_free(fpga_bit);
         }
         sr_dbg("%s: setting threshold to %d",
             __func__, devc->th_level);
@@ -2225,7 +2237,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
             packet.type = SR_DF_ANALOG;
             packet.payload = &analog;
             analog.probes = (*(struct sr_dev_inst *)(devc->cb_data)).channels;
-            analog.num_samples = transfer->actual_length / sample_width;
+            analog.num_samples = (transfer->actual_length / sample_width)/g_slist_length(analog.probes);
             analog.mq = SR_MQ_VOLTAGE;
             analog.unit = SR_UNIT_VOLT;
             analog.mqflags = SR_MQFLAG_AC;

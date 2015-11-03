@@ -1485,10 +1485,10 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, ch, SR_CONF_VPOS));
         }
         if (ret == SR_OK)
-            sr_dbg("%s: setting VPOS of channel %d to %d mv",
+            sr_dbg("%s: setting VPOS of channel %d to %lf mv",
                 __func__, ch->index, ch->vpos);
         else
-            sr_dbg("%s: setting VPOS of channel %d to %d mv failed",
+            sr_dbg("%s: setting VPOS of channel %d to %lf mv failed",
                 __func__, ch->index, ch->vpos);
     } else if (id == SR_CONF_TIMEBASE) {
         devc->timebase = g_variant_get_uint64(data);

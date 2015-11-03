@@ -105,6 +105,11 @@ boost::shared_ptr<pv::data::Logic> LogicSignal::logic_data() const
     return _data;
 }
 
+bool LogicSignal::has_trig() const
+{
+    return (_trig != NONTRIG);
+}
+
 LogicSignal::LogicSetRegions LogicSignal::get_trig() const
 {
     return _trig;

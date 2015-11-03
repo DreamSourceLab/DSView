@@ -753,6 +753,12 @@ enum {
     SR_CONF_ZERO,
     SR_CONF_ZERO_OVER,
 
+    /** status for dso channel */
+    SR_CONF_STATUS_PERIOD,
+    SR_CONF_STATUS_PCNT,
+    SR_CONF_STATUS_MAX,
+    SR_CONF_STATUS_MIN,
+
     /** Stream */
     SR_CONF_STREAM,
 

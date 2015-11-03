@@ -23,6 +23,8 @@
 #include "inputfile.h"
 #include "sessionfile.h"
 
+#include <QFileInfo>
+
 #include <boost/filesystem.hpp>
 
 #include <libsigrok4DSL/libsigrok.h>
@@ -39,7 +41,8 @@ File::File(QString path) :
 
 QString File::format_device_title() const
 {
-    return _path;
+    QFileInfo fi(_path);
+    return fi.fileName();
 }
 
 File* File::create(QString name)

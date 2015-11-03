@@ -120,8 +120,6 @@ DsoSignal::DsoSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
     //_trig_vpos(probe->index * 0.5 + 0.25),
     //_zeroPos(probe->index * 0.5 + 0.25)
     _trig_vpos(0.5),
-    _zeroPos(0.5),
-    _zero_off(255/2.0),
     _autoV(false),
     _autoH(false),
     _hover_en(false),
@@ -495,6 +493,19 @@ bool DsoSignal::load_settings()
     _dev_inst->set_config(_probe, NULL, SR_CONF_COUPLING,
                           g_variant_new_byte(_acCoupling));
 
+    // -- vpos
+    double vpos;
+    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_VPOS);
+    if (gvar != NULL) {
+        vpos = g_variant_get_double(gvar);
+        g_variant_unref(gvar);
+    } else {
+        qDebug() << "ERROR: config_get SR_CONF_COUPLING failed.";
+        return false;
+    }
+    _zeroPos = min(max((0.5 - vpos / (_vDial->get_value() * DS_CONF_DSO_VDIVS)), 0.0), 1.0);
+    _zero_off = _zeroPos * 255;
+
     if (_view) {
         _view->set_need_update(true);
         _view->update();
@@ -657,6 +668,7 @@ uint64_t DsoSignal::get_factor()
 void DsoSignal::set_ms_show(bool show)
 {
     _ms_show = show;
+    _view->set_need_update(true);
 }
 
 bool DsoSignal::get_ms_show() const
@@ -1093,7 +1105,12 @@ bool DsoSignal::mouse_press(int right, const QPoint pt)
     const QRectF x10_rect = get_rect(DSO_X10, y, right);
     const QRectF x100_rect = get_rect(DSO_X100, y, right);
 
-    if (enabled()) {
+    if (chEn_rect.contains(pt)) {
+       if (strcmp(_dev_inst->dev_inst()->driver->name, "virtual-session") &&
+           !_view->session().get_data_lock())
+           set_enable(!enabled());
+       return true;
+    } else if (enabled()) {
         if (vDec_rect.contains(pt)) {
             go_vDialPre();
         } else if (vInc_rect.contains(pt)) {
@@ -1114,10 +1131,8 @@ bool DsoSignal::mouse_press(int right, const QPoint pt)
                     setted = true;
                 }
             }
-        } else if (chEn_rect.contains(pt)) {
-           if (!_view->session().get_data_lock())
-               set_enable(!enabled());
-        } else if (acdc_rect.contains(pt)) {
+        } else if (strcmp(_dev_inst->dev_inst()->driver->name, "virtual-session") &&
+                   acdc_rect.contains(pt)) {
            if (strcmp(_view->session().get_device()->dev_inst()->driver->name, "DSLogic") == 0)
                set_acCoupling((get_acCoupling()+1)%2);
            else
@@ -1284,6 +1299,14 @@ void DsoSignal::paint_measure(QPainter &p)
                 _ms_string[DSO_MS_VMEA] = "Vmean: " +  (abs(value_vmean) > 1000 ? QString::number(value_vmean/1000.0, 'f', 2) + "V" : QString::number(value_vmean, 'f', 2) + "mV");
             }
         }
+    } else {
+        _ms_string[DSO_MS_VMAX] = "Vmax: #####";
+        _ms_string[DSO_MS_VMIN] = "Vmin: #####";
+        _ms_string[DSO_MS_PERD] = "Perd: #####";
+        _ms_string[DSO_MS_FREQ] = "Freq: #####";
+        _ms_string[DSO_MS_VP2P] = "Vp-p: #####";
+        _ms_string[DSO_MS_VRMS] = "Vrms: #####";
+        _ms_string[DSO_MS_VMEA] = "Vmean: #####";
     }
 
     QColor measure_colour = _colour;
