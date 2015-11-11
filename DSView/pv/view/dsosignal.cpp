@@ -409,10 +409,10 @@ bool DsoSignal::go_hDialNext(bool setted)
             return true;
         }
         if (!setted) {
-                const double scale = _hDial->get_value() * std::pow(10.0, -9.0) * DS_CONF_DSO_HDIVS / get_view_rect().width();
-                _view->set_scale_offset(scale, _view->offset());
-                _dev_inst->set_config(_probe, NULL, SR_CONF_TIMEBASE,
-                                      g_variant_new_uint64(_hDial->get_value()));
+            const double scale = _hDial->get_value() * std::pow(10.0, -9.0) * DS_CONF_DSO_HDIVS / get_view_rect().width();
+            _view->set_scale_offset(scale, _view->offset());
+            _dev_inst->set_config(_probe, NULL, SR_CONF_TIMEBASE,
+                                  g_variant_new_uint64(_hDial->get_value()));
         }
         return true;
     } else {
@@ -927,7 +927,6 @@ void DsoSignal::paint_trace(QPainter &p,
         QColor trace_colour = _colour;
         trace_colour.setAlpha(150);
         p.setPen(trace_colour);
-        //p.setPen(QPen(_colour, 3, Qt::SolidLine));
 
         QPointF *points = new QPointF[sample_count];
         QPointF *point = points;
@@ -955,6 +954,8 @@ void DsoSignal::paint_trace(QPainter &p,
         }
 
         p.drawPolyline(points, point - points);
+        p.eraseRect(get_view_rect().right(), get_view_rect().top(),
+                    _view->viewport()->width() - get_view_rect().width(), get_view_rect().height());
 
         //delete[] samples;
         delete[] points;
@@ -1420,6 +1421,10 @@ bool DsoSignal::measure(const QPointF &p)
 
     _hover_en = false;
     if (!enabled())
+        return false;
+
+    const QRectF window = get_view_rect();
+    if (!window.contains(p))
         return false;
 
     const deque< boost::shared_ptr<pv::data::DsoSnapshot> > &snapshots =

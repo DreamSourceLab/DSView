@@ -90,7 +90,7 @@ public:
 private:
 	void reallocate_envelope(Envelope &l);
 
-	void append_payload_to_envelope_levels();
+    void append_payload_to_envelope_levels(bool header);
 
 private:
     struct Envelope _envelope_levels[2*DS_MAX_DSO_PROBES_NUM][ScaleStepCount];

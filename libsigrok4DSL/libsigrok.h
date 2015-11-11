@@ -176,6 +176,7 @@ enum {
 	SR_DF_ANALOG,
 	SR_DF_FRAME_BEGIN,
 	SR_DF_FRAME_END,
+    SR_DF_ABANDON,
 };
 
 /** Values for sr_datafeed_analog.mq. */
@@ -322,6 +323,8 @@ struct sr_datafeed_dso {
     int unit;
     /** Bitmap with extra information about the MQ. */
     uint64_t mqflags;
+    /** samplerate different from last packet */
+    gboolean samplerate_tog;
     /** The analog value(s). The data is interleaved according to
      * the probes list. */
     void *data;
@@ -624,6 +627,7 @@ struct sr_status {
     uint32_t vlen;
     gboolean stream_mode;
     uint32_t sample_divider;
+    gboolean sample_divider_tog;
 
     gboolean zeroing;
     uint16_t ch0_vpos_mid;

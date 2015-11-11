@@ -2202,7 +2202,8 @@ static void receive_transfer(struct libusb_transfer *transfer)
                 mstatus.ch1_pcnt = *((const uint32_t*)cur_buf + mstatus_offset/2 + 14/2);
                 mstatus.vlen = *((const uint32_t*)cur_buf + mstatus_offset/2 + 16/2) & 0x7fffffff;
                 mstatus.stream_mode = *((const uint32_t*)cur_buf + mstatus_offset/2 + 16/2) & 0x80000000;
-                mstatus.sample_divider = *((const uint32_t*)cur_buf + mstatus_offset/2 + 18/2);
+                mstatus.sample_divider = *((const uint32_t*)cur_buf + mstatus_offset/2 + 18/2) & 0x7fffffff;
+                mstatus.sample_divider_tog = *((const uint32_t*)cur_buf + mstatus_offset/2 + 18/2) & 0x80000000;
                 mstatus.zeroing = (*((const uint16_t*)cur_buf + mstatus_offset + 128) & 0x8000) != 0;
                 mstatus.ch0_adc_off = *((const uint8_t*)cur_buf + mstatus_offset*2 + 131*2);
                 mstatus.ch0_adc_sign = *((const uint8_t*)cur_buf + mstatus_offset*2 + 131*2+1);
@@ -2229,6 +2230,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
                 dso.mq = SR_MQ_VOLTAGE;
                 dso.unit = SR_UNIT_VOLT;
                 dso.mqflags = SR_MQFLAG_AC;
+                dso.samplerate_tog = mstatus.sample_divider_tog;
                 dso.data = cur_buf + trigger_offset_bytes;
             } else {
                 devc->mstatus_valid = FALSE;

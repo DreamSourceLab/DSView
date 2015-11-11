@@ -75,14 +75,14 @@ void DsoSnapshot::append_payload(const sr_datafeed_dso &dso)
 
         // Generate the first mip-map from the data
         if (_envelope_en)
-            append_payload_to_envelope_levels();
+            append_payload_to_envelope_levels(dso.samplerate_tog);
     }
 }
 
 void DsoSnapshot::enable_envelope(bool enable)
 {
     if (!_envelope_done && enable)
-        append_payload_to_envelope_levels();
+        append_payload_to_envelope_levels(true);
     _envelope_en = enable;
 }
 
@@ -146,14 +146,17 @@ void DsoSnapshot::reallocate_envelope(Envelope &e)
 	}
 }
 
-void DsoSnapshot::append_payload_to_envelope_levels()
+void DsoSnapshot::append_payload_to_envelope_levels(bool header)
 {
     for (unsigned int i = 0; i < _channel_num; i++) {
         Envelope &e0 = _envelope_levels[i][0];
         uint64_t prev_length;
         EnvelopeSample *dest_ptr;
 
-        prev_length = e0.length;
+        if (header)
+            prev_length = 0;
+        else
+            prev_length = e0.length;
         e0.length = _sample_count / EnvelopeScaleFactor;
 
         if (e0.length == 0)
