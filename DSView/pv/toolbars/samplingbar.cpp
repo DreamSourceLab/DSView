@@ -225,6 +225,7 @@ void SamplingBar::on_configure()
     if (ret == QDialog::Accepted) {
         device_updated();
         update_sample_rate_selector();
+        commit_sample_rate();
     }
 
     GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_ZERO);
@@ -294,7 +295,7 @@ void SamplingBar::update_record_length()
     disconnect(&_sample_count, SIGNAL(currentIndexChanged(int)),
         this, SLOT(on_samplecount_sel(int)));
 
-    update_sample_count_selector_value();
+    update_sample_count_selector();
 
     connect(&_sample_count, SIGNAL(currentIndexChanged(int)),
         this, SLOT(on_samplecount_sel(int)));
@@ -305,7 +306,7 @@ void SamplingBar::update_sample_rate()
     disconnect(&_sample_rate, SIGNAL(currentIndexChanged(int)),
         this, SLOT(on_samplerate_sel(int)));
 
-    update_sample_rate_selector_value();
+    update_sample_rate_selector();
 
     connect(&_sample_rate, SIGNAL(currentIndexChanged(int)),
         this, SLOT(on_samplerate_sel(int)));
@@ -452,7 +453,7 @@ void SamplingBar::update_sample_rate_selector_value()
             break;
         }
     }
-
+    update_scale();
     _updating_sample_rate = false;
 }
 
@@ -511,27 +512,27 @@ void SamplingBar::on_samplecount_sel(int index)
                              g_variant_new_uint64(sample_count));
 
 
-        GVariant* gvar = _devInst->get_config(NULL, NULL, SR_CONF_STREAM);
-        if (gvar != NULL) {
-            stream_mode = g_variant_get_boolean(gvar);
-            g_variant_unref(gvar);
-        }
-        gvar = _devInst->get_config(NULL, NULL, SR_CONF_MAX_LOGIC_SAMPLELIMITS);
-        if (gvar != NULL) {
-            max_sample_count = g_variant_get_uint64(gvar);
-            g_variant_unref(gvar);
-        }
-        if (!stream_mode) {
-            if (sample_count > max_sample_count) {
-                _devInst->set_config(NULL, NULL,
-                                     SR_CONF_RLE,
-                                     g_variant_new_boolean(true));
-            } else {
-                _devInst->set_config(NULL, NULL,
-                                     SR_CONF_RLE,
-                                     g_variant_new_boolean(false));
-            }
-        }
+//        GVariant* gvar = _devInst->get_config(NULL, NULL, SR_CONF_STREAM);
+//        if (gvar != NULL) {
+//            stream_mode = g_variant_get_boolean(gvar);
+//            g_variant_unref(gvar);
+//        }
+//        gvar = _devInst->get_config(NULL, NULL, SR_CONF_MAX_LOGIC_SAMPLELIMITS);
+//        if (gvar != NULL) {
+//            max_sample_count = g_variant_get_uint64(gvar);
+//            g_variant_unref(gvar);
+//        }
+//        if (!stream_mode) {
+//            if (sample_count > max_sample_count) {
+//                _devInst->set_config(NULL, NULL,
+//                                     SR_CONF_RLE,
+//                                     g_variant_new_boolean(true));
+//            } else {
+//                _devInst->set_config(NULL, NULL,
+//                                     SR_CONF_RLE,
+//                                     g_variant_new_boolean(false));
+//            }
+//        }
 
         sample_count_changed();
         update_scale();
@@ -562,32 +563,32 @@ void SamplingBar::on_samplerate_sel(int index)
                                               SR_CONF_SAMPLERATE,
                                               g_variant_new_uint64(sample_rate));
 
-            GVariant* gvar = _devInst->get_config(NULL, NULL, SR_CONF_STREAM);
-            if (gvar != NULL) {
-                stream_mode = g_variant_get_boolean(gvar);
-                g_variant_unref(gvar);
-            }
-            gvar = _devInst->get_config(NULL, NULL, SR_CONF_LIMIT_SAMPLES);
-            if (gvar != NULL) {
-                sample_count = g_variant_get_uint64(gvar);
-                g_variant_unref(gvar);
-            }
-            gvar = _devInst->get_config(NULL, NULL, SR_CONF_MAX_LOGIC_SAMPLELIMITS);
-            if (gvar != NULL) {
-                max_sample_count = g_variant_get_uint64(gvar);
-                g_variant_unref(gvar);
-            }
-            if (!stream_mode) {
-                if (sample_count > max_sample_count) {
-                    _devInst->set_config(NULL, NULL,
-                                         SR_CONF_RLE,
-                                         g_variant_new_boolean(true));
-                } else {
-                    _devInst->set_config(NULL, NULL,
-                                         SR_CONF_RLE,
-                                         g_variant_new_boolean(false));
-                }
-            }
+//            GVariant* gvar = _devInst->get_config(NULL, NULL, SR_CONF_STREAM);
+//            if (gvar != NULL) {
+//                stream_mode = g_variant_get_boolean(gvar);
+//                g_variant_unref(gvar);
+//            }
+//            gvar = _devInst->get_config(NULL, NULL, SR_CONF_LIMIT_SAMPLES);
+//            if (gvar != NULL) {
+//                sample_count = g_variant_get_uint64(gvar);
+//                g_variant_unref(gvar);
+//            }
+//            gvar = _devInst->get_config(NULL, NULL, SR_CONF_MAX_LOGIC_SAMPLELIMITS);
+//            if (gvar != NULL) {
+//                max_sample_count = g_variant_get_uint64(gvar);
+//                g_variant_unref(gvar);
+//            }
+//            if (!stream_mode) {
+//                if (sample_count > max_sample_count) {
+//                    _devInst->set_config(NULL, NULL,
+//                                         SR_CONF_RLE,
+//                                         g_variant_new_boolean(true));
+//                } else {
+//                    _devInst->set_config(NULL, NULL,
+//                                         SR_CONF_RLE,
+//                                         g_variant_new_boolean(false));
+//                }
+//            }
 
             update_scale();
     }
@@ -664,6 +665,7 @@ void SamplingBar::update_sample_count_selector_value()
 
     _updating_sample_count = false;
     sample_count_changed();
+    update_scale();
 }
 
 void SamplingBar::commit_sample_count()

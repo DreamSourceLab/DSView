@@ -1429,6 +1429,12 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 0, SR_CONF_SAMPLERATE));
         } else {
             devc->sample_wide = (devc->cur_samplerate <= DSLOGIC_MAX_LOGIC_SAMPLERATE);
+            if (!devc->stream) {
+                if (devc->limit_samples > DSLOGIC_MAX_LOGIC_DEPTH*ceil(devc->cur_samplerate * 1.0 / DSLOGIC_MAX_LOGIC_SAMPLERATE))
+                    devc->rle_mode = TRUE;
+                else
+                    devc->rle_mode = FALSE;
+            }
             ret = SR_OK;
         }
     } else if (id == SR_CONF_CLOCK_TYPE) {
@@ -1459,6 +1465,14 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         ret = SR_OK;
 	} else if (id == SR_CONF_LIMIT_SAMPLES) {
 		devc->limit_samples = g_variant_get_uint64(data);
+        if(sdi->mode == LOGIC) {
+            if (!devc->stream) {
+                if (devc->limit_samples > DSLOGIC_MAX_LOGIC_DEPTH*ceil(devc->cur_samplerate * 1.0 / DSLOGIC_MAX_LOGIC_SAMPLERATE))
+                    devc->rle_mode = TRUE;
+                else
+                    devc->rle_mode = FALSE;
+            }
+        }
         ret = SR_OK;
     } else if (id == SR_CONF_DEVICE_MODE) {
         sdi->mode = g_variant_get_int16(data);
@@ -1574,6 +1588,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             } else if (!strcmp(stropt, opmodes[SR_OP_STREAM]) && (devc->op_mode != SR_OP_STREAM)) {
                 devc->op_mode = SR_OP_STREAM;
                 devc->stream = TRUE;
+                devc->rle_mode = FALSE;
                 devc->ch_mode = 0;
                 devc->samplerates_size = 10;
                 adjust_probes(sdi, stream_ch_num[0]);
@@ -1585,6 +1600,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 adjust_probes(sdi, buffer_ch_num[0]);
                 devc->limit_samples = DSLOGIC_MAX_LOGIC_DEPTH;
                 devc->cur_samplerate = DSLOGIC_MAX_LOGIC_SAMPLERATE;
+                devc->sample_wide = TRUE;
             } else if (!strcmp(stropt, opmodes[SR_OP_EXTERNAL_TEST]) && (devc->op_mode != SR_OP_EXTERNAL_TEST)) {
                 devc->op_mode = SR_OP_EXTERNAL_TEST;
                 devc->stream = FALSE;
@@ -1593,6 +1609,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 adjust_probes(sdi, buffer_ch_num[0]);
                 devc->limit_samples = DSLOGIC_MAX_LOGIC_DEPTH;
                 devc->cur_samplerate = DSLOGIC_MAX_LOGIC_SAMPLERATE;
+                devc->sample_wide = TRUE;
             } else if (!strcmp(stropt, opmodes[SR_OP_LOOPBACK_TEST]) && (devc->op_mode != SR_OP_LOOPBACK_TEST)) {
                 devc->op_mode = SR_OP_LOOPBACK_TEST;
                 devc->stream = FALSE;
@@ -1601,11 +1618,14 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 adjust_probes(sdi, buffer_ch_num[0]);
                 devc->limit_samples = DSLOGIC_MAX_LOGIC_DEPTH;
                 devc->cur_samplerate = DSLOGIC_MAX_LOGIC_SAMPLERATE;
+                devc->sample_wide = TRUE;
             } else {
                 ret = SR_ERR;
             }
-            if (devc->cur_samplerate > samplerates[devc->samplerates_size-1])
+            if (devc->cur_samplerate > samplerates[devc->samplerates_size-1]) {
                 devc->cur_samplerate = samplerates[devc->samplerates_size-1];
+                devc->sample_wide = (devc->cur_samplerate <= DSLOGIC_MAX_DSO_SAMPLERATE);
+            }
         }
         sr_dbg("%s: setting pattern to %d",
             __func__, devc->op_mode);
@@ -1630,8 +1650,10 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                         break;
                     }
             }
-            if (devc->cur_samplerate > samplerates[devc->samplerates_size-1])
+            if (devc->cur_samplerate > samplerates[devc->samplerates_size-1]) {
                 devc->cur_samplerate = samplerates[devc->samplerates_size-1];
+                devc->sample_wide = (devc->cur_samplerate <= DSLOGIC_MAX_DSO_SAMPLERATE);
+            }
         }
         sr_dbg("%s: setting channel mode to %d",
             __func__, devc->ch_mode);
@@ -2468,8 +2490,9 @@ static void receive_trigger_pos(struct libusb_transfer *transfer)
     switch (transfer->status) {
     case LIBUSB_TRANSFER_COMPLETED:
         if (transfer->actual_length == sizeof(struct ds_trigger_pos)) {
-            if (trigger_pos->remain_cnt < devc->limit_samples) {
-                devc->actual_samples = (devc->limit_samples - ceil(devc->cur_samplerate * 1.0 / DSLOGIC_MAX_LOGIC_SAMPLERATE) * (trigger_pos->remain_cnt + devc->rle_mode));
+            if (devc->stream || trigger_pos->remain_cnt < devc->limit_samples) {
+                if (!devc->stream)
+                    devc->actual_samples = (devc->limit_samples - ceil(devc->cur_samplerate * 1.0 / DSLOGIC_MAX_LOGIC_SAMPLERATE) * (trigger_pos->remain_cnt));
 
                 packet.type = SR_DF_TRIGGER;
                 packet.payload = trigger_pos;
