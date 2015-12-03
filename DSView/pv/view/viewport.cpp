@@ -381,10 +381,11 @@ void Viewport::mousePressEvent(QMouseEvent *event)
             const double samples_per_pixel = _view.session().get_device()->get_sample_rate() * _view.scale();
             while (i != _view.get_cursorList().end()) {
                 cursorX = (*i)->index()/samples_per_pixel - (_view.offset() / _view.scale());
-                if ((*i)->grabbed())
+                if ((*i)->grabbed()) {
                     _view.get_ruler()->rel_grabbed_cursor();
-                else if (qAbs(cursorX - event->pos().x()) <= HitCursorMargin) {
+                } else if (qAbs(cursorX - event->pos().x()) <= HitCursorMargin) {
                     _view.get_ruler()->set_grabbed_cursor(*i);
+                    _measure_type = LOGIC_CURS;
                     break;
                 }
                 i++;
@@ -521,7 +522,8 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
     if(_drag_sig)
         _drag_sig.reset();
 
-    if (_view.session().get_device()->dev_inst()->mode == LOGIC &&
+    if ((_measure_type != LOGIC_MOVE && _measure_type != LOGIC_CURS) &&
+        _view.session().get_device()->dev_inst()->mode == LOGIC &&
         _mouse_down_point.x() == event->pos().x() &&
         event->button() & Qt::LeftButton) {
         if (_measure_type == LOGIC_EDGE) {
@@ -529,14 +531,14 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
             _measure_shown = false;
             _edge_rising = 0;
             _edge_falling = 0;
-        } else if (_measure_type != LOGIC_MOVE) {
+        } else {
             _measure_type = LOGIC_EDGE;
             _edge_start = (_view.offset() + (event->pos().x() + 0.5) * _view.scale()) * _view.session().get_device()->get_sample_rate();
         }
     }
 
     if (_view.session().get_device()->dev_inst()->mode == LOGIC &&
-        _measure_type != LOGIC_EDGE) {
+        (_measure_type == NO_MEASURE || _measure_type == LOGIC_MOVE)) {
         const double strength = _drag_strength*DragTimerInterval*1.0/_time.elapsed();
         if (_time.elapsed() < 200 &&
             abs(_drag_strength) < MinorDragOffsetUp &&
@@ -555,6 +557,9 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
             _measure_type = NO_MEASURE;
         }
     }
+
+    if (!_view.get_ruler()->get_grabbed_cursor() && _measure_type == LOGIC_CURS)
+        _measure_type = NO_MEASURE;
 
     update();
 }

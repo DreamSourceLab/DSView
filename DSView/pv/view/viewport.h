@@ -59,6 +59,7 @@ public:
         LOGIC_FREQ,
         LOGIC_EDGE,
         LOGIC_MOVE,
+        LOGIC_CURS,
         DSO_FREQ
     };
 

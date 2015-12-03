@@ -710,8 +710,10 @@ QComboBox* DecodeTrace::create_probe_selector(
 		{
 			selector->addItem(s->get_name(),
 				qVariantFromValue((void*)s.get()));
-			if ((*probe_iter).second == s)
-				selector->setCurrentIndex(i + 1);
+            if (probe_iter != dec->channels().end()) {
+                if ((*probe_iter).second->get_index() == s->get_index())
+                    selector->setCurrentIndex(i + 1);
+            }
 		}
 	}
 
