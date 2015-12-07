@@ -498,7 +498,10 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_MAX_LOGIC_SAMPLELIMITS:
         *data = g_variant_new_uint64(DEMO_MAX_LOGIC_DEPTH);
         break;
-	default:
+    case SR_CONF_RLE_SAMPLELIMITS:
+        *data = g_variant_new_uint64(DEMO_MAX_LOGIC_DEPTH);
+        break;
+    default:
 		return SR_ERR_NA;
 	}
 

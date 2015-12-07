@@ -77,6 +77,8 @@ public:
     void start_trigger_timer(int msec);
     void stop_trigger_timer();
 
+    void clear_measure();
+
 protected:
 	void paintEvent(QPaintEvent *event);
 

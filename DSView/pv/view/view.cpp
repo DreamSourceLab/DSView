@@ -508,6 +508,7 @@ void View::signals_changed()
         next_v_offset += traceHeight + 2 * SignalMargin;
 	}
 
+    _viewport->clear_measure();
     header_updated();
     normalize_layout();
 }

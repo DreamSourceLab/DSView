@@ -1107,14 +1107,16 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
 	{
 		{
             boost::lock_guard<boost::mutex> lock(_data_mutex);
-            BOOST_FOREACH(const boost::shared_ptr<view::GroupSignal> g, _group_traces)
-            {
-                assert(g);
+            if (_cur_logic_snapshot) {
+                BOOST_FOREACH(const boost::shared_ptr<view::GroupSignal> g, _group_traces)
+                {
+                    assert(g);
 
-                _cur_group_snapshot = boost::shared_ptr<data::GroupSnapshot>(
-                            new data::GroupSnapshot(_logic_data->get_snapshots().front(), g->get_index_list()));
-                _group_data->push_snapshot(_cur_group_snapshot);
-                _cur_group_snapshot.reset();
+                    _cur_group_snapshot = boost::shared_ptr<data::GroupSnapshot>(
+                                new data::GroupSnapshot(_logic_data->get_snapshots().front(), g->get_index_list()));
+                    _group_data->push_snapshot(_cur_group_snapshot);
+                    _cur_group_snapshot.reset();
+                }
             }
             _cur_logic_snapshot.reset();
             _cur_dso_snapshot.reset();

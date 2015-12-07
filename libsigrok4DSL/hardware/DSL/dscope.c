@@ -1300,6 +1300,11 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
             return SR_ERR;
         *data = g_variant_new_uint64(DSCOPE_MAX_DEPTH);
         break;
+    case SR_CONF_RLE_SAMPLELIMITS:
+        if (!sdi)
+            return SR_ERR;
+        *data = g_variant_new_uint64(DSCOPE_MAX_DEPTH);
+        break;
     default:
         return SR_ERR_NA;
 	}

@@ -224,6 +224,7 @@ void SamplingBar::on_configure()
     ret = dlg.exec();
     if (ret == QDialog::Accepted) {
         device_updated();
+        update_sample_count_selector();
         update_sample_rate_selector();
         commit_sample_rate();
     }
@@ -511,29 +512,6 @@ void SamplingBar::on_samplecount_sel(int index)
                              SR_CONF_LIMIT_SAMPLES,
                              g_variant_new_uint64(sample_count));
 
-
-//        GVariant* gvar = _devInst->get_config(NULL, NULL, SR_CONF_STREAM);
-//        if (gvar != NULL) {
-//            stream_mode = g_variant_get_boolean(gvar);
-//            g_variant_unref(gvar);
-//        }
-//        gvar = _devInst->get_config(NULL, NULL, SR_CONF_MAX_LOGIC_SAMPLELIMITS);
-//        if (gvar != NULL) {
-//            max_sample_count = g_variant_get_uint64(gvar);
-//            g_variant_unref(gvar);
-//        }
-//        if (!stream_mode) {
-//            if (sample_count > max_sample_count) {
-//                _devInst->set_config(NULL, NULL,
-//                                     SR_CONF_RLE,
-//                                     g_variant_new_boolean(true));
-//            } else {
-//                _devInst->set_config(NULL, NULL,
-//                                     SR_CONF_RLE,
-//                                     g_variant_new_boolean(false));
-//            }
-//        }
-
         sample_count_changed();
         update_scale();
     }
@@ -563,33 +541,6 @@ void SamplingBar::on_samplerate_sel(int index)
                                               SR_CONF_SAMPLERATE,
                                               g_variant_new_uint64(sample_rate));
 
-//            GVariant* gvar = _devInst->get_config(NULL, NULL, SR_CONF_STREAM);
-//            if (gvar != NULL) {
-//                stream_mode = g_variant_get_boolean(gvar);
-//                g_variant_unref(gvar);
-//            }
-//            gvar = _devInst->get_config(NULL, NULL, SR_CONF_LIMIT_SAMPLES);
-//            if (gvar != NULL) {
-//                sample_count = g_variant_get_uint64(gvar);
-//                g_variant_unref(gvar);
-//            }
-//            gvar = _devInst->get_config(NULL, NULL, SR_CONF_MAX_LOGIC_SAMPLELIMITS);
-//            if (gvar != NULL) {
-//                max_sample_count = g_variant_get_uint64(gvar);
-//                g_variant_unref(gvar);
-//            }
-//            if (!stream_mode) {
-//                if (sample_count > max_sample_count) {
-//                    _devInst->set_config(NULL, NULL,
-//                                         SR_CONF_RLE,
-//                                         g_variant_new_boolean(true));
-//                } else {
-//                    _devInst->set_config(NULL, NULL,
-//                                         SR_CONF_RLE,
-//                                         g_variant_new_boolean(false));
-//                }
-//            }
-
             update_scale();
     }
 }
@@ -599,6 +550,8 @@ void SamplingBar::update_sample_count_selector()
     GVariant *gvar_dict, *gvar_list;
     const uint64_t *elements = NULL;
     gsize num_elements;
+    bool stream_mode = false;
+    uint64_t max_sample_count = 0;
 
     if (_updating_sample_count)
         return;
@@ -621,6 +574,17 @@ void SamplingBar::update_sample_count_selector()
         return;
     }
 
+    GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_STREAM);
+    if (gvar != NULL) {
+        stream_mode = g_variant_get_boolean(gvar);
+        g_variant_unref(gvar);
+    }
+    gvar = dev_inst->get_config(NULL, NULL, SR_CONF_RLE_SAMPLELIMITS);
+    if (gvar != NULL) {
+        max_sample_count = g_variant_get_uint64(gvar);
+        g_variant_unref(gvar);
+    }
+
     if ((gvar_list = g_variant_lookup_value(gvar_dict,
             "samplecounts", G_VARIANT_TYPE("at"))))
     {
@@ -631,8 +595,12 @@ void SamplingBar::update_sample_count_selector()
         for (unsigned int i = 0; i < num_elements; i++)
         {
             char *const s = sr_samplecount_string(elements[i]);
-            _sample_count.addItem(QString(s),
-                qVariantFromValue(elements[i]));
+            if (!stream_mode && (elements[i] > max_sample_count))
+                _sample_count.addItem(QString(s)+"(RLE)",
+                    qVariantFromValue(elements[i]));
+            else
+                _sample_count.addItem(QString(s),
+                    qVariantFromValue(elements[i]));
             g_free(s);
         }
 

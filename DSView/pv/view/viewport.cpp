@@ -414,6 +414,9 @@ void Viewport::mousePressEvent(QMouseEvent *event)
             }
         }
 
+        if (_measure_type == LOGIC_FREQ)
+            _measure_type = NO_MEASURE;
+
         update();
     }
 
@@ -481,7 +484,7 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
                 (_mouse_down_point - event->pos()).x() *
                 _view.scale());
             _drag_strength = (_mouse_down_point - event->pos()).x();
-            measure();
+            //measure();
         }
     }
 
@@ -655,6 +658,12 @@ void Viewport::set_receive_len(quint64 length)
         else
             _total_receive_len += length;
     }
+    update();
+}
+
+void Viewport::clear_measure()
+{
+    _measure_type = NO_MEASURE;
     update();
 }
 

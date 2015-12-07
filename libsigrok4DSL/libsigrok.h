@@ -827,6 +827,7 @@ enum {
     SR_CONF_MAX_DSO_SAMPLELIMITS,
     SR_CONF_MAX_LOGIC_SAMPLERATE,
     SR_CONF_MAX_LOGIC_SAMPLELIMITS,
+    SR_CONF_RLE_SAMPLELIMITS,
 
 	/*--- Special stuff -------------------------------------------------*/
 
