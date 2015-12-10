@@ -82,9 +82,9 @@ public:
     /**
      *
      */
-    bool has_trig() const;
     LogicSetRegions get_trig() const;
     void set_trig(int trig);
+    void commit_trig();
 
 	/**
 	 * Paints the signal with a QPainter

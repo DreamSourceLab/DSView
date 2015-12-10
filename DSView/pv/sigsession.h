@@ -169,8 +169,6 @@ public:
 	void register_hotplug_callback();
     void deregister_hotplug_callback();
 
-    void set_adv_trigger(bool adv_trigger);
-
     uint16_t get_ch_num(int type);
     
     bool get_instant();
@@ -255,8 +253,6 @@ private:
     std::unique_ptr<boost::thread> _hotplug;
     bool _hot_attach;
     bool _hot_detach;
-
-    bool _adv_trigger;
 
     QTimer _view_timer;
     QTimer _refresh_timer;

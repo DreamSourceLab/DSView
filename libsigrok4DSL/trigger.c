@@ -45,9 +45,11 @@ SR_API int ds_trigger_init(void)
 {
     int i, j;
 
-    if (!(trigger = g_try_malloc0(sizeof(struct ds_trigger)))) {
-        sr_err("Trigger malloc failed.");
-        return SR_ERR_MALLOC;
+    if (!trigger) {
+        if (!(trigger = g_try_malloc0(sizeof(struct ds_trigger)))) {
+            sr_err("Trigger malloc failed.");
+            return SR_ERR_MALLOC;
+        }
     }
 
     trigger->trigger_en = 0;

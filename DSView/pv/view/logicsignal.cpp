@@ -105,11 +105,6 @@ boost::shared_ptr<pv::data::Logic> LogicSignal::logic_data() const
     return _data;
 }
 
-bool LogicSignal::has_trig() const
-{
-    return (_trig != NONTRIG);
-}
-
 LogicSignal::LogicSetRegions LogicSignal::get_trig() const
 {
     return _trig;
@@ -121,19 +116,26 @@ void LogicSignal::set_trig(int trig)
         _trig = (LogicSetRegions)trig;
     else
         _trig = NONTRIG;
+}
 
-    if (trig == NONTRIG)
+void LogicSignal::commit_trig()
+{
+
+    if (_trig == NONTRIG)
         ds_trigger_probe_set(_index_list.front(), 'X', 'X');
-    else if (trig == POSTRIG)
-        ds_trigger_probe_set(_index_list.front(), 'R', 'X');
-    else if (trig == HIGTRIG)
-        ds_trigger_probe_set(_index_list.front(), '1', 'X');
-    else if (trig == NEGTRIG)
-        ds_trigger_probe_set(_index_list.front(), 'F', 'X');
-    else if (trig == LOWTRIG)
-        ds_trigger_probe_set(_index_list.front(), '0', 'X');
-    else if (trig == EDGTRIG)
-        ds_trigger_probe_set(_index_list.front(), 'C', 'X');
+    else {
+        ds_trigger_set_en(true);
+        if (_trig == POSTRIG)
+            ds_trigger_probe_set(_index_list.front(), 'R', 'X');
+        else if (_trig == HIGTRIG)
+            ds_trigger_probe_set(_index_list.front(), '1', 'X');
+        else if (_trig == NEGTRIG)
+            ds_trigger_probe_set(_index_list.front(), 'F', 'X');
+        else if (_trig == LOWTRIG)
+            ds_trigger_probe_set(_index_list.front(), '0', 'X');
+        else if (_trig == EDGTRIG)
+            ds_trigger_probe_set(_index_list.front(), 'C', 'X');
+    }
 }
 
 void LogicSignal::paint_mid(QPainter &p, int left, int right)

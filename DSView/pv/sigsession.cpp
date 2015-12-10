@@ -92,9 +92,7 @@ SigSession::SigSession(DeviceManager &device_manager) :
 	_session = this;
     _hot_attach = false;
     _hot_detach = false;
-    _adv_trigger = false;
     _group_cnt = 0;
-    ds_trigger_init();
 	register_hotplug_callback();
     _view_timer.stop();
     _view_timer.setSingleShot(true);
@@ -562,28 +560,6 @@ void SigSession::sample_thread_proc(boost::shared_ptr<device::DevInst> dev_inst,
     assert(dev_inst);
     assert(dev_inst->dev_inst());
     assert(error_handler);
-
-    if (_instant) {
-        /* disable trigger under instant mode */
-        ds_trigger_set_en(false);
-    } else if (!_adv_trigger) {
-        /* simple trigger check trigger_enable */
-        ds_trigger_set_en(false);
-        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
-        {
-            assert(s);
-            boost::shared_ptr<view::LogicSignal> logicSig;
-            if (logicSig = dynamic_pointer_cast<view::LogicSignal>(s)) {
-                if (logicSig->has_trig()) {
-                    ds_trigger_set_en(true);
-                    logicSig->set_trig(logicSig->get_trig());
-                }
-            }
-        }
-    } else {
-        /* advanced trigger check trigger_enable */
-        ds_trigger_set_en(true);
-    }
 
     try {
         dev_inst->start();
@@ -1239,15 +1215,6 @@ void SigSession::stop_hotplug_proc()
     }
     _hotplug.reset();
 }
-
-/*
- * Tigger
- */
-void SigSession::set_adv_trigger(bool adv_trigger)
-{
-    _adv_trigger = adv_trigger;
-}
-
 
 uint16_t SigSession::get_ch_num(int type)
 {

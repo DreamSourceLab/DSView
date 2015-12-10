@@ -414,6 +414,7 @@ void MainWindow::run_stop()
 	case SigSession::Stopped:
         _view->show_trig_cursor(false);
         _view->update_sample(false);
+        commit_trigger(false);
         _session.start_capture(false,
 			boost::bind(&MainWindow::session_error, this,
 				QString("Capture failed"), _1));
@@ -437,6 +438,7 @@ void MainWindow::instant_stop()
     case SigSession::Stopped:
         _view->show_trig_cursor(false);
         _view->update_sample(true);
+        commit_trigger(true);
         _session.start_capture(true,
             boost::bind(&MainWindow::session_error, this,
                 QString("Capture failed"), _1));
@@ -545,6 +547,26 @@ void MainWindow::on_trigger(bool visible)
         _dso_trigger_widget->init();
         _trigger_dock->setVisible(false);
         _dso_trigger_dock->setVisible(visible);
+    }
+}
+
+void MainWindow::commit_trigger(bool instant)
+{
+    ds_trigger_init();
+
+    if (_session.get_device()->dev_inst()->mode != LOGIC ||
+        instant)
+        return;
+
+    if (!_trigger_widget->commit_trigger()) {
+        /* simple trigger check trigger_enable */
+        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals())
+        {
+            assert(s);
+            boost::shared_ptr<view::LogicSignal> logicSig;
+            if (logicSig = dynamic_pointer_cast<view::LogicSignal>(s))
+                logicSig->commit_trig();
+        }
     }
 }
 
