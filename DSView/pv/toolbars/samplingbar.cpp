@@ -494,8 +494,6 @@ void SamplingBar::commit_sample_rate()
 void SamplingBar::on_samplecount_sel(int index)
 {
     uint64_t sample_count = 0;
-    uint64_t max_sample_count = 0;
-    bool stream_mode = false;
 
     qDebug() << "index: " << index;
     if (index >= 0)
@@ -520,10 +518,6 @@ void SamplingBar::on_samplecount_sel(int index)
 void SamplingBar::on_samplerate_sel(int index)
 {
     uint64_t sample_rate = 0;
-    //uint64_t last_sample_rate = 0;
-    uint64_t max_sample_count = 0;
-    uint64_t sample_count = 0;
-    bool stream_mode = false;
 
     if (index >= 0)
         sample_rate = _sample_rate.itemData(

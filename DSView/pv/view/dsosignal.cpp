@@ -426,15 +426,15 @@ bool DsoSignal::load_settings()
     GVariant* gvar;
 
     // -- enable
-    bool enable;
-    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_EN_CH);
-    if (gvar != NULL) {
-        enable = g_variant_get_boolean(gvar);
-        g_variant_unref(gvar);
-    } else {
-        qDebug() << "ERROR: config_get SR_CONF_EN_CH failed.";
-        return false;
-    }
+    //bool enable;
+    //gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_EN_CH);
+    //if (gvar != NULL) {
+    //    enable = g_variant_get_boolean(gvar);
+    //    g_variant_unref(gvar);
+    //} else {
+    //    qDebug() << "ERROR: config_get SR_CONF_EN_CH failed.";
+    //    return false;
+    //}
 
     // -- hdiv
     uint64_t hdiv;

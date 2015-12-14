@@ -267,7 +267,6 @@ void TriggerDock::paintEvent(QPaintEvent *)
 
 void TriggerDock::simple_trigger()
 {
-    int i;
     stages_label->setDisabled(true);
     stages_comboBox->setDisabled(true);
     _adv_tabWidget->setDisabled(true);
