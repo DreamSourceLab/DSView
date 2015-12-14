@@ -1052,7 +1052,7 @@ static int hw_dev_acquisition_stop(struct sr_dev_inst *sdi, void *cb_data)
 
 	(void)cb_data;
 
-	sr_dbg("Stopping aquisition.");
+	sr_dbg("Stopping acquisition.");
 
     devc->stop = TRUE;
     sr_session_source_remove_channel(devc->channel);

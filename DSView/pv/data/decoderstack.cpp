@@ -409,7 +409,7 @@ void DecoderStack::decode_proc()
 		prev_di = di;
 	}
 
-	// Get the intial sample count
+	// Get the initial sample count
 	{
 		unique_lock<mutex> input_lock(_input_mutex);
         sample_count = _sample_count = _snapshot->get_sample_count();

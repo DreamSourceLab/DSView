@@ -50,14 +50,14 @@
  * Improve measure function @ LA mode
  * Add duty cycle measure @ LA mode
  * Fix out of range issue @ LA mode
- * Add export funtion, support csv/vcd/gnuplot/zip @ LA mode; and csv @ DSO mode
+ * Add export function, support csv/vcd/gnuplot/zip @ LA mode; and csv @ DSO mode
  * Add x1/x10/x100 probe options @ DSO mode
  * Add measure function @ DSO mode
  * Add voltage display of trigger value @ DSO mode
  * Fix wave disappear issue @ DSO mode
  * Fix trigger issue @ DSO stream mode
  * Fix data repeat when set trigger @ LA stream mode
- * Keep channel settings when reload occured @ LA mode
+ * Keep channel settings when reload occurred @ LA mode
  * Fix decoder issue when capture part of data @ LA mode
  * Fix stack decoder add issue @ LA mode
  * Fix other bugs
@@ -84,14 +84,14 @@
  * Improve measure function @ LA mode
  * Add duty cycle measure @ LA mode
  * Fix out of range issue @ LA mode
- * Add export funtion, support csv/vcd/gnuplot/zip @ LA mode; and csv @ DSO mode
+ * Add export function, support csv/vcd/gnuplot/zip @ LA mode; and csv @ DSO mode
  * Add x1/x10/x100 probe options @ DSO mode
  * Add measure function @ DSO mode
  * Add voltage display of trigger value @ DSO mode
  * Fix wave disappear issue @ DSO mode
  * Fix trigger issue @ DSO stream mode
  * Fix data repeat when set trigger @ LA stream mode
- * Keep channel settings when reload occured @ LA mode
+ * Keep channel settings when reload occurred @ LA mode
  * Fix decoder issue when capture part of data @ LA mode
  * Fix stack decoder add issue @ LA mode
  * Fix other bugsnalyzer mode
