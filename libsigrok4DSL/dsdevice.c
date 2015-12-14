@@ -47,7 +47,7 @@
  */
 
 /** @private */
-SR_PRIV struct sr_channel *sr_channel_new(int index, int type,
+SR_PRIV struct sr_channel *sr_channel_new(uint16_t index, int type,
         gboolean enabled, const char *name)
 {
 	struct sr_channel *probe;
@@ -156,7 +156,7 @@ SR_API int sr_dev_probe_enable(const struct sr_dev_inst *sdi, int probenum,
  *
  * @since 0.1.0 (but the API changed in 0.2.0)
  */
-SR_API int sr_dev_trigger_set(const struct sr_dev_inst *sdi, int probenum,
+SR_API int sr_dev_trigger_set(const struct sr_dev_inst *sdi, uint16_t probenum,
 		const char *trigger)
 {
 	GSList *l;
@@ -208,7 +208,7 @@ SR_API gboolean sr_dev_has_option(const struct sr_dev_inst *sdi, int key)
 	if (!sdi || !sdi->driver || !sdi->driver->config_list)
 		return FALSE;
 
-    if (sdi->driver->config_list(SR_CONF_DEVICE_OPTIONS, &gvar, NULL, NULL) != SR_OK)
+    if (sdi->driver->config_list(SR_CONF_DEVICE_OPTIONS, &gvar, sdi, NULL) != SR_OK)
 		return FALSE;
 
 	ret = FALSE;

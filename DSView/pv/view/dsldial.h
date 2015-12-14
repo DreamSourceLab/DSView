@@ -20,7 +20,7 @@ public:
      * @param p the QPainter to paint into.
      * @param dialRect the rectangle to draw the dial at.
      **/
-    void paint(QPainter &p, QRectF dialRect, QColor dialColor);
+    void paint(QPainter &p, QRectF dialRect, QColor dialColor, bool hover, bool inc);
 
     // set/get current select
     void set_sel(uint64_t sel);

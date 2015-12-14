@@ -41,7 +41,7 @@ DeviceOptions::DeviceOptions(QWidget *parent, boost::shared_ptr<pv::device::DevI
 	QDialog(parent),
     _dev_inst(dev_inst),
 	_layout(this),
-	_button_box(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
+    _button_box(QDialogButtonBox::Ok,
 		Qt::Horizontal, this),
     _device_options_binding(_dev_inst->dev_inst())
 {
@@ -68,7 +68,16 @@ DeviceOptions::DeviceOptions(QWidget *parent, boost::shared_ptr<pv::device::DevI
 	_layout.addWidget(&_button_box);
 
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
-    connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
+    //connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
+
+    GVariant* gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_OPERATION_MODE);
+    if (gvar != NULL) {
+        _mode = QString::fromUtf8(g_variant_get_string(gvar, NULL));
+        g_variant_unref(gvar);
+    }
+    connect(&_mode_check, SIGNAL(timeout()), this, SLOT(mode_check()));
+    _mode_check.setInterval(100);
+    _mode_check.start();
 }
 
 void DeviceOptions::accept()
@@ -100,9 +109,7 @@ void DeviceOptions::accept()
 
 void DeviceOptions::reject()
 {
-    using namespace Qt;
-    QDialog::reject();
-
+    accept();
 }
 
 QWidget* DeviceOptions::get_property_form()
@@ -116,8 +123,11 @@ QWidget* DeviceOptions::get_property_form()
 	BOOST_FOREACH(boost::shared_ptr<pv::prop::Property> p, properties)
 	{
 		assert(p);
-		const QString label = p->labeled_widget() ? QString() : p->name();
-		layout->addRow(label, p->get_widget(form));
+        const QString label = p->labeled_widget() ? QString() : p->name();
+        if (label == tr("Operation Mode"))
+            layout->addRow(label, p->get_widget(form, true));
+        else
+            layout->addRow(label, p->get_widget(form));
 	}
 
 	return form;
@@ -127,8 +137,9 @@ void DeviceOptions::setup_probes()
 {
 	using namespace Qt;
 
-    int row = 0, col = 0;
+    int row0 = 0, row1 = 0, col = 0;
     int index = 0;
+    QString ch_mode;
 
     while(_probes_box_layout.count() > 0)
     {
@@ -140,6 +151,30 @@ void DeviceOptions::setup_probes()
     _probes_label_list.clear();
     _probes_checkBox_list.clear();
 
+    if (_dev_inst->dev_inst()->mode == LOGIC) {
+        GVariant *gvar_opts;
+        gsize num_opts;
+        if (sr_config_list(_dev_inst->dev_inst()->driver, _dev_inst->dev_inst(), NULL, SR_CONF_CHANNEL_MODE,
+            &gvar_opts) == SR_OK) {
+            const char **const options = g_variant_get_strv(gvar_opts, &num_opts);
+            GVariant* gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_CHANNEL_MODE);
+            if (gvar != NULL) {
+                ch_mode = QString::fromUtf8(g_variant_get_string(gvar, NULL));
+                g_variant_unref(gvar);
+
+                for (unsigned int i=0; i<num_opts; i++){
+                    QRadioButton *ch_opts = new QRadioButton(options[i]);
+                    _probes_box_layout.addWidget(ch_opts, row0, col, 1, 8);
+                    connect(ch_opts, SIGNAL(pressed()), this, SLOT(channel_check()));
+                    row0++;
+                    if (QString::fromUtf8(options[i]) == ch_mode)
+                        ch_opts->setChecked(true);
+                }
+            }
+        }
+        g_variant_unref(gvar_opts);
+    }
+
     for (const GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next) {
 		sr_channel *const probe = (sr_channel*)l->data;
 		assert(probe);
@@ -147,14 +182,14 @@ void DeviceOptions::setup_probes()
         QLabel *probe_label = new QLabel(QString::number(probe->index), this);
         QCheckBox *probe_checkBox = new QCheckBox(this);
         probe_checkBox->setCheckState(probe->enabled ? Qt::Checked : Qt::Unchecked);
-        _probes_box_layout.addWidget(probe_label, row * 2, col);
-        _probes_box_layout.addWidget(probe_checkBox, row * 2 + 1, col);
+        _probes_box_layout.addWidget(probe_label, row1 * 2 + row0, col);
+        _probes_box_layout.addWidget(probe_checkBox, row1 * 2 + 1 + row0, col);
         _probes_label_list.push_back(probe_label);
         _probes_checkBox_list.push_back(probe_checkBox);
 
         index++;
         col = index % 8;
-        row = index / 8;
+        row1 = index / 8;
 	}
 
     QPushButton *_enable_all_probes = new QPushButton(tr("Enable All"), this);
@@ -165,8 +200,8 @@ void DeviceOptions::setup_probes()
     connect(_disable_all_probes, SIGNAL(clicked()),
         this, SLOT(disable_all_probes()));
 
-    _probes_box_layout.addWidget(_enable_all_probes, (row + 1) * 2, 0, 1, 4);
-    _probes_box_layout.addWidget(_disable_all_probes, (row + 1) * 2, 4, 1, 4);
+    _probes_box_layout.addWidget(_enable_all_probes, (row1 + 1) * 2 + row0, 0, 1, 4);
+    _probes_box_layout.addWidget(_disable_all_probes, (row1 + 1) * 2 + row0, 4, 1, 4);
 }
 
 void DeviceOptions::set_all_probes(bool set)
@@ -204,6 +239,45 @@ void DeviceOptions::zero_adj()
     if ( ret == QMessageBox::AcceptRole) {
         _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO, g_variant_new_boolean(true));
     }
+}
+
+void DeviceOptions::mode_check()
+{
+    bool test;
+    QString mode;
+    GVariant* gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_OPERATION_MODE);
+    if (gvar != NULL) {
+        mode = QString::fromUtf8(g_variant_get_string(gvar, NULL));
+        g_variant_unref(gvar);
+
+        if (mode != _mode) {
+            setup_probes();
+            _mode = mode;
+        }
+    }
+
+    gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_TEST);
+    if (gvar != NULL) {
+        test = g_variant_get_boolean(gvar);
+        g_variant_unref(gvar);
+
+        if (test) {
+            QVector<QCheckBox *>::iterator i = _probes_checkBox_list.begin();
+            while(i != _probes_checkBox_list.end()) {
+                (*i)->setCheckState(Qt::Checked);
+                (*i)->setDisabled(TRUE);
+                i++;
+            }
+        }
+    }
+}
+
+void DeviceOptions::channel_check()
+{
+    QRadioButton* sc=dynamic_cast<QRadioButton*>(sender());
+    if(sc != NULL)
+        _dev_inst->set_config(NULL, NULL, SR_CONF_CHANNEL_MODE, g_variant_new_string(sc->text().toUtf8().data()));
+    setup_probes();
 }
 
 } // namespace dialogs

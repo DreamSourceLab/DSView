@@ -36,6 +36,7 @@ class Row
 {
 public:
 	Row();
+    ~Row();
 
 	Row(const srd_decoder *decoder,
 		const srd_decoder_annotation_row *row = NULL);

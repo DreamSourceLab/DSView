@@ -103,7 +103,7 @@ set(DS_DESCRIPTION "A GUI for instruments of DreamSourceLab")
 
 set(DS_VERSION_MAJOR 0)
 set(DS_VERSION_MINOR 9)
-set(DS_VERSION_MICRO 4)
+set(DS_VERSION_MICRO 5)
 set(DS_VERSION_STRING
 	${DS_VERSION_MAJOR}.${DS_VERSION_MINOR}.${DS_VERSION_MICRO}
 )
@@ -144,6 +144,7 @@ set(DSView_SOURCES
 	pv/dialogs/storeprogress.cpp
 	pv/dialogs/streamoptions.cpp
 	pv/dialogs/waitingdialog.cpp
+        pv/dialogs/dsomeasure.cpp
 	pv/dock/dsotriggerdock.cpp
 	pv/dock/measuredock.cpp
 	pv/dock/searchdock.cpp
@@ -189,6 +190,7 @@ set(DSView_HEADERS
 	pv/dialogs/storeprogress.h
 	pv/dialogs/streamoptions.h
 	pv/dialogs/waitingdialog.h
+        pv/dialogs/dsomeasure.h
 	pv/dock/dsotriggerdock.h
 	pv/dock/measuredock.h
 	pv/dock/searchdock.h

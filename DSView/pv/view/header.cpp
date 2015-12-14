@@ -118,7 +118,6 @@ void Header::paintEvent(QPaintEvent*)
     style()->drawPrimitive(QStyle::PE_Widget, &o, &painter, this);
 
 	const int w = width();
-    int action = 0;
     const vector< boost::shared_ptr<Trace> > traces(
         _view.get_traces());
 
@@ -129,11 +128,7 @@ void Header::paintEvent(QPaintEvent*)
     BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
 	{
         assert(t);
-
-        const int y = t->get_y();
-        const bool highlight = !dragging &&
-                               (action = t->pt_in_rect(y, w, _mouse_point));
-        t->paint_label(painter, w, highlight, action);
+        t->paint_label(painter, w, dragging ? QPoint(-1, -1) : _mouse_point);
 	}
 
 	painter.end();
@@ -145,7 +140,6 @@ void Header::mouseDoubleClickEvent(QMouseEvent *event)
 
     const vector< boost::shared_ptr<Trace> > traces(
         _view.get_traces());
-    int action;
 
     if (event->button() & Qt::LeftButton) {
         _mouse_down_point = event->pos();
@@ -157,14 +151,9 @@ void Header::mouseDoubleClickEvent(QMouseEvent *event)
                     make_pair(t, t->get_v_offset()));
 
         // Select the Trace if it has been clicked
-        const boost::shared_ptr<Trace> mTrace =
-            get_mTrace(action, event->pos());
-        if (action == Trace::LABEL && mTrace) {
-            boost::shared_ptr<view::DsoSignal> dsoSig;
-            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(mTrace)) {
-                dsoSig->auto_set();
-            }
-        }
+        BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
+            if (t->mouse_double_click(width(), event->pos()))
+                break;
     }
 
 }
@@ -213,92 +202,11 @@ void Header::mousePressEvent(QMouseEvent *event)
                 }
             }
             mTrace->set_old_v_offset(mTrace->get_v_offset());
-        } else if (action == Trace::POSTRIG && mTrace) {
-            if (mTrace->get_trig() == Trace::POSTRIG)
-                mTrace->set_trig(0);
-            else
-                mTrace->set_trig(Trace::POSTRIG);
-        } else if (action == Trace::HIGTRIG && mTrace) {
-            if (mTrace->get_trig() == Trace::HIGTRIG)
-                mTrace->set_trig(0);
-            else
-                mTrace->set_trig(Trace::HIGTRIG);
-        } else if (action == Trace::NEGTRIG && mTrace) {
-            if (mTrace->get_trig() == Trace::NEGTRIG)
-                mTrace->set_trig(0);
-            else
-                mTrace->set_trig(Trace::NEGTRIG);
-        } else if (action == Trace::LOWTRIG && mTrace) {
-            if (mTrace->get_trig() == Trace::LOWTRIG)
-                mTrace->set_trig(0);
-            else
-                mTrace->set_trig(Trace::LOWTRIG);
-        } else if (action == Trace::EDGETRIG && mTrace) {
-            if (mTrace->get_trig() == Trace::EDGETRIG)
-                mTrace->set_trig(0);
-            else
-                mTrace->set_trig(Trace::EDGETRIG);
-        } else if (action == Trace::VDIAL && mTrace) {
-            boost::shared_ptr<view::DsoSignal> dsoSig;
-            BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces) {
-                if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(t)) {
-                    dsoSig->set_hDialActive(false);
-                    if (t != mTrace) {
-                        dsoSig->set_vDialActive(false);
-                    }
-                }
-            }
-             if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(mTrace))
-                dsoSig->set_vDialActive(!dsoSig->get_vDialActive());
-        } else if (action == Trace::HDIAL && mTrace) {
-            boost::shared_ptr<view::DsoSignal> dsoSig;
-            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(mTrace)) {
-                if (dsoSig->get_hDialActive()) {
-                    BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces) {
-                        if(dsoSig = dynamic_pointer_cast<view::DsoSignal>(t)) {
-                            dsoSig->set_vDialActive(false);
-                            dsoSig->set_hDialActive(false);
-                        }
-                    }
-                } else {
-                    BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces) {
-                        if(dsoSig = dynamic_pointer_cast<view::DsoSignal>(t)) {
-                            dsoSig->set_vDialActive(false);
-                            dsoSig->set_hDialActive(true);
-                        }
-                    }
-                }
-            }
-        } else if (action == Trace::CHEN && mTrace) {
-            boost::shared_ptr<view::DsoSignal> dsoSig;
-            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(mTrace)) {
-                if (!_view.session().get_data_lock())
-                    dsoSig->set_enable(!dsoSig->enabled());
-            }
-        } else if (action == Trace::ACDC && mTrace) {
-            boost::shared_ptr<view::DsoSignal> dsoSig;
-            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(mTrace)) {
-                if (strcmp(_view.session().get_device()->dev_inst()->driver->name, "DSLogic") == 0)
-                    dsoSig->set_acCoupling((dsoSig->get_acCoupling()+1)%2);
-                else
-                    dsoSig->set_acCoupling((dsoSig->get_acCoupling()+1)%3);
-            }
-        } else if (action == Trace::X1 && mTrace) {
-            boost::shared_ptr<view::DsoSignal> dsoSig;
-            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(mTrace)) {
-                dsoSig->set_factor(1);
-            }
-        } else if (action == Trace::X10 && mTrace) {
-            boost::shared_ptr<view::DsoSignal> dsoSig;
-            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(mTrace)) {
-                dsoSig->set_factor(10);
-            }
-        } else if (action == Trace::X100 && mTrace) {
-            boost::shared_ptr<view::DsoSignal> dsoSig;
-            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(mTrace)) {
-                dsoSig->set_factor(100);
-            }
         }
+
+        BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
+            if (t->mouse_press(width(), event->pos()))
+                break;
 
         if (~QApplication::keyboardModifiers() & Qt::ControlModifier) {
             // Unselect all other Traces because the Ctrl is not
@@ -350,27 +258,9 @@ void Header::wheelEvent(QWheelEvent *event)
             _view.get_traces());
         // Vertical scrolling
         double shift = event->delta() / 20.0;
-        bool setted = false;
-        BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces) {
-            boost::shared_ptr<view::DsoSignal> dsoSig;
-            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(t)) {
-                if (dsoSig->get_vDialActive()) {
-                    if (shift > 1.0)
-                        dsoSig->go_vDialNext();
-                    else if (shift < -1.0)
-                        dsoSig->go_vDialPre();
-                    break;
-                } else if (dsoSig->get_hDialActive()){
-                    if (shift > 1.0)
-                        dsoSig->go_hDialNext(setted);
-                    else if (shift < -1.0)
-                        dsoSig->go_hDialPre(setted);
-                    else
-                        break;
-                    setted = true;
-                }
-            }
-        }
+        BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
+            if (t->mouse_wheel(width(), event->pos(), shift))
+                break;
         update();
     }
 }

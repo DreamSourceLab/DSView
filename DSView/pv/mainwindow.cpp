@@ -71,6 +71,7 @@
 #include "view/trace.h"
 #include "view/signal.h"
 #include "view/dsosignal.h"
+#include "view/logicsignal.h"
 
 /* __STDC_FORMAT_MACROS is required for PRIu64 and friends (in C++). */
 #define __STDC_FORMAT_MACROS
@@ -192,6 +193,8 @@ void MainWindow::setup_ui()
         SLOT(instant_stop()));
     connect(_sampling_bar, SIGNAL(update_scale()), _view,
         SLOT(update_scale()), Qt::DirectConnection);
+    connect(_sampling_bar, SIGNAL(sample_count_changed()), _trigger_widget,
+        SLOT(device_change()));
     connect(_dso_trigger_widget, SIGNAL(set_trig_pos(quint64)), _view,
         SLOT(set_trig_pos(quint64)));
 
@@ -284,6 +287,7 @@ void MainWindow::update_device_list()
 {
     assert(_sampling_bar);
 
+    _session.stop_capture();
     _view->show_trig_cursor(false);
     _trigger_widget->device_change();
 #ifdef ENABLE_DECODE
@@ -315,8 +319,7 @@ void MainWindow::update_device_list()
             errorMessage, infoMessage));
     }
 
-    if (strcmp(selected_device->dev_inst()->driver->name, "demo") != 0 &&
-        strcmp(selected_device->dev_inst()->driver->name, "virtual-session") != 0) {
+    if (strncmp(selected_device->dev_inst()->driver->name, "virtual", 7)) {
         _logo_bar->dsl_connected(true);
         QString ses_name = config_path +
                            QString::fromUtf8(selected_device->dev_inst()->driver->name) +
@@ -411,6 +414,7 @@ void MainWindow::run_stop()
 	case SigSession::Stopped:
         _view->show_trig_cursor(false);
         _view->update_sample(false);
+        commit_trigger(false);
         _session.start_capture(false,
 			boost::bind(&MainWindow::session_error, this,
 				QString("Capture failed"), _1));
@@ -434,6 +438,7 @@ void MainWindow::instant_stop()
     case SigSession::Stopped:
         _view->show_trig_cursor(false);
         _view->update_sample(true);
+        commit_trigger(true);
         _session.start_capture(true,
             boost::bind(&MainWindow::session_error, this,
                 QString("Capture failed"), _1));
@@ -483,6 +488,25 @@ void MainWindow::capture_state_changed(int state)
         _sampling_bar->enable_toggle(state != SigSession::Running);
         _trig_bar->enable_toggle(state != SigSession::Running);
         _measure_dock->widget()->setEnabled(state != SigSession::Running);
+        if (_session.get_device()->dev_inst()->mode == LOGIC &&
+            state == SigSession::Stopped) {
+            GVariant *gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_RLE);
+            if (gvar != NULL) {
+                bool rle = g_variant_get_boolean(gvar);
+                g_variant_unref(gvar);
+                if (rle) {
+                    gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_ACTUAL_SAMPLES);
+                    if (gvar != NULL) {
+                        uint64_t actual_samples = g_variant_get_uint64(gvar);
+                        g_variant_unref(gvar);
+                        if (actual_samples != _session.get_device()->get_sample_limit()) {
+                            show_session_error(tr("RLE Mode Warning"),
+                                               tr("Hardware buffer is full!\nActually received samples is less than setted sample depth!"));
+                        }
+                    }
+                }
+            }
+        }
 #ifdef TEST_MODE
         if (state == SigSession::Stopped) {
             test_timer.start(100);
@@ -498,7 +522,8 @@ void MainWindow::closeEvent(QCloseEvent *event)
         QString driver_name = _session.get_device()->dev_inst()->driver->name;
         QString mode_name = QString::number(_session.get_device()->dev_inst()->mode);
         QString file_name = dir.absolutePath() + "/" + driver_name + mode_name + ".dsc";
-        if (!file_name.isEmpty())
+        if (strncmp(driver_name.toLocal8Bit(), "virtual", 7) &&
+            !file_name.isEmpty())
             store_session(file_name);
     }
     event->accept();
@@ -522,6 +547,26 @@ void MainWindow::on_trigger(bool visible)
         _dso_trigger_widget->init();
         _trigger_dock->setVisible(false);
         _dso_trigger_dock->setVisible(visible);
+    }
+}
+
+void MainWindow::commit_trigger(bool instant)
+{
+    ds_trigger_init();
+
+    if (_session.get_device()->dev_inst()->mode != LOGIC ||
+        instant)
+        return;
+
+    if (!_trigger_widget->commit_trigger()) {
+        /* simple trigger check trigger_enable */
+        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals())
+        {
+            assert(s);
+            boost::shared_ptr<view::LogicSignal> logicSig;
+            if (logicSig = dynamic_pointer_cast<view::LogicSignal>(s))
+                logicSig->commit_trig();
+        }
     }
 }
 
@@ -632,7 +677,6 @@ bool MainWindow::load_session(QString name)
         bool isEnabled = false;
         foreach (const QJsonValue &value, sessionObj["channel"].toArray()) {
             QJsonObject obj = value.toObject();
-            qDebug("obj.index = %d", obj["index"].toDouble());
             if ((probe->index == obj["index"].toDouble()) &&
                 (probe->type == obj["type"].toDouble())) {
                 isEnabled = true;
@@ -659,13 +703,16 @@ bool MainWindow::load_session(QString name)
             if ((s->get_index() == obj["index"].toDouble()) &&
                 (s->get_type() == obj["type"].toDouble())) {
                 s->set_colour(QColor(obj["colour"].toString()));
-                s->set_trig(obj["strigger"].toDouble());
+
+                boost::shared_ptr<view::LogicSignal> logicSig;
+                if (logicSig = dynamic_pointer_cast<view::LogicSignal>(s)) {
+                    logicSig->set_trig(obj["strigger"].toDouble());
+                }
+
                 boost::shared_ptr<view::DsoSignal> dsoSig;
                 if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
-                    dsoSig->update_hDial();
-                    //dsoSig->update_vDial();
+                    dsoSig->load_settings();
                     dsoSig->set_zeroRate(obj["zeroPos"].toDouble());
-                    dsoSig->set_enable(obj["enabled"].toBool());
                     dsoSig->set_trigRate(obj["trigValue"].toDouble());
                 }
                 break;
@@ -736,11 +783,16 @@ bool MainWindow::store_session(QString name)
         s_obj["enabled"] = s->enabled();
         s_obj["name"] = s->get_name();
         s_obj["colour"] = QJsonValue::fromVariant(s->get_colour());
-        s_obj["strigger"] = s->get_trig();
+
+        boost::shared_ptr<view::LogicSignal> logicSig;
+        if (logicSig = dynamic_pointer_cast<view::LogicSignal>(s)) {
+            s_obj["strigger"] = logicSig->get_trig();
+        }
+
         boost::shared_ptr<view::DsoSignal> dsoSig;
         if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
-            s_obj["vdiv"] = QJsonValue::fromVariant(dsoSig->get_vDialValue());
-            s_obj["vfactor"] = QJsonValue::fromVariant(dsoSig->get_factor());
+            s_obj["vdiv"] = QJsonValue::fromVariant(static_cast<qulonglong>(dsoSig->get_vDialValue()));
+            s_obj["vfactor"] = QJsonValue::fromVariant(static_cast<qulonglong>(dsoSig->get_factor()));
             s_obj["coupling"] = dsoSig->get_acCoupling();
             s_obj["trigValue"] = dsoSig->get_trigRate();
             s_obj["zeroPos"] = dsoSig->get_zeroRate();

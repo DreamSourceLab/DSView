@@ -70,23 +70,24 @@ LogicSignal::LogicSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
                          boost::shared_ptr<data::Logic> data,
                          const sr_channel * const probe) :
     Signal(dev_inst, probe, SR_CHANNEL_LOGIC),
-    _data(data)
+    _data(data),
+    _trig(NONTRIG)
 {
-    assert(probe->index >= 0);
     _colour = SignalColours[probe->index % countof(SignalColours)];
 }
 
-LogicSignal::LogicSignal(const Signal &s,
+LogicSignal::LogicSignal(boost::shared_ptr<view::LogicSignal> s,
                          boost::shared_ptr<pv::data::Logic> data,
                          const sr_channel * const probe) :
-    Signal(s, probe),
-    _data(data)
+    Signal(*s.get(), probe),
+    _data(data),
+    _trig(s->get_trig())
 {
-    assert(probe->index >= 0);
 }
 
 LogicSignal::~LogicSignal()
 {
+    _cur_edges.clear();
 }
 
 const sr_channel* LogicSignal::probe() const
@@ -102,6 +103,39 @@ boost::shared_ptr<pv::data::SignalData> LogicSignal::data() const
 boost::shared_ptr<pv::data::Logic> LogicSignal::logic_data() const
 {
     return _data;
+}
+
+LogicSignal::LogicSetRegions LogicSignal::get_trig() const
+{
+    return _trig;
+}
+
+void LogicSignal::set_trig(int trig)
+{
+    if (trig > NONTRIG && trig <= EDGTRIG)
+        _trig = (LogicSetRegions)trig;
+    else
+        _trig = NONTRIG;
+}
+
+void LogicSignal::commit_trig()
+{
+
+    if (_trig == NONTRIG)
+        ds_trigger_probe_set(_index_list.front(), 'X', 'X');
+    else {
+        ds_trigger_set_en(true);
+        if (_trig == POSTRIG)
+            ds_trigger_probe_set(_index_list.front(), 'R', 'X');
+        else if (_trig == HIGTRIG)
+            ds_trigger_probe_set(_index_list.front(), '1', 'X');
+        else if (_trig == NEGTRIG)
+            ds_trigger_probe_set(_index_list.front(), 'F', 'X');
+        else if (_trig == LOWTRIG)
+            ds_trigger_probe_set(_index_list.front(), '0', 'X');
+        else if (_trig == EDGTRIG)
+            ds_trigger_probe_set(_index_list.front(), 'C', 'X');
+    }
 }
 
 void LogicSignal::paint_mid(QPainter &p, int left, int right)
@@ -206,35 +240,30 @@ const std::vector< std::pair<uint64_t, bool> > LogicSignal::cur_edges() const
     return _cur_edges;
 }
 
-void LogicSignal::paint_type_options(QPainter &p, int right, bool hover, int action)
+void LogicSignal::paint_type_options(QPainter &p, int right, const QPoint pt)
 {
     int y = get_y();
-    const QRectF posTrig_rect  = get_rect("posTrig",  y, right);
-    const QRectF higTrig_rect  = get_rect("higTrig",  y, right);
-    const QRectF negTrig_rect  = get_rect("negTrig",  y, right);
-    const QRectF lowTrig_rect  = get_rect("lowTrig",  y, right);
-    const QRectF edgeTrig_rect = get_rect("edgeTrig", y, right);
+    const QRectF posTrig_rect  = get_rect(POSTRIG,  y, right);
+    const QRectF higTrig_rect  = get_rect(HIGTRIG,  y, right);
+    const QRectF negTrig_rect  = get_rect(NEGTRIG,  y, right);
+    const QRectF lowTrig_rect  = get_rect(LOWTRIG,  y, right);
+    const QRectF edgeTrig_rect = get_rect(EDGTRIG, y, right);
 
     p.setPen(Qt::transparent);
-    p.setBrush(((hover && action == POSTRIG) || (_trig == POSTRIG)) ?
-                   dsYellow :
-                   dsBlue);
+    p.setBrush(posTrig_rect.contains(pt) ? dsYellow.darker() :
+               (_trig == POSTRIG) ? dsYellow : dsBlue);
     p.drawRect(posTrig_rect);
-    p.setBrush(((hover && action == HIGTRIG) || (_trig == HIGTRIG)) ?
-                   dsYellow :
-                   dsBlue);
+    p.setBrush(higTrig_rect.contains(pt) ? dsYellow.darker() :
+               (_trig == HIGTRIG) ? dsYellow : dsBlue);
     p.drawRect(higTrig_rect);
-    p.setBrush(((hover && action == NEGTRIG) || (_trig == NEGTRIG)) ?
-                   dsYellow :
-                   dsBlue);
+    p.setBrush(negTrig_rect.contains(pt) ? dsYellow.darker() :
+               (_trig == NEGTRIG) ? dsYellow : dsBlue);
     p.drawRect(negTrig_rect);
-    p.setBrush(((hover && action == LOWTRIG) || (_trig == LOWTRIG)) ?
-                   dsYellow :
-                   dsBlue);
+    p.setBrush(lowTrig_rect.contains(pt) ? dsYellow.darker() :
+               (_trig == LOWTRIG) ? dsYellow : dsBlue);
     p.drawRect(lowTrig_rect);
-    p.setBrush(((hover && action == EDGETRIG) || (_trig == EDGETRIG)) ?
-                   dsYellow :
-                   dsBlue);
+    p.setBrush(edgeTrig_rect.contains(pt) ? dsYellow.darker() :
+               (_trig == EDGTRIG) ? dsYellow : dsBlue);
     p.drawRect(edgeTrig_rect);
 
     p.setPen(QPen(Qt::blue, 1, Qt::DotLine));
@@ -323,6 +352,108 @@ bool LogicSignal::measure(const QPointF &p, uint64_t &index0, uint64_t &index1, 
         return true;
     }
     return false;
+}
+
+
+bool LogicSignal::edges(const QPointF &p, uint64_t start, uint64_t &rising, uint64_t &falling) const
+{
+    uint64_t index, end;
+    const float gap = abs(p.y() - get_y());
+    if (gap < get_signalHeight() * 0.5) {
+        const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
+            _data->get_snapshots();
+        if (snapshots.empty())
+            return false;
+
+        const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
+            snapshots.front();
+        if (snapshot->buf_null())
+            return false;
+
+        end = _data->samplerate() * (_view->offset() - _data->get_start_time() + p.x() * _view->scale());
+        index = min(start, end);
+        end = max(start, end);
+        start = index;
+        if (end > (snapshot->get_sample_count() - 1))
+            return false;
+
+        const uint64_t sig_mask = 1ULL << get_index();
+        bool sample = snapshot->get_sample(start) & sig_mask;
+
+        rising = 0;
+        falling = 0;
+        do {
+            if (snapshot->get_nxt_edge(index, sample, snapshot->get_sample_count(), 1, get_index())) {
+                if (index > end)
+                    break;
+                rising += !sample;
+                falling += sample;
+                sample = !sample;
+            } else {
+                break;
+            }
+        } while(index <= end);
+        return true;
+    }
+    return false;
+}
+
+bool LogicSignal::mouse_press(int right, const QPoint pt)
+{
+    int y = get_y();
+    const QRectF posTrig = get_rect(POSTRIG, y, right);
+    const QRectF higTrig = get_rect(HIGTRIG, y, right);
+    const QRectF negTrig = get_rect(NEGTRIG, y, right);
+    const QRectF lowTrig = get_rect(LOWTRIG, y, right);
+    const QRectF edgeTrig = get_rect(EDGTRIG, y, right);
+
+    if (posTrig.contains(pt))
+        set_trig((_trig == POSTRIG) ? NONTRIG : POSTRIG);
+    else if (higTrig.contains(pt))
+        set_trig((_trig == HIGTRIG) ? NONTRIG : HIGTRIG);
+    else if (negTrig.contains(pt))
+        set_trig((_trig == NEGTRIG) ? NONTRIG : NEGTRIG);
+    else if (lowTrig.contains(pt))
+        set_trig((_trig == LOWTRIG) ? NONTRIG : LOWTRIG);
+    else if (edgeTrig.contains(pt))
+        set_trig((_trig == EDGTRIG) ? NONTRIG : EDGTRIG);
+    else
+        return false;
+
+    return true;
+}
+
+QRectF LogicSignal::get_rect(LogicSetRegions type, int y, int right)
+{
+    const QSizeF name_size(right - get_leftWidth() - get_rightWidth(), SquareWidth);
+
+    if (type == POSTRIG)
+        return QRectF(
+            get_leftWidth() + name_size.width() + Margin,
+            y - SquareWidth / 2,
+            SquareWidth, SquareWidth);
+    else if (type == HIGTRIG)
+        return QRectF(
+            get_leftWidth() + name_size.width() + SquareWidth + Margin,
+            y - SquareWidth / 2,
+            SquareWidth, SquareWidth);
+    else if (type == NEGTRIG)
+        return QRectF(
+            get_leftWidth() + name_size.width() + 2 * SquareWidth + Margin,
+            y - SquareWidth / 2,
+            SquareWidth, SquareWidth);
+    else if (type == LOWTRIG)
+        return QRectF(
+            get_leftWidth() + name_size.width() + 3 * SquareWidth + Margin,
+            y - SquareWidth / 2,
+            SquareWidth, SquareWidth);
+    else if (type == EDGTRIG)
+        return QRectF(
+            get_leftWidth() + name_size.width() + 4 * SquareWidth + Margin,
+            y - SquareWidth / 2,
+            SquareWidth, SquareWidth);
+    else
+        return QRectF(0, 0, 0, 0);
 }
 
 } // namespace view

@@ -24,8 +24,8 @@
         <file>icons/start.png</file>
         <file>icons/dsl_logo.png</file>
         <file>icons/logo.png</file>
-        <file>icons/decoder-hidden.png</file>
-        <file>icons/decoder-shown.png</file>
+        <file>icons/hidden.png</file>
+        <file>icons/shown.png</file>
         <file>icons/instant.png</file>
         <file>icons/trigger_dis.png</file>
         <file>icons/file_dis.png</file>
@@ -55,5 +55,6 @@
         <file>icons/instant_dis_cn.png</file>
         <file>icons/start_dis.png</file>
         <file>icons/start_dis_cn.png</file>
+        <file>icons/settings.png</file>
     </qresource>
 </RCC>

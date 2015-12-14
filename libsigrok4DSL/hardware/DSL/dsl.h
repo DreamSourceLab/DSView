@@ -61,8 +61,8 @@
 #define MAX_ANALOG_PROBES_NUM 9
 #define MAX_DSO_PROBES_NUM 2
 
-#define DEFAULT_SAMPLERATE SR_MHZ(100)
-#define DEFAULT_SAMPLELIMIT SR_MB(16)
+#define DEFAULT_SAMPLERATE SR_MHZ(1)
+#define DEFAULT_SAMPLELIMIT SR_MB(1)
 
 #define VPOS_MINISTEP 0.083
 #define VPOS_STEP 26.0
@@ -150,13 +150,17 @@ struct DSL_context {
 	/* Device/capture settings */
 	uint64_t cur_samplerate;
 	uint64_t limit_samples;
+    uint64_t actual_samples;
 
 	/* Operational settings */
 	gboolean sample_wide;
     gboolean clock_type;
     gboolean clock_edge;
+    gboolean rle_mode;
     gboolean instant;
     uint16_t op_mode;
+    uint16_t ch_mode;
+    uint16_t samplerates_size;
     uint16_t th_level;
     double vth;
     uint16_t filter;
@@ -165,6 +169,7 @@ struct DSL_context {
 	int trigger_stage;
 	uint16_t trigger_buffer[NUM_TRIGGER_STAGES];
     uint64_t timebase;
+    uint8_t max_height;
     uint8_t trigger_slope;
     uint8_t trigger_source;
     uint8_t trigger_hrate;

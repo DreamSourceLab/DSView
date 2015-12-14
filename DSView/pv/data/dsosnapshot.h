@@ -67,6 +67,8 @@ private:
 	static const float LogEnvelopeScaleFactor;
 	static const uint64_t EnvelopeDataUnit;
 
+    static const int VrmsScaleFactor;
+
 public:
     DsoSnapshot(const sr_datafeed_dso &dso, uint64_t _total_sample_len, unsigned int channel_num, bool instant);
 
@@ -82,10 +84,13 @@ public:
 
     void enable_envelope(bool enable);
 
+    double cal_vrms(double zero_off, int index) const;
+    double cal_vmean(int index) const;
+
 private:
 	void reallocate_envelope(Envelope &l);
 
-	void append_payload_to_envelope_levels();
+    void append_payload_to_envelope_levels(bool header);
 
 private:
     struct Envelope _envelope_levels[2*DS_MAX_DSO_PROBES_NUM][ScaleStepCount];

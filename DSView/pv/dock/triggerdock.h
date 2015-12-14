@@ -61,30 +61,28 @@ public:
 
     void paintEvent(QPaintEvent *);
 
-    void device_change();
-
     void init();
 
     QJsonObject get_session();
     void set_session(QJsonObject ses);
+
+    /*
+     * commit trigger setting
+     * return 0: simple trigger
+     *        1: advanced trigger
+     */
+    bool commit_trigger();
 
 signals:
 
 public slots:
     void simple_trigger();
     void adv_trigger();
-    void trigger_stages_changed(int index);
-    void widget_enable();
+    void widget_enable(int index);
 
     void value_changed();
-    void logic_changed(int index);
-    void count_changed();
-    void inv_changed(int index);
 
-    void pos_changed(int pos);
-
-    void adv_tog(int index);
-    void serial_channel_changed(int index);
+    void device_change();
 
 private:
 

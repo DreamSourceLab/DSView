@@ -46,6 +46,10 @@ Decoder::~Decoder()
 	for (map<string, GVariant*>::const_iterator i = _options.begin();
 		i != _options.end(); i++)
 		g_variant_unref((*i).second);
+
+    for (map<string, GVariant*>::const_iterator i = _options_back.begin();
+        i != _options_back.end(); i++)
+        g_variant_unref((*i).second);
 }
 
 const srd_decoder* Decoder::decoder() const
@@ -130,6 +134,7 @@ set< shared_ptr<pv::data::Logic> > Decoder::get_data()
 
 srd_decoder_inst* Decoder::create_decoder_inst(srd_session *session, int unit_size) const
 {
+    (void)unit_size;
 	GHashTable *const opt_hash = g_hash_table_new_full(g_str_hash,
 		g_str_equal, g_free, (GDestroyNotify)g_variant_unref);
 
@@ -164,7 +169,7 @@ srd_decoder_inst* Decoder::create_decoder_inst(srd_session *session, int unit_si
 		g_hash_table_insert(probes, (*i).first->id, gvar);
 	}
 
-	srd_inst_channel_set_all(decoder_inst, probes, unit_size);
+    srd_inst_channel_set_all(decoder_inst, probes);
 
 	return decoder_inst;
 }

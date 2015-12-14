@@ -74,20 +74,21 @@ void LogicSnapshot::append_payload(
     append_payload_to_mipmap();
 }
 
-void LogicSnapshot::get_samples(uint8_t *const data,
-    int64_t start_sample, int64_t end_sample) const
+uint8_t * LogicSnapshot::get_samples(int64_t start_sample, int64_t end_sample) const
 {
-    assert(data);
+    //assert(data);
     assert(start_sample >= 0);
     assert(start_sample <= (int64_t)_sample_count);
     assert(end_sample >= 0);
     assert(end_sample <= (int64_t)_sample_count);
     assert(start_sample <= end_sample);
 
+    (void)end_sample;
     //lock_guard<recursive_mutex> lock(_mutex);
 
-    const size_t size = (end_sample - start_sample) * _unit_size;
-    memcpy(data, (const uint8_t*)_data + start_sample * _unit_size, size);
+    //const size_t size = (end_sample - start_sample) * _unit_size;
+    //memcpy(data, (const uint8_t*)_data + start_sample * _unit_size, size);
+    return (uint8_t*)_data + start_sample * _unit_size;
 }
 
 void LogicSnapshot::reallocate_mipmap_level(MipMapLevel &m)
@@ -192,9 +193,7 @@ void LogicSnapshot::get_subsampled_edges(
 	float min_length, int sig_index)
 {
 	uint64_t index = start;
-	unsigned int level;
 	bool last_sample;
-	bool fast_forward;
 
     assert(end <= get_sample_count());
 	assert(start <= end);
@@ -254,7 +253,7 @@ bool LogicSnapshot::get_nxt_edge(
     unsigned int level;
     bool fast_forward;
 
-    assert(index > 0);
+    //assert(index > 0);
 
     const unsigned int min_level = max((int)floorf(logf(min_length) /
         LogMipMapScaleFactor) - 1, 0);
@@ -447,9 +446,9 @@ bool LogicSnapshot::get_pre_edge(
         // If resolution is less than a mip map block,
         // round up to the beginning of the mip-map block
         // for this level of detail
-        const int min_level_scale_power =
+        const unsigned int min_level_scale_power =
             (level + 1) * MipMapScalePower;
-        if (index < (1 << min_level_scale_power))
+        if (index < (uint64_t)(1 << min_level_scale_power))
             index = 0;
         else
             index = pow2_ceil(index, min_level_scale_power) - (1 << min_level_scale_power) - 1;
@@ -539,16 +538,13 @@ bool LogicSnapshot::get_pre_edge(
         // do a linear search for the next transition within the
         // block
         if (min_length < MipMapScaleFactor) {
-            for (; index >= 0; index--) {
+            for (; index > 0; index--) {
                 const bool sample = (get_sample(index) &
                     sig_mask) != 0;
                 if (sample != last_sample) {
                     index++;
                     return true;
                 }
-
-                if (index == 0)
-                    return false;
             }
         }
     }

@@ -112,6 +112,8 @@ private slots:
 
     void on_trigger(bool visible);
 
+    void commit_trigger(bool instant);
+
     void on_measure(bool visible);
 
     void on_search(bool visible);

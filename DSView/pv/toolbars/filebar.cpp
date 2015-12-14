@@ -200,22 +200,16 @@ void FileBar::on_actionSave_triggered()
         msg.setStandardButtons(QMessageBox::Ok);
         msg.setIcon(QMessageBox::Warning);
         msg.exec();
-    } else if (_session.get_device()->dev_inst()->mode != LOGIC) {
-        QMessageBox msg(this);
-        msg.setText(tr("File Save"));
-        msg.setInformativeText(tr("DSView currently only support saving logic data to file!"));
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.setIcon(QMessageBox::Warning);
-        msg.exec();
-    }else {
+    } else {
         QString file_name = QFileDialog::getSaveFileName(
-                    this, tr("Save File"), "",
-                    tr("DSView Data (*.dsl)"));
+                        this, tr("Save File"), "",
+                        tr("DSView Data (*.dsl)"));
+
         if (!file_name.isEmpty()) {
             QFileInfo f(file_name);
             if(f.suffix().compare("dsl"))
                 file_name.append(tr(".dsl"));
-            _session.save_file(file_name);
+            _session.save_file(file_name, _session.get_device()->dev_inst()->mode);
         }
     }
 }

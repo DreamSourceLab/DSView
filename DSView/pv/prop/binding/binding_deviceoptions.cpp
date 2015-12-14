@@ -82,6 +82,8 @@ DeviceOptions::DeviceOptions(struct sr_dev_inst *sdi) :
 		case SR_CONF_BUFFERSIZE:
 		case SR_CONF_TRIGGER_SOURCE:
 		case SR_CONF_FILTER:
+        case SR_CONF_MAX_HEIGHT:
+        case SR_CONF_MAX_HEIGHT_VALUE:
         case SR_CONF_COUPLING:
         case SR_CONF_EN_CH:
         case SR_CONF_OPERATION_MODE:
@@ -91,7 +93,7 @@ DeviceOptions::DeviceOptions(struct sr_dev_inst *sdi) :
         case SR_CONF_TEST:
         case SR_CONF_STATUS:
         case SR_CONF_FACTOR:
-			bind_enum(name, key, gvar_list);
+            bind_enum(name, key, gvar_list);
 			break;
 
         case SR_CONF_VTH:
@@ -110,11 +112,11 @@ DeviceOptions::DeviceOptions(struct sr_dev_inst *sdi) :
             break;
 
 		case SR_CONF_TIMEBASE:
-			bind_enum(name, key, gvar_list, print_timebase);
+            bind_enum(name, key, gvar_list, print_timebase);
 			break;
 
         case SR_CONF_VDIV:
-			bind_enum(name, key, gvar_list, print_vdiv);
+            bind_enum(name, key, gvar_list, print_vdiv);
             break;
         default:
             gvar_list = NULL;
@@ -153,7 +155,7 @@ void DeviceOptions::bind_bool(const QString &name, int key)
 }
 
 void DeviceOptions::bind_enum(const QString &name, int key,
-	GVariant *const gvar_list, boost::function<QString (GVariant*)> printer)
+    GVariant *const gvar_list, boost::function<QString (GVariant*)> printer)
 {
 	GVariant *gvar;
 	GVariantIter iter;
@@ -166,7 +168,7 @@ void DeviceOptions::bind_enum(const QString &name, int key,
 		values.push_back(make_pair(gvar, printer(gvar)));
 
 	_properties.push_back(boost::shared_ptr<Property>(
-		new Enum(name, values,
+        new Enum(name, values,
 			bind(config_getter, _sdi, key),
 			bind(config_setter, _sdi, key, _1))));
 }
@@ -235,7 +237,7 @@ void DeviceOptions::bind_samplerate(const QString &name,
 	else if ((gvar_list_samplerates = g_variant_lookup_value(gvar_list,
 			"samplerates", G_VARIANT_TYPE("at"))))
 	{
-		bind_enum(name, SR_CONF_SAMPLERATE,
+        bind_enum(name, SR_CONF_SAMPLERATE,
 			gvar_list_samplerates, print_samplerate);
 		g_variant_unref(gvar_list_samplerates);
 	}

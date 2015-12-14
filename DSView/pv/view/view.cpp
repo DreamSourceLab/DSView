@@ -57,6 +57,7 @@ const int View::LabelMarginWidth = 70;
 const int View::RulerHeight = 50;
 
 const int View::MaxScrollValue = INT_MAX / 2;
+const int View::MaxHeightUnit = 20;
 
 //const int View::SignalHeight = 30;s
 const int View::SignalMargin = 10;
@@ -225,6 +226,7 @@ void View::zoom(double steps, int offset)
                 }
             }
         }
+
         _offset = cursor_offset - _scale * offset;
         _offset = max(min(_offset, get_max_offset()), get_min_offset());
 
@@ -470,6 +472,7 @@ void View::update_scale()
 void View::signals_changed()
 {
     int total_rows = 0;
+    uint8_t max_height = MaxHeightUnit;
     const vector< boost::shared_ptr<Trace> > traces(get_traces());
     BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
     {
@@ -483,7 +486,16 @@ void View::signals_changed()
                            - horizontalScrollBar()->height()
                            - 2 * SignalMargin * traces.size()) * 1.0 / total_rows;
 
-    _signalHeight = (int)((height <= 0) ? 1 : height);
+    if (_session.get_device()->dev_inst()->mode == LOGIC) {
+        GVariant* gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_MAX_HEIGHT_VALUE);
+        if (gvar != NULL) {
+            max_height = (g_variant_get_byte(gvar) + 1) * MaxHeightUnit;
+            g_variant_unref(gvar);
+        }
+        _signalHeight = (int)((height <= 0) ? 1 : (height >= max_height) ? max_height : height);
+    } else {
+        _signalHeight = (int)((height <= 0) ? 1 : height);
+    }
     _spanY = _signalHeight + 2 * SignalMargin;
     int next_v_offset = SignalMargin;
     BOOST_FOREACH(boost::shared_ptr<Trace> t, traces) {
@@ -494,6 +506,7 @@ void View::signals_changed()
         next_v_offset += traceHeight + 2 * SignalMargin;
 	}
 
+    _viewport->clear_measure();
     header_updated();
     normalize_layout();
 }

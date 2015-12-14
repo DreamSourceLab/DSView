@@ -176,6 +176,7 @@ enum {
 	SR_DF_ANALOG,
 	SR_DF_FRAME_BEGIN,
 	SR_DF_FRAME_END,
+    SR_DF_ABANDON,
 };
 
 /** Values for sr_datafeed_analog.mq. */
@@ -322,6 +323,8 @@ struct sr_datafeed_dso {
     int unit;
     /** Bitmap with extra information about the MQ. */
     uint64_t mqflags;
+    /** samplerate different from last packet */
+    gboolean samplerate_tog;
     /** The analog value(s). The data is interleaved according to
      * the probes list. */
     void *data;
@@ -556,7 +559,7 @@ enum {
 
 struct sr_channel {
     /* The index field will go: use g_slist_length(sdi->channels) instead. */
-	int index;
+    uint16_t index;
 	int type;
 	gboolean enabled;
 	char *name;
@@ -624,6 +627,7 @@ struct sr_status {
     uint32_t vlen;
     gboolean stream_mode;
     uint32_t sample_divider;
+    gboolean sample_divider_tog;
 
     gboolean zeroing;
     uint16_t ch0_vpos_mid;
@@ -753,6 +757,12 @@ enum {
     SR_CONF_ZERO,
     SR_CONF_ZERO_OVER,
 
+    /** status for dso channel */
+    SR_CONF_STATUS_PERIOD,
+    SR_CONF_STATUS_PCNT,
+    SR_CONF_STATUS_MAX,
+    SR_CONF_STATUS_MIN,
+
     /** Stream */
     SR_CONF_STREAM,
 
@@ -801,6 +811,13 @@ enum {
     /** Device operation mode */
     SR_CONF_OPERATION_MODE,
 
+    /** Device channel mode */
+    SR_CONF_CHANNEL_MODE,
+
+    /** Signal max height **/
+    SR_CONF_MAX_HEIGHT,
+    SR_CONF_MAX_HEIGHT_VALUE,
+
     /** Device sample threshold */
     SR_CONF_THRESHOLD,
     SR_CONF_VTH,
@@ -810,6 +827,7 @@ enum {
     SR_CONF_MAX_DSO_SAMPLELIMITS,
     SR_CONF_MAX_LOGIC_SAMPLERATE,
     SR_CONF_MAX_LOGIC_SAMPLELIMITS,
+    SR_CONF_RLE_SAMPLELIMITS,
 
 	/*--- Special stuff -------------------------------------------------*/
 
@@ -848,6 +866,11 @@ enum {
 	 * samples should be acquired).
 	 */
 	SR_CONF_LIMIT_SAMPLES,
+
+    /**
+     * The actual sample count received
+     */
+    SR_CONF_ACTUAL_SAMPLES,
 
 	/**
 	 * The device supports setting a frame limit (how many
@@ -919,13 +942,14 @@ enum {
 /** Device operation modes. */
 enum {
     /** Normal */
-    SR_OP_NORMAL = 0,
+    SR_OP_BUFFER = 0,
+    SR_OP_STREAM = 1,
     /** Internal pattern test mode */
-    SR_OP_INTERNAL_TEST = 1,
+    SR_OP_INTERNAL_TEST = 2,
     /** External pattern test mode */
-    SR_OP_EXTERNAL_TEST = 2,
+    SR_OP_EXTERNAL_TEST = 3,
     /** SDRAM loopback test mode */
-    SR_OP_LOOPBACK_TEST = 3,
+    SR_OP_LOOPBACK_TEST = 4,
 };
 
 /** Device threshold level. */
@@ -1065,7 +1089,8 @@ struct ds_trigger {
 struct ds_trigger_pos {
     uint32_t real_pos;
     uint32_t ram_saddr;
-    unsigned char first_block[504];
+    uint32_t remain_cnt;
+    unsigned char first_block[500];
 };
 
 #include "proto.h"

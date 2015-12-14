@@ -45,7 +45,7 @@ class Trace : public SelectableItem
 {
 	Q_OBJECT
 
-private:
+protected:
     static const int Margin = 3;
     static const int SquareNum = 5;
 	static const QPen AxisPen;
@@ -55,20 +55,7 @@ public:
     static const int SquareWidth = 20;
     static const int COLOR = 1;
     static const int NAME = 2;
-    static const int POSTRIG = 3;
-    static const int HIGTRIG = 4;
-    static const int NEGTRIG = 5;
-    static const int LOWTRIG = 6;
-    static const int EDGETRIG = 7;
     static const int LABEL = 8;
-    static const int VDIAL = 9;
-    static const int HDIAL = 10;
-    static const int CHEN = 11;
-    static const int ACDC = 12;
-    static const int DSOTRIG = 13;
-    static const int X1 = 14;
-    static const int X10 = 15;
-    static const int X100 = 16;
 
     static const QColor dsBlue;
     static const QColor dsYellow;
@@ -84,7 +71,7 @@ public:
     static const QPen SignalAxisPen;
 
 protected:
-    Trace(QString name, int index, int type);
+    Trace(QString name, uint16_t index, int type);
     Trace(QString name, std::list<int> index_list, int type, int sec_index);
 
     /**
@@ -166,12 +153,6 @@ public:
 
     virtual int get_zeroPos();
 
-    /**
-     *
-     */
-    int get_trig() const;
-    void set_trig(int trig);
-
 	/**
 	 * Returns true if the trace is visible and enabled.
 	 */
@@ -208,10 +189,9 @@ public:
 	 * @param p the QPainter to paint into.
 	 * @param right the x-coordinate of the right edge of the header
 	 * 	area.
-	 * @param hover true if the label is being hovered over by the mouse.
-     * @param action mouse position for hover
+     * @param point the mouse point.
 	 */
-    virtual void paint_label(QPainter &p, int right, bool hover, int action);
+    virtual void paint_label(QPainter &p, int right, const QPoint pt);
 
 	/**
 	 * Gets the y-offset of the axis.
@@ -250,6 +230,12 @@ public:
 
     virtual QRectF get_view_rect() const;
 
+    virtual bool mouse_double_click(int right, const QPoint pt);
+
+    virtual bool mouse_press(int right, const QPoint pt);
+
+    virtual bool mouse_wheel(int right, const QPoint pt, const int shift);
+
 protected:
 
 	/**
@@ -274,10 +260,9 @@ protected:
      * @param p the QPainter to paint into.
      * @param right the x-coordinate of the right edge of the header
      * 	area.
-     * @param hover true if the label is being hovered over by the mouse.
-     * @param action mouse position for hover
+     * @param point the mouse point.
      */
-    virtual void paint_type_options(QPainter &p, int right, bool hover, int action);
+    virtual void paint_type_options(QPainter &p, int right, const QPoint pt);
 
 private:
 
@@ -307,7 +292,6 @@ protected:
     int _sec_index;
     int _old_v_offset;
     int _signalHeight;
-    int _trig;
 
     QSizeF _text_size;
 };

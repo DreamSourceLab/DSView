@@ -137,8 +137,7 @@ void AnalogSignal::paint_trace(QPainter &p,
         //p.setPen(QPen(_colour, 2, Qt::SolidLine));
 
         QPointF *points = new QPointF[sample_count];
-        QPointF *point = points;
-
+        QPointF *point = points;        
         for (int64_t sample = start; sample != end; sample++) {
             const float x = (sample / samples_per_pixel -
                 pixels_offset) + left;
@@ -147,7 +146,6 @@ void AnalogSignal::paint_trace(QPainter &p,
         }
 
         p.drawPolyline(points, point - points);
-
         //delete[] samples;
         delete[] points;
     }

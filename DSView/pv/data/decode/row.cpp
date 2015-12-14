@@ -38,6 +38,11 @@ Row::Row(const srd_decoder *decoder, const srd_decoder_annotation_row *row) :
 {
 }
 
+Row::~Row()
+{
+    
+}
+
 const srd_decoder* Row::decoder() const
 {
 	return _decoder;

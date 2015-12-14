@@ -61,6 +61,37 @@ GroupSnapshot::GroupSnapshot(const boost::shared_ptr<LogicSnapshot> &_logic_snap
     _sample_count = _logic_snapshot->get_sample_count();
     _unit_size = _logic_snapshot->unit_size();
     _index_list = index_list;
+
+    _mask = 0;
+    std::list<int>::iterator j = _index_list.begin();
+    while(j != _index_list.end())
+        _mask |= value_mask[(*j++)];
+
+    for (int i=0; i<32; i++) {
+        _bubble_start[i] = -1;
+        _bubble_end[i] = -1;
+    }
+    uint16_t mask = _mask;
+    int i = 0;
+    int k = 0;
+    int zero = 0;
+    int zero_pre = 0;
+    // max bubble count: 31
+    do {
+        if (mask & 0x1) {
+            if (_bubble_start[k] != -1 &&
+                _bubble_end[k] == -1)
+                _bubble_end[k++] = i - zero_pre;
+        } else {
+            if (_bubble_start[k] == -1) {
+                _bubble_start[k] = i - zero;
+                zero_pre = zero;
+            }
+            zero++;
+        }
+        i++;
+    }while(mask >>= 1);
+
     append_payload();
 }
 
@@ -95,21 +126,25 @@ const uint16_t* GroupSnapshot::get_samples(
 	assert(start_sample <= end_sample);
 
     int64_t i;
-    uint64_t pow;
+    uint16_t tmpl, tmpr;
 	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 
     uint16_t *const data = new uint16_t[end_sample - start_sample];
 //    memcpy(data, (uint16_t*)_data + start_sample, sizeof(uint16_t) *
 //		(end_sample - start_sample));
-    memset(data, 0, sizeof(uint16_t) * (end_sample - start_sample));
+//    memset(data, 0, sizeof(uint16_t) * (end_sample - start_sample));
     for(i = start_sample; i < end_sample; i++) {
-        std::list<int>::iterator j = _index_list.begin();
-        pow = 0;
-        while(j != _index_list.end()) {
-            *(data + i - start_sample) += ((*((uint16_t*)_data + i) & value_mask[(*j)]) >> ((*j) - pow));
-            pow++;
-            j++;
+        if (_unit_size == 2)
+            tmpl = *((uint16_t*)_data + i) & _mask;
+        else
+            tmpl = *((uint8_t*)_data + i) & _mask;
+        for(int j=0; _bubble_start[j] != -1; j++) {
+            tmpr = tmpl & (0xffff >> (16 - _bubble_start[j]));
+            tmpl >>= _bubble_end[j];
+            tmpl <<= _bubble_start[j];
+            tmpl += tmpr;
         }
+        *(data + i - start_sample) = tmpl;
     }
 	return data;
 }
@@ -170,61 +205,26 @@ void GroupSnapshot::append_payload_to_envelope_levels()
 
 	// Iterate through the samples to populate the first level mipmap
     uint16_t group_value[EnvelopeScaleFactor];
-    const uint16_t *const end_src_ptr = (uint16_t*)_data +
-        e0.length * EnvelopeScaleFactor;
-    for (const uint16_t *src_ptr = (uint16_t*)_data +
-		prev_length * EnvelopeScaleFactor;
-		src_ptr < end_src_ptr; src_ptr += EnvelopeScaleFactor)
+    const uint8_t *const end_src_ptr = (uint8_t*)_data +
+        e0.length * EnvelopeScaleFactor * _unit_size;
+    for (const uint8_t *src_ptr = (uint8_t*)_data +
+        prev_length * EnvelopeScaleFactor * _unit_size;
+        src_ptr < end_src_ptr; src_ptr += EnvelopeScaleFactor * _unit_size)
 	{
-        int pow;
-//        for(i = 0; i < EnvelopeScaleFactor; i++) {
-//            group_value[i] = 0;
-//            std::list<int>::iterator j = _index_list.begin();
-//            pow = 0;
-//            while(j != _index_list.end()) {
-//                group_value[i] += ((*(src_ptr + i) & value_mask[(*j)]) >> ((*j) - pow));
-//                pow++;
-//                j++;
-//            }
-//        }
-        group_value[0] = 0;
-        group_value[1] = 0;
-        group_value[2] = 0;
-        group_value[3] = 0;
-        group_value[4] = 0;
-        group_value[5] = 0;
-        group_value[6] = 0;
-        group_value[7] = 0;
-        group_value[8] = 0;
-        group_value[9] = 0;
-        group_value[10] = 0;
-        group_value[11] = 0;
-        group_value[12] = 0;
-        group_value[13] = 0;
-        group_value[14] = 0;
-        group_value[15] = 0;
-        std::list<int>::iterator j = _index_list.begin();
-        pow = 0;
-        while(j != _index_list.end()) {
-            group_value[0] += ((*(src_ptr + 0) & value_mask[(*j)]) >> ((*j) - pow));
-            group_value[1] += ((*(src_ptr + 1) & value_mask[(*j)]) >> ((*j) - pow));
-            group_value[2] += ((*(src_ptr + 2) & value_mask[(*j)]) >> ((*j) - pow));
-            group_value[3] += ((*(src_ptr + 3) & value_mask[(*j)]) >> ((*j) - pow));
-            group_value[4] += ((*(src_ptr + 4) & value_mask[(*j)]) >> ((*j) - pow));
-            group_value[5] += ((*(src_ptr + 5) & value_mask[(*j)]) >> ((*j) - pow));
-            group_value[6] += ((*(src_ptr + 6) & value_mask[(*j)]) >> ((*j) - pow));
-            group_value[7] += ((*(src_ptr + 7) & value_mask[(*j)]) >> ((*j) - pow));
-            group_value[8] += ((*(src_ptr + 8) & value_mask[(*j)]) >> ((*j) - pow));
-            group_value[9] += ((*(src_ptr + 9) & value_mask[(*j)]) >> ((*j) - pow));
-            group_value[10] += ((*(src_ptr + 10) & value_mask[(*j)]) >> ((*j) - pow));
-            group_value[11] += ((*(src_ptr + 11) & value_mask[(*j)]) >> ((*j) - pow));
-            group_value[12] += ((*(src_ptr + 12) & value_mask[(*j)]) >> ((*j) - pow));
-            group_value[13] += ((*(src_ptr + 13) & value_mask[(*j)]) >> ((*j) - pow));
-            group_value[14] += ((*(src_ptr + 14) & value_mask[(*j)]) >> ((*j) - pow));
-            group_value[15] += ((*(src_ptr + 15) & value_mask[(*j)]) >> ((*j) - pow));
-            pow++;
-            j++;
+        uint16_t tmpr;
+        for(int i = 0; i < EnvelopeScaleFactor; i++) {
+            if (_unit_size == 2)
+                group_value[i] = *((uint16_t*)src_ptr + i) & _mask;
+            else
+                group_value[i] = *((uint8_t*)src_ptr + i) & _mask;
+            for(int j=0; _bubble_start[j] != -1; j++) {
+                tmpr = group_value[i] & (0xffff >> (16 - _bubble_start[j]));
+                group_value[i] >>= _bubble_end[j];
+                group_value[i] <<= _bubble_start[j];
+                group_value[i] += tmpr;
+            }
         }
+
 		const EnvelopeSample sub_sample = {
             *min_element(group_value, group_value + EnvelopeScaleFactor),
             *max_element(group_value, group_value + EnvelopeScaleFactor),

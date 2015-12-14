@@ -42,7 +42,7 @@ const QColor Trace::dsYellow = QColor(238, 178, 17, 255);
 const QColor Trace::dsRed = QColor(213, 15, 37, 255);
 const QColor Trace::dsGreen = QColor(0, 153, 37, 200);
 const QColor Trace::dsGray = QColor(0x88, 0x8A, 0x85, 60);
-const QColor Trace::dsFore = QColor(0xff, 0xff, 0xff, 100);
+const QColor Trace::dsFore = QColor(0xff, 0xff, 0xff, 60);
 const QColor Trace::dsBack = QColor(0x16, 0x18, 0x23, 180);
 const QColor Trace::dsDisable = QColor(0x88, 0x8A, 0x85, 200);
 const QColor Trace::dsActive = QColor(17, 133, 209, 255);
@@ -53,14 +53,13 @@ const QPen Trace::SignalAxisPen = QColor(128, 128, 128, 64);
 const QPen Trace::AxisPen(QColor(128, 128, 128, 64));
 const int Trace::LabelHitPadding = 2;
 
-Trace::Trace(QString name, int index, int type) :
+Trace::Trace(QString name, uint16_t index, int type) :
     _view(NULL),
 	_name(name),
     _v_offset(INT_MAX),
     _type(type),
     _sec_index(0),
-    _signalHeight(30),
-    _trig(0)
+    _signalHeight(30)
 {
     _index_list.push_back(index);
 }
@@ -72,8 +71,7 @@ Trace::Trace(QString name, std::list<int> index_list, int type, int sec_index) :
     _type(type),
     _index_list(index_list),
     _sec_index(sec_index),
-    _signalHeight(30),
-    _trig(0)
+    _signalHeight(30)
 {
 }
 
@@ -87,7 +85,6 @@ Trace::Trace(const Trace &t) :
     _sec_index(t._sec_index),
     _old_v_offset(t._old_v_offset),
     _signalHeight(t._signalHeight),
-    _trig(t._trig),
     _text_size(t._text_size)
 {
 }
@@ -180,28 +177,6 @@ void Trace::set_signalHeight(int height)
     _signalHeight = height;
 }
 
-int Trace::get_trig() const
-{
-    return _trig;
-}
-
-void Trace::set_trig(int trig)
-{
-    _trig = trig;
-    if (trig == 0)
-        ds_trigger_probe_set(_index_list.front(), 'X', 'X');
-    else if (trig == POSTRIG)
-        ds_trigger_probe_set(_index_list.front(), 'R', 'X');
-    else if (trig == HIGTRIG)
-        ds_trigger_probe_set(_index_list.front(), '1', 'X');
-    else if (trig == NEGTRIG)
-        ds_trigger_probe_set(_index_list.front(), 'F', 'X');
-    else if (trig == LOWTRIG)
-        ds_trigger_probe_set(_index_list.front(), '0', 'X');
-    else if (trig == EDGETRIG)
-        ds_trigger_probe_set(_index_list.front(), 'C', 'X');
-}
-
 void Trace::set_view(pv::view::View *view)
 {
 	assert(view);
@@ -231,7 +206,7 @@ void Trace::paint_fore(QPainter &p, int left, int right)
 	(void)right;
 }
 
-void Trace::paint_label(QPainter &p, int right, bool hover, int action)
+void Trace::paint_label(QPainter &p, int right, const QPoint pt)
 {
     compute_text_size(p);
     const int y = get_y();
@@ -251,7 +226,7 @@ void Trace::paint_label(QPainter &p, int right, bool hover, int action)
     p.drawText(name_rect, Qt::AlignLeft | Qt::AlignVCenter, _name);
 
     // Paint the trigButton
-    paint_type_options(p, right, hover, action);
+    paint_type_options(p, right, pt);
 
     // Paint the label
     if (enabled()) {
@@ -265,9 +240,9 @@ void Trace::paint_label(QPainter &p, int right, bool hover, int action)
 
         p.setPen(Qt::transparent);
         if (_type == SR_CHANNEL_DSO)
-            p.setBrush(((hover && action == LABEL) || selected()) ? _colour.darker() : _colour);
+            p.setBrush((label_rect.contains(pt) || selected()) ? _colour.darker() : _colour);
         else
-            p.setBrush(((hover && action == LABEL) || selected()) ? dsYellow : dsBlue);
+            p.setBrush((label_rect.contains(pt) || selected()) ? dsYellow : dsBlue);
         p.drawPolygon(points, countof(points));
 
         p.setPen(QPen(Qt::blue, 1, Qt::DotLine));
@@ -288,65 +263,47 @@ void Trace::paint_label(QPainter &p, int right, bool hover, int action)
     }
 }
 
-void Trace::paint_type_options(QPainter &p, int right, bool hover, int action)
+void Trace::paint_type_options(QPainter &p, int right, const QPoint pt)
 {
     (void)p;
     (void)right;
-    (void)hover;
-    (void)action;
+    (void)pt;
+}
+
+bool Trace::mouse_double_click(int right, const QPoint pt)
+{
+    (void)right;
+    (void)pt;
+    return false;
+}
+
+bool Trace::mouse_press(int right, const QPoint pt)
+{
+    (void)right;
+    (void)pt;
+    return false;
+}
+
+bool Trace::mouse_wheel(int right, const QPoint pt, const int shift)
+{
+    (void)right;
+    (void)pt;
+    (void)shift;
+    return false;
 }
 
 int Trace::pt_in_rect(int y, int right, const QPoint &point)
 {
     const QRectF color = get_rect("color", y, right);
     const QRectF name  = get_rect("name", y, right);
-    const QRectF posTrig = get_rect("posTrig", y, right);
-    const QRectF higTrig = get_rect("higTrig", y, right);
-    const QRectF negTrig = get_rect("negTrig", y, right);
-    const QRectF lowTrig = get_rect("lowTrig", y, right);
-    const QRectF edgeTrig = get_rect("edgeTrig", y, right);
     const QRectF label = get_rect("label", get_zeroPos(), right);
-    const QRectF vDial = get_rect("vDial", y, right);
-    const QRectF x1 = get_rect("x1", y, right);
-    const QRectF x10 = get_rect("x10", y, right);
-    const QRectF x100 = get_rect("x100", y, right);
-    const QRectF hDial = get_rect("hDial", y, right);
-    const QRectF chEn = get_rect("chEn", y, right);
-    const QRectF acdc = get_rect("acdc", y, right);
-    const QRectF dsoTrig = get_rect("dsoTrig", 0, right);
 
     if (color.contains(point) && enabled())
         return COLOR;
     else if (name.contains(point) && enabled())
         return NAME;
-    else if (posTrig.contains(point) && _type == SR_CHANNEL_LOGIC)
-        return POSTRIG;
-    else if (higTrig.contains(point) && _type == SR_CHANNEL_LOGIC)
-        return HIGTRIG;
-    else if (negTrig.contains(point) && _type == SR_CHANNEL_LOGIC)
-        return NEGTRIG;
-    else if (lowTrig.contains(point) && _type == SR_CHANNEL_LOGIC)
-        return LOWTRIG;
-    else if (edgeTrig.contains(point) && _type == SR_CHANNEL_LOGIC)
-        return EDGETRIG;
     else if (label.contains(point) && enabled())
         return LABEL;
-    else if (vDial.contains(point) && _type == SR_CHANNEL_DSO && enabled())
-        return VDIAL;
-    else if (x1.contains(point) && _type == SR_CHANNEL_DSO && enabled())
-        return X1;
-    else if (x10.contains(point) && _type == SR_CHANNEL_DSO && enabled())
-        return X10;
-    else if (x100.contains(point) && _type == SR_CHANNEL_DSO && enabled())
-        return X100;
-    else if (hDial.contains(point) && _type == SR_CHANNEL_DSO && enabled())
-        return HDIAL;
-    else if (chEn.contains(point) && _type == SR_CHANNEL_DSO)
-        return CHEN;
-    else if (acdc.contains(point) && _type == SR_CHANNEL_DSO && enabled())
-        return ACDC;
-    else if (dsoTrig.contains(point) && _type == SR_CHANNEL_DSO && enabled())
-        return DSOTRIG;
     else
         return 0;
 }
@@ -381,71 +338,6 @@ QRectF Trace::get_rect(const char *s, int y, int right)
             right - 1.5f * label_size.width(),
             y - SquareWidth / 2,
             label_size.width(), label_size.height());
-    else if (!strcmp(s, "posTrig"))
-        return QRectF(
-            get_leftWidth() + name_size.width() + Margin,
-            y - SquareWidth / 2,
-            SquareWidth, SquareWidth);
-    else if (!strcmp(s, "higTrig"))
-        return QRectF(
-            get_leftWidth() + name_size.width() + SquareWidth + Margin,
-            y - SquareWidth / 2,
-            SquareWidth, SquareWidth);
-    else if (!strcmp(s, "negTrig"))
-        return QRectF(
-            get_leftWidth() + name_size.width() + 2 * SquareWidth + Margin,
-            y - SquareWidth / 2,
-            SquareWidth, SquareWidth);
-    else if (!strcmp(s, "lowTrig"))
-        return QRectF(
-            get_leftWidth() + name_size.width() + 3 * SquareWidth + Margin,
-            y - SquareWidth / 2,
-            SquareWidth, SquareWidth);
-    else if (!strcmp(s, "edgeTrig"))
-        return QRectF(
-            get_leftWidth() + name_size.width() + 4 * SquareWidth + Margin,
-            y - SquareWidth / 2,
-            SquareWidth, SquareWidth);
-    else if (!strcmp(s, "groupIndex"))
-        return QRectF(
-            get_leftWidth() + name_size.width() + Margin,
-            y - SquareWidth / 2,
-            SquareWidth * SquareNum, SquareWidth);
-    else if (!strcmp(s, "vDial"))
-        return QRectF(
-            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin,
-            y - SquareWidth * SquareNum,
-            SquareWidth * (SquareNum-1), SquareWidth * (SquareNum-1));
-    else if (!strcmp(s, "x1"))
-        return QRectF(
-            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin - 45,
-            y - SquareWidth - SquareWidth * (SquareNum-1) * 0.85,
-            SquareWidth * 1.75, SquareWidth);
-    else if (!strcmp(s, "x10"))
-        return QRectF(
-            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin - 45,
-            y - SquareWidth - SquareWidth * (SquareNum-1) * 0.55,
-            SquareWidth * 1.75, SquareWidth);
-    else if (!strcmp(s, "x100"))
-        return QRectF(
-            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin - 45,
-            y - SquareWidth - SquareWidth * (SquareNum-1) * 0.25,
-            SquareWidth * 1.75, SquareWidth);
-    else if (!strcmp(s, "hDial"))
-        return QRectF(
-            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin,
-            y + SquareWidth * 1.5,
-            SquareWidth * (SquareNum-1), SquareWidth * (SquareNum-1));
-    else if (!strcmp(s, "chEn"))
-        return QRectF(
-            get_leftWidth() + name_size.width() + SquareWidth*0.75 + Margin,
-            y - SquareWidth / 2,
-            SquareWidth * 1.5, SquareWidth);
-    else if (!strcmp(s, "acdc"))
-        return QRectF(
-            get_leftWidth() + name_size.width() + SquareWidth*2.75 + Margin,
-            y - SquareWidth / 2,
-            SquareWidth * 1.5, SquareWidth);
     else
         return QRectF(
             2,

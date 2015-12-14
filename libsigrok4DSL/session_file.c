@@ -121,10 +121,15 @@ SR_API int sr_session_load(const char *filename)
 	struct zip_stat zs;
 	struct sr_dev_inst *sdi;
 	struct sr_channel *probe;
-	int ret, probenum, devcnt, version, i, j;
-	uint64_t tmp_u64, total_probes, enabled_probes, p;
+    int ret, devcnt, i, j, k;
+    uint16_t probenum;
+    uint64_t tmp_u64, total_probes, enabled_probes;
+    uint16_t p;
 	char **sections, **keys, *metafile, *val, s[11];
 	char probename[SR_MAX_PROBENAME_LEN + 1];
+    int mode = LOGIC;
+    int channel_type = SR_CHANNEL_LOGIC;
+    double tmp_double;
 
 	if (!filename) {
 		sr_err("%s: filename was NULL", __func__);
@@ -138,7 +143,7 @@ SR_API int sr_session_load(const char *filename)
 
 	/* read "metadata" */
     if (zip_stat(archive, "header", 0, &zs) == -1) {
-        sr_dbg("Not a valid DSLogic session file.");
+        sr_dbg("Not a valid DSView data file.");
 		return SR_ERR;
 	}
 
@@ -173,8 +178,10 @@ SR_API int sr_session_load(const char *filename)
 			keys = g_key_file_get_keys(kf, sections[i], NULL, NULL);
 			for (j = 0; keys[j]; j++) {
 				val = g_key_file_get_string(kf, sections[i], keys[j], NULL);
-				if (!strcmp(keys[j], "capturefile")) {
-                    sdi = sr_dev_inst_new(LOGIC, devcnt, SR_ST_ACTIVE, NULL, NULL, NULL);
+                if (!strcmp(keys[j], "device mode")) {
+                    mode = strtoull(val, NULL, 10);
+                } else if (!strcmp(keys[j], "capturefile")) {
+                    sdi = sr_dev_inst_new(mode, devcnt, SR_ST_ACTIVE, NULL, NULL, NULL);
 					sdi->driver = &session_driver;
 					if (devcnt == 0)
 						/* first device, init the driver */
@@ -198,13 +205,19 @@ SR_API int sr_session_load(const char *filename)
                     tmp_u64 = strtoull(val, NULL, 10);
                     sdi->driver->config_set(SR_CONF_LIMIT_SAMPLES,
                             g_variant_new_uint64(tmp_u64), sdi, NULL, NULL);
-				} else if (!strcmp(keys[j], "total probes")) {
+                }  else if (!strcmp(keys[j], "hDiv")) {
+                    tmp_u64 = strtoull(val, NULL, 10);
+                    sdi->driver->config_set(SR_CONF_TIMEBASE,
+                            g_variant_new_uint64(tmp_u64), sdi, NULL, NULL);
+                } else if (!strcmp(keys[j], "total probes")) {
 					total_probes = strtoull(val, NULL, 10);
 					sdi->driver->config_set(SR_CONF_CAPTURE_NUM_PROBES,
                             g_variant_new_uint64(total_probes), sdi, NULL, NULL);
+                    channel_type = (mode == DSO) ? SR_CHANNEL_DSO :
+                                   (mode == ANALOG) ? SR_CHANNEL_ANALOG : SR_CHANNEL_LOGIC;
 					for (p = 0; p < total_probes; p++) {
 						snprintf(probename, SR_MAX_PROBENAME_LEN, "%" PRIu64, p);
-						if (!(probe = sr_channel_new(p, SR_CHANNEL_LOGIC, TRUE,
+                        if (!(probe = sr_channel_new(p, channel_type, FALSE,
 								probename)))
 							return SR_ERR;
                         sdi->channels = g_slist_append(sdi->channels, probe);
@@ -215,17 +228,86 @@ SR_API int sr_session_load(const char *filename)
 					enabled_probes++;
 					tmp_u64 = strtoul(keys[j]+5, NULL, 10);
 					/* sr_session_save() */
-					sr_dev_probe_name_set(sdi, tmp_u64 - 1, val);
+                    sr_dev_probe_name_set(sdi, tmp_u64, val);
+                    sr_dev_probe_enable(sdi, tmp_u64, TRUE);
 				} else if (!strncmp(keys[j], "trigger", 7)) {
 					probenum = strtoul(keys[j]+7, NULL, 10);
 					sr_dev_trigger_set(sdi, probenum, val);
-				}
+                } else if (!strncmp(keys[j], "enable", 6)) {
+                    probenum = strtoul(keys[j]+6, NULL, 10);
+                    tmp_u64 = strtoull(val, NULL, 10);
+                    if (probenum < g_slist_length(sdi->channels)) {
+                        probe = g_slist_nth(sdi->channels, probenum)->data;
+                        sdi->driver->config_set(SR_CONF_EN_CH,
+                            g_variant_new_boolean(tmp_u64), sdi, probe, NULL);
+                    }
+                } else if (!strncmp(keys[j], "coupling", 8)) {
+                    probenum = strtoul(keys[j]+8, NULL, 10);
+                    tmp_u64 = strtoull(val, NULL, 10);
+                    if (probenum < g_slist_length(sdi->channels)) {
+                        probe = g_slist_nth(sdi->channels, probenum)->data;
+                        sdi->driver->config_set(SR_CONF_COUPLING,
+                            g_variant_new_byte(tmp_u64), sdi, probe, NULL);
+                    }
+                } else if (!strncmp(keys[j], "vDiv", 4)) {
+                    probenum = strtoul(keys[j]+4, NULL, 10);
+                    tmp_u64 = strtoull(val, NULL, 10);
+                    if (probenum < g_slist_length(sdi->channels)) {
+                        probe = g_slist_nth(sdi->channels, probenum)->data;
+                        sdi->driver->config_set(SR_CONF_VDIV,
+                            g_variant_new_uint64(tmp_u64), sdi, probe, NULL);
+                    }
+                } else if (!strncmp(keys[j], "vFactor", 7)) {
+                    probenum = strtoul(keys[j]+7, NULL, 10);
+                    tmp_u64 = strtoull(val, NULL, 10);
+                    if (probenum < g_slist_length(sdi->channels)) {
+                        probe = g_slist_nth(sdi->channels, probenum)->data;
+                        sdi->driver->config_set(SR_CONF_FACTOR,
+                            g_variant_new_uint64(tmp_u64), sdi, probe, NULL);
+                    }
+                } else if (!strncmp(keys[j], "vPos", 4)) {
+                    probenum = strtoul(keys[j]+4, NULL, 10);
+                    tmp_double = strtod(val, NULL);
+                    if (probenum < g_slist_length(sdi->channels)) {
+                        probe = g_slist_nth(sdi->channels, probenum)->data;
+                        sdi->driver->config_set(SR_CONF_VPOS,
+                            g_variant_new_double(tmp_double), sdi, probe, NULL);
+                    }
+                } else if (!strncmp(keys[j], "period", 6)) {
+                    probenum = strtoul(keys[j]+6, NULL, 10);
+                    tmp_u64 = strtoull(val, NULL, 10);
+                    if (probenum < g_slist_length(sdi->channels)) {
+                        probe = g_slist_nth(sdi->channels, probenum)->data;
+                        sdi->driver->config_set(SR_CONF_STATUS_PERIOD,
+                            g_variant_new_uint64(tmp_u64), sdi, probe, NULL);
+                    }
+                } else if (!strncmp(keys[j], "pcnt", 4)) {
+                    probenum = strtoul(keys[j]+4, NULL, 10);
+                    tmp_u64 = strtoull(val, NULL, 10);
+                    if (probenum < g_slist_length(sdi->channels)) {
+                        probe = g_slist_nth(sdi->channels, probenum)->data;
+                        sdi->driver->config_set(SR_CONF_STATUS_PCNT,
+                            g_variant_new_uint64(tmp_u64), sdi, probe, NULL);
+                    }
+                } else if (!strncmp(keys[j], "max", 3)) {
+                    probenum = strtoul(keys[j]+3, NULL, 10);
+                    tmp_u64 = strtoull(val, NULL, 10);
+                    if (probenum < g_slist_length(sdi->channels)) {
+                        probe = g_slist_nth(sdi->channels, probenum)->data;
+                        sdi->driver->config_set(SR_CONF_STATUS_MAX,
+                            g_variant_new_uint64(tmp_u64), sdi, probe, NULL);
+                    }
+                } else if (!strncmp(keys[j], "min", 3)) {
+                    probenum = strtoul(keys[j]+3, NULL, 10);
+                    tmp_u64 = strtoull(val, NULL, 10);
+                    if (probenum < g_slist_length(sdi->channels)) {
+                        probe = g_slist_nth(sdi->channels, probenum)->data;
+                        sdi->driver->config_set(SR_CONF_STATUS_MIN,
+                            g_variant_new_uint64(tmp_u64), sdi, probe, NULL);
+                    }
+                }
 			}
 			g_strfreev(keys);
-			/* Disable probes not specifically listed. */
-			if (total_probes)
-				for (p = enabled_probes; p < total_probes; p++)
-					sr_dev_probe_enable(sdi, p, FALSE);
 		}
 		devcnt++;
 	}
@@ -258,8 +340,9 @@ SR_API int sr_session_save(const char *filename, const struct sr_dev_inst *sdi,
     struct zip *zipfile;
     struct zip_source *versrc, *metasrc, *logicsrc;
     int tmpfile, ret, probecnt;
-    uint64_t samplerate;
+    uint64_t samplerate, timeBase, tmp_u64;
     char rawname[16], metafile[32], *s;
+    struct sr_status status;
 
 	if (!filename) {
 		sr_err("%s: filename was NULL", __func__);
@@ -272,42 +355,68 @@ SR_API int sr_session_save(const char *filename, const struct sr_dev_inst *sdi,
 		return SR_ERR;
 
     /* init "metadata" */
-    strcpy(metafile, "DSLogic-meta-XXXXXX");
+    strcpy(metafile, "DSView-meta-XXXXXX");
     if ((tmpfile = g_mkstemp(metafile)) == -1)
         return SR_ERR;
     close(tmpfile);
     meta = g_fopen(metafile, "wb");
     fprintf(meta, "[version]\n");
-    fprintf(meta, "DSLogic version = %s\n", PACKAGE_VERSION);
+    fprintf(meta, "DSView version = %s\n", PACKAGE_VERSION);
 
     /* metadata */
     fprintf(meta, "[header]\n");
-    if (sdi->driver)
+    if (sdi->driver) {
         fprintf(meta, "driver = %s\n", sdi->driver->name);
+        fprintf(meta, "device mode = %d\n", sdi->mode);
+    }
 
     /* metadata */
     fprintf(meta, "capturefile = data\n");
     fprintf(meta, "unitsize = %d\n", unitsize);
     fprintf(meta, "total samples = %d\n", units);
     fprintf(meta, "total probes = %d\n", g_slist_length(sdi->channels));
-    if (sr_dev_has_option(sdi, SR_CONF_SAMPLERATE)) {
-        if (sr_config_get(sdi->driver, sdi, NULL, NULL, SR_CONF_SAMPLERATE,
-                &gvar) == SR_OK) {
-            samplerate = g_variant_get_uint64(gvar);
-            s = sr_samplerate_string(samplerate);
-            fprintf(meta, "samplerate = %s\n", s);
-            g_free(s);
-            g_variant_unref(gvar);
-        }
+    if (sr_config_get(sdi->driver, sdi, NULL, NULL, SR_CONF_SAMPLERATE,
+            &gvar) == SR_OK) {
+        samplerate = g_variant_get_uint64(gvar);
+        s = sr_samplerate_string(samplerate);
+        fprintf(meta, "samplerate = %s\n", s);
+        g_free(s);
+        g_variant_unref(gvar);
+    }
+    if (sdi->mode == DSO &&
+        sr_config_get(sdi->driver, sdi, NULL, NULL, SR_CONF_TIMEBASE, &gvar) == SR_OK) {
+        timeBase = g_variant_get_uint64(gvar);
+        fprintf(meta, "hDiv = %d\n", timeBase);
+        g_variant_unref(gvar);
     }
     probecnt = 1;
     for (l = sdi->channels; l; l = l->next) {
         probe = l->data;
-        if (probe->enabled) {
+        if (probe->enabled || sdi->mode == DSO) {
             if (probe->name)
-                fprintf(meta, "probe%d = %s\n", probecnt, probe->name);
+                fprintf(meta, "probe%d = %s\n", probe->index, probe->name);
             if (probe->trigger)
-                fprintf(meta, " trigger%d = %s\n", probecnt, probe->trigger);
+                fprintf(meta, " trigger%d = %s\n", probe->index, probe->trigger);
+            if (sdi->mode == DSO) {
+                fprintf(meta, " enable%d = %d\n", probe->index, probe->enabled);
+                fprintf(meta, " coupling%d = %d\n", probe->index, probe->coupling);
+                fprintf(meta, " vDiv%d = %d\n", probe->index, probe->vdiv);
+                fprintf(meta, " vFactor%d = %d\n", probe->index, probe->vfactor);
+                fprintf(meta, " vPos%d = %lf\n", probe->index, probe->vpos);
+                if (sr_status_get(sdi, &status, 0, 0) == SR_OK) {
+                    if (probe->index == 0) {
+                        fprintf(meta, " period%d = %d\n", probe->index, status.ch0_period);
+                        fprintf(meta, " pcnt%d = %d\n", probe->index, status.ch0_pcnt);
+                        fprintf(meta, " max%d = %d\n", probe->index, status.ch0_max);
+                        fprintf(meta, " min%d = %d\n", probe->index, status.ch0_min);
+                    } else {
+                        fprintf(meta, " period%d = %d\n", probe->index, status.ch1_period);
+                        fprintf(meta, " pcnt%d = %d\n", probe->index, status.ch1_pcnt);
+                        fprintf(meta, " max%d = %d\n", probe->index, status.ch1_max);
+                        fprintf(meta, " min%d = %d\n", probe->index, status.ch1_min);
+                    }
+                }
+            }
             probecnt++;
         }
     }

@@ -49,7 +49,7 @@ Arch:
 
 Step2: Get the DSView source code
 
- $ clone git://github.com/DreamSourceLab/DSView
+ $ git clone git://github.com/DreamSourceLab/DSView
 
 Step3: Building
  

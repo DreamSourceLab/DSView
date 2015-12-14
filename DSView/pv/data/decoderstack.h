@@ -173,7 +173,7 @@ private:
 
 	QString _error_message;
 
-    std::auto_ptr<boost::thread> _decode_thread;
+    std::unique_ptr<boost::thread> _decode_thread;
     decode_state _decode_state;
 
     bool _options_changed;

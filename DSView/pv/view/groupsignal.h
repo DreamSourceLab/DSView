@@ -48,6 +48,11 @@ private:
 
 	static const float EnvelopeThreshold;
 
+    enum GroupSetRegions{
+        NONEREG = -1,
+        CHNLREG,
+    };
+
 public:
     GroupSignal(QString name,
         boost::shared_ptr<pv::data::Group> data,
@@ -74,8 +79,10 @@ public:
 
     const std::vector< std::pair<uint64_t, bool> > cur_edges() const;
 
+    QRectF get_rect(GroupSetRegions type, int y, int right);
+
 protected:
-    void paint_type_options(QPainter &p, int right, bool hover, int action);
+    void paint_type_options(QPainter &p, int right, const QPoint pt);
 
 private:
 	void paint_trace(QPainter &p,

@@ -52,6 +52,8 @@ static const char *opmodes[] = {
     "DRAM Loopback Test",
 };
 
+static uint16_t opmodes_show_count = 2;
+
 static const char *thresholds[] = {
     "1.8/2.5/3.3V Level",
     "5.0V Level",
@@ -254,7 +256,7 @@ static int fpga_setting(const struct sr_dev_inst *sdi)
                    ((devc->op_mode == SR_OP_EXTERNAL_TEST) << 14) +
                    ((devc->op_mode == SR_OP_LOOPBACK_TEST) << 13) +
                    trigger->trigger_en +
-                   ((sdi->mode > 0) << 4) + (devc->clock_type << 1) + (devc->clock_edge << 1) +
+                   ((sdi->mode > 0) << 4) + (devc->clock_type << 1) + (devc->clock_edge << 2) +
                    (((devc->cur_samplerate == SR_MHZ(200) && sdi->mode != DSO) || (sdi->mode == ANALOG)) << 5) +
                    ((devc->cur_samplerate == SR_MHZ(400)) << 6) +
                    ((sdi->mode == ANALOG) << 7) +
@@ -579,7 +581,7 @@ static struct DSL_context *DSCope_dev_new(void)
     devc->clock_type = FALSE;
     devc->clock_edge = FALSE;
     devc->instant = FALSE;
-    devc->op_mode = SR_OP_NORMAL;
+    devc->op_mode = SR_OP_BUFFER;
     devc->th_level = SR_TH_3V3;
     devc->filter = SR_FILTER_NONE;
     devc->timebase = 10000;
@@ -606,7 +608,7 @@ static int init(struct sr_context *sr_ctx)
 
 static int set_probes(struct sr_dev_inst *sdi, int num_probes)
 {
-    int j;
+    uint16_t j;
     struct sr_channel *probe;
 
     for (j = 0; j < num_probes; j++) {
@@ -627,7 +629,7 @@ static int set_probes(struct sr_dev_inst *sdi, int num_probes)
 
 static int adjust_probes(struct sr_dev_inst *sdi, int num_probes)
 {
-    int j;
+    uint16_t j;
     GSList *l;
     struct sr_channel *probe;
     GSList *p;
@@ -1298,6 +1300,11 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
             return SR_ERR;
         *data = g_variant_new_uint64(DSCOPE_MAX_DEPTH);
         break;
+    case SR_CONF_RLE_SAMPLELIMITS:
+        if (!sdi)
+            return SR_ERR;
+        *data = g_variant_new_uint64(DSCOPE_MAX_DEPTH);
+        break;
     default:
         return SR_ERR_NA;
 	}
@@ -1386,8 +1393,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     } else if (id == SR_CONF_OPERATION_MODE) {
         stropt = g_variant_get_string(data, NULL);
         ret = SR_OK;
-        if (!strcmp(stropt, opmodes[SR_OP_NORMAL])) {
-            devc->op_mode = SR_OP_NORMAL;
+        if (!strcmp(stropt, opmodes[SR_OP_BUFFER])) {
+            devc->op_mode = SR_OP_BUFFER;
         } else if (!strcmp(stropt, opmodes[SR_OP_INTERNAL_TEST])) {
             devc->op_mode = SR_OP_INTERNAL_TEST;
         } else if (!strcmp(stropt, opmodes[SR_OP_EXTERNAL_TEST])) {
@@ -1483,10 +1490,10 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, ch, SR_CONF_VPOS));
         }
         if (ret == SR_OK)
-            sr_dbg("%s: setting VPOS of channel %d to %d mv",
+            sr_dbg("%s: setting VPOS of channel %d to %lf mv",
                 __func__, ch->index, ch->vpos);
         else
-            sr_dbg("%s: setting VPOS of channel %d to %d mv failed",
+            sr_dbg("%s: setting VPOS of channel %d to %lf mv failed",
                 __func__, ch->index, ch->vpos);
     } else if (id == SR_CONF_TIMEBASE) {
         devc->timebase = g_variant_get_uint64(data);
@@ -1651,7 +1658,7 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
         *data = g_variant_new_string(TRIGGER_TYPE);
 		break;
     case SR_CONF_OPERATION_MODE:
-        *data = g_variant_new_strv(opmodes, ARRAY_SIZE(opmodes));
+        *data = g_variant_new_strv(opmodes, opmodes_show_count);
         break;
     case SR_CONF_THRESHOLD:
         *data = g_variant_new_strv(thresholds, ARRAY_SIZE(thresholds));
@@ -1936,7 +1943,8 @@ static void receive_transfer(struct libusb_transfer *transfer)
                 mstatus.ch1_pcnt = *((const uint32_t*)cur_buf + mstatus_offset/2 + 14/2);
                 mstatus.vlen = *((const uint32_t*)cur_buf + mstatus_offset/2 + 16/2) & 0x7fffffff;
                 mstatus.stream_mode = *((const uint32_t*)cur_buf + mstatus_offset/2 + 16/2) & 0x80000000;
-                mstatus.sample_divider = *((const uint32_t*)cur_buf + mstatus_offset/2 + 18/2);
+                mstatus.sample_divider = *((const uint32_t*)cur_buf + mstatus_offset/2 + 18/2) & 0x7fffffff;
+                mstatus.sample_divider_tog = *((const uint32_t*)cur_buf + mstatus_offset/2 + 18/2) & 0x80000000;
                 mstatus.zeroing = (*((const uint16_t*)cur_buf + mstatus_offset + 128) & 0x8000) != 0;
                 mstatus.ch0_vpos_mid = *((const uint16_t*)cur_buf + mstatus_offset + 128) & 0x7fff;
                 mstatus.ch0_voff_mid = *((const uint16_t*)cur_buf + mstatus_offset + 129);
@@ -1970,8 +1978,10 @@ static void receive_transfer(struct libusb_transfer *transfer)
                 dso.mq = SR_MQ_VOLTAGE;
                 dso.unit = SR_UNIT_VOLT;
                 dso.mqflags = SR_MQFLAG_AC;
+                dso.samplerate_tog = mstatus.sample_divider_tog;
                 dso.data = cur_buf + trigger_offset_bytes;
             } else {
+                packet.type = SR_DF_ABANDON;
                 mstatus_valid = FALSE;
             }
         } else {
@@ -2026,7 +2036,8 @@ static void receive_transfer(struct libusb_transfer *transfer)
             }
 
             /* send data to session bus */
-            sr_session_send(devc->cb_data, &packet);
+            if (packet.type != SR_DF_ABANDON)
+                sr_session_send(devc->cb_data, &packet);
         }
 
         devc->num_samples += cur_sample_count;

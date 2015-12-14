@@ -21,27 +21,47 @@
  */
 
 
-#include "property.h"
+#ifndef DSVIEW_PV_DSOMEASURE_H
+#define DSVIEW_PV_DSOMEASURE_H
+
+#include <QDialog>
+#include <QDialogButtonBox>
+#include <QVBoxLayout>
+
+#include <boost/shared_ptr.hpp>
+
+#include <pv/view/dsosignal.h>
 
 namespace pv {
-namespace prop {
 
-Property::Property(QString name, Getter getter, Setter setter) :
-	_getter(getter),
-	_setter(setter),
-    _name(name)
-{
+namespace view {
+class DsoSignal;
 }
 
-const QString& Property::name() const
-{
-	return _name;
-}
+namespace dialogs {
 
-bool Property::labeled_widget() const
+class DsoMeasure : public QDialog
 {
-	return false;
-}
+	Q_OBJECT
 
-} // prop
-} // pv
+public:
+    DsoMeasure(QWidget *parent, boost::shared_ptr<pv::view::DsoSignal> dsoSig);
+
+private slots:
+    void set_measure(bool en);
+
+protected:
+	void accept();
+    void reject();
+
+private:
+    boost::shared_ptr<pv::view::DsoSignal> _dsoSig;
+
+    QVBoxLayout _layout;
+    QDialogButtonBox _button_box;
+};
+
+} // namespace dialogs
+} // namespace pv
+
+#endif // DSVIEW_PV_DSOMEASURE_H

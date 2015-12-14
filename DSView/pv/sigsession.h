@@ -117,12 +117,10 @@ public:
     void set_file(QString name)
         throw(QString);
 
-    void save_file(const QString name);
+    void save_file(const QString name, int type);
 
     void set_default_device(boost::function<void (const QString)> error_handler);
     void export_file(const QString name, QWidget* parent, const QString ext);
-
-    void set_default_device();
 
     void release_device(device::DevInst *dev_inst);
 
@@ -170,8 +168,6 @@ public:
     void stop_hotplug_proc();
 	void register_hotplug_callback();
     void deregister_hotplug_callback();
-
-    void set_adv_trigger(bool adv_trigger);
 
     uint16_t get_ch_num(int type);
     
@@ -251,14 +247,12 @@ private:
     boost::shared_ptr<data::GroupSnapshot> _cur_group_snapshot;
     int _group_cnt;
 
-	std::auto_ptr<boost::thread> _sampling_thread;
+	std::unique_ptr<boost::thread> _sampling_thread;
 
 	libusb_hotplug_callback_handle _hotplug_handle;
-    std::auto_ptr<boost::thread> _hotplug;
+    std::unique_ptr<boost::thread> _hotplug;
     bool _hot_attach;
     bool _hot_detach;
-
-    bool _adv_trigger;
 
     QTimer _view_timer;
     QTimer _refresh_timer;

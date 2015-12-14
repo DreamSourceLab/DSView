@@ -92,9 +92,7 @@ SigSession::SigSession(DeviceManager &device_manager) :
 	_session = this;
     _hot_attach = false;
     _hot_detach = false;
-    _adv_trigger = false;
     _group_cnt = 0;
-    ds_trigger_init();
 	register_hotplug_callback();
     _view_timer.stop();
     _view_timer.setSingleShot(true);
@@ -177,19 +175,45 @@ void SigSession::set_file(QString name) throw(QString)
     }
 }
 
-void SigSession::save_file(const QString name){
-    const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
-        _logic_data->get_snapshots();
-    if (snapshots.empty())
-        return;
-
-    const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
-        snapshots.front();
+void SigSession::save_file(const QString name, int type){
+    unsigned char* data;
+    int unit_size;
+    uint64_t sample_count;
+    if (type == ANALOG) {
+        const deque< boost::shared_ptr<pv::data::AnalogSnapshot> > &snapshots =
+            _analog_data->get_snapshots();
+        if (snapshots.empty())
+            return;
+        const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot =
+            snapshots.front();
+        data = (unsigned char*)snapshot->get_data();
+        unit_size = snapshot->unit_size();
+        sample_count = snapshot->get_sample_count();
+    } else if (type == DSO) {
+        const deque< boost::shared_ptr<pv::data::DsoSnapshot> > &snapshots =
+            _dso_data->get_snapshots();
+        if (snapshots.empty())
+            return;
+        const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
+            snapshots.front();
+        data = (unsigned char*)snapshot->get_data();
+        // snapshot->unit_size() is not valid for dso, replaced by enabled channel number
+        unit_size = get_ch_num(SR_CHANNEL_DSO);
+        sample_count = snapshot->get_sample_count();
+    } else {
+        const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
+            _logic_data->get_snapshots();
+        if (snapshots.empty())
+            return;
+        const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
+            snapshots.front();
+        data = (unsigned char*)snapshot->get_data();
+        unit_size = snapshot->unit_size();
+        sample_count = snapshot->get_sample_count();
+    }
 
     sr_session_save(name.toLocal8Bit().data(), _dev_inst->dev_inst(),
-                    (unsigned char*)snapshot->get_data(),
-                    snapshot->unit_size(),
-                    snapshot->get_sample_count());
+                    data, unit_size, sample_count);
 }
 
 QList<QString> SigSession::getSuportedExportFormats(){
@@ -205,7 +229,7 @@ QList<QString> SigSession::getSuportedExportFormats(){
         format.append((*supportedModules)->id);
         format.append(")");
         list.append(format);
-        *supportedModules++;
+        supportedModules++;
     }
     return list;
 }
@@ -245,7 +269,7 @@ void SigSession::export_file(const QString name, QWidget* parent, const QString 
             outModule = *supportedModules;
             break;
         }
-        *supportedModules++;
+        supportedModules++;
     }
     if(outModule == NULL)
         return;
@@ -283,8 +307,8 @@ void SigSession::export_file(const QString name, QWidget* parent, const QString 
             unsigned char* datat = (unsigned char*)snapshot->get_data();
             unsigned int numsamples = snapshot->get_sample_count()*snapshot->unit_size();
             GString *data_out;
-            int usize = 8192;
-            int size = usize;
+            unsigned int usize = 8192;
+            unsigned int size = usize;
             struct sr_datafeed_logic lp;
             struct sr_datafeed_packet p;
             for(uint64_t i = 0; i < numsamples; i+=usize){
@@ -311,8 +335,8 @@ void SigSession::export_file(const QString name, QWidget* parent, const QString 
             unsigned char* datat = (unsigned char*)snapshot->get_data();
             unsigned int numsamples = snapshot->get_sample_count();
             GString *data_out;
-            int usize = 8192;
-            int size = usize;
+            unsigned int usize = 8192;
+            unsigned int size = usize;
             struct sr_datafeed_dso dp;
             struct sr_datafeed_packet p;
             for(uint64_t i = 0; i < numsamples; i+=usize){
@@ -365,8 +389,8 @@ void SigSession::set_default_device(boost::function<void (const QString)> error_
         // Try and find the DreamSourceLab device and select that by default
         BOOST_FOREACH (boost::shared_ptr<pv::device::DevInst> dev, devices)
             if (dev->dev_inst() &&
-                strcmp(dev->dev_inst()->driver->name,
-                "demo") != 0) {
+                strncmp(dev->dev_inst()->driver->name,
+                "virtual", 7) != 0) {
                 default_device = dev;
                 break;
             }
@@ -423,7 +447,10 @@ void SigSession::start_capture(bool instant,
 	}
 
     // update setting
-    _instant = instant;
+    if (strcmp(_dev_inst->dev_inst()->driver->name, "virtual-session"))
+        _instant = instant;
+    else
+        _instant = true;
     if (~_instant)
         _view_timer.blockSignals(false);
 
@@ -436,6 +463,7 @@ void SigSession::start_capture(bool instant,
 
 void SigSession::stop_capture()
 {
+    _instant = false;
     if (get_capture_state() != Running)
 		return;
 	sr_session_stop();
@@ -467,6 +495,7 @@ set< boost::shared_ptr<data::SignalData> > SigSession::get_data() const
         assert(sig);
         data.insert(sig->data());
     }
+    data.insert(_group_data);
 
     return data;
 }
@@ -531,25 +560,6 @@ void SigSession::sample_thread_proc(boost::shared_ptr<device::DevInst> dev_inst,
     assert(dev_inst);
     assert(dev_inst->dev_inst());
     assert(error_handler);
-
-    if (_instant) {
-        /* disable trigger under instant mode */
-        ds_trigger_set_en(false);
-    } else if (!_adv_trigger) {
-        /* simple trigger check trigger_enable */
-        ds_trigger_set_en(false);
-        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
-        {
-            assert(s);
-            if (s->get_trig() != 0) {
-                ds_trigger_set_en(true);
-                s->set_trig(s->get_trig());
-            }
-        }
-    } else {
-        /* advanced trigger check trigger_enable */
-        ds_trigger_set_en(true);
-    }
 
     try {
         dev_inst->start();
@@ -623,16 +633,18 @@ void SigSession::add_group()
         _group_traces.push_back(signal);
         _group_cnt++;
 
-        if (_capture_state == Stopped) {
-            if (!_cur_group_snapshot)
-            {
+        const deque< boost::shared_ptr<data::LogicSnapshot> > &snapshots =
+            _logic_data->get_snapshots();
+        if (!snapshots.empty()) {
+            //if (!_cur_group_snapshot)
+            //{
                 // Create a new data snapshot
                 _cur_group_snapshot = boost::shared_ptr<data::GroupSnapshot>(
-                            new data::GroupSnapshot(_logic_data->get_snapshots().front(), signal->get_index_list()));
+                            new data::GroupSnapshot(snapshots.front(), signal->get_index_list()));
                 //_cur_group_snapshot->append_payload();
                 _group_data->push_snapshot(_cur_group_snapshot);
                 _cur_group_snapshot.reset();
-            }
+            //}
         }
 
         signals_changed();
@@ -719,10 +731,6 @@ void SigSession::init_signals()
         if (logic_probe_count != 0) {
             _logic_data.reset(new data::Logic());
             assert(_logic_data);
-
-            _group_data.reset(new data::Group());
-            assert(_group_data);
-            _group_cnt = 0;
         }
 
         if (dso_probe_count != 0) {
@@ -734,10 +742,17 @@ void SigSession::init_signals()
             _analog_data.reset(new data::Analog());
             assert(_analog_data);
         }
+
+        _group_data.reset(new data::Group());
+        assert(_group_data);
+        _group_cnt = 0;
     }
 
     // Make the logic probe list
     {
+        _group_traces.clear();
+        vector< boost::shared_ptr<view::GroupSignal> >().swap(_group_traces);
+
         for (const GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next) {
             const sr_channel *const probe =
                 (const sr_channel *)l->data;
@@ -793,12 +808,22 @@ void SigSession::reload()
             signal.reset();
             switch(probe->type) {
             case SR_CHANNEL_LOGIC:
-                if (probe->enabled && probe->index < _signals.size())
-                    signal = boost::shared_ptr<view::Signal>(
-                        new view::LogicSignal(*_signals[probe->index].get(), _logic_data, probe));
-                else if (probe->enabled)
-                    signal = boost::shared_ptr<view::Signal>(
-                        new view::LogicSignal(_dev_inst, _logic_data, probe));
+                if (probe->enabled) {
+                    std::vector< boost::shared_ptr<view::Signal> >::iterator i = _signals.begin();
+                    while (i != _signals.end()) {
+                        if ((*i)->get_index() == probe->index) {
+                            boost::shared_ptr<view::LogicSignal> logicSig;
+                            if (logicSig = dynamic_pointer_cast<view::LogicSignal>(*i))
+                                signal = boost::shared_ptr<view::Signal>(
+                                    new view::LogicSignal(logicSig, _logic_data, probe));
+                            break;
+                        }
+                        i++;
+                    }
+                    if (!signal.get())
+                        signal = boost::shared_ptr<view::Signal>(
+                            new view::LogicSignal(_dev_inst, _logic_data, probe));
+                }
                 break;
 
             case SR_CHANNEL_DSO:
@@ -838,8 +863,10 @@ void SigSession::refresh(int holdtime)
         _analog_data->clear();
         _cur_analog_snapshot.reset();
     }
-    _data_lock = true;
-    _refresh_timer.start(holdtime);
+    if (strncmp(_dev_inst->dev_inst()->driver->name, "virtual", 7)) {
+        _data_lock = true;
+        _refresh_timer.start(holdtime);
+    }
     data_updated();
 }
 
@@ -1056,13 +1083,16 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
 	{
 		{
             boost::lock_guard<boost::mutex> lock(_data_mutex);
-            BOOST_FOREACH(const boost::shared_ptr<view::GroupSignal> g, _group_traces)
-            {
-                assert(g);
+            if (_cur_logic_snapshot) {
+                BOOST_FOREACH(const boost::shared_ptr<view::GroupSignal> g, _group_traces)
+                {
+                    assert(g);
 
-                _cur_group_snapshot = boost::shared_ptr<data::GroupSnapshot>(
-                            new data::GroupSnapshot(_logic_data->get_snapshots().front(), g->get_index_list()));
-                _group_data->push_snapshot(_cur_group_snapshot);
+                    _cur_group_snapshot = boost::shared_ptr<data::GroupSnapshot>(
+                                new data::GroupSnapshot(_logic_data->get_snapshots().front(), g->get_index_list()));
+                    _group_data->push_snapshot(_cur_group_snapshot);
+                    _cur_group_snapshot.reset();
+                }
             }
             _cur_logic_snapshot.reset();
             _cur_dso_snapshot.reset();
@@ -1185,15 +1215,6 @@ void SigSession::stop_hotplug_proc()
     }
     _hotplug.reset();
 }
-
-/*
- * Tigger
- */
-void SigSession::set_adv_trigger(bool adv_trigger)
-{
-    _adv_trigger = adv_trigger;
-}
-
 
 uint16_t SigSession::get_ch_num(int type)
 {

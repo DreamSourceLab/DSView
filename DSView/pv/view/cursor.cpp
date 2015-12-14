@@ -151,7 +151,8 @@ void Cursor::paint_fix_label(QPainter &p, const QRect &rect,
 
 void Cursor::compute_text_size(QPainter &p, unsigned int prefix)
 {
-	_text_size = p.boundingRect(QRectF(), 0,
+    (void)prefix;
+    _text_size = p.boundingRect(QRectF(), 0,
         Ruler::format_real_time(_index, _view.session().get_device()->get_sample_rate())).size();
 }
 

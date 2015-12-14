@@ -136,6 +136,18 @@ DecodeTrace::DecodeTrace(pv::SigSession &session,
 		this, SLOT(on_show_hide_decoder(int)));
 }
 
+DecodeTrace::~DecodeTrace()
+{
+    if (_popup_form)
+        delete _popup_form;
+    if (_popup)
+        delete _popup;
+    _cur_row_headings.clear();
+    _decoder_forms.clear();
+    _probe_selectors.clear();
+    _bindings.clear();
+}
+
 bool DecodeTrace::enabled() const
 {
 	return true;
@@ -698,8 +710,10 @@ QComboBox* DecodeTrace::create_probe_selector(
 		{
 			selector->addItem(s->get_name(),
 				qVariantFromValue((void*)s.get()));
-			if ((*probe_iter).second == s)
-				selector->setCurrentIndex(i + 1);
+            if (probe_iter != dec->channels().end()) {
+                if ((*probe_iter).second->get_index() == s->get_index())
+                    selector->setCurrentIndex(i + 1);
+            }
 		}
 	}
 
@@ -809,13 +823,12 @@ int DecodeTrace::rows_size()
     return _decoder_stack->cur_rows_size();
 }
 
-void DecodeTrace::paint_type_options(QPainter &p, int right, bool hover, int action)
+void DecodeTrace::paint_type_options(QPainter &p, int right, const QPoint pt)
 {
-    (void)hover;
-    (void)action;
+    (void)pt;
 
     int y = get_y();
-    const QRectF group_index_rect = get_rect("groupIndex", y, right);
+    const QRectF group_index_rect = get_rect(CHNLREG, y, right);
     QString index_string;
     int last_index;
     p.setPen(Qt::transparent);
@@ -835,6 +848,19 @@ void DecodeTrace::paint_type_options(QPainter &p, int right, bool hover, int act
     }
     p.setPen(Qt::white);
     p.drawText(group_index_rect, Qt::AlignRight | Qt::AlignVCenter, index_string);
+}
+
+QRectF DecodeTrace::get_rect(DecodeSetRegions type, int y, int right)
+{
+    const QSizeF name_size(right - get_leftWidth() - get_rightWidth(), SquareWidth);
+
+    if (type == CHNLREG)
+        return QRectF(
+            get_leftWidth() + name_size.width() + Margin,
+            y - SquareWidth / 2,
+            SquareWidth * SquareNum, SquareWidth);
+    else
+        return QRectF(0, 0, 0, 0);
 }
 
 } // namespace view
