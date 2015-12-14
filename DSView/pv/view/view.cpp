@@ -227,10 +227,8 @@ void View::zoom(double steps, int offset)
             }
         }
 
-        if (_session.get_device()->dev_inst()->mode != DSO) {
-            _offset = cursor_offset - _scale * offset;
-            _offset = max(min(_offset, get_max_offset()), get_min_offset());
-        }
+        _offset = cursor_offset - _scale * offset;
+        _offset = max(min(_offset, get_max_offset()), get_min_offset());
 
         if (_scale != _preScale || _offset != _preOffset) {
             _header->update();

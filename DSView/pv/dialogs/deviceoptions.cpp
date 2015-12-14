@@ -72,7 +72,7 @@ DeviceOptions::DeviceOptions(QWidget *parent, boost::shared_ptr<pv::device::DevI
 
     GVariant* gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_OPERATION_MODE);
     if (gvar != NULL) {
-        _mode = g_variant_get_string(gvar, NULL);
+        _mode = QString::fromUtf8(g_variant_get_string(gvar, NULL));
         g_variant_unref(gvar);
     }
     connect(&_mode_check, SIGNAL(timeout()), this, SLOT(mode_check()));
@@ -124,7 +124,7 @@ QWidget* DeviceOptions::get_property_form()
 	{
 		assert(p);
         const QString label = p->labeled_widget() ? QString() : p->name();
-        if (label == "Operation Mode")
+        if (label == tr("Operation Mode"))
             layout->addRow(label, p->get_widget(form, true));
         else
             layout->addRow(label, p->get_widget(form));
@@ -159,7 +159,7 @@ void DeviceOptions::setup_probes()
             const char **const options = g_variant_get_strv(gvar_opts, &num_opts);
             GVariant* gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_CHANNEL_MODE);
             if (gvar != NULL) {
-                ch_mode = g_variant_get_string(gvar, NULL);
+                ch_mode = QString::fromUtf8(g_variant_get_string(gvar, NULL));
                 g_variant_unref(gvar);
 
                 for (unsigned int i=0; i<num_opts; i++){
@@ -167,7 +167,7 @@ void DeviceOptions::setup_probes()
                     _probes_box_layout.addWidget(ch_opts, row0, col, 1, 8);
                     connect(ch_opts, SIGNAL(pressed()), this, SLOT(channel_check()));
                     row0++;
-                    if (QString::fromLocal8Bit(options[i]) == ch_mode)
+                    if (QString::fromUtf8(options[i]) == ch_mode)
                         ch_opts->setChecked(true);
                 }
             }
@@ -247,7 +247,7 @@ void DeviceOptions::mode_check()
     QString mode;
     GVariant* gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_OPERATION_MODE);
     if (gvar != NULL) {
-        mode = g_variant_get_string(gvar, NULL);
+        mode = QString::fromUtf8(g_variant_get_string(gvar, NULL));
         g_variant_unref(gvar);
 
         if (mode != _mode) {
@@ -276,7 +276,7 @@ void DeviceOptions::channel_check()
 {
     QRadioButton* sc=dynamic_cast<QRadioButton*>(sender());
     if(sc != NULL)
-        _dev_inst->set_config(NULL, NULL, SR_CONF_CHANNEL_MODE, g_variant_new_string(sc->text().toLocal8Bit()));
+        _dev_inst->set_config(NULL, NULL, SR_CONF_CHANNEL_MODE, g_variant_new_string(sc->text().toUtf8().data()));
     setup_probes();
 }
 

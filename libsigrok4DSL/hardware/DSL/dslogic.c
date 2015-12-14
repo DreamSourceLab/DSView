@@ -347,6 +347,12 @@ static int fpga_setting(const struct sr_dev_inst *sdi)
     if (channel_en_cnt == 0)
         channel_en_cnt = 1;
 
+    devc->rle_mode = FALSE;
+    if (sdi->mode == LOGIC &&
+        !devc->stream &&
+        devc->limit_samples > DSLOGIC_MAX_LOGIC_DEPTH*ceil(devc->cur_samplerate * 1.0 / DSLOGIC_MAX_LOGIC_SAMPLERATE))
+        devc->rle_mode = TRUE;
+
     //setting.mode = (test_mode ? 0x8000 : 0x0000) + trigger->trigger_en + (sdi->mode << 4);
     setting.mode = ((devc->op_mode == SR_OP_INTERNAL_TEST) << 15) +
                    ((devc->op_mode == SR_OP_EXTERNAL_TEST) << 14) +
@@ -1435,12 +1441,6 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 0, SR_CONF_SAMPLERATE));
         } else {
             devc->sample_wide = (devc->cur_samplerate <= DSLOGIC_MAX_LOGIC_SAMPLERATE);
-            if (!devc->stream) {
-                if (devc->limit_samples > DSLOGIC_MAX_LOGIC_DEPTH*ceil(devc->cur_samplerate * 1.0 / DSLOGIC_MAX_LOGIC_SAMPLERATE))
-                    devc->rle_mode = TRUE;
-                else
-                    devc->rle_mode = FALSE;
-            }
             ret = SR_OK;
         }
     } else if (id == SR_CONF_CLOCK_TYPE) {
@@ -1471,14 +1471,6 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         ret = SR_OK;
 	} else if (id == SR_CONF_LIMIT_SAMPLES) {
 		devc->limit_samples = g_variant_get_uint64(data);
-        if(sdi->mode == LOGIC) {
-            if (!devc->stream) {
-                if (devc->limit_samples > DSLOGIC_MAX_LOGIC_DEPTH*ceil(devc->cur_samplerate * 1.0 / DSLOGIC_MAX_LOGIC_SAMPLERATE))
-                    devc->rle_mode = TRUE;
-                else
-                    devc->rle_mode = FALSE;
-            }
-        }
         ret = SR_OK;
     } else if (id == SR_CONF_DEVICE_MODE) {
         sdi->mode = g_variant_get_int16(data);
@@ -1594,7 +1586,6 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             } else if (!strcmp(stropt, opmodes[SR_OP_STREAM]) && (devc->op_mode != SR_OP_STREAM)) {
                 devc->op_mode = SR_OP_STREAM;
                 devc->stream = TRUE;
-                devc->rle_mode = FALSE;
                 devc->ch_mode = 0;
                 devc->samplerates_size = 10;
                 adjust_probes(sdi, stream_ch_num[0]);
