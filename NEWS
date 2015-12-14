@@ -1,3 +1,26 @@
+0.95 (2015-12-14)
+-----------------
+ --for logic analyzer
+ *add RLE compress mode
+ *improve mode setting strategy, fix channel number
+ *add edge count function
+ *fix memory leakage when run protocol decoder
+ *add signal height setting, improve display issue
+ *fix crash issue when add group signal
+ *fix channel enable/disable issue
+ *fix channel display issue when load file input
+ *add cursor by mouse double-click
+ *fix other issues
+
+ --for oscilloscope
+ *add file export/load function
+ *fix wait time issue when trigger setted
+ *improve display of signal measure
+ *add Vrms/Vmean/Vp-p measure
+ *fix setting issue when load session
+ *imporve add/del of measure ruler
+ *fix other issues
+
 0.94 (2015-06-29)
 -----------------
  * add session load/store function
