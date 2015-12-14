@@ -140,7 +140,6 @@ void Header::mouseDoubleClickEvent(QMouseEvent *event)
 
     const vector< boost::shared_ptr<Trace> > traces(
         _view.get_traces());
-    int action;
 
     if (event->button() & Qt::LeftButton) {
         _mouse_down_point = event->pos();
