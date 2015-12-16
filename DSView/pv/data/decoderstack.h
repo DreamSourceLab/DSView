@@ -148,7 +148,7 @@ private:
 	pv::SigSession &_session;
 
 	/**
-	 * This mutex prevents more than one decode operation occuring
+	 * This mutex prevents more than one decode operation occurring
 	 * concurrently.
 	 * @todo A proper solution should be implemented to allow multiple
 	 * decode operations.
