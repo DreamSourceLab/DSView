@@ -84,8 +84,8 @@ public:
 
     void enable_envelope(bool enable);
 
-    double cal_vrms(double zero_off, int index) const;
-    double cal_vmean(int index) const;
+    double cal_vrms(double zero_off, unsigned int index) const;
+    double cal_vmean(unsigned int index) const;
 
 private:
 	void reallocate_envelope(Envelope &l);
