@@ -237,9 +237,8 @@ void DsoSnapshot::append_payload_to_envelope_levels(bool header)
     _envelope_done = true;
 }
 
-double DsoSnapshot::cal_vrms(double zero_off, int index) const
+double DsoSnapshot::cal_vrms(double zero_off, unsigned int index) const
 {
-    assert(index >= 0);
     assert(index < _channel_num);
 
     // root-meam-squart value
@@ -272,9 +271,8 @@ double DsoSnapshot::cal_vrms(double zero_off, int index) const
     return vrms;
 }
 
-double DsoSnapshot::cal_vmean(int index) const
+double DsoSnapshot::cal_vmean(unsigned int index) const
 {
-    assert(index >= 0);
     assert(index < _channel_num);
 
     // mean value

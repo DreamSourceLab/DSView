@@ -105,7 +105,7 @@ void ProtocolDock::paintEvent(QPaintEvent *)
 {
      QStyleOption opt;
      opt.init(this);
-     QPainter p(this);
+     QPainter p(this->viewport());
      style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 }
 
