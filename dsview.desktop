@@ -1,0 +1,9 @@
+[Desktop Entry]
+Exec=DSView
+Name=DSView
+GenericName=Logic Analyzer
+Comment=DreamStudio Logic Analyzer
+Icon=dsview
+Type=Application
+Terminal=false
+Categories=Development
