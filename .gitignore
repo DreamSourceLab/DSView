@@ -8,6 +8,7 @@
 *.lo
 CMakeFiles
 CMakeCache.txt
+*.cxx_parameters
 autom4te.cache
 *.cmake
 !cmake_modules
