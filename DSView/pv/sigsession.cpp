@@ -608,6 +608,13 @@ void SigSession::read_sample_rate(const sr_dev_inst *const sdi)
 
 void SigSession::feed_in_header(const sr_dev_inst *sdi)
 {
+#ifdef ENABLE_DECODE
+    for (vector< boost::shared_ptr<view::DecodeTrace> >::iterator i =
+        _decode_traces.begin();
+        i != _decode_traces.end();
+        i++)
+        (*i)->decoder()->stop_decode();
+#endif
     read_sample_rate(sdi);
     //receive_data(0);
 }
@@ -1098,13 +1105,7 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
             _cur_dso_snapshot.reset();
             _cur_analog_snapshot.reset();
 		}
-#ifdef ENABLE_DECODE
-        for (vector< boost::shared_ptr<view::DecodeTrace> >::iterator i =
-            _decode_traces.begin();
-            i != _decode_traces.end();
-            i++)
-            (*i)->decoder()->stop_decode();
-#endif
+
         frame_ended();
 		break;
 	}

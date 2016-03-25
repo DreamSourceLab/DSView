@@ -103,10 +103,10 @@ int ProtocolDock::decoder_name_cmp(const void *a, const void *b)
 
 void ProtocolDock::paintEvent(QPaintEvent *)
 {
-     QStyleOption opt;
-     opt.init(this);
-     QPainter p(this);
-     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
+     //QStyleOption opt;
+     //opt.init(this);
+     //QPainter p(this);
+     //style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 }
 
 void ProtocolDock::add_protocol()

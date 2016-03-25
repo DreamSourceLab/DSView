@@ -213,6 +213,8 @@ void DecoderStack::clear()
 
 void DecoderStack::stop_decode()
 {
+    _snapshot.reset();
+
     if(_decode_state == Stopped)
         return;
 
