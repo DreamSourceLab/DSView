@@ -333,43 +333,83 @@ boost::optional<uint64_t> DecoderStack::wait_for_data() const
 		_sample_count);
 }
 
+//void DecoderStack::decode_data(
+//    const uint64_t sample_count, const unsigned int unit_size,
+//	srd_session *const session)
+//{
+//    //uint8_t chunk[DecodeChunkLength];
+//    uint8_t *chunk = NULL;
+//    //chunk = (uint8_t *)realloc(chunk, DecodeChunkLength);
+
+//    const uint64_t chunk_sample_count =
+//		DecodeChunkLength / _snapshot->unit_size();
+
+//    for (uint64_t i = 0;
+//		!boost::this_thread::interruption_requested() &&
+//			i < sample_count;
+//		i += chunk_sample_count)
+//	{
+//        //lock_guard<mutex> decode_lock(_global_decode_mutex);
+
+//        const uint64_t chunk_end = min(
+//			i + chunk_sample_count, sample_count);
+//        chunk = _snapshot->get_samples(i, chunk_end);
+
+//		if (srd_session_send(session, i, i + sample_count, chunk,
+//                (chunk_end - i) * unit_size, unit_size) != SRD_OK) {
+//			_error_message = tr("Decoder reported an error");
+//			break;
+//		}
+
+//		{
+//			lock_guard<mutex> lock(_output_mutex);
+//			_samples_decoded = chunk_end;
+//		}
+
+//        if (i % DecodeNotifyPeriod == 0)
+//            new_decode_data();
+
+//	}
+//    _options_changed = false;
+//    decode_done();
+//    //new_decode_data();
+//}
+
 void DecoderStack::decode_data(
-    const uint64_t sample_count, const unsigned int unit_size,
-	srd_session *const session)
+    const uint64_t decode_start, const uint64_t decode_end,
+    const unsigned int unit_size, srd_session *const session)
 {
-    //uint8_t chunk[DecodeChunkLength];
     uint8_t *chunk = NULL;
-    //chunk = (uint8_t *)realloc(chunk, DecodeChunkLength);
 
     const uint64_t chunk_sample_count =
-		DecodeChunkLength / _snapshot->unit_size();
+        DecodeChunkLength / _snapshot->unit_size();
 
-    for (uint64_t i = 0;
-		!boost::this_thread::interruption_requested() &&
-			i < sample_count;
-		i += chunk_sample_count)
-	{
+    for (uint64_t i = decode_start;
+        !boost::this_thread::interruption_requested() &&
+            i < decode_end;
+        i += chunk_sample_count)
+    {
         //lock_guard<mutex> decode_lock(_global_decode_mutex);
 
         const uint64_t chunk_end = min(
-			i + chunk_sample_count, sample_count);
+            i + chunk_sample_count, decode_end);
         chunk = _snapshot->get_samples(i, chunk_end);
 
-		if (srd_session_send(session, i, i + sample_count, chunk,
+        if (srd_session_send(session, i, chunk_end, chunk,
                 (chunk_end - i) * unit_size, unit_size) != SRD_OK) {
-			_error_message = tr("Decoder reported an error");
-			break;
-		}
+            _error_message = tr("Decoder reported an error");
+            break;
+        }
 
-		{
-			lock_guard<mutex> lock(_output_mutex);
-			_samples_decoded = chunk_end;
-		}
+        {
+            lock_guard<mutex> lock(_output_mutex);
+            _samples_decoded = chunk_end - decode_start + 1;
+        }
 
         if (i % DecodeNotifyPeriod == 0)
             new_decode_data();
 
-	}
+    }
     _options_changed = false;
     decode_done();
     //new_decode_data();
@@ -382,6 +422,8 @@ void DecoderStack::decode_proc()
     optional<uint64_t> sample_count;
 	srd_session *session;
 	srd_decoder_inst *prev_di = NULL;
+    uint64_t decode_start;
+    uint64_t decode_end;
 
 	assert(_snapshot);
 
@@ -409,6 +451,8 @@ void DecoderStack::decode_proc()
 			srd_inst_stack (session, prev_di, di);
 
 		prev_di = di;
+        decode_start = dec->decode_start();
+        decode_end = min(dec->decode_end(), _snapshot->get_sample_count());
 	}
 
 	// Get the intial sample count
@@ -429,7 +473,8 @@ void DecoderStack::decode_proc()
 //	do {
 //		decode_data(*sample_count, unit_size, session);
 //	} while(_error_message.isEmpty() && (sample_count = wait_for_data()));
-    decode_data(*sample_count, unit_size, session);
+    //decode_data(*sample_count, unit_size, session);
+    decode_data(decode_start, decode_end, unit_size, session);
 
 	// Destroy the session
 	srd_session_destroy(session);
@@ -439,7 +484,10 @@ void DecoderStack::decode_proc()
 
 uint64_t DecoderStack::sample_count() const
 {
-    return _sample_count;
+    if (_snapshot)
+        return _snapshot->get_sample_count();
+    else
+        return 0;
 }
 
 void DecoderStack::annotation_callback(srd_proto_data *pdata, void *decoder)

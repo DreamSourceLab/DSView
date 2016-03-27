@@ -50,14 +50,10 @@ extern "C" {
 #include "../widgets/decodergroupbox.h"
 #include "../widgets/decodermenu.h"
 #include "../device/devinst.h"
+#include "../view/cursor.h"
 
-using boost::dynamic_pointer_cast;
-using boost::shared_ptr;
-using std::list;
-using std::max;
-using std::map;
-using std::min;
-using std::vector;
+using namespace boost;
+using namespace std;
 
 namespace pv {
 namespace view {
@@ -114,12 +110,21 @@ const QColor DecodeTrace::OutlineColours[16] = {
 	QColor(0x6B, 0x23, 0x37)
 };
 
+const QString DecodeTrace::RegionStart = "Start";
+const QString DecodeTrace::RegionEnd = "End  ";
+
 DecodeTrace::DecodeTrace(pv::SigSession &session,
 	boost::shared_ptr<pv::data::DecoderStack> decoder_stack, int index) :
 	Trace(QString::fromUtf8(
         decoder_stack->stack().front()->decoder()->name), index, SR_CHANNEL_DECODER),
 	_session(session),
 	_decoder_stack(decoder_stack),
+    _decode_start(0),
+    _decode_end(INT64_MAX),
+    _start_index(0),
+    _end_index(0),
+    _start_count(0),
+    _end_count(0),
     _show_hide_mapper(this),
     _popup_form(NULL),
     _popup()
@@ -169,8 +174,31 @@ void DecodeTrace::paint_back(QPainter &p, int left, int right)
     QPen pen(Signal::dsGray);
     pen.setStyle(Qt::DotLine);
     p.setPen(pen);
-    const double sigY = get_y() - (_signalHeight - _view->get_signalHeight())*0.5;
+    const double sigY = get_y() - (_totalHeight - _view->get_signalHeight())*0.5;
     p.drawLine(left, sigY, right, sigY);
+
+    // --draw decode region control
+    const double samples_per_pixel = _session.get_device()->get_sample_rate() * _view->scale();
+    const double startX = _decode_start/samples_per_pixel - (_view->offset() / _view->scale());
+    const double endX = _decode_end/samples_per_pixel - (_view->offset() / _view->scale());
+    const double regionY = get_y() - _totalHeight*0.5 - ControlRectWidth;
+
+    p.setBrush(Signal::dsBlue);
+    p.drawLine(startX, regionY, startX, regionY + _totalHeight + ControlRectWidth);
+    p.drawLine(endX, regionY, endX, regionY + _totalHeight + ControlRectWidth);
+    const QPointF start_points[] = {
+        QPointF(startX-ControlRectWidth, regionY),
+        QPointF(startX+ControlRectWidth, regionY),
+        QPointF(startX, regionY+ControlRectWidth)
+    };
+    const QPointF end_points[] = {
+        QPointF(endX-ControlRectWidth, regionY),
+        QPointF(endX+ControlRectWidth, regionY),
+        QPointF(endX, regionY+ControlRectWidth)
+    };
+    p.drawPolygon(start_points, countof(start_points));
+    p.drawPolygon(end_points, countof(end_points));
+
 }
 
 void DecodeTrace::paint_mid(QPainter &p, int left, int right)
@@ -203,22 +231,24 @@ void DecodeTrace::paint_mid(QPainter &p, int left, int right)
 	const QString err = _decoder_stack->error_message();
 	if (!err.isEmpty())
 	{
-        //draw_unresolved_period(p, _view->get_signalHeight(), left, right,
+        //draw_unresolved_period(p, annotation_height, left, right,
         //	samples_per_pixel, pixels_offset);
 		draw_error(p, err, left, right);
 		return;
 	}
 
     // Draw the hatching
-    if (draw_unresolved_period(p, _view->get_signalHeight(), left, right))
+    if (draw_unresolved_period(p, annotation_height, left, right))
         return;
 
 	// Iterate through the rows
 	assert(_view);
-    int y =  get_y() - (_signalHeight - _view->get_signalHeight())*0.5;
+    int y =  get_y() - (_totalHeight - annotation_height)*0.5;
 
 	assert(_decoder_stack);
 
+    const double decode_startX = _decode_start/samples_per_pixel - (_view->offset() / _view->scale());
+    const double decode_endX = _decode_end/samples_per_pixel - (_view->offset() / _view->scale());
     const std::vector< std::pair<Row, bool> > rows(_decoder_stack->get_visible_rows());
     for (size_t i = 0; i < rows.size(); i++)
     {
@@ -226,8 +256,8 @@ void DecodeTrace::paint_mid(QPainter &p, int left, int right)
         const bool shown = rows[i].second;
 
         if (!shown && _decoder_stack->has_annotations(row)) {
-            draw_unshown_row(p, y, _view->get_signalHeight(), left, right);
-            y += _view->get_signalHeight();
+            draw_unshown_row(p, y, annotation_height, decode_startX, decode_endX);
+            y += annotation_height;
             _cur_row_headings.push_back(row.title());
             continue;
         }
@@ -253,10 +283,10 @@ void DecodeTrace::paint_mid(QPainter &p, int left, int right)
                         base_colour);
             }
         } else if (max_annWidth != 0){
-            draw_nodetail(p, annotation_height, left, right, y, base_colour);
+            draw_nodetail(p, annotation_height, decode_startX, decode_endX, y, base_colour);
         }
         if (max_annWidth != 0) {
-            y += _view->get_signalHeight();
+            y += annotation_height;
             _cur_row_headings.push_back(row.title());
         }
 	}
@@ -272,7 +302,7 @@ void DecodeTrace::paint_fore(QPainter &p, int left, int right)
 
 	for (size_t i = 0; i < _cur_row_headings.size(); i++)
 	{
-        const int y = (i + 0.5) * row_height + get_y() - _signalHeight * 0.5;
+        const int y = (i + 0.5) * row_height + get_y() - _totalHeight * 0.5;
 
 		p.setPen(QPen(Qt::NoPen));
 		p.setBrush(QApplication::palette().brush(QPalette::WindowText));
@@ -317,11 +347,13 @@ bool DecodeTrace::create_popup()
 
     if (QDialog::Accepted == _popup->exec())
     {
-        BOOST_FOREACH(shared_ptr<data::decode::Decoder> dec,
+        BOOST_FOREACH(boost::shared_ptr<data::decode::Decoder> dec,
             _decoder_stack->stack())
         {
             if (dec->commit()) {
                 _decoder_stack->options_changed(true);
+                _decode_start = dec->decode_start();
+                _decode_end = dec->decode_end();
                 ret = true;
             }
         }
@@ -361,7 +393,7 @@ void DecodeTrace::populate_popup_form(QWidget *parent, QFormLayout *form)
 	_probe_selectors.clear();
 	_decoder_forms.clear();
 
-	const list< shared_ptr<Decoder> >& stack = _decoder_stack->stack();
+    const list< boost::shared_ptr<Decoder> >& stack = _decoder_stack->stack();
 
 	if (stack.empty())
 	{
@@ -372,16 +404,50 @@ void DecodeTrace::populate_popup_form(QWidget *parent, QFormLayout *form)
 	}
 	else
 	{
-		list< shared_ptr<Decoder> >::const_iterator iter =
+        list< boost::shared_ptr<Decoder> >::const_iterator iter =
 			stack.begin();
 		for (int i = 0; i < (int)stack.size(); i++, iter++) {
-			shared_ptr<Decoder> dec(*iter);
+            boost::shared_ptr<Decoder> dec(*iter);
 			create_decoder_form(i, dec, parent, form);
 		}
 
 		form->addRow(new QLabel(
 			tr("<i>* Required channels</i>"), parent));
 	}
+
+    // Add region combobox
+    _start_comboBox = new QComboBox(parent);
+    _end_comboBox = new QComboBox(parent);
+    _start_comboBox->addItem(RegionStart);
+    _end_comboBox->addItem(RegionEnd);
+    if (_view) {
+        int index = 1;
+        for(std::list<Cursor*>::iterator i = _view->get_cursorList().begin();
+            i != _view->get_cursorList().end(); i++) {
+            QString curCursor = tr("Cursor ")+QString::number(index);
+            _start_comboBox->addItem(curCursor);
+            _end_comboBox->addItem(curCursor);
+            index++;
+        }
+    }
+    if (_start_count > _start_comboBox->count())
+        _start_index = 0;
+    if (_end_count > _end_comboBox->count())
+        _end_index = 0;
+    _start_count = _start_comboBox->count();
+    _end_count = _end_comboBox->count();
+
+    _start_comboBox->setCurrentIndex(_start_index);
+    _end_comboBox->setCurrentIndex(_end_index);
+    connect(_start_comboBox, SIGNAL(currentIndexChanged(int)),
+        this, SLOT(on_region_set(int)));
+    connect(_end_comboBox, SIGNAL(currentIndexChanged(int)),
+        this, SLOT(on_region_set(int)));
+    on_region_set(_start_index);
+    form->addRow(_start_comboBox, new QLabel(
+                     tr("Decode Start From")));
+    form->addRow(_end_comboBox, new QLabel(
+                     tr("Decode End to")));
 
 	// Add stacking button
 	pv::widgets::DecoderMenu *const decoder_menu =
@@ -564,16 +630,16 @@ bool DecodeTrace::draw_unresolved_period(QPainter &p, int h, int left,
 
 	assert(_decoder_stack);	
 
-	shared_ptr<Logic> data;
-	shared_ptr<LogicSignal> logic_signal;
+    boost::shared_ptr<Logic> data;
+    boost::shared_ptr<LogicSignal> logic_signal;
 
-    //const int64_t sample_count = _session.get_device()->get_sample_limit();
-    const int64_t sample_count = _decoder_stack->sample_count();
-	if (sample_count == 0)
+    //const int64_t need_sample_count = _decoder_stack->sample_count();
+    const uint64_t need_sample_count = _decode_end - _decode_start + 1;
+    if (need_sample_count == 0)
         return true;
 
-	const int64_t samples_decoded = _decoder_stack->samples_decoded();
-	if (sample_count == samples_decoded)
+    const uint64_t samples_decoded = _decoder_stack->samples_decoded();
+    if (need_sample_count == samples_decoded)
         return false;
 
     const int y = get_y();
@@ -591,7 +657,7 @@ bool DecodeTrace::draw_unresolved_period(QPainter &p, int h, int left,
     p.setBrush(QBrush(NoDecodeColour, Qt::Dense7Pattern));
 	p.drawRect(no_decode_rect);
 
-    const int progress100 = ceil(samples_decoded * 100.0 / sample_count);
+    const int progress100 = ceil(samples_decoded * 100.0 / need_sample_count);
     p.setPen(dsLightBlue);
     QFont font=p.font();
     font.setPointSize(_view->get_signalHeight()*2/3);
@@ -620,7 +686,7 @@ void DecodeTrace::draw_unshown_row(QPainter &p, int y, int h, int left,
 }
 
 void DecodeTrace::create_decoder_form(int index,
-	shared_ptr<data::decode::Decoder> &dec, QWidget *parent,
+    boost::shared_ptr<data::decode::Decoder> &dec, QWidget *parent,
 	QFormLayout *form)
 {
 	const GSList *l;
@@ -672,7 +738,7 @@ void DecodeTrace::create_decoder_form(int index,
 	}
 
 	// Add the options
-	shared_ptr<prop::binding::DecoderOptions> binding(
+    boost::shared_ptr<prop::binding::DecoderOptions> binding(
 		new prop::binding::DecoderOptions(_decoder_stack, dec));
     binding->add_properties_to_form(decoder_form, true);
 
@@ -683,16 +749,16 @@ void DecodeTrace::create_decoder_form(int index,
 }
 
 QComboBox* DecodeTrace::create_probe_selector(
-	QWidget *parent, const shared_ptr<data::decode::Decoder> &dec,
+    QWidget *parent, const boost::shared_ptr<data::decode::Decoder> &dec,
 	const srd_channel *const pdch)
 {
 	assert(dec);
 
-    const vector< shared_ptr<Signal> > sigs(_session.get_signals());
+    const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
 
 	assert(_decoder_stack);
 	const map<const srd_channel*,
-		shared_ptr<LogicSignal> >::const_iterator probe_iter =
+        boost::shared_ptr<LogicSignal> >::const_iterator probe_iter =
 		dec->channels().find(pdch);
 
 	QComboBox *selector = new QComboBox(parent);
@@ -703,7 +769,7 @@ QComboBox* DecodeTrace::create_probe_selector(
 		selector->setCurrentIndex(0);
 
 	for(size_t i = 0; i < sigs.size(); i++) {
-		const shared_ptr<view::Signal> s(sigs[i]);
+        const boost::shared_ptr<view::Signal> s(sigs[i]);
 		assert(s);
 
 		if (dynamic_pointer_cast<LogicSignal>(s) && s->enabled())
@@ -720,12 +786,12 @@ QComboBox* DecodeTrace::create_probe_selector(
 	return selector;
 }
 
-void DecodeTrace::commit_decoder_probes(shared_ptr<data::decode::Decoder> &dec)
+void DecodeTrace::commit_decoder_probes(boost::shared_ptr<data::decode::Decoder> &dec)
 {
 	assert(dec);
 
-	map<const srd_channel*, shared_ptr<LogicSignal> > probe_map;
-    const vector< shared_ptr<Signal> > sigs(_session.get_signals());
+    map<const srd_channel*, boost::shared_ptr<LogicSignal> > probe_map;
+    const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
 
     _index_list.clear();
 	BOOST_FOREACH(const ProbeSelector &s, _probe_selectors)
@@ -737,7 +803,7 @@ void DecodeTrace::commit_decoder_probes(shared_ptr<data::decode::Decoder> &dec)
 			(LogicSignal*)s._combo->itemData(
 				s._combo->currentIndex()).value<void*>();
 
-		BOOST_FOREACH(shared_ptr<Signal> sig, sigs)
+        BOOST_FOREACH(boost::shared_ptr<Signal> sig, sigs)
 			if(sig.get() == selection) {
 				probe_map[s._pdch] =
 					dynamic_pointer_cast<LogicSignal>(sig);
@@ -752,7 +818,7 @@ void DecodeTrace::commit_decoder_probes(shared_ptr<data::decode::Decoder> &dec)
 void DecodeTrace::commit_probes()
 {
 	assert(_decoder_stack);
-	BOOST_FOREACH(shared_ptr<data::decode::Decoder> dec,
+    BOOST_FOREACH(boost::shared_ptr<data::decode::Decoder> dec,
 		_decoder_stack->stack())
 		commit_decoder_probes(dec);
 
@@ -787,7 +853,7 @@ void DecodeTrace::on_stack_decoder(srd_decoder *decoder)
 {
 	assert(decoder);
 	assert(_decoder_stack);
-	_decoder_stack->push(shared_ptr<data::decode::Decoder>(
+    _decoder_stack->push(boost::shared_ptr<data::decode::Decoder>(
 		new data::decode::Decoder(decoder)));
     //_decoder_stack->begin_decode();
 
@@ -798,14 +864,14 @@ void DecodeTrace::on_show_hide_decoder(int index)
 {
 	using pv::data::decode::Decoder;
 
-	const list< shared_ptr<Decoder> > stack(_decoder_stack->stack());
+    const list< boost::shared_ptr<Decoder> > stack(_decoder_stack->stack());
 
 	// Find the decoder in the stack
-	list< shared_ptr<Decoder> >::const_iterator iter = stack.begin();
+    list< boost::shared_ptr<Decoder> >::const_iterator iter = stack.begin();
 	for(int i = 0; i < index; i++, iter++)
 		assert(iter != stack.end());
 
-	shared_ptr<Decoder> dec = *iter;
+    boost::shared_ptr<Decoder> dec = *iter;
 	assert(dec);
 
 	const bool show = !dec->shown();
@@ -861,6 +927,63 @@ QRectF DecodeTrace::get_rect(DecodeSetRegions type, int y, int right)
             SquareWidth * SquareNum, SquareWidth);
     else
         return QRectF(0, 0, 0, 0);
+}
+
+void DecodeTrace::on_region_set(int index)
+{
+    (void)index;
+    const uint64_t last_samples = _session.get_device()->get_sample_limit() - 1;
+    const int index1 = _start_comboBox->currentIndex();
+    const int index2 = _end_comboBox->currentIndex();
+    uint64_t decode_start, decode_end;
+
+    if (index1 == 0) {
+        decode_start = 0;
+    } else {
+        decode_start = _view->get_cursor_samples(index1-1);
+    }
+    if (index2 == 0) {
+        decode_end = last_samples;
+    } else {
+        decode_end = _view->get_cursor_samples(index2-1);
+    }
+
+    if (decode_start > last_samples)
+        decode_start = 0;
+    if (decode_end > last_samples)
+        decode_end = last_samples;
+
+    if (decode_start > decode_end) {
+        uint64_t tmp = decode_start;
+        decode_start = decode_end;
+        decode_end = tmp;
+    }
+    _start_index = index1;
+    _end_index = index2;
+
+    BOOST_FOREACH(boost::shared_ptr<data::decode::Decoder> dec,
+        _decoder_stack->stack()) {
+        dec->set_decode_region(decode_start, decode_end);
+    }
+}
+
+void DecodeTrace::frame_ended()
+{
+    const uint64_t last_samples = _session.get_device()->get_sample_limit() - 1;
+    if (_decode_start > last_samples) {
+        _decode_start = 0;
+        _start_index = 0;
+    }
+    if (_end_index ==0 ||
+        _decode_end > last_samples) {
+        _decode_end = last_samples;
+        _end_index = 0;
+    }
+    BOOST_FOREACH(boost::shared_ptr<data::decode::Decoder> dec,
+        _decoder_stack->stack()) {
+        dec->set_decode_region(_decode_start, _decode_end);
+        dec->commit();
+    }
 }
 
 } // namespace view

@@ -148,12 +148,12 @@ void LogicSignal::paint_mid(QPainter &p, int left, int right)
     assert(_view);
 	assert(right >= left);
 
-    const int y = get_y() + _signalHeight * 0.5;
+    const int y = get_y() + _totalHeight * 0.5;
     const double scale = _view->scale();
     assert(scale > 0);
     const double offset = _view->offset();
 
-    const float high_offset = y - _signalHeight + 0.5f;
+    const float high_offset = y - _totalHeight + 0.5f;
 	const float low_offset = y + 0.5f;
 
 	const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
@@ -314,7 +314,7 @@ void LogicSignal::paint_type_options(QPainter &p, int right, const QPoint pt)
 bool LogicSignal::measure(const QPointF &p, uint64_t &index0, uint64_t &index1, uint64_t &index2) const
 {
     const float gap = abs(p.y() - get_y());
-    if (gap < get_signalHeight() * 0.5) {
+    if (gap < get_totalHeight() * 0.5) {
         const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
             _data->get_snapshots();
         if (snapshots.empty())
@@ -359,7 +359,7 @@ bool LogicSignal::edges(const QPointF &p, uint64_t start, uint64_t &rising, uint
 {
     uint64_t index, end;
     const float gap = abs(p.y() - get_y());
-    if (gap < get_signalHeight() * 0.5) {
+    if (gap < get_totalHeight() * 0.5) {
         const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
             _data->get_snapshots();
         if (snapshots.empty())

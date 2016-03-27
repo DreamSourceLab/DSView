@@ -134,7 +134,7 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession &session) :
     connect(_t3_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(delta_update()));
 
     connect(_fen_checkBox, SIGNAL(stateChanged(int)), &_view, SLOT(set_measure_en(int)));
-    connect(_view.get_viewport(), SIGNAL(mouse_measure()), this, SLOT(mouse_measure()));
+    connect(_view.get_viewport(), SIGNAL(measure_updated()), this, SLOT(measure_updated()));
 
     this->setWidget(_widget);
     _widget->setGeometry(0, 0, sizeHint().width(), 2000);
@@ -220,7 +220,7 @@ void MeasureDock::cursor_update()
     update();
 }
 
-void MeasureDock::mouse_measure()
+void MeasureDock::measure_updated()
 {
     _width_label->setText(_view.get_viewport()->get_measure("width"));
     _period_label->setText(_view.get_viewport()->get_measure("period"));

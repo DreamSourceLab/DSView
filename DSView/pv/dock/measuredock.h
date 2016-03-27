@@ -74,7 +74,7 @@ private slots:
 public slots:
     void cursor_update();
     void cursor_moved();
-    void mouse_measure();
+    void measure_updated();
 
 private:
     SigSession &_session;

@@ -58,7 +58,7 @@ AnalogSignal::AnalogSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
     _data(data)
 {
     _colour = SignalColours[probe->index % countof(SignalColours)];
-    _scale = _signalHeight * 1.0f / 65536;
+    _scale = _totalHeight * 1.0f / 65536;
 }
 
 AnalogSignal::~AnalogSignal()
@@ -81,7 +81,7 @@ void AnalogSignal::paint_mid(QPainter &p, int left, int right)
     assert(_view);
     assert(right >= left);
 
-    const int y = get_y() + _signalHeight * 0.5;
+    const int y = get_y() + _totalHeight * 0.5;
     const double scale = _view->scale();
     assert(scale > 0);
     const double offset = _view->offset();
@@ -91,7 +91,7 @@ void AnalogSignal::paint_mid(QPainter &p, int left, int right)
 	if (snapshots.empty())
 		return;
 
-    _scale = _signalHeight * 1.0f / 65536;
+    _scale = _totalHeight * 1.0f / 65536;
 	const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot =
 		snapshots.front();
 

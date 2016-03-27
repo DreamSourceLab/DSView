@@ -501,7 +501,7 @@ void View::signals_changed()
     BOOST_FOREACH(boost::shared_ptr<Trace> t, traces) {
         t->set_view(this);
         const double traceHeight = _signalHeight*t->rows_size();
-        t->set_signalHeight((int)traceHeight);
+        t->set_totalHeight((int)traceHeight);
         t->set_v_offset(next_v_offset + 0.5 * traceHeight + SignalMargin);
         next_v_offset += traceHeight + 2 * SignalMargin;
 	}

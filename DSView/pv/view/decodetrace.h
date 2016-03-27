@@ -89,6 +89,10 @@ private:
 	static const QColor OutlineColours[16];
 
     static const int DefaultFontSize = 8;
+    static const int ControlRectWidth = 5;
+
+    static const QString RegionStart;
+    static const QString RegionEnd;
 
 public:
 	DecodeTrace(pv::SigSession &session,
@@ -131,6 +135,11 @@ public:
     int rows_size();
 
     QRectF get_rect(DecodeSetRegions type, int y, int right);
+
+    /**
+     * decode region
+     **/
+    void frame_ended();
 
 protected:
     void paint_type_options(QPainter &p, int right, const QPoint pt);
@@ -191,11 +200,16 @@ private slots:
 
     void on_decode_done();
 
+    void on_region_set(int index);
+
 private:
 	pv::SigSession &_session;
 	boost::shared_ptr<pv::data::DecoderStack> _decoder_stack;
 
 	uint64_t _decode_start, _decode_end;
+    int _start_index, _end_index;
+    int _start_count, _end_count;
+    QComboBox *_start_comboBox, *_end_comboBox;
 
 	std::list< boost::shared_ptr<pv::prop::binding::DecoderOptions> >
 		_bindings;

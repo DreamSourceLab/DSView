@@ -1104,6 +1104,9 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
             _cur_logic_snapshot.reset();
             _cur_dso_snapshot.reset();
             _cur_analog_snapshot.reset();
+
+            BOOST_FOREACH(const boost::shared_ptr<view::DecodeTrace> d, _decode_traces)
+                d->frame_ended();
 		}
 
         frame_ended();
@@ -1287,6 +1290,13 @@ bool SigSession::add_decoder(srd_decoder *const dec)
         boost::shared_ptr<view::DecodeTrace> d(
             new view::DecodeTrace(*this, decoder_stack,
                 _decode_traces.size()));
+        // set view early for decode start/end region setting
+        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals) {
+            if (s->get_view()) {
+                d->set_view(s->get_view());
+                break;
+            }
+        }
         if (d->create_popup()) {
             _decode_traces.push_back(d);
             ret = true;

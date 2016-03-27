@@ -127,12 +127,12 @@ public:
     /**
      * Gets the height of this signal.
      */
-    int get_signalHeight() const;
+    int get_totalHeight() const;
 
     /**
      * Sets the height of this signal.
      */
-    void set_signalHeight(int height);
+    void set_totalHeight(int height);
 
     /**
      * Geom
@@ -159,6 +159,7 @@ public:
 	virtual bool enabled() const = 0;
 
 	virtual void set_view(pv::view::View *view);
+    pv::view::View* get_view() const;
 
 	/**
 	 * Paints the background layer of the trace with a QPainter
@@ -291,7 +292,7 @@ protected:
     std::list<int> _index_list;
     int _sec_index;
     int _old_v_offset;
-    int _signalHeight;
+    int _totalHeight;
 
     QSizeF _text_size;
 };

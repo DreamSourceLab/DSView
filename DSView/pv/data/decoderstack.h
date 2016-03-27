@@ -125,7 +125,10 @@ public:
 private:
     boost::optional<uint64_t> wait_for_data() const;
 
-    void decode_data(const uint64_t sample_count,
+//    void decode_data(const uint64_t sample_count,
+//        const unsigned int unit_size, srd_session *const session);
+
+    void decode_data(const uint64_t decode_start, const uint64_t decode_end,
         const unsigned int unit_size, srd_session *const session);
 
 	void decode_proc();

@@ -51,7 +51,7 @@ GroupSignal::GroupSignal(QString name, boost::shared_ptr<data::Group> data,
     _data(data)
 {
     _colour = SignalColours[probe_index_list.front() % countof(SignalColours)];
-    _scale = _signalHeight * 1.0f / std::pow(2.0, static_cast<double>(probe_index_list.size()));
+    _scale = _totalHeight * 1.0f / std::pow(2.0, static_cast<double>(probe_index_list.size()));
 }
 
 GroupSignal::~GroupSignal()
@@ -79,12 +79,12 @@ void GroupSignal::paint_mid(QPainter &p, int left, int right)
     assert(_view);
     assert(right >= left);
 
-    const int y = get_y() + _signalHeight * 0.5;
+    const int y = get_y() + _totalHeight * 0.5;
     const double scale = _view->scale();
     assert(scale > 0);
     const double offset = _view->offset();
 
-    _scale = _signalHeight * 1.0f / std::pow(2.0, static_cast<int>(_index_list.size()));
+    _scale = _totalHeight * 1.0f / std::pow(2.0, static_cast<int>(_index_list.size()));
 
     const deque< boost::shared_ptr<pv::data::GroupSnapshot> > &snapshots =
 		_data->get_snapshots();

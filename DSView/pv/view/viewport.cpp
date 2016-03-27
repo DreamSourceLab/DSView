@@ -33,6 +33,7 @@
 #include "../data/logicsnapshot.h"
 #include "../sigsession.h"
 #include "../dialogs/dsomeasure.h"
+#include "decodetrace.h"
 
 #include <QMouseEvent>
 #include <QStyleOption>
@@ -55,8 +56,7 @@ Viewport::Viewport(View &parent) :
 	QWidget(&parent),
         _view(parent),
     _total_receive_len(0),
-    _zoom_rect_visible(false),
-    _measure_shown(false),
+    _action_type(NO_ACTION),
     _measure_type(NO_MEASURE),
     _cur_sample(0),
     _nxt_sample(1),
@@ -65,10 +65,8 @@ Viewport::Viewport(View &parent) :
     _cur_midY(0),
     _hover_index(0),
     _hover_hit(false),
-    _dso_xm(false),
-    _dso_xm_stage(0),
-    _dso_ym(false),
-    _dso_ym_done(false)
+    _dso_xm_valid(false),
+    _dso_ym_valid(false)
 {
 	setMouseTracking(true);
 	setAutoFillBackground(true);
@@ -105,7 +103,7 @@ int Viewport::get_total_height() const
     const vector< boost::shared_ptr<Trace> > traces(_view.get_traces());
     BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces) {
         assert(t);
-        h += (int)(t->get_signalHeight());
+        h += (int)(t->get_totalHeight());
     }
     h += 2 * View::SignalMargin;
 
@@ -220,16 +218,14 @@ void Viewport::paintSignals(QPainter &p)
     }
 
     // plot zoom rect
-    if (_zoom_rect_visible) {
+    if (_action_type == LOGIC_ZOOM) {
         p.setPen(Qt::NoPen);
         p.setBrush(Trace::dsLightBlue);
-        p.drawRect(_zoom_rect);
+        p.drawRect(QRectF(_mouse_down_point, _mouse_point));
     }
 
     //plot measure arrow
-    if (_measure_shown) {
-        paintMeasure(p);
-    }
+    paintMeasure(p);
 }
 
 void Viewport::paintProgress(QPainter &p)
@@ -369,30 +365,10 @@ void Viewport::mousePressEvent(QMouseEvent *event)
 
 	_mouse_down_point = event->pos();
 	_mouse_down_offset = _view.offset();
-    _measure_shown = _dso_xm || _dso_ym;
-    //_dso_xm = false;
     _drag_strength = 0;
     _time.start();
 
-    if (event->buttons() & Qt::LeftButton) {
-        if (_view.cursors_shown()) {
-            list<Cursor*>::iterator i = _view.get_cursorList().begin();
-            double cursorX;
-            const double samples_per_pixel = _view.session().get_device()->get_sample_rate() * _view.scale();
-            while (i != _view.get_cursorList().end()) {
-                cursorX = (*i)->index()/samples_per_pixel - (_view.offset() / _view.scale());
-                if ((*i)->grabbed()) {
-                    _view.get_ruler()->rel_grabbed_cursor();
-                } else if (qAbs(cursorX - event->pos().x()) <= HitCursorMargin) {
-                    _view.get_ruler()->set_grabbed_cursor(*i);
-                    _measure_type = LOGIC_CURS;
-                    break;
-                }
-                i++;
-            }
-
-        }
-
+    if (event->button() == Qt::LeftButton) {
         const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
         BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
             assert(s);
@@ -400,10 +376,7 @@ void Viewport::mousePressEvent(QMouseEvent *event)
                 continue;
             boost::shared_ptr<DsoSignal> dsoSig;
             if (dsoSig = dynamic_pointer_cast<DsoSignal>(s)) {
-                if (dsoSig->get_trig_rect(0, _view.get_view_width()).contains(_mouse_point)) {
-                    _drag_sig = s;
-                    break;
-                } else if (dsoSig->get_ms_show_hover()) {
+                if (dsoSig->get_ms_show_hover()) {
                     dsoSig->set_ms_show(!dsoSig->get_ms_show());
                     break;
                 } else if (dsoSig->get_ms_gear_hover()) {
@@ -414,51 +387,20 @@ void Viewport::mousePressEvent(QMouseEvent *event)
             }
         }
 
-        if (_measure_type == LOGIC_FREQ)
-            _measure_type = NO_MEASURE;
-
         update();
     }
 
-    if (_hover_hit && (event->buttons() & Qt::RightButton)) {
-        _view.add_cursor(view::Ruler::CursorColor[_view.get_cursorList().size() % 8], _hover_index);
-        _view.show_cursors(true);
-        _hover_hit = false;
-    } else if (_hover_hit && (event->buttons() & Qt::LeftButton)) {
-        _dso_ym = true;
-        _dso_ym_done = false;
-        _dso_ym_sig_index = _hover_sig_index;
-        _dso_ym_sig_value = _hover_sig_value;
-        _dso_ym_index = _hover_index;
-        _dso_ym_start = event->pos().y();
-    } else if (_dso_ym && !_dso_ym_done && (event->buttons() & Qt::LeftButton)) {
-        _dso_ym_end = event->pos().y();
-        _dso_ym_done = true;
-    } else if (_dso_ym && !_dso_ym_done && (event->buttons() & Qt::RightButton)) {
-        _dso_ym = false;
-        _dso_ym_done = false;
-    } else if (_dso_xm && _dso_xm_stage < DsoMeasureStages && (event->buttons() & Qt::RightButton)) {
-        _dso_xm = false;
-        _measure_shown = _dso_ym;
-        _dso_xm_stage = 0;
-        _measure_type = NO_MEASURE;
-        _mm_width = "#####";
-        _mm_period = "#####";
-        _mm_freq = "#####";
-        _mm_duty = "#####";
-        mouse_measure();
-    } else if (event->buttons() & Qt::LeftButton) {
-        if (_dso_xm_stage > 0 && _dso_xm_stage < DsoMeasureStages) {
-            const uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
-            const double scale = _view.scale();
-            const double samples_per_pixel =  sample_rate * scale;
-            _dso_xm_index[_dso_xm_stage] = event->pos().x() * samples_per_pixel + _view.offset() * sample_rate;
-            for(int i = _dso_xm_stage; i > 0; i--) {
-                const uint64_t max_index = max(_dso_xm_index[i-1], _dso_xm_index[i]);
-                _dso_xm_index[i-1] = min(_dso_xm_index[i-1], _dso_xm_index[i]);
-                _dso_xm_index[i] = max_index;
+    if (_action_type == NO_ACTION &&
+        event->button() == Qt::RightButton &&
+        _view.session().get_capture_state() == SigSession::Stopped) {
+        if (_view.session().get_device()->dev_inst()->mode == LOGIC) {
+            _action_type = LOGIC_ZOOM;
+        } else if (_view.session().get_device()->dev_inst()->mode == DSO) {
+            if (_hover_hit) {
+                uint64_t index = (_view.offset() + (event->pos().x() + 0.5) * _view.scale()) * _view.session().get_device()->get_sample_rate();
+                _view.add_cursor(view::Ruler::CursorColor[_view.get_cursorList().size() % 8], index);
+                _view.show_cursors(true);
             }
-            _dso_xm_stage = (_dso_xm_stage + 1) % (DsoMeasureStages + 1);
         }
     }
 }
@@ -467,41 +409,41 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
 {
 	assert(event);
     _hover_hit = false;
-    if (!_dso_xm && (_dso_ym_done || !_dso_ym) &&
-        event->buttons() & Qt::RightButton) {
-        _zoom_rect = QRectF(_mouse_down_point, event->pos());
-        _zoom_rect_visible = true;
-	}
 
     if (event->buttons() & Qt::LeftButton) {
-        if (_drag_sig) {
-            boost::shared_ptr<view::DsoSignal> dsoSig;
-            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(_drag_sig))
-                dsoSig->set_trig_vpos(event->pos().y());
-        } else {
-            _view.set_scale_offset(_view.scale(),
-                _mouse_down_offset +
-                (_mouse_down_point - event->pos()).x() *
-                _view.scale());
-            _drag_strength = (_mouse_down_point - event->pos()).x();
-            //measure();
-        }
+        _view.set_scale_offset(_view.scale(),
+            _mouse_down_offset +
+            (_mouse_down_point - event->pos()).x() *
+            _view.scale());
+        _drag_strength = (_mouse_down_point - event->pos()).x();
     }
 
     if (!(event->buttons() || Qt::NoButton)) {
-        uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
-        TimeMarker* grabbed_marker = _view.get_ruler()->get_grabbed_cursor();
-        if (_view.cursors_shown() && grabbed_marker) {
-            const double cur_time = _view.offset() + _view.hover_point().x() * _view.scale();
-            const double pos = cur_time * sample_rate;
-            const double pos_delta = pos - (uint64_t)pos;
-            if ( pos_delta < 0.5)
-                grabbed_marker->set_index((uint64_t)floor(pos));
-            else
-                grabbed_marker->set_index((uint64_t)ceil(pos));
+        if (_action_type == DSO_TRIG_MOVE) {
+            if (_drag_sig) {
+                boost::shared_ptr<view::DsoSignal> dsoSig;
+                if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(_drag_sig))
+                    dsoSig->set_trig_vpos(event->pos().y());
+            }
         }
-        if (_dso_ym && !_dso_ym_done)
+
+        if (_action_type == CURS_MOVE) {
+            uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
+            TimeMarker* grabbed_marker = _view.get_ruler()->get_grabbed_cursor();
+            if (_view.cursors_shown() && grabbed_marker) {
+                const double cur_time = _view.offset() + _view.hover_point().x() * _view.scale();
+                const double pos = cur_time * sample_rate;
+                const double pos_delta = pos - (uint64_t)pos;
+                if ( pos_delta < 0.5)
+                    grabbed_marker->set_index((uint64_t)floor(pos));
+                else
+                    grabbed_marker->set_index((uint64_t)ceil(pos));
+            }
+        }
+
+        if (_action_type == DSO_YM)
             _dso_ym_end = event->pos().y();
+
         measure();
     }
 
@@ -513,56 +455,176 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
 {
     assert(event);
 
-    if (_zoom_rect_visible) {
-        _zoom_rect_visible = false;
-        const double newOffset = _view.offset() + (min(event->pos().x(), _mouse_down_point.x()) + 0.5) * _view.scale();
-        const double newScale = max(min(_view.scale() * abs(event->pos().x() - _mouse_down_point.x()) / _view.get_view_width(),
-                                        _view.get_maxscale()), _view.get_minscale());
-        if (newScale != _view.scale())
-            _view.set_scale_offset(newScale, newOffset);
-    }
-
-    if(_drag_sig)
-        _drag_sig.reset();
-
-    if ((_measure_type != LOGIC_MOVE && _measure_type != LOGIC_CURS) &&
-        _view.session().get_device()->dev_inst()->mode == LOGIC &&
-        _mouse_down_point.x() == event->pos().x() &&
-        event->button() & Qt::LeftButton) {
-        if (_measure_type == LOGIC_EDGE) {
-            _measure_type = NO_MEASURE;
-            _measure_shown = false;
-            _edge_rising = 0;
-            _edge_falling = 0;
-        } else {
-            _measure_type = LOGIC_EDGE;
-            _edge_start = (_view.offset() + (event->pos().x() + 0.5) * _view.scale()) * _view.session().get_device()->get_sample_rate();
+    if ((_action_type == NO_ACTION) &&
+        (event->button() == Qt::LeftButton)) {
+        // priority 0
+        if (_action_type == NO_ACTION && _view.cursors_shown()) {
+            list<Cursor*>::iterator i = _view.get_cursorList().begin();
+            double cursorX;
+            const double samples_per_pixel = _view.session().get_device()->get_sample_rate() * _view.scale();
+            while (i != _view.get_cursorList().end()) {
+                cursorX = (*i)->index()/samples_per_pixel - (_view.offset() / _view.scale());
+                if ((*i)->grabbed()) {
+                    _view.get_ruler()->rel_grabbed_cursor();
+                } else if (qAbs(cursorX - event->pos().x()) <= HitCursorMargin) {
+                    _view.get_ruler()->set_grabbed_cursor(*i);
+                    _action_type = CURS_MOVE;
+                    break;
+                }
+                i++;
+            }
         }
-    }
 
-    if (_view.session().get_device()->dev_inst()->mode == LOGIC &&
-        (_measure_type == NO_MEASURE || _measure_type == LOGIC_MOVE)) {
-        const double strength = _drag_strength*DragTimerInterval*1.0/_time.elapsed();
-        if (_time.elapsed() < 200 &&
-            abs(_drag_strength) < MinorDragOffsetUp &&
-            abs(strength) > MinorDragRateUp) {
-            _drag_strength = _drag_strength;
-            _drag_timer.start(DragTimerInterval);
-            _measure_type = LOGIC_MOVE;
-        } else if (_time.elapsed() < 200 &&
-                   abs(strength) > DragTimerInterval) {
-            _drag_strength = strength * 5;
-            _drag_timer.start(DragTimerInterval);
-            _measure_type = LOGIC_MOVE;
-        } else {
-            _drag_strength = 0;
-            _drag_timer.stop();
-            _measure_type = NO_MEASURE;
+        if (_view.session().get_device()->dev_inst()->mode == LOGIC &&
+            _view.session().get_capture_state() == SigSession::Stopped) {
+            // priority 1
+            if (_action_type == NO_ACTION) {
+                const double strength = _drag_strength*DragTimerInterval*1.0/_time.elapsed();
+                if (_time.elapsed() < 200 &&
+                    abs(_drag_strength) < MinorDragOffsetUp &&
+                    abs(strength) > MinorDragRateUp) {
+                    _drag_strength = _drag_strength;
+                    _drag_timer.start(DragTimerInterval);
+                    _action_type = LOGIC_MOVE;
+                } else if (_time.elapsed() < 200 &&
+                           abs(strength) > DragTimerInterval) {
+                    _drag_strength = strength * 5;
+                    _drag_timer.start(DragTimerInterval);
+                    _action_type = LOGIC_MOVE;
+                }
+            }
+
+            // priority 2
+            if (_action_type == NO_ACTION) {
+                if (_mouse_down_point.x() == event->pos().x()) {
+                    const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
+                    BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+                        assert(s);
+                        if (abs(event->pos().y() - s->get_y()) < _view.get_signalHeight()) {
+                            _action_type = LOGIC_EDGE;
+                            _edge_start = (_view.offset() + (event->pos().x() + 0.5) * _view.scale()) * _view.session().get_device()->get_sample_rate();
+                            break;
+                        }
+                    }
+                }
+            }
+        } else if (_view.session().get_device()->dev_inst()->mode == DSO) {
+            // priority 0
+            if (_action_type == NO_ACTION && _hover_hit) {
+                _action_type = DSO_YM;
+                _dso_ym_valid = true;
+                _dso_ym_sig_index = _hover_sig_index;
+                _dso_ym_sig_value = _hover_sig_value;
+                _dso_ym_index = _hover_index;
+                _dso_ym_start = event->pos().y();
+            }
+
+            // priority 1
+            if (_action_type == NO_ACTION) {
+                const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
+                BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+                    assert(s);
+                    if (!s->enabled())
+                        continue;
+                    boost::shared_ptr<DsoSignal> dsoSig;
+                    if (dsoSig = dynamic_pointer_cast<DsoSignal>(s)) {
+                        if (dsoSig->get_trig_rect(0, _view.get_view_width()).contains(_mouse_point)) {
+                            _drag_sig = s;
+                            _action_type = DSO_TRIG_MOVE;
+                            break;
+                        }
+                    }
+                }
+            }
         }
-    }
+    } else if (_action_type == DSO_YM) {
+        if (event->button() == Qt::LeftButton) {
+            _dso_ym_end = event->pos().y();
+            _action_type = NO_ACTION;
+        } else if (event->button() == Qt::RightButton) {
+            _action_type = NO_ACTION;
+            _dso_ym_valid = false;
+        }
+    } else if (_action_type == DSO_TRIG_MOVE) {
+        if (event->button() == Qt::LeftButton) {
+            _drag_sig.reset();
+            _action_type = NO_ACTION;
+        }
+    } else if (_action_type == DSO_XM_STEP0) {
+        if (event->button() == Qt::LeftButton) {
+            _action_type = DSO_XM_STEP1;
+            _dso_xm_valid = true;
+        }
+    } else if (_action_type == DSO_XM_STEP1) {
+        if (event->button() == Qt::LeftButton) {
+            const uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
+            const double scale = _view.scale();
+            const double samples_per_pixel =  sample_rate * scale;
 
-    if (!_view.get_ruler()->get_grabbed_cursor() && _measure_type == LOGIC_CURS)
-        _measure_type = NO_MEASURE;
+            _dso_xm_index[1] = event->pos().x() * samples_per_pixel + _view.offset() * sample_rate;
+            const uint64_t max_index = max(_dso_xm_index[0], _dso_xm_index[1]);
+            _dso_xm_index[0] = min(_dso_xm_index[0], _dso_xm_index[1]);
+            _dso_xm_index[1] = max_index;
+
+            _action_type = DSO_XM_STEP2;
+        } else if (event->button() == Qt::RightButton) {
+            _action_type = NO_ACTION;
+            _dso_xm_valid = false;
+            _mm_width = "#####";
+            _mm_period = "#####";
+            _mm_freq = "#####";
+            _mm_duty = "#####";
+            measure_updated();
+        }
+    } else if (_action_type == DSO_XM_STEP2) {
+        if (event->button() == Qt::LeftButton) {
+            const uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
+            const double scale = _view.scale();
+            const double samples_per_pixel =  sample_rate * scale;
+            _dso_xm_index[2] = event->pos().x() * samples_per_pixel + _view.offset() * sample_rate;
+            const uint64_t max_index = max(_dso_xm_index[1], _dso_xm_index[2]);
+            _dso_xm_index[1] = min(_dso_xm_index[1], _dso_xm_index[2]);
+            _dso_xm_index[2] = max_index;
+
+            _action_type = NO_ACTION;
+        } else if (event->button() == Qt::RightButton) {
+            _action_type = NO_ACTION;
+            _dso_xm_valid = false;
+            _mm_width = "#####";
+            _mm_period = "#####";
+            _mm_freq = "#####";
+            _mm_duty = "#####";
+            measure_updated();
+        }
+    } else if (_action_type == CURS_MOVE) {
+        _action_type = NO_ACTION;
+        if (_view.cursors_shown()) {
+            list<Cursor*>::iterator i = _view.get_cursorList().begin();
+            while (i != _view.get_cursorList().end()) {
+                if ((*i)->grabbed()) {
+                    _view.get_ruler()->rel_grabbed_cursor();
+                }
+                i++;
+            }
+        }
+    } else if (_action_type == LOGIC_EDGE) {
+        _action_type = NO_ACTION;
+        _edge_rising = 0;
+        _edge_falling = 0;
+    } else if (_action_type == LOGIC_MOVE) {
+        _drag_strength = 0;
+        _drag_timer.stop();
+        _action_type = NO_ACTION;
+    } else if (_action_type == LOGIC_ZOOM) {
+        if (event->pos().x() != _mouse_down_point.x()) {
+            const double newOffset = _view.offset() + (min(event->pos().x(), _mouse_down_point.x()) + 0.5) * _view.scale();
+            const double newScale = max(min(_view.scale() * abs(event->pos().x() - _mouse_down_point.x()) / _view.get_view_width(),
+                                            _view.get_maxscale()), _view.get_minscale());
+            if (newScale != _view.scale())
+                _view.set_scale_offset(newScale, newOffset);
+        }
+        _action_type = NO_ACTION;
+    }
 
     update();
 }
@@ -572,13 +634,14 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
     assert (event);
     (void)event;
 
-    if (_view.session().get_device()->dev_inst()->mode == LOGIC) {
-        if (event->button() & Qt::RightButton) {
+    if (_view.session().get_device()->dev_inst()->mode == LOGIC &&
+        _view.session().get_capture_state() == SigSession::Stopped) {
+        if (event->button() == Qt::RightButton) {
             if (_view.scale() == _view.get_maxscale())
                 _view.set_preScale_preOffset();
             else
                 _view.set_scale_offset(_view.get_maxscale(), 0);
-        } else if (event->button() & Qt::LeftButton) {
+        } else if (event->button() == Qt::LeftButton) {
             uint64_t index = (_view.offset() + (event->pos().x() + 0.5) * _view.scale()) * _view.session().get_device()->get_sample_rate();
             _view.add_cursor(view::Ruler::CursorColor[_view.get_cursorList().size() % 8], index);
             _view.show_cursors(true);
@@ -586,27 +649,23 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
         update();
     } else if (_view.session().get_device()->dev_inst()->mode == DSO &&
                _view.session().get_capture_state() != SigSession::Init &&
-               event->button() & Qt::LeftButton) {
-        if (_dso_xm_stage == 0) {
-            uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
-            double scale = _view.scale();
-            const double samples_per_pixel =  sample_rate * scale;
-            _dso_xm_index[0] = event->pos().x() * samples_per_pixel +
-                                    _view.offset() * sample_rate;;
-            _dso_xm_stage = 1;
-            _dso_xm_y = event->pos().y();
-            _dso_xm = true;
-            _measure_type = DSO_FREQ;
-            _measure_shown = true;
-        } else if (_dso_xm_stage == DsoMeasureStages) {
-            _dso_xm = false;
-            _measure_shown = _dso_ym;
-            _dso_xm_stage = 0;
+               event->button() == Qt::LeftButton) {
+        if (_dso_xm_valid) {
+            _dso_xm_valid = false;
+            _action_type = NO_ACTION;
             _mm_width = "#####";
             _mm_period = "#####";
             _mm_freq = "#####";
             _mm_duty = "#####";
-            mouse_measure();
+            measure_updated();
+        } else if (_action_type == NO_ACTION) {
+            uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
+            double scale = _view.scale();
+            const double samples_per_pixel =  sample_rate * scale;
+            _dso_xm_index[0] = event->pos().x() * samples_per_pixel +
+                                    _view.offset() * sample_rate;
+            _dso_xm_y = event->pos().y();
+            _action_type = DSO_XM_STEP0;
         }
     }
 }
@@ -631,13 +690,41 @@ void Viewport::wheelEvent(QWheelEvent *event)
 
 void Viewport::leaveEvent(QEvent *)
 {
-    _measure_shown = _dso_xm || _dso_ym;
     _mouse_point = QPoint(-1, -1);
     //_view.show_cursors(false);
-    if (_measure_type == LOGIC_EDGE || _measure_type == LOGIC_MOVE) {
-        _measure_type = NO_MEASURE;
-        _measure_shown = false;
+
+    if (_action_type == CURS_MOVE) {
+        if (_view.cursors_shown()) {
+            list<Cursor*>::iterator i = _view.get_cursorList().begin();
+            while (i != _view.get_cursorList().end()) {
+                if ((*i)->grabbed()) {
+                    _view.get_ruler()->rel_grabbed_cursor();
+                }
+                i++;
+            }
+        }
+    } else if (_action_type == LOGIC_EDGE) {
+        _edge_rising = 0;
+        _edge_falling = 0;
+    } else if (_action_type == LOGIC_MOVE) {
+        _drag_strength = 0;
+        _drag_timer.stop();
+    } else if (_action_type == DSO_TRIG_MOVE) {
+       _drag_sig.reset();
+    } else if (_action_type == DSO_XM_STEP1 || _action_type == DSO_XM_STEP2) {
+        _dso_xm_valid = false;
+       _mm_width = "#####";
+       _mm_period = "#####";
+       _mm_freq = "#####";
+       _mm_duty = "#####";
+       measure_updated();
+    } else if (_action_type == DSO_YM) {
+        _dso_ym_valid = false;
     }
+
+    if (_action_type != NO_ACTION)
+        _action_type = NO_ACTION;
+
     update();
 }
 
@@ -669,11 +756,7 @@ void Viewport::clear_measure()
 
 void Viewport::measure()
 {
-   if ((_view.session().get_device()->dev_inst()->mode == LOGIC &&
-        _view.session().get_capture_state() == SigSession::Running) ||
-       _drag_strength != 0)
-       return;
-    _measure_shown = _dso_xm || _dso_ym;
+    _measure_type = NO_MEASURE;
     const uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
     const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
     BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
@@ -681,61 +764,64 @@ void Viewport::measure()
         boost::shared_ptr<view::LogicSignal> logicSig;
         boost::shared_ptr<view::DsoSignal> dsoSig;
         if (logicSig = dynamic_pointer_cast<view::LogicSignal>(s)) {
-            if (_measure_type != LOGIC_EDGE &&
-                logicSig->measure(_view.hover_point(), _cur_sample, _nxt_sample, _thd_sample)) {
-                _measure_shown = true;
-                _measure_type = LOGIC_FREQ;
+            if (_action_type == NO_ACTION) {
+                if (logicSig->measure(_view.hover_point(), _cur_sample, _nxt_sample, _thd_sample)) {
+                    _measure_type = LOGIC_FREQ;
 
-                _mm_width = _view.get_ruler()->format_real_time(_nxt_sample - _cur_sample, sample_rate);
-                _mm_period = _thd_sample != 0 ? _view.get_ruler()->format_real_time(_thd_sample - _cur_sample, sample_rate) : "#####";
-                _mm_freq = _thd_sample != 0 ? _view.get_ruler()->format_real_freq(_thd_sample - _cur_sample, sample_rate) : "#####";
+                    _mm_width = _view.get_ruler()->format_real_time(_nxt_sample - _cur_sample, sample_rate);
+                    _mm_period = _thd_sample != 0 ? _view.get_ruler()->format_real_time(_thd_sample - _cur_sample, sample_rate) : "#####";
+                    _mm_freq = _thd_sample != 0 ? _view.get_ruler()->format_real_freq(_thd_sample - _cur_sample, sample_rate) : "#####";
 
-                const double pixels_offset =  _view.offset() / _view.scale();
-                const double samples_per_pixel = sample_rate * _view.scale();
-                _cur_preX = _cur_sample / samples_per_pixel - pixels_offset;
-                _cur_aftX = _nxt_sample / samples_per_pixel - pixels_offset;
-                _cur_thdX = _thd_sample / samples_per_pixel - pixels_offset;
-                _cur_midY = logicSig->get_y();
+                    const double pixels_offset =  _view.offset() / _view.scale();
+                    const double samples_per_pixel = sample_rate * _view.scale();
+                    _cur_preX = _cur_sample / samples_per_pixel - pixels_offset;
+                    _cur_aftX = _nxt_sample / samples_per_pixel - pixels_offset;
+                    _cur_thdX = _thd_sample / samples_per_pixel - pixels_offset;
+                    _cur_midY = logicSig->get_y();
 
-                _mm_duty = _thd_sample != 0 ? QString::number((_nxt_sample - _cur_sample) * 100.0 / (_thd_sample - _cur_sample), 'f', 2)+"%" :
-                                             "#####";
-                mouse_measure();
-                break;
-            } else if (_measure_type == LOGIC_EDGE &&
-                       logicSig->edges(_view.hover_point(), _edge_start, _edge_rising, _edge_falling)) {
-                _measure_shown = true;
+                    _mm_duty = _thd_sample != 0 ? QString::number((_nxt_sample - _cur_sample) * 100.0 / (_thd_sample - _cur_sample), 'f', 2)+"%" :
+                                                 "#####";
+                    break;
+                } else {
+                    _measure_type = NO_MEASURE;
+                    _mm_width = "#####";
+                    _mm_period = "#####";
+                    _mm_freq = "#####";
+                    _mm_duty = "#####";
+                }
+            } else if (_action_type == LOGIC_EDGE) {
+                if (logicSig->edges(_view.hover_point(), _edge_start, _edge_rising, _edge_falling)) {
+                    const double pixels_offset =  _view.offset() / _view.scale();
+                    const double samples_per_pixel = sample_rate * _view.scale();
+                    _cur_preX = _edge_start / samples_per_pixel - pixels_offset;
+                    _cur_aftX = _view.hover_point().x();
+                    _cur_midY = logicSig->get_y() - logicSig->get_totalHeight()/2 - 5;
 
-                const double pixels_offset =  _view.offset() / _view.scale();
-                const double samples_per_pixel = sample_rate * _view.scale();
-                _cur_preX = _edge_start / samples_per_pixel - pixels_offset;
-                _cur_aftX = _view.hover_point().x();
-                _cur_midY = logicSig->get_y() - logicSig->get_signalHeight()/2 - 5;
+                    _em_rising = "Rising: " + QString::number(_edge_rising);
+                    _em_falling = "Falling: " + QString::number(_edge_falling);
+                    _em_edges = "Edges: " + QString::number(_edge_rising + _edge_falling);
 
-                _em_rising = "Rising: " + QString::number(_edge_rising);
-                _em_falling = "Falling: " + QString::number(_edge_falling);
-                _em_edges = "Edges: " + QString::number(_edge_rising + _edge_falling);
-
-                break;
-            } else {
-                _mm_width = "#####";
-                _mm_period = "#####";
-                _mm_freq = "#####";
-                _mm_duty = "#####";
+                    break;
+                }
             }
-            mouse_measure();
         } else if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
             if (_measure_en && dsoSig->measure(_view.hover_point())) {
-                _measure_shown = true;
-                _measure_type = DSO_FREQ;
+                _measure_type = DSO_VALUE;
+                break;
+            } else {
+                _measure_type = NO_MEASURE;
             }
         }
     }
+    if (_measure_type != NO_MEASURE)
+        measure_updated();
 }
 
 void Viewport::paintMeasure(QPainter &p)
 {
     _hover_hit = false;
-    if (_measure_type == LOGIC_FREQ) {
+    if (_action_type == NO_ACTION &&
+        _measure_type == LOGIC_FREQ) {
         p.setPen(QColor(17, 133, 209,  255));
         p.drawLine(QLineF(_cur_preX, _cur_midY, _cur_aftX, _cur_midY));
         p.drawLine(QLineF(_cur_preX, _cur_midY, _cur_preX + 2, _cur_midY - 2));
@@ -788,45 +874,11 @@ void Viewport::paintMeasure(QPainter &p)
             p.drawText(measure4_rect, Qt::AlignRight | Qt::AlignVCenter,
                        tr("Duty Cycle: ") + _mm_duty);
         }
-    } else if (_measure_type == LOGIC_EDGE) {
-        p.setPen(QColor(17, 133, 209,  255));
+    } 
 
-        p.drawLine(QLineF(_cur_preX, _cur_midY-5, _cur_preX, _cur_midY+5));
-        p.drawLine(QLineF(_cur_aftX, _cur_midY-5, _cur_aftX, _cur_midY+5));
-        p.drawLine(QLineF(_cur_preX, _cur_midY, _cur_aftX, _cur_midY));
-
-        int typical_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
-            Qt::AlignLeft | Qt::AlignTop, _em_edges).width();
-        typical_width = max(typical_width, p.boundingRect(0, 0, INT_MAX, INT_MAX,
-            Qt::AlignLeft | Qt::AlignTop, _em_rising).width());
-        typical_width = max(typical_width, p.boundingRect(0, 0, INT_MAX, INT_MAX,
-            Qt::AlignLeft | Qt::AlignTop, _em_falling).width());
-
-        typical_width = typical_width + 30;
-
-        const double width = _view.get_view_width();
-        const double height = _view.viewport()->height();
-        const double left = _view.hover_point().x();
-        const double top = _view.hover_point().y();
-        const double right = left + typical_width;
-        const double bottom = top + 60;
-        QPointF org_pos = QPointF(right > width ? left - typical_width : left, bottom > height ? top - 80 : top);
-        QRectF measure_rect = QRectF(org_pos.x(), org_pos.y(), (double)typical_width, 60.0);
-        QRectF measure1_rect = QRectF(org_pos.x(), org_pos.y(), (double)typical_width, 20.0);
-        QRectF measure2_rect = QRectF(org_pos.x(), org_pos.y()+20, (double)typical_width, 20.0);
-        QRectF measure3_rect = QRectF(org_pos.x(), org_pos.y()+40, (double)typical_width, 20.0);
-
-        p.setPen(Qt::NoPen);
-        p.setBrush(QColor(17, 133, 209,  150));
-        p.drawRect(measure_rect);
-
-        p.setPen(Qt::black);
-        p.drawText(measure1_rect, Qt::AlignRight | Qt::AlignVCenter, _em_edges);
-        p.drawText(measure2_rect, Qt::AlignRight | Qt::AlignVCenter, _em_rising);
-        p.drawText(measure3_rect, Qt::AlignRight | Qt::AlignVCenter, _em_falling);
-
-    } else if (_measure_type == DSO_FREQ) {
-        const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
+    const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
+    if (_action_type == NO_ACTION &&
+        _measure_type == DSO_VALUE) {
         BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
             boost::shared_ptr<view::DsoSignal> dsoSig;
             if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
@@ -883,132 +935,177 @@ void Viewport::paintMeasure(QPainter &p)
                 }
             }
         }
+    }
 
-        // -- vertical value
-        if (_dso_ym) {
-            BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
-                boost::shared_ptr<view::DsoSignal> dsoSig;
-                if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
-                    if (dsoSig->get_index() == _dso_ym_sig_index) {
-                        p.setPen(QPen(dsoSig->get_colour(), 1, Qt::DotLine));
-                        const int text_height = p.boundingRect(0, 0, INT_MAX, INT_MAX,
-                            Qt::AlignLeft | Qt::AlignTop, "W").height();
-                        const uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
-                        const double x = (_dso_ym_index / (sample_rate * _view.scale())) -
-                            _view.offset() /_view.scale();
-                        p.drawLine(x-10, _dso_ym_start,
-                                   x+10, _dso_ym_start);
-                        p.drawLine(x, _dso_ym_start,
-                                   x, _dso_ym_end);
-                        p.drawLine(0, _dso_ym_end,
-                                   _view.get_view_width(), _dso_ym_end);
+    if (_dso_ym_valid) {
+        BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+            boost::shared_ptr<view::DsoSignal> dsoSig;
+            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
+                if (dsoSig->get_index() == _dso_ym_sig_index) {
+                    p.setPen(QPen(dsoSig->get_colour(), 1, Qt::DotLine));
+                    const int text_height = p.boundingRect(0, 0, INT_MAX, INT_MAX,
+                        Qt::AlignLeft | Qt::AlignTop, "W").height();
+                    const uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
+                    const double x = (_dso_ym_index / (sample_rate * _view.scale())) -
+                        _view.offset() /_view.scale();
+                    p.drawLine(x-10, _dso_ym_start,
+                               x+10, _dso_ym_start);
+                    p.drawLine(x, _dso_ym_start,
+                               x, _dso_ym_end);
+                    p.drawLine(0, _dso_ym_end,
+                               _view.get_view_width(), _dso_ym_end);
 
-                        // -- vertical delta value
-                        double hrate = (_dso_ym_start - _dso_ym_end) * 1.0f / _view.get_view_height();
-                        double value = hrate  * dsoSig->get_vDialValue() * dsoSig->get_factor() * DS_CONF_DSO_VDIVS;
-                        QString value_str = abs(value) > 1000 ? QString::number(value/1000.0, 'f', 2) + "V" : QString::number(value, 'f', 2) + "mV";
-                        int value_rect_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
-                                                          Qt::AlignLeft | Qt::AlignVCenter, value_str).width();
-                        p.drawText(QRect(x+10, abs(_dso_ym_start+_dso_ym_end)/2, value_rect_width, text_height),
-                                   value_str);
+                    // -- vertical delta value
+                    double hrate = (_dso_ym_start - _dso_ym_end) * 1.0f / _view.get_view_height();
+                    double value = hrate  * dsoSig->get_vDialValue() * dsoSig->get_factor() * DS_CONF_DSO_VDIVS;
+                    QString value_str = abs(value) > 1000 ? QString::number(value/1000.0, 'f', 2) + "V" : QString::number(value, 'f', 2) + "mV";
+                    int value_rect_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
+                                                      Qt::AlignLeft | Qt::AlignVCenter, value_str).width();
+                    p.drawText(QRect(x+10, abs(_dso_ym_start+_dso_ym_end)/2, value_rect_width, text_height),
+                               value_str);
 
-                        // -- start value
-                        value_str = abs(_dso_ym_sig_value) > 1000 ? QString::number(_dso_ym_sig_value/1000.0, 'f', 2) + "V" : QString::number(_dso_ym_sig_value, 'f', 2) + "mV";
-                        value_rect_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
-                                                          Qt::AlignLeft | Qt::AlignVCenter, value_str).width();
-                        int str_y = value > 0 ? _dso_ym_start : _dso_ym_start - text_height;
-                        p.drawText(QRect(x-0.5*value_rect_width, str_y, value_rect_width, text_height),
-                                   value_str);
+                    // -- start value
+                    value_str = abs(_dso_ym_sig_value) > 1000 ? QString::number(_dso_ym_sig_value/1000.0, 'f', 2) + "V" : QString::number(_dso_ym_sig_value, 'f', 2) + "mV";
+                    value_rect_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
+                                                      Qt::AlignLeft | Qt::AlignVCenter, value_str).width();
+                    int str_y = value > 0 ? _dso_ym_start : _dso_ym_start - text_height;
+                    p.drawText(QRect(x-0.5*value_rect_width, str_y, value_rect_width, text_height),
+                               value_str);
 
-                        // -- end value
-                        double end_value = _dso_ym_sig_value + value;
-                        value_str = abs(end_value) > 1000 ? QString::number(end_value/1000.0, 'f', 2) + "V" : QString::number(end_value, 'f', 2) + "mV";
-                        value_rect_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
-                                                          Qt::AlignLeft | Qt::AlignVCenter, value_str).width();
-                        str_y = value > 0 ? _dso_ym_end-text_height : _dso_ym_end;
-                        p.drawText(QRect(x-0.5*value_rect_width, str_y, value_rect_width, text_height),
-                                   value_str);
-                        break;
-                    }
+                    // -- end value
+                    double end_value = _dso_ym_sig_value + value;
+                    value_str = abs(end_value) > 1000 ? QString::number(end_value/1000.0, 'f', 2) + "V" : QString::number(end_value, 'f', 2) + "mV";
+                    value_rect_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
+                                                      Qt::AlignLeft | Qt::AlignVCenter, value_str).width();
+                    str_y = value > 0 ? _dso_ym_end-text_height : _dso_ym_end;
+                    p.drawText(QRect(x-0.5*value_rect_width, str_y, value_rect_width, text_height),
+                               value_str);
+                    break;
                 }
             }
         }
+    }
 
-        // -- width/period/frequency/duty
-        if (_dso_xm) {
-            p.setPen(QPen(Qt::red, 1, Qt::DotLine));
-            int measure_line_count = 6;
-            const int text_height = p.boundingRect(0, 0, INT_MAX, INT_MAX,
-                Qt::AlignLeft | Qt::AlignTop, "W").height();
-            const uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
-            QLineF *line;
-            QLineF *const measure_lines = new QLineF[measure_line_count];
-            line = measure_lines;
-            double x[DsoMeasureStages];
-            for (int i = 0; i < _dso_xm_stage; i++) {
-                x[i] = (_dso_xm_index[i] / (sample_rate * _view.scale())) -
-                    _view.offset() /_view.scale();
-            }
-            measure_line_count = 0;
-            if (_dso_xm_stage > 0) {
-                *line++ = QLineF(x[0], _dso_xm_y - 10,
-                               x[0], _dso_xm_y + 10);
-                measure_line_count += 1;
-            }
-            if (_dso_xm_stage > 1) {
-                *line++ = QLineF(x[1], _dso_xm_y - 10,
-                               x[1], _dso_xm_y + 10);
-                *line++ = QLineF(x[0], _dso_xm_y,
-                               x[1], _dso_xm_y);
-                _mm_width = _view.get_ruler()->format_real_time(_dso_xm_index[1] - _dso_xm_index[0], sample_rate);
+    if (_dso_xm_valid) {
+        p.setPen(QPen(Qt::red, 1, Qt::DotLine));
+        int measure_line_count = 6;
+        const int text_height = p.boundingRect(0, 0, INT_MAX, INT_MAX,
+            Qt::AlignLeft | Qt::AlignTop, "W").height();
+        const uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
+        QLineF *line;
+        QLineF *const measure_lines = new QLineF[measure_line_count];
+        line = measure_lines;
+        double x[DsoMeasureStages];
+        int dso_xm_stage = 0;
+        if (_action_type == DSO_XM_STEP1)
+            dso_xm_stage = 1;
+        else if(_action_type == DSO_XM_STEP2)
+            dso_xm_stage = 2;
+        else
+            dso_xm_stage = 3;
 
-                // -- width show
-                const QString w_ctr = "W="+_mm_width;
-                int w_rect_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
-                                                  Qt::AlignLeft | Qt::AlignVCenter, w_ctr).width();
-                p.drawText(QRect(x[0]+10, _dso_xm_y - text_height, w_rect_width, text_height), w_ctr);
-                measure_line_count += 2;
-            }
-            if (_dso_xm_stage > 2) {
-                *line++ = QLineF(x[0], _dso_xm_y + 20,
-                               x[0], _dso_xm_y + 40);
-                *line++ = QLineF(x[0], _dso_xm_y + 30,
-                               x[2], _dso_xm_y + 30);
-                *line++ = QLineF(x[2], _dso_xm_y + 20,
-                               x[2], _dso_xm_y + 40);
-                _mm_period = _view.get_ruler()->format_real_time(_dso_xm_index[2] - _dso_xm_index[0], sample_rate);
-                _mm_freq = _view.get_ruler()->format_real_freq(_dso_xm_index[2] - _dso_xm_index[0], sample_rate);
-                _mm_duty = QString::number((_dso_xm_index[1] - _dso_xm_index[0]) * 100.0 / (_dso_xm_index[2] - _dso_xm_index[0]), 'f', 2)+"%";
-
-                // -- period show
-                const QString p_ctr = "P="+_mm_period;
-                int p_rect_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
-                                                  Qt::AlignLeft | Qt::AlignVCenter, p_ctr).width();
-                p.drawText(QRect(x[0]+10, _dso_xm_y + 30 - text_height, p_rect_width, text_height), p_ctr);
-
-                // -- frequency show
-                const QString f_ctr = "F="+_mm_freq;
-                int f_rect_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
-                                                  Qt::AlignLeft | Qt::AlignVCenter, f_ctr).width();
-                p.drawText(QRect(x[0]+20 + p_rect_width, _dso_xm_y + 30 - text_height, f_rect_width, text_height), f_ctr);
-
-                // -- duty show
-                const QString d_ctr = "D="+_mm_duty;
-                int d_rect_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
-                                                  Qt::AlignLeft | Qt::AlignVCenter, d_ctr).width();
-                p.drawText(QRect(x[1]+10, _dso_xm_y - 0.5*text_height, d_rect_width, text_height), d_ctr);
-
-                measure_line_count += 3;
-            }
-            p.drawLines(measure_lines, measure_line_count);
-            if (_dso_xm_stage < DsoMeasureStages) {
-                p.drawLine(x[_dso_xm_stage-1], _dso_xm_y,
-                           _mouse_point.x(), _dso_xm_y);
-                p.drawLine(_mouse_point.x(), 0,
-                           _mouse_point.x(), _view.get_viewport()->height());
-            }
-            mouse_measure();
+        for (int i = 0; i < dso_xm_stage; i++) {
+            x[i] = (_dso_xm_index[i] / (sample_rate * _view.scale())) -
+                _view.offset() /_view.scale();
         }
+        measure_line_count = 0;
+        if (dso_xm_stage > 0) {
+            *line++ = QLineF(x[0], _dso_xm_y - 10,
+                           x[0], _dso_xm_y + 10);
+            measure_line_count += 1;
+        }
+        if (dso_xm_stage > 1) {
+            *line++ = QLineF(x[1], _dso_xm_y - 10,
+                           x[1], _dso_xm_y + 10);
+            *line++ = QLineF(x[0], _dso_xm_y,
+                           x[1], _dso_xm_y);
+            _mm_width = _view.get_ruler()->format_real_time(_dso_xm_index[1] - _dso_xm_index[0], sample_rate);
+
+            // -- width show
+            const QString w_ctr = "W="+_mm_width;
+            int w_rect_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
+                                              Qt::AlignLeft | Qt::AlignVCenter, w_ctr).width();
+            p.drawText(QRect(x[0]+10, _dso_xm_y - text_height, w_rect_width, text_height), w_ctr);
+            measure_line_count += 2;
+        }
+        if (dso_xm_stage > 2) {
+            *line++ = QLineF(x[0], _dso_xm_y + 20,
+                           x[0], _dso_xm_y + 40);
+            *line++ = QLineF(x[0], _dso_xm_y + 30,
+                           x[2], _dso_xm_y + 30);
+            *line++ = QLineF(x[2], _dso_xm_y + 20,
+                           x[2], _dso_xm_y + 40);
+            _mm_period = _view.get_ruler()->format_real_time(_dso_xm_index[2] - _dso_xm_index[0], sample_rate);
+            _mm_freq = _view.get_ruler()->format_real_freq(_dso_xm_index[2] - _dso_xm_index[0], sample_rate);
+            _mm_duty = QString::number((_dso_xm_index[1] - _dso_xm_index[0]) * 100.0 / (_dso_xm_index[2] - _dso_xm_index[0]), 'f', 2)+"%";
+
+            // -- period show
+            const QString p_ctr = "P="+_mm_period;
+            int p_rect_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
+                                              Qt::AlignLeft | Qt::AlignVCenter, p_ctr).width();
+            p.drawText(QRect(x[0]+10, _dso_xm_y + 30 - text_height, p_rect_width, text_height), p_ctr);
+
+            // -- frequency show
+            const QString f_ctr = "F="+_mm_freq;
+            int f_rect_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
+                                              Qt::AlignLeft | Qt::AlignVCenter, f_ctr).width();
+            p.drawText(QRect(x[0]+20 + p_rect_width, _dso_xm_y + 30 - text_height, f_rect_width, text_height), f_ctr);
+
+            // -- duty show
+            const QString d_ctr = "D="+_mm_duty;
+            int d_rect_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
+                                              Qt::AlignLeft | Qt::AlignVCenter, d_ctr).width();
+            p.drawText(QRect(x[1]+10, _dso_xm_y - 0.5*text_height, d_rect_width, text_height), d_ctr);
+
+            measure_line_count += 3;
+        }
+        p.drawLines(measure_lines, measure_line_count);
+        if (dso_xm_stage < DsoMeasureStages) {
+            p.drawLine(x[dso_xm_stage-1], _dso_xm_y,
+                       _mouse_point.x(), _dso_xm_y);
+            p.drawLine(_mouse_point.x(), 0,
+                       _mouse_point.x(), _view.get_viewport()->height());
+        }
+        measure_updated();
+    }
+
+    if (_action_type == LOGIC_EDGE) {
+        p.setPen(QColor(17, 133, 209,  255));
+
+        p.drawLine(QLineF(_cur_preX, _cur_midY-5, _cur_preX, _cur_midY+5));
+        p.drawLine(QLineF(_cur_aftX, _cur_midY-5, _cur_aftX, _cur_midY+5));
+        p.drawLine(QLineF(_cur_preX, _cur_midY, _cur_aftX, _cur_midY));
+
+        int typical_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
+            Qt::AlignLeft | Qt::AlignTop, _em_edges).width();
+        typical_width = max(typical_width, p.boundingRect(0, 0, INT_MAX, INT_MAX,
+            Qt::AlignLeft | Qt::AlignTop, _em_rising).width());
+        typical_width = max(typical_width, p.boundingRect(0, 0, INT_MAX, INT_MAX,
+            Qt::AlignLeft | Qt::AlignTop, _em_falling).width());
+
+        typical_width = typical_width + 30;
+
+        const double width = _view.get_view_width();
+        const double height = _view.viewport()->height();
+        const double left = _view.hover_point().x();
+        const double top = _view.hover_point().y();
+        const double right = left + typical_width;
+        const double bottom = top + 60;
+        QPointF org_pos = QPointF(right > width ? left - typical_width : left, bottom > height ? top - 80 : top);
+        QRectF measure_rect = QRectF(org_pos.x(), org_pos.y(), (double)typical_width, 60.0);
+        QRectF measure1_rect = QRectF(org_pos.x(), org_pos.y(), (double)typical_width, 20.0);
+        QRectF measure2_rect = QRectF(org_pos.x(), org_pos.y()+20, (double)typical_width, 20.0);
+        QRectF measure3_rect = QRectF(org_pos.x(), org_pos.y()+40, (double)typical_width, 20.0);
+
+        p.setPen(Qt::NoPen);
+        p.setBrush(QColor(17, 133, 209,  150));
+        p.drawRect(measure_rect);
+
+        p.setPen(Qt::black);
+        p.drawText(measure1_rect, Qt::AlignRight | Qt::AlignVCenter, _em_edges);
+        p.drawText(measure2_rect, Qt::AlignRight | Qt::AlignVCenter, _em_rising);
+        p.drawText(measure3_rect, Qt::AlignRight | Qt::AlignVCenter, _em_falling);
+
     }
 }
 

@@ -59,7 +59,7 @@ Trace::Trace(QString name, uint16_t index, int type) :
     _v_offset(INT_MAX),
     _type(type),
     _sec_index(0),
-    _signalHeight(30)
+    _totalHeight(30)
 {
     _index_list.push_back(index);
 }
@@ -71,7 +71,7 @@ Trace::Trace(QString name, std::list<int> index_list, int type, int sec_index) :
     _type(type),
     _index_list(index_list),
     _sec_index(sec_index),
-    _signalHeight(30)
+    _totalHeight(30)
 {
 }
 
@@ -84,7 +84,7 @@ Trace::Trace(const Trace &t) :
     _index_list(t._index_list),
     _sec_index(t._sec_index),
     _old_v_offset(t._old_v_offset),
-    _signalHeight(t._signalHeight),
+    _totalHeight(t._totalHeight),
     _text_size(t._text_size)
 {
 }
@@ -167,20 +167,25 @@ int Trace::get_zeroPos()
     return _v_offset - _view->v_offset();
 }
 
-int Trace::get_signalHeight() const
+int Trace::get_totalHeight() const
 {
-    return _signalHeight;
+    return _totalHeight;
 }
 
-void Trace::set_signalHeight(int height)
+void Trace::set_totalHeight(int height)
 {
-    _signalHeight = height;
+    _totalHeight = height;
 }
 
 void Trace::set_view(pv::view::View *view)
 {
 	assert(view);
 	_view = view;
+}
+
+pv::view::View* Trace::get_view() const
+{
+    return _view;
 }
 
 void Trace::paint_back(QPainter &p, int left, int right)

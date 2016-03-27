@@ -93,11 +93,32 @@ void Decoder::set_option(const char *id, GVariant *value)
     _setted = true;
 }
 
+void Decoder::set_decode_region(uint64_t start, uint64_t end)
+{
+    _decode_start_back = start;
+    _decode_end_back = end;
+    if (_decode_start != start ||
+        _decode_end != end)
+        _setted = true;
+}
+
+uint64_t Decoder::decode_start() const
+{
+    return _decode_start;
+}
+
+uint64_t Decoder::decode_end() const
+{
+    return _decode_end;
+}
+
 bool Decoder::commit()
 {
     if (_setted) {
         _probes = _probes_back;
         _options = _options_back;
+        _decode_start = _decode_start_back;
+        _decode_end = _decode_end_back;
         _setted = false;
         return true;
     } else {

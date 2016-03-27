@@ -54,13 +54,30 @@ public:
     static const int DsoMeasureStages = 3;
     static const double MinorDragRateUp;
     static const double DragDamping;
+    enum ActionType {
+        NO_ACTION,
+
+        CURS_MOVE,
+
+        LOGIC_EDGE,
+        LOGIC_MOVE,
+        LOGIC_ZOOM,
+
+        DSO_XM_STEP0,
+        DSO_XM_STEP1,
+        DSO_XM_STEP2,
+        DSO_XM_STEP3,
+        DSO_YM,
+        DSO_TRIG_MOVE,
+
+        DECODE_REGION
+    };
+
     enum MeasureType {
         NO_MEASURE,
         LOGIC_FREQ,
-        LOGIC_EDGE,
-        LOGIC_MOVE,
-        LOGIC_CURS,
-        DSO_FREQ
+        LOGIC_EDGE_CNT,
+        DSO_VALUE
     };
 
 public:
@@ -103,7 +120,7 @@ private slots:
     void set_receive_len(quint64 length);
 
 signals:
-    void mouse_measure();
+    void measure_updated();
 
 private:
 	View &_view;
@@ -118,11 +135,8 @@ private:
 
     QPixmap pixmap;
 
-    bool _zoom_rect_visible;
-    QRectF _zoom_rect;
-
     bool _measure_en;
-    bool _measure_shown;
+    ActionType _action_type;
     MeasureType _measure_type;
     uint64_t _cur_sample;
     uint64_t _nxt_sample;
@@ -158,13 +172,11 @@ private:
     QTimer _drag_timer;
     int _drag_strength;
 
-    bool _dso_xm;
-    int _dso_xm_stage;
+    bool _dso_xm_valid;
     int _dso_xm_y;
     uint64_t _dso_xm_index[DsoMeasureStages];
 
-    bool _dso_ym;
-    bool _dso_ym_done;
+    bool _dso_ym_valid;
     uint16_t _dso_ym_sig_index;
     double _dso_ym_sig_value;
     uint64_t _dso_ym_index;
