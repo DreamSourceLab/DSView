@@ -35,7 +35,7 @@ please check your respective distro's package manager tool if you use other dist
 Debian/Ubuntu:
  $ sudo apt-get install git-core gcc gcc-c++ make cmake autoconf automake libtool pkg-config \
    libglib2.0-dev libzip-dev libudev-dev libusb-1.0-0-dev \
-   python3-dev qt5-default libboost-dev libboost-test-dev libboost-thread-dev libboost-system-dev libboost-filesystem-dev check
+   python3-dev qt5-default libboost-dev libboost-test-dev libboost-thread-dev libboost-system-dev libboost-filesystem-dev check qt5-qtbase-devel
 
 Fedora (18, 19):
  $ sudo yum install git gcc g++ make cmake autoconf automake libtool pkgconfig glib2-devel \
