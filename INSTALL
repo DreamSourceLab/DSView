@@ -70,6 +70,9 @@ Step3: Building
 
  $ cd DSView
  $ cmake .
+
+  If this step fails, make sure that your pkg-config is properly configured to find the libsigrok and libsigrokdecode libraries (It's not by default in Fedora 23). To do this add "export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig" to your ~/.bashrc and reload it `. ~/.bashrc`.
+
  $ make
  $ sudo make install
 
