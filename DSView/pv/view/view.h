@@ -34,6 +34,7 @@
 
 #include <QAbstractScrollArea>
 #include <QSizeF>
+#include <QDateTime>
 
 #include "../toolbars/samplingbar.h"
 #include "../data/signaldata.h"
@@ -184,6 +185,8 @@ public:
 
     void set_sample_limit(uint64_t sample_limit, bool force = false);
 
+    QString trigger_time();
+
 signals:
 	void hover_point_changed();
 
@@ -272,6 +275,8 @@ private:
         uint64_t _search_pos;
 
         QPointF _hover_point;
+
+        QDateTime _trigger_time;
 };
 
 } // namespace view

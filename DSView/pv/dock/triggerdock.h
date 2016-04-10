@@ -125,6 +125,8 @@ private:
     QComboBox *_serial_data_comboBox;
     QLabel *_serial_value_lable;
     QLineEdit *_serial_value_lineEdit;
+    QLabel *_serial_vcnt_lable;
+    QSpinBox *_serial_vcnt_spinBox;
 };
 
 } // namespace dock

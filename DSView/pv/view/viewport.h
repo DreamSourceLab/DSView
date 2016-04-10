@@ -110,6 +110,7 @@ private:
     void paintSignals(QPainter& p);
     void paintProgress(QPainter& p);
     void paintMeasure(QPainter &p);
+    void paintTrigTime(QPainter &p);
 
     void measure();
 

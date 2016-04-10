@@ -31,6 +31,7 @@
 #include <QPainter>
 #include <QRegExpValidator>
 #include <QMessageBox>
+#include <QSplitter>
 
 #include "libsigrok4DSL/libsigrok.h"
 
@@ -186,23 +187,32 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
     _serial_value_lineEdit->setInputMask("X X X X X X X X X X X X X X X X");
     _serial_value_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
+    _serial_vcnt_spinBox = new QSpinBox(_widget);
+    _serial_vcnt_spinBox->setRange(1, INT32_MAX);
+    _serial_vcnt_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
+
     QLabel *serial_value_exp_label = new QLabel("1 1 1 1 1 1\n5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0", _widget);
     serial_value_exp_label->setFont(font);
 
     QVBoxLayout *serial_layout = new QVBoxLayout();
     QGridLayout *serial_glayout = new QGridLayout();
-    serial_glayout->addWidget(serial_value_exp_label, 1, 1, 1, 4);
+    serial_glayout->addWidget(serial_value_exp_label, 1, 1, 1, 3);
     serial_glayout->addWidget(_serial_start_label, 2, 0);
-    serial_glayout->addWidget(_serial_start_lineEdit, 2, 1, 1, 4);
-    serial_glayout->addWidget(new QLabel(_widget), 2, 2);
+    serial_glayout->addWidget(_serial_start_lineEdit, 2, 1, 1, 3);
+    serial_glayout->addWidget(new QLabel(_widget), 2, 4);
     serial_glayout->addWidget(_serial_stop_label, 3, 0);
-    serial_glayout->addWidget(_serial_stop_lineEdit, 3, 1, 1, 4);
+    serial_glayout->addWidget(_serial_stop_lineEdit, 3, 1, 1, 3);
     serial_glayout->addWidget(_serial_edge_label, 4, 0);
-    serial_glayout->addWidget(_serial_edge_lineEdit, 4, 1, 1, 4);
-    serial_glayout->addWidget(_serial_data_lable, 5, 0);
-    serial_glayout->addWidget(_serial_data_comboBox, 5, 1);
-    serial_glayout->addWidget(_serial_value_lable, 6, 0);
-    serial_glayout->addWidget(_serial_value_lineEdit, 6, 1, 1, 4);
+    serial_glayout->addWidget(_serial_edge_lineEdit, 4, 1, 1, 3);
+
+    serial_glayout->addWidget(new QLabel(_widget), 5, 0, 1, 5);
+    serial_glayout->addWidget(_serial_data_lable, 6, 0);
+    serial_glayout->addWidget(_serial_data_comboBox, 6, 1);
+    serial_glayout->addWidget(new QLabel(tr("counter"), _widget), 6, 4);
+    serial_glayout->addWidget(_serial_value_lable, 7, 0);
+    serial_glayout->addWidget(_serial_value_lineEdit, 7, 1, 1, 3);
+    serial_glayout->addWidget(_serial_vcnt_spinBox, 7, 4);
+    serial_glayout->addWidget(new QLabel(_widget), 7, 5);
     serial_layout->addLayout(serial_glayout);
     serial_layout->addSpacing(20);
     serial_layout->addWidget(new QLabel(tr("X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge")));
@@ -436,10 +446,16 @@ bool TriggerDock::commit_trigger()
         }
 
         // trigger count update
-        for (i = 0; i < stages_comboBox->currentText().toInt(); i++) {
-            ds_trigger_stage_set_count(i, TriggerProbes,
-                                       _count0_spinBox_list.at(i)->value() - 1,
-                                       _count1_spinBox_list.at(i)->value() - 1);
+        if (_adv_tabWidget->currentIndex() == 0) {
+            for (i = 0; i < stages_comboBox->currentText().toInt(); i++) {
+                ds_trigger_stage_set_count(i, TriggerProbes,
+                                           _count0_spinBox_list.at(i)->value() - 1,
+                                           _count1_spinBox_list.at(i)->value() - 1);
+            }
+        } else if(_adv_tabWidget->currentIndex() == 1){
+            ds_trigger_stage_set_count(4, TriggerProbes,
+                                       _serial_vcnt_spinBox->value() - 1,
+                                       0);
         }
         return 1;
     }
@@ -482,6 +498,7 @@ QJsonObject TriggerDock::get_session()
     trigSes["triggerClock"] = _serial_edge_lineEdit->text();
     trigSes["triggerChannel"] = _serial_data_comboBox->currentIndex();
     trigSes["triggerData"] = _serial_value_lineEdit->text();
+    trigSes["triggerVcnt"] = _serial_vcnt_spinBox->value();
 
     return trigSes;
 }
@@ -518,6 +535,7 @@ void TriggerDock::set_session(QJsonObject ses)
     _serial_edge_lineEdit->setText(ses["triggerClock"].toString());
     _serial_data_comboBox->setCurrentIndex(ses["triggerChannel"].toDouble());
     _serial_value_lineEdit->setText(ses["triggerData"].toString());
+    _serial_vcnt_spinBox->setValue(ses["triggerVcnt"].toDouble());
 }
 
 } // namespace dock

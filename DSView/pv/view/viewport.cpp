@@ -165,6 +165,8 @@ void Viewport::paintEvent(QPaintEvent *event)
     if (_view.get_signalHeight() != _curSignalHeight)
             _curSignalHeight = _view.get_signalHeight();
 
+    paintTrigTime(p);
+
 	p.end();
 }
 
@@ -813,8 +815,7 @@ void Viewport::measure()
             }
         }
     }
-    if (_measure_type != NO_MEASURE)
-        measure_updated();
+    measure_updated();
 }
 
 void Viewport::paintMeasure(QPainter &p)
@@ -1166,6 +1167,15 @@ void Viewport::on_drag_timer()
             _drag_timer.start(DragTimerInterval);
     } else {
         _drag_timer.stop();
+    }
+}
+
+void Viewport::paintTrigTime(QPainter &p)
+{
+    if (_view.session().get_device()->dev_inst()->mode == LOGIC) {
+        p.setPen(Trace::dsBack);
+        p.drawText(this->rect(), Qt::AlignRight | Qt::AlignBottom,
+                   "Last Trigger Time: "+_view.trigger_time());
     }
 }
 

@@ -345,6 +345,11 @@ void View::set_trig_pos(quint64 trig_pos)
     _trig_cursor->set_index(trig_pos);
     _show_trig_cursor = true;
     set_scale_offset(_scale,  time - _scale * get_view_width() / 2);
+
+    _trigger_time = QDateTime::currentDateTime();
+    const int64_t secs = time - _session.get_device()->get_sample_time();
+    _trigger_time = _trigger_time.addSecs(secs);
+
     _ruler->update();
     _viewport->update();
 }
@@ -822,6 +827,11 @@ double View::get_max_offset()
 {
     return _session.get_device()->get_sample_time()
             - _scale * (get_view_width() * MaxViewRate);
+}
+
+QString View::trigger_time()
+{
+    return _trigger_time.toString("yyyy-MM-dd hh:mm:ss ddd");
 }
 
 } // namespace view
