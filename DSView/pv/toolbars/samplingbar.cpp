@@ -454,7 +454,8 @@ void SamplingBar::update_sample_rate_selector_value()
             break;
         }
     }
-    update_scale();
+    if (samplerate != _sample_rate.itemData(_sample_rate.currentIndex()).value<uint64_t>())
+        update_scale();
     _updating_sample_rate = false;
 }
 
@@ -511,7 +512,7 @@ void SamplingBar::on_samplecount_sel(int index)
                              g_variant_new_uint64(sample_count));
 
         sample_count_changed();
-        update_scale();
+        //update_scale();
     }
 }
 
@@ -535,7 +536,7 @@ void SamplingBar::on_samplerate_sel(int index)
                                               SR_CONF_SAMPLERATE,
                                               g_variant_new_uint64(sample_rate));
 
-            update_scale();
+            //update_scale();
     }
 }
 
@@ -625,9 +626,11 @@ void SamplingBar::update_sample_count_selector_value()
             i).value<uint64_t>())
             _sample_count.setCurrentIndex(i);
 
+    if (samplecount != _sample_count.itemData(_sample_count.currentIndex()).value<uint64_t>()) {
+        sample_count_changed();
+        update_scale();
+    }
     _updating_sample_count = false;
-    sample_count_changed();
-    update_scale();
 }
 
 void SamplingBar::commit_sample_count()

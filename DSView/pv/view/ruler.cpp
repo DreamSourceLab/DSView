@@ -77,6 +77,7 @@ const QColor Ruler::dsBlue = QColor(17, 133, 209,  255);
 const QColor Ruler::dsYellow = QColor(238, 178, 17, 255);
 const QColor Ruler::dsRed = QColor(213, 15, 37, 255);
 const QColor Ruler::dsGreen = QColor(0, 153, 37, 255);
+const QColor Ruler::RULER_COLOR = QColor(255, 255, 255, 255);
 
 const QColor Ruler::HitColor = dsYellow;
 const QColor Ruler::WarnColor = dsRed;
@@ -458,7 +459,7 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
         AlignLeft | AlignTop, "8").height();
 
     // Draw the tick marks
-    p.setPen(dsBlue);
+    p.setPen(Trace::DARK_FORE);
 
     const double minor_tick_period = tick_period / MinPeriodScale;
     const int minor_order = (int)floorf(log10f(minor_tick_period));
@@ -548,7 +549,7 @@ void Ruler::draw_hover_mark(QPainter &p)
 		return;
 
 	p.setPen(QPen(Qt::NoPen));
-    p.setBrush(dsBlue);
+    p.setBrush(RULER_COLOR);
 
 	const int b = height() - 1;
 	const QPointF points[] = {

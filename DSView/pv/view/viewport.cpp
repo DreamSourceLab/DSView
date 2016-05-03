@@ -445,11 +445,11 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
 
         if (_action_type == DSO_YM)
             _dso_ym_end = event->pos().y();
-
-        measure();
     }
 
     _mouse_point = event->pos();
+
+    measure();
     update();
 }
 
@@ -719,7 +719,6 @@ void Viewport::leaveEvent(QEvent *)
        _mm_period = "#####";
        _mm_freq = "#####";
        _mm_duty = "#####";
-       measure_updated();
     } else if (_action_type == DSO_YM) {
         _dso_ym_valid = false;
     }
@@ -727,6 +726,7 @@ void Viewport::leaveEvent(QEvent *)
     if (_action_type != NO_ACTION)
         _action_type = NO_ACTION;
 
+    measure();
     update();
 }
 
@@ -767,7 +767,7 @@ void Viewport::measure()
         boost::shared_ptr<view::DsoSignal> dsoSig;
         if (logicSig = dynamic_pointer_cast<view::LogicSignal>(s)) {
             if (_action_type == NO_ACTION) {
-                if (logicSig->measure(_view.hover_point(), _cur_sample, _nxt_sample, _thd_sample)) {
+                if (logicSig->measure(_mouse_point, _cur_sample, _nxt_sample, _thd_sample)) {
                     _measure_type = LOGIC_FREQ;
 
                     _mm_width = _view.get_ruler()->format_real_time(_nxt_sample - _cur_sample, sample_rate);
@@ -1173,7 +1173,7 @@ void Viewport::on_drag_timer()
 void Viewport::paintTrigTime(QPainter &p)
 {
     if (_view.session().get_device()->dev_inst()->mode == LOGIC) {
-        p.setPen(Trace::dsBack);
+        p.setPen(Trace::DARK_FORE);
         p.drawText(this->rect(), Qt::AlignRight | Qt::AlignBottom,
                    "Last Trigger Time: "+_view.trigger_time());
     }

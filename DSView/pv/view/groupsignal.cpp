@@ -204,9 +204,8 @@ void GroupSignal::paint_type_options(QPainter &p, int right, const QPoint pt)
     const QRectF group_index_rect = get_rect(CHNLREG, y, right);
     QString index_string;
     int last_index;
-    p.setPen(Qt::transparent);
-    p.setBrush(dsBlue);
-    p.drawRect(group_index_rect);
+    p.setPen(QPen(DARK_FORE, 1, Qt::DashLine));
+    p.drawLine(group_index_rect.bottomLeft(), group_index_rect.bottomRight());
     std::list<int>::iterator i = _index_list.begin();
     last_index = (*i);
     index_string = QString::number(last_index);
@@ -219,7 +218,7 @@ void GroupSignal::paint_type_options(QPainter &p, int right, const QPoint pt)
             index_string = QString::number((*i)) + "," + index_string;
         last_index = (*i);
     }
-    p.setPen(Qt::white);
+    p.setPen(DARK_FORE);
     p.drawText(group_index_rect, Qt::AlignRight | Qt::AlignVCenter, index_string);
 }
 

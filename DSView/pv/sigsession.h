@@ -67,6 +67,7 @@ class Logic;
 class LogicSnapshot;
 class Group;
 class GroupSnapshot;
+class DecoderModel;
 }
 
 namespace device {
@@ -154,6 +155,8 @@ public:
 
     void rst_decoder(view::DecodeTrace *signal);
 
+    pv::data::DecoderModel* get_decoder_model() const;
+
 #endif
 
     void init_signals();
@@ -234,6 +237,7 @@ private:
     std::vector< boost::shared_ptr<view::GroupSignal> > _group_traces;
 #ifdef ENABLE_DECODE
     std::vector< boost::shared_ptr<view::DecodeTrace> > _decode_traces;
+    pv::data::DecoderModel *_decoder_model;
 #endif
 
     mutable boost::mutex _data_mutex;
@@ -290,6 +294,10 @@ signals:
 
     void zero_adj();
     void progressSaveFileValueChanged(int percent);
+
+    void decode_done();
+
+    void show_region(uint64_t start, uint64_t end);
 
 public slots:
     void reload();

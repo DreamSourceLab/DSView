@@ -74,7 +74,7 @@ View::View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget
 	_viewport(new Viewport(*this)),
 	_ruler(new Ruler(*this)),
 	_header(new Header(*this)),
-    _devmode(new DevMode(*this)),
+    _devmode(new DevMode(this, session)),
     _scale(1e-8),
     _preScale(1e-6),
     _maxscale(1e9),
@@ -98,15 +98,17 @@ View::View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     setViewportMargins(headerWidth(), RulerHeight, 0, 0);
     setViewport(_viewport);
 
+    connect(&_session, SIGNAL(device_setted()),
+            _devmode, SLOT(set_device()));
     connect(&_session, SIGNAL(signals_changed()),
         this, SLOT(signals_changed()));
     connect(&_session, SIGNAL(data_updated()),
         this, SLOT(data_updated()));
     connect(&_session, SIGNAL(receive_trigger(quint64)),
             this, SLOT(set_trig_pos(quint64)));
+    connect(&_session, SIGNAL(show_region(uint64_t,uint64_t)),
+            this, SLOT(show_region(uint64_t, uint64_t)));
 
-    connect(&_session, SIGNAL(device_setted()),
-            _devmode, SLOT(set_device()));
     connect(_devmode, SIGNAL(mode_changed()),
             this, SIGNAL(mode_changed()));
 
@@ -464,9 +466,9 @@ void View::update_scale()
     }
 
     _minscale = (1.0 / sample_rate) / MaxPixelsPerSample;
-    _offset = 0;
+    //_offset = 0;
     _preScale = _scale;
-    _preOffset = _offset;
+    //_preOffset = _offset;
 
     _trig_cursor->set_index(_trig_pos);
 
@@ -514,6 +516,7 @@ void View::signals_changed()
     _viewport->clear_measure();
     header_updated();
     normalize_layout();
+    data_updated();
 }
 
 bool View::eventFilter(QObject *object, QEvent *event)
@@ -832,6 +835,15 @@ double View::get_max_offset()
 QString View::trigger_time()
 {
     return _trigger_time.toString("yyyy-MM-dd hh:mm:ss ddd");
+}
+
+void View::show_region(uint64_t start, uint64_t end)
+{
+    assert(start <= end);
+    const double ideal_scale = (end-start) * 2.0 / _session.get_device()->get_sample_rate() / get_view_width();
+    const double new_scale = max(min(ideal_scale, _maxscale), _minscale);
+    const double new_off = (start + end)  * 0.5 / _session.get_device()->get_sample_rate() - new_scale * get_view_width() / 2;
+    set_scale_offset(new_scale, new_off);
 }
 
 } // namespace view

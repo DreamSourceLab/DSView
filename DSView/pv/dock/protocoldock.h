@@ -34,14 +34,22 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QScrollArea>
+#include <QSplitter>
+#include <QTableView>
 
 #include <vector>
 
 #include <libsigrok4DSL/libsigrok.h>
 
+#include "../data/decodermodel.h"
+
 namespace pv {
 
 class SigSession;
+
+namespace data {
+class DecoderModel;
+}
 
 namespace dock {
 
@@ -58,19 +66,29 @@ public:
     void del_all_protocol();
 
 signals:
+    void protocol_updated();
 
 private slots:
     void add_protocol();
     void rst_protocol();
     void del_protocol();
+    void set_model();
+    void update_model();
+    void export_table_view();
+    void item_clicked(const QModelIndex &index);
+    void column_resize(int index, int old_size, int new_size);
 
 private:
     static int decoder_name_cmp(const void *a, const void *b);
+    void resize_table_view(data::DecoderModel *decoder_model);
 
 private:
     SigSession &_session;
 
-    QWidget *_widget;
+    QSplitter *_split_widget;
+    QWidget *_up_widget;
+    QWidget *_dn_widget;
+    QTableView *_table_view;
 
     QPushButton *_add_button;
     QPushButton *_del_all_button;
@@ -80,7 +98,10 @@ private:
     QVector <QLabel *> _protocol_label_list;
     QVector <int > _protocol_index_list;
     QVector <QHBoxLayout *> _hori_layout_list;
-    QVBoxLayout *_layout;
+    QVBoxLayout *_up_layout;
+
+    QPushButton *_dn_set_button;
+    QPushButton *_dn_save_button;
 };
 
 } // namespace dock

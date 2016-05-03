@@ -68,7 +68,8 @@ DecoderStack::DecoderStack(pv::SigSession &session,
 	_frame_complete(false),
     _samples_decoded(0),
     _decode_state(Stopped),
-    _options_changed(false)
+    _options_changed(false),
+    _no_memory(false)
 {
 	connect(&_session, SIGNAL(frame_began()),
 		this, SLOT(on_new_frame()));
@@ -79,6 +80,8 @@ DecoderStack::DecoderStack(pv::SigSession &session,
 
 	_stack.push_back(shared_ptr<decode::Decoder>(
 		new decode::Decoder(dec)));
+
+    build_row();
 }
 
 DecoderStack::~DecoderStack()
@@ -89,7 +92,10 @@ DecoderStack::~DecoderStack()
 //	}
     stop_decode();
     _stack.clear();
-    clear();
+    _rows.clear();
+    _rows_gshow.clear();
+    _rows_lshow.clear();
+    _class_rows.clear();
 }
 
 const std::list< boost::shared_ptr<decode::Decoder> >&
@@ -102,56 +108,89 @@ void DecoderStack::push(boost::shared_ptr<decode::Decoder> decoder)
 {
 	assert(decoder);
 	_stack.push_back(decoder);
+    build_row();
+    _options_changed = true;
 }
 
-void DecoderStack::remove(int index)
+void DecoderStack::remove(boost::shared_ptr<Decoder> &decoder)
 {
-	assert(index >= 0);
-	assert(index < (int)_stack.size());
-
 	// Find the decoder in the stack
 	list< shared_ptr<Decoder> >::iterator iter = _stack.begin();
-	for(int i = 0; i < index; i++, iter++)
-		assert(iter != _stack.end());
+    for(int i = 0; i < _stack.size(); i++, iter++)
+        if ((*iter) == decoder)
+            break;
 
 	// Delete the element
-	_stack.erase(iter);
+    if (iter != _stack.end())
+        _stack.erase(iter);
+
+    build_row();
+    _options_changed = true;
+}
+
+void DecoderStack::build_row()
+{
+    _rows.clear();
+    // Add classes
+    BOOST_FOREACH (const shared_ptr<decode::Decoder> &dec, _stack)
+    {
+        assert(dec);
+        const srd_decoder *const decc = dec->decoder();
+        assert(dec->decoder());
+
+        // Add a row for the decoder if it doesn't have a row list
+        if (!decc->annotation_rows) {
+            const Row row(decc);
+            _rows[row] = decode::RowData();
+            std::map<const decode::Row, bool>::const_iterator iter = _rows_gshow.find(row);
+            if (iter == _rows_gshow.end()) {
+                if (row.title().contains("bit", Qt::CaseInsensitive) ||
+                    row.title().contains("warning", Qt::CaseInsensitive)) {
+                    _rows_gshow[row] = false;
+                    _rows_lshow[row] = false;
+                } else {
+                    _rows_gshow[row] = true;
+                    _rows_lshow[row] = true;
+                }
+            }
+        }
+
+        // Add the decoder rows
+        for (const GSList *l = decc->annotation_rows; l; l = l->next)
+        {
+            const srd_decoder_annotation_row *const ann_row =
+                (srd_decoder_annotation_row *)l->data;
+            assert(ann_row);
+
+            const Row row(decc, ann_row);
+
+            // Add a new empty row data object
+            _rows[row] = decode::RowData();
+            std::map<const decode::Row, bool>::const_iterator iter = _rows_gshow.find(row);
+            if (iter == _rows_gshow.end()) {
+                if (row.title().contains("bit", Qt::CaseInsensitive) ||
+                    row.title().contains("warning", Qt::CaseInsensitive)) {
+                    _rows_gshow[row] = false;
+                    _rows_lshow[row] = false;
+                } else {
+                    _rows_gshow[row] = true;
+                    _rows_lshow[row] = true;
+                }
+            }
+
+            // Map out all the classes
+            for (const GSList *ll = ann_row->ann_classes;
+                ll; ll = ll->next)
+                _class_rows[make_pair(decc,
+                    GPOINTER_TO_INT(ll->data))] = row;
+        }
+    }
 }
 
 int64_t DecoderStack::samples_decoded() const
 {
 	lock_guard<mutex> decode_lock(_output_mutex);
 	return _samples_decoded;
-}
-
-std::vector< std::pair<decode::Row, bool> >  DecoderStack::get_visible_rows() const
-{
-	lock_guard<mutex> lock(_output_mutex);
-
-    std::vector< std::pair<decode::Row, bool> >  rows;
-
-	BOOST_FOREACH (const shared_ptr<decode::Decoder> &dec, _stack)
-	{
-		assert(dec);
-
-		const srd_decoder *const decc = dec->decoder();
-		assert(dec->decoder());
-
-		// Add a row for the decoder if it doesn't have a row list
-		if (!decc->annotation_rows)
-            rows.push_back(make_pair(Row(decc), dec->shown()));
-
-		// Add the decoder rows
-		for (const GSList *l = decc->annotation_rows; l; l = l->next)
-		{
-			const srd_decoder_annotation_row *const ann_row =
-				(srd_decoder_annotation_row *)l->data;
-			assert(ann_row);
-            rows.push_back(make_pair(Row(decc, ann_row), dec->shown()));
-		}
-	}
-
-	return rows;
 }
 
 void DecoderStack::get_annotation_subset(
@@ -161,9 +200,9 @@ void DecoderStack::get_annotation_subset(
 {
 	lock_guard<mutex> lock(_output_mutex);
 
-	std::map<const Row, decode::RowData>::const_iterator iter =
-		_rows.find(row);
-	if (iter != _rows.end())
+    std::map<const Row, decode::RowData>::const_iterator iter =
+        _rows.find(row);
+    if (iter != _rows.end())
 		(*iter).second.get_annotation_subset(dest,
 			start_sample, end_sample);
 }
@@ -178,6 +217,44 @@ uint64_t DecoderStack::get_max_annotation(const Row &row)
         return (*iter).second.get_max_annotation();
 
     return 0;
+}
+
+uint64_t DecoderStack::get_min_annotation(const Row &row)
+{
+    lock_guard<mutex> lock(_output_mutex);
+
+    std::map<const Row, decode::RowData>::const_iterator iter =
+        _rows.find(row);
+    if (iter != _rows.end())
+        return (*iter).second.get_min_annotation();
+
+    return 0;
+}
+
+std::map<const decode::Row, bool>& DecoderStack::get_rows_gshow()
+{
+    return _rows_gshow;
+}
+
+std::map<const decode::Row, bool>& DecoderStack::get_rows_lshow()
+{
+    return _rows_lshow;
+}
+
+void DecoderStack::set_rows_gshow(const decode::Row row, bool show)
+{
+    std::map<const decode::Row, bool>::const_iterator iter = _rows_gshow.find(row);
+    if (iter != _rows_gshow.end()) {
+        _rows_gshow[row] = show;
+    }
+}
+
+void DecoderStack::set_rows_lshow(const decode::Row row, bool show)
+{
+    std::map<const decode::Row, bool>::const_iterator iter = _rows_lshow.find(row);
+    if (iter != _rows_lshow.end()) {
+        _rows_lshow[row] = show;
+    }
 }
 
 bool DecoderStack::has_annotations(const Row &row) const
@@ -195,6 +272,55 @@ bool DecoderStack::has_annotations(const Row &row) const
         return false;
 }
 
+uint64_t DecoderStack::list_annotation_size() const
+{
+    uint64_t max_annotation_size = 0;
+    int row = 0;
+    for (map<const Row, RowData>::const_iterator i = _rows.begin();
+        i != _rows.end(); i++) {
+        map<const Row, bool>::const_iterator iter = _rows_lshow.find((*i).first);
+        if (iter != _rows_lshow.end() && (*iter).second)
+            max_annotation_size = max(max_annotation_size,
+                (*i).second.get_annotation_size());
+    }
+
+    return max_annotation_size;
+}
+
+bool DecoderStack::list_annotation(pv::data::decode::Annotation &ann,
+                                  uint16_t row_index, uint64_t col_index) const
+{
+    int row = 0;
+    for (map<const Row, RowData>::const_iterator i = _rows.begin();
+        i != _rows.end(); i++) {
+        map<const Row, bool>::const_iterator iter = _rows_lshow.find((*i).first);
+        if (iter != _rows_lshow.end() && (*iter).second) {
+            if (row_index-- == 0) {
+                return (*i).second.get_annotation(ann, col_index);
+            }
+        }
+    }
+
+    return false;
+}
+
+
+bool DecoderStack::list_row_title(int row, QString &title) const
+{
+    int index = 0;
+    for (map<const Row, RowData>::const_iterator i = _rows.begin();
+        i != _rows.end(); i++) {
+        map<const Row, bool>::const_iterator iter = _rows_lshow.find((*i).first);
+        if (iter != _rows_lshow.end() && (*iter).second) {
+            if (row-- == 0) {
+                title = (*i).first.title();
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
 QString DecoderStack::error_message()
 {
 	lock_guard<mutex> lock(_output_mutex);
@@ -207,16 +333,20 @@ void DecoderStack::clear()
 	_frame_complete = false;
 	_samples_decoded = 0;
 	_error_message = QString();
-	_rows.clear();
-	_class_rows.clear();
+    for (map<const Row, RowData>::const_iterator i = _rows.begin();
+        i != _rows.end(); i++)
+        _rows[(*i).first] = decode::RowData();
+    _no_memory = false;
 }
 
 void DecoderStack::stop_decode()
 {
     _snapshot.reset();
 
-    if(_decode_state == Stopped)
+    if(_decode_state == Stopped) {
+        clear();
         return;
+    }
 
     if (_decode_thread.get()) {
         _decode_thread->interrupt();
@@ -224,6 +354,7 @@ void DecoderStack::stop_decode()
         _decode_state = Stopped;
     }
     _decode_thread.reset();
+    clear();
 }
 
 void DecoderStack::begin_decode()
@@ -239,8 +370,6 @@ void DecoderStack::begin_decode()
 //	}
     stop_decode();
 
-	clear();
-
 	// Check that all decoders have the required channels
 	BOOST_FOREACH(const shared_ptr<decode::Decoder> &dec, _stack)
 		if (!dec->have_required_probes()) {
@@ -248,37 +377,6 @@ void DecoderStack::begin_decode()
 				"have not been specified");
 			return;
 		}
-
-	// Add classes
-	BOOST_FOREACH (const shared_ptr<decode::Decoder> &dec, _stack)
-	{
-		assert(dec);
-		const srd_decoder *const decc = dec->decoder();
-		assert(dec->decoder());
-
-		// Add a row for the decoder if it doesn't have a row list
-		if (!decc->annotation_rows)
-			_rows[Row(decc)] = decode::RowData();
-
-		// Add the decoder rows
-		for (const GSList *l = decc->annotation_rows; l; l = l->next)
-		{
-			const srd_decoder_annotation_row *const ann_row =
-				(srd_decoder_annotation_row *)l->data;
-			assert(ann_row);
-
-			const Row row(decc, ann_row);
-
-			// Add a new empty row data object
-			_rows[row] = decode::RowData();
-
-			// Map out all the classes
-			for (const GSList *ll = ann_row->ann_classes;
-				ll; ll = ll->next)
-				_class_rows[make_pair(decc,
-					GPOINTER_TO_INT(ll->data))] = row;
-		}
-	}
 
 	// We get the logic data of the first channel in the list.
 	// This works because we are currently assuming all
@@ -313,8 +411,8 @@ uint64_t DecoderStack::get_max_sample_count() const
 {
 	uint64_t max_sample_count = 0;
 
-	for (map<const Row, RowData>::const_iterator i = _rows.begin();
-		i != _rows.end(); i++)
+    for (map<const Row, RowData>::const_iterator i = _rows.begin();
+        i != _rows.end(); i++)
 		max_sample_count = max(max_sample_count,
 			(*i).second.get_max_sample());
 
@@ -333,48 +431,6 @@ boost::optional<uint64_t> DecoderStack::wait_for_data() const
 		_sample_count);
 }
 
-//void DecoderStack::decode_data(
-//    const uint64_t sample_count, const unsigned int unit_size,
-//	srd_session *const session)
-//{
-//    //uint8_t chunk[DecodeChunkLength];
-//    uint8_t *chunk = NULL;
-//    //chunk = (uint8_t *)realloc(chunk, DecodeChunkLength);
-
-//    const uint64_t chunk_sample_count =
-//		DecodeChunkLength / _snapshot->unit_size();
-
-//    for (uint64_t i = 0;
-//		!boost::this_thread::interruption_requested() &&
-//			i < sample_count;
-//		i += chunk_sample_count)
-//	{
-//        //lock_guard<mutex> decode_lock(_global_decode_mutex);
-
-//        const uint64_t chunk_end = min(
-//			i + chunk_sample_count, sample_count);
-//        chunk = _snapshot->get_samples(i, chunk_end);
-
-//		if (srd_session_send(session, i, i + sample_count, chunk,
-//                (chunk_end - i) * unit_size, unit_size) != SRD_OK) {
-//			_error_message = tr("Decoder reported an error");
-//			break;
-//		}
-
-//		{
-//			lock_guard<mutex> lock(_output_mutex);
-//			_samples_decoded = chunk_end;
-//		}
-
-//        if (i % DecodeNotifyPeriod == 0)
-//            new_decode_data();
-
-//	}
-//    _options_changed = false;
-//    decode_done();
-//    //new_decode_data();
-//}
-
 void DecoderStack::decode_data(
     const uint64_t decode_start, const uint64_t decode_end,
     const unsigned int unit_size, srd_session *const session)
@@ -386,7 +442,7 @@ void DecoderStack::decode_data(
 
     for (uint64_t i = decode_start;
         !boost::this_thread::interruption_requested() &&
-            i < decode_end;
+            i < decode_end && !_no_memory;
         i += chunk_sample_count)
     {
         //lock_guard<mutex> decode_lock(_global_decode_mutex);
@@ -490,6 +546,11 @@ uint64_t DecoderStack::sample_count() const
         return 0;
 }
 
+uint64_t DecoderStack::sample_rate() const
+{
+    return _samplerate;
+}
+
 void DecoderStack::annotation_callback(srd_proto_data *pdata, void *decoder)
 {
 	assert(pdata);
@@ -500,6 +561,9 @@ void DecoderStack::annotation_callback(srd_proto_data *pdata, void *decoder)
 
 	lock_guard<mutex> lock(d->_output_mutex);
 
+    if (d->_no_memory)
+        return;
+
 	const Annotation a(pdata);
 
 	// Find the row
@@ -508,21 +572,21 @@ void DecoderStack::annotation_callback(srd_proto_data *pdata, void *decoder)
 	const srd_decoder *const decc = pdata->pdo->di->decoder;
 	assert(decc);
 
-	map<const Row, decode::RowData>::iterator row_iter = d->_rows.end();
+    map<const Row, decode::RowData>::iterator row_iter = d->_rows.end();
 	
 	// Try looking up the sub-row of this class
 	const map<pair<const srd_decoder*, int>, Row>::const_iterator r =
 		d->_class_rows.find(make_pair(decc, a.format()));
 	if (r != d->_class_rows.end())
-		row_iter = d->_rows.find((*r).second);
+        row_iter = d->_rows.find((*r).second);
 	else
 	{
 		// Failing that, use the decoder as a key
-		row_iter = d->_rows.find(Row(decc));	
+        row_iter = d->_rows.find(Row(decc));
 	}
 
-	assert(row_iter != d->_rows.end());
-	if (row_iter == d->_rows.end()) {
+    assert(row_iter != d->_rows.end());
+    if (row_iter == d->_rows.end()) {
 		qDebug() << "Unexpected annotation: decoder = " << decc <<
 			", format = " << a.format();
 		assert(0);
@@ -530,7 +594,8 @@ void DecoderStack::annotation_callback(srd_proto_data *pdata, void *decoder)
 	}
 
 	// Add the annotation
-	(*row_iter).second.push_annotation(a);
+    if (!(*row_iter).second.push_annotation(a))
+        d->_no_memory = true;
 }
 
 void DecoderStack::on_new_frame()
@@ -560,21 +625,25 @@ void DecoderStack::on_frame_ended()
     begin_decode();
 }
 
-int DecoderStack::cur_rows_size()
+int DecoderStack::list_rows_size()
 {
     int rows_size = 0;
+    int row = 0;
     for (map<const Row, RowData>::const_iterator i = _rows.begin();
-        i != _rows.end(); i++)
-        if ((*i).second.get_max_sample() != 0)
+        i != _rows.end(); i++) {
+        map<const Row, bool>::const_iterator iter = _rows_lshow.find((*i).first);
+        if (iter != _rows_lshow.end() && (*iter).second)
             rows_size++;
-
-    if (rows_size == 0)
-        return 1;
-    else
-        return rows_size;
+    }
+    return rows_size;
 }
 
-void DecoderStack::options_changed(bool changed)
+bool DecoderStack::options_changed() const
+{
+    return _options_changed;
+}
+
+void DecoderStack::set_options_changed(bool changed)
 {
     _options_changed = changed;
 }

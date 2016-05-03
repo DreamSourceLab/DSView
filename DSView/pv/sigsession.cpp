@@ -41,6 +41,7 @@
 #include "data/groupsnapshot.h"
 #include "data/decoderstack.h"
 #include "data/decode/decoder.h"
+#include "data/decodermodel.h"
 
 #include "view/analogsignal.h"
 #include "view/dsosignal.h"
@@ -99,6 +100,7 @@ SigSession::SigSession(DeviceManager &device_manager) :
     _refresh_timer.stop();
     _refresh_timer.setSingleShot(true);
     _data_lock = false;
+    _decoder_model = new pv::data::DecoderModel(this);
     connect(this, SIGNAL(start_timer(int)), &_view_timer, SLOT(start(int)));
     //connect(&_view_timer, SIGNAL(timeout()), this, SLOT(refresh()));
     connect(&_refresh_timer, SIGNAL(timeout()), this, SLOT(data_unlock()));
@@ -455,7 +457,6 @@ void SigSession::start_capture(bool instant,
         _view_timer.blockSignals(false);
 
 	// Begin the session
-
 	_sampling_thread.reset(new boost::thread(
         &SigSession::sample_thread_proc, this, _dev_inst,
         error_handler));
@@ -1104,9 +1105,10 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
             _cur_logic_snapshot.reset();
             _cur_dso_snapshot.reset();
             _cur_analog_snapshot.reset();
-
+#ifdef ENABLE_DECODE
             BOOST_FOREACH(const boost::shared_ptr<view::DecodeTrace> d, _decode_traces)
                 d->frame_ended();
+#endif
 		}
 
         frame_ended();
@@ -1394,6 +1396,12 @@ void SigSession::rst_decoder(view::DecodeTrace *signal)
             return;
         }
 }
+
+pv::data::DecoderModel* SigSession::get_decoder_model() const
+{
+    return _decoder_model;
+}
+
 #endif
 
 } // namespace pv

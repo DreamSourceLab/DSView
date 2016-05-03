@@ -25,13 +25,21 @@
 #include "../sigsession.h"
 #include "../view/decodetrace.h"
 #include "../device/devinst.h"
+#include "../data/decodermodel.h"
+#include "../data/decoderstack.h"
+#include "../dialogs/protocollist.h"
+#include "../dialogs/protocolexp.h"
 
 #include <QObject>
 #include <QHBoxLayout>
 #include <QPainter>
 #include <QMessageBox>
 #include <QFormLayout>
+#include <QStandardItemModel>
+#include <QTableView>
+#include <QHeaderView>
 
+#include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 
 namespace pv {
@@ -41,20 +49,20 @@ ProtocolDock::ProtocolDock(QWidget *parent, SigSession &session) :
     QScrollArea(parent),
     _session(session)
 {
-    _widget = new QWidget(this);
+    _up_widget = new QWidget(this);
 
     QHBoxLayout *hori_layout = new QHBoxLayout();
 
-    _add_button = new QPushButton(_widget);
+    _add_button = new QPushButton(_up_widget);
     _add_button->setFlat(true);
     _add_button->setIcon(QIcon::fromTheme("protocol",
                          QIcon(":/icons/add.png")));
-    _del_all_button = new QPushButton(_widget);
+    _del_all_button = new QPushButton(_up_widget);
     _del_all_button->setFlat(true);
     _del_all_button->setIcon(QIcon::fromTheme("protocol",
                              QIcon(":/icons/del.png")));
     _del_all_button->setCheckable(true);
-    _protocol_combobox = new QComboBox(_widget);
+    _protocol_combobox = new QComboBox(_up_widget);
 
     GSList *l = g_slist_sort(g_slist_copy(
         (GSList*)srd_decoder_list()), decoder_name_cmp);
@@ -80,15 +88,72 @@ ProtocolDock::ProtocolDock(QWidget *parent, SigSession &session) :
     connect(_del_all_button, SIGNAL(clicked()),
             this, SLOT(del_protocol()));
 
-    _layout = new QVBoxLayout();
-    _layout->addLayout(hori_layout);
-    _layout->addStretch(1);
+    _up_layout = new QVBoxLayout();
+    _up_layout->addLayout(hori_layout);
+    _up_layout->addStretch(1);
 
-    _widget->setLayout(_layout);
+    _up_widget->setLayout(_up_layout);
+    _up_widget->setMinimumHeight(120);
 
-    this->setWidget(_widget);
-    _widget->setGeometry(0, 0, sizeHint().width(), 500);
-    _widget->setObjectName("protocolWidget");
+//    this->setWidget(_widget);
+//    _widget->setGeometry(0, 0, sizeHint().width(), 500);
+//    _widget->setObjectName("protocolWidget");
+
+    _dn_widget = new QWidget(this);
+
+    _dn_set_button = new QPushButton(_dn_widget);
+    _dn_set_button->setFlat(true);
+    _dn_set_button->setIcon(QIcon::fromTheme("protocol",
+                             QIcon(":/icons/gear.png")));
+    connect(_dn_set_button, SIGNAL(clicked()),
+            this, SLOT(set_model()));
+
+    _dn_save_button = new QPushButton(_dn_widget);
+    _dn_save_button->setFlat(true);
+    _dn_save_button->setIcon(QIcon::fromTheme("protocol",
+                             QIcon(":/icons/save.png")));
+    connect(_dn_save_button, SIGNAL(clicked()),
+            this, SLOT(export_table_view()));
+
+    QHBoxLayout *dn_title_layout = new QHBoxLayout();
+    dn_title_layout->addWidget(_dn_set_button, 0, Qt::AlignLeft);
+    dn_title_layout->addWidget(_dn_save_button, 0, Qt::AlignLeft);
+    dn_title_layout->addWidget(new QLabel(tr("Protocol List Viewer"), _dn_widget), 1, Qt::AlignLeft);
+    dn_title_layout->addStretch(1);
+
+    _table_view = new QTableView(_dn_widget);
+    _table_view->setModel(_session.get_decoder_model());
+    _table_view->setAlternatingRowColors(true);
+    _table_view->setShowGrid(false);
+    _table_view->horizontalHeader()->setStretchLastSection(true);
+    _table_view->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+    _table_view->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+
+    QVBoxLayout *dn_layout = new QVBoxLayout();
+    dn_layout->addLayout(dn_title_layout);
+    dn_layout->addWidget(_table_view);
+
+    _dn_widget->setLayout(dn_layout);
+    _dn_widget->setMinimumHeight(400);
+
+    _split_widget = new QSplitter(this);
+    _split_widget->insertWidget(0, _up_widget);
+    _split_widget->insertWidget(1, _dn_widget);
+    _split_widget->setOrientation(Qt::Vertical);
+    _split_widget->setCollapsible(0, false);
+    _split_widget->setCollapsible(1, false);
+    //_split_widget->setStretchFactor(1, 1);
+    //_split_widget
+
+    this->setWidgetResizable(true);
+    this->setWidget(_split_widget);
+    //_split_widget->setGeometry(0, 0, sizeHint().width(), 500);
+    _split_widget->setObjectName("protocolWidget");
+
+    connect(&_session, SIGNAL(decode_done()), this, SLOT(update_model()));
+    connect(this, SIGNAL(protocol_updated()), this, SLOT(update_model()));
+    connect(_table_view, SIGNAL(clicked(QModelIndex)), this, SLOT(item_clicked(QModelIndex)));
+    connect(_table_view->horizontalHeader(), SIGNAL(sectionResized(int,int,int)), this, SLOT(column_resize(int, int, int)));
 }
 
 ProtocolDock::~ProtocolDock()
@@ -126,15 +191,15 @@ void ProtocolDock::add_protocol()
             //QMap <QString, QVariant>& _options = dlg.get_options();
             //QMap <QString, int> _options_index = dlg.get_options_index();
 
-            QPushButton *_del_button = new QPushButton(_widget);
-            QPushButton *_set_button = new QPushButton(_widget);
+            QPushButton *_del_button = new QPushButton(_up_widget);
+            QPushButton *_set_button = new QPushButton(_up_widget);
             _del_button->setFlat(true);
             _del_button->setIcon(QIcon::fromTheme("protocol",
                                  QIcon(":/icons/del.png")));
             _set_button->setFlat(true);
             _set_button->setIcon(QIcon::fromTheme("protocol",
                                  QIcon(":/icons/gear.png")));
-            QLabel *_protocol_label = new QLabel(_widget);
+            QLabel *_protocol_label = new QLabel(_up_widget);
 
             _del_button->setCheckable(true);
             _protocol_label->setText(_protocol_combobox->currentText());
@@ -155,9 +220,10 @@ void ProtocolDock::add_protocol()
             hori_layout->addWidget(_protocol_label);
             hori_layout->addStretch(1);
             _hori_layout_list.push_back(hori_layout);
-            _layout->insertLayout(_del_button_list.size(), hori_layout);
+            _up_layout->insertLayout(_del_button_list.size(), hori_layout);
 
             //_session.add_protocol_analyzer(_protocol_combobox->currentIndex(), _sel_probes, _options, _options_index);
+            protocol_updated();
         }
     }
 }
@@ -183,6 +249,7 @@ void ProtocolDock::rst_protocol()
         }
         rst_index++;
     }
+    protocol_updated();
 }
 
 void ProtocolDock::del_protocol()
@@ -193,7 +260,7 @@ void ProtocolDock::del_protocol()
             int del_index = 0;
             for (QVector <QHBoxLayout *>::const_iterator i = _hori_layout_list.begin();
                  i != _hori_layout_list.end(); i++) {
-                _layout->removeItem((*i));
+                _up_layout->removeItem((*i));
                 delete (*i);
                 delete _del_button_list.at(del_index);
                 delete _set_button_list.at(del_index);
@@ -220,7 +287,7 @@ void ProtocolDock::del_protocol()
        for (QVector <QPushButton *>::const_iterator i = _del_button_list.begin();
             i != _del_button_list.end(); i++) {
            if ((*i)->isChecked()) {
-               _layout->removeItem(_hori_layout_list.at(del_index));
+               _up_layout->removeItem(_hori_layout_list.at(del_index));
 
                delete _hori_layout_list.at(del_index);
                delete _del_button_list.at(del_index);
@@ -234,12 +301,12 @@ void ProtocolDock::del_protocol()
                _protocol_index_list.remove(del_index);
 
                _session.remove_decode_signal(del_index);
-
                break;
            }
            del_index++;
        }
     }
+    protocol_updated();
 }
 
 void ProtocolDock::del_all_protocol()
@@ -248,7 +315,7 @@ void ProtocolDock::del_all_protocol()
         int del_index = 0;
         for (QVector <QHBoxLayout *>::const_iterator i = _hori_layout_list.begin();
              i != _hori_layout_list.end(); i++) {
-            _layout->removeItem((*i));
+            _up_layout->removeItem((*i));
             delete (*i);
             delete _del_button_list.at(del_index);
             delete _set_button_list.at(del_index);
@@ -262,7 +329,89 @@ void ProtocolDock::del_all_protocol()
         _set_button_list.clear();
         _protocol_label_list.clear();
         _protocol_index_list.clear();
+
+        protocol_updated();
     }
+}
+
+void ProtocolDock::set_model()
+{
+    pv::dialogs::ProtocolList *protocollist_dlg = new pv::dialogs::ProtocolList(this, _session);
+    protocollist_dlg->exec();
+    resize_table_view(_session.get_decoder_model());
+}
+
+void ProtocolDock::update_model()
+{
+    pv::data::DecoderModel *decoder_model = _session.get_decoder_model();
+    const std::vector< boost::shared_ptr<pv::view::DecodeTrace> > decode_sigs(
+        _session.get_decode_signals());
+    if (decode_sigs.size() == 0)
+        decoder_model->setDecoderStack(NULL);
+    else if (!decoder_model->getDecoderStack())
+        decoder_model->setDecoderStack(decode_sigs.at(0)->decoder());
+    else {
+        int index = 0;
+        BOOST_FOREACH(const boost::shared_ptr<pv::view::DecodeTrace> d, decode_sigs) {
+            if (d->decoder() == decoder_model->getDecoderStack()) {
+                decoder_model->setDecoderStack(d->decoder());
+                break;
+            }
+            index++;
+        }
+        if (index >= decode_sigs.size())
+            decoder_model->setDecoderStack(decode_sigs.at(0)->decoder());
+    }
+
+    resize_table_view(decoder_model);
+}
+
+void ProtocolDock::resize_table_view(data::DecoderModel* decoder_model)
+{
+    if (decoder_model->getDecoderStack()) {
+        for (int i = 0; i < decoder_model->columnCount(QModelIndex()) - 1; i++) {
+            _table_view->resizeColumnToContents(i);
+            if (_table_view->columnWidth(i) > 200)
+                _table_view->setColumnWidth(i, 200);
+        }
+        int top_row = _table_view->rowAt(0);
+        int bom_row = _table_view->rowAt(_table_view->height());
+        if (bom_row >= top_row && top_row >= 0) {
+            for (int i = top_row; i <= bom_row; i++)
+                _table_view->resizeRowToContents(i);
+        }
+    }
+}
+
+void ProtocolDock::item_clicked(const QModelIndex &index)
+{
+    pv::data::DecoderModel *decoder_model = _session.get_decoder_model();
+    boost::shared_ptr<pv::data::DecoderStack> decoder_stack = decoder_model->getDecoderStack();
+    if (decoder_stack) {
+        pv::data::decode::Annotation ann;
+        if (decoder_stack->list_annotation(ann, index.column(), index.row())) {
+            _session.show_region(ann.start_sample(), ann.end_sample());
+        }
+    }
+}
+
+void ProtocolDock::column_resize(int index, int old_size, int new_size)
+{
+    pv::data::DecoderModel *decoder_model = _session.get_decoder_model();
+    if (decoder_model->getDecoderStack()) {
+        int top_row = _table_view->rowAt(0);
+        int bom_row = _table_view->rowAt(_table_view->height());
+        if (bom_row >= top_row && top_row >= 0) {
+            for (int i = top_row; i <= bom_row; i++)
+                _table_view->resizeRowToContents(i);
+        }
+    }
+}
+
+void ProtocolDock::export_table_view()
+{
+    pv::dialogs::ProtocolExp *protocolexp_dlg = new pv::dialogs::ProtocolExp(this, _session);
+    protocolexp_dlg->exec();
 }
 
 } // namespace dock

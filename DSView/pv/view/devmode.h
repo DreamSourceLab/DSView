@@ -44,9 +44,9 @@ namespace device{
 class DevInst;
 }
 
-namespace view {
+class SigSession;
 
-class View;
+namespace view {
 
 class DevMode : public QWidget
 {
@@ -56,7 +56,7 @@ private:
     static const int GRID_COLS = 3;
 
 public:
-    DevMode(View &parent);
+    DevMode(QWidget *parent, SigSession &session);
 
 private:
 	void paintEvent(QPaintEvent *event);
@@ -77,10 +77,10 @@ signals:
     void mode_changed();
 
 private:
-    View &_view;
+    SigSession &_session;
 
-    QGridLayout *  layout;
-    std::map <boost::shared_ptr<QPushButton>, sr_dev_mode *> _mode_button_list;
+    QGridLayout *  _layout;
+    std::map <QPushButton *, sr_dev_mode *> _mode_button_list;
     QPoint _mouse_point;
 };
 

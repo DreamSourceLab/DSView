@@ -221,6 +221,7 @@ public slots:
     void signals_changed();
     void data_updated();
     void update_scale();
+    void show_region(uint64_t start, uint64_t end);
 
 private slots:
 

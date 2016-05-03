@@ -147,7 +147,8 @@ int main(int argc, char *argv[])
 
 			// Initialise the main window
             		pv::MainWindow w(device_manager, open_file);
-            		QFile qss(":/stylesheet.qss");
+                    //QFile qss(":/stylesheet.qss");
+                    QFile qss(":qdarkstyle/style.qss");
             		qss.open(QFile::ReadOnly);
             		a.setStyleSheet(qss.readAll());
             		qss.close();

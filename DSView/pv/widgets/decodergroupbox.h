@@ -22,11 +22,19 @@
 #define DSVIEW_PV_WIDGETS_DECODERGROUPBOX_H
 
 #include <QPushButton>
-
-class QGridLayout;
-class QToolBar;
+#include <QGridLayout>
+#include <QToolBar>
+#include <boost/shared_ptr.hpp>
 
 namespace pv {
+
+namespace data{
+class DecoderStack;
+namespace decode{
+class Decoder;
+}
+}
+
 namespace widgets {
 
 class DecoderGroupBox : public QWidget
@@ -34,18 +42,30 @@ class DecoderGroupBox : public QWidget
 	Q_OBJECT
 
 public:
-	DecoderGroupBox(QString title, QWidget *parent = NULL);
+    DecoderGroupBox(boost::shared_ptr<pv::data::DecoderStack> &decoder_stack,
+                    boost::shared_ptr<data::decode::Decoder> &dec,
+                    QWidget *parent = NULL);
 
 	void add_layout(QLayout *layout);
 
-	void set_decoder_visible(bool visible);
-
 signals:
 	void show_hide_decoder();
+    void show_hide_row();
+    void del_stack(boost::shared_ptr<data::decode::Decoder> &_dec);
+
+private slots:
+    void tog_icon();
+    void on_del_stack();
 
 private:
-	QGridLayout *const _layout;
-	QPushButton _show_hide_button;
+    boost::shared_ptr<pv::data::DecoderStack> &_decoder_stack;
+    boost::shared_ptr<data::decode::Decoder> &_dec;
+    int _index;
+
+    QGridLayout *const _layout;
+    QPushButton *_del_button;
+    QPushButton *_show_button;
+    std::list <QPushButton *> _row_show_button;
 };
 
 } // widgets

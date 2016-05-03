@@ -115,14 +115,12 @@ void Header::paintEvent(QPaintEvent*)
     QStyleOption o;
     o.initFrom(this);
     QPainter painter(this);
+    //painter.setRenderHint(QPainter::Antialiasing);
     style()->drawPrimitive(QStyle::PE_Widget, &o, &painter, this);
 
 	const int w = width();
     const vector< boost::shared_ptr<Trace> > traces(
         _view.get_traces());
-
-    //QPainter painter(this);
-    //painter.setRenderHint(QPainter::Antialiasing);
 
     const bool dragging = !_drag_traces.empty();
     BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)

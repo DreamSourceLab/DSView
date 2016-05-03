@@ -197,7 +197,9 @@ void MainWindow::setup_ui()
         SLOT(device_change()));
     connect(_dso_trigger_widget, SIGNAL(set_trig_pos(quint64)), _view,
         SLOT(set_trig_pos(quint64)));
+    connect(_protocol_widget, SIGNAL(protocol_updated()), _view, SLOT(signals_changed()));
 
+    setIconSize(QSize(40,40));
     addToolBar(_sampling_bar);
     addToolBar(_trig_bar);
     addToolBar(_file_bar);

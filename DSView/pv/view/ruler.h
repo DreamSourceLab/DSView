@@ -54,6 +54,7 @@ private:
     static const QColor dsYellow;
     static const QColor dsRed;
     static const QColor dsGreen;
+    static const QColor RULER_COLOR;
 
 public:
     static const QColor CursorColor[8];

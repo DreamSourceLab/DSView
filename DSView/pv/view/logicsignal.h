@@ -48,7 +48,7 @@ private:
 	static const QColor HighColour;
 	static const QColor LowColour;
 
-    static const QColor SignalColours[8];
+    static const QColor DEFAULT_COLOR;
 
     static const int StateHeight;
     static const int StateRound;

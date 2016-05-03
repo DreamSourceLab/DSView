@@ -152,14 +152,14 @@ private:
 	void draw_annotation(const pv::data::decode::Annotation &a, QPainter &p,
 		QColor text_colour, int text_height, int left, int right,
 		double samples_per_pixel, double pixels_offset, int y,
-		size_t base_colour) const;
+        size_t base_colour, double min_annWidth) const;
     void draw_nodetail(QPainter &p,
         int text_height, int left, int right, int y,
         size_t base_colour) const;
 
 	void draw_instant(const pv::data::decode::Annotation &a, QPainter &p,
 		QColor fill, QColor outline, QColor text_color, int h, double x,
-		int y) const;
+        int y, double min_annWidth) const;
 
 	void draw_range(const pv::data::decode::Annotation &a, QPainter &p,
 		QColor fill, QColor outline, QColor text_color, int h, double start,
@@ -172,11 +172,11 @@ private:
         int right);
 
     void draw_unshown_row(QPainter &p, int y, int h, int left,
-                          int right);
+                          int right, QString info);
 
-	void create_decoder_form(int index,
-		boost::shared_ptr<pv::data::decode::Decoder> &dec,
-		QWidget *parent, QFormLayout *form);
+    void create_decoder_form(boost::shared_ptr<data::DecoderStack> &decoder_stack,
+        boost::shared_ptr<pv::data::decode::Decoder> &dec,
+        QWidget *parent, QFormLayout *form);
 
 	QComboBox* create_probe_selector(QWidget *parent,
 		const boost::shared_ptr<pv::data::decode::Decoder> &dec,
@@ -195,8 +195,7 @@ private slots:
 	void on_probe_selected(int);
 
 	void on_stack_decoder(srd_decoder *decoder);
-
-	void on_show_hide_decoder(int index);
+    void on_del_stack(boost::shared_ptr<data::decode::Decoder> &dec);
 
     void on_decode_done();
 
@@ -219,7 +218,6 @@ private:
 
 	std::vector<QString> _cur_row_headings;
 
-    QSignalMapper  _show_hide_mapper;
     QFormLayout *_popup_form;
     QDialog *_popup;
 };

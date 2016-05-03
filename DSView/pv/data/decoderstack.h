@@ -86,13 +86,12 @@ public:
 
 	virtual ~DecoderStack();
 
-	const std::list< boost::shared_ptr<decode::Decoder> >& stack() const;
+    const std::list< boost::shared_ptr<decode::Decoder> >& stack() const;
 	void push(boost::shared_ptr<decode::Decoder> decoder);
-	void remove(int index);
+    void remove(boost::shared_ptr<decode::Decoder>& decoder);
+    void build_row();
 
 	int64_t samples_decoded() const;
-
-    std::vector< std::pair<decode::Row, bool> > get_visible_rows() const;
 
 	/**
 	 * Extracts sorted annotations between two period into a vector.
@@ -103,8 +102,22 @@ public:
 		uint64_t end_sample) const;
 
     uint64_t get_max_annotation(const decode::Row &row);
+    uint64_t get_min_annotation(const decode::Row &row); // except instant(end=start) annotation
+
+    std::map<const decode::Row, bool> &get_rows_gshow();
+    std::map<const decode::Row, bool> &get_rows_lshow();
+    void set_rows_gshow(const decode::Row row, bool show);
+    void set_rows_lshow(const decode::Row row, bool show);
 
     bool has_annotations(const decode::Row &row) const;
+
+    uint64_t list_annotation_size() const;
+
+    bool list_annotation(decode::Annotation &ann,
+                        uint16_t row_index, uint64_t col_index) const;
+
+
+    bool list_row_title(int row, QString &title) const;
 
 	QString error_message();
 
@@ -116,11 +129,13 @@ public:
 
     void stop_decode();
 
-    int cur_rows_size();
+    int list_rows_size();
 
-    void options_changed(bool changed);
+    bool options_changed() const;
+    void set_options_changed(bool changed);
 
     uint64_t sample_count() const;
+    uint64_t sample_rate() const;
 
 private:
     boost::optional<uint64_t> wait_for_data() const;
@@ -170,9 +185,10 @@ private:
 	mutable boost::mutex _output_mutex;
 	int64_t	_samples_decoded;
 
-	std::map<const decode::Row, decode::RowData> _rows;
-
-	std::map<std::pair<const srd_decoder*, int>, decode::Row> _class_rows;
+    std::map<const decode::Row, decode::RowData> _rows;
+    std::map<const decode::Row, bool> _rows_gshow;
+    std::map<const decode::Row, bool> _rows_lshow;
+    std::map<std::pair<const srd_decoder*, int>, decode::Row> _class_rows;
 
 	QString _error_message;
 
@@ -180,6 +196,7 @@ private:
     decode_state _decode_state;
 
     bool _options_changed;
+    bool _no_memory;
 
 	friend class DecoderStackTest::TwoDecoderStack;
 };

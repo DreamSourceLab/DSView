@@ -49,6 +49,12 @@ Annotation::Annotation(const srd_proto_data *const pdata) :
 	}
 }
 
+Annotation::Annotation()
+{
+    _start_sample = 0;
+    _end_sample = 0;
+}
+
 Annotation::~Annotation()
 {
     _annotations.clear();

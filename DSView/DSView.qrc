@@ -56,5 +56,6 @@
         <file>icons/start_dis.png</file>
         <file>icons/start_dis_cn.png</file>
         <file>icons/settings.png</file>
+        <file>darkstyle/style.qss</file>
     </qresource>
 </RCC>

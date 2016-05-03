@@ -50,6 +50,29 @@ const QColor Trace::dsLightBlue = QColor(17, 133, 209,  150);
 const QColor Trace::dsLightRed = QColor(213, 15, 37, 150);
 const QPen Trace::SignalAxisPen = QColor(128, 128, 128, 64);
 
+const QColor Trace::DARK_BACK = QColor(48, 47, 47, 255);
+const QColor Trace::DARK_FORE = QColor(150, 150, 150, 255);
+const QColor Trace::DARK_HIGHLIGHT = QColor(32, 32, 32, 255);
+
+const QColor Trace::PROBE_COLORS[8] = {
+    QColor(0x50, 0x50, 0x50),	// Black
+    QColor(0x8F, 0x52, 0x02),	// Brown
+    QColor(0xCC, 0x00, 0x00),	// Red
+    QColor(0xF5, 0x79, 0x00),	// Orange
+    QColor(0xED, 0xD4, 0x00),	// Yellow
+    QColor(0x73, 0xD2, 0x16),	// Green
+    QColor(0x34, 0x65, 0xA4),	// Blue
+    QColor(0x75, 0x50, 0x7B),	// Violet
+//    QColor(17, 133, 209),
+//    QColor(17, 133, 209),
+//    QColor(17, 133, 209),
+//    QColor(17, 133, 209),
+//    QColor(17, 133, 209),
+//    QColor(17, 133, 209),
+//    QColor(17, 133, 209),
+//    QColor(17, 133, 209),
+};
+
 const QPen Trace::AxisPen(QColor(128, 128, 128, 64));
 const int Trace::LabelHitPadding = 2;
 
@@ -220,14 +243,14 @@ void Trace::paint_label(QPainter &p, int right, const QPoint pt)
     const QRectF name_rect  = get_rect("name",  y, right);
     const QRectF label_rect = get_rect("label", get_zeroPos(), right);
 
-    p.setRenderHint(QPainter::Antialiasing);
+    //p.setRenderHint(QPainter::Antialiasing);
     // Paint the ColorButton
     p.setPen(Qt::transparent);
     p.setBrush(enabled() ? _colour : dsDisable);
     p.drawRect(color_rect);
 
     // Paint the signal name
-    p.setPen(enabled() ? Qt::black : dsDisable);
+    p.setPen(enabled() ?  DARK_FORE: dsDisable);
     p.drawText(name_rect, Qt::AlignLeft | Qt::AlignVCenter, _name);
 
     // Paint the trigButton
@@ -244,16 +267,14 @@ void Trace::paint_label(QPainter &p, int right, const QPoint pt)
         };
 
         p.setPen(Qt::transparent);
-        if (_type == SR_CHANNEL_DSO)
+        if (_type == SR_CHANNEL_DSO) {
             p.setBrush((label_rect.contains(pt) || selected()) ? _colour.darker() : _colour);
-        else
-            p.setBrush((label_rect.contains(pt) || selected()) ? dsYellow : dsBlue);
-        p.drawPolygon(points, countof(points));
-
-        p.setPen(QPen(Qt::blue, 1, Qt::DotLine));
-        p.setBrush(Qt::transparent);
-        p.drawLine(label_rect.right(), label_rect.top() + 3,
-                    label_rect.right(), label_rect.bottom() - 3);
+            p.drawPolygon(points, countof(points));
+        } else {
+            QColor color = PROBE_COLORS[*_index_list.begin() % countof(PROBE_COLORS)];
+            p.setBrush((label_rect.contains(pt) || selected()) ? color.lighter() : color);
+            p.drawPolygon(points, countof(points));
+        }
 
         // Paint the text
         p.setPen(Qt::white);
@@ -326,30 +347,6 @@ void Trace::compute_text_size(QPainter &p)
         p.boundingRect(QRectF(), 0, "99").height());
 }
 
-QRectF Trace::get_rect(const char *s, int y, int right)
-{
-    const QSizeF color_size(SquareWidth, SquareWidth);
-    const QSizeF name_size(right - get_leftWidth() - get_rightWidth(), SquareWidth);
-    //const QSizeF label_size(_text_size.width() + Margin, SquareWidth);
-    const QSizeF label_size(SquareWidth, SquareWidth);
-
-    if (!strcmp(s, "name"))
-        return QRectF(
-            get_leftWidth(),
-            y - name_size.height() / 2,
-            name_size.width(), name_size.height());
-    else if (!strcmp(s, "label"))
-        return QRectF(
-            right - 1.5f * label_size.width(),
-            y - SquareWidth / 2,
-            label_size.width(), label_size.height());
-    else
-        return QRectF(
-            2,
-            y - SquareWidth / 2,
-            SquareWidth, SquareWidth);
-}
-
 QRectF Trace::get_view_rect() const
 {
     assert(_view);
@@ -385,7 +382,7 @@ int Trace::rows_size()
 
 int Trace::get_leftWidth() const
 {
-    return SquareWidth + Margin;
+    return SquareWidth/2 + Margin;
 }
 
 int Trace::get_rightWidth() const
@@ -396,6 +393,35 @@ int Trace::get_rightWidth() const
 int Trace::get_headerHeight() const
 {
     return SquareWidth;
+}
+
+QRectF Trace::get_rect(const char *s, int y, int right) const
+{
+    const QSizeF color_size(get_leftWidth() - Margin, SquareWidth);
+    const QSizeF name_size(right - get_leftWidth() - get_rightWidth(), SquareWidth);
+    //const QSizeF label_size(_text_size.width() + Margin, SquareWidth);
+    const QSizeF label_size(SquareWidth, SquareWidth);
+
+    if (!strcmp(s, "name"))
+        return QRectF(
+            get_leftWidth(),
+            y - name_size.height() / 2,
+            name_size.width(), name_size.height());
+    else if (!strcmp(s, "label"))
+        return QRectF(
+            right - 1.5f * label_size.width(),
+            y - label_size.height() / 2,
+            label_size.width(), label_size.height());
+    else if (!strcmp(s, "color"))
+        return QRectF(
+            2,
+            y - color_size.height() / 2,
+            color_size.width(), color_size.height());
+    else
+        return QRectF(
+            2,
+            y - SquareWidth / 2,
+            SquareWidth, SquareWidth);
 }
 
 } // namespace view

@@ -44,45 +44,50 @@ using namespace std;
 namespace pv {
 namespace view {
 
-DevMode::DevMode(View &parent) :
-	QWidget(&parent),
-    _view(parent),
-    layout(new QGridLayout(this))
+DevMode::DevMode(QWidget *parent, SigSession &session) :
+    QWidget(parent),
+    _session(session),
+    _layout(new QGridLayout(this))
     
 {
-    setLayout(layout);
+    setLayout(_layout);
 }
 
 void DevMode::set_device()
 {
     int index = 0;
-    const boost::shared_ptr<device::DevInst> dev_inst = _view.session().get_device();
+    const boost::shared_ptr<device::DevInst> dev_inst = _session.get_device();
 
     assert(dev_inst);
    
+    for(std::map<QPushButton *, sr_dev_mode *>::const_iterator i = _mode_button_list.begin();
+        i != _mode_button_list.end(); i++) {
+        (*i).first->setParent(NULL);
+        _layout->removeWidget((*i).first);
+        delete (*i).first;
+    }
     _mode_button_list.clear();
-    delete layout;
-    layout = new QGridLayout(this);
 
     for (GSList *l = dev_inst->get_dev_mode_list();
          l; l = l->next) {
         sr_dev_mode *mode = (sr_dev_mode *)l->data;
 
-        boost::shared_ptr<QPushButton> mode_button = boost::shared_ptr<QPushButton>(new QPushButton(NULL));
-        mode_button->setFlat(true);
+        QPushButton *mode_button = new QPushButton(this);
+        //mode_button->setFlat(true);
         mode_button->setText(mode->name);
+        mode_button->setCheckable(true);
 
         _mode_button_list[mode_button] = mode;
+        if (dev_inst->dev_inst()->mode == _mode_button_list[mode_button]->mode)
+            mode_button->setChecked(true);
 
-        connect(mode_button.get(), SIGNAL(clicked()), this, SLOT(on_mode_change()));
+        connect(mode_button, SIGNAL(clicked()), this, SLOT(on_mode_change()));
 
-        layout->addWidget(mode_button.get(), index / GRID_COLS, index % GRID_COLS);
-        layout->addWidget(new QWidget(), index / GRID_COLS, GRID_COLS);
-        layout->setColumnStretch(GRID_COLS, 1);
+        _layout->addWidget(mode_button, index / GRID_COLS, index % GRID_COLS);
+        //layout->addWidget(new QWidget(), index / GRID_COLS, GRID_COLS);
+        _layout->setColumnStretch(GRID_COLS, 1);
         index++;
-    }
-
-    setLayout(layout);  
+    } 
     update();
 }
 
@@ -94,40 +99,27 @@ void DevMode::paintEvent(QPaintEvent*)
     o.initFrom(this);
     QPainter painter(this);
     style()->drawPrimitive(QStyle::PE_Widget, &o, &painter, this);
-
-    painter.setRenderHint(QPainter::Antialiasing);
-    painter.setPen(Qt::NoPen);
-    for(std::map<boost::shared_ptr<QPushButton>, sr_dev_mode *>::const_iterator i = _mode_button_list.begin();
-        i != _mode_button_list.end(); i++) {
-        const boost::shared_ptr<device::DevInst> dev_inst = _view.session().get_device();
-        assert(dev_inst);
-        if (dev_inst->dev_inst()->mode == (*i).second->mode)
-            painter.setBrush(Trace::dsBlue);
-        else
-            painter.setBrush(Trace::dsGray);
-
-        painter.drawRoundedRect((*i).first->geometry(), 4, 4);
-    }
-
-    painter.end();
 }
 
 void DevMode::on_mode_change()
 {
-    const boost::shared_ptr<device::DevInst> dev_inst = _view.session().get_device();
+    const boost::shared_ptr<device::DevInst> dev_inst = _session.get_device();
     assert(dev_inst);
     QPushButton *button = qobject_cast<QPushButton *>(sender());
 
-    for(std::map<boost::shared_ptr<QPushButton>, sr_dev_mode *>::const_iterator i = _mode_button_list.begin();
+    for(std::map<QPushButton *, sr_dev_mode *>::const_iterator i = _mode_button_list.begin();
         i != _mode_button_list.end(); i++) {
-        if ((*i).first.get() == button) {
+        if ((*i).first == button) {
             if (dev_inst->dev_inst()->mode != (*i).second->mode) {
-                _view.session().stop_capture();
+                _session.stop_capture();
                 dev_inst->set_config(NULL, NULL,
                                      SR_CONF_DEVICE_MODE,
                                      g_variant_new_int16((*i).second->mode));
+                button->setChecked(true);
                 mode_changed();
             }
+        } else {
+            (*i).first->setChecked(false);
         }
     }
 }

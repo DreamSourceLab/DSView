@@ -70,6 +70,12 @@ public:
     static const QColor dsLightRed;
     static const QPen SignalAxisPen;
 
+    static const QColor DARK_BACK;
+    static const QColor DARK_FORE;
+    static const QColor DARK_HIGHLIGHT;
+
+    static const QColor PROBE_COLORS[8];
+
 protected:
     Trace(QString name, uint16_t index, int type);
     Trace(QString name, std::list<int> index_list, int type, int sec_index);
@@ -225,7 +231,7 @@ public:
      * 	area.
      * @return Returns the rectangle of the signal label.
      */
-    QRectF get_rect(const char *s, int y, int right);
+    QRectF get_rect(const char *s, int y, int right) const;
 
     virtual int rows_size();
 

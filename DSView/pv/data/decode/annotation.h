@@ -35,6 +35,7 @@ class Annotation
 {
 public:
 	Annotation(const srd_proto_data *const pdata);
+    Annotation();
     ~Annotation();
 
 	uint64_t start_sample() const;
