@@ -549,6 +549,7 @@ enum {
     SR_CHANNEL_ANALOG,
     SR_CHANNEL_GROUP,
     SR_CHANNEL_DECODER,
+    SR_CHANNEL_FFT,
 };
 
 enum {
@@ -560,7 +561,7 @@ enum {
 struct sr_channel {
     /* The index field will go: use g_slist_length(sdi->channels) instead. */
     uint16_t index;
-	int type;
+    int type;
 	gboolean enabled;
 	char *name;
 	char *trigger;

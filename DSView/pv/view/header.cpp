@@ -24,6 +24,7 @@
 #include "header.h"
 #include "view.h"
 
+#include "../../extdef.h"
 #include "trace.h"
 #include "dsosignal.h"
 #include "logicsignal.h"
@@ -95,7 +96,7 @@ boost::shared_ptr<pv::view::Trace> Header::get_mTrace(
 {
     const int w = width();
     const vector< boost::shared_ptr<Trace> > traces(
-        _view.get_traces());
+        _view.get_traces(ALL_VIEW));
 
     BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
     {
@@ -120,7 +121,7 @@ void Header::paintEvent(QPaintEvent*)
 
 	const int w = width();
     const vector< boost::shared_ptr<Trace> > traces(
-        _view.get_traces());
+        _view.get_traces(ALL_VIEW));
 
     const bool dragging = !_drag_traces.empty();
     BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
@@ -137,7 +138,7 @@ void Header::mouseDoubleClickEvent(QMouseEvent *event)
     assert(event);
 
     const vector< boost::shared_ptr<Trace> > traces(
-        _view.get_traces());
+        _view.get_traces(ALL_VIEW));
 
     if (event->button() & Qt::LeftButton) {
         _mouse_down_point = event->pos();
@@ -161,7 +162,7 @@ void Header::mousePressEvent(QMouseEvent *event)
 	assert(event);
 
     const vector< boost::shared_ptr<Trace> > traces(
-        _view.get_traces());
+        _view.get_traces(ALL_VIEW));
     int action;
     const bool instant = _view.session().get_instant();
     if (instant && _view.session().get_capture_state() == SigSession::Running)
@@ -229,7 +230,7 @@ void Header::mouseReleaseEvent(QMouseEvent *event)
         if (action == Trace::COLOR && _colorFlag) {
             _context_trace = mTrace;
             changeColor(event);
-            _view.set_need_update(true);
+            _view.set_all_update(true);
         } else if (action == Trace::NAME && _nameFlag) {
             _context_trace = mTrace;
             changeName(event);
@@ -238,7 +239,7 @@ void Header::mouseReleaseEvent(QMouseEvent *event)
     if (_moveFlag) {
         //move(event);
         _view.signals_changed();
-        _view.set_need_update(true);
+        _view.set_all_update(true);
     }
     _colorFlag = false;
     _nameFlag = false;
@@ -253,7 +254,7 @@ void Header::wheelEvent(QWheelEvent *event)
 
     if (event->orientation() == Qt::Vertical) {
         const vector< boost::shared_ptr<Trace> > traces(
-            _view.get_traces());
+            _view.get_traces(ALL_VIEW));
         // Vertical scrolling
         double shift = event->delta() / 20.0;
         BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)

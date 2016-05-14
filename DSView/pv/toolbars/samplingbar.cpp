@@ -154,8 +154,8 @@ SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
     addWidget(&_sample_count);
     addWidget(new QLabel(tr(" @ ")));
     addWidget(&_sample_rate);
-	addWidget(&_run_stop_button);
-    addWidget(&_instant_button);
+    _run_stop_action = addWidget(&_run_stop_button);
+    _instant_action = addWidget(&_instant_button);
 }
 
 void SamplingBar::set_device_list(
@@ -783,6 +783,30 @@ void SamplingBar::show_session_error(
     msg.setStandardButtons(QMessageBox::Ok);
     msg.setIcon(QMessageBox::Warning);
     msg.exec();
+}
+
+void SamplingBar::reload()
+{
+    if (_session.get_device()->dev_inst()->mode == LOGIC) {
+        _icon_instant = QIcon(":/icons/instant.png");
+        _icon_instant_dis = QIcon(":/icons/instant_dis.png");
+        _instant_button.setIcon(_icon_instant);
+        _run_stop_action->setVisible(true);
+        _instant_action->setVisible(true);
+        enable_toggle(true);
+    } else if (_session.get_device()->dev_inst()->mode == ANALOG) {
+        _run_stop_action->setVisible(true);
+        _instant_action->setVisible(false);
+        enable_toggle(true);
+    } else if (_session.get_device()->dev_inst()->mode == DSO) {
+        _icon_instant = QIcon(":/icons/single.png");
+        _icon_instant_dis = QIcon(":/icons/single_dis.png");
+        _instant_button.setIcon(_icon_instant);
+        _run_stop_action->setVisible(true);
+        _instant_action->setVisible(true);
+        enable_toggle(false);
+    }
+    update();
 }
 
 } // namespace toolbars

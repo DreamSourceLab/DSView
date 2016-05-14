@@ -105,7 +105,8 @@ public:
     virtual ~DsoSignal();
 
     boost::shared_ptr<pv::data::SignalData> data() const;
-    void set_view(pv::view::View *view);
+    boost::shared_ptr<pv::data::Dso> dso_data() const;
+    void set_viewport(pv::view::Viewport *viewport);
 
 	void set_scale(float scale);
     float get_scale();
@@ -154,6 +155,7 @@ public:
      */
     int get_zeroPos();
     double get_zeroRate();
+    double get_zeroValue();
     /**
      * Sets the mid-Y position of this signal.
      */

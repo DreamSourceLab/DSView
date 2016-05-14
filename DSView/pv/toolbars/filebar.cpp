@@ -96,7 +96,7 @@ FileBar::FileBar(SigSession &session, QWidget *parent) :
 
     _action_export = new QAction(this);
     _action_export->setText(QApplication::translate("File", "&Export...", 0));
-    _action_export->setIcon(QIcon::fromTheme("file",QIcon(":/icons/instant.png")));
+    _action_export->setIcon(QIcon::fromTheme("file",QIcon(":/icons/export.png")));
     _action_export->setObjectName(QString::fromUtf8("actionExport"));
     connect(_action_export, SIGNAL(triggered()), this, SLOT(on_actionExport_triggered()));
 

@@ -31,6 +31,8 @@
 
 #include <stdint.h>
 
+#include <libsigrok4DSL/libsigrok.h>
+
 #include "selectableitem.h"
 #include "dsldial.h"
 
@@ -40,6 +42,7 @@ namespace pv {
 namespace view {
 
 class View;
+class Viewport;
 
 class Trace : public SelectableItem
 {
@@ -73,6 +76,7 @@ public:
     static const QColor DARK_BACK;
     static const QColor DARK_FORE;
     static const QColor DARK_HIGHLIGHT;
+    static const QColor DARK_BLUE;
 
     static const QColor PROBE_COLORS[8];
 
@@ -166,6 +170,8 @@ public:
 
 	virtual void set_view(pv::view::View *view);
     pv::view::View* get_view() const;
+    virtual void set_viewport(pv::view::Viewport *viewport);
+    pv::view::Viewport* get_viewport() const;
 
 	/**
 	 * Paints the background layer of the trace with a QPainter
@@ -290,6 +296,7 @@ signals:
 
 protected:
 	pv::view::View *_view;
+    pv::view::Viewport *_viewport;
 
 	QString _name;
 	QColor _colour;

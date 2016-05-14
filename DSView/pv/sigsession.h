@@ -78,6 +78,7 @@ namespace view {
 class Signal;
 class GroupSignal;
 class DecodeTrace;
+class MathTrace;
 }
 
 namespace decoder {
@@ -157,6 +158,9 @@ public:
 
     pv::data::DecoderModel* get_decoder_model() const;
 
+    std::vector< boost::shared_ptr<view::MathTrace> >
+        get_math_signals();
+
 #endif
 
     void init_signals();
@@ -177,6 +181,8 @@ public:
     bool get_instant();
 
     bool get_data_lock();
+
+    void mathTraces_rebuild();
 
 private:
 	void set_capture_state(capture_state state);
@@ -239,6 +245,7 @@ private:
     std::vector< boost::shared_ptr<view::DecodeTrace> > _decode_traces;
     pv::data::DecoderModel *_decoder_model;
 #endif
+    std::vector< boost::shared_ptr<view::MathTrace> > _math_traces;
 
     mutable boost::mutex _data_mutex;
 	boost::shared_ptr<data::Logic> _logic_data;

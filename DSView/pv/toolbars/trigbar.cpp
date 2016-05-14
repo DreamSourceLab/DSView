@@ -22,19 +22,27 @@
 
 
 #include "trigbar.h"
+#include "../sigsession.h"
+#include "../device/devinst.h"
+#include "../dialogs/fftoptions.h"
+
+#include <QApplication>
 
 namespace pv {
 namespace toolbars {
 
-TrigBar::TrigBar(QWidget *parent) :
+TrigBar::TrigBar(SigSession &session, QWidget *parent) :
     QToolBar("Trig Bar", parent),
+    _session(session),
     _enable(true),
     _trig_button(this),
     _protocol_button(this),
     _measure_button(this),
-    _search_button(this)
+    _search_button(this),
+    _math_button(this)
 {
     setMovable(false);
+    setContentsMargins(0,0,0,0);
 
     connect(&_trig_button, SIGNAL(clicked()),
         this, SLOT(trigger_clicked()));
@@ -60,6 +68,8 @@ TrigBar::TrigBar(QWidget *parent) :
     _search_button.setIcon(QIcon::fromTheme("trig",
         QIcon(":/icons/search-bar_cn.png")));
     _search_button.setCheckable(true);
+    _math_button.setIcon(QIcon::fromTheme("trig",
+        QIcon(":/icons/math_cn.png")));
 #else
     _trig_button.setIcon(QIcon::fromTheme("trig",
         QIcon(":/icons/trigger.png")));
@@ -75,12 +85,29 @@ TrigBar::TrigBar(QWidget *parent) :
     _search_button.setIcon(QIcon::fromTheme("trig",
         QIcon(":/icons/search-bar.png")));
     _search_button.setCheckable(true);
+    _math_button.setIcon(QIcon::fromTheme("trig",
+        QIcon(":/icons/math.png")));
 #endif
 
-    addWidget(&_trig_button);
-    addWidget(&_protocol_button);
-    addWidget(&_measure_button);
-    addWidget(&_search_button);
+    _action_fft = new QAction(this);
+    _action_fft->setText(QApplication::translate(
+        "Math", "&FFT", 0));
+    _action_fft->setIcon(QIcon::fromTheme("Math",
+        QIcon(":/icons/fft.png")));
+    _action_fft->setObjectName(QString::fromUtf8("actionFft"));
+    connect(_action_fft, SIGNAL(triggered()), this, SLOT(on_actionFft_triggered()));
+
+    _math_menu = new QMenu(this);
+    _math_menu->setContentsMargins(0,0,0,0);
+    _math_menu->addAction(_action_fft);
+    _math_button.setPopupMode(QToolButton::InstantPopup);
+    _math_button.setMenu(_math_menu);
+
+    _trig_action = addWidget(&_trig_button);
+    _protocol_action = addWidget(&_protocol_button);
+    _measure_action = addWidget(&_measure_button);
+    _search_action = addWidget(&_search_button);
+    _math_action = addWidget(&_math_button);
 }
 
 void TrigBar::protocol_clicked()
@@ -109,6 +136,7 @@ void TrigBar::enable_toggle(bool enable)
     _protocol_button.setDisabled(!enable);
     _measure_button.setDisabled(!enable);
     _search_button.setDisabled(!enable);
+    _math_button.setDisabled(!enable);
 
 #ifdef LANGUAGE_ZH_CN
     _trig_button.setIcon(enable ? QIcon::fromTheme("trig", QIcon(":/icons/trigger_cn.png")) :
@@ -119,6 +147,8 @@ void TrigBar::enable_toggle(bool enable)
                                   QIcon::fromTheme("trig", QIcon(":/icons/measure_dis_cn.png")));
     _search_button.setIcon(enable ? QIcon::fromTheme("trig", QIcon(":/icons/search-bar_cn.png")) :
                                   QIcon::fromTheme("trig", QIcon(":/icons/search-bar_dis_cn.png")));
+    _math_button.setIcon(enable ? QIcon::fromTheme("trig", QIcon(":/icons/math_cn.png")) :
+                                  QIcon::fromTheme("trig", QIcon(":/icons/math_dis_cn.png")));
 #else
     _trig_button.setIcon(enable ? QIcon::fromTheme("trig", QIcon(":/icons/trigger.png")) :
                                   QIcon::fromTheme("trig", QIcon(":/icons/trigger_dis.png")));
@@ -128,6 +158,9 @@ void TrigBar::enable_toggle(bool enable)
                                   QIcon::fromTheme("trig", QIcon(":/icons/measure_dis.png")));
     _search_button.setIcon(enable ? QIcon::fromTheme("trig", QIcon(":/icons/search-bar.png")) :
                                   QIcon::fromTheme("trig", QIcon(":/icons/search-bar_dis.png")));
+    _math_button.setIcon(enable ? QIcon::fromTheme("trig", QIcon(":/icons/math.png")) :
+                                  QIcon::fromTheme("trig", QIcon(":/icons/math_dis.png")));
+
 #endif
 }
 
@@ -161,6 +194,37 @@ void TrigBar::close_all()
         _search_button.setChecked(false);
         on_search(false);
     }
+}
+
+void TrigBar::reload()
+{
+    close_all();
+    if (_session.get_device()->dev_inst()->mode == LOGIC) {
+        _trig_action->setVisible(true);
+        _protocol_action->setVisible(true);
+        _measure_action->setVisible(true);
+        _search_action->setVisible(true);
+        _math_action->setVisible(false);
+    } else if (_session.get_device()->dev_inst()->mode == ANALOG) {
+        _trig_action->setVisible(false);
+        _protocol_action->setVisible(false);
+        _measure_action->setVisible(true);
+        _search_action->setVisible(false);
+        _math_action->setVisible(false);
+    } else if (_session.get_device()->dev_inst()->mode == DSO) {
+        _trig_action->setVisible(true);
+        _protocol_action->setVisible(false);
+        _measure_action->setVisible(true);
+        _search_action->setVisible(false);
+        _math_action->setVisible(true);
+    }
+    update();
+}
+
+void TrigBar::on_actionFft_triggered()
+{
+    pv::dialogs::FftOptions fft_dlg(this, _session);
+    fft_dlg.exec();
 }
 
 } // namespace toolbars

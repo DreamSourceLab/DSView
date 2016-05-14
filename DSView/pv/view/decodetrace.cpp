@@ -836,7 +836,7 @@ void DecodeTrace::on_new_decode_data()
 void DecodeTrace::on_decode_done()
 {
     if (_view) {
-        _view->set_need_update(true);
+        _view->set_update(_viewport, true);
         _view->signals_changed();
     }
     _session.decode_done();

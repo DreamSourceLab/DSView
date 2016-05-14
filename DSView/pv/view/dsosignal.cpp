@@ -24,6 +24,7 @@
 
 #include <math.h>
 
+#include "../../extdef.h"
 #include "dsosignal.h"
 #include "pv/data/dso.h"
 #include "pv/data/dsosnapshot.h"
@@ -106,13 +107,13 @@ const float DsoSignal::EnvelopeThreshold = 256.0f;
 const double DsoSignal::TrigMargin = 0.02;
 
 const int DsoSignal::UpMargin = 30;
-const int DsoSignal::DownMargin = 30;
+const int DsoSignal::DownMargin = 0;
 const int DsoSignal::RightMargin = 30;
 
 DsoSignal::DsoSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
                      boost::shared_ptr<data::Dso> data,
                      const sr_channel * const probe):
-    Signal(dev_inst, probe, SR_CHANNEL_DSO),
+    Signal(dev_inst, probe),
     _data(data),
     _scale(0),
     _vDialActive(false),
@@ -167,9 +168,14 @@ boost::shared_ptr<pv::data::SignalData> DsoSignal::data() const
     return _data;
 }
 
-void DsoSignal::set_view(pv::view::View *view)
+boost::shared_ptr<pv::data::Dso> DsoSignal::dso_data() const
 {
-    Trace::set_view(view);
+    return _data;
+}
+
+void DsoSignal::set_viewport(pv::view::Viewport *viewport)
+{
+    Trace::set_viewport(viewport);
     update_zeroPos();
 
     const double ms_left = get_view_rect().right() - (MS_RectWidth + MS_RectMargin) * (get_index() + 1);
@@ -257,7 +263,7 @@ bool DsoSignal::go_vDialPre()
         if (_view->session().get_capture_state() == SigSession::Stopped)
             _scale *= pre_vdiv/_vDial->get_value();
         update_zeroPos();
-        _view->set_need_update(true);
+        _view->set_update(_viewport, true);
         _view->update();
         return true;
     } else {
@@ -276,7 +282,7 @@ bool DsoSignal::go_vDialNext()
         if (_view->session().get_capture_state() == SigSession::Stopped)
             _scale *= pre_vdiv/_vDial->get_value();
         update_zeroPos();
-        _view->set_need_update(true);
+        _view->set_update(_viewport, true);
         _view->update();
         return true;
     } else {
@@ -507,7 +513,7 @@ bool DsoSignal::load_settings()
     _zero_off = _zeroPos * 255;
 
     if (_view) {
-        _view->set_need_update(true);
+        _view->set_update(_viewport, true);
         _view->update();
     }
     return true;
@@ -608,6 +614,11 @@ double DsoSignal::get_zeroRate()
     return _zeroPos;
 }
 
+double DsoSignal::get_zeroValue()
+{
+    return _zero_off;
+}
+
 void DsoSignal::set_zeroPos(int pos)
 {
     if (enabled()) {
@@ -644,7 +655,7 @@ void DsoSignal::set_factor(uint64_t factor)
             _dev_inst->set_config(_probe, NULL, SR_CONF_FACTOR,
                                   g_variant_new_uint64(factor));
             _vDial->set_factor(factor);
-            _view->set_need_update(true);
+            _view->set_update(_viewport, true);
             _view->update();
         }
     }
@@ -668,7 +679,7 @@ uint64_t DsoSignal::get_factor()
 void DsoSignal::set_ms_show(bool show)
 {
     _ms_show = show;
-    _view->set_need_update(true);
+    _view->set_update(_viewport, true);
 }
 
 bool DsoSignal::get_ms_show() const
@@ -731,10 +742,10 @@ void DsoSignal::update_zeroPos()
 
 QRectF DsoSignal::get_view_rect() const
 {
-    assert(_view);
+    assert(_viewport);
     return QRectF(0, UpMargin,
-                  _view->viewport()->width() - RightMargin,
-                  _view->viewport()->height() - UpMargin - DownMargin);
+                  _viewport->width() - RightMargin,
+                  _viewport->height() - UpMargin - DownMargin);
 }
 
 void DsoSignal::paint_back(QPainter &p, int left, int right)
@@ -745,7 +756,9 @@ void DsoSignal::paint_back(QPainter &p, int left, int right)
     const int height = get_view_rect().height();
     const int width = right - left;
 
-    p.setPen(Qt::NoPen);
+    QPen solidPen(Signal::dsFore);
+    solidPen.setStyle(Qt::SolidLine);
+    p.setPen(solidPen);
     p.setBrush(Trace::dsBack);
     p.drawRect(left, UpMargin, width, height);
 
@@ -772,13 +785,14 @@ void DsoSignal::paint_back(QPainter &p, int left, int right)
     p.setBrush(Trace::dsBlue);
     p.drawRect(shown_offset, UpMargin/2 - 3, shown_len, 6);
 
-    QPen pen(Signal::dsFore);
-    pen.setStyle(Qt::DotLine);
-    p.setPen(pen);
+    QPen dashPen(Signal::dsFore);
+    dashPen.setStyle(Qt::DashLine);
+    p.setPen(dashPen);
     const double spanY =height * 1.0 / DS_CONF_DSO_VDIVS;
     for (i = 1; i <= DS_CONF_DSO_VDIVS; i++) {
         const double posY = spanY * i + UpMargin;
-        p.drawLine(left, posY, right, posY);
+        if (i != DS_CONF_DSO_VDIVS)
+            p.drawLine(left, posY, right, posY);
         const double miniSpanY = spanY / 5;
         for (j = 1; j < 5; j++) {
             p.drawLine(width / 2.0f - 5, posY - miniSpanY * j,
@@ -788,8 +802,8 @@ void DsoSignal::paint_back(QPainter &p, int left, int right)
     const double spanX = width * 1.0 / DS_CONF_DSO_HDIVS;
     for (i = 1; i <= DS_CONF_DSO_HDIVS; i++) {
         const double posX = spanX * i;
-        p.drawLine(posX, UpMargin,
-                   posX, height + UpMargin);
+        if (i != DS_CONF_DSO_HDIVS)
+            p.drawLine(posX, UpMargin,posX, height + UpMargin);
         const double miniSpanX = spanX / 5;
         for (j = 1; j < 5; j++) {
             p.drawLine(posX - miniSpanX * j, height / 2.0f + UpMargin - 5,
@@ -954,7 +968,7 @@ void DsoSignal::paint_trace(QPainter &p,
         }
 
         p.drawPolyline(points, point - points);
-        p.eraseRect(get_view_rect().right(), get_view_rect().top(),
+        p.eraseRect(get_view_rect().right()+1, get_view_rect().top(),
                     _view->viewport()->width() - get_view_rect().width(), get_view_rect().height());
 
         //delete[] samples;
@@ -1095,7 +1109,7 @@ bool DsoSignal::mouse_press(int right, const QPoint pt)
 {
     int y = get_y();
     bool setted = false;
-    const vector< boost::shared_ptr<Trace> > traces(_view->get_traces());
+    const vector< boost::shared_ptr<Trace> > traces(_view->get_traces(ALL_VIEW));
     const QRectF vDec_rect = get_rect(DSO_VDEC, y, right);
     const QRectF vInc_rect = get_rect(DSO_VINC, y, right);
     const QRectF hDec_rect = get_rect(DSO_HDEC, y, right);
@@ -1156,7 +1170,7 @@ bool DsoSignal::mouse_wheel(int right, const QPoint pt, const int shift)
 {
     int y = get_y();
     const vector< boost::shared_ptr<Trace> > traces(
-        _view->get_traces());
+        _view->get_traces(ALL_VIEW));
     bool setted = false;
     const QRectF vDial_rect = get_rect(DSO_VDIAL, y, right);
     const QRectF hDial_rect = get_rect(DSO_HDIAL, y, right);
@@ -1363,7 +1377,7 @@ void DsoSignal::paint_measure(QPainter &p)
 
     bool setted = false;
     if (_autoH) {
-        const vector< boost::shared_ptr<Trace> > traces(_view->get_traces());
+        const vector< boost::shared_ptr<Trace> > traces(_view->get_traces(ALL_VIEW));
         const double upPeriod = get_hDialValue() * DS_CONF_DSO_HDIVS * 0.8;
         const double dnPeriod = get_hDialValue() * DS_CONF_DSO_HDIVS * 0.2;
         if (_period > upPeriod) {
@@ -1404,18 +1418,18 @@ bool DsoSignal::measure(const QPointF &p)
 {
     if (_ms_gear_rect.contains(QPoint(p.x(), p.y()))) {
         _ms_gear_hover = true;
-        _view->set_need_update(true);
+        _view->set_update(_viewport, true);
         return false;
     } else if (_ms_gear_hover) {
-        _view->set_need_update(true);
+        _view->set_update(_viewport, true);
         _ms_gear_hover = false;
     }
     if (_ms_show_rect.contains(QPoint(p.x(), p.y()))) {
         _ms_show_hover = true;
-        _view->set_need_update(true);
+        _view->set_update(_viewport, true);
         return false;
     } else if (_ms_show_hover){
-        _view->set_need_update(true);
+        _view->set_update(_viewport, true);
         _ms_show_hover = false;
     }
 

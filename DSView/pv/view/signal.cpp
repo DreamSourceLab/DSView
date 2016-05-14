@@ -35,8 +35,8 @@ namespace pv {
 namespace view {
 
 Signal::Signal(boost::shared_ptr<pv::device::DevInst> dev_inst,
-               const sr_channel *const probe, int type) :
-    Trace(probe->name, probe->index, type),
+               const sr_channel *const probe) :
+    Trace(probe->name, probe->index, probe->type),
     _dev_inst(dev_inst),
     _probe(probe)
 {

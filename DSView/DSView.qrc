@@ -57,5 +57,16 @@
         <file>icons/start_dis_cn.png</file>
         <file>icons/settings.png</file>
         <file>darkstyle/style.qss</file>
+        <file>icons/export.png</file>
+        <file>icons/single.png</file>
+        <file>icons/single_dis.png</file>
+        <file>icons/math.png</file>
+        <file>icons/math_dis.png</file>
+        <file>icons/fft.png</file>
+        <file>icons/Blackman.png</file>
+        <file>icons/Flat_top.png</file>
+        <file>icons/Hamming.png</file>
+        <file>icons/Hann.png</file>
+        <file>icons/Rectangle.png</file>
     </qresource>
 </RCC>

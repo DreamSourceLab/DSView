@@ -21,13 +21,13 @@
  */
 
 
-#include "view.h"
 #include "viewport.h"
 #include "ruler.h"
 
 #include "signal.h"
 #include "dsosignal.h"
 #include "logicsignal.h"
+#include "mathtrace.h"
 #include "../device/devinst.h"
 #include "../data/logic.h"
 #include "../data/logicsnapshot.h"
@@ -52,9 +52,11 @@ namespace view {
 const double Viewport::DragDamping = 1.05;
 const double Viewport::MinorDragRateUp = 10;
 
-Viewport::Viewport(View &parent) :
-	QWidget(&parent),
-        _view(parent),
+Viewport::Viewport(View &parent, View_type type) :
+    QWidget(&parent),
+    _view(parent),
+    _type(type),
+    _need_update(false),
     _total_receive_len(0),
     _action_type(NO_ACTION),
     _measure_type(NO_MEASURE),
@@ -100,7 +102,7 @@ int Viewport::get_total_height() const
 {
 	int h = 0;
 
-    const vector< boost::shared_ptr<Trace> > traces(_view.get_traces());
+    const vector< boost::shared_ptr<Trace> > traces(_view.get_traces(_type));
     BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces) {
         assert(t);
         h += (int)(t->get_totalHeight());
@@ -126,11 +128,13 @@ void Viewport::paintEvent(QPaintEvent *event)
     QPainter p(this);
     style()->drawPrimitive(QStyle::PE_Widget, &o, &p, this);
 
-    const vector< boost::shared_ptr<Trace> > traces(_view.get_traces());
+    const vector< boost::shared_ptr<Trace> > traces(_view.get_traces(_type));
     BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
     {
         assert(t);
         t->paint_back(p, 0, _view.get_view_width());
+        if (t->enabled() && _view.session().get_device()->dev_inst()->mode == DSO)
+            break;
     }
 
     p.setRenderHint(QPainter::Antialiasing, false);
@@ -145,9 +149,11 @@ void Viewport::paintEvent(QPaintEvent *event)
             break;
 
         case SigSession::Running:
-            p.setRenderHint(QPainter::Antialiasing);
-            paintProgress(p);
-            p.setRenderHint(QPainter::Antialiasing, false);
+            if (_type == TIME_VIEW) {
+                p.setRenderHint(QPainter::Antialiasing);
+                paintProgress(p);
+                p.setRenderHint(QPainter::Antialiasing, false);
+            }
             break;
         }
     } else {
@@ -172,11 +178,11 @@ void Viewport::paintEvent(QPaintEvent *event)
 
 void Viewport::paintSignals(QPainter &p)
 {
-    const vector< boost::shared_ptr<Trace> > traces(_view.get_traces());
+    const vector< boost::shared_ptr<Trace> > traces(_view.get_traces(_type));
     if (_view.scale() != _curScale ||
         _view.offset() != _curOffset ||
         _view.get_signalHeight() != _curSignalHeight ||
-        _view.need_update()) {
+        _need_update) {
         _curScale = _view.scale();
         _curOffset = _view.offset();
         _curSignalHeight = _view.get_signalHeight();
@@ -190,15 +196,14 @@ void Viewport::paintSignals(QPainter &p)
         {
             assert(t);
             if (t->enabled())
-                t->paint_mid(dbp, 0, _view.get_view_width());
+                t->paint_mid(dbp, 0, t->get_view_rect().width());
         }
-
-        _view.set_need_update(false);
+        _need_update = false;
     }
     p.drawPixmap(0, 0, pixmap);
 
     // plot cursors
-    if (_view.cursors_shown()) {
+    if (_view.cursors_shown() && _type == TIME_VIEW) {
         list<Cursor*>::iterator i = _view.get_cursorList().begin();
         double cursorX;
         const double samples_per_pixel = _view.session().get_device()->get_sample_rate() * _view.scale();
@@ -212,22 +217,25 @@ void Viewport::paintSignals(QPainter &p)
             i++;
         }
     }
-    if (_view.trig_cursor_shown()) {
-        _view.get_trig_cursor()->paint(p, rect(), 0);
-    }
-    if (_view.search_cursor_shown()) {
-        _view.get_search_cursor()->paint(p, rect(), 0);
-    }
 
-    // plot zoom rect
-    if (_action_type == LOGIC_ZOOM) {
-        p.setPen(Qt::NoPen);
-        p.setBrush(Trace::dsLightBlue);
-        p.drawRect(QRectF(_mouse_down_point, _mouse_point));
-    }
+    if (_type == TIME_VIEW) {
+        if (_view.trig_cursor_shown()) {
+            _view.get_trig_cursor()->paint(p, rect(), 0);
+        }
+        if (_view.search_cursor_shown()) {
+            _view.get_search_cursor()->paint(p, rect(), 0);
+        }
 
-    //plot measure arrow
-    paintMeasure(p);
+        // plot zoom rect
+        if (_action_type == LOGIC_ZOOM) {
+            p.setPen(Qt::NoPen);
+            p.setBrush(Trace::dsLightBlue);
+            p.drawRect(QRectF(_mouse_down_point, _mouse_point));
+        }
+
+        //plot measure arrow
+        paintMeasure(p);
+    }
 }
 
 void Viewport::paintProgress(QPainter &p)
@@ -413,38 +421,51 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
     _hover_hit = false;
 
     if (event->buttons() & Qt::LeftButton) {
-        _view.set_scale_offset(_view.scale(),
-            _mouse_down_offset +
-            (_mouse_down_point - event->pos()).x() *
-            _view.scale());
-        _drag_strength = (_mouse_down_point - event->pos()).x();
+        if (_type == TIME_VIEW) {
+            _view.set_scale_offset(_view.scale(),
+                _mouse_down_offset +
+                (_mouse_down_point - event->pos()).x() *
+                _view.scale());
+            _drag_strength = (_mouse_down_point - event->pos()).x();
+        } else if (_type == FFT_VIEW) {
+            BOOST_FOREACH(const boost::shared_ptr<view::MathTrace> t, _view.session().get_math_signals()) {
+                assert(t);
+                if(t->enabled()) {
+                    double delta = (_mouse_point - event->pos()).x();
+                    t->set_offset(delta);
+                    break;
+                }
+            }
+        }
     }
 
-    if (!(event->buttons() || Qt::NoButton)) {
-        if (_action_type == DSO_TRIG_MOVE) {
-            if (_drag_sig) {
-                boost::shared_ptr<view::DsoSignal> dsoSig;
-                if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(_drag_sig))
-                    dsoSig->set_trig_vpos(event->pos().y());
+    if (_type == TIME_VIEW) {
+        if (!(event->buttons() || Qt::NoButton)) {
+            if (_action_type == DSO_TRIG_MOVE) {
+                if (_drag_sig) {
+                    boost::shared_ptr<view::DsoSignal> dsoSig;
+                    if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(_drag_sig))
+                        dsoSig->set_trig_vpos(event->pos().y());
+                }
             }
-        }
 
-        if (_action_type == CURS_MOVE) {
-            uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
-            TimeMarker* grabbed_marker = _view.get_ruler()->get_grabbed_cursor();
-            if (_view.cursors_shown() && grabbed_marker) {
-                const double cur_time = _view.offset() + _view.hover_point().x() * _view.scale();
-                const double pos = cur_time * sample_rate;
-                const double pos_delta = pos - (uint64_t)pos;
-                if ( pos_delta < 0.5)
-                    grabbed_marker->set_index((uint64_t)floor(pos));
-                else
-                    grabbed_marker->set_index((uint64_t)ceil(pos));
+            if (_action_type == CURS_MOVE) {
+                uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
+                TimeMarker* grabbed_marker = _view.get_ruler()->get_grabbed_cursor();
+                if (_view.cursors_shown() && grabbed_marker) {
+                    const double cur_time = _view.offset() + _view.hover_point().x() * _view.scale();
+                    const double pos = cur_time * sample_rate;
+                    const double pos_delta = pos - (uint64_t)pos;
+                    if ( pos_delta < 0.5)
+                        grabbed_marker->set_index((uint64_t)floor(pos));
+                    else
+                        grabbed_marker->set_index((uint64_t)ceil(pos));
+                }
             }
-        }
 
-        if (_action_type == DSO_YM)
-            _dso_ym_end = event->pos().y();
+            if (_action_type == DSO_YM)
+                _dso_ym_end = event->pos().y();
+        }
     }
 
     _mouse_point = event->pos();
@@ -457,177 +478,178 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
 {
     assert(event);
 
-    if ((_action_type == NO_ACTION) &&
-        (event->button() == Qt::LeftButton)) {
-        // priority 0
-        if (_action_type == NO_ACTION && _view.cursors_shown()) {
-            list<Cursor*>::iterator i = _view.get_cursorList().begin();
-            double cursorX;
-            const double samples_per_pixel = _view.session().get_device()->get_sample_rate() * _view.scale();
-            while (i != _view.get_cursorList().end()) {
-                cursorX = (*i)->index()/samples_per_pixel - (_view.offset() / _view.scale());
-                if ((*i)->grabbed()) {
-                    _view.get_ruler()->rel_grabbed_cursor();
-                } else if (qAbs(cursorX - event->pos().x()) <= HitCursorMargin) {
-                    _view.get_ruler()->set_grabbed_cursor(*i);
-                    _action_type = CURS_MOVE;
-                    break;
-                }
-                i++;
-            }
-        }
-
-        if (_view.session().get_device()->dev_inst()->mode == LOGIC &&
-            _view.session().get_capture_state() == SigSession::Stopped) {
-            // priority 1
-            if (_action_type == NO_ACTION) {
-                const double strength = _drag_strength*DragTimerInterval*1.0/_time.elapsed();
-                if (_time.elapsed() < 200 &&
-                    abs(_drag_strength) < MinorDragOffsetUp &&
-                    abs(strength) > MinorDragRateUp) {
-                    _drag_strength = _drag_strength;
-                    _drag_timer.start(DragTimerInterval);
-                    _action_type = LOGIC_MOVE;
-                } else if (_time.elapsed() < 200 &&
-                           abs(strength) > DragTimerInterval) {
-                    _drag_strength = strength * 5;
-                    _drag_timer.start(DragTimerInterval);
-                    _action_type = LOGIC_MOVE;
+    if (_type == TIME_VIEW) {
+        if ((_action_type == NO_ACTION) &&
+            (event->button() == Qt::LeftButton)) {
+            // priority 0
+            if (_action_type == NO_ACTION && _view.cursors_shown()) {
+                list<Cursor*>::iterator i = _view.get_cursorList().begin();
+                double cursorX;
+                const double samples_per_pixel = _view.session().get_device()->get_sample_rate() * _view.scale();
+                while (i != _view.get_cursorList().end()) {
+                    cursorX = (*i)->index()/samples_per_pixel - (_view.offset() / _view.scale());
+                    if ((*i)->grabbed()) {
+                        _view.get_ruler()->rel_grabbed_cursor();
+                    } else if (qAbs(cursorX - event->pos().x()) <= HitCursorMargin) {
+                        _view.get_ruler()->set_grabbed_cursor(*i);
+                        _action_type = CURS_MOVE;
+                        break;
+                    }
+                    i++;
                 }
             }
 
-            // priority 2
-            if (_action_type == NO_ACTION) {
-                if (_mouse_down_point.x() == event->pos().x()) {
+            if (_view.session().get_device()->dev_inst()->mode == LOGIC &&
+                _view.session().get_capture_state() == SigSession::Stopped) {
+                // priority 1
+                if (_action_type == NO_ACTION) {
+                    const double strength = _drag_strength*DragTimerInterval*1.0/_time.elapsed();
+                    if (_time.elapsed() < 200 &&
+                        abs(_drag_strength) < MinorDragOffsetUp &&
+                        abs(strength) > MinorDragRateUp) {
+                        _drag_strength = _drag_strength;
+                        _drag_timer.start(DragTimerInterval);
+                        _action_type = LOGIC_MOVE;
+                    } else if (_time.elapsed() < 200 &&
+                               abs(strength) > DragTimerInterval) {
+                        _drag_strength = strength * 5;
+                        _drag_timer.start(DragTimerInterval);
+                        _action_type = LOGIC_MOVE;
+                    }
+                }
+
+                // priority 2
+                if (_action_type == NO_ACTION) {
+                    if (_mouse_down_point.x() == event->pos().x()) {
+                        const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
+                        BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+                            assert(s);
+                            if (abs(event->pos().y() - s->get_y()) < _view.get_signalHeight()) {
+                                _action_type = LOGIC_EDGE;
+                                _edge_start = (_view.offset() + (event->pos().x() + 0.5) * _view.scale()) * _view.session().get_device()->get_sample_rate();
+                                break;
+                            }
+                        }
+                    }
+                }
+            } else if (_view.session().get_device()->dev_inst()->mode == DSO) {
+                // priority 0
+                if (_action_type == NO_ACTION && _hover_hit) {
+                    _action_type = DSO_YM;
+                    _dso_ym_valid = true;
+                    _dso_ym_sig_index = _hover_sig_index;
+                    _dso_ym_sig_value = _hover_sig_value;
+                    _dso_ym_index = _hover_index;
+                    _dso_ym_start = event->pos().y();
+                }
+
+                // priority 1
+                if (_action_type == NO_ACTION) {
                     const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
                     BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
                         assert(s);
-                        if (abs(event->pos().y() - s->get_y()) < _view.get_signalHeight()) {
-                            _action_type = LOGIC_EDGE;
-                            _edge_start = (_view.offset() + (event->pos().x() + 0.5) * _view.scale()) * _view.session().get_device()->get_sample_rate();
-                            break;
+                        if (!s->enabled())
+                            continue;
+                        boost::shared_ptr<DsoSignal> dsoSig;
+                        if (dsoSig = dynamic_pointer_cast<DsoSignal>(s)) {
+                            if (dsoSig->get_trig_rect(0, _view.get_view_width()).contains(_mouse_point)) {
+                                _drag_sig = s;
+                                _action_type = DSO_TRIG_MOVE;
+                                break;
+                            }
                         }
                     }
                 }
             }
-        } else if (_view.session().get_device()->dev_inst()->mode == DSO) {
-            // priority 0
-            if (_action_type == NO_ACTION && _hover_hit) {
-                _action_type = DSO_YM;
-                _dso_ym_valid = true;
-                _dso_ym_sig_index = _hover_sig_index;
-                _dso_ym_sig_value = _hover_sig_value;
-                _dso_ym_index = _hover_index;
-                _dso_ym_start = event->pos().y();
+        } else if (_action_type == DSO_YM) {
+            if (event->button() == Qt::LeftButton) {
+                _dso_ym_end = event->pos().y();
+                _action_type = NO_ACTION;
+            } else if (event->button() == Qt::RightButton) {
+                _action_type = NO_ACTION;
+                _dso_ym_valid = false;
             }
+        } else if (_action_type == DSO_TRIG_MOVE) {
+            if (event->button() == Qt::LeftButton) {
+                _drag_sig.reset();
+                _action_type = NO_ACTION;
+            }
+        } else if (_action_type == DSO_XM_STEP0) {
+            if (event->button() == Qt::LeftButton) {
+                _action_type = DSO_XM_STEP1;
+                _dso_xm_valid = true;
+            }
+        } else if (_action_type == DSO_XM_STEP1) {
+            if (event->button() == Qt::LeftButton) {
+                const uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
+                const double scale = _view.scale();
+                const double samples_per_pixel =  sample_rate * scale;
 
-            // priority 1
-            if (_action_type == NO_ACTION) {
-                const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
-                BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
-                    assert(s);
-                    if (!s->enabled())
-                        continue;
-                    boost::shared_ptr<DsoSignal> dsoSig;
-                    if (dsoSig = dynamic_pointer_cast<DsoSignal>(s)) {
-                        if (dsoSig->get_trig_rect(0, _view.get_view_width()).contains(_mouse_point)) {
-                            _drag_sig = s;
-                            _action_type = DSO_TRIG_MOVE;
-                            break;
-                        }
+                _dso_xm_index[1] = event->pos().x() * samples_per_pixel + _view.offset() * sample_rate;
+                const uint64_t max_index = max(_dso_xm_index[0], _dso_xm_index[1]);
+                _dso_xm_index[0] = min(_dso_xm_index[0], _dso_xm_index[1]);
+                _dso_xm_index[1] = max_index;
+
+                _action_type = DSO_XM_STEP2;
+            } else if (event->button() == Qt::RightButton) {
+                _action_type = NO_ACTION;
+                _dso_xm_valid = false;
+                _mm_width = "#####";
+                _mm_period = "#####";
+                _mm_freq = "#####";
+                _mm_duty = "#####";
+                measure_updated();
+            }
+        } else if (_action_type == DSO_XM_STEP2) {
+            if (event->button() == Qt::LeftButton) {
+                const uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
+                const double scale = _view.scale();
+                const double samples_per_pixel =  sample_rate * scale;
+                _dso_xm_index[2] = event->pos().x() * samples_per_pixel + _view.offset() * sample_rate;
+                const uint64_t max_index = max(_dso_xm_index[1], _dso_xm_index[2]);
+                _dso_xm_index[1] = min(_dso_xm_index[1], _dso_xm_index[2]);
+                _dso_xm_index[2] = max_index;
+
+                _action_type = NO_ACTION;
+            } else if (event->button() == Qt::RightButton) {
+                _action_type = NO_ACTION;
+                _dso_xm_valid = false;
+                _mm_width = "#####";
+                _mm_period = "#####";
+                _mm_freq = "#####";
+                _mm_duty = "#####";
+                measure_updated();
+            }
+        } else if (_action_type == CURS_MOVE) {
+            _action_type = NO_ACTION;
+            if (_view.cursors_shown()) {
+                list<Cursor*>::iterator i = _view.get_cursorList().begin();
+                while (i != _view.get_cursorList().end()) {
+                    if ((*i)->grabbed()) {
+                        _view.get_ruler()->rel_grabbed_cursor();
                     }
+                    i++;
                 }
             }
-        }
-    } else if (_action_type == DSO_YM) {
-        if (event->button() == Qt::LeftButton) {
-            _dso_ym_end = event->pos().y();
+        } else if (_action_type == LOGIC_EDGE) {
             _action_type = NO_ACTION;
-        } else if (event->button() == Qt::RightButton) {
+            _edge_rising = 0;
+            _edge_falling = 0;
+        } else if (_action_type == LOGIC_MOVE) {
+            _drag_strength = 0;
+            _drag_timer.stop();
             _action_type = NO_ACTION;
-            _dso_ym_valid = false;
-        }
-    } else if (_action_type == DSO_TRIG_MOVE) {
-        if (event->button() == Qt::LeftButton) {
-            _drag_sig.reset();
-            _action_type = NO_ACTION;
-        }
-    } else if (_action_type == DSO_XM_STEP0) {
-        if (event->button() == Qt::LeftButton) {
-            _action_type = DSO_XM_STEP1;
-            _dso_xm_valid = true;
-        }
-    } else if (_action_type == DSO_XM_STEP1) {
-        if (event->button() == Qt::LeftButton) {
-            const uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
-            const double scale = _view.scale();
-            const double samples_per_pixel =  sample_rate * scale;
-
-            _dso_xm_index[1] = event->pos().x() * samples_per_pixel + _view.offset() * sample_rate;
-            const uint64_t max_index = max(_dso_xm_index[0], _dso_xm_index[1]);
-            _dso_xm_index[0] = min(_dso_xm_index[0], _dso_xm_index[1]);
-            _dso_xm_index[1] = max_index;
-
-            _action_type = DSO_XM_STEP2;
-        } else if (event->button() == Qt::RightButton) {
-            _action_type = NO_ACTION;
-            _dso_xm_valid = false;
-            _mm_width = "#####";
-            _mm_period = "#####";
-            _mm_freq = "#####";
-            _mm_duty = "#####";
-            measure_updated();
-        }
-    } else if (_action_type == DSO_XM_STEP2) {
-        if (event->button() == Qt::LeftButton) {
-            const uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
-            const double scale = _view.scale();
-            const double samples_per_pixel =  sample_rate * scale;
-            _dso_xm_index[2] = event->pos().x() * samples_per_pixel + _view.offset() * sample_rate;
-            const uint64_t max_index = max(_dso_xm_index[1], _dso_xm_index[2]);
-            _dso_xm_index[1] = min(_dso_xm_index[1], _dso_xm_index[2]);
-            _dso_xm_index[2] = max_index;
-
-            _action_type = NO_ACTION;
-        } else if (event->button() == Qt::RightButton) {
-            _action_type = NO_ACTION;
-            _dso_xm_valid = false;
-            _mm_width = "#####";
-            _mm_period = "#####";
-            _mm_freq = "#####";
-            _mm_duty = "#####";
-            measure_updated();
-        }
-    } else if (_action_type == CURS_MOVE) {
-        _action_type = NO_ACTION;
-        if (_view.cursors_shown()) {
-            list<Cursor*>::iterator i = _view.get_cursorList().begin();
-            while (i != _view.get_cursorList().end()) {
-                if ((*i)->grabbed()) {
-                    _view.get_ruler()->rel_grabbed_cursor();
-                }
-                i++;
+        } else if (_action_type == LOGIC_ZOOM) {
+            if (event->pos().x() != _mouse_down_point.x()) {
+                const double newOffset = _view.offset() + (min(event->pos().x(), _mouse_down_point.x()) + 0.5) * _view.scale();
+                const double newScale = max(min(_view.scale() * abs(event->pos().x() - _mouse_down_point.x()) / _view.get_view_width(),
+                                                _view.get_maxscale()), _view.get_minscale());
+                if (newScale != _view.scale())
+                    _view.set_scale_offset(newScale, newOffset);
             }
+            _action_type = NO_ACTION;
         }
-    } else if (_action_type == LOGIC_EDGE) {
-        _action_type = NO_ACTION;
-        _edge_rising = 0;
-        _edge_falling = 0;
-    } else if (_action_type == LOGIC_MOVE) {
-        _drag_strength = 0;
-        _drag_timer.stop();
-        _action_type = NO_ACTION;
-    } else if (_action_type == LOGIC_ZOOM) {
-        if (event->pos().x() != _mouse_down_point.x()) {
-            const double newOffset = _view.offset() + (min(event->pos().x(), _mouse_down_point.x()) + 0.5) * _view.scale();
-            const double newScale = max(min(_view.scale() * abs(event->pos().x() - _mouse_down_point.x()) / _view.get_view_width(),
-                                            _view.get_maxscale()), _view.get_minscale());
-            if (newScale != _view.scale())
-                _view.set_scale_offset(newScale, newOffset);
-        }
-        _action_type = NO_ACTION;
     }
-
     update();
 }
 
@@ -676,16 +698,26 @@ void Viewport::wheelEvent(QWheelEvent *event)
 {
 	assert(event);
 
-	if (event->orientation() == Qt::Vertical) {
-		// Vertical scrolling is interpreted as zooming in/out
-        const double offset = event->x();
-        _view.zoom(event->delta() / 80, offset);
-	} else if (event->orientation() == Qt::Horizontal) {
-		// Horizontal scrolling is interpreted as moving left/right
-		_view.set_scale_offset(_view.scale(),
-				       event->delta() * _view.scale()
-				       + _view.offset());
-	}
+    if (_type == FFT_VIEW) {
+        BOOST_FOREACH(const boost::shared_ptr<view::MathTrace> t, _view.session().get_math_signals()) {
+            assert(t);
+            if(t->enabled()) {
+                t->zoom(event->delta() / 80, event->x());
+                break;
+            }
+        }
+    } else if (_type == TIME_VIEW){
+        if (event->orientation() == Qt::Vertical) {
+            // Vertical scrolling is interpreted as zooming in/out
+            const double offset = event->x();
+            _view.zoom(event->delta() / 80, offset);
+        } else if (event->orientation() == Qt::Horizontal) {
+            // Horizontal scrolling is interpreted as moving left/right
+            _view.set_scale_offset(_view.scale(),
+                           event->delta() * _view.scale()
+                           + _view.offset());
+        }
+    }
 
     measure();
 }
@@ -759,62 +791,72 @@ void Viewport::clear_measure()
 void Viewport::measure()
 {
     _measure_type = NO_MEASURE;
-    const uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
-    const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
-    BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
-        assert(s);
-        boost::shared_ptr<view::LogicSignal> logicSig;
-        boost::shared_ptr<view::DsoSignal> dsoSig;
-        if (logicSig = dynamic_pointer_cast<view::LogicSignal>(s)) {
-            if (_action_type == NO_ACTION) {
-                if (logicSig->measure(_mouse_point, _cur_sample, _nxt_sample, _thd_sample)) {
-                    _measure_type = LOGIC_FREQ;
+    if (_type == TIME_VIEW) {
+        const uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
+        const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
+        BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+            assert(s);
+            boost::shared_ptr<view::LogicSignal> logicSig;
+            boost::shared_ptr<view::DsoSignal> dsoSig;
+            if (logicSig = dynamic_pointer_cast<view::LogicSignal>(s)) {
+                if (_action_type == NO_ACTION) {
+                    if (logicSig->measure(_mouse_point, _cur_sample, _nxt_sample, _thd_sample)) {
+                        _measure_type = LOGIC_FREQ;
 
-                    _mm_width = _view.get_ruler()->format_real_time(_nxt_sample - _cur_sample, sample_rate);
-                    _mm_period = _thd_sample != 0 ? _view.get_ruler()->format_real_time(_thd_sample - _cur_sample, sample_rate) : "#####";
-                    _mm_freq = _thd_sample != 0 ? _view.get_ruler()->format_real_freq(_thd_sample - _cur_sample, sample_rate) : "#####";
+                        _mm_width = _view.get_ruler()->format_real_time(_nxt_sample - _cur_sample, sample_rate);
+                        _mm_period = _thd_sample != 0 ? _view.get_ruler()->format_real_time(_thd_sample - _cur_sample, sample_rate) : "#####";
+                        _mm_freq = _thd_sample != 0 ? _view.get_ruler()->format_real_freq(_thd_sample - _cur_sample, sample_rate) : "#####";
 
-                    const double pixels_offset =  _view.offset() / _view.scale();
-                    const double samples_per_pixel = sample_rate * _view.scale();
-                    _cur_preX = _cur_sample / samples_per_pixel - pixels_offset;
-                    _cur_aftX = _nxt_sample / samples_per_pixel - pixels_offset;
-                    _cur_thdX = _thd_sample / samples_per_pixel - pixels_offset;
-                    _cur_midY = logicSig->get_y();
+                        const double pixels_offset =  _view.offset() / _view.scale();
+                        const double samples_per_pixel = sample_rate * _view.scale();
+                        _cur_preX = _cur_sample / samples_per_pixel - pixels_offset;
+                        _cur_aftX = _nxt_sample / samples_per_pixel - pixels_offset;
+                        _cur_thdX = _thd_sample / samples_per_pixel - pixels_offset;
+                        _cur_midY = logicSig->get_y();
 
-                    _mm_duty = _thd_sample != 0 ? QString::number((_nxt_sample - _cur_sample) * 100.0 / (_thd_sample - _cur_sample), 'f', 2)+"%" :
-                                                 "#####";
+                        _mm_duty = _thd_sample != 0 ? QString::number((_nxt_sample - _cur_sample) * 100.0 / (_thd_sample - _cur_sample), 'f', 2)+"%" :
+                                                     "#####";
+                        break;
+                    } else {
+                        _measure_type = NO_MEASURE;
+                        _mm_width = "#####";
+                        _mm_period = "#####";
+                        _mm_freq = "#####";
+                        _mm_duty = "#####";
+                    }
+                } else if (_action_type == LOGIC_EDGE) {
+                    if (logicSig->edges(_view.hover_point(), _edge_start, _edge_rising, _edge_falling)) {
+                        const double pixels_offset =  _view.offset() / _view.scale();
+                        const double samples_per_pixel = sample_rate * _view.scale();
+                        _cur_preX = _edge_start / samples_per_pixel - pixels_offset;
+                        _cur_aftX = _view.hover_point().x();
+                        _cur_midY = logicSig->get_y() - logicSig->get_totalHeight()/2 - 5;
+
+                        _em_rising = "Rising: " + QString::number(_edge_rising);
+                        _em_falling = "Falling: " + QString::number(_edge_falling);
+                        _em_edges = "Edges: " + QString::number(_edge_rising + _edge_falling);
+
+                        break;
+                    }
+                }
+            } else if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
+                if (_measure_en && dsoSig->measure(_view.hover_point())) {
+                    _measure_type = DSO_VALUE;
                     break;
                 } else {
                     _measure_type = NO_MEASURE;
-                    _mm_width = "#####";
-                    _mm_period = "#####";
-                    _mm_freq = "#####";
-                    _mm_duty = "#####";
-                }
-            } else if (_action_type == LOGIC_EDGE) {
-                if (logicSig->edges(_view.hover_point(), _edge_start, _edge_rising, _edge_falling)) {
-                    const double pixels_offset =  _view.offset() / _view.scale();
-                    const double samples_per_pixel = sample_rate * _view.scale();
-                    _cur_preX = _edge_start / samples_per_pixel - pixels_offset;
-                    _cur_aftX = _view.hover_point().x();
-                    _cur_midY = logicSig->get_y() - logicSig->get_totalHeight()/2 - 5;
-
-                    _em_rising = "Rising: " + QString::number(_edge_rising);
-                    _em_falling = "Falling: " + QString::number(_edge_falling);
-                    _em_edges = "Edges: " + QString::number(_edge_rising + _edge_falling);
-
-                    break;
                 }
             }
-        } else if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
-            if (_measure_en && dsoSig->measure(_view.hover_point())) {
-                _measure_type = DSO_VALUE;
-                break;
-            } else {
-                _measure_type = NO_MEASURE;
+        }
+    } else if (_type == FFT_VIEW) {
+        BOOST_FOREACH(const boost::shared_ptr<view::MathTrace> t, _view.session().get_math_signals()) {
+            assert(t);
+            if(t->enabled()) {
+                t->measure(_view.hover_point());
             }
         }
     }
+
     measure_updated();
 }
 
@@ -1065,7 +1107,7 @@ void Viewport::paintMeasure(QPainter &p)
             p.drawLine(x[dso_xm_stage-1], _dso_xm_y,
                        _mouse_point.x(), _dso_xm_y);
             p.drawLine(_mouse_point.x(), 0,
-                       _mouse_point.x(), _view.get_viewport()->height());
+                       _mouse_point.x(), height());
         }
         measure_updated();
     }
@@ -1178,6 +1220,12 @@ void Viewport::paintTrigTime(QPainter &p)
                    "Last Trigger Time: "+_view.trigger_time());
     }
 }
+
+void Viewport::set_need_update(bool update)
+{
+    _need_update = update;
+}
+
 
 } // namespace view
 } // namespace pv

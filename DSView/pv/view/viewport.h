@@ -30,7 +30,11 @@
 #include <QTime>
 #include <QTimer>
 #include <QWidget>
+
 #include <stdint.h>
+
+#include "../../extdef.h"
+#include "../view/view.h"
 
 class QPainter;
 class QPaintEvent;
@@ -81,7 +85,7 @@ public:
     };
 
 public:
-	explicit Viewport(View &parent);
+    explicit Viewport(View &parent, View_type type);
 
 	int get_total_height() const;
 
@@ -95,6 +99,8 @@ public:
     void stop_trigger_timer();
 
     void clear_measure();
+
+    void set_need_update(bool update);
 
 protected:
 	void paintEvent(QPaintEvent *event);
@@ -125,6 +131,8 @@ signals:
 
 private:
 	View &_view;
+    View_type _type;
+    bool _need_update;
 
     uint64_t _total_receive_len;
     QPoint _mouse_point;

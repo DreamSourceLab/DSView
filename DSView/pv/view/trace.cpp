@@ -43,7 +43,7 @@ const QColor Trace::dsRed = QColor(213, 15, 37, 255);
 const QColor Trace::dsGreen = QColor(0, 153, 37, 200);
 const QColor Trace::dsGray = QColor(0x88, 0x8A, 0x85, 60);
 const QColor Trace::dsFore = QColor(0xff, 0xff, 0xff, 60);
-const QColor Trace::dsBack = QColor(0x16, 0x18, 0x23, 180);
+const QColor Trace::dsBack = QColor(0x16, 0x18, 0x23, 200);
 const QColor Trace::dsDisable = QColor(0x88, 0x8A, 0x85, 200);
 const QColor Trace::dsActive = QColor(17, 133, 209, 255);
 const QColor Trace::dsLightBlue = QColor(17, 133, 209,  150);
@@ -53,6 +53,7 @@ const QPen Trace::SignalAxisPen = QColor(128, 128, 128, 64);
 const QColor Trace::DARK_BACK = QColor(48, 47, 47, 255);
 const QColor Trace::DARK_FORE = QColor(150, 150, 150, 255);
 const QColor Trace::DARK_HIGHLIGHT = QColor(32, 32, 32, 255);
+const QColor Trace::DARK_BLUE = QColor(17, 133, 209,  255);
 
 const QColor Trace::PROBE_COLORS[8] = {
     QColor(0x50, 0x50, 0x50),	// Black
@@ -187,7 +188,7 @@ void Trace::set_old_v_offset(int v_offset)
 
 int Trace::get_zeroPos()
 {
-    return _v_offset - _view->v_offset();
+    return _v_offset;
 }
 
 int Trace::get_totalHeight() const
@@ -209,6 +210,17 @@ void Trace::set_view(pv::view::View *view)
 pv::view::View* Trace::get_view() const
 {
     return _view;
+}
+
+void Trace::set_viewport(pv::view::Viewport *viewport)
+{
+    assert(viewport);
+    _viewport = viewport;
+}
+
+pv::view::Viewport* Trace::get_viewport() const
+{
+    return _viewport;
 }
 
 void Trace::paint_back(QPainter &p, int left, int right)
@@ -236,6 +248,9 @@ void Trace::paint_fore(QPainter &p, int left, int right)
 
 void Trace::paint_label(QPainter &p, int right, const QPoint pt)
 {
+    if (_type == SR_CHANNEL_FFT && !enabled())
+        return;
+
     compute_text_size(p);
     const int y = get_y();
 
@@ -267,7 +282,7 @@ void Trace::paint_label(QPainter &p, int right, const QPoint pt)
         };
 
         p.setPen(Qt::transparent);
-        if (_type == SR_CHANNEL_DSO) {
+        if (_type == SR_CHANNEL_DSO || _type == SR_CHANNEL_FFT) {
             p.setBrush((label_rect.contains(pt) || selected()) ? _colour.darker() : _colour);
             p.drawPolygon(points, countof(points));
         } else {
@@ -284,6 +299,8 @@ void Trace::paint_label(QPainter &p, int right, const QPoint pt)
             p.drawText(label_rect, Qt::AlignCenter | Qt::AlignVCenter, "A");
         else if (_type == SR_CHANNEL_DECODER)
             p.drawText(label_rect, Qt::AlignCenter | Qt::AlignVCenter, "D");
+        else if (_type == SR_CHANNEL_FFT)
+            p.drawText(label_rect, Qt::AlignCenter | Qt::AlignVCenter, "M");
         else
             p.drawText(label_rect, Qt::AlignCenter | Qt::AlignVCenter, QString::number(_index_list.front()));
     }
@@ -355,7 +372,7 @@ QRectF Trace::get_view_rect() const
 
 int Trace::get_y() const
 {
-	return _v_offset - _view->v_offset();
+    return _v_offset;
 }
 
 QColor Trace::get_text_colour() const

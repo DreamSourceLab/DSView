@@ -109,7 +109,7 @@ QString Ruler::format_freq(double period, unsigned precision)
         QString s;
         QTextStream ts(&s);
         ts.setRealNumberPrecision(precision);
-        ts << fixed << forcesign << 1 / (period  * multiplier) <<
+        ts << fixed << 1 / (period  * multiplier) <<
             FreqPrefixes[prefix] << "Hz";
         return s;
     }

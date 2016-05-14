@@ -120,6 +120,7 @@ private slots:
 public slots:
     void on_configure();
     void zero_adj();
+    void reload();
 
 private:
     SigSession &_session;
@@ -145,6 +146,8 @@ private:
     QIcon _icon_instant_dis;
 	QToolButton _run_stop_button;
     QToolButton _instant_button;
+    QAction* _run_stop_action;
+    QAction* _instant_action;
 
     bool _instant;
 };

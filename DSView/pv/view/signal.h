@@ -57,7 +57,7 @@ private:
 
 protected:
     Signal(boost::shared_ptr<pv::device::DevInst> dev_inst,
-           const sr_channel * const probe, int type);
+           const sr_channel * const probe);
 
     /**
      * Copy constructor

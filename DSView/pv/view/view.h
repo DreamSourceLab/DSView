@@ -32,12 +32,15 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 
-#include <QAbstractScrollArea>
+#include <QScrollArea>
 #include <QSizeF>
 #include <QDateTime>
+#include <QSplitter>
 
+#include "../../extdef.h"
 #include "../toolbars/samplingbar.h"
 #include "../data/signaldata.h"
+#include "../view/viewport.h"
 #include "cursor.h"
 #include "signal.h"
 
@@ -57,7 +60,7 @@ class Ruler;
 class Trace;
 class Viewport;
 
-class View : public QAbstractScrollArea {
+class View : public QScrollArea {
 	Q_OBJECT
 
 private:
@@ -111,7 +114,7 @@ public:
 	void set_scale_offset(double scale, double offset);
     void set_preScale_preOffset();
 
-    std::vector< boost::shared_ptr<Trace> > get_traces() const;
+    std::vector< boost::shared_ptr<Trace> > get_traces(int type);
 
 	/**
 	 * Returns true if cursors are displayed. false otherwise.
@@ -164,11 +167,10 @@ public:
     double get_minscale() const;
     double get_maxscale() const;
 
-    void set_need_update(bool need_update);
-    bool need_update() const;
+    void set_update(Viewport *viewport, bool need_update);
+    void set_all_update(bool need_update);
 
     uint64_t get_cursor_samples(int index);
-    Viewport * get_viewport();
     QString get_cm_time(int index);
     QString get_cm_delta(int index1, int index2);
 
@@ -187,6 +189,11 @@ public:
 
     QString trigger_time();
 
+    QString get_measure(QString option);
+
+    void viewport_update();
+
+
 signals:
 	void hover_point_changed();
 
@@ -197,6 +204,8 @@ signals:
     void cursor_moved();
 
     void mode_changed();
+
+    void measure_updated();
 
 private:
 	void get_scroll_layout(double &length, double &offset) const;
@@ -236,12 +245,22 @@ private slots:
 
     void set_trig_pos(quint64 trig_pos);
 
+    void on_measure_updated();
+
+    void splitterMoved(int pos, int index);
+
 private:
 
 	SigSession &_session;
     pv::toolbars::SamplingBar *_sampling_bar;
 
-	Viewport *_viewport;
+    QWidget *_viewcenter;
+    QSplitter *_vsplitter;
+    Viewport * _time_viewport;
+    Viewport * _fft_viewport;
+    Viewport *_active_viewport;
+    std::list<Viewport *> _viewport_list;
+    std::map<int, int> _trace_view_map;
 	Ruler *_ruler;
 	Header *_header;
     DevMode *_devmode;
@@ -259,10 +278,7 @@ private:
         int _spanY;
         int _signalHeight;
 
-	int _v_offset;
-	bool _updating_scroll;
-
-        bool _need_update;
+        bool _updating_scroll;
 
 	bool _show_cursors;
 

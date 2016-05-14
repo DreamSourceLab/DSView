@@ -26,19 +26,25 @@
 
 #include <QToolBar>
 #include <QToolButton>
+#include <QAction>
+#include <QMenu>
 
 namespace pv {
+
+class SigSession;
+
 namespace toolbars {
 
 class TrigBar : public QToolBar
 {
     Q_OBJECT
 public:
-    explicit TrigBar(QWidget *parent = 0);
+    explicit TrigBar(SigSession &session, QWidget *parent = 0);
 
     void enable_toggle(bool enable);
     void enable_protocol(bool enable);
     void close_all();
+    void reload();
 
 signals:
     void on_protocol(bool visible);
@@ -52,12 +58,24 @@ public slots:
     void measure_clicked();
     void search_clicked();
 
+    void on_actionFft_triggered();
+
 private:
+    SigSession& _session;
     bool _enable;
     QToolButton _trig_button;
     QToolButton _protocol_button;
     QToolButton _measure_button;
     QToolButton _search_button;
+    QToolButton _math_button;
+    QAction* _trig_action;
+    QAction* _protocol_action;
+    QAction* _measure_action;
+    QAction* _search_action;
+    QAction* _math_action;
+
+    QMenu* _math_menu;
+    QAction* _action_fft;
 
 };
 

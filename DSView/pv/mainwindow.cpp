@@ -112,6 +112,7 @@ void MainWindow::setup_ui()
 {
 	setObjectName(QString::fromUtf8("MainWindow"));
     setMinimumHeight(680);
+    setMinimumWidth(300);
 	resize(1024, 768);
 
 	// Set the window icon
@@ -129,7 +130,7 @@ void MainWindow::setup_ui()
 
 	// Setup the sampling bar
     _sampling_bar = new toolbars::SamplingBar(_session, this);
-    _trig_bar = new toolbars::TrigBar(this);
+    _trig_bar = new toolbars::TrigBar(_session, this);
     _file_bar = new toolbars::FileBar(_session, this);
     _logo_bar = new toolbars::LogoBar(_session, this);
 
@@ -295,18 +296,8 @@ void MainWindow::update_device_list()
 #ifdef ENABLE_DECODE
     _protocol_widget->del_all_protocol();
 #endif
-    _trig_bar->close_all();
-
-    if (_session.get_device()->dev_inst()->mode == LOGIC) {
-        _trig_bar->enable_protocol(true);
-    } else {
-        _trig_bar->enable_protocol(false);
-    }
-    if (_session.get_device()->dev_inst()->mode == DSO) {
-        _sampling_bar->enable_toggle(false);
-    } else {
-        _sampling_bar->enable_toggle(true);
-    }
+    _trig_bar->reload();
+    _sampling_bar->reload();
 
     shared_ptr<pv::device::DevInst> selected_device = _session.get_device();
     _device_manager.add_device(selected_device);
@@ -534,8 +525,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
 void MainWindow::on_protocol(bool visible)
 {
 #ifdef ENABLE_DECODE
-    if (_session.get_device()->dev_inst()->mode == LOGIC)
-        _protocol_dock->setVisible(visible);
+    _protocol_dock->setVisible(visible);
 #endif
 }
 

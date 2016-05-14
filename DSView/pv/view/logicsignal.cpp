@@ -52,7 +52,7 @@ const int LogicSignal::StateRound = 5;
 LogicSignal::LogicSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
                          boost::shared_ptr<data::Logic> data,
                          const sr_channel * const probe) :
-    Signal(dev_inst, probe, SR_CHANNEL_LOGIC),
+    Signal(dev_inst, probe),
     _data(data),
     _trig(NONTRIG)
 {

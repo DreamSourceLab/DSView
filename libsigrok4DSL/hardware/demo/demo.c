@@ -247,6 +247,9 @@ static const uint64_t samplerates[] = {
 //    SR_MB(4),
 //    SR_MB(8),
 //    SR_MB(16),
+//    SR_MB(32),
+//    SR_MB(64),
+//    SR_MB(128),
 //};
 
 static const uint64_t samplecounts[] = {
@@ -270,10 +273,10 @@ static const uint64_t samplecounts[] = {
 
 /* We name the probes 0-7 on our demo driver. */
 static const char *probe_names[NUM_PROBES + 1] = {
-    "Channel 0", "Channel 1", "Channel 2", "Channel 3",
-    "Channel 4", "Channel 5", "Channel 6", "Channel 7",
-    "Channel 8", "Channel 9", "Channel 10", "Channel 11",
-    "Channel 12", "Channel 13", "Channel 14", "Channel 15",
+    "CH0", "CH1", "CH2", "CH3",
+    "CH4", "CH5", "CH6", "CH7",
+    "CH8", "CH9", "CH10", "CH11",
+    "CH12", "CH13", "CH14", "CH15",
 	NULL,
 };
 

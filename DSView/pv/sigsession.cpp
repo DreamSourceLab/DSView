@@ -42,12 +42,14 @@
 #include "data/decoderstack.h"
 #include "data/decode/decoder.h"
 #include "data/decodermodel.h"
+#include "data/mathstack.h"
 
 #include "view/analogsignal.h"
 #include "view/dsosignal.h"
 #include "view/logicsignal.h"
 #include "view/groupsignal.h"
 #include "view/decodetrace.h"
+#include "view/mathtrace.h"
 
 #include <assert.h>
 #include <stdexcept>
@@ -496,7 +498,6 @@ set< boost::shared_ptr<data::SignalData> > SigSession::get_data() const
         assert(sig);
         data.insert(sig->data());
     }
-    data.insert(_group_data);
 
     return data;
 }
@@ -605,6 +606,12 @@ void SigSession::read_sample_rate(const sr_dev_inst *const sdi)
         assert(data);
         data->set_samplerate(sample_rate);
     }
+    BOOST_FOREACH(const boost::shared_ptr<view::MathTrace> m, _math_traces)
+    {
+        assert(m);
+        m->get_math_stack()->set_samplerate(sample_rate);
+    }
+    _group_data->set_samplerate(sample_rate);
 }
 
 void SigSession::feed_in_header(const sr_dev_inst *sdi)
@@ -791,10 +798,10 @@ void SigSession::init_signals()
         _signals.clear();
         vector< boost::shared_ptr<view::Signal> >().swap(_signals);
         _signals = sigs;
-
-        signals_changed();
-        data_updated();
     }
+
+    mathTraces_rebuild();
+    data_updated();
 }
 
 void SigSession::reload()
@@ -854,7 +861,7 @@ void SigSession::reload()
         _signals = sigs;
     }
 
-    signals_changed();
+    mathTraces_rebuild();
 }
 
 void SigSession::refresh(int holdtime)
@@ -1007,6 +1014,14 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
         _cur_dso_snapshot->append_payload(dso);
     } else {
         return;
+    }
+
+    // reset scale of dso signal
+    BOOST_FOREACH(const boost::shared_ptr<view::MathTrace> m, _math_traces)
+    {
+        assert(m);
+        if (m->enabled())
+            m->get_math_stack()->calc_fft();
     }
 
     receive_data(dso.num_samples);
@@ -1401,7 +1416,41 @@ pv::data::DecoderModel* SigSession::get_decoder_model() const
 {
     return _decoder_model;
 }
-
 #endif
+
+void SigSession::mathTraces_rebuild()
+{
+    bool has_dso_signal = false;
+    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals) {
+        boost::shared_ptr<view::DsoSignal> dsoSig;
+        if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
+            has_dso_signal = true;
+            // check already have
+            std::vector< boost::shared_ptr<view::MathTrace> >::iterator iter = _math_traces.begin();
+            for(int i = 0; i < _math_traces.size(); i++, iter++)
+                if ((*iter)->get_index() == dsoSig->get_index())
+                    break;
+            // if not, rebuild
+            if (iter == _math_traces.end()) {
+                boost::shared_ptr<data::MathStack> math_stack(
+                    new data::MathStack(*this, dsoSig->get_index()));
+                boost::shared_ptr<view::MathTrace> math_trace(
+                    new view::MathTrace(*this, math_stack, dsoSig->get_index()));
+                _math_traces.push_back(math_trace);
+            }
+        }
+    }
+
+    if (!has_dso_signal)
+        _math_traces.clear();
+
+    signals_changed();
+}
+
+vector< boost::shared_ptr<view::MathTrace> > SigSession::get_math_signals()
+{
+    lock_guard<mutex> lock(_signals_mutex);
+    return _math_traces;
+}
 
 } // namespace pv
