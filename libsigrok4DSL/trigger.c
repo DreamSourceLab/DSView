@@ -208,6 +208,16 @@ SR_API int ds_trigger_set_en(uint16_t enable)
 }
 
 /**
+ * get trigger en
+ *
+ * @return SR_OK upon success.
+ */
+SR_API uint16_t ds_trigger_get_en()
+{
+    return trigger->trigger_en;
+}
+
+/**
  * set trigger mode
  *
  * @return SR_OK upon success.

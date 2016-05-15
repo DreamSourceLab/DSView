@@ -393,8 +393,8 @@ static int fpga_setting(const struct sr_dev_inst *sdi)
         setting.trig_logic1[0] = (trigger->trigger_logic[TriggerStages] << 1) + trigger->trigger1_inv[TriggerStages];
 
         for (i = 1; i < NUM_TRIGGER_STAGES; i++) {
-            setting.trig_mask0[i] = 0xff;
-            setting.trig_mask1[i] = 0xff;
+            setting.trig_mask0[i] = 0xffff;
+            setting.trig_mask1[i] = 0xffff;
 
             setting.trig_value0[i] = 0;
             setting.trig_value1[i] = 0;
@@ -1100,34 +1100,32 @@ static int dev_open(struct sr_dev_inst *sdi)
         return SR_ERR;
 	}
 
-    if (devc->fw_updated > 0) {
-        if ((ret = command_fpga_config(usb->devhdl)) != SR_OK) {
-            sr_err("Send FPGA configure command failed!");
-        } else {
-            /* Takes >= 10ms for the FX2 to be ready for FPGA configure. */
-            g_usleep(10 * 1000);
-            char *fpga_bit;
-            if (!(fpga_bit = g_try_malloc(strlen(config_path)+strlen(devc->profile->fpga_bit33)+1))) {
-                sr_err("fpag_bit path malloc error!");
-                return SR_ERR_MALLOC;
-            }
-            strcpy(fpga_bit, config_path);
-            switch(devc->th_level) {
-            case SR_TH_3V3:
-                strcat(fpga_bit, devc->profile->fpga_bit33);;
-                break;
-            case SR_TH_5V0:
-                strcat(fpga_bit, devc->profile->fpga_bit50);;
-                break;
-            default:
-                return SR_ERR;
-            }
-            ret = fpga_config(usb->devhdl, fpga_bit);
-            if (ret != SR_OK) {
-                sr_err("Configure FPGA failed!");
-            }
-            g_free(fpga_bit);
+    if ((ret = command_fpga_config(usb->devhdl)) != SR_OK) {
+        sr_err("Send FPGA configure command failed!");
+    } else {
+        /* Takes >= 10ms for the FX2 to be ready for FPGA configure. */
+        g_usleep(10 * 1000);
+        char *fpga_bit;
+        if (!(fpga_bit = g_try_malloc(strlen(config_path)+strlen(devc->profile->fpga_bit33)+1))) {
+            sr_err("fpag_bit path malloc error!");
+            return SR_ERR_MALLOC;
         }
+        strcpy(fpga_bit, config_path);
+        switch(devc->th_level) {
+        case SR_TH_3V3:
+            strcat(fpga_bit, devc->profile->fpga_bit33);;
+            break;
+        case SR_TH_5V0:
+            strcat(fpga_bit, devc->profile->fpga_bit50);;
+            break;
+        default:
+            return SR_ERR;
+        }
+        ret = fpga_config(usb->devhdl, fpga_bit);
+        if (ret != SR_OK) {
+            sr_err("Configure FPGA failed!");
+        }
+        g_free(fpga_bit);
     }
 
     ret = command_vth(usb->devhdl, devc->vth);

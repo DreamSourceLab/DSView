@@ -206,7 +206,7 @@ void Viewport::paintSignals(QPainter &p)
     if (_view.cursors_shown() && _type == TIME_VIEW) {
         list<Cursor*>::iterator i = _view.get_cursorList().begin();
         double cursorX;
-        const double samples_per_pixel = _view.session().get_device()->get_sample_rate() * _view.scale();
+        const double samples_per_pixel = _view.session().cur_samplerate() * _view.scale();
         while (i != _view.get_cursorList().end()) {
             cursorX = (*i)->index()/samples_per_pixel - (_view.offset() / _view.scale());
             if (rect().contains(_view.hover_point().x(), _view.hover_point().y()) &&
@@ -242,7 +242,7 @@ void Viewport::paintProgress(QPainter &p)
 {
     using pv::view::Signal;
 
-    const uint64_t _total_sample_len = _view.session().get_device()->get_sample_limit();
+    const uint64_t _total_sample_len = _view.session().cur_samplelimits();
     double progress = -(_total_receive_len * 1.0 / _total_sample_len * 360 * 16);
     int captured_progress = 0;
 
@@ -407,7 +407,7 @@ void Viewport::mousePressEvent(QMouseEvent *event)
             _action_type = LOGIC_ZOOM;
         } else if (_view.session().get_device()->dev_inst()->mode == DSO) {
             if (_hover_hit) {
-                uint64_t index = (_view.offset() + (event->pos().x() + 0.5) * _view.scale()) * _view.session().get_device()->get_sample_rate();
+                uint64_t index = (_view.offset() + (event->pos().x() + 0.5) * _view.scale()) * _view.session().cur_samplerate();
                 _view.add_cursor(view::Ruler::CursorColor[_view.get_cursorList().size() % 8], index);
                 _view.show_cursors(true);
             }
@@ -450,7 +450,7 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
             }
 
             if (_action_type == CURS_MOVE) {
-                uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
+                uint64_t sample_rate = _view.session().cur_samplerate();
                 TimeMarker* grabbed_marker = _view.get_ruler()->get_grabbed_cursor();
                 if (_view.cursors_shown() && grabbed_marker) {
                     const double cur_time = _view.offset() + _view.hover_point().x() * _view.scale();
@@ -485,7 +485,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
             if (_action_type == NO_ACTION && _view.cursors_shown()) {
                 list<Cursor*>::iterator i = _view.get_cursorList().begin();
                 double cursorX;
-                const double samples_per_pixel = _view.session().get_device()->get_sample_rate() * _view.scale();
+                const double samples_per_pixel = _view.session().cur_samplerate() * _view.scale();
                 while (i != _view.get_cursorList().end()) {
                     cursorX = (*i)->index()/samples_per_pixel - (_view.offset() / _view.scale());
                     if ((*i)->grabbed()) {
@@ -526,7 +526,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                             assert(s);
                             if (abs(event->pos().y() - s->get_y()) < _view.get_signalHeight()) {
                                 _action_type = LOGIC_EDGE;
-                                _edge_start = (_view.offset() + (event->pos().x() + 0.5) * _view.scale()) * _view.session().get_device()->get_sample_rate();
+                                _edge_start = (_view.offset() + (event->pos().x() + 0.5) * _view.scale()) * _view.session().cur_samplerate();
                                 break;
                             }
                         }
@@ -581,7 +581,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
             }
         } else if (_action_type == DSO_XM_STEP1) {
             if (event->button() == Qt::LeftButton) {
-                const uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
+                const uint64_t sample_rate = _view.session().cur_samplerate();
                 const double scale = _view.scale();
                 const double samples_per_pixel =  sample_rate * scale;
 
@@ -602,7 +602,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
             }
         } else if (_action_type == DSO_XM_STEP2) {
             if (event->button() == Qt::LeftButton) {
-                const uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
+                const uint64_t sample_rate = _view.session().cur_samplerate();
                 const double scale = _view.scale();
                 const double samples_per_pixel =  sample_rate * scale;
                 _dso_xm_index[2] = event->pos().x() * samples_per_pixel + _view.offset() * sample_rate;
@@ -666,7 +666,7 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
             else
                 _view.set_scale_offset(_view.get_maxscale(), 0);
         } else if (event->button() == Qt::LeftButton) {
-            uint64_t index = (_view.offset() + (event->pos().x() + 0.5) * _view.scale()) * _view.session().get_device()->get_sample_rate();
+            uint64_t index = (_view.offset() + (event->pos().x() + 0.5) * _view.scale()) * _view.session().cur_samplerate();
             _view.add_cursor(view::Ruler::CursorColor[_view.get_cursorList().size() % 8], index);
             _view.show_cursors(true);
         }
@@ -683,7 +683,7 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
             _mm_duty = "#####";
             measure_updated();
         } else if (_action_type == NO_ACTION) {
-            uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
+            uint64_t sample_rate = _view.session().cur_samplerate();
             double scale = _view.scale();
             const double samples_per_pixel =  sample_rate * scale;
             _dso_xm_index[0] = event->pos().x() * samples_per_pixel +
@@ -774,8 +774,8 @@ void Viewport::set_receive_len(quint64 length)
         start_trigger_timer(333);
     } else {
         stop_trigger_timer();
-        if (_total_receive_len + length > _view.session().get_device()->get_sample_limit())
-            _total_receive_len = _view.session().get_device()->get_sample_limit();
+        if (_total_receive_len + length > _view.session().cur_samplelimits())
+            _total_receive_len = _view.session().cur_samplelimits();
         else
             _total_receive_len += length;
     }
@@ -792,7 +792,7 @@ void Viewport::measure()
 {
     _measure_type = NO_MEASURE;
     if (_type == TIME_VIEW) {
-        const uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
+        const uint64_t sample_rate = _view.session().cur_samplerate();
         const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
         BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
             assert(s);
@@ -988,7 +988,7 @@ void Viewport::paintMeasure(QPainter &p)
                     p.setPen(QPen(dsoSig->get_colour(), 1, Qt::DotLine));
                     const int text_height = p.boundingRect(0, 0, INT_MAX, INT_MAX,
                         Qt::AlignLeft | Qt::AlignTop, "W").height();
-                    const uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
+                    const uint64_t sample_rate = _view.session().cur_samplerate();
                     const double x = (_dso_ym_index / (sample_rate * _view.scale())) -
                         _view.offset() /_view.scale();
                     p.drawLine(x-10, _dso_ym_start,
@@ -1034,7 +1034,7 @@ void Viewport::paintMeasure(QPainter &p)
         int measure_line_count = 6;
         const int text_height = p.boundingRect(0, 0, INT_MAX, INT_MAX,
             Qt::AlignLeft | Qt::AlignTop, "W").height();
-        const uint64_t sample_rate = _view.session().get_device()->get_sample_rate();
+        const uint64_t sample_rate = _view.session().cur_samplerate();
         QLineF *line;
         QLineF *const measure_lines = new QLineF[measure_line_count];
         line = measure_lines;

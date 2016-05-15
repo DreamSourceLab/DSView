@@ -305,7 +305,7 @@ bool DsoSignal::go_hDialPre(bool setted)
 {
     int ch_num = _view->session().get_ch_num(SR_CHANNEL_DSO);
     if (ch_num != 0 && !_hDial->isMin()) {
-        uint64_t sample_rate = _view->session().get_device()->get_sample_rate();
+        uint64_t sample_rate = _view->session().cur_samplerate();
         const uint64_t min_div = std::pow(10.0, 9.0) / sample_rate;
         if (_view->session().get_capture_state() != SigSession::Running &&
             !_data->get_snapshots().empty()) {
@@ -764,8 +764,8 @@ void DsoSignal::paint_back(QPainter &p, int left, int right)
 
     p.setPen(Trace::dsLightBlue);
     p.drawLine(left, UpMargin/2, left + width, UpMargin/2);
-    const uint64_t sample_len = _dev_inst->get_sample_limit();
-    const double samplerate = _dev_inst->get_sample_rate();
+    const uint64_t sample_len = _view->session().cur_samplelimits();
+    const double samplerate = _view->session().cur_samplerate();
     const double samples_per_pixel = samplerate * _view->scale();
     const double shown_rate = min(samples_per_pixel * width * 1.0 / sample_len, 1.0);
     const double start_time = _data->get_start_time();
@@ -843,7 +843,7 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right)
 
         const double pixels_offset = offset / scale;
         //const double samplerate = _data->samplerate();
-        const double samplerate = _dev_inst->get_sample_rate();
+        const double samplerate = _view->session().cur_samplerate();
         const double start_time = _data->get_start_time();
         const int64_t last_sample = max((int64_t)(snapshot->get_sample_count() - 1), (int64_t)0);
         const double samples_per_pixel = samplerate * scale;
@@ -1280,7 +1280,7 @@ void DsoSignal::paint_measure(QPainter &p)
         double value_p2p = value_max - value_min;
         _period = (count == 0) ? period * 10.0 : period * 10.0 / count;
         const int channel_count = _view->session().get_ch_num(SR_CHANNEL_DSO);
-        uint64_t sample_rate = _dev_inst->get_sample_rate();
+        uint64_t sample_rate = _view->session().cur_samplerate();
         _period = _period * 200.0 / (channel_count * sample_rate * 1.0 / SR_MHZ(1));
         _ms_string[DSO_MS_VMAX] = "Vmax: " + (abs(value_max) > 1000 ? QString::number(value_max/1000.0, 'f', 2) + "V" : QString::number(value_max, 'f', 2) + "mV");
         _ms_string[DSO_MS_VMIN] = "Vmin: " + (abs(value_min) > 1000 ? QString::number(value_min/1000.0, 'f', 2) + "V" : QString::number(value_min, 'f', 2) + "mV");
@@ -1455,7 +1455,7 @@ bool DsoSignal::measure(const QPointF &p)
     assert(scale > 0);
     const double offset = _view->offset();
     const double pixels_offset = offset / scale;
-    const double samplerate = _dev_inst->get_sample_rate();
+    const double samplerate = _view->session().cur_samplerate();
     const double samples_per_pixel = samplerate * scale;
 
     _hover_index = floor((p.x() + pixels_offset) * samples_per_pixel+0.5);

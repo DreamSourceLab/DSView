@@ -128,6 +128,10 @@ public:
 
 	capture_state get_capture_state() const;
 
+    uint64_t cur_samplerate() const;
+    uint64_t cur_samplelimits() const;
+    double cur_sampletime() const;
+
     void start_capture(bool instant,
 		boost::function<void (const QString)> error_handler);
 
@@ -187,7 +191,7 @@ public:
 private:
 	void set_capture_state(capture_state state);
 
-    void read_sample_rate(const sr_dev_inst *const sdi);
+    void update_data_header(const sr_dev_inst *const sdi);
 
 private:
     /**
@@ -237,6 +241,8 @@ private:
 	mutable boost::mutex _sampling_mutex;
 	capture_state _capture_state;
     bool _instant;
+    uint64_t _cur_samplerate;
+    uint64_t _cur_samplelimits;
 
 	mutable boost::mutex _signals_mutex;
 	std::vector< boost::shared_ptr<view::Signal> > _signals;
@@ -305,6 +311,8 @@ signals:
     void decode_done();
 
     void show_region(uint64_t start, uint64_t end);
+
+    void hardware_connect_failed();
 
 public slots:
     void reload();

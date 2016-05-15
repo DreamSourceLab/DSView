@@ -151,6 +151,8 @@ void SigSession::set_device(boost::shared_ptr<device::DevInst> dev_inst) throw(Q
     if (_dev_inst) {
         try {
             _dev_inst->use(this);
+            _cur_samplerate = _dev_inst->get_sample_rate();
+            _cur_samplelimits = _dev_inst->get_sample_limit();
         } catch(const QString e) {
             throw(e);
             return;
@@ -423,6 +425,24 @@ SigSession::capture_state SigSession::get_capture_state() const
 	return _capture_state;
 }
 
+uint64_t SigSession::cur_samplelimits() const
+{
+    return _cur_samplelimits;
+}
+
+uint64_t SigSession::cur_samplerate() const
+{
+    return _cur_samplerate;
+}
+
+double SigSession::cur_sampletime() const
+{
+    if (_cur_samplerate == 0)
+        return 0;
+    else
+        return  _cur_samplelimits * 1.0 / _cur_samplerate;
+}
+
 void SigSession::start_capture(bool instant,
     boost::function<void (const QString)> error_handler)
 {
@@ -582,36 +602,60 @@ void SigSession::sample_thread_proc(boost::shared_ptr<device::DevInst> dev_inst,
     assert(!_cur_analog_snapshot);
 }
 
-void SigSession::read_sample_rate(const sr_dev_inst *const sdi)
+void SigSession::update_data_header(const sr_dev_inst *const sdi)
 {
     GVariant *gvar;
-    uint64_t sample_rate = 0;
+    int ret;
 
     // Read out the sample rate
     if(sdi->driver)
     {
-        const int ret = sr_config_get(sdi->driver, sdi, NULL, NULL, SR_CONF_SAMPLERATE, &gvar);
+        ret = sr_config_get(sdi->driver, sdi, NULL, NULL, SR_CONF_SAMPLERATE, &gvar);
         if (ret != SR_OK) {
-            qDebug("Failed to get samplerate\n");
+            hardware_connect_failed();
             return;
         }
 
-        sample_rate = g_variant_get_uint64(gvar);
+        _cur_samplerate = g_variant_get_uint64(gvar);
+        g_variant_unref(gvar);
+
+        ret = sr_config_get(sdi->driver, sdi, NULL, NULL, SR_CONF_LIMIT_SAMPLES, &gvar);
+        if (ret != SR_OK) {
+            hardware_connect_failed();
+            return;
+        }
+
+        _cur_samplelimits = g_variant_get_uint64(gvar);
         g_variant_unref(gvar);
     }
 
-    // Set the sample rate of all data
-    const set< boost::shared_ptr<data::SignalData> > data_set = get_data();
+    // Set the sample rate of all SignalData
+    // Logic/Analog/Dso
+    set< boost::shared_ptr<data::SignalData> > data_set;
+    BOOST_FOREACH(const boost::shared_ptr<view::Signal> sig, _signals) {
+        assert(sig);
+        data_set.insert(sig->data());
+    }
     BOOST_FOREACH(boost::shared_ptr<data::SignalData> data, data_set) {
         assert(data);
-        data->set_samplerate(sample_rate);
+        data->set_samplerate(_cur_samplerate);
     }
+#ifdef ENABLE_DECODE
+    // DecoderStack
+    BOOST_FOREACH(const boost::shared_ptr<view::DecodeTrace> d, _decode_traces)
+    {
+        assert(d);
+        d->decoder()->set_samplerate(_cur_samplerate);
+    }
+#endif
+    // MathStack
     BOOST_FOREACH(const boost::shared_ptr<view::MathTrace> m, _math_traces)
     {
         assert(m);
-        m->get_math_stack()->set_samplerate(sample_rate);
+        m->get_math_stack()->set_samplerate(_cur_samplerate);
     }
-    _group_data->set_samplerate(sample_rate);
+    // Group
+    _group_data->set_samplerate(_cur_samplerate);
 }
 
 void SigSession::feed_in_header(const sr_dev_inst *sdi)
@@ -623,7 +667,7 @@ void SigSession::feed_in_header(const sr_dev_inst *sdi)
         i++)
         (*i)->decoder()->stop_decode();
 #endif
-    read_sample_rate(sdi);
+    update_data_header(sdi);
     //receive_data(0);
 }
 
@@ -640,8 +684,9 @@ void SigSession::add_group()
 
     if (probe_index_list.size() > 1) {
         //_group_data.reset(new data::Group(_last_sample_rate));
-        if (_group_data->get_snapshots().empty())
-            _group_data->set_samplerate(_dev_inst->get_sample_rate());
+//        if (_group_data->get_snapshots().empty())
+//            _group_data->set_samplerate(_dev_inst->get_sample_rate());
+        _group_data->set_samplerate(_cur_samplerate);
         const boost::shared_ptr<view::GroupSignal> signal(
                     new view::GroupSignal("New Group",
                                           _group_data, probe_index_list, _group_cnt));
@@ -811,6 +856,7 @@ void SigSession::reload()
     if (_capture_state == Running)
         stop_capture();
 
+    //refresh(0);
     vector< boost::shared_ptr<view::Signal> > sigs;
     boost::shared_ptr<view::Signal> signal;
 
@@ -869,10 +915,23 @@ void SigSession::refresh(int holdtime)
     if (_logic_data) {
         _logic_data->clear();
         _cur_logic_snapshot.reset();
+#ifdef ENABLE_DECODE
+        BOOST_FOREACH(const boost::shared_ptr<view::DecodeTrace> d, _decode_traces)
+        {
+            assert(d);
+            d->decoder()->clear();
+        }
+#endif
     }
     if (_dso_data) {
         _dso_data->clear();
         _cur_dso_snapshot.reset();
+        // MathStack
+        BOOST_FOREACH(const boost::shared_ptr<view::MathTrace> m, _math_traces)
+        {
+            assert(m);
+            m->get_math_stack()->clear();
+        }
     }
     if (_analog_data) {
         _analog_data->clear();

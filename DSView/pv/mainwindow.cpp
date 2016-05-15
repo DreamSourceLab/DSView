@@ -112,7 +112,7 @@ void MainWindow::setup_ui()
 {
 	setObjectName(QString::fromUtf8("MainWindow"));
     setMinimumHeight(680);
-    setMinimumWidth(300);
+    setMinimumWidth(500);
 	resize(1024, 768);
 
 	// Set the window icon
@@ -192,8 +192,6 @@ void MainWindow::setup_ui()
         SLOT(run_stop()));
     connect(_sampling_bar, SIGNAL(instant_stop()), this,
         SLOT(instant_stop()));
-    connect(_sampling_bar, SIGNAL(update_scale()), _view,
-        SLOT(update_scale()), Qt::DirectConnection);
     connect(_sampling_bar, SIGNAL(sample_count_changed()), _trigger_widget,
         SLOT(device_change()));
     connect(_dso_trigger_widget, SIGNAL(set_trig_pos(quint64)), _view,
@@ -248,6 +246,8 @@ void MainWindow::setup_ui()
             SLOT(test_data_error()));
     connect(&_session, SIGNAL(malloc_error()), this,
             SLOT(malloc_error()));
+    connect(&_session, SIGNAL(hardware_connect_failed()), this,
+            SLOT(hardware_connect_failed()));
 
     connect(_view, SIGNAL(cursor_update()), _measure_widget,
             SLOT(cursor_update()));
@@ -471,6 +471,17 @@ void MainWindow::malloc_error()
     msg.exec();
 }
 
+void MainWindow::hardware_connect_failed()
+{
+    _session.stop_capture();
+    QMessageBox msg(this);
+    msg.setText(tr("Hardware Connect Failed"));
+    msg.setInformativeText(tr("Please check hardware connection!"));
+    msg.setStandardButtons(QMessageBox::Ok);
+    msg.setIcon(QMessageBox::Warning);
+    msg.exec();
+}
+
 void MainWindow::capture_state_changed(int state)
 {
     _file_bar->enable_toggle(state != SigSession::Running);
@@ -492,7 +503,7 @@ void MainWindow::capture_state_changed(int state)
                     if (gvar != NULL) {
                         uint64_t actual_samples = g_variant_get_uint64(gvar);
                         g_variant_unref(gvar);
-                        if (actual_samples != _session.get_device()->get_sample_limit()) {
+                        if (actual_samples != _session.cur_samplelimits()) {
                             show_session_error(tr("RLE Mode Warning"),
                                                tr("Hardware buffer is full!\nActually received samples is less than setted sample depth!"));
                         }

@@ -126,17 +126,6 @@ SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
     _run_stop_button.setIcon(_icon_start);
     _instant_button.setIcon(_icon_instant);
 
-//	for (size_t i = 0; i < countof(RecordLengths); i++)
-//	{
-//		const uint64_t &l = RecordLengths[i];
-//		char *const text = ds_si_string_u64(l, " samples");
-//		_sample_count.addItem(QString(text),
-//			qVariantFromValue(l));
-//		g_free(text);
-
-//		if (l == DefaultRecordLength)
-//			_sample_count.setCurrentIndex(i);
-//	}
     _sample_count.setSizeAdjustPolicy(QComboBox::AdjustToContents);
 	set_sampling(false);
     connect(&_sample_count, SIGNAL(currentIndexChanged(int)),
@@ -191,7 +180,6 @@ void SamplingBar::set_device_list(
 
     update_sample_rate_selector();
     update_sample_count_selector();
-    update_scale();
 
     _updating_device_selector = false;
 }
@@ -454,8 +442,7 @@ void SamplingBar::update_sample_rate_selector_value()
             break;
         }
     }
-    if (samplerate != _sample_rate.itemData(_sample_rate.currentIndex()).value<uint64_t>())
-        update_scale();
+
     _updating_sample_rate = false;
 }
 
@@ -486,7 +473,6 @@ void SamplingBar::commit_sample_rate()
         get_selected_device()->set_config(NULL, NULL,
                                           SR_CONF_SAMPLERATE,
                                           g_variant_new_uint64(sample_rate));
-        update_scale();
     }
 
     _updating_sample_rate = false;
@@ -512,7 +498,6 @@ void SamplingBar::on_samplecount_sel(int index)
                              g_variant_new_uint64(sample_count));
 
         sample_count_changed();
-        //update_scale();
     }
 }
 
@@ -535,8 +520,6 @@ void SamplingBar::on_samplerate_sel(int index)
             get_selected_device()->set_config(NULL, NULL,
                                               SR_CONF_SAMPLERATE,
                                               g_variant_new_uint64(sample_rate));
-
-            //update_scale();
     }
 }
 
@@ -628,7 +611,6 @@ void SamplingBar::update_sample_count_selector_value()
 
     if (samplecount != _sample_count.itemData(_sample_count.currentIndex()).value<uint64_t>()) {
         sample_count_changed();
-        update_scale();
     }
     _updating_sample_count = false;
 }
@@ -661,7 +643,6 @@ void SamplingBar::commit_sample_count()
         get_selected_device()->set_config(NULL, NULL,
                                           SR_CONF_LIMIT_SAMPLES,
                                           g_variant_new_uint64(sample_count));
-        update_scale();
     }
 
     _updating_sample_count = false;

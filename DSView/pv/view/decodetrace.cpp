@@ -125,6 +125,7 @@ DecodeTrace::DecodeTrace(pv::SigSession &session,
     _end_index(0),
     _start_count(0),
     _end_count(0),
+    _progress(0),
     _popup_form(NULL),
     _popup()
 {
@@ -175,7 +176,7 @@ void DecodeTrace::paint_back(QPainter &p, int left, int right)
     p.drawLine(left, sigY, right, sigY);
 
     // --draw decode region control
-    const double samples_per_pixel = _session.get_device()->get_sample_rate() * _view->scale();
+    const double samples_per_pixel = _session.cur_samplerate() * _view->scale();
     const double startX = _decode_start/samples_per_pixel - (_view->offset() / _view->scale());
     const double endX = _decode_end/samples_per_pixel - (_view->offset() / _view->scale());
     const double regionY = get_y() - _totalHeight*0.5 - ControlRectWidth;
@@ -665,7 +666,7 @@ bool DecodeTrace::draw_unresolved_period(QPainter &p, int h, int left,
     font.setPointSize(_view->get_signalHeight()*2/3);
     font.setBold(true);
     p.setFont(font);
-    p.drawText(no_decode_rect, Qt::AlignCenter | Qt::AlignVCenter, QString::number(progress100)+"%");
+    p.drawText(no_decode_rect, Qt::AlignCenter | Qt::AlignVCenter, QString::number(_progress)+"%");
 
     return true;
 }
@@ -829,8 +830,22 @@ void DecodeTrace::commit_probes()
 
 void DecodeTrace::on_new_decode_data()
 {
+    const uint64_t need_sample_count = _decode_end - _decode_start + 1;
+    if (need_sample_count == 0) {
+        _progress = 100;
+    } else {
+        const uint64_t samples_decoded = _decoder_stack->samples_decoded();
+        _progress = ceil(samples_decoded * 100.0 / need_sample_count);
+    }
+    decoded_progress(_progress);
+
     if (_view && _view->session().get_capture_state() == SigSession::Stopped)
         _view->data_updated();
+}
+
+int DecodeTrace::get_progress() const
+{
+    return _progress;
 }
 
 void DecodeTrace::on_decode_done()
@@ -937,7 +952,7 @@ QRectF DecodeTrace::get_rect(DecodeSetRegions type, int y, int right)
 void DecodeTrace::on_region_set(int index)
 {
     (void)index;
-    const uint64_t last_samples = _session.get_device()->get_sample_limit() - 1;
+    const uint64_t last_samples = _session.cur_samplelimits() - 1;
     const int index1 = _start_comboBox->currentIndex();
     const int index2 = _end_comboBox->currentIndex();
     uint64_t decode_start, decode_end;
@@ -974,7 +989,7 @@ void DecodeTrace::on_region_set(int index)
 
 void DecodeTrace::frame_ended()
 {
-    const uint64_t last_samples = _session.get_device()->get_sample_limit() - 1;
+    const uint64_t last_samples = _session.cur_samplelimits() - 1;
     if (_decode_start > last_samples) {
         _decode_start = 0;
         _start_index = 0;

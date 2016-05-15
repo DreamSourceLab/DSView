@@ -181,6 +181,7 @@ SR_API int ds_trigger_set_stage(uint16_t stages);
 SR_API int ds_trigger_set_pos(uint16_t position);
 SR_API uint16_t ds_trigger_get_pos();
 SR_API int ds_trigger_set_en(uint16_t enable);
+SR_API uint16_t ds_trigger_get_en();
 SR_API int ds_trigger_set_mode(uint16_t mode);
 
 #endif

@@ -55,6 +55,9 @@ class TriggerDock : public QScrollArea
 {
     Q_OBJECT
 
+private:
+    static const int MinTrigPosition;
+
 public:
     TriggerDock(QWidget *parent, SigSession &session);
     ~TriggerDock();

@@ -359,8 +359,8 @@ void MathTrace::paint_fore(QPainter &p, int left, int right)
     double blank_right = width;
 
     // horizontal ruler
-    const double NyFreq = _session.get_device()->get_sample_rate() / (2.0 * _math_stack->get_sample_interval());
-    const double deltaFreq = _session.get_device()->get_sample_rate() * 1.0 /
+    const double NyFreq = _session.cur_samplerate() / (2.0 * _math_stack->get_sample_interval());
+    const double deltaFreq = _session.cur_samplerate() * 1.0 /
                             (_math_stack->get_sample_num() * _math_stack->get_sample_interval());
     const double FreqRange = NyFreq * _scale;
     const double FreqOffset = NyFreq * _offset;

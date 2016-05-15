@@ -95,7 +95,6 @@ signals:
     void instant_stop();
     void device_selected();
     void device_updated();
-    void update_scale();
     void sample_count_changed();
 
 private:

@@ -141,6 +141,8 @@ public:
      **/
     void frame_ended();
 
+    int get_progress() const;
+
 protected:
     void paint_type_options(QPainter &p, int right, const QPoint pt);
 
@@ -187,6 +189,9 @@ private:
 
 	void commit_probes();
 
+signals:
+    void decoded_progress(int progress);
+
 private slots:
 	void on_new_decode_data();
 
@@ -209,6 +214,7 @@ private:
     int _start_index, _end_index;
     int _start_count, _end_count;
     QComboBox *_start_comboBox, *_end_comboBox;
+    int _progress;
 
 	std::list< boost::shared_ptr<pv::prop::binding::DecoderOptions> >
 		_bindings;

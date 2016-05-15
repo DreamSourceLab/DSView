@@ -72,6 +72,7 @@ private slots:
     void add_protocol();
     void rst_protocol();
     void del_protocol();
+    void decoded_progess(int progress);
     void set_model();
     void update_model();
     void export_table_view();
@@ -96,6 +97,7 @@ private:
     QVector <QPushButton *> _del_button_list;
     QVector <QPushButton *> _set_button_list;
     QVector <QLabel *> _protocol_label_list;
+    QVector <QLabel *> _progress_label_list;
     QVector <int > _protocol_index_list;
     QVector <QHBoxLayout *> _hori_layout_list;
     QVBoxLayout *_up_layout;

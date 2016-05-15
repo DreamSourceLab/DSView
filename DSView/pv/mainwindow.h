@@ -131,6 +131,11 @@ private slots:
     void device_attach();
     void device_detach();
 
+    /*
+     * errors
+     */
+    void hardware_connect_failed();
+
 private:
 	DeviceManager &_device_manager;
 

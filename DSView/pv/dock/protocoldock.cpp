@@ -200,6 +200,7 @@ void ProtocolDock::add_protocol()
             _set_button->setIcon(QIcon::fromTheme("protocol",
                                  QIcon(":/icons/gear.png")));
             QLabel *_protocol_label = new QLabel(_up_widget);
+            QLabel *_progress_label = new QLabel(_up_widget);
 
             _del_button->setCheckable(true);
             _protocol_label->setText(_protocol_combobox->currentText());
@@ -212,17 +213,23 @@ void ProtocolDock::add_protocol()
             _del_button_list.push_back(_del_button);
             _set_button_list.push_back(_set_button);
             _protocol_label_list.push_back(_protocol_label);
+            _progress_label_list.push_back(_progress_label);
             _protocol_index_list.push_back(_protocol_combobox->currentIndex());
 
             QHBoxLayout *hori_layout = new QHBoxLayout();
             hori_layout->addWidget(_set_button);
             hori_layout->addWidget(_del_button);
             hori_layout->addWidget(_protocol_label);
+            hori_layout->addWidget(_progress_label);
             hori_layout->addStretch(1);
             _hori_layout_list.push_back(hori_layout);
             _up_layout->insertLayout(_del_button_list.size(), hori_layout);
 
-            //_session.add_protocol_analyzer(_protocol_combobox->currentIndex(), _sel_probes, _options, _options_index);
+            // progress connection
+            const std::vector< boost::shared_ptr<pv::view::DecodeTrace> > decode_sigs(
+                _session.get_decode_signals());
+            //connect(decode_sigs.back().get(), SIGNAL(decoded_progress(int)), this, SLOT(decoded_progess(int)));
+
             protocol_updated();
         }
     }
@@ -265,6 +272,7 @@ void ProtocolDock::del_protocol()
                 delete _del_button_list.at(del_index);
                 delete _set_button_list.at(del_index);
                 delete _protocol_label_list.at(del_index);
+                delete _progress_label_list.at(del_index);
 
                 _session.remove_decode_signal(0);
                 del_index++;
@@ -273,6 +281,7 @@ void ProtocolDock::del_protocol()
             _del_button_list.clear();
             _set_button_list.clear();
             _protocol_label_list.clear();
+            _progress_label_list.clear();
             _protocol_index_list.clear();
         } else {
             QMessageBox msg(this);
@@ -293,11 +302,13 @@ void ProtocolDock::del_protocol()
                delete _del_button_list.at(del_index);
                delete _set_button_list.at(del_index);
                delete _protocol_label_list.at(del_index);
+               delete _progress_label_list.at(del_index);
 
                _hori_layout_list.remove(del_index);
                _del_button_list.remove(del_index);
                _set_button_list.remove(del_index);
                _protocol_label_list.remove(del_index);
+               _progress_label_list.remove(del_index);
                _protocol_index_list.remove(del_index);
 
                _session.remove_decode_signal(del_index);
@@ -320,6 +331,7 @@ void ProtocolDock::del_all_protocol()
             delete _del_button_list.at(del_index);
             delete _set_button_list.at(del_index);
             delete _protocol_label_list.at(del_index);
+            delete _progress_label_list.at(del_index);
 
             _session.remove_decode_signal(0);
             del_index++;
@@ -328,9 +340,28 @@ void ProtocolDock::del_all_protocol()
         _del_button_list.clear();
         _set_button_list.clear();
         _protocol_label_list.clear();
+        _progress_label_list.clear();
         _protocol_index_list.clear();
 
         protocol_updated();
+    }
+}
+
+void ProtocolDock::decoded_progess(int progress)
+{
+    (void) progress;
+
+    const std::vector< boost::shared_ptr<pv::view::DecodeTrace> > decode_sigs(
+        _session.get_decode_signals());
+    int index = 0;
+    BOOST_FOREACH(boost::shared_ptr<pv::view::DecodeTrace> d, decode_sigs) {
+        QString progress_str = QString::number(d->get_progress()) + "%";
+        if (d->get_progress() == 100)
+            _progress_label_list.at(index)->setStyleSheet("color:green;");
+        else
+            _progress_label_list.at(index)->setStyleSheet("color:red;");
+        _progress_label_list.at(index)->setText(progress_str);
+        index++;
     }
 }
 

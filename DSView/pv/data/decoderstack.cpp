@@ -332,6 +332,7 @@ void DecoderStack::clear()
 	_sample_count = 0;
 	_frame_complete = false;
 	_samples_decoded = 0;
+    //new_decode_data();
 	_error_message = QString();
     for (map<const Row, RowData>::const_iterator i = _rows.begin();
         i != _rows.end(); i++)
@@ -468,7 +469,6 @@ void DecoderStack::decode_data(
     }
     _options_changed = false;
     decode_done();
-    //new_decode_data();
 }
 
 void DecoderStack::decode_proc()

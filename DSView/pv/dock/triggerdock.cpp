@@ -38,6 +38,8 @@
 namespace pv {
 namespace dock {
 
+const int TriggerDock::MinTrigPosition = 1;
+
 TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
     QScrollArea(parent),
     _session(session)
@@ -56,10 +58,10 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
 
     position_label = new QLabel(tr("Trigger Position: "), _widget);
     position_spinBox = new QSpinBox(_widget);
-    position_spinBox->setRange(0, 99);
+    position_spinBox->setRange(MinTrigPosition, 99);
     position_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     position_slider = new QSlider(Qt::Horizontal, _widget);
-    position_slider->setRange(0, 99);
+    position_slider->setRange(MinTrigPosition, 99);
     connect(position_slider, SIGNAL(valueChanged(int)), position_spinBox, SLOT(setValue(int)));
     connect(position_spinBox, SIGNAL(valueChanged(int)), position_slider, SLOT(setValue(int)));
 
@@ -356,8 +358,8 @@ void TriggerDock::device_change()
                 maxRange = 99;
             else
                 maxRange = max_hd_depth*70 / sample_limits;
-            position_spinBox->setRange(0, maxRange);
-            position_slider->setRange(0, maxRange);
+            position_spinBox->setRange(MinTrigPosition, maxRange);
+            position_slider->setRange(MinTrigPosition, maxRange);
 
 
 

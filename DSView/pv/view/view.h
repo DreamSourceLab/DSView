@@ -229,7 +229,7 @@ public slots:
     void set_measure_en(int enable);
     void signals_changed();
     void data_updated();
-    void update_scale();
+    void update_scale_offset();
     void show_region(uint64_t start, uint64_t end);
 
 private slots:
