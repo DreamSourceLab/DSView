@@ -94,6 +94,8 @@ void AnalogSignal::paint_mid(QPainter &p, int left, int right)
     _scale = _totalHeight * 1.0f / 65536;
 	const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot =
 		snapshots.front();
+    if (snapshot->empty())
+        return;
 
     if (get_index() >= (int)snapshot->get_channel_num())
         return;

@@ -61,8 +61,6 @@ public:
     ProtocolDock(QWidget *parent, SigSession &session);
     ~ProtocolDock();
 
-    void paintEvent(QPaintEvent *);
-
     void del_all_protocol();
 
 signals:

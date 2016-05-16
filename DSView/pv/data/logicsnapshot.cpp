@@ -43,21 +43,37 @@ const int LogicSnapshot::MipMapScaleFactor = 1 << MipMapScalePower;
 const float LogicSnapshot::LogMipMapScaleFactor = logf(MipMapScaleFactor);
 const uint64_t LogicSnapshot::MipMapDataUnit = 64*1024;	// bytes
 
-LogicSnapshot::LogicSnapshot(const sr_datafeed_logic &logic, uint64_t _total_sample_len, unsigned int channel_num) :
-    Snapshot(logic.unitsize, _total_sample_len, channel_num),
-	_last_append_sample(0)
+LogicSnapshot::LogicSnapshot() :
+    Snapshot(1, 1, 1),
+    _last_append_sample(0)
 {
-	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
-	memset(_mip_map, 0, sizeof(_mip_map));
-    if (init(_total_sample_len * channel_num) == SR_OK)
-        append_payload(logic);
+    memset(_mip_map, 0, sizeof(_mip_map));
 }
 
 LogicSnapshot::~LogicSnapshot()
 {
 	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
-	BOOST_FOREACH(MipMapLevel &l, _mip_map)
-		free(l.data);
+    BOOST_FOREACH(MipMapLevel &l, _mip_map)
+        free(l.data);
+}
+
+void LogicSnapshot::clear()
+{
+    _sample_count = 0;
+    _ring_sample_count = 0;
+    memset(_mip_map, 0, sizeof(_mip_map));
+}
+
+void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total_sample_count, unsigned int channel_num)
+{
+    _total_sample_count = total_sample_count;
+    _channel_num = channel_num;
+    _unit_size = logic.unitsize;
+    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    if (init(_total_sample_count * _channel_num) == SR_OK) {
+        append_payload(logic);
+        _last_ended = false;
+    }
 }
 
 void LogicSnapshot::append_payload(
@@ -88,7 +104,7 @@ uint8_t * LogicSnapshot::get_samples(int64_t start_sample, int64_t end_sample) c
 
     //const size_t size = (end_sample - start_sample) * _unit_size;
     //memcpy(data, (const uint8_t*)_data + start_sample * _unit_size, size);
-    return (uint8_t*)_data + start_sample * _unit_size;
+    return (uint8_t*)_data.data() + start_sample * _unit_size;
 }
 
 void LogicSnapshot::reallocate_mipmap_level(MipMapLevel &m)
@@ -127,9 +143,9 @@ void LogicSnapshot::append_payload_to_mipmap()
 	dest_ptr = (uint8_t*)m0.data + prev_length * _unit_size;
 
 	// Iterate through the samples to populate the first level mipmap
-	const uint8_t *const end_src_ptr = (uint8_t*)_data +
+    const uint8_t *const end_src_ptr = (uint8_t*)_data.data() +
 		m0.length * _unit_size * MipMapScaleFactor;
-	for (src_ptr = (uint8_t*)_data +
+    for (src_ptr = (uint8_t*)_data.data() +
 		prev_length * _unit_size * MipMapScaleFactor;
 		src_ptr < end_src_ptr;)
 	{
@@ -201,7 +217,7 @@ void LogicSnapshot::get_subsampled_edges(
 	assert(sig_index >= 0);
 	assert(sig_index < 64);
 
-    if (!_data)
+    if (_data.size() == 0)
         return;
 
 	boost::lock_guard<boost::recursive_mutex> lock(_mutex);

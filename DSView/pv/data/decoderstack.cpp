@@ -56,8 +56,8 @@ namespace data {
 
 const double DecoderStack::DecodeMargin = 1.0;
 const double DecoderStack::DecodeThreshold = 0.2;
-const int64_t DecoderStack::DecodeChunkLength = 1024 * 1024;
-const unsigned int DecoderStack::DecodeNotifyPeriod = 1;
+const int64_t DecoderStack::DecodeChunkLength = 4 * 1024;
+const unsigned int DecoderStack::DecodeNotifyPeriod = 1024;
 
 mutex DecoderStack::_global_decode_mutex;
 
@@ -332,7 +332,7 @@ void DecoderStack::clear()
 	_sample_count = 0;
 	_frame_complete = false;
 	_samples_decoded = 0;
-    //new_decode_data();
+    new_decode_data();
 	_error_message = QString();
     for (map<const Row, RowData>::const_iterator i = _rows.begin();
         i != _rows.end(); i++)
@@ -342,7 +342,7 @@ void DecoderStack::clear()
 
 void DecoderStack::stop_decode()
 {
-    _snapshot.reset();
+    //_snapshot.reset();
 
     if(_decode_state == Stopped) {
         clear();
@@ -397,12 +397,14 @@ void DecoderStack::begin_decode()
 	if (snapshots.empty())
 		return;
 	_snapshot = snapshots.front();
+    if (_snapshot->empty())
+        return;
 
 	// Get the samplerate and start time
 	_start_time = data->get_start_time();
 	_samplerate = data->samplerate();
-	if (_samplerate == 0.0)
-		_samplerate = 1.0;
+    if (_samplerate == 0.0)
+        return;
 
     //_decode_thread = boost::thread(&DecoderStack::decode_proc, this);
     _decode_thread.reset(new boost::thread(&DecoderStack::decode_proc, this));
@@ -437,7 +439,8 @@ void DecoderStack::decode_data(
     const unsigned int unit_size, srd_session *const session)
 {
     uint8_t *chunk = NULL;
-
+    uint64_t last_cnt = 0;
+    uint64_t notify_cnt = (decode_end - decode_start + 1)/100;
     const uint64_t chunk_sample_count =
         DecodeChunkLength / _snapshot->unit_size();
 
@@ -463,8 +466,10 @@ void DecoderStack::decode_data(
             _samples_decoded = chunk_end - decode_start + 1;
         }
 
-        if (i % DecodeNotifyPeriod == 0)
+        if ((i - last_cnt) > notify_cnt) {
+            last_cnt = i;
             new_decode_data();
+        }
 
     }
     _options_changed = false;
@@ -492,6 +497,12 @@ void DecoderStack::decode_proc()
 	// Create the decoders
 	const unsigned int unit_size = _snapshot->unit_size();
 
+    // Get the intial sample count
+    {
+        unique_lock<mutex> input_lock(_input_mutex);
+        sample_count = _sample_count = _snapshot->get_sample_count();
+    }
+
 	BOOST_FOREACH(const shared_ptr<decode::Decoder> &dec, _stack)
 	{
 		srd_decoder_inst *const di = dec->create_decoder_inst(session, unit_size);
@@ -508,13 +519,7 @@ void DecoderStack::decode_proc()
 
 		prev_di = di;
         decode_start = dec->decode_start();
-        decode_end = min(dec->decode_end(), _snapshot->get_sample_count());
-	}
-
-	// Get the intial sample count
-	{
-		unique_lock<mutex> input_lock(_input_mutex);
-        sample_count = _sample_count = _snapshot->get_sample_count();
+        decode_end = min(dec->decode_end(), _sample_count-1);
 	}
 
 	// Start the session

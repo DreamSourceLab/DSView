@@ -47,16 +47,13 @@ const uint64_t DsoSnapshot::EnvelopeDataUnit = 4*1024;	// bytes
 
 const int DsoSnapshot::VrmsScaleFactor = 1 << 8;
 
-DsoSnapshot::DsoSnapshot(const sr_datafeed_dso &dso, uint64_t _total_sample_len, unsigned int channel_num, bool instant) :
-    Snapshot(sizeof(uint16_t), _total_sample_len, channel_num),
+DsoSnapshot::DsoSnapshot() :
+    Snapshot(sizeof(uint16_t), 1, 1),
     _envelope_en(false),
     _envelope_done(false),
-    _instant(instant)
+    _instant(false)
 {
-	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 	memset(_envelope_levels, 0, sizeof(_envelope_levels));
-    init(_total_sample_len);
-    append_payload(dso);
 }
 
 DsoSnapshot::~DsoSnapshot()
@@ -64,6 +61,24 @@ DsoSnapshot::~DsoSnapshot()
 	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
     BOOST_FOREACH(Envelope &e, _envelope_levels[0])
 		free(e.samples);
+}
+
+void DsoSnapshot::clear()
+{
+    _sample_count = 0;
+    _ring_sample_count = 0;
+}
+
+void DsoSnapshot::first_payload(const sr_datafeed_dso &dso, uint64_t total_sample_count, unsigned int channel_num, bool instant)
+{
+    _total_sample_count = total_sample_count;
+    _channel_num = channel_num;
+    _instant = instant;
+    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    if (init(_total_sample_count) == SR_OK) {
+        append_payload(dso);
+        _last_ended = false;
+    }
 }
 
 void DsoSnapshot::append_payload(const sr_datafeed_dso &dso)
@@ -103,7 +118,7 @@ const uint8_t *DsoSnapshot::get_samples(
 //    memcpy(data, (uint16_t*)_data + start_sample, sizeof(uint16_t) *
 //		(end_sample - start_sample));
 //	return data;
-    return (uint8_t*)_data + start_sample * _channel_num + index * (_channel_num != 1);
+    return (uint8_t*)_data.data() + start_sample * _channel_num + index * (_channel_num != 1);
 }
 
 void DsoSnapshot::get_envelope_section(EnvelopeSection &s,
@@ -170,9 +185,9 @@ void DsoSnapshot::append_payload_to_envelope_levels(bool header)
         dest_ptr = e0.samples + prev_length;
 
         // Iterate through the samples to populate the first level mipmap
-        const uint8_t *const stop_src_ptr = (uint8_t*)_data +
+        const uint8_t *const stop_src_ptr = (uint8_t*)_data.data() +
             e0.length * EnvelopeScaleFactor * _channel_num;
-        for (const uint8_t *src_ptr = (uint8_t*)_data +
+        for (const uint8_t *src_ptr = (uint8_t*)_data.data() +
             prev_length * EnvelopeScaleFactor * _channel_num + i;
             src_ptr < stop_src_ptr; src_ptr += EnvelopeScaleFactor * _channel_num)
         {
@@ -248,9 +263,9 @@ double DsoSnapshot::cal_vrms(double zero_off, int index) const
     double tmp;
 
     // Iterate through the samples to populate the first level mipmap
-    const uint8_t *const stop_src_ptr = (uint8_t*)_data +
+    const uint8_t *const stop_src_ptr = (uint8_t*)_data.data() +
         _sample_count * _channel_num;
-    for (const uint8_t *src_ptr = (uint8_t*)_data + index;
+    for (const uint8_t *src_ptr = (uint8_t*)_data.data() + index;
         src_ptr < stop_src_ptr; src_ptr += VrmsScaleFactor * _channel_num)
     {
         const uint8_t * begin_src_ptr =
@@ -282,9 +297,9 @@ double DsoSnapshot::cal_vmean(int index) const
     double vmean = 0;
 
     // Iterate through the samples to populate the first level mipmap
-    const uint8_t *const stop_src_ptr = (uint8_t*)_data +
+    const uint8_t *const stop_src_ptr = (uint8_t*)_data.data() +
         _sample_count * _channel_num;
-    for (const uint8_t *src_ptr = (uint8_t*)_data + index;
+    for (const uint8_t *src_ptr = (uint8_t*)_data.data() + index;
         src_ptr < stop_src_ptr; src_ptr += VrmsScaleFactor * _channel_num)
     {
         const uint8_t * begin_src_ptr =

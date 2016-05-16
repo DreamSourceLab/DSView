@@ -24,6 +24,8 @@
 #include "analog.h"
 #include "analogsnapshot.h"
 
+#include <boost/foreach.hpp>
+
 using namespace boost;
 using namespace std;
 
@@ -47,7 +49,9 @@ deque< boost::shared_ptr<AnalogSnapshot> >& Analog::get_snapshots()
 
 void Analog::clear()
 {
-    _snapshots.clear();
+    //_snapshots.clear();
+    BOOST_FOREACH(const boost::shared_ptr<AnalogSnapshot> s, _snapshots)
+        s->clear();
 }
 
 } // namespace data

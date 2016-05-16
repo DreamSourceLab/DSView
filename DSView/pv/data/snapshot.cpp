@@ -33,12 +33,13 @@ namespace pv {
 namespace data {
 
 Snapshot::Snapshot(int unit_size, uint64_t total_sample_count, unsigned int channel_num) :
-    _data(NULL),
     _channel_num(channel_num),
     _sample_count(0),
     _total_sample_count(total_sample_count),
     _ring_sample_count(0),
-    _unit_size(unit_size)
+    _unit_size(unit_size),
+    _memory_failed(true),
+    _last_ended(true)
 {
 	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 	assert(_unit_size > 0);
@@ -47,29 +48,53 @@ Snapshot::Snapshot(int unit_size, uint64_t total_sample_count, unsigned int chan
 Snapshot::~Snapshot()
 {
 	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
-    if (_data != NULL)
-        free(_data);
-    _data = NULL;
+    _data.clear();
 }
 
 int Snapshot::init(uint64_t _total_sample_len)
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
-    _data = malloc(_total_sample_len * _unit_size +
-        sizeof(uint64_t));
+//    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+//    _data = malloc(_total_sample_len * _unit_size +
+//        sizeof(uint64_t));
 
-    if (_data == NULL)
+//    if (_data == NULL)
+//        return SR_ERR_MALLOC;
+//    else
+//        return SR_OK;
+
+    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    uint64_t size = _total_sample_len * _unit_size + sizeof(uint64_t);
+    try{
+        _data.resize(size);
+    } catch(...) {
+        _memory_failed = true;
         return SR_ERR_MALLOC;
-    else
-        return SR_OK;
+    }
+    _memory_failed = false;
+    return SR_OK;
 }
 
-bool Snapshot::buf_null() const
+bool Snapshot::memory_failed() const
 {
-    if (_data == NULL)
+    return _memory_failed;
+}
+
+bool Snapshot::empty() const
+{
+    if (_sample_count == 0 || _memory_failed)
         return true;
     else
         return false;
+}
+
+bool Snapshot::last_ended() const
+{
+    return _last_ended;
+}
+
+void Snapshot::set_last_ended(bool ended)
+{
+    _last_ended = ended;
 }
 
 uint64_t Snapshot::get_sample_count() const
@@ -78,10 +103,10 @@ uint64_t Snapshot::get_sample_count() const
     return _sample_count;
 }
 
-void* Snapshot::get_data() const
+const void* Snapshot::get_data() const
 {
     boost::lock_guard<boost::recursive_mutex> lock(_mutex);
-    return _data;
+    return _data.data();
 }
 
 int Snapshot::unit_size() const
@@ -100,10 +125,10 @@ uint64_t Snapshot::get_sample(uint64_t index) const
 {
     boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 
-    assert(_data);
+    assert(_data.data());
     assert(index < _sample_count);
 
-    return *(uint64_t*)((uint8_t*)_data + index * _unit_size);
+    return *(uint64_t*)((uint8_t*)_data.data() + index * _unit_size);
 }
 
 void Snapshot::append_data(void *data, uint64_t samples)
@@ -117,13 +142,13 @@ void Snapshot::append_data(void *data, uint64_t samples)
         _sample_count = _total_sample_count;
 
     if (_ring_sample_count + samples > _total_sample_count) {
-        memcpy((uint8_t*)_data + _ring_sample_count * _unit_size,
+        memcpy((uint8_t*)_data.data() + _ring_sample_count * _unit_size,
             data, (_total_sample_count - _ring_sample_count) * _unit_size);
         _ring_sample_count = (samples + _ring_sample_count - _total_sample_count) % _total_sample_count;
-        memcpy((uint8_t*)_data,
+        memcpy((uint8_t*)_data.data(),
             data, _ring_sample_count * _unit_size);
     } else {
-        memcpy((uint8_t*)_data + _ring_sample_count * _unit_size,
+        memcpy((uint8_t*)_data.data() + _ring_sample_count * _unit_size,
             data, samples * _unit_size);
         _ring_sample_count += samples;
     }
@@ -134,10 +159,10 @@ void Snapshot::refill_data(void *data, uint64_t samples, bool instant)
     boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 
     if (instant) {
-        memcpy((uint8_t*)_data + _sample_count * _channel_num, data, samples*_channel_num);
+        memcpy((uint8_t*)_data.data() + _sample_count * _channel_num, data, samples*_channel_num);
         _sample_count = (_sample_count + samples) % (_total_sample_count + 1);
     } else {
-        memcpy((uint8_t*)_data, data, samples*_channel_num);
+        memcpy((uint8_t*)_data.data(), data, samples*_channel_num);
         _sample_count = samples;
     }
 

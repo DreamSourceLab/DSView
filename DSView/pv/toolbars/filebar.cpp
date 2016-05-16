@@ -158,7 +158,7 @@ void FileBar::show_session_error(
 void FileBar::on_actionExport_triggered(){
     int unit_size;
     uint64_t length;
-    void* buf = _session.get_buf(unit_size, length);
+    const void* buf = _session.get_buf(unit_size, length);
     if (!buf) {
         QMessageBox msg(this);
         msg.setText(tr("Data Export"));
@@ -192,7 +192,7 @@ void FileBar::on_actionSave_triggered()
     //save();
     int unit_size;
     uint64_t length;
-    void* buf = _session.get_buf(unit_size, length);
+    const void* buf = _session.get_buf(unit_size, length);
     if (!buf) {
         QMessageBox msg(this);
         msg.setText(tr("File Save"));

@@ -23,6 +23,8 @@
 #include "dso.h"
 #include "dsosnapshot.h"
 
+#include <boost/foreach.hpp>
+
 using namespace boost;
 using namespace std;
 
@@ -46,7 +48,9 @@ deque< boost::shared_ptr<DsoSnapshot> >& Dso::get_snapshots()
 
 void Dso::clear()
 {
-    _snapshots.clear();
+    //_snapshots.clear();
+    BOOST_FOREACH(const boost::shared_ptr<DsoSnapshot> s, _snapshots)
+        s->clear();
 }
 
 } // namespace data

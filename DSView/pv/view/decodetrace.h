@@ -170,9 +170,6 @@ private:
 	void draw_error(QPainter &p, const QString &message,
 		int left, int right);
 
-    bool draw_unresolved_period(QPainter &p, int h, int left,
-        int right);
-
     void draw_unshown_row(QPainter &p, int y, int h, int left,
                           int right, QString info);
 

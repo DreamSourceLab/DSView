@@ -142,23 +142,18 @@ void LogicSignal::paint_mid(QPainter &p, int left, int right)
 
 	const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
 		_data->get_snapshots();
-	if (snapshots.empty())
+    double samplerate = _data->samplerate();
+    if (snapshots.empty() || samplerate == 0)
 		return;
 
 	const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
 		snapshots.front();
-    if (snapshot->buf_null())
+    if (snapshot->empty())
         return;
-
-    double samplerate = _data->samplerate();
-
-	// Show sample rate as 1Hz when it is unknown
-	if (samplerate == 0.0)
-		samplerate = 1.0;
 
 	const double pixels_offset = offset / scale;
 	const double start_time = _data->get_start_time();
-    const int64_t last_sample = snapshot->get_sample_count() - 1;
+    const int64_t last_sample =  snapshot->get_sample_count() - 1;
 	const double samples_per_pixel = samplerate * scale;
 	const double start = samplerate * (offset - start_time);
 	const double end = start + samples_per_pixel * (right - left);
@@ -308,7 +303,7 @@ bool LogicSignal::measure(const QPointF &p, uint64_t &index0, uint64_t &index1, 
 
         const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
             snapshots.front();
-        if (snapshot->buf_null())
+        if (snapshot->empty())
             return false;
 
         uint64_t index = _data->samplerate() * (_view->offset() - _data->get_start_time() + p.x() * _view->scale());
@@ -353,7 +348,7 @@ bool LogicSignal::edges(const QPointF &p, uint64_t start, uint64_t &rising, uint
 
         const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
             snapshots.front();
-        if (snapshot->buf_null())
+        if (snapshot->empty())
             return false;
 
         end = _data->samplerate() * (_view->offset() - _data->get_start_time() + p.x() * _view->scale());

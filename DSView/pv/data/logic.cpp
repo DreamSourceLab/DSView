@@ -24,6 +24,8 @@
 #include "logic.h"
 #include "logicsnapshot.h"
 
+#include <boost/foreach.hpp>
+
 using namespace boost;
 using namespace std;
 
@@ -48,7 +50,9 @@ deque< boost::shared_ptr<LogicSnapshot> >& Logic::get_snapshots()
 
 void Logic::clear()
 {
-    _snapshots.clear();
+    //_snapshots.clear();
+    BOOST_FOREACH(const boost::shared_ptr<LogicSnapshot> s, _snapshots)
+        s->clear();
 }
 
 } // namespace data

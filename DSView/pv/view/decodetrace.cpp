@@ -229,15 +229,9 @@ void DecodeTrace::paint_mid(QPainter &p, int left, int right)
 	const QString err = _decoder_stack->error_message();
 	if (!err.isEmpty())
 	{
-        //draw_unresolved_period(p, annotation_height, left, right,
-        //	samples_per_pixel, pixels_offset);
 		draw_error(p, err, left, right);
 		return;
 	}
-
-    // Draw the hatching
-    if (draw_unresolved_period(p, annotation_height, left, right))
-        return;
 
 	// Iterate through the rows
 	assert(_view);
@@ -637,40 +631,6 @@ void DecodeTrace::draw_error(QPainter &p, const QString &message,
 	p.drawText(text_rect, message);
 }
 
-bool DecodeTrace::draw_unresolved_period(QPainter &p, int h, int left,
-    int right)
-{
-	using namespace pv::data;
-	using pv::data::decode::Decoder;
-
-	assert(_decoder_stack);	
-
-    boost::shared_ptr<Logic> data;
-    boost::shared_ptr<LogicSignal> logic_signal;
-
-    //const int64_t need_sample_count = _decoder_stack->sample_count();
-    const uint64_t need_sample_count = _decode_end - _decode_start + 1;
-    if (need_sample_count == 0)
-        return true;
-
-    const uint64_t samples_decoded = _decoder_stack->samples_decoded();
-    if (need_sample_count == samples_decoded)
-        return false;
-
-    const int y = get_y();
-    const QRectF no_decode_rect(left, y - h/2 + 0.5, right - left, h);
-
-    const int progress100 = ceil(samples_decoded * 100.0 / need_sample_count);
-    p.setPen(dsLightBlue);
-    QFont font=p.font();
-    font.setPointSize(_view->get_signalHeight()*2/3);
-    font.setBold(true);
-    p.setFont(font);
-    p.drawText(no_decode_rect, Qt::AlignCenter | Qt::AlignVCenter, QString::number(_progress)+"%");
-
-    return true;
-}
-
 void DecodeTrace::draw_unshown_row(QPainter &p, int y, int h, int left,
     int right, QString info)
 {
@@ -830,12 +790,13 @@ void DecodeTrace::commit_probes()
 
 void DecodeTrace::on_new_decode_data()
 {
-    const uint64_t need_sample_count = _decode_end - _decode_start + 1;
-    if (need_sample_count == 0) {
+    uint64_t real_end = min(_decoder_stack->sample_count(), _decode_end+1);
+    const int64_t need_sample_count = real_end - _decode_start;
+    if (need_sample_count <= 0) {
         _progress = 100;
     } else {
         const uint64_t samples_decoded = _decoder_stack->samples_decoded();
-        _progress = ceil(samples_decoded * 100.0 / need_sample_count);
+        _progress = floor(samples_decoded * 100.0 / need_sample_count);
     }
     decoded_progress(_progress);
 
@@ -850,10 +811,11 @@ int DecodeTrace::get_progress() const
 
 void DecodeTrace::on_decode_done()
 {
-    if (_view) {
-        _view->set_update(_viewport, true);
-        _view->signals_changed();
-    }
+//    if (_view) {
+//        _view->set_update(_viewport, true);
+//        _view->signals_changed();
+//    }
+    on_new_decode_data();
     _session.decode_done();
 }
 

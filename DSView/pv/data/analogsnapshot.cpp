@@ -46,13 +46,10 @@ const float AnalogSnapshot::LogEnvelopeScaleFactor =
 	logf(EnvelopeScaleFactor);
 const uint64_t AnalogSnapshot::EnvelopeDataUnit = 64*1024;	// bytes
 
-AnalogSnapshot::AnalogSnapshot(const sr_datafeed_analog &analog, uint64_t _total_sample_len, unsigned int channel_num) :
-    Snapshot(sizeof(uint16_t)*channel_num, _total_sample_len, channel_num)
+AnalogSnapshot::AnalogSnapshot() :
+    Snapshot(sizeof(uint16_t), 1, 1)
 {
-	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 	memset(_envelope_levels, 0, sizeof(_envelope_levels));
-    init(_total_sample_len * channel_num);
-	append_payload(analog);
 }
 
 AnalogSnapshot::~AnalogSnapshot()
@@ -60,6 +57,24 @@ AnalogSnapshot::~AnalogSnapshot()
 	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
     BOOST_FOREACH(Envelope &e, _envelope_levels[0])
 		free(e.samples);
+}
+
+void AnalogSnapshot::clear()
+{
+    _sample_count = 0;
+    _ring_sample_count = 0;
+}
+
+void AnalogSnapshot::first_payload(const sr_datafeed_analog &analog, uint64_t total_sample_count, unsigned int channel_num)
+{
+    _total_sample_count = total_sample_count;
+    _channel_num = channel_num;
+    _unit_size = sizeof(uint16_t)*channel_num;
+    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    if (init(_total_sample_count*_channel_num) == SR_OK) {
+        append_payload(analog);
+        _last_ended = false;
+    }
 }
 
 void AnalogSnapshot::append_payload(
@@ -89,7 +104,7 @@ const uint16_t* AnalogSnapshot::get_samples(
 //    memcpy(data, (uint16_t*)_data + start_sample, sizeof(uint16_t) *
 //		(end_sample - start_sample));
 //	return data;
-    return (uint16_t*)_data + start_sample * _channel_num;
+    return (uint16_t*)_data.data() + start_sample * _channel_num;
 }
 
 void AnalogSnapshot::get_envelope_section(EnvelopeSection &s,
@@ -154,7 +169,7 @@ void AnalogSnapshot::append_payload_to_envelope_levels()
         dest_ptr = e0.samples + prev_length;
 
         // Iterate through the samples to populate the first level mipmap
-        const uint16_t *const stop_src_ptr = (uint16_t*)_data +
+        const uint16_t *const stop_src_ptr = (uint16_t*)_data.data() +
             e0.length * EnvelopeScaleFactor * _channel_num;
 //        for (const uint16_t *src_ptr = (uint16_t*)_data +
 //            prev_length * EnvelopeScaleFactor;
@@ -167,7 +182,7 @@ void AnalogSnapshot::append_payload_to_envelope_levels()
 
 //            *dest_ptr++ = sub_sample;
 //        }
-        for (const uint16_t *src_ptr = (uint16_t*)_data +
+        for (const uint16_t *src_ptr = (uint16_t*)_data.data() +
             prev_length * EnvelopeScaleFactor * _channel_num + i;
             src_ptr < stop_src_ptr; src_ptr += EnvelopeScaleFactor * _channel_num)
         {

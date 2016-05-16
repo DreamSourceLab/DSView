@@ -42,11 +42,15 @@ public:
 
 	uint64_t get_sample_count() const;
 
-    void * get_data() const;
+    const void * get_data() const;
 
     int unit_size() const;
 
-    bool buf_null() const;
+    bool memory_failed() const;
+    bool empty() const;
+
+    bool last_ended() const;
+    void set_last_ended(bool ended);
 
     unsigned int get_channel_num() const;
 
@@ -58,12 +62,14 @@ protected:
 
 protected:
 	mutable boost::recursive_mutex _mutex;
-	void *_data;
+    std::vector<uint8_t> _data;
     unsigned int _channel_num;
 	uint64_t _sample_count;
     uint64_t _total_sample_count;
     uint64_t _ring_sample_count;
 	int _unit_size;
+    bool _memory_failed;
+    bool _last_ended;
 };
 
 } // namespace data

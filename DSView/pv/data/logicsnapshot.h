@@ -61,9 +61,13 @@ public:
     typedef std::pair<uint64_t, bool> EdgePair;
 
 public:
-    LogicSnapshot(const sr_datafeed_logic &logic, uint64_t _total_sample_len, unsigned int channel_num);
+    LogicSnapshot();
 
 	virtual ~LogicSnapshot();
+
+    void clear();
+
+    void first_payload(const sr_datafeed_logic &logic, uint64_t total_sample_count, unsigned int channel_num);
 
 	void append_payload(const sr_datafeed_logic &logic);
 

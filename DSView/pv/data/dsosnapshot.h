@@ -70,9 +70,13 @@ private:
     static const int VrmsScaleFactor;
 
 public:
-    DsoSnapshot(const sr_datafeed_dso &dso, uint64_t _total_sample_len, unsigned int channel_num, bool instant);
+    DsoSnapshot();
 
     virtual ~DsoSnapshot();
+
+    void clear();
+
+    void first_payload(const sr_datafeed_dso &dso, uint64_t total_sample_count, unsigned int channel_num, bool instant);
 
     void append_payload(const sr_datafeed_dso &dso);
 

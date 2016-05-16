@@ -173,7 +173,7 @@ public:
 
     void del_group();
 
-    void* get_buf(int& unit_size, uint64_t& length);
+    const void* get_buf(int& unit_size, uint64_t& length);
 
     void start_hotplug_proc(boost::function<void (const QString)> error_handler);
     void stop_hotplug_proc();
@@ -190,8 +190,6 @@ public:
 
 private:
 	void set_capture_state(capture_state state);
-
-    void update_data_header(const sr_dev_inst *const sdi);
 
 private:
     /**

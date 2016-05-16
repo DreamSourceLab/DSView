@@ -98,7 +98,7 @@ private:
 private:
 	struct Envelope _envelope_levels[ScaleStepCount];
     mutable boost::recursive_mutex _mutex;
-    void *_data;
+    const void *_data;
     uint64_t _sample_count;
     int _unit_size;
     boost::shared_ptr<view::Signal> _signal;

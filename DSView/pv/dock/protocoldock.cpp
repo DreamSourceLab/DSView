@@ -166,14 +166,6 @@ int ProtocolDock::decoder_name_cmp(const void *a, const void *b)
         ((const srd_decoder*)b)->name);
 }
 
-void ProtocolDock::paintEvent(QPaintEvent *)
-{
-     //QStyleOption opt;
-     //opt.init(this);
-     //QPainter p(this);
-     //style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
-}
-
 void ProtocolDock::add_protocol()
 {
     if (_session.get_device()->dev_inst()->mode != LOGIC) {
@@ -228,7 +220,7 @@ void ProtocolDock::add_protocol()
             // progress connection
             const std::vector< boost::shared_ptr<pv::view::DecodeTrace> > decode_sigs(
                 _session.get_decode_signals());
-            //connect(decode_sigs.back().get(), SIGNAL(decoded_progress(int)), this, SLOT(decoded_progess(int)));
+            connect(decode_sigs.back().get(), SIGNAL(decoded_progress(int)), this, SLOT(decoded_progess(int)));
 
             protocol_updated();
         }
@@ -363,6 +355,7 @@ void ProtocolDock::decoded_progess(int progress)
         _progress_label_list.at(index)->setText(progress_str);
         index++;
     }
+    update_model();
 }
 
 void ProtocolDock::set_model()

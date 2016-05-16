@@ -69,9 +69,13 @@ private:
 	static const uint64_t EnvelopeDataUnit;
 
 public:
-    AnalogSnapshot(const sr_datafeed_analog &analog, uint64_t _total_sample_len, unsigned int channel_num);
+    AnalogSnapshot();
 
 	virtual ~AnalogSnapshot();
+
+    void clear();
+
+    void first_payload(const sr_datafeed_analog &analog, uint64_t total_sample_count, unsigned int channel_num);
 
 	void append_payload(const sr_datafeed_analog &analog);
 

@@ -56,7 +56,8 @@ MathStack::MathStack(pv::SigSession &session, int index) :
     _index(index),
     _dc_ignore(true),
     _sample_interval(1),
-    _math_state(Init)
+    _math_state(Init),
+    _fft_plan(NULL)
 {
 }
 
@@ -65,7 +66,8 @@ MathStack::~MathStack()
     _xn.clear();
     _xk.clear();
     _power_spectrum.clear();
-    fftw_destroy_plan(_fft_plan);
+    if (_fft_plan)
+        fftw_destroy_plan(_fft_plan);
 }
 
 void MathStack::clear()
