@@ -137,6 +137,8 @@ public:
     uint64_t sample_count() const;
     uint64_t sample_rate() const;
 
+    bool out_of_memory() const;
+
 private:
     boost::optional<uint64_t> wait_for_data() const;
 

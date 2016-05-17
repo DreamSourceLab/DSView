@@ -119,6 +119,8 @@ void Header::paintEvent(QPaintEvent*)
     //painter.setRenderHint(QPainter::Antialiasing);
     style()->drawPrimitive(QStyle::PE_Widget, &o, &painter, this);
 
+    painter.begin(this);
+
 	const int w = width();
     const vector< boost::shared_ptr<Trace> > traces(
         _view.get_traces(ALL_VIEW));

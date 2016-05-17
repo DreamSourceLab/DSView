@@ -36,6 +36,7 @@
 #include <QScrollArea>
 #include <QSplitter>
 #include <QTableView>
+#include <QSortFilterProxyModel>
 
 #include <vector>
 
@@ -60,6 +61,7 @@ class ProtocolDock : public QScrollArea
 public:
     ProtocolDock(QWidget *parent, SigSession &session);
     ~ProtocolDock();
+    void paintEvent(QPaintEvent *);
 
     void del_all_protocol();
 
@@ -70,12 +72,15 @@ private slots:
     void add_protocol();
     void rst_protocol();
     void del_protocol();
-    void decoded_progess(int progress);
+    void decoded_progress(int progress);
     void set_model();
     void update_model();
     void export_table_view();
     void item_clicked(const QModelIndex &index);
     void column_resize(int index, int old_size, int new_size);
+    void search_pre();
+    void search_nxt();
+    void search_done();
 
 private:
     static int decoder_name_cmp(const void *a, const void *b);
@@ -83,11 +88,17 @@ private:
 
 private:
     SigSession &_session;
+    QSortFilterProxyModel _model_proxy;
+    double _cur_search_index;
 
     QSplitter *_split_widget;
     QWidget *_up_widget;
     QWidget *_dn_widget;
     QTableView *_table_view;
+    QPushButton *_pre_button;
+    QPushButton *_nxt_button;
+    QLineEdit *_search_edit;
+    QLabel *_matchs_label;
 
     QPushButton *_add_button;
     QPushButton *_del_all_button;

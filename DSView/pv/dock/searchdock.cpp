@@ -60,13 +60,13 @@ SearchDock::SearchDock(QWidget *parent, View &view, SigSession &session) :
     connect(&_nxt_button, SIGNAL(clicked()),
         this, SLOT(on_next()));
 
-    _pre_button.setIcon(QIcon::fromTheme("search",
+    _pre_button.setIcon(QIcon::fromTheme("searchDock",
         QIcon(":/icons/pre.png")));
-    _nxt_button.setIcon(QIcon::fromTheme("search",
+    _nxt_button.setIcon(QIcon::fromTheme("searchDock",
         QIcon(":/icons/next.png")));
 
     QPushButton *_search_button = new QPushButton(this);
-    _search_button->setIcon(QIcon::fromTheme("search",
+    _search_button->setIcon(QIcon::fromTheme("searchDock",
                                              QIcon(":/icons/search.png")));
     _search_button->setFixedWidth(_search_button->height());
     _search_button->setDisabled(true);

@@ -611,7 +611,7 @@ background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1,
 
 QComboBox:hover,QAbstractSpinBox:hover,QLineEdit:hover,QTextEdit:hover,QPlainTextEdit:hover,QAbstractView:hover,QTreeView:hover
 {
-    border: 1px solid #78879b;
+    border: 1px solid #606060;
     color: silver;
 }
 

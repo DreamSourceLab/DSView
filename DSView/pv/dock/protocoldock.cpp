@@ -38,6 +38,8 @@
 #include <QStandardItemModel>
 #include <QTableView>
 #include <QHeaderView>
+#include <QScrollBar>
+#include <QLineEdit>
 
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
@@ -47,7 +49,8 @@ namespace dock {
 
 ProtocolDock::ProtocolDock(QWidget *parent, SigSession &session) :
     QScrollArea(parent),
-    _session(session)
+    _session(session),
+    _cur_search_index(-1)
 {
     _up_widget = new QWidget(this);
 
@@ -93,7 +96,7 @@ ProtocolDock::ProtocolDock(QWidget *parent, SigSession &session) :
     _up_layout->addStretch(1);
 
     _up_widget->setLayout(_up_layout);
-    _up_widget->setMinimumHeight(120);
+    _up_widget->setMinimumHeight(150);
 
 //    this->setWidget(_widget);
 //    _widget->setGeometry(0, 0, sizeHint().width(), 500);
@@ -129,12 +132,53 @@ ProtocolDock::ProtocolDock(QWidget *parent, SigSession &session) :
     _table_view->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
     _table_view->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
 
+    _pre_button = new QPushButton(_dn_widget);
+    _nxt_button = new QPushButton(_dn_widget);
+    _pre_button->setIcon(QIcon::fromTheme("protocol",
+                         QIcon(":/icons/pre.png")));
+    _nxt_button->setIcon(QIcon::fromTheme("protocol",
+                         QIcon(":/icons/next.png")));
+    connect(_pre_button, SIGNAL(clicked()),
+            this, SLOT(search_pre()));
+    connect(_nxt_button, SIGNAL(clicked()),
+            this, SLOT(search_nxt()));
+
+    QPushButton *search_button = new QPushButton(this);
+    search_button->setIcon(QIcon::fromTheme("protocol",
+                           QIcon(":/icons/search.png")));
+    search_button->setFixedWidth(search_button->height());
+    search_button->setDisabled(true);
+    _search_edit = new QLineEdit(_dn_widget);
+    _search_edit->setPlaceholderText(tr("search"));
+    QHBoxLayout *search_layout = new QHBoxLayout();
+    search_layout->addWidget(search_button);
+    search_layout->addStretch();
+    search_layout->setContentsMargins(0, 0, 0, 0);
+    _search_edit->setLayout(search_layout);
+    _search_edit->setTextMargins(search_button->width(), 0, 0, 0);
+    QSizePolicy sp = _search_edit->sizePolicy();
+    sp.setHorizontalStretch(1);
+    _search_edit->setSizePolicy(sp);
+
+    QHBoxLayout *dn_search_layout = new QHBoxLayout();
+    dn_search_layout->addWidget(_pre_button, 0, Qt::AlignLeft);
+    dn_search_layout->addWidget(_search_edit, 0, Qt::AlignLeft);
+    dn_search_layout->addWidget(_nxt_button, 0, Qt::AlignRight);
+
+    _matchs_label = new QLabel(_dn_widget);
+    QHBoxLayout *dn_match_layout = new QHBoxLayout();
+    dn_match_layout->addWidget(new QLabel(tr("Matching Items:")), 0, Qt::AlignLeft);
+    dn_match_layout->addWidget(_matchs_label, 0, Qt::AlignLeft);
+    dn_match_layout->addStretch(1);
+
     QVBoxLayout *dn_layout = new QVBoxLayout();
     dn_layout->addLayout(dn_title_layout);
+    dn_layout->addLayout(dn_search_layout);
+    dn_layout->addLayout(dn_match_layout);
     dn_layout->addWidget(_table_view);
 
     _dn_widget->setLayout(dn_layout);
-    _dn_widget->setMinimumHeight(400);
+    _dn_widget->setMinimumHeight(350);
 
     _split_widget = new QSplitter(this);
     _split_widget->insertWidget(0, _up_widget);
@@ -154,10 +198,20 @@ ProtocolDock::ProtocolDock(QWidget *parent, SigSession &session) :
     connect(this, SIGNAL(protocol_updated()), this, SLOT(update_model()));
     connect(_table_view, SIGNAL(clicked(QModelIndex)), this, SLOT(item_clicked(QModelIndex)));
     connect(_table_view->horizontalHeader(), SIGNAL(sectionResized(int,int,int)), this, SLOT(column_resize(int, int, int)));
+    //connect(_table_view->verticalScrollBar(), SIGNAL(sliderMoved()), this, SLOT(sliderMoved()));
+    connect(_search_edit, SIGNAL(editingFinished()), this, SLOT(search_done()));
 }
 
 ProtocolDock::~ProtocolDock()
 {
+}
+
+void ProtocolDock::paintEvent(QPaintEvent *)
+{
+//    QStyleOption opt;
+//    opt.init(this);
+//    QPainter p(this);
+//    style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 }
 
 int ProtocolDock::decoder_name_cmp(const void *a, const void *b)
@@ -220,7 +274,7 @@ void ProtocolDock::add_protocol()
             // progress connection
             const std::vector< boost::shared_ptr<pv::view::DecodeTrace> > decode_sigs(
                 _session.get_decode_signals());
-            connect(decode_sigs.back().get(), SIGNAL(decoded_progress(int)), this, SLOT(decoded_progess(int)));
+            connect(decode_sigs.back().get(), SIGNAL(decoded_progress(int)), this, SLOT(decoded_progress(int)));
 
             protocol_updated();
         }
@@ -339,23 +393,29 @@ void ProtocolDock::del_all_protocol()
     }
 }
 
-void ProtocolDock::decoded_progess(int progress)
+void ProtocolDock::decoded_progress(int progress)
 {
     (void) progress;
 
+    int pg;
+    QString err="";
     const std::vector< boost::shared_ptr<pv::view::DecodeTrace> > decode_sigs(
         _session.get_decode_signals());
     int index = 0;
     BOOST_FOREACH(boost::shared_ptr<pv::view::DecodeTrace> d, decode_sigs) {
-        QString progress_str = QString::number(d->get_progress()) + "%";
-        if (d->get_progress() == 100)
+        pg = d->get_progress();
+        if (d->decoder()->out_of_memory())
+            err = tr("(Out of Memory)");
+        QString progress_str = QString::number(pg) + "%" + err;
+        if (pg == 100)
             _progress_label_list.at(index)->setStyleSheet("color:green;");
         else
             _progress_label_list.at(index)->setStyleSheet("color:red;");
         _progress_label_list.at(index)->setText(progress_str);
         index++;
     }
-    update_model();
+    if (pg == 0 || pg % 10 == 1)
+        update_model();
 }
 
 void ProtocolDock::set_model()
@@ -363,6 +423,8 @@ void ProtocolDock::set_model()
     pv::dialogs::ProtocolList *protocollist_dlg = new pv::dialogs::ProtocolList(this, _session);
     protocollist_dlg->exec();
     resize_table_view(_session.get_decoder_model());
+    _model_proxy.setSourceModel(_session.get_decoder_model());
+    search_done();
 }
 
 void ProtocolDock::update_model()
@@ -386,7 +448,8 @@ void ProtocolDock::update_model()
         if (index >= decode_sigs.size())
             decoder_model->setDecoderStack(decode_sigs.at(0)->decoder());
     }
-
+    _model_proxy.setSourceModel(decoder_model);
+    search_done();
     resize_table_view(decoder_model);
 }
 
@@ -417,10 +480,50 @@ void ProtocolDock::item_clicked(const QModelIndex &index)
             _session.show_region(ann.start_sample(), ann.end_sample());
         }
     }
+    _table_view->resizeRowToContents(index.row());
+    if (index.column() != _model_proxy.filterKeyColumn()) {
+        _model_proxy.setFilterKeyColumn(index.column());
+        _model_proxy.setSourceModel(decoder_model);
+        search_done();
+    }
+    QModelIndex filterIndex = _model_proxy.mapFromSource(index);
+    if (filterIndex.isValid()) {
+        _cur_search_index = filterIndex.row();
+    } else {
+        if (_model_proxy.rowCount() == 0) {
+            _cur_search_index = -1;
+        } else {
+            uint64_t up = 0;
+            uint64_t dn = _model_proxy.rowCount() - 1;
+            do {
+                uint64_t md = (up + dn)/2;
+                QModelIndex curIndex = _model_proxy.mapToSource(_model_proxy.index(md,_model_proxy.filterKeyColumn()));
+                if (index.row() == curIndex.row()) {
+                    _cur_search_index = md;
+                    break;
+                } else if (md == up) {
+                    if (curIndex.row() < index.row() && up < dn) {
+                        QModelIndex nxtIndex = _model_proxy.mapToSource(_model_proxy.index(md+1,_model_proxy.filterKeyColumn()));
+                        if (nxtIndex.row() < index.row())
+                            md++;
+                    }
+                    _cur_search_index = md + ((curIndex.row() < index.row()) ? 0.5 : -0.5);
+                    break;
+                } else if (curIndex.row() < index.row()) {
+                    up = md;
+                } else if (curIndex.row() > index.row()) {
+                    dn = md;
+                }
+            }while(1);
+        }
+    }
 }
 
 void ProtocolDock::column_resize(int index, int old_size, int new_size)
 {
+    (void)index;
+    (void)old_size;
+    (void)new_size;
     pv::data::DecoderModel *decoder_model = _session.get_decoder_model();
     if (decoder_model->getDecoderStack()) {
         int top_row = _table_view->rowAt(0);
@@ -437,6 +540,48 @@ void ProtocolDock::export_table_view()
     pv::dialogs::ProtocolExp *protocolexp_dlg = new pv::dialogs::ProtocolExp(this, _session);
     protocolexp_dlg->exec();
 }
+
+void ProtocolDock::search_pre()
+{
+    // now the proxy only contains rows that match the name
+    // let's take the pre one and map it to the original model
+    if (_model_proxy.rowCount() == 0)
+        return;
+    _cur_search_index -= 1;
+    if (_cur_search_index <= -1 || _cur_search_index >= _model_proxy.rowCount())
+        _cur_search_index = _model_proxy.rowCount() - 1;
+    QModelIndex matchingIndex = _model_proxy.mapToSource(_model_proxy.index(ceil(_cur_search_index),_model_proxy.filterKeyColumn()));
+    if(matchingIndex.isValid()){
+        _table_view->scrollTo(matchingIndex);
+        _table_view->setCurrentIndex(matchingIndex);
+        _table_view->clicked(matchingIndex);
+    }
+}
+
+void ProtocolDock::search_nxt()
+{
+    // now the proxy only contains rows that match the name
+    // let's take the pre one and map it to the original model
+    if (_model_proxy.rowCount() == 0)
+        return;
+    _cur_search_index += 1;
+    if (_cur_search_index < 0 || _cur_search_index >= _model_proxy.rowCount())
+        _cur_search_index = 0;
+    QModelIndex matchingIndex = _model_proxy.mapToSource(_model_proxy.index(floor(_cur_search_index),_model_proxy.filterKeyColumn()));
+    if(matchingIndex.isValid()){
+        _table_view->scrollTo(matchingIndex);
+        _table_view->setCurrentIndex(matchingIndex);
+        _table_view->clicked(matchingIndex);
+    }
+}
+
+void ProtocolDock::search_done()
+{
+    QString str = _search_edit->text().trimmed();
+    _model_proxy.setFilterFixedString(str);
+    _matchs_label->setText(QString::number(_model_proxy.rowCount()));
+}
+
 
 } // namespace dock
 } // namespace pv

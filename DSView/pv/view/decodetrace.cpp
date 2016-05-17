@@ -792,7 +792,9 @@ void DecodeTrace::on_new_decode_data()
 {
     uint64_t real_end = min(_decoder_stack->sample_count(), _decode_end+1);
     const int64_t need_sample_count = real_end - _decode_start;
-    if (need_sample_count <= 0) {
+    if (real_end == 0) {
+        _progress = 0;
+    } else if (need_sample_count <= 0) {
         _progress = 100;
     } else {
         const uint64_t samples_decoded = _decoder_stack->samples_decoded();

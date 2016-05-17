@@ -653,5 +653,10 @@ void DecoderStack::set_options_changed(bool changed)
     _options_changed = changed;
 }
 
+bool DecoderStack::out_of_memory() const
+{
+    return _no_memory;
+}
+
 } // namespace data
 } // namespace pv

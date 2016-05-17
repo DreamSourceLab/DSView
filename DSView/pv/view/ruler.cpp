@@ -182,6 +182,7 @@ void Ruler::paintEvent(QPaintEvent*)
     QPainter p(this);
     style()->drawPrimitive(QStyle::PE_Widget, &o, &p, this);
 
+    p.begin(this);
     //QPainter p(this);
     //p.setRenderHint(QPainter::Antialiasing);
 
