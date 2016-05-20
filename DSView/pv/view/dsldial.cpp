@@ -1,6 +1,7 @@
 #include "dsldial.h"
 
-#include <assert.h>
+#include <cassert>
+#include <cmath>
 
 namespace pv {
 namespace view {
