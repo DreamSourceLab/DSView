@@ -20,8 +20,7 @@
 
 #ifndef DSVIEW_PV_DATA_DECODERSTACK_H
 #define DSVIEW_PV_DATA_DECODERSTACK_H
-
-#include "signaldata.h"
+#include <libsigrokdecode/libsigrokdecode.h>
 
 #include <list>
 
@@ -32,14 +31,9 @@
 #include <QObject>
 #include <QString>
 
-#include <pv/data/decode/row.h>
-#include <pv/data/decode/rowdata.h>
-
-struct srd_decoder;
-struct srd_decoder_annotation_row;
-struct srd_channel;
-struct srd_proto_data;
-struct srd_session;
+#include <../data/decode/row.h>
+#include <../data/decode/rowdata.h>
+#include <../data/signaldata.h>
 
 namespace DecoderStackTest {
 class TwoDecoderStack;

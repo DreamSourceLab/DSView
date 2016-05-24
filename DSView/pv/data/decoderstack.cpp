@@ -17,12 +17,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
-#include <libsigrokdecode/libsigrokdecode.h>
-
 #include <boost/foreach.hpp>
 #include <boost/thread/thread.hpp>
 
 #include <stdexcept>
+#include <algorithm>
 
 #include <QDebug>
 
@@ -57,6 +56,7 @@ namespace data {
 const double DecoderStack::DecodeMargin = 1.0;
 const double DecoderStack::DecodeThreshold = 0.2;
 const int64_t DecoderStack::DecodeChunkLength = 4 * 1024;
+//const int64_t DecoderStack::DecodeChunkLength = 1024 * 1024;
 const unsigned int DecoderStack::DecodeNotifyPeriod = 1024;
 
 mutex DecoderStack::_global_decode_mutex;
@@ -443,11 +443,22 @@ void DecoderStack::decode_data(
     uint64_t notify_cnt = (decode_end - decode_start + 1)/100;
     const uint64_t chunk_sample_count =
         DecodeChunkLength / _snapshot->unit_size();
+    srd_decoder_inst *logic_di = NULL;
+    // find the first level decoder instant
+    for (GSList *d = session->di_list; d; d = d->next) {
+        srd_decoder_inst *di = (srd_decoder_inst *)d->data;
+        srd_decoder *decoder = di->decoder;
+        const bool have_probes = (decoder->channels || decoder->opt_channels) != 0;
+        if (have_probes) {
+            logic_di = di;
+            break;
+        }
+    }
 
-    for (uint64_t i = decode_start;
-        !boost::this_thread::interruption_requested() &&
-            i < decode_end && !_no_memory;
-        i += chunk_sample_count)
+    uint8_t chunk_type = 0;
+    uint64_t i = decode_start;
+    while(!boost::this_thread::interruption_requested() &&
+          i < decode_end && !_no_memory)
     {
         //lock_guard<mutex> decode_lock(_global_decode_mutex);
 
@@ -455,22 +466,56 @@ void DecoderStack::decode_data(
             i + chunk_sample_count, decode_end);
         chunk = _snapshot->get_samples(i, chunk_end);
 
-        if (srd_session_send(session, i, chunk_end, chunk,
+        if (srd_session_send(session, chunk_type, i, chunk_end, chunk,
                 (chunk_end - i) * unit_size, unit_size) != SRD_OK) {
             _error_message = tr("Decoder reported an error");
             break;
         }
 
+        if (logic_di && logic_di->logic_mask != 0) {
+            uint64_t cur_pos = logic_di->cur_pos;
+            uint64_t sample = _snapshot->get_sample(cur_pos) & logic_di->logic_mask;
+            if (logic_di->edge_index == -1) {
+                std::vector<uint64_t> pos_vector;
+                cur_pos++;
+                for (int j =0 ; j < logic_di->dec_num_channels; j++) {
+                    int index = logic_di->dec_channelmap[j];
+                    if (index != -1 && (logic_di->logic_mask & (1 << index))) {
+                        bool last_sample = (sample & (1 << index)) ? 1 : 0;
+                        pos_vector.push_back(cur_pos);
+                        _snapshot->get_nxt_edge(pos_vector.back(), last_sample, decode_end, 1, index);
+                    }
+                }
+                cur_pos = *std::min_element(pos_vector.begin(), pos_vector.end());
+            } else {
+                bool last_sample = (sample & (1 << logic_di->edge_index)) ? 1 : 0;
+                do {
+                    cur_pos++;
+                    if (!_snapshot->get_nxt_edge(cur_pos, last_sample, decode_end, 1, logic_di->edge_index))
+                        break;
+                    sample = _snapshot->get_sample(cur_pos) & logic_di->logic_mask;
+                    last_sample = (sample & (1 << logic_di->edge_index)) ? 1 : 0;
+                } while(sample != logic_di->exp_logic);
+            }
+
+            i = cur_pos;
+            if (i >= decode_end)
+                i = decode_end;
+            chunk_type = 0;
+        } else {
+            i += chunk_sample_count;
+            chunk_type = 1;
+        }
+
         {
             lock_guard<mutex> lock(_output_mutex);
-            _samples_decoded = chunk_end - decode_start + 1;
+            _samples_decoded = i - decode_start + 1;
         }
 
         if ((i - last_cnt) > notify_cnt) {
             last_cnt = i;
             new_decode_data();
         }
-
     }
     _options_changed = false;
     decode_done();

@@ -23,6 +23,8 @@
 
 #include <extdef.h>
 
+#include <QDebug>
+
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
@@ -208,25 +210,25 @@ void LogicSnapshot::get_subsampled_edges(
 	uint64_t start, uint64_t end,
 	float min_length, int sig_index)
 {
-	uint64_t index = start;
-	bool last_sample;
+    if (!edges.empty())
+        edges.clear();
 
-    assert(end <= get_sample_count());
+    if (_sample_count == 0)
+        return;
+
+    assert(end < _sample_count);
 	assert(start <= end);
 	assert(min_length > 0);
 	assert(sig_index >= 0);
 	assert(sig_index < 64);
 
-    if (_data.size() == 0)
-        return;
-
 	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
-
+    uint64_t index = start;
+    bool last_sample;
 	const uint64_t block_length = (uint64_t)max(min_length, 1.0f);
 	const uint64_t sig_mask = 1ULL << sig_index;
 
-    if (!edges.empty())
-        edges.clear();
+
 	// Store the initial state
 	last_sample = (get_sample(start) & sig_mask) != 0;
 	edges.push_back(pair<int64_t, bool>(index++, last_sample));

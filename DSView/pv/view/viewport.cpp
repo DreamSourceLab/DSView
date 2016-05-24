@@ -128,7 +128,7 @@ void Viewport::paintEvent(QPaintEvent *event)
     QPainter p(this);
     style()->drawPrimitive(QStyle::PE_Widget, &o, &p, this);
 
-    p.begin(this);
+    //p.begin(this);
     const vector< boost::shared_ptr<Trace> > traces(_view.get_traces(_type));
     BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
     {

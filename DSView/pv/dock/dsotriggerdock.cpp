@@ -155,10 +155,10 @@ DsoTriggerDock::~DsoTriggerDock()
 
 void DsoTriggerDock::paintEvent(QPaintEvent *)
 {
-    QStyleOption opt;
-    opt.init(this);
-    QPainter p(this);
-    style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
+//    QStyleOption opt;
+//    opt.init(this);
+//    QPainter p(this);
+//    style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 }
 
 void DsoTriggerDock::pos_changed(int pos)

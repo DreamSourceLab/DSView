@@ -35,6 +35,7 @@
 #include <QFile>
 #include <QDir>
 
+#include "dsapplication.h"
 #include "pv/devicemanager.h"
 #include "pv/mainwindow.h"
 
@@ -59,7 +60,7 @@ int main(int argc, char *argv[])
 	struct sr_context *sr_ctx = NULL;
 	const char *open_file = NULL;
 
-	QApplication a(argc, argv);
+    DSApplication a(argc, argv);
 
     // Language
 #ifdef LANGUAGE_ZH_CN

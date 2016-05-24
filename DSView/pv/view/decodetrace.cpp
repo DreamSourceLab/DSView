@@ -197,6 +197,41 @@ void DecodeTrace::paint_back(QPainter &p, int left, int right)
     p.drawPolygon(start_points, countof(start_points));
     p.drawPolygon(end_points, countof(end_points));
 
+    // --draw headings
+    const int row_height = _view->get_signalHeight();
+    for (size_t i = 0; i < _cur_row_headings.size(); i++)
+    {
+        const int y = i * row_height + get_y() - _totalHeight * 0.5;
+
+        p.setPen(QPen(Qt::NoPen));
+        p.setBrush(QApplication::palette().brush(QPalette::WindowText));
+
+        const QRect r(left + ArrowSize * 2, y,
+            right - left, row_height / 2);
+        const QString h(_cur_row_headings[i]);
+        const int f = Qt::AlignLeft | Qt::AlignVCenter |
+            Qt::TextDontClip;
+        const QPointF points[] = {
+            QPointF(left, r.center().y() - ArrowSize),
+            QPointF(left + ArrowSize, r.center().y()),
+            QPointF(left, r.center().y() + ArrowSize)
+        };
+        p.drawPolygon(points, countof(points));
+
+        // Draw the outline
+        QFont font=p.font();
+        font.setPointSize(DefaultFontSize);
+        p.setFont(font);
+//		p.setPen(QApplication::palette().color(QPalette::Base));
+//		for (int dx = -1; dx <= 1; dx++)
+//			for (int dy = -1; dy <= 1; dy++)
+//				if (dx != 0 && dy != 0)
+//					p.drawText(r.translated(dx, dy), f, h);
+
+        // Draw the text
+        p.setPen(DARK_FORE);
+        p.drawText(r, f, h);
+    }
 }
 
 void DecodeTrace::paint_mid(QPainter &p, int left, int right)
@@ -300,45 +335,45 @@ void DecodeTrace::paint_fore(QPainter &p, int left, int right)
 
 	(void)right;
 
-    const int row_height = _view->get_signalHeight();
+//    const int row_height = _view->get_signalHeight();
 
-	for (size_t i = 0; i < _cur_row_headings.size(); i++)
-	{
-        const int y = (i + 0.5) * row_height + get_y() - _totalHeight * 0.5;
+//	for (size_t i = 0; i < _cur_row_headings.size(); i++)
+//	{
+//        const int y = (i + 0.5) * row_height + get_y() - _totalHeight * 0.5;
 
-		p.setPen(QPen(Qt::NoPen));
-		p.setBrush(QApplication::palette().brush(QPalette::WindowText));
+//		p.setPen(QPen(Qt::NoPen));
+//		p.setBrush(QApplication::palette().brush(QPalette::WindowText));
 
-		if (i != 0)
-		{
-			const QPointF points[] = {
-				QPointF(left, y - ArrowSize),
-				QPointF(left + ArrowSize, y),
-				QPointF(left, y + ArrowSize)
-			};
-			p.drawPolygon(points, countof(points));
-		}
+//		if (i != 0)
+//		{
+//			const QPointF points[] = {
+//				QPointF(left, y - ArrowSize),
+//				QPointF(left + ArrowSize, y),
+//				QPointF(left, y + ArrowSize)
+//			};
+//			p.drawPolygon(points, countof(points));
+//		}
 
-		const QRect r(left + ArrowSize * 2, y - row_height / 2,
-			right - left, row_height);
-		const QString h(_cur_row_headings[i]);
-        const int f = Qt::AlignLeft | Qt::AlignBottom |
-			Qt::TextDontClip;
+//		const QRect r(left + ArrowSize * 2, y - row_height / 2,
+//			right - left, row_height);
+//		const QString h(_cur_row_headings[i]);
+//        const int f = Qt::AlignLeft | Qt::AlignBottom |
+//			Qt::TextDontClip;
 
-		// Draw the outline
-        QFont font=p.font();
-        font.setPointSize(DefaultFontSize);
-        p.setFont(font);
-		p.setPen(QApplication::palette().color(QPalette::Base));
-		for (int dx = -1; dx <= 1; dx++)
-			for (int dy = -1; dy <= 1; dy++)
-				if (dx != 0 && dy != 0)
-					p.drawText(r.translated(dx, dy), f, h);
+//		// Draw the outline
+//        QFont font=p.font();
+//        font.setPointSize(DefaultFontSize);
+//        p.setFont(font);
+////		p.setPen(QApplication::palette().color(QPalette::Base));
+////		for (int dx = -1; dx <= 1; dx++)
+////			for (int dy = -1; dy <= 1; dy++)
+////				if (dx != 0 && dy != 0)
+////					p.drawText(r.translated(dx, dy), f, h);
 
-		// Draw the text
-		p.setPen(QApplication::palette().color(QPalette::WindowText));
-		p.drawText(r, f, h);
-	}
+//		// Draw the text
+//        p.setPen(DARK_FORE);
+//		p.drawText(r, f, h);
+//	}
 }
 
 bool DecodeTrace::create_popup()
@@ -506,7 +541,7 @@ void DecodeTrace::draw_nodetail(QPainter &p,
     size_t base_colour) const
 {
     const QRectF nodetail_rect(left, y - h/2 + 0.5, right - left, h);
-    QString info = tr("Zoom in For Detial");
+    QString info = tr("Zoom in For Detials");
     int info_left = nodetail_rect.center().x() - p.boundingRect(QRectF(), 0, info).width();
     int info_right = nodetail_rect.center().x() + p.boundingRect(QRectF(), 0, info).width();
     int height = p.boundingRect(QRectF(), 0, info).height();

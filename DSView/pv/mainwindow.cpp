@@ -112,7 +112,7 @@ void MainWindow::setup_ui()
 {
 	setObjectName(QString::fromUtf8("MainWindow"));
     setMinimumHeight(680);
-    setMinimumWidth(500);
+    setMinimumWidth(800);
 	resize(1024, 768);
 
 	// Set the window icon

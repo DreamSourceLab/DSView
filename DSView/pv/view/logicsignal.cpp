@@ -23,6 +23,8 @@
 
 #include <extdef.h>
 
+#include <QDebug>
+
 #include <math.h>
 
 #include "logicsignal.h"
