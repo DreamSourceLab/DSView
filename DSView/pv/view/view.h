@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -231,6 +231,8 @@ public slots:
     void data_updated();
     void update_scale_offset();
     void show_region(uint64_t start, uint64_t end);
+    // -- calibration
+    void update_calibration();
 
 private slots:
 
@@ -245,6 +247,9 @@ private slots:
 
     void set_trig_pos(quint64 trig_pos);
 
+    // calibration for oscilloscope
+    void show_calibration();
+    void hide_calibration();
     void on_measure_updated();
 
     void splitterMoved(int pos, int index);
@@ -292,7 +297,7 @@ private:
         uint64_t _search_pos;
 
         QPointF _hover_point;
-
+    	dialogs::Calibration *_cali;
         QDateTime _trigger_time;
 };
 

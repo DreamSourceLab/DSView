@@ -2,8 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,7 +45,8 @@ private:
     static const int TIP_WIDTH = 100;
     static const int TIP_HEIGHT = 40;
     static const int WPOINTS_NUM = 6;
-    static const QString TIPS_INFO;
+    static const QString TIPS_WAIT;
+    static const QString TIPS_FINISHED;
 
 public:
     WaitingDialog(QWidget *parent, boost::shared_ptr<pv::device::DevInst> dev_inst);

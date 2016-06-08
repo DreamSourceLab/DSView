@@ -2,7 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -263,6 +263,7 @@ bool DsoSignal::go_vDialPre()
         if (_view->session().get_capture_state() == SigSession::Stopped)
             _scale *= pre_vdiv/_vDial->get_value();
         update_zeroPos();
+        _view->update_calibration();
         _view->set_update(_viewport, true);
         _view->update();
         return true;
@@ -282,6 +283,7 @@ bool DsoSignal::go_vDialNext()
         if (_view->session().get_capture_state() == SigSession::Stopped)
             _scale *= pre_vdiv/_vDial->get_value();
         update_zeroPos();
+		_view->update_calibration();
         _view->set_update(_viewport, true);
         _view->update();
         return true;
@@ -469,7 +471,7 @@ bool DsoSignal::load_settings()
         vdiv = g_variant_get_uint64(gvar);
         g_variant_unref(gvar);
     } else {
-        qDebug() << "ERROR: config_get SR_CONF_TIMEBASE failed.";
+        qDebug() << "ERROR: config_get SR_CONF_VDIV failed.";
         return false;
     }
     gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_FACTOR);
@@ -477,7 +479,7 @@ bool DsoSignal::load_settings()
         vfactor = g_variant_get_uint64(gvar);
         g_variant_unref(gvar);
     } else {
-        qDebug() << "ERROR: config_get SR_CONF_TIMEBASE failed.";
+        qDebug() << "ERROR: config_get SR_CONF_FACTOR failed.";
         return false;
     }
 
@@ -506,17 +508,63 @@ bool DsoSignal::load_settings()
         vpos = g_variant_get_double(gvar);
         g_variant_unref(gvar);
     } else {
-        qDebug() << "ERROR: config_get SR_CONF_COUPLING failed.";
+        qDebug() << "ERROR: config_get SR_CONF_VPOS failed.";
         return false;
     }
     _zeroPos = min(max((0.5 - vpos / (_vDial->get_value() * DS_CONF_DSO_VDIVS)), 0.0), 1.0);
     _zero_off = _zeroPos * 255;
+
+    // -- trig_value
+    uint8_t trigger_value;
+    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_TRIGGER_VALUE);
+    if (gvar != NULL) {
+        trigger_value = g_variant_get_byte(gvar);
+        g_variant_unref(gvar);
+    } else {
+        qDebug() << "ERROR: config_get SR_CONF_TRIGGER_VALUE failed.";
+        return false;
+    }
+    bool isDSCope = (strcmp(_dev_inst->dev_inst()->driver->name, "DSCope") == 0);
+    if (isDSCope) {
+        _trig_vpos = min(max(trigger_value/255.0, 0+TrigMargin), 1-TrigMargin);
+    } else {
+        _trig_vpos = min(max(_zeroPos + ((trigger_value - 0x80) / 255.0), 0+TrigMargin), 1-TrigMargin);
+    }
 
     if (_view) {
         _view->set_update(_viewport, true);
         _view->update();
     }
     return true;
+}
+
+int DsoSignal::commit_settings()
+{
+    int ret;
+    // -- enable
+    ret = _dev_inst->set_config(_probe, NULL, SR_CONF_EN_CH,
+                                g_variant_new_boolean(enabled()));
+
+    // -- hdiv
+    ret = _dev_inst->set_config(_probe, NULL, SR_CONF_TIMEBASE,
+                                g_variant_new_uint64(_hDial->get_value()));
+
+    // -- vdiv
+    ret = _dev_inst->set_config(_probe, NULL, SR_CONF_VDIV,
+                                g_variant_new_uint64(_vDial->get_value()));
+    ret = _dev_inst->set_config(_probe, NULL, SR_CONF_FACTOR,
+                                g_variant_new_uint64(_vDial->get_factor()));
+
+    // -- coupling
+    ret = _dev_inst->set_config(_probe, NULL, SR_CONF_COUPLING,
+                                g_variant_new_byte(_acCoupling));
+
+    // -- vpos
+    double vpos_off = (0.5 - (get_zeroPos() - UpMargin) * 1.0/get_view_rect().height()) * _vDial->get_value() * DS_CONF_DSO_VDIVS;
+    ret = _dev_inst->set_config(_probe, NULL, SR_CONF_VPOS,
+                                g_variant_new_double(vpos_off));
+
+    return ret;
 }
 
 uint64_t DsoSignal::get_vDialValue() const
@@ -571,14 +619,14 @@ void DsoSignal::set_trig_vpos(int pos)
         double delta = min((double)max(pos - UpMargin, 0), get_view_rect().height()) * 1.0 / get_view_rect().height();
         bool isDSCope = (strcmp(_dev_inst->dev_inst()->driver->name, "DSCope") == 0);
         if (isDSCope) {
-            _trig_vpos = min(max(delta, 0+TrigMargin), 1-TrigMargin);
-            trig_value = delta * 255;
+            trig_value = delta * 255.0 + 0.5;
+            _trig_vpos = min(max(trig_value/255.0, 0+TrigMargin), 1-TrigMargin);
         } else {
             delta = delta - _zeroPos;
             delta = min(delta, 0.5);
             delta = max(delta, -0.5);
-            _trig_vpos = min(max(_zeroPos + delta, 0+TrigMargin), 1-TrigMargin);
             trig_value = (delta * 255.0f + 0x80);
+            _trig_vpos = min(max(_zeroPos + (trig_value - 0x80) / 255.0, 0+TrigMargin), 1-TrigMargin);
         }
         _dev_inst->set_config(_probe, NULL, SR_CONF_TRIGGER_VALUE,
                               g_variant_new_byte(trig_value));
@@ -591,14 +639,15 @@ void DsoSignal::set_trigRate(double rate)
     double delta = rate;
     bool isDSCope = (strcmp(_dev_inst->dev_inst()->driver->name, "DSCope") == 0);
     if (isDSCope) {
-        _trig_vpos = min(max(delta, 0+TrigMargin), 1-TrigMargin);
-        trig_value = delta * 255;
+        trig_value = delta * 255.0 + 0.5;
+        _trig_vpos = min(max(trig_value/255.0, 0+TrigMargin), 1-TrigMargin);
+
     } else {
         delta = delta - _zeroPos;
         delta = min(delta, 0.5);
         delta = max(delta, -0.5);
-        _trig_vpos = min(max(_zeroPos + delta, 0+TrigMargin), 1-TrigMargin);
         trig_value = (delta * 255.0f + 0x80);
+        _trig_vpos = min(max(_zeroPos + (trig_value - 0x80) / 255.0, 0+TrigMargin), 1-TrigMargin);
     }
     _dev_inst->set_config(_probe, NULL, SR_CONF_TRIGGER_VALUE,
                           g_variant_new_byte(trig_value));
@@ -764,8 +813,8 @@ void DsoSignal::paint_back(QPainter &p, int left, int right)
 
     p.setPen(Trace::dsLightBlue);
     p.drawLine(left, UpMargin/2, left + width, UpMargin/2);
-    const uint64_t sample_len = _view->session().get_device()->get_sample_limit();
-    const double samplerate = _view->session().get_device()->get_sample_rate();
+    const uint64_t sample_len = _dev_inst->get_sample_limit();
+    const double samplerate = _dev_inst->get_sample_rate();
     const double samples_per_pixel = samplerate * _view->scale();
     const double shown_rate = min(samples_per_pixel * width * 1.0 / sample_len, 1.0);
     const double start_time = _data->get_start_time();
@@ -845,7 +894,7 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right)
 
         const double pixels_offset = offset / scale;
         //const double samplerate = _data->samplerate();
-        const double samplerate = _view->session().get_device()->get_sample_rate();
+        const double samplerate = _dev_inst->get_sample_rate();
         const double start_time = _data->get_start_time();
         const int64_t last_sample = max((int64_t)(snapshot->get_sample_count() - 1), (int64_t)0);
         const double samples_per_pixel = samplerate * scale;
@@ -1153,7 +1202,7 @@ bool DsoSignal::mouse_press(int right, const QPoint pt)
            if (strcmp(_view->session().get_device()->dev_inst()->driver->name, "DSLogic") == 0)
                set_acCoupling((get_acCoupling()+1)%2);
            else
-               set_acCoupling((get_acCoupling()+1)%3);
+               set_acCoupling((get_acCoupling()+1)%2);
         } else if (x1_rect.contains(pt)) {
            set_factor(1);
         } else if (x10_rect.contains(pt)) {
@@ -1282,7 +1331,7 @@ void DsoSignal::paint_measure(QPainter &p)
         double value_p2p = value_max - value_min;
         _period = (count == 0) ? period * 10.0 : period * 10.0 / count;
         const int channel_count = _view->session().get_ch_num(SR_CHANNEL_DSO);
-        uint64_t sample_rate = _view->session().get_device()->get_sample_rate();
+        uint64_t sample_rate = _dev_inst->get_sample_rate();
         _period = _period * 200.0 / (channel_count * sample_rate * 1.0 / SR_MHZ(1));
         _ms_string[DSO_MS_VMAX] = "Vmax: " + (abs(value_max) > 1000 ? QString::number(value_max/1000.0, 'f', 2) + "V" : QString::number(value_max, 'f', 2) + "mV");
         _ms_string[DSO_MS_VMIN] = "Vmin: " + (abs(value_min) > 1000 ? QString::number(value_min/1000.0, 'f', 2) + "V" : QString::number(value_min, 'f', 2) + "mV");
@@ -1457,7 +1506,7 @@ bool DsoSignal::measure(const QPointF &p)
     assert(scale > 0);
     const double offset = _view->offset();
     const double pixels_offset = offset / scale;
-    const double samplerate = _view->session().get_device()->get_sample_rate();
+    const double samplerate = _dev_inst->get_sample_rate();
     const double samples_per_pixel = samplerate * scale;
 
     _hover_index = floor((p.x() + pixels_offset) * samples_per_pixel+0.5);

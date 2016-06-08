@@ -2,8 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +26,9 @@
 
 #include <QMovie>
 #include <QAbstractButton>
+#include <QFuture>
+#include <QProgressDialog>
+#include <QtConcurrent/QtConcurrent>
 
 #include "libsigrok4DSL/libsigrok.h"
 #include "../view/trace.h"
@@ -37,7 +39,8 @@ using namespace std;
 namespace pv {
 namespace dialogs {
 
-const QString WaitingDialog::TIPS_INFO = tr("Waiting");
+const QString WaitingDialog::TIPS_WAIT = tr("Waiting");
+const QString WaitingDialog::TIPS_FINISHED = tr("Finished!");
 
 WaitingDialog::WaitingDialog(QWidget *parent, boost::shared_ptr<pv::device::DevInst> dev_inst) :
 	QDialog(parent),
@@ -58,7 +61,7 @@ WaitingDialog::WaitingDialog(QWidget *parent, boost::shared_ptr<pv::device::DevI
     label->setMovie(movie);
 
     tips = new QLabel(this);
-    tips->setText(TIPS_INFO);
+    tips->setText(TIPS_WAIT);
     QFont font;
     font.setPointSize(10);
     font.setBold(true);
@@ -79,12 +82,29 @@ WaitingDialog::WaitingDialog(QWidget *parent, boost::shared_ptr<pv::device::DevI
 void WaitingDialog::accept()
 {
 	using namespace Qt;
-
     movie->stop();
     timer->stop();
+    QDialog::accept();
 
-    _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO_SET, g_variant_new_boolean(true));
-	QDialog::accept();
+    QFuture<void> future;
+    future = QtConcurrent::run([&]{
+        QTime dieTime = QTime::currentTime().addSecs(1);
+        _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO_SET,
+                              g_variant_new_boolean(true));
+        while( QTime::currentTime() < dieTime );
+    });
+    Qt::WindowFlags flags = Qt::CustomizeWindowHint;
+    QProgressDialog dlg(tr("Save Auto Zero Result... It can take a while."),
+                        tr("Cancel"),0,0,this,flags);
+    dlg.setWindowModality(Qt::WindowModal);
+    dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
+    dlg.setCancelButton(NULL);
+
+    QFutureWatcher<void> watcher;
+    watcher.setFuture(future);
+    connect(&watcher,SIGNAL(finished()),&dlg,SLOT(cancel()));
+
+    dlg.exec();
 }
 
 void WaitingDialog::reject()
@@ -94,6 +114,27 @@ void WaitingDialog::reject()
     movie->stop();
     timer->stop();
     QDialog::reject();
+
+    QFuture<void> future;
+    future = QtConcurrent::run([&]{
+        QTime dieTime = QTime::currentTime().addSecs(1);
+        _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO, g_variant_new_boolean(false));
+        _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO_LOAD,
+                              g_variant_new_boolean(true));
+        while( QTime::currentTime() < dieTime );
+    });
+    Qt::WindowFlags flags = Qt::CustomizeWindowHint;
+    QProgressDialog dlg(tr("Load Current Setting... It can take a while."),
+                        tr("Cancel"),0,0,this,flags);
+    dlg.setWindowModality(Qt::WindowModal);
+    dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
+    dlg.setCancelButton(NULL);
+
+    QFutureWatcher<void> watcher;
+    connect(&watcher,SIGNAL(finished()),&dlg,SLOT(cancel()));
+    watcher.setFuture(future);
+
+    dlg.exec();
 }
 
 void WaitingDialog::start()
@@ -105,19 +146,24 @@ void WaitingDialog::start()
 
 void WaitingDialog::changeText()
 {
-    sr_status status;
     index++;
     if(index == WPOINTS_NUM + 1)
     {
-        tips->setText(TIPS_INFO);
+        tips->setText(TIPS_WAIT);
         index = 0;
-        sr_status_get(_dev_inst->dev_inst(), &status, 0, 0);
-        if (!status.zeroing) {
-            movie->stop();
-            movie->jumpToFrame(0);
-            timer->stop();
-            tips->setText("");
-            _button_box.buttons().front()->setVisible(true);
+
+        GVariant* gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_ZERO);
+        if (gvar != NULL) {
+            bool zero = g_variant_get_boolean(gvar);
+            g_variant_unref(gvar);
+            if (!zero) {
+                movie->stop();
+                movie->jumpToFrame(0);
+                timer->stop();
+                tips->setAlignment(Qt::AlignHCenter);
+                tips->setText(TIPS_FINISHED);
+                _button_box.buttons().front()->setVisible(true);
+            }
         }
     } else {
         tips->setText(tips->text()+".");

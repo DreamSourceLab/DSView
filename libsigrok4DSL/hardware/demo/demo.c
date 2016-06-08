@@ -278,6 +278,7 @@ static const char *probe_names[NUM_PROBES + 1] = {
     "CH8", "CH9", "CH10", "CH11",
     "CH12", "CH13", "CH14", "CH15",
 	NULL,
+
 };
 
 /* Private, per-device-instance driver context. */

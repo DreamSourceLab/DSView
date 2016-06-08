@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,6 +47,7 @@
 #include "pv/sigsession.h"
 #include "pv/data/logic.h"
 #include "pv/data/logicsnapshot.h"
+#include "pv/dialogs/calibration.h"
 
 using namespace boost;
 using namespace std;
@@ -179,6 +180,9 @@ View::View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     _show_search_cursor = false;
     _search_pos = 0;
     _search_cursor = new Cursor(*this, Trace::dsLightBlue, _search_pos);
+
+    _cali = new pv::dialogs::Calibration(this);
+    _cali->hide();
 }
 
 SigSession& View::session()
@@ -970,6 +974,25 @@ double View::get_max_offset()
 {
     return _session.cur_sampletime()
             - _scale * (get_view_width() * MaxViewRate);
+}
+
+// -- calibration dialog
+void View::show_calibration()
+{
+    _cali->set_device(_session.get_device());
+    _cali->show();
+}
+
+void View::hide_calibration()
+{
+    _cali->hide();
+}
+
+void View::update_calibration()
+{
+    if (_cali->isVisible()) {
+        _cali->set_device(_session.get_device());
+    }
 }
 
 QString View::trigger_time()

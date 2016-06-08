@@ -2,8 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -204,6 +203,8 @@ shared_ptr<pv::device::DevInst> SamplingBar::get_selected_device() const
 
 void SamplingBar::on_configure()
 {
+    hide_calibration();
+
     int  ret;
     shared_ptr<pv::device::DevInst> dev_inst = get_selected_device();
     assert(dev_inst);
@@ -215,17 +216,29 @@ void SamplingBar::on_configure()
         update_sample_count_selector();
         update_sample_rate_selector();
         commit_sample_rate();
+
+        GVariant* gvar;
+        if (dev_inst->dev_inst()->mode == DSO) {
+            gvar = dev_inst->get_config(NULL, NULL, SR_CONF_ZERO);
+            if (gvar != NULL) {
+                bool zero = g_variant_get_boolean(gvar);
+                g_variant_unref(gvar);
+                if (zero)
+                    zero_adj();
+            }
+
+            gvar = dev_inst->get_config(NULL, NULL, SR_CONF_CALI);
+            if (gvar != NULL) {
+                bool cali = g_variant_get_boolean(gvar);
+                g_variant_unref(gvar);
+                if (cali) {
+                    show_calibration();
+                }
+            }
+        }
     }
 
-    GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_ZERO);
-    if (gvar != NULL) {
-        bool zero = g_variant_get_boolean(gvar);
-        g_variant_unref(gvar);
-        if (zero)
-            zero_adj();
-    }
-
-    gvar = dev_inst->get_config(NULL, NULL, SR_CONF_TEST);
+    GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_TEST);
     if (gvar != NULL) {
         bool test = g_variant_get_boolean(gvar);
         g_variant_unref(gvar);
@@ -316,17 +329,6 @@ void SamplingBar::set_sampling(bool sampling)
         _run_stop_button.setEnabled(true);
         _instant_button.setEnabled(true);
     } else {
-//        bool running = false;
-//        boost::shared_ptr<pv::device::DevInst> dev_inst = get_selected_device();
-//        assert(dev_inst);
-//        while (!running) {
-//            GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_STATUS);
-//            if (gvar != NULL) {
-//                running = g_variant_get_boolean(gvar);
-//                g_variant_unref(gvar);
-//            }
-//            g_usleep(10000);
-//        }
         g_usleep(100000);
         if (_instant)
             _instant_button.setEnabled(true);
@@ -667,10 +669,18 @@ void SamplingBar::on_run_stop()
                 QMessageBox msg(this);
                 msg.setText(tr("Zero Adjustment"));
                 msg.setInformativeText(tr("Please adjust zero skew and save the result!"));
-                msg.setStandardButtons(QMessageBox::Ok);
+                //msg.setStandardButtons(QMessageBox::Ok);
+                msg.addButton(tr("Ok"), QMessageBox::AcceptRole);
+                msg.addButton(tr("Skip"), QMessageBox::RejectRole);
                 msg.setIcon(QMessageBox::Warning);
-                msg.exec();
-                zero_adj();
+                int ret = msg.exec();
+                if ( ret == QMessageBox::AcceptRole) {
+                    zero_adj();
+                } else {
+                    dev_inst->set_config(NULL, NULL, SR_CONF_ZERO, g_variant_new_boolean(false));
+                    enable_run_stop(true);
+                    enable_instant(true);
+                }
                 return;
             }
         }
@@ -696,14 +706,19 @@ void SamplingBar::on_instant_stop()
             if (zero) {
                 QMessageBox msg(this);
                 msg.setText(tr("Zero Adjustment"));
-                if(strcmp(dev_inst->dev_inst()->driver->name, "DSLogic") == 0)
-                    msg.setInformativeText(tr("Please adjust zero skew and save the result!\nPlease left both of channels unconnect for zero adjustment!"));
-                else
-                    msg.setInformativeText(tr("Please adjust zero skew and save the result!"));
-                msg.setStandardButtons(QMessageBox::Ok);
+                msg.setInformativeText(tr("Zero adjustment program will be started. Please keep all channels out of singal input. It can take a while!"));
+                //msg.setStandardButtons(QMessageBox::Ok);
+                msg.addButton(tr("Ok"), QMessageBox::AcceptRole);
+                msg.addButton(tr("Skip"), QMessageBox::RejectRole);
                 msg.setIcon(QMessageBox::Warning);
-                msg.exec();
-                zero_adj();
+                int ret = msg.exec();
+                if ( ret == QMessageBox::AcceptRole) {
+                    zero_adj();
+                } else {
+                    dev_inst->set_config(NULL, NULL, SR_CONF_ZERO, g_variant_new_boolean(false));
+                    enable_run_stop(true);
+                    enable_instant(true);
+                }
                 return;
             }
         }

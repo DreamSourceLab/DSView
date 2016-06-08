@@ -49,7 +49,6 @@
  *
  * @{
  */
-
 static struct sr_config_info sr_config_info_data[] = {
     {SR_CONF_CONN, SR_T_CHAR, "conn",
         "Connection", "Connection", NULL},

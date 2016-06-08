@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -194,6 +194,10 @@ void MainWindow::setup_ui()
         SLOT(instant_stop()));
     connect(_sampling_bar, SIGNAL(sample_count_changed()), _trigger_widget,
         SLOT(device_change()));
+    connect(_sampling_bar, SIGNAL(show_calibration()), _view,
+        SLOT(show_calibration()));
+    connect(_sampling_bar, SIGNAL(hide_calibration()), _view,
+        SLOT(hide_calibration()));
     connect(_dso_trigger_widget, SIGNAL(set_trig_pos(quint64)), _view,
         SLOT(set_trig_pos(quint64)));
     connect(_protocol_widget, SIGNAL(protocol_updated()), _view, SLOT(signals_changed()));
@@ -421,11 +425,7 @@ void MainWindow::run_stop()
 
 void MainWindow::instant_stop()
 {
-#ifdef TEST_MODE
-    disconnect(&test_timer, SIGNAL(timeout()),
-            this, SLOT(run_stop()));
-    test_timer_linked = false;
-#else
+
     switch(_session.get_capture_state()) {
     case SigSession::Init:
     case SigSession::Stopped:
@@ -441,16 +441,12 @@ void MainWindow::instant_stop()
         _session.stop_capture();
         break;
     }
-#endif
+
 }
 
 void MainWindow::test_data_error()
 {
-#ifdef TEST_MODE
-    disconnect(&test_timer, SIGNAL(timeout()),
-            this, SLOT(run_stop()));
-    test_timer_linked = false;
-#endif
+
     _session.stop_capture();
     QMessageBox msg(this);
     msg.setText(tr("Data Error"));
@@ -511,11 +507,7 @@ void MainWindow::capture_state_changed(int state)
                 }
             }
         }
-#ifdef TEST_MODE
-        if (state == SigSession::Stopped) {
-            test_timer.start(100);
-        }
-#endif
+
     }
 }
 

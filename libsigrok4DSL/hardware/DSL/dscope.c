@@ -139,8 +139,7 @@ static const uint64_t samplecounts[] = {
     SR_MB(32),
 };
 
-static const uint8_t zero_base_addr = 0x80;
-static const uint8_t comb_base_addr = 0xB0;
+static const uint8_t zero_base_addr = 0x40;
 
 SR_PRIV struct sr_dev_driver DSCope_driver_info;
 static struct sr_dev_driver *di = &DSCope_driver_info;
@@ -149,8 +148,51 @@ extern struct ds_trigger *trigger;
 
 gboolean mstatus_valid = FALSE;
 struct sr_status mstatus;
-struct cmd_zero_info zero_info;
-struct cmd_comb_info comb_info;
+
+static const uint64_t DSCOPE_DEFAULT_VGAIN[] = {
+    DSCOPE_DEFAULT_VGAIN0,
+    DSCOPE_DEFAULT_VGAIN1,
+    DSCOPE_DEFAULT_VGAIN2,
+    DSCOPE_DEFAULT_VGAIN3,
+    DSCOPE_DEFAULT_VGAIN4,
+    DSCOPE_DEFAULT_VGAIN5,
+    DSCOPE_DEFAULT_VGAIN6,
+    DSCOPE_DEFAULT_VGAIN7,
+};
+
+static const uint64_t DSCOPE20_DEFAULT_VGAIN[] = {
+    DSCOPE20_DEFAULT_VGAIN0,
+    DSCOPE20_DEFAULT_VGAIN1,
+    DSCOPE20_DEFAULT_VGAIN2,
+    DSCOPE20_DEFAULT_VGAIN3,
+    DSCOPE20_DEFAULT_VGAIN4,
+    DSCOPE20_DEFAULT_VGAIN5,
+    DSCOPE20_DEFAULT_VGAIN6,
+    DSCOPE20_DEFAULT_VGAIN7,
+};
+
+struct DSL_vga DSCope_vga[] = {
+    {10,  DSCOPE_DEFAULT_VGAIN0, DSCOPE_DEFAULT_VGAIN0, DSCOPE_DEFAULT_VOFF, DSCOPE_DEFAULT_VOFF},
+    {20,  DSCOPE_DEFAULT_VGAIN1, DSCOPE_DEFAULT_VGAIN1, DSCOPE_DEFAULT_VOFF, DSCOPE_DEFAULT_VOFF},
+    {50,  DSCOPE_DEFAULT_VGAIN2, DSCOPE_DEFAULT_VGAIN2, DSCOPE_DEFAULT_VOFF, DSCOPE_DEFAULT_VOFF},
+    {100, DSCOPE_DEFAULT_VGAIN3, DSCOPE_DEFAULT_VGAIN3, DSCOPE_DEFAULT_VOFF, DSCOPE_DEFAULT_VOFF},
+    {200, DSCOPE_DEFAULT_VGAIN4, DSCOPE_DEFAULT_VGAIN4, DSCOPE_DEFAULT_VOFF, DSCOPE_DEFAULT_VOFF},
+    {500, DSCOPE_DEFAULT_VGAIN5, DSCOPE_DEFAULT_VGAIN5, DSCOPE_DEFAULT_VOFF, DSCOPE_DEFAULT_VOFF},
+    {1000,DSCOPE_DEFAULT_VGAIN6, DSCOPE_DEFAULT_VGAIN6, DSCOPE_DEFAULT_VOFF, DSCOPE_DEFAULT_VOFF},
+    {2000,DSCOPE_DEFAULT_VGAIN7, DSCOPE_DEFAULT_VGAIN7, DSCOPE_DEFAULT_VOFF, DSCOPE_DEFAULT_VOFF},
+    {0, 0, 0, 0},
+};
+struct DSL_vga DSCope20_vga[] = {
+    {10,  DSCOPE20_DEFAULT_VGAIN0, DSCOPE20_DEFAULT_VGAIN0, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
+    {20,  DSCOPE20_DEFAULT_VGAIN1, DSCOPE20_DEFAULT_VGAIN1, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
+    {50,  DSCOPE20_DEFAULT_VGAIN2, DSCOPE20_DEFAULT_VGAIN2, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
+    {100, DSCOPE20_DEFAULT_VGAIN3, DSCOPE20_DEFAULT_VGAIN3, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
+    {200, DSCOPE20_DEFAULT_VGAIN4, DSCOPE20_DEFAULT_VGAIN4, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
+    {500, DSCOPE20_DEFAULT_VGAIN5, DSCOPE20_DEFAULT_VGAIN5, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
+    {1000,DSCOPE20_DEFAULT_VGAIN6, DSCOPE20_DEFAULT_VGAIN6, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
+    {2000,DSCOPE20_DEFAULT_VGAIN7, DSCOPE20_DEFAULT_VGAIN7, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
+    {0, 0, 0, 0},
+};
 
 /**
  * Check the USB configuration to determine if this is an DSCope device.
@@ -162,7 +204,7 @@ static gboolean check_conf_profile(libusb_device *dev)
 {
 	struct libusb_device_descriptor des;
     struct libusb_device_handle *hdl;
-	gboolean ret;
+    gboolean ret;
 	unsigned char strdesc[64];
 
 	hdl = NULL;
@@ -184,7 +226,7 @@ static gboolean check_conf_profile(libusb_device *dev)
 		if (libusb_get_string_descriptor_ascii(hdl,
 				des.iProduct, strdesc, sizeof(strdesc)) < 0)
 			break;
-        if (strncmp((const char *)strdesc, "DSCope", 6))
+        if (strncmp((const char *)strdesc, "USB-based Instrument", 20))
 			break;
 
         /* If we made it here, it must be an DSCope. */
@@ -261,8 +303,8 @@ static int fpga_setting(const struct sr_dev_inst *sdi)
                    ((devc->cur_samplerate == SR_MHZ(400)) << 6) +
                    ((sdi->mode == ANALOG) << 7) +
                    ((devc->filter == SR_FILTER_1T) << 8) +
-                   (devc->instant << 9) + (devc->zero << 10);
-    setting.divider = devc->zero ? 0x1 : (uint32_t)ceil(DSCOPE_MAX_SAMPLERATE * 1.0 / devc->cur_samplerate / channel_en_cnt);
+                   (devc->instant << 9);
+    setting.divider = (uint32_t)ceil(DSCOPE_MAX_SAMPLERATE * 1.0 / devc->cur_samplerate / channel_en_cnt);
     setting.count = (uint32_t)(devc->limit_samples / (channel_cnt / channel_en_cnt));
     setting.trig_pos = (uint32_t)(trigger->trigger_pos / 100.0 * devc->limit_samples);
     setting.trig_glb = trigger->trigger_stages;
@@ -592,6 +634,7 @@ static struct DSL_context *DSCope_dev_new(void)
     devc->trigger_hrate = 0;
     devc->zero = FALSE;
     devc->data_lock = FALSE;
+    devc->cali = FALSE;
 
 	return devc;
 }
@@ -606,6 +649,74 @@ static int init(struct sr_context *sr_ctx)
     return std_hw_init(sr_ctx, di, LOG_PREFIX);
 }
 
+
+static struct DSL_vga* get_vga_ptr(struct sr_dev_inst *sdi)
+{
+    struct DSL_vga *vga_ptr = NULL;
+    if (strcmp(sdi->model, "DSCope") == 0)
+        vga_ptr = DSCope_vga;
+    else if (strcmp(sdi->model, "DSCope20") == 0)
+        vga_ptr = DSCope20_vga;
+
+    return vga_ptr;
+}
+
+static uint16_t get_default_trans(struct sr_dev_inst *sdi)
+{
+    uint16_t trans = 1;
+    if (strcmp(sdi->model, "DSCope") == 0)
+        trans = DSCOPE_DEFAULT_TRANS;
+    else if (strcmp(sdi->model, "DSCope20") == 0)
+        trans = DSCOPE20_DEFAULT_TRANS;
+
+    return trans;
+}
+
+static uint16_t get_default_voff(struct sr_dev_inst *sdi, int ch_index)
+{
+    uint16_t voff = 0;
+    if (strcmp(sdi->model, "DSCope") == 0)
+        voff = DSCOPE_DEFAULT_VOFF;
+    else if (strcmp(sdi->model, "DSCope20") == 0)
+        if (ch_index == 1)
+            voff = CALI_VOFF_RANGE - DSCOPE20_DEFAULT_VOFF;
+        else
+            voff = DSCOPE20_DEFAULT_VOFF;
+
+    return voff;
+}
+
+static uint64_t get_default_vgain(struct sr_dev_inst *sdi, int num)
+{
+    uint64_t vgain = 0;
+    if (strcmp(sdi->model, "DSCope") == 0) {
+        assert(num < sizeof(DSCOPE_DEFAULT_VGAIN));
+        vgain = DSCOPE_DEFAULT_VGAIN[num];
+    }
+    else if (strcmp(sdi->model, "DSCope20") == 0) {
+        assert(num < sizeof(DSCOPE20_DEFAULT_VGAIN));
+        vgain = DSCOPE20_DEFAULT_VGAIN[num];
+    }
+
+    return vgain;
+}
+
+static int probe_init(struct sr_dev_inst *sdi)
+{
+    GList *l;
+    for (l = sdi->channels; l; l = l->next) {
+        struct sr_channel *probe = (struct sr_channel *)l->data;
+        if (sdi->mode == DSO) {
+            probe->vdiv = 1000;
+            probe->vfactor = 1;
+            probe->vpos = 0;
+            probe->coupling = SR_DC_COUPLING;
+            probe->trig_value = 0x80;
+            probe->vpos_trans = get_default_trans(sdi);
+        }
+    }
+}
+
 static int set_probes(struct sr_dev_inst *sdi, int num_probes)
 {
     uint16_t j;
@@ -615,15 +726,9 @@ static int set_probes(struct sr_dev_inst *sdi, int num_probes)
         if (!(probe = sr_channel_new(j, (sdi->mode == LOGIC) ? SR_CHANNEL_LOGIC : ((sdi->mode == DSO) ? SR_CHANNEL_DSO : SR_CHANNEL_ANALOG),
                                    TRUE, probe_names[j])))
             return SR_ERR;
-        if (sdi->mode == DSO) {
-            probe->vdiv = 1000;
-            probe->vfactor = 1;
-            probe->vpos = 0;
-            probe->coupling = SR_DC_COUPLING;
-            probe->trig_value = 0x80;
-        }
         sdi->channels = g_slist_append(sdi->channels, probe);
     }
+    probe_init(sdi);
     return SR_OK;
 }
 
@@ -785,15 +890,66 @@ static GSList *dev_mode_list(const struct sr_dev_inst *sdi)
     return l;
 }
 
+static uint64_t dso_vga(struct sr_dev_inst *sdi, struct sr_channel* ch)
+{
+    int i;
+    struct DSL_vga *vga_ptr = get_vga_ptr(sdi);
+    for (i = 0; vga_ptr && (vga_ptr+i)->key; i++) {
+        if ((vga_ptr+i)->key == ch->vdiv)
+            return (ch->index == 0) ? (vga_ptr+i)->vgain0 : (vga_ptr+i)->vgain1;
+    }
+
+    return 0;
+}
+
+static uint64_t dso_voff(struct sr_dev_inst *sdi, struct sr_channel* ch)
+{
+    int i;
+    struct DSL_vga *vga_ptr =  get_vga_ptr(sdi);
+    for (i = 0; vga_ptr && (vga_ptr+i)->key; i++) {
+        if ((vga_ptr+i)->key == ch->vdiv)
+            return (ch->index == 0) ? (vga_ptr+i)->voff0 : (vga_ptr+i)->voff1;
+    }
+    return 0;
+}
+
+static uint64_t dso_vpos(struct sr_dev_inst *sdi, struct sr_channel* ch)
+{
+    uint64_t vpos;
+    int vpos_coarse, vpos_fine;
+    int trans_coarse, trans_fine;
+    struct DSL_context *devc = sdi->priv;
+    const double voltage = (devc->zero && devc->zero_comb == -1) ? 0 : ch->vpos;
+    if (strcmp(sdi->model, "DSCope") == 0) {
+        trans_coarse = (ch->vpos_trans & 0xFF00) >> 8;
+        trans_fine = (ch->vpos_trans & 0x00FF);
+        if (ch->vdiv < 500) {
+            vpos_coarse = floor(-voltage*DSCOPE_TRANS_CMULTI/trans_coarse + 0.5);
+            vpos_fine = floor((voltage + vpos_coarse*trans_coarse/DSCOPE_TRANS_CMULTI)*1000.0/trans_fine + 0.5);
+        } else {
+            vpos_coarse = floor(-voltage/trans_coarse + 0.5);
+            vpos_fine = floor((voltage + vpos_coarse*trans_coarse)*DSCOPE_TRANS_FMULTI/trans_fine + 0.5);
+        }
+        //vpos = (vpos_coarse << 16) + vpos_fine;
+    } else if (strcmp(sdi->model, "DSCope20") == 0) {
+        vpos = ((ch->vdiv*5.0) - voltage)/(ch->vdiv*10.0)*ch->vpos_trans;
+    }
+
+    const uint64_t voff = dso_voff(sdi, ch);
+    if (strcmp(sdi->model, "DSCope") == 0)
+        return ((vpos_coarse+DSCOPE_CONSTANT_BIAS+(voff>>10)) << 16)+vpos_fine+(voff&0x03ff);
+    else if (strcmp(sdi->model, "DSCope20") == 0)
+        return vpos+voff;
+    else
+        return 0;
+}
+
 static uint64_t dso_cmd_gen(struct sr_dev_inst *sdi, struct sr_channel* ch, int id)
 {
     struct DSL_context *devc;
     uint64_t cmd = 0;
     int channel_cnt = 0;
-    uint16_t vpos_coarse;
-    uint16_t vpos_fine;
-    gboolean vpos_coarse_neg;
-    gboolean vpos_fine_neg;
+    uint64_t vpos;
     GSList *l;
     const int ch_bit = 7;
 
@@ -806,59 +962,36 @@ static uint64_t dso_cmd_gen(struct sr_dev_inst *sdi, struct sr_channel* ch, int 
             struct sr_channel *probe = (struct sr_channel *)l->data;
             channel_cnt += probe->enabled;
         }
-        if (channel_cnt == 1) {
+        if (devc->zero || channel_cnt == 2) {
+            cmd += 0x0E00;
+            //cmd += 0x000;
+        } else if (channel_cnt == 1) {
             if (((ch->index == 0) && ch->enabled) || ((ch->index == 1) && !ch->enabled))
                 cmd += 0x1600;
             else if (((ch->index == 1) && ch->enabled) || ((ch->index == 0) && !ch->enabled))
                 cmd += 0x1A00;
-        } else if (channel_cnt == 2) {
-            cmd += 0x0E00;
-            //cmd += 0x000;
         } else {
             return 0x0;
         }
 
         cmd += ch->index << ch_bit;
-        if (ch->coupling == SR_GND_COUPLING)
-            cmd &= 0xFFFFFDFF;
-        else if (ch->coupling == SR_DC_COUPLING)
+        if (devc->zero || ch->coupling == SR_DC_COUPLING)
             cmd += 0x100;
+        else if (ch->coupling == SR_GND_COUPLING)
+            cmd &= 0xFFFFFDFF;
         break;
     case SR_CONF_VDIV:
     case SR_CONF_TIMEBASE:
         cmd += 0x8;
         cmd += ch->index << ch_bit;
-        //  --VDBS
-        switch(ch->vdiv){
-        case 5:     cmd += 0x170000; break;
-        case 10:    cmd += 0x162800; break;
-        case 20:    cmd += 0x14D000; break;
-        case 50:    cmd += 0x12E800; break;
-        case 100:   cmd += 0x118000; break;
-        case 200:   cmd += 0x101800; break;
-        case 500:   cmd += 0x2E800; break;
-        case 1000:  cmd += 0x18000; break;
-        case 2000:  cmd += 0x01800; break;
-        case 5000:  cmd += 0x00000; break;
-        default: cmd += 0x0; break;
-        }
+        //  --VGAIN
+        cmd += dso_vga(sdi, ch);
         break;
     case SR_CONF_VPOS:
         cmd += 0x10;
         cmd += ch->index << ch_bit;
-        if (ch->vdiv < 500) {
-            vpos_coarse_neg = (ch->vpos < 0);
-            vpos_coarse = (uint16_t)(abs(ch->vpos)/(2*VPOS_STEP) + 0.5) * 4;
-            vpos_fine_neg = vpos_coarse_neg ^ ((abs(ch->vpos) < vpos_coarse*0.5*VPOS_STEP));
-            vpos_fine = (uint16_t)(abs((abs(ch->vpos) - vpos_coarse*0.5*VPOS_STEP))/(2*VPOS_MINISTEP) + 0.5);
-        } else {
-            vpos_coarse_neg = (ch->vpos < 0);
-            vpos_coarse = (uint16_t)(abs(ch->vpos)/(20*VPOS_STEP) + 0.5) * 4;
-            vpos_fine_neg = vpos_coarse_neg ^ ((abs(ch->vpos) < vpos_coarse*5*VPOS_STEP));
-            vpos_fine = (uint16_t)(abs((abs(ch->vpos) - vpos_coarse*5*VPOS_STEP))/(20*VPOS_MINISTEP) + 0.5);
-        }
-        cmd += (vpos_fine_neg << 31) + (vpos_fine << 20) +
-               (vpos_coarse_neg << 19) + (vpos_coarse << 8);
+        vpos = dso_vpos(sdi, ch);
+        cmd += (vpos << 8);
         break;
     case SR_CONF_SAMPLERATE:
         for (l = sdi->channels; l; l = l->next) {
@@ -879,7 +1012,7 @@ static uint64_t dso_cmd_gen(struct sr_dev_inst *sdi, struct sr_channel* ch, int 
         break;
     case SR_CONF_TRIGGER_SOURCE:
         cmd += 0x30;
-        cmd += devc->trigger_source << 8;
+        cmd += devc->zero ? 0x0 : devc->trigger_source << 8;
         break;
     case SR_CONF_TRIGGER_VALUE:
         cmd += 0x38;
@@ -887,28 +1020,6 @@ static uint64_t dso_cmd_gen(struct sr_dev_inst *sdi, struct sr_channel* ch, int 
             struct sr_channel *probe = (struct sr_channel *)l->data;
             cmd += probe->trig_value << (8 * (probe->index + 1));
         }
-        break;
-    case SR_CONF_ZERO_SET:
-        cmd += 0x40;
-        cmd += ch->index << ch_bit;
-        cmd += ((uint64_t)zero_info.vpos_l << 8);
-        cmd += ((uint64_t)(zero_info.vpos_h & 0x3) << 16);
-        cmd += ((uint64_t)zero_info.voff_l << 24);
-        cmd += ((uint64_t)(zero_info.voff_h & 0x3) << 32);
-        cmd += ((uint64_t)zero_info.vcntr_l << 40);
-        cmd += ((uint64_t)(zero_info.vcntr_h & 0x3) << 48);
-        cmd += ((uint64_t)zero_info.adc_off << 56);
-        break;
-    case SR_CONF_COMB_SET:
-        cmd += 0x48;
-        cmd += ((uint64_t)comb_info.comb0_low_off << 8);
-        cmd += ((uint64_t)comb_info.comb0_hig_off << 16);
-        cmd += ((uint64_t)comb_info.comb1_low_off << 24);
-        cmd += ((uint64_t)comb_info.comb1_hig_off << 32);
-        cmd += ((uint64_t)comb_info.comb_sign << 40);
-        break;
-    case SR_CONF_ZERO_OVER:
-        cmd += 0x50;
         break;
     case SR_CONF_TRIGGER_HOLDOFF:
         cmd += 0x58;
@@ -918,214 +1029,72 @@ static uint64_t dso_cmd_gen(struct sr_dev_inst *sdi, struct sr_channel* ch, int 
         cmd = 0xa5a5a500;
         break;
     default:
-        cmd = 0x00000000;
+        cmd = 0xFFFFFFFF;
     }
 
     return cmd;
 }
 
-static int dev_open(struct sr_dev_inst *sdi)
+static gboolean dso_load_eep(struct sr_dev_inst *sdi, struct sr_channel *probe)
 {
-    struct sr_usb_dev_inst *usb;
-    struct DSL_context *devc;
-	int ret;
-	int64_t timediff_us, timediff_ms;
-
-	devc = sdi->priv;
-	usb = sdi->conn;
-
-	/*
-	 * If the firmware was recently uploaded, wait up to MAX_RENUM_DELAY_MS
-	 * milliseconds for the FX2 to renumerate.
-	 */
-    ret = SR_ERR;
-	if (devc->fw_updated > 0) {
-        sr_info("Waiting for device to reset.");
-		/* Takes >= 300ms for the FX2 to be gone from the USB bus. */
-        g_usleep(300 * 1000);
-		timediff_ms = 0;
-		while (timediff_ms < MAX_RENUM_DELAY_MS) {
-            if ((ret = DSCope_dev_open(sdi)) == SR_OK)
-				break;
-			g_usleep(100 * 1000);
-
-			timediff_us = g_get_monotonic_time() - devc->fw_updated;
-			timediff_ms = timediff_us / 1000;
-            sr_spew("Waited %" PRIi64 "ms.", timediff_ms);
-		}
-        if (ret != SR_OK) {
-            sr_err("Device failed to renumerate.");
-            return SR_ERR;
-		}
-        sr_info("Device came back after %" PRIi64 "ms.", timediff_ms);
-	} else {
-        sr_info("Firmware upload was not needed.");
-        ret = DSCope_dev_open(sdi);
-	}
-
-    if (ret != SR_OK) {
-        sr_err("Unable to open device.");
-        return SR_ERR;
-	}
-
-	ret = libusb_claim_interface(usb->devhdl, USB_INTERFACE);
-	if (ret != 0) {
-		switch(ret) {
-		case LIBUSB_ERROR_BUSY:
-            sr_err("Unable to claim USB interface. Another "
-			       "program or driver has already claimed it.");
-			break;
-		case LIBUSB_ERROR_NO_DEVICE:
-            sr_err("Device has been disconnected.");
-			break;
-		default:
-            sr_err("Unable to claim interface: %s.",
-			       libusb_error_name(ret));
-			break;
-		}
-
-        return SR_ERR;
-	}
-
-    if ((ret = command_fpga_config(usb->devhdl)) != SR_OK) {
-        sr_err("Send FPGA configure command failed!");
+    int ret, i;
+    struct sr_usb_dev_inst *usb = sdi->conn;
+    struct cmd_zero_info zero_info;
+    uint8_t dst_addr = (zero_base_addr +
+                        probe->index * (sizeof(struct cmd_zero_info) + sizeof(struct cmd_vga_info)));
+    zero_info.zero_addr = dst_addr;
+    if ((ret = command_rd_nvm(usb->devhdl, (unsigned char *)&zero_info, zero_info.zero_addr, sizeof(struct cmd_zero_info))) != SR_OK) {
+        return FALSE;
+        sr_err("Send Get Zero command failed!");
     } else {
-        /* Takes >= 10ms for the FX2 to be ready for FPGA configure. */
-        g_usleep(10 * 1000);
-        char *fpga_bit = malloc(strlen(config_path)+strlen(devc->profile->fpga_bit33)+1);
-        if (fpga_bit == NULL)
-            return SR_ERR_MALLOC;
-        strcpy(fpga_bit, config_path);
-        strcat(fpga_bit, devc->profile->fpga_bit33);
-        ret = fpga_config(usb->devhdl, fpga_bit);
-        if (ret != SR_OK) {
-            sr_err("Configure FPGA failed!");
-        }
-    }
-
-    if (sdi->mode == DSO) {
-        GSList *l;
-        for(l = sdi->channels; l; l = l->next) {
-            struct sr_channel *probe = (struct sr_channel *)l->data;
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe, SR_CONF_COUPLING));
-            if (ret != SR_OK) {
-                sr_err("DSO set coupling of channel %d command failed!", probe->index);
-                return ret;
-            }
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe, SR_CONF_VDIV));
-            if (ret != SR_OK) {
-                sr_err("Set VDIV of channel %d command failed!", probe->index);
-                return ret;
-            }
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe, SR_CONF_VPOS));
-            if (ret != SR_OK) {
-                sr_err("Set VDIV of channel %d command failed!", probe->index);
-                return ret;
-            }
-        }
-        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 0, SR_CONF_SAMPLERATE));
-        if (ret != SR_OK) {
-            sr_err("Set Sample Rate command failed!");
-            return ret;
-        }
-        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_HORIZ_TRIGGERPOS));
-        if (ret != SR_OK) {
-            sr_err("Set Horiz Trigger Position command failed!");
-            return ret;
-        }
-        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_HOLDOFF));
-        if (ret != SR_OK) {
-            sr_err("Set Trigger Holdoff Time command failed!");
-            return ret;
-        }
-        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_SLOPE));
-        if (ret != SR_OK) {
-            sr_err("Set Trigger Slope command failed!");
-            return ret;
-        }
-        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_SOURCE));
-        if (ret != SR_OK) {
-            sr_err("Set Trigger Source command failed!");
-            return ret;
-        }
-        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_VALUE));
-        if (ret != SR_OK) {
-            sr_err("Set Trigger Value command failed!");
-            return ret;
-        }
-    }
-
-    GSList *l;
-        for(l = sdi->channels; l; l = l->next) {
-        struct sr_channel *probe = (struct sr_channel *)l->data;
-        zero_info.zero_addr = (zero_base_addr + probe->index * sizeof(struct cmd_zero_info));
-        if ((ret = command_rd_nvm(usb->devhdl, (unsigned char *)&zero_info, zero_info.zero_addr, sizeof(struct cmd_zero_info))) != SR_OK) {
-            sr_err("Send Get Zero command failed!");
+        if (zero_info.zero_addr == dst_addr) {
+            uint8_t* voff_ptr = &zero_info.zero_addr + 1;
+            struct DSL_vga *vga_ptr =  get_vga_ptr(sdi);
+             for (i = 0; vga_ptr && (vga_ptr+i)->key; i++) {
+                 if (probe->index == 0)
+                     (vga_ptr+i)->voff0 = (*(voff_ptr + 2*i+1) << 8) + *(voff_ptr + 2*i);
+                 else
+                     (vga_ptr+i)->voff1 = (*(voff_ptr + 2*i+1) << 8) + *(voff_ptr + 2*i);
+             }
+             if (i != 0) {
+                 probe->comb_diff_top = *(voff_ptr + 2*i);
+                 probe->comb_diff_bom = *(voff_ptr + 2*i + 1);
+                 probe->vpos_trans = *(voff_ptr + 2*i + 2) + (*(voff_ptr + 2*i + 3) << 8);
+                 const double slope = (probe->comb_diff_bom - probe->comb_diff_top)/(2.0*255.0);
+                 for (i = 0; i < 256; i++) {
+                     ret = command_wr_reg(usb->devhdl, i, COMB_ADDR + probe->index*2);
+                     int value = i+i*slope+probe->comb_diff_top*0.5+0.5;
+                     value = (value < 0) ? 0 :
+                             (value > 255) ? 255 : value;
+                     ret = command_wr_reg(usb->devhdl, value, COMB_ADDR + probe->index*2 + 1);
+                 }
+             }
         } else {
-            if (zero_info.zero_addr == (zero_base_addr + probe->index * sizeof(struct cmd_zero_info))) {
-                ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe, SR_CONF_ZERO_SET));
-                if (ret != SR_OK) {
-                    sr_err("Set Zero command failed!");
-                    return ret;
-                }
-            } else {
-                devc->zero = TRUE;
-                sr_info("Zero have not been setted!");
-            }
+            return FALSE;
         }
     }
 
-    comb_info.comb_addr = comb_base_addr;
-    if ((ret = command_rd_nvm(usb->devhdl, (unsigned char *)&comb_info, comb_info.comb_addr, sizeof(struct cmd_comb_info))) != SR_OK) {
-        sr_err("Send Get Comb Command Failed!");
+    struct cmd_vga_info vga_info;
+    vga_info.vga_addr = dst_addr + sizeof(struct cmd_zero_info);
+    if ((ret = command_rd_nvm(usb->devhdl, (unsigned char *)&vga_info, vga_info.vga_addr, sizeof(struct cmd_vga_info))) != SR_OK) {
+        return FALSE;
+        sr_err("Send Get Zero command failed!");
     } else {
-        if (comb_info.comb_addr == comb_base_addr) {
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_COMB_SET));
-            if (ret != SR_OK) {
-                sr_err("Set Comb command failed!");
-                return ret;
-            }
+        if (vga_info.vga_addr == dst_addr + sizeof(struct cmd_zero_info)) {
+            uint16_t* vgain_ptr = &vga_info.vga0;
+            struct DSL_vga *vga_ptr =  get_vga_ptr(sdi);
+             for (i = 0; vga_ptr && (vga_ptr+i)->key; i++) {
+                 if (probe->index == 0)
+                     (vga_ptr+i)->vgain0 = *(vgain_ptr + i) << 8;
+                 else
+                     (vga_ptr+i)->vgain1 = *(vgain_ptr + i) << 8;
+             }
         } else {
-            devc->zero = TRUE;
-            sr_info("Comb have not been setted!");
+            return FALSE;
         }
     }
 
-    return SR_OK;
-}
-
-static int dev_close(struct sr_dev_inst *sdi)
-{
-    struct sr_usb_dev_inst *usb;
-
-	usb = sdi->conn;
-	if (usb->devhdl == NULL)
-        return SR_ERR;
-
-    sr_info("DSCope: Closing device %d on %d.%d interface %d.",
-		sdi->index, usb->bus, usb->address, USB_INTERFACE);
-	libusb_release_interface(usb->devhdl, USB_INTERFACE);
-	libusb_close(usb->devhdl);
-	usb->devhdl = NULL;
-    sdi->status = SR_ST_INACTIVE;
-
-    return SR_OK;
-}
-
-static int cleanup(void)
-{
-	int ret;
-	struct drv_context *drvc;
-
-	if (!(drvc = di->priv))
-        return SR_OK;
-
-	ret = dev_clear();
-
-	g_free(drvc);
-	di->priv = NULL;
-
-	return ret;
+    return TRUE;
 }
 
 static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
@@ -1134,22 +1103,24 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
 {
     struct DSL_context *devc;
     struct sr_usb_dev_inst *usb;
-	char str[128];
+    char str[128];
+    int i;
+    struct DSL_vga *vga_ptr;
 
     (void)cg;
 
-	switch (id) {
+    switch (id) {
     case SR_CONF_CONN:
-		if (!sdi || !sdi->conn)
+        if (!sdi || !sdi->conn)
             return SR_ERR_ARG;
-		usb = sdi->conn;
-		if (usb->address == 255)
-			/* Device still needs to re-enumerate after firmware
-			 * upload, so we don't know its (future) address. */
+        usb = sdi->conn;
+        if (usb->address == 255)
+            /* Device still needs to re-enumerate after firmware
+             * upload, so we don't know its (future) address. */
             return SR_ERR;
-		snprintf(str, 128, "%d.%d", usb->bus, usb->address);
+        snprintf(str, 128, "%d.%d", usb->bus, usb->address);
         *data = g_variant_new_string(str);
-		break;
+        break;
     case SR_CONF_LIMIT_SAMPLES:
         if (!sdi)
             return SR_ERR;
@@ -1157,11 +1128,11 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         *data = g_variant_new_uint64(devc->limit_samples);
         break;
     case SR_CONF_SAMPLERATE:
-		if (!sdi)
+        if (!sdi)
             return SR_ERR;
-		devc = sdi->priv;
-		*data = g_variant_new_uint64(devc->cur_samplerate);
-		break;
+        devc = sdi->priv;
+        *data = g_variant_new_uint64(devc->cur_samplerate);
+        break;
     case SR_CONF_CLOCK_TYPE:
         if (!sdi)
             return SR_ERR;
@@ -1270,6 +1241,12 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         devc = sdi->priv;
         *data = g_variant_new_boolean(devc->zero);
         break;
+    case SR_CONF_CALI:
+        if (!sdi)
+            return SR_ERR;
+        devc = sdi->priv;
+        *data = g_variant_new_boolean(devc->cali);
+        break;
     case SR_CONF_STREAM:
         if (!sdi)
             return SR_ERR;
@@ -1305,9 +1282,60 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
             return SR_ERR;
         *data = g_variant_new_uint64(DSCOPE_MAX_DEPTH);
         break;
+    case SR_CONF_VGAIN:
+        if (!sdi || !ch)
+            return SR_ERR;
+        *data = g_variant_new_uint64(dso_vga(sdi, ch)>>8);
+        break;
+    case SR_CONF_VGAIN_DEFAULT:
+        if (!sdi || !ch)
+            return SR_ERR;
+        vga_ptr =  get_vga_ptr(sdi);
+        for (i = 0; vga_ptr && (vga_ptr+i)->key; i++) {
+            if ((vga_ptr+i)->key == ch->vdiv)
+                break;
+        }
+        *data = g_variant_new_uint64(get_default_vgain(sdi, i)>>8);
+        break;
+    case SR_CONF_VGAIN_RANGE:
+        if (!sdi)
+            return SR_ERR;
+        vga_ptr =  get_vga_ptr(sdi);
+        for (i = 0; vga_ptr && (vga_ptr+i)->key; i++) {
+            if ((vga_ptr+i)->key == ch->vdiv)
+                break;
+        }
+        uint16_t vgain_default= (get_default_vgain(sdi, i)>>8) & 0x0FFF;
+        *data = g_variant_new_uint16(min(CALI_VGAIN_RANGE, vgain_default*2));
+        break;
+    case SR_CONF_VOFF:
+        if (!sdi || !ch)
+            return SR_ERR;
+        uint16_t voff = dso_voff(sdi, ch);
+        uint16_t voff_default = get_default_voff(sdi, ch->index);
+        if (strcmp(sdi->model, "DSCope") == 0) {
+            int voff_skew_coarse = (voff >> 10) - (voff_default >> 10);
+            int voff_skew_fine = (voff & 0x03ff) - (voff_default & 0x03ff);
+            double trans_coarse = (ch->vdiv < 500) ? (ch->vpos_trans >> 8)/DSCOPE_TRANS_CMULTI : (ch->vpos_trans >> 8);
+            double trans_fine = (ch->vdiv < 500) ? (ch->vpos_trans & 0x00ff) / 1000.0 : (ch->vpos_trans & 0x00ff) / DSCOPE_TRANS_FMULTI;
+            double voff_rate = (voff_skew_coarse*trans_coarse - voff_skew_fine*trans_fine) / ch->vdiv;
+            voff = (voff_rate * 0.5 + 0.5) * CALI_VOFF_RANGE;
+        }
+        *data = g_variant_new_uint16(voff);
+        break;
+    case SR_CONF_VOFF_DEFAULT:
+        if (!sdi || !ch)
+            return SR_ERR;
+        *data = g_variant_new_uint16(get_default_voff(sdi, ch->index));
+        break;
+    case SR_CONF_VOFF_RANGE:
+        if (!sdi)
+            return SR_ERR;
+        *data = g_variant_new_uint16(CALI_VOFF_RANGE);
+        break;
     default:
         return SR_ERR_NA;
-	}
+    }
 
     return SR_OK;
 }
@@ -1326,11 +1354,11 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     if (sdi->status != SR_ST_ACTIVE)
         return SR_ERR;
 
-	devc = sdi->priv;
+    devc = sdi->priv;
     usb = sdi->conn;
 
     if (id == SR_CONF_SAMPLERATE) {
-		devc->cur_samplerate = g_variant_get_uint64(data);
+        devc->cur_samplerate = g_variant_get_uint64(data);
         if (sdi->mode == LOGIC) {
             if (devc->cur_samplerate >= SR_MHZ(200)) {
                 adjust_probes(sdi, SR_MHZ(1600)/devc->cur_samplerate);
@@ -1364,7 +1392,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         }
         ret = SR_OK;
     } else if (id == SR_CONF_LIMIT_SAMPLES) {
-		devc->limit_samples = g_variant_get_uint64(data);
+        devc->limit_samples = g_variant_get_uint64(data);
         ret = SR_OK;
     } else if (id == SR_CONF_DEVICE_MODE) {
         sdi->mode = g_variant_get_int16(data);
@@ -1572,62 +1600,162 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 __func__, devc->trigger_holdoff);
     } else if (id == SR_CONF_ZERO) {
         devc->zero = g_variant_get_boolean(data);
-    } else if (id == SR_CONF_ZERO_SET) {
+        if (devc->zero) {
+            devc->zero_stage = -1;
+            devc->zero_pcnt = 0;
+            devc->zero_comb = -1;
+            GList *l;
+            int i;
+            struct DSL_vga *vga_ptr =  get_vga_ptr(sdi);
+            for(l = sdi->channels; l; l = l->next) {
+                struct sr_channel *probe = (struct sr_channel *)l->data;
+                probe->vpos_trans = get_default_trans(sdi);
+            }
+            for (i = 0; vga_ptr && (vga_ptr+i)->key; i++) {
+                (vga_ptr+i)->vgain0 = get_default_vgain(sdi, i);
+                (vga_ptr+i)->vgain1 = get_default_vgain(sdi, i);
+                (vga_ptr+i)->voff0 = get_default_voff(sdi, 0);
+                (vga_ptr+i)->voff1 = get_default_voff(sdi, 1);
+            }
+        }
+    }  else if (id == SR_CONF_CALI) {
+        devc->cali = g_variant_get_boolean(data);
+    } else if (id == SR_CONF_ZERO_LOAD) {
         GSList *l;
         for(l = sdi->channels; l; l = l->next) {
             struct sr_channel *probe = (struct sr_channel *)l->data;
-            zero_info.zero_addr = zero_base_addr + probe->index * sizeof(struct cmd_zero_info);
-            zero_info.vpos_l = (probe->index == 0) ? mstatus.ch0_vpos_mid : mstatus.ch1_vpos_mid;
-            zero_info.vpos_h = (probe->index == 0) ? mstatus.ch0_vpos_mid >> 8 : mstatus.ch1_vpos_mid >> 8;
-            zero_info.voff_l = (probe->index == 0) ? mstatus.ch0_voff_mid : mstatus.ch1_voff_mid;
-            zero_info.voff_h = (probe->index == 0) ? mstatus.ch0_voff_mid >> 8 : mstatus.ch1_voff_mid >> 8;
-            zero_info.vcntr_l = (probe->index == 0) ? mstatus.ch0_vcntr : mstatus.ch1_vcntr;
-            zero_info.vcntr_h = (probe->index == 0) ? mstatus.ch0_vcntr >> 8 : mstatus.ch1_vcntr >> 8;
-            zero_info.adc_off = (probe->index == 0) ? mstatus.ch0_adc_off + (mstatus.ch0_adc_sign << 7) : mstatus.ch1_adc_off + (mstatus.ch1_adc_sign << 7);
-            ret = command_wr_nvm(usb->devhdl, (unsigned char *)&zero_info, sizeof(struct cmd_zero_info));
-            if (ret != SR_OK)
-                sr_err("DSO channel %d Set Zero command failed!", probe->index);
+            if (!dso_load_eep(sdi, probe)) {
+                config_set(SR_CONF_ZERO, g_variant_new_boolean(TRUE), sdi, NULL, NULL);
+                sr_info("Zero have not been setted!");
+                break;
+            }
         }
-        comb_info.comb_addr = comb_base_addr;
-        comb_info.comb0_low_off = mstatus.comb0_off;
-        comb_info.comb0_hig_off = mstatus.comb0_off >> 8;
-        comb_info.comb1_low_off = mstatus.comb1_off;
-        comb_info.comb1_hig_off = mstatus.comb1_off >> 8;
-        comb_info.comb_sign = mstatus.comb_sign;
-        ret = command_wr_nvm(usb->devhdl, (unsigned char *)&comb_info, sizeof(struct cmd_comb_info));
-        if (ret != SR_OK)
-            sr_err("DSO Set Comb command failed!");
-        else
-            devc->zero = FALSE;
-    } else {
-        ret = SR_ERR_NA;
-	}
+    } else if (id == SR_CONF_ZERO_SET) {
+        GSList *l;
+        struct cmd_zero_info zero_info;
+        struct cmd_vga_info vga_info;
+        for(l = sdi->channels; l; l = l->next) {
+            struct sr_channel *probe = (struct sr_channel *)l->data;
+            zero_info.zero_addr = zero_base_addr +
+                                  probe->index * (sizeof(struct cmd_zero_info) + sizeof(struct cmd_vga_info));
+            int i;
+            struct DSL_vga *vga_ptr =  get_vga_ptr(sdi);
+            uint8_t *voff_ptr = &zero_info.zero_addr + 1;
+            for (i = 0; vga_ptr && (vga_ptr+i)->key; i++) {
+                *(voff_ptr+2*i) = ((probe->index == 0) ? (vga_ptr+i)->voff0 : (vga_ptr+i)->voff1) & 0x00ff;
+                *(voff_ptr+2*i+1) = ((probe->index == 0) ? (vga_ptr+i)->voff0 : (vga_ptr+i)->voff1) >> 8;
+            }
+            if (i != 0) {
+                *(voff_ptr+2*i) = probe->comb_diff_top;
+                *(voff_ptr+2*i+1) = probe->comb_diff_bom;
+                *(voff_ptr+2*i+2) = (probe->vpos_trans&0x00FF);
+                *(voff_ptr+2*i+3) = (probe->vpos_trans>>8);
 
-	return ret;
+                vga_info.vga_addr = zero_info.zero_addr + sizeof(struct cmd_zero_info);
+                uint16_t *vgain_ptr = &vga_info.vga0;
+                for (i=0; vga_ptr && (vga_ptr+i)->key; i++){
+                    *(vgain_ptr+i) = ((probe->index == 0) ? (vga_ptr+i)->vgain0 : (vga_ptr+i)->vgain1) >> 8;
+                }
+                ret = command_wr_reg(usb->devhdl, 0, EEWP_ADDR);
+                if (ret == SR_OK)
+                    ret = command_wr_nvm(usb->devhdl, (unsigned char *)&zero_info, sizeof(struct cmd_zero_info));
+                if (ret == SR_OK)
+                    ret = command_wr_nvm(usb->devhdl, (unsigned char *)&vga_info, sizeof(struct cmd_vga_info));
+                if (ret == SR_OK)
+                    ret = command_wr_reg(usb->devhdl, 1, EEWP_ADDR);
+                if (ret != SR_OK)
+                    sr_err("DSO channel %d Set Zero command failed!", probe->index);
+
+                const double slope = (probe->comb_diff_bom - probe->comb_diff_top)/(2.0*255.0);
+                for (i = 0; i < 256; i++) {
+                    ret = command_wr_reg(usb->devhdl, i, COMB_ADDR + probe->index*2);
+                    int value = i+i*slope+probe->comb_diff_top*0.5+0.5;
+                    value = (value < 0) ? 0 :
+                            (value > 255) ? 255 : value;
+                    ret = command_wr_reg(usb->devhdl, value, COMB_ADDR + probe->index*2 + 1);
+                }
+            }
+        }
+    } else if (id == SR_CONF_VOCM) {
+        const uint8_t vocm = g_variant_get_byte(data);
+        ret = command_wr_reg(usb->devhdl, vocm, COMB_ADDR+4);
+    } else if (id == SR_CONF_VGAIN) {
+        const uint64_t vgain = g_variant_get_uint64(data) << 8;
+        int i;
+        struct DSL_vga *vga_ptr =  get_vga_ptr(sdi);
+        for (i = 0; vga_ptr && (vga_ptr+i)->key; i++) {
+            if ((vga_ptr+i)->key == ch->vdiv)
+                if (ch->index == 0)
+                    (vga_ptr+i)->vgain0 = vgain;
+                else if (ch->index == 1)
+                    (vga_ptr+i)->vgain1 = vgain;
+        }
+        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, ch, SR_CONF_VDIV));
+        if (ret == SR_OK)
+            sr_dbg("%s: setting VDIV of channel %d to %d mv",
+                __func__, ch->index, ch->vdiv);
+        else
+            sr_dbg("%s: setting VDIV of channel %d to %d mv failed",
+                __func__, ch->index, ch->vdiv);
+    } else if (id == SR_CONF_VOFF) {
+        uint16_t voff = g_variant_get_uint16(data);
+        if (strcmp(sdi->model, "DSCope") == 0) {
+            double voltage_off = (2.0 * voff / CALI_VOFF_RANGE  - 1) * ch->vdiv;
+            double trans_coarse = (ch->vdiv < 500) ? (ch->vpos_trans >> 8)/DSCOPE_TRANS_CMULTI : (ch->vpos_trans >> 8);
+            double trans_fine = (ch->vdiv < 500) ? (ch->vpos_trans & 0x00ff) / 1000.0 : (ch->vpos_trans & 0x00ff) / DSCOPE_TRANS_FMULTI;
+
+            uint16_t default_voff = get_default_voff(sdi, ch->index);
+            int voff_coarse = floor(voltage_off / trans_coarse + 0.5);
+            int voff_fine = floor(-(voltage_off - voff_coarse*trans_coarse)/trans_fine + 0.5);
+            voff_coarse = (default_voff >> 10) + voff_coarse;
+            voff_fine = (default_voff&0x03ff) + voff_fine;
+            voff = (voff_coarse << 10) + voff_fine;
+        }
+        int i;
+        struct DSL_vga *vga_ptr =  get_vga_ptr(sdi);
+        for (i = 0; vga_ptr && (vga_ptr+i)->key; i++) {
+            if ((vga_ptr+i)->key == ch->vdiv)
+                if (ch->index == 0)
+                    (vga_ptr+i)->voff0 = voff;
+                else if (ch->index == 1)
+                    (vga_ptr+i)->voff1 = voff;
+        }
+        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, ch, SR_CONF_VPOS));
+        if (ret == SR_OK)
+            sr_dbg("%s: setting VPOS of channel %d to %lf mv",
+                __func__, ch->index, ch->vpos);
+        else
+            sr_dbg("%s: setting VPOS of channel %d to %lf mv failed",
+                __func__, ch->index, ch->vpos);
+    }else {
+        ret = SR_ERR_NA;
+    }
+
+    return ret;
 }
 
 static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
                        const struct sr_channel_group *cg)
 {
-	GVariant *gvar;
-	GVariantBuilder gvb;
+    GVariant *gvar;
+    GVariantBuilder gvb;
 
-	(void)sdi;
+    (void)sdi;
     (void)cg;
 
-	switch (key) {
+    switch (key) {
     case SR_CONF_SCAN_OPTIONS:
 //		*data = g_variant_new_fixed_array(G_VARIANT_TYPE_INT32,
 //				hwopts, ARRAY_SIZE(hwopts), sizeof(int32_t));
         *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
                 hwopts, ARRAY_SIZE(hwopts)*sizeof(int32_t), TRUE, NULL, NULL);
-		break;
+        break;
     case SR_CONF_DEVICE_OPTIONS:
 //		*data = g_variant_new_fixed_array(G_VARIANT_TYPE_INT32,
 //				hwcaps, ARRAY_SIZE(hwcaps), sizeof(int32_t));
         *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
                 hwcaps, ARRAY_SIZE(hwcaps)*sizeof(int32_t), TRUE, NULL, NULL);
-		break;
+        break;
     case SR_CONF_DEVICE_CONFIGS:
 //		*data = g_variant_new_fixed_array(G_VARIANT_TYPE_INT32,
 //				hwcaps, ARRAY_SIZE(hwcaps), sizeof(int32_t));
@@ -1639,14 +1767,14 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
                 sessions, ARRAY_SIZE(sessions)*sizeof(int32_t), TRUE, NULL, NULL);
         break;
     case SR_CONF_SAMPLERATE:
-		g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));
+        g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));
 //		gvar = g_variant_new_fixed_array(G_VARIANT_TYPE("t"), samplerates,
 //				ARRAY_SIZE(samplerates), sizeof(uint64_t));
         gvar = g_variant_new_from_data(G_VARIANT_TYPE("at"),
                 samplerates, ARRAY_SIZE(samplerates)*sizeof(uint64_t), TRUE, NULL, NULL);
         g_variant_builder_add(&gvb, "{sv}", "samplerates", gvar);
-		*data = g_variant_builder_end(&gvb);
-		break;
+        *data = g_variant_builder_end(&gvb);
+        break;
     case SR_CONF_LIMIT_SAMPLES:
         g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));
         gvar = g_variant_new_from_data(G_VARIANT_TYPE("at"),
@@ -1656,7 +1784,7 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
         break;
     case SR_CONF_TRIGGER_TYPE:
         *data = g_variant_new_string(TRIGGER_TYPE);
-		break;
+        break;
     case SR_CONF_OPERATION_MODE:
         *data = g_variant_new_strv(opmodes, opmodes_show_count);
         break;
@@ -1666,12 +1794,363 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_FILTER:
         *data = g_variant_new_strv(filters, ARRAY_SIZE(filters));
         break;
-	default:
+    default:
         return SR_ERR_NA;
-	}
+    }
 
     return SR_OK;
 }
+
+static int dso_init(struct sr_dev_inst *sdi, gboolean from_eep)
+{
+    int ret, i;
+    GSList *l;
+    struct sr_usb_dev_inst *usb = sdi->conn;
+    gboolean zeroed = TRUE;
+
+    for(l = sdi->channels; l; l = l->next) {
+        struct sr_channel *probe = (struct sr_channel *)l->data;
+        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe, SR_CONF_COUPLING));
+        if (ret != SR_OK) {
+            sr_err("DSO set coupling of channel %d command failed!", probe->index);
+            return ret;
+        }
+        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe, SR_CONF_VDIV));
+        if (ret != SR_OK) {
+            sr_err("Set VDIV of channel %d command failed!", probe->index);
+            return ret;
+        }
+        if (from_eep && zeroed) {
+            zeroed = dso_load_eep(sdi, probe);
+        }
+        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe, SR_CONF_VPOS));
+        if (ret != SR_OK) {
+            sr_err("Set VPOS of channel %d command failed!", probe->index);
+            return ret;
+        }
+    }
+    if (!zeroed) {
+        for(l = sdi->channels; l; l = l->next) {
+            struct sr_channel *probe = (struct sr_channel *)l->data;
+            for (i = 0; i < 256; i++) {
+                ret = command_wr_reg(usb->devhdl, i, COMB_ADDR + probe->index*2);
+                ret = command_wr_reg(usb->devhdl, i, COMB_ADDR + probe->index*2 + 1);
+            }
+        }
+        config_set(SR_CONF_ZERO, g_variant_new_boolean(TRUE), sdi, NULL, NULL);
+        sr_info("Zero have not been setted!");
+    }
+
+    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 0, SR_CONF_SAMPLERATE));
+    if (ret != SR_OK) {
+        sr_err("Set Sample Rate command failed!");
+        return ret;
+    }
+    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_HORIZ_TRIGGERPOS));
+    if (ret != SR_OK) {
+        sr_err("Set Horiz Trigger Position command failed!");
+        return ret;
+    }
+    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_HOLDOFF));
+    if (ret != SR_OK) {
+        sr_err("Set Trigger Holdoff Time command failed!");
+        return ret;
+    }
+    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_SLOPE));
+    if (ret != SR_OK) {
+        sr_err("Set Trigger Slope command failed!");
+        return ret;
+    }
+    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_SOURCE));
+    if (ret != SR_OK) {
+        sr_err("Set Trigger Source command failed!");
+        return ret;
+    }
+    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_VALUE));
+    if (ret != SR_OK) {
+        sr_err("Set Trigger Value command failed!");
+        return ret;
+    }
+    return ret;
+}
+
+static int dso_zero(struct sr_dev_inst *sdi, struct sr_status mstatus)
+{
+    struct DSL_context *devc = sdi->priv;
+    struct sr_usb_dev_inst *usb = sdi->conn;
+    GSList *l;
+    int ret, i;
+    static double vpos_back[2];
+    static uint64_t vdiv_back[2];
+    struct DSL_vga *vga_ptr = get_vga_ptr(sdi);
+    struct sr_channel *probe0, *probe1;
+    for(l = sdi->channels; l; l = l->next) {
+        struct sr_channel *probe = (struct sr_channel *)l->data;
+        if (probe->index == 0)
+            probe0 = probe;
+        if (probe->index == 1)
+            probe1 = probe;
+    }
+
+    if (devc->zero_stage == -1) {
+        // initialize before zero adjustment
+        if (dso_init(sdi, 0) == SR_OK)
+            devc->zero_stage = 0;
+    } else if ((vga_ptr+devc->zero_stage)->key == 0) {
+        ret = SR_OK;
+        if (strcmp(sdi->model, "DSCope20") == 0) {
+            if (devc->zero_pcnt == 0) {
+                devc->zero_comb = 0;
+                vpos_back[0] = probe0->vpos;
+                probe0->vpos = (vga_ptr+devc->zero_stage-1)->key * -4.8;
+                vdiv_back[0] = probe0->vdiv;
+                probe0->vdiv = (vga_ptr+devc->zero_stage-1)->key;
+                ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe0, SR_CONF_VPOS));
+            } else if (devc->zero_pcnt == 4) {
+                const double voff = 255*0.98 - (mstatus.ch0_max + mstatus.ch0_min) / 2.0;
+                if (abs(voff) < 0.5) {
+                    probe0->vpos = vpos_back[0];
+                } else {
+                    probe0->vpos_trans += voff;
+                    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe0, SR_CONF_VPOS));
+                    devc->zero_pcnt = 1;
+                }
+            } else if (devc->zero_pcnt == 5) {
+                devc->zero_comb = 0;
+                vpos_back[1] = probe1->vpos;
+                probe1->vpos = (vga_ptr+devc->zero_stage-1)->key * -4.8;
+                vdiv_back[1] = probe1->vdiv;
+                probe1->vdiv = (vga_ptr+devc->zero_stage-1)->key;
+                ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe1, SR_CONF_VPOS));
+            } else if (devc->zero_pcnt == 9) {
+                const double voff = 255*0.98 - (mstatus.ch1_max + mstatus.ch1_min) / 2.0;
+                if (abs(voff) < 0.5) {
+                    probe1->vpos = vpos_back[1];
+                } else {
+                    probe1->vpos_trans += voff;
+                    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe1, SR_CONF_VPOS));
+                    devc->zero_pcnt = 6;
+                }
+            }
+        }
+
+        if (devc->zero_pcnt == 10) {
+            ret = command_wr_reg(usb->devhdl, 0b1101, COMB_ADDR+6);
+            devc->zero_comb = 0;
+            vpos_back[0] = probe0->vpos;
+            probe0->vpos = (vga_ptr+devc->zero_stage-1)->key * 4.5;
+            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe0, SR_CONF_VPOS));
+        } else if (devc->zero_pcnt == 15) {
+            probe0->comb_diff_top = (mstatus.ch0_max - mstatus.ch1_max) +
+                                    (mstatus.ch0_min - mstatus.ch1_min);
+            probe0->vpos = (vga_ptr+devc->zero_stage-1)->key * -4.5;
+            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe0, SR_CONF_VPOS));
+        } else if (devc->zero_pcnt == 20) {
+            probe0->comb_diff_bom = (mstatus.ch0_max - mstatus.ch1_max) +
+                                    (mstatus.ch0_min - mstatus.ch1_min);
+            probe0->vpos = vpos_back[0];
+            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe0, SR_CONF_VPOS));
+        }
+
+        if (devc->zero_pcnt == 25) {
+            ret = command_wr_reg(usb->devhdl, 0b1110, COMB_ADDR+6);
+            devc->zero_comb = 1;
+            vpos_back[1] = probe1->vpos;
+            probe1->vpos = (vga_ptr+devc->zero_stage-1)->key * 4.5;
+            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe1, SR_CONF_VPOS));
+        } else if (devc->zero_pcnt == 30) {
+            probe1->comb_diff_top = (mstatus.ch1_max - mstatus.ch0_max) +
+                                    (mstatus.ch1_min - mstatus.ch0_min);
+            probe1->vpos = (vga_ptr+devc->zero_stage-1)->key * -4.5;
+            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe1, SR_CONF_VPOS));
+        } else if (devc->zero_pcnt == 35) {
+            probe1->comb_diff_bom = (mstatus.ch1_max - mstatus.ch0_max) +
+                                    (mstatus.ch1_min - mstatus.ch0_min);
+            probe1->vpos = vpos_back[1];
+            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe1, SR_CONF_VPOS));
+        }
+
+        if (devc->zero_pcnt == 40) {
+            if (strcmp(sdi->model, "DSCope20") == 0) {
+                probe0->vdiv = vdiv_back[0];
+                probe1->vdiv = vdiv_back[1];
+            }
+            ret = command_wr_reg(usb->devhdl, 0b0011, COMB_ADDR+6);
+            devc->zero = FALSE;
+            dso_init(sdi, 0);
+        }
+
+        if (ret == SR_OK)
+            devc->zero_pcnt++;
+    } else {
+        if (devc->zero_pcnt == 0) {
+            for(l = sdi->channels; l; l = l->next) {
+                struct sr_channel *probe = (struct sr_channel *)l->data;
+                uint64_t vdiv_back = probe->vdiv;
+                probe->vdiv = (vga_ptr+devc->zero_stage)->key;
+                ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe, SR_CONF_VDIV));
+                ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe, SR_CONF_VPOS));
+                probe->vdiv = vdiv_back;
+            }
+        }
+
+        if (devc->zero_pcnt == 4) {
+            const double voff0 = 255/2.0 - (mstatus.ch0_max + mstatus.ch0_min)/2.0;
+            const double voff1 = 255/2.0 - (mstatus.ch1_max + mstatus.ch1_min)/2.0;
+            if (abs(voff0) < 0.5 && abs(voff1) < 0.5) {
+                devc->zero_stage++;
+            } else {
+                if (strcmp(sdi->model, "DSCope") == 0) {
+                    for(l = sdi->channels; l; l = l->next) {
+                        struct sr_channel *probe = (struct sr_channel *)l->data;
+                        double trans_coarse = ((vga_ptr+devc->zero_stage)->key < 500) ? (probe->vpos_trans >> 8)/DSCOPE_TRANS_CMULTI : (probe->vpos_trans >> 8);
+                        double trans_fine = ((vga_ptr+devc->zero_stage)->key < 500) ? (probe->vpos_trans & 0x00ff) / 1000.0 : (probe->vpos_trans & 0x00ff) / DSCOPE_TRANS_FMULTI;
+
+                        double voltage_off = ((probe->index == 0) ? voff0 : voff1) * (vga_ptr+devc->zero_stage)->key * 10 / 255.0;
+                        uint16_t last_voff = ((probe->index == 0) ? (vga_ptr+devc->zero_stage)->voff0 : (vga_ptr+devc->zero_stage)->voff1);
+                        int voff_coarse = floor(voltage_off / trans_coarse + 0.5);
+                        int voff_fine = floor(-(voltage_off - voff_coarse*trans_coarse)/trans_fine + 0.5);
+                        voff_coarse = (last_voff >> 10) + voff_coarse;
+                        voff_fine = (last_voff&0x03ff) + voff_fine;
+                        if (probe->index == 0)
+                            (vga_ptr+devc->zero_stage)->voff0 = (voff_coarse << 10) + voff_fine;
+                        else if (probe->index == 1)
+                            (vga_ptr+devc->zero_stage)->voff1 = (voff_coarse << 10) + voff_fine;
+                    }
+                } else if (strcmp(sdi->model, "DSCope20") == 0) {
+                    (vga_ptr+devc->zero_stage)->voff0 += voff0;
+                    (vga_ptr+devc->zero_stage)->voff1 += voff1;
+                }
+            }
+            devc->zero_pcnt = 0;
+        } else {
+            devc->zero_pcnt++;
+        }
+    }
+
+    return ret;
+}
+
+static int dev_open(struct sr_dev_inst *sdi)
+{
+    struct sr_usb_dev_inst *usb;
+    struct DSL_context *devc;
+	int ret;
+	int64_t timediff_us, timediff_ms;
+    int i;
+
+	devc = sdi->priv;
+	usb = sdi->conn;
+
+	/*
+	 * If the firmware was recently uploaded, wait up to MAX_RENUM_DELAY_MS
+	 * milliseconds for the FX2 to renumerate.
+	 */
+    ret = SR_ERR;
+	if (devc->fw_updated > 0) {
+        sr_info("Waiting for device to reset.");
+		/* Takes >= 300ms for the FX2 to be gone from the USB bus. */
+        g_usleep(300 * 1000);
+		timediff_ms = 0;
+		while (timediff_ms < MAX_RENUM_DELAY_MS) {
+            if ((ret = DSCope_dev_open(sdi)) == SR_OK)
+				break;
+			g_usleep(100 * 1000);
+
+			timediff_us = g_get_monotonic_time() - devc->fw_updated;
+			timediff_ms = timediff_us / 1000;
+            sr_spew("Waited %" PRIi64 "ms.", timediff_ms);
+		}
+        if (ret != SR_OK) {
+            sr_err("Device failed to renumerate.");
+            return SR_ERR;
+		}
+        sr_info("Device came back after %" PRIi64 "ms.", timediff_ms);
+	} else {
+        sr_info("Firmware upload was not needed.");
+        ret = DSCope_dev_open(sdi);
+	}
+
+    if (ret != SR_OK) {
+        sr_err("Unable to open device.");
+        return SR_ERR;
+	}
+
+	ret = libusb_claim_interface(usb->devhdl, USB_INTERFACE);
+	if (ret != 0) {
+		switch(ret) {
+		case LIBUSB_ERROR_BUSY:
+            sr_err("Unable to claim USB interface. Another "
+			       "program or driver has already claimed it.");
+			break;
+		case LIBUSB_ERROR_NO_DEVICE:
+            sr_err("Device has been disconnected.");
+			break;
+		default:
+            sr_err("Unable to claim interface: %s.",
+			       libusb_error_name(ret));
+			break;
+		}
+
+        return SR_ERR;
+	}
+
+    if ((ret = command_fpga_config(usb->devhdl)) != SR_OK) {
+        sr_err("Send FPGA configure command failed!");
+    } else {
+        /* Takes >= 10ms for the FX2 to be ready for FPGA configure. */
+        g_usleep(10 * 1000);
+        char *fpga_bit = malloc(strlen(config_path)+strlen(devc->profile->fpga_bit33)+1);
+        if (fpga_bit == NULL)
+            return SR_ERR_MALLOC;
+        strcpy(fpga_bit, config_path);
+        strcat(fpga_bit, devc->profile->fpga_bit33);
+        ret = fpga_config(usb->devhdl, fpga_bit);
+        if (ret != SR_OK) {
+            sr_err("Configure FPGA failed!");
+        }
+    }
+
+    if (sdi->mode == DSO)
+        dso_init(sdi, 1);
+
+    return SR_OK;
+}
+
+static int dev_close(struct sr_dev_inst *sdi)
+{
+    struct sr_usb_dev_inst *usb;
+
+	usb = sdi->conn;
+	if (usb->devhdl == NULL)
+        return SR_ERR;
+
+    sr_info("DSCope: Closing device %d on %d.%d interface %d.",
+		sdi->index, usb->bus, usb->address, USB_INTERFACE);
+	libusb_release_interface(usb->devhdl, USB_INTERFACE);
+	libusb_close(usb->devhdl);
+	usb->devhdl = NULL;
+    sdi->status = SR_ST_INACTIVE;
+
+    return SR_OK;
+}
+
+static int cleanup(void)
+{
+	int ret;
+	struct drv_context *drvc;
+
+	if (!(drvc = di->priv))
+        return SR_OK;
+
+	ret = dev_clear();
+
+	g_free(drvc);
+	di->priv = NULL;
+
+	return ret;
+}
+
 
 static void abort_acquisition(struct DSL_context *devc)
 {
@@ -1778,7 +2257,7 @@ static struct sr_config * new_config(int key, GVariant *data)
 
 static void receive_transfer(struct libusb_transfer *transfer)
 {
-	gboolean packet_has_error = FALSE;
+    gboolean packet_has_error = FALSE;
     struct sr_datafeed_packet packet;
     struct sr_datafeed_logic logic;
     struct sr_datafeed_dso dso;
@@ -1920,6 +2399,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
             uint16_t channel_cnt = 0;
             uint16_t channel_en_cnt = 0;
             GSList *l;
+            int ret;
             struct sr_dev_inst *sdi = devc->cb_data;
             for (l = sdi->channels; l; l = l->next) {
                 struct sr_channel *probe = (struct sr_channel *)l->data;
@@ -1945,22 +2425,12 @@ static void receive_transfer(struct libusb_transfer *transfer)
                 mstatus.stream_mode = *((const uint32_t*)cur_buf + mstatus_offset/2 + 16/2) & 0x80000000;
                 mstatus.sample_divider = *((const uint32_t*)cur_buf + mstatus_offset/2 + 18/2) & 0x7fffffff;
                 mstatus.sample_divider_tog = *((const uint32_t*)cur_buf + mstatus_offset/2 + 18/2) & 0x80000000;
-                mstatus.zeroing = (*((const uint16_t*)cur_buf + mstatus_offset + 128) & 0x8000) != 0;
-                mstatus.ch0_vpos_mid = *((const uint16_t*)cur_buf + mstatus_offset + 128) & 0x7fff;
-                mstatus.ch0_voff_mid = *((const uint16_t*)cur_buf + mstatus_offset + 129);
-                mstatus.ch0_vcntr = *((const uint16_t*)cur_buf + mstatus_offset + 130);
-                mstatus.ch0_adc_off = *((const uint8_t*)cur_buf + mstatus_offset*2 + 131*2);
-                mstatus.ch0_adc_sign = *((const uint8_t*)cur_buf + mstatus_offset*2 + 131*2+1);
-                mstatus.ch1_vpos_mid = *((const uint16_t*)cur_buf + mstatus_offset + 132);
-                mstatus.ch1_voff_mid = *((const uint16_t*)cur_buf + mstatus_offset + 133);
-                mstatus.ch1_vcntr = *((const uint16_t*)cur_buf + mstatus_offset + 134);
-                mstatus.ch1_adc_off = *((const uint8_t*)cur_buf + mstatus_offset*2 + 135*2);
-                mstatus.ch1_adc_sign = *((const uint8_t*)cur_buf + mstatus_offset*2 + 135*2+1);
-                mstatus.comb0_off = *((const uint16_t*)cur_buf + mstatus_offset + 136);
-                mstatus.comb1_off = *((const uint16_t*)cur_buf + mstatus_offset + 137);
-                mstatus.comb_sign = *((const uint8_t*)cur_buf + mstatus_offset*2 + 138*2);
             } else {
                 mstatus.vlen = instant_buffer_size;
+            }
+
+            if (devc->zero) {
+                dso_zero(sdi, mstatus);
             }
 
             const uint32_t divider = devc->zero ? 0x1 : (uint32_t)ceil(DSCOPE_MAX_SAMPLERATE * 1.0 / devc->cur_samplerate / channel_en_cnt);
@@ -2394,9 +2864,14 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi, void *cb_data)
     devc->transfers[0] = transfer;
     devc->submitted_transfers++;
 
+    if (devc->zero && devc->zero_stage == -1) {
+        // initialize before zero adjustment
+        if (dso_init(sdi, 0) == SR_OK)
+            devc->zero_stage = 0;
+    }
+
     devc->status = DSL_START;
     mstatus_valid = FALSE;
-    mstatus.zeroing = devc->zero;
 	/* Send header packet to the session bus. */
     //std_session_send_df_header(cb_data, LOG_PREFIX);
     std_session_send_df_header(sdi, LOG_PREFIX);
@@ -2447,10 +2922,7 @@ static int dev_status_get(struct sr_dev_inst *sdi, struct sr_status *status, int
         devc = sdi->priv;
         if (mstatus_valid) {
             *status = mstatus;
-            if (devc->zero)
-                return SR_ERR;
-            else
-                return SR_OK;
+            return SR_OK;
         } else {
             return SR_ERR;
         }

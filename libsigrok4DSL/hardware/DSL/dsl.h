@@ -2,7 +2,7 @@
  * This file is part of the libsigrok project.
  *
  * Copyright (C) 2013 Bert Vermeulen <bert@biot.com>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -78,6 +78,49 @@
 #define DSCOPE_MAX_SAMPLERATE SR_MHZ(200)
 #define DSCOPE_INSTANT_DEPTH SR_MB(32)
 
+/*
+ * for DSCope device
+ * trans: x << 8 + y
+ * x = vpos(coarse), each step(1024 total) indicate x(mv) at 1/20 attenuation, and x/10(mv) at 1/2 attenuation
+ * y = voff(fine), each step(1024 total) indicate y/100(mv) at 1/20 attenuation, adn y/1000(mv) at 1/2 attenuation
+ * voff: x << 10 + y
+ * x = vpos(coarse) default bias
+ * y = voff(fine) default bias
+ * the final offset: x+DSCOPE_CONSTANT_BIAS->vpos(coarse); y->voff(fine)
+ */
+#define DSCOPE_DEFAULT_TRANS (129<<8)+167
+#define DSCOPE_DEFAULT_VOFF  (32<<10)+558
+#define DSCOPE_CONSTANT_BIAS 160
+#define DSCOPE_TRANS_CMULTI   10
+#define DSCOPE_TRANS_FMULTI   100.0
+#define DSCOPE_DEFAULT_VGAIN0 0x162400
+#define DSCOPE_DEFAULT_VGAIN1 0x14C000
+#define DSCOPE_DEFAULT_VGAIN2 0x12E800
+#define DSCOPE_DEFAULT_VGAIN3 0x118000
+#define DSCOPE_DEFAULT_VGAIN4 0x102400
+#define DSCOPE_DEFAULT_VGAIN5 0x2E800
+#define DSCOPE_DEFAULT_VGAIN6 0x18000
+#define DSCOPE_DEFAULT_VGAIN7 0x02400
+
+/*
+ * for DSCope20 device
+ * trans: the whole windows offset map to the offset pwm(1024 total)
+ * voff: offset pwm constant bias to balance circuit offset
+ */
+#define DSCOPE20_DEFAULT_TRANS 920
+#define DSCOPE20_DEFAULT_VOFF 45
+#define DSCOPE20_DEFAULT_VGAIN0 0x1DA800
+#define DSCOPE20_DEFAULT_VGAIN1 0x1A7200
+#define DSCOPE20_DEFAULT_VGAIN2 0x164200
+#define DSCOPE20_DEFAULT_VGAIN3 0x131800
+#define DSCOPE20_DEFAULT_VGAIN4 0xBD000
+#define DSCOPE20_DEFAULT_VGAIN5 0x7AD00
+#define DSCOPE20_DEFAULT_VGAIN6 0x48800
+#define DSCOPE20_DEFAULT_VGAIN7 0x12000
+
+#define CALI_VGAIN_RANGE 100
+#define CALI_VOFF_RANGE (1024-DSCOPE20_DEFAULT_TRANS)
+
 struct DSL_profile {
     uint16_t vid;
     uint16_t pid;
@@ -113,7 +156,7 @@ static const struct DSL_profile supported_DSLogic[3] = {
     { 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 };
 
-static const struct DSL_profile supported_DSCope[2] = {
+static const struct DSL_profile supported_DSCope[3] = {
     /*
      * DSCope
      */
@@ -121,6 +164,12 @@ static const struct DSL_profile supported_DSCope[2] = {
      "DSCope.fw",
      "DSCope.bin",
      "DSCope.bin",
+     DEV_CAPS_16BIT},
+
+    {0x2A0E, 0x0004, NULL, "DSCope20", NULL,
+     "DSCope20.fw",
+     "DSCope20.bin",
+     "DSCope20.bin",
      DEV_CAPS_16BIT},
 
     { 0, 0, 0, 0, 0, 0, 0, 0, 0 }
@@ -176,6 +225,10 @@ struct DSL_context {
     uint32_t trigger_hpos;
     uint32_t trigger_holdoff;
     gboolean zero;
+    gboolean cali;
+    int zero_stage;
+    int zero_pcnt;
+    int zero_comb;
     gboolean stream;
     gboolean data_lock;
 
@@ -252,6 +305,14 @@ struct DSL_setting {
     //uint32_t trig_logic3_header;             // 35
     //uint16_t trig_logic3[NUM_TRIGGER_STAGES];
     uint32_t end_sync;
+};
+
+struct DSL_vga {
+    int key;
+    uint64_t vgain0;
+    uint64_t vgain1;
+    uint16_t voff0;
+    uint16_t voff1;
 };
 
 #endif

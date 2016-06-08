@@ -245,7 +245,6 @@ extern struct ds_trigger *trigger;
 
 struct sr_status mstatus;
 struct cmd_zero_info zero_info;
-struct cmd_comb_info comb_info;
 
 /**
  * Check the USB configuration to determine if this is an DSLogic device.
@@ -279,7 +278,7 @@ static gboolean check_conf_profile(libusb_device *dev)
 		if (libusb_get_string_descriptor_ascii(hdl,
 				des.iProduct, strdesc, sizeof(strdesc)) < 0)
 			break;
-        if (strncmp((const char *)strdesc, "DSLogic", 7))
+        if (strncmp((const char *)strdesc, "USB-based Instrument", 20))
 			break;
 
         /* If we made it here, it must be an DSLogic. */
@@ -1000,28 +999,6 @@ static uint64_t dso_cmd_gen(struct sr_dev_inst *sdi, struct sr_channel* ch, int 
             cmd += probe->trig_value << (8 * (probe->index + 1));
         }
         break;
-    case SR_CONF_ZERO_SET:
-        cmd += 0x40;
-        cmd += ch->index << ch_bit;
-        cmd += ((uint64_t)zero_info.vpos_l << 8);
-        cmd += ((uint64_t)(zero_info.vpos_h & 0x3) << 16);
-        cmd += ((uint64_t)zero_info.voff_l << 24);
-        cmd += ((uint64_t)(zero_info.voff_h & 0x3) << 32);
-        cmd += ((uint64_t)zero_info.vcntr_l << 40);
-        cmd += ((uint64_t)(zero_info.vcntr_h & 0x3) << 48);
-        cmd += ((uint64_t)zero_info.adc_off << 56);
-        break;
-    case SR_CONF_COMB_SET:
-        cmd += 0x48;
-        cmd += ((uint64_t)comb_info.comb0_low_off << 8);
-        cmd += ((uint64_t)comb_info.comb0_hig_off << 16);
-        cmd += ((uint64_t)comb_info.comb1_low_off << 24);
-        cmd += ((uint64_t)comb_info.comb1_hig_off << 32);
-        cmd += ((uint64_t)comb_info.comb_sign << 40);
-        break;
-    case SR_CONF_ZERO_OVER:
-        cmd += 0x50;
-        break;
     case SR_CONF_TRIGGER_HOLDOFF:
         cmd += 0x58;
         cmd += devc->trigger_holdoff << 8;
@@ -1128,7 +1105,7 @@ static int dev_open(struct sr_dev_inst *sdi)
         g_free(fpga_bit);
     }
 
-    ret = command_vth(usb->devhdl, devc->vth);
+    ret = command_wr_reg(usb->devhdl, (uint8_t)(devc->vth/5.0*255), VTH_ADDR);
     if (ret == SR_OK)
         sr_dbg("%s: setting threshold voltage to %d",
             __func__, devc->vth);
@@ -1401,12 +1378,6 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         devc = sdi->priv;
         *data = g_variant_new_uint64(DSLOGIC_MAX_LOGIC_DEPTH*ceil(samplerates[devc->samplerates_size-1] * 1.0 / DSLOGIC_MAX_LOGIC_SAMPLERATE));
         break;
-    case SR_CONF_STATUS:
-        if (!sdi)
-            return SR_ERR;
-        devc = sdi->priv;
-        *data = g_variant_new_boolean(devc->status != DSL_INIT);
-        break;
     default:
         return SR_ERR_NA;
 	}
@@ -1507,22 +1478,6 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                         devc->zero = TRUE;
                         sr_info("Zero have not been setted!");
                     }
-                }
-            }
-
-            comb_info.comb_addr = comb_base_addr;
-            if ((ret = command_rd_nvm(usb->devhdl, (unsigned char *)&comb_info, comb_info.comb_addr, sizeof(struct cmd_comb_info))) != SR_OK) {
-                sr_err("Send Get Comb Command Failed!");
-            } else {
-                if (comb_info.comb_addr == comb_base_addr) {
-                    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_COMB_SET));
-                    if (ret != SR_OK) {
-                        sr_err("Set Comb command failed!");
-                        return ret;
-                    }
-                } else {
-                    devc->zero = TRUE;
-                    sr_info("Comb have not been setted!");
                 }
             }
 
@@ -1695,7 +1650,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             __func__, devc->th_level);
     } else if (id == SR_CONF_VTH) {
         devc->vth = g_variant_get_double(data);
-        ret = command_vth(usb->devhdl, devc->vth);
+        ret = command_wr_reg(usb->devhdl, (uint8_t)(devc->vth/5.0*255), VTH_ADDR);
         if (ret == SR_OK)
             sr_dbg("%s: setting threshold voltage to %d",
                 __func__, devc->vth);
@@ -1851,18 +1806,10 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         for(l = sdi->channels; l; l = l->next) {
             struct sr_channel *probe = (struct sr_channel *)l->data;
             zero_info.zero_addr = zero_base_addr + probe->index * sizeof(struct cmd_zero_info);
-            zero_info.adc_off = (probe->index == 0) ? mstatus.ch0_adc_off + (mstatus.ch0_adc_sign << 7) : mstatus.ch1_adc_off + (mstatus.ch1_adc_sign << 7);
             ret = command_wr_nvm(usb->devhdl, (unsigned char *)&zero_info, sizeof(struct cmd_zero_info));
             if (ret != SR_OK)
                 sr_err("DSO channel %d Set Zero command failed!", probe->index);
         }
-        comb_info.comb_addr = comb_base_addr;
-        comb_info.comb0_low_off = mstatus.comb0_off;
-        comb_info.comb0_hig_off = mstatus.comb0_off >> 8;
-        comb_info.comb1_low_off = mstatus.comb1_off;
-        comb_info.comb1_hig_off = mstatus.comb1_off >> 8;
-        comb_info.comb_sign = mstatus.comb_sign;
-        ret = command_wr_nvm(usb->devhdl, (unsigned char *)&comb_info, sizeof(struct cmd_comb_info));
         if (ret != SR_OK)
             sr_err("DSO Set Comb command failed!");
         else
@@ -2221,14 +2168,6 @@ static void receive_transfer(struct libusb_transfer *transfer)
                 mstatus.stream_mode = *((const uint32_t*)cur_buf + mstatus_offset/2 + 16/2) & 0x80000000;
                 mstatus.sample_divider = *((const uint32_t*)cur_buf + mstatus_offset/2 + 18/2) & 0x7fffffff;
                 mstatus.sample_divider_tog = *((const uint32_t*)cur_buf + mstatus_offset/2 + 18/2) & 0x80000000;
-                mstatus.zeroing = (*((const uint16_t*)cur_buf + mstatus_offset + 128) & 0x8000) != 0;
-                mstatus.ch0_adc_off = *((const uint8_t*)cur_buf + mstatus_offset*2 + 131*2);
-                mstatus.ch0_adc_sign = *((const uint8_t*)cur_buf + mstatus_offset*2 + 131*2+1);
-                mstatus.ch1_adc_off = *((const uint8_t*)cur_buf + mstatus_offset*2 + 135*2);
-                mstatus.ch1_adc_sign = *((const uint8_t*)cur_buf + mstatus_offset*2 + 135*2+1);
-                mstatus.comb0_off = *((const uint16_t*)cur_buf + mstatus_offset + 136);
-                mstatus.comb1_off = *((const uint16_t*)cur_buf + mstatus_offset + 137);
-                mstatus.comb_sign = *((const uint8_t*)cur_buf + mstatus_offset*2 + 138*2);
             } else {
                 mstatus.vlen = instant_buffer_size;
             }

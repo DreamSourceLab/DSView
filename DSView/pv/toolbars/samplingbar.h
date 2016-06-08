@@ -2,8 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,6 +51,7 @@ class DevInst;
 
 namespace dialogs {
 class deviceoptions;
+class Calibration;
 }
 
 namespace toolbars {
@@ -96,6 +96,8 @@ signals:
     void device_selected();
     void device_updated();
     void sample_count_changed();
+    void show_calibration();
+    void hide_calibration();
 
 private:
     void update_sample_rate_selector();

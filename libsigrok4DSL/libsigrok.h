@@ -568,10 +568,11 @@ struct sr_channel {
     uint64_t vdiv;
     uint16_t vfactor;
     double vpos;
+    uint16_t vpos_trans;
     uint8_t coupling;
     uint8_t trig_value;
-    uint16_t vpos_mid;
-    uint16_t voff_mid;
+    int8_t comb_diff_top;
+    int8_t comb_diff_bom;
 };
 
 /** Structure for groups of channels that have common properties. */
@@ -629,22 +630,6 @@ struct sr_status {
     gboolean stream_mode;
     uint32_t sample_divider;
     gboolean sample_divider_tog;
-
-    gboolean zeroing;
-    uint16_t ch0_vpos_mid;
-    uint16_t ch0_voff_mid;
-    uint16_t ch0_vcntr;
-    uint16_t ch1_vpos_mid;
-    uint16_t ch1_voff_mid;
-    uint16_t ch1_vcntr;
-    uint8_t ch0_adc_off;
-    uint8_t ch1_adc_off;
-    gboolean ch0_adc_sign;
-    gboolean ch1_adc_sign;
-
-    uint16_t comb0_off;
-    uint16_t comb1_off;
-    uint8_t comb_sign;
 };
 
 enum {
@@ -754,9 +739,12 @@ enum {
 
     /** Zero */
     SR_CONF_ZERO_SET,
+    SR_CONF_ZERO_LOAD,
     SR_CONF_COMB_SET,
     SR_CONF_ZERO,
     SR_CONF_ZERO_OVER,
+    SR_CONF_VOCM,
+    SR_CONF_CALI,
 
     /** status for dso channel */
     SR_CONF_STATUS_PERIOD,
@@ -778,6 +766,13 @@ enum {
 
     /** Vertical offset */
     SR_CONF_VOFF,
+    SR_CONF_VOFF_DEFAULT,
+    SR_CONF_VOFF_RANGE,
+
+    /** VGain */
+    SR_CONF_VGAIN,
+    SR_CONF_VGAIN_DEFAULT,
+    SR_CONF_VGAIN_RANGE,
 
     /** Coupling for dso channel. */
     SR_CONF_COUPLING,

@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -62,6 +62,10 @@ DeviceOptions::DeviceOptions(QWidget *parent, boost::shared_ptr<pv::device::DevI
         _config_button = new QPushButton(tr("Zero Adjustment"), this);
         _layout.addWidget(_config_button);
         connect(_config_button, SIGNAL(clicked()), this, SLOT(zero_adj()));
+
+        _cali_button = new QPushButton(tr("Manual Calibration"), this);
+        _layout.addWidget(_cali_button);
+        connect(_cali_button, SIGNAL(clicked()), this, SLOT(on_calibration()));
     }
 
     _layout.addStretch(1);
@@ -226,11 +230,11 @@ void DeviceOptions::disable_all_probes()
 void DeviceOptions::zero_adj()
 {
     using namespace Qt;
-    QDialog::reject();
+    QDialog::accept();
 
     QMessageBox msg(this);
     msg.setText(tr("Information"));
-    msg.setInformativeText(tr("Zero adjustment program will be started. This may take a few minutes!"));
+    msg.setInformativeText(tr("Zero adjustment program will be started. Please keep all channels out of singal input. It can take a while!"));
     //msg.setStandardButtons(QMessageBox::);
     msg.addButton(tr("Ok"), QMessageBox::AcceptRole);
     msg.addButton(tr("Cancel"), QMessageBox::RejectRole);
@@ -239,6 +243,13 @@ void DeviceOptions::zero_adj()
     if ( ret == QMessageBox::AcceptRole) {
         _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO, g_variant_new_boolean(true));
     }
+}
+
+void DeviceOptions::on_calibration()
+{
+    using namespace Qt;
+    QDialog::accept();
+    _dev_inst->set_config(NULL, NULL, SR_CONF_CALI, g_variant_new_boolean(true));
 }
 
 void DeviceOptions::mode_check()

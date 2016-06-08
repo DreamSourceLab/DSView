@@ -20,65 +20,58 @@
  */
 
 
-#ifndef DSVIEW_PV_PROTOCOLEXP_H
-#define DSVIEW_PV_PROTOCOLEXP_H
+#ifndef DSVIEW_PV_CALIBRATION_H
+#define DSVIEW_PV_CALIBRATION_H
 
 #include <QDialog>
 #include <QDialogButtonBox>
-#include <QFormLayout>
-#include <QVBoxLayout>
+#include <QPushButton>
 #include <QLabel>
-#include <QRadioButton>
-#include <QComboBox>
+#include <QFormLayout>
+#include <QSlider>
 
+#include <list>
 #include <boost/shared_ptr.hpp>
 
-#include "../device/devinst.h"
-#include "../prop/binding/deviceoptions.h"
+#include <pv/device/devinst.h>
 
 namespace pv {
-
-class SigSession;
-
-namespace data {
-namespace decode {
-class Row;
-}
-}
-
 namespace dialogs {
 
-class ProtocolExp : public QDialog
+class Calibration : public QDialog
 {
-    Q_OBJECT
-
-public:
-    ProtocolExp(QWidget *parent, SigSession &session);
-
-protected:
-    void accept();
-    void reject();
-
-signals:
-    void export_progress(int percent);
-
-private slots:
-    void cancel_export();
+	Q_OBJECT
 
 private:
-    SigSession &_session;
+    static const QString VGAIN;
+    static const QString VOFF;
 
-    QComboBox *_format_combobox;
-    std::list<QRadioButton *> _row_sel_list;
-    std::list<QLabel *> _row_label_list;
+public:
+    Calibration(QWidget *parent);
+
+    void set_device(boost::shared_ptr<pv::device::DevInst> dev_inst);
+protected:
+	void accept();
+    void reject();
+
+private slots:
+    void set_value(int value);
+    void on_save();
+    void on_reset();
+    void reload_value();
+
+private:
+    boost::shared_ptr<pv::device::DevInst>  _dev_inst;
+
+    QPushButton *_save_btn;
+    QPushButton *_reset_btn;
+    QPushButton *_exit_btn;
     QFormLayout *_flayout;
-    QVBoxLayout *_layout;
-    QDialogButtonBox _button_box;
-
-    bool _export_cancel;
+    std::list <QSlider *> _slider_list;
+    std::list<QLabel *> _label_list;
 };
 
 } // namespace dialogs
 } // namespace pv
 
-#endif // DSVIEW_PV_PROTOCOLEXP_H
+#endif // DSVIEW_PV_CALIBRATION_H
