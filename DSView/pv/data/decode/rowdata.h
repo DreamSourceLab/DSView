@@ -35,7 +35,6 @@ class RowData
 public:
 	RowData();
     ~RowData();
-
 public:
 	uint64_t get_max_sample() const;
 

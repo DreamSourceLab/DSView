@@ -233,6 +233,7 @@ struct DSL_context {
     gboolean data_lock;
 
 	int num_samples;
+    uint64_t sent_samples;
 	int submitted_transfers;
 	int empty_transfer_count;
 

@@ -1013,142 +1013,6 @@ static uint64_t dso_cmd_gen(struct sr_dev_inst *sdi, struct sr_channel* ch, int 
     return cmd;
 }
 
-static int dev_open(struct sr_dev_inst *sdi)
-{
-    struct sr_usb_dev_inst *usb;
-    struct DSL_context *devc;
-    GSList *l;
-	int ret;
-	int64_t timediff_us, timediff_ms;
-
-	devc = sdi->priv;
-	usb = sdi->conn;
-
-	/*
-	 * If the firmware was recently uploaded, wait up to MAX_RENUM_DELAY_MS
-	 * milliseconds for the FX2 to renumerate.
-	 */
-    ret = SR_ERR;
-    if (devc->fw_updated > 0) {
-        sr_info("Waiting for device to reset.");
-        /* Takes >= 300ms for the FX2 to be gone from the USB bus. */
-        g_usleep(300 * 1000);
-        timediff_ms = 0;
-        while (timediff_ms < MAX_RENUM_DELAY_MS) {
-            if ((ret = DSLogic_dev_open(sdi)) == SR_OK)
-                break;
-            g_usleep(100 * 1000);
-
-            timediff_us = g_get_monotonic_time() - devc->fw_updated;
-            timediff_ms = timediff_us / 1000;
-            sr_spew("Waited %" PRIi64 "ms.", timediff_ms);
-        }
-        if (ret != SR_OK) {
-            sr_err("Device failed to renumerate.");
-            return SR_ERR;
-        }
-        sr_info("Device came back after %" PRIi64 "ms.", timediff_ms);
-    } else {
-        sr_info("Firmware upload was not needed.");
-        ret = DSLogic_dev_open(sdi);
-    }
-
-    if (ret != SR_OK) {
-        sr_err("Unable to open device.");
-        return SR_ERR;
-	}
-
-	ret = libusb_claim_interface(usb->devhdl, USB_INTERFACE);
-	if (ret != 0) {
-		switch(ret) {
-		case LIBUSB_ERROR_BUSY:
-            sr_err("Unable to claim USB interface. Another "
-			       "program or driver has already claimed it.");
-			break;
-		case LIBUSB_ERROR_NO_DEVICE:
-            sr_err("Device has been disconnected.");
-			break;
-		default:
-            sr_err("Unable to claim interface: %s.",
-			       libusb_error_name(ret));
-			break;
-		}
-
-        return SR_ERR;
-	}
-
-    if ((ret = command_fpga_config(usb->devhdl)) != SR_OK) {
-        sr_err("Send FPGA configure command failed!");
-    } else {
-        /* Takes >= 10ms for the FX2 to be ready for FPGA configure. */
-        g_usleep(10 * 1000);
-        char *fpga_bit;
-        if (!(fpga_bit = g_try_malloc(strlen(config_path)+strlen(devc->profile->fpga_bit33)+1))) {
-            sr_err("fpag_bit path malloc error!");
-            return SR_ERR_MALLOC;
-        }
-        strcpy(fpga_bit, config_path);
-        switch(devc->th_level) {
-        case SR_TH_3V3:
-            strcat(fpga_bit, devc->profile->fpga_bit33);;
-            break;
-        case SR_TH_5V0:
-            strcat(fpga_bit, devc->profile->fpga_bit50);;
-            break;
-        default:
-            return SR_ERR;
-        }
-        ret = fpga_config(usb->devhdl, fpga_bit);
-        if (ret != SR_OK) {
-            sr_err("Configure FPGA failed!");
-        }
-        g_free(fpga_bit);
-    }
-
-    ret = command_wr_reg(usb->devhdl, (uint8_t)(devc->vth/5.0*255), VTH_ADDR);
-    if (ret == SR_OK)
-        sr_dbg("%s: setting threshold voltage to %d",
-            __func__, devc->vth);
-    else
-        sr_dbg("%s: setting threshold voltage to %d failed",
-            __func__, devc->vth);
-
-    return SR_OK;
-}
-
-static int dev_close(struct sr_dev_inst *sdi)
-{
-    struct sr_usb_dev_inst *usb;
-
-	usb = sdi->conn;
-	if (usb->devhdl == NULL)
-        return SR_ERR;
-
-    sr_info("DSLogic: Closing device %d on %d.%d interface %d.",
-		sdi->index, usb->bus, usb->address, USB_INTERFACE);
-	libusb_release_interface(usb->devhdl, USB_INTERFACE);
-	libusb_close(usb->devhdl);
-	usb->devhdl = NULL;
-    sdi->status = SR_ST_INACTIVE;
-
-    return SR_OK;
-}
-
-static int cleanup(void)
-{
-	int ret;
-	struct drv_context *drvc;
-
-	if (!(drvc = di->priv))
-        return SR_OK;
-
-	ret = dev_clear();
-
-	g_free(drvc);
-	di->priv = NULL;
-
-	return ret;
-}
 
 static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
                       const struct sr_channel *ch,
@@ -1904,11 +1768,174 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_MAX_HEIGHT:
         *data = g_variant_new_strv(maxHeights, ARRAY_SIZE(maxHeights));
         break;
-	default:
+    default:
         return SR_ERR_NA;
-	}
+    }
 
     return SR_OK;
+}
+
+static int dev_open(struct sr_dev_inst *sdi)
+{
+    struct sr_usb_dev_inst *usb;
+    struct DSL_context *devc;
+    GSList *l;
+	int ret;
+	int64_t timediff_us, timediff_ms;
+
+	devc = sdi->priv;
+	usb = sdi->conn;
+
+	/*
+	 * If the firmware was recently uploaded, wait up to MAX_RENUM_DELAY_MS
+	 * milliseconds for the FX2 to renumerate.
+	 */
+    ret = SR_ERR;
+    if (devc->fw_updated > 0) {
+        sr_info("Waiting for device to reset.");
+        /* Takes >= 300ms for the FX2 to be gone from the USB bus. */
+        g_usleep(300 * 1000);
+        timediff_ms = 0;
+        while (timediff_ms < MAX_RENUM_DELAY_MS) {
+            if ((ret = DSLogic_dev_open(sdi)) == SR_OK)
+                break;
+            g_usleep(100 * 1000);
+
+            timediff_us = g_get_monotonic_time() - devc->fw_updated;
+            timediff_ms = timediff_us / 1000;
+            sr_spew("Waited %" PRIi64 "ms.", timediff_ms);
+        }
+        if (ret != SR_OK) {
+            sr_err("Device failed to renumerate.");
+            return SR_ERR;
+        }
+        sr_info("Device came back after %" PRIi64 "ms.", timediff_ms);
+    } else {
+        sr_info("Firmware upload was not needed.");
+        ret = DSLogic_dev_open(sdi);
+    }
+
+    if (ret != SR_OK) {
+        sr_err("Unable to open device.");
+        return SR_ERR;
+	}
+
+	ret = libusb_claim_interface(usb->devhdl, USB_INTERFACE);
+	if (ret != 0) {
+		switch(ret) {
+		case LIBUSB_ERROR_BUSY:
+            sr_err("Unable to claim USB interface. Another "
+			       "program or driver has already claimed it.");
+			break;
+		case LIBUSB_ERROR_NO_DEVICE:
+            sr_err("Device has been disconnected.");
+			break;
+		default:
+            sr_err("Unable to claim interface: %s.",
+			       libusb_error_name(ret));
+			break;
+		}
+
+        return SR_ERR;
+	}
+
+    if (devc->fw_updated > 0) {
+        if ((ret = command_fpga_config(usb->devhdl)) != SR_OK) {
+            sr_err("Send FPGA configure command failed!");
+        } else {
+            /* Takes >= 10ms for the FX2 to be ready for FPGA configure. */
+            g_usleep(10 * 1000);
+            char *fpga_bit;
+            if (!(fpga_bit = g_try_malloc(strlen(config_path)+strlen(devc->profile->fpga_bit33)+1))) {
+                sr_err("fpag_bit path malloc error!");
+                return SR_ERR_MALLOC;
+            }
+            strcpy(fpga_bit, config_path);
+            switch(devc->th_level) {
+            case SR_TH_3V3:
+                strcat(fpga_bit, devc->profile->fpga_bit33);;
+                break;
+            case SR_TH_5V0:
+                strcat(fpga_bit, devc->profile->fpga_bit50);;
+                break;
+            default:
+                return SR_ERR;
+            }
+            ret = fpga_config(usb->devhdl, fpga_bit);
+            if (ret != SR_OK) {
+                sr_err("Configure FPGA failed!");
+            }
+            g_free(fpga_bit);
+        }
+    }
+
+    ret = command_wr_reg(usb->devhdl, (uint8_t)(devc->vth/5.0*255), VTH_ADDR);
+    if (ret == SR_OK)
+        sr_dbg("%s: setting threshold voltage to %d",
+            __func__, devc->vth);
+    else
+        sr_dbg("%s: setting threshold voltage to %d failed",
+            __func__, devc->vth);
+
+    #ifdef _WIN32
+        if (pipe(devc->pipe_fds)) {
+            /* TODO: Better error message. */
+            sr_err("%s: pipe() failed", __func__);
+            return SR_ERR;
+        }
+        devc->channel = g_io_channel_unix_new(devc->pipe_fds[0]);
+        g_io_channel_set_flags(devc->channel, G_IO_FLAG_NONBLOCK, NULL);
+        /* Set channel encoding to binary (default is UTF-8). */
+        g_io_channel_set_encoding(devc->channel, NULL, NULL);
+        /* Make channels to unbuffered. */
+        g_io_channel_set_buffered(devc->channel, FALSE);
+    #endif
+
+    return SR_OK;
+}
+
+static int dev_close(struct sr_dev_inst *sdi)
+{
+    struct sr_usb_dev_inst *usb;
+    struct DSL_context *devc;
+
+	usb = sdi->conn;
+	if (usb->devhdl == NULL)
+        return SR_ERR;
+    devc = sdi->priv;
+
+    #ifdef _WIN32
+    if (sdi->status == SR_ST_ACTIVE && devc->channel) {
+        g_io_channel_shutdown(devc->channel, FALSE, NULL);
+        g_io_channel_unref(devc->channel);
+        devc->channel = NULL;
+    }
+    #endif
+
+    sr_info("DSLogic: Closing device %d on %d.%d interface %d.",
+		sdi->index, usb->bus, usb->address, USB_INTERFACE);
+	libusb_release_interface(usb->devhdl, USB_INTERFACE);
+	libusb_close(usb->devhdl);
+	usb->devhdl = NULL;
+    sdi->status = SR_ST_INACTIVE;
+
+    return SR_OK;
+}
+
+static int cleanup(void)
+{
+	int ret;
+	struct drv_context *drvc;
+
+	if (!(drvc = di->priv))
+        return SR_OK;
+
+	ret = dev_clear();
+
+	g_free(drvc);
+	di->priv = NULL;
+
+	return ret;
 }
 
 static void abort_acquisition(struct DSL_context *devc)
@@ -2246,12 +2273,13 @@ static void receive_transfer(struct libusb_transfer *transfer)
 
             /* send data to session bus */
             sr_session_send(devc->cb_data, &packet);
+            devc->sent_samples += cur_sample_count;
         }
 
         devc->num_samples += cur_sample_count;
-            if (((*(struct sr_dev_inst *)(devc->cb_data)).mode == LOGIC || devc->instant) &&
-            devc->limit_samples &&
-            (unsigned int)devc->num_samples >= devc->actual_samples) {
+        if (((*(struct sr_dev_inst *)(devc->cb_data)).mode == LOGIC || devc->instant) &&
+        devc->limit_samples &&
+        (unsigned int)devc->num_samples >= devc->actual_samples) {
             //abort_acquisition(devc);
             free_transfer(transfer);
             devc->status = DSL_STOP;
@@ -2391,6 +2419,8 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
 
     if (devc->num_samples != -1 &&
         (devc->status == DSL_STOP || devc->status == DSL_ERROR)) {
+        if (devc->sent_samples < devc->actual_samples)
+            devc->sent_samples = 0;
         sr_info("%s: Stopping", __func__);
         abort_acquisition(devc);
     }
@@ -2503,6 +2533,7 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi, void *cb_data)
     //devc->cb_data = cb_data;
     devc->cb_data = sdi;
     devc->num_samples = 0;
+    devc->sent_samples = 0;
     devc->empty_transfer_count = 0;
     devc->status = DSL_INIT;
     devc->num_transfers = 0;

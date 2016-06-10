@@ -128,7 +128,7 @@ void ProtocolList::set_protocol(int index)
 
     _session.get_decoder_model()->setDecoderStack(decoder_stack);
     int row_index = 0;
-    const std::map<const pv::data::decode::Row, bool>& rows(decoder_stack->get_rows_lshow());
+    const std::map<const pv::data::decode::Row, bool> rows = decoder_stack->get_rows_lshow();
     for (std::map<const pv::data::decode::Row, bool>::const_iterator i = rows.begin();
         i != rows.end(); i++) {
         QLabel *row_label = new QLabel((*i).first.title(), this);
@@ -166,7 +166,7 @@ void ProtocolList::on_row_check(bool show)
     if (!decoder_stack)
         return;
 
-    std::map<const pv::data::decode::Row, bool>& rows(decoder_stack->get_rows_lshow());
+    std::map<const pv::data::decode::Row, bool> rows = decoder_stack->get_rows_lshow();
     for (std::map<const pv::data::decode::Row, bool>::const_iterator i = rows.begin();
         i != rows.end(); i++) {
         if (index-- == 0) {

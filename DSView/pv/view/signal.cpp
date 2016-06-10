@@ -35,14 +35,14 @@ namespace pv {
 namespace view {
 
 Signal::Signal(boost::shared_ptr<pv::device::DevInst> dev_inst,
-               const sr_channel *const probe) :
+               sr_channel *probe) :
     Trace(probe->name, probe->index, probe->type),
     _dev_inst(dev_inst),
     _probe(probe)
 {
 }
 
-Signal::Signal(const Signal &s, const sr_channel * const probe) :
+Signal::Signal(const Signal &s, sr_channel *probe) :
     Trace((const Trace &)s),
     _dev_inst(s._dev_inst),
     _probe(probe)
@@ -52,6 +52,13 @@ Signal::Signal(const Signal &s, const sr_channel * const probe) :
 bool Signal::enabled() const
 {
     return _probe->enabled;
+}
+
+void Signal::set_name(QString name)
+{
+    Trace::set_name(name);
+    g_free(_probe->name);
+    _probe->name = g_strdup(name.toLocal8Bit().data());
 }
 
 void Signal::paint_axis(QPainter &p, int y, int left, int right)

@@ -46,6 +46,7 @@ public:
 		get_snapshots();
 
     void clear();
+    void init();
 
 private:
 	std::deque< boost::shared_ptr<AnalogSnapshot> > _snapshots;

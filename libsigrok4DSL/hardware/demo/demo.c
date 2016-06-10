@@ -48,7 +48,8 @@
 
 /* The size of chunks to send through the session bus. */
 /* TODO: Should be configurable. */
-#define BUFSIZE                1024*1024
+#define BUFSIZE                512*1024
+#define DSO_BUFSIZE            10*1024
 
 #define PERIOD                  4000
 
@@ -319,7 +320,7 @@ static GSList *hw_scan(GSList *options)
 
 	devices = NULL;
 
-    sdi = sr_dev_inst_new(LOGIC, 0, SR_ST_ACTIVE, DEMONAME, NULL, NULL);
+    sdi = sr_dev_inst_new(LOGIC, 0, SR_ST_INITIALIZING, DEMONAME, NULL, NULL);
 	if (!sdi) {
         sr_err("Device instance creation failed.");
 		return NULL;
@@ -391,20 +392,39 @@ static GSList *hw_dev_mode_list(const struct sr_dev_inst *sdi)
 
 static int hw_dev_open(struct sr_dev_inst *sdi)
 {
-	(void)sdi;
+    //(void)sdi;
+    struct dev_context *const devc = sdi->priv;
 
-	sdi->status = SR_ST_ACTIVE;
+    sdi->status = SR_ST_ACTIVE;
+
+    if (pipe(devc->pipe_fds)) {
+        /* TODO: Better error message. */
+        sr_err("%s: pipe() failed", __func__);
+        return SR_ERR;
+    }
+    devc->channel = g_io_channel_unix_new(devc->pipe_fds[0]);
+    g_io_channel_set_flags(devc->channel, G_IO_FLAG_NONBLOCK, NULL);
+    /* Set channel encoding to binary (default is UTF-8). */
+    g_io_channel_set_encoding(devc->channel, NULL, NULL);
+    /* Make channels to unbuffered. */
+    g_io_channel_set_buffered(devc->channel, FALSE);
 
 	return SR_OK;
 }
 
 static int hw_dev_close(struct sr_dev_inst *sdi)
 {
-	(void)sdi;
+    //(void)sdi;
+    struct dev_context *const devc = sdi->priv;
 
+    if (sdi->status == SR_ST_ACTIVE && devc->channel) {
+        g_io_channel_shutdown(devc->channel, FALSE, NULL);
+        g_io_channel_unref(devc->channel);
+        devc->channel = NULL;
+    }
     sdi->status = SR_ST_INACTIVE;
 
-	return SR_OK;
+    return SR_OK;
 }
 
 static int hw_cleanup(void)
@@ -483,6 +503,9 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         break;
     case SR_CONF_COUPLING:
         *data = g_variant_new_byte(ch->coupling);
+        break;
+    case SR_CONF_TRIGGER_VALUE:
+        *data = g_variant_new_byte(ch->trig_value);
         break;
     case SR_CONF_EN_CH:
         *data = g_variant_new_uint64(ch->enabled);
@@ -667,6 +690,11 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         sr_dbg("%s: setting AC COUPLING of channel %d to %d", __func__,
                ch->index, ch->coupling);
         ret = SR_OK;
+    }  else if (id == SR_CONF_TRIGGER_VALUE) {
+        ch->trig_value = g_variant_get_byte(data);
+        sr_dbg("%s: setting channel %d Trigger Value to %d",
+            __func__, ch->index, ch->trig_value);
+        ret = SR_OK;
     } else {
         ret = SR_ERR_NA;
 	}
@@ -843,7 +871,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
     struct sr_datafeed_logic logic;
     struct sr_datafeed_dso dso;
     struct sr_datafeed_analog analog;
-	static uint64_t samples_to_send, expected_samplenum, sending_now;
+    static uint64_t samples_to_send = 0, expected_samplenum, sending_now;
 	int64_t time, elapsed;
     static uint16_t last_sample = 0;
     uint16_t cur_sample;
@@ -860,19 +888,22 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
 	/* Of those, how many do we still have to send? */
     //samples_to_send = (expected_samplenum - devc->samples_counter) / CONST_LEN * CONST_LEN;
     //samples_to_send = expected_samplenum / CONST_LEN * CONST_LEN;
-    samples_to_send = ceil(elapsed / 1000000.0 * devc->cur_samplerate);
+    samples_to_send += ceil(elapsed / 1000000.0 * devc->cur_samplerate);
 
     if (devc->limit_samples) {
-        if ((sdi->mode == DSO && !devc->instant) || sdi->mode == ANALOG)
+        if (sdi->mode == DSO && !devc->instant)
             samples_to_send = MIN(samples_to_send,
+                                  devc->limit_samples - devc->pre_index);
+        else if (sdi->mode == ANALOG)
+            samples_to_send = MIN(samples_to_send * g_slist_length(sdi->channels),
                                   devc->limit_samples - devc->pre_index);
         else
             samples_to_send = MIN(samples_to_send,
                      devc->limit_samples - devc->samples_counter);
     }
 
-    while (samples_to_send > 0) {
-        sending_now = MIN(samples_to_send, BUFSIZE);
+    if (samples_to_send > 0 && !devc->stop) {
+        sending_now = MIN(samples_to_send, (sdi->mode == DSO ) ? DSO_BUFSIZE : BUFSIZE);
         samples_generator(devc->buf, sending_now, sdi, devc);
 
         if (devc->trigger_stage != 0) {
@@ -959,8 +990,6 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
             devc->mstatus.captured_cnt1 = devc->samples_counter >> 8;
             devc->mstatus.captured_cnt2 = devc->samples_counter >> 16;
             devc->mstatus.captured_cnt3 = devc->samples_counter >> 32;
-        } else {
-            break;
         }
 	}
 
@@ -1015,30 +1044,15 @@ static int hw_dev_acquisition_start(const struct sr_dev_inst *sdi,
 	 * They are kept here because it provides a convenient way of setting
 	 * up a timeout-based polling mechanism.
 	 */
-	if (pipe(devc->pipe_fds)) {
-		/* TODO: Better error message. */
-		sr_err("%s: pipe() failed", __func__);
-		return SR_ERR;
-	}
-
-	devc->channel = g_io_channel_unix_new(devc->pipe_fds[0]);
-
-	g_io_channel_set_flags(devc->channel, G_IO_FLAG_NONBLOCK, NULL);
-
-	/* Set channel encoding to binary (default is UTF-8). */
-	g_io_channel_set_encoding(devc->channel, NULL, NULL);
-
-	/* Make channels to unbuffered. */
-	g_io_channel_set_buffered(devc->channel, FALSE);
 
     sr_session_source_add_channel(devc->channel, G_IO_IN | G_IO_ERR,
-            100, receive_data, sdi);
+            (sdi->mode == DSO) ? 50 : 10, receive_data, sdi);
 
 	/* Send header packet to the session bus. */
     //std_session_send_df_header(cb_data, LOG_PREFIX);
     std_session_send_df_header(sdi, LOG_PREFIX);
 
-    if (!(devc->buf = g_try_malloc(BUFSIZE*sizeof(uint16_t)))) {
+    if (!(devc->buf = g_try_malloc(((sdi->mode == DSO ) ? DSO_BUFSIZE : BUFSIZE)*sizeof(uint16_t)))) {
         sr_err("buf for receive_data malloc failed.");
         return FALSE;
     }
@@ -1051,18 +1065,18 @@ static int hw_dev_acquisition_start(const struct sr_dev_inst *sdi,
 
 static int hw_dev_acquisition_stop(struct sr_dev_inst *sdi, void *cb_data)
 {
-	struct dev_context *const devc = sdi->priv;
-	struct sr_datafeed_packet packet;
+    (void)cb_data;
 
-	(void)cb_data;
+    struct dev_context *const devc = sdi->priv;
+    struct sr_datafeed_packet packet;
+    if (devc->stop)
+        return SR_OK;
 
 	sr_dbg("Stopping aquisition.");
 
     devc->stop = TRUE;
+
     sr_session_source_remove_channel(devc->channel);
-	g_io_channel_shutdown(devc->channel, FALSE, NULL);
-	g_io_channel_unref(devc->channel);
-	devc->channel = NULL;
 
     g_free(devc->buf);
 

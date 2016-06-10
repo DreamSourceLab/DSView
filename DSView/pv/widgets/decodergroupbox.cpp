@@ -46,12 +46,12 @@ DecoderGroupBox::DecoderGroupBox(boost::shared_ptr<data::DecoderStack> &decoder_
     QWidget(parent),
     _decoder_stack(decoder_stack),
     _dec(dec),
-    _layout(new QGridLayout)
+    _layout(new QGridLayout(this))
 {
     _layout->setContentsMargins(0, 0, 0, 0);
     setLayout(_layout);
 
-    _layout->addWidget(new QLabel(QString("<h3>%1</h3>").arg(_dec->decoder()->name)),
+    _layout->addWidget(new QLabel(QString("<h3>%1</h3>").arg(_dec->decoder()->name), this),
 		0, 0);
 	_layout->setColumnStretch(0, 1);
 
@@ -82,7 +82,7 @@ DecoderGroupBox::DecoderGroupBox(boost::shared_ptr<data::DecoderStack> &decoder_
 
     // add row show/hide
     int index = 0;
-    const std::map<const pv::data::decode::Row, bool>& rows(_decoder_stack->get_rows_gshow());
+    const std::map<const pv::data::decode::Row, bool> rows = _decoder_stack->get_rows_gshow();
     for (std::map<const pv::data::decode::Row, bool>::const_iterator i = rows.begin();
         i != rows.end(); i++) {
         if ((*i).first.decoder() == _dec->decoder()) {
@@ -97,6 +97,10 @@ DecoderGroupBox::DecoderGroupBox(boost::shared_ptr<data::DecoderStack> &decoder_
         }
         index++;
     }
+}
+
+DecoderGroupBox::~DecoderGroupBox()
+{
 }
 
 void DecoderGroupBox::add_layout(QLayout *layout)
@@ -122,14 +126,14 @@ void DecoderGroupBox::tog_icon()
             }
         }
     } else {
-        std::map<const pv::data::decode::Row, bool>& rows(_decoder_stack->get_rows_gshow());
+        std::map<const pv::data::decode::Row, bool> rows = _decoder_stack->get_rows_gshow();
         for (std::map<const pv::data::decode::Row, bool>::const_iterator i = rows.begin();
             i != rows.end(); i++) {
             if (index-- == 0) {
                 _decoder_stack->set_rows_gshow((*i).first, !(*i).second);
                 //rows[(*i).first] = !(*i).second;
-                sc->setIcon(QIcon(rows[(*i).first] ? ":/icons/shown.png" :
-                                                    ":/icons/hidden.png"));
+                sc->setIcon(QIcon(rows[(*i).first] ? ":/icons/hidden.png" :
+                                                    ":/icons/shown.png"));
                 break;
             }
         }

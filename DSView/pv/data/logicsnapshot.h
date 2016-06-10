@@ -66,6 +66,7 @@ public:
 	virtual ~LogicSnapshot();
 
     void clear();
+    void init();
 
     void first_payload(const sr_datafeed_logic &logic, uint64_t total_sample_count, unsigned int channel_num);
 
@@ -74,8 +75,8 @@ public:
     uint8_t * get_samples(int64_t start_sample, int64_t end_sample) const;
 
 private:
+    void free_mipmap();
 	void reallocate_mipmap_level(MipMapLevel &m);
-
 	void append_payload_to_mipmap();
 
 public:

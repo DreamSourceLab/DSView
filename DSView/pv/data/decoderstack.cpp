@@ -60,7 +60,7 @@ const int64_t DecoderStack::DecodeChunkLength = 4 * 1024;
 //const int64_t DecoderStack::DecodeChunkLength = 1024 * 1024;
 const unsigned int DecoderStack::DecodeNotifyPeriod = 1024;
 
-mutex DecoderStack::_global_decode_mutex;
+//mutex DecoderStack::_global_decode_mutex;
 
 DecoderStack::DecoderStack(pv::SigSession &session,
 	const srd_decoder *const dec) :
@@ -190,7 +190,7 @@ void DecoderStack::build_row()
 
 int64_t DecoderStack::samples_decoded() const
 {
-	lock_guard<mutex> decode_lock(_output_mutex);
+    lock_guard<boost::recursive_mutex> decode_lock(_output_mutex);
 	return _samples_decoded;
 }
 
@@ -199,7 +199,7 @@ void DecoderStack::get_annotation_subset(
 	const Row &row, uint64_t start_sample,
 	uint64_t end_sample) const
 {
-	lock_guard<mutex> lock(_output_mutex);
+    //lock_guard<mutex> lock(_output_mutex);
 
     std::map<const Row, decode::RowData>::const_iterator iter =
         _rows.find(row);
@@ -210,7 +210,7 @@ void DecoderStack::get_annotation_subset(
 
 uint64_t DecoderStack::get_max_annotation(const Row &row)
 {
-    lock_guard<mutex> lock(_output_mutex);
+    //lock_guard<mutex> lock(_output_mutex);
 
     std::map<const Row, decode::RowData>::const_iterator iter =
         _rows.find(row);
@@ -222,7 +222,7 @@ uint64_t DecoderStack::get_max_annotation(const Row &row)
 
 uint64_t DecoderStack::get_min_annotation(const Row &row)
 {
-    lock_guard<mutex> lock(_output_mutex);
+    //lock_guard<mutex> lock(_output_mutex);
 
     std::map<const Row, decode::RowData>::const_iterator iter =
         _rows.find(row);
@@ -232,14 +232,24 @@ uint64_t DecoderStack::get_min_annotation(const Row &row)
     return 0;
 }
 
-std::map<const decode::Row, bool>& DecoderStack::get_rows_gshow()
+std::map<const decode::Row, bool> DecoderStack::get_rows_gshow()
 {
-    return _rows_gshow;
+    std::map<const decode::Row, bool> rows_gshow;
+    for (std::map<const decode::Row, bool>::const_iterator i = _rows_gshow.begin();
+        i != _rows_gshow.end(); i++) {
+        rows_gshow[(*i).first] = (*i).second;
+    }
+    return rows_gshow;
 }
 
-std::map<const decode::Row, bool>& DecoderStack::get_rows_lshow()
+std::map<const decode::Row, bool> DecoderStack::get_rows_lshow()
 {
-    return _rows_lshow;
+    std::map<const decode::Row, bool> rows_lshow;
+    for (std::map<const decode::Row, bool>::const_iterator i = _rows_lshow.begin();
+        i != _rows_lshow.end(); i++) {
+        rows_lshow[(*i).first] = (*i).second;
+    }
+    return rows_lshow;
 }
 
 void DecoderStack::set_rows_gshow(const decode::Row row, bool show)
@@ -260,7 +270,7 @@ void DecoderStack::set_rows_lshow(const decode::Row row, bool show)
 
 bool DecoderStack::has_annotations(const Row &row) const
 {
-    lock_guard<mutex> lock(_output_mutex);
+    //lock_guard<mutex> lock(_output_mutex);
 
     std::map<const Row, decode::RowData>::const_iterator iter =
         _rows.find(row);
@@ -275,6 +285,7 @@ bool DecoderStack::has_annotations(const Row &row) const
 
 uint64_t DecoderStack::list_annotation_size() const
 {
+    lock_guard<boost::recursive_mutex> lock(_output_mutex);
     uint64_t max_annotation_size = 0;
     int row = 0;
     for (map<const Row, RowData>::const_iterator i = _rows.begin();
@@ -291,6 +302,7 @@ uint64_t DecoderStack::list_annotation_size() const
 bool DecoderStack::list_annotation(pv::data::decode::Annotation &ann,
                                   uint16_t row_index, uint64_t col_index) const
 {
+    //lock_guard<mutex> lock(_output_mutex);
     int row = 0;
     for (map<const Row, RowData>::const_iterator i = _rows.begin();
         i != _rows.end(); i++) {
@@ -308,6 +320,7 @@ bool DecoderStack::list_annotation(pv::data::decode::Annotation &ann,
 
 bool DecoderStack::list_row_title(int row, QString &title) const
 {
+    //lock_guard<mutex> lock(_output_mutex);
     int index = 0;
     for (map<const Row, RowData>::const_iterator i = _rows.begin();
         i != _rows.end(); i++) {
@@ -324,21 +337,31 @@ bool DecoderStack::list_row_title(int row, QString &title) const
 
 QString DecoderStack::error_message()
 {
-	lock_guard<mutex> lock(_output_mutex);
+    //lock_guard<mutex> lock(_output_mutex);
 	return _error_message;
 }
 
 void DecoderStack::clear()
 {
+    //lock_guard<boost::recursive_mutex> decode_lock(_output_mutex);
 	_sample_count = 0;
-	_frame_complete = false;
-	_samples_decoded = 0;
+    _frame_complete = false;
+    _samples_decoded = 0;
     new_decode_data();
 	_error_message = QString();
-    for (map<const Row, RowData>::const_iterator i = _rows.begin();
+    for (map<const Row, RowData>::iterator i = _rows.begin();
         i != _rows.end(); i++)
         _rows[(*i).first] = decode::RowData();
+//    _rows.clear();
+//    _rows_gshow.clear();
+//    _rows_lshow.clear();
+//    _class_rows.clear();
     _no_memory = false;
+}
+
+void DecoderStack::init()
+{
+    clear();
 }
 
 void DecoderStack::stop_decode()
@@ -379,6 +402,9 @@ void DecoderStack::begin_decode()
 				"have not been specified");
 			return;
 		}
+
+//    // Build rows
+//    build_row();
 
 	// We get the logic data of the first channel in the list.
 	// This works because we are currently assuming all
@@ -425,10 +451,10 @@ uint64_t DecoderStack::get_max_sample_count() const
 
 boost::optional<uint64_t> DecoderStack::wait_for_data() const
 {
-	unique_lock<mutex> input_lock(_input_mutex);
+    //unique_lock<mutex> input_lock(_input_mutex);
 	while(!boost::this_thread::interruption_requested() &&
 		!_frame_complete && (uint64_t)_samples_decoded >= _sample_count)
-		_input_cond.wait(input_lock);
+        //_input_cond.wait(input_lock);
 	return boost::make_optional(
 		!boost::this_thread::interruption_requested() &&
 		((uint64_t)_samples_decoded < _sample_count || !_frame_complete),
@@ -456,6 +482,7 @@ void DecoderStack::decode_data(
         }
     }
 
+    uint64_t entry_cnt = 0;
     uint8_t chunk_type = 0;
     uint64_t i = decode_start;
     while(!boost::this_thread::interruption_requested() &&
@@ -475,6 +502,7 @@ void DecoderStack::decode_data(
 
         if (logic_di && logic_di->logic_mask != 0) {
             uint64_t cur_pos = logic_di->cur_pos;
+            assert(cur_pos < _snapshot->get_sample_count());
             uint64_t sample = _snapshot->get_sample(cur_pos) & logic_di->logic_mask;
             if (logic_di->edge_index == -1) {
                 std::vector<uint64_t> pos_vector;
@@ -509,7 +537,7 @@ void DecoderStack::decode_data(
         }
 
         {
-            lock_guard<mutex> lock(_output_mutex);
+            lock_guard<boost::recursive_mutex> lock(_output_mutex);
             _samples_decoded = i - decode_start + 1;
         }
 
@@ -517,6 +545,7 @@ void DecoderStack::decode_data(
             last_cnt = i;
             new_decode_data();
         }
+        entry_cnt++;
     }
     _options_changed = false;
     decode_done();
@@ -524,7 +553,7 @@ void DecoderStack::decode_data(
 
 void DecoderStack::decode_proc()
 {
-    lock_guard<mutex> decode_lock(_global_decode_mutex);
+    //lock_guard<mutex> decode_lock(_global_decode_mutex);
 
     optional<uint64_t> sample_count;
 	srd_session *session;
@@ -545,7 +574,7 @@ void DecoderStack::decode_proc()
 
     // Get the intial sample count
     {
-        unique_lock<mutex> input_lock(_input_mutex);
+        //unique_lock<mutex> input_lock(_input_mutex);
         sample_count = _sample_count = _snapshot->get_sample_count();
     }
 
@@ -610,7 +639,7 @@ void DecoderStack::annotation_callback(srd_proto_data *pdata, void *decoder)
 	DecoderStack *const d = (DecoderStack*)decoder;
 	assert(d);
 
-	lock_guard<mutex> lock(d->_output_mutex);
+    //lock_guard<mutex> lock(d->_output_mutex);
 
     if (d->_no_memory)
         return;
@@ -638,13 +667,14 @@ void DecoderStack::annotation_callback(srd_proto_data *pdata, void *decoder)
 
     assert(row_iter != d->_rows.end());
     if (row_iter == d->_rows.end()) {
-		qDebug() << "Unexpected annotation: decoder = " << decc <<
-			", format = " << a.format();
-		assert(0);
-		return;
-	}
+        qDebug() << "Unexpected annotation: decoder = " << decc <<
+            ", format = " << a.format();
+        assert(0);
+        return;
+    }
 
 	// Add the annotation
+    lock_guard<boost::recursive_mutex> lock(d->_output_mutex);
     if (!(*row_iter).second.push_annotation(a))
         d->_no_memory = true;
 }
@@ -678,6 +708,7 @@ void DecoderStack::on_frame_ended()
 
 int DecoderStack::list_rows_size()
 {
+    //lock_guard<mutex> lock(_output_mutex);
     int rows_size = 0;
     int row = 0;
     for (map<const Row, RowData>::const_iterator i = _rows.begin();

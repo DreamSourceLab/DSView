@@ -79,6 +79,9 @@ public:
 
     virtual ~GroupSnapshot();
 
+    void clear();
+    void init();
+
     void append_payload();
 
     uint64_t get_sample_count() const;
@@ -96,7 +99,7 @@ private:
 
 private:
 	struct Envelope _envelope_levels[ScaleStepCount];
-    mutable boost::recursive_mutex _mutex;
+    //mutable boost::recursive_mutex _mutex;
     const void *_data;
     uint64_t _sample_count;
     int _unit_size;

@@ -42,6 +42,8 @@ class WaitingDialog : public QDialog
 
 private:
     static const int GIF_SIZE = 80;
+    static const int GIF_WIDTH = 220;
+    static const int GIF_HEIGHT = 20;
     static const int TIP_WIDTH = 100;
     static const int TIP_HEIGHT = 40;
     static const int WPOINTS_NUM = 6;

@@ -65,7 +65,7 @@ ProtocolExp::ProtocolExp(QWidget *parent, SigSession &session) :
     const boost::shared_ptr<pv::data::DecoderStack>& decoder_stack = decoder_model->getDecoderStack();
     if (decoder_stack) {
         int row_index = 0;
-        const std::map<const pv::data::decode::Row, bool>& rows(decoder_stack->get_rows_lshow());
+        const std::map<const pv::data::decode::Row, bool> rows = decoder_stack->get_rows_lshow();
         for (std::map<const pv::data::decode::Row, bool>::const_iterator i = rows.begin();
             i != rows.end(); i++) {
             if ((*i).second) {
@@ -149,7 +149,7 @@ void ProtocolExp::accept()
                 const boost::shared_ptr<pv::data::DecoderStack>& decoder_stack = decoder_model->getDecoderStack();
                 int row_index = 0;
                 Row row;
-                const std::map<const Row, bool>& rows_lshow(decoder_stack->get_rows_lshow());
+                const std::map<const Row, bool> rows_lshow = decoder_stack->get_rows_lshow();
                 for (std::map<const Row, bool>::const_iterator i = rows_lshow.begin();
                     i != rows_lshow.end(); i++) {
                     if ((*i).second) {

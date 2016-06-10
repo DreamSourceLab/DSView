@@ -53,6 +53,12 @@ void Analog::clear()
     BOOST_FOREACH(const boost::shared_ptr<AnalogSnapshot> s, _snapshots)
         s->clear();
 }
+void Analog::init()
+{
+    //_snapshots.clear();
+    BOOST_FOREACH(const boost::shared_ptr<AnalogSnapshot> s, _snapshots)
+        s->init();
+}
 
 } // namespace data
 } // namespace pv

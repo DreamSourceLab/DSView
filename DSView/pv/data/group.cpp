@@ -23,6 +23,8 @@
 #include "group.h"
 #include "groupsnapshot.h"
 
+#include <boost/foreach.hpp>
+
 using namespace boost;
 using namespace std;
 
@@ -46,7 +48,14 @@ deque< boost::shared_ptr<GroupSnapshot> >& Group::get_snapshots()
 
 void Group::clear()
 {
-    _snapshots.clear();
+    BOOST_FOREACH(const boost::shared_ptr<GroupSnapshot> s, _snapshots)
+        s->clear();
+}
+
+void Group::init()
+{
+    BOOST_FOREACH(const boost::shared_ptr<GroupSnapshot> s, _snapshots)
+        s->init();
 }
 
 } // namespace data

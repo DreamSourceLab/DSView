@@ -66,6 +66,7 @@ public:
     MathStack(pv::SigSession &_session, int index);
     virtual ~MathStack();
     void clear();
+    void init();
 
     int get_index() const;
 

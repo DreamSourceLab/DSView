@@ -47,6 +47,8 @@ public:
 
     void clear();
 
+    void init();
+
 private:
 	std::deque< boost::shared_ptr<LogicSnapshot> > _snapshots;
 };

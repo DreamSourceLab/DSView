@@ -256,8 +256,13 @@ void DecodeTrace::paint_mid(QPainter &p, int left, int right)
 
 	const uint64_t start_sample = (uint64_t)max((left + pixels_offset) *
 		samples_per_pixel, 0.0);
-	const uint64_t end_sample = (uint64_t)max((right + pixels_offset) *
+    uint64_t end_sample = (uint64_t)max((right + pixels_offset) *
 		samples_per_pixel, 0.0);
+    const uint64_t samples_decoded = _decoder_stack->samples_decoded();
+    if (samples_decoded < start_sample)
+        return;
+    if (samples_decoded < end_sample)
+        end_sample = samples_decoded;
 
     const int annotation_height = _view->get_signalHeight();
 
@@ -281,18 +286,13 @@ void DecodeTrace::paint_mid(QPainter &p, int left, int right)
     BOOST_FOREACH(boost::shared_ptr<data::decode::Decoder> dec,
         _decoder_stack->stack()) {
         if (dec->shown()) {
-            const std::map<const pv::data::decode::Row, bool>& rows(_decoder_stack->get_rows_gshow());
+            const std::map<const pv::data::decode::Row, bool> rows = _decoder_stack->get_rows_gshow();
             for (std::map<const pv::data::decode::Row, bool>::const_iterator i = rows.begin();
                 i != rows.end(); i++) {
                 if ((*i).first.decoder() == dec->decoder() &&
                     _decoder_stack->has_annotations((*i).first)) {
                     if ((*i).second) {
                         const Row &row = (*i).first;
-                        size_t base_colour = 0x13579BDF;
-                        boost::hash_combine(base_colour, this);
-                        boost::hash_combine(base_colour, row.decoder());
-                        boost::hash_combine(base_colour, row.row());
-                        base_colour >>= 16;
 
                         const uint64_t min_annotation =
                                 _decoder_stack->get_min_annotation(row);
@@ -310,10 +310,10 @@ void DecodeTrace::paint_mid(QPainter &p, int left, int right)
                                     draw_annotation(a, p, get_text_colour(),
                                         annotation_height, left, right,
                                         samples_per_pixel, pixels_offset, y,
-                                        base_colour, min_annWidth);
+                                        0, min_annWidth);
                             }
                         } else if (max_annWidth != 0){
-                            draw_nodetail(p, annotation_height, left, right, y, base_colour);
+                            draw_nodetail(p, annotation_height, left, right, y, 0);
                         }
                         if (max_annWidth != 0) {
                             y += annotation_height;
@@ -397,6 +397,9 @@ bool DecodeTrace::create_popup()
         }
     }
 
+    if (_popup_form)
+        QWidget().setLayout(_popup_form);
+    delete _popup;
     _popup = NULL;
     _popup_form = NULL;
 
@@ -522,7 +525,7 @@ void DecodeTrace::draw_annotation(const pv::data::decode::Annotation &a,
     const double end = min(a.end_sample() / samples_per_pixel -
         pixels_offset, (double)right);
 
-	const size_t colour = (base_colour + a.format()) % countof(Colours);
+    const size_t colour = ((base_colour + a.type()) % MaxAnnType) % countof(Colours);
 	const QColor &fill = Colours[colour];
 	const QColor &outline = OutlineColours[colour];
 
@@ -699,11 +702,11 @@ void DecodeTrace::create_decoder_form(
 	assert(decoder);
 
     pv::widgets::DecoderGroupBox *const group =
-        new pv::widgets::DecoderGroupBox(decoder_stack, dec);
+        new pv::widgets::DecoderGroupBox(decoder_stack, dec, parent);
     connect(group, SIGNAL(del_stack(boost::shared_ptr<data::decode::Decoder>&)),
         this, SLOT(on_del_stack(boost::shared_ptr<data::decode::Decoder>&)));
 
-	QFormLayout *const decoder_form = new QFormLayout;
+    QFormLayout *const decoder_form = new QFormLayout();
 	group->add_layout(decoder_form);
 
 	// Add the mandatory channels
@@ -840,6 +843,8 @@ void DecodeTrace::on_new_decode_data()
 
     if (_view && _view->session().get_capture_state() == SigSession::Stopped)
         _view->data_updated();
+    if (_totalHeight/_view->get_signalHeight() != rows_size())
+        _view->signals_changed();
 }
 
 int DecodeTrace::get_progress() const
@@ -895,7 +900,7 @@ int DecodeTrace::rows_size()
     BOOST_FOREACH(boost::shared_ptr<data::decode::Decoder> dec,
         _decoder_stack->stack()) {
         if (dec->shown()) {
-            const std::map<const pv::data::decode::Row, bool>& rows(_decoder_stack->get_rows_gshow());
+            const std::map<const pv::data::decode::Row, bool> rows = _decoder_stack->get_rows_gshow();
             for (std::map<const pv::data::decode::Row, bool>::const_iterator i = rows.begin();
                 i != rows.end(); i++) {
                 if ((*i).first.decoder() == dec->decoder() &&

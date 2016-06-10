@@ -119,6 +119,11 @@ void TrigBar::trigger_clicked()
     on_trigger(_trig_button.isChecked());
 }
 
+void TrigBar::update_trig_btn(bool checked)
+{
+    _trig_button.setChecked(checked);
+}
+
 void TrigBar::measure_clicked()
 {
     on_measure(_measure_button.isChecked());

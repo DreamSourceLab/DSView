@@ -149,7 +149,7 @@ View::View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     connect(&_session, SIGNAL(device_setted()),
             _devmode, SLOT(set_device()));
     connect(&_session, SIGNAL(signals_changed()),
-        this, SLOT(signals_changed()));
+        this, SLOT(signals_changed()), Qt::DirectConnection);
     connect(&_session, SIGNAL(data_updated()),
         this, SLOT(data_updated()));
     connect(&_session, SIGNAL(receive_trigger(quint64)),
@@ -157,8 +157,10 @@ View::View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     connect(&_session, SIGNAL(show_region(uint64_t,uint64_t)),
             this, SLOT(show_region(uint64_t, uint64_t)));
 
+//    connect(_devmode, SIGNAL(mode_changed()),
+//            this, SIGNAL(mode_changed()));
     connect(_devmode, SIGNAL(mode_changed()),
-            this, SIGNAL(mode_changed()));
+            parent, SLOT(update_device_list()), Qt::DirectConnection);
 
     connect(_header, SIGNAL(traces_moved()),
         this, SLOT(on_traces_moved()));
@@ -431,7 +433,7 @@ void View::set_trig_pos(quint64 trig_pos)
     }
 
     _trigger_time = QDateTime::currentDateTime();
-    const int64_t secs = time - _session.cur_sampletime();
+    const int64_t secs = time - _session.get_device()->get_sample_time();
     _trigger_time = _trigger_time.addSecs(secs);
 
     _ruler->update();
@@ -498,7 +500,7 @@ void View::get_scroll_layout(double &length, double &offset) const
     if (data_set.empty())
 		return;
 
-    length = _session.cur_sampletime() / _scale;
+    length = _session.get_device()->get_sample_time() / _scale;
 	offset = _offset / _scale;
 }
 
@@ -645,6 +647,7 @@ void View::signals_changed()
 
     header_updated();
     normalize_layout();
+    update_scale_offset();
     data_updated();
 }
 
@@ -972,7 +975,7 @@ double View::get_min_offset()
 
 double View::get_max_offset()
 {
-    return _session.cur_sampletime()
+    return _session.get_device()->get_sample_time()
             - _scale * (get_view_width() * MaxViewRate);
 }
 

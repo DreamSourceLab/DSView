@@ -543,6 +543,7 @@ void MainWindow::on_trigger(bool visible)
         _trigger_dock->setVisible(false);
         _dso_trigger_dock->setVisible(visible);
     }
+    _trig_bar->update_trig_btn(visible);
 }
 
 void MainWindow::commit_trigger(bool instant)
@@ -689,7 +690,8 @@ bool MainWindow::load_session(QString name)
         if (!isEnabled)
             probe->enabled = false;
     }
-    _session.init_signals();
+    //_session.init_signals();
+    _session.reload();
 
     // load signal setting
     BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
@@ -698,6 +700,7 @@ bool MainWindow::load_session(QString name)
             if ((s->get_index() == obj["index"].toDouble()) &&
                 (s->get_type() == obj["type"].toDouble())) {
                 s->set_colour(QColor(obj["colour"].toString()));
+                s->set_name(g_strdup(obj["name"].toString().toStdString().c_str()));
 
                 boost::shared_ptr<view::LogicSignal> logicSig;
                 if (logicSig = dynamic_pointer_cast<view::LogicSignal>(s)) {

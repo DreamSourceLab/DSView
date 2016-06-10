@@ -38,7 +38,8 @@ public:
 
 	virtual ~Snapshot();
 
-    int init(uint64_t _total_sample_len);
+    virtual void clear() = 0;
+    virtual void init() = 0;
 
 	uint64_t get_sample_count() const;
 
@@ -59,10 +60,13 @@ public:
 protected:
 	void append_data(void *data, uint64_t samples);
     void refill_data(void *data, uint64_t samples, bool instant);
+    void free_data();
 
 protected:
-	mutable boost::recursive_mutex _mutex;
-    std::vector<uint8_t> _data;
+    mutable boost::recursive_mutex _mutex;
+    //std::vector<uint8_t> _data;
+    void* _data;
+    uint64_t _capacity;
     unsigned int _channel_num;
 	uint64_t _sample_count;
     uint64_t _total_sample_count;

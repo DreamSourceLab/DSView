@@ -57,12 +57,12 @@ private:
 
 protected:
     Signal(boost::shared_ptr<pv::device::DevInst> dev_inst,
-           const sr_channel * const probe);
+           sr_channel * const probe);
 
     /**
      * Copy constructor
      */
-    Signal(const Signal &s, const sr_channel * const probe);
+    Signal(const Signal &s, sr_channel * const probe);
 
 public:
     virtual boost::shared_ptr<pv::data::SignalData> data() const = 0;
@@ -73,6 +73,11 @@ public:
      * Returns true if the trace is visible and enabled.
      */
     bool enabled() const;
+
+    /**
+     * Sets the name of the signal.
+     */
+    void set_name(QString name);
 
 	/**
 	 * Paints the signal label into a QGLWidget.
@@ -97,7 +102,7 @@ protected:
 
 protected:
     boost::shared_ptr<pv::device::DevInst> _dev_inst;
-    const sr_channel *const _probe;
+    sr_channel *const _probe;
 };
 
 } // namespace view

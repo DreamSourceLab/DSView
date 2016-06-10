@@ -57,6 +57,8 @@ public slots:
     void measure_clicked();
     void search_clicked();
 
+    void update_trig_btn(bool checked);
+
     void on_actionFft_triggered();
 
 private:

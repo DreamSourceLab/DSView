@@ -470,12 +470,12 @@ void SamplingBar::commit_sample_rate()
     // Get last samplerate
     last_sample_rate = get_selected_device()->get_sample_rate();
 
-    if (last_sample_rate != sample_rate) {
+    //if (last_sample_rate != sample_rate) {
         // Set the samplerate
         get_selected_device()->set_config(NULL, NULL,
                                           SR_CONF_SAMPLERATE,
                                           g_variant_new_uint64(sample_rate));
-    }
+    //}
 
     _updating_sample_rate = false;
 }
@@ -730,6 +730,8 @@ void SamplingBar::on_device_selected()
 {
     if (_updating_device_selector)
         return;
+
+    _session.stop_capture();
 
     const shared_ptr<device::DevInst> dev_inst = get_selected_device();
     if (!dev_inst)

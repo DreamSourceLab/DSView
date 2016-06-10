@@ -92,7 +92,7 @@ class SigSession : public QObject
 
 private:
     static constexpr float Oversampling = 2.0f;
-    static const int ViewTime = 800;
+    static const int ViewTime = 50;
     static const int RefreshTime = 500;
 	bool saveFileThreadRunning = false;
 
@@ -134,7 +134,7 @@ public:
 
     void start_capture(bool instant,
 		boost::function<void (const QString)> error_handler);
-
+    void capture_init();
 	void stop_capture();
 
     std::set< boost::shared_ptr<data::SignalData> > get_data() const;
@@ -236,13 +236,13 @@ private:
 	 */
     boost::shared_ptr<device::DevInst> _dev_inst;
 
-	mutable boost::mutex _sampling_mutex;
+    mutable boost::mutex _sampling_mutex;
 	capture_state _capture_state;
     bool _instant;
     uint64_t _cur_samplerate;
     uint64_t _cur_samplelimits;
 
-	mutable boost::mutex _signals_mutex;
+    //mutable boost::mutex _signals_mutex;
 	std::vector< boost::shared_ptr<view::Signal> > _signals;
     std::vector< boost::shared_ptr<view::GroupSignal> > _group_traces;
 #ifdef ENABLE_DECODE
@@ -272,6 +272,7 @@ private:
     QTimer _view_timer;
     QTimer _refresh_timer;
     bool _data_lock;
+    bool _data_updated;
 
 signals:
 	void capture_state_changed(int state);
@@ -319,6 +320,7 @@ public slots:
 private slots:
     void cancelSaveFile();
     void data_unlock();
+    void check_update();
 
 private:
 	// TODO: This should not be necessary. Multiple concurrent

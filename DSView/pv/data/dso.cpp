@@ -53,5 +53,12 @@ void Dso::clear()
         s->clear();
 }
 
+void Dso::init()
+{
+    //_snapshots.clear();
+    BOOST_FOREACH(const boost::shared_ptr<DsoSnapshot> s, _snapshots)
+        s->init();
+}
+
 } // namespace data
 } // namespace pv

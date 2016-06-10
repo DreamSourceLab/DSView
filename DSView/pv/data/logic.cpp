@@ -55,5 +55,12 @@ void Logic::clear()
         s->clear();
 }
 
+void Logic::init()
+{
+    //_snapshots.clear();
+    BOOST_FOREACH(const boost::shared_ptr<LogicSnapshot> s, _snapshots)
+        s->init();
+}
+
 } // namespace data
 } // namespace pv

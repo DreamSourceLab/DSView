@@ -100,7 +100,7 @@ private:
 public:
     DsoSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
               boost::shared_ptr<pv::data::Dso> data,
-              const sr_channel * const probe);
+              sr_channel *probe);
 
     virtual ~DsoSignal();
 

@@ -1046,7 +1046,7 @@ struct sr_session {
 	 * an async fashion. We need to make sure the session is stopped from
 	 * within the session thread itself.
 	 */
-//	GMutex stop_mutex;
+    GMutex stop_mutex;
 	gboolean abort_session;
 };
 

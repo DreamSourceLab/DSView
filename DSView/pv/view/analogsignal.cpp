@@ -53,7 +53,7 @@ const float AnalogSignal::EnvelopeThreshold = 256.0f;
 
 AnalogSignal::AnalogSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
                            boost::shared_ptr<data::Analog> data,
-                           const sr_channel * const probe) :
+                           sr_channel *probe) :
     Signal(dev_inst, probe),
     _data(data)
 {

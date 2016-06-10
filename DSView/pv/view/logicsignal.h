@@ -65,11 +65,11 @@ private:
 public:
     LogicSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
                 boost::shared_ptr<pv::data::Logic> data,
-                const sr_channel * const probe);
+                sr_channel *probe);
 
     LogicSignal(boost::shared_ptr<view::LogicSignal> s,
                 boost::shared_ptr<pv::data::Logic> data,
-                const sr_channel * const probe);
+                sr_channel *probe);
 
 	virtual ~LogicSignal();
 

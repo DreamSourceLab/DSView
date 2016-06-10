@@ -74,6 +74,7 @@ public:
 	virtual ~AnalogSnapshot();
 
     void clear();
+    void init();
 
     void first_payload(const sr_datafeed_analog &analog, uint64_t total_sample_count, unsigned int channel_num);
 
@@ -86,8 +87,8 @@ public:
         uint64_t start, uint64_t end, float min_length, int probe_index) const;
 
 private:
+    void free_envelop();
 	void reallocate_envelope(Envelope &l);
-
 	void append_payload_to_envelope_levels();
 
 private:

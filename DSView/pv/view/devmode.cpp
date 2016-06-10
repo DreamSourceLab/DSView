@@ -115,8 +115,8 @@ void DevMode::on_mode_change()
                 dev_inst->set_config(NULL, NULL,
                                      SR_CONF_DEVICE_MODE,
                                      g_variant_new_int16((*i).second->mode));
-                button->setChecked(true);
                 mode_changed();
+                button->setChecked(true);
             }
         } else {
             (*i).first->setChecked(false);

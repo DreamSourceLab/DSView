@@ -179,6 +179,8 @@ void Viewport::paintEvent(QPaintEvent *event)
 
 void Viewport::paintSignals(QPainter &p)
 {
+    if (_view.session().get_data_lock())
+        return;
     const vector< boost::shared_ptr<Trace> > traces(_view.get_traces(_type));
     if (_view.scale() != _curScale ||
         _view.offset() != _curOffset ||
@@ -791,6 +793,8 @@ void Viewport::clear_measure()
 
 void Viewport::measure()
 {
+    if (_view.session().get_data_lock())
+        return;
     _measure_type = NO_MEASURE;
     if (_type == TIME_VIEW) {
         const uint64_t sample_rate = _view.session().cur_samplerate();

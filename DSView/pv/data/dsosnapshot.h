@@ -75,6 +75,7 @@ public:
     virtual ~DsoSnapshot();
 
     void clear();
+    void init();
 
     void first_payload(const sr_datafeed_dso &dso, uint64_t total_sample_count, unsigned int channel_num, bool instant);
 
@@ -92,8 +93,8 @@ public:
     double cal_vmean(int index) const;
 
 private:
+    void free_envelop();
 	void reallocate_envelope(Envelope &l);
-
     void append_payload_to_envelope_levels(bool header);
 
 private:

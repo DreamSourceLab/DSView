@@ -46,7 +46,7 @@ public:
     DecoderGroupBox(boost::shared_ptr<pv::data::DecoderStack> &decoder_stack,
                     boost::shared_ptr<data::decode::Decoder> &dec,
                     QWidget *parent = NULL);
-
+    ~DecoderGroupBox();
 	void add_layout(QLayout *layout);
 
 signals:

@@ -42,7 +42,6 @@ void SignalData::set_samplerate(double samplerate)
 {
     assert(samplerate > 0);
     _samplerate = samplerate;
-    clear();
 }
 
 double SignalData::get_start_time() const

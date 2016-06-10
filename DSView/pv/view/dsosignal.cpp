@@ -112,7 +112,7 @@ const int DsoSignal::RightMargin = 30;
 
 DsoSignal::DsoSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
                      boost::shared_ptr<data::Dso> data,
-                     const sr_channel * const probe):
+                     sr_channel *probe):
     Signal(dev_inst, probe),
     _data(data),
     _scale(0),

@@ -72,7 +72,10 @@ MathStack::~MathStack()
 
 void MathStack::clear()
 {
+}
 
+void MathStack::init()
+{
 }
 
 int MathStack::get_index() const

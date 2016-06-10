@@ -99,8 +99,8 @@ public:
     uint64_t get_max_annotation(const decode::Row &row);
     uint64_t get_min_annotation(const decode::Row &row); // except instant(end=start) annotation
 
-    std::map<const decode::Row, bool> &get_rows_gshow();
-    std::map<const decode::Row, bool> &get_rows_lshow();
+    std::map<const decode::Row, bool> get_rows_gshow();
+    std::map<const decode::Row, bool> get_rows_lshow();
     void set_rows_gshow(const decode::Row row, bool show);
     void set_rows_lshow(const decode::Row row, bool show);
 
@@ -117,6 +117,7 @@ public:
 	QString error_message();
 
 	void clear();
+    void init();
 
 	uint64_t get_max_sample_count() const;
 
@@ -168,18 +169,19 @@ private:
 	 * @todo A proper solution should be implemented to allow multiple
 	 * decode operations.
 	 */
-	static boost::mutex _global_decode_mutex;
+    //static boost::mutex _global_decode_mutex;
 
 	std::list< boost::shared_ptr<decode::Decoder> > _stack;
 
 	boost::shared_ptr<pv::data::LogicSnapshot> _snapshot;
 
-	mutable boost::mutex _input_mutex;
-	mutable boost::condition_variable _input_cond;
+    //mutable boost::mutex _input_mutex;
+    //mutable boost::condition_variable _input_cond;
     uint64_t _sample_count;
 	bool _frame_complete;
 
-	mutable boost::mutex _output_mutex;
+    mutable boost::recursive_mutex _output_mutex;
+    //mutable boost::mutex _output_mutex;
 	int64_t	_samples_decoded;
 
     std::map<const decode::Row, decode::RowData> _rows;

@@ -91,6 +91,7 @@ private:
 
     static const int DefaultFontSize = 8;
     static const int ControlRectWidth = 5;
+    static const int MaxAnnType = 100;
 
     static const QString RegionStart;
     static const QString RegionEnd;

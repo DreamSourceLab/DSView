@@ -118,6 +118,8 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
         _view_combobox->addItem(view_modes[i],
             qVariantFromValue(i));
     }
+    assert(_view_combobox->count() > 0);
+    _view_combobox->setCurrentIndex(_view_combobox->count()-1);
     for (int i = 0; i < dbv_ranges.size(); i++)
     {
         _dbv_combobox->addItem(QString::number(dbv_ranges[i]),

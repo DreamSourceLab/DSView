@@ -436,6 +436,7 @@ static int fpga_config(struct libusb_device_handle *hdl, const char *filename)
         offset += chunksize;
     }
     fclose(fw);
+    g_free(buf);
     if (result == SR_OK)
         sr_info("FPGA configure done");
 
@@ -861,6 +862,7 @@ static GSList *scan(GSList *options)
 			else
                 sr_err("Firmware upload failed for "
 				       "device %d.", devcnt);
+            g_free(firmware);
             sdi->inst_type = SR_INST_USB;
             sdi->conn = sr_usb_dev_inst_new (libusb_get_bus_number(devlist[i]),
 					0xff, NULL);
@@ -2109,6 +2111,7 @@ static int dev_open(struct sr_dev_inst *sdi)
         if (ret != SR_OK) {
             sr_err("Configure FPGA failed!");
         }
+        g_free(fpga_bit);
     }
 
     if (sdi->mode == DSO)

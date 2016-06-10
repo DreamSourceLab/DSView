@@ -48,15 +48,15 @@ WaitingDialog::WaitingDialog(QWidget *parent, boost::shared_ptr<pv::device::DevI
     _button_box(QDialogButtonBox::Save | QDialogButtonBox::Abort,
         Qt::Horizontal, this)
 {
-    this->setFixedSize((GIF_SIZE+TIP_WIDTH)*2, (GIF_SIZE+TIP_HEIGHT)*2);
+    this->setFixedSize((GIF_WIDTH+TIP_WIDTH)*1.2, (GIF_HEIGHT+TIP_HEIGHT)*4);
     int midx = this->width() / 2;
     int midy = this->height() / 2;
-    this->setWindowOpacity(0.7);
+    this->setWindowOpacity(0.5);
     this->setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
 
     label = new QLabel(this);
     label->setStyleSheet("background-color: transparent;");
-    label->setGeometry(midx-GIF_SIZE/2, midy-GIF_SIZE/2, GIF_SIZE, GIF_SIZE);
+    label->setGeometry(midx-GIF_WIDTH/2, midy-GIF_HEIGHT/2, GIF_WIDTH, GIF_HEIGHT);
     movie = new QMovie(":/icons/wait.gif");
     label->setMovie(movie);
 
@@ -66,7 +66,7 @@ WaitingDialog::WaitingDialog(QWidget *parent, boost::shared_ptr<pv::device::DevI
     font.setPointSize(10);
     font.setBold(true);
     tips->setFont(font);
-    tips->setGeometry(midx-TIP_WIDTH/2, midy+GIF_SIZE/2, TIP_WIDTH, TIP_HEIGHT);
+    tips->setGeometry(midx-TIP_WIDTH/2, midy+GIF_HEIGHT/2, TIP_WIDTH, TIP_HEIGHT);
 
     index = 0;
     timer = new QTimer();

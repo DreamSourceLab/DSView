@@ -60,13 +60,13 @@ StoreSession::~StoreSession()
 
 pair<uint64_t, uint64_t> StoreSession::progress() const
 {
-	lock_guard<mutex> lock(_mutex);
+    //lock_guard<mutex> lock(_mutex);
 	return make_pair(_units_stored, _unit_count);
 }
 
 const QString& StoreSession::error() const
 {
-	lock_guard<mutex> lock(_mutex);
+    //lock_guard<mutex> lock(_mutex);
 	return _error;
 }
 
@@ -163,7 +163,7 @@ void StoreSession::store_proc(shared_ptr<data::LogicSnapshot> snapshot)
 	assert(unit_size != 0);
 
 	{
-		lock_guard<mutex> lock(_mutex);
+        //lock_guard<mutex> lock(_mutex);
 		_unit_count = snapshot->get_sample_count();
 	}
 
@@ -188,7 +188,7 @@ void StoreSession::store_proc(shared_ptr<data::LogicSnapshot> snapshot)
 		start_sample = end_sample;
 
 		{
-			lock_guard<mutex> lock(_mutex);
+            //lock_guard<mutex> lock(_mutex);
 			_units_stored = start_sample;
 		}
 	}

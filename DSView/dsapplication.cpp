@@ -39,7 +39,13 @@ bool DSApplication::notify(QObject *receiver_, QEvent *event_)
         msg.setStandardButtons(QMessageBox::Ok);
         msg.setIcon(QMessageBox::Warning);
         msg.exec();
-        //QMessageBox::warning(NULL, "Application Error", e.what())
-        return false;
+    } catch (...) {
+        QMessageBox msg(NULL);
+        msg.setText("Application Error");
+        msg.setInformativeText("An unexpected error occurred");
+        msg.setStandardButtons(QMessageBox::Ok);
+        msg.setIcon(QMessageBox::Warning);
+        msg.exec();
     }
+    return false;
 }
