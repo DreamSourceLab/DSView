@@ -232,7 +232,7 @@ void SigSession::save_file(const QString name, int type){
     }
 
     sr_session_save(name.toLocal8Bit().data(), _dev_inst->dev_inst(),
-                    data, unit_size, sample_count);
+                    data, unit_size, sample_count, _trigger_time.toMSecsSinceEpoch(), _trigger_pos);
 }
 
 QList<QString> SigSession::getSuportedExportFormats(){
@@ -408,8 +408,7 @@ void SigSession::set_default_device(boost::function<void (const QString)> error_
         // Try and find the DreamSourceLab device and select that by default
         BOOST_FOREACH (boost::shared_ptr<pv::device::DevInst> dev, devices)
             if (dev->dev_inst() &&
-                strncmp(dev->dev_inst()->driver->name,
-                "virtual", 7) != 0) {
+                !dev->name().contains("virtual")) {
                 default_device = dev;
                 break;
             }
@@ -530,7 +529,7 @@ void SigSession::start_capture(bool instant,
 	}
 
     // update setting
-    if (strcmp(_dev_inst->dev_inst()->driver->name, "virtual-session"))
+    if (_dev_inst->name() != "virtual-session")
         _instant = instant;
     else
         _instant = true;
@@ -672,10 +671,6 @@ void SigSession::check_update()
         data_updated();
         _data_updated = false;
     }
-}
-
-void SigSession::feed_in_header(const sr_dev_inst *sdi)
-{
 }
 
 void SigSession::add_group()
@@ -909,7 +904,7 @@ void SigSession::refresh(int holdtime)
 {
     boost::lock_guard<boost::mutex> lock(_data_mutex);
 
-    if (strncmp(_dev_inst->dev_inst()->driver->name, "virtual", 7)) {
+    if (!_dev_inst->name().contains("virtual")) {
         _data_lock = true;
         _refresh_timer.start(holdtime);
     }
@@ -951,6 +946,26 @@ bool SigSession::get_data_lock()
     return _data_lock;
 }
 
+void SigSession::feed_in_header(const sr_dev_inst *sdi)
+{
+    _trigger_pos = 0;
+    _trigger_time = QDateTime::currentDateTime();
+    const int64_t secs = -cur_sampletime();
+    _trigger_time = _trigger_time.addSecs(secs);
+
+    if (_dev_inst->name() == "virtual-session") {
+        int64_t time;
+        GVariant* gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_TRIGGER_TIME);
+        if (gvar != NULL) {
+            time = g_variant_get_int64(gvar);
+            g_variant_unref(gvar);
+            if (time != 0)
+                _trigger_time = QDateTime::fromMSecsSinceEpoch(time);
+        }
+    }
+    receive_header();
+}
+
 void SigSession::feed_in_meta(const sr_dev_inst *sdi,
     const sr_datafeed_meta &meta)
 {
@@ -973,7 +988,14 @@ void SigSession::feed_in_meta(const sr_dev_inst *sdi,
 void SigSession::feed_in_trigger(const ds_trigger_pos &trigger_pos)
 {
     if (_dev_inst->dev_inst()->mode != DSO) {
-        receive_trigger(trigger_pos.real_pos);
+        _trigger_pos = trigger_pos.real_pos;
+        receive_trigger(_trigger_pos);
+        if (_dev_inst->name() != "virtual-session") {
+            const double time = trigger_pos.real_pos * 1.0 / _cur_samplerate;
+            _trigger_time = QDateTime::currentDateTime();
+            const int64_t secs = time - cur_sampletime();
+            _trigger_time = _trigger_time.addSecs(secs);
+        }
     } else {
         int probe_count = 0;
         int probe_en_count = 0;
@@ -986,7 +1008,8 @@ void SigSession::feed_in_trigger(const ds_trigger_pos &trigger_pos)
                     probe_en_count++;
             }
         }
-        receive_trigger(trigger_pos.real_pos * probe_count / probe_en_count);
+        _trigger_pos = trigger_pos.real_pos * probe_count / probe_en_count;
+        receive_trigger(_trigger_pos);
     }
 }
 
@@ -1218,9 +1241,6 @@ void SigSession::hotplug_proc(boost::function<void (const QString)> error_handle
             if (_hot_detach) {
                 qDebug("DreamSourceLab hardware detached!");
                 device_detach();
-                _logic_data.reset();
-                _dso_data.reset();
-                _analog_data.reset();
                 _hot_detach = false;
             }
             boost::this_thread::sleep(boost::posix_time::millisec(100));
@@ -1485,6 +1505,16 @@ vector< boost::shared_ptr<view::MathTrace> > SigSession::get_math_signals()
 {
     //lock_guard<mutex> lock(_signals_mutex);
     return _math_traces;
+}
+
+QDateTime SigSession::get_trigger_time() const
+{
+    return _trigger_time;
+}
+
+uint64_t  SigSession::get_trigger_pos() const
+{
+    return _trigger_pos;
 }
 
 } // namespace pv

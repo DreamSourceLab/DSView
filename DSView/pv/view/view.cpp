@@ -73,7 +73,7 @@ View::View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     QScrollArea(parent),
 	_session(session),
     _sampling_bar(sampling_bar),
-    _scale(1e-8),
+    _scale(1e-5),
     _preScale(1e-6),
     _maxscale(1e9),
     _minscale(1e-15),
@@ -81,7 +81,6 @@ View::View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     _preOffset(0),
 	_updating_scroll(false),
 	_show_cursors(false),
-    _trig_pos(0),
     _hover_point(-1, -1)
 {
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
@@ -136,12 +135,13 @@ View::View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     _viewcenter = new QWidget(this);
     _viewcenter->setContentsMargins(0,0,0,0);
     QGridLayout* layout = new QGridLayout(_viewcenter);
+    layout->setSpacing(0);
     layout->setContentsMargins(0,0,0,0);
     _viewcenter->setLayout(layout);
     layout->addWidget(_vsplitter, 0, 0);
-    QWidget* bottom = new QWidget(this);
-    bottom->setFixedHeight(10);
-    layout->addWidget(bottom, 1, 0);
+    _viewbottom = new widgets::ViewStatus(this);
+    _viewbottom->setFixedHeight(StatusHeight);
+    layout->addWidget(_viewbottom, 1, 0);
     setViewport(_viewcenter);
     connect(_vsplitter, SIGNAL(splitterMoved(int,int)),
         this, SLOT(splitterMoved(int, int)));
@@ -152,8 +152,14 @@ View::View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget
         this, SLOT(signals_changed()), Qt::DirectConnection);
     connect(&_session, SIGNAL(data_updated()),
         this, SLOT(data_updated()));
+    connect(&_session, SIGNAL(receive_header()),
+            this, SLOT(receive_header()));
     connect(&_session, SIGNAL(receive_trigger(quint64)),
             this, SLOT(set_trig_pos(quint64)));
+    connect(&_session, SIGNAL(frame_ended()),
+            this, SLOT(receive_end()));
+    connect(&_session, SIGNAL(frame_began()),
+            this, SLOT(frame_began()));
     connect(&_session, SIGNAL(show_region(uint64_t,uint64_t)),
             this, SLOT(show_region(uint64_t, uint64_t)));
 
@@ -321,27 +327,6 @@ void View::set_preScale_preOffset()
 
 vector< boost::shared_ptr<Trace> > View::get_traces(int type)
 {
-//    const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
-//    const vector< boost::shared_ptr<GroupSignal> > groups(_session.get_group_signals());
-//#ifdef ENABLE_DECODE
-//    const vector< boost::shared_ptr<DecodeTrace> > decode_sigs(
-//        _session.get_decode_signals());
-//    vector< boost::shared_ptr<Trace> > traces(
-//        sigs.size() + groups.size() + decode_sigs.size());
-//#else
-//    vector< boost::shared_ptr<Trace> > traces(sigs.size() + groups.size());
-//#endif
-
-//    vector< boost::shared_ptr<Trace> >::iterator i = traces.begin();
-//    i = copy(sigs.begin(), sigs.end(), i);
-//#ifdef ENABLE_DECODE
-//    i = copy(decode_sigs.begin(), decode_sigs.end(), i);
-//#endif
-//    i = copy(groups.begin(), groups.end(), i);
-
-//    stable_sort(traces.begin(), traces.end(), compare_trace_v_offsets);
-//    return traces;
-
     const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
     const vector< boost::shared_ptr<GroupSignal> > groups(_session.get_group_signals());
 #ifdef ENABLE_DECODE
@@ -422,19 +407,51 @@ void View::show_search_cursor(bool show)
     viewport_update();
 }
 
+void View::status_clear()
+{
+    _viewbottom->clear();
+}
+
+void View::receive_header()
+{
+    status_clear();
+}
+
+void View::frame_began()
+{
+    if (_session.get_device()->dev_inst()->mode == LOGIC)
+        _viewbottom->set_trig_time(_session.get_trigger_time());
+}
+
+void View::receive_end()
+{
+    if (_session.get_device()->dev_inst()->mode == LOGIC) {
+        GVariant *gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_RLE);
+        if (gvar != NULL) {
+            bool rle = g_variant_get_boolean(gvar);
+            g_variant_unref(gvar);
+            if (rle) {
+                gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_ACTUAL_SAMPLES);
+                if (gvar != NULL) {
+                    uint64_t actual_samples = g_variant_get_uint64(gvar);
+                    g_variant_unref(gvar);
+                    if (actual_samples != _session.cur_samplelimits()) {
+                        _viewbottom->set_rle_depth(actual_samples);
+                    }
+                }
+            }
+        }
+    }
+}
+
 void View::set_trig_pos(quint64 trig_pos)
 {
     const double time = trig_pos * 1.0 / _session.cur_samplerate();
-    _trig_pos = trig_pos;
     _trig_cursor->set_index(trig_pos);
-    if (ds_trigger_get_en()) {
+    if (ds_trigger_get_en() || _session.get_device()->name() == "virtual-session") {
         _show_trig_cursor = true;
         set_scale_offset(_scale,  time - _scale * get_view_width() / 2);
     }
-
-    _trigger_time = QDateTime::currentDateTime();
-    const int64_t secs = time - _session.get_device()->get_sample_time();
-    _trigger_time = _trigger_time.addSecs(secs);
 
     _ruler->update();
     viewport_update();
@@ -450,11 +467,6 @@ void View::set_search_pos(uint64_t search_pos)
     set_scale_offset(_scale,  time - _scale * get_view_width() / 2);
     _ruler->update();
     viewport_update();
-}
-
-uint64_t View::get_trig_pos()
-{
-    return _trig_pos;
 }
 
 uint64_t View::get_search_pos()
@@ -555,7 +567,7 @@ void View::update_scale_offset()
     _preScale = _scale;
     _preOffset = _offset;
 
-    _trig_cursor->set_index(_trig_pos);
+    _trig_cursor->set_index(_session.get_trigger_pos());
 
     _ruler->update();
     viewport_update();
@@ -611,7 +623,6 @@ void View::signals_changed()
         }
 
         const double height = (_time_viewport->height()
-                               - horizontalScrollBar()->height()
                                - 2 * SignalMargin * time_traces.size()) * 1.0 / total_rows;
 
         if (_session.get_device()->dev_inst()->mode == LOGIC) {
@@ -996,11 +1007,6 @@ void View::update_calibration()
     if (_cali->isVisible()) {
         _cali->set_device(_session.get_device());
     }
-}
-
-QString View::trigger_time()
-{
-    return _trigger_time.toString("yyyy-MM-dd hh:mm:ss ddd");
 }
 
 void View::show_region(uint64_t start, uint64_t end)

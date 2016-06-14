@@ -47,7 +47,7 @@ using std::ostringstream;
 using std::runtime_error;
 using std::string;
 
-char config_path[256];
+extern char AppDataPath[256];
 
 namespace pv {
 
@@ -103,12 +103,9 @@ std::list<boost::shared_ptr<device::DevInst> > DeviceManager::driver_scan(
 
     // Check If DSL hardware driver
     if (strncmp(driver->name, "virtual", 7)) {
-        QDir dir(QCoreApplication::applicationDirPath());
-        if (!dir.cd("res"))
+        QDir dir(DS_RES_PATH);
+        if (!dir.exists())
             return driver_devices;
-        QString str = dir.absolutePath() + "/";
-        QString str_utf8 = QString::fromLocal8Bit(str.toLocal8Bit());
-        strcpy(config_path, str_utf8.toUtf8().data());
     }
 
 	// Do the scan

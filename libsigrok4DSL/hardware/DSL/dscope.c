@@ -850,10 +850,10 @@ static GSList *scan(GSList *options)
             sdi->conn = sr_usb_dev_inst_new(libusb_get_bus_number(devlist[i]),
 					libusb_get_device_address(devlist[i]), NULL);
 		} else {
-            char *firmware = malloc(strlen(config_path)+strlen(prof->firmware)+1);
+            char *firmware = malloc(strlen(DS_RES_PATH)+strlen(prof->firmware)+1);
             if (firmware == NULL)
                 return NULL;
-            strcpy(firmware, config_path);
+            strcpy(firmware, DS_RES_PATH);
             strcat(firmware, prof->firmware);
             if (ezusb_upload_firmware(devlist[i], USB_CONFIGURATION,
                 firmware) == SR_OK)
@@ -1452,12 +1452,12 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             /* Takes >= 10ms for the FX2 to be ready for FPGA configure. */
             g_usleep(10 * 1000);
             //char filename[256];
-            //sprintf(filename,"%s%s",config_path,devc->profile->fpga_bit33);
+            //sprintf(filename,"%s%s",DS_RES_PATH,devc->profile->fpga_bit33);
             //const char *fpga_bit = filename;
-            char *fpga_bit = malloc(strlen(config_path)+strlen(devc->profile->fpga_bit33)+1);
+            char *fpga_bit = malloc(strlen(DS_RES_PATH)+strlen(devc->profile->fpga_bit33)+1);
             if (fpga_bit == NULL)
                 return SR_ERR_MALLOC;
-            strcpy(fpga_bit, config_path);
+            strcpy(fpga_bit, DS_RES_PATH);
             strcat(fpga_bit, devc->profile->fpga_bit33);
             ret = fpga_config(usb->devhdl, fpga_bit);
             if (ret != SR_OK) {
@@ -2102,10 +2102,10 @@ static int dev_open(struct sr_dev_inst *sdi)
     } else {
         /* Takes >= 10ms for the FX2 to be ready for FPGA configure. */
         g_usleep(10 * 1000);
-        char *fpga_bit = malloc(strlen(config_path)+strlen(devc->profile->fpga_bit33)+1);
+        char *fpga_bit = malloc(strlen(DS_RES_PATH)+strlen(devc->profile->fpga_bit33)+1);
         if (fpga_bit == NULL)
             return SR_ERR_MALLOC;
-        strcpy(fpga_bit, config_path);
+        strcpy(fpga_bit, DS_RES_PATH);
         strcat(fpga_bit, devc->profile->fpga_bit33);
         ret = fpga_config(usb->devhdl, fpga_bit);
         if (ret != SR_OK) {
@@ -2171,10 +2171,6 @@ static void abort_acquisition(struct DSL_context *devc)
         sr_err("Stop DSCope acquisition failed!");
     else
         sr_info("Stop DSCope acquisition!");
-
-    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen((struct sr_dev_inst *)devc->cb_data, NULL, SR_CONF_ZERO_OVER));
-    if (ret != SR_OK)
-        sr_err("DSO zero over command failed!");
 
     /* Cancel exist transfers */
     if (devc->num_transfers)
@@ -2432,10 +2428,6 @@ static void receive_transfer(struct libusb_transfer *transfer)
                 mstatus.vlen = instant_buffer_size;
             }
 
-            if (devc->zero) {
-                dso_zero(sdi, mstatus);
-            }
-
             const uint32_t divider = devc->zero ? 0x1 : (uint32_t)ceil(DSCOPE_MAX_SAMPLERATE * 1.0 / devc->cur_samplerate / channel_en_cnt);
             if ((mstatus.sample_divider == divider &&
                 mstatus.vlen != 0 &&
@@ -2674,6 +2666,10 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
 
     tv.tv_sec = tv.tv_usec = 0;
     libusb_handle_events_timeout_completed(drvc->sr_ctx->libusb_ctx, &tv, &completed);
+
+    if (devc->zero) {
+        dso_zero(sdi, mstatus);
+    }
 
     return TRUE;
 }

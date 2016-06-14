@@ -87,19 +87,11 @@ SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
     _sample_rate(this),
     _updating_sample_rate(false),
     _updating_sample_count(false),
-    #ifdef LANGUAGE_ZH_CN
-    _icon_stop(":/icons/stop_cn.png"),
-    _icon_start(":/icons/start_cn.png"),
-    _icon_instant(":/icons/instant_cn.png"),
-    _icon_start_dis(":/icons/start_dis_cn.png"),
-    _icon_instant_dis(":/icons/instant_dis_cn.png"),
-    #else
     _icon_stop(":/icons/stop.png"),
     _icon_start(":/icons/start.png"),
     _icon_instant(":/icons/instant.png"),
     _icon_start_dis(":/icons/start_dis.png"),
     _icon_instant_dis(":/icons/instant_dis.png"),
-    #endif
     _run_stop_button(this),
     _instant_button(this),
     _instant(false)
@@ -115,13 +107,9 @@ SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
     connect(&_instant_button, SIGNAL(clicked()),
         this, SLOT(on_instant_stop()));
 
-#ifdef LANGUAGE_ZH_CN
-    _configure_button.setIcon(QIcon::fromTheme("configure",
-        QIcon(":/icons/params_cn.png")));
-#else
     _configure_button.setIcon(QIcon::fromTheme("configure",
         QIcon(":/icons/params.png")));
-#endif
+
     _run_stop_button.setIcon(_icon_start);
     _instant_button.setIcon(_icon_instant);
 
@@ -337,13 +325,8 @@ void SamplingBar::set_sampling(bool sampling)
     }
 
     _configure_button.setEnabled(!sampling);
-#ifdef LANGUAGE_ZH_CN
-    _configure_button.setIcon(sampling ? QIcon(":/icons/params_dis_cn.png") :
-                                  QIcon(":/icons/params_cn.png"));
-#else
     _configure_button.setIcon(sampling ? QIcon(":/icons/params_dis.png") :
                                   QIcon(":/icons/params.png"));
-#endif
 }
 
 void SamplingBar::set_sample_rate(uint64_t sample_rate)
@@ -492,7 +475,7 @@ void SamplingBar::on_samplecount_sel(int index)
     boost::shared_ptr<pv::device::DevInst> _devInst = get_selected_device();
     assert(_devInst);
 
-    if (strcmp(_devInst->dev_inst()->driver->name, "DSLogic") == 0 && _devInst->dev_inst()->mode != DSO) {
+    if (_devInst->name() == "DSLogic" && _devInst->dev_inst()->mode != DSO) {
 
         // Set the sample count
         _devInst->set_config(NULL, NULL,
@@ -517,7 +500,7 @@ void SamplingBar::on_samplerate_sel(int index)
     // Get last samplerate
     //last_sample_rate = get_selected_device()->get_sample_rate();
 
-    if (strcmp(_devInst->dev_inst()->driver->name, "DSLogic") == 0 && _devInst->dev_inst()->mode != DSO) {
+    if (_devInst->name() == "DSLogic" && _devInst->dev_inst()->mode != DSO) {
             // Set the samplerate
             get_selected_device()->set_config(NULL, NULL,
                                               SR_CONF_SAMPLERATE,

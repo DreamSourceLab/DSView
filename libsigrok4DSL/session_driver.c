@@ -52,6 +52,8 @@ struct session_vdev {
 	int bytes_read;
 	uint64_t samplerate;
     uint64_t total_samples;
+    int64_t trig_time;
+    uint64_t trig_pos;
 	int unitsize;
 	int num_probes;
     uint64_t timebase;
@@ -171,6 +173,8 @@ static int dev_open(struct sr_dev_inst *sdi)
         sr_err("%s: vdev->buf malloc failed", __func__);
         return SR_ERR_MALLOC;
     }
+    vdev->trig_pos = 0;
+    vdev->trig_time = 0;
 
 	dev_insts = g_slist_append(dev_insts, sdi);
 
@@ -208,6 +212,13 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         if (sdi) {
             vdev = sdi->priv;
             *data = g_variant_new_uint64(vdev->total_samples);
+        } else
+            return SR_ERR;
+        break;
+    case SR_CONF_TRIGGER_TIME:
+        if (sdi) {
+            vdev = sdi->priv;
+            *data = g_variant_new_int64(vdev->trig_time);
         } else
             return SR_ERR;
         break;
@@ -258,6 +269,9 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
             return SR_ERR;
         *data = g_variant_new_uint64(vdev->total_samples);
         break;
+    case SR_CONF_RLE_SAMPLELIMITS:
+        *data = g_variant_new_uint64(UINT64_MAX);
+        break;
     default:
 		return SR_ERR_ARG;
 	}
@@ -299,7 +313,15 @@ static int config_set(int id, GVariant *data, const struct sr_dev_inst *sdi,
         samplecounts[0] = vdev->total_samples;
         sr_info("Setting limit samples to %" PRIu64 ".", vdev->total_samples);
         break;
-	case SR_CONF_CAPTURE_NUM_PROBES:
+    case SR_CONF_TRIGGER_TIME:
+        vdev->trig_time = g_variant_get_int64(data);
+        sr_info("Setting trigger time to %" PRId64 ".", vdev->trig_time);
+        break;
+    case SR_CONF_TRIGGER_POS:
+        vdev->trig_pos = g_variant_get_uint64(data);
+        sr_info("Setting trigger position to %" PRIu64 ".", vdev->trig_pos);
+        break;
+    case SR_CONF_CAPTURE_NUM_PROBES:
 		vdev->num_probes = g_variant_get_uint64(data);
 		break;
     case SR_CONF_EN_CH:
@@ -407,6 +429,7 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi,
 {
 	struct zip_stat zs;
 	struct session_vdev *vdev;
+    struct sr_datafeed_packet packet;
 	int ret;
 
 	vdev = sdi->priv;
@@ -434,6 +457,15 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi,
 
 	/* Send header packet to the session bus. */
     std_session_send_df_header(sdi, LOG_PREFIX);
+
+    /* Send trigger packet to the session bus */
+    if (vdev->trig_pos != 0) {
+        struct ds_trigger_pos session_trigger;
+        session_trigger.real_pos = vdev->trig_pos;
+        packet.type = SR_DF_TRIGGER;
+        packet.payload = &session_trigger;
+        sr_session_send(sdi, &packet);
+    }
 
 	/* freewheeling source */
     sr_session_source_add(-1, 0, 0, receive_data, sdi);

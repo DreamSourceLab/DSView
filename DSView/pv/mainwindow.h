@@ -86,6 +86,8 @@ private:
 
     bool eventFilter(QObject *object, QEvent *event);
 
+    void session_save();
+
 private slots:
 	void load_file(QString file_name);
 

@@ -60,7 +60,7 @@ const int64_t DecoderStack::DecodeChunkLength = 4 * 1024;
 //const int64_t DecoderStack::DecodeChunkLength = 1024 * 1024;
 const unsigned int DecoderStack::DecodeNotifyPeriod = 1024;
 
-//mutex DecoderStack::_global_decode_mutex;
+mutex DecoderStack::_global_decode_mutex;
 
 DecoderStack::DecoderStack(pv::SigSession &session,
 	const srd_decoder *const dec) :
@@ -145,12 +145,11 @@ void DecoderStack::build_row()
             _rows[row] = decode::RowData();
             std::map<const decode::Row, bool>::const_iterator iter = _rows_gshow.find(row);
             if (iter == _rows_gshow.end()) {
+                _rows_gshow[row] = true;
                 if (row.title().contains("bit", Qt::CaseInsensitive) ||
                     row.title().contains("warning", Qt::CaseInsensitive)) {
-                    _rows_gshow[row] = false;
                     _rows_lshow[row] = false;
                 } else {
-                    _rows_gshow[row] = true;
                     _rows_lshow[row] = true;
                 }
             }
@@ -169,12 +168,11 @@ void DecoderStack::build_row()
             _rows[row] = decode::RowData();
             std::map<const decode::Row, bool>::const_iterator iter = _rows_gshow.find(row);
             if (iter == _rows_gshow.end()) {
+                _rows_gshow[row] = true;
                 if (row.title().contains("bit", Qt::CaseInsensitive) ||
                     row.title().contains("warning", Qt::CaseInsensitive)) {
-                    _rows_gshow[row] = false;
                     _rows_lshow[row] = false;
                 } else {
-                    _rows_gshow[row] = true;
                     _rows_lshow[row] = true;
                 }
             }
@@ -553,7 +551,7 @@ void DecoderStack::decode_data(
 
 void DecoderStack::decode_proc()
 {
-    //lock_guard<mutex> decode_lock(_global_decode_mutex);
+    lock_guard<mutex> decode_lock(_global_decode_mutex);
 
     optional<uint64_t> sample_count;
 	srd_session *session;

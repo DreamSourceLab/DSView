@@ -43,6 +43,7 @@
 #include "../view/viewport.h"
 #include "cursor.h"
 #include "signal.h"
+#include "../widgets/viewstatus.h"
 
 namespace pv {
 
@@ -82,6 +83,8 @@ public:
     static const int WellPixelsPerSample = 10;
     static constexpr double MaxViewRate = 1.0;
     static const int MaxPixelsPerSample = 100;
+
+    static const int StatusHeight = 25;
 
 public:
     explicit View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget *parent = 0);
@@ -158,7 +161,6 @@ public:
     //void set_trig_pos(uint64_t trig_pos);
     void set_search_pos(uint64_t search_pos);
 
-    uint64_t get_trig_pos();
     uint64_t get_search_pos();
 
     /*
@@ -186,8 +188,6 @@ public:
     void set_sample_rate(uint64_t sample_rate, bool force = false);
 
     void set_sample_limit(uint64_t sample_limit, bool force = false);
-
-    QString trigger_time();
 
     QString get_measure(QString option);
 
@@ -233,6 +233,7 @@ public slots:
     void show_region(uint64_t start, uint64_t end);
     // -- calibration
     void update_calibration();
+    void status_clear();
 
 private slots:
 
@@ -245,7 +246,13 @@ private slots:
 
     void header_updated();
 
+    void receive_header();
+
     void set_trig_pos(quint64 trig_pos);
+
+    void receive_end();
+
+    void frame_began();
 
     // calibration for oscilloscope
     void show_calibration();
@@ -260,6 +267,7 @@ private:
     pv::toolbars::SamplingBar *_sampling_bar;
 
     QWidget *_viewcenter;
+    widgets::ViewStatus *_viewbottom;
     QSplitter *_vsplitter;
     Viewport * _time_viewport;
     Viewport * _fft_viewport;
@@ -291,14 +299,12 @@ private:
 
         Cursor *_trig_cursor;
         bool _show_trig_cursor;
-        uint64_t _trig_pos;
         Cursor *_search_cursor;
         bool _show_search_cursor;
         uint64_t _search_pos;
 
         QPointF _hover_point;
     	dialogs::Calibration *_cali;
-        QDateTime _trigger_time;
 };
 
 } // namespace view

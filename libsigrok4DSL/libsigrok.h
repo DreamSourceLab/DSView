@@ -111,6 +111,8 @@ enum {
 #define DS_CONF_DSO_HDIVS 10
 #define DS_CONF_DSO_VDIVS 10
 
+#define DS_RES_PATH "/usr/local/share/DSView/res/"
+
 /** libsigrok loglevels. */
 enum {
 	SR_LOG_NONE = 0, /**< Output no messages at all. */
@@ -864,6 +866,16 @@ enum {
 	SR_CONF_LIMIT_SAMPLES,
 
     /**
+     * Absolute time record for session driver
+     */
+    SR_CONF_TRIGGER_TIME,
+
+    /**
+     * Trigger position for session driver
+     */
+    SR_CONF_TRIGGER_POS,
+
+    /**
      * The actual sample count received
      */
     SR_CONF_ACTUAL_SAMPLES,
@@ -973,8 +985,6 @@ enum {
     /** Ground */
     SR_GND_COUPLING = 2,
 };
-
-extern char config_path[256];
 
 struct sr_dev_mode {
     char *name;

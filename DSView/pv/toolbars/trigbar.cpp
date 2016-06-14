@@ -52,24 +52,6 @@ TrigBar::TrigBar(SigSession &session, QWidget *parent) :
     connect(&_search_button, SIGNAL(clicked()),
             this, SLOT(search_clicked()));
 
-#ifdef LANGUAGE_ZH_CN
-    _trig_button.setIcon(QIcon::fromTheme("trig",
-        QIcon(":/icons/trigger_cn.png")));
-    _trig_button.setCheckable(true);
-    _protocol_button.setIcon(QIcon::fromTheme("trig",
-        QIcon(":/icons/protocol_cn.png")));
-#ifdef ENABLE_DECODE
-    _protocol_button.setCheckable(true);
-#endif
-    _measure_button.setIcon(QIcon::fromTheme("trig",
-        QIcon(":/icons/measure_cn.png")));
-    _measure_button.setCheckable(true);
-    _search_button.setIcon(QIcon::fromTheme("trig",
-        QIcon(":/icons/search-bar_cn.png")));
-    _search_button.setCheckable(true);
-    _math_button.setIcon(QIcon::fromTheme("trig",
-        QIcon(":/icons/math_cn.png")));
-#else
     _trig_button.setIcon(QIcon::fromTheme("trig",
         QIcon(":/icons/trigger.png")));
     _trig_button.setCheckable(true);
@@ -86,7 +68,6 @@ TrigBar::TrigBar(SigSession &session, QWidget *parent) :
     _search_button.setCheckable(true);
     _math_button.setIcon(QIcon::fromTheme("trig",
         QIcon(":/icons/math.png")));
-#endif
 
     _action_fft = new QAction(this);
     _action_fft->setText(QApplication::translate(
@@ -142,18 +123,6 @@ void TrigBar::enable_toggle(bool enable)
     _search_button.setDisabled(!enable);
     _math_button.setDisabled(!enable);
 
-#ifdef LANGUAGE_ZH_CN
-    _trig_button.setIcon(enable ? QIcon::fromTheme("trig", QIcon(":/icons/trigger_cn.png")) :
-                                  QIcon::fromTheme("trig", QIcon(":/icons/trigger_dis_cn.png")));
-    _protocol_button.setIcon(enable ? QIcon::fromTheme("trig", QIcon(":/icons/protocol_cn.png")) :
-                                  QIcon::fromTheme("trig", QIcon(":/icons/protocol_dis_cn.png")));
-    _measure_button.setIcon(enable ? QIcon::fromTheme("trig", QIcon(":/icons/measure_cn.png")) :
-                                  QIcon::fromTheme("trig", QIcon(":/icons/measure_dis_cn.png")));
-    _search_button.setIcon(enable ? QIcon::fromTheme("trig", QIcon(":/icons/search-bar_cn.png")) :
-                                  QIcon::fromTheme("trig", QIcon(":/icons/search-bar_dis_cn.png")));
-    _math_button.setIcon(enable ? QIcon::fromTheme("trig", QIcon(":/icons/math_cn.png")) :
-                                  QIcon::fromTheme("trig", QIcon(":/icons/math_dis_cn.png")));
-#else
     _trig_button.setIcon(enable ? QIcon::fromTheme("trig", QIcon(":/icons/trigger.png")) :
                                   QIcon::fromTheme("trig", QIcon(":/icons/trigger_dis.png")));
     _protocol_button.setIcon(enable ? QIcon::fromTheme("trig", QIcon(":/icons/protocol.png")) :
@@ -164,20 +133,13 @@ void TrigBar::enable_toggle(bool enable)
                                   QIcon::fromTheme("trig", QIcon(":/icons/search-bar_dis.png")));
     _math_button.setIcon(enable ? QIcon::fromTheme("trig", QIcon(":/icons/math.png")) :
                                   QIcon::fromTheme("trig", QIcon(":/icons/math_dis.png")));
-
-#endif
 }
 
 void TrigBar::enable_protocol(bool enable)
 {
     _protocol_button.setDisabled(!enable);
-#ifdef LANGUAGE_ZH_CN
-    _protocol_button.setIcon(enable ? QIcon::fromTheme("trig", QIcon(":/icons/protocol_cn.png")) :
-                                  QIcon::fromTheme("trig", QIcon(":/icons/protocol_dis_cn.png")));
-#else
     _protocol_button.setIcon(enable ? QIcon::fromTheme("trig", QIcon(":/icons/protocol.png")) :
                                   QIcon::fromTheme("trig", QIcon(":/icons/protocol_dis.png")));
-#endif
 }
 
 void TrigBar::close_all()

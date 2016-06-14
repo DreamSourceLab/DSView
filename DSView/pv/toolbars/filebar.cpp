@@ -34,6 +34,8 @@
 
 #include <deque>
 
+extern char AppDataPath[256];
+
 namespace pv {
 namespace toolbars {
 
@@ -109,11 +111,7 @@ FileBar::FileBar(SigSession &session, QWidget *parent) :
     connect(_action_capture, SIGNAL(triggered()), this, SLOT(on_actionCapture_triggered()));
 
     _file_button.setPopupMode(QToolButton::InstantPopup);
-#ifdef LANGUAGE_ZH_CN
-    _file_button.setIcon(QIcon(":/icons/file_cn.png"));
-#else
     _file_button.setIcon(QIcon(":/icons/file.png"));
-#endif
 
     _menu = new QMenu(this);
     _menu->addMenu(_menu_session);
@@ -226,8 +224,8 @@ void FileBar::on_actionLoad_triggered()
 
 void FileBar::on_actionDefault_triggered()
 {
-    QDir dir(QCoreApplication::applicationDirPath());
-    if (!dir.cd("res")) {
+    QDir dir(DS_RES_PATH);
+    if (!dir.exists()) {
         QMessageBox msg(this);
         msg.setText(tr("Session Load"));
         msg.setInformativeText(tr("Cannot find default session file for this device!"));
@@ -237,7 +235,7 @@ void FileBar::on_actionDefault_triggered()
         return;
     }
 
-    QString driver_name = _session.get_device()->dev_inst()->driver->name;
+    QString driver_name = _session.get_device()->name();
     QString mode_name = QString::number(_session.get_device()->dev_inst()->mode);
     QString file_name = dir.absolutePath() + "/" + driver_name + mode_name + ".def.dsc";
     if (!file_name.isEmpty())
@@ -246,7 +244,7 @@ void FileBar::on_actionDefault_triggered()
 
 void FileBar::on_actionStore_triggered()
 {
-    QString default_name = _session.get_device()->dev_inst()->driver->name;
+    QString default_name = _session.get_device()->name();
     QString file_name = QFileDialog::getSaveFileName(
                 this, tr("Save Session"), default_name,
                 tr("DSView Session (*.dsc)"));
@@ -266,13 +264,8 @@ void FileBar::on_actionCapture_triggered()
 void FileBar::enable_toggle(bool enable)
 {
     _file_button.setDisabled(!enable);
-#ifdef LANGUAGE_ZH_CN
-    _file_button.setIcon(enable ? QIcon(":/icons/file_cn.png") :
-                                  QIcon(":/icons/file_dis_cn.png"));
-#else
     _file_button.setIcon(enable ? QIcon(":/icons/file.png") :
                                   QIcon(":/icons/file_dis.png"));
-#endif
 }
 
 } // namespace toolbars

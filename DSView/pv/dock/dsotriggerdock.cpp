@@ -243,7 +243,7 @@ void DsoTriggerDock::type_changed()
 
 void DsoTriggerDock::device_change()
 {
-    if (strcmp(_session.get_device()->dev_inst()->driver->name, "DSLogic") != 0) {
+    if (_session.get_device()->name() != "DSLogic") {
         position_spinBox->setDisabled(true);
         position_slider->setDisabled(true);
     } else {

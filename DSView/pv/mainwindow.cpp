@@ -87,6 +87,8 @@ using boost::dynamic_pointer_cast;
 using std::list;
 using std::vector;
 
+extern char AppDataPath[256];
+
 namespace pv {
 
 MainWindow::MainWindow(DeviceManager &device_manager,
@@ -316,16 +318,17 @@ void MainWindow::update_device_list()
             errorMessage, infoMessage));
     }
 
-    if (strncmp(selected_device->dev_inst()->driver->name, "virtual", 7)) {
+    if (!selected_device->name().contains("virtual")) {
         _logo_bar->dsl_connected(true);
-        QString ses_name = config_path +
-                           QString::fromUtf8(selected_device->dev_inst()->driver->name) +
+        QString ses_name = DS_RES_PATH +
+                           selected_device->name() +
                            QString::number(selected_device->dev_inst()->mode) +
                            ".dsc";
         load_session(ses_name);
     } else {
         _logo_bar->dsl_connected(false);
     }
+    _view->status_clear();
 }
 
 void MainWindow::reload()
@@ -385,6 +388,8 @@ void MainWindow::device_detach()
 
     if (_session.get_capture_state() == SigSession::Running)
         _session.stop_capture();
+
+    session_save();
 
     struct sr_dev_driver **const drivers = sr_driver_list();
     struct sr_dev_driver **driver;
@@ -488,40 +493,25 @@ void MainWindow::capture_state_changed(int state)
         _sampling_bar->enable_toggle(state != SigSession::Running);
         _trig_bar->enable_toggle(state != SigSession::Running);
         _measure_dock->widget()->setEnabled(state != SigSession::Running);
-        if (_session.get_device()->dev_inst()->mode == LOGIC &&
-            state == SigSession::Stopped) {
-            GVariant *gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_RLE);
-            if (gvar != NULL) {
-                bool rle = g_variant_get_boolean(gvar);
-                g_variant_unref(gvar);
-                if (rle) {
-                    gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_ACTUAL_SAMPLES);
-                    if (gvar != NULL) {
-                        uint64_t actual_samples = g_variant_get_uint64(gvar);
-                        g_variant_unref(gvar);
-                        if (actual_samples != _session.cur_samplelimits()) {
-                            show_session_error(tr("RLE Mode Warning"),
-                                               tr("Hardware buffer is full!\nActually received samples is less than setted sample depth!"));
-                        }
-                    }
-                }
-            }
-        }
-
     }
 }
 
-void MainWindow::closeEvent(QCloseEvent *event)
+void MainWindow::session_save()
 {
-    QDir dir(QCoreApplication::applicationDirPath());
-    if (dir.cd("res")) {
-        QString driver_name = _session.get_device()->dev_inst()->driver->name;
+    QDir dir(DS_RES_PATH);
+    if (dir.exists()) {
+        QString driver_name = _session.get_device()->name();
         QString mode_name = QString::number(_session.get_device()->dev_inst()->mode);
         QString file_name = dir.absolutePath() + "/" + driver_name + mode_name + ".dsc";
         if (strncmp(driver_name.toLocal8Bit(), "virtual", 7) &&
             !file_name.isEmpty())
             store_session(file_name);
     }
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    session_save();
     event->accept();
 }
 

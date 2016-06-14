@@ -285,7 +285,7 @@ void TriggerDock::simple_trigger()
 
 void TriggerDock::adv_trigger()
 {
-    if (strcmp(_session.get_device()->dev_inst()->driver->name, "DSLogic") == 0) {
+    if (_session.get_device()->name() == "DSLogic") {
         bool stream = false;
         GVariant *gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_STREAM);
         if (gvar != NULL) {
@@ -368,7 +368,7 @@ void TriggerDock::device_change()
                 g_variant_unref(gvar);
             }
 
-            if (!strncmp(_session.get_device()->dev_inst()->driver->name, "virtual", 7) ||
+            if (_session.get_device()->name().contains("virtual") ||
                 stream) {
                 simple_radioButton->setChecked(true);
                 simple_trigger();

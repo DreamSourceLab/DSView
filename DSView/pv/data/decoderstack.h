@@ -169,7 +169,7 @@ private:
 	 * @todo A proper solution should be implemented to allow multiple
 	 * decode operations.
 	 */
-    //static boost::mutex _global_decode_mutex;
+    static boost::mutex _global_decode_mutex;
 
 	std::list< boost::shared_ptr<decode::Decoder> > _stack;
 

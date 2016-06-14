@@ -58,6 +58,7 @@ public:
     static const int DsoMeasureStages = 3;
     static const double MinorDragRateUp;
     static const double DragDamping;
+    static const int SnapMinSpace = 10;
     enum ActionType {
         NO_ACTION,
 
@@ -70,11 +71,8 @@ public:
         DSO_XM_STEP0,
         DSO_XM_STEP1,
         DSO_XM_STEP2,
-        DSO_XM_STEP3,
         DSO_YM,
-        DSO_TRIG_MOVE,
-
-        DECODE_REGION
+        DSO_TRIG_MOVE
     };
 
     enum MeasureType {
@@ -116,7 +114,6 @@ private:
     void paintSignals(QPainter& p);
     void paintProgress(QPainter& p);
     void paintMeasure(QPainter &p);
-    void paintTrigTime(QPainter &p);
 
     void measure();
 

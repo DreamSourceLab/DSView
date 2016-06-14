@@ -125,6 +125,7 @@ SR_API int sr_session_load(const char *filename)
     uint16_t probenum;
     uint64_t tmp_u64, total_probes, enabled_probes;
     uint16_t p;
+    int64_t tmp_64;
 	char **sections, **keys, *metafile, *val, s[11];
 	char probename[SR_MAX_PROBENAME_LEN + 1];
     int mode = LOGIC;
@@ -205,9 +206,17 @@ SR_API int sr_session_load(const char *filename)
                     tmp_u64 = strtoull(val, NULL, 10);
                     sdi->driver->config_set(SR_CONF_LIMIT_SAMPLES,
                             g_variant_new_uint64(tmp_u64), sdi, NULL, NULL);
-                }  else if (!strcmp(keys[j], "hDiv")) {
+                } else if (!strcmp(keys[j], "hDiv")) {
                     tmp_u64 = strtoull(val, NULL, 10);
                     sdi->driver->config_set(SR_CONF_TIMEBASE,
+                            g_variant_new_uint64(tmp_u64), sdi, NULL, NULL);
+                } else if (!strcmp(keys[j], "trigger time")) {
+                    tmp_64 = strtoll(val, NULL, 10);
+                    sdi->driver->config_set(SR_CONF_TRIGGER_TIME,
+                            g_variant_new_int64(tmp_64), sdi, NULL, NULL);
+                } else if (!strcmp(keys[j], "trigger pos")) {
+                    tmp_u64 = strtoull(val, NULL, 10);
+                    sdi->driver->config_set(SR_CONF_TRIGGER_POS,
                             g_variant_new_uint64(tmp_u64), sdi, NULL, NULL);
                 } else if (!strcmp(keys[j], "total probes")) {
 					total_probes = strtoull(val, NULL, 10);
@@ -331,7 +340,7 @@ SR_API int sr_session_load(const char *filename)
  *         upon other errors.
  */
 SR_API int sr_session_save(const char *filename, const struct sr_dev_inst *sdi,
-		unsigned char *buf, int unitsize, int units)
+        unsigned char *buf, int unitsize, uint64_t samples, int64_t trig_time, uint64_t trig_pos)
 {
     GSList *l;
     GVariant *gvar;
@@ -373,7 +382,7 @@ SR_API int sr_session_save(const char *filename, const struct sr_dev_inst *sdi,
     /* metadata */
     fprintf(meta, "capturefile = data\n");
     fprintf(meta, "unitsize = %d\n", unitsize);
-    fprintf(meta, "total samples = %d\n", units);
+    fprintf(meta, "total samples = %llu\n", samples);
     fprintf(meta, "total probes = %d\n", g_slist_length(sdi->channels));
     if (sr_config_get(sdi->driver, sdi, NULL, NULL, SR_CONF_SAMPLERATE,
             &gvar) == SR_OK) {
@@ -386,9 +395,13 @@ SR_API int sr_session_save(const char *filename, const struct sr_dev_inst *sdi,
     if (sdi->mode == DSO &&
         sr_config_get(sdi->driver, sdi, NULL, NULL, SR_CONF_TIMEBASE, &gvar) == SR_OK) {
         timeBase = g_variant_get_uint64(gvar);
-        fprintf(meta, "hDiv = %d\n", timeBase);
+        fprintf(meta, "hDiv = %llu\n", timeBase);
         g_variant_unref(gvar);
+    } else if (sdi->mode == LOGIC) {
+        fprintf(meta, "trigger time = %lld\n", trig_time);
     }
+    fprintf(meta, "trigger pos = %llu\n", trig_pos);
+
     probecnt = 1;
     for (l = sdi->channels; l; l = l->next) {
         probe = l->data;
@@ -405,13 +418,13 @@ SR_API int sr_session_save(const char *filename, const struct sr_dev_inst *sdi,
                 fprintf(meta, " vPos%d = %lf\n", probe->index, probe->vpos);
                 if (sr_status_get(sdi, &status, 0, 0) == SR_OK) {
                     if (probe->index == 0) {
-                        fprintf(meta, " period%d = %d\n", probe->index, status.ch0_period);
-                        fprintf(meta, " pcnt%d = %d\n", probe->index, status.ch0_pcnt);
+                        fprintf(meta, " period%d = %llu\n", probe->index, status.ch0_period);
+                        fprintf(meta, " pcnt%d = %lu\n", probe->index, status.ch0_pcnt);
                         fprintf(meta, " max%d = %d\n", probe->index, status.ch0_max);
                         fprintf(meta, " min%d = %d\n", probe->index, status.ch0_min);
                     } else {
-                        fprintf(meta, " period%d = %d\n", probe->index, status.ch1_period);
-                        fprintf(meta, " pcnt%d = %d\n", probe->index, status.ch1_pcnt);
+                        fprintf(meta, " period%d = %llu\n", probe->index, status.ch1_period);
+                        fprintf(meta, " pcnt%d = %lu\n", probe->index, status.ch1_pcnt);
                         fprintf(meta, " max%d = %d\n", probe->index, status.ch1_max);
                         fprintf(meta, " min%d = %d\n", probe->index, status.ch1_min);
                     }
@@ -422,7 +435,7 @@ SR_API int sr_session_save(const char *filename, const struct sr_dev_inst *sdi,
     }
 
     if (!(logicsrc = zip_source_buffer(zipfile, buf,
-               units * unitsize, FALSE)))
+               samples * unitsize, FALSE)))
         return SR_ERR;
     snprintf(rawname, 15, "data");
     if (zip_add(zipfile, rawname, logicsrc) == -1)
@@ -544,7 +557,7 @@ SR_API int sr_session_save_init(const char *filename, uint64_t samplerate,
  * @param filename The name of the filename to append to. Must not be NULL.
  * @param buf The data to be appended.
  * @param unitsize The number of bytes per sample.
- * @param units The number of samples.
+ * @param samples The number of samples.
  *
  * @retval SR_OK Success
  * @retval SR_ERR_ARG Invalid arguments

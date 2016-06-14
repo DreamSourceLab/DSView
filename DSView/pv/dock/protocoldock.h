@@ -89,6 +89,7 @@ private:
     SigSession &_session;
     QSortFilterProxyModel _model_proxy;
     double _cur_search_index;
+    QStringList _str_list;
 
     QSplitter *_split_widget;
     QWidget *_up_widget;

@@ -119,6 +119,8 @@ struct dev_context {
     uint16_t trigger_mask;
     uint16_t trigger_value;
     uint16_t trigger_edge;
+    uint8_t trigger_slope;
+    uint8_t trigger_source;
 };
 
 static const int hwcaps[] = {
@@ -342,7 +344,7 @@ static GSList *hw_scan(GSList *options)
     devc->sample_generator = PATTERN_SINE;
     devc->timebase = 200;
     devc->data_lock = FALSE;
-    devc->max_height = 1;
+    devc->max_height = 0;
 
 	sdi->priv = devc;
 
@@ -690,7 +692,17 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         sr_dbg("%s: setting AC COUPLING of channel %d to %d", __func__,
                ch->index, ch->coupling);
         ret = SR_OK;
-    }  else if (id == SR_CONF_TRIGGER_VALUE) {
+    } else if (id == SR_CONF_TRIGGER_SOURCE) {
+        devc->trigger_source = g_variant_get_byte(data);
+        sr_dbg("%s: setting Trigger Source to %d",
+            __func__, devc->trigger_source);
+        ret = SR_OK;
+    } else if (id == SR_CONF_TRIGGER_SLOPE) {
+        devc->trigger_slope = g_variant_get_byte(data);
+        sr_dbg("%s: setting Trigger Slope to %d",
+            __func__, devc->trigger_slope);
+        ret = SR_OK;
+    } else if (id == SR_CONF_TRIGGER_VALUE) {
         ch->trig_value = g_variant_get_byte(data);
         sr_dbg("%s: setting channel %d Trigger Value to %d",
             __func__, ch->index, ch->trig_value);
@@ -798,7 +810,7 @@ static void samples_generator(uint16_t *buf, uint64_t size,
     } else if (sdi->mode != DSO) {
         start_rand = rand()%len;
         for (i = 0; i < size; i++) {
-            index = (i/g_slist_length(sdi->channels)+start_rand)%len;
+            index = (i/10/g_slist_length(sdi->channels)+start_rand)%len;
             *(buf + i) = (uint16_t)(((const_dc+pre_buf[index]) << 8) + (const_dc+pre_buf[index]));
         }
     } else {

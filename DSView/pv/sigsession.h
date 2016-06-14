@@ -131,6 +131,8 @@ public:
     uint64_t cur_samplerate() const;
     uint64_t cur_samplelimits() const;
     double cur_sampletime() const;
+    QDateTime get_trigger_time() const;
+    uint64_t get_trigger_pos() const;
 
     void start_capture(bool instant,
 		boost::function<void (const QString)> error_handler);
@@ -274,6 +276,9 @@ private:
     bool _data_lock;
     bool _data_updated;
 
+    QDateTime _trigger_time;
+    uint64_t _trigger_pos;
+
 signals:
 	void capture_state_changed(int state);
 
@@ -291,6 +296,8 @@ signals:
     void test_data_error();
 
     void receive_trigger(quint64 trigger_pos);
+
+    void receive_header();
 
     void dso_ch_changed(uint16_t num);
 

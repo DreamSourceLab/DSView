@@ -199,7 +199,7 @@ float DsoSignal::get_scale()
 
 void DsoSignal::set_enable(bool enable)
 {
-    if ((strcmp(_dev_inst->dev_inst()->driver->name, "DSLogic") == 0) &&
+    if (_dev_inst->name() == "DSLogic" &&
          get_index() == 0)
         return;
     _view->session().refresh(INT_MAX);
@@ -524,7 +524,7 @@ bool DsoSignal::load_settings()
         qDebug() << "ERROR: config_get SR_CONF_TRIGGER_VALUE failed.";
         return false;
     }
-    bool isDSCope = (strcmp(_dev_inst->dev_inst()->driver->name, "DSCope") == 0);
+    bool isDSCope = (_dev_inst->name() == "DSCope");
     if (isDSCope) {
         _trig_vpos = min(max(trigger_value/255.0, 0+TrigMargin), 1-TrigMargin);
     } else {
@@ -617,7 +617,7 @@ void DsoSignal::set_trig_vpos(int pos)
     int trig_value;
     if (enabled()) {
         double delta = min((double)max(pos - UpMargin, 0), get_view_rect().height()) * 1.0 / get_view_rect().height();
-        bool isDSCope = (strcmp(_dev_inst->dev_inst()->driver->name, "DSCope") == 0);
+        bool isDSCope = (_dev_inst->name() == "DSCope");
         if (isDSCope) {
             trig_value = delta * 255.0 + 0.5;
             _trig_vpos = min(max(trig_value/255.0, 0+TrigMargin), 1-TrigMargin);
@@ -637,7 +637,7 @@ void DsoSignal::set_trigRate(double rate)
 {
     int trig_value;
     double delta = rate;
-    bool isDSCope = (strcmp(_dev_inst->dev_inst()->driver->name, "DSCope") == 0);
+    bool isDSCope = (_dev_inst->name() == "DSCope");
     if (isDSCope) {
         trig_value = delta * 255.0 + 0.5;
         _trig_vpos = min(max(trig_value/255.0, 0+TrigMargin), 1-TrigMargin);
@@ -781,7 +781,7 @@ QString DsoSignal::get_ms_string(int index) const
 
 void DsoSignal::update_zeroPos()
 {
-    if (strcmp(_dev_inst->dev_inst()->driver->name, "DSCope") == 0) {
+    if (_dev_inst->name() == "DSCope") {
         //double vpos_off = (0.5 - _zeroPos) * _vDial->get_value() * DS_CONF_DSO_VDIVS;
         double vpos_off = (0.5 - (get_zeroPos() - UpMargin) * 1.0/get_view_rect().height()) * _vDial->get_value() * DS_CONF_DSO_VDIVS;
         _dev_inst->set_config(_probe, NULL, SR_CONF_VPOS,
@@ -888,7 +888,7 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right)
             return;
 
         const uint16_t number_channels = snapshot->get_channel_num();
-        if ((strcmp(_dev_inst->dev_inst()->driver->name, "DSLogic") == 0) &&
+        if (_dev_inst->name() == "DSLogic" &&
             (unsigned int)get_index() >= number_channels)
             return;
 
@@ -999,7 +999,7 @@ void DsoSignal::paint_trace(QPainter &p,
         float top = get_view_rect().top();
         float bottom = get_view_rect().bottom();
         float zeroP = _zeroPos * get_view_rect().height() + top;;
-        if (strcmp(_dev_inst->dev_inst()->driver->name, "DSCope") == 0 &&
+        if (_dev_inst->name() == "DSCope" &&
             _view->session().get_capture_state() == SigSession::Running)
             _zero_off = _zeroPos * 255;
         float x = (start / samples_per_pixel - pixels_offset) + left;
@@ -1055,7 +1055,7 @@ void DsoSignal::paint_envelope(QPainter &p,
     float top = get_view_rect().top();
     float bottom = get_view_rect().bottom();
     float zeroP = _zeroPos * get_view_rect().height() + top;
-    if (strcmp(_dev_inst->dev_inst()->driver->name, "DSCope") == 0 &&
+    if (_dev_inst->name() == "DSCope" &&
         _view->session().get_capture_state() == SigSession::Running)
         _zero_off = _zeroPos * 255;
     for(uint64_t sample = 0; sample < e.length-1; sample++) {
@@ -1172,7 +1172,7 @@ bool DsoSignal::mouse_press(int right, const QPoint pt)
     const QRectF x100_rect = get_rect(DSO_X100, y, right);
 
     if (chEn_rect.contains(pt)) {
-       if (strcmp(_dev_inst->dev_inst()->driver->name, "virtual-session") &&
+       if (_dev_inst->name() != "virtual-session" &&
            !_view->session().get_data_lock())
            set_enable(!enabled());
        return true;
@@ -1197,9 +1197,9 @@ bool DsoSignal::mouse_press(int right, const QPoint pt)
                     setted = true;
                 }
             }
-        } else if (strcmp(_dev_inst->dev_inst()->driver->name, "virtual-session") &&
+        } else if (_dev_inst->name() != "virtual-session" &&
                    acdc_rect.contains(pt)) {
-           if (strcmp(_view->session().get_device()->dev_inst()->driver->name, "DSLogic") == 0)
+           if (_dev_inst->name() == "DSLogic")
                set_acCoupling((get_acCoupling()+1)%2);
            else
                set_acCoupling((get_acCoupling()+1)%2);

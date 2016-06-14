@@ -39,6 +39,7 @@
 #include <QHeaderView>
 #include <QScrollBar>
 #include <QLineEdit>
+#include <QRegExp>
 
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
@@ -544,16 +545,54 @@ void ProtocolDock::search_pre()
 {
     // now the proxy only contains rows that match the name
     // let's take the pre one and map it to the original model
-    if (_model_proxy.rowCount() == 0)
+    if (_model_proxy.rowCount() == 0) {
+        _table_view->scrollToTop();
+        _table_view->clearSelection();
+        _matchs_label->setText(QString::number(0));
+        _cur_search_index = -1;
         return;
-    _cur_search_index -= 1;
-    if (_cur_search_index <= -1 || _cur_search_index >= _model_proxy.rowCount())
-        _cur_search_index = _model_proxy.rowCount() - 1;
-    QModelIndex matchingIndex = _model_proxy.mapToSource(_model_proxy.index(ceil(_cur_search_index),_model_proxy.filterKeyColumn()));
-    if(matchingIndex.isValid()){
+    }
+    int i;
+    uint64_t rowCount = _model_proxy.rowCount();
+    QModelIndex matchingIndex;
+    pv::data::DecoderModel *decoder_model = _session.get_decoder_model();
+    boost::shared_ptr<pv::data::DecoderStack> decoder_stack = decoder_model->getDecoderStack();
+    do {
+        _cur_search_index--;
+        if (_cur_search_index <= -1 || _cur_search_index >= _model_proxy.rowCount())
+            _cur_search_index = _model_proxy.rowCount() - 1;
+
+        matchingIndex = _model_proxy.mapToSource(_model_proxy.index(ceil(_cur_search_index),_model_proxy.filterKeyColumn()));
+        if (!decoder_stack || !matchingIndex.isValid())
+            break;
+        i = 1;
+        uint64_t row = matchingIndex.row() + 1;
+        uint64_t col = matchingIndex.column();
+        pv::data::decode::Annotation ann;
+        bool ann_valid;
+        while(i < _str_list.size()) {
+            QString nxt = _str_list.at(i);
+            do {
+                ann_valid = decoder_stack->list_annotation(ann, col, row);
+                row++;
+            }while(ann_valid && (ann.type() < 100 || ann.type() > 999));
+            QString source = ann.annotations().at(0);
+            if (ann_valid && source.contains(nxt))
+                i++;
+            else
+                break;
+        }
+    }while(i < _str_list.size() && --rowCount);
+
+    if(i >= _str_list.size() && matchingIndex.isValid()){
         _table_view->scrollTo(matchingIndex);
         _table_view->setCurrentIndex(matchingIndex);
         _table_view->clicked(matchingIndex);
+    } else {
+        _table_view->scrollToTop();
+        _table_view->clearSelection();
+        _matchs_label->setText(QString::number(0));
+        _cur_search_index = -1;
     }
 }
 
@@ -561,24 +600,67 @@ void ProtocolDock::search_nxt()
 {
     // now the proxy only contains rows that match the name
     // let's take the pre one and map it to the original model
-    if (_model_proxy.rowCount() == 0)
+    if (_model_proxy.rowCount() == 0) {
+        _table_view->scrollToTop();
+        _table_view->clearSelection();
+        _matchs_label->setText(QString::number(0));
+        _cur_search_index = -1;
         return;
-    _cur_search_index += 1;
-    if (_cur_search_index < 0 || _cur_search_index >= _model_proxy.rowCount())
-        _cur_search_index = 0;
-    QModelIndex matchingIndex = _model_proxy.mapToSource(_model_proxy.index(floor(_cur_search_index),_model_proxy.filterKeyColumn()));
-    if(matchingIndex.isValid()){
+    }
+    int i;
+    uint64_t rowCount = _model_proxy.rowCount();
+    QModelIndex matchingIndex;
+    pv::data::DecoderModel *decoder_model = _session.get_decoder_model();
+    boost::shared_ptr<pv::data::DecoderStack> decoder_stack = decoder_model->getDecoderStack();
+    do {
+        _cur_search_index++;
+        if (_cur_search_index < 0 || _cur_search_index >= _model_proxy.rowCount())
+            _cur_search_index = 0;
+
+        matchingIndex = _model_proxy.mapToSource(_model_proxy.index(floor(_cur_search_index),_model_proxy.filterKeyColumn()));
+        if (!decoder_stack || !matchingIndex.isValid())
+            break;
+        i = 1;
+        uint64_t row = matchingIndex.row() + 1;
+        uint64_t col = matchingIndex.column();
+        pv::data::decode::Annotation ann;
+        bool ann_valid;
+        while(i < _str_list.size()) {
+            QString nxt = _str_list.at(i);
+            do {
+                ann_valid = decoder_stack->list_annotation(ann, col, row);
+                row++;
+            }while(ann_valid && (ann.type() < 100 || ann.type() > 999));
+            QString source = ann.annotations().at(0);
+            if (ann_valid && source.contains(nxt))
+                i++;
+            else
+                break;
+        }
+    }while(i < _str_list.size() && --rowCount);
+
+    if(i >= _str_list.size() && matchingIndex.isValid()){
         _table_view->scrollTo(matchingIndex);
         _table_view->setCurrentIndex(matchingIndex);
         _table_view->clicked(matchingIndex);
+    } else {
+        _table_view->scrollToTop();
+        _table_view->clearSelection();
+        _matchs_label->setText(QString::number(0));
+        _cur_search_index = -1;
     }
 }
 
 void ProtocolDock::search_done()
 {
     QString str = _search_edit->text().trimmed();
-    _model_proxy.setFilterFixedString(str);
-    _matchs_label->setText(QString::number(_model_proxy.rowCount()));
+    QRegExp rx("(-)");
+    _str_list = str.split(rx);
+    _model_proxy.setFilterFixedString(_str_list.first());
+    if (_str_list.size() > 1)
+        _matchs_label->setText("...");
+    else
+        _matchs_label->setText(QString::number(_model_proxy.rowCount()));
 }
 
 

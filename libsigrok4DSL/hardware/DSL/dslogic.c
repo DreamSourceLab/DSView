@@ -700,7 +700,7 @@ static struct DSL_context *DSLogic_dev_new(void)
     devc->stream = FALSE;
     devc->mstatus_valid = FALSE;
     devc->data_lock = FALSE;
-    devc->max_height = 1;
+    devc->max_height = 0;
 
 	return devc;
 }
@@ -855,11 +855,11 @@ static GSList *scan(GSList *options)
 					libusb_get_device_address(devlist[i]), NULL);
 		} else {
             char *firmware;
-            if (!(firmware = g_try_malloc(strlen(config_path)+strlen(prof->firmware)+1))) {
+            if (!(firmware = g_try_malloc(strlen(DS_RES_PATH)+strlen(prof->firmware)+1))) {
                 sr_err("Firmware path malloc error!");
                 return NULL;
             }
-            strcpy(firmware, config_path);
+            strcpy(firmware, DS_RES_PATH);
             strcat(firmware, prof->firmware);
             if (ezusb_upload_firmware(devlist[i], USB_CONFIGURATION,
                 firmware) == SR_OK)
@@ -1328,25 +1328,6 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             GList *l;
             for(l = sdi->channels; l; l = l->next) {
                 struct sr_channel *probe = (struct sr_channel *)l->data;
-                zero_info.zero_addr = (zero_base_addr + probe->index * sizeof(struct cmd_zero_info));
-                if ((ret = command_rd_nvm(usb->devhdl, (unsigned char *)&zero_info, zero_info.zero_addr, sizeof(struct cmd_zero_info))) != SR_OK) {
-                    sr_err("Send Get Zero command failed!");
-                } else {
-                    if (zero_info.zero_addr == (zero_base_addr + probe->index * sizeof(struct cmd_zero_info))) {
-                        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe, SR_CONF_ZERO_SET));
-                        if (ret != SR_OK) {
-                            sr_err("Set Zero command failed!");
-                            return ret;
-                        }
-                    } else {
-                        devc->zero = TRUE;
-                        sr_info("Zero have not been setted!");
-                    }
-                }
-            }
-
-            for(l = sdi->channels; l; l = l->next) {
-                struct sr_channel *probe = (struct sr_channel *)l->data;
                 ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe, SR_CONF_COUPLING));
                 if (ret != SR_OK) {
                     sr_err("Set Coupling command failed!");
@@ -1488,11 +1469,11 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 /* Takes >= 10ms for the FX2 to be ready for FPGA configure. */
                 g_usleep(10 * 1000);
                 char *fpga_bit;
-                if (!(fpga_bit = g_try_malloc(strlen(config_path)+strlen(devc->profile->fpga_bit33)+1))) {
+                if (!(fpga_bit = g_try_malloc(strlen(DS_RES_PATH)+strlen(devc->profile->fpga_bit33)+1))) {
                     sr_err("fpag_bit path malloc error!");
                     return SR_ERR_MALLOC;
                 }
-                strcpy(fpga_bit, config_path);
+                strcpy(fpga_bit, DS_RES_PATH);
                 switch(devc->th_level) {
                 case SR_TH_3V3:
                     strcat(fpga_bit, devc->profile->fpga_bit33);;
@@ -1846,11 +1827,11 @@ static int dev_open(struct sr_dev_inst *sdi)
             /* Takes >= 10ms for the FX2 to be ready for FPGA configure. */
             g_usleep(10 * 1000);
             char *fpga_bit;
-            if (!(fpga_bit = g_try_malloc(strlen(config_path)+strlen(devc->profile->fpga_bit33)+1))) {
+            if (!(fpga_bit = g_try_malloc(strlen(DS_RES_PATH)+strlen(devc->profile->fpga_bit33)+1))) {
                 sr_err("fpag_bit path malloc error!");
                 return SR_ERR_MALLOC;
             }
-            strcpy(fpga_bit, config_path);
+            strcpy(fpga_bit, DS_RES_PATH);
             switch(devc->th_level) {
             case SR_TH_3V3:
                 strcat(fpga_bit, devc->profile->fpga_bit33);;
@@ -1954,10 +1935,6 @@ static void abort_acquisition(struct DSL_context *devc)
         sr_err("Stop DSLogic acquisition failed!");
     else
         sr_info("Stop DSLogic acquisition!");
-
-    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen((struct sr_dev_inst *)devc->cb_data, NULL, SR_CONF_ZERO_OVER));
-    if (ret != SR_OK)
-        sr_err("DSO zero over command failed!");
 
     /* Cancel exist transfers */
     if (devc->num_transfers)
@@ -2439,9 +2416,12 @@ static void receive_trigger_pos(struct libusb_transfer *transfer)
     struct sr_datafeed_dso dso;
     struct sr_datafeed_analog analog;
     struct ds_trigger_pos *trigger_pos;
+    const struct sr_dev_inst *sdi;
     int ret;
 
     devc = transfer->user_data;
+    sdi = devc->cb_data;
+
     sr_info("receive_trigger_pos(): status %d; timeout %d; received %d bytes.",
         transfer->status, transfer->timeout, transfer->actual_length);
 
@@ -2454,13 +2434,13 @@ static void receive_trigger_pos(struct libusb_transfer *transfer)
     switch (transfer->status) {
     case LIBUSB_TRANSFER_COMPLETED:
         if (transfer->actual_length == sizeof(struct ds_trigger_pos)) {
-            if (devc->stream || trigger_pos->remain_cnt < devc->limit_samples) {
-                if (!devc->stream)
+            if (sdi->mode != LOGIC || devc->stream || trigger_pos->remain_cnt < devc->limit_samples) {
+                if (sdi->mode == LOGIC && !devc->stream)
                     devc->actual_samples = (devc->limit_samples - ceil(devc->cur_samplerate * 1.0 / DSLOGIC_MAX_LOGIC_SAMPLERATE) * (trigger_pos->remain_cnt));
 
                 packet.type = SR_DF_TRIGGER;
                 packet.payload = trigger_pos;
-                sr_session_send(devc->cb_data, &packet);
+                sr_session_send(sdi, &packet);
 
                 devc->status = DSL_TRIGGERED;
                 free_transfer(transfer);
@@ -2500,7 +2480,7 @@ static void receive_trigger_pos(struct libusb_transfer *transfer)
     }
 
     if (devc->status == DSL_TRIGGERED) {
-        if ((ret = dev_transfer_start(devc->cb_data)) != SR_OK) {
+        if ((ret = dev_transfer_start(sdi)) != SR_OK) {
             sr_err("%s: could not start data transfer"
                    "(%d)%d", __func__, ret, errno);
         }
