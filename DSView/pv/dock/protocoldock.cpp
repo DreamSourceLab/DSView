@@ -28,11 +28,11 @@
 #include "../data/decoderstack.h"
 #include "../dialogs/protocollist.h"
 #include "../dialogs/protocolexp.h"
+#include "../dialogs/dsmessagebox.h"
 
 #include <QObject>
 #include <QHBoxLayout>
 #include <QPainter>
-#include <QMessageBox>
 #include <QFormLayout>
 #include <QStandardItemModel>
 #include <QTableView>
@@ -223,11 +223,11 @@ int ProtocolDock::decoder_name_cmp(const void *a, const void *b)
 void ProtocolDock::add_protocol()
 {
     if (_session.get_device()->dev_inst()->mode != LOGIC) {
-        QMessageBox msg(this);
-        msg.setText(tr("Protocol Analyzer"));
-        msg.setInformativeText(tr("Protocol Analyzer is only valid in Digital Mode!"));
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.setIcon(QMessageBox::Warning);
+        dialogs::DSMessageBox msg(this);
+        msg.mBox()->setText(tr("Protocol Analyzer"));
+        msg.mBox()->setInformativeText(tr("Protocol Analyzer is only valid in Digital Mode!"));
+        msg.mBox()->setStandardButtons(QMessageBox::Ok);
+        msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
     } else {
         srd_decoder *const decoder =
@@ -330,11 +330,11 @@ void ProtocolDock::del_protocol()
             _progress_label_list.clear();
             _protocol_index_list.clear();
         } else {
-            QMessageBox msg(this);
-            msg.setText(tr("Protocol Analyzer"));
-            msg.setInformativeText(tr("No Protocol Analyzer to delete!"));
-            msg.setStandardButtons(QMessageBox::Ok);
-            msg.setIcon(QMessageBox::Warning);
+            dialogs::DSMessageBox msg(NULL);
+            msg.mBox()->setText(tr("Protocol Analyzer"));
+            msg.mBox()->setInformativeText(tr("No Protocol Analyzer to delete!"));
+            msg.mBox()->setStandardButtons(QMessageBox::Ok);
+            msg.mBox()->setIcon(QMessageBox::Warning);
             msg.exec();
         }
     } else {

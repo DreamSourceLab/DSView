@@ -579,6 +579,12 @@ void View::signals_changed()
     uint8_t max_height = MaxHeightUnit;
     vector< boost::shared_ptr<Trace> > time_traces;
     vector< boost::shared_ptr<Trace> > fft_traces;
+
+    if (_session.get_device()->dev_inst()->mode == LOGIC)
+        _viewbottom->setFixedHeight(StatusHeight);
+    else
+        _viewbottom->setFixedHeight(10);
+
     BOOST_FOREACH(const boost::shared_ptr<Trace> t, get_traces(ALL_VIEW)) {
         if (_trace_view_map[t->get_type()] == TIME_VIEW)
             time_traces.push_back(t);
@@ -666,7 +672,6 @@ bool View::eventFilter(QObject *object, QEvent *event)
 {
 	const QEvent::Type type = event->type();
 	if (type == QEvent::MouseMove) {
-
 		const QMouseEvent *const mouse_event = (QMouseEvent*)event;
         if (object == _ruler || object == _time_viewport || object == _fft_viewport) {
             //_hover_point = QPoint(mouse_event->x(), 0);
@@ -683,7 +688,6 @@ bool View::eventFilter(QObject *object, QEvent *event)
 			_hover_point = QPoint(-1, -1);
 
 		hover_point_changed();
-
 	} else if (type == QEvent::Leave) {
 		_hover_point = QPoint(-1, -1);
 		hover_point_changed();

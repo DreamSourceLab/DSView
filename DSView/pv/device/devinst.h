@@ -126,6 +126,7 @@ public:
     virtual void* get_id() const;
 
 signals:
+    void device_updated();
 	void config_changed();
 
 protected:

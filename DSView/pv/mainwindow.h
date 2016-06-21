@@ -76,6 +76,8 @@ public:
 		const char *open_file_name = NULL,
 		QWidget *parent = 0);
 
+        void session_save();
+
 protected:
     void closeEvent(QCloseEvent *event);
 
@@ -85,8 +87,6 @@ private:
 	void session_error(const QString text, const QString info_text);
 
     bool eventFilter(QObject *object, QEvent *event);
-
-    void session_save();
 
 private slots:
 	void load_file(QString file_name);

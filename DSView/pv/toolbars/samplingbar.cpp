@@ -31,7 +31,6 @@
 #include <QAction>
 #include <QDebug>
 #include <QLabel>
-#include <QMessageBox>
 
 #include "samplingbar.h"
 
@@ -39,7 +38,7 @@
 #include "../device/devinst.h"
 #include "../dialogs/deviceoptions.h"
 #include "../dialogs/waitingdialog.h"
-#include "../dialogs/streamoptions.h"
+#include "../dialogs/dsmessagebox.h"
 #include "../view/dsosignal.h"
 
 using namespace boost;
@@ -97,6 +96,8 @@ SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
     _instant(false)
 {
     setMovable(false);
+    layout()->setMargin(0);
+    layout()->setSpacing(0);
 
     connect(&_device_selector, SIGNAL(currentIndexChanged (int)),
         this, SLOT(on_device_selected()));
@@ -124,7 +125,9 @@ SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
     connect(&_sample_rate, SIGNAL(currentIndexChanged(int)),
         this, SLOT(on_samplerate_sel(int)));
 
-    addWidget(new QLabel(tr(" ")));
+    QWidget *leftMargin = new QWidget(this);
+    leftMargin->setFixedWidth(4);
+    addWidget(leftMargin);
     addWidget(&_device_selector);
     addWidget(&_configure_button);
     addWidget(&_sample_count);
@@ -211,8 +214,10 @@ void SamplingBar::on_configure()
             if (gvar != NULL) {
                 bool zero = g_variant_get_boolean(gvar);
                 g_variant_unref(gvar);
-                if (zero)
+                if (zero) {
                     zero_adj();
+                    return;
+                }
             }
 
             gvar = dev_inst->get_config(NULL, NULL, SR_CONF_CALI);
@@ -221,25 +226,25 @@ void SamplingBar::on_configure()
                 g_variant_unref(gvar);
                 if (cali) {
                     show_calibration();
+                    return;
                 }
             }
         }
-    }
-
-    GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_TEST);
-    if (gvar != NULL) {
-        bool test = g_variant_get_boolean(gvar);
-        g_variant_unref(gvar);
-        if (test) {
-            update_sample_count_selector_value();
-            update_sample_rate_selector_value();
-            #ifndef TEST_MODE
-            _sample_count.setDisabled(true);
-            _sample_rate.setDisabled(true);
-            #endif
-        } else if (dev_inst->dev_inst()->mode != DSO) {
-            _sample_count.setDisabled(false);
-            _sample_rate.setDisabled(false);
+        gvar = dev_inst->get_config(NULL, NULL, SR_CONF_TEST);
+        if (gvar != NULL) {
+            bool test = g_variant_get_boolean(gvar);
+            g_variant_unref(gvar);
+            if (test) {
+                update_sample_count_selector_value();
+                update_sample_rate_selector_value();
+                #ifndef TEST_MODE
+                _sample_count.setDisabled(true);
+                _sample_rate.setDisabled(true);
+                #endif
+            } else if (dev_inst->dev_inst()->mode != DSO) {
+                _sample_count.setDisabled(false);
+                _sample_rate.setDisabled(false);
+            }
         }
     }
 }
@@ -257,7 +262,8 @@ void SamplingBar::zero_adj()
     pv::dialogs::WaitingDialog wait(this, get_selected_device());
     wait.start();
 
-    run_stop();
+    if (_session.get_capture_state() == pv::SigSession::Running)
+        run_stop();
 }
 
 uint64_t SamplingBar::get_record_length() const
@@ -649,15 +655,14 @@ void SamplingBar::on_run_stop()
             bool zero = g_variant_get_boolean(gvar);
             g_variant_unref(gvar);
             if (zero) {
-                QMessageBox msg(this);
-                msg.setText(tr("Zero Adjustment"));
-                msg.setInformativeText(tr("Please adjust zero skew and save the result!"));
+                dialogs::DSMessageBox msg(this);
+                msg.mBox()->setText(tr("Zero Adjustment"));
+                msg.mBox()->setInformativeText(tr("Please adjust zero skew and save the result!"));
                 //msg.setStandardButtons(QMessageBox::Ok);
-                msg.addButton(tr("Ok"), QMessageBox::AcceptRole);
-                msg.addButton(tr("Skip"), QMessageBox::RejectRole);
-                msg.setIcon(QMessageBox::Warning);
-                int ret = msg.exec();
-                if ( ret == QMessageBox::AcceptRole) {
+                msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
+                msg.mBox()->addButton(tr("Skip"), QMessageBox::RejectRole);
+                msg.mBox()->setIcon(QMessageBox::Warning);
+                if (msg.exec()) {
                     zero_adj();
                 } else {
                     dev_inst->set_config(NULL, NULL, SR_CONF_ZERO, g_variant_new_boolean(false));
@@ -687,15 +692,14 @@ void SamplingBar::on_instant_stop()
             bool zero = g_variant_get_boolean(gvar);
             g_variant_unref(gvar);
             if (zero) {
-                QMessageBox msg(this);
-                msg.setText(tr("Zero Adjustment"));
-                msg.setInformativeText(tr("Zero adjustment program will be started. Please keep all channels out of singal input. It can take a while!"));
-                //msg.setStandardButtons(QMessageBox::Ok);
-                msg.addButton(tr("Ok"), QMessageBox::AcceptRole);
-                msg.addButton(tr("Skip"), QMessageBox::RejectRole);
-                msg.setIcon(QMessageBox::Warning);
-                int ret = msg.exec();
-                if ( ret == QMessageBox::AcceptRole) {
+                dialogs::DSMessageBox msg(this);
+                msg.mBox()->setText(tr("Zero Adjustment"));
+                msg.mBox()->setInformativeText(tr("Zero adjustment program will be started. Please keep all channels out of singal input. It can take a while!"));
+                //msg.mBox()->setStandardButtons(QMessageBox::Ok);
+                msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
+                msg.mBox()->addButton(tr("Skip"), QMessageBox::RejectRole);
+                msg.mBox()->setIcon(QMessageBox::Warning);
+                if (msg.exec()) {
                     zero_adj();
                 } else {
                     dev_inst->set_config(NULL, NULL, SR_CONF_ZERO, g_variant_new_boolean(false));
@@ -758,11 +762,11 @@ void SamplingBar::enable_instant(bool enable)
 void SamplingBar::show_session_error(
     const QString text, const QString info_text)
 {
-    QMessageBox msg(this);
-    msg.setText(text);
-    msg.setInformativeText(info_text);
-    msg.setStandardButtons(QMessageBox::Ok);
-    msg.setIcon(QMessageBox::Warning);
+    dialogs::DSMessageBox msg(this);
+    msg.mBox()->setText(text);
+    msg.mBox()->setInformativeText(info_text);
+    msg.mBox()->setStandardButtons(QMessageBox::Ok);
+    msg.mBox()->setIcon(QMessageBox::Warning);
     msg.exec();
 }
 

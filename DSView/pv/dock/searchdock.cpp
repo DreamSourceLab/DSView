@@ -30,13 +30,13 @@
 #include "../data/snapshot.h"
 #include "../data/logicsnapshot.h"
 #include "../device/devinst.h"
+#include "../dialogs/dsmessagebox.h"
 
 #include <QObject>
 #include <QPainter>
 #include <QRegExpValidator>
 #include <QRect>
 #include <QMouseEvent>
-#include <QMessageBox>
 
 #include <stdint.h>
 #include <boost/shared_ptr.hpp>
@@ -118,31 +118,31 @@ void SearchDock::on_previous()
 
     last_pos = _view.get_search_pos();
     if (last_pos == 0) {
-        QMessageBox msg(this);
-        msg.setText(tr("Search"));
-        msg.setInformativeText(tr("Search cursor at the start position!"));
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.setIcon(QMessageBox::Warning);
+        dialogs::DSMessageBox msg(this);
+        msg.mBox()->setText(tr("Search"));
+        msg.mBox()->setInformativeText(tr("Search cursor at the start position!"));
+        msg.mBox()->setStandardButtons(QMessageBox::Ok);
+        msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
         return;
     } else {
         data = (uint8_t*)_session.get_buf(unit_size, length);
         if (data == NULL) {
-            QMessageBox msg(this);
-            msg.setText(tr("Search"));
-            msg.setInformativeText(tr("No Sample data!"));
-            msg.setStandardButtons(QMessageBox::Ok);
-            msg.setIcon(QMessageBox::Warning);
+            dialogs::DSMessageBox msg(this);
+            msg.mBox()->setText(tr("Search"));
+            msg.mBox()->setInformativeText(tr("No Sample data!"));
+            msg.mBox()->setStandardButtons(QMessageBox::Ok);
+            msg.mBox()->setIcon(QMessageBox::Warning);
             msg.exec();
             return;
         } else {
             const bool ret = search_value(data, unit_size, length, last_pos, 1, value);
             if (!ret) {
-                QMessageBox msg(this);
-                msg.setText(tr("Search"));
-                msg.setInformativeText(tr("Pattern ") + value + tr(" not found!"));
-                msg.setStandardButtons(QMessageBox::Ok);
-                msg.setIcon(QMessageBox::Warning);
+                dialogs::DSMessageBox msg(this);
+                msg.mBox()->setText(tr("Search"));
+                msg.mBox()->setInformativeText(tr("Pattern ") + value + tr(" not found!"));
+                msg.mBox()->setStandardButtons(QMessageBox::Ok);
+                msg.mBox()->setIcon(QMessageBox::Warning);
                 msg.exec();
                 return;
             } else {
@@ -163,30 +163,30 @@ void SearchDock::on_next()
 
     last_pos = _view.get_search_pos();
     if (last_pos == length - 1) {
-        QMessageBox msg(this);
-        msg.setText(tr("Search"));
-        msg.setInformativeText(tr("Search cursor at the end position!"));
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.setIcon(QMessageBox::Warning);
+        dialogs::DSMessageBox msg(this);
+        msg.mBox()->setText(tr("Search"));
+        msg.mBox()->setInformativeText(tr("Search cursor at the end position!"));
+        msg.mBox()->setStandardButtons(QMessageBox::Ok);
+        msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
         return;
     } else {
         if (data == NULL) {
-            QMessageBox msg(this);
-            msg.setText(tr("Search"));
-            msg.setInformativeText(tr("No Sample data!"));
-            msg.setStandardButtons(QMessageBox::Ok);
-            msg.setIcon(QMessageBox::Warning);
+            dialogs::DSMessageBox msg(this);
+            msg.mBox()->setText(tr("Search"));
+            msg.mBox()->setInformativeText(tr("No Sample data!"));
+            msg.mBox()->setStandardButtons(QMessageBox::Ok);
+            msg.mBox()->setIcon(QMessageBox::Warning);
             msg.exec();
             return;
         } else {
             const int ret = search_value(data, unit_size, length, last_pos, 0, value);
             if (!ret) {
-                QMessageBox msg(this);
-                msg.setText(tr("Search"));
-                msg.setInformativeText(tr("Pattern ") + value + tr(" not found!"));
-                msg.setStandardButtons(QMessageBox::Ok);
-                msg.setIcon(QMessageBox::Warning);
+                dialogs::DSMessageBox msg(this);
+                msg.mBox()->setText(tr("Search"));
+                msg.mBox()->setInformativeText(tr("Pattern ") + value + tr(" not found!"));
+                msg.mBox()->setStandardButtons(QMessageBox::Ok);
+                msg.mBox()->setIcon(QMessageBox::Warning);
                 msg.exec();
                 return;
             } else {
@@ -198,7 +198,7 @@ void SearchDock::on_next()
 
 void SearchDock::on_set()
 {
-    dialogs::Search dlg(this, _session.get_device()->dev_inst(), _pattern);
+    dialogs::Search dlg(this, _session.get_device(), _pattern);
     if (dlg.exec()) {
         _pattern = dlg.get_pattern();
         _pattern.remove(QChar(' '), Qt::CaseInsensitive);

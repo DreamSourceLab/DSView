@@ -23,7 +23,6 @@
 #ifndef DSVIEW_PV_WAITINGDIALOG_H
 #define DSVIEW_PV_WAITINGDIALOG_H
 
-#include <QDialog>
 #include <QDialogButtonBox>
 #include <QTimer>
 #include <QLabel>
@@ -32,11 +31,13 @@
 #include <boost/shared_ptr.hpp>
 
 #include <pv/device/devinst.h>
+#include "../toolbars/titlebar.h"
+#include "dsdialog.h"
 
 namespace pv {
 namespace dialogs {
 
-class WaitingDialog : public QDialog
+class WaitingDialog : public DSDialog
 {
 	Q_OBJECT
 
@@ -60,10 +61,11 @@ protected:
 
 private slots:
     void changeText();
+    void stop();
 
 private:
     boost::shared_ptr<pv::device::DevInst>  _dev_inst;
-
+    toolbars::TitleBar *_titlebar;
     QDialogButtonBox _button_box;
 
     int index;

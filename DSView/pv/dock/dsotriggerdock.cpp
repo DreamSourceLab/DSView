@@ -23,13 +23,13 @@
 #include "dsotriggerdock.h"
 #include "../sigsession.h"
 #include "../device/devinst.h"
+#include "../dialogs/dsmessagebox.h"
 
 #include <QObject>
 #include <QLabel>
 #include <QRadioButton>
 #include <QPainter>
 #include <QStyleOption>
-#include <QMessageBox>
 
 #include <QVector>
 #include <QVBoxLayout>
@@ -167,11 +167,11 @@ void DsoTriggerDock::pos_changed(int pos)
                                             SR_CONF_HORIZ_TRIGGERPOS,
                                             g_variant_new_byte((uint8_t)pos));
     if (!ret) {
-        QMessageBox msg(this);
-        msg.setText(tr("Trigger Setting Issue"));
-        msg.setInformativeText(tr("Change horiz trigger position failed!"));
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.setIcon(QMessageBox::Warning);
+        dialogs::DSMessageBox msg(this);
+        msg.mBox()->setText(tr("Trigger Setting Issue"));
+        msg.mBox()->setInformativeText(tr("Change horiz trigger position failed!"));
+        msg.mBox()->setStandardButtons(QMessageBox::Ok);
+        msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
     }
 
@@ -196,11 +196,11 @@ void DsoTriggerDock::hold_changed(int hold)
                                             g_variant_new_uint64(holdoff));
 
     if (!ret) {
-        QMessageBox msg(this);
-        msg.setText(tr("Trigger Setting Issue"));
-        msg.setInformativeText(tr("Change trigger hold off time failed!"));
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.setIcon(QMessageBox::Warning);
+        dialogs::DSMessageBox msg(this);
+        msg.mBox()->setText(tr("Trigger Setting Issue"));
+        msg.mBox()->setInformativeText(tr("Change trigger hold off time failed!"));
+        msg.mBox()->setStandardButtons(QMessageBox::Ok);
+        msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
     }
 }
@@ -214,11 +214,11 @@ void DsoTriggerDock::source_changed()
                                             SR_CONF_TRIGGER_SOURCE,
                                             g_variant_new_byte(id));
     if (!ret) {
-        QMessageBox msg(this);
-        msg.setText(tr("Trigger Setting Issue"));
-        msg.setInformativeText(tr("Change trigger source failed!"));
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.setIcon(QMessageBox::Warning);
+        dialogs::DSMessageBox msg(this);
+        msg.mBox()->setText(tr("Trigger Setting Issue"));
+        msg.mBox()->setInformativeText(tr("Change trigger source failed!"));
+        msg.mBox()->setStandardButtons(QMessageBox::Ok);
+        msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
     }
 }
@@ -232,11 +232,11 @@ void DsoTriggerDock::type_changed()
                                             SR_CONF_TRIGGER_SLOPE,
                                             g_variant_new_byte(id));
     if (!ret) {
-        QMessageBox msg(this);
-        msg.setText(tr("Trigger Setting Issue"));
-        msg.setInformativeText(tr("Change trigger type failed!"));
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.setIcon(QMessageBox::Warning);
+        dialogs::DSMessageBox msg(this);
+        msg.mBox()->setText(tr("Trigger Setting Issue"));
+        msg.mBox()->setInformativeText(tr("Change trigger type failed!"));
+        msg.mBox()->setStandardButtons(QMessageBox::Ok);
+        msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
     }
 }

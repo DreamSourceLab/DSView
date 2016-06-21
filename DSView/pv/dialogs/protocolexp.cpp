@@ -26,7 +26,6 @@
 
 #include <QFormLayout>
 #include <QListWidget>
-#include <QMessageBox>
 #include <QFile>
 #include <QFileDialog>
 #include <QTextStream>
@@ -48,7 +47,7 @@ namespace pv {
 namespace dialogs {
 
 ProtocolExp::ProtocolExp(QWidget *parent, SigSession &session) :
-    QDialog(parent),
+    DSDialog(parent),
     _session(session),
     _button_box(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
         Qt::Horizontal, this),
@@ -84,13 +83,17 @@ ProtocolExp::ProtocolExp(QWidget *parent, SigSession &session) :
         }
     }
 
-    _layout = new QVBoxLayout(this);
+    _layout = new QVBoxLayout();
     _layout->addLayout(_flayout);
     _layout->addWidget(&_button_box);
-    setLayout(_layout);
+
+    layout()->addLayout(_layout);
+    setTitle(tr("Protocol Export"));
 
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
     connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
+    connect(_session.get_device().get(), SIGNAL(device_updated()), this, SLOT(reject()));
+
 }
 
 void ProtocolExp::accept()

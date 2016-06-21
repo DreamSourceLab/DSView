@@ -42,11 +42,13 @@
 
 #include <pv/device/devinst.h>
 #include <pv/prop/binding/deviceoptions.h>
+#include "../toolbars/titlebar.h"
+#include "../dialogs/dsdialog.h"
 
 namespace pv {
 namespace dialogs {
 
-class DeviceOptions : public QDialog
+class DeviceOptions : public DSDialog
 {
 	Q_OBJECT
 
@@ -76,6 +78,7 @@ private slots:
 private:
     boost::shared_ptr<pv::device::DevInst>  _dev_inst;
 	QVBoxLayout _layout;
+    toolbars::TitleBar *_titlebar;
 
     QGroupBox *_probes_box;
     QGridLayout _probes_box_layout;

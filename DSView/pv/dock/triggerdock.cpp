@@ -23,13 +23,13 @@
 #include "triggerdock.h"
 #include "../sigsession.h"
 #include "../device/devinst.h"
+#include "../dialogs/dsmessagebox.h"
 
 #include <QObject>
 #include <QGridLayout>
 #include <QVBoxLayout>
 #include <QPainter>
 #include <QRegExpValidator>
-#include <QMessageBox>
 #include <QSplitter>
 
 #include "libsigrok4DSL/libsigrok.h"
@@ -293,22 +293,22 @@ void TriggerDock::adv_trigger()
             g_variant_unref(gvar);
         }
         if (stream) {
-            QMessageBox msg(this);
-            msg.setText(tr("Trigger"));
-            msg.setInformativeText(tr("Stream Mode Don't Support Advanced Trigger!"));
-            msg.setStandardButtons(QMessageBox::Ok);
-            msg.setIcon(QMessageBox::Warning);
+            dialogs::DSMessageBox msg(this);
+            msg.mBox()->setText(tr("Trigger"));
+            msg.mBox()->setInformativeText(tr("Stream Mode Don't Support Advanced Trigger!"));
+            msg.mBox()->setStandardButtons(QMessageBox::Ok);
+            msg.mBox()->setIcon(QMessageBox::Warning);
             msg.exec();
             simple_radioButton->setChecked(true);
         } else {
             widget_enable(0);
         }
     } else {
-        QMessageBox msg(this);
-        msg.setText(tr("Trigger"));
-        msg.setInformativeText(tr("Advanced Trigger need DSLogic Hardware Support!"));
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.setIcon(QMessageBox::Warning);
+        dialogs::DSMessageBox msg(this);
+        msg.mBox()->setText(tr("Trigger"));
+        msg.mBox()->setInformativeText(tr("Advanced Trigger need DSLogic Hardware Support!"));
+        msg.mBox()->setStandardButtons(QMessageBox::Ok);
+        msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
         simple_radioButton->setChecked(true);
     }

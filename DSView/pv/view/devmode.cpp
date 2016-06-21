@@ -35,7 +35,6 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QRect>
-#include <QMessageBox>
 #include <QDebug>
 
 using boost::shared_ptr;
@@ -50,6 +49,8 @@ DevMode::DevMode(QWidget *parent, SigSession &session) :
     _layout(new QGridLayout(this))
     
 {
+    _layout->setMargin(5);
+    _layout->setSpacing(0);
     setLayout(_layout);
 }
 

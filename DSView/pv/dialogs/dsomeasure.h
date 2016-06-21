@@ -23,13 +23,14 @@
 #ifndef DSVIEW_PV_DSOMEASURE_H
 #define DSVIEW_PV_DSOMEASURE_H
 
-#include <QDialog>
 #include <QDialogButtonBox>
 #include <QVBoxLayout>
 
 #include <boost/shared_ptr.hpp>
 
-#include <pv/view/dsosignal.h>
+#include "../view/dsosignal.h"
+#include "../toolbars/titlebar.h"
+#include "dsdialog.h"
 
 namespace pv {
 
@@ -39,7 +40,7 @@ class DsoSignal;
 
 namespace dialogs {
 
-class DsoMeasure : public QDialog
+class DsoMeasure : public DSDialog
 {
 	Q_OBJECT
 
@@ -55,7 +56,7 @@ protected:
 
 private:
     boost::shared_ptr<pv::view::DsoSignal> _dsoSig;
-
+    toolbars::TitleBar *_titlebar;
     QVBoxLayout _layout;
     QDialogButtonBox _button_box;
 };

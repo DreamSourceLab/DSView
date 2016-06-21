@@ -52,6 +52,7 @@ extern "C" {
 #include "../widgets/decodermenu.h"
 #include "../device/devinst.h"
 #include "../view/cursor.h"
+#include "../toolbars/titlebar.h"
 
 using namespace boost;
 using namespace std;
@@ -380,7 +381,8 @@ void DecodeTrace::paint_fore(QPainter &p, int left, int right)
 bool DecodeTrace::create_popup()
 {
     int ret = false;
-    _popup = new QDialog();
+    _popup = new dialogs::DSDialog();
+
     create_popup_form();
 
     if (QDialog::Accepted == _popup->exec())
@@ -397,8 +399,7 @@ bool DecodeTrace::create_popup()
         }
     }
 
-    if (_popup_form)
-        QWidget().setLayout(_popup_form);
+    delete _popup_form;
     delete _popup;
     _popup = NULL;
     _popup_form = NULL;
@@ -414,14 +415,13 @@ void DecodeTrace::create_popup_form()
     // which then goes out of scope destroying the layout and all the child
     // widgets.
     if (_popup_form)
-        QWidget().setLayout(_popup_form);
+        _popup->reload(false);
 
-    _popup_form = new QFormLayout(_popup);
-    _popup->setLayout(_popup_form);
+    _popup_form = new QFormLayout();
+    _popup->layout()->addLayout(_popup_form);
+    _popup->setTitle(tr("Decoder Options"));
+
     populate_popup_form(_popup, _popup_form);
-    const int width = _popup_form->sizeHint().width();
-    const int height = _popup_form->sizeHint().height();
-    _popup->resize(width, height);
 }
 
 void DecodeTrace::populate_popup_form(QWidget *parent, QFormLayout *form)

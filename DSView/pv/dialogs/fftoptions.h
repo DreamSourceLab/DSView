@@ -23,7 +23,6 @@
 #ifndef DSVIEW_PV_FFTOPTIONS_H
 #define DSVIEW_PV_FFTOPTIONS_H
 
-#include <QDialog>
 #include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QVBoxLayout>
@@ -34,6 +33,8 @@
 #include <boost/shared_ptr.hpp>
 
 #include "../device/devinst.h"
+#include "../toolbars/titlebar.h"
+#include "dsdialog.h"
 
 namespace pv {
 
@@ -41,7 +42,7 @@ class SigSession;
 
 namespace dialogs {
 
-class FftOptions : public QDialog
+class FftOptions : public DSDialog
 {
     Q_OBJECT
 
@@ -63,6 +64,7 @@ private:
     SigSession &_session;
     uint64_t _sample_limit;
 
+    toolbars::TitleBar *_titlebar;
     QComboBox *_len_combobox;
     QComboBox *_interval_combobox;
     QCheckBox *_en_checkbox;

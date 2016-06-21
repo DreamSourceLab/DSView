@@ -25,16 +25,14 @@
 #include <boost/shared_ptr.hpp>
 
 #include <QMetaObject>
-#include <QMessageBox>
 #include <QFileDialog>
 #include <QApplication>
 
 #include "filebar.h"
 #include "../device/devinst.h"
+#include "../dialogs/dsmessagebox.h"
 
 #include <deque>
-
-extern char AppDataPath[256];
 
 namespace pv {
 namespace toolbars {
@@ -144,11 +142,11 @@ void FileBar::session_error(
 void FileBar::show_session_error(
     const QString text, const QString info_text)
 {
-    QMessageBox msg(this);
-    msg.setText(text);
-    msg.setInformativeText(info_text);
-    msg.setStandardButtons(QMessageBox::Ok);
-    msg.setIcon(QMessageBox::Warning);
+    dialogs::DSMessageBox msg(this);
+    msg.mBox()->setText(text);
+    msg.mBox()->setInformativeText(info_text);
+    msg.mBox()->setStandardButtons(QMessageBox::Ok);
+    msg.mBox()->setIcon(QMessageBox::Warning);
     msg.exec();
 }
 
@@ -157,11 +155,11 @@ void FileBar::on_actionExport_triggered(){
     uint64_t length;
     const void* buf = _session.get_buf(unit_size, length);
     if (!buf) {
-        QMessageBox msg(this);
-        msg.setText(tr("Data Export"));
-        msg.setInformativeText(tr("No Data to Save!"));
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.setIcon(QMessageBox::Warning);
+        dialogs::DSMessageBox msg(this);
+        msg.mBox()->setText(tr("Data Export"));
+        msg.mBox()->setInformativeText(tr("No Data to Save!"));
+        msg.mBox()->setStandardButtons(QMessageBox::Ok);
+        msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
     } else {
         QList<QString> supportedFormats = _session.getSuportedExportFormats();
@@ -191,11 +189,11 @@ void FileBar::on_actionSave_triggered()
     uint64_t length;
     const void* buf = _session.get_buf(unit_size, length);
     if (!buf) {
-        QMessageBox msg(this);
-        msg.setText(tr("File Save"));
-        msg.setInformativeText(tr("No Data to Save!"));
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.setIcon(QMessageBox::Warning);
+        dialogs::DSMessageBox msg(this);
+        msg.mBox()->setText(tr("File Save"));
+        msg.mBox()->setInformativeText(tr("No Data to Save!"));
+        msg.mBox()->setStandardButtons(QMessageBox::Ok);
+        msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
     } else {
         QString file_name = QFileDialog::getSaveFileName(
@@ -206,7 +204,7 @@ void FileBar::on_actionSave_triggered()
             QFileInfo f(file_name);
             if(f.suffix().compare("dsl"))
                 file_name.append(tr(".dsl"));
-            _session.save_file(file_name, _session.get_device()->dev_inst()->mode);
+            _session.save_file(file_name, this, _session.get_device()->dev_inst()->mode);
         }
     }
 }
@@ -226,11 +224,11 @@ void FileBar::on_actionDefault_triggered()
 {
     QDir dir(DS_RES_PATH);
     if (!dir.exists()) {
-        QMessageBox msg(this);
-        msg.setText(tr("Session Load"));
-        msg.setInformativeText(tr("Cannot find default session file for this device!"));
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.setIcon(QMessageBox::Warning);
+        dialogs::DSMessageBox msg(this);
+        msg.mBox()->setText(tr("Session Load"));
+        msg.mBox()->setInformativeText(tr("Cannot find default session file for this device!"));
+        msg.mBox()->setStandardButtons(QMessageBox::Ok);
+        msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
         return;
     }

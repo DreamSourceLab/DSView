@@ -43,11 +43,10 @@ const QString Calibration::VGAIN = tr(" VGAIN");
 const QString Calibration::VOFF = tr(" VOFF");
 
 Calibration::Calibration(QWidget *parent) :
-    QDialog(parent)
+    DSDialog(parent)
 {
     this->setFixedSize(400, 200);
     this->setWindowOpacity(0.7);
-    this->setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     this->setModal(false);
 
     _dev_inst = NULL;
@@ -56,16 +55,19 @@ Calibration::Calibration(QWidget *parent) :
     _exit_btn = new QPushButton(tr("Exit"), this);
 
     _flayout = new QFormLayout();
-    QGridLayout *glayout = new QGridLayout(this);
-    glayout->addLayout(_flayout, 0, 0, 1, 5);
-    glayout->addWidget(_save_btn, 1, 0);
-    glayout->addWidget(new QWidget(this), 1, 1);
+    QGridLayout *glayout = new QGridLayout();
+
+    glayout->addLayout(_flayout, 1, 0, 1, 5);
+    glayout->addWidget(_save_btn, 2, 0);
+    glayout->addWidget(new QWidget(this), 2, 1);
     glayout->setColumnStretch(1, 1);
-    glayout->addWidget(_reset_btn, 1, 2);
-    glayout->addWidget(new QWidget(this), 1, 3);
+    glayout->addWidget(_reset_btn, 2, 2);
+    glayout->addWidget(new QWidget(this), 2, 3);
     glayout->setColumnStretch(3, 1);
-    glayout->addWidget(_exit_btn, 1, 4);
-    setLayout(glayout);
+    glayout->addWidget(_exit_btn, 2, 4);
+
+    layout()->addLayout(glayout);
+    setTitle(tr("Manual Calibration"));
 
     connect(_save_btn, SIGNAL(clicked()), this, SLOT(on_save()));
     connect(_reset_btn, SIGNAL(clicked()), this, SLOT(on_reset()));

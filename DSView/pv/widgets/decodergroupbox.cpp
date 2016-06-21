@@ -52,7 +52,7 @@ DecoderGroupBox::DecoderGroupBox(boost::shared_ptr<data::DecoderStack> &decoder_
     setLayout(_layout);
 
     _layout->addWidget(new QLabel(QString("<h3>%1</h3>").arg(_dec->decoder()->name), this),
-		0, 0);
+        0, 0);
 	_layout->setColumnStretch(0, 1);
 
     const srd_decoder *const d = _dec->decoder();

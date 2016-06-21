@@ -26,7 +26,6 @@
 
 #include <QFormLayout>
 #include <QListWidget>
-#include <QMessageBox>
 
 #include "../sigsession.h"
 #include "../data/decoderstack.h"
@@ -41,7 +40,7 @@ namespace pv {
 namespace dialogs {
 
 ProtocolList::ProtocolList(QWidget *parent, SigSession &session) :
-    QDialog(parent),
+    DSDialog(parent),
     _session(session),
     _button_box(QDialogButtonBox::Ok,
         Qt::Horizontal, this)
@@ -66,14 +65,19 @@ ProtocolList::ProtocolList(QWidget *parent, SigSession &session) :
     _flayout = new QFormLayout();
     _flayout->addRow(new QLabel(tr("Decoded Protocols: "), this), _protocol_combobox);
 
-    _layout = new QVBoxLayout(this);
+    _layout = new QVBoxLayout();
     _layout->addLayout(_flayout);
     _layout->addWidget(&_button_box);
-    setLayout(_layout);
+
+    setMinimumWidth(300);
+    layout()->addLayout(_layout);
+    setTitle(tr("Protocol List Viewer"));
 
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
     connect(_protocol_combobox, SIGNAL(currentIndexChanged(int)), this, SLOT(set_protocol(int)));
     set_protocol(_protocol_combobox->currentIndex());
+    connect(_session.get_device().get(), SIGNAL(device_updated()), this, SLOT(reject()));
+
 }
 
 void ProtocolList::accept()

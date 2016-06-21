@@ -21,6 +21,7 @@
 
 
 #include "dsomeasure.h"
+#include "../device/devinst.h"
 
 #include <QCheckBox>
 #include <QVariant>
@@ -35,14 +36,12 @@ namespace pv {
 namespace dialogs {
 
 DsoMeasure::DsoMeasure(QWidget *parent, boost::shared_ptr<DsoSignal> dsoSig) :
-	QDialog(parent),
+    DSDialog(parent),
     _dsoSig(dsoSig),
-    _layout(this),
     _button_box(QDialogButtonBox::Ok,
         Qt::Horizontal, this)
 {
-    setWindowTitle(tr("DSO Measure Options"));
-    setLayout(&_layout);
+    setMinimumWidth(300);
 
     for (int i=DsoSignal::DSO_MS_BEGIN+1; i<DsoSignal::DSO_MS_END; i++) {
         QCheckBox *checkBox = new QCheckBox(_dsoSig->get_ms_string(i), this);
@@ -54,8 +53,13 @@ DsoMeasure::DsoMeasure(QWidget *parent, boost::shared_ptr<DsoSignal> dsoSig) :
 
     _layout.addWidget(&_button_box);
 
+    layout()->addLayout(&_layout);
+    setTitle(tr("Measurements"));
+
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
     connect(&_button_box, SIGNAL(rejected()), this, SLOT(accept()));
+
+    connect(_dsoSig->get_device().get(), SIGNAL(device_updated()), this, SLOT(reject()));
 }
 
 void DsoMeasure::set_measure(bool en)
@@ -77,7 +81,9 @@ void DsoMeasure::accept()
 
 void DsoMeasure::reject()
 {
-    accept();
+    using namespace Qt;
+
+    QDialog::reject();
 }
 
 } // namespace dialogs

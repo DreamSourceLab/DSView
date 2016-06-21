@@ -68,5 +68,9 @@
         <file>icons/Hamming.png</file>
         <file>icons/Hann.png</file>
         <file>icons/Rectangle.png</file>
+        <file>icons/close.png</file>
+        <file>icons/maximize.png</file>
+        <file>icons/minimize.png</file>
+        <file>icons/restore.png</file>
     </qresource>
 </RCC>

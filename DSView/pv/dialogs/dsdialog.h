@@ -2,8 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
+ * Copyright (C) 2016 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,29 +20,49 @@
  */
 
 
-#ifndef DSVIEW_PV_ABOUT_H
-#define DSVIEW_PV_ABOUT_H
+#ifndef DSVIEW_PV_DSDIALOG_H
+#define DSVIEW_PV_DSDIALOG_H
 
-#include <QLabel>
-#include "dsdialog.h"
+#include <QDialog>
+#include <QWidget>
+#include <QVBoxLayout>
+
+#include "../toolbars/titlebar.h"
 
 namespace pv {
 namespace dialogs {
 
-class About : public DSDialog
+class DSDialog : public QDialog
 {
 	Q_OBJECT
 
 public:
-	explicit About(QWidget *parent = 0);
-	~About();
+    DSDialog(QWidget *parent = 0, bool hasClose = false);
+    QVBoxLayout *layout();
+    QWidget *mainWidget();
+
+    void setTitle(QString title);
+    void reload(bool hasClose);
+
+protected:
+    void accept();
+    void reject();
+    //void mousePressEvent(QMouseEvent *event);
+    //void mouseReleaseEvent(QMouseEvent *event);
+    bool eventFilter(QObject *object, QEvent *event);
+private:
+    void build_main(bool hasClose);
 
 private:
-    QLabel *_logo;
-    QLabel *_info;
+    QVBoxLayout *_layout;
+    QVBoxLayout *_mlayout;
+    QWidget *_main;
+    toolbars::TitleBar *_titlebar;
+    bool _moving;
+    QPoint _startPos;
 };
 
 } // namespace dialogs
 } // namespace pv
 
-#endif // DSVIEW_PV_ABOUT_H
+#endif // DSVIEW_PV_DSDIALOG_H

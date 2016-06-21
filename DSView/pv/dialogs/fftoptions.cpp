@@ -26,7 +26,6 @@
 
 #include <QFormLayout>
 #include <QListWidget>
-#include <QMessageBox>
 
 #include "../sigsession.h"
 #include "../data/mathstack.h"
@@ -41,7 +40,7 @@ namespace pv {
 namespace dialogs {
 
 FftOptions::FftOptions(QWidget *parent, SigSession &session) :
-    QDialog(parent),
+    DSDialog(parent),
     _session(session),
     _button_box(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
         Qt::Horizontal, this)
@@ -188,15 +187,18 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
     _hint_label->setPixmap(pixmap);
     _hlayout->addWidget(_hint_label);
 
-    _layout = new QVBoxLayout(this);
+    _layout = new QVBoxLayout();
     _layout->addLayout(_hlayout);
     _layout->addWidget(&_button_box);
-    setLayout(_layout);
+
+    layout()->addLayout(_layout);
+    setTitle(tr("FFT Options"));
 
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
     connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
     connect(_window_combobox, SIGNAL(currentIndexChanged(QString)), this, SLOT(window_changed(QString)));
     connect(_len_combobox, SIGNAL(currentIndexChanged(int)), this, SLOT(len_changed(int)));
+    connect(_session.get_device().get(), SIGNAL(device_updated()), this, SLOT(reject()));
 }
 
 void FftOptions::accept()

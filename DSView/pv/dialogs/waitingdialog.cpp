@@ -29,6 +29,7 @@
 #include <QFuture>
 #include <QProgressDialog>
 #include <QtConcurrent/QtConcurrent>
+#include <QVBoxLayout>
 
 #include "libsigrok4DSL/libsigrok.h"
 #include "../view/trace.h"
@@ -43,22 +44,18 @@ const QString WaitingDialog::TIPS_WAIT = tr("Waiting");
 const QString WaitingDialog::TIPS_FINISHED = tr("Finished!");
 
 WaitingDialog::WaitingDialog(QWidget *parent, boost::shared_ptr<pv::device::DevInst> dev_inst) :
-	QDialog(parent),
+    DSDialog(parent),
     _dev_inst(dev_inst),
-    _button_box(QDialogButtonBox::Save | QDialogButtonBox::Abort,
+    _button_box(QDialogButtonBox::Abort,
         Qt::Horizontal, this)
 {
     this->setFixedSize((GIF_WIDTH+TIP_WIDTH)*1.2, (GIF_HEIGHT+TIP_HEIGHT)*4);
-    int midx = this->width() / 2;
-    int midy = this->height() / 2;
-    this->setWindowOpacity(0.5);
-    this->setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
+    this->setWindowOpacity(0.7);
 
     label = new QLabel(this);
-    label->setStyleSheet("background-color: transparent;");
-    label->setGeometry(midx-GIF_WIDTH/2, midy-GIF_HEIGHT/2, GIF_WIDTH, GIF_HEIGHT);
     movie = new QMovie(":/icons/wait.gif");
     label->setMovie(movie);
+    label->setAlignment(Qt::AlignCenter);
 
     tips = new QLabel(this);
     tips->setText(TIPS_WAIT);
@@ -66,17 +63,23 @@ WaitingDialog::WaitingDialog(QWidget *parent, boost::shared_ptr<pv::device::DevI
     font.setPointSize(10);
     font.setBold(true);
     tips->setFont(font);
-    tips->setGeometry(midx-TIP_WIDTH/2, midy+GIF_HEIGHT/2, TIP_WIDTH, TIP_HEIGHT);
+    tips->setAlignment(Qt::AlignCenter);
 
     index = 0;
     timer = new QTimer();
     connect(timer, SIGNAL(timeout()), this, SLOT(changeText()));
-
-    _button_box.setGeometry(width()-_button_box.width()-30, height()-_button_box.height()-15,
-                            _button_box.width(), _button_box.height());
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
     connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
-    _button_box.buttons().front()->setVisible(false);
+    connect(_dev_inst.get(), SIGNAL(device_updated()), this, SLOT(stop()));
+
+
+    QVBoxLayout *mlayout = new QVBoxLayout();
+    mlayout->addWidget(label, Qt::AlignHCenter);
+    mlayout->addWidget(tips, Qt::AlignHCenter);
+    mlayout->addWidget(&_button_box);
+
+    layout()->addLayout(mlayout);
+    setTitle(tr("Zero Adjustment"));
 }
 
 void WaitingDialog::accept()
@@ -137,6 +140,15 @@ void WaitingDialog::reject()
     dlg.exec();
 }
 
+void WaitingDialog::stop()
+{
+    using namespace Qt;
+
+    movie->stop();
+    timer->stop();
+    QDialog::reject();
+}
+
 void WaitingDialog::start()
 {
     movie->start();
@@ -162,7 +174,7 @@ void WaitingDialog::changeText()
                 timer->stop();
                 tips->setAlignment(Qt::AlignHCenter);
                 tips->setText(TIPS_FINISHED);
-                _button_box.buttons().front()->setVisible(true);
+                _button_box.addButton(QDialogButtonBox::Save);
             }
         }
     } else {

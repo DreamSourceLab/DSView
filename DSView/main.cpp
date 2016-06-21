@@ -37,7 +37,7 @@
 
 #include "dsapplication.h"
 #include "pv/devicemanager.h"
-#include "pv/mainwindow.h"
+#include "pv/mainframe.h"
 
 #include "config.h"
 
@@ -134,13 +134,13 @@ int main(int argc, char *argv[])
 			// Create the device manager, initialise the drivers
 			pv::DeviceManager device_manager(sr_ctx);
 
-			// Initialise the main window
-            		pv::MainWindow w(device_manager, open_file);
-                    //QFile qss(":/stylesheet.qss");
-                    QFile qss(":qdarkstyle/style.qss");
-            		qss.open(QFile::ReadOnly);
-            		a.setStyleSheet(qss.readAll());
-            		qss.close();
+            // Initialise the main frame
+            pv::MainFrame w(device_manager, open_file);
+            //QFile qss(":/stylesheet.qss");
+            QFile qss(":qdarkstyle/style.qss");
+            qss.open(QFile::ReadOnly);
+            a.setStyleSheet(qss.readAll());
+            qss.close();
 			w.show();
 
 			// Run the application

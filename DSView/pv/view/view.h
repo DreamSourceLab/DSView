@@ -84,7 +84,7 @@ public:
     static constexpr double MaxViewRate = 1.0;
     static const int MaxPixelsPerSample = 100;
 
-    static const int StatusHeight = 25;
+    static const int StatusHeight = 20;
 
 public:
     explicit View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget *parent = 0);
@@ -193,7 +193,6 @@ public:
 
     void viewport_update();
 
-
 signals:
 	void hover_point_changed();
 
@@ -233,6 +232,7 @@ public slots:
     void show_region(uint64_t start, uint64_t end);
     // -- calibration
     void update_calibration();
+    void hide_calibration();
     void status_clear();
 
 private slots:
@@ -256,7 +256,6 @@ private slots:
 
     // calibration for oscilloscope
     void show_calibration();
-    void hide_calibration();
     void on_measure_updated();
 
     void splitterMoved(int pos, int index);

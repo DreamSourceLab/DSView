@@ -23,7 +23,6 @@
 #ifndef DSVIEW_PV_CALIBRATION_H
 #define DSVIEW_PV_CALIBRATION_H
 
-#include <QDialog>
 #include <QDialogButtonBox>
 #include <QPushButton>
 #include <QLabel>
@@ -34,11 +33,13 @@
 #include <boost/shared_ptr.hpp>
 
 #include <pv/device/devinst.h>
+#include "../toolbars/titlebar.h"
+#include "dsdialog.h"
 
 namespace pv {
 namespace dialogs {
 
-class Calibration : public QDialog
+class Calibration : public DSDialog
 {
 	Q_OBJECT
 
@@ -63,6 +64,7 @@ private slots:
 private:
     boost::shared_ptr<pv::device::DevInst>  _dev_inst;
 
+    toolbars::TitleBar *_titlebar;
     QPushButton *_save_btn;
     QPushButton *_reset_btn;
     QPushButton *_exit_btn;

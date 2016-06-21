@@ -56,11 +56,11 @@
 #include <sys/stat.h>
 
 #include <QDebug>
-#include <QMessageBox>
 #include <QProgressDialog>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QFuture>
 #include <QtConcurrent/QtConcurrent>
 
 #include <boost/foreach.hpp>
@@ -194,7 +194,7 @@ void SigSession::set_file(QString name) throw(QString)
     }
 }
 
-void SigSession::save_file(const QString name, int type){
+void SigSession::save_file(const QString name, QWidget* parent, int type){
     unsigned char* data;
     int unit_size;
     uint64_t sample_count;
@@ -231,8 +231,23 @@ void SigSession::save_file(const QString name, int type){
         sample_count = snapshot->get_sample_count();
     }
 
-    sr_session_save(name.toLocal8Bit().data(), _dev_inst->dev_inst(),
-                    data, unit_size, sample_count, _trigger_time.toMSecsSinceEpoch(), _trigger_pos);
+    QFuture<void> future;
+    future = QtConcurrent::run([&]{
+        sr_session_save(name.toLocal8Bit().data(), _dev_inst->dev_inst(),
+                        data, unit_size, sample_count, _trigger_time.toMSecsSinceEpoch(), _trigger_pos);
+    });
+    Qt::WindowFlags flags = Qt::CustomizeWindowHint;
+    QProgressDialog dlg(tr("Save Capture to File... It can take a while."),
+                        tr("Cancel"),0,0,parent,flags);
+    dlg.setWindowModality(Qt::WindowModal);
+    dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
+    dlg.setCancelButton(NULL);
+
+    QFutureWatcher<void> watcher;
+    watcher.setFuture(future);
+    connect(&watcher,SIGNAL(finished()),&dlg,SLOT(cancel()));
+
+    dlg.exec();
 }
 
 QList<QString> SigSession::getSuportedExportFormats(){

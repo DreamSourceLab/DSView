@@ -89,6 +89,8 @@ public:
 	 */
     //virtual void paint_label(QPainter &p, int right, bool hover, int action);
 
+    boost::shared_ptr<device::DevInst> get_device() const;
+
 protected:
 
 	/**

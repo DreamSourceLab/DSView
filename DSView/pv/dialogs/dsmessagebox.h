@@ -2,7 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
+ * Copyright (C) 2016 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,56 +20,49 @@
  */
 
 
-#ifndef DSVIEW_PV_STREAMOPTIONS_H
-#define DSVIEW_PV_STREAMOPTIONS_H
+#ifndef DSVIEW_PV_DSMESSAGEBOX_H
+#define DSVIEW_PV_DSMESSAGEBOX_H
 
 #include <QDialog>
-#include <QDialogButtonBox>
-#include <QGroupBox>
+#include <QWidget>
+#include <QMessageBox>
 #include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QGridLayout>
-#include <QPushButton>
-#include <QVector>
-#include <QLabel>
-#include <QCheckBox>
-#include <QComboBox>
-#include <QRadioButton>
 
-#include <boost/shared_ptr.hpp>
-
-#include <pv/device/devinst.h>
-#include <pv/prop/binding/deviceoptions.h>
+#include "../toolbars/titlebar.h"
 
 namespace pv {
 namespace dialogs {
 
-class StreamOptions : public QDialog
+class DSMessageBox : public QDialog
 {
 	Q_OBJECT
 
 public:
-    StreamOptions(QWidget *parent, boost::shared_ptr<pv::device::DevInst> dev_inst,
-                  uint64_t sample_count, bool stream);
+    DSMessageBox(QWidget *parent);
+    QMessageBox *mBox();
+
+    int exec();
 
 protected:
-	void accept();
+    void accept();
     void reject();
+    //void mousePressEvent(QMouseEvent *event);
+    //void mouseReleaseEvent(QMouseEvent *event);
+    bool eventFilter(QObject *object, QEvent *event);
+
+private slots:
+    void on_button(QAbstractButton* btn);
 
 private:
-    boost::shared_ptr<pv::device::DevInst>  _dev_inst;
-    uint64_t _sample_count;
-	QVBoxLayout _layout;
-
-    QRadioButton * _op0;
-    QRadioButton * _op1;
-
-    bool _stream;
-
-    QDialogButtonBox _button_box;
+    QVBoxLayout *_layout;
+    QWidget *_main;
+    QMessageBox *_msg;
+    toolbars::TitleBar *_titlebar;
+    bool _moving;
+    QPoint _startPos;
 };
 
 } // namespace dialogs
 } // namespace pv
 
-#endif // DSVIEW_PV_STREAMOPTIONS_H
+#endif // DSVIEW_PV_DSMESSAGEBOX_H

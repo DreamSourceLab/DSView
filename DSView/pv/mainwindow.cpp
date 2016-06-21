@@ -56,11 +56,13 @@
 #include "dialogs/deviceoptions.h"
 #include "dialogs/storeprogress.h"
 #include "dialogs/waitingdialog.h"
+#include "dialogs/dsmessagebox.h"
 
 #include "toolbars/samplingbar.h"
 #include "toolbars/trigbar.h"
 #include "toolbars/filebar.h"
 #include "toolbars/logobar.h"
+#include "toolbars/titlebar.h"
 
 #include "dock/triggerdock.h"
 #include "dock/dsotriggerdock.h"
@@ -87,8 +89,6 @@ using boost::dynamic_pointer_cast;
 using std::list;
 using std::vector;
 
-extern char AppDataPath[256];
-
 namespace pv {
 
 MainWindow::MainWindow(DeviceManager &device_manager,
@@ -113,9 +113,8 @@ MainWindow::MainWindow(DeviceManager &device_manager,
 void MainWindow::setup_ui()
 {
 	setObjectName(QString::fromUtf8("MainWindow"));
-    setMinimumHeight(680);
-    setMinimumWidth(800);
-	resize(1024, 768);
+    layout()->setMargin(0);
+    layout()->setSpacing(0);
 
 	// Set the window icon
 	QIcon icon;
@@ -126,7 +125,7 @@ void MainWindow::setup_ui()
 	// Setup the central widget
 	_central_widget = new QWidget(this);
 	_vertical_layout = new QVBoxLayout(_central_widget);
-	_vertical_layout->setSpacing(6);
+    _vertical_layout->setSpacing(0);
 	_vertical_layout->setContentsMargins(0, 0, 0, 0);
 	setCentralWidget(_central_widget);
 
@@ -356,16 +355,17 @@ void MainWindow::load_file(QString file_name)
 void MainWindow::show_session_error(
 	const QString text, const QString info_text)
 {
-	QMessageBox msg(this);
-	msg.setText(text);
-	msg.setInformativeText(info_text);
-	msg.setStandardButtons(QMessageBox::Ok);
-	msg.setIcon(QMessageBox::Warning);
+    dialogs::DSMessageBox msg(this);
+    msg.mBox()->setText(text);
+    msg.mBox()->setInformativeText(info_text);
+    msg.mBox()->setStandardButtons(QMessageBox::Ok);
+    msg.mBox()->setIcon(QMessageBox::Warning);
 	msg.exec();
 }
 
 void MainWindow::device_attach()
 {
+    _session.get_device()->device_updated();
     //_session.stop_hot_plug_proc();
 
     if (_session.get_capture_state() == SigSession::Running)
@@ -384,12 +384,14 @@ void MainWindow::device_attach()
 
 void MainWindow::device_detach()
 {
+    _session.get_device()->device_updated();
     //_session.stop_hot_plug_proc();
 
     if (_session.get_capture_state() == SigSession::Running)
         _session.stop_capture();
 
     session_save();
+    _view->hide_calibration();
 
     struct sr_dev_driver **const drivers = sr_driver_list();
     struct sr_dev_driver **driver;
@@ -453,33 +455,33 @@ void MainWindow::test_data_error()
 {
 
     _session.stop_capture();
-    QMessageBox msg(this);
-    msg.setText(tr("Data Error"));
-    msg.setInformativeText(tr("the receive data are not consist with pre-defined test data"));
-    msg.setStandardButtons(QMessageBox::Ok);
-    msg.setIcon(QMessageBox::Warning);
+    dialogs::DSMessageBox msg(this);
+    msg.mBox()->setText(tr("Data Error"));
+    msg.mBox()->setInformativeText(tr("the receive data are not consist with pre-defined test data"));
+    msg.mBox()->setStandardButtons(QMessageBox::Ok);
+    msg.mBox()->setIcon(QMessageBox::Warning);
     msg.exec();
 }
 
 void MainWindow::malloc_error()
 {
     _session.stop_capture();
-    QMessageBox msg(this);
-    msg.setText(tr("Malloc Error"));
-    msg.setInformativeText(tr("Memory is not enough for this sample!\nPlease reduce the sample depth!"));
-    msg.setStandardButtons(QMessageBox::Ok);
-    msg.setIcon(QMessageBox::Warning);
+    dialogs::DSMessageBox msg(this);
+    msg.mBox()->setText(tr("Malloc Error"));
+    msg.mBox()->setInformativeText(tr("Memory is not enough for this sample!\nPlease reduce the sample depth!"));
+    msg.mBox()->setStandardButtons(QMessageBox::Ok);
+    msg.mBox()->setIcon(QMessageBox::Warning);
     msg.exec();
 }
 
 void MainWindow::hardware_connect_failed()
 {
     _session.stop_capture();
-    QMessageBox msg(this);
-    msg.setText(tr("Hardware Connect Failed"));
-    msg.setInformativeText(tr("Please check hardware connection!"));
-    msg.setStandardButtons(QMessageBox::Ok);
-    msg.setIcon(QMessageBox::Warning);
+    dialogs::DSMessageBox msg(this);
+    msg.mBox()->setText(tr("Hardware Connect Failed"));
+    msg.mBox()->setInformativeText(tr("Please check hardware connection!"));
+    msg.mBox()->setStandardButtons(QMessageBox::Ok);
+    msg.mBox()->setIcon(QMessageBox::Warning);
     msg.exec();
 }
 
@@ -606,11 +608,11 @@ bool MainWindow::load_session(QString name)
 {
     QFile sessionFile(name);
     if (!sessionFile.open(QIODevice::ReadOnly)) {
-        QMessageBox msg(this);
-        msg.setText(tr("File Error"));
-        msg.setInformativeText(tr("Couldn't open session file!"));
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.setIcon(QMessageBox::Warning);
+        dialogs::DSMessageBox msg(this);
+        msg.mBox()->setText(tr("File Error"));
+        msg.mBox()->setInformativeText(tr("Couldn't open session file!"));
+        msg.mBox()->setStandardButtons(QMessageBox::Ok);
+        msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
         return false;
     }
@@ -623,11 +625,11 @@ bool MainWindow::load_session(QString name)
     const sr_dev_inst *const sdi = _session.get_device()->dev_inst();
     if (strcmp(sdi->driver->name, sessionObj["Device"].toString().toLocal8Bit()) != 0 ||
         sdi->mode != sessionObj["DeviceMode"].toDouble()) {
-        QMessageBox msg(this);
-        msg.setText(tr("Session Error"));
-        msg.setInformativeText(tr("Session File is not compatible with current device or mode!"));
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.setIcon(QMessageBox::Warning);
+        dialogs::DSMessageBox msg(this);
+        msg.mBox()->setText(tr("Session Error"));
+        msg.mBox()->setInformativeText(tr("Session File is not compatible with current device or mode!"));
+        msg.mBox()->setStandardButtons(QMessageBox::Ok);
+        msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
         return false;
     }
@@ -719,11 +721,11 @@ bool MainWindow::store_session(QString name)
 {
     QFile sessionFile(name);
     if (!sessionFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox msg(this);
-        msg.setText(tr("File Error"));
-        msg.setInformativeText(tr("Couldn't open session file to write!"));
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.setIcon(QMessageBox::Warning);
+        dialogs::DSMessageBox msg(this);
+        msg.mBox()->setText(tr("File Error"));
+        msg.mBox()->setInformativeText(tr("Couldn't open session file to write!"));
+        msg.mBox()->setStandardButtons(QMessageBox::Ok);
+        msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
         return false;
     }
@@ -805,10 +807,8 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
 {
     (void) object;
 
-    if( event->type() == QEvent::KeyPress ) {
-        const vector< shared_ptr<view::Signal> > sigs(
-                    _session.get_signals());
-
+    if ( event->type() == QEvent::KeyPress ) {
+        const vector< shared_ptr<view::Signal> > sigs(_session.get_signals());
         QKeyEvent *ke = (QKeyEvent *) event;
         switch(ke->key()) {
         case Qt::Key_S:

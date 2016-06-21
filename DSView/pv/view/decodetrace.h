@@ -29,11 +29,11 @@
 
 #include <QSignalMapper>
 #include <QFormLayout>
-#include <QDialog>
 
 #include <boost/shared_ptr.hpp>
 
 #include <pv/prop/binding/decoderoptions.h>
+#include "../dialogs/dsdialog.h"
 
 struct srd_channel;
 struct srd_decoder;
@@ -224,7 +224,7 @@ private:
 	std::vector<QString> _cur_row_headings;
 
     QFormLayout *_popup_form;
-    QDialog *_popup;
+    dialogs::DSDialog *_popup;
 };
 
 } // namespace view

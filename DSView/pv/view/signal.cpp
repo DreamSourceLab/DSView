@@ -67,5 +67,10 @@ void Signal::paint_axis(QPainter &p, int y, int left, int right)
 	p.drawLine(QPointF(left, y + 0.5f), QPointF(right, y + 0.5f));
 }
 
+boost::shared_ptr<device::DevInst> Signal::get_device() const
+{
+    return _dev_inst;
+}
+
 } // namespace view
 } // namespace pv

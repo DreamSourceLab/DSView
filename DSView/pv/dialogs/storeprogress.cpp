@@ -19,8 +19,7 @@
  */
 
 #include "storeprogress.h"
-
-#include <QMessageBox>
+#include "dsmessagebox.h"
 
 namespace pv {
 namespace dialogs {
@@ -49,11 +48,11 @@ void StoreProgress::run()
 
 void StoreProgress::show_error()
 {
-	QMessageBox msg(parentWidget());
-	msg.setText(tr("Failed to save session."));
-	msg.setInformativeText(_session.error());
-	msg.setStandardButtons(QMessageBox::Ok);
-	msg.setIcon(QMessageBox::Warning);
+    dialogs::DSMessageBox msg(parentWidget());
+    msg.mBox()->setText(tr("Failed to save session."));
+    msg.mBox()->setInformativeText(_session.error());
+    msg.mBox()->setStandardButtons(QMessageBox::Ok);
+    msg.mBox()->setIcon(QMessageBox::Warning);
 	msg.exec();
 }
 

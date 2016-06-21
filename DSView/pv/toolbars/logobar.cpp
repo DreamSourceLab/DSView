@@ -24,7 +24,6 @@
 #include <boost/foreach.hpp>
 
 #include <QMetaObject>
-#include <QMessageBox>
 #include <QFileDialog>
 #include <QApplication>
 #include <QDesktopServices>
@@ -32,6 +31,7 @@
 
 #include "logobar.h"
 #include "../dialogs/about.h"
+#include "../dialogs/dsmessagebox.h"
 
 namespace pv {
 namespace toolbars {
@@ -93,11 +93,11 @@ void LogoBar::session_error(
 void LogoBar::show_session_error(
     const QString text, const QString info_text)
 {
-    QMessageBox msg(this);
-    msg.setText(text);
-    msg.setInformativeText(info_text);
-    msg.setStandardButtons(QMessageBox::Ok);
-    msg.setIcon(QMessageBox::Warning);
+    dialogs::DSMessageBox msg(this);
+    msg.mBox()->setText(text);
+    msg.mBox()->setInformativeText(info_text);
+    msg.mBox()->setStandardButtons(QMessageBox::Ok);
+    msg.mBox()->setIcon(QMessageBox::Warning);
     msg.exec();
 }
 

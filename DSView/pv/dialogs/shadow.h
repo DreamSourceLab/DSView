@@ -2,8 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
+ * Copyright (C) 2016 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,29 +20,40 @@
  */
 
 
-#ifndef DSVIEW_PV_ABOUT_H
-#define DSVIEW_PV_ABOUT_H
+#ifndef DSVIEW_PV_SHADOW_H
+#define DSVIEW_PV_SHADOW_H
 
-#include <QLabel>
-#include "dsdialog.h"
+#include <QGraphicsDropShadowEffect>
+#include <QGraphicsEffect>
 
 namespace pv {
 namespace dialogs {
 
-class About : public DSDialog
+class Shadow : public QGraphicsEffect
 {
-	Q_OBJECT
-
+    Q_OBJECT
 public:
-	explicit About(QWidget *parent = 0);
-	~About();
+    explicit Shadow(QObject *parent = 0);
+
+    void draw(QPainter* painter);
+    QRectF boundingRectFor(const QRectF& rect) const;
+
+    inline void setDistance(qreal distance) { _distance = distance; updateBoundingRect(); }
+    inline qreal distance() const { return _distance; }
+
+    inline void setBlurRadius(qreal blurRadius) { _blurRadius = blurRadius; updateBoundingRect(); }
+    inline qreal blurRadius() const { return _blurRadius; }
+
+    inline void setColor(const QColor& color) { _color = color; }
+    inline QColor color() const { return _color; }
 
 private:
-    QLabel *_logo;
-    QLabel *_info;
+    qreal  _distance;
+    qreal  _blurRadius;
+    QColor _color;
 };
 
 } // namespace dialogs
 } // namespace pv
 
-#endif // DSVIEW_PV_ABOUT_H
+#endif // DSVIEW_PV_SHADOW_H

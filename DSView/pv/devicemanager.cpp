@@ -47,8 +47,6 @@ using std::ostringstream;
 using std::runtime_error;
 using std::string;
 
-extern char AppDataPath[256];
-
 namespace pv {
 
 DeviceManager::DeviceManager(struct sr_context *sr_ctx) :

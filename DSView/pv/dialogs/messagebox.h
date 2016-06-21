@@ -2,8 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
+ * Copyright (C) 2016 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,29 +20,40 @@
  */
 
 
-#ifndef DSVIEW_PV_ABOUT_H
-#define DSVIEW_PV_ABOUT_H
+#ifndef DSVIEW_PV_MESSAGE_H
+#define DSVIEW_PV_MESSAGE_H
 
-#include <QLabel>
-#include "dsdialog.h"
+#include <QDialog>
+#include <QMessageBox>
+
+#include "../toolbars/titlebar.h"
 
 namespace pv {
 namespace dialogs {
 
-class About : public DSDialog
+class MessageBox : public QDialog
 {
 	Q_OBJECT
 
 public:
-	explicit About(QWidget *parent = 0);
-	~About();
+    MessageBox(QWidget *parent);
+    QMessageBox *mBox();
+
+    int exec();
+
+protected:
+    void accept();
+    void reject();
+
+private slots:
+    void on_button(QAbstractButton* btn);
 
 private:
-    QLabel *_logo;
-    QLabel *_info;
+    QMessageBox *_msg;
+    toolbars::TitleBar *_titlebar;
 };
 
 } // namespace dialogs
 } // namespace pv
 
-#endif // DSVIEW_PV_ABOUT_H
+#endif // DSVIEW_PV_MESSAGE_H

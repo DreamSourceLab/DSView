@@ -2,8 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
+ * Copyright (C) 2016 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,30 +19,28 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
+#ifndef DSVIEW_PV_WIDGETS_BORDER_H
+#define DSVIEW_PV_WIDGETS_BORDER_H
 
-#ifndef DSVIEW_PV_ABOUT_H
-#define DSVIEW_PV_ABOUT_H
-
-#include <QLabel>
-#include "dsdialog.h"
+#include <QWidget>
 
 namespace pv {
-namespace dialogs {
+namespace widgets {
 
-class About : public DSDialog
+class Border : public QWidget
 {
-	Q_OBJECT
-
+    Q_OBJECT
 public:
-	explicit About(QWidget *parent = 0);
-	~About();
+    explicit Border(int type, QWidget *parent = 0);
+
+protected:
+    void paintEvent(QPaintEvent *);
 
 private:
-    QLabel *_logo;
-    QLabel *_info;
+    int _type;
 };
 
-} // namespace dialogs
+} // namespace widgets
 } // namespace pv
 
-#endif // DSVIEW_PV_ABOUT_H
+#endif // DSVIEW_PV_WIDGETS_BORDER_H

@@ -46,7 +46,6 @@
 #include <QPainter>
 #include <QRect>
 #include <QStyleOption>
-#include <QMessageBox>
 
 using namespace boost;
 using namespace std;

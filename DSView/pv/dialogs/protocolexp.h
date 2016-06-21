@@ -23,7 +23,6 @@
 #ifndef DSVIEW_PV_PROTOCOLEXP_H
 #define DSVIEW_PV_PROTOCOLEXP_H
 
-#include <QDialog>
 #include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QVBoxLayout>
@@ -35,6 +34,8 @@
 
 #include "../device/devinst.h"
 #include "../prop/binding/deviceoptions.h"
+#include "../toolbars/titlebar.h"
+#include "dsdialog.h"
 
 namespace pv {
 
@@ -48,7 +49,7 @@ class Row;
 
 namespace dialogs {
 
-class ProtocolExp : public QDialog
+class ProtocolExp : public DSDialog
 {
     Q_OBJECT
 
@@ -68,6 +69,7 @@ private slots:
 private:
     SigSession &_session;
 
+    toolbars::TitleBar *_titlebar;
     QComboBox *_format_combobox;
     std::list<QRadioButton *> _row_sel_list;
     std::list<QLabel *> _row_label_list;
