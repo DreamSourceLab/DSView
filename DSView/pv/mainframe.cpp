@@ -33,6 +33,8 @@
 #include <QPainter>
 #include <QBitmap>
 #include <QResizeEvent>
+#include <QDesktopWidget>
+#include <QApplication>
 
 #include <algorithm>
 
@@ -109,12 +111,14 @@ MainFrame::MainFrame(DeviceManager &device_manager,
     _layout->addWidget(_bottom_right, 2, 2);
 
     connect(&_timer, SIGNAL(timeout()), this, SLOT(unfreezing()));
+    readSettings();
 }
 
-bool MainFrame::close()
+void MainFrame::closeEvent(QCloseEvent *event)
 {
     _mainWindow->session_save();
-    return QFrame::close();
+    writeSettings();
+    event->accept();
 }
 
 void MainFrame::unfreezing()
@@ -200,7 +204,7 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
         } else if(mouse_event->buttons().testFlag(Qt::LeftButton)) {
             if (_moving) {
                 this->move(mouse_event->globalPos() - _lastMousePosition);
-            } else if (!_freezing){
+            } else if (!_freezing) {
                 switch (_startPos) {
                 case TopLeft:
                     newWidth = std::max(_dragStartGeometry.right() - mouse_event->globalX(), minimumWidth());
@@ -266,7 +270,7 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
                    break;
                 }
                 _freezing = true;
-            }
+            } 
             return true;
         }
     } else if (type == QEvent::MouseButtonPress) {
@@ -275,7 +279,7 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
                 _startPos == None) {
             _moving = true;
             _lastMousePosition = mouse_event->pos() +
-                                 QPoint(Margin, Margin) +
+                                 //QPoint(Margin, Margin) +
                                  QPoint(geometry().left() - frameGeometry().left(), frameGeometry().right() - geometry().right());
         }
         if (_startPos != None)
@@ -302,6 +306,29 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
     }
 
     return QObject::eventFilter(object, event);
+}
+
+void MainFrame::writeSettings()
+{
+    QSettings settings;
+
+    settings.beginGroup("MainFrame");
+    settings.setValue("size", size());
+    settings.setValue("pos", pos() +
+                      QPoint(geometry().left() - frameGeometry().left(), frameGeometry().right() - geometry().right()));
+    settings.endGroup();
+}
+
+void MainFrame::readSettings()
+{
+    QSettings settings;
+    QDesktopWidget* desktopWidget = QApplication::desktop();
+    QRect deskRect = desktopWidget->availableGeometry();
+
+    settings.beginGroup("MainFrame");
+    resize(settings.value("size", QSize(minWidth, minHeight)).toSize());
+    move(settings.value("pos", QPoint((deskRect.width() - minWidth)/2, (deskRect.height() - minHeight)/2)).toPoint());
+    settings.endGroup();
 }
 
 } // namespace pv

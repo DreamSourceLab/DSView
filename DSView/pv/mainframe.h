@@ -41,6 +41,9 @@ class TitleBar;
 class MainFrame : public QFrame
 {
     Q_OBJECT
+public:
+    static const int minWidth = 800;
+    static const int minHeight = 680;
 
 public:
     static const int Margin = 8;
@@ -64,16 +67,20 @@ public:
     void showMaxRestore();
 
 protected:
+    void closeEvent(QCloseEvent *event);
     bool eventFilter(QObject *object, QEvent *event);
 
 public slots:
     void unfreezing();
-    bool close();
     void showNormal();
     void showMaximized();
+
 private:
     void hide_border();
     void show_border();
+
+    void writeSettings();
+    void readSettings();
 
 private:
     toolbars::TitleBar *_titleBar;

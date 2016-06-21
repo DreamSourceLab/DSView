@@ -571,35 +571,42 @@ void MainWindow::on_search(bool visible)
 
 void MainWindow::on_screenShot()
 {
+    const QString DIR_KEY("ScreenShotPath");
+    QSettings settings;
     QPixmap pixmap;
     QDesktopWidget *desktop = QApplication::desktop();
     pixmap = QPixmap::grabWindow(desktop->winId(), pos().x(), pos().y(), frameGeometry().width(), frameGeometry().height());
     QString format = "png";
-    QString initialPath = QDir::currentPath()+
-                          tr("/untitled.") + format;
 
     QString fileName = QFileDialog::getSaveFileName(this,
-                       tr("Save As"),initialPath,
+                       tr("Save As"),settings.value(DIR_KEY).toString(),
                        tr("%1 Files (*.%2);;All Files (*)")
                        .arg(format.toUpper()).arg(format));
-    if (!fileName.isEmpty())
+    if (!fileName.isEmpty()) {
+        QDir CurrentDir;
+        settings.setValue(DIR_KEY, CurrentDir.absoluteFilePath(fileName));
         pixmap.save(fileName, format.toLatin1());
+    }
 }
 
 void MainWindow::on_save()
 {
     using pv::dialogs::StoreProgress;
 
+    const QString DIR_KEY("SavePath");
+    QSettings settings;
+
     // Stop any currently running capture session
     _session.stop_capture();
 
     // Show the dialog
     const QString file_name = QFileDialog::getSaveFileName(
-        this, tr("Save File"), "", tr("DSView Data (*.dsl)"));
+        this, tr("Save File"), settings.value(DIR_KEY).toString(), tr("DSView Data (*.dsl)"));
 
     if (file_name.isEmpty())
         return;
-
+    QDir CurrentDir;
+    settings.setValue(DIR_KEY, CurrentDir.absoluteFilePath(file_name));
     StoreProgress *dlg = new StoreProgress(file_name, _session, this);
     dlg->run();
 }

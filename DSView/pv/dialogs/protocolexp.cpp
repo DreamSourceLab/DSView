@@ -114,15 +114,20 @@ void ProtocolExp::accept()
             if(i < supportedFormats.count() - 1)
                 filter.append(";;");
         }
+        const QString DIR_KEY("ProtocolExportPath");
+        QSettings settings;
         QString default_filter = _format_combobox->currentText();
         QString file_name = QFileDialog::getSaveFileName(
-                    this, tr("Export Data"), "",filter,&default_filter);
+                    this, tr("Export Data"), settings.value(DIR_KEY).toString(),filter,&default_filter);
         if (!file_name.isEmpty()) {
             QFileInfo f(file_name);
             QStringList list = default_filter.split('.').last().split(')');
             QString ext = list.first();
             if(f.suffix().compare(ext))
                 file_name+=tr(".")+ext;
+
+            QDir CurrentDir;
+            settings.setValue(DIR_KEY, CurrentDir.absoluteFilePath(file_name));
 
             QFile file(file_name);
             file.open(QIODevice::WriteOnly | QIODevice::Text);

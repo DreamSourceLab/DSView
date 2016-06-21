@@ -123,12 +123,17 @@ FileBar::FileBar(SigSession &session, QWidget *parent) :
 
 void FileBar::on_actionOpen_triggered()
 {
+    const QString DIR_KEY("OpenPath");
+    QSettings settings;
     // Show the dialog
     const QString file_name = QFileDialog::getOpenFileName(
-        this, tr("Open File"), "", tr(
+        this, tr("Open File"), settings.value(DIR_KEY).toString(), tr(
             "DSView Data (*.dsl);;All Files (*.*)"));
-    if (!file_name.isEmpty())
+    if (!file_name.isEmpty()) {
+        QDir CurrentDir;
+        settings.setValue(DIR_KEY, CurrentDir.absoluteFilePath(file_name));
         load_file(file_name);
+    }
 }
 
 void FileBar::session_error(
@@ -151,6 +156,8 @@ void FileBar::show_session_error(
 }
 
 void FileBar::on_actionExport_triggered(){
+    const QString DIR_KEY("ExportPath");
+    QSettings settings;
     int unit_size;
     uint64_t length;
     const void* buf = _session.get_buf(unit_size, length);
@@ -170,13 +177,15 @@ void FileBar::on_actionExport_triggered(){
                 filter.append(";;");
         }
         QString file_name = QFileDialog::getSaveFileName(
-                    this, tr("Export Data"), "",filter,&filter);
+                    this, tr("Export Data"), settings.value(DIR_KEY).toString(),filter,&filter);
         if (!file_name.isEmpty()) {
             QFileInfo f(file_name);
             QStringList list = filter.split('.').last().split(')');
             QString ext = list.first();
             if(f.suffix().compare(ext))
                 file_name+=tr(".")+ext;
+            QDir CurrentDir;
+            settings.setValue(DIR_KEY, CurrentDir.absoluteFilePath(file_name));
             _session.export_file(file_name, this, ext);
         }
     }
@@ -184,6 +193,8 @@ void FileBar::on_actionExport_triggered(){
 
 void FileBar::on_actionSave_triggered()
 {
+    const QString DIR_KEY("SavePath");
+    QSettings settings;
     //save();
     int unit_size;
     uint64_t length;
@@ -197,13 +208,15 @@ void FileBar::on_actionSave_triggered()
         msg.exec();
     } else {
         QString file_name = QFileDialog::getSaveFileName(
-                        this, tr("Save File"), "",
+                        this, tr("Save File"), settings.value(DIR_KEY).toString(),
                         tr("DSView Data (*.dsl)"));
 
         if (!file_name.isEmpty()) {
             QFileInfo f(file_name);
             if(f.suffix().compare("dsl"))
                 file_name.append(tr(".dsl"));
+            QDir CurrentDir;
+            settings.setValue(DIR_KEY, CurrentDir.absoluteFilePath(file_name));
             _session.save_file(file_name, this, _session.get_device()->dev_inst()->mode);
         }
     }
@@ -212,12 +225,17 @@ void FileBar::on_actionSave_triggered()
 
 void FileBar::on_actionLoad_triggered()
 {
+    const QString DIR_KEY("SessionLoadPath");
+    QSettings settings;
     // Show the dialog
     const QString file_name = QFileDialog::getOpenFileName(
-        this, tr("Open Session"), "", tr(
+        this, tr("Open Session"), settings.value(DIR_KEY).toString(), tr(
             "DSView Session (*.dsc)"));
-    if (!file_name.isEmpty())
+    if (!file_name.isEmpty()) {
+        QDir CurrentDir;
+        settings.setValue(DIR_KEY, CurrentDir.absoluteFilePath(file_name));
         load_session(file_name);
+    }
 }
 
 void FileBar::on_actionDefault_triggered()
@@ -242,14 +260,17 @@ void FileBar::on_actionDefault_triggered()
 
 void FileBar::on_actionStore_triggered()
 {
-    QString default_name = _session.get_device()->name();
+    const QString DIR_KEY("SessionStorePath");
+    QSettings settings;
     QString file_name = QFileDialog::getSaveFileName(
-                this, tr("Save Session"), default_name,
+                this, tr("Save Session"), settings.value(DIR_KEY).toString(),
                 tr("DSView Session (*.dsc)"));
     if (!file_name.isEmpty()) {
         QFileInfo f(file_name);
         if(f.suffix().compare("dsc"))
             file_name.append(tr(".dsc"));
+        QDir CurrentDir;
+        settings.setValue(DIR_KEY, CurrentDir.absoluteFilePath(file_name));
         store_session(file_name);
     }
 }
