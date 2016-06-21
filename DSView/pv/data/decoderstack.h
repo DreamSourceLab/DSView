@@ -107,6 +107,8 @@ public:
     bool has_annotations(const decode::Row &row) const;
 
     uint64_t list_annotation_size() const;
+    uint64_t list_annotation_size(uint16_t row_index) const;
+
 
     bool list_annotation(decode::Annotation &ann,
                         uint16_t row_index, uint64_t col_index) const;

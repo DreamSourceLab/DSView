@@ -40,6 +40,9 @@
 #include <QScrollBar>
 #include <QLineEdit>
 #include <QRegExp>
+#include <QFuture>
+#include <QProgressDialog>
+#include <QtConcurrent/QtConcurrent>
 
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
@@ -50,7 +53,9 @@ namespace dock {
 ProtocolDock::ProtocolDock(QWidget *parent, SigSession &session) :
     QScrollArea(parent),
     _session(session),
-    _cur_search_index(-1)
+    _cur_search_index(-1),
+    _search_edited(false),
+    _searching(false)
 {
     _up_widget = new QWidget(this);
 
@@ -199,7 +204,7 @@ ProtocolDock::ProtocolDock(QWidget *parent, SigSession &session) :
     connect(_table_view, SIGNAL(clicked(QModelIndex)), this, SLOT(item_clicked(QModelIndex)));
     connect(_table_view->horizontalHeader(), SIGNAL(sectionResized(int,int,int)), this, SLOT(column_resize(int, int, int)));
     //connect(_table_view->verticalScrollBar(), SIGNAL(sliderMoved()), this, SLOT(sliderMoved()));
-    connect(_search_edit, SIGNAL(editingFinished()), this, SLOT(search_done()));
+    connect(_search_edit, SIGNAL(editingFinished()), this, SLOT(search_changed()));
 }
 
 ProtocolDock::~ProtocolDock()
@@ -543,6 +548,7 @@ void ProtocolDock::export_table_view()
 
 void ProtocolDock::search_pre()
 {
+    search_update();
     // now the proxy only contains rows that match the name
     // let's take the pre one and map it to the original model
     if (_model_proxy.rowCount() == 0) {
@@ -598,6 +604,7 @@ void ProtocolDock::search_pre()
 
 void ProtocolDock::search_nxt()
 {
+    search_update();
     // now the proxy only contains rows that match the name
     // let's take the pre one and map it to the original model
     if (_model_proxy.rowCount() == 0) {
@@ -661,6 +668,46 @@ void ProtocolDock::search_done()
         _matchs_label->setText("...");
     else
         _matchs_label->setText(QString::number(_model_proxy.rowCount()));
+}
+
+void ProtocolDock::search_changed()
+{
+    _search_edited = true;
+    _matchs_label->setText("...");
+}
+
+void ProtocolDock::search_update()
+{
+    if (!_search_edited)
+        return;
+
+    pv::data::DecoderModel *decoder_model = _session.get_decoder_model();
+    boost::shared_ptr<pv::data::DecoderStack> decoder_stack = decoder_model->getDecoderStack();
+    if (!decoder_stack)
+        return;
+
+    if (decoder_stack->list_annotation_size(_model_proxy.filterKeyColumn()) > ProgressRows) {
+        QFuture<void> future;
+        future = QtConcurrent::run([&]{
+            search_done();
+        });
+        Qt::WindowFlags flags = Qt::CustomizeWindowHint;
+        QProgressDialog dlg(tr("Searching..."),
+                            tr("Cancel"),0,0,this,flags);
+        dlg.setWindowModality(Qt::WindowModal);
+        dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
+        dlg.setCancelButton(NULL);
+
+        QFutureWatcher<void> watcher;
+        watcher.setFuture(future);
+        connect(&watcher,SIGNAL(finished()),&dlg,SLOT(cancel()));
+
+        dlg.exec();
+    } else {
+        search_done();
+    }
+    _search_edited = false;
+    //search_done();
 }
 
 

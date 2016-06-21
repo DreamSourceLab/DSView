@@ -297,6 +297,21 @@ uint64_t DecoderStack::list_annotation_size() const
     return max_annotation_size;
 }
 
+uint64_t DecoderStack::list_annotation_size(uint16_t row_index) const
+{
+    //lock_guard<boost::recursive_mutex> lock(_output_mutex);
+    //int row = 0;
+    for (map<const Row, RowData>::const_iterator i = _rows.begin();
+        i != _rows.end(); i++) {
+        map<const Row, bool>::const_iterator iter = _rows_lshow.find((*i).first);
+        if (iter != _rows_lshow.end() && (*iter).second)
+            if (row_index-- == 0) {
+                return (*i).second.get_annotation_size();
+            }
+    }
+    return 0;
+}
+
 bool DecoderStack::list_annotation(pv::data::decode::Annotation &ann,
                                   uint16_t row_index, uint64_t col_index) const
 {
@@ -387,6 +402,7 @@ void DecoderStack::begin_decode()
 
     if (!_options_changed)
         return;
+    _options_changed = false;
 //	if (_decode_thread.joinable()) {
 //		_decode_thread.interrupt();
 //		_decode_thread.join();
@@ -545,7 +561,6 @@ void DecoderStack::decode_data(
         }
         entry_cnt++;
     }
-    _options_changed = false;
     decode_done();
 }
 

@@ -38,6 +38,7 @@
 #include <QSortFilterProxyModel>
 
 #include <vector>
+#include <boost/thread.hpp>
 
 #include <libsigrok4DSL/libsigrok.h>
 
@@ -56,6 +57,9 @@ namespace dock {
 class ProtocolDock : public QScrollArea
 {
     Q_OBJECT
+
+public:
+    static const uint64_t ProgressRows = 100000;
 
 public:
     ProtocolDock(QWidget *parent, SigSession &session);
@@ -80,6 +84,8 @@ private slots:
     void search_pre();
     void search_nxt();
     void search_done();
+    void search_changed();
+    void search_update();
 
 private:
     static int decoder_name_cmp(const void *a, const void *b);
@@ -113,6 +119,10 @@ private:
 
     QPushButton *_dn_set_button;
     QPushButton *_dn_save_button;
+
+    mutable boost::mutex _search_mutex;
+    bool _search_edited;
+    bool _searching;
 };
 
 } // namespace dock
