@@ -31,6 +31,7 @@
 #include <QAction>
 #include <QDebug>
 #include <QLabel>
+#include <QAbstractItemView>
 
 #include "samplingbar.h"
 
@@ -114,7 +115,11 @@ SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
     _run_stop_button.setIcon(_icon_start);
     _instant_button.setIcon(_icon_instant);
 
+    _device_selector.setSizeAdjustPolicy(QComboBox::AdjustToContents);
+    _sample_rate.setSizeAdjustPolicy(QComboBox::AdjustToContents);
     _sample_count.setSizeAdjustPolicy(QComboBox::AdjustToContents);
+    _device_selector.setMaximumWidth(ComboBoxMaxWidth);
+
 	set_sampling(false);
     connect(&_sample_count, SIGNAL(currentIndexChanged(int)),
         this, SLOT(on_samplecount_sel(int)));
@@ -163,6 +168,9 @@ void SamplingBar::set_device_list(
         _device_selector.addItem(title,
             qVariantFromValue((void*)id));
     }
+    int width = _device_selector.sizeHint().width();
+    _device_selector.setFixedWidth(min(width+15, _device_selector.maximumWidth()));
+    _device_selector.view()->setMinimumWidth(width+30);
 
     // The selected device should have been in the list
     assert(selected_index != -1);
@@ -407,6 +415,10 @@ void SamplingBar::update_sample_rate_selector()
         _sample_rate.show();
 		g_variant_unref(gvar_list);
 	}
+
+    _sample_rate.setMinimumWidth(_sample_rate.sizeHint().width()+15);
+    _sample_rate.view()->setMinimumWidth(_sample_rate.sizeHint().width()+30);
+
     _updating_sample_rate = false;
 	g_variant_unref(gvar_dict);
 
@@ -576,6 +588,8 @@ void SamplingBar::update_sample_count_selector()
         _sample_count.show();
         g_variant_unref(gvar_list);
     }
+    _sample_count.setMinimumWidth(_sample_count.sizeHint().width()+15);
+    _sample_count.view()->setMinimumWidth(_sample_count.sizeHint().width()+30);
 
     _updating_sample_count = false;
     g_variant_unref(gvar_dict);

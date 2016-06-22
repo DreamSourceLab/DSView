@@ -499,6 +499,7 @@ void DecoderStack::decode_data(
     uint64_t entry_cnt = 0;
     uint8_t chunk_type = 0;
     uint64_t i = decode_start;
+    char *error = NULL;
     while(!boost::this_thread::interruption_requested() &&
           i < decode_end && !_no_memory)
     {
@@ -509,8 +510,8 @@ void DecoderStack::decode_data(
         chunk = _snapshot->get_samples(i, chunk_end);
 
         if (srd_session_send(session, chunk_type, i, chunk_end, chunk,
-                (chunk_end - i) * unit_size, unit_size) != SRD_OK) {
-            _error_message = tr("Decoder reported an error");
+                (chunk_end - i) * unit_size, unit_size, &error) != SRD_OK) {
+            _error_message = QString::fromLocal8Bit(error);
             break;
         }
 
@@ -561,6 +562,8 @@ void DecoderStack::decode_data(
         }
         entry_cnt++;
     }
+    if (error)
+        g_free(error);
     decode_done();
 }
 
@@ -617,15 +620,15 @@ void DecoderStack::decode_proc()
 	srd_pd_output_callback_add(session, SRD_OUTPUT_ANN,
 		DecoderStack::annotation_callback, this);
 
-	srd_session_start(session);
-
-//	do {
-//		decode_data(*sample_count, unit_size, session);
-//	} while(_error_message.isEmpty() && (sample_count = wait_for_data()));
-    //decode_data(*sample_count, unit_size, session);
-    decode_data(decode_start, decode_end, unit_size, session);
+    char *error = NULL;
+    if (srd_session_start(session, &error) == SRD_OK)
+        decode_data(decode_start, decode_end, unit_size, session);
+    else
+        _error_message = QString::fromLocal8Bit(error);
 
 	// Destroy the session
+    if (error)
+        g_free(error);
 	srd_session_destroy(session);
 
     _decode_state = Stopped;

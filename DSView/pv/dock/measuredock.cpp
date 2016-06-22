@@ -92,6 +92,9 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession &session) :
     _t1_last_index = 0;
     _t2_last_index = 0;
     _t3_last_index = 0;
+    _t1_comboBox->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+    _t2_comboBox->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+    _t3_comboBox->setSizeAdjustPolicy(QComboBox::AdjustToContents);
 
     _cursor_layout = new QGridLayout(_widget);
     _cursor_layout->addWidget(new QLabel(tr("T1: "), _widget), 0, 0);
@@ -203,6 +206,9 @@ void MeasureDock::cursor_update()
 
         index++;
     }
+    _t1_comboBox->setMinimumWidth(_t1_comboBox->sizeHint().width()+15);
+    _t2_comboBox->setMinimumWidth(_t2_comboBox->sizeHint().width()+15);
+    _t3_comboBox->setMinimumWidth(_t3_comboBox->sizeHint().width()+15);
 
     if (_t1_last_index < _t1_comboBox->count())
         _t1_comboBox->setCurrentIndex(_t1_last_index);

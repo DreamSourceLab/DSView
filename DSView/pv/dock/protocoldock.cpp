@@ -43,9 +43,11 @@
 #include <QFuture>
 #include <QProgressDialog>
 #include <QtConcurrent/QtConcurrent>
+#include <QSizePolicy>
 
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
+#include <algorithm>
 
 namespace pv {
 namespace dock {
@@ -154,21 +156,19 @@ ProtocolDock::ProtocolDock(QWidget *parent, SigSession &session) :
     search_button->setFixedWidth(search_button->height());
     search_button->setDisabled(true);
     _search_edit = new QLineEdit(_dn_widget);
+    _search_edit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     _search_edit->setPlaceholderText(tr("search"));
     QHBoxLayout *search_layout = new QHBoxLayout();
     search_layout->addWidget(search_button);
-    search_layout->addStretch();
+    search_layout->addStretch(1);
     search_layout->setContentsMargins(0, 0, 0, 0);
     _search_edit->setLayout(search_layout);
     _search_edit->setTextMargins(search_button->width(), 0, 0, 0);
-    QSizePolicy sp = _search_edit->sizePolicy();
-    sp.setHorizontalStretch(1);
-    _search_edit->setSizePolicy(sp);
 
-    QHBoxLayout *dn_search_layout = new QHBoxLayout();
-    dn_search_layout->addWidget(_pre_button, 0, Qt::AlignLeft);
-    dn_search_layout->addWidget(_search_edit, 0, Qt::AlignLeft);
-    dn_search_layout->addWidget(_nxt_button, 0, Qt::AlignRight);
+    _dn_search_layout = new QHBoxLayout();
+    _dn_search_layout->addWidget(_pre_button, 0, Qt::AlignLeft);
+    _dn_search_layout->addWidget(_search_edit, 1, Qt::AlignLeft);
+    _dn_search_layout->addWidget(_nxt_button, 0, Qt::AlignRight);
 
     _matchs_label = new QLabel(_dn_widget);
     QHBoxLayout *dn_match_layout = new QHBoxLayout();
@@ -176,13 +176,13 @@ ProtocolDock::ProtocolDock(QWidget *parent, SigSession &session) :
     dn_match_layout->addWidget(_matchs_label, 0, Qt::AlignLeft);
     dn_match_layout->addStretch(1);
 
-    QVBoxLayout *dn_layout = new QVBoxLayout();
-    dn_layout->addLayout(dn_title_layout);
-    dn_layout->addLayout(dn_search_layout);
-    dn_layout->addLayout(dn_match_layout);
-    dn_layout->addWidget(_table_view);
+    _dn_layout = new QVBoxLayout();
+    _dn_layout->addLayout(dn_title_layout);
+    _dn_layout->addLayout(_dn_search_layout);
+    _dn_layout->addLayout(dn_match_layout);
+    _dn_layout->addWidget(_table_view);
 
-    _dn_widget->setLayout(dn_layout);
+    _dn_widget->setLayout(_dn_layout);
     _dn_widget->setMinimumHeight(350);
 
     _split_widget = new QSplitter(this);
@@ -217,6 +217,18 @@ void ProtocolDock::paintEvent(QPaintEvent *)
 //    opt.init(this);
 //    QPainter p(this);
 //    style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
+}
+
+void ProtocolDock::resizeEvent(QResizeEvent *event)
+{
+    int width = this->visibleRegion().boundingRect().width();
+    width = width - _dn_layout->margin() * 2 -
+            _dn_search_layout->margin() * 2 -
+            _dn_search_layout->spacing() * 2 -
+            _pre_button->width()-_nxt_button->width();
+    width = std::max(width, 0);
+    _search_edit->setMinimumWidth(width);
+    QScrollArea::resizeEvent(event);
 }
 
 int ProtocolDock::decoder_name_cmp(const void *a, const void *b)

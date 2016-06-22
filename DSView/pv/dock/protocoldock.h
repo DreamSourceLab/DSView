@@ -64,9 +64,12 @@ public:
 public:
     ProtocolDock(QWidget *parent, SigSession &session);
     ~ProtocolDock();
-    void paintEvent(QPaintEvent *);
 
     void del_all_protocol();
+
+protected:
+    void paintEvent(QPaintEvent *);
+    void resizeEvent(QResizeEvent *);
 
 signals:
     void protocol_updated();
@@ -104,6 +107,8 @@ private:
     QPushButton *_pre_button;
     QPushButton *_nxt_button;
     QLineEdit *_search_edit;
+    QHBoxLayout *_dn_search_layout;
+    QVBoxLayout *_dn_layout;
     QLabel *_matchs_label;
 
     QPushButton *_add_button;

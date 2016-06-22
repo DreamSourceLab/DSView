@@ -63,6 +63,7 @@ class SamplingBar : public QToolBar
 private:
     static const uint64_t RecordLengths[19];
     static const uint64_t DefaultRecordLength;
+    static const int ComboBoxMaxWidth = 200;
 
 public:
     SamplingBar(SigSession &session, QWidget *parent);

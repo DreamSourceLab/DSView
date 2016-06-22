@@ -240,6 +240,14 @@ void DecodeTrace::paint_mid(QPainter &p, int left, int right)
 {
     using namespace pv::data::decode;
 
+    assert(_decoder_stack);
+    const QString err = _decoder_stack->error_message();
+    if (!err.isEmpty())
+    {
+        draw_error(p, err, left, right);
+        return;
+    }
+
 	const double scale = _view->scale();
 	assert(scale > 0);
 
@@ -266,14 +274,6 @@ void DecodeTrace::paint_mid(QPainter &p, int left, int right)
         end_sample = samples_decoded;
 
     const int annotation_height = _view->get_signalHeight();
-
-	assert(_decoder_stack);
-	const QString err = _decoder_stack->error_message();
-	if (!err.isEmpty())
-	{
-		draw_error(p, err, left, right);
-		return;
-	}
 
 	// Iterate through the rows
 	assert(_view);
@@ -610,24 +610,19 @@ void DecodeTrace::draw_error(QPainter &p, const QString &message,
 	int left, int right)
 {
 	const int y = get_y();
+    const int h = get_totalHeight();
 
-	p.setPen(ErrorBgColour.darker());
-	p.setBrush(ErrorBgColour);
-
-	const QRectF bounding_rect =
-		QRectF(left, INT_MIN / 2 + y, right - left, INT_MAX);
-	const QRectF text_rect = p.boundingRect(bounding_rect,
-		Qt::AlignCenter, message);
-	const float r = text_rect.height() / 4;
-
-	p.drawRoundedRect(text_rect.adjusted(-r, -r, r, r), r, r,
-		Qt::AbsoluteSize);
-
-	p.setPen(get_text_colour());
+    const QRectF text_rect(left, y - h/2 + 0.5, right - left, h);
+    const QRectF bounding_rect = p.boundingRect(text_rect,
+            Qt::AlignCenter, message);
+    p.setPen(Qt::red);
     QFont font=p.font();
     font.setPointSize(DefaultFontSize);
     p.setFont(font);
-	p.drawText(text_rect, message);
+    if (bounding_rect.width() < text_rect.width())
+        p.drawText(text_rect, Qt::AlignCenter, tr("Error: ")+message);
+    else
+        p.drawText(text_rect, Qt::AlignCenter, tr("Error: ..."));
 }
 
 void DecodeTrace::draw_unshown_row(QPainter &p, int y, int h, int left,
