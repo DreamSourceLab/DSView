@@ -44,7 +44,6 @@ signals:
     void maximizedShow();
 
 public slots:
-    void showSmall() { parentWidget()->showMinimized(); }
     void showMaxRestore();
     void setRestoreButton(bool max);
 

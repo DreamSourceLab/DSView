@@ -91,6 +91,7 @@ static const int32_t sessions[] = {
     SR_CONF_TRIGGER_SOURCE,
     SR_CONF_HORIZ_TRIGGERPOS,
     SR_CONF_TRIGGER_HOLDOFF,
+    SR_CONF_TRIGGER_MARGIN,
 };
 
 static const char *probe_names[] = {
@@ -392,7 +393,7 @@ static int fpga_config(struct libusb_device_handle *hdl, const char *filename)
 	struct stat f_stat;
 
     sr_info("Configure FPGA using %s", filename);
-    if ((fw = g_fopen(filename, "rb")) == NULL) {
+    if ((fw = fopen(filename, "rb")) == NULL) {
         sr_err("Unable to open FPGA bit file %s for reading: %s",
                filename, strerror(errno));
         return SR_ERR;
@@ -636,6 +637,8 @@ static struct DSL_context *DSCope_dev_new(void)
     devc->zero = FALSE;
     devc->data_lock = FALSE;
     devc->cali = FALSE;
+    devc->dso_bits = 8;
+    devc->trigger_margin = 0;
 
 	return devc;
 }
@@ -1023,6 +1026,10 @@ static uint64_t dso_cmd_gen(struct sr_dev_inst *sdi, struct sr_channel* ch, int 
             cmd += probe->trig_value << (8 * (probe->index + 1));
         }
         break;
+    case SR_CONF_TRIGGER_MARGIN:
+        cmd += 0x40;
+        cmd += ((uint64_t)devc->trigger_margin << 8);
+        break;
     case SR_CONF_TRIGGER_HOLDOFF:
         cmd += 0x58;
         cmd += ((uint64_t)devc->trigger_holdoff << 8);
@@ -1237,6 +1244,12 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         devc = sdi->priv;
         *data = g_variant_new_uint64(devc->trigger_holdoff);
         break;
+    case SR_CONF_TRIGGER_MARGIN:
+        if (!sdi)
+            return SR_ERR;
+        devc = sdi->priv;
+        *data = g_variant_new_byte(devc->trigger_margin);
+        break;
     case SR_CONF_ZERO:
         if (!sdi)
             return SR_ERR;
@@ -1334,6 +1347,12 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         if (!sdi)
             return SR_ERR;
         *data = g_variant_new_uint16(CALI_VOFF_RANGE);
+        break;
+    case SR_CONF_DSO_BITS:
+        if (!sdi)
+            return SR_ERR;
+        devc = sdi->priv;
+        *data = g_variant_new_byte(devc->dso_bits);
         break;
     default:
         return SR_ERR_NA;
@@ -1600,6 +1619,17 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         else
             sr_dbg("%s: setting Trigger Holdoff Time to %d failed",
                 __func__, devc->trigger_holdoff);
+    } else if (id == SR_CONF_TRIGGER_MARGIN) {
+        devc->trigger_margin = g_variant_get_byte(data);
+        if (sdi->mode == DSO) {
+            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_MARGIN));
+        }
+        if (ret == SR_OK)
+            sr_dbg("%s: setting Trigger Margin to %d",
+                __func__, devc->trigger_margin);
+        else
+            sr_dbg("%s: setting Trigger Margin to %d failed",
+                __func__, devc->trigger_margin);
     } else if (id == SR_CONF_ZERO) {
         devc->zero = g_variant_get_boolean(data);
         if (devc->zero) {
@@ -1871,6 +1901,11 @@ static int dso_init(struct sr_dev_inst *sdi, gboolean from_eep)
     ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_VALUE));
     if (ret != SR_OK) {
         sr_err("Set Trigger Value command failed!");
+        return ret;
+    }
+    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_MARGIN));
+    if (ret != SR_OK) {
+        sr_err("Set Trigger Margin command failed!");
         return ret;
     }
     return ret;

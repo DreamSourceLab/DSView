@@ -186,7 +186,7 @@ void Trace::set_old_v_offset(int v_offset)
     _old_v_offset = v_offset;
 }
 
-int Trace::get_zeroPos()
+int Trace::get_zero_vpos()
 {
     return _v_offset;
 }
@@ -256,7 +256,7 @@ void Trace::paint_label(QPainter &p, int right, const QPoint pt)
 
     const QRectF color_rect = get_rect("color", y, right);
     const QRectF name_rect  = get_rect("name",  y, right);
-    const QRectF label_rect = get_rect("label", get_zeroPos(), right);
+    const QRectF label_rect = get_rect("label", get_zero_vpos(), right);
 
     //p.setRenderHint(QPainter::Antialiasing);
     // Paint the ColorButton
@@ -276,7 +276,7 @@ void Trace::paint_label(QPainter &p, int right, const QPoint pt)
         const QPointF points[] = {
             label_rect.topLeft(),
             label_rect.topRight(),
-            QPointF(right, get_zeroPos()),
+            QPointF(right, get_zero_vpos()),
             label_rect.bottomRight(),
             label_rect.bottomLeft()
         };
@@ -339,7 +339,7 @@ int Trace::pt_in_rect(int y, int right, const QPoint &point)
 {
     const QRectF color = get_rect("color", y, right);
     const QRectF name  = get_rect("name", y, right);
-    const QRectF label = get_rect("label", get_zeroPos(), right);
+    const QRectF label = get_rect("label", get_zero_vpos(), right);
 
     if (color.contains(point) && enabled())
         return COLOR;
@@ -364,10 +364,10 @@ void Trace::compute_text_size(QPainter &p)
         p.boundingRect(QRectF(), 0, "99").height());
 }
 
-QRectF Trace::get_view_rect() const
+QRect Trace::get_view_rect() const
 {
     assert(_view);
-    return QRectF(0, 0, _view->viewport()->width(), _view->viewport()->height());
+    return QRect(0, 0, _view->viewport()->width(), _view->viewport()->height());
 }
 
 int Trace::get_y() const

@@ -69,7 +69,7 @@ FileBar::FileBar(SigSession &session, QWidget *parent) :
     _action_default->setObjectName(QString::fromUtf8("actionDefault"));
     connect(_action_default, SIGNAL(triggered()), this, SLOT(on_actionDefault_triggered()));
 
-    _menu_session = new QMenu(tr("Session"), parent);
+    _menu_session = new QMenu(tr("Settings"), parent);
     _menu_session->setIcon(QIcon::fromTheme("file",
         QIcon(":/icons/gear.png")));
     _menu_session->setObjectName(QString::fromUtf8("menuSession"));
@@ -285,6 +285,11 @@ void FileBar::enable_toggle(bool enable)
     _file_button.setDisabled(!enable);
     _file_button.setIcon(enable ? QIcon(":/icons/file.png") :
                                   QIcon(":/icons/file_dis.png"));
+}
+
+void FileBar::set_settings_en(bool enable)
+{
+    _menu_session->setDisabled(!enable);
 }
 
 } // namespace toolbars

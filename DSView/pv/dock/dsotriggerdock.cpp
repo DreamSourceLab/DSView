@@ -56,7 +56,7 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession &session) :
     connect(position_spinBox, SIGNAL(valueChanged(int)), position_slider, SLOT(setValue(int)));
     connect(position_slider, SIGNAL(valueChanged(int)), this, SLOT(pos_changed(int)));
 
-    QLabel *holdoff_label = new QLabel(tr("Trigger Hold Off Time: "), _widget);
+    QLabel *holdoff_label = new QLabel(tr("Hold Off Time: "), _widget);
     holdoff_comboBox = new QComboBox(_widget);
     holdoff_comboBox->addItem(tr("uS"), qVariantFromValue(1000));
     holdoff_comboBox->addItem(tr("mS"), qVariantFromValue(1000000));
@@ -70,6 +70,11 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession &session) :
     connect(holdoff_spinBox, SIGNAL(valueChanged(int)), holdoff_slider, SLOT(setValue(int)));
     connect(holdoff_slider, SIGNAL(valueChanged(int)), this, SLOT(hold_changed(int)));
     connect(holdoff_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(hold_changed(int)));
+
+    QLabel *margin_label = new QLabel(tr("Noise Sensitivity: "), _widget);
+    margin_slider = new QSlider(Qt::Horizontal, _widget);
+    margin_slider->setRange(0, 15);
+    connect(margin_slider, SIGNAL(valueChanged(int)), this, SLOT(margin_changed(int)));
 
 
     QLabel *tSource_labe = new QLabel(tr("Trigger Sources: "), _widget);
@@ -137,6 +142,10 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession &session) :
     gLayout->addWidget(holdoff_comboBox, 12, 2);
     gLayout->addWidget(holdoff_slider, 13, 0, 1, 4);
 
+    gLayout->addWidget(new QLabel(_widget), 14, 0);
+    gLayout->addWidget(margin_label, 15, 0);
+    gLayout->addWidget(margin_slider, 16, 0, 1, 4);
+
     gLayout->setColumnStretch(3, 1);
 
     layout->addLayout(gLayout);
@@ -174,10 +183,7 @@ void DsoTriggerDock::pos_changed(int pos)
         msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
     }
-
-    uint64_t sample_limit = _session.get_device()->get_sample_limit();
-    uint64_t trig_pos = sample_limit * pos / 100;
-    set_trig_pos(trig_pos);
+    set_trig_pos(pos);
 }
 
 void DsoTriggerDock::hold_changed(int hold)
@@ -199,6 +205,22 @@ void DsoTriggerDock::hold_changed(int hold)
         dialogs::DSMessageBox msg(this);
         msg.mBox()->setText(tr("Trigger Setting Issue"));
         msg.mBox()->setInformativeText(tr("Change trigger hold off time failed!"));
+        msg.mBox()->setStandardButtons(QMessageBox::Ok);
+        msg.mBox()->setIcon(QMessageBox::Warning);
+        msg.exec();
+    }
+}
+
+void DsoTriggerDock::margin_changed(int margin)
+{
+    int ret;
+    ret = _session.get_device()->set_config(NULL, NULL,
+                                            SR_CONF_TRIGGER_MARGIN,
+                                            g_variant_new_byte(margin));
+    if (!ret) {
+        dialogs::DSMessageBox msg(this);
+        msg.mBox()->setText(tr("Trigger Setting Issue"));
+        msg.mBox()->setInformativeText(tr("Change trigger value sensitivity failed!"));
         msg.mBox()->setStandardButtons(QMessageBox::Ok);
         msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
@@ -254,6 +276,27 @@ void DsoTriggerDock::device_change()
 
 void DsoTriggerDock::init()
 {
+    if (_session.get_device()->name().contains("virtual")) {
+        foreach(QAbstractButton * btn, source_group->buttons())
+            btn->setDisabled(true);
+        foreach(QAbstractButton * btn, type_group->buttons())
+            btn->setDisabled(true);
+        holdoff_slider->setDisabled(true);
+        holdoff_spinBox->setDisabled(true);
+        holdoff_comboBox->setDisabled(true);
+        margin_slider->setDisabled(true);
+        return;
+    } else {
+        foreach(QAbstractButton * btn, source_group->buttons())
+            btn->setDisabled(false);
+        foreach(QAbstractButton * btn, type_group->buttons())
+            btn->setDisabled(false);
+        holdoff_slider->setDisabled(false);
+        holdoff_spinBox->setDisabled(false);
+        holdoff_comboBox->setDisabled(false);
+        margin_slider->setDisabled(false);
+    }
+
     // TRIGGERPOS
     GVariant* gvar = _session.get_device()->get_config(NULL, NULL,
                                             SR_CONF_HORIZ_TRIGGERPOS);

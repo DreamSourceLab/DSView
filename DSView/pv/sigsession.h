@@ -92,9 +92,12 @@ class SigSession : public QObject
 
 private:
     static constexpr float Oversampling = 2.0f;
-    static const int ViewTime = 50;
     static const int RefreshTime = 500;
 	bool saveFileThreadRunning = false;
+
+public:
+    static const int ViewTime = 50;
+    static const int WaitShowTime = 1000;
 
 public:
 	enum capture_state {
@@ -131,6 +134,8 @@ public:
     uint64_t cur_samplerate() const;
     uint64_t cur_samplelimits() const;
     double cur_sampletime() const;
+    void set_cur_samplerate(uint64_t samplerate);
+    void set_cur_samplelimits(uint64_t samplelimits);
     QDateTime get_trigger_time() const;
     uint64_t get_trigger_pos() const;
 
@@ -272,6 +277,7 @@ private:
     bool _hot_detach;
 
     QTimer _view_timer;
+    int    _noData_cnt;
     QTimer _refresh_timer;
     bool _data_lock;
     bool _data_updated;
@@ -319,6 +325,8 @@ signals:
     void show_region(uint64_t start, uint64_t end);
 
     void hardware_connect_failed();
+
+    void show_wait_trigger();
 
 public slots:
     void reload();

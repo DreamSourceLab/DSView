@@ -98,6 +98,7 @@ SigSession::SigSession(DeviceManager &device_manager) :
     _group_cnt = 0;
 	register_hotplug_callback();
     _view_timer.stop();
+    _noData_cnt = 0;
     _refresh_timer.stop();
     _refresh_timer.setSingleShot(true);
     _data_lock = false;
@@ -470,12 +471,48 @@ double SigSession::cur_sampletime() const
         return  _cur_samplelimits * 1.0 / _cur_samplerate;
 }
 
+void SigSession::set_cur_samplerate(uint64_t samplerate)
+{
+    assert(samplerate != 0);
+    _cur_samplerate = samplerate;
+    // sample rate for all SignalData
+    // Logic/Analog/Dso
+    if (_logic_data)
+        _logic_data->set_samplerate(_cur_samplerate);
+    if (_analog_data)
+        _analog_data->set_samplerate(_cur_samplerate);
+    if (_dso_data)
+        _dso_data->set_samplerate(_cur_samplerate);
+    // Group
+    if (_group_data)
+        _group_data->set_samplerate(_cur_samplerate);
+
+#ifdef ENABLE_DECODE
+    // DecoderStack
+    BOOST_FOREACH(const boost::shared_ptr<view::DecodeTrace> d, _decode_traces)
+        d->decoder()->set_samplerate(_cur_samplerate);
+#endif
+    // MathStack
+    BOOST_FOREACH(const boost::shared_ptr<view::MathTrace> m, _math_traces)
+        m->get_math_stack()->set_samplerate(_cur_samplerate);
+}
+
+void SigSession::set_cur_samplelimits(uint64_t samplelimits)
+{
+    assert(samplelimits != 0);
+    _cur_samplelimits = samplelimits;
+}
+
+
 void SigSession::capture_init()
 {
     _cur_samplerate = _dev_inst->get_sample_rate();
     _cur_samplelimits = _dev_inst->get_sample_limit();
     _data_updated = false;
-    _view_timer.start(ViewTime);
+    if (_dev_inst->dev_inst()->mode == DSO) {
+        _view_timer.start(ViewTime);
+        _noData_cnt = 0;
+    }
 
     // Init and Set sample rate for all SignalData
     // Logic/Analog/Dso
@@ -685,6 +722,10 @@ void SigSession::check_update()
     if (_data_updated) {
         data_updated();
         _data_updated = false;
+        _noData_cnt = 0;
+    } else {
+        if (++_noData_cnt >= (WaitShowTime/ViewTime))
+            show_wait_trigger();
     }
 }
 

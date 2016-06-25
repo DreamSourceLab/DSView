@@ -42,6 +42,8 @@ public:
 
     void enable_toggle(bool enable);
 
+    void set_settings_en(bool enable);
+
 private:
 
     void session_error(

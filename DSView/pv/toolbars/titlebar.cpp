@@ -66,7 +66,7 @@ TitleBar::TitleBar(bool top, QWidget *parent, bool hasClose) :
 
         connect(this, SIGNAL( normalShow() ), parent, SLOT(showNormal() ) );
         connect(this, SIGNAL( maximizedShow() ), parent, SLOT(showMaximized() ) );
-        connect(_minimizeButton, SIGNAL( clicked() ), this, SLOT(showSmall() ) );
+        connect(_minimizeButton, SIGNAL( clicked() ), parent, SLOT(showMinimized() ) );
         connect(_maximizeButton, SIGNAL( clicked() ), this, SLOT(showMaxRestore() ) );
     }
 

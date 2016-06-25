@@ -110,6 +110,7 @@ struct dev_context {
     gboolean instant;
     gboolean data_lock;
     uint8_t max_height;
+    uint8_t dso_bits;
 
     uint16_t *buf;
     uint64_t pre_index;
@@ -345,6 +346,7 @@ static GSList *hw_scan(GSList *options)
     devc->timebase = 200;
     devc->data_lock = FALSE;
     devc->max_height = 0;
+    devc->dso_bits = 8;
 
 	sdi->priv = devc;
 
@@ -530,6 +532,9 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_RLE_SAMPLELIMITS:
         *data = g_variant_new_uint64(DEMO_MAX_LOGIC_DEPTH);
         break;
+    case SR_CONF_DSO_BITS:
+        *data = g_variant_new_byte(devc->dso_bits);
+        break;
     default:
 		return SR_ERR_NA;
 	}
@@ -655,6 +660,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         ret = SR_OK;
     } else if (id == SR_CONF_TRIGGER_HOLDOFF) {
         ret = SR_OK;
+    } else if (id == SR_CONF_TRIGGER_MARGIN) {
+        ret = SR_OK;
     } else if (id == SR_CONF_EN_CH) {
         ch->enabled = g_variant_get_boolean(data);
         sr_dbg("%s: setting ENABLE of channel %d to %d", __func__,
@@ -678,7 +685,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                ch->index, ch->vfactor);
         ret = SR_OK;
     } else if (id == SR_CONF_VPOS) {
-        ch->vpos = g_variant_get_double(data);
+        //ch->vpos = g_variant_get_double(data);
         sr_dbg("%s: setting VPOS of channel %d to %lf", __func__,
                ch->index, ch->vpos);
         ret = SR_OK;

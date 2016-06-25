@@ -139,7 +139,7 @@ public:
 	 */
 	void show_cursors(bool show = true);
 
-    const QPointF& hover_point() const;
+    const QPoint& hover_point() const;
 
 	void normalize_layout();
 
@@ -158,7 +158,6 @@ public:
     Cursor* get_trig_cursor();
     Cursor* get_search_cursor();
 
-    //void set_trig_pos(uint64_t trig_pos);
     void set_search_pos(uint64_t search_pos);
 
     uint64_t get_search_pos();
@@ -180,6 +179,7 @@ public:
 
     void on_state_changed(bool stop);
 
+    QRect get_view_rect();
     int get_view_width();
     int get_view_height();
 
@@ -248,7 +248,8 @@ private slots:
 
     void receive_header();
 
-    void set_trig_pos(quint64 trig_pos);
+    void receive_trigger(quint64 trig_pos);
+    void set_trig_pos(int percent);
 
     void receive_end();
 
@@ -302,7 +303,7 @@ private:
         bool _show_search_cursor;
         uint64_t _search_pos;
 
-        QPointF _hover_point;
+        QPoint _hover_point;
     	dialogs::Calibration *_cali;
 };
 

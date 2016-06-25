@@ -146,6 +146,7 @@ static const int32_t sessions[] = {
     SR_CONF_TRIGGER_SOURCE,
     SR_CONF_HORIZ_TRIGGERPOS,
     SR_CONF_TRIGGER_HOLDOFF,
+    SR_CONF_TRIGGER_MARGIN,
 };
 
 static const int32_t sessions_pro[] = {
@@ -161,6 +162,7 @@ static const int32_t sessions_pro[] = {
     SR_CONF_TRIGGER_SOURCE,
     SR_CONF_HORIZ_TRIGGERPOS,
     SR_CONF_TRIGGER_HOLDOFF,
+    SR_CONF_TRIGGER_MARGIN,
 };
 
 static const int32_t ch_sessions[] = {
@@ -457,7 +459,7 @@ static int fpga_config(struct libusb_device_handle *hdl, const char *filename)
 	struct stat f_stat;
 
     sr_info("Configure FPGA using %s", filename);
-    if ((fw = g_fopen(filename, "rb")) == NULL) {
+    if ((fw = fopen(filename, "rb")) == NULL) {
         sr_err("Unable to open FPGA bit file %s for reading: %s",
                filename, strerror(errno));
         return SR_ERR;
@@ -701,6 +703,7 @@ static struct DSL_context *DSLogic_dev_new(void)
     devc->mstatus_valid = FALSE;
     devc->data_lock = FALSE;
     devc->max_height = 0;
+    devc->dso_bits = 8;
 
 	return devc;
 }
@@ -999,6 +1002,10 @@ static uint64_t dso_cmd_gen(struct sr_dev_inst *sdi, struct sr_channel* ch, int 
             cmd += probe->trig_value << (8 * (probe->index + 1));
         }
         break;
+    case SR_CONF_TRIGGER_MARGIN:
+        cmd += 0x40;
+        cmd += ((uint64_t)devc->trigger_margin << 8);
+        break;
     case SR_CONF_TRIGGER_HOLDOFF:
         cmd += 0x58;
         cmd += devc->trigger_holdoff << 8;
@@ -1013,6 +1020,63 @@ static uint64_t dso_cmd_gen(struct sr_dev_inst *sdi, struct sr_channel* ch, int 
     return cmd;
 }
 
+static int dso_init(struct sr_dev_inst *sdi)
+{
+    int ret;
+    GSList *l;
+    struct sr_usb_dev_inst *usb = sdi->conn;
+
+    for(l = sdi->channels; l; l = l->next) {
+        struct sr_channel *probe = (struct sr_channel *)l->data;
+        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe, SR_CONF_COUPLING));
+        if (ret != SR_OK) {
+            sr_err("DSO set coupling of channel %d command failed!", probe->index);
+            return ret;
+        }
+        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe, SR_CONF_VDIV));
+        if (ret != SR_OK) {
+            sr_err("Set VDIV of channel %d command failed!", probe->index);
+            return ret;
+        }
+    }
+
+    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 0, SR_CONF_SAMPLERATE));
+    if (ret != SR_OK) {
+        sr_err("Set Sample Rate command failed!");
+        return ret;
+    }
+    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_HORIZ_TRIGGERPOS));
+    if (ret != SR_OK) {
+        sr_err("Set Horiz Trigger Position command failed!");
+        return ret;
+    }
+    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_HOLDOFF));
+    if (ret != SR_OK) {
+        sr_err("Set Trigger Holdoff Time command failed!");
+        return ret;
+    }
+    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_SLOPE));
+    if (ret != SR_OK) {
+        sr_err("Set Trigger Slope command failed!");
+        return ret;
+    }
+    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_SOURCE));
+    if (ret != SR_OK) {
+        sr_err("Set Trigger Source command failed!");
+        return ret;
+    }
+    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_VALUE));
+    if (ret != SR_OK) {
+        sr_err("Set Trigger Value command failed!");
+        return ret;
+    }
+    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_MARGIN));
+    if (ret != SR_OK) {
+        sr_err("Set Trigger Margin command failed!");
+        return ret;
+    }
+    return ret;
+}
 
 static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
                       const struct sr_channel *ch,
@@ -1200,6 +1264,12 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         devc = sdi->priv;
         *data = g_variant_new_uint64(devc->trigger_holdoff);
         break;
+    case SR_CONF_TRIGGER_MARGIN:
+        if (!sdi)
+            return SR_ERR;
+        devc = sdi->priv;
+        *data = g_variant_new_byte(devc->trigger_margin);
+        break;
     case SR_CONF_ZERO:
         if (!sdi)
             return SR_ERR;
@@ -1241,6 +1311,12 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
             return SR_ERR;
         devc = sdi->priv;
         *data = g_variant_new_uint64(DSLOGIC_MAX_LOGIC_DEPTH*ceil(samplerates[devc->samplerates_size-1] * 1.0 / DSLOGIC_MAX_LOGIC_SAMPLERATE));
+        break;
+    case SR_CONF_DSO_BITS:
+        if (!sdi)
+            return SR_ERR;
+        devc = sdi->priv;
+        *data = g_variant_new_byte(devc->dso_bits);
         break;
     default:
         return SR_ERR_NA;
@@ -1325,51 +1401,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         set_probes(sdi, num_probes);
         sr_dbg("%s: setting mode to %d", __func__, sdi->mode);
         if (sdi->mode == DSO) {
-            GList *l;
-            for(l = sdi->channels; l; l = l->next) {
-                struct sr_channel *probe = (struct sr_channel *)l->data;
-                ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe, SR_CONF_COUPLING));
-                if (ret != SR_OK) {
-                    sr_err("Set Coupling command failed!");
-                    return ret;
-                }
-                ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe, SR_CONF_VDIV));
-                if (ret != SR_OK) {
-                    sr_dbg("%s: Initial setting for DSO mode failed", __func__);
-                    return ret;
-                }
-            }
-
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 0, SR_CONF_SAMPLERATE));
-            if (ret != SR_OK) {
-                sr_err("Set Sample Rate command failed!");
-                return ret;
-            }
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_HORIZ_TRIGGERPOS));
-            if (ret != SR_OK) {
-                sr_err("Set Horiz Trigger Position command failed!");
-                return ret;
-            }
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_HOLDOFF));
-            if (ret != SR_OK) {
-                sr_err("Set Trigger Holdoff Time command failed!");
-                return ret;
-            }
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_SLOPE));
-            if (ret != SR_OK) {
-                sr_err("Set Trigger Slope command failed!");
-                return ret;
-            }
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_SOURCE));
-            if (ret != SR_OK) {
-                sr_err("Set Trigger Source command failed!");
-                return ret;
-            }
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_VALUE));
-            if (ret != SR_OK) {
-                sr_err("Set Trigger Value command failed!");
-                return ret;
-            }
+            dso_init(sdi);
         }
     } else if (id == SR_CONF_OPERATION_MODE) {
         stropt = g_variant_get_string(data, NULL);
@@ -1560,6 +1592,13 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 __func__, ch->index, ch->vdiv);
     } else if (id == SR_CONF_FACTOR) {
         ch->vfactor = g_variant_get_uint64(data);
+        sr_dbg("%s: setting Factor of channel %d to %d", __func__,
+               ch->index, ch->vfactor);
+        ret = SR_OK;
+    } else if (id == SR_CONF_VPOS) {
+        ch->vpos = g_variant_get_double(data);
+        sr_dbg("%s: setting VPOS of channel %d to %lf", __func__,
+               ch->index, ch->vpos);
         ret = SR_OK;
     } else if (id == SR_CONF_TIMEBASE) {
         devc->timebase = g_variant_get_uint64(data);
@@ -1643,6 +1682,17 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         else
             sr_dbg("%s: setting Trigger Holdoff Time to %d failed",
                 __func__, devc->trigger_holdoff);
+    } else if (id == SR_CONF_TRIGGER_MARGIN) {
+        devc->trigger_margin = g_variant_get_byte(data);
+        if (sdi->mode == DSO) {
+            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_MARGIN));
+        }
+        if (ret == SR_OK)
+            sr_dbg("%s: setting Trigger Margin to %d",
+                __func__, devc->trigger_margin);
+        else
+            sr_dbg("%s: setting Trigger Margin to %d failed",
+                __func__, devc->trigger_margin);
     } else if (id == SR_CONF_ZERO) {
         devc->zero = g_variant_get_boolean(data);
         ret = SR_OK;

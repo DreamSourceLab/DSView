@@ -80,6 +80,8 @@ static struct sr_config_info sr_config_info_data[] = {
         "Horizontal trigger position", "Horizontal trigger position", NULL},
     {SR_CONF_TRIGGER_HOLDOFF, SR_T_UINT64, "triggerholdoff",
         "Trigger hold off", "Trigger hold off", NULL},
+    {SR_CONF_TRIGGER_MARGIN, SR_T_UINT8, "triggermargin",
+    "Trigger margin", "Trigger margin", NULL},
     {SR_CONF_BUFFERSIZE, SR_T_UINT64, "buffersize",
         "Buffer size", "Buffer size", NULL},
     {SR_CONF_TIMEBASE, SR_T_UINT64, "timebase",

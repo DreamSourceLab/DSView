@@ -727,6 +727,9 @@ enum {
     /** Trigger hold off time */
     SR_CONF_TRIGGER_HOLDOFF,
 
+    /** Trigger Margin */
+    SR_CONF_TRIGGER_MARGIN,
+
 	/** Buffer size. */
 	SR_CONF_BUFFERSIZE,
 
@@ -738,6 +741,9 @@ enum {
 
     /** DSO configure sync */
     SR_CONF_DSO_SYNC,
+
+    /** DSO vertical resolution*/
+    SR_CONF_DSO_BITS,
 
     /** Zero */
     SR_CONF_ZERO_SET,

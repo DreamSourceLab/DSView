@@ -70,8 +70,10 @@ void TimeMarker::set_index(uint64_t index)
 
 void TimeMarker::paint(QPainter &p, const QRect &rect, const bool highlight)
 {
-    const double samples_per_pixel = _view.session().cur_samplerate() * _view.scale();
-    const double x = _index/samples_per_pixel - (_view.offset() / _view.scale());
+    const uint64_t sample_rate = _view.session().cur_samplerate();
+    const double scale = _view.scale();
+    const double samples_per_pixel = sample_rate * scale;
+    const double x = _index/samples_per_pixel - (_view.offset() / scale);
     p.setPen((_grabbed | highlight) ? QPen(_colour.lighter(), 2, Qt::DashLine) : QPen(_colour, 1, Qt::DashLine));
     p.drawLine(QPointF(x, rect.top()), QPointF(x, rect.bottom()));
 }

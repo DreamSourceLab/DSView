@@ -43,7 +43,6 @@ class DsoSignal : public Signal
 private:
 	static const QColor SignalColours[4];
 	static const float EnvelopeThreshold;
-    static const double TrigMargin;
 
     static const int HitCursorMargin = 3;
     static const uint64_t vDialValueCount = 8;
@@ -58,9 +57,12 @@ private:
     static const uint64_t hDialValue[hDialValueCount];
     static const QString hDialUnit[hDialUnitCount];
 
-    static const int UpMargin;
-    static const int DownMargin;
-    static const int RightMargin;
+    static const int UpMargin = 30;
+    static const int DownMargin = 0;
+    static const int RightMargin = 30;
+
+    static const uint8_t DefaultBits = 8;
+    static const int TrigMargin = 16;
 
 public:
     enum DSO_MEASURE_TYPE {
@@ -130,10 +132,10 @@ public:
     uint16_t get_hDialSel() const;
     uint8_t get_acCoupling() const;
     void set_acCoupling(uint8_t coupling);
-    void set_trig_vpos(int pos);
+    void set_trig_vpos(int pos, bool delta_change);
     int get_trig_vpos() const;
-    void set_trigRate(double rate);
-    double get_trigRate() const;
+    void set_trig_vrate(double rate);
+    double get_trig_vrate() const;
     void set_factor(uint64_t factor);
     uint64_t get_factor();
 
@@ -154,15 +156,15 @@ public:
     /**
      * Gets the mid-Y position of this signal.
      */
-    int get_zeroPos();
-    double get_zeroRate();
-    double get_zeroValue();
+    int get_zero_vpos();
+    double get_zero_vrate();
+    double get_zero_value();
     /**
      * Sets the mid-Y position of this signal.
      */
-    void set_zeroPos(int pos);
-    void set_zeroRate(double rate);
-    void update_zeroPos();
+    void set_zero_vpos(int pos);
+    void set_zero_vrate(double rate);
+    void update_offset();
 
     /**
      * Paints the background layer of the trace with a QPainter
@@ -190,7 +192,7 @@ public:
 
     const std::vector< std::pair<uint64_t, bool> > cur_edges() const;
 
-    QRectF get_view_rect() const;
+    QRect get_view_rect() const;
 
     QRectF get_trig_rect(int left, int right) const;
 
@@ -237,10 +239,12 @@ private:
     bool _vDialActive;
     bool _hDialActive;
     uint8_t _acCoupling;
+    uint8_t _bits;
 
-    double _trig_vpos;
-    double _zeroPos;
-    float _zero_off;
+    int _trig_value;
+    double _trig_delta;
+    double _zero_vrate;
+    float _zero_value;
 
     uint8_t _max;
     uint8_t _min;

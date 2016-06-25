@@ -68,7 +68,8 @@ Viewport::Viewport(View &parent, View_type type) :
     _hover_index(0),
     _hover_hit(false),
     _dso_xm_valid(false),
-    _dso_ym_valid(false)
+    _dso_ym_valid(false),
+    _waiting_trig(0)
 {
 	setMouseTracking(true);
 	setAutoFillBackground(true);
@@ -236,6 +237,16 @@ void Viewport::paintSignals(QPainter &p)
 
         //plot measure arrow
         paintMeasure(p);
+
+        //plot waiting trigger
+        if (_waiting_trig > 0) {
+            p.setPen(Trace::DARK_FORE);
+            QString text = "Waiting Trig";
+            for (int i = 1; i < _waiting_trig; i++)
+                if (i % (WaitLoopTime / SigSession::ViewTime) == 0)
+                    text += ".";
+            p.drawText(_view.get_view_rect(), Qt::AlignLeft | Qt::AlignTop, text);
+        }
     }
 }
 
@@ -446,7 +457,7 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
                 if (_drag_sig) {
                     boost::shared_ptr<view::DsoSignal> dsoSig;
                     if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(_drag_sig))
-                        dsoSig->set_trig_vpos(event->pos().y());
+                        dsoSig->set_trig_vpos(event->pos().y(), true);
                 }
             }
 
@@ -454,7 +465,7 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
                 uint64_t sample_rate = _view.session().cur_samplerate();
                 TimeMarker* grabbed_marker = _view.get_ruler()->get_grabbed_cursor();
                 if (_view.cursors_shown() && grabbed_marker) {
-                    double curX = _view.hover_point().x();
+                    int curX = _view.hover_point().x();
                     uint64_t index0 = 0, index1 = 0, index2 = 0;
                     bool logic = false;
                     const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
@@ -1277,6 +1288,19 @@ void Viewport::on_drag_timer()
 void Viewport::set_need_update(bool update)
 {
     _need_update = update;
+}
+
+void Viewport::show_wait_trigger()
+{
+    _waiting_trig %= (WaitLoopTime / SigSession::ViewTime) * 4;
+    _waiting_trig++;
+    update();
+}
+
+void Viewport::unshow_wait_trigger()
+{
+    _waiting_trig = 0;
+    update();
 }
 
 

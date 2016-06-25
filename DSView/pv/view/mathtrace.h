@@ -95,7 +95,7 @@ public:
 
     static QString format_freq(double freq, unsigned precision = Pricision);
 
-    bool measure(const QPointF &p);
+    bool measure(const QPoint &p);
 
     /**
      * Paints the background layer of the trace with a QPainter
@@ -121,7 +121,7 @@ public:
      **/
     void paint_fore(QPainter &p, int left, int right);
 
-    QRectF get_view_rect() const;
+    QRect get_view_rect() const;
 
 protected:
     void paint_type_options(QPainter &p, int right, const QPoint pt);

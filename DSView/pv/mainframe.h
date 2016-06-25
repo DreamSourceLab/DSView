@@ -67,6 +67,8 @@ public:
     void showMaxRestore();
 
 protected:
+    void changeEvent(QEvent* event);
+    void resizeEvent(QResizeEvent *event);
     void closeEvent(QCloseEvent *event);
     bool eventFilter(QObject *object, QEvent *event);
 
@@ -74,6 +76,7 @@ public slots:
     void unfreezing();
     void showNormal();
     void showMaximized();
+    void showMinimized();
 
 private:
     void hide_border();
@@ -103,6 +106,7 @@ private:
     int _startPos;
     QTimer _timer;
     bool _freezing;
+    bool _minimized;
 };
 
 } // namespace pv

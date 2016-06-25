@@ -199,8 +199,8 @@ void MainWindow::setup_ui()
         SLOT(show_calibration()));
     connect(_sampling_bar, SIGNAL(hide_calibration()), _view,
         SLOT(hide_calibration()));
-    connect(_dso_trigger_widget, SIGNAL(set_trig_pos(quint64)), _view,
-        SLOT(set_trig_pos(quint64)));
+    connect(_dso_trigger_widget, SIGNAL(set_trig_pos(int)), _view,
+        SLOT(set_trig_pos(int)));
     connect(_protocol_widget, SIGNAL(protocol_updated()), _view, SLOT(signals_changed()));
 
     setIconSize(QSize(40,40));
@@ -318,6 +318,7 @@ void MainWindow::update_device_list()
     }
 
     if (!selected_device->name().contains("virtual")) {
+        _file_bar->set_settings_en(true);
         _logo_bar->dsl_connected(true);
         QString ses_name = DS_RES_PATH +
                            selected_device->name() +
@@ -325,9 +326,12 @@ void MainWindow::update_device_list()
                            ".dsc";
         load_session(ses_name);
     } else {
+        _file_bar->set_settings_en(false);
         _logo_bar->dsl_connected(false);
     }
     _view->status_clear();
+    _trigger_widget->init();
+    _dso_trigger_widget->init();
 }
 
 void MainWindow::reload()
@@ -416,7 +420,10 @@ void MainWindow::run_stop()
     switch(_session.get_capture_state()) {
     case SigSession::Init:
 	case SigSession::Stopped:
-        _view->show_trig_cursor(false);
+        if (_session.get_device()->dev_inst()->mode == DSO)
+            _view->show_trig_cursor(true);
+        else
+            _view->show_trig_cursor(false);
         _view->update_sample(false);
         commit_trigger(false);
         _session.start_capture(false,
@@ -436,7 +443,10 @@ void MainWindow::instant_stop()
     switch(_session.get_capture_state()) {
     case SigSession::Init:
     case SigSession::Stopped:
-        _view->show_trig_cursor(false);
+        if (_session.get_device()->dev_inst()->mode == DSO)
+            _view->show_trig_cursor(true);
+        else
+            _view->show_trig_cursor(false);
         _view->update_sample(true);
         commit_trigger(true);
         _session.start_capture(true,
@@ -650,6 +660,8 @@ bool MainWindow::load_session(QString name)
         for (unsigned int i = 0; i < num_opts; i++) {
             const struct sr_config_info *const info =
                 sr_config_info_get(options[i]);
+            if (!sessionObj.contains(info->name))
+                continue;
             if (info->datatype == SR_T_BOOL)
                 _session.get_device()->set_config(NULL, NULL, info->key, g_variant_new_boolean(sessionObj[info->name].toDouble()));
             else if (info->datatype == SR_T_UINT64)
@@ -709,8 +721,8 @@ bool MainWindow::load_session(QString name)
                 boost::shared_ptr<view::DsoSignal> dsoSig;
                 if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
                     dsoSig->load_settings();
-                    dsoSig->set_zeroRate(obj["zeroPos"].toDouble());
-                    dsoSig->set_trigRate(obj["trigValue"].toDouble());
+                    dsoSig->set_zero_vrate(obj["zeroPos"].toDouble());
+                    dsoSig->set_trig_vrate(obj["trigValue"].toDouble());
                 }
                 break;
             }
@@ -791,8 +803,8 @@ bool MainWindow::store_session(QString name)
             s_obj["vdiv"] = QJsonValue::fromVariant(static_cast<qulonglong>(dsoSig->get_vDialValue()));
             s_obj["vfactor"] = QJsonValue::fromVariant(static_cast<qulonglong>(dsoSig->get_factor()));
             s_obj["coupling"] = dsoSig->get_acCoupling();
-            s_obj["trigValue"] = dsoSig->get_trigRate();
-            s_obj["zeroPos"] = dsoSig->get_zeroRate();
+            s_obj["trigValue"] = dsoSig->get_trig_vrate();
+            s_obj["zeroPos"] = dsoSig->get_zero_vrate();
         }
         channelVar.append(s_obj);
     }

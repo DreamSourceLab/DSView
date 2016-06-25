@@ -224,6 +224,7 @@ struct DSL_context {
     uint8_t trigger_hrate;
     uint32_t trigger_hpos;
     uint32_t trigger_holdoff;
+    uint8_t trigger_margin;
     gboolean zero;
     gboolean cali;
     int zero_stage;
@@ -231,6 +232,7 @@ struct DSL_context {
     int zero_comb;
     gboolean stream;
     gboolean data_lock;
+    uint8_t dso_bits;
 
 	int num_samples;
     uint64_t sent_samples;

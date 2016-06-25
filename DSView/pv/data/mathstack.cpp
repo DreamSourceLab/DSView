@@ -200,7 +200,7 @@ void MathStack::calc_fft()
         _samplerate = 1.0;
 
     // prepare _xn data
-    const double offset = dsoSig->get_zeroValue();
+    const double offset = dsoSig->get_zero_value();
     const double vscale = dsoSig->get_vDialValue() * dsoSig->get_factor() * DS_CONF_DSO_VDIVS / (1000*255.0);
     const uint16_t step = _snapshot->get_channel_num() * _sample_interval;
     const uint8_t *const samples = _snapshot->get_samples(0, _sample_num*_sample_interval-1, _index);

@@ -59,6 +59,7 @@ public:
     static const double MinorDragRateUp;
     static const double DragDamping;
     static const int SnapMinSpace = 10;
+    static const int WaitLoopTime = 400;
     enum ActionType {
         NO_ACTION,
 
@@ -122,6 +123,10 @@ private slots:
     void on_trigger_timer();
     void on_drag_timer();
     void set_receive_len(quint64 length);
+
+public slots:
+    void show_wait_trigger();
+    void unshow_wait_trigger();
 
 signals:
     void measure_updated();
@@ -188,6 +193,8 @@ private:
     uint64_t _dso_ym_index;
     int _dso_ym_start;
     int _dso_ym_end;
+
+    int _waiting_trig;
 };
 
 } // namespace view

@@ -55,11 +55,12 @@ public:
     void init();
 
 signals:
-    void set_trig_pos(quint64 trig_pos);
+    void set_trig_pos(int percent);
 
 private slots:
     void pos_changed(int pos);
     void hold_changed(int hold);
+    void margin_changed(int margin);
     void source_changed();
     void type_changed();
 
@@ -73,6 +74,8 @@ private:
     QComboBox *holdoff_comboBox;
     QSpinBox *holdoff_spinBox;
     QSlider *holdoff_slider;
+
+    QSlider *margin_slider;
 
     QSpinBox *position_spinBox;
     QSlider *position_slider;

@@ -54,6 +54,7 @@ MainFrame::MainFrame(DeviceManager &device_manager,
     _moving = false;
     _startPos = None;
     _freezing = false;
+    _minimized = false;
 
     // MainWindow
     _mainWindow = new MainWindow(device_manager, open_file_name, this);
@@ -114,6 +115,33 @@ MainFrame::MainFrame(DeviceManager &device_manager,
     readSettings();
 }
 
+void MainFrame::changeEvent(QEvent* event)
+{
+    QFrame::changeEvent(event);
+     QWindowStateChangeEvent* win_event = static_cast< QWindowStateChangeEvent* >(event);
+     if(win_event->type() == QEvent::WindowStateChange) {
+        if (win_event->oldState() & Qt::WindowMinimized) {
+             if (_minimized) {
+                 readSettings();
+                 _minimized = false;
+             }
+         }
+     }
+}
+
+
+void MainFrame::resizeEvent(QResizeEvent *event)
+{
+    QFrame::resizeEvent(event);
+    if (isMaximized()) {
+        hide_border();
+    } else {
+        show_border();
+    }
+    _titleBar->setRestoreButton(isMaximized());
+    _layout->update();
+}
+
 void MainFrame::closeEvent(QCloseEvent *event)
 {
     _mainWindow->session_save();
@@ -160,6 +188,13 @@ void MainFrame::showMaximized()
 {
     hide_border();
     QFrame::showMaximized();
+}
+
+void MainFrame::showMinimized()
+{
+    _minimized = true;
+    writeSettings();
+    QFrame::showMinimized();
 }
 
 bool MainFrame::eventFilter(QObject *object, QEvent *event)
@@ -295,14 +330,6 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
     } else if (!_draging && type == QEvent::Leave) {
         _startPos = None;
         setCursor(Qt::ArrowCursor);
-    } else if (type == QEvent::Resize) {
-        if (isMaximized()) {
-            hide_border();
-        } else {
-            show_border();
-        }
-        _titleBar->setRestoreButton(isMaximized());
-        _layout->update();
     }
 
     return QObject::eventFilter(object, event);
@@ -326,9 +353,16 @@ void MainFrame::readSettings()
     QRect deskRect = desktopWidget->availableGeometry();
 
     settings.beginGroup("MainFrame");
-    resize(settings.value("size", QSize(minWidth, minHeight)).toSize());
-    move(settings.value("pos", QPoint((deskRect.width() - minWidth)/2, (deskRect.height() - minHeight)/2)).toPoint());
+    QSize size = settings.value("size", QSize(minWidth, minHeight)).toSize();
+    QPoint pos = settings.value("pos", QPoint((deskRect.width() - minWidth)/2, (deskRect.height() - minHeight)/2)).toPoint();
     settings.endGroup();
+
+    if (size == deskRect.size()) {
+        _titleBar->showMaxRestore();
+    } else {
+        resize(size);
+        move(pos);
+    }
 }
 
 } // namespace pv

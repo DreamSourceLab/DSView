@@ -958,11 +958,28 @@ QSlider::groove:horizontal {
     border-radius: 2px;
 }
 
+QSlider::groove:horizontal:disabled {
+    border: 1px solid #3A3939;
+    height: 8px;
+    background: #282727;
+    margin: 2px 0;
+    border-radius: 2px;
+}
+
 QSlider::handle:horizontal {
     background: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1,
       stop: 0.0 silver, stop: 0.2 #a8a8a8, stop: 1 #727272);
     border: 1px solid #3A3939;
-    width: 14px;
+    width: 10px;
+    height: 14px;
+    margin: -4px 0;
+    border-radius: 2px;
+}
+
+QSlider::handle:horizontal:disabled {
+    background: #4A4949;
+    border: 1px solid #3A3939;
+    width: 10px;
     height: 14px;
     margin: -4px 0;
     border-radius: 2px;
@@ -976,15 +993,33 @@ QSlider::groove:vertical {
     border-radius: 2px;
 }
 
+QSlider::groove:vertical:disabled {
+    border: 1px solid #3A3939;
+    height: 8px;
+    background: #403F3F;
+    margin: 2px 0;
+    border-radius: 2px;
+}
+
 QSlider::handle:vertical {
     background: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0.0 silver,
       stop: 0.2 #a8a8a8, stop: 1 #727272);
     border: 1px solid #3A3939;
     width: 14px;
-    height: 14px;
+    height: 10px;
     margin: 0 -4px;
     border-radius: 2px;
 }
+
+QSlider::handle:vertical:disabled {
+    background: #4A4949;
+    border: 1px solid #3A3939;
+    width: 14px;
+    height: 10px;
+    margin: 0 -4px;
+    border-radius: 2px;
+}
+
 QToolButton#MaximizeButton {
     background-color: transparent;
     border-left: 1px solid QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1,

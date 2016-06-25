@@ -198,7 +198,7 @@ void Header::mousePressEvent(QMouseEvent *event)
 
                 // Add the Trace to the drag list
                 if (event->button() & Qt::LeftButton) {
-                    _drag_traces.push_back(make_pair(mTrace, mTrace->get_zeroPos()));
+                    _drag_traces.push_back(make_pair(mTrace, mTrace->get_zero_vpos()));
                 }
             }
             mTrace->set_old_v_offset(mTrace->get_v_offset());
@@ -315,7 +315,7 @@ void Header::mouseMoveEvent(QMouseEvent *event)
                 } else {
                     boost::shared_ptr<DsoSignal> dsoSig;
                     if (dsoSig = dynamic_pointer_cast<DsoSignal>(sig)) {
-                        dsoSig->set_zeroPos(y);
+                        dsoSig->set_zero_vpos(y);
                         dsoSig->select(false);
                         traces_moved();
                     }

@@ -161,7 +161,7 @@ public:
      */
     void set_old_v_offset(int v_offset);
 
-    virtual int get_zeroPos();
+    virtual int get_zero_vpos();
 
 	/**
 	 * Returns true if the trace is visible and enabled.
@@ -241,7 +241,7 @@ public:
 
     virtual int rows_size();
 
-    virtual QRectF get_view_rect() const;
+    virtual QRect get_view_rect() const;
 
     virtual bool mouse_double_click(int right, const QPoint pt);
 

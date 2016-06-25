@@ -217,13 +217,13 @@ QString MathTrace::format_freq(double freq, unsigned precision)
     }
 }
 
-bool MathTrace::measure(const QPointF &p)
+bool MathTrace::measure(const QPoint &p)
 {
     _hover_en = false;
     if(!_view || !enabled())
         return false;
 
-    const QRectF window = get_view_rect();
+    const QRect window = get_view_rect();
     if (!window.contains(p))
         return false;
 
@@ -291,14 +291,12 @@ void MathTrace::paint_mid(QPainter &p, int left, int right)
 
         double vdiv;
         double vfactor;
-        double voffset;
         BOOST_FOREACH(const boost::shared_ptr<Signal> s, _session.get_signals()) {
             boost::shared_ptr<DsoSignal> dsoSig;
             if (dsoSig = dynamic_pointer_cast<DsoSignal>(s)) {
                 if(dsoSig->get_index() == _math_stack->get_index()) {
                     vdiv = dsoSig->get_vDialValue();
                     vfactor = dsoSig->get_factor();
-                    voffset = dsoSig->get_zeroRate();
                     break;
                 }
             }
@@ -476,10 +474,10 @@ void MathTrace::paint_type_options(QPainter &p, int right, const QPoint pt)
     (void)right;
 }
 
-QRectF MathTrace::get_view_rect() const
+QRect MathTrace::get_view_rect() const
 {
     assert(_viewport);
-    return QRectF(0, UpMargin,
+    return QRect(0, UpMargin,
                   _viewport->width() - RightMargin,
                   _viewport->height() - UpMargin - DownMargin);
 }
