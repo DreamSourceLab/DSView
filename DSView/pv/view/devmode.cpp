@@ -107,6 +107,9 @@ void DevMode::on_mode_change()
     const boost::shared_ptr<device::DevInst> dev_inst = _session.get_device();
     assert(dev_inst);
     QPushButton *button = qobject_cast<QPushButton *>(sender());
+    button->setChecked(true);
+    if (dev_inst->dev_inst()->mode == _mode_button_list[button]->mode)
+        return;
 
     for(std::map<QPushButton *, sr_dev_mode *>::const_iterator i = _mode_button_list.begin();
         i != _mode_button_list.end(); i++) {

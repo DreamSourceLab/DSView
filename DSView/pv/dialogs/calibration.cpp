@@ -98,8 +98,8 @@ void Calibration::set_device(boost::shared_ptr<device::DevInst> dev_inst)
         sr_channel *const probe = (sr_channel*)l->data;
         assert(probe);
 
-        uint64_t vgain, vgain_default;
-        uint16_t vgain_range;
+        uint64_t vgain = 0, vgain_default = 0;
+        uint16_t vgain_range = 0;
         GVariant* gvar = _dev_inst->get_config(probe, NULL, SR_CONF_VGAIN);
         if (gvar != NULL) {
             vgain = g_variant_get_uint64(gvar);
@@ -126,16 +126,11 @@ void Calibration::set_device(boost::shared_ptr<device::DevInst> dev_inst)
         _slider_list.push_back(gain_slider);
         _label_list.push_back(gain_label);
 
-        uint64_t voff, voff_default;
-        uint16_t voff_range;
+        uint64_t voff = 0;
+        uint16_t voff_range = 0;
         gvar = _dev_inst->get_config(probe, NULL, SR_CONF_VOFF);
         if (gvar != NULL) {
             voff = g_variant_get_uint16(gvar);
-            g_variant_unref(gvar);
-        }
-        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_VOFF_DEFAULT);
-        if (gvar != NULL) {
-            voff_default = g_variant_get_uint16(gvar);
             g_variant_unref(gvar);
         }
         gvar = _dev_inst->get_config(probe, NULL, SR_CONF_VOFF_RANGE);
@@ -204,10 +199,10 @@ void Calibration::on_save()
     this->hide();
     QFuture<void> future;
     future = QtConcurrent::run([&]{
-        QTime dieTime = QTime::currentTime().addSecs(1);
+        //QTime dieTime = QTime::currentTime().addSecs(1);
         _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO_SET,
                               g_variant_new_boolean(true));
-        while( QTime::currentTime() < dieTime );
+        //while( QTime::currentTime() < dieTime );
     });
     Qt::WindowFlags flags = Qt::CustomizeWindowHint;
     QProgressDialog dlg(tr("Save Calibration Result... It can take a while."),
@@ -229,11 +224,11 @@ void Calibration::on_reset()
     this->hide();
     QFuture<void> future;
     future = QtConcurrent::run([&]{
-        QTime dieTime = QTime::currentTime().addSecs(1);
+        //QTime dieTime = QTime::currentTime().addSecs(1);
         _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO_LOAD,
                               g_variant_new_boolean(true));
         reload_value();
-        while( QTime::currentTime() < dieTime );
+        //while( QTime::currentTime() < dieTime );
     });
     Qt::WindowFlags flags = Qt::CustomizeWindowHint;
     QProgressDialog dlg(tr("Reset Calibration Result... It can take a while."),
@@ -256,8 +251,8 @@ void Calibration::reload_value()
         sr_channel *const probe = (sr_channel*)l->data;
         assert(probe);
 
-        uint64_t vgain, vgain_default;
-        uint16_t vgain_range;
+        uint64_t vgain = 0, vgain_default = 0;
+        uint16_t vgain_range = 0;
         GVariant* gvar = _dev_inst->get_config(probe, NULL, SR_CONF_VGAIN);
         if (gvar != NULL) {
             vgain = g_variant_get_uint64(gvar);
@@ -274,8 +269,8 @@ void Calibration::reload_value()
             g_variant_unref(gvar);
         }
 
-        uint64_t voff;
-        uint16_t voff_range;
+        uint64_t voff = 0;
+        uint16_t voff_range = 0;
         gvar = _dev_inst->get_config(probe, NULL, SR_CONF_VOFF);
         if (gvar != NULL) {
             voff = g_variant_get_uint16(gvar);

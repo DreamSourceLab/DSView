@@ -39,10 +39,10 @@ namespace pv {
 namespace toolbars {
 
 TitleBar::TitleBar(bool top, QWidget *parent, bool hasClose) :
+    QWidget(parent),
     _moving(false),
     _isTop(top),
-    _hasClose(hasClose),
-    QWidget(parent)
+    _hasClose(hasClose)
 {
     setObjectName("TitleBar");
     setFixedHeight(28);

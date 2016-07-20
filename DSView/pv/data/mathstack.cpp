@@ -205,7 +205,7 @@ void MathStack::calc_fft()
     const uint16_t step = _snapshot->get_channel_num() * _sample_interval;
     const uint8_t *const samples = _snapshot->get_samples(0, _sample_num*_sample_interval-1, _index);
     double wsum = 0;
-    for (int i = 0; i < _sample_num; i++) {
+    for (unsigned int i = 0; i < _sample_num; i++) {
         double w = window(i, _windows_index);
         _xn[i] = ((double)samples[i*step] - offset) * vscale * w;
         wsum += w;
@@ -216,7 +216,7 @@ void MathStack::calc_fft()
 
     // calculate power spectrum
     _power_spectrum[0] = abs(_xk[0])/wsum;  /* DC component */
-    for (int k = 1; k < (_sample_num + 1) / 2; ++k)  /* (k < N/2 rounded up) */
+    for (unsigned int k = 1; k < (_sample_num + 1) / 2; ++k)  /* (k < N/2 rounded up) */
          _power_spectrum[k] = sqrt((_xk[k]*_xk[k] + _xk[_sample_num-k]*_xk[_sample_num-k]) * 2) / wsum;
     if (_sample_num % 2 == 0) /* N is even */
          _power_spectrum[_sample_num/2] = abs(_xk[_sample_num/2])/wsum;  /* Nyquist freq. */

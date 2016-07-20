@@ -32,9 +32,9 @@
 #include <QObject>
 #include <QString>
 
-#include <../data/decode/row.h>
-#include <../data/decode/rowdata.h>
-#include <../data/signaldata.h>
+#include "../data/decode/row.h"
+#include "../data/decode/rowdata.h"
+#include "../data/signaldata.h"
 
 namespace DecoderStackTest {
 class TwoDecoderStack;

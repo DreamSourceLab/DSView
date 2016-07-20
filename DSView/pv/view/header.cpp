@@ -257,7 +257,7 @@ void Header::wheelEvent(QWheelEvent *event)
         const vector< boost::shared_ptr<Trace> > traces(
             _view.get_traces(ALL_VIEW));
         // Vertical scrolling
-        double shift = event->delta() / 20.0;
+        double shift = event->delta() / 80.0;
         BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
             if (t->mouse_wheel(width(), event->pos(), shift))
                 break;

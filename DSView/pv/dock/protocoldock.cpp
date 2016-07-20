@@ -414,7 +414,7 @@ void ProtocolDock::decoded_progress(int progress)
 {
     (void) progress;
 
-    int pg;
+    int pg = 0;
     QString err="";
     const std::vector< boost::shared_ptr<pv::view::DecodeTrace> > decode_sigs(
         _session.get_decode_signals());
@@ -454,7 +454,7 @@ void ProtocolDock::update_model()
     else if (!decoder_model->getDecoderStack())
         decoder_model->setDecoderStack(decode_sigs.at(0)->decoder());
     else {
-        int index = 0;
+        unsigned int index = 0;
         BOOST_FOREACH(const boost::shared_ptr<pv::view::DecodeTrace> d, decode_sigs) {
             if (d->decoder() == decoder_model->getDecoderStack()) {
                 decoder_model->setDecoderStack(d->decoder());
@@ -570,7 +570,7 @@ void ProtocolDock::search_pre()
         _cur_search_index = -1;
         return;
     }
-    int i;
+    int i = 0;
     uint64_t rowCount = _model_proxy.rowCount();
     QModelIndex matchingIndex;
     pv::data::DecoderModel *decoder_model = _session.get_decoder_model();
@@ -626,7 +626,7 @@ void ProtocolDock::search_nxt()
         _cur_search_index = -1;
         return;
     }
-    int i;
+    int i = 0;
     uint64_t rowCount = _model_proxy.rowCount();
     QModelIndex matchingIndex;
     pv::data::DecoderModel *decoder_model = _session.get_decoder_model();

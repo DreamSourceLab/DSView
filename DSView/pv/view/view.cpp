@@ -81,7 +81,8 @@ View::View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     _preOffset(0),
 	_updating_scroll(false),
 	_show_cursors(false),
-    _hover_point(-1, -1)
+    _hover_point(-1, -1),
+    _dso_auto(true)
 {
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
 
@@ -165,8 +166,6 @@ View::View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     connect(&_session, SIGNAL(show_wait_trigger()),
             _time_viewport, SLOT(show_wait_trigger()));
 
-//    connect(_devmode, SIGNAL(mode_changed()),
-//            this, SIGNAL(mode_changed()));
     connect(_devmode, SIGNAL(mode_changed()),
             parent, SLOT(update_device_list()), Qt::DirectConnection);
 
@@ -629,7 +628,7 @@ void View::signals_changed()
 
         // Find the decoder in the stack
         std::list< Viewport *>::iterator iter = _viewport_list.begin();
-        for(int i = 0; i < _viewport_list.size(); i++, iter++)
+        for(unsigned int i = 0; i < _viewport_list.size(); i++, iter++)
             if ((*iter) == _fft_viewport)
                 break;
         // Delete the element
@@ -803,6 +802,7 @@ void View::h_scroll_value_changed(int value)
 
 void View::v_scroll_value_changed(int value)
 {
+    (void)value;
 	_header->update();
     viewport_update();
 }

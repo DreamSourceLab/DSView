@@ -305,3 +305,22 @@ SR_PRIV int command_rd_nvm(libusb_device_handle *devhdl, unsigned char *ctx, uin
 
     return SR_OK;
 }
+
+SR_PRIV int command_get_fpga_done(libusb_device_handle *devhdl,
+                   uint8_t *fpga_done)
+{
+    int ret;
+
+    ret = libusb_control_transfer(devhdl, LIBUSB_REQUEST_TYPE_VENDOR |
+        LIBUSB_ENDPOINT_IN, CMD_FPGA_DONE, 0x0000, 0x0000,
+        fpga_done, 1, 3000);
+
+    if (ret < 0) {
+        sr_err("Unable to get fpga done info: %s.",
+               libusb_error_name(ret));
+        return SR_ERR;
+    }
+
+    return SR_OK;
+}
+

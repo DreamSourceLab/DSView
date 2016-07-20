@@ -90,6 +90,7 @@ private:
     QPushButton _pre_button;
     QPushButton _nxt_button;
     widgets::FakeLineEdit* _search_value;
+    QPushButton *_search_button;
 };
 
 } // namespace dock

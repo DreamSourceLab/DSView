@@ -24,6 +24,10 @@
 #include "../sigsession.h"
 #include "../device/devinst.h"
 #include "../dialogs/dsmessagebox.h"
+#include "../view/dsosignal.h"
+
+#include <boost/shared_ptr.hpp>
+#include <boost/foreach.hpp>
 
 #include <QObject>
 #include <QLabel>
@@ -36,6 +40,9 @@
 #include <QHBoxLayout>
 
 #include "libsigrok4DSL/libsigrok.h"
+
+using namespace boost;
+using namespace std;
 
 namespace pv {
 namespace dock {
@@ -61,6 +68,7 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession &session) :
     holdoff_comboBox->addItem(tr("uS"), qVariantFromValue(1000));
     holdoff_comboBox->addItem(tr("mS"), qVariantFromValue(1000000));
     holdoff_comboBox->addItem(tr("S"), qVariantFromValue(1000000000));
+    holdoff_comboBox->setCurrentIndex(0);
     holdoff_spinBox = new QSpinBox(_widget);
     holdoff_spinBox->setRange(0, 999);
     holdoff_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
@@ -98,6 +106,7 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession &session) :
     connect(falling_radioButton, SIGNAL(clicked()), this, SLOT(type_changed()));
 
     source_group=new QButtonGroup(_widget);
+    channel_comboBox = new QComboBox(_widget);
     type_group=new QButtonGroup(_widget);
 
     source_group->addButton(auto_radioButton);
@@ -126,6 +135,7 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession &session) :
     gLayout->addWidget(new QLabel(_widget), 2, 0);
     gLayout->addWidget(tSource_labe, 3, 0);
     gLayout->addWidget(auto_radioButton, 4, 0);
+    gLayout->addWidget(channel_comboBox, 4, 1, 1, 3);
     gLayout->addWidget(ch0_radioButton, 5, 0);
     gLayout->addWidget(ch1_radioButton, 5, 1, 1, 3);
     gLayout->addWidget(ch0a1_radioButton, 6, 0);
@@ -245,6 +255,24 @@ void DsoTriggerDock::source_changed()
     }
 }
 
+void DsoTriggerDock::channel_changed(int ch)
+{
+    (void)ch;
+    int ret;
+
+    ret = _session.get_device()->set_config(NULL, NULL,
+                                            SR_CONF_TRIGGER_CHANNEL,
+                                            g_variant_new_byte(channel_comboBox->currentData().toInt()));
+    if (!ret) {
+        dialogs::DSMessageBox msg(this);
+        msg.mBox()->setText(tr("Trigger Setting Issue"));
+        msg.mBox()->setInformativeText(tr("Change trigger channel failed!"));
+        msg.mBox()->setStandardButtons(QMessageBox::Ok);
+        msg.mBox()->setIcon(QMessageBox::Warning);
+        msg.exec();
+    }
+}
+
 void DsoTriggerDock::type_changed()
 {
     int id = type_group->checkedId();
@@ -285,6 +313,7 @@ void DsoTriggerDock::init()
         holdoff_spinBox->setDisabled(true);
         holdoff_comboBox->setDisabled(true);
         margin_slider->setDisabled(true);
+        channel_comboBox->setDisabled(true);
         return;
     } else {
         foreach(QAbstractButton * btn, source_group->buttons())
@@ -295,6 +324,7 @@ void DsoTriggerDock::init()
         holdoff_spinBox->setDisabled(false);
         holdoff_comboBox->setDisabled(false);
         margin_slider->setDisabled(false);
+        channel_comboBox->setDisabled(false);
     }
 
     // TRIGGERPOS
@@ -314,6 +344,29 @@ void DsoTriggerDock::init()
         source_group->button(src)->setChecked(true);
     }
 
+    // setup channel_comboBox
+    disconnect(channel_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(channel_changed(int)));
+    channel_comboBox->clear();
+    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
+        boost::shared_ptr<view::DsoSignal> dsoSig;
+        if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
+            channel_comboBox->addItem(dsoSig->get_name(), qVariantFromValue(dsoSig->get_index()));
+        }
+    }
+    gvar = _session.get_device()->get_config(NULL, NULL,
+                                                SR_CONF_TRIGGER_CHANNEL);
+    if (gvar != NULL) {
+        uint8_t src = g_variant_get_byte(gvar);
+        g_variant_unref(gvar);
+        for (int i = 0; i < channel_comboBox->count(); i++) {
+            if (src == channel_comboBox->itemData(i).toInt()) {
+                channel_comboBox->setCurrentIndex(i);
+                break;
+            }
+        }
+    }
+    connect(channel_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(channel_changed(int)));
+
     gvar = _session.get_device()->get_config(NULL, NULL,
                                                 SR_CONF_TRIGGER_SLOPE);
     if (gvar != NULL) {
@@ -321,6 +374,39 @@ void DsoTriggerDock::init()
         g_variant_unref(gvar);
         type_group->button(slope)->setChecked(true);
     }
+
+    disconnect(holdoff_slider, SIGNAL(valueChanged(int)), this, SLOT(hold_changed(int)));
+    disconnect(holdoff_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(hold_changed(int)));
+    gvar = _session.get_device()->get_config(NULL, NULL,
+                                                SR_CONF_TRIGGER_HOLDOFF);
+    if (gvar != NULL) {
+        uint64_t holdoff = g_variant_get_uint64(gvar);
+        g_variant_unref(gvar);
+        for (int i = holdoff_comboBox->count()-1; i >= 0; i--) {
+            if (holdoff >= holdoff_comboBox->itemData(i).toDouble()) {
+                holdoff_comboBox->setCurrentIndex(i);
+                break;
+            }
+        }
+        if (holdoff_comboBox->currentData().toDouble() == 1000000000) {
+            holdoff_slider->setRange(0, 10);
+        } else {
+            holdoff_slider->setRange(0, 999);
+        }
+        holdoff_spinBox->setValue(holdoff * 10.0/holdoff_comboBox->currentData().toDouble());
+    }
+    connect(holdoff_slider, SIGNAL(valueChanged(int)), this, SLOT(hold_changed(int)));
+    connect(holdoff_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(hold_changed(int)));
+
+    disconnect(margin_slider, SIGNAL(valueChanged(int)), this, SLOT(margin_changed(int)));
+    gvar = _session.get_device()->get_config(NULL, NULL,
+                                                SR_CONF_TRIGGER_MARGIN);
+    if (gvar != NULL) {
+        uint8_t margin = g_variant_get_byte(gvar);
+        g_variant_unref(gvar);
+        margin_slider->setValue(margin);
+    }
+    connect(margin_slider, SIGNAL(valueChanged(int)), this, SLOT(margin_changed(int)));
 }
 
 } // namespace dock

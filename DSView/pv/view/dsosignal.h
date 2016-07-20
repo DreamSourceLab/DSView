@@ -63,20 +63,10 @@ private:
 
     static const uint8_t DefaultBits = 8;
     static const int TrigMargin = 16;
+    static const int RefreshShort = 200;
+    static const int RefreshLong = 800;
 
 public:
-    enum DSO_MEASURE_TYPE {
-        DSO_MS_BEGIN = 0,
-        DSO_MS_FREQ,
-        DSO_MS_PERD,
-        DSO_MS_VMAX,
-        DSO_MS_VMIN,
-        DSO_MS_VRMS,
-        DSO_MS_VMEA,
-        DSO_MS_VP2P,
-        DSO_MS_END,
-    };
-
     enum DsoSetRegions {
         DSO_NONE = -1,
         DSO_VDIAL,

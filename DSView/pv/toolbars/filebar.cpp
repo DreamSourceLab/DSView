@@ -119,6 +119,9 @@ FileBar::FileBar(SigSession &session, QWidget *parent) :
     _menu->addAction(_action_capture);
     _file_button.setMenu(_menu);
     addWidget(&_file_button);
+
+    _screenshot_timer.setSingleShot(true);
+    connect(&_screenshot_timer, SIGNAL(timeout()), this, SIGNAL(on_screenShot()));
 }
 
 void FileBar::on_actionOpen_triggered()
@@ -277,7 +280,9 @@ void FileBar::on_actionStore_triggered()
 
 void FileBar::on_actionCapture_triggered()
 {
-    on_screenShot();
+    _file_button.close();
+    QCoreApplication::sendPostedEvents();
+    _screenshot_timer.start(100);
 }
 
 void FileBar::enable_toggle(bool enable)

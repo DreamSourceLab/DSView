@@ -105,7 +105,7 @@ SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
     connect(&_configure_button, SIGNAL(clicked()),
         this, SLOT(on_configure()));
 	connect(&_run_stop_button, SIGNAL(clicked()),
-		this, SLOT(on_run_stop()));
+        this, SLOT(on_run_stop()), Qt::DirectConnection);
     connect(&_instant_button, SIGNAL(clicked()),
         this, SLOT(on_instant_stop()));
 
@@ -268,7 +268,13 @@ void SamplingBar::zero_adj()
     run_stop();
 
     pv::dialogs::WaitingDialog wait(this, get_selected_device());
-    wait.start();
+    if (wait.start() ==QDialog::Rejected) {
+        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals())
+        {
+            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))
+                dsoSig->commit_settings();
+        }
+    }
 
     if (_session.get_capture_state() == pv::SigSession::Running)
         run_stop();
@@ -327,15 +333,13 @@ void SamplingBar::set_sampling(bool sampling)
     }
 
     if (!sampling) {
-        g_usleep(100000);
-        _run_stop_button.setEnabled(true);
-        _instant_button.setEnabled(true);
+        enable_run_stop(true);
+        enable_instant(true);
     } else {
-        g_usleep(100000);
         if (_instant)
-            _instant_button.setEnabled(true);
+            enable_instant(true);
         else
-            _run_stop_button.setEnabled(true);
+            enable_run_stop(true);
     }
 
     _configure_button.setEnabled(!sampling);
@@ -452,7 +456,6 @@ void SamplingBar::update_sample_rate_selector_value()
 void SamplingBar::commit_sample_rate()
 {
 	uint64_t sample_rate = 0;
-    uint64_t last_sample_rate = 0;
 
     if (_updating_sample_rate)
         return;
@@ -468,15 +471,9 @@ void SamplingBar::commit_sample_rate()
 	if (sample_rate == 0)
 		return;
 
-    // Get last samplerate
-    last_sample_rate = get_selected_device()->get_sample_rate();
-
-    //if (last_sample_rate != sample_rate) {
-        // Set the samplerate
-        get_selected_device()->set_config(NULL, NULL,
-                                          SR_CONF_SAMPLERATE,
-                                          g_variant_new_uint64(sample_rate));
-    //}
+    get_selected_device()->set_config(NULL, NULL,
+                                      SR_CONF_SAMPLERATE,
+                                      g_variant_new_uint64(sample_rate));
 
     _updating_sample_rate = false;
 }

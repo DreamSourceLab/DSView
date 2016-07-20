@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
             // Initialise the main frame
             pv::MainFrame w(device_manager, open_file);
             //QFile qss(":/stylesheet.qss");
-            QFile qss(":qdarkstyle/style.qss");
+            QFile qss(":darkstyle/style.qss");
             qss.open(QFile::ReadOnly);
             a.setStyleSheet(qss.readAll());
             qss.close();

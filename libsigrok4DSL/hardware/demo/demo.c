@@ -100,6 +100,7 @@ struct dev_context {
 	GIOChannel *channel;
 	uint64_t cur_samplerate;
 	uint64_t limit_samples;
+    uint64_t limit_samples_show;
 	uint64_t limit_msec;
 	uint8_t sample_generator;
 	uint64_t samples_counter;
@@ -285,6 +286,18 @@ static const char *probe_names[NUM_PROBES + 1] = {
 
 };
 
+static const gboolean default_ms_en[DSO_MS_END - DSO_MS_BEGIN] = {
+    FALSE, /* DSO_MS_BEGIN */
+    TRUE,  /* DSO_MS_FREQ */
+    FALSE, /* DSO_MS_PERD */
+    TRUE,  /* DSO_MS_VMAX */
+    TRUE,  /* DSO_MS_VMIN */
+    FALSE, /* DSO_MS_VRMS */
+    FALSE, /* DSO_MS_VMEA */
+    FALSE, /* DSO_MS_VP2P */
+    FALSE, /* DSO_MS_END */
+};
+
 /* Private, per-device-instance driver context. */
 /* TODO: struct context as with the other drivers. */
 
@@ -341,6 +354,7 @@ static GSList *hw_scan(GSList *options)
 	devc->sdi = sdi;
     devc->cur_samplerate = SR_MHZ(1);
     devc->limit_samples = SR_MB(1);
+    devc->limit_samples_show = devc->limit_samples;
 	devc->limit_msec = 0;
     devc->sample_generator = PATTERN_SINE;
     devc->timebase = 200;
@@ -457,6 +471,20 @@ static int hw_cleanup(void)
 	return ret;
 }
 
+static int en_ch_num(const struct sr_dev_inst *sdi)
+{
+    GSList *l;
+    int channel_en_cnt = 0;
+
+    for (l = sdi->channels; l; l = l->next) {
+        struct sr_channel *probe = (struct sr_channel *)l->data;
+        channel_en_cnt += probe->enabled;
+    }
+    channel_en_cnt += (channel_en_cnt == 0);
+
+    return channel_en_cnt;
+}
+
 static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
                       const struct sr_channel *ch,
                       const struct sr_channel_group *cg)
@@ -470,7 +498,7 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
 		*data = g_variant_new_uint64(devc->cur_samplerate);
 		break;
 	case SR_CONF_LIMIT_SAMPLES:
-		*data = g_variant_new_uint64(devc->limit_samples);
+        *data = g_variant_new_uint64(devc->limit_samples_show);
 		break;
 	case SR_CONF_LIMIT_MSEC:
 		*data = g_variant_new_uint64(devc->limit_msec);
@@ -546,7 +574,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                       struct sr_channel *ch,
                       const struct sr_channel_group *cg)
 {
-    uint16_t i;
+    uint16_t i, j;
     int ret;
 	const char *stropt;
     struct sr_channel *probe;
@@ -567,14 +595,19 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 		       devc->cur_samplerate);
 		ret = SR_OK;
 	} else if (id == SR_CONF_LIMIT_SAMPLES) {
-		devc->limit_msec = 0;
-		devc->limit_samples = g_variant_get_uint64(data);
+        devc->limit_msec = 0;
+        devc->limit_samples = g_variant_get_uint64(data);
+        devc->limit_samples_show = devc->limit_samples;
+        if (sdi->mode == DSO && en_ch_num(sdi) == 1) {
+            devc->limit_samples /= 2;
+        }
 		sr_dbg("%s: setting limit_samples to %" PRIu64, __func__,
 		       devc->limit_samples);
 		ret = SR_OK;
 	} else if (id == SR_CONF_LIMIT_MSEC) {
 		devc->limit_msec = g_variant_get_uint64(data);
 		devc->limit_samples = 0;
+        devc->limit_samples_show = devc->limit_samples;
 		sr_dbg("%s: setting limit_msec to %" PRIu64, __func__,
 		       devc->limit_msec);
         ret = SR_OK;
@@ -590,6 +623,9 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 else
                     sdi->channels = g_slist_append(sdi->channels, probe);
             }
+            devc->cur_samplerate = SR_MHZ(1);
+            devc->limit_samples = SR_MB(1);
+            devc->limit_samples_show = devc->limit_samples;
         } else if (sdi->mode == DSO) {
             sr_dev_probes_free(sdi);
             for (i = 0; i < DEMO_MAX_DSO_PROBES_NUM; i++) {
@@ -603,10 +639,14 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                     probe->trig_value = 0x80;
                     probe->vpos = (probe->index == 0 ? 0.5 : -0.5)*probe->vdiv;
                     sdi->channels = g_slist_append(sdi->channels, probe);
+                    probe->ms_show = TRUE;
+                    for (j = DSO_MS_BEGIN; j < DSO_MS_END; j++)
+                        probe->ms_en[j] = default_ms_en[j];
                 }
             }
             devc->cur_samplerate = DEMO_MAX_DSO_SAMPLERATE / DEMO_MAX_DSO_PROBES_NUM;
             devc->limit_samples = DEMO_MAX_DSO_DEPTH / DEMO_MAX_DSO_PROBES_NUM;
+            devc->limit_samples_show = devc->limit_samples;
         } else if (sdi->mode == ANALOG) {
             sr_dev_probes_free(sdi);
             for (i = 0; i < DS_MAX_ANALOG_PROBES_NUM; i++) {
@@ -618,6 +658,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             }
             devc->cur_samplerate = SR_HZ(100);
             devc->limit_samples = SR_KB(1);
+            devc->limit_samples_show = devc->limit_samples;
         } else {
             ret = SR_ERR;
         }
@@ -980,6 +1021,8 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
                     dso.num_samples = sending_now;
                 else
                     dso.num_samples = devc->samples_counter;
+                if (en_ch_num(sdi) == 1)
+                    dso.num_samples *= 2;
                 dso.mq = SR_MQ_VOLTAGE;
                 dso.unit = SR_UNIT_VOLT;
                 dso.mqflags = SR_MQFLAG_AC;
@@ -997,8 +1040,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
 
             if (sdi->mode == DSO && !devc->instant) {
                 devc->pre_index += sending_now;
-                if (sdi->mode == DSO && !devc->instant &&
-                    devc->pre_index >= devc->limit_samples)
+                if (devc->pre_index >= devc->limit_samples)
                     devc->pre_index = 0;
             }
 
@@ -1012,7 +1054,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
         }
 	}
 
-    if ((sdi->mode == LOGIC || devc->instant) && devc->limit_samples &&
+    if ((sdi->mode != DSO || devc->instant) && devc->limit_samples &&
         devc->samples_counter >= devc->limit_samples) {
         sr_info("Requested number of samples reached.");
         hw_dev_acquisition_stop(sdi, NULL);

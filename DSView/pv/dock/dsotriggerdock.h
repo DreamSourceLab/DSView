@@ -63,6 +63,7 @@ private slots:
     void margin_changed(int margin);
     void source_changed();
     void type_changed();
+    void channel_changed(int ch);
 
 private:
 
@@ -81,6 +82,7 @@ private:
     QSlider *position_slider;
 
     QButtonGroup *source_group;
+    QComboBox *channel_comboBox;
     QButtonGroup *type_group;
 };
 

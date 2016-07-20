@@ -166,7 +166,7 @@ void DsoSnapshot::enable_envelope(bool enable)
 const uint8_t *DsoSnapshot::get_samples(
     int64_t start_sample, int64_t end_sample, uint16_t index) const
 {
-        (void)end_sample;
+    (void)end_sample;
 
 	assert(start_sample >= 0);
     assert(start_sample < (int64_t)get_sample_count());
@@ -202,9 +202,9 @@ void DsoSnapshot::get_envelope_section(EnvelopeSection &s,
 
 	s.start = start << scale_power;
 	s.scale = 1 << scale_power;
-    //if (_envelope_levels[probe_index][min_level].length < get_sample_count() / EnvelopeScaleFactor)
-    //    s.length = 0;
-    //else
+    if (_envelope_levels[probe_index][min_level].length == 0)
+        s.length = 0;
+    else
         s.length = end - start;
 //	s.samples = new EnvelopeSample[s.length];
 //	memcpy(s.samples, _envelope_levels[min_level].samples + start,

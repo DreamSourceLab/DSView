@@ -121,6 +121,11 @@
 #define CALI_VGAIN_RANGE 100
 #define CALI_VOFF_RANGE (1024-DSCOPE20_DEFAULT_TRANS)
 
+#define DSO_AUTOTRIG_THRESHOLD 16
+
+#define TRIG_CHECKID 0xa500005a
+#define DSO_PKTID 0xa500
+
 struct DSL_profile {
     uint16_t vid;
     uint16_t pid;
@@ -175,6 +180,17 @@ static const struct DSL_profile supported_DSCope[3] = {
     { 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 };
 
+static const gboolean default_ms_en[DSO_MS_END - DSO_MS_BEGIN] = {
+    FALSE, /* DSO_MS_BEGIN */
+    TRUE,  /* DSO_MS_FREQ */
+    FALSE, /* DSO_MS_PERD */
+    TRUE,  /* DSO_MS_VMAX */
+    TRUE,  /* DSO_MS_VMIN */
+    FALSE, /* DSO_MS_VRMS */
+    FALSE, /* DSO_MS_VMEA */
+    FALSE, /* DSO_MS_VP2P */
+    FALSE, /* DSO_MS_END */
+};
 
 enum {
     DSL_ERROR = -1,
@@ -184,6 +200,7 @@ enum {
     DSL_TRIGGERED = 3,
     DSL_DATA = 4,
     DSL_STOP = 5,
+    DSL_FINISH = 6,
 };
 
 struct DSL_context {
@@ -210,6 +227,7 @@ struct DSL_context {
     uint16_t op_mode;
     uint16_t ch_mode;
     uint16_t samplerates_size;
+    uint16_t samplecounts_size;
     uint16_t th_level;
     double vth;
     uint16_t filter;
@@ -219,6 +237,7 @@ struct DSL_context {
 	uint16_t trigger_buffer[NUM_TRIGGER_STAGES];
     uint64_t timebase;
     uint8_t max_height;
+    uint8_t trigger_channel;
     uint8_t trigger_slope;
     uint8_t trigger_source;
     uint8_t trigger_hrate;
@@ -235,7 +254,6 @@ struct DSL_context {
     uint8_t dso_bits;
 
 	int num_samples;
-    uint64_t sent_samples;
 	int submitted_transfers;
 	int empty_transfer_count;
 
@@ -249,6 +267,7 @@ struct DSL_context {
 
     int status;
     gboolean mstatus_valid;
+    gboolean abort;
 };
 
 struct DSL_setting {

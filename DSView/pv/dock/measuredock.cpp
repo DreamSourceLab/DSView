@@ -206,9 +206,9 @@ void MeasureDock::cursor_update()
 
         index++;
     }
-    _t1_comboBox->setMinimumWidth(_t1_comboBox->sizeHint().width()+15);
-    _t2_comboBox->setMinimumWidth(_t2_comboBox->sizeHint().width()+15);
-    _t3_comboBox->setMinimumWidth(_t3_comboBox->sizeHint().width()+15);
+    _t1_comboBox->setMinimumWidth(_t1_comboBox->sizeHint().width()+30);
+    _t2_comboBox->setMinimumWidth(_t2_comboBox->sizeHint().width()+30);
+    _t3_comboBox->setMinimumWidth(_t3_comboBox->sizeHint().width()+30);
 
     if (_t1_last_index < _t1_comboBox->count())
         _t1_comboBox->setCurrentIndex(_t1_last_index);

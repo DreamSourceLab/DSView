@@ -91,10 +91,10 @@ void WaitingDialog::accept()
 
     QFuture<void> future;
     future = QtConcurrent::run([&]{
-        QTime dieTime = QTime::currentTime().addSecs(1);
+        //QTime dieTime = QTime::currentTime().addSecs(1);
         _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO_SET,
                               g_variant_new_boolean(true));
-        while( QTime::currentTime() < dieTime );
+        //while( QTime::currentTime() < dieTime );
     });
     Qt::WindowFlags flags = Qt::CustomizeWindowHint;
     QProgressDialog dlg(tr("Save Auto Zero Result... It can take a while."),
@@ -120,11 +120,11 @@ void WaitingDialog::reject()
 
     QFuture<void> future;
     future = QtConcurrent::run([&]{
-        QTime dieTime = QTime::currentTime().addSecs(1);
+        //QTime dieTime = QTime::currentTime().addSecs(1);
         _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO, g_variant_new_boolean(false));
         _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO_LOAD,
                               g_variant_new_boolean(true));
-        while( QTime::currentTime() < dieTime );
+        //while( QTime::currentTime() < dieTime );
     });
     Qt::WindowFlags flags = Qt::CustomizeWindowHint;
     QProgressDialog dlg(tr("Load Current Setting... It can take a while."),
@@ -149,11 +149,11 @@ void WaitingDialog::stop()
     QDialog::reject();
 }
 
-void WaitingDialog::start()
+int WaitingDialog::start()
 {
     movie->start();
     timer->start(300);
-    this->exec();
+    return this->exec();
 }
 
 void WaitingDialog::changeText()

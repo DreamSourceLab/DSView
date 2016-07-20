@@ -1,0 +1,200 @@
+-------------------------------------------------------------------------------
+HACKING
+-------------------------------------------------------------------------------
+
+Coding style
+------------
+
+This project is programmed using the Linux kernel coding style, see
+http://lxr.linux.no/linux/Documentation/CodingStyle for details.
+
+Please use the same style for any code contributions, thanks!
+
+The Python decoders should follow the usual Python conventions and use
+Python idioms as far as it makes sense. The coding style should mostly follow
+the Python PEP-8, which includes the convention of 4 spaces for indentation.
+See http://www.python.org/dev/peps/pep-0008/ for details.
+
+
+Contributions
+-------------
+
+ - Patches should be sent to the development mailinglist at
+   sigrok-devel@lists.sourceforge.net (please subscribe to the list first).
+
+   https://lists.sourceforge.net/lists/listinfo/sigrok-devel
+
+ - Alternatively, you can also clone the git repository and let us know
+   from where to pull/review your changes. You can use gitorious.org,
+   github.com, or any other public git hosting site.
+
+
+Random notes
+------------
+
+ - Don't do variable declarations in compound statements, only at the
+   beginning of a function.
+
+ - Generally avoid assigning values to variables at declaration time,
+   especially so for complex and/or run-time dependent values.
+
+ - Consistently use g_*malloc() / g_*malloc0(). Do not use standard
+   malloc()/calloc() if it can be avoided (sometimes other libs such
+   as libftdi can return malloc()'d memory, for example).
+
+ - Always properly match allocations with the proper *free() functions. If
+   glib's g_*malloc()/g_*malloc0() was used, use g_free() to free the
+   memory. Otherwise use standard free(). Never use the wrong function!
+
+ - We assume that "small" memory allocations (< 1MB) will always succeed.
+   Thus, it's fine to use g_malloc() or g_malloc0() for allocations of
+   simple/small structs and such (instead of using g_try_malloc()), and
+   there's no need to check the return value.
+
+   Do use g_try_malloc() or g_try_malloc0() for large (>= 1MB) allocations
+   and check the return value.
+
+ - You should never print any messages (neither to stdout nor stderr nor
+   elsewhere) "manually" via e.g. printf() or g_log() or similar functions.
+   Only srd_err()/srd_warn()/srd_info()/srd_dbg()/srd_spew() should be used.
+
+ - Use glib's gboolean / TRUE / FALSE for boolean types consistently.
+   Do not use <stdbool.h> and its true / false, and do not invent private
+   definitions for this either.
+
+ - Consistently use the same naming convention for #include guards in headers:
+   <PROJECTNAME>_<PATH_TO_FILE>_<FILE>
+   This ensures that all #include guards are always unique and consistent.
+   Example: LIBSIGROKDECODE_LIBSIGROKDECODE_INTERNAL_H
+
+ - Consistently use the same naming convention for API functions:
+   <libprefix>_<groupname>_<action>().
+
+   Examples:
+     srd_log_loglevel_set(), srd_log_loglevel_get(), srd_log_handler_set(),
+     srd_log_handler_set_default(), and so on.
+
+   Getter/setter function names should usually end with "_get" or "_set".
+   Functions creating new "objects" should end with "_new".
+   Functions destroying "objects" should end with "_destroy".
+   Functions adding or removing items (e.g. from lists) should end with
+   either "_add" or "_remove".
+   Functions operating on all items from a list (not on only one of them),
+   should end with "_all", e.g. "_remove_all", "_get_all", and so on.
+   Use "_remove_all" in favor of "_clear" for consistency.
+
+ - All enums should generally use an explicit start number of 10000.
+   If there are multiple "categories" in the enum entries, each category
+   should be 10000 entries apart from the next one. The start of categories
+   are thus 10000, 20000, 30000, and so on.
+
+   Adding items to an enum MUST always append to a "category", never add
+   items in the middle of a category. The order of items MUST NOT be changed.
+   Any of the above would break the ABI.
+
+   The enum item 0 is special and is used as terminator in some lists, thus
+   enums should not use this for "valid" entries (and start at 10000 instead).
+
+
+Doxygen
+-------
+
+ - In Doxygen comments, put an empty line between the block of @param lines
+   and the final @return line. The @param lines themselves (if there is more
+   than one) are not separated by empty lines.
+
+ - Mark private functions (SRD_PRIV) with /** @private */, so that Doxygen
+   doesn't include them in the output. Functions that are "static" anyway
+   don't need to be marked like this.
+
+ - Mark private variables/#defines with /** @cond PRIVATE */ and
+   /** @endcond */, so that Doxygen doesn't include them in the output.
+   Variables that are "static" don't need to be marked like this.
+
+ - Mark all public API functions (SRD_API) with a @since tag which indicates
+   in which release the respective function was added (e.g. "@since 0.1.0").
+
+   If the function has existed before, but its API changed later, the @since
+   tag should mention only the release when the API last changed.
+
+   Example: The srd_foo() call was added in 0.1.0, but the API changed in
+   the later 0.2.0 release. The docs should read "@since 0.2.0" in that case.
+
+   Non-public functions (static ones, and those marked SRD_PRIV) don't need
+   to have @since markers.
+
+   The @since tag should be the last one, i.e. it should come after @param,
+   @return, @see, and so on.
+
+
+Protocol decoder guidelines
+---------------------------
+
+ - The 'desc' metadata field for a protocol decoder, which contains a
+   short, one-line description of the protocol/bus, should be at most 55
+   characters long, and end with a full stop. This short description can be
+   displayed on the command-line using "sigrok-cli -V -l 3", or in various
+   different places in GUIs.
+
+ - Longer, multi-line descriptions should be placed in the protocol
+   decoder's __init__.py file as docstring. It can be viewed (for a specific
+   protocol decoder, e.g., UART) via "sigrok-cli -a uart", or in various
+   other places in GUIs.
+
+ - Generally use strings for states (of the PD state machine), not integers.
+   This avoids having to keep a list of state definitions at the top of file.
+   The performance overhead for this is negligible in practice.
+
+   Recommended:
+     self.state = 'IDLE'
+     self.state = 'GET STOP BIT'
+   Not recommended:
+     self.state = IDLE
+     self.state = GET_STOP_BIT
+     (where IDLE = 0 and GET_STOP_BIT = 1, for example)
+
+ - Generally use strings for commands/IDs in generated protocol packets.
+   This avoids having to know magic numbers of the PD in higher-level PDs.
+   The performance overhead for this is negligible in practice.
+
+   Recommended:
+     self.put(x, y, p, ['STOPBIT', 0, 0])
+     self.put(x, y, p, ['ADDRESS READ', 0x51])
+   Not recommended:
+     self.put(x, y, p, [STOPBIT, 0, 0])
+     self.put(x, y, p, [ADDRESS_READ, 0x51])
+     (with STOPBIT = 3 and ADDRESS_READ = 7, for example)
+
+ - Use ALL-CAPS names for PD states and protocol packet commands/ID.
+   Words should be separated by spaces (not underscores or the like).
+
+   Recommended:
+     'FIND ADDRESS', 'GET TEMPERATURE', 'START'
+   Not recommended:
+     'FIND_ADDRESS', 'Get Temperature', 'start'
+
+
+Testsuite
+---------
+
+You can run the libsigrokdecode testsuite using:
+
+ $ make check
+
+
+Protocol decoder test framework
+-------------------------------
+
+Please see the sigrok-test repository for a protocol decoder test suite that
+checks the decoded data of various PDs against known-good reference data.
+
+
+Release engineering
+-------------------
+
+See
+
+ http://sigrok.org/wiki/Developers/Release_process
+
+for a list of items that need to be done when releasing a new tarball.
+

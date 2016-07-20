@@ -238,14 +238,36 @@ void Viewport::paintSignals(QPainter &p)
         //plot measure arrow
         paintMeasure(p);
 
-        //plot waiting trigger
-        if (_waiting_trig > 0) {
+        //plot trigger information
+        if (_view.session().get_device()->dev_inst()->mode == DSO &&
+            _view.session().get_capture_state() == SigSession::Running) {
+            uint8_t type;
+            bool stream = false;
+            QString type_str="";
+            GVariant *gvar = _view.session().get_device()->get_config(NULL, NULL, SR_CONF_STREAM);
+            if (gvar != NULL) {
+                stream = g_variant_get_boolean(gvar);
+                g_variant_unref(gvar);
+            }
+            gvar = _view.session().get_device()->get_config(NULL, NULL, SR_CONF_TRIGGER_SOURCE);
+            if (gvar != NULL) {
+                type = g_variant_get_byte(gvar);
+                g_variant_unref(gvar);
+                if (type == DSO_TRIGGER_AUTO && stream) {
+                    type_str = "Auto(Roll)";
+                } else if (type == DSO_TRIGGER_AUTO && !_view.session().trigd()) {
+                    type_str = "Auto";
+                } else if (_waiting_trig > 0) {
+                    type_str = "Waiting Trig";
+                    for (int i = 1; i < _waiting_trig; i++)
+                        if (i % (WaitLoopTime / SigSession::ViewTime) == 0)
+                            type_str += ".";
+                } else {
+                    type_str = "Trig'd";
+                }
+            }
             p.setPen(Trace::DARK_FORE);
-            QString text = "Waiting Trig";
-            for (int i = 1; i < _waiting_trig; i++)
-                if (i % (WaitLoopTime / SigSession::ViewTime) == 0)
-                    text += ".";
-            p.drawText(_view.get_view_rect(), Qt::AlignLeft | Qt::AlignTop, text);
+            p.drawText(_view.get_view_rect(), Qt::AlignLeft | Qt::AlignTop, type_str);
         }
     }
 }
@@ -255,6 +277,7 @@ void Viewport::paintProgress(QPainter &p)
     using pv::view::Signal;
 
     const uint64_t _total_sample_len = _view.session().cur_samplelimits();
+
     double progress = -(_total_receive_len * 1.0 / _total_sample_len * 360 * 16);
     int captured_progress = 0;
 
@@ -338,10 +361,12 @@ void Viewport::paintProgress(QPainter &p)
         sr_status status;
         if (sr_status_get(_view.session().get_device()->dev_inst(), &status, SR_STATUS_TRIG_BEGIN, SR_STATUS_TRIG_END) == SR_OK){
             const bool triggred = status.trig_hit & 0x01;
-            const uint32_t captured_cnt = (status.captured_cnt0 +
+            uint32_t captured_cnt = (status.captured_cnt0 +
                                           (status.captured_cnt1 << 8) +
                                           (status.captured_cnt2 << 16) +
                                           (status.captured_cnt3 << 24));
+            if (_view.session().get_device()->dev_inst()->mode == DSO)
+                captured_cnt = captured_cnt * _view.session().get_signals().size() / _view.session().get_ch_num(SR_CHANNEL_DSO);
             if (triggred)
                 captured_progress = (_total_sample_len - captured_cnt) * 100.0 / _total_sample_len;
             else
@@ -924,7 +949,7 @@ void Viewport::measure()
         BOOST_FOREACH(const boost::shared_ptr<view::MathTrace> t, _view.session().get_math_signals()) {
             assert(t);
             if(t->enabled()) {
-                t->measure(_view.hover_point());
+                t->measure(_mouse_point);
             }
         }
     }
@@ -1279,7 +1304,12 @@ void Viewport::on_drag_timer()
         _drag_strength /= DragDamping;
         if (_drag_strength != 0)
             _drag_timer.start(DragTimerInterval);
-    } else if (_action_type == NO_ACTION){
+    } else if (offset == _view.get_max_offset() ||
+               offset == _view.get_min_offset()) {
+        _drag_strength = 0;
+        _drag_timer.stop();
+        _action_type = NO_ACTION;
+    }else if (_action_type == NO_ACTION){
         _drag_strength = 0;
         _drag_timer.stop();
     }

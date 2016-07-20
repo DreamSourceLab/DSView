@@ -117,7 +117,7 @@ void DecoderStack::remove(boost::shared_ptr<Decoder> &decoder)
 {
 	// Find the decoder in the stack
 	list< shared_ptr<Decoder> >::iterator iter = _stack.begin();
-    for(int i = 0; i < _stack.size(); i++, iter++)
+    for(unsigned int i = 0; i < _stack.size(); i++, iter++)
         if ((*iter) == decoder)
             break;
 
@@ -285,7 +285,6 @@ uint64_t DecoderStack::list_annotation_size() const
 {
     lock_guard<boost::recursive_mutex> lock(_output_mutex);
     uint64_t max_annotation_size = 0;
-    int row = 0;
     for (map<const Row, RowData>::const_iterator i = _rows.begin();
         i != _rows.end(); i++) {
         map<const Row, bool>::const_iterator iter = _rows_lshow.find((*i).first);
@@ -316,7 +315,6 @@ bool DecoderStack::list_annotation(pv::data::decode::Annotation &ann,
                                   uint16_t row_index, uint64_t col_index) const
 {
     //lock_guard<mutex> lock(_output_mutex);
-    int row = 0;
     for (map<const Row, RowData>::const_iterator i = _rows.begin();
         i != _rows.end(); i++) {
         map<const Row, bool>::const_iterator iter = _rows_lshow.find((*i).first);
@@ -334,7 +332,6 @@ bool DecoderStack::list_annotation(pv::data::decode::Annotation &ann,
 bool DecoderStack::list_row_title(int row, QString &title) const
 {
     //lock_guard<mutex> lock(_output_mutex);
-    int index = 0;
     for (map<const Row, RowData>::const_iterator i = _rows.begin();
         i != _rows.end(); i++) {
         map<const Row, bool>::const_iterator iter = _rows_lshow.find((*i).first);
@@ -574,8 +571,8 @@ void DecoderStack::decode_proc()
     optional<uint64_t> sample_count;
 	srd_session *session;
 	srd_decoder_inst *prev_di = NULL;
-    uint64_t decode_start;
-    uint64_t decode_end;
+    uint64_t decode_start = 0;
+    uint64_t decode_end = 0;
 
 	assert(_snapshot);
 
@@ -726,7 +723,6 @@ int DecoderStack::list_rows_size()
 {
     //lock_guard<mutex> lock(_output_mutex);
     int rows_size = 0;
-    int row = 0;
     for (map<const Row, RowData>::const_iterator i = _rows.begin();
         i != _rows.end(); i++) {
         map<const Row, bool>::const_iterator iter = _rows_lshow.find((*i).first);

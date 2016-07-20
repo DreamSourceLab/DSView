@@ -1,0 +1,112 @@
+#!/usr/bin/env python3
+##
+## This file is part of the libsigrokdecode project.
+##
+## Copyright (C) 2013 Bert Vermeulen <bert@biot.com>
+##
+## This program is free software; you can redistribute it and/or modify
+## it under the terms of the GNU General Public License as published by
+## the Free Software Foundation; either version 3 of the License, or
+## (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
+##
+
+import os
+import sys
+from shutil import copy
+from getopt import getopt
+
+
+def install(srcdir, dstdir):
+    worklist = []
+    for pd in os.listdir(srcdir):
+        pd_dir = srcdir + '/' + pd
+        if not os.path.isdir(pd_dir):
+            continue
+        install_list = []
+        for f in os.listdir(pd_dir):
+            pd_file = pd_dir + '/' + f
+            if not os.path.isfile(pd_file):
+                continue
+            if f == 'config':
+                install_list.extend(config_get_extra_install(pd_file))
+            elif f[-3:] == '.py':
+                install_list.append(f)
+        worklist.append((pd, pd_dir, install_list))
+
+    print("Installing %d protocol decoders:" % len(worklist))
+    col = 0
+    for pd, pd_dir, install_list in worklist:
+        msg = pd + ' '
+        if (col + len(msg) > 80):
+            print()
+            col = 0
+        print(msg, end='')
+        col += len(msg)
+        pd_dst = os.path.join(dstdir, pd)
+        try:
+            os.mkdir(pd_dst)
+        except OSError as e:
+            if e.errno != os.errno.EEXIST:
+                raise
+            else:
+                pass
+        for f in install_list:
+            copy(os.path.join(pd_dir, f), pd_dst)
+    print()
+
+
+def config_get_extra_install(config_file):
+    install_list = []
+    for line in open(config_file).read().split('\n'):
+        line = line.strip()
+        if len(line) == 0 or line[0] == '#':
+            continue
+        words = line.split()
+        if words[0] != 'extra-install':
+            continue
+        install_list.extend(words[1:])
+
+    return install_list
+
+
+def usage(msg=None):
+    if msg:
+        print(msg)
+        ret = 1
+    else:
+        ret = 0
+    print("""Usage:
+    install-decoders [-i <decoder source>] -o <install path>""")
+    sys.exit(ret)
+
+
+#
+# main
+#
+
+src = 'decoders'
+dst = None
+try:
+    opts, args = getopt(sys.argv[1:], 'i:o:')
+    for opt, arg in opts:
+        if opt == '-i':
+            src = arg
+        elif opt == '-o':
+            dst = arg
+except Exception as e:
+    usage(str(e))
+
+if len(args) != 0 or dst is None:
+    usage()
+
+install(src, dst)
+
+

@@ -97,7 +97,7 @@ private:
 
 public:
     static const int ViewTime = 50;
-    static const int WaitShowTime = 1000;
+    static const int WaitShowTime = 500;
 
 public:
 	enum capture_state {
@@ -142,7 +142,6 @@ public:
     void start_capture(bool instant,
 		boost::function<void (const QString)> error_handler);
     void capture_init();
-	void stop_capture();
 
     std::set< boost::shared_ptr<data::SignalData> > get_data() const;
 
@@ -192,8 +191,9 @@ public:
     bool get_instant();
 
     bool get_data_lock();
-
     void mathTraces_rebuild();
+
+    bool trigd() const;
 
 private:
 	void set_capture_state(capture_state state);
@@ -282,8 +282,13 @@ private:
     bool _data_lock;
     bool _data_updated;
 
+    #ifdef TEST_MODE
+    QTimer _test_timer;
+    #endif
+
     QDateTime _trigger_time;
     uint64_t _trigger_pos;
+    bool _trigger_flag;
 
 signals:
 	void capture_state_changed(int state);
@@ -331,11 +336,13 @@ signals:
 public slots:
     void reload();
     void refresh(int holdtime);
+    void stop_capture();
 
 private slots:
     void cancelSaveFile();
     void data_unlock();
     void check_update();
+    void nodata_timeout();
 
 private:
 	// TODO: This should not be necessary. Multiple concurrent

@@ -43,7 +43,7 @@ DsoMeasure::DsoMeasure(QWidget *parent, boost::shared_ptr<DsoSignal> dsoSig) :
 {
     setMinimumWidth(300);
 
-    for (int i=DsoSignal::DSO_MS_BEGIN+1; i<DsoSignal::DSO_MS_END; i++) {
+    for (int i=DSO_MS_BEGIN+1; i<DSO_MS_END; i++) {
         QCheckBox *checkBox = new QCheckBox(_dsoSig->get_ms_string(i), this);
         checkBox->setProperty("id", QVariant(i));
         checkBox->setChecked(dsoSig->get_ms_en(i));

@@ -202,8 +202,6 @@ signals:
 
     void cursor_moved();
 
-    void mode_changed();
-
     void measure_updated();
 
 private:
@@ -305,6 +303,7 @@ private:
 
         QPoint _hover_point;
     	dialogs::Calibration *_cali;
+        bool _dso_auto;
 };
 
 } // namespace view

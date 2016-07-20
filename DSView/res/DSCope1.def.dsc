@@ -1,7 +1,7 @@
-{
+﻿{
     "Device": "DSCope",
     "DeviceMode": 1,
-    "Horizontal trigger position": "0",
+    "Horizontal trigger position": "1",
     "Operation Mode": "Normal",
     "Sample count": "1048576",
     "Sample rate": "100000000",
@@ -16,7 +16,6 @@
             "enabled": true,
             "index": 0,
             "name": "0",
-            "strigger": 0,
             "trigValue": 0.5,
             "type": 10001,
             "vdiv": 1000,
@@ -29,7 +28,6 @@
             "enabled": true,
             "index": 1,
             "name": "1",
-            "strigger": 0,
             "trigValue": 0.5,
             "type": 10001,
             "vdiv": 1000,

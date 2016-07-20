@@ -37,6 +37,9 @@
 #include <QRegExpValidator>
 #include <QRect>
 #include <QMouseEvent>
+#include <QFuture>
+#include <QProgressDialog>
+#include <QtConcurrent/QtConcurrent>
 
 #include <stdint.h>
 #include <boost/shared_ptr.hpp>
@@ -64,7 +67,7 @@ SearchDock::SearchDock(QWidget *parent, View &view, SigSession &session) :
     _nxt_button.setIcon(QIcon::fromTheme("searchDock",
         QIcon(":/icons/next.png")));
 
-    QPushButton *_search_button = new QPushButton(this);
+    _search_button = new QPushButton(this);
     _search_button->setIcon(QIcon::fromTheme("searchDock",
                                              QIcon(":/icons/search.png")));
     _search_button->setFixedWidth(_search_button->height());
@@ -109,6 +112,7 @@ void SearchDock::paintEvent(QPaintEvent *)
 
 void SearchDock::on_previous()
 {
+    bool ret;
     uint64_t last_pos;
     uint8_t *data;
     int unit_size;
@@ -136,7 +140,22 @@ void SearchDock::on_previous()
             msg.exec();
             return;
         } else {
-            const bool ret = search_value(data, unit_size, length, last_pos, 1, value);
+            QFuture<void> future;
+            future = QtConcurrent::run([&]{
+                ret = search_value(data, unit_size, length, last_pos, 1, value);
+            });
+            Qt::WindowFlags flags = Qt::CustomizeWindowHint;
+            QProgressDialog dlg(tr("Search Previous..."),
+                                tr("Cancel"),0,0,this,flags);
+            dlg.setWindowModality(Qt::WindowModal);
+            dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
+            dlg.setCancelButton(NULL);
+
+            QFutureWatcher<void> watcher;
+            connect(&watcher,SIGNAL(finished()),&dlg,SLOT(cancel()));
+            watcher.setFuture(future);
+            dlg.exec();
+
             if (!ret) {
                 dialogs::DSMessageBox msg(this);
                 msg.mBox()->setText(tr("Search"));
@@ -154,6 +173,7 @@ void SearchDock::on_previous()
 
 void SearchDock::on_next()
 {
+    bool ret;
     uint64_t last_pos;
     int unit_size;
     uint64_t length;
@@ -180,7 +200,22 @@ void SearchDock::on_next()
             msg.exec();
             return;
         } else {
-            const int ret = search_value(data, unit_size, length, last_pos, 0, value);
+            QFuture<void> future;
+            future = QtConcurrent::run([&]{
+                ret = search_value(data, unit_size, length, last_pos, 0, value);
+            });
+            Qt::WindowFlags flags = Qt::CustomizeWindowHint;
+            QProgressDialog dlg(tr("Search Next..."),
+                                tr("Cancel"),0,0,this,flags);
+            dlg.setWindowModality(Qt::WindowModal);
+            dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
+            dlg.setCancelButton(NULL);
+
+            QFutureWatcher<void> watcher;
+            connect(&watcher,SIGNAL(finished()),&dlg,SLOT(cancel()));
+            watcher.setFuture(future);
+            dlg.exec();
+
             if (!ret) {
                 dialogs::DSMessageBox msg(this);
                 msg.mBox()->setText(tr("Search"));
@@ -204,6 +239,9 @@ void SearchDock::on_set()
         _pattern.remove(QChar(' '), Qt::CaseInsensitive);
         _pattern = _pattern.toUpper();
         _search_value->setText(_pattern);
+
+        QFontMetrics fm = this->fontMetrics();
+        _search_value->setFixedWidth(fm.width(_pattern)+_search_button->width()+20);
     }
 }
 

@@ -30,8 +30,8 @@ namespace pv {
 namespace widgets {
 
 Border::Border(int type, QWidget *parent) :
-    _type(type),
-    QWidget(parent)
+    QWidget(parent),
+    _type(type)
 {
     setAttribute(Qt::WA_TranslucentBackground);
     setMouseTracking(true);

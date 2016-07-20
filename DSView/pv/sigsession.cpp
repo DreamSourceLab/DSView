@@ -120,6 +120,11 @@ SigSession::SigSession(DeviceManager &device_manager) :
 
     connect(&_view_timer, SIGNAL(timeout()), this, SLOT(check_update()));
     connect(&_refresh_timer, SIGNAL(timeout()), this, SLOT(data_unlock()));
+
+    #ifdef TEST_MODE
+    _test_timer.setSingleShot(true);
+    connect(&_test_timer, SIGNAL(timeout()), this, SLOT(stop_capture()));
+    #endif
 }
 
 SigSession::~SigSession()
@@ -509,10 +514,12 @@ void SigSession::capture_init()
     _cur_samplerate = _dev_inst->get_sample_rate();
     _cur_samplelimits = _dev_inst->get_sample_limit();
     _data_updated = false;
-    if (_dev_inst->dev_inst()->mode == DSO) {
+    if (_dev_inst->dev_inst()->mode != LOGIC)
         _view_timer.start(ViewTime);
-        _noData_cnt = 0;
-    }
+    else
+        _view_timer.stop();
+    _noData_cnt = 0;
+    data_unlock();
 
     // Init and Set sample rate for all SignalData
     // Logic/Analog/Dso
@@ -595,7 +602,8 @@ void SigSession::start_capture(bool instant,
 void SigSession::stop_capture()
 {
     _instant = false;
-    _view_timer.stop();
+    //_data_lock = true;
+    //_view_timer.stop();
 #ifdef ENABLE_DECODE
     for (vector< boost::shared_ptr<view::DecodeTrace> >::iterator i =
         _decode_traces.begin();
@@ -608,9 +616,9 @@ void SigSession::stop_capture()
 	sr_session_stop();
 
 	// Check that sampling stopped
-	if (_sampling_thread.get())
-		_sampling_thread->join();
-	_sampling_thread.reset();
+    if (_sampling_thread.get())
+        _sampling_thread->join();
+    _sampling_thread.reset();
 }
 
 vector< boost::shared_ptr<view::Signal> > SigSession::get_signals()
@@ -710,22 +718,30 @@ void SigSession::sample_thread_proc(boost::shared_ptr<device::DevInst> dev_inst,
 
     dev_inst->run();
 
+    set_capture_state(Stopped);
+
     // Confirm that SR_DF_END was received
     assert(_cur_logic_snapshot->last_ended());
     assert(_cur_dso_snapshot->last_ended());
     assert(_cur_analog_snapshot->last_ended());
-    set_capture_state(Stopped);
 }
 
 void SigSession::check_update()
 {
+    if (_capture_state != Running)
+        return;
+
     if (_data_updated) {
         data_updated();
         _data_updated = false;
         _noData_cnt = 0;
+        #ifdef TEST_MODE
+        if (!_test_timer.isActive())
+            _test_timer.start(qrand()%5000);
+        #endif
     } else {
         if (++_noData_cnt >= (WaitShowTime/ViewTime))
-            show_wait_trigger();
+            nodata_timeout();
     }
 }
 
@@ -960,10 +976,9 @@ void SigSession::refresh(int holdtime)
 {
     boost::lock_guard<boost::mutex> lock(_data_mutex);
 
-    if (!_dev_inst->name().contains("virtual")) {
-        _data_lock = true;
-        _refresh_timer.start(holdtime);
-    }
+    _data_lock = true;
+    _refresh_timer.start(holdtime);
+
     if (_logic_data) {
         _logic_data->init();
         //_cur_logic_snapshot.reset();
@@ -1004,6 +1019,7 @@ bool SigSession::get_data_lock()
 
 void SigSession::feed_in_header(const sr_dev_inst *sdi)
 {
+    (void)sdi;
     _trigger_pos = 0;
     _trigger_time = QDateTime::currentDateTime();
     const int64_t secs = -cur_sampletime();
@@ -1100,6 +1116,7 @@ void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
     emit receive_data(logic.length/logic.unitsize);
     data_received();
     //data_updated();
+    _data_updated = true;
 }
 
 void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
@@ -1141,6 +1158,7 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
             m->get_math_stack()->calc_fft();
     }
 
+    _trigger_flag = dso.trig_flag;
     receive_data(dso.num_samples);
     //data_updated();
     _data_updated = true;
@@ -1537,7 +1555,7 @@ void SigSession::mathTraces_rebuild()
             has_dso_signal = true;
             // check already have
             std::vector< boost::shared_ptr<view::MathTrace> >::iterator iter = _math_traces.begin();
-            for(int i = 0; i < _math_traces.size(); i++, iter++)
+            for(unsigned int i = 0; i < _math_traces.size(); i++, iter++)
                 if ((*iter)->get_index() == dsoSig->get_index())
                     break;
             // if not, rebuild
@@ -1571,6 +1589,21 @@ QDateTime SigSession::get_trigger_time() const
 uint64_t  SigSession::get_trigger_pos() const
 {
     return _trigger_pos;
+}
+
+bool SigSession::trigd() const
+{
+    return _trigger_flag;
+}
+
+void SigSession::nodata_timeout()
+{
+    GVariant *gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_TRIGGER_SOURCE);
+    if (gvar == NULL)
+        return;
+    if (g_variant_get_byte(gvar) != DSO_TRIGGER_AUTO) {
+        show_wait_trigger();
+    }
 }
 
 } // namespace pv

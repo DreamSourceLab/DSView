@@ -139,7 +139,7 @@ void ProtocolExp::accept()
             future = QtConcurrent::run([&]{
                 _export_cancel = false;
                 QString title;
-                int index;
+                int index = 0;
                 for (std::list<QRadioButton *>::const_iterator i = _row_sel_list.begin();
                     i != _row_sel_list.end(); i++) {
                     if ((*i)->isChecked()) {

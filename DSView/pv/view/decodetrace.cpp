@@ -281,9 +281,6 @@ void DecodeTrace::paint_mid(QPainter &p, int left, int right)
 
 	assert(_decoder_stack);
 
-    const double decode_startX = _decode_start/samples_per_pixel - (_view->offset() / _view->scale());
-    const double decode_endX = _decode_end/samples_per_pixel - (_view->offset() / _view->scale());
-
     BOOST_FOREACH(boost::shared_ptr<data::decode::Decoder> dec,
         _decoder_stack->stack()) {
         if (dec->shown()) {
@@ -335,6 +332,8 @@ void DecodeTrace::paint_fore(QPainter &p, int left, int right)
 {
 	using namespace pv::data::decode;
 
+    (void)p;
+    (void)left;
 	(void)right;
 }
 
@@ -504,6 +503,7 @@ void DecodeTrace::draw_nodetail(QPainter &p,
     int h, int left, int right, int y,
     size_t base_colour) const
 {
+    (void)base_colour;
     const QRectF nodetail_rect(left, y - h/2 + 0.5, right - left, h);
     QString info = tr("Zoom in For Detials");
     int info_left = nodetail_rect.center().x() - p.boundingRect(QRectF(), 0, info).width();

@@ -90,12 +90,12 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
     assert(length.size() > 0);
     assert(view_modes.size() > 0);
     assert(dbv_ranges.size() > 0);
-    for (int i = 0; i < windows.size(); i++)
+    for (unsigned int i = 0; i < windows.size(); i++)
     {
         _window_combobox->addItem(windows[i],
             qVariantFromValue(i));
     }
-    for (int i = 0; i < length.size(); i++)
+    for (unsigned int i = 0; i < length.size(); i++)
     {
         if (length[i] < _sample_limit)
             _len_combobox->addItem(QString::number(length[i]),
@@ -112,14 +112,14 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
         _interval_combobox->addItem(QString::number(i),
             qVariantFromValue(i));
     }
-    for (int i = 0; i < view_modes.size(); i++)
+    for (unsigned int i = 0; i < view_modes.size(); i++)
     {
         _view_combobox->addItem(view_modes[i],
             qVariantFromValue(i));
     }
     assert(_view_combobox->count() > 0);
     _view_combobox->setCurrentIndex(_view_combobox->count()-1);
-    for (int i = 0; i < dbv_ranges.size(); i++)
+    for (unsigned int i = 0; i < dbv_ranges.size(); i++)
     {
         _dbv_combobox->addItem(QString::number(dbv_ranges[i]),
             qVariantFromValue(dbv_ranges[i]));
@@ -138,7 +138,7 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
                     }
                 }
                 for (int i = 0; i < _len_combobox->count(); i++) {
-                    if (mathTrace->get_math_stack()->get_sample_num() == _len_combobox->itemData(i).toLongLong()) {
+                    if (mathTrace->get_math_stack()->get_sample_num() == _len_combobox->itemData(i).toULongLong()) {
                         _len_combobox->setCurrentIndex(i);
                         break;
                     }

@@ -45,6 +45,7 @@
 #include <QDesktopWidget>
 #include <QKeyEvent>
 #include <QEvent>
+#include <QtGlobal>
 
 #include "mainwindow.h"
 
@@ -148,7 +149,7 @@ void MainWindow::setup_ui()
     connect(_file_bar, SIGNAL(save()), this,
             SLOT(on_save()));
     connect(_file_bar, SIGNAL(on_screenShot()), this,
-            SLOT(on_screenShot()));
+            SLOT(on_screenShot()), Qt::QueuedConnection);
     connect(_file_bar, SIGNAL(load_session(QString)), this,
             SLOT(load_session(QString)));
     connect(_file_bar, SIGNAL(store_session(QString)), this,
@@ -244,9 +245,9 @@ void MainWindow::setup_ui()
 	connect(&_session, SIGNAL(capture_state_changed(int)), this,
 		SLOT(capture_state_changed(int)));
     connect(&_session, SIGNAL(device_attach()), this,
-            SLOT(device_attach()));
+            SLOT(device_attach()), Qt::QueuedConnection);
     connect(&_session, SIGNAL(device_detach()), this,
-            SLOT(device_detach()));
+            SLOT(device_detach()), Qt::QueuedConnection);
     connect(&_session, SIGNAL(test_data_error()), this,
             SLOT(test_data_error()));
     connect(&_session, SIGNAL(malloc_error()), this,
@@ -258,8 +259,6 @@ void MainWindow::setup_ui()
             SLOT(cursor_update()));
     connect(_view, SIGNAL(cursor_moved()), _measure_widget,
             SLOT(cursor_moved()));
-    connect(_view, SIGNAL(mode_changed()), this,
-            SLOT(update_device_list()));
 
     // event filter
     _view->installEventFilter(this);
@@ -320,11 +319,19 @@ void MainWindow::update_device_list()
     if (!selected_device->name().contains("virtual")) {
         _file_bar->set_settings_en(true);
         _logo_bar->dsl_connected(true);
-        QString ses_name = DS_RES_PATH +
-                           selected_device->name() +
-                           QString::number(selected_device->dev_inst()->mode) +
-                           ".dsc";
-        load_session(ses_name);
+        #if QT_VERSION >= 0x050400
+        QDir dir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
+        #else
+        QDir dir(QStandardPaths::writableLocation(QStandardPaths::DataLocation));
+        #endif
+        if (dir.exists()) {
+            QString str = dir.absolutePath() + "/";
+            QString ses_name = str +
+                               selected_device->name() +
+                               QString::number(selected_device->dev_inst()->mode) +
+                               ".dsc";
+            load_session(ses_name);
+        }
     } else {
         _file_bar->set_settings_en(false);
         _logo_bar->dsl_connected(false);
@@ -439,7 +446,13 @@ void MainWindow::run_stop()
 
 void MainWindow::instant_stop()
 {
-
+#ifdef TEST_MODE
+    if (!test_timer_linked) {
+        connect(&test_timer, SIGNAL(timeout()),
+                this, SLOT(instant_stop()));
+        test_timer_linked = true;
+    }
+#endif
     switch(_session.get_capture_state()) {
     case SigSession::Init:
     case SigSession::Stopped:
@@ -506,12 +519,24 @@ void MainWindow::capture_state_changed(int state)
         _trig_bar->enable_toggle(state != SigSession::Running);
         _measure_dock->widget()->setEnabled(state != SigSession::Running);
     }
+
+#ifdef TEST_MODE
+    if (state == SigSession::Stopped) {
+        test_timer.start(qrand()%1000);
+    }
+#endif
 }
 
 void MainWindow::session_save()
 {
-    QDir dir(DS_RES_PATH);
-    if (dir.exists()) {
+    QDir dir;
+    #if QT_VERSION >= 0x050400
+    QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    #else
+    QString path = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    #endif
+    if(dir.mkpath(path)) {
+        dir.cd(path);
         QString driver_name = _session.get_device()->name();
         QString mode_name = QString::number(_session.get_device()->dev_inst()->mode);
         QString file_name = dir.absolutePath() + "/" + driver_name + mode_name + ".dsc";
@@ -585,7 +610,8 @@ void MainWindow::on_screenShot()
     QSettings settings;
     QPixmap pixmap;
     QDesktopWidget *desktop = QApplication::desktop();
-    pixmap = QPixmap::grabWindow(desktop->winId(), pos().x(), pos().y(), frameGeometry().width(), frameGeometry().height());
+    pixmap = QPixmap::grabWindow(desktop->winId(), parentWidget()->pos().x(), parentWidget()->pos().y(),
+                                                   parentWidget()->frameGeometry().width(), parentWidget()->frameGeometry().height());
     QString format = "png";
 
     QString fileName = QFileDialog::getSaveFileName(this,
@@ -625,12 +651,13 @@ bool MainWindow::load_session(QString name)
 {
     QFile sessionFile(name);
     if (!sessionFile.open(QIODevice::ReadOnly)) {
-        dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(tr("File Error"));
-        msg.mBox()->setInformativeText(tr("Couldn't open session file!"));
-        msg.mBox()->setStandardButtons(QMessageBox::Ok);
-        msg.mBox()->setIcon(QMessageBox::Warning);
-        msg.exec();
+//        dialogs::DSMessageBox msg(this);
+//        msg.mBox()->setText(tr("File Error"));
+//        msg.mBox()->setInformativeText(tr("Couldn't open session file!"));
+//        msg.mBox()->setStandardButtons(QMessageBox::Ok);
+//        msg.mBox()->setIcon(QMessageBox::Warning);
+//        msg.exec();
+        qDebug("Warning: Couldn't open session file!");
         return false;
     }
 
@@ -740,12 +767,13 @@ bool MainWindow::store_session(QString name)
 {
     QFile sessionFile(name);
     if (!sessionFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(tr("File Error"));
-        msg.mBox()->setInformativeText(tr("Couldn't open session file to write!"));
-        msg.mBox()->setStandardButtons(QMessageBox::Ok);
-        msg.mBox()->setIcon(QMessageBox::Warning);
-        msg.exec();
+//        dialogs::DSMessageBox msg(this);
+//        msg.mBox()->setText(tr("File Error"));
+//        msg.mBox()->setInformativeText(tr("Couldn't open session file to write!"));
+//        msg.mBox()->setStandardButtons(QMessageBox::Ok);
+//        msg.mBox()->setIcon(QMessageBox::Warning);
+//        msg.exec();
+        qDebug("Warning: Couldn't open session file to write!");
         return false;
     }
     QTextStream outStream(&sessionFile);

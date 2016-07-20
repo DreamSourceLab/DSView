@@ -83,6 +83,7 @@ void DSMessageBox::reject()
 
 bool DSMessageBox::eventFilter(QObject *object, QEvent *event)
 {
+    (void)object;
     const QEvent::Type type = event->type();
     const QMouseEvent *const mouse_event = (QMouseEvent*)event;
     if (type == QEvent::MouseMove) {

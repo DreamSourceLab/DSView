@@ -288,6 +288,18 @@ enum {
 	SR_MQFLAG_SPL_PCT_OVER_ALARM = 0x10000,
 };
 
+enum DSO_MEASURE_TYPE {
+    DSO_MS_BEGIN = 0,
+    DSO_MS_FREQ,
+    DSO_MS_PERD,
+    DSO_MS_VMAX,
+    DSO_MS_VMIN,
+    DSO_MS_VRMS,
+    DSO_MS_VMEA,
+    DSO_MS_VP2P,
+    DSO_MS_END,
+};
+
 struct sr_context;
 
 struct sr_datafeed_packet {
@@ -327,6 +339,8 @@ struct sr_datafeed_dso {
     uint64_t mqflags;
     /** samplerate different from last packet */
     gboolean samplerate_tog;
+    /** trig flag */
+    gboolean trig_flag;
     /** The analog value(s). The data is interleaved according to
      * the probes list. */
     void *data;
@@ -575,6 +589,8 @@ struct sr_channel {
     uint8_t trig_value;
     int8_t comb_diff_top;
     int8_t comb_diff_bom;
+    gboolean ms_show;
+    gboolean ms_en[DSO_MS_END - DSO_MS_BEGIN];
 };
 
 /** Structure for groups of channels that have common properties. */
@@ -632,6 +648,9 @@ struct sr_status {
     gboolean stream_mode;
     uint32_t sample_divider;
     gboolean sample_divider_tog;
+    gboolean trig_flag;
+
+    uint16_t pkt_id;
 };
 
 enum {
@@ -717,6 +736,9 @@ enum {
 
 	/** Trigger source. */
 	SR_CONF_TRIGGER_SOURCE,
+
+    /** Trigger channel */
+    SR_CONF_TRIGGER_CHANNEL,
 
     /** Trigger Value. */
     SR_CONF_TRIGGER_VALUE,
@@ -1099,10 +1121,11 @@ struct ds_trigger {
 };
 
 struct ds_trigger_pos {
+    uint32_t check_id;
     uint32_t real_pos;
     uint32_t ram_saddr;
     uint32_t remain_cnt;
-    unsigned char first_block[500];
+    unsigned char first_block[496];
 };
 
 #include "proto.h"

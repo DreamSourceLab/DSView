@@ -25,6 +25,7 @@ Requirements
  - pkg-config >= 0.22
 	This is part of the standard OpenBSD install (not an extra package), apparently.
  - check >= 0.9.4 (optional, only needed to run unit tests)
+ - libfftw3 >= 3.3
 
 Building and installing
 -----------------------
@@ -35,17 +36,17 @@ please check your respective distro's package manager tool if you use other dist
 Debian/Ubuntu:
  $ sudo apt-get install git-core gcc g++ make cmake autoconf automake libtool pkg-config \
    libglib2.0-dev libzip-dev libudev-dev libusb-1.0-0-dev \
-   python3-dev qt5-default libboost-dev libboost-test-dev libboost-thread-dev libboost-system-dev libboost-filesystem-dev check
+   python3-dev qt5-default libboost-dev libboost-test-dev libboost-thread-dev libboost-system-dev libboost-filesystem-dev check libfftw3-dev
 
 Fedora (18, 19):
  $ sudo yum install git gcc g++ make cmake autoconf automake libtool pkgconfig glib2-devel \
    libzip-devel libudev-devel libusb1-devel \
-   python3-devel qt-devel boost-devel check
+   python3-devel qt-devel boost-devel check libfftw3-devel
 
 Arch:
  $ pacman -S git gcc make cmake autoconf autoconf-archive automake libtool \
    pkg-config glib2 glibmm libzip libusb check 
-   python boost qt5 qt5-base qt5-svg
+   python boost qt5 qt5-base qt5-svg libfftw3
 
 Step2: Get the DSView source code
 
@@ -60,8 +61,7 @@ Step3: Building
  $ sudo make install
  $ cd ..
 
- $ git clone git://sigrok.org/libsigrokdecode
- $ cd libsigrokdecode
+ $ cd libsigrokdecode4DSL
  $ ./autogen.sh
  $ ./configure
  $ make

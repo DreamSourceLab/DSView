@@ -85,6 +85,8 @@ private:
     QAction *_action_export;
     QAction *_action_capture;
 
+    QTimer _screenshot_timer;
+
 };
 
 } // namespace toolbars

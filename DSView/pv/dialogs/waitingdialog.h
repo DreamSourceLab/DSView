@@ -53,7 +53,7 @@ private:
 
 public:
     WaitingDialog(QWidget *parent, boost::shared_ptr<pv::device::DevInst> dev_inst);
-    void start();
+    int start();
 
 protected:
 	void accept();

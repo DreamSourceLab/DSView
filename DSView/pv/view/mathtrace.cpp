@@ -117,7 +117,7 @@ void MathTrace::set_view_mode(int mode)
 std::vector<QString> MathTrace::get_view_modes_support()
 {
     std::vector<QString> modes;
-    for (int i = 0; i < sizeof(FFT_ViewMode)/sizeof(FFT_ViewMode[0]); i++) {
+    for (unsigned int i = 0; i < sizeof(FFT_ViewMode)/sizeof(FFT_ViewMode[0]); i++) {
         modes.push_back(FFT_ViewMode[i]);
     }
     return modes;
@@ -191,7 +191,7 @@ int MathTrace::dbv_range() const
 std::vector<int> MathTrace::get_dbv_ranges()
 {
     std::vector<int> range;
-    for (int i = 0; i < sizeof(DbvRanges)/sizeof(DbvRanges[0]); i++) {
+    for (unsigned int i = 0; i < sizeof(DbvRanges)/sizeof(DbvRanges[0]); i++) {
         range.push_back(DbvRanges[i]);
     }
     return range;
@@ -231,9 +231,9 @@ bool MathTrace::measure(const QPoint &p)
     if(samples.empty())
         return false;
 
-    const int full_size = (_math_stack->get_sample_num()/2+1);
+    const unsigned int full_size = (_math_stack->get_sample_num()/2);
     const double view_off = full_size * _offset;
-    const int view_size = full_size*_scale;
+    const double view_size = full_size*_scale;
     const double sample_per_pixels = view_size/window.width();
     _hover_index = std::round(p.x() * sample_per_pixels + view_off);
 
@@ -251,7 +251,6 @@ void MathTrace::paint_back(QPainter &p, int left, int right)
     if(!_view)
         return;
 
-    int i, j;
     const int height = get_view_rect().height();
     const int width = right - left;
 
@@ -277,7 +276,7 @@ void MathTrace::paint_mid(QPainter &p, int left, int right)
         trace_colour.setAlpha(150);
         p.setPen(trace_colour);
 
-        const int full_size = (_math_stack->get_sample_num()/2+1);
+        const int full_size = (_math_stack->get_sample_num()/2);
         const double view_off = full_size * _offset;
         const int view_start = floor(view_off);
         const int view_size = full_size*_scale;
@@ -289,8 +288,8 @@ void MathTrace::paint_mid(QPainter &p, int left, int right)
         const double width = right - left;
         const double pixels_per_sample = width/view_size;
 
-        double vdiv;
-        double vfactor;
+        double vdiv = 0;
+        double vfactor = 0;
         BOOST_FOREACH(const boost::shared_ptr<Signal> s, _session.get_signals()) {
             boost::shared_ptr<DsoSignal> dsoSig;
             if (dsoSig = dynamic_pointer_cast<DsoSignal>(s)) {
@@ -349,6 +348,8 @@ void MathTrace::paint_fore(QPainter &p, int left, int right)
         return;
     assert(right >= left);
 
+    (void)left;
+    (void)right;
     const int text_height = p.boundingRect(0, 0, INT_MAX, INT_MAX,
         AlignLeft | AlignTop, "8").height();
     const double width = get_view_rect().width();
@@ -427,7 +428,7 @@ void MathTrace::paint_fore(QPainter &p, int left, int right)
         const std::vector<double> samples(_math_stack->get_fft_spectrum());
         if(samples.empty())
             return;
-        const int full_size = (_math_stack->get_sample_num()/2+1);
+        const int full_size = (_math_stack->get_sample_num()/2);
         const double view_off = full_size * _offset;
         const int view_size = full_size*_scale;
         const double scale = height / (_vmax - _vmin);
