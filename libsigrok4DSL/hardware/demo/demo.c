@@ -1134,7 +1134,7 @@ static int hw_dev_acquisition_stop(struct sr_dev_inst *sdi, void *cb_data)
     if (devc->stop)
         return SR_OK;
 
-	sr_dbg("Stopping aquisition.");
+	sr_dbg("Stopping acquisition.");
 
     devc->stop = TRUE;
 
