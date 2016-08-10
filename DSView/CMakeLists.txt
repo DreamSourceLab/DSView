@@ -104,7 +104,7 @@ set(DS_DESCRIPTION "A GUI for instruments of DreamSourceLab")
 
 set(DS_VERSION_MAJOR 0)
 set(DS_VERSION_MINOR 9)
-set(DS_VERSION_MICRO 5)
+set(DS_VERSION_MICRO 6)
 set(DS_VERSION_STRING
 	${DS_VERSION_MAJOR}.${DS_VERSION_MINOR}.${DS_VERSION_MICRO}
 )
@@ -394,21 +394,8 @@ set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "/usr/local/lib")
 
 # Install the executable.
 install(TARGETS ${PROJECT_NAME} DESTINATION bin/)
-install(FILES res/DSLogic.fw DESTINATION bin/res/)
-install(FILES res/DSLogic33.bin DESTINATION bin/res/)
-install(FILES res/DSLogic50.bin DESTINATION bin/res/)
-install(FILES res/DSLogicPro.fw DESTINATION bin/res/)
-install(FILES res/DSLogicPro.bin DESTINATION bin/res/)
-install(FILES res/DSCope.fw DESTINATION bin/res/)
-install(FILES res/DSCope.bin DESTINATION bin/res/)
-install(FILES res/DSLogic0.dsc DESTINATION bin/res/)
-install(FILES res/DSLogic0.def.dsc DESTINATION bin/res/)
-install(FILES res/DSLogic1.dsc DESTINATION bin/res/)
-install(FILES res/DSLogic1.def.dsc DESTINATION bin/res/)
-install(FILES res/DSLogic2.dsc DESTINATION bin/res/)
-install(FILES res/DSLogic2.def.dsc DESTINATION bin/res/)
-install(FILES res/DSCope1.dsc DESTINATION bin/res/)
-install(FILES res/DSCope1.def.dsc DESTINATION bin/res/)
+install(DIRECTORY res DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY ../libsigrokdecode4DSL/decoders DESTINATION share/${PROJECT_NAME})
 
 #===============================================================================
 #= Packaging (handled by CPack)
