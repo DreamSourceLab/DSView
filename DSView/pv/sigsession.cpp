@@ -473,7 +473,7 @@ double SigSession::cur_sampletime() const
     if (_cur_samplerate == 0)
         return 0;
     else
-        return  _cur_samplelimits * 1.0 / _cur_samplerate;
+        return  cur_samplelimits() * 1.0 / cur_samplerate();
 }
 
 void SigSession::set_cur_samplerate(uint64_t samplerate)
@@ -602,8 +602,6 @@ void SigSession::start_capture(bool instant,
 void SigSession::stop_capture()
 {
     _instant = false;
-    //_data_lock = true;
-    //_view_timer.stop();
 #ifdef ENABLE_DECODE
     for (vector< boost::shared_ptr<view::DecodeTrace> >::iterator i =
         _decode_traces.begin();

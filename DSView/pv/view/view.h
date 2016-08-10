@@ -223,6 +223,7 @@ private:
 	void resizeEvent(QResizeEvent *e);
 
 public slots:
+    void reload();
     void set_measure_en(int enable);
     void signals_changed();
     void data_updated();

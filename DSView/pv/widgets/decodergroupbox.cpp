@@ -49,6 +49,7 @@ DecoderGroupBox::DecoderGroupBox(boost::shared_ptr<data::DecoderStack> &decoder_
     _layout(new QGridLayout(this))
 {
     _layout->setContentsMargins(0, 0, 0, 0);
+    _layout->setVerticalSpacing(5);
     setLayout(_layout);
 
     _layout->addWidget(new QLabel(QString("<h3>%1</h3>").arg(_dec->decoder()->name), this),

@@ -333,6 +333,8 @@ signals:
 
     void show_wait_trigger();
 
+    void on_mode_change();
+
 public slots:
     void reload();
     void refresh(int holdtime);

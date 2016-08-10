@@ -242,18 +242,18 @@ void Viewport::paintSignals(QPainter &p)
         if (_view.session().get_device()->dev_inst()->mode == DSO &&
             _view.session().get_capture_state() == SigSession::Running) {
             uint8_t type;
-            bool stream = false;
+            bool roll = false;
             QString type_str="";
-            GVariant *gvar = _view.session().get_device()->get_config(NULL, NULL, SR_CONF_STREAM);
+            GVariant *gvar = _view.session().get_device()->get_config(NULL, NULL, SR_CONF_ROLL);
             if (gvar != NULL) {
-                stream = g_variant_get_boolean(gvar);
+                roll = g_variant_get_boolean(gvar);
                 g_variant_unref(gvar);
             }
             gvar = _view.session().get_device()->get_config(NULL, NULL, SR_CONF_TRIGGER_SOURCE);
             if (gvar != NULL) {
                 type = g_variant_get_byte(gvar);
                 g_variant_unref(gvar);
-                if (type == DSO_TRIGGER_AUTO && stream) {
+                if (type == DSO_TRIGGER_AUTO && roll) {
                     type_str = "Auto(Roll)";
                 } else if (type == DSO_TRIGGER_AUTO && !_view.session().trigd()) {
                     type_str = "Auto";
@@ -929,9 +929,9 @@ void Viewport::measure()
                         _cur_aftX = _view.hover_point().x();
                         _cur_midY = logicSig->get_y() - logicSig->get_totalHeight()/2 - 5;
 
-                        _em_rising = "Rising: " + QString::number(_edge_rising);
-                        _em_falling = "Falling: " + QString::number(_edge_falling);
-                        _em_edges = "Edges: " + QString::number(_edge_rising + _edge_falling);
+                        _em_rising = tr("Rising: ") + QString::number(_edge_rising);
+                        _em_falling = tr("Falling: ") + QString::number(_edge_falling);
+                        _em_edges = tr("Edges: ") + QString::number(_edge_rising + _edge_falling);
 
                         break;
                     }

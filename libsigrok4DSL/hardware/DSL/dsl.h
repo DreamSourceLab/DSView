@@ -250,6 +250,7 @@ struct DSL_context {
     int zero_pcnt;
     int zero_comb;
     gboolean stream;
+    gboolean roll;
     gboolean data_lock;
     uint8_t dso_bits;
 

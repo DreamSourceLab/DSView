@@ -45,8 +45,7 @@ DeviceOptions::DeviceOptions(QWidget *parent, boost::shared_ptr<pv::device::DevI
     _device_options_binding(_dev_inst->dev_inst())
 {
     _props_box = new QGroupBox(tr("Mode"), this);
-    _props_box->setLayout(&_props_box_layout);
-    _props_box_layout.addWidget(get_property_form());
+    _props_box->setLayout(get_property_form(_props_box));
     _layout.addWidget(_props_box);
 
     if (_dev_inst->dev_inst()->mode != DSO) {
@@ -118,25 +117,27 @@ void DeviceOptions::reject()
     QDialog::reject();
 }
 
-QWidget* DeviceOptions::get_property_form()
+QGridLayout * DeviceOptions::get_property_form(QWidget * parent)
 {
-	QWidget *const form = new QWidget(this);
-	QFormLayout *const layout = new QFormLayout(form);
-	form->setLayout(layout);
+    QGridLayout *const layout = new QGridLayout(parent);
+    layout->setVerticalSpacing(5);
 
 	const vector< boost::shared_ptr<pv::prop::Property> > &properties =
 		_device_options_binding.properties();
-	BOOST_FOREACH(boost::shared_ptr<pv::prop::Property> p, properties)
+    int i = 0;
+    BOOST_FOREACH(boost::shared_ptr<pv::prop::Property> p, properties)
 	{
 		assert(p);
         const QString label = p->labeled_widget() ? QString() : p->name();
+        layout->addWidget(new QLabel(label, parent), i, 0);
         if (label == tr("Operation Mode"))
-            layout->addRow(label, p->get_widget(form, true));
+            layout->addWidget(p->get_widget(parent, true), i, 1);
         else
-            layout->addRow(label, p->get_widget(form));
+            layout->addWidget(p->get_widget(parent), i, 1);
+        i++;
 	}
 
-	return form;
+    return layout;
 }
 
 void DeviceOptions::setup_probes()
@@ -177,8 +178,8 @@ void DeviceOptions::setup_probes()
                         ch_opts->setChecked(true);
                 }
             }
+            g_variant_unref(gvar_opts);
         }
-        g_variant_unref(gvar_opts);
     }
 
     for (const GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next) {

@@ -1276,11 +1276,11 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         devc = sdi->priv;
         *data = g_variant_new_boolean(devc->cali);
         break;
-    case SR_CONF_STREAM:
+    case SR_CONF_ROLL:
         if (!sdi)
             return SR_ERR;
         devc = sdi->priv;
-        *data = g_variant_new_boolean(devc->stream);
+        *data = g_variant_new_boolean(devc->roll);
         break;
     case SR_CONF_TEST:
         if (!sdi)
@@ -2408,7 +2408,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
                  mstatus.vlen != 0 &&
                  mstatus.vlen <= (transfer->actual_length - 512) / sample_width) ||
                 devc->instant) {
-                devc->stream = (mstatus.stream_mode != 0);
+                devc->roll = (mstatus.stream_mode != 0);
                 devc->mstatus_valid = TRUE;
                 packet.type = SR_DF_DSO;
                 packet.payload = &dso;

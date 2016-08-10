@@ -134,12 +134,12 @@ static const int32_t hwoptions_pro[] = {
 };
 
 static const int32_t sessions[] = {
+    SR_CONF_OPERATION_MODE,
+    SR_CONF_CHANNEL_MODE,
     SR_CONF_SAMPLERATE,
     SR_CONF_LIMIT_SAMPLES,
     SR_CONF_CLOCK_TYPE,
     SR_CONF_CLOCK_EDGE,
-    SR_CONF_OPERATION_MODE,
-    SR_CONF_CHANNEL_MODE,
     SR_CONF_THRESHOLD,
     SR_CONF_FILTER,
     SR_CONF_TRIGGER_SLOPE,
@@ -150,12 +150,12 @@ static const int32_t sessions[] = {
 };
 
 static const int32_t sessions_pro[] = {
+    SR_CONF_OPERATION_MODE,
+    SR_CONF_CHANNEL_MODE,
     SR_CONF_SAMPLERATE,
     SR_CONF_LIMIT_SAMPLES,
     SR_CONF_CLOCK_TYPE,
     SR_CONF_CLOCK_EDGE,
-    SR_CONF_OPERATION_MODE,
-    SR_CONF_CHANNEL_MODE,
     SR_CONF_VTH,
     SR_CONF_FILTER,
     SR_CONF_TRIGGER_SLOPE,
@@ -937,6 +937,7 @@ static uint64_t dso_cmd_gen(const struct sr_dev_inst *sdi, struct sr_channel* ch
     uint64_t cmd = 0;
     int channel_cnt = 0;
     GSList *l;
+    struct sr_channel *en_probe;
 
     devc = sdi->priv;
 
@@ -947,14 +948,18 @@ static uint64_t dso_cmd_gen(const struct sr_dev_inst *sdi, struct sr_channel* ch
     case SR_CONF_COUPLING:
         for (l = sdi->channels; l; l = l->next) {
             struct sr_channel *probe = (struct sr_channel *)l->data;
-            if (probe->enabled)
+            if (probe->enabled) {
                 channel_cnt += probe->index + 0x1;
+                en_probe = probe;
+            }
         }
         if (channel_cnt == 0)
             return 0x0;
 
         //  --VDBS
-        switch(ch->vdiv){
+        if (channel_cnt != 1)
+            en_probe = ch;
+        switch(en_probe->vdiv){
         case 5:     cmd += 0x247000; break;
         case 10:    cmd += 0x23D000; break;
         case 20:    cmd += 0x22F000; break;
@@ -1317,6 +1322,12 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         devc = sdi->priv;
         *data = g_variant_new_boolean(devc->stream);
         break;
+    case SR_CONF_ROLL:
+        if (!sdi)
+            return SR_ERR;
+        devc = sdi->priv;
+        *data = g_variant_new_boolean(devc->roll);
+        break;
     case SR_CONF_MAX_DSO_SAMPLERATE:
         if (!sdi)
             return SR_ERR;
@@ -1410,7 +1421,6 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             num_probes = devc->profile->dev_caps & DEV_CAPS_16BIT ? 16 : 8;
             devc->samplecounts_size = ARRAY_SIZE(samplecounts);
         } else if (sdi->mode == DSO) {
-            sdi->mode = DSO;
             num_probes = devc->profile->dev_caps & DEV_CAPS_16BIT ? MAX_DSO_PROBES_NUM : 1;
             ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_DSO_SYNC));
             if (ret != SR_OK)
@@ -1558,8 +1568,13 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             __func__, devc->th_level);
     } else if (id == SR_CONF_VTH) {
         devc->vth = g_variant_get_double(data);
-        sr_dbg("%s: setting threshold voltage to %f failed",
-            __func__, devc->vth);
+        if ((ret = command_wr_reg(usb->devhdl, (uint8_t)(devc->vth/5.0*255), VTH_ADDR)) == SR_OK) {
+            sr_err("%s: setting threshold voltage to %f",
+                __func__, devc->vth);
+        } else {
+            sr_info("%s: setting threshold voltage to %f failed",
+                __func__, devc->vth);
+        }
     } else if (id == SR_CONF_FILTER) {
         stropt = g_variant_get_string(data, NULL);
         if (!strcmp(stropt, filters[SR_FILTER_NONE])) {
@@ -1889,6 +1904,14 @@ static int dev_open(struct sr_dev_inst *sdi)
                 sr_err("%s: Configure FPGA failed!", __func__);
             }
             g_free(fpga_bit);
+
+            if ((ret = command_wr_reg(usb->devhdl, (uint8_t)(devc->vth/5.0*255), VTH_ADDR)) == SR_OK) {
+                sr_err("%s: setting threshold voltage to %f",
+                    __func__, devc->vth);
+            } else {
+                sr_info("%s: setting threshold voltage to %f failed",
+                    __func__, devc->vth);
+            }
         }
     }
 
@@ -2144,7 +2167,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
                  mstatus.vlen != 0 &&
                  mstatus.vlen <= (transfer->actual_length - 512) / sample_width) ||
                 devc->instant) {
-                devc->stream = (mstatus.stream_mode != 0);
+                devc->roll = (mstatus.stream_mode != 0);
                 devc->mstatus_valid = TRUE;
                 packet.type = SR_DF_DSO;
                 packet.payload = &dso;
@@ -2491,14 +2514,6 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi, void *cb_data)
         else
             sr_dbg("%s: setting DSO Horiz Trigger Position to %d failed",
                 __func__, devc->trigger_hpos);
-    } else if (sdi->mode == LOGIC) {
-        if ((ret = command_wr_reg(usb->devhdl, (uint8_t)(devc->vth/5.0*255), VTH_ADDR)) == SR_OK) {
-            sr_err("%s: setting threshold voltage to %f",
-                __func__, devc->vth);
-        } else {
-            sr_info("%s: setting threshold voltage to %f failed",
-                __func__, devc->vth);
-        }
     }
 
     /* poll trigger status transfer*/

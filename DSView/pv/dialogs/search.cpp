@@ -54,6 +54,7 @@ Search::Search(QWidget *parent, boost::shared_ptr<device::DevInst> dev_inst, QSt
     search_buttonBox.addButton(QDialogButtonBox::Cancel);
 
     QGridLayout *search_layout = new QGridLayout();
+    search_layout->setVerticalSpacing(5);
     search_layout->addWidget(search_label, 1, 1);
     search_layout->addWidget(new QLabel(tr("Search Value: ")), 2,0, Qt::AlignRight);
     search_layout->addWidget(&search_lineEdit, 2, 1);

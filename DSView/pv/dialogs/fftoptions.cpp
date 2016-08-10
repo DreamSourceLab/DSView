@@ -169,26 +169,34 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
         }
     }
 
-    _flayout = new QFormLayout();
-    _flayout->addRow(new QLabel(tr("FFT Enable: "), this), _en_checkbox);
-    _flayout->addRow(new QLabel(tr("FFT Length: "), this), _len_combobox);
-    _flayout->addRow(new QLabel(tr("Sample Interval: "), this), _interval_combobox);
-    _flayout->addRow(new QLabel(tr("FFT Source: "), this), _ch_combobox);
-    _flayout->addRow(new QLabel(tr("FFT Window: "), this), _window_combobox);
-    _flayout->addRow(new QLabel(tr("DC Ignored: "), this), _dc_checkbox);
-    _flayout->addRow(new QLabel(tr("Y-axis Mode: "), this), _view_combobox);
-    _flayout->addRow(new QLabel(tr("DBV Range: "), this), _dbv_combobox);
-
-    _hlayout = new QHBoxLayout();
-    _hlayout->addLayout(_flayout);
     _hint_label = new QLabel(this);
     QString hint_pic= ":/icons/" + _window_combobox->currentText()+".png";
     QPixmap pixmap(hint_pic);
     _hint_label->setPixmap(pixmap);
-    _hlayout->addWidget(_hint_label);
+
+    _glayout = new QGridLayout();
+    _glayout->setVerticalSpacing(5);
+    _glayout->addWidget(new QLabel(tr("FFT Enable: "), this), 0, 0);
+    _glayout->addWidget(_en_checkbox, 0, 1);
+    _glayout->addWidget(new QLabel(tr("FFT Length: "), this), 1, 0);
+    _glayout->addWidget(_len_combobox, 1, 1);
+    _glayout->addWidget(new QLabel(tr("Sample Interval: "), this), 2, 0);
+    _glayout->addWidget(_interval_combobox, 2, 1);
+    _glayout->addWidget(new QLabel(tr("FFT Source: "), this), 3, 0);
+    _glayout->addWidget(_ch_combobox, 3, 1);
+    _glayout->addWidget(new QLabel(tr("FFT Window: "), this), 4, 0);
+    _glayout->addWidget(_window_combobox, 4, 1);
+    _glayout->addWidget(new QLabel(tr("DC Ignored: "), this), 5, 0);
+    _glayout->addWidget(_dc_checkbox, 5, 1);
+    _glayout->addWidget(new QLabel(tr("Y-axis Mode: "), this), 6, 0);
+    _glayout->addWidget(_view_combobox, 6, 1);
+    _glayout->addWidget(new QLabel(tr("DBV Range: "), this), 7, 0);
+    _glayout->addWidget(_dbv_combobox, 7, 1);
+    _glayout->addWidget(_hint_label, 0, 2, 8, 1);
+
 
     _layout = new QVBoxLayout();
-    _layout->addLayout(_hlayout);
+    _layout->addLayout(_glayout);
     _layout->addWidget(&_button_box);
 
     layout()->addLayout(_layout);

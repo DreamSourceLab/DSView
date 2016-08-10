@@ -70,6 +70,10 @@ QWidget* Binding::get_property_form(QWidget *parent,
 {
     QWidget *const form = new QWidget(parent);
     QFormLayout *const layout = new QFormLayout(form);
+    layout->setVerticalSpacing(5);
+    layout->setFormAlignment(Qt::AlignLeft);
+    layout->setLabelAlignment(Qt::AlignLeft);
+    layout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
     form->setLayout(layout);
     add_properties_to_form(layout, auto_commit);
     return form;

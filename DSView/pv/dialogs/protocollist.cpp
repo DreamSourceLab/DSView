@@ -63,6 +63,10 @@ ProtocolList::ProtocolList(QWidget *parent, SigSession &session) :
         _protocol_combobox->setCurrentIndex(index);
 
     _flayout = new QFormLayout();
+    _flayout->setVerticalSpacing(5);
+    _flayout->setFormAlignment(Qt::AlignLeft);
+    _flayout->setLabelAlignment(Qt::AlignLeft);
+    _flayout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
     _flayout->addRow(new QLabel(tr("Decoded Protocols: "), this), _protocol_combobox);
 
     _layout = new QVBoxLayout();

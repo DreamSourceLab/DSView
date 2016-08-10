@@ -75,8 +75,7 @@ private:
     QComboBox *_dbv_combobox;
 
     QLabel *_hint_label;
-    QFormLayout *_flayout;
-    QHBoxLayout *_hlayout;
+    QGridLayout *_glayout;
     QVBoxLayout *_layout;
     QDialogButtonBox _button_box;
 

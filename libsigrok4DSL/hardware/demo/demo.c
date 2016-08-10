@@ -146,7 +146,7 @@ static const int32_t sessions[] = {
     SR_CONF_PATTERN_MODE,
 };
 
-static const int const_dc = 50;
+static const int const_dc = 1.95 / 10 * 255;
 static const int sinx[] = {
   0,   2,   3,   5,   6,   8,   9,  11,  12,  14,  16,  17,  18,  20,  21,  23,  24,  26,  27,  28,
  30,  31,  32,  33,  34,  35,  37,  38,  39,  40,  41,  41,  42,  43,  44,  45,  45,  46,  47,  47,
@@ -357,7 +357,7 @@ static GSList *hw_scan(GSList *options)
     devc->limit_samples_show = devc->limit_samples;
 	devc->limit_msec = 0;
     devc->sample_generator = PATTERN_SINE;
-    devc->timebase = 200;
+    devc->timebase = 500;
     devc->data_lock = FALSE;
     devc->max_height = 0;
     devc->dso_bits = 8;
@@ -876,7 +876,8 @@ static void samples_generator(uint16_t *buf, uint64_t size,
         for (l = sdi->channels; l; l = l->next) {
             start_rand = devc->pre_index == 0 ? rand()%len : 0;
             probe = (struct sr_channel *)l->data;
-            offset = ceil((0.5 - (probe->vpos/probe->vdiv/10.0)) * 255);
+            //offset = ceil((0.5 - (probe->vpos/probe->vdiv/10.0)) * 255);
+            offset = 128;
             pre0_i = devc->pre_index;
             pre1_i = devc->pre_index;
             for (i = devc->pre_index; i < devc->pre_index + size; i++) {

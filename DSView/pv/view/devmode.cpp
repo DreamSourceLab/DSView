@@ -75,6 +75,7 @@ void DevMode::set_device()
 
         QPushButton *mode_button = new QPushButton(this);
         //mode_button->setFlat(true);
+        mode_button->setMinimumWidth(32);
         mode_button->setText(mode->name);
         mode_button->setCheckable(true);
 
@@ -116,6 +117,7 @@ void DevMode::on_mode_change()
         if ((*i).first == button) {
             if (dev_inst->dev_inst()->mode != (*i).second->mode) {
                 _session.stop_capture();
+                _session.on_mode_change();
                 dev_inst->set_config(NULL, NULL,
                                      SR_CONF_DEVICE_MODE,
                                      g_variant_new_int16((*i).second->mode));

@@ -39,13 +39,13 @@ using namespace std;
 namespace pv {
 namespace dialogs {
 
-const QString Calibration::VGAIN = tr(" VGAIN");
-const QString Calibration::VOFF = tr(" VOFF");
+const QString Calibration::VGAIN = QT_TR_NOOP(" VGAIN");
+const QString Calibration::VOFF = QT_TR_NOOP(" VOFF");
 
 Calibration::Calibration(QWidget *parent) :
     DSDialog(parent)
 {
-    this->setFixedSize(400, 200);
+    this->setFixedSize(400, 250);
     this->setWindowOpacity(0.7);
     this->setModal(false);
 
@@ -55,7 +55,12 @@ Calibration::Calibration(QWidget *parent) :
     _exit_btn = new QPushButton(tr("Exit"), this);
 
     _flayout = new QFormLayout();
+    _flayout->setVerticalSpacing(10);
+    _flayout->setFormAlignment(Qt::AlignLeft);
+    _flayout->setLabelAlignment(Qt::AlignLeft);
+    _flayout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
     QGridLayout *glayout = new QGridLayout();
+    glayout->setVerticalSpacing(5);
 
     glayout->addLayout(_flayout, 1, 0, 1, 5);
     glayout->addWidget(_save_btn, 2, 0);

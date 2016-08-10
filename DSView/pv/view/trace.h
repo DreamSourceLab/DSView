@@ -306,6 +306,7 @@ protected:
     int _sec_index;
     int _old_v_offset;
     int _totalHeight;
+    int _typeWidth;
 
     QSizeF _text_size;
 };

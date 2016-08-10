@@ -58,6 +58,10 @@ ProtocolExp::ProtocolExp(QWidget *parent, SigSession &session) :
     _format_combobox->addItem(tr("Text files (*.txt)"));
 
     _flayout = new QFormLayout();
+    _flayout->setVerticalSpacing(5);
+    _flayout->setFormAlignment(Qt::AlignLeft);
+    _flayout->setLabelAlignment(Qt::AlignLeft);
+    _flayout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
     _flayout->addRow(new QLabel(tr("Export Format: "), this), _format_combobox);
 
     pv::data::DecoderModel* decoder_model = _session.get_decoder_model();

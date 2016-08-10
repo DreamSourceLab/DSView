@@ -36,11 +36,11 @@ namespace pv {
 namespace data {
 
 const QString MathStack::windows_support[5] = {
-    "Rectangle",
-    "Hann",
-    "Hamming",
-    "Blackman",
-    "Flat_top"
+    QT_TR_NOOP("Rectangle"),
+    QT_TR_NOOP("Hann"),
+    QT_TR_NOOP("Hamming"),
+    QT_TR_NOOP("Blackman"),
+    QT_TR_NOOP("Flat_top")
 };
 
 const uint64_t MathStack::length_support[5] = {

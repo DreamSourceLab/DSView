@@ -61,7 +61,7 @@ protected:
 
 private:
 
-	QWidget* get_property_form();
+    QGridLayout *get_property_form(QWidget *parent);
 
 	void setup_probes();
 
@@ -86,7 +86,6 @@ private:
     QVector <QCheckBox *> _probes_checkBox_list;
 
     QGroupBox *_props_box;
-    QVBoxLayout _props_box_layout;
 
     QPushButton *_config_button;
     QPushButton *_cali_button;

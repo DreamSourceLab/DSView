@@ -437,7 +437,7 @@ bool DsoSignal::load_settings()
     //    qDebug() << "ERROR: config_get SR_CONF_EN_CH failed.";
     //    return false;
     //}
-    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_DSO_BITS);
+    gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_DSO_BITS);
     if (gvar != NULL) {
         _bits = g_variant_get_byte(gvar);
         g_variant_unref(gvar);
@@ -563,6 +563,10 @@ int DsoSignal::commit_settings()
     double vpos_off = (0.5 - (get_zero_vpos() - UpMargin) * 1.0/get_view_rect().height()) * _vDial->get_value() * DS_CONF_DSO_VDIVS;
     ret = _dev_inst->set_config(_probe, NULL, SR_CONF_VPOS,
                                 g_variant_new_double(vpos_off));
+
+    // -- trig_value
+    _dev_inst->set_config(_probe, NULL, SR_CONF_TRIGGER_VALUE,
+                          g_variant_new_byte(_trig_value));
 
     return ret;
 }

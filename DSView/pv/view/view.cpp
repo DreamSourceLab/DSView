@@ -167,7 +167,7 @@ View::View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget
             _time_viewport, SLOT(show_wait_trigger()));
 
     connect(_devmode, SIGNAL(mode_changed()),
-            parent, SLOT(update_device_list()), Qt::DirectConnection);
+            parent, SLOT(mode_changed()), Qt::DirectConnection);
 
     connect(_header, SIGNAL(traces_moved()),
         this, SLOT(on_traces_moved()));
@@ -571,11 +571,13 @@ void View::update_scale_offset()
     if (_session.get_device()->dev_inst()->mode != DSO) {
         //_scale = (1.0 / sample_rate) / WellPixelsPerSample;
         _maxscale = _session.cur_sampletime() / (get_view_width() * MaxViewRate);
+        _minscale = (1.0 / sample_rate) / MaxPixelsPerSample;
     } else {
         _scale = _session.get_device()->get_time_base() * 10.0 / get_view_width() * std::pow(10.0, -9.0);
         _maxscale = 1e9;
+        _minscale = 1e-15;
     }
-    _minscale = (1.0 / sample_rate) / MaxPixelsPerSample;
+
 
     _scale = max(min(_scale, _maxscale), _minscale);
     _offset = max(min(_offset, get_max_offset()), get_min_offset());
@@ -595,11 +597,7 @@ void View::signals_changed()
     uint8_t max_height = MaxHeightUnit;
     vector< boost::shared_ptr<Trace> > time_traces;
     vector< boost::shared_ptr<Trace> > fft_traces;
-
-    if (_session.get_device()->dev_inst()->mode == LOGIC)
-        _viewbottom->setFixedHeight(StatusHeight);
-    else
-        _viewbottom->setFixedHeight(10);
+    int bits = 8;
 
     BOOST_FOREACH(const boost::shared_ptr<Trace> t, get_traces(ALL_VIEW)) {
         if (_trace_view_map[t->get_type()] == TIME_VIEW)
@@ -672,8 +670,14 @@ void View::signals_changed()
             next_v_offset += traceHeight + 2 * SignalMargin;
 
             boost::shared_ptr<view::DsoSignal> dsoSig;
-            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(t))
-                dsoSig->set_scale(dsoSig->get_view_rect().height() / 256.0f);
+            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(t)) {
+                GVariant *gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_DSO_BITS);
+                if (gvar != NULL) {
+                    bits = g_variant_get_byte(gvar);
+                    g_variant_unref(gvar);
+                }
+                dsoSig->set_scale(dsoSig->get_view_rect().height() * 1.0f / (1 << bits));
+            }
         }
         _time_viewport->clear_measure();
     }
@@ -1064,6 +1068,22 @@ void View::splitterMoved(int pos, int index)
     (void)pos;
     (void)index;
     signals_changed();
+}
+
+void View::reload()
+{
+    show_trig_cursor(false);
+
+    /*
+     * if headerwidth not change, viewport height will not be updated
+     * lead to a wrong signal height
+     */
+    if (_session.get_device()->dev_inst()->mode == LOGIC)
+        _viewbottom->setFixedHeight(StatusHeight);
+    else
+        _viewbottom->setFixedHeight(10);
+
+
 }
 
 } // namespace view

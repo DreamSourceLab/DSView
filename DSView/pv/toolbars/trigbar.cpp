@@ -184,6 +184,7 @@ void TrigBar::reload()
         _search_action->setVisible(false);
         _math_action->setVisible(true);
     }
+    enable_toggle(true);
     update();
 }
 

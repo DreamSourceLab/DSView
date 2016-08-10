@@ -112,8 +112,8 @@ const QColor DecodeTrace::OutlineColours[16] = {
 	QColor(0x6B, 0x23, 0x37)
 };
 
-const QString DecodeTrace::RegionStart = "Start";
-const QString DecodeTrace::RegionEnd = "End  ";
+const QString DecodeTrace::RegionStart = QT_TR_NOOP("Start");
+const QString DecodeTrace::RegionEnd = QT_TR_NOOP("End  ");
 
 DecodeTrace::DecodeTrace(pv::SigSession &session,
 	boost::shared_ptr<pv::data::DecoderStack> decoder_stack, int index) :
@@ -377,6 +377,10 @@ void DecodeTrace::create_popup_form()
         _popup->reload(false);
 
     _popup_form = new QFormLayout();
+    _popup_form->setVerticalSpacing(5);
+    _popup_form->setFormAlignment(Qt::AlignLeft);
+    _popup_form->setLabelAlignment(Qt::AlignLeft);
+    _popup_form->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
     _popup->layout()->addLayout(_popup_form);
     _popup->setTitle(tr("Decoder Options"));
 
@@ -662,6 +666,11 @@ void DecodeTrace::create_decoder_form(
         this, SLOT(on_del_stack(boost::shared_ptr<data::decode::Decoder>&)));
 
     QFormLayout *const decoder_form = new QFormLayout();
+    decoder_form->setContentsMargins(0,0,0,0);
+    decoder_form->setVerticalSpacing(5);
+    decoder_form->setFormAlignment(Qt::AlignLeft);
+    decoder_form->setLabelAlignment(Qt::AlignLeft);
+    decoder_form->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
 	group->add_layout(decoder_form);
 
 	// Add the mandatory channels

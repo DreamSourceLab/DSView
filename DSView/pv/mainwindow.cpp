@@ -254,6 +254,8 @@ void MainWindow::setup_ui()
             SLOT(malloc_error()));
     connect(&_session, SIGNAL(hardware_connect_failed()), this,
             SLOT(hardware_connect_failed()));
+    connect(&_session, SIGNAL(on_mode_change()), this,
+            SLOT(session_save()));
 
     connect(_view, SIGNAL(cursor_update()), _measure_widget,
             SLOT(cursor_update()));
@@ -295,7 +297,7 @@ void MainWindow::update_device_list()
     assert(_sampling_bar);
 
     _session.stop_capture();
-    _view->show_trig_cursor(false);
+    _view->reload();
     _trigger_widget->device_change();
 #ifdef ENABLE_DECODE
     _protocol_widget->del_all_protocol();
@@ -345,6 +347,11 @@ void MainWindow::reload()
 {
     _trigger_widget->device_change();
     _session.reload();
+}
+
+void MainWindow::mode_changed()
+{
+    update_device_list();
 }
 
 void MainWindow::load_file(QString file_name)
@@ -750,6 +757,7 @@ bool MainWindow::load_session(QString name)
                     dsoSig->load_settings();
                     dsoSig->set_zero_vrate(obj["zeroPos"].toDouble());
                     dsoSig->set_trig_vrate(obj["trigValue"].toDouble());
+                    dsoSig->commit_settings();
                 }
                 break;
             }

@@ -57,6 +57,7 @@ AnalogSignal::AnalogSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
     Signal(dev_inst, probe),
     _data(data)
 {
+    _typeWidth = 2;
     _colour = SignalColours[probe->index % countof(SignalColours)];
     _scale = _totalHeight * 1.0f / 65536;
 }

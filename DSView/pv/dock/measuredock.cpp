@@ -66,6 +66,7 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession &session) :
     _duty_label = new QLabel("#####", _widget);
 
     _mouse_layout = new QGridLayout();
+    _mouse_layout->setVerticalSpacing(5);
     _mouse_layout->addWidget(_fen_checkBox, 0, 0, 1, 4);
     _mouse_layout->addWidget(new QLabel(tr("W: "), _widget), 1, 0);
     _mouse_layout->addWidget(_width_label, 1, 1);
@@ -97,6 +98,7 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession &session) :
     _t3_comboBox->setSizeAdjustPolicy(QComboBox::AdjustToContents);
 
     _cursor_layout = new QGridLayout(_widget);
+    _cursor_layout->setVerticalSpacing(5);
     _cursor_layout->addWidget(new QLabel(tr("T1: "), _widget), 0, 0);
     _cursor_layout->addWidget(_t1_comboBox, 0, 1);
     _cursor_layout->addWidget(new QLabel(tr("T2: "), _widget), 1, 0);

@@ -125,6 +125,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
 
         QVBoxLayout *stage_layout = new QVBoxLayout();
         QGridLayout *stage_glayout = new QGridLayout();
+        stage_glayout->setVerticalSpacing(5);
         stage_glayout->addWidget(value_exp_label, 1, 0);
         stage_glayout->addWidget(inv_exp_label, 1, 1);
         stage_glayout->addWidget(count_exp_label, 1, 2);
@@ -197,6 +198,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
 
     QVBoxLayout *serial_layout = new QVBoxLayout();
     QGridLayout *serial_glayout = new QGridLayout();
+    serial_glayout->setVerticalSpacing(5);
     serial_glayout->addWidget(serial_value_exp_label, 1, 1, 1, 3);
     serial_glayout->addWidget(_serial_start_label, 2, 0);
     serial_glayout->addWidget(_serial_start_lineEdit, 2, 1, 1, 3);
@@ -243,6 +245,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
 
     QVBoxLayout *layout = new QVBoxLayout(_widget);
     QGridLayout *gLayout = new QGridLayout();
+    gLayout->setVerticalSpacing(5);
     gLayout->addWidget(simple_radioButton, 0, 0);
     gLayout->addWidget(adv_radioButton, 1, 0);
     gLayout->addWidget(position_label, 2, 0);

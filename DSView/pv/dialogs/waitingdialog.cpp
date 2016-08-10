@@ -40,8 +40,8 @@ using namespace std;
 namespace pv {
 namespace dialogs {
 
-const QString WaitingDialog::TIPS_WAIT = tr("Waiting");
-const QString WaitingDialog::TIPS_FINISHED = tr("Finished!");
+const QString WaitingDialog::TIPS_WAIT = QT_TR_NOOP("Waiting");
+const QString WaitingDialog::TIPS_FINISHED = QT_TR_NOOP("Finished!");
 
 WaitingDialog::WaitingDialog(QWidget *parent, boost::shared_ptr<pv::device::DevInst> dev_inst) :
     DSDialog(parent),

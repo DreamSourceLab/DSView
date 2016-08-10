@@ -785,6 +785,9 @@ enum {
     /** Stream */
     SR_CONF_STREAM,
 
+    /** DSO Roll */
+    SR_CONF_ROLL,
+
     /** Test */
     SR_CONF_TEST,
 

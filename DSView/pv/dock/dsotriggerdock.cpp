@@ -51,6 +51,7 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession &session) :
     QScrollArea(parent),
     _session(session)
 {
+    this->setWidgetResizable(true);
     _widget = new QWidget(this);
 
     QLabel *position_label = new QLabel(tr("Trigger Position: "), _widget);
@@ -127,6 +128,7 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession &session) :
 
     QVBoxLayout *layout = new QVBoxLayout(_widget);
     QGridLayout *gLayout = new QGridLayout();
+    gLayout->setVerticalSpacing(5);
     gLayout->addWidget(position_label, 0, 0);
     gLayout->addWidget(position_spinBox, 0, 1);
     gLayout->addWidget(new QLabel(tr("%"), _widget), 0, 2);
@@ -156,14 +158,14 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession &session) :
     gLayout->addWidget(margin_label, 15, 0);
     gLayout->addWidget(margin_slider, 16, 0, 1, 4);
 
-    gLayout->setColumnStretch(3, 1);
+    gLayout->setColumnStretch(4, 1);
 
     layout->addLayout(gLayout);
     layout->addStretch(1);
     _widget->setLayout(layout);
 
     this->setWidget(_widget);
-    _widget->setGeometry(0, 0, sizeHint().width(), 500);
+    //_widget->setGeometry(0, 0, sizeHint().width(), 500);
     _widget->setObjectName("dsoTriggerWidget");
 }
 
