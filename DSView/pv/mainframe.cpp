@@ -51,6 +51,12 @@ MainFrame::MainFrame(DeviceManager &device_manager,
     setMinimumWidth(800);
     //resize(1024, 768);
 
+    // Set the window icon
+    QIcon icon;
+    icon.addFile(QString::fromUtf8(":/icons/logo.png"),
+        QSize(), QIcon::Normal, QIcon::Off);
+    setWindowIcon(icon);
+
     _moving = false;
     _startPos = None;
     _freezing = false;

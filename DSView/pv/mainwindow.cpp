@@ -117,12 +117,6 @@ void MainWindow::setup_ui()
     layout()->setMargin(0);
     layout()->setSpacing(0);
 
-	// Set the window icon
-	QIcon icon;
-    icon.addFile(QString::fromUtf8(":/icons/logo.png"),
-		QSize(), QIcon::Normal, QIcon::Off);
-	setWindowIcon(icon);
-
 	// Setup the central widget
 	_central_widget = new QWidget(this);
 	_vertical_layout = new QVBoxLayout(_central_widget);

@@ -34,6 +34,7 @@
 #include <QDebug>
 #include <QFile>
 #include <QDir>
+#include <QIcon>
 
 #include "dsapplication.h"
 #include "pv/devicemanager.h"
