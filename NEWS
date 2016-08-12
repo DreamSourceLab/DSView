@@ -1,3 +1,43 @@
+0.96 (2016-08-12)
+-----------------
+  --common
+  *change color matching of UI
+  *fix memory leakage issues
+  *improve stability of usb transfer
+  *add new hardware support
+  *improve interaction of mouse operations
+  *improve stability of multi-thread operations
+  *change usb driver under windows system
+  *add path memory for file operations
+  *custom windows title of UI
+  *change path of setting files, avoid authority issues
+
+  --for logic analyzer
+  *add list viewer for results of protocol decoders
+  *add search function for protocol list viewer
+  *add file export for results of protocol decoders
+  *improve speed and memory usage of protocol decoders
+  *improve protocol decoders scripts (i2c, uart, spi already done)
+  *add start and end settings for protocol decoders
+  *improve serial trigger, add counter for serial value
+  *improve display and settings for protocol decoders
+  *add display of trigger time
+  *add multi-row search for protocol list viewer
+  *add trigger position and time for file save
+
+  --for oscilloscope
+  *add FFT function for signal analyzer
+  *add auto/trigger shift function
+  *improve zero adjustment program
+  *add manual zero adjustment
+  *add gain adjustment for each vdiv
+  *fix signal display issue when resize window
+  *fix crash issue when change measure settings
+  *fix run-without-display issue
+  *add trigger sensitivity setting
+  *add display of trigger status
+  *fix measure setting reset issue
+
 0.95 (2015-12-14)
 -----------------
  --for logic analyzer
