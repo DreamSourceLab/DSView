@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -67,6 +67,7 @@ class Logic;
 class LogicSnapshot;
 class Group;
 class GroupSnapshot;
+class DecoderModel;
 }
 
 namespace device {
@@ -77,6 +78,7 @@ namespace view {
 class Signal;
 class GroupSignal;
 class DecodeTrace;
+class MathTrace;
 }
 
 namespace decoder {
@@ -90,9 +92,12 @@ class SigSession : public QObject
 
 private:
     static constexpr float Oversampling = 2.0f;
-    static const int ViewTime = 800;
     static const int RefreshTime = 500;
 	bool saveFileThreadRunning = false;
+
+public:
+    static const int ViewTime = 50;
+    static const int WaitShowTime = 500;
 
 public:
 	enum capture_state {
@@ -117,7 +122,7 @@ public:
     void set_file(QString name)
         throw(QString);
 
-    void save_file(const QString name, int type);
+    void save_file(const QString name, QWidget* parent, int type);
 
     void set_default_device(boost::function<void (const QString)> error_handler);
     void export_file(const QString name, QWidget* parent, const QString ext);
@@ -126,10 +131,17 @@ public:
 
 	capture_state get_capture_state() const;
 
+    uint64_t cur_samplerate() const;
+    uint64_t cur_samplelimits() const;
+    double cur_sampletime() const;
+    void set_cur_samplerate(uint64_t samplerate);
+    void set_cur_samplelimits(uint64_t samplelimits);
+    QDateTime get_trigger_time() const;
+    uint64_t get_trigger_pos() const;
+
     void start_capture(bool instant,
 		boost::function<void (const QString)> error_handler);
-
-	void stop_capture();
+    void capture_init();
 
     std::set< boost::shared_ptr<data::SignalData> > get_data() const;
 
@@ -154,6 +166,11 @@ public:
 
     void rst_decoder(view::DecodeTrace *signal);
 
+    pv::data::DecoderModel* get_decoder_model() const;
+
+    std::vector< boost::shared_ptr<view::MathTrace> >
+        get_math_signals();
+
 #endif
 
     void init_signals();
@@ -162,7 +179,7 @@ public:
 
     void del_group();
 
-    void* get_buf(int& unit_size, uint64_t& length);
+    const void* get_buf(int& unit_size, uint64_t& length);
 
     void start_hotplug_proc(boost::function<void (const QString)> error_handler);
     void stop_hotplug_proc();
@@ -174,11 +191,12 @@ public:
     bool get_instant();
 
     bool get_data_lock();
+    void mathTraces_rebuild();
+
+    bool trigd() const;
 
 private:
 	void set_capture_state(capture_state state);
-
-    void read_sample_rate(const sr_dev_inst *const sdi);
 
 private:
     /**
@@ -225,16 +243,20 @@ private:
 	 */
     boost::shared_ptr<device::DevInst> _dev_inst;
 
-	mutable boost::mutex _sampling_mutex;
+    mutable boost::mutex _sampling_mutex;
 	capture_state _capture_state;
     bool _instant;
+    uint64_t _cur_samplerate;
+    uint64_t _cur_samplelimits;
 
-	mutable boost::mutex _signals_mutex;
+    //mutable boost::mutex _signals_mutex;
 	std::vector< boost::shared_ptr<view::Signal> > _signals;
     std::vector< boost::shared_ptr<view::GroupSignal> > _group_traces;
 #ifdef ENABLE_DECODE
     std::vector< boost::shared_ptr<view::DecodeTrace> > _decode_traces;
+    pv::data::DecoderModel *_decoder_model;
 #endif
+    std::vector< boost::shared_ptr<view::MathTrace> > _math_traces;
 
     mutable boost::mutex _data_mutex;
 	boost::shared_ptr<data::Logic> _logic_data;
@@ -255,8 +277,18 @@ private:
     bool _hot_detach;
 
     QTimer _view_timer;
+    int    _noData_cnt;
     QTimer _refresh_timer;
     bool _data_lock;
+    bool _data_updated;
+
+    #ifdef TEST_MODE
+    QTimer _test_timer;
+    #endif
+
+    QDateTime _trigger_time;
+    uint64_t _trigger_pos;
+    bool _trigger_flag;
 
 signals:
 	void capture_state_changed(int state);
@@ -276,6 +308,8 @@ signals:
 
     void receive_trigger(quint64 trigger_pos);
 
+    void receive_header();
+
     void dso_ch_changed(uint16_t num);
 
     void frame_began();
@@ -291,13 +325,26 @@ signals:
     void zero_adj();
     void progressSaveFileValueChanged(int percent);
 
+    void decode_done();
+
+    void show_region(uint64_t start, uint64_t end);
+
+    void hardware_connect_failed();
+
+    void show_wait_trigger();
+
+    void on_mode_change();
+
 public slots:
     void reload();
     void refresh(int holdtime);
+    void stop_capture();
 
 private slots:
     void cancelSaveFile();
     void data_unlock();
+    void check_update();
+    void nodata_timeout();
 
 private:
 	// TODO: This should not be necessary. Multiple concurrent

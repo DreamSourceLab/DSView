@@ -36,25 +36,24 @@
         <file>icons/gear.png</file>
         <file>icons/wiki.png</file>
         <file>icons/wait.gif</file>
-        <file>icons/file_cn.png</file>
-        <file>icons/file_dis_cn.png</file>
-        <file>icons/instant_cn.png</file>
-        <file>icons/measure_cn.png</file>
-        <file>icons/measure_dis_cn.png</file>
-        <file>icons/params_cn.png</file>
-        <file>icons/params_dis_cn.png</file>
-        <file>icons/protocol_dis_cn.png</file>
-        <file>icons/search-bar_cn.png</file>
-        <file>icons/search-bar_dis_cn.png</file>
-        <file>icons/start_cn.png</file>
-        <file>icons/stop_cn.png</file>
-        <file>icons/trigger_cn.png</file>
-        <file>icons/trigger_dis_cn.png</file>
-        <file>icons/protocol_cn.png</file>
         <file>icons/instant_dis.png</file>
-        <file>icons/instant_dis_cn.png</file>
         <file>icons/start_dis.png</file>
-        <file>icons/start_dis_cn.png</file>
         <file>icons/settings.png</file>
+        <file>darkstyle/style.qss</file>
+        <file>icons/export.png</file>
+        <file>icons/single.png</file>
+        <file>icons/single_dis.png</file>
+        <file>icons/math.png</file>
+        <file>icons/math_dis.png</file>
+        <file>icons/fft.png</file>
+        <file>icons/Blackman.png</file>
+        <file>icons/Flat_top.png</file>
+        <file>icons/Hamming.png</file>
+        <file>icons/Hann.png</file>
+        <file>icons/Rectangle.png</file>
+        <file>icons/close.png</file>
+        <file>icons/maximize.png</file>
+        <file>icons/minimize.png</file>
+        <file>icons/restore.png</file>
     </qresource>
 </RCC>

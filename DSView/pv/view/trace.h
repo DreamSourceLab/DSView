@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2013 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2014 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2014 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,8 @@
 
 #include <stdint.h>
 
+#include <libsigrok4DSL/libsigrok.h>
+
 #include "selectableitem.h"
 #include "dsldial.h"
 
@@ -40,6 +42,7 @@ namespace pv {
 namespace view {
 
 class View;
+class Viewport;
 
 class Trace : public SelectableItem
 {
@@ -69,6 +72,13 @@ public:
     static const QColor dsLightBlue;
     static const QColor dsLightRed;
     static const QPen SignalAxisPen;
+
+    static const QColor DARK_BACK;
+    static const QColor DARK_FORE;
+    static const QColor DARK_HIGHLIGHT;
+    static const QColor DARK_BLUE;
+
+    static const QColor PROBE_COLORS[8];
 
 protected:
     Trace(QString name, uint16_t index, int type);
@@ -127,12 +137,12 @@ public:
     /**
      * Gets the height of this signal.
      */
-    int get_signalHeight() const;
+    int get_totalHeight() const;
 
     /**
      * Sets the height of this signal.
      */
-    void set_signalHeight(int height);
+    void set_totalHeight(int height);
 
     /**
      * Geom
@@ -151,7 +161,7 @@ public:
      */
     void set_old_v_offset(int v_offset);
 
-    virtual int get_zeroPos();
+    virtual int get_zero_vpos();
 
 	/**
 	 * Returns true if the trace is visible and enabled.
@@ -159,6 +169,9 @@ public:
 	virtual bool enabled() const = 0;
 
 	virtual void set_view(pv::view::View *view);
+    pv::view::View* get_view() const;
+    virtual void set_viewport(pv::view::Viewport *viewport);
+    pv::view::Viewport* get_viewport() const;
 
 	/**
 	 * Paints the background layer of the trace with a QPainter
@@ -224,11 +237,11 @@ public:
      * 	area.
      * @return Returns the rectangle of the signal label.
      */
-    QRectF get_rect(const char *s, int y, int right);
+    QRectF get_rect(const char *s, int y, int right) const;
 
     virtual int rows_size();
 
-    virtual QRectF get_view_rect() const;
+    virtual QRect get_view_rect() const;
 
     virtual bool mouse_double_click(int right, const QPoint pt);
 
@@ -283,6 +296,7 @@ signals:
 
 protected:
 	pv::view::View *_view;
+    pv::view::Viewport *_viewport;
 
 	QString _name;
 	QColor _colour;
@@ -291,7 +305,8 @@ protected:
     std::list<int> _index_list;
     int _sec_index;
     int _old_v_offset;
-    int _signalHeight;
+    int _totalHeight;
+    int _typeWidth;
 
     QSizeF _text_size;
 };

@@ -2,7 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2014 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2014 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,9 +44,9 @@ namespace device{
 class DevInst;
 }
 
-namespace view {
+class SigSession;
 
-class View;
+namespace view {
 
 class DevMode : public QWidget
 {
@@ -56,7 +56,7 @@ private:
     static const int GRID_COLS = 3;
 
 public:
-    DevMode(View &parent);
+    DevMode(QWidget *parent, SigSession &session);
 
 private:
 	void paintEvent(QPaintEvent *event);
@@ -77,10 +77,10 @@ signals:
     void mode_changed();
 
 private:
-    View &_view;
+    SigSession &_session;
 
-    QGridLayout *  layout;
-    std::map <boost::shared_ptr<QPushButton>, sr_dev_mode *> _mode_button_list;
+    QGridLayout *  _layout;
+    std::map <QPushButton *, sr_dev_mode *> _mode_button_list;
     QPoint _mouse_point;
 };
 

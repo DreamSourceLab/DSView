@@ -86,7 +86,7 @@ SR_API struct sr_session *sr_session_new(void)
 	session->source_timeout = -1;
     session->running = FALSE;
 	session->abort_session = FALSE;
-//	g_mutex_init(&session->stop_mutex);
+    g_mutex_init(&session->stop_mutex);
 
 	return session;
 }
@@ -121,7 +121,7 @@ SR_API int sr_session_destroy(void)
 
 	/* TODO: Error checks needed? */
 
-//	g_mutex_clear(&session->stop_mutex);
+    g_mutex_clear(&session->stop_mutex);
 
 	g_free(session);
 	session = NULL;
@@ -325,13 +325,13 @@ static int sr_session_iteration(gboolean block)
 		 * we check the flag after processing every source, not
 		 * just once per main event loop.
 		 */
-		//g_mutex_lock(&session->stop_mutex);
+        g_mutex_lock(&session->stop_mutex);
 		if (session->abort_session) {
 			sr_session_stop_sync();
 			/* But once is enough. */
 			session->abort_session = FALSE;
 		}
-		//g_mutex_unlock(&session->stop_mutex);
+        g_mutex_unlock(&session->stop_mutex);
 	}
 
 	return SR_OK;
@@ -414,6 +414,10 @@ SR_API int sr_session_run(void)
 			sr_session_iteration(TRUE);
 	}
 
+    g_mutex_lock(&session->stop_mutex);
+    session->running = FALSE;
+    session->abort_session = FALSE;
+    g_mutex_unlock(&session->stop_mutex);
 	return SR_OK;
 }
 
@@ -447,7 +451,6 @@ SR_PRIV int sr_session_stop_sync(void)
                 sdi->driver->dev_acquisition_stop(sdi, NULL);
 		}
 	}
-        session->running = FALSE;
 
 	return SR_OK;
 }
@@ -472,9 +475,10 @@ SR_API int sr_session_stop(void)
 		return SR_ERR_BUG;
 	}
 
-//	g_mutex_lock(&session->stop_mutex);
-	session->abort_session = TRUE;
-//	g_mutex_unlock(&session->stop_mutex);
+    g_mutex_lock(&session->stop_mutex);
+    if (session->running)
+        session->abort_session = TRUE;
+    g_mutex_unlock(&session->stop_mutex);
 
 	return SR_OK;
 }
@@ -722,29 +726,37 @@ static int _sr_session_source_remove(gintptr poll_object)
 	if (old == session->num_sources)
 		return SR_OK;
 
-	session->num_sources -= 1;
+    session->num_sources -= 1;
 
-	if (old != session->num_sources) {
-		memmove(&session->pollfds[old], &session->pollfds[old+1],
-			(session->num_sources - old) * sizeof(GPollFD));
-		memmove(&session->sources[old], &session->sources[old+1],
-			(session->num_sources - old) * sizeof(struct source));
-	}
+    if (session->num_sources == 0) {
+        session->source_timeout = -1;
+        g_free(session->pollfds);
+        g_free(session->sources);
+        session->pollfds = NULL;
+        session->sources = NULL;
+    } else {
+        if (old != session->num_sources) {
+            memmove(&session->pollfds[old], &session->pollfds[old+1],
+                (session->num_sources - old) * sizeof(GPollFD));
+            memmove(&session->sources[old], &session->sources[old+1],
+                (session->num_sources - old) * sizeof(struct source));
+        }
 
-	new_pollfds = g_try_realloc(session->pollfds, sizeof(GPollFD) * session->num_sources);
-	if (!new_pollfds && session->num_sources > 0) {
-		sr_err("%s: new_pollfds malloc failed", __func__);
-		return SR_ERR_MALLOC;
-	}
+        new_pollfds = g_try_realloc(session->pollfds, sizeof(GPollFD) * session->num_sources);
+        if (!new_pollfds && session->num_sources > 0) {
+            sr_err("%s: new_pollfds malloc failed", __func__);
+            return SR_ERR_MALLOC;
+        }
 
-	new_sources = g_try_realloc(session->sources, sizeof(struct source) * session->num_sources);
-	if (!new_sources && session->num_sources > 0) {
-		sr_err("%s: new_sources malloc failed", __func__);
-		return SR_ERR_MALLOC;
-	}
+        new_sources = g_try_realloc(session->sources, sizeof(struct source) * session->num_sources);
+        if (!new_sources && session->num_sources > 0) {
+            sr_err("%s: new_sources malloc failed", __func__);
+            return SR_ERR_MALLOC;
+        }
 
-	session->pollfds = new_pollfds;
-	session->sources = new_sources;
+        session->pollfds = new_pollfds;
+        session->sources = new_sources;
+    }
 
 	return SR_OK;
 }

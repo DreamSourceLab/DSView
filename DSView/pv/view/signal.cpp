@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,14 +35,14 @@ namespace pv {
 namespace view {
 
 Signal::Signal(boost::shared_ptr<pv::device::DevInst> dev_inst,
-               const sr_channel *const probe, int type) :
-    Trace(probe->name, probe->index, type),
+               sr_channel *probe) :
+    Trace(probe->name, probe->index, probe->type),
     _dev_inst(dev_inst),
     _probe(probe)
 {
 }
 
-Signal::Signal(const Signal &s, const sr_channel * const probe) :
+Signal::Signal(const Signal &s, sr_channel *probe) :
     Trace((const Trace &)s),
     _dev_inst(s._dev_inst),
     _probe(probe)
@@ -54,10 +54,22 @@ bool Signal::enabled() const
     return _probe->enabled;
 }
 
+void Signal::set_name(QString name)
+{
+    Trace::set_name(name);
+    g_free(_probe->name);
+    _probe->name = g_strdup(name.toLocal8Bit().data());
+}
+
 void Signal::paint_axis(QPainter &p, int y, int left, int right)
 {
 	p.setPen(SignalAxisPen);
 	p.drawLine(QPointF(left, y + 0.5f), QPointF(right, y + 0.5f));
+}
+
+boost::shared_ptr<device::DevInst> Signal::get_device() const
+{
+    return _dev_inst;
 }
 
 } // namespace view

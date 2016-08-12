@@ -2,8 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,6 +53,9 @@ namespace dock {
 class TriggerDock : public QScrollArea
 {
     Q_OBJECT
+
+private:
+    static const int MinTrigPosition;
 
 public:
     TriggerDock(QWidget *parent, SigSession &session);
@@ -125,6 +127,8 @@ private:
     QComboBox *_serial_data_comboBox;
     QLabel *_serial_value_lable;
     QLineEdit *_serial_value_lineEdit;
+    QLabel *_serial_vcnt_lable;
+    QSpinBox *_serial_vcnt_spinBox;
 };
 
 } // namespace dock

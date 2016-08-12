@@ -2,6 +2,7 @@
  * This file is part of the PulseView project.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
+ * Copyright (C) 2014 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,11 +29,11 @@
 
 #include <QSignalMapper>
 #include <QFormLayout>
-#include <QDialog>
 
 #include <boost/shared_ptr.hpp>
 
 #include <pv/prop/binding/decoderoptions.h>
+#include "../dialogs/dsdialog.h"
 
 struct srd_channel;
 struct srd_decoder;
@@ -88,7 +89,12 @@ private:
 	static const QColor Colours[16];
 	static const QColor OutlineColours[16];
 
-    static const int DefaultFontSize = 8;
+    static const int DefaultFontSize = 10;
+    static const int ControlRectWidth = 5;
+    static const int MaxAnnType = 100;
+
+    static const QString RegionStart;
+    static const QString RegionEnd;
 
 public:
 	DecodeTrace(pv::SigSession &session,
@@ -132,6 +138,13 @@ public:
 
     QRectF get_rect(DecodeSetRegions type, int y, int right);
 
+    /**
+     * decode region
+     **/
+    void frame_ended();
+
+    int get_progress() const;
+
 protected:
     void paint_type_options(QPainter &p, int right, const QPoint pt);
 
@@ -143,14 +156,14 @@ private:
 	void draw_annotation(const pv::data::decode::Annotation &a, QPainter &p,
 		QColor text_colour, int text_height, int left, int right,
 		double samples_per_pixel, double pixels_offset, int y,
-		size_t base_colour) const;
+        size_t base_colour, double min_annWidth) const;
     void draw_nodetail(QPainter &p,
         int text_height, int left, int right, int y,
         size_t base_colour) const;
 
 	void draw_instant(const pv::data::decode::Annotation &a, QPainter &p,
 		QColor fill, QColor outline, QColor text_color, int h, double x,
-		int y) const;
+        int y, double min_annWidth) const;
 
 	void draw_range(const pv::data::decode::Annotation &a, QPainter &p,
 		QColor fill, QColor outline, QColor text_color, int h, double start,
@@ -159,15 +172,12 @@ private:
 	void draw_error(QPainter &p, const QString &message,
 		int left, int right);
 
-    bool draw_unresolved_period(QPainter &p, int h, int left,
-        int right);
-
     void draw_unshown_row(QPainter &p, int y, int h, int left,
-                          int right);
+                          int right, QString info);
 
-	void create_decoder_form(int index,
-		boost::shared_ptr<pv::data::decode::Decoder> &dec,
-		QWidget *parent, QFormLayout *form);
+    void create_decoder_form(boost::shared_ptr<data::DecoderStack> &decoder_stack,
+        boost::shared_ptr<pv::data::decode::Decoder> &dec,
+        QWidget *parent, QFormLayout *form);
 
 	QComboBox* create_probe_selector(QWidget *parent,
 		const boost::shared_ptr<pv::data::decode::Decoder> &dec,
@@ -178,6 +188,9 @@ private:
 
 	void commit_probes();
 
+signals:
+    void decoded_progress(int progress);
+
 private slots:
 	void on_new_decode_data();
 
@@ -186,16 +199,21 @@ private slots:
 	void on_probe_selected(int);
 
 	void on_stack_decoder(srd_decoder *decoder);
-
-	void on_show_hide_decoder(int index);
+    void on_del_stack(boost::shared_ptr<data::decode::Decoder> &dec);
 
     void on_decode_done();
+
+    void on_region_set(int index);
 
 private:
 	pv::SigSession &_session;
 	boost::shared_ptr<pv::data::DecoderStack> _decoder_stack;
 
 	uint64_t _decode_start, _decode_end;
+    int _start_index, _end_index;
+    int _start_count, _end_count;
+    QComboBox *_start_comboBox, *_end_comboBox;
+    int _progress;
 
 	std::list< boost::shared_ptr<pv::prop::binding::DecoderOptions> >
 		_bindings;
@@ -205,9 +223,8 @@ private:
 
 	std::vector<QString> _cur_row_headings;
 
-    QSignalMapper  _show_hide_mapper;
     QFormLayout *_popup_form;
-    QDialog *_popup;
+    dialogs::DSDialog *_popup;
 };
 
 } // namespace view

@@ -3,7 +3,6 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +23,7 @@
 #include <assert.h>
 
 #include <QComboBox>
+#include <QAbstractItemView>
 
 #include "enum.h"
 
@@ -61,12 +61,14 @@ QWidget* Enum::get_widget(QWidget *parent, bool auto_commit)
         return NULL;
 
 	_selector = new QComboBox(parent);
+    _selector->setSizeAdjustPolicy(QComboBox::AdjustToContents);
 	for (unsigned int i = 0; i < _values.size(); i++) {
 		const pair<GVariant*, QString> &v = _values[i];
 		_selector->addItem(v.second, qVariantFromValue((void*)v.first));
 		if (value && g_variant_compare(v.first, value) == 0)
 			_selector->setCurrentIndex(i);
 	}
+    _selector->view()->setMinimumWidth(_selector->width()+30);
 
 	g_variant_unref(value);
 

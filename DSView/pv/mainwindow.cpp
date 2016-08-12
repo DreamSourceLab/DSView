@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,6 +45,7 @@
 #include <QDesktopWidget>
 #include <QKeyEvent>
 #include <QEvent>
+#include <QtGlobal>
 
 #include "mainwindow.h"
 
@@ -56,11 +57,13 @@
 #include "dialogs/deviceoptions.h"
 #include "dialogs/storeprogress.h"
 #include "dialogs/waitingdialog.h"
+#include "dialogs/dsmessagebox.h"
 
 #include "toolbars/samplingbar.h"
 #include "toolbars/trigbar.h"
 #include "toolbars/filebar.h"
 #include "toolbars/logobar.h"
+#include "toolbars/titlebar.h"
 
 #include "dock/triggerdock.h"
 #include "dock/dsotriggerdock.h"
@@ -111,25 +114,19 @@ MainWindow::MainWindow(DeviceManager &device_manager,
 void MainWindow::setup_ui()
 {
 	setObjectName(QString::fromUtf8("MainWindow"));
-    setMinimumHeight(680);
-	resize(1024, 768);
-
-	// Set the window icon
-	QIcon icon;
-    icon.addFile(QString::fromUtf8(":/icons/logo.png"),
-		QSize(), QIcon::Normal, QIcon::Off);
-	setWindowIcon(icon);
+    layout()->setMargin(0);
+    layout()->setSpacing(0);
 
 	// Setup the central widget
 	_central_widget = new QWidget(this);
 	_vertical_layout = new QVBoxLayout(_central_widget);
-	_vertical_layout->setSpacing(6);
+    _vertical_layout->setSpacing(0);
 	_vertical_layout->setContentsMargins(0, 0, 0, 0);
 	setCentralWidget(_central_widget);
 
 	// Setup the sampling bar
     _sampling_bar = new toolbars::SamplingBar(_session, this);
-    _trig_bar = new toolbars::TrigBar(this);
+    _trig_bar = new toolbars::TrigBar(_session, this);
     _file_bar = new toolbars::FileBar(_session, this);
     _logo_bar = new toolbars::LogoBar(_session, this);
 
@@ -146,7 +143,7 @@ void MainWindow::setup_ui()
     connect(_file_bar, SIGNAL(save()), this,
             SLOT(on_save()));
     connect(_file_bar, SIGNAL(on_screenShot()), this,
-            SLOT(on_screenShot()));
+            SLOT(on_screenShot()), Qt::QueuedConnection);
     connect(_file_bar, SIGNAL(load_session(QString)), this,
             SLOT(load_session(QString)));
     connect(_file_bar, SIGNAL(store_session(QString)), this,
@@ -191,13 +188,17 @@ void MainWindow::setup_ui()
         SLOT(run_stop()));
     connect(_sampling_bar, SIGNAL(instant_stop()), this,
         SLOT(instant_stop()));
-    connect(_sampling_bar, SIGNAL(update_scale()), _view,
-        SLOT(update_scale()), Qt::DirectConnection);
     connect(_sampling_bar, SIGNAL(sample_count_changed()), _trigger_widget,
         SLOT(device_change()));
-    connect(_dso_trigger_widget, SIGNAL(set_trig_pos(quint64)), _view,
-        SLOT(set_trig_pos(quint64)));
+    connect(_sampling_bar, SIGNAL(show_calibration()), _view,
+        SLOT(show_calibration()));
+    connect(_sampling_bar, SIGNAL(hide_calibration()), _view,
+        SLOT(hide_calibration()));
+    connect(_dso_trigger_widget, SIGNAL(set_trig_pos(int)), _view,
+        SLOT(set_trig_pos(int)));
+    connect(_protocol_widget, SIGNAL(protocol_updated()), _view, SLOT(signals_changed()));
 
+    setIconSize(QSize(40,40));
     addToolBar(_sampling_bar);
     addToolBar(_trig_bar);
     addToolBar(_file_bar);
@@ -238,20 +239,22 @@ void MainWindow::setup_ui()
 	connect(&_session, SIGNAL(capture_state_changed(int)), this,
 		SLOT(capture_state_changed(int)));
     connect(&_session, SIGNAL(device_attach()), this,
-            SLOT(device_attach()));
+            SLOT(device_attach()), Qt::QueuedConnection);
     connect(&_session, SIGNAL(device_detach()), this,
-            SLOT(device_detach()));
+            SLOT(device_detach()), Qt::QueuedConnection);
     connect(&_session, SIGNAL(test_data_error()), this,
             SLOT(test_data_error()));
     connect(&_session, SIGNAL(malloc_error()), this,
             SLOT(malloc_error()));
+    connect(&_session, SIGNAL(hardware_connect_failed()), this,
+            SLOT(hardware_connect_failed()));
+    connect(&_session, SIGNAL(on_mode_change()), this,
+            SLOT(session_save()));
 
     connect(_view, SIGNAL(cursor_update()), _measure_widget,
             SLOT(cursor_update()));
     connect(_view, SIGNAL(cursor_moved()), _measure_widget,
             SLOT(cursor_moved()));
-    connect(_view, SIGNAL(mode_changed()), this,
-            SLOT(update_device_list()));
 
     // event filter
     _view->installEventFilter(this);
@@ -288,23 +291,13 @@ void MainWindow::update_device_list()
     assert(_sampling_bar);
 
     _session.stop_capture();
-    _view->show_trig_cursor(false);
+    _view->reload();
     _trigger_widget->device_change();
 #ifdef ENABLE_DECODE
     _protocol_widget->del_all_protocol();
 #endif
-    _trig_bar->close_all();
-
-    if (_session.get_device()->dev_inst()->mode == LOGIC) {
-        _trig_bar->enable_protocol(true);
-    } else {
-        _trig_bar->enable_protocol(false);
-    }
-    if (_session.get_device()->dev_inst()->mode == DSO) {
-        _sampling_bar->enable_toggle(false);
-    } else {
-        _sampling_bar->enable_toggle(true);
-    }
+    _trig_bar->reload();
+    _sampling_bar->reload();
 
     shared_ptr<pv::device::DevInst> selected_device = _session.get_device();
     _device_manager.add_device(selected_device);
@@ -319,22 +312,40 @@ void MainWindow::update_device_list()
             errorMessage, infoMessage));
     }
 
-    if (strncmp(selected_device->dev_inst()->driver->name, "virtual", 7)) {
+    if (!selected_device->name().contains("virtual")) {
+        _file_bar->set_settings_en(true);
         _logo_bar->dsl_connected(true);
-        QString ses_name = config_path +
-                           QString::fromUtf8(selected_device->dev_inst()->driver->name) +
-                           QString::number(selected_device->dev_inst()->mode) +
-                           ".dsc";
-        load_session(ses_name);
+        #if QT_VERSION >= 0x050400
+        QDir dir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
+        #else
+        QDir dir(QStandardPaths::writableLocation(QStandardPaths::DataLocation));
+        #endif
+        if (dir.exists()) {
+            QString str = dir.absolutePath() + "/";
+            QString ses_name = str +
+                               selected_device->name() +
+                               QString::number(selected_device->dev_inst()->mode) +
+                               ".dsc";
+            load_session(ses_name);
+        }
     } else {
+        _file_bar->set_settings_en(false);
         _logo_bar->dsl_connected(false);
     }
+    _view->status_clear();
+    _trigger_widget->init();
+    _dso_trigger_widget->init();
 }
 
 void MainWindow::reload()
 {
     _trigger_widget->device_change();
     _session.reload();
+}
+
+void MainWindow::mode_changed()
+{
+    update_device_list();
 }
 
 void MainWindow::load_file(QString file_name)
@@ -356,16 +367,17 @@ void MainWindow::load_file(QString file_name)
 void MainWindow::show_session_error(
 	const QString text, const QString info_text)
 {
-	QMessageBox msg(this);
-	msg.setText(text);
-	msg.setInformativeText(info_text);
-	msg.setStandardButtons(QMessageBox::Ok);
-	msg.setIcon(QMessageBox::Warning);
+    dialogs::DSMessageBox msg(this);
+    msg.mBox()->setText(text);
+    msg.mBox()->setInformativeText(info_text);
+    msg.mBox()->setStandardButtons(QMessageBox::Ok);
+    msg.mBox()->setIcon(QMessageBox::Warning);
 	msg.exec();
 }
 
 void MainWindow::device_attach()
 {
+    _session.get_device()->device_updated();
     //_session.stop_hot_plug_proc();
 
     if (_session.get_capture_state() == SigSession::Running)
@@ -384,10 +396,14 @@ void MainWindow::device_attach()
 
 void MainWindow::device_detach()
 {
+    _session.get_device()->device_updated();
     //_session.stop_hot_plug_proc();
 
     if (_session.get_capture_state() == SigSession::Running)
         _session.stop_capture();
+
+    session_save();
+    _view->hide_calibration();
 
     struct sr_dev_driver **const drivers = sr_driver_list();
     struct sr_dev_driver **driver;
@@ -412,7 +428,10 @@ void MainWindow::run_stop()
     switch(_session.get_capture_state()) {
     case SigSession::Init:
 	case SigSession::Stopped:
-        _view->show_trig_cursor(false);
+        if (_session.get_device()->dev_inst()->mode == DSO)
+            _view->show_trig_cursor(true);
+        else
+            _view->show_trig_cursor(false);
         _view->update_sample(false);
         commit_trigger(false);
         _session.start_capture(false,
@@ -429,14 +448,19 @@ void MainWindow::run_stop()
 void MainWindow::instant_stop()
 {
 #ifdef TEST_MODE
-    disconnect(&test_timer, SIGNAL(timeout()),
-            this, SLOT(run_stop()));
-    test_timer_linked = false;
-#else
+    if (!test_timer_linked) {
+        connect(&test_timer, SIGNAL(timeout()),
+                this, SLOT(instant_stop()));
+        test_timer_linked = true;
+    }
+#endif
     switch(_session.get_capture_state()) {
     case SigSession::Init:
     case SigSession::Stopped:
-        _view->show_trig_cursor(false);
+        if (_session.get_device()->dev_inst()->mode == DSO)
+            _view->show_trig_cursor(true);
+        else
+            _view->show_trig_cursor(false);
         _view->update_sample(true);
         commit_trigger(true);
         _session.start_capture(true,
@@ -448,33 +472,40 @@ void MainWindow::instant_stop()
         _session.stop_capture();
         break;
     }
-#endif
+
 }
 
 void MainWindow::test_data_error()
 {
-#ifdef TEST_MODE
-    disconnect(&test_timer, SIGNAL(timeout()),
-            this, SLOT(run_stop()));
-    test_timer_linked = false;
-#endif
+
     _session.stop_capture();
-    QMessageBox msg(this);
-    msg.setText(tr("Data Error"));
-    msg.setInformativeText(tr("the receive data are not consist with pre-defined test data"));
-    msg.setStandardButtons(QMessageBox::Ok);
-    msg.setIcon(QMessageBox::Warning);
+    dialogs::DSMessageBox msg(this);
+    msg.mBox()->setText(tr("Data Error"));
+    msg.mBox()->setInformativeText(tr("the receive data are not consist with pre-defined test data"));
+    msg.mBox()->setStandardButtons(QMessageBox::Ok);
+    msg.mBox()->setIcon(QMessageBox::Warning);
     msg.exec();
 }
 
 void MainWindow::malloc_error()
 {
     _session.stop_capture();
-    QMessageBox msg(this);
-    msg.setText(tr("Malloc Error"));
-    msg.setInformativeText(tr("Memory is not enough for this sample!\nPlease reduce the sample depth!"));
-    msg.setStandardButtons(QMessageBox::Ok);
-    msg.setIcon(QMessageBox::Warning);
+    dialogs::DSMessageBox msg(this);
+    msg.mBox()->setText(tr("Malloc Error"));
+    msg.mBox()->setInformativeText(tr("Memory is not enough for this sample!\nPlease reduce the sample depth!"));
+    msg.mBox()->setStandardButtons(QMessageBox::Ok);
+    msg.mBox()->setIcon(QMessageBox::Warning);
+    msg.exec();
+}
+
+void MainWindow::hardware_connect_failed()
+{
+    _session.stop_capture();
+    dialogs::DSMessageBox msg(this);
+    msg.mBox()->setText(tr("Hardware Connect Failed"));
+    msg.mBox()->setInformativeText(tr("Please check hardware connection!"));
+    msg.mBox()->setStandardButtons(QMessageBox::Ok);
+    msg.mBox()->setIcon(QMessageBox::Warning);
     msg.exec();
 }
 
@@ -488,52 +519,44 @@ void MainWindow::capture_state_changed(int state)
         _sampling_bar->enable_toggle(state != SigSession::Running);
         _trig_bar->enable_toggle(state != SigSession::Running);
         _measure_dock->widget()->setEnabled(state != SigSession::Running);
-        if (_session.get_device()->dev_inst()->mode == LOGIC &&
-            state == SigSession::Stopped) {
-            GVariant *gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_RLE);
-            if (gvar != NULL) {
-                bool rle = g_variant_get_boolean(gvar);
-                g_variant_unref(gvar);
-                if (rle) {
-                    gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_ACTUAL_SAMPLES);
-                    if (gvar != NULL) {
-                        uint64_t actual_samples = g_variant_get_uint64(gvar);
-                        g_variant_unref(gvar);
-                        if (actual_samples != _session.get_device()->get_sample_limit()) {
-                            show_session_error(tr("RLE Mode Warning"),
-                                               tr("Hardware buffer is full!\nActually received samples is less than setted sample depth!"));
-                        }
-                    }
-                }
-            }
-        }
-#ifdef TEST_MODE
-        if (state == SigSession::Stopped) {
-            test_timer.start(100);
-        }
-#endif
     }
+
+#ifdef TEST_MODE
+    if (state == SigSession::Stopped) {
+        test_timer.start(qrand()%1000);
+    }
+#endif
 }
 
-void MainWindow::closeEvent(QCloseEvent *event)
+void MainWindow::session_save()
 {
-    QDir dir(QCoreApplication::applicationDirPath());
-    if (dir.cd("res")) {
-        QString driver_name = _session.get_device()->dev_inst()->driver->name;
+    QDir dir;
+    #if QT_VERSION >= 0x050400
+    QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    #else
+    QString path = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    #endif
+    if(dir.mkpath(path)) {
+        dir.cd(path);
+        QString driver_name = _session.get_device()->name();
         QString mode_name = QString::number(_session.get_device()->dev_inst()->mode);
         QString file_name = dir.absolutePath() + "/" + driver_name + mode_name + ".dsc";
         if (strncmp(driver_name.toLocal8Bit(), "virtual", 7) &&
             !file_name.isEmpty())
             store_session(file_name);
     }
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    session_save();
     event->accept();
 }
 
 void MainWindow::on_protocol(bool visible)
 {
 #ifdef ENABLE_DECODE
-    if (_session.get_device()->dev_inst()->mode == LOGIC)
-        _protocol_dock->setVisible(visible);
+    _protocol_dock->setVisible(visible);
 #endif
 }
 
@@ -548,6 +571,7 @@ void MainWindow::on_trigger(bool visible)
         _trigger_dock->setVisible(false);
         _dso_trigger_dock->setVisible(visible);
     }
+    _trig_bar->update_trig_btn(visible);
 }
 
 void MainWindow::commit_trigger(bool instant)
@@ -583,35 +607,43 @@ void MainWindow::on_search(bool visible)
 
 void MainWindow::on_screenShot()
 {
+    const QString DIR_KEY("ScreenShotPath");
+    QSettings settings;
     QPixmap pixmap;
     QDesktopWidget *desktop = QApplication::desktop();
-    pixmap = QPixmap::grabWindow(desktop->winId(), pos().x(), pos().y(), frameGeometry().width(), frameGeometry().height());
+    pixmap = QPixmap::grabWindow(desktop->winId(), parentWidget()->pos().x(), parentWidget()->pos().y(),
+                                                   parentWidget()->frameGeometry().width(), parentWidget()->frameGeometry().height());
     QString format = "png";
-    QString initialPath = QDir::currentPath()+
-                          tr("/untitled.") + format;
 
     QString fileName = QFileDialog::getSaveFileName(this,
-                       tr("Save As"),initialPath,
+                       tr("Save As"),settings.value(DIR_KEY).toString(),
                        tr("%1 Files (*.%2);;All Files (*)")
                        .arg(format.toUpper()).arg(format));
-    if (!fileName.isEmpty())
+    if (!fileName.isEmpty()) {
+        QDir CurrentDir;
+        settings.setValue(DIR_KEY, CurrentDir.absoluteFilePath(fileName));
         pixmap.save(fileName, format.toLatin1());
+    }
 }
 
 void MainWindow::on_save()
 {
     using pv::dialogs::StoreProgress;
 
+    const QString DIR_KEY("SavePath");
+    QSettings settings;
+
     // Stop any currently running capture session
     _session.stop_capture();
 
     // Show the dialog
     const QString file_name = QFileDialog::getSaveFileName(
-        this, tr("Save File"), "", tr("DSView Data (*.dsl)"));
+        this, tr("Save File"), settings.value(DIR_KEY).toString(), tr("DSView Data (*.dsl)"));
 
     if (file_name.isEmpty())
         return;
-
+    QDir CurrentDir;
+    settings.setValue(DIR_KEY, CurrentDir.absoluteFilePath(file_name));
     StoreProgress *dlg = new StoreProgress(file_name, _session, this);
     dlg->run();
 }
@@ -620,12 +652,13 @@ bool MainWindow::load_session(QString name)
 {
     QFile sessionFile(name);
     if (!sessionFile.open(QIODevice::ReadOnly)) {
-        QMessageBox msg(this);
-        msg.setText(tr("File Error"));
-        msg.setInformativeText(tr("Couldn't open session file!"));
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.setIcon(QMessageBox::Warning);
-        msg.exec();
+//        dialogs::DSMessageBox msg(this);
+//        msg.mBox()->setText(tr("File Error"));
+//        msg.mBox()->setInformativeText(tr("Couldn't open session file!"));
+//        msg.mBox()->setStandardButtons(QMessageBox::Ok);
+//        msg.mBox()->setIcon(QMessageBox::Warning);
+//        msg.exec();
+        qDebug("Warning: Couldn't open session file!");
         return false;
     }
 
@@ -637,11 +670,11 @@ bool MainWindow::load_session(QString name)
     const sr_dev_inst *const sdi = _session.get_device()->dev_inst();
     if (strcmp(sdi->driver->name, sessionObj["Device"].toString().toLocal8Bit()) != 0 ||
         sdi->mode != sessionObj["DeviceMode"].toDouble()) {
-        QMessageBox msg(this);
-        msg.setText(tr("Session Error"));
-        msg.setInformativeText(tr("Session File is not compatible with current device or mode!"));
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.setIcon(QMessageBox::Warning);
+        dialogs::DSMessageBox msg(this);
+        msg.mBox()->setText(tr("Session Error"));
+        msg.mBox()->setInformativeText(tr("Session File is not compatible with current device or mode!"));
+        msg.mBox()->setStandardButtons(QMessageBox::Ok);
+        msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
         return false;
     }
@@ -655,6 +688,8 @@ bool MainWindow::load_session(QString name)
         for (unsigned int i = 0; i < num_opts; i++) {
             const struct sr_config_info *const info =
                 sr_config_info_get(options[i]);
+            if (!sessionObj.contains(info->name))
+                continue;
             if (info->datatype == SR_T_BOOL)
                 _session.get_device()->set_config(NULL, NULL, info->key, g_variant_new_boolean(sessionObj[info->name].toDouble()));
             else if (info->datatype == SR_T_UINT64)
@@ -694,7 +729,8 @@ bool MainWindow::load_session(QString name)
         if (!isEnabled)
             probe->enabled = false;
     }
-    _session.init_signals();
+    //_session.init_signals();
+    _session.reload();
 
     // load signal setting
     BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
@@ -703,6 +739,7 @@ bool MainWindow::load_session(QString name)
             if ((s->get_index() == obj["index"].toDouble()) &&
                 (s->get_type() == obj["type"].toDouble())) {
                 s->set_colour(QColor(obj["colour"].toString()));
+                s->set_name(g_strdup(obj["name"].toString().toStdString().c_str()));
 
                 boost::shared_ptr<view::LogicSignal> logicSig;
                 if (logicSig = dynamic_pointer_cast<view::LogicSignal>(s)) {
@@ -712,8 +749,9 @@ bool MainWindow::load_session(QString name)
                 boost::shared_ptr<view::DsoSignal> dsoSig;
                 if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
                     dsoSig->load_settings();
-                    dsoSig->set_zeroRate(obj["zeroPos"].toDouble());
-                    dsoSig->set_trigRate(obj["trigValue"].toDouble());
+                    dsoSig->set_zero_vrate(obj["zeroPos"].toDouble());
+                    dsoSig->set_trig_vrate(obj["trigValue"].toDouble());
+                    dsoSig->commit_settings();
                 }
                 break;
             }
@@ -731,12 +769,13 @@ bool MainWindow::store_session(QString name)
 {
     QFile sessionFile(name);
     if (!sessionFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox msg(this);
-        msg.setText(tr("File Error"));
-        msg.setInformativeText(tr("Couldn't open session file to write!"));
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.setIcon(QMessageBox::Warning);
-        msg.exec();
+//        dialogs::DSMessageBox msg(this);
+//        msg.mBox()->setText(tr("File Error"));
+//        msg.mBox()->setInformativeText(tr("Couldn't open session file to write!"));
+//        msg.mBox()->setStandardButtons(QMessageBox::Ok);
+//        msg.mBox()->setIcon(QMessageBox::Warning);
+//        msg.exec();
+        qDebug("Warning: Couldn't open session file to write!");
         return false;
     }
     QTextStream outStream(&sessionFile);
@@ -794,8 +833,8 @@ bool MainWindow::store_session(QString name)
             s_obj["vdiv"] = QJsonValue::fromVariant(static_cast<qulonglong>(dsoSig->get_vDialValue()));
             s_obj["vfactor"] = QJsonValue::fromVariant(static_cast<qulonglong>(dsoSig->get_factor()));
             s_obj["coupling"] = dsoSig->get_acCoupling();
-            s_obj["trigValue"] = dsoSig->get_trigRate();
-            s_obj["zeroPos"] = dsoSig->get_zeroRate();
+            s_obj["trigValue"] = dsoSig->get_trig_vrate();
+            s_obj["zeroPos"] = dsoSig->get_zero_vrate();
         }
         channelVar.append(s_obj);
     }
@@ -817,10 +856,8 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
 {
     (void) object;
 
-    if( event->type() == QEvent::KeyPress ) {
-        const vector< shared_ptr<view::Signal> > sigs(
-                    _session.get_signals());
-
+    if ( event->type() == QEvent::KeyPress ) {
+        const vector< shared_ptr<view::Signal> > sigs(_session.get_signals());
         QKeyEvent *ke = (QKeyEvent *) event;
         switch(ke->key()) {
         case Qt::Key_S:

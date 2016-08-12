@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ Cursor::Cursor(View &view, QColor color, uint64_t index) :
 
 QRectF Cursor::get_label_rect(const QRect &rect) const
 {
-    const double samples_per_pixel = _view.session().get_device()->get_sample_rate() * _view.scale();
+    const double samples_per_pixel = _view.session().cur_samplerate() * _view.scale();
     const double x = _index/samples_per_pixel - (_view.offset() / _view.scale());
 
 	const QSizeF label_size(
@@ -116,7 +116,7 @@ void Cursor::paint_label(QPainter &p, const QRect &rect,
     p.drawLine(close.left() + 2, close.bottom() - 2, close.right() - 2, close.top() + 2);
 
 	p.drawText(r, Qt::AlignCenter | Qt::AlignVCenter,
-        Ruler::format_real_time(_index, _view.session().get_device()->get_sample_rate()));
+        Ruler::format_real_time(_index, _view.session().cur_samplerate()));
 
     const QRectF arrowRect = QRectF(r.bottomLeft().x(), r.bottomLeft().y(), r.width(), ArrowSize);
     p.drawText(arrowRect, Qt::AlignCenter | Qt::AlignVCenter, QString::number(index));
@@ -143,7 +143,7 @@ void Cursor::paint_fix_label(QPainter &p, const QRect &rect,
 
     p.setPen(Qt::white);
     p.drawText(r, Qt::AlignCenter | Qt::AlignVCenter,
-        Ruler::format_real_time(_index, _view.session().get_device()->get_sample_rate()));
+        Ruler::format_real_time(_index, _view.session().cur_samplerate()));
 
     const QRectF arrowRect = QRectF(r.bottomLeft().x(), r.bottomLeft().y(), r.width(), ArrowSize);
     p.drawText(arrowRect, Qt::AlignCenter | Qt::AlignVCenter, label);
@@ -153,7 +153,7 @@ void Cursor::compute_text_size(QPainter &p, unsigned int prefix)
 {
     (void)prefix;
     _text_size = p.boundingRect(QRectF(), 0,
-        Ruler::format_real_time(_index, _view.session().get_device()->get_sample_rate())).size();
+        Ruler::format_real_time(_index, _view.session().cur_samplerate())).size();
 }
 
 } // namespace view

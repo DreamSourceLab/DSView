@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
 
 
 #include <extdef.h>
+
+#include <QDebug>
 
 #include <assert.h>
 #include <string.h>
@@ -43,21 +45,88 @@ const int LogicSnapshot::MipMapScaleFactor = 1 << MipMapScalePower;
 const float LogicSnapshot::LogMipMapScaleFactor = logf(MipMapScaleFactor);
 const uint64_t LogicSnapshot::MipMapDataUnit = 64*1024;	// bytes
 
-LogicSnapshot::LogicSnapshot(const sr_datafeed_logic &logic, uint64_t _total_sample_len, unsigned int channel_num) :
-    Snapshot(logic.unitsize, _total_sample_len, channel_num),
-	_last_append_sample(0)
+LogicSnapshot::LogicSnapshot() :
+    Snapshot(1, 1, 1),
+    _last_append_sample(0)
 {
-	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
-	memset(_mip_map, 0, sizeof(_mip_map));
-    if (init(_total_sample_len * channel_num) == SR_OK)
-        append_payload(logic);
+    memset(_mip_map, 0, sizeof(_mip_map));
 }
 
 LogicSnapshot::~LogicSnapshot()
 {
-	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
-	BOOST_FOREACH(MipMapLevel &l, _mip_map)
-		free(l.data);
+    free_mipmap();
+}
+
+void LogicSnapshot::free_mipmap()
+{
+    BOOST_FOREACH(MipMapLevel &l, _mip_map) {
+        if (l.data)
+            free(l.data);
+    }
+    memset(_mip_map, 0, sizeof(_mip_map));
+}
+
+void LogicSnapshot::init()
+{
+    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    _sample_count = 0;
+    _ring_sample_count = 0;
+    _memory_failed = false;
+    _last_ended = true;
+    for (unsigned int level = 0; level < ScaleStepCount; level++) {
+        _mip_map[level].length = 0;
+        _mip_map[level].data_length = 0;
+    }
+}
+
+void LogicSnapshot::clear()
+{
+    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    free_data();
+    free_mipmap();
+    init();
+}
+
+void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total_sample_count, unsigned int channel_num)
+{
+    _total_sample_count = total_sample_count;
+    _channel_num = channel_num;
+    _unit_size = logic.unitsize;
+
+    bool isOk = true;
+    uint64_t size = _total_sample_count * _unit_size + sizeof(uint64_t);
+    if (size != _capacity) {
+        free_data();
+        _data = malloc(size);
+        if (_data) {
+            free_mipmap();
+            uint64_t mipmap_count = _total_sample_count /  MipMapScaleFactor;
+            for (unsigned int level = 0; level < ScaleStepCount; level++) {
+                mipmap_count = ((mipmap_count + MipMapDataUnit - 1) /
+                        MipMapDataUnit) * MipMapDataUnit;
+                _mip_map[level].data = malloc(mipmap_count * _unit_size + sizeof(uint64_t));
+                if (!_mip_map[level].data) {
+                    isOk = false;
+                    break;
+                }
+                mipmap_count = mipmap_count /  MipMapScaleFactor;
+            }
+        } else {
+            isOk = false;
+        }
+    }
+
+    if (isOk) {
+        _capacity = size;
+        _memory_failed = false;
+        append_payload(logic);
+        _last_ended = false;
+    } else {
+        free_data();
+        free_mipmap();
+        _capacity = 0;
+        _memory_failed = true;
+    }
 }
 
 void LogicSnapshot::append_payload(
@@ -66,7 +135,7 @@ void LogicSnapshot::append_payload(
 	assert(_unit_size == logic.unitsize);
 	assert((logic.length % _unit_size) == 0);
 
-	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 
 	append_data(logic.data, logic.length / _unit_size);
 
@@ -78,13 +147,12 @@ uint8_t * LogicSnapshot::get_samples(int64_t start_sample, int64_t end_sample) c
 {
     //assert(data);
     assert(start_sample >= 0);
-    assert(start_sample <= (int64_t)_sample_count);
+    assert(start_sample <= (int64_t)get_sample_count());
     assert(end_sample >= 0);
-    assert(end_sample <= (int64_t)_sample_count);
+    assert(end_sample <= (int64_t)get_sample_count());
     assert(start_sample <= end_sample);
 
     (void)end_sample;
-    //lock_guard<recursive_mutex> lock(_mutex);
 
     //const size_t size = (end_sample - start_sample) * _unit_size;
     //memcpy(data, (const uint8_t*)_data + start_sample * _unit_size, size);
@@ -100,8 +168,8 @@ void LogicSnapshot::reallocate_mipmap_level(MipMapLevel &m)
 		m.data_length = new_data_length;
 
 		// Padding is added to allow for the uint64_t write word
-		m.data = realloc(m.data, new_data_length * _unit_size +
-			sizeof(uint64_t));
+//		m.data = realloc(m.data, new_data_length * _unit_size +
+//			sizeof(uint64_t));
 	}
 }
 
@@ -127,9 +195,9 @@ void LogicSnapshot::append_payload_to_mipmap()
 	dest_ptr = (uint8_t*)m0.data + prev_length * _unit_size;
 
 	// Iterate through the samples to populate the first level mipmap
-	const uint8_t *const end_src_ptr = (uint8_t*)_data +
+    const uint8_t *const end_src_ptr = (uint8_t*)_data +
 		m0.length * _unit_size * MipMapScaleFactor;
-	for (src_ptr = (uint8_t*)_data +
+    for (src_ptr = (uint8_t*)_data +
 		prev_length * _unit_size * MipMapScaleFactor;
 		src_ptr < end_src_ptr;)
 	{
@@ -192,25 +260,24 @@ void LogicSnapshot::get_subsampled_edges(
 	uint64_t start, uint64_t end,
 	float min_length, int sig_index)
 {
-	uint64_t index = start;
-	bool last_sample;
+    if (!edges.empty())
+        edges.clear();
 
-    assert(end <= get_sample_count());
+    if (get_sample_count() == 0)
+        return;
+
+    assert(end < get_sample_count());
 	assert(start <= end);
 	assert(min_length > 0);
 	assert(sig_index >= 0);
 	assert(sig_index < 64);
 
-    if (!_data)
-        return;
-
-	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
-
+    uint64_t index = start;
+    bool last_sample;
 	const uint64_t block_length = (uint64_t)max(min_length, 1.0f);
 	const uint64_t sig_mask = 1ULL << sig_index;
 
-    if (!edges.empty())
-        edges.clear();
+
 	// Store the initial state
 	last_sample = (get_sample(start) & sig_mask) != 0;
 	edges.push_back(pair<int64_t, bool>(index++, last_sample));
@@ -555,7 +622,7 @@ uint64_t LogicSnapshot::get_subsample(int level, uint64_t offset) const
 {
 	assert(level >= 0);
 	assert(_mip_map[level].data);
-	return *(uint64_t*)((uint8_t*)_mip_map[level].data +
+    return *(uint64_t*)((uint8_t*)_mip_map[level].data +
 		_unit_size * offset);
 }
 

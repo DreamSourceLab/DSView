@@ -2,6 +2,7 @@
  * This file is part of the PulseView project.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
+ * Copyright (C) 2016 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,12 +42,19 @@ Annotation::Annotation(const srd_proto_data *const pdata) :
 	assert(pda);
 
     _format = pda->ann_class;
+    _type = pda->ann_type;
 
     const char *const *annotations = (char**)pda->ann_text;
 	while(*annotations) {
         _annotations.push_back(QString::fromUtf8(*annotations));
 		annotations++;
 	}
+}
+
+Annotation::Annotation()
+{
+    _start_sample = 0;
+    _end_sample = 0;
 }
 
 Annotation::~Annotation()
@@ -67,6 +75,11 @@ uint64_t Annotation::end_sample() const
 int Annotation::format() const
 {
 	return _format;
+}
+
+int Annotation::type() const
+{
+    return _type;
 }
 
 const std::vector<QString>& Annotation::annotations() const

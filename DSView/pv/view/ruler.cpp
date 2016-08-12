@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -77,6 +77,7 @@ const QColor Ruler::dsBlue = QColor(17, 133, 209,  255);
 const QColor Ruler::dsYellow = QColor(238, 178, 17, 255);
 const QColor Ruler::dsRed = QColor(213, 15, 37, 255);
 const QColor Ruler::dsGreen = QColor(0, 153, 37, 255);
+const QColor Ruler::RULER_COLOR = QColor(255, 255, 255, 255);
 
 const QColor Ruler::HitColor = dsYellow;
 const QColor Ruler::WarnColor = dsRed;
@@ -108,7 +109,7 @@ QString Ruler::format_freq(double period, unsigned precision)
         QString s;
         QTextStream ts(&s);
         ts.setRealNumberPrecision(precision);
-        ts << fixed << forcesign << 1 / (period  * multiplier) <<
+        ts << fixed << 1 / (period  * multiplier) <<
             FreqPrefixes[prefix] << "Hz";
         return s;
     }
@@ -181,6 +182,7 @@ void Ruler::paintEvent(QPaintEvent*)
     QPainter p(this);
     style()->drawPrimitive(QStyle::PE_Widget, &o, &p, this);
 
+    //p.begin(this);
     //QPainter p(this);
     //p.setRenderHint(QPainter::Antialiasing);
 
@@ -204,7 +206,7 @@ void Ruler::mouseMoveEvent(QMouseEvent *e)
 
     if (_grabbed_marker) {
         _grabbed_marker->set_index((_view.offset() +
-            _view.hover_point().x() * _view.scale()) * _view.session().get_device()->get_sample_rate());
+            _view.hover_point().x() * _view.scale()) * _view.session().cur_samplerate());
     }
 
     update();
@@ -263,7 +265,7 @@ void Ruler::mouseReleaseEvent(QMouseEvent *event)
                     _cursor_sel_visible = true;
                 } else {
                     int overCursor;
-                    uint64_t index = (_view.offset() + (_cursor_sel_x + 0.5) * _view.scale()) * _view.session().get_device()->get_sample_rate();
+                    uint64_t index = (_view.offset() + (_cursor_sel_x + 0.5) * _view.scale()) * _view.session().cur_samplerate();
                     overCursor = in_cursor_sel_rect(event->pos());
                     if (overCursor == 0) {
                         _view.add_cursor(CursorColor[_view.get_cursorList().size() % 8], index);
@@ -424,14 +426,15 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
     const double SpacingIncrement = 32.0;
     const double MinValueSpacing = 16.0;
     const int ValueMargin = 5;
-
-    const double abs_min_period = 10.0 / _view.session().get_device()->get_sample_rate();
+    const double abs_min_period = 10.0 / _view.session().cur_samplerate();
 
     double min_width = SpacingIncrement;
     double typical_width;
     double tick_period = 0;
+    double scale = _view.scale();
+    double offset = _view.offset();
 
-    const uint64_t cur_period_scale = ceil((_view.scale() * min_width) / abs_min_period);
+    const uint64_t cur_period_scale = ceil((scale * min_width) / abs_min_period);
 
     // Find tick spacing, and number formatting that does not cause
     // value to collide.
@@ -440,25 +443,25 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
     } else {
         _min_period = cur_period_scale * abs_min_period;
     }
-    const int order = (int)floorf(log10f(_view.scale() * _view.get_view_width()));
+    const int order = (int)floorf(log10f(scale * _view.get_view_width()));
     //const double order_decimal = pow(10, order);
     const unsigned int prefix = (order - FirstSIPrefixPower) / 3;
     _cur_prefix = prefix;
     assert(prefix < countof(SIPrefixes));
     typical_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
-        AlignLeft | AlignTop, format_time(_view.offset(),
+        AlignLeft | AlignTop, format_time(offset,
         prefix)).width() + MinValueSpacing;
     do
     {
         tick_period += _min_period;
 
-    } while(typical_width > tick_period / _view.scale());
+    } while(typical_width > tick_period / scale);
 
     const int text_height = p.boundingRect(0, 0, INT_MAX, INT_MAX,
         AlignLeft | AlignTop, "8").height();
 
     // Draw the tick marks
-    p.setPen(dsBlue);
+    p.setPen(Trace::DARK_FORE);
 
     const double minor_tick_period = tick_period / MinPeriodScale;
     const int minor_order = (int)floorf(log10f(minor_tick_period));
@@ -467,9 +470,9 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
     assert(minor_prefix < countof(SIPrefixes));
 
     const double first_major_division =
-        floor(_view.offset() / tick_period);
+        floor(offset / tick_period);
     const double first_minor_division =
-        floor(_view.offset() / minor_tick_period + 1);
+        floor(offset / minor_tick_period + 1);
     const double t0 = first_major_division * tick_period;
 
     int division = (int)round(first_minor_division -
@@ -489,7 +492,7 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
         const double t = t0 + division * minor_tick_period;
         const double major_t = t0 + floor(division / MinPeriodScale) * tick_period;
 
-        x = (t - _view.offset()) / _view.scale();
+        x = (t - offset) / scale;
 
         if (division % MinPeriodScale == 0)
         {
@@ -503,13 +506,13 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
         else
         {
             // Draw a minor tick
-            if (minor_tick_period / _view.scale() > 2 * typical_width)
+            if (minor_tick_period / scale > 2 * typical_width)
                 p.drawText(x, 2 * ValueMargin, 0, text_height,
                     AlignCenter | AlignTop | TextDontClip,
                     format_time(t, prefix));
-            //else if ((tick_period / _view.scale() > width() / 4) && (minor_tick_period / _view.scale() > inc_text_width))
-            else if (minor_tick_period / _view.scale() > 1.1 * inc_text_width ||
-                     tick_period / _view.scale() > _view.get_view_width())
+            //else if ((tick_period / scale > width() / 4) && (minor_tick_period / scale > inc_text_width))
+            else if (minor_tick_period / scale > 1.1 * inc_text_width ||
+                     tick_period / scale > _view.get_view_width())
                 p.drawText(x, 2 * ValueMargin, 0, minor_tick_y1 + ValueMargin,
                     AlignCenter | AlignTop | TextDontClip,
                     format_time(t - major_t, minor_prefix));
@@ -548,7 +551,7 @@ void Ruler::draw_hover_mark(QPainter &p)
 		return;
 
 	p.setPen(QPen(Qt::NoPen));
-    p.setBrush(dsBlue);
+    p.setBrush(RULER_COLOR);
 
 	const int b = height() - 1;
 	const QPointF points[] = {

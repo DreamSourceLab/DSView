@@ -2,6 +2,7 @@
  * This file is part of the PulseView project.
  *
  * Copyright (C) 2013 Joel Holdsworth <joel@airwebreathe.org.uk>
+ * Copyright (C) 2014 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -93,11 +94,32 @@ void Decoder::set_option(const char *id, GVariant *value)
     _setted = true;
 }
 
+void Decoder::set_decode_region(uint64_t start, uint64_t end)
+{
+    _decode_start_back = start;
+    _decode_end_back = end;
+    if (_decode_start != start ||
+        _decode_end != end)
+        _setted = true;
+}
+
+uint64_t Decoder::decode_start() const
+{
+    return _decode_start;
+}
+
+uint64_t Decoder::decode_end() const
+{
+    return _decode_end;
+}
+
 bool Decoder::commit()
 {
     if (_setted) {
         _probes = _probes_back;
         _options = _options_back;
+        _decode_start = _decode_start_back;
+        _decode_end = _decode_end_back;
         _setted = false;
         return true;
     } else {

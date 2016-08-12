@@ -2,6 +2,7 @@
  * This file is part of the PulseView project.
  *
  * Copyright (C) 2014 Joel Holdsworth <joel@airwebreathe.org.uk>
+ * Copyright (C) 2016 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +24,7 @@
 #include "rowdata.h"
 
 using std::max;
+using std::min;
 using std::vector;
 
 namespace pv {
@@ -30,7 +32,8 @@ namespace data {
 namespace decode {
 
 RowData::RowData() :
-    _max_annotation(0)
+    _max_annotation(0),
+    _min_annotation(UINT64_MAX)
 {
 }
 
@@ -51,6 +54,11 @@ uint64_t RowData::get_max_annotation() const
     return _max_annotation;
 }
 
+uint64_t RowData::get_min_annotation() const
+{
+    return _min_annotation;
+}
+
 void RowData::get_annotation_subset(
 	vector<pv::data::decode::Annotation> &dest,
 	uint64_t start_sample, uint64_t end_sample) const
@@ -62,10 +70,33 @@ void RowData::get_annotation_subset(
 			dest.push_back(*i);
 }
 
-void RowData::push_annotation(const Annotation &a)
+bool RowData::push_annotation(const Annotation &a)
 {
-	_annotations.push_back(a);
-    _max_annotation = max(_max_annotation, a.end_sample() - a.start_sample());
+    try {
+      _annotations.push_back(a);
+      _max_annotation = max(_max_annotation, a.end_sample() - a.start_sample());
+      if (a.end_sample() != a.start_sample())
+          _min_annotation = min(_min_annotation, a.end_sample() - a.start_sample());
+      return true;
+    } catch (const std::bad_alloc&) {
+      return false;
+    }
+}
+
+uint64_t RowData::get_annotation_size() const
+{
+    return _annotations.size();
+}
+
+bool RowData::get_annotation(Annotation &ann,
+                             uint64_t index) const
+{
+    if (index < _annotations.size()) {
+        ann = _annotations[index];
+        return true;
+    } else {
+        return false;
+    }
 }
 
 } // decode

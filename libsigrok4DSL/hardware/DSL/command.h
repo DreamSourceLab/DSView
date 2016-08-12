@@ -33,10 +33,11 @@
 #define CMD_CONTROL             0xb5
 #define CMD_STATUS              0xb6
 #define CMD_STATUS_INFO         0xb7
-#define CMD_VTH                 0xb8
+#define CMD_WR_REG              0xb8
 #define CMD_WR_NVM              0xb9
 #define CMD_RD_NVM              0xba
 #define CMD_RD_NVM_PRE          0xbb
+#define CMD_FPGA_DONE           0xbc
 
 #define CMD_START_FLAGS_MODE_POS    4
 #define CMD_START_FLAGS_WIDE_POS	5
@@ -54,6 +55,10 @@
 #define CMD_START_FLAGS_STOP        (1 << CMD_START_FLAGS_STOP_POS)
 
 #define CMD_STATUS_CNT	32
+
+#define VTH_ADDR 0x78
+#define EEWP_ADDR 0x70
+#define COMB_ADDR 0x68
 
 #pragma pack(push, 1)
 
@@ -98,22 +103,38 @@ struct cmd_status_info {
 
 struct cmd_zero_info {
     uint8_t zero_addr;
-    uint8_t vpos_l;
-    uint8_t vpos_h;
-    uint8_t voff_l;
-    uint8_t voff_h;
-    uint8_t vcntr_l;
-    uint8_t vcntr_h;
-    uint8_t adc_off;
+    uint8_t voff0;
+    uint8_t voff1;
+    uint8_t voff2;
+    uint8_t voff3;
+    uint8_t voff4;
+    uint8_t voff5;
+    uint8_t voff6;
+    uint8_t voff7;
+    uint8_t voff8;
+    uint8_t voff9;
+    uint8_t voff10;
+    uint8_t voff11;
+    uint8_t voff12;
+    uint8_t voff13;
+    uint8_t voff14;
+    uint8_t voff15;
+    uint8_t diff0;
+    uint8_t diff1;
+    uint8_t trans0;
+    uint8_t trans1;
 };
 
-struct cmd_comb_info {
-    uint8_t comb_addr;
-    uint8_t comb0_low_off;
-    uint8_t comb0_hig_off;
-    uint8_t comb1_low_off;
-    uint8_t comb1_hig_off;
-    uint8_t comb_sign;
+struct cmd_vga_info {
+    uint8_t vga_addr;
+    uint16_t vga0;
+    uint16_t vga1;
+    uint16_t vga2;
+    uint16_t vga3;
+    uint16_t vga4;
+    uint16_t vga5;
+    uint16_t vga6;
+    uint16_t vga7;
 };
 
 struct cmd_nvm_info {
@@ -140,9 +161,11 @@ SR_PRIV int command_get_status(libusb_device_handle *devhdl,
                    unsigned char *status,
                                int begin, int end);
 
-SR_PRIV int command_vth(libusb_device_handle *devhdl, double vth);
+SR_PRIV int command_wr_reg(libusb_device_handle *devhdl, uint8_t value, uint8_t addr);
 
 SR_PRIV int command_wr_nvm(libusb_device_handle *devhdl, unsigned char *ctx, uint8_t len);
 SR_PRIV int command_rd_nvm(libusb_device_handle *devhdl, unsigned char *ctx, uint8_t addr, uint8_t len);
 
+SR_PRIV int command_get_fpga_done(libusb_device_handle *devhdl,
+                      uint8_t *fpga_done);
 #endif

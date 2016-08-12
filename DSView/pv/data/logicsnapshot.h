@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,17 +61,22 @@ public:
     typedef std::pair<uint64_t, bool> EdgePair;
 
 public:
-    LogicSnapshot(const sr_datafeed_logic &logic, uint64_t _total_sample_len, unsigned int channel_num);
+    LogicSnapshot();
 
 	virtual ~LogicSnapshot();
+
+    void clear();
+    void init();
+
+    void first_payload(const sr_datafeed_logic &logic, uint64_t total_sample_count, unsigned int channel_num);
 
 	void append_payload(const sr_datafeed_logic &logic);
 
     uint8_t * get_samples(int64_t start_sample, int64_t end_sample) const;
 
 private:
+    void free_mipmap();
 	void reallocate_mipmap_level(MipMapLevel &m);
-
 	void append_payload_to_mipmap();
 
 public:

@@ -2,8 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +23,6 @@
 #ifndef DSVIEW_PV_SEARCH_H
 #define DSVIEW_PV_SEARCH_H
 
-#include <QDialog>
 #include <QLabel>
 #include <QLineEdit>
 #include <QVBoxLayout>
@@ -32,17 +30,22 @@
 #include <QDialogButtonBox>
 #include "../sigsession.h"
 #include <libsigrok4DSL/libsigrok.h>
+#include "../toolbars/titlebar.h"
+#include "dsdialog.h"
+#include "../device/devinst.h"
+
+#include <boost/shared_ptr.hpp>
 
 namespace pv {
 namespace dialogs {
 
-class Search : public QDialog
+class Search : public DSDialog
 {
     Q_OBJECT
 
 public:
 
-    Search(QWidget *parent = 0, sr_dev_inst *sdi = 0, QString pattern = "");
+    Search(QWidget *parent = 0, boost::shared_ptr<pv::device::DevInst> dev_inst = 0, QString pattern = "");
     ~Search();
 
     QString get_pattern();
@@ -55,9 +58,10 @@ signals:
 public slots:
     
 private:
+    toolbars::TitleBar *_titlebar;
     QLineEdit search_lineEdit;
     QDialogButtonBox search_buttonBox;
-    sr_dev_inst *_sdi;
+    boost::shared_ptr<pv::device::DevInst>  _dev_inst;
 };
 
 } // namespace decoder

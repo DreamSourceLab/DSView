@@ -2,8 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,6 +51,7 @@ class DevInst;
 
 namespace dialogs {
 class deviceoptions;
+class Calibration;
 }
 
 namespace toolbars {
@@ -63,6 +63,7 @@ class SamplingBar : public QToolBar
 private:
     static const uint64_t RecordLengths[19];
     static const uint64_t DefaultRecordLength;
+    static const int ComboBoxMaxWidth = 200;
 
 public:
     SamplingBar(SigSession &session, QWidget *parent);
@@ -95,8 +96,9 @@ signals:
     void instant_stop();
     void device_selected();
     void device_updated();
-    void update_scale();
     void sample_count_changed();
+    void show_calibration();
+    void hide_calibration();
 
 private:
     void update_sample_rate_selector();
@@ -120,6 +122,7 @@ private slots:
 public slots:
     void on_configure();
     void zero_adj();
+    void reload();
 
 private:
     SigSession &_session;
@@ -145,6 +148,8 @@ private:
     QIcon _icon_instant_dis;
 	QToolButton _run_stop_button;
     QToolButton _instant_button;
+    QAction* _run_stop_action;
+    QAction* _instant_action;
 
     bool _instant;
 };

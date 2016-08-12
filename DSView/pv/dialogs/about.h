@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,18 +24,13 @@
 #ifndef DSVIEW_PV_ABOUT_H
 #define DSVIEW_PV_ABOUT_H
 
-#include <QDialog>
-
-#include <memory>
-
-namespace Ui {
-class About;
-}
+#include <QLabel>
+#include "dsdialog.h"
 
 namespace pv {
 namespace dialogs {
 
-class About : public QDialog
+class About : public DSDialog
 {
 	Q_OBJECT
 
@@ -43,11 +38,9 @@ public:
 	explicit About(QWidget *parent = 0);
 	~About();
 
-protected:
-    void accept();
-
 private:
-	Ui::About *ui;
+    QLabel *_logo;
+    QLabel *_info;
 };
 
 } // namespace dialogs

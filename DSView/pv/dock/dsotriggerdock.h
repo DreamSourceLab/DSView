@@ -2,8 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,13 +55,15 @@ public:
     void init();
 
 signals:
-    void set_trig_pos(quint64 trig_pos);
+    void set_trig_pos(int percent);
 
 private slots:
     void pos_changed(int pos);
     void hold_changed(int hold);
+    void margin_changed(int margin);
     void source_changed();
     void type_changed();
+    void channel_changed(int ch);
 
 private:
 
@@ -75,10 +76,13 @@ private:
     QSpinBox *holdoff_spinBox;
     QSlider *holdoff_slider;
 
+    QSlider *margin_slider;
+
     QSpinBox *position_spinBox;
     QSlider *position_slider;
 
     QButtonGroup *source_group;
+    QComboBox *channel_comboBox;
     QButtonGroup *type_group;
 };
 

@@ -111,6 +111,8 @@ enum {
 #define DS_CONF_DSO_HDIVS 10
 #define DS_CONF_DSO_VDIVS 10
 
+#define DS_RES_PATH "/usr/local/share/DSView/res/"
+
 /** libsigrok loglevels. */
 enum {
 	SR_LOG_NONE = 0, /**< Output no messages at all. */
@@ -286,6 +288,18 @@ enum {
 	SR_MQFLAG_SPL_PCT_OVER_ALARM = 0x10000,
 };
 
+enum DSO_MEASURE_TYPE {
+    DSO_MS_BEGIN = 0,
+    DSO_MS_FREQ,
+    DSO_MS_PERD,
+    DSO_MS_VMAX,
+    DSO_MS_VMIN,
+    DSO_MS_VRMS,
+    DSO_MS_VMEA,
+    DSO_MS_VP2P,
+    DSO_MS_END,
+};
+
 struct sr_context;
 
 struct sr_datafeed_packet {
@@ -325,6 +339,8 @@ struct sr_datafeed_dso {
     uint64_t mqflags;
     /** samplerate different from last packet */
     gboolean samplerate_tog;
+    /** trig flag */
+    gboolean trig_flag;
     /** The analog value(s). The data is interleaved according to
      * the probes list. */
     void *data;
@@ -549,6 +565,7 @@ enum {
     SR_CHANNEL_ANALOG,
     SR_CHANNEL_GROUP,
     SR_CHANNEL_DECODER,
+    SR_CHANNEL_FFT,
 };
 
 enum {
@@ -560,17 +577,20 @@ enum {
 struct sr_channel {
     /* The index field will go: use g_slist_length(sdi->channels) instead. */
     uint16_t index;
-	int type;
+    int type;
 	gboolean enabled;
 	char *name;
 	char *trigger;
     uint64_t vdiv;
     uint16_t vfactor;
     double vpos;
+    uint16_t vpos_trans;
     uint8_t coupling;
     uint8_t trig_value;
-    uint16_t vpos_mid;
-    uint16_t voff_mid;
+    int8_t comb_diff_top;
+    int8_t comb_diff_bom;
+    gboolean ms_show;
+    gboolean ms_en[DSO_MS_END - DSO_MS_BEGIN];
 };
 
 /** Structure for groups of channels that have common properties. */
@@ -628,22 +648,9 @@ struct sr_status {
     gboolean stream_mode;
     uint32_t sample_divider;
     gboolean sample_divider_tog;
+    gboolean trig_flag;
 
-    gboolean zeroing;
-    uint16_t ch0_vpos_mid;
-    uint16_t ch0_voff_mid;
-    uint16_t ch0_vcntr;
-    uint16_t ch1_vpos_mid;
-    uint16_t ch1_voff_mid;
-    uint16_t ch1_vcntr;
-    uint8_t ch0_adc_off;
-    uint8_t ch1_adc_off;
-    gboolean ch0_adc_sign;
-    gboolean ch1_adc_sign;
-
-    uint16_t comb0_off;
-    uint16_t comb1_off;
-    uint8_t comb_sign;
+    uint16_t pkt_id;
 };
 
 enum {
@@ -730,6 +737,9 @@ enum {
 	/** Trigger source. */
 	SR_CONF_TRIGGER_SOURCE,
 
+    /** Trigger channel */
+    SR_CONF_TRIGGER_CHANNEL,
+
     /** Trigger Value. */
     SR_CONF_TRIGGER_VALUE,
 
@@ -738,6 +748,9 @@ enum {
 
     /** Trigger hold off time */
     SR_CONF_TRIGGER_HOLDOFF,
+
+    /** Trigger Margin */
+    SR_CONF_TRIGGER_MARGIN,
 
 	/** Buffer size. */
 	SR_CONF_BUFFERSIZE,
@@ -751,11 +764,17 @@ enum {
     /** DSO configure sync */
     SR_CONF_DSO_SYNC,
 
+    /** DSO vertical resolution*/
+    SR_CONF_DSO_BITS,
+
     /** Zero */
     SR_CONF_ZERO_SET,
+    SR_CONF_ZERO_LOAD,
     SR_CONF_COMB_SET,
     SR_CONF_ZERO,
     SR_CONF_ZERO_OVER,
+    SR_CONF_VOCM,
+    SR_CONF_CALI,
 
     /** status for dso channel */
     SR_CONF_STATUS_PERIOD,
@@ -765,6 +784,9 @@ enum {
 
     /** Stream */
     SR_CONF_STREAM,
+
+    /** DSO Roll */
+    SR_CONF_ROLL,
 
     /** Test */
     SR_CONF_TEST,
@@ -777,6 +799,13 @@ enum {
 
     /** Vertical offset */
     SR_CONF_VOFF,
+    SR_CONF_VOFF_DEFAULT,
+    SR_CONF_VOFF_RANGE,
+
+    /** VGain */
+    SR_CONF_VGAIN,
+    SR_CONF_VGAIN_DEFAULT,
+    SR_CONF_VGAIN_RANGE,
 
     /** Coupling for dso channel. */
     SR_CONF_COUPLING,
@@ -866,6 +895,16 @@ enum {
 	 * samples should be acquired).
 	 */
 	SR_CONF_LIMIT_SAMPLES,
+
+    /**
+     * Absolute time record for session driver
+     */
+    SR_CONF_TRIGGER_TIME,
+
+    /**
+     * Trigger position for session driver
+     */
+    SR_CONF_TRIGGER_POS,
 
     /**
      * The actual sample count received
@@ -978,8 +1017,6 @@ enum {
     SR_GND_COUPLING = 2,
 };
 
-extern char config_path[256];
-
 struct sr_dev_mode {
     char *name;
     int mode;
@@ -1050,7 +1087,7 @@ struct sr_session {
 	 * an async fashion. We need to make sure the session is stopped from
 	 * within the session thread itself.
 	 */
-//	GMutex stop_mutex;
+    GMutex stop_mutex;
 	gboolean abort_session;
 };
 
@@ -1087,10 +1124,11 @@ struct ds_trigger {
 };
 
 struct ds_trigger_pos {
+    uint32_t check_id;
     uint32_t real_pos;
     uint32_t ram_saddr;
     uint32_t remain_cnt;
-    unsigned char first_block[500];
+    unsigned char first_block[496];
 };
 
 #include "proto.h"

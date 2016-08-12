@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,11 @@
 #include <QTime>
 #include <QTimer>
 #include <QWidget>
+
 #include <stdint.h>
+
+#include "../../extdef.h"
+#include "../view/view.h"
 
 class QPainter;
 class QPaintEvent;
@@ -54,17 +58,33 @@ public:
     static const int DsoMeasureStages = 3;
     static const double MinorDragRateUp;
     static const double DragDamping;
+    static const int SnapMinSpace = 10;
+    static const int WaitLoopTime = 400;
+    enum ActionType {
+        NO_ACTION,
+
+        CURS_MOVE,
+
+        LOGIC_EDGE,
+        LOGIC_MOVE,
+        LOGIC_ZOOM,
+
+        DSO_XM_STEP0,
+        DSO_XM_STEP1,
+        DSO_XM_STEP2,
+        DSO_YM,
+        DSO_TRIG_MOVE
+    };
+
     enum MeasureType {
         NO_MEASURE,
         LOGIC_FREQ,
-        LOGIC_EDGE,
-        LOGIC_MOVE,
-        LOGIC_CURS,
-        DSO_FREQ
+        LOGIC_EDGE_CNT,
+        DSO_VALUE
     };
 
 public:
-	explicit Viewport(View &parent);
+    explicit Viewport(View &parent, View_type type);
 
 	int get_total_height() const;
 
@@ -78,6 +98,8 @@ public:
     void stop_trigger_timer();
 
     void clear_measure();
+
+    void set_need_update(bool update);
 
 protected:
 	void paintEvent(QPaintEvent *event);
@@ -102,11 +124,17 @@ private slots:
     void on_drag_timer();
     void set_receive_len(quint64 length);
 
+public slots:
+    void show_wait_trigger();
+    void unshow_wait_trigger();
+
 signals:
-    void mouse_measure();
+    void measure_updated();
 
 private:
 	View &_view;
+    View_type _type;
+    bool _need_update;
 
     uint64_t _total_receive_len;
     QPoint _mouse_point;
@@ -118,11 +146,8 @@ private:
 
     QPixmap pixmap;
 
-    bool _zoom_rect_visible;
-    QRectF _zoom_rect;
-
     bool _measure_en;
-    bool _measure_shown;
+    ActionType _action_type;
     MeasureType _measure_type;
     uint64_t _cur_sample;
     uint64_t _nxt_sample;
@@ -158,18 +183,18 @@ private:
     QTimer _drag_timer;
     int _drag_strength;
 
-    bool _dso_xm;
-    int _dso_xm_stage;
+    bool _dso_xm_valid;
     int _dso_xm_y;
     uint64_t _dso_xm_index[DsoMeasureStages];
 
-    bool _dso_ym;
-    bool _dso_ym_done;
+    bool _dso_ym_valid;
     uint16_t _dso_ym_sig_index;
     double _dso_ym_sig_value;
     uint64_t _dso_ym_index;
     int _dso_ym_start;
     int _dso_ym_end;
+
+    int _waiting_trig;
 };
 
 } // namespace view

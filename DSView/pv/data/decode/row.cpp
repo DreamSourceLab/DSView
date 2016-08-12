@@ -68,8 +68,8 @@ const QString Row::title() const
 
 bool Row::operator<(const Row &other) const
 {
-	return (_decoder < other._decoder) ||
-		(_decoder == other._decoder && _row < other._row);
+    return (_decoder < other._decoder) ||
+        (_decoder == other._decoder && _row < other._row);
 }
 
 } // decode

@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,13 +32,18 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 
-#include <QAbstractScrollArea>
+#include <QScrollArea>
 #include <QSizeF>
+#include <QDateTime>
+#include <QSplitter>
 
+#include "../../extdef.h"
 #include "../toolbars/samplingbar.h"
 #include "../data/signaldata.h"
+#include "../view/viewport.h"
 #include "cursor.h"
 #include "signal.h"
+#include "../widgets/viewstatus.h"
 
 namespace pv {
 
@@ -56,7 +61,7 @@ class Ruler;
 class Trace;
 class Viewport;
 
-class View : public QAbstractScrollArea {
+class View : public QScrollArea {
 	Q_OBJECT
 
 private:
@@ -78,6 +83,8 @@ public:
     static const int WellPixelsPerSample = 10;
     static constexpr double MaxViewRate = 1.0;
     static const int MaxPixelsPerSample = 100;
+
+    static const int StatusHeight = 20;
 
 public:
     explicit View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget *parent = 0);
@@ -110,7 +117,7 @@ public:
 	void set_scale_offset(double scale, double offset);
     void set_preScale_preOffset();
 
-    std::vector< boost::shared_ptr<Trace> > get_traces() const;
+    std::vector< boost::shared_ptr<Trace> > get_traces(int type);
 
 	/**
 	 * Returns true if cursors are displayed. false otherwise.
@@ -132,7 +139,7 @@ public:
 	 */
 	void show_cursors(bool show = true);
 
-    const QPointF& hover_point() const;
+    const QPoint& hover_point() const;
 
 	void normalize_layout();
 
@@ -151,10 +158,8 @@ public:
     Cursor* get_trig_cursor();
     Cursor* get_search_cursor();
 
-    //void set_trig_pos(uint64_t trig_pos);
     void set_search_pos(uint64_t search_pos);
 
-    uint64_t get_trig_pos();
     uint64_t get_search_pos();
 
     /*
@@ -163,11 +168,10 @@ public:
     double get_minscale() const;
     double get_maxscale() const;
 
-    void set_need_update(bool need_update);
-    bool need_update() const;
+    void set_update(Viewport *viewport, bool need_update);
+    void set_all_update(bool need_update);
 
     uint64_t get_cursor_samples(int index);
-    Viewport * get_viewport();
     QString get_cm_time(int index);
     QString get_cm_delta(int index1, int index2);
 
@@ -175,6 +179,7 @@ public:
 
     void on_state_changed(bool stop);
 
+    QRect get_view_rect();
     int get_view_width();
     int get_view_height();
 
@@ -183,6 +188,10 @@ public:
     void set_sample_rate(uint64_t sample_rate, bool force = false);
 
     void set_sample_limit(uint64_t sample_limit, bool force = false);
+
+    QString get_measure(QString option);
+
+    void viewport_update();
 
 signals:
 	void hover_point_changed();
@@ -193,7 +202,7 @@ signals:
 
     void cursor_moved();
 
-    void mode_changed();
+    void measure_updated();
 
 private:
 	void get_scroll_layout(double &length, double &offset) const;
@@ -214,10 +223,16 @@ private:
 	void resizeEvent(QResizeEvent *e);
 
 public slots:
+    void reload();
     void set_measure_en(int enable);
     void signals_changed();
     void data_updated();
-    void update_scale();
+    void update_scale_offset();
+    void show_region(uint64_t start, uint64_t end);
+    // -- calibration
+    void update_calibration();
+    void hide_calibration();
+    void status_clear();
 
 private slots:
 
@@ -230,14 +245,34 @@ private slots:
 
     void header_updated();
 
-    void set_trig_pos(quint64 trig_pos);
+    void receive_header();
+
+    void receive_trigger(quint64 trig_pos);
+    void set_trig_pos(int percent);
+
+    void receive_end();
+
+    void frame_began();
+
+    // calibration for oscilloscope
+    void show_calibration();
+    void on_measure_updated();
+
+    void splitterMoved(int pos, int index);
 
 private:
 
 	SigSession &_session;
     pv::toolbars::SamplingBar *_sampling_bar;
 
-	Viewport *_viewport;
+    QWidget *_viewcenter;
+    widgets::ViewStatus *_viewbottom;
+    QSplitter *_vsplitter;
+    Viewport * _time_viewport;
+    Viewport * _fft_viewport;
+    Viewport *_active_viewport;
+    std::list<Viewport *> _viewport_list;
+    std::map<int, int> _trace_view_map;
 	Ruler *_ruler;
 	Header *_header;
     DevMode *_devmode;
@@ -255,10 +290,7 @@ private:
         int _spanY;
         int _signalHeight;
 
-	int _v_offset;
-	bool _updating_scroll;
-
-        bool _need_update;
+        bool _updating_scroll;
 
 	bool _show_cursors;
 
@@ -266,12 +298,13 @@ private:
 
         Cursor *_trig_cursor;
         bool _show_trig_cursor;
-        uint64_t _trig_pos;
         Cursor *_search_cursor;
         bool _show_search_cursor;
         uint64_t _search_pos;
 
-        QPointF _hover_point;
+        QPoint _hover_point;
+    	dialogs::Calibration *_cali;
+        bool _dso_auto;
 };
 
 } // namespace view

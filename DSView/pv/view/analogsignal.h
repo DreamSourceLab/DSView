@@ -2,8 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,7 +48,7 @@ private:
 public:
     AnalogSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
                  boost::shared_ptr<pv::data::Analog> data,
-                 const sr_channel * const probe);
+                 sr_channel *probe);
 
 	virtual ~AnalogSignal();
 

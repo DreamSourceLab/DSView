@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,7 +48,7 @@ private:
 	static const QColor HighColour;
 	static const QColor LowColour;
 
-    static const QColor SignalColours[8];
+    static const QColor DEFAULT_COLOR;
 
     static const int StateHeight;
     static const int StateRound;
@@ -65,11 +65,11 @@ private:
 public:
     LogicSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
                 boost::shared_ptr<pv::data::Logic> data,
-                const sr_channel * const probe);
+                sr_channel *probe);
 
     LogicSignal(boost::shared_ptr<view::LogicSignal> s,
                 boost::shared_ptr<pv::data::Logic> data,
-                const sr_channel * const probe);
+                sr_channel *probe);
 
 	virtual ~LogicSignal();
 

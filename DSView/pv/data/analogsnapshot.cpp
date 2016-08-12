@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,26 +46,101 @@ const float AnalogSnapshot::LogEnvelopeScaleFactor =
 	logf(EnvelopeScaleFactor);
 const uint64_t AnalogSnapshot::EnvelopeDataUnit = 64*1024;	// bytes
 
-AnalogSnapshot::AnalogSnapshot(const sr_datafeed_analog &analog, uint64_t _total_sample_len, unsigned int channel_num) :
-    Snapshot(sizeof(uint16_t)*channel_num, _total_sample_len, channel_num)
+AnalogSnapshot::AnalogSnapshot() :
+    Snapshot(sizeof(uint16_t), 1, 1)
 {
-	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 	memset(_envelope_levels, 0, sizeof(_envelope_levels));
-    init(_total_sample_len * channel_num);
-	append_payload(analog);
 }
 
 AnalogSnapshot::~AnalogSnapshot()
 {
-	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
-    BOOST_FOREACH(Envelope &e, _envelope_levels[0])
-		free(e.samples);
+    free_envelop();
+}
+
+void AnalogSnapshot::free_envelop()
+{
+    for (unsigned int i = 0; i < _channel_num; i++) {
+        BOOST_FOREACH(Envelope &e, _envelope_levels[i]) {
+            if (e.samples)
+                free(e.samples);
+        }
+    }
+    memset(_envelope_levels, 0, sizeof(_envelope_levels));
+}
+
+void AnalogSnapshot::init()
+{
+    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    _sample_count = 0;
+    _ring_sample_count = 0;
+    _memory_failed = false;
+    _last_ended = true;
+    for (unsigned int i = 0; i < _channel_num; i++) {
+        for (unsigned int level = 0; level < ScaleStepCount; level++) {
+            _envelope_levels[i][level].length = 0;
+            _envelope_levels[i][level].data_length = 0;
+        }
+    }
+}
+
+void AnalogSnapshot::clear()
+{
+    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    free_data();
+    free_envelop();
+    init();
+}
+
+void AnalogSnapshot::first_payload(const sr_datafeed_analog &analog, uint64_t total_sample_count, unsigned int channel_num)
+{
+    _total_sample_count = total_sample_count;
+    _channel_num = channel_num;
+    _unit_size = sizeof(uint16_t)*channel_num;
+
+    bool isOk = true;
+    uint64_t size = _total_sample_count * _unit_size + sizeof(uint64_t);
+    if (size != _capacity) {
+        free_data();
+        _data = malloc(size);
+        if (_data) {
+            free_envelop();
+            for (unsigned int i = 0; i < _channel_num; i++) {
+                uint64_t envelop_count = _total_sample_count / EnvelopeScaleFactor;
+                for (unsigned int level = 0; level < ScaleStepCount; level++) {
+                    envelop_count = ((envelop_count + EnvelopeDataUnit - 1) /
+                            EnvelopeDataUnit) * EnvelopeDataUnit;
+                    _envelope_levels[i][level].samples = (EnvelopeSample*)malloc(envelop_count * sizeof(EnvelopeSample));
+                    if (!_envelope_levels[i][level].samples) {
+                        isOk = false;
+                        break;
+                    }
+                    envelop_count = envelop_count / EnvelopeScaleFactor;
+                }
+                if (!isOk)
+                    break;
+            }
+        } else {
+            isOk = true;
+        }
+    }
+
+    if (isOk) {
+        _capacity = size;
+        _memory_failed = false;
+        append_payload(analog);
+        _last_ended = false;
+    } else {
+        free_data();
+        free_envelop();
+        _capacity = 0;
+        _memory_failed = true;
+    }
 }
 
 void AnalogSnapshot::append_payload(
 	const sr_datafeed_analog &analog)
 {
-	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
     append_data(analog.data, analog.num_samples);
 
 	// Generate the first mip-map from the data
@@ -83,8 +158,6 @@ const uint16_t* AnalogSnapshot::get_samples(
     assert(end_sample < (int64_t)get_sample_count());
 	assert(start_sample <= end_sample);
 
-	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
-
 //    uint16_t *const data = new uint16_t[end_sample - start_sample];
 //    memcpy(data, (uint16_t*)_data + start_sample, sizeof(uint16_t) *
 //		(end_sample - start_sample));
@@ -98,8 +171,6 @@ void AnalogSnapshot::get_envelope_section(EnvelopeSection &s,
 	assert(end <= get_sample_count());
 	assert(start <= end);
 	assert(min_length > 0);
-
-	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 
 	const unsigned int min_level = max((int)floorf(logf(min_length) /
 		LogEnvelopeScaleFactor) - 1, 0);
@@ -124,8 +195,8 @@ void AnalogSnapshot::reallocate_envelope(Envelope &e)
     if (new_data_length > e.data_length)
 	{
 		e.data_length = new_data_length;
-		e.samples = (EnvelopeSample*)realloc(e.samples,
-			new_data_length * sizeof(EnvelopeSample));
+//		e.samples = (EnvelopeSample*)realloc(e.samples,
+//			new_data_length * sizeof(EnvelopeSample));
 	}
 }
 
@@ -139,7 +210,7 @@ void AnalogSnapshot::append_payload_to_envelope_levels()
 
         // Expand the data buffer to fit the new samples
         prev_length = e0.length;
-        e0.length = get_sample_count() / EnvelopeScaleFactor;
+        e0.length = _sample_count / EnvelopeScaleFactor;
 
         // Break off if there are no new samples to compute
     //	if (e0.length == prev_length)

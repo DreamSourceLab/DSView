@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,8 @@
 
 #include "snapshot.h"
 
+#include <QDebug>
+
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,81 +36,86 @@ namespace data {
 
 Snapshot::Snapshot(int unit_size, uint64_t total_sample_count, unsigned int channel_num) :
     _data(NULL),
+    _capacity(0),
     _channel_num(channel_num),
     _sample_count(0),
     _total_sample_count(total_sample_count),
     _ring_sample_count(0),
-    _unit_size(unit_size)
+    _unit_size(unit_size),
+    _memory_failed(false),
+    _last_ended(true)
 {
-	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
-	assert(_unit_size > 0);
+    assert(_unit_size > 0);
 }
 
 Snapshot::~Snapshot()
 {
-	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
-    if (_data != NULL)
+    free_data();
+}
+
+void Snapshot::free_data()
+{
+    if (_data) {
         free(_data);
-    _data = NULL;
+        _data = NULL;
+        _capacity = 0;
+    }
 }
 
-int Snapshot::init(uint64_t _total_sample_len)
+bool Snapshot::memory_failed() const
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
-    _data = malloc(_total_sample_len * _unit_size +
-        sizeof(uint64_t));
-
-    if (_data == NULL)
-        return SR_ERR_MALLOC;
-    else
-        return SR_OK;
+    return _memory_failed;
 }
 
-bool Snapshot::buf_null() const
+bool Snapshot::empty() const
 {
-    if (_data == NULL)
+    if (get_sample_count() == 0 || _memory_failed || !_data)
         return true;
     else
         return false;
 }
 
+bool Snapshot::last_ended() const
+{
+    return _last_ended;
+}
+
+void Snapshot::set_last_ended(bool ended)
+{
+    _last_ended = ended;
+}
+
 uint64_t Snapshot::get_sample_count() const
 {
-	boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
     return _sample_count;
 }
 
-void* Snapshot::get_data() const
+const void* Snapshot::get_data() const
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
     return _data;
 }
 
 int Snapshot::unit_size() const
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
     return _unit_size;
 }
 
 unsigned int Snapshot::get_channel_num() const
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
     return _channel_num;
 }
 
 uint64_t Snapshot::get_sample(uint64_t index) const
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
-
     assert(_data);
-    assert(index < _sample_count);
+    assert(index < get_sample_count());
 
     return *(uint64_t*)((uint8_t*)_data + index * _unit_size);
 }
 
 void Snapshot::append_data(void *data, uint64_t samples)
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 //	_data = realloc(_data, (_sample_count + samples) * _unit_size +
 //		sizeof(uint64_t));
     if (_sample_count + samples < _total_sample_count)
@@ -131,8 +138,6 @@ void Snapshot::append_data(void *data, uint64_t samples)
 
 void Snapshot::refill_data(void *data, uint64_t samples, bool instant)
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
-
     if (instant) {
         memcpy((uint8_t*)_data + _sample_count * _channel_num, data, samples*_channel_num);
         _sample_count = (_sample_count + samples) % (_total_sample_count + 1);

@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -70,8 +70,10 @@ void TimeMarker::set_index(uint64_t index)
 
 void TimeMarker::paint(QPainter &p, const QRect &rect, const bool highlight)
 {
-    const double samples_per_pixel = _view.session().get_device()->get_sample_rate() * _view.scale();
-    const double x = _index/samples_per_pixel - (_view.offset() / _view.scale());
+    const uint64_t sample_rate = _view.session().cur_samplerate();
+    const double scale = _view.scale();
+    const double samples_per_pixel = sample_rate * scale;
+    const double x = _index/samples_per_pixel - (_view.offset() / scale);
     p.setPen((_grabbed | highlight) ? QPen(_colour.lighter(), 2, Qt::DashLine) : QPen(_colour, 1, Qt::DashLine));
     p.drawLine(QPointF(x, rect.top()), QPointF(x, rect.bottom()));
 }

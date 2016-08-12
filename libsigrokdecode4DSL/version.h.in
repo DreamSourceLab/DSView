@@ -1,0 +1,70 @@
+/*
+ * This file is part of the libsigrokdecode project.
+ *
+ * Copyright (C) 2010 Uwe Hermann <uwe@hermann-uwe.de>
+ * Copyright (C) 2012 Bert Vermeulen <bert@biot.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef LIBSIGROKDECODE_VERSION_H
+#define LIBSIGROKDECODE_VERSION_H
+
+/**
+ * @file
+ *
+ * Version number definitions and macros.
+ */
+
+/**
+ * @ingroup grp_versions
+ *
+ * @{
+ */
+
+/*
+ * Package version macros (can be used for conditional compilation).
+ */
+
+/** The libsigrokdecode package 'major' version number. */
+#undef SRD_PACKAGE_VERSION_MAJOR
+
+/** The libsigrokdecode package 'minor' version number. */
+#undef SRD_PACKAGE_VERSION_MINOR
+
+/** The libsigrokdecode package 'micro' version number. */
+#undef SRD_PACKAGE_VERSION_MICRO
+
+/** The libsigrokdecode package version ("major.minor.micro") as string. */
+#undef SRD_PACKAGE_VERSION_STRING
+
+/*
+ * Library/libtool version macros (can be used for conditional compilation).
+ */
+
+/** The libsigrokdecode libtool 'current' version number. */
+#undef SRD_LIB_VERSION_CURRENT
+
+/** The libsigrokdecode libtool 'revision' version number. */
+#undef SRD_LIB_VERSION_REVISION
+
+/** The libsigrokdecode libtool 'age' version number. */
+#undef SRD_LIB_VERSION_AGE
+
+/** The libsigrokdecode libtool version ("current:revision:age") as string. */
+#undef SRD_LIB_VERSION_STRING
+
+/** @} */
+
+#endif

@@ -49,7 +49,6 @@
  *
  * @{
  */
-
 static struct sr_config_info sr_config_info_data[] = {
     {SR_CONF_CONN, SR_T_CHAR, "conn",
         "Connection", "Connection", NULL},
@@ -77,10 +76,14 @@ static struct sr_config_info sr_config_info_data[] = {
         "Trigger slope", "Trigger slope", NULL},
     {SR_CONF_TRIGGER_SOURCE, SR_T_UINT8, "triggersource",
         "Trigger source", "Trigger source", NULL},
+    {SR_CONF_TRIGGER_CHANNEL, SR_T_UINT8, "triggerchannel",
+        "Trigger channel", "Trigger channel", NULL},
     {SR_CONF_HORIZ_TRIGGERPOS, SR_T_UINT8, "horiz_triggerpos",
         "Horizontal trigger position", "Horizontal trigger position", NULL},
     {SR_CONF_TRIGGER_HOLDOFF, SR_T_UINT64, "triggerholdoff",
         "Trigger hold off", "Trigger hold off", NULL},
+    {SR_CONF_TRIGGER_MARGIN, SR_T_UINT8, "triggermargin",
+    "Trigger margin", "Trigger margin", NULL},
     {SR_CONF_BUFFERSIZE, SR_T_UINT64, "buffersize",
         "Buffer size", "Buffer size", NULL},
     {SR_CONF_TIMEBASE, SR_T_UINT64, "timebase",

@@ -2,8 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -67,6 +66,7 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession &session) :
     _duty_label = new QLabel("#####", _widget);
 
     _mouse_layout = new QGridLayout();
+    _mouse_layout->setVerticalSpacing(5);
     _mouse_layout->addWidget(_fen_checkBox, 0, 0, 1, 4);
     _mouse_layout->addWidget(new QLabel(tr("W: "), _widget), 1, 0);
     _mouse_layout->addWidget(_width_label, 1, 1);
@@ -93,8 +93,12 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession &session) :
     _t1_last_index = 0;
     _t2_last_index = 0;
     _t3_last_index = 0;
+    _t1_comboBox->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+    _t2_comboBox->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+    _t3_comboBox->setSizeAdjustPolicy(QComboBox::AdjustToContents);
 
     _cursor_layout = new QGridLayout(_widget);
+    _cursor_layout->setVerticalSpacing(5);
     _cursor_layout->addWidget(new QLabel(tr("T1: "), _widget), 0, 0);
     _cursor_layout->addWidget(_t1_comboBox, 0, 1);
     _cursor_layout->addWidget(new QLabel(tr("T2: "), _widget), 1, 0);
@@ -134,7 +138,7 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession &session) :
     connect(_t3_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(delta_update()));
 
     connect(_fen_checkBox, SIGNAL(stateChanged(int)), &_view, SLOT(set_measure_en(int)));
-    connect(_view.get_viewport(), SIGNAL(mouse_measure()), this, SLOT(mouse_measure()));
+    connect(&_view, SIGNAL(measure_updated()), this, SLOT(measure_updated()));
 
     this->setWidget(_widget);
     _widget->setGeometry(0, 0, sizeHint().width(), 2000);
@@ -147,10 +151,10 @@ MeasureDock::~MeasureDock()
 
 void MeasureDock::paintEvent(QPaintEvent *)
 {
-    QStyleOption opt;
-    opt.init(this);
-    QPainter p(this);
-    style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
+//    QStyleOption opt;
+//    opt.init(this);
+//    QPainter p(this);
+//    style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 }
 
 void MeasureDock::cursor_update()
@@ -204,6 +208,9 @@ void MeasureDock::cursor_update()
 
         index++;
     }
+    _t1_comboBox->setMinimumWidth(_t1_comboBox->sizeHint().width()+30);
+    _t2_comboBox->setMinimumWidth(_t2_comboBox->sizeHint().width()+30);
+    _t3_comboBox->setMinimumWidth(_t3_comboBox->sizeHint().width()+30);
 
     if (_t1_last_index < _t1_comboBox->count())
         _t1_comboBox->setCurrentIndex(_t1_last_index);
@@ -220,12 +227,12 @@ void MeasureDock::cursor_update()
     update();
 }
 
-void MeasureDock::mouse_measure()
+void MeasureDock::measure_updated()
 {
-    _width_label->setText(_view.get_viewport()->get_measure("width"));
-    _period_label->setText(_view.get_viewport()->get_measure("period"));
-    _freq_label->setText(_view.get_viewport()->get_measure("frequency"));
-    _duty_label->setText(_view.get_viewport()->get_measure("duty"));
+    _width_label->setText(_view.get_measure("width"));
+    _period_label->setText(_view.get_measure("period"));
+    _freq_label->setText(_view.get_measure("frequency"));
+    _duty_label->setText(_view.get_measure("duty"));
 }
 
 void MeasureDock::cursor_moved()

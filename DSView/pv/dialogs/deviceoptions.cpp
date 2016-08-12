@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,8 +27,8 @@
 
 #include <QFormLayout>
 #include <QListWidget>
-#include <QMessageBox>
 
+#include "dsmessagebox.h"
 #include <pv/prop/property.h>
 
 using namespace boost;
@@ -38,19 +38,14 @@ namespace pv {
 namespace dialogs {
 
 DeviceOptions::DeviceOptions(QWidget *parent, boost::shared_ptr<pv::device::DevInst> dev_inst) :
-	QDialog(parent),
+    DSDialog(parent),
     _dev_inst(dev_inst),
-	_layout(this),
     _button_box(QDialogButtonBox::Ok,
 		Qt::Horizontal, this),
     _device_options_binding(_dev_inst->dev_inst())
 {
-	setWindowTitle(tr("Configure Device"));
-	setLayout(&_layout);
-
     _props_box = new QGroupBox(tr("Mode"), this);
-    _props_box->setLayout(&_props_box_layout);
-    _props_box_layout.addWidget(get_property_form());
+    _props_box->setLayout(get_property_form(_props_box));
     _layout.addWidget(_props_box);
 
     if (_dev_inst->dev_inst()->mode != DSO) {
@@ -58,17 +53,25 @@ DeviceOptions::DeviceOptions(QWidget *parent, boost::shared_ptr<pv::device::DevI
         setup_probes();
         _probes_box->setLayout(&_probes_box_layout);
         _layout.addWidget(_probes_box);
-    } else {
+    } else if (_dev_inst->name().contains("DSCope")){
         _config_button = new QPushButton(tr("Zero Adjustment"), this);
         _layout.addWidget(_config_button);
         connect(_config_button, SIGNAL(clicked()), this, SLOT(zero_adj()));
+
+        _cali_button = new QPushButton(tr("Manual Calibration"), this);
+        _layout.addWidget(_cali_button);
+        connect(_cali_button, SIGNAL(clicked()), this, SLOT(on_calibration()));
     }
 
     _layout.addStretch(1);
 	_layout.addWidget(&_button_box);
 
+    layout()->addLayout(&_layout);
+    setTitle(tr("Device Options"));
+
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
     //connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
+    connect(_dev_inst.get(), SIGNAL(device_updated()), this, SLOT(reject()));
 
     GVariant* gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_OPERATION_MODE);
     if (gvar != NULL) {
@@ -109,28 +112,32 @@ void DeviceOptions::accept()
 
 void DeviceOptions::reject()
 {
-    accept();
+    using namespace Qt;
+
+    QDialog::reject();
 }
 
-QWidget* DeviceOptions::get_property_form()
+QGridLayout * DeviceOptions::get_property_form(QWidget * parent)
 {
-	QWidget *const form = new QWidget(this);
-	QFormLayout *const layout = new QFormLayout(form);
-	form->setLayout(layout);
+    QGridLayout *const layout = new QGridLayout(parent);
+    layout->setVerticalSpacing(5);
 
 	const vector< boost::shared_ptr<pv::prop::Property> > &properties =
 		_device_options_binding.properties();
-	BOOST_FOREACH(boost::shared_ptr<pv::prop::Property> p, properties)
+    int i = 0;
+    BOOST_FOREACH(boost::shared_ptr<pv::prop::Property> p, properties)
 	{
 		assert(p);
         const QString label = p->labeled_widget() ? QString() : p->name();
+        layout->addWidget(new QLabel(label, parent), i, 0);
         if (label == tr("Operation Mode"))
-            layout->addRow(label, p->get_widget(form, true));
+            layout->addWidget(p->get_widget(parent, true), i, 1);
         else
-            layout->addRow(label, p->get_widget(form));
+            layout->addWidget(p->get_widget(parent), i, 1);
+        i++;
 	}
 
-	return form;
+    return layout;
 }
 
 void DeviceOptions::setup_probes()
@@ -171,8 +178,8 @@ void DeviceOptions::setup_probes()
                         ch_opts->setChecked(true);
                 }
             }
+            g_variant_unref(gvar_opts);
         }
-        g_variant_unref(gvar_opts);
     }
 
     for (const GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next) {
@@ -226,19 +233,25 @@ void DeviceOptions::disable_all_probes()
 void DeviceOptions::zero_adj()
 {
     using namespace Qt;
-    QDialog::reject();
+    QDialog::accept();
 
-    QMessageBox msg(this);
-    msg.setText(tr("Information"));
-    msg.setInformativeText(tr("Zero adjustment program will be started. This may take a few minutes!"));
-    //msg.setStandardButtons(QMessageBox::);
-    msg.addButton(tr("Ok"), QMessageBox::AcceptRole);
-    msg.addButton(tr("Cancel"), QMessageBox::RejectRole);
-    msg.setIcon(QMessageBox::Information);
-    int ret = msg.exec();
-    if ( ret == QMessageBox::AcceptRole) {
+    dialogs::DSMessageBox msg(this);
+    msg.mBox()->setText(tr("Information"));
+    msg.mBox()->setInformativeText(tr("Zero adjustment program will be started. Please keep all channels out of singal input. It can take a while!"));
+    //msg.mBox()->setStandardButtons(QMessageBox::);
+    msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
+    msg.mBox()->addButton(tr("Cancel"), QMessageBox::RejectRole);
+    msg.mBox()->setIcon(QMessageBox::Information);
+    if (msg.exec()) {
         _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO, g_variant_new_boolean(true));
     }
+}
+
+void DeviceOptions::on_calibration()
+{
+    using namespace Qt;
+    QDialog::accept();
+    _dev_inst->set_config(NULL, NULL, SR_CONF_CALI, g_variant_new_boolean(true));
 }
 
 void DeviceOptions::mode_check()

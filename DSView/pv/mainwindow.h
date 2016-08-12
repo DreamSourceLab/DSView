@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,6 +59,10 @@ class MeasureDock;
 class SearchDock;
 }
 
+namespace dialogs{
+class Calibration;
+}
+
 namespace view {
 class View;
 }
@@ -82,6 +86,9 @@ private:
 
     bool eventFilter(QObject *object, QEvent *event);
 
+public slots:
+    void session_save();
+
 private slots:
 	void load_file(QString file_name);
 
@@ -92,6 +99,8 @@ private slots:
      * first device in the device list should be selected.
      */
     void update_device_list();
+
+    void mode_changed();
 
     void reload();
 
@@ -130,6 +139,11 @@ private slots:
      */
     void device_attach();
     void device_detach();
+
+    /*
+     * errors
+     */
+    void hardware_connect_failed();
 
 private:
 	DeviceManager &_device_manager;

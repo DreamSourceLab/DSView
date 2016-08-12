@@ -1,20 +1,23 @@
-{
+﻿{
+    "Channel Mode": "Use Channels 0~15 (Max 100MHz)",
     "Device": "DSLogic",
     "DeviceMode": 0,
     "Filter Targets": "None",
     "Horizontal trigger position": "0",
-    "Operation Mode": "Normal",
-    "Sample count": "16777216",
-    "Sample rate": "100000000",
+    "Operation Mode": "Buffer Mode",
+    "Sample count": "1048576",
+    "Sample rate": "1000000",
     "Threshold Level": 1,
+    "Trigger channel": "0",
     "Trigger hold off": "0",
+    "Trigger margin": "8",
     "Trigger slope": "0",
     "Trigger source": "0",
     "Using Clock Negedge": 0,
     "Using External Clock": 0,
     "channel": [
         {
-            "colour": "#16191a",
+            "colour": "#969696",
             "enabled": true,
             "index": 0,
             "name": "0",
@@ -22,7 +25,7 @@
             "type": 10000
         },
         {
-            "colour": "#8f5202",
+            "colour": "#969696",
             "enabled": true,
             "index": 1,
             "name": "1",
@@ -30,7 +33,7 @@
             "type": 10000
         },
         {
-            "colour": "#cc0000",
+            "colour": "#969696",
             "enabled": true,
             "index": 2,
             "name": "2",
@@ -38,7 +41,7 @@
             "type": 10000
         },
         {
-            "colour": "#f57900",
+            "colour": "#969696",
             "enabled": true,
             "index": 3,
             "name": "3",
@@ -46,7 +49,7 @@
             "type": 10000
         },
         {
-            "colour": "#edd400",
+            "colour": "#969696",
             "enabled": true,
             "index": 4,
             "name": "4",
@@ -54,7 +57,7 @@
             "type": 10000
         },
         {
-            "colour": "#73d216",
+            "colour": "#969696",
             "enabled": true,
             "index": 5,
             "name": "5",
@@ -62,7 +65,7 @@
             "type": 10000
         },
         {
-            "colour": "#3465a4",
+            "colour": "#969696",
             "enabled": true,
             "index": 6,
             "name": "6",
@@ -70,7 +73,7 @@
             "type": 10000
         },
         {
-            "colour": "#75507b",
+            "colour": "#969696",
             "enabled": true,
             "index": 7,
             "name": "7",
@@ -78,7 +81,7 @@
             "type": 10000
         },
         {
-            "colour": "#16191a",
+            "colour": "#969696",
             "enabled": true,
             "index": 8,
             "name": "8",
@@ -86,7 +89,7 @@
             "type": 10000
         },
         {
-            "colour": "#8f5202",
+            "colour": "#969696",
             "enabled": true,
             "index": 9,
             "name": "9",
@@ -94,7 +97,7 @@
             "type": 10000
         },
         {
-            "colour": "#cc0000",
+            "colour": "#969696",
             "enabled": true,
             "index": 10,
             "name": "10",
@@ -102,7 +105,7 @@
             "type": 10000
         },
         {
-            "colour": "#f57900",
+            "colour": "#969696",
             "enabled": true,
             "index": 11,
             "name": "11",
@@ -110,7 +113,7 @@
             "type": 10000
         },
         {
-            "colour": "#edd400",
+            "colour": "#969696",
             "enabled": true,
             "index": 12,
             "name": "12",
@@ -118,7 +121,7 @@
             "type": 10000
         },
         {
-            "colour": "#73d216",
+            "colour": "#969696",
             "enabled": true,
             "index": 13,
             "name": "13",
@@ -126,7 +129,7 @@
             "type": 10000
         },
         {
-            "colour": "#3465a4",
+            "colour": "#969696",
             "enabled": true,
             "index": 14,
             "name": "14",
@@ -134,7 +137,7 @@
             "type": 10000
         },
         {
-            "colour": "#75507b",
+            "colour": "#969696",
             "enabled": true,
             "index": 15,
             "name": "15",
@@ -227,7 +230,7 @@
         "triggerLogic8": 1,
         "triggerLogic9": 1,
         "triggerMode": 0,
-        "triggerPos": 0,
+        "triggerPos": 1,
         "triggerSerial": 0,
         "triggerStages": 0,
         "triggerStart": "X X X X X X X X X X X X X X X X",
@@ -263,6 +266,7 @@
         "triggerValue16": "X X X X X X X X X X X X X X X X",
         "triggerValue17": "X X X X X X X X X X X X X X X X",
         "triggerValue18": "X X X X X X X X X X X X X X X X",
-        "triggerValue19": "X X X X X X X X X X X X X X X X"
+        "triggerValue19": "X X X X X X X X X X X X X X X X",
+        "triggerVcnt": 1
     }
 }

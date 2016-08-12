@@ -2,8 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,7 +50,7 @@ GroupSignal::GroupSignal(QString name, boost::shared_ptr<data::Group> data,
     _data(data)
 {
     _colour = SignalColours[probe_index_list.front() % countof(SignalColours)];
-    _scale = _signalHeight * 1.0f / std::pow(2.0, static_cast<double>(probe_index_list.size()));
+    _scale = _totalHeight * 1.0f / std::pow(2.0, static_cast<double>(probe_index_list.size()));
 }
 
 GroupSignal::~GroupSignal()
@@ -79,12 +78,12 @@ void GroupSignal::paint_mid(QPainter &p, int left, int right)
     assert(_view);
     assert(right >= left);
 
-    const int y = get_y() + _signalHeight * 0.5;
+    const int y = get_y() + _totalHeight * 0.5;
     const double scale = _view->scale();
     assert(scale > 0);
     const double offset = _view->offset();
 
-    _scale = _signalHeight * 1.0f / std::pow(2.0, static_cast<int>(_index_list.size()));
+    _scale = _totalHeight * 1.0f / std::pow(2.0, static_cast<int>(_index_list.size()));
 
     const deque< boost::shared_ptr<pv::data::GroupSnapshot> > &snapshots =
 		_data->get_snapshots();
@@ -204,9 +203,8 @@ void GroupSignal::paint_type_options(QPainter &p, int right, const QPoint pt)
     const QRectF group_index_rect = get_rect(CHNLREG, y, right);
     QString index_string;
     int last_index;
-    p.setPen(Qt::transparent);
-    p.setBrush(dsBlue);
-    p.drawRect(group_index_rect);
+    p.setPen(QPen(DARK_FORE, 1, Qt::DashLine));
+    p.drawLine(group_index_rect.bottomLeft(), group_index_rect.bottomRight());
     std::list<int>::iterator i = _index_list.begin();
     last_index = (*i);
     index_string = QString::number(last_index);
@@ -219,7 +217,7 @@ void GroupSignal::paint_type_options(QPainter &p, int right, const QPoint pt)
             index_string = QString::number((*i)) + "," + index_string;
         last_index = (*i);
     }
-    p.setPen(Qt::white);
+    p.setPen(DARK_FORE);
     p.drawText(group_index_rect, Qt::AlignRight | Qt::AlignVCenter, index_string);
 }
 

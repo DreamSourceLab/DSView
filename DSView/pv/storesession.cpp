@@ -25,6 +25,8 @@
 #include <pv/data/logicsnapshot.h>
 #include <pv/view/signal.h>
 
+#include <boost/foreach.hpp>
+
 using boost::dynamic_pointer_cast;
 using boost::mutex;
 using boost::shared_ptr;
@@ -58,21 +60,24 @@ StoreSession::~StoreSession()
 
 pair<uint64_t, uint64_t> StoreSession::progress() const
 {
-	lock_guard<mutex> lock(_mutex);
+    //lock_guard<mutex> lock(_mutex);
 	return make_pair(_units_stored, _unit_count);
 }
 
 const QString& StoreSession::error() const
 {
-	lock_guard<mutex> lock(_mutex);
+    //lock_guard<mutex> lock(_mutex);
 	return _error;
 }
 
 bool StoreSession::start()
 {
-	set< shared_ptr<data::SignalData> > data_set =
-		_session.get_data();
     const vector< shared_ptr<view::Signal> > sigs(_session.get_signals());
+    set< boost::shared_ptr<data::SignalData> > data_set;
+    BOOST_FOREACH(const boost::shared_ptr<view::Signal> sig, sigs) {
+        assert(sig);
+        data_set.insert(sig->data());
+    }
 
 	// Check we have logic data
 	if (data_set.empty() || sigs.empty()) {
@@ -158,7 +163,7 @@ void StoreSession::store_proc(shared_ptr<data::LogicSnapshot> snapshot)
 	assert(unit_size != 0);
 
 	{
-		lock_guard<mutex> lock(_mutex);
+        //lock_guard<mutex> lock(_mutex);
 		_unit_count = snapshot->get_sample_count();
 	}
 
@@ -183,7 +188,7 @@ void StoreSession::store_proc(shared_ptr<data::LogicSnapshot> snapshot)
 		start_sample = end_sample;
 
 		{
-			lock_guard<mutex> lock(_mutex);
+            //lock_guard<mutex> lock(_mutex);
 			_units_stored = start_sample;
 		}
 	}

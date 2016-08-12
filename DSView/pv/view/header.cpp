@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include "header.h"
 #include "view.h"
 
+#include "../../extdef.h"
 #include "trace.h"
 #include "dsosignal.h"
 #include "logicsignal.h"
@@ -45,7 +46,6 @@
 #include <QPainter>
 #include <QRect>
 #include <QStyleOption>
-#include <QMessageBox>
 
 using namespace boost;
 using namespace std;
@@ -95,7 +95,7 @@ boost::shared_ptr<pv::view::Trace> Header::get_mTrace(
 {
     const int w = width();
     const vector< boost::shared_ptr<Trace> > traces(
-        _view.get_traces());
+        _view.get_traces(ALL_VIEW));
 
     BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
     {
@@ -115,14 +115,14 @@ void Header::paintEvent(QPaintEvent*)
     QStyleOption o;
     o.initFrom(this);
     QPainter painter(this);
+    //painter.setRenderHint(QPainter::Antialiasing);
     style()->drawPrimitive(QStyle::PE_Widget, &o, &painter, this);
+
+    //painter.begin(this);
 
 	const int w = width();
     const vector< boost::shared_ptr<Trace> > traces(
-        _view.get_traces());
-
-    //QPainter painter(this);
-    //painter.setRenderHint(QPainter::Antialiasing);
+        _view.get_traces(ALL_VIEW));
 
     const bool dragging = !_drag_traces.empty();
     BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
@@ -139,7 +139,7 @@ void Header::mouseDoubleClickEvent(QMouseEvent *event)
     assert(event);
 
     const vector< boost::shared_ptr<Trace> > traces(
-        _view.get_traces());
+        _view.get_traces(ALL_VIEW));
 
     if (event->button() & Qt::LeftButton) {
         _mouse_down_point = event->pos();
@@ -163,7 +163,7 @@ void Header::mousePressEvent(QMouseEvent *event)
 	assert(event);
 
     const vector< boost::shared_ptr<Trace> > traces(
-        _view.get_traces());
+        _view.get_traces(ALL_VIEW));
     int action;
     const bool instant = _view.session().get_instant();
     if (instant && _view.session().get_capture_state() == SigSession::Running)
@@ -198,7 +198,7 @@ void Header::mousePressEvent(QMouseEvent *event)
 
                 // Add the Trace to the drag list
                 if (event->button() & Qt::LeftButton) {
-                    _drag_traces.push_back(make_pair(mTrace, mTrace->get_zeroPos()));
+                    _drag_traces.push_back(make_pair(mTrace, mTrace->get_zero_vpos()));
                 }
             }
             mTrace->set_old_v_offset(mTrace->get_v_offset());
@@ -231,7 +231,7 @@ void Header::mouseReleaseEvent(QMouseEvent *event)
         if (action == Trace::COLOR && _colorFlag) {
             _context_trace = mTrace;
             changeColor(event);
-            _view.set_need_update(true);
+            _view.set_all_update(true);
         } else if (action == Trace::NAME && _nameFlag) {
             _context_trace = mTrace;
             changeName(event);
@@ -240,7 +240,7 @@ void Header::mouseReleaseEvent(QMouseEvent *event)
     if (_moveFlag) {
         //move(event);
         _view.signals_changed();
-        _view.set_need_update(true);
+        _view.set_all_update(true);
     }
     _colorFlag = false;
     _nameFlag = false;
@@ -255,9 +255,9 @@ void Header::wheelEvent(QWheelEvent *event)
 
     if (event->orientation() == Qt::Vertical) {
         const vector< boost::shared_ptr<Trace> > traces(
-            _view.get_traces());
+            _view.get_traces(ALL_VIEW));
         // Vertical scrolling
-        double shift = event->delta() / 20.0;
+        double shift = event->delta() / 80.0;
         BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
             if (t->mouse_wheel(width(), event->pos(), shift))
                 break;
@@ -315,7 +315,7 @@ void Header::mouseMoveEvent(QMouseEvent *event)
                 } else {
                     boost::shared_ptr<DsoSignal> dsoSig;
                     if (dsoSig = dynamic_pointer_cast<DsoSignal>(sig)) {
-                        dsoSig->set_zeroPos(y);
+                        dsoSig->set_zero_vpos(y);
                         dsoSig->select(false);
                         traces_moved();
                     }

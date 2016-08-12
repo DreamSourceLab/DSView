@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
 
 
 #include <extdef.h>
+
+#include <QDebug>
 
 #include <math.h>
 
@@ -44,41 +46,25 @@ const QColor LogicSignal::EdgeColour(0x80, 0x80, 0x80);
 const QColor LogicSignal::HighColour(0x00, 0xC0, 0x00);
 const QColor LogicSignal::LowColour(0xC0, 0x00, 0x00);
 
-const QColor LogicSignal::SignalColours[8] = {
-    QColor(0x16, 0x19, 0x1A),	// Black
-    QColor(0x8F, 0x52, 0x02),	// Brown
-    QColor(0xCC, 0x00, 0x00),	// Red
-    QColor(0xF5, 0x79, 0x00),	// Orange
-    QColor(0xED, 0xD4, 0x00),	// Yellow
-    QColor(0x73, 0xD2, 0x16),	// Green
-    QColor(0x34, 0x65, 0xA4),	// Blue
-    QColor(0x75, 0x50, 0x7B),	// Violet
-//    QColor(17, 133, 209),
-//    QColor(17, 133, 209),
-//    QColor(17, 133, 209),
-//    QColor(17, 133, 209),
-//    QColor(17, 133, 209),
-//    QColor(17, 133, 209),
-//    QColor(17, 133, 209),
-//    QColor(17, 133, 209),
-};
+const QColor LogicSignal::DEFAULT_COLOR = QColor(150, 150, 150, 255);
 
 const int LogicSignal::StateHeight = 12;
 const int LogicSignal::StateRound = 5;
 
 LogicSignal::LogicSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
                          boost::shared_ptr<data::Logic> data,
-                         const sr_channel * const probe) :
-    Signal(dev_inst, probe, SR_CHANNEL_LOGIC),
+                         sr_channel *probe) :
+    Signal(dev_inst, probe),
     _data(data),
     _trig(NONTRIG)
 {
-    _colour = SignalColours[probe->index % countof(SignalColours)];
+    //_colour = PROBE_COLORS[probe->index % countof(PROBE_COLORS)];
+    _colour = DEFAULT_COLOR;
 }
 
 LogicSignal::LogicSignal(boost::shared_ptr<view::LogicSignal> s,
                          boost::shared_ptr<pv::data::Logic> data,
-                         const sr_channel * const probe) :
+                         sr_channel *probe) :
     Signal(*s.get(), probe),
     _data(data),
     _trig(s->get_trig())
@@ -148,33 +134,28 @@ void LogicSignal::paint_mid(QPainter &p, int left, int right)
     assert(_view);
 	assert(right >= left);
 
-    const int y = get_y() + _signalHeight * 0.5;
+    const int y = get_y() + _totalHeight * 0.5;
     const double scale = _view->scale();
     assert(scale > 0);
     const double offset = _view->offset();
 
-    const float high_offset = y - _signalHeight + 0.5f;
+    const float high_offset = y - _totalHeight + 0.5f;
 	const float low_offset = y + 0.5f;
 
 	const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
 		_data->get_snapshots();
-	if (snapshots.empty())
+    double samplerate = _data->samplerate();
+    if (snapshots.empty() || samplerate == 0)
 		return;
 
 	const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
 		snapshots.front();
-    if (snapshot->buf_null())
+    if (snapshot->empty())
         return;
-
-    double samplerate = _data->samplerate();
-
-	// Show sample rate as 1Hz when it is unknown
-	if (samplerate == 0.0)
-		samplerate = 1.0;
 
 	const double pixels_offset = offset / scale;
 	const double start_time = _data->get_start_time();
-    const int64_t last_sample = snapshot->get_sample_count() - 1;
+    const int64_t last_sample =  snapshot->get_sample_count() - 1;
 	const double samples_per_pixel = samplerate * scale;
 	const double start = samplerate * (offset - start_time);
 	const double end = start + samples_per_pixel * (right - left);
@@ -249,35 +230,37 @@ void LogicSignal::paint_type_options(QPainter &p, int right, const QPoint pt)
     const QRectF lowTrig_rect  = get_rect(LOWTRIG,  y, right);
     const QRectF edgeTrig_rect = get_rect(EDGTRIG, y, right);
 
-    p.setPen(Qt::transparent);
-    p.setBrush(posTrig_rect.contains(pt) ? dsYellow.darker() :
-               (_trig == POSTRIG) ? dsYellow : dsBlue);
+    p.setPen(Qt::NoPen);
+    p.setBrush(posTrig_rect.contains(pt) ? dsBlue.lighter() :
+               (_trig == POSTRIG) ? dsBlue : DARK_BACK);
     p.drawRect(posTrig_rect);
-    p.setBrush(higTrig_rect.contains(pt) ? dsYellow.darker() :
-               (_trig == HIGTRIG) ? dsYellow : dsBlue);
+    p.setBrush(higTrig_rect.contains(pt) ? dsBlue.lighter() :
+               (_trig == HIGTRIG) ? dsBlue : DARK_BACK);
     p.drawRect(higTrig_rect);
-    p.setBrush(negTrig_rect.contains(pt) ? dsYellow.darker() :
-               (_trig == NEGTRIG) ? dsYellow : dsBlue);
+    p.setBrush(negTrig_rect.contains(pt) ? dsBlue.lighter() :
+               (_trig == NEGTRIG) ? dsBlue : DARK_BACK);
     p.drawRect(negTrig_rect);
-    p.setBrush(lowTrig_rect.contains(pt) ? dsYellow.darker() :
-               (_trig == LOWTRIG) ? dsYellow : dsBlue);
+    p.setBrush(lowTrig_rect.contains(pt) ? dsBlue.lighter() :
+               (_trig == LOWTRIG) ? dsBlue : DARK_BACK);
     p.drawRect(lowTrig_rect);
-    p.setBrush(edgeTrig_rect.contains(pt) ? dsYellow.darker() :
-               (_trig == EDGTRIG) ? dsYellow : dsBlue);
+    p.setBrush(edgeTrig_rect.contains(pt) ? dsBlue.lighter() :
+               (_trig == EDGTRIG) ? dsBlue : DARK_BACK);
     p.drawRect(edgeTrig_rect);
 
-    p.setPen(QPen(Qt::blue, 1, Qt::DotLine));
+    p.setPen(QPen(DARK_FORE, 1, Qt::DashLine));
     p.setBrush(Qt::transparent);
-    p.drawLine(posTrig_rect.right(), posTrig_rect.top() + 3,
-               posTrig_rect.right(), posTrig_rect.bottom() - 3);
-    p.drawLine(higTrig_rect.right(), higTrig_rect.top() + 3,
-               higTrig_rect.right(), higTrig_rect.bottom() - 3);
-    p.drawLine(negTrig_rect.right(), negTrig_rect.top() + 3,
-               negTrig_rect.right(), negTrig_rect.bottom() - 3);
-    p.drawLine(lowTrig_rect.right(), lowTrig_rect.top() + 3,
-               lowTrig_rect.right(), lowTrig_rect.bottom() - 3);
+//    p.drawLine(posTrig_rect.right(), posTrig_rect.top(),
+//               posTrig_rect.right(), posTrig_rect.bottom());
+//    p.drawLine(higTrig_rect.right(), higTrig_rect.top(),
+//               higTrig_rect.right(), higTrig_rect.bottom());
+//    p.drawLine(negTrig_rect.right(), negTrig_rect.top(),
+//               negTrig_rect.right(), negTrig_rect.bottom());
+//    p.drawLine(lowTrig_rect.right(), lowTrig_rect.top(),
+//               lowTrig_rect.right(), lowTrig_rect.bottom());
+    p.drawLine(posTrig_rect.left(), posTrig_rect.bottom(),
+               edgeTrig_rect.right(), edgeTrig_rect.bottom());
 
-    p.setPen(QPen(Qt::white, 2, Qt::SolidLine));
+    p.setPen(QPen(DARK_FORE, 2, Qt::SolidLine));
     p.setBrush(Qt::transparent);
     p.drawLine(posTrig_rect.left() + 5, posTrig_rect.bottom() - 5,
                posTrig_rect.center().x(), posTrig_rect.bottom() - 5);
@@ -314,7 +297,7 @@ void LogicSignal::paint_type_options(QPainter &p, int right, const QPoint pt)
 bool LogicSignal::measure(const QPointF &p, uint64_t &index0, uint64_t &index1, uint64_t &index2) const
 {
     const float gap = abs(p.y() - get_y());
-    if (gap < get_signalHeight() * 0.5) {
+    if (gap < get_totalHeight() * 0.5) {
         const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
             _data->get_snapshots();
         if (snapshots.empty())
@@ -322,7 +305,7 @@ bool LogicSignal::measure(const QPointF &p, uint64_t &index0, uint64_t &index1, 
 
         const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
             snapshots.front();
-        if (snapshot->buf_null())
+        if (snapshot->empty())
             return false;
 
         uint64_t index = _data->samplerate() * (_view->offset() - _data->get_start_time() + p.x() * _view->scale());
@@ -359,7 +342,7 @@ bool LogicSignal::edges(const QPointF &p, uint64_t start, uint64_t &rising, uint
 {
     uint64_t index, end;
     const float gap = abs(p.y() - get_y());
-    if (gap < get_signalHeight() * 0.5) {
+    if (gap < get_totalHeight() * 0.5) {
         const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
             _data->get_snapshots();
         if (snapshots.empty())
@@ -367,7 +350,7 @@ bool LogicSignal::edges(const QPointF &p, uint64_t start, uint64_t &rising, uint
 
         const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
             snapshots.front();
-        if (snapshot->buf_null())
+        if (snapshot->empty())
             return false;
 
         end = _data->samplerate() * (_view->offset() - _data->get_start_time() + p.x() * _view->scale());

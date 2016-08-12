@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,11 +42,13 @@
 
 #include <pv/device/devinst.h>
 #include <pv/prop/binding/deviceoptions.h>
+#include "../toolbars/titlebar.h"
+#include "../dialogs/dsdialog.h"
 
 namespace pv {
 namespace dialogs {
 
-class DeviceOptions : public QDialog
+class DeviceOptions : public DSDialog
 {
 	Q_OBJECT
 
@@ -59,7 +61,7 @@ protected:
 
 private:
 
-	QWidget* get_property_form();
+    QGridLayout *get_property_form(QWidget *parent);
 
 	void setup_probes();
 
@@ -71,10 +73,12 @@ private slots:
     void zero_adj();
     void mode_check();
     void channel_check();
+    void on_calibration();
 
 private:
     boost::shared_ptr<pv::device::DevInst>  _dev_inst;
 	QVBoxLayout _layout;
+    toolbars::TitleBar *_titlebar;
 
     QGroupBox *_probes_box;
     QGridLayout _probes_box_layout;
@@ -82,9 +86,9 @@ private:
     QVector <QCheckBox *> _probes_checkBox_list;
 
     QGroupBox *_props_box;
-    QVBoxLayout _props_box_layout;
 
     QPushButton *_config_button;
+    QPushButton *_cali_button;
 	QDialogButtonBox _button_box;
 
     QTimer _mode_check;

@@ -2,8 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2015 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,13 +23,14 @@
 #ifndef DSVIEW_PV_DSOMEASURE_H
 #define DSVIEW_PV_DSOMEASURE_H
 
-#include <QDialog>
 #include <QDialogButtonBox>
 #include <QVBoxLayout>
 
 #include <boost/shared_ptr.hpp>
 
-#include <pv/view/dsosignal.h>
+#include "../view/dsosignal.h"
+#include "../toolbars/titlebar.h"
+#include "dsdialog.h"
 
 namespace pv {
 
@@ -40,7 +40,7 @@ class DsoSignal;
 
 namespace dialogs {
 
-class DsoMeasure : public QDialog
+class DsoMeasure : public DSDialog
 {
 	Q_OBJECT
 
@@ -56,7 +56,7 @@ protected:
 
 private:
     boost::shared_ptr<pv::view::DsoSignal> _dsoSig;
-
+    toolbars::TitleBar *_titlebar;
     QVBoxLayout _layout;
     QDialogButtonBox _button_box;
 };

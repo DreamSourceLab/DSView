@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -70,6 +70,10 @@ QWidget* Binding::get_property_form(QWidget *parent,
 {
     QWidget *const form = new QWidget(parent);
     QFormLayout *const layout = new QFormLayout(form);
+    layout->setVerticalSpacing(5);
+    layout->setFormAlignment(Qt::AlignLeft);
+    layout->setLabelAlignment(Qt::AlignLeft);
+    layout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
     form->setLayout(layout);
     add_properties_to_form(layout, auto_commit);
     return form;

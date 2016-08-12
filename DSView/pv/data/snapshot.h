@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,15 +38,20 @@ public:
 
 	virtual ~Snapshot();
 
-    int init(uint64_t _total_sample_len);
+    virtual void clear() = 0;
+    virtual void init() = 0;
 
 	uint64_t get_sample_count() const;
 
-    void * get_data() const;
+    const void * get_data() const;
 
     int unit_size() const;
 
-    bool buf_null() const;
+    bool memory_failed() const;
+    bool empty() const;
+
+    bool last_ended() const;
+    void set_last_ended(bool ended);
 
     unsigned int get_channel_num() const;
 
@@ -55,15 +60,20 @@ public:
 protected:
 	void append_data(void *data, uint64_t samples);
     void refill_data(void *data, uint64_t samples, bool instant);
+    void free_data();
 
 protected:
-	mutable boost::recursive_mutex _mutex;
-	void *_data;
+    mutable boost::recursive_mutex _mutex;
+    //std::vector<uint8_t> _data;
+    void* _data;
+    uint64_t _capacity;
     unsigned int _channel_num;
 	uint64_t _sample_count;
     uint64_t _total_sample_count;
     uint64_t _ring_sample_count;
 	int _unit_size;
+    bool _memory_failed;
+    bool _last_ended;
 };
 
 } // namespace data

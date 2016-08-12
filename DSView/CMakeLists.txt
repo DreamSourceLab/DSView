@@ -93,6 +93,7 @@ find_package(Threads)
 
 find_package(Boost 1.42 COMPONENTS filesystem system thread REQUIRED)
 find_package(libusb-1.0 REQUIRED)
+find_package(FFTW REQUIRED)
 
 #===============================================================================
 #= Config Header
@@ -103,7 +104,7 @@ set(DS_DESCRIPTION "A GUI for instruments of DreamSourceLab")
 
 set(DS_VERSION_MAJOR 0)
 set(DS_VERSION_MINOR 9)
-set(DS_VERSION_MICRO 5)
+set(DS_VERSION_MICRO 6)
 set(DS_VERSION_STRING
 	${DS_VERSION_MAJOR}.${DS_VERSION_MINOR}.${DS_VERSION_MICRO}
 )
@@ -118,107 +119,147 @@ configure_file (
 #-------------------------------------------------------------------------------
 
 set(DSView_SOURCES
-	main.cpp
-	pv/devicemanager.cpp
-	pv/mainwindow.cpp
-	pv/sigsession.cpp
-	pv/storesession.cpp
-	pv/data/analog.cpp
-	pv/data/analogsnapshot.cpp
-        pv/data/dso.cpp
-        pv/data/dsosnapshot.cpp
-	pv/data/group.cpp
-	pv/data/groupsnapshot.cpp
-	pv/data/logic.cpp
-	pv/data/logicsnapshot.cpp
-	pv/data/signaldata.cpp
-	pv/data/snapshot.cpp
-	pv/device/devinst.cpp
-	pv/device/device.cpp
-	pv/device/file.cpp
-	pv/device/inputfile.cpp
-	pv/device/sessionfile.cpp
-	pv/dialogs/about.cpp
-	pv/dialogs/deviceoptions.cpp
-	pv/dialogs/search.cpp
-	pv/dialogs/storeprogress.cpp
-	pv/dialogs/streamoptions.cpp
-	pv/dialogs/waitingdialog.cpp
-        pv/dialogs/dsomeasure.cpp
-	pv/dock/dsotriggerdock.cpp
-	pv/dock/measuredock.cpp
-	pv/dock/searchdock.cpp
-	pv/dock/triggerdock.cpp
-	pv/prop/bool.cpp
-	pv/prop/double.cpp
-	pv/prop/enum.cpp
-	pv/prop/int.cpp
-	pv/prop/property.cpp
-	pv/prop/string.cpp
-	pv/prop/binding/binding.cpp
-	pv/prop/binding/binding_deviceoptions.cpp
-	pv/toolbars/filebar.cpp
-	pv/toolbars/logobar.cpp
-	pv/toolbars/samplingbar.cpp
-	pv/toolbars/trigbar.cpp
-	pv/view/analogsignal.cpp
-	pv/view/cursor.cpp
-	pv/view/devmode.cpp
-	pv/view/dsldial.cpp
-	pv/view/dsosignal.cpp
-	pv/view/groupsignal.cpp
-	pv/view/header.cpp
-	pv/view/logicsignal.cpp
-	pv/view/ruler.cpp
-	pv/view/selectableitem.cpp
-	pv/view/signal.cpp
-	pv/view/timemarker.cpp
-	pv/view/trace.cpp
-	pv/view/view.cpp
-	pv/view/viewport.cpp
-	pv/widgets/fakelineedit.cpp
+    main.cpp 
+    pv/sigsession.cpp 
+    pv/mainwindow.cpp 
+    pv/devicemanager.cpp 
+    pv/data/snapshot.cpp 
+    pv/data/signaldata.cpp 
+    pv/data/logicsnapshot.cpp 
+    pv/data/logic.cpp 
+    pv/data/analogsnapshot.cpp 
+    pv/data/analog.cpp 
+    pv/dialogs/deviceoptions.cpp 
+    pv/prop/property.cpp 
+    pv/prop/int.cpp 
+    pv/prop/enum.cpp 
+    pv/prop/double.cpp 
+    pv/prop/bool.cpp 
+    pv/prop/binding/binding.cpp 
+    pv/toolbars/samplingbar.cpp 
+    pv/view/viewport.cpp 
+    pv/view/view.cpp 
+    pv/view/timemarker.cpp 
+    pv/view/signal.cpp 
+    pv/view/ruler.cpp 
+    pv/view/logicsignal.cpp 
+    pv/view/header.cpp 
+    pv/view/cursor.cpp 
+    pv/view/analogsignal.cpp 
+    pv/prop/binding/binding_deviceoptions.cpp 
+    pv/toolbars/trigbar.cpp 
+    pv/toolbars/filebar.cpp 
+    pv/dock/protocoldock.cpp 
+    pv/dock/triggerdock.cpp 
+    pv/dock/measuredock.cpp 
+    pv/dock/searchdock.cpp 
+    pv/toolbars/logobar.cpp 
+    pv/data/groupsnapshot.cpp 
+    pv/view/groupsignal.cpp 
+    pv/data/group.cpp 
+    pv/dialogs/about.cpp 
+    pv/dialogs/search.cpp 
+    pv/data/dsosnapshot.cpp 
+    pv/data/dso.cpp
+    pv/view/dsosignal.cpp 
+    pv/view/dsldial.cpp 
+    pv/dock/dsotriggerdock.cpp 
+    pv/view/trace.cpp 
+    pv/view/selectableitem.cpp 
+    pv/data/decoderstack.cpp 
+    pv/data/decode/rowdata.cpp 
+    pv/data/decode/row.cpp 
+    pv/data/decode/decoder.cpp 
+    pv/data/decode/annotation.cpp 
+    pv/view/decodetrace.cpp 
+    pv/prop/binding/decoderoptions.cpp 
+    pv/widgets/fakelineedit.cpp 
+    pv/widgets/decodermenu.cpp 
+    pv/widgets/decodergroupbox.cpp 
+    pv/prop/string.cpp 
+    pv/device/sessionfile.cpp 
+    pv/device/inputfile.cpp 
+    pv/device/file.cpp 
+    pv/device/devinst.cpp 
+    pv/dialogs/storeprogress.cpp 
+    pv/storesession.cpp 
+    pv/view/devmode.cpp 
+    pv/device/device.cpp 
+    pv/dialogs/waitingdialog.cpp 
+    pv/dialogs/dsomeasure.cpp 
+    pv/dialogs/calibration.cpp 
+    pv/data/decodermodel.cpp 
+    pv/dialogs/protocollist.cpp 
+    pv/dialogs/protocolexp.cpp 
+    pv/dialogs/fftoptions.cpp 
+    pv/data/mathstack.cpp 
+    pv/view/mathtrace.cpp 
+    dsapplication.cpp 
+    pv/widgets/viewstatus.cpp 
+    pv/toolbars/titlebar.cpp 
+    pv/mainframe.cpp 
+    pv/widgets/border.cpp 
+    pv/dialogs/dsmessagebox.cpp 
+    pv/dialogs/shadow.cpp 
+    pv/dialogs/dsdialog.cpp
 )
 
 set(DSView_HEADERS
-	pv/mainwindow.h
-	pv/sigsession.h
-	pv/storesession.h
-	pv/device/devinst.h
-	pv/dialogs/about.h
-	pv/dialogs/deviceoptions.h
-	pv/dialogs/search.h
-	pv/dialogs/storeprogress.h
-	pv/dialogs/streamoptions.h
-	pv/dialogs/waitingdialog.h
-        pv/dialogs/dsomeasure.h
-	pv/dock/dsotriggerdock.h
-	pv/dock/measuredock.h
-	pv/dock/searchdock.h
-	pv/dock/triggerdock.h
-	pv/prop/bool.h
-	pv/prop/double.h
-	pv/prop/enum.h
-	pv/prop/int.h
-	pv/prop/property.h
-	pv/prop/string.h
-	pv/toolbars/filebar.h
-	pv/toolbars/logobar.h
-	pv/toolbars/samplingbar.h
-	pv/toolbars/trigbar.h
-	pv/view/cursor.h
-	pv/view/devmode.h
-	pv/view/header.h
-	pv/view/ruler.h
-	pv/view/selectableitem.h
-	pv/view/timemarker.h
-	pv/view/trace.h
-	pv/view/view.h
-	pv/view/viewport.h
-	pv/widgets/fakelineedit.h
+    pv/sigsession.h 
+    pv/mainwindow.h
+    pv/dialogs/deviceoptions.h
+    pv/prop/property.h
+    pv/prop/int.h
+    pv/prop/enum.h
+    pv/prop/double.h
+    pv/prop/bool.h
+    pv/toolbars/samplingbar.h
+    pv/view/viewport.h
+    pv/view/view.h
+    pv/view/timemarker.h
+    pv/view/ruler.h
+    pv/view/header.h
+    pv/view/cursor.h
+    pv/toolbars/trigbar.h
+    pv/toolbars/filebar.h
+    pv/dock/protocoldock.h
+    pv/dock/triggerdock.h
+    pv/dock/measuredock.h
+    pv/dock/searchdock.h
+    pv/toolbars/logobar.h
+    pv/dialogs/about.h
+    pv/dialogs/search.h
+    pv/dock/dsotriggerdock.h
+    pv/view/trace.h
+    pv/view/selectableitem.h
+    pv/data/decoderstack.h
+    pv/view/decodetrace.h
+    pv/widgets/fakelineedit.h
+    pv/widgets/decodermenu.h
+    pv/widgets/decodergroupbox.h
+    pv/prop/string.h
+    pv/device/devinst.h
+    pv/dialogs/storeprogress.h
+    pv/storesession.h
+    pv/view/devmode.h
+    pv/dialogs/waitingdialog.h
+    pv/dialogs/dsomeasure.h
+    pv/dialogs/calibration.h
+    pv/dialogs/protocollist.h
+    pv/dialogs/protocolexp.h
+    pv/dialogs/fftoptions.h
+    pv/data/mathstack.h
+    pv/view/mathtrace.h
+    pv/widgets/viewstatus.h
+    pv/toolbars/titlebar.h
+    pv/mainframe.h
+    pv/widgets/border.h
+    pv/dialogs/dsmessagebox.h
+    pv/dialogs/shadow.h
+    pv/dialogs/dsdialog.h
 )
 
 set(DSView_FORMS
-	pv/dialogs/about.ui
 )
 
 set(DSView_RESOURCES
@@ -310,6 +351,7 @@ set(DSVIEW_LINK_LIBS
 	${CMAKE_THREAD_LIBS_INIT}
 	${QT_LIBRARIES}
         ${LIBUSB_1_LIBRARIES}
+        ${FFTW_LIBRARIES}
 )
 
 if(STATIC_PKGDEPS_LIBS)
@@ -352,21 +394,11 @@ set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "/usr/local/lib")
 
 # Install the executable.
 install(TARGETS ${PROJECT_NAME} DESTINATION bin/)
-install(FILES res/DSLogic.fw DESTINATION bin/res/)
-install(FILES res/DSLogic33.bin DESTINATION bin/res/)
-install(FILES res/DSLogic50.bin DESTINATION bin/res/)
-install(FILES res/DSLogicPro.fw DESTINATION bin/res/)
-install(FILES res/DSLogicPro.bin DESTINATION bin/res/)
-install(FILES res/DSCope.fw DESTINATION bin/res/)
-install(FILES res/DSCope.bin DESTINATION bin/res/)
-install(FILES res/DSLogic0.dsc DESTINATION bin/res/)
-install(FILES res/DSLogic0.def.dsc DESTINATION bin/res/)
-install(FILES res/DSLogic1.dsc DESTINATION bin/res/)
-install(FILES res/DSLogic1.def.dsc DESTINATION bin/res/)
-install(FILES res/DSLogic2.dsc DESTINATION bin/res/)
-install(FILES res/DSLogic2.def.dsc DESTINATION bin/res/)
-install(FILES res/DSCope1.dsc DESTINATION bin/res/)
-install(FILES res/DSCope1.def.dsc DESTINATION bin/res/)
+install(DIRECTORY res DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY ../libsigrokdecode4DSL/decoders DESTINATION share/${PROJECT_NAME})
+install(FILES icons/logo.png DESTINATION share/${PROJECT_NAME} RENAME logo.png)
+install(FILES DreamSourceLab.rules DESTINATION /etc/udev/rules.d/)
+install(FILES DSView.desktop DESTINATION /usr/share/applications/)
 
 #===============================================================================
 #= Packaging (handled by CPack)

@@ -2,6 +2,7 @@
  * This file is part of the PulseView project.
  *
  * Copyright (C) 2014 Joel Holdsworth <joel@airwebreathe.org.uk>
+ * Copyright (C) 2016 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,11 +35,11 @@ class RowData
 public:
 	RowData();
     ~RowData();
-
 public:
 	uint64_t get_max_sample() const;
 
     uint64_t get_max_annotation() const;
+    uint64_t get_min_annotation() const;
 	/**
 	 * Extracts sorted annotations between two period into a vector.
 	 */
@@ -46,10 +47,16 @@ public:
 		std::vector<pv::data::decode::Annotation> &dest,
 		uint64_t start_sample, uint64_t end_sample) const;
 
-	void push_annotation(const Annotation &a);
+    bool push_annotation(const Annotation &a);
+
+    uint64_t get_annotation_size() const;
+
+    bool get_annotation(pv::data::decode::Annotation &ann,
+                        uint64_t index) const;
 
 private:
     uint64_t _max_annotation;
+    uint64_t _min_annotation;
 	std::vector<Annotation> _annotations;
 };
 

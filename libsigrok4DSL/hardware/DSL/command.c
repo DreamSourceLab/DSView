@@ -234,19 +234,19 @@ SR_PRIV int command_get_status(libusb_device_handle *devhdl,
     return SR_OK;
 }
 
-SR_PRIV int command_vth(libusb_device_handle *devhdl, double vth)
+SR_PRIV int command_wr_reg(libusb_device_handle *devhdl, uint8_t value, uint8_t addr)
 {
     int ret;
-    uint8_t cmd;
+    uint16_t cmd;
 
-    cmd = vth/5.0 * 255;
+    cmd = value + (addr << 8);
     /* Send the control command. */
     ret = libusb_control_transfer(devhdl, LIBUSB_REQUEST_TYPE_VENDOR |
-            LIBUSB_ENDPOINT_OUT, CMD_VTH, 0x0000, 0x0000,
+            LIBUSB_ENDPOINT_OUT, CMD_WR_REG, 0x0000, 0x0000,
             (unsigned char *)&cmd, sizeof(cmd), 3000);
     if (ret < 0) {
-        sr_err("Unable to send VTH command: %s.",
-               libusb_error_name(ret));
+        sr_err("Unable to write REG @ address %d : %s.",
+               addr, libusb_error_name(ret));
         return SR_ERR;
     }
 
@@ -276,7 +276,7 @@ SR_PRIV int command_rd_nvm(libusb_device_handle *devhdl, unsigned char *ctx, uin
     int ret;
 
     struct cmd_nvm_info nvm_info;
-    assert(len <= 8);
+    assert(len <= 32);
     nvm_info.addr = addr;
     nvm_info.len = len;
 
@@ -305,3 +305,22 @@ SR_PRIV int command_rd_nvm(libusb_device_handle *devhdl, unsigned char *ctx, uin
 
     return SR_OK;
 }
+
+SR_PRIV int command_get_fpga_done(libusb_device_handle *devhdl,
+                   uint8_t *fpga_done)
+{
+    int ret;
+
+    ret = libusb_control_transfer(devhdl, LIBUSB_REQUEST_TYPE_VENDOR |
+        LIBUSB_ENDPOINT_IN, CMD_FPGA_DONE, 0x0000, 0x0000,
+        fpga_done, 1, 3000);
+
+    if (ret < 0) {
+        sr_err("Unable to get fpga done info: %s.",
+               libusb_error_name(ret));
+        return SR_ERR;
+    }
+
+    return SR_OK;
+}
+

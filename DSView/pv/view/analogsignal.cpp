@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,12 +53,13 @@ const float AnalogSignal::EnvelopeThreshold = 256.0f;
 
 AnalogSignal::AnalogSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
                            boost::shared_ptr<data::Analog> data,
-                           const sr_channel * const probe) :
-    Signal(dev_inst, probe, SR_CHANNEL_ANALOG),
+                           sr_channel *probe) :
+    Signal(dev_inst, probe),
     _data(data)
 {
+    _typeWidth = 3;
     _colour = SignalColours[probe->index % countof(SignalColours)];
-    _scale = _signalHeight * 1.0f / 65536;
+    _scale = _totalHeight * 1.0f / 65536;
 }
 
 AnalogSignal::~AnalogSignal()
@@ -81,7 +82,7 @@ void AnalogSignal::paint_mid(QPainter &p, int left, int right)
     assert(_view);
     assert(right >= left);
 
-    const int y = get_y() + _signalHeight * 0.5;
+    const int y = get_y() + _totalHeight * 0.5;
     const double scale = _view->scale();
     assert(scale > 0);
     const double offset = _view->offset();
@@ -91,9 +92,11 @@ void AnalogSignal::paint_mid(QPainter &p, int left, int right)
 	if (snapshots.empty())
 		return;
 
-    _scale = _signalHeight * 1.0f / 65536;
+    _scale = _totalHeight * 1.0f / 65536;
 	const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot =
 		snapshots.front();
+    if (snapshot->empty())
+        return;
 
     if (get_index() >= (int)snapshot->get_channel_num())
         return;

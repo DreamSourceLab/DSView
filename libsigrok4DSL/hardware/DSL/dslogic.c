@@ -134,33 +134,36 @@ static const int32_t hwoptions_pro[] = {
 };
 
 static const int32_t sessions[] = {
+    SR_CONF_OPERATION_MODE,
+    SR_CONF_CHANNEL_MODE,
     SR_CONF_SAMPLERATE,
     SR_CONF_LIMIT_SAMPLES,
     SR_CONF_CLOCK_TYPE,
     SR_CONF_CLOCK_EDGE,
-    SR_CONF_OPERATION_MODE,
-    SR_CONF_CHANNEL_MODE,
     SR_CONF_THRESHOLD,
     SR_CONF_FILTER,
     SR_CONF_TRIGGER_SLOPE,
     SR_CONF_TRIGGER_SOURCE,
     SR_CONF_HORIZ_TRIGGERPOS,
     SR_CONF_TRIGGER_HOLDOFF,
+    SR_CONF_TRIGGER_MARGIN,
 };
 
 static const int32_t sessions_pro[] = {
+    SR_CONF_OPERATION_MODE,
+    SR_CONF_CHANNEL_MODE,
     SR_CONF_SAMPLERATE,
     SR_CONF_LIMIT_SAMPLES,
     SR_CONF_CLOCK_TYPE,
     SR_CONF_CLOCK_EDGE,
-    SR_CONF_OPERATION_MODE,
-    SR_CONF_CHANNEL_MODE,
     SR_CONF_VTH,
     SR_CONF_FILTER,
     SR_CONF_TRIGGER_SLOPE,
     SR_CONF_TRIGGER_SOURCE,
+	SR_CONF_TRIGGER_CHANNEL,
     SR_CONF_HORIZ_TRIGGERPOS,
     SR_CONF_TRIGGER_HOLDOFF,
+    SR_CONF_TRIGGER_MARGIN,
 };
 
 static const int32_t ch_sessions[] = {
@@ -236,7 +239,6 @@ static const uint64_t samplecounts[] = {
 };
 
 static const uint8_t zero_base_addr = 0x80;
-static const uint8_t comb_base_addr = 0xB0;
 
 SR_PRIV struct sr_dev_driver DSLogic_driver_info;
 static struct sr_dev_driver *di = &DSLogic_driver_info;
@@ -244,8 +246,6 @@ static struct sr_dev_driver *di = &DSLogic_driver_info;
 extern struct ds_trigger *trigger;
 
 struct sr_status mstatus;
-struct cmd_zero_info zero_info;
-struct cmd_comb_info comb_info;
 
 /**
  * Check the USB configuration to determine if this is an DSLogic device.
@@ -279,7 +279,7 @@ static gboolean check_conf_profile(libusb_device *dev)
 		if (libusb_get_string_descriptor_ascii(hdl,
 				des.iProduct, strdesc, sizeof(strdesc)) < 0)
 			break;
-        if (strncmp((const char *)strdesc, "DSLogic", 7))
+        if (strncmp((const char *)strdesc, "USB-based Instrument", 20))
 			break;
 
         /* If we made it here, it must be an DSLogic. */
@@ -289,6 +289,20 @@ static gboolean check_conf_profile(libusb_device *dev)
 		libusb_close(hdl);
 
 	return ret;
+}
+
+static int en_ch_num(const struct sr_dev_inst *sdi)
+{
+    GSList *l;
+    int channel_en_cnt = 0;
+
+    for (l = sdi->channels; l; l = l->next) {
+        struct sr_channel *probe = (struct sr_channel *)l->data;
+        channel_en_cnt += probe->enabled;
+    }
+    channel_en_cnt += (channel_en_cnt == 0);
+
+    return channel_en_cnt;
 }
 
 static int fpga_setting(const struct sr_dev_inst *sdi)
@@ -339,14 +353,6 @@ static int fpga_setting(const struct sr_dev_inst *sdi)
     //setting.trig_logic3_header = 0x2310ffff;
     setting.end_sync = 0xfa5afa5a;
 
-    for (l = sdi->channels; l; l = l->next) {
-        struct sr_channel *probe = (struct sr_channel *)l->data;
-        channel_en_cnt += probe->enabled;
-        channel_cnt++;
-    }
-    if (channel_en_cnt == 0)
-        channel_en_cnt = 1;
-
     devc->rle_mode = FALSE;
     if (sdi->mode == LOGIC &&
         !devc->stream &&
@@ -360,18 +366,21 @@ static int fpga_setting(const struct sr_dev_inst *sdi)
                    ((devc->stream) << 12) +
                    ((trigger->trigger_mode == SERIAL_TRIGGER) << 11) +
                    trigger->trigger_en +
-                   ((sdi->mode > 0) << 4) + (devc->clock_type << 1) + (devc->clock_edge << 2) +
+                   ((sdi->mode == DSO) << 4) + (devc->clock_type << 1) + (devc->clock_edge << 2) +
                    (devc->rle_mode << 3) +
                    ((((devc->cur_samplerate == (2 * DSLOGIC_MAX_LOGIC_SAMPLERATE)) && sdi->mode != DSO) || (sdi->mode == ANALOG)) << 5) +
                    ((devc->cur_samplerate == (4 * DSLOGIC_MAX_LOGIC_SAMPLERATE)) << 6) +
                    ((sdi->mode == ANALOG) << 7) +
                    ((devc->filter == SR_FILTER_1T) << 8) +
-                   (devc->instant << 9) + (devc->zero << 10);
-    if (sdi->mode == DSO)
-        setting.divider = devc->zero ? 0x1 : (uint32_t)ceil(DSLOGIC_MAX_DSO_SAMPLERATE * 1.0 / devc->cur_samplerate / channel_en_cnt);
-    else
-        setting.divider = devc->zero ? 0x1 : (uint32_t)ceil(DSLOGIC_MAX_LOGIC_SAMPLERATE * 1.0 / devc->cur_samplerate);
-    setting.count = (sdi->mode == DSO) ? (uint32_t)(devc->limit_samples / (channel_cnt / channel_en_cnt)) : (uint32_t)(devc->limit_samples);
+                   (devc->instant << 9);
+
+    setting.divider  = (sdi->mode == DSO) ?    (uint32_t)ceil(DSLOGIC_MAX_DSO_SAMPLERATE * 1.0 / devc->cur_samplerate / en_ch_num(sdi)) :
+                                               (uint32_t)ceil(DSLOGIC_MAX_LOGIC_SAMPLERATE * 1.0 / devc->cur_samplerate);
+
+    // analog: 16bits, but sample with half mode(0-7 valid only)
+    setting.count    = (sdi->mode == DSO) ?    (uint32_t)(devc->limit_samples / (g_slist_length(sdi->channels) / en_ch_num(sdi))) :
+                       (sdi->mode == ANALOG) ? (uint32_t)(devc->limit_samples * g_slist_length(sdi->channels) * 4) :
+                                               (uint32_t)(devc->limit_samples);
     setting.trig_pos = (uint32_t)(trigger->trigger_pos / 100.0 * devc->limit_samples);
     setting.trig_glb = trigger->trigger_stages;
     setting.trig_adp = setting.count - setting.trig_pos - 1;
@@ -393,8 +402,8 @@ static int fpga_setting(const struct sr_dev_inst *sdi)
         setting.trig_logic1[0] = (trigger->trigger_logic[TriggerStages] << 1) + trigger->trigger1_inv[TriggerStages];
 
         for (i = 1; i < NUM_TRIGGER_STAGES; i++) {
-            setting.trig_mask0[i] = 0xff;
-            setting.trig_mask1[i] = 0xff;
+            setting.trig_mask0[i] = 0xffff;
+            setting.trig_mask1[i] = 0xffff;
 
             setting.trig_value0[i] = 0;
             setting.trig_value1[i] = 0;
@@ -430,7 +439,7 @@ static int fpga_setting(const struct sr_dev_inst *sdi)
     result  = SR_OK;
     ret = libusb_bulk_transfer(hdl, 2 | LIBUSB_ENDPOINT_OUT,
                                &setting, sizeof(struct DSL_setting),
-                               &transferred, 3000);
+                               &transferred, 1000);
 
     if (ret < 0) {
         sr_err("Unable to setting FPGA of DSLogic: %s.",
@@ -458,7 +467,7 @@ static int fpga_config(struct libusb_device_handle *hdl, const char *filename)
 	struct stat f_stat;
 
     sr_info("Configure FPGA using %s", filename);
-    if ((fw = g_fopen(filename, "rb")) == NULL) {
+    if ((fw = fopen(filename, "rb")) == NULL) {
         sr_err("Unable to open FPGA bit file %s for reading: %s",
                filename, strerror(errno));
         return SR_ERR;
@@ -688,6 +697,7 @@ static struct DSL_context *DSLogic_dev_new(void)
     devc->op_mode = SR_OP_BUFFER;
     devc->ch_mode = 0;
     devc->samplerates_size = 14;
+    devc->samplecounts_size = ARRAY_SIZE(samplecounts);
     devc->th_level = SR_TH_3V3;
     devc->vth = 1.0;
     devc->filter = SR_FILTER_NONE;
@@ -701,7 +711,10 @@ static struct DSL_context *DSLogic_dev_new(void)
     devc->stream = FALSE;
     devc->mstatus_valid = FALSE;
     devc->data_lock = FALSE;
-    devc->max_height = 1;
+    devc->max_height = 0;
+    devc->dso_bits = 8;
+    devc->trigger_margin = 8;
+    devc->trigger_channel = 0;
 
 	return devc;
 }
@@ -716,6 +729,25 @@ static int init(struct sr_context *sr_ctx)
     return std_hw_init(sr_ctx, di, LOG_PREFIX);
 }
 
+static int probe_init(struct sr_dev_inst *sdi)
+{
+    int i;
+    GList *l;
+    for (l = sdi->channels; l; l = l->next) {
+        struct sr_channel *probe = (struct sr_channel *)l->data;
+        if (sdi->mode == DSO) {
+            probe->vdiv = 1000;
+            probe->vfactor = 1;
+            probe->vpos = 0;
+            probe->coupling = SR_DC_COUPLING;
+            probe->trig_value = 0x80;
+            probe->ms_show = TRUE;
+            for (i = DSO_MS_BEGIN; i < DSO_MS_END; i++)
+                probe->ms_en[i] = default_ms_en[i];
+        }
+    }
+}
+
 static int set_probes(struct sr_dev_inst *sdi, int num_probes)
 {
     uint16_t j;
@@ -725,15 +757,9 @@ static int set_probes(struct sr_dev_inst *sdi, int num_probes)
         if (!(probe = sr_channel_new(j, (sdi->mode == LOGIC) ? SR_CHANNEL_LOGIC : ((sdi->mode == DSO) ? SR_CHANNEL_DSO : SR_CHANNEL_ANALOG),
                                    TRUE, probe_names[j])))
             return SR_ERR;
-        if (sdi->mode == DSO) {
-            probe->vdiv = 1000;
-            probe->vfactor = 1;
-            probe->vpos = 0;
-            probe->coupling = SR_DC_COUPLING;
-            probe->trig_value = 0x80;
-        }
         sdi->channels = g_slist_append(sdi->channels, probe);
     }
+    probe_init(sdi);
     return SR_OK;
 }
 
@@ -845,7 +871,7 @@ static GSList *scan(GSList *options)
 		devc->profile = prof;
 		sdi->priv = devc;
 		drvc->instances = g_slist_append(drvc->instances, sdi);
-		devices = g_slist_append(devices, sdi);
+        //devices = g_slist_append(devices, sdi);
 
         if (check_conf_profile(devlist[i])) {
 			/* Already has the firmware, so fix the new address. */
@@ -854,13 +880,15 @@ static GSList *scan(GSList *options)
             sdi->inst_type = SR_INST_USB;
             sdi->conn = sr_usb_dev_inst_new(libusb_get_bus_number(devlist[i]),
 					libusb_get_device_address(devlist[i]), NULL);
+            /* only report device after firmware is ready */
+            devices = g_slist_append(devices, sdi);
 		} else {
             char *firmware;
-            if (!(firmware = g_try_malloc(strlen(config_path)+strlen(prof->firmware)+1))) {
+            if (!(firmware = g_try_malloc(strlen(DS_RES_PATH)+strlen(prof->firmware)+1))) {
                 sr_err("Firmware path malloc error!");
                 return NULL;
             }
-            strcpy(firmware, config_path);
+            strcpy(firmware, DS_RES_PATH);
             strcat(firmware, prof->firmware);
             if (ezusb_upload_firmware(devlist[i], USB_CONFIGURATION,
                 firmware) == SR_OK)
@@ -903,13 +931,13 @@ static GSList *dev_mode_list(const struct sr_dev_inst *sdi)
     return l;
 }
 
-static uint64_t dso_cmd_gen(struct sr_dev_inst *sdi, struct sr_channel* ch, int id)
+static uint64_t dso_cmd_gen(const struct sr_dev_inst *sdi, struct sr_channel* ch, int id)
 {
     struct DSL_context *devc;
     uint64_t cmd = 0;
     int channel_cnt = 0;
     GSList *l;
-    const int ch_bit = 7;
+    struct sr_channel *en_probe;
 
     devc = sdi->priv;
 
@@ -920,14 +948,18 @@ static uint64_t dso_cmd_gen(struct sr_dev_inst *sdi, struct sr_channel* ch, int 
     case SR_CONF_COUPLING:
         for (l = sdi->channels; l; l = l->next) {
             struct sr_channel *probe = (struct sr_channel *)l->data;
-            if (probe->enabled)
+            if (probe->enabled) {
                 channel_cnt += probe->index + 0x1;
+                en_probe = probe;
+            }
         }
         if (channel_cnt == 0)
             return 0x0;
 
         //  --VDBS
-        switch(ch->vdiv){
+        if (channel_cnt != 1)
+            en_probe = ch;
+        switch(en_probe->vdiv){
         case 5:     cmd += 0x247000; break;
         case 10:    cmd += 0x23D000; break;
         case 20:    cmd += 0x22F000; break;
@@ -978,7 +1010,7 @@ static uint64_t dso_cmd_gen(struct sr_dev_inst *sdi, struct sr_channel* ch, int 
             channel_cnt += probe->enabled;
         }
         cmd += 0x18;
-        uint32_t divider = devc->zero ? 0x1 : (uint32_t)ceil(DSLOGIC_MAX_DSO_SAMPLERATE * 1.0  / devc->cur_samplerate / channel_cnt);
+        uint32_t divider = (uint32_t)ceil(DSLOGIC_MAX_DSO_SAMPLERATE * 1.0  / devc->cur_samplerate / channel_cnt);
         cmd += divider << 8;
         break;
     case SR_CONF_HORIZ_TRIGGERPOS:
@@ -1000,27 +1032,9 @@ static uint64_t dso_cmd_gen(struct sr_dev_inst *sdi, struct sr_channel* ch, int 
             cmd += probe->trig_value << (8 * (probe->index + 1));
         }
         break;
-    case SR_CONF_ZERO_SET:
+    case SR_CONF_TRIGGER_MARGIN:
         cmd += 0x40;
-        cmd += ch->index << ch_bit;
-        cmd += ((uint64_t)zero_info.vpos_l << 8);
-        cmd += ((uint64_t)(zero_info.vpos_h & 0x3) << 16);
-        cmd += ((uint64_t)zero_info.voff_l << 24);
-        cmd += ((uint64_t)(zero_info.voff_h & 0x3) << 32);
-        cmd += ((uint64_t)zero_info.vcntr_l << 40);
-        cmd += ((uint64_t)(zero_info.vcntr_h & 0x3) << 48);
-        cmd += ((uint64_t)zero_info.adc_off << 56);
-        break;
-    case SR_CONF_COMB_SET:
-        cmd += 0x48;
-        cmd += ((uint64_t)comb_info.comb0_low_off << 8);
-        cmd += ((uint64_t)comb_info.comb0_hig_off << 16);
-        cmd += ((uint64_t)comb_info.comb1_low_off << 24);
-        cmd += ((uint64_t)comb_info.comb1_hig_off << 32);
-        cmd += ((uint64_t)comb_info.comb_sign << 40);
-        break;
-    case SR_CONF_ZERO_OVER:
-        cmd += 0x50;
+        cmd += ((uint64_t)devc->trigger_margin << 8);
         break;
     case SR_CONF_TRIGGER_HOLDOFF:
         cmd += 0x58;
@@ -1030,149 +1044,69 @@ static uint64_t dso_cmd_gen(struct sr_dev_inst *sdi, struct sr_channel* ch, int 
         cmd = 0xa5a5a500;
         break;
     default:
-        cmd = 0x00000000;
+        cmd = 0xFFFFFFFF;
     }
 
     return cmd;
 }
 
-static int dev_open(struct sr_dev_inst *sdi)
+static int dso_init(const struct sr_dev_inst *sdi, gboolean from_eep)
 {
-    struct sr_usb_dev_inst *usb;
-    struct DSL_context *devc;
+    int ret, i;
     GSList *l;
-	int ret;
-	int64_t timediff_us, timediff_ms;
+    struct sr_usb_dev_inst *usb = sdi->conn;
+    gboolean zeroed = FALSE;
 
-	devc = sdi->priv;
-	usb = sdi->conn;
-
-	/*
-	 * If the firmware was recently uploaded, wait up to MAX_RENUM_DELAY_MS
-	 * milliseconds for the FX2 to renumerate.
-	 */
-    ret = SR_ERR;
-    if (devc->fw_updated > 0) {
-        sr_info("Waiting for device to reset.");
-        /* Takes >= 300ms for the FX2 to be gone from the USB bus. */
-        g_usleep(300 * 1000);
-        timediff_ms = 0;
-        while (timediff_ms < MAX_RENUM_DELAY_MS) {
-            if ((ret = DSLogic_dev_open(sdi)) == SR_OK)
-                break;
-            g_usleep(100 * 1000);
-
-            timediff_us = g_get_monotonic_time() - devc->fw_updated;
-            timediff_ms = timediff_us / 1000;
-            sr_spew("Waited %" PRIi64 "ms.", timediff_ms);
-        }
+    for(l = sdi->channels; l; l = l->next) {
+        struct sr_channel *probe = (struct sr_channel *)l->data;
+        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe, SR_CONF_COUPLING));
         if (ret != SR_OK) {
-            sr_err("Device failed to renumerate.");
-            return SR_ERR;
+            sr_err("DSO set coupling of channel %d command failed!", probe->index);
+            return ret;
         }
-        sr_info("Device came back after %" PRIi64 "ms.", timediff_ms);
-    } else {
-        sr_info("Firmware upload was not needed.");
-        ret = DSLogic_dev_open(sdi);
+        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe, SR_CONF_VDIV));
+        if (ret != SR_OK) {
+            sr_err("Set VDIV of channel %d command failed!", probe->index);
+            return ret;
+        }
     }
 
+    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 0, SR_CONF_SAMPLERATE));
     if (ret != SR_OK) {
-        sr_err("Unable to open device.");
-        return SR_ERR;
-	}
-
-	ret = libusb_claim_interface(usb->devhdl, USB_INTERFACE);
-	if (ret != 0) {
-		switch(ret) {
-		case LIBUSB_ERROR_BUSY:
-            sr_err("Unable to claim USB interface. Another "
-			       "program or driver has already claimed it.");
-			break;
-		case LIBUSB_ERROR_NO_DEVICE:
-            sr_err("Device has been disconnected.");
-			break;
-		default:
-            sr_err("Unable to claim interface: %s.",
-			       libusb_error_name(ret));
-			break;
-		}
-
-        return SR_ERR;
-	}
-
-    if (devc->fw_updated > 0) {
-        if ((ret = command_fpga_config(usb->devhdl)) != SR_OK) {
-            sr_err("Send FPGA configure command failed!");
-        } else {
-            /* Takes >= 10ms for the FX2 to be ready for FPGA configure. */
-            g_usleep(10 * 1000);
-            char *fpga_bit;
-            if (!(fpga_bit = g_try_malloc(strlen(config_path)+strlen(devc->profile->fpga_bit33)+1))) {
-                sr_err("fpag_bit path malloc error!");
-                return SR_ERR_MALLOC;
-            }
-            strcpy(fpga_bit, config_path);
-            switch(devc->th_level) {
-            case SR_TH_3V3:
-                strcat(fpga_bit, devc->profile->fpga_bit33);;
-                break;
-            case SR_TH_5V0:
-                strcat(fpga_bit, devc->profile->fpga_bit50);;
-                break;
-            default:
-                return SR_ERR;
-            }
-            ret = fpga_config(usb->devhdl, fpga_bit);
-            if (ret != SR_OK) {
-                sr_err("Configure FPGA failed!");
-            }
-            g_free(fpga_bit);
-        }
+        sr_err("Set Sample Rate command failed!");
+        return ret;
     }
-
-    ret = command_vth(usb->devhdl, devc->vth);
-    if (ret == SR_OK)
-        sr_dbg("%s: setting threshold voltage to %d",
-            __func__, devc->vth);
-    else
-        sr_dbg("%s: setting threshold voltage to %d failed",
-            __func__, devc->vth);
-
-    return SR_OK;
-}
-
-static int dev_close(struct sr_dev_inst *sdi)
-{
-    struct sr_usb_dev_inst *usb;
-
-	usb = sdi->conn;
-	if (usb->devhdl == NULL)
-        return SR_ERR;
-
-    sr_info("DSLogic: Closing device %d on %d.%d interface %d.",
-		sdi->index, usb->bus, usb->address, USB_INTERFACE);
-	libusb_release_interface(usb->devhdl, USB_INTERFACE);
-	libusb_close(usb->devhdl);
-	usb->devhdl = NULL;
-    sdi->status = SR_ST_INACTIVE;
-
-    return SR_OK;
-}
-
-static int cleanup(void)
-{
-	int ret;
-	struct drv_context *drvc;
-
-	if (!(drvc = di->priv))
-        return SR_OK;
-
-	ret = dev_clear();
-
-	g_free(drvc);
-	di->priv = NULL;
-
-	return ret;
+    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_HORIZ_TRIGGERPOS));
+    if (ret != SR_OK) {
+        sr_err("Set Horiz Trigger Position command failed!");
+        return ret;
+    }
+    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_HOLDOFF));
+    if (ret != SR_OK) {
+        sr_err("Set Trigger Holdoff Time command failed!");
+        return ret;
+    }
+    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_SLOPE));
+    if (ret != SR_OK) {
+        sr_err("Set Trigger Slope command failed!");
+        return ret;
+    }
+    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_SOURCE));
+    if (ret != SR_OK) {
+        sr_err("Set Trigger Source command failed!");
+        return ret;
+    }
+    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_VALUE));
+    if (ret != SR_OK) {
+        sr_err("Set Trigger Value command failed!");
+        return ret;
+    }
+    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_MARGIN));
+    if (ret != SR_OK) {
+        sr_err("Set Trigger Margin command failed!");
+        return ret;
+    }
+    return ret;
 }
 
 static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
@@ -1338,7 +1272,13 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         if (!sdi)
             return SR_ERR;
         devc = sdi->priv;
-        *data = g_variant_new_byte(devc->trigger_source);
+        *data = g_variant_new_byte(devc->trigger_source&0x0f);
+        break;
+    case SR_CONF_TRIGGER_CHANNEL:
+        if (!sdi)
+            return SR_ERR;
+        devc = sdi->priv;
+        *data = g_variant_new_byte(devc->trigger_source>>4);
         break;
     case SR_CONF_TRIGGER_VALUE:
         if (!ch)
@@ -1361,6 +1301,12 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         devc = sdi->priv;
         *data = g_variant_new_uint64(devc->trigger_holdoff);
         break;
+    case SR_CONF_TRIGGER_MARGIN:
+        if (!sdi)
+            return SR_ERR;
+        devc = sdi->priv;
+        *data = g_variant_new_byte(devc->trigger_margin);
+        break;
     case SR_CONF_ZERO:
         if (!sdi)
             return SR_ERR;
@@ -1375,6 +1321,12 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
             return SR_ERR;
         devc = sdi->priv;
         *data = g_variant_new_boolean(devc->stream);
+        break;
+    case SR_CONF_ROLL:
+        if (!sdi)
+            return SR_ERR;
+        devc = sdi->priv;
+        *data = g_variant_new_boolean(devc->roll);
         break;
     case SR_CONF_MAX_DSO_SAMPLERATE:
         if (!sdi)
@@ -1403,11 +1355,11 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         devc = sdi->priv;
         *data = g_variant_new_uint64(DSLOGIC_MAX_LOGIC_DEPTH*ceil(samplerates[devc->samplerates_size-1] * 1.0 / DSLOGIC_MAX_LOGIC_SAMPLERATE));
         break;
-    case SR_CONF_STATUS:
+    case SR_CONF_DSO_BITS:
         if (!sdi)
             return SR_ERR;
         devc = sdi->priv;
-        *data = g_variant_new_boolean(devc->status != DSL_INIT);
+        *data = g_variant_new_byte(devc->dso_bits);
         break;
     default:
         return SR_ERR_NA;
@@ -1425,15 +1377,18 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     int ret, num_probes;
     struct sr_usb_dev_inst *usb;
     int i;
+    struct drv_context *drvc;
 
     (void)cg;
 
     if (sdi->status != SR_ST_ACTIVE)
         return SR_ERR;
 
+    drvc = di->priv;
 	devc = sdi->priv;
     usb = sdi->conn;
 
+    ret = SR_OK;
     if (id == SR_CONF_SAMPLERATE) {
 		devc->cur_samplerate = g_variant_get_uint64(data);
         if(sdi->mode == DSO) {
@@ -1441,141 +1396,54 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 0, SR_CONF_SAMPLERATE));
         } else {
             devc->sample_wide = (devc->cur_samplerate <= DSLOGIC_MAX_LOGIC_SAMPLERATE);
-            ret = SR_OK;
         }
     } else if (id == SR_CONF_CLOCK_TYPE) {
         devc->clock_type = g_variant_get_boolean(data);
-        ret = SR_OK;
     } else if (id == SR_CONF_CLOCK_EDGE) {
         devc->clock_edge = g_variant_get_boolean(data);
-        ret = SR_OK;
     } else if (id == SR_CONF_RLE) {
         devc->rle_mode = g_variant_get_boolean(data);
-        ret = SR_OK;
     } else if (id == SR_CONF_INSTANT) {
         if (sdi->mode == DSO) {
             devc->instant = g_variant_get_boolean(data);
-            int num_probes = 0;
-            GSList *l;
-            for (l = sdi->channels; l; l = l->next) {
-                struct sr_channel *probe = (struct sr_channel *)l->data;
-                num_probes += probe->enabled;
-            }
-            if (num_probes != 0) {
+            if (en_ch_num(sdi) != 0) {
                 if (devc->instant)
-                    devc->limit_samples = DSLOGIC_INSTANT_DEPTH / num_probes;
+                    devc->limit_samples = DSLOGIC_INSTANT_DEPTH / en_ch_num(sdi);
                 else
-                    devc->limit_samples = DSLOGIC_MAX_DSO_DEPTH / num_probes;
+                    devc->limit_samples = DSLOGIC_MAX_DSO_DEPTH / en_ch_num(sdi);
             }
         }
-        ret = SR_OK;
 	} else if (id == SR_CONF_LIMIT_SAMPLES) {
 		devc->limit_samples = g_variant_get_uint64(data);
-        ret = SR_OK;
     } else if (id == SR_CONF_DEVICE_MODE) {
         sdi->mode = g_variant_get_int16(data);
-        ret = SR_OK;
         if (sdi->mode == LOGIC) {
             num_probes = devc->profile->dev_caps & DEV_CAPS_16BIT ? 16 : 8;
+            devc->samplecounts_size = ARRAY_SIZE(samplecounts);
         } else if (sdi->mode == DSO) {
-            sdi->mode = DSO;
             num_probes = devc->profile->dev_caps & DEV_CAPS_16BIT ? MAX_DSO_PROBES_NUM : 1;
             ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_DSO_SYNC));
             if (ret != SR_OK)
                 sr_dbg("%s: DSO configuration sync failed", __func__);
             devc->cur_samplerate = DSLOGIC_MAX_DSO_SAMPLERATE / num_probes;
             devc->limit_samples = DSLOGIC_MAX_DSO_DEPTH / num_probes;
+            devc->samplerates_size = 15;
+            devc->samplecounts_size = ARRAY_SIZE(samplecounts);
         } else if (sdi->mode == ANALOG){
             num_probes = devc->profile->dev_caps & DEV_CAPS_16BIT ? MAX_ANALOG_PROBES_NUM : 1;
+            devc->op_mode = SR_OP_STREAM;
+            devc->stream = TRUE;
+            devc->samplerates_size = 10;
+            devc->samplecounts_size = 15;
         }
         sr_dev_probes_free(sdi);
         set_probes(sdi, num_probes);
         sr_dbg("%s: setting mode to %d", __func__, sdi->mode);
         if (sdi->mode == DSO) {
-            GList *l;
-            for(l = sdi->channels; l; l = l->next) {
-                struct sr_channel *probe = (struct sr_channel *)l->data;
-                zero_info.zero_addr = (zero_base_addr + probe->index * sizeof(struct cmd_zero_info));
-                if ((ret = command_rd_nvm(usb->devhdl, (unsigned char *)&zero_info, zero_info.zero_addr, sizeof(struct cmd_zero_info))) != SR_OK) {
-                    sr_err("Send Get Zero command failed!");
-                } else {
-                    if (zero_info.zero_addr == (zero_base_addr + probe->index * sizeof(struct cmd_zero_info))) {
-                        ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe, SR_CONF_ZERO_SET));
-                        if (ret != SR_OK) {
-                            sr_err("Set Zero command failed!");
-                            return ret;
-                        }
-                    } else {
-                        devc->zero = TRUE;
-                        sr_info("Zero have not been setted!");
-                    }
-                }
-            }
-
-            comb_info.comb_addr = comb_base_addr;
-            if ((ret = command_rd_nvm(usb->devhdl, (unsigned char *)&comb_info, comb_info.comb_addr, sizeof(struct cmd_comb_info))) != SR_OK) {
-                sr_err("Send Get Comb Command Failed!");
-            } else {
-                if (comb_info.comb_addr == comb_base_addr) {
-                    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_COMB_SET));
-                    if (ret != SR_OK) {
-                        sr_err("Set Comb command failed!");
-                        return ret;
-                    }
-                } else {
-                    devc->zero = TRUE;
-                    sr_info("Comb have not been setted!");
-                }
-            }
-
-            for(l = sdi->channels; l; l = l->next) {
-                struct sr_channel *probe = (struct sr_channel *)l->data;
-                ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe, SR_CONF_COUPLING));
-                if (ret != SR_OK) {
-                    sr_err("Set Coupling command failed!");
-                    return ret;
-                }
-                ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe, SR_CONF_VDIV));
-                if (ret != SR_OK) {
-                    sr_dbg("%s: Initial setting for DSO mode failed", __func__);
-                    return ret;
-                }
-            }
-
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 0, SR_CONF_SAMPLERATE));
-            if (ret != SR_OK) {
-                sr_err("Set Sample Rate command failed!");
-                return ret;
-            }
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_HORIZ_TRIGGERPOS));
-            if (ret != SR_OK) {
-                sr_err("Set Horiz Trigger Position command failed!");
-                return ret;
-            }
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_HOLDOFF));
-            if (ret != SR_OK) {
-                sr_err("Set Trigger Holdoff Time command failed!");
-                return ret;
-            }
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_SLOPE));
-            if (ret != SR_OK) {
-                sr_err("Set Trigger Slope command failed!");
-                return ret;
-            }
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_SOURCE));
-            if (ret != SR_OK) {
-                sr_err("Set Trigger Source command failed!");
-                return ret;
-            }
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_VALUE));
-            if (ret != SR_OK) {
-                sr_err("Set Trigger Value command failed!");
-                return ret;
-            }
+            dso_init(sdi, 0);
         }
     } else if (id == SR_CONF_OPERATION_MODE) {
         stropt = g_variant_get_string(data, NULL);
-        ret = SR_OK;
         if (sdi->mode == LOGIC) {
             if (!strcmp(stropt, opmodes[SR_OP_BUFFER]) && (devc->op_mode != SR_OP_BUFFER)) {
                 devc->op_mode = SR_OP_BUFFER;
@@ -1623,12 +1491,16 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 devc->cur_samplerate = samplerates[devc->samplerates_size-1];
                 devc->sample_wide = (devc->cur_samplerate <= DSLOGIC_MAX_DSO_SAMPLERATE);
             }
+        } else if (sdi->mode == ANALOG) {
+            devc->op_mode = SR_OP_STREAM;
+            devc->stream = TRUE;
+            devc->samplerates_size = 10;
+            devc->samplecounts_size = 15;
         }
         sr_dbg("%s: setting pattern to %d",
             __func__, devc->op_mode);
     } else if (id == SR_CONF_CHANNEL_MODE) {
         stropt = g_variant_get_string(data, NULL);
-        ret = SR_OK;
         if (sdi->mode == LOGIC) {
             if (devc->stream) {
                 for (i = 0; i < ARRAY_SIZE(stream_ch_modes); i++)
@@ -1656,7 +1528,6 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             __func__, devc->ch_mode);
     } else if (id == SR_CONF_THRESHOLD) {
         stropt = g_variant_get_string(data, NULL);
-        ret = SR_OK;
         if (!strcmp(stropt, thresholds[SR_TH_3V3])) {
             devc->th_level = SR_TH_3V3;
         } else if (!strcmp(stropt, thresholds[SR_TH_5V0])) {
@@ -1671,11 +1542,11 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 /* Takes >= 10ms for the FX2 to be ready for FPGA configure. */
                 g_usleep(10 * 1000);
                 char *fpga_bit;
-                if (!(fpga_bit = g_try_malloc(strlen(config_path)+strlen(devc->profile->fpga_bit33)+1))) {
+                if (!(fpga_bit = g_try_malloc(strlen(DS_RES_PATH)+strlen(devc->profile->fpga_bit33)+1))) {
                     sr_err("fpag_bit path malloc error!");
                     return SR_ERR_MALLOC;
                 }
-                strcpy(fpga_bit, config_path);
+                strcpy(fpga_bit, DS_RES_PATH);
                 switch(devc->th_level) {
                 case SR_TH_3V3:
                     strcat(fpga_bit, devc->profile->fpga_bit33);;
@@ -1697,16 +1568,15 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             __func__, devc->th_level);
     } else if (id == SR_CONF_VTH) {
         devc->vth = g_variant_get_double(data);
-        ret = command_vth(usb->devhdl, devc->vth);
-        if (ret == SR_OK)
-            sr_dbg("%s: setting threshold voltage to %d",
+        if ((ret = command_wr_reg(usb->devhdl, (uint8_t)(devc->vth/5.0*255), VTH_ADDR)) == SR_OK) {
+            sr_err("%s: setting threshold voltage to %f",
                 __func__, devc->vth);
-        else
-            sr_dbg("%s: setting threshold voltage to %d failed",
+        } else {
+            sr_info("%s: setting threshold voltage to %f failed",
                 __func__, devc->vth);
+        }
     } else if (id == SR_CONF_FILTER) {
         stropt = g_variant_get_string(data, NULL);
-        ret = SR_OK;
         if (!strcmp(stropt, filters[SR_FILTER_NONE])) {
             devc->filter = SR_FILTER_NONE;
         } else if (!strcmp(stropt, filters[SR_FILTER_1T])) {
@@ -1714,11 +1584,10 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         } else {
             ret = SR_ERR;
         }
-        sr_dbg("%s: setting threshold to %d",
-            __func__, devc->th_level);
+        sr_dbg("%s: setting filter to %d",
+            __func__, devc->filter);
     } else if (id == SR_CONF_MAX_HEIGHT) {
         stropt = g_variant_get_string(data, NULL);
-        ret = SR_OK;
         for (i = 0; i < ARRAY_SIZE(maxHeights); i++) {
             if (!strcmp(stropt, maxHeights[i])) {
                 devc->max_height = i;
@@ -1747,8 +1616,9 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             sr_dbg("%s: setting ENABLE of channel %d to %d",
                 __func__, ch->index, ch->enabled);
     } else if (id == SR_CONF_DATALOCK) {
+        while(libusb_try_lock_events(drvc->sr_ctx->libusb_ctx));
         devc->data_lock = g_variant_get_boolean(data);
-        ret = SR_OK;
+        libusb_unlock_events(drvc->sr_ctx->libusb_ctx);
     } else if (id == SR_CONF_VDIV) {
         ch->vdiv = g_variant_get_uint64(data);
         if (sdi->mode == DSO) {
@@ -1762,10 +1632,14 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 __func__, ch->index, ch->vdiv);
     } else if (id == SR_CONF_FACTOR) {
         ch->vfactor = g_variant_get_uint64(data);
-        ret = SR_OK;
+        sr_dbg("%s: setting Factor of channel %d to %d", __func__,
+               ch->index, ch->vfactor);
+    } else if (id == SR_CONF_VPOS) {
+        ch->vpos = g_variant_get_double(data);
+        sr_dbg("%s: setting VPOS of channel %d to %lf", __func__,
+               ch->index, ch->vpos);
     } else if (id == SR_CONF_TIMEBASE) {
         devc->timebase = g_variant_get_uint64(data);
-        ret = SR_OK;
     } else if (id == SR_CONF_COUPLING) {
         ch->coupling = g_variant_get_byte(data);
         if (ch->coupling == SR_GND_COUPLING)
@@ -1814,26 +1688,22 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 __func__, ch->index, ch->trig_value);
     } else if (id == SR_CONF_HORIZ_TRIGGERPOS) {
 		if (sdi->mode == DSO) {
-	        uint16_t channel_cnt = 0;
-	        GSList *l;
-	        for (l = sdi->channels; l; l = l->next) {
-	            struct sr_channel *probe = (struct sr_channel *)l->data;
-	            channel_cnt += probe->enabled;
-	        }
             devc->trigger_hrate = g_variant_get_byte(data);
-            devc->trigger_hpos =  devc->trigger_hrate * channel_cnt * devc->limit_samples / 200.0;
+            //devc->trigger_hpos = devc->trigger_hrate * en_ch_num(sdi) * devc->limit_samples / 200.0;
+            /*
+             * devc->trigger_hpos should be updated before each acquisition
+             * because the samplelimits may changed
+             */
+            devc->trigger_hpos = devc->trigger_hrate * en_ch_num(sdi) * devc->limit_samples / 200.0;
+            if ((ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 1, SR_CONF_HORIZ_TRIGGERPOS))) == SR_OK)
+                sr_dbg("%s: setting DSO Horiz Trigger Position to %d",
+                    __func__, devc->trigger_hpos);
+            else
+                sr_dbg("%s: setting DSO Horiz Trigger Position to %d failed",
+                    __func__, devc->trigger_hpos);
 		} else {
             devc->trigger_hpos = g_variant_get_byte(data) * devc->limit_samples / 100.0;
         }
-		if (sdi->mode == DSO) {
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 1, SR_CONF_HORIZ_TRIGGERPOS));
-        }
-        if (ret == SR_OK)
-            sr_dbg("%s: setting DSO Horiz Trigger Position to %d",
-                __func__, devc->trigger_hpos);
-        else
-            sr_dbg("%s: setting DSO Horiz Trigger Position to %d failed",
-                __func__, devc->trigger_hpos);
     } else if (id == SR_CONF_TRIGGER_HOLDOFF) {
         devc->trigger_holdoff = g_variant_get_uint64(data);
         if (sdi->mode == DSO) {
@@ -1845,30 +1715,17 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         else
             sr_dbg("%s: setting Trigger Holdoff Time to %d failed",
                 __func__, devc->trigger_holdoff);
-    } else if (id == SR_CONF_ZERO) {
-        devc->zero = g_variant_get_boolean(data);
-        ret = SR_OK;
-    } else if (id == SR_CONF_ZERO_SET) {
-        GSList *l;
-        for(l = sdi->channels; l; l = l->next) {
-            struct sr_channel *probe = (struct sr_channel *)l->data;
-            zero_info.zero_addr = zero_base_addr + probe->index * sizeof(struct cmd_zero_info);
-            zero_info.adc_off = (probe->index == 0) ? mstatus.ch0_adc_off + (mstatus.ch0_adc_sign << 7) : mstatus.ch1_adc_off + (mstatus.ch1_adc_sign << 7);
-            ret = command_wr_nvm(usb->devhdl, (unsigned char *)&zero_info, sizeof(struct cmd_zero_info));
-            if (ret != SR_OK)
-                sr_err("DSO channel %d Set Zero command failed!", probe->index);
+    } else if (id == SR_CONF_TRIGGER_MARGIN) {
+        devc->trigger_margin = g_variant_get_byte(data);
+        if (sdi->mode == DSO) {
+            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_TRIGGER_MARGIN));
         }
-        comb_info.comb_addr = comb_base_addr;
-        comb_info.comb0_low_off = mstatus.comb0_off;
-        comb_info.comb0_hig_off = mstatus.comb0_off >> 8;
-        comb_info.comb1_low_off = mstatus.comb1_off;
-        comb_info.comb1_hig_off = mstatus.comb1_off >> 8;
-        comb_info.comb_sign = mstatus.comb_sign;
-        ret = command_wr_nvm(usb->devhdl, (unsigned char *)&comb_info, sizeof(struct cmd_comb_info));
-        if (ret != SR_OK)
-            sr_err("DSO Set Comb command failed!");
+        if (ret == SR_OK)
+            sr_dbg("%s: setting Trigger Margin to %d",
+                __func__, devc->trigger_margin);
         else
-            devc->zero = FALSE;
+            sr_dbg("%s: setting Trigger Margin to %d failed",
+                __func__, devc->trigger_margin);
     } else if (id == SR_CONF_STREAM) {
         devc->stream = g_variant_get_boolean(data);
     } else {
@@ -1932,7 +1789,7 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_LIMIT_SAMPLES:
         g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));
         gvar = g_variant_new_from_data(G_VARIANT_TYPE("at"),
-                samplecounts, ARRAY_SIZE(samplecounts)*sizeof(uint64_t), TRUE, NULL, NULL);
+                samplecounts, devc->samplecounts_size*sizeof(uint64_t), TRUE, NULL, NULL);
         g_variant_builder_add(&gvb, "{sv}", "samplecounts", gvar);
         *data = g_variant_builder_end(&gvb);
         break;
@@ -1959,63 +1816,169 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_MAX_HEIGHT:
         *data = g_variant_new_strv(maxHeights, ARRAY_SIZE(maxHeights));
         break;
-	default:
+    default:
         return SR_ERR_NA;
-	}
+    }
 
     return SR_OK;
 }
 
-static void abort_acquisition(struct DSL_context *devc)
+static int dev_open(struct sr_dev_inst *sdi)
+{
+    struct sr_usb_dev_inst *usb;
+    struct DSL_context *devc;
+    GSList *l;
+	int ret;
+	int64_t timediff_us, timediff_ms;
+    uint8_t fpga_done;
+
+	devc = sdi->priv;
+	usb = sdi->conn;
+
+	/*
+     * If the firmware was recently uploaded, no dev_open operation should be called.
+     * Just wait for renumerate -> detach -> attach
+	 */
+    ret = SR_ERR;
+	if (devc->fw_updated > 0) {
+        return SR_ERR;
+    } else {
+        sr_info("%s: Firmware upload was not needed.", __func__);
+        ret = DSLogic_dev_open(sdi);
+    }
+
+    if (ret != SR_OK) {
+        sr_err("%s: Unable to open device.", __func__);
+        return SR_ERR;
+	}
+
+	ret = libusb_claim_interface(usb->devhdl, USB_INTERFACE);
+	if (ret != 0) {
+		switch(ret) {
+		case LIBUSB_ERROR_BUSY:
+            sr_err("%s: Unable to claim USB interface. Another "
+                   "program or driver has already claimed it.", __func__);
+			break;
+		case LIBUSB_ERROR_NO_DEVICE:
+            sr_err("%s: Device has been disconnected.", __func__);
+			break;
+		default:
+            sr_err("%s: Unable to claim interface: %s.",
+                   __func__, libusb_error_name(ret));
+			break;
+		}
+
+        return SR_ERR;
+	}
+
+    ret = command_get_fpga_done(usb->devhdl, &fpga_done);
+    if (ret != SR_OK) {
+        sr_err("Failed to get fpga done infos.");
+        return SR_ERR;
+    }
+
+    if (fpga_done == 0) {
+        if ((ret = command_fpga_config(usb->devhdl)) != SR_OK) {
+            sr_err("%s: Send FPGA configure command failed!", __func__);
+        } else {
+            /* Takes >= 10ms for the FX2 to be ready for FPGA configure. */
+            g_usleep(10 * 1000);
+            char *fpga_bit;
+            if (!(fpga_bit = g_try_malloc(strlen(DS_RES_PATH)+strlen(devc->profile->fpga_bit33)+1))) {
+                sr_err("fpag_bit path malloc error!");
+                return SR_ERR_MALLOC;
+            }
+            strcpy(fpga_bit, DS_RES_PATH);
+            switch(devc->th_level) {
+            case SR_TH_3V3:
+                strcat(fpga_bit, devc->profile->fpga_bit33);;
+                break;
+            case SR_TH_5V0:
+                strcat(fpga_bit, devc->profile->fpga_bit50);;
+                break;
+            default:
+                return SR_ERR;
+            }
+            ret = fpga_config(usb->devhdl, fpga_bit);
+            if (ret != SR_OK) {
+                sr_err("%s: Configure FPGA failed!", __func__);
+            }
+            g_free(fpga_bit);
+
+            if ((ret = command_wr_reg(usb->devhdl, (uint8_t)(devc->vth/5.0*255), VTH_ADDR)) == SR_OK) {
+                sr_err("%s: setting threshold voltage to %f",
+                    __func__, devc->vth);
+            } else {
+                sr_info("%s: setting threshold voltage to %f failed",
+                    __func__, devc->vth);
+            }
+        }
+    }
+
+    return SR_OK;
+}
+
+static int dev_close(struct sr_dev_inst *sdi)
+{
+    struct sr_usb_dev_inst *usb;
+    struct DSL_context *devc;
+
+	usb = sdi->conn;
+	if (usb->devhdl == NULL)
+        return SR_ERR;
+    devc = sdi->priv;
+
+    sr_info("DSLogic: Closing device %d on %d.%d interface %d.",
+		sdi->index, usb->bus, usb->address, USB_INTERFACE);
+	libusb_release_interface(usb->devhdl, USB_INTERFACE);
+	libusb_close(usb->devhdl);
+	usb->devhdl = NULL;
+    sdi->status = SR_ST_INACTIVE;
+
+    return SR_OK;
+}
+
+static int cleanup(void)
+{
+	int ret;
+	struct drv_context *drvc;
+
+	if (!(drvc = di->priv))
+        return SR_OK;
+
+	ret = dev_clear();
+
+	g_free(drvc);
+	di->priv = NULL;
+
+	return ret;
+}
+
+static void remove_sources(struct DSL_context *devc)
 {
     int i;
-	int ret;
-	struct sr_usb_dev_inst *usb;
-
-    devc->num_samples = -1;
-
-	sr_info("%s: Stopping", __func__);
-
-    /* Stop GPIF acquisition */
-    usb = ((struct sr_dev_inst *)devc->cb_data)->conn;
-    if ((ret = command_stop_acquisition (usb->devhdl)) != SR_OK)
-        sr_err("Stop DSLogic acquisition failed!");
-    else
-        sr_info("Stop DSLogic acquisition!");
-
-    ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen((struct sr_dev_inst *)devc->cb_data, NULL, SR_CONF_ZERO_OVER));
-    if (ret != SR_OK)
-        sr_err("DSO zero over command failed!");
-
-    /* Cancel exist transfers */
-    if (devc->num_transfers)
-        for (i = devc->num_transfers - 1; i >= 0; i--) {
-            if (devc->transfers[i])
-                libusb_cancel_transfer(devc->transfers[i]);
-        }
+    sr_err("%s: remove fds from polling", __func__);
+    /* Remove fds from polling. */
+    for (i = 0; devc->usbfd[i] != -1; i++)
+        sr_source_remove(devc->usbfd[i]);
+    g_free(devc->usbfd);
 }
 
 static void finish_acquisition(struct DSL_context *devc)
 {
     struct sr_datafeed_packet packet;
-    int i, ret;
-    struct sr_usb_dev_inst *usb;
 
-    sr_err("finish acquisition: send SR_DF_END packet");
+    sr_err("%s: send SR_DF_END packet", __func__);
     /* Terminate session. */
     packet.type = SR_DF_END;
     sr_session_send(devc->cb_data, &packet);
-
-    sr_err("finish acquisition: remove fds from polling");
-    /* Remove fds from polling. */
-    for (i = 0; devc->usbfd[i] != -1; i++)
-        sr_source_remove(devc->usbfd[i]);
-    g_free(devc->usbfd);
 	
     if (devc->num_transfers != 0) {
         devc->num_transfers = 0;
         g_free(devc->transfers);
     }
+
+    devc->status = DSL_FINISH;
 }
 
 static void free_transfer(struct libusb_transfer *transfer)
@@ -2023,7 +1986,7 @@ static void free_transfer(struct libusb_transfer *transfer)
     struct DSL_context *devc;
 	unsigned int i;
 
-	devc = transfer->user_data;
+    devc = transfer->user_data;
 
 	g_free(transfer->buffer);
 	transfer->buffer = NULL;
@@ -2062,42 +2025,32 @@ static void receive_transfer(struct libusb_transfer *transfer)
     struct sr_datafeed_logic logic;
     struct sr_datafeed_dso dso;
     struct sr_datafeed_analog analog;
-    struct DSL_context *devc;
-    int trigger_offset, i, sample_width, cur_sample_count;
-    int trigger_offset_bytes;
-    uint8_t *cur_buf;
-    //GTimeVal cur_time;
 
-    //g_get_current_time(&cur_time);
-    //sr_info("receive_transfer: current time %d sec %d usec", cur_time.tv_sec, cur_time.tv_usec);
+    int trigger_offset, i;
+	int trigger_offset_bytes;
 
-
-    devc = transfer->user_data;
-
-    /*
-     * If acquisition has already ended, just free any queued up
-     * transfer that come in.
-     */
-    if (devc->num_samples == -1) {
-        free_transfer(transfer);
+    const uint8_t *cur_buf = transfer->buffer;
+    struct DSL_context *devc = transfer->user_data;
+    struct sr_dev_inst *sdi = devc->cb_data;
+	const int sample_width = (devc->sample_wide) ? 2 : 1;
+    int cur_sample_count = transfer->actual_length / sample_width;
+	
+    if (devc->data_lock) {
+        resubmit_transfer(transfer);
         return;
     }
 
-    //sr_info("receive_transfer(): status %d; timeout %d; received %d bytes.",
-    //    transfer->status, transfer->timeout, transfer->actual_length);
+    if (devc->abort)
+        devc->status = DSL_STOP;
 
-    /* Save incoming transfer before reusing the transfer struct. */
-    cur_buf = transfer->buffer;
-
-    sample_width = (devc->sample_wide) ? 2 : 1;
-    cur_sample_count = transfer->actual_length / sample_width;
+    sr_info("receive_transfer(): status %d; timeout %d; received %d bytes.",
+        transfer->status, transfer->timeout, transfer->actual_length);
 
     switch (transfer->status) {
     case LIBUSB_TRANSFER_NO_DEVICE:
-        //abort_acquisition(devc);
-        free_transfer(transfer);
+    case LIBUSB_TRANSFER_CANCELLED:
         devc->status = DSL_ERROR;
-        return;
+        break;
     case LIBUSB_TRANSFER_COMPLETED:
     case LIBUSB_TRANSFER_TIMED_OUT: /* We may have received some data though. */
         break;
@@ -2106,30 +2059,20 @@ static void receive_transfer(struct libusb_transfer *transfer)
         break;
     }
 
-    if (transfer->actual_length == 0 ||
-        packet_has_error ||
-        devc->data_lock) {
+    if (devc->status == DSL_DATA &&
+        (transfer->actual_length == 0 ||
+        packet_has_error)) {
         devc->empty_transfer_count++;
         if (devc->empty_transfer_count > MAX_EMPTY_TRANSFERS) {
-            /*
-             * The FX2 gave up. End the acquisition, the frontend
-             * will work out that the samplecount is short.
-             */
-            //abort_acquisition(devc);
-            free_transfer(transfer);
             devc->status = DSL_ERROR;
-        } else {
-            resubmit_transfer(transfer);
         }
-        return;
     } else {
         devc->empty_transfer_count = 0;
     }
 
     trigger_offset = 0;
-    if (devc->trigger_stage >= 0) {
+    if (devc->status == DSL_DATA && devc->trigger_stage >= 0) {
         for (i = 0; i < cur_sample_count; i++) {
-
             const uint16_t cur_sample = devc->sample_wide ?
                 *((const uint16_t*)cur_buf + i) :
                 *((const uint8_t*)cur_buf + i);
@@ -2151,7 +2094,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
                      */
                     packet.type = SR_DF_TRIGGER;
                     packet.payload = NULL;
-                    sr_session_send(devc->cb_data, &packet);
+                    sr_session_send(sdi, &packet);
 
                     /*
                      * Send the samples that triggered it,
@@ -2162,7 +2105,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
                     logic.unitsize = sizeof(*devc->trigger_buffer);
                     logic.length = devc->trigger_stage * logic.unitsize;
                     logic.data = devc->trigger_buffer;
-                    sr_session_send(devc->cb_data, &packet);
+                    sr_session_send(sdi, &packet);
 
                     devc->trigger_stage = TRIGGER_FIRED;
                     break;
@@ -2184,81 +2127,70 @@ static void receive_transfer(struct libusb_transfer *transfer)
         }
     }
 
-    if (devc->trigger_stage == TRIGGER_FIRED) {
+    if (devc->status == DSL_DATA && devc->trigger_stage == TRIGGER_FIRED) {
         /* Send the incoming transfer to the session bus. */
         trigger_offset_bytes = trigger_offset * sample_width;
-        if ((*(struct sr_dev_inst *)(devc->cb_data)).mode == LOGIC) {
+        // check packet type
+        if (sdi->mode == LOGIC) {
             packet.type = SR_DF_LOGIC;
             packet.payload = &logic;
             logic.length = transfer->actual_length - trigger_offset_bytes;
             logic.unitsize = sample_width;
             logic.data_error = 0;
             logic.data = cur_buf + trigger_offset_bytes;
-        } else if ((*(struct sr_dev_inst *)(devc->cb_data)).mode == DSO) {
-            uint16_t channel_cnt = 0;
-            uint16_t channel_en_cnt = 0;
-            GSList *l;
-            struct sr_dev_inst *sdi = devc->cb_data;
-            for (l = sdi->channels; l; l = l->next) {
-                struct sr_channel *probe = (struct sr_channel *)l->data;
-                channel_cnt ++;
-                channel_en_cnt += probe->enabled;
-            }
-            if (channel_en_cnt == 0)
-                channel_en_cnt = 1;
-
+        } else if (sdi->mode == DSO) {
             if (!devc->instant) {
-                const uint32_t mstatus_offset = devc->limit_samples / (channel_cnt/channel_en_cnt);
+                const uint32_t mstatus_offset = devc->limit_samples / (g_slist_length(sdi->channels)/en_ch_num(sdi));
+                mstatus.pkt_id = *((const uint16_t*)cur_buf + mstatus_offset);
                 mstatus.ch0_max = *((const uint8_t*)cur_buf + mstatus_offset*2 + 1*2);
                 mstatus.ch0_min = *((const uint8_t*)cur_buf + mstatus_offset*2 + 3);
                 mstatus.ch0_period = *((const uint32_t*)cur_buf + mstatus_offset/2 + 2/2);
-                mstatus.ch0_period += *((const uint32_t*)cur_buf + mstatus_offset/2 + 4/2) << 32;
+                mstatus.ch0_period += ((uint64_t)*((const uint32_t*)cur_buf + mstatus_offset/2 + 4/2)) << 32;
                 mstatus.ch0_pcnt = *((const uint32_t*)cur_buf + mstatus_offset/2 + 6/2);
                 mstatus.ch1_max = *((const uint8_t*)cur_buf + mstatus_offset*2 + 9*2);
                 mstatus.ch1_min = *((const uint8_t*)cur_buf + mstatus_offset*2 + 19);
                 mstatus.ch1_period = *((const uint32_t*)cur_buf + mstatus_offset/2 + 10/2);
-                mstatus.ch1_period += *((const uint32_t*)cur_buf + mstatus_offset/2 + 12/2) << 32;
+                mstatus.ch1_period += ((uint64_t)*((const uint32_t*)cur_buf + mstatus_offset/2 + 12/2)) << 32;
                 mstatus.ch1_pcnt = *((const uint32_t*)cur_buf + mstatus_offset/2 + 14/2);
                 mstatus.vlen = *((const uint32_t*)cur_buf + mstatus_offset/2 + 16/2) & 0x7fffffff;
                 mstatus.stream_mode = *((const uint32_t*)cur_buf + mstatus_offset/2 + 16/2) & 0x80000000;
-                mstatus.sample_divider = *((const uint32_t*)cur_buf + mstatus_offset/2 + 18/2) & 0x7fffffff;
+                mstatus.sample_divider = *((const uint32_t*)cur_buf + mstatus_offset/2 + 18/2) & 0x0fffffff;
                 mstatus.sample_divider_tog = *((const uint32_t*)cur_buf + mstatus_offset/2 + 18/2) & 0x80000000;
-                mstatus.zeroing = (*((const uint16_t*)cur_buf + mstatus_offset + 128) & 0x8000) != 0;
-                mstatus.ch0_adc_off = *((const uint8_t*)cur_buf + mstatus_offset*2 + 131*2);
-                mstatus.ch0_adc_sign = *((const uint8_t*)cur_buf + mstatus_offset*2 + 131*2+1);
-                mstatus.ch1_adc_off = *((const uint8_t*)cur_buf + mstatus_offset*2 + 135*2);
-                mstatus.ch1_adc_sign = *((const uint8_t*)cur_buf + mstatus_offset*2 + 135*2+1);
-                mstatus.comb0_off = *((const uint16_t*)cur_buf + mstatus_offset + 136);
-                mstatus.comb1_off = *((const uint16_t*)cur_buf + mstatus_offset + 137);
-                mstatus.comb_sign = *((const uint8_t*)cur_buf + mstatus_offset*2 + 138*2);
+                mstatus.trig_flag = *((const uint32_t*)cur_buf + mstatus_offset/2 + 18/2) & 0x40000000;
             } else {
                 mstatus.vlen = instant_buffer_size;
             }
-            const uint32_t divider = devc->zero ? 0x1 : (uint32_t)ceil(DSLOGIC_MAX_DSO_SAMPLERATE * 1.0 / devc->cur_samplerate / channel_en_cnt);
-            if ((mstatus.sample_divider == divider &&
-                mstatus.vlen != 0 &&
-                mstatus.vlen <= (transfer->actual_length - 512) / sample_width) ||
+
+            const uint32_t divider = devc->zero ? 0x1 : (uint32_t)ceil(DSCOPE_MAX_SAMPLERATE * 1.0 / devc->cur_samplerate / en_ch_num(sdi));
+            if ((mstatus.pkt_id == DSO_PKTID &&
+                 mstatus.sample_divider == divider &&
+                 mstatus.vlen != 0 &&
+                 mstatus.vlen <= (transfer->actual_length - 512) / sample_width) ||
                 devc->instant) {
-                devc->mstatus_valid = devc->instant ? FALSE : TRUE;
+                devc->roll = (mstatus.stream_mode != 0);
+                devc->mstatus_valid = TRUE;
                 packet.type = SR_DF_DSO;
                 packet.payload = &dso;
-                dso.probes = (*(struct sr_dev_inst *)(devc->cb_data)).channels;
+                dso.probes = sdi->channels;
                 //dso.num_samples = (transfer->actual_length - 512) / sample_width;
-                cur_sample_count = 2 * mstatus.vlen / channel_en_cnt ;
+                cur_sample_count = 2 * mstatus.vlen / en_ch_num(sdi) ;
                 dso.num_samples = cur_sample_count;
                 dso.mq = SR_MQ_VOLTAGE;
                 dso.unit = SR_UNIT_VOLT;
                 dso.mqflags = SR_MQFLAG_AC;
-                dso.samplerate_tog = mstatus.sample_divider_tog;
+                dso.samplerate_tog = (mstatus.sample_divider_tog != 0);
+                dso.trig_flag = (mstatus.trig_flag != 0);
                 dso.data = cur_buf + trigger_offset_bytes;
             } else {
+                packet.type = SR_DF_ABANDON;
                 devc->mstatus_valid = FALSE;
             }
         } else {
             packet.type = SR_DF_ANALOG;
             packet.payload = &analog;
-            analog.probes = (*(struct sr_dev_inst *)(devc->cb_data)).channels;
-            analog.num_samples = (transfer->actual_length / sample_width)/g_slist_length(analog.probes);
+            analog.probes = sdi->channels;
+            cur_sample_count = transfer->actual_length / (sample_width * g_slist_length(analog.probes));
+            analog.num_samples = cur_sample_count;
             analog.mq = SR_MQ_VOLTAGE;
             analog.unit = SR_UNIT_VOLT;
             analog.mqflags = SR_MQFLAG_AC;
@@ -2308,26 +2240,22 @@ static void receive_transfer(struct libusb_transfer *transfer)
             }
 
             /* send data to session bus */
-            sr_session_send(devc->cb_data, &packet);
+            if (packet.type != SR_DF_ABANDON)
+                sr_session_send(sdi, &packet);
         }
 
         devc->num_samples += cur_sample_count;
-            if (((*(struct sr_dev_inst *)(devc->cb_data)).mode == LOGIC || devc->instant) &&
+        if ((sdi->mode != DSO || devc->instant) &&
             devc->limit_samples &&
             (unsigned int)devc->num_samples >= devc->actual_samples) {
-            //abort_acquisition(devc);
-            free_transfer(transfer);
             devc->status = DSL_STOP;
-            return;
         }
-    } else {
-        /*
-         * TODO: Buffer pre-trigger data in capture
-         * ratio-sized buffer.
-         */
     }
 
-    resubmit_transfer(transfer);
+    if (devc->status == DSL_DATA)
+        resubmit_transfer(transfer);
+    else
+        free_transfer(transfer);
 }
 
 static unsigned int to_bytes_per_ms(struct DSL_context *devc)
@@ -2335,7 +2263,7 @@ static unsigned int to_bytes_per_ms(struct DSL_context *devc)
     if (devc->cur_samplerate > SR_MHZ(100))
         return SR_MHZ(100) / 1000 * (devc->sample_wide ? 2 : 1);
     else
-        return devc->cur_samplerate / 1000 * (devc->sample_wide ? 2 : 1);
+        return devc->cur_samplerate / 1000 * (devc->sample_wide ? 2 : 1) ;
 }
 
 static size_t get_buffer_size(struct DSL_context *devc)
@@ -2379,7 +2307,7 @@ static int dev_transfer_start(const struct sr_dev_inst *sdi)
     struct DSL_context *devc;
     struct sr_usb_dev_inst *usb;
     struct libusb_transfer *transfer;
-    unsigned int i, timeout, num_transfers;
+    unsigned int i, num_transfers;
     int ret;
     unsigned char *buf;
     size_t size;
@@ -2388,34 +2316,26 @@ static int dev_transfer_start(const struct sr_dev_inst *sdi)
     devc = sdi->priv;
     usb = sdi->conn;
 
-    uint16_t channel_en_cnt = 0;
-    uint16_t channel_cnt = 0;
-    GSList *l;
-    for (l = sdi->channels; l; l = l->next) {
-        struct sr_channel *probe = (struct sr_channel *)l->data;
-        channel_en_cnt += probe->enabled;
-        channel_cnt++;
-    }
     if (devc->instant)
-        dso_buffer_size = instant_buffer_size * channel_cnt;
+        dso_buffer_size = instant_buffer_size * g_slist_length(sdi->channels);
     else
-        dso_buffer_size = devc->limit_samples * channel_en_cnt + 512;
+        dso_buffer_size = devc->limit_samples * en_ch_num(sdi) + 512;
 
     num_transfers = 1;
-    size = (sdi->mode == ANALOG) ? cons_buffer_size : ((sdi->mode == DSO) ? dso_buffer_size : get_buffer_size(devc));
+    size = (sdi->mode == DSO) ? dso_buffer_size :
+           (devc->op_mode == SR_OP_STREAM) ? get_buffer_size(devc) : instant_buffer_size;
 
     devc->submitted_transfers = 0;
 
     devc->transfers = g_try_malloc0(sizeof(*devc->transfers) * num_transfers);
     if (!devc->transfers) {
-        sr_err("USB transfers malloc failed.");
+        sr_err("%s: USB transfers malloc failed.", __func__);
         return SR_ERR_MALLOC;
     }
 
-    devc->num_transfers = num_transfers;
     for (i = 0; i < num_transfers; i++) {
         if (!(buf = g_try_malloc(size))) {
-            sr_err("USB transfer buffer malloc failed.");
+            sr_err("%s: USB transfer buffer malloc failed.", __func__);
             return SR_ERR_MALLOC;
         }
         transfer = libusb_alloc_transfer(0);
@@ -2423,15 +2343,17 @@ static int dev_transfer_start(const struct sr_dev_inst *sdi)
                 6 | LIBUSB_ENDPOINT_IN, buf, size,
                 receive_transfer, devc, 0);
         if ((ret = libusb_submit_transfer(transfer)) != 0) {
-            sr_err("Failed to submit transfer: %s.",
-                   libusb_error_name(ret));
+            sr_err("%s: Failed to submit transfer: %s.",
+                   __func__, libusb_error_name(ret));
             libusb_free_transfer(transfer);
             g_free(buf);
-            abort_acquisition(devc);
+            devc->status = DSL_ERROR;
+            devc->abort = TRUE;
             return SR_ERR;
         }
         devc->transfers[i] = transfer;
         devc->submitted_transfers++;
+        devc->num_transfers++;
     }
 
     devc->status = DSL_DATA;
@@ -2439,27 +2361,42 @@ static int dev_transfer_start(const struct sr_dev_inst *sdi)
     return SR_OK;
 }
 
+
 static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
 {
     int completed = 0;
     struct timeval tv;
     struct drv_context *drvc;
     struct DSL_context *devc;
+    struct sr_usb_dev_inst *usb;
+    int i;
+    int ret;
 
     (void)fd;
     (void)revents;
 
     drvc = di->priv;
     devc = sdi->priv;
-
-    if (devc->num_samples != -1 &&
-        (devc->status == DSL_STOP || devc->status == DSL_ERROR)) {
-        sr_info("%s: Stopping", __func__);
-        abort_acquisition(devc);
-    }
+    usb = sdi->conn;
 
     tv.tv_sec = tv.tv_usec = 0;
     libusb_handle_events_timeout_completed(drvc->sr_ctx->libusb_ctx, &tv, &completed);
+
+    if (devc->status == DSL_FINISH) {
+        if (libusb_try_lock_events(drvc->sr_ctx->libusb_ctx) == 0) {
+            if (libusb_event_handling_ok(drvc->sr_ctx->libusb_ctx)) {
+                /* Stop GPIF acquisition */
+                usb = ((struct sr_dev_inst *)devc->cb_data)->conn;
+                if ((ret = command_stop_acquisition (usb->devhdl)) != SR_OK)
+                    sr_err("%s: Sent acquisition stop command failed!", __func__);
+                else
+                    sr_info("%s: Sent acquisition stop command!", __func__);
+
+                remove_sources(devc);
+            }
+            libusb_unlock_events(drvc->sr_ctx->libusb_ctx);
+        }
+    }
 
     return TRUE;
 }
@@ -2468,75 +2405,43 @@ static void receive_trigger_pos(struct libusb_transfer *transfer)
 {
     struct DSL_context *devc;
     struct sr_datafeed_packet packet;
-    struct sr_datafeed_logic logic;
-    struct sr_datafeed_dso dso;
-    struct sr_datafeed_analog analog;
     struct ds_trigger_pos *trigger_pos;
+    const struct sr_dev_inst *sdi;
     int ret;
 
     devc = transfer->user_data;
-    sr_info("receive_trigger_pos(): status %d; timeout %d; received %d bytes.",
-        transfer->status, transfer->timeout, transfer->actual_length);
-
-    if (devc->num_samples == -1) {
-        free_transfer(transfer);
-        return;
-    }
-
+	sdi = devc->cb_data;
     trigger_pos = (struct ds_trigger_pos *)transfer->buffer;
-    switch (transfer->status) {
-    case LIBUSB_TRANSFER_COMPLETED:
+    devc->status = DSL_ERROR;
+    if (transfer->status == LIBUSB_TRANSFER_COMPLETED &&
+        trigger_pos->check_id == TRIG_CHECKID) {
+        sr_info("receive_trigger_pos(): status %d; timeout %d; received %d bytes.",
+            transfer->status, transfer->timeout, transfer->actual_length);
         if (transfer->actual_length == sizeof(struct ds_trigger_pos)) {
-            if (devc->stream || trigger_pos->remain_cnt < devc->limit_samples) {
-                if (!devc->stream)
+            if (sdi->mode != LOGIC || devc->stream || trigger_pos->remain_cnt < devc->limit_samples) {
+                if (sdi->mode == LOGIC && !devc->stream)
                     devc->actual_samples = (devc->limit_samples - ceil(devc->cur_samplerate * 1.0 / DSLOGIC_MAX_LOGIC_SAMPLERATE) * (trigger_pos->remain_cnt));
-
                 packet.type = SR_DF_TRIGGER;
                 packet.payload = trigger_pos;
-                sr_session_send(devc->cb_data, &packet);
+                sr_session_send(sdi, &packet);
 
                 devc->status = DSL_TRIGGERED;
-                free_transfer(transfer);
                 devc->num_transfers = 0;
                 devc->empty_transfer_count = 0;
-            } else {
-                free_transfer(transfer);
-                devc->status = DSL_ERROR;
             }
-        } else {
-            free_transfer(transfer);
-            devc->status = DSL_ERROR;
         }
-        break;
-    case LIBUSB_TRANSFER_TIMED_OUT:
-        devc->empty_transfer_count++;
-        if (devc->empty_transfer_count > MAX_EMPTY_TRANSFERS) {
-            /*
-             * The FX2 gave up. End the acquisition, the frontend
-             * will work out that the samplecount is short.
-             */
-            //abort_acquisition(devc);
-            free_transfer(transfer);
-            devc->status = DSL_ERROR;
-        } else {
-            resubmit_transfer(transfer);
-        }
-        break;
-    case LIBUSB_TRANSFER_CANCELLED:
-        resubmit_transfer(transfer);
-        break;
-    default:
-        //abort_acquisition(devc);
-        free_transfer(transfer);
-        devc->status = DSL_ERROR;
-        break;
     }
 
     if (devc->status == DSL_TRIGGERED) {
+        // successfull
+        free_transfer(transfer);
         if ((ret = dev_transfer_start(devc->cb_data)) != SR_OK) {
             sr_err("%s: could not start data transfer"
                    "(%d)%d", __func__, ret, errno);
         }
+    } else {
+        // failed
+        free_transfer(transfer);
     }
 }
 
@@ -2571,57 +2476,71 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi, void *cb_data)
     devc->num_transfers = 0;
     devc->submitted_transfers = 0;
     devc->actual_samples = devc->limit_samples;
+	test_sample_value = 0;
+	devc->abort = FALSE;
 
 	/* Configures devc->trigger_* and devc->sample_wide */
     if (configure_probes(sdi) != SR_OK) {
-        sr_err("Failed to configure probes.");
+        sr_err("%s: Failed to configure probes.", __func__);
         return SR_ERR;
 	}
 
     /* Stop Previous GPIF acquisition */
     if ((ret = command_stop_acquisition (usb->devhdl)) != SR_OK) {
-        sr_err("Stop DSLogic acquisition failed!");
-        abort_acquisition(devc);
+        sr_err("%s: Stop DSLogic acquisition failed!", __func__);
         return ret;
     } else {
-        sr_info("Stop Previous DSLogic acquisition!");
+        sr_info("%s: Stop Previous DSLogic acquisition!", __func__);
     }
 
     /* Setting FPGA before acquisition start*/
     if ((ret = command_fpga_setting(usb->devhdl, sizeof(struct DSL_setting) / sizeof(uint16_t))) != SR_OK) {
-        sr_err("Send FPGA setting command failed!");
+        sr_err("%s: Send FPGA setting command failed!", __func__);
     } else {
         if ((ret = fpga_setting(sdi)) != SR_OK) {
-            sr_err("Configure FPGA failed!");
-            abort_acquisition(devc);
+            sr_err("%s: Configure FPGA failed!", __func__);
             return ret;
         }
     }
 
+    /*
+     * settings must be updated before acquisition
+     */
     if (sdi->mode == DSO) {
-        GList *l;
-        for(l = sdi->channels; l; l = l->next) {
-            struct sr_channel *probe = (struct sr_channel *)l->data;
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe, SR_CONF_COUPLING));
-            if (ret != SR_OK) {
-                sr_err("Set Coupling command failed!");
-                return ret;
-            }
-            ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, probe, SR_CONF_VDIV));
-            if (ret != SR_OK) {
-                sr_dbg("%s: Initial setting for DSO mode failed", __func__);
-                return ret;
-            }
-        }
+        devc->trigger_hpos =  devc->trigger_hrate * en_ch_num(sdi) * devc->limit_samples / 200.0;
+        if ((ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 1, SR_CONF_HORIZ_TRIGGERPOS))) == SR_OK)
+            sr_dbg("%s: setting DSO Horiz Trigger Position to %d",
+                __func__, devc->trigger_hpos);
+        else
+            sr_dbg("%s: setting DSO Horiz Trigger Position to %d failed",
+                __func__, devc->trigger_hpos);
     }
 
-    if ((ret = command_start_acquisition (usb->devhdl,
-        devc->cur_samplerate, 1, (sdi->mode == LOGIC))) != SR_OK) {
-        abort_acquisition(devc);
-        return ret;
+    /* poll trigger status transfer*/
+    if (!(trigger_pos = g_try_malloc0(sizeof(struct ds_trigger_pos)))) {
+        sr_err("%s: USB trigger_pos buffer malloc failed.", __func__);
+        return SR_ERR_MALLOC;
     }
-
-    test_sample_value = 0;
+    devc->transfers = g_try_malloc0(sizeof(*devc->transfers));
+    if (!devc->transfers) {
+        sr_err("%s: USB trigger_pos transfer malloc failed.", __func__);
+        return SR_ERR_MALLOC;
+	}
+    transfer = libusb_alloc_transfer(0);
+    libusb_fill_bulk_transfer(transfer, usb->devhdl,
+            6 | LIBUSB_ENDPOINT_IN, trigger_pos, sizeof(struct ds_trigger_pos),
+            receive_trigger_pos, devc, 0);
+    if ((ret = libusb_submit_transfer(transfer)) != 0) {
+        sr_err("%s: Failed to submit trigger_pos transfer: %s.",
+               __func__, libusb_error_name(ret));
+        libusb_free_transfer(transfer);
+        g_free(trigger_pos);
+        return SR_ERR;
+    } else {
+        devc->num_transfers++;
+        devc->transfers[0] = transfer;
+        devc->submitted_transfers++;
+    }
 
     /* setup callback function for data transfer */
     lupfd = libusb_get_pollfds(drvc->sr_ctx->libusb_ctx);
@@ -2630,40 +2549,21 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi, void *cb_data)
     return SR_ERR;
     for (i = 0; lupfd[i]; i++) {
         sr_source_add(lupfd[i]->fd, lupfd[i]->events,
-    		      get_timeout(devc), receive_data, sdi);
-    	devc->usbfd[i] = lupfd[i]->fd;
+                  get_timeout(devc), receive_data, sdi);
+        devc->usbfd[i] = lupfd[i]->fd;
     }
     devc->usbfd[i] = -1;
     free(lupfd);
-	
-    /* poll trigger status transfer*/
-    if (!(trigger_pos = g_try_malloc0(sizeof(struct ds_trigger_pos)))) {
-        sr_err("USB trigger_pos buffer malloc failed.");
-        return SR_ERR_MALLOC;
-    }
-    devc->transfers = g_try_malloc0(sizeof(*devc->transfers));
-    if (!devc->transfers) {
-        sr_err("USB trigger_pos transfer malloc failed.");
-        return SR_ERR_MALLOC;
-    }
-    devc->num_transfers = 1;
-    transfer = libusb_alloc_transfer(0);
-    libusb_fill_bulk_transfer(transfer, usb->devhdl,
-            6 | LIBUSB_ENDPOINT_IN, trigger_pos, sizeof(struct ds_trigger_pos),
-            receive_trigger_pos, devc, 0);
-    if ((ret = libusb_submit_transfer(transfer)) != 0) {
-        sr_err("Failed to submit trigger_pos transfer: %s.",
-               libusb_error_name(ret));
-        libusb_free_transfer(transfer);
-        g_free(trigger_pos);
-        abort_acquisition(devc);
-        return SR_ERR;
-    }
-    devc->transfers[0] = transfer;
-    devc->submitted_transfers++;
 
     devc->status = DSL_START;
     devc->mstatus_valid = FALSE;
+    if ((ret = command_start_acquisition (usb->devhdl,
+        devc->cur_samplerate, devc->sample_wide, (sdi->mode == LOGIC))) != SR_OK) {
+        devc->status = DSL_ERROR;
+        devc->abort = TRUE;
+        return ret;
+    }
+
 	/* Send header packet to the session bus. */
     //std_session_send_df_header(cb_data, LOG_PREFIX);
     std_session_send_df_header(sdi, LOG_PREFIX);
@@ -2676,12 +2576,15 @@ static int dev_acquisition_stop(struct sr_dev_inst *sdi, void *cb_data)
 	(void)cb_data;
 
     struct DSL_context *devc;
+    struct sr_usb_dev_inst *usb;
 
     devc = sdi->priv;
-    devc->status = DSL_STOP;
+    usb = sdi->conn;
 
-    sr_info("%s: Stopping", __func__);
-    //abort_acquisition(sdi->priv);
+    if (!devc->abort) {
+        devc->abort = TRUE;
+        command_wr_reg(usb->devhdl, 3, EEWP_ADDR);
+    }
 
     return SR_OK;
 }
@@ -2706,30 +2609,22 @@ static int dev_test(struct sr_dev_inst *sdi)
 
 static int dev_status_get(struct sr_dev_inst *sdi, struct sr_status *status, int begin, int end)
 {
+	int ret = SR_ERR;
     if (sdi) {
-        struct sr_usb_dev_inst *usb;
-        int ret = SR_ERR;
         struct DSL_context *devc;
+        struct sr_usb_dev_inst *usb;
 
         devc = sdi->priv;
         usb = sdi->conn;
-        if (sdi->mode == DSO) {
-            if (devc->mstatus_valid) {
-                *status = mstatus;
-                if (devc->zero)
-                    return SR_ERR;
-                else
-                    return SR_OK;
-            }
-        } else {
-        if (devc->status == DSL_START)
-            ret = command_get_status(usb->devhdl, (unsigned char*)status, begin, end);
+		if (devc->status == DSL_START) {
+			ret = command_get_status(usb->devhdl, (unsigned char*)status, begin, end);
+        } else if (devc->mstatus_valid) {
+            *status = mstatus;
+            ret = SR_OK;
         }
-
-        return ret;
-    } else {
-        return SR_ERR;
     }
+
+    return ret;
 }
 
 SR_PRIV struct sr_dev_driver DSLogic_driver_info = {

@@ -34,7 +34,7 @@
  * @{
  */
 
-struct ds_trigger *trigger;
+struct ds_trigger *trigger = NULL;
 
 /**
  * recovery trigger to initial status.
@@ -77,7 +77,7 @@ SR_API int ds_trigger_destroy(void)
 {
     if (trigger)
         g_free(trigger);
-
+    trigger = NULL;
     return SR_OK;
 }
 
@@ -205,6 +205,19 @@ SR_API int ds_trigger_set_en(uint16_t enable)
     trigger->trigger_en = enable;
 
     return SR_OK;
+}
+
+/**
+ * get trigger en
+ *
+ * @return SR_OK upon success.
+ */
+SR_API uint16_t ds_trigger_get_en()
+{
+    if (trigger == NULL)
+        return 0;
+    else
+        return trigger->trigger_en;
 }
 
 /**

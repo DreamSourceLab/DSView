@@ -46,7 +46,7 @@ public:
 
 	const QString title() const;
 
-	bool operator<(const Row &other) const;
+    bool operator<(const Row &other) const;
 
 private:
 	const srd_decoder *_decoder;

@@ -2,8 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +23,6 @@
 #ifndef DSVIEW_PV_WAITINGDIALOG_H
 #define DSVIEW_PV_WAITINGDIALOG_H
 
-#include <QDialog>
 #include <QDialogButtonBox>
 #include <QTimer>
 #include <QLabel>
@@ -33,24 +31,29 @@
 #include <boost/shared_ptr.hpp>
 
 #include <pv/device/devinst.h>
+#include "../toolbars/titlebar.h"
+#include "dsdialog.h"
 
 namespace pv {
 namespace dialogs {
 
-class WaitingDialog : public QDialog
+class WaitingDialog : public DSDialog
 {
 	Q_OBJECT
 
 private:
     static const int GIF_SIZE = 80;
+    static const int GIF_WIDTH = 220;
+    static const int GIF_HEIGHT = 20;
     static const int TIP_WIDTH = 100;
     static const int TIP_HEIGHT = 40;
     static const int WPOINTS_NUM = 6;
-    static const QString TIPS_INFO;
+    static const QString TIPS_WAIT;
+    static const QString TIPS_FINISHED;
 
 public:
     WaitingDialog(QWidget *parent, boost::shared_ptr<pv::device::DevInst> dev_inst);
-    void start();
+    int start();
 
 protected:
 	void accept();
@@ -58,10 +61,11 @@ protected:
 
 private slots:
     void changeText();
+    void stop();
 
 private:
     boost::shared_ptr<pv::device::DevInst>  _dev_inst;
-
+    toolbars::TitleBar *_titlebar;
     QDialogButtonBox _button_box;
 
     int index;

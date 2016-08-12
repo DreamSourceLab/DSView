@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=0.96
+Exec=/usr/local/bin/DSView
+Name=DSView
+Comment=GUI Program for DreamSourceLab USB-based Instruments
+Icon=/usr/local/share/DSView/logo.png
+Type=Application
+Terminal=false
+Categories=Development

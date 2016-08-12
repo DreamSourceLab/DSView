@@ -1,0 +1,223 @@
+0.3.0 (2014-05-06)
+------------------
+
+Note: This release DOES change the libsigrokdecode public C API. This
+means it is NOT backwards-compatible and frontends will need updates.
+
+ * New supported protocol decoders:
+   - guess_bitrate  Guess the bitrate/baudrate of a signal
+   - ir_nec         NEC infrared remote control protocol
+   - ir_rc5         RC-5 infrared remote control protocol
+   - midi           Musical Instrument Digital Interface
+   - parallel       Parallel synchronous bus decoder
+   - rgb_led_spi    RGB LED string decoder (SPI)
+   - xfp            10 Gigabit Small Form Factor Pluggable Module
+   - z80            Zilog Z80 microprocessor disassembly
+ * Add support for annotation rows, i.e. groups of annotation classes that
+   are supposed to be displayed on the same GUI "row" together.
+ * Add support for the new OUTPUT_BINARY feature, which allows PDs to output
+   decoded data in various file formats (for loading and further processing
+   in other tools, or for direct live piping into other tools).
+ * Add support for the OUTPUT_META output type. This is used by PDs for
+   reporting various data points to the frontends, allowing them to perform
+   various post-processing and statistics tasks on them (e.g. simple counts,
+   average/mean values, min/max values, and so on).
+ * The OUTPUT_PROTO output type is now called OUTPUT_PYTHON.
+ * All protocol decoders:
+   - Bump the 'api_version' field of all decoders to 2. They are no longer
+     compatible (and cannot be used with) older libsigrokdecode versions.
+   - Updates to emit proper annotation classes, annotation sample numbers,
+     and annotation rows for GUI usage (bugs #146, #148, #150, #151, #154,
+     #155, #162, #147, #163, #168, #156, #309, and #344).
+   - Longer and shorter annotations are now supplied for GUI usage (frontends
+     can for example always show the longest annotation per zoom-level).
+   - Extensive protocol information has been moved from the PDs to the wiki.
+     Example: http://sigrok.org/wiki/Protocol_decoder:Uart
+   - Use correct I²C / I²S names in user-visible texts (not I2C/I2S).
+ * dcf77:
+   - Fix a bug in the handling of DCF77 bit 0.
+   - Drop handling of the 'PON' pin, this is not DCF77 related (bug #153).
+   - Fix the data parity check (bug #157).
+ * i2c:
+   - Fix corner case that can yield issues when using triggers on LAs.
+   - Drop unneeded 'addressing' option.
+   - Output bit-exact annotations and data for use by stacked PDs.
+ * i2s:
+   - Add OUTPUT_BINARY support for dumping the decoded data in WAV format.
+ * lpc:
+   - Various fixes to make the PD work better (or at all).
+   - Fix the handling of optional channels.
+   - Make the RESET# pin optional.
+ * onewire_link:
+   - Split 'reset' and 'presence' annotations.
+ * pan1321:
+   - Support the JSEC, JPRO, JAAC, and JSDA commands.
+   - Various internal fixes and improvements.
+ * parallel:
+   - Fix internal use of the obsolete 'metadata' parameter (bug #202).
+ * rtc8564:
+   - Properly handle register 0x06 (weekday) and the 'century' bit.
+ * sdcard_spi:
+   - Emit bit-exact annotations for the register fields that need them.
+   - Fix a Python issue with duplicate keys in a dict (bug #191).
+ * spi:
+   - Either MISO or MOSI can be optional now, but not both (bug #175).
+   - The CS# pin is optional now. If the pin is supplied, it is honored
+     (decoding only happens when the pin is asserted). Otherwise decoding will
+     use every CLK edge, regardless of CS# state or CS# existence (bug #152).
+   - Rename the 'SCK' pin to the more common 'CLK'.
+   - Output bit-exact annotations and data for use by stacked PDs.
+   - Fix a bug occurring when only MOSI (but not MISO) was supplied.
+ * transitioncounter:
+   - Drop the obsolete 'transitioncounter' dummy protocol decoder.
+ * uart:
+   - Fix corner case that can yield issues when using triggers on LAs.
+   - Use 'T' for stop bits and 'P' for parity bits (shortest annotations).
+   - Add a data format selection option.
+   - Annotations for RX and TX are now emitted in different annotation rows.
+   - Either the RX or TX signal can be optional now (but not both).
+   - Fix incorrectly displayed characters (bug #201).
+   - Add support for OUTPUT_BINARY output for RX, TX, or both.
+   - Output bit-exact annotations and data for use by stacked PDs.
+ * uart_dump:
+   - Drop the obsolete 'uart_dump' decoder (the feature is now included
+     in the 'uart' protocol decoder itself via OUTPUT_BINARY).
+ * usb_packet:
+   - The 'usb_protocol' decoder has been renamed to 'usb_packet'.
+   - Various bugfixes and decoding improvements.
+ * usb_signalling:
+   - Fix decoding of individual bits, sample in the middle of bits (bug #158).
+ * libsigrokdecode API changes overview:
+   - Add srd_session_new(), srd_session_destroy(), and a session context.
+   - Add srd_session_metadata_set().
+   - The name 'probe' has been renamed to 'channel' everywhere.
+   - The lib no longer defineѕ names with _t suffix (POSIX reserved).
+   - Drop the obsolete SRD_MAX_NUM_PROBES.
+   - Add the SRD_CONF_SAMPLERATE config key.
+   - Please see the Doxygen API documentation for further details.
+ * Protocol decoder API:
+   - Metadata is passed to PDs at runtime now (not at decoder start).
+     PDs now have a new optional metadata() method to receive it.
+   - Output types are now registered via Decoder.register(), not Decoder.add().
+   - The report() method is now obsolete. This kind of information will be
+     passed to the frontends via the OUTPUT_META output type, allowing the
+     frontends to perform various post-processing and statistics tasks.
+   - PDs can now define BINARY_OUTPUT types via the 'binary' tuple.
+   - PDs can now define annotation rows via the 'annotation_rows' tuple.
+   - PD options are now a tuple of dicts. Each option is a dict containing
+     the keys 'id', 'desc', 'def', and 'values'. Valid option types are
+     UTF-8 strings, integers, and floats (bugs #254, #306, #317, #165).
+   - Channels, optional channels, and annotations are now tuples (not lists).
+   - Only load PDs of API version 2, all other versions are incompatible.
+ * srd_inst_channel_set_all(): Report an error if not all channels required
+   by the respective protocol decoder have been supplied.
+ * Remove some internal limitations to max. 64 channels (bug #120).
+ * Add a unit test suite framework for libsigrokdecode ('make check').
+ * Add a protocol decoder test-suite framework for developers (tests/pdtest).
+ * Various bugfixes:
+   - srd_inst_option_set(): Properly return an error on exceptions.
+   - srd_inst_option_set(): Fix setting of instance options, caused by class
+     variable clobbering or releasing borrowed references (bugs #170, #174).
+   - srd_decoder_load(): Error out upon invalid module names (bug #176).
+   - srd_decoder_load(): Don't try to load an already loaded PD twice.
+   - srd_decoder_load_all(): Avoid issues without prior srd_init() (bug #178).
+   - srd_decoder_doc_get(): Fix an issue in the unit test suite (bug #179).
+   - srd_pd_output_callback_add(): Honor cb_data value (bug #143).
+   - Fix issues with PDs not getting the samplerate (bugs #97, #132, #166).
+   - Don't incorrectly decrease a borrowed reference (bug #177).
+   - Fix various memory leaks and segfault conditions.
+ * Build system:
+    - Use pkg-config (not python3-config) to check for Python libs.
+      This enables (better) libsigrokdecode cross-compile support.
+    - PDs no longer have an extra Makefile.am, and 'make install' now
+      happens via a Python script.
+    - configure: Clearly mark required and optional libs.
+    - Fix an issue with DESTDIR support (bug #215).
+    - Add the HACKING file to the tarball.
+ * Updated or new build-time and runtime requirements:
+   - Python >= 3.2 (required)
+   - check >= 0.9.4 (optional, only needed for the libsigrokdecode testsuite)
+   - libsigrok >= 0.3.0 (optional, only needed for the developer PD testsuite)
+   - python3-coverage (optional, only needed for the developer PD testsuite)
+ * New 'make install'-time requirement:
+   - Python >= 3.2 (required)
+
+0.2.0 (2013-05-04)
+------------------
+
+Note: This release DOES change the libsigrokdecode public C API. This
+means it is NOT backwards-compatible and frontends will need updates.
+
+ * New supported protocol decoders:
+   - Dallas DS1307 RTC
+ * Library: Decoders now expose their options via the GSList *options field
+   in struct srd_decoder.
+ * API related changes:
+   - Various API documentation fixes.
+   - srd_decoder_list() now returns 'const GSList *' instead of 'GSList *'.
+   - Added new srd_strerror() and srd_strerror_name() API calls.
+ * Added support for optional probes for PDs.
+
+0.1.1 (2013-01-27)
+------------------
+
+Note: This release does NOT change the libsigrokdecode public C API. This
+means existing libsigrokdecode frontends should not require any changes.
+However, individual PDs and their output changed, which may require
+some adaptations on the user's side in some cases.
+
+ * New supported protocol decoders:
+   - avr_isp              AVR In-System Programming
+   - can                  Controller Area Network
+   - jtag                 Joint Test Action Group (IEEE 1149.1)
+   - jtag_stm32           Joint Test Action Group / ST STM32
+   - lm75                 National LM75
+   - lpc                  Low-Pin-Count
+   - maxim_ds28ea00       Maxim DS28EA00 1-Wire digital thermometer
+   - onewire_link         1-Wire serial communication bus (link layer)
+   - onewire_network      1-Wire serial communication bus (network layer)
+   - sdcard_spi           Secure Digital card (SPI mode)
+   - tlc5620              Texas Instruments TLC5620
+   - uart_dump            UART dump
+ * i2cfilter: Now outputs 'i2c' packets instead of just data bytes, so
+   other PDs can stack on top of it. It filters by I2C slave address.
+ * edid: Now takes 'i2c' packets as input.
+ * pan1321:
+   - Various bugfixes to make the PD actually work.
+   - Now features 'Text (short)' and 'Text (verbose)' outputs.
+ * usb:
+   - The PD is split into 'usb_signalling' and 'usb_protocol' (stacked on top).
+   - Various bugfixes to make the PD work (better).
+   - The DP/DM probes were swapped, this is now fixed.
+   - Preliminary support for USB low-speed (in addition to full-speed).
+ * mlx90614: Minor bugfixes.
+ * dcf77:
+    - Major bugfix, this PD was not working correctly at all.
+    - Handle PON signal.
+ * nunchuk: Complete rewrite, works (better) now.
+ * spi: Update docs, send CS# change packets, change output API slightly.
+   If you have a PD which stacks on top of SPI, it'll need to be adapted.
+   The PDs that ship with libsigrokdecode are updated already.
+ * mx25lxx05d:
+   - Implement support for the READ, RDSR, and PP commands.
+   - Decode status register bits.
+   - Fix SE command handling.
+   - Fix inverted SRWD bit handling.
+ * Various smaller style and consistency changes in code and PD descriptions.
+ * Fix the build with Homebrew on Mac OS X.
+ * Performance improvements in some PDs.
+ * Documentation: Update website and git URLs.
+ * pkg-config file: Small fix to improve behaviour on Windows with cmake.
+ * All PD implementation files are now named 'pd.py' consistently.
+ * configure script:
+   - Also check for python3.3-config in addition to python-config and others.
+   - Add missing -fvisibility=hidden to default CFLAGS.
+   - Fix CFLAGS handling (configure.ac amends CFLAGS, doesn't overwrite now).
+ * The minimum required glib version is 2.24.0 now.
+ * We now ship a standard INSTALL file which documents the 'configure' options.
+
+0.1.0 (2012-04-17)
+------------------
+
+ * Initial release.
+

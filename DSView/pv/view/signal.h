@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -57,12 +57,12 @@ private:
 
 protected:
     Signal(boost::shared_ptr<pv::device::DevInst> dev_inst,
-           const sr_channel * const probe, int type);
+           sr_channel * const probe);
 
     /**
      * Copy constructor
      */
-    Signal(const Signal &s, const sr_channel * const probe);
+    Signal(const Signal &s, sr_channel * const probe);
 
 public:
     virtual boost::shared_ptr<pv::data::SignalData> data() const = 0;
@@ -74,6 +74,11 @@ public:
      */
     bool enabled() const;
 
+    /**
+     * Sets the name of the signal.
+     */
+    void set_name(QString name);
+
 	/**
 	 * Paints the signal label into a QGLWidget.
 	 * @param p the QPainter to paint into.
@@ -83,6 +88,8 @@ public:
      * @param action mouse position for hover
 	 */
     //virtual void paint_label(QPainter &p, int right, bool hover, int action);
+
+    boost::shared_ptr<device::DevInst> get_device() const;
 
 protected:
 
@@ -97,7 +104,7 @@ protected:
 
 protected:
     boost::shared_ptr<pv::device::DevInst> _dev_inst;
-    const sr_channel *const _probe;
+    sr_channel *const _probe;
 };
 
 } // namespace view

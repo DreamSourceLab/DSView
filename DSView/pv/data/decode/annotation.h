@@ -2,6 +2,7 @@
  * This file is part of the PulseView project.
  *
  * Copyright (C) 2013 Joel Holdsworth <joel@airwebreathe.org.uk>
+ * Copyright (C) 2016 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,17 +36,20 @@ class Annotation
 {
 public:
 	Annotation(const srd_proto_data *const pdata);
+    Annotation();
     ~Annotation();
 
 	uint64_t start_sample() const;
 	uint64_t end_sample() const;
 	int format() const;
+    int type() const;
 	const std::vector<QString>& annotations() const;
 
 private:
 	uint64_t _start_sample;
 	uint64_t _end_sample;
 	int _format;
+    int _type;
 	std::vector<QString> _annotations; 
 };
 

@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -69,9 +69,14 @@ private:
 	static const uint64_t EnvelopeDataUnit;
 
 public:
-    AnalogSnapshot(const sr_datafeed_analog &analog, uint64_t _total_sample_len, unsigned int channel_num);
+    AnalogSnapshot();
 
 	virtual ~AnalogSnapshot();
+
+    void clear();
+    void init();
+
+    void first_payload(const sr_datafeed_analog &analog, uint64_t total_sample_count, unsigned int channel_num);
 
 	void append_payload(const sr_datafeed_analog &analog);
 
@@ -82,8 +87,8 @@ public:
         uint64_t start, uint64_t end, float min_length, int probe_index) const;
 
 private:
+    void free_envelop();
 	void reallocate_envelope(Envelope &l);
-
 	void append_payload_to_envelope_levels();
 
 private:

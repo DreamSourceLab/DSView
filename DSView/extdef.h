@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,5 +28,11 @@
 
 #define begin_element(x) (&x[0])
 #define end_element(x) (&x[countof(x)])
+
+enum View_type {
+    TIME_VIEW,
+    FFT_VIEW,
+    ALL_VIEW
+};
 
 #endif // DSVIEW_EXTDEF_H

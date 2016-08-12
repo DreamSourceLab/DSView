@@ -28,6 +28,7 @@
 #include <QProgressDialog>
 
 #include <pv/storesession.h>
+#include "../toolbars/titlebar.h"
 
 namespace pv {
 
@@ -57,6 +58,8 @@ private slots:
 
 private:
 	pv::StoreSession _session;
+
+    toolbars::TitleBar *_titlebar;
 };
 
 } // dialogs

@@ -2,8 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +24,6 @@
 #include <boost/foreach.hpp>
 
 #include <QMetaObject>
-#include <QMessageBox>
 #include <QFileDialog>
 #include <QApplication>
 #include <QDesktopServices>
@@ -33,6 +31,7 @@
 
 #include "logobar.h"
 #include "../dialogs/about.h"
+#include "../dialogs/dsmessagebox.h"
 
 namespace pv {
 namespace toolbars {
@@ -94,11 +93,11 @@ void LogoBar::session_error(
 void LogoBar::show_session_error(
     const QString text, const QString info_text)
 {
-    QMessageBox msg(this);
-    msg.setText(text);
-    msg.setInformativeText(info_text);
-    msg.setStandardButtons(QMessageBox::Ok);
-    msg.setIcon(QMessageBox::Warning);
+    dialogs::DSMessageBox msg(this);
+    msg.mBox()->setText(text);
+    msg.mBox()->setInformativeText(info_text);
+    msg.mBox()->setStandardButtons(QMessageBox::Ok);
+    msg.mBox()->setIcon(QMessageBox::Warning);
     msg.exec();
 }
 

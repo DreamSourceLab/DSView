@@ -2,8 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,13 +30,16 @@
 #include "../data/snapshot.h"
 #include "../data/logicsnapshot.h"
 #include "../device/devinst.h"
+#include "../dialogs/dsmessagebox.h"
 
 #include <QObject>
 #include <QPainter>
 #include <QRegExpValidator>
 #include <QRect>
 #include <QMouseEvent>
-#include <QMessageBox>
+#include <QFuture>
+#include <QProgressDialog>
+#include <QtConcurrent/QtConcurrent>
 
 #include <stdint.h>
 #include <boost/shared_ptr.hpp>
@@ -60,13 +62,13 @@ SearchDock::SearchDock(QWidget *parent, View &view, SigSession &session) :
     connect(&_nxt_button, SIGNAL(clicked()),
         this, SLOT(on_next()));
 
-    _pre_button.setIcon(QIcon::fromTheme("search",
+    _pre_button.setIcon(QIcon::fromTheme("searchDock",
         QIcon(":/icons/pre.png")));
-    _nxt_button.setIcon(QIcon::fromTheme("search",
+    _nxt_button.setIcon(QIcon::fromTheme("searchDock",
         QIcon(":/icons/next.png")));
 
-    QPushButton *_search_button = new QPushButton(this);
-    _search_button->setIcon(QIcon::fromTheme("search",
+    _search_button = new QPushButton(this);
+    _search_button->setIcon(QIcon::fromTheme("searchDock",
                                              QIcon(":/icons/search.png")));
     _search_button->setFixedWidth(_search_button->height());
     _search_button->setDisabled(true);
@@ -102,14 +104,15 @@ SearchDock::~SearchDock()
 
 void SearchDock::paintEvent(QPaintEvent *)
 {
-    QStyleOption opt;
-    opt.init(this);
-    QPainter p(this);
-    style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
+//    QStyleOption opt;
+//    opt.init(this);
+//    QPainter p(this);
+//    style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 }
 
 void SearchDock::on_previous()
 {
+    bool ret;
     uint64_t last_pos;
     uint8_t *data;
     int unit_size;
@@ -119,31 +122,46 @@ void SearchDock::on_previous()
 
     last_pos = _view.get_search_pos();
     if (last_pos == 0) {
-        QMessageBox msg(this);
-        msg.setText(tr("Search"));
-        msg.setInformativeText(tr("Search cursor at the start position!"));
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.setIcon(QMessageBox::Warning);
+        dialogs::DSMessageBox msg(this);
+        msg.mBox()->setText(tr("Search"));
+        msg.mBox()->setInformativeText(tr("Search cursor at the start position!"));
+        msg.mBox()->setStandardButtons(QMessageBox::Ok);
+        msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
         return;
     } else {
         data = (uint8_t*)_session.get_buf(unit_size, length);
         if (data == NULL) {
-            QMessageBox msg(this);
-            msg.setText(tr("Search"));
-            msg.setInformativeText(tr("No Sample data!"));
-            msg.setStandardButtons(QMessageBox::Ok);
-            msg.setIcon(QMessageBox::Warning);
+            dialogs::DSMessageBox msg(this);
+            msg.mBox()->setText(tr("Search"));
+            msg.mBox()->setInformativeText(tr("No Sample data!"));
+            msg.mBox()->setStandardButtons(QMessageBox::Ok);
+            msg.mBox()->setIcon(QMessageBox::Warning);
             msg.exec();
             return;
         } else {
-            const bool ret = search_value(data, unit_size, length, last_pos, 1, value);
+            QFuture<void> future;
+            future = QtConcurrent::run([&]{
+                ret = search_value(data, unit_size, length, last_pos, 1, value);
+            });
+            Qt::WindowFlags flags = Qt::CustomizeWindowHint;
+            QProgressDialog dlg(tr("Search Previous..."),
+                                tr("Cancel"),0,0,this,flags);
+            dlg.setWindowModality(Qt::WindowModal);
+            dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
+            dlg.setCancelButton(NULL);
+
+            QFutureWatcher<void> watcher;
+            connect(&watcher,SIGNAL(finished()),&dlg,SLOT(cancel()));
+            watcher.setFuture(future);
+            dlg.exec();
+
             if (!ret) {
-                QMessageBox msg(this);
-                msg.setText(tr("Search"));
-                msg.setInformativeText(tr("Pattern ") + value + tr(" not found!"));
-                msg.setStandardButtons(QMessageBox::Ok);
-                msg.setIcon(QMessageBox::Warning);
+                dialogs::DSMessageBox msg(this);
+                msg.mBox()->setText(tr("Search"));
+                msg.mBox()->setInformativeText(tr("Pattern ") + value + tr(" not found!"));
+                msg.mBox()->setStandardButtons(QMessageBox::Ok);
+                msg.mBox()->setIcon(QMessageBox::Warning);
                 msg.exec();
                 return;
             } else {
@@ -155,6 +173,7 @@ void SearchDock::on_previous()
 
 void SearchDock::on_next()
 {
+    bool ret;
     uint64_t last_pos;
     int unit_size;
     uint64_t length;
@@ -164,30 +183,45 @@ void SearchDock::on_next()
 
     last_pos = _view.get_search_pos();
     if (last_pos == length - 1) {
-        QMessageBox msg(this);
-        msg.setText(tr("Search"));
-        msg.setInformativeText(tr("Search cursor at the end position!"));
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.setIcon(QMessageBox::Warning);
+        dialogs::DSMessageBox msg(this);
+        msg.mBox()->setText(tr("Search"));
+        msg.mBox()->setInformativeText(tr("Search cursor at the end position!"));
+        msg.mBox()->setStandardButtons(QMessageBox::Ok);
+        msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
         return;
     } else {
         if (data == NULL) {
-            QMessageBox msg(this);
-            msg.setText(tr("Search"));
-            msg.setInformativeText(tr("No Sample data!"));
-            msg.setStandardButtons(QMessageBox::Ok);
-            msg.setIcon(QMessageBox::Warning);
+            dialogs::DSMessageBox msg(this);
+            msg.mBox()->setText(tr("Search"));
+            msg.mBox()->setInformativeText(tr("No Sample data!"));
+            msg.mBox()->setStandardButtons(QMessageBox::Ok);
+            msg.mBox()->setIcon(QMessageBox::Warning);
             msg.exec();
             return;
         } else {
-            const int ret = search_value(data, unit_size, length, last_pos, 0, value);
+            QFuture<void> future;
+            future = QtConcurrent::run([&]{
+                ret = search_value(data, unit_size, length, last_pos, 0, value);
+            });
+            Qt::WindowFlags flags = Qt::CustomizeWindowHint;
+            QProgressDialog dlg(tr("Search Next..."),
+                                tr("Cancel"),0,0,this,flags);
+            dlg.setWindowModality(Qt::WindowModal);
+            dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
+            dlg.setCancelButton(NULL);
+
+            QFutureWatcher<void> watcher;
+            connect(&watcher,SIGNAL(finished()),&dlg,SLOT(cancel()));
+            watcher.setFuture(future);
+            dlg.exec();
+
             if (!ret) {
-                QMessageBox msg(this);
-                msg.setText(tr("Search"));
-                msg.setInformativeText(tr("Pattern ") + value + tr(" not found!"));
-                msg.setStandardButtons(QMessageBox::Ok);
-                msg.setIcon(QMessageBox::Warning);
+                dialogs::DSMessageBox msg(this);
+                msg.mBox()->setText(tr("Search"));
+                msg.mBox()->setInformativeText(tr("Pattern ") + value + tr(" not found!"));
+                msg.mBox()->setStandardButtons(QMessageBox::Ok);
+                msg.mBox()->setIcon(QMessageBox::Warning);
                 msg.exec();
                 return;
             } else {
@@ -199,12 +233,15 @@ void SearchDock::on_next()
 
 void SearchDock::on_set()
 {
-    dialogs::Search dlg(this, _session.get_device()->dev_inst(), _pattern);
+    dialogs::Search dlg(this, _session.get_device(), _pattern);
     if (dlg.exec()) {
         _pattern = dlg.get_pattern();
         _pattern.remove(QChar(' '), Qt::CaseInsensitive);
         _pattern = _pattern.toUpper();
         _search_value->setText(_pattern);
+
+        QFontMetrics fm = this->fontMetrics();
+        _search_value->setFixedWidth(fm.width(_pattern)+_search_button->width()+20);
     }
 }
 

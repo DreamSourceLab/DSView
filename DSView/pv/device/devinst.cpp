@@ -183,6 +183,13 @@ GSList* DevInst::get_dev_mode_list()
     return sr_dev_mode_list(sdi);
 }
 
+QString DevInst::name()
+{
+    sr_dev_inst *const sdi = dev_inst();
+    assert(sdi);
+    return QString::fromLocal8Bit(sdi->driver->name);
+}
+
 bool DevInst::is_trigger_enabled() const
 {
 	return false;

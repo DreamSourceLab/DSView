@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,8 @@
 
 #include "analog.h"
 #include "analogsnapshot.h"
+
+#include <boost/foreach.hpp>
 
 using namespace boost;
 using namespace std;
@@ -47,7 +49,15 @@ deque< boost::shared_ptr<AnalogSnapshot> >& Analog::get_snapshots()
 
 void Analog::clear()
 {
-    _snapshots.clear();
+    //_snapshots.clear();
+    BOOST_FOREACH(const boost::shared_ptr<AnalogSnapshot> s, _snapshots)
+        s->clear();
+}
+void Analog::init()
+{
+    //_snapshots.clear();
+    BOOST_FOREACH(const boost::shared_ptr<AnalogSnapshot> s, _snapshots)
+        s->init();
 }
 
 } // namespace data

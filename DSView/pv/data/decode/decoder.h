@@ -2,6 +2,7 @@
  * This file is part of the PulseView project.
  *
  * Copyright (C) 2013 Joel Holdsworth <joel@airwebreathe.org.uk>
+ * Copyright (C) 2014 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -73,6 +74,10 @@ public:
 
 	std::set< boost::shared_ptr<pv::data::Logic> > get_data();	
 
+    void set_decode_region(uint64_t start, uint64_t end);
+    uint64_t decode_start() const;
+    uint64_t decode_end() const;
+
     bool commit();
 
 private:
@@ -87,6 +92,9 @@ private:
     std::map<const srd_channel*, boost::shared_ptr<pv::view::LogicSignal> >
         _probes_back;
     std::map<std::string, GVariant*> _options_back;
+
+    uint64_t _decode_start, _decode_end;
+    uint64_t _decode_start_back, _decode_end_back;
 
     bool _setted;
 };

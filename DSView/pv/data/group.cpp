@@ -2,8 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +22,8 @@
 
 #include "group.h"
 #include "groupsnapshot.h"
+
+#include <boost/foreach.hpp>
 
 using namespace boost;
 using namespace std;
@@ -47,7 +48,14 @@ deque< boost::shared_ptr<GroupSnapshot> >& Group::get_snapshots()
 
 void Group::clear()
 {
-    _snapshots.clear();
+    BOOST_FOREACH(const boost::shared_ptr<GroupSnapshot> s, _snapshots)
+        s->clear();
+}
+
+void Group::init()
+{
+    BOOST_FOREACH(const boost::shared_ptr<GroupSnapshot> s, _snapshots)
+        s->init();
 }
 
 } // namespace data

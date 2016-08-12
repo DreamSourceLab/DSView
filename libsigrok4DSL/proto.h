@@ -111,7 +111,7 @@ SR_API int sr_session_start(void);
 SR_API int sr_session_run(void);
 SR_API int sr_session_stop(void);
 SR_API int sr_session_save(const char *filename, const struct sr_dev_inst *sdi,
-		unsigned char *buf, int unitsize, int units);
+        unsigned char *buf, int unitsize, uint64_t samples, int64_t trig_time, uint64_t trig_pos);
 SR_API int sr_session_save_init(const char *filename, uint64_t samplerate,
         char **channels);
 SR_API int sr_session_append(const char *filename, unsigned char *buf,
@@ -181,6 +181,7 @@ SR_API int ds_trigger_set_stage(uint16_t stages);
 SR_API int ds_trigger_set_pos(uint16_t position);
 SR_API uint16_t ds_trigger_get_pos();
 SR_API int ds_trigger_set_en(uint16_t enable);
+SR_API uint16_t ds_trigger_get_en();
 SR_API int ds_trigger_set_mode(uint16_t mode);
 
 #endif

@@ -109,6 +109,13 @@ public:
      */
     GSList* get_dev_mode_list();
 
+    /**
+     * @brief Get the device name from the driver
+     *
+     * @return device name
+     */
+    QString name();
+
 	virtual bool is_trigger_enabled() const;
 
 public:
@@ -119,6 +126,7 @@ public:
     virtual void* get_id() const;
 
 signals:
+    void device_updated();
 	void config_changed();
 
 protected:

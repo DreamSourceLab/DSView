@@ -34,9 +34,11 @@
 #include <QDebug>
 #include <QFile>
 #include <QDir>
+#include <QIcon>
 
+#include "dsapplication.h"
 #include "pv/devicemanager.h"
-#include "pv/mainwindow.h"
+#include "pv/mainframe.h"
 
 #include "config.h"
 
@@ -59,22 +61,11 @@ int main(int argc, char *argv[])
 	struct sr_context *sr_ctx = NULL;
 	const char *open_file = NULL;
 
-	QApplication a(argc, argv);
-
-    // Language
-#ifdef LANGUAGE_ZH_CN
-    QTranslator qtTrans;
-    qtTrans.load(":/qt_zh_CN");
-    a.installTranslator(&qtTrans);
-
-    QTranslator DSViewTrans;
-    DSViewTrans.load(":/DSView_zh");
-    a.installTranslator(&DSViewTrans);
-#endif
+    DSApplication a(argc, argv);
 
     // Set some application metadata
     QApplication::setApplicationVersion(DS_VERSION_STRING);
-    QApplication::setApplicationName("DSView(Beta)");
+    QApplication::setApplicationName("DSView");
     QApplication::setOrganizationDomain("http://www.DreamSourceLab.com");
 
 	// Parse arguments
@@ -129,7 +120,6 @@ int main(int argc, char *argv[])
 	}
 
 	do {
-
 #ifdef ENABLE_DECODE
 		// Initialise libsigrokdecode
 		if (srd_init(NULL) != SRD_OK) {
@@ -145,12 +135,13 @@ int main(int argc, char *argv[])
 			// Create the device manager, initialise the drivers
 			pv::DeviceManager device_manager(sr_ctx);
 
-			// Initialise the main window
-            		pv::MainWindow w(device_manager, open_file);
-            		QFile qss(":/stylesheet.qss");
-            		qss.open(QFile::ReadOnly);
-            		a.setStyleSheet(qss.readAll());
-            		qss.close();
+            // Initialise the main frame
+            pv::MainFrame w(device_manager, open_file);
+            //QFile qss(":/stylesheet.qss");
+            QFile qss(":darkstyle/style.qss");
+            qss.open(QFile::ReadOnly);
+            a.setStyleSheet(qss.readAll());
+            qss.close();
 			w.show();
 
 			// Run the application

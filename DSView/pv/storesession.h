@@ -72,7 +72,7 @@ private:
 
 	boost::thread _thread;
 
-	mutable boost::mutex _mutex;
+    //mutable boost::mutex _mutex;
 	uint64_t _units_stored;
 	uint64_t _unit_count;
 	QString _error;

@@ -3,7 +3,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,45 +21,41 @@
  */
 
 
-#include <QTextDocument>
+#include <QPixmap>
+#include <QApplication>
 
 #include "about.h"
-#include <ui_about.h>
-
-/* __STDC_FORMAT_MACROS is required for PRIu64 and friends (in C++). */
-#define __STDC_FORMAT_MACROS
-#include <glib.h>
-#include <libsigrok4DSL/libsigrok.h>
-
 
 namespace pv {
 namespace dialogs {
 
 About::About(QWidget *parent) :
-	QDialog(parent),
-	ui(new Ui::About)
+    DSDialog(parent, true)
 {
-	ui->setupUi(this);
+    QPixmap pix(":/icons/dsl_logo.png");
+    _logo = new QLabel(this);
+    _logo->setPixmap(pix);
+    _logo->setAlignment(Qt::AlignCenter);
 
-	/* Setup the version field */
-    ui->versionInfo->setText(tr("%1 %2<br /><a href=\"%4\">%4</a>")
-				 .arg(QApplication::applicationName())
-				 .arg(QApplication::applicationVersion())
-				 .arg(QApplication::organizationDomain()));
-    ui->versionInfo->setOpenExternalLinks(true);
+    _info = new QLabel(this);
+    _info->setText(tr("%1 %2<br /><a href=\"%4\">%4</a>")
+                     .arg(QApplication::applicationName())
+                     .arg(QApplication::applicationVersion())
+                     .arg(QApplication::organizationDomain()));
+    _info->setOpenExternalLinks(true);
+    _info->setAlignment(Qt::AlignCenter);
 
-	connect(ui->buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
+    QVBoxLayout *xlayout = new QVBoxLayout();
+    xlayout->addWidget(_logo);
+    xlayout->addWidget(_info);
+
+    layout()->addLayout(xlayout);
+    setTitle(tr("About"));
+    setFixedWidth(500);
 }
 
 About::~About()
 {
-    delete ui;
-}
-
-void About::accept()
-{
-    using namespace Qt;
-    QDialog::accept();
 }
 
 } // namespace dialogs

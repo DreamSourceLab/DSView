@@ -2,8 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <dreamsourcelab@dreamsourcelab.com>
+ * Copyright (C) 2015 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +21,7 @@
 
 
 #include "dsomeasure.h"
+#include "../device/devinst.h"
 
 #include <QCheckBox>
 #include <QVariant>
@@ -36,16 +36,14 @@ namespace pv {
 namespace dialogs {
 
 DsoMeasure::DsoMeasure(QWidget *parent, boost::shared_ptr<DsoSignal> dsoSig) :
-	QDialog(parent),
+    DSDialog(parent),
     _dsoSig(dsoSig),
-    _layout(this),
     _button_box(QDialogButtonBox::Ok,
         Qt::Horizontal, this)
 {
-    setWindowTitle(tr("DSO Measure Options"));
-    setLayout(&_layout);
+    setMinimumWidth(300);
 
-    for (int i=DsoSignal::DSO_MS_BEGIN+1; i<DsoSignal::DSO_MS_END; i++) {
+    for (int i=DSO_MS_BEGIN+1; i<DSO_MS_END; i++) {
         QCheckBox *checkBox = new QCheckBox(_dsoSig->get_ms_string(i), this);
         checkBox->setProperty("id", QVariant(i));
         checkBox->setChecked(dsoSig->get_ms_en(i));
@@ -55,8 +53,13 @@ DsoMeasure::DsoMeasure(QWidget *parent, boost::shared_ptr<DsoSignal> dsoSig) :
 
     _layout.addWidget(&_button_box);
 
+    layout()->addLayout(&_layout);
+    setTitle(tr("Measurements"));
+
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
     connect(&_button_box, SIGNAL(rejected()), this, SLOT(accept()));
+
+    connect(_dsoSig->get_device().get(), SIGNAL(device_updated()), this, SLOT(reject()));
 }
 
 void DsoMeasure::set_measure(bool en)
@@ -78,7 +81,9 @@ void DsoMeasure::accept()
 
 void DsoMeasure::reject()
 {
-    accept();
+    using namespace Qt;
+
+    QDialog::reject();
 }
 
 } // namespace dialogs
