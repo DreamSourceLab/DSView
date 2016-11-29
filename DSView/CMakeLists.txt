@@ -264,6 +264,7 @@ set(DSView_FORMS
 
 set(DSView_RESOURCES
 	DSView.qrc
+	darkstyle/style.qrc
 )
 
 
