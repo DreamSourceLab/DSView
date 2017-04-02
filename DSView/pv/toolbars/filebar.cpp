@@ -167,7 +167,7 @@ void FileBar::on_actionExport_triggered(){
     if (!buf) {
         dialogs::DSMessageBox msg(this);
         msg.mBox()->setText(tr("Data Export"));
-        msg.mBox()->setInformativeText(tr("No Data to Save!"));
+        msg.mBox()->setInformativeText(tr("No data to save!"));
         msg.mBox()->setStandardButtons(QMessageBox::Ok);
         msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
@@ -205,7 +205,7 @@ void FileBar::on_actionSave_triggered()
     if (!buf) {
         dialogs::DSMessageBox msg(this);
         msg.mBox()->setText(tr("File Save"));
-        msg.mBox()->setInformativeText(tr("No Data to Save!"));
+        msg.mBox()->setInformativeText(tr("No data to save!"));
         msg.mBox()->setStandardButtons(QMessageBox::Ok);
         msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();

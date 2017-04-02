@@ -705,7 +705,7 @@ void SamplingBar::on_instant_stop()
             if (zero) {
                 dialogs::DSMessageBox msg(this);
                 msg.mBox()->setText(tr("Zero Adjustment"));
-                msg.mBox()->setInformativeText(tr("Zero adjustment program will be started. Please keep all channels out of singal input. It can take a while!"));
+                msg.mBox()->setInformativeText(tr("Zero adjustment program will be started. Please keep all channels out of signal input. This can take a while!"));
                 //msg.mBox()->setStandardButtons(QMessageBox::Ok);
                 msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
                 msg.mBox()->addButton(tr("Skip"), QMessageBox::RejectRole);
@@ -738,7 +738,7 @@ void SamplingBar::on_device_selected()
     try {
         _session.set_device(dev_inst);
     } catch(QString e) {
-        show_session_error(tr("Failed to Select ") + dev_inst->dev_inst()->model, e);
+        show_session_error(tr("Failed to select ") + dev_inst->dev_inst()->model, e);
     }
     device_selected();
 }

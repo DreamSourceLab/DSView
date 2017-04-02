@@ -481,7 +481,7 @@ void MainWindow::test_data_error()
     _session.stop_capture();
     dialogs::DSMessageBox msg(this);
     msg.mBox()->setText(tr("Data Error"));
-    msg.mBox()->setInformativeText(tr("the receive data are not consist with pre-defined test data"));
+    msg.mBox()->setInformativeText(tr("The received data is not consistent with pre-defined test data."));
     msg.mBox()->setStandardButtons(QMessageBox::Ok);
     msg.mBox()->setIcon(QMessageBox::Warning);
     msg.exec();
@@ -492,7 +492,7 @@ void MainWindow::malloc_error()
     _session.stop_capture();
     dialogs::DSMessageBox msg(this);
     msg.mBox()->setText(tr("Malloc Error"));
-    msg.mBox()->setInformativeText(tr("Memory is not enough for this sample!\nPlease reduce the sample depth!"));
+    msg.mBox()->setInformativeText(tr("Not enough memory for this sample!\nPlease reduce the sample depth!"));
     msg.mBox()->setStandardButtons(QMessageBox::Ok);
     msg.mBox()->setIcon(QMessageBox::Warning);
     msg.exec();
