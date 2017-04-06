@@ -399,6 +399,7 @@ install(DIRECTORY res DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY ../libsigrokdecode4DSL/decoders DESTINATION share/${PROJECT_NAME})
 install(FILES icons/logo.png DESTINATION share/${PROJECT_NAME} RENAME logo.png)
 install(FILES DreamSourceLab.rules DESTINATION /usr/lib/udev/rules.d/)
+install(FILES DreamSourceLab.rules DESTINATION /etc/udev/rules.d/)
 install(FILES DSView.desktop DESTINATION /usr/share/applications/)
 
 #===============================================================================
