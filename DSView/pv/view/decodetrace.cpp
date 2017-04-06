@@ -509,7 +509,7 @@ void DecodeTrace::draw_nodetail(QPainter &p,
 {
     (void)base_colour;
     const QRectF nodetail_rect(left, y - h/2 + 0.5, right - left, h);
-    QString info = tr("Zoom in For Detials");
+    QString info = tr("Zoom in for details");
     int info_left = nodetail_rect.center().x() - p.boundingRect(QRectF(), 0, info).width();
     int info_right = nodetail_rect.center().x() + p.boundingRect(QRectF(), 0, info).width();
     int height = p.boundingRect(QRectF(), 0, info).height();
