@@ -2380,11 +2380,11 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
     usb = sdi->conn;
 
     tv.tv_sec = tv.tv_usec = 0;
-    libusb_handle_events_timeout_completed(drvc->sr_ctx->libusb_ctx, &tv, &completed);
+    /* broken libusb_handle_events_timeout_completed(drvc->sr_ctx->libusb_ctx, &tv, &completed); */
 
     if (devc->status == DSL_FINISH) {
-        if (libusb_try_lock_events(drvc->sr_ctx->libusb_ctx) == 0) {
-            if (libusb_event_handling_ok(drvc->sr_ctx->libusb_ctx)) {
+        /* broken if (libusb_try_lock_events(drvc->sr_ctx->libusb_ctx) == 0) { */
+            /* broken if (libusb_event_handling_ok(drvc->sr_ctx->libusb_ctx)) { */
                 /* Stop GPIF acquisition */
                 usb = ((struct sr_dev_inst *)devc->cb_data)->conn;
                 if ((ret = command_stop_acquisition (usb->devhdl)) != SR_OK)
@@ -2393,9 +2393,9 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
                     sr_info("%s: Sent acquisition stop command!", __func__);
 
                 remove_sources(devc);
-            }
-            libusb_unlock_events(drvc->sr_ctx->libusb_ctx);
-        }
+            /* } */
+            /* broken libusb_unlock_events(drvc->sr_ctx->libusb_ctx); */
+        /* } */
     }
 
     return TRUE;
