@@ -779,7 +779,7 @@ QString DsoSignal::get_ms_string(int index) const
         case DSO_MS_VRMS: return "Vrms";
         case DSO_MS_VMEA: return "Vmean";
         case DSO_MS_VP2P: return "Vp-p";
-        default: return "Error: Out of Bound";
+        default: return "Error: Out of Bounds";
     }
 }
 

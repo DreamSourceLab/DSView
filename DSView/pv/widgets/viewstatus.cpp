@@ -59,7 +59,7 @@ void ViewStatus::set_trig_time(QDateTime time)
 
 void ViewStatus::set_rle_depth(uint64_t depth)
 {
-    _rle_depth = tr("RLE FULL: ") + QString::number(depth) + tr(" Samples Captured!");
+    _rle_depth = tr("RLE FULL: ") + QString::number(depth) + tr(" samples captured!");
 }
 
 } // namespace widgets

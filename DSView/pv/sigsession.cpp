@@ -243,7 +243,7 @@ void SigSession::save_file(const QString name, QWidget* parent, int type){
                         data, unit_size, sample_count, _trigger_time.toMSecsSinceEpoch(), _trigger_pos);
     });
     Qt::WindowFlags flags = Qt::CustomizeWindowHint;
-    QProgressDialog dlg(tr("Save Capture to File... It can take a while."),
+    QProgressDialog dlg(tr("Saving capture to file... this can take a while."),
                         tr("Cancel"),0,0,parent,flags);
     dlg.setWindowModality(Qt::WindowModal);
     dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
@@ -400,7 +400,7 @@ void SigSession::export_file(const QString name, QWidget* parent, const QString 
 
     QFutureWatcher<void> watcher;
     Qt::WindowFlags flags = Qt::CustomizeWindowHint;
-    QProgressDialog dlg(tr("Exporting data... It can take a while."),
+    QProgressDialog dlg(tr("Exporting data... this can take a while."),
                         tr("Cancel"),0,100,parent,flags);
     dlg.setWindowModality(Qt::WindowModal);
     watcher.setFuture(future);
@@ -1281,10 +1281,10 @@ int SigSession::hotplug_callback(struct libusb_context *ctx, struct libusb_devic
 
     if (LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED == event) {
         _session->_hot_attach = true;
-        qDebug("DreamSourceLab Hardware Attaced!\n");
+        qDebug("DreamSourceLab Hardware Attached!\n");
     }else if (LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT == event) {
         _session->_hot_detach = true;
-        qDebug("DreamSourceLab Hardware Dettaced!\n");
+        qDebug("DreamSourceLab Hardware Detached!\n");
     }else{
         qDebug("Unhandled event %d\n", event);
     }
