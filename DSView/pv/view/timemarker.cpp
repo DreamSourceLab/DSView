@@ -24,6 +24,7 @@
 #include "timemarker.h"
 
 #include "view.h"
+#include "ruler.h"
 #include "../device/device.h"
 
 #include <QPainter>
@@ -48,6 +49,16 @@ TimeMarker::TimeMarker(const TimeMarker &s) :
 {
 }
 
+QColor TimeMarker::colour() const
+{
+    return _colour;
+}
+
+void TimeMarker::set_colour(QColor color)
+{
+    _colour = color;
+}
+
 bool TimeMarker::grabbed() const
 {
     return _grabbed;
@@ -68,14 +79,15 @@ void TimeMarker::set_index(uint64_t index)
     time_changed();
 }
 
-void TimeMarker::paint(QPainter &p, const QRect &rect, const bool highlight)
+void TimeMarker::paint(QPainter &p, const QRect &rect, const bool highlight, int order)
 {
     const uint64_t sample_rate = _view.session().cur_samplerate();
     const double scale = _view.scale();
     const double samples_per_pixel = sample_rate * scale;
-    const double x = _index/samples_per_pixel - (_view.offset() / scale);
-    p.setPen((_grabbed | highlight) ? QPen(_colour.lighter(), 2, Qt::DashLine) : QPen(_colour, 1, Qt::DashLine));
-    p.drawLine(QPointF(x, rect.top()), QPointF(x, rect.bottom()));
+    const int64_t x = _index/samples_per_pixel - _view.offset();
+    QColor color = (order == -1) ? _colour : Ruler::CursorColor[order%8];
+    p.setPen((_grabbed | highlight) ? QPen(color.lighter(), 2, Qt::DashLine) : QPen(color, 1, Qt::DashLine));
+    p.drawLine(QPoint(x, rect.top()), QPoint(x, rect.bottom()));
 }
 
 } // namespace view

@@ -32,6 +32,7 @@
 #include <QDebug>
 #include <QLabel>
 #include <QAbstractItemView>
+#include <QApplication>
 
 #include "samplingbar.h"
 
@@ -41,6 +42,7 @@
 #include "../dialogs/waitingdialog.h"
 #include "../dialogs/dsmessagebox.h"
 #include "../view/dsosignal.h"
+#include "../dialogs/interval.h"
 
 using namespace boost;
 using boost::shared_ptr;
@@ -74,12 +76,15 @@ const uint64_t SamplingBar::RecordLengths[19] = {
     40000000,
 };
 
+const QString SamplingBar::RLEString = "(RLE)";
+
 const uint64_t SamplingBar::DefaultRecordLength = 1000000;
 
 SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
 	QToolBar("Sampling Bar", parent),
     _session(session),
     _enable(true),
+    _sampling(false),
     _device_selector(this),
     _updating_device_selector(false),
     _configure_button(this),
@@ -94,6 +99,11 @@ SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
     _icon_instant_dis(":/icons/instant_dis.png"),
     _run_stop_button(this),
     _instant_button(this),
+    _mode_button(this),
+    _icon_repeat(":/icons/moder.png"),
+    _icon_single(":/icons/modes.png"),
+    _icon_repeat_dis(":/icons/moder_dis.png"),
+    _icon_single_dis(":/icons/modes_dis.png"),
     _instant(false)
 {
     setMovable(false);
@@ -112,6 +122,8 @@ SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
     _configure_button.setIcon(QIcon::fromTheme("configure",
         QIcon(":/icons/params.png")));
 
+    _mode_button.setPopupMode(QToolButton::InstantPopup);
+    _mode_button.setIcon(_session.get_run_mode() == pv::SigSession::Single ? _icon_single : _icon_repeat);
     _run_stop_button.setIcon(_icon_start);
     _instant_button.setIcon(_icon_instant);
 
@@ -138,6 +150,25 @@ SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
     addWidget(&_sample_count);
     addWidget(new QLabel(tr(" @ ")));
     addWidget(&_sample_rate);
+
+    _action_single = new QAction(this);
+    _action_single->setText(QApplication::translate("Sampling", "&Single", 0));
+    _action_single->setIcon(QIcon::fromTheme("Sampling",
+        QIcon(":/icons/oneloop.png")));
+    connect(_action_single, SIGNAL(triggered()), this, SLOT(on_mode()));
+
+    _action_repeat = new QAction(this);
+    _action_repeat->setText(QApplication::translate("Sampling", "&Repetitive", 0));
+    _action_repeat->setIcon(QIcon::fromTheme("Sampling",
+        QIcon(":/icons/repeat.png")));
+    connect(_action_repeat, SIGNAL(triggered()), this, SLOT(on_mode()));
+
+    _mode_menu = new QMenu(this);
+    _mode_menu->addAction(_action_single);
+    _mode_menu->addAction(_action_repeat);
+    _mode_button.setMenu(_mode_menu);
+    _mode_action = addWidget(&_mode_button);
+
     _run_stop_action = addWidget(&_run_stop_button);
     _instant_action = addWidget(&_instant_button);
 }
@@ -245,10 +276,8 @@ void SamplingBar::on_configure()
             if (test) {
                 update_sample_count_selector_value();
                 update_sample_rate_selector_value();
-                #ifndef TEST_MODE
                 _sample_count.setDisabled(true);
                 _sample_rate.setDisabled(true);
-                #endif
             } else if (dev_inst->dev_inst()->mode != DSO) {
                 _sample_count.setDisabled(false);
                 _sample_rate.setDisabled(false);
@@ -277,7 +306,7 @@ void SamplingBar::zero_adj()
     }
 
     if (_session.get_capture_state() == pv::SigSession::Running)
-        run_stop();
+        on_run_stop();
 }
 
 uint64_t SamplingBar::get_record_length() const
@@ -322,8 +351,20 @@ void SamplingBar::update_sample_rate()
         this, SLOT(on_samplerate_sel(int)));
 }
 
+bool SamplingBar::get_sampling() const
+{
+    return _sampling;
+}
+
+bool SamplingBar::get_instant() const
+{
+    return _instant;
+}
+
 void SamplingBar::set_sampling(bool sampling)
 {
+    lock_guard<boost::recursive_mutex> lock(_sampling_mutex);
+    _sampling = sampling;
     if (_instant) {
         _instant_button.setIcon(sampling ? _icon_stop : _icon_instant);
         _run_stop_button.setIcon(sampling ? _icon_start_dis : _icon_start);
@@ -342,6 +383,9 @@ void SamplingBar::set_sampling(bool sampling)
             enable_run_stop(true);
     }
 
+    _mode_button.setEnabled(!sampling);
+    _mode_button.setIcon(sampling ? (_session.get_run_mode() == pv::SigSession::Single ? _icon_single_dis : _icon_repeat_dis) :
+                                    (_session.get_run_mode() == pv::SigSession::Single ? _icon_single : _icon_repeat));
     _configure_button.setEnabled(!sampling);
     _configure_button.setIcon(sampling ? QIcon(":/icons/params_dis.png") :
                                   QIcon(":/icons/params.png"));
@@ -482,7 +526,6 @@ void SamplingBar::on_samplecount_sel(int index)
 {
     uint64_t sample_count = 0;
 
-    qDebug() << "index: " << index;
     if (index >= 0)
         sample_count = _sample_count.itemData(
             index).value<uint64_t>();
@@ -509,13 +552,13 @@ void SamplingBar::on_samplerate_sel(int index)
         sample_rate = _sample_rate.itemData(
             index).value<uint64_t>();
 
-    boost::shared_ptr<pv::device::DevInst> _devInst = get_selected_device();
-    assert(_devInst);
+    boost::shared_ptr<pv::device::DevInst> dev_inst = get_selected_device();
+    assert(dev_inst);
 
     // Get last samplerate
     //last_sample_rate = get_selected_device()->get_sample_rate();
 
-    if (_devInst->name() == "DSLogic" && _devInst->dev_inst()->mode != DSO) {
+    if (dev_inst->name() == "DSLogic" && dev_inst->dev_inst()->mode != DSO) {
             // Set the samplerate
             get_selected_device()->set_config(NULL, NULL,
                                               SR_CONF_SAMPLERATE,
@@ -529,7 +572,8 @@ void SamplingBar::update_sample_count_selector()
     const uint64_t *elements = NULL;
     gsize num_elements;
     bool stream_mode = false;
-    uint64_t max_sample_count = 0;
+    uint64_t hw_depth;
+    uint64_t sw_depth;
 
     if (_updating_sample_count)
         return;
@@ -557,9 +601,9 @@ void SamplingBar::update_sample_count_selector()
         stream_mode = g_variant_get_boolean(gvar);
         g_variant_unref(gvar);
     }
-    gvar = dev_inst->get_config(NULL, NULL, SR_CONF_RLE_SAMPLELIMITS);
+    gvar = dev_inst->get_config(NULL, NULL, SR_CONF_HW_DEPTH);
     if (gvar != NULL) {
-        max_sample_count = g_variant_get_uint64(gvar);
+        hw_depth = g_variant_get_uint64(gvar);
         g_variant_unref(gvar);
     }
 
@@ -570,11 +614,23 @@ void SamplingBar::update_sample_count_selector()
                 gvar_list, &num_elements, sizeof(uint64_t));
         _sample_count.clear();
 
+        #if defined(__x86_64__) || defined(_M_X64)
+            sw_depth = elements[num_elements - 1];
+        #elif defined(__i386) || defined(_M_IX86)
+            int ch_num = _session.get_ch_num(SR_CHANNEL_LOGIC);
+            if (ch_num <= 0)
+                sw_depth = SR_GB(8);
+            else
+                sw_depth = SR_GB(8) / ch_num;
+        #endif
+
         for (unsigned int i = 0; i < num_elements; i++)
         {
+            if (elements[i] > sw_depth)
+                break;
             char *const s = sr_samplecount_string(elements[i]);
-            if (!stream_mode && (elements[i] > max_sample_count))
-                _sample_count.addItem(QString(s)+"(RLE)",
+            if (!stream_mode && (elements[i] > hw_depth))
+                _sample_count.addItem(QString(s)+RLEString,
                     qVariantFromValue(elements[i]));
             else
                 _sample_count.addItem(QString(s),
@@ -647,81 +703,118 @@ void SamplingBar::commit_sample_count()
                                           g_variant_new_uint64(sample_count));
     }
 
+    bool rle_mode = _sample_count.currentText().contains(RLEString);
+    get_selected_device()->set_config(NULL, NULL,
+                                      SR_CONF_RLE,
+                                      g_variant_new_boolean(rle_mode));
+
     _updating_sample_count = false;
 }
 
 void SamplingBar::on_run_stop()
 {
-    enable_run_stop(false);
-    enable_instant(false);
-	commit_sample_rate();
-    commit_sample_count();
-    _instant = false;
-    const shared_ptr<device::DevInst> dev_inst = get_selected_device();
-    if (!dev_inst)
-        return;
-    if (dev_inst->dev_inst()->mode == DSO) {
-        GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_ZERO);
-        if (gvar != NULL) {
-            bool zero = g_variant_get_boolean(gvar);
-            g_variant_unref(gvar);
-            if (zero) {
-                dialogs::DSMessageBox msg(this);
-                msg.mBox()->setText(tr("Zero Adjustment"));
-                msg.mBox()->setInformativeText(tr("Please adjust zero skew and save the result!"));
-                //msg.setStandardButtons(QMessageBox::Ok);
-                msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
-                msg.mBox()->addButton(tr("Skip"), QMessageBox::RejectRole);
-                msg.mBox()->setIcon(QMessageBox::Warning);
-                if (msg.exec()) {
-                    zero_adj();
-                } else {
-                    dev_inst->set_config(NULL, NULL, SR_CONF_ZERO, g_variant_new_boolean(false));
-                    enable_run_stop(true);
-                    enable_instant(true);
-                }
-                return;
+    if (get_sampling() || _session.isRepeating()) {
+        _session.set_repeating(false);
+        bool wait_upload = false;
+        if (_session.get_run_mode() != SigSession::Repetitive) {
+            GVariant *gvar = get_selected_device()->get_config(NULL, NULL, SR_CONF_WAIT_UPLOAD);
+            if (gvar != NULL) {
+                wait_upload = g_variant_get_boolean(gvar);
+                g_variant_unref(gvar);
             }
         }
+        if (!wait_upload) {
+            _session.stop_capture();
+            _session.capture_state_changed(SigSession::Stopped);
+        }
+    } else {
+        enable_run_stop(false);
+        enable_instant(false);
+        commit_sample_rate();
+        commit_sample_count();
+        _instant = false;
+        const shared_ptr<device::DevInst> dev_inst = get_selected_device();
+        if (!dev_inst)
+            return;
+        if (dev_inst->dev_inst()->mode == DSO) {
+            GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_ZERO);
+            if (gvar != NULL) {
+                bool zero = g_variant_get_boolean(gvar);
+                g_variant_unref(gvar);
+                if (zero) {
+                    dialogs::DSMessageBox msg(this);
+                    msg.mBox()->setText(tr("Auto Calibration"));
+                    msg.mBox()->setInformativeText(tr("Please adjust zero skew and save the result!"));
+                    //msg.setStandardButtons(QMessageBox::Ok);
+                    msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
+                    msg.mBox()->addButton(tr("Skip"), QMessageBox::RejectRole);
+                    msg.mBox()->setIcon(QMessageBox::Warning);
+                    if (msg.exec()) {
+                        zero_adj();
+                    } else {
+                        dev_inst->set_config(NULL, NULL, SR_CONF_ZERO, g_variant_new_boolean(false));
+                        enable_run_stop(true);
+                        enable_instant(true);
+                    }
+                    return;
+                }
+            }
+        }
+        run_stop();
     }
-    run_stop();
 }
 
 void SamplingBar::on_instant_stop()
 {
-    enable_run_stop(false);
-    enable_instant(false);
-    commit_sample_rate();
-    commit_sample_count();
-    _instant = true;
-    const shared_ptr<device::DevInst> dev_inst = get_selected_device();
-    if (!dev_inst)
-        return;
-    if (dev_inst->dev_inst()->mode == DSO) {
-        GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_ZERO);
-        if (gvar != NULL) {
-            bool zero = g_variant_get_boolean(gvar);
-            g_variant_unref(gvar);
-            if (zero) {
-                dialogs::DSMessageBox msg(this);
-                msg.mBox()->setText(tr("Zero Adjustment"));
-                msg.mBox()->setInformativeText(tr("Zero adjustment program will be started. Please keep all channels out of singal input. It can take a while!"));
-                //msg.mBox()->setStandardButtons(QMessageBox::Ok);
-                msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
-                msg.mBox()->addButton(tr("Skip"), QMessageBox::RejectRole);
-                msg.mBox()->setIcon(QMessageBox::Warning);
-                if (msg.exec()) {
-                    zero_adj();
-                } else {
-                    dev_inst->set_config(NULL, NULL, SR_CONF_ZERO, g_variant_new_boolean(false));
-                    enable_run_stop(true);
-                    enable_instant(true);
-                }
-                return;
+    if (get_sampling()) {
+        _session.set_repeating(false);
+        bool wait_upload = false;
+        if (_session.get_run_mode() != SigSession::Repetitive) {
+            GVariant *gvar = get_selected_device()->get_config(NULL, NULL, SR_CONF_WAIT_UPLOAD);
+            if (gvar != NULL) {
+                wait_upload = g_variant_get_boolean(gvar);
+                g_variant_unref(gvar);
             }
         }
+        if (!wait_upload) {
+            _session.stop_capture();
+            _session.capture_state_changed(SigSession::Stopped);
+        }
+    } else {
+        enable_run_stop(false);
+        enable_instant(false);
+        commit_sample_rate();
+        commit_sample_count();
+        _instant = true;
+        const shared_ptr<device::DevInst> dev_inst = get_selected_device();
+        if (!dev_inst)
+            return;
+        if (dev_inst->dev_inst()->mode == DSO) {
+            GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_ZERO);
+            if (gvar != NULL) {
+                bool zero = g_variant_get_boolean(gvar);
+                g_variant_unref(gvar);
+                if (zero) {
+                    dialogs::DSMessageBox msg(this);
+                    msg.mBox()->setText(tr("Auto Calibration"));
+                    msg.mBox()->setInformativeText(tr("Auto Calibration program will be started. Please keep all channels out of singal input. It can take a while!"));
+                    //msg.mBox()->setStandardButtons(QMessageBox::Ok);
+                    msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
+                    msg.mBox()->addButton(tr("Skip"), QMessageBox::RejectRole);
+                    msg.mBox()->setIcon(QMessageBox::Warning);
+                    if (msg.exec()) {
+                        zero_adj();
+                    } else {
+                        dev_inst->set_config(NULL, NULL, SR_CONF_ZERO, g_variant_new_boolean(false));
+                        enable_run_stop(true);
+                        enable_instant(true);
+                    }
+                    return;
+                }
+            }
+        }
+        instant_stop();
     }
-    instant_stop();
 }
 
 void SamplingBar::on_device_selected()
@@ -757,6 +850,9 @@ void SamplingBar::enable_toggle(bool enable)
     if (!test) {
         _sample_count.setDisabled(!enable);
         _sample_rate.setDisabled(!enable);
+    } else {
+        _sample_count.setDisabled(true);
+        _sample_rate.setDisabled(true);
     }
 }
 
@@ -787,10 +883,17 @@ void SamplingBar::reload()
         _icon_instant = QIcon(":/icons/instant.png");
         _icon_instant_dis = QIcon(":/icons/instant_dis.png");
         _instant_button.setIcon(_icon_instant);
+        if (_session.get_device()->name() == "virtual-session") {
+            _mode_action->setVisible(false);
+        } else {
+            _mode_button.setIcon(_session.get_run_mode() == pv::SigSession::Single ? _icon_single : _icon_repeat);
+            _mode_action->setVisible(true);
+        }
         _run_stop_action->setVisible(true);
         _instant_action->setVisible(true);
         enable_toggle(true);
     } else if (_session.get_device()->dev_inst()->mode == ANALOG) {
+        _mode_action->setVisible(false);
         _run_stop_action->setVisible(true);
         _instant_action->setVisible(false);
         enable_toggle(true);
@@ -798,11 +901,26 @@ void SamplingBar::reload()
         _icon_instant = QIcon(":/icons/single.png");
         _icon_instant_dis = QIcon(":/icons/single_dis.png");
         _instant_button.setIcon(_icon_instant);
+        _mode_action->setVisible(false);
         _run_stop_action->setVisible(true);
         _instant_action->setVisible(true);
         enable_toggle(false);
     }
     update();
+}
+
+void SamplingBar::on_mode()
+{
+    QAction *act = qobject_cast<QAction *>(sender());
+    if (act == _action_single) {
+        _mode_button.setIcon(_icon_single);
+        _session.set_run_mode(pv::SigSession::Single);
+    } else if (act == _action_repeat) {
+        _mode_button.setIcon(_icon_repeat);
+        pv::dialogs::Interval interval_dlg(_session, this);
+        interval_dlg.exec();
+        _session.set_run_mode(pv::SigSession::Repetitive);
+    }
 }
 
 } // namespace toolbars

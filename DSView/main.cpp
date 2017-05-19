@@ -34,7 +34,7 @@
 #include <QDebug>
 #include <QFile>
 #include <QDir>
-#include <QIcon>
+#include <QTranslator>
 
 #include "dsapplication.h"
 #include "pv/devicemanager.h"
@@ -143,9 +143,10 @@ int main(int argc, char *argv[])
             a.setStyleSheet(qss.readAll());
             qss.close();
 			w.show();
+            w.readSettings();
 
 			// Run the application
-			ret = a.exec();
+            ret = a.exec();
 
 		} catch(std::exception e) {
 			qDebug() << e.what();

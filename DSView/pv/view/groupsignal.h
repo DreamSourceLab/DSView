@@ -76,8 +76,6 @@ public:
 	 **/
     void paint_mid(QPainter &p, int left, int right);
 
-    const std::vector< std::pair<uint64_t, bool> > cur_edges() const;
-
     QRectF get_rect(GroupSetRegions type, int y, int right);
 
 protected:

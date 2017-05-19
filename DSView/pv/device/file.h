@@ -24,6 +24,9 @@
 
 #include <string>
 
+#include <QJsonArray>
+#include <QJsonDocument>
+
 #include "devinst.h"
 
 namespace pv {
@@ -36,6 +39,8 @@ protected:
 
 public:
     static File* create(QString name);
+
+    QJsonArray get_decoders();
 
 public:
     QString format_device_title() const;

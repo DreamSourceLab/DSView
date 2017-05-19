@@ -152,7 +152,7 @@ void ProtocolExp::accept()
                         break;
                     }
                 }
-                out << QString("%1;%2;%3\n")
+                out << QString("%1,%2,%3\n")
                        .arg("ID")
                        .arg("Time[s]")
                        .arg(title);
@@ -180,7 +180,7 @@ void ProtocolExp::accept()
                     0, decoder_stack->sample_count()-1);
                 if (!annotations.empty()) {
                     BOOST_FOREACH(const Annotation &a, annotations) {
-                        out << QString("%1;%2;%3\n")
+                        out << QString("%1,%2,%3\n")
                                .arg(QString::number(exported))
                                .arg(QString::number(a.start_sample()*time_pre_samples))
                                .arg(a.annotations().at(0));
@@ -195,7 +195,8 @@ void ProtocolExp::accept()
             QProgressDialog dlg(tr("Export Protocol List Result... It can take a while."),
                                 tr("Cancel"),0,100,this,flags);
             dlg.setWindowModality(Qt::WindowModal);
-            dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
+            dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
+                               Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
 
             QFutureWatcher<void> watcher;
             connect(&watcher,SIGNAL(finished()),&dlg,SLOT(cancel()));

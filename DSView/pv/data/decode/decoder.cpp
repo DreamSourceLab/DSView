@@ -24,8 +24,6 @@
 
 #include "decoder.h"
 
-#include <pv/view/logicsignal.h>
-
 using boost::shared_ptr;
 using std::set;
 using std::map;
@@ -44,10 +42,6 @@ Decoder::Decoder(const srd_decoder *const dec) :
 
 Decoder::~Decoder()
 {
-	for (map<string, GVariant*>::const_iterator i = _options.begin();
-		i != _options.end(); i++)
-		g_variant_unref((*i).second);
-
     for (map<string, GVariant*>::const_iterator i = _options_back.begin();
         i != _options_back.end(); i++)
         g_variant_unref((*i).second);
@@ -68,14 +62,13 @@ void Decoder::show(bool show)
     _shown = show;
 }
 
-const map<const srd_channel*, shared_ptr<view::LogicSignal> >&
+const map<const srd_channel*, int>&
 Decoder::channels() const
 {
 	return _probes;
 }
 
-void Decoder::set_probes(std::map<const srd_channel*,
-	boost::shared_ptr<view::LogicSignal> > probes)
+void Decoder::set_probes(std::map<const srd_channel *, int> probes)
 {
     _probes_back = probes;
     _setted = true;
@@ -89,6 +82,7 @@ const std::map<std::string, GVariant*>& Decoder::options() const
 void Decoder::set_option(const char *id, GVariant *value)
 {
 	assert(value);
+    g_variant_unref(_options_back[id]);
 	g_variant_ref(value);
     _options_back[id] = value;
     _setted = true;
@@ -139,24 +133,8 @@ bool Decoder::have_required_probes() const
 	return true;
 }
 
-set< shared_ptr<pv::data::Logic> > Decoder::get_data()
+srd_decoder_inst* Decoder::create_decoder_inst(srd_session *session) const
 {
-	set< shared_ptr<pv::data::Logic> > data;
-	for(map<const srd_channel*, shared_ptr<view::LogicSignal> >::
-		const_iterator i = _probes.begin();
-		i != _probes.end(); i++)
-	{
-		shared_ptr<view::LogicSignal> signal((*i).second);
-		assert(signal);
-		data.insert(signal->logic_data());
-	}
-
-	return data;
-}
-
-srd_decoder_inst* Decoder::create_decoder_inst(srd_session *session, int unit_size) const
-{
-    (void)unit_size;
 	GHashTable *const opt_hash = g_hash_table_new_full(g_str_hash,
 		g_str_equal, g_free, (GDestroyNotify)g_variant_unref);
 
@@ -180,13 +158,11 @@ srd_decoder_inst* Decoder::create_decoder_inst(srd_session *session, int unit_si
 	GHashTable *const probes = g_hash_table_new_full(g_str_hash,
 		g_str_equal, g_free, (GDestroyNotify)g_variant_unref);
 
-	for(map<const srd_channel*, shared_ptr<view::LogicSignal> >::
+    for(map<const srd_channel*, int>::
 		const_iterator i = _probes.begin();
 		i != _probes.end(); i++)
 	{
-		shared_ptr<view::LogicSignal> signal((*i).second);
-		GVariant *const gvar = g_variant_new_int32(
-			signal->probe()->index);
+        GVariant *const gvar = g_variant_new_int32((*i).second);
 		g_variant_ref_sink(gvar);
 		g_hash_table_insert(probes, (*i).first->id, gvar);
 	}
@@ -194,6 +170,11 @@ srd_decoder_inst* Decoder::create_decoder_inst(srd_session *session, int unit_si
     srd_inst_channel_set_all(decoder_inst, probes);
 
 	return decoder_inst;
+}
+
+int Decoder::get_channel_type(const srd_channel *ch)
+{
+    return ch->type;
 }
 
 } // decode

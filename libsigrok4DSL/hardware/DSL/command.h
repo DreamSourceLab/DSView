@@ -37,7 +37,7 @@
 #define CMD_WR_NVM              0xb9
 #define CMD_RD_NVM              0xba
 #define CMD_RD_NVM_PRE          0xbb
-#define CMD_FPGA_DONE           0xbc
+#define CMD_GET_HW_INFO         0xbc
 
 #define CMD_START_FLAGS_MODE_POS    4
 #define CMD_START_FLAGS_WIDE_POS	5
@@ -138,7 +138,7 @@ struct cmd_vga_info {
 };
 
 struct cmd_nvm_info {
-    uint8_t addr;
+    uint16_t addr;
     uint8_t len;
 };
 
@@ -164,8 +164,8 @@ SR_PRIV int command_get_status(libusb_device_handle *devhdl,
 SR_PRIV int command_wr_reg(libusb_device_handle *devhdl, uint8_t value, uint8_t addr);
 
 SR_PRIV int command_wr_nvm(libusb_device_handle *devhdl, unsigned char *ctx, uint8_t len);
-SR_PRIV int command_rd_nvm(libusb_device_handle *devhdl, unsigned char *ctx, uint8_t addr, uint8_t len);
+SR_PRIV int command_rd_nvm(libusb_device_handle *devhdl, unsigned char *ctx, uint16_t addr, uint8_t len);
 
-SR_PRIV int command_get_fpga_done(libusb_device_handle *devhdl,
+SR_PRIV int command_get_hw_info(libusb_device_handle *devhdl,
                       uint8_t *fpga_done);
 #endif

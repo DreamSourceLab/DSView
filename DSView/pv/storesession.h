@@ -2,6 +2,7 @@
  * This file is part of the PulseView project.
  *
  * Copyright (C) 2014 Joel Holdsworth <joel@airwebreathe.org.uk>
+ * Copyright (C) 2016 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,19 +23,25 @@
 #define DSVIEW_PV_STORESESSION_H
 
 #include <stdint.h>
-
 #include <string>
 
 #include <boost/thread.hpp>
 
 #include <QObject>
 
+#include <libsigrok4DSL/libsigrok.h>
+#include <libsigrokdecode/libsigrokdecode.h>
+
 namespace pv {
 
 class SigSession;
 
 namespace data {
-class LogicSnapshot;
+class Snapshot;
+}
+
+namespace dock {
+class ProtocolDock;
 }
 
 class StoreSession : public QObject
@@ -42,11 +49,10 @@ class StoreSession : public QObject
 	Q_OBJECT
 
 private:
-	static const size_t BlockSize;
+    const static int File_Version = 2;
 
 public:
-    StoreSession(const std::string &file_name,
-        SigSession &session);
+    StoreSession(SigSession &session);
 
 	~StoreSession();
 
@@ -54,27 +60,48 @@ public:
 
 	const QString& error() const;
 
-	bool start();
+    bool save_start();
+
+    bool export_start();
 
 	void wait();
 
 	void cancel();
 
 private:
-	void store_proc(boost::shared_ptr<pv::data::LogicSnapshot> snapshot);
+    void save_proc(boost::shared_ptr<pv::data::Snapshot> snapshot);
+    QString meta_gen(boost::shared_ptr<data::Snapshot> snapshot);
+    void export_proc(boost::shared_ptr<pv::data::Snapshot> snapshot);
+    #ifdef ENABLE_DECODE
+    QString decoders_gen();
+    #endif
+
+public:
+    #ifdef ENABLE_DECODE
+    QJsonArray json_decoders();
+    void load_decoders(dock::ProtocolDock *widget, QJsonArray dec_array);
+    #endif
+
+private:
+    QList<QString> getSuportedExportFormats();
+    double get_double(GVariant * var);
 
 signals:
 	void progress_updated();
 
 private:
-	const std::string _file_name;
+    QString _file_name;
+    QString _suffix;
     SigSession &_session;
 
 	boost::thread _thread;
 
+    const struct sr_output_module* _outModule;
+
     //mutable boost::mutex _mutex;
 	uint64_t _units_stored;
 	uint64_t _unit_count;
+    bool _has_error;
 	QString _error;
 };
 

@@ -87,6 +87,7 @@ DeviceOptions::DeviceOptions(struct sr_dev_inst *sdi) :
         case SR_CONF_COUPLING:
         case SR_CONF_EN_CH:
         case SR_CONF_OPERATION_MODE:
+        case SR_CONF_BUFFER_OPTIONS:
         case SR_CONF_THRESHOLD:
         case SR_CONF_ZERO:
         case SR_CONF_STREAM:

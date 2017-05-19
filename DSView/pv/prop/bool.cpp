@@ -69,6 +69,13 @@ bool Bool::labeled_widget() const
 	return true;
 }
 
+GVariant* Bool::get_value() const
+{
+    GVariant *const value = _getter ? _getter() : NULL;
+
+    return value;
+}
+
 void Bool::commit()
 {
 	assert(_setter);

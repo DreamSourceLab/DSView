@@ -146,6 +146,15 @@ enum srd_configkey {
 	SRD_CONF_SAMPLERATE = 10000,
 };
 
+enum srd_channel_type {
+    SRD_CHANNEL_COMMON = -1,
+    SRD_CHANNEL_SCLK,
+    SRD_CHANNEL_SDATA,
+    SRD_CHANNEL_ADATA,
+};
+
+extern char decoders_path[256];
+
 struct srd_decoder {
 	/** The decoder ID. Must be non-NULL and unique for all decoders. */
 	char *id;
@@ -213,6 +222,8 @@ struct srd_channel {
 	char *desc;
 	/** The index of the channel, i.e. its order in the list of channels. */
 	int order;
+    /** The type of the channel, such us: sclk/sdata/.../others */
+    int type;
 };
 
 struct srd_decoder_option {
@@ -237,7 +248,6 @@ struct srd_decoder_inst {
 	GSList *pd_output;
 	int dec_num_channels;
 	int *dec_channelmap;
-	int data_unitsize;
 	uint8_t *channel_samples;
 	GSList *next_di;
     uint64_t cur_pos;
@@ -294,7 +304,7 @@ SRD_API int srd_session_metadata_set(struct srd_session *sess, int key,
 		GVariant *data);
 SRD_API int srd_session_send(struct srd_session *sess, uint8_t chunk_type,
 		uint64_t start_samplenum, uint64_t end_samplenum,
-        const uint8_t *inbuf, uint64_t inbuflen, uint64_t unitsize, char **error);
+        const uint8_t **inbuf, const uint8_t *inbuf_const, char **error);
 SRD_API int srd_session_destroy(struct srd_session *sess);
 SRD_API int srd_pd_output_callback_add(struct srd_session *sess,
 		int output_type, srd_pd_output_callback cb, void *cb_data);

@@ -118,6 +118,8 @@ public:
 
 	virtual bool is_trigger_enabled() const;
 
+    bool is_usable() const;
+
 public:
 	virtual void start();
 
@@ -132,6 +134,7 @@ signals:
 protected:
 	SigSession *_owner;
     void *_id;
+    bool _usable;
 };
 
 } // device

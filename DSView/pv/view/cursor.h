@@ -64,9 +64,9 @@ public:
 	 * @param rect The rectangle of the ruler client area.
 	 * @return Returns the label rectangle.
 	 */
-	QRectF get_label_rect(const QRect &rect) const;
+    QRect get_label_rect(const QRect &rect, bool &visible) const;
 
-    QRectF get_close_rect(const QRect &rect) const;
+    QRect get_close_rect(const QRect &rect) const;
 
 	/**
 	 * Paints the cursor's label to the ruler.

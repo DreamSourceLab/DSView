@@ -54,7 +54,7 @@ DeviceOptions::DeviceOptions(QWidget *parent, boost::shared_ptr<pv::device::DevI
         _probes_box->setLayout(&_probes_box_layout);
         _layout.addWidget(_probes_box);
     } else if (_dev_inst->name().contains("DSCope")){
-        _config_button = new QPushButton(tr("Zero Adjustment"), this);
+        _config_button = new QPushButton(tr("Auto Calibration"), this);
         _layout.addWidget(_config_button);
         connect(_config_button, SIGNAL(clicked()), this, SLOT(zero_adj()));
 
@@ -86,8 +86,7 @@ DeviceOptions::DeviceOptions(QWidget *parent, boost::shared_ptr<pv::device::DevI
 void DeviceOptions::accept()
 {
 	using namespace Qt;
-
-	QDialog::accept();
+    bool hasEnabled = false;
 
 	// Commit the properties
 	const vector< boost::shared_ptr<pv::prop::Property> > &properties =
@@ -103,10 +102,24 @@ void DeviceOptions::accept()
         for (const GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next) {
             sr_channel *const probe = (sr_channel*)l->data;
             assert(probe);
-
             probe->enabled = (_probes_checkBox_list.at(index)->checkState() == Qt::Checked);
             index++;
+            if (probe->enabled)
+                hasEnabled = true;
         }
+    } else {
+        hasEnabled = true;
+    }
+
+    if (hasEnabled) {
+        QDialog::accept();
+    } else {
+        dialogs::DSMessageBox msg(this);
+        msg.mBox()->setText(tr("Attention"));
+        msg.mBox()->setInformativeText(tr("All channel disabled! Please enable at least one channel."));
+        msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
+        msg.mBox()->setIcon(QMessageBox::Warning);
+        msg.exec();
     }
 }
 
@@ -147,6 +160,8 @@ void DeviceOptions::setup_probes()
     int row0 = 0, row1 = 0, col = 0;
     int index = 0;
     QString ch_mode;
+    int vld_ch_num = 0;
+    int cur_ch_num = 0;
 
     while(_probes_box_layout.count() > 0)
     {
@@ -182,9 +197,21 @@ void DeviceOptions::setup_probes()
         }
     }
 
+    GVariant *gvar =  _dev_inst->get_config(NULL, NULL, SR_CONF_VLD_CH_NUM);
+    if (gvar != NULL) {
+        vld_ch_num = g_variant_get_int16(gvar);
+        g_variant_unref(gvar);
+    }
+
     for (const GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next) {
 		sr_channel *const probe = (sr_channel*)l->data;
 		assert(probe);
+
+        if (probe->enabled)
+            cur_ch_num++;
+
+        if (cur_ch_num > vld_ch_num)
+            probe->enabled = false;
 
         QLabel *probe_label = new QLabel(QString::number(probe->index), this);
         QCheckBox *probe_checkBox = new QCheckBox(this);
@@ -197,6 +224,8 @@ void DeviceOptions::setup_probes()
         index++;
         col = index % 8;
         row1 = index / 8;
+
+        connect(probe_checkBox, SIGNAL(released()), this, SLOT(channel_enable()));
 	}
 
     QPushButton *_enable_all_probes = new QPushButton(tr("Enable All"), this);
@@ -220,8 +249,45 @@ void DeviceOptions::set_all_probes(bool set)
     }
 }
 
+void DeviceOptions::enable_max_probes() {
+    int cur_ch_num = 0;
+    QVector<QCheckBox *>::iterator iter = _probes_checkBox_list.begin();
+    while(iter != _probes_checkBox_list.end()) {
+        if ((*iter)->isChecked())
+            cur_ch_num++;
+        iter++;
+    }
+
+    GVariant* gvar =  _dev_inst->get_config(NULL, NULL, SR_CONF_VLD_CH_NUM);
+    if (gvar == NULL)
+        return;
+
+    int vld_ch_num = g_variant_get_int16(gvar);
+    g_variant_unref(gvar);
+    iter = _probes_checkBox_list.begin();
+    while(cur_ch_num < vld_ch_num &&
+          iter != _probes_checkBox_list.end()) {
+        if (!(*iter)->isChecked()) {
+            (*iter)->setChecked(true);
+            cur_ch_num++;
+        }
+        iter++;
+    }
+}
+
 void DeviceOptions::enable_all_probes()
 {
+    GVariant* gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_STREAM);
+    if (gvar != NULL) {
+        bool stream_mode = g_variant_get_boolean(gvar);
+        g_variant_unref(gvar);
+
+        if (stream_mode) {
+            enable_max_probes();
+            return;
+        }
+    }
+
 	set_all_probes(true);
 }
 
@@ -237,7 +303,7 @@ void DeviceOptions::zero_adj()
 
     dialogs::DSMessageBox msg(this);
     msg.mBox()->setText(tr("Information"));
-    msg.mBox()->setInformativeText(tr("Zero adjustment program will be started. Please keep all channels out of singal input. It can take a while!"));
+    msg.mBox()->setInformativeText(tr("Auto Calibration program will be started. Please keep all channels out of singal input. It can take a while!"));
     //msg.mBox()->setStandardButtons(QMessageBox::);
     msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
     msg.mBox()->addButton(tr("Cancel"), QMessageBox::RejectRole);
@@ -291,6 +357,48 @@ void DeviceOptions::channel_check()
     if(sc != NULL)
         _dev_inst->set_config(NULL, NULL, SR_CONF_CHANNEL_MODE, g_variant_new_string(sc->text().toUtf8().data()));
     setup_probes();
+}
+
+void DeviceOptions::channel_enable()
+{
+    QCheckBox* sc=dynamic_cast<QCheckBox*>(sender());
+    if (sc == NULL || !sc->isChecked())
+        return;
+
+    GVariant* gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_STREAM);
+    if (gvar == NULL)
+        return;
+
+    bool stream_mode = g_variant_get_boolean(gvar);
+    g_variant_unref(gvar);
+
+    if (!stream_mode)
+        return;
+
+    int cur_ch_num = 0;
+    QVector<QCheckBox *>::iterator i = _probes_checkBox_list.begin();
+    while(i != _probes_checkBox_list.end()) {
+        if ((*i)->isChecked())
+            cur_ch_num++;
+        i++;
+    }
+
+    gvar =  _dev_inst->get_config(NULL, NULL, SR_CONF_VLD_CH_NUM);
+    if (gvar == NULL)
+        return;
+
+    int vld_ch_num = g_variant_get_int16(gvar);
+    g_variant_unref(gvar);
+    if (cur_ch_num > vld_ch_num) {
+        dialogs::DSMessageBox msg(this);
+        msg.mBox()->setText(tr("Information"));
+        msg.mBox()->setInformativeText(tr("Current mode only suppport max ") + QString::number(vld_ch_num) + tr(" channels!"));
+        msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
+        msg.mBox()->setIcon(QMessageBox::Information);
+        msg.exec();
+
+        sc->setChecked(false);
+    }
 }
 
 } // namespace dialogs

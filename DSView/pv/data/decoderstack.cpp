@@ -35,19 +35,8 @@
 #include <pv/sigsession.h>
 #include <pv/view/logicsignal.h>
 
-using boost::lock_guard;
-using boost::mutex;
-using boost::optional;
-using boost::shared_ptr;
-using boost::unique_lock;
-using std::deque;
-using std::make_pair;
-using std::max;
-using std::min;
-using std::list;
-using std::map;
-using std::pair;
-using std::vector;
+using namespace boost;
+using namespace std;
 
 using namespace pv::data::decode;
 
@@ -70,7 +59,8 @@ DecoderStack::DecoderStack(pv::SigSession &session,
     _samples_decoded(0),
     _decode_state(Stopped),
     _options_changed(false),
-    _no_memory(false)
+    _no_memory(false),
+    _mark_index(-1)
 {
 	connect(&_session, SIGNAL(frame_began()),
 		this, SLOT(on_new_frame()));
@@ -79,7 +69,7 @@ DecoderStack::DecoderStack(pv::SigSession &session,
 	connect(&_session, SIGNAL(frame_ended()),
 		this, SLOT(on_frame_ended()));
 
-	_stack.push_back(shared_ptr<decode::Decoder>(
+    _stack.push_back(boost::shared_ptr<decode::Decoder>(
 		new decode::Decoder(dec)));
 
     build_row();
@@ -116,7 +106,7 @@ void DecoderStack::push(boost::shared_ptr<decode::Decoder> decoder)
 void DecoderStack::remove(boost::shared_ptr<Decoder> &decoder)
 {
 	// Find the decoder in the stack
-	list< shared_ptr<Decoder> >::iterator iter = _stack.begin();
+    list< boost::shared_ptr<Decoder> >::iterator iter = _stack.begin();
     for(unsigned int i = 0; i < _stack.size(); i++, iter++)
         if ((*iter) == decoder)
             break;
@@ -133,7 +123,7 @@ void DecoderStack::build_row()
 {
     _rows.clear();
     // Add classes
-    BOOST_FOREACH (const shared_ptr<decode::Decoder> &dec, _stack)
+    BOOST_FOREACH (const boost::shared_ptr<decode::Decoder> &dec, _stack)
     {
         assert(dec);
         const srd_decoder *const decc = dec->decoder();
@@ -204,6 +194,21 @@ void DecoderStack::get_annotation_subset(
     if (iter != _rows.end())
 		(*iter).second.get_annotation_subset(dest,
 			start_sample, end_sample);
+}
+
+
+uint64_t DecoderStack::get_annotation_index(
+    const Row &row, uint64_t start_sample) const
+{
+    //lock_guard<mutex> lock(_output_mutex);
+
+    uint64_t index = 0;
+    std::map<const Row, decode::RowData>::const_iterator iter =
+        _rows.find(row);
+    if (iter != _rows.end())
+        index = (*iter).second.get_annotation_index(start_sample);
+
+    return index;
 }
 
 uint64_t DecoderStack::get_max_annotation(const Row &row)
@@ -353,84 +358,77 @@ QString DecoderStack::error_message()
 
 void DecoderStack::clear()
 {
-    //lock_guard<boost::recursive_mutex> decode_lock(_output_mutex);
-	_sample_count = 0;
-    _frame_complete = false;
-    _samples_decoded = 0;
-    new_decode_data();
-	_error_message = QString();
-    for (map<const Row, RowData>::iterator i = _rows.begin();
-        i != _rows.end(); i++)
-        _rows[(*i).first] = decode::RowData();
-//    _rows.clear();
-//    _rows_gshow.clear();
-//    _rows_lshow.clear();
-//    _class_rows.clear();
-    _no_memory = false;
+    init();
 }
 
 void DecoderStack::init()
 {
-    clear();
+    _sample_count = 0;
+    _frame_complete = false;
+    _samples_decoded = 0;
+    _error_message = QString();
+    _no_memory = false;
+    for (map<const Row, RowData>::iterator i = _rows.begin();
+        i != _rows.end(); i++) {
+        //_rows[(*i).first] = decode::RowData();
+        (*i).second.clear();
+    }
+    set_mark_index(-1);
 }
 
 void DecoderStack::stop_decode()
 {
     //_snapshot.reset();
-
-    if(_decode_state == Stopped) {
-        clear();
-        return;
+    if(_decode_state != Stopped) {
+        if (_decode_thread.get()) {
+            _decode_thread->interrupt();
+            _decode_thread->join();
+            _decode_state = Stopped;
+        }
+        _decode_thread.reset();
     }
-
-    if (_decode_thread.get()) {
-        _decode_thread->interrupt();
-        _decode_thread->join();
-        _decode_state = Stopped;
-    }
-    _decode_thread.reset();
-    clear();
 }
 
 void DecoderStack::begin_decode()
 {
-	shared_ptr<pv::view::LogicSignal> logic_signal;
-	shared_ptr<pv::data::Logic> data;
+    boost::shared_ptr<pv::view::LogicSignal> logic_signal;
+    boost::shared_ptr<pv::data::Logic> data;
 
     if (!_options_changed)
         return;
     _options_changed = false;
-//	if (_decode_thread.joinable()) {
-//		_decode_thread.interrupt();
-//		_decode_thread.join();
-//	}
     stop_decode();
+    init();
 
 	// Check that all decoders have the required channels
-	BOOST_FOREACH(const shared_ptr<decode::Decoder> &dec, _stack)
+    BOOST_FOREACH(const boost::shared_ptr<decode::Decoder> &dec, _stack)
 		if (!dec->have_required_probes()) {
 			_error_message = tr("One or more required channels "
 				"have not been specified");
 			return;
 		}
 
-//    // Build rows
-//    build_row();
-
 	// We get the logic data of the first channel in the list.
 	// This works because we are currently assuming all
 	// LogicSignals have the same data/snapshot
-	BOOST_FOREACH (const shared_ptr<decode::Decoder> &dec, _stack)
-		if (dec && !dec->channels().empty() &&
-			((logic_signal = (*dec->channels().begin()).second)) &&
-			((data = logic_signal->logic_data())))
-			break;
+    BOOST_FOREACH (const boost::shared_ptr<decode::Decoder> &dec, _stack) {
+        if (dec && !dec->channels().empty()) {
+            BOOST_FOREACH(boost::shared_ptr<view::Signal> sig, _session.get_signals()) {
+                if((sig->get_index() == (*dec->channels().begin()).second) &&
+                   (logic_signal = dynamic_pointer_cast<view::LogicSignal>(sig)) &&
+                   (data = logic_signal->logic_data()))
+                    break;
+            }
+            if (data)
+                break;
+        }
+    }
 
 	if (!data)
 		return;
 
 	// Check we have a snapshot of data
-	const deque< shared_ptr<pv::data::LogicSnapshot> > &snapshots =
+    const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
 		data->get_snapshots();
 	if (snapshots.empty())
 		return;
@@ -438,8 +436,7 @@ void DecoderStack::begin_decode()
     if (_snapshot->empty())
         return;
 
-	// Get the samplerate and start time
-	_start_time = data->get_start_time();
+    // Get the samplerate
 	_samplerate = data->samplerate();
     if (_samplerate == 0.0)
         return;
@@ -474,13 +471,11 @@ boost::optional<uint64_t> DecoderStack::wait_for_data() const
 
 void DecoderStack::decode_data(
     const uint64_t decode_start, const uint64_t decode_end,
-    const unsigned int unit_size, srd_session *const session)
+    srd_session *const session)
 {
-    uint8_t *chunk = NULL;
+    //uint8_t *chunk = NULL;
     uint64_t last_cnt = 0;
     uint64_t notify_cnt = (decode_end - decode_start + 1)/100;
-    const uint64_t chunk_sample_count =
-        DecodeChunkLength / _snapshot->unit_size();
     srd_decoder_inst *logic_di = NULL;
     // find the first level decoder instant
     for (GSList *d = session->di_list; d; d = d->next) {
@@ -501,41 +496,63 @@ void DecoderStack::decode_data(
           i < decode_end && !_no_memory)
     {
         //lock_guard<mutex> decode_lock(_global_decode_mutex);
+        std::vector<const uint8_t *> chunk;
+        std::vector<uint8_t> chunk_const;
+        uint64_t chunk_end = decode_end;
+        for (int j =0 ; j < logic_di->dec_num_channels; j++) {
+            int sig_index = logic_di->dec_channelmap[j];
+            if (sig_index == -1) {
+                chunk.push_back(NULL);
+            } else {
+                if (_snapshot->has_data(sig_index)) {
+                    chunk.push_back(_snapshot->get_samples(i, chunk_end, sig_index));
+                    chunk_const.push_back(_snapshot->get_sample(i, sig_index));
+                } else {
+                    _error_message = tr("At least one of selected channels are not enabled.");
+                    return;
+                }
+            }
+        }
+        if (chunk_end - i > MaxChunkSize)
+            chunk_end = i + MaxChunkSize;
 
-        const uint64_t chunk_end = min(
-            i + chunk_sample_count, decode_end);
-        chunk = _snapshot->get_samples(i, chunk_end);
-
-        if (srd_session_send(session, chunk_type, i, chunk_end, chunk,
-                (chunk_end - i) * unit_size, unit_size, &error) != SRD_OK) {
+        if (srd_session_send(session, chunk_type, i, chunk_end,
+                             chunk.data(), chunk_const.data(), &error) != SRD_OK) {
             _error_message = QString::fromLocal8Bit(error);
             break;
         }
 
-        if (logic_di && logic_di->logic_mask != 0) {
+        if (logic_di && logic_di->logic_mask != 0 && logic_di->cur_pos < decode_end) {
             uint64_t cur_pos = logic_di->cur_pos;
-            assert(cur_pos < _snapshot->get_sample_count());
-            uint64_t sample = _snapshot->get_sample(cur_pos) & logic_di->logic_mask;
+            uint64_t sample;
             if (logic_di->edge_index == -1) {
                 std::vector<uint64_t> pos_vector;
                 cur_pos++;
                 for (int j =0 ; j < logic_di->dec_num_channels; j++) {
                     int index = logic_di->dec_channelmap[j];
-                    if (index != -1 && (logic_di->logic_mask & (1 << index))) {
-                        bool last_sample = (sample & (1 << index)) ? 1 : 0;
+                    if (index != -1 && (logic_di->logic_mask & (1 << j))) {
+                        bool last_sample = _snapshot->get_sample(cur_pos - 1, index);
                         pos_vector.push_back(cur_pos);
                         _snapshot->get_nxt_edge(pos_vector.back(), last_sample, decode_end, 1, index);
                     }
                 }
                 cur_pos = *std::min_element(pos_vector.begin(), pos_vector.end());
             } else {
-                bool last_sample = (sample & (1 << logic_di->edge_index)) ? 1 : 0;
+                bool last_sample = _snapshot->get_sample(cur_pos, logic_di->edge_index);
                 do {
+                    sample = 0;
                     cur_pos++;
                     if (!_snapshot->get_nxt_edge(cur_pos, last_sample, decode_end, 1, logic_di->edge_index))
                         break;
-                    sample = _snapshot->get_sample(cur_pos) & logic_di->logic_mask;
-                    last_sample = (sample & (1 << logic_di->edge_index)) ? 1 : 0;
+                    for (int j =0 ; j < logic_di->dec_num_channels; j++) {
+                        if (logic_di->logic_mask & (1 << j)) {
+                            int index = logic_di->dec_channelmap[j];
+                            bool index_sample = _snapshot->get_sample(cur_pos, index);
+                            sample +=  index_sample << j;
+                            if (index == logic_di->edge_index)
+                                last_sample = index_sample;
+                        }
+                    }
                 } while(sample != logic_di->exp_logic);
             }
 
@@ -544,7 +561,7 @@ void DecoderStack::decode_data(
                 i = decode_end;
             chunk_type = 0;
         } else {
-            i += chunk_sample_count;
+            i = chunk_end + 1;
             chunk_type = 1;
         }
 
@@ -582,18 +599,16 @@ void DecoderStack::decode_proc()
 
     _decode_state = Running;
 
-	// Create the decoders
-	const unsigned int unit_size = _snapshot->unit_size();
-
     // Get the intial sample count
     {
         //unique_lock<mutex> input_lock(_input_mutex);
         sample_count = _sample_count = _snapshot->get_sample_count();
     }
 
-	BOOST_FOREACH(const shared_ptr<decode::Decoder> &dec, _stack)
+    // Create the decoders
+    BOOST_FOREACH(const boost::shared_ptr<decode::Decoder> &dec, _stack)
 	{
-		srd_decoder_inst *const di = dec->create_decoder_inst(session, unit_size);
+        srd_decoder_inst *const di = dec->create_decoder_inst(session);
 
 		if (!di)
 		{
@@ -619,7 +634,7 @@ void DecoderStack::decode_proc()
 
     char *error = NULL;
     if (srd_session_start(session, &error) == SRD_OK)
-        decode_data(decode_start, decode_end, unit_size, session);
+        decode_data(decode_start, decode_end, session);
     else
         _error_message = QString::fromLocal8Bit(error);
 
@@ -745,6 +760,16 @@ void DecoderStack::set_options_changed(bool changed)
 bool DecoderStack::out_of_memory() const
 {
     return _no_memory;
+}
+
+void DecoderStack::set_mark_index(int64_t index)
+{
+    _mark_index = index;
+}
+
+int64_t DecoderStack::get_mark_index() const
+{
+    return _mark_index;
 }
 
 } // namespace data

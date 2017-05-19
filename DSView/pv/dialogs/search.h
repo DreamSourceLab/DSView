@@ -45,23 +45,25 @@ class Search : public DSDialog
 
 public:
 
-    Search(QWidget *parent = 0, boost::shared_ptr<pv::device::DevInst> dev_inst = 0, QString pattern = "");
+    Search(QWidget *parent, SigSession &session, std::map<uint16_t, QString> pattern);
     ~Search();
 
-    QString get_pattern();
+    std::map<uint16_t, QString> get_pattern();
 
 protected:
     void accept();
 
 signals:
     
-public slots:
+private slots:
+    void format();
     
 private:
+    SigSession &_session;
+
     toolbars::TitleBar *_titlebar;
-    QLineEdit search_lineEdit;
+    QVector<QLineEdit *> _search_lineEdit_vec;
     QDialogButtonBox search_buttonBox;
-    boost::shared_ptr<pv::device::DevInst>  _dev_inst;
 };
 
 } // namespace decoder

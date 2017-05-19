@@ -34,7 +34,7 @@ Requirements
  - automake >= 1.11 (only needed when building from git)
  - libtool (only needed when building from git)
  - pkg-config >= 0.22
- - libglib >= 2.24.0
+ - libglib >= 2.28.0
  - Python >= 3.2
  - check >= 0.9.4 (optional, only needed to run unit tests)
  - doxygen (optional, only needed for the C API docs)

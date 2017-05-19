@@ -35,15 +35,7 @@ struct srd_channel;
 struct srd_session;
 
 namespace pv {
-
-namespace view {
-class LogicSignal;
-}
-
 namespace data {
-
-class Logic;
-
 namespace decode {
 
 class Decoder
@@ -58,10 +50,8 @@ public:
 	bool shown() const;
 	void show(bool show = true);
 
-	const std::map<const srd_channel*,
-		boost::shared_ptr<view::LogicSignal> >& channels() const;
-	void set_probes(std::map<const srd_channel*,
-		boost::shared_ptr<view::LogicSignal> > probes);
+    const std::map<const srd_channel*, int>& channels() const;
+    void set_probes(std::map<const srd_channel*, int> probes);
 
 	const std::map<std::string, GVariant*>& options() const;
 
@@ -69,10 +59,7 @@ public:
 
 	bool have_required_probes() const;
 
-	srd_decoder_inst* create_decoder_inst(
-		srd_session *session, int unit_size) const;
-
-	std::set< boost::shared_ptr<pv::data::Logic> > get_data();	
+    srd_decoder_inst* create_decoder_inst(srd_session *session) const;
 
     void set_decode_region(uint64_t start, uint64_t end);
     uint64_t decode_start() const;
@@ -80,17 +67,17 @@ public:
 
     bool commit();
 
+    int get_channel_type(const srd_channel* ch);
+
 private:
 	const srd_decoder *const _decoder;
 
 	bool _shown;
 
-    std::map<const srd_channel*, boost::shared_ptr<pv::view::LogicSignal> >
-		_probes;
+    std::map<const srd_channel*, int> _probes;
 	std::map<std::string, GVariant*> _options;
 
-    std::map<const srd_channel*, boost::shared_ptr<pv::view::LogicSignal> >
-        _probes_back;
+    std::map<const srd_channel*, int> _probes_back;
     std::map<std::string, GVariant*> _options_back;
 
     uint64_t _decode_start, _decode_end;

@@ -62,6 +62,7 @@ endif()
 list(APPEND PKGDEPS
 	"libsigrok4DSL >= 0.2.0"
 	"libusb-1.0 >= 1.0.16"
+	"libzip >= 0.10"
 )
 if(ENABLE_DECODE)
 	list(APPEND PKGDEPS "libsigrokdecode>=0.3.0")
@@ -93,6 +94,7 @@ find_package(Threads)
 
 find_package(Boost 1.42 COMPONENTS filesystem system thread REQUIRED)
 find_package(libusb-1.0 REQUIRED)
+find_package(libzip REQUIRED)
 find_package(FFTW REQUIRED)
 
 #===============================================================================
@@ -104,7 +106,7 @@ set(DS_DESCRIPTION "A GUI for instruments of DreamSourceLab")
 
 set(DS_VERSION_MAJOR 0)
 set(DS_VERSION_MINOR 9)
-set(DS_VERSION_MICRO 6)
+set(DS_VERSION_MICRO 7)
 set(DS_VERSION_STRING
 	${DS_VERSION_MAJOR}.${DS_VERSION_MINOR}.${DS_VERSION_MICRO}
 )
@@ -202,6 +204,7 @@ set(DSView_SOURCES
     pv/dialogs/dsmessagebox.cpp 
     pv/dialogs/shadow.cpp 
     pv/dialogs/dsdialog.cpp
+    pv/dialogs/interval.cpp
 )
 
 set(DSView_HEADERS
@@ -257,6 +260,7 @@ set(DSView_HEADERS
     pv/dialogs/dsmessagebox.h
     pv/dialogs/shadow.h
     pv/dialogs/dsdialog.h
+    pv/dialogs/interval.h
 )
 
 set(DSView_FORMS

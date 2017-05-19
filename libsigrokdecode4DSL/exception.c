@@ -22,71 +22,142 @@
 #include "libsigrokdecode.h"
 #include <stdarg.h>
 #include <glib.h>
-#include <frameobject.h> /* Python header not pulled in by default. */
+#include <glib/gprintf.h>
+
+static char *py_stringify(PyObject *py_obj)
+{
+	PyObject *py_str, *py_bytes;
+	char *str = NULL;
+
+	if (!py_obj)
+		return NULL;
+
+	py_str = PyObject_Str(py_obj);
+	if (!py_str || !PyUnicode_Check(py_str))
+		goto cleanup;
+
+	py_bytes = PyUnicode_AsUTF8String(py_str);
+	if (!py_bytes)
+		goto cleanup;
+
+	str = g_strdup(PyBytes_AsString(py_bytes));
+	Py_DECREF(py_bytes);
+
+cleanup:
+	Py_XDECREF(py_str);
+	if (!str) {
+		PyErr_Clear();
+		srd_dbg("Failed to stringify object.");
+	}
+	return str;
+}
+
+static char *py_get_string_attr(PyObject *py_obj, const char *attr)
+{
+	PyObject *py_str, *py_bytes;
+	char *str = NULL;
+
+	if (!py_obj)
+		return NULL;
+
+	py_str = PyObject_GetAttrString(py_obj, attr);
+	if (!py_str || !PyUnicode_Check(py_str))
+		goto cleanup;
+
+	py_bytes = PyUnicode_AsUTF8String(py_str);
+	if (!py_bytes)
+		goto cleanup;
+
+	str = g_strdup(PyBytes_AsString(py_bytes));
+	Py_DECREF(py_bytes);
+
+cleanup:
+	Py_XDECREF(py_str);
+	if (!str) {
+		PyErr_Clear();
+		srd_dbg("Failed to get object attribute %s.", attr);
+	}
+	return str;
+}
 
 /** @private */
-SRD_PRIV void srd_exception_catch(const char *format, char **error, ...)
+SRD_PRIV void srd_exception_catch(char **error, const char *format, ...)
 {
-	PyObject *etype, *evalue, *etb, *py_str;
-	PyTracebackObject *py_tb;
-	GString *msg;
 	va_list args;
-	char *ename, *str, *tracestr;
+	PyObject *py_etype, *py_evalue, *py_etraceback;
+	PyObject *py_mod, *py_func, *py_tracefmt;
+	char *msg, *etype_name, *evalue_str, *tracefmt_str;
+	const char *etype_name_fallback;
+    char *final_msg;
 
-	if (!PyErr_Occurred())
-		/* Nothing is wrong. */
-		return;
+	py_etype = py_evalue = py_etraceback = py_mod = py_func = NULL;
 
-	PyErr_Fetch(&etype, &evalue, &etb);
-	PyErr_NormalizeException(&etype, &evalue, &etb);
-
-	if (!(py_str = PyObject_Str(evalue))) {
-		/* Shouldn't happen. */
-		srd_dbg("Failed to convert exception value to string.");
-		return;
-	}
-
-	/* Send the exception error message(s) to srd_err(). */
-	if (evalue)
-		ename = (char *)Py_TYPE(evalue)->tp_name;
-	else
-		/* Can be NULL. */
-		ename = "(unknown exception)";
-
-	msg = g_string_sized_new(128);
-	g_string_append(msg, ename);
-	g_string_append(msg, ": ");
-    va_start(args, error);
-	g_string_append_vprintf(msg, format, args);
+	va_start(args, error);
+	msg = g_strdup_vprintf(format, args);
 	va_end(args);
-	py_str_as_str(py_str, &str);
-	g_string_append(msg, str);
-	Py_DecRef(py_str);
-	srd_err("%s", msg->str);
 
-	/* Send a more precise error location to srd_dbg(), if we have it. */
-	if (etb && etb != Py_None) {
-		tracestr = NULL;
-		py_tb = (PyTracebackObject *)etb;
-		py_str = PyUnicode_FromFormat("%U:%d in %U",
-					py_tb->tb_frame->f_code->co_filename,
-					py_tb->tb_frame->f_lineno,
-					py_tb->tb_frame->f_code->co_name);
-		py_str_as_str(py_str, &tracestr);
-		Py_DecRef(py_str);
-		g_string_printf(msg, "%s in %s: %s", ename, tracestr, str);
-		srd_dbg("%s", msg->str);
-		g_free(tracestr);
+	PyErr_Fetch(&py_etype, &py_evalue, &py_etraceback);
+	if (!py_etype) {
+		/* No current exception, so just print the message. */
+        final_msg = g_strjoin(":", msg, "unknown error", NULL);
+        srd_err("%s.", final_msg);
+		goto cleanup;
 	}
-    if (error)
-        *error = g_strdup(str);
-	g_free(str);
-	g_string_free(msg, TRUE);
+	PyErr_NormalizeException(&py_etype, &py_evalue, &py_etraceback);
 
-	Py_XDECREF(etype);
-	Py_XDECREF(evalue);
-	Py_XDECREF(etb);
+	etype_name = py_get_string_attr(py_etype, "__name__");
+	evalue_str = py_stringify(py_evalue);
+	etype_name_fallback = (etype_name) ? etype_name : "(unknown exception)";
+
+    if (evalue_str)
+        final_msg = g_strjoin(":", msg, etype_name_fallback, evalue_str, NULL);
+	else
+        final_msg = g_strjoin(":", msg, etype_name_fallback, NULL);
+
+    srd_err("%s.", final_msg);
+
+	g_free(evalue_str);
+	g_free(etype_name);
+
+	/* If there is no traceback object, we are done. */
+	if (!py_etraceback)
+		goto cleanup;
+
+	py_mod = py_import_by_name("traceback");
+	if (!py_mod)
+		goto cleanup;
+
+	py_func = PyObject_GetAttrString(py_mod, "format_exception");
+	if (!py_func || !PyCallable_Check(py_func))
+		goto cleanup;
+
+	/* Call into Python to format the stack trace. */
+	py_tracefmt = PyObject_CallFunctionObjArgs(py_func,
+			py_etype, py_evalue, py_etraceback, NULL);
+	if (!py_tracefmt)
+		goto cleanup;
+
+	tracefmt_str = py_stringify(py_tracefmt);
+	Py_DECREF(py_tracefmt);
+
+	/* Log the detailed stack trace. */
+	if (tracefmt_str) {
+		srd_dbg("%s", tracefmt_str);
+		g_free(tracefmt_str);
+	}
+
+cleanup:
+    if (error)
+        *error = g_strdup(final_msg);
+	Py_XDECREF(py_func);
+	Py_XDECREF(py_mod);
+	Py_XDECREF(py_etraceback);
+	Py_XDECREF(py_evalue);
+	Py_XDECREF(py_etype);
 
 	/* Just in case. */
 	PyErr_Clear();
+
+	g_free(msg);
+    g_free(final_msg);
 }

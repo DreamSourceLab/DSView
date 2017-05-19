@@ -68,6 +68,7 @@ private:
 	static const double DecodeThreshold;
 	static const int64_t DecodeChunkLength;
 	static const unsigned int DecodeNotifyPeriod;
+    static const uint64_t MaxChunkSize = 1024 * 16;
 
 public:
     enum decode_state {
@@ -95,6 +96,9 @@ public:
 		std::vector<pv::data::decode::Annotation> &dest,
 		const decode::Row &row, uint64_t start_sample,
 		uint64_t end_sample) const;
+
+    uint64_t get_annotation_index(
+        const decode::Row &row, uint64_t start_sample) const;
 
     uint64_t get_max_annotation(const decode::Row &row);
     uint64_t get_min_annotation(const decode::Row &row); // except instant(end=start) annotation
@@ -137,14 +141,13 @@ public:
 
     bool out_of_memory() const;
 
+    void set_mark_index(int64_t index);
+    int64_t get_mark_index() const;
+
 private:
     boost::optional<uint64_t> wait_for_data() const;
 
-//    void decode_data(const uint64_t sample_count,
-//        const unsigned int unit_size, srd_session *const session);
-
-    void decode_data(const uint64_t decode_start, const uint64_t decode_end,
-        const unsigned int unit_size, srd_session *const session);
+    void decode_data(const uint64_t decode_start, const uint64_t decode_end, srd_session *const session);
 
 	void decode_proc();
 
@@ -198,6 +201,8 @@ private:
 
     bool _options_changed;
     bool _no_memory;
+
+    int64_t _mark_index;
 
 	friend class DecoderStackTest::TwoDecoderStack;
 };

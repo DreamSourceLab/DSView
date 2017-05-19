@@ -107,9 +107,12 @@ enum {
 #define TriggerStages 16
 #define TriggerProbes 16
 #define TriggerCountBits 16
+#define STriggerDataStage 3
 
 #define DS_CONF_DSO_HDIVS 10
 #define DS_CONF_DSO_VDIVS 10
+
+#define DS_MAX_TRIG_PERCENT 90
 
 #define DS_RES_PATH "/usr/local/share/DSView/res/"
 
@@ -178,7 +181,7 @@ enum {
 	SR_DF_ANALOG,
 	SR_DF_FRAME_BEGIN,
 	SR_DF_FRAME_END,
-    SR_DF_ABANDON,
+    SR_DF_OVERFLOW,
 };
 
 /** Values for sr_datafeed_analog.mq. */
@@ -300,10 +303,17 @@ enum DSO_MEASURE_TYPE {
     DSO_MS_END,
 };
 
+enum {
+    SR_PKT_OK,
+    SR_PKT_SOURCE_ERROR,
+    SR_PKT_DATA_ERROR,
+};
+
 struct sr_context;
 
 struct sr_datafeed_packet {
 	uint16_t type;
+    uint16_t status;
 	const void *payload;
 };
 
@@ -316,10 +326,21 @@ struct sr_datafeed_meta {
 	GSList *config;
 };
 
+enum LA_DATA_FORMAT {
+    LA_CROSS_DATA,
+    LA_SPLIT_DATA,
+};
+
 struct sr_datafeed_logic {
 	uint64_t length;
+    /** data format */
+    int format;
+    /** for LA_SPLIT_DATA, indicate the channel index */
+    uint16_t index;
+    uint16_t order;
 	uint16_t unitsize;
     uint16_t data_error;
+    uint64_t error_pattern;
 	void *data;
 };
 
@@ -731,6 +752,9 @@ enum {
 	/** The device supports Run Length Encoding. */
 	SR_CONF_RLE,
 
+    /** Need wait to uplad captured data */
+    SR_CONF_WAIT_UPLOAD,
+
 	/** The device supports setting trigger slope. */
 	SR_CONF_TRIGGER_SLOPE,
 
@@ -764,8 +788,11 @@ enum {
     /** DSO configure sync */
     SR_CONF_DSO_SYNC,
 
-    /** DSO vertical resolution*/
+    /** DSO vertical resolution */
     SR_CONF_DSO_BITS,
+
+    /** Valid channel number */
+    SR_CONF_VLD_CH_NUM,
 
     /** Zero */
     SR_CONF_ZERO_SET,
@@ -790,6 +817,7 @@ enum {
 
     /** Test */
     SR_CONF_TEST,
+    SR_CONF_EEPROM,
 
     /** Volts/div for dso channel. */
     SR_CONF_VDIV,
@@ -840,6 +868,9 @@ enum {
     /** Device operation mode */
     SR_CONF_OPERATION_MODE,
 
+    /** Device buffer options */
+    SR_CONF_BUFFER_OPTIONS,
+
     /** Device channel mode */
     SR_CONF_CHANNEL_MODE,
 
@@ -851,12 +882,13 @@ enum {
     SR_CONF_THRESHOLD,
     SR_CONF_VTH,
 
-    /** Device capacity **/
+    /** Hardware capacity **/
     SR_CONF_MAX_DSO_SAMPLERATE,
     SR_CONF_MAX_DSO_SAMPLELIMITS,
-    SR_CONF_MAX_LOGIC_SAMPLERATE,
-    SR_CONF_MAX_LOGIC_SAMPLELIMITS,
-    SR_CONF_RLE_SAMPLELIMITS,
+    SR_CONF_HW_DEPTH,
+
+    /** Hardware status */
+    SR_CONF_HW_STATUS,
 
 	/*--- Special stuff -------------------------------------------------*/
 
@@ -876,11 +908,14 @@ enum {
 	/** The device supports specifying a capturefile to inject. */
 	SR_CONF_CAPTUREFILE,
 
-	/** The device supports specifying the capturefile unit size. */
-	SR_CONF_CAPTURE_UNITSIZE,
+    /** Session file version */
+    SR_CONF_FILE_VERSION,
 
 	/** The device supports setting the number of probes. */
 	SR_CONF_CAPTURE_NUM_PROBES,
+
+    /** The device supports setting the number of data blocks. */
+    SR_CONF_NUM_BLOCKS,
 
 	/*--- Acquisition modes ---------------------------------------------*/
 
@@ -972,6 +1007,8 @@ enum {
 	SR_ST_INITIALIZING,
 	/** The device instance is live, but not in use. */
 	SR_ST_INACTIVE,
+    /** The device instance has an imcompatible firmware */
+    SR_ST_INCOMPATIBLE,
 	/** The device instance is actively in use in a session. */
 	SR_ST_ACTIVE,
 	/** The device is winding down its session. */
@@ -989,6 +1026,14 @@ enum {
     SR_OP_EXTERNAL_TEST = 3,
     /** SDRAM loopback test mode */
     SR_OP_LOOPBACK_TEST = 4,
+};
+
+/** Device buffer mode */
+enum {
+    /** Stop immediately */
+    SR_BUF_STOP = 0,
+    /** Upload captured data */
+    SR_BUF_UPLOAD = 1,
 };
 
 /** Device threshold level. */
@@ -1049,7 +1094,6 @@ struct sr_dev_driver {
 	/* Device-specific */
 	int (*dev_open) (struct sr_dev_inst *sdi);
 	int (*dev_close) (struct sr_dev_inst *sdi);
-    int (*dev_test) (struct sr_dev_inst *sdi);
     int (*dev_status_get) (struct sr_dev_inst *sdi,
                            struct sr_status *status,
                            int begin, int end);
@@ -1127,8 +1171,10 @@ struct ds_trigger_pos {
     uint32_t check_id;
     uint32_t real_pos;
     uint32_t ram_saddr;
-    uint32_t remain_cnt;
-    unsigned char first_block[496];
+    uint32_t remain_cnt_l;
+    uint32_t remain_cnt_h;
+    uint32_t status;
+    unsigned char first_block[488];
 };
 
 #include "proto.h"

@@ -58,13 +58,6 @@ SR_API int sr_dev_clear(const struct sr_dev_driver *driver);
 SR_API int sr_dev_open(struct sr_dev_inst *sdi);
 SR_API int sr_dev_close(struct sr_dev_inst *sdi);
 
-/*--- filter.c --------------------------------------------------------------*/
-
-SR_API int sr_filter_probes(unsigned int in_unitsize, unsigned int out_unitsize,
-			    const GArray *probe_array, const uint8_t *data_in,
-			    uint64_t length_in, uint8_t **data_out,
-			    uint64_t *length_out);
-
 /*--- hwdriver.c ------------------------------------------------------------*/
 
 SR_API struct sr_dev_driver **sr_driver_list(void);
@@ -110,12 +103,9 @@ SR_API int sr_session_datafeed_callback_add(sr_datafeed_callback_t cb,
 SR_API int sr_session_start(void);
 SR_API int sr_session_run(void);
 SR_API int sr_session_stop(void);
-SR_API int sr_session_save(const char *filename, const struct sr_dev_inst *sdi,
-        unsigned char *buf, int unitsize, uint64_t samples, int64_t trig_time, uint64_t trig_pos);
-SR_API int sr_session_save_init(const char *filename, uint64_t samplerate,
-        char **channels);
-SR_API int sr_session_append(const char *filename, unsigned char *buf,
-        int unitsize, int units);
+SR_API int sr_session_save_init(const char *filename, const char *metafile, const char *decfile);
+SR_API int sr_session_append(const char *filename, const unsigned char *buf,
+        uint64_t size, int chunk_num, int index, int type, int version);
 SR_API int sr_session_source_add(int fd, int events, int timeout,
 		sr_receive_data_callback_t cb, const struct sr_dev_inst *sdi);
 SR_API int sr_session_source_add_pollfd(GPollFD *pollfd, int timeout,

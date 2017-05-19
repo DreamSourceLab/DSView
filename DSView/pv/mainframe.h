@@ -64,7 +64,7 @@ public:
     MainFrame(DeviceManager &device_manager,
         const char *open_file_name = NULL);
 
-    void showMaxRestore();
+    void readSettings();
 
 protected:
     void changeEvent(QEvent* event);
@@ -83,7 +83,6 @@ private:
     void show_border();
 
     void writeSettings();
-    void readSettings();
 
 private:
     toolbars::TitleBar *_titleBar;

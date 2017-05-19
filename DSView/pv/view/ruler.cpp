@@ -205,8 +205,9 @@ void Ruler::mouseMoveEvent(QMouseEvent *e)
     (void)e;
 
     if (_grabbed_marker) {
-        _grabbed_marker->set_index((_view.offset() +
-            _view.hover_point().x() * _view.scale()) * _view.session().cur_samplerate());
+        _grabbed_marker->set_index((_view.offset() + _view.hover_point().x()) *
+                                   _view.scale() * _view.session().cur_samplerate());
+        _view.cursor_moving();
     }
 
     update();
@@ -228,6 +229,7 @@ void Ruler::mousePressEvent(QMouseEvent *e)
 void Ruler::mouseReleaseEvent(QMouseEvent *event)
 {
     bool addCursor = false;
+    bool visible;
     if (event->button() & Qt::LeftButton) {
         bool hitCursor = false;
         if (!_cursor_sel_visible & !_view.get_cursorList().empty()) {
@@ -235,10 +237,12 @@ void Ruler::mouseReleaseEvent(QMouseEvent *event)
             if (_grabbed_marker) {
                 rel_grabbed_cursor();
                 hitCursor = true;
+                _view.cursor_moved();
             } else {
                 list<Cursor*>::iterator i = _view.get_cursorList().begin();
                 while (i != _view.get_cursorList().end()) {
-                    if ((*i)->get_close_rect(rect()).contains(event->pos())) {
+                    const QRect cursor_rect((*i)->get_label_rect(rect(), visible));
+                    if ((*i)->get_close_rect(cursor_rect).contains(event->pos())) {
                         _view.del_cursor(*i);
                         if (_view.get_cursorList().empty()) {
                             _cursor_sel_visible = false;
@@ -247,7 +251,7 @@ void Ruler::mouseReleaseEvent(QMouseEvent *event)
                         hitCursor = true;
                         break;
                     }
-                    if ((*i)->get_label_rect(rect()).contains(event->pos())) {
+                    if (cursor_rect.contains(event->pos())) {
                         set_grabbed_cursor(*i);
                         _cursor_sel_visible = false;
                         _cursor_go_visible = false;
@@ -265,7 +269,7 @@ void Ruler::mouseReleaseEvent(QMouseEvent *event)
                     _cursor_sel_visible = true;
                 } else {
                     int overCursor;
-                    uint64_t index = (_view.offset() + (_cursor_sel_x + 0.5) * _view.scale()) * _view.session().cur_samplerate();
+                    uint64_t index = (_view.offset() + _cursor_sel_x + 0.5) * _view.scale() * _view.session().cur_samplerate();
                     overCursor = in_cursor_sel_rect(event->pos());
                     if (overCursor == 0) {
                         _view.add_cursor(CursorColor[_view.get_cursorList().size() % 8], index);
@@ -354,7 +358,7 @@ void Ruler::draw_tick_mark(QPainter &p)
 
 
         typical_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
-            AlignLeft | AlignTop, format_time(_view.offset(),
+            AlignLeft | AlignTop, format_time(_view.offset() * _view.scale(),
             prefix)).width() + MinValueSpacing;
 
         min_width += SpacingIncrement;
@@ -369,9 +373,9 @@ void Ruler::draw_tick_mark(QPainter &p)
 
     const double minor_tick_period = tick_period / MinorTickSubdivision;
     const double first_major_division =
-        floor(_view.offset() / tick_period);
+        floor(_view.offset() * _view.scale() / tick_period);
     const double first_minor_division =
-        ceil(_view.offset() / minor_tick_period);
+        ceil(_view.offset() * _view.scale() / minor_tick_period);
     const double t0 = first_major_division * tick_period;
 
     int division = (int)round(first_minor_division -
@@ -385,7 +389,7 @@ void Ruler::draw_tick_mark(QPainter &p)
 
     do {
         const double t = t0 + division * minor_tick_period;
-        x = (t - _view.offset()) / _view.scale();
+        x = t / _view.scale() - _view.offset();
 
         if (division % MinorTickSubdivision == 0)
         {
@@ -432,7 +436,7 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
     double typical_width;
     double tick_period = 0;
     double scale = _view.scale();
-    double offset = _view.offset();
+    int64_t offset = _view.offset();
 
     const uint64_t cur_period_scale = ceil((scale * min_width) / abs_min_period);
 
@@ -449,7 +453,7 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
     _cur_prefix = prefix;
     assert(prefix < countof(SIPrefixes));
     typical_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
-        AlignLeft | AlignTop, format_time(offset,
+        AlignLeft | AlignTop, format_time(offset * scale,
         prefix)).width() + MinValueSpacing;
     do
     {
@@ -470,9 +474,9 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
     assert(minor_prefix < countof(SIPrefixes));
 
     const double first_major_division =
-        floor(offset / tick_period);
+        floor(offset * scale / tick_period);
     const double first_minor_division =
-        floor(offset / minor_tick_period + 1);
+        floor(offset * scale / minor_tick_period + 1);
     const double t0 = first_major_division * tick_period;
 
     int division = (int)round(first_minor_division -
@@ -482,7 +486,7 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
     const int tick_y2 = height();
     const int minor_tick_y1 = (major_tick_y1 + tick_y2) / 2;
 
-    double x;
+    int x;
 
     const double inc_text_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
                                                  AlignLeft | AlignTop,
@@ -492,7 +496,7 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
         const double t = t0 + division * minor_tick_period;
         const double major_t = t0 + floor(division / MinPeriodScale) * tick_period;
 
-        x = (t - offset) / scale;
+        x = t / scale - offset;
 
         if (division % MinPeriodScale == 0)
         {
@@ -500,8 +504,8 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
             p.drawText(x, 2 * ValueMargin, 0, text_height,
                 AlignCenter | AlignTop | TextDontClip,
                 format_time(t, prefix));
-            p.drawLine(QPointF(x, major_tick_y1),
-                QPointF(x, tick_y2));
+            p.drawLine(QPoint(x, major_tick_y1),
+                QPoint(x, tick_y2));
         }
         else
         {
@@ -516,8 +520,8 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
                 p.drawText(x, 2 * ValueMargin, 0, minor_tick_y1 + ValueMargin,
                     AlignCenter | AlignTop | TextDontClip,
                     format_time(t - major_t, minor_prefix));
-            p.drawLine(QPointF(x, minor_tick_y1),
-                QPointF(x, tick_y2));
+            p.drawLine(QPoint(x, minor_tick_y1),
+                QPoint(x, tick_y2));
         }
 
         division++;
@@ -533,13 +537,12 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
             index++;
             i++;
         }
-        _view.on_cursor_moved();
     }
     if (_view.trig_cursor_shown()) {
-        _view.get_trig_cursor()->paint_fix_label(p, rect(), prefix, 'T', Trace::dsLightRed);
+        _view.get_trig_cursor()->paint_fix_label(p, rect(), prefix, 'T', _view.get_trig_cursor()->colour());
     }
     if (_view.search_cursor_shown()) {
-        _view.get_search_cursor()->paint_fix_label(p, rect(), prefix, 'S', Trace::dsLightBlue);
+        _view.get_search_cursor()->paint_fix_label(p, rect(), prefix, 'S', _view.get_search_cursor()->colour());
     }
 }
 

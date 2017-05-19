@@ -68,6 +68,12 @@ public:
 	 */
     void set_index(uint64_t index);
 
+    /**
+     * Gets/Sets colour of the marker
+     */
+    QColor colour() const;
+    void set_colour(QColor color);
+
     /*
      *
      */
@@ -79,14 +85,15 @@ public:
 	 * @param p The painter to draw with.
 	 * @param rect The rectangle of the viewport client area.
 	 */
-    virtual void paint(QPainter &p, const QRect &rect, const bool highlight);
+    virtual void paint(QPainter &p, const QRect &rect, const bool highlight, int order);
 
 	/**
 	 * Gets the marker label rectangle.
 	 * @param rect The rectangle of the ruler client area.
+     * @param visible is this marker in visible area
 	 * @return Returns the label rectangle.
 	 */
-	virtual QRectF get_label_rect(const QRect &rect) const = 0;
+    virtual QRect get_label_rect(const QRect &rect, bool &visible) const = 0;
 
 	/**
 	 * Paints the marker's label to the ruler.

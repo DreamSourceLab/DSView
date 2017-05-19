@@ -80,6 +80,7 @@ void DsoSnapshot::init()
     _memory_failed = false;
     _last_ended = true;
     _envelope_done = false;
+    _ch_enable.clear();
     for (unsigned int i = 0; i < _channel_num; i++) {
         for (unsigned int level = 0; level < ScaleStepCount; level++) {
             _envelope_levels[i][level].length = 0;
@@ -96,15 +97,29 @@ void DsoSnapshot::clear()
     init();
 }
 
-void DsoSnapshot::first_payload(const sr_datafeed_dso &dso, uint64_t total_sample_count, unsigned int channel_num, bool instant)
+void DsoSnapshot::first_payload(const sr_datafeed_dso &dso, uint64_t total_sample_count,
+                                std::map<int, bool> ch_enable, bool instant)
 {
+    bool re_alloc = false;
+    unsigned int channel_num = 0;
+    for (auto& iter:ch_enable) {
+        if (iter.second)
+            channel_num++;
+    }
+    assert(channel_num != 0);
+
+    if (total_sample_count != _total_sample_count ||
+        channel_num != _channel_num)
+        re_alloc = true;
+
     _total_sample_count = total_sample_count;
     _channel_num = channel_num;
     _instant = instant;
+    _ch_enable = ch_enable;
 
     bool isOk = true;
-    uint64_t size = _total_sample_count * _unit_size + sizeof(uint64_t);
-    if (size != _capacity) {
+    uint64_t size = _total_sample_count * _channel_num + sizeof(uint64_t);
+    if (re_alloc || size != _capacity) {
         free_data();
         _data = malloc(size);
         if (_data) {
@@ -137,7 +152,6 @@ void DsoSnapshot::first_payload(const sr_datafeed_dso &dso, uint64_t total_sampl
     } else {
         free_data();
         free_envelop();
-        _capacity = 0;
         _memory_failed = true;
     }
 }
@@ -147,12 +161,24 @@ void DsoSnapshot::append_payload(const sr_datafeed_dso &dso)
     boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 
     if (_channel_num > 0 && dso.num_samples != 0) {
-        refill_data(dso.data, dso.num_samples, _instant);
+        append_data(dso.data, dso.num_samples, _instant);
 
         // Generate the first mip-map from the data
         if (_envelope_en)
             append_payload_to_envelope_levels(dso.samplerate_tog);
     }
+}
+
+void DsoSnapshot::append_data(void *data, uint64_t samples, bool instant)
+{
+    if (instant) {
+        memcpy((uint8_t*)_data + _sample_count * _channel_num, data, samples*_channel_num);
+        _sample_count = (_sample_count + samples) % (_total_sample_count + 1);
+    } else {
+        memcpy((uint8_t*)_data, data, samples*_channel_num);
+        _sample_count = samples;
+    }
+
 }
 
 void DsoSnapshot::enable_envelope(bool enable)
@@ -380,6 +406,14 @@ double DsoSnapshot::cal_vmean(int index) const
     }
 
     return vmean;
+}
+
+bool DsoSnapshot::has_data(int index)
+{
+    if (_ch_enable.find(index) != _ch_enable.end())
+        return _ch_enable[index];
+    else
+        return false;
 }
 
 } // namespace data

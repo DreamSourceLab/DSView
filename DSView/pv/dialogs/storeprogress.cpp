@@ -2,6 +2,7 @@
  * This file is part of the PulseView project.
  *
  * Copyright (C) 2014 Joel Holdsworth <joel@airwebreathe.org.uk>
+ * Copyright (C) 2016 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,62 +22,113 @@
 #include "storeprogress.h"
 #include "dsmessagebox.h"
 
+#include "QVBoxLayout"
+
 namespace pv {
 namespace dialogs {
 
-StoreProgress::StoreProgress(const QString &file_name,
-    SigSession &session, QWidget *parent) :
-	QProgressDialog(tr("Saving..."), tr("Cancel"), 0, 0, parent),
-	_session(file_name.toStdString(), session)
+StoreProgress::StoreProgress(SigSession &session, QWidget *parent) :
+    DSDialog(parent),
+    _store_session(session),
+    _button_box(QDialogButtonBox::Cancel, Qt::Horizontal, this),
+    _done(false)
 {
-	connect(&_session, SIGNAL(progress_updated()),
-		this, SLOT(on_progress_updated()));
+    this->setModal(true);
+
+    _info.setText("...");
+    _progress.setValue(0);
+    _progress.setMaximum(0);
+
+    QVBoxLayout* add_layout = new QVBoxLayout(this);
+    add_layout->addWidget(&_info, 0, Qt::AlignCenter);
+    add_layout->addWidget(&_progress);
+    add_layout->addWidget(&_button_box);
+    layout()->addLayout(add_layout);
+
+    connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
+    connect(&_store_session, SIGNAL(progress_updated()),
+        this, SLOT(on_progress_updated()), Qt::QueuedConnection);
 }
 
 StoreProgress::~StoreProgress()
 {
-	_session.wait();
+    _store_session.wait();
 }
 
-void StoreProgress::run()
+void StoreProgress::reject()
 {
-	if (_session.start())
-		show();
-	else
+    using namespace Qt;
+    _store_session.cancel();
+    QDialog::reject();
+}
+
+void StoreProgress::timeout()
+{
+    if (_done)
+        close();
+    else
+        QTimer::singleShot(100, this, SLOT(timeout()));
+}
+
+void StoreProgress::save_run()
+{
+    _info.setText("Saving...");
+    if (_store_session.save_start())
+        show();
+    else
 		show_error();
+
+    QTimer::singleShot(100, this, SLOT(timeout()));
+}
+
+void StoreProgress::export_run()
+{
+    _info.setText("Exporting...");
+    if (_store_session.export_start())
+        show();
+    else
+        show_error();
+
+    QTimer::singleShot(100, this, SLOT(timeout()));
 }
 
 void StoreProgress::show_error()
 {
-    dialogs::DSMessageBox msg(parentWidget());
-    msg.mBox()->setText(tr("Failed to save session."));
-    msg.mBox()->setInformativeText(_session.error());
-    msg.mBox()->setStandardButtons(QMessageBox::Ok);
-    msg.mBox()->setIcon(QMessageBox::Warning);
-	msg.exec();
+    if (!_store_session.error().isEmpty()) {
+        dialogs::DSMessageBox msg(parentWidget());
+        msg.mBox()->setText(tr("Failed to save data."));
+        msg.mBox()->setInformativeText(_store_session.error());
+        msg.mBox()->setStandardButtons(QMessageBox::Ok);
+        msg.mBox()->setIcon(QMessageBox::Warning);
+        msg.exec();
+    }
 }
 
-void StoreProgress::closeEvent(QCloseEvent*)
+void StoreProgress::closeEvent(QCloseEvent* e)
 {
-	_session.cancel();
+    _store_session.cancel();
+    DSDialog::closeEvent(e);
 }
 
 void StoreProgress::on_progress_updated()
 {
-	const std::pair<uint64_t, uint64_t> p = _session.progress();
+    const std::pair<uint64_t, uint64_t> p = _store_session.progress();
 	assert(p.first <= p.second);
 
-	setValue(p.first);
-	setMaximum(p.second);
+    _progress.setValue(p.first);
+    _progress.setMaximum(p.second);
 
-	const QString err = _session.error();
+    const QString err = _store_session.error();
 	if (!err.isEmpty()) {
 		show_error();
-		close();
+        //close();
+        _done = true;
 	}
 
-	if (p.first == p.second)
-		close();
+    if (p.first == p.second) {
+        //close();
+        _done = true;
+    }
 }
 
 } // dialogs

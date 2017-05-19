@@ -42,11 +42,8 @@ public:
 
     virtual void init() = 0;
 
-	double get_start_time() const;
-
 protected:
     double _samplerate;
-    double _start_time;
 };
 
 } // namespace data

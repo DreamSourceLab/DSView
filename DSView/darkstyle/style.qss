@@ -65,7 +65,7 @@ QWidget:item:selected
 
 QCheckBox
 {
-    spacing: 5px;
+    spacing: 0px;
     outline: none;
     color: #bbb;
     margin-bottom: 2px;
@@ -635,7 +635,7 @@ QComboBox::drop-down
 {
     subcontrol-origin: padding;
     subcontrol-position: top right;
-    width: 15px;
+    width: 10px;
 
     border-left-width: 0px;
     border-left-color: darkgray;

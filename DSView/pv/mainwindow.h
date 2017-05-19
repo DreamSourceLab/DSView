@@ -27,7 +27,6 @@
 #include <list>
 
 #include <QMainWindow>
-#include <QTimer>
 
 #include "sigsession.h"
 
@@ -59,10 +58,6 @@ class MeasureDock;
 class SearchDock;
 }
 
-namespace dialogs{
-class Calibration;
-}
-
 namespace view {
 class View;
 }
@@ -70,6 +65,9 @@ class View;
 class MainWindow : public QMainWindow
 {
 	Q_OBJECT
+
+private:
+    static constexpr int Session_Version = 2;
 
 public:
 	explicit MainWindow(DeviceManager &device_manager,
@@ -100,8 +98,6 @@ private slots:
      */
     void update_device_list();
 
-    void mode_changed();
-
     void reload();
 
 	void show_session_error(
@@ -110,10 +106,6 @@ private slots:
 	void run_stop();
 
     void instant_stop();
-
-    void test_data_error();
-
-    void malloc_error();
 
     void capture_state_changed(int state);
 
@@ -131,8 +123,15 @@ private slots:
 
     void on_save();
 
+    void on_export();
+
     bool load_session(QString name);
     bool store_session(QString name);
+
+    /*
+     * repeat
+     */
+    void repeat_resume();
 
     /*
      * hotplug slot function
@@ -143,7 +142,9 @@ private slots:
     /*
      * errors
      */
-    void hardware_connect_failed();
+    void show_error();
+signals:
+    void prgRate(int progress);
 
 private:
 	DeviceManager &_device_manager;
@@ -187,9 +188,6 @@ private:
     dock::MeasureDock *_measure_widget;
     QDockWidget *_search_dock;
     dock::SearchDock * _search_widget;
-
-    QTimer test_timer;
-    bool test_timer_linked;
 };
 
 } // namespace pv

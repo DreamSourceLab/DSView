@@ -142,6 +142,7 @@ static int loadfile(struct sr_input *in, const char *filename)
 	char buf[CHUNK_SIZE];
 
 	ctx = in->sdi->priv;
+    packet.status = SR_PKT_OK;
 
 	/* Send header packet to the session bus. */
 	std_session_send_df_header(in->sdi, LOG_PREFIX);

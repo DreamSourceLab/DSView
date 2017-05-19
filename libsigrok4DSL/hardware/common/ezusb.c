@@ -64,7 +64,7 @@ SR_PRIV int ezusb_install_firmware(libusb_device_handle *hdl,
 	unsigned char buf[4096];
 
     sr_info("Uploading firmware at %s", filename);
-	if ((fw = g_fopen(filename, "rb")) == NULL) {
+    if ((fw = fopen(filename, "rb")) == NULL) {
         sr_err("Unable to open firmware file %s for reading: %s",
 		       filename, strerror(errno));
         return SR_ERR;

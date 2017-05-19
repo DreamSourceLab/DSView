@@ -271,7 +271,7 @@ SR_PRIV int command_wr_nvm(libusb_device_handle *devhdl, unsigned char *ctx, uin
     return SR_OK;
 }
 
-SR_PRIV int command_rd_nvm(libusb_device_handle *devhdl, unsigned char *ctx, uint8_t addr, uint8_t len)
+SR_PRIV int command_rd_nvm(libusb_device_handle *devhdl, unsigned char *ctx, uint16_t addr, uint8_t len)
 {
     int ret;
 
@@ -285,7 +285,7 @@ SR_PRIV int command_rd_nvm(libusb_device_handle *devhdl, unsigned char *ctx, uin
             LIBUSB_ENDPOINT_OUT, CMD_RD_NVM_PRE, 0x0000, 0x0000,
             (unsigned char *)&nvm_info, sizeof(struct cmd_nvm_info), 3000);
     if (ret < 0) {
-        sr_err("Unable to send CMD_ZERO_RD_PRE command: %s.",
+        sr_err("Unable to send CMD_RD_NVM_PRE command: %s.",
                libusb_error_name(ret));
         return SR_ERR;
     }
@@ -306,17 +306,16 @@ SR_PRIV int command_rd_nvm(libusb_device_handle *devhdl, unsigned char *ctx, uin
     return SR_OK;
 }
 
-SR_PRIV int command_get_fpga_done(libusb_device_handle *devhdl,
-                   uint8_t *fpga_done)
+SR_PRIV int command_get_hw_info(libusb_device_handle *devhdl, uint8_t *info)
 {
     int ret;
 
     ret = libusb_control_transfer(devhdl, LIBUSB_REQUEST_TYPE_VENDOR |
-        LIBUSB_ENDPOINT_IN, CMD_FPGA_DONE, 0x0000, 0x0000,
-        fpga_done, 1, 3000);
+        LIBUSB_ENDPOINT_IN, CMD_GET_HW_INFO, 0x0000, 0x0000,
+        info, 1, 3000);
 
     if (ret < 0) {
-        sr_err("Unable to get fpga done info: %s.",
+        sr_err("Unable to get hardware info: %s.",
                libusb_error_name(ret));
         return SR_ERR;
     }

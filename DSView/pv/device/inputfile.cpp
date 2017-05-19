@@ -50,13 +50,18 @@ void InputFile::use(SigSession *owner) throw(QString)
 {
 	assert(!_input);
 
-	_input = load_input_file_format(_path, NULL);
-	File::use(owner);
+    // only *.dsl file is valid
+    // don't allow other types of file input
+    throw tr("Not a valid DSView data file.");
+    return;
 
-	sr_session_new();
+//	_input = load_input_file_format(_path, NULL);
+//	File::use(owner);
 
-	if (sr_session_dev_add(_input->sdi) != SR_OK)
-		throw tr("Failed to add session device.");
+//	sr_session_new();
+
+//	if (sr_session_dev_add(_input->sdi) != SR_OK)
+//		throw tr("Failed to add session device.");
 }
 
 void InputFile::release()
@@ -78,7 +83,7 @@ sr_input_format* InputFile::determine_input_file_format(const QString filename)
 	/* If there are no input formats, return NULL right away. */
 	sr_input_format *const *const inputs = sr_input_list();
 	if (!inputs) {
-		g_critical("No supported input formats available.");
+        g_critical("No supported input formats available.");
 		return NULL;
 	}
 
@@ -90,7 +95,7 @@ sr_input_format* InputFile::determine_input_file_format(const QString filename)
 
 	/* Return NULL if no input module wanted to touch this. */
 	if (!inputs[i]) {
-		g_critical("Error: no matching input module found.");
+        g_critical("Error: no matching input module found.");
 		return NULL;
 	}
 

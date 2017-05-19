@@ -79,7 +79,7 @@ WaitingDialog::WaitingDialog(QWidget *parent, boost::shared_ptr<pv::device::DevI
     mlayout->addWidget(&_button_box);
 
     layout()->addLayout(mlayout);
-    setTitle(tr("Zero Adjustment"));
+    setTitle(tr("Auto Calibration"));
 }
 
 void WaitingDialog::accept()
@@ -100,7 +100,8 @@ void WaitingDialog::accept()
     QProgressDialog dlg(tr("Save Auto Zero Result... It can take a while."),
                         tr("Cancel"),0,0,this,flags);
     dlg.setWindowModality(Qt::WindowModal);
-    dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
+    dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
+                       Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
     dlg.setCancelButton(NULL);
 
     QFutureWatcher<void> watcher;
@@ -130,7 +131,8 @@ void WaitingDialog::reject()
     QProgressDialog dlg(tr("Load Current Setting... It can take a while."),
                         tr("Cancel"),0,0,this,flags);
     dlg.setWindowModality(Qt::WindowModal);
-    dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
+    dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
+                       Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
     dlg.setCancelButton(NULL);
 
     QFutureWatcher<void> watcher;

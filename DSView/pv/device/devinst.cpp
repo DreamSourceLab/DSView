@@ -33,7 +33,8 @@ namespace pv {
 namespace device {
 
 DevInst::DevInst() :
-    _owner(NULL)
+    _owner(NULL),
+    _usable(true)
 {
     _id = malloc(1);
 }
@@ -204,6 +205,11 @@ void DevInst::start()
 void DevInst::run()
 {
 	sr_session_run();
+}
+
+bool DevInst::is_usable() const
+{
+    return _usable;
 }
 
 } // device

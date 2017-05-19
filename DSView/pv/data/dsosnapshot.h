@@ -77,7 +77,7 @@ public:
     void clear();
     void init();
 
-    void first_payload(const sr_datafeed_dso &dso, uint64_t total_sample_count, unsigned int channel_num, bool instant);
+    void first_payload(const sr_datafeed_dso &dso, uint64_t total_sample_count, std::map<int, bool> ch_enable, bool instant);
 
     void append_payload(const sr_datafeed_dso &dso);
 
@@ -92,7 +92,10 @@ public:
     double cal_vrms(double zero_off, int index) const;
     double cal_vmean(int index) const;
 
+    bool has_data(int index);
+
 private:
+    void append_data(void *data, uint64_t samples, bool instant);
     void free_envelop();
 	void reallocate_envelope(Envelope &l);
     void append_payload_to_envelope_levels(bool header);
@@ -102,6 +105,7 @@ private:
     bool _envelope_en;
     bool _envelope_done;
     bool _instant;
+    std::map<int, bool> _ch_enable;
 
     friend class DsoSnapshotTest::Basic;
 };

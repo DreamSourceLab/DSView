@@ -70,22 +70,15 @@ public:
 
     void paintEvent(QPaintEvent *);
 
-signals:
-    void search_previous(QString);
-    void search_next(QString);
-
 public slots:
     void on_previous();
     void on_next();
     void on_set();
-private:
-    bool search_value(const uint8_t* data, int unit_size, uint64_t length,
-                     uint64_t& pos, bool left, QString value);
 
 private:
     SigSession &_session;
     view::View &_view;
-    QString _pattern;
+    std::map<uint16_t, QString> _pattern;
 
     QPushButton _pre_button;
     QPushButton _nxt_button;

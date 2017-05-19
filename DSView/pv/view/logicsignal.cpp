@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
+#include <libsigrokdecode/libsigrokdecode.h>
 
 #include <extdef.h>
 
@@ -74,6 +75,7 @@ LogicSignal::LogicSignal(boost::shared_ptr<view::LogicSignal> s,
 LogicSignal::~LogicSignal()
 {
     _cur_edges.clear();
+    _cur_pulses.clear();
 }
 
 const sr_channel* LogicSignal::probe() const
@@ -128,8 +130,6 @@ void LogicSignal::paint_mid(QPainter &p, int left, int right)
 {
 	using pv::view::View;
 
-	QLineF *line;
-
 	assert(_data);
     assert(_view);
 	assert(right >= left);
@@ -137,10 +137,10 @@ void LogicSignal::paint_mid(QPainter &p, int left, int right)
     const int y = get_y() + _totalHeight * 0.5;
     const double scale = _view->scale();
     assert(scale > 0);
-    const double offset = _view->offset();
+    const int64_t offset = _view->offset();
 
-    const float high_offset = y - _totalHeight + 0.5f;
-	const float low_offset = y + 0.5f;
+    const int high_offset = y - _totalHeight + 0.5f;
+    const int low_offset = y + 0.5f;
 
 	const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
 		_data->get_snapshots();
@@ -150,47 +150,60 @@ void LogicSignal::paint_mid(QPainter &p, int left, int right)
 
 	const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
 		snapshots.front();
-    if (snapshot->empty())
+    if (snapshot->empty() || !snapshot->has_data(_probe->index))
         return;
 
-	const double pixels_offset = offset / scale;
-	const double start_time = _data->get_start_time();
     const int64_t last_sample =  snapshot->get_sample_count() - 1;
 	const double samples_per_pixel = samplerate * scale;
-	const double start = samplerate * (offset - start_time);
-	const double end = start + samples_per_pixel * (right - left);
 
-    snapshot->get_subsampled_edges(_cur_edges,
-		min(max((int64_t)floor(start), (int64_t)0), last_sample),
-		min(max((int64_t)ceil(end), (int64_t)0), last_sample),
-        samples_per_pixel / Oversampling, _probe->index);
-    if (_cur_edges.size() < 2)
+    uint16_t width = right - left;
+    const double start = offset * samples_per_pixel;
+    const double end = (offset + width + 1) * samples_per_pixel;
+    const uint64_t end_index = min(max((int64_t)ceil(end), (int64_t)0), last_sample);
+    const uint64_t start_index = max((uint64_t)floor(start), (uint64_t)0);
+    if (start_index > end_index)
         return;
+    width = min(width, (uint16_t)ceil((end_index + 1)/samples_per_pixel - offset));
+    const uint16_t max_togs = width / TogMaxScale;
 
-    // Paint the edges
-    const unsigned int edge_count = 2 * _cur_edges.size() - 3;
-    QLineF *const edge_lines = new QLineF[edge_count];
-    line = edge_lines;
+    const bool first_sample = snapshot->get_display_edges(_cur_pulses, _cur_edges,
+                                                          start_index, end_index, width, max_togs,
+                                                          offset,
+                                                          samples_per_pixel, _probe->index);
+    assert(_cur_pulses.size() >= width);
 
-    double preX = ((*(_cur_edges.begin())).first / samples_per_pixel - pixels_offset) + left;
-    double preY = (*(_cur_edges.begin())).second ? high_offset : low_offset;
-    vector<pv::data::LogicSnapshot::EdgePair>::const_iterator i;
-    for ( i = _cur_edges.begin() + 1; i != _cur_edges.end() - 1; i++) {
-        const double x = ((*i).first / samples_per_pixel -
-            pixels_offset) + left;
-        const double y = (*i).second ? high_offset : low_offset;
-        *line++ = QLineF(preX, preY, x, preY);
-        *line++ = QLineF(x, high_offset, x, low_offset);
-        preX = x;
-        preY = y;
+    int preX = 0;
+    int preY = first_sample ? high_offset : low_offset;
+    int x = preX;
+    std::vector<QLine> wave_lines;
+    if (_cur_edges.size() < max_togs) {
+        std::vector<std::pair<uint16_t, bool>>::const_iterator i;
+        for (i = _cur_edges.begin() + 1; i != _cur_edges.end() - 1; i++) {
+            x = (*i).first;
+            wave_lines.push_back(QLine(preX, preY, x, preY));
+            wave_lines.push_back(QLine(x, high_offset, x, low_offset));
+            preX = x;
+            preY = (*i).second ? high_offset : low_offset;
+        }
+        x = (*i).first;
+        wave_lines.push_back(QLine(preX, preY, x, preY));
+    } else {
+        std::vector<std::pair<bool, bool>>::const_iterator i = _cur_pulses.begin();
+        while (i != _cur_pulses.end() - 1) {
+            if ((*i).first) {
+                wave_lines.push_back(QLine(preX, preY, x, preY));
+                wave_lines.push_back(QLine(x, high_offset, x, low_offset));
+                preX = x;
+                preY = (*i).second ? high_offset : low_offset;
+            }
+            x++;
+            i++;
+        }
+        wave_lines.push_back(QLine(preX, preY, x, preY));
     }
-    const double x = ((*i).first / samples_per_pixel -
-            pixels_offset) + left;
-    *line++ = QLineF(preX, preY, x, preY);
 
     p.setPen(_colour);
-    p.drawLines(edge_lines, edge_count);
-    delete[] edge_lines;
+    p.drawLines(wave_lines.data(), wave_lines.size());
 }
 
 void LogicSignal::paint_caps(QPainter &p, QLineF *const lines,
@@ -214,11 +227,6 @@ void LogicSignal::paint_caps(QPainter &p, QLineF *const lines,
 		}
 
 	p.drawLines(lines, line - lines);
-}
-
-const std::vector< std::pair<uint64_t, bool> > LogicSignal::cur_edges() const
-{
-    return _cur_edges;
 }
 
 void LogicSignal::paint_type_options(QPainter &p, int right, const QPoint pt)
@@ -305,32 +313,43 @@ bool LogicSignal::measure(const QPointF &p, uint64_t &index0, uint64_t &index1, 
 
         const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
             snapshots.front();
-        if (snapshot->empty())
+        if (snapshot->empty() || !snapshot->has_data(_probe->index))
             return false;
 
-        uint64_t index = _data->samplerate() * (_view->offset() - _data->get_start_time() + p.x() * _view->scale());
-        if (index == 0 || index >= (snapshot->get_sample_count() - 1))
+        const uint64_t end = snapshot->get_sample_count() - 1;
+        uint64_t index = _data->samplerate() * _view->scale() * (_view->offset() + p.x());
+        if (index > end)
             return false;
 
-        const uint64_t sig_mask = 1ULL << get_index();
-        bool sample = snapshot->get_sample(index) & sig_mask;
-        index--;
-        if (!snapshot->get_pre_edge(index, sample, 1, get_index()))
-            return false;
+        bool sample = snapshot->get_sample(index, get_index());
+        if (index == 0)
+            index0 = index;
+        else {
+            index--;
+            if (snapshot->get_pre_edge(index, sample, 1, get_index()))
+                index0 = index;
+            else
+                index0 = 0;
+        }
 
-        index0 = index;
-        sample = snapshot->get_sample(index) & sig_mask;
+        sample = snapshot->get_sample(index, get_index());
         index++;
-        if (!snapshot->get_nxt_edge(index, sample, snapshot->get_sample_count(), 1, get_index()))
-            return false;
-
-        index1 = index;
-        sample = snapshot->get_sample(index) & sig_mask;
-        index++;
-        if (!snapshot->get_nxt_edge(index, sample, snapshot->get_sample_count(), 1, get_index()))
+        if (snapshot->get_nxt_edge(index, sample, end, 1, get_index()))
+            index1 = index;
+        else {
+            if (index0 == 0)
+                return false;
+            index1 = end + 1;
             index2 = 0;
-        else
+            return true;
+        }
+
+        sample = snapshot->get_sample(index, get_index());
+        index++;
+        if (snapshot->get_nxt_edge(index, sample, end, 1, get_index()))
             index2 = index;
+        else
+            index2 = end + 1;
 
         return true;
     }
@@ -343,42 +362,49 @@ bool LogicSignal::edges(const QPointF &p, uint64_t start, uint64_t &rising, uint
     uint64_t index, end;
     const float gap = abs(p.y() - get_y());
     if (gap < get_totalHeight() * 0.5) {
-        const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
-            _data->get_snapshots();
-        if (snapshots.empty())
-            return false;
-
-        const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
-            snapshots.front();
-        if (snapshot->empty())
-            return false;
-
-        end = _data->samplerate() * (_view->offset() - _data->get_start_time() + p.x() * _view->scale());
-        index = min(start, end);
-        end = max(start, end);
-        start = index;
-        if (end > (snapshot->get_sample_count() - 1))
-            return false;
-
-        const uint64_t sig_mask = 1ULL << get_index();
-        bool sample = snapshot->get_sample(start) & sig_mask;
-
-        rising = 0;
-        falling = 0;
-        do {
-            if (snapshot->get_nxt_edge(index, sample, snapshot->get_sample_count(), 1, get_index())) {
-                if (index > end)
-                    break;
-                rising += !sample;
-                falling += sample;
-                sample = !sample;
-            } else {
-                break;
-            }
-        } while(index <= end);
-        return true;
+        end = _data->samplerate() * _view->scale() * (_view->offset() + p.x());
+        return edges(end, start, rising, falling);
     }
     return false;
+}
+
+bool LogicSignal::edges(uint64_t end, uint64_t start, uint64_t &rising, uint64_t &falling) const
+{
+    const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
+        _data->get_snapshots();
+    if (snapshots.empty())
+        return false;
+
+    const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
+        snapshots.front();
+    if (snapshot->empty() || !snapshot->has_data(_probe->index))
+        return false;
+
+    uint64_t index = min(start, end);
+    const uint64_t sample_count = snapshot->get_sample_count();
+    end = max(start, end);
+    start = index;
+    if (end > (sample_count - 1))
+        return false;
+
+    const int ch_index = get_index();
+    bool sample = snapshot->get_sample(start, ch_index);
+
+    rising = 0;
+    falling = 0;
+    do {
+        if (snapshot->get_nxt_edge(index, sample, sample_count, 1, ch_index)) {
+            if (index > end)
+                break;
+            rising += !sample;
+            falling += sample;
+            sample = !sample;
+        } else {
+            break;
+        }
+    } while(index <= end);
+
+    return true;
 }
 
 bool LogicSignal::mouse_press(int right, const QPoint pt)
@@ -437,6 +463,39 @@ QRectF LogicSignal::get_rect(LogicSetRegions type, int y, int right)
             SquareWidth, SquareWidth);
     else
         return QRectF(0, 0, 0, 0);
+}
+
+
+void LogicSignal::paint_mark(QPainter &p, int xstart, int xend, int type)
+{
+    const int ypos = get_y();
+    const int msize = 3;
+    p.setPen(p.brush().color());
+    if (type == SRD_CHANNEL_SDATA) {
+        p.drawEllipse(QPoint(xstart, ypos), msize, msize);
+    } else if (type == SRD_CHANNEL_SCLK) {
+        const QPoint triangle[] = {
+            QPoint(xstart, ypos - 2),
+            QPoint(xstart-1, ypos - 1),
+            QPoint(xstart, ypos - 1),
+            QPoint(xstart+1, ypos - 1),
+            QPoint(xstart-2, ypos),
+            QPoint(xstart-1, ypos),
+            QPoint(xstart, ypos),
+            QPoint(xstart+1, ypos),
+            QPoint(xstart+2, ypos),
+            QPoint(xstart-3, ypos + 1),
+            QPoint(xstart-2, ypos + 1),
+            QPoint(xstart-1, ypos + 1),
+            QPoint(xstart, ypos + 1),
+            QPoint(xstart+1, ypos + 1),
+            QPoint(xstart+2, ypos + 1),
+            QPoint(xstart+3, ypos + 1),
+        };
+        p.drawPoints(triangle, 16);
+    } else if (type == SRD_CHANNEL_ADATA) {
+        p.drawEllipse(QPoint((xstart+xend)/2, ypos), msize, msize);
+    }
 }
 
 } // namespace view

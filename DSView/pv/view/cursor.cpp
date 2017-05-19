@@ -58,25 +58,31 @@ Cursor::Cursor(View &view, QColor color, uint64_t index) :
 {
 }
 
-QRectF Cursor::get_label_rect(const QRect &rect) const
+QRect Cursor::get_label_rect(const QRect &rect, bool &visible) const
 {
     const double samples_per_pixel = _view.session().cur_samplerate() * _view.scale();
-    const double x = _index/samples_per_pixel - (_view.offset() / _view.scale());
+    const double cur_offset = _index / samples_per_pixel;
+    if (cur_offset < _view.offset() ||
+        cur_offset > (_view.offset() + _view.width())) {
+        visible = false;
+        return QRect(-1, -1, 0, 0);
+    }
+    const int64_t x = _index/samples_per_pixel - _view.offset();
 
-	const QSizeF label_size(
+    const QSize label_size(
 		_text_size.width() + View::LabelPadding.width() * 2,
 		_text_size.height() + View::LabelPadding.height() * 2);
-	const float top = rect.height() - label_size.height() -
+    const int top = rect.height() - label_size.height() -
 		Cursor::Offset - Cursor::ArrowSize - 0.5f;
-	const float height = label_size.height();
+    const int height = label_size.height();
 
-    return QRectF(x - label_size.width() / 2, top, label_size.width(), height);
+    visible = true;
+    return QRect(x - label_size.width() / 2, top, label_size.width(), height);
 }
 
-QRectF Cursor::get_close_rect(const QRect &rect) const
+QRect Cursor::get_close_rect(const QRect &rect) const
 {
-    const QRectF r(get_label_rect(rect));
-    return QRectF(r.right() - CloseSize, r.top(), CloseSize, CloseSize);
+    return QRect(rect.right() - CloseSize, rect.top(), CloseSize, CloseSize);
 }
 
 void Cursor::paint_label(QPainter &p, const QRect &rect,
@@ -85,10 +91,13 @@ void Cursor::paint_label(QPainter &p, const QRect &rect,
     assert(index > 0);
 
     using pv::view::Ruler;
+    bool visible;
 
-	compute_text_size(p, prefix);
-	const QRectF r(get_label_rect(rect));
-    const QRectF close(get_close_rect(rect));
+    compute_text_size(p, prefix);
+    const QRect r(get_label_rect(rect, visible));
+    if (!visible)
+        return;
+    const QRect close(get_close_rect(r));
 
     p.setPen(Qt::transparent);
     if (close.contains(QPoint(_view.hover_point().x(), _view.hover_point().y())))
@@ -99,10 +108,10 @@ void Cursor::paint_label(QPainter &p, const QRect &rect,
         p.setBrush(Ruler::CursorColor[(index - 1) % 8]);
     p.drawRect(r);
 
-    const QPointF points[] = {
-        QPointF(r.left() + r.width() / 2 - ArrowSize, r.bottom()),
-        QPointF(r.left() + r.width() / 2 + ArrowSize, r.bottom()),
-        QPointF(r.left() + r.width() / 2, rect.bottom()),
+    const QPoint points[] = {
+        QPoint(r.left() + r.width() / 2 - ArrowSize, r.bottom()),
+        QPoint(r.left() + r.width() / 2 + ArrowSize, r.bottom()),
+        QPoint(r.left() + r.width() / 2, rect.bottom()),
     };
     p.drawPolygon(points, countof(points));
 
@@ -118,7 +127,7 @@ void Cursor::paint_label(QPainter &p, const QRect &rect,
 	p.drawText(r, Qt::AlignCenter | Qt::AlignVCenter,
         Ruler::format_real_time(_index, _view.session().cur_samplerate()));
 
-    const QRectF arrowRect = QRectF(r.bottomLeft().x(), r.bottomLeft().y(), r.width(), ArrowSize);
+    const QRect arrowRect = QRect(r.bottomLeft().x(), r.bottomLeft().y(), r.width(), ArrowSize);
     p.drawText(arrowRect, Qt::AlignCenter | Qt::AlignVCenter, QString::number(index));
 }
 
@@ -126,18 +135,21 @@ void Cursor::paint_fix_label(QPainter &p, const QRect &rect,
     unsigned int prefix, QChar label, QColor color)
 {
     using pv::view::Ruler;
+    bool visible;
 
     compute_text_size(p, prefix);
-    const QRectF r(get_label_rect(rect));
+    const QRect r(get_label_rect(rect, visible));
+    if (!visible)
+        return;
 
     p.setPen(Qt::transparent);
     p.setBrush(color);
     p.drawRect(r);
 
-    const QPointF points[] = {
-        QPointF(r.left() + r.width() / 2 - ArrowSize, r.bottom()),
-        QPointF(r.left() + r.width() / 2 + ArrowSize, r.bottom()),
-        QPointF(r.left() + r.width() / 2, rect.bottom()),
+    const QPoint points[] = {
+        QPoint(r.left() + r.width() / 2 - ArrowSize, r.bottom()),
+        QPoint(r.left() + r.width() / 2 + ArrowSize, r.bottom()),
+        QPoint(r.left() + r.width() / 2, rect.bottom()),
     };
     p.drawPolygon(points, countof(points));
 
@@ -145,14 +157,14 @@ void Cursor::paint_fix_label(QPainter &p, const QRect &rect,
     p.drawText(r, Qt::AlignCenter | Qt::AlignVCenter,
         Ruler::format_real_time(_index, _view.session().cur_samplerate()));
 
-    const QRectF arrowRect = QRectF(r.bottomLeft().x(), r.bottomLeft().y(), r.width(), ArrowSize);
+    const QRect arrowRect = QRect(r.bottomLeft().x(), r.bottomLeft().y(), r.width(), ArrowSize);
     p.drawText(arrowRect, Qt::AlignCenter | Qt::AlignVCenter, label);
 }
 
 void Cursor::compute_text_size(QPainter &p, unsigned int prefix)
 {
     (void)prefix;
-    _text_size = p.boundingRect(QRectF(), 0,
+    _text_size = p.boundingRect(QRect(), 0,
         Ruler::format_real_time(_index, _view.session().cur_samplerate())).size();
 }
 

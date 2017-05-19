@@ -77,8 +77,6 @@ private slots:
 
     void on_action_del_group_triggered();
 
-    void on_traces_moved();
-
 signals:
     void traces_moved();
     void header_updated();

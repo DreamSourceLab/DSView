@@ -52,6 +52,10 @@ namespace data {
 class DecoderModel;
 }
 
+namespace view {
+class View;
+}
+
 namespace dock {
 
 class ProtocolDock : public QScrollArea
@@ -62,10 +66,12 @@ public:
     static const uint64_t ProgressRows = 100000;
 
 public:
-    ProtocolDock(QWidget *parent, SigSession &session);
+    ProtocolDock(QWidget *parent, view::View &view, SigSession &session);
     ~ProtocolDock();
 
     void del_all_protocol();
+    bool sel_protocol(QString name);
+    void add_protocol(bool silent);
 
 protected:
     void paintEvent(QPaintEvent *);
@@ -82,6 +88,7 @@ private slots:
     void set_model();
     void update_model();
     void export_table_view();
+    void nav_table_view();
     void item_clicked(const QModelIndex &index);
     void column_resize(int index, int old_size, int new_size);
     void search_pre();
@@ -96,6 +103,7 @@ private:
 
 private:
     SigSession &_session;
+    view::View &_view;
     QSortFilterProxyModel _model_proxy;
     double _cur_search_index;
     QStringList _str_list;
@@ -124,10 +132,13 @@ private:
 
     QPushButton *_dn_set_button;
     QPushButton *_dn_save_button;
+    QPushButton *_dn_nav_button;
 
     mutable boost::mutex _search_mutex;
     bool _search_edited;
     bool _searching;
+
+    bool _add_silent;
 };
 
 } // namespace dock

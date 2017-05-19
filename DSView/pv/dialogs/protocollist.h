@@ -62,6 +62,7 @@ private:
     SigSession &_session;
 
     toolbars::TitleBar *_titlebar;
+    QComboBox *_map_zoom_combobox;
     QComboBox *_protocol_combobox;
     std::list<QCheckBox *> _show_checkbox_list;
     std::list<QLabel *> _show_label_list;

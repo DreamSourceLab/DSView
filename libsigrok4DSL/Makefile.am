@@ -33,7 +33,6 @@ libsigrok4DSL_la_SOURCES = \
 	session_file.c \
 	session_driver.c \
 	hwdriver.c \
-	filter.c \
 	strutil.c \
 	log.c \
         trigger.c \

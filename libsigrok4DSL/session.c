@@ -406,8 +406,14 @@ SR_API int sr_session_run(void)
 	/* Do we have real sources? */
 	if (session->num_sources == 1 && session->pollfds[0].fd == -1) {
 		/* Dummy source, freewheel over it. */
-		while (session->num_sources)
-			session->sources[0].cb(-1, 0, session->sources[0].cb_data);
+        while (session->num_sources) {
+            if (session->abort_session) {
+                session->sources[0].cb(-1, -1, session->sources[0].cb_data);
+                break;
+            } else {
+                session->sources[0].cb(-1, 0, session->sources[0].cb_data);
+            }
+        }
 	} else {
 		/* Real sources, use g_poll() main loop. */
     	while (session->num_sources)
@@ -528,7 +534,10 @@ static void datafeed_dump(const struct sr_datafeed_packet *packet)
 	case SR_DF_FRAME_END:
 		sr_dbg("bus: Received SR_DF_FRAME_END packet.");
 		break;
-	default:
+    case SR_DF_OVERFLOW:
+        sr_dbg("bus: Received SR_DF_OVERFLOW packet.");
+        break;
+    default:
 		sr_dbg("bus: Received unknown packet type: %d.", packet->type);
 		break;
 	}

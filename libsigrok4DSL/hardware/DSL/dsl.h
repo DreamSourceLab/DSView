@@ -44,15 +44,13 @@
 #define MAX_EMPTY_TRANSFERS	(NUM_SIMUL_TRANSFERS * 2)
 
 #define DSL_REQUIRED_VERSION_MAJOR	1
+#define DSL_REQUIRED_VERSION_MINOR	1
 
 #define MAX_8BIT_SAMPLE_RATE	DS_MHZ(24)
 #define MAX_16BIT_SAMPLE_RATE	DS_MHZ(12)
 
 /* 6 delay states of up to 256 clock ticks */
 #define MAX_SAMPLE_DELAY	(6 * 256)
-
-/* Software trigger implementation: positive values indicate trigger stage. */
-#define TRIGGER_FIRED          -1
 
 #define DEV_CAPS_16BIT_POS	0
 
@@ -67,6 +65,11 @@
 #define VPOS_MINISTEP 0.083
 #define VPOS_STEP 26.0
 
+#define DSLOGIC_ATOMIC_BITS 6
+#define DSLOGIC_ATOMIC_SAMPLES (1 << DSLOGIC_ATOMIC_BITS)
+#define DSLOGIC_ATOMIC_SIZE (1 << (DSLOGIC_ATOMIC_BITS - 3))
+#define DSLOGIC_ATOMIC_MASK (0xFFFF << DSLOGIC_ATOMIC_BITS)
+
 #define DSLOGIC_MAX_DSO_DEPTH SR_MB(2)
 //#define DSLOGIC_MAX_DSO_DEPTH SR_KB(2)
 #define DSLOGIC_MAX_DSO_SAMPLERATE SR_MHZ(200)
@@ -77,6 +80,40 @@
 //#define DSCOPE_MAX_DEPTH SR_KB(512)
 #define DSCOPE_MAX_SAMPLERATE SR_MHZ(200)
 #define DSCOPE_INSTANT_DEPTH SR_MB(32)
+
+/*
+ * for basic configuration
+ */
+#define TRIG_EN_BIT 0
+#define CLK_TYPE_BIT 1
+#define CLK_EDGE_BIT 2
+#define RLE_MODE_BIT 3
+#define DSO_MODE_BIT 4
+#define HALF_MODE_BIT 5
+#define QUAR_MODE_BIT 6
+#define ANALOG_MODE_BIT 7
+#define FILTER_BIT 8
+#define INSTANT_BIT 9
+#define STRIG_MODE_BIT 11
+#define STREAM_MODE_BIT 12
+#define LPB_TEST_BIT 13
+#define EXT_TEST_BIT 14
+#define INT_TEST_BIT 15
+
+#define bmZERO 0x00
+#define bmEEWP 0x01
+#define bmFORCE_RDY 0x02
+#define bmFORCE_STOP 0x04
+#define bmSCOPE_SET 0x08
+#define bmSCOPE_CLR 0x08
+
+/*
+ * for DSLogic device
+ *
+ */
+#define MAX_LOGIC_PROBES 16
+#define DSLOGIC_BASIC_MEM_DEPTH SR_KB(256)
+#define DSLOGIC_MEM_DEPTH SR_MB(256)
 
 /*
  * for DSCope device
@@ -123,7 +160,7 @@
 
 #define DSO_AUTOTRIG_THRESHOLD 16
 
-#define TRIG_CHECKID 0xa500005a
+#define TRIG_CHECKID 0x55555555
 #define DSO_PKTID 0xa500
 
 struct DSL_profile {
@@ -142,7 +179,7 @@ struct DSL_profile {
     uint32_t dev_caps;
 };
 
-static const struct DSL_profile supported_DSLogic[3] = {
+static const struct DSL_profile supported_DSLogic[] = {
     /*
      * DSLogic
      */
@@ -158,10 +195,29 @@ static const struct DSL_profile supported_DSLogic[3] = {
      "DSLogicPro.bin",
      DEV_CAPS_16BIT},
 
+    {0x2A0E, 0x0005, NULL, "DSMso", NULL,
+     "DSMso.fw",
+     "DSMso.bin",
+     "DSMso.bin",
+     DEV_CAPS_16BIT},
+
+    {0x2A0E, 0x0020, NULL, "DSLogic PLus", NULL,
+     "DSLogicPlus.fw",
+     "DSLogicPlus.bin",
+     "DSLogicPlus.bin",
+     DEV_CAPS_16BIT},
+
+    {0x2A0E, 0x0021, NULL, "DSLogic Basic", NULL,
+     "DSLogicBasic.fw",
+     "DSLogicBasic.bin",
+     "DSLogicBasic.bin",
+     DEV_CAPS_16BIT},
+	 
+
     { 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 };
 
-static const struct DSL_profile supported_DSCope[3] = {
+static const struct DSL_profile supported_DSCope[] = {
     /*
      * DSCope
      */
@@ -200,7 +256,8 @@ enum {
     DSL_TRIGGERED = 3,
     DSL_DATA = 4,
     DSL_STOP = 5,
-    DSL_FINISH = 6,
+    DSL_FINISH = 7,
+    DSL_ABORT = 8,
 };
 
 struct DSL_context {
@@ -217,6 +274,7 @@ struct DSL_context {
 	uint64_t cur_samplerate;
 	uint64_t limit_samples;
     uint64_t actual_samples;
+    uint64_t actual_bytes;
 
 	/* Operational settings */
 	gboolean sample_wide;
@@ -225,6 +283,7 @@ struct DSL_context {
     gboolean rle_mode;
     gboolean instant;
     uint16_t op_mode;
+    uint16_t buf_options;
     uint16_t ch_mode;
     uint16_t samplerates_size;
     uint16_t samplecounts_size;
@@ -254,7 +313,8 @@ struct DSL_context {
     gboolean data_lock;
     uint8_t dso_bits;
 
-	int num_samples;
+    uint64_t num_samples;
+    uint64_t num_bytes;
 	int submitted_transfers;
 	int empty_transfer_count;
 
@@ -269,64 +329,42 @@ struct DSL_context {
     int status;
     gboolean mstatus_valid;
     gboolean abort;
+    gboolean overflow;
 };
 
+/*
+ * hardware setting for each capture
+ */
 struct DSL_setting {
     uint32_t sync;
+
     uint16_t mode_header;                   // 0
     uint16_t mode;
-    uint32_t divider_header;                // 1-2
-    uint32_t divider;
-    uint32_t count_header;                  // 3-4
-    uint32_t count;
-    uint32_t trig_pos_header;               // 5-6
-    uint32_t trig_pos;
+    uint16_t divider_header;                // 1-2
+    uint16_t div_l;
+    uint16_t div_h;
+    uint16_t count_header;                  // 3-4
+    uint16_t cnt_l;
+    uint16_t cnt_h;
+    uint16_t trig_pos_header;               // 5-6
+    uint16_t tpos_l;
+    uint16_t tpos_h;
     uint16_t trig_glb_header;               // 7
     uint16_t trig_glb;
-    uint32_t trig_adp_header;               // 10-11
-    uint32_t trig_adp;
-    uint32_t trig_sda_header;               // 12-13
-    uint32_t trig_sda;
-    uint32_t trig_mask0_header;              // 16
+    uint16_t ch_en_header;                  // 8
+    uint16_t ch_en;
+
+    uint16_t trig_header;                   // 64
     uint16_t trig_mask0[NUM_TRIGGER_STAGES];
-    uint32_t trig_mask1_header;              // 17
     uint16_t trig_mask1[NUM_TRIGGER_STAGES];
-    //uint32_t trig_mask2_header;              // 18
-    //uint16_t trig_mask2[NUM_TRIGGER_STAGES];
-    //uint32_t trig_mask3_header;              // 19
-    //uint16_t trig_mask3[NUM_TRIGGER_STAGES];
-    uint32_t trig_value0_header;             // 20
     uint16_t trig_value0[NUM_TRIGGER_STAGES];
-    uint32_t trig_value1_header;             // 21
     uint16_t trig_value1[NUM_TRIGGER_STAGES];
-    //uint32_t trig_value2_header;             // 22
-    //uint16_t trig_value2[NUM_TRIGGER_STAGES];
-    //uint32_t trig_value3_header;             // 23
-    //uint16_t trig_value3[NUM_TRIGGER_STAGES];
-    uint32_t trig_edge0_header;              // 24
     uint16_t trig_edge0[NUM_TRIGGER_STAGES];
-    uint32_t trig_edge1_header;              // 25
     uint16_t trig_edge1[NUM_TRIGGER_STAGES];
-    //uint32_t trig_edge2_header;              // 26
-    //uint16_t trig_edge2[NUM_TRIGGER_STAGES];
-    //uint32_t trig_edge3_header;              // 27
-    //uint16_t trig_edge3[NUM_TRIGGER_STAGES];
-    uint32_t trig_count0_header;             // 28
-    uint32_t trig_count0[NUM_TRIGGER_STAGES];
-    uint32_t trig_count1_header;             // 29
-    uint32_t trig_count1[NUM_TRIGGER_STAGES];
-    //uint32_t trig_count2_header;             // 30
-    //uint16_t trig_count2[NUM_TRIGGER_STAGES];
-    //uint32_t trig_count3_header;             // 31
-    //uint16_t trig_count3[NUM_TRIGGER_STAGES];
-    uint32_t trig_logic0_header;             // 32
     uint16_t trig_logic0[NUM_TRIGGER_STAGES];
-    uint32_t trig_logic1_header;             // 33
     uint16_t trig_logic1[NUM_TRIGGER_STAGES];
-    //uint32_t trig_logic2_header;             // 34
-    //uint16_t trig_logic2[NUM_TRIGGER_STAGES];
-    //uint32_t trig_logic3_header;             // 35
-    //uint16_t trig_logic3[NUM_TRIGGER_STAGES];
+    uint32_t trig_count[NUM_TRIGGER_STAGES];
+
     uint32_t end_sync;
 };
 

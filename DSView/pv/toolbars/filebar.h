@@ -53,7 +53,8 @@ private:
 
 signals:
     void load_file(QString);
-    void save();
+    void on_save();
+    void on_export();
     void on_screenShot();
     void load_session(QString);
     void store_session(QString);
@@ -63,9 +64,7 @@ private slots:
     void on_actionStore_triggered();
     void on_actionDefault_triggered();
     void on_actionOpen_triggered();
-    void on_actionSave_triggered();
     void on_actionCapture_triggered();
-    void on_actionExport_triggered();
 
 private:
     bool _enable;
@@ -84,9 +83,6 @@ private:
     QAction *_action_save;
     QAction *_action_export;
     QAction *_action_capture;
-
-    QTimer _screenshot_timer;
-
 };
 
 } // namespace toolbars

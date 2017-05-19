@@ -563,6 +563,7 @@ static int loadfile(struct sr_input *in, const char *filename)
 	uint64_t samplerate;
 
 	ctx = in->internal;
+    packet.status = SR_PKT_OK;
 
     if ((file = g_fopen(filename, "r")) == NULL)
 		return SR_ERR;

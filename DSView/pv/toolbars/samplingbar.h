@@ -33,6 +33,8 @@
 #include <QComboBox>
 #include <QToolBar>
 #include <QToolButton>
+#include <QAction>
+#include <QMenu>
 
 #include <libsigrok4DSL/libsigrok.h>
 
@@ -64,6 +66,7 @@ private:
     static const uint64_t RecordLengths[19];
     static const uint64_t DefaultRecordLength;
     static const int ComboBoxMaxWidth = 200;
+    static const QString RLEString;
 
 public:
     SamplingBar(SigSession &session, QWidget *parent);
@@ -80,6 +83,8 @@ public:
     void update_sample_rate();
 
 	void set_sampling(bool sampling);
+    bool get_sampling() const;
+    bool get_instant() const;
 
     void enable_toggle(bool enable);
 
@@ -110,6 +115,7 @@ private:
     void setting_adj();
 
 private slots:
+    void on_mode();
 	void on_run_stop();
     void on_instant_stop();
     void on_device_selected();
@@ -127,7 +133,9 @@ public slots:
 private:
     SigSession &_session;
 
+    mutable boost::recursive_mutex _sampling_mutex;
     bool _enable;
+    bool _sampling;
 
     QComboBox _device_selector;
     std::map<const void*, boost::weak_ptr<device::DevInst> >
@@ -150,6 +158,17 @@ private:
     QToolButton _instant_button;
     QAction* _run_stop_action;
     QAction* _instant_action;
+
+    QAction* _mode_action;
+    QToolButton _mode_button;
+    QMenu *_mode_menu;
+    QAction *_action_repeat;
+    QAction *_action_single;
+
+    QIcon _icon_repeat;
+    QIcon _icon_single;
+    QIcon _icon_repeat_dis;
+    QIcon _icon_single_dis;
 
     bool _instant;
 };

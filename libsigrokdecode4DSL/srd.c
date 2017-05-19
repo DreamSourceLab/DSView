@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "config.h"
+#include <config.h>
 #include "libsigrokdecode-internal.h" /* First, so we avoid a _POSIX_C_SOURCE warning. */
 #include "libsigrokdecode.h"
 #include <glib.h>
@@ -95,6 +95,23 @@ extern SRD_PRIV int max_session_id;
  * @{
  */
 
+static int searchpath_add_xdg_dir(const char *datadir)
+{
+	char *decdir;
+	int ret;
+
+	decdir = g_build_filename(datadir, PACKAGE_TARNAME, "decoders", NULL);
+
+	if (g_file_test(decdir, G_FILE_TEST_IS_DIR))
+		ret = srd_decoder_searchpath_add(decdir);
+	else
+		ret = SRD_OK; /* just ignore non-existing directory */
+
+	g_free(decdir);
+
+	return ret;
+}
+
 /**
  * Initialize libsigrokdecode.
  *
@@ -124,8 +141,10 @@ extern SRD_PRIV int max_session_id;
  */
 SRD_API int srd_init(const char *path)
 {
+	const char *const *sys_datadirs;
+	const char *env_path;
+	size_t i;
 	int ret;
-	char *env_path;
 
 	if (max_session_id != -1) {
 		srd_err("libsigrokdecode is already initialized.");
@@ -138,10 +157,27 @@ SRD_API int srd_init(const char *path)
 	PyImport_AppendInittab("sigrokdecode", PyInit_sigrokdecode);
 
 	/* Initialize the Python interpreter. */
-	Py_Initialize();
+	Py_InitializeEx(0);
 
-	/* Installed decoders. */
-    if ((ret = srd_decoder_searchpath_add(DECODERS_DIR)) != SRD_OK) {
+	/* Locations relative to the XDG system data directories. */
+	sys_datadirs = g_get_system_data_dirs();
+	for (i = g_strv_length((char **)sys_datadirs); i > 0; i--) {
+		ret = searchpath_add_xdg_dir(sys_datadirs[i-1]);
+		if (ret != SRD_OK) {
+			Py_Finalize();
+			return ret;
+		}
+	}
+#ifdef DECODERS_DIR
+	/* Hardcoded decoders install location, if defined. */
+	if ((ret = srd_decoder_searchpath_add(DECODERS_DIR)) != SRD_OK) {
+		Py_Finalize();
+		return ret;
+	}
+#endif
+	/* Location relative to the XDG user data directory. */
+	ret = searchpath_add_xdg_dir(g_get_user_data_dir());
+	if (ret != SRD_OK) {
 		Py_Finalize();
 		return ret;
 	}
@@ -155,7 +191,7 @@ SRD_API int srd_init(const char *path)
 	}
 
 	/* Environment variable overrides everything, for debugging. */
-	if ((env_path = getenv("SIGROKDECODE_DIR"))) {
+	if ((env_path = g_getenv("SIGROKDECODE_DIR"))) {
 		if ((ret = srd_decoder_searchpath_add(env_path)) != SRD_OK) {
 			Py_Finalize();
 			return ret;
@@ -183,12 +219,9 @@ SRD_API int srd_init(const char *path)
  */
 SRD_API int srd_exit(void)
 {
-	GSList *l;
-
 	srd_dbg("Exiting libsigrokdecode.");
 
-	for (l = sessions; l; l = l->next)
-		srd_session_destroy((struct srd_session *)l->data);
+	g_slist_foreach(sessions, (GFunc)srd_session_destroy, NULL);
 
 	srd_decoder_unload_all();
 	g_slist_free_full(searchpaths, g_free);
@@ -224,36 +257,26 @@ SRD_API int srd_exit(void)
 SRD_PRIV int srd_decoder_searchpath_add(const char *path)
 {
 	PyObject *py_cur_path, *py_item;
-	GString *new_path;
-	int wc_len, i;
-	wchar_t *wc_new_path;
-	char *item;
 
 	srd_dbg("Adding '%s' to module path.", path);
 
-	new_path = g_string_sized_new(256);
-	g_string_assign(new_path, path);
 	py_cur_path = PySys_GetObject("path");
-	for (i = 0; i < PyList_Size(py_cur_path); i++) {
-		g_string_append(new_path, G_SEARCHPATH_SEPARATOR_S);
-		py_item = PyList_GetItem(py_cur_path, i);
-		if (!PyUnicode_Check(py_item))
-			/* Shouldn't happen. */
-			continue;
-		if (py_str_as_str(py_item, &item) != SRD_OK)
-			continue;
-		g_string_append(new_path, item);
-		g_free(item);
-	}
+	if (!py_cur_path)
+		return SRD_ERR_PYTHON;
 
-	/* Convert to wide chars. */
-	wc_len = sizeof(wchar_t) * (new_path->len + 1);
-	wc_new_path = g_malloc(wc_len);
-	mbstowcs(wc_new_path, new_path->str, wc_len);
-	PySys_SetPath(wc_new_path);
-	g_string_free(new_path, TRUE);
-	g_free(wc_new_path);
-	searchpaths = g_slist_append(searchpaths, g_strdup(path));
+	py_item = PyUnicode_FromString(path);
+	if (!py_item) {
+		srd_exception_catch(NULL, "Failed to create Unicode object");
+		return SRD_ERR_PYTHON;
+	}
+	if (PyList_Insert(py_cur_path, 0, py_item) < 0) {
+		srd_exception_catch(NULL, "Failed to insert path element");
+		Py_DECREF(py_item);
+		return SRD_ERR_PYTHON;
+	}
+	Py_DECREF(py_item);
+
+	searchpaths = g_slist_prepend(searchpaths, g_strdup(path));
 
 	return SRD_OK;
 }

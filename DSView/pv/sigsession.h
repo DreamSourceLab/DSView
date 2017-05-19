@@ -59,6 +59,7 @@ class DeviceManager;
 
 namespace data {
 class SignalData;
+class Snapshot;
 class Analog;
 class AnalogSnapshot;
 class Dso;
@@ -93,7 +94,7 @@ class SigSession : public QObject
 private:
     static constexpr float Oversampling = 2.0f;
     static const int RefreshTime = 500;
-	bool saveFileThreadRunning = false;
+    static const int RepeatHoldDiv = 20;
 
 public:
     static const int ViewTime = 50;
@@ -105,6 +106,21 @@ public:
 		Stopped,
 		Running
 	};
+
+    enum run_mode {
+        Single,
+        Repetitive
+    };
+
+    enum error_state {
+        No_err,
+        Hw_err,
+        Malloc_err,
+        Test_data_err,
+        Test_timeout_err,
+        Pkt_data_err,
+        Data_overflow
+    };
 
 public:
 	SigSession(DeviceManager &device_manager);
@@ -122,10 +138,7 @@ public:
     void set_file(QString name)
         throw(QString);
 
-    void save_file(const QString name, QWidget* parent, int type);
-
     void set_default_device(boost::function<void (const QString)> error_handler);
-    void export_file(const QString name, QWidget* parent, const QString ext);
 
     void release_device(device::DevInst *dev_inst);
 
@@ -142,6 +155,8 @@ public:
     void start_capture(bool instant,
 		boost::function<void (const QString)> error_handler);
     void capture_init();
+    bool get_capture_status(bool &triggered, int &progress);
+    void logic_init();
 
     std::set< boost::shared_ptr<data::SignalData> > get_data() const;
 
@@ -150,10 +165,9 @@ public:
 
     std::vector< boost::shared_ptr<view::GroupSignal> >
         get_group_signals();
-    QList<QString> getSuportedExportFormats();
 
 #ifdef ENABLE_DECODE
-    bool add_decoder(srd_decoder *const dec);
+    bool add_decoder(srd_decoder *const dec, bool silent);
 
     std::vector< boost::shared_ptr<view::DecodeTrace> >
         get_decode_signals() const;
@@ -167,19 +181,16 @@ public:
     void rst_decoder(view::DecodeTrace *signal);
 
     pv::data::DecoderModel* get_decoder_model() const;
+#endif
 
     std::vector< boost::shared_ptr<view::MathTrace> >
         get_math_signals();
-
-#endif
 
     void init_signals();
 
     void add_group();
 
     void del_group();
-
-    const void* get_buf(int& unit_size, uint64_t& length);
 
     void start_hotplug_proc(boost::function<void (const QString)> error_handler);
     void stop_hotplug_proc();
@@ -194,6 +205,23 @@ public:
     void mathTraces_rebuild();
 
     bool trigd() const;
+
+    boost::shared_ptr<data::Snapshot> get_snapshot(int type);
+
+    error_state get_error() const;
+    void set_error(error_state state);
+    void clear_error();
+    uint64_t get_error_pattern() const;
+
+    run_mode get_run_mode() const;
+    void set_run_mode(run_mode mode);
+    int get_repeat_intvl() const;
+    void set_repeat_intvl(int interval);
+    bool isRepeating() const;
+    bool repeat_check();
+    int get_repeat_hold() const;
+
+    int get_map_zoom() const;
 
 private:
 	void set_capture_state(capture_state state);
@@ -278,17 +306,23 @@ private:
 
     QTimer _view_timer;
     int    _noData_cnt;
-    QTimer _refresh_timer;
     bool _data_lock;
     bool _data_updated;
-
-    #ifdef TEST_MODE
-    QTimer _test_timer;
-    #endif
 
     QDateTime _trigger_time;
     uint64_t _trigger_pos;
     bool _trigger_flag;
+    bool _hw_replied;
+
+    error_state _error;
+    uint64_t _error_pattern;
+
+    run_mode _run_mode;
+    int _repeat_intvl;
+    bool _repeating;
+    int _repeat_hold_prg;
+
+    int _map_zoom;
 
 signals:
 	void capture_state_changed(int state);
@@ -297,14 +331,10 @@ signals:
 
 	void data_updated();
 
-    void start_timer(int);
-
     void receive_data(quint64 length);
 
     void device_attach();
     void device_detach();
-
-    void test_data_error();
 
     void receive_trigger(quint64 trigger_pos);
 
@@ -320,31 +350,35 @@ signals:
 
     void device_setted();
 
-    void malloc_error();
-
     void zero_adj();
     void progressSaveFileValueChanged(int percent);
 
     void decode_done();
 
-    void show_region(uint64_t start, uint64_t end);
-
-    void hardware_connect_failed();
+    void show_region(uint64_t start, uint64_t end, bool keep);
 
     void show_wait_trigger();
 
-    void on_mode_change();
+    void session_save();
+
+    void session_error();
+
+    void repeat_hold(int percent);
+    void repeat_resume();
 
 public slots:
     void reload();
     void refresh(int holdtime);
     void stop_capture();
+    // repeat
+    void set_repeating(bool repeat);
+    void set_map_zoom(int index);
 
 private slots:
-    void cancelSaveFile();
     void data_unlock();
     void check_update();
     void nodata_timeout();
+    void repeat_update();
 
 private:
 	// TODO: This should not be necessary. Multiple concurrent

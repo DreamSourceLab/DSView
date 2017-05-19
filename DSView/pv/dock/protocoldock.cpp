@@ -29,6 +29,7 @@
 #include "../dialogs/protocollist.h"
 #include "../dialogs/protocolexp.h"
 #include "../dialogs/dsmessagebox.h"
+#include "../view/view.h"
 
 #include <QObject>
 #include <QHBoxLayout>
@@ -52,12 +53,14 @@
 namespace pv {
 namespace dock {
 
-ProtocolDock::ProtocolDock(QWidget *parent, SigSession &session) :
+ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession &session) :
     QScrollArea(parent),
     _session(session),
+    _view(view),
     _cur_search_index(-1),
     _search_edited(false),
-    _searching(false)
+    _searching(false),
+    _add_silent(false)
 {
     _up_widget = new QWidget(this);
 
@@ -125,11 +128,19 @@ ProtocolDock::ProtocolDock(QWidget *parent, SigSession &session) :
     connect(_dn_save_button, SIGNAL(clicked()),
             this, SLOT(export_table_view()));
 
+    _dn_nav_button = new QPushButton(_dn_widget);
+    _dn_nav_button->setFlat(true);
+    _dn_nav_button->setIcon(QIcon::fromTheme("protocol",
+                             QIcon(":/icons/nav.png")));
+    connect(_dn_nav_button, SIGNAL(clicked()),
+            this, SLOT(nav_table_view()));
+
     QHBoxLayout *dn_title_layout = new QHBoxLayout();
     dn_title_layout->addWidget(_dn_set_button, 0, Qt::AlignLeft);
     dn_title_layout->addWidget(_dn_save_button, 0, Qt::AlignLeft);
     dn_title_layout->addWidget(new QLabel(tr("Protocol List Viewer"), _dn_widget), 1, Qt::AlignLeft);
-    dn_title_layout->addStretch(1);
+    dn_title_layout->addWidget(_dn_nav_button, 0, Qt::AlignRight);
+    //dn_title_layout->addStretch(1);
 
     _table_view = new QTableView(_dn_widget);
     _table_view->setModel(_session.get_decoder_model());
@@ -237,7 +248,38 @@ int ProtocolDock::decoder_name_cmp(const void *a, const void *b)
         ((const srd_decoder*)b)->name);
 }
 
+bool ProtocolDock::sel_protocol(QString id)
+{
+    QString name;
+    GSList *l = g_slist_sort(g_slist_copy(
+        (GSList*)srd_decoder_list()), decoder_name_cmp);
+    for(; l; l = l->next)
+    {
+        const srd_decoder *const d = (srd_decoder*)l->data;
+        assert(d);
+
+        const bool have_probes = (d->channels || d->opt_channels) != 0;
+        if (true == have_probes &&
+            QString::fromUtf8(d->id) == id) {
+            name = QString::fromUtf8(d->name);
+            break;
+        }
+    }
+    g_slist_free(l);
+
+    _protocol_combobox->setCurrentText(name);
+    if (_protocol_combobox->currentText() == name)
+        return true;
+    else
+        return false;
+}
+
 void ProtocolDock::add_protocol()
+{
+    add_protocol(false);
+}
+
+void ProtocolDock::add_protocol(bool silent)
 {
     if (_session.get_device()->dev_inst()->mode != LOGIC) {
         dialogs::DSMessageBox msg(this);
@@ -249,7 +291,7 @@ void ProtocolDock::add_protocol()
     } else {
         srd_decoder *const decoder =
             (srd_decoder*)(_protocol_combobox->itemData(_protocol_combobox->currentIndex())).value<void*>();
-        if (_session.add_decoder(decoder)) {
+        if (_session.add_decoder(decoder, silent)) {
             //std::list <int > _sel_probes = dlg.get_sel_probes();
             //QMap <QString, QVariant>& _options = dlg.get_options();
             //QMap <QString, int> _options_index = dlg.get_options_index();
@@ -442,6 +484,13 @@ void ProtocolDock::set_model()
     resize_table_view(_session.get_decoder_model());
     _model_proxy.setSourceModel(_session.get_decoder_model());
     search_done();
+
+    // clear mark_index of all DecoderStacks
+    const std::vector< boost::shared_ptr<pv::view::DecodeTrace> > decode_sigs(
+        _session.get_decode_signals());
+    BOOST_FOREACH(boost::shared_ptr<pv::view::DecodeTrace> d, decode_sigs) {
+        d->decoder()->set_mark_index(-1);
+    }
 }
 
 void ProtocolDock::update_model()
@@ -494,7 +543,13 @@ void ProtocolDock::item_clicked(const QModelIndex &index)
     if (decoder_stack) {
         pv::data::decode::Annotation ann;
         if (decoder_stack->list_annotation(ann, index.column(), index.row())) {
-            _session.show_region(ann.start_sample(), ann.end_sample());
+            const std::vector< boost::shared_ptr<pv::view::DecodeTrace> > decode_sigs(
+                _session.get_decode_signals());
+            BOOST_FOREACH(boost::shared_ptr<pv::view::DecodeTrace> d, decode_sigs) {
+                d->decoder()->set_mark_index(-1);
+            }
+            decoder_stack->set_mark_index((ann.start_sample()+ann.end_sample())/2);
+            _session.show_region(ann.start_sample(), ann.end_sample(), false);
         }
     }
     _table_view->resizeRowToContents(index.row());
@@ -556,6 +611,41 @@ void ProtocolDock::export_table_view()
 {
     pv::dialogs::ProtocolExp *protocolexp_dlg = new pv::dialogs::ProtocolExp(this, _session);
     protocolexp_dlg->exec();
+}
+
+void ProtocolDock::nav_table_view()
+{
+    uint64_t row_index;
+    pv::data::DecoderModel *decoder_model = _session.get_decoder_model();
+    boost::shared_ptr<pv::data::DecoderStack> decoder_stack = decoder_model->getDecoderStack();
+    if (decoder_stack) {
+        uint64_t offset = _view.offset() * (decoder_stack->samplerate() * _view.scale());
+        std::map<const pv::data::decode::Row, bool> rows = decoder_stack->get_rows_lshow();
+        int column = _model_proxy.filterKeyColumn();
+        for (std::map<const pv::data::decode::Row, bool>::const_iterator i = rows.begin();
+            i != rows.end(); i++) {
+            if ((*i).second && column-- == 0) {
+                row_index = decoder_stack->get_annotation_index((*i).first, offset);
+                break;
+            }
+        }
+        QModelIndex index = _model_proxy.mapToSource(_model_proxy.index(row_index, _model_proxy.filterKeyColumn()));
+        if(index.isValid()){
+            _table_view->scrollTo(index);
+            _table_view->setCurrentIndex(index);
+
+            pv::data::decode::Annotation ann;
+            decoder_stack->list_annotation(ann, index.column(), index.row());
+            const std::vector< boost::shared_ptr<pv::view::DecodeTrace> > decode_sigs(
+                _session.get_decode_signals());
+            BOOST_FOREACH(boost::shared_ptr<pv::view::DecodeTrace> d, decode_sigs) {
+                d->decoder()->set_mark_index(-1);
+            }
+            decoder_stack->set_mark_index((ann.start_sample()+ann.end_sample())/2);
+            _view.set_all_update(true);
+            _view.update();
+        }
+    }
 }
 
 void ProtocolDock::search_pre()
@@ -707,7 +797,8 @@ void ProtocolDock::search_update()
         QProgressDialog dlg(tr("Searching..."),
                             tr("Cancel"),0,0,this,flags);
         dlg.setWindowModality(Qt::WindowModal);
-        dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
+        dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
+                           Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
         dlg.setCancelButton(NULL);
 
         QFutureWatcher<void> watcher;

@@ -52,8 +52,6 @@ static const char *opmodes[] = {
     "DRAM Loopback Test",
 };
 
-static uint16_t opmodes_show_count = 2;
-
 static const char *thresholds[] = {
     "1.8/2.5/3.3V Level",
     "5.0V Level",
@@ -141,6 +139,7 @@ static const uint64_t samplecounts[] = {
     SR_MB(32),
 };
 
+static uint16_t opmodes_show_count = 2;
 static const uint8_t zero_base_addr = 0x40;
 
 SR_PRIV struct sr_dev_driver DSCope_driver_info;
@@ -264,6 +263,9 @@ static int fpga_setting(const struct sr_dev_inst *sdi)
     int transferred;
     int result;
     int i;
+    GSList *l;
+    uint32_t tmp_u32;
+    uint64_t tmp_u64;
 
     devc = sdi->priv;
     usb = sdi->conn;
@@ -271,51 +273,65 @@ static int fpga_setting(const struct sr_dev_inst *sdi)
 
     setting.sync = 0xf5a5f5a5;
     setting.mode_header = 0x0001;
-    setting.divider_header = 0x0102ffff;
-    setting.count_header = 0x0302ffff;
-    setting.trig_pos_header = 0x0502ffff;
+    setting.divider_header = 0x0102;
+    setting.count_header = 0x0302;
+    setting.trig_pos_header = 0x0502;
     setting.trig_glb_header = 0x0701;
-    setting.trig_adp_header = 0x0a02ffff;
-    setting.trig_sda_header = 0x0c02ffff;
-    setting.trig_mask0_header = 0x1010ffff;
-    setting.trig_mask1_header = 0x1110ffff;
-    //setting.trig_mask2_header = 0x1210ffff;
-    //setting.trig_mask3_header = 0x1310ffff;
-    setting.trig_value0_header = 0x1410ffff;
-    setting.trig_value1_header = 0x1510ffff;
-    //setting.trig_value2_header = 0x1610ffff;
-    //setting.trig_value3_header = 0x1710ffff;
-    setting.trig_edge0_header = 0x1810ffff;
-    setting.trig_edge1_header = 0x1910ffff;
-    //setting.trig_edge2_header = 0x1a10ffff;
-    //setting.trig_edge3_header = 0x1b10ffff;
-    setting.trig_count0_header = 0x1c20ffff;
-    setting.trig_count1_header = 0x1d20ffff;
-    //setting.trig_count2_header = 0x1e10ffff;
-    //setting.trig_count3_header = 0x1f10ffff;
-    setting.trig_logic0_header = 0x2010ffff;
-    setting.trig_logic1_header = 0x2110ffff;
-    //setting.trig_logic2_header = 0x2210ffff;
-    //setting.trig_logic3_header = 0x2310ffff;
+    setting.ch_en_header = 0x0801;
+    setting.trig_header = 0x40a0;
     setting.end_sync = 0xfa5afa5a;
 
     //setting.mode = (test_mode ? 0x8000 : 0x0000) + trigger->trigger_en + (sdi->mode << 4);
-    setting.mode = ((devc->op_mode == SR_OP_INTERNAL_TEST) << 15) +
-                   ((devc->op_mode == SR_OP_EXTERNAL_TEST) << 14) +
-                   ((devc->op_mode == SR_OP_LOOPBACK_TEST) << 13) +
-                   trigger->trigger_en +
-                   ((sdi->mode == DSO) << 4) + (devc->clock_type << 1) + (devc->clock_edge << 2) +
-                   (((devc->cur_samplerate == SR_MHZ(200) && sdi->mode != DSO) || (sdi->mode == ANALOG)) << 5) +
-                   ((devc->cur_samplerate == SR_MHZ(400)) << 6) +
-                   ((sdi->mode == ANALOG) << 7) +
-                   ((devc->filter == SR_FILTER_1T) << 8) +
-                   (devc->instant << 9);
-    setting.divider = (uint32_t)ceil(DSCOPE_MAX_SAMPLERATE * 1.0 / devc->cur_samplerate / en_ch_num(sdi));
-    setting.count = (uint32_t)(devc->limit_samples / (g_slist_length(sdi->channels) / en_ch_num(sdi)));
-    setting.trig_pos = (uint32_t)(trigger->trigger_pos / 100.0 * devc->limit_samples);
-    setting.trig_glb = trigger->trigger_stages;
-    setting.trig_adp = setting.count - setting.trig_pos - 1;
-    setting.trig_sda = 0x0;
+    setting.mode = (trigger->trigger_en << TRIG_EN_BIT) +
+                   (devc->clock_type << CLK_TYPE_BIT) +
+                   (devc->clock_edge << CLK_EDGE_BIT) +
+                   ((sdi->mode == DSO) << DSO_MODE_BIT) +
+                   ((((devc->cur_samplerate == (2 * DSLOGIC_MAX_LOGIC_SAMPLERATE)) && sdi->mode != DSO) || (sdi->mode == ANALOG)) << HALF_MODE_BIT) +
+                   ((devc->cur_samplerate == (4 * DSLOGIC_MAX_LOGIC_SAMPLERATE)) << QUAR_MODE_BIT) +
+                   ((sdi->mode == ANALOG) << ANALOG_MODE_BIT) +
+                   ((devc->filter == SR_FILTER_1T) << FILTER_BIT) +
+                   (devc->instant << INSTANT_BIT) +
+                   ((devc->op_mode == SR_OP_LOOPBACK_TEST) << LPB_TEST_BIT) +
+                   ((devc->op_mode == SR_OP_EXTERNAL_TEST) << EXT_TEST_BIT) +
+                   ((devc->op_mode == SR_OP_INTERNAL_TEST) << INT_TEST_BIT);
+
+    // sample rate divider
+    tmp_u32  = (sdi->mode == DSO) ? (uint32_t)ceil(DSLOGIC_MAX_DSO_SAMPLERATE * 1.0 / devc->cur_samplerate / en_ch_num(sdi)) :
+                                    (uint32_t)ceil(DSLOGIC_MAX_LOGIC_SAMPLERATE * 1.0 / devc->cur_samplerate);
+    setting.div_l = tmp_u32 & 0x0000ffff;
+    setting.div_h = tmp_u32 >> 16;
+
+    // capture counter
+    // analog: 16bits, but sample with half mode(0-7 valid only)
+    tmp_u64 = (sdi->mode == DSO) ?    (devc->limit_samples / (g_slist_length(sdi->channels) / en_ch_num(sdi))) :
+              (sdi->mode == ANALOG) ? (devc->limit_samples * g_slist_length(sdi->channels) * 4) :
+                                      (devc->limit_samples);
+    tmp_u64 >>= 4; // hardware minimum unit 64
+    setting.cnt_l = tmp_u64 & 0x0000ffff;
+    setting.cnt_h = tmp_u64 >> 16;
+
+    // trigger position
+    tmp_u32 = (uint32_t)(trigger->trigger_pos / 100.0 * devc->limit_samples);
+    if (setting.mode & (1 << QUAR_MODE_BIT))
+        setting.tpos_l = tmp_u32 & 0x0000fffc;
+    else if (setting.mode & (1 << HALF_MODE_BIT))
+        setting.tpos_l = tmp_u32 & 0x0000fffe;
+    else
+        setting.tpos_l = tmp_u32 & 0x0000ffff;
+    setting.tpos_h = tmp_u32 >> 16;
+
+    // trigger global settings
+    setting.trig_glb = ((en_ch_num(sdi) & 0xf) << 4) +
+                       trigger->trigger_stages;
+
+    // channel enable mapping
+    setting.ch_en = 0;
+    for (l = sdi->channels; l; l = l->next) {
+        struct sr_channel *probe = (struct sr_channel *)l->data;
+        setting.ch_en += probe->enabled << probe->index;
+    }
+
+    // trigger advanced configuration
     if (trigger->trigger_mode == SIMPLE_TRIGGER) {
         setting.trig_mask0[0] = ds_trigger_get_mask0(TriggerStages);
         setting.trig_mask1[0] = ds_trigger_get_mask1(TriggerStages);
@@ -326,15 +342,54 @@ static int fpga_setting(const struct sr_dev_inst *sdi)
         setting.trig_edge0[0] = ds_trigger_get_edge0(TriggerStages);
         setting.trig_edge1[0] = ds_trigger_get_edge1(TriggerStages);
 
-        setting.trig_count0[0] = trigger->trigger0_count[TriggerStages];
-        setting.trig_count1[0] = trigger->trigger1_count[TriggerStages];
+        if (setting.mode & (1 << QUAR_MODE_BIT)) {
+            setting.trig_mask0[0] = ((setting.trig_mask0[0] & 0x0f) << 12) +
+                                    ((setting.trig_mask0[0] & 0x0f) << 8) +
+                                    ((setting.trig_mask0[0] & 0x0f) << 4) +
+                                    ((setting.trig_mask0[0] & 0x0f) << 0);
+            setting.trig_mask1[0] = ((setting.trig_mask1[0] & 0x0f) << 12) +
+                                    ((setting.trig_mask1[0] & 0x0f) << 8) +
+                                    ((setting.trig_mask1[0] & 0x0f) << 4) +
+                                    ((setting.trig_mask1[0] & 0x0f) << 0);
+            setting.trig_value0[0] = ((setting.trig_value0[0] & 0x0f) << 12) +
+                                     ((setting.trig_value0[0] & 0x0f) << 8) +
+                                     ((setting.trig_value0[0] & 0x0f) << 4) +
+                                     ((setting.trig_value0[0] & 0x0f) << 0);
+            setting.trig_value1[0] = ((setting.trig_value1[0] & 0x0f) << 12) +
+                                     ((setting.trig_value1[0] & 0x0f) << 8) +
+                                     ((setting.trig_value1[0] & 0x0f) << 4) +
+                                     ((setting.trig_value1[0] & 0x0f) << 0);
+            setting.trig_edge0[0] = ((setting.trig_edge0[0] & 0x0f) << 12) +
+                                    ((setting.trig_edge0[0] & 0x0f) << 8) +
+                                    ((setting.trig_edge0[0] & 0x0f) << 4) +
+                                    ((setting.trig_edge0[0] & 0x0f) << 0);
+            setting.trig_edge1[0] = ((setting.trig_edge1[0] & 0x0f) << 12) +
+                                    ((setting.trig_edge1[0] & 0x0f) << 8) +
+                                    ((setting.trig_edge1[0] & 0x0f) << 4) +
+                                    ((setting.trig_edge1[0] & 0x0f) << 0);
+        } else if (setting.mode & (1 << HALF_MODE_BIT)) {
+            setting.trig_mask0[0] = ((setting.trig_mask0[0] & 0xff) << 8) +
+                                    ((setting.trig_mask0[0] & 0xff) << 0);
+            setting.trig_mask1[0] = ((setting.trig_mask1[0] & 0xff) << 8) +
+                                    ((setting.trig_mask1[0] & 0xff) << 0);
+            setting.trig_value0[0] = ((setting.trig_value0[0] & 0xff) << 8) +
+                                     ((setting.trig_value0[0] & 0xff) << 0);
+            setting.trig_value1[0] = ((setting.trig_value1[0] & 0xff) << 8) +
+                                     ((setting.trig_value1[0] & 0xff) << 0);
+            setting.trig_edge0[0] = ((setting.trig_edge0[0] & 0xff) << 8) +
+                                    ((setting.trig_edge0[0] & 0xff) << 0);
+            setting.trig_edge1[0] = ((setting.trig_edge1[0] & 0xff) << 8) +
+                                    ((setting.trig_edge1[0] & 0xff) << 0);
+        }
 
         setting.trig_logic0[0] = (trigger->trigger_logic[TriggerStages] << 1) + trigger->trigger0_inv[TriggerStages];
         setting.trig_logic1[0] = (trigger->trigger_logic[TriggerStages] << 1) + trigger->trigger1_inv[TriggerStages];
 
+        setting.trig_count[0] = trigger->trigger0_count[TriggerStages];
+
         for (i = 1; i < NUM_TRIGGER_STAGES; i++) {
-            setting.trig_mask0[i] = 0xff;
-            setting.trig_mask1[i] = 0xff;
+            setting.trig_mask0[i] = 0xffff;
+            setting.trig_mask1[i] = 0xffff;
 
             setting.trig_value0[i] = 0;
             setting.trig_value1[i] = 0;
@@ -342,11 +397,10 @@ static int fpga_setting(const struct sr_dev_inst *sdi)
             setting.trig_edge0[i] = 0;
             setting.trig_edge1[i] = 0;
 
-            setting.trig_count0[i] = 0;
-            setting.trig_count1[i] = 0;
-
             setting.trig_logic0[i] = 2;
             setting.trig_logic1[i] = 2;
+
+            setting.trig_count[i] = 0;
         }
     } else {
         for (i = 0; i < NUM_TRIGGER_STAGES; i++) {
@@ -359,11 +413,54 @@ static int fpga_setting(const struct sr_dev_inst *sdi)
             setting.trig_edge0[i] = ds_trigger_get_edge0(i);
             setting.trig_edge1[i] = ds_trigger_get_edge1(i);
 
-            setting.trig_count0[i] = trigger->trigger0_count[i];
-            setting.trig_count1[i] = trigger->trigger1_count[i];
+            if (setting.mode & (1 << STRIG_MODE_BIT) && i == STriggerDataStage) {
+                // serial trigger, data mask/value should not be duplicated
+            } else {
+                if (setting.mode & (1 << QUAR_MODE_BIT)) {
+                    setting.trig_mask0[i] = ((setting.trig_mask0[i] & 0x0f) << 12) +
+                                            ((setting.trig_mask0[i] & 0x0f) << 8) +
+                                            ((setting.trig_mask0[i] & 0x0f) << 4) +
+                                            ((setting.trig_mask0[i] & 0x0f) << 0);
+                    setting.trig_mask1[i] = ((setting.trig_mask1[i] & 0x0f) << 12) +
+                                            ((setting.trig_mask1[i] & 0x0f) << 8) +
+                                            ((setting.trig_mask1[i] & 0x0f) << 4) +
+                                            ((setting.trig_mask1[i] & 0x0f) << 0);
+                    setting.trig_value0[i] = ((setting.trig_value0[i] & 0x0f) << 12) +
+                                             ((setting.trig_value0[i] & 0x0f) << 8) +
+                                             ((setting.trig_value0[i] & 0x0f) << 4) +
+                                             ((setting.trig_value0[i] & 0x0f) << 0);
+                    setting.trig_value1[i] = ((setting.trig_value1[i] & 0x0f) << 12) +
+                                             ((setting.trig_value1[i] & 0x0f) << 8) +
+                                             ((setting.trig_value1[i] & 0x0f) << 4) +
+                                             ((setting.trig_value1[i] & 0x0f) << 0);
+                    setting.trig_edge0[i] = ((setting.trig_edge0[i] & 0x0f) << 12) +
+                                            ((setting.trig_edge0[i] & 0x0f) << 8) +
+                                            ((setting.trig_edge0[i] & 0x0f) << 4) +
+                                            ((setting.trig_edge0[i] & 0x0f) << 0);
+                    setting.trig_edge1[i] = ((setting.trig_edge1[i] & 0x0f) << 12) +
+                                            ((setting.trig_edge1[i] & 0x0f) << 8) +
+                                            ((setting.trig_edge1[i] & 0x0f) << 4) +
+                                            ((setting.trig_edge1[i] & 0x0f) << 0);
+                } else if (setting.mode & (1 << HALF_MODE_BIT)) {
+                    setting.trig_mask0[i] = ((setting.trig_mask0[i] & 0xff) << 8) +
+                                            ((setting.trig_mask0[i] & 0xff) << 0);
+                    setting.trig_mask1[i] = ((setting.trig_mask1[i] & 0xff) << 8) +
+                                            ((setting.trig_mask1[i] & 0xff) << 0);
+                    setting.trig_value0[i] = ((setting.trig_value0[i] & 0xff) << 8) +
+                                             ((setting.trig_value0[i] & 0xff) << 0);
+                    setting.trig_value1[i] = ((setting.trig_value1[i] & 0xff) << 8) +
+                                             ((setting.trig_value1[i] & 0xff) << 0);
+                    setting.trig_edge0[i] = ((setting.trig_edge0[i] & 0xff) << 8) +
+                                            ((setting.trig_edge0[i] & 0xff) << 0);
+                    setting.trig_edge1[i] = ((setting.trig_edge1[i] & 0xff) << 8) +
+                                            ((setting.trig_edge1[i] & 0xff) << 0);
+                }
+            }
 
             setting.trig_logic0[i] = (trigger->trigger_logic[i] << 1) + trigger->trigger0_inv[i];
             setting.trig_logic1[i] = (trigger->trigger_logic[i] << 1) + trigger->trigger1_inv[i];
+
+            setting.trig_count[i] = trigger->trigger0_count[i];
         }
     }
 
@@ -529,19 +626,20 @@ static int DSCope_dev_open(struct sr_dev_inst *sdi)
 			break;
 		}
 
-		/*
-		 * Changes in major version mean incompatible/API changes, so
-		 * bail out if we encounter an incompatible version.
-		 * Different minor versions are OK, they should be compatible.
-		 */
-        if (vi.major != DSL_REQUIRED_VERSION_MAJOR) {
-            sr_err("Expected firmware version %d.x, "
-                   "got %d.%d.", DSL_REQUIRED_VERSION_MAJOR,
+        /*
+         * Different versions may have incompatible issue,
+         * Mark for up level process
+         */
+        if (vi.major != DSL_REQUIRED_VERSION_MAJOR ||
+            vi.minor != DSL_REQUIRED_VERSION_MINOR) {
+            sr_err("Expected firmware version %d.%d, "
+                   "got %d.%d.", DSL_REQUIRED_VERSION_MAJOR, DSL_REQUIRED_VERSION_MINOR,
                    vi.major, vi.minor);
-            break;
+            sdi->status = SR_ST_INCOMPATIBLE;
+        } else {
+            sdi->status = SR_ST_ACTIVE;
         }
 
-        sdi->status = SR_ST_ACTIVE;
         sr_info("Opened device %d on %d.%d, "
 			"interface %d, firmware %d.%d.",
 			sdi->index, usb->bus, usb->address,
@@ -554,7 +652,8 @@ static int DSCope_dev_open(struct sr_dev_inst *sdi)
 	}
 	libusb_free_device_list(devlist, 1);
 
-    if (sdi->status != SR_ST_ACTIVE)
+    if ((sdi->status != SR_ST_ACTIVE) &&
+        (sdi->status != SR_ST_INCOMPATIBLE))
         return SR_ERR;
 
     return SR_OK;
@@ -601,15 +700,6 @@ static int configure_probes(const struct sr_dev_inst *sdi)
 		}
 	}
 
-	if (stage == -1)
-		/*
-		 * We didn't configure any triggers, make sure acquisition
-		 * doesn't wait for any.
-		 */
-		devc->trigger_stage = TRIGGER_FIRED;
-	else
-		devc->trigger_stage = 0;
-
     return SR_OK;
 }
 
@@ -645,6 +735,7 @@ static struct DSL_context *DSCope_dev_new(void)
     devc->dso_bits = 8;
     devc->trigger_margin = 8;
     devc->trigger_channel = 0;
+    devc->rle_mode = FALSE;
 
 	return devc;
 }
@@ -1119,6 +1210,8 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     char str[128];
     int i;
     struct DSL_vga *vga_ptr;
+    uint8_t tmp_u8;
+    int ret;
 
     (void)cg;
 
@@ -1297,20 +1390,10 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
             return SR_ERR;
         *data = g_variant_new_uint64(DSCOPE_MAX_DEPTH);
         break;
-    case SR_CONF_MAX_LOGIC_SAMPLERATE:
+    case SR_CONF_HW_DEPTH:
         if (!sdi)
             return SR_ERR;
-        *data = g_variant_new_uint64(DSCOPE_MAX_SAMPLERATE);
-        break;
-    case SR_CONF_MAX_LOGIC_SAMPLELIMITS:
-        if (!sdi)
-            return SR_ERR;
-        *data = g_variant_new_uint64(DSCOPE_MAX_DEPTH);
-        break;
-    case SR_CONF_RLE_SAMPLELIMITS:
-        if (!sdi)
-            return SR_ERR;
-        *data = g_variant_new_uint64(DSCOPE_MAX_DEPTH);
+        *data = g_variant_new_uint64(DSCOPE_INSTANT_DEPTH);
         break;
     case SR_CONF_VGAIN:
         if (!sdi || !ch)
@@ -1368,6 +1451,16 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
             return SR_ERR;
         devc = sdi->priv;
         *data = g_variant_new_byte(devc->dso_bits);
+        break;
+    case SR_CONF_HW_STATUS:
+        if (!sdi)
+            return SR_ERR;
+        usb = sdi->conn;
+        ret = command_get_hw_info(usb->devhdl, &tmp_u8);
+        if (ret == SR_OK)
+            *data = g_variant_new_byte(tmp_u8);
+        else
+            *data = g_variant_new_byte(0);
         break;
     default:
         return SR_ERR_NA;
@@ -1689,13 +1782,13 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 for (i=0; vga_ptr && (vga_ptr+i)->key; i++){
                     *(vgain_ptr+i) = ((probe->index == 0) ? (vga_ptr+i)->vgain0 : (vga_ptr+i)->vgain1) >> 8;
                 }
-                ret = command_wr_reg(usb->devhdl, 0, EEWP_ADDR);
+                ret = command_wr_reg(usb->devhdl, bmEEWP, EEWP_ADDR);
                 if (ret == SR_OK)
                     ret = command_wr_nvm(usb->devhdl, (unsigned char *)&zero_info, sizeof(struct cmd_zero_info));
                 if (ret == SR_OK)
                     ret = command_wr_nvm(usb->devhdl, (unsigned char *)&vga_info, sizeof(struct cmd_vga_info));
                 if (ret == SR_OK)
-                    ret = command_wr_reg(usb->devhdl, 1, EEWP_ADDR);
+                    ret = command_wr_reg(usb->devhdl, bmZERO, EEWP_ADDR);
                 if (ret != SR_OK)
                     sr_err("DSO channel %d Set Zero command failed!", probe->index);
 
@@ -1916,7 +2009,7 @@ static int dso_zero(struct sr_dev_inst *sdi, struct sr_status mstatus)
     }
 
     if (devc->zero_stage == -1) {
-        // initialize before zero adjustment
+        // initialize before Auto Calibration
         if (dso_init(sdi) == SR_OK)
             devc->zero_stage = 0;
     } else if ((vga_ptr+devc->zero_stage)->key == 0) {
@@ -2060,9 +2153,10 @@ static int dev_open(struct sr_dev_inst *sdi)
     struct DSL_context *devc;
 	int ret;
 	int64_t timediff_us, timediff_ms;
-    uint8_t fpga_done;
+    uint8_t hw_info;
     GSList *l;
     gboolean zeroed;
+    gboolean fpga_done;
 
 	devc = sdi->priv;
 	usb = sdi->conn;
@@ -2103,13 +2197,14 @@ static int dev_open(struct sr_dev_inst *sdi)
         return SR_ERR;
 	}
 
-    ret = command_get_fpga_done(usb->devhdl, &fpga_done);
+    ret = command_get_hw_info(usb->devhdl, &hw_info);
     if (ret != SR_OK) {
-        sr_err("Failed to get fpga done infos.");
+        sr_err("Failed to get hardware infos.");
         return SR_ERR;
     }
+    fpga_done = (hw_info & 0x80) != 0;
 
-    if (fpga_done == 0) {
+    if (sdi->status == SR_ST_ACTIVE && !fpga_done) {
         if ((ret = command_fpga_config(usb->devhdl)) != SR_OK) {
             sr_err("%s: Send FPGA configure command failed!", __func__);
         } else {
@@ -2140,7 +2235,7 @@ static int dev_open(struct sr_dev_inst *sdi)
             config_set(SR_CONF_ZERO, g_variant_new_boolean(TRUE), sdi, NULL, NULL);
             sr_info("Zero have not been setted!");
         }
-        if (fpga_done == 0)
+        if (!fpga_done)
             dso_init(sdi);
     }
 
@@ -2198,6 +2293,7 @@ static void finish_acquisition(struct DSL_context *devc)
     sr_err("%s: send SR_DF_END packet", __func__);
     /* Terminate session. */
     packet.type = SR_DF_END;
+    packet.status = SR_PKT_OK;
     sr_session_send(devc->cb_data, &packet);
 	
     if (devc->num_transfers != 0) {
@@ -2261,20 +2357,17 @@ static struct sr_config * new_config(int key, GVariant *data)
 
 static void receive_transfer(struct libusb_transfer *transfer)
 {
-    gboolean packet_has_error = FALSE;
     struct sr_datafeed_packet packet;
     struct sr_datafeed_logic logic;
     struct sr_datafeed_dso dso;
     struct sr_datafeed_analog analog;
-
-    int trigger_offset, i;
-	int trigger_offset_bytes;
 
     const uint8_t *cur_buf = transfer->buffer;
     struct DSL_context *devc = transfer->user_data;
     struct sr_dev_inst *sdi = devc->cb_data;
     const int sample_width = 2;
     int cur_sample_count = transfer->actual_length / sample_width;
+    int i;
 
     if (devc->data_lock) {
         resubmit_transfer(transfer);
@@ -2288,97 +2381,24 @@ static void receive_transfer(struct libusb_transfer *transfer)
         transfer->status, transfer->timeout, transfer->actual_length);
 
     switch (transfer->status) {
-    case LIBUSB_TRANSFER_NO_DEVICE:
-    case LIBUSB_TRANSFER_CANCELLED:
-        devc->status = DSL_ERROR;
-        break;
     case LIBUSB_TRANSFER_COMPLETED:
     case LIBUSB_TRANSFER_TIMED_OUT: /* We may have received some data though. */
         break;
     default:
-        packet_has_error = TRUE;
+        devc->status = DSL_ERROR;
         break;
     }
 
+    packet.status = SR_PKT_OK;
     if (devc->status == DSL_DATA &&
-        (transfer->actual_length == 0 ||
-        packet_has_error)) {
-        devc->empty_transfer_count++;
-        if (devc->empty_transfer_count > MAX_EMPTY_TRANSFERS) {
-            devc->status = DSL_ERROR;
-        }
-    } else {
-        devc->empty_transfer_count = 0;
-    }
-
-    trigger_offset = 0;
-    if (devc->status == DSL_DATA && devc->trigger_stage >= 0) {
-        for (i = 0; i < cur_sample_count; i++) {
-            const uint16_t cur_sample = devc->sample_wide ?
-                *((const uint16_t*)cur_buf + i) :
-                *((const uint8_t*)cur_buf + i);
-
-            if ((cur_sample & devc->trigger_mask[devc->trigger_stage]) ==
-                devc->trigger_value[devc->trigger_stage]) {
-                /* Match on this trigger stage. */
-                devc->trigger_buffer[devc->trigger_stage] = cur_sample;
-                devc->trigger_stage++;
-
-                if (devc->trigger_stage == NUM_TRIGGER_STAGES ||
-                    devc->trigger_mask[devc->trigger_stage] == 0) {
-                    /* Match on all trigger stages, we're done. */
-                    trigger_offset = i + 1;
-
-                    /*
-                     * TODO: Send pre-trigger buffer to session bus.
-                     * Tell the frontend we hit the trigger here.
-                     */
-                    packet.type = SR_DF_TRIGGER;
-                    packet.payload = NULL;
-                    sr_session_send(sdi, &packet);
-
-                    /*
-                     * Send the samples that triggered it,
-                     * since we're skipping past them.
-                     */
-                    packet.type = SR_DF_LOGIC;
-                    packet.payload = &logic;
-                    logic.unitsize = sizeof(*devc->trigger_buffer);
-                    logic.length = devc->trigger_stage * logic.unitsize;
-                    logic.data = devc->trigger_buffer;
-                    sr_session_send(sdi, &packet);
-
-                    devc->trigger_stage = TRIGGER_FIRED;
-                    break;
-                }
-            } else if (devc->trigger_stage > 0) {
-                /*
-                 * We had a match before, but not in the next sample. However, we may
-                 * have a match on this stage in the next bit -- trigger on 0001 will
-                 * fail on seeing 00001, so we need to go back to stage 0 -- but at
-                 * the next sample from the one that matched originally, which the
-                 * counter increment at the end of the loop takes care of.
-                 */
-                i -= devc->trigger_stage;
-                if (i < -1)
-                    i = -1; /* Oops, went back past this buffer. */
-                /* Reset trigger stage. */
-                devc->trigger_stage = 0;
-            }
-        }
-    }
-
-    if (devc->status == DSL_DATA && devc->trigger_stage == TRIGGER_FIRED) {
-        /* Send the incoming transfer to the session bus. */
-        trigger_offset_bytes = trigger_offset * sample_width;
+        transfer->actual_length != 0) {
         // check packet type
         if (sdi->mode == LOGIC) {
             packet.type = SR_DF_LOGIC;
             packet.payload = &logic;
-            logic.length = transfer->actual_length - trigger_offset_bytes;
-            logic.unitsize = sample_width;
+            logic.length = transfer->actual_length;
             logic.data_error = 0;
-            logic.data = cur_buf + trigger_offset_bytes;
+            logic.data = cur_buf;
         } else if (sdi->mode == DSO) {
             if (!devc->instant) {
                 const uint32_t mstatus_offset = devc->limit_samples / (g_slist_length(sdi->channels)/en_ch_num(sdi));
@@ -2409,7 +2429,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
                  mstatus.vlen <= (transfer->actual_length - 512) / sample_width) ||
                 devc->instant) {
                 devc->roll = (mstatus.stream_mode != 0);
-                devc->mstatus_valid = TRUE;
+                devc->mstatus_valid = devc->instant ? FALSE : TRUE;
                 packet.type = SR_DF_DSO;
                 packet.payload = &dso;
                 dso.probes = sdi->channels;
@@ -2421,9 +2441,10 @@ static void receive_transfer(struct libusb_transfer *transfer)
                 dso.mqflags = SR_MQFLAG_AC;
                 dso.samplerate_tog = (mstatus.sample_divider_tog != 0);
                 dso.trig_flag = (mstatus.trig_flag != 0);
-                dso.data = cur_buf + trigger_offset_bytes;
+                dso.data = cur_buf;
             } else {
-                packet.type = SR_DF_ABANDON;
+                packet.type = SR_DF_DSO;
+                packet.status = SR_PKT_DATA_ERROR;
                 devc->mstatus_valid = FALSE;
             }
         } else {
@@ -2434,7 +2455,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
             analog.mq = SR_MQ_VOLTAGE;
             analog.unit = SR_UNIT_VOLT;
             analog.mqflags = SR_MQFLAG_AC;
-            analog.data = cur_buf + trigger_offset_bytes;
+            analog.data = cur_buf;
         }
 
         if (devc->limit_samples) {
@@ -2479,14 +2500,14 @@ static void receive_transfer(struct libusb_transfer *transfer)
             }
 
             /* send data to session bus */
-            if (packet.type != SR_DF_ABANDON)
+            if (packet.status != SR_PKT_DATA_ERROR)
                 sr_session_send(sdi, &packet);
         }
 
         devc->num_samples += cur_sample_count;
         if ((sdi->mode == LOGIC || devc->instant) &&
             devc->limit_samples &&
-            (unsigned int)devc->num_samples >= devc->limit_samples) {
+            devc->num_samples >= devc->limit_samples) {
             devc->status = DSL_STOP;
         }
     }
@@ -2663,6 +2684,7 @@ static void receive_trigger_pos(struct libusb_transfer *transfer)
     const struct sr_dev_inst *sdi;
     int ret;
 
+    packet.status = SR_PKT_OK;
     devc = transfer->user_data;
 	sdi = devc->cb_data;
     trigger_pos = (struct ds_trigger_pos *)transfer->buffer;
@@ -2753,7 +2775,7 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi, void *cb_data)
     }
 
     if (devc->zero && devc->zero_stage == -1) {
-        // initialize before zero adjustment
+        // initialize before Auto Calibration
         if ((ret = dso_init(sdi)) == SR_OK) {
             devc->zero_stage = 0;
         } else {
@@ -2845,30 +2867,10 @@ static int dev_acquisition_stop(struct sr_dev_inst *sdi, void *cb_data)
 
     if (!devc->abort) {
         devc->abort = TRUE;
-        command_wr_reg(usb->devhdl, 3, EEWP_ADDR);
+        command_wr_reg(usb->devhdl, bmFORCE_RDY, EEWP_ADDR);
     }
 
     return SR_OK;
-}
-
-static int dev_test(struct sr_dev_inst *sdi)
-{
-    if (sdi) {
-        struct sr_usb_dev_inst *usb;
-        struct version_info vi;
-        int ret;
-
-        usb = sdi->conn;
-        ret = command_get_fw_version(usb->devhdl, &vi);
-        if (ret != SR_OK) {
-            sr_err("Device don't exist!");
-            return SR_ERR;
-        } else {
-            return SR_OK;
-        }
-    } else {
-        return SR_ERR;
-    }
 }
 
 static int dev_status_get(struct sr_dev_inst *sdi, struct sr_status *status, int begin, int end)
@@ -2906,7 +2908,6 @@ SR_PRIV struct sr_dev_driver DSCope_driver_info = {
 	.config_list = config_list,
 	.dev_open = dev_open,
 	.dev_close = dev_close,
-    .dev_test = dev_test,
     .dev_status_get = dev_status_get,
 	.dev_acquisition_start = dev_acquisition_start,
 	.dev_acquisition_stop = dev_acquisition_stop,

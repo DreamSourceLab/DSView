@@ -171,9 +171,9 @@ void DsoSignal::set_viewport(pv::view::Viewport *viewport)
 
 }
 
-void DsoSignal::set_scale(float scale)
+void DsoSignal::set_scale(int height)
 {
-	_scale = scale;
+    _scale = height * 1.0f / (1 << _bits);
 }
 
 float DsoSignal::get_scale()
@@ -186,48 +186,38 @@ void DsoSignal::set_enable(bool enable)
     if (_dev_inst->name() == "DSLogic" &&
          get_index() == 0)
         return;
-    _view->session().refresh(INT_MAX);
-    /*
-     * avoid race condition for en_ch_num
-     * data lock need to lock usb event
-     */
-    _dev_inst->set_config(_probe, NULL, SR_CONF_DATALOCK,
-                          g_variant_new_boolean(true));
-    set_vDialActive(false);
-    _dev_inst->set_config(_probe, NULL, SR_CONF_EN_CH,
-                          g_variant_new_boolean(enable));
-    int ch_num = _view->session().get_ch_num(SR_CHANNEL_DSO);
 
     GVariant* gvar;
-    uint64_t max_sample_rate;
-    uint64_t max_sample_limit;
-    gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_MAX_DSO_SAMPLERATE);
+    bool cur_enable;
+    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_EN_CH);
     if (gvar != NULL) {
-        max_sample_rate = g_variant_get_uint64(gvar);
+        cur_enable = g_variant_get_boolean(gvar);
         g_variant_unref(gvar);
     } else {
         qDebug() << "ERROR: config_get SR_CONF_MAX_DSO_SAMPLERATE failed.";
         return;
     }
-    gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_MAX_DSO_SAMPLELIMITS);
-    if (gvar != NULL) {
-        max_sample_limit = g_variant_get_uint64(gvar);
-        g_variant_unref(gvar);
-    } else {
-        qDebug() << "ERROR: config_get SR_CONF_MAX_DSO_SAMPLELIMITS failed.";
+    if (cur_enable == enable)
         return;
+
+    bool running =  false;
+    if (_view->session().get_capture_state() == SigSession::Running) {
+        running = true;
+        _view->session().stop_capture();
+    }
+    while(_view->session().get_capture_state() == SigSession::Running)
+        QCoreApplication::processEvents();
+
+    set_vDialActive(false);
+    _dev_inst->set_config(_probe, NULL, SR_CONF_EN_CH,
+                          g_variant_new_boolean(enable));
+    int ch_num = _view->session().get_ch_num(SR_CHANNEL_DSO);
+
+    if (running) {
+        update_capture();
+        _view->session().repeat_resume();
     }
 
-    uint64_t sample_limit = (uint64_t)(max_sample_limit / (ch_num ? ch_num : 1));
-    uint64_t sample_rate = min((uint64_t)(sample_limit * std::pow(10.0, 9.0) / (_hDial->get_value() * DS_CONF_DSO_HDIVS)),
-                               (uint64_t)(max_sample_rate / (ch_num ? ch_num : 1)));
-
-    _view->set_sample_rate(sample_rate, true);
-    _view->set_sample_limit(sample_limit, true);
-
-    _dev_inst->set_config(_probe, NULL, SR_CONF_DATALOCK,
-                          g_variant_new_boolean(false));
-    _view->session().refresh(RefreshLong);
     _view->set_update(_viewport, true);
     _view->update();
 }
@@ -304,11 +294,11 @@ bool DsoSignal::go_hDialPre(bool setted)
         uint64_t sample_rate = _view->session().get_device()->get_sample_rate();
         const uint64_t min_div = std::pow(10.0, 9.0) / sample_rate;
         if (_view->session().get_capture_state() != SigSession::Running &&
-            !_data->get_snapshots().empty()) {
+            !_data->get_snapshots().front()->empty()) {
             if (_hDial->get_value() > min_div)
                 _hDial->set_sel(_hDial->get_sel() - 1);
         } else if ((_view->session().get_capture_state() == SigSession::Running ||
-                    _data->get_snapshots().empty()) &&
+                    _data->get_snapshots().front()->empty()) &&
                    !_view->session().get_instant()) {
             _view->session().refresh(RefreshShort);
             _hDial->set_sel(_hDial->get_sel() - 1);
@@ -346,17 +336,16 @@ bool DsoSignal::go_hDialPre(bool setted)
     }
 }
 
-bool DsoSignal::go_hDialCur()
+bool DsoSignal::update_capture()
 {
     int ch_num = _view->session().get_ch_num(SR_CHANNEL_DSO);
     if (ch_num == 0)
         return false;
 
     _view->session().refresh(RefreshShort);
-    uint64_t sample_limit = _view->session().get_device()->get_sample_limit();
-    GVariant* gvar;
     uint64_t max_sample_rate;
-    gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_MAX_DSO_SAMPLERATE);
+    uint64_t max_sample_limit;
+    GVariant *gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_MAX_DSO_SAMPLERATE);
     if (gvar != NULL) {
         max_sample_rate = g_variant_get_uint64(gvar);
         g_variant_unref(gvar);
@@ -364,11 +353,19 @@ bool DsoSignal::go_hDialCur()
         qDebug() << "ERROR: config_get SR_CONF_MAX_DSO_SAMPLERATE failed.";
         return false;
     }
+    gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_MAX_DSO_SAMPLELIMITS);
+    if (gvar != NULL) {
+        max_sample_limit = g_variant_get_uint64(gvar);
+        g_variant_unref(gvar);
+    } else {
+        qDebug() << "ERROR: config_get SR_CONF_MAX_DSO_SAMPLELIMITS failed.";
+        return false;
+    }
 
+    uint64_t sample_limit = (uint64_t)(max_sample_limit / (ch_num ? ch_num : 1));
     uint64_t sample_rate = min((uint64_t)(sample_limit * std::pow(10.0, 9.0) / (_hDial->get_value() * DS_CONF_DSO_HDIVS)),
                                (uint64_t)(max_sample_rate / (ch_num ? ch_num : 1)));
-//    _dev_inst->set_config(NULL, NULL, SR_CONF_SAMPLERATE,
-//                          g_variant_new_uint64(sample_rate));
+
     _view->set_sample_limit(sample_limit, true);
     _view->set_sample_rate(sample_rate, true);
     _dev_inst->set_config(_probe, NULL, SR_CONF_TIMEBASE,
@@ -381,10 +378,10 @@ bool DsoSignal::go_hDialNext(bool setted)
     int ch_num = _view->session().get_ch_num(SR_CHANNEL_DSO);
     if (ch_num != 0 && !_hDial->isMax()) {
         if (_view->session().get_capture_state() != SigSession::Running &&
-            !_data->get_snapshots().empty()) {
+            !_data->get_snapshots().front()->empty()) {
             _hDial->set_sel(_hDial->get_sel() + 1);
         } else if ((_view->session().get_capture_state() == SigSession::Running ||
-                    _data->get_snapshots().empty()) &&
+                    _data->get_snapshots().front()->empty()) &&
                    !_view->session().get_instant()) {
             _view->session().refresh(RefreshShort);
             _hDial->set_sel(_hDial->get_sel() + 1);
@@ -428,15 +425,17 @@ bool DsoSignal::load_settings()
     GVariant* gvar;
 
     // -- enable
-    //bool enable;
-    //gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_EN_CH);
-    //if (gvar != NULL) {
-    //    enable = g_variant_get_boolean(gvar);
-    //    g_variant_unref(gvar);
-    //} else {
-    //    qDebug() << "ERROR: config_get SR_CONF_EN_CH failed.";
-    //    return false;
-    //}
+    bool enable;
+    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_EN_CH);
+    if (gvar != NULL) {
+        enable = g_variant_get_boolean(gvar);
+        g_variant_unref(gvar);
+    } else {
+        qDebug() << "ERROR: config_get SR_CONF_EN_CH failed.";
+        return false;
+    }
+
+    // dso channel bits
     gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_DSO_BITS);
     if (gvar != NULL) {
         _bits = g_variant_get_byte(gvar);
@@ -444,7 +443,8 @@ bool DsoSignal::load_settings()
     } else {
         _bits = DefaultBits;
         qDebug("Warning: config_get SR_CONF_DSO_BITS failed, set to %d(default).", DefaultBits);
-        return false;
+        if (strncmp(_dev_inst->name().toLocal8Bit(), "virtual", 7))
+            return false;
     }
 
     // -- hdiv
@@ -515,10 +515,8 @@ bool DsoSignal::load_settings()
         return false;
     }
     _zero_vrate = min(max((0.5 - vpos / (_vDial->get_value() * DS_CONF_DSO_VDIVS)), 0.0), 1.0);
-    if (_dev_inst->name() == "DSCope")
-        _zero_value = _zero_vrate * ((1 << _bits) - 1);
-    else
-        _zero_value = 0x80;
+    if (_dev_inst->name().contains("virtual"))
+        cur_hw_offset = _zero_vrate * ((1 << _bits) - 1);
 
     // -- trig_value
     gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_TRIGGER_VALUE);
@@ -528,7 +526,8 @@ bool DsoSignal::load_settings()
         g_variant_unref(gvar);
     } else {
         qDebug() << "ERROR: config_get SR_CONF_TRIGGER_VALUE failed.";
-        return false;
+        if (strncmp(_dev_inst->name().toLocal8Bit(), "virtual", 7))
+            return false;
     }
 
     if (_view) {
@@ -666,29 +665,33 @@ double DsoSignal::get_zero_vrate()
     return _zero_vrate;
 }
 
-double DsoSignal::get_zero_value()
+double DsoSignal::get_hw_offset()
 {
-    return _zero_value;
+    return cur_hw_offset;
 }
 
 void DsoSignal::set_zero_vpos(int pos)
 {
     if (enabled()) {
         double delta = _trig_delta* get_view_rect().height();
-        _zero_vrate = min(max(pos - UpMargin, 0), get_view_rect().height()) * 1.0 / get_view_rect().height();
+        set_zero_vrate(min(max(pos - UpMargin, 0), get_view_rect().height()) * 1.0 / get_view_rect().height(), false);
         set_trig_vpos(get_zero_vpos() + delta, false);
-        update_offset();
     }
 }
 
-void DsoSignal::set_zero_vrate(double rate)
+void DsoSignal::set_zero_vrate(double rate, bool force_update)
 {
     _zero_vrate = rate;
-    if (_dev_inst->name() == "DSCope")
-        _zero_value = _zero_vrate * ((1 << _bits) - 1);
-    else
-        _zero_value = 0x80;
     update_offset();
+
+    if (!_dev_inst->name().contains("virtual") &&
+        (force_update ||
+        _view->session().get_capture_state() == SigSession::Running)) {
+        if (_dev_inst->name() == "DSLogic")
+            cur_hw_offset = 0x80;
+        else
+            cur_hw_offset = _zero_vrate * ((1 << _bits) - 1);
+    }
 }
 
 void DsoSignal::set_factor(uint64_t factor)
@@ -818,8 +821,7 @@ void DsoSignal::paint_back(QPainter &p, int left, int right)
     const double samplerate = _dev_inst->get_sample_rate();
     const double samples_per_pixel = samplerate * _view->scale();
     const double shown_rate = min(samples_per_pixel * width * 1.0 / sample_len, 1.0);
-    const double start_time = _data->get_start_time();
-    const double start = samplerate * (_view->offset() - start_time);
+    const double start = _view->offset() * samples_per_pixel;
     const double shown_offset = min(start / sample_len, 1.0) * width;
     const double shown_len = shown_rate * width;
     const QPointF left_edge[] =  {QPoint(shown_offset + 3, UpMargin/2 - 6),
@@ -875,7 +877,7 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right)
         const int y = get_zero_vpos() + height * 0.5;
         const double scale = _view->scale();
         assert(scale > 0);
-        const double offset = _view->offset();
+        const int64_t offset = _view->offset();
 
         const deque< boost::shared_ptr<pv::data::DsoSnapshot> > &snapshots =
             _data->get_snapshots();
@@ -886,18 +888,16 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right)
         if (snapshot->empty())
             return;
 
-        const uint16_t number_channels = snapshot->get_channel_num();
-        if (_dev_inst->name() == "DSLogic" &&
-            (unsigned int)get_index() >= number_channels)
+        if (!snapshot->has_data(get_index()))
             return;
 
-        const double pixels_offset = offset / scale;
+        const uint16_t number_channels = snapshot->get_channel_num();
+        const double pixels_offset = offset;
         //const double samplerate = _data->samplerate();
         const double samplerate = _dev_inst->get_sample_rate();
-        const double start_time = _data->get_start_time();
         const int64_t last_sample = max((int64_t)(snapshot->get_sample_count() - 1), (int64_t)0);
         const double samples_per_pixel = samplerate * scale;
-        const double start = samplerate * (offset - start_time);
+        const double start = offset * samples_per_pixel;
         const double end = start + samples_per_pixel * width;
 
         const int64_t start_sample = min(max((int64_t)floor(start),
@@ -922,6 +922,9 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right)
 void DsoSignal::paint_fore(QPainter &p, int left, int right)
 {
     assert(_view);
+
+    bool antialiasing = p.Antialiasing;
+    p.setRenderHint(QPainter::Antialiasing, false);
 
     QPen pen(Signal::dsGray);
     pen.setStyle(Qt::DotLine);
@@ -967,6 +970,8 @@ void DsoSignal::paint_fore(QPainter &p, int left, int right)
         // Paint measure
         paint_measure(p);
     }
+
+    p.setRenderHint(QPainter::Antialiasing, antialiasing);
 }
 
 QRectF DsoSignal::get_trig_rect(int left, int right) const
@@ -1001,9 +1006,6 @@ void DsoSignal::paint_trace(QPainter &p,
         float top = get_view_rect().top();
         float bottom = get_view_rect().bottom();
         float zeroP = _zero_vrate * get_view_rect().height() + top;;
-        if (_dev_inst->name() == "DSCope" &&
-            _view->session().get_capture_state() == SigSession::Running)
-                _zero_value = _zero_vrate * ((1 << _bits) - 1);
         float x = (start / samples_per_pixel - pixels_offset) + left;
         double  pixels_per_sample = 1.0/samples_per_pixel;
         uint8_t offset;
@@ -1014,7 +1016,7 @@ void DsoSignal::paint_trace(QPainter &p,
 
             //offset = samples[(sample - start)*num_channels];
             offset = samples[sample];
-            const float y = min(max(top, zeroP + (offset - _zero_value) * _scale), bottom);
+            const float y = min(max(top, zeroP + (offset - cur_hw_offset) * _scale), bottom);
             *point++ = QPointF(x, y);
             x += pixels_per_sample;
             //*point++ = QPointF(x, top + offset);
@@ -1057,9 +1059,6 @@ void DsoSignal::paint_envelope(QPainter &p,
     float top = get_view_rect().top();
     float bottom = get_view_rect().bottom();
     float zeroP = _zero_vrate * get_view_rect().height() + top;
-    if (_dev_inst->name() == "DSCope" &&
-        _view->session().get_capture_state() == SigSession::Running)
-            _zero_value = _zero_vrate * ((1 << _bits) - 1);
     for(uint64_t sample = 0; sample < e.length-1; sample++) {
 		const float x = ((e.scale * sample + e.start) /
 			samples_per_pixel - pixels_offset) + left;
@@ -1068,8 +1067,8 @@ void DsoSignal::paint_envelope(QPainter &p,
 
 		// We overlap this sample with the next so that vertical
 		// gaps do not appear during steep rising or falling edges
-        const float b = min(max(top, ((max(s->max, (s+1)->min) - _zero_value) * _scale + zeroP)), bottom);
-        const float t = min(max(top, ((min(s->min, (s+1)->max) - _zero_value) * _scale + zeroP)), bottom);
+        const float b = min(max(top, ((max(s->max, (s+1)->min) - cur_hw_offset) * _scale + zeroP)), bottom);
+        const float t = min(max(top, ((min(s->min, (s+1)->max) - cur_hw_offset) * _scale + zeroP)), bottom);
 
 		float h = b - t;
 		if(h >= 0.0f && h <= 1.0f)
@@ -1084,11 +1083,6 @@ void DsoSignal::paint_envelope(QPainter &p,
 
 	delete[] rects;
     //delete[] e.samples;
-}
-
-const std::vector< std::pair<uint64_t, bool> > DsoSignal::cur_edges() const
-{
-
 }
 
 void DsoSignal::paint_type_options(QPainter &p, int right, const QPoint pt)
@@ -1328,21 +1322,21 @@ void DsoSignal::paint_measure(QPainter &p)
         _min = (index == 0) ? status.ch0_min : status.ch1_min;
         const uint64_t period = (index == 0) ? status.ch0_period : status.ch1_period;
         const uint32_t count  = (index == 0) ? status.ch0_pcnt : status.ch1_pcnt;
-        double value_max = (_zero_value - _min) * _scale * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
-        double value_min = (_zero_value - _max) * _scale * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
+        double value_max = (cur_hw_offset - _min) * _scale * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
+        double value_min = (cur_hw_offset - _max) * _scale * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
         double value_p2p = value_max - value_min;
         _period = (count == 0) ? period * 10.0 : period * 10.0 / count;
         const int channel_count = _view->session().get_ch_num(SR_CHANNEL_DSO);
         uint64_t sample_rate = _dev_inst->get_sample_rate();
         _period = _period * 200.0 / (channel_count * sample_rate * 1.0 / SR_MHZ(1));
-        _ms_string[DSO_MS_VMAX] = "Vmax: " + (abs(value_max) > 1000 ? QString::number(value_max/1000.0, 'f', 2) + "V" : QString::number(value_max, 'f', 2) + "mV");
-        _ms_string[DSO_MS_VMIN] = "Vmin: " + (abs(value_min) > 1000 ? QString::number(value_min/1000.0, 'f', 2) + "V" : QString::number(value_min, 'f', 2) + "mV");
-        _ms_string[DSO_MS_PERD] = "Perd: " + (abs(_period) > 1000000000 ? QString::number(_period/1000000000, 'f', 2) + "S" :
+        _ms_string[DSO_MS_VMAX] = tr("Vmax: ") + (abs(value_max) > 1000 ? QString::number(value_max/1000.0, 'f', 2) + "V" : QString::number(value_max, 'f', 2) + "mV");
+        _ms_string[DSO_MS_VMIN] = tr("Vmin: ") + (abs(value_min) > 1000 ? QString::number(value_min/1000.0, 'f', 2) + "V" : QString::number(value_min, 'f', 2) + "mV");
+        _ms_string[DSO_MS_PERD] = tr("Perd: ") + (abs(_period) > 1000000000 ? QString::number(_period/1000000000, 'f', 2) + "S" :
                                 abs(_period) > 1000000 ? QString::number(_period/1000000, 'f', 2) + "mS" :
                                 abs(_period) > 1000 ? QString::number(_period/1000, 'f', 2) + "uS" : QString::number(_period, 'f', 2) + "nS");
-        _ms_string[DSO_MS_FREQ] = "Freq: " + (abs(_period) > 1000000 ? QString::number(1000000000/_period, 'f', 2) + "Hz" :
+        _ms_string[DSO_MS_FREQ] = tr("Freq: ") + (abs(_period) > 1000000 ? QString::number(1000000000/_period, 'f', 2) + "Hz" :
                               abs(_period) > 1000 ? QString::number(1000000/_period, 'f', 2) + "kHz" : QString::number(1000/_period, 'f', 2) + "MHz");
-        _ms_string[DSO_MS_VP2P] = "Vp-p: " +  (abs(value_p2p) > 1000 ? QString::number(value_p2p/1000.0, 'f', 2) + "V" : QString::number(value_p2p, 'f', 2) + "mV");
+        _ms_string[DSO_MS_VP2P] = tr("Vp-p: ") +  (abs(value_p2p) > 1000 ? QString::number(value_p2p/1000.0, 'f', 2) + "V" : QString::number(value_p2p, 'f', 2) + "mV");
 
         if (_probe->ms_show && _probe->ms_en[DSO_MS_VRMS]) {
             const deque< boost::shared_ptr<pv::data::DsoSnapshot> > &snapshots =
@@ -1350,9 +1344,9 @@ void DsoSignal::paint_measure(QPainter &p)
             if (!snapshots.empty()) {
                 const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
                     snapshots.front();
-                const double vrms = snapshot->cal_vrms(_zero_value, get_index());
+                const double vrms = snapshot->cal_vrms(cur_hw_offset, get_index());
                 const double value_vrms = vrms * _scale * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
-                _ms_string[DSO_MS_VRMS] = "Vrms: " +  (abs(value_vrms) > 1000 ? QString::number(value_vrms/1000.0, 'f', 2) + "V" : QString::number(value_vrms, 'f', 2) + "mV");
+                _ms_string[DSO_MS_VRMS] = tr("Vrms: ") +  (abs(value_vrms) > 1000 ? QString::number(value_vrms/1000.0, 'f', 2) + "V" : QString::number(value_vrms, 'f', 2) + "mV");
             }
         }
 
@@ -1363,18 +1357,18 @@ void DsoSignal::paint_measure(QPainter &p)
                 const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
                     snapshots.front();
                 const double vmean = snapshot->cal_vmean(get_index());
-                const double value_vmean = (_zero_value - vmean) * _scale * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
-                _ms_string[DSO_MS_VMEA] = "Vmean: " +  (abs(value_vmean) > 1000 ? QString::number(value_vmean/1000.0, 'f', 2) + "V" : QString::number(value_vmean, 'f', 2) + "mV");
+                const double value_vmean = (cur_hw_offset - vmean) * _scale * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
+                _ms_string[DSO_MS_VMEA] = tr("Vmean: ") +  (abs(value_vmean) > 1000 ? QString::number(value_vmean/1000.0, 'f', 2) + "V" : QString::number(value_vmean, 'f', 2) + "mV");
             }
         }
     } else {
-        _ms_string[DSO_MS_VMAX] = "Vmax: #####";
-        _ms_string[DSO_MS_VMIN] = "Vmin: #####";
-        _ms_string[DSO_MS_PERD] = "Perd: #####";
-        _ms_string[DSO_MS_FREQ] = "Freq: #####";
-        _ms_string[DSO_MS_VP2P] = "Vp-p: #####";
-        _ms_string[DSO_MS_VRMS] = "Vrms: #####";
-        _ms_string[DSO_MS_VMEA] = "Vmean: #####";
+        _ms_string[DSO_MS_VMAX] = tr("Vmax: #####");
+        _ms_string[DSO_MS_VMIN] = tr("Vmin: #####");
+        _ms_string[DSO_MS_PERD] = tr("Perd: #####");
+        _ms_string[DSO_MS_FREQ] = tr("Freq: #####");
+        _ms_string[DSO_MS_VP2P] = tr("Vp-p: #####");
+        _ms_string[DSO_MS_VRMS] = tr("Vrms: #####");
+        _ms_string[DSO_MS_VMEA] = tr("Vmean: #####");
     }
 
     QColor measure_colour = _colour;
@@ -1506,8 +1500,7 @@ bool DsoSignal::measure(const QPointF &p)
 
     const double scale = _view->scale();
     assert(scale > 0);
-    const double offset = _view->offset();
-    const double pixels_offset = offset / scale;
+    const int64_t pixels_offset = _view->offset();
     const double samplerate = _dev_inst->get_sample_rate();
     const double samples_per_pixel = samplerate * scale;
 
@@ -1529,17 +1522,17 @@ bool DsoSignal::measure(const QPointF &p)
     const uint8_t cur_sample = *snapshot->get_samples(_hover_index, _hover_index, get_index());
     const uint8_t nxt_sample = *snapshot->get_samples(nxt_index, nxt_index, get_index());
 
-    _hover_value = (_zero_value - cur_sample) * _scale * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
+    _hover_value = (cur_hw_offset - cur_sample) * _scale * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
 
     float top = get_view_rect().top();
     float bottom = get_view_rect().bottom();
     float zeroP = _zero_vrate * get_view_rect().height() + top;
     float pre_x = (pre_index / samples_per_pixel - pixels_offset);
-    const float pre_y = min(max(top, zeroP + (pre_sample - _zero_value)* _scale), bottom);
+    const float pre_y = min(max(top, zeroP + (pre_sample - cur_hw_offset)* _scale), bottom);
     float x = (_hover_index / samples_per_pixel - pixels_offset);
-    const float y = min(max(top, zeroP + (cur_sample - _zero_value)* _scale), bottom);
+    const float y = min(max(top, zeroP + (cur_sample - cur_hw_offset)* _scale), bottom);
     float nxt_x = (nxt_index / samples_per_pixel - pixels_offset);
-    const float nxt_y = min(max(top, zeroP + (nxt_sample - _zero_value)* _scale), bottom);
+    const float nxt_y = min(max(top, zeroP + (nxt_sample - cur_hw_offset)* _scale), bottom);
     const QRectF slope_rect = QRectF(QPointF(pre_x - 10, pre_y - 10), QPointF(nxt_x + 10, nxt_y + 10));
     if (abs(y-p.y()) < 20 || slope_rect.contains(p)) {
         _hover_point = QPointF(x, y);
