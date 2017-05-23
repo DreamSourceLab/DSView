@@ -181,7 +181,7 @@ struct DSL_vga DSCope_vga[] = {
     {500, DSCOPE_DEFAULT_VGAIN5, DSCOPE_DEFAULT_VGAIN5, DSCOPE_DEFAULT_VOFF, DSCOPE_DEFAULT_VOFF},
     {1000,DSCOPE_DEFAULT_VGAIN6, DSCOPE_DEFAULT_VGAIN6, DSCOPE_DEFAULT_VOFF, DSCOPE_DEFAULT_VOFF},
     {2000,DSCOPE_DEFAULT_VGAIN7, DSCOPE_DEFAULT_VGAIN7, DSCOPE_DEFAULT_VOFF, DSCOPE_DEFAULT_VOFF},
-    {0, 0, 0, 0},
+    {0, 0, 0, 0, 0},
 };
 struct DSL_vga DSCope20_vga[] = {
     {10,  DSCOPE20_DEFAULT_VGAIN0, DSCOPE20_DEFAULT_VGAIN0, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
@@ -192,7 +192,7 @@ struct DSL_vga DSCope20_vga[] = {
     {500, DSCOPE20_DEFAULT_VGAIN5, DSCOPE20_DEFAULT_VGAIN5, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
     {1000,DSCOPE20_DEFAULT_VGAIN6, DSCOPE20_DEFAULT_VGAIN6, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
     {2000,DSCOPE20_DEFAULT_VGAIN7, DSCOPE20_DEFAULT_VGAIN7, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
-    {0, 0, 0, 0},
+    {0, 0, 0, 0, 0},
 };
 
 /**
@@ -466,7 +466,7 @@ static int fpga_setting(const struct sr_dev_inst *sdi)
 
     result  = SR_OK;
     ret = libusb_bulk_transfer(hdl, 2 | LIBUSB_ENDPOINT_OUT,
-                               &setting, sizeof(struct DSL_setting),
+                               (unsigned char*)&setting, sizeof(struct DSL_setting),
                                &transferred, 1000);
 
     if (ret < 0) {
@@ -751,7 +751,7 @@ static int init(struct sr_context *sr_ctx)
 }
 
 
-static struct DSL_vga* get_vga_ptr(struct sr_dev_inst *sdi)
+static struct DSL_vga* get_vga_ptr(const struct sr_dev_inst *sdi)
 {
     struct DSL_vga *vga_ptr = NULL;
     if (strcmp(sdi->model, "DSCope") == 0)
@@ -762,7 +762,7 @@ static struct DSL_vga* get_vga_ptr(struct sr_dev_inst *sdi)
     return vga_ptr;
 }
 
-static uint16_t get_default_trans(struct sr_dev_inst *sdi)
+static uint16_t get_default_trans(const struct sr_dev_inst *sdi)
 {
     uint16_t trans = 1;
     if (strcmp(sdi->model, "DSCope") == 0)
@@ -773,21 +773,22 @@ static uint16_t get_default_trans(struct sr_dev_inst *sdi)
     return trans;
 }
 
-static uint16_t get_default_voff(struct sr_dev_inst *sdi, int ch_index)
+static uint16_t get_default_voff(const struct sr_dev_inst *sdi, int ch_index)
 {
     uint16_t voff = 0;
-    if (strcmp(sdi->model, "DSCope") == 0)
+    if (strcmp(sdi->model, "DSCope") == 0) {
         voff = DSCOPE_DEFAULT_VOFF;
-    else if (strcmp(sdi->model, "DSCope20") == 0)
+    } else if (strcmp(sdi->model, "DSCope20") == 0) {
         if (ch_index == 1)
             voff = CALI_VOFF_RANGE - DSCOPE20_DEFAULT_VOFF;
         else
             voff = DSCOPE20_DEFAULT_VOFF;
+    }
 
     return voff;
 }
 
-static uint64_t get_default_vgain(struct sr_dev_inst *sdi, int num)
+static uint64_t get_default_vgain(const struct sr_dev_inst *sdi, unsigned int num)
 {
     uint64_t vgain = 0;
     if (strcmp(sdi->model, "DSCope") == 0) {
@@ -802,10 +803,10 @@ static uint64_t get_default_vgain(struct sr_dev_inst *sdi, int num)
     return vgain;
 }
 
-static int probe_init(struct sr_dev_inst *sdi)
+static void probe_init(struct sr_dev_inst *sdi)
 {
     int i;
-    GList *l;
+    GSList *l;
     for (l = sdi->channels; l; l = l->next) {
         struct sr_channel *probe = (struct sr_channel *)l->data;
         if (sdi->mode == DSO) {
@@ -840,9 +841,7 @@ static int set_probes(struct sr_dev_inst *sdi, int num_probes)
 static int adjust_probes(struct sr_dev_inst *sdi, int num_probes)
 {
     uint16_t j;
-    GSList *l;
     struct sr_channel *probe;
-    GSList *p;
 
     assert(num_probes > 0);
 
@@ -856,7 +855,7 @@ static int adjust_probes(struct sr_dev_inst *sdi, int num_probes)
     }
 
     while(j > num_probes) {
-        g_slist_delete_link(sdi->channels, g_slist_last(sdi->channels));
+        sdi->channels = g_slist_delete_link(sdi->channels, g_slist_last(sdi->channels));
         j--;
     }
 
@@ -989,7 +988,7 @@ static GSList *dev_mode_list(const struct sr_dev_inst *sdi)
 {
     (void)sdi;
     GSList *l = NULL;
-    int i;
+    unsigned int i;
 
     for(i = 0; i < ARRAY_SIZE(mode_list); i++) {
         l = g_slist_append(l, &mode_list[i]);
@@ -998,7 +997,7 @@ static GSList *dev_mode_list(const struct sr_dev_inst *sdi)
     return l;
 }
 
-static uint64_t dso_vga(struct sr_dev_inst *sdi, struct sr_channel* ch)
+static uint64_t dso_vga(const struct sr_dev_inst *sdi, const struct sr_channel* ch)
 {
     int i;
     struct DSL_vga *vga_ptr = get_vga_ptr(sdi);
@@ -1010,7 +1009,7 @@ static uint64_t dso_vga(struct sr_dev_inst *sdi, struct sr_channel* ch)
     return 0;
 }
 
-static uint64_t dso_voff(struct sr_dev_inst *sdi, struct sr_channel* ch)
+static uint64_t dso_voff(const struct sr_dev_inst *sdi, const struct sr_channel* ch)
 {
     int i;
     struct DSL_vga *vga_ptr =  get_vga_ptr(sdi);
@@ -1021,7 +1020,7 @@ static uint64_t dso_voff(struct sr_dev_inst *sdi, struct sr_channel* ch)
     return 0;
 }
 
-static uint64_t dso_vpos(struct sr_dev_inst *sdi, struct sr_channel* ch)
+static uint64_t dso_vpos(const struct sr_dev_inst *sdi, const struct sr_channel* ch)
 {
     uint64_t vpos;
     int vpos_coarse, vpos_fine;
@@ -1052,7 +1051,7 @@ static uint64_t dso_vpos(struct sr_dev_inst *sdi, struct sr_channel* ch)
         return 0;
 }
 
-static uint64_t dso_cmd_gen(struct sr_dev_inst *sdi, struct sr_channel* ch, int id)
+static uint64_t dso_cmd_gen(const struct sr_dev_inst *sdi, struct sr_channel* ch, int id)
 {
     struct DSL_context *devc;
     uint64_t cmd = 0;
@@ -1208,7 +1207,7 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     struct DSL_context *devc;
     struct sr_usb_dev_inst *usb;
     char str[128];
-    int i;
+    unsigned int i;
     struct DSL_vga *vga_ptr;
     uint8_t tmp_u8;
     int ret;
@@ -1471,7 +1470,7 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
 
 static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                       struct sr_channel *ch,
-                      const struct sr_channel_group *cg )
+                      struct sr_channel_group *cg )
 {
     struct DSL_context *devc;
     const char *stropt;
@@ -1531,7 +1530,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 sr_dbg("%s: Initial setting for DSO mode failed", __func__);
             devc->cur_samplerate = DSCOPE_MAX_SAMPLERATE / num_probes;
             devc->limit_samples = DSCOPE_MAX_DEPTH / num_probes;
-        } else if (sdi->mode == ANALOG){
+        } else {
             num_probes = devc->profile->dev_caps & DEV_CAPS_16BIT ? MAX_ANALOG_PROBES_NUM : 1;
         }
         sr_dev_probes_free(sdi);
@@ -1696,7 +1695,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
          * because the samplelimits may changed
          */
         devc->trigger_hpos = devc->trigger_hrate * en_ch_num(sdi) * devc->limit_samples / 200.0;
-        if ((ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 1, SR_CONF_HORIZ_TRIGGERPOS))) == SR_OK)
+        if ((ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_HORIZ_TRIGGERPOS))) == SR_OK)
             sr_dbg("%s: setting DSO Horiz Trigger Position to %d",
                 __func__, devc->trigger_hpos);
         else
@@ -1730,8 +1729,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             devc->zero_stage = -1;
             devc->zero_pcnt = 0;
             devc->zero_comb = -1;
-            GList *l;
-            int i;
+            GSList *l;
+            unsigned int i;
             struct DSL_vga *vga_ptr =  get_vga_ptr(sdi);
             for(l = sdi->channels; l; l = l->next) {
                 struct sr_channel *probe = (struct sr_channel *)l->data;
@@ -1810,11 +1809,12 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         int i;
         struct DSL_vga *vga_ptr =  get_vga_ptr(sdi);
         for (i = 0; vga_ptr && (vga_ptr+i)->key; i++) {
-            if ((vga_ptr+i)->key == ch->vdiv)
+            if ((vga_ptr+i)->key == ch->vdiv) {
                 if (ch->index == 0)
                     (vga_ptr+i)->vgain0 = vgain;
                 else if (ch->index == 1)
                     (vga_ptr+i)->vgain1 = vgain;
+            }
         }
         ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, ch, SR_CONF_VDIV));
         if (ret == SR_OK)
@@ -1840,11 +1840,12 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         int i;
         struct DSL_vga *vga_ptr =  get_vga_ptr(sdi);
         for (i = 0; vga_ptr && (vga_ptr+i)->key; i++) {
-            if ((vga_ptr+i)->key == ch->vdiv)
+            if ((vga_ptr+i)->key == ch->vdiv) {
                 if (ch->index == 0)
                     (vga_ptr+i)->voff0 = voff;
                 else if (ch->index == 1)
                     (vga_ptr+i)->voff1 = voff;
+            }
         }
         ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, ch, SR_CONF_VPOS));
         if (ret == SR_OK)
@@ -1929,7 +1930,7 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
 
 static int dso_init(const struct sr_dev_inst *sdi)
 {
-    int ret, i;
+    int ret;
     GSList *l;
     struct sr_usb_dev_inst *usb = sdi->conn;
 
@@ -1990,16 +1991,16 @@ static int dso_init(const struct sr_dev_inst *sdi)
     return ret;
 }
 
-static int dso_zero(struct sr_dev_inst *sdi, struct sr_status mstatus)
+static int dso_zero(const struct sr_dev_inst *sdi, struct sr_status mstatus)
 {
     struct DSL_context *devc = sdi->priv;
     struct sr_usb_dev_inst *usb = sdi->conn;
     GSList *l;
-    int ret, i;
+    int ret;
     static double vpos_back[2];
     static uint64_t vdiv_back[2];
     struct DSL_vga *vga_ptr = get_vga_ptr(sdi);
-    struct sr_channel *probe0, *probe1;
+    struct sr_channel *probe0 = NULL, *probe1 = NULL;
     for(l = sdi->channels; l; l = l->next) {
         struct sr_channel *probe = (struct sr_channel *)l->data;
         if (probe->index == 0)
@@ -2152,7 +2153,6 @@ static int dev_open(struct sr_dev_inst *sdi)
     struct sr_usb_dev_inst *usb;
     struct DSL_context *devc;
 	int ret;
-	int64_t timediff_us, timediff_ms;
     uint8_t hw_info;
     GSList *l;
     gboolean zeroed;
@@ -2340,21 +2340,6 @@ static void resubmit_transfer(struct libusb_transfer *transfer)
     sr_err("%s: %s", __func__, libusb_error_name(ret));
 }
 
-static struct sr_config * new_config(int key, GVariant *data)
-{
-    struct sr_config *config;
-
-    if (!(config = g_try_malloc0(sizeof(struct sr_config)))) {
-        sr_err("META config malloc failed.");
-        return NULL;
-    }
-
-    config->key = key;
-    config->data = data;
-
-    return config;
-}
-
 static void receive_transfer(struct libusb_transfer *transfer)
 {
     struct sr_datafeed_packet packet;
@@ -2362,12 +2347,12 @@ static void receive_transfer(struct libusb_transfer *transfer)
     struct sr_datafeed_dso dso;
     struct sr_datafeed_analog analog;
 
-    const uint8_t *cur_buf = transfer->buffer;
+    uint8_t *cur_buf = transfer->buffer;
     struct DSL_context *devc = transfer->user_data;
     struct sr_dev_inst *sdi = devc->cb_data;
     const int sample_width = 2;
     int cur_sample_count = transfer->actual_length / sample_width;
-    int i;
+    unsigned int i;
 
     if (devc->data_lock) {
         resubmit_transfer(transfer);
@@ -2455,7 +2440,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
             analog.mq = SR_MQ_VOLTAGE;
             analog.unit = SR_UNIT_VOLT;
             analog.mqflags = SR_MQFLAG_AC;
-            analog.data = cur_buf;
+            analog.data = (float *)cur_buf;
         }
 
         if (devc->limit_samples) {
@@ -2572,7 +2557,7 @@ static int dev_transfer_start(const struct sr_dev_inst *sdi)
     struct DSL_context *devc;
     struct sr_usb_dev_inst *usb;
     struct libusb_transfer *transfer;
-    unsigned int i, timeout, num_transfers;
+    unsigned int i, num_transfers;
     int ret;
     unsigned char *buf;
     size_t size;
@@ -2581,10 +2566,6 @@ static int dev_transfer_start(const struct sr_dev_inst *sdi)
     devc = sdi->priv;
     usb = sdi->conn;
 
-//    timeout = get_timeout(devc);
-//    num_transfers = get_number_of_transfers(devc);
-//    size = get_buffer_size(devc);
-    timeout = 500;
     #ifndef _WIN32
     num_transfers = 1;
     #else
@@ -2640,7 +2621,6 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
     struct drv_context *drvc;
     struct DSL_context *devc;
     struct sr_usb_dev_inst *usb;
-    int i;
     int ret;
 
     (void)fd;
@@ -2720,8 +2700,10 @@ static void receive_trigger_pos(struct libusb_transfer *transfer)
     }
 }
 
-static int dev_acquisition_start(const struct sr_dev_inst *sdi, void *cb_data)
+static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
 {
+    (void)cb_data;
+
     struct DSL_context *devc;
     struct drv_context *drvc;
     struct sr_usb_dev_inst *usb;
@@ -2790,7 +2772,7 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi, void *cb_data)
      */
     if (sdi->mode == DSO) {
         devc->trigger_hpos = devc->trigger_hrate * en_ch_num(sdi) * devc->limit_samples / 200.0;
-        if ((ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 1, SR_CONF_HORIZ_TRIGGERPOS))) == SR_OK)
+        if ((ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_HORIZ_TRIGGERPOS))) == SR_OK)
             sr_dbg("%s: setting DSO Horiz Trigger Position to %d",
                 __func__, devc->trigger_hpos);
         else
@@ -2810,7 +2792,7 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi, void *cb_data)
 	}
     transfer = libusb_alloc_transfer(0);
     libusb_fill_bulk_transfer(transfer, usb->devhdl,
-            6 | LIBUSB_ENDPOINT_IN, trigger_pos, sizeof(struct ds_trigger_pos),
+            6 | LIBUSB_ENDPOINT_IN, (unsigned char*)trigger_pos, sizeof(struct ds_trigger_pos),
             receive_trigger_pos, devc, 0);
     if ((ret = libusb_submit_transfer(transfer)) != 0) {
         sr_err("%s: Failed to submit trigger_pos transfer: %s.",
@@ -2853,15 +2835,13 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi, void *cb_data)
     return SR_OK;
 }
 
-static int dev_acquisition_stop(struct sr_dev_inst *sdi, void *cb_data)
+static int dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data)
 {
 	(void)cb_data;
 
-    struct drv_context *drvc;
     struct DSL_context *devc;
     struct sr_usb_dev_inst *usb;
 
-    drvc = di->priv;
     devc = sdi->priv;
     usb = sdi->conn;
 
@@ -2873,7 +2853,7 @@ static int dev_acquisition_stop(struct sr_dev_inst *sdi, void *cb_data)
     return SR_OK;
 }
 
-static int dev_status_get(struct sr_dev_inst *sdi, struct sr_status *status, int begin, int end)
+static int dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, int begin, int end)
 {
 	int ret = SR_ERR;
     if (sdi) {

@@ -150,7 +150,7 @@ SR_PRIV int command_get_revid_version(libusb_device_handle *devhdl,
 				      uint8_t *revid);
 SR_PRIV int command_start_acquisition(libusb_device_handle *devhdl,
                       uint64_t samplerate, gboolean samplewide, gboolean la_mode);
-SR_PRIV int command_stop_acquistition(libusb_device_handle *devhdl);
+SR_PRIV int command_stop_acquisition(libusb_device_handle *devhdl);
 
 SR_PRIV int command_fpga_config(libusb_device_handle *devhdl);
 SR_PRIV int command_fpga_setting(libusb_device_handle *devhdl, uint32_t setting_count);

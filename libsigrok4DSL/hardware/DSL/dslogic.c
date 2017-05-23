@@ -36,11 +36,11 @@
 #undef max
 #define max(a,b) ((a)>(b)?(a):(b))
 
-static const int single_buffer_time = 20;
-static const int total_buffer_time = 200;
-static const int instant_buffer_size = 1024 * 1024;
-static const int cons_buffer_size = 128;
-static const int buffer_cnt = 4;
+static const unsigned int single_buffer_time = 20;
+static const unsigned int total_buffer_time = 200;
+static const unsigned int instant_buffer_size = 1024 * 1024;
+static const unsigned int cons_buffer_size = 128;
+static const unsigned int buffer_cnt = 4;
 
 static struct sr_dev_mode mode_list[] = {
     {"LA", LOGIC},
@@ -568,7 +568,8 @@ static int fpga_setting(const struct sr_dev_inst *sdi)
 
     result  = SR_OK;
     ret = libusb_bulk_transfer(hdl, 2 | LIBUSB_ENDPOINT_OUT,
-                               &setting, sizeof(struct DSL_setting),
+                               (unsigned char *)&setting,
+                               sizeof(struct DSL_setting),
                                &transferred, 1000);
 
     if (ret < 0) {
@@ -851,10 +852,10 @@ static int init(struct sr_context *sr_ctx)
     return std_hw_init(sr_ctx, di, LOG_PREFIX);
 }
 
-static int probe_init(struct sr_dev_inst *sdi)
+static void probe_init(struct sr_dev_inst *sdi)
 {
     int i;
-    GList *l;
+    GSList *l;
     for (l = sdi->channels; l; l = l->next) {
         struct sr_channel *probe = (struct sr_channel *)l->data;
         if (sdi->mode == DSO) {
@@ -902,7 +903,7 @@ static int adjust_probes(struct sr_dev_inst *sdi, int num_probes)
     }
 
     while(j > num_probes) {
-        g_slist_delete_link(sdi->channels, g_slist_last(sdi->channels));
+        sdi->channels = g_slist_delete_link(sdi->channels, g_slist_last(sdi->channels));
         j--;
     }
 
@@ -1037,7 +1038,7 @@ static GSList *dev_list(void)
 static GSList *dev_mode_list(const struct sr_dev_inst *sdi)
 {
     GSList *l = NULL;
-    int i;
+    unsigned int i;
 
     if (strcmp(sdi->model, "DSLogic") == 0) {
         for(i = 0; i < ARRAY_SIZE(mode_list); i++) {
@@ -1170,12 +1171,11 @@ static uint64_t dso_cmd_gen(const struct sr_dev_inst *sdi, struct sr_channel* ch
     return cmd;
 }
 
-static int dso_init(const struct sr_dev_inst *sdi, gboolean from_eep)
+static int dso_init(const struct sr_dev_inst *sdi)
 {
-    int ret, i;
+    int ret;
     GSList *l;
     struct sr_usb_dev_inst *usb = sdi->conn;
-    gboolean zeroed = FALSE;
 
     for(l = sdi->channels; l; l = l->next) {
         struct sr_channel *probe = (struct sr_channel *)l->data;
@@ -1523,13 +1523,13 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
 
 static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                       struct sr_channel *ch,
-                      const struct sr_channel_group *cg )
+                      struct sr_channel_group *cg )
 {
     struct DSL_context *devc;
     const char *stropt;
     int ret, num_probes;
     struct sr_usb_dev_inst *usb;
-    int i;
+    unsigned int i;
     struct drv_context *drvc;
 
     (void)cg;
@@ -1585,7 +1585,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             devc->cur_samplerate = DSLOGIC_MAX_DSO_SAMPLERATE / num_probes;
             devc->limit_samples = DSLOGIC_MAX_DSO_DEPTH / num_probes;
             devc->samplerates_size = 15;
-        } else if (sdi->mode == ANALOG){
+        } else {
             command_wr_reg(usb->devhdl, bmSCOPE_CLR, EEWP_ADDR);
             num_probes = devc->profile->dev_caps & DEV_CAPS_16BIT ? MAX_ANALOG_PROBES_NUM : 1;
             devc->op_mode = SR_OP_STREAM;
@@ -1597,7 +1597,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         set_probes(sdi, num_probes);
         sr_dbg("%s: setting mode to %d", __func__, sdi->mode);
         if (sdi->mode == DSO) {
-            dso_init(sdi, 0);
+            dso_init(sdi);
         }
     } else if (id == SR_CONF_OPERATION_MODE) {
         stropt = g_variant_get_string(data, NULL);
@@ -1870,7 +1870,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
              * because the samplelimits may changed
              */
             devc->trigger_hpos = devc->trigger_hrate * en_ch_num(sdi) * devc->limit_samples / 200.0;
-            if ((ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 1, SR_CONF_HORIZ_TRIGGERPOS))) == SR_OK)
+            if ((ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_HORIZ_TRIGGERPOS))) == SR_OK)
                 sr_dbg("%s: setting DSO Horiz Trigger Position to %d",
                     __func__, devc->trigger_hpos);
             else
@@ -2005,9 +2005,7 @@ static int dev_open(struct sr_dev_inst *sdi)
 {
     struct sr_usb_dev_inst *usb;
     struct DSL_context *devc;
-    GSList *l;
 	int ret;
-	int64_t timediff_us, timediff_ms;
     uint8_t hw_info;
     gboolean fpga_done;
 
@@ -2101,12 +2099,10 @@ static int dev_open(struct sr_dev_inst *sdi)
 static int dev_close(struct sr_dev_inst *sdi)
 {
     struct sr_usb_dev_inst *usb;
-    struct DSL_context *devc;
 
 	usb = sdi->conn;
 	if (usb->devhdl == NULL)
         return SR_ERR;
-    devc = sdi->priv;
 
     sr_info("DSLogic: Closing device %d on %d.%d interface %d.",
 		sdi->index, usb->bus, usb->address, USB_INTERFACE);
@@ -2205,10 +2201,9 @@ static void receive_transfer(struct libusb_transfer *transfer)
     struct sr_datafeed_logic logic;
     struct sr_datafeed_dso dso;
     struct sr_datafeed_analog analog;
-    uint64_t cur_sample_count;
-    int i, j, k;
+    uint64_t cur_sample_count = 0;
 
-    const uint8_t *cur_buf = transfer->buffer;
+    uint8_t *cur_buf = transfer->buffer;
     struct DSL_context *devc = transfer->user_data;
     struct sr_dev_inst *sdi = devc->cb_data;
 	const int sample_width = (devc->sample_wide) ? 2 : 1;
@@ -2305,7 +2300,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
             analog.mq = SR_MQ_VOLTAGE;
             analog.unit = SR_UNIT_VOLT;
             analog.mqflags = SR_MQFLAG_AC;
-            analog.data = cur_buf;
+            analog.data = (float *)cur_buf;
         }
 
         if ((devc->limit_samples && devc->num_bytes < devc->actual_bytes) ||
@@ -2392,7 +2387,6 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
     struct drv_context *drvc;
     struct DSL_context *devc;
     struct sr_usb_dev_inst *usb;
-    unsigned int i;
     int ret;
 
     (void)fd;
@@ -2432,7 +2426,6 @@ static void receive_trigger_pos(struct libusb_transfer *transfer)
     struct sr_datafeed_packet packet;
     struct ds_trigger_pos *trigger_pos;
     const struct sr_dev_inst *sdi;
-    int ret;
     uint64_t remain_cnt;
 
     packet.status = SR_PKT_OK;
@@ -2485,7 +2478,7 @@ static int start_transfers(const struct sr_dev_inst *sdi)
     int ret;
     unsigned char *buf;
     size_t size;
-    int dso_buffer_size;
+    unsigned int dso_buffer_size;
     struct ds_trigger_pos *trigger_pos;
 
     devc = sdi->priv;
@@ -2513,7 +2506,7 @@ static int start_transfers(const struct sr_dev_inst *sdi)
     }
     transfer = libusb_alloc_transfer(0);
     libusb_fill_bulk_transfer(transfer, usb->devhdl,
-            6 | LIBUSB_ENDPOINT_IN, trigger_pos, sizeof(struct ds_trigger_pos),
+            6 | LIBUSB_ENDPOINT_IN, (unsigned char *)trigger_pos, sizeof(struct ds_trigger_pos),
             receive_trigger_pos, devc, 0);
     if ((ret = libusb_submit_transfer(transfer)) != 0) {
         sr_err("%s: Failed to submit trigger_pos transfer: %s.",
@@ -2555,12 +2548,13 @@ static int start_transfers(const struct sr_dev_inst *sdi)
     return SR_OK;
 }
 
-static int dev_acquisition_start(const struct sr_dev_inst *sdi, void *cb_data)
+static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
 {
+    (void)cb_data;
+
     struct DSL_context *devc;
     struct drv_context *drvc;
     struct sr_usb_dev_inst *usb;
-    struct libusb_transfer *transfer;
     const struct libusb_pollfd **lupfd;
 	unsigned int i;
     int ret;
@@ -2618,7 +2612,7 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi, void *cb_data)
      */
     if (sdi->mode == DSO) {
         devc->trigger_hpos =  devc->trigger_hrate * en_ch_num(sdi) * devc->limit_samples / 200.0;
-        if ((ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, 1, SR_CONF_HORIZ_TRIGGERPOS))) == SR_OK)
+        if ((ret = command_dso_ctrl(usb->devhdl, dso_cmd_gen(sdi, NULL, SR_CONF_HORIZ_TRIGGERPOS))) == SR_OK)
             sr_dbg("%s: setting DSO Horiz Trigger Position to %d",
                 __func__, devc->trigger_hpos);
         else
@@ -2661,7 +2655,7 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi, void *cb_data)
     return SR_OK;
 }
 
-static int dev_acquisition_stop(struct sr_dev_inst *sdi, void *cb_data)
+static int dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data)
 {
 	(void)cb_data;
 
@@ -2679,7 +2673,7 @@ static int dev_acquisition_stop(struct sr_dev_inst *sdi, void *cb_data)
     return SR_OK;
 }
 
-static int dev_status_get(struct sr_dev_inst *sdi, struct sr_status *status, int begin, int end)
+static int dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, int begin, int end)
 {
 	int ret = SR_ERR;
     if (sdi) {

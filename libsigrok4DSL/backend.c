@@ -261,7 +261,7 @@ static int sanity_check_all_input_modules(void)
 static int sanity_check_all_output_modules(void)
 {
 	int i, errors, ret = SR_OK;
-	struct sr_output_module **outputs;
+    const struct sr_output_module **outputs;
 	const char *d;
 
 	sr_spew("Sanity-checking all output modules.");

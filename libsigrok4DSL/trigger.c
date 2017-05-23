@@ -177,7 +177,6 @@ SR_API int ds_trigger_set_stage(uint16_t stages)
 SR_API int ds_trigger_set_pos(uint16_t position)
 {
     assert(position <= 100);
-    assert(position >= 0);
 
     trigger->trigger_pos = position;
 
@@ -245,7 +244,7 @@ SR_PRIV uint64_t ds_trigger_get_mask0(uint16_t stage)
 
     for (i = TriggerProbes - 1; i >= 0 ; i--) {
         mask = (mask << 1);
-        mask += (trigger->trigger0[stage][i] == 'X' | trigger->trigger0[stage][i] == 'C');
+        mask += (trigger->trigger0[stage][i] == 'X' || trigger->trigger0[stage][i] == 'C');
     }
 
     return mask;
@@ -259,7 +258,7 @@ SR_PRIV uint64_t ds_trigger_get_mask1(uint16_t stage)
 
     for (i = TriggerProbes - 1; i >= 0 ; i--) {
         mask = (mask << 1);
-        mask += (trigger->trigger1[stage][i] == 'X' | trigger->trigger1[stage][i] == 'C');
+        mask += ((trigger->trigger1[stage][i] == 'X') | (trigger->trigger1[stage][i] == 'C'));
     }
 
     return mask;
@@ -273,7 +272,7 @@ SR_PRIV uint64_t ds_trigger_get_value0(uint16_t stage)
 
     for (i = TriggerProbes - 1; i >= 0 ; i--) {
         value = (value << 1);
-        value += (trigger->trigger0[stage][i] == '1' | trigger->trigger0[stage][i] == 'R');
+        value += ((trigger->trigger0[stage][i] == '1') | (trigger->trigger0[stage][i] == 'R'));
     }
 
     return value;
@@ -287,7 +286,7 @@ SR_PRIV uint64_t ds_trigger_get_value1(uint16_t stage)
 
     for (i = TriggerProbes - 1; i >= 0 ; i--) {
         value = (value << 1);
-        value += (trigger->trigger1[stage][i] == '1' | trigger->trigger1[stage][i] == 'R');
+        value += ((trigger->trigger1[stage][i] == '1') | (trigger->trigger1[stage][i] == 'R'));
     }
 
     return value;
@@ -301,8 +300,8 @@ SR_PRIV uint64_t ds_trigger_get_edge0(uint16_t stage)
 
     for (i = TriggerProbes - 1; i >= 0 ; i--) {
         edge = (edge << 1);
-        edge += (trigger->trigger0[stage][i] == 'R' | trigger->trigger0[stage][i] == 'F' |
-                 trigger->trigger0[stage][i] == 'C');
+        edge += ((trigger->trigger0[stage][i] == 'R') | (trigger->trigger0[stage][i] == 'F') |
+                 (trigger->trigger0[stage][i] == 'C'));
     }
 
     return edge;
@@ -316,8 +315,8 @@ SR_PRIV uint64_t ds_trigger_get_edge1(uint16_t stage)
 
     for (i = TriggerProbes - 1; i >= 0 ; i--) {
         edge = (edge << 1);
-        edge += (trigger->trigger1[stage][i] == 'R' | trigger->trigger1[stage][i] == 'F' |
-                 trigger->trigger1[stage][i] == 'C');
+        edge += ((trigger->trigger1[stage][i] == 'R') | (trigger->trigger1[stage][i] == 'F') |
+                 (trigger->trigger1[stage][i] == 'C'));
     }
 
     return edge;

@@ -51,7 +51,7 @@
 struct source {
 	int timeout;
 	sr_receive_data_callback_t cb;
-	void *cb_data;
+    const void *cb_data;
 
 	/* This is used to keep track of the object (fd, pollfd or channel) which is
 	 * being polled and will be used to match the source when removing it again.
@@ -187,7 +187,7 @@ SR_API int sr_session_dev_remove_all(void)
  *
  * @return SR_OK upon success, SR_ERR_ARG upon invalid arguments.
  */
-SR_API int sr_session_dev_add(const struct sr_dev_inst *sdi)
+SR_API int sr_session_dev_add(struct sr_dev_inst *sdi)
 {
         int ret;
 

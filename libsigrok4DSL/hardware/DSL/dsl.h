@@ -236,7 +236,7 @@ static const struct DSL_profile supported_DSCope[] = {
     { 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 };
 
-static const gboolean default_ms_en[DSO_MS_END - DSO_MS_BEGIN] = {
+static const gboolean default_ms_en[] = {
     FALSE, /* DSO_MS_BEGIN */
     TRUE,  /* DSO_MS_FREQ */
     FALSE, /* DSO_MS_PERD */
@@ -245,7 +245,6 @@ static const gboolean default_ms_en[DSO_MS_END - DSO_MS_BEGIN] = {
     FALSE, /* DSO_MS_VRMS */
     FALSE, /* DSO_MS_VMEA */
     FALSE, /* DSO_MS_VP2P */
-    FALSE, /* DSO_MS_END */
 };
 
 enum {
@@ -369,7 +368,7 @@ struct DSL_setting {
 };
 
 struct DSL_vga {
-    int key;
+    uint64_t key;
     uint64_t vgain0;
     uint64_t vgain1;
     uint16_t voff0;

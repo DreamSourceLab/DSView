@@ -121,12 +121,12 @@ SR_API int sr_session_load(const char *filename)
 	struct zip_stat zs;
 	struct sr_dev_inst *sdi;
 	struct sr_channel *probe;
-    int ret, devcnt, i, j, k;
+    int ret, devcnt, i, j;
     uint16_t probenum;
     uint64_t tmp_u64, total_probes, enabled_probes;
     uint16_t p;
     int64_t tmp_64;
-	char **sections, **keys, *metafile, *val, s[11];
+    char **sections, **keys, *metafile, *val;
 	char probename[SR_MAX_PROBENAME_LEN + 1];
     int mode = LOGIC;
     int channel_type = SR_CHANNEL_LOGIC;
@@ -239,7 +239,7 @@ SR_API int sr_session_load(const char *filename)
                         channel_type = (mode == DSO) ? SR_CHANNEL_DSO :
                                        (mode == ANALOG) ? SR_CHANNEL_ANALOG : SR_CHANNEL_LOGIC;
                         for (p = 0; p < total_probes; p++) {
-                            snprintf(probename, SR_MAX_PROBENAME_LEN, "%" PRIu64, p);
+                            snprintf(probename, SR_MAX_PROBENAME_LEN, "%u", p);
                             if (!(probe = sr_channel_new(p, channel_type, FALSE,
                                     probename)))
                                 return SR_ERR;

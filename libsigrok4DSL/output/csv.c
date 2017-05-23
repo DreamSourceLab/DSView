@@ -236,7 +236,7 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
             *out = g_string_sized_new(512);
         }
 
-        for (i = 0; i < dso->num_samples; i++) {
+        for (i = 0; i < (uint64_t)dso->num_samples; i++) {
             for (j = 0; j < ctx->num_enabled_channels; j++) {
                 idx = ctx->channel_index[j];
                 p = dso->data + i * ctx->num_enabled_channels + idx * ((ctx->num_enabled_channels > 1) ? 1 : 0);

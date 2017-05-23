@@ -287,7 +287,7 @@ static const char *probe_names[NUM_PROBES + 1] = {
 
 };
 
-static const gboolean default_ms_en[DSO_MS_END - DSO_MS_BEGIN] = {
+static const gboolean default_ms_en[] = {
     FALSE, /* DSO_MS_BEGIN */
     TRUE,  /* DSO_MS_FREQ */
     FALSE, /* DSO_MS_PERD */
@@ -296,7 +296,6 @@ static const gboolean default_ms_en[DSO_MS_END - DSO_MS_BEGIN] = {
     FALSE, /* DSO_MS_VRMS */
     FALSE, /* DSO_MS_VMEA */
     FALSE, /* DSO_MS_VP2P */
-    FALSE, /* DSO_MS_END */
 };
 
 /* Private, per-device-instance driver context. */
@@ -308,7 +307,7 @@ static struct sr_dev_driver *di = &demo_driver_info;
 
 extern struct ds_trigger *trigger;
 
-static int hw_dev_acquisition_stop(struct sr_dev_inst *sdi, void *cb_data);
+static int hw_dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data);
 
 static int clear_instances(void)
 {
@@ -400,7 +399,7 @@ static GSList *hw_dev_mode_list(const struct sr_dev_inst *sdi)
 {
     (void)sdi;
     GSList *l = NULL;
-    int i;
+    unsigned int i;
 
     for(i = 0; i < ARRAY_SIZE(mode_list); i++) {
         l = g_slist_append(l, &mode_list[i]);
@@ -472,16 +471,15 @@ static int hw_cleanup(void)
 	return ret;
 }
 
-static int en_ch_num(const struct sr_dev_inst *sdi)
+static unsigned int en_ch_num(const struct sr_dev_inst *sdi)
 {
     GSList *l;
-    int channel_en_cnt = 0;
+    unsigned int channel_en_cnt = 0;
 
     for (l = sdi->channels; l; l = l->next) {
         struct sr_channel *probe = (struct sr_channel *)l->data;
         channel_en_cnt += probe->enabled;
     }
-    channel_en_cnt += (channel_en_cnt == 0);
 
     return channel_en_cnt;
 }
@@ -573,7 +571,7 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
 
 static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                       struct sr_channel *ch,
-                      const struct sr_channel_group *cg)
+                      struct sr_channel_group *cg)
 {
     uint16_t i, j;
     int ret;
@@ -822,16 +820,16 @@ static void samples_generator(uint16_t *buf, uint64_t size,
                               const struct sr_dev_inst *sdi,
                               struct dev_context *devc)
 {
-    uint64_t i, pre0_i, pre1_i, index;
+    uint64_t i, pre0_i, pre1_i;
     GSList *l;
     struct sr_channel *probe;
     int offset;
-    int start_rand;
+    unsigned int start_rand;
     const uint64_t span = DEMO_MAX_DSO_SAMPLERATE / devc->cur_samplerate;
     const uint64_t len = ARRAY_SIZE(sinx) - 1;
-    int *pre_buf;
+    const int *pre_buf;
     uint16_t tmp_u16 = 0;
-    int ch_num = en_ch_num(sdi);
+    unsigned int ch_num = en_ch_num(sdi) ? en_ch_num(sdi) : 1;
 
     switch (devc->sample_generator) {
     case PATTERN_SINE: /* Sine */
@@ -955,11 +953,11 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
     struct sr_datafeed_dso dso;
     struct sr_datafeed_analog analog;
     double samples_elaspsed;
-    uint64_t samples_to_send = 0, expected_samplenum, sending_now;
+    uint64_t samples_to_send = 0, sending_now;
 	int64_t time, elapsed;
     static uint16_t last_sample = 0;
     uint16_t cur_sample;
-    int i;
+    uint64_t i;
 
 	(void)fd;
 	(void)revents;
@@ -1069,7 +1067,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
                 analog.mq = SR_MQ_VOLTAGE;
                 analog.unit = SR_UNIT_VOLT;
                 analog.mqflags = SR_MQFLAG_AC;
-                analog.data = devc->buf;
+                analog.data = (float *)devc->buf;
             }
 
             if (sdi->mode == DSO && !devc->instant) {
@@ -1098,7 +1096,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
     return TRUE;
 }
 
-static int hw_dev_acquisition_start(const struct sr_dev_inst *sdi,
+static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
 		void *cb_data)
 {
 	struct dev_context *const devc = sdi->priv;
@@ -1159,7 +1157,7 @@ static int hw_dev_acquisition_start(const struct sr_dev_inst *sdi,
 	return SR_OK;
 }
 
-static int hw_dev_acquisition_stop(struct sr_dev_inst *sdi, void *cb_data)
+static int hw_dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data)
 {
     (void)cb_data;
 
@@ -1184,7 +1182,7 @@ static int hw_dev_acquisition_stop(struct sr_dev_inst *sdi, void *cb_data)
 	return SR_OK;
 }
 
-static int hw_dev_status_get(struct sr_dev_inst *sdi, struct sr_status *status, int begin, int end)
+static int hw_dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, int begin, int end)
 {
     (void)begin;
     (void)end;

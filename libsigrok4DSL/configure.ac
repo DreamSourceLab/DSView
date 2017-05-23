@@ -52,6 +52,12 @@ AC_PROG_CPP
 AC_PROG_INSTALL
 AC_PROG_LN_S
 
+# https://github.com/rsyslog/rsyslog/issues/1179
+# Seems libtool doesn't honors ARFLAGS, but statically set AR_FLAGS=cru
+# This causes a few warnings on build:
+#   "ar u modifier ignored since D is the default (see U)"
+m4_divert_text([DEFAULTS], [: "${ARFLAGS=cr} ${AR_FLAGS=cr}"])
+
 # Required for per-target flags or subdir-objects with C sources.
 AM_PROG_CC_C_O
 

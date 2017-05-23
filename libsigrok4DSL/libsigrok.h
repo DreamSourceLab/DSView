@@ -156,8 +156,6 @@ enum {
 #define SR_PRIV
 #endif
 
-typedef int (*sr_receive_data_callback_t)(int fd, int revents, const struct sr_dev_inst *sdi);
-
 /** Data types used by sr_config_info(). */
 enum {
 	SR_T_UINT64 = 10000,
@@ -456,13 +454,13 @@ struct sr_output {
 	 * A pointer to this output format's 'struct sr_output_format'.
 	 * The frontend can use this to call the module's callbacks.
 	 */
-	struct sr_output_module *module;
+    const struct sr_output_module *module;
 
 	/**
 	 * The device for which this output module is creating output. This
 	 * can be used by the module to find out probe names and numbers.
 	 */
-	struct sr_dev_inst *sdi;
+    const struct sr_dev_inst *sdi;
 
 	/**
 	 * An optional parameter which the frontend can pass in to the
@@ -665,7 +663,7 @@ struct sr_status {
     uint64_t ch1_period;
     uint32_t ch1_pcnt;
 
-    uint32_t vlen;
+    int vlen;
     gboolean stream_mode;
     uint32_t sample_divider;
     gboolean sample_divider_tog;
@@ -1084,9 +1082,9 @@ struct sr_dev_driver {
                        const struct sr_channel *ch,
                        const struct sr_channel_group *cg);
     int (*config_set) (int id, GVariant *data,
-                       const struct sr_dev_inst *sdi,
-                       const struct sr_channel *ch,
-                       const struct sr_channel_group *cg);
+                       struct sr_dev_inst *sdi,
+                       struct sr_channel *ch,
+                       struct sr_channel_group *cg);
     int (*config_list) (int info_id, GVariant **data,
                         const struct sr_dev_inst *sdi,
                         const struct sr_channel_group *cg);
@@ -1094,12 +1092,12 @@ struct sr_dev_driver {
 	/* Device-specific */
 	int (*dev_open) (struct sr_dev_inst *sdi);
 	int (*dev_close) (struct sr_dev_inst *sdi);
-    int (*dev_status_get) (struct sr_dev_inst *sdi,
+    int (*dev_status_get) (const struct sr_dev_inst *sdi,
                            struct sr_status *status,
                            int begin, int end);
-	int (*dev_acquisition_start) (const struct sr_dev_inst *sdi,
+    int (*dev_acquisition_start) (struct sr_dev_inst *sdi,
 			void *cb_data);
-	int (*dev_acquisition_stop) (struct sr_dev_inst *sdi,
+    int (*dev_acquisition_stop) (const struct sr_dev_inst *sdi,
 			void *cb_data);
 
 	/* Dynamic */
@@ -1176,6 +1174,8 @@ struct ds_trigger_pos {
     uint32_t status;
     unsigned char first_block[488];
 };
+
+typedef int (*sr_receive_data_callback_t)(int fd, int revents, const struct sr_dev_inst *sdi);
 
 #include "proto.h"
 #include "version.h"

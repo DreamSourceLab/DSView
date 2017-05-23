@@ -24,6 +24,7 @@
 #include <sys/time.h>
 #include <zip.h>
 #include <assert.h>
+#include <string.h>
 #include "libsigrok.h"
 #include "libsigrok-internal.h"
 
@@ -91,7 +92,7 @@ static int trans_data(struct sr_dev_inst *sdi)
 {
     // translate for old format
     struct session_vdev *vdev = sdi->priv;
-    GList *l;
+    GSList *l;
     struct sr_channel *probe;
 
     assert(vdev->buf != NULL);
@@ -124,7 +125,7 @@ static int trans_data(struct sr_dev_inst *sdi)
 static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
 {
 	struct sr_dev_inst *sdi;
-	struct session_vdev *vdev;
+    struct session_vdev *vdev = NULL;
 	struct sr_datafeed_packet packet;
 	struct sr_datafeed_logic logic;
     struct sr_datafeed_dso dso;
@@ -132,7 +133,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
 	GSList *l;
     int ret;
     char file_name[32];
-    struct sr_channel *probe;
+    struct sr_channel *probe = NULL;
     GSList *pl;
     int channel;
 
@@ -242,7 +243,8 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
         }
 	}
 
-    if (vdev->cur_channel >= vdev->num_probes ||
+    if (!vdev ||
+        vdev->cur_channel >= vdev->num_probes ||
         revents == -1) {
 		packet.type = SR_DF_END;
 		sr_session_send(cb_sdi, &packet);
@@ -320,6 +322,8 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
                       const struct sr_channel *ch,
                       const struct sr_channel_group *cg)
 {
+    (void)cg;
+
 	struct session_vdev *vdev;
 
 	switch (id) {
@@ -443,13 +447,15 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
 	return SR_OK;
 }
 
-static int config_set(int id, GVariant *data, const struct sr_dev_inst *sdi,
+static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                       struct sr_channel *ch,
-                      const struct sr_channel_group *cg)
+                      struct sr_channel_group *cg)
 {
+    (void)cg;
+
 	struct session_vdev *vdev;
     const char *stropt;
-    int i;
+    unsigned int i;
 
 	vdev = sdi->priv;
 
@@ -565,8 +571,12 @@ static int config_set(int id, GVariant *data, const struct sr_dev_inst *sdi,
 	return SR_OK;
 }
 
-static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi)
+static int config_list(int key, GVariant **data,
+                       const struct sr_dev_inst *sdi,
+                       const struct sr_channel_group *cg)
 {
+    (void)cg;
+
     GVariant *gvar;
     GVariantBuilder gvb;
 
@@ -611,7 +621,7 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi)
 	return SR_OK;
 }
 
-static int dev_status_get(struct sr_dev_inst *sdi, struct sr_status *status, int begin, int end)
+static int dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, int begin, int end)
 {
     (void)begin;
     (void)end;
@@ -627,14 +637,16 @@ static int dev_status_get(struct sr_dev_inst *sdi, struct sr_status *status, int
     }
 }
 
-static int dev_acquisition_start(const struct sr_dev_inst *sdi,
+static int dev_acquisition_start(struct sr_dev_inst *sdi,
 		void *cb_data)
 {
+    (void)cb_data;
+
 	struct zip_stat zs;
 	struct session_vdev *vdev;
     struct sr_datafeed_packet packet;
 	int ret;
-    GList *l;
+    GSList *l;
     struct sr_channel *probe;
 
 	vdev = sdi->priv;

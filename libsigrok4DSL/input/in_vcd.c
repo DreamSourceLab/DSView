@@ -299,7 +299,7 @@ static int format_match(const char *filename)
 	gchar *name = NULL, *contents = NULL;
 	gboolean status;
 	
-    file = g_fopen(filename, "r");
+    file = fopen(filename, "r");
 	if (file == NULL)
 		return FALSE;
 
@@ -565,7 +565,7 @@ static int loadfile(struct sr_input *in, const char *filename)
 	ctx = in->internal;
     packet.status = SR_PKT_OK;
 
-    if ((file = g_fopen(filename, "r")) == NULL)
+    if ((file = fopen(filename, "r")) == NULL)
 		return SR_ERR;
 
 	if (!parse_header(file, ctx))

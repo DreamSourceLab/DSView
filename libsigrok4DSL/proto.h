@@ -69,9 +69,9 @@ SR_API int sr_config_get(const struct sr_dev_driver *driver,
                          const struct sr_channel *ch,
                          const struct sr_channel_group *cg,
                          int key, GVariant **data);
-SR_API int sr_config_set(const struct sr_dev_inst *sdi,
-                         const struct sr_channel *ch,
-                         const struct sr_channel_group *cg,
+SR_API int sr_config_set(struct sr_dev_inst *sdi,
+                         struct sr_channel *ch,
+                         struct sr_channel_group *cg,
                          int key, GVariant *data);
 SR_API int sr_config_list(const struct sr_dev_driver *driver,
                           const struct sr_dev_inst *sdi,
@@ -91,7 +91,7 @@ SR_API int sr_session_load(const char *filename);
 SR_API struct sr_session *sr_session_new(void);
 SR_API int sr_session_destroy(void);
 SR_API int sr_session_dev_remove_all(void);
-SR_API int sr_session_dev_add(const struct sr_dev_inst *sdi);
+SR_API int sr_session_dev_add(struct sr_dev_inst *sdi);
 SR_API int sr_session_dev_list(GSList **devlist);
 
 /* Datafeed setup */
@@ -174,4 +174,10 @@ SR_API int ds_trigger_set_en(uint16_t enable);
 SR_API uint16_t ds_trigger_get_en();
 SR_API int ds_trigger_set_mode(uint16_t mode);
 
+SR_PRIV uint64_t ds_trigger_get_mask0(uint16_t stage);
+SR_PRIV uint64_t ds_trigger_get_value0(uint16_t stage);
+SR_PRIV uint64_t ds_trigger_get_edge0(uint16_t stage);
+SR_PRIV uint64_t ds_trigger_get_mask1(uint16_t stage);
+SR_PRIV uint64_t ds_trigger_get_value1(uint16_t stage);
+SR_PRIV uint64_t ds_trigger_get_edge1(uint16_t stage);
 #endif
