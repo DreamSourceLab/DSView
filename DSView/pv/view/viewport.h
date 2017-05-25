@@ -119,7 +119,6 @@ private:
     void measure();
 
 private slots:
-    void on_traces_moved();
     void on_trigger_timer();
     void on_drag_timer();
     void set_receive_len(quint64 length);
@@ -130,18 +129,19 @@ public slots:
 
 signals:
     void measure_updated();
+    void prgRate(int progress);
 
 private:
 	View &_view;
     View_type _type;
     bool _need_update;
 
-    uint64_t _total_receive_len;
+    uint64_t _sample_received;
     QPoint _mouse_point;
 	QPoint _mouse_down_point;
-	double _mouse_down_offset;
+    int64_t _mouse_down_offset;
     double _curScale;
-    double _curOffset;
+    int64_t _curOffset;
     int _curSignalHeight;
 
     QPixmap pixmap;
@@ -152,10 +152,10 @@ private:
     uint64_t _cur_sample;
     uint64_t _nxt_sample;
     uint64_t _thd_sample;
-    double _cur_preX;
-    double _cur_aftX;
-    double _cur_thdX;
-    double _cur_midY;
+    int64_t _cur_preX;
+    int64_t _cur_aftX;
+    int64_t _cur_thdX;
+    int _cur_midY;
     QString _mm_width;
     QString _mm_period;
     QString _mm_freq;
@@ -169,7 +169,7 @@ private:
     QString _em_edges;
 
     QTimer trigger_timer;
-    bool triggered;
+    bool transfer_started;
     int timer_cnt;
 
     boost::shared_ptr<Signal> _drag_sig;

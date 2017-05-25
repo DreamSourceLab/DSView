@@ -53,6 +53,8 @@ private:
     static const int StateHeight;
     static const int StateRound;
 
+    static const int TogMaxScale = 10;
+
     enum LogicSetRegions{
         NONTRIG = 0,
         POSTRIG,
@@ -94,15 +96,17 @@ public:
 	 **/
     void paint_mid(QPainter &p, int left, int right);
 
-    const std::vector< std::pair<uint64_t, bool> > cur_edges() const;
-
     bool measure(const QPointF &p, uint64_t &index0, uint64_t &index1, uint64_t &index2) const;
 
     bool edges(const QPointF &p, uint64_t start, uint64_t &rising, uint64_t &falling) const;
 
+    bool edges(uint64_t end, uint64_t start, uint64_t &rising, uint64_t &falling) const;
+
     bool mouse_press(int right, const QPoint pt);
 
     QRectF get_rect(LogicSetRegions type, int y, int right);
+
+    void paint_mark(QPainter &p, int xstart, int xend, int type);
 
 protected:
     void paint_type_options(QPainter &p, int right, const QPoint pt);
@@ -116,7 +120,8 @@ private:
 
 private:
 	boost::shared_ptr<pv::data::Logic> _data;
-    std::vector< std::pair<uint64_t, bool> > _cur_edges;
+    std::vector< std::pair<uint16_t, bool> > _cur_edges;
+    std::vector<std::pair<bool, bool>> _cur_pulses;
     LogicSetRegions _trig;
 };
 

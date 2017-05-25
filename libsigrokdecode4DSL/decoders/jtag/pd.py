@@ -30,10 +30,8 @@ import sigrokdecode as srd
 
 '''
 OUTPUT_PYTHON format:
-
 Packet:
 [<ptype>, <pdata>]
-
 <ptype>:
  - 'NEW STATE': <pdata> is the new state of the JTAG state machine.
    Valid values: 'TEST-LOGIC-RESET', 'RUN-TEST/IDLE', 'SELECT-DR-SCAN',
@@ -44,7 +42,6 @@ Packet:
  - 'IR TDO': Bitstring that was clocked out of the IR register.
  - 'DR TDI': Bitstring that was clocked into the DR register.
  - 'DR TDO': Bitstring that was clocked out of the DR register.
-
 All bitstrings are a list consisting of two items. The first is a sequence
 of '1' and '0' characters (the right-most character is the LSB. Example:
 '01110001', where 1 is the LSB). The second item is a list of ss/es values

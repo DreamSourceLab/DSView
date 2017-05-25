@@ -57,10 +57,10 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
 
     position_label = new QLabel(tr("Trigger Position: "), _widget);
     position_spinBox = new QSpinBox(_widget);
-    position_spinBox->setRange(MinTrigPosition, 99);
+    position_spinBox->setRange(MinTrigPosition, DS_MAX_TRIG_PERCENT);
     position_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     position_slider = new QSlider(Qt::Horizontal, _widget);
-    position_slider->setRange(MinTrigPosition, 99);
+    position_slider->setRange(MinTrigPosition, DS_MAX_TRIG_PERCENT);
     connect(position_slider, SIGNAL(valueChanged(int)), position_spinBox, SLOT(setValue(int)));
     connect(position_spinBox, SIGNAL(valueChanged(int)), position_slider, SLOT(setValue(int)));
 
@@ -93,10 +93,10 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
         _value0_lineEdit->setInputMask("X X X X X X X X X X X X X X X X");
 		_value0_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
         _value0_lineEdit_list.push_back(_value0_lineEdit);
-        QSpinBox *_count0_spinBox = new QSpinBox(_widget);
-        _count0_spinBox->setRange(1, INT32_MAX);
-        _count0_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-        _count0_spinBox_list.push_back(_count0_spinBox);
+        QSpinBox *_count_spinBox = new QSpinBox(_widget);
+        _count_spinBox->setRange(1, INT32_MAX);
+        _count_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
+        _count_spinBox_list.push_back(_count_spinBox);
         QComboBox *_inv0_comboBox = new QComboBox(_widget);
         _inv0_comboBox->addItem(tr("=="));
         _inv0_comboBox->addItem(tr("!="));
@@ -109,33 +109,38 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
         _value1_lineEdit->setInputMask("X X X X X X X X X X X X X X X X");
 		_value1_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
         _value1_lineEdit_list.push_back(_value1_lineEdit);
-        QSpinBox *_count1_spinBox = new QSpinBox(_widget);
-        _count1_spinBox->setRange(1, INT32_MAX);
-        _count1_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-        _count1_spinBox_list.push_back(_count1_spinBox);
         QComboBox *_inv1_comboBox = new QComboBox(_widget);
         _inv1_comboBox->addItem(tr("=="));
         _inv1_comboBox->addItem(tr("!="));
         _inv1_comboBox_list.push_back(_inv1_comboBox);
 
+        QCheckBox *_contiguous_checkbox = new QCheckBox(_widget);
+        _contiguous_checkbox_list.push_back(_contiguous_checkbox);
+
         QLabel *value_exp_label = new QLabel("1 1 1 1 1 1\n5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 ", _widget);
-        QLabel *inv_exp_label = new QLabel("Inv", _widget);
-        QLabel *count_exp_label = new QLabel("Counter", _widget);
+        QLabel *inv_exp_label = new QLabel(tr("Inv"), _widget);
+        QLabel *count_exp_label = new QLabel(tr("Counter"), _widget);
         value_exp_label->setFont(font);
 
         QVBoxLayout *stage_layout = new QVBoxLayout();
         QGridLayout *stage_glayout = new QGridLayout();
         stage_glayout->setVerticalSpacing(5);
+
         stage_glayout->addWidget(value_exp_label, 1, 0);
         stage_glayout->addWidget(inv_exp_label, 1, 1);
-        stage_glayout->addWidget(count_exp_label, 1, 2);
         stage_glayout->addWidget(_value0_lineEdit, 2, 0);
         stage_glayout->addWidget(_inv0_comboBox, 2, 1);
-        stage_glayout->addWidget(_count0_spinBox, 2, 2);
-        stage_glayout->addWidget(_logic_comboBox, 2, 3);
+        stage_glayout->addWidget(_logic_comboBox, 2, 2);
         stage_glayout->addWidget(_value1_lineEdit, 3, 0);
         stage_glayout->addWidget(_inv1_comboBox, 3, 1);
-        stage_glayout->addWidget(_count1_spinBox, 3, 2);
+
+        stage_glayout->addWidget(new QLabel(_widget), 4, 0);
+
+        stage_glayout->addWidget(new QLabel(tr("Contiguous")), 5, 1, 1, 2);
+        stage_glayout->addWidget(_contiguous_checkbox, 5, 0, 1, 1, Qt::AlignRight);
+        stage_glayout->addWidget(count_exp_label, 6, 1, 1, 2);
+        stage_glayout->addWidget(_count_spinBox, 6, 0);
+
         stage_layout->addLayout(stage_glayout);
         stage_layout->addSpacing(20);
         stage_layout->addWidget(new QLabel(tr("X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge")));
@@ -189,9 +194,9 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
     _serial_value_lineEdit->setInputMask("X X X X X X X X X X X X X X X X");
     _serial_value_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
-    _serial_vcnt_spinBox = new QSpinBox(_widget);
-    _serial_vcnt_spinBox->setRange(1, INT32_MAX);
-    _serial_vcnt_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
+    _serial_bits_comboBox = new QComboBox(_widget);
+    for(i = 1; i <= 16; i++)
+        _serial_bits_comboBox->addItem(QString::number(i));
 
     QLabel *serial_value_exp_label = new QLabel("1 1 1 1 1 1\n5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0", _widget);
     serial_value_exp_label->setFont(font);
@@ -211,11 +216,11 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
     serial_glayout->addWidget(new QLabel(_widget), 5, 0, 1, 5);
     serial_glayout->addWidget(_serial_data_lable, 6, 0);
     serial_glayout->addWidget(_serial_data_comboBox, 6, 1);
-    serial_glayout->addWidget(new QLabel(tr("counter"), _widget), 6, 4);
-    serial_glayout->addWidget(_serial_value_lable, 7, 0);
-    serial_glayout->addWidget(_serial_value_lineEdit, 7, 1, 1, 3);
-    serial_glayout->addWidget(_serial_vcnt_spinBox, 7, 4);
-    serial_glayout->addWidget(new QLabel(_widget), 7, 5);
+    serial_glayout->addWidget(new QLabel(tr("Data Bits"), _widget), 7, 0);
+    serial_glayout->addWidget(_serial_bits_comboBox, 7, 1);
+    serial_glayout->addWidget(_serial_value_lable, 8, 0);
+    serial_glayout->addWidget(_serial_value_lineEdit, 8, 1, 1, 3);
+
     serial_layout->addLayout(serial_glayout);
     serial_layout->addSpacing(20);
     serial_layout->addWidget(new QLabel(tr("X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge")));
@@ -343,33 +348,34 @@ void TriggerDock::value_changed()
         sc->setText(sc->text().toUpper());
 }
 
-void TriggerDock::device_change()
+void TriggerDock::device_updated()
 {
-    uint64_t max_hd_depth;
+    uint64_t hw_depth;
     bool stream = false;
     uint8_t maxRange;
     uint64_t sample_limits;
-    GVariant *gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_MAX_LOGIC_SAMPLELIMITS);
+    GVariant *gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_HW_DEPTH);
     if (gvar != NULL) {
-        max_hd_depth = g_variant_get_uint64(gvar);
+        hw_depth = g_variant_get_uint64(gvar);
         g_variant_unref(gvar);
 
         if (_session.get_device()->dev_inst()->mode == LOGIC) {
-            sample_limits = _session.get_device()->get_sample_limit();
-            if (max_hd_depth >= sample_limits)
-                maxRange = 99;
-            else
-                maxRange = max_hd_depth*70 / sample_limits;
-            position_spinBox->setRange(MinTrigPosition, maxRange);
-            position_slider->setRange(MinTrigPosition, maxRange);
-
-
 
             gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_STREAM);
             if (gvar != NULL) {
                 stream = g_variant_get_boolean(gvar);
                 g_variant_unref(gvar);
             }
+
+            sample_limits = _session.get_device()->get_sample_limit();
+            if (stream)
+                maxRange = 1;
+            else if (hw_depth >= sample_limits)
+                maxRange = DS_MAX_TRIG_PERCENT;
+            else
+                maxRange = ceil(hw_depth * DS_MAX_TRIG_PERCENT / sample_limits);
+            position_spinBox->setRange(MinTrigPosition, maxRange);
+            position_slider->setRange(MinTrigPosition, maxRange);
 
             if (_session.get_device()->name().contains("virtual") ||
                 stream) {
@@ -397,7 +403,7 @@ bool TriggerDock::commit_trigger()
             ds_trigger_set_mode(SERIAL_TRIGGER);
 
         // trigger stage update
-        ds_trigger_set_stage(stages_comboBox->currentText().toInt());
+        ds_trigger_set_stage(stages_comboBox->currentText().toInt() - 1);
 
         int i;
         // trigger value update
@@ -410,36 +416,36 @@ bool TriggerDock::commit_trigger()
         } else if(_adv_tabWidget->currentIndex() == 1){
             ds_trigger_stage_set_value(0, TriggerProbes,
                                  _serial_start_lineEdit->text().toLocal8Bit().data(),
-                                 _value1_lineEdit_list.at(0)->text().toLocal8Bit().data());
+                                 _serial_stop_lineEdit->text().toLocal8Bit().data());
             ds_trigger_stage_set_value(1, TriggerProbes,
-                                 _serial_stop_lineEdit->text().toLocal8Bit().data(),
-                                 _value1_lineEdit_list.at(1)->text().toLocal8Bit().data());
-            ds_trigger_stage_set_value(2, TriggerProbes,
                                  _serial_edge_lineEdit->text().toLocal8Bit().data(),
-                                 _value1_lineEdit_list.at(2)->text().toLocal8Bit().data());
+                                 _value1_lineEdit_list.at(1)->text().toLocal8Bit().data());
+
             //_serial_data_comboBox
             const int data_channel = _serial_data_comboBox->currentText().toInt();
             char channel[31];
             for(i = 0; i < 31; i++){
                 if (i == (30 - 2*data_channel))
-                    channel[i] = '1';
-                else if (i%2 == 0)
                     channel[i] = '0';
+                else if (i%2 == 0)
+                    channel[i] = 'X';
                 else
                     channel[i] = ' ';
             }
-            ds_trigger_stage_set_value(3, TriggerProbes,
+            ds_trigger_stage_set_value(2, TriggerProbes,
                                  channel,
-                                 _value1_lineEdit_list.at(3)->text().toLocal8Bit().data());
-            ds_trigger_stage_set_value(4, TriggerProbes,
+                                 _value1_lineEdit_list.at(2)->text().toLocal8Bit().data());
+            ds_trigger_stage_set_value(STriggerDataStage, TriggerProbes,
                                  _serial_value_lineEdit->text().toLocal8Bit().data(),
-                                 _value1_lineEdit_list.at(4)->text().toLocal8Bit().data());
+                                 _value1_lineEdit_list.at(3)->text().toLocal8Bit().data());
         }
 
         // trigger logic update
         for (i = 0; i < stages_comboBox->currentText().toInt(); i++) {
+            const char logic = (_contiguous_checkbox_list.at(i)->isChecked() << 1) +
+                               _logic_comboBox_list.at(i)->currentIndex();
             ds_trigger_stage_set_logic(i, TriggerProbes,
-                                 _logic_comboBox_list.at(i)->currentIndex());
+                                 logic);
         }
 
         // trigger inv update
@@ -453,12 +459,15 @@ bool TriggerDock::commit_trigger()
         if (_adv_tabWidget->currentIndex() == 0) {
             for (i = 0; i < stages_comboBox->currentText().toInt(); i++) {
                 ds_trigger_stage_set_count(i, TriggerProbes,
-                                           _count0_spinBox_list.at(i)->value() - 1,
-                                           _count1_spinBox_list.at(i)->value() - 1);
+                                           _count_spinBox_list.at(i)->value(),
+                                           0);
             }
         } else if(_adv_tabWidget->currentIndex() == 1){
-            ds_trigger_stage_set_count(4, TriggerProbes,
-                                       _serial_vcnt_spinBox->value() - 1,
+            ds_trigger_stage_set_count(1, TriggerProbes,
+                                       1,
+                                       0);
+            ds_trigger_stage_set_count(3, TriggerProbes,
+                                       _serial_bits_comboBox->currentText().toInt() - 1,
                                        0);
         }
         return 1;
@@ -475,34 +484,37 @@ void TriggerDock::init()
 QJsonObject TriggerDock::get_session()
 {
     QJsonObject trigSes;
-    trigSes["triggerMode"] = adv_radioButton->isChecked() ? 1 : 0;
+    trigSes["advTriggerMode"] = adv_radioButton->isChecked();
     trigSes["triggerPos"] = position_slider->value();
     trigSes["triggerStages"] = stages_comboBox->currentIndex();
-    trigSes["triggerSerial"] = _adv_tabWidget->currentIndex();
+    trigSes["triggerTab"] = _adv_tabWidget->currentIndex();
 
     for (int i = 0; i < stages_comboBox->count(); i++) {
-        QString value0_str = "triggerValue0" + QString::number(i);
-        QString inv0_str = "triggerInv0" + QString::number(i);
-        QString count0_str = "triggerCount0" + QString::number(i);
-        QString value1_str = "triggerValue1" + QString::number(i);
-        QString inv1_str = "triggerInv1" + QString::number(i);
-        QString count1_str = "triggerCount1" + QString::number(i);
-        QString logic_str = "triggerLogic" + QString::number(i);
+        QString value0_str = "stageTriggerValue0" + QString::number(i);
+        QString inv0_str = "stageTriggerInv0" + QString::number(i);
+        QString value1_str = "stageTriggerValue1" + QString::number(i);
+        QString inv1_str = "stageTriggerInv1" + QString::number(i);
+
+        QString logic_str = "stageTriggerLogic" + QString::number(i);
+        QString count_str = "stageTriggerCount" + QString::number(i);
+        QString conti_str = "stageTriggerContiguous" + QString::number(i);
+
         trigSes[value0_str] = _value0_lineEdit_list.at(i)->text();
         trigSes[value1_str] = _value1_lineEdit_list.at(i)->text();
         trigSes[inv0_str] = _inv0_comboBox_list.at(i)->currentIndex();
         trigSes[inv1_str] = _inv1_comboBox_list.at(i)->currentIndex();
-        trigSes[count0_str] = _count0_spinBox_list.at(i)->value();
-        trigSes[count1_str] = _count1_spinBox_list.at(i)->value();
+
         trigSes[logic_str] = _logic_comboBox_list.at(i)->currentIndex();
+        trigSes[count_str] = _count_spinBox_list.at(i)->value();
+        trigSes[conti_str] = _contiguous_checkbox_list.at(i)->isChecked();
     }
 
-    trigSes["triggerStart"] = _serial_start_lineEdit->text();
-    trigSes["triggerStop"] = _serial_stop_lineEdit->text();
-    trigSes["triggerClock"] = _serial_edge_lineEdit->text();
-    trigSes["triggerChannel"] = _serial_data_comboBox->currentIndex();
-    trigSes["triggerData"] = _serial_value_lineEdit->text();
-    trigSes["triggerVcnt"] = _serial_vcnt_spinBox->value();
+    trigSes["serialTriggerStart"] = _serial_start_lineEdit->text();
+    trigSes["serialTriggerStop"] = _serial_stop_lineEdit->text();
+    trigSes["serialTriggerClock"] = _serial_edge_lineEdit->text();
+    trigSes["serialTriggerChannel"] = _serial_data_comboBox->currentIndex();
+    trigSes["serialTriggerData"] = _serial_value_lineEdit->text();
+    trigSes["serialTriggerBits"] = _serial_bits_comboBox->currentIndex();
 
     return trigSes;
 }
@@ -511,35 +523,38 @@ void TriggerDock::set_session(QJsonObject ses)
 {
     position_slider->setValue(ses["triggerPos"].toDouble());
     stages_comboBox->setCurrentIndex(ses["triggerStages"].toDouble());
-    _adv_tabWidget->setCurrentIndex(ses["triggerSerial"].toDouble());
-    if (ses["triggerMode"].toDouble() == 0)
-        simple_radioButton->click();
-    else
+    _adv_tabWidget->setCurrentIndex(ses["triggerTab"].toDouble());
+    if (ses["advTriggerMode"].toBool())
         adv_radioButton->click();
+    else
+        simple_radioButton->click();
 
     for (int i = 0; i < stages_comboBox->count(); i++) {
-        QString value0_str = "triggerValue0" + QString::number(i);
-        QString inv0_str = "triggerInv0" + QString::number(i);
-        QString count0_str = "triggerCount0" + QString::number(i);
-        QString value1_str = "triggerValue1" + QString::number(i);
-        QString inv1_str = "triggerInv1" + QString::number(i);
-        QString count1_str = "triggerCount1" + QString::number(i);
-        QString logic_str = "triggerLogic" + QString::number(i);
+        QString value0_str = "stageTriggerValue0" + QString::number(i);
+        QString inv0_str = "stageTriggerInv0" + QString::number(i);
+        QString value1_str = "stageTriggerValue1" + QString::number(i);
+        QString inv1_str = "stageTriggerInv1" + QString::number(i);
+
+        QString logic_str = "stageTriggerLogic" + QString::number(i);
+        QString count_str = "stageTriggerCount" + QString::number(i);
+        QString conti_str = "stageTriggerContiguous" + QString::number(i);
+
         _value0_lineEdit_list.at(i)->setText(ses[value0_str].toString());
         _value1_lineEdit_list.at(i)->setText(ses[value1_str].toString());
         _inv0_comboBox_list.at(i)->setCurrentIndex(ses[inv0_str].toDouble());
         _inv1_comboBox_list.at(i)->setCurrentIndex(ses[inv1_str].toDouble());
-        _count0_spinBox_list.at(i)->setValue(ses[count0_str].toDouble());
-        _count1_spinBox_list.at(i)->setValue(ses[count1_str].toDouble());
+
         _logic_comboBox_list.at(i)->setCurrentIndex(ses[logic_str].toDouble());
+        _count_spinBox_list.at(i)->setValue(ses[count_str].toDouble());
+        _contiguous_checkbox_list.at(i)->setChecked(ses[conti_str].toBool());
     }
 
-    _serial_start_lineEdit->setText(ses["triggerStart"].toString());
-    _serial_stop_lineEdit->setText(ses["triggerStop"].toString());
-    _serial_edge_lineEdit->setText(ses["triggerClock"].toString());
-    _serial_data_comboBox->setCurrentIndex(ses["triggerChannel"].toDouble());
-    _serial_value_lineEdit->setText(ses["triggerData"].toString());
-    _serial_vcnt_spinBox->setValue(ses["triggerVcnt"].toDouble());
+    _serial_start_lineEdit->setText(ses["serialTriggerStart"].toString());
+    _serial_stop_lineEdit->setText(ses["serialTriggerStop"].toString());
+    _serial_edge_lineEdit->setText(ses["serialTriggerClock"].toString());
+    _serial_data_comboBox->setCurrentIndex(ses["serialTriggerChannel"].toDouble());
+    _serial_value_lineEdit->setText(ses["serialTriggerData"].toString());
+    _serial_bits_comboBox->setCurrentIndex(ses["serialTriggerBits"].toDouble());
 }
 
 } // namespace dock

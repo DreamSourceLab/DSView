@@ -88,12 +88,12 @@ class Decoder(srd.Decoder):
     inputs = ['logic']
     outputs = ['spi']
     channels = (
-        {'id': 'clk', 'name': 'CLK', 'desc': 'Clock'},
+        {'id': 'clk', 'type': 0, 'name': 'CLK', 'desc': 'Clock'},
     )
     optional_channels = (
-        {'id': 'miso', 'name': 'MISO', 'desc': 'Master in, slave out'},
-        {'id': 'mosi', 'name': 'MOSI', 'desc': 'Master out, slave in'},
-        {'id': 'cs', 'name': 'CS#', 'desc': 'Chip-select'},
+        {'id': 'miso', 'type': 107, 'name': 'MISO', 'desc': 'Master in, slave out'},
+        {'id': 'mosi', 'type': 109, 'name': 'MOSI', 'desc': 'Master out, slave in'},
+        {'id': 'cs', 'type': -1, 'name': 'CS#', 'desc': 'Chip-select'},
     )
     options = (
         {'id': 'cs_polarity', 'desc': 'CS# polarity', 'default': 'active-low',
@@ -109,8 +109,8 @@ class Decoder(srd.Decoder):
     annotations = (
         ('106', 'miso-data', 'MISO data'),
         ('108', 'mosi-data', 'MOSI data'),
-        ('107', 'miso-bits', 'MISO bits'),
-        ('109', 'mosi-bits', 'MOSI bits'),
+        ('207', 'miso-bits', 'MISO bits'),
+        ('209', 'mosi-bits', 'MOSI bits'),
         ('1000', 'warnings', 'Human-readable warnings'),
     )
     annotation_rows = (

@@ -78,7 +78,7 @@ class Decoder(srd.Decoder):
     inputs = ['logic']
     outputs = ['uart']
     channels = (
-        {'id': 'rxtx', 'name': 'RX/TX', 'desc': 'UART transceive line'},
+        {'id': 'rxtx', 'type': 209, 'name': 'RX/TX', 'desc': 'UART transceive line'},
     )
     options = (
         {'id': 'baudrate', 'desc': 'Baud rate', 'default': 9600},
@@ -104,7 +104,7 @@ class Decoder(srd.Decoder):
         ('0', 'parity-err', 'parity error bits'),
         ('1', 'stop', 'stop bits'),
         ('1000', 'warnings', 'warnings'),
-        ('109', 'data-bits', 'data bits'),
+        ('209', 'data-bits', 'data bits'),
     )
     annotation_rows = (
         ('data', 'RX/TX', (0, 1, 2, 3, 4)),

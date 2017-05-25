@@ -85,7 +85,7 @@ void AnalogSignal::paint_mid(QPainter &p, int left, int right)
     const int y = get_y() + _totalHeight * 0.5;
     const double scale = _view->scale();
     assert(scale > 0);
-    const double offset = _view->offset();
+    const int64_t offset = _view->offset();
 
     const deque< boost::shared_ptr<pv::data::AnalogSnapshot> > &snapshots =
 		_data->get_snapshots();
@@ -98,15 +98,15 @@ void AnalogSignal::paint_mid(QPainter &p, int left, int right)
     if (snapshot->empty())
         return;
 
-    if (get_index() >= (int)snapshot->get_channel_num())
+    const int order = snapshot->get_ch_order(get_index());
+    if (order == -1)
         return;
 
-	const double pixels_offset = offset / scale;
+    const double pixels_offset = offset;
     const double samplerate = _data->samplerate();
-	const double start_time = _data->get_start_time();
     const int64_t last_sample = max((int64_t)(snapshot->get_sample_count() - 1), (int64_t)0);
 	const double samples_per_pixel = samplerate * scale;
-	const double start = samplerate * (offset - start_time);
+    const double start = offset * samples_per_pixel;
 	const double end = start + samples_per_pixel * (right - left);
 
 	const int64_t start_sample = min(max((int64_t)floor(start),
@@ -117,17 +117,18 @@ void AnalogSignal::paint_mid(QPainter &p, int left, int right)
 	if (samples_per_pixel < EnvelopeThreshold)
 		paint_trace(p, snapshot, y, left,
 			start_sample, end_sample,
-			pixels_offset, samples_per_pixel);
+            pixels_offset, samples_per_pixel, order);
 	else
 		paint_envelope(p, snapshot, y, left,
 			start_sample, end_sample,
-			pixels_offset, samples_per_pixel);
+            pixels_offset, samples_per_pixel, order);
 }
 
 void AnalogSignal::paint_trace(QPainter &p,
 	const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot,
 	int y, int left, const int64_t start, const int64_t end,
-	const double pixels_offset, const double samples_per_pixel)
+    const double pixels_offset, const double samples_per_pixel,
+    int order)
 {
 	const int64_t sample_count = end - start;
     const int64_t channel_num = snapshot->get_channel_num();
@@ -145,7 +146,7 @@ void AnalogSignal::paint_trace(QPainter &p,
             const float x = (sample / samples_per_pixel -
                 pixels_offset) + left;
             *point++ = QPointF(x,
-                               y - samples[(sample - start) * channel_num + get_index()] * _scale);
+                               y - samples[(sample - start) * channel_num + order] * _scale);
         }
 
         p.drawPolyline(points, point - points);
@@ -157,13 +158,14 @@ void AnalogSignal::paint_trace(QPainter &p,
 void AnalogSignal::paint_envelope(QPainter &p,
 	const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot,
 	int y, int left, const int64_t start, const int64_t end,
-	const double pixels_offset, const double samples_per_pixel)
+    const double pixels_offset, const double samples_per_pixel,
+    int order)
 {
 	using namespace Qt;
 	using pv::data::AnalogSnapshot;
 
 	AnalogSnapshot::EnvelopeSection e;
-    snapshot->get_envelope_section(e, start, end, samples_per_pixel, get_index());
+    snapshot->get_envelope_section(e, start, end, samples_per_pixel, order);
 
 	if (e.length < 2)
 		return;
@@ -199,11 +201,6 @@ void AnalogSignal::paint_envelope(QPainter &p,
 
 	delete[] rects;
     //delete[] e.samples;
-}
-
-const std::vector< std::pair<uint64_t, bool> > AnalogSignal::cur_edges() const
-{
-
 }
 
 } // namespace view

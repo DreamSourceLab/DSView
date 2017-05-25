@@ -55,17 +55,18 @@ public:
 
     unsigned int get_channel_num() const;
 
-    uint64_t get_sample(uint64_t index) const;
+    virtual void capture_ended();
 
 protected:
-	void append_data(void *data, uint64_t samples);
-    void refill_data(void *data, uint64_t samples, bool instant);
-    void free_data();
+    virtual void free_data();
 
 protected:
     mutable boost::recursive_mutex _mutex;
+
     //std::vector<uint8_t> _data;
     void* _data;
+    std::vector<uint16_t> _ch_index;
+
     uint64_t _capacity;
     unsigned int _channel_num;
 	uint64_t _sample_count;

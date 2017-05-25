@@ -24,7 +24,7 @@
 
 #include <QWidget>
 #include <QLabel>
-#include "QDateTime"
+#include <QDateTime>
 
 namespace pv {
 
@@ -36,7 +36,7 @@ class ViewStatus : public QWidget
 {
     Q_OBJECT
 public:
-    explicit ViewStatus(QWidget *parent = 0);
+    explicit ViewStatus(SigSession &session, QWidget *parent = 0);
 
     void paintEvent(QPaintEvent *);
 
@@ -44,12 +44,17 @@ signals:
 
 public slots:
     void clear();
+    void repeat_unshow();
     void set_trig_time(QDateTime time);
     void set_rle_depth(uint64_t depth);
+    void set_capture_status(bool triggered, int progess);
 
 private:
+    SigSession &_session;
+
     QString _trig_time;
     QString _rle_depth;
+    QString _capture_status;
 };
 
 } // namespace widgets

@@ -81,7 +81,7 @@ void GroupSignal::paint_mid(QPainter &p, int left, int right)
     const int y = get_y() + _totalHeight * 0.5;
     const double scale = _view->scale();
     assert(scale > 0);
-    const double offset = _view->offset();
+    const int64_t offset = _view->offset();
 
     _scale = _totalHeight * 1.0f / std::pow(2.0, static_cast<int>(_index_list.size()));
 
@@ -93,12 +93,11 @@ void GroupSignal::paint_mid(QPainter &p, int left, int right)
     const boost::shared_ptr<pv::data::GroupSnapshot> &snapshot =
             snapshots.at(_sec_index);
 
-	const double pixels_offset = offset / scale;
+    const double pixels_offset = offset;
     const double samplerate = _data->samplerate();
-	const double start_time = _data->get_start_time();
     const int64_t last_sample = snapshot->get_sample_count() - 1;
 	const double samples_per_pixel = samplerate * scale;
-	const double start = samplerate * (offset - start_time);
+    const double start = offset * samples_per_pixel;
 	const double end = start + samples_per_pixel * (right - left);
 
 	const int64_t start_sample = min(max((int64_t)floor(start),
@@ -188,11 +187,6 @@ void GroupSignal::paint_envelope(QPainter &p,
 
 	delete[] rects;
 	delete[] e.samples;
-}
-
-const std::vector< std::pair<uint64_t, bool> > GroupSignal::cur_edges() const
-{
-
 }
 
 void GroupSignal::paint_type_options(QPainter &p, int right, const QPoint pt)

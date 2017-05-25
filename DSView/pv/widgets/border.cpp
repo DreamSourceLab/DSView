@@ -103,5 +103,10 @@ void Border::paintEvent(QPaintEvent *)
     }
 }
 
+void Border::leaveEvent(QEvent*)
+{
+    //setCursor(Qt::ArrowCursor);
+}
+
 } // namespace widgets
 } // namespace pv

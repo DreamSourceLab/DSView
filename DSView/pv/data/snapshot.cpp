@@ -59,7 +59,9 @@ void Snapshot::free_data()
         free(_data);
         _data = NULL;
         _capacity = 0;
+        _sample_count = 0;
     }
+    _ch_index.clear();
 }
 
 bool Snapshot::memory_failed() const
@@ -69,7 +71,7 @@ bool Snapshot::memory_failed() const
 
 bool Snapshot::empty() const
 {
-    if (get_sample_count() == 0 || _memory_failed || !_data)
+    if (get_sample_count() == 0)
         return true;
     else
         return false;
@@ -106,46 +108,9 @@ unsigned int Snapshot::get_channel_num() const
     return _channel_num;
 }
 
-uint64_t Snapshot::get_sample(uint64_t index) const
+void Snapshot::capture_ended()
 {
-    assert(_data);
-    assert(index < get_sample_count());
-
-    return *(uint64_t*)((uint8_t*)_data + index * _unit_size);
-}
-
-void Snapshot::append_data(void *data, uint64_t samples)
-{
-//	_data = realloc(_data, (_sample_count + samples) * _unit_size +
-//		sizeof(uint64_t));
-    if (_sample_count + samples < _total_sample_count)
-        _sample_count += samples;
-    else
-        _sample_count = _total_sample_count;
-
-    if (_ring_sample_count + samples > _total_sample_count) {
-        memcpy((uint8_t*)_data + _ring_sample_count * _unit_size,
-            data, (_total_sample_count - _ring_sample_count) * _unit_size);
-        _ring_sample_count = (samples + _ring_sample_count - _total_sample_count) % _total_sample_count;
-        memcpy((uint8_t*)_data,
-            data, _ring_sample_count * _unit_size);
-    } else {
-        memcpy((uint8_t*)_data + _ring_sample_count * _unit_size,
-            data, samples * _unit_size);
-        _ring_sample_count += samples;
-    }
-}
-
-void Snapshot::refill_data(void *data, uint64_t samples, bool instant)
-{
-    if (instant) {
-        memcpy((uint8_t*)_data + _sample_count * _channel_num, data, samples*_channel_num);
-        _sample_count = (_sample_count + samples) % (_total_sample_count + 1);
-    } else {
-        memcpy((uint8_t*)_data, data, samples*_channel_num);
-        _sample_count = samples;
-    }
-
+    set_last_ended(true);
 }
 
 } // namespace data

@@ -32,6 +32,7 @@
 #include <QLineEdit>
 #include <QSpinBox>
 #include <QGroupBox>
+#include <QCheckBox>
 #include <QTableWidget>
 #include <QJsonObject>
 
@@ -84,7 +85,7 @@ public slots:
 
     void value_changed();
 
-    void device_change();
+    void device_updated();
 
 private:
 
@@ -109,11 +110,11 @@ private:
     QVector <QLabel *>    _mu_label_list;
     QVector <QComboBox *> _logic_comboBox_list;
     QVector <QLineEdit *> _value0_lineEdit_list;
-    QVector <QSpinBox *> _count0_spinBox_list;
+    QVector <QSpinBox *> _count_spinBox_list;
     QVector <QComboBox *> _inv0_comboBox_list;
     QVector <QLineEdit *> _value1_lineEdit_list;
-    QVector <QSpinBox *> _count1_spinBox_list;
     QVector <QComboBox *> _inv1_comboBox_list;
+    QVector <QCheckBox *> _contiguous_checkbox_list;
 
     QTabWidget *_adv_tabWidget;
     QGroupBox *_serial_groupBox;
@@ -128,7 +129,7 @@ private:
     QLabel *_serial_value_lable;
     QLineEdit *_serial_value_lineEdit;
     QLabel *_serial_vcnt_lable;
-    QSpinBox *_serial_vcnt_spinBox;
+    QComboBox *_serial_bits_comboBox;
 };
 
 } // namespace dock

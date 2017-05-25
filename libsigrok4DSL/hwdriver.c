@@ -63,7 +63,7 @@ static struct sr_config_info sr_config_info_data[] = {
     {SR_CONF_CLOCK_TYPE, SR_T_BOOL, "clocktype",
         "Using External Clock", "Using External Clock", NULL},
     {SR_CONF_CLOCK_EDGE, SR_T_BOOL, "clockedge",
-        "Using Clock Negedge", "Using Clock Negedge", NULL},  
+        "Using Clock Negedge", "Using Clock Negedge", NULL},
     {SR_CONF_CAPTURE_RATIO, SR_T_UINT64, "captureratio",
         "Pre-trigger capture ratio", "Pre-trigger capture ratio", NULL},
     {SR_CONF_PATTERN_MODE, SR_T_CHAR, "pattern",
@@ -72,6 +72,8 @@ static struct sr_config_info sr_config_info_data[] = {
         "Trigger types", "Trigger types", NULL},
 	{SR_CONF_RLE, SR_T_BOOL, "rle",
         "Run Length Encoding", "Run Length Encoding", NULL},
+    {SR_CONF_WAIT_UPLOAD, SR_T_BOOL, "buf_upload",
+        "Wait Buffer Upload", "Wait Buffer Upload", NULL},
     {SR_CONF_TRIGGER_SLOPE, SR_T_UINT8, "triggerslope",
         "Trigger slope", "Trigger slope", NULL},
     {SR_CONF_TRIGGER_SOURCE, SR_T_UINT8, "triggersource",
@@ -104,6 +106,8 @@ static struct sr_config_info sr_config_info_data[] = {
         "Datalog", "Datalog", NULL},
     {SR_CONF_OPERATION_MODE, SR_T_CHAR, "operation",
         "Operation Mode", "Operation Mode", NULL},
+    {SR_CONF_BUFFER_OPTIONS, SR_T_CHAR, "stopoptions",
+        "Stop Options", "Stop Options", NULL},
     {SR_CONF_CHANNEL_MODE, SR_T_CHAR, "channel",
         "Channel Mode", "Channel Mode", NULL},
     {SR_CONF_THRESHOLD, SR_T_CHAR, "threshold",
@@ -322,9 +326,9 @@ SR_API int sr_config_get(const struct sr_dev_driver *driver,
  *         but this is not to be flagged as an error by the caller; merely
  *         as an indication that it's not applicable.
  */
-SR_API int sr_config_set(const struct sr_dev_inst *sdi,
-                         const struct sr_channel *ch,
-                         const struct sr_channel_group *cg,
+SR_API int sr_config_set(struct sr_dev_inst *sdi,
+                         struct sr_channel *ch,
+                         struct sr_channel_group *cg,
                          int key, GVariant *data)
 {
 	int ret;

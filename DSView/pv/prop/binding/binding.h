@@ -27,6 +27,7 @@
 #include <glib.h>
 
 #include <vector>
+#include <map>
 #include <boost/shared_ptr.hpp>
 
 #include <QString>
@@ -53,6 +54,9 @@ public:
 
     QWidget* get_property_form(QWidget *parent,
         bool auto_commit = false) const;
+
+    std::map< boost::shared_ptr<Property>,
+              GVariant* > get_property_value() const;
 
     static QString print_gvariant(GVariant *const gvar);
 

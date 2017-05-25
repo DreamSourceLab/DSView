@@ -34,15 +34,15 @@ bool DSApplication::notify(QObject *receiver_, QEvent *event_)
         return QApplication::notify(receiver_, event_);
     } catch ( std::exception& e ) {
         QMessageBox msg(NULL);
-        msg.setText("Application Error");
+        msg.setText(tr("Application Error"));
         msg.setInformativeText(e.what());
         msg.setStandardButtons(QMessageBox::Ok);
         msg.setIcon(QMessageBox::Warning);
         msg.exec();
     } catch (...) {
         QMessageBox msg(NULL);
-        msg.setText("Application Error");
-        msg.setInformativeText("An unexpected error occurred");
+        msg.setText(tr("Application Error"));
+        msg.setInformativeText(tr("An unexpected error occurred"));
         msg.setStandardButtons(QMessageBox::Ok);
         msg.setIcon(QMessageBox::Warning);
         msg.exec();

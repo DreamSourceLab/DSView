@@ -23,6 +23,8 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <zip.h>
+#include <assert.h>
+#include <string.h>
 #include "libsigrok.h"
 #include "libsigrok-internal.h"
 
@@ -38,51 +40,110 @@
 /* size of payloads sent across the session bus */
 /** @cond PRIVATE */
 #define CHUNKSIZE (512 * 1024)
+#define UNITLEN 64
 /** @endcond */
 
 static uint64_t samplerates[1];
 static uint64_t samplecounts[1];
 
+static const char *maxHeights[] = {
+    "1X",
+    "2X",
+    "3X",
+    "4X",
+    "5X",
+};
+
 struct session_vdev {
+    int version;
 	char *sessionfile;
 	char *capturefile;
 	struct zip *archive;
 	struct zip_file *capfile;
     void *buf;
+    void *logic_buf;
 	int bytes_read;
+    int cur_channel;
+    int cur_block;
+    int num_blocks;
+    gboolean file_opened;
 	uint64_t samplerate;
     uint64_t total_samples;
     int64_t trig_time;
     uint64_t trig_pos;
-	int unitsize;
 	int num_probes;
+    int enabled_probes;
     uint64_t timebase;
+    uint8_t bits;
+    uint8_t max_height;
     struct sr_status mstatus;
 };
 
 static GSList *dev_insts = NULL;
 static const int hwcaps[] = {
 	SR_CONF_CAPTUREFILE,
-	SR_CONF_CAPTURE_UNITSIZE,
-	0,
 };
+
+static const int hwoptions[] = {
+    SR_CONF_MAX_HEIGHT,
+};
+
+static int trans_data(struct sr_dev_inst *sdi)
+{
+    // translate for old format
+    struct session_vdev *vdev = sdi->priv;
+    GSList *l;
+    struct sr_channel *probe;
+
+    assert(vdev->buf != NULL);
+    assert(vdev->logic_buf != NULL);
+    assert(CHUNKSIZE % UNITLEN == 0);
+
+    //int bytes = ceil(vdev->num_probes / 8.0);
+    int bytes = 2;
+    uint8_t *src_ptr = (uint8_t *)vdev->buf;
+    uint64_t *dest_ptr = (uint64_t *)vdev->logic_buf;
+    for (int k = 0; k < CHUNKSIZE / (UNITLEN * bytes); k++) {
+        src_ptr = (uint8_t *)vdev->buf + (k * bytes * UNITLEN);
+        for (l = sdi->channels; l; l = l->next) {
+            probe = l->data;
+            if (!probe->enabled)
+                continue;
+            uint64_t mask = 1ULL << probe->index;
+            uint64_t result = 0;
+            for (int j = 0; j < UNITLEN; j++) {
+                if (*(uint64_t *)(src_ptr + j * bytes) & mask)
+                    result += 1ULL << j;
+            }
+            *dest_ptr++ = result;
+        }
+    }
+
+    return SR_OK;
+}
 
 static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
 {
 	struct sr_dev_inst *sdi;
-	struct session_vdev *vdev;
+    struct session_vdev *vdev = NULL;
 	struct sr_datafeed_packet packet;
 	struct sr_datafeed_logic logic;
     struct sr_datafeed_dso dso;
     struct sr_datafeed_analog analog;
 	GSList *l;
-	int ret, got_data;
+    int ret;
+    char file_name[32];
+    struct sr_channel *probe = NULL;
+    GSList *pl;
+    int channel;
+
 	(void)fd;
-	(void)revents;
+    //(void)revents;
 
 	sr_dbg("Feed chunk.");
 
-	got_data = FALSE;
+    ret = 0;
+    packet.status = SR_PKT_OK;
 	for (l = dev_insts; l; l = l->next) {
 		sdi = l->data;
 		vdev = sdi->priv;
@@ -90,46 +151,104 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
 			/* already done with this instance */
 			continue;
 
-        ret = zip_fread(vdev->capfile, vdev->buf, CHUNKSIZE);
-		if (ret > 0) {
-			got_data = TRUE;
-            if (sdi->mode == DSO) {
-                packet.type = SR_DF_DSO;
-                packet.payload = &dso;
-                dso.num_samples = ret / vdev->unitsize;
-                dso.data = vdev->buf;
-                dso.probes = sdi->channels;
-                dso.mq = SR_MQ_VOLTAGE;
-                dso.unit = SR_UNIT_VOLT;
-                dso.mqflags = SR_MQFLAG_AC;
-            } else if (sdi->mode == ANALOG){
-                packet.type = SR_DF_ANALOG;
-                packet.payload = &analog;
-                analog.probes = sdi->channels;
-                analog.num_samples = ret / vdev->unitsize;
-                analog.mq = SR_MQ_VOLTAGE;
-                analog.unit = SR_UNIT_VOLT;
-                analog.mqflags = SR_MQFLAG_AC;
-                analog.data = vdev->buf;
-            } else {
-                packet.type = SR_DF_LOGIC;
-                packet.payload = &logic;
-                logic.length = ret;
-                logic.unitsize = vdev->unitsize;
-                logic.data = vdev->buf;
+        assert(vdev->cur_channel >= 0);
+        if (vdev->cur_channel < vdev->num_probes) {
+            if (vdev->version == 1) {
+                ret = zip_fread(vdev->capfile, vdev->buf, CHUNKSIZE);
+            } else if (vdev->version == 2) {
+                channel = vdev->cur_channel;
+                pl = sdi->channels;
+                while (channel--)
+                    pl = pl->next;
+                probe = (struct sr_channel *)pl->data;
+
+                if (!vdev->file_opened) {
+                    char *type_name = (probe->type == SR_CHANNEL_LOGIC) ? "L" :
+                                (probe->type == SR_CHANNEL_DSO) ? "O" :
+                                (probe->type == SR_CHANNEL_ANALOG) ? "A" : "U";
+                    snprintf(file_name, 31, "%s-%d/%d", type_name,
+                             probe->index, vdev->cur_block);
+                    if (!(vdev->capfile = zip_fopen(vdev->archive, file_name, 0))) {
+                        sr_err("Failed to open capture file '%s' in "
+                               "session file '%s'.", file_name, vdev->sessionfile);
+                    } else {
+                        vdev->file_opened = TRUE;
+                    }
+                }
+                if (vdev->file_opened)
+                    ret = zip_fread(vdev->capfile, vdev->buf, CHUNKSIZE);
             }
-			vdev->bytes_read += ret;
-			sr_session_send(cb_sdi, &packet);
-		} else {
-			/* done with this capture file */
-			zip_fclose(vdev->capfile);
-            //g_free(vdev->capturefile);
-            //g_free(vdev);
-            //sdi->priv = NULL;
-		}
+
+            if (!vdev->file_opened) {
+                packet.type = SR_DF_END;
+                packet.status = SR_PKT_SOURCE_ERROR;
+                sr_session_send(cb_sdi, &packet);
+                sr_session_source_remove(-1);
+                return FALSE;
+            }
+
+            if (ret > 0) {
+                if (sdi->mode == DSO) {
+                    packet.type = SR_DF_DSO;
+                    packet.payload = &dso;
+                    dso.num_samples = ret / vdev->enabled_probes;
+                    dso.data = vdev->buf;
+                    dso.probes = sdi->channels;
+                    dso.mq = SR_MQ_VOLTAGE;
+                    dso.unit = SR_UNIT_VOLT;
+                    dso.mqflags = SR_MQFLAG_AC;
+                } else if (sdi->mode == ANALOG){
+                    packet.type = SR_DF_ANALOG;
+                    packet.payload = &analog;
+                    analog.probes = sdi->channels;
+                    analog.num_samples = ret / vdev->num_probes;
+                    analog.mq = SR_MQ_VOLTAGE;
+                    analog.unit = SR_UNIT_VOLT;
+                    analog.mqflags = SR_MQFLAG_AC;
+                    analog.data = vdev->buf;
+                } else {
+                    packet.type = SR_DF_LOGIC;
+                    packet.payload = &logic;
+                    logic.length = ret;
+                    logic.format = (vdev->version == 2) ? LA_SPLIT_DATA : LA_CROSS_DATA;
+                    if (probe)
+                        logic.index = probe->index;
+                    else
+                        logic.index = 0;
+                    logic.order = vdev->cur_channel;
+
+                    if (vdev->version == 1) {
+                        logic.length = ret / 16 * vdev->enabled_probes;
+                        logic.data = vdev->logic_buf;
+                        trans_data(sdi);
+                    } else if (vdev->version == 2) {
+                        logic.length = ret;
+                        logic.data = vdev->buf;
+                    }
+                }
+                vdev->bytes_read += ret;
+                sr_session_send(cb_sdi, &packet);
+            } else {
+                /* done with this capture file */
+                zip_fclose(vdev->capfile);
+
+                if (vdev->version == 1) {
+                    vdev->cur_channel++;
+                } else if (vdev->version == 2) {
+                    vdev->file_opened = FALSE;
+                    vdev->cur_block++;
+                    if (vdev->cur_block == vdev->num_blocks) {
+                        vdev->cur_block = 0;
+                        vdev->cur_channel++;
+                    }
+                }
+            }
+        }
 	}
 
-	if (!got_data) {
+    if (!vdev ||
+        vdev->cur_channel >= vdev->num_probes ||
+        revents == -1) {
 		packet.type = SR_DF_END;
 		sr_session_send(cb_sdi, &packet);
 		sr_session_source_remove(-1);
@@ -169,12 +288,18 @@ static int dev_open(struct sr_dev_inst *sdi)
 
     struct session_vdev *vdev;
     vdev = sdi->priv;
-    if (!(vdev->buf = g_try_malloc(CHUNKSIZE))) {
+    if (!(vdev->buf = g_try_malloc(CHUNKSIZE + sizeof(uint64_t)))) {
         sr_err("%s: vdev->buf malloc failed", __func__);
         return SR_ERR_MALLOC;
     }
     vdev->trig_pos = 0;
     vdev->trig_time = 0;
+    vdev->cur_block = 0;
+    vdev->cur_channel = 0;
+    vdev->file_opened = FALSE;
+    vdev->num_blocks = 0;
+    vdev->bits = 8;
+    vdev->max_height = 0;
 
 	dev_insts = g_slist_append(dev_insts, sdi);
 
@@ -187,6 +312,8 @@ static int dev_close(struct sr_dev_inst *sdi)
     g_free(vdev->sessionfile);
     g_free(vdev->capturefile);
     g_free(vdev->buf);
+    if (vdev->logic_buf)
+        g_free(vdev->logic_buf);
 
     g_free(sdi->priv);
     sdi->priv = NULL;
@@ -198,6 +325,8 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
                       const struct sr_channel *ch,
                       const struct sr_channel_group *cg)
 {
+    (void)cg;
+
 	struct session_vdev *vdev;
 
 	switch (id) {
@@ -226,6 +355,13 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         if (sdi) {
             vdev = sdi->priv;
             *data = g_variant_new_uint64(vdev->timebase);
+        } else
+            return SR_ERR;
+        break;
+    case SR_CONF_DSO_BITS:
+        if (sdi) {
+            vdev = sdi->priv;
+            *data = g_variant_new_byte(vdev->bits);
         } else
             return SR_ERR;
         break;
@@ -259,18 +395,53 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         } else
             return SR_ERR;
         break;
+    case SR_CONF_TRIGGER_VALUE:
+        if (sdi && ch) {
+            *data = g_variant_new_byte(ch->trig_value);
+        } else
+            return SR_ERR;
+        break;
     case SR_CONF_MAX_DSO_SAMPLERATE:
         if (!sdi)
             return SR_ERR;
+        vdev = sdi->priv;
         *data = g_variant_new_uint64(vdev->samplerate);
         break;
     case SR_CONF_MAX_DSO_SAMPLELIMITS:
         if (!sdi)
             return SR_ERR;
+        vdev = sdi->priv;
         *data = g_variant_new_uint64(vdev->total_samples);
         break;
-    case SR_CONF_RLE_SAMPLELIMITS:
-        *data = g_variant_new_uint64(UINT64_MAX);
+    case SR_CONF_HW_DEPTH:
+        if (!sdi)
+            return SR_ERR;
+        vdev = sdi->priv;
+        *data = g_variant_new_uint64(vdev->total_samples);
+        break;
+    case SR_CONF_MAX_HEIGHT:
+        if (!sdi)
+            return SR_ERR;
+        vdev = sdi->priv;
+        *data = g_variant_new_string(maxHeights[vdev->max_height]);
+        break;
+    case SR_CONF_MAX_HEIGHT_VALUE:
+        if (!sdi)
+            return SR_ERR;
+        vdev = sdi->priv;
+        *data = g_variant_new_byte(vdev->max_height);
+        break;
+    case SR_CONF_VLD_CH_NUM:
+        if (!sdi)
+            return SR_ERR;
+        vdev = sdi->priv;
+        *data = g_variant_new_int16(vdev->num_probes);
+        break;
+    case SR_CONF_FILE_VERSION:
+        if (!sdi)
+            return SR_ERR;
+        vdev = sdi->priv;
+        *data = g_variant_new_int16(vdev->version);
         break;
     default:
 		return SR_ERR_ARG;
@@ -279,11 +450,15 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
 	return SR_OK;
 }
 
-static int config_set(int id, GVariant *data, const struct sr_dev_inst *sdi,
+static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                       struct sr_channel *ch,
-                      const struct sr_channel_group *cg)
+                      struct sr_channel_group *cg)
 {
+    (void)cg;
+
 	struct session_vdev *vdev;
+    const char *stropt;
+    unsigned int i;
 
 	vdev = sdi->priv;
 
@@ -297,6 +472,10 @@ static int config_set(int id, GVariant *data, const struct sr_dev_inst *sdi,
         vdev->timebase = g_variant_get_uint64(data);
         sr_info("Setting timebase to %" PRIu64 ".", vdev->timebase);
         break;
+    case SR_CONF_DSO_BITS:
+        vdev->bits = g_variant_get_byte(data);
+        sr_info("Setting DSO bits to %d.", vdev->bits);
+        break;
     case SR_CONF_SESSIONFILE:
         vdev->sessionfile = g_strdup(g_variant_get_bytestring(data));
 		sr_info("Setting sessionfile to '%s'.", vdev->sessionfile);
@@ -305,9 +484,10 @@ static int config_set(int id, GVariant *data, const struct sr_dev_inst *sdi,
         vdev->capturefile = g_strdup(g_variant_get_bytestring(data));
 		sr_info("Setting capturefile to '%s'.", vdev->capturefile);
 		break;
-	case SR_CONF_CAPTURE_UNITSIZE:
-		vdev->unitsize = g_variant_get_uint64(data);
-		break;
+    case SR_CONF_FILE_VERSION:
+        vdev->version = g_variant_get_int16(data);
+        sr_info("Setting file version to '%d'.", vdev->version);
+        break;
     case SR_CONF_LIMIT_SAMPLES:
         vdev->total_samples = g_variant_get_uint64(data);
         samplecounts[0] = vdev->total_samples;
@@ -321,8 +501,17 @@ static int config_set(int id, GVariant *data, const struct sr_dev_inst *sdi,
         vdev->trig_pos = g_variant_get_uint64(data);
         sr_info("Setting trigger position to %" PRIu64 ".", vdev->trig_pos);
         break;
+    case SR_CONF_NUM_BLOCKS:
+        vdev->num_blocks = g_variant_get_uint64(data);
+        sr_info("Setting block number to %" PRIu64 ".", vdev->num_blocks);
+        break;
     case SR_CONF_CAPTURE_NUM_PROBES:
 		vdev->num_probes = g_variant_get_uint64(data);
+        if (sdi->mode == LOGIC) {
+            if (!(vdev->logic_buf = g_try_malloc(CHUNKSIZE/16*vdev->num_probes))) {
+                sr_err("%s: vdev->logic_buf malloc failed", __func__);
+            }
+        }
 		break;
     case SR_CONF_EN_CH:
         ch->enabled = g_variant_get_boolean(data);
@@ -338,6 +527,9 @@ static int config_set(int id, GVariant *data, const struct sr_dev_inst *sdi,
         break;
     case SR_CONF_VPOS:
         ch->vpos = g_variant_get_double(data);
+        break;
+    case SR_CONF_TRIGGER_VALUE:
+        ch->trig_value = g_variant_get_byte(data);
         break;
     case SR_CONF_STATUS_PERIOD:
         if (ch->index == 0)
@@ -363,6 +555,17 @@ static int config_set(int id, GVariant *data, const struct sr_dev_inst *sdi,
         else
             vdev->mstatus.ch1_min = g_variant_get_uint64(data);
         break;
+    case SR_CONF_MAX_HEIGHT:
+        stropt = g_variant_get_string(data, NULL);
+        for (i = 0; i < ARRAY_SIZE(maxHeights); i++) {
+            if (!strcmp(stropt, maxHeights[i])) {
+                vdev->max_height = i;
+                break;
+            }
+        }
+        sr_dbg("%s: setting Signal Max Height to %d",
+            __func__, vdev->max_height);
+        break;
     default:
 		sr_err("Unknown capability: %d.", id);
 		return SR_ERR;
@@ -371,8 +574,12 @@ static int config_set(int id, GVariant *data, const struct sr_dev_inst *sdi,
 	return SR_OK;
 }
 
-static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi)
+static int config_list(int key, GVariant **data,
+                       const struct sr_dev_inst *sdi,
+                       const struct sr_channel_group *cg)
 {
+    (void)cg;
+
     GVariant *gvar;
     GVariantBuilder gvb;
 
@@ -385,6 +592,12 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi)
 		*data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
 				hwcaps, ARRAY_SIZE(hwcaps)*sizeof(int32_t), TRUE, NULL, NULL);
 		break;
+    case SR_CONF_DEVICE_CONFIGS:
+//		*data = g_variant_new_fixed_array(G_VARIANT_TYPE_INT32,
+//				hwcaps, ARRAY_SIZE(hwcaps), sizeof(int32_t));
+        *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
+                hwoptions, ARRAY_SIZE(hwoptions)*sizeof(int32_t), TRUE, NULL, NULL);
+        break;
     case SR_CONF_SAMPLERATE:
         g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));
 //		gvar = g_variant_new_fixed_array(G_VARIANT_TYPE("t"), samplerates,
@@ -401,14 +614,17 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi)
         g_variant_builder_add(&gvb, "{sv}", "samplecounts", gvar);
         *data = g_variant_builder_end(&gvb);
         break;
-	default:
+    case SR_CONF_MAX_HEIGHT:
+        *data = g_variant_new_strv(maxHeights, ARRAY_SIZE(maxHeights));
+        break;
+    default:
 		return SR_ERR_ARG;
 	}
 
 	return SR_OK;
 }
 
-static int dev_status_get(struct sr_dev_inst *sdi, struct sr_status *status, int begin, int end)
+static int dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, int begin, int end)
 {
     (void)begin;
     (void)end;
@@ -424,15 +640,21 @@ static int dev_status_get(struct sr_dev_inst *sdi, struct sr_status *status, int
     }
 }
 
-static int dev_acquisition_start(const struct sr_dev_inst *sdi,
+static int dev_acquisition_start(struct sr_dev_inst *sdi,
 		void *cb_data)
 {
+    (void)cb_data;
+
 	struct zip_stat zs;
 	struct session_vdev *vdev;
     struct sr_datafeed_packet packet;
 	int ret;
+    GSList *l;
+    struct sr_channel *probe;
 
 	vdev = sdi->priv;
+    vdev->enabled_probes = 0;
+    packet.status = SR_PKT_OK;
 
 	sr_info("Opening archive %s file %s", vdev->sessionfile,
 		vdev->capturefile);
@@ -443,17 +665,29 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi,
 		return SR_ERR;
 	}
 
-	if (zip_stat(vdev->archive, vdev->capturefile, 0, &zs) == -1) {
-		sr_err("Failed to check capture file '%s' in "
-		       "session file '%s'.", vdev->capturefile, vdev->sessionfile);
-		return SR_ERR;
-	}
+    if (vdev->version == 1) {
+        if (zip_stat(vdev->archive, vdev->capturefile, 0, &zs) == -1) {
+            sr_err("Failed to check capture file '%s' in "
+                   "session file '%s'.", vdev->capturefile, vdev->sessionfile);
+            return SR_ERR;
+        }
 
-	if (!(vdev->capfile = zip_fopen(vdev->archive, vdev->capturefile, 0))) {
-		sr_err("Failed to open capture file '%s' in "
-		       "session file '%s'.", vdev->capturefile, vdev->sessionfile);
-		return SR_ERR;
-	}
+        if (!(vdev->capfile = zip_fopen(vdev->archive, vdev->capturefile, 0))) {
+            sr_err("Failed to open capture file '%s' in "
+                   "session file '%s'.", vdev->capturefile, vdev->sessionfile);
+            return SR_ERR;
+        }
+        vdev->file_opened = TRUE;
+        vdev->cur_channel = vdev->num_probes - 1;
+    } else {
+        vdev->cur_channel = 0;
+    }
+
+    for (l = sdi->channels; l; l = l->next) {
+        probe = l->data;
+        if (probe->enabled)
+            vdev->enabled_probes++;
+    }
 
 	/* Send header packet to the session bus. */
     std_session_send_df_header(sdi, LOG_PREFIX);
@@ -461,7 +695,10 @@ static int dev_acquisition_start(const struct sr_dev_inst *sdi,
     /* Send trigger packet to the session bus */
     if (vdev->trig_pos != 0) {
         struct ds_trigger_pos session_trigger;
-        session_trigger.real_pos = vdev->trig_pos;
+        if (sdi->mode == DSO)
+            session_trigger.real_pos = vdev->trig_pos * vdev->enabled_probes / vdev->num_probes;
+        else
+            session_trigger.real_pos = vdev->trig_pos;
         packet.type = SR_DF_TRIGGER;
         packet.payload = &session_trigger;
         sr_session_send(sdi, &packet);
@@ -489,7 +726,6 @@ SR_PRIV struct sr_dev_driver session_driver = {
     .config_list = config_list,
     .dev_open = dev_open,
     .dev_close = dev_close,
-    .dev_test = NULL,
     .dev_status_get = dev_status_get,
     .dev_acquisition_start = dev_acquisition_start,
     .dev_acquisition_stop = NULL,

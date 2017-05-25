@@ -64,18 +64,16 @@ public:
 	 **/
     void paint_mid(QPainter &p, int left, int right);
 
-    const std::vector< std::pair<uint64_t, bool> > cur_edges() const;
-
 private:
-	void paint_trace(QPainter &p,
-		const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot,
-		int y, int left, const int64_t start, const int64_t end,
-		const double pixels_offset, const double samples_per_pixel);
+    void paint_trace(QPainter &p,
+        const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot,
+        int y, int left, const int64_t start, const int64_t end,
+        const double pixels_offset, const double samples_per_pixel, int order);
 
-	void paint_envelope(QPainter &p,
-		const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot,
-		int y, int left, const int64_t start, const int64_t end,
-		const double pixels_offset, const double samples_per_pixel);
+    void paint_envelope(QPainter &p,
+        const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot,
+        int y, int left, const int64_t start, const int64_t end,
+        const double pixels_offset, const double samples_per_pixel, int order);
 
 private:
 	boost::shared_ptr<pv::data::Analog> _data;

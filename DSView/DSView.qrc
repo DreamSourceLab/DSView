@@ -10,8 +10,6 @@
         <file>stylesheet.qss</file>
         <file>icons/down-arrow.png</file>
         <file>icons/slider-handle.png</file>
-        <file>icons/add.png</file>
-        <file>icons/del.png</file>
         <file>icons/trigger.png</file>
         <file>icons/measure.png</file>
         <file>icons/search-bar.png</file>
@@ -55,5 +53,16 @@
         <file>icons/maximize.png</file>
         <file>icons/minimize.png</file>
         <file>icons/restore.png</file>
+        <file>icons/nav.png</file>
+        <file>icons/oneloop.png</file>
+        <file>icons/repeat.png</file>
+        <file>icons/moder.png</file>
+        <file>icons/moder_dis.png</file>
+        <file>icons/modes.png</file>
+        <file>icons/modes_dis.png</file>
+        <file>icons/add.png</file>
+        <file>icons/del.png</file>
+        <file>icons/add_dis.png</file>
+        <file>icons/del_dis.png</file>
     </qresource>
 </RCC>

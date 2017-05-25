@@ -91,14 +91,20 @@ void AnalogSnapshot::clear()
     init();
 }
 
-void AnalogSnapshot::first_payload(const sr_datafeed_analog &analog, uint64_t total_sample_count, unsigned int channel_num)
+void AnalogSnapshot::first_payload(const sr_datafeed_analog &analog, uint64_t total_sample_count, GSList *channels)
 {
     _total_sample_count = total_sample_count;
-    _channel_num = channel_num;
-    _unit_size = sizeof(uint16_t)*channel_num;
+    _channel_num = 0;
+    for (const GSList *l = channels; l; l = l->next) {
+        sr_channel *const probe = (sr_channel*)l->data;
+        assert(probe);
+        if (probe->type == SR_CHANNEL_ANALOG && probe->enabled) {
+            _channel_num ++;
+        }
+    }
 
     bool isOk = true;
-    uint64_t size = _total_sample_count * _unit_size + sizeof(uint64_t);
+    uint64_t size = _total_sample_count * _channel_num * BytesPerSample + sizeof(uint64_t);
     if (size != _capacity) {
         free_data();
         _data = malloc(size);
@@ -125,6 +131,13 @@ void AnalogSnapshot::first_payload(const sr_datafeed_analog &analog, uint64_t to
     }
 
     if (isOk) {
+        for (const GSList *l = channels; l; l = l->next) {
+            sr_channel *const probe = (sr_channel*)l->data;
+            assert(probe);
+            if (probe->type == SR_CHANNEL_ANALOG && probe->enabled) {
+                _ch_index.push_back(probe->index);
+            }
+        }
         _capacity = size;
         _memory_failed = false;
         append_payload(analog);
@@ -132,7 +145,6 @@ void AnalogSnapshot::first_payload(const sr_datafeed_analog &analog, uint64_t to
     } else {
         free_data();
         free_envelop();
-        _capacity = 0;
         _memory_failed = true;
     }
 }
@@ -145,6 +157,27 @@ void AnalogSnapshot::append_payload(
 
 	// Generate the first mip-map from the data
 	append_payload_to_envelope_levels();
+}
+
+void AnalogSnapshot::append_data(void *data, uint64_t samples)
+{
+    int unit_bytes = BytesPerSample * _channel_num;
+    if (_sample_count + samples < _total_sample_count)
+        _sample_count += samples;
+    else
+        _sample_count = _total_sample_count;
+
+    if (_ring_sample_count + samples > _total_sample_count) {
+        memcpy((uint8_t*)_data + _ring_sample_count * unit_bytes,
+            data, (_total_sample_count - _ring_sample_count) * unit_bytes);
+        _ring_sample_count = (samples + _ring_sample_count - _total_sample_count) % _total_sample_count;
+        memcpy((uint8_t*)_data,
+            data, _ring_sample_count * unit_bytes);
+    } else {
+        memcpy((uint8_t*)_data + _ring_sample_count * unit_bytes,
+            data, samples * unit_bytes);
+        _ring_sample_count += samples;
+    }
 }
 
 const uint16_t* AnalogSnapshot::get_samples(
@@ -301,6 +334,21 @@ void AnalogSnapshot::append_payload_to_envelope_levels()
             }
         }
     }
+}
+
+int AnalogSnapshot::get_ch_order(int sig_index)
+{
+    uint16_t order = 0;
+    for (auto& iter:_ch_index) {
+        if (iter == sig_index)
+            break;
+        order++;
+    }
+
+    if (order >= _ch_index.size())
+        return -1;
+    else
+        return order;
 }
 
 } // namespace data

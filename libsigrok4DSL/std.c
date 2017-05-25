@@ -89,6 +89,7 @@ SR_PRIV int std_session_send_df_header(const struct sr_dev_inst *sdi,
 	/* Send header packet to the session bus. */
 	sr_dbg("%sSending SR_DF_HEADER packet.", prefix);
 	packet.type = SR_DF_HEADER;
+    packet.status = SR_PKT_OK;
 	packet.payload = (uint8_t *)&header;
 	header.feed_version = 1;
 	gettimeofday(&header.starttime, NULL);
@@ -152,6 +153,7 @@ SR_PRIV int std_hw_dev_acquisition_stop_serial(struct sr_dev_inst *sdi,
 	/* Send SR_DF_END packet to the session bus. */
 	sr_dbg("%sSending SR_DF_END packet.", prefix);
 	packet.type = SR_DF_END;
+    packet.status = SR_PKT_OK;
 	packet.payload = NULL;
 	if ((ret = sr_session_send(cb_data, &packet)) < 0) {
 		sr_err("%sFailed to send SR_DF_END packet: %d.", prefix, ret);

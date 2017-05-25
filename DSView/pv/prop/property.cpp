@@ -42,5 +42,10 @@ bool Property::labeled_widget() const
 	return false;
 }
 
+GVariant* Property::get_value() const
+{
+    return NULL;
+}
+
 } // prop
 } // pv

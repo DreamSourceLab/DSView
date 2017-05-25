@@ -68,6 +68,8 @@ private:
 	static const float LogEnvelopeScaleFactor;
 	static const uint64_t EnvelopeDataUnit;
 
+    static const int BytesPerSample = 2;
+
 public:
     AnalogSnapshot();
 
@@ -76,7 +78,8 @@ public:
     void clear();
     void init();
 
-    void first_payload(const sr_datafeed_analog &analog, uint64_t total_sample_count, unsigned int channel_num);
+    void first_payload(const sr_datafeed_analog &analog,
+                       uint64_t total_sample_count, GSList *channels);
 
 	void append_payload(const sr_datafeed_analog &analog);
 
@@ -86,10 +89,15 @@ public:
 	void get_envelope_section(EnvelopeSection &s,
         uint64_t start, uint64_t end, float min_length, int probe_index) const;
 
+    int get_ch_order(int sig_index);
+
 private:
+    void append_data(void *data, uint64_t samples);
     void free_envelop();
 	void reallocate_envelope(Envelope &l);
 	void append_payload_to_envelope_levels();
+
+
 
 private:
     struct Envelope _envelope_levels[2*DS_MAX_ANALOG_PROBES_NUM][ScaleStepCount];

@@ -28,8 +28,7 @@ namespace pv {
 namespace data {
 
 SignalData::SignalData() :
-    _samplerate(0),
-    _start_time(0)
+    _samplerate(0)
 {
 }
 
@@ -42,11 +41,6 @@ void SignalData::set_samplerate(double samplerate)
 {
     assert(samplerate > 0);
     _samplerate = samplerate;
-}
-
-double SignalData::get_start_time() const
-{
-	return _start_time;
 }
 
 } // namespace data

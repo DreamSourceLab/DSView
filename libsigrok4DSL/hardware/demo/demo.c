@@ -112,6 +112,7 @@ struct dev_context {
     gboolean data_lock;
     uint8_t max_height;
     uint8_t dso_bits;
+    uint64_t samples_not_sent;
 
     uint16_t *buf;
     uint64_t pre_index;
@@ -286,7 +287,7 @@ static const char *probe_names[NUM_PROBES + 1] = {
 
 };
 
-static const gboolean default_ms_en[DSO_MS_END - DSO_MS_BEGIN] = {
+static const gboolean default_ms_en[] = {
     FALSE, /* DSO_MS_BEGIN */
     TRUE,  /* DSO_MS_FREQ */
     FALSE, /* DSO_MS_PERD */
@@ -295,7 +296,6 @@ static const gboolean default_ms_en[DSO_MS_END - DSO_MS_BEGIN] = {
     FALSE, /* DSO_MS_VRMS */
     FALSE, /* DSO_MS_VMEA */
     FALSE, /* DSO_MS_VP2P */
-    FALSE, /* DSO_MS_END */
 };
 
 /* Private, per-device-instance driver context. */
@@ -307,7 +307,7 @@ static struct sr_dev_driver *di = &demo_driver_info;
 
 extern struct ds_trigger *trigger;
 
-static int hw_dev_acquisition_stop(struct sr_dev_inst *sdi, void *cb_data);
+static int hw_dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data);
 
 static int clear_instances(void)
 {
@@ -399,7 +399,7 @@ static GSList *hw_dev_mode_list(const struct sr_dev_inst *sdi)
 {
     (void)sdi;
     GSList *l = NULL;
-    int i;
+    unsigned int i;
 
     for(i = 0; i < ARRAY_SIZE(mode_list); i++) {
         l = g_slist_append(l, &mode_list[i]);
@@ -471,16 +471,15 @@ static int hw_cleanup(void)
 	return ret;
 }
 
-static int en_ch_num(const struct sr_dev_inst *sdi)
+static unsigned int en_ch_num(const struct sr_dev_inst *sdi)
 {
     GSList *l;
-    int channel_en_cnt = 0;
+    unsigned int channel_en_cnt = 0;
 
     for (l = sdi->channels; l; l = l->next) {
         struct sr_channel *probe = (struct sr_channel *)l->data;
         channel_en_cnt += probe->enabled;
     }
-    channel_en_cnt += (channel_en_cnt == 0);
 
     return channel_en_cnt;
 }
@@ -540,7 +539,7 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         *data = g_variant_new_byte(ch->trig_value);
         break;
     case SR_CONF_EN_CH:
-        *data = g_variant_new_uint64(ch->enabled);
+        *data = g_variant_new_boolean(ch->enabled);
         break;
     case SR_CONF_DATALOCK:
         *data = g_variant_new_boolean(devc->data_lock);
@@ -551,17 +550,17 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_MAX_DSO_SAMPLELIMITS:
         *data = g_variant_new_uint64(DEMO_MAX_DSO_DEPTH);
         break;
-    case SR_CONF_MAX_LOGIC_SAMPLERATE:
-        *data = g_variant_new_uint64(DEMO_MAX_LOGIC_SAMPLERATE);
-        break;
-    case SR_CONF_MAX_LOGIC_SAMPLELIMITS:
-        *data = g_variant_new_uint64(DEMO_MAX_LOGIC_DEPTH);
-        break;
-    case SR_CONF_RLE_SAMPLELIMITS:
+    case SR_CONF_HW_DEPTH:
         *data = g_variant_new_uint64(DEMO_MAX_LOGIC_DEPTH);
         break;
     case SR_CONF_DSO_BITS:
         *data = g_variant_new_byte(devc->dso_bits);
+        break;
+    case SR_CONF_HW_STATUS:
+        *data = g_variant_new_byte(0);
+        break;
+    case SR_CONF_VLD_CH_NUM:
+        *data = g_variant_new_int16(NUM_PROBES);
         break;
     default:
 		return SR_ERR_NA;
@@ -572,7 +571,7 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
 
 static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                       struct sr_channel *ch,
-                      const struct sr_channel_group *cg)
+                      struct sr_channel_group *cg)
 {
     uint16_t i, j;
     int ret;
@@ -821,14 +820,16 @@ static void samples_generator(uint16_t *buf, uint64_t size,
                               const struct sr_dev_inst *sdi,
                               struct dev_context *devc)
 {
-    uint64_t i, pre0_i, pre1_i, index;
+    uint64_t i, pre0_i, pre1_i;
     GSList *l;
     struct sr_channel *probe;
     int offset;
-    int start_rand;
+    unsigned int start_rand;
     const uint64_t span = DEMO_MAX_DSO_SAMPLERATE / devc->cur_samplerate;
     const uint64_t len = ARRAY_SIZE(sinx) - 1;
-    int *pre_buf;
+    const int *pre_buf;
+    uint16_t tmp_u16 = 0;
+    unsigned int ch_num = en_ch_num(sdi) ? en_ch_num(sdi) : 1;
 
     switch (devc->sample_generator) {
     case PATTERN_SINE: /* Sine */
@@ -855,11 +856,30 @@ static void samples_generator(uint16_t *buf, uint64_t size,
         size != devc->limit_samples) {
         for (i = 0; i < devc->limit_samples; i++)
             *(buf + i) = *(buf + ((i + size)%devc->limit_samples));
-    } else if (sdi->mode != DSO) {
-        start_rand = rand()%len;
+    } else if (sdi->mode == LOGIC) {
         for (i = 0; i < size; i++) {
-            index = (i/10/g_slist_length(sdi->channels)+start_rand)%len;
-            *(buf + i) = (uint16_t)(((const_dc+pre_buf[index]) << 8) + (const_dc+pre_buf[index]));
+            //index = (i/10/g_slist_length(sdi->channels)+start_rand)%len;
+            //*(buf + i) = (uint16_t)(((const_dc+pre_buf[index]) << 8) + (const_dc+pre_buf[index]));
+            tmp_u16 = 0;
+            if (i < ch_num*4)
+                *(buf + i) = tmp_u16;
+            else if (i % 4 == 0) {
+                start_rand = rand() % (ch_num * 4);
+                if (start_rand == (i/4 % ch_num))
+                    tmp_u16 = 0xffff;
+                *(buf + i) = tmp_u16 ? ~*(buf + i - ch_num*4) : *(buf + i - ch_num*4);
+            } else {
+                *(buf + i) = *(buf + i - 1);
+            }
+        }
+    } else if (sdi->mode == ANALOG) {
+        for (i = 0; i < size; i++) {
+            if (rand() % (devc->limit_samples / 100) == 0)
+                *(buf + i) = 0x4000 + rand() % 0x8000;
+            else if (rand() % (devc->limit_samples / 1000) == 0)
+                *(buf + i) = 0x7000 + rand() % 0x2000;
+            else
+                *(buf + i) = 0x8000;
         }
     } else {
         if (devc->pre_index == 0) {
@@ -876,8 +896,8 @@ static void samples_generator(uint16_t *buf, uint64_t size,
         for (l = sdi->channels; l; l = l->next) {
             start_rand = devc->pre_index == 0 ? rand()%len : 0;
             probe = (struct sr_channel *)l->data;
-            //offset = ceil((0.5 - (probe->vpos/probe->vdiv/10.0)) * 255);
-            offset = 128;
+            offset = ceil((0.5 - (probe->vpos/probe->vdiv/10.0)) * 255);
+            //offset = 128;
             pre0_i = devc->pre_index;
             pre1_i = devc->pre_index;
             for (i = devc->pre_index; i < devc->pre_index + size; i++) {
@@ -932,35 +952,46 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
     struct sr_datafeed_logic logic;
     struct sr_datafeed_dso dso;
     struct sr_datafeed_analog analog;
-    static uint64_t samples_to_send = 0, expected_samplenum, sending_now;
+    double samples_elaspsed;
+    uint64_t samples_to_send = 0, sending_now;
 	int64_t time, elapsed;
     static uint16_t last_sample = 0;
     uint16_t cur_sample;
-    int i;
+    uint64_t i;
 
 	(void)fd;
 	(void)revents;
 
+    packet.status = SR_PKT_OK;
 	/* How many "virtual" samples should we have collected by now? */
 	time = g_get_monotonic_time();
 	elapsed = time - devc->starttime;
     devc->starttime = time;
     //expected_samplenum = ceil(elapsed / 1000000.0 * devc->cur_samplerate);
 	/* Of those, how many do we still have to send? */
-    //samples_to_send = (expected_samplenum - devc->samples_counter) / CONST_LEN * CONST_LEN;
-    //samples_to_send = expected_samplenum / CONST_LEN * CONST_LEN;
-    samples_to_send += ceil(elapsed / 1000000.0 * devc->cur_samplerate);
+    samples_elaspsed = elapsed / 1000000.0 * devc->cur_samplerate;
 
     if (devc->limit_samples) {
-        if (sdi->mode == DSO && !devc->instant)
+        if (sdi->mode == DSO && !devc->instant) {
+            samples_to_send = ceil(samples_elaspsed);
             samples_to_send = MIN(samples_to_send,
                                   devc->limit_samples - devc->pre_index);
-        else if (sdi->mode == ANALOG)
-            samples_to_send = MIN(samples_to_send * g_slist_length(sdi->channels),
-                                  devc->limit_samples - devc->pre_index);
-        else
+        } else if (sdi->mode == ANALOG) {
+            samples_to_send = ceil(samples_elaspsed * g_slist_length(sdi->channels));
+            samples_to_send = MIN(samples_to_send,
+                                  devc->limit_samples * g_slist_length(sdi->channels) - devc->pre_index);
+        } else {
+            samples_to_send = ceil(samples_elaspsed);
+            samples_to_send += devc->samples_not_sent;
+            if (samples_to_send < 64) {
+                devc->samples_not_sent = samples_to_send;
+                return TRUE;
+            } else
+                devc->samples_not_sent = samples_to_send & 63;
+            samples_to_send = samples_to_send & ~63;
             samples_to_send = MIN(samples_to_send,
                      devc->limit_samples - devc->samples_counter);
+        }
     }
 
     if (samples_to_send > 0 && !devc->stop) {
@@ -1007,12 +1038,12 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
             devc->samples_counter = devc->limit_samples;
 
         if (devc->trigger_stage == 0){
-            samples_to_send -= sending_now;
+            //samples_to_send -= sending_now;
             if (sdi->mode == LOGIC) {
                 packet.type = SR_DF_LOGIC;
                 packet.payload = &logic;
                 logic.length = sending_now * (NUM_PROBES >> 3);
-                logic.unitsize = (NUM_PROBES >> 3);
+                logic.format = LA_CROSS_DATA;
                 logic.data = devc->buf;
             } else if (sdi->mode == DSO) {
                 packet.type = SR_DF_DSO;
@@ -1036,7 +1067,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
                 analog.mq = SR_MQ_VOLTAGE;
                 analog.unit = SR_UNIT_VOLT;
                 analog.mqflags = SR_MQFLAG_AC;
-                analog.data = devc->buf;
+                analog.data = (float *)devc->buf;
             }
 
             if (sdi->mode == DSO && !devc->instant) {
@@ -1065,7 +1096,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
     return TRUE;
 }
 
-static int hw_dev_acquisition_start(const struct sr_dev_inst *sdi,
+static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
 		void *cb_data)
 {
 	struct dev_context *const devc = sdi->priv;
@@ -1083,6 +1114,7 @@ static int hw_dev_acquisition_start(const struct sr_dev_inst *sdi,
     devc->mstatus.captured_cnt2 = 0;
     devc->mstatus.captured_cnt3 = 0;
     devc->stop = FALSE;
+    devc->samples_not_sent = 0;
 
     /*
      * trigger setting
@@ -1108,7 +1140,7 @@ static int hw_dev_acquisition_start(const struct sr_dev_inst *sdi,
 	 */
 
     sr_session_source_add_channel(devc->channel, G_IO_IN | G_IO_ERR,
-            (sdi->mode == DSO) ? 50 : 10, receive_data, sdi);
+            50, receive_data, sdi);
 
 	/* Send header packet to the session bus. */
     //std_session_send_df_header(cb_data, LOG_PREFIX);
@@ -1125,7 +1157,7 @@ static int hw_dev_acquisition_start(const struct sr_dev_inst *sdi,
 	return SR_OK;
 }
 
-static int hw_dev_acquisition_stop(struct sr_dev_inst *sdi, void *cb_data)
+static int hw_dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data)
 {
     (void)cb_data;
 
@@ -1144,20 +1176,13 @@ static int hw_dev_acquisition_stop(struct sr_dev_inst *sdi, void *cb_data)
 
 	/* Send last packet. */
     packet.type = SR_DF_END;
+    packet.status = SR_PKT_OK;
     sr_session_send(sdi, &packet);
 
 	return SR_OK;
 }
 
-static int hw_dev_test(struct sr_dev_inst *sdi)
-{
-    if (sdi)
-        return SR_OK;
-    else
-        return SR_ERR;
-}
-
-static int hw_dev_status_get(struct sr_dev_inst *sdi, struct sr_status *status, int begin, int end)
+static int hw_dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, int begin, int end)
 {
     (void)begin;
     (void)end;
@@ -1185,7 +1210,6 @@ SR_PRIV struct sr_dev_driver demo_driver_info = {
 	.config_list = config_list,
 	.dev_open = hw_dev_open,
 	.dev_close = hw_dev_close,
-    .dev_test = hw_dev_test,
     .dev_status_get = hw_dev_status_get,
 	.dev_acquisition_start = hw_dev_acquisition_start,
 	.dev_acquisition_stop = hw_dev_acquisition_stop,

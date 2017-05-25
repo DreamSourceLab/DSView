@@ -28,9 +28,9 @@ AM_CPPFLAGS = -DDECODERS_DIR='"$(DECODERS_DIR)"'
 # The tests CFLAGS are a superset of the libsigrokdecode CFLAGS.
 AM_CFLAGS = $(SRD_EXTRA_CFLAGS) $(SRD_WFLAGS) $(TESTS_CFLAGS)
 
-lib_LTLIBRARIES = libsigrokdecode.la
+lib_LTLIBRARIES = libsigrokdecode4DSL.la
 
-libsigrokdecode_la_SOURCES = \
+libsigrokdecode4DSL_la_SOURCES = \
 	srd.c \
 	session.c \
 	decoder.c \
@@ -44,15 +44,15 @@ libsigrokdecode_la_SOURCES = \
 	error.c \
 	version.c
 
-libsigrokdecode_la_LIBADD = $(SRD_EXTRA_LIBS) $(LIBSIGROKDECODE_LIBS)
-libsigrokdecode_la_LDFLAGS = -version-info $(SRD_LIB_VERSION) -no-undefined
+libsigrokdecode4DSL_la_LIBADD = $(SRD_EXTRA_LIBS) $(LIBSIGROKDECODE_LIBS)
+libsigrokdecode4DSL_la_LDFLAGS = -version-info $(SRD_LIB_VERSION) -no-undefined
 
 pkginclude_HEADERS = libsigrokdecode.h
 nodist_pkginclude_HEADERS = version.h
 noinst_HEADERS = libsigrokdecode-internal.h
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = libsigrokdecode.pc
+pkgconfig_DATA = libsigrokdecode4DSL.pc
 
 EXTRA_DIST = Doxyfile HACKING contrib/sigrok-logo-notext.png
 
@@ -71,7 +71,7 @@ tests_main_SOURCES = \
 	tests/session.c
 
 tests_main_CPPFLAGS = -DDECODERS_DIR='"$(abs_top_srcdir)/decoders"'
-tests_main_LDADD = libsigrokdecode.la $(SRD_EXTRA_LIBS) $(TESTS_LIBS)
+tests_main_LDADD = libsigrokdecode4DSL.la $(SRD_EXTRA_LIBS) $(TESTS_LIBS)
 
 MAINTAINERCLEANFILES = ChangeLog
 

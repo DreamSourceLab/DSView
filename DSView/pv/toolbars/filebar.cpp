@@ -91,13 +91,13 @@ FileBar::FileBar(SigSession &session, QWidget *parent) :
     _action_save->setIcon(QIcon::fromTheme("file",
         QIcon(":/icons/save.png")));
     _action_save->setObjectName(QString::fromUtf8("actionSave"));
-    connect(_action_save, SIGNAL(triggered()), this, SLOT(on_actionSave_triggered()));
+    connect(_action_save, SIGNAL(triggered()), this, SIGNAL(on_save()));
 
     _action_export = new QAction(this);
     _action_export->setText(QApplication::translate("File", "&Export...", 0));
     _action_export->setIcon(QIcon::fromTheme("file",QIcon(":/icons/export.png")));
     _action_export->setObjectName(QString::fromUtf8("actionExport"));
-    connect(_action_export, SIGNAL(triggered()), this, SLOT(on_actionExport_triggered()));
+    connect(_action_export, SIGNAL(triggered()), this, SIGNAL(on_export()));
 
 
     _action_capture = new QAction(this);
@@ -119,9 +119,6 @@ FileBar::FileBar(SigSession &session, QWidget *parent) :
     _menu->addAction(_action_capture);
     _file_button.setMenu(_menu);
     addWidget(&_file_button);
-
-    _screenshot_timer.setSingleShot(true);
-    connect(&_screenshot_timer, SIGNAL(timeout()), this, SIGNAL(on_screenShot()));
 }
 
 void FileBar::on_actionOpen_triggered()
@@ -131,7 +128,7 @@ void FileBar::on_actionOpen_triggered()
     // Show the dialog
     const QString file_name = QFileDialog::getOpenFileName(
         this, tr("Open File"), settings.value(DIR_KEY).toString(), tr(
-            "DSView Data (*.dsl);;All Files (*.*)"));
+            "DSView Data (*.dsl)"));
     if (!file_name.isEmpty()) {
         QDir CurrentDir;
         settings.setValue(DIR_KEY, CurrentDir.absoluteFilePath(file_name));
@@ -157,74 +154,6 @@ void FileBar::show_session_error(
     msg.mBox()->setIcon(QMessageBox::Warning);
     msg.exec();
 }
-
-void FileBar::on_actionExport_triggered(){
-    const QString DIR_KEY("ExportPath");
-    QSettings settings;
-    int unit_size;
-    uint64_t length;
-    const void* buf = _session.get_buf(unit_size, length);
-    if (!buf) {
-        dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(tr("Data Export"));
-        msg.mBox()->setInformativeText(tr("No data to save!"));
-        msg.mBox()->setStandardButtons(QMessageBox::Ok);
-        msg.mBox()->setIcon(QMessageBox::Warning);
-        msg.exec();
-    } else {
-        QList<QString> supportedFormats = _session.getSuportedExportFormats();
-        QString filter;
-        for(int i = 0; i < supportedFormats.count();i++){
-            filter.append(supportedFormats[i]);
-            if(i < supportedFormats.count() - 1)
-                filter.append(";;");
-        }
-        QString file_name = QFileDialog::getSaveFileName(
-                    this, tr("Export Data"), settings.value(DIR_KEY).toString(),filter,&filter);
-        if (!file_name.isEmpty()) {
-            QFileInfo f(file_name);
-            QStringList list = filter.split('.').last().split(')');
-            QString ext = list.first();
-            if(f.suffix().compare(ext))
-                file_name+=tr(".")+ext;
-            QDir CurrentDir;
-            settings.setValue(DIR_KEY, CurrentDir.absoluteFilePath(file_name));
-            _session.export_file(file_name, this, ext);
-        }
-    }
-}
-
-void FileBar::on_actionSave_triggered()
-{
-    const QString DIR_KEY("SavePath");
-    QSettings settings;
-    //save();
-    int unit_size;
-    uint64_t length;
-    const void* buf = _session.get_buf(unit_size, length);
-    if (!buf) {
-        dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(tr("File Save"));
-        msg.mBox()->setInformativeText(tr("No data to save!"));
-        msg.mBox()->setStandardButtons(QMessageBox::Ok);
-        msg.mBox()->setIcon(QMessageBox::Warning);
-        msg.exec();
-    } else {
-        QString file_name = QFileDialog::getSaveFileName(
-                        this, tr("Save File"), settings.value(DIR_KEY).toString(),
-                        tr("DSView Data (*.dsl)"));
-
-        if (!file_name.isEmpty()) {
-            QFileInfo f(file_name);
-            if(f.suffix().compare("dsl"))
-                file_name.append(tr(".dsl"));
-            QDir CurrentDir;
-            settings.setValue(DIR_KEY, CurrentDir.absoluteFilePath(file_name));
-            _session.save_file(file_name, this, _session.get_device()->dev_inst()->mode);
-        }
-    }
-}
-
 
 void FileBar::on_actionLoad_triggered()
 {
@@ -282,7 +211,7 @@ void FileBar::on_actionCapture_triggered()
 {
     _file_button.close();
     QCoreApplication::sendPostedEvents();
-    _screenshot_timer.start(100);
+    QTimer::singleShot(100, this, SIGNAL(on_screenShot()));
 }
 
 void FileBar::enable_toggle(bool enable)

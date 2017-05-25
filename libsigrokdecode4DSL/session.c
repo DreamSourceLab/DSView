@@ -128,19 +128,27 @@ static int srd_inst_send_meta(struct srd_decoder_inst *di, int key,
 		GVariant *data)
 {
 	PyObject *py_ret;
+	GSList *l;
+	struct srd_decoder_inst *next_di;
+	int ret;
 
 	if (key != SRD_CONF_SAMPLERATE)
 		/* This is the only key we pass on to the decoder for now. */
 		return SRD_OK;
 
-	if (!PyObject_HasAttrString(di->py_inst, "metadata"))
-		/* This decoder doesn't want metadata, that's fine. */
-		return SRD_OK;
+	if (PyObject_HasAttrString(di->py_inst, "metadata")) {
+		py_ret = PyObject_CallMethod(di->py_inst, "metadata", "lK",
+				(long)SRD_CONF_SAMPLERATE,
+				(unsigned long long)g_variant_get_uint64(data));
+		Py_XDECREF(py_ret);
+	}
 
-	py_ret = PyObject_CallMethod(di->py_inst, "metadata", "lK",
-			(long)SRD_CONF_SAMPLERATE,
-			(unsigned long long)g_variant_get_uint64(data));
-	Py_XDECREF(py_ret);
+	/* Push metadata to all the PDs stacked on top of this one. */
+	for (l = di->next_di; l; l = l->next) {
+		next_di = l->data;
+		if ((ret = srd_inst_send_meta(next_di, key, data)) != SRD_OK)
+			return ret;
+	}
 
 	return SRD_OK;
 }
@@ -212,16 +220,11 @@ SRD_API int srd_session_metadata_set(struct srd_session *sess, int key,
  * in channel order, in the least amount of space possible. The default
  * channel set consists of all required channels + all optional channels.
  *
- * The size of a sample in inbuf is 'unitsize' bytes. If no channel map
- * has been configured, it is the minimum number of bytes needed to store
- * the default channels.
- *
  * @param sess The session to use.
  * @param start_samplenum The sample number of the first sample in this chunk.
  * @param end_samplenum The sample number of the last sample in this chunk.
  * @param inbuf Pointer to sample data.
  * @param inbuflen Length in bytes of the buffer.
- * @param unitsize The number of bytes per sample.
  *
  * @return SRD_OK upon success, a (negative) error code otherwise.
  *
@@ -229,7 +232,7 @@ SRD_API int srd_session_metadata_set(struct srd_session *sess, int key,
  */
 SRD_API int srd_session_send(struct srd_session *sess, uint8_t chunk_type,
 		uint64_t start_samplenum, uint64_t end_samplenum,
-        const uint8_t *inbuf, uint64_t inbuflen, uint64_t unitsize, char **error)
+        const uint8_t **inbuf, const uint8_t *inbuf_const, char **error)
 {
 	GSList *d;
 	int ret;
@@ -241,7 +244,7 @@ SRD_API int srd_session_send(struct srd_session *sess, uint8_t chunk_type,
 
 	for (d = sess->di_list; d; d = d->next) {
         if ((ret = srd_inst_decode(d->data, chunk_type, start_samplenum,
-                end_samplenum, inbuf, inbuflen, unitsize, error)) != SRD_OK)
+                end_samplenum, inbuf, inbuf_const, error)) != SRD_OK)
 			return ret;
 	}
 

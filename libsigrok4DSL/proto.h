@@ -58,13 +58,6 @@ SR_API int sr_dev_clear(const struct sr_dev_driver *driver);
 SR_API int sr_dev_open(struct sr_dev_inst *sdi);
 SR_API int sr_dev_close(struct sr_dev_inst *sdi);
 
-/*--- filter.c --------------------------------------------------------------*/
-
-SR_API int sr_filter_probes(unsigned int in_unitsize, unsigned int out_unitsize,
-			    const GArray *probe_array, const uint8_t *data_in,
-			    uint64_t length_in, uint8_t **data_out,
-			    uint64_t *length_out);
-
 /*--- hwdriver.c ------------------------------------------------------------*/
 
 SR_API struct sr_dev_driver **sr_driver_list(void);
@@ -76,9 +69,9 @@ SR_API int sr_config_get(const struct sr_dev_driver *driver,
                          const struct sr_channel *ch,
                          const struct sr_channel_group *cg,
                          int key, GVariant **data);
-SR_API int sr_config_set(const struct sr_dev_inst *sdi,
-                         const struct sr_channel *ch,
-                         const struct sr_channel_group *cg,
+SR_API int sr_config_set(struct sr_dev_inst *sdi,
+                         struct sr_channel *ch,
+                         struct sr_channel_group *cg,
                          int key, GVariant *data);
 SR_API int sr_config_list(const struct sr_dev_driver *driver,
                           const struct sr_dev_inst *sdi,
@@ -98,7 +91,7 @@ SR_API int sr_session_load(const char *filename);
 SR_API struct sr_session *sr_session_new(void);
 SR_API int sr_session_destroy(void);
 SR_API int sr_session_dev_remove_all(void);
-SR_API int sr_session_dev_add(const struct sr_dev_inst *sdi);
+SR_API int sr_session_dev_add(struct sr_dev_inst *sdi);
 SR_API int sr_session_dev_list(GSList **devlist);
 
 /* Datafeed setup */
@@ -110,12 +103,9 @@ SR_API int sr_session_datafeed_callback_add(sr_datafeed_callback_t cb,
 SR_API int sr_session_start(void);
 SR_API int sr_session_run(void);
 SR_API int sr_session_stop(void);
-SR_API int sr_session_save(const char *filename, const struct sr_dev_inst *sdi,
-        unsigned char *buf, int unitsize, uint64_t samples, int64_t trig_time, uint64_t trig_pos);
-SR_API int sr_session_save_init(const char *filename, uint64_t samplerate,
-        char **channels);
-SR_API int sr_session_append(const char *filename, unsigned char *buf,
-        int unitsize, int units);
+SR_API int sr_session_save_init(const char *filename, const char *metafile, const char *decfile);
+SR_API int sr_session_append(const char *filename, const unsigned char *buf,
+        uint64_t size, int chunk_num, int index, int type, int version);
 SR_API int sr_session_source_add(int fd, int events, int timeout,
 		sr_receive_data_callback_t cb, const struct sr_dev_inst *sdi);
 SR_API int sr_session_source_add_pollfd(GPollFD *pollfd, int timeout,
@@ -184,4 +174,10 @@ SR_API int ds_trigger_set_en(uint16_t enable);
 SR_API uint16_t ds_trigger_get_en();
 SR_API int ds_trigger_set_mode(uint16_t mode);
 
+SR_PRIV uint64_t ds_trigger_get_mask0(uint16_t stage);
+SR_PRIV uint64_t ds_trigger_get_value0(uint16_t stage);
+SR_PRIV uint64_t ds_trigger_get_edge0(uint16_t stage);
+SR_PRIV uint64_t ds_trigger_get_mask1(uint16_t stage);
+SR_PRIV uint64_t ds_trigger_get_value1(uint16_t stage);
+SR_PRIV uint64_t ds_trigger_get_edge1(uint16_t stage);
 #endif

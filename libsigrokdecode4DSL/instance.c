@@ -31,8 +31,8 @@
 
 extern SRD_PRIV GSList *sessions;
 
-/* type_logic.c */
-extern SRD_PRIV PyTypeObject srd_logic_type;
+/* module_sigrokdecode.c */
+extern SRD_PRIV PyObject *srd_logic_type;
 
 /** @endcond */
 
@@ -156,6 +156,7 @@ SRD_API int srd_inst_option_set(struct srd_decoder_inst *di,
 		/* Not harmful even if we used the default. */
 		g_hash_table_remove(options, sdo->id);
 	}
+    Py_DECREF(py_di_options);
 	if (g_hash_table_size(options) != 0)
 		srd_warn("Unknown options specified for '%s'", di->inst_id);
 
@@ -164,7 +165,7 @@ SRD_API int srd_inst_option_set(struct srd_decoder_inst *di,
 err_out:
 	Py_XDECREF(py_optval);
 	if (PyErr_Occurred()) {
-        srd_exception_catch("Stray exception in srd_inst_option_set().", NULL);
+        srd_exception_catch(NULL, "Stray exception in srd_inst_option_set().");
 		ret = SRD_ERR_PYTHON;
 	}
 
@@ -342,7 +343,7 @@ SRD_API struct srd_decoder_inst *srd_inst_new(struct srd_session *sess,
 	/* Create a new instance of this decoder class. */
 	if (!(di->py_inst = PyObject_CallObject(dec->py_dec, NULL))) {
 		if (PyErr_Occurred())
-            srd_exception_catch("failed to create %s instance: ", NULL,
+            srd_exception_catch(NULL, "Failed to create %s instance: ",
 					decoder_id);
 		g_free(di->dec_channelmap);
 		g_free(di);
@@ -507,15 +508,16 @@ SRD_PRIV int srd_inst_start(struct srd_decoder_inst *di, char **error)
 			di->inst_id);
 
 	if (!(py_res = PyObject_CallMethod(di->py_inst, "start", NULL))) {
-        srd_exception_catch("Protocol decoder instance %s: ", error,
+        srd_exception_catch(error, "Decoder %s",
 				di->inst_id);
 		return SRD_ERR_PYTHON;
 	}
     Py_DecRef(py_res);
 
     if ((di->decoder->channels || di->decoder->opt_channels) != 0 ) {
-        logic = PyObject_New(srd_logic, &srd_logic_type);
-        //Py_INCREF(logic);
+        //logic = PyObject_New(srd_logic, &srd_logic_type);
+		logic = PyObject_New(srd_logic, (PyTypeObject *)srd_logic_type);
+        Py_INCREF(logic);
         logic->di = (struct srd_decoder_inst *)di;
         logic->sample = PyList_New(2);
         //Py_INCREF(logic->sample);
@@ -542,7 +544,6 @@ SRD_PRIV int srd_inst_start(struct srd_decoder_inst *di, char **error)
  * 			  set, relative to the start of capture.
  * @param inbuf The buffer to decode. Must not be NULL.
  * @param inbuflen Length of the buffer. Must be > 0.
- * @param unitsize The number of bytes per sample.
  *
  * @return SRD_OK upon success, a (negative) error code otherwise.
  *
@@ -552,32 +553,25 @@ SRD_PRIV int srd_inst_start(struct srd_decoder_inst *di, char **error)
  */
 SRD_PRIV int srd_inst_decode(const struct srd_decoder_inst *di, uint8_t chunk_type,
 		uint64_t start_samplenum, uint64_t end_samplenum,
-        const uint8_t *inbuf, uint64_t inbuflen, uint64_t unitsize, char **error)
+        const uint8_t **inbuf, const uint8_t *inbuf_const, char **error)
 {
 	PyObject *py_res;
 	srd_logic *logic;
 
 	/* Return an error upon unusable input. */
 	if (!di) {
-		srd_dbg("empty decoder instance");
+        *error = g_strdup("Empty decoder instance");
 		return SRD_ERR_ARG;
 	}
-	if (!inbuf) {
-		srd_dbg("NULL buffer pointer");
+    if (end_samplenum < start_samplenum) {
+        *error = g_strdup("Invalid start/end index couple");
 		return SRD_ERR_ARG;
 	}
-	if (inbuflen == 0) {
-		srd_dbg("empty buffer");
-		return SRD_ERR_ARG;
-	}
-
-	((struct srd_decoder_inst *)di)->data_unitsize = unitsize;
 
 	srd_dbg("Calling decode(), start sample %" PRIu64 ", end sample %"
-		PRIu64 " (%" PRIu64 " samples, %" PRIu64 " bytes, unitsize = "
-		"%d), instance %s.", start_samplenum, end_samplenum,
-		end_samplenum - start_samplenum, inbuflen, di->data_unitsize,
-		di->inst_id);
+        PRIu64 " (%" PRIu64 " samples, instance %s.",
+        start_samplenum, end_samplenum,
+        end_samplenum - start_samplenum + 1, di->inst_id);
 
 	/*
 	 * Create new srd_logic object. Each iteration around the PD's loop
@@ -586,24 +580,25 @@ SRD_PRIV int srd_inst_decode(const struct srd_decoder_inst *di, uint8_t chunk_ty
     logic = di->py_logic;
 	logic->start_samplenum = start_samplenum;
     if (chunk_type == 0) {
-        logic->itercnt = 0;
+        logic->itercnt = 0; // *inbuf is a byte pointer, 8bit align
         logic->logic_mask = 0;
     }
-    logic->inbuf = (uint8_t *)inbuf;
-	logic->inbuflen = inbuflen;
+    logic->inbuf = (uint8_t **)inbuf;
+    logic->inbuf_const = inbuf_const;
+    logic->samplenum = end_samplenum - start_samplenum + 1;
     Py_INCREF(logic);
 
     //Py_IncRef(di->py_inst);
 	if (!(py_res = PyObject_CallMethod(di->py_inst, "decode",
 			"KKO", start_samplenum, end_samplenum, logic))) {
-        srd_exception_catch("Protocol decoder instance %s: ", error,
+        srd_exception_catch(error, "Decoder %s",
 				di->inst_id);
 		return SRD_ERR_PYTHON;
 	}
     Py_DecRef(py_res);
 
     if (logic->logic_mask == 0)
-        logic->itercnt -= logic->inbuflen / logic->di->data_unitsize;
+        logic->itercnt -= logic->samplenum;
 
 	return SRD_OK;
 }
@@ -627,7 +622,7 @@ SRD_PRIV void srd_inst_free(struct srd_decoder_inst *di)
 	Py_DecRef(di->py_inst);
 	g_free(di->inst_id);
 	g_free(di->dec_channelmap);
-    g_free(di->channel_samples);
+	g_free(di->channel_samples);
 	g_slist_free(di->next_di);
 	for (l = di->pd_output; l; l = l->next) {
 		pdo = l->data;

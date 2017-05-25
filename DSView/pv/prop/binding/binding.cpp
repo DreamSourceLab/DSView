@@ -79,6 +79,20 @@ QWidget* Binding::get_property_form(QWidget *parent,
     return form;
 }
 
+std::map< boost::shared_ptr<Property>,
+          GVariant* > Binding::get_property_value() const
+{
+    std::map < boost::shared_ptr<Property>,
+            GVariant* > pvalue;
+    BOOST_FOREACH(shared_ptr<pv::prop::Property> p, _properties)
+    {
+        assert(p);
+        pvalue[p] = p->get_value();
+    }
+
+    return pvalue;
+}
+
 QString Binding::print_gvariant(GVariant *const gvar)
 {
     QString s;

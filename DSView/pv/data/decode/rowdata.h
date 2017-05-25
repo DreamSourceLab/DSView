@@ -47,12 +47,16 @@ public:
 		std::vector<pv::data::decode::Annotation> &dest,
 		uint64_t start_sample, uint64_t end_sample) const;
 
+    uint64_t get_annotation_index(uint64_t start_sample) const;
+
     bool push_annotation(const Annotation &a);
 
     uint64_t get_annotation_size() const;
 
     bool get_annotation(pv::data::decode::Annotation &ann,
                         uint64_t index) const;
+
+    void clear();
 
 private:
     uint64_t _max_annotation;

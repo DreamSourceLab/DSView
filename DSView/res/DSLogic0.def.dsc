@@ -14,7 +14,7 @@
     "Trigger slope": "0",
     "Trigger source": "0",
     "Using Clock Negedge": 0,
-    "Using External Clock": 0,
+    "Using External Clock": 1,
     "channel": [
         {
             "colour": "#969696",

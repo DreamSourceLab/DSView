@@ -45,14 +45,16 @@ public:
 	DecoderOptions(boost::shared_ptr<pv::data::DecoderStack> decoder_stack,
 		boost::shared_ptr<pv::data::decode::Decoder> decoder);
 
+    GVariant* getter(const char *id);
+
+    void setter(const char *id, GVariant *value);
+
 private:
 	static boost::shared_ptr<Property> bind_enum(const QString &name,
 		const srd_decoder_option *option,
 		Property::Getter getter, Property::Setter setter);
 
-	GVariant* getter(const char *id);
 
-	void setter(const char *id, GVariant *value);
 
 private:
 	boost::shared_ptr<pv::data::DecoderStack> _decoder_stack;

@@ -17,17 +17,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "libsigrokdecode.h" /* First, so we avoid a _POSIX_C_SOURCE warning. */
+#include "libsigrokdecode-internal.h"
 #include "config.h"
-#include "libsigrokdecode-internal.h" /* First, so we avoid a _POSIX_C_SOURCE warning. */
-#include "libsigrokdecode.h"
 
 /** @cond PRIVATE */
 
-/* type_decoder.c */
-extern SRD_PRIV PyTypeObject srd_Decoder_type;
-
-/* type_logic.c */
-extern SRD_PRIV PyTypeObject srd_logic_type;
+SRD_PRIV PyObject *srd_logic_type = NULL;
 
 /*
  * When initialized, a reference to this module inside the Python interpreter
@@ -47,42 +43,45 @@ static struct PyModuleDef sigrokdecode_module = {
 /** @cond PRIVATE */
 PyMODINIT_FUNC PyInit_sigrokdecode(void)
 {
-	PyObject *mod;
-
-	/* tp_new needs to be assigned here for compiler portability. */
-	srd_Decoder_type.tp_new = PyType_GenericNew;
-	if (PyType_Ready(&srd_Decoder_type) < 0)
-		return NULL;
-
-    srd_logic_type.tp_new = PyType_GenericNew;
-	if (PyType_Ready(&srd_logic_type) < 0)
-		return NULL;
+	PyObject *mod, *Decoder_type, *logic_type;
 
 	mod = PyModule_Create(&sigrokdecode_module);
-	Py_INCREF(&srd_Decoder_type);
-	if (PyModule_AddObject(mod, "Decoder",
-	    (PyObject *)&srd_Decoder_type) == -1)
-		return NULL;
-	Py_INCREF(&srd_logic_type);
-	if (PyModule_AddObject(mod, "srd_logic",
-	    (PyObject *)&srd_logic_type) == -1)
-		return NULL;
+	if (!mod)
+		goto err_out;
+
+	Decoder_type = srd_Decoder_type_new();
+	if (!Decoder_type)
+		goto err_out;
+	if (PyModule_AddObject(mod, "Decoder", Decoder_type) < 0)
+		goto err_out;
+
+    logic_type = srd_logic_type_new();
+    if (!logic_type)
+        goto err_out;
+    if (PyModule_AddObject(mod, "srd_logic", logic_type) < 0)
+        goto err_out;
 
 	/* Expose output types as symbols in the sigrokdecode module */
-	if (PyModule_AddIntConstant(mod, "OUTPUT_ANN", SRD_OUTPUT_ANN) == -1)
-		return NULL;
-	if (PyModule_AddIntConstant(mod, "OUTPUT_PYTHON", SRD_OUTPUT_PYTHON) == -1)
-		return NULL;
-	if (PyModule_AddIntConstant(mod, "OUTPUT_BINARY", SRD_OUTPUT_BINARY) == -1)
-		return NULL;
-	if (PyModule_AddIntConstant(mod, "OUTPUT_META", SRD_OUTPUT_META) == -1)
-		return NULL;
+	if (PyModule_AddIntConstant(mod, "OUTPUT_ANN", SRD_OUTPUT_ANN) < 0)
+		goto err_out;
+	if (PyModule_AddIntConstant(mod, "OUTPUT_PYTHON", SRD_OUTPUT_PYTHON) < 0)
+		goto err_out;
+	if (PyModule_AddIntConstant(mod, "OUTPUT_BINARY", SRD_OUTPUT_BINARY) < 0)
+		goto err_out;
+	if (PyModule_AddIntConstant(mod, "OUTPUT_META", SRD_OUTPUT_META) < 0)
+		goto err_out;
 	/* Expose meta input symbols. */
-	if (PyModule_AddIntConstant(mod, "SRD_CONF_SAMPLERATE", SRD_CONF_SAMPLERATE) == -1)
-		return NULL;
+	if (PyModule_AddIntConstant(mod, "SRD_CONF_SAMPLERATE", SRD_CONF_SAMPLERATE) < 0)
+		goto err_out;
 
+    srd_logic_type = logic_type;
 	mod_sigrokdecode = mod;
 
 	return mod;
+err_out:
+	Py_XDECREF(mod);
+    srd_exception_catch(NULL, "Failed to initialize module");
+
+	return NULL;
 }
 /** @endcond */

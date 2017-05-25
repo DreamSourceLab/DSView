@@ -2,6 +2,7 @@
  * This file is part of the PulseView project.
  *
  * Copyright (C) 2014 Joel Holdsworth <joel@airwebreathe.org.uk>
+ * Copyright (C) 2016 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,9 +26,13 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include <QProgressDialog>
+#include <QLabel>
+#include <QProgressBar>
+#include <QDialogButtonBox>
+#include <QTimer>
 
-#include <pv/storesession.h>
+#include "../storesession.h"
+#include "../dialogs/dsdialog.h"
 #include "../toolbars/titlebar.h"
 
 namespace pv {
@@ -36,30 +41,43 @@ class SigSession;
 
 namespace dialogs {
 
-class StoreProgress : public QProgressDialog
+class StoreProgress : public DSDialog
 {
 	Q_OBJECT
 
 public:
-    StoreProgress(const QString &file_name, SigSession &session,
+    StoreProgress(SigSession &session,
         QWidget *parent = 0);
 
 	virtual ~StoreProgress();
 
-	void run();
+
+
+protected:
+    void reject();
 
 private:
 	void show_error();
+    void closeEvent(QCloseEvent* e);
 
-	void closeEvent(QCloseEvent*);
+public slots:
+    void save_run();
+    void export_run();
 
 private slots:
 	void on_progress_updated();
+    void timeout();
 
 private:
-	pv::StoreSession _session;
+    pv::StoreSession _store_session;
+
+    QLabel _info;
+    QProgressBar _progress;
+    QDialogButtonBox _button_box;
 
     toolbars::TitleBar *_titlebar;
+
+    bool _done;
 };
 
 } // dialogs

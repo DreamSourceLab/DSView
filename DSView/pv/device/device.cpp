@@ -32,7 +32,7 @@ namespace pv {
 namespace device {
 
 Device::Device(sr_dev_inst *sdi) :
-	_sdi(sdi)
+    _sdi(sdi)
 {
 	assert(_sdi);
 }
@@ -50,6 +50,7 @@ void Device::use(SigSession *owner) throw(QString)
 
     assert(_sdi);
     sr_dev_open(_sdi);
+    _usable = (_sdi->status == SR_ST_ACTIVE);
     if (sr_session_dev_add(_sdi) != SR_OK)
         throw QString(tr("Failed to use device."));
 }

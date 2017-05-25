@@ -42,6 +42,8 @@ public:
     QWidget* get_widget(QWidget *parent, bool auto_commit);
 	bool labeled_widget() const;
 
+    GVariant* get_value() const;
+
 	void commit();
 
 private slots:

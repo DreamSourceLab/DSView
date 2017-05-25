@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 extern "C" {
-#include <libsigrokdecode/libsigrokdecode.h>
+#include <libsigrokdecode4DSL/libsigrokdecode.h>
 }
 
 #include <extdef.h>
@@ -179,8 +179,8 @@ void DecodeTrace::paint_back(QPainter &p, int left, int right)
 
     // --draw decode region control
     const double samples_per_pixel = _session.cur_samplerate() * _view->scale();
-    const double startX = _decode_start/samples_per_pixel - (_view->offset() / _view->scale());
-    const double endX = _decode_end/samples_per_pixel - (_view->offset() / _view->scale());
+    const double startX = _decode_start/samples_per_pixel - _view->offset();
+    const double endX = _decode_end/samples_per_pixel - _view->offset();
     const double regionY = get_y() - _totalHeight*0.5 - ControlRectWidth;
 
     p.setBrush(Signal::dsBlue);
@@ -245,41 +245,42 @@ void DecodeTrace::paint_mid(QPainter &p, int left, int right)
     if (!err.isEmpty())
     {
         draw_error(p, err, left, right);
-        return;
+        //return;
     }
 
-	const double scale = _view->scale();
-	assert(scale > 0);
+    const double scale = _view->scale();
+    assert(scale > 0);
 
-	double samplerate = _decoder_stack->samplerate();
+    double samplerate = _decoder_stack->samplerate();
 
-	_cur_row_headings.clear();
+    _cur_row_headings.clear();
 
-	// Show sample rate as 1Hz when it is unknown
-	if (samplerate == 0.0)
-		samplerate = 1.0;
+    // Show sample rate as 1Hz when it is unknown
+    if (samplerate == 0.0)
+        samplerate = 1.0;
 
-	const double pixels_offset = (_view->offset() -
-		_decoder_stack->get_start_time()) / scale;
-	const double samples_per_pixel = samplerate * scale;
+    const int64_t pixels_offset = _view->offset();
+    const double samples_per_pixel = samplerate * scale;
 
-	const uint64_t start_sample = (uint64_t)max((left + pixels_offset) *
-		samples_per_pixel, 0.0);
+    uint64_t start_sample = (uint64_t)max((left + pixels_offset) *
+        samples_per_pixel, 0.0);
     uint64_t end_sample = (uint64_t)max((right + pixels_offset) *
-		samples_per_pixel, 0.0);
-    const uint64_t samples_decoded = _decoder_stack->samples_decoded();
-    if (samples_decoded < start_sample)
+        samples_per_pixel, 0.0);
+    BOOST_FOREACH(const boost::shared_ptr<data::decode::Decoder> &dec, _decoder_stack->stack()) {
+        start_sample = max(dec->decode_start(), start_sample);
+        end_sample = min(dec->decode_end(), end_sample);
+        break;
+    }
+    if (end_sample < start_sample)
         return;
-    if (samples_decoded < end_sample)
-        end_sample = samples_decoded;
 
     const int annotation_height = _view->get_signalHeight();
 
-	// Iterate through the rows
-	assert(_view);
+    // Iterate through the rows
+    assert(_view);
     int y =  get_y() - (_totalHeight - annotation_height)*0.5;
 
-	assert(_decoder_stack);
+    assert(_decoder_stack);
 
     BOOST_FOREACH(boost::shared_ptr<data::decode::Decoder> dec,
         _decoder_stack->stack()) {
@@ -299,7 +300,8 @@ void DecodeTrace::paint_mid(QPainter &p, int left, int right)
                         const uint64_t max_annotation =
                                 _decoder_stack->get_max_annotation(row);
                         const double max_annWidth = max_annotation / samples_per_pixel;
-                        if (max_annWidth > 5) {
+                        if ((max_annWidth > 10 && min_annWidth > 1) ||
+                            (max_annWidth == 0 && samples_per_pixel < 10)) {
                             vector<Annotation> annotations;
                             _decoder_stack->get_annotation_subset(annotations, row,
                                 start_sample, end_sample);
@@ -310,13 +312,11 @@ void DecodeTrace::paint_mid(QPainter &p, int left, int right)
                                         samples_per_pixel, pixels_offset, y,
                                         0, min_annWidth);
                             }
-                        } else if (max_annWidth != 0){
+                        } else {
                             draw_nodetail(p, annotation_height, left, right, y, 0);
                         }
-                        if (max_annWidth != 0) {
-                            y += annotation_height;
-                            _cur_row_headings.push_back(row.title());
-                        }
+                        y += annotation_height;
+                        _cur_row_headings.push_back(row.title());
                     }
                 }
             }
@@ -495,12 +495,50 @@ void DecodeTrace::draw_annotation(const pv::data::decode::Annotation &a,
 	if (start > right + DrawPadding || end < left - DrawPadding)
 		return;
 
+    if (_decoder_stack->get_mark_index() == (int64_t)(a.start_sample()+ a.end_sample())/2) {
+        p.setPen(Signal::dsBlue);
+        int xpos = (start+end)/2;
+        int ypos = get_y()+_totalHeight*0.5 + 1;
+        const QPoint triangle[] = {
+            QPoint(xpos, ypos),
+            QPoint(xpos-1, ypos + 1),
+            QPoint(xpos, ypos + 1),
+            QPoint(xpos+1, ypos + 1),
+            QPoint(xpos-2, ypos + 2),
+            QPoint(xpos-1, ypos + 2),
+            QPoint(xpos, ypos + 2),
+            QPoint(xpos+1, ypos + 2),
+            QPoint(xpos+2, ypos + 2),
+        };
+        p.drawPoints(triangle, 9);
+    }
+
 	if (a.start_sample() == a.end_sample())
 		draw_instant(a, p, fill, outline, text_color, h,
             start, y, min_annWidth);
-	else
+    else {
 		draw_range(a, p, fill, outline, text_color, h,
 			start, end, y);
+        if ((a.type()/100 == 2) && (end - start > 20)) {
+            BOOST_FOREACH(boost::shared_ptr<data::decode::Decoder> dec,
+                _decoder_stack->stack()) {
+                for (auto& iter: dec->channels()) {
+                    int type = dec->get_channel_type(iter.first);
+                    if ((type == SRD_CHANNEL_COMMON) ||
+                        ((type%100 != a.type()%100) && (type%100 != 0)))
+                        continue;
+                    boost::shared_ptr<LogicSignal> logic_sig;
+                    BOOST_FOREACH(boost::shared_ptr<view::Signal> sig, _session.get_signals()) {
+                        if((sig->get_index() == iter.second) &&
+                           (logic_sig = dynamic_pointer_cast<view::LogicSignal>(sig))) {
+                            logic_sig->paint_mark(p, start, end, type/100);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 void DecodeTrace::draw_nodetail(QPainter &p,
@@ -723,13 +761,12 @@ QComboBox* DecodeTrace::create_probe_selector(
     const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
 
 	assert(_decoder_stack);
-	const map<const srd_channel*,
-        boost::shared_ptr<LogicSignal> >::const_iterator probe_iter =
+    const map<const srd_channel*, int>::const_iterator probe_iter =
 		dec->channels().find(pdch);
 
 	QComboBox *selector = new QComboBox(parent);
 
-	selector->addItem("-", qVariantFromValue((void*)NULL));
+    selector->addItem("-", qVariantFromValue(-1));
 
 	if (probe_iter == dec->channels().end())
 		selector->setCurrentIndex(0);
@@ -741,9 +778,9 @@ QComboBox* DecodeTrace::create_probe_selector(
 		if (dynamic_pointer_cast<LogicSignal>(s) && s->enabled())
 		{
 			selector->addItem(s->get_name(),
-				qVariantFromValue((void*)s.get()));
+                qVariantFromValue(s->get_index()));
             if (probe_iter != dec->channels().end()) {
-                if ((*probe_iter).second->get_index() == s->get_index())
+                if ((*probe_iter).second == s->get_index())
                     selector->setCurrentIndex(i + 1);
             }
 		}
@@ -756,7 +793,7 @@ void DecodeTrace::commit_decoder_probes(boost::shared_ptr<data::decode::Decoder>
 {
 	assert(dec);
 
-    map<const srd_channel*, boost::shared_ptr<LogicSignal> > probe_map;
+    map<const srd_channel*, int> probe_map;
     const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
 
     _index_list.clear();
@@ -765,15 +802,13 @@ void DecodeTrace::commit_decoder_probes(boost::shared_ptr<data::decode::Decoder>
 		if(s._decoder != dec)
 			break;
 
-		const LogicSignal *const selection =
-			(LogicSignal*)s._combo->itemData(
-				s._combo->currentIndex()).value<void*>();
+        const int selection = s._combo->itemData(
+                s._combo->currentIndex()).value<int>();
 
         BOOST_FOREACH(boost::shared_ptr<Signal> sig, sigs)
-			if(sig.get() == selection) {
-				probe_map[s._pdch] =
-					dynamic_pointer_cast<LogicSignal>(sig);
-                _index_list.push_back(sig->get_index());
+            if(sig->get_index() == selection) {
+                probe_map[s._pdch] = selection;
+                _index_list.push_back(selection);
 				break;
 			}
 	}

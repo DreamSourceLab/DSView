@@ -35,6 +35,7 @@ public:
 
 protected:
     void paintEvent(QPaintEvent *);
+    void leaveEvent(QEvent *);
 
 private:
     int _type;

@@ -36,6 +36,7 @@ DSView/ui_*.h
 DSView/DSView
 DSView/install_manifest.txt
 DSView/qrc_DSView.cpp
+DSView/qrc_style.cpp
 
 moc_*.cpp
 moc_*.cpp_parameters

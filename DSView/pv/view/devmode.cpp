@@ -117,7 +117,7 @@ void DevMode::on_mode_change()
         if ((*i).first == button) {
             if (dev_inst->dev_inst()->mode != (*i).second->mode) {
                 _session.stop_capture();
-                _session.on_mode_change();
+                _session.session_save();
                 dev_inst->set_config(NULL, NULL,
                                      SR_CONF_DEVICE_MODE,
                                      g_variant_new_int16((*i).second->mode));

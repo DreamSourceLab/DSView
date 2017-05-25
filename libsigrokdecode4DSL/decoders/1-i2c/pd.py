@@ -79,8 +79,8 @@ class Decoder(srd.Decoder):
     inputs = ['logic']
     outputs = ['i2c']
     channels = (
-        {'id': 'scl', 'name': 'SCL', 'desc': 'Serial clock line'},
-        {'id': 'sda', 'name': 'SDA', 'desc': 'Serial data line'},
+        {'id': 'scl', 'type': 8, 'name': 'SCL', 'desc': 'Serial clock line'},
+        {'id': 'sda', 'type': 108, 'name': 'SDA', 'desc': 'Serial data line'},
     )
     options = (
         {'id': 'address_format', 'desc': 'Displayed slave address format',
@@ -94,7 +94,7 @@ class Decoder(srd.Decoder):
         ('0', 'nack', 'NACK'),
         ('12', 'read', 'Read'),
         ('11', 'write', 'Write'),
-        ('108', 'bit', 'Data/address bit'),
+        ('208', 'bit', 'Data/address bit'),
         ('112', 'address-read', 'Address read'),
         ('111', 'address-write', 'Address write'),
         ('110', 'data-read', 'Data read'),

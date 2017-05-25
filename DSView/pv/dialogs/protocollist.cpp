@@ -47,6 +47,15 @@ ProtocolList::ProtocolList(QWidget *parent, SigSession &session) :
 {
     pv::data::DecoderModel* decoder_model = _session.get_decoder_model();
 
+    _map_zoom_combobox = new QComboBox(this);
+    _map_zoom_combobox->addItem(tr("Fit to Window"));
+    _map_zoom_combobox->addItem(tr("Fixed"));
+    int cur_map_zoom = _session.get_map_zoom();
+    if (cur_map_zoom >= _map_zoom_combobox->count())
+        _map_zoom_combobox->setCurrentIndex(0);
+    else
+        _map_zoom_combobox->setCurrentIndex(cur_map_zoom);
+    connect(_map_zoom_combobox, SIGNAL(currentIndexChanged(int)), &_session, SLOT(set_map_zoom(int)));
 
     _protocol_combobox = new QComboBox(this);
     const std::vector< boost::shared_ptr<pv::view::DecodeTrace> > decode_sigs(
@@ -67,6 +76,7 @@ ProtocolList::ProtocolList(QWidget *parent, SigSession &session) :
     _flayout->setFormAlignment(Qt::AlignLeft);
     _flayout->setLabelAlignment(Qt::AlignLeft);
     _flayout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
+    _flayout->addRow(new QLabel(tr("Map Zoom: "), this), _map_zoom_combobox);
     _flayout->addRow(new QLabel(tr("Decoded Protocols: "), this), _protocol_combobox);
 
     _layout = new QVBoxLayout();
@@ -185,6 +195,5 @@ void ProtocolList::on_row_check(bool show)
 
     _session.get_decoder_model()->setDecoderStack(decoder_stack);
 }
-
 } // namespace dialogs
 } // namespace pv

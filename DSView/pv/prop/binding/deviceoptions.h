@@ -47,7 +47,7 @@ private:
 	static GVariant* config_getter(
 		const struct sr_dev_inst *sdi, int key);
 	static void config_setter(
-		const struct sr_dev_inst *sdi, int key, GVariant* value);
+        struct sr_dev_inst *sdi, int key, GVariant* value);
 
 	void bind_bool(const QString &name, int key);
 	void bind_enum(const QString &name, int key,

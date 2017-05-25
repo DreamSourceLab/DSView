@@ -33,7 +33,8 @@ namespace pv {
 namespace device {
 
 DevInst::DevInst() :
-    _owner(NULL)
+    _owner(NULL),
+    _usable(true)
 {
     _id = malloc(1);
 }
@@ -82,7 +83,7 @@ GVariant* DevInst::get_config(const sr_channel *ch, const sr_channel_group *grou
 	return data;
 }
 
-bool DevInst::set_config(const sr_channel *ch, const sr_channel_group *group, int key, GVariant *data)
+bool DevInst::set_config(sr_channel *ch, sr_channel_group *group, int key, GVariant *data)
 {
 	assert(_owner);
 	sr_dev_inst *const sdi = dev_inst();
@@ -204,6 +205,11 @@ void DevInst::start()
 void DevInst::run()
 {
 	sr_session_run();
+}
+
+bool DevInst::is_usable() const
+{
+    return _usable;
 }
 
 } // device

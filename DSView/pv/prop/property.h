@@ -53,6 +53,8 @@ public:
         bool auto_commit = false) = 0;
 	virtual bool labeled_widget() const;
 
+    virtual GVariant* get_value() const;
+
 	virtual void commit() = 0;
 
 protected:

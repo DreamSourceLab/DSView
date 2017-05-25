@@ -66,6 +66,7 @@ private:
 	void setup_probes();
 
 	void set_all_probes(bool set);
+    void enable_max_probes();
 
 private slots:
 	void enable_all_probes();
@@ -74,6 +75,7 @@ private slots:
     void mode_check();
     void channel_check();
     void on_calibration();
+    void channel_enable();
 
 private:
     boost::shared_ptr<pv::device::DevInst>  _dev_inst;

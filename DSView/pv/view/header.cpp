@@ -75,9 +75,6 @@ Header::Header(View &parent) :
 
     connect(nameEdit, SIGNAL(editingFinished()),
             this, SLOT(on_action_set_name_triggered()));
-
-    connect(&_view, SIGNAL(traces_moved()),
-            this, SLOT(on_traces_moved()));
 }
 
 
@@ -322,7 +319,6 @@ void Header::mouseMoveEvent(QMouseEvent *event)
                 }
 			}
 		}
-        //traces_moved();
 	}
 	update();
 }
@@ -378,11 +374,6 @@ void Header::on_action_add_group_triggered()
 void Header::on_action_del_group_triggered()
 {
     _view.session().del_group();
-}
-
-void Header::on_traces_moved()
-{
-	update();
 }
 
 void Header::header_resize()

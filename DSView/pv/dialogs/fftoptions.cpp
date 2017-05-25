@@ -224,7 +224,7 @@ void FftOptions::accept()
                 mathTrace->get_math_stack()->set_sample_num(_len_combobox->currentData().toULongLong());
                 mathTrace->get_math_stack()->set_sample_interval(_interval_combobox->currentData().toInt());
                 mathTrace->get_math_stack()->set_windows_index(_window_combobox->currentData().toInt());
-                mathTrace->set_view_mode(_view_combobox->currentData().toInt());
+                mathTrace->set_view_mode(_view_combobox->currentData().toUInt());
                 //mathTrace->init_zoom();
                 mathTrace->set_dbv_range(_dbv_combobox->currentData().toInt());
                 mathTrace->set_enable(_en_checkbox->isChecked());

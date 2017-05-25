@@ -21,7 +21,7 @@
  */
 
 #ifdef ENABLE_DECODE
-#include <libsigrokdecode/libsigrokdecode.h>
+#include <libsigrokdecode4DSL/libsigrokdecode.h>
 #endif
 
 #include "sigsession.h"
@@ -89,7 +89,13 @@ SigSession* SigSession::_session = NULL;
 SigSession::SigSession(DeviceManager &device_manager) :
 	_device_manager(device_manager),
     _capture_state(Init),
-    _instant(false)    
+    _instant(false),
+    _error(No_err),
+    _run_mode(Single),
+    _repeat_intvl(1),
+    _repeating(false),
+    _repeat_hold_prg(0),
+    _map_zoom(0)
 {
 	// TODO: This should not be necessary
 	_session = this;
@@ -99,11 +105,11 @@ SigSession::SigSession(DeviceManager &device_manager) :
 	register_hotplug_callback();
     _view_timer.stop();
     _noData_cnt = 0;
-    _refresh_timer.stop();
-    _refresh_timer.setSingleShot(true);
     _data_lock = false;
     _data_updated = false;
+    #ifdef ENABLE_DECODE
     _decoder_model = new pv::data::DecoderModel(this);
+    #endif
 
     // Create snapshots & data containers
     _cur_logic_snapshot.reset(new data::LogicSnapshot());
@@ -119,12 +125,6 @@ SigSession::SigSession(DeviceManager &device_manager) :
     _group_cnt = 0;
 
     connect(&_view_timer, SIGNAL(timeout()), this, SLOT(check_update()));
-    connect(&_refresh_timer, SIGNAL(timeout()), this, SLOT(data_unlock()));
-
-    #ifdef TEST_MODE
-    _test_timer.setSingleShot(true);
-    connect(&_test_timer, SIGNAL(timeout()), this, SLOT(stop_capture()));
-    #endif
 }
 
 SigSession::~SigSession()
@@ -172,6 +172,11 @@ void SigSession::set_device(boost::shared_ptr<device::DevInst> dev_inst) throw(Q
             _dev_inst->use(this);
             _cur_samplerate = _dev_inst->get_sample_rate();
             _cur_samplelimits = _dev_inst->get_sample_limit();
+
+            if (_dev_inst->dev_inst()->mode == DSO)
+                set_run_mode(Repetitive);
+            else
+                set_run_mode(Single);
         } catch(const QString e) {
             throw(e);
             return;
@@ -198,222 +203,6 @@ void SigSession::set_file(QString name) throw(QString)
         throw(e);
         return;
     }
-}
-
-void SigSession::save_file(const QString name, QWidget* parent, int type){
-    unsigned char* data;
-    int unit_size;
-    uint64_t sample_count;
-    if (type == ANALOG) {
-        const deque< boost::shared_ptr<pv::data::AnalogSnapshot> > &snapshots =
-            _analog_data->get_snapshots();
-        if (snapshots.empty())
-            return;
-        const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot =
-            snapshots.front();
-        data = (unsigned char*)snapshot->get_data();
-        unit_size = snapshot->unit_size();
-        sample_count = snapshot->get_sample_count();
-    } else if (type == DSO) {
-        const deque< boost::shared_ptr<pv::data::DsoSnapshot> > &snapshots =
-            _dso_data->get_snapshots();
-        if (snapshots.empty())
-            return;
-        const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
-            snapshots.front();
-        data = (unsigned char*)snapshot->get_data();
-        // snapshot->unit_size() is not valid for dso, replaced by enabled channel number
-        unit_size = get_ch_num(SR_CHANNEL_DSO);
-        sample_count = snapshot->get_sample_count();
-    } else {
-        const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
-            _logic_data->get_snapshots();
-        if (snapshots.empty())
-            return;
-        const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
-            snapshots.front();
-        data = (unsigned char*)snapshot->get_data();
-        unit_size = snapshot->unit_size();
-        sample_count = snapshot->get_sample_count();
-    }
-
-    QFuture<void> future;
-    future = QtConcurrent::run([&]{
-        sr_session_save(name.toLocal8Bit().data(), _dev_inst->dev_inst(),
-                        data, unit_size, sample_count, _trigger_time.toMSecsSinceEpoch(), _trigger_pos);
-    });
-    Qt::WindowFlags flags = Qt::CustomizeWindowHint;
-    QProgressDialog dlg(tr("Saving capture to file... this can take a while."),
-                        tr("Cancel"),0,0,parent,flags);
-    dlg.setWindowModality(Qt::WindowModal);
-    dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
-    dlg.setCancelButton(NULL);
-
-    QFutureWatcher<void> watcher;
-    watcher.setFuture(future);
-    connect(&watcher,SIGNAL(finished()),&dlg,SLOT(cancel()));
-
-    dlg.exec();
-}
-
-QList<QString> SigSession::getSuportedExportFormats(){
-    const struct sr_output_module** supportedModules = sr_output_list();
-    QList<QString> list;
-    while(*supportedModules){
-        if(*supportedModules == NULL)
-            break;
-        if (_dev_inst->dev_inst()->mode == DSO && strcmp((*supportedModules)->id, "csv"))
-            break;
-        QString format((*supportedModules)->desc);
-        format.append(" (*.");
-        format.append((*supportedModules)->id);
-        format.append(")");
-        list.append(format);
-        supportedModules++;
-    }
-    return list;
-}
-
-void SigSession::cancelSaveFile(){
-    saveFileThreadRunning = false;
-}
-
-void SigSession::export_file(const QString name, QWidget* parent, const QString ext){
-    boost::shared_ptr<pv::data::Snapshot> snapshot;
-    int channel_type;
-
-    if (_dev_inst->dev_inst()->mode == LOGIC) {
-        const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
-                _logic_data->get_snapshots();
-        if(snapshots.empty())
-            return;
-        snapshot = snapshots.front();
-        channel_type = SR_CHANNEL_LOGIC;
-    } else if (_dev_inst->dev_inst()->mode == DSO) {
-        const deque< boost::shared_ptr<pv::data::DsoSnapshot> > &snapshots =
-                _dso_data->get_snapshots();
-        if(snapshots.empty())
-            return;
-        snapshot = snapshots.front();
-        channel_type = SR_CHANNEL_DSO;
-    } else {
-        return;
-    }
-
-    const struct sr_output_module** supportedModules = sr_output_list();
-    const struct sr_output_module* outModule = NULL;
-    while(*supportedModules){
-        if(*supportedModules == NULL)
-            break;
-        if(!strcmp((*supportedModules)->id, ext.toLocal8Bit().data())){
-            outModule = *supportedModules;
-            break;
-        }
-        supportedModules++;
-    }
-    if(outModule == NULL)
-        return;
-
-
-    GHashTable *params = g_hash_table_new(g_str_hash, g_str_equal);
-    GVariant* filenameGVariant = g_variant_new_bytestring(name.toLocal8Bit().data());
-    g_hash_table_insert(params, (char*)"filename", filenameGVariant);
-    GVariant* typeGVariant = g_variant_new_int16(channel_type);
-    g_hash_table_insert(params, (char*)"type", typeGVariant);
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals) {
-        boost::shared_ptr<view::DsoSignal> dsoSig;
-        if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
-            GVariant* timebaseGVariant = g_variant_new_uint64(dsoSig->get_hDialValue());
-            g_hash_table_insert(params, (char*)"timebase", timebaseGVariant);
-            break;
-        }
-    }
-
-    struct sr_output output;
-    output.module = (sr_output_module*) outModule;
-    output.sdi = _dev_inst->dev_inst();
-    output.param = NULL;
-    if(outModule->init)
-        outModule->init(&output, params);
-    QFile file(name);
-    file.open(QIODevice::WriteOnly | QIODevice::Text);
-    QTextStream out(&file);
-    out.setCodec("UTF-8");
-    out.setGenerateByteOrderMark(true);
-    QFuture<void> future;
-    if (_dev_inst->dev_inst()->mode == LOGIC) {
-        future = QtConcurrent::run([&]{
-            saveFileThreadRunning = true;
-            unsigned char* datat = (unsigned char*)snapshot->get_data();
-            unsigned int numsamples = snapshot->get_sample_count()*snapshot->unit_size();
-            GString *data_out;
-            unsigned int usize = 8192;
-            unsigned int size = usize;
-            struct sr_datafeed_logic lp;
-            struct sr_datafeed_packet p;
-            for(uint64_t i = 0; i < numsamples; i+=usize){
-                if(numsamples - i < usize)
-                    size = numsamples - i;
-                lp.data = &datat[i];
-                lp.length = size;
-                lp.unitsize = snapshot->unit_size();
-                p.type = SR_DF_LOGIC;
-                p.payload = &lp;
-                outModule->receive(&output, &p, &data_out);
-                if(data_out){
-                    out << QString::fromUtf8((char*) data_out->str);
-                    g_string_free(data_out,TRUE);
-                }
-                emit  progressSaveFileValueChanged(i*100/numsamples);
-                if(!saveFileThreadRunning)
-                    break;
-            }
-        });
-    } else if (_dev_inst->dev_inst()->mode == DSO) {
-        future = QtConcurrent::run([&]{
-            saveFileThreadRunning = true;
-            unsigned char* datat = (unsigned char*)snapshot->get_data();
-            unsigned int numsamples = snapshot->get_sample_count();
-            GString *data_out;
-            unsigned int usize = 8192;
-            unsigned int size = usize;
-            struct sr_datafeed_dso dp;
-            struct sr_datafeed_packet p;
-            for(uint64_t i = 0; i < numsamples; i+=usize){
-                if(numsamples - i < usize)
-                    size = numsamples - i;
-                dp.data = &datat[i*snapshot->get_channel_num()];
-                dp.num_samples = size;
-                p.type = SR_DF_DSO;
-                p.payload = &dp;
-                outModule->receive(&output, &p, &data_out);
-                if(data_out){
-                    out << (char*) data_out->str;
-                    g_string_free(data_out,TRUE);
-                }
-                emit  progressSaveFileValueChanged(i*100/numsamples);
-                if(!saveFileThreadRunning)
-                    break;
-            }
-        });
-    }
-
-    QFutureWatcher<void> watcher;
-    Qt::WindowFlags flags = Qt::CustomizeWindowHint;
-    QProgressDialog dlg(tr("Exporting data... this can take a while."),
-                        tr("Cancel"),0,100,parent,flags);
-    dlg.setWindowModality(Qt::WindowModal);
-    watcher.setFuture(future);
-    connect(&watcher,SIGNAL(finished()),&dlg,SLOT(cancel()));
-    connect(this,SIGNAL(progressSaveFileValueChanged(int)),&dlg,SLOT(setValue(int)));
-    connect(&dlg,SIGNAL(canceled()),this,SLOT(cancelSaveFile()));
-    dlg.exec();
-    future.waitForFinished();
-    // optional, as QFile destructor will already do it:
-    file.close();
-    outModule->cleanup(&output);
-    g_hash_table_destroy(params);
-    g_variant_unref(filenameGVariant);
 }
 
 void SigSession::set_default_device(boost::function<void (const QString)> error_handler)
@@ -511,9 +300,13 @@ void SigSession::set_cur_samplelimits(uint64_t samplelimits)
 
 void SigSession::capture_init()
 {
+    if (!_instant)
+        set_repeating(get_run_mode() == Repetitive);
     _cur_samplerate = _dev_inst->get_sample_rate();
     _cur_samplelimits = _dev_inst->get_sample_limit();
     _data_updated = false;
+    _trigger_flag = false;
+    _hw_replied = false;
     if (_dev_inst->dev_inst()->mode != LOGIC)
         _view_timer.start(ViewTime);
     else
@@ -522,11 +315,7 @@ void SigSession::capture_init()
     data_unlock();
 
     // Init and Set sample rate for all SignalData
-    // Logic/Analog/Dso
-    if (_logic_data) {
-        _logic_data->init();
-        _logic_data->set_samplerate(_cur_samplerate);
-    }
+    // Analog/Dso
     if (_analog_data) {
         _analog_data->init();
         _analog_data->set_samplerate(_cur_samplerate);
@@ -535,12 +324,42 @@ void SigSession::capture_init()
         _dso_data->init();
         _dso_data->set_samplerate(_cur_samplerate);
     }
+
+    // MathStack
+    BOOST_FOREACH(const boost::shared_ptr<view::MathTrace> m, _math_traces)
+    {
+        assert(m);
+        m->get_math_stack()->init();
+        m->get_math_stack()->set_samplerate(_cur_samplerate);
+    }
+
+    // update current hw offset
+    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
+    {
+        assert(s);
+        boost::shared_ptr<view::DsoSignal> dsoSig;
+        if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
+            dsoSig->set_zero_vrate(dsoSig->get_zero_vrate(), true);
+        }
+    }
+}
+
+void SigSession::logic_init()
+{
+    // Logic
+    if (_logic_data) {
+        _logic_data->init();
+        _logic_data->set_samplerate(_cur_samplerate);
+    }
     // Group
     if (_group_data) {
         _group_data->init();
         _group_data->set_samplerate(_cur_samplerate);
     }
 #ifdef ENABLE_DECODE
+    // DecoderModel
+    pv::data::DecoderModel *decoder_model = get_decoder_model();
+    decoder_model->setDecoderStack(NULL);
     // DecoderStack
     BOOST_FOREACH(const boost::shared_ptr<view::DecodeTrace> d, _decode_traces)
     {
@@ -549,28 +368,35 @@ void SigSession::capture_init()
         d->decoder()->set_samplerate(_cur_samplerate);
     }
 #endif
-    // MathStack
-    BOOST_FOREACH(const boost::shared_ptr<view::MathTrace> m, _math_traces)
-    {
-        assert(m);
-        m->get_math_stack()->init();
-        m->get_math_stack()->set_samplerate(_cur_samplerate);
-    }
 }
 
 void SigSession::start_capture(bool instant,
     boost::function<void (const QString)> error_handler)
 {
-	stop_capture();
-    capture_init();
-
-	// Check that a device instance has been selected.
+    // Check that a device instance has been selected.
     if (!_dev_inst) {
-		qDebug() << "No device selected";
-		return;
-	}
-
+        qDebug() << "No device selected";
+        capture_state_changed(SigSession::Stopped);
+        return;
+    }
     assert(_dev_inst->dev_inst());
+
+    if (!_dev_inst->is_usable()) {
+        _error = Hw_err;
+        session_error();
+        capture_state_changed(SigSession::Stopped);
+        return;
+    }
+
+    // stop previous capture
+	stop_capture();
+
+    // update setting
+    if (_dev_inst->name() != "virtual-session")
+        _instant = instant;
+    else
+        _instant = true;
+    capture_init();
 
 	// Check that at least one probe is enabled
 	const GSList *l;
@@ -583,15 +409,10 @@ void SigSession::start_capture(bool instant,
 	if (!l) {
 		error_handler(tr("No probes enabled."));
         data_updated();
+        set_repeating(false);
         capture_state_changed(SigSession::Stopped);
 		return;
 	}
-
-    // update setting
-    if (_dev_inst->name() != "virtual-session")
-        _instant = instant;
-    else
-        _instant = true;
 
 	// Begin the session
 	_sampling_thread.reset(new boost::thread(
@@ -617,6 +438,30 @@ void SigSession::stop_capture()
     if (_sampling_thread.get())
         _sampling_thread->join();
     _sampling_thread.reset();
+}
+
+bool SigSession::get_capture_status(bool &triggered, int &progress)
+{
+    uint64_t sample_limits = cur_samplelimits();
+    sr_status status;
+    if (sr_status_get(_dev_inst->dev_inst(), &status, SR_STATUS_TRIG_BEGIN, SR_STATUS_TRIG_END) == SR_OK){
+        triggered = status.trig_hit & 0x01;
+        const bool  captured_cnt_dec = status.trig_hit & 0x02;
+        uint64_t captured_cnt = status.trig_hit >> 2;
+        captured_cnt = ((uint64_t)status.captured_cnt0 +
+                       ((uint64_t)status.captured_cnt1 << 8) +
+                       ((uint64_t)status.captured_cnt2 << 16) +
+                       ((uint64_t)status.captured_cnt3 << 24) +
+                       (captured_cnt << 32));
+        if (_dev_inst->dev_inst()->mode == DSO)
+            captured_cnt = captured_cnt * _signals.size() / get_ch_num(SR_CHANNEL_DSO);
+        if (captured_cnt_dec)
+            progress = (sample_limits - captured_cnt) * 100.0 / sample_limits;
+        else
+            progress = captured_cnt * 100.0 / sample_limits;
+        return true;
+    }
+    return false;
 }
 
 vector< boost::shared_ptr<view::Signal> > SigSession::get_signals()
@@ -646,47 +491,6 @@ set< boost::shared_ptr<data::SignalData> > SigSession::get_data() const
 bool SigSession::get_instant()
 {
     return _instant;
-}
-
-const void* SigSession::get_buf(int& unit_size, uint64_t &length)
-{
-    if (_dev_inst->dev_inst()->mode == LOGIC) {
-        const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
-            _logic_data->get_snapshots();
-        if (snapshots.empty())
-            return NULL;
-
-        const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
-            snapshots.front();
-
-        unit_size = snapshot->unit_size();
-        length = snapshot->get_sample_count();
-        return snapshot->get_data();
-    } else if (_dev_inst->dev_inst()->mode == DSO) {
-        const deque< boost::shared_ptr<pv::data::DsoSnapshot> > &snapshots =
-            _dso_data->get_snapshots();
-        if (snapshots.empty())
-            return NULL;
-
-        const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
-            snapshots.front();
-
-        unit_size = snapshot->unit_size();
-        length = snapshot->get_sample_count();
-        return snapshot->get_data();
-    } else {
-        const deque< boost::shared_ptr<pv::data::AnalogSnapshot> > &snapshots =
-            _analog_data->get_snapshots();
-        if (snapshots.empty())
-            return NULL;
-
-        const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot =
-            snapshots.front();
-
-        unit_size = snapshot->unit_size();
-        length = snapshot->get_sample_count();
-        return snapshot->get_data();
-    }
 }
 
 void SigSession::set_capture_state(capture_state state)
@@ -733,10 +537,6 @@ void SigSession::check_update()
         data_updated();
         _data_updated = false;
         _noData_cnt = 0;
-        #ifdef TEST_MODE
-        if (!_test_timer.isActive())
-            _test_timer.start(qrand()%5000);
-        #endif
     } else {
         if (++_noData_cnt >= (WaitShowTime/ViewTime))
             nodata_timeout();
@@ -947,24 +747,26 @@ void SigSession::reload()
                 }
                 break;
 
-            case SR_CHANNEL_DSO:
-                signal = boost::shared_ptr<view::Signal>(
-                    new view::DsoSignal(_dev_inst,_dso_data, probe));
-                break;
+//            case SR_CHANNEL_DSO:
+//                signal = boost::shared_ptr<view::Signal>(
+//                    new view::DsoSignal(_dev_inst,_dso_data, probe));
+//                break;
 
-            case SR_CHANNEL_ANALOG:
-                if (probe->enabled)
-                    signal = boost::shared_ptr<view::Signal>(
-                        new view::AnalogSignal(_dev_inst, _analog_data, probe));
-                break;
+//            case SR_CHANNEL_ANALOG:
+//                if (probe->enabled)
+//                    signal = boost::shared_ptr<view::Signal>(
+//                        new view::AnalogSignal(_dev_inst, _analog_data, probe));
+//                break;
             }
             if (signal.get())
                 sigs.push_back(signal);
         }
 
-        _signals.clear();
-        vector< boost::shared_ptr<view::Signal> >().swap(_signals);
-        _signals = sigs;
+        if (!sigs.empty()) {
+            _signals.clear();
+            vector< boost::shared_ptr<view::Signal> >().swap(_signals);
+            _signals = sigs;
+        }
     }
 
     mathTraces_rebuild();
@@ -975,7 +777,7 @@ void SigSession::refresh(int holdtime)
     boost::lock_guard<boost::mutex> lock(_data_mutex);
 
     _data_lock = true;
-    _refresh_timer.start(holdtime);
+    QTimer::singleShot(holdtime, this, SLOT(data_unlock()));
 
     if (_logic_data) {
         _logic_data->init();
@@ -1057,9 +859,13 @@ void SigSession::feed_in_meta(const sr_dev_inst *sdi,
 
 void SigSession::feed_in_trigger(const ds_trigger_pos &trigger_pos)
 {
+    _hw_replied = true;
     if (_dev_inst->dev_inst()->mode != DSO) {
-        _trigger_pos = trigger_pos.real_pos;
-        receive_trigger(_trigger_pos);
+        _trigger_flag = (trigger_pos.status & 0x01);
+        if (_trigger_flag) {
+            _trigger_pos = trigger_pos.real_pos;
+            receive_trigger(_trigger_pos);
+        }
         if (_dev_inst->name() != "virtual-session") {
             const double time = trigger_pos.real_pos * 1.0 / _cur_samplerate;
             _trigger_time = QDateTime::currentDateTime();
@@ -1092,15 +898,14 @@ void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
 	}
 
     if (logic.data_error == 1) {
-        test_data_error();
+        _error = Test_data_err;
+        _error_pattern = logic.error_pattern;
+        session_error();
     }
 
     if (_cur_logic_snapshot->last_ended()) {
-        _cur_logic_snapshot->first_payload(logic, _dev_inst->get_sample_limit(), 1);
-        if (_cur_logic_snapshot->memory_failed()) {
-            malloc_error();
-            return;
-        }
+        logic_init();
+        _cur_logic_snapshot->first_payload(logic, _dev_inst->get_sample_limit(), _dev_inst->dev_inst()->channels);
         // @todo Putting this here means that only listeners querying
         // for logic will be notified. Currently the only user of
         // frame_began is DecoderStack, but in future we need to signal
@@ -1111,7 +916,13 @@ void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
 		_cur_logic_snapshot->append_payload(logic);
     }
 
-    emit receive_data(logic.length/logic.unitsize);
+    if (_cur_logic_snapshot->memory_failed()) {
+        _error = Malloc_err;
+        session_error();
+        return;
+    }
+
+    emit receive_data(logic.length * 8 / get_ch_num(SR_CHANNEL_LOGIC));
     data_received();
     //data_updated();
     _data_updated = true;
@@ -1129,25 +940,30 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
 
     if (_cur_dso_snapshot->last_ended())
     {
+        std::map<int, bool> sig_enable;
         // reset scale of dso signal
         BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
         {
             assert(s);
             boost::shared_ptr<view::DsoSignal> dsoSig;
-            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))
-                dsoSig->set_scale(dsoSig->get_view_rect().height() / 256.0f);
+            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
+                dsoSig->set_scale(dsoSig->get_view_rect().height());
+                sig_enable[dsoSig->get_index()] = dsoSig->enabled();
+            }
         }
 
         // first payload
-        _cur_dso_snapshot->first_payload(dso, _dev_inst->get_sample_limit(), get_ch_num(SR_CHANNEL_DSO), _instant);
-        if (_cur_dso_snapshot->memory_failed()) {
-            malloc_error();
-            return;
-        }
+        _cur_dso_snapshot->first_payload(dso, _dev_inst->get_sample_limit(), sig_enable, _instant);
     } else {
         // Append to the existing data snapshot
         _cur_dso_snapshot->append_payload(dso);
     }
+    if (_cur_dso_snapshot->memory_failed()) {
+        _error = Malloc_err;
+        session_error();
+        return;
+    }
+
     // calculate related math results
     BOOST_FOREACH(const boost::shared_ptr<view::MathTrace> m, _math_traces)
     {
@@ -1175,14 +991,16 @@ void SigSession::feed_in_analog(const sr_datafeed_analog &analog)
     if (_cur_analog_snapshot->last_ended())
 	{
         // first payload
-        _cur_analog_snapshot->first_payload(analog, _dev_inst->get_sample_limit(), get_ch_num(SR_CHANNEL_ANALOG));
-        if (_cur_analog_snapshot->memory_failed()) {
-            malloc_error();
-            return;
-        }
+        _cur_analog_snapshot->first_payload(analog, _dev_inst->get_sample_limit(), _dev_inst->dev_inst()->channels);
     } else {
 		// Append to the existing data snapshot
 		_cur_analog_snapshot->append_payload(analog);
+    }
+
+    if (_cur_analog_snapshot->memory_failed()) {
+        _error = Malloc_err;
+        session_error();
+        return;
     }
 
     receive_data(analog.num_samples);
@@ -1200,6 +1018,12 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
 
     if (_data_lock)
         return;
+    if (packet->type != SR_DF_END &&
+        packet->status != SR_PKT_OK) {
+        _error = Pkt_data_err;
+        session_error();
+        return;
+    }
 
 	switch (packet->type) {
 	case SR_DF_HEADER:
@@ -1232,6 +1056,12 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
         feed_in_analog(*(const sr_datafeed_analog*)packet->payload);
 		break;
 
+    case SR_DF_OVERFLOW:
+    {
+        _error = Data_overflow;
+        session_error();
+        break;
+    }
 	case SR_DF_END:
 	{
 		{
@@ -1247,14 +1077,22 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
                     _cur_group_snapshot.reset();
                 }
             }
-            _cur_logic_snapshot->set_last_ended(true);
-            _cur_dso_snapshot->set_last_ended(true);
-            _cur_analog_snapshot->set_last_ended(true);
+            if (!_cur_logic_snapshot->last_ended())
+                _cur_logic_snapshot->capture_ended();
+            else if (get_run_mode() != SigSession::Repetitive)
+                logic_init();
+            _cur_dso_snapshot->capture_ended();
+            _cur_analog_snapshot->capture_ended();
 #ifdef ENABLE_DECODE
             BOOST_FOREACH(const boost::shared_ptr<view::DecodeTrace> d, _decode_traces)
                 d->frame_ended();
 #endif
 		}
+
+        if (packet->status != SR_PKT_OK) {
+            _error = Pkt_data_err;
+            session_error();
+        }
         frame_ended();
 		break;
 	}
@@ -1403,14 +1241,13 @@ uint16_t SigSession::get_ch_num(int type)
 }
 
 #ifdef ENABLE_DECODE
-bool SigSession::add_decoder(srd_decoder *const dec)
+bool SigSession::add_decoder(srd_decoder *const dec, bool silent)
 {
     bool ret = false;
-    map<const srd_channel*, boost::shared_ptr<view::LogicSignal> > probes;
+    map<const srd_channel*, int> probes;
     boost::shared_ptr<data::DecoderStack> decoder_stack;
 
-    try
-    {
+    try {
         //lock_guard<mutex> lock(_signals_mutex);
 
         // Create the decoder
@@ -1440,13 +1277,14 @@ bool SigSession::add_decoder(srd_decoder *const dec)
                 break;
             }
         }
-        if (d->create_popup()) {
+        if (silent) {
+            _decode_traces.push_back(d);
+            ret = true;
+        } else if (d->create_popup()) {
             _decode_traces.push_back(d);
             ret = true;
         }
-    }
-    catch(std::runtime_error e)
-    {
+    } catch(std::runtime_error e) {
         return false;
     }
 
@@ -1602,6 +1440,119 @@ void SigSession::nodata_timeout()
     if (g_variant_get_byte(gvar) != DSO_TRIGGER_AUTO) {
         show_wait_trigger();
     }
+}
+
+boost::shared_ptr<data::Snapshot> SigSession::get_snapshot(int type)
+{
+    if (type == SR_CHANNEL_LOGIC)
+        return _cur_logic_snapshot;
+    else if (type == SR_CHANNEL_ANALOG)
+        return _cur_analog_snapshot;
+    else if (type == SR_CHANNEL_DSO)
+        return _cur_dso_snapshot;
+    else
+        return NULL;
+}
+
+SigSession::error_state SigSession::get_error() const
+{
+    return _error;
+}
+
+void SigSession::set_error(error_state state)
+{
+    _error = state;
+}
+
+void SigSession::clear_error()
+{
+    _error_pattern = 0;
+    _error = No_err;
+}
+
+uint64_t SigSession::get_error_pattern() const
+{
+    return _error_pattern;
+}
+
+SigSession::run_mode SigSession::get_run_mode() const
+{
+    return _run_mode;
+}
+
+void SigSession::set_run_mode(run_mode mode)
+{
+    _run_mode = mode;
+}
+
+int SigSession::get_repeat_intvl() const
+{
+    return _repeat_intvl;
+}
+
+void SigSession::set_repeat_intvl(int interval)
+{
+    _repeat_intvl = interval;
+}
+
+void SigSession::set_repeating(bool repeat)
+{
+    _repeating = repeat;
+    if (!_repeating)
+        _repeat_hold_prg = 0;
+}
+
+bool SigSession::isRepeating() const
+{
+    return _repeating;
+}
+
+bool SigSession::repeat_check()
+{
+    if (get_capture_state() != Stopped ||
+        get_run_mode() != Repetitive ||
+        !isRepeating()) {
+        return false;
+    }
+
+    if (_dev_inst->dev_inst()->mode == LOGIC) {
+        _repeat_hold_prg = 100;
+        repeat_hold(_repeat_hold_prg);
+        QTimer::singleShot(_repeat_intvl*1000/RepeatHoldDiv, this, SLOT(repeat_update()));
+        return true;
+    } else {
+        return true;
+    }
+}
+
+void SigSession::repeat_update()
+{
+    if (isRepeating()) {
+        _repeat_hold_prg -= 100/RepeatHoldDiv;
+        if (_repeat_hold_prg != 0)
+            QTimer::singleShot(_repeat_intvl*1000/RepeatHoldDiv, this, SLOT(repeat_update()));
+        repeat_hold(_repeat_hold_prg);
+        if (_repeat_hold_prg == 0)
+            repeat_resume();
+    }
+}
+
+int SigSession::get_repeat_hold() const
+{
+    if (isRepeating())
+        return _repeat_hold_prg;
+    else
+        return 0;
+}
+
+void SigSession::set_map_zoom(int index)
+{
+    _map_zoom = index;
+}
+
+int SigSession::get_map_zoom() const
+{
+    return _map_zoom;
 }
 
 } // namespace pv

@@ -21,53 +21,73 @@
 
 
 #include "search.h"
+#include "../view/logicsignal.h"
+
 #include <assert.h>
 #include <QRegExpValidator>
+
+#include <boost/foreach.hpp>
 
 namespace pv {
 namespace dialogs {
 
-Search::Search(QWidget *parent, boost::shared_ptr<device::DevInst> dev_inst, QString pattern) :
+Search::Search(QWidget *parent, SigSession &session, std::map<uint16_t, QString> pattern) :
     DSDialog(parent),
-    _dev_inst(dev_inst)
+    _session(session)
 {
-    assert(_dev_inst);
 
     QFont font("Monaco");
     font.setStyleHint(QFont::Monospace);
     font.setFixedPitch(true);
+    //this->setMinimumWidth(350);
 
-    QRegExp value_rx("[10XRFCxrfc ]+");
+    QRegExp value_rx("[10XRFCxrfc]+");
     QValidator *value_validator = new QRegExpValidator(value_rx, this);
-
-
-    search_lineEdit.setText(pattern);
-    search_lineEdit.setValidator(value_validator);
-    search_lineEdit.setMaxLength(16 * 2 - 1);
-    search_lineEdit.setInputMask("X X X X X X X X X X X X X X X X");
-    search_lineEdit.setFont(font);
-
-    QLabel *search_label = new QLabel("1 1 1 1 1 1\n5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0");
-    search_label->setFont(font);
 
     search_buttonBox.addButton(QDialogButtonBox::Ok);
     search_buttonBox.addButton(QDialogButtonBox::Cancel);
 
     QGridLayout *search_layout = new QGridLayout();
-    search_layout->setVerticalSpacing(5);
-    search_layout->addWidget(search_label, 1, 1);
-    search_layout->addWidget(new QLabel(tr("Search Value: ")), 2,0, Qt::AlignRight);
-    search_layout->addWidget(&search_lineEdit, 2, 1);
-    search_layout->addWidget(new QLabel(" "), 3,0);
-    search_layout->addWidget(new QLabel(tr("X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge")), 4, 0);
-    search_layout->addWidget(&search_buttonBox, 5, 2);
+    search_layout->setVerticalSpacing(0);
+
+    int index = 0;
+    BOOST_FOREACH(const boost::shared_ptr<view::Signal> sig,
+                  _session.get_signals()) {
+        assert(sig);
+        boost::shared_ptr<view::LogicSignal> logic_sig;
+        if (logic_sig = boost::dynamic_pointer_cast<view::LogicSignal>(sig)) {
+            QLineEdit *search_lineEdit = new QLineEdit(this);
+            if (pattern.find(index) != pattern.end())
+                search_lineEdit->setText(pattern[index]);
+            else
+                search_lineEdit->setText("X");
+            search_lineEdit->setValidator(value_validator);
+            search_lineEdit->setMaxLength(1);
+            search_lineEdit->setInputMask("X");
+            search_lineEdit->setFont(font);
+            _search_lineEdit_vec.push_back(search_lineEdit);
+
+            search_layout->addWidget(new QLabel(logic_sig->get_name()+":"), index, 0, Qt::AlignRight);
+            search_layout->addWidget(new QLabel(QString::number(logic_sig->get_index())), index, 1, Qt::AlignRight);
+            search_layout->addWidget(search_lineEdit, index, 2);
+
+            connect(search_lineEdit, SIGNAL(editingFinished()), this, SLOT(format()));
+
+            index++;
+        }
+    }
+
+    search_layout->addWidget(new QLabel(" "), index,0);
+    search_layout->addWidget(new QLabel(tr("X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge")), 0, 3, index, 1);
+    search_layout->addWidget(&search_buttonBox, index+1, 3);
+    search_layout->setColumnStretch(3, 100);
 
     layout()->addLayout(search_layout);
     setTitle(tr("Search Options"));
 
     connect(&search_buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
     connect(&search_buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
-    connect(_dev_inst.get(), SIGNAL(device_updated()), this, SLOT(reject()));
+    connect(_session.get_device().get(), SIGNAL(device_updated()), this, SLOT(reject()));
 }
 
 Search::~Search()
@@ -81,10 +101,27 @@ void Search::accept()
     QDialog::accept();
 }
 
-QString Search::get_pattern()
+void Search::format()
 {
-    QString pattern = search_lineEdit.text();
-    //pattern.remove(QChar('/r'), Qt::CaseInsensitive);
+    QLineEdit *sc = qobject_cast<QLineEdit *>(sender());
+    sc->setText(sc->text().toUpper());
+}
+
+std::map<uint16_t, QString> Search::get_pattern()
+{
+    std::map<uint16_t, QString> pattern;
+
+    int index = 0;
+    BOOST_FOREACH(const boost::shared_ptr<view::Signal> sig,
+                  _session.get_signals()) {
+        assert(sig);
+        boost::shared_ptr<view::LogicSignal> logic_sig;
+        if (logic_sig = boost::dynamic_pointer_cast<view::LogicSignal>(sig)) {
+            pattern[index] = _search_lineEdit_vec[index]->text();
+            index++;
+        }
+    }
+
     return pattern;
 }
 

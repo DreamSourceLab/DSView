@@ -46,7 +46,8 @@ MainFrame::MainFrame(DeviceManager &device_manager,
     setAttribute(Qt::WA_TranslucentBackground);
     // Make this a borderless window which can't
     // be resized or moved via the window system
-    setWindowFlags(Qt::FramelessWindowHint);
+    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
+                   Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
     setMinimumHeight(680);
     setMinimumWidth(800);
     //resize(1024, 768);
@@ -58,6 +59,7 @@ MainFrame::MainFrame(DeviceManager &device_manager,
     setWindowIcon(icon);
 
     _moving = false;
+    _draging = false;
     _startPos = None;
     _freezing = false;
     _minimized = false;
@@ -118,23 +120,22 @@ MainFrame::MainFrame(DeviceManager &device_manager,
     _layout->addWidget(_bottom_right, 2, 2);
 
     connect(&_timer, SIGNAL(timeout()), this, SLOT(unfreezing()));
-    readSettings();
+    //readSettings();
 }
 
 void MainFrame::changeEvent(QEvent* event)
 {
     QFrame::changeEvent(event);
-     QWindowStateChangeEvent* win_event = static_cast< QWindowStateChangeEvent* >(event);
-     if(win_event->type() == QEvent::WindowStateChange) {
-        if (win_event->oldState() & Qt::WindowMinimized) {
-             if (_minimized) {
-                 readSettings();
-                 _minimized = false;
-             }
+    QWindowStateChangeEvent* win_event = static_cast< QWindowStateChangeEvent* >(event);
+    if(win_event->type() == QEvent::WindowStateChange) {
+    if (win_event->oldState() & Qt::WindowMinimized) {
+         if (_minimized) {
+             readSettings();
+             _minimized = false;
          }
      }
+    }
 }
-
 
 void MainFrame::resizeEvent(QResizeEvent *event)
 {
@@ -346,6 +347,7 @@ void MainFrame::writeSettings()
     QSettings settings;
 
     settings.beginGroup("MainFrame");
+    settings.setValue("isMax", isMaximized());
     settings.setValue("size", size());
     settings.setValue("pos", pos() +
                       QPoint(geometry().left() - frameGeometry().left(), frameGeometry().right() - geometry().right()));
@@ -357,13 +359,28 @@ void MainFrame::readSettings()
     QSettings settings;
     QDesktopWidget* desktopWidget = QApplication::desktop();
     QRect deskRect = desktopWidget->availableGeometry();
+    QPoint default_upleft = QPoint((deskRect.width() - minWidth)/2, (deskRect.height() - minHeight)/2);
+    QSize default_size = QSize(minWidth, minHeight);
 
     settings.beginGroup("MainFrame");
-    QSize size = settings.value("size", QSize(minWidth, minHeight)).toSize();
-    QPoint pos = settings.value("pos", QPoint((deskRect.width() - minWidth)/2, (deskRect.height() - minHeight)/2)).toPoint();
+    bool isMax = settings.value("isMax", false).toBool();
+    QSize size = settings.value("size", default_size).toSize();
+    QPoint pos = settings.value("pos", default_upleft).toPoint();
     settings.endGroup();
 
-    if (size == deskRect.size()) {
+    // check the restored position is vavlid or not
+    int i = 0;
+    for (; i < desktopWidget->screenCount(); i++) {
+        deskRect = desktopWidget->availableGeometry(i);
+        if (deskRect.contains(pos))
+            break;
+    }
+    if (i >= desktopWidget->screenCount())
+        pos = default_upleft;
+
+    if (isMax) {
+        resize(default_size);
+        move(default_upleft);
         _titleBar->showMaxRestore();
     } else {
         resize(size);

@@ -63,7 +63,7 @@ public:
 
     GVariant* get_config(const sr_channel *ch, const sr_channel_group *group, int key);
 
-    bool set_config(const sr_channel *ch, const sr_channel_group *group, int key, GVariant *data);
+    bool set_config(sr_channel *ch, sr_channel_group *group, int key, GVariant *data);
 
 	GVariant* list_config(const sr_channel_group *group, int key);
 
@@ -118,6 +118,8 @@ public:
 
 	virtual bool is_trigger_enabled() const;
 
+    bool is_usable() const;
+
 public:
 	virtual void start();
 
@@ -132,6 +134,7 @@ signals:
 protected:
 	SigSession *_owner;
     void *_id;
+    bool _usable;
 };
 
 } // device

@@ -40,30 +40,43 @@ using namespace std;
 namespace pv {
 namespace data {
 
-const int LogicSnapshot::MipMapScalePower = 4;
-const int LogicSnapshot::MipMapScaleFactor = 1 << MipMapScalePower;
-const float LogicSnapshot::LogMipMapScaleFactor = logf(MipMapScaleFactor);
-const uint64_t LogicSnapshot::MipMapDataUnit = 64*1024;	// bytes
+const uint64_t LogicSnapshot::LevelMask[LogicSnapshot::ScaleLevel] = {
+    ~(~0ULL << ScalePower) << 0 * ScalePower,
+    ~(~0ULL << ScalePower) << 1 * ScalePower,
+    ~(~0ULL << ScalePower) << 2 * ScalePower,
+    ~(~0ULL << ScalePower) << 3 * ScalePower,
+};
+const uint64_t LogicSnapshot::LevelOffset[LogicSnapshot::ScaleLevel] = {
+    0,
+    (uint64_t)pow(Scale, 3),
+    (uint64_t)pow(Scale, 3) + (uint64_t)pow(Scale, 2),
+    (uint64_t)pow(Scale, 3) + (uint64_t)pow(Scale, 2) + (uint64_t)pow(Scale, 1),
+};
 
 LogicSnapshot::LogicSnapshot() :
-    Snapshot(1, 1, 1),
-    _last_append_sample(0)
+    Snapshot(1, 0, 0),
+    _block_num(0)
 {
-    memset(_mip_map, 0, sizeof(_mip_map));
 }
 
 LogicSnapshot::~LogicSnapshot()
 {
-    free_mipmap();
 }
 
-void LogicSnapshot::free_mipmap()
+void LogicSnapshot::free_data()
 {
-    BOOST_FOREACH(MipMapLevel &l, _mip_map) {
-        if (l.data)
-            free(l.data);
+    Snapshot::free_data();
+    for(auto& iter:_ch_data) {
+        for(auto& iter_rn:iter) {
+            for (unsigned int k = 0; k < Scale; k++)
+                if (iter_rn.lbp[k] != NULL)
+                    free(iter_rn.lbp[k]);
+        }
+        std::vector<struct RootNode> void_vector;
+        iter.swap(void_vector);
     }
-    memset(_mip_map, 0, sizeof(_mip_map));
+    _ch_data.clear();
+    _sample_count = 0;
 }
 
 void LogicSnapshot::init()
@@ -71,308 +84,602 @@ void LogicSnapshot::init()
     boost::lock_guard<boost::recursive_mutex> lock(_mutex);
     _sample_count = 0;
     _ring_sample_count = 0;
+    _block_num = 0;
+    _byte_fraction = 0;
+    _ch_fraction = 0;
+    _src_ptr = NULL;
+    _dest_ptr = NULL;
+    _data = NULL;
     _memory_failed = false;
     _last_ended = true;
-    for (unsigned int level = 0; level < ScaleStepCount; level++) {
-        _mip_map[level].length = 0;
-        _mip_map[level].data_length = 0;
-    }
 }
 
 void LogicSnapshot::clear()
 {
     boost::lock_guard<boost::recursive_mutex> lock(_mutex);
     free_data();
-    free_mipmap();
     init();
 }
 
-void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total_sample_count, unsigned int channel_num)
+void LogicSnapshot::capture_ended()
 {
-    _total_sample_count = total_sample_count;
-    _channel_num = channel_num;
-    _unit_size = logic.unitsize;
+    Snapshot::capture_ended();
 
-    bool isOk = true;
-    uint64_t size = _total_sample_count * _unit_size + sizeof(uint64_t);
-    if (size != _capacity) {
-        free_data();
-        _data = malloc(size);
-        if (_data) {
-            free_mipmap();
-            uint64_t mipmap_count = _total_sample_count /  MipMapScaleFactor;
-            for (unsigned int level = 0; level < ScaleStepCount; level++) {
-                mipmap_count = ((mipmap_count + MipMapDataUnit - 1) /
-                        MipMapDataUnit) * MipMapDataUnit;
-                _mip_map[level].data = malloc(mipmap_count * _unit_size + sizeof(uint64_t));
-                if (!_mip_map[level].data) {
-                    isOk = false;
-                    break;
-                }
-                mipmap_count = mipmap_count /  MipMapScaleFactor;
+    //assert(_ch_fraction == 0);
+    //assert(_byte_fraction == 0);
+    uint64_t block_index = _ring_sample_count / LeafBlockSamples;
+    uint64_t block_offset = (_ring_sample_count % LeafBlockSamples) / Scale;
+    if (block_offset != 0) {
+        uint64_t index0 = block_index / RootScale;
+        uint64_t index1 = block_index % RootScale;
+        int order = 0;
+        for(auto& iter:_ch_data) {
+            const uint64_t *end_ptr = (uint64_t *)iter[index0].lbp[index1] + (LeafBlockSamples / Scale);
+            uint64_t *ptr = (uint64_t *)iter[index0].lbp[index1] + block_offset;
+            while (ptr < end_ptr)
+                *ptr++ = 0;
+
+            // calc mipmap of current block
+            calc_mipmap(order, index0, index1, block_offset * Scale);
+
+            // calc root of current block
+            if (*((uint64_t *)iter[index0].lbp[index1]) != 0)
+                iter[index0].value += 1ULL << index1;
+            if (*((uint64_t *)iter[index0].lbp[index1] + LeafBlockSpace / sizeof(uint64_t) - 1) != 0) {
+                iter[index0].tog += 1ULL << index1;
+            } else {
+               // trim leaf to free space
+               free(iter[index0].lbp[index1]);
+               iter[index0].lbp[index1] = NULL;
             }
-        } else {
-            isOk = false;
+
+            order++;
+        }
+    }
+    _sample_count = _ring_sample_count;
+}
+
+void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total_sample_count, GSList *channels)
+{
+    bool channel_changed = false;
+    uint16_t channel_num = 0;
+    for (const GSList *l = channels; l; l = l->next) {
+        sr_channel *const probe = (sr_channel*)l->data;
+        assert(probe);
+        if (probe->type == SR_CHANNEL_LOGIC) {
+            channel_num += probe->enabled;
+            if (!channel_changed && probe->enabled) {
+                channel_changed = !has_data(probe->index);
+            }
         }
     }
 
-    if (isOk) {
-        _capacity = size;
-        _memory_failed = false;
-        append_payload(logic);
-        _last_ended = false;
-    } else {
+    if (total_sample_count != _total_sample_count ||
+        channel_num != _channel_num ||
+        channel_changed) {
         free_data();
-        free_mipmap();
-        _capacity = 0;
-        _memory_failed = true;
+        _total_sample_count = total_sample_count;
+        _channel_num = channel_num;
+        uint64_t rootnode_size = (_total_sample_count + RootNodeSamples - 1) / RootNodeSamples;
+        for (const GSList *l = channels; l; l = l->next) {
+            sr_channel *const probe = (sr_channel*)l->data;
+            if (probe->type == SR_CHANNEL_LOGIC && probe->enabled) {
+                std::vector<struct RootNode> root_vector;
+                for (uint64_t j = 0; j < rootnode_size; j++) {
+                    struct RootNode rn;
+                    rn.tog = 0;
+                    rn.value = 0;
+                    memset(rn.lbp, 0, sizeof(rn.lbp));
+                    root_vector.push_back(rn);
+                }
+                _ch_data.push_back(root_vector);
+                _ch_index.push_back(probe->index);
+            }
+        }
+    } else {
+        for(auto& iter:_ch_data) {
+            for(auto& iter_rn:iter) {
+                iter_rn.tog = 0;
+                iter_rn.value = 0;
+            }
+        }
     }
+
+    _sample_count = 0;
+    _last_sample.clear();
+    _sample_cnt.clear();
+    _block_cnt.clear();
+    _ring_sample_cnt.clear();
+    for (unsigned int i = 0; i < _channel_num; i++) {
+        _last_sample.push_back(0);
+        _sample_cnt.push_back(0);
+        _block_cnt.push_back(0);
+        _ring_sample_cnt.push_back(0);
+    }
+
+    append_payload(logic);
+    _last_ended = false;
 }
 
 void LogicSnapshot::append_payload(
 	const sr_datafeed_logic &logic)
 {
-	assert(_unit_size == logic.unitsize);
-	assert((logic.length % _unit_size) == 0);
-
     boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 
-	append_data(logic.data, logic.length / _unit_size);
-
-	// Generate the first mip-map from the data
-    append_payload_to_mipmap();
+    if (logic.format == LA_CROSS_DATA)
+        append_cross_payload(logic);
+    else if (logic.format == LA_SPLIT_DATA)
+        append_split_payload(logic);
 }
 
-uint8_t * LogicSnapshot::get_samples(int64_t start_sample, int64_t end_sample) const
+void LogicSnapshot::append_cross_payload(
+    const sr_datafeed_logic &logic)
+{
+    assert(logic.format == LA_CROSS_DATA);
+    assert(logic.length >= ScaleSize * _channel_num);
+
+    if (_sample_count >= _total_sample_count)
+        return;
+
+    uint64_t samples = ceil(logic.length * 8.0 / _channel_num);
+
+    if (_sample_count + samples < _total_sample_count)
+        _sample_count += samples;
+    else
+        _sample_count = _total_sample_count;
+
+    while (_sample_count > _block_num * LeafBlockSamples) {
+        uint8_t index0 = _block_num / RootScale;
+        uint8_t index1 = _block_num % RootScale;
+        for(auto& iter:_ch_data) {
+            if (iter[index0].lbp[index1] == NULL)
+                iter[index0].lbp[index1] = malloc(LeafBlockSpace);
+            if (iter[index0].lbp[index1] == NULL) {
+                _memory_failed = true;
+                return;
+            }
+            uint64_t *mipmap_ptr = (uint64_t *)iter[index0].lbp[index1] +
+                                   (LeafBlockSamples / Scale);
+            memset(mipmap_ptr, 0, LeafBlockSpace - (LeafBlockSamples / 8));
+        }
+        _block_num++;
+    }
+
+    _src_ptr = logic.data;
+    uint64_t len = logic.length;
+
+    // bit align
+    while (((_ch_fraction != 0) || (_byte_fraction != 0)) && (len != 0)) {
+        uint8_t *dp_tmp = (uint8_t *)_dest_ptr;
+        uint8_t *sp_tmp = (uint8_t *)_src_ptr;
+        do {
+            //*(uint8_t *)_dest_ptr++ = *(uint8_t *)_src_ptr++;
+            *dp_tmp++ = *sp_tmp++;
+            _byte_fraction = (_byte_fraction + 1) % ScaleSize;
+            len--;
+        } while ((_byte_fraction != 0) && (len != 0));
+        _dest_ptr = dp_tmp;
+        _src_ptr = sp_tmp;
+        if (_byte_fraction == 0) {
+            const uint64_t index0 = _ring_sample_count / RootNodeSamples;
+            const uint64_t index1 = (_ring_sample_count >> LeafBlockPower) % RootScale;
+            const uint64_t offset = (_ring_sample_count % LeafBlockSamples) / Scale;
+
+//            _dest_ptr = (uint64_t *)_ch_data[i][index0].lbp[index1] + offset;
+//            uint64_t mipmap_index = offset / 8 / Scale;
+//            uint64_t mipmap_offset = (offset / 8) % Scale;
+//            uint64_t *l1_mipmap = (uint64_t *)_ch_data[i][index0].lbp[index1] +
+//                                  (LeafBlockSamples / Scale) + mipmap_index;
+//            *l1_mipmap += ((_last_sample[i] ^ *(uint64_t *)_dest_ptr) != 0 ? 1ULL : 0ULL) << mipmap_offset;
+//            _last_sample[i] = *(uint64_t *)_dest_ptr & (1ULL << (Scale - 1)) ? ~0ULL : 0ULL;
+
+            _ch_fraction = (_ch_fraction + 1) % _channel_num;
+            if (_ch_fraction == 0)
+                _ring_sample_count += Scale;
+            _dest_ptr = (uint8_t *)_ch_data[_ch_fraction][index0].lbp[index1] + (offset * ScaleSize);
+        }
+    }
+
+    // align data append
+    {
+        assert(_ch_fraction == 0);
+        assert(_byte_fraction == 0);
+        assert(_ring_sample_count % Scale == 0);
+        uint64_t pre_index0 = _ring_sample_count / RootNodeSamples;
+        uint64_t pre_index1 = (_ring_sample_count >> LeafBlockPower) % RootScale;
+        uint64_t pre_offset = (_ring_sample_count % LeafBlockSamples) / Scale;
+        uint64_t *src_ptr = NULL;
+        uint64_t *dest_ptr;
+        int order = 0;
+        const uint64_t align_size = len / ScaleSize / _channel_num;
+        _ring_sample_count += align_size * Scale;
+
+//        uint64_t mipmap_index = pre_offset / Scale;
+//        uint64_t mipmap_offset = pre_offset % Scale;
+//        uint64_t *l1_mipmap;
+        for(auto& iter:_ch_data) {
+            uint64_t index0 = pre_index0;
+            uint64_t index1 = pre_index1;
+            src_ptr = (uint64_t *)_src_ptr + order;
+            _dest_ptr = iter[index0].lbp[index1];
+            dest_ptr = (uint64_t *)_dest_ptr + pre_offset;
+//            l1_mipmap = (uint64_t *)_dest_ptr + (LeafBlockSamples / Scale) + mipmap_index;
+            while (src_ptr < (uint64_t *)_src_ptr + (align_size * _channel_num)) {
+                const uint64_t tmp_u64 = *src_ptr;
+                *dest_ptr++ = tmp_u64;
+//                *l1_mipmap += ((_last_sample[i] ^ tmp_u64) != 0 ? 1ULL : 0ULL) << mipmap_offset;
+//                mipmap_offset = (mipmap_offset + 1) % Scale;
+//                l1_mipmap += (mipmap_offset == 0);
+//                _last_sample[i] = tmp_u64 & (1ULL << (Scale - 1)) ? ~0ULL : 0ULL;
+                src_ptr += _channel_num;
+                //mipmap
+                if (dest_ptr == (uint64_t *)_dest_ptr + (LeafBlockSamples / Scale)) {
+                    // calc mipmap of current block
+                    calc_mipmap(order, index0, index1, LeafBlockSamples);
+
+                    // calc root of current block
+                    if (*((uint64_t *)iter[index0].lbp[index1]) != 0)
+                        iter[index0].value +=  1ULL<< index1;
+                    if (*((uint64_t *)iter[index0].lbp[index1] + LeafBlockSpace / sizeof(uint64_t) - 1) != 0) {
+                        iter[index0].tog += 1ULL << index1;
+                    } else {
+                        // trim leaf to free space
+                        free(iter[index0].lbp[index1]);
+                        iter[index0].lbp[index1] = NULL;
+                    }
+
+                    index1++;
+                    if (index1 == RootScale) {
+                        index0++;
+                        index1 = 0;
+                    }
+                    _dest_ptr = iter[index0].lbp[index1];
+                    dest_ptr = (uint64_t *)_dest_ptr;
+                }
+            }
+            order++;
+        }
+        len -= align_size * _channel_num * ScaleSize;
+        _src_ptr = src_ptr - _channel_num + 1;
+    }
+
+    // fraction data append
+    {
+        uint64_t index0 = _ring_sample_count / RootNodeSamples;
+        uint64_t index1 = (_ring_sample_count >> LeafBlockPower) % RootScale;
+        uint64_t offset = (_ring_sample_count % LeafBlockSamples) / 8;
+        _dest_ptr = (uint8_t *)_ch_data[_ch_fraction][index0].lbp[index1] + offset;
+
+        uint8_t *dp_tmp = (uint8_t *)_dest_ptr;
+        uint8_t *sp_tmp = (uint8_t *)_src_ptr;
+        while(len-- != 0) {
+            //*(uint8_t *)_dest_ptr++ = *(uint8_t *)_src_ptr++;
+            *dp_tmp++ = *sp_tmp++;
+            if (++_byte_fraction == ScaleSize) {
+                _ch_fraction = (_ch_fraction + 1) % _channel_num;
+                _byte_fraction = 0;
+                //_dest_ptr = (uint8_t *)_ch_data[_ch_fraction][index0].lbp[index1] + offset;
+                dp_tmp = (uint8_t *)_ch_data[_ch_fraction][index0].lbp[index1] + offset;
+            }
+        }
+        //_dest_ptr = (uint8_t *)_dest_ptr + _byte_fraction;
+        _dest_ptr = dp_tmp + _byte_fraction;
+    }
+}
+
+void LogicSnapshot::append_split_payload(
+    const sr_datafeed_logic &logic)
+{
+    assert(logic.format == LA_SPLIT_DATA);
+
+    uint64_t samples = logic.length * 8;
+    uint16_t order = logic.order;
+    assert(order < _ch_data.size());
+
+    if (_sample_cnt[order] >= _total_sample_count)
+        return;
+
+    if (_sample_cnt[order] + samples < _total_sample_count)
+        _sample_cnt[order] += samples;
+    else
+        _sample_cnt[order] = _total_sample_count;
+
+    while (_sample_cnt[order] > _block_cnt[order] * LeafBlockSamples) {
+        uint8_t index0 = _block_cnt[order] / RootScale;
+        uint8_t index1 = _block_cnt[order] % RootScale;
+        if (_ch_data[order][index0].lbp[index1] == NULL)
+            _ch_data[order][index0].lbp[index1] = malloc(LeafBlockSpace);
+        if (_ch_data[order][index0].lbp[index1] == NULL) {
+            _memory_failed = true;
+            return;
+        }
+        memset(_ch_data[order][index0].lbp[index1], 0, LeafBlockSpace);
+        _block_cnt[order]++;
+    }
+
+    while(samples > 0) {
+        const uint64_t index0 = _ring_sample_cnt[order] / RootNodeSamples;
+        const uint64_t index1 = (_ring_sample_cnt[order] >> LeafBlockPower) % RootScale;
+        const uint64_t offset = (_ring_sample_cnt[order] % LeafBlockSamples) / 8;
+        _dest_ptr = (uint8_t *)_ch_data[order][index0].lbp[index1] + offset;
+
+        uint64_t bblank = (LeafBlockSamples - (_ring_sample_cnt[order] & LeafMask));
+        if (samples >= bblank) {
+            memcpy((uint8_t*)_dest_ptr, (uint8_t *)logic.data, bblank/8);
+            _ring_sample_cnt[order] += bblank;
+            samples -= bblank;
+
+            // calc mipmap of current block
+            calc_mipmap(order, index0, index1, LeafBlockSamples);
+
+            // calc root of current block
+            if (*((uint64_t *)_ch_data[order][index0].lbp[index1]) != 0)
+                _ch_data[order][index0].value +=  1ULL<< index1;
+            if (*((uint64_t *)_ch_data[order][index0].lbp[index1] + LeafBlockSpace / sizeof(uint64_t) - 1) != 0) {
+                _ch_data[order][index0].tog += 1ULL << index1;
+            } else {
+                // trim leaf to free space
+                free(_ch_data[order][index0].lbp[index1]);
+                _ch_data[order][index0].lbp[index1] = NULL;
+            }
+        } else {
+            memcpy((uint8_t*)_dest_ptr, (uint8_t *)logic.data, samples/8);
+            _ring_sample_cnt[order] += samples;
+            samples = 0;
+        }
+    }
+
+    _sample_count = *min_element(_sample_cnt.begin(), _sample_cnt.end());
+    _ring_sample_count = *min_element(_ring_sample_cnt.begin(), _ring_sample_cnt.end());
+}
+
+void LogicSnapshot::calc_mipmap(unsigned int order, uint8_t index0, uint8_t index1, uint64_t samples)
+{
+    uint8_t offset;
+    uint64_t *src_ptr;
+    uint64_t *dest_ptr;
+    unsigned int i;
+
+    // level 1
+    src_ptr = (uint64_t *)_ch_data[order][index0].lbp[index1];
+    dest_ptr = src_ptr + (LeafBlockSamples / Scale) - 1;
+    const uint64_t mask =  1ULL << (Scale - 1);
+    for(i = 0; i < samples / Scale; i++) {
+        offset = i % Scale;
+        if (offset == 0)
+            dest_ptr++;
+        *dest_ptr += ((_last_sample[order] ^ *src_ptr) != 0 ? 1ULL : 0ULL) << offset;
+        _last_sample[order] = *src_ptr & mask ? ~0ULL : 0ULL;
+        src_ptr++;
+    }
+
+    // level 2/3
+    src_ptr = (uint64_t *)_ch_data[order][index0].lbp[index1] + (LeafBlockSamples / Scale);
+    dest_ptr = src_ptr + (LeafBlockSamples / Scale / Scale) - 1;
+    for(i = LeafBlockSamples / Scale; i < LeafBlockSpace / sizeof(uint64_t) - 1; i++) {
+        offset = i % Scale;
+        if (offset == 0)
+            dest_ptr++;
+        *dest_ptr += (*src_ptr != 0 ? 1ULL : 0ULL) << offset;
+        src_ptr++;
+    }
+}
+
+const uint8_t *LogicSnapshot::get_samples(uint64_t start_sample, uint64_t &end_sample,
+                                     int sig_index)
 {
     //assert(data);
-    assert(start_sample >= 0);
-    assert(start_sample <= (int64_t)get_sample_count());
-    assert(end_sample >= 0);
-    assert(end_sample <= (int64_t)get_sample_count());
+    assert(start_sample < get_sample_count());
+    assert(end_sample < get_sample_count());
     assert(start_sample <= end_sample);
 
-    (void)end_sample;
+    int order = get_ch_order(sig_index);
+    uint64_t root_index = start_sample >> (LeafBlockPower + RootScalePower);
+    uint8_t root_pos = (start_sample & RootMask) >> LeafBlockPower;
+    uint64_t block_offset = (start_sample & LeafMask) / 8;
+    end_sample = (root_index << (LeafBlockPower + RootScalePower)) +
+                 (root_pos << LeafBlockPower) +
+                 ~(~0ULL << LeafBlockPower);
+    end_sample = min(end_sample, get_sample_count() - 1);
 
-    //const size_t size = (end_sample - start_sample) * _unit_size;
-    //memcpy(data, (const uint8_t*)_data + start_sample * _unit_size, size);
-    return (uint8_t*)_data + start_sample * _unit_size;
+    if (order == -1 ||
+        _ch_data[order][root_index].lbp[root_pos] == NULL)
+        return NULL;
+    else
+        return (uint8_t *)_ch_data[order][root_index].lbp[root_pos] + block_offset;
 }
 
-void LogicSnapshot::reallocate_mipmap_level(MipMapLevel &m)
+bool LogicSnapshot::get_sample(uint64_t index, int sig_index)
 {
-	const uint64_t new_data_length = ((m.length + MipMapDataUnit - 1) /
-		MipMapDataUnit) * MipMapDataUnit;
-	if (new_data_length > m.data_length)
-	{
-		m.data_length = new_data_length;
+    int order = get_ch_order(sig_index);
+    assert(order != -1);
+    assert(_ch_data[order].size() != 0);
+    assert(index < get_sample_count());
 
-		// Padding is added to allow for the uint64_t write word
-//		m.data = realloc(m.data, new_data_length * _unit_size +
-//			sizeof(uint64_t));
-	}
+    uint64_t index_mask = 1ULL << (index & LevelMask[0]);
+    uint64_t root_index = index >> (LeafBlockPower + RootScalePower);
+    uint8_t root_pos = (index & RootMask) >> LeafBlockPower;
+    uint64_t root_pos_mask = 1ULL << root_pos;
+
+    if ((_ch_data[order][root_index].tog & root_pos_mask) == 0) {
+        return (_ch_data[order][root_index].value & root_pos_mask) != 0;
+    } else {
+        uint64_t *lbp = (uint64_t *)_ch_data[order][root_index].lbp[root_pos];
+        return *(lbp + ((index & LeafMask) >> ScalePower)) & index_mask;
+    }
 }
 
-void LogicSnapshot::append_payload_to_mipmap()
-{
-	MipMapLevel &m0 = _mip_map[0];
-	uint64_t prev_length;
-	const uint8_t *src_ptr;
-	uint8_t *dest_ptr;
-	uint64_t accumulator;
-	unsigned int diff_counter;
-
-	// Expand the data buffer to fit the new samples
-	prev_length = m0.length;
-	m0.length = _sample_count / MipMapScaleFactor;
-
-	// Break off if there are no new samples to compute
-	if (m0.length == prev_length)
-		return;
-
-	reallocate_mipmap_level(m0);
-
-	dest_ptr = (uint8_t*)m0.data + prev_length * _unit_size;
-
-	// Iterate through the samples to populate the first level mipmap
-    const uint8_t *const end_src_ptr = (uint8_t*)_data +
-		m0.length * _unit_size * MipMapScaleFactor;
-    for (src_ptr = (uint8_t*)_data +
-		prev_length * _unit_size * MipMapScaleFactor;
-		src_ptr < end_src_ptr;)
-	{
-		// Accumulate transitions which have occurred in this sample
-		accumulator = 0;
-		diff_counter = MipMapScaleFactor;
-		while (diff_counter-- > 0)
-		{
-			const uint64_t sample = *(uint64_t*)src_ptr;
-			accumulator |= _last_append_sample ^ sample;
-			_last_append_sample = sample;
-			src_ptr += _unit_size;
-		}
-
-		*(uint64_t*)dest_ptr = accumulator;
-		dest_ptr += _unit_size;
-	}
-
-	// Compute higher level mipmaps
-	for (unsigned int level = 1; level < ScaleStepCount; level++)
-	{
-		MipMapLevel &m = _mip_map[level];
-		const MipMapLevel &ml = _mip_map[level-1];
-
-		// Expand the data buffer to fit the new samples
-		prev_length = m.length;
-		m.length = ml.length / MipMapScaleFactor;
-
-		// Break off if there are no more samples to computed
-		if (m.length == prev_length)
-			break;
-
-		reallocate_mipmap_level(m);
-
-		// Subsample the level lower level
-		src_ptr = (uint8_t*)ml.data +
-			_unit_size * prev_length * MipMapScaleFactor;
-		const uint8_t *const end_dest_ptr =
-			(uint8_t*)m.data + _unit_size * m.length;
-		for (dest_ptr = (uint8_t*)m.data +
-			_unit_size * prev_length;
-			dest_ptr < end_dest_ptr;
-			dest_ptr += _unit_size)
-		{
-			accumulator = 0;
-			diff_counter = MipMapScaleFactor;
-			while (diff_counter-- > 0)
-			{
-				accumulator |= *(uint64_t*)src_ptr;
-				src_ptr += _unit_size;
-			}
-
-			*(uint64_t*)dest_ptr = accumulator;
-		}
-	}
-}
-
-void LogicSnapshot::get_subsampled_edges(
-	std::vector<EdgePair> &edges,
-	uint64_t start, uint64_t end,
-	float min_length, int sig_index)
+bool LogicSnapshot::get_display_edges(std::vector<std::pair<bool, bool> > &edges,
+    std::vector<std::pair<uint16_t, bool> > &togs,
+    uint64_t start, uint64_t end, uint16_t width, uint16_t max_togs,
+    double pixels_offset, double min_length, uint16_t sig_index)
 {
     if (!edges.empty())
         edges.clear();
+    if (!togs.empty())
+        togs.clear();
 
     if (get_sample_count() == 0)
-        return;
+        return false;
 
     assert(end < get_sample_count());
-	assert(start <= end);
-	assert(min_length > 0);
-	assert(sig_index >= 0);
-	assert(sig_index < 64);
+    assert(start <= end);
+    assert(min_length > 0);
 
     uint64_t index = start;
     bool last_sample;
-	const uint64_t block_length = (uint64_t)max(min_length, 1.0f);
-	const uint64_t sig_mask = 1ULL << sig_index;
+    bool start_sample;
 
-
-	// Store the initial state
-	last_sample = (get_sample(start) & sig_mask) != 0;
-	edges.push_back(pair<int64_t, bool>(index++, last_sample));
-
-    while (index + block_length <= end)
-	{
+    // Get the initial state
+    start_sample = last_sample = get_sample(index++, sig_index);
+    togs.push_back(pair<uint16_t, bool>(0, last_sample));
+    while(edges.size() < width) {
         // search next edge
-        get_nxt_edge(index, last_sample, end, min_length, sig_index);
+        bool has_edge = get_nxt_edge(index, last_sample, end, 0, sig_index);
 
-		//----- Store the edge -----//
+        // calc the edge position
+        int64_t gap = (index / min_length) - pixels_offset;
+        index = max((uint64_t)ceil((floor(index/min_length) + 1) * min_length), index + 1);
+        while(gap > (int64_t)edges.size() && edges.size() < width)
+            edges.push_back(pair<bool, bool>(false, last_sample));
 
-		// Take the last sample of the quanization block
-		const int64_t final_index = index + block_length;
-        if (index + block_length > end)
-			break;
+        if (index > end)
+            last_sample = get_sample(end, sig_index);
+        else
+            last_sample = get_sample(index - 1, sig_index);
 
-		// Store the final state
-		const bool final_sample =
-			(get_sample(final_index - 1) & sig_mask) != 0;
-		edges.push_back(pair<int64_t, bool>(index, final_sample));
+        if (has_edge) {
+            edges.push_back(pair<bool, bool>(true, last_sample));
+            if (togs.size() < max_togs)
+                togs.push_back(pair<uint16_t, bool>(edges.size() - 1, last_sample));
+        }
 
-		index = final_index;
-		last_sample = final_sample;
-	}
+        while(index > end && edges.size() < width)
+            edges.push_back(pair<bool, bool>(false, last_sample));
+    }
 
-    // Add the final state
-    const bool end_sample = ((get_sample(end) & sig_mask) != 0);
-    if ((end != get_sample_count() - 1) ||
-            ((end == get_sample_count() - 1) && end_sample != last_sample))
-        edges.push_back(pair<int64_t, bool>(end, end_sample));
+    if (togs.size() < max_togs) {
+        last_sample = get_sample(end, sig_index);
+        togs.push_back(pair<uint16_t, bool>(edges.size() - 1, last_sample));
+    }
 
-    if (end == get_sample_count() - 1)
-        edges.push_back(pair<int64_t, bool>(end + 1, ~last_sample));
+    return start_sample;
 }
 
 bool LogicSnapshot::get_nxt_edge(
     uint64_t &index, bool last_sample, uint64_t end,
-    float min_length, int sig_index)
+    double min_length, int sig_index)
 {
-    unsigned int level;
-    bool fast_forward;
-
-    //assert(index > 0);
-
-    const unsigned int min_level = max((int)floorf(logf(min_length) /
-        LogMipMapScaleFactor) - 1, 0);
-    const uint64_t sig_mask = 1ULL << sig_index;
-
-    if (index >= end)
+    if (index > end)
         return false;
 
-    //----- Continue to search -----//
-    level = min_level;
+    int order = get_ch_order(sig_index);
+    if (order == -1)
+        return false;
 
-    // We cannot fast-forward if there is no mip-map data at
-    // at the minimum level.
-    fast_forward = (_mip_map[level].data != NULL);
+    //const unsigned int min_level = max((int)floorf(logf(min_length) / logf(Scale)) - 1, 0);
+    const unsigned int min_level = max((int)(log2f(min_length) - 1) / ScalePower, 0);
+    uint64_t root_index = index >> (LeafBlockPower + RootScalePower);
+    uint8_t root_pos = (index & RootMask) >> LeafBlockPower;
+    bool edge_hit = false;
 
-    if (min_length < MipMapScaleFactor)
+    // linear search for the next transition on the root level
+    for (int64_t i = root_index; !edge_hit && (index <= end) && i < (int64_t)_ch_data[order].size(); i++) {
+        uint64_t cur_mask = (~0ULL << root_pos);
+        do {
+            uint64_t cur_tog = _ch_data[order][i].tog & cur_mask;
+            if (cur_tog != 0) {
+                uint64_t first_edge_pos = bsf_folded(cur_tog);
+                uint64_t *lbp = (uint64_t *)_ch_data[order][i].lbp[first_edge_pos];
+                uint64_t blk_start = (i << (LeafBlockPower + RootScalePower)) + (first_edge_pos << LeafBlockPower);
+                index = max(blk_start, index);
+                if (min_level < ScaleLevel) {
+                    uint64_t block_end = min(index | LeafMask, end);
+                    edge_hit = block_nxt_edge(lbp, index, block_end, last_sample, min_level);
+                } else {
+                    edge_hit = true;
+                }
+                if (first_edge_pos == RootScale - 1)
+                    break;
+                cur_mask = (~0ULL << (first_edge_pos + 1));
+            } else {
+                index = (index + (1 << (LeafBlockPower + RootScalePower))) &
+                        (~0ULL << (LeafBlockPower + RootScalePower));
+                break;
+            }
+        } while (!edge_hit && index < end);
+        root_pos = 0;
+    }
+    return edge_hit;
+}
+
+bool LogicSnapshot::get_pre_edge(uint64_t &index, bool last_sample,
+    double min_length, int sig_index)
+{
+    assert(index < get_sample_count());
+
+    int order = get_ch_order(sig_index);
+    if (order == -1)
+        return false;
+
+    //const unsigned int min_level = max((int)floorf(logf(min_length) / logf(Scale)) - 1, 1);
+    const unsigned int min_level = max((int)(log2f(min_length) - 1) / ScalePower, 0);
+    int root_index = index >> (LeafBlockPower + RootScalePower);
+    uint8_t root_pos = (index & RootMask) >> LeafBlockPower;
+    bool edge_hit = false;
+
+    // linear search for the previous transition on the root level
+    for (int64_t i = root_index; !edge_hit && i >= 0; i--) {
+        uint64_t cur_mask = (~0ULL >> (RootScale - root_pos - 1));
+        do {
+            uint64_t cur_tog = _ch_data[order][i].tog & cur_mask;
+            if (cur_tog != 0) {
+                uint64_t first_edge_pos = bsr64(cur_tog);
+                uint64_t *lbp = (uint64_t *)_ch_data[order][i].lbp[first_edge_pos];
+                uint64_t blk_end = ((i << (LeafBlockPower + RootScalePower)) +
+                                   (first_edge_pos << LeafBlockPower)) | LeafMask;
+                index = min(blk_end, index);
+                if (min_level < ScaleLevel) {
+                    edge_hit = block_pre_edge(lbp, index, last_sample, min_level, sig_index);
+                } else {
+                    edge_hit = true;
+                }
+                if (first_edge_pos == 0)
+                    break;
+                cur_mask = (~0ULL >> (RootScale - first_edge_pos));
+            } else {
+                break;
+            }
+        } while (!edge_hit);
+        root_pos = RootScale - 1;
+    }
+
+    return edge_hit;
+}
+
+bool LogicSnapshot::block_nxt_edge(uint64_t *lbp, uint64_t &index, uint64_t block_end, bool last_sample,
+                                   unsigned int min_level)
+{
+    unsigned int level = min_level;
+    bool fast_forward = true;
+    const uint64_t last = last_sample ? ~0ULL : 0;
+
+    //----- Search Next Edge Within Current LeafBlock -----//
+    if (level == 0)
     {
         // Search individual samples up to the beginning of
         // the next first level mip map block
-        const uint64_t final_index = min(end,
-            pow2_ceil(index, MipMapScalePower));
-
-        for (; index < final_index &&
-            (index & ~(~0 << MipMapScalePower)) != 0;
-            index++)
-        {
-            const bool sample =
-                (get_sample(index) & sig_mask) != 0;
-
-            // If there was a change we cannot fast forward
-            if (sample != last_sample) {
-                fast_forward = false;
-                break;
-            }
-        }
-    }
-    else
-    {
-        // If resolution is less than a mip map block,
-        // round up to the beginning of the mip-map block
-        // for this level of detail
-        const int min_level_scale_power =
-            (level + 1) * MipMapScalePower;
-        index = pow2_ceil(index, min_level_scale_power);
-        if (index >= end)
-            return false;
-
-        // We can fast forward only if there was no change
-        const bool sample =
-            (get_sample(index) & sig_mask) != 0;
-        if (last_sample != sample)
+        const uint64_t offset = (index & ~(~0ULL << LeafBlockPower)) >> ScalePower;
+        const uint64_t mask = last_sample ? ~(~0ULL << (index & LevelMask[0])) : ~0ULL << (index & LevelMask[0]);
+        uint64_t sample = last_sample ? *(lbp + offset) | mask : *(lbp + offset) & mask;
+        if (sample ^ last) {
+            index = (index & ~LevelMask[0]) + bsf_folded(last_sample ? ~sample : sample);
             fast_forward = false;
+        } else {
+            index = ((index >> ScalePower) + 1) << ScalePower;
+        }
+    } else {
+        index = ((index >> level*ScalePower) + 1) << level*ScalePower;
     }
 
     if (fast_forward) {
@@ -382,155 +689,94 @@ bool LogicSnapshot::get_nxt_edge(
         // zooming in on them to find the point where the edge
         // begins.
 
-        // Slide right and zoom out at the beginnings of mip-map
+        // Zoom out at the beginnings of mip-map
         // blocks until we encounter a change
-        while (1) {
-            const int level_scale_power =
-                (level + 1) * MipMapScalePower;
-            const uint64_t offset =
-                index >> level_scale_power;
-
-            // Check if we reached the last block at this
-            // level, or if there was a change in this block
-            if (offset >= _mip_map[level].length ||
-                (get_subsample(level, offset) &
-                    sig_mask))
-                break;
-
-            if ((offset & ~(~0 << MipMapScalePower)) == 0) {
-                // If we are now at the beginning of a
-                // higher level mip-map block ascend one
-                // level
-                if (level + 1 >= ScaleStepCount ||
-                    !_mip_map[level + 1].data)
-                    break;
-
+        while (index <= block_end) {
+            // continue only within current block
+            if (level == 0)
                 level++;
-            } else {
-                // Slide right to the beginning of the
-                // next mip map block
-                index = pow2_ceil(index + 1,
-                    level_scale_power);
-            }
-        }
-
-        // Zoom in, and slide right until we encounter a change,
-        // and repeat until we reach min_level
-        while (1) {
-            assert(_mip_map[level].data);
-
             const int level_scale_power =
-                (level + 1) * MipMapScalePower;
+                (level + 1) * ScalePower;
             const uint64_t offset =
-                index >> level_scale_power;
+                (index & ~(~0ULL << LeafBlockPower)) >> level_scale_power;
+            const uint64_t mask = ~0ULL << ((index & LevelMask[level]) >> (level*ScalePower));
+            uint64_t sample = *(lbp + LevelOffset[level] + offset) & mask;
 
-            // Check if we reached the last block at this
-            // level, or if there was a change in this block
-            if (offset >= _mip_map[level].length ||
-                (get_subsample(level, offset) &
-                    sig_mask)) {
-                // Zoom in unless we reached the minimum
-                // zoom
-                if (level == min_level)
-                    break;
-
-                level--;
+            // Check if there was a change in this block
+            if (sample) {
+                index = (index & (~0 << (level + 1)*ScalePower)) + (bsf_folded(sample) << level*ScalePower);
+                break;
             } else {
-                // Slide right to the beginning of the
-                // next mip map block
-                index = pow2_ceil(index + 1,
-                    level_scale_power);
+                index = ((index >> (level + 1)*ScalePower) + 1) << (level + 1)*ScalePower;
+                ++level;
             }
         }
 
-        // If individual samples within the limit of resolution,
-        // do a linear search for the next transition within the
-        // block
-        if (min_length < MipMapScaleFactor) {
-            for (; index < end; index++) {
-                const bool sample = (get_sample(index) &
-                    sig_mask) != 0;
-                if (sample != last_sample)
+        // Zoom in until we encounter a change,
+        // and repeat until we reach min_level
+        while ((index <= block_end) && (level > min_level)) {
+            // continue only within current block
+            level--;
+            const int level_scale_power =
+                (level + 1) * ScalePower;
+            const uint64_t offset =
+                (index & ~(~0ULL << LeafBlockPower)) >> level_scale_power;
+            const uint64_t mask = (level == 0 && last_sample) ?
+                        ~(~0ULL << ((index & LevelMask[level]) >> (level*ScalePower))) :
+                        ~0ULL << ((index & LevelMask[level]) >> (level*ScalePower));
+            uint64_t sample = (level == 0 && last_sample) ?
+                        *(lbp + LevelOffset[level] + offset) | mask :
+                        *(lbp + LevelOffset[level] + offset) & mask;
+
+            // Update the low level position of the change in this block
+            if (level == 0 ? sample ^ last : sample) {
+                index = (index & (~0 << (level + 1)*ScalePower)) + (bsf_folded(level == 0 ? sample ^ last : sample) << level*ScalePower);
+                if (level == min_level)
                     break;
             }
         }
     }
 
-    if (index >= end)
-        return false;
-    else
-        return true;
+    return (index <= block_end);
 }
 
-bool LogicSnapshot::get_pre_edge(
-    uint64_t &index, bool last_sample,
-    float min_length, int sig_index)
+bool LogicSnapshot::block_pre_edge(uint64_t *lbp, uint64_t &index, bool last_sample,
+                                   unsigned int min_level, int sig_index)
 {
-    unsigned int level;
-    bool fast_forward;
+    assert(min_level == 0);
 
-    assert(index < get_sample_count());
+    unsigned int level = min_level;
+    bool fast_forward = true;
+    const uint64_t last = last_sample ? ~0ULL : 0;
+    uint64_t block_start = index & ~LeafMask;
 
-    const unsigned int min_level = max((int)floorf(logf(min_length) /
-        LogMipMapScaleFactor) - 1, 0);
-    const uint64_t sig_mask = 1ULL << sig_index;
-
-    //----- Continue to search -----//
-    level = min_level;
-
-    // We cannot fast-forward if there is no mip-map data at
-    // at the minimum level.
-    fast_forward = (_mip_map[level].data != NULL);
-
-    if (min_length < MipMapScaleFactor)
+    //----- Search Next Edge Within Current LeafBlock -----//
+    if (level == 0)
     {
-        // Search individual samples down to the ending of
+        // Search individual samples down to the beginning of
         // the previous first level mip map block
-        uint64_t final_index;
-        if (index < (1 << MipMapScalePower))
-            final_index = 0;
-        else
-            final_index = pow2_ceil(index + 1, MipMapScalePower) - (1 << MipMapScalePower) - 1;
-
-        for (; index >= final_index; index--)
-        {
-            const bool sample =
-                (get_sample(index) & sig_mask) != 0;
-
-            // If there was a change we cannot fast forward
-            if (sample != last_sample) {
-                fast_forward = false;
-                index++;
-                return true;
-            }
-
+        const uint64_t offset = (index & ~(~0ULL << LeafBlockPower)) >> ScalePower;
+        const uint64_t mask = last_sample ? ~(~0ULL >> (Scale - (index & LevelMask[0]) - 1)) : ~0ULL >> (Scale - (index & LevelMask[0]) - 1);
+        uint64_t sample = last_sample ? *(lbp + offset) | mask : *(lbp + offset) & mask;
+        if (sample ^ last) {
+            index = (index & ~LevelMask[0]) + bsr64(last_sample ? ~sample : sample) + 1;
+            return true;
+        } else {
+            index &= ~LevelMask[0];
             if (index == 0)
                 return false;
-        }
-    }
-    else
-    {
-        // If resolution is less than a mip map block,
-        // round up to the beginning of the mip-map block
-        // for this level of detail
-        const unsigned int min_level_scale_power =
-            (level + 1) * MipMapScalePower;
-        if (index < (uint64_t)(1 << min_level_scale_power))
-            index = 0;
-        else
-            index = pow2_ceil(index, min_level_scale_power) - (1 << min_level_scale_power) - 1;
+            else
+                index--;
 
-        // We can fast forward only if there was no change
-        const bool sample =
-            (get_sample(index) & sig_mask) != 0;
-        if (last_sample != sample) {
-            fast_forward = false;
-            index++;
-            return true;
+            // using get_sample() to avoid out of block case
+            bool sample = get_sample(index, sig_index);
+            if (sample ^ last_sample) {
+                index++;
+                return true;
+            } else if (index < block_start) {
+                return false;
+            }
         }
-
-        if (index == 0)
-            return false;
     }
 
     if (fast_forward) {
@@ -540,96 +786,305 @@ bool LogicSnapshot::get_pre_edge(
         // zooming in on them to find the point where the edge
         // begins.
 
-        // Slide left and zoom out at the endings of mip-map
+        // Zoom out at the beginnings of mip-map
         // blocks until we encounter a change
-        while (1) {
-            const int level_scale_power =
-                (level + 1) * MipMapScalePower;
-            const uint64_t offset =
-                index >> level_scale_power;
-
-            // Check if we reached the first block at this
-            // level, or if there was a change in this block
-            if (offset == 0 ||
-                (get_subsample(level, offset) &
-                    sig_mask))
-                break;
-
-            if (((offset+1) & ~(~0 << MipMapScalePower)) == 0) {
-                // If we are now at the ending of a
-                // higher level mip-map block ascend one
-                // level
-                if (level + 1 >= ScaleStepCount ||
-                    !_mip_map[level + 1].data)
-                    break;
-
+        while (index > block_start) {
+            // continue only within current block
+            if (level == 0)
                 level++;
-            } else {
-                // Slide left to the beginning of the
-                // previous mip map block
-                index = pow2_ceil(index + 1,
-                    level_scale_power) - (1 << level_scale_power) - 1;
-            }
-        }
-
-        // Zoom in, and slide left until we encounter a change,
-        // and repeat until we reach min_level
-        while (1) {
-            assert(_mip_map[level].data);
-
             const int level_scale_power =
-                (level + 1) * MipMapScalePower;
+                (level + 1) * ScalePower;
             const uint64_t offset =
-                index >> level_scale_power;
+                (index & ~(~0ULL << LeafBlockPower)) >> level_scale_power;
+            const uint64_t mask = ~0ULL >> (Scale - ((index & LevelMask[level]) >> (level*ScalePower)) - 1);
+            uint64_t sample = *(lbp + LevelOffset[level] + offset) & mask;
 
-            // Check if we reached the first block at this
-            // level, or if there was a change in this block
-            if (offset == 0 ||
-                (get_subsample(level, offset) &
-                    sig_mask)) {
-                // Zoom in unless we reached the minimum
-                // zoom
-                if (level == min_level)
-                    break;
-
-                level--;
+            // Check if there was a change in this block
+            if (sample) {
+                index = (index & (~0 << (level + 1)*ScalePower)) +
+                        (bsr64(sample) << level*ScalePower) +
+                        ~(~0ULL << level*ScalePower);
+                break;
             } else {
-                // Slide left to the ending of the
-                // previous mip map block
-                index = pow2_ceil(index + 1,
-                    level_scale_power) - (1 << level_scale_power) - 1;
+                index = (index >> (level + 1)*ScalePower) << (level + 1)*ScalePower;
+                if (index == 0)
+                    return false;
+                else
+                    index--;
             }
         }
 
-        // If individual samples within the limit of resolution,
-        // do a linear search for the next transition within the
-        // block
-        if (min_length < MipMapScaleFactor) {
-            for (; index > 0; index--) {
-                const bool sample = (get_sample(index) &
-                    sig_mask) != 0;
-                if (sample != last_sample) {
+        // Zoom in until we encounter a change,
+        // and repeat until we reach min_level
+        while ((index >= block_start) && (level > min_level)) {
+            // continue only within current block
+            level--;
+            const int level_scale_power =
+                (level + 1) * ScalePower;
+            const uint64_t offset =
+                (index & ~(~0ULL << LeafBlockPower)) >> level_scale_power;
+            const uint64_t mask = (level == 0 && last_sample) ?
+                        ~(~0ULL >> (Scale - ((index & LevelMask[level]) >> (level*ScalePower)) - 1)) :
+                        ~0ULL >> (Scale - ((index & LevelMask[level]) >> (level*ScalePower)) - 1);
+            uint64_t sample = (level == 0 && last_sample) ?
+                        *(lbp + LevelOffset[level] + offset) | mask :
+                        *(lbp + LevelOffset[level] + offset) & mask;
+
+            // Update the low level position of the change in this block
+            if (level == 0 ? sample ^ last : sample) {
+                index = (index & (~0 << (level + 1)*ScalePower)) +
+                        (bsr64(level == 0 ? sample ^ last : sample) << level*ScalePower) +
+                        ~(~0ULL << level*ScalePower);
+                if (level == min_level) {
                     index++;
-                    return true;
+                    break;
                 }
+            } else {
+                index = (index & (~0 << (level + 1)*ScalePower));
+            }
+        }
+    }
+
+    return (index >= block_start) && (index != 0);
+}
+
+bool LogicSnapshot::pattern_search(int64_t start, int64_t end, bool nxt, int64_t &index,
+                    std::map<uint16_t, QString> pattern)
+{
+    int start_match_pos = pattern.size() - 1;
+    int end_match_pos = 0;
+    if (pattern.empty()) {
+        return true;
+    } else {
+        for (auto& iter:pattern) {
+            int char_index = 0;
+            for (auto& iter_char:iter.second) {
+                if (iter_char != 'X') {
+                   start_match_pos = min(start_match_pos, char_index);
+                   end_match_pos = max(end_match_pos, char_index);
+                }
+                char_index++;
+            }
+        }
+    }
+
+    if (start_match_pos > end_match_pos)
+        return true;
+
+    std::map<uint16_t, bool> cur_sample;
+    std::map<uint16_t, bool> exp_sample;
+    std::map<uint16_t, bool> cur_edge;
+    std::map<uint16_t, bool> exp_edge;
+    int nxt_match_pos = nxt ? start_match_pos : end_match_pos;
+    int cur_match_pos = nxt ? nxt_match_pos - 1 : nxt_match_pos + 1;
+    std::vector<uint64_t> exp_index;
+    bool find_edge;
+    typedef std::map<uint16_t, QString>::iterator it_type;
+    while(nxt ? index <= end : index >= start) {
+        // get expacted and current pattern
+        exp_index.clear();
+        for(it_type iterator = pattern.begin();
+            iterator != pattern.end(); iterator++) {
+            uint16_t ch_index = iterator->first;
+            if (!has_data(ch_index))
+                continue;
+            exp_index.push_back(index);
+            cur_sample[ch_index] = get_sample(index, ch_index);
+
+            if (iterator->second[nxt_match_pos] == '0') {
+                exp_sample[ch_index] = false;
+            } else if (iterator->second[nxt_match_pos] == '1') {
+                exp_sample[ch_index] = true;
+            } else if (iterator->second[nxt_match_pos] == 'X') {
+                exp_sample[ch_index] = cur_sample[ch_index];
+            } else if (iterator->second[nxt_match_pos] == 'F') {
+                exp_sample[ch_index] = false;
+                exp_edge[ch_index] = true;
+            } else if (iterator->second[nxt_match_pos] == 'R') {
+                exp_sample[ch_index] = true;
+                exp_edge[ch_index] = true;
+            } else if (iterator->second[nxt_match_pos] == 'C') {
+                exp_sample[ch_index] = cur_sample[ch_index];
+                exp_edge[ch_index] = true;
+            }
+
+            if (exp_edge.find(ch_index) != exp_edge.end()) {
+                if (index > start) {
+                    bool sample = get_sample(index - 1, ch_index);
+                    if (sample != cur_sample[ch_index])
+                        cur_edge[ch_index] = true;
+                }
+            }
+        }
+        cur_match_pos = nxt_match_pos;
+
+        // pattern compare
+        if (cur_edge == exp_edge &&
+            cur_sample == exp_sample)
+            nxt_match_pos += nxt ? 1 : -1;
+
+        if (nxt ? nxt_match_pos > end_match_pos :
+                  nxt_match_pos < start_match_pos) {
+            // all matched
+            return true;
+        } else if (nxt ? nxt_match_pos > cur_match_pos :
+                         nxt_match_pos < cur_match_pos) {
+            // one stage matched
+            int64_t sub_index = nxt ? index + 1 : index - 1;
+            while((nxt ? cur_match_pos++ < end_match_pos : cur_match_pos-- > start_match_pos) &&
+                  (nxt ? sub_index <= end : sub_index >= start)) {
+                // get expacted and current pattern
+                exp_index.clear();
+                for(it_type iterator = pattern.begin();
+                    iterator != pattern.end(); iterator++) {
+                    uint16_t ch_index = iterator->first;
+                    if (!has_data(ch_index))
+                        continue;
+                    exp_index.push_back(sub_index);
+                    cur_sample[ch_index] = get_sample(sub_index, ch_index);
+
+                    if (iterator->second[cur_match_pos] == '0') {
+                        exp_sample[ch_index] = false;
+                    } else if (iterator->second[cur_match_pos] == '1') {
+                        exp_sample[ch_index] = true;
+                    } else if (iterator->second[cur_match_pos] == 'X') {
+                        exp_sample[ch_index] = cur_sample[ch_index];
+                    } else if (iterator->second[cur_match_pos] == 'F') {
+                        exp_sample[ch_index] = false;
+                        exp_edge[ch_index] = true;
+                    } else if (iterator->second[cur_match_pos] == 'R') {
+                        exp_sample[ch_index] = true;
+                        exp_edge[ch_index] = true;
+                    } else if (iterator->second[cur_match_pos] == 'C') {
+                        exp_sample[ch_index] = cur_sample[ch_index];
+                        exp_edge[ch_index] = true;
+                    }
+
+                    if (exp_edge.find(ch_index) != exp_edge.end()) {
+                        if (sub_index > start) {
+                            bool sample = get_sample(sub_index - 1, ch_index);
+                            if (sample != cur_sample[ch_index])
+                                cur_edge[ch_index] = true;
+                        }
+                    }
+                }
+
+                // pattern compare
+                if (cur_edge != exp_edge ||
+                    cur_sample != exp_sample) {
+                    cur_match_pos = nxt_match_pos - 1;
+                    index += nxt ? 1 : -1;
+                    break;
+                } else {
+                    sub_index += nxt ? 1 : -1;
+                }
+            }
+
+            if (nxt ? cur_match_pos > end_match_pos :
+                    cur_match_pos < start_match_pos) {
+                index = nxt ? sub_index - 1 : index;
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            // not matched, find the next index for pattern compare
+            find_edge = true;
+            int seq = 0;
+            for(it_type iterator = pattern.begin();
+                iterator != pattern.end(); iterator++) {
+                uint16_t ch_index = iterator->first;
+                if (!has_data(ch_index))
+                    continue;
+                if (exp_edge.find(ch_index) != exp_edge.end() ||
+                    cur_sample[ch_index] != exp_sample[ch_index]) {
+                    do {
+                        if (nxt) {
+                            exp_index[seq] += 1;
+                            find_edge = get_nxt_edge(exp_index[seq], cur_sample[ch_index], end, 1, ch_index);
+                        } else {
+                            exp_index[seq] -= 1;
+                            cur_sample[ch_index] = get_sample(exp_index[seq], ch_index);
+                            find_edge = get_pre_edge(exp_index[seq], cur_sample[ch_index], 1, ch_index);
+                        }
+                        if (find_edge)
+                            cur_sample[ch_index] = get_sample(exp_index[seq], ch_index);
+                        else
+                            break;
+                    }while(cur_sample[ch_index] != exp_sample[ch_index]);
+                }
+                seq++;
+            }
+            if (find_edge) {
+                if (nxt)
+                    index = *max_element(exp_index.begin(), exp_index.end());
+                else
+                    index = *min_element(exp_index.begin(), exp_index.end());
+            } else {
+                break;
             }
         }
     }
     return false;
 }
 
-uint64_t LogicSnapshot::get_subsample(int level, uint64_t offset) const
+bool LogicSnapshot::has_data(int sig_index)
 {
-	assert(level >= 0);
-	assert(_mip_map[level].data);
-    return *(uint64_t*)((uint8_t*)_mip_map[level].data +
-		_unit_size * offset);
+    return get_ch_order(sig_index) != -1;
 }
 
-uint64_t LogicSnapshot::pow2_ceil(uint64_t x, unsigned int power)
+int LogicSnapshot::get_block_num()
 {
-	const uint64_t p = 1 << power;
-	return (x + p - 1) / p * p;
+    return (_ring_sample_count >> LeafBlockPower) +
+           ((_ring_sample_count & LeafMask) != 0);
+}
+
+uint64_t LogicSnapshot::get_block_size(int block_index)
+{
+    assert(block_index < get_block_num());
+
+    if (block_index < get_block_num() - 1) {
+        return LeafBlockSamples / 8;
+    } else {
+        if (_ring_sample_count % LeafBlockSamples == 0)
+            return LeafBlockSamples / 8;
+        else
+            return (_ring_sample_count % LeafBlockSamples) / 8;
+    }
+}
+
+uint8_t *LogicSnapshot::get_block_buf(int block_index, int sig_index, bool &sample)
+{
+    assert(block_index < get_block_num());
+
+    int order = get_ch_order(sig_index);
+    if (order == -1) {
+        sample = 0;
+        return NULL;
+    }
+    uint64_t index = block_index / RootScale;
+    uint8_t pos = block_index % RootScale;
+    uint8_t *lbp = (uint8_t *)_ch_data[order][index].lbp[pos];
+
+    if (lbp == NULL)
+        sample = (_ch_data[order][index].value & 1ULL << pos) != 0;
+
+    return lbp;
+}
+
+int LogicSnapshot::get_ch_order(int sig_index)
+{
+    uint16_t order = 0;
+    for (auto& iter:_ch_index) {
+        if (iter == sig_index)
+            break;
+        order++;
+    }
+
+    if (order >= _ch_index.size())
+        return -1;
+    else
+        return order;
 }
 
 } // namespace data

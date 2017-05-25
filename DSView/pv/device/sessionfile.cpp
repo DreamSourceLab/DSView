@@ -21,7 +21,7 @@
 
 #include "sessionfile.h"
 
-#include <libsigrok4DSL//libsigrok.h>
+#include <libsigrok4DSL/libsigrok.h>
 
 namespace pv {
 namespace device {

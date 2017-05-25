@@ -45,6 +45,10 @@ const QString Calibration::VOFF = QT_TR_NOOP(" VOFF");
 Calibration::Calibration(QWidget *parent) :
     DSDialog(parent)
 {
+#ifdef Q_OS_OSX
+    Qt::WindowFlags flags = windowFlags();
+    this->setWindowFlags(flags | Qt::Tool);
+#endif
     this->setFixedSize(400, 250);
     this->setWindowOpacity(0.7);
     this->setModal(false);
@@ -125,7 +129,7 @@ void Calibration::set_device(boost::shared_ptr<device::DevInst> dev_inst)
         gain_slider->setRange(-vgain_range/2, vgain_range/2);
         gain_slider->setValue(vgain - vgain_default);
         gain_slider->setObjectName(VGAIN+probe->index);
-        QString gain_string = "Channel" + QString::number(probe->index) + VGAIN;
+        QString gain_string = tr("Channel") + QString::number(probe->index) + VGAIN;
         QLabel *gain_label = new QLabel(gain_string, this);
         _flayout->addRow(gain_label, gain_slider);
         _slider_list.push_back(gain_slider);
@@ -147,7 +151,7 @@ void Calibration::set_device(boost::shared_ptr<device::DevInst> dev_inst)
         off_slider->setRange(0, voff_range);
         off_slider->setValue(voff);
         off_slider->setObjectName(VOFF+probe->index);
-        QString off_string = "Channel" + QString::number(probe->index) + VOFF;
+        QString off_string = tr("Channel") + QString::number(probe->index) + VOFF;
         QLabel *off_label = new QLabel(off_string, this);
         _flayout->addRow(off_label, off_slider);
         _slider_list.push_back(off_slider);
@@ -213,7 +217,8 @@ void Calibration::on_save()
     QProgressDialog dlg(tr("Save Calibration Result... It can take a while."),
                         tr("Cancel"),0,0,this,flags);
     dlg.setWindowModality(Qt::WindowModal);
-    dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
+    dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
+                       Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
     dlg.setCancelButton(NULL);
 
     QFutureWatcher<void> watcher;
@@ -239,7 +244,8 @@ void Calibration::on_reset()
     QProgressDialog dlg(tr("Reset Calibration Result... It can take a while."),
                         tr("Cancel"),0,0,this,flags);
     dlg.setWindowModality(Qt::WindowModal);
-    dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
+    dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
+                       Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
     dlg.setCancelButton(NULL);
 
     QFutureWatcher<void> watcher;

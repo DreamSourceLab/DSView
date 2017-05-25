@@ -26,6 +26,8 @@
 
 #include "snapshot.h"
 
+#include <QString>
+
 #include <utility>
 #include <vector>
 
@@ -43,19 +45,30 @@ namespace data {
 class LogicSnapshot : public Snapshot
 {
 private:
-	struct MipMapLevel
-	{
-		uint64_t length;
-		uint64_t data_length;
-		void *data;
-	};
+    static const int ScaleLevel = 4;
+    static const int ScalePower = 6;
+    static const uint64_t Scale = 1 << ScalePower;
+    static const int ScaleSize = Scale / 8;
+    static const int RootScalePower = ScalePower;
+    static const uint64_t RootScale = 1 << RootScalePower;
+    static const uint64_t LeafBlockSpace = (Scale + Scale*Scale +
+            Scale*Scale*Scale + Scale*Scale*Scale*Scale) / 8;
+    static const uint64_t LeafBlockSamples = 1 << ScaleLevel*ScalePower;
+    static const uint64_t LeafBlockPower = ScaleLevel*ScalePower;
+    static const uint64_t RootNodeSamples = LeafBlockSamples*RootScale;
+
+    static const uint64_t RootMask = ~(~0ULL << RootScalePower) << ScaleLevel*ScalePower;
+    static const uint64_t LeafMask = ~(~0ULL << ScaleLevel*ScalePower);
+    static const uint64_t LevelMask[ScaleLevel];
+    static const uint64_t LevelOffset[ScaleLevel];
 
 private:
-	static const unsigned int ScaleStepCount = 10;
-	static const int MipMapScalePower;
-	static const int MipMapScaleFactor;
-	static const float LogMipMapScaleFactor;
-	static const uint64_t MipMapDataUnit;
+    struct RootNode
+    {
+        uint64_t tog;
+        uint64_t value;
+        void *lbp[Scale];
+    };
 
 public:
     typedef std::pair<uint64_t, bool> EdgePair;
@@ -64,50 +77,116 @@ public:
     LogicSnapshot();
 
 	virtual ~LogicSnapshot();
-
+    void free_data();
     void clear();
     void init();
 
-    void first_payload(const sr_datafeed_logic &logic, uint64_t total_sample_count, unsigned int channel_num);
+    void first_payload(const sr_datafeed_logic &logic, uint64_t total_sample_count, GSList *channels);
 
 	void append_payload(const sr_datafeed_logic &logic);
 
-    uint8_t * get_samples(int64_t start_sample, int64_t end_sample) const;
+    const uint8_t * get_samples(uint64_t start_sample, uint64_t& end_sample, int sig_index);
 
-private:
-    void free_mipmap();
-	void reallocate_mipmap_level(MipMapLevel &m);
-	void append_payload_to_mipmap();
+    bool get_sample(uint64_t index, int sig_index);
 
-public:
-	/**
-	 * Parses a logic data snapshot to generate a list of transitions
-	 * in a time interval to a given level of detail.
-	 * @param[out] edges The vector to place the edges into.
-	 * @param[in] start The start sample index.
-	 * @param[in] end The end sample index.
-	 * @param[in] min_length The minimum number of samples that
-	 * can be resolved at this level of detail.
-	 * @param[in] sig_index The index of the signal.
-	 **/
-	void get_subsampled_edges(std::vector<EdgePair> &edges,
-		uint64_t start, uint64_t end,
-		float min_length, int sig_index);
+    void capture_ended();
+
+    bool get_display_edges(std::vector<std::pair<bool, bool>> &edges,
+                           std::vector<std::pair<uint16_t, bool>> &togs,
+                           uint64_t start, uint64_t end, uint16_t width,
+                           uint16_t max_togs, double pixels_offset,
+                           double min_length, uint16_t sig_index);
 
     bool get_nxt_edge(uint64_t &index, bool last_sample, uint64_t end,
-                      float min_length, int sig_index);
+                      double min_length, int sig_index);
 
     bool get_pre_edge(uint64_t &index, bool last_sample,
-                      float min_length, int sig_index);
+                      double min_length, int sig_index);
+
+    bool has_data(int sig_index);
+    int get_block_num();
+    uint64_t get_block_size(int block_index);
+    uint8_t *get_block_buf(int block_index, int sig_index, bool &sample);
+
+    bool pattern_search(int64_t start, int64_t end, bool nxt, int64_t& index,
+                        std::map<uint16_t, QString> pattern);
 
 private:
-	uint64_t get_subsample(int level, uint64_t offset) const;
+    int get_ch_order(int sig_index);
+    void calc_mipmap(unsigned int order, uint8_t index0, uint8_t index1, uint64_t samples);
 
-	static uint64_t pow2_ceil(uint64_t x, unsigned int power);
+    void append_cross_payload(const sr_datafeed_logic &logic);
+    void append_split_payload(const sr_datafeed_logic &logic);
+
+    bool block_nxt_edge(uint64_t *lbp, uint64_t &index, uint64_t block_end, bool last_sample,
+                        unsigned int min_level);
+
+    bool block_pre_edge(uint64_t *lbp, uint64_t &index, bool last_sample,
+                        unsigned int min_level, int sig_index);
+
+    inline uint64_t bsf_folded (uint64_t bb)
+    {
+        static const int lsb_64_table[64] = {
+            63, 30,  3, 32, 59, 14, 11, 33,
+            60, 24, 50,  9, 55, 19, 21, 34,
+            61, 29,  2, 53, 51, 23, 41, 18,
+            56, 28,  1, 43, 46, 27,  0, 35,
+            62, 31, 58,  4,  5, 49, 54,  6,
+            15, 52, 12, 40,  7, 42, 45, 16,
+            25, 57, 48, 13, 10, 39,  8, 44,
+            20, 47, 38, 22, 17, 37, 36, 26
+        };
+        unsigned int folded;
+        bb ^= bb - 1;
+        folded = (int) bb ^ (bb >> 32);
+        return lsb_64_table[folded * 0x78291ACF >> 26];
+    }
+
+    inline int bsr32(uint32_t bb)
+    {
+        static const char msb_256_table[256] = {
+            0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
+            4, 4, 4, 4, 4, 4, 4, 4,4, 4, 4, 4,4, 4, 4, 4,
+            5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+            6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+            6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+            7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+            7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+            7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+            7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+       };
+       int result = 0;
+
+       if (bb > 0xFFFF) {
+          bb >>= 16;
+          result += 16;
+       }
+       if (bb > 0xFF) {
+          bb >>= 8;
+          result += 8;
+       }
+
+       return (result + msb_256_table[bb]);
+    }
+
+    inline uint64_t bsr64(uint64_t bb)
+    {
+        const uint32_t hb = bb >> 32;
+        return hb ? 32 + bsr32((uint32_t)hb) : bsr32((uint32_t)bb);
+    }
 
 private:
-	struct MipMapLevel _mip_map[ScaleStepCount];
-	uint64_t _last_append_sample;
+    std::vector<std::vector<struct RootNode>> _ch_data;
+    uint64_t _block_num;
+    uint8_t _byte_fraction;
+    uint16_t _ch_fraction;
+    void *_src_ptr;
+    void *_dest_ptr;
+
+    std::vector<uint64_t> _sample_cnt;
+    std::vector<uint64_t> _block_cnt;
+    std::vector<uint64_t> _ring_sample_cnt;
+    std::vector<uint64_t> _last_sample;
 
 	friend class LogicSnapshotTest::Pow2;
 	friend class LogicSnapshotTest::Basic;

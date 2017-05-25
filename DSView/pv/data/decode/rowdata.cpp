@@ -39,6 +39,11 @@ RowData::RowData() :
 
 RowData::~RowData()
 {
+    clear();
+}
+
+void RowData::clear()
+{
     _annotations.clear();
 }
 
@@ -56,7 +61,10 @@ uint64_t RowData::get_max_annotation() const
 
 uint64_t RowData::get_min_annotation() const
 {
-    return _min_annotation;
+    if (_min_annotation == UINT64_MAX)
+        return 10;
+    else
+        return _min_annotation;
 }
 
 void RowData::get_annotation_subset(
@@ -68,6 +76,18 @@ void RowData::get_annotation_subset(
 		if ((*i).end_sample() > start_sample &&
 			(*i).start_sample() <= end_sample)
 			dest.push_back(*i);
+}
+
+uint64_t RowData::get_annotation_index(uint64_t start_sample) const
+{
+    uint64_t index = 0;
+    for (vector<Annotation>::const_iterator i = _annotations.begin();
+        i != _annotations.end(); i++) {
+        if ((*i).start_sample() > start_sample)
+            break;
+        index++;
+    }
+    return index;
 }
 
 bool RowData::push_annotation(const Annotation &a)

@@ -20,7 +20,7 @@
  */
 
 extern "C" {
-#include <libsigrokdecode/libsigrokdecode.h>
+#include <libsigrokdecode4DSL/libsigrokdecode.h>
 }
 
 #include <vector>

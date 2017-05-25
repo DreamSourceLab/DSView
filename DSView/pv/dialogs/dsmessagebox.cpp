@@ -36,7 +36,8 @@ DSMessageBox::DSMessageBox(QWidget *parent) :
     QDialog(parent),
     _moving(false)
 {
-    setWindowFlags(Qt::FramelessWindowHint | Qt::Dialog);
+    setWindowFlags(Qt::FramelessWindowHint | Qt::Dialog | Qt::WindowSystemMenuHint |
+                   Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
     setAttribute(Qt::WA_TranslucentBackground);
     _main = new QWidget(this);
     QVBoxLayout *mlayout = new QVBoxLayout(_main);
@@ -50,7 +51,8 @@ DSMessageBox::DSMessageBox(QWidget *parent) :
     _main->setGraphicsEffect(bodyShadow);
 
     _msg = new QMessageBox(this);
-    _msg->setWindowFlags(Qt::FramelessWindowHint | Qt::Widget);
+    _msg->setWindowFlags(Qt::FramelessWindowHint | Qt::Widget | Qt::WindowSystemMenuHint |
+                         Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
 
     _titlebar = new toolbars::TitleBar(false, this);
     _titlebar->setTitle(tr("Message"));

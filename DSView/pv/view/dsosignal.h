@@ -100,7 +100,7 @@ public:
     boost::shared_ptr<pv::data::Dso> dso_data() const;
     void set_viewport(pv::view::Viewport *viewport);
 
-	void set_scale(float scale);
+    void set_scale(int height);
     float get_scale();
 
     /**
@@ -115,7 +115,7 @@ public:
     bool go_vDialNext();
     bool go_hDialPre(bool setted);
     bool go_hDialNext(bool setted);
-    bool go_hDialCur();
+    bool update_capture();
     uint64_t get_vDialValue() const;
     uint64_t get_hDialValue() const;
     uint16_t get_vDialSel() const;
@@ -148,12 +148,12 @@ public:
      */
     int get_zero_vpos();
     double get_zero_vrate();
-    double get_zero_value();
+    double get_hw_offset();
     /**
      * Sets the mid-Y position of this signal.
      */
     void set_zero_vpos(int pos);
-    void set_zero_vrate(double rate);
+    void set_zero_vrate(double rate, bool force_update);
     void update_offset();
 
     /**
@@ -179,8 +179,6 @@ public:
      * @param right the x-coordinate of the right edge of the signal.
      **/
     void paint_fore(QPainter &p, int left, int right);
-
-    const std::vector< std::pair<uint64_t, bool> > cur_edges() const;
 
     QRect get_view_rect() const;
 
@@ -234,7 +232,7 @@ private:
     int _trig_value;
     double _trig_delta;
     double _zero_vrate;
-    float _zero_value;
+    float cur_hw_offset;
 
     uint8_t _max;
     uint8_t _min;

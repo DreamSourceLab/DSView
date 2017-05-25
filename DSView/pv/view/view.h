@@ -80,7 +80,7 @@ public:
 
 	static const QSizeF LabelPadding;
 
-    static const int WellPixelsPerSample = 10;
+    static const int WellSamplesPerPixel = 2048;
     static constexpr double MaxViewRate = 1.0;
     static const int MaxPixelsPerSample = 100;
 
@@ -97,14 +97,15 @@ public:
 	double scale() const;
 
 	/**
-	 * Returns the time offset of the left edge of the view in
-	 * seconds.
+     * Returns the pixels offset of the left edge of the view
 	 */
-	double offset() const;
+    int64_t offset() const;
 	int v_offset() const;
 
-    double get_min_offset();
-    double get_max_offset();
+    int64_t get_min_offset();
+    int64_t get_max_offset();
+
+    void capture_init(bool instant);
 
 	void zoom(double steps);
 	void zoom(double steps, int offset);
@@ -114,7 +115,7 @@ public:
 	 * @param scale The new view scale in seconds per pixel.
 	 * @param offset The view time offset in seconds.
 	 */
-	void set_scale_offset(double scale, double offset);
+    void set_scale_offset(double scale, int64_t offset);
     void set_preScale_preOffset();
 
     std::vector< boost::shared_ptr<Trace> > get_traces(int type);
@@ -157,8 +158,9 @@ public:
 
     Cursor* get_trig_cursor();
     Cursor* get_search_cursor();
+    bool get_search_hit();
 
-    void set_search_pos(uint64_t search_pos);
+    void set_search_pos(uint64_t search_pos, bool hit);
 
     uint64_t get_search_pos();
 
@@ -174,8 +176,6 @@ public:
     uint64_t get_cursor_samples(int index);
     QString get_cm_time(int index);
     QString get_cm_delta(int index1, int index2);
-
-    void on_cursor_moved();
 
     void on_state_changed(bool stop);
 
@@ -193,19 +193,25 @@ public:
 
     void viewport_update();
 
+    bool get_capture_status(bool &triggered, int &progress);
+    void set_capture_status();
+
 signals:
 	void hover_point_changed();
 
-    void traces_moved();
-
     void cursor_update();
 
+    void cursor_moving();
     void cursor_moved();
 
     void measure_updated();
 
+    void prgRate(int progress);
+
+    void update_device_list();
+
 private:
-	void get_scroll_layout(double &length, double &offset) const;
+    void get_scroll_layout(int64_t &length, int64_t &offset) const;
 	
 	void update_scroll();
 
@@ -228,11 +234,14 @@ public slots:
     void signals_changed();
     void data_updated();
     void update_scale_offset();
-    void show_region(uint64_t start, uint64_t end);
+    void show_region(uint64_t start, uint64_t end, bool keep);
     // -- calibration
     void update_calibration();
     void hide_calibration();
     void status_clear();
+    void repeat_unshow();
+    // -- repeat
+    void repeat_show();
 
 private slots:
 
@@ -244,8 +253,6 @@ private slots:
     void on_traces_moved();
 
     void header_updated();
-
-    void receive_header();
 
     void receive_trigger(quint64 trig_pos);
     void set_trig_pos(int percent);
@@ -259,6 +266,8 @@ private slots:
     void on_measure_updated();
 
     void splitterMoved(int pos, int index);
+
+    void mode_changed();
 
 private:
 
@@ -279,32 +288,29 @@ private:
 
 	/// The view time scale in seconds per pixel.
 	double _scale;
-        double _preScale;
-        double _maxscale;
-        double _minscale;
+    double _preScale;
+    double _maxscale;
+    double _minscale;
 
-	/// The view time offset in seconds.
-        double _offset;
-        double _preOffset;
-
-        int _spanY;
-        int _signalHeight;
-
-        bool _updating_scroll;
+    /// The pixels offset of the left edge of the view
+    int64_t _offset;
+    int64_t _preOffset;
+    int _spanY;
+    int _signalHeight;
+    bool _updating_scroll;
 
 	bool _show_cursors;
+    std::list<Cursor*> _cursorList;
+    Cursor *_trig_cursor;
+    bool _show_trig_cursor;
+    Cursor *_search_cursor;
+    bool _show_search_cursor;
+    uint64_t _search_pos;
+    bool _search_hit;
 
-        std::list<Cursor*> _cursorList;
-
-        Cursor *_trig_cursor;
-        bool _show_trig_cursor;
-        Cursor *_search_cursor;
-        bool _show_search_cursor;
-        uint64_t _search_pos;
-
-        QPoint _hover_point;
-    	dialogs::Calibration *_cali;
-        bool _dso_auto;
+    QPoint _hover_point;
+    dialogs::Calibration *_cali;
+    bool _dso_auto;
 };
 
 } // namespace view

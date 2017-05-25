@@ -108,7 +108,7 @@ int MathTrace::view_mode() const
     return _view_mode;
 }
 
-void MathTrace::set_view_mode(int mode)
+void MathTrace::set_view_mode(unsigned int mode)
 {
     assert(mode < sizeof(FFT_ViewMode)/sizeof(FFT_ViewMode[0]));
     _view_mode = mode;
