@@ -83,7 +83,7 @@ GVariant* DevInst::get_config(const sr_channel *ch, const sr_channel_group *grou
 	return data;
 }
 
-bool DevInst::set_config(const sr_channel *ch, const sr_channel_group *group, int key, GVariant *data)
+bool DevInst::set_config(sr_channel *ch, sr_channel_group *group, int key, GVariant *data)
 {
 	assert(_owner);
 	sr_dev_inst *const sdi = dev_inst();

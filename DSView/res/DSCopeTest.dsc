@@ -11,6 +11,7 @@
     "Trigger margin": "8",
     "Trigger slope": "0",
     "Trigger source": "0",
+    "Version": 2,
     "channel": [
         {
             "colour": "#eeb211",
@@ -22,7 +23,7 @@
             "type": 10001,
             "vdiv": 1000,
             "vfactor": 1,
-            "zeroPos": 0.5
+            "zeroPos": 0.4
         },
         {
             "colour": "#009925",
@@ -34,7 +35,9 @@
             "type": 10001,
             "vdiv": 1000,
             "vfactor": 1,
-            "zeroPos": 0.5
+            "zeroPos": 0.6
         }
+    ],
+    "decoder": [
     ]
 }

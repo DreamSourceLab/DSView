@@ -37,7 +37,7 @@ typedef struct {
     uint64_t start_samplenum;
     float itercnt;
     uint8_t **inbuf;
-    uint8_t *inbuf_const;
+    const uint8_t *inbuf_const;
     uint64_t samplenum;
     PyObject *sample;
 

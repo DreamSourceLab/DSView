@@ -615,7 +615,7 @@ void ProtocolDock::export_table_view()
 
 void ProtocolDock::nav_table_view()
 {
-    uint64_t row_index;
+    uint64_t row_index = 0;
     pv::data::DecoderModel *decoder_model = _session.get_decoder_model();
     boost::shared_ptr<pv::data::DecoderStack> decoder_stack = decoder_model->getDecoderStack();
     if (decoder_stack) {

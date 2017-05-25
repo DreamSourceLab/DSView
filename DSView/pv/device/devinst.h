@@ -63,7 +63,7 @@ public:
 
     GVariant* get_config(const sr_channel *ch, const sr_channel_group *group, int key);
 
-    bool set_config(const sr_channel *ch, const sr_channel_group *group, int key, GVariant *data);
+    bool set_config(sr_channel *ch, sr_channel_group *group, int key, GVariant *data);
 
 	GVariant* list_config(const sr_channel_group *group, int key);
 

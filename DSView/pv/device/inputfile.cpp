@@ -48,6 +48,7 @@ sr_dev_inst* InputFile::dev_inst() const
 
 void InputFile::use(SigSession *owner) throw(QString)
 {
+    (void)owner;
 	assert(!_input);
 
     // only *.dsl file is valid

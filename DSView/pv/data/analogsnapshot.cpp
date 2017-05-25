@@ -338,7 +338,7 @@ void AnalogSnapshot::append_payload_to_envelope_levels()
 
 int AnalogSnapshot::get_ch_order(int sig_index)
 {
-    int order = 0;
+    uint16_t order = 0;
     for (auto& iter:_ch_index) {
         if (iter == sig_index)
             break;

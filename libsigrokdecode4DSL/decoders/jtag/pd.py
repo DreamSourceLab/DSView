@@ -3,6 +3,14 @@
 ##
 ## Copyright (C) 2012-2015 Uwe Hermann <uwe@hermann-uwe.de>
 ##
+## Version: 
+## Modified by Shiqiu Nie(369614718@qq.com)
+## Date: 2017-01-11
+## Descript: 
+##  1. 2017-01-10 Fixed TDI/TDO data decode, when JTAG TAP run into 
+##                SHIFT-IR/SHIFT-DR status,the first bit is not a valid bit.
+##  2. 2017-01-11 Fixed decode when shift only one bit.
+##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
 ## the Free Software Foundation; either version 2 of the License, or
@@ -22,10 +30,8 @@ import sigrokdecode as srd
 
 '''
 OUTPUT_PYTHON format:
-
 Packet:
 [<ptype>, <pdata>]
-
 <ptype>:
  - 'NEW STATE': <pdata> is the new state of the JTAG state machine.
    Valid values: 'TEST-LOGIC-RESET', 'RUN-TEST/IDLE', 'SELECT-DR-SCAN',
@@ -36,7 +42,6 @@ Packet:
  - 'IR TDO': Bitstring that was clocked out of the IR register.
  - 'DR TDI': Bitstring that was clocked into the DR register.
  - 'DR TDO': Bitstring that was clocked out of the DR register.
-
 All bitstrings are a list consisting of two items. The first is a sequence
 of '1' and '0' characters (the right-most character is the LSB. Example:
 '01110001', where 1 is the LSB). The second item is a list of ss/es values
@@ -104,6 +109,8 @@ class Decoder(srd.Decoder):
         self.saved_item = None
         self.first = True
         self.first_bit = True
+        self.bits_cnt = 0
+        self.data_ready = False
 
     def start(self):
         self.out_python = self.register(srd.OUTPUT_PYTHON)
@@ -179,55 +186,96 @@ class Decoder(srd.Decoder):
 
         # Upon SHIFT-IR/SHIFT-DR collect the current TDI/TDO values.
         if self.state.startswith('SHIFT-'):
-            if self.first_bit:
-                self.ss_bitstring = self.samplenum
-                self.first_bit = False
-            else:
-                self.putx([16, [str(self.bits_tdi[0])]])
-                self.putx([17, [str(self.bits_tdo[0])]])
-                # Use self.samplenum as ES of the previous bit.
-                self.bits_samplenums_tdi[0][1] = self.samplenum
-                self.bits_samplenums_tdo[0][1] = self.samplenum
+            #if self.first_bit:
+                #self.ss_bitstring = self.samplenum
+            #    self.first_bit = False
+                
+            #else:
+            if self.bits_cnt > 0:
+                if self.bits_cnt == 1:
+                    self.ss_bitstring = self.samplenum
 
-            self.bits_tdi.insert(0, tdi)
-            self.bits_tdo.insert(0, tdo)
-
+                if self.bits_cnt > 1:
+                    self.putx([16, [str(self.bits_tdi[0])]])
+                    self.putx([17, [str(self.bits_tdo[0])]])
+                    # Use self.samplenum as ES of the previous bit.
+                    self.bits_samplenums_tdi[0][1] = self.samplenum
+                    self.bits_samplenums_tdo[0][1] = self.samplenum
+                    
+                self.bits_tdi.insert(0, tdi)
+                self.bits_tdo.insert(0, tdo)
+                  
             # Use self.samplenum as SS of the current bit.
             self.bits_samplenums_tdi.insert(0, [self.samplenum, -1])
             self.bits_samplenums_tdo.insert(0, [self.samplenum, -1])
+                    
+            self.bits_cnt = self.bits_cnt + 1
 
         # Output all TDI/TDO bits if we just switched from SHIFT-* to EXIT1-*.
         if self.oldstate.startswith('SHIFT-') and \
            self.state.startswith('EXIT1-'):
-
-            self.es_bitstring = self.samplenum
-
-            t = self.state[-2:] + ' TDI'
-            b = ''.join(map(str, self.bits_tdi))
-            h = ' (0x%x' % int('0b' + b, 2) + ')'
-            s = t + ': ' + b + h + ', ' + str(len(self.bits_tdi)) + ' bits'
-            self.putx_bs([18, [s]])
-            self.bits_samplenums_tdi[0][1] = self.samplenum # ES of last bit.
-            self.putp_bs([t, [b, self.bits_samplenums_tdi]])
-            self.putx([16, [str(self.bits_tdi[0])]]) # Last bit.
-            self.bits_tdi = []
-            self.bits_samplenums_tdi = []
-
-            t = self.state[-2:] + ' TDO'
-            b = ''.join(map(str, self.bits_tdo))
-            h = ' (0x%x' % int('0b' + b, 2) + ')'
-            s = t + ': ' + b + h + ', ' + str(len(self.bits_tdo)) + ' bits'
-            self.putx_bs([19, [s]])
-            self.bits_samplenums_tdo[0][1] = self.samplenum # ES of last bit.
-            self.putp_bs([t, [b, self.bits_samplenums_tdo]])
-            self.putx([17, [str(self.bits_tdo[0])]]) # Last bit.
-            self.bits_tdo = []
-            self.bits_samplenums_tdo = []
+			
+            #self.es_bitstring = self.samplenum
+            if self.bits_cnt > 0:
+                if self.bits_cnt == 1:  # Only shift one bit
+                    self.ss_bitstring = self.samplenum
+                    self.bits_tdi.insert(0, tdi)
+                    self.bits_tdo.insert(0, tdo)
+                    ## Use self.samplenum as SS of the current bit.
+                    self.bits_samplenums_tdi.insert(0, [self.samplenum, -1])
+                    self.bits_samplenums_tdo.insert(0, [self.samplenum, -1])
+                else:
+                    ### ----------------------------------------------------------------
+                    self.putx([16, [str(self.bits_tdi[0])]])
+                    self.putx([17, [str(self.bits_tdo[0])]])
+                    ### Use self.samplenum as ES of the previous bit.
+                    self.bits_samplenums_tdi[0][1] = self.samplenum
+                    self.bits_samplenums_tdo[0][1] = self.samplenum	
+                    
+                    self.bits_tdi.insert(0, tdi)
+                    self.bits_tdo.insert(0, tdo)
+                    
+                    ## Use self.samplenum as SS of the current bit.
+                    self.bits_samplenums_tdi.insert(0, [self.samplenum, -1])
+                    self.bits_samplenums_tdo.insert(0, [self.samplenum, -1])
+                    ## ----------------------------------------------------------------
+                
+                self.data_ready = True
 
             self.first_bit = True
+            self.bits_cnt = 0
+        if self.oldstate.startswith('EXIT'):# and \
+           #self.state.startswith('PAUSE-'):
+            if self.data_ready:
+                self.data_ready = False
+                self.es_bitstring = self.samplenum
+                t = self.state[-2:] + ' TDI'
+                b = ''.join(map(str, self.bits_tdi))
+                h = ' (0x%X' % int('0b' + b, 2) + ')'
+                s = t + ': ' + h + ', ' + str(len(self.bits_tdi)) + ' bits' #b +
+                self.putx_bs([18, [s]])
+                self.bits_samplenums_tdi[0][1] = self.samplenum # ES of last bit.
+                self.putp_bs([t, [b, self.bits_samplenums_tdi]])
+                self.putx([16, [str(self.bits_tdi[0])]]) # Last bit.
+                self.bits_tdi = []
+                self.bits_samplenums_tdi = []
 
-            self.ss_bitstring = self.samplenum
+                t = self.state[-2:] + ' TDO'
+                b = ''.join(map(str, self.bits_tdo))
+                h = ' (0x%X' % int('0b' + b, 2) + ')'
+                s = t + ': ' + h + ', ' + str(len(self.bits_tdo)) + ' bits' #+ b 
+                self.putx_bs([19, [s]])
+                self.bits_samplenums_tdo[0][1] = self.samplenum # ES of last bit.
+                self.putp_bs([t, [b, self.bits_samplenums_tdo]])
+                self.putx([17, [str(self.bits_tdo[0])]]) # Last bit.
+                self.bits_tdo = []
+                self.bits_samplenums_tdo = []
 
+            #self.first_bit = True
+            #self.bits_cnt = 0
+
+            #self.ss_bitstring = self.samplenum
+        
         self.ss_item = self.samplenum
 
     def decode(self, ss, es, data):

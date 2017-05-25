@@ -20,7 +20,7 @@
  */
 
 #include <libsigrok4DSL/libsigrok.h>
-#include <libsigrokdecode/libsigrokdecode.h>
+#include <libsigrokdecode4DSL/libsigrokdecode.h>
 
 #include "decoder.h"
 

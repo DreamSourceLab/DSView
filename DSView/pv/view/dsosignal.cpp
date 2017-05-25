@@ -211,7 +211,6 @@ void DsoSignal::set_enable(bool enable)
     set_vDialActive(false);
     _dev_inst->set_config(_probe, NULL, SR_CONF_EN_CH,
                           g_variant_new_boolean(enable));
-    int ch_num = _view->session().get_ch_num(SR_CHANNEL_DSO);
 
     if (running) {
         update_capture();
@@ -425,15 +424,15 @@ bool DsoSignal::load_settings()
     GVariant* gvar;
 
     // -- enable
-    bool enable;
-    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_EN_CH);
-    if (gvar != NULL) {
-        enable = g_variant_get_boolean(gvar);
-        g_variant_unref(gvar);
-    } else {
-        qDebug() << "ERROR: config_get SR_CONF_EN_CH failed.";
-        return false;
-    }
+//    bool enable;
+//    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_EN_CH);
+//    if (gvar != NULL) {
+//        enable = g_variant_get_boolean(gvar);
+//        g_variant_unref(gvar);
+//    } else {
+//        qDebug() << "ERROR: config_get SR_CONF_EN_CH failed.";
+//        return false;
+//    }
 
     // dso channel bits
     gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_DSO_BITS);

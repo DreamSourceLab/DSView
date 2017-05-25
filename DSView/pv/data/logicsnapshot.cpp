@@ -165,7 +165,7 @@ void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total
             sr_channel *const probe = (sr_channel*)l->data;
             if (probe->type == SR_CHANNEL_LOGIC && probe->enabled) {
                 std::vector<struct RootNode> root_vector;
-                for (int j = 0; j < rootnode_size; j++) {
+                for (uint64_t j = 0; j < rootnode_size; j++) {
                     struct RootNode rn;
                     rn.tog = 0;
                     rn.value = 0;
@@ -250,11 +250,16 @@ void LogicSnapshot::append_cross_payload(
 
     // bit align
     while (((_ch_fraction != 0) || (_byte_fraction != 0)) && (len != 0)) {
+        uint8_t *dp_tmp = (uint8_t *)_dest_ptr;
+        uint8_t *sp_tmp = (uint8_t *)_src_ptr;
         do {
-            *(uint8_t *)_dest_ptr++ = *(uint8_t *)_src_ptr++;
+            //*(uint8_t *)_dest_ptr++ = *(uint8_t *)_src_ptr++;
+            *dp_tmp++ = *sp_tmp++;
             _byte_fraction = (_byte_fraction + 1) % ScaleSize;
             len--;
         } while ((_byte_fraction != 0) && (len != 0));
+        _dest_ptr = dp_tmp;
+        _src_ptr = sp_tmp;
         if (_byte_fraction == 0) {
             const uint64_t index0 = _ring_sample_count / RootNodeSamples;
             const uint64_t index1 = (_ring_sample_count >> LeafBlockPower) % RootScale;
@@ -283,7 +288,7 @@ void LogicSnapshot::append_cross_payload(
         uint64_t pre_index0 = _ring_sample_count / RootNodeSamples;
         uint64_t pre_index1 = (_ring_sample_count >> LeafBlockPower) % RootScale;
         uint64_t pre_offset = (_ring_sample_count % LeafBlockSamples) / Scale;
-        uint64_t *src_ptr;
+        uint64_t *src_ptr = NULL;
         uint64_t *dest_ptr;
         int order = 0;
         const uint64_t align_size = len / ScaleSize / _channel_num;
@@ -345,15 +350,20 @@ void LogicSnapshot::append_cross_payload(
         uint64_t offset = (_ring_sample_count % LeafBlockSamples) / 8;
         _dest_ptr = (uint8_t *)_ch_data[_ch_fraction][index0].lbp[index1] + offset;
 
+        uint8_t *dp_tmp = (uint8_t *)_dest_ptr;
+        uint8_t *sp_tmp = (uint8_t *)_src_ptr;
         while(len-- != 0) {
-            *(uint8_t *)_dest_ptr++ = *(uint8_t *)_src_ptr++;
+            //*(uint8_t *)_dest_ptr++ = *(uint8_t *)_src_ptr++;
+            *dp_tmp++ = *sp_tmp++;
             if (++_byte_fraction == ScaleSize) {
                 _ch_fraction = (_ch_fraction + 1) % _channel_num;
                 _byte_fraction = 0;
-                _dest_ptr = (uint8_t *)_ch_data[_ch_fraction][index0].lbp[index1] + offset;
+                //_dest_ptr = (uint8_t *)_ch_data[_ch_fraction][index0].lbp[index1] + offset;
+                dp_tmp = (uint8_t *)_ch_data[_ch_fraction][index0].lbp[index1] + offset;
             }
         }
-        _dest_ptr = (uint8_t *)_dest_ptr + _byte_fraction;
+        //_dest_ptr = (uint8_t *)_dest_ptr + _byte_fraction;
+        _dest_ptr = dp_tmp + _byte_fraction;
     }
 }
 
@@ -363,7 +373,7 @@ void LogicSnapshot::append_split_payload(
     assert(logic.format == LA_SPLIT_DATA);
 
     uint64_t samples = logic.length * 8;
-    int order = logic.order;
+    uint16_t order = logic.order;
     assert(order < _ch_data.size());
 
     if (_sample_cnt[order] >= _total_sample_count)
@@ -459,9 +469,7 @@ const uint8_t *LogicSnapshot::get_samples(uint64_t start_sample, uint64_t &end_s
                                      int sig_index)
 {
     //assert(data);
-    assert(start_sample >= 0);
     assert(start_sample < get_sample_count());
-    assert(end_sample >= 0);
     assert(end_sample < get_sample_count());
     assert(start_sample <= end_sample);
 
@@ -530,9 +538,9 @@ bool LogicSnapshot::get_display_edges(std::vector<std::pair<bool, bool> > &edges
         bool has_edge = get_nxt_edge(index, last_sample, end, 0, sig_index);
 
         // calc the edge position
-        int gap = (index / min_length) - pixels_offset;
+        int64_t gap = (index / min_length) - pixels_offset;
         index = max((uint64_t)ceil((floor(index/min_length) + 1) * min_length), index + 1);
-        while(gap > edges.size() && edges.size() < width)
+        while(gap > (int64_t)edges.size() && edges.size() < width)
             edges.push_back(pair<bool, bool>(false, last_sample));
 
         if (index > end)
@@ -576,7 +584,7 @@ bool LogicSnapshot::get_nxt_edge(
     bool edge_hit = false;
 
     // linear search for the next transition on the root level
-    for (int64_t i = root_index; !edge_hit && (index <= end) && i < _ch_data[order].size(); i++) {
+    for (int64_t i = root_index; !edge_hit && (index <= end) && i < (int64_t)_ch_data[order].size(); i++) {
         uint64_t cur_mask = (~0ULL << root_pos);
         do {
             uint64_t cur_tog = _ch_data[order][i].tog & cur_mask;
@@ -739,7 +747,6 @@ bool LogicSnapshot::block_pre_edge(uint64_t *lbp, uint64_t &index, bool last_sam
 
     unsigned int level = min_level;
     bool fast_forward = true;
-    bool within_block = true;
     const uint64_t last = last_sample ? ~0ULL : 0;
     uint64_t block_start = index & ~LeafMask;
 
@@ -1067,7 +1074,7 @@ uint8_t *LogicSnapshot::get_block_buf(int block_index, int sig_index, bool &samp
 
 int LogicSnapshot::get_ch_order(int sig_index)
 {
-    int order = 0;
+    uint16_t order = 0;
     for (auto& iter:_ch_index) {
         if (iter == sig_index)
             break;

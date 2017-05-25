@@ -367,7 +367,6 @@ void Viewport::paintProgress(QPainter &p)
         p.setBrush((timer_cnt % 3) == 2 ? Trace::dsLightBlue : Trace::dsGray);
         p.drawEllipse(cenRightPos, trigger_radius, trigger_radius);
 
-        sr_status status;
         bool triggered;
         if (_view.session().get_capture_status(triggered, captured_progress)){
             p.setPen(Trace::dsLightBlue);

@@ -156,6 +156,7 @@ SRD_API int srd_inst_option_set(struct srd_decoder_inst *di,
 		/* Not harmful even if we used the default. */
 		g_hash_table_remove(options, sdo->id);
 	}
+    Py_DECREF(py_di_options);
 	if (g_hash_table_size(options) != 0)
 		srd_warn("Unknown options specified for '%s'", di->inst_id);
 

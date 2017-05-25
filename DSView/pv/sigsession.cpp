@@ -21,7 +21,7 @@
  */
 
 #ifdef ENABLE_DECODE
-#include <libsigrokdecode/libsigrokdecode.h>
+#include <libsigrokdecode4DSL/libsigrokdecode.h>
 #endif
 
 #include "sigsession.h"
@@ -861,7 +861,8 @@ void SigSession::feed_in_trigger(const ds_trigger_pos &trigger_pos)
 {
     _hw_replied = true;
     if (_dev_inst->dev_inst()->mode != DSO) {
-        if (_trigger_flag = (trigger_pos.status & 0x01)) {
+        _trigger_flag = (trigger_pos.status & 0x01);
+        if (_trigger_flag) {
             _trigger_pos = trigger_pos.real_pos;
             receive_trigger(_trigger_pos);
         }

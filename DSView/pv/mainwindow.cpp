@@ -22,7 +22,7 @@
 
 
 #ifdef ENABLE_DECODE
-#include <libsigrokdecode/libsigrokdecode.h>
+#include <libsigrokdecode4DSL/libsigrokdecode.h>
 #include "dock/protocoldock.h"
 #endif
 
@@ -819,6 +819,8 @@ bool MainWindow::load_session(QString name)
         ss.load_decoders(_protocol_widget, sessionObj["decoder"].toArray());
     }
     #endif
+
+    return true;
 }
 
 bool MainWindow::store_session(QString name)

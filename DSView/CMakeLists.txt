@@ -34,7 +34,7 @@ project(DSView)
 
 option(DISABLE_WERROR "Build without -Werror" TRUE)
 option(ENABLE_SIGNALS "Build with UNIX signals" TRUE)
-option(ENABLE_DECODE "Build with libsigrokdecode" TRUE)
+option(ENABLE_DECODE "Build with libsigrokdecode4DSL" TRUE)
 option(ENABLE_COTIRE "Enable cotire" FALSE)
 option(ENABLE_TESTS "Enable unit tests" FALSE)
 option(STATIC_PKGDEPS_LIBS "Statically link to (pkg-config) libraries" FALSE)
@@ -65,7 +65,7 @@ list(APPEND PKGDEPS
 	"libzip >= 0.10"
 )
 if(ENABLE_DECODE)
-	list(APPEND PKGDEPS "libsigrokdecode>=0.3.0")
+	list(APPEND PKGDEPS "libsigrokdecode4DSL>=0.4.0")
 endif()
 
 find_package(PkgConfig)
@@ -148,7 +148,7 @@ set(DSView_SOURCES
     pv/view/header.cpp 
     pv/view/cursor.cpp 
     pv/view/analogsignal.cpp 
-    pv/prop/binding/binding_deviceoptions.cpp 
+    pv/prop/binding/deviceoptions.cpp 
     pv/toolbars/trigbar.cpp 
     pv/toolbars/filebar.cpp 
     pv/dock/protocoldock.cpp 
@@ -267,9 +267,9 @@ set(DSView_FORMS
 )
 
 set(DSView_RESOURCES
-	DSView.qrc
+    DSView.qrc
+    darkstyle/style.qrc
 )
-
 
 if(ENABLE_DECODE)
 	list(APPEND DSView_SOURCES
@@ -399,7 +399,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "/usr/local/lib")
 # Install the executable.
 install(TARGETS ${PROJECT_NAME} DESTINATION bin/)
 install(DIRECTORY res DESTINATION share/${PROJECT_NAME})
-install(DIRECTORY ../libsigrokdecode4DSL/decoders DESTINATION share/${PROJECT_NAME})
 install(FILES icons/logo.png DESTINATION share/${PROJECT_NAME} RENAME logo.png)
 install(FILES DreamSourceLab.rules DESTINATION /etc/udev/rules.d/)
 install(FILES DSView.desktop DESTINATION /usr/share/applications/)

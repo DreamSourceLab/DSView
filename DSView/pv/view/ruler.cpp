@@ -646,7 +646,7 @@ void Ruler::hover_point_changed()
 	update();
 }
 
-const double Ruler::get_min_period() const
+double Ruler::get_min_period() const
 {
     return _min_period / MinPeriodScale;
 }

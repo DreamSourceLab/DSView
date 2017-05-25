@@ -23,7 +23,7 @@
 #ifndef DSVIEW_PV_PROTOCOLDOCK_H
 #define DSVIEW_PV_PROTOCOLDOCK_H
 
-#include <libsigrokdecode/libsigrokdecode.h>
+#include <libsigrokdecode4DSL/libsigrokdecode.h>
 
 #include <QDockWidget>
 #include <QPushButton>

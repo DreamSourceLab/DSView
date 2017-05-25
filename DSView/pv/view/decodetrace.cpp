@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 extern "C" {
-#include <libsigrokdecode/libsigrokdecode.h>
+#include <libsigrokdecode4DSL/libsigrokdecode.h>
 }
 
 #include <extdef.h>
@@ -495,7 +495,7 @@ void DecodeTrace::draw_annotation(const pv::data::decode::Annotation &a,
 	if (start > right + DrawPadding || end < left - DrawPadding)
 		return;
 
-    if (_decoder_stack->get_mark_index() == (a.start_sample()+ a.end_sample())/2) {
+    if (_decoder_stack->get_mark_index() == (int64_t)(a.start_sample()+ a.end_sample())/2) {
         p.setPen(Signal::dsBlue);
         int xpos = (start+end)/2;
         int ypos = get_y()+_totalHeight*0.5 + 1;

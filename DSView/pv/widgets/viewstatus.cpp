@@ -32,8 +32,8 @@ namespace pv {
 namespace widgets {
 
 ViewStatus::ViewStatus(SigSession &session, QWidget *parent) :
-    _session(session),
-    QWidget(parent)
+    QWidget(parent),
+    _session(session)
 {
 }
 

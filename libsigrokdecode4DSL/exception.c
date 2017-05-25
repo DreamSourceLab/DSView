@@ -92,7 +92,7 @@ SRD_PRIV void srd_exception_catch(char **error, const char *format, ...)
 
 	py_etype = py_evalue = py_etraceback = py_mod = py_func = NULL;
 
-	va_start(args, error);
+    va_start(args, format);
 	msg = g_strdup_vprintf(format, args);
 	va_end(args);
 

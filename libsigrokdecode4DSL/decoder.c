@@ -156,21 +156,21 @@ static void decoder_free(struct srd_decoder *dec)
 	if (!dec)
 		return;
 
-	Py_XDECREF(dec->py_dec);
-	Py_XDECREF(dec->py_mod);
+    Py_XDECREF(dec->py_dec);
+    Py_XDECREF(dec->py_mod);
 
-	g_slist_free_full(dec->options, &decoder_option_free);
-	g_slist_free_full(dec->binary, (GDestroyNotify)&g_strfreev);
-	g_slist_free_full(dec->annotation_rows, &annotation_row_free);
-	g_slist_free_full(dec->annotations, (GDestroyNotify)&g_strfreev);
-	g_slist_free_full(dec->opt_channels, &channel_free);
-	g_slist_free_full(dec->channels, &channel_free);
+    g_slist_free_full(dec->options, &decoder_option_free);
+    g_slist_free_full(dec->binary, (GDestroyNotify)&g_strfreev);
+    g_slist_free_full(dec->annotation_rows, &annotation_row_free);
+    g_slist_free_full(dec->annotations, (GDestroyNotify)&g_strfreev);
+    g_slist_free_full(dec->opt_channels, &channel_free);
+    g_slist_free_full(dec->channels, &channel_free);
 
-	g_free(dec->license);
-	g_free(dec->desc);
-	g_free(dec->longname);
-	g_free(dec->name);
-	g_free(dec->id);
+    g_free(dec->license);
+    g_free(dec->desc);
+    g_free(dec->longname);
+    g_free(dec->name);
+    g_free(dec->id);
 
 	g_free(dec);
 }
@@ -365,7 +365,7 @@ static int get_annotations(struct srd_decoder *dec)
 	char **annpair;
 	ssize_t i;
     int ann_type = 7;
-    int j;
+    unsigned int j;
 
 	if (!PyObject_HasAttrString(dec->py_dec, "annotations"))
 		return SRD_OK;
@@ -636,20 +636,11 @@ SRD_PRIV long srd_decoder_apiver(const struct srd_decoder *d)
  */
 SRD_API int srd_decoder_load(const char *module_name)
 {
-	PyObject *py_basedec, *py_method, *py_attr, *py_annlist, *py_ann;
-	PyObject *py_bin_classes, *py_bin_class, *py_ann_rows, *py_ann_row;
-	PyObject *py_ann_classes, *py_long;
+    PyObject *py_basedec;
 	struct srd_decoder *d;
 	long apiver;
 	int is_subclass;
 	const char *fail_txt;
-	int ret, i, j;
-	char **ann, **bin, *ann_row_id, *ann_row_desc;
-	struct srd_channel *pdch;
-	GSList *l, *ann_classes;
-	struct srd_decoder_annotation_row *ann_row;
-    int ann_type = 7;
-    int ann_len;
 	
 	if (!srd_check_init())
 		return SRD_ERR;

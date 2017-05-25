@@ -572,7 +572,7 @@ void SamplingBar::update_sample_count_selector()
     const uint64_t *elements = NULL;
     gsize num_elements;
     bool stream_mode = false;
-    uint64_t hw_depth;
+    uint64_t hw_depth = 0;
     uint64_t sw_depth;
 
     if (_updating_sample_count)

@@ -53,7 +53,7 @@ public:
 
     // get current value
     uint64_t get_value();
-    bool set_value(uint64_t value);
+    void set_value(uint64_t value);
 
     // set/get factor
     void set_factor(uint64_t factor);

@@ -80,7 +80,7 @@ QWidget* Binding::get_property_form(QWidget *parent,
 }
 
 std::map< boost::shared_ptr<Property>,
-          GVariant* >& Binding::get_property_value() const
+          GVariant* > Binding::get_property_value() const
 {
     std::map < boost::shared_ptr<Property>,
             GVariant* > pvalue;
@@ -89,6 +89,8 @@ std::map< boost::shared_ptr<Property>,
         assert(p);
         pvalue[p] = p->get_value();
     }
+
+    return pvalue;
 }
 
 QString Binding::print_gvariant(GVariant *const gvar)

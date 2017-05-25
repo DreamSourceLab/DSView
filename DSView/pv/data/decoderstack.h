@@ -21,7 +21,7 @@
 
 #ifndef DSVIEW_PV_DATA_DECODERSTACK_H
 #define DSVIEW_PV_DATA_DECODERSTACK_H
-#include <libsigrokdecode/libsigrokdecode.h>
+#include <libsigrokdecode4DSL/libsigrokdecode.h>
 
 #include <list>
 
@@ -145,8 +145,6 @@ public:
     int64_t get_mark_index() const;
 
 private:
-    boost::optional<uint64_t> wait_for_data() const;
-
     void decode_data(const uint64_t decode_start, const uint64_t decode_end, srd_session *const session);
 
 	void decode_proc();

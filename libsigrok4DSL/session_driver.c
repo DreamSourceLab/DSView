@@ -211,7 +211,10 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
                     packet.payload = &logic;
                     logic.length = ret;
                     logic.format = (vdev->version == 2) ? LA_SPLIT_DATA : LA_CROSS_DATA;
-                    logic.index = probe->index;
+                    if (probe)
+                        logic.index = probe->index;
+                    else
+                        logic.index = 0;
                     logic.order = vdev->cur_channel;
 
                     if (vdev->version == 1) {

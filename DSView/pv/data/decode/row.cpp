@@ -20,7 +20,7 @@
 
 #include "row.h"
 
-#include <libsigrokdecode/libsigrokdecode.h>
+#include <libsigrokdecode4DSL/libsigrokdecode.h>
 
 namespace pv {
 namespace data {

@@ -30,7 +30,7 @@
 #include <QObject>
 
 #include <libsigrok4DSL/libsigrok.h>
-#include <libsigrokdecode/libsigrokdecode.h>
+#include <libsigrokdecode4DSL/libsigrokdecode.h>
 
 namespace pv {
 

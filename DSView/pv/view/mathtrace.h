@@ -88,7 +88,7 @@ public:
     std::vector<int> get_dbv_ranges();
 
     int view_mode() const;
-    void set_view_mode(int mode);
+    void set_view_mode(unsigned int mode);
     std::vector<QString> get_view_modes_support();
 
     const boost::shared_ptr<pv::data::MathStack>& get_math_stack() const;

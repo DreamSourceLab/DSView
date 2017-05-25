@@ -86,7 +86,7 @@ public:
     void set_sample_interval(int interval);
 
     const std::vector<double> get_fft_spectrum() const;
-    const double get_fft_spectrum(uint64_t index) const;
+    double get_fft_spectrum(uint64_t index);
 
     void calc_fft();
 

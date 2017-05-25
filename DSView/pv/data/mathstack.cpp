@@ -157,12 +157,13 @@ const std::vector<double> MathStack::get_fft_spectrum() const
         return empty;
 }
 
-const double MathStack::get_fft_spectrum(uint64_t index) const
+double MathStack::get_fft_spectrum(uint64_t index)
 {
+    double ret = -1;
     if (_math_state == Stopped && index < _power_spectrum.size())
-        return _power_spectrum[index];
-    else
-        return -1;
+        ret = _power_spectrum[index];
+
+    return ret;
 }
 
 void MathStack::calc_fft()

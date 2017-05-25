@@ -445,7 +445,7 @@ void MeasureDock::show_all_coursor()
     cursor_dlg.setWindowFlags(Qt::FramelessWindowHint | Qt::Popup | Qt::WindowSystemMenuHint |
                               Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
     int index = 0;
-    QHBoxLayout *hlayout;
+    QHBoxLayout *hlayout = NULL;
     QVBoxLayout *vlayout = new QVBoxLayout(&cursor_dlg);
     for(std::list<Cursor*>::iterator i = _view.get_cursorList().begin();
         i != _view.get_cursorList().end(); i++) {
@@ -634,7 +634,7 @@ void MeasureDock::update_probe_selector(QComboBox *selector)
 void MeasureDock::del_cursor()
 {
     int del_index = 0;
-    Cursor* cursor;
+    Cursor* cursor = NULL;
     for (QVector <QToolButton *>::const_iterator i = _cursor_del_btn_vec.begin();
          i != _cursor_del_btn_vec.end(); i++) {
         if ((*i)->isChecked()) {
@@ -648,7 +648,8 @@ void MeasureDock::del_cursor()
         del_index++;
     }
 
-    _view.del_cursor(cursor);
+    if (cursor)
+        _view.del_cursor(cursor);
     if (_view.get_cursorList().empty())
         _view.show_cursors(false);
 

@@ -126,7 +126,7 @@ SRD_PRIV int py_dictitem_as_str(PyObject *py_obj, const char *key,
 SRD_PRIV int py_dictitem_to_int(PyObject *py_obj, const char *key)
 {
     PyObject *py_value;
-    PyObject *py_long;
+    long type;
 
     if (!PyDict_Check(py_obj)) {
         srd_dbg("Object is not a dictionary.");
@@ -137,8 +137,10 @@ SRD_PRIV int py_dictitem_to_int(PyObject *py_obj, const char *key)
         srd_dbg("Dictionary has no attribute '%s'.", key);
         return -1;
     }
-    py_long = PyLong_FromUnicodeObject(py_value, 10);
-    return PyLong_AsLong(py_long);
+
+    type = PyLong_Check(py_value) ? PyLong_AsLong(py_value) : -1;
+
+    return type;
 }
 
 /**

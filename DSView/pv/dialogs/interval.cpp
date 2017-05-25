@@ -27,8 +27,8 @@ namespace pv {
 namespace dialogs {
 
 Interval::Interval(SigSession &session, QWidget *parent) :
-    _session(session),
     DSDialog(parent),
+    _session(session),
     _button_box(QDialogButtonBox::Ok,
         Qt::Horizontal, this)
 {

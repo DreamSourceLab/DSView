@@ -120,7 +120,6 @@ MainFrame::MainFrame(DeviceManager &device_manager,
     _layout->addWidget(_bottom_right, 2, 2);
 
     connect(&_timer, SIGNAL(timeout()), this, SLOT(unfreezing()));
-    connect(_mainWindow, SIGNAL(prgRate(int)), this, SLOT(setTaskbarProgress(int)));
     //readSettings();
 }
 

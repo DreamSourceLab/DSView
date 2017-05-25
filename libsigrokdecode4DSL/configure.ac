@@ -21,9 +21,9 @@
 AC_PREREQ([2.63])
 
 # libsigrokdecode package version number (NOT the same as shared lib version!).
-AC_INIT([libsigrokdecode], [0.4.0],
-	[sigrok-devel@lists.sourceforge.net], [libsigrokdecode],
-	[http://www.sigrok.org])
+AC_INIT([libsigrokdecode4DSL], [0.4.0],
+	[support@dreamsourcelab.com], [libsigrokdecode4DSL],
+	[http://www.dreamsourcelab.com])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([autostuff])
 AC_CONFIG_HEADERS([config.h version.h])
@@ -133,7 +133,7 @@ PKG_CHECK_MODULES([TESTS], [$SRD_PKGLIBS_TESTS glib-2.0 $SRD_PKGLIBS])
 
 srd_glib_version=`$PKG_CONFIG --modversion glib-2.0 2>&AS_MESSAGE_LOG_FD`
 
-AC_CONFIG_FILES([Makefile libsigrokdecode.pc])
+AC_CONFIG_FILES([Makefile libsigrokdecode4DSL.pc])
 
 AC_OUTPUT
 

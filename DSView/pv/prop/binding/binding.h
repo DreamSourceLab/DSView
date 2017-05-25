@@ -56,7 +56,7 @@ public:
         bool auto_commit = false) const;
 
     std::map< boost::shared_ptr<Property>,
-              GVariant* >& get_property_value() const;
+              GVariant* > get_property_value() const;
 
     static QString print_gvariant(GVariant *const gvar);
 

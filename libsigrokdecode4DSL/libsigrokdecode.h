@@ -43,7 +43,7 @@ extern "C" {
  * The correct way to get/use the libsigrokdecode API functions is:
  *
  * @code{.c}
- *   #include <libsigrokdecode/libsigrokdecode.h>
+ *   #include <libsigrokdecode4DSL/libsigrokdecode.h>
  * @endcode
  */
 

@@ -457,18 +457,6 @@ uint64_t DecoderStack::get_max_sample_count() const
 	return max_sample_count;
 }
 
-boost::optional<uint64_t> DecoderStack::wait_for_data() const
-{
-    //unique_lock<mutex> input_lock(_input_mutex);
-	while(!boost::this_thread::interruption_requested() &&
-		!_frame_complete && (uint64_t)_samples_decoded >= _sample_count)
-        //_input_cond.wait(input_lock);
-	return boost::make_optional(
-		!boost::this_thread::interruption_requested() &&
-		((uint64_t)_samples_decoded < _sample_count || !_frame_complete),
-		_sample_count);
-}
-
 void DecoderStack::decode_data(
     const uint64_t decode_start, const uint64_t decode_end,
     srd_session *const session)

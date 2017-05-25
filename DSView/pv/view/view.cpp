@@ -81,8 +81,8 @@ View::View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     _preOffset(0),
 	_updating_scroll(false),
 	_show_cursors(false),
-    _hover_point(-1, -1),
     _search_hit(false),
+    _hover_point(-1, -1),
     _dso_auto(true)
 {
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
@@ -633,7 +633,6 @@ void View::signals_changed()
     uint8_t max_height = MaxHeightUnit;
     vector< boost::shared_ptr<Trace> > time_traces;
     vector< boost::shared_ptr<Trace> > fft_traces;
-    int bits = 8;
 
     BOOST_FOREACH(const boost::shared_ptr<Trace> t, get_traces(ALL_VIEW)) {
         if (_trace_view_map[t->get_type()] == TIME_VIEW)
@@ -977,14 +976,17 @@ uint64_t View::get_cursor_samples(int index)
 {
     assert(index < (int)_cursorList.size());
 
+    uint64_t ret = 0;
     int curIndex = 0;
     for (list<Cursor*>::iterator i = _cursorList.begin();
          i != _cursorList.end(); i++) {
         if (index == curIndex) {
-            return (*i)->index();
+            ret = (*i)->index();
         }
         curIndex++;
     }
+
+    return ret;
 }
 
 void View::set_measure_en(int enable)
@@ -1009,9 +1011,9 @@ QRect View::get_view_rect()
         BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
             return s->get_view_rect();
         }
-    } else {
-        return _viewcenter->rect();
     }
+
+    return _viewcenter->rect();
 }
 
 int View::get_view_width()

@@ -219,15 +219,17 @@ void StoreSession::save_proc(shared_ptr<data::Snapshot> snapshot)
             }
         }
     } else {
-        int ch_type;
+        int ch_type = -1;
         BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
             ch_type = s->get_type();
             break;
         }
-        uint64_t size = snapshot->get_sample_count() * snapshot->get_channel_num();
-        uint8_t *buf = (uint8_t *)snapshot->get_data();
-        sr_session_append(_file_name.toLocal8Bit().data(), buf, size,
-                          0, 0, ch_type, 1);
+        if (ch_type != -1) {
+            uint64_t size = snapshot->get_sample_count() * snapshot->get_channel_num();
+            uint8_t *buf = (uint8_t *)snapshot->get_data();
+            sr_session_append(_file_name.toLocal8Bit().data(), buf, size,
+                              0, 0, ch_type, 1);
+        }
     }
 
 	progress_updated();
@@ -276,7 +278,7 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
 
     /* metadata */
     fprintf(meta, "capturefile = data\n");
-    fprintf(meta, "total samples = %llu\n", snapshot->get_sample_count());
+    fprintf(meta, "total samples = %" PRIu64 "\n", snapshot->get_sample_count());
 
     if (sdi->mode == DSO)
         fprintf(meta, "total probes = %d\n", g_slist_length(sdi->channels));
@@ -300,7 +302,7 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
         gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_TIMEBASE);
         if (gvar != NULL) {
             uint64_t tmp_u64 = g_variant_get_uint64(gvar);
-            fprintf(meta, "hDiv = %llu\n", tmp_u64);
+            fprintf(meta, "hDiv = %" PRIu64 "\n", tmp_u64);
             g_variant_unref(gvar);
         }
         gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_DSO_BITS);
@@ -312,7 +314,7 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
     } else if (sdi->mode == LOGIC) {
         fprintf(meta, "trigger time = %lld\n", _session.get_trigger_time().toMSecsSinceEpoch());
     }
-    fprintf(meta, "trigger pos = %llu\n", _session.get_trigger_pos());
+    fprintf(meta, "trigger pos = %" PRIu64 "\n", _session.get_trigger_pos());
 
     probecnt = 1;
     for (l = sdi->channels; l; l = l->next) {
@@ -325,19 +327,19 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
             if (sdi->mode == DSO) {
                 fprintf(meta, " enable%d = %d\n", probe->index, probe->enabled);
                 fprintf(meta, " coupling%d = %d\n", probe->index, probe->coupling);
-                fprintf(meta, " vDiv%d = %d\n", probe->index, probe->vdiv);
+                fprintf(meta, " vDiv%d = %" PRIu64 "\n", probe->index, probe->vdiv);
                 fprintf(meta, " vFactor%d = %d\n", probe->index, probe->vfactor);
                 fprintf(meta, " vPos%d = %lf\n", probe->index, probe->vpos);
                 fprintf(meta, " vTrig%d = %d\n", probe->index, probe->trig_value);
                 if (sr_status_get(sdi, &status, 0, 0) == SR_OK) {
                     if (probe->index == 0) {
-                        fprintf(meta, " period%d = %llu\n", probe->index, status.ch0_period);
-                        fprintf(meta, " pcnt%d = %lu\n", probe->index, status.ch0_pcnt);
+                        fprintf(meta, " period%d = %" PRIu64 "\n", probe->index, status.ch0_period);
+                        fprintf(meta, " pcnt%d = %" PRIu32 "\n", probe->index, status.ch0_pcnt);
                         fprintf(meta, " max%d = %d\n", probe->index, status.ch0_max);
                         fprintf(meta, " min%d = %d\n", probe->index, status.ch0_min);
                     } else {
-                        fprintf(meta, " period%d = %llu\n", probe->index, status.ch1_period);
-                        fprintf(meta, " pcnt%d = %lu\n", probe->index, status.ch1_pcnt);
+                        fprintf(meta, " period%d = %" PRIu64 "\n", probe->index, status.ch1_period);
+                        fprintf(meta, " pcnt%d = %" PRIu32 "\n", probe->index, status.ch1_pcnt);
                         fprintf(meta, " max%d = %d\n", probe->index, status.ch1_max);
                         fprintf(meta, " min%d = %d\n", probe->index, status.ch1_min);
                     }
@@ -531,7 +533,7 @@ void StoreSession::export_proc(shared_ptr<data::Snapshot> snapshot)
                 progress_updated();
             }
         }
-    } else if (channel_type = SR_CHANNEL_DSO) {
+    } else if (channel_type == SR_CHANNEL_DSO) {
         _unit_count = snapshot->get_sample_count();
         unsigned char* datat = (unsigned char*)snapshot->get_data();
         GString *data_out;
@@ -844,7 +846,7 @@ void StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_arra
 
 double StoreSession::get_double(GVariant *var)
 {
-    double val;
+    double val = 0;
     const GVariantType *const type = g_variant_get_type(var);
     assert(type);
 

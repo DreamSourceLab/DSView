@@ -137,7 +137,7 @@ uint64_t dslDial::get_value()
     return _value[_sel];
 }
 
-bool dslDial::set_value(uint64_t value)
+void dslDial::set_value(uint64_t value)
 {
     assert(_value.contains(value));
     _sel = _value.indexOf(value, 0);

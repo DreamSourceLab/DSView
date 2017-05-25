@@ -78,10 +78,12 @@ QJsonArray File::get_decoders()
     QJsonArray dec_array;
     QJsonParseError error;
 
-    if (archive = zip_open(_path.toLocal8Bit().data(), 0, &ret)) {
+    archive = zip_open(_path.toLocal8Bit().data(), 0, &ret);
+    if (archive) {
         /* read "decoders" */
         if (zip_stat(archive, "decoders", 0, &zs) != -1) {
-            if (dec_file = (char *)g_try_malloc(zs.size)) {
+            dec_file = (char *)g_try_malloc(zs.size);
+            if (dec_file) {
                 zf = zip_fopen_index(archive, zs.index, 0);
                 zip_fread(zf, dec_file, zs.size);
                 zip_fclose(zf);

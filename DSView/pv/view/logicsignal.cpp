@@ -20,7 +20,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <libsigrokdecode/libsigrokdecode.h>
+#include <libsigrokdecode4DSL/libsigrokdecode.h>
 
 #include <extdef.h>
 
@@ -359,7 +359,7 @@ bool LogicSignal::measure(const QPointF &p, uint64_t &index0, uint64_t &index1, 
 
 bool LogicSignal::edges(const QPointF &p, uint64_t start, uint64_t &rising, uint64_t &falling) const
 {
-    uint64_t index, end;
+    uint64_t end;
     const float gap = abs(p.y() - get_y());
     if (gap < get_totalHeight() * 0.5) {
         end = _data->samplerate() * _view->scale() * (_view->offset() + p.x());
