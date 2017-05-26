@@ -9,8 +9,10 @@ CMakeFiles
 CMakeCache.txt
 *.cxx_parameters
 autom4te.cache
-*.cmake
 !cmake_modules
+CPackConfig.cmake
+CPackSourceConfig.cmake
+cmake_install.cmake
 Makefile
 *.cxx
 config.guess
