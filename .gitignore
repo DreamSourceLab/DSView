@@ -2,7 +2,6 @@
 *~
 *.Plo
 *.pc
-*.pc.in
 *.Po
 *.la
 *.lo
@@ -43,9 +42,5 @@ moc_*.cpp_parameters
 
 libsigrok4DSL/version.h
 
-libusbx-1.0.18/doc/doxygen.cfg
-libusbx-1.0.18/m4/
-
 DSView-prj
-libsigrokdecode
 build*
