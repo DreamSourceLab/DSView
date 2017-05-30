@@ -48,9 +48,8 @@ Fedora (18, 19):
    python3-devel qt-devel boost-devel check libfftw3-devel
 
 Arch:
- $ pacman -S git gcc make cmake autoconf autoconf-archive automake libtool \
-   pkg-config glib2 glibmm libzip libusb check 
-   python boost qt5 qt5-base qt5-svg libfftw3
+ $ pacman -S base-devel git cmake glib2 libzip libusb check 
+   python boost qt5 fftw
 
 
 Step3: Building

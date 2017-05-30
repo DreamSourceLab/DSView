@@ -2400,21 +2400,8 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
     libusb_handle_events_timeout_completed(drvc->sr_ctx->libusb_ctx, &tv, &completed);
 
     if (devc->status == DSL_FINISH) {
-        if (libusb_try_lock_events(drvc->sr_ctx->libusb_ctx) == 0) {
-            if (libusb_event_handling_ok(drvc->sr_ctx->libusb_ctx)) {
-                usb = ((struct sr_dev_inst *)devc->cb_data)->conn;
-
-                /* Stop GPIF acquisition */
-                if ((ret = command_stop_acquisition (usb->devhdl)) != SR_OK)
-                    sr_err("%s: Sent acquisition stop command failed!", __func__);
-                else
-                    sr_info("%s: Sent acquisition stop command!", __func__);
-
-                /* Remove polling */
-                remove_sources(devc);
-            }
-            libusb_unlock_events(drvc->sr_ctx->libusb_ctx);
-        }
+        /* Remove polling */
+        remove_sources(devc);
     }
 
     return TRUE;
@@ -2661,6 +2648,7 @@ static int dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data)
 
     struct DSL_context *devc;
     struct sr_usb_dev_inst *usb;
+    int ret;
 
     devc = sdi->priv;
     usb = sdi->conn;
@@ -2668,6 +2656,12 @@ static int dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data)
     if (!devc->abort) {
         devc->abort = TRUE;
         command_wr_reg(usb->devhdl, bmFORCE_RDY, EEWP_ADDR);
+    } else if (devc->status == DSL_FINISH) {
+    	/* Stop GPIF acquisition */
+        if ((ret = command_stop_acquisition (usb->devhdl)) != SR_OK)
+            sr_err("%s: Sent acquisition stop command failed!", __func__);
+        else
+            sr_info("%s: Sent acquisition stop command!", __func__);
     }
 
     return SR_OK;
