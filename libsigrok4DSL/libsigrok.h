@@ -114,7 +114,7 @@ enum {
 
 #define DS_MAX_TRIG_PERCENT 90
 
-#define DS_RES_PATH "/usr/local/share/DSView/res/"
+extern char DS_RES_PATH[256];
 
 /** libsigrok loglevels. */
 enum {

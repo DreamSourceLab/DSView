@@ -390,7 +390,7 @@ if(ENABLE_COTIRE)
 	include(cotire)
 	cotire(${PROJECT_NAME})
 endif()
-set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "/usr/local/lib")
+set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 
 #===============================================================================
 #= Installation

@@ -46,3 +46,4 @@ libsigrok4DSL/version.h
 
 DSView-prj
 build*
+share

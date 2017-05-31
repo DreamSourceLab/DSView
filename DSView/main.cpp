@@ -42,6 +42,8 @@
 
 #include "config.h"
 
+char DS_RES_PATH[256];
+
 void usage()
 {
 	fprintf(stdout,
@@ -112,6 +114,20 @@ int main(int argc, char *argv[])
 		return 1;
 	} else if (argc - optind == 1)
 		open_file = argv[argc - 1];
+
+    // Initialise DS_RES_PATH
+    QDir dir(QCoreApplication::applicationDirPath());
+    if (dir.cd("..") &&
+        dir.cd("share") &&
+        dir.cd(QApplication::applicationName()) &&
+        dir.cd("res")) {
+        QString res_dir = dir.absolutePath() + "/";
+        QByteArray str_tmp = res_dir.toLocal8Bit();
+        strcpy(DS_RES_PATH, str_tmp.data());
+    } else {
+        qDebug() << "ERROR: config files don't exist.";
+        return 1;
+    }
 
 	// Initialise libsigrok
 	if (sr_init(&sr_ctx) != SR_OK) {
