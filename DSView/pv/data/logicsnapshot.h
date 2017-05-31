@@ -45,11 +45,11 @@ namespace data {
 class LogicSnapshot : public Snapshot
 {
 private:
-    static const int ScaleLevel = 4;
-    static const int ScalePower = 6;
+    static const uint64_t ScaleLevel = 4;
+    static const uint64_t ScalePower = 6;
     static const uint64_t Scale = 1 << ScalePower;
-    static const int ScaleSize = Scale / 8;
-    static const int RootScalePower = ScalePower;
+    static const uint64_t ScaleSize = Scale / 8;
+    static const uint64_t RootScalePower = ScalePower;
     static const uint64_t RootScale = 1 << RootScalePower;
     static const uint64_t LeafBlockSpace = (Scale + Scale*Scale +
             Scale*Scale*Scale + Scale*Scale*Scale*Scale) / 8;

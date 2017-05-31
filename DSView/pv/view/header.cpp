@@ -163,8 +163,9 @@ void Header::mousePressEvent(QMouseEvent *event)
         _view.get_traces(ALL_VIEW));
     int action;
     const bool instant = _view.session().get_instant();
-    if (instant && _view.session().get_capture_state() == SigSession::Running)
+    if (instant && _view.session().get_capture_state() == SigSession::Running) {
         return;
+    }
 
 	if (event->button() & Qt::LeftButton) {
 		_mouse_down_point = event->pos();

@@ -627,8 +627,9 @@ void DecoderStack::decode_proc()
         _error_message = QString::fromLocal8Bit(error);
 
 	// Destroy the session
-    if (error)
+    if (error) {
         g_free(error);
+    }
 	srd_session_destroy(session);
 
     _decode_state = Stopped;
@@ -657,8 +658,9 @@ void DecoderStack::annotation_callback(srd_proto_data *pdata, void *decoder)
 
     //lock_guard<mutex> lock(d->_output_mutex);
 
-    if (d->_no_memory)
+    if (d->_no_memory) {
         return;
+    }
 
 	const Annotation a(pdata);
 

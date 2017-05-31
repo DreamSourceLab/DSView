@@ -194,8 +194,9 @@ void Ruler::paintEvent(QPaintEvent*)
 	draw_hover_mark(p);
 
     // Draw cursor selection
-    if (_cursor_sel_visible || _cursor_go_visible)
+    if (_cursor_sel_visible || _cursor_go_visible) {
         draw_cursor_sel(p);
+    }
 
 	p.end();
 }

@@ -72,9 +72,10 @@ QWidget* Double::get_widget(QWidget *parent, bool auto_commit)
 		g_variant_unref(value);
 	}
 
-    if (auto_commit)
+    if (auto_commit) {
         connect(_spin_box, SIGNAL(valueChanged(double)),
             this, SLOT(on_value_changed(double)));
+    }
 
 	return _spin_box;
 }

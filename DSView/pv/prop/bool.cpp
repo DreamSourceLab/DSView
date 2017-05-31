@@ -57,9 +57,10 @@ QWidget* Bool::get_widget(QWidget *parent, bool auto_commit)
 		g_variant_unref(value);
 	}
 
-    if (auto_commit)
+    if (auto_commit) {
         connect(_check_box, SIGNAL(stateChanged(int)),
             this, SLOT(on_state_changed(int)));
+    }
 
 	return _check_box;
 }

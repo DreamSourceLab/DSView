@@ -512,8 +512,9 @@ void SamplingBar::commit_sample_rate()
         sample_rate = _sample_rate.itemData(
             index).value<uint64_t>();
 
-	if (sample_rate == 0)
+    if (sample_rate == 0) {
 		return;
+    }
 
     get_selected_device()->set_config(NULL, NULL,
                                       SR_CONF_SAMPLERATE,

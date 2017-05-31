@@ -57,8 +57,9 @@ QWidget* Enum::get_widget(QWidget *parent, bool auto_commit)
 		return _selector;
 
 	GVariant *const value = _getter ? _getter() : NULL;
-    if (!value)
+    if (!value) {
         return NULL;
+    }
 
 	_selector = new QComboBox(parent);
     _selector->setSizeAdjustPolicy(QComboBox::AdjustToContents);
@@ -72,9 +73,10 @@ QWidget* Enum::get_widget(QWidget *parent, bool auto_commit)
 
 	g_variant_unref(value);
 
-    if (auto_commit)
+    if (auto_commit) {
         connect(_selector, SIGNAL(currentIndexChanged(int)),
             this, SLOT(on_current_item_changed(int)));
+    }
 
 	return _selector;
 }

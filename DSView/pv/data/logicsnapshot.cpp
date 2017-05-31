@@ -578,7 +578,7 @@ bool LogicSnapshot::get_nxt_edge(
         return false;
 
     //const unsigned int min_level = max((int)floorf(logf(min_length) / logf(Scale)) - 1, 0);
-    const unsigned int min_level = max((int)(log2f(min_length) - 1) / ScalePower, 0);
+    const unsigned int min_level = max((int)(log2f(min_length) - 1) / (int)ScalePower, 0);
     uint64_t root_index = index >> (LeafBlockPower + RootScalePower);
     uint8_t root_pos = (index & RootMask) >> LeafBlockPower;
     bool edge_hit = false;
@@ -623,7 +623,7 @@ bool LogicSnapshot::get_pre_edge(uint64_t &index, bool last_sample,
         return false;
 
     //const unsigned int min_level = max((int)floorf(logf(min_length) / logf(Scale)) - 1, 1);
-    const unsigned int min_level = max((int)(log2f(min_length) - 1) / ScalePower, 0);
+    const unsigned int min_level = max((int)(log2f(min_length) - 1) / (int)ScalePower, 0);
     int root_index = index >> (LeafBlockPower + RootScalePower);
     uint8_t root_pos = (index & RootMask) >> LeafBlockPower;
     bool edge_hit = false;
