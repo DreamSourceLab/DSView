@@ -46,7 +46,7 @@ AM_PROG_CC_C_O
 # Set the standard the C library headers should conform to.
 AH_VERBATIM([_POSIX_C_SOURCE], [/* The targeted POSIX standard. */
 #ifndef _POSIX_C_SOURCE
-# define _POSIX_C_SOURCE 200112L
+# define _POSIX_C_SOURCE 200809L
 #endif])
 
 # Get compiler versions.

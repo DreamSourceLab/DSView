@@ -39,7 +39,6 @@ static const int total_buffer_time = 200;
 static const int buffer_size = 1024 * 1024;
 static const int instant_buffer_size = 1024 * 1024;
 static const int cons_buffer_size = 128;
-static const int buffer_cnt = 4;
 
 static struct sr_dev_mode mode_list[] = {
     {"OSC", DSO},
@@ -561,9 +560,10 @@ static int DSCope_dev_open(struct sr_dev_inst *sdi)
 	devc = sdi->priv;
 	usb = sdi->conn;
 
-    if (sdi->status == SR_ST_ACTIVE)
+    if (sdi->status == SR_ST_ACTIVE) {
 		/* Device is already in use. */
         return SR_ERR;
+    }
 
 	skip = 0;
     device_count = libusb_get_device_list(drvc->sr_ctx->libusb_ctx, &devlist);

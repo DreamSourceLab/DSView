@@ -58,8 +58,9 @@ PyMODINIT_FUNC PyInit_sigrokdecode(void)
     logic_type = srd_logic_type_new();
     if (!logic_type)
         goto err_out;
-    if (PyModule_AddObject(mod, "srd_logic", logic_type) < 0)
+    if (PyModule_AddObject(mod, "srd_logic", logic_type) < 0) {
         goto err_out;
+    }
 
 	/* Expose output types as symbols in the sigrokdecode module */
 	if (PyModule_AddIntConstant(mod, "OUTPUT_ANN", SRD_OUTPUT_ANN) < 0)

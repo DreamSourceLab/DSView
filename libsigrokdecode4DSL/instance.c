@@ -597,8 +597,9 @@ SRD_PRIV int srd_inst_decode(const struct srd_decoder_inst *di, uint8_t chunk_ty
 	}
     Py_DecRef(py_res);
 
-    if (logic->logic_mask == 0)
+    if (logic->logic_mask == 0) {
         logic->itercnt -= logic->samplenum;
+    }
 
 	return SRD_OK;
 }
