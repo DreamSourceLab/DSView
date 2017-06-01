@@ -2352,7 +2352,7 @@ static unsigned int get_number_of_transfers(struct DSL_context *devc)
 {
     unsigned int n;
     /* Total buffer size should be able to hold about 100ms of data. */
-    n = total_buffer_time * to_bytes_per_ms(devc) / get_buffer_size(devc);
+    n = ceil(total_buffer_time * 1.0f * to_bytes_per_ms(devc) / get_buffer_size(devc));
 
     if (n > NUM_SIMUL_TRANSFERS)
         return NUM_SIMUL_TRANSFERS;

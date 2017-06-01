@@ -2532,7 +2532,7 @@ static unsigned int get_number_of_transfers(struct DSL_context *devc)
                       total_buffer_time * to_bytes_per_ms(devc));
     /* Total buffer size should be able to hold about 500ms of data. */
     //n = 500 * to_bytes_per_ms(devc) / get_buffer_size(devc);
-    n = ceil(total_size * 1.0 / get_buffer_size(devc));
+    n = ceil(total_size * 1.0f / get_buffer_size(devc));
 
     if (n > NUM_SIMUL_TRANSFERS)
         return NUM_SIMUL_TRANSFERS;
@@ -2620,15 +2620,12 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
     struct timeval tv;
     struct drv_context *drvc;
     struct DSL_context *devc;
-    struct sr_usb_dev_inst *usb;
-    int ret;
 
     (void)fd;
     (void)revents;
 
     drvc = di->priv;
     devc = sdi->priv;
-    usb = sdi->conn;
 
     tv.tv_sec = tv.tv_usec = 0;
     libusb_handle_events_timeout_completed(drvc->sr_ctx->libusb_ctx, &tv, &completed);
@@ -2638,19 +2635,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
     }
 
     if (devc->status == DSL_FINISH) {
-        if (libusb_try_lock_events(drvc->sr_ctx->libusb_ctx) == 0) {
-            if (libusb_event_handling_ok(drvc->sr_ctx->libusb_ctx)) {
-                /* Stop GPIF acquisition */
-                usb = ((struct sr_dev_inst *)devc->cb_data)->conn;
-                if ((ret = command_stop_acquisition (usb->devhdl)) != SR_OK)
-                    sr_err("%s: Sent acquisition stop command failed!", __func__);
-                else
-                    sr_info("%s: Sent acquisition stop command!", __func__);
-
-                remove_sources(devc);
-            }
-            libusb_unlock_events(drvc->sr_ctx->libusb_ctx);
-        }
+        remove_sources(devc);
     }
 
     return TRUE;
@@ -2841,6 +2826,7 @@ static int dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data)
 
     struct DSL_context *devc;
     struct sr_usb_dev_inst *usb;
+    int ret;
 
     devc = sdi->priv;
     usb = sdi->conn;
@@ -2848,6 +2834,12 @@ static int dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data)
     if (!devc->abort) {
         devc->abort = TRUE;
         command_wr_reg(usb->devhdl, bmFORCE_RDY, EEWP_ADDR);
+    } else if (devc->status == DSL_FINISH) {
+        /* Stop GPIF acquisition */
+        if ((ret = command_stop_acquisition (usb->devhdl)) != SR_OK)
+            sr_err("%s: Sent acquisition stop command failed!", __func__);
+        else
+            sr_info("%s: Sent acquisition stop command!", __func__);
     }
 
     return SR_OK;

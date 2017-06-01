@@ -160,11 +160,16 @@ bool StoreSession::save_start()
             _error = tr("Generate temp file failed.");
             return false;
         } else {
-            sr_session_save_init(_file_name.toLocal8Bit().data(),
+            int ret = sr_session_save_init(_file_name.toLocal8Bit().data(),
                                  meta_file.toLocal8Bit().data(),
                                  decoders_file.toLocal8Bit().data());
-            _thread = boost::thread(&StoreSession::save_proc, this, snapshot);
-            return !_has_error;
+            if (ret != SR_OK) {
+                _error = tr("Failed to create zip file. Please check write permission of this path.");
+                return false;
+            } else {
+                _thread = boost::thread(&StoreSession::save_proc, this, snapshot);
+                return !_has_error;
+            }
         }
     }
 
@@ -239,7 +244,7 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
 {
     GSList *l;
     GVariant *gvar;
-    FILE *meta;
+    FILE *meta = NULL;
     struct sr_channel *probe;
     int probecnt;
     char *s;
@@ -262,6 +267,11 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
 
     const sr_dev_inst *sdi = _session.get_device()->dev_inst();
     meta = fopen(metafile.toLocal8Bit().data(), "wb");
+    if (meta == NULL) {
+        qDebug() << "Failed to create temp meta file.";
+        return NULL;
+    }
+
     fprintf(meta, "[version]\n");
     if (sdi->mode == DSO)
         fprintf(meta, "version = %d\n", 1); // should be updated in next version
