@@ -2,14 +2,14 @@
  * This file is part of the DSLogic project.
  */
 
+#include "libsigrok.h"
+#include "libsigrok-internal.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <assert.h>
 #include <glib.h>
-#include "libsigrok.h"
-#include "libsigrok-internal.h"
 
 /* Message logging helpers with subsystem-specific prefix string. */
 #define LOG_PREFIX "session: "
@@ -244,7 +244,7 @@ SR_PRIV uint64_t ds_trigger_get_mask0(uint16_t stage)
 
     for (i = TriggerProbes - 1; i >= 0 ; i--) {
         mask = (mask << 1);
-        mask += (trigger->trigger0[stage][i] == 'X' || trigger->trigger0[stage][i] == 'C');
+        mask += ((trigger->trigger0[stage][i] == 'X') | (trigger->trigger0[stage][i] == 'C'));
     }
 
     return mask;

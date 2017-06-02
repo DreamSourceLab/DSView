@@ -83,7 +83,6 @@
 #include <stdarg.h>
 #include <glib.h>
 #include <list>
-#include <libsigrok4DSL/libsigrok.h>
 
 using boost::shared_ptr;
 using boost::dynamic_pointer_cast;

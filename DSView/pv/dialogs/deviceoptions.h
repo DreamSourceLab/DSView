@@ -40,8 +40,9 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include <pv/device/devinst.h>
-#include <pv/prop/binding/deviceoptions.h>
+#include <libsigrok4DSL/libsigrok.h>
+#include "../device/devinst.h"
+#include "../prop/binding/deviceoptions.h"
 #include "../toolbars/titlebar.h"
 #include "../dialogs/dsdialog.h"
 

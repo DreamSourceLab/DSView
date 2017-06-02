@@ -20,15 +20,14 @@
 /*
  * Helper functions for the Cypress EZ-USB / FX2 series chips.
  */
-
+#include "libsigrok.h"
+#include "libsigrok-internal.h"
 //#include <libusb.h>
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
-#include "libsigrok.h"
-#include "libsigrok-internal.h"
 
 /* Message logging helpers with subsystem-specific prefix string. */
 #define LOG_PREFIX "ezusb: "

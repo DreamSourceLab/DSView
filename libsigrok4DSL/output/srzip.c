@@ -17,6 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "libsigrok.h"
+#include "libsigrok-internal.h"
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
@@ -24,8 +26,6 @@
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <zip.h>
-#include "libsigrok.h"
-#include "libsigrok-internal.h"
 
 #define LOG_PREFIX "output/srzip"
 

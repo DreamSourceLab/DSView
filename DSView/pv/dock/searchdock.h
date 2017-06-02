@@ -42,8 +42,6 @@
 
 #include <vector>
 
-#include <libsigrok4DSL/libsigrok.h>
-
 #include "../widgets/fakelineedit.h"
 
 namespace pv {

@@ -20,11 +20,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-
 #ifndef DSVIEW_PV_DATA_SNAPSHOT_H
 #define DSVIEW_PV_DATA_SNAPSHOT_H
-
-#include <libsigrok4DSL/libsigrok.h>
 
 #include <boost/thread.hpp>
 

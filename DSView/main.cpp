@@ -20,14 +20,12 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-
+#include <libsigrok4DSL/libsigrok.h>
 #ifdef ENABLE_DECODE
-#include <libsigrokdecode4DSL/libsigrokdecode.h> /* First, so we avoid a _POSIX_C_SOURCE warning. */
+#include <libsigrokdecode4DSL/libsigrokdecode.h>
 #endif
 
 #include <stdint.h>
-#include <libsigrok4DSL/libsigrok.h>
-
 #include <getopt.h>
 
 #include <QApplication>

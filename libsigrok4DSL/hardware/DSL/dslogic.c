@@ -18,6 +18,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "libsigrok.h"
+#include "libsigrok-internal.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -2367,7 +2369,7 @@ static unsigned int get_timeout(struct DSL_context *devc)
 
     total_size = get_buffer_size(devc) * get_number_of_transfers(devc);
     timeout = total_size / to_bytes_per_ms(devc);
-    //return timeout + timeout / 4; /* Leave a headroom of 25% percent. */
+
     if (devc->op_mode == SR_OP_STREAM)
         return timeout + timeout / 4; /* Leave a headroom of 25% percent. */
     else
@@ -2531,8 +2533,8 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
     (void)cb_data;
 
     struct DSL_context *devc;
-    struct drv_context *drvc;
     struct sr_usb_dev_inst *usb;
+    struct drv_context *drvc;
     const struct libusb_pollfd **lupfd;
 	unsigned int i;
     int ret;

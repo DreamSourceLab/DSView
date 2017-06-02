@@ -19,7 +19,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-
 #include "dsotriggerdock.h"
 #include "../sigsession.h"
 #include "../device/devinst.h"
@@ -38,8 +37,6 @@
 #include <QVector>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-
-#include "libsigrok4DSL/libsigrok.h"
 
 using namespace boost;
 using namespace std;

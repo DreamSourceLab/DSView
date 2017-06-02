@@ -23,10 +23,11 @@
 #ifndef DSVIEW_PV_DATA_DSOSNAPSHOT_H
 #define DSVIEW_PV_DATA_DSOSNAPSHOT_H
 
-#include "snapshot.h"
-
 #include <utility>
 #include <vector>
+
+#include <libsigrok4DSL/libsigrok.h>
+#include "snapshot.h"
 
 namespace DsoSnapshotTest {
 class Basic;

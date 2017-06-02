@@ -31,8 +31,6 @@
 
 #include <stdint.h>
 
-#include <libsigrok4DSL/libsigrok.h>
-
 #include "selectableitem.h"
 #include "dsldial.h"
 

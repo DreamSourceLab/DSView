@@ -20,6 +20,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
+#include "libsigrok.h"
+#include "libsigrok-internal.h"
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
@@ -29,8 +31,6 @@
 #include <fcntl.h>
 #define pipe(fds) _pipe(fds, 4096, _O_BINARY)
 #endif
-#include "libsigrok.h"
-#include "libsigrok-internal.h"
 
 /* Message logging helpers with subsystem-specific prefix string. */
 #define LOG_PREFIX "demo: "

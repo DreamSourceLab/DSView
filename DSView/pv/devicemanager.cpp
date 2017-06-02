@@ -20,7 +20,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-
 #include "devicemanager.h"
 #include "device/devinst.h"
 #include "device/device.h"
@@ -37,8 +36,6 @@
 #include <QDir>
 
 #include <boost/foreach.hpp>
-
-#include <libsigrok4DSL/libsigrok.h>
 
 using boost::shared_ptr;
 using std::list;

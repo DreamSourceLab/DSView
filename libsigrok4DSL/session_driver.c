@@ -17,6 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "libsigrok.h"
+#include "libsigrok-internal.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -25,8 +27,6 @@
 #include <zip.h>
 #include <assert.h>
 #include <string.h>
-#include "libsigrok.h"
-#include "libsigrok-internal.h"
 
 /* Message logging helpers with subsystem-specific prefix string. */
 #define LOG_PREFIX "virtual-session: "

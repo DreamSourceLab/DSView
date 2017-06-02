@@ -30,11 +30,6 @@
 #include <QApplication>
 #include <QPainter>
 
-#ifdef Q_OS_WIN
-#pragma comment(lib, "user32.lib")
-#include <qt_windows.h>
-#endif
-
 namespace pv {
 namespace toolbars {
 

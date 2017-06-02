@@ -24,6 +24,8 @@
 #ifndef DSVIEW_PV_DATA_LOGICSNAPSHOT_H
 #define DSVIEW_PV_DATA_LOGICSNAPSHOT_H
 
+#include <libsigrok4DSL/libsigrok.h>
+
 #include "snapshot.h"
 
 #include <QString>

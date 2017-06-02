@@ -20,7 +20,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-
 #include "header.h"
 #include "view.h"
 
@@ -332,6 +331,8 @@ void Header::leaveEvent(QEvent*)
 
 void Header::contextMenuEvent(QContextMenuEvent *event)
 {
+    (void)event;
+
     int action;
 
     const boost::shared_ptr<Trace> t = get_mTrace(action, _mouse_point);
@@ -339,15 +340,18 @@ void Header::contextMenuEvent(QContextMenuEvent *event)
     if (!t || !t->selected() || action != Trace::LABEL)
         return;
 
-    QMenu menu(this);
-    if (t->get_type() == SR_CHANNEL_LOGIC)
-        menu.addAction(_action_add_group);
-    else if (t->get_type() == SR_CHANNEL_GROUP)
-        menu.addAction(_action_del_group);
+    /*
+     * disable group function for v0.97 temporarily
+     */
+//    QMenu menu(this);
+//    if (t->get_type() == SR_CHANNEL_LOGIC)
+//        menu.addAction(_action_add_group);
+//    else if (t->get_type() == SR_CHANNEL_GROUP)
+//        menu.addAction(_action_del_group);
 
-    _context_trace = t;
-    menu.exec(event->globalPos());
-    _context_trace.reset();
+//    _context_trace = t;
+//    menu.exec(event->globalPos());
+//    _context_trace.reset();
 }
 
 void Header::on_action_set_name_triggered()

@@ -26,7 +26,6 @@
 
 #include "sigsession.h"
 #include "mainwindow.h"
-
 #include "devicemanager.h"
 #include "device/device.h"
 #include "device/file.h"

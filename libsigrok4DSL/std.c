@@ -18,9 +18,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <glib.h>
 #include "libsigrok.h"
 #include "libsigrok-internal.h"
+#include <glib.h>
 
 /**
  * Standard sr_driver_init() API helper.

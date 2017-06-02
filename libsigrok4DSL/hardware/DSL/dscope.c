@@ -18,6 +18,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "libsigrok.h"
+#include "libsigrok-internal.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -35,10 +37,10 @@
 #define min(a,b) ((a)<(b)?(a):(b))
 
 static const int single_buffer_time = 20;
-static const int total_buffer_time = 200;
 static const int buffer_size = 1024 * 1024;
 static const int instant_buffer_size = 1024 * 1024;
 static const int cons_buffer_size = 128;
+static const int total_buffer_time = 200;
 
 static struct sr_dev_mode mode_list[] = {
     {"OSC", DSO},
@@ -47,8 +49,7 @@ static struct sr_dev_mode mode_list[] = {
 static const char *opmodes[] = {
     "Normal",
     "Internal Test",
-    "External Test",
-    "DRAM Loopback Test",
+    "Internal Test",
 };
 
 static const char *thresholds[] = {
@@ -1542,10 +1543,6 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             devc->op_mode = SR_OP_BUFFER;
         } else if (!strcmp(stropt, opmodes[SR_OP_INTERNAL_TEST])) {
             devc->op_mode = SR_OP_INTERNAL_TEST;
-        } else if (!strcmp(stropt, opmodes[SR_OP_EXTERNAL_TEST])) {
-            devc->op_mode = SR_OP_EXTERNAL_TEST;
-        } else if (!strcmp(stropt, opmodes[SR_OP_LOOPBACK_TEST])) {
-            devc->op_mode = SR_OP_LOOPBACK_TEST;
         } else {
             ret = SR_ERR;
         }
@@ -2690,10 +2687,10 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
     (void)cb_data;
 
     struct DSL_context *devc;
-    struct drv_context *drvc;
     struct sr_usb_dev_inst *usb;
     struct libusb_transfer *transfer;
     struct ds_trigger_pos *trigger_pos;
+    struct drv_context *drvc;
     const struct libusb_pollfd **lupfd;
 	unsigned int i;
     int ret;

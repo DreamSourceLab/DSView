@@ -17,9 +17,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <string.h>
 #include "libsigrok.h"
 #include "libsigrok-internal.h"
+#include <string.h>
 
 /** @cond PRIVATE */
 #define LOG_PREFIX "output"

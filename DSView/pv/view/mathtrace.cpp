@@ -17,22 +17,21 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
-#include <extdef.h>
-#include "mathtrace.h"
 
+#include <extdef.h>
 #include <algorithm>
 #include <math.h>
 
 #include <boost/foreach.hpp>
 #include <boost/functional/hash.hpp>
 
+#include "mathtrace.h"
 #include "../sigsession.h"
 #include "../data/dso.h"
 #include "../data/dsosnapshot.h"
 #include "../view/dsosignal.h"
 #include "../view/viewport.h"
 #include "../device/devinst.h"
-
 #include "../data/mathstack.h"
 
 using namespace boost;

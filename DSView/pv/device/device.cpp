@@ -21,8 +21,6 @@
 
 #include <sstream>
 
-#include <libsigrok4DSL/libsigrok.h>
-
 #include "device.h"
 
 using std::ostringstream;

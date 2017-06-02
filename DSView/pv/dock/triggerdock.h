@@ -43,8 +43,6 @@
 
 #include <vector>
 
-#include <libsigrok4DSL/libsigrok.h>
-
 namespace pv {
 
 class SigSession;
