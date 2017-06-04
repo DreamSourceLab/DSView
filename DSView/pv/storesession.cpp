@@ -488,6 +488,8 @@ void StoreSession::export_proc(shared_ptr<data::Snapshot> snapshot)
         for (int blk = 0; !boost::this_thread::interruption_requested()  &&
                           blk < blk_num; blk++) {
             uint64_t buf_sample_num = logic_snapshot->get_block_size(blk) * 8;
+            buf_vec.clear();
+            buf_sample.clear();
             BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
                 int ch_type = s->get_type();
                 if (ch_type == SR_CHANNEL_LOGIC) {
@@ -517,7 +519,7 @@ void StoreSession::export_proc(shared_ptr<data::Snapshot> snapshot)
                     return;
                 }
                 memset(xbuf, 0, size * unitsize);
-                for (uint64_t j = 0; j < usize; j++) {
+                for (uint64_t j = 0; j < size; j++) {
                     for (unsigned int k = 0; k < buf_vec.size(); k++) {
                         if (buf_vec[k] == NULL && buf_sample[k])
                             xbuf[j*unitsize+k/8] +=  1 << k%8;
