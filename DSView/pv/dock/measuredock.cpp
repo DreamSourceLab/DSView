@@ -42,8 +42,6 @@
 #include <QRegExpValidator>
 #include <QMessageBox>
 
-#include "libsigrok4DSL/libsigrok.h"
-
 using namespace boost;
 
 namespace pv {

@@ -20,20 +20,13 @@
 #ifndef LIBSIGROK_SIGROK_H
 #define LIBSIGROK_SIGROK_H
 
+#include <sys/time.h>
+
 #include <stdio.h>
 #include <sys/time.h>
 #include <stdint.h>
 #include <inttypes.h>
 #include <glib.h>
-
-#ifndef _WIN32
-#include <sys/time.h>
-#else
-#define WINVER 0x0501
-#define _WIN32_WINNT WINVER
-#include <Winsock2.h>
-#include <usbiodef.h>
-#endif
 
 #ifdef __cplusplus
 extern "C" {

@@ -24,7 +24,6 @@
 #define DSVIEW_PV_TOOLBARS_SAMPLINGBAR_H
 
 #include <stdint.h>
-
 #include <list>
 #include <map>
 
@@ -35,8 +34,6 @@
 #include <QToolButton>
 #include <QAction>
 #include <QMenu>
-
-#include <libsigrok4DSL/libsigrok.h>
 
 #include "../sigsession.h"
 

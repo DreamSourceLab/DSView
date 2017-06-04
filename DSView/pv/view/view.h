@@ -25,7 +25,6 @@
 #define DSVIEW_PV_VIEW_VIEW_H
 
 #include <stdint.h>
-
 #include <set>
 #include <vector>
 

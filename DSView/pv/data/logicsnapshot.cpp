@@ -20,7 +20,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-
 #include <extdef.h>
 
 #include <QDebug>
@@ -662,7 +661,7 @@ bool LogicSnapshot::block_nxt_edge(uint64_t *lbp, uint64_t &index, uint64_t bloc
 {
     unsigned int level = min_level;
     bool fast_forward = true;
-    const uint64_t last = last_sample ? ~0ULL : 0;
+    const uint64_t last = last_sample ? ~0ULL : 0ULL;
 
     //----- Search Next Edge Within Current LeafBlock -----//
     if (level == 0)
@@ -704,7 +703,7 @@ bool LogicSnapshot::block_nxt_edge(uint64_t *lbp, uint64_t &index, uint64_t bloc
 
             // Check if there was a change in this block
             if (sample) {
-                index = (index & (~0 << (level + 1)*ScalePower)) + (bsf_folded(sample) << level*ScalePower);
+                index = (index & (~0ULL << (level + 1)*ScalePower)) + (bsf_folded(sample) << level*ScalePower);
                 break;
             } else {
                 index = ((index >> (level + 1)*ScalePower) + 1) << (level + 1)*ScalePower;
@@ -730,7 +729,7 @@ bool LogicSnapshot::block_nxt_edge(uint64_t *lbp, uint64_t &index, uint64_t bloc
 
             // Update the low level position of the change in this block
             if (level == 0 ? sample ^ last : sample) {
-                index = (index & (~0 << (level + 1)*ScalePower)) + (bsf_folded(level == 0 ? sample ^ last : sample) << level*ScalePower);
+                index = (index & (~0ULL << (level + 1)*ScalePower)) + (bsf_folded(level == 0 ? sample ^ last : sample) << level*ScalePower);
                 if (level == min_level)
                     break;
             }
@@ -747,7 +746,7 @@ bool LogicSnapshot::block_pre_edge(uint64_t *lbp, uint64_t &index, bool last_sam
 
     unsigned int level = min_level;
     bool fast_forward = true;
-    const uint64_t last = last_sample ? ~0ULL : 0;
+    const uint64_t last = last_sample ? ~0ULL : 0ULL;
     uint64_t block_start = index & ~LeafMask;
 
     //----- Search Next Edge Within Current LeafBlock -----//
@@ -801,7 +800,7 @@ bool LogicSnapshot::block_pre_edge(uint64_t *lbp, uint64_t &index, bool last_sam
 
             // Check if there was a change in this block
             if (sample) {
-                index = (index & (~0 << (level + 1)*ScalePower)) +
+                index = (index & (~0ULL << (level + 1)*ScalePower)) +
                         (bsr64(sample) << level*ScalePower) +
                         ~(~0ULL << level*ScalePower);
                 break;
@@ -832,7 +831,7 @@ bool LogicSnapshot::block_pre_edge(uint64_t *lbp, uint64_t &index, bool last_sam
 
             // Update the low level position of the change in this block
             if (level == 0 ? sample ^ last : sample) {
-                index = (index & (~0 << (level + 1)*ScalePower)) +
+                index = (index & (~0ULL << (level + 1)*ScalePower)) +
                         (bsr64(level == 0 ? sample ^ last : sample) << level*ScalePower) +
                         ~(~0ULL << level*ScalePower);
                 if (level == min_level) {
@@ -840,7 +839,7 @@ bool LogicSnapshot::block_pre_edge(uint64_t *lbp, uint64_t &index, bool last_sam
                     break;
                 }
             } else {
-                index = (index & (~0 << (level + 1)*ScalePower));
+                index = (index & (~0ULL << (level + 1)*ScalePower));
             }
         }
     }

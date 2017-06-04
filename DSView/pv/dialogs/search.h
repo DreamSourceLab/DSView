@@ -28,8 +28,8 @@
 #include <QVBoxLayout>
 #include <QGridLayout>
 #include <QDialogButtonBox>
+
 #include "../sigsession.h"
-#include <libsigrok4DSL/libsigrok.h>
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
 #include "../device/devinst.h"

@@ -29,8 +29,6 @@
 
 #include <boost/filesystem.hpp>
 
-#include <libsigrok4DSL/libsigrok.h>
-
 using std::string;
 
 namespace pv {

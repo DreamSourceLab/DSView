@@ -20,14 +20,11 @@
  */
 
 #include <cassert>
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
 #include "inputfile.h"
-
-#include <libsigrok4DSL/libsigrok.h>
 
 using std::string;
 

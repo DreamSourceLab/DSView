@@ -40,8 +40,6 @@
 #include <vector>
 #include <boost/thread.hpp>
 
-#include <libsigrok4DSL/libsigrok.h>
-
 #include "../data/decodermodel.h"
 
 namespace pv {

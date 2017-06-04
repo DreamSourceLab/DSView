@@ -30,7 +30,6 @@
 #include <QString>
 
 #include <libsigrok4DSL/libsigrok.h>
-
 #include "binding.h"
 
 namespace pv {

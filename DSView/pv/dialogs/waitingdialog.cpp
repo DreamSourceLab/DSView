@@ -19,7 +19,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-
 #include "waitingdialog.h"
 
 #include <boost/foreach.hpp>
@@ -31,7 +30,6 @@
 #include <QtConcurrent/QtConcurrent>
 #include <QVBoxLayout>
 
-#include "libsigrok4DSL/libsigrok.h"
 #include "../view/trace.h"
 
 using namespace boost;

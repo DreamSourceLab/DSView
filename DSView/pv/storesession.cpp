@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
+/* __STDC_FORMAT_MACROS is required for PRIu64 and friends (in C++). */
+#define __STDC_FORMAT_MACROS
+
 #include "storesession.h"
 
 #include <pv/sigsession.h>

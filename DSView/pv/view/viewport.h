@@ -24,6 +24,8 @@
 #ifndef DSVIEW_PV_VIEW_VIEWPORT_H
 #define DSVIEW_PV_VIEW_VIEWPORT_H
 
+#include <stdint.h>
+
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 
@@ -31,10 +33,8 @@
 #include <QTimer>
 #include <QWidget>
 
-#include <stdint.h>
-
-#include "../../extdef.h"
 #include "../view/view.h"
+#include "../../extdef.h"
 
 class QPainter;
 class QPaintEvent;

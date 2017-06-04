@@ -18,11 +18,12 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
+#include "libsigrok.h"
+#include "libsigrok-internal.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include "libsigrok.h"
-#include "libsigrok-internal.h"
+#include <stdio.h>
 
 /* Message logging helpers with subsystem-specific prefix string. */
 #define LOG_PREFIX "strutil: "
@@ -67,26 +68,26 @@ SR_API char *sr_si_string_u64(uint64_t x, const char *unit)
 	if (unit == NULL)
 		unit = "";
 
-	if ((x >= SR_GHZ(1)) && (x % SR_GHZ(1) == 0)) {
-		return g_strdup_printf("%" PRIu64 " G%s", x / SR_GHZ(1), unit);
-	} else if ((x >= SR_GHZ(1)) && (x % SR_GHZ(1) != 0)) {
-		return g_strdup_printf("%" PRIu64 ".%" PRIu64 " G%s",
-				       x / SR_GHZ(1), x % SR_GHZ(1), unit);
-	} else if ((x >= SR_MHZ(1)) && (x % SR_MHZ(1) == 0)) {
-		return g_strdup_printf("%" PRIu64 " M%s",
-				       x / SR_MHZ(1), unit);
-	} else if ((x >= SR_MHZ(1)) && (x % SR_MHZ(1) != 0)) {
-		return g_strdup_printf("%" PRIu64 ".%" PRIu64 " M%s",
-				    x / SR_MHZ(1), x % SR_MHZ(1), unit);
-	} else if ((x >= SR_KHZ(1)) && (x % SR_KHZ(1) == 0)) {
-		return g_strdup_printf("%" PRIu64 " k%s",
-				    x / SR_KHZ(1), unit);
-	} else if ((x >= SR_KHZ(1)) && (x % SR_KHZ(1) != 0)) {
+    if ((x >= SR_GHZ(1)) && (x % SR_GHZ(1) == 0)) {
+        return g_strdup_printf("%" PRIu64 " G%s", x / SR_GHZ(1), unit);
+    } else if ((x >= SR_GHZ(1)) && (x % SR_GHZ(1) != 0)) {
+        return g_strdup_printf("%" PRIu64 ".%" PRIu64 " G%s",
+                       x / SR_GHZ(1), x % SR_GHZ(1), unit);
+    } else if ((x >= SR_MHZ(1)) && (x % SR_MHZ(1) == 0)) {
+        return g_strdup_printf("%" PRIu64 " M%s",
+                       x / SR_MHZ(1), unit);
+    } else if ((x >= SR_MHZ(1)) && (x % SR_MHZ(1) != 0)) {
+        return g_strdup_printf("%" PRIu64 ".%" PRIu64 " M%s",
+                    x / SR_MHZ(1), x % SR_MHZ(1), unit);
+    } else if ((x >= SR_KHZ(1)) && (x % SR_KHZ(1) == 0)) {
+        return g_strdup_printf("%" PRIu64 " k%s",
+                    x / SR_KHZ(1), unit);
+    } else if ((x >= SR_KHZ(1)) && (x % SR_KHZ(1) != 0)) {
         return g_strdup_printf("%" PRIu64 ".%" PRIu64 " K%s",
-				    x / SR_KHZ(1), x % SR_KHZ(1), unit);
-	} else {
-		return g_strdup_printf("%" PRIu64 " %s", x, unit);
-	}
+                    x / SR_KHZ(1), x % SR_KHZ(1), unit);
+    } else {
+        return g_strdup_printf("%" PRIu64 " %s", x, unit);
+    }
 
 	sr_err("%s: Error creating SI units string.", __func__);
 	return NULL;
@@ -115,19 +116,19 @@ SR_API char *sr_iec_string_u64(uint64_t x, const char *unit)
     if ((x >= SR_GB(1)) && (x % SR_GB(1) == 0)) {
         return g_strdup_printf("%" PRIu64 " G%s", x / SR_GB(1), unit);
     } else if ((x >= SR_GB(1)) && (x % SR_GB(1) != 0)) {
-        return g_strdup_printf("%" PRIu64 ".%" PRIu64 "G%s",
+        return g_strdup_printf("%" PRIu64 ".%" PRIu64 " G%s",
                        x / SR_GB(1), x % SR_GB(1), unit);
     } else if ((x >= SR_MB(1)) && (x % SR_MB(1) == 0)) {
         return g_strdup_printf("%" PRIu64 " M%s",
                        x / SR_MB(1), unit);
     } else if ((x >= SR_MB(1)) && (x % SR_MB(1) != 0)) {
-        return g_strdup_printf("%" PRIu64 ".%" PRIu64 "M%s",
+        return g_strdup_printf("%" PRIu64 ".%" PRIu64 " M%s",
                     x / SR_MB(1), x % SR_MB(1), unit);
     } else if ((x >= SR_KB(1)) && (x % SR_KB(1) == 0)) {
         return g_strdup_printf("%" PRIu64 " k%s",
                     x / SR_KB(1), unit);
     } else if ((x >= SR_KB(1)) && (x % SR_KB(1) != 0)) {
-        return g_strdup_printf("%" PRIu64 ".%" PRIu64 "K%s",
+        return g_strdup_printf("%" PRIu64 ".%" PRIu64 " K%s",
                     x / SR_KB(1), x % SR_KB(1), unit);
     } else {
         return g_strdup_printf("%" PRIu64 " %s", x, unit);

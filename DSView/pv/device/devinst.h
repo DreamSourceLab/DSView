@@ -22,15 +22,15 @@
 #ifndef DSVIEW_PV_DEVICE_DEVINST_H
 #define DSVIEW_PV_DEVICE_DEVINST_H
 
-#include <string>
-
 #include <boost/shared_ptr.hpp>
 
 #include <QObject>
 
+#include <string>
 #include <glib.h>
-
 #include <stdint.h>
+
+#include <libsigrok4DSL/libsigrok.h>
 
 struct sr_dev_inst;
 struct sr_channel;
