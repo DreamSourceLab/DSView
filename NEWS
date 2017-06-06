@@ -1,3 +1,42 @@
+0.97 (2017-06-02)
+-----------------
+  --common
+  *fix file save fail issue
+  *fix window missing issue when disconnect external monitor
+  *fix crash issue when open illegal files
+  *improve graphics rendering and operations fluency
+  *fix window display issue: maximize/minimize/show/hide...etc
+
+  --for logic analyzer
+  *Enhance stream mode funtion to achieve 100M@3channels / 50M@6channels / 25M@12channels / 20M@16channels
+  *improve memory structure, extend sample depth to solve memory alloc fail issue
+  *resolve the coupling between channel data, unused channels don't occupy memory space
+  *add stop options to support upload already captured data under buffer mode
+  *add save/load function for protocol settings
+  *add cursor-based edge statistics function
+  *add repetitive mode to support repeat trigger acquisiton
+  *improve search funciton to support start position setting
+  *improve advanced trigger
+  *improve cursor measurement method, add 16 sets of measurement between cursors
+  *fix trigger issue when sample rate greater than 100MHz
+  *fix display issue of trigger position
+  *implement free combination of channels under stream mode
+  *improve file saving display window, and add cancel button
+  *fix partial decoding issue
+  *fix messy code issue when add protocol decoder
+  *improve the stability of protocol decoder
+  *add mapping funtion from graphic decode to list decode
+  *add mapping flag between grapic decode and list decode
+  *add channel height option for file device
+  *add auto snap to edge function when insert cursor
+
+  --for oscilloscope
+  *fix dsl file loading issue
+  *fix waveform delay display issue after trigger
+  *fix crash issue when enable/disable channels
+  *fix vertical position moving issue under stop state
+  *fix window background rendering issue
+
 0.96 (2016-08-12)
 -----------------
   --common
