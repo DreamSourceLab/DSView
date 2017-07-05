@@ -882,6 +882,7 @@ bool LogicSnapshot::pattern_search(int64_t start, int64_t end, bool nxt, int64_t
     while(nxt ? index <= end : index >= start) {
         // get expacted and current pattern
         exp_index.clear();
+        cur_edge.clear();
         for(it_type iterator = pattern.begin();
             iterator != pattern.end(); iterator++) {
             uint16_t ch_index = iterator->first;
@@ -934,6 +935,7 @@ bool LogicSnapshot::pattern_search(int64_t start, int64_t end, bool nxt, int64_t
                   (nxt ? sub_index <= end : sub_index >= start)) {
                 // get expacted and current pattern
                 exp_index.clear();
+                cur_edge.clear();
                 for(it_type iterator = pattern.begin();
                     iterator != pattern.end(); iterator++) {
                     uint16_t ch_index = iterator->first;
@@ -1006,13 +1008,18 @@ bool LogicSnapshot::pattern_search(int64_t start, int64_t end, bool nxt, int64_t
                             cur_sample[ch_index] = get_sample(exp_index[seq], ch_index);
                             find_edge = get_pre_edge(exp_index[seq], cur_sample[ch_index], 1, ch_index);
                         }
-                        if (find_edge)
+                        if (find_edge) {
                             cur_sample[ch_index] = get_sample(exp_index[seq], ch_index);
-                        else
+                            if (iterator->second[cur_match_pos] == 'C')
+                                exp_sample[ch_index] = cur_sample[ch_index];
+                        } else
                             break;
                     }while(cur_sample[ch_index] != exp_sample[ch_index]);
                 }
-                seq++;
+                if (find_edge)
+                    seq++;
+                else
+                    break;
             }
             if (find_edge) {
                 if (nxt)

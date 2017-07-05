@@ -234,22 +234,23 @@ void SearchDock::on_set()
 {
     dialogs::Search dlg(this, _session, _pattern);
     if (dlg.exec()) {
-        _pattern = dlg.get_pattern();
+        std::map<uint16_t, QString> new_pattern = dlg.get_pattern();
 
         QString search_label;
-        for (auto& iter:_pattern) {
+        for (auto& iter:new_pattern) {
             iter.second.remove(QChar(' '), Qt::CaseInsensitive);
             iter.second = iter.second.toUpper();
             search_label.push_back(iter.second);
-//            if (iter.second != "XXXXXXXXXXXXXXXX") {
-//                search_label.push_back(QString::number(iter.first));
-//                search_label.push_back("/");
-//            }
         }
 
         _search_value->setText(search_label);
         QFontMetrics fm = this->fontMetrics();
         _search_value->setFixedWidth(fm.width(search_label)+_search_button->width()+20);
+
+        if (new_pattern != _pattern) {
+            _view.set_search_pos(_view.get_search_pos(), false);
+            _pattern = new_pattern;
+        }
     }
 }
 
