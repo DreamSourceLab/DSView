@@ -943,8 +943,35 @@ void DsoSignal::paint_fore(QPainter &p, int left, int right)
         };
 
         p.setPen(Qt::transparent);
-        p.setBrush(hover ? _colour.dark() : _colour);
+        p.setBrush(_colour);
         p.drawPolygon(points, countof(points));
+
+        p.setPen(Qt::white);
+        const QPointF arrow_points[] = {
+            QPoint(label_rect.left(), label_rect.center().y()),
+            QPoint(label_rect.left(), label_rect.center().y()-1),
+            QPoint(label_rect.left(), label_rect.center().y()+1),
+            QPoint(label_rect.left(), label_rect.center().y()-2),
+            QPoint(label_rect.left(), label_rect.center().y()+2),
+            QPoint(label_rect.left(), label_rect.center().y()-3),
+            QPoint(label_rect.left(), label_rect.center().y()+3),
+            QPoint(label_rect.left(), label_rect.center().y()-4),
+            QPoint(label_rect.left(), label_rect.center().y()+4),
+            QPoint(label_rect.left()-1, label_rect.center().y()-3),
+            QPoint(label_rect.left()-1, label_rect.center().y()+3),
+            QPoint(label_rect.left()+1, label_rect.center().y()-3),
+            QPoint(label_rect.left()+1, label_rect.center().y()+3),
+            QPoint(label_rect.left()-1, label_rect.center().y()-2),
+            QPoint(label_rect.left()-1, label_rect.center().y()+2),
+            QPoint(label_rect.left()+1, label_rect.center().y()-2),
+            QPoint(label_rect.left()+1, label_rect.center().y()+2),
+            QPoint(label_rect.left()-2, label_rect.center().y()-2),
+            QPoint(label_rect.left()-2, label_rect.center().y()+2),
+            QPoint(label_rect.left()+2, label_rect.center().y()-2),
+            QPoint(label_rect.left()+2, label_rect.center().y()+2),
+        };
+        if (hover || selected())
+            p.drawPoints(arrow_points, countof(arrow_points));
 
         // paint the trig voltage
         int trigp = get_trig_vpos();
@@ -957,8 +984,10 @@ void DsoSignal::paint_fore(QPainter &p, int left, int right)
         p.drawText(t_vol_rect, Qt::AlignRight | Qt::AlignVCenter, t_vol_s);
 
         // paint the _trig_vpos line
-        p.setPen(QPen(_colour, 1, Qt::DotLine));
-        p.drawLine(left, trigp, right - p.boundingRect(t_vol_rect, Qt::AlignLeft, t_vol_s).width(), trigp);
+        if (_view->get_dso_trig_moved()) {
+            p.setPen(QPen(_colour, 1, Qt::DotLine));
+            p.drawLine(left, trigp, right - p.boundingRect(t_vol_rect, Qt::AlignLeft, t_vol_s).width(), trigp);
+        }
 
         // Paint the text
         p.setPen(Qt::white);

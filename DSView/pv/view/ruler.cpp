@@ -87,7 +87,9 @@ Ruler::Ruler(View &parent) :
     _cursor_sel_visible(false),
     _cursor_go_visible(false),
     _cursor_sel_x(-1),
-	_grabbed_marker(NULL)
+    _grabbed_marker(NULL),
+    _hitCursor(false),
+    _curs_moved(false)
 {
 	setMouseTracking(true);
 
@@ -208,6 +210,7 @@ void Ruler::mouseMoveEvent(QMouseEvent *e)
         _grabbed_marker->set_index((_view.offset() + _view.hover_point().x()) *
                                    _view.scale() * _view.session().cur_samplerate());
         _view.cursor_moving();
+        _curs_moved = true;
     }
 
     update();
@@ -221,48 +224,42 @@ void Ruler::leaveEvent(QEvent *)
     update();
 }
 
-void Ruler::mousePressEvent(QMouseEvent *e)
+void Ruler::mousePressEvent(QMouseEvent *event)
 {
-    (void)e;
+    if (event->button() & Qt::LeftButton) {
+        bool visible;
+        if (!_cursor_sel_visible & !_view.get_cursorList().empty()) {
+            _view.show_cursors(true);
+            list<Cursor*>::iterator i = _view.get_cursorList().begin();
+            while (i != _view.get_cursorList().end()) {
+                const QRect cursor_rect((*i)->get_label_rect(rect(), visible));
+                if ((*i)->get_close_rect(cursor_rect).contains(event->pos())) {
+                    _view.del_cursor(*i);
+                    if (_view.get_cursorList().empty()) {
+                        _cursor_sel_visible = false;
+                        _view.show_cursors(false);
+                    }
+                    _hitCursor = true;
+                    break;
+                }
+                if (cursor_rect.contains(event->pos())) {
+                    set_grabbed_cursor(*i);
+                    _cursor_sel_visible = false;
+                    _cursor_go_visible = false;
+                    _hitCursor = true;
+                    break;
+                }
+                i++;
+            }
+        }
+    }
 }
 
 void Ruler::mouseReleaseEvent(QMouseEvent *event)
 {
     bool addCursor = false;
-    bool visible;
     if (event->button() & Qt::LeftButton) {
-        bool hitCursor = false;
-        if (!_cursor_sel_visible & !_view.get_cursorList().empty()) {
-            _view.show_cursors(true);
-            if (_grabbed_marker) {
-                rel_grabbed_cursor();
-                hitCursor = true;
-                _view.cursor_moved();
-            } else {
-                list<Cursor*>::iterator i = _view.get_cursorList().begin();
-                while (i != _view.get_cursorList().end()) {
-                    const QRect cursor_rect((*i)->get_label_rect(rect(), visible));
-                    if ((*i)->get_close_rect(cursor_rect).contains(event->pos())) {
-                        _view.del_cursor(*i);
-                        if (_view.get_cursorList().empty()) {
-                            _cursor_sel_visible = false;
-                            _view.show_cursors(false);
-                        }
-                        hitCursor = true;
-                        break;
-                    }
-                    if (cursor_rect.contains(event->pos())) {
-                        set_grabbed_cursor(*i);
-                        _cursor_sel_visible = false;
-                        _cursor_go_visible = false;
-                        hitCursor = true;
-                        break;
-                    }
-                    i++;
-                }
-            }
-        }
-        if (!hitCursor && !_grabbed_marker) {
+        if (!_hitCursor && !_grabbed_marker) {
             if (!_cursor_go_visible) {
                 if (!_cursor_sel_visible) {
                     _cursor_sel_x = event->pos().x();
@@ -292,6 +289,13 @@ void Ruler::mouseReleaseEvent(QMouseEvent *event)
 
                 _cursor_go_visible = false;
             }
+        }
+
+        if (_curs_moved && _grabbed_marker) {
+            rel_grabbed_cursor();
+            _hitCursor = false;
+            _curs_moved = false;
+            _view.cursor_moved();
         }
     }
 

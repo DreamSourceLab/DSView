@@ -101,6 +101,8 @@ public:
 
     void set_need_update(bool update);
 
+    bool get_dso_trig_moved() const;
+
 protected:
 	void paintEvent(QPaintEvent *event);
 
@@ -195,6 +197,8 @@ private:
     int _dso_ym_end;
 
     int _waiting_trig;
+    bool _dso_trig_moved;
+    bool _curs_moved;
 };
 
 } // namespace view

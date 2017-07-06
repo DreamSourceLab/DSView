@@ -81,7 +81,7 @@ private:
 	void paintEvent(QPaintEvent *event);
 
 	void mouseMoveEvent(QMouseEvent *e);
-	void mousePressEvent(QMouseEvent *e);
+    void mousePressEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
     void leaveEvent(QEvent *);
 
@@ -114,6 +114,8 @@ private:
     double _min_period;
 
     unsigned int _cur_prefix;
+    bool _hitCursor;
+    bool _curs_moved;
 };
 
 } // namespace view

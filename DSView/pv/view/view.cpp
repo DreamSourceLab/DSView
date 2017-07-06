@@ -1166,5 +1166,10 @@ void View::set_capture_status()
     }
 }
 
+bool View::get_dso_trig_moved() const
+{
+    return _time_viewport->get_dso_trig_moved();
+}
+
 } // namespace view
 } // namespace pv

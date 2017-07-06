@@ -285,13 +285,40 @@ void Trace::paint_label(QPainter &p, int right, const QPoint pt)
 
         p.setPen(Qt::transparent);
         if (_type == SR_CHANNEL_DSO || _type == SR_CHANNEL_FFT) {
-            p.setBrush((label_rect.contains(pt) || selected()) ? _colour.darker() : _colour);
+            p.setBrush(_colour);
             p.drawPolygon(points, countof(points));
         } else {
             QColor color = PROBE_COLORS[*_index_list.begin() % countof(PROBE_COLORS)];
-            p.setBrush((label_rect.contains(pt) || selected()) ? color.lighter() : color);
+            p.setBrush(color);
             p.drawPolygon(points, countof(points));
         }
+
+        p.setPen(Qt::white);
+        const QPointF arrow_points[] = {
+            QPoint(label_rect.right(), label_rect.center().y()),
+            QPoint(label_rect.right(), label_rect.center().y()-1),
+            QPoint(label_rect.right(), label_rect.center().y()+1),
+            QPoint(label_rect.right(), label_rect.center().y()-2),
+            QPoint(label_rect.right(), label_rect.center().y()+2),
+            QPoint(label_rect.right(), label_rect.center().y()-3),
+            QPoint(label_rect.right(), label_rect.center().y()+3),
+            QPoint(label_rect.right(), label_rect.center().y()-4),
+            QPoint(label_rect.right(), label_rect.center().y()+4),
+            QPoint(label_rect.right()-1, label_rect.center().y()-3),
+            QPoint(label_rect.right()-1, label_rect.center().y()+3),
+            QPoint(label_rect.right()+1, label_rect.center().y()-3),
+            QPoint(label_rect.right()+1, label_rect.center().y()+3),
+            QPoint(label_rect.right()-1, label_rect.center().y()-2),
+            QPoint(label_rect.right()-1, label_rect.center().y()+2),
+            QPoint(label_rect.right()+1, label_rect.center().y()-2),
+            QPoint(label_rect.right()+1, label_rect.center().y()+2),
+            QPoint(label_rect.right()-2, label_rect.center().y()-2),
+            QPoint(label_rect.right()-2, label_rect.center().y()+2),
+            QPoint(label_rect.right()+2, label_rect.center().y()-2),
+            QPoint(label_rect.right()+2, label_rect.center().y()+2),
+        };
+        if (label_rect.contains(pt) || selected())
+            p.drawPoints(arrow_points, countof(arrow_points));
 
         // Paint the text
         p.setPen(Qt::white);

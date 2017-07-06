@@ -183,21 +183,11 @@ void Header::mousePressEvent(QMouseEvent *event)
         } else if (action == Trace::NAME && mTrace) {
             _nameFlag = true;
         } else if (action == Trace::LABEL && mTrace) {
-            if (mTrace->selected())
-                mTrace->select(false);
-            else {
-                if (mTrace->get_type() != SR_CHANNEL_DSO)
-                    mTrace->select(true);
-
-                if (~QApplication::keyboardModifiers() &
-                    Qt::ControlModifier)
-                    _drag_traces.clear();
-
-                // Add the Trace to the drag list
-                if (event->button() & Qt::LeftButton) {
-                    _drag_traces.push_back(make_pair(mTrace, mTrace->get_zero_vpos()));
-                }
-            }
+            mTrace->select(true);
+            if (~QApplication::keyboardModifiers() &
+                Qt::ControlModifier)
+                _drag_traces.clear();
+            _drag_traces.push_back(make_pair(mTrace, mTrace->get_zero_vpos()));
             mTrace->set_old_v_offset(mTrace->get_v_offset());
         }
 
@@ -236,13 +226,20 @@ void Header::mouseReleaseEvent(QMouseEvent *event)
     }
     if (_moveFlag) {
         //move(event);
+        _drag_traces.clear();
         _view.signals_changed();
         _view.set_all_update(true);
+
+        const vector< boost::shared_ptr<Trace> > traces(
+            _view.get_traces(ALL_VIEW));
+        BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
+            t->select(false);
     }
+
     _colorFlag = false;
     _nameFlag = false;
     _moveFlag = false;
-    _drag_traces.clear();
+
     _view.normalize_layout();
 }
 
@@ -299,21 +296,21 @@ void Header::mouseMoveEvent(QMouseEvent *event)
 			if (sig) {
                 int y = (*i).second + delta;
                 if (sig->get_type() != SR_CHANNEL_DSO) {
-                    const int y_snap =
-                        ((y + View::SignalSnapGridSize / 2) /
-                            View::SignalSnapGridSize) *
-                            View::SignalSnapGridSize;
-                    if (y_snap != sig->get_v_offset()) {
-                        _moveFlag = true;
-                        sig->set_v_offset(y_snap);
+                    if (~QApplication::keyboardModifiers() & Qt::ControlModifier) {
+                        const int y_snap =
+                            ((y + View::SignalSnapGridSize / 2) /
+                                View::SignalSnapGridSize) *
+                                View::SignalSnapGridSize;
+                        if (y_snap != sig->get_v_offset()) {
+                            _moveFlag = true;
+                            sig->set_v_offset(y_snap);
+                        }
                     }
-                    // Ensure the Trace is selected
-                    sig->select(true);
                 } else {
                     boost::shared_ptr<DsoSignal> dsoSig;
                     if (dsoSig = dynamic_pointer_cast<DsoSignal>(sig)) {
                         dsoSig->set_zero_vpos(y);
-                        dsoSig->select(false);
+                        _moveFlag = true;
                         traces_moved();
                     }
                 }

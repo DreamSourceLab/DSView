@@ -195,6 +195,8 @@ public:
     bool get_capture_status(bool &triggered, int &progress);
     void set_capture_status();
 
+    bool get_dso_trig_moved() const;
+
 signals:
 	void hover_point_changed();
 
