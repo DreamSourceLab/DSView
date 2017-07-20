@@ -400,6 +400,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_
 install(TARGETS ${PROJECT_NAME} DESTINATION bin/)
 install(DIRECTORY res DESTINATION share/${PROJECT_NAME})
 install(FILES icons/logo.png DESTINATION share/${PROJECT_NAME} RENAME logo.png)
+install(FILES ../NEWS DESTINATION share/${PROJECT_NAME}/res RENAME NEWS)
 install(FILES DreamSourceLab.rules DESTINATION /etc/udev/rules.d/)
 install(FILES DSView.desktop DESTINATION /usr/share/applications/)
 

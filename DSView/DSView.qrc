@@ -16,7 +16,6 @@
         <file>icons/protocol.png</file>
         <file>icons/logo_noColor.png</file>
         <file>icons/logo_color.png</file>
-        <file>icons/about.png</file>
         <file>icons/capture.png</file>
         <file>icons/stop.png</file>
         <file>icons/start.png</file>
@@ -32,7 +31,6 @@
         <file>icons/search-bar_dis.png</file>
         <file>icons/params_dis.png</file>
         <file>icons/gear.png</file>
-        <file>icons/wiki.png</file>
         <file>icons/wait.gif</file>
         <file>icons/instant_dis.png</file>
         <file>icons/start_dis.png</file>
@@ -64,5 +62,9 @@
         <file>icons/del.png</file>
         <file>icons/add_dis.png</file>
         <file>icons/del_dis.png</file>
+        <file>icons/about.png</file>
+        <file>icons/manual.png</file>
+        <file>icons/bug.png</file>
+        <file>icons/support.png</file>
     </qresource>
 </RCC>

@@ -52,14 +52,23 @@ LogoBar::LogoBar(SigSession &session, QWidget *parent) :
     _logo_button.addAction(_about);
     connect(_about, SIGNAL(triggered()), this, SLOT(on_actionAbout_triggered()));
 
-    _wiki = new QAction(this);
-    _wiki->setText(QApplication::translate(
-        "File", "&Wiki", 0));
-    _wiki->setIcon(QIcon::fromTheme("file",
-        QIcon(":/icons/wiki.png")));
-    _wiki->setObjectName(QString::fromUtf8("actionWiki"));
-    _logo_button.addAction(_wiki);
-    connect(_wiki, SIGNAL(triggered()), this, SLOT(on_actionWiki_triggered()));
+    _manual = new QAction(this);
+    _manual->setText(QApplication::translate(
+        "File", "&Manual", 0));
+    _manual->setIcon(QIcon::fromTheme("file",
+        QIcon(":/icons/manual.png")));
+    _manual->setObjectName(QString::fromUtf8("actionManual"));
+    _logo_button.addAction(_manual);
+    connect(_manual, SIGNAL(triggered()), this, SLOT(on_actionManual_triggered()));
+
+    _issue = new QAction(this);
+    _issue->setText(QApplication::translate(
+        "File", "&Bug Report", 0));
+    _issue->setIcon(QIcon::fromTheme("file",
+        QIcon(":/icons/bug.png")));
+    _issue->setObjectName(QString::fromUtf8("actionManual"));
+    _logo_button.addAction(_issue);
+    connect(_issue, SIGNAL(triggered()), this, SLOT(on_actionIssue_triggered()));
 
     _logo_button.setPopupMode(QToolButton::InstantPopup);
     _logo_button.setIcon(QIcon(":/icons/logo_noColor.png"));
@@ -106,10 +115,18 @@ void LogoBar::on_actionAbout_triggered()
     dlg.exec();
 }
 
-void LogoBar::on_actionWiki_triggered()
+void LogoBar::on_actionManual_triggered()
 {
+    QDir dir(QCoreApplication::applicationDirPath());
     QDesktopServices::openUrl(
-                QUrl(QLatin1String("http://www.dreamsourcelab.com/wiki")));
+                QUrl("file:///"+dir.absolutePath() + "/ug.pdf"));
+}
+
+void LogoBar::on_actionIssue_triggered()
+{
+    QDir dir(QCoreApplication::applicationDirPath());
+    QDesktopServices::openUrl(
+                QUrl(QLatin1String("https://github.com/DreamSourceLab/DSView/issues")));
 }
 
 void LogoBar::enable_toggle(bool enable)

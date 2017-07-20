@@ -27,6 +27,8 @@
 #include <QLabel>
 #include "dsdialog.h"
 
+#include <libsigrok4DSL/libsigrok.h>
+
 namespace pv {
 namespace dialogs {
 
@@ -37,10 +39,6 @@ class About : public DSDialog
 public:
 	explicit About(QWidget *parent = 0);
 	~About();
-
-private:
-    QLabel *_logo;
-    QLabel *_info;
 };
 
 } // namespace dialogs

@@ -53,7 +53,8 @@ signals:
 
 private slots:
     void on_actionAbout_triggered();
-    void on_actionWiki_triggered();
+    void on_actionManual_triggered();
+    void on_actionIssue_triggered();
 
 private:
     bool _enable;
@@ -62,7 +63,8 @@ private:
     QToolButton _logo_button;
 
     QAction *_about;
-    QAction *_wiki;
+    QAction *_manual;
+    QAction *_issue;
 
 };
 

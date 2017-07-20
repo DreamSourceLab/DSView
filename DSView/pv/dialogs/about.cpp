@@ -23,6 +23,11 @@
 
 #include <QPixmap>
 #include <QApplication>
+#include <QTextBrowser>
+#include <QFile>
+#include <QDir>
+#include <QTextStream>
+#include <QScrollBar>
 
 #include "about.h"
 
@@ -32,22 +37,59 @@ namespace dialogs {
 About::About(QWidget *parent) :
     DSDialog(parent, true)
 {
-    QPixmap pix(":/icons/dsl_logo.png");
-    _logo = new QLabel(this);
-    _logo->setPixmap(pix);
-    _logo->setAlignment(Qt::AlignCenter);
+    setFixedHeight(360);
 
-    _info = new QLabel(this);
-    _info->setText(tr("%1 %2<br /><a href=\"%4\">%4</a>")
-                     .arg(QApplication::applicationName())
-                     .arg(QApplication::applicationVersion())
-                     .arg(QApplication::organizationDomain()));
-    _info->setOpenExternalLinks(true);
-    _info->setAlignment(Qt::AlignCenter);
+    #if defined(__x86_64__) || defined(_M_X64)
+        QString arch = "x64";
+    #elif defined(__i386) || defined(_M_IX86)
+        QString arch = "x86";
+    #endif
+
+    QString version = tr("<font size=24>DSView %1 (%2)</font><br />")
+                      .arg(QApplication::applicationVersion())
+                      .arg(arch);
+
+    QString url = tr("Website: <a href=\"%1\" style=\"color:#C0C0C0\">%1</a><br />"
+                     "Gitbub: <a href=\"%2\" style=\"color:#C0C0C0\">%2</a><br />"
+                     "<br /><br />")
+                  .arg(QApplication::organizationDomain())
+                  .arg("https://github.com/DreamSourceLab/DSView");
+
+    QString thanks = tr("<font size=16>Special Thanks</font><br />"
+                        "<a href=\"%1\" style=\"color:#C0C0C0\">All backers on kickstarter</a><br />"
+                        "<a href=\"%1\" style=\"color:#C0C0C0\">All members of Sigrok project</a><br />"
+                        "All contributors of open-source projects</a><br />"
+                        "<br /><br />")
+                        .arg("https://www.kickstarter.com/projects/dreamsourcelab/dslogic-multifunction-instruments-for-everyone")
+                        .arg("http://sigrok.org/");
+
+    QString changlogs = tr("<font size=16>Changelogs</font><br />");
+    QDir dir(DS_RES_PATH);
+    QString filename = dir.absolutePath() + "/NEWS";
+    QFile news(filename);
+    if (news.open(QIODevice::ReadOnly)) {
+        QTextStream stream(&news);
+        QString line;
+        while (!stream.atEnd()){
+            line = stream.readLine();
+            changlogs += line + "<br />";
+        }
+    }
+
+    QPixmap pix(":/icons/dsl_logo.png");
+    QImage logo = pix.toImage();
+
+    QTextBrowser *about = new QTextBrowser(this);
+    about->setOpenExternalLinks(true);
+    about->setFrameStyle(QFrame::NoFrame);
+    QTextCursor cur = about->textCursor();
+    cur.insertImage(logo);
+    cur.insertHtml("<br /><br /><br />");
+    cur.insertHtml(version+url+thanks+changlogs);
+    about->moveCursor(QTextCursor::Start);
 
     QVBoxLayout *xlayout = new QVBoxLayout();
-    xlayout->addWidget(_logo);
-    xlayout->addWidget(_info);
+    xlayout->addWidget(about);
 
     layout()->addLayout(xlayout);
     setTitle(tr("About"));
