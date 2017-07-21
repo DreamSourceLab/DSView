@@ -220,12 +220,15 @@ void LogicSnapshot::append_cross_payload(
     if (_sample_count >= _total_sample_count)
         return;
 
+    _src_ptr = logic.data;
+    uint64_t len = logic.length;
     uint64_t samples = ceil(logic.length * 8.0 / _channel_num);
-
-    if (_sample_count + samples < _total_sample_count)
+    if (_sample_count + samples < _total_sample_count) {
         _sample_count += samples;
-    else
+    } else {
+        len = ceil((_total_sample_count - _sample_count) * _channel_num / 8.0);
         _sample_count = _total_sample_count;
+    }
 
     while (_sample_count > _block_num * LeafBlockSamples) {
         uint8_t index0 = _block_num / RootScale;
@@ -243,9 +246,6 @@ void LogicSnapshot::append_cross_payload(
         }
         _block_num++;
     }
-
-    _src_ptr = logic.data;
-    uint64_t len = logic.length;
 
     // bit align
     while (((_ch_fraction != 0) || (_byte_fraction != 0)) && (len != 0)) {
@@ -378,10 +378,12 @@ void LogicSnapshot::append_split_payload(
     if (_sample_cnt[order] >= _total_sample_count)
         return;
 
-    if (_sample_cnt[order] + samples < _total_sample_count)
+    if (_sample_cnt[order] + samples < _total_sample_count) {
         _sample_cnt[order] += samples;
-    else
+    } else {
+        samples = _total_sample_count - _sample_cnt[order];
         _sample_cnt[order] = _total_sample_count;
+    }
 
     while (_sample_cnt[order] > _block_cnt[order] * LeafBlockSamples) {
         uint8_t index0 = _block_cnt[order] / RootScale;

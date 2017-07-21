@@ -191,11 +191,12 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
 		memcpy(ctx->prevsample, sample, logic->unitsize);
 
 		/* The first column is a counter (needed for gnuplot). */
-        g_string_append_printf(*out, "%"PRIu64"\t", ctx->samplecount);
+        g_string_append_printf(*out, "%"PRIu64"\t", ctx->samplecount-1);
 
 		/* The next columns are the values of all channels. */
 		for (p = 0; p < ctx->num_enabled_channels; p++) {
-			idx = ctx->channel_index[p];
+            //idx = ctx->channel_index[p];
+            idx = p;
 			curbit = (sample[idx / 8] & ((uint8_t) (1 << (idx % 8)))) >> (idx % 8);
 			g_string_append_printf(*out, "%d ", curbit);
 		}

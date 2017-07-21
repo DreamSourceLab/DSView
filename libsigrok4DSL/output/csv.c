@@ -93,7 +93,8 @@ static int init(struct sr_output *o, GHashTable *options)
 		if (!ch->enabled)
 			continue;
         ctx->channel_index[i] = ch->index;
-        ctx->mask |= (1 << ch->index);
+        //ctx->mask |= (1 << ch->index);
+        ctx->mask |= (1 << i);
         ctx->channel_vdiv[i] = ch->vdiv * ch->vfactor >= 500 ? ch->vdiv * ch->vfactor / 100.0f : ch->vdiv * ch->vfactor * 10.0f;
         ctx->channel_vpos[i] = ch->vdiv * ch->vfactor >= 500 ? ch->vpos / 1000 : ch->vpos;
         i++;
@@ -217,7 +218,8 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
                 continue;
             g_string_append_printf(*out, "%0.10g", (ctx->index-1)*1.0/ctx->samplerate);
             for (j = 0; j < ctx->num_enabled_channels; j++) {
-				idx = ctx->channel_index[j];
+                //idx = ctx->channel_index[j];
+                idx = j;
 				p = logic->data + i + idx / 8;
 				c = *p & (1 << (idx % 8));
                 g_string_append_c(*out, ctx->separator);

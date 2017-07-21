@@ -37,7 +37,7 @@ StoreProgress::StoreProgress(SigSession &session, QWidget *parent) :
 
     _info.setText("...");
     _progress.setValue(0);
-    _progress.setMaximum(0);
+    _progress.setMaximum(100);
 
     QVBoxLayout* add_layout = new QVBoxLayout(this);
     add_layout->addWidget(&_info, 0, Qt::AlignCenter);
@@ -114,9 +114,8 @@ void StoreProgress::on_progress_updated()
 {
     const std::pair<uint64_t, uint64_t> p = _store_session.progress();
 	assert(p.first <= p.second);
-
-    _progress.setValue(p.first);
-    _progress.setMaximum(p.second);
+    int percent = p.first * 1.0 / p.second * 100;
+    _progress.setValue(percent);
 
     const QString err = _store_session.error();
 	if (!err.isEmpty()) {
