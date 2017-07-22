@@ -23,6 +23,7 @@ noinst_LTLIBRARIES = libsigrok4DSL_hw_dsl.la
 
 libsigrok4DSL_hw_dsl_la_SOURCES = \
 	command.c \
+        dsl.c \
 	dslogic.c \
 	dscope.c
 

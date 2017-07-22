@@ -523,8 +523,8 @@ void MainWindow::show_error()
             ch_status += (i > 9 ? " " : "");
             error_pattern >>= 1;
         }
-        details = tr("the received data are not consist with pre-defined test data!\n") +
-                  tr("0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15\n") + ch_status;
+        details = tr("the received data are not consist with pre-defined test data!") + "\n" +
+                  tr("0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15")+ "\n" + ch_status;
         break;
     case SigSession::Pkt_data_err:
         title = tr("Packet Error");
@@ -722,6 +722,13 @@ bool MainWindow::load_session(QString name)
         msg.exec();
         return false;
     }
+
+    // clear decoders
+    #ifdef ENABLE_DECODE
+    if (sdi->mode == LOGIC) {
+        _protocol_widget->del_all_protocol();
+    }
+    #endif
 
     // load device settings
     GVariant *gvar_opts;

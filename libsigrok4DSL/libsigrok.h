@@ -878,9 +878,6 @@ enum {
     SR_CONF_MAX_DSO_SAMPLELIMITS,
     SR_CONF_HW_DEPTH,
 
-    /** Hardware status */
-    SR_CONF_HW_STATUS,
-
 	/*--- Special stuff -------------------------------------------------*/
 
 	/** Scan options supported by the driver. */

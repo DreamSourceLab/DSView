@@ -556,9 +556,6 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_DSO_BITS:
         *data = g_variant_new_byte(devc->dso_bits);
         break;
-    case SR_CONF_HW_STATUS:
-        *data = g_variant_new_byte(0);
-        break;
     case SR_CONF_VLD_CH_NUM:
         *data = g_variant_new_int16(NUM_PROBES);
         break;

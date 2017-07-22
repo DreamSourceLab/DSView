@@ -25,80 +25,52 @@
 #include "libsigrok-internal.h"
 
 /* Protocol commands */
-#define CMD_GET_FW_VERSION		0xb0
-#define CMD_GET_REVID_VERSION	0xb1
-#define CMD_START               0xb2
-#define CMD_CONFIG              0xb3
-#define CMD_SETTING             0xb4
-#define CMD_CONTROL             0xb5
-#define CMD_STATUS              0xb6
-#define CMD_STATUS_INFO         0xb7
-#define CMD_WR_REG              0xb8
-#define CMD_WR_NVM              0xb9
-#define CMD_RD_NVM              0xba
-#define CMD_RD_NVM_PRE          0xbb
-#define CMD_GET_HW_INFO         0xbc
+#define CMD_CTL_WR              0xb0
+#define CMD_CTL_RD_PRE          0xb1
+#define CMD_CTL_RD              0xb2
 
-#define CMD_START_FLAGS_MODE_POS    4
-#define CMD_START_FLAGS_WIDE_POS	5
-#define CMD_START_FLAGS_CLK_SRC_POS	6
-#define CMD_START_FLAGS_STOP_POS	7
+#define bmGPIF_DONE     (1 << 7)
+#define bmFPGA_DONE     (1 << 6)
+#define bmFPGA_INIT_B   (1 << 5)
+#define bmSYS_OVERFLOW  (1 << 4)
+#define bmSYS_CLR       (1 << 3)
+#define bmSYS_EN        (1 << 2)
+#define bmLED_RED       (1 << 1)
+#define bmLED_GREEN     (1 << 0)
 
-#define CMD_START_FLAGS_MODE_LA         (1 << CMD_START_FLAGS_MODE_POS)
-
-#define CMD_START_FLAGS_SAMPLE_8BIT     (0 << CMD_START_FLAGS_WIDE_POS)
-#define CMD_START_FLAGS_SAMPLE_16BIT	(1 << CMD_START_FLAGS_WIDE_POS)
-
-#define CMD_START_FLAGS_CLK_30MHZ	(0 << CMD_START_FLAGS_CLK_SRC_POS)
-#define CMD_START_FLAGS_CLK_48MHZ	(1 << CMD_START_FLAGS_CLK_SRC_POS)
-
-#define CMD_START_FLAGS_STOP        (1 << CMD_START_FLAGS_STOP_POS)
-
-#define CMD_STATUS_CNT	32
+#define bmWR_PROG_B        (1 << 2)
+#define bmWR_INTRDY        (1 << 7)
+#define bmWR_WORDWIDE      (1 << 0)
 
 #define VTH_ADDR 0x78
 #define EEWP_ADDR 0x70
 #define COMB_ADDR 0x68
 
-#pragma pack(push, 1)
+enum {
+    DSL_CTL_FW_VERSION		= 0,
+    DSL_CTL_REVID_VERSION	= 1,
+    DSL_CTL_HW_STATUS		= 2,
+    DSL_CTL_PROG_B			= 3,
+    DSL_CTL_SYS				= 4,
+    DSL_CTL_LED				= 5,
+    DSL_CTL_INTRDY			= 6,
+    DSL_CTL_WORDWIDE		= 7,
 
+    DSL_CTL_START			= 8,
+    DSL_CTL_STOP			= 9,
+    DSL_CTL_BULK_WR			= 10,
+    DSL_CTL_REG				= 11,
+    DSL_CTL_NVM				= 12,
+
+    DSL_CTL_I2C_DSO			= 13,
+    DSL_CTL_I2C_REG			= 14,
+    DSL_CTL_DSO_MEASURE		= 15,
+};
+
+#pragma pack(push, 1) // byte align
 struct version_info {
 	uint8_t major;
 	uint8_t minor;
-};
-
-struct cmd_start_acquisition {
-	uint8_t flags;
-	uint8_t sample_delay_h;
-	uint8_t sample_delay_l;
-};
-
-struct cmd_setting_count {
-    uint8_t byte0;
-    uint8_t byte1;
-    uint8_t byte2;
-};
-
-struct cmd_cfg_count {
-    uint8_t byte0;
-    uint8_t byte1;
-    uint8_t byte2;
-};
-
-struct cmd_control {
-    uint8_t byte0;
-    uint8_t byte1;
-    uint8_t byte2;
-    uint8_t byte3;
-    uint8_t byte4;
-    uint8_t byte5;
-    uint8_t byte6;
-    uint8_t byte7;
-};
-
-struct cmd_status_info {
-    uint8_t begin;
-    uint8_t end;
 };
 
 struct cmd_zero_info {
@@ -137,35 +109,23 @@ struct cmd_vga_info {
     uint16_t vga7;
 };
 
-struct cmd_nvm_info {
-    uint16_t addr;
-    uint8_t len;
+struct ctl_header {
+    uint8_t dest;
+    uint16_t offset;
+    uint8_t size;
 };
-
+struct ctl_wr_cmd {
+    struct ctl_header header;
+    uint8_t data[60];
+};
+struct ctl_rd_cmd {
+    struct ctl_header header;
+    uint8_t *data;
+};
 #pragma pack(pop)
 
-SR_PRIV int command_get_fw_version(libusb_device_handle *devhdl,
-				   struct version_info *vi);
-SR_PRIV int command_get_revid_version(libusb_device_handle *devhdl,
-				      uint8_t *revid);
-SR_PRIV int command_start_acquisition(libusb_device_handle *devhdl,
-                      uint64_t samplerate, gboolean samplewide, gboolean la_mode);
-SR_PRIV int command_stop_acquisition(libusb_device_handle *devhdl);
 
-SR_PRIV int command_fpga_config(libusb_device_handle *devhdl);
-SR_PRIV int command_fpga_setting(libusb_device_handle *devhdl, uint32_t setting_count);
+SR_PRIV int command_ctl_wr(libusb_device_handle *devhdl, struct ctl_wr_cmd cmd);
+SR_PRIV int command_ctl_rd(libusb_device_handle *devhdl, struct ctl_rd_cmd cmd);
 
-SR_PRIV int command_dso_ctrl(libusb_device_handle *devhdl, uint64_t command);
-
-SR_PRIV int command_get_status(libusb_device_handle *devhdl,
-                   unsigned char *status,
-                               int begin, int end);
-
-SR_PRIV int command_wr_reg(libusb_device_handle *devhdl, uint8_t value, uint8_t addr);
-
-SR_PRIV int command_wr_nvm(libusb_device_handle *devhdl, unsigned char *ctx, uint8_t len);
-SR_PRIV int command_rd_nvm(libusb_device_handle *devhdl, unsigned char *ctx, uint16_t addr, uint8_t len);
-
-SR_PRIV int command_get_hw_info(libusb_device_handle *devhdl,
-                      uint8_t *fpga_done);
 #endif

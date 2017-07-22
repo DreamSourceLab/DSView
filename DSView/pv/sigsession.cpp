@@ -445,7 +445,6 @@ bool SigSession::get_capture_status(bool &triggered, int &progress)
     sr_status status;
     if (sr_status_get(_dev_inst->dev_inst(), &status, SR_STATUS_TRIG_BEGIN, SR_STATUS_TRIG_END) == SR_OK){
         triggered = status.trig_hit & 0x01;
-        const bool  captured_cnt_dec = status.trig_hit & 0x02;
         uint64_t captured_cnt = status.trig_hit >> 2;
         captured_cnt = ((uint64_t)status.captured_cnt0 +
                        ((uint64_t)status.captured_cnt1 << 8) +
@@ -454,7 +453,7 @@ bool SigSession::get_capture_status(bool &triggered, int &progress)
                        (captured_cnt << 32));
         if (_dev_inst->dev_inst()->mode == DSO)
             captured_cnt = captured_cnt * _signals.size() / get_ch_num(SR_CHANNEL_DSO);
-        if (captured_cnt_dec)
+        if (triggered)
             progress = (sample_limits - captured_cnt) * 100.0 / sample_limits;
         else
             progress = captured_cnt * 100.0 / sample_limits;
@@ -1057,8 +1056,10 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
 
     case SR_DF_OVERFLOW:
     {
-        _error = Data_overflow;
-        session_error();
+        if (_error == No_err) {
+            _error = Data_overflow;
+            session_error();
+        }
         break;
     }
 	case SR_DF_END:

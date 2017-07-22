@@ -25,6 +25,21 @@
 #include "libsigrok.h"
 #include "libsigrok-internal.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <errno.h>
+#include <assert.h>
+
+#include <sys/stat.h>
+#include <inttypes.h>
+
+#undef min
+#define min(a,b) ((a)<(b)?(a):(b))
+#undef max
+#define max(a,b) ((a)>(b)?(a):(b))
+
 /* Message logging helpers with subsystem-specific prefix string. */
 #define LOG_PREFIX "DSL Hardware: "
 #define ds_log(l, s, args...) ds_log(l, LOG_PREFIX s, ## args)
@@ -43,8 +58,8 @@
 #define NUM_SIMUL_TRANSFERS	64
 #define MAX_EMPTY_TRANSFERS	(NUM_SIMUL_TRANSFERS * 2)
 
-#define DSL_REQUIRED_VERSION_MAJOR	1
-#define DSL_REQUIRED_VERSION_MINOR	1
+#define DSL_REQUIRED_VERSION_MAJOR	2
+#define DSL_REQUIRED_VERSION_MINOR	0
 
 #define MAX_8BIT_SAMPLE_RATE	DS_MHZ(24)
 #define MAX_16BIT_SAMPLE_RATE	DS_MHZ(12)
@@ -233,6 +248,12 @@ static const struct DSL_profile supported_DSCope[] = {
      "DSCope20.bin",
      DEV_CAPS_16BIT},
 
+    {0x2A0E, 0x0022, NULL, "DSCope B20", NULL,
+     "DSCopeB20.fw",
+     "DSCope20.bin",
+     "DSCope20.bin",
+     DEV_CAPS_16BIT},
+
     { 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 };
 
@@ -326,7 +347,9 @@ struct DSL_context {
     GIOChannel *channel;
 
     int status;
+    int trf_completed;
     gboolean mstatus_valid;
+    struct sr_status mstatus;
     gboolean abort;
     gboolean overflow;
 };
@@ -374,5 +397,30 @@ struct DSL_vga {
     uint16_t voff0;
     uint16_t voff1;
 };
+
+SR_PRIV int dsl_en_ch_num(const struct sr_dev_inst *sdi);
+SR_PRIV gboolean dsl_check_conf_profile(libusb_device *dev);
+SR_PRIV int dsl_configure_probes(const struct sr_dev_inst *sdi);
+SR_PRIV uint64_t dsl_channel_depth(const struct sr_dev_inst *sdi);
+
+SR_PRIV int dsl_wr_reg(const struct sr_dev_inst *sdi, uint8_t addr, uint8_t value);
+SR_PRIV int dsl_wr_dso(const struct sr_dev_inst *sdi, uint64_t cmd);
+SR_PRIV int dsl_wr_nvm(const struct sr_dev_inst *sdi, unsigned char *ctx, uint16_t addr, uint8_t len);
+SR_PRIV int dsl_rd_nvm(const struct sr_dev_inst *sdi, unsigned char *ctx, uint16_t addr, uint8_t len);
+
+SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi);
+SR_PRIV int dsl_fpga_config(struct libusb_device_handle *hdl, const char *filename);
+
+SR_PRIV int dsl_config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
+                      const struct sr_channel *ch,
+                      const struct sr_channel_group *cg);
+
+SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboolean *fpga_done);
+SR_PRIV int dsl_dev_close(struct sr_dev_inst *sdi);
+SR_PRIV int dsl_dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data);
+SR_PRIV int dsl_dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, int begin, int end);
+
+SR_PRIV unsigned int dsl_get_timeout(struct DSL_context *devc);
+SR_PRIV int dsl_start_transfers(const struct sr_dev_inst *sdi);
 
 #endif
