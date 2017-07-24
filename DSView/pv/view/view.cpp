@@ -578,7 +578,7 @@ void View::update_scroll()
 	} else {
 		horizontalScrollBar()->setRange(0, MaxScrollValue);
 		horizontalScrollBar()->setSliderPosition(
-            _offset * MaxScrollValue / length);
+            _offset * 1.0  / length * MaxScrollValue);
 	}
 
 	_updating_scroll = false;
@@ -824,7 +824,7 @@ void View::h_scroll_value_changed(int value)
         int64_t length = 0;
         int64_t offset = 0;
 		get_scroll_layout(length, offset);
-        _offset = floor(length * value / MaxScrollValue);
+        _offset = floor(value * 1.0 / MaxScrollValue * length);
 	}
 
     _offset = max(min(_offset, get_max_offset()), get_min_offset());

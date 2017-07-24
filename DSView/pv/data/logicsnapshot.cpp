@@ -495,18 +495,22 @@ bool LogicSnapshot::get_sample(uint64_t index, int sig_index)
     int order = get_ch_order(sig_index);
     assert(order != -1);
     assert(_ch_data[order].size() != 0);
-    assert(index < get_sample_count());
+    //assert(index < get_sample_count());
 
-    uint64_t index_mask = 1ULL << (index & LevelMask[0]);
-    uint64_t root_index = index >> (LeafBlockPower + RootScalePower);
-    uint8_t root_pos = (index & RootMask) >> LeafBlockPower;
-    uint64_t root_pos_mask = 1ULL << root_pos;
+    if (index < get_sample_count()) {
+        uint64_t index_mask = 1ULL << (index & LevelMask[0]);
+        uint64_t root_index = index >> (LeafBlockPower + RootScalePower);
+        uint8_t root_pos = (index & RootMask) >> LeafBlockPower;
+        uint64_t root_pos_mask = 1ULL << root_pos;
 
-    if ((_ch_data[order][root_index].tog & root_pos_mask) == 0) {
-        return (_ch_data[order][root_index].value & root_pos_mask) != 0;
+        if ((_ch_data[order][root_index].tog & root_pos_mask) == 0) {
+            return (_ch_data[order][root_index].value & root_pos_mask) != 0;
+        } else {
+            uint64_t *lbp = (uint64_t *)_ch_data[order][root_index].lbp[root_pos];
+            return *(lbp + ((index & LeafMask) >> ScalePower)) & index_mask;
+        }
     } else {
-        uint64_t *lbp = (uint64_t *)_ch_data[order][root_index].lbp[root_pos];
-        return *(lbp + ((index & LeafMask) >> ScalePower)) & index_mask;
+        return false;
     }
 }
 

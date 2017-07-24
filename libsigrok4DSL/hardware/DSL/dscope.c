@@ -24,8 +24,6 @@
 #include "dsl.h"
 #include "command.h"
 
-#undef min
-#define min(a,b) ((a)<(b)?(a):(b))
 
 static struct sr_dev_mode mode_list[] = {
     {"OSC", DSO},

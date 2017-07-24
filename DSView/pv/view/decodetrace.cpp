@@ -301,7 +301,8 @@ void DecodeTrace::paint_mid(QPainter &p, int left, int right)
                         const uint64_t max_annotation =
                                 _decoder_stack->get_max_annotation(row);
                         const double max_annWidth = max_annotation / samples_per_pixel;
-                        if ((max_annWidth > 10 && min_annWidth > 1) ||
+                        if ((max_annWidth > 100) ||
+                            (max_annWidth > 10 && min_annWidth > 1) ||
                             (max_annWidth == 0 && samples_per_pixel < 10)) {
                             vector<Annotation> annotations;
                             _decoder_stack->get_annotation_subset(annotations, row,

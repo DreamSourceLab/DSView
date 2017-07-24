@@ -254,7 +254,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
     gLayout->addWidget(adv_radioButton, 1, 0);
     gLayout->addWidget(position_label, 2, 0);
     gLayout->addWidget(position_spinBox, 2, 1);
-    gLayout->addWidget(new QLabel(_widget), 2, 2);
+    gLayout->addWidget(new QLabel(tr("%"), _widget), 2, 2);
     gLayout->addWidget(position_slider, 3, 0, 1, 3);
     gLayout->addWidget(stages_label, 4, 0);
     gLayout->addWidget(stages_comboBox, 4, 1);

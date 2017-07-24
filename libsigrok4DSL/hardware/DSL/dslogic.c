@@ -24,14 +24,6 @@
 #include "dsl.h"
 #include "command.h"
 
-#undef min
-#define min(a,b) ((a)<(b)?(a):(b))
-#undef max
-#define max(a,b) ((a)>(b)?(a):(b))
-
-static const unsigned int single_buffer_time = 20;
-static const unsigned int total_buffer_time = 100;
-static const unsigned int instant_buffer_size = 1024 * 1024;
 
 static struct sr_dev_mode mode_list[] = {
     {"LA", LOGIC},

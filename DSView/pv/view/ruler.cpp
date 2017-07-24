@@ -297,6 +297,10 @@ void Ruler::mouseReleaseEvent(QMouseEvent *event)
             _curs_moved = false;
             _view.cursor_moved();
         }
+
+        if (_hitCursor && !_grabbed_marker) {
+            _hitCursor = false;
+        }
     }
 
     if (event->button() & Qt::RightButton) {

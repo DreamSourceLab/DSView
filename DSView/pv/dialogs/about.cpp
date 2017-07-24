@@ -28,6 +28,7 @@
 #include <QDir>
 #include <QTextStream>
 #include <QScrollBar>
+#include <QTextCodec>
 
 #include "about.h"
 
@@ -68,7 +69,9 @@ About::About(QWidget *parent) :
     QString filename = dir.absolutePath() + "/NEWS";
     QFile news(filename);
     if (news.open(QIODevice::ReadOnly)) {
+        QTextCodec *code=QTextCodec::codecForName("UTF-8");
         QTextStream stream(&news);
+        stream.setCodec(code);
         QString line;
         while (!stream.atEnd()){
             line = stream.readLine();

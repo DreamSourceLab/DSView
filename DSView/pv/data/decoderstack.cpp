@@ -50,7 +50,7 @@ const int64_t DecoderStack::DecodeChunkLength = 4 * 1024;
 //const int64_t DecoderStack::DecodeChunkLength = 1024 * 1024;
 const unsigned int DecoderStack::DecodeNotifyPeriod = 1024;
 
-mutex DecoderStack::_global_decode_mutex;
+boost::mutex DecoderStack::_global_decode_mutex;
 
 DecoderStack::DecoderStack(pv::SigSession &session,
 	const srd_decoder *const dec) :
@@ -179,7 +179,7 @@ void DecoderStack::build_row()
 
 int64_t DecoderStack::samples_decoded() const
 {
-    lock_guard<boost::recursive_mutex> decode_lock(_output_mutex);
+    boost::lock_guard<boost::recursive_mutex> decode_lock(_output_mutex);
 	return _samples_decoded;
 }
 
@@ -289,7 +289,7 @@ bool DecoderStack::has_annotations(const Row &row) const
 
 uint64_t DecoderStack::list_annotation_size() const
 {
-    lock_guard<boost::recursive_mutex> lock(_output_mutex);
+    boost::lock_guard<boost::recursive_mutex> lock(_output_mutex);
     uint64_t max_annotation_size = 0;
     for (map<const Row, RowData>::const_iterator i = _rows.begin();
         i != _rows.end(); i++) {
@@ -555,7 +555,7 @@ void DecoderStack::decode_data(
         }
 
         {
-            lock_guard<boost::recursive_mutex> lock(_output_mutex);
+            boost::lock_guard<boost::recursive_mutex> lock(_output_mutex);
             _samples_decoded = i - decode_start + 1;
         }
 
@@ -572,7 +572,7 @@ void DecoderStack::decode_data(
 
 void DecoderStack::decode_proc()
 {
-    lock_guard<mutex> decode_lock(_global_decode_mutex);
+    boost::lock_guard<boost::mutex> decode_lock(_global_decode_mutex);
 
     optional<uint64_t> sample_count;
 	srd_session *session;
@@ -693,7 +693,7 @@ void DecoderStack::annotation_callback(srd_proto_data *pdata, void *decoder)
     }
 
 	// Add the annotation
-    lock_guard<boost::recursive_mutex> lock(d->_output_mutex);
+    boost::lock_guard<boost::recursive_mutex> lock(d->_output_mutex);
     if (!(*row_iter).second.push_annotation(a))
         d->_no_memory = true;
 }

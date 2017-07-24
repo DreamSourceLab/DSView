@@ -56,8 +56,8 @@ Search::Search(QWidget *parent, SigSession &session, std::map<uint16_t, QString>
         boost::shared_ptr<view::LogicSignal> logic_sig;
         if (logic_sig = boost::dynamic_pointer_cast<view::LogicSignal>(sig)) {
             QLineEdit *search_lineEdit = new QLineEdit(this);
-            if (pattern.find(index) != pattern.end())
-                search_lineEdit->setText(pattern[index]);
+            if (pattern.find(logic_sig->get_index()) != pattern.end())
+                search_lineEdit->setText(pattern[logic_sig->get_index()]);
             else
                 search_lineEdit->setText("X");
             search_lineEdit->setValidator(value_validator);
@@ -116,7 +116,7 @@ std::map<uint16_t, QString> Search::get_pattern()
         assert(sig);
         boost::shared_ptr<view::LogicSignal> logic_sig;
         if (logic_sig = boost::dynamic_pointer_cast<view::LogicSignal>(sig)) {
-            pattern[index] = _search_lineEdit_vec[index]->text();
+            pattern[logic_sig->get_index()] = _search_lineEdit_vec[index]->text();
             index++;
         }
     }
