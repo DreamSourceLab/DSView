@@ -77,9 +77,6 @@ static const char *probe_names[] = {
 	NULL,
 };
 
-static uint16_t test_sample_value;
-static uint16_t test_init = 1;
-
 static const uint64_t samplerates[] = {
     SR_KHZ(10),
     SR_KHZ(20),
@@ -1529,8 +1526,6 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
     int ret;
     struct ctl_wr_cmd wr_cmd;
 
-    test_init = 1;
-
     if (sdi->status != SR_ST_ACTIVE)
         return SR_ERR_DEV_CLOSED;
 
@@ -1546,7 +1541,6 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
     devc->num_transfers = 0;
     devc->submitted_transfers = 0;
     devc->actual_samples = devc->limit_samples;
-	test_sample_value = 0;
 	devc->abort = FALSE;
     devc->mstatus_valid = FALSE;
     devc->overflow = FALSE;
@@ -1641,8 +1635,13 @@ static int dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data)
 
 static int dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, int begin, int end)
 {
-    int ret = dsl_dev_status_get(sdi, status, begin, end);
-    return ret;
+    struct DSL_context *devc = sdi->priv;
+    if (devc->instant || devc->status == DSL_DATA) {
+        int ret = dsl_dev_status_get(sdi, status, begin, end);
+        return ret;
+    } else {
+        return FALSE;
+    }
 }
 
 SR_PRIV struct sr_dev_driver DSCope_driver_info = {

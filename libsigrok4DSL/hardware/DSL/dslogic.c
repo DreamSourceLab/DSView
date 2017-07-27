@@ -169,9 +169,6 @@ static const char *probe_names[] = {
 	NULL,
 };
 
-static uint16_t test_sample_value;
-static uint16_t test_init = 1;
-
 static const uint64_t samplerates[] = {
     SR_KHZ(10),
     SR_KHZ(20),
@@ -1403,8 +1400,6 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
     int ret;
     struct ctl_wr_cmd wr_cmd;
 
-    test_init = 1;
-
     if (sdi->status != SR_ST_ACTIVE)
         return SR_ERR_DEV_CLOSED;
 
@@ -1422,7 +1417,6 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
     devc->submitted_transfers = 0;
     devc->actual_samples = devc->limit_samples;
     devc->actual_bytes = devc->actual_samples / DSLOGIC_ATOMIC_SAMPLES * dsl_en_ch_num(sdi) * DSLOGIC_ATOMIC_SIZE;
-	test_sample_value = 0;
 	devc->abort = FALSE;
     devc->mstatus_valid = FALSE;
     devc->overflow = FALSE;

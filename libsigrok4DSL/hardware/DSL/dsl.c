@@ -31,6 +31,7 @@ extern struct ds_trigger *trigger;
 static const unsigned int single_buffer_time = 20;
 static const unsigned int total_buffer_time = 100;
 static const unsigned int instant_buffer_size = 1024 * 1024;
+static uint16_t test_init = 1;
 
 SR_PRIV int dsl_en_ch_num(const struct sr_dev_inst *sdi)
 {
@@ -1417,6 +1418,7 @@ SR_PRIV int dsl_start_transfers(const struct sr_dev_inst *sdi)
 
     devc = sdi->priv;
     usb = sdi->conn;
+    test_init = 1;
 
     if (devc->instant)
         dso_buffer_size = instant_buffer_size * g_slist_length(sdi->channels);
