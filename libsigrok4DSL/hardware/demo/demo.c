@@ -1179,8 +1179,9 @@ static int hw_dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data)
 	return SR_OK;
 }
 
-static int hw_dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, int begin, int end)
+static int hw_dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, gboolean prg, int begin, int end)
 {
+    (void)prg;
     (void)begin;
     (void)end;
     if (sdi) {

@@ -415,7 +415,7 @@ SR_API const struct sr_config_info *sr_config_info_get(int key)
  */
 SR_API int sr_status_get(const struct sr_dev_inst *sdi,
                          struct sr_status *status,
-                         int begin, int end)
+                         gboolean prg, int begin, int end)
 {
     int ret;
 
@@ -424,7 +424,7 @@ SR_API int sr_status_get(const struct sr_dev_inst *sdi,
     else if (!sdi->driver->dev_status_get)
         ret = SR_ERR_ARG;
     else
-        ret = sdi->driver->dev_status_get(sdi, status, begin, end);
+        ret = sdi->driver->dev_status_get(sdi, status, prg, begin, end);
 
     return ret;
 }

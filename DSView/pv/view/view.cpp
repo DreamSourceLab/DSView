@@ -1129,33 +1129,6 @@ void View::repeat_show()
     _viewbottom->update();
 }
 
-bool View::get_capture_status(bool &triggered, int &progress)
-{
-    uint64_t sample_limits = _session.cur_samplelimits();
-    sr_status status;
-    if (sr_status_get(_session.get_device()->dev_inst(), &status, SR_STATUS_TRIG_BEGIN, SR_STATUS_TRIG_END) == SR_OK){
-        triggered = status.trig_hit & 0x01;
-        const bool  captured_cnt_dec = status.trig_hit & 0x02;
-        uint64_t captured_cnt = status.trig_hit >> 2;
-        captured_cnt = ((uint64_t)status.captured_cnt0 +
-                       ((uint64_t)status.captured_cnt1 << 8) +
-                       ((uint64_t)status.captured_cnt2 << 16) +
-                       ((uint64_t)status.captured_cnt3 << 24) +
-                       (captured_cnt << 32));
-        if (_session.get_device()->dev_inst()->mode == DSO)
-            captured_cnt = captured_cnt * _session.get_signals().size() / _session.get_ch_num(SR_CHANNEL_DSO);
-        if (captured_cnt_dec)
-            progress = (sample_limits - captured_cnt) * 100.0 / sample_limits;
-        else
-            progress = captured_cnt * 100.0 / sample_limits;
-
-
-        return true;
-    }
-
-    return false;
-}
-
 void View::set_capture_status()
 {
     bool triggered;

@@ -1498,9 +1498,9 @@ static int dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data)
     return ret;
 }
 
-static int dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, int begin, int end)
+static int dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, gboolean prg, int begin, int end)
 {
-    int ret = dsl_dev_status_get(sdi, status, begin, end);
+    int ret = dsl_dev_status_get(sdi, status, prg, begin, end);
     return ret;
 }
 

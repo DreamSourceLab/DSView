@@ -418,7 +418,7 @@ SR_PRIV int dsl_config_get(int id, GVariant **data, const struct sr_dev_inst *sd
 SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboolean *fpga_done);
 SR_PRIV int dsl_dev_close(struct sr_dev_inst *sdi);
 SR_PRIV int dsl_dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data);
-SR_PRIV int dsl_dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, int begin, int end);
+SR_PRIV int dsl_dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, gboolean prg, int begin, int end);
 
 SR_PRIV unsigned int dsl_get_timeout(struct DSL_context *devc);
 SR_PRIV int dsl_start_transfers(const struct sr_dev_inst *sdi);

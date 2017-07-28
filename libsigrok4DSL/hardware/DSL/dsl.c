@@ -1082,7 +1082,7 @@ SR_PRIV int dsl_dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_dat
     return SR_OK;
 }
 
-SR_PRIV int dsl_dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, int begin, int end)
+SR_PRIV int dsl_dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, gboolean prg, int begin, int end)
 {
     int ret = SR_ERR;
     struct ctl_rd_cmd rd_cmd;
@@ -1093,7 +1093,7 @@ SR_PRIV int dsl_dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *
 
         devc = sdi->priv;
         usb = sdi->conn;
-        if (devc->status == DSL_START) {
+        if (prg && (devc->status == DSL_START)) {
             rd_cmd.header.dest = DSL_CTL_DSO_MEASURE;
             rd_cmd.header.offset = begin;
             rd_cmd.header.size = end - begin + 1;

@@ -344,7 +344,7 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
                 fprintf(meta, " vFactor%d = %d\n", probe->index, probe->vfactor);
                 fprintf(meta, " vPos%d = %lf\n", probe->index, probe->vpos);
                 fprintf(meta, " vTrig%d = %d\n", probe->index, probe->trig_value);
-                if (sr_status_get(sdi, &status, 0, 0) == SR_OK) {
+                if (sr_status_get(sdi, &status, false, 0, 0) == SR_OK) {
                     if (probe->index == 0) {
                         fprintf(meta, " period%d = %" PRIu64 "\n", probe->index, status.ch0_period);
                         fprintf(meta, " pcnt%d = %" PRIu32 "\n", probe->index, status.ch0_pcnt);

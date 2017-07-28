@@ -1343,7 +1343,7 @@ void DsoSignal::paint_measure(QPainter &p)
     int index = get_index();
     const int st_begin = (index == 0) ? SR_STATUS_CH0_BEGIN : SR_STATUS_CH1_BEGIN;
     const int st_end = (index == 0) ? SR_STATUS_CH0_END : SR_STATUS_CH1_END;
-    if (sr_status_get(_dev_inst->dev_inst(), &status, st_begin, st_end) == SR_OK) {
+    if (sr_status_get(_dev_inst->dev_inst(), &status, false, st_begin, st_end) == SR_OK) {
         _max = (index == 0) ? status.ch0_max : status.ch1_max;
         _min = (index == 0) ? status.ch0_min : status.ch1_min;
         const uint64_t period = (index == 0) ? status.ch0_period : status.ch1_period;

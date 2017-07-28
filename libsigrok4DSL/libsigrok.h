@@ -1084,7 +1084,7 @@ struct sr_dev_driver {
 	int (*dev_close) (struct sr_dev_inst *sdi);
     int (*dev_status_get) (const struct sr_dev_inst *sdi,
                            struct sr_status *status,
-                           int begin, int end);
+                           gboolean prg, int begin, int end);
     int (*dev_acquisition_start) (struct sr_dev_inst *sdi,
 			void *cb_data);
     int (*dev_acquisition_stop) (const struct sr_dev_inst *sdi,

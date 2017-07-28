@@ -192,7 +192,6 @@ public:
 
     void viewport_update();
 
-    bool get_capture_status(bool &triggered, int &progress);
     void set_capture_status();
 
     bool get_dso_trig_moved() const;
