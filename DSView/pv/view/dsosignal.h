@@ -115,7 +115,7 @@ public:
     bool go_vDialNext();
     bool go_hDialPre(bool setted);
     bool go_hDialNext(bool setted);
-    bool update_capture();
+    bool update_capture(bool instant);
     uint64_t get_vDialValue() const;
     uint64_t get_hDialValue() const;
     uint16_t get_vDialSel() const;

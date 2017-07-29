@@ -211,7 +211,7 @@ void DsoSignal::set_enable(bool enable)
                           g_variant_new_boolean(enable));
 
     if (running) {
-        update_capture();
+        update_capture(_view->session().get_instant());
         _view->session().repeat_resume();
     }
 
@@ -333,7 +333,7 @@ bool DsoSignal::go_hDialPre(bool setted)
     }
 }
 
-bool DsoSignal::update_capture()
+bool DsoSignal::update_capture(bool instant)
 {
     int ch_num = _view->session().get_ch_num(SR_CHANNEL_DSO);
     if (ch_num == 0)
@@ -350,7 +350,10 @@ bool DsoSignal::update_capture()
         qDebug() << "ERROR: config_get SR_CONF_MAX_DSO_SAMPLERATE failed.";
         return false;
     }
-    gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_MAX_DSO_SAMPLELIMITS);
+    if (instant)
+        gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_HW_DEPTH);
+    else
+        gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_MAX_DSO_SAMPLELIMITS);
     if (gvar != NULL) {
         max_sample_limit = g_variant_get_uint64(gvar);
         g_variant_unref(gvar);

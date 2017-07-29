@@ -253,7 +253,7 @@ void View::update_sample(bool instant)
     BOOST_FOREACH(const boost::shared_ptr<pv::view::Signal> s, _session.get_signals()) {
         boost::shared_ptr<pv::view::DsoSignal> dsoSig;
         if (dsoSig = dynamic_pointer_cast<pv::view::DsoSignal>(s)) {
-            dsoSig->update_capture();
+            dsoSig->update_capture(instant);
             break;
         }
     }
