@@ -106,7 +106,7 @@ set(DS_DESCRIPTION "A GUI for instruments of DreamSourceLab")
 
 set(DS_VERSION_MAJOR 0)
 set(DS_VERSION_MINOR 9)
-set(DS_VERSION_MICRO 7)
+set(DS_VERSION_MICRO 8)
 set(DS_VERSION_STRING
 	${DS_VERSION_MAJOR}.${DS_VERSION_MINOR}.${DS_VERSION_MICRO}
 )
@@ -400,7 +400,8 @@ set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_
 install(TARGETS ${PROJECT_NAME} DESTINATION bin/)
 install(DIRECTORY res DESTINATION share/${PROJECT_NAME})
 install(FILES icons/logo.png DESTINATION share/${PROJECT_NAME} RENAME logo.png)
-install(FILES ../NEWS DESTINATION share/${PROJECT_NAME}/res RENAME NEWS)
+install(FILES ../NEWS DESTINATION share/${PROJECT_NAME} RENAME NEWS)
+install(FILES ../ug.pdf DESTINATION share/${PROJECT_NAME} RENAME ug.pdf)
 install(FILES DreamSourceLab.rules DESTINATION /etc/udev/rules.d/)
 install(FILES DSView.desktop DESTINATION /usr/share/applications/)
 

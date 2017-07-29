@@ -29,6 +29,8 @@
 
 #include "../sigsession.h"
 
+#include <libsigrok4DSL/libsigrok.h>
+
 namespace pv {
 namespace toolbars {
 

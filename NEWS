@@ -1,3 +1,23 @@
+0.98 (2017-07-29)
+-----------------
+  --common
+  *fix hardware initialization issue(always red led indicator) when power on
+  *improve move operations of cursors/label/trigger level, support both press-drag and select-move-release mode
+  *update the manually, and integrate into the menu of the software
+  *improve the content of 'About' menu, add 'changelogs' information
+  *firmware/HDL update
+
+  --for logic analyzer
+  *improve display scale of decoder contents under exception case
+  *fix display issue of progressbar of saving dsl file, when sample depth greater than 4G
+  *fix export issue when part of channels enalbed
+  *fix pattern search issue.
+  *fix out of boundary issue of scroll bar, when sample depth greater than 8G
+
+  --for oscilloscope
+  *fix auto calibraiton issue
+  *improve noise processing method
+
 0.97 (2017-06-02)
 -----------------
   --common

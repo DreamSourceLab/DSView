@@ -66,6 +66,7 @@ About::About(QWidget *parent) :
 
     QString changlogs = tr("<font size=16>Changelogs</font><br />");
     QDir dir(DS_RES_PATH);
+    dir.cdUp();
     QString filename = dir.absolutePath() + "/NEWS";
     QFile news(filename);
     if (news.open(QIODevice::ReadOnly)) {

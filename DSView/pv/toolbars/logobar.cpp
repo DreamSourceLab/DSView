@@ -117,7 +117,8 @@ void LogoBar::on_actionAbout_triggered()
 
 void LogoBar::on_actionManual_triggered()
 {
-    QDir dir(QCoreApplication::applicationDirPath());
+    QDir dir(DS_RES_PATH);
+	dir.cdUp();
     QDesktopServices::openUrl(
                 QUrl("file:///"+dir.absolutePath() + "/ug.pdf"));
 }
