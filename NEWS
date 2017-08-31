@@ -10,12 +10,12 @@
   --for logic analyzer
   *improve display scale of decoder contents under exception case
   *fix display issue of progressbar of saving dsl file, when sample depth greater than 4G
-  *fix export issue when part of channels enalbed
+  *fix export issue when part of channels enabled
   *fix pattern search issue.
   *fix out of boundary issue of scroll bar, when sample depth greater than 8G
 
   --for oscilloscope
-  *fix auto calibraiton issue
+  *fix auto calibration issue
   *improve noise processing method
 
 0.97 (2017-06-02)
@@ -28,14 +28,14 @@
   *fix window display issue: maximize/minimize/show/hide...etc
 
   --for logic analyzer
-  *Enhance stream mode funtion to achieve 100M@3channels / 50M@6channels / 25M@12channels / 20M@16channels
+  *Enhance stream mode function to achieve 100M@3channels / 50M@6channels / 25M@12channels / 20M@16channels
   *improve memory structure, extend sample depth to solve memory alloc fail issue
   *resolve the coupling between channel data, unused channels don't occupy memory space
   *add stop options to support upload already captured data under buffer mode
   *add save/load function for protocol settings
   *add cursor-based edge statistics function
-  *add repetitive mode to support repeat trigger acquisiton
-  *improve search funciton to support start position setting
+  *add repetitive mode to support repeat trigger acquisition
+  *improve search function to support start position setting
   *improve advanced trigger
   *improve cursor measurement method, add 16 sets of measurement between cursors
   *fix trigger issue when sample rate greater than 100MHz
@@ -43,10 +43,10 @@
   *implement free combination of channels under stream mode
   *improve file saving display window, and add cancel button
   *fix partial decoding issue
-  *fix messy code issue when add protocol decoder
+  *fix messy code issue when adding protocol decoder
   *improve the stability of protocol decoder
-  *add mapping funtion from graphic decode to list decode
-  *add mapping flag between grapic decode and list decode
+  *add mapping function from graphic decode to list decode
+  *add mapping flag between graphic decode and list decode
   *add channel height option for file device
   *add auto snap to edge function when insert cursor
 
@@ -103,9 +103,9 @@
  *add RLE compress mode
  *improve mode setting strategy, fix channel number
  *add edge count function
- *fix memory leakage when run protocol decoder
+ *fix memory leakage when running protocol decoder
  *add signal height setting, improve display issue
- *fix crash issue when add group signal
+ *fix crash issue when adding group signal
  *fix channel enable/disable issue
  *fix channel display issue when load file input
  *add cursor by mouse double-click
@@ -113,11 +113,11 @@
 
  --for oscilloscope
  *add file export/load function
- *fix wait time issue when trigger setted
+ *fix wait time issue when trigger set
  *improve display of signal measure
  *add Vrms/Vmean/Vp-p measure
- *fix setting issue when load session
- *imporve add/del of measure ruler
+ *fix setting issue when loading session
+ *improve add/del of measure ruler
  *fix other issues
 
 0.94 (2015-06-29)
@@ -130,7 +130,7 @@
  --for logic analyzer
  * upgrade advance trigger counter from 16bit to 32bit
  * add serial trigger function
- * fix memory leakage issue when load *.dsl files
+ * fix memory leakage issue when loading *.dsl files
  * fix delete group signal issue when no data captured
 
  --for oscilloscope
@@ -168,7 +168,7 @@
  * Support up to 1G samples @ LA mode
  * Add zero adjustment @ Oscilloscope mode
  * Support zero skew parameters restore
- * Enhance stbility
+ * Enhance stability
  * Fix other bugs
 
 0.4 (2014-09-24)
@@ -205,12 +205,12 @@
 0.3 (2014-06-29)
 -----------------
  * Add DSLogic Oscilloscope module support.
- * Fix data display issue when not all channels be enabled.
+ * Fix data display issue when not all channels are enabled.
  * Fix issue of data mirrored to other channels.
  * Fix radiobutton/checkbox display issue under certain windows theme.
  * Add new simple trigger type
  * Fix bugs of trigger setting and detection
- * Fix other minior issues.
+ * Fix other minor issues.
  * Clean up the git repository
 
 0.2.1 (2014-05-08)
