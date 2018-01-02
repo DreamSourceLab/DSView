@@ -257,7 +257,7 @@ void Ruler::mousePressEvent(QMouseEvent *event)
 
 void Ruler::mouseReleaseEvent(QMouseEvent *event)
 {
-    bool addCursor = false;
+    bool updatedCursor = false;
     if (event->button() & Qt::LeftButton) {
         if (!_hitCursor && !_grabbed_marker) {
             if (!_cursor_go_visible) {
@@ -271,12 +271,14 @@ void Ruler::mouseReleaseEvent(QMouseEvent *event)
                     if (overCursor == 0) {
                         _view.add_cursor(CursorColor[_view.get_cursorList().size() % 8], index);
                         _view.show_cursors(true);
-                        addCursor = true;
+                        updatedCursor = true;
                     } else if (overCursor > 0) {
                         list<Cursor*>::iterator i = _view.get_cursorList().begin();
                         while (--overCursor != 0)
                                 i++;
                         (*i)->set_index(index);
+                        updatedCursor = true;
+                        _view.cursor_moved();
                     }
                     _cursor_sel_visible = false;
                 }
@@ -326,9 +328,10 @@ void Ruler::mouseReleaseEvent(QMouseEvent *event)
     }
 
     update();
-    if (addCursor) {
-        const QRect reDrawRect = QRect(_cursor_sel_x - 1, 0, 3, _view.viewport()->height());
-        _view.viewport()->update(reDrawRect);
+    if (updatedCursor) {
+        //const QRect reDrawRect = QRect(_cursor_sel_x - 1, 0, 3, _view.viewport()->height());
+        //_view.viewport()->update(reDrawRect);
+        _view.viewport()->update();
     }
 }
 

@@ -254,6 +254,7 @@ void MeasureDock::cursor_moving()
 
 void MeasureDock::reCalc()
 {
+    update_dist();
     update_edge();
 }
 
