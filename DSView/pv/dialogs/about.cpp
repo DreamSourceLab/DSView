@@ -98,6 +98,8 @@ About::About(QWidget *parent) :
     layout()->addLayout(xlayout);
     setTitle(tr("About"));
     setFixedWidth(500);
+
+    setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
 }
 
 About::~About()

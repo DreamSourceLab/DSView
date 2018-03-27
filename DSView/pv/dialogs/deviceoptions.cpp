@@ -80,6 +80,8 @@ DeviceOptions::DeviceOptions(QWidget *parent, boost::shared_ptr<pv::device::DevI
     connect(&_mode_check, SIGNAL(timeout()), this, SLOT(mode_check()));
     _mode_check.setInterval(100);
     _mode_check.start();
+
+    setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
 }
 
 void DeviceOptions::accept()
