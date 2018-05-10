@@ -111,7 +111,7 @@ struct dev_context {
     gboolean instant;
     gboolean data_lock;
     uint8_t max_height;
-    uint8_t dso_bits;
+    uint8_t unit_bits;
     uint64_t samples_not_sent;
 
     uint16_t *buf;
@@ -145,6 +145,49 @@ static const int32_t sessions[] = {
     SR_CONF_SAMPLERATE,
     SR_CONF_LIMIT_SAMPLES,
     SR_CONF_PATTERN_MODE,
+};
+
+static const int32_t probeOptions[] = {
+    SR_CONF_PROBE_COUPLING,
+    SR_CONF_PROBE_VDIV,
+    SR_CONF_PROBE_MAP_UNIT,
+    SR_CONF_PROBE_MAP_MIN,
+    SR_CONF_PROBE_MAP_MAX,
+};
+
+static const int32_t probeSessions[] = {
+    SR_CONF_PROBE_COUPLING,
+    SR_CONF_PROBE_VDIV,
+    SR_CONF_PROBE_MAP_UNIT,
+    SR_CONF_PROBE_MAP_MIN,
+    SR_CONF_PROBE_MAP_MAX,
+};
+
+static const uint8_t probeCoupling[] = {
+    SR_DC_COUPLING,
+    SR_AC_COUPLING,
+};
+
+static const uint64_t probeVdivs[] = {
+    SR_mV(10),
+    SR_mV(20),
+    SR_mV(50),
+    SR_mV(100),
+    SR_mV(200),
+    SR_mV(500),
+    SR_V(1),
+    SR_V(2),
+};
+
+static const char *probeMapUnits[] = {
+    "V",
+    "A",
+    "°C",
+    "°F",
+    "g",
+    "m",
+    "m/s",
+    "Custom",
 };
 
 static const int const_dc = 1.95 / 10 * 255;
@@ -284,7 +327,6 @@ static const char *probe_names[NUM_PROBES + 1] = {
     "CH8", "CH9", "CH10", "CH11",
     "CH12", "CH13", "CH14", "CH15",
 	NULL,
-
 };
 
 static const gboolean default_ms_en[] = {
@@ -319,6 +361,42 @@ static int clear_instances(void)
 static int hw_init(struct sr_context *sr_ctx)
 {
 	return std_hw_init(sr_ctx, di, LOG_PREFIX);
+}
+
+static void probe_init(struct sr_dev_inst *sdi)
+{
+    int i;
+    GSList *l;
+    for (l = sdi->channels; l; l = l->next) {
+        struct sr_channel *probe = (struct sr_channel *)l->data;
+        probe->vdiv = 1000;
+        probe->vfactor = 1;
+        probe->coupling = SR_AC_COUPLING;
+        probe->trig_value = 0x80;
+        probe->vpos = (probe->index == 0 ? 0.5 : -0.5)*probe->vdiv;
+        probe->ms_show = TRUE;
+        for (i = DSO_MS_BEGIN; i < DSO_MS_END; i++)
+            probe->ms_en[i] = default_ms_en[i];
+        probe->map_unit = probeMapUnits[0];
+        probe->map_min = -1;
+        probe->map_max = 1;
+    }
+}
+
+static int setup_probes(struct sr_dev_inst *sdi, int num_probes)
+{
+    uint16_t j;
+    struct sr_channel *probe;
+
+    for (j = 0; j < num_probes; j++) {
+        if (!(probe = sr_channel_new(j, (sdi->mode == LOGIC) ? SR_CHANNEL_LOGIC :
+                                        ((sdi->mode == DSO) ? SR_CHANNEL_DSO : SR_CHANNEL_ANALOG),
+                                   TRUE, probe_names[j])))
+            return SR_ERR;
+        sdi->channels = g_slist_append(sdi->channels, probe);
+    }
+    probe_init(sdi);
+    return SR_OK;
 }
 
 static GSList *hw_scan(GSList *options)
@@ -360,7 +438,7 @@ static GSList *hw_scan(GSList *options)
     devc->timebase = 500;
     devc->data_lock = FALSE;
     devc->max_height = 0;
-    devc->dso_bits = 8;
+    devc->unit_bits = 8;
 
 	sdi->priv = devc;
 
@@ -520,25 +598,25 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_MAX_HEIGHT_VALUE:
         *data = g_variant_new_byte(devc->max_height);
         break;
-    case SR_CONF_VPOS:
+    case SR_CONF_PROBE_VPOS:
         *data = g_variant_new_double(ch->vpos);
         break;
-    case SR_CONF_VDIV:
+    case SR_CONF_PROBE_VDIV:
         *data = g_variant_new_uint64(ch->vdiv);
         break;
-    case SR_CONF_FACTOR:
+    case SR_CONF_PROBE_FACTOR:
         *data = g_variant_new_uint64(ch->vfactor);
         break;
     case SR_CONF_TIMEBASE:
         *data = g_variant_new_uint64(devc->timebase);
         break;
-    case SR_CONF_COUPLING:
+    case SR_CONF_PROBE_COUPLING:
         *data = g_variant_new_byte(ch->coupling);
         break;
     case SR_CONF_TRIGGER_VALUE:
         *data = g_variant_new_byte(ch->trig_value);
         break;
-    case SR_CONF_EN_CH:
+    case SR_CONF_PROBE_EN:
         *data = g_variant_new_boolean(ch->enabled);
         break;
     case SR_CONF_DATALOCK:
@@ -553,8 +631,23 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_HW_DEPTH:
         *data = g_variant_new_uint64(DEMO_MAX_LOGIC_DEPTH);
         break;
-    case SR_CONF_DSO_BITS:
-        *data = g_variant_new_byte(devc->dso_bits);
+    case SR_CONF_UNIT_BITS:
+        *data = g_variant_new_byte(devc->unit_bits);
+        break;
+    case SR_CONF_PROBE_MAP_UNIT:
+        if (!sdi || !ch)
+            return SR_ERR;
+        *data = g_variant_new_string(ch->map_unit);
+        break;
+    case SR_CONF_PROBE_MAP_MIN:
+        if (!sdi || !ch)
+            return SR_ERR;
+        *data = g_variant_new_double(ch->map_min);
+        break;
+    case SR_CONF_PROBE_MAP_MAX:
+        if (!sdi || !ch)
+            return SR_ERR;
+        *data = g_variant_new_double(ch->map_max);
         break;
     case SR_CONF_VLD_CH_NUM:
         *data = g_variant_new_int16(NUM_PROBES);
@@ -570,10 +663,9 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                       struct sr_channel *ch,
                       struct sr_channel_group *cg)
 {
-    uint16_t i, j;
-    int ret;
+    uint16_t i;
+    int ret, num_probes;
 	const char *stropt;
-    struct sr_channel *probe;
     uint64_t tmp_u64;
 
     (void) cg;
@@ -611,53 +703,25 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         sdi->mode = g_variant_get_int16(data);
         ret = SR_OK;
         if (sdi->mode == LOGIC) {
-            sr_dev_probes_free(sdi);
-            for (i = 0; probe_names[i]; i++) {
-                if (!(probe = sr_channel_new(i, SR_CHANNEL_LOGIC, TRUE,
-                        probe_names[i])))
-                    ret = SR_ERR;
-                else
-                    sdi->channels = g_slist_append(sdi->channels, probe);
-            }
+            num_probes = ARRAY_SIZE(probe_names) - 1;
             devc->cur_samplerate = SR_MHZ(1);
             devc->limit_samples = SR_MB(1);
             devc->limit_samples_show = devc->limit_samples;
         } else if (sdi->mode == DSO) {
-            sr_dev_probes_free(sdi);
-            for (i = 0; i < DEMO_MAX_DSO_PROBES_NUM; i++) {
-                if (!(probe = sr_channel_new(i, SR_CHANNEL_DSO, TRUE,
-                        probe_names[i])))
-                    ret = SR_ERR;
-                else {
-                    probe->vdiv = 1000;
-                    probe->vfactor = 1;
-                    probe->coupling = SR_AC_COUPLING;
-                    probe->trig_value = 0x80;
-                    probe->vpos = (probe->index == 0 ? 0.5 : -0.5)*probe->vdiv;
-                    sdi->channels = g_slist_append(sdi->channels, probe);
-                    probe->ms_show = TRUE;
-                    for (j = DSO_MS_BEGIN; j < DSO_MS_END; j++)
-                        probe->ms_en[j] = default_ms_en[j];
-                }
-            }
+            num_probes = DEMO_MAX_DSO_PROBES_NUM;
             devc->cur_samplerate = DEMO_MAX_DSO_SAMPLERATE / DEMO_MAX_DSO_PROBES_NUM;
             devc->limit_samples = DEMO_MAX_DSO_DEPTH / DEMO_MAX_DSO_PROBES_NUM;
             devc->limit_samples_show = devc->limit_samples;
         } else if (sdi->mode == ANALOG) {
-            sr_dev_probes_free(sdi);
-            for (i = 0; i < DS_MAX_ANALOG_PROBES_NUM; i++) {
-                if (!(probe = sr_channel_new(i, SR_CHANNEL_ANALOG, TRUE,
-                        probe_names[i])))
-                    ret = SR_ERR;
-                else
-                    sdi->channels = g_slist_append(sdi->channels, probe);
-            }
+            num_probes = DS_MAX_ANALOG_PROBES_NUM;
             devc->cur_samplerate = SR_HZ(100);
             devc->limit_samples = SR_KB(1);
             devc->limit_samples_show = devc->limit_samples;
         } else {
-            ret = SR_ERR;
+            num_probes = 0;
         }
+        sr_dev_probes_free(sdi);
+        setup_probes(sdi, num_probes);
         sr_dbg("%s: setting mode to %d", __func__, sdi->mode);
     }else if (id == SR_CONF_PATTERN_MODE) {
         stropt = g_variant_get_string(data, NULL);
@@ -699,7 +763,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         ret = SR_OK;
     } else if (id == SR_CONF_TRIGGER_MARGIN) {
         ret = SR_OK;
-    } else if (id == SR_CONF_EN_CH) {
+    } else if (id == SR_CONF_PROBE_EN) {
         ch->enabled = g_variant_get_boolean(data);
         sr_dbg("%s: setting ENABLE of channel %d to %d", __func__,
                ch->index, ch->enabled);
@@ -709,19 +773,19 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         sr_dbg("%s: setting data lock to %d", __func__,
                devc->data_lock);
         ret = SR_OK;
-    } else if (id == SR_CONF_VDIV) {
+    } else if (id == SR_CONF_PROBE_VDIV) {
         tmp_u64 = g_variant_get_uint64(data);
         ch->vpos = (tmp_u64 * 1.0 / ch->vdiv) * ch->vpos;
         ch->vdiv = tmp_u64;
         sr_dbg("%s: setting VDIV of channel %d to %" PRIu64, __func__,
                ch->index, ch->vdiv);
         ret = SR_OK;
-    } else if (id == SR_CONF_FACTOR) {
+    } else if (id == SR_CONF_PROBE_FACTOR) {
         ch->vfactor = g_variant_get_uint64(data);
         sr_dbg("%s: setting FACTOR of channel %d to %" PRIu64, __func__,
                ch->index, ch->vfactor);
         ret = SR_OK;
-    } else if (id == SR_CONF_VPOS) {
+    } else if (id == SR_CONF_PROBE_VPOS) {
         //ch->vpos = g_variant_get_double(data);
         sr_dbg("%s: setting VPOS of channel %d to %lf", __func__,
                ch->index, ch->vpos);
@@ -731,7 +795,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         sr_dbg("%s: setting TIMEBASE to %" PRIu64, __func__,
                devc->timebase);
         ret = SR_OK;
-    } else if (id == SR_CONF_COUPLING) {
+    } else if (id == SR_CONF_PROBE_COUPLING) {
         ch->coupling = g_variant_get_byte(data);
         sr_dbg("%s: setting AC COUPLING of channel %d to %d", __func__,
                ch->index, ch->coupling);
@@ -751,6 +815,12 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         sr_dbg("%s: setting channel %d Trigger Value to %d",
             __func__, ch->index, ch->trig_value);
         ret = SR_OK;
+    } else if (id == SR_CONF_PROBE_MAP_UNIT) {
+        ch->map_unit = g_variant_get_string(data, NULL);
+    } else if (id == SR_CONF_PROBE_MAP_MIN) {
+        ch->map_min = g_variant_get_double(data);
+    } else if (id == SR_CONF_PROBE_MAP_MAX) {
+        ch->map_max = g_variant_get_double(data);
     } else {
         ret = SR_ERR_NA;
 	}
@@ -806,6 +876,32 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_MAX_HEIGHT:
         *data = g_variant_new_strv(maxHeights, ARRAY_SIZE(maxHeights));
         break;
+
+    case SR_CONF_PROBE_CONFIGS:
+        *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
+                probeOptions, ARRAY_SIZE(probeOptions)*sizeof(int32_t), TRUE, NULL, NULL);
+        break;
+    case SR_CONF_PROBE_SESSIONS:
+        *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
+                probeSessions, ARRAY_SIZE(probeSessions)*sizeof(int32_t), TRUE, NULL, NULL);
+        break;
+    case SR_CONF_PROBE_VDIV:
+        g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));
+        gvar = g_variant_new_from_data(G_VARIANT_TYPE("at"),
+                probeVdivs, ARRAY_SIZE(probeVdivs)*sizeof(uint64_t), TRUE, NULL, NULL);
+        g_variant_builder_add(&gvb, "{sv}", "vdivs", gvar);
+        *data = g_variant_builder_end(&gvb);
+        break;
+    case SR_CONF_PROBE_COUPLING:
+        g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));
+        gvar = g_variant_new_from_data(G_VARIANT_TYPE("ay"),
+                probeCoupling, ARRAY_SIZE(probeCoupling)*sizeof(uint8_t), TRUE, NULL, NULL);
+        g_variant_builder_add(&gvb, "{sv}", "coupling", gvar);
+        *data = g_variant_builder_end(&gvb);
+        break;
+    case SR_CONF_PROBE_MAP_UNIT:
+        *data = g_variant_new_strv(probeMapUnits, ARRAY_SIZE(probeMapUnits));
+        break;
 	default:
         return SR_ERR_NA;
 	}
@@ -851,8 +947,8 @@ static void samples_generator(uint16_t *buf, uint64_t size,
 
     if (devc->samples_counter == devc->limit_samples &&
         size != devc->limit_samples) {
-        for (i = 0; i < devc->limit_samples; i++)
-            *(buf + i) = *(buf + ((i + size)%devc->limit_samples));
+//        for (i = 0; i < devc->limit_samples; i++)
+//            *(buf + i) = *(buf + ((i + size)%devc->limit_samples));
     } else if (sdi->mode == LOGIC) {
         for (i = 0; i < size; i++) {
             //index = (i/10/g_slist_length(sdi->channels)+start_rand)%len;
@@ -871,12 +967,13 @@ static void samples_generator(uint16_t *buf, uint64_t size,
         }
     } else if (sdi->mode == ANALOG) {
         for (i = 0; i < size; i++) {
-            if (rand() % (devc->limit_samples / 100) == 0)
-                *(buf + i) = 0x4000 + rand() % 0x8000;
-            else if (rand() % (devc->limit_samples / 1000) == 0)
-                *(buf + i) = 0x7000 + rand() % 0x2000;
-            else
-                *(buf + i) = 0x8000;
+            *(buf + i) = 0x8080;
+            if (i % (int)ceil(size / 7.0))
+                *(buf + i) = 0x7E7E + (rand() & 0x0300) + (rand() & 0x003);
+            else if (rand() > INT_MAX / 4)
+                *(buf + i) = 0x7878 + (rand() & 0x0F00) + (rand() & 0x00F);
+            else if (rand() < INT_MAX / 8)
+                *(buf + i) = 0x6060 + (rand() & 0x3F00) + (rand() & 0x03F);
         }
     } else {
         if (devc->pre_index == 0) {
@@ -974,9 +1071,9 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
             samples_to_send = MIN(samples_to_send,
                                   devc->limit_samples - devc->pre_index);
         } else if (sdi->mode == ANALOG) {
-            samples_to_send = ceil(samples_elaspsed * g_slist_length(sdi->channels));
+            samples_to_send = ceil(samples_elaspsed/2);
             samples_to_send = MIN(samples_to_send,
-                                  devc->limit_samples * g_slist_length(sdi->channels) - devc->pre_index);
+                                  devc->limit_samples - devc->pre_index);
         } else {
             samples_to_send = ceil(samples_elaspsed);
             samples_to_send += devc->samples_not_sent;
@@ -1027,7 +1124,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
         }
 
         if (sdi->mode == ANALOG)
-            devc->samples_counter += sending_now/g_slist_length(sdi->channels);
+            devc->samples_counter += sending_now/2;
         else
             devc->samples_counter += sending_now;
         if (sdi->mode == DSO && !devc->instant &&
@@ -1060,7 +1157,8 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
                 packet.type = SR_DF_ANALOG;
                 packet.payload = &analog;
                 analog.probes = sdi->channels;
-                analog.num_samples = sending_now / g_slist_length(sdi->channels);
+                analog.num_samples = sending_now / 2;
+                analog.unit_bits = 8;
                 analog.mq = SR_MQ_VOLTAGE;
                 analog.unit = SR_UNIT_VOLT;
                 analog.mqflags = SR_MQFLAG_AC;
@@ -1083,7 +1181,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
         }
 	}
 
-    if ((sdi->mode != DSO || devc->instant) && devc->limit_samples &&
+    if ((sdi->mode == LOGIC || devc->instant) && devc->limit_samples &&
         devc->samples_counter >= devc->limit_samples) {
         sr_info("Requested number of samples reached.");
         hw_dev_acquisition_stop(sdi, NULL);

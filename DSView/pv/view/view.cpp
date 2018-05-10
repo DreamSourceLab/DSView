@@ -222,10 +222,14 @@ double View::get_maxscale() const
 
 void View::capture_init(bool instant)
 {
+    _maxscale = _session.cur_sampletime() / (get_view_width() * MaxViewRate);
+
     if (_session.get_device()->dev_inst()->mode == DSO)
         show_trig_cursor(true);
     else if (!_session.isRepeating())
         show_trig_cursor(false);
+    if (_session.get_device()->dev_inst()->mode == ANALOG)
+        set_scale_offset(_maxscale, 0);
 
     update_sample(instant);
     status_clear();
@@ -284,7 +288,8 @@ void View::zoom(double steps, int offset)
         _preOffset = _offset;
 
         if (_session.get_device()->dev_inst()->mode != DSO) {
-            _scale *= std::pow(3.0/2.0, -steps);
+            //_scale *= std::pow(3.0/2.0, -steps);
+            _scale *= std::pow(2, -steps);
             _scale = max(min(_scale, _maxscale), _minscale);
         }else {
             const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
@@ -808,6 +813,7 @@ void View::resizeEvent(QResizeEvent*)
     _header->header_resize();
     set_update(_time_viewport, true);
     set_update(_fft_viewport, true);
+    resize();
 }
 
 void View::h_scroll_value_changed(int value)
@@ -984,7 +990,6 @@ uint64_t View::get_cursor_samples(int index)
         }
         curIndex++;
     }
-
     return ret;
 }
 

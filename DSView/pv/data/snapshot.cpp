@@ -93,6 +93,26 @@ uint64_t Snapshot::get_sample_count() const
     return _sample_count;
 }
 
+uint64_t Snapshot::get_ring_start() const
+{
+    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    if (_sample_count < _total_sample_count)
+        return 0;
+    else
+        return _ring_sample_count;
+}
+
+uint64_t Snapshot::get_ring_end() const
+{
+    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    if (_sample_count == 0)
+        return 0;
+    else if (_ring_sample_count == 0)
+        return _total_sample_count - 1;
+    else
+        return _ring_sample_count - 1;
+}
+
 const void* Snapshot::get_data() const
 {
     return _data;

@@ -188,7 +188,7 @@ void Trace::set_old_v_offset(int v_offset)
     _old_v_offset = v_offset;
 }
 
-int Trace::get_zero_vpos()
+int Trace::get_zero_vpos() const
 {
     return _v_offset;
 }
@@ -203,10 +203,16 @@ void Trace::set_totalHeight(int height)
     _totalHeight = height;
 }
 
+void Trace::resize()
+{
+
+}
+
 void Trace::set_view(pv::view::View *view)
 {
 	assert(view);
 	_view = view;
+    connect(_view, SIGNAL(resize()), this, SLOT(resize()));
 }
 
 pv::view::View* Trace::get_view() const
@@ -284,7 +290,9 @@ void Trace::paint_label(QPainter &p, int right, const QPoint pt)
         };
 
         p.setPen(Qt::transparent);
-        if (_type == SR_CHANNEL_DSO || _type == SR_CHANNEL_FFT) {
+        if (_type == SR_CHANNEL_DSO ||
+            _type == SR_CHANNEL_FFT ||
+            _type == SR_CHANNEL_ANALOG) {
             p.setBrush(_colour);
             p.drawPolygon(points, countof(points));
         } else {
@@ -324,8 +332,6 @@ void Trace::paint_label(QPainter &p, int right, const QPoint pt)
         p.setPen(Qt::white);
         if (_type == SR_CHANNEL_GROUP)
             p.drawText(label_rect, Qt::AlignCenter | Qt::AlignVCenter, "G");
-        else if (_type == SR_CHANNEL_ANALOG)
-            p.drawText(label_rect, Qt::AlignCenter | Qt::AlignVCenter, "A");
         else if (_type == SR_CHANNEL_DECODER)
             p.drawText(label_rect, Qt::AlignCenter | Qt::AlignVCenter, "D");
         else if (_type == SR_CHANNEL_FFT)

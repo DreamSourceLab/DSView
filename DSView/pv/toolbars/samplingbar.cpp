@@ -529,7 +529,7 @@ void SamplingBar::on_samplecount_sel(int index)
     boost::shared_ptr<pv::device::DevInst> _devInst = get_selected_device();
     assert(_devInst);
 
-    if (_devInst->name() == "DSLogic" && _devInst->dev_inst()->mode != DSO) {
+    if (_devInst->dev_inst()->mode != DSO) {
 
         // Set the sample count
         _devInst->set_config(NULL, NULL,
@@ -554,7 +554,7 @@ void SamplingBar::on_samplerate_sel(int index)
     // Get last samplerate
     //last_sample_rate = get_selected_device()->get_sample_rate();
 
-    if (dev_inst->name() == "DSLogic" && dev_inst->dev_inst()->mode != DSO) {
+    if (dev_inst->dev_inst()->mode != DSO) {
             // Set the samplerate
             get_selected_device()->set_config(NULL, NULL,
                                               SR_CONF_SAMPLERATE,

@@ -210,6 +210,8 @@ signals:
 
     void update_device_list();
 
+    void resize();
+
 private:
     void get_scroll_layout(int64_t &length, int64_t &offset) const;
 	

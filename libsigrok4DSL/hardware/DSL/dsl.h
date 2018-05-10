@@ -95,6 +95,9 @@
 //#define DSCOPE_MAX_DEPTH SR_KB(512)
 #define DSCOPE_MAX_SAMPLERATE SR_MHZ(200)
 #define DSCOPE_INSTANT_DEPTH SR_MB(32)
+#define DSCOPE_VLD_CH_NUM 2
+#define DSCOPE_MAX_DAQ_SAMPLERATE SR_MHZ(100)
+#define HW_MIN_SAMPLERATE SR_KHZ(10)
 
 /*
  * for basic configuration
@@ -303,6 +306,8 @@ struct DSL_context {
     gboolean rle_mode;
     gboolean instant;
     uint16_t op_mode;
+    gboolean stream;
+    uint8_t  test_mode;
     uint16_t buf_options;
     uint16_t ch_mode;
     uint16_t samplerates_size;
@@ -328,10 +333,10 @@ struct DSL_context {
     int zero_stage;
     int zero_pcnt;
     int zero_comb;
-    gboolean stream;
     gboolean roll;
     gboolean data_lock;
-    uint8_t dso_bits;
+    uint8_t unit_bits;
+    uint16_t unit_pitch;
 
     uint64_t num_samples;
     uint64_t num_bytes;

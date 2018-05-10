@@ -75,6 +75,7 @@
 #include "view/signal.h"
 #include "view/dsosignal.h"
 #include "view/logicsignal.h"
+#include "view/analogsignal.h"
 
 /* __STDC_FORMAT_MACROS is required for PRIu64 and friends (in C++). */
 #define __STDC_FORMAT_MACROS
@@ -450,11 +451,11 @@ void MainWindow::run_stop()
     switch(_session.get_capture_state()) {
     case SigSession::Init:
     case SigSession::Stopped:
-        _view->capture_init(false);
         commit_trigger(false);
         _session.start_capture(false,
             boost::bind(&MainWindow::session_error, this,
                 QString(tr("Capture failed")), _1));
+        _view->capture_init(false);
         break;
 
     case SigSession::Running:
@@ -468,11 +469,11 @@ void MainWindow::instant_stop()
     switch(_session.get_capture_state()) {
     case SigSession::Init:
     case SigSession::Stopped:
-        _view->capture_init(true);
         commit_trigger(true);
         _session.start_capture(true,
             boost::bind(&MainWindow::session_error, this,
                 QString(tr("Capture failed")), _1));
+        _view->capture_init(true);
         break;
 
     case SigSession::Running:
@@ -767,13 +768,14 @@ bool MainWindow::load_session(QString name)
                 (probe->type == obj["type"].toDouble())) {
                 isEnabled = true;
                 probe->enabled = obj["enabled"].toBool();
-                //probe->colour = obj["colour"].toString();
                 probe->name = g_strdup(obj["name"].toString().toStdString().c_str());
                 probe->vdiv = obj["vdiv"].toDouble();
                 probe->coupling = obj["coupling"].toDouble();
                 probe->vfactor = obj["vfactor"].toDouble();
                 probe->trig_value = obj["trigValue"].toDouble();
-                //probe->zeroPos = obj["zeroPos"].toDouble();
+                probe->map_unit = g_strdup(obj["mapUnit"].toString().toStdString().c_str());
+                probe->map_min = obj["mapMin"].toDouble();
+                probe->map_max = obj["mapMax"].toDouble();
                 break;
             }
         }
@@ -807,6 +809,13 @@ bool MainWindow::load_session(QString name)
                     dsoSig->set_trig_vrate(obj["trigValue"].toDouble());
                     dsoSig->commit_settings();
                 }
+
+                boost::shared_ptr<view::AnalogSignal> analogSig;
+                if (analogSig = dynamic_pointer_cast<view::AnalogSignal>(s)) {
+                    analogSig->set_zero_vrate(obj["zeroPos"].toDouble(), true);
+                    analogSig->commit_settings();
+                }
+
                 break;
             }
         }
@@ -899,6 +908,16 @@ bool MainWindow::store_session(QString name)
             s_obj["coupling"] = dsoSig->get_acCoupling();
             s_obj["trigValue"] = dsoSig->get_trig_vrate();
             s_obj["zeroPos"] = dsoSig->get_zero_vrate();
+        }
+
+        boost::shared_ptr<view::AnalogSignal> analogSig;
+        if (analogSig = dynamic_pointer_cast<view::AnalogSignal>(s)) {
+            s_obj["vdiv"] = QJsonValue::fromVariant(static_cast<qulonglong>(analogSig->get_vdiv()));
+            s_obj["coupling"] = analogSig->get_acCoupling();
+            s_obj["zeroPos"] = analogSig->get_zero_vrate();
+            s_obj["mapUnit"] = analogSig->get_mapUnit();
+            s_obj["mapMin"] = analogSig->get_mapMin();
+            s_obj["mapMax"] = analogSig->get_mapMax();
         }
         channelVar.append(s_obj);
     }

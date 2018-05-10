@@ -74,7 +74,7 @@ struct session_vdev {
 	int num_probes;
     int enabled_probes;
     uint64_t timebase;
-    uint8_t bits;
+    uint8_t unit_bits;
     uint8_t max_height;
     struct sr_status mstatus;
 };
@@ -202,6 +202,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
                     packet.payload = &analog;
                     analog.probes = sdi->channels;
                     analog.num_samples = ret / vdev->num_probes;
+                    analog.unit_bits = vdev->unit_bits;
                     analog.mq = SR_MQ_VOLTAGE;
                     analog.unit = SR_UNIT_VOLT;
                     analog.mqflags = SR_MQFLAG_AC;
@@ -298,7 +299,12 @@ static int dev_open(struct sr_dev_inst *sdi)
     vdev->cur_channel = 0;
     vdev->file_opened = FALSE;
     vdev->num_blocks = 0;
-    vdev->bits = 8;
+    if (sdi->mode == DSO)
+        vdev->unit_bits = 8;
+    else if (sdi->mode == ANALOG)
+        vdev->unit_bits = 16;
+    else
+        vdev->unit_bits = 1;
     vdev->max_height = 0;
 
 	dev_insts = g_slist_append(dev_insts, sdi);
@@ -358,38 +364,38 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         } else
             return SR_ERR;
         break;
-    case SR_CONF_DSO_BITS:
+    case SR_CONF_UNIT_BITS:
         if (sdi) {
             vdev = sdi->priv;
-            *data = g_variant_new_byte(vdev->bits);
+            *data = g_variant_new_byte(vdev->unit_bits);
         } else
             return SR_ERR;
         break;
-    case SR_CONF_EN_CH:
+    case SR_CONF_PROBE_EN:
         if (sdi && ch) {
             *data = g_variant_new_boolean(ch->enabled);
         } else
             return SR_ERR;
         break;
-    case SR_CONF_COUPLING:
+    case SR_CONF_PROBE_COUPLING:
         if (sdi && ch) {
             *data = g_variant_new_byte(ch->coupling);
         } else
             return SR_ERR;
         break;
-    case SR_CONF_VDIV:
+    case SR_CONF_PROBE_VDIV:
         if (sdi && ch) {
             *data = g_variant_new_uint64(ch->vdiv);
         } else
             return SR_ERR;
         break;
-    case SR_CONF_FACTOR:
+    case SR_CONF_PROBE_FACTOR:
         if (sdi && ch) {
             *data = g_variant_new_uint64(ch->vfactor);
         } else
             return SR_ERR;
         break;
-    case SR_CONF_VPOS:
+    case SR_CONF_PROBE_VPOS:
         if (sdi && ch) {
             *data = g_variant_new_double(ch->vpos);
         } else
@@ -472,9 +478,9 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         vdev->timebase = g_variant_get_uint64(data);
         sr_info("Setting timebase to %" PRIu64 ".", vdev->timebase);
         break;
-    case SR_CONF_DSO_BITS:
-        vdev->bits = g_variant_get_byte(data);
-        sr_info("Setting DSO bits to %d.", vdev->bits);
+    case SR_CONF_UNIT_BITS:
+        vdev->unit_bits = g_variant_get_byte(data);
+        sr_info("Setting unit bits to %d.", vdev->unit_bits);
         break;
     case SR_CONF_SESSIONFILE:
         vdev->sessionfile = g_strdup(g_variant_get_bytestring(data));
@@ -513,19 +519,19 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             }
         }
 		break;
-    case SR_CONF_EN_CH:
+    case SR_CONF_PROBE_EN:
         ch->enabled = g_variant_get_boolean(data);
         break;
-    case SR_CONF_COUPLING:
+    case SR_CONF_PROBE_COUPLING:
         ch->coupling = g_variant_get_byte(data);
         break;
-    case SR_CONF_VDIV:
+    case SR_CONF_PROBE_VDIV:
         ch->vdiv = g_variant_get_uint64(data);
         break;
-    case SR_CONF_FACTOR:
+    case SR_CONF_PROBE_FACTOR:
         ch->vfactor = g_variant_get_uint64(data);
         break;
-    case SR_CONF_VPOS:
+    case SR_CONF_PROBE_VPOS:
         ch->vpos = g_variant_get_double(data);
         break;
     case SR_CONF_TRIGGER_VALUE:

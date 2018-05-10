@@ -107,17 +107,17 @@ void Calibration::set_device(boost::shared_ptr<device::DevInst> dev_inst)
 
         uint64_t vgain = 0, vgain_default = 0;
         uint16_t vgain_range = 0;
-        GVariant* gvar = _dev_inst->get_config(probe, NULL, SR_CONF_VGAIN);
+        GVariant* gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_VGAIN);
         if (gvar != NULL) {
             vgain = g_variant_get_uint64(gvar);
             g_variant_unref(gvar);
         }
-        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_VGAIN_DEFAULT);
+        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_VGAIN_DEFAULT);
         if (gvar != NULL) {
             vgain_default = g_variant_get_uint64(gvar);
             g_variant_unref(gvar);
         }
-        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_VGAIN_RANGE);
+        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_VGAIN_RANGE);
         if (gvar != NULL) {
             vgain_range = g_variant_get_uint16(gvar);
             g_variant_unref(gvar);
@@ -135,12 +135,12 @@ void Calibration::set_device(boost::shared_ptr<device::DevInst> dev_inst)
 
         uint64_t voff = 0;
         uint16_t voff_range = 0;
-        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_VOFF);
+        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_VOFF);
         if (gvar != NULL) {
             voff = g_variant_get_uint16(gvar);
             g_variant_unref(gvar);
         }
-        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_VOFF_RANGE);
+        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_VOFF_RANGE);
         if (gvar != NULL) {
             voff_range = g_variant_get_uint16(gvar);
             g_variant_unref(gvar);
@@ -185,16 +185,16 @@ void Calibration::set_value(int value)
         assert(probe);
         if (sc->objectName() == VGAIN+probe->index) {
             uint64_t vgain_default;
-            GVariant* gvar = _dev_inst->get_config(probe, NULL, SR_CONF_VGAIN_DEFAULT);
+            GVariant* gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_VGAIN_DEFAULT);
             if (gvar != NULL) {
                 vgain_default = g_variant_get_uint64(gvar);
                 g_variant_unref(gvar);
-                _dev_inst->set_config(probe, NULL, SR_CONF_VGAIN,
+                _dev_inst->set_config(probe, NULL, SR_CONF_PROBE_VGAIN,
                                       g_variant_new_uint64(value+vgain_default));
             }
             break;
         } else if (sc->objectName() == VOFF+probe->index) {
-            _dev_inst->set_config(probe, NULL, SR_CONF_VOFF,
+            _dev_inst->set_config(probe, NULL, SR_CONF_PROBE_VOFF,
                                   g_variant_new_uint16(value));
             break;
         }
@@ -262,17 +262,17 @@ void Calibration::reload_value()
 
         uint64_t vgain = 0, vgain_default = 0;
         uint16_t vgain_range = 0;
-        GVariant* gvar = _dev_inst->get_config(probe, NULL, SR_CONF_VGAIN);
+        GVariant* gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_VGAIN);
         if (gvar != NULL) {
             vgain = g_variant_get_uint64(gvar);
             g_variant_unref(gvar);
         }
-        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_VGAIN_DEFAULT);
+        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_VGAIN_DEFAULT);
         if (gvar != NULL) {
             vgain_default = g_variant_get_uint64(gvar);
             g_variant_unref(gvar);
         }
-        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_VGAIN_RANGE);
+        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_VGAIN_RANGE);
         if (gvar != NULL) {
             vgain_range = g_variant_get_uint16(gvar);
             g_variant_unref(gvar);
@@ -280,12 +280,12 @@ void Calibration::reload_value()
 
         uint64_t voff = 0;
         uint16_t voff_range = 0;
-        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_VOFF);
+        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_VOFF);
         if (gvar != NULL) {
             voff = g_variant_get_uint16(gvar);
             g_variant_unref(gvar);
         }
-        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_VOFF_RANGE);
+        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_VOFF_RANGE);
         if (gvar != NULL) {
             voff_range = g_variant_get_uint16(gvar);
             g_variant_unref(gvar);

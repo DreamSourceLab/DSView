@@ -146,7 +146,7 @@ public:
     /**
      * Gets the mid-Y position of this signal.
      */
-    int get_zero_vpos();
+    int get_zero_vpos() const;
     double get_zero_vrate();
     double get_hw_offset();
     /**
@@ -154,7 +154,7 @@ public:
      */
     void set_zero_vpos(int pos);
     void set_zero_vrate(double rate, bool force_update);
-    void update_offset();
+    void update_vpos();
 
     /**
      * Paints the background layer of the trace with a QPainter
@@ -206,13 +206,13 @@ protected:
 private:
 	void paint_trace(QPainter &p,
         const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot,
-		int y, int left, const int64_t start, const int64_t end,
+        int zeroY, int left, const int64_t start, const int64_t end,
         const double pixels_offset, const double samples_per_pixel,
         uint64_t num_channels);
 
 	void paint_envelope(QPainter &p,
         const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot,
-		int y, int left, const int64_t start, const int64_t end,
+        int zeroY, int left, const int64_t start, const int64_t end,
         const double pixels_offset, const double samples_per_pixel,
         uint64_t num_channels);
 
@@ -232,7 +232,7 @@ private:
     int _trig_value;
     double _trig_delta;
     double _zero_vrate;
-    float cur_hw_offset;
+    float _hw_offset;
 
     uint8_t _max;
     uint8_t _min;

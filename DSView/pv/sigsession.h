@@ -96,7 +96,7 @@ private:
     static const int RepeatHoldDiv = 20;
 
 public:
-    static const int ViewTime = 50;
+    static const int ViewTime = 100;
     static const int WaitShowTime = 500;
 
 public:

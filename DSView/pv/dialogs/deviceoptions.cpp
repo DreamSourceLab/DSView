@@ -24,8 +24,9 @@
 
 #include <boost/foreach.hpp>
 
-#include <QFormLayout>
 #include <QListWidget>
+#include <QSpinBox>
+#include <QDoubleSpinBox>
 
 #include "dsmessagebox.h"
 #include <pv/prop/property.h>
@@ -47,20 +48,10 @@ DeviceOptions::DeviceOptions(QWidget *parent, boost::shared_ptr<pv::device::DevI
     _props_box->setLayout(get_property_form(_props_box));
     _layout.addWidget(_props_box);
 
-    if (_dev_inst->dev_inst()->mode != DSO) {
-        _probes_box = new QGroupBox(tr("Channels"), this);
-        setup_probes();
-        _probes_box->setLayout(&_probes_box_layout);
-        _layout.addWidget(_probes_box);
-    } else if (_dev_inst->name().contains("DSCope")){
-        _config_button = new QPushButton(tr("Auto Calibration"), this);
-        _layout.addWidget(_config_button);
-        connect(_config_button, SIGNAL(clicked()), this, SLOT(zero_adj()));
-
-        _cali_button = new QPushButton(tr("Manual Calibration"), this);
-        _layout.addWidget(_cali_button);
-        connect(_cali_button, SIGNAL(clicked()), this, SLOT(on_calibration()));
-    }
+    QGroupBox *dynamic_box = new QGroupBox(dynamic_widget(_dynamic_layout),
+                                          this);
+    dynamic_box->setLayout(&_dynamic_layout);
+    _layout.addWidget(dynamic_box);
 
     _layout.addStretch(1);
 	_layout.addWidget(&_button_box);
@@ -88,20 +79,21 @@ void DeviceOptions::accept()
     bool hasEnabled = false;
 
 	// Commit the properties
-	const vector< boost::shared_ptr<pv::prop::Property> > &properties =
+    const vector< boost::shared_ptr<pv::prop::Property> > &dev_props =
 		_device_options_binding.properties();
-	BOOST_FOREACH(boost::shared_ptr<pv::prop::Property> p, properties) {
+    BOOST_FOREACH(boost::shared_ptr<pv::prop::Property> p, dev_props) {
 		assert(p);
 		p->commit();
 	}
 
     // Commit the probes
-    if (_dev_inst->dev_inst()->mode != DSO) {
+    if (_dev_inst->dev_inst()->mode == LOGIC ||
+            _dev_inst->dev_inst()->mode == ANALOG) {
         int index = 0;
         for (const GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next) {
             sr_channel *const probe = (sr_channel*)l->data;
             assert(probe);
-            probe->enabled = (_probes_checkBox_list.at(index)->checkState() == Qt::Checked);
+            probe->enabled = _probes_checkBox_list.at(index)->isChecked();
             index++;
             if (probe->enabled)
                 hasEnabled = true;
@@ -111,6 +103,17 @@ void DeviceOptions::accept()
     }
 
     if (hasEnabled) {
+        QVector<pv::prop::binding::ProbeOptions *>::iterator i = _probe_options_binding_list.begin();
+        while(i != _probe_options_binding_list.end()) {
+            const vector< boost::shared_ptr<pv::prop::Property> > &probe_props =
+                    (*i)->properties();
+            BOOST_FOREACH(boost::shared_ptr<pv::prop::Property> p, probe_props) {
+                assert(p);
+                p->commit();
+            }
+            i++;
+        }
+
         QDialog::accept();
     } else {
         dialogs::DSMessageBox msg(this);
@@ -152,7 +155,7 @@ QGridLayout * DeviceOptions::get_property_form(QWidget * parent)
     return layout;
 }
 
-void DeviceOptions::setup_probes()
+void DeviceOptions::logic_probes(QGridLayout &layout)
 {
 	using namespace Qt;
 
@@ -162,11 +165,11 @@ void DeviceOptions::setup_probes()
     int vld_ch_num = 0;
     int cur_ch_num = 0;
 
-    while(_probes_box_layout.count() > 0)
+    while(layout.count() > 0)
     {
         //remove Widgets in QLayoutGrid
-        QWidget* widget = _probes_box_layout.itemAt(0)->widget();
-        _probes_box_layout.removeWidget(widget);
+        QWidget* widget = layout.itemAt(0)->widget();
+        layout.removeWidget(widget);
         delete widget;
     }
     _probes_label_list.clear();
@@ -185,7 +188,7 @@ void DeviceOptions::setup_probes()
 
                 for (unsigned int i=0; i<num_opts; i++){
                     QRadioButton *ch_opts = new QRadioButton(options[i]);
-                    _probes_box_layout.addWidget(ch_opts, row0, col, 1, 8);
+                    layout.addWidget(ch_opts, row0, col, 1, 8);
                     connect(ch_opts, SIGNAL(pressed()), this, SLOT(channel_check()));
                     row0++;
                     if (QString::fromUtf8(options[i]) == ch_mode)
@@ -215,8 +218,8 @@ void DeviceOptions::setup_probes()
         QLabel *probe_label = new QLabel(QString::number(probe->index), this);
         QCheckBox *probe_checkBox = new QCheckBox(this);
         probe_checkBox->setCheckState(probe->enabled ? Qt::Checked : Qt::Unchecked);
-        _probes_box_layout.addWidget(probe_label, row1 * 2 + row0, col);
-        _probes_box_layout.addWidget(probe_checkBox, row1 * 2 + 1 + row0, col);
+        layout.addWidget(probe_label, row1 * 2 + row0, col);
+        layout.addWidget(probe_checkBox, row1 * 2 + 1 + row0, col);
         _probes_label_list.push_back(probe_label);
         _probes_checkBox_list.push_back(probe_checkBox);
 
@@ -235,8 +238,8 @@ void DeviceOptions::setup_probes()
     connect(_disable_all_probes, SIGNAL(clicked()),
         this, SLOT(disable_all_probes()));
 
-    _probes_box_layout.addWidget(_enable_all_probes, (row1 + 1) * 2 + row0, 0, 1, 4);
-    _probes_box_layout.addWidget(_disable_all_probes, (row1 + 1) * 2 + row0, 4, 1, 4);
+    layout.addWidget(_enable_all_probes, (row1 + 1) * 2 + row0, 0, 1, 4);
+    layout.addWidget(_disable_all_probes, (row1 + 1) * 2 + row0, 4, 1, 4);
 }
 
 void DeviceOptions::set_all_probes(bool set)
@@ -329,7 +332,7 @@ void DeviceOptions::mode_check()
         g_variant_unref(gvar);
 
         if (mode != _mode) {
-            setup_probes();
+            dynamic_widget(_dynamic_layout);
             _mode = mode;
         }
     }
@@ -355,49 +358,150 @@ void DeviceOptions::channel_check()
     QRadioButton* sc=dynamic_cast<QRadioButton*>(sender());
     if(sc != NULL)
         _dev_inst->set_config(NULL, NULL, SR_CONF_CHANNEL_MODE, g_variant_new_string(sc->text().toUtf8().data()));
-    setup_probes();
+    dynamic_widget(_dynamic_layout);
 }
 
 void DeviceOptions::channel_enable()
 {
-    QCheckBox* sc=dynamic_cast<QCheckBox*>(sender());
-    if (sc == NULL || !sc->isChecked())
-        return;
+    if (_dev_inst->dev_inst()->mode == LOGIC) {
+        QCheckBox* sc=dynamic_cast<QCheckBox*>(sender());
+        if (sc == NULL || !sc->isChecked())
+            return;
 
-    GVariant* gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_STREAM);
-    if (gvar == NULL)
-        return;
+        GVariant* gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_STREAM);
+        if (gvar == NULL)
+            return;
 
-    bool stream_mode = g_variant_get_boolean(gvar);
-    g_variant_unref(gvar);
+        bool stream_mode = g_variant_get_boolean(gvar);
+        g_variant_unref(gvar);
 
-    if (!stream_mode)
-        return;
+        if (!stream_mode)
+            return;
 
-    int cur_ch_num = 0;
-    QVector<QCheckBox *>::iterator i = _probes_checkBox_list.begin();
-    while(i != _probes_checkBox_list.end()) {
-        if ((*i)->isChecked())
-            cur_ch_num++;
-        i++;
+        int cur_ch_num = 0;
+        QVector<QCheckBox *>::iterator i = _probes_checkBox_list.begin();
+        while(i != _probes_checkBox_list.end()) {
+            if ((*i)->isChecked())
+                cur_ch_num++;
+            i++;
+        }
+
+        gvar =  _dev_inst->get_config(NULL, NULL, SR_CONF_VLD_CH_NUM);
+        if (gvar == NULL)
+            return;
+
+        int vld_ch_num = g_variant_get_int16(gvar);
+        g_variant_unref(gvar);
+        if (cur_ch_num > vld_ch_num) {
+            dialogs::DSMessageBox msg(this);
+            msg.mBox()->setText(tr("Information"));
+            msg.mBox()->setInformativeText(tr("Current mode only suppport max ") + QString::number(vld_ch_num) + tr(" channels!"));
+            msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
+            msg.mBox()->setIcon(QMessageBox::Information);
+            msg.exec();
+
+            sc->setChecked(false);
+        }
+    } else if (_dev_inst->dev_inst()->mode == ANALOG) {
+        QCheckBox* sc=dynamic_cast<QCheckBox*>(sender());
+        if (sc != NULL) {
+            QGridLayout *const layout = (QGridLayout *)sc->property("Layout").value<void *>();
+            int i = layout->count();
+            while(i--)
+            {
+                QWidget* w = layout->itemAt(i)->widget();
+                if (w->property("Enable").isNull()) {
+                    w->setEnabled(sc->isChecked());
+                }
+            }
+            //dynamic_widget(_dynamic_layout);
+        }
+    }
+}
+
+QString DeviceOptions::dynamic_widget(QGridLayout& inner_layout) {
+    if (_dev_inst->dev_inst()->mode == LOGIC) {
+        logic_probes(inner_layout);
+        return tr("Channels");
+    } else if (_dev_inst->dev_inst()->mode == DSO) {
+        _config_button = new QPushButton(tr("Auto Calibration"), this);
+        inner_layout.addWidget(_config_button, 0, 0, 1, 1);
+        connect(_config_button, SIGNAL(clicked()), this, SLOT(zero_adj()));
+        _cali_button = new QPushButton(tr("Manual Calibration"), this);
+        inner_layout.addWidget(_cali_button, 1, 0, 1, 1);
+        connect(_cali_button, SIGNAL(clicked()), this, SLOT(on_calibration()));
+
+        return tr("Calibration");
+    } else if (_dev_inst->dev_inst()->mode == ANALOG) {
+        analog_probes(inner_layout);
+        return tr("Channels");
+    } else {
+        return tr("Undefined");
+    }
+}
+
+void DeviceOptions::analog_probes(QGridLayout &layout)
+{
+    using namespace Qt;
+
+    while(layout.count() > 0)
+    {
+        //remove Widgets in QLayoutGrid
+        QWidget* widget = layout.itemAt(0)->widget();
+        layout.removeWidget(widget);
+        delete widget;
+    }
+    _probe_widget_list.clear();
+    _probes_checkBox_list.clear();
+    _probe_options_binding_list.clear();
+
+    QTabWidget *tabWidget = new QTabWidget(this);
+    tabWidget->setTabPosition(QTabWidget::North);
+    tabWidget->setUsesScrollButtons(false);
+    for (const GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next) {
+        sr_channel *const probe = (sr_channel*)l->data;
+        assert(probe);
+
+        QWidget *probe_widget = new QWidget(tabWidget);
+        QGridLayout *probe_layout = new QGridLayout(probe_widget);
+        probe_widget->setLayout(probe_layout);
+        _probe_widget_list.push_back(probe_widget);
+
+        QCheckBox *probe_checkBox = new QCheckBox(this);
+        QVariant vlayout = QVariant::fromValue((void *)probe_layout);
+        probe_checkBox->setProperty("Layout", vlayout);
+        probe_checkBox->setProperty("Enable", true);
+        probe_checkBox->setCheckState(probe->enabled ? Qt::Checked : Qt::Unchecked);
+        _probes_checkBox_list.push_back(probe_checkBox);
+
+        QLabel *en_label = new QLabel(tr("Enable: "), this);
+        en_label->setProperty("Enable", true);
+        probe_layout->addWidget(en_label, 0, 0, 1, 1);
+        probe_layout->addWidget(probe_checkBox, 0, 1, 1, 3);
+
+
+        pv::prop::binding::ProbeOptions *probe_options_binding =
+                new pv::prop::binding::ProbeOptions(_dev_inst->dev_inst(), probe);
+        const vector< boost::shared_ptr<pv::prop::Property> > &properties =
+            probe_options_binding->properties();
+        int i = 1;
+        BOOST_FOREACH(boost::shared_ptr<pv::prop::Property> p, properties)
+        {
+            assert(p);
+            probe_layout->addWidget(new QLabel(p->name(), probe_widget), i, 0, 1, 1);
+            QWidget *pow = p->get_widget(probe_widget);
+            pow->setEnabled(probe_checkBox->isChecked());
+            probe_layout->addWidget(pow, i, 1, 1, 3);
+            i++;
+        }
+        _probe_options_binding_list.push_back(probe_options_binding);
+
+        connect(probe_checkBox, SIGNAL(released()), this, SLOT(channel_enable()));
+
+        tabWidget->addTab(probe_widget, QString::fromUtf8(probe->name));
     }
 
-    gvar =  _dev_inst->get_config(NULL, NULL, SR_CONF_VLD_CH_NUM);
-    if (gvar == NULL)
-        return;
-
-    int vld_ch_num = g_variant_get_int16(gvar);
-    g_variant_unref(gvar);
-    if (cur_ch_num > vld_ch_num) {
-        dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(tr("Information"));
-        msg.mBox()->setInformativeText(tr("Current mode only suppport max ") + QString::number(vld_ch_num) + tr(" channels!"));
-        msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
-        msg.mBox()->setIcon(QMessageBox::Information);
-        msg.exec();
-
-        sc->setChecked(false);
-    }
+    layout.addWidget(tabWidget, 0, 0, 1, 1);
 }
 
 } // namespace dialogs

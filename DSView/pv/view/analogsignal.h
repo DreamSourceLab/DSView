@@ -49,12 +49,51 @@ public:
     AnalogSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
                  boost::shared_ptr<pv::data::Analog> data,
                  sr_channel *probe);
+    AnalogSignal(boost::shared_ptr<view::AnalogSignal> s,
+                 boost::shared_ptr<pv::data::Analog> data,
+                 sr_channel *probe);
 
 	virtual ~AnalogSignal();
 
     boost::shared_ptr<pv::data::SignalData> data() const;
 
 	void set_scale(float scale);
+    float get_scale() const;
+    int get_bits() const;
+    int get_hw_offset() const;
+    int commit_settings();
+
+    /**
+     * Probe options
+     **/
+    uint64_t get_vdiv() const;
+    uint8_t get_acCoupling() const;
+    QString get_mapUnit() const;
+    double get_mapMin() const;
+    double get_mapMax() const;
+
+    /**
+     *
+     **/
+    void set_zero_vpos(int pos);
+    int get_zero_vpos() const;
+    void set_zero_vrate(double rate, bool force_update);
+    double get_zero_vrate() const;
+    void update_vpos();
+    void update_offset();
+
+    /**
+     * Event
+     **/
+    void resize();
+
+    /**
+     * Paints the background layer of the trace with a QPainter
+     * @param p the QPainter to paint into.
+     * @param left the x-coordinate of the left edge of the signal
+     * @param right the x-coordinate of the right edge of the signal
+     **/
+    void paint_back(QPainter &p, int left, int right);
 
 	/**
 	 * Paints the signal with a QPainter
@@ -66,18 +105,28 @@ public:
 
 private:
     void paint_trace(QPainter &p,
-        const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot,
-        int y, int left, const int64_t start, const int64_t end,
-        const double pixels_offset, const double samples_per_pixel, int order);
+                     const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot,
+                     int zeroY, const int start_pixel,
+                     const uint64_t start_index, const int64_t sample_count,
+                     const double samples_per_pixel, const int order,
+                     const int top, const int bottom, const int width);
 
     void paint_envelope(QPainter &p,
-        const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot,
-        int y, int left, const int64_t start, const int64_t end,
-        const double pixels_offset, const double samples_per_pixel, int order);
+                        const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot,
+                        int zeroY, const int start_pixel,
+                        const uint64_t start_index, const int64_t sample_count,
+                        const double samples_per_pixel, const int order,
+                        const int top, const int bottom, const int width);
 
 private:
 	boost::shared_ptr<pv::data::Analog> _data;
+
+    QRectF *_rects;
+
 	float _scale;
+    double _zero_vrate;
+    int _hw_offset;
+    int _bits;
 };
 
 } // namespace view

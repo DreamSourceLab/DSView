@@ -172,10 +172,11 @@ void SigSession::set_device(boost::shared_ptr<device::DevInst> dev_inst) throw(Q
             _cur_samplerate = _dev_inst->get_sample_rate();
             _cur_samplelimits = _dev_inst->get_sample_limit();
 
-            if (_dev_inst->dev_inst()->mode == DSO)
-                set_run_mode(Repetitive);
-            else
-                set_run_mode(Single);
+//            if (_dev_inst->dev_inst()->mode == DSO)
+//                set_run_mode(Repetitive);
+//            else
+//                set_run_mode(Single);
+            set_run_mode(Single);
         } catch(const QString e) {
             throw(e);
             return;
@@ -339,6 +340,10 @@ void SigSession::capture_init()
         boost::shared_ptr<view::DsoSignal> dsoSig;
         if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
             dsoSig->set_zero_vrate(dsoSig->get_zero_vrate(), true);
+        }
+        boost::shared_ptr<view::AnalogSignal> analogSig;
+        if (analogSig = dynamic_pointer_cast<view::AnalogSignal>(s)) {
+            analogSig->set_zero_vrate(analogSig->get_zero_vrate(), true);
         }
     }
 }
@@ -750,11 +755,24 @@ void SigSession::reload()
 //                    new view::DsoSignal(_dev_inst,_dso_data, probe));
 //                break;
 
-//            case SR_CHANNEL_ANALOG:
-//                if (probe->enabled)
-//                    signal = boost::shared_ptr<view::Signal>(
-//                        new view::AnalogSignal(_dev_inst, _analog_data, probe));
-//                break;
+            case SR_CHANNEL_ANALOG:
+                if (probe->enabled) {
+                    std::vector< boost::shared_ptr<view::Signal> >::iterator i = _signals.begin();
+                    while (i != _signals.end()) {
+                        if ((*i)->get_index() == probe->index) {
+                            boost::shared_ptr<view::AnalogSignal> analogSig;
+                            if (analogSig = dynamic_pointer_cast<view::AnalogSignal>(*i))
+                                signal = boost::shared_ptr<view::Signal>(
+                                    new view::AnalogSignal(analogSig, _analog_data, probe));
+                            break;
+                        }
+                        i++;
+                    }
+                    if (!signal.get())
+                        signal = boost::shared_ptr<view::Signal>(
+                            new view::AnalogSignal(_dev_inst, _analog_data, probe));
+                }
+                break;
             }
             if (signal.get())
                 sigs.push_back(signal);
@@ -1521,7 +1539,7 @@ bool SigSession::repeat_check()
         QTimer::singleShot(_repeat_intvl*1000/RepeatHoldDiv, this, SLOT(repeat_update()));
         return true;
     } else {
-        return true;
+        return false;
     }
 }
 

@@ -84,8 +84,8 @@ DeviceOptions::DeviceOptions(struct sr_dev_inst *sdi) :
 		case SR_CONF_FILTER:
         case SR_CONF_MAX_HEIGHT:
         case SR_CONF_MAX_HEIGHT_VALUE:
-        case SR_CONF_COUPLING:
-        case SR_CONF_EN_CH:
+        case SR_CONF_PROBE_COUPLING:
+        case SR_CONF_PROBE_EN:
         case SR_CONF_OPERATION_MODE:
         case SR_CONF_BUFFER_OPTIONS:
         case SR_CONF_THRESHOLD:
@@ -93,7 +93,7 @@ DeviceOptions::DeviceOptions(struct sr_dev_inst *sdi) :
         case SR_CONF_STREAM:
         case SR_CONF_TEST:
         case SR_CONF_STATUS:
-        case SR_CONF_FACTOR:
+        case SR_CONF_PROBE_FACTOR:
             bind_enum(name, key, gvar_list);
 			break;
 
@@ -116,7 +116,7 @@ DeviceOptions::DeviceOptions(struct sr_dev_inst *sdi) :
             bind_enum(name, key, gvar_list, print_timebase);
 			break;
 
-        case SR_CONF_VDIV:
+        case SR_CONF_PROBE_VDIV:
             bind_enum(name, key, gvar_list, print_vdiv);
             break;
         default:

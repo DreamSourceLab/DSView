@@ -43,6 +43,7 @@
 #include <libsigrok4DSL/libsigrok.h>
 #include "../device/devinst.h"
 #include "../prop/binding/deviceoptions.h"
+#include "../prop/binding/probeoptions.h"
 #include "../toolbars/titlebar.h"
 #include "../dialogs/dsdialog.h"
 
@@ -64,7 +65,9 @@ private:
 
     QGridLayout *get_property_form(QWidget *parent);
 
-	void setup_probes();
+    void logic_probes(QGridLayout& layout);
+    void analog_probes(QGridLayout& layout);
+    QString dynamic_widget(QGridLayout &_dynamic_layout);
 
 	void set_all_probes(bool set);
     void enable_max_probes();
@@ -83,10 +86,10 @@ private:
 	QVBoxLayout _layout;
     toolbars::TitleBar *_titlebar;
 
-    QGroupBox *_probes_box;
-    QGridLayout _probes_box_layout;
+    QGridLayout _dynamic_layout;
     QVector <QLabel *> _probes_label_list;
     QVector <QCheckBox *> _probes_checkBox_list;
+    QVector <QWidget *> _probe_widget_list;
 
     QGroupBox *_props_box;
 
@@ -98,6 +101,7 @@ private:
     QString _mode;
 
 	pv::prop::binding::DeviceOptions _device_options_binding;
+    QVector <pv::prop::binding::ProbeOptions *> _probe_options_binding_list;
 };
 
 } // namespace dialogs

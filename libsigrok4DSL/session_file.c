@@ -217,7 +217,7 @@ SR_API int sr_session_load(const char *filename)
                             g_variant_new_uint64(tmp_u64), sdi, NULL, NULL);
                 } else if (!strcmp(keys[j], "bits")) {
                     tmp_u64 = strtoull(val, NULL, 10);
-                    sdi->driver->config_set(SR_CONF_DSO_BITS,
+                    sdi->driver->config_set(SR_CONF_UNIT_BITS,
                             g_variant_new_byte(tmp_u64), sdi, NULL, NULL);
                 } else if (!strcmp(keys[j], "trigger time")) {
                     tmp_64 = strtoll(val, NULL, 10);
@@ -271,7 +271,7 @@ SR_API int sr_session_load(const char *filename)
                     tmp_u64 = strtoull(val, NULL, 10);
                     if (probenum < g_slist_length(sdi->channels)) {
                         probe = g_slist_nth(sdi->channels, probenum)->data;
-                        sdi->driver->config_set(SR_CONF_EN_CH,
+                        sdi->driver->config_set(SR_CONF_PROBE_EN,
                             g_variant_new_boolean(tmp_u64), sdi, probe, NULL);
                     }
                 } else if (!strncmp(keys[j], "coupling", 8)) {
@@ -279,7 +279,7 @@ SR_API int sr_session_load(const char *filename)
                     tmp_u64 = strtoull(val, NULL, 10);
                     if (probenum < g_slist_length(sdi->channels)) {
                         probe = g_slist_nth(sdi->channels, probenum)->data;
-                        sdi->driver->config_set(SR_CONF_COUPLING,
+                        sdi->driver->config_set(SR_CONF_PROBE_COUPLING,
                             g_variant_new_byte(tmp_u64), sdi, probe, NULL);
                     }
                 } else if (!strncmp(keys[j], "vDiv", 4)) {
@@ -287,7 +287,7 @@ SR_API int sr_session_load(const char *filename)
                     tmp_u64 = strtoull(val, NULL, 10);
                     if (probenum < g_slist_length(sdi->channels)) {
                         probe = g_slist_nth(sdi->channels, probenum)->data;
-                        sdi->driver->config_set(SR_CONF_VDIV,
+                        sdi->driver->config_set(SR_CONF_PROBE_VDIV,
                             g_variant_new_uint64(tmp_u64), sdi, probe, NULL);
                     }
                 } else if (!strncmp(keys[j], "vFactor", 7)) {
@@ -295,7 +295,7 @@ SR_API int sr_session_load(const char *filename)
                     tmp_u64 = strtoull(val, NULL, 10);
                     if (probenum < g_slist_length(sdi->channels)) {
                         probe = g_slist_nth(sdi->channels, probenum)->data;
-                        sdi->driver->config_set(SR_CONF_FACTOR,
+                        sdi->driver->config_set(SR_CONF_PROBE_FACTOR,
                             g_variant_new_uint64(tmp_u64), sdi, probe, NULL);
                     }
                 } else if (!strncmp(keys[j], "vPos", 4)) {
@@ -303,7 +303,7 @@ SR_API int sr_session_load(const char *filename)
                     tmp_double = strtod(val, NULL);
                     if (probenum < g_slist_length(sdi->channels)) {
                         probe = g_slist_nth(sdi->channels, probenum)->data;
-                        sdi->driver->config_set(SR_CONF_VPOS,
+                        sdi->driver->config_set(SR_CONF_PROBE_VPOS,
                             g_variant_new_double(tmp_double), sdi, probe, NULL);
                     }
                 } else if (!strncmp(keys[j], "vTrig", 5)) {

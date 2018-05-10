@@ -39,6 +39,8 @@ public:
     virtual void init() = 0;
 
 	uint64_t get_sample_count() const;
+    uint64_t get_ring_start() const;
+    uint64_t get_ring_end() const;
 
     const void * get_data() const;
 

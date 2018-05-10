@@ -94,8 +94,13 @@ enum {
 #define SR_MB(n) ((n) * (uint64_t)(1048576ULL))
 #define SR_GB(n) ((n) * (uint64_t)(1073741824ULL))
 
+#define SR_mV(n) (n)
+#define SR_V(n)  ((n) * (uint64_t)(1000ULL))
+#define SR_KV(n) ((n) * (uint64_t)(1000000ULL))
+#define SR_MV(n) ((n) * (uint64_t)(1000000000ULL))
+
 #define SR_MAX_PROBENAME_LEN 32
-#define DS_MAX_ANALOG_PROBES_NUM 8
+#define DS_MAX_ANALOG_PROBES_NUM 4
 #define DS_MAX_DSO_PROBES_NUM 2
 #define TriggerStages 16
 #define TriggerProbes 16
@@ -362,6 +367,10 @@ struct sr_datafeed_analog {
 	/** The probes for which data is included in this packet. */
 	GSList *probes;
 	int num_samples;
+    /** How many bits for each sample */
+    uint8_t unit_bits;
+    /** Interval between two valid samples */
+    uint16_t unit_pitch;
 	/** Measured quantity (voltage, current, temperature, and so on). */
 	int mq;
 	/** Unit in which the MQ is measured. */
@@ -603,6 +612,9 @@ struct sr_channel {
     int8_t comb_diff_bom;
     gboolean ms_show;
     gboolean ms_en[DSO_MS_END - DSO_MS_BEGIN];
+    const char *map_unit;
+    double map_min;
+    double map_max;
 };
 
 /** Structure for groups of channels that have common properties. */
@@ -779,8 +791,8 @@ enum {
     /** DSO configure sync */
     SR_CONF_DSO_SYNC,
 
-    /** DSO vertical resolution */
-    SR_CONF_DSO_BITS,
+    /** How many bits for each sample */
+    SR_CONF_UNIT_BITS,
 
     /** Valid channel number */
     SR_CONF_VLD_CH_NUM,
@@ -810,33 +822,17 @@ enum {
     SR_CONF_TEST,
     SR_CONF_EEPROM,
 
-    /** Volts/div for dso channel. */
-    SR_CONF_VDIV,
 
-    /** Vertical position */
-    SR_CONF_VPOS,
 
-    /** Vertical offset */
-    SR_CONF_VOFF,
-    SR_CONF_VOFF_DEFAULT,
-    SR_CONF_VOFF_RANGE,
 
-    /** VGain */
-    SR_CONF_VGAIN,
-    SR_CONF_VGAIN_DEFAULT,
-    SR_CONF_VGAIN_RANGE,
 
-    /** Coupling for dso channel. */
-    SR_CONF_COUPLING,
 
-    /** Channel enable for dso channel. */
-    SR_CONF_EN_CH,
+
 
     /** Data lock */
     SR_CONF_DATALOCK,
 
-    /** probe factor for dso channel. */
-    SR_CONF_FACTOR,
+
 
 	/** Trigger types.  */
 	SR_CONF_TRIGGER_TYPE,
@@ -847,7 +843,7 @@ enum {
 	/** Number of timebases, as related to SR_CONF_TIMEBASE.  */
 	SR_CONF_NUM_TIMEBASE,
 
-	/** Number of vertical divisions, as related to SR_CONF_VDIV.  */
+    /** Number of vertical divisions, as related to SR_CONF_PROBE_VDIV.  */
 	SR_CONF_NUM_VDIV,
 
     /** clock type (internal/external) */
@@ -877,6 +873,43 @@ enum {
     SR_CONF_MAX_DSO_SAMPLERATE,
     SR_CONF_MAX_DSO_SAMPLELIMITS,
     SR_CONF_HW_DEPTH,
+
+    /*--- Probe configuration -------------------------------------------*/
+    /** Probe options */
+    SR_CONF_PROBE_CONFIGS,
+
+    /** Probe options */
+    SR_CONF_PROBE_SESSIONS,
+
+    /** Enable */
+    SR_CONF_PROBE_EN,
+
+    /** Coupling */
+    SR_CONF_PROBE_COUPLING,
+
+    /** Volts/div */
+    SR_CONF_PROBE_VDIV,
+
+    /** Factor */
+    SR_CONF_PROBE_FACTOR,
+
+    /** Vertical position */
+    SR_CONF_PROBE_VPOS,
+
+    /** Mapping */
+    SR_CONF_PROBE_MAP_UNIT,
+    SR_CONF_PROBE_MAP_MIN,
+    SR_CONF_PROBE_MAP_MAX,
+
+    /** Vertical offset */
+    SR_CONF_PROBE_VOFF,
+    SR_CONF_PROBE_VOFF_DEFAULT,
+    SR_CONF_PROBE_VOFF_RANGE,
+
+    /** VGain */
+    SR_CONF_PROBE_VGAIN,
+    SR_CONF_PROBE_VGAIN_DEFAULT,
+    SR_CONF_PROBE_VGAIN_RANGE,
 
 	/*--- Special stuff -------------------------------------------------*/
 
@@ -1003,17 +1036,16 @@ enum {
 	SR_ST_STOPPING,
 };
 
-/** Device operation modes. */
+/** Device test modes. */
 enum {
-    /** Normal */
-    SR_OP_BUFFER = 0,
-    SR_OP_STREAM = 1,
+    /** No test mode */
+    SR_TEST_NONE,
     /** Internal pattern test mode */
-    SR_OP_INTERNAL_TEST = 2,
+    SR_TEST_INTERNAL,
     /** External pattern test mode */
-    SR_OP_EXTERNAL_TEST = 3,
+    SR_TEST_EXTERNAL,
     /** SDRAM loopback test mode */
-    SR_OP_LOOPBACK_TEST = 4,
+    SR_TEST_LOOPBACK,
 };
 
 /** Device buffer mode */

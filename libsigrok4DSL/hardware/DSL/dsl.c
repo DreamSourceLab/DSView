@@ -390,25 +390,42 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
     setting.end_sync = 0xfa5afa5a;
 
     // basic configuration
+//    setting.mode = (trigger->trigger_en << TRIG_EN_BIT) +
+//                   (devc->clock_type << CLK_TYPE_BIT) +
+//                   (devc->clock_edge << CLK_EDGE_BIT) +
+//                   (devc->rle_mode << RLE_MODE_BIT) +
+//                   ((sdi->mode == DSO) << DSO_MODE_BIT) +
+//                   ((((devc->cur_samplerate == (2 * DSLOGIC_MAX_LOGIC_SAMPLERATE)) && sdi->mode != DSO) || (sdi->mode == ANALOG)) << HALF_MODE_BIT) +
+//                   ((devc->cur_samplerate == (4 * DSLOGIC_MAX_LOGIC_SAMPLERATE)) << QUAR_MODE_BIT) +
+//                   ((sdi->mode == ANALOG) << ANALOG_MODE_BIT) +
+//                   ((devc->filter == SR_FILTER_1T) << FILTER_BIT) +
+//                   (devc->instant << INSTANT_BIT) +
+//                   ((trigger->trigger_mode == SERIAL_TRIGGER) << STRIG_MODE_BIT) +
+//                   ((devc->stream) << STREAM_MODE_BIT) +
+//                   ((devc->op_mode == SR_OP_LA_LPTEST) << LPB_TEST_BIT) +
+//                   ((devc->op_mode == SR_OP_LA_EXTEST) << EXT_TEST_BIT) +
+//                   ((devc->op_mode == SR_OP_LA_INTEST) << INT_TEST_BIT);
     setting.mode = (trigger->trigger_en << TRIG_EN_BIT) +
                    (devc->clock_type << CLK_TYPE_BIT) +
                    (devc->clock_edge << CLK_EDGE_BIT) +
                    (devc->rle_mode << RLE_MODE_BIT) +
                    ((sdi->mode == DSO) << DSO_MODE_BIT) +
-                   ((((devc->cur_samplerate == (2 * DSLOGIC_MAX_LOGIC_SAMPLERATE)) && sdi->mode != DSO) || (sdi->mode == ANALOG)) << HALF_MODE_BIT) +
+                   (((devc->cur_samplerate == (2 * DSLOGIC_MAX_LOGIC_SAMPLERATE)) && sdi->mode != DSO) << HALF_MODE_BIT) +
                    ((devc->cur_samplerate == (4 * DSLOGIC_MAX_LOGIC_SAMPLERATE)) << QUAR_MODE_BIT) +
                    ((sdi->mode == ANALOG) << ANALOG_MODE_BIT) +
                    ((devc->filter == SR_FILTER_1T) << FILTER_BIT) +
                    (devc->instant << INSTANT_BIT) +
                    ((trigger->trigger_mode == SERIAL_TRIGGER) << STRIG_MODE_BIT) +
                    ((devc->stream) << STREAM_MODE_BIT) +
-                   ((devc->op_mode == SR_OP_LOOPBACK_TEST) << LPB_TEST_BIT) +
-                   ((devc->op_mode == SR_OP_EXTERNAL_TEST) << EXT_TEST_BIT) +
-                   ((devc->op_mode == SR_OP_INTERNAL_TEST) << INT_TEST_BIT);
+                   ((devc->test_mode == SR_TEST_LOOPBACK) << LPB_TEST_BIT) +
+                   ((devc->test_mode == SR_TEST_EXTERNAL) << EXT_TEST_BIT) +
+                   ((devc->test_mode == SR_TEST_INTERNAL) << INT_TEST_BIT);
 
     // sample rate divider
     tmp_u32  = (sdi->mode == DSO) ? (uint32_t)ceil(DSLOGIC_MAX_DSO_SAMPLERATE * 1.0 / devc->cur_samplerate / ch_num) :
-                                    (uint32_t)ceil(DSLOGIC_MAX_LOGIC_SAMPLERATE * 1.0 / devc->cur_samplerate);
+               (sdi->mode == ANALOG) ? (uint32_t)ceil(DSCOPE_MAX_DAQ_SAMPLERATE * 1.0 / max(devc->cur_samplerate, HW_MIN_SAMPLERATE)) :
+                                       (uint32_t)ceil(DSLOGIC_MAX_LOGIC_SAMPLERATE * 1.0 / devc->cur_samplerate);
+    devc->unit_pitch = ceil(HW_MIN_SAMPLERATE * 1.0 / devc->cur_samplerate);
     setting.div_l = tmp_u32 & 0x0000ffff;
     setting.div_h = tmp_u32 >> 16;
 
@@ -840,17 +857,17 @@ SR_PRIV int dsl_config_get(int id, GVariant **data, const struct sr_dev_inst *sd
         devc = sdi->priv;
         *data = g_variant_new_boolean(devc->instant);
         break;
-    case SR_CONF_VDIV:
+    case SR_CONF_PROBE_VDIV:
         if (!ch)
             return SR_ERR;
         *data = g_variant_new_uint64(ch->vdiv);
         break;
-    case SR_CONF_FACTOR:
+    case SR_CONF_PROBE_FACTOR:
         if (!ch)
             return SR_ERR;
         *data = g_variant_new_uint64(ch->vfactor);
         break;
-    case SR_CONF_VPOS:
+    case SR_CONF_PROBE_VPOS:
         if (!ch)
             return SR_ERR;
         *data = g_variant_new_double(ch->vpos);
@@ -861,12 +878,12 @@ SR_PRIV int dsl_config_get(int id, GVariant **data, const struct sr_dev_inst *sd
         devc = sdi->priv;
         *data = g_variant_new_uint64(devc->timebase);
         break;
-    case SR_CONF_COUPLING:
+    case SR_CONF_PROBE_COUPLING:
         if (!ch)
             return SR_ERR;
         *data = g_variant_new_byte(ch->coupling);
         break;
-    case SR_CONF_EN_CH:
+    case SR_CONF_PROBE_EN:
         if (!ch)
             return SR_ERR;
         *data = g_variant_new_boolean(ch->enabled);
@@ -937,11 +954,11 @@ SR_PRIV int dsl_config_get(int id, GVariant **data, const struct sr_dev_inst *sd
         devc = sdi->priv;
         *data = g_variant_new_boolean(devc->roll);
         break;
-    case SR_CONF_DSO_BITS:
+    case SR_CONF_UNIT_BITS:
         if (!sdi)
             return SR_ERR;
         devc = sdi->priv;
-        *data = g_variant_new_byte(devc->dso_bits);
+        *data = g_variant_new_byte(devc->unit_bits);
         break;
     default:
         return SR_ERR_NA;
@@ -1111,10 +1128,17 @@ SR_PRIV int dsl_dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *
 static unsigned int to_bytes_per_ms(struct DSL_context *devc)
 {
     struct sr_dev_inst *sdi = devc->cb_data;
-    if (devc->cur_samplerate > SR_MHZ(100))
-        return SR_MHZ(100) / 1000 * dsl_en_ch_num(sdi) / 8;
-    else
-        return devc->cur_samplerate / 1000 * dsl_en_ch_num(sdi) / 8;
+    if (sdi->mode == LOGIC) {
+        if (devc->cur_samplerate > SR_MHZ(100))
+            return SR_MHZ(100) / 1000 * dsl_en_ch_num(sdi) / 8;
+        else
+            return ceil(devc->cur_samplerate / 1000.0 * dsl_en_ch_num(sdi) / 8);
+    } else {
+        if (devc->cur_samplerate > SR_MHZ(100))
+            return SR_MHZ(100) / 1000.0 * dsl_en_ch_num(sdi);
+        else
+            return ceil(devc->cur_samplerate / 1000.0 * dsl_en_ch_num(sdi));
+    }
 }
 
 static size_t get_buffer_size(struct DSL_context *devc)
@@ -1150,7 +1174,7 @@ SR_PRIV unsigned int dsl_get_timeout(struct DSL_context *devc)
     total_size = get_buffer_size(devc) * get_number_of_transfers(devc);
     timeout = total_size / to_bytes_per_ms(devc);
 
-    if (devc->op_mode == SR_OP_STREAM)
+    if (devc->stream)
         return timeout + timeout / 4; /* Leave a headroom of 25% percent. */
     else
         return 1000;
@@ -1307,12 +1331,14 @@ static void receive_transfer(struct libusb_transfer *transfer)
                 packet.status = SR_PKT_DATA_ERROR;
                 devc->mstatus_valid = FALSE;
             }
-        } else {
+        } else if (sdi->mode == ANALOG) {
             packet.type = SR_DF_ANALOG;
             packet.payload = &analog;
             analog.probes = sdi->channels;
-            cur_sample_count = transfer->actual_length / (sample_width * g_slist_length(analog.probes));
+            cur_sample_count = transfer->actual_length / (((devc->unit_bits + 7) / 8) * g_slist_length(analog.probes));
             analog.num_samples = cur_sample_count;
+            analog.unit_bits = devc->unit_bits;
+            analog.unit_pitch = devc->unit_pitch;
             analog.mq = SR_MQ_VOLTAGE;
             analog.unit = SR_UNIT_VOLT;
             analog.mqflags = SR_MQFLAG_AC;
@@ -1341,7 +1367,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
             devc->limit_samples &&
             devc->num_bytes >= devc->actual_bytes) {
             devc->status = DSL_STOP;
-        } else if ((sdi->mode != DSO || devc->instant) &&
+        } else if ((sdi->mode == DSO && devc->instant) &&
                    devc->limit_samples &&
                    devc->num_samples >= devc->actual_samples) {
             devc->status = DSL_STOP;

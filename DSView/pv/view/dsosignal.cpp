@@ -187,7 +187,7 @@ void DsoSignal::set_enable(bool enable)
 
     GVariant* gvar;
     bool cur_enable;
-    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_EN_CH);
+    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_EN);
     if (gvar != NULL) {
         cur_enable = g_variant_get_boolean(gvar);
         g_variant_unref(gvar);
@@ -207,7 +207,7 @@ void DsoSignal::set_enable(bool enable)
         QCoreApplication::processEvents();
 
     set_vDialActive(false);
-    _dev_inst->set_config(_probe, NULL, SR_CONF_EN_CH,
+    _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_EN,
                           g_variant_new_boolean(enable));
 
     if (running) {
@@ -237,11 +237,11 @@ bool DsoSignal::go_vDialPre()
             _view->session().refresh(RefreshShort);
         const double pre_vdiv = _vDial->get_value();
         _vDial->set_sel(_vDial->get_sel() - 1);
-        _dev_inst->set_config(_probe, NULL, SR_CONF_VDIV,
+        _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_VDIV,
                               g_variant_new_uint64(_vDial->get_value()));
         if (_view->session().get_capture_state() == SigSession::Stopped)
             _scale *= pre_vdiv/_vDial->get_value();
-        update_offset();
+        update_vpos();
         _view->update_calibration();
         _view->set_update(_viewport, true);
         _view->update();
@@ -259,11 +259,11 @@ bool DsoSignal::go_vDialNext()
             _view->session().refresh(RefreshShort);
         const double pre_vdiv = _vDial->get_value();
         _vDial->set_sel(_vDial->get_sel() + 1);
-        _dev_inst->set_config(_probe, NULL, SR_CONF_VDIV,
+        _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_VDIV,
                               g_variant_new_uint64(_vDial->get_value()));
         if (_view->session().get_capture_state() == SigSession::Stopped)
             _scale *= pre_vdiv/_vDial->get_value();
-        update_offset();
+        update_vpos();
 		_view->update_calibration();
         _view->set_update(_viewport, true);
         _view->update();
@@ -426,23 +426,23 @@ bool DsoSignal::load_settings()
 
     // -- enable
 //    bool enable;
-//    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_EN_CH);
+//    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_EN);
 //    if (gvar != NULL) {
 //        enable = g_variant_get_boolean(gvar);
 //        g_variant_unref(gvar);
 //    } else {
-//        qDebug() << "ERROR: config_get SR_CONF_EN_CH failed.";
+//        qDebug() << "ERROR: config_get SR_CONF_PROBE_EN failed.";
 //        return false;
 //    }
 
     // dso channel bits
-    gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_DSO_BITS);
+    gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_UNIT_BITS);
     if (gvar != NULL) {
         _bits = g_variant_get_byte(gvar);
         g_variant_unref(gvar);
     } else {
         _bits = DefaultBits;
-        qDebug("Warning: config_get SR_CONF_DSO_BITS failed, set to %d(default).", DefaultBits);
+        qDebug("Warning: config_get SR_CONF_UNIT_BITS failed, set to %d(default).", DefaultBits);
         if (strncmp(_dev_inst->name().toLocal8Bit(), "virtual", 7))
             return false;
     }
@@ -469,54 +469,54 @@ bool DsoSignal::load_settings()
     // -- vdiv
     uint64_t vdiv;
     uint64_t vfactor;
-    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_VDIV);
+    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_VDIV);
     if (gvar != NULL) {
         vdiv = g_variant_get_uint64(gvar);
         g_variant_unref(gvar);
     } else {
-        qDebug() << "ERROR: config_get SR_CONF_VDIV failed.";
+        qDebug() << "ERROR: config_get SR_CONF_PROBE_VDIV failed.";
         return false;
     }
-    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_FACTOR);
+    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_FACTOR);
     if (gvar != NULL) {
         vfactor = g_variant_get_uint64(gvar);
         g_variant_unref(gvar);
     } else {
-        qDebug() << "ERROR: config_get SR_CONF_FACTOR failed.";
+        qDebug() << "ERROR: config_get SR_CONF_PROBE_FACTOR failed.";
         return false;
     }
 
     _vDial->set_value(vdiv);
     _vDial->set_factor(vfactor);
-//    _dev_inst->set_config(_probe, NULL, SR_CONF_VDIV,
+//    _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_VDIV,
 //                          g_variant_new_uint64(_vDial->get_value()));
 
     // -- coupling
-    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_COUPLING);
+    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_COUPLING);
     if (gvar != NULL) {
         _acCoupling = g_variant_get_byte(gvar);
         g_variant_unref(gvar);
     } else {
-        qDebug() << "ERROR: config_get SR_CONF_COUPLING failed.";
+        qDebug() << "ERROR: config_get SR_CONF_PROBE_COUPLING failed.";
         return false;
     }
 
-//    _dev_inst->set_config(_probe, NULL, SR_CONF_COUPLING,
+//    _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_COUPLING,
 //                          g_variant_new_byte(_acCoupling));
 
     // -- vpos
     double vpos;
-    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_VPOS);
+    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_VPOS);
     if (gvar != NULL) {
         vpos = g_variant_get_double(gvar);
         g_variant_unref(gvar);
     } else {
-        qDebug() << "ERROR: config_get SR_CONF_VPOS failed.";
+        qDebug() << "ERROR: config_get SR_CONF_PROBE_VPOS failed.";
         return false;
     }
     _zero_vrate = min(max((0.5 - vpos / (_vDial->get_value() * DS_CONF_DSO_VDIVS)), 0.0), 1.0);
     if (_dev_inst->name().contains("virtual"))
-        cur_hw_offset = _zero_vrate * ((1 << _bits) - 1);
+        _hw_offset = _zero_vrate * ((1 << _bits) - 1);
 
     // -- trig_value
     gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_TRIGGER_VALUE);
@@ -541,7 +541,7 @@ int DsoSignal::commit_settings()
 {
     int ret;
     // -- enable
-    ret = _dev_inst->set_config(_probe, NULL, SR_CONF_EN_CH,
+    ret = _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_EN,
                                 g_variant_new_boolean(enabled()));
 
     // -- hdiv
@@ -549,18 +549,18 @@ int DsoSignal::commit_settings()
                                 g_variant_new_uint64(_hDial->get_value()));
 
     // -- vdiv
-    ret = _dev_inst->set_config(_probe, NULL, SR_CONF_VDIV,
+    ret = _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_VDIV,
                                 g_variant_new_uint64(_vDial->get_value()));
-    ret = _dev_inst->set_config(_probe, NULL, SR_CONF_FACTOR,
+    ret = _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_FACTOR,
                                 g_variant_new_uint64(_vDial->get_factor()));
 
     // -- coupling
-    ret = _dev_inst->set_config(_probe, NULL, SR_CONF_COUPLING,
+    ret = _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_COUPLING,
                                 g_variant_new_byte(_acCoupling));
 
     // -- vpos
     double vpos_off = (0.5 - (get_zero_vpos() - UpMargin) * 1.0/get_view_rect().height()) * _vDial->get_value() * DS_CONF_DSO_VDIVS;
-    ret = _dev_inst->set_config(_probe, NULL, SR_CONF_VPOS,
+    ret = _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_VPOS,
                                 g_variant_new_double(vpos_off));
 
     // -- trig_value
@@ -599,7 +599,7 @@ void DsoSignal::set_acCoupling(uint8_t coupling)
 {
     if (enabled()) {
         _acCoupling = coupling;
-        _dev_inst->set_config(_probe, NULL, SR_CONF_COUPLING,
+        _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_COUPLING,
                               g_variant_new_byte(_acCoupling));
     }
 }
@@ -655,7 +655,7 @@ void DsoSignal::set_trig_vrate(double rate)
                           g_variant_new_byte(_trig_value));
 }
 
-int DsoSignal::get_zero_vpos()
+int DsoSignal::get_zero_vpos() const
 {
     return _zero_vrate * get_view_rect().height() + UpMargin;
 }
@@ -667,7 +667,7 @@ double DsoSignal::get_zero_vrate()
 
 double DsoSignal::get_hw_offset()
 {
-    return cur_hw_offset;
+    return _hw_offset;
 }
 
 void DsoSignal::set_zero_vpos(int pos)
@@ -682,15 +682,15 @@ void DsoSignal::set_zero_vpos(int pos)
 void DsoSignal::set_zero_vrate(double rate, bool force_update)
 {
     _zero_vrate = rate;
-    update_offset();
+    update_vpos();
 
     if (!_dev_inst->name().contains("virtual") &&
         (force_update ||
         _view->session().get_capture_state() == SigSession::Running)) {
         if (_dev_inst->name() == "DSLogic")
-            cur_hw_offset = 0x80;
+            _hw_offset = 0x80;
         else
-            cur_hw_offset = _zero_vrate * ((1 << _bits) - 1);
+            _hw_offset = _zero_vrate * ((1 << _bits) - 1);
     }
 }
 
@@ -699,16 +699,16 @@ void DsoSignal::set_factor(uint64_t factor)
     if (enabled()) {
         GVariant* gvar;
         uint64_t prefactor = 0;
-        gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_FACTOR);
+        gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_FACTOR);
         if (gvar != NULL) {
             prefactor = g_variant_get_uint64(gvar);
             g_variant_unref(gvar);
         } else {
-            qDebug() << "ERROR: config_get SR_CONF_FACTOR failed.";
+            qDebug() << "ERROR: config_get SR_CONF_PROBE_FACTOR failed.";
             return;
         }
         if (prefactor != factor) {
-            _dev_inst->set_config(_probe, NULL, SR_CONF_FACTOR,
+            _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_FACTOR,
                                   g_variant_new_uint64(factor));
             _vDial->set_factor(factor);
             _view->set_update(_viewport, true);
@@ -721,13 +721,13 @@ uint64_t DsoSignal::get_factor()
 {
     GVariant* gvar;
     uint64_t factor;
-    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_FACTOR);
+    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_FACTOR);
     if (gvar != NULL) {
         factor = g_variant_get_uint64(gvar);
         g_variant_unref(gvar);
         return factor;
     } else {
-        qDebug() << "ERROR: config_get SR_CONF_FACTOR failed.";
+        qDebug() << "ERROR: config_get SR_CONF_PROBE_FACTOR failed.";
         return 1;
     }
 }
@@ -786,10 +786,10 @@ QString DsoSignal::get_ms_string(int index) const
     }
 }
 
-void DsoSignal::update_offset()
+void DsoSignal::update_vpos()
 {
     double vpos_off = (0.5 - _zero_vrate) * _vDial->get_value() * DS_CONF_DSO_VDIVS;
-    _dev_inst->set_config(_probe, NULL, SR_CONF_VPOS,
+    _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_VPOS,
                           g_variant_new_double(vpos_off));
 }
 
@@ -871,10 +871,11 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right)
     assert(right >= left);
 
     if (enabled()) {
+        const float top = get_view_rect().top();
         const int height = get_view_rect().height();
         const int width = right - left;
+        const float zeroY = _zero_vrate * height + top;
 
-        const int y = get_zero_vpos() + height * 0.5;
         const double scale = _view->scale();
         assert(scale > 0);
         const int64_t offset = _view->offset();
@@ -907,12 +908,12 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right)
 
         if (samples_per_pixel < EnvelopeThreshold) {
             snapshot->enable_envelope(false);
-            paint_trace(p, snapshot, y, left,
+            paint_trace(p, snapshot, zeroY, left,
                 start_sample, end_sample,
                 pixels_offset, samples_per_pixel, number_channels);
         } else {
             snapshot->enable_envelope(true);
-            paint_envelope(p, snapshot, y, left,
+            paint_envelope(p, snapshot, zeroY, left,
                 start_sample, end_sample,
                 pixels_offset, samples_per_pixel, number_channels);
         }
@@ -1014,11 +1015,9 @@ QRectF DsoSignal::get_trig_rect(int left, int right) const
 
 void DsoSignal::paint_trace(QPainter &p,
     const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot,
-    int y, int left, const int64_t start, const int64_t end,
+    int zeroY, int left, const int64_t start, const int64_t end,
     const double pixels_offset, const double samples_per_pixel, uint64_t num_channels)
 {
-    (void)y;
-
     const int64_t sample_count = end - start + 1;
 
     if (sample_count > 0) {
@@ -1034,7 +1033,6 @@ void DsoSignal::paint_trace(QPainter &p,
 
         float top = get_view_rect().top();
         float bottom = get_view_rect().bottom();
-        float zeroP = _zero_vrate * get_view_rect().height() + top;;
         float x = (start / samples_per_pixel - pixels_offset) + left;
         double  pixels_per_sample = 1.0/samples_per_pixel;
         uint8_t offset;
@@ -1045,7 +1043,7 @@ void DsoSignal::paint_trace(QPainter &p,
 
             //offset = samples[(sample - start)*num_channels];
             offset = samples[sample];
-            const float y = min(max(top, zeroP + (offset - cur_hw_offset) * _scale), bottom);
+            const float y = min(max(top, zeroY + (offset - _hw_offset) * _scale), bottom);
             *point++ = QPointF(x, y);
             x += pixels_per_sample;
             //*point++ = QPointF(x, top + offset);
@@ -1062,13 +1060,11 @@ void DsoSignal::paint_trace(QPainter &p,
 
 void DsoSignal::paint_envelope(QPainter &p,
     const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot,
-    int y, int left, const int64_t start, const int64_t end,
+    int zeroY, int left, const int64_t start, const int64_t end,
     const double pixels_offset, const double samples_per_pixel, uint64_t num_channels)
 {
 	using namespace Qt;
     using pv::data::DsoSnapshot;
-
-    (void)y;
 
     DsoSnapshot::EnvelopeSection e;
     const uint16_t index = get_index() % num_channels;
@@ -1087,7 +1083,6 @@ void DsoSignal::paint_envelope(QPainter &p,
 	QRectF *rect = rects;
     float top = get_view_rect().top();
     float bottom = get_view_rect().bottom();
-    float zeroP = _zero_vrate * get_view_rect().height() + top;
     for(uint64_t sample = 0; sample < e.length-1; sample++) {
 		const float x = ((e.scale * sample + e.start) /
 			samples_per_pixel - pixels_offset) + left;
@@ -1096,8 +1091,8 @@ void DsoSignal::paint_envelope(QPainter &p,
 
 		// We overlap this sample with the next so that vertical
 		// gaps do not appear during steep rising or falling edges
-        const float b = min(max(top, ((max(s->max, (s+1)->min) - cur_hw_offset) * _scale + zeroP)), bottom);
-        const float t = min(max(top, ((min(s->min, (s+1)->max) - cur_hw_offset) * _scale + zeroP)), bottom);
+        const float b = min(max(top, ((max(s->max, (s+1)->min) - _hw_offset) * _scale + zeroY)), bottom);
+        const float t = min(max(top, ((min(s->min, (s+1)->max) - _hw_offset) * _scale + zeroY)), bottom);
 
 		float h = b - t;
 		if(h >= 0.0f && h <= 1.0f)
@@ -1147,12 +1142,12 @@ void DsoSignal::paint_type_options(QPainter &p, int right, const QPoint pt)
     // paint the probe factor selector
     GVariant* gvar;
     uint64_t factor;
-    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_FACTOR);
+    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_FACTOR);
     if (gvar != NULL) {
         factor = g_variant_get_uint64(gvar);
         g_variant_unref(gvar);
     } else {
-        qDebug() << "ERROR: config_get SR_CONF_FACTOR failed.";
+        qDebug() << "ERROR: config_get SR_CONF_PROBE_FACTOR failed.";
         return;
     }
 
@@ -1351,8 +1346,8 @@ void DsoSignal::paint_measure(QPainter &p)
         _min = (index == 0) ? status.ch0_min : status.ch1_min;
         const uint64_t period = (index == 0) ? status.ch0_period : status.ch1_period;
         const uint32_t count  = (index == 0) ? status.ch0_pcnt : status.ch1_pcnt;
-        double value_max = (cur_hw_offset - _min) * _scale * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
-        double value_min = (cur_hw_offset - _max) * _scale * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
+        double value_max = (_hw_offset - _min) * _scale * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
+        double value_min = (_hw_offset - _max) * _scale * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
         double value_p2p = value_max - value_min;
         _period = (count == 0) ? period * 10.0 : period * 10.0 / count;
         const int channel_count = _view->session().get_ch_num(SR_CHANNEL_DSO);
@@ -1373,7 +1368,7 @@ void DsoSignal::paint_measure(QPainter &p)
             if (!snapshots.empty()) {
                 const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
                     snapshots.front();
-                const double vrms = snapshot->cal_vrms(cur_hw_offset, get_index());
+                const double vrms = snapshot->cal_vrms(_hw_offset, get_index());
                 const double value_vrms = vrms * _scale * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
                 _ms_string[DSO_MS_VRMS] = tr("Vrms: ") +  (abs(value_vrms) > 1000 ? QString::number(value_vrms/1000.0, 'f', 2) + "V" : QString::number(value_vrms, 'f', 2) + "mV");
             }
@@ -1386,7 +1381,7 @@ void DsoSignal::paint_measure(QPainter &p)
                 const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
                     snapshots.front();
                 const double vmean = snapshot->cal_vmean(get_index());
-                const double value_vmean = (cur_hw_offset - vmean) * _scale * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
+                const double value_vmean = (_hw_offset - vmean) * _scale * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
                 _ms_string[DSO_MS_VMEA] = tr("Vmean: ") +  (abs(value_vmean) > 1000 ? QString::number(value_vmean/1000.0, 'f', 2) + "V" : QString::number(value_vmean, 'f', 2) + "mV");
             }
         }
@@ -1551,17 +1546,17 @@ bool DsoSignal::measure(const QPointF &p)
     const uint8_t cur_sample = *snapshot->get_samples(_hover_index, _hover_index, get_index());
     const uint8_t nxt_sample = *snapshot->get_samples(nxt_index, nxt_index, get_index());
 
-    _hover_value = (cur_hw_offset - cur_sample) * _scale * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
+    _hover_value = (_hw_offset - cur_sample) * _scale * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
 
     float top = get_view_rect().top();
     float bottom = get_view_rect().bottom();
     float zeroP = _zero_vrate * get_view_rect().height() + top;
     float pre_x = (pre_index / samples_per_pixel - pixels_offset);
-    const float pre_y = min(max(top, zeroP + (pre_sample - cur_hw_offset)* _scale), bottom);
+    const float pre_y = min(max(top, zeroP + (pre_sample - _hw_offset)* _scale), bottom);
     float x = (_hover_index / samples_per_pixel - pixels_offset);
-    const float y = min(max(top, zeroP + (cur_sample - cur_hw_offset)* _scale), bottom);
+    const float y = min(max(top, zeroP + (cur_sample - _hw_offset)* _scale), bottom);
     float nxt_x = (nxt_index / samples_per_pixel - pixels_offset);
-    const float nxt_y = min(max(top, zeroP + (nxt_sample - cur_hw_offset)* _scale), bottom);
+    const float nxt_y = min(max(top, zeroP + (nxt_sample - _hw_offset)* _scale), bottom);
     const QRectF slope_rect = QRectF(QPointF(pre_x - 10, pre_y - 10), QPointF(nxt_x + 10, nxt_y + 10));
     if (abs(y-p.y()) < 20 || slope_rect.contains(p)) {
         _hover_point = QPointF(x, y);

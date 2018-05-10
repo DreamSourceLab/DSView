@@ -43,8 +43,8 @@ class AnalogSnapshot : public Snapshot
 public:
 	struct EnvelopeSample
 	{
-        uint16_t min;
-        uint16_t max;
+        uint8_t min;
+        uint8_t max;
 	};
 
 	struct EnvelopeSection
@@ -52,15 +52,22 @@ public:
 		uint64_t start;
 		unsigned int scale;
 		uint64_t length;
+        uint64_t samples_num;
 		EnvelopeSample *samples;
+        uint8_t *max;
+        uint8_t *min;
 	};
 
 private:
 	struct Envelope
 	{
 		uint64_t length;
+        uint64_t ring_length;
+        uint64_t count;
 		uint64_t data_length;
 		EnvelopeSample *samples;
+        uint8_t *max;
+        uint8_t *min;
 	};
 
 private:
@@ -69,8 +76,6 @@ private:
 	static const int EnvelopeScaleFactor;
 	static const float LogEnvelopeScaleFactor;
 	static const uint64_t EnvelopeDataUnit;
-
-    static const int BytesPerSample = 2;
 
 public:
     AnalogSnapshot();
@@ -85,16 +90,19 @@ public:
 
 	void append_payload(const sr_datafeed_analog &analog);
 
-    const uint16_t* get_samples(int64_t start_sample,
-		int64_t end_sample) const;
+    const uint8_t *get_samples(int64_t start_sample) const;
 
-	void get_envelope_section(EnvelopeSection &s,
-        uint64_t start, uint64_t end, float min_length, int probe_index) const;
+    void get_envelope_section(EnvelopeSection &s,
+        uint64_t start, int64_t count, float min_length, int probe_index) const;
 
     int get_ch_order(int sig_index);
 
+    uint8_t get_unit_bytes() const;
+
+    int get_scale_factor() const;
+
 private:
-    void append_data(void *data, uint64_t samples);
+    void append_data(void *data, uint64_t samples, uint16_t pitch);
     void free_envelop();
 	void reallocate_envelope(Envelope &l);
 	void append_payload_to_envelope_levels();
@@ -102,8 +110,9 @@ private:
 
 
 private:
-    struct Envelope _envelope_levels[2*DS_MAX_ANALOG_PROBES_NUM][ScaleStepCount];
-
+    struct Envelope _envelope_levels[DS_MAX_ANALOG_PROBES_NUM][ScaleStepCount];
+    uint8_t _unit_bytes;
+    uint16_t _unit_pitch;
 	friend class AnalogSnapshotTest::Basic;
 };
 

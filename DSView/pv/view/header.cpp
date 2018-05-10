@@ -295,7 +295,21 @@ void Header::mouseMoveEvent(QMouseEvent *event)
             const boost::shared_ptr<Trace> sig((*i).first);
 			if (sig) {
                 int y = (*i).second + delta;
-                if (sig->get_type() != SR_CHANNEL_DSO) {
+                if (sig->get_type() == SR_CHANNEL_DSO) {
+                    boost::shared_ptr<DsoSignal> dsoSig;
+                    if (dsoSig = dynamic_pointer_cast<DsoSignal>(sig)) {
+                        dsoSig->set_zero_vpos(y);
+                        _moveFlag = true;
+                        traces_moved();
+                    }
+                } else if (sig->get_type() == SR_CHANNEL_ANALOG) {
+                    boost::shared_ptr<AnalogSignal> analogSig;
+                    if (analogSig = dynamic_pointer_cast<AnalogSignal>(sig)) {
+                        analogSig->set_zero_vpos(y);
+                        _moveFlag = true;
+                        traces_moved();
+                    }
+                } else {
                     if (~QApplication::keyboardModifiers() & Qt::ControlModifier) {
                         const int y_snap =
                             ((y + View::SignalSnapGridSize / 2) /
@@ -305,13 +319,6 @@ void Header::mouseMoveEvent(QMouseEvent *event)
                             _moveFlag = true;
                             sig->set_v_offset(y_snap);
                         }
-                    }
-                } else {
-                    boost::shared_ptr<DsoSignal> dsoSig;
-                    if (dsoSig = dynamic_pointer_cast<DsoSignal>(sig)) {
-                        dsoSig->set_zero_vpos(y);
-                        _moveFlag = true;
-                        traces_moved();
                     }
                 }
 			}

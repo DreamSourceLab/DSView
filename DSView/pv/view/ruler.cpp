@@ -537,7 +537,7 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
 
         division++;
 
-    } while (x < _view.get_view_width());
+    } while (x < rect().right());
 
     // Draw the cursors
     if (!_view.get_cursorList().empty()) {

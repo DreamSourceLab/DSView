@@ -115,7 +115,10 @@ void DevMode::on_mode_change()
         i != _mode_button_list.end(); i++) {
         if ((*i).first == button) {
             if (dev_inst->dev_inst()->mode != (*i).second->mode) {
+                _session.set_run_mode(SigSession::Single);
+                _session.set_repeating(false);
                 _session.stop_capture();
+                _session.capture_state_changed(SigSession::Stopped);
                 _session.session_save();
                 dev_inst->set_config(NULL, NULL,
                                      SR_CONF_DEVICE_MODE,

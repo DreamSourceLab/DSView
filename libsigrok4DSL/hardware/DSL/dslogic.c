@@ -35,6 +35,18 @@ static struct sr_dev_mode pro_mode_list[] = {
     {"LA", LOGIC},
 };
 
+enum {
+    /** Buffer mode */
+    OP_BUFFER = 0,
+    /** Stream mode */
+    OP_STREAM = 1,
+    /** Internal pattern test mode */
+    OP_INTEST = 2,
+    /** External pattern test mode */
+    OP_EXTEST = 3,
+    /** SDRAM loopback test mode */
+    OP_LPTEST = 4,
+};
 static const char *opmodes[] = {
     "Buffer Mode",
     "Stream Mode",
@@ -244,7 +256,7 @@ static int counts_size(const struct sr_dev_inst *sdi)
     if (strcmp(sdi->model, "DSLogic Basic") == 0)
         if (sdi->mode == ANALOG)
             return 5;
-        else if (!devc || devc->op_mode == SR_OP_STREAM)
+        else if (!devc || devc->stream)
             return ARRAY_SIZE(samplecounts);
         else
             return 15;
@@ -332,7 +344,9 @@ static struct DSL_context *DSLogic_dev_new(const struct sr_dev_inst *sdi)
     devc->clock_edge = FALSE;
     devc->rle_mode = FALSE;
     devc->instant = FALSE;
-    devc->op_mode = SR_OP_STREAM;
+    devc->op_mode = OP_STREAM;
+    devc->test_mode = SR_TEST_NONE;
+    devc->stream = (devc->op_mode == OP_STREAM);
     devc->buf_options = SR_BUF_UPLOAD;
     devc->ch_mode = 0;
     devc->samplerates_size = 11;
@@ -347,11 +361,11 @@ static struct DSL_context *DSLogic_dev_new(const struct sr_dev_inst *sdi)
     devc->trigger_hrate = 0;
     devc->trigger_holdoff = 0;
     devc->zero = FALSE;
-    devc->stream = (devc->op_mode == SR_OP_STREAM);
+
     devc->mstatus_valid = FALSE;
     devc->data_lock = FALSE;
     devc->max_height = 0;
-    devc->dso_bits = 8;
+    devc->unit_bits = 8;
     devc->trigger_margin = 8;
     devc->trigger_channel = 0;
 
@@ -521,10 +535,10 @@ static uint64_t dso_cmd_gen(const struct sr_dev_inst *sdi, struct sr_channel* ch
     devc = sdi->priv;
 
     switch (id) {
-    case SR_CONF_VDIV:
-    case SR_CONF_EN_CH:
+    case SR_CONF_PROBE_VDIV:
+    case SR_CONF_PROBE_EN:
     case SR_CONF_TIMEBASE:
-    case SR_CONF_COUPLING:
+    case SR_CONF_PROBE_COUPLING:
         for (l = sdi->channels; l; l = l->next) {
             struct sr_channel *probe = (struct sr_channel *)l->data;
             if (probe->enabled) {
@@ -636,12 +650,12 @@ static int dso_init(const struct sr_dev_inst *sdi)
 
     for(l = sdi->channels; l; l = l->next) {
         struct sr_channel *probe = (struct sr_channel *)l->data;
-        ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe, SR_CONF_COUPLING));
+        ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe, SR_CONF_PROBE_COUPLING));
         if (ret != SR_OK) {
             sr_err("DSO set coupling of channel %d command failed!", probe->index);
             return ret;
         }
-        ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe, SR_CONF_VDIV));
+        ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe, SR_CONF_PROBE_VDIV));
         if (ret != SR_OK) {
             sr_err("Set VDIV of channel %d command failed!", probe->index);
             return ret;
@@ -718,8 +732,7 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
             if (!sdi)
                 return SR_ERR;
             devc = sdi->priv;
-            *data = g_variant_new_boolean((devc->op_mode != SR_OP_BUFFER) &&
-                                          (devc->op_mode != SR_OP_STREAM));
+            *data = g_variant_new_boolean(devc->test_mode != SR_TEST_NONE);
             break;
         case SR_CONF_ACTUAL_SAMPLES:
             if (!sdi)
@@ -859,10 +872,10 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         while(libusb_try_lock_events(drvc->sr_ctx->libusb_ctx));
         devc->data_lock = g_variant_get_boolean(data);
         libusb_unlock_events(drvc->sr_ctx->libusb_ctx);
-    } else if (id == SR_CONF_VDIV) {
+    } else if (id == SR_CONF_PROBE_VDIV) {
         ch->vdiv = g_variant_get_uint64(data);
         if (sdi->mode == DSO) {
-            ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, ch, SR_CONF_VDIV));
+            ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, ch, SR_CONF_PROBE_VDIV));
         }
         if (ret == SR_OK)
             sr_dbg("%s: setting VDIV of channel %d to %d mv",
@@ -870,18 +883,18 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         else
             sr_dbg("%s: setting VDIV of channel %d to %d mv failed",
                 __func__, ch->index, ch->vdiv);
-    } else if (id == SR_CONF_FACTOR) {
+    } else if (id == SR_CONF_PROBE_FACTOR) {
         ch->vfactor = g_variant_get_uint64(data);
         sr_dbg("%s: setting Factor of channel %d to %d", __func__,
                ch->index, ch->vfactor);
     } else if (id == SR_CONF_TIMEBASE) {
         devc->timebase = g_variant_get_uint64(data);
-    } else if (id == SR_CONF_COUPLING) {
+    } else if (id == SR_CONF_PROBE_COUPLING) {
         ch->coupling = g_variant_get_byte(data);
         if (ch->coupling == SR_GND_COUPLING)
             ch->coupling = SR_DC_COUPLING;
         if (sdi->mode == DSO) {
-            ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, ch, SR_CONF_COUPLING));
+            ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, ch, SR_CONF_PROBE_COUPLING));
         }
         if (ret == SR_OK)
             sr_dbg("%s: setting AC COUPLING of channel %d to %d",
@@ -952,8 +965,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             sr_dbg("%s: setting Trigger Margin to %d failed",
                 __func__, devc->trigger_margin);
     } else if (id == SR_CONF_SAMPLERATE) {
-        if ((devc->op_mode != SR_OP_INTERNAL_TEST) &&
-            (devc->op_mode != SR_OP_EXTERNAL_TEST)) {
+        if (devc->test_mode != SR_TEST_NONE) {
             devc->cur_samplerate = g_variant_get_uint64(data);
             if(sdi->mode == DSO) {
                 devc->sample_wide = (devc->cur_samplerate <= DSLOGIC_MAX_DSO_SAMPLERATE);
@@ -1002,7 +1014,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         } else {
             dsl_wr_reg(sdi, EEWP_ADDR, bmSCOPE_CLR);
             num_probes = devc->profile->dev_caps & DEV_CAPS_16BIT ? MAX_ANALOG_PROBES_NUM : 1;
-            devc->op_mode = SR_OP_STREAM;
+            devc->op_mode = OP_STREAM;
+            devc->test_mode = SR_TEST_NONE;
             devc->stream = TRUE;
             devc->samplerates_size = 10;
         }
@@ -1016,20 +1029,23 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     } else if (id == SR_CONF_OPERATION_MODE) {
         stropt = g_variant_get_string(data, NULL);
         if (sdi->mode == LOGIC) {
-            if (!strcmp(stropt, opmodes[SR_OP_BUFFER]) && (devc->op_mode != SR_OP_BUFFER)) {
-                devc->op_mode = SR_OP_BUFFER;
+            if (!strcmp(stropt, opmodes[OP_BUFFER]) && (devc->op_mode != OP_BUFFER)) {
+                devc->op_mode = OP_BUFFER;
+                devc->test_mode = SR_TEST_NONE;
                 devc->stream = FALSE;
                 devc->ch_mode = 0;
                 devc->samplerates_size = 14;
                 adjust_probes(sdi, MAX_LOGIC_PROBES);
-            } else if (!strcmp(stropt, opmodes[SR_OP_STREAM]) && (devc->op_mode != SR_OP_STREAM)) {
-                devc->op_mode = SR_OP_STREAM;
+            } else if (!strcmp(stropt, opmodes[OP_STREAM]) && (devc->op_mode != OP_STREAM)) {
+                devc->op_mode = OP_STREAM;
+                devc->test_mode = SR_TEST_NONE;
                 devc->stream = TRUE;
                 devc->ch_mode = 0;
                 devc->samplerates_size = 11;
                 adjust_probes(sdi, MAX_LOGIC_PROBES);
-            } else if (!strcmp(stropt, opmodes[SR_OP_INTERNAL_TEST]) && (devc->op_mode != SR_OP_INTERNAL_TEST)) {
-                devc->op_mode = SR_OP_INTERNAL_TEST;
+            } else if (!strcmp(stropt, opmodes[OP_INTEST]) && (devc->op_mode != OP_INTEST)) {
+                devc->op_mode = OP_INTEST;
+                devc->test_mode = SR_TEST_INTERNAL;
                 if (strcmp(sdi->model, "DSLogic Basic") == 0) {
                     devc->stream = TRUE;
                     devc->samplerates_size = 10;
@@ -1042,8 +1058,9 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 devc->limit_samples = DSLOGIC_MAX_LOGIC_DEPTH;
                 devc->cur_samplerate = DSLOGIC_MAX_LOGIC_SAMPLERATE;
                 devc->sample_wide = TRUE;
-            } else if (!strcmp(stropt, opmodes[SR_OP_EXTERNAL_TEST]) && (devc->op_mode != SR_OP_EXTERNAL_TEST)) {
-                devc->op_mode = SR_OP_EXTERNAL_TEST;
+            } else if (!strcmp(stropt, opmodes[OP_EXTEST]) && (devc->op_mode != OP_EXTEST)) {
+                devc->op_mode = OP_EXTEST;
+                devc->test_mode = SR_TEST_EXTERNAL;
                 if (strcmp(sdi->model, "DSLogic Basic") == 0) {
                     devc->stream = TRUE;
                     devc->samplerates_size = 11;
@@ -1056,8 +1073,9 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 devc->limit_samples = DSLOGIC_MAX_LOGIC_DEPTH;
                 devc->cur_samplerate = DSLOGIC_MAX_LOGIC_SAMPLERATE;
                 devc->sample_wide = TRUE;
-            } else if (!strcmp(stropt, opmodes[SR_OP_LOOPBACK_TEST]) && (devc->op_mode != SR_OP_LOOPBACK_TEST)) {
-                devc->op_mode = SR_OP_LOOPBACK_TEST;
+            } else if (!strcmp(stropt, opmodes[OP_LPTEST]) && (devc->op_mode != OP_LPTEST)) {
+                devc->op_mode = OP_LPTEST;
+                devc->test_mode = SR_TEST_LOOPBACK;
                 devc->stream = FALSE;
                 devc->ch_mode = 0;
                 devc->samplerates_size = 14;
@@ -1073,7 +1091,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 devc->sample_wide = (devc->cur_samplerate <= DSLOGIC_MAX_DSO_SAMPLERATE);
             }
         } else if (sdi->mode == ANALOG) {
-            devc->op_mode = SR_OP_STREAM;
+            devc->op_mode = OP_STREAM;
+            devc->test_mode = SR_TEST_NONE;
             devc->stream = TRUE;
             devc->samplerates_size = 10;
         }
@@ -1164,10 +1183,10 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         }
         sr_dbg("%s: setting Signal Max Height to %d",
             __func__, devc->max_height);
-    } else if (id == SR_CONF_EN_CH) {
+    } else if (id == SR_CONF_PROBE_EN) {
         ch->enabled = g_variant_get_boolean(data);
         if (sdi->mode == DSO) {
-            ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, ch, SR_CONF_EN_CH));
+            ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, ch, SR_CONF_PROBE_EN));
             uint16_t channel_cnt = 0;
             GSList *l;
             for (l = sdi->channels; l; l = l->next) {
@@ -1183,7 +1202,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         else
             sr_dbg("%s: setting ENABLE of channel %d to %d",
                 __func__, ch->index, ch->enabled);
-    } else if (id == SR_CONF_VPOS) {
+    } else if (id == SR_CONF_PROBE_VPOS) {
         ch->vpos = g_variant_get_double(data);
         sr_dbg("%s: setting VPOS of channel %d to %lf", __func__,
                ch->index, ch->vpos);
@@ -1277,7 +1296,7 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_CHANNEL_MODE:
         if (devc->stream)
             *data = g_variant_new_strv(stream_ch_modes, ARRAY_SIZE(stream_ch_modes));
-        else if (devc->op_mode != SR_OP_BUFFER)
+        else if (devc->test_mode != SR_TEST_NONE)
             *data = g_variant_new_strv(buffer_ch_modes, 1);
         else
             *data = g_variant_new_strv(buffer_ch_modes, ARRAY_SIZE(buffer_ch_modes));

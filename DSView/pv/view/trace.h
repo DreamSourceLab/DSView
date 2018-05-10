@@ -159,7 +159,7 @@ public:
      */
     void set_old_v_offset(int v_offset);
 
-    virtual int get_zero_vpos();
+    virtual int get_zero_vpos() const;
 
 	/**
 	 * Returns true if the trace is visible and enabled.
@@ -284,8 +284,8 @@ private:
 
 private slots:
 	void on_text_changed(const QString &text);
-
 	void on_colour_changed(const QColor &colour);
+    virtual void resize();
 
 signals:
 	void visibility_changed();
