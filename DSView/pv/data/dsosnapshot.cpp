@@ -415,5 +415,27 @@ bool DsoSnapshot::has_data(int index)
         return false;
 }
 
+int DsoSnapshot::get_block_num()
+{
+    const uint64_t size = _sample_count * get_unit_bytes() * get_channel_num();
+    return (size >> LeafBlockPower) +
+           ((size & LeafMask) != 0);
+}
+
+uint64_t DsoSnapshot::get_block_size(int block_index)
+{
+    assert(block_index < get_block_num());
+
+    if (block_index < get_block_num() - 1) {
+        return LeafBlockSamples;
+    } else {
+        const uint64_t size = _sample_count * get_unit_bytes() * get_channel_num();
+        if (size % LeafBlockSamples == 0)
+            return LeafBlockSamples;
+        else
+            return size % LeafBlockSamples;
+    }
+}
+
 } // namespace data
 } // namespace pv

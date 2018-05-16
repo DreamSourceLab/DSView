@@ -28,6 +28,7 @@
 #include <pv/data/logic.h>
 #include <pv/data/logicsnapshot.h>
 #include <pv/data/dsosnapshot.h>
+#include <pv/data/analogsnapshot.h>
 #include <pv/data/decoderstack.h>
 #include <pv/data/decode/decoder.h>
 #include <pv/data/decode/row.h>
@@ -101,7 +102,8 @@ QList<QString> StoreSession::getSuportedExportFormats(){
     while(*supportedModules){
         if(*supportedModules == NULL)
             break;
-        if (_session.get_device()->dev_inst()->mode == DSO && strcmp((*supportedModules)->id, "csv"))
+        if (_session.get_device()->dev_inst()->mode != LOGIC &&
+            strcmp((*supportedModules)->id, "csv"))
             break;
         QString format((*supportedModules)->desc);
         format.append(" (*.");
@@ -233,10 +235,38 @@ void StoreSession::save_proc(shared_ptr<data::Snapshot> snapshot)
             break;
         }
         if (ch_type != -1) {
-            uint64_t size = snapshot->get_sample_count() * snapshot->get_channel_num();
-            uint8_t *buf = (uint8_t *)snapshot->get_data();
-            sr_session_append(_file_name.toLocal8Bit().data(), buf, size,
-                              0, 0, ch_type, 1);
+            const int num = snapshot->get_block_num();
+            _unit_count = snapshot->get_sample_count() *
+                          snapshot->get_unit_bytes() *
+                          snapshot->get_channel_num();
+            uint8_t *buf = (uint8_t *)snapshot->get_data() +
+                           (snapshot->get_ring_start() * snapshot->get_unit_bytes() * snapshot->get_channel_num());
+            const uint8_t *buf_start = (uint8_t *)snapshot->get_data();
+            const uint8_t *buf_end = buf_start + _unit_count;
+
+            for (int i = 0; !boost::this_thread::interruption_requested() && i < num; i++) {
+                const uint64_t size = snapshot->get_block_size(i);
+                if ((buf + size) > buf_end) {
+                    uint8_t *tmp = (uint8_t *)malloc(size);
+                    if (tmp == NULL) {
+                        _has_error = true;
+                        _error = tr("Malloc failed.");
+                        return;
+                    }
+                    memcpy(tmp, buf, buf_end-buf);
+                    memcpy(tmp+(buf_end-buf), buf_start, buf+size-buf_end);
+                    sr_session_append(_file_name.toLocal8Bit().data(), tmp, size,
+                                      i, 0, ch_type, File_Version);
+                    buf += (size - _unit_count);
+                    free(tmp);
+                } else {
+                    sr_session_append(_file_name.toLocal8Bit().data(), buf, size,
+                                      i, 0, ch_type, File_Version);
+                    buf += size;
+                }
+                _units_stored += size;
+                progress_updated();
+            }
         }
     }
 
@@ -276,10 +306,11 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
     }
 
     fprintf(meta, "[version]\n");
-    if (sdi->mode == DSO)
-        fprintf(meta, "version = %d\n", 1); // should be updated in next version
-    else
-        fprintf(meta, "version = %d\n", File_Version);
+//    if (sdi->mode != LOGIC)
+//        fprintf(meta, "version = %d\n", 1); // should be updated in next version
+//    else
+//        fprintf(meta, "version = %d\n", File_Version);
+    fprintf(meta, "version = %d\n", File_Version);
 
     /* metadata */
 
@@ -293,8 +324,10 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
     fprintf(meta, "capturefile = data\n");
     fprintf(meta, "total samples = %" PRIu64 "\n", snapshot->get_sample_count());
 
-    if (sdi->mode == DSO)
-        fprintf(meta, "total probes = %d\n", g_slist_length(sdi->channels));
+    if (sdi->mode != LOGIC) {
+        fprintf(meta, "total probes = %d\n", snapshot->get_channel_num());
+        fprintf(meta, "total blocks = %d\n", snapshot->get_block_num());
+    }
 
     shared_ptr<data::LogicSnapshot> logic_snapshot;
     if (logic_snapshot = dynamic_pointer_cast<data::LogicSnapshot>(snapshot)) {
@@ -326,37 +359,51 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
         }
     } else if (sdi->mode == LOGIC) {
         fprintf(meta, "trigger time = %lld\n", _session.get_trigger_time().toMSecsSinceEpoch());
+    } else if (sdi->mode == ANALOG) {
+        shared_ptr<data::AnalogSnapshot> analog_snapshot;
+        if (analog_snapshot = dynamic_pointer_cast<data::AnalogSnapshot>(snapshot)) {
+            uint8_t tmp_u8 = analog_snapshot->get_unit_bytes();
+            fprintf(meta, "bits = %d\n", tmp_u8*8);
+        }
     }
     fprintf(meta, "trigger pos = %" PRIu64 "\n", _session.get_trigger_pos());
 
-    probecnt = 1;
+    probecnt = 0;
     for (l = sdi->channels; l; l = l->next) {
         probe = (struct sr_channel *)l->data;
-        if (probe->enabled || sdi->mode == DSO) {
+        if (snapshot->has_data(probe->index)) {
             if (probe->name)
-                fprintf(meta, "probe%d = %s\n", probe->index, probe->name);
+                fprintf(meta, "probe%d = %s\n", probecnt, probe->name);
             if (probe->trigger)
-                fprintf(meta, " trigger%d = %s\n", probe->index, probe->trigger);
+                fprintf(meta, " trigger%d = %s\n", probecnt, probe->trigger);
             if (sdi->mode == DSO) {
-                fprintf(meta, " enable%d = %d\n", probe->index, probe->enabled);
-                fprintf(meta, " coupling%d = %d\n", probe->index, probe->coupling);
-                fprintf(meta, " vDiv%d = %" PRIu64 "\n", probe->index, probe->vdiv);
-                fprintf(meta, " vFactor%d = %d\n", probe->index, probe->vfactor);
-                fprintf(meta, " vPos%d = %lf\n", probe->index, probe->vpos);
-                fprintf(meta, " vTrig%d = %d\n", probe->index, probe->trig_value);
+                fprintf(meta, " enable%d = %d\n", probecnt, probe->enabled);
+                fprintf(meta, " coupling%d = %d\n", probecnt, probe->coupling);
+                fprintf(meta, " vDiv%d = %" PRIu64 "\n", probecnt, probe->vdiv);
+                fprintf(meta, " vFactor%d = %d\n", probecnt, probe->vfactor);
+                fprintf(meta, " vPos%d = %lf\n", probecnt, probe->vpos);
+                fprintf(meta, " vTrig%d = %d\n", probecnt, probe->trig_value);
                 if (sr_status_get(sdi, &status, false, 0, 0) == SR_OK) {
                     if (probe->index == 0) {
-                        fprintf(meta, " period%d = %" PRIu64 "\n", probe->index, status.ch0_period);
-                        fprintf(meta, " pcnt%d = %" PRIu32 "\n", probe->index, status.ch0_pcnt);
-                        fprintf(meta, " max%d = %d\n", probe->index, status.ch0_max);
-                        fprintf(meta, " min%d = %d\n", probe->index, status.ch0_min);
+                        fprintf(meta, " period%d = %" PRIu64 "\n", probecnt, status.ch0_period);
+                        fprintf(meta, " pcnt%d = %" PRIu32 "\n", probecnt, status.ch0_pcnt);
+                        fprintf(meta, " max%d = %d\n", probecnt, status.ch0_max);
+                        fprintf(meta, " min%d = %d\n", probecnt, status.ch0_min);
                     } else {
-                        fprintf(meta, " period%d = %" PRIu64 "\n", probe->index, status.ch1_period);
-                        fprintf(meta, " pcnt%d = %" PRIu32 "\n", probe->index, status.ch1_pcnt);
-                        fprintf(meta, " max%d = %d\n", probe->index, status.ch1_max);
-                        fprintf(meta, " min%d = %d\n", probe->index, status.ch1_min);
+                        fprintf(meta, " period%d = %" PRIu64 "\n", probecnt, status.ch1_period);
+                        fprintf(meta, " pcnt%d = %" PRIu32 "\n", probecnt, status.ch1_pcnt);
+                        fprintf(meta, " max%d = %d\n", probecnt, status.ch1_max);
+                        fprintf(meta, " min%d = %d\n", probecnt, status.ch1_min);
                     }
                 }
+            } else if (sdi->mode == ANALOG) {
+                fprintf(meta, " enable%d = %d\n", probecnt, probe->enabled);
+                fprintf(meta, " coupling%d = %d\n", probecnt, probe->coupling);
+                fprintf(meta, " vDiv%d = %" PRIu64 "\n", probecnt, probe->vdiv);
+                fprintf(meta, " vPos%d = %lf\n", probecnt, probe->vpos);
+                fprintf(meta, " mapUnit%d = %s\n", probecnt, probe->map_unit);
+                fprintf(meta, " mapMax%d = %lf\n", probecnt, probe->map_max);
+                fprintf(meta, " mapMin%d = %lf\n", probecnt, probe->map_min);
             }
             probecnt++;
         }
@@ -450,6 +497,8 @@ void StoreSession::export_proc(shared_ptr<data::Snapshot> snapshot)
         channel_type = SR_CHANNEL_LOGIC;
     } else if (dso_snapshot = boost::dynamic_pointer_cast<data::DsoSnapshot>(snapshot)) {
         channel_type = SR_CHANNEL_DSO;
+    } else if (analog_snapshot = boost::dynamic_pointer_cast<data::AnalogSnapshot>(snapshot)) {
+        channel_type = SR_CHANNEL_ANALOG;
     } else {
         _has_error = true;
         _error = tr("data type don't support.");
@@ -482,6 +531,31 @@ void StoreSession::export_proc(shared_ptr<data::Snapshot> snapshot)
     out.setCodec("UTF-8");
     out.setGenerateByteOrderMark(true);
 
+    // Meta
+    GString *data_out;
+    struct sr_datafeed_packet p;
+    struct sr_datafeed_meta meta;
+    struct sr_config *src;
+    src = sr_config_new(SR_CONF_SAMPLERATE,
+            g_variant_new_uint64(_session.cur_samplerate()));
+    meta.config = g_slist_append(NULL, src);
+    src = sr_config_new(SR_CONF_LIMIT_SAMPLES,
+            g_variant_new_uint64(snapshot->get_sample_count()));
+    meta.config = g_slist_append(meta.config, src);
+    p.type = SR_DF_META;
+    p.status = SR_PKT_OK;
+    p.payload = &meta;
+    _outModule->receive(&output, &p, &data_out);
+    if(data_out){
+        out << QString::fromUtf8((char*) data_out->str);
+        g_string_free(data_out,TRUE);
+    }
+    for (GSList *l = meta.config; l; l = l->next) {
+        src = (struct sr_config *)l->data;
+        sr_config_free(src);
+    }
+    g_slist_free(meta.config);
+
     if (channel_type == SR_CHANNEL_LOGIC) {
         _unit_count = logic_snapshot->get_sample_count();
         int blk_num = logic_snapshot->get_block_num();
@@ -506,11 +580,9 @@ void StoreSession::export_proc(shared_ptr<data::Snapshot> snapshot)
             }
 
             uint16_t unitsize = ceil(buf_vec.size() / 8.0);
-            GString *data_out;
             unsigned int usize = 8192;
             unsigned int size = usize;
             struct sr_datafeed_logic lp;
-            struct sr_datafeed_packet p;
             for(uint64_t i = 0; !boost::this_thread::interruption_requested() &&
                                 i < buf_sample_num; i+=usize){
                 if(buf_sample_num - i < usize)
@@ -551,11 +623,9 @@ void StoreSession::export_proc(shared_ptr<data::Snapshot> snapshot)
     } else if (channel_type == SR_CHANNEL_DSO) {
         _unit_count = snapshot->get_sample_count();
         unsigned char* datat = (unsigned char*)snapshot->get_data();
-        GString *data_out;
         unsigned int usize = 8192;
         unsigned int size = usize;
         struct sr_datafeed_dso dp;
-        struct sr_datafeed_packet p;
         for(uint64_t i = 0; !boost::this_thread::interruption_requested() && i < _unit_count; i+=usize){
             if(_unit_count - i < usize)
                 size = _unit_count - i;
@@ -564,6 +634,29 @@ void StoreSession::export_proc(shared_ptr<data::Snapshot> snapshot)
             p.type = SR_DF_DSO;
             p.status = SR_PKT_OK;
             p.payload = &dp;
+            _outModule->receive(&output, &p, &data_out);
+            if(data_out){
+                out << (char*) data_out->str;
+                g_string_free(data_out,TRUE);
+            }
+
+            _units_stored += size;
+            progress_updated();
+        }
+    } else if (channel_type == SR_CHANNEL_ANALOG) {
+        _unit_count = snapshot->get_sample_count();
+        unsigned char* datat = (unsigned char*)snapshot->get_data();
+        unsigned int usize = 8192;
+        unsigned int size = usize;
+        struct sr_datafeed_analog ap;
+        for(uint64_t i = 0; !boost::this_thread::interruption_requested() && i < _unit_count; i+=usize){
+            if(_unit_count - i < usize)
+                size = _unit_count - i;
+            ap.data = &datat[i*snapshot->get_channel_num()];
+            ap.num_samples = size;
+            p.type = SR_DF_ANALOG;
+            p.status = SR_PKT_OK;
+            p.payload = &ap;
             _outModule->receive(&output, &p, &data_out);
             if(data_out){
                 out << (char*) data_out->str;

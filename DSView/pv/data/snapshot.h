@@ -45,6 +45,7 @@ public:
     const void * get_data() const;
 
     int unit_size() const;
+    uint8_t get_unit_bytes() const;
 
     bool memory_failed() const;
     bool empty() const;
@@ -55,6 +56,9 @@ public:
     unsigned int get_channel_num() const;
 
     virtual void capture_ended();
+    virtual bool has_data(int index) = 0;
+    virtual int get_block_num() = 0;
+    virtual uint64_t get_block_size(int block_index) = 0;
 
 protected:
     virtual void free_data();
@@ -72,6 +76,8 @@ protected:
     uint64_t _total_sample_count;
     uint64_t _ring_sample_count;
 	int _unit_size;
+    uint8_t _unit_bytes;
+    uint16_t _unit_pitch;
     bool _memory_failed;
     bool _last_ended;
 };

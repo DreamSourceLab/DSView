@@ -77,6 +77,10 @@ private:
 	static const float LogEnvelopeScaleFactor;
 	static const uint64_t EnvelopeDataUnit;
 
+    static const uint64_t LeafBlockPower = 21;
+    static const uint64_t LeafBlockSamples = 1 << LeafBlockPower;
+    static const uint64_t LeafMask = ~(~0ULL << LeafBlockPower);
+
 public:
     AnalogSnapshot();
 
@@ -97,9 +101,11 @@ public:
 
     int get_ch_order(int sig_index);
 
-    uint8_t get_unit_bytes() const;
-
     int get_scale_factor() const;
+
+    bool has_data(int index);
+    int get_block_num();
+    uint64_t get_block_size(int block_index);
 
 private:
     void append_data(void *data, uint64_t samples, uint16_t pitch);
@@ -111,8 +117,6 @@ private:
 
 private:
     struct Envelope _envelope_levels[DS_MAX_ANALOG_PROBES_NUM][ScaleStepCount];
-    uint8_t _unit_bytes;
-    uint16_t _unit_pitch;
 	friend class AnalogSnapshotTest::Basic;
 };
 

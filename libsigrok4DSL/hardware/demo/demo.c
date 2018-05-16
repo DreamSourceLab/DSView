@@ -187,7 +187,6 @@ static const char *probeMapUnits[] = {
     "g",
     "m",
     "m/s",
-    "Custom",
 };
 
 static const int const_dc = 1.95 / 10 * 255;
@@ -1162,7 +1161,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
                 analog.mq = SR_MQ_VOLTAGE;
                 analog.unit = SR_UNIT_VOLT;
                 analog.mqflags = SR_MQFLAG_AC;
-                analog.data = (float *)devc->buf;
+                analog.data = devc->buf;
             }
 
             if (sdi->mode == DSO && !devc->instant) {

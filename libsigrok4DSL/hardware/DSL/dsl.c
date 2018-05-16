@@ -1342,7 +1342,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
             analog.mq = SR_MQ_VOLTAGE;
             analog.unit = SR_UNIT_VOLT;
             analog.mqflags = SR_MQFLAG_AC;
-            analog.data = (float *)cur_buf;
+            analog.data = cur_buf;
         }
 
         if ((devc->limit_samples && devc->num_bytes < devc->actual_bytes) ||

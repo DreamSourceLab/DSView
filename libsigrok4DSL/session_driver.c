@@ -88,6 +88,22 @@ static const int hwoptions[] = {
     SR_CONF_MAX_HEIGHT,
 };
 
+static const int32_t probeOptions[] = {
+    SR_CONF_PROBE_MAP_UNIT,
+    SR_CONF_PROBE_MAP_MIN,
+    SR_CONF_PROBE_MAP_MAX,
+};
+
+static const char *probeMapUnits[] = {
+    "V",
+    "A",
+    "°C",
+    "°F",
+    "g",
+    "m",
+    "m/s",
+};
+
 static int trans_data(struct sr_dev_inst *sdi)
 {
     // translate for old format
@@ -151,6 +167,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
 			/* already done with this instance */
 			continue;
 
+        assert(vdev->unit_bits > 0);
         assert(vdev->cur_channel >= 0);
         if (vdev->cur_channel < vdev->num_probes) {
             if (vdev->version == 1) {
@@ -167,7 +184,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
                                 (probe->type == SR_CHANNEL_DSO) ? "O" :
                                 (probe->type == SR_CHANNEL_ANALOG) ? "A" : "U";
                     snprintf(file_name, 31, "%s-%d/%d", type_name,
-                             probe->index, vdev->cur_block);
+                             sdi->mode == LOGIC ? probe->index : 0, vdev->cur_block);
                     if (!(vdev->capfile = zip_fopen(vdev->archive, file_name, 0))) {
                         sr_err("Failed to open capture file '%s' in "
                                "session file '%s'.", file_name, vdev->sessionfile);
@@ -191,7 +208,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
                 if (sdi->mode == DSO) {
                     packet.type = SR_DF_DSO;
                     packet.payload = &dso;
-                    dso.num_samples = ret / vdev->enabled_probes;
+                    dso.num_samples = ret / vdev->num_probes;
                     dso.data = vdev->buf;
                     dso.probes = sdi->channels;
                     dso.mq = SR_MQ_VOLTAGE;
@@ -201,7 +218,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
                     packet.type = SR_DF_ANALOG;
                     packet.payload = &analog;
                     analog.probes = sdi->channels;
-                    analog.num_samples = ret / vdev->num_probes;
+                    analog.num_samples = ret / vdev->num_probes / ((vdev->unit_bits + 7) / 8);
                     analog.unit_bits = vdev->unit_bits;
                     analog.mq = SR_MQ_VOLTAGE;
                     analog.unit = SR_UNIT_VOLT;
@@ -299,12 +316,7 @@ static int dev_open(struct sr_dev_inst *sdi)
     vdev->cur_channel = 0;
     vdev->file_opened = FALSE;
     vdev->num_blocks = 0;
-    if (sdi->mode == DSO)
-        vdev->unit_bits = 8;
-    else if (sdi->mode == ANALOG)
-        vdev->unit_bits = 16;
-    else
-        vdev->unit_bits = 1;
+    vdev->unit_bits = 1;
     vdev->max_height = 0;
 
 	dev_insts = g_slist_append(dev_insts, sdi);
@@ -400,6 +412,21 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
             *data = g_variant_new_double(ch->vpos);
         } else
             return SR_ERR;
+        break;
+    case SR_CONF_PROBE_MAP_UNIT:
+        if (!sdi || !ch)
+            return SR_ERR;
+        *data = g_variant_new_string(ch->map_unit);
+        break;
+    case SR_CONF_PROBE_MAP_MIN:
+        if (!sdi || !ch)
+            return SR_ERR;
+        *data = g_variant_new_double(ch->map_min);
+        break;
+    case SR_CONF_PROBE_MAP_MAX:
+        if (!sdi || !ch)
+            return SR_ERR;
+        *data = g_variant_new_double(ch->map_max);
         break;
     case SR_CONF_TRIGGER_VALUE:
         if (sdi && ch) {
@@ -534,6 +561,15 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     case SR_CONF_PROBE_VPOS:
         ch->vpos = g_variant_get_double(data);
         break;
+    case SR_CONF_PROBE_MAP_UNIT:
+        ch->map_unit = g_variant_get_string(data, NULL);
+        break;
+    case SR_CONF_PROBE_MAP_MIN:
+        ch->map_min = g_variant_get_double(data);
+        break;
+    case SR_CONF_PROBE_MAP_MAX:
+        ch->map_max = g_variant_get_double(data);
+        break;
     case SR_CONF_TRIGGER_VALUE:
         ch->trig_value = g_variant_get_byte(data);
         break;
@@ -623,6 +659,14 @@ static int config_list(int key, GVariant **data,
     case SR_CONF_MAX_HEIGHT:
         *data = g_variant_new_strv(maxHeights, ARRAY_SIZE(maxHeights));
         break;
+
+    case SR_CONF_PROBE_CONFIGS:
+        *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
+                probeOptions, ARRAY_SIZE(probeOptions)*sizeof(int32_t), TRUE, NULL, NULL);
+        break;
+    case SR_CONF_PROBE_MAP_UNIT:
+        *data = g_variant_new_strv(probeMapUnits, ARRAY_SIZE(probeMapUnits));
+        break;
     default:
 		return SR_ERR_ARG;
 	}
@@ -687,7 +731,10 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi,
         vdev->file_opened = TRUE;
         vdev->cur_channel = vdev->num_probes - 1;
     } else {
-        vdev->cur_channel = 0;
+        if (sdi->mode == LOGIC)
+            vdev->cur_channel = 0;
+        else
+            vdev->cur_channel = vdev->num_probes - 1;
     }
 
     for (l = sdi->channels; l; l = l->next) {

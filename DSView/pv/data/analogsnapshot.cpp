@@ -46,11 +46,10 @@ const float AnalogSnapshot::LogEnvelopeScaleFactor =
 const uint64_t AnalogSnapshot::EnvelopeDataUnit = 64*1024;	// bytes
 
 AnalogSnapshot::AnalogSnapshot() :
-    Snapshot(sizeof(uint16_t), 1, 1),
-    _unit_bytes(1),
-    _unit_pitch(0)
+    Snapshot(sizeof(uint16_t), 1, 1)
 {
 	memset(_envelope_levels, 0, sizeof(_envelope_levels));
+    _unit_pitch = 0;
 }
 
 AnalogSnapshot::~AnalogSnapshot()
@@ -150,7 +149,9 @@ void AnalogSnapshot::first_payload(const sr_datafeed_analog &analog, uint64_t to
         for (const GSList *l = channels; l; l = l->next) {
             sr_channel *const probe = (sr_channel*)l->data;
             assert(probe);
-            if (probe->type == SR_CHANNEL_ANALOG && probe->enabled) {
+            // TODO: data of disabled channels should not be captured.
+            //if (probe->type == SR_CHANNEL_ANALOG && probe->enabled) {
+            if (probe->type == SR_CHANNEL_ANALOG) {
                 _ch_index.push_back(probe->index);
             }
         }
@@ -369,14 +370,40 @@ int AnalogSnapshot::get_ch_order(int sig_index)
         return order;
 }
 
-uint8_t AnalogSnapshot::get_unit_bytes() const
-{
-    return _unit_bytes;
-}
-
 int AnalogSnapshot::get_scale_factor() const
 {
     return EnvelopeScaleFactor;
+}
+
+bool AnalogSnapshot::has_data(int index)
+{
+    for (auto& iter:_ch_index) {
+        if (iter == index)
+            return true;
+    }
+    return false;
+}
+
+int AnalogSnapshot::get_block_num()
+{
+    const uint64_t size = _sample_count * get_unit_bytes() * get_channel_num();
+    return (size >> LeafBlockPower) +
+           ((size & LeafMask) != 0);
+}
+
+uint64_t AnalogSnapshot::get_block_size(int block_index)
+{
+    assert(block_index < get_block_num());
+
+    if (block_index < get_block_num() - 1) {
+        return LeafBlockSamples;
+    } else {
+        const uint64_t size = _sample_count * get_unit_bytes() * get_channel_num();
+        if (size % LeafBlockSamples == 0)
+            return LeafBlockSamples;
+        else
+            return size % LeafBlockSamples;
+    }
 }
 
 } // namespace data

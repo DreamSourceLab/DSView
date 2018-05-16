@@ -46,6 +46,8 @@ Snapshot::Snapshot(int unit_size, uint64_t total_sample_count, unsigned int chan
     _last_ended(true)
 {
     assert(_unit_size > 0);
+    _unit_bytes = 1;
+    _unit_pitch = 0;
 }
 
 Snapshot::~Snapshot()
@@ -121,6 +123,11 @@ const void* Snapshot::get_data() const
 int Snapshot::unit_size() const
 {
     return _unit_size;
+}
+
+uint8_t Snapshot::get_unit_bytes() const
+{
+    return _unit_bytes;
 }
 
 unsigned int Snapshot::get_channel_num() const

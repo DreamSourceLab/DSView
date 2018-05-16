@@ -267,6 +267,8 @@ SR_API int sr_session_load(const char *filename)
 					probenum = strtoul(keys[j]+7, NULL, 10);
 					sr_dev_trigger_set(sdi, probenum, val);
                 } else if (!strncmp(keys[j], "enable", 6)) {
+                    if (mode != LOGIC)
+                        continue;
                     probenum = strtoul(keys[j]+6, NULL, 10);
                     tmp_u64 = strtoull(val, NULL, 10);
                     if (probenum < g_slist_length(sdi->channels)) {
@@ -345,6 +347,29 @@ SR_API int sr_session_load(const char *filename)
                         probe = g_slist_nth(sdi->channels, probenum)->data;
                         sdi->driver->config_set(SR_CONF_STATUS_MIN,
                             g_variant_new_uint64(tmp_u64), sdi, probe, NULL);
+                    }
+                } else if (!strncmp(keys[j], "mapUnit", 7)) {
+                    probenum = strtoul(keys[j]+7, NULL, 10);
+                    if (probenum < g_slist_length(sdi->channels)) {
+                        probe = g_slist_nth(sdi->channels, probenum)->data;
+                        sdi->driver->config_set(SR_CONF_PROBE_MAP_UNIT,
+                            g_variant_new_string(val), sdi, probe, NULL);
+                    }
+                } else if (!strncmp(keys[j], "mapMax", 6)) {
+                    probenum = strtoul(keys[j]+6, NULL, 10);
+                    tmp_double = strtod(val, NULL);
+                    if (probenum < g_slist_length(sdi->channels)) {
+                        probe = g_slist_nth(sdi->channels, probenum)->data;
+                        sdi->driver->config_set(SR_CONF_PROBE_MAP_MAX,
+                            g_variant_new_double(tmp_double), sdi, probe, NULL);
+                    }
+                } else if (!strncmp(keys[j], "mapMin", 6)) {
+                    probenum = strtoul(keys[j]+6, NULL, 10);
+                    tmp_double = strtod(val, NULL);
+                    if (probenum < g_slist_length(sdi->channels)) {
+                        probe = g_slist_nth(sdi->channels, probenum)->data;
+                        sdi->driver->config_set(SR_CONF_PROBE_MAP_MIN,
+                            g_variant_new_double(tmp_double), sdi, probe, NULL);
                     }
                 }
 			}

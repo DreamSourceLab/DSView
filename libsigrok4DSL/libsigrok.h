@@ -379,7 +379,7 @@ struct sr_datafeed_analog {
 	uint64_t mqflags;
 	/** The analog value(s). The data is interleaved according to
 	 * the probes list. */
-	float *data;
+    void *data;
 };
 
 /** Input (file) format struct. */

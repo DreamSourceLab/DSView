@@ -80,6 +80,8 @@ SR_API int sr_config_list(const struct sr_dev_driver *driver,
 SR_API const struct sr_config_info *sr_config_info_get(int key);
 SR_API const struct sr_config_info *sr_config_info_name_get(const char *optname);
 SR_API int sr_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, gboolean prg, int begin, int end);
+SR_API struct sr_config *sr_config_new(int key, GVariant *data);
+SR_API void sr_config_free(struct sr_config *src);
 
 /*--- session.c -------------------------------------------------------------*/
 

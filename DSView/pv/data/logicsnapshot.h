@@ -55,12 +55,13 @@ private:
     static const uint64_t RootScale = 1 << RootScalePower;
     static const uint64_t LeafBlockSpace = (Scale + Scale*Scale +
             Scale*Scale*Scale + Scale*Scale*Scale*Scale) / 8;
-    static const uint64_t LeafBlockSamples = 1 << ScaleLevel*ScalePower;
+
     static const uint64_t LeafBlockPower = ScaleLevel*ScalePower;
+    static const uint64_t LeafBlockSamples = 1 << LeafBlockPower;
     static const uint64_t RootNodeSamples = LeafBlockSamples*RootScale;
 
-    static const uint64_t RootMask = ~(~0ULL << RootScalePower) << ScaleLevel*ScalePower;
-    static const uint64_t LeafMask = ~(~0ULL << ScaleLevel*ScalePower);
+    static const uint64_t RootMask = ~(~0ULL << RootScalePower) << LeafBlockPower;
+    static const uint64_t LeafMask = ~(~0ULL << LeafBlockPower);
     static const uint64_t LevelMask[ScaleLevel];
     static const uint64_t LevelOffset[ScaleLevel];
 

@@ -39,7 +39,7 @@ StoreProgress::StoreProgress(SigSession &session, QWidget *parent) :
     _progress.setValue(0);
     _progress.setMaximum(100);
 
-    QVBoxLayout* add_layout = new QVBoxLayout(this);
+    QVBoxLayout* add_layout = new QVBoxLayout();
     add_layout->addWidget(&_info, 0, Qt::AlignCenter);
     add_layout->addWidget(&_progress);
     add_layout->addWidget(&_button_box);

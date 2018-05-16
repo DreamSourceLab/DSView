@@ -123,7 +123,6 @@ static const char *probeMapUnits[] = {
     "g",
     "m",
     "m/s",
-    "Custom",
 };
 
 static const uint64_t samplerates[] = {
