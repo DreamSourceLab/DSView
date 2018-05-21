@@ -47,35 +47,38 @@ dslDial::~dslDial()
 {
 }
 
-void dslDial::paint(QPainter &p, QRectF dialRect, QColor dialColor, bool hover, bool inc)
+void dslDial::paint(QPainter &p, QRectF dialRect, QColor dialColor, const QPoint pt)
 {
     p.setRenderHint(QPainter::Antialiasing, true);
     p.setPen(dialColor);
     p.setBrush(dialColor);
 
-    int dialStartAngle = 225 * 16;
-    int dialSpanAngle = -270 * 16;
+    int dialMarginAngle = 15 * 16;
+    int dialStartAngle = 75 * 16;
+    int dialSpanAngle = -150 * 16;
 
     // draw dial arc
-    p.drawArc(dialRect, dialStartAngle, dialSpanAngle);
+    p.drawArc(dialRect, dialStartAngle + dialMarginAngle,
+              dialSpanAngle - dialMarginAngle * 2);
     // draw ticks
     p.save();
     p.translate(dialRect.center());
-    p.rotate(45);
+    p.rotate(270 - dialStartAngle/16);
+    // draw pointer
+    p.rotate(-dialSpanAngle/16.0/(_div-1)*_sel);
+    p.drawEllipse(-3, -3, 6, 6);
+    p.drawLine(3, 0, 0, dialRect.width()/2-3);
+    p.drawLine(-3, 0, 0, dialRect.width()/2-3);
+    p.rotate(+dialSpanAngle/16.0/(_div-1)*_sel);
     for (uint64_t i = 0; i < _div; i++) {
         // draw major ticks
         p.drawLine(0, dialRect.width()/2+3, 0, dialRect.width()/2+8);
         // draw minor ticks
         for (uint64_t j = 0; (j < 5) && (i < _div - 1); j++) {
             p.drawLine(0, dialRect.width()/2+3, 0, dialRect.width()/2+5);
-            p.rotate(54.0/(_div-1));
+            p.rotate(-dialSpanAngle/16/5.0/(_div-1));
         }
     }
-    // draw pointer
-    p.rotate(90+270.0/(_div-1)*_sel);
-    p.drawEllipse(-3, -3, 6, 6);
-    p.drawLine(3, 0, 0, dialRect.width()/2-3);
-    p.drawLine(-3, 0, 0, dialRect.width()/2-3);
     p.restore();
     // draw value
     uint64_t displayValue = _value[_sel]*_factor;
@@ -84,23 +87,27 @@ void dslDial::paint(QPainter &p, QRectF dialRect, QColor dialColor, bool hover, 
         displayValue = displayValue / _step;
         displayIndex++;
     }
-    QString pText = QString::number(displayValue) + _unit[displayIndex] + "/div";
+    QString pText = QString::number(displayValue) + _unit[displayIndex] + tr(" / div");
     QFontMetrics fm(p.font());
-    const QRectF valueRect = QRectF(dialRect.left(), dialRect.bottom()-dialRect.width()*0.3+fm.height()*0.5, dialRect.width(), fm.height());
+    const QRectF valueRect = QRectF(dialRect.left(), dialRect.top()-fm.height()-10, dialRect.width(), fm.height());
     p.drawText(valueRect, Qt::AlignCenter, pText);
 
     // draw +/-
-    if (hover) {
-        const int arcInc = 15;
-        const QRectF hoverRect = QRectF(dialRect.left()-arcInc, dialRect.top()-arcInc, dialRect.width()+arcInc*2, dialRect.height()+arcInc*2);
-        const double arcSpan = hoverRect.width()/(2*sqrt(2));
-        p.drawArc(hoverRect, 135 * 16, -90 * 16);
+    if (dialRect.contains(pt) && pt.x() > dialRect.center().x()) {
+        const int arcInc = 12;
+        const QRectF hoverRect = QRectF(dialRect.left()-arcInc, dialRect.top()-arcInc,
+                                        dialRect.width()+arcInc*2, dialRect.height()+arcInc*2);
+        p.drawArc(hoverRect, dialStartAngle + dialSpanAngle/4, dialSpanAngle/2);
+        p.save();
+        p.translate(hoverRect.center());
+        const bool inc = pt.y() > dialRect.center().y();
         if (inc)
-            p.drawLine(hoverRect.center().x()+arcSpan, hoverRect.center().y()-arcSpan,
-                       hoverRect.center().x()+arcSpan-4, hoverRect.center().y()-arcSpan-10);
+            p.rotate(270-(dialStartAngle/16 + dialSpanAngle/16/4 + dialSpanAngle/16/2));
         else
-            p.drawLine(hoverRect.center().x()-arcSpan, hoverRect.center().y()-arcSpan,
-                       hoverRect.center().x()-arcSpan+4, hoverRect.center().y()-arcSpan-10);
+            p.rotate(270-(dialStartAngle/16 + dialSpanAngle/16/4));
+        p.drawLine(0, hoverRect.width()/2,
+                   inc ? 10 : -10, hoverRect.width()/2 + 4);
+        p.restore();
     }
 }
 

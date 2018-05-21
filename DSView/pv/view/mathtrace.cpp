@@ -78,6 +78,7 @@ MathTrace::MathTrace(pv::SigSession &session,
     _scale(1),
     _offset(0)
 {
+    _typeWidth = 0;
     const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
     for(size_t i = 0; i < sigs.size(); i++) {
         const boost::shared_ptr<view::Signal> s(sigs[i]);

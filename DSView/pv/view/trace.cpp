@@ -120,6 +120,14 @@ QString Trace::get_name() const
 	return _name;
 }
 
+int Trace::get_name_width() const
+{
+    QFont font = QApplication::font();
+    QFontMetrics fm(font);
+
+    return fm.boundingRect(get_name()).width();
+}
+
 void Trace::set_name(QString name)
 {
 	_name = name;
@@ -271,10 +279,16 @@ void Trace::paint_label(QPainter &p, int right, const QPoint pt)
     p.setPen(Qt::transparent);
     p.setBrush(enabled() ? _colour : dsDisable);
     p.drawRect(color_rect);
+    if (_type == SR_CHANNEL_DSO) {
+        p.setPen(enabled() ?  Qt::white: dsDisable);
+        p.drawText(color_rect, Qt::AlignCenter | Qt::AlignVCenter, _name);
+    }
 
-    // Paint the signal name
-    p.setPen(enabled() ?  DARK_FORE: dsDisable);
-    p.drawText(name_rect, Qt::AlignLeft | Qt::AlignVCenter, _name);
+    if (_type != SR_CHANNEL_DSO) {
+        // Paint the signal name
+        p.setPen(enabled() ?  DARK_FORE: dsDisable);
+        p.drawText(name_rect, Qt::AlignLeft | Qt::AlignVCenter, _name);
+    }
 
     // Paint the trigButton
     paint_type_options(p, right, pt);

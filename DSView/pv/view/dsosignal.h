@@ -40,6 +40,8 @@ namespace view {
 
 class DsoSignal : public Signal
 {
+    //Q_OBJECT
+
 private:
 	static const QColor SignalColours[4];
 	static const float EnvelopeThreshold;
@@ -48,14 +50,8 @@ private:
     static const uint64_t vDialValueCount = 8;
     static const uint64_t vDialValueStep = 1000;
     static const uint64_t vDialUnitCount = 2;
-    static const uint64_t hDialValueCount = 28;
-    static const uint64_t hDialValueStep = 1000;
-    static const uint64_t hDialUnitCount = 4;
     static const uint64_t vDialValue[vDialValueCount];
     static const QString vDialUnit[vDialUnitCount];
-
-    static const uint64_t hDialValue[hDialValueCount];
-    static const QString hDialUnit[hDialUnitCount];
 
     static const int UpMargin = 30;
     static const int DownMargin = 0;
@@ -70,13 +66,9 @@ public:
     enum DsoSetRegions {
         DSO_NONE = -1,
         DSO_VDIAL,
-        DSO_HDIAL,
-        DSO_VDEC,
-        DSO_VINC,
-        DSO_HDEC,
-        DSO_HINC,
         DSO_CHEN,
         DSO_ACDC,
+        DSO_AUTO,
         DSO_X1,
         DSO_X10,
         DSO_X100,
@@ -103,23 +95,19 @@ public:
     void set_scale(int height);
     float get_scale();
 
+    int get_name_width() const;
+
     /**
      *
      */
     void set_enable(bool enable);
     bool get_vDialActive() const;
     void set_vDialActive(bool active);
-    bool get_hDialActive() const;
-    void set_hDialActive(bool active);
     bool go_vDialPre();
     bool go_vDialNext();
-    bool go_hDialPre(bool setted);
-    bool go_hDialNext(bool setted);
     bool update_capture(bool instant);
     uint64_t get_vDialValue() const;
-    uint64_t get_hDialValue() const;
     uint16_t get_vDialSel() const;
-    uint16_t get_hDialSel() const;
     uint8_t get_acCoupling() const;
     void set_acCoupling(uint8_t coupling);
     void set_trig_vpos(int pos, bool delta_change);
@@ -223,9 +211,7 @@ private:
 	float _scale;
 
     dslDial *_vDial;
-    dslDial *_hDial;
     bool _vDialActive;
-    bool _hDialActive;
     uint8_t _acCoupling;
     uint8_t _bits;
 

@@ -684,6 +684,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 	} else if (id == SR_CONF_LIMIT_SAMPLES) {
         devc->limit_msec = 0;
         devc->limit_samples = g_variant_get_uint64(data);
+        devc->limit_samples = (devc->limit_samples + 63) & ~63;
         devc->limit_samples_show = devc->limit_samples;
         if (sdi->mode == DSO && en_ch_num(sdi) == 1) {
             devc->limit_samples /= 2;

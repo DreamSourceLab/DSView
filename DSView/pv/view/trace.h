@@ -92,6 +92,7 @@ public:
 	 * Gets the name of this signal.
 	 */
 	QString get_name() const;
+    virtual int get_name_width() const;
 
 	/**
 	 * Sets the name of the signal.

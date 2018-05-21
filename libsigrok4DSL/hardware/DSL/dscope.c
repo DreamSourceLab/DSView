@@ -1140,6 +1140,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, ch, SR_CONF_PROBE_EN));
             if (dsl_en_ch_num(sdi) != 0) {
                 ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, 0, SR_CONF_SAMPLERATE));
+                devc->limit_samples = DSCOPE_MAX_DEPTH / dsl_en_ch_num(sdi);
             }
         }
         if (ret == SR_OK)

@@ -60,10 +60,13 @@ class SamplingBar : public QToolBar
 	Q_OBJECT
 
 private:
-    static const uint64_t RecordLengths[19];
-    static const uint64_t DefaultRecordLength;
     static const int ComboBoxMaxWidth = 200;
+    static const int RefreshShort = 200;
+    static const uint64_t LogicMaxSWDepth64 = SR_GB(16);
+    static const uint64_t LogicMaxSWDepth32 = SR_GB(8);
+    static const uint64_t AnalogMaxSWDepth = SR_Mn(100);
     static const QString RLEString;
+    static const QString DIVString;
 
 public:
     SamplingBar(SigSession &session, QWidget *parent);
@@ -73,11 +76,7 @@ public:
 
     boost::shared_ptr<pv::device::DevInst> get_selected_device() const;
 
-	uint64_t get_record_length() const;
-    void set_record_length(uint64_t length);
-    void update_record_length();
-
-    void update_sample_rate();
+    void update_sample_rate_selector();
 
 	void set_sampling(bool sampling);
     bool get_sampling() const;
@@ -89,9 +88,11 @@ public:
 
     void enable_instant(bool enable);
 
+    void hori_knob(int dir);
+    void commit_hori_res();
+
 public slots:
     void set_sample_rate(uint64_t sample_rate);
-    void set_sample_limit(uint64_t sample_limit);
 
 signals:
 	void run_stop();
@@ -101,14 +102,13 @@ signals:
     void sample_count_changed();
     void show_calibration();
     void hide_calibration();
+    void hori_res_changed(double hori_res);
 
 private:
-    void update_sample_rate_selector();
 	void update_sample_rate_selector_value();
     void update_sample_count_selector();
     void update_sample_count_selector_value();
-	void commit_sample_rate();
-    void commit_sample_count();
+    void commit_settings();
     void setting_adj();
 
 private slots:

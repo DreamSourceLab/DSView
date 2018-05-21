@@ -184,6 +184,8 @@ void MainWindow::setup_ui()
         SLOT(hide_calibration()));
     connect(_dso_trigger_widget, SIGNAL(set_trig_pos(int)), _view,
         SLOT(set_trig_pos(int)));
+    connect(_sampling_bar, SIGNAL(hori_res_changed(double)), _view,
+        SLOT(hori_res_changed(double)));
 
     setIconSize(QSize(40,40));
     addToolBar(_sampling_bar);
@@ -567,7 +569,8 @@ void MainWindow::capture_state_changed(int state)
         _sampling_bar->set_sampling(state == SigSession::Running);
         _view->on_state_changed(state != SigSession::Running);
 
-        if (_session.get_device()->dev_inst()->mode != DSO) {
+        if (_session.get_device()->dev_inst()->mode != DSO ||
+            _session.get_instant()) {
             _sampling_bar->enable_toggle(state != SigSession::Running);
             _trig_bar->enable_toggle(state != SigSession::Running);
             //_measure_dock->widget()->setEnabled(state != SigSession::Running);
@@ -754,8 +757,6 @@ bool MainWindow::load_session(QString name)
                 _session.get_device()->set_config(NULL, NULL, info->key, g_variant_new_string(sessionObj[info->name].toString().toUtf8()));
         }
     }
-    _sampling_bar->update_record_length();
-    _sampling_bar->update_sample_rate();
 
     // load channel settings
     for (const GSList *l = _session.get_device()->dev_inst()->channels; l; l = l->next) {
@@ -782,7 +783,7 @@ bool MainWindow::load_session(QString name)
         if (!isEnabled)
             probe->enabled = false;
     }
-    _sampling_bar->update_record_length();
+    _sampling_bar->update_sample_rate_selector();
     _trigger_widget->device_updated();
 
     //_session.init_signals();

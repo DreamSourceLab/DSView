@@ -235,12 +235,18 @@ SR_API char *sr_time_string(uint64_t time)
         return NULL;
     }
 
-    if (time >= 1000000000)
-        r = snprintf(o, 30, "%" PRIu64 " s", time / 1000000000);
-    else if (time >= 1000000)
-        r = snprintf(o, 30, "%" PRIu64 " ms", time / 1000000);
-    else if (time >= 1000)
-        r = snprintf(o, 30, "%" PRIu64 " us", time / 1000);
+    if (time >= SR_DAY(1))
+        r = snprintf(o, 30, "%0.2lf day", time * 1.0 / SR_DAY(1));
+    else if (time >= SR_HOUR(1))
+        r = snprintf(o, 30, "%0.2lf hour", time * 1.0 / SR_HOUR(1));
+    else if (time >= SR_MIN(1))
+        r = snprintf(o, 30, "%0.2lf min", time * 1.0  / SR_MIN(1));
+    else if (time >= SR_SEC(1))
+        r = snprintf(o, 30, "%0.2lf s", time * 1.0  / SR_SEC(1));
+    else if (time >= SR_MS(1))
+        r = snprintf(o, 30, "%0.2lf ms", time * 1.0  / SR_MS(1));
+    else if (time >= SR_US(1))
+        r = snprintf(o, 30, "%0.2lf us", time * 1.0  / SR_US(1));
     else
         r = snprintf(o, 30, "%" PRIu64 " ns", time);
 

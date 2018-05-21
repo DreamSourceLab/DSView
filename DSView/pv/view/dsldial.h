@@ -28,8 +28,10 @@
 namespace pv {
 namespace view {
 
-class dslDial
+class dslDial : public QObject
 {
+    //Q_OBJECT
+
 public:
     dslDial(const uint64_t div, const uint64_t step,
             const QVector<uint64_t> value, const QVector<QString> unit);
@@ -41,7 +43,8 @@ public:
      * @param p the QPainter to paint into.
      * @param dialRect the rectangle to draw the dial at.
      **/
-    void paint(QPainter &p, QRectF dialRect, QColor dialColor, bool hover, bool inc);
+    void paint(QPainter &p, QRectF dialRect, QColor dialColor,
+               const QPoint pt);
 
     // set/get current select
     void set_sel(uint64_t sel);

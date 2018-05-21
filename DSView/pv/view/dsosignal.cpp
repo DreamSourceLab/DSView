@@ -55,44 +55,6 @@ const QString DsoSignal::vDialUnit[DsoSignal::vDialUnitCount] = {
     "v",
 };
 
-const uint64_t DsoSignal::hDialValue[DsoSignal::hDialValueCount] = {
-    10,
-    20,
-    50,
-    100,
-    200,
-    500,
-    1000,
-    2000,
-    5000,
-    10000,
-    20000,
-    50000,
-    100000,
-    200000,
-    500000,
-    1000000,
-    2000000,
-    5000000,
-    10000000,
-    20000000,
-    50000000,
-    100000000,
-    200000000,
-    500000000,
-    1000000000,
-    2000000000,
-    5000000000,
-    10000000000,
-};
-
-const QString DsoSignal::hDialUnit[DsoSignal::hDialUnitCount] = {
-    "ns",
-    "us",
-    "ms",
-    "s",
-};
-
 const QColor DsoSignal::SignalColours[4] = {
     QColor(238, 178, 17, 255),  // dsYellow
     QColor(0, 153, 37, 255),    // dsGreen
@@ -110,7 +72,6 @@ DsoSignal::DsoSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
     _data(data),
     _scale(0),
     _vDialActive(false),
-    _hDialActive(false),
     _autoV(false),
     _autoH(false),
     _hover_en(false),
@@ -122,20 +83,12 @@ DsoSignal::DsoSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
 {
     QVector<uint64_t> vValue;
     QVector<QString> vUnit;
-    QVector<uint64_t> hValue;
-    QVector<QString> hUnit;
     for(uint64_t i = 0; i < vDialValueCount; i++)
         vValue.append(vDialValue[i]);
     for(uint64_t i = 0; i < vDialUnitCount; i++)
         vUnit.append(vDialUnit[i]);
 
-    for(uint64_t i = 0; i < hDialValueCount; i++)
-        hValue.append(hDialValue[i]);
-    for(uint64_t i = 0; i < hDialUnitCount; i++)
-        hUnit.append(hDialUnit[i]);
-
     _vDial = new dslDial(vDialValueCount, vDialValueStep, vValue, vUnit);
-    _hDial = new dslDial(hDialValueCount, hDialValueStep, hValue, hUnit);
 
     _colour = SignalColours[probe->index % countof(SignalColours)];
 
@@ -179,6 +132,11 @@ float DsoSignal::get_scale()
     return _scale;
 }
 
+int DsoSignal::get_name_width() const
+{
+    return 0;
+}
+
 void DsoSignal::set_enable(bool enable)
 {
     if (_dev_inst->name() == "DSLogic" &&
@@ -211,7 +169,7 @@ void DsoSignal::set_enable(bool enable)
                           g_variant_new_boolean(enable));
 
     if (running) {
-        update_capture(_view->session().get_instant());
+        _view->update_hori_res();
         _view->session().repeat_resume();
     }
 
@@ -274,152 +232,6 @@ bool DsoSignal::go_vDialNext()
     }
 }
 
-bool DsoSignal::get_hDialActive() const
-{
-    return _hDialActive;
-}
-
-void DsoSignal::set_hDialActive(bool active)
-{
-    _hDialActive = active;
-}
-
-bool DsoSignal::go_hDialPre(bool setted)
-{
-    int ch_num = _view->session().get_ch_num(SR_CHANNEL_DSO);
-    if (ch_num != 0 && !_hDial->isMin()) {
-        uint64_t sample_rate = _view->session().get_device()->get_sample_rate();
-        const uint64_t min_div = std::pow(10.0, 9.0) / sample_rate;
-        if (_view->session().get_capture_state() != SigSession::Running &&
-            !_data->get_snapshots().front()->empty()) {
-            if (_hDial->get_value() > min_div)
-                _hDial->set_sel(_hDial->get_sel() - 1);
-        } else if ((_view->session().get_capture_state() == SigSession::Running ||
-                    _data->get_snapshots().front()->empty()) &&
-                   !_view->session().get_instant()) {
-            _view->session().refresh(RefreshShort);
-            _hDial->set_sel(_hDial->get_sel() - 1);
-
-            if (!setted) {
-                uint64_t sample_limit = _view->session().get_device()->get_sample_limit();
-                GVariant* gvar;
-                uint64_t max_sample_rate;
-                gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_MAX_DSO_SAMPLERATE);
-                if (gvar != NULL) {
-                    max_sample_rate = g_variant_get_uint64(gvar);
-                    g_variant_unref(gvar);
-                } else {
-                    qDebug() << "ERROR: config_get SR_CONF_MAX_DSO_SAMPLERATE failed.";
-                    return false;
-                }
-
-                sample_rate = min((uint64_t)(sample_limit * std::pow(10.0, 9.0) / (_hDial->get_value() * DS_CONF_DSO_HDIVS)),
-                                           (uint64_t)(max_sample_rate / (ch_num ? ch_num : 1)));
-                _view->set_sample_rate(sample_rate, true);
-            }
-        } else {
-            return true;
-        }
-        if (!setted) {
-            const double scale = _hDial->get_value() * std::pow(10.0, -9.0) * DS_CONF_DSO_HDIVS / get_view_rect().width();
-            _view->set_scale_offset(scale, _view->offset());
-            _dev_inst->set_config(_probe, NULL, SR_CONF_TIMEBASE,
-                                  g_variant_new_uint64(_hDial->get_value()));
-        }
-        return true;
-    } else {
-        _autoH = false;
-        return false;
-    }
-}
-
-bool DsoSignal::update_capture(bool instant)
-{
-    int ch_num = _view->session().get_ch_num(SR_CHANNEL_DSO);
-    if (ch_num == 0)
-        return false;
-
-    _view->session().refresh(RefreshShort);
-    uint64_t max_sample_rate;
-    uint64_t max_sample_limit;
-    GVariant *gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_MAX_DSO_SAMPLERATE);
-    if (gvar != NULL) {
-        max_sample_rate = g_variant_get_uint64(gvar);
-        g_variant_unref(gvar);
-    } else {
-        qDebug() << "ERROR: config_get SR_CONF_MAX_DSO_SAMPLERATE failed.";
-        return false;
-    }
-    if (instant)
-        gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_HW_DEPTH);
-    else
-        gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_MAX_DSO_SAMPLELIMITS);
-    if (gvar != NULL) {
-        max_sample_limit = g_variant_get_uint64(gvar);
-        g_variant_unref(gvar);
-    } else {
-        qDebug() << "ERROR: config_get SR_CONF_MAX_DSO_SAMPLELIMITS failed.";
-        return false;
-    }
-
-    uint64_t sample_limit = (uint64_t)(max_sample_limit / (ch_num ? ch_num : 1));
-    uint64_t sample_rate = min((uint64_t)(sample_limit * std::pow(10.0, 9.0) / (_hDial->get_value() * DS_CONF_DSO_HDIVS)),
-                               (uint64_t)(max_sample_rate / (ch_num ? ch_num : 1)));
-
-    _view->set_sample_limit(sample_limit, true);
-    _view->set_sample_rate(sample_rate, true);
-    _dev_inst->set_config(_probe, NULL, SR_CONF_TIMEBASE,
-                          g_variant_new_uint64(_hDial->get_value()));
-    return true;
-}
-
-bool DsoSignal::go_hDialNext(bool setted)
-{
-    int ch_num = _view->session().get_ch_num(SR_CHANNEL_DSO);
-    if (ch_num != 0 && !_hDial->isMax()) {
-        if (_view->session().get_capture_state() != SigSession::Running &&
-            !_data->get_snapshots().front()->empty()) {
-            _hDial->set_sel(_hDial->get_sel() + 1);
-        } else if ((_view->session().get_capture_state() == SigSession::Running ||
-                    _data->get_snapshots().front()->empty()) &&
-                   !_view->session().get_instant()) {
-            _view->session().refresh(RefreshShort);
-            _hDial->set_sel(_hDial->get_sel() + 1);
-
-            if (!setted) {
-                uint64_t sample_limit = _view->session().get_device()->get_sample_limit();
-
-                GVariant* gvar;
-                uint64_t max_sample_rate;
-                gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_MAX_DSO_SAMPLERATE);
-                if (gvar != NULL) {
-                    max_sample_rate = g_variant_get_uint64(gvar);
-                    g_variant_unref(gvar);
-                } else {
-                    qDebug() << "ERROR: config_get SR_CONF_MAX_DSO_SAMPLERATE failed.";
-		    return false;
-                }
-
-                uint64_t sample_rate = min((uint64_t)(sample_limit * std::pow(10.0, 9.0) / (_hDial->get_value() * DS_CONF_DSO_HDIVS)),
-                                           (uint64_t)(max_sample_rate / (ch_num ? ch_num : 1)));
-                _view->set_sample_rate(sample_rate, true);
-            }
-        } else {
-            return true;
-        }
-        if (!setted) {
-            const double scale = _hDial->get_value() * std::pow(10.0, -9.0) * DS_CONF_DSO_HDIVS / get_view_rect().width();
-            _view->set_scale_offset(scale, _view->offset());
-            _dev_inst->set_config(_probe, NULL, SR_CONF_TIMEBASE,
-                                  g_variant_new_uint64(_hDial->get_value()));
-        }
-        return true;
-    } else {
-        _autoH = false;
-        return false;
-    }
-}
-
 bool DsoSignal::load_settings()
 {
     GVariant* gvar;
@@ -445,25 +257,6 @@ bool DsoSignal::load_settings()
         qDebug("Warning: config_get SR_CONF_UNIT_BITS failed, set to %d(default).", DefaultBits);
         if (strncmp(_dev_inst->name().toLocal8Bit(), "virtual", 7))
             return false;
-    }
-
-    // -- hdiv
-    uint64_t hdiv;
-    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_TIMEBASE);
-    if (gvar != NULL) {
-        hdiv = g_variant_get_uint64(gvar);
-        g_variant_unref(gvar);
-    } else {
-        qDebug() << "ERROR: config_get SR_CONF_TIMEBASE failed.";
-        return false;
-    }
-
-    _hDial->set_value(hdiv);
-    _dev_inst->set_config(_probe, NULL, SR_CONF_TIMEBASE,
-                          g_variant_new_uint64(_hDial->get_value()));
-    if (_view) {
-        const double scale = _hDial->get_value() * std::pow(10.0, -9.0) * DS_CONF_DSO_HDIVS / get_view_rect().width();
-        _view->set_scale_offset(scale, _view->offset());
     }
 
     // -- vdiv
@@ -544,10 +337,6 @@ int DsoSignal::commit_settings()
     ret = _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_EN,
                                 g_variant_new_boolean(enabled()));
 
-    // -- hdiv
-    ret = _dev_inst->set_config(_probe, NULL, SR_CONF_TIMEBASE,
-                                g_variant_new_uint64(_hDial->get_value()));
-
     // -- vdiv
     ret = _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_VDIV,
                                 g_variant_new_uint64(_vDial->get_value()));
@@ -575,19 +364,9 @@ uint64_t DsoSignal::get_vDialValue() const
     return _vDial->get_value();
 }
 
-uint64_t DsoSignal::get_hDialValue() const
-{
-    return _hDial->get_value();
-}
-
 uint16_t DsoSignal::get_vDialSel() const
 {
     return _vDial->get_sel();
-}
-
-uint16_t DsoSignal::get_hDialSel() const
-{
-    return _hDial->get_sel();
 }
 
 uint8_t DsoSignal::get_acCoupling() const
@@ -895,7 +674,8 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right)
         const uint16_t number_channels = snapshot->get_channel_num();
         const double pixels_offset = offset;
         //const double samplerate = _data->samplerate();
-        const double samplerate = _dev_inst->get_sample_rate();
+        //const double samplerate = _dev_inst->get_sample_rate();
+        const double samplerate = _view->session().cur_samplerate();
         const int64_t last_sample = max((int64_t)(snapshot->get_sample_count() - 1), (int64_t)0);
         const double samples_per_pixel = samplerate * scale;
         const double start = offset * samples_per_pixel;
@@ -1113,18 +893,14 @@ void DsoSignal::paint_type_options(QPainter &p, int right, const QPoint pt)
 {
     int y = get_y();
     const QRectF vDial_rect = get_rect(DSO_VDIAL, y, right);
-    const QRectF vInc_rect = get_rect(DSO_VINC, y, right);
-    const QRectF hDial_rect = get_rect(DSO_HDIAL, y, right);
-    const QRectF hInc_rect = get_rect(DSO_HINC, y, right);
-
     const QRectF x1_rect = get_rect(DSO_X1, y, right);
     const QRectF x10_rect = get_rect(DSO_X10, y, right);
     const QRectF x100_rect = get_rect(DSO_X100, y, right);
     const QRectF acdc_rect = get_rect(DSO_ACDC, y, right);
     const QRectF chEn_rect = get_rect(DSO_CHEN, y, right);
+    const QRectF auto_rect = get_rect(DSO_AUTO, y, right);
 
-    _vDial->paint(p, vDial_rect, _colour, vDial_rect.contains(pt), vInc_rect.contains(pt));
-    _hDial->paint(p, hDial_rect, _colour, hDial_rect.contains(pt), hInc_rect.contains(pt));
+    _vDial->paint(p, vDial_rect, _colour, pt);
 
     p.setPen(Qt::transparent);
     p.setBrush(chEn_rect.contains(pt) ? _colour.darker() : _colour);
@@ -1138,6 +914,12 @@ void DsoSignal::paint_type_options(QPainter &p, int right, const QPoint pt)
     p.setPen(Qt::white);
     p.drawText(acdc_rect, Qt::AlignCenter | Qt::AlignVCenter, (_acCoupling == SR_GND_COUPLING) ? tr("GND") :
                                                               (_acCoupling == SR_DC_COUPLING) ? tr("DC") : tr("AC"));
+
+    p.setPen(Qt::transparent);
+    p.setBrush(enabled() ? (auto_rect.contains(pt) ? _colour.darker() : _colour) : dsDisable);
+    p.drawRect(auto_rect);
+    p.setPen(Qt::white);
+    p.drawText(auto_rect, Qt::AlignCenter | Qt::AlignVCenter, tr("AUTO"));
 
     // paint the probe factor selector
     GVariant* gvar;
@@ -1179,12 +961,7 @@ bool DsoSignal::mouse_double_click(int right, const QPoint pt)
 bool DsoSignal::mouse_press(int right, const QPoint pt)
 {
     int y = get_y();
-    bool setted = false;
-    const vector< boost::shared_ptr<Trace> > traces(_view->get_traces(ALL_VIEW));
-    const QRectF vDec_rect = get_rect(DSO_VDEC, y, right);
-    const QRectF vInc_rect = get_rect(DSO_VINC, y, right);
-    const QRectF hDec_rect = get_rect(DSO_HDEC, y, right);
-    const QRectF hInc_rect = get_rect(DSO_HINC, y, right);
+    const QRectF vDial_rect = get_rect(DSO_VDIAL, y, right);
     const QRectF chEn_rect = get_rect(DSO_CHEN, y, right);
     const QRectF acdc_rect = get_rect(DSO_ACDC, y, right);
     const QRectF x1_rect = get_rect(DSO_X1, y, right);
@@ -1197,26 +974,11 @@ bool DsoSignal::mouse_press(int right, const QPoint pt)
            set_enable(!enabled());
        return true;
     } else if (enabled()) {
-        if (vDec_rect.contains(pt)) {
-            go_vDialPre();
-        } else if (vInc_rect.contains(pt)) {
-            go_vDialNext();
-        } else if (hDec_rect.contains(pt)) {
-            boost::shared_ptr<view::DsoSignal> dsoSig;
-            BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces) {
-                if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(t)) {
-                    dsoSig->go_hDialPre(setted);
-                    setted = true;
-                }
-            }
-        } else if (hInc_rect.contains(pt)) {
-            boost::shared_ptr<view::DsoSignal> dsoSig;
-            BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces) {
-                if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(t)) {
-                    dsoSig->go_hDialNext(setted);
-                    setted = true;
-                }
-            }
+        if (vDial_rect.contains(pt) && pt.x() > vDial_rect.center().x()) {
+            if (pt.y() > vDial_rect.center().y())
+                go_vDialNext();
+            else
+                go_vDialPre();
         } else if (_dev_inst->name() != "virtual-session" &&
                    acdc_rect.contains(pt)) {
            if (_dev_inst->name() == "DSLogic")
@@ -1240,31 +1002,14 @@ bool DsoSignal::mouse_press(int right, const QPoint pt)
 bool DsoSignal::mouse_wheel(int right, const QPoint pt, const int shift)
 {
     int y = get_y();
-    const vector< boost::shared_ptr<Trace> > traces(
-        _view->get_traces(ALL_VIEW));
-    bool setted = false;
     const QRectF vDial_rect = get_rect(DSO_VDIAL, y, right);
-    const QRectF hDial_rect = get_rect(DSO_HDIAL, y, right);
 
     if (vDial_rect.contains(pt)) {
         if (shift > 0.5)
-            go_vDialNext();
-        else if (shift < -0.5)
             go_vDialPre();
+        else if (shift < -0.5)
+            go_vDialNext();
         return true;
-    } else if (hDial_rect.contains(pt)) {
-        boost::shared_ptr<view::DsoSignal> dsoSig;
-        BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces) {
-            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(t)) {
-                if (shift > 0.5) {
-                    dsoSig->go_hDialNext(setted);
-                    setted = true;
-                } else if (shift < -0.5) {
-                    dsoSig->go_hDialPre(setted);
-                    setted = true;
-                }
-            }
-        }
     } else {
         return false;
     }
@@ -1274,63 +1019,43 @@ bool DsoSignal::mouse_wheel(int right, const QPoint pt, const int shift)
 
 QRectF DsoSignal::get_rect(DsoSetRegions type, int y, int right)
 {
-    const QSizeF name_size(right - get_leftWidth() - get_rightWidth(), SquareWidth);
+    (void)right;
 
     if (type == DSO_VDIAL)
         return QRectF(
-            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin,
-            y - SquareWidth * SquareNum,
+            get_leftWidth() + SquareWidth*0.5 + Margin,
+            y - SquareWidth * SquareNum + SquareWidth * 3,
             SquareWidth * (SquareNum-1), SquareWidth * (SquareNum-1));
-    else if (type == DSO_VDEC)
-        return QRectF(
-            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin,
-            y - SquareWidth * SquareNum,
-            SquareWidth * (SquareNum-1) / 2, SquareWidth * (SquareNum-1));
-    else if (type == DSO_VINC)
-        return QRectF(
-            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin + SquareWidth * (SquareNum-1) / 2,
-            y - SquareWidth * SquareNum,
-            SquareWidth * (SquareNum-1) / 2, SquareWidth * (SquareNum-1));
-    else if (type == DSO_HDIAL)
-        return QRectF(
-            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin,
-            y + SquareWidth * 1.5,
-            SquareWidth * (SquareNum-1), SquareWidth * (SquareNum-1));
-    else if (type == DSO_HDEC)
-        return QRectF(
-            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin,
-            y + SquareWidth * 1.5,
-            SquareWidth * (SquareNum-1) / 2, SquareWidth * (SquareNum-1));
-    else if (type == DSO_HINC)
-        return QRectF(
-            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin + SquareWidth * (SquareNum-1) / 2,
-            y + SquareWidth * 1.5,
-            SquareWidth * (SquareNum-1) / 2, SquareWidth * (SquareNum-1));
     else if (type == DSO_X1)
         return QRectF(
-            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin - 45,
-            y - SquareWidth - SquareWidth * (SquareNum-1) * 0.85,
+            get_leftWidth() + SquareWidth*0.5,
+            y - SquareWidth * 2 - SquareWidth * (SquareNum-2) * 1 + SquareWidth * 3,
             SquareWidth * 1.75, SquareWidth);
     else if (type == DSO_X10)
         return QRectF(
-            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin - 45,
-            y - SquareWidth - SquareWidth * (SquareNum-1) * 0.55,
+            get_leftWidth() + SquareWidth*0.5,
+            y - SquareWidth * 2 - SquareWidth * (SquareNum-2) * 0.5 + SquareWidth * 3,
             SquareWidth * 1.75, SquareWidth);
     else if (type == DSO_X100)
         return QRectF(
-            get_leftWidth() + name_size.width() + SquareWidth*0.5 + Margin - 45,
-            y - SquareWidth - SquareWidth * (SquareNum-1) * 0.25,
+            get_leftWidth() + SquareWidth*0.5,
+            y - SquareWidth * 2 - SquareWidth * (SquareNum-2) * 0 + SquareWidth * 3,
             SquareWidth * 1.75, SquareWidth);
     else if (type == DSO_CHEN)
         return QRectF(
-            get_leftWidth() + name_size.width() + SquareWidth*0.75 + Margin,
-            y - SquareWidth / 2,
-            SquareWidth * 1.5, SquareWidth);
+            2,
+            y - SquareWidth / 2 + SquareWidth * 3,
+            SquareWidth * 1.75, SquareWidth);
     else if (type == DSO_ACDC)
         return QRectF(
-            get_leftWidth() + name_size.width() + SquareWidth*2.75 + Margin,
-            y - SquareWidth / 2,
-            SquareWidth * 1.5, SquareWidth);
+            2+SquareWidth*1.75 + Margin,
+            y - SquareWidth / 2 + SquareWidth * 3,
+            SquareWidth * 1.75, SquareWidth);
+    else if (type == DSO_AUTO)
+        return QRectF(
+            2+SquareWidth*3.5 + Margin*2,
+            y - SquareWidth / 2 + SquareWidth * 3,
+            SquareWidth * 1.75, SquareWidth);
     else
         return QRectF(0, 0, 0, 0);
 }
@@ -1445,33 +1170,6 @@ void DsoSignal::paint_measure(QPainter &p)
             go_vDialPre();
         }
     }
-
-    bool setted = false;
-    if (_autoH) {
-        const vector< boost::shared_ptr<Trace> > traces(_view->get_traces(ALL_VIEW));
-        const double upPeriod = get_hDialValue() * DS_CONF_DSO_HDIVS * 0.8;
-        const double dnPeriod = get_hDialValue() * DS_CONF_DSO_HDIVS * 0.2;
-        if (_period > upPeriod) {
-            boost::shared_ptr<view::DsoSignal> dsoSig;
-            BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces) {
-                if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(t)) {
-                    dsoSig->go_hDialNext(setted);
-                    setted = true;
-                }
-            }
-        } else if (_period > dnPeriod) {
-            _autoH = false;
-        } else {
-            boost::shared_ptr<view::DsoSignal> dsoSig;
-            BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces) {
-                if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(t)) {
-                    dsoSig->go_hDialPre(setted);
-                    setted = true;
-                }
-            }
-        }
-    }
-    //_view->update();
 }
 
 void DsoSignal::auto_set()

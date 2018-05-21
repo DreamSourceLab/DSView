@@ -49,31 +49,8 @@ using std::string;
 namespace pv {
 namespace toolbars {
 
-const uint64_t SamplingBar::RecordLengths[19] = {
-	1000,
-    2000,
-    4000,
-    8000,
-	10000,
-    20000,
-    40000,
-    80000,
-	100000,
-    200000,
-    400000,
-    800000,
-	1000000,
-	2000000,
-    4000000,
-    8000000,
-	10000000,
-    20000000,
-    40000000,
-};
-
-const QString SamplingBar::RLEString = "(RLE)";
-
-const uint64_t SamplingBar::DefaultRecordLength = 1000000;
+const QString SamplingBar::RLEString = tr("(RLE)");
+const QString SamplingBar::DIVString = tr(" / div");
 
 SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
 	QToolBar("Sampling Bar", parent),
@@ -203,7 +180,6 @@ void SamplingBar::set_device_list(
     _device_selector.setCurrentIndex(selected_index);
 
     update_sample_rate_selector();
-    update_sample_count_selector();
 
     _updating_device_selector = false;
 }
@@ -238,9 +214,7 @@ void SamplingBar::on_configure()
     ret = dlg.exec();
     if (ret == QDialog::Accepted) {
         device_updated();
-        update_sample_count_selector();
         update_sample_rate_selector();
-        commit_sample_rate();
 
         GVariant* gvar;
         if (dev_inst->dev_inst()->mode == DSO) {
@@ -269,13 +243,13 @@ void SamplingBar::on_configure()
             bool test = g_variant_get_boolean(gvar);
             g_variant_unref(gvar);
             if (test) {
-                update_sample_count_selector_value();
                 update_sample_rate_selector_value();
                 _sample_count.setDisabled(true);
                 _sample_rate.setDisabled(true);
-            } else if (dev_inst->dev_inst()->mode != DSO) {
+            } else {
                 _sample_count.setDisabled(false);
-                _sample_rate.setDisabled(false);
+                if (dev_inst->dev_inst()->mode != DSO)
+                    _sample_rate.setDisabled(false);
             }
         }
     }
@@ -302,48 +276,6 @@ void SamplingBar::zero_adj()
 
     if (_session.get_capture_state() == pv::SigSession::Running)
         on_run_stop();
-}
-
-uint64_t SamplingBar::get_record_length() const
-{
-    const int index = _sample_count.currentIndex();
-	if (index < 0)
-		return 0;
-
-    return _sample_count.itemData(index).value<uint64_t>();
-}
-
-void SamplingBar::set_record_length(uint64_t length)
-{
-    for (int i = 0; i < _sample_count.count(); i++) {
-        if (length == _sample_count.itemData(
-            i).value<uint64_t>()) {
-            _sample_count.setCurrentIndex(i);
-            break;
-        }
-    }
-}
-
-void SamplingBar::update_record_length()
-{
-    disconnect(&_sample_count, SIGNAL(currentIndexChanged(int)),
-        this, SLOT(on_samplecount_sel(int)));
-
-    update_sample_count_selector();
-
-    connect(&_sample_count, SIGNAL(currentIndexChanged(int)),
-        this, SLOT(on_samplecount_sel(int)));
-}
-
-void SamplingBar::update_sample_rate()
-{
-    disconnect(&_sample_rate, SIGNAL(currentIndexChanged(int)),
-        this, SLOT(on_samplerate_sel(int)));
-
-    update_sample_rate_selector();
-
-    connect(&_sample_rate, SIGNAL(currentIndexChanged(int)),
-        this, SLOT(on_samplerate_sel(int)));
 }
 
 bool SamplingBar::get_sampling() const
@@ -393,25 +325,10 @@ void SamplingBar::set_sample_rate(uint64_t sample_rate)
                     i).value<uint64_t>();
         if (sample_rate >= cur_index_sample_rate) {
             _sample_rate.setCurrentIndex(i);
-            // commit the samplerate
-            commit_sample_rate();
             break;
         }
     }
-}
-
-void SamplingBar::set_sample_limit(uint64_t sample_limit)
-{
-    for (int i = 0; i < _sample_count.count(); i++) {
-        uint64_t cur_index_sample_limit = _sample_count.itemData(
-                    i).value<uint64_t>();
-        if (sample_limit <= cur_index_sample_limit) {
-            _sample_count.setCurrentIndex(i);
-            // commit the samplecount
-            commit_sample_count();
-            break;
-        }
-    }
+    commit_settings();
 }
 
 void SamplingBar::update_sample_rate_selector()
@@ -468,6 +385,8 @@ void SamplingBar::update_sample_rate_selector()
     update_sample_rate_selector_value();
     connect(&_sample_rate, SIGNAL(currentIndexChanged(int)),
         this, SLOT(on_samplerate_sel(int)));
+
+    update_sample_count_selector();
 }
 
 void SamplingBar::update_sample_rate_selector_value()
@@ -480,96 +399,35 @@ void SamplingBar::update_sample_rate_selector_value()
     assert(!_updating_sample_rate);
     _updating_sample_rate = true;
 
-    //for (int i = 0; i < _sample_rate.count(); i++)
-    for (int i = _sample_rate.count() - 1; i >= 0; i--) {
-        if (samplerate >= _sample_rate.itemData(
-            i).value<uint64_t>()) {
-            _sample_rate.setCurrentIndex(i);
-            break;
+    if (samplerate != _sample_rate.itemData(
+                _sample_rate.currentIndex()).value<uint64_t>()) {
+        for (int i = _sample_rate.count() - 1; i >= 0; i--) {
+            if (samplerate >= _sample_rate.itemData(
+                i).value<uint64_t>()) {
+                _sample_rate.setCurrentIndex(i);
+                break;
+            }
         }
     }
 
     _updating_sample_rate = false;
 }
 
-void SamplingBar::commit_sample_rate()
-{
-	uint64_t sample_rate = 0;
-
-    if (_updating_sample_rate)
-        return;
-
-    assert(!_updating_sample_rate);
-    _updating_sample_rate = true;
-
-    const int index = _sample_rate.currentIndex();
-    if (index >= 0)
-        sample_rate = _sample_rate.itemData(
-            index).value<uint64_t>();
-
-    if (sample_rate == 0) {
-		return;
-    }
-
-    get_selected_device()->set_config(NULL, NULL,
-                                      SR_CONF_SAMPLERATE,
-                                      g_variant_new_uint64(sample_rate));
-
-    _updating_sample_rate = false;
-}
-
-void SamplingBar::on_samplecount_sel(int index)
-{
-    uint64_t sample_count = 0;
-
-    if (index >= 0)
-        sample_count = _sample_count.itemData(
-            index).value<uint64_t>();
-
-    boost::shared_ptr<pv::device::DevInst> _devInst = get_selected_device();
-    assert(_devInst);
-
-    if (_devInst->dev_inst()->mode != DSO) {
-
-        // Set the sample count
-        _devInst->set_config(NULL, NULL,
-                             SR_CONF_LIMIT_SAMPLES,
-                             g_variant_new_uint64(sample_count));
-
-        sample_count_changed();
-    }
-}
-
 void SamplingBar::on_samplerate_sel(int index)
 {
-    uint64_t sample_rate = 0;
-
-    if (index >= 0)
-        sample_rate = _sample_rate.itemData(
-            index).value<uint64_t>();
-
-    boost::shared_ptr<pv::device::DevInst> dev_inst = get_selected_device();
-    assert(dev_inst);
-
-    // Get last samplerate
-    //last_sample_rate = get_selected_device()->get_sample_rate();
-
-    if (dev_inst->dev_inst()->mode != DSO) {
-            // Set the samplerate
-            get_selected_device()->set_config(NULL, NULL,
-                                              SR_CONF_SAMPLERATE,
-                                              g_variant_new_uint64(sample_rate));
-    }
+    (void)index;
+    const shared_ptr<device::DevInst> dev_inst = get_selected_device();
+    if (dev_inst->dev_inst()->mode != DSO)
+        update_sample_count_selector();
 }
 
 void SamplingBar::update_sample_count_selector()
 {
-    GVariant *gvar_dict, *gvar_list;
-    const uint64_t *elements = NULL;
-    gsize num_elements;
     bool stream_mode = false;
     uint64_t hw_depth = 0;
     uint64_t sw_depth;
+    double pre_duration = SR_SEC(1);
+    double duration;
 
     if (_updating_sample_count)
         return;
@@ -577,21 +435,10 @@ void SamplingBar::update_sample_count_selector()
     disconnect(&_sample_count, SIGNAL(currentIndexChanged(int)),
         this, SLOT(on_samplecount_sel(int)));
 
-    const shared_ptr<device::DevInst> dev_inst = get_selected_device();
-    if (!dev_inst)
-        return;
-
     assert(!_updating_sample_count);
     _updating_sample_count = true;
 
-    if (!(gvar_dict = dev_inst->list_config(NULL, SR_CONF_LIMIT_SAMPLES)))
-    {
-        _sample_count.clear();
-        _sample_count.show();
-        _updating_sample_count = false;
-        return;
-    }
-
+    const shared_ptr<device::DevInst> dev_inst = get_selected_device();
     GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_STREAM);
     if (gvar != NULL) {
         stream_mode = g_variant_get_boolean(gvar);
@@ -603,47 +450,87 @@ void SamplingBar::update_sample_count_selector()
         g_variant_unref(gvar);
     }
 
-    if ((gvar_list = g_variant_lookup_value(gvar_dict,
-            "samplecounts", G_VARIANT_TYPE("at"))))
-    {
-        elements = (const uint64_t *)g_variant_get_fixed_array(
-                gvar_list, &num_elements, sizeof(uint64_t));
-        _sample_count.clear();
-
+    if (dev_inst->dev_inst()->mode == LOGIC) {
         #if defined(__x86_64__) || defined(_M_X64)
-            sw_depth = elements[num_elements - 1];
+            sw_depth = LogicMaxSWDepth64;
         #elif defined(__i386) || defined(_M_IX86)
             int ch_num = _session.get_ch_num(SR_CHANNEL_LOGIC);
             if (ch_num <= 0)
-                sw_depth = SR_GB(8);
+                sw_depth = LogicMaxSWDepth32;
             else
-                sw_depth = SR_GB(8) / ch_num;
+                sw_depth = LogicMaxSWDepth32 / ch_num;
         #endif
-
-        for (unsigned int i = 0; i < num_elements; i++)
-        {
-            if (elements[i] > sw_depth)
-                break;
-            char *const s = sr_samplecount_string(elements[i]);
-            if (!stream_mode && (elements[i] > hw_depth))
-                _sample_count.addItem(QString(s)+RLEString,
-                    qVariantFromValue(elements[i]));
-            else
-                _sample_count.addItem(QString(s),
-                    qVariantFromValue(elements[i]));
-            g_free(s);
-        }
-
-        _sample_count.show();
-        g_variant_unref(gvar_list);
+    } else {
+        sw_depth = AnalogMaxSWDepth;
     }
-    _sample_count.setMinimumWidth(_sample_count.sizeHint().width()+15);
-    _sample_count.view()->setMinimumWidth(_sample_count.sizeHint().width()+30);
 
+    if (0 != _sample_count.count())
+        pre_duration = _sample_count.itemData(
+                    _sample_count.currentIndex()).value<double>();
+    _sample_count.clear();
+    const uint64_t samplerate = _sample_rate.itemData(
+                _sample_rate.currentIndex()).value<uint64_t>();
+    if (dev_inst->dev_inst()->mode == DSO)
+        duration = SR_SEC(10);
+    else if (stream_mode)
+        duration = sw_depth / (samplerate * (1.0 / SR_SEC(1)));
+    else
+        duration = hw_depth / (samplerate * (1.0 / SR_SEC(1)));
+
+    bool not_last = true;
+    do {
+        char *const s = sr_time_string(duration);
+        _sample_count.addItem(QString(s) + ((dev_inst->dev_inst()->mode == DSO) ? DIVString : ""),
+            qVariantFromValue(duration));
+        g_free(s);
+
+        double unit;
+        if (duration >= SR_DAY(1))
+            unit = SR_DAY(1);
+        else if (duration >= SR_HOUR(1))
+            unit = SR_HOUR(1);
+        else if (duration >= SR_MIN(1))
+            unit = SR_MIN(1);
+        else
+            unit = 1;
+        const double log10_duration = pow(10,
+                                          floor(log10(duration / unit)));
+        if (duration > 5 * log10_duration * unit)
+            duration = 5 * log10_duration * unit;
+        else if (duration > 2 * log10_duration * unit)
+            duration = 2 * log10_duration * unit;
+        else if (duration > log10_duration * unit)
+            duration = log10_duration * unit;
+        else
+            duration = log10_duration > 1 ? duration * 0.5 :
+                       (unit == SR_DAY(1) ? SR_HOUR(20) :
+                        unit == SR_HOUR(1) ? SR_MIN(50) :
+                        unit == SR_MIN(1) ? SR_SEC(50) : duration * 0.5);
+
+        if (dev_inst->dev_inst()->mode == DSO)
+            not_last = duration >= SR_NS(10);
+        else
+            not_last = (duration / SR_SEC(1) * samplerate >= SR_KB(1));
+    } while(not_last);
+
+    _updating_sample_count = true;
+    if (pre_duration > _sample_count.itemData(0).value<double>())
+        _sample_count.setCurrentIndex(0);
+    else if (pre_duration < _sample_count.itemData(_sample_count.count()-1).value<double>())
+        _sample_count.setCurrentIndex(_sample_count.count()-1);
+    else {
+        for (int i = 0; i < _sample_count.count(); i++)
+            if (pre_duration >= _sample_count.itemData(
+                i).value<double>()) {
+                _sample_count.setCurrentIndex(i);
+                break;
+            }
+        sample_count_changed();
+    }
     _updating_sample_count = false;
-    g_variant_unref(gvar_dict);
 
-    update_sample_count_selector_value();
+    if (dev_inst->dev_inst()->mode == DSO)
+        update_sample_count_selector_value();
     connect(&_sample_count, SIGNAL(currentIndexChanged(int)),
         this, SLOT(on_samplecount_sel(int)));
 }
@@ -653,58 +540,118 @@ void SamplingBar::update_sample_count_selector_value()
     if (_updating_sample_count)
         return;
 
-    const uint64_t samplecount = get_selected_device()->get_sample_limit();
-
+    GVariant* gvar;
+    double hori_res;
+    gvar = get_selected_device()->get_config(NULL, NULL, SR_CONF_TIMEBASE);
+    if (gvar != NULL) {
+        hori_res = g_variant_get_uint64(gvar);
+        g_variant_unref(gvar);
+    } else {
+        qDebug() << "ERROR: config_get SR_CONF_TIMEBASE failed.";
+        return;
+    }
     assert(!_updating_sample_count);
     _updating_sample_count = true;
 
-    for (int i = 0; i < _sample_count.count(); i++)
-        if (samplecount == _sample_count.itemData(
-            i).value<uint64_t>())
-            _sample_count.setCurrentIndex(i);
-
-    if (samplecount != _sample_count.itemData(_sample_count.currentIndex()).value<uint64_t>()) {
-        sample_count_changed();
+    if (hori_res != _sample_count.itemData(
+                _sample_count.currentIndex()).value<double>()) {
+        for (int i = _sample_count.count() - 1; i >= 0; i--) {
+            if (hori_res == _sample_count.itemData(
+                i).value<double>()) {
+                _sample_count.setCurrentIndex(i);
+                break;
+            }
+        }
     }
+
     _updating_sample_count = false;
 }
 
-void SamplingBar::commit_sample_count()
+void SamplingBar::on_samplecount_sel(int index)
 {
-    uint64_t sample_count = 0;
-    uint64_t last_sample_count = 0;
+    (void)index;
 
-    if (_updating_sample_count)
+    const shared_ptr<device::DevInst> dev_inst = get_selected_device();
+    if (dev_inst->dev_inst()->mode == DSO)
+        commit_hori_res();
+    else
+        sample_count_changed();
+}
+
+void SamplingBar::hori_knob(int dir)
+{
+    if (0 == dir) {
+        commit_hori_res();
+    } else if ((dir > 0) && (_sample_count.currentIndex() > 0)) {
+        _sample_count.setCurrentIndex(_sample_count.currentIndex() - 1);
+        commit_hori_res();
+    } else if ((dir < 0) && (_sample_count.currentIndex() < _sample_count.count() - 1)) {
+        _sample_count.setCurrentIndex(_sample_count.currentIndex() + 1);
+        commit_hori_res();
+    }
+}
+
+void SamplingBar::commit_hori_res()
+{
+    const double hori_res = _sample_count.itemData(
+                           _sample_count.currentIndex()).value<double>();
+
+    if (_session.get_capture_state() == SigSession::Running)
+        _session.refresh(RefreshShort);
+    const shared_ptr<device::DevInst> dev_inst = get_selected_device();
+    const uint64_t sample_limit = dev_inst->get_sample_limit();
+    GVariant* gvar;
+    uint64_t max_sample_rate;
+    gvar = dev_inst->get_config(NULL, NULL, SR_CONF_MAX_DSO_SAMPLERATE);
+    if (gvar != NULL) {
+        max_sample_rate = g_variant_get_uint64(gvar);
+        g_variant_unref(gvar);
+    } else {
+        qDebug() << "ERROR: config_get SR_CONF_MAX_DSO_SAMPLERATE failed.";
         return;
-
-    assert(!_updating_sample_count);
-    _updating_sample_count = true;
-
-
-    const int index = _sample_count.currentIndex();
-    if (index >= 0)
-        sample_count = _sample_count.itemData(
-            index).value<uint64_t>();
-
-    if (sample_count == 0)
-        return;
-
-    // Get last samplecount
-    last_sample_count = get_selected_device()->get_sample_limit();
-
-    if (last_sample_count != sample_count) {
-        // Set the samplecount
-        get_selected_device()->set_config(NULL, NULL,
-                                          SR_CONF_LIMIT_SAMPLES,
-                                          g_variant_new_uint64(sample_count));
     }
 
-    bool rle_mode = _sample_count.currentText().contains(RLEString);
-    get_selected_device()->set_config(NULL, NULL,
-                                      SR_CONF_RLE,
-                                      g_variant_new_boolean(rle_mode));
+    const uint64_t sample_rate = min((uint64_t)(sample_limit * SR_SEC(1) /
+                                                (hori_res * DS_CONF_DSO_HDIVS)),
+                                     (uint64_t)(max_sample_rate /
+                                                (_session.get_ch_num(DSO) ? _session.get_ch_num(DSO) : 1)));
+    set_sample_rate(sample_rate);
+    if (_session.get_capture_state() != SigSession::Stopped)
+        _session.set_cur_samplerate(dev_inst->get_sample_rate());
 
-    _updating_sample_count = false;
+    dev_inst->set_config(NULL, NULL, SR_CONF_TIMEBASE,
+                         g_variant_new_uint64(hori_res));
+
+    hori_res_changed(hori_res);
+}
+
+void SamplingBar::commit_settings()
+{
+    const double sample_duration = _sample_count.itemData(
+            _sample_count.currentIndex()).value<double>();
+    const uint64_t sample_rate = _sample_rate.itemData(
+            _sample_rate.currentIndex()).value<uint64_t>();
+    const uint64_t sample_count = ceil(sample_duration / SR_SEC(1) *
+                                       sample_rate);
+
+    const shared_ptr<device::DevInst> dev_inst = get_selected_device();
+    if (dev_inst) {
+        if (sample_rate != dev_inst->get_sample_rate())
+            dev_inst->set_config(NULL, NULL,
+                                 SR_CONF_SAMPLERATE,
+                                 g_variant_new_uint64(sample_rate));
+        if (dev_inst->dev_inst()->mode != DSO) {
+            if (sample_count != dev_inst->get_sample_limit())
+                dev_inst->set_config(NULL, NULL,
+                                     SR_CONF_LIMIT_SAMPLES,
+                                     g_variant_new_uint64(sample_count));
+
+            bool rle_mode = _sample_count.currentText().contains(RLEString);
+            dev_inst->set_config(NULL, NULL,
+                                 SR_CONF_RLE,
+                                 g_variant_new_boolean(rle_mode));
+        }
+    }
 }
 
 void SamplingBar::on_run_stop()
@@ -726,8 +673,7 @@ void SamplingBar::on_run_stop()
     } else {
         enable_run_stop(false);
         enable_instant(false);
-        commit_sample_rate();
-        commit_sample_count();
+        commit_settings();
         _instant = false;
         const shared_ptr<device::DevInst> dev_inst = get_selected_device();
         if (!dev_inst)
@@ -779,8 +725,7 @@ void SamplingBar::on_instant_stop()
     } else {
         enable_run_stop(false);
         enable_instant(false);
-        commit_sample_rate();
-        commit_sample_count();
+        commit_settings();
         _instant = true;
         const shared_ptr<device::DevInst> dev_inst = get_selected_device();
         if (!dev_inst)
@@ -845,7 +790,10 @@ void SamplingBar::enable_toggle(bool enable)
     }
     if (!test) {
         _sample_count.setDisabled(!enable);
-        _sample_rate.setDisabled(!enable);
+        if (dev_inst->dev_inst()->mode == DSO)
+            _sample_rate.setDisabled(true);
+        else
+            _sample_rate.setDisabled(!enable);
     } else {
         _sample_count.setDisabled(true);
         _sample_rate.setDisabled(true);
@@ -900,7 +848,7 @@ void SamplingBar::reload()
         _mode_action->setVisible(false);
         _run_stop_action->setVisible(true);
         _instant_action->setVisible(true);
-        enable_toggle(false);
+        enable_toggle(true);
     }
     update();
 }

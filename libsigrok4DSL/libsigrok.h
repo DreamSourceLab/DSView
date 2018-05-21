@@ -89,6 +89,19 @@ enum {
 
 #define SR_HZ_TO_NS(n) ((uint64_t)(1000000000ULL) / (n))
 
+#define SR_NS(n)   (n)
+#define SR_US(n)   ((n) * (uint64_t)(1000ULL))
+#define SR_MS(n)   ((n) * (uint64_t)(1000000ULL))
+#define SR_SEC(n)  ((n) * (uint64_t)(1000000000ULL))
+#define SR_MIN(n)  ((n) * (uint64_t)(60000000000ULL))
+#define SR_HOUR(n) ((n) * (uint64_t)(3600000000000ULL))
+#define SR_DAY(n)  ((n) * (uint64_t)(86400000000000ULL))
+
+#define SR_n(n)  (n)
+#define SR_Kn(n) ((n) * (uint64_t)(1000ULL))
+#define SR_Mn(n) ((n) * (uint64_t)(1000000ULL))
+#define SR_Gn(n) ((n) * (uint64_t)(1000000000ULL))
+
 #define SR_B(n)  (n)
 #define SR_KB(n) ((n) * (uint64_t)(1024ULL))
 #define SR_MB(n) ((n) * (uint64_t)(1048576ULL))

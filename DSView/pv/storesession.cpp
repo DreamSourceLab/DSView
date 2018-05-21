@@ -510,14 +510,6 @@ void StoreSession::export_proc(shared_ptr<data::Snapshot> snapshot)
     g_hash_table_insert(params, (char*)"filename", filenameGVariant);
     GVariant* typeGVariant = g_variant_new_int16(channel_type);
     g_hash_table_insert(params, (char*)"type", typeGVariant);
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
-        boost::shared_ptr<view::DsoSignal> dsoSig;
-        if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
-            GVariant* timebaseGVariant = g_variant_new_uint64(dsoSig->get_hDialValue());
-            g_hash_table_insert(params, (char*)"timebase", timebaseGVariant);
-            break;
-        }
-    }
 
     struct sr_output output;
     output.module = (sr_output_module*) _outModule;

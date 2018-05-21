@@ -231,7 +231,8 @@ void View::capture_init(bool instant)
     if (_session.get_device()->dev_inst()->mode == ANALOG)
         set_scale_offset(_maxscale, 0);
 
-    update_sample(instant);
+    _session.get_device()->set_config(NULL, NULL, SR_CONF_INSTANT, g_variant_new_boolean(instant));
+    update_hori_res();
     status_clear();
 }
 
@@ -251,34 +252,13 @@ void View::set_all_update(bool need_update)
         viewport->set_need_update(need_update);
 }
 
-void View::update_sample(bool instant)
+void View::update_hori_res()
 {
-    _session.get_device()->set_config(NULL, NULL, SR_CONF_INSTANT, g_variant_new_boolean(instant));
-    BOOST_FOREACH(const boost::shared_ptr<pv::view::Signal> s, _session.get_signals()) {
-        boost::shared_ptr<pv::view::DsoSignal> dsoSig;
-        if (dsoSig = dynamic_pointer_cast<pv::view::DsoSignal>(s)) {
-            dsoSig->update_capture(instant);
-            break;
-        }
-    }
-}
+    _sampling_bar->hori_knob(0);
 
-void View::set_sample_rate(uint64_t sample_rate, bool force)
-{
-    if (_session.get_capture_state() != pv::SigSession::Stopped || force) {
-        _sampling_bar->set_sample_rate(sample_rate);
-        _session.set_cur_samplerate(_session.get_device()->get_sample_rate());
-    }
-}
-
-void View::set_sample_limit(uint64_t sample_limit, bool force)
-{
-    if (_session.get_capture_state() != pv::SigSession::Stopped || force) {
-        _sampling_bar->set_sample_limit(sample_limit);
-        const uint64_t final_limit = _session.get_device()->get_sample_limit();
-        _trig_cursor->set_index(_trig_cursor->index() * 1.0 / _session.cur_samplelimits() * final_limit);
-        _session.set_cur_samplelimits(final_limit);
-    }
+    const uint64_t final_limit = _session.get_device()->get_sample_limit();
+    _trig_cursor->set_index(_trig_cursor->index() * 1.0 / _session.cur_samplelimits() * final_limit);
+    _session.set_cur_samplelimits(final_limit);
 }
 
 void View::zoom(double steps, int offset)
@@ -291,21 +271,15 @@ void View::zoom(double steps, int offset)
             //_scale *= std::pow(3.0/2.0, -steps);
             _scale *= std::pow(2, -steps);
             _scale = max(min(_scale, _maxscale), _minscale);
-        }else {
-            const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
-            bool setted = false;
-            BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
-                boost::shared_ptr<DsoSignal> dsoSig;
-                if (dsoSig = dynamic_pointer_cast<DsoSignal>(s)) {
-                    if(steps > 0.5)
-                        dsoSig->go_hDialPre(setted);
-                    else if (steps < -0.5)
-                        dsoSig->go_hDialNext(setted);
-                    else
-                        break;
-                    setted = true;
-                }
-            }
+        } else {
+            if (_session.get_capture_state() == SigSession::Running &&
+                _session.get_instant())
+                return;
+
+            if(steps > 0.5)
+                _sampling_bar->hori_knob(-1);
+            else if (steps < -0.5)
+                _sampling_bar->hori_knob(1);
         }
 
         _offset = floor((_offset + offset) * (_preScale / _scale) - offset);
@@ -318,6 +292,14 @@ void View::zoom(double steps, int offset)
             update_scroll();
         }
     //}
+}
+
+void View::hori_res_changed(double hori_res)
+{
+    if (hori_res > 0) {
+        const double scale = hori_res * DS_CONF_DSO_HDIVS / SR_SEC(1) / get_view_width();
+        set_scale_offset(scale, this->offset());
+    }
 }
 
 
@@ -769,24 +751,14 @@ bool View::viewportEvent(QEvent *e)
 
 int View::headerWidth()
 {
-    int headerWidth;
-    int maxNameWidth = 25;
-    int maxLeftWidth = 0;
-    int maxRightWidth = 0;
-
-    QFont font = QApplication::font();
-    QFontMetrics fm(font);
+    int headerWidth = _header->get_nameEditWidth();
 
     const vector< boost::shared_ptr<Trace> > traces(get_traces(ALL_VIEW));
-    if (!traces.empty()){
-        BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces) {
-            maxNameWidth = max(fm.boundingRect(t->get_name()).width(), maxNameWidth);
-            maxLeftWidth = max(t->get_leftWidth(), maxLeftWidth);
-            maxRightWidth = max(t->get_rightWidth(), maxRightWidth);
-        }
+    if (!traces.empty()) {
+        BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
+            headerWidth = max(t->get_name_width() + t->get_leftWidth() + t->get_rightWidth(),
+                              headerWidth);
     }
-    maxNameWidth = max(_header->get_nameEditWidth(), maxNameWidth);
-    headerWidth = maxLeftWidth + maxNameWidth + maxRightWidth;
 
     setViewportMargins(headerWidth, RulerHeight, 0, 0);
 

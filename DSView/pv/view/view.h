@@ -182,11 +182,7 @@ public:
     int get_view_width();
     int get_view_height();
 
-    void update_sample(bool instant);
-
-    void set_sample_rate(uint64_t sample_rate, bool force = false);
-
-    void set_sample_limit(uint64_t sample_limit, bool force = false);
+    void update_hori_res();
 
     QString get_measure(QString option);
 
@@ -244,6 +240,8 @@ public slots:
     void repeat_unshow();
     // -- repeat
     void repeat_show();
+    // -- hori resolution
+    void hori_res_changed(double hori_res);
 
 private slots:
 

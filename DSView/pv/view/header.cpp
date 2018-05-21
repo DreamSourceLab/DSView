@@ -261,7 +261,8 @@ void Header::wheelEvent(QWheelEvent *event)
 
 void Header::changeName(QMouseEvent *event)
 {
-    if ((event->button() == Qt::LeftButton)) {
+    if ((event->button() == Qt::LeftButton) &&
+        (_context_trace->get_type() != SR_CHANNEL_DSO)) {
         header_resize();
         nameEdit->setText(_context_trace->get_name());
         nameEdit->selectAll();

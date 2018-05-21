@@ -965,7 +965,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             sr_dbg("%s: setting Trigger Margin to %d failed",
                 __func__, devc->trigger_margin);
     } else if (id == SR_CONF_SAMPLERATE) {
-        if (devc->test_mode != SR_TEST_NONE) {
+        if (devc->test_mode == SR_TEST_NONE) {
             devc->cur_samplerate = g_variant_get_uint64(data);
             if(sdi->mode == DSO) {
                 devc->sample_wide = (devc->cur_samplerate <= DSLOGIC_MAX_DSO_SAMPLERATE);

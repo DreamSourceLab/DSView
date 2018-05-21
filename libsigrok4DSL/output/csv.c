@@ -38,7 +38,6 @@ struct context {
     double *channel_vpos;
     double *channel_mmin;
     double *channel_mmax;
-    uint64_t timebase;
     uint64_t mask;
     uint64_t pre_data;
     uint64_t index;
@@ -73,7 +72,6 @@ static int init(struct sr_output *o, GHashTable *options)
     ctx->mask = 0;
     ctx->index = 0;
     ctx->type = g_variant_get_int16(g_hash_table_lookup(options, "type"));
-    ctx->timebase = g_variant_get_uint64(g_hash_table_lookup(options, "timebase"));
 
 	/* Get the number of channels, and the unitsize. */
 	for (l = o->sdi->channels; l; l = l->next) {
