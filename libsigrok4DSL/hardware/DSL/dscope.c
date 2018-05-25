@@ -223,12 +223,25 @@ struct DSL_vga DSCope20_vga[] = {
     {2000,DSCOPE20_DEFAULT_VGAIN7, DSCOPE20_DEFAULT_VGAIN7, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
     {0, 0, 0, 0, 0},
 };
+struct DSL_vga DSCopeC20_vga[] = {
+    {10,  DSCOPEC20_DEFAULT_VGAIN0, DSCOPEC20_DEFAULT_VGAIN0, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
+    {20,  DSCOPEC20_DEFAULT_VGAIN1, DSCOPEC20_DEFAULT_VGAIN1, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
+    {50,  DSCOPEC20_DEFAULT_VGAIN2, DSCOPEC20_DEFAULT_VGAIN2, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
+    {100, DSCOPEC20_DEFAULT_VGAIN3, DSCOPEC20_DEFAULT_VGAIN3, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
+    {200, DSCOPEC20_DEFAULT_VGAIN4, DSCOPEC20_DEFAULT_VGAIN4, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
+    {500, DSCOPEC20_DEFAULT_VGAIN5, DSCOPEC20_DEFAULT_VGAIN5, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
+    {1000,DSCOPEC20_DEFAULT_VGAIN6, DSCOPEC20_DEFAULT_VGAIN6, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
+    {2000,DSCOPEC20_DEFAULT_VGAIN7, DSCOPEC20_DEFAULT_VGAIN7, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
+    {0, 0, 0, 0, 0},
+};
 
 static struct DSL_vga* get_vga_ptr(const struct sr_dev_inst *sdi)
 {
     struct DSL_vga *vga_ptr = NULL;
     if (strcmp(sdi->model, "DSCope") == 0)
         vga_ptr = DSCope_vga;
+    else if (strncmp(sdi->model, "DSCope C20", 10) == 0)
+        vga_ptr = DSCopeC20_vga;
     else
         vga_ptr = DSCope20_vga;
 
@@ -952,6 +965,9 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     const char *stropt;
     int ret, num_probes;
     struct drv_context *drvc;
+    struct sr_usb_dev_inst *usb;
+    struct libusb_device_handle *hdl;
+    struct ctl_wr_cmd wr_cmd;
 
     (void)cg;
 
@@ -960,6 +976,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 
     drvc = di->priv;
 	devc = sdi->priv;
+    usb = sdi->conn;
+    hdl = usb->devhdl;
 
     ret = SR_OK;
 
@@ -1138,6 +1156,15 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 
         if (sdi->mode == DSO) {
             ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, ch, SR_CONF_PROBE_EN));
+            if (ch->index == 0) {
+                wr_cmd.header.dest = DSL_CTL_DSO_EN0;
+                wr_cmd.data[0] = (ch->enabled << DSO_EN0_BIT);
+            } else {
+                wr_cmd.header.dest = DSL_CTL_DSO_EN1;
+                wr_cmd.data[0] = (ch->enabled << DSO_EN1_BIT);
+            }
+            wr_cmd.header.size = 1;
+            ret = command_ctl_wr(hdl, wr_cmd);
             if (dsl_en_ch_num(sdi) != 0) {
                 ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, 0, SR_CONF_SAMPLERATE));
                 devc->limit_samples = DSCOPE_MAX_DEPTH / dsl_en_ch_num(sdi);
@@ -1430,10 +1457,17 @@ static int dso_zero(const struct sr_dev_inst *sdi)
     struct DSL_context *devc = sdi->priv;
     GSList *l;
     int ret;
+    struct sr_usb_dev_inst *usb;
+    struct libusb_device_handle *hdl;
+    struct ctl_wr_cmd wr_cmd;
+
     static double vpos_back[2];
     static uint64_t vdiv_back[2];
     struct DSL_vga *vga_ptr = get_vga_ptr(sdi);
     struct sr_channel *probe0 = NULL, *probe1 = NULL;
+
+    usb = sdi->conn;
+    hdl = usb->devhdl;
     for(l = sdi->channels; l; l = l->next) {
         struct sr_channel *probe = (struct sr_channel *)l->data;
         if (probe->index == 0)
@@ -1486,6 +1520,11 @@ static int dso_zero(const struct sr_dev_inst *sdi)
 
         if (devc->zero_pcnt == 10) {
             ret = dsl_wr_reg(sdi, COMB_ADDR+6, 0b1101);
+            wr_cmd.header.dest = DSL_CTL_DSO_EN1;
+            wr_cmd.data[0] = (FALSE << DSO_EN1_BIT);
+            wr_cmd.header.size = 1;
+            ret = command_ctl_wr(hdl, wr_cmd);
+
             devc->zero_comb = 0;
             vpos_back[0] = probe0->vpos;
             probe0->vpos = (vga_ptr+devc->zero_stage-1)->key * 4.5;
@@ -1504,6 +1543,15 @@ static int dso_zero(const struct sr_dev_inst *sdi)
 
         if (devc->zero_pcnt == 25) {
             ret = dsl_wr_reg(sdi, COMB_ADDR+6, 0b1110);
+            wr_cmd.header.dest = DSL_CTL_DSO_EN1;
+            wr_cmd.data[0] = (TRUE << DSO_EN1_BIT);
+            wr_cmd.header.size = 1;
+            ret = command_ctl_wr(hdl, wr_cmd);
+            wr_cmd.header.dest = DSL_CTL_DSO_EN0;
+            wr_cmd.data[0] = (FALSE << DSO_EN0_BIT);
+            wr_cmd.header.size = 1;
+            ret = command_ctl_wr(hdl, wr_cmd);
+
             devc->zero_comb = 1;
             vpos_back[1] = probe1->vpos;
             probe1->vpos = (vga_ptr+devc->zero_stage-1)->key * 4.5;
@@ -1526,6 +1574,11 @@ static int dso_zero(const struct sr_dev_inst *sdi)
                 probe1->vdiv = vdiv_back[1];
             }
             ret = dsl_wr_reg(sdi, COMB_ADDR+6, 0b0011);
+            wr_cmd.header.dest = DSL_CTL_DSO_EN0;
+            wr_cmd.data[0] = (TRUE << DSO_EN0_BIT);
+            wr_cmd.header.size = 1;
+            ret = command_ctl_wr(hdl, wr_cmd);
+
             devc->zero = FALSE;
             dso_init(sdi);
         }

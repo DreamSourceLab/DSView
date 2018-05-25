@@ -68,6 +68,15 @@ enum {
     DSL_CTL_I2C_DSO			= 13,
     DSL_CTL_I2C_REG			= 14,
     DSL_CTL_DSO_MEASURE		= 15,
+
+    DSL_CTL_DSO_EN0			= 16,
+    DSL_CTL_DSO_DC0			= 17,
+    DSL_CTL_DSO_ATT0		= 18,
+    DSL_CTL_DSO_EN1			= 19,
+    DSL_CTL_DSO_DC1			= 20,
+    DSL_CTL_DSO_ATT1		= 21,
+
+    DSL_CTL_AWG_WR			= 22,
 };
 
 #pragma pack(push, 1) // byte align
