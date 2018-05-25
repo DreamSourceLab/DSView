@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
 	struct sr_context *sr_ctx = NULL;
 	const char *open_file = NULL;
 
-    DSApplication a(argc, argv);
+    QApplication a(argc, argv);
 
     // Set some application metadata
     QApplication::setApplicationVersion(DS_VERSION_STRING);

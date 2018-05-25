@@ -47,8 +47,8 @@ MainFrame::MainFrame(DeviceManager &device_manager,
     // be resized or moved via the window system
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
                    Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
-    setMinimumHeight(680);
-    setMinimumWidth(800);
+    setMinimumHeight(minHeight);
+    setMinimumWidth(minWidth);
     //resize(1024, 768);
 
     // Set the window icon

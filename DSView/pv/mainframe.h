@@ -46,7 +46,7 @@ public:
     static const int minHeight = 680;
 
 public:
-    static const int Margin = 8;
+    static const int Margin = 5;
 
     enum borderTypes{
         None,
