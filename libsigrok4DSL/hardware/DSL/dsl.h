@@ -257,6 +257,18 @@ static const struct DSL_profile supported_DSCope[] = {
      "DSCope20.bin",
      DEV_CAPS_16BIT},
 
+    {0x2A0E, 0x0023, NULL, "DSCope C20", NULL,
+     "DSCopeC20.fw",
+     "DSCopeC20.bin",
+     "DSCopeC20.bin",
+     DEV_CAPS_16BIT},
+
+    {0x2A0E, 0x0024, NULL, "DSCope C20P", NULL,
+     "DSCopeC20P.fw",
+     "DSCopeC20.bin",
+     "DSCopeC20.bin",
+     DEV_CAPS_16BIT},
+
     { 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 };
 
@@ -409,6 +421,7 @@ SR_PRIV int dsl_configure_probes(const struct sr_dev_inst *sdi);
 SR_PRIV uint64_t dsl_channel_depth(const struct sr_dev_inst *sdi);
 
 SR_PRIV int dsl_wr_reg(const struct sr_dev_inst *sdi, uint8_t addr, uint8_t value);
+SR_PRIV int dsl_wr_ext(const struct sr_dev_inst *sdi, uint8_t addr, uint8_t value);
 SR_PRIV int dsl_wr_dso(const struct sr_dev_inst *sdi, uint64_t cmd);
 SR_PRIV int dsl_wr_nvm(const struct sr_dev_inst *sdi, unsigned char *ctx, uint16_t addr, uint8_t len);
 SR_PRIV int dsl_rd_nvm(const struct sr_dev_inst *sdi, unsigned char *ctx, uint16_t addr, uint8_t len);

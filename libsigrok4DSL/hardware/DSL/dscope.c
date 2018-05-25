@@ -1679,6 +1679,7 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
     int ret;
     struct ctl_wr_cmd wr_cmd;
 
+
     if (sdi->status != SR_ST_ACTIVE)
         return SR_ERR_DEV_CLOSED;
 

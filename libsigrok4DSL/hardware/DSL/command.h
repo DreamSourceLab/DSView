@@ -45,6 +45,9 @@
 #define VTH_ADDR 0x78
 #define EEWP_ADDR 0x70
 #define COMB_ADDR 0x68
+#define EXT_I2CSEL 0x71
+#define FPGA_I2CADDR 0x21
+#define EXT_I2CADDR 0x50
 
 enum {
     DSL_CTL_FW_VERSION		= 0,

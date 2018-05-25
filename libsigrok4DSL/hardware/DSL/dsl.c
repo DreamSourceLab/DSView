@@ -271,7 +271,29 @@ SR_PRIV int dsl_wr_reg(const struct sr_dev_inst *sdi, uint8_t addr, uint8_t valu
     hdl = usb->devhdl;
 
     wr_cmd.header.dest = DSL_CTL_I2C_REG;
-    wr_cmd.header.offset = addr;
+    wr_cmd.header.offset = (FPGA_I2CADDR << 8) + addr;
+    wr_cmd.header.size = 1;
+    wr_cmd.data[0] = value;
+    if ((ret = command_ctl_wr(hdl, wr_cmd)) != SR_OK) {
+        sr_err("Sent DSL_CTL_I2C_REG command failed.");
+        return SR_ERR;
+    }
+
+    return SR_OK;
+}
+
+SR_PRIV int dsl_wr_ext(const struct sr_dev_inst *sdi, uint8_t addr, uint8_t value)
+{
+    struct sr_usb_dev_inst *usb;
+    struct libusb_device_handle *hdl;
+    struct ctl_wr_cmd wr_cmd;
+    int ret;
+
+    usb = sdi->conn;
+    hdl = usb->devhdl;
+
+    wr_cmd.header.dest = DSL_CTL_I2C_REG;
+    wr_cmd.header.offset = (EXT_I2CADDR << 8) + addr;
     wr_cmd.header.size = 1;
     wr_cmd.data[0] = value;
     if ((ret = command_ctl_wr(hdl, wr_cmd)) != SR_OK) {
@@ -1112,7 +1134,7 @@ SR_PRIV int dsl_dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *
         usb = sdi->conn;
         if (prg && (devc->status == DSL_START)) {
             rd_cmd.header.dest = DSL_CTL_DSO_MEASURE;
-            rd_cmd.header.offset = begin;
+            rd_cmd.header.offset = (FPGA_I2CADDR << 8) + begin;
             rd_cmd.header.size = end - begin + 1;
             rd_cmd.data = (unsigned char*)status;
             ret = command_ctl_rd(usb->devhdl, rd_cmd);
