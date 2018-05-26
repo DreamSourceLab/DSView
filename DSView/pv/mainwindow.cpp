@@ -184,6 +184,8 @@ void MainWindow::setup_ui()
         SLOT(hide_calibration()));
     connect(_dso_trigger_widget, SIGNAL(set_trig_pos(int)), _view,
         SLOT(set_trig_pos(int)));
+    connect(_view, SIGNAL(auto_trig(int)), _dso_trigger_widget,
+        SLOT(auto_trig(int)));
 
     setIconSize(QSize(40,40));
     addToolBar(_sampling_bar);

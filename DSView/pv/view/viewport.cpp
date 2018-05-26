@@ -902,6 +902,15 @@ void Viewport::wheelEvent(QWheelEvent *event)
         }
     }
 
+    const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
+    BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+        assert(s);
+        boost::shared_ptr<view::DsoSignal> dsoSig;
+        if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
+            dsoSig->auto_end();
+        }
+    }
+
     measure();
 }
 

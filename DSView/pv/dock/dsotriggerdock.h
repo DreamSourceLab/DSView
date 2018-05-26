@@ -54,6 +54,9 @@ public:
 signals:
     void set_trig_pos(int percent);
 
+public slots:
+    void auto_trig(int index);
+
 private slots:
     void pos_changed(int pos);
     void hold_changed(int hold);

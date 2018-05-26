@@ -252,6 +252,11 @@ void View::set_all_update(bool need_update)
         viewport->set_need_update(need_update);
 }
 
+double View::get_hori_res()
+{
+    return _sampling_bar->get_hori_res();
+}
+
 void View::update_hori_res()
 {
     if (_session.get_device()->dev_inst()->mode == DSO)

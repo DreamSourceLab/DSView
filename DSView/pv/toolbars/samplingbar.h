@@ -90,6 +90,7 @@ public:
 
     double hori_knob(int dir);
     double commit_hori_res();
+    double get_hori_res();
 
 public slots:
     void set_sample_rate(uint64_t sample_rate);

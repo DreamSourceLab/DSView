@@ -184,6 +184,7 @@ public:
     int get_view_height();
 
     void update_hori_res();
+    double get_hori_res();
 
     QString get_measure(QString option);
 
@@ -208,6 +209,8 @@ signals:
     void update_device_list();
 
     void resize();
+
+    void auto_trig(int index);
 
 private:
     void get_scroll_layout(int64_t &length, int64_t &offset) const;

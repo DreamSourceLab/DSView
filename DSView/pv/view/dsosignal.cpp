@@ -33,6 +33,7 @@
 #include <boost/foreach.hpp>
 
 #include <QDebug>
+#include <QTimer>
 
 using namespace boost;
 using namespace std;
@@ -201,11 +202,11 @@ bool DsoSignal::go_vDialPre()
             _scale *= pre_vdiv/_vDial->get_value();
         update_vpos();
         _view->update_calibration();
-        _view->set_update(_viewport, true);
-        _view->update();
+        //_view->set_update(_viewport, true);
+        //_view->update();
         return true;
     } else {
-        _autoV = false;
+        autoV_end();
         return false;
     }
 }
@@ -223,11 +224,11 @@ bool DsoSignal::go_vDialNext()
             _scale *= pre_vdiv/_vDial->get_value();
         update_vpos();
 		_view->update_calibration();
-        _view->set_update(_viewport, true);
-        _view->update();
+        //_view->set_update(_viewport, true);
+        //_view->update();
         return true;
     } else {
-        _autoV = false;
+        autoV_end();
         return false;
     }
 }
@@ -947,23 +948,13 @@ void DsoSignal::paint_type_options(QPainter &p, int right, const QPoint pt)
     p.drawText(x1_rect, Qt::AlignCenter | Qt::AlignVCenter, "x1");
 }
 
-bool DsoSignal::mouse_double_click(int right, const QPoint pt)
-{
-    int y = get_zero_vpos();
-    const QRectF label_rect = Trace::get_rect("label", y, right);
-    if (label_rect.contains(pt)) {
-        this->auto_set();
-        return true;
-    }
-    return false;
-}
-
 bool DsoSignal::mouse_press(int right, const QPoint pt)
 {
     int y = get_y();
     const QRectF vDial_rect = get_rect(DSO_VDIAL, y, right);
     const QRectF chEn_rect = get_rect(DSO_CHEN, y, right);
     const QRectF acdc_rect = get_rect(DSO_ACDC, y, right);
+    const QRectF auto_rect = get_rect(DSO_AUTO, y, right);
     const QRectF x1_rect = get_rect(DSO_X1, y, right);
     const QRectF x10_rect = get_rect(DSO_X10, y, right);
     const QRectF x100_rect = get_rect(DSO_X100, y, right);
@@ -985,6 +976,8 @@ bool DsoSignal::mouse_press(int right, const QPoint pt)
                set_acCoupling((get_acCoupling()+1)%2);
            else
                set_acCoupling((get_acCoupling()+1)%2);
+        } else if (auto_rect.contains(pt)) {
+            auto_start();
         } else if (x1_rect.contains(pt)) {
            set_factor(1);
         } else if (x10_rect.contains(pt)) {
@@ -1160,26 +1153,70 @@ void DsoSignal::paint_measure(QPainter &p)
     }
     p.setRenderHint(QPainter::Antialiasing, antialiasing);
 
-    if (_autoV) {
+    if (_view->session().get_capture_state() == SigSession::Stopped) {
+        if (_autoV)
+            autoV_end();
+        if (_autoH)
+            autoH_end();
+    }
+
+    if (_autoV && !_view->session().get_data_lock()) {
+        set_zero_vrate(0.5, true);
         const uint8_t vscale = abs(_max - _min);
         if (_max == 0xff || _min == 0x00 || vscale > 0xCC) {
             go_vDialNext();
         } else if (vscale > 0x33) {
-            _autoV = false;
+            autoV_end();
         } else {
             go_vDialPre();
         }
     }
+
+    if (_autoH && !_view->session().get_data_lock()) {
+        const double hori_res = _view->get_hori_res();
+        if (_period < 1.5*hori_res) {
+            _view->zoom(1);
+        } else if (_period > 6*hori_res) {
+            _view->zoom(-1);
+        } else {
+            autoH_end();
+        }
+    }
 }
 
-void DsoSignal::auto_set()
+void DsoSignal::autoV_end()
 {
-    if (_autoV | _autoH) {
-        _autoV = false;
-        _autoH = false;
-    } else {
+    _autoV = false;
+    _view->auto_trig(get_index());
+    _trig_value = (_min+_max)/2;
+    set_trig_vpos(get_trig_vpos(), true);
+    _view->set_update(_viewport, true);
+    _view->update();
+}
+
+void DsoSignal::autoH_end()
+{
+    _autoH = false;
+    _view->set_update(_viewport, true);
+    _view->update();
+}
+
+void DsoSignal::auto_end()
+{
+    if (_autoV)
+        autoV_end();
+    if (_autoH)
+        autoH_end();
+}
+
+void DsoSignal::auto_start()
+{
+    if (_autoV || _autoH)
+        return;
+    if (_view->session().get_capture_state() == SigSession::Running) {
         _autoV = true;
         _autoH = true;
+        QTimer::singleShot(AutoTime, this, SLOT(auto_end()));
     }
 }
 

@@ -40,7 +40,7 @@ namespace view {
 
 class DsoSignal : public Signal
 {
-    //Q_OBJECT
+    Q_OBJECT
 
 private:
 	static const QColor SignalColours[4];
@@ -61,6 +61,7 @@ private:
     static const int TrigMargin = 16;
     static const int RefreshShort = 200;
     static const int RefreshLong = 800;
+    static const int AutoTime = 10000;
 
 public:
     enum DsoSetRegions {
@@ -129,7 +130,9 @@ public:
     /**
       * auto set the vertical and Horizontal scale
       */
-    void auto_set();
+    void auto_start();
+    void autoV_end();
+    void autoH_end();
 
     /**
      * Gets the mid-Y position of this signal.
@@ -182,11 +185,12 @@ public:
 
     QRectF get_rect(DsoSetRegions type, int y, int right);
 
-    bool mouse_double_click(int right, const QPoint pt);
-
     bool mouse_press(int right, const QPoint pt);
 
     bool mouse_wheel(int right, const QPoint pt, const int shift);
+
+public slots:
+    void auto_end();
 
 protected:
     void paint_type_options(QPainter &p, int right, const QPoint pt);

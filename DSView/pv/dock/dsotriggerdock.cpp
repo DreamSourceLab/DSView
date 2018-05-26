@@ -178,6 +178,14 @@ void DsoTriggerDock::paintEvent(QPaintEvent *)
 //    style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 }
 
+void DsoTriggerDock::auto_trig(int index)
+{
+    source_group->button(DSO_TRIGGER_AUTO)->setChecked(true);
+    channel_comboBox->setCurrentIndex(index);
+    source_changed();
+    channel_changed(index);
+}
+
 void DsoTriggerDock::pos_changed(int pos)
 {
     int ret;

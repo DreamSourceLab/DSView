@@ -578,6 +578,11 @@ void SamplingBar::on_samplecount_sel(int index)
         sample_count_changed();
 }
 
+double SamplingBar::get_hori_res()
+{
+    return _sample_count.itemData(_sample_count.currentIndex()).value<double>();
+}
+
 double SamplingBar::hori_knob(int dir)
 {
     double hori_res = -1;
