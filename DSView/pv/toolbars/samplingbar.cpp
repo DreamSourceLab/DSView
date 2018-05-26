@@ -578,20 +578,22 @@ void SamplingBar::on_samplecount_sel(int index)
         sample_count_changed();
 }
 
-void SamplingBar::hori_knob(int dir)
+double SamplingBar::hori_knob(int dir)
 {
+    double hori_res = -1;
     if (0 == dir) {
-        commit_hori_res();
+        hori_res = commit_hori_res();
     } else if ((dir > 0) && (_sample_count.currentIndex() > 0)) {
         _sample_count.setCurrentIndex(_sample_count.currentIndex() - 1);
-        commit_hori_res();
+        hori_res = commit_hori_res();
     } else if ((dir < 0) && (_sample_count.currentIndex() < _sample_count.count() - 1)) {
         _sample_count.setCurrentIndex(_sample_count.currentIndex() + 1);
-        commit_hori_res();
+        hori_res = commit_hori_res();
     }
+    return hori_res;
 }
 
-void SamplingBar::commit_hori_res()
+double SamplingBar::commit_hori_res()
 {
     const double hori_res = _sample_count.itemData(
                            _sample_count.currentIndex()).value<double>();
@@ -608,7 +610,7 @@ void SamplingBar::commit_hori_res()
         g_variant_unref(gvar);
     } else {
         qDebug() << "ERROR: config_get SR_CONF_MAX_DSO_SAMPLERATE failed.";
-        return;
+        return -1;
     }
 
     const uint64_t sample_rate = min((uint64_t)(sample_limit * SR_SEC(1) /
@@ -622,7 +624,7 @@ void SamplingBar::commit_hori_res()
     dev_inst->set_config(NULL, NULL, SR_CONF_TIMEBASE,
                          g_variant_new_uint64(hori_res));
 
-    hori_res_changed(hori_res);
+    return hori_res;
 }
 
 void SamplingBar::commit_settings()

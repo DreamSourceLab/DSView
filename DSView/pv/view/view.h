@@ -175,6 +175,7 @@ public:
     uint64_t get_cursor_samples(int index);
     QString get_cm_time(int index);
     QString get_cm_delta(int index1, int index2);
+    QString get_index_delta(uint64_t start, uint64_t end);
 
     void on_state_changed(bool stop);
 
@@ -240,8 +241,6 @@ public slots:
     void repeat_unshow();
     // -- repeat
     void repeat_show();
-    // -- hori resolution
-    void hori_res_changed(double hori_res);
 
 private slots:
 

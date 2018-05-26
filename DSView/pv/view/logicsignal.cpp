@@ -356,6 +356,59 @@ bool LogicSignal::measure(const QPointF &p, uint64_t &index0, uint64_t &index1, 
     return false;
 }
 
+bool LogicSignal::edge(const QPointF &p, uint64_t &index, int radius) const
+{
+    uint64_t pre_index, nxt_index;
+    const float gap = abs(p.y() - get_y());
+    if (gap < get_totalHeight() * 0.5) {
+        const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
+            _data->get_snapshots();
+        if (snapshots.empty())
+            return false;
+
+        const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
+            snapshots.front();
+        if (snapshot->empty() || !snapshot->has_data(_probe->index))
+            return false;
+
+        const uint64_t end = snapshot->get_sample_count() - 1;
+        const
+        double pos = _data->samplerate() * _view->scale() * (_view->offset() + p.x());
+        index = floor(pos + 0.5);
+        if (index > end)
+            return false;
+
+        bool sample = snapshot->get_sample(index, get_index());
+        if (index == 0)
+            pre_index = index;
+        else {
+            index--;
+            if (snapshot->get_pre_edge(index, sample, 1, get_index()))
+                pre_index = index;
+            else
+                pre_index = 0;
+        }
+
+        sample = snapshot->get_sample(index, get_index());
+        index++;
+        if (snapshot->get_nxt_edge(index, sample, end, 1, get_index()))
+            nxt_index = index;
+        else
+            nxt_index = 0;
+
+        if (pre_index == 0 || nxt_index == 0)
+            return false;
+
+        if (pos - pre_index > nxt_index - pos)
+            index = nxt_index;
+        else
+            index = pre_index;
+
+        if (radius > abs((index-pos) / _view->scale() / _data->samplerate()))
+            return true;
+    }
+    return false;
+}
 
 bool LogicSignal::edges(const QPointF &p, uint64_t start, uint64_t &rising, uint64_t &falling) const
 {

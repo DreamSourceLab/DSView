@@ -88,8 +88,8 @@ public:
 
     void enable_instant(bool enable);
 
-    void hori_knob(int dir);
-    void commit_hori_res();
+    double hori_knob(int dir);
+    double commit_hori_res();
 
 public slots:
     void set_sample_rate(uint64_t sample_rate);
@@ -102,7 +102,6 @@ signals:
     void sample_count_changed();
     void show_calibration();
     void hide_calibration();
-    void hori_res_changed(double hori_res);
 
 private:
 	void update_sample_rate_selector_value();

@@ -82,6 +82,7 @@ Viewport::Viewport(View &parent, View_type type) :
     _mm_freq = "#####";
     _mm_duty = "#####";
     _measure_en = true;
+    _edge_hit = false;
     transfer_started = false;
     timer_cnt = 0;
 
@@ -646,6 +647,30 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                         const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
                         BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
                             assert(s);
+                            boost::shared_ptr<view::LogicSignal> logicSig;
+                            if ((logicSig = dynamic_pointer_cast<view::LogicSignal>(s))) {
+                                if (logicSig->edge(event->pos(), _edge_start, 10)) {
+                                    _action_type = LOGIC_JUMP;
+                                    const double samples_per_pixel = _view.session().cur_samplerate() * _view.scale();
+                                    _cur_preX = _edge_start / samples_per_pixel - _view.offset();
+                                    _cur_preY = logicSig->get_y();
+                                    _cur_preY_top = logicSig->get_y() - logicSig->get_totalHeight()/2 - 12;
+                                    _cur_preY_bottom = logicSig->get_y() + logicSig->get_totalHeight()/2 + 2;
+                                    _cur_aftX = _cur_preX;
+                                    _cur_aftY = _cur_preY;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // priority 3
+                if (_action_type == NO_ACTION) {
+                    if (_mouse_down_point.x() == event->pos().x()) {
+                        const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
+                        BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+                            assert(s);
                             if (abs(event->pos().y() - s->get_y()) < _view.get_signalHeight()) {
                                 _action_type = LOGIC_EDGE;
                                 _edge_start = (_view.offset() + event->pos().x()) * _view.scale() * _view.session().cur_samplerate();
@@ -738,6 +763,11 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
             _action_type = NO_ACTION;
             _edge_rising = 0;
             _edge_falling = 0;
+        } else if (_action_type == LOGIC_JUMP) {
+            _action_type = NO_ACTION;
+            _edge_rising = 0;
+            _edge_falling = 0;
+            _edge_hit = false;
         } else if (_action_type == LOGIC_MOVE) {
             if (_mouse_down_point == event->pos()) {
                 _drag_strength = 0;
@@ -884,6 +914,10 @@ void Viewport::leaveEvent(QEvent *)
         _edge_rising = 0;
         _edge_falling = 0;
         _action_type = NO_ACTION;
+    } else if (_action_type == LOGIC_JUMP) {
+        _edge_rising = 0;
+        _edge_falling = 0;
+        _action_type = NO_ACTION;
     } else if (_action_type == LOGIC_MOVE) {
         _drag_strength = 0;
         _drag_timer.stop();
@@ -975,6 +1009,18 @@ void Viewport::measure()
 
                         break;
                     }
+                } else if (_action_type == LOGIC_JUMP) {
+                    const double samples_per_pixel = _view.session().cur_samplerate() * _view.scale();
+                    if (logicSig->edge(_view.hover_point(), _edge_end, 10)) {
+                        _cur_aftX = _edge_end / samples_per_pixel - _view.offset();
+                        _cur_aftY = logicSig->get_y();
+                        _edge_hit = true;
+                        break;
+                    }
+                    _cur_preX = _edge_start / samples_per_pixel - _view.offset();
+                    _cur_aftX = _view.hover_point().x();
+                    _cur_aftY = _view.hover_point().y();
+                    _edge_hit = false;
                 }
             } else if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
                 if (_measure_en && dsoSig->measure(_view.hover_point())) {
@@ -1286,6 +1332,56 @@ void Viewport::paintMeasure(QPainter &p)
         p.drawText(measure2_rect, Qt::AlignRight | Qt::AlignVCenter, _em_rising);
         p.drawText(measure3_rect, Qt::AlignRight | Qt::AlignVCenter, _em_falling);
 
+    }
+
+    if (_action_type == LOGIC_JUMP) {
+        p.setPen(QColor(238, 178, 17, 255));
+        const QPoint pre_points[] = {
+            QPoint(_cur_preX, _cur_preY),
+            QPoint(_cur_preX-1, _cur_preY-1),
+            QPoint(_cur_preX+1, _cur_preY-1),
+            QPoint(_cur_preX-1, _cur_preY+1),
+            QPoint(_cur_preX+1, _cur_preY+1),
+            QPoint(_cur_preX-2, _cur_preY-2),
+            QPoint(_cur_preX+2, _cur_preY-2),
+            QPoint(_cur_preX-2, _cur_preY+2),
+            QPoint(_cur_preX+2, _cur_preY+2),
+        };
+        p.drawPoints(pre_points, countof(pre_points));
+        if (abs(_cur_aftX - _cur_preX) + abs(_cur_aftY - _cur_preY) > 20) {
+            if (_edge_hit) {
+                const QPoint aft_points[] = {
+                    QPoint(_cur_aftX, _cur_aftY),
+                    QPoint(_cur_aftX-1, _cur_aftY-1),
+                    QPoint(_cur_aftX+1, _cur_aftY-1),
+                    QPoint(_cur_aftX-1, _cur_aftY+1),
+                    QPoint(_cur_aftX+1, _cur_aftY+1),
+                    QPoint(_cur_aftX-2, _cur_aftY-2),
+                    QPoint(_cur_aftX+2, _cur_aftY-2),
+                    QPoint(_cur_aftX-2, _cur_aftY+2),
+                    QPoint(_cur_aftX+2, _cur_aftY+2),
+                };
+                p.drawPoints(aft_points, countof(aft_points));
+
+                int64_t delta = max(_edge_start, _edge_end) - min(_edge_start, _edge_end);
+                QString delta_text = _view.get_index_delta(_edge_start, _edge_end) +
+                                     "/" + QString::number(delta);
+                QFontMetrics fm = this->fontMetrics();
+                const int rectW = fm.width(delta_text);
+                const int rectY = (_cur_aftY >= _cur_preY) ? _cur_preY_top : _cur_preY_bottom;
+                const int rectX = (_cur_aftX >= _cur_preX) ? _cur_preX : _cur_preX - rectW;
+                QRectF jump_rect = QRectF(rectX, rectY, rectW, 10);
+                p.drawText(jump_rect, Qt::AlignCenter | Qt::AlignVCenter, delta_text);
+
+            }
+
+            QPainterPath path(QPoint(_cur_preX, _cur_preY));
+            QPoint c1((_cur_preX+_cur_aftX)/2, _cur_preY);
+            QPoint c2((_cur_preX+_cur_aftX)/2, _cur_aftY);
+            path.cubicTo(c1, c2, QPoint(_cur_aftX, _cur_aftY));
+            p.drawPath(path);
+
+        }
     }
 }
 

@@ -68,6 +68,7 @@ public:
         LOGIC_EDGE,
         LOGIC_MOVE,
         LOGIC_ZOOM,
+        LOGIC_JUMP,
 
         DSO_XM_STEP0,
         DSO_XM_STEP1,
@@ -158,6 +159,11 @@ private:
     int64_t _cur_aftX;
     int64_t _cur_thdX;
     int _cur_midY;
+    int _cur_preY;
+    int _cur_preY_top;
+    int _cur_preY_bottom;
+    int _cur_aftY;
+    bool _edge_hit;
     QString _mm_width;
     QString _mm_period;
     QString _mm_freq;
@@ -166,6 +172,7 @@ private:
     uint64_t _edge_rising;
     uint64_t _edge_falling;
     uint64_t _edge_start;
+    uint64_t _edge_end;
     QString _em_rising;
     QString _em_falling;
     QString _em_edges;

@@ -254,7 +254,8 @@ void View::set_all_update(bool need_update)
 
 void View::update_hori_res()
 {
-    _sampling_bar->hori_knob(0);
+    if (_session.get_device()->dev_inst()->mode == DSO)
+        _sampling_bar->hori_knob(0);
 
     const uint64_t final_limit = _session.get_device()->get_sample_limit();
     _trig_cursor->set_index(_trig_cursor->index() * 1.0 / _session.cur_samplelimits() * final_limit);
@@ -276,10 +277,16 @@ void View::zoom(double steps, int offset)
                 _session.get_instant())
                 return;
 
+            double hori_res = -1;
             if(steps > 0.5)
-                _sampling_bar->hori_knob(-1);
+                hori_res = _sampling_bar->hori_knob(-1);
             else if (steps < -0.5)
-                _sampling_bar->hori_knob(1);
+                hori_res = _sampling_bar->hori_knob(1);
+
+            if (hori_res > 0) {
+                const double scale = hori_res * DS_CONF_DSO_HDIVS / SR_SEC(1) / get_view_width();
+                _scale = max(min(scale, _maxscale), _minscale);
+            }
         }
 
         _offset = floor((_offset + offset) * (_preScale / _scale) - offset);
@@ -293,15 +300,6 @@ void View::zoom(double steps, int offset)
         }
     //}
 }
-
-void View::hori_res_changed(double hori_res)
-{
-    if (hori_res > 0) {
-        const double scale = hori_res * DS_CONF_DSO_HDIVS / SR_SEC(1) / get_view_width();
-        set_scale_offset(scale, this->offset());
-    }
-}
-
 
 void View::set_scale_offset(double scale, int64_t offset)
 {
@@ -946,6 +944,15 @@ QString View::get_cm_delta(int index1, int index2)
     uint64_t samples1 = get_cursor_samples(index1);
     uint64_t samples2 = get_cursor_samples(index2);
     uint64_t delta_sample = (samples1 > samples2) ? samples1 - samples2 : samples2 - samples1;
+    return _ruler->format_real_time(delta_sample, _session.cur_samplerate());
+}
+
+QString View::get_index_delta(uint64_t start, uint64_t end)
+{
+    if (start == end)
+        return "0";
+
+    uint64_t delta_sample = (start > end) ? start - end : end - start;
     return _ruler->format_real_time(delta_sample, _session.cur_samplerate());
 }
 
