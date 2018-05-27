@@ -276,7 +276,6 @@ static const uint64_t samplerates[] = {
     SR_MHZ(50),
     SR_MHZ(100),
     SR_MHZ(200),
-    SR_MHZ(400),
 };
 
 //static const uint64_t samplecounts[] = {
@@ -321,10 +320,10 @@ static const uint64_t samplecounts[] = {
 
 /* We name the probes 0-7 on our demo driver. */
 static const char *probe_names[NUM_PROBES + 1] = {
-    "CH0", "CH1", "CH2", "CH3",
-    "CH4", "CH5", "CH6", "CH7",
-    "CH8", "CH9", "CH10", "CH11",
-    "CH12", "CH13", "CH14", "CH15",
+    "0", "1", "2", "3",
+    "4", "5", "6", "7",
+    "8", "9", "10", "11",
+    "12", "13", "14", "15",
 	NULL,
 };
 
@@ -714,8 +713,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             devc->limit_samples_show = devc->limit_samples;
         } else if (sdi->mode == ANALOG) {
             num_probes = DS_MAX_ANALOG_PROBES_NUM;
-            devc->cur_samplerate = SR_HZ(100);
-            devc->limit_samples = SR_KB(1);
+            devc->cur_samplerate = SR_KHZ(1);
+            devc->limit_samples = SR_KB(2);
             devc->limit_samples_show = devc->limit_samples;
         } else {
             num_probes = 0;
@@ -765,6 +764,9 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         ret = SR_OK;
     } else if (id == SR_CONF_PROBE_EN) {
         ch->enabled = g_variant_get_boolean(data);
+        if (en_ch_num(sdi) != 0) {
+            devc->limit_samples_show = DEMO_MAX_DSO_DEPTH / en_ch_num(sdi);
+        }
         sr_dbg("%s: setting ENABLE of channel %d to %d", __func__,
                ch->index, ch->enabled);
         ret = SR_OK;
@@ -858,8 +860,15 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
 		g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));
 //		gvar = g_variant_new_fixed_array(G_VARIANT_TYPE("t"), samplerates,
 //				ARRAY_SIZE(samplerates), sizeof(uint64_t));
-		gvar = g_variant_new_from_data(G_VARIANT_TYPE("at"),
-				samplerates, ARRAY_SIZE(samplerates)*sizeof(uint64_t), TRUE, NULL, NULL);
+        if (sdi->mode == ANALOG)
+            gvar = g_variant_new_from_data(G_VARIANT_TYPE("at"),
+                    samplerates, 16*sizeof(uint64_t), TRUE, NULL, NULL);
+        else if (sdi->mode == LOGIC)
+            gvar = g_variant_new_from_data(G_VARIANT_TYPE("at"),
+                    samplerates, 19*sizeof(uint64_t), TRUE, NULL, NULL);
+        else
+            gvar = g_variant_new_from_data(G_VARIANT_TYPE("at"),
+                    samplerates, ARRAY_SIZE(samplerates)*sizeof(uint64_t), TRUE, NULL, NULL);
         g_variant_builder_add(&gvb, "{sv}", "samplerates", gvar);
 		*data = g_variant_builder_end(&gvb);
 		break;
@@ -1071,7 +1080,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
             samples_to_send = MIN(samples_to_send,
                                   devc->limit_samples - devc->pre_index);
         } else if (sdi->mode == ANALOG) {
-            samples_to_send = ceil(samples_elaspsed/2);
+            samples_to_send = ceil(samples_elaspsed);
             samples_to_send = MIN(samples_to_send,
                                   devc->limit_samples - devc->pre_index);
         } else {
@@ -1090,7 +1099,10 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
 
     if (samples_to_send > 0 && !devc->stop) {
         sending_now = MIN(samples_to_send, (sdi->mode == DSO ) ? DSO_BUFSIZE : BUFSIZE);
-        samples_generator(devc->buf, sending_now, sdi, devc);
+        if (sdi->mode == ANALOG)
+            samples_generator(devc->buf, sending_now*2, sdi, devc);
+        else
+            samples_generator(devc->buf, sending_now, sdi, devc);
 
         if (devc->trigger_stage != 0) {
             for (i = 0; i < sending_now; i++) {
@@ -1123,10 +1135,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
             }
         }
 
-        if (sdi->mode == ANALOG)
-            devc->samples_counter += sending_now/2;
-        else
-            devc->samples_counter += sending_now;
+        devc->samples_counter += sending_now;
         if (sdi->mode == DSO && !devc->instant &&
             devc->samples_counter > devc->limit_samples)
             devc->samples_counter = devc->limit_samples;
@@ -1157,7 +1166,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
                 packet.type = SR_DF_ANALOG;
                 packet.payload = &analog;
                 analog.probes = sdi->channels;
-                analog.num_samples = sending_now / 2;
+                analog.num_samples = sending_now;
                 analog.unit_bits = 8;
                 analog.mq = SR_MQ_VOLTAGE;
                 analog.unit = SR_UNIT_VOLT;
@@ -1241,7 +1250,7 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
     //std_session_send_df_header(cb_data, LOG_PREFIX);
     std_session_send_df_header(sdi, LOG_PREFIX);
 
-    if (!(devc->buf = g_try_malloc(((sdi->mode == DSO ) ? DSO_BUFSIZE : BUFSIZE)*sizeof(uint16_t)))) {
+    if (!(devc->buf = g_try_malloc(((sdi->mode == DSO ) ? DSO_BUFSIZE : (sdi->mode == ANALOG ) ? 2*BUFSIZE : BUFSIZE)*sizeof(uint16_t)))) {
         sr_err("buf for receive_data malloc failed.");
         return FALSE;
     }

@@ -529,8 +529,7 @@ void SamplingBar::update_sample_count_selector()
     }
     _updating_sample_count = false;
 
-    if (dev_inst->dev_inst()->mode == DSO)
-        update_sample_count_selector_value();
+    update_sample_count_selector_value();
     connect(&_sample_count, SIGNAL(currentIndexChanged(int)),
         this, SLOT(on_samplecount_sel(int)));
 }
@@ -541,22 +540,36 @@ void SamplingBar::update_sample_count_selector_value()
         return;
 
     GVariant* gvar;
-    double hori_res;
-    gvar = get_selected_device()->get_config(NULL, NULL, SR_CONF_TIMEBASE);
-    if (gvar != NULL) {
-        hori_res = g_variant_get_uint64(gvar);
-        g_variant_unref(gvar);
+    double duration;
+    const shared_ptr<device::DevInst> dev_inst = get_selected_device();
+    if (dev_inst->dev_inst()->mode == DSO) {
+        gvar = dev_inst->get_config(NULL, NULL, SR_CONF_TIMEBASE);
+        if (gvar != NULL) {
+            duration = g_variant_get_uint64(gvar);
+            g_variant_unref(gvar);
+        } else {
+            qDebug() << "ERROR: config_get SR_CONF_TIMEBASE failed.";
+            return;
+        }
     } else {
-        qDebug() << "ERROR: config_get SR_CONF_TIMEBASE failed.";
-        return;
+        gvar = dev_inst->get_config(NULL, NULL, SR_CONF_LIMIT_SAMPLES);
+        if (gvar != NULL) {
+            duration = g_variant_get_uint64(gvar);
+            g_variant_unref(gvar);
+        } else {
+            qDebug() << "ERROR: config_get SR_CONF_TIMEBASE failed.";
+            return;
+        }
+        const uint64_t samplerate = dev_inst->get_sample_rate();
+        duration = duration / samplerate * SR_SEC(1);
     }
     assert(!_updating_sample_count);
     _updating_sample_count = true;
 
-    if (hori_res != _sample_count.itemData(
+    if (duration != _sample_count.itemData(
                 _sample_count.currentIndex()).value<double>()) {
-        for (int i = _sample_count.count() - 1; i >= 0; i--) {
-            if (hori_res == _sample_count.itemData(
+        for (int i = 0; i < _sample_count.count(); i++) {
+            if (duration >= _sample_count.itemData(
                 i).value<double>()) {
                 _sample_count.setCurrentIndex(i);
                 break;
@@ -603,8 +616,6 @@ double SamplingBar::commit_hori_res()
     const double hori_res = _sample_count.itemData(
                            _sample_count.currentIndex()).value<double>();
 
-    if (_session.get_capture_state() == SigSession::Running)
-        _session.refresh(RefreshShort);
     const shared_ptr<device::DevInst> dev_inst = get_selected_device();
     const uint64_t sample_limit = dev_inst->get_sample_limit();
     GVariant* gvar;

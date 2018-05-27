@@ -170,6 +170,7 @@ void DsoSignal::set_enable(bool enable)
                           g_variant_new_boolean(enable));
 
     if (running) {
+        //_view->session().refresh(RefreshShort);
         _view->update_hori_res();
         _view->session().repeat_resume();
     }
