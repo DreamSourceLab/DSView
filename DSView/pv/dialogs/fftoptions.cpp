@@ -89,6 +89,9 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
     assert(length.size() > 0);
     assert(view_modes.size() > 0);
     assert(dbv_ranges.size() > 0);
+
+    setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
+
     for (unsigned int i = 0; i < windows.size(); i++)
     {
         _window_combobox->addItem(windows[i],
