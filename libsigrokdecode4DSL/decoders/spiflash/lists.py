@@ -18,41 +18,63 @@
 ## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
 ##
 
-# Dict which maps command IDs to their names and descriptions.
-cmds = {
-    0x06: ('WREN', 'Write enable'),
-    0x04: ('WRDI', 'Write disable'),
-    0x9f: ('RDID', 'Read identification'),
-    0x05: ('RDSR', 'Read status register'),
-    0x01: ('WRSR', 'Write status register'),
-    0x03: ('READ', 'Read data'),
-    0x0b: ('FAST/READ', 'Fast read data'),
-    0xbb: ('2READ', '2x I/O read'),
-    0x20: ('SE', 'Sector erase'),
-    0xd8: ('BE', 'Block erase'),
-    0x60: ('CE', 'Chip erase'),
-    0xc7: ('CE2', 'Chip erase'), # Alternative command ID
-    0x02: ('PP', 'Page program'),
-    0xad: ('CP', 'Continuously program mode'),
-    0xb9: ('DP', 'Deep power down'),
-    0xab: ('RDP/RES', 'Release from deep powerdown / Read electronic ID'),
-    0x90: ('REMS', 'Read electronic manufacturer & device ID'),
-    0xef: ('REMS2', 'Read ID for 2x I/O mode'),
-    0xb1: ('ENSO', 'Enter secured OTP'),
-    0xc1: ('EXSO', 'Exit secured OTP'),
-    0x2b: ('RDSCUR', 'Read security register'),
-    0x2f: ('WRSCUR', 'Write security register'),
-    0x70: ('ESRY', 'Enable SO to output RY/BY#'),
-    0x80: ('DSRY', 'Disable SO to output RY/BY#'),
-}
+from collections import OrderedDict
+
+# OrderedDict which maps command IDs to their names and descriptions.
+# Please keep this sorted by command ID.
+# Don't forget to update 'Ann' in pd.py if you add/remove items here.
+cmds = OrderedDict([
+    (0x01, ('WRSR', 'Write status register')),
+    (0x02, ('PP', 'Page program')),
+    (0x03, ('READ', 'Read data')),
+    (0x04, ('WRDI', 'Write disable')),
+    (0x05, ('RDSR', 'Read status register')),
+    (0x06, ('WREN', 'Write enable')),
+    (0x0b, ('FAST/READ', 'Fast read data')),
+    (0x20, ('SE', 'Sector erase')),
+    (0x2b, ('RDSCUR', 'Read security register')),
+    (0x2f, ('WRSCUR', 'Write security register')),
+    (0x35, ('RDSR2', 'Read status register 2')),
+    (0x60, ('CE', 'Chip erase')),
+    (0x70, ('ESRY', 'Enable SO to output RY/BY#')),
+    (0x80, ('DSRY', 'Disable SO to output RY/BY#')),
+    (0x90, ('REMS', 'Read electronic manufacturer & device ID')),
+    (0x9f, ('RDID', 'Read identification')),
+    (0xab, ('RDP/RES', 'Release from deep powerdown / Read electronic ID')),
+    (0xad, ('CP', 'Continuously program mode')),
+    (0xb1, ('ENSO', 'Enter secured OTP')),
+    (0xb9, ('DP', 'Deep power down')),
+    (0xbb, ('2READ', '2x I/O read')), # a.k.a. "Fast read dual I/O".
+    (0xc1, ('EXSO', 'Exit secured OTP')),
+    (0xc7, ('CE2', 'Chip erase')), # Alternative command ID
+    (0xd8, ('BE', 'Block erase')),
+    (0xef, ('REMS2', 'Read ID for 2x I/O mode')),
+])
 
 device_name = {
-    0x14: 'MX25L1605D',
-    0x15: 'MX25L3205D',
-    0x16: 'MX25L6405D',
+    'fidelix': {
+        0x15: 'FM25Q32',
+    },
+    'macronix': {
+        0x14: 'MX25L1605D',
+        0x15: 'MX25L3205D',
+        0x16: 'MX25L6405D',
+    },
 }
 
 chips = {
+    # FIDELIX
+    'fidelix_fm25q32': {
+        'vendor': 'FIDELIX',
+        'model': 'FM25Q32',
+        'res_id': 0x15,
+        'rems_id': 0xa115,
+        'rems2_id': 0xa115,
+        'rdid_id': 0xa14016,
+        'page_size': 256,
+        'sector_size': 4 * 1024,
+        'block_size': 64 * 1024,
+    },
     # Macronix
     'macronix_mx25l1605d': {
         'vendor': 'Macronix',

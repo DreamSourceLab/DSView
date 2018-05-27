@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2011 Uwe Hermann <uwe@hermann-uwe.de>
  * Copyright (C) 2012 Bert Vermeulen <bert@biot.com>
+ * Copyright (C) 2016 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,19 +33,19 @@
 /* Custom Python types: */
 
 typedef struct {
-    PyObject_HEAD
-    struct srd_decoder_inst *di;
-    uint64_t start_samplenum;
-    float itercnt;
-    uint8_t **inbuf;
-    const uint8_t *inbuf_const;
-    uint64_t samplenum;
-    PyObject *sample;
+	PyObject_HEAD
+	struct srd_decoder_inst *di;
+	uint64_t start_samplenum;
+	float itercnt;
+	uint8_t **inbuf;
+	const uint8_t *inbuf_const;
+	uint64_t samplenum;
+	PyObject *sample;
 
-    uint64_t exp_logic;
-    int edge_index;
-    uint64_t logic_mask;
-    uint64_t cur_pos;
+	uint64_t exp_logic;
+	int edge_index;
+	uint64_t logic_mask;
+	uint64_t cur_pos;
 } srd_logic;
 
 /* srd.c */
@@ -61,7 +62,7 @@ SRD_PRIV struct srd_decoder_inst *srd_inst_find_by_obj( const GSList *stack,
 SRD_PRIV int srd_inst_start(struct srd_decoder_inst *di, char **error);
 SRD_PRIV int srd_inst_decode(const struct srd_decoder_inst *di, uint8_t chunk_type,
 		uint64_t start_samplenum, uint64_t end_samplenum,
-        const uint8_t **inbuf, const uint8_t *inbuf_const, char **error);
+		const uint8_t **inbuf, const uint8_t *inbuf_const, char **error);
 SRD_PRIV void srd_inst_free(struct srd_decoder_inst *di);
 SRD_PRIV void srd_inst_free_all(struct srd_session *sess, GSList *stack);
 
@@ -111,7 +112,7 @@ SRD_PRIV GVariant *py_obj_to_variant(PyObject *py_obj);
  * will assume non-standard Microsoft printf syntax.
  */
 SRD_PRIV void srd_exception_catch(char **error, const char *format, ...)
-        __attribute__((__format__ (__gnu_printf__, 2, 3)));
+		__attribute__((__format__ (__gnu_printf__, 2, 3)));
 #else
 SRD_PRIV void srd_exception_catch(char **error, const char *format, ...) G_GNUC_PRINTF(2, 3);
 #endif

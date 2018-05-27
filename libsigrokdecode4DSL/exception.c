@@ -2,6 +2,7 @@
  * This file is part of the libsigrokdecode project.
  *
  * Copyright (C) 2012 Bert Vermeulen <bert@biot.com>
+ * Copyright (C) 2016 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -88,19 +89,19 @@ SRD_PRIV void srd_exception_catch(char **error, const char *format, ...)
 	PyObject *py_mod, *py_func, *py_tracefmt;
 	char *msg, *etype_name, *evalue_str, *tracefmt_str;
 	const char *etype_name_fallback;
-    char *final_msg;
+	char *final_msg;
 
 	py_etype = py_evalue = py_etraceback = py_mod = py_func = NULL;
 
-    va_start(args, format);
+	va_start(args, format);
 	msg = g_strdup_vprintf(format, args);
 	va_end(args);
 
 	PyErr_Fetch(&py_etype, &py_evalue, &py_etraceback);
 	if (!py_etype) {
 		/* No current exception, so just print the message. */
-        final_msg = g_strjoin(":", msg, "unknown error", NULL);
-        srd_err("%s.", final_msg);
+		final_msg = g_strjoin(":", msg, "unknown error", NULL);
+		srd_err("%s.", final_msg);
 		goto cleanup;
 	}
 	PyErr_NormalizeException(&py_etype, &py_evalue, &py_etraceback);
@@ -109,15 +110,15 @@ SRD_PRIV void srd_exception_catch(char **error, const char *format, ...)
 	evalue_str = py_stringify(py_evalue);
 	etype_name_fallback = (etype_name) ? etype_name : "(unknown exception)";
 
-    if (evalue_str)
-        final_msg = g_strjoin(":", msg, etype_name_fallback, evalue_str, NULL);
+	if (evalue_str)
+		final_msg = g_strjoin(":", msg, etype_name_fallback, evalue_str, NULL);
 	else
-        final_msg = g_strjoin(":", msg, etype_name_fallback, NULL);
-
-    srd_err("%s.", final_msg);
+		final_msg = g_strjoin(":", msg, etype_name_fallback, NULL);
 
 	g_free(evalue_str);
 	g_free(etype_name);
+
+	srd_err("%s.", final_msg);
 
 	/* If there is no traceback object, we are done. */
 	if (!py_etraceback)
@@ -147,8 +148,8 @@ SRD_PRIV void srd_exception_catch(char **error, const char *format, ...)
 	}
 
 cleanup:
-    if (error)
-        *error = g_strdup(final_msg);
+	if (error)
+		*error = g_strdup(final_msg);
 	Py_XDECREF(py_func);
 	Py_XDECREF(py_mod);
 	Py_XDECREF(py_etraceback);
@@ -159,5 +160,5 @@ cleanup:
 	PyErr_Clear();
 
 	g_free(msg);
-    g_free(final_msg);
+	g_free(final_msg);
 }

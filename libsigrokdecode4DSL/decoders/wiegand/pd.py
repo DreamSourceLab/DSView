@@ -55,7 +55,7 @@ class Decoder(srd.Decoder):
         self._d1_prev = None
 
         self._state = None
-        self._ss_state = None
+        self.ss_state = None
 
         self.ss_bit = None
         self.es_bit = None
@@ -98,8 +98,8 @@ class Decoder(srd.Decoder):
             elif self._state == 'invalid':
                 ann = [1, [self._state]]
             if ann:
-                self.put(self._ss_state, self.samplenum, self.out_ann, ann)
-            self._ss_state = self.samplenum
+                self.put(self.ss_state, self.samplenum, self.out_ann, ann)
+            self.ss_state = self.samplenum
             self._state = state
             self._bits = []
 

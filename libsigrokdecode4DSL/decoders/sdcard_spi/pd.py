@@ -19,57 +19,7 @@
 ##
 
 import sigrokdecode as srd
-
-# Normal commands (CMD)
-cmd_names = {
-    0:  'GO_IDLE_STATE',
-    1:  'SEND_OP_COND',
-    6:  'SWITCH_FUNC',
-    8:  'SEND_IF_COND',
-    9:  'SEND_CSD',
-    10: 'SEND_CID',
-    12: 'STOP_TRANSMISSION',
-    13: 'SEND_STATUS',
-    16: 'SET_BLOCKLEN',
-    17: 'READ_SINGLE_BLOCK',
-    18: 'READ_MULTIPLE_BLOCK',
-    24: 'WRITE_BLOCK',
-    25: 'WRITE_MULTIPLE_BLOCK',
-    27: 'PROGRAM_CSD',
-    28: 'SET_WRITE_PROT',
-    29: 'CLR_WRITE_PROT',
-    30: 'SEND_WRITE_PROT',
-    32: 'ERASE_WR_BLK_START_ADDR',
-    33: 'ERASE_WR_BLK_END_ADDR',
-    38: 'ERASE',
-    42: 'LOCK_UNLOCK',
-    55: 'APP_CMD',
-    56: 'GEN_CMD',
-    58: 'READ_OCR',
-    59: 'CRC_ON_OFF',
-    # CMD60-63: Reserved for manufacturer
-}
-
-# Application-specific commands (ACMD)
-acmd_names = {
-    13: 'SD_STATUS',
-    18: 'Reserved for SD security applications',
-    22: 'SEND_NUM_WR_BLOCKS',
-    23: 'SET_WR_BLK_ERASE_COUNT',
-    25: 'Reserved for SD security applications',
-    26: 'Reserved for SD security applications',
-    38: 'Reserved for SD security applications',
-    41: 'SD_SEND_OP_COND',
-    42: 'SET_CLR_CARD_DETECT',
-    43: 'Reserved for SD security applications',
-    44: 'Reserved for SD security applications',
-    45: 'Reserved for SD security applications',
-    46: 'Reserved for SD security applications',
-    47: 'Reserved for SD security applications',
-    48: 'Reserved for SD security applications',
-    49: 'Reserved for SD security applications',
-    51: 'SEND_SCR',
-}
+from common.sdcard import (cmd_names, acmd_names)
 
 class Decoder(srd.Decoder):
     api_version = 2
@@ -96,7 +46,7 @@ class Decoder(srd.Decoder):
         ('cmd-reply', 'Commands/replies', tuple(range(134))),
     )
 
-    def __init__(self, **kwargs):
+    def __init__(self):
         self.state = 'IDLE'
         self.ss, self.es = 0, 0
         self.ss_bit, self.es_bit = 0, 0
@@ -122,7 +72,12 @@ class Decoder(srd.Decoder):
 
     def cmd_name(self, cmd):
         c = acmd_names if self.is_acmd else cmd_names
-        return c.get(cmd, 'Unknown')
+        s = c.get(cmd, 'Unknown')
+        # SD mode names for CMD32/33: ERASE_WR_BLK_{START,END}.
+        # SPI mode names for CMD32/33: ERASE_WR_BLK_{START,END}_ADDR.
+        if cmd in (32, 33):
+            s += '_ADDR'
+        return s
 
     def handle_command_token(self, mosi, miso):
         # Command tokens (6 bytes) are sent (MSB-first) by the host.

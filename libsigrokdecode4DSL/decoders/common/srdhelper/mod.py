@@ -1,7 +1,7 @@
 ##
 ## This file is part of the libsigrokdecode project.
 ##
-## Copyright (C) 2016 Rudolf Reuter <reuterru@arcor.de>
+## Copyright (C) 2012-2014 Uwe Hermann <uwe@hermann-uwe.de>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -18,8 +18,6 @@
 ## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
 ##
 
-'''
-This protocol decoder can decode the GPIB (IEEE-488) protocol.
-'''
-
-from .pd import Decoder
+# Return the specified BCD number (max. 8 bits) as integer.
+def bcd2int(b):
+    return (b & 0x0f) + ((b >> 4) * 10)

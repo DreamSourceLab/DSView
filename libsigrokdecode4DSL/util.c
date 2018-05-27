@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 Uwe Hermann <uwe@hermann-uwe.de>
  * Copyright (C) 2012 Bert Vermeulen <bert@biot.com>
+ * Copyright (C) 2016 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +22,6 @@
 #include "config.h"
 #include "libsigrokdecode-internal.h" /* First, so we avoid a _POSIX_C_SOURCE warning. */
 #include "libsigrokdecode.h"
-#include "config.h"
 /**
  * Import a Python module by name.
  *
@@ -72,7 +72,7 @@ SRD_PRIV int py_attr_as_str(PyObject *py_obj, const char *attr, char **outstr)
 	}
 
 	if (!(py_str = PyObject_GetAttrString(py_obj, attr))) {
-        srd_exception_catch(NULL, "Failed to get attribute '%s'", attr);
+		srd_exception_catch(NULL, "Failed to get attribute '%s'", attr);
 		return SRD_ERR_PYTHON;
 	}
 
@@ -125,22 +125,22 @@ SRD_PRIV int py_dictitem_as_str(PyObject *py_obj, const char *key,
  */
 SRD_PRIV int py_dictitem_to_int(PyObject *py_obj, const char *key)
 {
-    PyObject *py_value;
-    long type;
+	PyObject *py_value;
+	long type;
 
-    if (!PyDict_Check(py_obj)) {
-        srd_dbg("Object is not a dictionary.");
-        return -1;
-    }
+	if (!PyDict_Check(py_obj)) {
+		srd_dbg("Object is not a dictionary.");
+		return -1;
+	}
 
-    if (!(py_value = PyDict_GetItemString(py_obj, key))) {
-        srd_dbg("Dictionary has no attribute '%s'.", key);
-        return -1;
-    }
+	if (!(py_value = PyDict_GetItemString(py_obj, key))) {
+		srd_dbg("Dictionary has no attribute '%s'.", key);
+		return -1;
+	}
 
-    type = PyLong_Check(py_value) ? PyLong_AsLong(py_value) : -1;
+	type = PyLong_Check(py_value) ? PyLong_AsLong(py_value) : -1;
 
-    return type;
+	return type;
 }
 
 /**
@@ -174,7 +174,7 @@ SRD_PRIV int py_str_as_str(PyObject *py_str, char **outstr)
 			return SRD_OK;
 		}
 	}
-    srd_exception_catch(NULL, "Failed to extract string");
+	srd_exception_catch(NULL, "Failed to extract string");
 
 	return SRD_ERR_PYTHON;
 }
@@ -205,7 +205,7 @@ SRD_PRIV int py_strseq_to_char(PyObject *py_strseq, char ***out_strv)
 
 	seq_len = PySequence_Size(py_strseq);
 	if (seq_len < 0) {
-        srd_exception_catch(NULL, "Failed to obtain sequence size");
+		srd_exception_catch(NULL, "Failed to obtain sequence size");
 		return SRD_ERR_PYTHON;
 	}
 
@@ -242,7 +242,7 @@ SRD_PRIV int py_strseq_to_char(PyObject *py_strseq, char ***out_strv)
 
 err_out:
 	g_strfreev(strv);
-    srd_exception_catch(NULL, "Failed to obtain string item");
+	srd_exception_catch(NULL, "Failed to obtain string item");
 
 	return SRD_ERR_PYTHON;
 }
@@ -272,7 +272,7 @@ SRD_PRIV GVariant *py_obj_to_variant(PyObject *py_obj)
 			Py_DECREF(py_bytes);
 		}
 		if (!var)
-            srd_exception_catch(NULL, "Failed to extract string value");
+			srd_exception_catch(NULL, "Failed to extract string value");
 
 	} else if (PyLong_Check(py_obj)) { /* integer */
 		int64_t val;
@@ -281,7 +281,7 @@ SRD_PRIV GVariant *py_obj_to_variant(PyObject *py_obj)
 		if (!PyErr_Occurred())
 			var = g_variant_new_int64(val);
 		else
-            srd_exception_catch(NULL, "Failed to extract integer value");
+			srd_exception_catch(NULL, "Failed to extract integer value");
 
 	} else if (PyFloat_Check(py_obj)) { /* float */
 		double val;
@@ -290,7 +290,7 @@ SRD_PRIV GVariant *py_obj_to_variant(PyObject *py_obj)
 		if (!PyErr_Occurred())
 			var = g_variant_new_double(val);
 		else
-            srd_exception_catch(NULL, "Failed to extract float value");
+			srd_exception_catch(NULL, "Failed to extract float value");
 
 	} else {
 		srd_err("Failed to extract value of unsupported type.");

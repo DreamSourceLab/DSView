@@ -17,9 +17,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "libsigrokdecode.h" /* First, so we avoid a _POSIX_C_SOURCE warning. */
-#include "libsigrokdecode-internal.h"
 #include "config.h"
+#include "libsigrokdecode-internal.h" /* First, so we avoid a _POSIX_C_SOURCE warning. */
+#include "libsigrokdecode.h"
 
 /** @cond PRIVATE */
 
@@ -55,12 +55,11 @@ PyMODINIT_FUNC PyInit_sigrokdecode(void)
 	if (PyModule_AddObject(mod, "Decoder", Decoder_type) < 0)
 		goto err_out;
 
-    logic_type = srd_logic_type_new();
-    if (!logic_type)
-        goto err_out;
-    if (PyModule_AddObject(mod, "srd_logic", logic_type) < 0) {
-        goto err_out;
-    }
+	logic_type = srd_logic_type_new();
+	if (!logic_type)
+		goto err_out;
+	if (PyModule_AddObject(mod, "srd_logic", logic_type) < 0)
+		goto err_out;
 
 	/* Expose output types as symbols in the sigrokdecode module */
 	if (PyModule_AddIntConstant(mod, "OUTPUT_ANN", SRD_OUTPUT_ANN) < 0)
@@ -75,13 +74,13 @@ PyMODINIT_FUNC PyInit_sigrokdecode(void)
 	if (PyModule_AddIntConstant(mod, "SRD_CONF_SAMPLERATE", SRD_CONF_SAMPLERATE) < 0)
 		goto err_out;
 
-    srd_logic_type = logic_type;
+	srd_logic_type = logic_type;
 	mod_sigrokdecode = mod;
 
 	return mod;
 err_out:
 	Py_XDECREF(mod);
-    srd_exception_catch(NULL, "Failed to initialize module");
+	srd_exception_catch(NULL, "Failed to initialize module");
 
 	return NULL;
 }

@@ -1,5 +1,5 @@
 ##
-## This file is part of the sigrok project.
+## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2015 Uwe Hermann <uwe@hermann-uwe.de>
 ##
@@ -19,7 +19,7 @@
 ##
 
 import sigrokdecode as srd
-from .lists import *
+from common.sdcard import (cmd_names, acmd_names, accepted_voltages, card_status, sd_status)
 
 class Decoder(srd.Decoder):
     api_version = 2
@@ -61,7 +61,7 @@ class Decoder(srd.Decoder):
         ('cmd', 'Commands', tuple(range(128))),
     )
 
-    def __init__(self, **kwargs):
+    def __init__(self):
         self.state = 'GET COMMAND TOKEN'
         self.token = []
         self.oldpins = None

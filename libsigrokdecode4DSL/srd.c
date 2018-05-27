@@ -142,9 +142,9 @@ static int searchpath_add_xdg_dir(const char *datadir)
 SRD_API int srd_init(const char *path)
 {
 	const char *const *sys_datadirs;
+	const char *env_path;
 	size_t i;
 	int ret;
-	const char *env_path;
 
 	if (max_session_id != -1) {
 		srd_err("libsigrokdecode is already initialized.");
@@ -158,6 +158,7 @@ SRD_API int srd_init(const char *path)
 
 	/* Initialize the Python interpreter. */
 	Py_InitializeEx(0);
+
 	/* Locations relative to the XDG system data directories. */
 	sys_datadirs = g_get_system_data_dirs();
 	for (i = g_strv_length((char **)sys_datadirs); i > 0; i--) {
@@ -167,13 +168,13 @@ SRD_API int srd_init(const char *path)
 			return ret;
 		}
 	}
-	#ifdef DECODERS_DIR
+#ifdef DECODERS_DIR
 	/* Hardcoded decoders install location, if defined. */
 	if ((ret = srd_decoder_searchpath_add(DECODERS_DIR)) != SRD_OK) {
 		Py_Finalize();
 		return ret;
 	}
-	#endif
+#endif
 	/* Location relative to the XDG user data directory. */
 	ret = searchpath_add_xdg_dir(g_get_user_data_dir());
 	if (ret != SRD_OK) {

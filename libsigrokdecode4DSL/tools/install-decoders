@@ -24,7 +24,21 @@ from shutil import copy
 from getopt import getopt
 
 
-def install(srcdir, dstdir):
+_inst_pp_col_max = 80
+_inst_pp_col = 0
+def _install_pretty_print(item):
+    """Pretty print an install item. Enforce maximum line width."""
+    global _inst_pp_col
+    if item is None:
+        _inst_pp_col = 0
+        return
+    _inst_pp_col += len(item)
+    if _inst_pp_col > _inst_pp_col_max:
+        print()
+        _inst_pp_col = len(item)
+    print(item, end = "")
+
+def install(srcdir, dstdir, s):
     worklist = []
     for pd in os.listdir(srcdir):
         pd_dir = srcdir + '/' + pd
@@ -39,17 +53,13 @@ def install(srcdir, dstdir):
                 install_list.extend(config_get_extra_install(pd_file))
             elif f[-3:] == '.py':
                 install_list.append(f)
-        worklist.append((pd, pd_dir, install_list))
+        if install_list:
+            worklist.append((pd, pd_dir, install_list))
 
-    print("Installing %d protocol decoders:" % len(worklist))
-    col = 0
+    worklist.sort()
+    print("Installing %d %s:" % (len(worklist), s))
     for pd, pd_dir, install_list in worklist:
-        msg = pd + ' '
-        if (col + len(msg) > 80):
-            print()
-            col = 0
-        print(msg, end='')
-        col += len(msg)
+        _install_pretty_print("{} ".format(pd))
         pd_dst = os.path.join(dstdir, pd)
         try:
             os.mkdir(pd_dst)
@@ -61,6 +71,7 @@ def install(srcdir, dstdir):
         for f in install_list:
             copy(os.path.join(pd_dir, f), pd_dst)
     print()
+    _install_pretty_print(None)
 
 
 def config_get_extra_install(config_file):
@@ -107,6 +118,7 @@ except Exception as e:
 if len(args) != 0 or dst is None:
     usage()
 
-install(src, dst)
+install(src, dst, 'protocol decoders')
+install(src + '/common', dst + '/common', 'common modules')
 
 

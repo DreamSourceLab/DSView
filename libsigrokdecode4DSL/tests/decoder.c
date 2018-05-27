@@ -19,7 +19,7 @@
  */
 
 #include <config.h>
-#include "../libsigrokdecode.h" /* First, to avoid compiler warning. */
+#include <libsigrokdecode.h> /* First, to avoid compiler warning. */
 #include <stdlib.h>
 #include <check.h>
 #include "lib.h"
@@ -32,7 +32,7 @@ START_TEST(test_load_all)
 {
 	int ret;
 
-	srd_init(DECODERS_DIR);
+	srd_init(DECODERS_TESTDIR);
 	ret = srd_decoder_load_all();
 	fail_unless(ret == SRD_OK, "srd_decoder_load_all() failed: %d.", ret);
 	srd_exit();
@@ -61,7 +61,7 @@ START_TEST(test_load)
 {
 	int ret;
 
-	srd_init(DECODERS_DIR);
+	srd_init(DECODERS_TESTDIR);
 	ret = srd_decoder_load("uart");
 	fail_unless(ret == SRD_OK, "srd_decoder_load(uart) failed: %d.", ret);
 	ret = srd_decoder_load("spi");
@@ -78,7 +78,7 @@ END_TEST
  */
 START_TEST(test_load_bogus)
 {
-	srd_init(DECODERS_DIR);
+	srd_init(DECODERS_TESTDIR);
 	/* http://sigrok.org/bugzilla/show_bug.cgi?id=176 */
 	fail_unless(srd_decoder_load(NULL) != SRD_OK);
 	fail_unless(srd_decoder_load("") != SRD_OK);
@@ -101,7 +101,7 @@ END_TEST
  */
 START_TEST(test_load_valid_and_bogus)
 {
-	srd_init(DECODERS_DIR);
+	srd_init(DECODERS_TESTDIR);
 	fail_unless(srd_decoder_load("") != SRD_OK);
 	fail_unless(srd_decoder_load("uart") == SRD_OK);
 	fail_unless(srd_decoder_load("") != SRD_OK);
@@ -122,7 +122,7 @@ START_TEST(test_load_multiple)
 {
 	int ret;
 
-	srd_init(DECODERS_DIR);
+	srd_init(DECODERS_TESTDIR);
 	ret = srd_decoder_load("uart");
 	fail_unless(ret == SRD_OK, "Loading uart PD 1x failed: %d", ret);
 	ret = srd_decoder_load("uart");
@@ -150,12 +150,120 @@ START_TEST(test_load_nonexisting_pd_dir)
 END_TEST
 
 /*
+ * Check whether srd_decoder_unload_all() works.
+ * If it returns != SRD_OK (or segfaults) this test will fail.
+ */
+START_TEST(test_unload_all)
+{
+	int ret;
+
+	srd_init(DECODERS_TESTDIR);
+	ret = srd_decoder_load_all();
+	fail_unless(ret == SRD_OK, "srd_decoder_load_all() failed: %d.", ret);
+	ret = srd_decoder_unload_all();
+	fail_unless(ret == SRD_OK, "srd_decoder_unload_all() failed: %d.", ret);
+	srd_exit();
+}
+END_TEST
+
+/*
+ * Check whether srd_decoder_unload_all() works without prior srd_init().
+ * If it returns != SRD_OK (or segfaults) this test will fail.
+ */
+START_TEST(test_unload_all_no_init)
+{
+	int ret;
+
+	ret = srd_decoder_unload_all();
+	fail_unless(ret == SRD_OK, "srd_decoder_unload_all() failed: %d.", ret);
+}
+END_TEST
+
+/*
+ * Check whether srd_decoder_unload_all() works multiple times.
+ * If it returns != SRD_OK (or segfaults) this test will fail.
+ */
+START_TEST(test_unload_all_multiple)
+{
+	int ret, i;
+
+	srd_init(DECODERS_TESTDIR);
+	for (i = 0; i < 10; i++) {
+		ret = srd_decoder_load_all();
+		fail_unless(ret == SRD_OK, "srd_decoder_load_all() failed: %d.", ret);
+		ret = srd_decoder_unload_all();
+		fail_unless(ret == SRD_OK, "srd_decoder_unload_all() failed: %d.", ret);
+	}
+	srd_exit();
+}
+END_TEST
+
+/*
+ * Check whether srd_decoder_unload_all() works multiple times (no load).
+ * If it returns != SRD_OK (or segfaults) this test will fail.
+ */
+START_TEST(test_unload_all_multiple_noload)
+{
+	int ret, i;
+
+	srd_init(DECODERS_TESTDIR);
+	for (i = 0; i < 10; i++) {
+		ret = srd_decoder_unload_all();
+		fail_unless(ret == SRD_OK, "srd_decoder_unload_all() failed: %d.", ret);
+	}
+	srd_exit();
+}
+END_TEST
+
+/*
+ * Check whether srd_decoder_unload() works.
+ * If it returns != SRD_OK (or segfaults) this test will fail.
+ */
+START_TEST(test_unload)
+{
+	int ret;
+	struct srd_decoder *dec;
+
+	srd_init(DECODERS_TESTDIR);
+	ret = srd_decoder_load("uart");
+	fail_unless(ret == SRD_OK, "srd_decoder_load(uart) failed: %d.", ret);
+	dec = srd_decoder_get_by_id("uart");
+	fail_unless(dec != NULL);
+	ret = srd_decoder_unload(dec);
+	fail_unless(ret == SRD_OK, "srd_decoder_unload() failed: %d.", ret);
+	srd_exit();
+}
+END_TEST
+
+/*
+ * Check whether srd_decoder_unload(NULL) fails.
+ * If it returns SRD_OK (or segfaults) this test will fail.
+ */
+START_TEST(test_unload_null)
+{
+	srd_init(DECODERS_TESTDIR);
+	fail_unless(srd_decoder_unload(NULL) != SRD_OK);
+	srd_exit();
+}
+END_TEST
+
+/*
+ * Check whether srd_decoder_unload(NULL) fails without prior srd_init().
+ * If it returns SRD_OK (or segfaults) this test will fail.
+ */
+START_TEST(test_unload_null_no_init)
+{
+	fail_unless(srd_decoder_unload(NULL) != SRD_OK);
+}
+END_TEST
+
+/*
  * Check whether srd_decoder_list() returns a non-empty list.
  * If it returns an empty list (or segfaults) this test will fail.
  */
 START_TEST(test_decoder_list)
 {
-	srd_init(DECODERS_DIR);
+	srd_init(DECODERS_TESTDIR);
 	srd_decoder_load_all();
 	fail_unless(srd_decoder_list() != NULL);
 	srd_exit();
@@ -169,7 +277,7 @@ END_TEST
  */
 START_TEST(test_decoder_list_no_load)
 {
-	srd_init(DECODERS_DIR);
+	srd_init(DECODERS_TESTDIR);
 	fail_unless(srd_decoder_list() == NULL);
 	srd_exit();
 }
@@ -205,7 +313,7 @@ END_TEST
  */
 START_TEST(test_decoder_list_correct_numbers)
 {
-	srd_init(DECODERS_DIR);
+	srd_init(DECODERS_TESTDIR);
 	fail_unless(g_slist_length((GSList *)srd_decoder_list()) == 0);
 	srd_decoder_load("spi");
 	fail_unless(g_slist_length((GSList *)srd_decoder_list()) == 1);
@@ -225,7 +333,7 @@ END_TEST
  */
 START_TEST(test_get_by_id)
 {
-	srd_init(DECODERS_DIR);
+	srd_init(DECODERS_TESTDIR);
 	srd_decoder_load("uart");
 	fail_unless(srd_decoder_get_by_id("uart") != NULL);
 	fail_unless(srd_decoder_get_by_id("can") == NULL);
@@ -242,7 +350,7 @@ END_TEST
  */
 START_TEST(test_get_by_id_multiple)
 {
-	srd_init(DECODERS_DIR);
+	srd_init(DECODERS_TESTDIR);
 	srd_decoder_load("uart");
 	fail_unless(srd_decoder_get_by_id("uart") != NULL);
 	fail_unless(srd_decoder_get_by_id("uart") != NULL);
@@ -258,7 +366,7 @@ END_TEST
  */
 START_TEST(test_get_by_id_bogus)
 {
-	srd_init(DECODERS_DIR);
+	srd_init(DECODERS_TESTDIR);
 	fail_unless(srd_decoder_get_by_id(NULL) == NULL);
 	fail_unless(srd_decoder_get_by_id("") == NULL);
 	fail_unless(srd_decoder_get_by_id(" ") == NULL);
@@ -282,7 +390,7 @@ START_TEST(test_doc_get)
 {
 	struct srd_decoder *dec;
 
-	srd_init(DECODERS_DIR);
+	srd_init(DECODERS_TESTDIR);
 	srd_decoder_load("uart");
 	dec = srd_decoder_get_by_id("uart");
 	fail_unless(srd_decoder_doc_get(dec) != NULL);
@@ -297,7 +405,7 @@ END_TEST
  */
 START_TEST(test_doc_get_null)
 {
-	srd_init(DECODERS_DIR);
+	srd_init(DECODERS_TESTDIR);
 	fail_unless(srd_decoder_doc_get(NULL) == NULL);
 	srd_exit();
 }
@@ -320,6 +428,17 @@ Suite *suite_decoder(void)
 	tcase_add_test(tc, test_load_valid_and_bogus);
 	tcase_add_test(tc, test_load_multiple);
 	tcase_add_test(tc, test_load_nonexisting_pd_dir);
+	suite_add_tcase(s, tc);
+
+	tc = tcase_create("unload");
+	tcase_add_checked_fixture(tc, srdtest_setup, srdtest_teardown);
+	tcase_add_test(tc, test_unload_all);
+	tcase_add_test(tc, test_unload_all_no_init);
+	tcase_add_test(tc, test_unload_all_multiple);
+	tcase_add_test(tc, test_unload_all_multiple_noload);
+	tcase_add_test(tc, test_unload);
+	tcase_add_test(tc, test_unload_null);
+	tcase_add_test(tc, test_unload_null_no_init);
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("list");

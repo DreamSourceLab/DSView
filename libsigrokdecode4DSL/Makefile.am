@@ -23,7 +23,12 @@ AM_LIBTOOLFLAGS = --silent
 GNUMAKEFLAGS = --no-print-directory
 
 DECODERS_DIR = $(pkgdatadir)/decoders
+# Do not hard-code the decoders location on Windows.
+if WIN32
+AM_CPPFLAGS =
+else
 AM_CPPFLAGS = -DDECODERS_DIR='"$(DECODERS_DIR)"'
+endif
 
 # The tests CFLAGS are a superset of the libsigrokdecode CFLAGS.
 AM_CFLAGS = $(SRD_EXTRA_CFLAGS) $(SRD_WFLAGS) $(TESTS_CFLAGS)
@@ -70,7 +75,7 @@ tests_main_SOURCES = \
 	tests/inst.c \
 	tests/session.c
 
-tests_main_CPPFLAGS = -DDECODERS_DIR='"$(abs_top_srcdir)/decoders"'
+tests_main_CPPFLAGS = -DDECODERS_TESTDIR='"$(abs_top_srcdir)/decoders"'
 tests_main_LDADD = libsigrokdecode4DSL.la $(SRD_EXTRA_LIBS) $(TESTS_LIBS)
 
 MAINTAINERCLEANFILES = ChangeLog

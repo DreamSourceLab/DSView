@@ -179,7 +179,7 @@ class Decoder(srd.Decoder):
             self.bits[1][2] = self.samplenum
         if self.bitcount == 7:
             self.bitwidth = self.bits[1][2] - self.bits[2][2]
-            self.bits[0][2] += self.bitwidth    
+            self.bits[0][2] += self.bitwidth
 
         # Return if we haven't collected all 8 + 1 bits, yet.
         if self.bitcount < 7:
@@ -233,7 +233,7 @@ class Decoder(srd.Decoder):
             self.bits[1][2] = self.samplenum
         if self.bitcount == 7:
             self.bitwidth = self.bits[1][2] - self.bits[2][2]
-            self.bits[0][2] += self.bitwidth    
+            self.bits[0][2] += self.bitwidth
 
         # Return if we haven't collected all 8 + 1 bits, yet.
         if self.bitcount < 7:

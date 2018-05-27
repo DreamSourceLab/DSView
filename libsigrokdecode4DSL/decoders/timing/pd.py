@@ -20,19 +20,29 @@
 ##
 
 import sigrokdecode as srd
+from collections import deque
 
 class SamplerateError(Exception):
     pass
 
 def normalize_time(t):
     if t >= 1.0:
-        return '%.3f s' % t
+        return '%.3f s  (%.3f Hz)' % (t, (1/t))
     elif t >= 0.001:
-        return '%.3f ms' % (t * 1000.0)
+        if 1/t/1000 < 1:
+            return '%.3f ms (%.3f Hz)' % (t * 1000.0, (1/t))
+        else:
+            return '%.3f ms (%.3f kHz)' % (t * 1000.0, (1/t)/1000)
     elif t >= 0.000001:
-        return '%.3f μs' % (t * 1000.0 * 1000.0)
+        if 1/t/1000/1000 < 1:
+            return '%.3f μs (%.3f kHz)' % (t * 1000.0 * 1000.0, (1/t)/1000)
+        else:
+            return '%.3f μs (%.3f MHz)' % (t * 1000.0 * 1000.0, (1/t)/1000/1000)
     elif t >= 0.000000001:
-        return '%.3f ns' % (t * 1000.0 * 1000.0 * 1000.0)
+        if 1/t/1000/1000/1000:
+            return '%.3f ns (%.3f MHz)' % (t * 1000.0 * 1000.0 * 1000.0, (1/t)/1000/1000)
+        else:
+            return '%.3f ns (%.3f GHz)' % (t * 1000.0 * 1000.0 * 1000.0, (1/t)/1000/1000/1000)
     else:
         return '%f' % t
 
@@ -40,7 +50,7 @@ class Decoder(srd.Decoder):
     api_version = 2
     id = 'timing'
     name = 'Timing'
-    longname = 'Timing calculation'
+    longname = 'Timing calculation with frequency and averaging'
     desc = 'Calculate time between edges.'
     license = 'gplv2+'
     inputs = ['logic']
@@ -50,15 +60,22 @@ class Decoder(srd.Decoder):
     )
     annotations = (
         ('time', 'Time'),
+        ('average', 'Average'),
     )
     annotation_rows = (
         ('time', 'Time', (0,)),
+        ('average', 'Average', (1,)),
+    )
+    options = (
+        { 'id': 'avg_period', 'desc': 'Averaging period', 'default': 100 },
     )
 
     def __init__(self):
         self.samplerate = None
         self.oldpin = None
         self.last_samplenum = None
+        self.last_n = deque()
+        self.chunks = 0
 
     def metadata(self, key, value):
         if key == srd.SRD_CONF_SAMPLERATE:
@@ -73,10 +90,6 @@ class Decoder(srd.Decoder):
 
         for (self.samplenum, (pin,)) in data:
             data.itercnt += 1
-            # Ignore identical samples early on (for performance reasons).
-            if self.oldpin == pin:
-                continue
-
             if self.oldpin is None:
                 self.oldpin = pin
                 self.last_samplenum = self.samplenum
@@ -85,10 +98,26 @@ class Decoder(srd.Decoder):
             if self.oldpin != pin:
                 samples = self.samplenum - self.last_samplenum
                 t = samples / self.samplerate
+                self.chunks += 1
 
-                # Report the timing normalized.
-                self.put(self.last_samplenum, self.samplenum, self.out_ann,
-                         [0, [normalize_time(t)]])
+                # Don't insert the first chunk into the averaging as it is
+                # not complete probably.
+                if self.last_samplenum is None or self.chunks < 2:
+                    # Report the timing normalized.
+                    self.put(self.last_samplenum, self.samplenum, self.out_ann,
+                             [0, [normalize_time(t)]])
+                else:
+                    if t > 0:
+                        self.last_n.append(t)
+
+                    if len(self.last_n) > self.options['avg_period']:
+                        self.last_n.popleft()
+
+                    # Report the timing normalized.
+                    self.put(self.last_samplenum, self.samplenum, self.out_ann,
+                             [0, [normalize_time(t)]])
+                    self.put(self.last_samplenum, self.samplenum, self.out_ann,
+                             [1, [normalize_time(sum(self.last_n) / len(self.last_n))]])
 
                 # Store data for next round.
                 self.last_samplenum = self.samplenum

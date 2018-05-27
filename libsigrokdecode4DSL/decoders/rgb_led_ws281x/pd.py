@@ -49,7 +49,7 @@ class Decoder(srd.Decoder):
     def __init__(self):
         self.samplerate = None
         self.oldpin = None
-        self.packet_ss = None
+        self.ss_packet = None
         self.ss = None
         self.es = None
         self.bits = []
@@ -66,10 +66,10 @@ class Decoder(srd.Decoder):
         if len(self.bits) == 24:
             grb = reduce(lambda a, b: (a << 1) | b, self.bits)
             rgb = (grb & 0xff0000) >> 8 | (grb & 0x00ff00) << 8 | (grb & 0x0000ff)
-            self.put(self.packet_ss, samplenum, self.out_ann,
+            self.put(self.ss_packet, samplenum, self.out_ann,
                      [2, ['#%06x' % rgb]])
             self.bits = []
-            self.packet_ss = None
+            self.ss_packet = None
 
     def decode(self, ss, es, data):
         if not self.samplerate:
@@ -99,7 +99,7 @@ class Decoder(srd.Decoder):
 
                 self.inreset = True
                 self.bits = []
-                self.packet_ss = None
+                self.ss_packet = None
                 self.ss = None
 
             if not self.oldpin and pin:
@@ -116,8 +116,8 @@ class Decoder(srd.Decoder):
                     self.bits.append(bit_)
                     self.handle_bits(samplenum)
 
-                if self.packet_ss is None:
-                    self.packet_ss = samplenum
+                if self.ss_packet is None:
+                    self.ss_packet = samplenum
 
                 self.ss = samplenum
 

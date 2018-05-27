@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 Uwe Hermann <uwe@hermann-uwe.de>
  * Copyright (C) 2012 Bert Vermeulen <bert@biot.com>
+ * Copyright (C) 2016 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -185,7 +186,7 @@ struct srd_decoder {
 	 * supported annotation output.
 	 */
 	GSList *annotations;
-    GSList *ann_types;
+	GSList *ann_types;
 
 	/**
 	 * List of annotation rows (row items: id, description, and a list
@@ -222,8 +223,8 @@ struct srd_channel {
 	char *desc;
 	/** The index of the channel, i.e. its order in the list of channels. */
 	int order;
-    /** The type of the channel, such us: sclk/sdata/.../others */
-    int type;
+	/** The type of the channel, such us: sclk/sdata/.../others */
+	int type;
 };
 
 struct srd_decoder_option {
@@ -242,18 +243,18 @@ struct srd_decoder_annotation_row {
 struct srd_decoder_inst {
 	struct srd_decoder *decoder;
 	struct srd_session *sess;
-    void *py_inst;
-    void *py_logic;
+	void *py_inst;
+	void *py_logic;
 	char *inst_id;
 	GSList *pd_output;
 	int dec_num_channels;
 	int *dec_channelmap;
 	uint8_t *channel_samples;
 	GSList *next_di;
-    uint64_t cur_pos;
-    uint64_t logic_mask;
-    uint64_t exp_logic;
-    int edge_index;
+	uint64_t cur_pos;
+	uint64_t logic_mask;
+	uint64_t exp_logic;
+	int edge_index;
 };
 
 struct srd_pd_output {
@@ -275,7 +276,7 @@ struct srd_proto_data {
 };
 struct srd_proto_data_annotation {
 	int ann_class;
-    int ann_type;
+	int ann_type;
 	char **ann_text;
 };
 struct srd_proto_data_binary {
@@ -304,7 +305,7 @@ SRD_API int srd_session_metadata_set(struct srd_session *sess, int key,
 		GVariant *data);
 SRD_API int srd_session_send(struct srd_session *sess, uint8_t chunk_type,
 		uint64_t start_samplenum, uint64_t end_samplenum,
-        const uint8_t **inbuf, const uint8_t *inbuf_const, char **error);
+		const uint8_t **inbuf, const uint8_t *inbuf_const, char **error);
 SRD_API int srd_session_destroy(struct srd_session *sess);
 SRD_API int srd_pd_output_callback_add(struct srd_session *sess,
 		int output_type, srd_pd_output_callback cb, void *cb_data);

@@ -45,11 +45,11 @@ static const char *output_type_name(unsigned int idx)
 static int convert_annotation(struct srd_decoder_inst *di, PyObject *obj,
 		struct srd_proto_data *pdata)
 {
-    PyObject *py_tmp;
+	PyObject *py_tmp;
 	struct srd_proto_data_annotation *pda;
-    unsigned int ann_class;
+	unsigned int ann_class;
 	char **ann_text;
-    gpointer ann_type_ptr;
+	gpointer ann_type_ptr;
 
 	/* Should be a list of [annotation class, [string, ...]]. */
 	if (!PyList_Check(obj)) {
@@ -76,18 +76,18 @@ static int convert_annotation(struct srd_decoder_inst *di, PyObject *obj,
 			"first element was not an integer.", di->decoder->name);
 		return SRD_ERR_PYTHON;
 	}
-    ann_class = PyLong_AsLong(py_tmp);
+	ann_class = PyLong_AsLong(py_tmp);
 //	if (!(pdo = g_slist_nth_data(di->decoder->annotations, ann_class))) {
 //		srd_err("Protocol decoder %s submitted data to unregistered "
 //			"annotation class %d.", di->decoder->name, ann_class);
 //		return SRD_ERR_PYTHON;
 //	}
-    if (ann_class >= g_slist_length(di->decoder->ann_types)) {
-        srd_err("Protocol decoder %s submitted data to unregistered "
-            "annotation class %d.", di->decoder->name, ann_class);
-        return SRD_ERR_PYTHON;
-    }
-    ann_type_ptr = g_slist_nth_data(di->decoder->ann_types, ann_class);
+	if (ann_class >= g_slist_length(di->decoder->ann_types)) {
+		srd_err("Protocol decoder %s submitted data to unregistered "
+			"annotation class %d.", di->decoder->name, ann_class);
+		return SRD_ERR_PYTHON;
+	}
+	ann_type_ptr = g_slist_nth_data(di->decoder->ann_types, ann_class);
 
 	/* Second element must be a list. */
 	py_tmp = PyList_GetItem(obj, 1);
@@ -104,7 +104,7 @@ static int convert_annotation(struct srd_decoder_inst *di, PyObject *obj,
 
 	pda = g_malloc(sizeof(struct srd_proto_data_annotation));
 	pda->ann_class = ann_class;
-    pda->ann_type = GPOINTER_TO_INT(ann_type_ptr);
+	pda->ann_type = GPOINTER_TO_INT(ann_type_ptr);
 	pda->ann_text = ann_text;
 	pdata->data = pda;
 
@@ -209,17 +209,17 @@ static int convert_meta(struct srd_proto_data *pdata, PyObject *obj)
 
 static PyObject *Decoder_put(PyObject *self, PyObject *args)
 {
-    GSList *l;
-    PyObject *py_data, *py_res;
-    struct srd_decoder_inst *di, *next_di;
-    struct srd_pd_output *pdo;
-    struct srd_proto_data *pdata;
-    uint64_t start_sample, end_sample;
-    int output_id;
-    struct srd_pd_callback *cb;
-    struct srd_proto_data_binary *pdb;
-    struct srd_proto_data_annotation *pda;
-    char **annotations;
+	GSList *l;
+	PyObject *py_data, *py_res;
+	struct srd_decoder_inst *di, *next_di;
+	struct srd_pd_output *pdo;
+	struct srd_proto_data *pdata;
+	uint64_t start_sample, end_sample;
+	int output_id;
+	struct srd_pd_callback *cb;
+	struct srd_proto_data_binary *pdb;
+	struct srd_proto_data_annotation *pda;
+	char **annotations;
 
 	if (!(di = srd_inst_find_by_obj(NULL, self))) {
 		/* Shouldn't happen. */
@@ -253,74 +253,74 @@ static PyObject *Decoder_put(PyObject *self, PyObject *args)
 	pdata->end_sample = end_sample;
 	pdata->pdo = pdo;
 
-    switch (pdo->output_type) {
-    case SRD_OUTPUT_ANN:
-        /* Annotations are only fed to callbacks. */
-        if ((cb = srd_pd_output_callback_find(di->sess, pdo->output_type))) {
-            /* Convert from PyDict to srd_proto_data_annotation. */
-            if (convert_annotation(di, py_data, pdata) != SRD_OK) {
-                /* An error was already logged. */
-                break;
-            }
-            cb->cb(pdata, cb->cb_data);
-            pda = pdata->data;
-            annotations = (char**)pda->ann_text;
-            while(*annotations) {
-                g_free(*annotations);
-                annotations++;
-            }
-            g_free(pda->ann_text);
-            g_free(pda);
-        }
-        break;
-    case SRD_OUTPUT_PYTHON:
-        for (l = di->next_di; l; l = l->next) {
-            next_di = l->data;
-            srd_spew("Sending %" PRIu64 "-%" PRIu64 " to instance %s",
-                 start_sample, end_sample, next_di->inst_id);
-            if (!(py_res = PyObject_CallMethod(
-                next_di->py_inst, "decode", "KKO", start_sample,
-                end_sample, py_data))) {
-                srd_exception_catch(NULL, "Calling %s decode() failed",
-                            next_di->inst_id);
-            }
-            Py_XDECREF(py_res);
-        }
-        if ((cb = srd_pd_output_callback_find(di->sess, pdo->output_type))) {
-            /* Frontends aren't really supposed to get Python
-             * callbacks, but it's useful for testing. */
-            pdata->data = py_data;
-            cb->cb(pdata, cb->cb_data);
-        }
-        break;
-    case SRD_OUTPUT_BINARY:
-        if ((cb = srd_pd_output_callback_find(di->sess, pdo->output_type))) {
-            /* Convert from PyDict to srd_proto_data_binary. */
-            if (convert_binary(di, py_data, pdata) != SRD_OK) {
-                /* An error was already logged. */
-                break;
-            }
-            cb->cb(pdata, cb->cb_data);
-            pdb = pdata->data;
-            g_free(pdb->data);
-            g_free(pdb);
-        }
-        break;
-    case SRD_OUTPUT_META:
-        if ((cb = srd_pd_output_callback_find(di->sess, pdo->output_type))) {
-            /* Annotations need converting from PyObject. */
-            if (convert_meta(pdata, py_data) != SRD_OK) {
-                /* An exception was already set up. */
-                break;
-            }
-            cb->cb(pdata, cb->cb_data);
-        }
-        break;
-    default:
-        srd_err("Protocol decoder %s submitted invalid output type %d.",
-            di->decoder->name, pdo->output_type);
-        break;
-    }
+	switch (pdo->output_type) {
+	case SRD_OUTPUT_ANN:
+		/* Annotations are only fed to callbacks. */
+		if ((cb = srd_pd_output_callback_find(di->sess, pdo->output_type))) {
+			/* Convert from PyDict to srd_proto_data_annotation. */
+			if (convert_annotation(di, py_data, pdata) != SRD_OK) {
+				/* An error was already logged. */
+				break;
+			}
+			cb->cb(pdata, cb->cb_data);
+			pda = pdata->data;
+			annotations = (char**)pda->ann_text;
+			while(*annotations) {
+				g_free(*annotations);
+				annotations++;
+			}
+			g_free(pda->ann_text);
+			g_free(pda);
+		}
+		break;
+	case SRD_OUTPUT_PYTHON:
+		for (l = di->next_di; l; l = l->next) {
+			next_di = l->data;
+			srd_spew("Sending %" PRIu64 "-%" PRIu64 " to instance %s",
+				 start_sample, end_sample, next_di->inst_id);
+			if (!(py_res = PyObject_CallMethod(
+				next_di->py_inst, "decode", "KKO", start_sample,
+				end_sample, py_data))) {
+				srd_exception_catch(NULL, "Calling %s decode() failed",
+							next_di->inst_id);
+			}
+			Py_XDECREF(py_res);
+		}
+		if ((cb = srd_pd_output_callback_find(di->sess, pdo->output_type))) {
+			/* Frontends aren't really supposed to get Python
+			 * callbacks, but it's useful for testing. */
+			pdata->data = py_data;
+			cb->cb(pdata, cb->cb_data);
+		}
+		break;
+	case SRD_OUTPUT_BINARY:
+		if ((cb = srd_pd_output_callback_find(di->sess, pdo->output_type))) {
+			/* Convert from PyDict to srd_proto_data_binary. */
+			if (convert_binary(di, py_data, pdata) != SRD_OK) {
+				/* An error was already logged. */
+				break;
+			}
+			cb->cb(pdata, cb->cb_data);
+			pdb = pdata->data;
+			g_free(pdb->data);
+			g_free(pdb);
+		}
+		break;
+	case SRD_OUTPUT_META:
+		if ((cb = srd_pd_output_callback_find(di->sess, pdo->output_type))) {
+			/* Annotations need converting from PyObject. */
+			if (convert_meta(pdata, py_data) != SRD_OK) {
+				/* An exception was already set up. */
+				break;
+			}
+			cb->cb(pdata, cb->cb_data);
+		}
+		break;
+	default:
+		srd_err("Protocol decoder %s submitted invalid output type %d.",
+			di->decoder->name, pdo->output_type);
+		break;
+	}
 
 	g_free(pdata);
 

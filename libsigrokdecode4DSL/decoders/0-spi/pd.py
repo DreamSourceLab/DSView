@@ -250,7 +250,7 @@ class Decoder(srd.Decoder):
                 if not (self.have_miso or self.have_mosi):
                     raise ChannelError('Either MISO or MOSI (or both) pins required.')
                 if (self.mode == 0 or self.mode == 3):
-                    self.exp_oldclk = 0 
+                    self.exp_oldclk = 0
                     self.exp_clk = 1
                 else:
                     self.exp_oldclk = 1
@@ -272,7 +272,7 @@ class Decoder(srd.Decoder):
             #if not self.no_cs_notification and not self.have_cs:
             #    self.put(0, 0, self.out_python, ['CS-CHANGE', None, None])
             #    self.no_cs_notification = True
-                    
+
             if (self.oldcs, cs) == (self.asserted_oldcs, self.asserted_cs):
                 #self.ss_transfer = self.samplenum
                 #self.misobytes = []
@@ -288,6 +288,6 @@ class Decoder(srd.Decoder):
             elif not self.have_cs or cs == self.asserted_cs:
                 if (self.oldclk, clk) == (self.exp_oldclk, self.exp_clk):
                     #Sample on rising/falling clock edge
-                    self.handle_bit(miso, mosi, clk, cs)   
+                    self.handle_bit(miso, mosi, clk, cs)
 
             self.oldclk, self.oldcs = clk, cs

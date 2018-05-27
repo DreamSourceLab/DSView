@@ -74,12 +74,12 @@ class Decoder(srd.Decoder):
         self.oldpl = 0
         self.oldsamplenum = 0
         self.last_bit_pos = 0
-        self.first_ss = 0
+        self.ss_first = 0
         self.first_one = 0
         self.state = 'HEADER'
         self.data = 0
         self.data_bits = 0
-        self.data_ss = 0
+        self.ss_data = 0
         self.data_parity = 0
         self.payload_cnt = 0
         self.data_col_parity = [0, 0, 0, 0, 0, 0]
@@ -105,14 +105,14 @@ class Decoder(srd.Decoder):
                 if self.first_one > 0:
                     self.first_one += 1
                 if self.first_one == 9:
-                    self.put(self.first_ss, es, self.out_ann,
+                    self.put(self.ss_first, es, self.out_ann,
                              [1, ['Header', 'Head', 'He', 'H']])
                     self.first_one = 0
                     self.state = 'PAYLOAD'
                     return
                 if self.first_one == 0:
                     self.first_one = 1
-                    self.first_ss = ss
+                    self.ss_first = ss
 
             if bit == 0:
                 self.first_one = 0
@@ -121,14 +121,14 @@ class Decoder(srd.Decoder):
         if self.state == 'PAYLOAD':
             self.payload_cnt += 1
             if self.data_bits == 0:
-                self.data_ss = ss
+                self.ss_data = ss
                 self.data = 0
                 self.data_parity = 0
             self.data_bits += 1
             if self.data_bits == 5:
                 s = 'Version/customer' if self.payload_cnt <= 10 else 'Data'
                 c = 2 if self.payload_cnt <= 10 else 3
-                self.put(self.data_ss, ss, self.out_ann,
+                self.put(self.ss_data, ss, self.out_ann,
                          [c, [s + ': %X' % self.data, '%X' % self.data]])
                 s = 'OK' if self.data_parity == bit else 'ERROR'
                 c = 4 if s == 'OK' else 5
@@ -150,7 +150,7 @@ class Decoder(srd.Decoder):
         if self.state == 'TRAILER':
             self.payload_cnt += 1
             if self.data_bits == 0:
-                self.data_ss = ss
+                self.ss_data = ss
                 self.data = 0
                 self.data_parity = 0
             self.data_bits += 1
@@ -172,7 +172,7 @@ class Decoder(srd.Decoder):
                 # Emit an annotation for valid-looking tags.
                 all_col_parity_ok = (self.data_col_parity[1:5] == self.col_parity[1:5])
                 if all_col_parity_ok and self.all_row_parity_ok:
-                    self.put(self.first_ss, es, self.out_ann,
+                    self.put(self.ss_first, es, self.out_ann,
                              [9, ['Tag: %010X' % self.tag, 'Tag', 'T']])
 
                 self.tag = 0

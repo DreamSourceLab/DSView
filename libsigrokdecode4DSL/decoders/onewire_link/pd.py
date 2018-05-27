@@ -182,7 +182,7 @@ class Decoder(srd.Decoder):
         self.cnt_overdrive_presence = int(samplerate * x) - 1
         x = float(self.options['cnt_overdrive_reset']) / 1000000.0
         self.cnt_overdrive_reset = int(samplerate * x) - 1
-           
+
         # Organize values into lists.
         self.cnt_bit = [self.cnt_normal_bit, self.cnt_overdrive_bit]
         self.cnt_presence = [self.cnt_normal_presence, self.cnt_overdrive_presence]
@@ -286,4 +286,3 @@ class Decoder(srd.Decoder):
 
                 # Wait for next slot.
                 self.state = 'WAIT FOR FALLING EDGE'
-

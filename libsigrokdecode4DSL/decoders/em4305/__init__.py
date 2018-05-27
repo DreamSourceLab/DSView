@@ -1,7 +1,7 @@
 ##
 ## This file is part of the libsigrokdecode project.
 ##
-## Copyright (C) 2016 Rudolf Reuter <reuterru@arcor.de>
+## Copyright (C) 2015 Benjamin Larsson <benjamin@southpole.se>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 ##
 
 '''
-This protocol decoder can decode the GPIB (IEEE-488) protocol.
+EM4305 is a 100-150kHz RFID protocol.
 '''
 
 from .pd import Decoder

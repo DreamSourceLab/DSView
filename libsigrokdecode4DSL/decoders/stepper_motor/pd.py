@@ -52,7 +52,7 @@ class Decoder(srd.Decoder):
 
     def __init__(self):
         self.oldstep = None
-        self.prev_step_ss = None
+        self.ss_prev_step = None
         self.pos = 0
         self.prev_speed = None
         self.prev_pos = None
@@ -70,18 +70,18 @@ class Decoder(srd.Decoder):
             self.unit = 'mm'
 
     def step(self, ss, direction):
-        if self.prev_step_ss is not None:
-            delta = ss - self.prev_step_ss
+        if self.ss_prev_step is not None:
+            delta = ss - self.ss_prev_step
             speed = self.samplerate / delta / self.scale
             speed_txt = self.format % speed
             pos_txt = self.format % (self.pos / self.scale)
-            self.put(self.prev_step_ss, ss, self.out_ann,
+            self.put(self.ss_prev_step, ss, self.out_ann,
                 [0, [speed_txt + ' ' + self.unit + '/s', speed_txt]])
-            self.put(self.prev_step_ss, ss, self.out_ann,
+            self.put(self.ss_prev_step, ss, self.out_ann,
                 [1, [pos_txt + ' ' + self.unit, pos_txt]])
 
         self.pos += (1 if direction else -1)
-        self.prev_step_ss = ss
+        self.ss_prev_step = ss
 
     def metadata(self, key, value):
         if key == srd.SRD_CONF_SAMPLERATE:

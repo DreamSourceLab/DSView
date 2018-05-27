@@ -281,7 +281,7 @@ class Decoder(srd.Decoder):
             (signal,) = pins
 
             if self.options['invert'] == 'yes':
-                signal = not signal 
+                signal = not signal
 
             # State machine.
             if self.state == 'FIND START':

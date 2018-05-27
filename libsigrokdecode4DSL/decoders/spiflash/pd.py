@@ -1,7 +1,7 @@
 ##
 ## This file is part of the libsigrokdecode project.
 ##
-## Copyright (C) 2011-2015 Uwe Hermann <uwe@hermann-uwe.de>
+## Copyright (C) 2011-2016 Uwe Hermann <uwe@hermann-uwe.de>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -21,8 +21,30 @@
 import sigrokdecode as srd
 from .lists import *
 
+L = len(cmds)
+
+# Don't forget to keep this in sync with 'cmds' is lists.py.
+class Ann:
+    WRSR, PP, READ, WRDI, RDSR, WREN, FAST_READ, SE, RDSCUR, WRSCUR, \
+    RDSR2, CE, ESRY, DSRY, REMS, RDID, RDP_RES, CP, ENSO, DP, READ2X, \
+    EXSO, CE2, BE, REMS2, \
+    BIT, FIELD, WARN = range(L + 3)
+
 def cmd_annotation_classes():
     return tuple([tuple([cmd[0].lower(), cmd[1]]) for cmd in cmds.values()])
+
+def decode_dual_bytes(sio0, sio1):
+    # Given a byte in SIO0 (MOSI) of even bits and a byte in
+    # SIO1 (MISO) of odd bits, return a tuple of two bytes.
+    def combine_byte(even, odd):
+        result = 0
+        for bit in range(4):
+            if even & (1 << bit):
+                result |= 1 << (bit*2)
+            if odd & (1 << bit):
+                result |= 1 << ((bit*2) + 1)
+        return result
+    return (combine_byte(sio0 >> 4, sio1 >> 4), combine_byte(sio0, sio1))
 
 def decode_status_reg(data):
     # TODO: Additional per-bit(s) self.put() calls with correct start/end.
@@ -59,21 +81,40 @@ class Decoder(srd.Decoder):
     inputs = ['spi']
     outputs = ['spiflash']
     annotations = cmd_annotation_classes() + (
-        ('bits', 'Bits'),
-        ('bits2', 'Bits2'),
-        ('warnings', 'Warnings'),
+        ('bit', 'Bit'),
+        ('field', 'Field'),
+        ('warning', 'Warning'),
     )
     annotation_rows = (
-        ('bits', 'Bits', (24, 25)),
-        ('commands', 'Commands', tuple(range(23 + 1))),
-        ('warnings', 'Warnings', (26,)),
+        ('bits', 'Bits', (L + 0,)),
+        ('fields', 'Fields', (L + 1,)),
+        ('commands', 'Commands', tuple(range(len(cmds)))),
+        ('warnings', 'Warnings', (L + 2,)),
     )
     options = (
         {'id': 'chip', 'desc': 'Chip', 'default': tuple(chips.keys())[0],
             'values': tuple(chips.keys())},
+        {'id': 'format', 'desc': 'Data format', 'default': 'hex',
+            'values': ('hex', 'ascii')},
     )
 
     def __init__(self):
+        self.device_id = -1
+        self.on_end_transaction = None
+        self.end_current_transaction()
+
+        # Build dict mapping command keys to handler functions. Each
+        # command in 'cmds' (defined in lists.py) has a matching
+        # handler self.handle_<shortname>.
+        def get_handler(cmd):
+            s = 'handle_%s' % cmds[cmd][0].lower().replace('/', '_')
+            return getattr(self, s)
+        self.cmd_handlers = dict((cmd, get_handler(cmd)) for cmd in cmds.keys())
+
+    def end_current_transaction(self):
+        if self.on_end_transaction is not None: # Callback for CS# transition.
+            self.on_end_transaction()
+            self.on_end_transaction = None
         self.state = None
         self.cmdstate = 1
         self.addr = 0
@@ -82,43 +123,78 @@ class Decoder(srd.Decoder):
     def start(self):
         self.out_ann = self.register(srd.OUTPUT_ANN)
         self.chip = chips[self.options['chip']]
+        self.vendor = self.options['chip'].split('_')[0]
 
     def putx(self, data):
         # Simplification, most annotations span exactly one SPI byte/packet.
         self.put(self.ss, self.es, self.out_ann, data)
 
-    def putb(self, data):
-        self.put(self.block_ss, self.block_es, self.out_ann, data)
+    def putf(self, data):
+        self.put(self.ss_field, self.es_field, self.out_ann, data)
+
+    def putc(self, data):
+        self.put(self.ss_cmd, self.es_cmd, self.out_ann, data)
+
+    def device(self):
+        return device_name[self.vendor].get(self.device_id, 'Unknown')
+
+    def vendor_device(self):
+        return '%s %s' % (self.chip['vendor'], self.device())
+
+    def cmd_ann_list(self):
+        x, s = cmds[self.state][0], cmds[self.state][1]
+        return ['Command: %s (%s)' % (s, x), 'Command: %s' % s,
+                'Cmd: %s' % s, 'Cmd: %s' % x, x]
+
+    def cmd_vendor_dev_list(self):
+        c, d = cmds[self.state], 'Device = %s' % self.vendor_device()
+        return ['%s (%s): %s' % (c[1], c[0], d), '%s: %s' % (c[1], d),
+                '%s: %s' % (c[0], d), d, self.vendor_device()]
+
+    def emit_cmd_byte(self):
+        self.ss_cmd = self.ss
+        self.putx([Ann.FIELD, self.cmd_ann_list()])
+        self.addr = 0
+
+    def emit_addr_bytes(self, mosi):
+        self.addr |= (mosi << ((4 - self.cmdstate) * 8))
+        b = ((3 - (self.cmdstate - 2)) * 8) - 1
+        self.putx([Ann.BIT,
+            ['Address bits %d..%d: 0x%02x' % (b, b - 7, mosi),
+             'Addr bits %d..%d: 0x%02x' % (b, b - 7, mosi),
+             'Addr bits %d..%d' % (b, b - 7), 'A%d..A%d' % (b, b - 7)]])
+        if self.cmdstate == 2:
+            self.ss_field = self.ss
+        if self.cmdstate == 4:
+            self.es_field = self.es
+            self.putf([Ann.FIELD, ['Address: 0x%06x' % self.addr,
+                'Addr: 0x%06x' % self.addr, '0x%06x' % self.addr]])
 
     def handle_wren(self, mosi, miso):
-        self.putx([0, ['Command: %s' % cmds[self.state][1]]])
+        self.putx([Ann.WREN, self.cmd_ann_list()])
         self.state = None
 
     def handle_wrdi(self, mosi, miso):
         pass # TODO
 
-    # TODO: Check/display device ID / name
     def handle_rdid(self, mosi, miso):
         if self.cmdstate == 1:
             # Byte 1: Master sends command ID.
-            self.ss_block = self.ss
-            self.putx([2, ['Command: %s' % cmds[self.state][1]]])
+            self.emit_cmd_byte()
         elif self.cmdstate == 2:
             # Byte 2: Slave sends the JEDEC manufacturer ID.
-            self.putx([2, ['Manufacturer ID: 0x%02x' % miso]])
+            self.putx([Ann.FIELD, ['Manufacturer ID: 0x%02x' % miso]])
         elif self.cmdstate == 3:
-            # Byte 3: Slave sends the memory type (0x20 for this chip).
-            self.putx([2, ['Memory type: 0x%02x' % miso]])
+            # Byte 3: Slave sends the memory type.
+            self.putx([Ann.FIELD, ['Memory type: 0x%02x' % miso]])
         elif self.cmdstate == 4:
             # Byte 4: Slave sends the device ID.
             self.device_id = miso
-            self.putx([2, ['Device ID: 0x%02x' % miso]])
+            self.putx([Ann.FIELD, ['Device ID: 0x%02x' % miso]])
 
         if self.cmdstate == 4:
-            # TODO: Check self.device_id is valid & exists in device_names.
-            # TODO: Same device ID? Check!
-            d = 'Device: Macronix %s' % device_name[self.device_id]
-            self.put(self.ss_block, self.es, self.out_ann, [0, [d]])
+            self.es_cmd = self.es
+            self.putc([Ann.RDID, self.cmd_vendor_dev_list()])
             self.state = None
         else:
             self.cmdstate += 1
@@ -130,52 +206,69 @@ class Decoder(srd.Decoder):
         # When done, the master de-asserts CS# again.
         if self.cmdstate == 1:
             # Byte 1: Master sends command ID.
-            self.putx([3, ['Command: %s' % cmds[self.state][1]]])
+            self.emit_cmd_byte()
         elif self.cmdstate >= 2:
             # Bytes 2-x: Slave sends status register as long as master clocks.
-            if self.cmdstate <= 3: # TODO: While CS# asserted.
-                self.putx([24, ['Status register: 0x%02x' % miso]])
-                self.putx([25, [decode_status_reg(miso)]])
+            self.es_cmd = self.es
+            self.putx([Ann.BIT, [decode_status_reg(miso)]])
+            self.putx([Ann.FIELD, ['Status register']])
+            self.putc([Ann.RDSR, self.cmd_ann_list()])
+        self.cmdstate += 1
 
-            if self.cmdstate == 3: # TODO: If CS# got de-asserted.
-                self.state = None
-                return
-
+    def handle_rdsr2(self, mosi, miso):
+        # Read status register 2: Master asserts CS#, sends RDSR2 command,
+        # reads status register 2 byte. If CS# is kept asserted, the status
+        # register 2 can be read continuously / multiple times in a row.
+        # When done, the master de-asserts CS# again.
+        if self.cmdstate == 1:
+            # Byte 1: Master sends command ID.
+            self.emit_cmd_byte()
+        elif self.cmdstate >= 2:
+            # Bytes 2-x: Slave sends status register 2 as long as master clocks.
+            self.es_cmd = self.es
+            # TODO: Decode status register 2 correctly.
+            self.putx([Ann.BIT, [decode_status_reg(miso)]])
+            self.putx([Ann.FIELD, ['Status register 2']])
+            self.putc([Ann.RDSR2, self.cmd_ann_list()])
         self.cmdstate += 1
 
     def handle_wrsr(self, mosi, miso):
-        pass # TODO
+        # Write status register: Master asserts CS#, sends WRSR command,
+        # writes 1 or 2 status register byte(s).
+        # When done, the master de-asserts CS# again. If this doesn't happen
+        # the WRSR command will not be executed.
+        if self.cmdstate == 1:
+            # Byte 1: Master sends command ID.
+            self.emit_cmd_byte()
+        elif self.cmdstate == 2:
+            # Byte 2: Master sends status register 1.
+            self.putx([Ann.BIT, [decode_status_reg(miso)]])
+            self.putx([Ann.FIELD, ['Status register 1']])
+        elif self.cmdstate == 3:
+            # Byte 3: Master sends status register 2.
+            # TODO: Decode status register 2 correctly.
+            self.putx([Ann.BIT, [decode_status_reg(miso)]])
+            self.putx([Ann.FIELD, ['Status register 2']])
+            self.es_cmd = self.es
+            self.putc([Ann.WRSR, self.cmd_ann_list()])
+        self.cmdstate += 1
 
     def handle_read(self, mosi, miso):
         # Read data bytes: Master asserts CS#, sends READ command, sends
         # 3-byte address, reads >= 1 data bytes, de-asserts CS#.
         if self.cmdstate == 1:
             # Byte 1: Master sends command ID.
-            self.putx([5, ['Command: %s' % cmds[self.state][1]]])
+            self.emit_cmd_byte()
         elif self.cmdstate in (2, 3, 4):
             # Bytes 2/3/4: Master sends read address (24bits, MSB-first).
-            self.addr |= (mosi << ((4 - self.cmdstate) * 8))
-            # self.putx([0, ['Read address, byte %d: 0x%02x' % \
-            #                (4 - self.cmdstate, mosi)]])
-            if self.cmdstate == 4:
-                self.putx([24, ['Read address: 0x%06x' % self.addr]])
-                self.addr = 0
+            self.emit_addr_bytes(mosi)
         elif self.cmdstate >= 5:
             # Bytes 5-x: Master reads data bytes (until CS# de-asserted).
-            # TODO: For now we hardcode 256 bytes per READ command.
-            if self.cmdstate <= 256 + 4: # TODO: While CS# asserted.
-                self.data.append(miso)
-                # self.putx([0, ['New read byte: 0x%02x' % miso]])
-
-            if self.cmdstate == 256 + 4: # TODO: If CS# got de-asserted.
-                # s = ', '.join(map(hex, self.data))
-                s = ''.join(map(chr, self.data))
-                self.putx([24, ['Read data']])
-                self.putx([25, ['Read data: %s' % s]])
-                self.data = []
-                self.state = None
-                return
-
+            self.es_field = self.es # Will be overwritten for each byte.
+            if self.cmdstate == 5:
+                self.ss_field = self.ss
+                self.on_end_transaction = lambda: self.output_data_block('Data', Ann.READ)
+            self.data.append(miso)
         self.cmdstate += 1
 
     def handle_fast_read(self, mosi, miso):
@@ -183,60 +276,70 @@ class Decoder(srd.Decoder):
         # 3-byte address + 1 dummy byte, reads >= 1 data bytes, de-asserts CS#.
         if self.cmdstate == 1:
             # Byte 1: Master sends command ID.
-            self.putx([5, ['Command: %s' % cmds[self.state][1]]])
+            self.emit_cmd_byte()
         elif self.cmdstate in (2, 3, 4):
             # Bytes 2/3/4: Master sends read address (24bits, MSB-first).
-            self.putx([24, ['AD%d: 0x%02x' % (self.cmdstate - 1, mosi)]])
-            if self.cmdstate == 2:
-                self.block_ss = self.ss
-            self.addr |= (mosi << ((4 - self.cmdstate) * 8))
+            self.emit_addr_bytes(mosi)
         elif self.cmdstate == 5:
-            self.putx([24, ['Dummy byte: 0x%02x' % mosi]])
-            self.block_es = self.es
-            self.putb([5, ['Read address: 0x%06x' % self.addr]])
-            self.addr = 0
+            self.putx([Ann.BIT, ['Dummy byte: 0x%02x' % mosi]])
         elif self.cmdstate >= 6:
             # Bytes 6-x: Master reads data bytes (until CS# de-asserted).
-            # TODO: For now we hardcode 32 bytes per FAST READ command.
+            self.es_field = self.es # Will be overwritten for each byte.
             if self.cmdstate == 6:
-                self.block_ss = self.ss
-            if self.cmdstate <= 32 + 5: # TODO: While CS# asserted.
-                self.data.append(miso)
-            if self.cmdstate == 32 + 5: # TODO: If CS# got de-asserted.
-                self.block_es = self.es
-                s = ' '.join([hex(b)[2:] for b in self.data])
-                self.putb([25, ['Read data: %s' % s]])
-                self.data = []
-                self.state = None
-                return
-
+                self.ss_field = self.ss
+                self.on_end_transaction = lambda: self.output_data_block('Data', Ann.FAST_READ)
+            self.data.append(miso)
         self.cmdstate += 1
 
     def handle_2read(self, mosi, miso):
-        pass # TODO
+        # 2x I/O read (fast read dual I/O): Master asserts CS#, sends 2READ
+        # command, sends 3-byte address + 1 dummy byte, reads >= 1 data bytes,
+        # de-asserts CS#. All data after the command is sent via two I/O pins.
+        # MOSI = SIO0 = even bits, MISO = SIO1 = odd bits.
+        if self.cmdstate != 1:
+            b1, b2 = decode_dual_bytes(mosi, miso)
+        if self.cmdstate == 1:
+            # Byte 1: Master sends command ID.
+            self.emit_cmd_byte()
+        elif self.cmdstate == 2:
+            # Bytes 2/3(/4): Master sends read address (24bits, MSB-first).
+            # Handle bytes 2 and 3 here.
+            self.emit_addr_bytes(b1)
+            self.cmdstate = 3
+            self.emit_addr_bytes(b2)
+        elif self.cmdstate == 4:
+            # Byte 5: Dummy byte. Also handle byte 4 (address LSB) here.
+            self.emit_addr_bytes(b1)
+            self.cmdstate = 5
+            self.putx([Ann.BIT, ['Dummy byte: 0x%02x' % b2]])
+        elif self.cmdstate >= 6:
+            # Bytes 6-x: Master reads data bytes (until CS# de-asserted).
+            self.es_field = self.es # Will be overwritten for each byte.
+            if self.cmdstate == 6:
+                self.ss_field = self.ss
+                self.on_end_transaction = lambda: self.output_data_block('Data', Ann.READ2X)
+            self.data.append(b1)
+            self.data.append(b2)
+        self.cmdstate += 1
 
     # TODO: Warn/abort if we don't see the necessary amount of bytes.
     # TODO: Warn if WREN was not seen before.
     def handle_se(self, mosi, miso):
         if self.cmdstate == 1:
             # Byte 1: Master sends command ID.
-            self.addr = 0
-            self.ss_block = self.ss
-            self.putx([8, ['Command: %s' % cmds[self.state][1]]])
+            self.emit_cmd_byte()
         elif self.cmdstate in (2, 3, 4):
             # Bytes 2/3/4: Master sends sector address (24bits, MSB-first).
-            self.addr |= (mosi << ((4 - self.cmdstate) * 8))
-            # self.putx([0, ['Sector address, byte %d: 0x%02x' % \
-            #                (4 - self.cmdstate, mosi)]])
+            self.emit_addr_bytes(mosi)
 
         if self.cmdstate == 4:
+            self.es_cmd = self.es
             d = 'Erase sector %d (0x%06x)' % (self.addr, self.addr)
-            self.put(self.ss_block, self.es, self.out_ann, [24, [d]])
+            self.putc([Ann.SE, [d]])
             # TODO: Max. size depends on chip, check that too if possible.
             if self.addr % 4096 != 0:
                 # Sector addresses must be 4K-aligned (same for all 3 chips).
-                d = 'Warning: Invalid sector address!'
-                self.put(self.ss_block, self.es, self.out_ann, [101, [d]])
+                self.putc([Ann.WARN, ['Warning: Invalid sector address!']])
             self.state = None
         else:
             self.cmdstate += 1
@@ -255,31 +358,17 @@ class Decoder(srd.Decoder):
         # page address, sends >= 1 data bytes, de-asserts CS#.
         if self.cmdstate == 1:
             # Byte 1: Master sends command ID.
-            self.putx([12, ['Command: %s' % cmds[self.state][1]]])
+            self.emit_cmd_byte()
         elif self.cmdstate in (2, 3, 4):
             # Bytes 2/3/4: Master sends page address (24bits, MSB-first).
-            self.addr |= (mosi << ((4 - self.cmdstate) * 8))
-            # self.putx([0, ['Page address, byte %d: 0x%02x' % \
-            #                (4 - self.cmdstate, mosi)]])
-            if self.cmdstate == 4:
-                self.putx([24, ['Page address: 0x%06x' % self.addr]])
-                self.addr = 0
+            self.emit_addr_bytes(mosi)
         elif self.cmdstate >= 5:
             # Bytes 5-x: Master sends data bytes (until CS# de-asserted).
-            # TODO: For now we hardcode 256 bytes per page / PP command.
-            if self.cmdstate <= 256 + 4: # TODO: While CS# asserted.
-                self.data.append(mosi)
-                # self.putx([0, ['New data byte: 0x%02x' % mosi]])
-
-            if self.cmdstate == 256 + 4: # TODO: If CS# got de-asserted.
-                # s = ', '.join(map(hex, self.data))
-                s = ''.join(map(chr, self.data))
-                self.putx([24, ['Page data']])
-                self.putx([25, ['Page data: %s' % s]])
-                self.data = []
-                self.state = None
-                return
-
+            self.es_field = self.es # Will be overwritten for each byte.
+            if self.cmdstate == 5:
+                self.ss_field = self.ss
+                self.on_end_transaction = lambda: self.output_data_block('Data', Ann.PP)
+            self.data.append(mosi)
         self.cmdstate += 1
 
     def handle_cp(self, mosi, miso):
@@ -289,38 +378,52 @@ class Decoder(srd.Decoder):
         pass # TODO
 
     def handle_rdp_res(self, mosi, miso):
-        pass # TODO
+        if self.cmdstate == 1:
+            # Byte 1: Master sends command ID.
+            self.emit_cmd_byte()
+        elif self.cmdstate in (2, 3, 4):
+            # Bytes 2/3/4: Master sends three dummy bytes.
+            self.putx([Ann.FIELD, ['Dummy byte: %02x' % mosi]])
+        elif self.cmdstate == 5:
+            # Byte 5: Slave sends device ID.
+            self.es_cmd = self.es
+            self.device_id = miso
+            self.putx([Ann.FIELD, ['Device ID: %s' % self.device()]])
+            d = 'Device = %s' % self.vendor_device()
+            self.putc([Ann.RDP_RES, self.cmd_vendor_dev_list()])
+            self.state = None
+        self.cmdstate += 1
 
     def handle_rems(self, mosi, miso):
         if self.cmdstate == 1:
             # Byte 1: Master sends command ID.
-            self.ss_block = self.ss
-            self.putx([16, ['Command: %s' % cmds[self.state][1]]])
+            self.emit_cmd_byte()
         elif self.cmdstate in (2, 3):
             # Bytes 2/3: Master sends two dummy bytes.
-            # TODO: Check dummy bytes? Check reply from device?
-            self.putx([24, ['Dummy byte: %s' % mosi]])
+            self.putx([Ann.FIELD, ['Dummy byte: 0x%02x' % mosi]])
         elif self.cmdstate == 4:
             # Byte 4: Master sends 0x00 or 0x01.
             # 0x00: Master wants manufacturer ID as first reply byte.
             # 0x01: Master wants device ID as first reply byte.
             self.manufacturer_id_first = True if (mosi == 0x00) else False
             d = 'manufacturer' if (mosi == 0x00) else 'device'
-            self.putx([24, ['Master wants %s ID first' % d]])
+            self.putx([Ann.FIELD, ['Master wants %s ID first' % d]])
         elif self.cmdstate == 5:
             # Byte 5: Slave sends manufacturer ID (or device ID).
             self.ids = [miso]
             d = 'Manufacturer' if self.manufacturer_id_first else 'Device'
-            self.putx([24, ['%s ID' % d]])
+            self.putx([Ann.FIELD, ['%s ID: 0x%02x' % (d, miso)]])
         elif self.cmdstate == 6:
             # Byte 6: Slave sends device ID (or manufacturer ID).
             self.ids.append(miso)
-            d = 'Manufacturer' if self.manufacturer_id_first else 'Device'
-            self.putx([24, ['%s ID' % d]])
+            d = 'Device' if self.manufacturer_id_first else 'Manufacturer'
+            self.putx([Ann.FIELD, ['%s ID: 0x%02x' % (d, miso)]])
 
         if self.cmdstate == 6:
             id = self.ids[1] if self.manufacturer_id_first else self.ids[0]
-            self.putx([24, ['Device: Macronix %s' % device_name[id]]])
+            self.device_id = id
+            self.es_cmd = self.es
+            self.putc([Ann.REMS, self.cmd_vendor_dev_list()])
             self.state = None
         else:
             self.cmdstate += 1
@@ -346,23 +449,28 @@ class Decoder(srd.Decoder):
     def handle_dsry(self, mosi, miso):
         pass # TODO
 
-    def decode(self, ss, es, data):
+    def output_data_block(self, label, idx):
+        # Print accumulated block of data
+        # (called on CS# de-assert via self.on_end_transaction callback).
+        self.es_cmd = self.es # End on the CS# de-assert sample.
+        if self.options['format'] == 'hex':
+            s = ' '.join([('%02x' % b) for b in self.data])
+        else:
+            s = ''.join(map(chr, self.data))
+        self.putf([Ann.FIELD, ['%s (%d bytes)' % (label, len(self.data))]])
+        self.putc([idx, ['%s (addr 0x%06x, %d bytes): %s' % \
+                   (cmds[self.state][1], self.addr, len(self.data), s)]])
 
+    def decode(self, ss, es, data):
         ptype, mosi, miso = data
 
-        # if ptype == 'DATA':
-        #     self.putx([0, ['MOSI: 0x%02x, MISO: 0x%02x' % (mosi, miso)]])
+        self.ss, self.es = ss, es
 
-        # if ptype == 'CS-CHANGE':
-        #     if mosi == 1 and miso == 0:
-        #         self.putx([0, ['Asserting CS#']])
-        #     elif mosi == 0 and miso == 1:
-        #         self.putx([0, ['De-asserting CS#']])
+        if ptype == 'CS-CHANGE':
+            self.end_current_transaction()
 
         if ptype != 'DATA':
             return
-
-        self.ss, self.es = ss, es
 
         # If we encountered a known chip command, enter the resp. state.
         if self.state is None:
@@ -370,10 +478,8 @@ class Decoder(srd.Decoder):
             self.cmdstate = 1
 
         # Handle commands.
-        if self.state in cmds:
-            s = 'handle_%s' % cmds[self.state][0].lower().replace('/', '_')
-            handle_reg = getattr(self, s)
-            handle_reg(mosi, miso)
-        else:
-            self.putx([24, ['Unknown command: 0x%02x' % mosi]])
+        try:
+            self.cmd_handlers[self.state](mosi, miso)
+        except KeyError:
+            self.putx([Ann.BIT, ['Unknown command: 0x%02x' % mosi]])
             self.state = None

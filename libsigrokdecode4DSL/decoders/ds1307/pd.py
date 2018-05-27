@@ -21,6 +21,7 @@
 
 import re
 import sigrokdecode as srd
+from common.srdhelper import bcd2int
 
 days_of_week = (
     'Sunday', 'Monday', 'Tuesday', 'Wednesday',
@@ -51,10 +52,6 @@ def regs_and_bits():
     l += [('bit-' + re.sub('\/| ', '-', b).lower(), b + ' bit') for b in bits]
     return tuple(l)
 
-# Return the specified BCD number (max. 8 bits) as integer.
-def bcd2int(b):
-    return (b & 0x0f) + ((b >> 4) * 10)
-
 class Decoder(srd.Decoder):
     api_version = 2
     id = 'ds1307'
@@ -78,7 +75,7 @@ class Decoder(srd.Decoder):
         ('warnings', 'Warnings', (28,)),
     )
 
-    def __init__(self, **kwargs):
+    def __init__(self):
         self.state = 'IDLE'
         self.hours = -1
         self.minutes = -1
