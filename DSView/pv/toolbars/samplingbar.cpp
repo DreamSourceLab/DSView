@@ -426,8 +426,10 @@ void SamplingBar::update_sample_count_selector()
     bool stream_mode = false;
     uint64_t hw_depth = 0;
     uint64_t sw_depth;
+    uint64_t rle_depth = 0;
     double pre_duration = SR_SEC(1);
     double duration;
+    bool rle_support = false;
 
     if (_updating_sample_count)
         return;
@@ -464,23 +466,38 @@ void SamplingBar::update_sample_count_selector()
         sw_depth = AnalogMaxSWDepth;
     }
 
+    if (dev_inst->dev_inst()->mode == LOGIC)  {
+        gvar = dev_inst->get_config(NULL, NULL, SR_CONF_RLE_SUPPORT);
+        if (gvar != NULL) {
+            rle_support = g_variant_get_boolean(gvar);
+            g_variant_unref(gvar);
+        }
+        if (rle_support)
+            rle_depth = min(hw_depth*SR_KB(1), sw_depth);
+    }
+
     if (0 != _sample_count.count())
         pre_duration = _sample_count.itemData(
                     _sample_count.currentIndex()).value<double>();
     _sample_count.clear();
     const uint64_t samplerate = _sample_rate.itemData(
                 _sample_rate.currentIndex()).value<uint64_t>();
+    const double hw_duration = hw_depth / (samplerate * (1.0 / SR_SEC(1)));
     if (dev_inst->dev_inst()->mode == DSO)
         duration = SR_SEC(10);
     else if (stream_mode)
         duration = sw_depth / (samplerate * (1.0 / SR_SEC(1)));
+    else if (rle_support)
+        duration = rle_depth / (samplerate * (1.0 / SR_SEC(1)));
     else
-        duration = hw_depth / (samplerate * (1.0 / SR_SEC(1)));
+        duration = hw_duration;
 
     bool not_last = true;
     do {
+        QString suffix = (dev_inst->dev_inst()->mode == DSO) ? DIVString :
+                         (!stream_mode & duration > hw_duration) ? RLEString : "";
         char *const s = sr_time_string(duration);
-        _sample_count.addItem(QString(s) + ((dev_inst->dev_inst()->mode == DSO) ? DIVString : ""),
+        _sample_count.addItem(QString(s) + suffix,
             qVariantFromValue(duration));
         g_free(s);
 

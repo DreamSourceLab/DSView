@@ -124,6 +124,7 @@ static const int32_t hwoptions[] = {
     SR_CONF_THRESHOLD,
     SR_CONF_FILTER,
     SR_CONF_MAX_HEIGHT,
+    SR_CONF_RLE_SUPPORT,
     SR_CONF_CLOCK_TYPE,
     SR_CONF_CLOCK_EDGE,
 };
@@ -134,6 +135,7 @@ static const int32_t hwoptions_pro[] = {
     SR_CONF_VTH,
     SR_CONF_FILTER,
     SR_CONF_MAX_HEIGHT,
+    SR_CONF_RLE_SUPPORT,
     SR_CONF_CLOCK_TYPE,
     SR_CONF_CLOCK_EDGE,
 };
@@ -145,6 +147,7 @@ static const int32_t sessions[] = {
     SR_CONF_CHANNEL_MODE,
     SR_CONF_SAMPLERATE,
     SR_CONF_LIMIT_SAMPLES,
+    SR_CONF_RLE_SUPPORT,
     SR_CONF_CLOCK_TYPE,
     SR_CONF_CLOCK_EDGE,
     SR_CONF_THRESHOLD,
@@ -163,6 +166,7 @@ static const int32_t sessions_pro[] = {
     SR_CONF_CHANNEL_MODE,
     SR_CONF_SAMPLERATE,
     SR_CONF_LIMIT_SAMPLES,
+    SR_CONF_RLE_SUPPORT,
     SR_CONF_CLOCK_TYPE,
     SR_CONF_CLOCK_EDGE,
     SR_CONF_VTH,
@@ -864,6 +868,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 
     if (id == SR_CONF_CLOCK_TYPE) {
         devc->clock_type = g_variant_get_boolean(data);
+    } else if (id == SR_CONF_RLE_SUPPORT) {
+        devc->rle_support = g_variant_get_boolean(data);
     } else if (id == SR_CONF_CLOCK_EDGE) {
         devc->clock_edge = g_variant_get_boolean(data);
     } else if (id == SR_CONF_LIMIT_SAMPLES) {

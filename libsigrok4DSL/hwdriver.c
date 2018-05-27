@@ -108,6 +108,8 @@ static struct sr_config_info sr_config_info_data[] = {
         "Threshold Level", "Threshold Level", NULL},
     {SR_CONF_VTH, SR_T_FLOAT, "threshold",
         "Threshold Level", "Threshold Level", NULL},
+    {SR_CONF_RLE_SUPPORT, SR_T_BOOL, "rle",
+        "Enable RLE Compress", "Enable RLE Compress", NULL},
 
     {SR_CONF_PROBE_COUPLING, SR_T_CHAR, "coupling",
         "Coupling", "Coupling", NULL},

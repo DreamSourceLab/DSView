@@ -861,6 +861,12 @@ SR_PRIV int dsl_config_get(int id, GVariant **data, const struct sr_dev_inst *sd
         devc = sdi->priv;
         *data = g_variant_new_uint64(devc->cur_samplerate);
         break;
+    case SR_CONF_RLE_SUPPORT:
+        if (!sdi)
+            return SR_ERR;
+        devc = sdi->priv;
+        *data = g_variant_new_boolean(devc->rle_support);
+        break;
     case SR_CONF_CLOCK_TYPE:
         if (!sdi)
             return SR_ERR;

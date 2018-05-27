@@ -874,6 +874,9 @@ enum {
     /** Device channel mode */
     SR_CONF_CHANNEL_MODE,
 
+    /** RLE compress support */
+    SR_CONF_RLE_SUPPORT,
+
     /** Signal max height **/
     SR_CONF_MAX_HEIGHT,
     SR_CONF_MAX_HEIGHT_VALUE,

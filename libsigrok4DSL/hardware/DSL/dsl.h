@@ -333,6 +333,7 @@ struct DSL_context {
     gboolean clock_type;
     gboolean clock_edge;
     gboolean rle_mode;
+    gboolean rle_support;
     gboolean instant;
     uint16_t op_mode;
     gboolean stream;
