@@ -45,8 +45,7 @@ MainFrame::MainFrame(DeviceManager &device_manager,
     setAttribute(Qt::WA_TranslucentBackground);
     // Make this a borderless window which can't
     // be resized or moved via the window system
-    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
-                   Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
+    setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
     setMinimumHeight(minHeight);
     setMinimumWidth(minWidth);
     //resize(1024, 768);
