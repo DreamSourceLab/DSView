@@ -44,6 +44,8 @@ About::About(QWidget *parent) :
         QString arch = "x64";
     #elif defined(__i386) || defined(_M_IX86)
         QString arch = "x86";
+    #elif defined(__arm__) || defined(_M_ARM)
+        QString arch = "arm";
     #endif
 
     QString version = tr("<font size=24>DSView %1 (%2)</font><br />")
