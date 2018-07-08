@@ -1,3 +1,26 @@
+0.99 (2018-07-08)
+-----------------
+  --common
+  *add boundary for the main window
+  *fix the double border issue #130
+  *fix measure no update when change cursor in Rule area
+  *add sample duration setting instead of sample count
+  *improve save/load and export support
+  *fix other minor issues
+
+  --for logic analyzer
+  *add more decoders
+  *add edges distance measure between channels
+  *add RLE compress options
+
+  --for oscilloscope
+  *add DSCopeC20/DSCopeC20P devices support
+  *improve UI of channel settings
+  *improve autoset function
+
+  --for data acquisiton
+  *add DAQ mode for DSCope serial devices
+
 0.98 (2017-07-29)
 -----------------
   --common
