@@ -1,12 +1,15 @@
 ﻿{
-    "Channel Mode": "Use Channels 0~15 (Max 100MHz)",
+    "Channel Mode": "使用通道 0~1 (最大采样率 200MHz)",
     "Device": "DSLogic",
     "DeviceMode": 1,
-    "Filter Targets": "None",
-    "Horizontal trigger position": "1",
-    "Operation Mode": "Buffer Mode",
-    "Sample count": "1048576",
+    "Enable RLE Compress": 1,
+    "Filter Targets": "无",
+    "Horizontal trigger position": "0",
+    "Max Height": "1X",
+    "Operation Mode": "Stream模式",
+    "Sample count": "1000000",
     "Sample rate": "100000000",
+    "Stop Options": "上传已采集的数据",
     "Threshold Level": "1.8/2.5/3.3V Level",
     "Trigger hold off": "0",
     "Trigger margin": "8",
@@ -14,6 +17,7 @@
     "Trigger source": "0",
     "Using Clock Negedge": 0,
     "Using External Clock": 0,
+    "Version": 2,
     "channel": [
         {
             "colour": "#eeb211",
@@ -39,5 +43,7 @@
             "vfactor": 1,
             "zeroPos": 0.5
         }
+    ],
+    "decoder": [
     ]
 }

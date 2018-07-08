@@ -283,7 +283,18 @@ class Decoder(srd.Decoder):
 
         ptype, data1, data2 = data
 
-        if ptype == 'CS-CHANGE':
+        if ptype == 'TRANSFER':
+            if self.cmd:
+                # Check if we got the minimum number of data bytes
+                # after the command byte.
+                if len(self.mb) < self.min:
+                    self.warn((ss, ss), 'missing data bytes')
+                elif self.mb:
+                    self.finish_command((self.mb_s, self.mb_e))
+
+            self.next()
+            self.cs_was_released = True
+        elif ptype == 'CS-CHANGE':
             if data1 is None:
                 if data2 is None:
                     self.requirements_met = False
@@ -303,8 +314,8 @@ class Decoder(srd.Decoder):
                         self.finish_command((self.mb_s, self.mb_e))
 
                 self.next()
-                self.cs_was_released = True
-        elif ptype == 'DATA' and self.cs_was_released:
+                self.cs_was_released = True            
+        elif ptype == 'DATA':
             mosi, miso = data1, data2
             pos = (ss, es)
 

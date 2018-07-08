@@ -33,6 +33,169 @@ static const unsigned int total_buffer_time = 100;
 static const unsigned int instant_buffer_size = 1024 * 1024;
 static uint16_t test_init = 1;
 
+static const int32_t probeOptions[] = {
+    SR_CONF_PROBE_COUPLING,
+    SR_CONF_PROBE_VDIV,
+    SR_CONF_PROBE_MAP_UNIT,
+    SR_CONF_PROBE_MAP_MIN,
+    SR_CONF_PROBE_MAP_MAX,
+};
+
+static const int32_t probeSessions[] = {
+    SR_CONF_PROBE_COUPLING,
+    SR_CONF_PROBE_VDIV,
+    SR_CONF_PROBE_MAP_UNIT,
+    SR_CONF_PROBE_MAP_MIN,
+    SR_CONF_PROBE_MAP_MAX,
+};
+
+static const uint8_t probeCoupling[] = {
+    SR_DC_COUPLING,
+    SR_AC_COUPLING,
+};
+
+const char *probeMapUnits[] = {
+    "V",
+    "A",
+    "℃",
+    "℉",
+    "g",
+    "m",
+    "m/s",
+};
+
+static const char *probe_names[] = {
+    "0",  "1",  "2",  "3",  "4",  "5",  "6",  "7",
+    "8",  "9", "10", "11", "12", "13", "14", "15",
+    NULL,
+};
+
+static struct sr_dev_mode mode_list[] = {
+    {"LA", LOGIC},
+    {"DAQ", ANALOG},
+    {"OSC", DSO},
+};
+
+SR_PRIV void dsl_probe_init(struct sr_dev_inst *sdi)
+{
+    int i;
+    GSList *l;
+    struct DSL_context *devc = sdi->priv;
+
+    for (l = sdi->channels; l; l = l->next) {
+        struct sr_channel *probe = (struct sr_channel *)l->data;
+        probe->vdiv = 1000;
+        probe->vfactor = 1;
+        probe->vpos = 0;
+        probe->coupling = SR_DC_COUPLING;
+        probe->trig_value = 0x80;
+        probe->vpos_trans = devc->profile->dev_caps.default_pwmtrans;
+        probe->ms_show = TRUE;
+        for (i = DSO_MS_BEGIN; i < DSO_MS_END; i++)
+            probe->ms_en[i] = default_ms_en[i];
+        probe->map_unit = probeMapUnits[0];
+        probe->map_min = -1;
+        probe->map_max = 1;
+        if (devc->profile->dev_caps.vdivs &&
+            probe->vga_ptr == NULL) {
+            for (i = 0; devc->profile->dev_caps.vdivs[i]; i++);
+            probe->vga_ptr = g_try_malloc((i+1)*sizeof(struct DSL_vga));
+            (probe->vga_ptr + i)->id = 0;
+            (probe->vga_ptr + i)->key = 0;
+            (probe->vga_ptr + i)->vgain = 0;
+            (probe->vga_ptr + i)->voff = 0;
+            (probe->vga_ptr + i)->voff_comp = 0;
+            for (i = 0; devc->profile->dev_caps.vdivs[i]; i++) {
+                (probe->vga_ptr + i)->id = devc->profile->dev_caps.vga_id;
+                (probe->vga_ptr + i)->key = devc->profile->dev_caps.vdivs[i];
+            }
+        }
+    }
+}
+
+SR_PRIV int dsl_setup_probes(struct sr_dev_inst *sdi, int num_probes)
+{
+    uint16_t j;
+    struct sr_channel *probe;
+    struct DSL_context *devc = sdi->priv;
+
+    for (j = 0; j < num_probes; j++) {
+        if (!(probe = sr_channel_new(j, channel_modes[devc->ch_mode].type,
+                                   TRUE, probe_names[j])))
+            return SR_ERR;
+        sdi->channels = g_slist_append(sdi->channels, probe);
+    }
+    dsl_probe_init(sdi);
+    return SR_OK;
+}
+
+SR_PRIV int dsl_adjust_probes(struct sr_dev_inst *sdi, int num_probes)
+{
+    uint16_t j;
+    struct sr_channel *probe;
+    struct DSL_context *devc = sdi->priv;
+    GSList *l;
+
+    assert(num_probes > 0);
+
+    j = g_slist_length(sdi->channels);
+    while(j < num_probes) {
+        if (!(probe = sr_channel_new(j, channel_modes[devc->ch_mode].type,
+                                   TRUE, probe_names[j])))
+            return SR_ERR;
+        sdi->channels = g_slist_append(sdi->channels, probe);
+        j++;
+    }
+
+    while(j > num_probes) {
+        sdi->channels = g_slist_delete_link(sdi->channels, g_slist_last(sdi->channels));
+        j--;
+    }
+
+    for(l = sdi->channels; l; l = l->next) {
+        probe = (struct sr_channel *)l->data;
+        probe->enabled = TRUE;
+        probe->type = channel_modes[devc->ch_mode].type;
+    }
+    return SR_OK;
+}
+
+SR_PRIV const GSList *dsl_mode_list(const struct sr_dev_inst *sdi)
+{
+    struct DSL_context *devc;
+    GSList *l = NULL;
+    unsigned int i;
+
+    devc = sdi->priv;
+    for (i = 0; i < ARRAY_SIZE(mode_list); i++) {
+        if (devc->profile->dev_caps.mode_caps & (1 << i))
+            l = g_slist_append(l, &mode_list[i]);
+    }
+
+    return l;
+}
+
+SR_PRIV void dsl_adjust_samplerate(struct DSL_context *devc)
+{
+    devc->samplerates_max_index = ARRAY_SIZE(samplerates) - 1;
+    while (samplerates[devc->samplerates_max_index] >
+           channel_modes[devc->ch_mode].max_samplerate)
+        devc->samplerates_max_index--;
+
+    devc->samplerates_min_index = 0;
+    while (samplerates[devc->samplerates_min_index] <
+           channel_modes[devc->ch_mode].min_samplerate)
+        devc->samplerates_min_index++;
+
+    assert(devc->samplerates_max_index >= devc->samplerates_min_index);
+
+    if (devc->cur_samplerate > samplerates[devc->samplerates_max_index])
+        devc->cur_samplerate = samplerates[devc->samplerates_max_index];
+
+    if (devc->cur_samplerate < samplerates[devc->samplerates_min_index])
+        devc->cur_samplerate = samplerates[devc->samplerates_min_index];
+}
+
 SR_PRIV int dsl_en_ch_num(const struct sr_dev_inst *sdi)
 {
     GSList *l;
@@ -100,7 +263,6 @@ static int hw_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi)
     struct drv_context *drvc;
     struct version_info vi;
     int ret, skip, i, device_count;
-    uint8_t revid;
     struct ctl_rd_cmd rd_cmd;
     uint8_t rd_cmd_data[2];
 
@@ -172,20 +334,11 @@ static int hw_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi)
         vi.major = rd_cmd_data[0];
         vi.minor = rd_cmd_data[1];
 
-        rd_cmd.header.dest = DSL_CTL_REVID_VERSION;
-        rd_cmd.header.size = 1;
-        rd_cmd.data = &revid;
-        if ((ret = command_ctl_rd(usb->devhdl, rd_cmd)) != SR_OK) {
-            sr_err("Failed to get REVID.");
-            break;
-        }
-
         /*
          * Different versions may have incompatible issue,
          * Mark for up level process
          */
-        if (vi.major != DSL_REQUIRED_VERSION_MAJOR ||
-            vi.minor != DSL_REQUIRED_VERSION_MINOR) {
+        if (vi.major != DSL_REQUIRED_VERSION_MAJOR) {
             sr_err("Expected firmware version %d.%d, "
                    "got %d.%d.", DSL_REQUIRED_VERSION_MAJOR, DSL_REQUIRED_VERSION_MINOR,
                    vi.major, vi.minor);
@@ -198,9 +351,6 @@ static int hw_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi)
             "interface %d, firmware %d.%d.",
             sdi->index, usb->bus, usb->address,
             USB_INTERFACE, vi.major, vi.minor);
-
-        sr_info("Detected REVID=%d, it's a Cypress CY7C68013%s.",
-            revid, (revid != 1) ? " (FX2)" : "A (FX2LP)");
 
         break;
     }
@@ -253,11 +403,9 @@ SR_PRIV int dsl_configure_probes(const struct sr_dev_inst *sdi)
 
 SR_PRIV uint64_t dsl_channel_depth(const struct sr_dev_inst *sdi)
 {
+    struct DSL_context *devc = sdi->priv;
     int ch_num = dsl_en_ch_num(sdi);
-    if (strcmp(sdi->model, "DSLogic Basic") == 0)
-        return DSLOGIC_BASIC_MEM_DEPTH / (ch_num ? ch_num : 1);
-    else
-        return DSLOGIC_MEM_DEPTH / (ch_num ? ch_num : 1);
+    return devc->profile->dev_caps.hw_depth / (ch_num ? ch_num : 1);
 }
 
 SR_PRIV int dsl_wr_reg(const struct sr_dev_inst *sdi, uint8_t addr, uint8_t value)
@@ -271,7 +419,7 @@ SR_PRIV int dsl_wr_reg(const struct sr_dev_inst *sdi, uint8_t addr, uint8_t valu
     hdl = usb->devhdl;
 
     wr_cmd.header.dest = DSL_CTL_I2C_REG;
-    wr_cmd.header.offset = (FPGA_I2CADDR << 8) + addr;
+    wr_cmd.header.offset = addr;
     wr_cmd.header.size = 1;
     wr_cmd.data[0] = value;
     if ((ret = command_ctl_wr(hdl, wr_cmd)) != SR_OK) {
@@ -282,26 +430,108 @@ SR_PRIV int dsl_wr_reg(const struct sr_dev_inst *sdi, uint8_t addr, uint8_t valu
     return SR_OK;
 }
 
-SR_PRIV int dsl_wr_ext(const struct sr_dev_inst *sdi, uint8_t addr, uint8_t value)
+SR_PRIV int dsl_rd_reg(const struct sr_dev_inst *sdi, uint8_t addr, uint8_t *value)
 {
     struct sr_usb_dev_inst *usb;
-    struct libusb_device_handle *hdl;
-    struct ctl_wr_cmd wr_cmd;
+    struct ctl_rd_cmd rd_cmd;
     int ret;
 
     usb = sdi->conn;
-    hdl = usb->devhdl;
 
-    wr_cmd.header.dest = DSL_CTL_I2C_REG;
-    wr_cmd.header.offset = (EXT_I2CADDR << 8) + addr;
-    wr_cmd.header.size = 1;
-    wr_cmd.data[0] = value;
-    if ((ret = command_ctl_wr(hdl, wr_cmd)) != SR_OK) {
-        sr_err("Sent DSL_CTL_I2C_REG command failed.");
+    rd_cmd.header.dest = DSL_CTL_I2C_STATUS;
+    rd_cmd.header.offset = addr;
+    rd_cmd.header.size = 1;
+    rd_cmd.data = value;
+    if ((ret = command_ctl_rd(usb->devhdl, rd_cmd)) != SR_OK) {
+        sr_err("Sent DSL_CTL_I2C_STATUS read command failed.");
         return SR_ERR;
     }
 
     return SR_OK;
+}
+
+SR_PRIV int dsl_wr_ext(const struct sr_dev_inst *sdi, uint8_t addr, uint8_t value)
+{
+    uint8_t rdata;
+    int ret;
+
+    // write addr + wr
+    ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_TXR_OFF, EI2C_AWR);
+    ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STA | bmEI2C_WR);
+    // check done
+    ret = dsl_rd_reg(sdi, EI2C_ADDR+EI2C_SR_OFF, &rdata);
+    if (rdata & bmEI2C_RXNACK) {
+        ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STO | bmEI2C_WR);
+        return SR_ERR;
+    }
+
+    // write offset + wr
+    ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_TXR_OFF, addr);
+    ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_WR);
+    // check done
+    ret = dsl_rd_reg(sdi, EI2C_ADDR+EI2C_SR_OFF, &rdata);
+    if (rdata & bmEI2C_RXNACK) {
+        ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STO | bmEI2C_WR);
+        return SR_ERR;
+    }
+
+    // write value + wr
+    ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_TXR_OFF, value);
+    ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STO | bmEI2C_WR);
+    // check done
+    ret = dsl_rd_reg(sdi, EI2C_ADDR+EI2C_SR_OFF, &rdata);
+    if (rdata & bmEI2C_RXNACK) {
+        ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STO | bmEI2C_WR);
+        return SR_ERR;
+    }
+
+    return ret;
+}
+
+SR_PRIV int dsl_rd_ext(const struct sr_dev_inst *sdi, unsigned char *ctx, uint16_t addr, uint8_t len)
+{
+    uint8_t rdata;
+    int ret;
+
+    // write addr + wr
+    ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_TXR_OFF, EI2C_AWR);
+    ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STA | bmEI2C_WR);
+    // check done
+    ret = dsl_rd_reg(sdi, EI2C_ADDR+EI2C_SR_OFF, &rdata);
+    if (rdata & bmEI2C_RXNACK) {
+        ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STO | bmEI2C_WR);
+        return SR_ERR;
+    }
+
+    // write offset + wr
+    ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_TXR_OFF, addr);
+    ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_WR);
+    // check done
+    ret = dsl_rd_reg(sdi, EI2C_ADDR+EI2C_SR_OFF, &rdata);
+    if (rdata & bmEI2C_RXNACK) {
+        ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STO | bmEI2C_WR);
+        return SR_ERR;
+    }
+
+    // write read addr + wr
+    ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_TXR_OFF, EI2C_ARD);
+    ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STA | bmEI2C_WR);
+    // check done
+    ret = dsl_rd_reg(sdi, EI2C_ADDR+EI2C_SR_OFF, &rdata);
+    if (rdata & bmEI2C_RXNACK) {
+        ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STO | bmEI2C_WR);
+        return SR_ERR;
+    }
+
+    while(--len) {
+        ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_RD);
+        ret = dsl_rd_reg(sdi, EI2C_ADDR+EI2C_RXR_OFF, ctx);
+        ctx++;
+    }
+    ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STO | bmEI2C_RD | bmEI2C_NACK);
+    ret = dsl_rd_reg(sdi, EI2C_ADDR+EI2C_RXR_OFF, ctx);
+
+    return ret;
 }
 
 SR_PRIV int dsl_wr_dso(const struct sr_dev_inst *sdi, uint64_t cmd)
@@ -432,8 +662,8 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
                    (devc->clock_edge << CLK_EDGE_BIT) +
                    (devc->rle_mode << RLE_MODE_BIT) +
                    ((sdi->mode == DSO) << DSO_MODE_BIT) +
-                   (((devc->cur_samplerate == (2 * DSLOGIC_MAX_LOGIC_SAMPLERATE)) && sdi->mode != DSO) << HALF_MODE_BIT) +
-                   ((devc->cur_samplerate == (4 * DSLOGIC_MAX_LOGIC_SAMPLERATE)) << QUAR_MODE_BIT) +
+                   (((devc->cur_samplerate == (2 * channel_modes[devc->ch_mode].hw_max_samplerate)) && sdi->mode != DSO) << HALF_MODE_BIT) +
+                   ((devc->cur_samplerate == (4 * channel_modes[devc->ch_mode].hw_max_samplerate)) << QUAR_MODE_BIT) +
                    ((sdi->mode == ANALOG) << ANALOG_MODE_BIT) +
                    ((devc->filter == SR_FILTER_1T) << FILTER_BIT) +
                    (devc->instant << INSTANT_BIT) +
@@ -444,18 +674,16 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
                    ((devc->test_mode == SR_TEST_INTERNAL) << INT_TEST_BIT);
 
     // sample rate divider
-    tmp_u32  = (sdi->mode == DSO) ? (uint32_t)ceil(DSLOGIC_MAX_DSO_SAMPLERATE * 1.0 / devc->cur_samplerate / ch_num) :
-               (sdi->mode == ANALOG) ? (uint32_t)ceil(DSCOPE_MAX_DAQ_SAMPLERATE * 1.0 / max(devc->cur_samplerate, HW_MIN_SAMPLERATE)) :
-                                       (uint32_t)ceil(DSLOGIC_MAX_LOGIC_SAMPLERATE * 1.0 / devc->cur_samplerate);
-    devc->unit_pitch = ceil(HW_MIN_SAMPLERATE * 1.0 / devc->cur_samplerate);
+    tmp_u32  = (sdi->mode == DSO) ? (uint32_t)ceil(channel_modes[devc->ch_mode].max_samplerate * 1.0 / devc->cur_samplerate / ch_num) :
+               (sdi->mode == ANALOG) ? (uint32_t)ceil(channel_modes[devc->ch_mode].hw_max_samplerate * 1.0 / max(devc->cur_samplerate, channel_modes[devc->ch_mode].hw_min_samplerate)) :
+                                       (uint32_t)ceil(channel_modes[devc->ch_mode].hw_max_samplerate * 1.0 / devc->cur_samplerate);
+    devc->unit_pitch = ceil(channel_modes[devc->ch_mode].hw_min_samplerate * 1.0 / devc->cur_samplerate);
     setting.div_l = tmp_u32 & 0x0000ffff;
     setting.div_h = tmp_u32 >> 16;
 
     // capture counter
-    // analog: 16bits, but sample with half mode(0-7 valid only)
-    tmp_u64 = (sdi->mode == DSO) ?    (devc->limit_samples / (g_slist_length(sdi->channels) / ch_num)) :
-              (sdi->mode == ANALOG) ? (devc->limit_samples * g_slist_length(sdi->channels) * 4) :
-                                      (devc->limit_samples);
+    tmp_u64 = (sdi->mode == DSO) ? (devc->actual_samples / (channel_modes[devc->ch_mode].num / ch_num)) :
+                                   (devc->limit_samples);
     tmp_u64 >>= 4; // hardware minimum unit 64
     setting.cnt_l = tmp_u64 & 0x0000ffff;
     setting.cnt_h = tmp_u64 >> 16;
@@ -831,7 +1059,7 @@ SR_PRIV int dsl_config_get(int id, GVariant **data, const struct sr_dev_inst *sd
                       const struct sr_channel *ch,
                       const struct sr_channel_group *cg)
 {
-    struct DSL_context *devc;
+    struct DSL_context *devc = sdi->priv;
     struct sr_usb_dev_inst *usb;
     char str[128];
 
@@ -852,37 +1080,31 @@ SR_PRIV int dsl_config_get(int id, GVariant **data, const struct sr_dev_inst *sd
     case SR_CONF_LIMIT_SAMPLES:
         if (!sdi)
             return SR_ERR;
-        devc = sdi->priv;
         *data = g_variant_new_uint64(devc->limit_samples);
         break;
     case SR_CONF_SAMPLERATE:
         if (!sdi)
             return SR_ERR;
-        devc = sdi->priv;
         *data = g_variant_new_uint64(devc->cur_samplerate);
         break;
     case SR_CONF_RLE_SUPPORT:
         if (!sdi)
             return SR_ERR;
-        devc = sdi->priv;
         *data = g_variant_new_boolean(devc->rle_support);
         break;
     case SR_CONF_CLOCK_TYPE:
         if (!sdi)
             return SR_ERR;
-        devc = sdi->priv;
         *data = g_variant_new_boolean(devc->clock_type);
         break;
     case SR_CONF_CLOCK_EDGE:
         if (!sdi)
             return SR_ERR;
-        devc = sdi->priv;
         *data = g_variant_new_boolean(devc->clock_edge);
         break;
     case SR_CONF_INSTANT:
         if (!sdi)
             return SR_ERR;
-        devc = sdi->priv;
         *data = g_variant_new_boolean(devc->instant);
         break;
     case SR_CONF_PROBE_VDIV:
@@ -903,8 +1125,17 @@ SR_PRIV int dsl_config_get(int id, GVariant **data, const struct sr_dev_inst *sd
     case SR_CONF_TIMEBASE:
         if (!sdi)
             return SR_ERR;
-        devc = sdi->priv;
         *data = g_variant_new_uint64(devc->timebase);
+        break;
+    case SR_CONF_MAX_TIMEBASE:
+        if (!sdi)
+            return SR_ERR;
+        *data = g_variant_new_uint64(min(MAX_TIMEBASE,
+                                         SR_SEC(1) *
+                                         devc->profile->dev_caps.dso_depth /
+                                         channel_modes[devc->ch_mode].num /
+                                         channel_modes[devc->ch_mode].min_samplerate /
+                                         DS_CONF_DSO_HDIVS));
         break;
     case SR_CONF_PROBE_COUPLING:
         if (!ch)
@@ -916,28 +1147,19 @@ SR_PRIV int dsl_config_get(int id, GVariant **data, const struct sr_dev_inst *sd
             return SR_ERR;
         *data = g_variant_new_boolean(ch->enabled);
         break;
-    case SR_CONF_DATALOCK:
-        if (!sdi)
-            return SR_ERR;
-        devc = sdi->priv;
-        *data = g_variant_new_boolean(devc->data_lock);
-        break;
     case SR_CONF_TRIGGER_SLOPE:
         if (!sdi)
             return SR_ERR;
-        devc = sdi->priv;
         *data = g_variant_new_byte(devc->trigger_slope);
         break;
     case SR_CONF_TRIGGER_SOURCE:
         if (!sdi)
             return SR_ERR;
-        devc = sdi->priv;
         *data = g_variant_new_byte(devc->trigger_source&0x0f);
         break;
     case SR_CONF_TRIGGER_CHANNEL:
         if (!sdi)
             return SR_ERR;
-        devc = sdi->priv;
         *data = g_variant_new_byte(devc->trigger_source>>4);
         break;
     case SR_CONF_TRIGGER_VALUE:
@@ -948,7 +1170,6 @@ SR_PRIV int dsl_config_get(int id, GVariant **data, const struct sr_dev_inst *sd
     case SR_CONF_HORIZ_TRIGGERPOS:
         if (!sdi)
             return SR_ERR;
-        devc = sdi->priv;
         if (sdi->mode == DSO) {
             *data = g_variant_new_byte(devc->trigger_hrate);
         } else {
@@ -958,19 +1179,21 @@ SR_PRIV int dsl_config_get(int id, GVariant **data, const struct sr_dev_inst *sd
     case SR_CONF_TRIGGER_HOLDOFF:
         if (!sdi)
             return SR_ERR;
-        devc = sdi->priv;
         *data = g_variant_new_uint64(devc->trigger_holdoff);
         break;
     case SR_CONF_TRIGGER_MARGIN:
         if (!sdi)
             return SR_ERR;
-        devc = sdi->priv;
         *data = g_variant_new_byte(devc->trigger_margin);
+        break;
+    case SR_CONF_HAVE_ZERO:
+        if (!sdi)
+            return SR_ERR;
+        *data = g_variant_new_boolean(devc->profile->dev_caps.feature_caps & CAPS_FEATURE_ZERO);
         break;
     case SR_CONF_ZERO:
         if (!sdi)
             return SR_ERR;
-        devc = sdi->priv;
         if (sdi->mode == DSO)
             *data = g_variant_new_boolean(devc->zero);
         else
@@ -979,14 +1202,83 @@ SR_PRIV int dsl_config_get(int id, GVariant **data, const struct sr_dev_inst *sd
     case SR_CONF_ROLL:
         if (!sdi)
             return SR_ERR;
-        devc = sdi->priv;
         *data = g_variant_new_boolean(devc->roll);
         break;
     case SR_CONF_UNIT_BITS:
         if (!sdi)
             return SR_ERR;
-        devc = sdi->priv;
-        *data = g_variant_new_byte(devc->unit_bits);
+        *data = g_variant_new_byte(channel_modes[devc->ch_mode].unit_bits);
+        break;
+    case SR_CONF_PROBE_MAP_UNIT:
+        if (!sdi || !ch)
+            return SR_ERR;
+        *data = g_variant_new_string(ch->map_unit);
+        break;
+    case SR_CONF_PROBE_MAP_MIN:
+        if (!sdi || !ch)
+            return SR_ERR;
+        *data = g_variant_new_double(ch->map_min);
+        break;
+    case SR_CONF_PROBE_MAP_MAX:
+        if (!sdi || !ch)
+            return SR_ERR;
+        *data = g_variant_new_double(ch->map_max);
+        break;
+    default:
+        return SR_ERR_NA;
+    }
+
+    return SR_OK;
+}
+
+SR_PRIV int dsl_config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
+                       const struct sr_channel_group *cg)
+{
+    struct DSL_context *devc;
+    GVariant *gvar;
+    GVariantBuilder gvb;
+    int i;
+
+    (void)cg;
+    devc = sdi->priv;
+
+    switch (key) {
+    case SR_CONF_SAMPLERATE:
+        g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));
+//		gvar = g_variant_new_fixed_array(G_VARIANT_TYPE("t"), samplerates,
+//				ARRAY_SIZE(samplerates), sizeof(uint64_t));
+        gvar = g_variant_new_from_data(G_VARIANT_TYPE("at"),
+               samplerates + devc->samplerates_min_index,
+               (devc->samplerates_max_index - devc->samplerates_min_index + 1) * sizeof(uint64_t), TRUE, NULL, NULL);
+        g_variant_builder_add(&gvb, "{sv}", "samplerates", gvar);
+        *data = g_variant_builder_end(&gvb);
+        break;
+
+    case SR_CONF_PROBE_CONFIGS:
+        *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
+                probeOptions, ARRAY_SIZE(probeOptions)*sizeof(int32_t), TRUE, NULL, NULL);
+        break;
+    case SR_CONF_PROBE_SESSIONS:
+        *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
+                probeSessions, ARRAY_SIZE(probeSessions)*sizeof(int32_t), TRUE, NULL, NULL);
+        break;
+    case SR_CONF_PROBE_VDIV:
+        g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));
+        for (i = 0; devc->profile->dev_caps.vdivs[i]; i++);
+        gvar = g_variant_new_from_data(G_VARIANT_TYPE("at"),
+                devc->profile->dev_caps.vdivs, i*sizeof(uint64_t), TRUE, NULL, NULL);
+        g_variant_builder_add(&gvb, "{sv}", "vdivs", gvar);
+        *data = g_variant_builder_end(&gvb);
+        break;
+    case SR_CONF_PROBE_COUPLING:
+        g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));
+        gvar = g_variant_new_from_data(G_VARIANT_TYPE("ay"),
+                probeCoupling, ARRAY_SIZE(probeCoupling)*sizeof(uint8_t), TRUE, NULL, NULL);
+        g_variant_builder_add(&gvb, "{sv}", "coupling", gvar);
+        *data = g_variant_builder_end(&gvb);
+        break;
+    case SR_CONF_PROBE_MAP_UNIT:
+        *data = g_variant_new_strv(probeMapUnits, ARRAY_SIZE(probeMapUnits));
         break;
     default:
         return SR_ERR_NA;
@@ -1113,7 +1405,7 @@ SR_PRIV int dsl_dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_dat
 
     if (!devc->abort) {
         devc->abort = TRUE;
-        dsl_wr_reg(sdi, EEWP_ADDR, bmFORCE_RDY);
+        dsl_wr_reg(sdi, CTR0_ADDR, bmFORCE_RDY);
     } else if (devc->status == DSL_FINISH) {
         /* Stop GPIF acquisition */
         wr_cmd.header.dest = DSL_CTL_STOP;
@@ -1139,8 +1431,8 @@ SR_PRIV int dsl_dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *
         devc = sdi->priv;
         usb = sdi->conn;
         if (prg && (devc->status == DSL_START)) {
-            rd_cmd.header.dest = DSL_CTL_DSO_MEASURE;
-            rd_cmd.header.offset = (FPGA_I2CADDR << 8) + begin;
+            rd_cmd.header.dest = DSL_CTL_I2C_STATUS;
+            rd_cmd.header.offset = begin;
             rd_cmd.header.size = end - begin + 1;
             rd_cmd.data = (unsigned char*)status;
             ret = command_ctl_rd(usb->devhdl, rd_cmd);
@@ -1212,7 +1504,7 @@ static void finish_acquisition(struct DSL_context *devc)
 {
     struct sr_datafeed_packet packet;
 
-    sr_err("%s: send SR_DF_END packet", __func__);
+    sr_info("%s: send SR_DF_END packet", __func__);
     /* Terminate session. */
     packet.type = SR_DF_END;
     packet.status = SR_PKT_OK;
@@ -1273,15 +1565,9 @@ static void receive_transfer(struct libusb_transfer *transfer)
     uint8_t *cur_buf = transfer->buffer;
     struct DSL_context *devc = transfer->user_data;
     struct sr_dev_inst *sdi = devc->cb_data;
-    const int sample_width = (devc->sample_wide) ? 2 : 1;
 
     if (devc->status == DSL_START)
         devc->status = DSL_DATA;
-    if (devc->data_lock) {
-        resubmit_transfer(transfer);
-        devc->trf_completed = 1;
-        return;
-    }
 
     if (devc->abort)
         devc->status = DSL_STOP;
@@ -1313,7 +1599,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
             logic.data = cur_buf;
         } else if (sdi->mode == DSO) {
             if (!devc->instant) {
-                const uint32_t mstatus_offset = devc->limit_samples / (g_slist_length(sdi->channels)/dsl_en_ch_num(sdi));
+                const uint32_t mstatus_offset = devc->actual_samples / (channel_modes[devc->ch_mode].num/dsl_en_ch_num(sdi));
                 devc->mstatus.pkt_id = *((const uint16_t*)cur_buf + mstatus_offset);
                 devc->mstatus.ch0_max = *((const uint8_t*)cur_buf + mstatus_offset*2 + 1*2);
                 devc->mstatus.ch0_min = *((const uint8_t*)cur_buf + mstatus_offset*2 + 3);
@@ -1334,19 +1620,18 @@ static void receive_transfer(struct libusb_transfer *transfer)
                 devc->mstatus.vlen = instant_buffer_size;
             }
 
-            const uint32_t divider = devc->zero ? 0x1 : (uint32_t)ceil(DSCOPE_MAX_SAMPLERATE * 1.0 / devc->cur_samplerate / dsl_en_ch_num(sdi));
+            const uint32_t divider = devc->zero ? 0x1 : (uint32_t)ceil(channel_modes[devc->ch_mode].max_samplerate * 1.0 / devc->cur_samplerate / dsl_en_ch_num(sdi));
             if ((devc->mstatus.pkt_id == DSO_PKTID &&
                  devc->mstatus.sample_divider == divider &&
                  devc->mstatus.vlen != 0 &&
-                 devc->mstatus.vlen <= (transfer->actual_length - 512) / sample_width) ||
+                 devc->mstatus.vlen <= (uint32_t)(transfer->actual_length - 512) / 2) ||
                 devc->instant) {
                 devc->roll = (devc->mstatus.stream_mode != 0);
                 devc->mstatus_valid = devc->instant ? FALSE : TRUE;
                 packet.type = SR_DF_DSO;
                 packet.payload = &dso;
                 dso.probes = sdi->channels;
-                //dso.num_samples = (transfer->actual_length - 512) / sample_width;
-                cur_sample_count = 2 * devc->mstatus.vlen / dsl_en_ch_num(sdi) ;
+                cur_sample_count = min(2 * devc->mstatus.vlen / dsl_en_ch_num(sdi), devc->limit_samples);
                 dso.num_samples = cur_sample_count;
                 dso.mq = SR_MQ_VOLTAGE;
                 dso.unit = SR_UNIT_VOLT;
@@ -1363,9 +1648,9 @@ static void receive_transfer(struct libusb_transfer *transfer)
             packet.type = SR_DF_ANALOG;
             packet.payload = &analog;
             analog.probes = sdi->channels;
-            cur_sample_count = transfer->actual_length / (((devc->unit_bits + 7) / 8) * g_slist_length(analog.probes));
+            cur_sample_count = transfer->actual_length / (((channel_modes[devc->ch_mode].unit_bits + 7) / 8) * g_slist_length(analog.probes));
             analog.num_samples = cur_sample_count;
-            analog.unit_bits = devc->unit_bits;
+            analog.unit_bits = channel_modes[devc->ch_mode].unit_bits;;
             analog.unit_pitch = devc->unit_pitch;
             analog.mq = SR_MQ_VOLTAGE;
             analog.unit = SR_UNIT_VOLT;
@@ -1475,9 +1760,10 @@ SR_PRIV int dsl_start_transfers(const struct sr_dev_inst *sdi)
     test_init = 1;
 
     if (devc->instant)
-        dso_buffer_size = instant_buffer_size * g_slist_length(sdi->channels);
+        dso_buffer_size = min(instant_buffer_size * channel_modes[devc->ch_mode].num,
+                              devc->profile->dev_caps.hw_depth / channel_modes[devc->ch_mode].unit_bits);
     else
-        dso_buffer_size = devc->limit_samples * dsl_en_ch_num(sdi) + 512;
+        dso_buffer_size = devc->actual_samples * dsl_en_ch_num(sdi) + 512;
 
     num_transfers = (devc->stream) ? get_number_of_transfers(devc) : 1;
     size = (sdi->mode == DSO) ? dso_buffer_size :

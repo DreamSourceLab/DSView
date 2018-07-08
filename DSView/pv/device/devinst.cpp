@@ -174,7 +174,7 @@ double DevInst::get_sample_time()
     return sample_time;
 }
 
-GSList* DevInst::get_dev_mode_list()
+const GSList* DevInst::get_dev_mode_list()
 {
     assert(_owner);
     sr_dev_inst *const sdi = dev_inst();

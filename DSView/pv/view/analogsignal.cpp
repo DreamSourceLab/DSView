@@ -112,6 +112,10 @@ int AnalogSignal::commit_settings()
 {
     int ret;
 
+    // -- enable
+    ret = _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_EN,
+                                g_variant_new_boolean(enabled()));
+
     // -- vdiv
     ret = _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_VDIV,
                                 g_variant_new_uint64(_probe->vdiv));
@@ -169,7 +173,7 @@ QString AnalogSignal::get_mapUnit() const
 
 double AnalogSignal::get_mapMin() const
 {
-    double min;
+    double min = -1;
     GVariant* gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_MAP_MIN);
     if (gvar != NULL) {
         min = g_variant_get_double(gvar);
@@ -180,7 +184,7 @@ double AnalogSignal::get_mapMin() const
 
 double AnalogSignal::get_mapMax() const
 {
-    double max;
+    double max = 1;
     GVariant* gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_MAP_MAX);
     if (gvar != NULL) {
         max = g_variant_get_double(gvar);
@@ -196,14 +200,14 @@ void AnalogSignal::set_zero_vpos(int pos)
 {
     if (enabled()) {
         const int height = get_totalHeight();
-        const int bottom = get_y() + height / 2;
-        set_zero_vrate(min(max(bottom - pos, 0), height) * 1.0 / height, false);
+        const int top = get_y() - height / 2;
+        set_zero_vrate(min(max(pos - top, 0), height) * 1.0 / height, false);
     }
 }
 
 int AnalogSignal::get_zero_vpos() const
 {
-    return (0.5 - _zero_vrate) * get_totalHeight() + get_y();
+    return (_zero_vrate - 0.5) * get_totalHeight() + get_y();
 }
 
 void AnalogSignal::set_zero_vrate(double rate, bool force_update)
@@ -271,7 +275,7 @@ void AnalogSignal::paint_back(QPainter &p, int left, int right)
 
     // paint rule
     double y = get_y() - height * 0.5;
-    double mapValue = get_mapMax() + (0.5 - _zero_vrate) * (get_mapMax() - get_mapMin());
+    double mapValue = get_mapMax() + (_zero_vrate - 0.5) * (get_mapMax() - get_mapMin());
     for (i = 0; i < DIVS; i++) {
         p.drawLine(left, y, left+10, y);
         if (i == 0 || i == DIVS/2)
@@ -310,7 +314,7 @@ void AnalogSignal::paint_mid(QPainter &p, int left, int right)
     const int height = get_totalHeight();
     const int top = get_y() - height * 0.5;
     const int bottom = get_y() + height * 0.5;
-    const float zeroY = bottom - _zero_vrate * height ;
+    const float zeroY = _zero_vrate * height + top;
 
     const double scale = _view->scale();
     assert(scale > 0);
@@ -461,10 +465,10 @@ void AnalogSignal::paint_envelope(QPainter &p,
         _rects = new QRectF[width+3];
     QRectF *rect = _rects;
     int px = -1, pre_px;
-    int y_min, y_max, pre_y_min, pre_y_max;
+    int y_min = zeroY, y_max = zeroY, pre_y_min = zeroY, pre_y_max = zeroY;
     int pcnt = 0;
     const double scale_samples_pre_pixel = samples_per_pixel / e.scale;
-    const uint64_t ring_end = snapshot->get_ring_end() / e.scale;
+    const uint64_t ring_end = max((int64_t)0, (int64_t)snapshot->get_ring_end() / e.scale - 1);
 //    const int64_t start_offset = start_pixel -
 //            (int64_t)(e.start / scale_samples_pre_pixel + 0.5);
 //    for(uint64_t sample = 0; sample < e.length; sample++) {

@@ -356,7 +356,7 @@ void DsoTriggerDock::init()
     channel_comboBox->clear();
     BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
         boost::shared_ptr<view::DsoSignal> dsoSig;
-        if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
+        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
             channel_comboBox->addItem(dsoSig->get_name(), qVariantFromValue(dsoSig->get_index()));
         }
     }

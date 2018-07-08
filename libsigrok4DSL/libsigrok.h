@@ -124,6 +124,10 @@ enum {
 #define DS_CONF_DSO_VDIVS 10
 
 #define DS_MAX_TRIG_PERCENT 90
+/*
+ * Oscilloscope
+ */
+#define MAX_TIMEBASE SR_SEC(10)
 
 extern char DS_RES_PATH[256];
 
@@ -351,10 +355,6 @@ struct sr_datafeed_logic {
     uint16_t data_error;
     uint64_t error_pattern;
 	void *data;
-};
-
-struct sr_datafeed_trigger {
-
 };
 
 struct sr_datafeed_dso {
@@ -593,7 +593,7 @@ struct sr_output_module {
 };
 
 
-enum {
+enum CHANNEL_TYPE {
     SR_CHANNEL_LOGIC = 10000,
     SR_CHANNEL_DSO,
     SR_CHANNEL_ANALOG,
@@ -602,7 +602,7 @@ enum {
     SR_CHANNEL_FFT,
 };
 
-enum {
+enum OPERATION_MODE {
     LOGIC = 0,
     DSO = 1,
     ANALOG = 2,
@@ -628,6 +628,7 @@ struct sr_channel {
     const char *map_unit;
     double map_min;
     double map_max;
+    struct DSL_vga *vga_ptr;
 };
 
 /** Structure for groups of channels that have common properties. */
@@ -681,7 +682,7 @@ struct sr_status {
     uint64_t ch1_period;
     uint32_t ch1_pcnt;
 
-    int vlen;
+    uint32_t vlen;
     gboolean stream_mode;
     uint32_t sample_divider;
     gboolean sample_divider_tog;
@@ -796,6 +797,7 @@ enum {
 	SR_CONF_BUFFERSIZE,
 
 	/** Time base. */
+    SR_CONF_MAX_TIMEBASE,
 	SR_CONF_TIMEBASE,
 
 	/** Filter. */
@@ -811,11 +813,10 @@ enum {
     SR_CONF_VLD_CH_NUM,
 
     /** Zero */
+    SR_CONF_HAVE_ZERO,
+    SR_CONF_ZERO,
     SR_CONF_ZERO_SET,
     SR_CONF_ZERO_LOAD,
-    SR_CONF_COMB_SET,
-    SR_CONF_ZERO,
-    SR_CONF_ZERO_OVER,
     SR_CONF_VOCM,
     SR_CONF_CALI,
 
@@ -834,21 +835,6 @@ enum {
     /** Test */
     SR_CONF_TEST,
     SR_CONF_EEPROM,
-
-
-
-
-
-
-
-
-    /** Data lock */
-    SR_CONF_DATALOCK,
-
-
-
-	/** Trigger types.  */
-	SR_CONF_TRIGGER_TYPE,
 
 	/** The device supports setting its sample interval, in ms. */
 	SR_CONF_SAMPLE_INTERVAL,
@@ -929,12 +915,8 @@ enum {
 
 	/*--- Special stuff -------------------------------------------------*/
 
-	/** Scan options supported by the driver. */
-	SR_CONF_SCAN_OPTIONS = 40000,
-
 	/** Device options for a particular device. */
 	SR_CONF_DEVICE_OPTIONS,
-    SR_CONF_DEVICE_CONFIGS,
 
     /** Sessions */
     SR_CONF_DEVICE_SESSIONS,
@@ -1112,7 +1094,7 @@ struct sr_dev_driver {
 	int (*cleanup) (void);
 	GSList *(*scan) (GSList *options);
 	GSList *(*dev_list) (void);
-    GSList *(*dev_mode_list) (const struct sr_dev_inst *sdi);
+    const GSList *(*dev_mode_list) (const struct sr_dev_inst *sdi);
     int (*dev_clear) (void);
 
     int (*config_get) (int id, GVariant **data,

@@ -58,8 +58,8 @@ About::About(QWidget *parent) :
 
     QString thanks = tr("<font size=16>Special Thanks</font><br />"
                         "<a href=\"%1\" style=\"color:#C0C0C0\">All backers on kickstarter</a><br />"
-                        "<a href=\"%1\" style=\"color:#C0C0C0\">All members of Sigrok project</a><br />"
-                        "All contributors of open-source projects</a><br />"
+                        "<a href=\"%2\" style=\"color:#C0C0C0\">All members of Sigrok project</a><br />"
+                        "All contributors of all open-source projects</a><br />"
                         "<br /><br />")
                         .arg("https://www.kickstarter.com/projects/dreamsourcelab/dslogic-multifunction-instruments-for-everyone")
                         .arg("http://sigrok.org/");

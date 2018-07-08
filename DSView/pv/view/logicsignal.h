@@ -55,6 +55,7 @@ private:
 
     static const int TogMaxScale = 10;
 
+public:
     enum LogicSetRegions{
         NONTRIG = 0,
         POSTRIG,
@@ -86,7 +87,7 @@ public:
      */
     LogicSetRegions get_trig() const;
     void set_trig(int trig);
-    void commit_trig();
+    bool commit_trig();
 
 	/**
 	 * Paints the signal with a QPainter

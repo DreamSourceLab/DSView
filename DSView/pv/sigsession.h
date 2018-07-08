@@ -96,7 +96,7 @@ private:
     static const int RepeatHoldDiv = 20;
 
 public:
-    static const int ViewTime = 100;
+    static const int ViewTime = 50;
     static const int WaitShowTime = 500;
 
 public:
@@ -155,7 +155,7 @@ public:
 		boost::function<void (const QString)> error_handler);
     void capture_init();
     bool get_capture_status(bool &triggered, int &progress);
-    void logic_init();
+    void container_init();
 
     std::set< boost::shared_ptr<data::SignalData> > get_data() const;
 
@@ -201,6 +201,9 @@ public:
     bool get_instant();
 
     bool get_data_lock();
+    void data_auto_lock(int lock);
+    void data_auto_unlock();
+    bool get_data_auto_lock();
     void mathTraces_rebuild();
 
     bool trigd() const;
@@ -307,6 +310,7 @@ private:
     int    _noData_cnt;
     bool _data_lock;
     bool _data_updated;
+    int _data_auto_lock;
 
     QDateTime _trigger_time;
     uint64_t _trigger_pos;
@@ -365,6 +369,10 @@ signals:
     void repeat_hold(int percent);
     void repeat_resume();
 
+    void cur_samplerate_changed();
+
+    void update_capture();
+
 public slots:
     void reload();
     void refresh(int holdtime);
@@ -374,6 +382,7 @@ public slots:
     void set_map_zoom(int index);
 
 private slots:
+    void data_lock();
     void data_unlock();
     void check_update();
     void nodata_timeout();

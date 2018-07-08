@@ -38,12 +38,19 @@ namespace toolbars {
 class TitleBar;
 }
 
+namespace dialogs {
+class DSMessageBox;
+class DSDialog;
+}
+
 class MainFrame : public QFrame
 {
     Q_OBJECT
 public:
-    static const int minWidth = 800;
-    static const int minHeight = 680;
+    static const int minWidth = 600;
+    static const int minHeight = 500;
+    static const int defWidth = 900;
+    static const int defHeight = 680;
 
 public:
     static const int Margin = 5;
@@ -77,6 +84,8 @@ public slots:
     void showNormal();
     void showMaximized();
     void showMinimized();
+    void show_doc();
+    void setTaskbarProgress(int progress);
 
 private:
     void hide_border();

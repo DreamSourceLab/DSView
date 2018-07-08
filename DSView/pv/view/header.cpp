@@ -298,14 +298,14 @@ void Header::mouseMoveEvent(QMouseEvent *event)
                 int y = (*i).second + delta;
                 if (sig->get_type() == SR_CHANNEL_DSO) {
                     boost::shared_ptr<DsoSignal> dsoSig;
-                    if (dsoSig = dynamic_pointer_cast<DsoSignal>(sig)) {
+                    if ((dsoSig = dynamic_pointer_cast<DsoSignal>(sig))) {
                         dsoSig->set_zero_vpos(y);
                         _moveFlag = true;
                         traces_moved();
                     }
                 } else if (sig->get_type() == SR_CHANNEL_ANALOG) {
                     boost::shared_ptr<AnalogSignal> analogSig;
-                    if (analogSig = dynamic_pointer_cast<AnalogSignal>(sig)) {
+                    if ((analogSig = dynamic_pointer_cast<AnalogSignal>(sig))) {
                         analogSig->set_zero_vpos(y);
                         _moveFlag = true;
                         traces_moved();

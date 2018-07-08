@@ -60,7 +60,7 @@ void DevMode::set_device()
 
     assert(dev_inst);
    
-    for(std::map<QPushButton *, sr_dev_mode *>::const_iterator i = _mode_button_list.begin();
+    for(std::map<QPushButton *, const sr_dev_mode *>::const_iterator i = _mode_button_list.begin();
         i != _mode_button_list.end(); i++) {
         (*i).first->setParent(NULL);
         _layout->removeWidget((*i).first);
@@ -68,9 +68,9 @@ void DevMode::set_device()
     }
     _mode_button_list.clear();
 
-    for (GSList *l = dev_inst->get_dev_mode_list();
+    for (const GSList *l = dev_inst->get_dev_mode_list();
          l; l = l->next) {
-        sr_dev_mode *mode = (sr_dev_mode *)l->data;
+        const sr_dev_mode *mode = (const sr_dev_mode *)l->data;
 
         QPushButton *mode_button = new QPushButton(this);
         //mode_button->setFlat(true);
@@ -111,7 +111,7 @@ void DevMode::on_mode_change()
     if (dev_inst->dev_inst()->mode == _mode_button_list[button]->mode)
         return;
 
-    for(std::map<QPushButton *, sr_dev_mode *>::const_iterator i = _mode_button_list.begin();
+    for(std::map<QPushButton *, const sr_dev_mode *>::const_iterator i = _mode_button_list.begin();
         i != _mode_button_list.end(); i++) {
         if ((*i).first == button) {
             if (dev_inst->dev_inst()->mode != (*i).second->mode) {

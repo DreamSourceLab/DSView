@@ -47,7 +47,7 @@ class Decoder(srd.Decoder):
         self.syncbuf = []
         self.prevsample = 0
         self.stream = 0
-        self.ss_stream = None
+        self.stream_ss = None
         self.bytenum = 0
 
     def start(self):
@@ -57,10 +57,10 @@ class Decoder(srd.Decoder):
     def stream_changed(self, ss, stream):
         if self.stream != stream:
             if self.stream != 0:
-                self.put(self.ss_stream, ss, self.out_ann,
+                self.put(self.stream_ss, ss, self.out_ann,
                          [0, ['Stream %d' % self.stream, 'S%d' % self.stream]])
             self.stream = stream
-            self.ss_stream = ss
+            self.stream_ss = ss
 
     def emit_byte(self, ss, es, byte):
         if self.stream == self.options['stream']:

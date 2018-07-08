@@ -25,11 +25,6 @@
 #include "command.h"
 
 
-static struct sr_dev_mode mode_list[] = {
-    {"DAQ", ANALOG},
-    {"OSC", DSO},
-};
-
 enum {
     /** Normal */
     OP_NORMAL = 0,
@@ -41,30 +36,22 @@ static const char *opmodes[] = {
     "Internal Test",
 };
 
-static const char *thresholds[] = {
-    "1.8/2.5/3.3V Level",
-    "5.0V Level",
-};
-
-static const int32_t hwopts[] = {
-    SR_CONF_CONN,
-};
-
-static const int32_t hwcaps[] = {
-    SR_CONF_LOGIC_ANALYZER,
-    SR_CONF_TRIGGER_TYPE,
-    SR_CONF_SAMPLERATE,
-
-	/* These are really implemented in the driver, not the hardware. */
-    SR_CONF_LIMIT_SAMPLES,
-    SR_CONF_CONTINUOUS,
-};
-
 static const int32_t hwoptions[] = {
     SR_CONF_OPERATION_MODE,
 };
 
-static const int32_t sessions[] = {
+static const int32_t sessions_dso[] = {
+    SR_CONF_OPERATION_MODE,
+    SR_CONF_TIMEBASE,
+    SR_CONF_TRIGGER_SLOPE,
+    SR_CONF_TRIGGER_SOURCE,
+    SR_CONF_TRIGGER_CHANNEL,
+    SR_CONF_HORIZ_TRIGGERPOS,
+    SR_CONF_TRIGGER_HOLDOFF,
+    SR_CONF_TRIGGER_MARGIN,
+};
+
+static const int32_t sessions_daq[] = {
     SR_CONF_SAMPLERATE,
     SR_CONF_LIMIT_SAMPLES,
     SR_CONF_OPERATION_MODE,
@@ -77,317 +64,54 @@ static const int32_t sessions[] = {
     SR_CONF_TRIGGER_MARGIN,
 };
 
-static const char *probe_names[] = {
-	"0",  "1",  "2",  "3",  "4",  "5",  "6",  "7",
-	"8",  "9", "10", "11", "12", "13", "14", "15",
-	NULL,
-};
-
-static const int32_t probeOptions[] = {
-    SR_CONF_PROBE_COUPLING,
-    SR_CONF_PROBE_VDIV,
-    SR_CONF_PROBE_MAP_UNIT,
-    SR_CONF_PROBE_MAP_MIN,
-    SR_CONF_PROBE_MAP_MAX,
-};
-
-static const int32_t probeSessions[] = {
-    SR_CONF_PROBE_COUPLING,
-    SR_CONF_PROBE_VDIV,
-    SR_CONF_PROBE_MAP_UNIT,
-    SR_CONF_PROBE_MAP_MIN,
-    SR_CONF_PROBE_MAP_MAX,
-};
-
-static const uint8_t probeCoupling[] = {
-    SR_DC_COUPLING,
-    SR_AC_COUPLING,
-};
-
-static const uint64_t probeVdivs[] = {
-    SR_mV(10),
-    SR_mV(20),
-    SR_mV(50),
-    SR_mV(100),
-    SR_mV(200),
-    SR_mV(500),
-    SR_V(1),
-    SR_V(2),
-};
-
-static const char *probeMapUnits[] = {
-    "V",
-    "A",
-    "°C",
-    "°F",
-    "g",
-    "m",
-    "m/s",
-};
-
-static const uint64_t samplerates[] = {
-    SR_HZ(10),
-    SR_HZ(20),
-    SR_HZ(50),
-    SR_HZ(100),
-    SR_HZ(200),
-    SR_HZ(500),
-    SR_KHZ(1),
-    SR_KHZ(2),
-    SR_KHZ(5),
-    SR_KHZ(10),
-    SR_KHZ(20),
-    SR_KHZ(50),
-    SR_KHZ(100),
-    SR_KHZ(200),
-    SR_KHZ(500),
-    SR_MHZ(1),
-    SR_MHZ(2),
-    SR_MHZ(5),
-    SR_MHZ(10),
-    SR_MHZ(20),
-    SR_MHZ(25),
-    SR_MHZ(50),
-    SR_MHZ(100),
-    SR_MHZ(200),
-};
-
-static const uint64_t samplecounts[] = {
-    SR_KB(1),
-    SR_KB(2),
-    SR_KB(4),
-    SR_KB(8),
-    SR_KB(16),
-    SR_KB(32),
-    SR_KB(64),
-    SR_KB(128),
-    SR_KB(256),
-    SR_KB(512),
-    SR_MB(1),
-    SR_MB(2),
-    SR_MB(4),
-    SR_MB(8),
-    SR_MB(16),
-    SR_MB(32),
-    SR_MB(64),
-    SR_MB(128),
-};
-
 static const uint8_t zero_base_addr = 0x40;
 static const uint8_t zero_big_addr = 0x20;
 
 SR_PRIV struct sr_dev_driver DSCope_driver_info;
 static struct sr_dev_driver *di = &DSCope_driver_info;
 
-static const uint64_t DSCOPE_DEFAULT_VGAIN[] = {
-    DSCOPE_DEFAULT_VGAIN0,
-    DSCOPE_DEFAULT_VGAIN1,
-    DSCOPE_DEFAULT_VGAIN2,
-    DSCOPE_DEFAULT_VGAIN3,
-    DSCOPE_DEFAULT_VGAIN4,
-    DSCOPE_DEFAULT_VGAIN5,
-    DSCOPE_DEFAULT_VGAIN6,
-    DSCOPE_DEFAULT_VGAIN7,
-};
-
-static const uint64_t DSCOPE20_DEFAULT_VGAIN[] = {
-    DSCOPE20_DEFAULT_VGAIN0,
-    DSCOPE20_DEFAULT_VGAIN1,
-    DSCOPE20_DEFAULT_VGAIN2,
-    DSCOPE20_DEFAULT_VGAIN3,
-    DSCOPE20_DEFAULT_VGAIN4,
-    DSCOPE20_DEFAULT_VGAIN5,
-    DSCOPE20_DEFAULT_VGAIN6,
-    DSCOPE20_DEFAULT_VGAIN7,
-};
-
-struct DSL_vga DSCope_vga[] = {
-    {10,  DSCOPE_DEFAULT_VGAIN0, DSCOPE_DEFAULT_VGAIN0, DSCOPE_DEFAULT_VOFF, DSCOPE_DEFAULT_VOFF},
-    {20,  DSCOPE_DEFAULT_VGAIN1, DSCOPE_DEFAULT_VGAIN1, DSCOPE_DEFAULT_VOFF, DSCOPE_DEFAULT_VOFF},
-    {50,  DSCOPE_DEFAULT_VGAIN2, DSCOPE_DEFAULT_VGAIN2, DSCOPE_DEFAULT_VOFF, DSCOPE_DEFAULT_VOFF},
-    {100, DSCOPE_DEFAULT_VGAIN3, DSCOPE_DEFAULT_VGAIN3, DSCOPE_DEFAULT_VOFF, DSCOPE_DEFAULT_VOFF},
-    {200, DSCOPE_DEFAULT_VGAIN4, DSCOPE_DEFAULT_VGAIN4, DSCOPE_DEFAULT_VOFF, DSCOPE_DEFAULT_VOFF},
-    {500, DSCOPE_DEFAULT_VGAIN5, DSCOPE_DEFAULT_VGAIN5, DSCOPE_DEFAULT_VOFF, DSCOPE_DEFAULT_VOFF},
-    {1000,DSCOPE_DEFAULT_VGAIN6, DSCOPE_DEFAULT_VGAIN6, DSCOPE_DEFAULT_VOFF, DSCOPE_DEFAULT_VOFF},
-    {2000,DSCOPE_DEFAULT_VGAIN7, DSCOPE_DEFAULT_VGAIN7, DSCOPE_DEFAULT_VOFF, DSCOPE_DEFAULT_VOFF},
-    {0, 0, 0, 0, 0},
-};
-struct DSL_vga DSCope20_vga[] = {
-    {10,  DSCOPE20_DEFAULT_VGAIN0, DSCOPE20_DEFAULT_VGAIN0, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
-    {20,  DSCOPE20_DEFAULT_VGAIN1, DSCOPE20_DEFAULT_VGAIN1, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
-    {50,  DSCOPE20_DEFAULT_VGAIN2, DSCOPE20_DEFAULT_VGAIN2, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
-    {100, DSCOPE20_DEFAULT_VGAIN3, DSCOPE20_DEFAULT_VGAIN3, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
-    {200, DSCOPE20_DEFAULT_VGAIN4, DSCOPE20_DEFAULT_VGAIN4, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
-    {500, DSCOPE20_DEFAULT_VGAIN5, DSCOPE20_DEFAULT_VGAIN5, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
-    {1000,DSCOPE20_DEFAULT_VGAIN6, DSCOPE20_DEFAULT_VGAIN6, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
-    {2000,DSCOPE20_DEFAULT_VGAIN7, DSCOPE20_DEFAULT_VGAIN7, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
-    {0, 0, 0, 0, 0},
-};
-struct DSL_vga DSCopeC20_vga[] = {
-    {10,  DSCOPEC20_DEFAULT_VGAIN0, DSCOPEC20_DEFAULT_VGAIN0, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
-    {20,  DSCOPEC20_DEFAULT_VGAIN1, DSCOPEC20_DEFAULT_VGAIN1, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
-    {50,  DSCOPEC20_DEFAULT_VGAIN2, DSCOPEC20_DEFAULT_VGAIN2, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
-    {100, DSCOPEC20_DEFAULT_VGAIN3, DSCOPEC20_DEFAULT_VGAIN3, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
-    {200, DSCOPEC20_DEFAULT_VGAIN4, DSCOPEC20_DEFAULT_VGAIN4, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
-    {500, DSCOPEC20_DEFAULT_VGAIN5, DSCOPEC20_DEFAULT_VGAIN5, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
-    {1000,DSCOPEC20_DEFAULT_VGAIN6, DSCOPEC20_DEFAULT_VGAIN6, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
-    {2000,DSCOPEC20_DEFAULT_VGAIN7, DSCOPEC20_DEFAULT_VGAIN7, DSCOPE20_DEFAULT_VOFF, CALI_VOFF_RANGE-DSCOPE20_DEFAULT_VOFF},
-    {0, 0, 0, 0, 0},
-};
-
-static struct DSL_vga* get_vga_ptr(const struct sr_dev_inst *sdi)
-{
-    struct DSL_vga *vga_ptr = NULL;
-    if (strcmp(sdi->model, "DSCope") == 0)
-        vga_ptr = DSCope_vga;
-    else if (strncmp(sdi->model, "DSCope C20", 10) == 0)
-        vga_ptr = DSCopeC20_vga;
-    else
-        vga_ptr = DSCope20_vga;
-
-    return vga_ptr;
-}
-
-static uint16_t get_default_trans(const struct sr_dev_inst *sdi)
-{
-    uint16_t trans = 1;
-    if (strcmp(sdi->model, "DSCope") == 0)
-        trans = DSCOPE_DEFAULT_TRANS;
-    else
-        trans = DSCOPE20_DEFAULT_TRANS;
-
-    return trans;
-}
-
-static uint16_t get_default_voff(const struct sr_dev_inst *sdi, int ch_index)
-{
-    uint16_t voff = 0;
-    if (strcmp(sdi->model, "DSCope") == 0) {
-        voff = DSCOPE_DEFAULT_VOFF;
-    } else {
-        if (ch_index == 1)
-            voff = CALI_VOFF_RANGE - DSCOPE20_DEFAULT_VOFF;
-        else
-            voff = DSCOPE20_DEFAULT_VOFF;
-    }
-
-    return voff;
-}
-
-static uint64_t get_default_vgain(const struct sr_dev_inst *sdi, unsigned int num)
-{
-    uint64_t vgain = 0;
-    if (strcmp(sdi->model, "DSCope") == 0) {
-        assert(num < sizeof(DSCOPE_DEFAULT_VGAIN));
-        vgain = DSCOPE_DEFAULT_VGAIN[num];
-    } else {
-        assert(num < sizeof(DSCOPE20_DEFAULT_VGAIN));
-        vgain = DSCOPE20_DEFAULT_VGAIN[num];
-    }
-
-    return vgain;
-}
-
-static int counts_size(const struct sr_dev_inst *sdi)
-{
-    if (strcmp(sdi->model, "DSCope") == 0 ||
-        strcmp(sdi->model, "DSCope20") == 0 ||
-        strcmp(sdi->model, "DSCope B20") == 0) {
-        if (sdi->mode == DSO)
-            return 15;
-        else if (sdi->mode == ANALOG)
-            return ARRAY_SIZE(samplecounts);
-        else
-            return 0;
-    } else {
-        return 0;
-    }
-}
-
-static void probe_init(struct sr_dev_inst *sdi)
+static uint16_t get_default_voff(const struct sr_dev_inst *sdi, const struct sr_channel* ch)
 {
     int i;
-    GSList *l;
-    for (l = sdi->channels; l; l = l->next) {
-        struct sr_channel *probe = (struct sr_channel *)l->data;
-        probe->vdiv = 1000;
-        probe->vfactor = 1;
-        probe->vpos = 0;
-        probe->coupling = SR_DC_COUPLING;
-        probe->trig_value = 0x80;
-        probe->vpos_trans = get_default_trans(sdi);
-        probe->ms_show = TRUE;
-        for (i = DSO_MS_BEGIN; i < DSO_MS_END; i++)
-            probe->ms_en[i] = default_ms_en[i];
-        probe->map_unit = probeMapUnits[0];
-        probe->map_min = -1;
-        probe->map_max = 1;
+    struct DSL_context *devc = sdi->priv;
+    for (i = 0; vga_defaults[i].id; i++) {
+        if (vga_defaults[i].id == devc->profile->dev_caps.vga_id &&
+            vga_defaults[i].key == ch->vdiv) {
+            if (ch->index == 1)
+                return vga_defaults[i].voff_comp;
+            else
+                return vga_defaults[i].voff;
+        }
     }
+
+    return 0;
 }
 
-static int setup_probes(struct sr_dev_inst *sdi, int num_probes)
-{
-    uint16_t j;
-    struct sr_channel *probe;
-
-    for (j = 0; j < num_probes; j++) {
-        if (!(probe = sr_channel_new(j, (sdi->mode == LOGIC) ? SR_CHANNEL_LOGIC :
-                                        ((sdi->mode == DSO) ? SR_CHANNEL_DSO : SR_CHANNEL_ANALOG),
-                                   TRUE, probe_names[j])))
-            return SR_ERR;
-        sdi->channels = g_slist_append(sdi->channels, probe);
-    }
-    probe_init(sdi);
-    return SR_OK;
-}
-
-static int adjust_probes(struct sr_dev_inst *sdi, int num_probes)
-{
-    uint16_t j;
-    struct sr_channel *probe;
-
-    assert(num_probes > 0);
-
-    j = g_slist_length(sdi->channels);
-    while(j < num_probes) {
-        if (!(probe = sr_channel_new(j, (sdi->mode == LOGIC) ? SR_CHANNEL_LOGIC : ((sdi->mode == DSO) ? SR_CHANNEL_DSO : SR_CHANNEL_ANALOG),
-                                   TRUE, probe_names[j])))
-            return SR_ERR;
-        sdi->channels = g_slist_append(sdi->channels, probe);
-        j++;
-    }
-
-    while(j > num_probes) {
-        sdi->channels = g_slist_delete_link(sdi->channels, g_slist_last(sdi->channels));
-        j--;
-    }
-
-    return SR_OK;
-}
-
-static struct DSL_context *DSCope_dev_new(const struct sr_dev_inst *sdi)
+static struct DSL_context *DSCope_dev_new(const struct DSL_profile *prof)
 {
     struct DSL_context *devc;
+    unsigned int i;
 
     if (!(devc = g_try_malloc(sizeof(struct DSL_context)))) {
         sr_err("Device context malloc failed.");
 		return NULL;
 	}
 
+    for (i = 0; i < ARRAY_SIZE(channel_modes); i++)
+        assert(channel_modes[i].id == i);
+
     devc->channel = NULL;
-    devc->profile = NULL;
+    devc->profile = prof;
     devc->fw_updated = 0;
-    devc->cur_samplerate = DSCOPE_MAX_SAMPLERATE / MAX_DSO_PROBES_NUM;
-    devc->limit_samples = DSCOPE_MAX_DEPTH / MAX_DSO_PROBES_NUM;
-    devc->sample_wide = TRUE;
+    devc->cur_samplerate = devc->profile->dev_caps.default_samplerate;
+    devc->limit_samples = devc->profile->dev_caps.default_samplelimit;
     devc->clock_type = FALSE;
     devc->clock_edge = FALSE;
     devc->instant = FALSE;
     devc->op_mode = OP_NORMAL;
     devc->test_mode = SR_TEST_NONE;
     devc->stream = FALSE;
-    devc->samplerates_size = ARRAY_SIZE(samplerates);
-    devc->samplecounts_size = counts_size(sdi);
+    devc->ch_mode = devc->profile->dev_caps.default_channelmode;
     devc->th_level = SR_TH_3V3;
     devc->filter = SR_FILTER_NONE;
     devc->timebase = 10000;
@@ -399,10 +123,11 @@ static struct DSL_context *DSCope_dev_new(const struct sr_dev_inst *sdi)
     devc->zero = FALSE;
     devc->data_lock = FALSE;
     devc->cali = FALSE;
-    devc->unit_bits = 8;
     devc->trigger_margin = 8;
     devc->trigger_channel = 0;
     devc->rle_mode = FALSE;
+
+    dsl_adjust_samplerate(devc);
 	return devc;
 }
 
@@ -483,21 +208,24 @@ static GSList *scan(GSList *options)
 			continue;
 
 		devcnt = g_slist_length(drvc->instances);
-        sdi = sr_dev_inst_new(DSO, devcnt, SR_ST_INITIALIZING,
+        devc = DSCope_dev_new(prof);
+        if (!devc)
+            return NULL;
+        sdi = sr_dev_inst_new(channel_modes[devc->ch_mode].mode, devcnt, SR_ST_INITIALIZING,
 			prof->vendor, prof->model, prof->model_version);
-		if (!sdi)
-			return NULL;
+        if (!sdi) {
+            g_free(devc);
+            return NULL;
+        }
+        sdi->priv = devc;
 		sdi->driver = di;
 
-		/* Fill in probelist according to this device's profile. */
-        if (setup_probes(sdi, 2) != SR_OK)
-            return NULL;
-
-        devc = DSCope_dev_new(sdi);
-        devc->profile = prof;
-        sdi->priv = devc;
         drvc->instances = g_slist_append(drvc->instances, sdi);
         //devices = g_slist_append(devices, sdi);
+
+        /* Fill in probelist according to this device's profile. */
+        if (dsl_setup_probes(sdi, channel_modes[devc->ch_mode].num) != SR_OK)
+            return NULL;
 
 		if (dsl_check_conf_profile(devlist[i])) {
 			/* Already has the firmware, so fix the new address. */
@@ -540,50 +268,40 @@ static GSList *dev_list(void)
 	return ((struct drv_context *)(di->priv))->instances;
 }
 
-static GSList *dev_mode_list(const struct sr_dev_inst *sdi)
+static const GSList *dev_mode_list(const struct sr_dev_inst *sdi)
 {
-    (void)sdi;
-    GSList *l = NULL;
-    unsigned int i;
-
-    for(i = 0; i < ARRAY_SIZE(mode_list); i++) {
-        l = g_slist_append(l, &mode_list[i]);
-    }
-
-    return l;
+    return dsl_mode_list(sdi);
 }
 
-static uint64_t dso_vga(const struct sr_dev_inst *sdi, const struct sr_channel* ch)
+static uint64_t dso_vga(const struct sr_channel* ch)
 {
     int i;
-    struct DSL_vga *vga_ptr = get_vga_ptr(sdi);
-    for (i = 0; vga_ptr && (vga_ptr+i)->key; i++) {
-        if ((vga_ptr+i)->key == ch->vdiv)
-            return (ch->index == 0) ? (vga_ptr+i)->vgain0 : (vga_ptr+i)->vgain1;
+    for (i = 0; ch->vga_ptr && (ch->vga_ptr+i)->id; i++) {
+        if ((ch->vga_ptr+i)->key == ch->vdiv)
+            return (ch->vga_ptr+i)->vgain;
     }
 
     return 0;
 }
 
-static uint64_t dso_voff(const struct sr_dev_inst *sdi, const struct sr_channel* ch)
+static uint64_t dso_voff(const struct sr_channel* ch)
 {
     int i;
-    struct DSL_vga *vga_ptr =  get_vga_ptr(sdi);
-    for (i = 0; vga_ptr && (vga_ptr+i)->key; i++) {
-        if ((vga_ptr+i)->key == ch->vdiv)
-            return (ch->index == 0) ? (vga_ptr+i)->voff0 : (vga_ptr+i)->voff1;
+    for (i = 0; ch->vga_ptr && (ch->vga_ptr+i)->id; i++) {
+        if ((ch->vga_ptr+i)->key == ch->vdiv)
+            return (ch->vga_ptr+i)->voff;
     }
     return 0;
 }
 
 static uint64_t dso_vpos(const struct sr_dev_inst *sdi, const struct sr_channel* ch)
 {
-    uint64_t vpos;
+    uint64_t vpos = 0;
     int vpos_coarse, vpos_fine;
     int trans_coarse, trans_fine;
     struct DSL_context *devc = sdi->priv;
     const double voltage = (devc->zero && devc->zero_comb == -1) ? 0 : ch->vpos;
-    if (strcmp(sdi->model, "DSCope") == 0) {
+    if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_PREOFF) {
         trans_coarse = (ch->vpos_trans & 0xFF00) >> 8;
         trans_fine = (ch->vpos_trans & 0x00FF);
         if (ch->vdiv < 500) {
@@ -598,8 +316,8 @@ static uint64_t dso_vpos(const struct sr_dev_inst *sdi, const struct sr_channel*
         vpos = ((ch->vdiv*5.0) - voltage)/(ch->vdiv*10.0)*ch->vpos_trans;
     }
 
-    const uint64_t voff = dso_voff(sdi, ch);
-    if (strcmp(sdi->model, "DSCope") == 0)
+    const uint64_t voff = dso_voff(ch);
+    if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_PREOFF)
         return ((vpos_coarse+DSCOPE_CONSTANT_BIAS+(voff>>10)) << 16)+vpos_fine+(voff&0x03ff);
     else
         return vpos+voff;
@@ -617,7 +335,7 @@ static uint64_t dso_cmd_gen(const struct sr_dev_inst *sdi, struct sr_channel* ch
     switch (id) {
     case SR_CONF_PROBE_EN:
     case SR_CONF_PROBE_COUPLING:
-        if (devc->zero || dsl_en_ch_num(sdi) == 2) {
+        if (devc->zero || sdi->mode == ANALOG || dsl_en_ch_num(sdi) == 2) {
             cmd += 0x0E00;
             //cmd += 0x000;
         } else if (dsl_en_ch_num(sdi) == 1) {
@@ -640,7 +358,7 @@ static uint64_t dso_cmd_gen(const struct sr_dev_inst *sdi, struct sr_channel* ch
         cmd += 0x8;
         cmd += ch->index << ch_bit;
         //  --VGAIN
-        cmd += dso_vga(sdi, ch);
+        cmd += dso_vga(ch);
         break;
     case SR_CONF_PROBE_VPOS:
         cmd += 0x10;
@@ -650,7 +368,7 @@ static uint64_t dso_cmd_gen(const struct sr_dev_inst *sdi, struct sr_channel* ch
         break;
     case SR_CONF_SAMPLERATE:
         cmd += 0x18;
-        uint32_t divider = devc->zero ? 0x1 : (uint32_t)ceil(DSCOPE_MAX_SAMPLERATE * 1.0 / devc->cur_samplerate / dsl_en_ch_num(sdi));
+        uint32_t divider = devc->zero ? 0x1 : (uint32_t)ceil(channel_modes[devc->ch_mode].max_samplerate * 1.0 / devc->cur_samplerate / dsl_en_ch_num(sdi));
         cmd += divider << 8;
         break;
     case SR_CONF_HORIZ_TRIGGERPOS:
@@ -754,15 +472,16 @@ static int dso_init(const struct sr_dev_inst *sdi)
 
 static gboolean dso_load_eep(struct sr_dev_inst *sdi, struct sr_channel *probe, gboolean fpga_done)
 {
+    struct DSL_context *devc;
     int ret, i;
     uint16_t real_zero_addr;
 
+    devc = sdi->priv;
     struct cmd_zero_info zero_info;
     uint8_t dst_addr = (zero_base_addr +
                         probe->index * (sizeof(struct cmd_zero_info) + sizeof(struct cmd_vga_info)));
     zero_info.zero_addr = dst_addr;
-    if (strcmp(sdi->model, "DSCope20") == 0 ||
-        strcmp(sdi->model, "DSCope") == 0)
+    if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_SEEP)
         real_zero_addr = zero_info.zero_addr;
     else
         real_zero_addr = (zero_big_addr << 8) + zero_info.zero_addr;
@@ -772,12 +491,8 @@ static gboolean dso_load_eep(struct sr_dev_inst *sdi, struct sr_channel *probe, 
     } else {
         if (zero_info.zero_addr == dst_addr) {
             uint8_t* voff_ptr = &zero_info.zero_addr + 1;
-            struct DSL_vga *vga_ptr =  get_vga_ptr(sdi);
-             for (i = 0; vga_ptr && (vga_ptr+i)->key; i++) {
-                 if (probe->index == 0)
-                     (vga_ptr+i)->voff0 = (*(voff_ptr + 2*i+1) << 8) + *(voff_ptr + 2*i);
-                 else
-                     (vga_ptr+i)->voff1 = (*(voff_ptr + 2*i+1) << 8) + *(voff_ptr + 2*i);
+             for (i = 0; probe->vga_ptr && (probe->vga_ptr+i)->id; i++) {
+                 (probe->vga_ptr+i)->voff = (*(voff_ptr + 2*i+1) << 8) + *(voff_ptr + 2*i);
              }
              if (i != 0) {
                  probe->comb_diff_top = *(voff_ptr + 2*i);
@@ -801,8 +516,7 @@ static gboolean dso_load_eep(struct sr_dev_inst *sdi, struct sr_channel *probe, 
 
     struct cmd_vga_info vga_info;
     vga_info.vga_addr = dst_addr + sizeof(struct cmd_zero_info);
-    if (strcmp(sdi->model, "DSCope20") == 0 ||
-        strcmp(sdi->model, "DSCope") == 0)
+    if (devc ->profile->dev_caps.feature_caps & CAPS_FEATURE_SEEP)
         real_zero_addr = vga_info.vga_addr;
     else
         real_zero_addr = (zero_big_addr << 8) + vga_info.vga_addr;
@@ -812,13 +526,9 @@ static gboolean dso_load_eep(struct sr_dev_inst *sdi, struct sr_channel *probe, 
     } else {
         if (vga_info.vga_addr == dst_addr + sizeof(struct cmd_zero_info)) {
             uint16_t* vgain_ptr = &vga_info.vga0;
-            struct DSL_vga *vga_ptr =  get_vga_ptr(sdi);
-             for (i = 0; vga_ptr && (vga_ptr+i)->key; i++) {
-                 if (probe->index == 0)
-                     (vga_ptr+i)->vgain0 = *(vgain_ptr + i) << 8;
-                 else
-                     (vga_ptr+i)->vgain1 = *(vgain_ptr + i) << 8;
-             }
+            for (i = 0; probe->vga_ptr && (probe->vga_ptr+i)->id; i++) {
+                (probe->vga_ptr+i)->vgain = *(vgain_ptr + i) << 8;
+            }
         } else {
             return FALSE;
         }
@@ -831,10 +541,9 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
                       const struct sr_channel *ch,
                       const struct sr_channel_group *cg)
 {
-    struct DSL_context *devc;
     unsigned int i;
-    struct DSL_vga *vga_ptr;
     int ret;
+    struct DSL_context *devc = sdi->priv;
 
     ret = dsl_config_get(id, data, sdi, ch, cg);
     if (ret != SR_OK) {
@@ -842,13 +551,11 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         case SR_CONF_OPERATION_MODE:
             if (!sdi)
                 return SR_ERR;
-            devc = sdi->priv;
             *data = g_variant_new_string(opmodes[devc->op_mode]);
             break;
         case SR_CONF_CALI:
             if (!sdi)
                 return SR_ERR;
-            devc = sdi->priv;
             *data = g_variant_new_boolean(devc->cali);
             break;
         case SR_CONF_TEST:
@@ -859,95 +566,82 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         case SR_CONF_STREAM:
             if (!sdi)
                 return SR_ERR;
-            devc = sdi->priv;
             *data = g_variant_new_boolean(devc->stream);
             break;
         case SR_CONF_MAX_DSO_SAMPLERATE:
             if (!sdi)
                 return SR_ERR;
-            *data = g_variant_new_uint64(DSCOPE_MAX_SAMPLERATE);
+            *data = g_variant_new_uint64(channel_modes[devc->ch_mode].max_samplerate);
             break;
         case SR_CONF_MAX_DSO_SAMPLELIMITS:
             if (!sdi)
                 return SR_ERR;
-            *data = g_variant_new_uint64(DSCOPE_MAX_DEPTH);
+            *data = g_variant_new_uint64(devc->profile->dev_caps.dso_depth);
             break;
         case SR_CONF_HW_DEPTH:
             if (!sdi)
                 return SR_ERR;
-            *data = g_variant_new_uint64(DSCOPE_INSTANT_DEPTH);
+            *data = g_variant_new_uint64(devc->profile->dev_caps.hw_depth / channel_modes[devc->ch_mode].unit_bits);
             break;
         case SR_CONF_PROBE_VGAIN:
             if (!sdi || !ch)
                 return SR_ERR;
-            *data = g_variant_new_uint64(dso_vga(sdi, ch)>>8);
+            *data = g_variant_new_uint64(dso_vga(ch)>>8);
             break;
         case SR_CONF_PROBE_VGAIN_DEFAULT:
             if (!sdi || !ch)
                 return SR_ERR;
-            vga_ptr =  get_vga_ptr(sdi);
-            for (i = 0; vga_ptr && (vga_ptr+i)->key; i++) {
-                if ((vga_ptr+i)->key == ch->vdiv)
+            for (i = 0; vga_defaults[i].id; i++) {
+                if (vga_defaults[i].id == devc->profile->dev_caps.vga_id &&
+                    vga_defaults[i].key == ch->vdiv) {
+                    *data = g_variant_new_uint64(vga_defaults[i].vgain >> 8);
                     break;
+                }
             }
-            *data = g_variant_new_uint64(get_default_vgain(sdi, i)>>8);
             break;
         case SR_CONF_PROBE_VGAIN_RANGE:
             if (!sdi)
                 return SR_ERR;
-            vga_ptr =  get_vga_ptr(sdi);
-            for (i = 0; vga_ptr && (vga_ptr+i)->key; i++) {
-                if ((vga_ptr+i)->key == ch->vdiv)
+            uint16_t vgain_default = 0;
+            for (i = 0; vga_defaults[i].id; i++) {
+                if (vga_defaults[i].id == devc->profile->dev_caps.vga_id &&
+                    vga_defaults[i].key == ch->vdiv) {
+                    vgain_default = vga_defaults[i].vgain;
                     break;
+                }
             }
-            uint16_t vgain_default= (get_default_vgain(sdi, i)>>8) & 0x0FFF;
+            vgain_default = (vgain_default>>8) & 0x0FFF;
             *data = g_variant_new_uint16(min(CALI_VGAIN_RANGE, vgain_default*2));
             break;
         case SR_CONF_PROBE_VOFF:
             if (!sdi || !ch)
                 return SR_ERR;
-            uint16_t voff = dso_voff(sdi, ch);
-            uint16_t voff_default = get_default_voff(sdi, ch->index);
-            if (strcmp(sdi->model, "DSCope") == 0) {
+            uint16_t voff = dso_voff(ch);
+            uint16_t voff_default = get_default_voff(sdi, ch);
+            if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_PREOFF) {
                 int voff_skew_coarse = (voff >> 10) - (voff_default >> 10);
                 int voff_skew_fine = (voff & 0x03ff) - (voff_default & 0x03ff);
                 double trans_coarse = (ch->vdiv < 500) ? (ch->vpos_trans >> 8)/DSCOPE_TRANS_CMULTI : (ch->vpos_trans >> 8);
                 double trans_fine = (ch->vdiv < 500) ? (ch->vpos_trans & 0x00ff) / 1000.0 : (ch->vpos_trans & 0x00ff) / DSCOPE_TRANS_FMULTI;
                 double voff_rate = (voff_skew_coarse*trans_coarse - voff_skew_fine*trans_fine) / ch->vdiv;
-                voff = (voff_rate * 0.5 + 0.5) * CALI_VOFF_RANGE;
+                voff = (voff_rate * 0.5 + 0.5) * devc->profile->dev_caps.default_pwmmargin;
             }
             *data = g_variant_new_uint16(voff);
             break;
         case SR_CONF_PROBE_VOFF_DEFAULT:
             if (!sdi || !ch)
                 return SR_ERR;
-            *data = g_variant_new_uint16(get_default_voff(sdi, ch->index));
+            *data = g_variant_new_uint16(get_default_voff(sdi, ch));
             break;
         case SR_CONF_PROBE_VOFF_RANGE:
             if (!sdi)
                 return SR_ERR;
-            *data = g_variant_new_uint16(CALI_VOFF_RANGE);
-            break;
-        case SR_CONF_PROBE_MAP_UNIT:
-            if (!sdi || !ch)
-                return SR_ERR;
-            *data = g_variant_new_string(ch->map_unit);
-            break;
-        case SR_CONF_PROBE_MAP_MIN:
-            if (!sdi || !ch)
-                return SR_ERR;
-            *data = g_variant_new_double(ch->map_min);
-            break;
-        case SR_CONF_PROBE_MAP_MAX:
-            if (!sdi || !ch)
-                return SR_ERR;
-            *data = g_variant_new_double(ch->map_max);
+            *data = g_variant_new_uint16(devc->profile->dev_caps.default_pwmmargin);
             break;
         case SR_CONF_VLD_CH_NUM:
             if (!sdi)
                 return SR_ERR;
-            devc = sdi->priv;
-            *data = g_variant_new_int16(DSCOPE_VLD_CH_NUM);
+            *data = g_variant_new_int16(channel_modes[devc->ch_mode].num);
             break;
         default:
             return SR_ERR_NA;
@@ -964,17 +658,17 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     struct DSL_context *devc;
     const char *stropt;
     int ret, num_probes;
-    struct drv_context *drvc;
     struct sr_usb_dev_inst *usb;
     struct libusb_device_handle *hdl;
     struct ctl_wr_cmd wr_cmd;
+    unsigned int i;
 
     (void)cg;
 
-    if (sdi->status != SR_ST_ACTIVE)
+    if (sdi->status != SR_ST_ACTIVE) {
         return SR_ERR;
+    }
 
-    drvc = di->priv;
 	devc = sdi->priv;
     usb = sdi->conn;
     hdl = usb->devhdl;
@@ -987,10 +681,6 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         devc->clock_edge = g_variant_get_boolean(data);
     } else if (id == SR_CONF_LIMIT_SAMPLES) {
         devc->limit_samples = g_variant_get_uint64(data);
-    } else if (id == SR_CONF_DATALOCK) {
-        while(libusb_try_lock_events(drvc->sr_ctx->libusb_ctx));
-        devc->data_lock = g_variant_get_boolean(data);
-        libusb_unlock_events(drvc->sr_ctx->libusb_ctx);
     } else if (id == SR_CONF_PROBE_VDIV) {
         ch->vdiv = g_variant_get_uint64(data);
         ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, ch, SR_CONF_PROBE_VDIV));
@@ -1081,27 +771,21 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 __func__, devc->trigger_margin);
     } else if (id == SR_CONF_SAMPLERATE) {
         devc->cur_samplerate = g_variant_get_uint64(data);
-        if (sdi->mode == LOGIC) {
-            if (devc->cur_samplerate >= SR_MHZ(200)) {
-                adjust_probes(sdi, SR_MHZ(1600)/devc->cur_samplerate);
-            } else {
-                adjust_probes(sdi, 16);
-            }
-        } else if(sdi->mode == DSO) {
+        if(sdi->mode == DSO) {
             ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, 0, SR_CONF_SAMPLERATE));
         }
     } else if (id == SR_CONF_INSTANT) {
         devc->instant = g_variant_get_boolean(data);
         if (sdi->mode == DSO && dsl_en_ch_num(sdi) != 0) {
             if (devc->instant)
-                devc->limit_samples = DSCOPE_INSTANT_DEPTH / dsl_en_ch_num(sdi);
+                devc->limit_samples = devc->profile->dev_caps.hw_depth / channel_modes[devc->ch_mode].unit_bits /  dsl_en_ch_num(sdi);
             else
-                devc->limit_samples = DSCOPE_MAX_DEPTH / dsl_en_ch_num(sdi);
+                devc->limit_samples = devc->profile->dev_caps.dso_depth / dsl_en_ch_num(sdi);
         }
     } else if (id == SR_CONF_DEVICE_MODE) {
         sdi->mode = g_variant_get_int16(data);
+        num_probes = 0;
         if (sdi->mode == DSO) {
-            num_probes = devc->profile->dev_caps & DEV_CAPS_16BIT ? MAX_DSO_PROBES_NUM : 1;
             ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, NULL, SR_CONF_DSO_SYNC));
             if (ret != SR_OK)
                 sr_dbg("%s: DSO configuration sync failed", __func__);
@@ -1112,13 +796,19 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 sr_dbg("%s: Initial setting for DSO mode failed", __func__);
             devc->op_mode = OP_NORMAL;
             devc->test_mode = SR_TEST_NONE;
-            devc->stream = FALSE;
             devc->instant = FALSE;
-            devc->samplerates_size = ARRAY_SIZE(samplerates);
-            devc->cur_samplerate = DSCOPE_MAX_SAMPLERATE / num_probes;
-            devc->limit_samples = DSCOPE_MAX_DEPTH / num_probes;
+            for (i = 0; i < ARRAY_SIZE(channel_modes); i++) {
+                if (channel_modes[i].mode == DSO &&
+                    devc->profile->dev_caps.channels & (1 << i)) {
+                    devc->ch_mode = channel_modes[i].id;
+                    num_probes = channel_modes[i].num;
+                    devc->stream = channel_modes[i].stream;
+                    devc->cur_samplerate = channel_modes[i].max_samplerate / num_probes;
+                    break;
+                }
+            }
+            devc->limit_samples = devc->profile->dev_caps.dso_depth / num_probes;
         } else if (sdi->mode == ANALOG) {
-            num_probes = devc->profile->dev_caps & DEV_CAPS_16BIT ? MAX_DSO_PROBES_NUM : 1;
             ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, sdi->channels->data, SR_CONF_PROBE_VDIV));
             if (ret == SR_OK)
                 sr_dbg("%s: Initial setting for DSO mode", __func__);
@@ -1126,17 +816,22 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 sr_dbg("%s: Initial setting for DSO mode failed", __func__);
             devc->op_mode = OP_NORMAL;
             devc->test_mode = SR_TEST_NONE;
-            devc->stream = TRUE;
             devc->instant = TRUE;
-            devc->samplerates_size = 19;
-            devc->cur_samplerate = SR_MHZ(1);
-            devc->limit_samples = SR_MB(16);
-        } else {
-            num_probes = 0;
+            for (i = 0; i < ARRAY_SIZE(channel_modes); i++) {
+                if (channel_modes[i].mode == ANALOG &&
+                    devc->profile->dev_caps.channels & (1 << i)) {
+                    devc->ch_mode = channel_modes[i].id;
+                    num_probes = channel_modes[i].num;
+                    devc->stream = channel_modes[i].stream;
+                    devc->cur_samplerate = channel_modes[i].max_samplerate;
+                    break;
+                }
+            }
+            devc->limit_samples = devc->cur_samplerate;
         }
-        devc->samplecounts_size = counts_size(sdi);
-        sr_dev_probes_free(sdi);
-        setup_probes(sdi, num_probes);
+        assert(num_probes != 0);
+        dsl_adjust_probes(sdi, num_probes);
+        dsl_adjust_samplerate(devc);
         sr_dbg("%s: setting mode to %d", __func__, sdi->mode);
     } else if (id == SR_CONF_OPERATION_MODE) {
         stropt = g_variant_get_string(data, NULL);
@@ -1158,17 +853,28 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, ch, SR_CONF_PROBE_EN));
             if (ch->index == 0) {
                 wr_cmd.header.dest = DSL_CTL_DSO_EN0;
-                wr_cmd.data[0] = (ch->enabled << DSO_EN0_BIT);
+                wr_cmd.data[0] = ch->enabled ? bmCH_CH0 : (uint8_t)~bmCH_CH0;
             } else {
                 wr_cmd.header.dest = DSL_CTL_DSO_EN1;
-                wr_cmd.data[0] = (ch->enabled << DSO_EN1_BIT);
+                wr_cmd.data[0] = ch->enabled ? bmCH_CH1 : (uint8_t)~bmCH_CH1;
             }
             wr_cmd.header.size = 1;
             ret = command_ctl_wr(hdl, wr_cmd);
             if (dsl_en_ch_num(sdi) != 0) {
                 ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, 0, SR_CONF_SAMPLERATE));
-                devc->limit_samples = DSCOPE_MAX_DEPTH / dsl_en_ch_num(sdi);
+                devc->limit_samples = devc->profile->dev_caps.dso_depth / dsl_en_ch_num(sdi);
             }
+        } else if (sdi->mode == ANALOG) {
+            ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, ch, SR_CONF_PROBE_EN));
+            if (ch->index == 0) {
+                wr_cmd.header.dest = DSL_CTL_DSO_EN0;
+                wr_cmd.data[0] = bmCH_CH0;
+            } else {
+                wr_cmd.header.dest = DSL_CTL_DSO_EN1;
+                wr_cmd.data[0] = bmCH_CH1;
+            }
+            wr_cmd.header.size = 1;
+            ret = command_ctl_wr(hdl, wr_cmd);
         }
         if (ret == SR_OK)
             sr_dbg("%s: setting ENABLE of channel %d to %d",
@@ -1210,18 +916,25 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             devc->zero_pcnt = 0;
             devc->zero_comb = -1;
             GSList *l;
-            unsigned int i;
-            struct DSL_vga *vga_ptr =  get_vga_ptr(sdi);
+            unsigned int i, j;
             for(l = sdi->channels; l; l = l->next) {
                 struct sr_channel *probe = (struct sr_channel *)l->data;
-                probe->vpos_trans = get_default_trans(sdi);
-            }
-            for (i = 0; vga_ptr && (vga_ptr+i)->key; i++) {
-                (vga_ptr+i)->vgain0 = get_default_vgain(sdi, i);
-                (vga_ptr+i)->vgain1 = get_default_vgain(sdi, i);
-                (vga_ptr+i)->voff0 = get_default_voff(sdi, 0);
-                (vga_ptr+i)->voff1 = get_default_voff(sdi, 1);
-            }
+                probe->vpos_trans = devc->profile->dev_caps.default_pwmtrans;
+                if (probe->vga_ptr != NULL) {
+                    for (i = 0; devc->profile->dev_caps.vdivs[i]; i++) {
+                        for (j = 0; j < ARRAY_SIZE(vga_defaults); j++) {
+                            if (vga_defaults[j].id == devc->profile->dev_caps.vga_id &&
+                                vga_defaults[j].key == devc->profile->dev_caps.vdivs[i]) {
+                                (probe->vga_ptr+i)->id = vga_defaults[j].id;
+                                (probe->vga_ptr+i)->key = vga_defaults[j].key;
+                                (probe->vga_ptr+i)->vgain = vga_defaults[j].vgain;
+                                (probe->vga_ptr+i)->voff = vga_defaults[j].voff;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }  
         }
     }  else if (id == SR_CONF_CALI) {
         devc->cali = g_variant_get_boolean(data);
@@ -1245,11 +958,10 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                                   probe->index * (sizeof(struct cmd_zero_info) + sizeof(struct cmd_vga_info));
             int i;
             uint16_t real_zero_addr;
-            struct DSL_vga *vga_ptr =  get_vga_ptr(sdi);
             uint8_t *voff_ptr = &zero_info.zero_addr + 1;
-            for (i = 0; vga_ptr && (vga_ptr+i)->key; i++) {
-                *(voff_ptr+2*i) = ((probe->index == 0) ? (vga_ptr+i)->voff0 : (vga_ptr+i)->voff1) & 0x00ff;
-                *(voff_ptr+2*i+1) = ((probe->index == 0) ? (vga_ptr+i)->voff0 : (vga_ptr+i)->voff1) >> 8;
+            for (i = 0; probe->vga_ptr && (probe->vga_ptr+i)->id; i++) {
+                *(voff_ptr+2*i) = (probe->vga_ptr+i)->voff & 0x00ff;
+                *(voff_ptr+2*i+1) = (probe->vga_ptr+i)->voff >> 8;
             }
             if (i != 0) {
                 *(voff_ptr+2*i) = probe->comb_diff_top;
@@ -1259,31 +971,25 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 
                 vga_info.vga_addr = zero_info.zero_addr + sizeof(struct cmd_zero_info);
                 uint16_t *vgain_ptr = &vga_info.vga0;
-                for (i=0; vga_ptr && (vga_ptr+i)->key; i++){
-                    *(vgain_ptr+i) = ((probe->index == 0) ? (vga_ptr+i)->vgain0 : (vga_ptr+i)->vgain1) >> 8;
+                for (i=0; probe->vga_ptr && (probe->vga_ptr+i)->id; i++){
+                    *(vgain_ptr+i) = (probe->vga_ptr+i)->vgain >> 8;
                 }
-                ret = dsl_wr_reg(sdi, EEWP_ADDR, bmEEWP);
+                ret = dsl_wr_reg(sdi, CTR0_ADDR, bmEEWP);
                 if (ret == SR_OK) {
-                    if (strcmp(sdi->model, "DSCope20") == 0 ||
-                        strcmp(sdi->model, "DSCope") == 0)
+                    if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_SEEP)
                         real_zero_addr = zero_info.zero_addr;
                     else
                         real_zero_addr = (zero_big_addr << 8) + zero_info.zero_addr;
                     ret = dsl_wr_nvm(sdi, (unsigned char *)&zero_info, real_zero_addr, sizeof(struct cmd_zero_info));
                 }
                 if (ret == SR_OK) {
-                    if (strcmp(sdi->model, "DSCope20") == 0 ||
-                        strcmp(sdi->model, "DSCope") == 0)
+                    if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_SEEP)
                         real_zero_addr = vga_info.vga_addr;
                     else
                         real_zero_addr = (zero_big_addr << 8) + vga_info.vga_addr;
                     ret = dsl_wr_nvm(sdi, (unsigned char *)&vga_info, real_zero_addr, sizeof(struct cmd_vga_info));
                 }
-                if (ret == SR_OK)
-                    ret = dsl_wr_reg(sdi, EEWP_ADDR, bmZERO);
-                if (ret != SR_OK)
-                    sr_err("DSO channel %d Set Zero command failed!", probe->index);
-
+                ret = dsl_wr_reg(sdi, CTR0_ADDR, bmNONE);
                 const double slope = (probe->comb_diff_bom - probe->comb_diff_top)/(2.0*255.0);
                 for (i = 0; i < 256; i++) {
                     ret = dsl_wr_reg(sdi, COMB_ADDR + probe->index*2, i);
@@ -1300,13 +1006,9 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     } else if (id == SR_CONF_PROBE_VGAIN) {
         const uint64_t vgain = g_variant_get_uint64(data) << 8;
         int i;
-        struct DSL_vga *vga_ptr =  get_vga_ptr(sdi);
-        for (i = 0; vga_ptr && (vga_ptr+i)->key; i++) {
-            if ((vga_ptr+i)->key == ch->vdiv) {
-                if (ch->index == 0)
-                    (vga_ptr+i)->vgain0 = vgain;
-                else if (ch->index == 1)
-                    (vga_ptr+i)->vgain1 = vgain;
+        for (i = 0; ch->vga_ptr && (ch->vga_ptr+i)->id; i++) {
+            if ((ch->vga_ptr+i)->key == ch->vdiv) {
+                (ch->vga_ptr+i)->vgain = vgain;
             }
         }
         ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, ch, SR_CONF_PROBE_VDIV));
@@ -1318,12 +1020,12 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 __func__, ch->index, ch->vdiv);
     } else if (id == SR_CONF_PROBE_VOFF) {
         uint16_t voff = g_variant_get_uint16(data);
-        if (strcmp(sdi->model, "DSCope") == 0) {
-            double voltage_off = (2.0 * voff / CALI_VOFF_RANGE  - 1) * ch->vdiv;
+        if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_PREOFF) {
+            double voltage_off = (2.0 * voff / devc->profile->dev_caps.default_pwmmargin  - 1) * ch->vdiv;
             double trans_coarse = (ch->vdiv < 500) ? (ch->vpos_trans >> 8)/DSCOPE_TRANS_CMULTI : (ch->vpos_trans >> 8);
             double trans_fine = (ch->vdiv < 500) ? (ch->vpos_trans & 0x00ff) / 1000.0 : (ch->vpos_trans & 0x00ff) / DSCOPE_TRANS_FMULTI;
 
-            uint16_t default_voff = get_default_voff(sdi, ch->index);
+            uint16_t default_voff = get_default_voff(sdi, ch);
             int voff_coarse = floor(voltage_off / trans_coarse + 0.5);
             int voff_fine = floor(-(voltage_off - voff_coarse*trans_coarse)/trans_fine + 0.5);
             voff_coarse = (default_voff >> 10) + voff_coarse;
@@ -1331,13 +1033,9 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             voff = (voff_coarse << 10) + voff_fine;
         }
         int i;
-        struct DSL_vga *vga_ptr =  get_vga_ptr(sdi);
-        for (i = 0; vga_ptr && (vga_ptr+i)->key; i++) {
-            if ((vga_ptr+i)->key == ch->vdiv) {
-                if (ch->index == 0)
-                    (vga_ptr+i)->voff0 = voff;
-                else if (ch->index == 1)
-                    (vga_ptr+i)->voff1 = voff;
+        for (i = 0; ch->vga_ptr && (ch->vga_ptr+i)->id; i++) {
+            if ((ch->vga_ptr+i)->key == ch->vdiv) {
+                (ch->vga_ptr+i)->voff = voff;
             }
         }
         ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, ch, SR_CONF_PROBE_VPOS));
@@ -1363,88 +1061,30 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
                        const struct sr_channel_group *cg)
 {
-    struct DSL_context *devc;
-    GVariant *gvar;
-    GVariantBuilder gvb;
-
-    //(void)sdi;
     (void)cg;
-    devc = sdi->priv;
+
+    if (dsl_config_list(key, data, sdi, cg) == SR_OK)
+        return SR_OK;
 
     switch (key) {
-    case SR_CONF_SCAN_OPTIONS:
-//		*data = g_variant_new_fixed_array(G_VARIANT_TYPE_INT32,
-//				hwopts, ARRAY_SIZE(hwopts), sizeof(int32_t));
-        *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
-                hwopts, ARRAY_SIZE(hwopts)*sizeof(int32_t), TRUE, NULL, NULL);
-        break;
     case SR_CONF_DEVICE_OPTIONS:
-//		*data = g_variant_new_fixed_array(G_VARIANT_TYPE_INT32,
-//				hwcaps, ARRAY_SIZE(hwcaps), sizeof(int32_t));
-        *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
-                hwcaps, ARRAY_SIZE(hwcaps)*sizeof(int32_t), TRUE, NULL, NULL);
-        break;
-    case SR_CONF_DEVICE_CONFIGS:
 //		*data = g_variant_new_fixed_array(G_VARIANT_TYPE_INT32,
 //				hwcaps, ARRAY_SIZE(hwcaps), sizeof(int32_t));
         *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
                 hwoptions, ARRAY_SIZE(hwoptions)*sizeof(int32_t), TRUE, NULL, NULL);
         break;
     case SR_CONF_DEVICE_SESSIONS:
-        *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
-                sessions, ARRAY_SIZE(sessions)*sizeof(int32_t), TRUE, NULL, NULL);
-        break;
-    case SR_CONF_SAMPLERATE:
-        g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));
-//		gvar = g_variant_new_fixed_array(G_VARIANT_TYPE("t"), samplerates,
-//				ARRAY_SIZE(samplerates), sizeof(uint64_t));
-        gvar = g_variant_new_from_data(G_VARIANT_TYPE("at"),
-                samplerates, devc->samplerates_size*sizeof(uint64_t), TRUE, NULL, NULL);
-        g_variant_builder_add(&gvb, "{sv}", "samplerates", gvar);
-        *data = g_variant_builder_end(&gvb);
-        break;
-    case SR_CONF_LIMIT_SAMPLES:
-        g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));
-        gvar = g_variant_new_from_data(G_VARIANT_TYPE("at"),
-                samplecounts, devc->samplecounts_size*sizeof(uint64_t), TRUE, NULL, NULL);
-        g_variant_builder_add(&gvb, "{sv}", "samplecounts", gvar);
-        *data = g_variant_builder_end(&gvb);
-        break;
-    case SR_CONF_TRIGGER_TYPE:
-        *data = g_variant_new_string(TRIGGER_TYPE);
+        if (sdi->mode == DSO)
+            *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
+                    sessions_dso, ARRAY_SIZE(sessions_dso)*sizeof(int32_t), TRUE, NULL, NULL);
+        else if (sdi->mode == ANALOG)
+            *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
+                    sessions_daq, ARRAY_SIZE(sessions_daq)*sizeof(int32_t), TRUE, NULL, NULL);
         break;
     case SR_CONF_OPERATION_MODE:
         *data = g_variant_new_strv(opmodes, ARRAY_SIZE(opmodes));
         break;
-    case SR_CONF_THRESHOLD:
-        *data = g_variant_new_strv(thresholds, ARRAY_SIZE(thresholds));
-        break;
 
-    case SR_CONF_PROBE_CONFIGS:
-        *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
-                probeOptions, ARRAY_SIZE(probeOptions)*sizeof(int32_t), TRUE, NULL, NULL);
-        break;
-    case SR_CONF_PROBE_SESSIONS:
-        *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
-                probeSessions, ARRAY_SIZE(probeSessions)*sizeof(int32_t), TRUE, NULL, NULL);
-        break;
-    case SR_CONF_PROBE_VDIV:
-        g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));
-        gvar = g_variant_new_from_data(G_VARIANT_TYPE("at"),
-                probeVdivs, ARRAY_SIZE(probeVdivs)*sizeof(uint64_t), TRUE, NULL, NULL);
-        g_variant_builder_add(&gvb, "{sv}", "vdivs", gvar);
-        *data = g_variant_builder_end(&gvb);
-        break;
-    case SR_CONF_PROBE_COUPLING:
-        g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));
-        gvar = g_variant_new_from_data(G_VARIANT_TYPE("ay"),
-                probeCoupling, ARRAY_SIZE(probeCoupling)*sizeof(uint8_t), TRUE, NULL, NULL);
-        g_variant_builder_add(&gvb, "{sv}", "coupling", gvar);
-        *data = g_variant_builder_end(&gvb);
-        break;
-    case SR_CONF_PROBE_MAP_UNIT:
-        *data = g_variant_new_strv(probeMapUnits, ARRAY_SIZE(probeMapUnits));
-        break;
     default:
         return SR_ERR_NA;
     }
@@ -1463,7 +1103,6 @@ static int dso_zero(const struct sr_dev_inst *sdi)
 
     static double vpos_back[2];
     static uint64_t vdiv_back[2];
-    struct DSL_vga *vga_ptr = get_vga_ptr(sdi);
     struct sr_channel *probe0 = NULL, *probe1 = NULL;
 
     usb = sdi->conn;
@@ -1480,15 +1119,15 @@ static int dso_zero(const struct sr_dev_inst *sdi)
         // initialize before Auto Calibration
         if (dso_init(sdi) == SR_OK)
             devc->zero_stage = 0;
-    } else if ((vga_ptr+devc->zero_stage)->key == 0) {
+    } else if ((probe0->vga_ptr+devc->zero_stage)->key == 0) {
         ret = SR_OK;
-        if (strcmp(sdi->model, "DSCope") != 0) {
+        if (!(devc->profile->dev_caps.feature_caps & CAPS_FEATURE_PREOFF)) {
             if (devc->zero_pcnt == 0) {
                 devc->zero_comb = 0;
                 vpos_back[0] = probe0->vpos;
-                probe0->vpos = (vga_ptr+devc->zero_stage-1)->key * -4.8;
+                probe0->vpos = (probe0->vga_ptr+devc->zero_stage-1)->key * -4.8;
                 vdiv_back[0] = probe0->vdiv;
-                probe0->vdiv = (vga_ptr+devc->zero_stage-1)->key;
+                probe0->vdiv = (probe0->vga_ptr+devc->zero_stage-1)->key;
                 ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe0, SR_CONF_PROBE_VPOS));
             } else if (devc->zero_pcnt == 4) {
                 const double voff = 255*0.98 - (devc->mstatus.ch0_max + devc->mstatus.ch0_min) / 2.0;
@@ -1502,9 +1141,9 @@ static int dso_zero(const struct sr_dev_inst *sdi)
             } else if (devc->zero_pcnt == 5) {
                 devc->zero_comb = 0;
                 vpos_back[1] = probe1->vpos;
-                probe1->vpos = (vga_ptr+devc->zero_stage-1)->key * -4.8;
+                probe1->vpos = (probe1->vga_ptr+devc->zero_stage-1)->key * -4.8;
                 vdiv_back[1] = probe1->vdiv;
-                probe1->vdiv = (vga_ptr+devc->zero_stage-1)->key;
+                probe1->vdiv = (probe1->vga_ptr+devc->zero_stage-1)->key;
                 ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe1, SR_CONF_PROBE_VPOS));
             } else if (devc->zero_pcnt == 9) {
                 const double voff = 255*0.98 - (devc->mstatus.ch1_max + devc->mstatus.ch1_min) / 2.0;
@@ -1521,18 +1160,18 @@ static int dso_zero(const struct sr_dev_inst *sdi)
         if (devc->zero_pcnt == 10) {
             ret = dsl_wr_reg(sdi, COMB_ADDR+6, 0b1101);
             wr_cmd.header.dest = DSL_CTL_DSO_EN1;
-            wr_cmd.data[0] = (FALSE << DSO_EN1_BIT);
+            wr_cmd.data[0] = (uint8_t)~bmCH_CH1;
             wr_cmd.header.size = 1;
             ret = command_ctl_wr(hdl, wr_cmd);
 
             devc->zero_comb = 0;
             vpos_back[0] = probe0->vpos;
-            probe0->vpos = (vga_ptr+devc->zero_stage-1)->key * 4.5;
+            probe0->vpos = (probe0->vga_ptr+devc->zero_stage-1)->key * 4.5;
             ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe0, SR_CONF_PROBE_VPOS));
         } else if (devc->zero_pcnt == 15) {
             probe0->comb_diff_top = (devc->mstatus.ch0_max - devc->mstatus.ch1_max) +
                                     (devc->mstatus.ch0_min - devc->mstatus.ch1_min);
-            probe0->vpos = (vga_ptr+devc->zero_stage-1)->key * -4.5;
+            probe0->vpos = (probe0->vga_ptr+devc->zero_stage-1)->key * -4.5;
             ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe0, SR_CONF_PROBE_VPOS));
         } else if (devc->zero_pcnt == 20) {
             probe0->comb_diff_bom = (devc->mstatus.ch0_max - devc->mstatus.ch1_max) +
@@ -1544,22 +1183,22 @@ static int dso_zero(const struct sr_dev_inst *sdi)
         if (devc->zero_pcnt == 25) {
             ret = dsl_wr_reg(sdi, COMB_ADDR+6, 0b1110);
             wr_cmd.header.dest = DSL_CTL_DSO_EN1;
-            wr_cmd.data[0] = (TRUE << DSO_EN1_BIT);
+            wr_cmd.data[0] = bmCH_CH1;
             wr_cmd.header.size = 1;
             ret = command_ctl_wr(hdl, wr_cmd);
             wr_cmd.header.dest = DSL_CTL_DSO_EN0;
-            wr_cmd.data[0] = (FALSE << DSO_EN0_BIT);
+            wr_cmd.data[0] = (uint8_t)~bmCH_CH0;
             wr_cmd.header.size = 1;
             ret = command_ctl_wr(hdl, wr_cmd);
 
             devc->zero_comb = 1;
             vpos_back[1] = probe1->vpos;
-            probe1->vpos = (vga_ptr+devc->zero_stage-1)->key * 4.5;
+            probe1->vpos = (probe1->vga_ptr+devc->zero_stage-1)->key * 4.5;
             ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe1, SR_CONF_PROBE_VPOS));
         } else if (devc->zero_pcnt == 30) {
             probe1->comb_diff_top = (devc->mstatus.ch1_max - devc->mstatus.ch0_max) +
                                     (devc->mstatus.ch1_min - devc->mstatus.ch0_min);
-            probe1->vpos = (vga_ptr+devc->zero_stage-1)->key * -4.5;
+            probe1->vpos = (probe1->vga_ptr+devc->zero_stage-1)->key * -4.5;
             ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe1, SR_CONF_PROBE_VPOS));
         } else if (devc->zero_pcnt == 35) {
             probe1->comb_diff_bom = (devc->mstatus.ch1_max - devc->mstatus.ch0_max) +
@@ -1569,13 +1208,13 @@ static int dso_zero(const struct sr_dev_inst *sdi)
         }
 
         if (devc->zero_pcnt == 40) {
-            if (strcmp(sdi->model, "DSCope") != 0) {
+            if (!(devc->profile->dev_caps.feature_caps & CAPS_FEATURE_PREOFF)) {
                 probe0->vdiv = vdiv_back[0];
                 probe1->vdiv = vdiv_back[1];
             }
             ret = dsl_wr_reg(sdi, COMB_ADDR+6, 0b0011);
             wr_cmd.header.dest = DSL_CTL_DSO_EN0;
-            wr_cmd.data[0] = (TRUE << DSO_EN0_BIT);
+            wr_cmd.data[0] = bmCH_CH0;
             wr_cmd.header.size = 1;
             ret = command_ctl_wr(hdl, wr_cmd);
 
@@ -1590,7 +1229,7 @@ static int dso_zero(const struct sr_dev_inst *sdi)
             for(l = sdi->channels; l; l = l->next) {
                 struct sr_channel *probe = (struct sr_channel *)l->data;
                 uint64_t vdiv_back = probe->vdiv;
-                probe->vdiv = (vga_ptr+devc->zero_stage)->key;
+                probe->vdiv = (probe->vga_ptr+devc->zero_stage)->key;
                 ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe, SR_CONF_PROBE_VDIV));
                 ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe, SR_CONF_PROBE_VPOS));
                 probe->vdiv = vdiv_back;
@@ -1603,26 +1242,28 @@ static int dso_zero(const struct sr_dev_inst *sdi)
             if (abs(voff0) < 0.5 && abs(voff1) < 0.5) {
                 devc->zero_stage++;
             } else {
-                if (strcmp(sdi->model, "DSCope") == 0) {
+                if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_PREOFF) {
                     for(l = sdi->channels; l; l = l->next) {
                         struct sr_channel *probe = (struct sr_channel *)l->data;
-                        double trans_coarse = ((vga_ptr+devc->zero_stage)->key < 500) ? (probe->vpos_trans >> 8)/DSCOPE_TRANS_CMULTI : (probe->vpos_trans >> 8);
-                        double trans_fine = ((vga_ptr+devc->zero_stage)->key < 500) ? (probe->vpos_trans & 0x00ff) / 1000.0 : (probe->vpos_trans & 0x00ff) / DSCOPE_TRANS_FMULTI;
+                        double trans_coarse = ((probe->vga_ptr+devc->zero_stage)->key < 500) ? (probe->vpos_trans >> 8)/DSCOPE_TRANS_CMULTI : (probe->vpos_trans >> 8);
+                        double trans_fine = ((probe->vga_ptr+devc->zero_stage)->key < 500) ? (probe->vpos_trans & 0x00ff) / 1000.0 : (probe->vpos_trans & 0x00ff) / DSCOPE_TRANS_FMULTI;
 
-                        double voltage_off = ((probe->index == 0) ? voff0 : voff1) * (vga_ptr+devc->zero_stage)->key * 10 / 255.0;
-                        uint16_t last_voff = ((probe->index == 0) ? (vga_ptr+devc->zero_stage)->voff0 : (vga_ptr+devc->zero_stage)->voff1);
+                        double voltage_off = ((probe->index == 0) ? voff0 : voff1) * (probe->vga_ptr+devc->zero_stage)->key * 10 / 255.0;
+                        uint16_t last_voff = (probe->vga_ptr+devc->zero_stage)->voff;
                         int voff_coarse = floor(voltage_off / trans_coarse + 0.5);
                         int voff_fine = floor(-(voltage_off - voff_coarse*trans_coarse)/trans_fine + 0.5);
                         voff_coarse = (last_voff >> 10) + voff_coarse;
                         voff_fine = (last_voff&0x03ff) + voff_fine;
-                        if (probe->index == 0)
-                            (vga_ptr+devc->zero_stage)->voff0 = (voff_coarse << 10) + voff_fine;
-                        else if (probe->index == 1)
-                            (vga_ptr+devc->zero_stage)->voff1 = (voff_coarse << 10) + voff_fine;
+                        (probe->vga_ptr+devc->zero_stage)->voff = (voff_coarse << 10) + voff_fine;
                     }
                 } else {
-                    (vga_ptr+devc->zero_stage)->voff0 += voff0;
-                    (vga_ptr+devc->zero_stage)->voff1 += voff1;
+                    for(l = sdi->channels; l; l = l->next) {
+                        struct sr_channel *probe = (struct sr_channel *)l->data;
+                        if (probe->index == 0)
+                            (probe->vga_ptr+devc->zero_stage)->voff += voff0;
+                        else
+                            (probe->vga_ptr+devc->zero_stage)->voff += voff1;
+                    }
                 }
             }
             devc->zero_pcnt = 0;
@@ -1662,7 +1303,8 @@ static int dev_open(struct sr_dev_inst *sdi)
 
 static int dev_close(struct sr_dev_inst *sdi)
 {
-    int ret = dsl_dev_close(sdi);
+    int ret;
+    ret = dsl_dev_close(sdi);
     return ret;
 }
 
@@ -1685,7 +1327,7 @@ static int cleanup(void)
 static void remove_sources(struct DSL_context *devc)
 {
     int i;
-    sr_err("%s: remove fds from polling", __func__);
+    sr_info("%s: remove fds from polling", __func__);
     /* Remove fds from polling. */
     for (i = 0; devc->usbfd[i] != -1; i++)
         sr_source_remove(devc->usbfd[i]);
@@ -1732,7 +1374,6 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
     int ret;
     struct ctl_wr_cmd wr_cmd;
 
-
     if (sdi->status != SR_ST_ACTIVE)
         return SR_ERR_DEV_CLOSED;
 
@@ -1747,7 +1388,7 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
     devc->status = DSL_INIT;
     devc->num_transfers = 0;
     devc->submitted_transfers = 0;
-    devc->actual_samples = devc->limit_samples;
+    devc->actual_samples = (devc->limit_samples + 1023) & ~1023;
 	devc->abort = FALSE;
     devc->mstatus_valid = FALSE;
     devc->overflow = FALSE;

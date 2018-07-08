@@ -172,11 +172,10 @@ void SigSession::set_device(boost::shared_ptr<device::DevInst> dev_inst) throw(Q
             _cur_samplerate = _dev_inst->get_sample_rate();
             _cur_samplelimits = _dev_inst->get_sample_limit();
 
-//            if (_dev_inst->dev_inst()->mode == DSO)
-//                set_run_mode(Repetitive);
-//            else
-//                set_run_mode(Single);
-            set_run_mode(Single);
+            if (_dev_inst->dev_inst()->mode == DSO)
+                set_run_mode(Repetitive);
+            else
+                set_run_mode(Single);
         } catch(const QString e) {
             throw(e);
             return;
@@ -289,6 +288,8 @@ void SigSession::set_cur_samplerate(uint64_t samplerate)
     // MathStack
     BOOST_FOREACH(const boost::shared_ptr<view::MathTrace> m, _math_traces)
         m->get_math_stack()->set_samplerate(_cur_samplerate);
+
+    cur_samplerate_changed();
 }
 
 void SigSession::set_cur_samplelimits(uint64_t samplelimits)
@@ -302,8 +303,12 @@ void SigSession::capture_init()
 {
     if (!_instant)
         set_repeating(get_run_mode() == Repetitive);
-    _cur_samplerate = _dev_inst->get_sample_rate();
-    _cur_samplelimits = _dev_inst->get_sample_limit();
+    // update instant setting
+    _dev_inst->set_config(NULL, NULL, SR_CONF_INSTANT, g_variant_new_boolean(_instant));
+    update_capture();
+
+    set_cur_samplerate(_dev_inst->get_sample_rate());
+    set_cur_samplelimits(_dev_inst->get_sample_limit());
     _data_updated = false;
     _trigger_flag = false;
     _hw_replied = false;
@@ -314,62 +319,58 @@ void SigSession::capture_init()
     _noData_cnt = 0;
     data_unlock();
 
-    // Init and Set sample rate for all SignalData
-    // Analog/Dso
-    if (_analog_data) {
-        _analog_data->init();
-        _analog_data->set_samplerate(_cur_samplerate);
-    }
-    if (_dso_data) {
-        _dso_data->init();
-        _dso_data->set_samplerate(_cur_samplerate);
-    }
-
-    // MathStack
-    BOOST_FOREACH(const boost::shared_ptr<view::MathTrace> m, _math_traces)
-    {
-        assert(m);
-        m->get_math_stack()->init();
-        m->get_math_stack()->set_samplerate(_cur_samplerate);
-    }
+    // container init
+    container_init();
 
     // update current hw offset
     BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
     {
         assert(s);
         boost::shared_ptr<view::DsoSignal> dsoSig;
-        if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
+        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
             dsoSig->set_zero_vrate(dsoSig->get_zero_vrate(), true);
         }
         boost::shared_ptr<view::AnalogSignal> analogSig;
-        if (analogSig = dynamic_pointer_cast<view::AnalogSignal>(s)) {
+        if ((analogSig = dynamic_pointer_cast<view::AnalogSignal>(s))) {
             analogSig->set_zero_vrate(analogSig->get_zero_vrate(), true);
         }
     }
 }
 
-void SigSession::logic_init()
+void SigSession::container_init()
 {
     // Logic
-    if (_logic_data) {
+    if (_logic_data)
         _logic_data->init();
-        _logic_data->set_samplerate(_cur_samplerate);
-    }
+
     // Group
-    if (_group_data) {
+    if (_group_data)
         _group_data->init();
-        _group_data->set_samplerate(_cur_samplerate);
+
+    // Dso
+    if (_analog_data)
+        _analog_data->init();
+
+    // Analog
+    if (_dso_data)
+        _dso_data->init();
+
+    // MathStack
+    BOOST_FOREACH(const boost::shared_ptr<view::MathTrace> m, _math_traces)
+    {
+        assert(m);
+        m->get_math_stack()->init();
     }
+
 #ifdef ENABLE_DECODE
     // DecoderModel
-    pv::data::DecoderModel *decoder_model = get_decoder_model();
-    decoder_model->setDecoderStack(NULL);
+    //pv::data::DecoderModel *decoder_model = get_decoder_model();
+    //decoder_model->setDecoderStack(NULL);
     // DecoderStack
     BOOST_FOREACH(const boost::shared_ptr<view::DecodeTrace> d, _decode_traces)
     {
         assert(d);
         d->decoder()->init();
-        d->decoder()->set_samplerate(_cur_samplerate);
     }
 #endif
 }
@@ -426,7 +427,7 @@ void SigSession::start_capture(bool instant,
 
 void SigSession::stop_capture()
 {
-    _instant = false;
+    data_unlock();
 #ifdef ENABLE_DECODE
     for (vector< boost::shared_ptr<view::DecodeTrace> >::iterator i =
         _decode_traces.begin();
@@ -533,6 +534,7 @@ void SigSession::sample_thread_proc(boost::shared_ptr<device::DevInst> dev_inst,
 
 void SigSession::check_update()
 {
+    data_unlock();
     if (_capture_state != Running)
         return;
 
@@ -540,6 +542,7 @@ void SigSession::check_update()
         data_updated();
         _data_updated = false;
         _noData_cnt = 0;
+        data_auto_unlock();
     } else {
         if (++_noData_cnt >= (WaitShowTime/ViewTime))
             nodata_timeout();
@@ -737,7 +740,7 @@ void SigSession::reload()
                     while (i != _signals.end()) {
                         if ((*i)->get_index() == probe->index) {
                             boost::shared_ptr<view::LogicSignal> logicSig;
-                            if (logicSig = dynamic_pointer_cast<view::LogicSignal>(*i))
+                            if ((logicSig = dynamic_pointer_cast<view::LogicSignal>(*i)))
                                 signal = boost::shared_ptr<view::Signal>(
                                     new view::LogicSignal(logicSig, _logic_data, probe));
                             break;
@@ -761,7 +764,7 @@ void SigSession::reload()
                     while (i != _signals.end()) {
                         if ((*i)->get_index() == probe->index) {
                             boost::shared_ptr<view::AnalogSignal> analogSig;
-                            if (analogSig = dynamic_pointer_cast<view::AnalogSignal>(*i))
+                            if ((analogSig = dynamic_pointer_cast<view::AnalogSignal>(*i)))
                                 signal = boost::shared_ptr<view::Signal>(
                                     new view::AnalogSignal(analogSig, _analog_data, probe));
                             break;
@@ -792,7 +795,7 @@ void SigSession::refresh(int holdtime)
 {
     boost::lock_guard<boost::mutex> lock(_data_mutex);
 
-    _data_lock = true;
+    data_lock();
     QTimer::singleShot(holdtime, this, SLOT(data_unlock()));
 
     if (_logic_data) {
@@ -823,6 +826,11 @@ void SigSession::refresh(int holdtime)
     _data_updated = true;
 }
 
+void SigSession::data_lock()
+{
+    _data_lock = true;
+}
+
 void SigSession::data_unlock()
 {
     _data_lock = false;
@@ -831,6 +839,21 @@ void SigSession::data_unlock()
 bool SigSession::get_data_lock()
 {
     return _data_lock;
+}
+
+void SigSession::data_auto_lock(int lock) {
+    _data_auto_lock = lock;
+}
+
+void SigSession::data_auto_unlock() {
+    if (_data_auto_lock > 0)
+        _data_auto_lock--;
+    else if (_data_auto_lock < 0)
+        _data_auto_lock = 0;
+}
+
+bool SigSession::get_data_auto_lock() {
+    return _data_auto_lock != 0;
 }
 
 void SigSession::feed_in_header(const sr_dev_inst *sdi)
@@ -920,7 +943,6 @@ void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
     }
 
     if (_cur_logic_snapshot->last_ended()) {
-        logic_init();
         _cur_logic_snapshot->first_payload(logic, _dev_inst->get_sample_limit(), _dev_inst->dev_inst()->channels);
         // @todo Putting this here means that only listeners querying
         // for logic will be notified. Currently the only user of
@@ -962,7 +984,7 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
         {
             assert(s);
             boost::shared_ptr<view::DsoSignal> dsoSig;
-            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
+            if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
                 dsoSig->set_scale(dsoSig->get_view_rect().height());
                 sig_enable[dsoSig->get_index()] = dsoSig->enabled();
             }
@@ -991,6 +1013,8 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
     _trigger_flag = dso.trig_flag;
     receive_data(dso.num_samples);
     //data_updated();
+    if (!_instant)
+        data_lock();
     _data_updated = true;
 }
 
@@ -1032,7 +1056,7 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
 
     boost::lock_guard<boost::mutex> lock(_data_mutex);
 
-    if (_data_lock)
+    if (_data_lock && packet->type != SR_DF_END)
         return;
     if (packet->type != SR_DF_END &&
         packet->status != SR_PKT_OK) {
@@ -1095,10 +1119,7 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
                     _cur_group_snapshot.reset();
                 }
             }
-            if (!_cur_logic_snapshot->last_ended())
-                _cur_logic_snapshot->capture_ended();
-            else if (get_run_mode() != SigSession::Repetitive)
-                logic_init();
+            _cur_logic_snapshot->capture_ended();
             _cur_dso_snapshot->capture_ended();
             _cur_analog_snapshot->capture_ended();
 #ifdef ENABLE_DECODE
@@ -1405,7 +1426,7 @@ void SigSession::mathTraces_rebuild()
     bool has_dso_signal = false;
     BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals) {
         boost::shared_ptr<view::DsoSignal> dsoSig;
-        if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
+        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
             has_dso_signal = true;
             // check already have
             std::vector< boost::shared_ptr<view::MathTrace> >::iterator iter = _math_traces.begin();

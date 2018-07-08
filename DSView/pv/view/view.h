@@ -104,7 +104,7 @@ public:
     int64_t get_min_offset();
     int64_t get_max_offset();
 
-    void capture_init(bool instant);
+    void capture_init();
 
 	void zoom(double steps);
 	void zoom(double steps, int offset);
@@ -183,7 +183,6 @@ public:
     int get_view_width();
     int get_view_height();
 
-    void update_hori_res();
     double get_hori_res();
 
     QString get_measure(QString option);
@@ -244,6 +243,10 @@ public slots:
     void repeat_unshow();
     // -- repeat
     void repeat_show();
+    // --
+    void timebase_changed();
+    // --
+    void update_hori_res();
 
 private slots:
 

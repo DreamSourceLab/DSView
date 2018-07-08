@@ -53,6 +53,16 @@ static const char *maxHeights[] = {
     "4X",
     "5X",
 };
+static const uint64_t vdivs[] = {
+    SR_mV(10),
+    SR_mV(20),
+    SR_mV(50),
+    SR_mV(100),
+    SR_mV(200),
+    SR_mV(500),
+    SR_V(1),
+    SR_V(2),
+};
 
 struct session_vdev {
     int version;
@@ -80,9 +90,6 @@ struct session_vdev {
 };
 
 static GSList *dev_insts = NULL;
-static const int hwcaps[] = {
-	SR_CONF_CAPTUREFILE,
-};
 
 static const int hwoptions[] = {
     SR_CONF_MAX_HEIGHT,
@@ -97,8 +104,8 @@ static const int32_t probeOptions[] = {
 static const char *probeMapUnits[] = {
     "V",
     "A",
-    "°C",
-    "°F",
+    "℃",
+    "℉",
     "g",
     "m",
     "m/s",
@@ -376,6 +383,11 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         } else
             return SR_ERR;
         break;
+    case SR_CONF_MAX_TIMEBASE:
+        if (!sdi)
+            return SR_ERR;
+        *data = g_variant_new_uint64(MAX_TIMEBASE);
+        break;
     case SR_CONF_UNIT_BITS:
         if (sdi) {
             vdev = sdi->priv;
@@ -628,13 +640,7 @@ static int config_list(int key, GVariant **data,
 	(void)sdi;
 
 	switch (key) {
-	case SR_CONF_DEVICE_OPTIONS:
-//		*data = g_variant_new_fixed_array(G_VARIANT_TYPE_INT32,
-//				hwcaps, ARRAY_SIZE(hwcaps), sizeof(int32_t));
-		*data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
-				hwcaps, ARRAY_SIZE(hwcaps)*sizeof(int32_t), TRUE, NULL, NULL);
-		break;
-    case SR_CONF_DEVICE_CONFIGS:
+    case SR_CONF_DEVICE_OPTIONS:
 //		*data = g_variant_new_fixed_array(G_VARIANT_TYPE_INT32,
 //				hwcaps, ARRAY_SIZE(hwcaps), sizeof(int32_t));
         *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
@@ -663,6 +669,13 @@ static int config_list(int key, GVariant **data,
     case SR_CONF_PROBE_CONFIGS:
         *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
                 probeOptions, ARRAY_SIZE(probeOptions)*sizeof(int32_t), TRUE, NULL, NULL);
+        break;
+    case SR_CONF_PROBE_VDIV:
+        g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));
+        gvar = g_variant_new_from_data(G_VARIANT_TYPE("at"),
+                vdivs, ARRAY_SIZE(vdivs)*sizeof(uint64_t), TRUE, NULL, NULL);
+        g_variant_builder_add(&gvb, "{sv}", "vdivs", gvar);
+        *data = g_variant_builder_end(&gvb);
         break;
     case SR_CONF_PROBE_MAP_UNIT:
         *data = g_variant_new_strv(probeMapUnits, ARRAY_SIZE(probeMapUnits));

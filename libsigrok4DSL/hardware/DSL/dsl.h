@@ -42,62 +42,44 @@
 
 /* Message logging helpers with subsystem-specific prefix string. */
 #define LOG_PREFIX "DSL Hardware: "
-#define ds_log(l, s, args...) ds_log(l, LOG_PREFIX s, ## args)
-#define ds_spew(s, args...) ds_spew(LOG_PREFIX s, ## args)
-#define ds_dbg(s, args...) ds_dbg(LOG_PREFIX s, ## args)
-#define ds_info(s, args...) ds_info(LOG_PREFIX s, ## args)
-#define ds_warn(s, args...) ds_warn(LOG_PREFIX s, ## args)
-#define ds_err(s, args...) ds_err(LOG_PREFIX s, ## args)
+#define sr_log(l, s, args...) sr_log(l, LOG_PREFIX s, ## args)
+#define sr_spew(s, args...) sr_spew(LOG_PREFIX s, ## args)
+#define sr_dbg(s, args...) sr_dbg(LOG_PREFIX s, ## args)
+#define sr_info(s, args...) sr_info(LOG_PREFIX s, ## args)
+#define sr_warn(s, args...) sr_warn(LOG_PREFIX s, ## args)
+#define sr_err(s, args...) sr_err(LOG_PREFIX s, ## args)
 
 #define USB_INTERFACE		0
 #define USB_CONFIGURATION	1
 #define NUM_TRIGGER_STAGES	16
-#define TRIGGER_TYPE 		"01"
-
-#define MAX_RENUM_DELAY_MS	3000
 #define NUM_SIMUL_TRANSFERS	64
-#define MAX_EMPTY_TRANSFERS	(NUM_SIMUL_TRANSFERS * 2)
 
 #define DSL_REQUIRED_VERSION_MAJOR	2
 #define DSL_REQUIRED_VERSION_MINOR	0
 
-#define MAX_8BIT_SAMPLE_RATE	DS_MHZ(24)
-#define MAX_16BIT_SAMPLE_RATE	DS_MHZ(12)
+/* hardware Capabilities */
+#define CAPS_MODE_LOGIC (1 << 0)
+#define CAPS_MODE_ANALOG (1 << 1)
+#define CAPS_MODE_DSO (1 << 2)
 
-/* 6 delay states of up to 256 clock ticks */
-#define MAX_SAMPLE_DELAY	(6 * 256)
+#define CAPS_FEATURE_NONE 0
+// voltage threshold
+#define CAPS_FEATURE_VTH (1 << 0)
+// with external buffer
+#define CAPS_FEATURE_BUF (1 << 1)
+// pre offset control
+#define CAPS_FEATURE_PREOFF (1 << 2)
+// small startup eemprom
+#define CAPS_FEATURE_SEEP (1 << 3)
+// zero calibration ability
+#define CAPS_FEATURE_ZERO (1 << 4)
+/* end */
 
-#define DEV_CAPS_16BIT_POS	0
-
-#define DEV_CAPS_16BIT		(1 << DEV_CAPS_16BIT_POS)
-
-#define MAX_ANALOG_PROBES_NUM 9
-#define MAX_DSO_PROBES_NUM 2
-
-#define DEFAULT_SAMPLERATE SR_MHZ(1)
-#define DEFAULT_SAMPLELIMIT SR_MB(1)
-
-#define VPOS_MINISTEP 0.083
-#define VPOS_STEP 26.0
 
 #define DSLOGIC_ATOMIC_BITS 6
 #define DSLOGIC_ATOMIC_SAMPLES (1 << DSLOGIC_ATOMIC_BITS)
 #define DSLOGIC_ATOMIC_SIZE (1 << (DSLOGIC_ATOMIC_BITS - 3))
 #define DSLOGIC_ATOMIC_MASK (0xFFFF << DSLOGIC_ATOMIC_BITS)
-
-#define DSLOGIC_MAX_DSO_DEPTH SR_MB(2)
-//#define DSLOGIC_MAX_DSO_DEPTH SR_KB(2)
-#define DSLOGIC_MAX_DSO_SAMPLERATE SR_MHZ(200)
-#define DSLOGIC_INSTANT_DEPTH SR_MB(32)
-#define DSLOGIC_MAX_LOGIC_DEPTH SR_MB(16)
-#define DSLOGIC_MAX_LOGIC_SAMPLERATE SR_MHZ(100)
-#define DSCOPE_MAX_DEPTH SR_MB(2)
-//#define DSCOPE_MAX_DEPTH SR_KB(512)
-#define DSCOPE_MAX_SAMPLERATE SR_MHZ(200)
-#define DSCOPE_INSTANT_DEPTH SR_MB(32)
-#define DSCOPE_VLD_CH_NUM 2
-#define DSCOPE_MAX_DAQ_SAMPLERATE SR_MHZ(100)
-#define HW_MIN_SAMPLERATE SR_KHZ(10)
 
 /*
  * for basic configuration
@@ -118,28 +100,18 @@
 #define EXT_TEST_BIT 14
 #define INT_TEST_BIT 15
 
-#define bmZERO 0x00
-#define bmEEWP 0x01
-#define bmFORCE_RDY 0x02
-#define bmFORCE_STOP 0x04
-#define bmSCOPE_SET 0x08
-#define bmSCOPE_CLR 0x08
-
-#define DSO_EN1_BIT		6
-#define DSO_EN0_BIT		5
-#define DSO_EN_COMB_BIT	4
-#define DSO_DC1_BIT		3
-#define DSO_ATT1_BIT	2
-#define DSO_DC0_BIT		1
-#define DSO_ATT0_BIT	0
+#define bmNONE          0
+#define bmEEWP          (1 << 0)
+#define bmFORCE_RDY     (1 << 1)
+#define bmFORCE_STOP    (1 << 2)
+#define bmSCOPE_SET     (1 << 3)
+#define bmSCOPE_CLR     (1 << 4)
 
 /*
- * for DSLogic device
- *
+ * packet content check
  */
-#define MAX_LOGIC_PROBES 16
-#define DSLOGIC_BASIC_MEM_DEPTH SR_KB(256)
-#define DSLOGIC_MEM_DEPTH SR_MB(256)
+#define TRIG_CHECKID 0x55555555
+#define DSO_PKTID 0xa500
 
 /*
  * for DSCope device
@@ -151,52 +123,32 @@
  * y = voff(fine) default bias
  * the final offset: x+DSCOPE_CONSTANT_BIAS->vpos(coarse); y->voff(fine)
  */
-#define DSCOPE_DEFAULT_TRANS (129<<8)+167
-#define DSCOPE_DEFAULT_VOFF  (32<<10)+558
 #define DSCOPE_CONSTANT_BIAS 160
 #define DSCOPE_TRANS_CMULTI   10
 #define DSCOPE_TRANS_FMULTI   100.0
-#define DSCOPE_DEFAULT_VGAIN0 0x162400
-#define DSCOPE_DEFAULT_VGAIN1 0x14C000
-#define DSCOPE_DEFAULT_VGAIN2 0x12E800
-#define DSCOPE_DEFAULT_VGAIN3 0x118000
-#define DSCOPE_DEFAULT_VGAIN4 0x102400
-#define DSCOPE_DEFAULT_VGAIN5 0x2E800
-#define DSCOPE_DEFAULT_VGAIN6 0x18000
-#define DSCOPE_DEFAULT_VGAIN7 0x02400
 
 /*
  * for DSCope20 device
  * trans: the whole windows offset map to the offset pwm(1024 total)
  * voff: offset pwm constant bias to balance circuit offset
  */
-#define DSCOPE20_DEFAULT_TRANS 920
-#define DSCOPE20_DEFAULT_VOFF 45
-#define DSCOPE20_DEFAULT_VGAIN0 0x1DA800
-#define DSCOPE20_DEFAULT_VGAIN1 0x1A7200
-#define DSCOPE20_DEFAULT_VGAIN2 0x164200
-#define DSCOPE20_DEFAULT_VGAIN3 0x131800
-#define DSCOPE20_DEFAULT_VGAIN4 0xBD000
-#define DSCOPE20_DEFAULT_VGAIN5 0x7AD00
-#define DSCOPE20_DEFAULT_VGAIN6 0x48800
-#define DSCOPE20_DEFAULT_VGAIN7 0x12000
-
-#define DSCOPEC20_DEFAULT_VGAIN0 0x1C5C00
-#define DSCOPEC20_DEFAULT_VGAIN1 0x19EB00
-#define DSCOPEC20_DEFAULT_VGAIN2 0x16AE00
-#define DSCOPEC20_DEFAULT_VGAIN3 0x143D00
-#define DSCOPEC20_DEFAULT_VGAIN4 0xAFC00
-#define DSCOPEC20_DEFAULT_VGAIN5 0x7C000
-#define DSCOPEC20_DEFAULT_VGAIN6 0x54E00
-#define DSCOPEC20_DEFAULT_VGAIN7 0x2DD00
-
 #define CALI_VGAIN_RANGE 100
-#define CALI_VOFF_RANGE (1024-DSCOPE20_DEFAULT_TRANS)
 
-#define DSO_AUTOTRIG_THRESHOLD 16
-
-#define TRIG_CHECKID 0x55555555
-#define DSO_PKTID 0xa500
+struct DSL_caps {
+    uint64_t mode_caps;
+    uint64_t feature_caps;
+    uint64_t channels;
+    uint64_t hw_depth;
+    uint64_t dso_depth;
+    uint8_t intest_channel;
+    const uint64_t *vdivs;
+    uint8_t vga_id;
+    uint16_t default_channelmode;
+    uint64_t default_samplerate;
+    uint64_t default_samplelimit;
+    uint16_t default_pwmtrans;
+    uint16_t default_pwmmargin;
+};
 
 struct DSL_profile {
     uint16_t vid;
@@ -211,82 +163,328 @@ struct DSL_profile {
     const char *fpga_bit33;
     const char *fpga_bit50;
 
-    uint32_t dev_caps;
+    struct DSL_caps dev_caps;
+};
+
+static const uint64_t vdivs10to2000[] = {
+    SR_mV(10),
+    SR_mV(20),
+    SR_mV(50),
+    SR_mV(100),
+    SR_mV(200),
+    SR_mV(500),
+    SR_V(1),
+    SR_V(2),
+    0,
+};
+
+struct DSL_vga {
+    uint8_t id;
+    uint64_t key;
+    uint64_t vgain;
+    uint16_t voff;
+    uint16_t voff_comp;
+};
+static const struct DSL_vga vga_defaults[] = {
+    {1, 10,   0x162400, (32<<10)+558, (32<<10)+558},
+    {1, 20,   0x14C000, (32<<10)+558, (32<<10)+558},
+    {1, 50,   0x12E800, (32<<10)+558, (32<<10)+558},
+    {1, 100,  0x118000, (32<<10)+558, (32<<10)+558},
+    {1, 200,  0x102400, (32<<10)+558, (32<<10)+558},
+    {1, 500,  0x2E800,  (32<<10)+558, (32<<10)+558},
+    {1, 1000, 0x18000,  (32<<10)+558, (32<<10)+558},
+    {1, 2000, 0x02400,  (32<<10)+558, (32<<10)+558},
+
+    {2, 10,   0x1DA800, 45, 1024-920-45},
+    {2, 20,   0x1A7200, 45, 1024-920-45},
+    {2, 50,   0x164200, 45, 1024-920-45},
+    {2, 100,  0x131800, 45, 1024-920-45},
+    {2, 200,  0xBD000,  45, 1024-920-45},
+    {2, 500,  0x7AD00,  45, 1024-920-45},
+    {2, 1000, 0x48800,  45, 1024-920-45},
+    {2, 2000, 0x12000,  45, 1024-920-45},
+
+    {3, 10,   0x1C5C00, 45, 1024-920-45},
+    {3, 20,   0x19EB00, 45, 1024-920-45},
+    {3, 50,   0x16AE00, 45, 1024-920-45},
+    {3, 100,  0x143D00, 45, 1024-920-45},
+    {3, 200,  0xB1000,  45, 1024-920-45},
+    {3, 500,  0x7F000,  45, 1024-920-45},
+    {3, 1000, 0x57200,  45, 1024-920-45},
+    {3, 2000, 0x2DD00,  45, 1024-920-45},
+
+    {0, 0, 0, 0, 0}
+};
+
+enum CHANNEL_ID {
+    DSL_STREAM20x16 = 0,
+    DSL_STREAM25x12,
+    DSL_STREAM50x6,
+    DSL_STREAM100x3,
+    DSL_BUFFER100x16,
+    DSL_BUFFER200x8,
+    DSL_BUFFER400x4,
+    DSL_ANALOG10x2,
+    DSL_DSO200x2,
+};
+
+struct DSL_channels {
+    enum CHANNEL_ID id;
+    enum OPERATION_MODE mode;
+    enum CHANNEL_TYPE type;
+    gboolean stream;
+    uint16_t num;
+    uint8_t unit_bits;
+    uint64_t min_samplerate;
+    uint64_t max_samplerate;
+    uint64_t hw_min_samplerate;
+    uint64_t hw_max_samplerate;
+    const char *descr;
+};
+
+static const struct DSL_channels channel_modes[] = {
+    // LA Stream
+    {DSL_STREAM20x16,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE,  16, 1, SR_KHZ(10), SR_MHZ(20),
+     SR_KHZ(10), SR_MHZ(100), "Use 16 Channels (Max 20MHz)"},
+    {DSL_STREAM25x12,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE,  12, 1, SR_KHZ(10), SR_MHZ(25),
+     SR_KHZ(10), SR_MHZ(100), "Use 12 Channels (Max 25MHz)"},
+    {DSL_STREAM50x6,   LOGIC,  SR_CHANNEL_LOGIC,  TRUE,  6,  1, SR_KHZ(10), SR_MHZ(50),
+     SR_KHZ(10), SR_MHZ(100), "Use 6 Channels (Max 50MHz)"},
+    {DSL_STREAM100x3,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE,  3,  1, SR_KHZ(10), SR_MHZ(100),
+     SR_KHZ(10), SR_MHZ(100), "Use 3 Channels (Max 100MHz)"},
+
+    // LA Buffer
+    {DSL_BUFFER100x16, LOGIC,  SR_CHANNEL_LOGIC,  FALSE, 16, 1, SR_KHZ(10), SR_MHZ(100),
+     SR_KHZ(10), SR_MHZ(100), "Use Channels 0~15 (Max 100MHz)"},
+    {DSL_BUFFER200x8,  LOGIC,  SR_CHANNEL_LOGIC,  FALSE, 8,  1, SR_KHZ(10), SR_MHZ(200),
+     SR_KHZ(10), SR_MHZ(100), "Use Channels 0~7 (Max 200MHz)"},
+    {DSL_BUFFER400x4,  LOGIC,  SR_CHANNEL_LOGIC,  FALSE, 4,  1, SR_KHZ(10), SR_MHZ(400),
+     SR_KHZ(10), SR_MHZ(100), "Use Channels 0~3 (Max 400MHz)"},
+
+    // DAQ
+    {DSL_ANALOG10x2,   ANALOG, SR_CHANNEL_ANALOG, TRUE,  2,  8, SR_HZ(10),  SR_MHZ(10),
+     SR_KHZ(10), SR_MHZ(100), "Use Channels 0~1 (Max 10MHz)"},
+
+    // OSC
+    {DSL_DSO200x2,     DSO,    SR_CHANNEL_DSO,    FALSE, 2,  8, SR_KHZ(10), SR_MHZ(200),
+     SR_KHZ(10), SR_MHZ(100), "Use Channels 0~1 (Max 200MHz)"}
 };
 
 static const struct DSL_profile supported_DSLogic[] = {
     /*
      * DSLogic
      */
-    {0x2A0E, 0x0001, NULL, "DSLogic", NULL,
+    {0x2A0E, 0x0001, "DreamSourceLab", "DSLogic", NULL,
      "DSLogic.fw",
      "DSLogic33.bin",
      "DSLogic50.bin",
-     DEV_CAPS_16BIT},
+     {CAPS_MODE_LOGIC | CAPS_MODE_ANALOG | CAPS_MODE_DSO,
+      CAPS_FEATURE_SEEP | CAPS_FEATURE_BUF,
+      (1 << DSL_STREAM20x16) | (1 << DSL_STREAM25x12) | (1 << DSL_STREAM50x6) | (1 << DSL_STREAM100x3) |
+      (1 << DSL_BUFFER100x16) | (1 << DSL_BUFFER200x8) | (1 << DSL_BUFFER400x4) |
+      (1 << DSL_ANALOG10x2) |
+      (1 << DSL_DSO200x2),
+      SR_MB(256),
+      SR_Mn(2),
+      DSL_BUFFER100x16,
+      vdivs10to2000,
+      0,
+      DSL_STREAM20x16,
+      SR_MHZ(1),
+      SR_Mn(1),
+      0,
+      0}
+    },
 
-    {0x2A0E, 0x0003, NULL, "DSLogic Pro", NULL,
+    {0x2A0E, 0x0003, "DreamSourceLab", "DSLogic Pro", NULL,
      "DSLogicPro.fw",
      "DSLogicPro.bin",
      "DSLogicPro.bin",
-     DEV_CAPS_16BIT},
+     {CAPS_MODE_LOGIC,
+      CAPS_FEATURE_SEEP | CAPS_FEATURE_VTH | CAPS_FEATURE_BUF,
+      (1 << DSL_STREAM20x16) | (1 << DSL_STREAM25x12) | (1 << DSL_STREAM50x6) | (1 << DSL_STREAM100x3) |
+      (1 << DSL_BUFFER100x16) | (1 << DSL_BUFFER200x8) | (1 << DSL_BUFFER400x4),
+      SR_MB(256),
+      0,
+      DSL_BUFFER100x16,
+      0,
+      0,
+      DSL_STREAM20x16,
+      SR_MHZ(1),
+      SR_Mn(1),
+      0,
+      0}
+    },
 
-    {0x2A0E, 0x0005, NULL, "DSMso", NULL,
-     "DSMso.fw",
-     "DSMso.bin",
-     "DSMso.bin",
-     DEV_CAPS_16BIT},
-
-    {0x2A0E, 0x0020, NULL, "DSLogic PLus", NULL,
+    {0x2A0E, 0x0020, "DreamSourceLab", "DSLogic PLus", NULL,
      "DSLogicPlus.fw",
      "DSLogicPlus.bin",
      "DSLogicPlus.bin",
-     DEV_CAPS_16BIT},
+     {CAPS_MODE_LOGIC,
+      CAPS_FEATURE_VTH | CAPS_FEATURE_BUF,
+      (1 << DSL_STREAM20x16) | (1 << DSL_STREAM25x12) | (1 << DSL_STREAM50x6) | (1 << DSL_STREAM100x3) |
+      (1 << DSL_BUFFER100x16) | (1 << DSL_BUFFER200x8) | (1 << DSL_BUFFER400x4),
+      SR_MB(256),
+      0,
+      DSL_BUFFER100x16,
+      0,
+      0,
+      DSL_STREAM20x16,
+      SR_MHZ(1),
+      SR_Mn(1),
+      0,
+      0}
+    },
 
-    {0x2A0E, 0x0021, NULL, "DSLogic Basic", NULL,
+    {0x2A0E, 0x0021, "DreamSourceLab", "DSLogic Basic", NULL,
      "DSLogicBasic.fw",
      "DSLogicBasic.bin",
      "DSLogicBasic.bin",
-     DEV_CAPS_16BIT},
-	 
+     {CAPS_MODE_LOGIC,
+      CAPS_FEATURE_VTH,
+      (1 << DSL_STREAM20x16) | (1 << DSL_STREAM25x12) | (1 << DSL_STREAM50x6) | (1 << DSL_STREAM100x3) |
+      (1 << DSL_BUFFER100x16) | (1 << DSL_BUFFER200x8) | (1 << DSL_BUFFER400x4),
+      SR_KB(256),
+      0,
+      DSL_STREAM20x16,
+      0,
+      0,
+      DSL_STREAM20x16,
+      SR_MHZ(1),
+      SR_Mn(1),
+      0,
+      0}
+    },
 
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+    { 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 };
 
 static const struct DSL_profile supported_DSCope[] = {
     /*
      * DSCope
      */
-    {0x2A0E, 0x0002, NULL, "DSCope", NULL,
+    {0x2A0E, 0x0002, "DreamSourceLab", "DSCope", NULL,
      "DSCope.fw",
      "DSCope.bin",
      "DSCope.bin",
-     DEV_CAPS_16BIT},
+     {CAPS_MODE_ANALOG | CAPS_MODE_DSO,
+      CAPS_FEATURE_ZERO | CAPS_FEATURE_PREOFF | CAPS_FEATURE_SEEP | CAPS_FEATURE_BUF,
+      (1 << DSL_ANALOG10x2) |
+      (1 << DSL_DSO200x2),
+      SR_MB(256),
+      SR_Mn(2),
+      0,
+      vdivs10to2000,
+      1,
+      DSL_DSO200x2,
+      SR_MHZ(100),
+      SR_Mn(1),
+      (129<<8)+167,
+      1024-920}
+    },
 
-    {0x2A0E, 0x0004, NULL, "DSCope20", NULL,
+    {0x2A0E, 0x0004, "DreamSourceLab", "DSCope20", NULL,
      "DSCope20.fw",
      "DSCope20.bin",
      "DSCope20.bin",
-     DEV_CAPS_16BIT},
+     {CAPS_MODE_ANALOG | CAPS_MODE_DSO,
+      CAPS_FEATURE_ZERO | CAPS_FEATURE_SEEP | CAPS_FEATURE_BUF,
+      (1 << DSL_ANALOG10x2) |
+      (1 << DSL_DSO200x2),
+      SR_MB(256),
+      SR_Mn(2),
+      0,
+      vdivs10to2000,
+      2,
+      DSL_DSO200x2,
+      SR_MHZ(100),
+      SR_Mn(1),
+      920,
+      1024-920}
+    },
 
-    {0x2A0E, 0x0022, NULL, "DSCope B20", NULL,
+    {0x2A0E, 0x0022, "DreamSourceLab", "DSCope B20", NULL,
      "DSCopeB20.fw",
      "DSCope20.bin",
      "DSCope20.bin",
-     DEV_CAPS_16BIT},
+     {CAPS_MODE_ANALOG | CAPS_MODE_DSO,
+      CAPS_FEATURE_ZERO | CAPS_FEATURE_BUF,
+      (1 << DSL_ANALOG10x2) |
+      (1 << DSL_DSO200x2),
+      SR_MB(256),
+      SR_Mn(2),
+      0,
+      vdivs10to2000,
+      2,
+      DSL_DSO200x2,
+      SR_MHZ(100),
+      SR_Mn(1),
+      920,
+      1024-920}
+    },
 
-    {0x2A0E, 0x0023, NULL, "DSCope C20", NULL,
+    {0x2A0E, 0x0023, "DreamSourceLab", "DSCope C20", NULL,
      "DSCopeC20.fw",
      "DSCopeC20.bin",
      "DSCopeC20.bin",
-     DEV_CAPS_16BIT},
+     {CAPS_MODE_ANALOG | CAPS_MODE_DSO,
+      CAPS_FEATURE_ZERO | CAPS_FEATURE_BUF,
+      (1 << DSL_ANALOG10x2) |
+      (1 << DSL_DSO200x2),
+      SR_MB(256),
+      SR_Mn(2),
+      0,
+      vdivs10to2000,
+      3,
+      DSL_DSO200x2,
+      SR_MHZ(100),
+      SR_Mn(1),
+      920,
+      1024-920}
+    },
 
-    {0x2A0E, 0x0024, NULL, "DSCope C20P", NULL,
+
+    {0x2A0E, 0x0024, "DreamSourceLab", "DSCope C20P", NULL,
      "DSCopeC20P.fw",
-     "DSCopeC20.bin",
-     "DSCopeC20.bin",
-     DEV_CAPS_16BIT},
+     "DSCopeC20P.bin",
+     "DSCopeC20P.bin",
+     {CAPS_MODE_ANALOG | CAPS_MODE_DSO,
+      CAPS_FEATURE_ZERO | CAPS_FEATURE_BUF,
+      (1 << DSL_ANALOG10x2) |
+      (1 << DSL_DSO200x2),
+      SR_MB(256),
+      SR_Mn(2),
+      0,
+      vdivs10to2000,
+      3,
+      DSL_DSO200x2,
+      SR_MHZ(100),
+      SR_Mn(1),
+      920,
+      1024-920}
+    },
 
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+    {0x2A0E, 0x0025, "DreamSourceLab", "DSCope C20", NULL,
+     "DSCopeC20B.fw",
+     "DSCopeC20B.bin",
+     "DSCopeC20B.bin",
+     {CAPS_MODE_ANALOG | CAPS_MODE_DSO,
+      CAPS_FEATURE_ZERO,
+      (1 << DSL_ANALOG10x2) |
+      (1 << DSL_DSO200x2),
+      SR_KB(256),
+      SR_Kn(20),
+      0,
+      vdivs10to2000,
+      3,
+      DSL_DSO200x2,
+      SR_MHZ(100),
+      SR_Kn(10),
+      920,
+      1024-920}
+    },
+
+    { 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 };
 
 static const gboolean default_ms_en[] = {
@@ -329,7 +527,6 @@ struct DSL_context {
     uint64_t actual_bytes;
 
 	/* Operational settings */
-	gboolean sample_wide;
     gboolean clock_type;
     gboolean clock_edge;
     gboolean rle_mode;
@@ -339,9 +536,9 @@ struct DSL_context {
     gboolean stream;
     uint8_t  test_mode;
     uint16_t buf_options;
-    uint16_t ch_mode;
-    uint16_t samplerates_size;
-    uint16_t samplecounts_size;
+    enum CHANNEL_ID ch_mode;
+    uint16_t samplerates_min_index;
+    uint16_t samplerates_max_index;
     uint16_t th_level;
     double vth;
     uint16_t filter;
@@ -365,7 +562,6 @@ struct DSL_context {
     int zero_comb;
     gboolean roll;
     gboolean data_lock;
-    uint8_t unit_bits;
     uint16_t unit_pitch;
 
     uint64_t num_samples;
@@ -425,13 +621,48 @@ struct DSL_setting {
     uint32_t end_sync;
 };
 
-struct DSL_vga {
-    uint64_t key;
-    uint64_t vgain0;
-    uint64_t vgain1;
-    uint16_t voff0;
-    uint16_t voff1;
+static const uint64_t samplerates[] = {
+    SR_HZ(10),
+    SR_HZ(20),
+    SR_HZ(50),
+    SR_HZ(100),
+    SR_HZ(200),
+    SR_HZ(500),
+    SR_KHZ(1),
+    SR_KHZ(2),
+    SR_KHZ(5),
+    SR_KHZ(10),
+    SR_KHZ(20),
+    SR_KHZ(40),
+    SR_KHZ(50),
+    SR_KHZ(100),
+    SR_KHZ(200),
+    SR_KHZ(400),
+    SR_KHZ(500),
+    SR_MHZ(1),
+    SR_MHZ(2),
+    SR_MHZ(4),
+    SR_MHZ(5),
+    SR_MHZ(10),
+    SR_MHZ(20),
+    SR_MHZ(25),
+    SR_MHZ(40),
+    SR_MHZ(50),
+    SR_MHZ(100),
+    SR_MHZ(200),
+    SR_MHZ(400),
+    SR_MHZ(500),
+    SR_MHZ(800),
+    SR_GHZ(1),
+    SR_GHZ(2),
+    SR_GHZ(5),
+    SR_GHZ(10),
 };
+
+SR_PRIV int dsl_adjust_probes(struct sr_dev_inst *sdi, int num_probes);
+SR_PRIV int dsl_setup_probes(struct sr_dev_inst *sdi, int num_probes);
+SR_PRIV const GSList *dsl_mode_list(const struct sr_dev_inst *sdi);
+SR_PRIV void dsl_adjust_samplerate(struct DSL_context *devc);
 
 SR_PRIV int dsl_en_ch_num(const struct sr_dev_inst *sdi);
 SR_PRIV gboolean dsl_check_conf_profile(libusb_device *dev);
@@ -439,7 +670,10 @@ SR_PRIV int dsl_configure_probes(const struct sr_dev_inst *sdi);
 SR_PRIV uint64_t dsl_channel_depth(const struct sr_dev_inst *sdi);
 
 SR_PRIV int dsl_wr_reg(const struct sr_dev_inst *sdi, uint8_t addr, uint8_t value);
+SR_PRIV int dsl_rd_reg(const struct sr_dev_inst *sdi, uint8_t addr, uint8_t *value);
 SR_PRIV int dsl_wr_ext(const struct sr_dev_inst *sdi, uint8_t addr, uint8_t value);
+SR_PRIV int dsl_rd_ext(const struct sr_dev_inst *sdi, unsigned char *ctx, uint16_t addr, uint8_t len);
+
 SR_PRIV int dsl_wr_dso(const struct sr_dev_inst *sdi, uint64_t cmd);
 SR_PRIV int dsl_wr_nvm(const struct sr_dev_inst *sdi, unsigned char *ctx, uint16_t addr, uint8_t len);
 SR_PRIV int dsl_rd_nvm(const struct sr_dev_inst *sdi, unsigned char *ctx, uint16_t addr, uint8_t len);
@@ -450,6 +684,8 @@ SR_PRIV int dsl_fpga_config(struct libusb_device_handle *hdl, const char *filena
 SR_PRIV int dsl_config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
                       const struct sr_channel *ch,
                       const struct sr_channel_group *cg);
+SR_PRIV int dsl_config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
+                       const struct sr_channel_group *cg);
 
 SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboolean *fpga_done);
 SR_PRIV int dsl_dev_close(struct sr_dev_inst *sdi);

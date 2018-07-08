@@ -69,12 +69,12 @@ QString Device::format_device_title() const
 
 	assert(_sdi);
 
-	if (_sdi->vendor && _sdi->vendor[0]) {
-		s << _sdi->vendor;
-		if ((_sdi->model && _sdi->model[0]) ||
-			(_sdi->version && _sdi->version[0]))
-			s << ' ';
-	}
+//	if (_sdi->vendor && _sdi->vendor[0]) {
+//		s << _sdi->vendor;
+//		if ((_sdi->model && _sdi->model[0]) ||
+//			(_sdi->version && _sdi->version[0]))
+//			s << ' ';
+//	}
 
 	if (_sdi->model && _sdi->model[0]) {
 		s << _sdi->model;

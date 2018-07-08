@@ -57,7 +57,7 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
     // setup _ch_combobox
     BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
         boost::shared_ptr<view::DsoSignal> dsoSig;
-        if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
+        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
             _ch_combobox->addItem(dsoSig->get_name(), qVariantFromValue(dsoSig->get_index()));
         }
     }
@@ -77,7 +77,7 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
     std::vector<int> dbv_ranges;
     BOOST_FOREACH(const boost::shared_ptr<view::Trace> t, _session.get_math_signals()) {
         boost::shared_ptr<view::MathTrace> mathTrace;
-        if (mathTrace = dynamic_pointer_cast<view::MathTrace>(t)) {
+        if ((mathTrace = dynamic_pointer_cast<view::MathTrace>(t))) {
             windows = mathTrace->get_math_stack()->get_windows_support();
             length = mathTrace->get_math_stack()->get_length_support();
             view_modes = mathTrace->get_view_modes_support();
@@ -127,7 +127,7 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
     // load current settings
     BOOST_FOREACH(const boost::shared_ptr<view::Trace> t, _session.get_math_signals()) {
         boost::shared_ptr<view::MathTrace> mathTrace;
-        if (mathTrace = dynamic_pointer_cast<view::MathTrace>(t)) {
+        if ((mathTrace = dynamic_pointer_cast<view::MathTrace>(t))) {
             if (mathTrace->enabled()) {
                 _en_checkbox->setChecked(true);
                 for (int i = 0; i < _ch_combobox->count(); i++) {
@@ -216,7 +216,7 @@ void FftOptions::accept()
 
     BOOST_FOREACH(const boost::shared_ptr<view::Trace> t, _session.get_math_signals()) {
         boost::shared_ptr<view::MathTrace> mathTrace;
-        if (mathTrace = dynamic_pointer_cast<view::MathTrace>(t)) {
+        if ((mathTrace = dynamic_pointer_cast<view::MathTrace>(t))) {
             mathTrace->set_enable(false);
             if (mathTrace->get_index() == _ch_combobox->currentData().toInt()) {
                 mathTrace->get_math_stack()->set_dc_ignore(_dc_checkbox->isChecked());

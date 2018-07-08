@@ -22,6 +22,8 @@
 #include "mainframe.h"
 
 #include "toolbars/titlebar.h"
+#include "dialogs/dsmessagebox.h"
+#include "dialogs/dsdialog.h"
 #include "mainwindow.h"
 
 #include <QVBoxLayout>
@@ -30,9 +32,14 @@
 #include <QHoverEvent>
 #include <QPixmap>
 #include <QPainter>
+#include <QLabel>
+#include <QDialogButtonBox>
 #include <QBitmap>
 #include <QResizeEvent>
 #include <QDesktopWidget>
+#include <QDesktopServices>
+#include <QPushButton>
+#include <QMessageBox>
 #include <QApplication>
 
 #include <algorithm>
@@ -357,8 +364,8 @@ void MainFrame::readSettings()
     QSettings settings;
     QDesktopWidget* desktopWidget = QApplication::desktop();
     QRect deskRect = desktopWidget->availableGeometry();
-    QPoint default_upleft = QPoint((deskRect.width() - minWidth)/2, (deskRect.height() - minHeight)/2);
-    QSize default_size = QSize(minWidth, minHeight);
+    QPoint default_upleft = QPoint((deskRect.width() - defWidth)/2, (deskRect.height() - defHeight)/2);
+    QSize default_size = QSize(defWidth, defHeight);
 
     settings.beginGroup("MainFrame");
     bool isMax = settings.value("isMax", false).toBool();
@@ -383,6 +390,49 @@ void MainFrame::readSettings()
     } else {
         resize(size);
         move(pos);
+    }
+}
+
+void MainFrame::setTaskbarProgress(int progress)
+{
+    (void)progress;
+}
+
+void MainFrame::show_doc()
+{
+    const QString DOC_KEY("ShowDocuments");
+    QSettings settings;
+
+    if (!settings.contains(DOC_KEY)) {
+        dialogs::DSDialog dlg(this);
+        dlg.setTitle(tr("Document"));
+
+        QLabel tipsLabel;
+        tipsLabel.setPixmap(QPixmap(":/icons/showDoc.png"));
+        QMessageBox msg;
+        msg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
+        msg.setContentsMargins(0, 0, 0, 0);
+        connect(&msg, SIGNAL(buttonClicked(QAbstractButton*)), &dlg, SLOT(accept()));
+        QPushButton *noMoreButton = msg.addButton(tr("Not Show Again"), QMessageBox::ActionRole);
+        msg.addButton(tr("Ignore"), QMessageBox::ActionRole);
+        QPushButton *openButton = msg.addButton(tr("Open"), QMessageBox::ActionRole);
+
+        QVBoxLayout layout;
+        layout.addWidget(&tipsLabel);
+        layout.addWidget(&msg, 0, Qt::AlignRight);
+        layout.setContentsMargins(0, 0, 0, 0);
+
+        dlg.layout()->addLayout(&layout);
+        dlg.exec();
+
+        if (msg.clickedButton() == openButton) {
+            QDir dir(DS_RES_PATH);
+            dir.cdUp();
+            QDesktopServices::openUrl(
+                        QUrl("file:///"+dir.absolutePath() + "/ug.pdf"));
+        }
+        if (msg.clickedButton() == noMoreButton)
+              settings.setValue(DOC_KEY, false);
     }
 }
 

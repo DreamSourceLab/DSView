@@ -106,12 +106,13 @@ void LogicSignal::set_trig(int trig)
         _trig = NONTRIG;
 }
 
-void LogicSignal::commit_trig()
+bool LogicSignal::commit_trig()
 {
 
-    if (_trig == NONTRIG)
+    if (_trig == NONTRIG) {
         ds_trigger_probe_set(_index_list.front(), 'X', 'X');
-    else {
+        return false;
+    } else {
         ds_trigger_set_en(true);
         if (_trig == POSTRIG)
             ds_trigger_probe_set(_index_list.front(), 'R', 'X');
@@ -123,6 +124,7 @@ void LogicSignal::commit_trig()
             ds_trigger_probe_set(_index_list.front(), '0', 'X');
         else if (_trig == EDGTRIG)
             ds_trigger_probe_set(_index_list.front(), 'C', 'X');
+        return true;
     }
 }
 

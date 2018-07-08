@@ -416,8 +416,8 @@ SR_API int sr_session_run(void)
         }
 	} else {
 		/* Real sources, use g_poll() main loop. */
-    	while (session->num_sources)
-			sr_session_iteration(TRUE);
+        while (session->num_sources)
+            sr_session_iteration(TRUE);
 	}
 
     g_mutex_lock(&session->stop_mutex);

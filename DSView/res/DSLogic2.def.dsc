@@ -1,12 +1,15 @@
 ﻿{
-    "Channel Mode": "Use Channels 0~15 (Max 10MHz)",
+    "Channel Mode": "使用通道 0~1 (最大采样率 10MHz)",
     "Device": "DSLogic",
     "DeviceMode": 2,
-    "Filter Targets": "None",
+    "Enable RLE Compress": 1,
+    "Filter Targets": "无",
     "Horizontal trigger position": "0",
-    "Operation Mode": "Stream Mode",
-    "Sample count": "1048576",
+    "Max Height": "1X",
+    "Operation Mode": "Stream模式",
+    "Sample count": "1000000",
     "Sample rate": "1000000",
+    "Stop Options": "上传已采集的数据",
     "Threshold Level": "1.8/2.5/3.3V Level",
     "Trigger hold off": "0",
     "Trigger margin": "8",
@@ -14,69 +17,35 @@
     "Trigger source": "0",
     "Using Clock Negedge": 0,
     "Using External Clock": 0,
+    "Version": 2,
     "channel": [
         {
-            "colour": "#1185d1",
+            "colour": "#eeb211",
+            "coupling": 0,
             "enabled": true,
             "index": 0,
+            "mapMax": 1,
+            "mapMin": -1,
+            "mapUnit": "V",
             "name": "0",
-            "type": 10002
+            "type": 10002,
+            "vdiv": 1000,
+            "zeroPos": 0.5
         },
         {
-            "colour": "#eeb211",
+            "colour": "#009925",
+            "coupling": 0,
             "enabled": true,
             "index": 1,
+            "mapMax": 1,
+            "mapMin": -1,
+            "mapUnit": "V",
             "name": "1",
-            "type": 10002
-        },
-        {
-            "colour": "#d50f25",
-            "enabled": true,
-            "index": 2,
-            "name": "2",
-            "type": 10002
-        },
-        {
-            "colour": "#009925",
-            "enabled": true,
-            "index": 3,
-            "name": "3",
-            "type": 10002
-        },
-        {
-            "colour": "#1185d1",
-            "enabled": true,
-            "index": 4,
-            "name": "4",
-            "type": 10002
-        },
-        {
-            "colour": "#eeb211",
-            "enabled": true,
-            "index": 5,
-            "name": "5",
-            "type": 10002
-        },
-        {
-            "colour": "#d50f25",
-            "enabled": true,
-            "index": 6,
-            "name": "6",
-            "type": 10002
-        },
-        {
-            "colour": "#009925",
-            "enabled": true,
-            "index": 7,
-            "name": "7",
-            "type": 10002
-        },
-        {
-            "colour": "#1185d1",
-            "enabled": true,
-            "index": 8,
-            "name": "8",
-            "type": 10002
+            "type": 10002,
+            "vdiv": 1000,
+            "zeroPos": 0.5
         }
+    ],
+    "decoder": [
     ]
 }

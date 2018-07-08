@@ -86,6 +86,7 @@ private:
 	QVBoxLayout _layout;
     toolbars::TitleBar *_titlebar;
 
+    QGroupBox *_dynamic_box;
     QGridLayout _dynamic_layout;
     QVector <QLabel *> _probes_label_list;
     QVector <QCheckBox *> _probes_checkBox_list;

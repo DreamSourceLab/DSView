@@ -51,9 +51,8 @@ SR_API int sr_dev_probe_enable(const struct sr_dev_inst *sdi, int probenum,
 		gboolean state);
 SR_API int sr_dev_trigger_set(const struct sr_dev_inst *sdi, uint16_t probenum,
 		const char *trigger);
-SR_API gboolean sr_dev_has_option(const struct sr_dev_inst *sdi, int key);
 SR_API GSList *sr_dev_list(const struct sr_dev_driver *driver);
-SR_API GSList *sr_dev_mode_list(const struct sr_dev_inst *sdi);
+SR_API const GSList *sr_dev_mode_list(const struct sr_dev_inst *sdi);
 SR_API int sr_dev_clear(const struct sr_dev_driver *driver);
 SR_API int sr_dev_open(struct sr_dev_inst *sdi);
 SR_API int sr_dev_close(struct sr_dev_inst *sdi);
@@ -135,8 +134,6 @@ SR_API char *sr_samplecount_string(uint64_t samplecount);
 SR_API char *sr_period_string(uint64_t frequency);
 SR_API char *sr_time_string(uint64_t time);
 SR_API char *sr_voltage_string(uint64_t v_p, uint64_t v_q);
-SR_API char **sr_parse_triggerstring(const struct sr_dev_inst *sdi,
-		const char *triggerstring);
 SR_API int sr_parse_sizestring(const char *sizestring, uint64_t *size);
 SR_API uint64_t sr_parse_timestring(const char *timestring);
 SR_API gboolean sr_parse_boolstring(const char *boolstring);

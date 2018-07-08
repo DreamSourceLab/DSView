@@ -29,9 +29,15 @@
 #define CMD_CTL_RD_PRE          0xb1
 #define CMD_CTL_RD              0xb2
 
+// read only
 #define bmGPIF_DONE     (1 << 7)
 #define bmFPGA_DONE     (1 << 6)
 #define bmFPGA_INIT_B   (1 << 5)
+// write only
+#define bmCH_CH0        (1 << 7)
+#define bmCH_COM        (1 << 6)
+#define bmCH_CH1        (1 << 5)
+// read/write
 #define bmSYS_OVERFLOW  (1 << 4)
 #define bmSYS_CLR       (1 << 3)
 #define bmSYS_EN        (1 << 2)
@@ -43,11 +49,31 @@
 #define bmWR_WORDWIDE      (1 << 0)
 
 #define VTH_ADDR 0x78
-#define EEWP_ADDR 0x70
+#define CTR1_ADDR 0x71
+#define CTR0_ADDR 0x70
 #define COMB_ADDR 0x68
-#define EXT_I2CSEL 0x71
-#define FPGA_I2CADDR 0x21
-#define EXT_I2CADDR 0x50
+#define EI2C_ADDR 0x60
+
+#define EI2C_CTR_OFF   0x2
+#define EI2C_RXR_OFF   0x3
+#define EI2C_SR_OFF    0x4
+#define EI2C_TXR_OFF   0x3
+#define EI2C_CR_OFF    0x4
+#define EI2C_SEL_OFF   0x7
+
+#define bmEI2C_EN (1 << 7)
+
+#define bmEI2C_STA (1 << 7)
+#define bmEI2C_STO (1 << 6)
+#define bmEI2C_RD (1 << 5)
+#define bmEI2C_WR (1 << 4)
+#define bmEI2C_NACK (1 << 3)
+
+#define bmEI2C_RXNACK (1 << 7)
+#define bmEI2C_TIP (1 << 1)
+
+#define EI2C_AWR 0xA0
+#define EI2C_ARD 0xA1
 
 enum {
     DSL_CTL_FW_VERSION		= 0,
@@ -67,7 +93,7 @@ enum {
 
     DSL_CTL_I2C_DSO			= 13,
     DSL_CTL_I2C_REG			= 14,
-    DSL_CTL_DSO_MEASURE		= 15,
+    DSL_CTL_I2C_STATUS		= 15,
 
     DSL_CTL_DSO_EN0			= 16,
     DSL_CTL_DSO_DC0			= 17,

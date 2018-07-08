@@ -33,6 +33,8 @@
 #include <QFile>
 #include <QDir>
 #include <QTranslator>
+#include <QSettings>
+#include <QDesktopServices>
 
 #include "dsapplication.h"
 #include "pv/devicemanager.h"
@@ -158,6 +160,7 @@ int main(int argc, char *argv[])
             qss.close();
 			w.show();
             w.readSettings();
+            w.show_doc();
 
 			// Run the application
             ret = a.exec();

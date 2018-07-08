@@ -215,11 +215,11 @@ QString ProbeOptions::print_gvariant(GVariant *const gvar)
 
 QString ProbeOptions::print_vdiv(GVariant *const gvar)
 {
-	uint64_t p, q;
+    uint64_t p, q;
     g_variant_get(gvar, "t", &p);
     if (p < 1000ULL) {
         q = 1000;
-    } else if (p < 1000000ULL) {
+    } else {
         q = 1;
         p /= 1000;
     }

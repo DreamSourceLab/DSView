@@ -292,7 +292,7 @@ void MathTrace::paint_mid(QPainter &p, int left, int right)
         double vfactor = 0;
         BOOST_FOREACH(const boost::shared_ptr<Signal> s, _session.get_signals()) {
             boost::shared_ptr<DsoSignal> dsoSig;
-            if (dsoSig = dynamic_pointer_cast<DsoSignal>(s)) {
+            if ((dsoSig = dynamic_pointer_cast<DsoSignal>(s))) {
                 if(dsoSig->get_index() == _math_stack->get_index()) {
                     vdiv = dsoSig->get_vDialValue();
                     vfactor = dsoSig->get_factor();
@@ -358,8 +358,8 @@ void MathTrace::paint_fore(QPainter &p, int left, int right)
     double blank_right = width;
 
     // horizontal ruler
-    const double NyFreq = _session.get_device()->get_sample_rate() / (2.0 * _math_stack->get_sample_interval());
-    const double deltaFreq = _session.get_device()->get_sample_rate() * 1.0 /
+    const double NyFreq = _session.cur_samplerate() / (2.0 * _math_stack->get_sample_interval());
+    const double deltaFreq = _session.cur_samplerate() * 1.0 /
                             (_math_stack->get_sample_num() * _math_stack->get_sample_interval());
     const double FreqRange = NyFreq * _scale;
     const double FreqOffset = NyFreq * _offset;

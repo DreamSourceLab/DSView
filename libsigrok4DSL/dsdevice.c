@@ -62,6 +62,7 @@ SR_PRIV struct sr_channel *sr_channel_new(uint16_t index, int type,
 	probe->enabled = enabled;
 	if (name)
 		probe->name = g_strdup(name);
+    probe->vga_ptr = NULL;
 
 	return probe;
 }
@@ -181,49 +182,6 @@ SR_API int sr_dev_trigger_set(const struct sr_dev_inst *sdi, uint16_t probenum,
 	return ret;
 }
 
-/**
- * Determine whether the specified device instance has the specified
- * capability.
- *
- * @param sdi Pointer to the device instance to be checked. Must not be NULL.
- *            If the device's 'driver' field is NULL (virtual device), this
- *            function will always return FALSE (virtual devices don't have
- *            a hardware capabilities list).
- * @param key The option that should be checked for support on the
- *            specified device.
- *
- * @return TRUE if the device has the specified option, FALSE otherwise.
- *         FALSE is also returned on invalid input parameters or other
- *         error conditions.
- *
- * @since 0.1.0 (but the API changed in 0.2.0)
- */
-SR_API gboolean sr_dev_has_option(const struct sr_dev_inst *sdi, int key)
-{
-	GVariant *gvar;
-	const int *devopts;
-	gsize num_opts, i;
-	int ret;
-
-	if (!sdi || !sdi->driver || !sdi->driver->config_list)
-		return FALSE;
-
-    if (sdi->driver->config_list(SR_CONF_DEVICE_OPTIONS, &gvar, sdi, NULL) != SR_OK)
-		return FALSE;
-
-	ret = FALSE;
-	devopts = g_variant_get_fixed_array(gvar, &num_opts, sizeof(int32_t));
-	for (i = 0; i < num_opts; i++) {
-		if (devopts[i] == key) {
-			ret = TRUE;
-			break;
-		}
-	}
-	g_variant_unref(gvar);
-
-	return ret;
-}
-
 /** @private */
 SR_PRIV struct sr_dev_inst *sr_dev_inst_new(int mode, int index, int status,
 		const char *vendor, const char *model, const char *version)
@@ -260,6 +218,8 @@ SR_PRIV void sr_dev_probes_free(struct sr_dev_inst *sdi)
         probe = l->data;
         g_free(probe->name);
         g_free(probe->trigger);
+        if (probe->vga_ptr)
+            g_free(probe->vga_ptr);
         g_free(probe);
     }
 
@@ -369,7 +329,7 @@ SR_API GSList *sr_dev_list(const struct sr_dev_driver *driver)
 		return NULL;
 }
 
-SR_API GSList *sr_dev_mode_list(const struct sr_dev_inst *sdi)
+SR_API const GSList *sr_dev_mode_list(const struct sr_dev_inst *sdi)
 {
     if (sdi && sdi->driver && sdi->driver->dev_mode_list)
         return sdi->driver->dev_mode_list(sdi);

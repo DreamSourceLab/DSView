@@ -220,19 +220,16 @@ double View::get_maxscale() const
     return _maxscale;
 }
 
-void View::capture_init(bool instant)
+void View::capture_init()
 {
-    _maxscale = _session.cur_sampletime() / (get_view_width() * MaxViewRate);
-
     if (_session.get_device()->dev_inst()->mode == DSO)
         show_trig_cursor(true);
     else if (!_session.isRepeating())
         show_trig_cursor(false);
+
+    _maxscale = _session.cur_sampletime() / (get_view_width() * MaxViewRate);
     if (_session.get_device()->dev_inst()->mode == ANALOG)
         set_scale_offset(_maxscale, 0);
-
-    _session.get_device()->set_config(NULL, NULL, SR_CONF_INSTANT, g_variant_new_boolean(instant));
-    update_hori_res();
     status_clear();
 }
 
@@ -259,12 +256,9 @@ double View::get_hori_res()
 
 void View::update_hori_res()
 {
-    if (_session.get_device()->dev_inst()->mode == DSO)
+    if (_session.get_device()->dev_inst()->mode == DSO) {
         _sampling_bar->hori_knob(0);
-
-    const uint64_t final_limit = _session.get_device()->get_sample_limit();
-    _trig_cursor->set_index(_trig_cursor->index() * 1.0 / _session.cur_samplelimits() * final_limit);
-    _session.set_cur_samplelimits(final_limit);
+    }
 }
 
 void View::zoom(double steps, int offset)
@@ -274,8 +268,7 @@ void View::zoom(double steps, int offset)
         _preOffset = _offset;
 
         if (_session.get_device()->dev_inst()->mode != DSO) {
-            //_scale *= std::pow(3.0/2.0, -steps);
-            _scale *= std::pow(2, -steps);
+            _scale *= std::pow(3.0/2.0, -steps);
             _scale = max(min(_scale, _maxscale), _minscale);
         } else {
             if (_session.get_capture_state() == SigSession::Running &&
@@ -304,6 +297,18 @@ void View::zoom(double steps, int offset)
             update_scroll();
         }
     //}
+}
+
+void View::timebase_changed()
+{
+    if (_session.get_device()->dev_inst()->mode != DSO)
+        return;
+
+    double scale = this->scale();
+    double hori_res = _sampling_bar->get_hori_res();
+    if (hori_res > 0)
+        scale = hori_res * DS_CONF_DSO_HDIVS / SR_SEC(1) / get_view_width();
+    set_scale_offset(scale, this->offset());
 }
 
 void View::set_scale_offset(double scale, int64_t offset)
@@ -417,6 +422,8 @@ void View::show_search_cursor(bool show)
 
 void View::status_clear()
 {
+    _time_viewport->clear_dso_xm();
+    _time_viewport->clear_measure();
     _viewbottom->clear();
 }
 
@@ -694,7 +701,7 @@ void View::signals_changed()
             next_v_offset += traceHeight + 2 * SignalMargin;
 
             boost::shared_ptr<view::DsoSignal> dsoSig;
-            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(t)) {
+            if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(t))) {
                 dsoSig->set_scale(dsoSig->get_view_rect().height());
             }
         }

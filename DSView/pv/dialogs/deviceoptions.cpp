@@ -48,10 +48,11 @@ DeviceOptions::DeviceOptions(QWidget *parent, boost::shared_ptr<pv::device::DevI
     _props_box->setLayout(get_property_form(_props_box));
     _layout.addWidget(_props_box);
 
-    QGroupBox *dynamic_box = new QGroupBox(dynamic_widget(_dynamic_layout),
+    _dynamic_box = new QGroupBox(dynamic_widget(_dynamic_layout),
                                           this);
-    dynamic_box->setLayout(&_dynamic_layout);
-    _layout.addWidget(dynamic_box);
+    _dynamic_box->setLayout(&_dynamic_layout);
+    _layout.addWidget(_dynamic_box);
+    _dynamic_box->setVisible(_dynamic_box->title() != NULL);
 
     _layout.addStretch(1);
 	_layout.addWidget(&_button_box);
@@ -333,6 +334,7 @@ void DeviceOptions::mode_check()
 
         if (mode != _mode) {
             dynamic_widget(_dynamic_layout);
+            _dynamic_box->setVisible(_dynamic_box->title() != NULL);
             _mode = mode;
         }
     }
@@ -356,9 +358,12 @@ void DeviceOptions::mode_check()
 void DeviceOptions::channel_check()
 {
     QRadioButton* sc=dynamic_cast<QRadioButton*>(sender());
+    QString text = sc->text();
+    text.remove('&');
     if(sc != NULL)
-        _dev_inst->set_config(NULL, NULL, SR_CONF_CHANNEL_MODE, g_variant_new_string(sc->text().toUtf8().data()));
+        _dev_inst->set_config(NULL, NULL, SR_CONF_CHANNEL_MODE, g_variant_new_string(text.toUtf8().data()));
     dynamic_widget(_dynamic_layout);
+    _dynamic_box->setVisible(_dynamic_box->title() != NULL);
 }
 
 void DeviceOptions::channel_enable()
@@ -424,20 +429,27 @@ QString DeviceOptions::dynamic_widget(QGridLayout& inner_layout) {
         logic_probes(inner_layout);
         return tr("Channels");
     } else if (_dev_inst->dev_inst()->mode == DSO) {
-        _config_button = new QPushButton(tr("Auto Calibration"), this);
-        inner_layout.addWidget(_config_button, 0, 0, 1, 1);
-        connect(_config_button, SIGNAL(clicked()), this, SLOT(zero_adj()));
-        _cali_button = new QPushButton(tr("Manual Calibration"), this);
-        inner_layout.addWidget(_cali_button, 1, 0, 1, 1);
-        connect(_cali_button, SIGNAL(clicked()), this, SLOT(on_calibration()));
+        GVariant* gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_HAVE_ZERO);
+        if (gvar != NULL) {
+            bool have_zero = g_variant_get_boolean(gvar);
+            g_variant_unref(gvar);
 
-        return tr("Calibration");
+            if (have_zero) {
+                _config_button = new QPushButton(tr("Auto Calibration"), this);
+                inner_layout.addWidget(_config_button, 0, 0, 1, 1);
+                connect(_config_button, SIGNAL(clicked()), this, SLOT(zero_adj()));
+                _cali_button = new QPushButton(tr("Manual Calibration"), this);
+                inner_layout.addWidget(_cali_button, 1, 0, 1, 1);
+                connect(_cali_button, SIGNAL(clicked()), this, SLOT(on_calibration()));
+
+                return tr("Calibration");
+            }
+        }
     } else if (_dev_inst->dev_inst()->mode == ANALOG) {
         analog_probes(inner_layout);
         return tr("Channels");
-    } else {
-        return tr("Undefined");
     }
+    return NULL;
 }
 
 void DeviceOptions::analog_probes(QGridLayout &layout)

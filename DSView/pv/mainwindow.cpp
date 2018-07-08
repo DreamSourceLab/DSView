@@ -43,6 +43,7 @@
 #include <QDockWidget>
 #include <QDebug>
 #include <QDesktopWidget>
+#include <QDesktopServices>
 #include <QKeyEvent>
 #include <QEvent>
 #include <QtGlobal>
@@ -176,12 +177,12 @@ void MainWindow::setup_ui()
         SLOT(run_stop()));
     connect(_sampling_bar, SIGNAL(instant_stop()), this,
         SLOT(instant_stop()));
-    connect(_sampling_bar, SIGNAL(sample_count_changed()), _trigger_widget,
+    connect(_sampling_bar, SIGNAL(duration_changed()), _trigger_widget,
         SLOT(device_updated()));
+    connect(_sampling_bar, SIGNAL(duration_changed()), _view,
+        SLOT(timebase_changed()));
     connect(_sampling_bar, SIGNAL(show_calibration()), _view,
         SLOT(show_calibration()));
-    connect(_sampling_bar, SIGNAL(hide_calibration()), _view,
-        SLOT(hide_calibration()));
     connect(_dso_trigger_widget, SIGNAL(set_trig_pos(int)), _view,
         SLOT(set_trig_pos(int)));
     connect(_view, SIGNAL(auto_trig(int)), _dso_trigger_widget,
@@ -252,7 +253,11 @@ void MainWindow::setup_ui()
             SLOT(reCalc()));
     connect(&_session, SIGNAL(repeat_resume()), this,
             SLOT(repeat_resume()));
+    connect(&_session, SIGNAL(update_capture()), _view,
+            SLOT(update_hori_res()), Qt::DirectConnection);
 
+    connect(&_session, SIGNAL(cur_samplerate_changed()), _measure_widget,
+            SLOT(cursor_update()));
     connect(_view, SIGNAL(cursor_update()), _measure_widget,
             SLOT(cursor_update()));
     connect(_view, SIGNAL(cursor_moving()), _measure_widget,
@@ -307,11 +312,11 @@ void MainWindow::update_device_list()
 
     shared_ptr<pv::device::DevInst> selected_device = _session.get_device();
     _device_manager.add_device(selected_device);
-    _sampling_bar->set_device_list(_device_manager.devices(), selected_device);
     _session.init_signals();
+    _sampling_bar->set_device_list(_device_manager.devices(), selected_device);
 
     shared_ptr<pv::device::File> file_dev;
-    if(file_dev = dynamic_pointer_cast<pv::device::File>(selected_device)) {
+    if((file_dev = dynamic_pointer_cast<pv::device::File>(selected_device))) {
         #ifdef ENABLE_DECODE
         // load decoders
         StoreSession ss(_session);
@@ -457,7 +462,7 @@ void MainWindow::run_stop()
         _session.start_capture(false,
             boost::bind(&MainWindow::session_error, this,
                 QString(tr("Capture failed")), _1));
-        _view->capture_init(false);
+        _view->capture_init();
         break;
 
     case SigSession::Running:
@@ -475,7 +480,7 @@ void MainWindow::instant_stop()
         _session.start_capture(true,
             boost::bind(&MainWindow::session_error, this,
                 QString(tr("Capture failed")), _1));
-        _view->capture_init(true);
+        _view->capture_init();
         break;
 
     case SigSession::Running:
@@ -633,6 +638,10 @@ void MainWindow::on_trigger(bool visible)
 
 void MainWindow::commit_trigger(bool instant)
 {
+    int i = 0;
+    const QString TRIG_KEY("WarnofMultiTrig");
+    QSettings settings;
+
     ds_trigger_init();
 
     if (_session.get_device()->dev_inst()->mode != LOGIC ||
@@ -645,8 +654,37 @@ void MainWindow::commit_trigger(bool instant)
         {
             assert(s);
             boost::shared_ptr<view::LogicSignal> logicSig;
-            if (logicSig = dynamic_pointer_cast<view::LogicSignal>(s))
-                logicSig->commit_trig();
+            if ((logicSig = dynamic_pointer_cast<view::LogicSignal>(s))) {
+                if (logicSig->commit_trig())
+                    i++;
+            }
+        }
+        if (!settings.contains(TRIG_KEY) &&
+            i > 1) {
+            dialogs::DSMessageBox msg(this);
+            msg.mBox()->setText(tr("Trigger"));
+            msg.mBox()->setInformativeText(tr("Trigger setted on multiple channels! "
+                                              "Capture will Only triggered when all setted channels fullfill at one sample"));
+            msg.mBox()->setIcon(QMessageBox::Information);
+
+            QPushButton *noMoreButton = msg.mBox()->addButton(tr("Not Show Again"), QMessageBox::ActionRole);
+            QPushButton *cancelButton = msg.mBox()->addButton(tr("Clear Trig"), QMessageBox::ActionRole);
+            msg.mBox()->addButton(tr("Continue"), QMessageBox::ActionRole);
+
+            msg.exec();
+            if (msg.mBox()->clickedButton() == cancelButton) {
+                BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals())
+                {
+                    assert(s);
+                    boost::shared_ptr<view::LogicSignal> logicSig;
+                    if ((logicSig = dynamic_pointer_cast<view::LogicSignal>(s))) {
+                        logicSig->set_trig(view::LogicSignal::NONTRIG);
+                        logicSig->commit_trig();
+                    }
+                }
+            }
+            if (msg.mBox()->clickedButton() == noMoreButton)
+                  settings.setValue(TRIG_KEY, false);
         }
     }
 }
@@ -783,8 +821,6 @@ bool MainWindow::load_session(QString name)
         if (!isEnabled)
             probe->enabled = false;
     }
-    _sampling_bar->update_sample_rate_selector();
-    _trigger_widget->device_updated();
 
     //_session.init_signals();
     _session.reload();
@@ -799,12 +835,12 @@ bool MainWindow::load_session(QString name)
                 s->set_name(g_strdup(obj["name"].toString().toStdString().c_str()));
 
                 boost::shared_ptr<view::LogicSignal> logicSig;
-                if (logicSig = dynamic_pointer_cast<view::LogicSignal>(s)) {
+                if ((logicSig = dynamic_pointer_cast<view::LogicSignal>(s))) {
                     logicSig->set_trig(obj["strigger"].toDouble());
                 }
 
                 boost::shared_ptr<view::DsoSignal> dsoSig;
-                if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
+                if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
                     dsoSig->load_settings();
                     dsoSig->set_zero_vrate(obj["zeroPos"].toDouble(), true);
                     dsoSig->set_trig_vrate(obj["trigValue"].toDouble());
@@ -812,7 +848,7 @@ bool MainWindow::load_session(QString name)
                 }
 
                 boost::shared_ptr<view::AnalogSignal> analogSig;
-                if (analogSig = dynamic_pointer_cast<view::AnalogSignal>(s)) {
+                if ((analogSig = dynamic_pointer_cast<view::AnalogSignal>(s))) {
                     analogSig->set_zero_vrate(obj["zeroPos"].toDouble(), true);
                     analogSig->commit_settings();
                 }
@@ -821,6 +857,10 @@ bool MainWindow::load_session(QString name)
             }
         }
     }
+
+    // update UI settings
+    _sampling_bar->update_sample_rate_selector();
+    _trigger_widget->device_updated();
 
     // load trigger settings
     if (sessionObj.contains("trigger")) {
@@ -898,12 +938,12 @@ bool MainWindow::store_session(QString name)
         s_obj["colour"] = QJsonValue::fromVariant(s->get_colour());
 
         boost::shared_ptr<view::LogicSignal> logicSig;
-        if (logicSig = dynamic_pointer_cast<view::LogicSignal>(s)) {
+        if ((logicSig = dynamic_pointer_cast<view::LogicSignal>(s))) {
             s_obj["strigger"] = logicSig->get_trig();
         }
 
         boost::shared_ptr<view::DsoSignal> dsoSig;
-        if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
+        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
             s_obj["vdiv"] = QJsonValue::fromVariant(static_cast<qulonglong>(dsoSig->get_vDialValue()));
             s_obj["vfactor"] = QJsonValue::fromVariant(static_cast<qulonglong>(dsoSig->get_factor()));
             s_obj["coupling"] = dsoSig->get_acCoupling();
@@ -912,7 +952,7 @@ bool MainWindow::store_session(QString name)
         }
 
         boost::shared_ptr<view::AnalogSignal> analogSig;
-        if (analogSig = dynamic_pointer_cast<view::AnalogSignal>(s)) {
+        if ((analogSig = dynamic_pointer_cast<view::AnalogSignal>(s))) {
             s_obj["vdiv"] = QJsonValue::fromVariant(static_cast<qulonglong>(analogSig->get_vdiv()));
             s_obj["coupling"] = analogSig->get_acCoupling();
             s_obj["zeroPos"] = analogSig->get_zero_vrate();
@@ -992,7 +1032,7 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
         case Qt::Key_0:
             BOOST_FOREACH(const shared_ptr<view::Signal> s, sigs) {
                 shared_ptr<view::DsoSignal> dsoSig;
-                if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
+                if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
                     if (dsoSig->get_index() == 0)
                         dsoSig->set_vDialActive(!dsoSig->get_vDialActive());
                     else
@@ -1005,7 +1045,7 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
         case Qt::Key_1:
             BOOST_FOREACH(const shared_ptr<view::Signal> s, sigs) {
                 shared_ptr<view::DsoSignal> dsoSig;
-                if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
+                if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
                     if (dsoSig->get_index() == 1)
                         dsoSig->set_vDialActive(!dsoSig->get_vDialActive());
                     else
@@ -1018,7 +1058,7 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
         case Qt::Key_Up:
             BOOST_FOREACH(const shared_ptr<view::Signal> s, sigs) {
                 shared_ptr<view::DsoSignal> dsoSig;
-                if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
+                if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
                     if (dsoSig->get_vDialActive()) {
                         dsoSig->go_vDialNext();
                         update();
@@ -1030,7 +1070,7 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
         case Qt::Key_Down:
             BOOST_FOREACH(const shared_ptr<view::Signal> s, sigs) {
                 shared_ptr<view::DsoSignal> dsoSig;
-                if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) {
+                if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
                     if (dsoSig->get_vDialActive()) {
                         dsoSig->go_vDialPre();
                         update();

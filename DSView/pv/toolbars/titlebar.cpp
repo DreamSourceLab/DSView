@@ -89,7 +89,7 @@ void TitleBar::paintEvent(QPaintEvent *)
     p.setBrush(QColor(48, 47, 47, 255));
     p.drawRect(rect());
 
-    const int xgap = 2.5;
+    const int xgap = 2;
     const int xstart = 10;
     p.setPen(QPen(QColor(213, 15, 37, 255), 2, Qt::SolidLine));
     p.drawLine(xstart + xgap*0,  height()*0.50, xstart + xgap*0,  height()*0.66);

@@ -190,7 +190,7 @@ void StoreSession::save_proc(shared_ptr<data::Snapshot> snapshot)
     shared_ptr<data::AnalogSnapshot> analog_snapshot;
     shared_ptr<data::DsoSnapshot> dso_snapshot;
 
-    if (logic_snapshot = boost::dynamic_pointer_cast<data::LogicSnapshot>(snapshot)) {
+    if ((logic_snapshot = boost::dynamic_pointer_cast<data::LogicSnapshot>(snapshot))) {
         uint16_t to_save_probes = 0;
         BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
             if (s->enabled() && logic_snapshot->has_data(s->get_index()))
@@ -330,7 +330,7 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
     }
 
     shared_ptr<data::LogicSnapshot> logic_snapshot;
-    if (logic_snapshot = dynamic_pointer_cast<data::LogicSnapshot>(snapshot)) {
+    if ((logic_snapshot = dynamic_pointer_cast<data::LogicSnapshot>(snapshot))) {
         uint16_t to_save_probes = 0;
         for (l = sdi->channels; l; l = l->next) {
             probe = (struct sr_channel *)l->data;
@@ -361,7 +361,7 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
         fprintf(meta, "trigger time = %lld\n", _session.get_trigger_time().toMSecsSinceEpoch());
     } else if (sdi->mode == ANALOG) {
         shared_ptr<data::AnalogSnapshot> analog_snapshot;
-        if (analog_snapshot = dynamic_pointer_cast<data::AnalogSnapshot>(snapshot)) {
+        if ((analog_snapshot = dynamic_pointer_cast<data::AnalogSnapshot>(snapshot))) {
             uint8_t tmp_u8 = analog_snapshot->get_unit_bytes();
             fprintf(meta, "bits = %d\n", tmp_u8*8);
         }
@@ -373,7 +373,7 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
         probe = (struct sr_channel *)l->data;
         if (snapshot->has_data(probe->index)) {
             if (probe->name)
-                fprintf(meta, "probe%d = %s\n", probecnt, probe->name);
+                fprintf(meta, "probe%d = %s\n", (sdi->mode == LOGIC) ? probe->index : probecnt, probe->name);
             if (probe->trigger)
                 fprintf(meta, " trigger%d = %s\n", probecnt, probe->trigger);
             if (sdi->mode == DSO) {
@@ -493,11 +493,11 @@ void StoreSession::export_proc(shared_ptr<data::Snapshot> snapshot)
     shared_ptr<data::DsoSnapshot> dso_snapshot;
     int channel_type;
 
-    if (logic_snapshot = boost::dynamic_pointer_cast<data::LogicSnapshot>(snapshot)) {
+    if ((logic_snapshot = boost::dynamic_pointer_cast<data::LogicSnapshot>(snapshot))) {
         channel_type = SR_CHANNEL_LOGIC;
-    } else if (dso_snapshot = boost::dynamic_pointer_cast<data::DsoSnapshot>(snapshot)) {
+    } else if ((dso_snapshot = boost::dynamic_pointer_cast<data::DsoSnapshot>(snapshot))) {
         channel_type = SR_CHANNEL_DSO;
-    } else if (analog_snapshot = boost::dynamic_pointer_cast<data::AnalogSnapshot>(snapshot)) {
+    } else if ((analog_snapshot = boost::dynamic_pointer_cast<data::AnalogSnapshot>(snapshot))) {
         channel_type = SR_CHANNEL_ANALOG;
     } else {
         _has_error = true;

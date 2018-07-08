@@ -66,5 +66,6 @@
         <file>icons/manual.png</file>
         <file>icons/bug.png</file>
         <file>icons/support.png</file>
+        <file>icons/showDoc.png</file>
     </qresource>
 </RCC>

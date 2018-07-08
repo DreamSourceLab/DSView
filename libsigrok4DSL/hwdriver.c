@@ -68,8 +68,6 @@ static struct sr_config_info sr_config_info_data[] = {
         "Pre-trigger capture ratio", "Pre-trigger capture ratio", NULL},
     {SR_CONF_PATTERN_MODE, SR_T_CHAR, "pattern",
         "Pattern mode", "Pattern mode", NULL},
-    {SR_CONF_TRIGGER_TYPE, SR_T_CHAR, "triggertype",
-        "Trigger types", "Trigger types", NULL},
 	{SR_CONF_RLE, SR_T_BOOL, "rle",
         "Run Length Encoding", "Run Length Encoding", NULL},
     {SR_CONF_WAIT_UPLOAD, SR_T_BOOL, "buf_upload",

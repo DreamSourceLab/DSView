@@ -260,7 +260,7 @@ void SamplingBar::zero_adj()
     boost::shared_ptr<view::DsoSignal> dsoSig;
     BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals())
     {
-        if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))
+        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)))
             dsoSig->set_enable(true);
     }
     run_stop();
@@ -269,7 +269,7 @@ void SamplingBar::zero_adj()
     if (wait.start() ==QDialog::Rejected) {
         BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals())
         {
-            if (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))
+            if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)))
                 dsoSig->commit_settings();
         }
     }
@@ -427,6 +427,7 @@ void SamplingBar::update_sample_count_selector()
     uint64_t hw_depth = 0;
     uint64_t sw_depth;
     uint64_t rle_depth = 0;
+    uint64_t max_timebase = 0;
     double pre_duration = SR_SEC(1);
     double duration;
     bool rle_support = false;
@@ -474,6 +475,12 @@ void SamplingBar::update_sample_count_selector()
         }
         if (rle_support)
             rle_depth = min(hw_depth*SR_KB(1), sw_depth);
+    } else if (dev_inst->dev_inst()->mode == DSO) {
+        gvar = dev_inst->get_config(NULL, NULL, SR_CONF_MAX_TIMEBASE);
+        if (gvar != NULL) {
+            max_timebase = g_variant_get_uint64(gvar);
+            g_variant_unref(gvar);
+        }
     }
 
     if (0 != _sample_count.count())
@@ -484,7 +491,7 @@ void SamplingBar::update_sample_count_selector()
                 _sample_rate.currentIndex()).value<uint64_t>();
     const double hw_duration = hw_depth / (samplerate * (1.0 / SR_SEC(1)));
     if (dev_inst->dev_inst()->mode == DSO)
-        duration = SR_SEC(10);
+        duration = max_timebase;
     else if (stream_mode)
         duration = sw_depth / (samplerate * (1.0 / SR_SEC(1)));
     else if (rle_support)
@@ -492,10 +499,11 @@ void SamplingBar::update_sample_count_selector()
     else
         duration = hw_duration;
 
+    assert(duration > 0);
     bool not_last = true;
     do {
         QString suffix = (dev_inst->dev_inst()->mode == DSO) ? DIVString :
-                         (!stream_mode & duration > hw_duration) ? RLEString : "";
+                         (!stream_mode && duration > hw_duration) ? RLEString : "";
         char *const s = sr_time_string(duration);
         _sample_count.addItem(QString(s) + suffix,
             qVariantFromValue(duration));
@@ -526,6 +534,9 @@ void SamplingBar::update_sample_count_selector()
 
         if (dev_inst->dev_inst()->mode == DSO)
             not_last = duration >= SR_NS(10);
+        else if (dev_inst->dev_inst()->mode == ANALOG)
+            not_last = (duration >= SR_MS(100)) &&
+                       (duration / SR_SEC(1) * samplerate >= SR_KB(1));
         else
             not_last = (duration / SR_SEC(1) * samplerate >= SR_KB(1));
     } while(not_last);
@@ -542,11 +553,11 @@ void SamplingBar::update_sample_count_selector()
                 _sample_count.setCurrentIndex(i);
                 break;
             }
-        sample_count_changed();
     }
     _updating_sample_count = false;
 
     update_sample_count_selector_value();
+    on_samplecount_sel(_sample_count.currentIndex());
     connect(&_sample_count, SIGNAL(currentIndexChanged(int)),
         this, SLOT(on_samplecount_sel(int)));
 }
@@ -604,8 +615,7 @@ void SamplingBar::on_samplecount_sel(int index)
     const shared_ptr<device::DevInst> dev_inst = get_selected_device();
     if (dev_inst->dev_inst()->mode == DSO)
         commit_hori_res();
-    else
-        sample_count_changed();
+    duration_changed();
 }
 
 double SamplingBar::get_hori_res()
@@ -616,6 +626,9 @@ double SamplingBar::get_hori_res()
 double SamplingBar::hori_knob(int dir)
 {
     double hori_res = -1;
+    disconnect(&_sample_count, SIGNAL(currentIndexChanged(int)),
+        this, SLOT(on_samplecount_sel(int)));
+
     if (0 == dir) {
         hori_res = commit_hori_res();
     } else if ((dir > 0) && (_sample_count.currentIndex() > 0)) {
@@ -625,6 +638,10 @@ double SamplingBar::hori_knob(int dir)
         _sample_count.setCurrentIndex(_sample_count.currentIndex() + 1);
         hori_res = commit_hori_res();
     }
+
+    connect(&_sample_count, SIGNAL(currentIndexChanged(int)),
+        this, SLOT(on_samplecount_sel(int)));
+
     return hori_res;
 }
 
@@ -649,7 +666,7 @@ double SamplingBar::commit_hori_res()
     const uint64_t sample_rate = min((uint64_t)(sample_limit * SR_SEC(1) /
                                                 (hori_res * DS_CONF_DSO_HDIVS)),
                                      (uint64_t)(max_sample_rate /
-                                                (_session.get_ch_num(DSO) ? _session.get_ch_num(DSO) : 1)));
+                                                (_session.get_ch_num(SR_CHANNEL_DSO) ? _session.get_ch_num(SR_CHANNEL_DSO) : 1)));
     set_sample_rate(sample_rate);
     if (_session.get_capture_state() != SigSession::Stopped)
         _session.set_cur_samplerate(dev_inst->get_sample_rate());

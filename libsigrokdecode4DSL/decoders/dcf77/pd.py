@@ -20,7 +20,10 @@
 
 import sigrokdecode as srd
 import calendar
-from common.srdhelper import bcd2int
+
+# Return the specified BCD number (max. 8 bits) as integer.
+def bcd2int(b):
+    return (b & 0x0f) + ((b >> 4) * 10)
 
 class SamplerateError(Exception):
     pass
@@ -65,7 +68,7 @@ class Decoder(srd.Decoder):
         ('warnings', 'Warnings', (19,)),
     )
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.samplerate = None
         self.state = 'WAIT FOR RISING EDGE'
         self.oldpins = None

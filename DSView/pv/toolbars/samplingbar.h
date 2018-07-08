@@ -100,7 +100,7 @@ signals:
     void instant_stop();
     void device_selected();
     void device_updated();
-    void sample_count_changed();
+    void duration_changed();
     void show_calibration();
     void hide_calibration();
 

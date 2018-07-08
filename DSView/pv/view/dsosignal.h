@@ -47,10 +47,8 @@ private:
 	static const float EnvelopeThreshold;
 
     static const int HitCursorMargin = 3;
-    static const uint64_t vDialValueCount = 8;
     static const uint64_t vDialValueStep = 1000;
     static const uint64_t vDialUnitCount = 2;
-    static const uint64_t vDialValue[vDialValueCount];
     static const QString vDialUnit[vDialUnitCount];
 
     static const int UpMargin = 30;
@@ -62,6 +60,7 @@ private:
     static const int RefreshShort = 200;
     static const int RefreshLong = 800;
     static const int AutoTime = 10000;
+    static const int AutoLock = 3;
 
 public:
     enum DsoSetRegions {
@@ -213,6 +212,7 @@ private:
 private:
     boost::shared_ptr<pv::data::Dso> _data;
 	float _scale;
+    bool _en_lock;
 
     dslDial *_vDial;
     bool _vDialActive;

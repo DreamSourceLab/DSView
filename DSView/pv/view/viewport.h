@@ -100,6 +100,8 @@ public:
 
     void clear_measure();
 
+    void clear_dso_xm();
+
     void set_need_update(bool update);
 
     bool get_dso_trig_moved() const;
@@ -114,6 +116,7 @@ private:
     void mouseDoubleClickEvent(QMouseEvent *event);
 	void wheelEvent(QWheelEvent *event);
     void leaveEvent(QEvent *);
+    void resizeEvent(QResizeEvent *e);
 
     void paintSignals(QPainter& p);
     void paintProgress(QPainter& p);
@@ -139,6 +142,8 @@ private:
     View_type _type;
     bool _need_update;
 
+    QPixmap *_pixmap;
+
     uint64_t _sample_received;
     QPoint _mouse_point;
 	QPoint _mouse_down_point;
@@ -147,7 +152,7 @@ private:
     int64_t _curOffset;
     int _curSignalHeight;
 
-    QPixmap pixmap;
+    //QPixmap pixmap;
 
     bool _measure_en;
     ActionType _action_type;

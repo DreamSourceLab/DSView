@@ -273,9 +273,9 @@ void AnalogSnapshot::append_payload_to_envelope_levels()
 
         // Break off if there are no new samples to compute
     	if (e0.ring_length == prev_length)
-    		return;
+            continue;
         if (e0.length == 0)
-            return;
+            continue;
 
         reallocate_envelope(e0);
 

@@ -80,7 +80,7 @@ private:
     SigSession &_session;
 
     QGridLayout *  _layout;
-    std::map <QPushButton *, sr_dev_mode *> _mode_button_list;
+    std::map <QPushButton *, const sr_dev_mode *> _mode_button_list;
     QPoint _mouse_point;
 };
 

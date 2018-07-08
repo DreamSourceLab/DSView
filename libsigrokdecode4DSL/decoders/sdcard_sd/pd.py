@@ -1,5 +1,5 @@
 ##
-## This file is part of the libsigrokdecode project.
+## This file is part of the sigrok project.
 ##
 ## Copyright (C) 2015 Uwe Hermann <uwe@hermann-uwe.de>
 ##
@@ -19,7 +19,7 @@
 ##
 
 import sigrokdecode as srd
-from common.sdcard import (cmd_names, acmd_names, accepted_voltages, card_status, sd_status)
+from .lists import *
 
 class Decoder(srd.Decoder):
     api_version = 2
@@ -61,7 +61,7 @@ class Decoder(srd.Decoder):
         ('cmd', 'Commands', tuple(range(128))),
     )
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.state = 'GET COMMAND TOKEN'
         self.token = []
         self.oldpins = None
@@ -167,7 +167,7 @@ class Decoder(srd.Decoder):
         # Handle command.
         s = 'ACMD' if self.is_acmd else 'CMD'
         self.cmd_str = '%s%d (%s)' % (s, self.cmd, self.cmd_name(self.cmd))
-        if self.cmd in (0, 2, 3, 4, 6, 7, 8, 9, 10, 13, 41, 51, 55):
+        if self.cmd in (0, 2, 3, 6, 7, 8, 9, 10, 13, 41, 51, 55):
             self.state = 'HANDLE CMD%d' % self.cmd
         else:
             self.state = 'HANDLE CMD999'

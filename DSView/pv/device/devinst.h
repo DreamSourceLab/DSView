@@ -107,7 +107,7 @@ public:
      * @return The returned device mode list from the driver, or NULL if the
      * 	mode list could not be read.
      */
-    GSList* get_dev_mode_list();
+    const GSList *get_dev_mode_list();
 
     /**
      * @brief Get the device name from the driver
