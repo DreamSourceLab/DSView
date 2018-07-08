@@ -40,8 +40,6 @@ namespace view {
 
 class DsoSignal : public Signal
 {
-    Q_OBJECT
-
 private:
 	static const QColor SignalColours[4];
 	static const float EnvelopeThreshold;

@@ -52,8 +52,6 @@ namespace view {
 
 class Signal : public Trace
 {
-    Q_OBJECT
-
 private:
 
 
