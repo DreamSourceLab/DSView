@@ -119,6 +119,5 @@ if len(args) != 0 or dst is None:
     usage()
 
 install(src, dst, 'protocol decoders')
-install(src + '/common', dst + '/common', 'common modules')
 
 

@@ -205,6 +205,7 @@ set(DSView_SOURCES
     pv/dialogs/shadow.cpp 
     pv/dialogs/dsdialog.cpp
     pv/dialogs/interval.cpp
+    pv/prop/binding/probeoptions.cpp
 )
 
 set(DSView_HEADERS
