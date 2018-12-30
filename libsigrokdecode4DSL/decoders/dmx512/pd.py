@@ -79,17 +79,18 @@ class Decoder(srd.Decoder):
             # Seek for an interval with no state change with a length between
             # 88 and 1000000 us (BREAK).
             if self.state == 'FIND BREAK':
-                if self.run_bit == pins[0]:
-                    continue
-                runlen = (self.samplenum - self.run_start) * self.sample_usec
-                if runlen > 88 and runlen < 1000000:
-                    self.putr([1, ['Break']])
-                    self.bit_break = self.run_bit
-                    self.state = 'MARK MAB'
-                    self.channel = 0
-                elif runlen >= 1000000:
-                    # Error condition.
-                    self.putr([10, ['Invalid break length']])
+                if pins[0] == 0 or self.run_bit == 0:
+                    if self.run_bit == pins[0]:
+                        continue
+                    runlen = (self.samplenum - self.run_start) * self.sample_usec
+                    if runlen > 88 and runlen < 1000000:
+                        self.putr([1, ['Break']])
+                        self.bit_break = self.run_bit
+                        self.state = 'MARK MAB'
+                        self.channel = 0
+                    elif runlen >= 1000000:
+                        # Error condition.
+                        self.putr([10, ['Invalid break length']])
                 self.run_bit = pins[0]
                 self.run_start = self.samplenum
             # Directly following the BREAK is the MARK AFTER BREAK.
