@@ -130,6 +130,7 @@ class Decoder(srd.Decoder):
                             # On invalid 2nd stop bit, search for new break.
                             self.run_bit = pins[0]
                             self.state = 'FIND BREAK'
+                            continue
                 else:
                     # Label and process one bit.
                     self.put(self.samplenum - self.skip_per_bit,
