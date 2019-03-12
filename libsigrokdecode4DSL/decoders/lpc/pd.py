@@ -29,7 +29,7 @@ fields = {
         0b0010: 'Grant for bus master 0',
         0b0011: 'Grant for bus master 1',
         0b0100: 'Reserved',
-        0b0101: 'Reserved',
+        0b0101: 'TPM',
         0b0110: 'Reserved',
         0b0111: 'Reserved',
         0b1000: 'Reserved',
@@ -193,7 +193,7 @@ class Decoder(srd.Decoder):
         if lframe != 1:
             return
 
-        if (self.oldlad == 0b0000):
+        if (self.oldlad == 0b0000 or self.oldlad == 0b0101):
             self.start_field = self.oldlad
             self.state = 'GET CT/DR'
         else:
