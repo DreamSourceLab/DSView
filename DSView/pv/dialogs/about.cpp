@@ -53,7 +53,7 @@ About::About(QWidget *parent) :
                       .arg(arch);
 
     QString url = tr("Website: <a href=\"%1\" style=\"color:#C0C0C0\">%1</a><br />"
-                     "Gitbub: <a href=\"%2\" style=\"color:#C0C0C0\">%2</a><br />"
+                     "Github: <a href=\"%2\" style=\"color:#C0C0C0\">%2</a><br />"
                      "<br /><br />")
                   .arg(QApplication::organizationDomain())
                   .arg("https://github.com/DreamSourceLab/DSView");
