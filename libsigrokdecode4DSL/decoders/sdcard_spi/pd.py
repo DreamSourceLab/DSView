@@ -14,72 +14,22 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
-
-# Normal commands (CMD)
-cmd_names = {
-    0:  'GO_IDLE_STATE',
-    1:  'SEND_OP_COND',
-    6:  'SWITCH_FUNC',
-    8:  'SEND_IF_COND',
-    9:  'SEND_CSD',
-    10: 'SEND_CID',
-    12: 'STOP_TRANSMISSION',
-    13: 'SEND_STATUS',
-    16: 'SET_BLOCKLEN',
-    17: 'READ_SINGLE_BLOCK',
-    18: 'READ_MULTIPLE_BLOCK',
-    24: 'WRITE_BLOCK',
-    25: 'WRITE_MULTIPLE_BLOCK',
-    27: 'PROGRAM_CSD',
-    28: 'SET_WRITE_PROT',
-    29: 'CLR_WRITE_PROT',
-    30: 'SEND_WRITE_PROT',
-    32: 'ERASE_WR_BLK_START_ADDR',
-    33: 'ERASE_WR_BLK_END_ADDR',
-    38: 'ERASE',
-    42: 'LOCK_UNLOCK',
-    55: 'APP_CMD',
-    56: 'GEN_CMD',
-    58: 'READ_OCR',
-    59: 'CRC_ON_OFF',
-    # CMD60-63: Reserved for manufacturer
-}
-
-# Application-specific commands (ACMD)
-acmd_names = {
-    13: 'SD_STATUS',
-    18: 'Reserved for SD security applications',
-    22: 'SEND_NUM_WR_BLOCKS',
-    23: 'SET_WR_BLK_ERASE_COUNT',
-    25: 'Reserved for SD security applications',
-    26: 'Reserved for SD security applications',
-    38: 'Reserved for SD security applications',
-    41: 'SD_SEND_OP_COND',
-    42: 'SET_CLR_CARD_DETECT',
-    43: 'Reserved for SD security applications',
-    44: 'Reserved for SD security applications',
-    45: 'Reserved for SD security applications',
-    46: 'Reserved for SD security applications',
-    47: 'Reserved for SD security applications',
-    48: 'Reserved for SD security applications',
-    49: 'Reserved for SD security applications',
-    51: 'SEND_SCR',
-}
+from common.sdcard import (cmd_names, acmd_names)
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'sdcard_spi'
     name = 'SD card (SPI mode)'
     longname = 'Secure Digital card (SPI mode)'
     desc = 'Secure Digital card (SPI mode) low-level protocol.'
     license = 'gplv2+'
     inputs = ['spi']
-    outputs = ['sdcard_spi']
+    outputs = []
+    tags = ['Memory']
     annotations = \
         tuple(('cmd%d' % i, 'CMD%d' % i) for i in range(64)) + \
         tuple(('acmd%d' % i, 'ACMD%d' % i) for i in range(64)) + ( \
@@ -92,11 +42,14 @@ class Decoder(srd.Decoder):
         ('bit-warnings', 'Bit warnings'),
     )
     annotation_rows = (
-        ('bits', 'Bits', (134, 135)),
-        ('cmd-reply', 'Commands/replies', tuple(range(134))),
+        ('bits', 'Bits', (133, 134)),
+        ('cmd-reply', 'Commands/replies', tuple(range(133))),
     )
 
-    def __init__(self, **kwargs):
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.state = 'IDLE'
         self.ss, self.es = 0, 0
         self.ss_bit, self.es_bit = 0, 0
@@ -107,6 +60,8 @@ class Decoder(srd.Decoder):
         self.blocklen = 0
         self.read_buf = []
         self.cmd_str = ''
+        self.is_cmd24 = False
+        self.cmd24_start_token_found = False
 
     def start(self):
         self.out_ann = self.register(srd.OUTPUT_ANN)
@@ -122,7 +77,12 @@ class Decoder(srd.Decoder):
 
     def cmd_name(self, cmd):
         c = acmd_names if self.is_acmd else cmd_names
-        return c.get(cmd, 'Unknown')
+        s = c.get(cmd, 'Unknown')
+        # SD mode names for CMD32/33: ERASE_WR_BLK_{START,END}.
+        # SPI mode names for CMD32/33: ERASE_WR_BLK_{START,END}_ADDR.
+        if cmd in (32, 33):
+            s += '_ADDR'
+        return s
 
     def handle_command_token(self, mosi, miso):
         # Command tokens (6 bytes) are sent (MSB-first) by the host.
@@ -187,14 +147,13 @@ class Decoder(srd.Decoder):
 
         # Bits[0:0]: End bit (always 1)
         bit, self.ss_bit, self.es_bit = tb(0, 0)[0], tb(0, 0)[1], tb(0, 0)[2]
-        self.putb([134, ['End bit: %d' % bit]])
         if bit == 1:
             self.putb([134, ['End bit: %d' % bit]])
         else:
             self.putb([135, ['End bit: %d (Warning: Must be 1!)' % bit]])
 
         # Handle command.
-        if cmd in (0, 1, 9, 16, 17, 41, 49, 55, 59):
+        if cmd in (0, 1, 9, 16, 17, 24, 41, 49, 55, 59):
             self.state = 'HANDLE CMD%d' % cmd
             self.cmd_str = '%s%d (%s)' % (s, cmd, self.cmd_name(cmd))
         else:
@@ -264,6 +223,12 @@ class Decoder(srd.Decoder):
         self.read_buf = self.read_buf[2:] # FIXME
         self.putx([17, ['Block data: %s' % self.read_buf]])
         self.read_buf = []
+        self.state = 'GET RESPONSE R1'
+
+    def handle_cmd24(self):
+        # CMD24: WRITE_BLOCK
+        self.putc(24, 'Write a block to address 0x%04x' % self.arg)
+        self.is_cmd24 = True
         self.state = 'GET RESPONSE R1'
 
     def handle_cmd49(self):
@@ -370,7 +335,8 @@ class Decoder(srd.Decoder):
         # Bit 7: Always set to 0
         putbit(7, ['Bit 7 (always 0)'])
 
-        self.state = 'IDLE'
+        if self.is_cmd24:
+            self.state = 'HANDLE DATA BLOCK CMD24'
 
     def handle_response_r1b(self, res):
         # TODO
@@ -391,6 +357,61 @@ class Decoder(srd.Decoder):
     def handle_response_r7(self, res):
         # TODO
         pass
+
+    def handle_data_cmd24(self, mosi):
+        if self.cmd24_start_token_found:
+            if len(self.read_buf) == 0:
+                self.ss_data = self.ss
+                if not self.blocklen:
+                    # Assume a fixed block size when inspection of the
+                    # previous traffic did not provide the respective
+                    # parameter value.
+                    # TODO Make the default block size a user adjustable option?
+                    self.blocklen = 512
+            self.read_buf.append(mosi)
+            # Wait until block transfer completed.
+            if len(self.read_buf) < self.blocklen:
+                return
+            self.es_data = self.es
+            self.put(self.ss_data, self.es_data, self.out_ann, [24, ['Block data: %s' % self.read_buf]])
+            self.read_buf = []
+            self.state = 'DATA RESPONSE'
+        elif mosi == 0xfe:
+            self.put(self.ss, self.es, self.out_ann, [24, ['Start Block']])
+            self.cmd24_start_token_found = True
+
+    def handle_data_response(self, miso):
+        # Data Response token (1 byte).
+        #
+        # Format:
+        #  - Bits[7:5]: Don't care.
+        #  - Bits[4:4]: Always 0.
+        #  - Bits[3:1]: Status.
+        #    - 010: Data accepted.
+        #    - 101: Data rejected due to a CRC error.
+        #    - 110: Data rejected due to a write error.
+        #  - Bits[0:0]: Always 1.
+        miso &= 0x1f
+        if miso & 0x11 != 0x01:
+            # This is not the byte we are waiting for.
+            # Should we return to IDLE here?
+            return
+        m = self.miso_bits
+        self.put(m[7][1], m[5][2], self.out_ann, [134, ['Don\'t care']])
+        self.put(m[4][1], m[4][2], self.out_ann, [134, ['Always 0']])
+        if miso == 0x05:
+            self.put(m[3][1], m[1][2], self.out_ann, [134, ['Data accepted']])
+        elif miso == 0x0b:
+            self.put(m[3][1], m[1][2], self.out_ann, [134, ['Data rejected (CRC error)']])
+        elif miso == 0x0d:
+            self.put(m[3][1], m[1][2], self.out_ann, [134, ['Data rejected (write error)']])
+        self.put(m[0][1], m[0][2], self.out_ann, [134, ['Always 1']])
+        ann_class = None
+        if self.is_cmd24:
+            ann_class = 24
+        if ann_class is not None:
+            self.put(self.ss, self.es, self.out_ann, [ann_class, ['Data Response']])
+        self.state = 'IDLE'
 
     def decode(self, ss, es, data):
         ptype, mosi, miso = data
@@ -431,10 +452,14 @@ class Decoder(srd.Decoder):
             # Ignore stray 0xff bytes, some devices seem to send those!?
             if miso == 0xff: # TODO?
                 return
-
             # Call the respective handler method for the response.
+            # Assume return to IDLE state, but allow response handlers
+            # to advance to some other state when applicable.
             s = 'handle_response_%s' % self.state[13:].lower()
             handle_response = getattr(self, s)
-            handle_response(miso)
-
             self.state = 'IDLE'
+            handle_response(miso)
+        elif self.state == 'HANDLE DATA BLOCK CMD24':
+            self.handle_data_cmd24(mosi)
+        elif self.state == 'DATA RESPONSE':
+            self.handle_data_response(miso)

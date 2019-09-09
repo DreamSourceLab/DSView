@@ -14,8 +14,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
@@ -35,14 +34,15 @@ class SamplerateError(Exception):
     pass
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'am230x'
-    name = 'AM230x/DHTxx/RHTxx'
+    name = 'AM230x'
     longname = 'Aosong AM230x/DHTxx/RHTxx'
-    desc = 'Aosong AM230x/DHTxx/RHTxx humidity/temperature sensor protocol.'
+    desc = 'Aosong AM230x/DHTxx/RHTxx humidity/temperature sensor.'
     license = 'gplv2+'
     inputs = ['logic']
-    outputs = ['am230x']
+    outputs = []
+    tags = ['IC', 'Sensor']
     channels = (
         {'id': 'sda', 'name': 'SDA', 'desc': 'Single wire serial data line'},
     )
@@ -51,14 +51,14 @@ class Decoder(srd.Decoder):
             'default': 'am230x', 'values': ('am230x/rht', 'dht11')},
     )
     annotations = (
-        ('7', 'start', 'Start'),
-        ('5', 'response', 'Response'),
-        ('107', 'bit', 'Bit'),
-        ('3', 'end', 'End'),
-        ('106', 'byte', 'Byte'),
-        ('108', 'humidity', 'Relative humidity in percent'),
-        ('109', 'temperature', 'Temperature in degrees Celsius'),
-        ('112', 'checksum', 'Checksum'),
+        ('start', 'Start'),
+        ('response', 'Response'),
+        ('bit', 'Bit'),
+        ('end', 'End'),
+        ('byte', 'Byte'),
+        ('humidity', 'Relative humidity in percent'),
+        ('temperature', 'Temperature in degrees Celsius'),
+        ('checksum', 'Checksum'),
     )
     annotation_rows = (
         ('bits', 'Bits', (0, 1, 2, 3)),
@@ -75,9 +75,8 @@ class Decoder(srd.Decoder):
     def putv(self, data):
         self.put(self.bytepos[-2], self.samplenum, self.out_ann, data)
 
-    def reset(self):
+    def reset_variables(self):
         self.state = 'WAIT FOR START LOW'
-        self.samplenum = 0
         self.fall = 0
         self.rise = 0
         self.bits = []
@@ -124,8 +123,11 @@ class Decoder(srd.Decoder):
         return checksum % 256
 
     def __init__(self):
-        self.samplerate = None
         self.reset()
+
+    def reset(self):
+        self.samplerate = None
+        self.reset_variables()
 
     def start(self):
         self.out_ann = self.register(srd.OUTPUT_ANN)
@@ -164,73 +166,64 @@ class Decoder(srd.Decoder):
                 self.state = 'WAIT FOR END'
             self.bytepos.append(self.samplenum)
 
-    def decode(self, ss, es, data):
+    def decode(self):
         if not self.samplerate:
             raise SamplerateError('Cannot decode without samplerate.')
-        for (self.samplenum, (sda,)) in data:
-            data.itercnt += 1
+        while True:
             # State machine.
             if self.state == 'WAIT FOR START LOW':
-                if sda != 0:
-                    continue
+                self.wait({0: 'f'})
                 self.fall = self.samplenum
                 self.state = 'WAIT FOR START HIGH'
             elif self.state == 'WAIT FOR START HIGH':
-                if sda != 1:
-                    continue
+                self.wait({0: 'r'})
                 if self.is_valid('START LOW'):
                     self.rise = self.samplenum
                     self.state = 'WAIT FOR RESPONSE LOW'
                 else:
-                    self.reset()
+                    self.reset_variables()
             elif self.state == 'WAIT FOR RESPONSE LOW':
-                if sda != 0:
-                    continue
+                self.wait({0: 'f'})
                 if self.is_valid('START HIGH'):
                     self.putfs([0, ['Start', 'S']])
                     self.fall = self.samplenum
                     self.state = 'WAIT FOR RESPONSE HIGH'
                 else:
-                    self.reset()
+                    self.reset_variables()
             elif self.state == 'WAIT FOR RESPONSE HIGH':
-                if sda != 1:
-                    continue
+                self.wait({0: 'r'})
                 if self.is_valid('RESPONSE LOW'):
                     self.rise = self.samplenum
                     self.state = 'WAIT FOR FIRST BIT'
                 else:
-                    self.reset()
+                    self.reset_variables()
             elif self.state == 'WAIT FOR FIRST BIT':
-                if sda != 0:
-                    continue
+                self.wait({0: 'f'})
                 if self.is_valid('RESPONSE HIGH'):
                     self.putfs([1, ['Response', 'R']])
                     self.fall = self.samplenum
                     self.bytepos.append(self.samplenum)
                     self.state = 'WAIT FOR BIT HIGH'
                 else:
-                    self.reset()
+                    self.reset_variables()
             elif self.state == 'WAIT FOR BIT HIGH':
-                if sda != 1:
-                    continue
+                self.wait({0: 'r'})
                 if self.is_valid('BIT LOW'):
                     self.rise = self.samplenum
                     self.state = 'WAIT FOR BIT LOW'
                 else:
-                    self.reset()
+                    self.reset_variables()
             elif self.state == 'WAIT FOR BIT LOW':
-                if sda != 0:
-                    continue
+                self.wait({0: 'f'})
                 if self.is_valid('BIT 0 HIGH'):
                     bit = 0
                 elif self.is_valid('BIT 1 HIGH'):
                     bit = 1
                 else:
-                    self.reset()
+                    self.reset_variables()
                     continue
                 self.handle_byte(bit)
             elif self.state == 'WAIT FOR END':
-                if sda != 1:
-                    continue
+                self.wait({0: 'r'})
                 self.putfs([3, ['End', 'E']])
-                self.reset()
+                self.reset_variables()

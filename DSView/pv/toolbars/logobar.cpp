@@ -38,40 +38,54 @@ namespace toolbars {
 LogoBar::LogoBar(SigSession &session, QWidget *parent) :
     QToolBar("File Bar", parent),
     _enable(true),
+    _connected(false),
     _session(session),
     _logo_button(this)
 {
     setMovable(false);
+    setContentsMargins(0,0,0,0);
+    setIconSize(QSize(40, 28));
+
+    _action_en = new QAction(this);
+    _action_en->setObjectName(QString::fromUtf8("actionEn"));
+    connect(_action_en, SIGNAL(triggered()), this, SLOT(on_actionEn_triggered()));
+
+    _action_cn = new QAction(this);
+    _action_cn->setObjectName(QString::fromUtf8("actionCn"));
+    connect(_action_cn, SIGNAL(triggered()), this, SLOT(on_actionCn_triggered()));
+
+    _language = new QMenu(this);
+    _language->setObjectName(QString::fromUtf8("menuLanguage"));
+    _language->addAction(_action_cn);
+    _language->addAction(_action_en);
+
+    _action_en->setIcon(QIcon(":/icons/English.png"));
+    _action_cn->setIcon(QIcon(":/icons/Chinese.png"));
 
     _about = new QAction(this);
-    _about->setText(QApplication::translate(
-        "File", "&About...", 0));
-    _about->setIcon(QIcon::fromTheme("file",
-        QIcon(":/icons/about.png")));
     _about->setObjectName(QString::fromUtf8("actionAbout"));
     _logo_button.addAction(_about);
     connect(_about, SIGNAL(triggered()), this, SLOT(on_actionAbout_triggered()));
 
     _manual = new QAction(this);
-    _manual->setText(QApplication::translate(
-        "File", "&Manual", 0));
-    _manual->setIcon(QIcon::fromTheme("file",
-        QIcon(":/icons/manual.png")));
     _manual->setObjectName(QString::fromUtf8("actionManual"));
     _logo_button.addAction(_manual);
-    connect(_manual, SIGNAL(triggered()), this, SLOT(on_actionManual_triggered()));
+    connect(_manual, SIGNAL(triggered()), this, SIGNAL(openDoc()));
 
     _issue = new QAction(this);
-    _issue->setText(QApplication::translate(
-        "File", "&Bug Report", 0));
-    _issue->setIcon(QIcon::fromTheme("file",
-        QIcon(":/icons/bug.png")));
     _issue->setObjectName(QString::fromUtf8("actionManual"));
     _logo_button.addAction(_issue);
     connect(_issue, SIGNAL(triggered()), this, SLOT(on_actionIssue_triggered()));
 
+    _menu = new QMenu(this);
+    _menu->addMenu(_language);
+    _menu->addAction(_about);
+    _menu->addAction(_manual);
+    _menu->addAction(_issue);
+    _logo_button.setMenu(_menu);
+
+    _logo_button.setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     _logo_button.setPopupMode(QToolButton::InstantPopup);
-    _logo_button.setIcon(QIcon(":/icons/logo_noColor.png"));
 
     QWidget *spacer = new QWidget(this);
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -80,14 +94,56 @@ LogoBar::LogoBar(SigSession &session, QWidget *parent) :
     QWidget *margin = new QWidget(this);
     margin->setMinimumWidth(20);
     addWidget(margin);
+
+    retranslateUi();
+}
+
+void LogoBar::changeEvent(QEvent *event)
+{
+    if (event->type() == QEvent::LanguageChange)
+        retranslateUi();
+    else if (event->type() == QEvent::StyleChange)
+        reStyle();
+    QToolBar::changeEvent(event);
+}
+
+void LogoBar::retranslateUi()
+{
+    _logo_button.setText(tr("Help"));
+    _action_en->setText("English");
+    _action_cn->setText("中文");
+    _language->setTitle(tr("&Language"));
+    _about->setText(tr("&About..."));
+    _manual->setText(tr("&Manual"));
+    _issue->setText(tr("&Bug Report"));
+
+    if (qApp->property("Language") == QLocale::Chinese)
+        _language->setIcon(QIcon(":/icons/Chinese.png"));
+    else
+        _language->setIcon(QIcon(":/icons/English.png"));
+}
+
+void LogoBar::reStyle()
+{
+    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+
+    _about->setIcon(QIcon(iconPath+"/about.png"));
+    _manual->setIcon(QIcon(iconPath+"/manual.png"));
+    _issue->setIcon(QIcon(iconPath+"/bug.png"));
+    if (_connected)
+        _logo_button.setIcon(QIcon(iconPath+"/logo_color.png"));
+    else
+        _logo_button.setIcon(QIcon(iconPath+"/logo_noColor.png"));
 }
 
 void LogoBar::dsl_connected(bool conn)
 {
-    if (conn)
-        _logo_button.setIcon(QIcon(":/icons/logo_color.png"));
+    _connected = conn;
+    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    if (_connected)
+        _logo_button.setIcon(QIcon(iconPath+"/logo_color.png"));
     else
-        _logo_button.setIcon(QIcon(":/icons/logo_noColor.png"));
+        _logo_button.setIcon(QIcon(iconPath+"/logo_noColor.png"));
 }
 
 void LogoBar::session_error(
@@ -109,6 +165,20 @@ void LogoBar::show_session_error(
     msg.exec();
 }
 
+void LogoBar::on_actionEn_triggered()
+{
+    _language->setIcon(QIcon::fromTheme("file",
+        QIcon(":/icons/English.png")));
+    setLanguage(QLocale::English);
+}
+
+void LogoBar::on_actionCn_triggered()
+{
+    _language->setIcon(QIcon::fromTheme("file",
+        QIcon(":/icons/Chinese.png")));
+    setLanguage(QLocale::Chinese);
+}
+
 void LogoBar::on_actionAbout_triggered()
 {
     dialogs::About dlg(this);
@@ -117,8 +187,12 @@ void LogoBar::on_actionAbout_triggered()
 
 void LogoBar::on_actionManual_triggered()
 {
+    #ifndef Q_OS_LINUX
+    QDir dir(QCoreApplication::applicationDirPath());
+    #else
     QDir dir(DS_RES_PATH);
     dir.cdUp();
+    #endif
     QDesktopServices::openUrl(
                 QUrl("file:///"+dir.absolutePath() + "/ug.pdf"));
 }

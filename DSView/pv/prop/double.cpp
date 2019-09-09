@@ -32,14 +32,14 @@ using namespace boost;
 namespace pv {
 namespace prop {
 
-Double::Double(QString name,
-	int decimals,
-	QString suffix,
-	optional< pair<double, double> > range,
-	optional<double> step,
-	Getter getter,
-	Setter setter) :
-	Property(name, getter, setter),
+Double::Double(QString name, QString label,
+    int decimals,
+    QString suffix,
+    optional< pair<double, double> > range,
+    optional<double> step,
+    Getter getter,
+    Setter setter) :
+    Property(name, label, getter, setter),
 	_decimals(decimals),
 	_suffix(suffix),
 	_range(range),

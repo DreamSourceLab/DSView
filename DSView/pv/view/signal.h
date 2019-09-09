@@ -52,6 +52,8 @@ namespace view {
 
 class Signal : public Trace
 {
+    Q_OBJECT
+
 private:
 
 
@@ -88,17 +90,6 @@ public:
     //virtual void paint_label(QPainter &p, int right, bool hover, int action);
 
     boost::shared_ptr<device::DevInst> get_device() const;
-
-protected:
-
-	/**
-	 * Paints a zero axis across the viewport.
-	 * @param p the QPainter to paint into.
-	 * @param y the y-offset of the axis.
-	 * @param left the x-coordinate of the left edge of the view.
-	 * @param right the x-coordinate of the right edge of the view.
-	 */
-	void paint_axis(QPainter &p, int y, int left, int right);
 
 protected:
     boost::shared_ptr<pv::device::DevInst> _dev_inst;

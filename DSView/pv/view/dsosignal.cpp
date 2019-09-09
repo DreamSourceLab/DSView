@@ -42,8 +42,8 @@ namespace pv {
 namespace view {
 
 const QString DsoSignal::vDialUnit[DsoSignal::vDialUnitCount] = {
-    "mv",
-    "v",
+    "mV",
+    "V",
 };
 
 const QColor DsoSignal::SignalColours[4] = {
@@ -63,15 +63,18 @@ DsoSignal::DsoSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
     _data(data),
     _scale(0),
     _en_lock(false),
+    _show(true),
     _vDialActive(false),
+    _mValid(false),
+    _level_valid(false),
     _autoV(false),
     _autoH(false),
+    _autoV_over(false),
+    _auto_cnt(0),
     _hover_en(false),
     _hover_index(0),
     _hover_point(QPointF(0, 0)),
-    _hover_value(0),
-    _ms_gear_hover(false),
-    _ms_show_hover(false)
+    _hover_value(0)
 {
     QVector<uint64_t> vValue;
     QVector<QString> vUnit;
@@ -87,9 +90,10 @@ DsoSignal::DsoSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
             GVariant *gvar;
             GVariantIter iter;
             g_variant_iter_init(&iter, gvar_list_vdivs);
-            while(NULL != (gvar = g_variant_iter_next_value(&iter)))
+            while(NULL != (gvar = g_variant_iter_next_value(&iter))) {
                 vValue.push_back(g_variant_get_uint64(gvar));
-            g_variant_unref(gvar);
+                g_variant_unref(gvar);
+            }
             g_variant_unref(gvar_list_vdivs);
             g_variant_unref(gvar_list);
         }
@@ -114,27 +118,29 @@ boost::shared_ptr<pv::data::Dso> DsoSignal::dso_data() const
     return _data;
 }
 
-void DsoSignal::set_viewport(pv::view::Viewport *viewport)
-{
-    Trace::set_viewport(viewport);
-
-    const double ms_left = get_view_rect().right() - (MS_RectWidth + MS_RectMargin) * (get_index() + 1);
-    const double ms_top = get_view_rect().top() + 5;
-    for (int i = DSO_MS_BEGIN; i < DSO_MS_END; i++)
-        _ms_rect[i] = QRect(ms_left, ms_top + MS_RectHeight * i, MS_RectWidth, MS_RectHeight);
-    _ms_gear_rect = QRect(ms_left+MS_RectRad, ms_top+MS_RectRad, MS_IconSize, MS_IconSize);
-    _ms_show_rect = QRect(ms_left+MS_RectWidth-MS_RectRad-MS_IconSize, ms_top+MS_RectRad, MS_IconSize, MS_IconSize);
-
-}
-
 void DsoSignal::set_scale(int height)
 {
-    _scale = height * 1.0f / (1 << _bits);
+    _scale = height / (_ref_max - _ref_min);
 }
 
 float DsoSignal::get_scale()
 {
     return _scale;
+}
+
+uint8_t DsoSignal::get_bits()
+{
+    return _bits;
+}
+
+double DsoSignal::get_ref_min() const
+{
+    return _ref_min;
+}
+
+double DsoSignal::get_ref_max() const
+{
+    return _ref_max;
 }
 
 int DsoSignal::get_name_width() const
@@ -198,8 +204,11 @@ void DsoSignal::set_vDialActive(bool active)
         _vDialActive = active;
 }
 
-bool DsoSignal::go_vDialPre()
+bool DsoSignal::go_vDialPre(bool manul)
 {
+    if (_autoV && manul)
+        autoV_end();
+
     if (enabled() && !_vDial->isMin()) {
         if (_view->session().get_capture_state() == SigSession::Running)
             _view->session().refresh(RefreshShort);
@@ -209,20 +218,25 @@ bool DsoSignal::go_vDialPre()
                               g_variant_new_uint64(_vDial->get_value()));
         if (_view->session().get_capture_state() == SigSession::Stopped)
             _scale *= pre_vdiv/_vDial->get_value();
-        update_vpos();
-        _view->update_calibration();
+        _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_OFFSET,
+                              g_variant_new_uint16(_zero_offset));
+
+        _view->vDial_updated();
         _view->set_update(_viewport, true);
         _view->update();
         return true;
     } else {
-        if (_autoV)
+        if (_autoV && !_autoV_over)
             autoV_end();
         return false;
     }
 }
 
-bool DsoSignal::go_vDialNext()
+bool DsoSignal::go_vDialNext(bool manul)
 {
+    if (_autoV && manul)
+        autoV_end();
+
     if (enabled() && !_vDial->isMax()) {
         if (_view->session().get_capture_state() == SigSession::Running)
             _view->session().refresh(RefreshShort);
@@ -232,13 +246,15 @@ bool DsoSignal::go_vDialNext()
                               g_variant_new_uint64(_vDial->get_value()));
         if (_view->session().get_capture_state() == SigSession::Stopped)
             _scale *= pre_vdiv/_vDial->get_value();
-        update_vpos();
-		_view->update_calibration();
+        _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_OFFSET,
+                              g_variant_new_uint16(_zero_offset));
+
+        _view->vDial_updated();
         _view->set_update(_viewport, true);
         _view->update();
         return true;
     } else {
-        if (_autoV)
+        if (_autoV && !_autoV_over)
             autoV_end();
         return false;
     }
@@ -269,6 +285,20 @@ bool DsoSignal::load_settings()
         qDebug("Warning: config_get SR_CONF_UNIT_BITS failed, set to %d(default).", DefaultBits);
         if (strncmp(_dev_inst->name().toLocal8Bit(), "virtual", 7))
             return false;
+    }
+    gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_REF_MIN);
+    if (gvar != NULL) {
+        _ref_min = g_variant_get_uint32(gvar);
+        g_variant_unref(gvar);
+    } else {
+        _ref_min = 1;
+    }
+    gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_REF_MAX);
+    if (gvar != NULL) {
+        _ref_max = g_variant_get_uint32(gvar);
+        g_variant_unref(gvar);
+    } else {
+        _ref_max = ((1 << _bits) - 1);
     }
 
     // -- vdiv
@@ -310,24 +340,20 @@ bool DsoSignal::load_settings()
 //                          g_variant_new_byte(_acCoupling));
 
     // -- vpos
-    double vpos;
-    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_VPOS);
+    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_OFFSET);
     if (gvar != NULL) {
-        vpos = g_variant_get_double(gvar);
+        _zero_offset = g_variant_get_uint16(gvar);
         g_variant_unref(gvar);
     } else {
-        qDebug() << "ERROR: config_get SR_CONF_PROBE_VPOS failed.";
+        qDebug() << "ERROR: config_get SR_CONF_PROBE_OFFSET failed.";
         return false;
     }
-    _zero_vrate = min(max((0.5 - vpos / (_vDial->get_value() * DS_CONF_DSO_VDIVS)), 0.0), 1.0);
-    if (_dev_inst->name().contains("virtual"))
-        _hw_offset = _zero_vrate * ((1 << _bits) - 1);
 
     // -- trig_value
     gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_TRIGGER_VALUE);
     if (gvar != NULL) {
         _trig_value = g_variant_get_byte(gvar);
-        _trig_delta = get_trig_vrate() - _zero_vrate;
+        _trig_delta = get_trig_vrate() - get_zero_ratio();
         g_variant_unref(gvar);
     } else {
         qDebug() << "ERROR: config_get SR_CONF_TRIGGER_VALUE failed.";
@@ -359,16 +385,20 @@ int DsoSignal::commit_settings()
     ret = _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_COUPLING,
                                 g_variant_new_byte(_acCoupling));
 
-    // -- vpos
-    double vpos_off = (0.5 - (get_zero_vpos() - UpMargin) * 1.0/get_view_rect().height()) * _vDial->get_value() * DS_CONF_DSO_VDIVS;
-    ret = _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_VPOS,
-                                g_variant_new_double(vpos_off));
+    // -- offset
+    ret = _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_OFFSET,
+                                g_variant_new_uint16(_zero_offset));
 
     // -- trig_value
     _dev_inst->set_config(_probe, NULL, SR_CONF_TRIGGER_VALUE,
                           g_variant_new_byte(_trig_value));
 
     return ret;
+}
+
+dslDial * DsoSignal::get_vDial() const
+{
+    return _vDial;
 }
 
 uint64_t DsoSignal::get_vDialValue() const
@@ -395,94 +425,96 @@ void DsoSignal::set_acCoupling(uint8_t coupling)
     }
 }
 
-int DsoSignal::get_trig_vpos() const
+int DsoSignal::ratio2value(double ratio) const
 {
-    return get_trig_vrate() * get_view_rect().height() + UpMargin;
+    return ratio * (_ref_max - _ref_min) + _ref_min;
+}
+
+int DsoSignal::ratio2pos(double ratio) const
+{
+    return ratio * get_view_rect().height() + get_view_rect().top();
+}
+
+double DsoSignal::value2ratio(int value) const
+{
+    return max(0.0, (value - _ref_min) / (_ref_max - _ref_min));
+}
+
+double DsoSignal::pos2ratio(int pos) const
+{
+    return min(max(pos - get_view_rect().top(), 0), get_view_rect().height()) * 1.0 / get_view_rect().height();
 }
 
 double DsoSignal::get_trig_vrate() const
 {
     if (_dev_inst->name() == "DSLogic")
-        return (_trig_value - (1 << (_bits - 1)))* 1.0 / ((1 << _bits) - 1.0) + _zero_vrate;
+        return value2ratio(_trig_value - ratio2value(0.5)) + get_zero_ratio();
     else
-        return _trig_value * 1.0 / ((1 << _bits) - 1.0);
+        return value2ratio(_trig_value);
 }
 
 void DsoSignal::set_trig_vpos(int pos, bool delta_change)
 {
     assert(_view);
     if (enabled()) {
-        double delta = min(max(pos - UpMargin, 0), get_view_rect().height()) * 1.0 / get_view_rect().height();
-        if (_dev_inst->name() == "DSLogic") {
-            delta = delta - _zero_vrate;
-            delta = min(delta, 0.5);
-            delta = max(delta, -0.5);
-            _trig_value = delta * ((1 << _bits) -1) + (1 << (_bits - 1));
-        } else {
-            _trig_value = delta * ((1 << _bits) -1) + 0.5;
-        }
-        int margin = TrigMargin;
-        _trig_value = std::min(std::max(_trig_value, margin), ((1 << _bits) - margin - 1));
-        if (delta_change)
-            _trig_delta = get_trig_vrate() - _zero_vrate;
-        _dev_inst->set_config(_probe, NULL, SR_CONF_TRIGGER_VALUE,
-                              g_variant_new_byte(_trig_value));
+        set_trig_ratio(pos2ratio(pos), delta_change);
     }
 }
 
-void DsoSignal::set_trig_vrate(double rate)
+void DsoSignal::set_trig_ratio(double ratio, bool delta_change)
 {
-    double delta = rate;
+    double delta = ratio;
     if (_dev_inst->name() == "DSLogic") {
-        delta = delta - _zero_vrate;
+        delta = delta - get_zero_ratio();
         delta = min(delta, 0.5);
         delta = max(delta, -0.5);
-        _trig_value = delta * ((1 << _bits) - 1) + (1 << (_bits - 1));
+        _trig_value = ratio2value(delta + 0.5);
     } else {
-        _trig_value = delta * ((1 << _bits) - 1) + 0.5;
+        _trig_value = ratio2value(delta);
     }
-    _trig_delta = get_trig_vrate() - _zero_vrate;
+
+    int margin = TrigMargin;
+    _trig_value = std::min(std::max(_trig_value, margin), (ratio2value(1) - margin));
+    if (delta_change)
+        _trig_delta = get_trig_vrate() - get_zero_ratio();
     _dev_inst->set_config(_probe, NULL, SR_CONF_TRIGGER_VALUE,
                           g_variant_new_byte(_trig_value));
 }
 
 int DsoSignal::get_zero_vpos() const
 {
-    return _zero_vrate * get_view_rect().height() + UpMargin;
+    return ratio2pos(get_zero_ratio());
 }
 
-double DsoSignal::get_zero_vrate()
+double DsoSignal::get_zero_ratio() const
 {
-    return _zero_vrate;
+    return value2ratio(_zero_offset);
 }
 
-double DsoSignal::get_hw_offset()
+int DsoSignal::get_hw_offset() const
 {
-    return _hw_offset;
+    int hw_offset = 0;
+    GVariant *gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_HW_OFFSET);
+    if (gvar != NULL) {
+        hw_offset = g_variant_get_uint16(gvar);
+        g_variant_unref(gvar);
+    }
+    return hw_offset;
 }
 
 void DsoSignal::set_zero_vpos(int pos)
 {
     if (enabled()) {
-        double delta = _trig_delta* get_view_rect().height();
-        set_zero_vrate(min(max(pos - UpMargin, 0), get_view_rect().height()) * 1.0 / get_view_rect().height(), false);
-        set_trig_vpos(get_zero_vpos() + delta, false);
+        set_zero_ratio(pos2ratio(pos));
+        set_trig_ratio(_trig_delta + get_zero_ratio(), false);
     }
 }
 
-void DsoSignal::set_zero_vrate(double rate, bool force_update)
+void DsoSignal::set_zero_ratio(double ratio)
 {
-    _zero_vrate = rate;
-    update_vpos();
-
-    if (!_dev_inst->name().contains("virtual") &&
-        (force_update ||
-        _view->session().get_capture_state() == SigSession::Running)) {
-        if (_dev_inst->name() == "DSLogic")
-            _hw_offset = 0x80;
-        else
-            _hw_offset = _zero_vrate * ((1 << _bits) - 1);
-    }
+    _zero_offset = ratio2value(ratio);
+    _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_OFFSET,
+                          g_variant_new_uint16(_zero_offset));
 }
 
 void DsoSignal::set_factor(uint64_t factor)
@@ -523,65 +555,132 @@ uint64_t DsoSignal::get_factor()
     }
 }
 
-void DsoSignal::set_ms_show(bool show)
+void DsoSignal::set_show(bool show)
 {
-    _probe->ms_show = show;
-    _view->set_update(_viewport, true);
+    _show = show;
 }
 
-bool DsoSignal::get_ms_show() const
+bool DsoSignal::show() const
 {
-    return _probe->ms_show;
+    return _show;
 }
 
-bool DsoSignal::get_ms_show_hover() const
+QString DsoSignal::get_measure(enum DSO_MEASURE_TYPE type)
 {
-    return _ms_show_hover;
-}
-
-bool DsoSignal::get_ms_gear_hover() const
-{
-    return _ms_gear_hover;
-}
-
-void DsoSignal::set_ms_en(int index, bool en)
-{
-    assert(index > DSO_MS_BEGIN);
-    assert(index < DSO_MS_END);
-
-    _probe->ms_en[index] = en;
-}
-
-bool DsoSignal::get_ms_en(int index) const
-{
-    assert(index > DSO_MS_BEGIN);
-    assert(index < DSO_MS_END);
-
-    return _probe->ms_en[index];
-}
-
-QString DsoSignal::get_ms_string(int index) const
-{
-    assert(index > DSO_MS_BEGIN);
-    assert(index < DSO_MS_END);
-
-    switch(index) {
-        case DSO_MS_FREQ: return "Frequency";
-        case DSO_MS_PERD: return "Period";
-        case DSO_MS_VMAX: return "Vmax";
-        case DSO_MS_VMIN: return "Vmin";
-        case DSO_MS_VRMS: return "Vrms";
-        case DSO_MS_VMEA: return "Vmean";
-        case DSO_MS_VP2P: return "Vp-p";
-        default: return "Error: Out of Bounds";
+    const QString mNone = "--";
+    QString mString;
+    if (_mValid) {
+        const int hw_offset = get_hw_offset();
+        switch(type) {
+        case DSO_MS_AMPT:
+            if (_level_valid)
+                mString = get_voltage(_high - _low, 2);
+            else
+                mString = mNone;
+            break;
+        case DSO_MS_VHIG:
+            if (_level_valid)
+                mString = get_voltage(hw_offset - _low, 2);
+            else
+                mString = mNone;
+            break;
+        case DSO_MS_VLOW:
+            if (_level_valid)
+                mString = get_voltage(hw_offset - _high, 2);
+            else
+                mString = mNone;
+            break;
+        case DSO_MS_VP2P:
+            mString = get_voltage(_max - _min, 2);
+            break;
+        case DSO_MS_VMAX:
+            mString = get_voltage(hw_offset - _min, 2);
+            break;
+        case DSO_MS_VMIN:
+            mString = get_voltage(hw_offset - _max, 2);
+            break;
+        case DSO_MS_PERD:
+            mString = get_time(_period);
+            break;
+        case DSO_MS_FREQ:
+            mString = (abs(_period) > 1000000 ? QString::number(1000000000/_period, 'f', 2) + "Hz" :
+                       abs(_period) > 1000 ? QString::number(1000000/_period, 'f', 2) + "kHz" : QString::number(1000/_period, 'f', 2) + "MHz");
+            break;
+        case DSO_MS_VRMS:
+            mString = get_voltage(_rms, 2);
+            break;
+        case DSO_MS_VMEA:
+            mString = get_voltage(_mean, 2);
+            break;
+        case DSO_MS_NOVR:
+            if (_level_valid)
+                mString = QString::number((_max - _high) * 100.0 / (_high - _low), 'f', 2) + "%";
+            else
+                mString = mNone;
+            break;
+        case DSO_MS_POVR:
+            if (_level_valid)
+                mString = QString::number((_low - _min) * 100.0 / (_high - _low), 'f', 2) + "%";
+            else
+                mString = mNone;
+            break;
+        case DSO_MS_PDUT:
+            if (_level_valid)
+                mString = QString::number(_high_time/_period*100, 'f', 2)+"%";
+            else
+                mString = mNone;
+            break;
+        case DSO_MS_NDUT:
+            if (_level_valid)
+                mString = QString::number(100 - _high_time/_period*100, 'f', 2)+"%";
+            else
+                mString = mNone;
+            break;
+        case DSO_MS_PWDT:
+            if (_level_valid)
+                mString = get_time(_high_time);
+            else
+                mString = mNone;
+            break;
+        case DSO_MS_NWDT:
+            if (_level_valid)
+                mString = get_time(_period - _high_time);
+            else
+                mString = mNone;
+            break;
+        case DSO_MS_RISE:
+            if (_level_valid)
+                mString = get_time(_rise_time);
+            else
+                mString = mNone;
+            break;
+        case DSO_MS_FALL:
+            if (_level_valid)
+                mString = get_time(_fall_time);
+            else
+                mString = mNone;
+            break;
+        case DSO_MS_BRST:
+            if (_level_valid)
+                mString = get_time(_burst_time);
+            else
+                mString = mNone;
+            break;
+        case DSO_MS_PCNT:
+            if (_level_valid)
+                mString = (_pcount > 1000000 ? QString::number(_pcount/1000000, 'f', 6) + "M" :
+                           _pcount > 1000 ? QString::number(_pcount/1000, 'f', 3) + "K" : QString::number(_pcount, 'f', 0));
+            else
+                mString = mNone;
+            break;
+        default:
+            mString = "Error";
+            break;
+        }
+    } else {
+        mString = mNone;
     }
-}
-
-void DsoSignal::update_vpos()
-{
-    double vpos_off = (0.5 - _zero_vrate) * _vDial->get_value() * DS_CONF_DSO_VDIVS;
-    _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_VPOS,
-                          g_variant_new_double(vpos_off));
+    return mString;
 }
 
 QRect DsoSignal::get_view_rect() const
@@ -592,29 +691,35 @@ QRect DsoSignal::get_view_rect() const
                   _viewport->height() - UpMargin - DownMargin);
 }
 
-void DsoSignal::paint_back(QPainter &p, int left, int right)
+void DsoSignal::paint_back(QPainter &p, int left, int right, QColor fore, QColor back)
 {
     assert(_view);
+
+    if (!_show)
+        return;
 
     int i, j;
     const int height = get_view_rect().height();
     const int width = right - left;
 
-    QPen solidPen(Signal::dsFore);
+    fore.setAlpha(View::BackAlpha);
+
+    QPen solidPen(fore);
     solidPen.setStyle(Qt::SolidLine);
     p.setPen(solidPen);
-    p.setBrush(Trace::dsBack);
+    p.setBrush(back.black() > 0x80 ? back.darker() : back.lighter());
     p.drawRect(left, UpMargin, width, height);
 
-    p.setPen(Trace::dsLightBlue);
-    p.drawLine(left, UpMargin/2, left + width, UpMargin/2);
+    // draw zoom region
+    fore.setAlpha(View::ForeAlpha);
+    p.setPen(fore);
     const uint64_t sample_len = _view->session().cur_samplelimits();
     const double samplerate = _view->session().cur_samplerate();
     const double samples_per_pixel = samplerate * _view->scale();
     const double shown_rate = min(samples_per_pixel * width * 1.0 / sample_len, 1.0);
     const double start = _view->offset() * samples_per_pixel;
     const double shown_offset = min(start / sample_len, 1.0) * width;
-    const double shown_len = shown_rate * width;
+    const double shown_len = max(shown_rate * width, 6.0);
     const QPointF left_edge[] =  {QPoint(shown_offset + 3, UpMargin/2 - 6),
                                   QPoint(shown_offset, UpMargin/2 - 6),
                                   QPoint(shown_offset, UpMargin/2 + 6),
@@ -623,12 +728,16 @@ void DsoSignal::paint_back(QPainter &p, int left, int right)
                                   QPoint(shown_offset + shown_len , UpMargin/2 - 6),
                                   QPoint(shown_offset + shown_len , UpMargin/2 + 6),
                                   QPoint(shown_offset + shown_len - 3, UpMargin/2 + 6)};
+    p.drawLine(left, UpMargin/2, shown_offset, UpMargin/2);
+    p.drawLine(shown_offset + shown_len, UpMargin/2, left + width, UpMargin/2);
     p.drawPolyline(left_edge, countof(left_edge));
     p.drawPolyline(right_edge, countof(right_edge));
-    p.setBrush(Trace::dsBlue);
+    p.setBrush(fore);
     p.drawRect(shown_offset, UpMargin/2 - 3, shown_len, 6);
 
-    QPen dashPen(Signal::dsFore);
+    // draw divider
+    fore.setAlpha(View::BackAlpha);
+    QPen dashPen(fore);
     dashPen.setStyle(Qt::DashLine);
     p.setPen(dashPen);
     const double spanY =height * 1.0 / DS_CONF_DSO_VDIVS;
@@ -653,19 +762,32 @@ void DsoSignal::paint_back(QPainter &p, int left, int right)
                        posX - miniSpanX * j, height / 2.0f + UpMargin + 5);
         }
     }
+    _view->set_back(true);
 }
 
-void DsoSignal::paint_mid(QPainter &p, int left, int right)
+void DsoSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColor back)
 {
+    (void)fore;
+    (void)back;
+
+    if (!_show)
+        return;
+
     assert(_data);
     assert(_view);
     assert(right >= left);
 
+    {
+        if (_view->session().dso_feed()) {
+            _mValid = false;
+            _view->session().set_dso_feed(false);
+        }
+    }
+
     if (enabled()) {
-        const float top = get_view_rect().top();
-        const int height = get_view_rect().height();
+        const int index = get_index();
         const int width = right - left;
-        const float zeroY = _zero_vrate * height + top;
+        const float zeroY = get_zero_vpos();
 
         const double scale = _view->scale();
         assert(scale > 0);
@@ -680,14 +802,14 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right)
         if (snapshot->empty())
             return;
 
-        if (!snapshot->has_data(get_index()))
+        if (!snapshot->has_data(index))
             return;
 
-        const uint16_t number_channels = snapshot->get_channel_num();
+        const uint16_t enabled_channels = snapshot->get_channel_num();
         const double pixels_offset = offset;
-        //const double samplerate = _data->samplerate();
+        const double samplerate = _data->samplerate();
         //const double samplerate = _dev_inst->get_sample_rate();
-        const double samplerate = _view->session().cur_samplerate();
+        //const double samplerate = _view->session().cur_samplerate();
         const int64_t last_sample = max((int64_t)(snapshot->get_sample_count() - 1), (int64_t)0);
         const double samples_per_pixel = samplerate * scale;
         const double start = offset * samples_per_pixel;
@@ -697,33 +819,78 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right)
             (int64_t)0), last_sample);
         const int64_t end_sample = min(max((int64_t)ceil(end) + 1,
             (int64_t)0), last_sample);
+        const int hw_offset = get_hw_offset();
 
         if (samples_per_pixel < EnvelopeThreshold) {
             snapshot->enable_envelope(false);
             paint_trace(p, snapshot, zeroY, left,
-                start_sample, end_sample,
-                pixels_offset, samples_per_pixel, number_channels);
+                start_sample, end_sample, hw_offset,
+                pixels_offset, samples_per_pixel, enabled_channels);
         } else {
             snapshot->enable_envelope(true);
             paint_envelope(p, snapshot, zeroY, left,
-                start_sample, end_sample,
-                pixels_offset, samples_per_pixel, number_channels);
+                start_sample, end_sample, hw_offset,
+                pixels_offset, samples_per_pixel, enabled_channels);
+        }
+
+        sr_status status;
+        if (sr_status_get(_dev_inst->dev_inst(), &status, false, 0, 0) == SR_OK) {
+            _mValid = true;
+            if (status.measure_valid) {
+                _min = (index == 0) ? status.ch0_min : status.ch1_min;
+                _max = (index == 0) ? status.ch0_max : status.ch1_max;
+
+                _level_valid = (index == 0) ? status.ch0_level_valid : status.ch1_level_valid;
+                _low = (index == 0) ? status.ch0_low_level : status.ch1_low_level;
+                _high = (index == 0) ? status.ch0_high_level : status.ch1_high_level;
+
+                const uint32_t count  = (index == 0) ? status.ch0_cyc_cnt : status.ch1_cyc_cnt;
+                const bool plevel = (index == 0) ? status.ch0_plevel : status.ch1_plevel;
+                const bool startXORend = (index == 0) ? (status.ch0_cyc_llen == 0) : (status.ch1_cyc_llen == 0);
+                const uint16_t total_channels = g_slist_length(_dev_inst->dev_inst()->channels);
+                const double tfactor = (total_channels / enabled_channels) * SR_GHZ(1) * 1.0 / samplerate;
+
+                double samples = (index == 0) ? status.ch0_cyc_tlen : status.ch1_cyc_tlen;
+                _period = ((count == 0) ? 0 : samples / count) * tfactor;
+
+                samples = (index == 0) ? status.ch0_cyc_flen : status.ch1_cyc_flen;
+                _rise_time = ((count == 0) ? 0 : samples / ((plevel && startXORend) ? count : count + 1)) * tfactor;
+                samples = (index == 0) ? status.ch0_cyc_rlen : status.ch1_cyc_rlen;
+                _fall_time = ((count == 0) ? 0 : samples / ((!plevel && startXORend) ? count : count + 1)) * tfactor;
+
+                samples = (index == 0) ? (status.ch0_plevel ? status.ch0_cyc_plen - status.ch0_cyc_llen :
+                                                              status.ch0_cyc_tlen - status.ch0_cyc_plen + status.ch0_cyc_llen) :
+                                         (status.ch1_plevel ? status.ch1_cyc_plen - status.ch1_cyc_llen :
+                                                              status.ch1_cyc_tlen - status.ch1_cyc_plen + status.ch1_cyc_llen);
+                _high_time = ((count == 0) ? 0 : samples / count) * tfactor;
+
+                samples = (index == 0) ? status.ch0_cyc_tlen + status.ch0_cyc_llen : status.ch1_cyc_flen + status.ch1_cyc_llen;
+                _burst_time = samples * tfactor;
+
+                _pcount = count + (plevel & !startXORend);
+                _rms = (index == 0) ? status.ch0_acc_square : status.ch1_acc_square;
+                _rms = sqrt(_rms / snapshot->get_sample_count());
+                _mean = (index == 0) ? status.ch0_acc_mean : status.ch1_acc_mean;
+                _mean = hw_offset - _mean / snapshot->get_sample_count();
+            }
         }
     }
 }
 
-void DsoSignal::paint_fore(QPainter &p, int left, int right)
+void DsoSignal::paint_fore(QPainter &p, int left, int right, QColor fore, QColor back)
 {
+    if (!_show)
+        return;
+
     assert(_view);
 
-    bool antialiasing = p.Antialiasing;
-    p.setRenderHint(QPainter::Antialiasing, false);
-
-    QPen pen(Signal::dsGray);
+    fore.setAlpha(View::BackAlpha);
+    QPen pen(fore);
     pen.setStyle(Qt::DotLine);
     p.setPen(pen);
     p.drawLine(left, get_zero_vpos(), right, get_zero_vpos());
 
+    fore.setAlpha(View::ForeAlpha);
     if(enabled()) {
         const QPointF mouse_point = _view->hover_point();
         const QRectF label_rect = get_trig_rect(left, right);
@@ -731,7 +898,7 @@ void DsoSignal::paint_fore(QPainter &p, int left, int right)
 
         // Paint the trig line
         const QPointF points[] = {
-            QPointF(right, get_trig_vpos()),
+            QPointF(right, ratio2pos(get_trig_vrate())),
             label_rect.topLeft(),
             label_rect.topRight(),
             label_rect.bottomRight(),
@@ -742,7 +909,7 @@ void DsoSignal::paint_fore(QPainter &p, int left, int right)
         p.setBrush(_colour);
         p.drawPolygon(points, countof(points));
 
-        p.setPen(Qt::white);
+        p.setPen(fore);
         const QPointF arrow_points[] = {
             QPoint(label_rect.left(), label_rect.center().y()),
             QPoint(label_rect.left(), label_rect.center().y()-1),
@@ -770,13 +937,12 @@ void DsoSignal::paint_fore(QPainter &p, int left, int right)
             p.drawPoints(arrow_points, countof(arrow_points));
 
         // paint the trig voltage
-        int trigp = get_trig_vpos();
-        float t_vol = (_zero_vrate - get_trig_vrate()) * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS;
-        QString t_vol_s = (_vDial->get_value() >= 500) ? QString::number(t_vol/1000.0f, 'f', 2)+"V" : QString::number(t_vol, 'f', 2)+"mV";
+        int trigp = ratio2pos(get_trig_vrate());
+        QString t_vol_s = get_voltage(get_zero_vpos() - trigp, 2, true);
         int vol_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
                                        Qt::AlignLeft | Qt::AlignTop, t_vol_s).width();
         const QRectF t_vol_rect = QRectF(right-vol_width, trigp-10, vol_width, 20);
-        p.setPen(Qt::white);
+        p.setPen(fore);
         p.drawText(t_vol_rect, Qt::AlignRight | Qt::AlignVCenter, t_vol_s);
 
         // paint the _trig_vpos line
@@ -786,14 +952,16 @@ void DsoSignal::paint_fore(QPainter &p, int left, int right)
         }
 
         // Paint the text
-        p.setPen(Qt::white);
+        p.setPen(fore);
         p.drawText(label_rect, Qt::AlignCenter | Qt::AlignVCenter, "T");
 
         // Paint measure
-        paint_measure(p);
-    }
+        if (_view->session().get_capture_state() == SigSession::Stopped)
+            paint_hover_measure(p, fore, back);
 
-    p.setRenderHint(QPainter::Antialiasing, antialiasing);
+        // autoset
+        auto_set();
+    }
 }
 
 QRectF DsoSignal::get_trig_rect(int left, int right) const
@@ -801,13 +969,13 @@ QRectF DsoSignal::get_trig_rect(int left, int right) const
     (void)left;
 
     return QRectF(right + SquareWidth / 2,
-                  get_trig_vpos() - SquareWidth / 2,
+                  ratio2pos(get_trig_vrate()) - SquareWidth / 2,
                   SquareWidth, SquareWidth);
 }
 
 void DsoSignal::paint_trace(QPainter &p,
     const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot,
-    int zeroY, int left, const int64_t start, const int64_t end,
+    int zeroY, int left, const int64_t start, const int64_t end, int hw_offset,
     const double pixels_offset, const double samples_per_pixel, uint64_t num_channels)
 {
     const int64_t sample_count = end - start + 1;
@@ -817,7 +985,7 @@ void DsoSignal::paint_trace(QPainter &p,
         assert(samples);
 
         QColor trace_colour = _colour;
-        trace_colour.setAlpha(150);
+        trace_colour.setAlpha(View::ForeAlpha);
         p.setPen(trace_colour);
 
         QPointF *points = new QPointF[sample_count];
@@ -827,32 +995,26 @@ void DsoSignal::paint_trace(QPainter &p,
         float bottom = get_view_rect().bottom();
         float x = (start / samples_per_pixel - pixels_offset) + left;
         double  pixels_per_sample = 1.0/samples_per_pixel;
-        uint8_t offset;
+        uint8_t value;
         int64_t sample_end = sample_count*num_channels;
         for (int64_t sample = 0; sample < sample_end; sample+=num_channels) {
-            //const float x = (sample / samples_per_pixel - pixels_offset) + left;
-            //uint8_t offset = samples[(sample - start)*num_channels];
-
-            //offset = samples[(sample - start)*num_channels];
-            offset = samples[sample];
-            const float y = min(max(top, zeroY + (offset - _hw_offset) * _scale), bottom);
+            value = samples[sample];
+            const float y = min(max(top, zeroY + (value - hw_offset) * _scale), bottom);
             *point++ = QPointF(x, y);
             x += pixels_per_sample;
-            //*point++ = QPointF(x, top + offset);
         }
 
         p.drawPolyline(points, point - points);
         p.eraseRect(get_view_rect().right()+1, get_view_rect().top(),
                     _view->viewport()->width() - get_view_rect().width(), get_view_rect().height());
 
-        //delete[] samples;
         delete[] points;
     }
 }
 
 void DsoSignal::paint_envelope(QPainter &p,
     const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot,
-    int zeroY, int left, const int64_t start, const int64_t end,
+    int zeroY, int left, const int64_t start, const int64_t end, int hw_offset,
     const double pixels_offset, const double samples_per_pixel, uint64_t num_channels)
 {
 	using namespace Qt;
@@ -868,7 +1030,7 @@ void DsoSignal::paint_envelope(QPainter &p,
     p.setPen(QPen(NoPen));
     //p.setPen(QPen(_colour, 2, Qt::SolidLine));
     QColor envelope_colour = _colour;
-    envelope_colour.setAlpha(150);
+    envelope_colour.setAlpha(View::ForeAlpha);
     p.setBrush(envelope_colour);
 
 	QRectF *const rects = new QRectF[e.length];
@@ -883,8 +1045,8 @@ void DsoSignal::paint_envelope(QPainter &p,
 
 		// We overlap this sample with the next so that vertical
 		// gaps do not appear during steep rising or falling edges
-        const float b = min(max(top, ((max(s->max, (s+1)->min) - _hw_offset) * _scale + zeroY)), bottom);
-        const float t = min(max(top, ((min(s->min, (s+1)->max) - _hw_offset) * _scale + zeroY)), bottom);
+        const float b = min(max(top, ((max(s->max, (s+1)->min) - hw_offset) * _scale + zeroY)), bottom);
+        const float t = min(max(top, ((min(s->min, (s+1)->max) - hw_offset) * _scale + zeroY)), bottom);
 
 		float h = b - t;
 		if(h >= 0.0f && h <= 1.0f)
@@ -901,8 +1063,12 @@ void DsoSignal::paint_envelope(QPainter &p,
     //delete[] e.samples;
 }
 
-void DsoSignal::paint_type_options(QPainter &p, int right, const QPoint pt)
+void DsoSignal::paint_type_options(QPainter &p, int right, const QPoint pt, QColor fore)
 {
+    p.setRenderHint(QPainter::Antialiasing, true);
+
+    QColor foreBack = fore;
+    foreBack.setAlpha(View::BackAlpha);
     int y = get_y();
     const QRectF vDial_rect = get_rect(DSO_VDIAL, y, right);
     const QRectF x1_rect = get_rect(DSO_X1, y, right);
@@ -912,27 +1078,39 @@ void DsoSignal::paint_type_options(QPainter &p, int right, const QPoint pt)
     const QRectF chEn_rect = get_rect(DSO_CHEN, y, right);
     const QRectF auto_rect = get_rect(DSO_AUTO, y, right);
 
-    _vDial->paint(p, vDial_rect, _colour, pt);
+    QString pText;
+    _vDial->paint(p, vDial_rect, _colour, pt, pText);
+    QFontMetrics fm(p.font());
+    const QRectF valueRect = QRectF(chEn_rect.left(), vDial_rect.top()-fm.height()-10, right, fm.height());
+    p.drawText(valueRect, Qt::AlignCenter, pText);
 
+    const char *strings[6] = {
+        QT_TR_NOOP("EN"),
+        QT_TR_NOOP("DIS"),
+        QT_TR_NOOP("GND"),
+        QT_TR_NOOP("DC"),
+        QT_TR_NOOP("AC"),
+        QT_TR_NOOP("AUTO"),
+    };
     p.setPen(Qt::transparent);
     p.setBrush(chEn_rect.contains(pt) ? _colour.darker() : _colour);
     p.drawRect(chEn_rect);
     p.setPen(Qt::white);
-    p.drawText(chEn_rect, Qt::AlignCenter | Qt::AlignVCenter, enabled() ? tr("EN") : tr("DIS"));
+    p.drawText(chEn_rect, Qt::AlignCenter | Qt::AlignVCenter, enabled() ? tr(strings[0]) : tr(strings[1]));
 
     p.setPen(Qt::transparent);
-    p.setBrush(enabled() ? (acdc_rect.contains(pt) ? _colour.darker() : _colour) : dsDisable);
+    p.setBrush(enabled() ? (acdc_rect.contains(pt) ? _colour.darker() : _colour) : foreBack);
     p.drawRect(acdc_rect);
     p.setPen(Qt::white);
-    p.drawText(acdc_rect, Qt::AlignCenter | Qt::AlignVCenter, (_acCoupling == SR_GND_COUPLING) ? tr("GND") :
-                                                              (_acCoupling == SR_DC_COUPLING) ? tr("DC") : tr("AC"));
+    p.drawText(acdc_rect, Qt::AlignCenter | Qt::AlignVCenter, (_acCoupling == SR_GND_COUPLING) ? tr(strings[2]):
+                                                              (_acCoupling == SR_DC_COUPLING) ? tr(strings[3]) : tr(strings[4]));
 
     if (!_dev_inst->name().contains("virtual")) {
         p.setPen(Qt::transparent);
-        p.setBrush(enabled() ? (auto_rect.contains(pt) ? _colour.darker() : _colour) : dsDisable);
+        p.setBrush(enabled() ? (auto_rect.contains(pt) ? _colour.darker() : _colour) : foreBack);
         p.drawRect(auto_rect);
         p.setPen(Qt::white);
-        p.drawText(auto_rect, Qt::AlignCenter | Qt::AlignVCenter, tr("AUTO"));
+        p.drawText(auto_rect, Qt::AlignCenter | Qt::AlignVCenter, tr(strings[5]));
     }
 
     // paint the probe factor selector
@@ -948,17 +1126,19 @@ void DsoSignal::paint_type_options(QPainter &p, int right, const QPoint pt)
     }
 
     p.setPen(Qt::transparent);
-    p.setBrush((enabled() && (factor == 100)) ? (x100_rect.contains(pt) ? _colour.darker() : _colour)  : (x100_rect.contains(pt) ? _colour.darker() : dsDisable));
+    p.setBrush((enabled() && (factor == 100)) ? (x100_rect.contains(pt) ? _colour.darker() : _colour)  : (x100_rect.contains(pt) ? _colour.darker() : foreBack));
     p.drawRect(x100_rect);
-    p.setBrush((enabled() && (factor == 10)) ? (x10_rect.contains(pt) ? _colour.darker() : _colour)  : (x10_rect.contains(pt) ? _colour.darker() : dsDisable));
+    p.setBrush((enabled() && (factor == 10)) ? (x10_rect.contains(pt) ? _colour.darker() : _colour)  : (x10_rect.contains(pt) ? _colour.darker() : foreBack));
     p.drawRect(x10_rect);
-    p.setBrush((enabled() && (factor == 1)) ? (x1_rect.contains(pt) ? _colour.darker() : _colour)  : (x1_rect.contains(pt) ? _colour.darker() : dsDisable));
+    p.setBrush((enabled() && (factor == 1)) ? (x1_rect.contains(pt) ? _colour.darker() : _colour)  : (x1_rect.contains(pt) ? _colour.darker() : foreBack));
     p.drawRect(x1_rect);
 
     p.setPen(Qt::white);
     p.drawText(x100_rect, Qt::AlignCenter | Qt::AlignVCenter, "x100");
     p.drawText(x10_rect, Qt::AlignCenter | Qt::AlignVCenter, "x10");
     p.drawText(x1_rect, Qt::AlignCenter | Qt::AlignVCenter, "x1");
+
+    p.setRenderHint(QPainter::Antialiasing, false);
 }
 
 bool DsoSignal::mouse_press(int right, const QPoint pt)
@@ -981,9 +1161,9 @@ bool DsoSignal::mouse_press(int right, const QPoint pt)
     } else if (enabled()) {
         if (vDial_rect.contains(pt) && pt.x() > vDial_rect.center().x()) {
             if (pt.y() > vDial_rect.center().y())
-                go_vDialNext();
+                go_vDialNext(true);
             else
-                go_vDialPre();
+                go_vDialPre(true);
         } else if (_dev_inst->name() != "virtual-session" &&
                    acdc_rect.contains(pt)) {
            if (_dev_inst->name() == "DSLogic")
@@ -1014,9 +1194,9 @@ bool DsoSignal::mouse_wheel(int right, const QPoint pt, const int shift)
 
     if (vDial_rect.contains(pt)) {
         if (shift > 0.5)
-            go_vDialPre();
+            go_vDialPre(true);
         else if (shift < -0.5)
-            go_vDialNext();
+            go_vDialNext(true);
         return true;
     } else {
         return false;
@@ -1068,147 +1248,126 @@ QRectF DsoSignal::get_rect(DsoSetRegions type, int y, int right)
         return QRectF(0, 0, 0, 0);
 }
 
-void DsoSignal::paint_measure(QPainter &p)
+void DsoSignal::paint_hover_measure(QPainter &p, QColor fore, QColor back)
 {
-    sr_status status;
-    int index = get_index();
-    const int st_begin = (index == 0) ? SR_STATUS_CH0_BEGIN : SR_STATUS_CH1_BEGIN;
-    const int st_end = (index == 0) ? SR_STATUS_CH0_END : SR_STATUS_CH1_END;
-    if (sr_status_get(_dev_inst->dev_inst(), &status, false, st_begin, st_end) == SR_OK) {
-        _max = (index == 0) ? status.ch0_max : status.ch1_max;
-        _min = (index == 0) ? status.ch0_min : status.ch1_min;
-        const uint64_t period = (index == 0) ? status.ch0_period : status.ch1_period;
-        const uint32_t count  = (index == 0) ? status.ch0_pcnt : status.ch1_pcnt;
-        double value_max = (_hw_offset - _min) * _scale * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
-        double value_min = (_hw_offset - _max) * _scale * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
-        double value_p2p = value_max - value_min;
-        _period = (count == 0) ? 0 : period * 10.0 / count;
-        const int channel_count = _view->session().get_ch_num(SR_CHANNEL_DSO);
-        uint64_t sample_rate = _dev_inst->get_sample_rate();
-        _period = _period * 200.0 / (channel_count * sample_rate * 1.0 / SR_MHZ(1));
-        _ms_string[DSO_MS_VMAX] = tr("Vmax: ") + (abs(value_max) > 1000 ? QString::number(value_max/1000.0, 'f', 2) + "V" : QString::number(value_max, 'f', 2) + "mV");
-        _ms_string[DSO_MS_VMIN] = tr("Vmin: ") + (abs(value_min) > 1000 ? QString::number(value_min/1000.0, 'f', 2) + "V" : QString::number(value_min, 'f', 2) + "mV");
-        _ms_string[DSO_MS_PERD] = tr("Perd: ") + (abs(_period) > 1000000000 ? QString::number(_period/1000000000, 'f', 2) + "S" :
-                                abs(_period) > 1000000 ? QString::number(_period/1000000, 'f', 2) + "mS" :
-                                abs(_period) > 1000 ? QString::number(_period/1000, 'f', 2) + "uS" : QString::number(_period, 'f', 2) + "nS");
-        _ms_string[DSO_MS_FREQ] = tr("Freq: ") + (abs(_period) > 1000000 ? QString::number(1000000000/_period, 'f', 2) + "Hz" :
-                              abs(_period) > 1000 ? QString::number(1000000/_period, 'f', 2) + "kHz" : QString::number(1000/_period, 'f', 2) + "MHz");
-        _ms_string[DSO_MS_VP2P] = tr("Vp-p: ") +  (abs(value_p2p) > 1000 ? QString::number(value_p2p/1000.0, 'f', 2) + "V" : QString::number(value_p2p, 'f', 2) + "mV");
+    const int hw_offset = get_hw_offset();
+    // Hover measure
+    if (_hover_en) {
+        QString hover_str = get_voltage(hw_offset - _hover_value, 2);
+        const int hover_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
+            Qt::AlignLeft | Qt::AlignTop, hover_str).width() + 10;
+        const int hover_height = p.boundingRect(0, 0, INT_MAX, INT_MAX,
+            Qt::AlignLeft | Qt::AlignTop, hover_str).height();
+        QRectF hover_rect(_hover_point.x(), _hover_point.y()-hover_height/2, hover_width, hover_height);
+        if (hover_rect.right() > get_view_rect().right())
+            hover_rect.moveRight(_hover_point.x());
+        if (hover_rect.top() < get_view_rect().top())
+            hover_rect.moveTop(_hover_point.y());
+        if (hover_rect.bottom() > get_view_rect().bottom())
+            hover_rect.moveBottom(_hover_point.y());
 
-        if (_probe->ms_show && _probe->ms_en[DSO_MS_VRMS]) {
-            const deque< boost::shared_ptr<pv::data::DsoSnapshot> > &snapshots =
-                _data->get_snapshots();
-            if (!snapshots.empty()) {
-                const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
-                    snapshots.front();
-                const double vrms = snapshot->cal_vrms(_hw_offset, get_index());
-                const double value_vrms = vrms * _scale * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
-                _ms_string[DSO_MS_VRMS] = tr("Vrms: ") +  (abs(value_vrms) > 1000 ? QString::number(value_vrms/1000.0, 'f', 2) + "V" : QString::number(value_vrms, 'f', 2) + "mV");
-            }
-        }
-
-        if (_probe->ms_show && _probe->ms_en[DSO_MS_VMEA]) {
-            const deque< boost::shared_ptr<pv::data::DsoSnapshot> > &snapshots =
-                _data->get_snapshots();
-            if (!snapshots.empty()) {
-                const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
-                    snapshots.front();
-                const double vmean = snapshot->cal_vmean(get_index());
-                const double value_vmean = (_hw_offset - vmean) * _scale * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
-                _ms_string[DSO_MS_VMEA] = tr("Vmean: ") +  (abs(value_vmean) > 1000 ? QString::number(value_vmean/1000.0, 'f', 2) + "V" : QString::number(value_vmean, 'f', 2) + "mV");
-            }
-        }
-    } else {
-        _ms_string[DSO_MS_VMAX] = tr("Vmax: #####");
-        _ms_string[DSO_MS_VMIN] = tr("Vmin: #####");
-        _ms_string[DSO_MS_PERD] = tr("Perd: #####");
-        _ms_string[DSO_MS_FREQ] = tr("Freq: #####");
-        _ms_string[DSO_MS_VP2P] = tr("Vp-p: #####");
-        _ms_string[DSO_MS_VRMS] = tr("Vrms: #####");
-        _ms_string[DSO_MS_VMEA] = tr("Vmean: #####");
+        p.setPen(fore);
+        p.setBrush(back);
+        p.drawRect(_hover_point.x()-1, _hover_point.y()-1, HoverPointSize, HoverPointSize);
+        p.drawText(hover_rect, Qt::AlignCenter | Qt::AlignTop | Qt::TextDontClip, hover_str);
     }
 
-    QColor measure_colour = _colour;
-    measure_colour.setAlpha(180);
-    QColor back_colour = Qt::white;
-    back_colour.setAlpha(100);
+    list<Cursor*>::iterator i = _view->get_cursorList().begin();
+    while (i != _view->get_cursorList().end()) {
+        float pt_value;
+        const QPointF pt = get_point((*i)->index(), pt_value);
+        QString pt_str = get_voltage(hw_offset - pt_value, 2);
+        const int pt_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
+            Qt::AlignLeft | Qt::AlignTop, pt_str).width() + 10;
+        const int pt_height = p.boundingRect(0, 0, INT_MAX, INT_MAX,
+            Qt::AlignLeft | Qt::AlignTop, pt_str).height();
+        QRectF pt_rect(pt.x(), pt.y()-pt_height/2, pt_width, pt_height);
+        if (pt_rect.right() > get_view_rect().right())
+            pt_rect.moveRight(pt.x());
+        if (pt_rect.top() < get_view_rect().top())
+            pt_rect.moveTop(pt.y());
+        if (pt_rect.bottom() > get_view_rect().bottom())
+            pt_rect.moveBottom(pt.y());
 
-    bool antialiasing = p.Antialiasing;
-    p.setRenderHint(QPainter::Antialiasing, true);
+        p.drawRect(pt.x()-1, pt.y()-1, 2, 2);
+        p.drawLine(pt.x()-2, pt.y()-2, pt.x()+2, pt.y()+2);
+        p.drawLine(pt.x()+2, pt.y()-2, pt.x()-2, pt.y()+2);
+        p.drawText(pt_rect, Qt::AlignCenter | Qt::AlignTop | Qt::TextDontClip, pt_str);
 
-    p.setPen(Qt::NoPen);
-    p.setBrush(measure_colour);
-    p.drawRoundedRect(_ms_rect[DSO_MS_BEGIN], MS_RectRad, MS_RectRad);
-    const QPixmap gear_pix(":/icons/settings.png");
-    const QPixmap show_pix(_probe->ms_show ? ":/icons/shown.png" : ":/icons/hidden.png");
-    if (_ms_gear_hover) {
-        p.setBrush(back_colour);
-        p.drawRoundedRect(_ms_gear_rect, MS_RectRad, MS_RectRad);
-    } else if (_ms_show_hover) {
-        p.setBrush(back_colour);
-        p.drawRoundedRect(_ms_show_rect, MS_RectRad, MS_RectRad);
+        i++;
     }
-    p.drawPixmap(_ms_gear_rect, gear_pix);
-    p.drawPixmap(_ms_show_rect, show_pix);
-    p.setPen(Qt::white);
-    p.drawText(_ms_rect[DSO_MS_BEGIN], Qt::AlignCenter | Qt::AlignVCenter, "CH"+QString::number(index));
+}
 
-    if (_probe->ms_show) {
-        p.setBrush(back_colour);
-        int j = DSO_MS_BEGIN+1;
-        for (int i=DSO_MS_BEGIN+1; i<DSO_MS_END; i++) {
-            if (_probe->ms_en[i]) {
-                p.setPen(_colour);
-                p.drawText(_ms_rect[j], Qt::AlignLeft | Qt::AlignVCenter, _ms_string[i]);
-                p.setPen(Qt::NoPen);
-                p.drawRoundedRect(_ms_rect[j], MS_RectRad, MS_RectRad);
-                j++;
-            }
-        }
-    }
-    p.setRenderHint(QPainter::Antialiasing, antialiasing);
-
+void DsoSignal::auto_set()
+{
     if (_view->session().get_capture_state() == SigSession::Stopped) {
         if (_autoV)
             autoV_end();
         if (_autoH)
             autoH_end();
-    }
-
-    if (_autoV && !_view->session().get_data_auto_lock()) {
-        set_zero_vrate(0.5, true);
-        const uint8_t vscale = abs(_max - _min);
-        if (_max == 0xff || _min == 0x00 || vscale > 0xCC) {
-            go_vDialNext();
-        } else if (vscale > 0x33) {
-            autoV_end();
-        } else {
-            go_vDialPre();
+    } else {
+        if (_autoH && _autoV && get_zero_ratio() != 0.5) {
+            set_zero_ratio(0.5);
         }
-        _view->session().data_auto_lock(AutoLock);
-    }
+        if (_mValid && !_view->session().get_data_auto_lock()) {
+            if (_autoH) {
+                bool roll = false;
+                GVariant *gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_ROLL);
+                if (gvar != NULL) {
+                    roll = g_variant_get_boolean(gvar);
+                    g_variant_unref(gvar);
+                }
+                const double hori_res = _view->get_hori_res();
+                if (_level_valid && ((!roll && _pcount < 3) || _period > 4*hori_res)) {
+                    _view->zoom(-1);
+                } else if (_level_valid && _pcount > 6 && _period < 1.5*hori_res) {
+                    _view->zoom(1);
+                } else if (_level_valid) {
+                    autoH_end();
+                }
+            }
+            if (_autoV) {
+                const bool over_flag = _max == 0xff || _min == 0x0;
+                const bool out_flag = _max >= 0xE0 || _min <= 0x20;
+                const bool under_flag = _max <= 0xA0 && _min >= 0x60;
+                if (over_flag) {
+                    if (!_autoV_over)
+                        _auto_cnt = 0;
+                    _autoV_over = true;
+                    go_vDialNext(false);
+                } else if (out_flag) {
+                    go_vDialNext(false);
+                } else if (!_autoV_over && under_flag) {
+                    go_vDialPre(false);
+                } else if (!_autoH) {
+                    autoV_end();
+                }
 
-    if (_autoH && !_view->session().get_data_auto_lock()) {
-        const double hori_res = _view->get_hori_res();
-        if (_period <= 0) {
-            _view->zoom(-1);
-        } else if (_period < 1.5*hori_res) {
-            _view->zoom(1);
-        } else if (_period > 6*hori_res) {
-            _view->zoom(-1);
-        } else {
-            autoH_end();
+                if (_autoV_over && under_flag) {
+                    if (_auto_cnt++ > 16)
+                        _autoV_over = false;
+                } else {
+                    _auto_cnt = 0;
+                }
+
+                if (_level_valid) {
+                    _trig_value = (_min+_max)/2;
+                    set_trig_vpos(ratio2pos(get_trig_vrate()));
+                }
+            }
+            if (_autoH || _autoV)
+                _view->session().data_auto_lock(AutoLock);
         }
-        _view->session().data_auto_lock(AutoLock);
     }
 }
 
 void DsoSignal::autoV_end()
 {
     _autoV = false;
+    _autoV_over = false;
     _view->auto_trig(get_index());
     _trig_value = (_min+_max)/2;
-    set_trig_vpos(get_trig_vpos(), true);
+    set_trig_vpos(ratio2pos(get_trig_vrate()));
     _view->set_update(_viewport, true);
     _view->update();
 }
@@ -1236,31 +1395,17 @@ void DsoSignal::auto_start()
         _view->session().data_auto_lock(AutoLock);
         _autoV = true;
         _autoH = true;
-        QTimer::singleShot(AutoTime, this, SLOT(auto_end()));
+        QTimer::singleShot(AutoTime, &_view->session(), SLOT(auto_end()));
     }
 }
 
 bool DsoSignal::measure(const QPointF &p)
 {
-    if (_ms_gear_rect.contains(QPoint(p.x(), p.y()))) {
-        _ms_gear_hover = true;
-        _view->set_update(_viewport, true);
-        return false;
-    } else if (_ms_gear_hover) {
-        _view->set_update(_viewport, true);
-        _ms_gear_hover = false;
-    }
-    if (_ms_show_rect.contains(QPoint(p.x(), p.y()))) {
-        _ms_show_hover = true;
-        _view->set_update(_viewport, true);
-        return false;
-    } else if (_ms_show_hover){
-        _view->set_update(_viewport, true);
-        _ms_show_hover = false;
-    }
-
     _hover_en = false;
-    if (!enabled())
+    if (!enabled() || !show())
+        return false;
+
+    if (_view->session().get_capture_state() != SigSession::Stopped)
         return false;
 
     const QRectF window = get_view_rect();
@@ -1287,39 +1432,9 @@ bool DsoSignal::measure(const QPointF &p)
     if (_hover_index >= snapshot->get_sample_count())
         return false;
 
-    uint64_t pre_index;
-    uint64_t nxt_index;
-    if (_hover_index > 0)
-        pre_index = _hover_index - 1;
-    else
-        pre_index = _hover_index;
-    if (_hover_index < snapshot->get_sample_count() - 1)
-        nxt_index = _hover_index + 1;
-    else
-        nxt_index = _hover_index;
-    const uint8_t pre_sample = *snapshot->get_samples(pre_index, pre_index, get_index());
-    const uint8_t cur_sample = *snapshot->get_samples(_hover_index, _hover_index, get_index());
-    const uint8_t nxt_sample = *snapshot->get_samples(nxt_index, nxt_index, get_index());
-
-    _hover_value = (_hw_offset - cur_sample) * _scale * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
-
-    float top = get_view_rect().top();
-    float bottom = get_view_rect().bottom();
-    float zeroP = _zero_vrate * get_view_rect().height() + top;
-    float pre_x = (pre_index / samples_per_pixel - pixels_offset);
-    const float pre_y = min(max(top, zeroP + (pre_sample - _hw_offset)* _scale), bottom);
-    float x = (_hover_index / samples_per_pixel - pixels_offset);
-    const float y = min(max(top, zeroP + (cur_sample - _hw_offset)* _scale), bottom);
-    float nxt_x = (nxt_index / samples_per_pixel - pixels_offset);
-    const float nxt_y = min(max(top, zeroP + (nxt_sample - _hw_offset)* _scale), bottom);
-    const QRectF slope_rect = QRectF(QPointF(pre_x - 10, pre_y - 10), QPointF(nxt_x + 10, nxt_y + 10));
-    if (abs(y-p.y()) < 20 || slope_rect.contains(p)) {
-        _hover_point = QPointF(x, y);
-        _hover_en = true;
-        return true;
-    } else {
-        return false;
-    }
+    _hover_point = get_point(_hover_index, _hover_value);
+    _hover_en = true;
+    return true;
 }
 
 bool DsoSignal::get_hover(uint64_t &index, QPointF &p, double &value)
@@ -1331,6 +1446,85 @@ bool DsoSignal::get_hover(uint64_t &index, QPointF &p, double &value)
         return true;
     }
     return false;
+}
+
+QPointF DsoSignal::get_point(uint64_t index, float &value)
+{
+    QPointF pt = QPointF(0, 0);
+
+    if (!enabled())
+        return pt;
+
+    const deque< boost::shared_ptr<pv::data::DsoSnapshot> > &snapshots =
+        _data->get_snapshots();
+    if (snapshots.empty())
+        return pt;
+
+    const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
+        snapshots.front();
+    if (snapshot->empty())
+        return pt;
+
+    const double scale = _view->scale();
+    assert(scale > 0);
+    const int64_t pixels_offset = _view->offset();
+    const double samplerate = _view->session().cur_samplerate();
+    const double samples_per_pixel = samplerate * scale;
+
+    if (index >= snapshot->get_sample_count())
+        return pt;
+
+    value = *snapshot->get_samples(index, index, get_index());
+    const float top = get_view_rect().top();
+    const float bottom = get_view_rect().bottom();
+    const int hw_offset = get_hw_offset();
+    const float x = (index / samples_per_pixel - pixels_offset);
+    const float y = min(max(top, get_zero_vpos() + (value - hw_offset)* _scale), bottom);
+    pt = QPointF(x, y);
+
+    return pt;
+}
+
+double DsoSignal::get_voltage(uint64_t index)
+{
+    if (!enabled())
+        return 1;
+
+    const deque< boost::shared_ptr<pv::data::DsoSnapshot> > &snapshots =
+        _data->get_snapshots();
+    if (snapshots.empty())
+        return 1;
+
+    const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
+        snapshots.front();
+    if (snapshot->empty())
+        return 1;
+
+    if (index >= snapshot->get_sample_count())
+        return 1;
+
+    const double value = *snapshot->get_samples(index, index, get_index());
+    const int hw_offset = get_hw_offset();
+    return (hw_offset - value) * _scale *
+            _vDial->get_value() * _vDial->get_factor() *
+            DS_CONF_DSO_VDIVS / get_view_rect().height();
+}
+
+QString DsoSignal::get_voltage(double v, int p, bool scaled)
+{
+    if (scaled)
+        v = v * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
+    else
+        v = v * _scale * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
+    return abs(v) >= 1000 ? QString::number(v/1000.0, 'f', p) + "V" : QString::number(v, 'f', p) + "mV";
+}
+
+QString DsoSignal::get_time(double t)
+{
+    QString str = (abs(t) > 1000000000 ? QString::number(t/1000000000, 'f', 2) + "S" :
+                   abs(t) > 1000000 ? QString::number(t/1000000, 'f', 2) + "mS" :
+                   abs(t) > 1000 ? QString::number(t/1000, 'f', 2) + "uS" : QString::number(t, 'f', 2) + "nS");
+    return str;
 }
 
 } // namespace view

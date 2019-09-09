@@ -87,7 +87,7 @@ public:
 public:
     explicit Viewport(View &parent, View_type type);
 
-	int get_total_height() const;
+    int get_total_height() const;
 
     QPoint get_mouse_point() const;
 
@@ -110,17 +110,17 @@ protected:
 	void paintEvent(QPaintEvent *event);
 
 private:
-	void mousePressEvent(QMouseEvent *event);
-	void mouseMoveEvent(QMouseEvent *event);
+    void mousePressEvent(QMouseEvent *event);
+    void mouseMoveEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
     void mouseDoubleClickEvent(QMouseEvent *event);
-	void wheelEvent(QWheelEvent *event);
+    void wheelEvent(QWheelEvent *event);
     void leaveEvent(QEvent *);
     void resizeEvent(QResizeEvent *e);
 
-    void paintSignals(QPainter& p);
-    void paintProgress(QPainter& p);
-    void paintMeasure(QPainter &p);
+    void paintSignals(QPainter& p, QColor fore, QColor back);
+    void paintProgress(QPainter& p, QColor fore, QColor back);
+    void paintMeasure(QPainter &p, QColor fore, QColor back);
 
     void measure();
 
@@ -128,6 +128,10 @@ private slots:
     void on_trigger_timer();
     void on_drag_timer();
     void set_receive_len(quint64 length);
+
+    void show_contextmenu(const QPoint& pos);
+    void add_cursor_x();
+    void add_cursor_y();
 
 public slots:
     void show_wait_trigger();
@@ -142,11 +146,12 @@ private:
     View_type _type;
     bool _need_update;
 
-    QPixmap *_pixmap;
+    QPixmap pixmap;
+    QMenu *_cmenu;
 
     uint64_t _sample_received;
     QPoint _mouse_point;
-	QPoint _mouse_down_point;
+    QPoint _mouse_down_point;
     int64_t _mouse_down_offset;
     double _curScale;
     int64_t _curOffset;
@@ -211,6 +216,7 @@ private:
     int _waiting_trig;
     bool _dso_trig_moved;
     bool _curs_moved;
+    bool _xcurs_moved;
 };
 
 } // namespace view

@@ -14,44 +14,44 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
 
 regs = {
-	0: 'Product_ID',
-	1: 'Revision_ID',
-	2: 'Motion',
-	3: 'Delta_X',
-	4: 'Delta_Y',
-	5: 'SQUAL',
-	6: 'Shutter_Upper',
-	7: 'Shutter_Lower',
-	8: 'Maximum_Pixel',
-	9: 'Pixel_Sum',
-	0xa: 'Minimum_Pixel',
-	0xb: 'Pixel_Grab',
-	0xd: 'Mouse_Control',
-	0x3a: 'Chip_Reset',
-	0x3f: 'Inv_Rev_ID',
-	0x63: 'Motion_Burst',
+    0: 'Product_ID',
+    1: 'Revision_ID',
+    2: 'Motion',
+    3: 'Delta_X',
+    4: 'Delta_Y',
+    5: 'SQUAL',
+    6: 'Shutter_Upper',
+    7: 'Shutter_Lower',
+    8: 'Maximum_Pixel',
+    9: 'Pixel_Sum',
+    0xa: 'Minimum_Pixel',
+    0xb: 'Pixel_Grab',
+    0xd: 'Mouse_Control',
+    0x3a: 'Chip_Reset',
+    0x3f: 'Inv_Rev_ID',
+    0x63: 'Motion_Burst',
 }
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'adns5020'
     name = 'ADNS-5020'
-    longname = 'Avago ADNS-5020 optical mouse sensor'
-    desc = 'Bidirectional command and data over an SPI-like protocol.'
+    longname = 'Avago ADNS-5020'
+    desc = 'Bidirectional optical mouse sensor protocol.'
     license = 'gplv2+'
     inputs = ['spi']
-    outputs = ['adns5020']
+    outputs = []
+    tags = ['IC', 'PC', 'Sensor']
     annotations = (
-        ('106', 'read', 'Register read commands'),
-        ('108', 'write', 'Register write commands'),
-        ('0', 'warning', 'Warnings'),
+        ('read', 'Register read commands'),
+        ('write', 'Register write commands'),
+        ('warning', 'Warnings'),
     )
     annotation_rows = (
         ('read', 'Read', (0,)),
@@ -60,6 +60,9 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.ss_cmd, self.es_cmd = 0, 0
         self.mosi_bytes = []
 

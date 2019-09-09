@@ -14,8 +14,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 # Systems/addresses (0..31). Items that are not listed are reserved/unknown.
@@ -70,7 +69,7 @@ command = {
         12: ['Standby', 'StBy'],
         13: ['Mute', 'M'],
         14: ['Personal preferences', 'PP'],
-        14: ['Display', 'Disp'],
+        15: ['Display', 'Disp'],
         16: ['Volume up', 'Vol+'],
         17: ['Volume down', 'Vol-'],
         18: ['Brightness up', 'Br+'],

@@ -1,7 +1,8 @@
 /*
- * This file is part of the PulseView project.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
- * Copyright (C) 2016 DreamSourceLab <support@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,139 +19,156 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#ifndef DSVIEW_PV_VIEW_MATHTRACE_H
-#define DSVIEW_PV_VIEW_MATHTRACE_H
+
+#ifndef DSVIEW_PV_MATHTRACE_H
+#define DSVIEW_PV_MATHTRACE_H
 
 #include "trace.h"
 
-#include <list>
-#include <map>
-
 #include <boost/shared_ptr.hpp>
-
-struct srd_channel;
 
 namespace pv {
 
-class SigSession;
-
-namespace data{
+namespace data {
+class Logic;
+class Dso;
+class Analog;
+class DsoSnapshot;
 class MathStack;
 }
 
 namespace view {
 
+class DsoSignal;
+
 class MathTrace : public Trace
 {
     Q_OBJECT
 
-private:
-    static const int UpMargin;
-    static const int DownMargin;
-    static const int RightMargin;
-    static const QString FFT_ViewMode[2];
-
-    static const QString FreqPrefixes[9];
-    static const int FirstSIPrefixPower;
-    static const int LastSIPrefixPower;
-    static const int Pricision;
-    static const int FreqMinorDivNum;
-    static const int TickHeight;
-    static const int VolDivNum;
-
-    static const int DbvRanges[4];
-
-    static const int HoverPointSize;
-
-    static const double VerticalRate;
+public:
+    enum MathSetRegions {
+        DSO_NONE = -1,
+        DSO_VDIAL,
+    };
 
 public:
-    MathTrace(pv::SigSession &session,
-        boost::shared_ptr<pv::data::MathStack> math_stack, int index);
-    ~MathTrace();
+    MathTrace(bool enable, boost::shared_ptr<pv::data::MathStack> math_stack,
+              boost::shared_ptr<view::DsoSignal> dsoSig1,
+              boost::shared_ptr<view::DsoSignal> dsoSig2);
+
+    virtual ~MathTrace();
+
+    float get_scale();
+
+    int get_name_width() const;
+
+    /**
+     *
+     */
+    void update_vDial();
+    void go_vDialPre();
+    void go_vDialNext();
+    uint64_t get_vDialValue() const;
+    uint16_t get_vDialSel() const;
 
     bool enabled() const;
     void set_enable(bool enable);
+    void set_show(bool show);
 
-    void init_zoom();
-    void zoom(double steps, int offset);
-    bool zoom_hit() const;
-    void set_zoom_hit(bool hit);
+    int get_zero_vpos() const;
+    void set_zero_vpos(int pos);
 
-    void set_offset(double delta);
-    double get_offset() const;
+    int src1() const;
+    int src2() const;
 
-    void set_scale(double scale);
-    double get_scale() const;
+    /**
+      *
+      */
+    bool measure(const QPointF &p);
+    QPointF get_point(uint64_t index, float &value);
 
-    void set_dbv_range(int range);
-    int dbv_range() const;
-    std::vector<int> get_dbv_ranges();
 
-    int view_mode() const;
-    void set_view_mode(unsigned int mode);
-    std::vector<QString> get_view_modes_support();
+    /**
+     * Gets the mid-Y position of this signal.
+     */
+    double get_zero_ratio();
 
-    const boost::shared_ptr<pv::data::MathStack>& get_math_stack() const;
+    /**
+     * Sets the mid-Y position of this signal.
+     */
+    void set_zero_vrate(double rate);
 
-    static QString format_freq(double freq, unsigned precision = Pricision);
-
-    bool measure(const QPoint &p);
+    QString get_voltage(double v, int p);
+    QString get_time(double t);
 
     /**
      * Paints the background layer of the trace with a QPainter
      * @param p the QPainter to paint into.
+     * @param left the x-coordinate of the left edge of the signal
+     * @param right the x-coordinate of the right edge of the signal
+     **/
+    void paint_back(QPainter &p, int left, int right, QColor fore, QColor back);
+
+	/**
+	 * Paints the signal with a QPainter
+	 * @param p the QPainter to paint into.
+	 * @param left the x-coordinate of the left edge of the signal.
+	 * @param right the x-coordinate of the right edge of the signal.
+	 **/
+    void paint_mid(QPainter &p, int left, int right, QColor fore, QColor back);
+
+    /**
+     * Paints the signal with a QPainter
+     * @param p the QPainter to paint into.
      * @param left the x-coordinate of the left edge of the signal.
      * @param right the x-coordinate of the right edge of the signal.
      **/
-    void paint_back(QPainter &p, int left, int right);
-
-    /**
-     * Paints the mid-layer of the trace with a QPainter
-     * @param p the QPainter to paint into.
-     * @param left the x-coordinate of the left edge of the signal
-     * @param right the x-coordinate of the right edge of the signal
-     **/
-    void paint_mid(QPainter &p, int left, int right);
-
-    /**
-     * Paints the foreground layer of the trace with a QPainter
-     * @param p the QPainter to paint into.
-     * @param left the x-coordinate of the left edge of the signal
-     * @param right the x-coordinate of the right edge of the signal
-     **/
-    void paint_fore(QPainter &p, int left, int right);
+    void paint_fore(QPainter &p, int left, int right, QColor fore, QColor back);
 
     QRect get_view_rect() const;
 
+    QRectF get_rect(MathSetRegions type, int y, int right);
+
+    bool mouse_wheel(int right, const QPoint pt, const int shift);
+
+    const boost::shared_ptr<pv::data::MathStack>& get_math_stack() const;
+
 protected:
-    void paint_type_options(QPainter &p, int right, const QPoint pt);
+    void paint_type_options(QPainter &p, int right, const QPoint pt, QColor fore);
 
 private:
+    void paint_trace(QPainter &p,
+        int zeroY, int left, const int64_t start, const int64_t end,
+        const double pixels_offset, const double samples_per_pixel);
 
-private slots:
+    void paint_envelope(QPainter &p,
+        int zeroY, int left, const int64_t start, const int64_t end,
+        const double pixels_offset, const double samples_per_pixel);
+
+    void paint_hover_measure(QPainter &p, QColor fore, QColor back);
 
 private:
-    pv::SigSession &_session;
     boost::shared_ptr<pv::data::MathStack> _math_stack;
-
+    boost::shared_ptr<view::DsoSignal> _dsoSig1;
+    boost::shared_ptr<view::DsoSignal> _dsoSig2;
     bool _enable;
-    int _view_mode;
+    bool _show;
 
-    double _vmax;
-    double _vmin;
-    int _dbv_range;
+    dslDial *_vDial;
+    double _ref_min;
+    double _ref_max;
+    float _scale;
 
-    uint64_t _hover_index;
+    double _zero_vrate;
+    float _hw_offset;
+
     bool _hover_en;
+    uint64_t _hover_index;
     QPointF _hover_point;
-    double _hover_value;
-
-    double _scale;
-    double _offset;
+    float _hover_voltage;
 };
 
 } // namespace view
 } // namespace pv
 
-#endif // DSVIEW_PV_VIEW_FFTTRACE_H
+#endif // DSVIEW_PV_MATHTRACE_H

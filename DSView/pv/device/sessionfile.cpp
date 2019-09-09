@@ -35,7 +35,7 @@ sr_dev_inst* SessionFile::dev_inst() const
 	return _sdi;
 }
 
-void SessionFile::use(SigSession *owner) throw(QString)
+void SessionFile::use(SigSession *owner)
 {
 	assert(!_sdi);
 

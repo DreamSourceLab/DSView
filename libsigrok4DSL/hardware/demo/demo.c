@@ -36,11 +36,13 @@ static const int32_t sessions[] = {
     SR_CONF_SAMPLERATE,
     SR_CONF_LIMIT_SAMPLES,
     SR_CONF_PATTERN_MODE,
+    SR_CONF_MAX_HEIGHT,
 };
 
 static const int32_t probeOptions[] = {
     SR_CONF_PROBE_COUPLING,
     SR_CONF_PROBE_VDIV,
+    SR_CONF_PROBE_MAP_DEFAULT,
     SR_CONF_PROBE_MAP_UNIT,
     SR_CONF_PROBE_MAP_MIN,
     SR_CONF_PROBE_MAP_MAX,
@@ -49,6 +51,7 @@ static const int32_t probeOptions[] = {
 static const int32_t probeSessions[] = {
     SR_CONF_PROBE_COUPLING,
     SR_CONF_PROBE_VDIV,
+    SR_CONF_PROBE_MAP_DEFAULT,
     SR_CONF_PROBE_MAP_UNIT,
     SR_CONF_PROBE_MAP_MIN,
     SR_CONF_PROBE_MAP_MAX,
@@ -106,21 +109,24 @@ static void adjust_samplerate(struct demo_context *devc)
 
 static void probe_init(struct sr_dev_inst *sdi)
 {
-    int i;
     GSList *l;
+    struct demo_context *devc = sdi->priv;
+
     for (l = sdi->channels; l; l = l->next) {
         struct sr_channel *probe = (struct sr_channel *)l->data;
+        probe->bits = channel_modes[devc->ch_mode].unit_bits;
         probe->vdiv = 1000;
         probe->vfactor = 1;
         probe->coupling = SR_AC_COUPLING;
-        probe->trig_value = 0x80;
-        probe->vpos = (probe->index == 0 ? 0.5 : -0.5)*probe->vdiv;
-        probe->ms_show = TRUE;
-        for (i = DSO_MS_BEGIN; i < DSO_MS_END; i++)
-            probe->ms_en[i] = default_ms_en[i];
+        probe->trig_value = (1 << (probe->bits - 1));
+        probe->hw_offset = (1 << (probe->bits - 1));
+        probe->offset = probe->hw_offset +
+                        (probe->index - (channel_modes[devc->ch_mode].num - 1) /2.0) * (1 << (probe->bits - 2));
+
+        probe->map_default = TRUE;
         probe->map_unit = probeMapUnits[0];
-        probe->map_min = -1;
-        probe->map_max = 1;
+        probe->map_min = -(probe->vdiv * probe->vfactor * DS_CONF_DSO_VDIVS / 2000.0);
+        probe->map_max = probe->vdiv * probe->vfactor * DS_CONF_DSO_VDIVS / 2000.0;
     }
 }
 
@@ -306,6 +312,9 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_TEST:
         *data = g_variant_new_boolean(FALSE);
         break;
+    case SR_CONF_LANGUAGE:
+        *data = g_variant_new_int16(devc->language);
+        break;
     case SR_CONF_INSTANT:
         *data = g_variant_new_boolean(devc->instant);
         break;
@@ -318,8 +327,11 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_MAX_HEIGHT_VALUE:
         *data = g_variant_new_byte(devc->max_height);
         break;
-    case SR_CONF_PROBE_VPOS:
-        *data = g_variant_new_double(ch->vpos);
+    case SR_CONF_PROBE_OFFSET:
+        *data = g_variant_new_uint16(ch->offset);
+        break;
+    case SR_CONF_PROBE_HW_OFFSET:
+        *data = g_variant_new_uint16(ch->hw_offset);
         break;
     case SR_CONF_PROBE_VDIV:
         *data = g_variant_new_uint64(ch->vdiv);
@@ -355,6 +367,11 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         break;
     case SR_CONF_UNIT_BITS:
         *data = g_variant_new_byte(channel_modes[devc->ch_mode].unit_bits);
+        break;
+    case SR_CONF_PROBE_MAP_DEFAULT:
+        if (!sdi || !ch)
+            return SR_ERR;
+        *data = g_variant_new_boolean(ch->map_default);
         break;
     case SR_CONF_PROBE_MAP_UNIT:
         if (!sdi || !ch)
@@ -496,7 +513,6 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         ret = SR_OK;
     } else if (id == SR_CONF_PROBE_VDIV) {
         tmp_u64 = g_variant_get_uint64(data);
-        ch->vpos = (tmp_u64 * 1.0 / ch->vdiv) * ch->vpos;
         ch->vdiv = tmp_u64;
         sr_dbg("%s: setting VDIV of channel %d to %" PRIu64, __func__,
                ch->index, ch->vdiv);
@@ -506,10 +522,10 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         sr_dbg("%s: setting FACTOR of channel %d to %" PRIu64, __func__,
                ch->index, ch->vfactor);
         ret = SR_OK;
-    } else if (id == SR_CONF_PROBE_VPOS) {
-        //ch->vpos = g_variant_get_double(data);
-        sr_dbg("%s: setting VPOS of channel %d to %lf", __func__,
-               ch->index, ch->vpos);
+    } else if (id == SR_CONF_PROBE_OFFSET) {
+        ch->offset = g_variant_get_uint16(data);
+        sr_dbg("%s: setting OFFSET of channel %d to %d", __func__,
+               ch->index, ch->offset);
         ret = SR_OK;
     } else if (id == SR_CONF_TIMEBASE) {
         devc->timebase = g_variant_get_uint64(data);
@@ -536,14 +552,34 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         sr_dbg("%s: setting channel %d Trigger Value to %d",
             __func__, ch->index, ch->trig_value);
         ret = SR_OK;
+    } else if (id == SR_CONF_PROBE_MAP_DEFAULT) {
+        ch->map_default = g_variant_get_boolean(data);
+        if (ch->map_default) {
+            ch->map_unit = probeMapUnits[0];
+            ch->map_min = -(ch->vdiv * ch->vfactor * DS_CONF_DSO_VDIVS / 2000.0);
+            ch->map_max = ch->vdiv * ch->vfactor * DS_CONF_DSO_VDIVS / 2000.0;
+        }
+        ret = SR_OK;
     } else if (id == SR_CONF_PROBE_MAP_UNIT) {
-        ch->map_unit = g_variant_get_string(data, NULL);
+        if (ch->map_default)
+            ch->map_unit = probeMapUnits[0];
+        else
+            ch->map_unit = g_variant_get_string(data, NULL);
         ret = SR_OK;
     } else if (id == SR_CONF_PROBE_MAP_MIN) {
-        ch->map_min = g_variant_get_double(data);
+        if (ch->map_default)
+            ch->map_min = -(ch->vdiv * ch->vfactor * DS_CONF_DSO_VDIVS / 2000.0);
+        else
+            ch->map_min = g_variant_get_double(data);
         ret = SR_OK;
     } else if (id == SR_CONF_PROBE_MAP_MAX) {
-        ch->map_max = g_variant_get_double(data);
+        if (ch->map_default)
+            ch->map_max = ch->vdiv * ch->vfactor * DS_CONF_DSO_VDIVS / 2000.0;
+        else
+            ch->map_max = g_variant_get_double(data);
+        ret = SR_OK;
+    } else if (id == SR_CONF_LANGUAGE) {
+        devc->language = g_variant_get_int16(data);
         ret = SR_OK;
     } else {
         ret = SR_ERR_NA;
@@ -629,14 +665,12 @@ static void samples_generator(uint16_t *buf, uint64_t size,
     uint64_t i, pre0_i, pre1_i;
     GSList *l;
     struct sr_channel *probe;
-    int offset;
     unsigned int start_rand;
     double span = 1;
     const uint64_t len = ARRAY_SIZE(sinx) - 1;
     const int *pre_buf;
     uint16_t tmp_u16 = 0;
     unsigned int ch_num = en_ch_num(sdi) ? en_ch_num(sdi) : 1;
-    uint64_t index = 0;
 
     switch (devc->sample_generator) {
     case PATTERN_SINE: /* Sine */
@@ -659,11 +693,7 @@ static void samples_generator(uint16_t *buf, uint64_t size,
         break;
     }
 
-    if (sdi->mode == DSO && devc->samples_counter == devc->limit_samples &&
-        size != devc->limit_samples) {
-        for (i = 0; i < devc->limit_samples; i++)
-            *(buf + i) = *(buf + ((i + size)%devc->limit_samples));
-    } else if (sdi->mode == LOGIC) {
+    if (sdi->mode == LOGIC) {
         for (i = 0; i < size; i++) {
             //index = (i/10/g_slist_length(sdi->channels)+start_rand)%len;
             //*(buf + i) = (uint16_t)(((const_dc+pre_buf[index]) << 8) + (const_dc+pre_buf[index]));
@@ -679,23 +709,14 @@ static void samples_generator(uint16_t *buf, uint64_t size,
                 *(buf + i) = *(buf + i - 1);
             }
         }
-//    } else if (sdi->mode == ANALOG) {
-//        for (i = 0; i < size; i++) {
-//            *(buf + i) = 0x8080;
-//            if (i % (int)ceil(size / 7.0))
-//                *(buf + i) = 0x7E7E + (rand() & 0x0300) + (rand() & 0x003);
-//            else if (rand() > INT_MAX / 4)
-//                *(buf + i) = 0x7878 + (rand() & 0x0F00) + (rand() & 0x00F);
-//            else if (rand() < INT_MAX / 8)
-//                *(buf + i) = 0x6060 + (rand() & 0x3F00) + (rand() & 0x03F);
-//        }
     } else {
         if (sdi->mode == DSO) {
-            index = devc->pre_index;
-            span = channel_modes[devc->ch_mode].max_samplerate / devc->cur_samplerate;
+            if (ch_num == 1)
+                span = 2 * channel_modes[devc->ch_mode].max_samplerate / devc->cur_samplerate;
+            else
+                span = channel_modes[devc->ch_mode].max_samplerate / devc->cur_samplerate;
         } else if (sdi->mode == ANALOG) {
             span = len * 20.0 / devc->limit_samples;
-            index = 0;
         }
 
         if (devc->pre_index == 0) {
@@ -703,52 +724,51 @@ static void samples_generator(uint16_t *buf, uint64_t size,
             devc->mstatus.ch0_min = 255;
             devc->mstatus.ch1_max = 0;
             devc->mstatus.ch1_min = 255;
-            devc->mstatus.ch0_period = 0;
-            devc->mstatus.ch0_pcnt = 1;
-            devc->mstatus.ch1_period = 0;
-            devc->mstatus.ch1_pcnt = 1;
+            devc->mstatus.ch0_cyc_tlen = 0;
+            devc->mstatus.ch0_cyc_cnt = 1;
+            devc->mstatus.ch1_cyc_tlen = 0;
+            devc->mstatus.ch1_cyc_cnt = 1;
+            devc->mstatus.ch0_level_valid = TRUE;
+            devc->mstatus.ch0_plevel = TRUE;
+            devc->mstatus.ch1_level_valid = TRUE;
+            devc->mstatus.ch1_plevel = TRUE;
         }
 
         if (sdi->mode == DSO)
-            memset(buf+devc->pre_index, 0, size*sizeof(uint16_t));
+            memset(buf, 0, size*sizeof(uint16_t));
         else if (sdi->mode == ANALOG)
             memset(buf, 0, size*sizeof(uint16_t));
 
         for (l = sdi->channels; l; l = l->next) {
-            if (sdi->mode == DSO)
-                start_rand = (devc->pre_index == 0) ? rand()%len : 0;
-            else
-                start_rand = devc->pre_index * span;
+            start_rand = devc->pre_index * span;
             probe = (struct sr_channel *)l->data;
-            offset = ceil((0.5 - (probe->vpos/probe->vdiv/10.0)) * 255);
-            //offset = 128;
             pre0_i = devc->pre_index;
             pre1_i = devc->pre_index;
-            for (i = index; i < index + size; i++) {
+            for (i = 0; i < size; i++) {
                 if (probe->coupling == SR_DC_COUPLING) {
-                    *(buf + i) += (uint8_t)(offset + (1000.0/probe->vdiv) * (pre_buf[(uint64_t)(i*span+start_rand)%len] - const_dc)) << (probe->index * 8);
+                    *(buf + i) += (uint8_t)(probe->hw_offset + (1000.0/probe->vdiv) * (pre_buf[(uint64_t)(i*span+start_rand)%len] - const_dc)) << (probe->index * 8);
                 } else if (probe->coupling == SR_AC_COUPLING) {
-                    *(buf + i) += (uint8_t)(offset + (1000.0/probe->vdiv) * pre_buf[(uint64_t)(i*span+start_rand)%len]) << (probe->index * 8);
+                    *(buf + i) += (uint8_t)(probe->hw_offset + (1000.0/probe->vdiv) * pre_buf[(uint64_t)(i*span+start_rand)%len]) << (probe->index * 8);
                 } else {
-                    *(buf + i) += offset << (probe->index * 8);
+                    *(buf + i) += probe->hw_offset << (probe->index * 8);
                 }
 
                 if (probe->index == 0) {
                     devc->mstatus.ch0_max = MAX(devc->mstatus.ch0_max, (*(buf + i) & 0x00ff));
                     devc->mstatus.ch0_min = MIN(devc->mstatus.ch0_min, (*(buf + i) & 0x00ff));
-                    if (i > devc->pre_index &&
-                        pre_buf[(uint64_t)(i*span+start_rand)%len] < 0 &&
+                    if (pre_buf[(uint64_t)(i*span+start_rand)%len] < 0 &&
                         pre_buf[(uint64_t)((i-1)*span+start_rand)%len] > 0) {
-                        devc->mstatus.ch0_period = 2*(i - pre0_i)*pow(10, 8)/channel_modes[devc->ch_mode].max_samplerate;
+                        devc->mstatus.ch0_cyc_tlen = 2*(i - pre0_i)*pow(10, 8)/channel_modes[devc->ch_mode].max_samplerate;
+                        devc->mstatus.ch0_cyc_cnt++;
                         pre0_i = i;
                     }
                 } else {
                     devc->mstatus.ch1_max = MAX(devc->mstatus.ch1_max, ((*(buf + i) & 0xff00) >> 8));
                     devc->mstatus.ch1_min = MIN(devc->mstatus.ch1_min, ((*(buf + i) & 0xff00) >> 8));
-                    if (i > devc->pre_index &&
-                        pre_buf[(uint64_t)(i*span+start_rand)%len] < 0 &&
+                    if (pre_buf[(uint64_t)(i*span+start_rand)%len] < 0 &&
                         pre_buf[(uint64_t)((i-1)*span+start_rand)%len] > 0) {
-                        devc->mstatus.ch1_period = 2*(i - pre1_i)*pow(10, 8)/channel_modes[devc->ch_mode].max_samplerate;
+                        devc->mstatus.ch1_cyc_tlen = 2*(i - pre1_i)*pow(10, 8)/channel_modes[devc->ch_mode].max_samplerate;
+                        devc->mstatus.ch1_cyc_cnt++;
                         pre1_i = i;
                     }
                 }
@@ -765,6 +785,39 @@ static void samples_generator(uint16_t *buf, uint64_t size,
                 break;
             }
         }
+
+        devc->mstatus.ch0_cyc_tlen *= devc->mstatus.ch0_cyc_cnt;
+        devc->mstatus.ch1_cyc_tlen *= devc->mstatus.ch1_cyc_cnt;
+
+        devc->mstatus.ch0_high_level = devc->mstatus.ch0_max;
+        devc->mstatus.ch0_low_level = devc->mstatus.ch0_min;
+        devc->mstatus.ch1_high_level = devc->mstatus.ch1_max;
+        devc->mstatus.ch1_low_level = devc->mstatus.ch1_min;
+        devc->mstatus.ch0_cyc_llen = 0;
+        devc->mstatus.ch1_cyc_llen = 0;
+        devc->mstatus.ch0_cyc_plen = devc->mstatus.ch0_cyc_tlen / 2;
+        devc->mstatus.ch1_cyc_plen = devc->mstatus.ch1_cyc_tlen / 2;
+        devc->mstatus.ch0_cyc_rlen = devc->mstatus.ch0_cyc_tlen / 4;
+        devc->mstatus.ch0_cyc_flen = devc->mstatus.ch0_cyc_tlen / 4;
+        devc->mstatus.ch1_cyc_rlen = devc->mstatus.ch1_cyc_tlen / 4;
+        devc->mstatus.ch1_cyc_flen = devc->mstatus.ch1_cyc_tlen / 4;
+
+        for (l = sdi->channels; l; l = l->next) {
+            probe = (struct sr_channel *)l->data;
+            if (probe->index == 0) {
+                devc->mstatus.ch0_acc_mean = (probe->coupling == SR_AC_COUPLING) ? probe->hw_offset * devc->limit_samples_show :
+                                             (devc->mstatus.ch0_max + devc->mstatus.ch0_min) / 2.0 * devc->limit_samples_show;
+                devc->mstatus.ch0_acc_square = (probe->coupling == SR_AC_COUPLING) ? pow((devc->mstatus.ch0_max - probe->hw_offset) * 0.707, 2) * devc->limit_samples_show :
+                                               pow((devc->mstatus.ch0_max - devc->mstatus.ch0_min) * 0.707, 2) * devc->limit_samples_show;
+            } else {
+                devc->mstatus.ch1_acc_mean = (probe->coupling == SR_AC_COUPLING) ? probe->hw_offset * devc->limit_samples_show :
+                                             (devc->mstatus.ch1_max + devc->mstatus.ch1_min) / 2.0 * devc->limit_samples_show;
+                devc->mstatus.ch1_acc_square = (probe->coupling == SR_AC_COUPLING) ? pow((devc->mstatus.ch1_max - probe->hw_offset) * 0.707, 2) * devc->limit_samples_show :
+                                               pow((devc->mstatus.ch1_max - devc->mstatus.ch1_min) * 0.707, 2) * devc->limit_samples_show;
+            }
+        }
+
+        devc->mstatus.measure_valid = TRUE;
     }
 }
 
@@ -798,12 +851,8 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
     if (devc->limit_samples) {
         if (sdi->mode == DSO && !devc->instant) {
             samples_to_send = ceil(samples_elaspsed);
-            samples_to_send = MIN(samples_to_send,
-                                  devc->limit_samples - devc->pre_index);
         } else if (sdi->mode == ANALOG) {
             samples_to_send = ceil(samples_elaspsed);
-            samples_to_send = MIN(samples_to_send,
-                                  devc->limit_samples - devc->pre_index);
         } else {
             samples_to_send = ceil(samples_elaspsed);
             samples_to_send += devc->samples_not_sent;
@@ -820,8 +869,22 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
 
     if (samples_to_send > 0 && !devc->stop) {
         sending_now = MIN(samples_to_send, (sdi->mode == DSO ) ? DSO_BUFSIZE : BUFSIZE);
+        if (sdi->mode == DSO && !devc->instant) {
+            if (en_ch_num(sdi) == 1) {
+                devc->samples_counter += sending_now / 2;
+                devc->samples_counter = min(devc->samples_counter, devc->limit_samples_show / 2);
+            } else {
+                devc->samples_counter += sending_now;
+                devc->samples_counter = min(devc->samples_counter, devc->limit_samples_show);
+            }
+        } else {
+            devc->samples_counter += sending_now;
+        }
+
         if (sdi->mode == ANALOG)
             samples_generator(devc->buf, sending_now*2, sdi, devc);
+        else if (sdi->mode == DSO)
+            samples_generator(devc->buf, devc->samples_counter, sdi, devc);
         else
             samples_generator(devc->buf, sending_now, sdi, devc);
 
@@ -855,11 +918,6 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
                 sr_session_send(sdi, &packet);
             }
         }
-
-        devc->samples_counter += sending_now;
-        if (sdi->mode == DSO && !devc->instant &&
-            devc->samples_counter > devc->limit_samples)
-            devc->samples_counter = devc->limit_samples;
 
         if (devc->trigger_stage == 0){
             //samples_to_send -= sending_now;
@@ -896,11 +954,12 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
             }
 
             if (sdi->mode == DSO && !devc->instant) {
-                devc->pre_index += sending_now;
-                if (devc->pre_index >= devc->limit_samples)
+                if ((uint64_t)dso.num_samples < devc->limit_samples_show)
                     devc->pre_index = 0;
+                else
+                    devc->pre_index += sending_now;
             } else if (sdi->mode == ANALOG) {
-                devc->pre_index =(devc->pre_index + sending_now) % devc->limit_samples;
+                devc->pre_index += sending_now;
             }
 
             sr_session_send(sdi, &packet);

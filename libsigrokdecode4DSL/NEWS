@@ -1,22 +1,174 @@
-0.4.1 (2016-12-27)
+0.5.2 (2018-09-12)
 ------------------
 
-Note: This release does NOT change the libsigrokdecode public C API. This
-means existing libsigrokdecode frontends should not require any changes.
-However, individual PDs and their output changed, which may require
-some adaptations on the user's side in some cases.
+Note: This release does NOT change the libsigrokdecode public C API in
+incompatible ways. This means existing frontends should not require any
+changes. However, individual PDs and their output changed, which may
+require some adaptations on the user's side in some cases.
 
  * New supported protocol decoders:
+   - mcs48            Intel MCS-48 external memory access protocol
+   - st7735           Sitronix ST7735 TFT controller protocol
+   - atsha204a        Microchip ATSHA204A CryptoAuthentication device
+   - cfp              100 Gigabit C form-factor pluggable (CFP) protocol
+   - jtag_ejtag       MIPS EJTAG protocol
+   - swim             STM8 Single Wire Interface Module (SWIM) protocol
+   - cec              HDMI Consumer Electronics Control (CEC) protocol
+   - miller           Miller encoding protocol
+   - ook              On-off keying protocol
+   - ook_oregon       Oregon Scientific weather sensor protocol
+   - ook_vis          OOK visualisation in various formats
+ * Various minor performance improvements in the backend.
+ * Fix an issue causing decoder termination to take a long time.
+ * Fix multiple self.put() memory leaks (bug #329).
+ * Fix multiple memory leaks reported by scan-build.
+ * Show a backtrace when the decode aborts due to an error (bug #1158).
+ * Perform the log level check for non-default handlers as well (bug #698).
+ * Fix multiple compiler warnings.
+ * Compiler: Add -Wshadow -Wformat=2 -Wno-format-nonliteral -Wfloat-equal.
+ * Build system: Add Python 3.7 support.
+ * Fix a 'make install' issue that happens with Python >= 3.7.
+ * Add two missing Python GIL release operations.
+ * libsigrokdecode API changes:
+   - Add the srd_log_callback_get() API call.
+   - Add the SRD_ERR_TERM_REQ error code.
+ * dcf77:
+   - Annotate invalid dow and month fields, do not abort execution (bug #1173).
+   - Annotate unexpected bit numbers and values, do not abort execution.
+ * spiflash:
+   - Add basic Adesto AT45DBxx support (WRITE1/2, STATUS).
+   - Add Adesto AT45DB161E metadata.
+ * jtag:
+   - Fix shifting of registers (bug #1066).
+ * jtag_stm32:
+   - Fix handling of boundary scan TAP and incorrect state transitions.
+ * eeprom24xx:
+   - Add ON Semi CAT24C256 and CAT24M01 support.
+ * counter:
+   - Emit wider annotations to improve readability in UIs (bug #1210).
+   - Add support for user specified initial counter values (bug #1229).
+   - Add an option to ignore a certain number of edges.
+   - Let the user decide how to handle the initial dead_cycles state.
+ * mdio:
+   - Accept MDIO READ without previous ADDRESS command (bug #1258).
+ * edid:
+   - Add support for extension blocks.
+   - Various annotation improvements.
+ * spi:
+   - Fix an issue causing an AttributeError during certain decodes.
+ * usb_power_delivery:
+   - Emit more details in annotations (power, PDO type, RDO info).
+   - Add PPS support.
+   - Add better USB Power Delivery 3.0 support.
+
+0.5.1 (2018-04-12)
+------------------
+
+Note: This release does NOT change the libsigrokdecode public C API in
+incompatible ways. This means existing frontends should not require any
+changes. However, individual PDs and their output changed, which may
+require some adaptations on the user's side in some cases.
+
+ * New supported protocol decoders:
+   - ac97             Audio and modem control for PC systems
+   - ds243x           Maxim DS243x series 1-Wire EEPROM protocol
+   - maple_bus        Maple bus peripheral protocol for SEGA Dreamcast
+   - morse            Demodulated morse code protocol
+   - graycode         Accumulate rotary encoder increments, timing statistics
+   - counter          Count number of edges
+   - sda2506          Serial nonvolatile 1-Kbit EEPROM
+   - rc_encode        PT2262/HX2262/SC5262 remote control encoder protocol
+ * Updated build requirements:
+   - libglib >= 2.34
+ * New API calls:
+   - srd_searchpaths_get(): Retrieve PD search paths.
+   - srd_session_terminate_reset(): Terminate currently executing decoders
+     in a session, reset internal state. Allows re-using a session.
+ * can:
+   - Introduce clock synchronization (bug #990).
+   - Fix incorrect stuff bit handling (bug #1085).
+ * i2c:
+   - Don't drop the first sample of input data.
+   - Make input samplerate optional (bug #1076).
+ * i2s:
+   - Binary output: Make 32-bit WAV files, set file size to 4GB.
+   - Fix unportable use of struct.pack().
+   - Make samplerate meta data optional.
+ * stepper_motor:
+   - Make samplerate meta data optional.
+ * pwm:
+   - Fixup sample numbers for binary output.
+ * onewire_network:
+   - Fixup start samplenumber for annotations.
+ * lpc:
+   - Improve robustness when decoding unexpected input data.
+ * ir_nec:
+   - Make timing margin relative.
+   - Optionally accept input signals that include the carrier.
+ * usb_request:
+   - Handle CONTROL transfer protocol stalls.
+ * usb_power_delivery:
+   - Enforce numerical order of RDO/PDO flag annotations, enforce check
+     order for start-of-packet sequences (bug #1090).
+ * parallel:
+   - Cope with sparse input maps, assume zero for unconnected pins (bug #1088).
+   - Unbreak and improve "word" de-multiplexing.
+   - Implement consistent number formatting.
+   - Expand 'wordsize' description (bits vs cycles).
+ * spi:
+   - Cope when a sample rate of 0 was configured (bug #1118).
+ * Acquire/release the Python GIL where needed to avoid threading issues.
+   This allows frontends to call libsigrokdecode API functions from different
+   threads without running into issues.
+ * Convert all protocol decoders to PD API version 3.
+ * Support for the old PD API version 2 has been removed.
+ * Unbreak the execution of Decoder.wait() with empty condition.
+ * self.wait(): Accept more forms of "unconditional wait" (None, no args).
+ * Fix a compiler warning on Mac OS X.
+ * configure.ac: Add missing PKG_PROG_PKG_CONFIG and AC_C_BIGENDIAN.
+ * Add a reset() method to all PDs which resets internal variable state.
+ * Clarify and improve channel mapping debug output.
+ * Print decoder and system search paths in debug output.
+ * Drop overly verbose log messages about (un)loading PDs.
+ * HACKING: Prefer git pull requests over mailing list patches.
+
+0.5.0 (2017-06-12)
+------------------
+
+Note: This release DOES change the libsigrokdecode public C API. This
+means it is NOT backwards-compatible and frontends will need updates.
+
+ * New supported protocol decoders:
+   - ade77xx          Poly phase multifunction energy metering IC protocol
+   - adf435x          Wideband synthesizer with integrated VCO
    - aud              Renesas/Hitachi Advanced User Debugger (AUD) protocol
    - avr_pdi          Atmel proprietary interface for the ATxmega MCU
+   - dali             DALI lighting control protocol
+   - dsi              DSI lighting control protocol
    - dmx512           Professional lighting control protocol
+   - eeprom93xx       93xx series Microwire EEPROM protocol (bug #931)
    - em4305           EM4205/EM4305 100-150kHz RFID protocol
    - gpib             IEEE-488 GPIB / HPIB protocol
+   - iec              Commodore serial IEEE-488 (IEC) bus protocol
+   - microwire        3-wire, half-duplex, synchronous serial bus (bug #931)
    - ps2              PS/2 keyboard/mouse interface
    - rgb_led_ws281x   RGB LED string protocol (WS281x)
    - ssi32            Synchronous Serial Interface (32bit) protocol
    - t55xx            T55xx 100-150kHz RFID protocol
    - wiegand          Wiegand interface for electronic entry systems
+ * Add support for the new query-based PD v3 decoder API.
+   - Decoders using PD v3 API can benefit from both readability improvements
+     as well as performance improvements. Up to 10x speedup has been measured
+     in some situations (depends a lot on the decoder, the amount of data,
+     the amount of edges in the signals, and the amount of oversampling).
+   - The majority of all decoders have been converted to PD API v3.
+   - For the time being, both APIs (2 and 3) will remain supported until all
+     decoders have been converted to API version 3. Then, support for API
+     version 2 will be dropped.
+ * Add support for specifying the (assumed) initial pin states before the
+   first sample that is being decoded. This can be set to 0/low, 1/high, or
+   to "use the same value as in the first sample".
+ * Add support for adding multiple instances of a decoder (bug #868).
  * Introduce a decoders/common facility for code shared between PDs (bug #804).
  * Supply metadata to all stacked decoders, not just low-level ones (bug #664).
  * Various Doxygen/documentation improvements.
@@ -45,6 +197,8 @@ some adaptations on the user's side in some cases.
    - Various annotation improvements.
  * timing:
    - Add frequency and averaging support.
+   - Disable averaging feature if it's set to zero.
+   - Add edge-edge mode and delta calculation.
  * midi:
    - Decode note names and percussion names (e.g. 'G2', 'Tambourine').
    - Decode instrument names and drum_kit names (e.g. 'GS Orchestra Kit').
@@ -80,11 +234,30 @@ some adaptations on the user's side in some cases.
    - Default to hex format datavalue annotations.
  * spi:
    - Fix binary output for wordsizes > 8 (bug #686).
+ * sdcard_sd:
+   - Don't try to decode commands that are not yet supported.
+   - Always show CMD argument in hex.
+   - Fix incorrect CMD8 annotations.
+ * can:
+   - Add warnings for various invalid bits and fields.
+   - Skip stuff bit inspection where not applicable (bug #656).
+ * eeprom24xx:
+   - Add Xicor X24C02 support.
+ * onewire_link:
+   - Replace PD with a new, improved implementation (bugs #666, #926).
+   - Overdrive speed is now detected automatically.
+   - Some no longer needed decoder options have been dropped.
  * Various decoders:
    - Fix some incorrect PD license metadata fields.
    - Fix typos, whitespace issues and random other cosmetics in some PDs.
    - Use consistent __init__() format across all PDs.
    - Move some duplicated code snippets/lists to decoders/common.
+ * Rename the maxim_ds28ea00 decoder to ds28ea00.
+ * Show library versions in the debug output.
+ * configure: Also check for Python 3.6.
+ * configure summary: Show build type (static/shared) and linker flags.
+ * Remove FSF postal address from boiler plate license text.
+ * HACKING: Update URL to Linux kernel coding style.
 
 0.4.0 (2016-01-29)
 ------------------

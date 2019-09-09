@@ -14,8 +14,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
@@ -27,14 +26,15 @@ class Ann:
 Bit = namedtuple('Bit', 'val ss es')
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'ps2'
     name = 'PS/2'
     longname = 'PS/2'
     desc = 'PS/2 keyboard/mouse interface.'
     license = 'gplv2+'
     inputs = ['logic']
-    outputs = ['ps2']
+    outputs = []
+    tags = ['PC']
     channels = (
         {'id': 'clk', 'name': 'Clock', 'desc': 'Clock line'},
         {'id': 'data', 'name': 'Data', 'desc': 'Data line'},
@@ -54,11 +54,11 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.bits = []
-        self.prev_pins = None
-        self.prev_clock = None
         self.samplenum = 0
-        self.clock_was_high = False
         self.bitcount = 0
 
     def start(self):
@@ -115,31 +115,8 @@ class Decoder(srd.Decoder):
 
         self.bits, self.bitcount = [], 0
 
-    def find_clk_edge(self, clock_pin, data_pin):
-        # Ignore sample if the clock pin hasn't changed.
-        if clock_pin == self.prev_clock:
-            return
-        self.prev_clock = clock_pin
-
-        # Sample on falling clock edge.
-        if clock_pin == 1:
-            return
-
-        # Found the correct clock edge, now get the bits.
-        self.handle_bits(data_pin)
-
-    def decode(self, ss, es, data):
-        for (self.samplenum, pins) in data:
-            data.itercnt += 1
-            clock_pin, data_pin = pins[0], pins[1]
-
-            # Ignore identical samples.
-            if self.prev_pins == pins:
-                continue
-            self.prev_pins = pins
-
-            if clock_pin == 0 and not self.clock_was_high:
-                continue
-            self.clock_was_high = True
-
-            self.find_clk_edge(clock_pin, data_pin)
+    def decode(self):
+        while True:
+            # Sample data bits on falling clock edge.
+            (clock_pin, data_pin) = self.wait({0: 'f'})
+            self.handle_bits(data_pin)

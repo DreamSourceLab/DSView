@@ -144,7 +144,7 @@ QGridLayout * DeviceOptions::get_property_form(QWidget * parent)
     BOOST_FOREACH(boost::shared_ptr<pv::prop::Property> p, properties)
 	{
 		assert(p);
-        const QString label = p->labeled_widget() ? QString() : p->name();
+        const QString label = p->labeled_widget() ? QString() : p->label();
         layout->addWidget(new QLabel(label, parent), i, 0);
         if (label == tr("Operation Mode"))
             layout->addWidget(p->get_widget(parent, true), i, 1);
@@ -196,7 +196,8 @@ void DeviceOptions::logic_probes(QGridLayout &layout)
                         ch_opts->setChecked(true);
                 }
             }
-            g_variant_unref(gvar_opts);
+            if (gvar_opts)
+                g_variant_unref(gvar_opts);
         }
     }
 
@@ -307,12 +308,14 @@ void DeviceOptions::zero_adj()
     dialogs::DSMessageBox msg(this);
     msg.mBox()->setText(tr("Information"));
     msg.mBox()->setInformativeText(tr("Auto Calibration program will be started. Please keep all channels out of singal input. It can take a while!"));
-    //msg.mBox()->setStandardButtons(QMessageBox::);
     msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
     msg.mBox()->addButton(tr("Cancel"), QMessageBox::RejectRole);
     msg.mBox()->setIcon(QMessageBox::Information);
+
     if (msg.exec()) {
         _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO, g_variant_new_boolean(true));
+    } else {
+        _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO, g_variant_new_boolean(false));
     }
 }
 
@@ -362,6 +365,22 @@ void DeviceOptions::channel_check()
     text.remove('&');
     if(sc != NULL)
         _dev_inst->set_config(NULL, NULL, SR_CONF_CHANNEL_MODE, g_variant_new_string(text.toUtf8().data()));
+    dynamic_widget(_dynamic_layout);
+    _dynamic_box->setVisible(_dynamic_box->title() != NULL);
+}
+
+void DeviceOptions::analog_channel_check()
+{
+    QCheckBox* sc=dynamic_cast<QCheckBox*>(sender());
+    if(sc != NULL) {
+        for (const GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next) {
+            sr_channel *const probe = (sr_channel*)l->data;
+            assert(probe);
+            if (sc->property("index").toInt() == probe->index)
+               _dev_inst->set_config(probe, NULL, SR_CONF_PROBE_MAP_DEFAULT,
+                                     g_variant_new_boolean(sc->isChecked()));
+        }
+    }
     dynamic_widget(_dynamic_layout);
     _dynamic_box->setVisible(_dynamic_box->title() != NULL);
 }
@@ -491,7 +510,6 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
         probe_layout->addWidget(en_label, 0, 0, 1, 1);
         probe_layout->addWidget(probe_checkBox, 0, 1, 1, 3);
 
-
         pv::prop::binding::ProbeOptions *probe_options_binding =
                 new pv::prop::binding::ProbeOptions(_dev_inst->dev_inst(), probe);
         const vector< boost::shared_ptr<pv::prop::Property> > &properties =
@@ -500,9 +518,26 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
         BOOST_FOREACH(boost::shared_ptr<pv::prop::Property> p, properties)
         {
             assert(p);
-            probe_layout->addWidget(new QLabel(p->name(), probe_widget), i, 0, 1, 1);
-            QWidget *pow = p->get_widget(probe_widget);
+            const QString label = p->labeled_widget() ? QString() : p->label();
+            probe_layout->addWidget(new QLabel(label, probe_widget), i, 0, 1, 1);
+
+            QWidget * pow = p->get_widget(probe_widget);
             pow->setEnabled(probe_checkBox->isChecked());
+            if (p->name().contains("Map Default")) {
+                pow->setProperty("index", probe->index);
+                connect(pow, SIGNAL(clicked()), this, SLOT(analog_channel_check()));
+            } else {
+                if (probe_checkBox->isChecked() && p->name().contains("Map")) {
+                    bool map_default = true;
+                    GVariant* gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_MAP_DEFAULT);
+                    if (gvar != NULL) {
+                        map_default =g_variant_get_boolean(gvar);
+                        g_variant_unref(gvar);
+                    }
+                    if (map_default)
+                        pow->setEnabled(false);
+                }
+            }
             probe_layout->addWidget(pow, i, 1, 1, 3);
             i++;
         }

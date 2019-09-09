@@ -14,8 +14,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
@@ -60,19 +59,23 @@ status = {
 }
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'mxc6225xu'
     name = 'MXC6225XU'
     longname = 'MEMSIC MXC6225XU'
     desc = 'Digital Thermal Orientation Sensor (DTOS) protocol.'
     license = 'gplv2+'
     inputs = ['i2c']
-    outputs = ['mxc6225xu']
+    outputs = []
+    tags = ['IC', 'Sensor']
     annotations = (
         ('text', 'Human-readable text'),
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.state = 'IDLE'
 
     def start(self):

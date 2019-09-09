@@ -104,9 +104,9 @@ find_package(FFTW REQUIRED)
 set(DS_TITLE DSView)
 set(DS_DESCRIPTION "A GUI for instruments of DreamSourceLab")
 
-set(DS_VERSION_MAJOR 0)
-set(DS_VERSION_MINOR 9)
-set(DS_VERSION_MICRO 9)
+set(DS_VERSION_MAJOR 1)
+set(DS_VERSION_MINOR 0)
+set(DS_VERSION_MICRO 0)
 set(DS_VERSION_STRING
 	${DS_VERSION_MAJOR}.${DS_VERSION_MINOR}.${DS_VERSION_MICRO}
 )
@@ -121,95 +121,102 @@ configure_file (
 #-------------------------------------------------------------------------------
 
 set(DSView_SOURCES
-    main.cpp 
-    pv/sigsession.cpp 
-    pv/mainwindow.cpp 
-    pv/devicemanager.cpp 
-    pv/data/snapshot.cpp 
-    pv/data/signaldata.cpp 
-    pv/data/logicsnapshot.cpp 
-    pv/data/logic.cpp 
-    pv/data/analogsnapshot.cpp 
-    pv/data/analog.cpp 
-    pv/dialogs/deviceoptions.cpp 
-    pv/prop/property.cpp 
-    pv/prop/int.cpp 
-    pv/prop/enum.cpp 
-    pv/prop/double.cpp 
-    pv/prop/bool.cpp 
-    pv/prop/binding/binding.cpp 
-    pv/toolbars/samplingbar.cpp 
-    pv/view/viewport.cpp 
-    pv/view/view.cpp 
-    pv/view/timemarker.cpp 
-    pv/view/signal.cpp 
-    pv/view/ruler.cpp 
-    pv/view/logicsignal.cpp 
-    pv/view/header.cpp 
-    pv/view/cursor.cpp 
-    pv/view/analogsignal.cpp 
-    pv/prop/binding/deviceoptions.cpp 
-    pv/toolbars/trigbar.cpp 
-    pv/toolbars/filebar.cpp 
-    pv/dock/protocoldock.cpp 
-    pv/dock/triggerdock.cpp 
-    pv/dock/measuredock.cpp 
-    pv/dock/searchdock.cpp 
-    pv/toolbars/logobar.cpp 
-    pv/data/groupsnapshot.cpp 
-    pv/view/groupsignal.cpp 
-    pv/data/group.cpp 
-    pv/dialogs/about.cpp 
-    pv/dialogs/search.cpp 
-    pv/data/dsosnapshot.cpp 
+    main.cpp
+    pv/sigsession.cpp
+    pv/mainwindow.cpp
+    pv/devicemanager.cpp
+    pv/data/snapshot.cpp
+    pv/data/signaldata.cpp
+    pv/data/logicsnapshot.cpp
+    pv/data/logic.cpp
+    pv/data/analogsnapshot.cpp
+    pv/data/analog.cpp
+    pv/dialogs/deviceoptions.cpp
+    pv/prop/property.cpp
+    pv/prop/int.cpp
+    pv/prop/enum.cpp
+    pv/prop/double.cpp
+    pv/prop/bool.cpp
+    pv/prop/binding/binding.cpp
+    pv/toolbars/samplingbar.cpp
+    pv/view/viewport.cpp
+    pv/view/view.cpp
+    pv/view/timemarker.cpp
+    pv/view/signal.cpp
+    pv/view/ruler.cpp
+    pv/view/logicsignal.cpp
+    pv/view/header.cpp
+    pv/view/cursor.cpp
+    pv/view/analogsignal.cpp
+    pv/prop/binding/deviceoptions.cpp
+    pv/toolbars/trigbar.cpp
+    pv/toolbars/filebar.cpp
+    pv/dock/protocoldock.cpp
+    pv/dock/triggerdock.cpp
+    pv/dock/measuredock.cpp
+    pv/dock/searchdock.cpp
+    pv/toolbars/logobar.cpp
+    pv/data/groupsnapshot.cpp
+    pv/view/groupsignal.cpp
+    pv/data/group.cpp
+    pv/dialogs/about.cpp
+    pv/dialogs/search.cpp
+    pv/data/dsosnapshot.cpp
     pv/data/dso.cpp
-    pv/view/dsosignal.cpp 
-    pv/view/dsldial.cpp 
-    pv/dock/dsotriggerdock.cpp 
-    pv/view/trace.cpp 
-    pv/view/selectableitem.cpp 
-    pv/data/decoderstack.cpp 
-    pv/data/decode/rowdata.cpp 
-    pv/data/decode/row.cpp 
-    pv/data/decode/decoder.cpp 
-    pv/data/decode/annotation.cpp 
-    pv/view/decodetrace.cpp 
-    pv/prop/binding/decoderoptions.cpp 
-    pv/widgets/fakelineedit.cpp 
-    pv/widgets/decodermenu.cpp 
-    pv/widgets/decodergroupbox.cpp 
-    pv/prop/string.cpp 
-    pv/device/sessionfile.cpp 
-    pv/device/inputfile.cpp 
-    pv/device/file.cpp 
-    pv/device/devinst.cpp 
-    pv/dialogs/storeprogress.cpp 
-    pv/storesession.cpp 
-    pv/view/devmode.cpp 
-    pv/device/device.cpp 
-    pv/dialogs/waitingdialog.cpp 
-    pv/dialogs/dsomeasure.cpp 
-    pv/dialogs/calibration.cpp 
-    pv/data/decodermodel.cpp 
-    pv/dialogs/protocollist.cpp 
-    pv/dialogs/protocolexp.cpp 
-    pv/dialogs/fftoptions.cpp 
-    pv/data/mathstack.cpp 
-    pv/view/mathtrace.cpp 
-    dsapplication.cpp 
-    pv/widgets/viewstatus.cpp 
-    pv/toolbars/titlebar.cpp 
-    pv/mainframe.cpp 
-    pv/widgets/border.cpp 
-    pv/dialogs/dsmessagebox.cpp 
-    pv/dialogs/shadow.cpp 
+    pv/view/dsosignal.cpp
+    pv/view/dsldial.cpp
+    pv/dock/dsotriggerdock.cpp
+    pv/view/trace.cpp
+    pv/view/selectableitem.cpp
+    pv/data/decoderstack.cpp
+    pv/data/decode/rowdata.cpp
+    pv/data/decode/row.cpp
+    pv/data/decode/decoder.cpp
+    pv/data/decode/annotation.cpp
+    pv/view/decodetrace.cpp
+    pv/prop/binding/decoderoptions.cpp
+    pv/widgets/fakelineedit.cpp
+    pv/widgets/decodermenu.cpp
+    pv/widgets/decodergroupbox.cpp
+    pv/prop/string.cpp
+    pv/device/sessionfile.cpp
+    pv/device/inputfile.cpp
+    pv/device/file.cpp
+    pv/device/devinst.cpp
+    pv/dialogs/storeprogress.cpp
+    pv/storesession.cpp
+    pv/view/devmode.cpp
+    pv/device/device.cpp
+    pv/dialogs/waitingdialog.cpp
+    pv/dialogs/dsomeasure.cpp
+    pv/dialogs/calibration.cpp
+    pv/data/decodermodel.cpp
+    pv/dialogs/protocollist.cpp
+    pv/dialogs/protocolexp.cpp
+    pv/dialogs/fftoptions.cpp
+    pv/data/mathstack.cpp
+    pv/view/mathtrace.cpp
+    dsapplication.cpp
+    pv/toolbars/titlebar.cpp
+    pv/mainframe.cpp
+    pv/widgets/border.cpp
+    pv/dialogs/dsmessagebox.cpp
+    pv/dialogs/shadow.cpp
     pv/dialogs/dsdialog.cpp
     pv/dialogs/interval.cpp
     pv/prop/binding/probeoptions.cpp
+    pv/view/viewstatus.cpp
+    pv/dialogs/lissajousoptions.cpp
+    pv/view/lissajoustrace.cpp
+    pv/view/spectrumtrace.cpp
+    pv/data/spectrumstack.cpp
+    pv/dialogs/mathoptions.cpp
+    pv/dialogs/regionoptions.cpp
+    pv/view/xcursor.cpp
 )
 
 set(DSView_HEADERS
-    pv/sigsession.h 
+    pv/sigsession.h
     pv/mainwindow.h
     pv/dialogs/deviceoptions.h
     pv/prop/property.h
@@ -254,7 +261,7 @@ set(DSView_HEADERS
     pv/dialogs/fftoptions.h
     pv/data/mathstack.h
     pv/view/mathtrace.h
-    pv/widgets/viewstatus.h
+    pv/view/viewstatus.h
     pv/toolbars/titlebar.h
     pv/mainframe.h
     pv/widgets/border.h
@@ -262,6 +269,17 @@ set(DSView_HEADERS
     pv/dialogs/shadow.h
     pv/dialogs/dsdialog.h
     pv/dialogs/interval.h
+    pv/dialogs/lissajousoptions.h
+    pv/view/lissajoustrace.h
+    pv/view/spectrumtrace.h
+    pv/data/spectrumstack.h
+    pv/dialogs/mathoptions.h
+    pv/dialogs/regionoptions.h
+    pv/view/xcursor.h
+    pv/view/signal.h
+    pv/view/logicsignal.h
+    pv/view/analogsignal.h
+    pv/view/dsosignal.h
 )
 
 set(DSView_FORMS
@@ -269,7 +287,8 @@ set(DSView_FORMS
 
 set(DSView_RESOURCES
     DSView.qrc
-    darkstyle/style.qrc
+    themes/breeze.qrc
+    languages/language.qrc
 )
 
 if(ENABLE_DECODE)
@@ -401,8 +420,10 @@ set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_
 install(TARGETS ${PROJECT_NAME} DESTINATION bin/)
 install(DIRECTORY res DESTINATION share/${PROJECT_NAME})
 install(FILES icons/logo.png DESTINATION share/${PROJECT_NAME} RENAME logo.png)
-install(FILES ../NEWS DESTINATION share/${PROJECT_NAME} RENAME NEWS)
-install(FILES ../ug.pdf DESTINATION share/${PROJECT_NAME} RENAME ug.pdf)
+install(FILES ../NEWS25 DESTINATION share/${PROJECT_NAME} RENAME NEWS25)
+install(FILES ../NEWS31 DESTINATION share/${PROJECT_NAME} RENAME NEWS31)
+install(FILES ../ug25.pdf DESTINATION share/${PROJECT_NAME} RENAME ug25.pdf)
+install(FILES ../ug31.pdf DESTINATION share/${PROJECT_NAME} RENAME ug31.pdf)
 install(FILES DreamSourceLab.rules DESTINATION /etc/udev/rules.d/)
 install(FILES DSView.desktop DESTINATION /usr/share/applications/)
 

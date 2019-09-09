@@ -47,9 +47,8 @@ dslDial::~dslDial()
 {
 }
 
-void dslDial::paint(QPainter &p, QRectF dialRect, QColor dialColor, const QPoint pt)
+void dslDial::paint(QPainter &p, QRectF dialRect, QColor dialColor, const QPoint pt, QString &pText)
 {
-    p.setRenderHint(QPainter::Antialiasing, true);
     p.setPen(dialColor);
     p.setBrush(dialColor);
 
@@ -87,10 +86,10 @@ void dslDial::paint(QPainter &p, QRectF dialRect, QColor dialColor, const QPoint
         displayValue = displayValue / _step;
         displayIndex++;
     }
-    QString pText = QString::number(displayValue) + _unit[displayIndex] + tr(" / div");
-    QFontMetrics fm(p.font());
-    const QRectF valueRect = QRectF(dialRect.left(), dialRect.top()-fm.height()-10, dialRect.width(), fm.height());
-    p.drawText(valueRect, Qt::AlignCenter, pText);
+    pText = QString::number(displayValue) + _unit[displayIndex] + tr("/div");
+//    QFontMetrics fm(p.font());
+//    const QRectF valueRect = QRectF(dialRect.left(), dialRect.top()-fm.height()-10, dialRect.width(), fm.height());
+//    p.drawText(valueRect, Qt::AlignCenter, pText);
 
     // draw +/-
     if (dialRect.contains(pt) && pt.x() > dialRect.center().x()) {
@@ -118,9 +117,14 @@ void dslDial::set_sel(uint64_t sel)
     _sel = sel;
 }
 
-uint64_t dslDial::get_sel()
+uint64_t dslDial::get_sel() const
 {
     return _sel;
+}
+
+uint64_t dslDial::get_count() const
+{
+    return _div;
 }
 
 bool dslDial::isMin()
@@ -139,9 +143,25 @@ bool dslDial::isMax()
         return false;
 }
 
-uint64_t dslDial::get_value()
+uint64_t dslDial::get_min() const
+{
+    return _value[0];
+}
+
+uint64_t dslDial::get_max() const
+{
+    return _value[_div-1];
+}
+
+uint64_t dslDial::get_value() const
 {
     return _value[_sel];
+}
+
+uint64_t dslDial::get_value(uint64_t i) const
+{
+    assert(i < _div);
+    return _value[i];
 }
 
 void dslDial::set_value(uint64_t value)
@@ -157,7 +177,7 @@ void dslDial::set_factor(uint64_t factor)
     }
 }
 
-uint64_t dslDial::get_factor()
+uint64_t dslDial::get_factor() const
 {
     return _factor;
 }

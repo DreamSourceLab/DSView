@@ -16,21 +16,21 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'tca6408a'
     name = 'TI TCA6408A'
     longname = 'Texas Instruments TCA6408A'
     desc = 'Texas Instruments TCA6408A 8-bit I²C I/O expander.'
     license = 'gplv2+'
     inputs = ['i2c']
-    outputs = ['tca6408a']
+    outputs = []
+    tags = ['Embedded/industrial', 'IC']
     annotations = (
         ('register', 'Register type'),
         ('value', 'Register value'),
@@ -42,6 +42,9 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.state = 'IDLE'
         self.chip = -1
 
@@ -92,7 +95,7 @@ class Decoder(srd.Decoder):
                 return
             self.state = 'GET SLAVE ADDR'
         elif self.state == 'GET SLAVE ADDR':
-            self.chip = databyte  
+            self.chip = databyte
             self.state = 'GET REG ADDR'
         elif self.state == 'GET REG ADDR':
             # Wait for a data write (master selects the slave register).

@@ -14,22 +14,22 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
 from .lists import *
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'mrf24j40'
     name = 'MRF24J40'
     longname = 'Microchip MRF24J40'
     desc = 'IEEE 802.15.4 2.4 GHz RF tranceiver chip.'
     license = 'gplv2+'
     inputs = ['spi']
-    outputs = ['mrf24j40']
+    outputs = []
+    tags = ['IC', 'Wireless/RF']
     annotations = (
         ('sread', 'Short register read commands'),
         ('swrite', 'Short register write commands'),
@@ -44,6 +44,9 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.ss_cmd, self.es_cmd = 0, 0
         self.mosi_bytes = []
         self.miso_bytes = []
@@ -57,7 +60,7 @@ class Decoder(srd.Decoder):
     def putw(self, pos, msg):
         self.put(pos[0], pos[1], self.out_ann, [4, [msg]])
 
-    def reset(self):
+    def reset_data(self):
         self.mosi_bytes = []
         self.miso_bytes = []
 
@@ -104,7 +107,7 @@ class Decoder(srd.Decoder):
             if cs_old is not None and cs_old == 0 and cs_new == 1:
                 if len(self.mosi_bytes) not in (0, 2, 3):
                     self.putw([self.ss_cmd, es], 'Misplaced CS!')
-                    self.reset()
+                    self.reset_data()
             return
 
         # Don't care about anything else.
@@ -127,8 +130,8 @@ class Decoder(srd.Decoder):
             if len(self.mosi_bytes) == 3:
                 self.es_cmd = es
                 self.handle_long()
-                self.reset()
+                self.reset_data()
         else:
             self.es_cmd = es
             self.handle_short()
-            self.reset()
+            self.reset_data()

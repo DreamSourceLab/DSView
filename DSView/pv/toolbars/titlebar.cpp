@@ -29,6 +29,8 @@
 #include <QMouseEvent>
 #include <QApplication>
 #include <QPainter>
+#include <QStyleOption>
+
 
 namespace pv {
 namespace toolbars {
@@ -40,7 +42,8 @@ TitleBar::TitleBar(bool top, QWidget *parent, bool hasClose) :
     _hasClose(hasClose)
 {
     setObjectName("TitleBar");
-    setFixedHeight(28);
+    setContentsMargins(0,0,0,0);
+    setFixedHeight(32);
 
     _title = new QLabel(this);
     QHBoxLayout *hbox = new QHBoxLayout(this);
@@ -49,12 +52,8 @@ TitleBar::TitleBar(bool top, QWidget *parent, bool hasClose) :
     if (_isTop) {
         _minimizeButton = new QToolButton(this);
         _minimizeButton->setObjectName("MinimizeButton");
-        _minimizeButton->setIcon(QIcon::fromTheme("titlebar",
-                                 QIcon(":/icons/minimize.png")));
         _maximizeButton = new QToolButton(this);
         _maximizeButton->setObjectName("MaximizeButton");
-        _maximizeButton->setIcon(QIcon::fromTheme("titlebar",
-                                 QIcon(":/icons/maximize.png")));
 
         hbox->addWidget(_minimizeButton);
         hbox->addWidget(_maximizeButton);
@@ -68,8 +67,6 @@ TitleBar::TitleBar(bool top, QWidget *parent, bool hasClose) :
     if (_isTop || _hasClose) {
         _closeButton= new QToolButton(this);
         _closeButton->setObjectName("CloseButton");
-        _closeButton->setIcon(QIcon::fromTheme("titlebar",
-                                 QIcon(":/icons/close.png")));
         hbox->addWidget(_closeButton);
         connect(_closeButton, SIGNAL( clicked() ), parent, SLOT(close() ) );
     }
@@ -81,13 +78,33 @@ TitleBar::TitleBar(bool top, QWidget *parent, bool hasClose) :
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 }
 
-void TitleBar::paintEvent(QPaintEvent *)
+void TitleBar::changeEvent(QEvent *event)
 {
+    if (event->type() == QEvent::StyleChange)
+        reStyle();
+    QWidget::changeEvent(event);
+}
+
+void TitleBar::reStyle()
+{
+    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+
+    if (_isTop) {
+        _minimizeButton->setIcon(QIcon(iconPath+"/minimize.png"));
+        _maximizeButton->setIcon(QIcon(iconPath+"/maximize.png"));
+    }
+    if (_isTop || _hasClose)
+        _closeButton->setIcon(QIcon(iconPath+"/close.png"));
+}
+
+void TitleBar::paintEvent(QPaintEvent *event)
+{
+    QStyleOption o;
+    o.initFrom(this);
     QPainter p(this);
+    style()->drawPrimitive(QStyle::PE_Widget, &o, &p, this);
+
     p.setRenderHint(QPainter::Antialiasing, true);
-    p.setPen(QColor(48, 47, 47, 255));
-    p.setBrush(QColor(48, 47, 47, 255));
-    p.drawRect(rect());
 
     const int xgap = 2;
     const int xstart = 10;
@@ -110,6 +127,8 @@ void TitleBar::paintEvent(QPaintEvent *)
     p.setPen(QPen(QColor(109, 50, 156, 255), 2, Qt::SolidLine));
     p.drawLine(xstart + xgap*8,  height()*0.50, xstart + xgap*8,  height()*0.66);
     p.drawLine(xstart + xgap*10, height()*0.34, xstart + xgap*10, height()*0.50);
+
+    QWidget::paintEvent(event);
 }
 
 void TitleBar::setTitle(QString title)
@@ -129,25 +148,23 @@ QString TitleBar::title() const
 
 void TitleBar::showMaxRestore()
 {
+    QString iconPath = ":/icons/" + qApp->property("Style").toString();
     if (parentWidget()->isMaximized()) {
-        _maximizeButton->setIcon(QIcon::fromTheme("titlebar",
-                                 QIcon(":/icons/maximize.png")));
+        _maximizeButton->setIcon(QIcon(iconPath+"/maximize.png"));
         normalShow();
     } else {
-        _maximizeButton->setIcon(QIcon::fromTheme("titlebar",
-                                 QIcon(":/icons/restore.png")));
+        _maximizeButton->setIcon(QIcon(iconPath+"/restore.png"));
         maximizedShow();
     }   
 }
 
 void TitleBar::setRestoreButton(bool max)
 {
+    QString iconPath = ":/icons/" + qApp->property("Style").toString();
     if (!max) {
-        _maximizeButton->setIcon(QIcon::fromTheme("titlebar",
-                                 QIcon(":/icons/maximize.png")));
+        _maximizeButton->setIcon(QIcon(iconPath+"/maximize.png"));
     } else {
-        _maximizeButton->setIcon(QIcon::fromTheme("titlebar",
-                                 QIcon(":/icons/restore.png")));
+        _maximizeButton->setIcon(QIcon(iconPath+"/restore.png"));
     }
 }
 

@@ -61,6 +61,7 @@ public:
     const std::list< boost::shared_ptr<pv::device::DevInst> >& devices() const;
 
     void add_device(boost::shared_ptr<pv::device::DevInst> device);
+    void del_device(boost::shared_ptr<pv::device::DevInst> device);
 
     std::list< boost::shared_ptr<pv::device::DevInst> > driver_scan(
 		struct sr_dev_driver *const driver,

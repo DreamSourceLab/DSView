@@ -111,8 +111,10 @@ static GString *gen_header(const struct sr_output *o)
 	if (ctx->samplerate == 0) {
 		if (sr_config_get(o->sdi->driver, o->sdi, NULL, NULL, SR_CONF_SAMPLERATE,
 				&gvar) == SR_OK) {
-			ctx->samplerate = g_variant_get_uint64(gvar);
-			g_variant_unref(gvar);
+            if (gvar != NULL) {
+                ctx->samplerate = g_variant_get_uint64(gvar);
+                g_variant_unref(gvar);
+            }
 		}
 	}
 	if (ctx->samplerate != 0) {

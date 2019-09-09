@@ -67,6 +67,10 @@ public:
     ~SearchDock();
 
     void paintEvent(QPaintEvent *);
+private:
+    void changeEvent(QEvent *event);
+    void retranslateUi();
+    void reStyle();
 
 public slots:
     void on_previous();

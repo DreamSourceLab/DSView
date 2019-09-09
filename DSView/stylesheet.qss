@@ -21,7 +21,7 @@ QToolBar {
     stop: 0.95 rgb(0, 102, 185, 255),
     stop: 1 rgb(0, 75, 165, 255));*/
     background: rgb(17, 133, 209, 255);
-    min-height: 50px;
+    padding: 0px;
 }
 
 pv--view--View,
@@ -35,10 +35,10 @@ pv--view--Viewport{
 QToolButton {
     border: none;
     border-style: flat;
+    padding: 0px;
+    margin: 0px;
     color: white;
-    font: bold 10ft;
-    min-height: 50px;
-    min-width: 50px;
+    font: bold 9ft;
 }
 
 QPushButton:hover, QPushButton:pressed,

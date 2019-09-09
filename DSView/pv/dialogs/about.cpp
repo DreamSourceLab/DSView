@@ -54,9 +54,11 @@ About::About(QWidget *parent) :
 
     QString url = tr("Website: <a href=\"%1\" style=\"color:#C0C0C0\">%1</a><br />"
                      "Gitbub: <a href=\"%2\" style=\"color:#C0C0C0\">%2</a><br />"
+                     "Copyright：<a href=\"%3\" style=\"color:#C0C0C0\">%3</a><br />"
                      "<br /><br />")
                   .arg(QApplication::organizationDomain())
-                  .arg("https://github.com/DreamSourceLab/DSView");
+                  .arg("https://github.com/DreamSourceLab/DSView")
+                  .arg(tr("© DreamSourceLab. All rights reserved."));
 
     QString thanks = tr("<font size=16>Special Thanks</font><br />"
                         "<a href=\"%1\" style=\"color:#C0C0C0\">All backers on kickstarter</a><br />"
@@ -67,9 +69,13 @@ About::About(QWidget *parent) :
                         .arg("http://sigrok.org/");
 
     QString changlogs = tr("<font size=16>Changelogs</font><br />");
+    #ifndef Q_OS_LINUX
+    QDir dir(QCoreApplication::applicationDirPath());
+    #else
     QDir dir(DS_RES_PATH);
     dir.cdUp();
-    QString filename = dir.absolutePath() + "/NEWS";
+    #endif
+    QString filename = dir.absolutePath() + "/NEWS" + QString::number(qApp->property("Language").toInt());
     QFile news(filename);
     if (news.open(QIODevice::ReadOnly)) {
         QTextCodec *code=QTextCodec::codecForName("UTF-8");

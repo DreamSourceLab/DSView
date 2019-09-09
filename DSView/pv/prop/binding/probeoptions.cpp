@@ -67,27 +67,42 @@ ProbeOptions::ProbeOptions(struct sr_dev_inst *sdi,
         if(sr_config_list(_sdi->driver, _sdi, NULL, key, &gvar_list) != SR_OK)
 			gvar_list = NULL;
 
-        const QString name(info->label);
+        const QString name(info->name);
+        char *label_char = info->label;
+        GVariant *gvar_tmp = NULL;
+        if (sr_config_get(_sdi->driver, _sdi, NULL, NULL, SR_CONF_LANGUAGE, &gvar_tmp) == SR_OK) {
+            if (gvar_tmp != NULL) {
+                int language = g_variant_get_int16(gvar_tmp);
+                if (language == QLocale::Chinese)
+                    label_char = info->label_cn;
+                g_variant_unref(gvar_tmp);
+            }
+        }
+        const QString label(label_char);
 
 		switch(key)
 		{
         case SR_CONF_PROBE_VDIV:
-            bind_vdiv(name, gvar_list);
+            bind_vdiv(name, label, gvar_list);
 			break;
 
         case SR_CONF_PROBE_MAP_MIN:
         case SR_CONF_PROBE_MAP_MAX:
-            bind_double(name, key, "",
+            bind_double(name, label, key, "",
                         pair<double, double>(-999999.99, 999999.99), 2, 0.01);
             break;
 
         case SR_CONF_PROBE_COUPLING:
-            bind_coupling(name, gvar_list);
+            bind_coupling(name, label, gvar_list);
             break;
 
         case SR_CONF_PROBE_MAP_UNIT:
-            bind_enum(name, key, gvar_list);
+            bind_enum(name, label, key, gvar_list);
 			break;
+
+        case SR_CONF_PROBE_MAP_DEFAULT:
+            bind_bool(name, label, key);
+            break;
 
         default:
             gvar_list = NULL;
@@ -96,7 +111,8 @@ ProbeOptions::ProbeOptions(struct sr_dev_inst *sdi,
 		if (gvar_list)
 			g_variant_unref(gvar_list);
 	}
-	g_variant_unref(gvar_opts);
+    if (gvar_opts)
+        g_variant_unref(gvar_opts);
 }
 
 GVariant* ProbeOptions::config_getter(
@@ -120,14 +136,14 @@ void ProbeOptions::config_setter(
 		qDebug() << "WARNING: Failed to set value of sample rate";
 }
 
-void ProbeOptions::bind_bool(const QString &name, int key)
+void ProbeOptions::bind_bool(const QString &name, const QString label, int key)
 {
 	_properties.push_back(boost::shared_ptr<Property>(
-        new Bool(name, bind(config_getter, _sdi, _probe, key),
+        new Bool(name, label, bind(config_getter, _sdi, _probe, key),
             bind(config_setter, _sdi, _probe, key, _1))));
 }
 
-void ProbeOptions::bind_enum(const QString &name, int key,
+void ProbeOptions::bind_enum(const QString &name, const QString label, int key,
     GVariant *const gvar_list, boost::function<QString (GVariant*)> printer)
 {
 	GVariant *gvar;
@@ -141,32 +157,32 @@ void ProbeOptions::bind_enum(const QString &name, int key,
 		values.push_back(make_pair(gvar, printer(gvar)));
 
 	_properties.push_back(boost::shared_ptr<Property>(
-        new Enum(name, values,
+        new Enum(name, label, values,
             bind(config_getter, _sdi, _probe, key),
             bind(config_setter, _sdi, _probe, key, _1))));
 }
 
-void ProbeOptions::bind_int(const QString &name, int key, QString suffix,
-	optional< std::pair<int64_t, int64_t> > range)
+void ProbeOptions::bind_int(const QString &name, const QString label, int key, QString suffix,
+    optional< std::pair<int64_t, int64_t> > range)
 {
 	_properties.push_back(boost::shared_ptr<Property>(
-		new Int(name, suffix, range,
+        new Int(name, label, suffix, range,
             bind(config_getter, _sdi, _probe, key),
             bind(config_setter, _sdi, _probe, key, _1))));
 }
 
-void ProbeOptions::bind_double(const QString &name, int key, QString suffix,
+void ProbeOptions::bind_double(const QString &name, const QString label, int key, QString suffix,
     optional< std::pair<double, double> > range,
     int decimals, boost::optional<double> step)
 {
     _properties.push_back(boost::shared_ptr<Property>(
-        new Double(name, decimals, suffix, range, step,
+        new Double(name, label, decimals, suffix, range, step,
             bind(config_getter, _sdi, _probe, key),
             bind(config_setter, _sdi, _probe, key, _1))));
 }
 
-void ProbeOptions::bind_vdiv(const QString &name,
-	GVariant *const gvar_list)
+void ProbeOptions::bind_vdiv(const QString &name, const QString label,
+    GVariant *const gvar_list)
 {
     GVariant *gvar_list_vdivs;
 
@@ -175,13 +191,13 @@ void ProbeOptions::bind_vdiv(const QString &name,
     if ((gvar_list_vdivs = g_variant_lookup_value(gvar_list,
             "vdivs", G_VARIANT_TYPE("at"))))
 	{
-        bind_enum(name, SR_CONF_PROBE_VDIV,
+        bind_enum(name, label, SR_CONF_PROBE_VDIV,
             gvar_list_vdivs, print_vdiv);
         g_variant_unref(gvar_list_vdivs);
 	}
 }
 
-void ProbeOptions::bind_coupling(const QString &name,
+void ProbeOptions::bind_coupling(const QString &name, const QString label,
     GVariant *const gvar_list)
 {
     GVariant *gvar_list_coupling;
@@ -191,7 +207,7 @@ void ProbeOptions::bind_coupling(const QString &name,
     if ((gvar_list_coupling = g_variant_lookup_value(gvar_list,
             "coupling", G_VARIANT_TYPE("ay"))))
     {
-        bind_enum(name, SR_CONF_PROBE_COUPLING,
+        bind_enum(name, label, SR_CONF_PROBE_COUPLING,
             gvar_list_coupling, print_coupling);
         g_variant_unref(gvar_list_coupling);
     }

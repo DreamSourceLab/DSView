@@ -36,39 +36,75 @@ using namespace std;
 namespace pv {
 namespace data {
 
-const QString MathStack::windows_support[5] = {
-    QT_TR_NOOP("Rectangle"),
-    QT_TR_NOOP("Hann"),
-    QT_TR_NOOP("Hamming"),
-    QT_TR_NOOP("Blackman"),
-    QT_TR_NOOP("Flat_top")
+const int MathStack::EnvelopeScalePower = 8;
+const int MathStack::EnvelopeScaleFactor = 1 << EnvelopeScalePower;
+const float MathStack::LogEnvelopeScaleFactor = logf(EnvelopeScaleFactor);
+const uint64_t MathStack::EnvelopeDataUnit = 4*1024;	// bytes
+
+const uint64_t MathStack::vDialValue[MathStack::vDialValueCount] = {
+    1,
+    2,
+    5,
+    10,
+    20,
+    50,
+    100,
+    200,
+    500,
+    1000,
+    2000,
+    5000,
+    10000,
+    20000,
+    50000,
+    100000,
+    200000,
+    500000,
+    1000000,
+};
+const QString MathStack::vDialAddUnit[MathStack::vDialUnitCount] = {
+    "mV",
+    "V",
+};
+const QString MathStack::vDialMulUnit[MathStack::vDialUnitCount] = {
+    "mV*V",
+    "V*V",
+};
+const QString MathStack::vDialDivUnit[MathStack::vDialUnitCount] = {
+    "mV/V",
+    "V/V",
 };
 
-const uint64_t MathStack::length_support[5] = {
-    1024,
-    2048,
-    4096,
-    8192,
-    16384,
-};
-
-MathStack::MathStack(pv::SigSession &session, int index) :
+MathStack::MathStack(pv::SigSession &session,
+                     boost::shared_ptr<view::DsoSignal> dsoSig1,
+                     boost::shared_ptr<view::DsoSignal> dsoSig2,
+                     MathType type) :
     _session(session),
-    _index(index),
-    _dc_ignore(true),
-    _sample_interval(1),
+    _dsoSig1(dsoSig1),
+    _dsoSig2(dsoSig2),
+    _type(type),
+    _sample_num(0),
+    _total_sample_num(0),
     _math_state(Init),
-    _fft_plan(NULL)
+    _envelope_en(false),
+    _envelope_done(false)
 {
+    memset(_envelope_level, 0, sizeof(_envelope_level));
 }
 
 MathStack::~MathStack()
 {
-    _xn.clear();
-    _xk.clear();
-    _power_spectrum.clear();
-    if (_fft_plan)
-        fftw_destroy_plan(_fft_plan);
+    _math.clear();
+    free_envelop();
+}
+
+void MathStack::free_envelop()
+{
+    BOOST_FOREACH(Envelope &e, _envelope_level) {
+        if (e.samples)
+            free(e.samples);
+    }
+    memset(_envelope_level, 0, sizeof(_envelope_level));
 }
 
 void MathStack::clear()
@@ -77,11 +113,13 @@ void MathStack::clear()
 
 void MathStack::init()
 {
+    _sample_num = 0;
+    _envelope_done = false;
 }
 
-int MathStack::get_index() const
+MathStack::MathType MathStack::get_type() const
 {
-    return _index;
+    return _type;
 }
 
 uint64_t MathStack::get_sample_num() const
@@ -89,158 +127,351 @@ uint64_t MathStack::get_sample_num() const
     return _sample_num;
 }
 
-void MathStack::set_sample_num(uint64_t num)
+void MathStack::realloc(uint64_t num)
 {
-    _sample_num = num;
-    _xn.resize(_sample_num);
-    _xk.resize(_sample_num);
-    _power_spectrum.resize(_sample_num/2+1);
-    _fft_plan = fftw_plan_r2r_1d(_sample_num, _xn.data(), _xk.data(),
-                                 FFTW_R2HC, FFTW_ESTIMATE);
-}
+    if (num != _total_sample_num) {
+        free_envelop();
+        _total_sample_num = num;
 
-int MathStack::get_windows_index() const
-{
-    return _windows_index;
-}
-
-void MathStack::set_windows_index(int index)
-{
-    _windows_index = index;
-}
-
-bool MathStack::dc_ignored() const
-{
-    return _dc_ignore;
-}
-
-void MathStack::set_dc_ignore(bool ignore)
-{
-    _dc_ignore = ignore;
-}
-
-int MathStack::get_sample_interval() const
-{
-    return _sample_interval;
-}
-
-void MathStack::set_sample_interval(int interval)
-{
-    _sample_interval = interval;
-}
-
-const std::vector<QString> MathStack::get_windows_support() const
-{
-    std::vector<QString> windows;
-    for (size_t i = 0; i < sizeof(windows_support)/sizeof(windows_support[0]); i++)
-    {
-        windows.push_back(windows_support[i]);
+        _math.resize(_total_sample_num);
+        uint64_t envelop_count = _total_sample_num / EnvelopeScaleFactor;
+        for (unsigned int level = 0; level < ScaleStepCount; level++) {
+            envelop_count = ((envelop_count + EnvelopeDataUnit - 1) /
+                    EnvelopeDataUnit) * EnvelopeDataUnit;
+            _envelope_level[level].samples = (EnvelopeSample*)malloc(envelop_count * sizeof(EnvelopeSample));
+            envelop_count = envelop_count / EnvelopeScaleFactor;
+        }
     }
-    return windows;
 }
 
-const std::vector<uint64_t> MathStack::get_length_support() const
+void MathStack::enable_envelope(bool enable)
 {
-    std::vector<uint64_t> length;
-    for (size_t i = 0; i < sizeof(length_support)/sizeof(length_support[0]); i++)
-    {
-        length.push_back(length_support[i]);
+    if (!_envelope_done && enable)
+        append_to_envelope_level(true);
+    _envelope_en = enable;
+}
+
+uint64_t MathStack::default_vDialValue()
+{
+    uint64_t value = 0;
+    view::dslDial *dial1 = _dsoSig1->get_vDial();
+    view::dslDial *dial2 = _dsoSig1->get_vDial();
+    const uint64_t dial1_value = dial1->get_value() * dial1->get_factor();
+    const uint64_t dial2_value = dial2->get_value() * dial2->get_factor();
+
+    switch(_type) {
+    case MATH_ADD:
+    case MATH_SUB:
+        value = max(dial1_value, dial2_value);
+        break;
+    case MATH_MUL:
+        value = dial1_value * dial2_value / 1000.0;
+        break;
+    case MATH_DIV:
+        value = dial1_value * 1000.0 / dial2_value;
+        break;
     }
-    return length;
-}
 
-const std::vector<double> MathStack::get_fft_spectrum() const
-{
-    std::vector<double> empty;
-    if (_math_state == Stopped)
-        return _power_spectrum;
-    else
-        return empty;
-}
-
-double MathStack::get_fft_spectrum(uint64_t index)
-{
-    double ret = -1;
-    if (_math_state == Stopped && index < _power_spectrum.size())
-        ret = _power_spectrum[index];
-
-    return ret;
-}
-
-void MathStack::calc_fft()
-{
-    _math_state = Running;
-    // Get the dso data
-    boost::shared_ptr<pv::data::Dso> data;
-    boost::shared_ptr<pv::view::DsoSignal> dsoSig;
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
-        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
-            if (dsoSig->get_index() == _index && dsoSig->enabled()) {
-                data = dsoSig->dso_data();
-                break;
-            }
+    for (int i = 0; i < vDialValueCount; i++) {
+        if (vDialValue[i] >= value) {
+            value = vDialValue[i];
+            break;
         }
     }
 
-    if (!data)
-        return;
+    return value;
+}
 
-    // Check we have a snapshot of data
+view::dslDial * MathStack::get_vDial()
+{
+    QVector<uint64_t> vValue;
+    QVector<QString> vUnit;
+    view::dslDial *dial1 = _dsoSig1->get_vDial();
+    view::dslDial *dial2 = _dsoSig2->get_vDial();
+    const uint64_t dial1_min = dial1->get_value(0) * dial1->get_factor();
+    const uint64_t dial1_max = dial1->get_value(dial1->get_count() - 1) * dial1->get_factor();
+    const uint64_t dial2_min = dial2->get_value(0) * dial2->get_factor();
+    const uint64_t dial2_max = dial2->get_value(dial2->get_count() - 1) * dial2->get_factor();
+
+    switch(_type) {
+    case MATH_ADD:
+    case MATH_SUB:
+        for (int i = 0; i < vDialValueCount; i++) {
+            if (vDialValue[i] < min(dial1_min, dial2_min))
+                continue;
+            vValue.append(vDialValue[i]);
+            if (vDialValue[i] > max(dial1_max, dial2_max))
+                break;
+        }
+        for(int i = 0; i < vDialUnitCount; i++)
+            vUnit.append(vDialAddUnit[i]);
+        break;
+    case MATH_MUL:
+        for (int i = 0; i < vDialValueCount; i++) {
+            if (vDialValue[i] < dial1_min * dial2_min / 1000.0)
+                continue;
+            vValue.append(vDialValue[i]);
+            if (vDialValue[i] > dial1_max * dial2_max / 1000.0)
+                break;
+        }
+        for(int i = 0; i < vDialUnitCount; i++)
+            vUnit.append(vDialMulUnit[i]);
+        break;
+    case MATH_DIV:
+        for (int i = 0; i < vDialValueCount; i++) {
+            if (vDialValue[i] < min(dial1_min * 1000.0 / dial2_max, dial2_min * 1000.0  / dial1_max))
+                continue;
+            vValue.append(vDialValue[i]);
+            if (vDialValue[i] > max(dial1_max * 1000.0 / dial2_min, dial2_max * 1000.0 / dial1_min))
+                break;
+        }
+        for(int i = 0; i < vDialUnitCount; i++)
+            vUnit.append(vDialDivUnit[i]);
+        break;
+    }
+
+    view::dslDial *vDial = new view::dslDial(vValue.count(), vDialValueStep, vValue, vUnit);
+    return vDial;
+}
+
+QString MathStack::get_unit(int level)
+{
+    if (level >= vDialUnitCount)
+        return tr(" ");
+
+    QString unit;
+    switch(_type) {
+    case MATH_ADD:
+    case MATH_SUB:
+        unit = vDialAddUnit[level];
+        break;
+    case MATH_MUL:
+        unit = vDialMulUnit[level];
+        break;
+    case MATH_DIV:
+        unit = vDialDivUnit[level];
+        break;
+    }
+
+    return unit;
+}
+
+double MathStack::get_math_scale()
+{
+    double scale = 0;
+    switch(_type) {
+    case MATH_ADD:
+    case MATH_SUB:
+        scale = 1.0 / DS_CONF_DSO_VDIVS;
+        break;
+    case MATH_MUL:
+        //scale = 1.0 / (DS_CONF_DSO_VDIVS * DS_CONF_DSO_VDIVS);
+        scale = 1.0 / DS_CONF_DSO_VDIVS;
+        break;
+    case MATH_DIV:
+        scale = 1.0 / DS_CONF_DSO_VDIVS;
+        break;
+    }
+
+    return scale;
+}
+
+const double* MathStack::get_math(uint64_t start) const
+{
+    return _math.data() + start;
+}
+
+void MathStack::get_math_envelope_section(EnvelopeSection &s,
+    uint64_t start, uint64_t end, float min_length) const
+{
+    assert(end <= get_sample_num());
+    assert(start <= end);
+    assert(min_length > 0);
+
+    if (!_envelope_done) {
+        s.length = 0;
+        return;
+    }
+
+    const unsigned int min_level = max((int)floorf(logf(min_length) /
+        LogEnvelopeScaleFactor) - 1, 0);
+    const unsigned int scale_power = (min_level + 1) *
+        EnvelopeScalePower;
+    start >>= scale_power;
+    end >>= scale_power;
+
+    s.start = start << scale_power;
+    s.scale = 1 << scale_power;
+    if (_envelope_level[min_level].length == 0)
+        s.length = 0;
+    else
+        s.length = end - start;
+
+    s.samples = _envelope_level[min_level].samples + start;
+}
+
+void MathStack::calc_math()
+{
+    _math_state = Running;
+
+    const boost::shared_ptr<pv::data::Dso> data = _dsoSig1->dso_data();
     const deque< boost::shared_ptr<pv::data::DsoSnapshot> > &snapshots =
         data->get_snapshots();
     if (snapshots.empty())
         return;
-    _snapshot = snapshots.front();
 
-    if (_snapshot->get_sample_count() < _sample_num*_sample_interval)
+    const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
+        snapshots.front();
+    if (snapshot->empty())
         return;
 
-    // Get the samplerate
-    _samplerate = data->samplerate();
-    if (_samplerate == 0.0)
-        _samplerate = 1.0;
+    if (_math.size() < _total_sample_num)
+        return;
 
-    // prepare _xn data
-    const double offset = dsoSig->get_hw_offset();
-    const double vscale = dsoSig->get_vDialValue() * dsoSig->get_factor() * DS_CONF_DSO_VDIVS / (1000*255.0);
-    const uint16_t step = _snapshot->get_channel_num() * _sample_interval;
-    const uint8_t *const samples = _snapshot->get_samples(0, _sample_num*_sample_interval-1, _index);
-    double wsum = 0;
-    for (unsigned int i = 0; i < _sample_num; i++) {
-        double w = window(i, _windows_index);
-        _xn[i] = ((double)samples[i*step] - offset) * vscale * w;
-        wsum += w;
+    if (!_dsoSig1->enabled() || !_dsoSig2->enabled())
+        return;
+
+    const double scale1 = _dsoSig1->get_vDialValue() / 1000.0 * _dsoSig1->get_factor() * DS_CONF_DSO_VDIVS *
+                          _dsoSig1->get_scale() / _dsoSig1->get_view_rect().height();
+    const double delta1 = _dsoSig1->get_hw_offset() * scale1;
+
+    const double scale2 = _dsoSig2->get_vDialValue() / 1000.0 * _dsoSig2->get_factor() * DS_CONF_DSO_VDIVS *
+                          _dsoSig2->get_scale() / _dsoSig2->get_view_rect().height();
+    const double delta2 = _dsoSig2->get_hw_offset() * scale2;
+
+    const int index1 = _dsoSig1->get_index();
+    const int index2 = _dsoSig2->get_index();
+
+    const int num_channels = snapshot->get_channel_num();
+    const uint8_t* value = snapshot->get_samples(0, 0, 0);
+    _sample_num = snapshot->get_sample_count();
+    assert(_sample_num <= _total_sample_num);
+
+    double value1, value2;
+    for (uint64_t sample = 0; sample < _sample_num; sample++) {
+        value1 = value[sample * num_channels + index1];
+        value2 = value[sample * num_channels + index2];
+        switch(_type) {
+        case MATH_ADD:
+            _math[sample] = (delta1 - scale1 * value1) + (delta2 - scale2 * value2);
+            break;
+        case MATH_SUB:
+            _math[sample] = (delta1 - scale1 * value1) - (delta2 - scale2 * value2);
+            break;
+        case MATH_MUL:
+            _math[sample] = (delta1 - scale1 * value1) * (delta2 - scale2 * value2);
+            break;
+        case MATH_DIV:
+            _math[sample] = (delta1 - scale1 * value1) / (delta2 - scale2 * value2);
+            break;
+        }
     }
 
-    // fft
-    fftw_execute(_fft_plan);
+    if (_envelope_en)
+        append_to_envelope_level(true);
 
-    // calculate power spectrum
-    _power_spectrum[0] = abs(_xk[0])/wsum;  /* DC component */
-    for (unsigned int k = 1; k < (_sample_num + 1) / 2; ++k)  /* (k < N/2 rounded up) */
-         _power_spectrum[k] = sqrt((_xk[k]*_xk[k] + _xk[_sample_num-k]*_xk[_sample_num-k]) * 2) / wsum;
-    if (_sample_num % 2 == 0) /* N is even */
-         _power_spectrum[_sample_num/2] = abs(_xk[_sample_num/2])/wsum;  /* Nyquist freq. */
-
+    // stop
     _math_state = Stopped;
 }
 
-double MathStack::window(uint64_t i, int type)
+void MathStack::reallocate_envelope(Envelope &e)
 {
-    const double n_m_1 = _sample_num-1;
-    switch(type) {
-    case 1: // Hann window
-        return 0.5*(1-cos(2*PI*i/n_m_1));
-    case 2: // Hamming window
-        return 0.54-0.46*cos(2*PI*i/n_m_1);
-    case 3: // Blackman window
-        return 0.42659-0.49656*cos(2*PI*i/n_m_1) + 0.076849*cos(4*PI*i/n_m_1);
-    case 4: // Flat_top window
-        return 1-1.93*cos(2*PI*i/n_m_1)+1.29*cos(4*PI*i/n_m_1)-
-                 0.388*cos(6*PI*i/n_m_1)+0.028*cos(8*PI*i/n_m_1);
-    default:
-        return 1;
+    const uint64_t new_data_length = ((e.length + EnvelopeDataUnit - 1) /
+        EnvelopeDataUnit) * EnvelopeDataUnit;
+    if (new_data_length > e.data_length)
+    {
+        e.data_length = new_data_length;
     }
+}
+
+void MathStack::append_to_envelope_level(bool header)
+{
+    Envelope &e0 = _envelope_level[0];
+    uint64_t prev_length;
+    EnvelopeSample *dest_ptr;
+
+    if (header)
+        prev_length = 0;
+    else
+        prev_length = e0.length;
+    e0.length = _sample_num / EnvelopeScaleFactor;
+
+    if (e0.length == 0)
+        return;
+    if (e0.length == prev_length)
+        prev_length = 0;
+
+    // Expand the data buffer to fit the new samples
+    reallocate_envelope(e0);
+
+    dest_ptr = e0.samples + prev_length;
+
+    // Iterate through the samples to populate the first level mipmap
+    const double *const stop_src_ptr = (double*)_math.data() +
+        e0.length * EnvelopeScaleFactor;
+    for (const double *src_ptr = (double*)_math.data() +
+        prev_length * EnvelopeScaleFactor;
+        src_ptr < stop_src_ptr; src_ptr += EnvelopeScaleFactor)
+    {
+        const double * begin_src_ptr =
+            src_ptr;
+        const double *const end_src_ptr =
+            src_ptr + EnvelopeScaleFactor;
+
+        EnvelopeSample sub_sample;
+        sub_sample.min = *begin_src_ptr;
+        sub_sample.max = *begin_src_ptr;
+        //begin_src_ptr += _channel_num;
+        while (begin_src_ptr < end_src_ptr)
+        {
+            sub_sample.min = min(sub_sample.min, *begin_src_ptr);
+            sub_sample.max = max(sub_sample.max, *begin_src_ptr);
+            begin_src_ptr ++;
+        }
+        *dest_ptr++ = sub_sample;
+    }
+
+    // Compute higher level mipmaps
+    for (unsigned int level = 1; level < ScaleStepCount; level++)
+    {
+        Envelope &e = _envelope_level[level];
+        const Envelope &el = _envelope_level[level-1];
+
+        // Expand the data buffer to fit the new samples
+        prev_length = e.length;
+        e.length = el.length / EnvelopeScaleFactor;
+
+        // Break off if there are no more samples to computed
+//		if (e.length == prev_length)
+//			break;
+        if (e.length == prev_length)
+            prev_length = 0;
+
+        reallocate_envelope(e);
+
+        // Subsample the level lower level
+        const EnvelopeSample *src_ptr =
+            el.samples + prev_length * EnvelopeScaleFactor;
+        const EnvelopeSample *const end_dest_ptr = e.samples + e.length;
+        for (dest_ptr = e.samples + prev_length;
+            dest_ptr < end_dest_ptr; dest_ptr++)
+        {
+            const EnvelopeSample *const end_src_ptr =
+                src_ptr + EnvelopeScaleFactor;
+
+            EnvelopeSample sub_sample = *src_ptr++;
+            while (src_ptr < end_src_ptr)
+            {
+                sub_sample.min = min(sub_sample.min, src_ptr->min);
+                sub_sample.max = max(sub_sample.max, src_ptr->max);
+                src_ptr++;
+            }
+
+            *dest_ptr = sub_sample;
+        }
+    }
+
+    _envelope_done = true;
 }
 
 } // namespace data

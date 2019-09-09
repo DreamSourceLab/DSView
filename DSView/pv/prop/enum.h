@@ -38,7 +38,7 @@ class Enum : public Property
     Q_OBJECT;
 
 public:
-	Enum(QString name, std::vector<std::pair<GVariant*, QString> > values,
+    Enum(QString name, QString label, std::vector<std::pair<GVariant*, QString> > values,
 		Getter getter, Setter setter);
 
 	virtual ~Enum();

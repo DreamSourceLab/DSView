@@ -50,22 +50,22 @@ private:
 		struct sr_dev_inst *sdi,
         	struct sr_channel *probe, int key, GVariant* value);
 
-	void bind_bool(const QString &name, int key);
-	void bind_enum(const QString &name, int key,
+    void bind_bool(const QString &name, const QString label, int key);
+    void bind_enum(const QString &name, const QString label, int key,
 		GVariant *const gvar_list,
 		boost::function<QString (GVariant*)> printer = print_gvariant);
-	void bind_int(const QString &name, int key, QString suffix,
+    void bind_int(const QString &name, const QString label, int key, QString suffix,
 		boost::optional< std::pair<int64_t, int64_t> > range);
 
-    void bind_double(const QString &name, int key, QString suffix,
+    void bind_double(const QString &name, const QString label, int key, QString suffix,
         boost::optional<std::pair<double, double> > range,
         int decimals, boost::optional<double> step);
 
 	static QString print_gvariant(GVariant *const gvar);
 
-    void bind_vdiv(const QString &name,
+    void bind_vdiv(const QString &name, const QString label,
 		GVariant *const gvar_list);
-    void bind_coupling(const QString &name,
+    void bind_coupling(const QString &name, const QString label,
         GVariant *const gvar_list);
 
 	static QString print_vdiv(GVariant *const gvar);

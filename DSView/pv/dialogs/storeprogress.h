@@ -61,7 +61,7 @@ private:
     void closeEvent(QCloseEvent* e);
 
 public slots:
-    void save_run();
+    void save_run(QString session_file);
     void export_run();
 
 private slots:

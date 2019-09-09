@@ -30,6 +30,7 @@
 #include <QTime>
 
 #include "../view/trace.h"
+#include "../dialogs/dsmessagebox.h"
 
 using namespace boost;
 using namespace std;
@@ -39,6 +40,7 @@ namespace dialogs {
 
 const QString Calibration::VGAIN = QT_TR_NOOP(" VGAIN");
 const QString Calibration::VOFF = QT_TR_NOOP(" VOFF");
+const QString Calibration::VCOMB = QT_TR_NOOP(" VCOMB");
 
 Calibration::Calibration(QWidget *parent) :
     DSDialog(parent)
@@ -52,9 +54,10 @@ Calibration::Calibration(QWidget *parent) :
     this->setModal(false);
 
     _dev_inst = NULL;
-    _save_btn = new QPushButton(tr("Save"), this);
-    _reset_btn = new QPushButton(tr("Reset"), this);
-    _exit_btn = new QPushButton(tr("Exit"), this);
+    _save_btn = new QPushButton(this);
+    _abort_btn = new QPushButton(this);
+    _reset_btn = new QPushButton(this);
+    _exit_btn = new QPushButton(this);
 
     _flayout = new QFormLayout();
     _flayout->setVerticalSpacing(10);
@@ -64,21 +67,43 @@ Calibration::Calibration(QWidget *parent) :
     QGridLayout *glayout = new QGridLayout();
     glayout->setVerticalSpacing(5);
 
-    glayout->addLayout(_flayout, 1, 0, 1, 5);
+    glayout->addLayout(_flayout, 1, 0, 1, 7);
     glayout->addWidget(_save_btn, 2, 0);
     glayout->addWidget(new QWidget(this), 2, 1);
     glayout->setColumnStretch(1, 1);
-    glayout->addWidget(_reset_btn, 2, 2);
+    glayout->addWidget(_abort_btn, 2, 2);
     glayout->addWidget(new QWidget(this), 2, 3);
     glayout->setColumnStretch(3, 1);
-    glayout->addWidget(_exit_btn, 2, 4);
+    glayout->addWidget(_reset_btn, 2, 4);
+    glayout->addWidget(new QWidget(this), 2, 5);
+    glayout->setColumnStretch(5, 1);
+    glayout->addWidget(_exit_btn, 2, 6);
 
     layout()->addLayout(glayout);
-    setTitle(tr("Manual Calibration"));
 
     connect(_save_btn, SIGNAL(clicked()), this, SLOT(on_save()));
+    connect(_abort_btn, SIGNAL(clicked()), this, SLOT(on_abort()));
     connect(_reset_btn, SIGNAL(clicked()), this, SLOT(on_reset()));
     connect(_exit_btn, SIGNAL(clicked()), this, SLOT(reject()));
+
+    retranslateUi();
+}
+
+void Calibration::changeEvent(QEvent *event)
+{
+    if (event->type() == QEvent::LanguageChange)
+        retranslateUi();
+    DSDialog::changeEvent(event);
+}
+
+void Calibration::retranslateUi()
+{
+    _save_btn->setText(tr("Save"));
+    _abort_btn->setText(tr("Abort"));
+    _reset_btn->setText(tr("Reset"));
+    _exit_btn->setText(tr("Exit"));
+
+    setTitle(tr("Manual Calibration"));
 }
 
 void Calibration::set_device(boost::shared_ptr<device::DevInst> dev_inst)
@@ -135,12 +160,12 @@ void Calibration::set_device(boost::shared_ptr<device::DevInst> dev_inst)
 
         uint64_t voff = 0;
         uint16_t voff_range = 0;
-        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_VOFF);
+        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_PREOFF);
         if (gvar != NULL) {
             voff = g_variant_get_uint16(gvar);
             g_variant_unref(gvar);
         }
-        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_VOFF_RANGE);
+        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_PREOFF_MARGIN);
         if (gvar != NULL) {
             voff_range = g_variant_get_uint16(gvar);
             g_variant_unref(gvar);
@@ -154,6 +179,31 @@ void Calibration::set_device(boost::shared_ptr<device::DevInst> dev_inst)
         _flayout->addRow(off_label, off_slider);
         _slider_list.push_back(off_slider);
         _label_list.push_back(off_label);
+
+        bool comb_comp_en = false;
+        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_COMB_COMP_EN);
+        if (gvar != NULL) {
+            comb_comp_en = g_variant_get_boolean(gvar);
+            g_variant_unref(gvar);
+        }
+        if (comb_comp_en) {
+            int16_t comb_comp = 0;
+            gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_COMB_COMP);
+            if (gvar != NULL) {
+                comb_comp = g_variant_get_int16(gvar);
+                g_variant_unref(gvar);
+            }
+            QSlider *comp_slider = new QSlider(Qt::Horizontal, this);
+            comp_slider->setRange(-127, 127);
+            comp_slider->setValue(comb_comp);
+            comp_slider->setObjectName(VCOMB+probe->index);
+            QString comp_string = tr("Channel") + QString::number(probe->index) + VCOMB;
+            QLabel *comp_label = new QLabel(comp_string, this);
+            _flayout->addRow(comp_label, comp_slider);
+            _slider_list.push_back(comp_slider);
+            _label_list.push_back(comp_label);
+            connect(comp_slider, SIGNAL(valueChanged(int)), this, SLOT(set_value(int)));
+        }
 
         connect(gain_slider, SIGNAL(valueChanged(int)), this, SLOT(set_value(int)));
         connect(off_slider, SIGNAL(valueChanged(int)), this, SLOT(set_value(int)));
@@ -194,8 +244,12 @@ void Calibration::set_value(int value)
             }
             break;
         } else if (sc->objectName() == VOFF+probe->index) {
-            _dev_inst->set_config(probe, NULL, SR_CONF_PROBE_VOFF,
+            _dev_inst->set_config(probe, NULL, SR_CONF_PROBE_PREOFF,
                                   g_variant_new_uint16(value));
+            break;
+        } else if (sc->objectName() == VCOMB+probe->index) {
+            _dev_inst->set_config(probe, NULL, SR_CONF_PROBE_COMB_COMP,
+                                  g_variant_new_int16(value));
             break;
         }
     }
@@ -212,7 +266,7 @@ void Calibration::on_save()
         //while( QTime::currentTime() < dieTime );
     });
     Qt::WindowFlags flags = Qt::CustomizeWindowHint;
-    QProgressDialog dlg(tr("Save Calibration Result... It can take a while."),
+    QProgressDialog dlg(tr("Save calibration results... It can take a while."),
                         tr("Cancel"),0,0,this,flags);
     dlg.setWindowModality(Qt::WindowModal);
     dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
@@ -227,7 +281,7 @@ void Calibration::on_save()
     this->show();
 }
 
-void Calibration::on_reset()
+void Calibration::on_abort()
 {
     this->hide();
     QFuture<void> future;
@@ -239,7 +293,7 @@ void Calibration::on_reset()
         //while( QTime::currentTime() < dieTime );
     });
     Qt::WindowFlags flags = Qt::CustomizeWindowHint;
-    QProgressDialog dlg(tr("Reset Calibration Result... It can take a while."),
+    QProgressDialog dlg(tr("Reload last calibration results... It can take a while."),
                         tr("Cancel"),0,0,this,flags);
     dlg.setWindowModality(Qt::WindowModal);
     dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
@@ -280,12 +334,12 @@ void Calibration::reload_value()
 
         uint64_t voff = 0;
         uint16_t voff_range = 0;
-        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_VOFF);
+        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_PREOFF);
         if (gvar != NULL) {
             voff = g_variant_get_uint16(gvar);
             g_variant_unref(gvar);
         }
-        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_VOFF_RANGE);
+        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_PREOFF_MARGIN);
         if (gvar != NULL) {
             voff_range = g_variant_get_uint16(gvar);
             g_variant_unref(gvar);
@@ -301,6 +355,22 @@ void Calibration::reload_value()
                 (*i)->setValue(voff);
             }
         }
+    }
+}
+
+void Calibration::on_reset()
+{
+
+    dialogs::DSMessageBox msg(this);
+    msg.mBox()->setText(tr("Attention"));
+    msg.mBox()->setInformativeText(tr("All calibration settings will become the defualt values!"));
+    msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
+    msg.mBox()->addButton(tr("Cancel"), QMessageBox::RejectRole);
+    msg.mBox()->setIcon(QMessageBox::Warning);
+    if (msg.exec()) {
+        _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO_DEFAULT,
+                              g_variant_new_boolean(true));
+        reload_value();
     }
 }
 

@@ -27,6 +27,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <glib.h>
+#include <zip.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -308,11 +309,24 @@ enum DSO_MEASURE_TYPE {
     DSO_MS_BEGIN = 0,
     DSO_MS_FREQ,
     DSO_MS_PERD,
-    DSO_MS_VMAX,
-    DSO_MS_VMIN,
+    DSO_MS_PDUT,
+    DSO_MS_NDUT,
+    DSO_MS_PCNT,
+    DSO_MS_RISE,
+    DSO_MS_FALL,
+    DSO_MS_PWDT,
+    DSO_MS_NWDT,
+    DSO_MS_BRST,
+    DSO_MS_AMPT,
+    DSO_MS_VHIG,
+    DSO_MS_VLOW,
     DSO_MS_VRMS,
     DSO_MS_VMEA,
     DSO_MS_VP2P,
+    DSO_MS_VMAX,
+    DSO_MS_VMIN,
+    DSO_MS_POVR,
+    DSO_MS_NOVR,
     DSO_MS_END,
 };
 
@@ -594,12 +608,14 @@ struct sr_output_module {
 
 
 enum CHANNEL_TYPE {
+    SR_CHANNEL_DECODER = 9998,
+    SR_CHANNEL_GROUP = 9999,
     SR_CHANNEL_LOGIC = 10000,
     SR_CHANNEL_DSO,
     SR_CHANNEL_ANALOG,
-    SR_CHANNEL_GROUP,
-    SR_CHANNEL_DECODER,
     SR_CHANNEL_FFT,
+    SR_CHANNEL_LISSAJOUS,
+    SR_CHANNEL_MATH,
 };
 
 enum OPERATION_MODE {
@@ -615,16 +631,20 @@ struct sr_channel {
 	gboolean enabled;
 	char *name;
 	char *trigger;
+    uint8_t bits;
     uint64_t vdiv;
-    uint16_t vfactor;
-    double vpos;
+    uint64_t vfactor;
+    uint16_t offset;
+    uint16_t zero_offset;
+    uint16_t hw_offset;
     uint16_t vpos_trans;
     uint8_t coupling;
     uint8_t trig_value;
     int8_t comb_diff_top;
     int8_t comb_diff_bom;
-    gboolean ms_show;
-    gboolean ms_en[DSO_MS_END - DSO_MS_BEGIN];
+    int8_t comb_comp;
+
+    gboolean map_default;
     const char *map_unit;
     double map_min;
     double map_max;
@@ -652,6 +672,7 @@ struct sr_config_info {
 	char *id;
 	char *name;
     char *label;
+    char *label_cn;
 	char *description;
 };
 
@@ -673,22 +694,43 @@ struct sr_status {
     uint8_t captured_cnt1;
     uint8_t captured_cnt0;
 
-    uint8_t ch0_max;
-    uint8_t ch0_min;
-    uint64_t ch0_period;
-    uint32_t ch0_pcnt;
-    uint8_t ch1_max;
-    uint8_t ch1_min;
-    uint64_t ch1_period;
-    uint32_t ch1_pcnt;
-
+    uint16_t pkt_id;
     uint32_t vlen;
     gboolean stream_mode;
+    gboolean measure_valid;
     uint32_t sample_divider;
     gboolean sample_divider_tog;
     gboolean trig_flag;
 
-    uint16_t pkt_id;
+    uint8_t ch0_max;
+    uint8_t ch0_min;
+    uint32_t ch0_cyc_cnt;
+    uint32_t ch0_cyc_tlen;
+    uint32_t ch0_cyc_plen;
+    uint32_t ch0_cyc_llen;
+    gboolean ch0_level_valid;
+    gboolean ch0_plevel;
+    uint8_t ch0_low_level;
+    uint8_t ch0_high_level;
+    uint32_t ch0_cyc_rlen;
+    uint32_t ch0_cyc_flen;
+    uint64_t ch0_acc_square;
+    uint32_t ch0_acc_mean;
+
+    uint8_t ch1_max;
+    uint8_t ch1_min;
+    uint32_t ch1_cyc_cnt;
+    uint32_t ch1_cyc_tlen;
+    uint32_t ch1_cyc_plen;
+    uint32_t ch1_cyc_llen;
+    gboolean ch1_level_valid;
+    gboolean ch1_plevel;
+    uint8_t ch1_low_level;
+    uint8_t ch1_high_level;
+    uint32_t ch1_cyc_rlen;
+    uint32_t ch1_cyc_flen;
+    uint64_t ch1_acc_square;
+    uint32_t ch1_acc_mean;
 };
 
 enum {
@@ -808,6 +850,8 @@ enum {
 
     /** How many bits for each sample */
     SR_CONF_UNIT_BITS,
+    SR_CONF_REF_MIN,
+    SR_CONF_REF_MAX,
 
     /** Valid channel number */
     SR_CONF_VLD_CH_NUM,
@@ -817,6 +861,7 @@ enum {
     SR_CONF_ZERO,
     SR_CONF_ZERO_SET,
     SR_CONF_ZERO_LOAD,
+    SR_CONF_ZERO_DEFAULT,
     SR_CONF_VOCM,
     SR_CONF_CALI,
 
@@ -825,6 +870,16 @@ enum {
     SR_CONF_STATUS_PCNT,
     SR_CONF_STATUS_MAX,
     SR_CONF_STATUS_MIN,
+    SR_CONF_STATUS_PLEN,
+    SR_CONF_STATUS_LLEN,
+    SR_CONF_STATUS_LEVEL,
+    SR_CONF_STATUS_PLEVEL,
+    SR_CONF_STATUS_LOW,
+    SR_CONF_STATUS_HIGH,
+    SR_CONF_STATUS_RLEN,
+    SR_CONF_STATUS_FLEN,
+    SR_CONF_STATUS_RMS,
+    SR_CONF_STATUS_MEAN,
 
     /** Stream */
     SR_CONF_STREAM,
@@ -835,6 +890,10 @@ enum {
     /** Test */
     SR_CONF_TEST,
     SR_CONF_EEPROM,
+    SR_CONF_TUNE,
+    SR_CONF_TUNE_SEL,
+    SR_CONF_EXTEND_ID,
+    SR_CONF_EXTEND_DATA,
 
 	/** The device supports setting its sample interval, in ms. */
 	SR_CONF_SAMPLE_INTERVAL,
@@ -876,6 +935,10 @@ enum {
     SR_CONF_MAX_DSO_SAMPLELIMITS,
     SR_CONF_HW_DEPTH,
 
+    /** bandwidth */
+    SR_CONF_BANDWIDTH,
+    SR_CONF_BANDWIDTH_LIMIT,
+
     /*--- Probe configuration -------------------------------------------*/
     /** Probe options */
     SR_CONF_PROBE_CONFIGS,
@@ -895,23 +958,25 @@ enum {
     /** Factor */
     SR_CONF_PROBE_FACTOR,
 
-    /** Vertical position */
-    SR_CONF_PROBE_VPOS,
-
     /** Mapping */
+    SR_CONF_PROBE_MAP_DEFAULT,
     SR_CONF_PROBE_MAP_UNIT,
     SR_CONF_PROBE_MAP_MIN,
     SR_CONF_PROBE_MAP_MAX,
 
     /** Vertical offset */
-    SR_CONF_PROBE_VOFF,
-    SR_CONF_PROBE_VOFF_DEFAULT,
-    SR_CONF_PROBE_VOFF_RANGE,
+    SR_CONF_PROBE_OFFSET,
+    SR_CONF_PROBE_HW_OFFSET,
+    SR_CONF_PROBE_PREOFF,
+    SR_CONF_PROBE_PREOFF_DEFAULT,
+    SR_CONF_PROBE_PREOFF_MARGIN,
 
     /** VGain */
     SR_CONF_PROBE_VGAIN,
     SR_CONF_PROBE_VGAIN_DEFAULT,
     SR_CONF_PROBE_VGAIN_RANGE,
+    SR_CONF_PROBE_COMB_COMP_EN,
+    SR_CONF_PROBE_COMB_COMP,
 
 	/*--- Special stuff -------------------------------------------------*/
 
@@ -935,6 +1000,9 @@ enum {
 
     /** The device supports setting the number of data blocks. */
     SR_CONF_NUM_BLOCKS,
+
+    /** language (string code) **/
+    SR_CONF_LANGUAGE,
 
 	/*--- Acquisition modes ---------------------------------------------*/
 
@@ -1081,8 +1149,10 @@ enum {
 };
 
 struct sr_dev_mode {
-    char *name;
     int mode;
+    char *name;
+    char *name_cn;
+    char *icon;
 };
 
 struct sr_dev_driver {
@@ -1192,7 +1262,6 @@ struct ds_trigger_pos {
     uint32_t remain_cnt_l;
     uint32_t remain_cnt_h;
     uint32_t status;
-    unsigned char first_block[488];
 };
 
 typedef int (*sr_receive_data_callback_t)(int fd, int revents, const struct sr_dev_inst *sdi);

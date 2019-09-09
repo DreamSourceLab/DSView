@@ -14,8 +14,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
@@ -24,14 +23,15 @@ class SamplerateError(Exception):
     pass
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'em4100'
     name = 'EM4100'
     longname = 'RFID EM4100'
     desc = 'EM4100 100-150kHz RFID protocol.'
     license = 'gplv2+'
     inputs = ['logic']
-    outputs = ['em4100']
+    outputs = []
+    tags = ['IC', 'RFID']
     channels = (
         {'id': 'data', 'name': 'Data', 'desc': 'Data line'},
     )
@@ -63,6 +63,9 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.samplerate = None
         self.oldpin = None
         self.last_samplenum = None
@@ -74,12 +77,12 @@ class Decoder(srd.Decoder):
         self.oldpl = 0
         self.oldsamplenum = 0
         self.last_bit_pos = 0
-        self.first_ss = 0
+        self.ss_first = 0
         self.first_one = 0
         self.state = 'HEADER'
         self.data = 0
         self.data_bits = 0
-        self.data_ss = 0
+        self.ss_data = 0
         self.data_parity = 0
         self.payload_cnt = 0
         self.data_col_parity = [0, 0, 0, 0, 0, 0]
@@ -105,14 +108,14 @@ class Decoder(srd.Decoder):
                 if self.first_one > 0:
                     self.first_one += 1
                 if self.first_one == 9:
-                    self.put(self.first_ss, es, self.out_ann,
+                    self.put(self.ss_first, es, self.out_ann,
                              [1, ['Header', 'Head', 'He', 'H']])
                     self.first_one = 0
                     self.state = 'PAYLOAD'
                     return
                 if self.first_one == 0:
                     self.first_one = 1
-                    self.first_ss = ss
+                    self.ss_first = ss
 
             if bit == 0:
                 self.first_one = 0
@@ -121,14 +124,14 @@ class Decoder(srd.Decoder):
         if self.state == 'PAYLOAD':
             self.payload_cnt += 1
             if self.data_bits == 0:
-                self.data_ss = ss
+                self.ss_data = ss
                 self.data = 0
                 self.data_parity = 0
             self.data_bits += 1
             if self.data_bits == 5:
                 s = 'Version/customer' if self.payload_cnt <= 10 else 'Data'
                 c = 2 if self.payload_cnt <= 10 else 3
-                self.put(self.data_ss, ss, self.out_ann,
+                self.put(self.ss_data, ss, self.out_ann,
                          [c, [s + ': %X' % self.data, '%X' % self.data]])
                 s = 'OK' if self.data_parity == bit else 'ERROR'
                 c = 4 if s == 'OK' else 5
@@ -150,7 +153,7 @@ class Decoder(srd.Decoder):
         if self.state == 'TRAILER':
             self.payload_cnt += 1
             if self.data_bits == 0:
-                self.data_ss = ss
+                self.ss_data = ss
                 self.data = 0
                 self.data_parity = 0
             self.data_bits += 1
@@ -172,7 +175,7 @@ class Decoder(srd.Decoder):
                 # Emit an annotation for valid-looking tags.
                 all_col_parity_ok = (self.data_col_parity[1:5] == self.col_parity[1:5])
                 if all_col_parity_ok and self.all_row_parity_ok:
-                    self.put(self.first_ss, es, self.out_ann,
+                    self.put(self.ss_first, es, self.out_ann,
                              [9, ['Tag: %010X' % self.tag, 'Tag', 'T']])
 
                 self.tag = 0
@@ -186,53 +189,50 @@ class Decoder(srd.Decoder):
                     self.col_parity_pos = []
                     self.all_row_parity_ok = True
 
-    def manchester_decode(self, samplenum, pl, pp, pin):
+    def manchester_decode(self, pl, pp, pin):
         bit = self.oldpin ^ self.polarity
         if pl > self.halfbit_limit:
-            es = int(samplenum - pl/2)
+            es = int(self.samplenum - pl/2)
             if self.oldpl > self.halfbit_limit:
                 ss = int(self.oldsamplenum - self.oldpl/2)
             else:
                 ss = int(self.oldsamplenum - self.oldpl)
             self.putbit(bit, ss, es)
-            self.last_bit_pos = int(samplenum - pl/2)
+            self.last_bit_pos = int(self.samplenum - pl/2)
         else:
-            es = int(samplenum)
+            es = int(self.samplenum)
             if self.oldpl > self.halfbit_limit:
                 ss = int(self.oldsamplenum - self.oldpl/2)
                 self.putbit(bit, ss, es)
-                self.last_bit_pos = int(samplenum)
+                self.last_bit_pos = int(self.samplenum)
             else:
                 if self.last_bit_pos <= self.oldsamplenum - self.oldpl:
                     ss = int(self.oldsamplenum - self.oldpl)
                     self.putbit(bit, ss, es)
-                    self.last_bit_pos = int(samplenum)
+                    self.last_bit_pos = int(self.samplenum)
 
-    def decode(self, ss, es, data):
+    def decode(self):
         if not self.samplerate:
             raise SamplerateError('Cannot decode without samplerate.')
-        for (samplenum, (pin,)) in data:
-            data.itercnt += 1
-            # Ignore identical samples early on (for performance reasons).
-            if self.oldpin == pin:
-                continue
 
-            if self.oldpin is None:
-                self.oldpin = pin
-                self.last_samplenum = samplenum
-                self.lastlast_samplenum = samplenum
-                self.last_edge = samplenum
-                self.oldpl = 0
-                self.oldpp = 0
-                self.oldsamplenum = 0
-                self.last_bit_pos = 0
-                continue
+        # Initialize internal state from the very first sample.
+        (pin,) = self.wait()
+        self.oldpin = pin
+        self.last_samplenum = self.samplenum
+        self.lastlast_samplenum = self.samplenum
+        self.last_edge = self.samplenum
+        self.oldpl = 0
+        self.oldpp = 0
+        self.oldsamplenum = 0
+        self.last_bit_pos = 0
 
-            if self.oldpin != pin:
-                pl = samplenum - self.oldsamplenum
-                pp = pin
-                self.manchester_decode(samplenum, pl, pp, pin)
-                self.oldpl = pl
-                self.oldpp = pp
-                self.oldsamplenum = samplenum
-                self.oldpin = pin
+        while True:
+            # Ignore identical samples, only process edges.
+            (pin,) = self.wait({0: 'e'})
+            pl = self.samplenum - self.oldsamplenum
+            pp = pin
+            self.manchester_decode(pl, pp, pin)
+            self.oldpl = pl
+            self.oldpp = pp
+            self.oldsamplenum = self.samplenum
+            self.oldpin = pin

@@ -53,6 +53,7 @@
 #define CTR0_ADDR 0x70
 #define COMB_ADDR 0x68
 #define EI2C_ADDR 0x60
+#define ADCC_ADDR 0x48
 
 #define EI2C_CTR_OFF   0x2
 #define EI2C_RXR_OFF   0x3
@@ -72,8 +73,8 @@
 #define bmEI2C_RXNACK (1 << 7)
 #define bmEI2C_TIP (1 << 1)
 
-#define EI2C_AWR 0xA0
-#define EI2C_ARD 0xA1
+#define EI2C_AWR 0x82
+#define EI2C_ARD 0x83
 
 enum {
     DSL_CTL_FW_VERSION		= 0,
@@ -103,6 +104,8 @@ enum {
     DSL_CTL_DSO_ATT1		= 21,
 
     DSL_CTL_AWG_WR			= 22,
+    DSL_CTL_I2C_PROBE		= 23,
+    DSL_CTL_I2C_EXT         = 24,
 };
 
 #pragma pack(push, 1) // byte align
@@ -133,6 +136,7 @@ struct cmd_zero_info {
     uint8_t diff1;
     uint8_t trans0;
     uint8_t trans1;
+    uint8_t comb_comp;
 };
 
 struct cmd_vga_info {

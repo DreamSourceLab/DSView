@@ -64,8 +64,10 @@ static int zip_create(const struct sr_output *o)
 	if (outc->samplerate == 0) {
 		if (sr_config_get(o->sdi->driver, o->sdi, NULL, NULL, SR_CONF_SAMPLERATE,
 				&gvar) == SR_OK) {
-			outc->samplerate = g_variant_get_uint64(gvar);
-			g_variant_unref(gvar);
+            if (gvar != NULL) {
+                outc->samplerate = g_variant_get_uint64(gvar);
+                g_variant_unref(gvar);
+            }
 		}
 	}
 

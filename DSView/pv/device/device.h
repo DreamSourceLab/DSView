@@ -34,7 +34,7 @@ public:
 
 	sr_dev_inst* dev_inst() const;
 
-    void use(SigSession *owner) throw(QString);
+    void use(SigSession *owner);
 
 	void release();
 

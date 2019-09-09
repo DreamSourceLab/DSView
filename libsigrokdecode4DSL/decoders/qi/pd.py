@@ -14,8 +14,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
@@ -46,14 +45,15 @@ def bits_to_uint(bits):
     return reduce(lambda i, v: (i >> 1) | (v << (len(bits) - 1)), bits, 0)
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'qi'
     name = 'Qi'
     longname = 'Qi charger protocol'
-    desc = 'Protocol used by Qi receiver'
+    desc = 'Protocol used by Qi receiver.'
     license = 'gplv2+'
     inputs = ['logic']
-    outputs = ['qi']
+    outputs = []
+    tags = ['Embedded/industrial', 'Wireless/RF']
     channels = (
         {'id': 'qi', 'name': 'Qi', 'desc': 'Demodulated Qi data line'},
     )
@@ -74,6 +74,9 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.samplerate = None
         self.reset_variables()
 
@@ -147,7 +150,7 @@ class Decoder(srd.Decoder):
                        'C: PC = %d MP = %d P = %d C = %d WS = %d WO = %d' %
                        (powerclass, maxpower, prop, count, winsize, winoff),
                        'Configuration', 'C'])
-        elif self.packet[0] == 0x71: # Identification 
+        elif self.packet[0] == 0x71: # Identification
             version = '%d.%d' % ((self.packet[1] & 0xf0) >> 4, self.packet[1] & 0x0f)
             mancode = '%02x%02x' % (self.packet[2], self.packet[3])
             devid = '%02x%02x%02x%02x' % (self.packet[4] & ~0x80,
@@ -229,17 +232,13 @@ class Decoder(srd.Decoder):
             self.bits.clear()
             self.bitsi.clear()
 
-    def next_sample(self, s):
-        if s == self.prev:
-            self.counter += 1
-        else:
-            self.handle_transition(self.counter, s == 0)
-            self.prev = s
-            self.counter = 1
-
-    def decode(self, ss, es, data):
+    def decode(self):
         if not self.samplerate:
             raise SamplerateError('Cannot decode without samplerate.')
-        for (self.samplenum, (qi,)) in data:
-            data.itercnt += 1
-            self.next_sample(qi)
+
+        (qi,) = self.wait()
+        self.handle_transition(self.samplenum, qi == 0)
+        while True:
+            prev = self.samplenum
+            (qi,) = self.wait({0: 'e'})
+            self.handle_transition(self.samplenum - prev, qi == 0)

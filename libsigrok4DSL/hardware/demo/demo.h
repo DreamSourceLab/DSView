@@ -67,9 +67,9 @@
 /* end */
 
 static struct sr_dev_mode mode_list[] = {
-    {"LA", LOGIC},
-    {"DAQ", ANALOG},
-    {"OSC", DSO},
+    {LOGIC, "Logic Analyzer", "逻辑分析仪", "la.png"},
+    {ANALOG, "Data Acquisition", "数据记录仪", "daq.png"},
+    {DSO, "Oscilloscope", "示波器", "osc.png"},
 };
 
 /* Supported patterns which we can generate */
@@ -213,6 +213,8 @@ struct demo_context {
     uint16_t trigger_edge;
     uint8_t trigger_slope;
     uint8_t trigger_source;
+
+    int language;
 };
 
 static const uint64_t samplerates[] = {

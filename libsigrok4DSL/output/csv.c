@@ -34,8 +34,10 @@ struct context {
 	char separator;
 	gboolean header_done;
 	int *channel_index;
-    float *channel_vdiv;
-    double *channel_vpos;
+    int *channel_unit;
+    float *channel_scale;
+    uint16_t *channel_offset;
+    uint8_t *channel_bits;
     double *channel_mmin;
     double *channel_mmax;
     uint64_t mask;
@@ -62,6 +64,7 @@ static int init(struct sr_output *o, GHashTable *options)
 	struct sr_channel *ch;
 	GSList *l;
 	int i;
+    float range;
 
 	if (!o || !o->sdi)
 		return SR_ERR_ARG;
@@ -83,8 +86,10 @@ static int init(struct sr_output *o, GHashTable *options)
 		ctx->num_enabled_channels++;
 	}
 	ctx->channel_index = g_malloc(sizeof(int) * ctx->num_enabled_channels);
-    ctx->channel_vdiv = g_malloc(sizeof(float) * ctx->num_enabled_channels);
-    ctx->channel_vpos = g_malloc(sizeof(double) * ctx->num_enabled_channels);
+    ctx->channel_unit = g_malloc(sizeof(int) * ctx->num_enabled_channels);
+    ctx->channel_scale = g_malloc(sizeof(float) * ctx->num_enabled_channels);
+    ctx->channel_offset = g_malloc(sizeof(uint16_t) * ctx->num_enabled_channels);
+    ctx->channel_bits = g_malloc(sizeof(uint8_t) * ctx->num_enabled_channels);
     ctx->channel_mmax = g_malloc(sizeof(double) * ctx->num_enabled_channels);
     ctx->channel_mmin = g_malloc(sizeof(double) * ctx->num_enabled_channels);
 
@@ -98,8 +103,12 @@ static int init(struct sr_output *o, GHashTable *options)
         ctx->channel_index[i] = ch->index;
         //ctx->mask |= (1 << ch->index);
         ctx->mask |= (1 << i);
-        ctx->channel_vdiv[i] = ch->vdiv * ch->vfactor >= 500 ? ch->vdiv * ch->vfactor / 100.0f : ch->vdiv * ch->vfactor * 10.0f;
-        ctx->channel_vpos[i] = ch->vdiv * ch->vfactor >= 500 ? ch->vpos / 1000 : ch->vpos;
+        range = ch->vdiv * ch->vfactor * DS_CONF_DSO_VDIVS;
+        ctx->channel_unit[i] = (range >= 5000000) ? 1000000 :
+                                (range >= 5000) ? 1000 : 1;
+        ctx->channel_scale[i] = range / ctx->channel_unit[i];
+        ctx->channel_offset[i] = ch->hw_offset;
+        ctx->channel_bits[i] = ch->bits;
         ctx->channel_mmax[i] = ch->map_max;
         ctx->channel_mmin[i] = ch->map_min;
         i++;
@@ -165,7 +174,8 @@ static GString *gen_header(const struct sr_output *o)
         if (!ch->enabled)
             continue;
         if (ctx->type == SR_CHANNEL_DSO) {
-            char *unit_s = (ch->vdiv * ch->vfactor) >= 500 ? "V" : "mV";
+            char *unit_s = ctx->channel_unit[i] >= 1000000 ? "kV" :
+                           ctx->channel_unit[i] >= 1000 ?  "V" : "mV";
             g_string_append_printf(header, " %s (Unit: %s),", ch->name, unit_s);
         } else if (ctx->type == SR_CHANNEL_ANALOG) {
             g_string_append_printf(header, " %s (Unit: %s),", ch->name, ch->map_unit);
@@ -251,7 +261,9 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
             for (j = 0; j < ctx->num_enabled_channels; j++) {
                 idx = ctx->channel_index[j];
                 p = dso->data + i * ctx->num_enabled_channels + idx * ((ctx->num_enabled_channels > 1) ? 1 : 0);
-                g_string_append_printf(*out, "%0.2f", (128 - *p) * ctx->channel_vdiv[j] / 255 - ctx->channel_vpos[j]);
+                g_string_append_printf(*out, "%0.3f", (ctx->channel_offset[j] - *p) *
+                                                       ctx->channel_scale[j] /
+                                                      ((1 << ctx->channel_bits[j]) - 2.0));
                 g_string_append_c(*out, ctx->separator);
             }
 

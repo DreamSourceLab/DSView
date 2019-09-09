@@ -14,21 +14,24 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
 
+class SamplerateError(Exception):
+    pass
+
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'wiegand'
     name = 'Wiegand'
     longname = 'Wiegand interface'
     desc = 'Wiegand interface for electronic entry systems.'
     license = 'gplv2+'
     inputs = ['logic']
-    outputs = ['wiegand']
+    outputs = []
+    tags = ['Embedded/industrial', 'RFID']
     channels = (
         {'id': 'd0', 'name': 'D0', 'desc': 'Data 0 line'},
         {'id': 'd1', 'name': 'D1', 'desc': 'Data 1 line'},
@@ -49,13 +52,17 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.samplerate = None
         self._samples_per_bit = 10
 
         self._d0_prev = None
         self._d1_prev = None
 
         self._state = None
-        self._ss_state = None
+        self.ss_state = None
 
         self.ss_bit = None
         self.es_bit = None
@@ -65,15 +72,17 @@ class Decoder(srd.Decoder):
     def start(self):
         'Register output types and verify user supplied decoder values.'
         self.out_ann = self.register(srd.OUTPUT_ANN)
-        self._active = self.options['active'] == 'high' and 1 or 0
+        self._active = 1 if self.options['active'] == 'high' else 0
         self._inactive = 1 - self._active
 
     def metadata(self, key, value):
         'Receive decoder metadata about the data stream.'
         if key == srd.SRD_CONF_SAMPLERATE:
-            ms_per_sample = 1000 * (1.0 / value)
-            ms_per_bit = float(self.options['bitwidth_ms'])
-            self._samples_per_bit = int(max(1, int(ms_per_bit / ms_per_sample)))
+            self.samplerate = value
+            if self.samplerate:
+                ms_per_sample = 1000 * (1.0 / self.samplerate)
+                ms_per_bit = float(self.options['bitwidth_ms'])
+                self._samples_per_bit = int(max(1, int(ms_per_bit / ms_per_sample)))
 
     def _update_state(self, state, bit=None):
         'Update state and bit values when they change.'
@@ -98,14 +107,18 @@ class Decoder(srd.Decoder):
             elif self._state == 'invalid':
                 ann = [1, [self._state]]
             if ann:
-                self.put(self._ss_state, self.samplenum, self.out_ann, ann)
-            self._ss_state = self.samplenum
+                self.put(self.ss_state, self.samplenum, self.out_ann, ann)
+            self.ss_state = self.samplenum
             self._state = state
             self._bits = []
 
-    def decode(self, ss, es, data):
-        for self.samplenum, (d0, d1) in data:
-            data.itercnt += 1
+    def decode(self):
+        if not self.samplerate:
+            raise SamplerateError('Cannot decode without samplerate.')
+        while True:
+            # TODO: Come up with more appropriate self.wait() conditions.
+            (d0, d1) = self.wait()
+
             if d0 == self._d0_prev and d1 == self._d1_prev:
                 if self.es_bit and self.samplenum >= self.es_bit:
                     if (d0, d1) == (self._inactive, self._inactive):

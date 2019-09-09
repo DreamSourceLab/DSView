@@ -66,16 +66,27 @@ DeviceOptions::DeviceOptions(struct sr_dev_inst *sdi) :
         if(sr_config_list(_sdi->driver, _sdi, NULL, key, &gvar_list) != SR_OK)
 			gvar_list = NULL;
 
-        const QString name(info->label);
+        const QString name(info->name);
+        char *label_char = info->label;
+        GVariant *gvar_tmp = NULL;
+        if (sr_config_get(_sdi->driver, _sdi, NULL, NULL, SR_CONF_LANGUAGE, &gvar_tmp) == SR_OK) {
+            if (gvar_tmp != NULL) {
+                int language = g_variant_get_int16(gvar_tmp);
+                if (language == QLocale::Chinese)
+                    label_char = info->label_cn;
+                g_variant_unref(gvar_tmp);
+            }
+        }
+        const QString label(label_char);
 
 		switch(key)
 		{
 		case SR_CONF_SAMPLERATE:
-			bind_samplerate(name, gvar_list);
+            bind_samplerate(name, label, gvar_list);
 			break;
 
 		case SR_CONF_CAPTURE_RATIO:
-			bind_int(name, key, "%", pair<int64_t, int64_t>(0, 100));
+            bind_int(name, label, key, "%", pair<int64_t, int64_t>(0, 100));
 			break;
 
 		case SR_CONF_PATTERN_MODE:
@@ -94,31 +105,36 @@ DeviceOptions::DeviceOptions(struct sr_dev_inst *sdi) :
         case SR_CONF_TEST:
         case SR_CONF_STATUS:
         case SR_CONF_PROBE_FACTOR:
-            bind_enum(name, key, gvar_list);
+            bind_enum(name, label, key, gvar_list);
 			break;
 
         case SR_CONF_VTH:
-            bind_double(name, key, "V", pair<double, double>(0.0, 5.0), 1, 0.1);
+            bind_double(name, label, key, "V", pair<double, double>(0.0, 5.0), 1, 0.1);
             break;
 
 		case SR_CONF_RLE:
-			bind_bool(name, key);
+            bind_bool(name, label, key);
 			break;
 
         case SR_CONF_RLE_SUPPORT:
         case SR_CONF_CLOCK_TYPE:
         case SR_CONF_CLOCK_EDGE:
         case SR_CONF_INSTANT:
-            bind_bool(name, key);
+            bind_bool(name, label, key);
             break;
 
 		case SR_CONF_TIMEBASE:
-            bind_enum(name, key, gvar_list, print_timebase);
+            bind_enum(name, label, key, gvar_list, print_timebase);
 			break;
 
         case SR_CONF_PROBE_VDIV:
-            bind_enum(name, key, gvar_list, print_vdiv);
+            bind_enum(name, label, key, gvar_list, print_vdiv);
             break;
+
+        case SR_CONF_BANDWIDTH_LIMIT:
+            bind_bandwidths(name, label, key, gvar_list);
+            break;
+
         default:
             gvar_list = NULL;
 		}
@@ -126,7 +142,8 @@ DeviceOptions::DeviceOptions(struct sr_dev_inst *sdi) :
 		if (gvar_list)
 			g_variant_unref(gvar_list);
 	}
-	g_variant_unref(gvar_opts);
+    if (gvar_opts)
+        g_variant_unref(gvar_opts);
 }
 
 GVariant* DeviceOptions::config_getter(
@@ -134,8 +151,7 @@ GVariant* DeviceOptions::config_getter(
 {
 	GVariant *data = NULL;
     if (sr_config_get(sdi->driver, sdi, NULL, NULL, key, &data) != SR_OK) {
-		qDebug() <<
-			"WARNING: Failed to get value of config id" << key;
+        qDebug() << "WARNING: Failed to get value of config id" << key;
 		return NULL;
 	}
 	return data;
@@ -145,17 +161,17 @@ void DeviceOptions::config_setter(
     struct sr_dev_inst *sdi, int key, GVariant* value)
 {
     if (sr_config_set(sdi, NULL, NULL, key, value) != SR_OK)
-		qDebug() << "WARNING: Failed to set value of sample rate";
+        qDebug() << "WARNING: Failed to set value of config id" << key;
 }
 
-void DeviceOptions::bind_bool(const QString &name, int key)
+void DeviceOptions::bind_bool(const QString &name, const QString label, int key)
 {
 	_properties.push_back(boost::shared_ptr<Property>(
-		new Bool(name, bind(config_getter, _sdi, key),
+        new Bool(name, label, bind(config_getter, _sdi, key),
 			bind(config_setter, _sdi, key, _1))));
 }
 
-void DeviceOptions::bind_enum(const QString &name, int key,
+void DeviceOptions::bind_enum(const QString &name, const QString label, int key,
     GVariant *const gvar_list, boost::function<QString (GVariant*)> printer)
 {
 	GVariant *gvar;
@@ -169,26 +185,26 @@ void DeviceOptions::bind_enum(const QString &name, int key,
 		values.push_back(make_pair(gvar, printer(gvar)));
 
 	_properties.push_back(boost::shared_ptr<Property>(
-        new Enum(name, values,
+        new Enum(name, label, values,
 			bind(config_getter, _sdi, key),
 			bind(config_setter, _sdi, key, _1))));
 }
 
-void DeviceOptions::bind_int(const QString &name, int key, QString suffix,
-	optional< std::pair<int64_t, int64_t> > range)
+void DeviceOptions::bind_int(const QString &name, const QString label, int key, QString suffix,
+    optional< std::pair<int64_t, int64_t> > range)
 {
 	_properties.push_back(boost::shared_ptr<Property>(
-		new Int(name, suffix, range,
+        new Int(name, label, suffix, range,
 			bind(config_getter, _sdi, key),
 			bind(config_setter, _sdi, key, _1))));
 }
 
-void DeviceOptions::bind_double(const QString &name, int key, QString suffix,
+void DeviceOptions::bind_double(const QString &name, const QString label, int key, QString suffix,
     optional< std::pair<double, double> > range,
     int decimals, boost::optional<double> step)
 {
     _properties.push_back(boost::shared_ptr<Property>(
-        new Double(name, decimals, suffix, range, step,
+        new Double(name, label, decimals, suffix, range, step,
             bind(config_getter, _sdi, key),
             bind(config_setter, _sdi, key, _1))));
 }
@@ -209,8 +225,8 @@ QString DeviceOptions::print_gvariant(GVariant *const gvar)
 	return s;
 }
 
-void DeviceOptions::bind_samplerate(const QString &name,
-	GVariant *const gvar_list)
+void DeviceOptions::bind_samplerate(const QString &name, const QString label,
+    GVariant *const gvar_list)
 {
 	GVariant *gvar_list_samplerates;
 
@@ -227,7 +243,7 @@ void DeviceOptions::bind_samplerate(const QString &name,
 		assert(num_elements == 3);
 
 		_properties.push_back(boost::shared_ptr<Property>(
-			new Double(name, 0, QObject::tr("Hz"),
+            new Double(name, label, 0, QObject::tr("Hz"),
 				make_pair((double)elements[0], (double)elements[1]),
 						(double)elements[2],
 				bind(samplerate_double_getter, _sdi),
@@ -238,7 +254,7 @@ void DeviceOptions::bind_samplerate(const QString &name,
 	else if ((gvar_list_samplerates = g_variant_lookup_value(gvar_list,
 			"samplerates", G_VARIANT_TYPE("at"))))
 	{
-        bind_enum(name, SR_CONF_SAMPLERATE,
+        bind_enum(name, label, SR_CONF_SAMPLERATE,
 			gvar_list_samplerates, print_samplerate);
 		g_variant_unref(gvar_list_samplerates);
 	}
@@ -289,6 +305,37 @@ QString DeviceOptions::print_vdiv(GVariant *const gvar)
 	uint64_t p, q;
 	g_variant_get(gvar, "(tt)", &p, &q);
 	return QString(sr_voltage_string(p, q));
+}
+
+void DeviceOptions::bind_bandwidths(const QString &name, const QString label, int key,
+    GVariant *const gvar_list, boost::function<QString (GVariant*)> printer)
+{
+    GVariant *gvar;
+    GVariantIter iter;
+    vector< pair<GVariant*, QString> > values;
+    bool bw_limit = FALSE;
+
+    assert(gvar_list);
+
+    GVariant *gvar_tmp = NULL;
+    if (sr_config_get(_sdi->driver, _sdi, NULL, NULL, SR_CONF_BANDWIDTH, &gvar_tmp) == SR_OK) {
+        if (gvar_tmp != NULL) {
+            bw_limit = g_variant_get_boolean(gvar_tmp);
+            g_variant_unref(gvar_tmp);
+        }
+    }
+
+    if (!bw_limit)
+        return;
+
+    g_variant_iter_init (&iter, gvar_list);
+    while ((gvar = g_variant_iter_next_value (&iter)))
+        values.push_back(make_pair(gvar, printer(gvar)));
+
+    _properties.push_back(boost::shared_ptr<Property>(
+        new Enum(name, label, values,
+            bind(config_getter, _sdi, key),
+            bind(config_setter, _sdi, key, _1))));
 }
 
 } // binding

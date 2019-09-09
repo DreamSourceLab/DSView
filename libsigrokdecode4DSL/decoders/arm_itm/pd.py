@@ -14,8 +14,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
@@ -38,14 +37,15 @@ ARM_EXCEPTIONS = {
 }
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'arm_itm'
     name = 'ARM ITM'
     longname = 'ARM Instrumentation Trace Macroblock'
-    desc = 'Trace data from Cortex-M / ARMv7m ITM module.'
+    desc = 'ARM Cortex-M / ARMv7m ITM trace protocol.'
     license = 'gplv2+'
     inputs = ['uart']
-    outputs = ['arm_itm']
+    outputs = []
+    tags = ['Debug/trace']
     options = (
         {'id': 'objdump', 'desc': 'objdump path',
             'default': 'arm-none-eabi-objdump'},
@@ -81,6 +81,9 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.buf = []
         self.syncbuf = []
         self.swpackets = {}

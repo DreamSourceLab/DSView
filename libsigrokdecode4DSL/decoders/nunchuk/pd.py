@@ -14,21 +14,21 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'nunchuk'
     name = 'Nunchuk'
     longname = 'Nintendo Wii Nunchuk'
     desc = 'Nintendo Wii Nunchuk controller protocol.'
     license = 'gplv2+'
     inputs = ['i2c']
-    outputs = ['nunchuck']
+    outputs = []
+    tags = ['Sensor']
     annotations = \
         tuple(('reg-0x%02X' % i, 'Register 0x%02X' % i) for i in range(6)) + (
         ('bit-bz', 'BZ bit'),
@@ -48,6 +48,9 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.state = 'IDLE'
         self.sx = self.sy = self.ax = self.ay = self.az = self.bz = self.bc = -1
         self.databytecount = 0

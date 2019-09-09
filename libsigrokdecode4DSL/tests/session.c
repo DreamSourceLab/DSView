@@ -14,8 +14,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <config.h>
@@ -149,10 +148,13 @@ static void conf_check_ok(struct srd_session *sess, int key, uint64_t x)
 static void conf_check_fail(struct srd_session *sess, int key, uint64_t x)
 {
 	int ret;
+	GVariant *value = g_variant_new_uint64(x);
 
-	ret = srd_session_metadata_set(sess, key, g_variant_new_uint64(x));
+	ret = srd_session_metadata_set(sess, key, value);
 	fail_unless(ret != SRD_OK, "srd_session_metadata_set(%p, %d, %"
 		PRIu64 ") worked.", sess, key, x);
+	if (ret != SRD_OK)
+		g_variant_unref(value);
 }
 
 static void conf_check_fail_null(struct srd_session *sess, int key)
@@ -167,10 +169,13 @@ static void conf_check_fail_null(struct srd_session *sess, int key)
 static void conf_check_fail_str(struct srd_session *sess, int key, const char *s)
 {
 	int ret;
+	GVariant *value = g_variant_new_string(s);
 
-	ret = srd_session_metadata_set(sess, key, g_variant_new_string(s));
+	ret = srd_session_metadata_set(sess, key, value);
 	fail_unless(ret != SRD_OK, "srd_session_metadata_set() for key %d "
 		"failed: %d.", key, ret);
+	if (ret != SRD_OK)
+		g_variant_unref(value);
 }
 
 /*
@@ -225,6 +230,36 @@ START_TEST(test_session_metadata_set_bogus)
 }
 END_TEST
 
+/*
+ * Check whether srd_session_terminate_reset() succeeds on newly created
+ * sessions, as well as after calling start() and meta(). No data is fed
+ * to decoders here.
+ */
+START_TEST(test_session_reset_nodata)
+{
+	struct srd_session *sess;
+	int ret;
+	GVariant *data;
+
+	srd_init(NULL);
+	srd_session_new(&sess);
+	ret = srd_session_terminate_reset(sess);
+	fail_unless(ret == SRD_OK, "srd_session_terminate_reset() failed: %d.", ret);
+	ret = srd_session_start(sess);
+	fail_unless(ret == SRD_OK, "srd_session_start() failed: %d.", ret);
+	ret = srd_session_terminate_reset(sess);
+	fail_unless(ret == SRD_OK, "srd_session_terminate_reset() failed: %d.", ret);
+	data = g_variant_new_uint64(1000000);
+	ret = srd_session_metadata_set(sess, SRD_CONF_SAMPLERATE, data);
+	fail_unless(ret == SRD_OK, "srd_session_metadata_set() failed: %d.", ret);
+	ret = srd_session_terminate_reset(sess);
+	fail_unless(ret == SRD_OK, "srd_session_terminate_reset() failed: %d.", ret);
+	ret = srd_session_destroy(sess);
+	fail_unless(ret == SRD_OK, "srd_session_destroy() failed: %d.", ret);
+	srd_exit();
+}
+END_TEST
+
 Suite *suite_session(void)
 {
 	Suite *s;
@@ -245,6 +280,10 @@ Suite *suite_session(void)
 	tcase_add_checked_fixture(tc, srdtest_setup, srdtest_teardown);
 	tcase_add_test(tc, test_session_metadata_set);
 	tcase_add_test(tc, test_session_metadata_set_bogus);
+	suite_add_tcase(s, tc);
+
+	tc = tcase_create("reset");
+	tcase_add_test(tc, test_session_reset_nodata);
 	suite_add_tcase(s, tc);
 
 	return s;

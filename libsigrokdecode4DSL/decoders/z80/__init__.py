@@ -28,8 +28,9 @@ sampling clock, if applicable.
 Notes on the Z80 opcode format and descriptions of both documented and
 "undocumented" opcodes are available here:
 
-  http://www.z80.info/decoding.htm
-  http://clrhome.org/table/
+Details:
+http://www.z80.info/decoding.htm
+http://clrhome.org/table/
 '''
 
 from .pd import Decoder

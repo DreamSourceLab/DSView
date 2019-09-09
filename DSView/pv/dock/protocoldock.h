@@ -70,6 +70,10 @@ public:
     void del_all_protocol();
     bool sel_protocol(QString name);
     void add_protocol(bool silent);
+private:
+    void changeEvent(QEvent *event);
+    void retranslateUi();
+    void reStyle();
 
 protected:
     void paintEvent(QPaintEvent *);
@@ -116,6 +120,8 @@ private:
     QHBoxLayout *_dn_search_layout;
     QVBoxLayout *_dn_layout;
     QLabel *_matchs_label;
+    QLabel *_matchs_title_label;
+    QLabel *_dn_title_label;
 
     QPushButton *_add_button;
     QPushButton *_del_all_button;
@@ -131,6 +137,8 @@ private:
     QPushButton *_dn_set_button;
     QPushButton *_dn_save_button;
     QPushButton *_dn_nav_button;
+
+    QPushButton *_search_button;
 
     mutable boost::mutex _search_mutex;
     bool _search_edited;

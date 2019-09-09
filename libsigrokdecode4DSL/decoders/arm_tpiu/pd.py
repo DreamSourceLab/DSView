@@ -14,14 +14,13 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'arm_tpiu'
     name = 'ARM TPIU'
     longname = 'ARM Trace Port Interface Unit'
@@ -29,6 +28,7 @@ class Decoder(srd.Decoder):
     license = 'gplv2+'
     inputs = ['uart']
     outputs = ['uart'] # Emulate uart output so that arm_itm/arm_etm can stack.
+    tags = ['Debug/trace']
     options = (
         {'id': 'stream', 'desc': 'Stream index', 'default': 1},
         {'id': 'sync_offset', 'desc': 'Initial sync offset', 'default': 0},
@@ -43,11 +43,14 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.buf = []
         self.syncbuf = []
         self.prevsample = 0
         self.stream = 0
-        self.stream_ss = None
+        self.ss_stream = None
         self.bytenum = 0
 
     def start(self):
@@ -57,10 +60,10 @@ class Decoder(srd.Decoder):
     def stream_changed(self, ss, stream):
         if self.stream != stream:
             if self.stream != 0:
-                self.put(self.stream_ss, ss, self.out_ann,
+                self.put(self.ss_stream, ss, self.out_ann,
                          [0, ['Stream %d' % self.stream, 'S%d' % self.stream]])
             self.stream = stream
-            self.stream_ss = ss
+            self.ss_stream = ss
 
     def emit_byte(self, ss, es, byte):
         if self.stream == self.options['stream']:

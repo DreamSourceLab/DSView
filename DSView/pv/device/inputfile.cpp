@@ -43,7 +43,7 @@ sr_dev_inst* InputFile::dev_inst() const
 	return _input->sdi;
 }
 
-void InputFile::use(SigSession *owner) throw(QString)
+void InputFile::use(SigSession *owner)
 {
     (void)owner;
 	assert(!_input);

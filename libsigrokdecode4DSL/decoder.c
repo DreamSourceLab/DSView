@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2010 Uwe Hermann <uwe@hermann-uwe.de>
  * Copyright (C) 2012 Bert Vermeulen <bert@biot.com>
- * Copyright (C) 2016 DreamSourceLab <support@dreamsourcelab.com>
+ * Copyright (C) 2019 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -153,11 +153,15 @@ static void decoder_option_free(void *data)
 
 static void decoder_free(struct srd_decoder *dec)
 {
+	PyGILState_STATE gstate;
+
 	if (!dec)
 		return;
 
+	gstate = PyGILState_Ensure();
 	Py_XDECREF(dec->py_dec);
 	Py_XDECREF(dec->py_mod);
+	PyGILState_Release(gstate);
 
 	g_slist_free_full(dec->options, &decoder_option_free);
 	g_slist_free_full(dec->binary, (GDestroyNotify)&g_strfreev);
@@ -166,6 +170,9 @@ static void decoder_free(struct srd_decoder *dec)
 	g_slist_free_full(dec->opt_channels, &channel_free);
 	g_slist_free_full(dec->channels, &channel_free);
 
+	g_slist_free_full(dec->outputs, g_free);
+	g_slist_free_full(dec->inputs, g_free);
+	g_slist_free_full(dec->tags, g_free);
 	g_free(dec->license);
 	g_free(dec->desc);
 	g_free(dec->longname);
@@ -182,10 +189,15 @@ static int get_channels(const struct srd_decoder *d, const char *attr,
 	struct srd_channel *pdch;
 	GSList *pdchl;
 	ssize_t i;
+	PyGILState_STATE gstate;
 
-	if (!PyObject_HasAttrString(d->py_dec, attr))
+	gstate = PyGILState_Ensure();
+
+	if (!PyObject_HasAttrString(d->py_dec, attr)) {
 		/* No channels of this type specified. */
+		PyGILState_Release(gstate);
 		return SRD_OK;
+	}
 
 	pdchl = NULL;
 
@@ -209,7 +221,7 @@ static int get_channels(const struct srd_decoder *d, const char *attr,
 				"a list of dict elements.", d->name, attr);
 			goto err_out;
 		}
-		pdch = g_malloc0(sizeof(struct srd_channel));
+		pdch = g_malloc(sizeof(struct srd_channel));
 		/* Add to list right away so it doesn't get lost. */
 		pdchl = g_slist_prepend(pdchl, pdch);
 
@@ -229,14 +241,18 @@ static int get_channels(const struct srd_decoder *d, const char *attr,
 	Py_DECREF(py_channellist);
 	*out_pdchl = pdchl;
 
+	PyGILState_Release(gstate);
+
 	return SRD_OK;
 
 except_out:
-	srd_exception_catch(NULL, "Failed to get %s list of %s decoder",
+    srd_exception_catch(NULL, "Failed to get %s list of %s decoder",
 			attr, d->name);
+
 err_out:
 	g_slist_free_full(pdchl, &channel_free);
 	Py_XDECREF(py_channellist);
+	PyGILState_Release(gstate);
 
 	return SRD_ERR_PYTHON;
 }
@@ -248,10 +264,15 @@ static int get_options(struct srd_decoder *d)
 	struct srd_decoder_option *o;
 	GVariant *gvar;
 	ssize_t opt, i;
+	PyGILState_STATE gstate;
 
-	if (!PyObject_HasAttrString(d->py_dec, "options"))
+	gstate = PyGILState_Ensure();
+
+	if (!PyObject_HasAttrString(d->py_dec, "options")) {
 		/* No options, that's fine. */
+		PyGILState_Release(gstate);
 		return SRD_OK;
+	}
 
 	options = NULL;
 
@@ -283,7 +304,7 @@ static int get_options(struct srd_decoder *d)
 
 		py_str = PyDict_GetItemString(py_opt, "id");
 		if (!py_str) {
-			srd_err("Protocol decoder %s option %zd has no id.",
+			srd_err("Protocol decoder %s option %zd has no ID.",
 				d->name, opt);
 			goto err_out;
 		}
@@ -309,8 +330,10 @@ static int get_options(struct srd_decoder *d)
 
 		py_values = PyDict_GetItemString(py_opt, "values");
 		if (py_values) {
-			/* A default is required if a list of values is
-			 * given, since it's used to verify their type. */
+			/*
+			 * A default is required if a list of values is
+			 * given, since it's used to verify their type.
+			 */
 			if (!o->def) {
 				srd_err("No default for option '%s'.", o->id);
 				goto err_out;
@@ -325,7 +348,7 @@ static int get_options(struct srd_decoder *d)
 				if (!py_item)
 					goto except_out;
 
-				if (Py_TYPE(py_default) != Py_TYPE(py_item)) {
+				if (py_default && (Py_TYPE(py_default) != Py_TYPE(py_item))) {
 					srd_err("All values for option '%s' must be "
 						"of the same type as the default.",
 						o->id);
@@ -344,20 +367,22 @@ static int get_options(struct srd_decoder *d)
 	}
 	d->options = options;
 	Py_DECREF(py_opts);
+	PyGILState_Release(gstate);
 
 	return SRD_OK;
 
 except_out:
-	srd_exception_catch(NULL, "Failed to get %s decoder options", d->name);
+    srd_exception_catch(NULL, "Failed to get %s decoder options", d->name);
+
 err_out:
 	g_slist_free_full(options, &decoder_option_free);
 	Py_XDECREF(py_opts);
+	PyGILState_Release(gstate);
 
 	return SRD_ERR_PYTHON;
 }
 
-/* Convert annotation class attribute to GSList of char **.
- */
+/* Convert annotation class attribute to GSList of char **. */
 static int get_annotations(struct srd_decoder *dec)
 {
 	PyObject *py_annlist, *py_ann;
@@ -366,9 +391,14 @@ static int get_annotations(struct srd_decoder *dec)
 	ssize_t i;
 	int ann_type = 7;
 	unsigned int j;
+	PyGILState_STATE gstate;
 
-	if (!PyObject_HasAttrString(dec->py_dec, "annotations"))
+	gstate = PyGILState_Ensure();
+
+	if (!PyObject_HasAttrString(dec->py_dec, "annotations")) {
+		PyGILState_Release(gstate);
 		return SRD_OK;
+	}
 
 	annotations = NULL;
 
@@ -400,9 +430,9 @@ static int get_annotations(struct srd_decoder *dec)
 
 		if (PyTuple_Size(py_ann) == 3) {
 			ann_type = 0;
-		for (j = 0; j < strlen(annpair[0]); j++)
-			ann_type = ann_type * 10 + (annpair[0][j] - '0');
-		dec->ann_types = g_slist_append(dec->ann_types, GINT_TO_POINTER(ann_type));
+            for (j = 0; j < strlen(annpair[0]); j++)
+                ann_type = ann_type * 10 + (annpair[0][j] - '0');
+            dec->ann_types = g_slist_append(dec->ann_types, GINT_TO_POINTER(ann_type));
 		} else if (PyTuple_Size(py_ann) == 2) {
 			dec->ann_types = g_slist_append(dec->ann_types, GINT_TO_POINTER(ann_type));
 			ann_type++;
@@ -410,20 +440,22 @@ static int get_annotations(struct srd_decoder *dec)
 	}
 	dec->annotations = annotations;
 	Py_DECREF(py_annlist);
+	PyGILState_Release(gstate);
 
 	return SRD_OK;
 
 except_out:
-	srd_exception_catch(NULL, "Failed to get %s decoder annotations", dec->name);
+    srd_exception_catch(NULL, "Failed to get %s decoder annotations", dec->name);
+
 err_out:
 	g_slist_free_full(annotations, (GDestroyNotify)&g_strfreev);
 	Py_XDECREF(py_annlist);
+	PyGILState_Release(gstate);
 
 	return SRD_ERR_PYTHON;
 }
 
-/* Convert annotation_rows to GSList of 'struct srd_decoder_annotation_row'.
- */
+/* Convert annotation_rows to GSList of 'struct srd_decoder_annotation_row'. */
 static int get_annotation_rows(struct srd_decoder *dec)
 {
 	PyObject *py_ann_rows, *py_ann_row, *py_ann_classes, *py_item;
@@ -431,9 +463,14 @@ static int get_annotation_rows(struct srd_decoder *dec)
 	struct srd_decoder_annotation_row *ann_row;
 	ssize_t i, k;
 	size_t class_idx;
+	PyGILState_STATE gstate;
 
-	if (!PyObject_HasAttrString(dec->py_dec, "annotation_rows"))
+	gstate = PyGILState_Ensure();
+
+	if (!PyObject_HasAttrString(dec->py_dec, "annotation_rows")) {
+		PyGILState_Release(gstate);
 		return SRD_OK;
+	}
 
 	annotation_rows = NULL;
 
@@ -506,30 +543,37 @@ static int get_annotation_rows(struct srd_decoder *dec)
 	}
 	dec->annotation_rows = annotation_rows;
 	Py_DECREF(py_ann_rows);
+	PyGILState_Release(gstate);
 
 	return SRD_OK;
 
 except_out:
-	srd_exception_catch(NULL, "Failed to get %s decoder annotation rows",
+    srd_exception_catch(NULL, "Failed to get %s decoder annotation rows",
 			dec->name);
+
 err_out:
 	g_slist_free_full(annotation_rows, &annotation_row_free);
 	Py_XDECREF(py_ann_rows);
+	PyGILState_Release(gstate);
 
 	return SRD_ERR_PYTHON;
 }
 
-/* Convert binary classes to GSList of char **.
- */
+/* Convert binary classes to GSList of char **. */
 static int get_binary_classes(struct srd_decoder *dec)
 {
 	PyObject *py_bin_classes, *py_bin_class;
 	GSList *bin_classes;
 	char **bin;
 	ssize_t i;
+	PyGILState_STATE gstate;
 
-	if (!PyObject_HasAttrString(dec->py_dec, "binary"))
+	gstate = PyGILState_Ensure();
+
+	if (!PyObject_HasAttrString(dec->py_dec, "binary")) {
+		PyGILState_Release(gstate);
 		return SRD_OK;
+	}
 
 	bin_classes = NULL;
 
@@ -562,36 +606,44 @@ static int get_binary_classes(struct srd_decoder *dec)
 	}
 	dec->binary = bin_classes;
 	Py_DECREF(py_bin_classes);
+	PyGILState_Release(gstate);
 
 	return SRD_OK;
 
 except_out:
-	srd_exception_catch(NULL, "Failed to get %s decoder binary classes",
+    srd_exception_catch(NULL, "Failed to get %s decoder binary classes",
 			dec->name);
+
 err_out:
 	g_slist_free_full(bin_classes, (GDestroyNotify)&g_strfreev);
 	Py_XDECREF(py_bin_classes);
+	PyGILState_Release(gstate);
 
 	return SRD_ERR_PYTHON;
 }
 
-/* Check whether the Decoder class defines the named method.
- */
+/* Check whether the Decoder class defines the named method. */
 static int check_method(PyObject *py_dec, const char *mod_name,
 		const char *method_name)
 {
 	PyObject *py_method;
 	int is_callable;
+	PyGILState_STATE gstate;
+
+	gstate = PyGILState_Ensure();
 
 	py_method = PyObject_GetAttrString(py_dec, method_name);
 	if (!py_method) {
-		srd_exception_catch(NULL, "Protocol decoder %s Decoder class "
+        srd_exception_catch(NULL, "Protocol decoder %s Decoder class "
 				"has no %s() method", mod_name, method_name);
+		PyGILState_Release(gstate);
 		return SRD_ERR_PYTHON;
 	}
 
 	is_callable = PyCallable_Check(py_method);
 	Py_DECREF(py_method);
+
+	PyGILState_Release(gstate);
 
 	if (!is_callable) {
 		srd_err("Protocol decoder %s Decoder class attribute '%s' "
@@ -608,19 +660,26 @@ static int check_method(PyObject *py_dec, const char *mod_name,
  * @param d The decoder to use. Must not be NULL.
  *
  * @return The API version of the decoder, or 0 upon errors.
+ *
+ * @private
  */
 SRD_PRIV long srd_decoder_apiver(const struct srd_decoder *d)
 {
 	PyObject *py_apiver;
 	long apiver;
+	PyGILState_STATE gstate;
 
 	if (!d)
 		return 0;
+
+	gstate = PyGILState_Ensure();
 
 	py_apiver = PyObject_GetAttrString(d->py_dec, "api_version");
 	apiver = (py_apiver && PyLong_Check(py_apiver))
 			? PyLong_AsLong(py_apiver) : 0;
 	Py_XDECREF(py_apiver);
+
+	PyGILState_Release(gstate);
 
 	return apiver;
 }
@@ -641,6 +700,7 @@ SRD_API int srd_decoder_load(const char *module_name)
 	long apiver;
 	int is_subclass;
 	const char *fail_txt;
+	PyGILState_STATE gstate;
 
 	if (!srd_check_init())
 		return SRD_ERR;
@@ -648,12 +708,13 @@ SRD_API int srd_decoder_load(const char *module_name)
 	if (!module_name)
 		return SRD_ERR_ARG;
 
+	gstate = PyGILState_Ensure();
+
 	if (PyDict_GetItemString(PyImport_GetModuleDict(), module_name)) {
 		/* Module was already imported. */
+		PyGILState_Release(gstate);
 		return SRD_OK;
 	}
-
-	srd_dbg("Loading protocol decoder '%s'.", module_name);
 
 	d = g_malloc0(sizeof(struct srd_decoder));
 	fail_txt = NULL;
@@ -698,15 +759,20 @@ SRD_API int srd_decoder_load(const char *module_name)
 	 * PDs of different API versions are incompatible and cannot work.
 	 */
 	apiver = srd_decoder_apiver(d);
-	if (apiver != 2) {
-		srd_exception_catch(NULL, "Only PD API version 2 is supported, "
+	if (apiver != 3) {
+        srd_exception_catch(NULL, "Only PD API version 3 is supported, "
 			"decoder %s has version %ld", module_name, apiver);
 		fail_txt = "API version mismatch";
 		goto err_out;
 	}
 
-	/* Check Decoder class for required methods.
-	 */
+	/* Check Decoder class for required methods. */
+
+	if (check_method(d->py_dec, module_name, "reset") != SRD_OK) {
+		fail_txt = "no 'reset()' method";
+		goto err_out;
+	}
+
 	if (check_method(d->py_dec, module_name, "start") != SRD_OK) {
 		fail_txt = "no 'start()' method";
 		goto err_out;
@@ -740,6 +806,21 @@ SRD_API int srd_decoder_load(const char *module_name)
 
 	if (py_attr_as_str(d->py_dec, "license", &(d->license)) != SRD_OK) {
 		fail_txt = "no 'license' attribute";
+		goto err_out;
+	}
+
+	if (py_attr_as_strlist(d->py_dec, "inputs", &(d->inputs)) != SRD_OK) {
+		fail_txt = "missing or malformed 'inputs' attribute";
+		goto err_out;
+	}
+
+	if (py_attr_as_strlist(d->py_dec, "outputs", &(d->outputs)) != SRD_OK) {
+		fail_txt = "missing or malformed 'outputs' attribute";
+		goto err_out;
+	}
+
+	if (py_attr_as_strlist(d->py_dec, "tags", &(d->tags)) != SRD_OK) {
+		fail_txt = "missing or malformed 'tags' attribute";
 		goto err_out;
 	}
 
@@ -777,23 +858,26 @@ SRD_API int srd_decoder_load(const char *module_name)
 		goto err_out;
 	}
 
+	PyGILState_Release(gstate);
+
 	/* Append it to the list of loaded decoders. */
 	pd_list = g_slist_append(pd_list, d);
 
 	return SRD_OK;
 
 except_out:
-	if (fail_txt) {
-		srd_exception_catch(NULL, "Failed to load decoder %s: %s",
+	/* Don't show a message for the "common" directory, it's not a PD. */
+	if (strcmp(module_name, "common")) {
+        srd_exception_catch(NULL, "Failed to load decoder %s: %s",
 				    module_name, fail_txt);
-		fail_txt = NULL;
-	} else {
-		srd_exception_catch(NULL, "Failed to load decoder %s", module_name);
 	}
+	fail_txt = NULL;
+
 err_out:
 	if (fail_txt)
 		srd_err("Failed to load decoder %s: %s", module_name, fail_txt);
 	decoder_free(d);
+	PyGILState_Release(gstate);
 
 	return SRD_ERR_PYTHON;
 }
@@ -812,6 +896,7 @@ SRD_API char *srd_decoder_doc_get(const struct srd_decoder *dec)
 {
 	PyObject *py_str;
 	char *doc;
+	PyGILState_STATE gstate;
 
 	if (!srd_check_init())
 		return NULL;
@@ -819,12 +904,14 @@ SRD_API char *srd_decoder_doc_get(const struct srd_decoder *dec)
 	if (!dec)
 		return NULL;
 
+	gstate = PyGILState_Ensure();
+
 	if (!PyObject_HasAttrString(dec->py_mod, "__doc__"))
-		return NULL;
+		goto err;
 
 	if (!(py_str = PyObject_GetAttrString(dec->py_mod, "__doc__"))) {
-		srd_exception_catch(NULL, "Failed to get docstring");
-		return NULL;
+        srd_exception_catch(NULL, "Failed to get docstring");
+		goto err;
 	}
 
 	doc = NULL;
@@ -832,7 +919,14 @@ SRD_API char *srd_decoder_doc_get(const struct srd_decoder *dec)
 		py_str_as_str(py_str, &doc);
 	Py_DECREF(py_str);
 
+	PyGILState_Release(gstate);
+
 	return doc;
+
+err:
+	PyGILState_Release(gstate);
+
+	return NULL;
 }
 
 /**
@@ -855,8 +949,6 @@ SRD_API int srd_decoder_unload(struct srd_decoder *dec)
 	if (!dec)
 		return SRD_ERR_ARG;
 
-	srd_dbg("Unloading protocol decoder '%s'.", dec->name);
-
 	/*
 	 * Since any instances of this decoder need to be released as well,
 	 * but they could be anywhere in the stack, just free the entire
@@ -865,7 +957,7 @@ SRD_API int srd_decoder_unload(struct srd_decoder *dec)
 	 */
 	for (l = sessions; l; l = l->next) {
 		sess = l->data;
-		srd_inst_free_all(sess, NULL);
+		srd_inst_free_all(sess);
 	}
 
 	/* Remove the PD from the list of loaded decoders. */
@@ -876,15 +968,18 @@ SRD_API int srd_decoder_unload(struct srd_decoder *dec)
 	return SRD_OK;
 }
 
-static void srd_decoder_load_all_zip_path(char *path)
+static void srd_decoder_load_all_zip_path(char *zip_path)
 {
 	PyObject *zipimport_mod, *zipimporter_class, *zipimporter;
 	PyObject *prefix_obj, *files, *key, *value, *set, *modname;
 	Py_ssize_t pos = 0;
 	char *prefix;
 	size_t prefix_len;
+	PyGILState_STATE gstate;
 
 	set = files = prefix_obj = zipimporter = zipimporter_class = NULL;
+
+	gstate = PyGILState_Ensure();
 
 	zipimport_mod = py_import_by_name("zipimport");
 	if (zipimport_mod == NULL)
@@ -894,7 +989,7 @@ static void srd_decoder_load_all_zip_path(char *path)
 	if (zipimporter_class == NULL)
 		goto err_out;
 
-	zipimporter = PyObject_CallFunction(zipimporter_class, "s", path);
+	zipimporter = PyObject_CallFunction(zipimporter_class, "s", zip_path);
 	if (zipimporter == NULL)
 		goto err_out;
 
@@ -954,6 +1049,7 @@ err_out:
 	Py_XDECREF(zipimporter_class);
 	Py_XDECREF(zipimport_mod);
 	PyErr_Clear();
+	PyGILState_Release(gstate);
 }
 
 static void srd_decoder_load_all_path(char *path)
@@ -962,21 +1058,21 @@ static void srd_decoder_load_all_path(char *path)
 	const gchar *direntry;
 
 	if (!(dir = g_dir_open(path, 0, NULL))) {
-		/* Not really fatal */
-		/* Try zipimport method too */
+		/* Not really fatal. Try zipimport method too. */
 		srd_decoder_load_all_zip_path(path);
 		return;
 	}
 
-	/* This ignores errors returned by srd_decoder_load(). That
+	/*
+	 * This ignores errors returned by srd_decoder_load(). That
 	 * function will have logged the cause, but in any case we
-	 * want to continue anyway. */
+	 * want to continue anyway.
+	 */
 	while ((direntry = g_dir_read_name(dir)) != NULL) {
 		/* The directory name is the module name (e.g. "i2c"). */
 		srd_decoder_load(direntry);
 	}
 	g_dir_close(dir);
-
 }
 
 /**
@@ -999,6 +1095,13 @@ SRD_API int srd_decoder_load_all(void)
 	return SRD_OK;
 }
 
+static void srd_decoder_unload_cb(void *arg, void *ignored)
+{
+	(void)ignored;
+
+	srd_decoder_unload((struct srd_decoder *)arg);
+}
+
 /**
  * Unload all loaded protocol decoders.
  *
@@ -1008,7 +1111,7 @@ SRD_API int srd_decoder_load_all(void)
  */
 SRD_API int srd_decoder_unload_all(void)
 {
-	g_slist_foreach(pd_list, (GFunc)srd_decoder_unload, NULL);
+	g_slist_foreach(pd_list, srd_decoder_unload_cb, NULL);
 	g_slist_free(pd_list);
 	pd_list = NULL;
 

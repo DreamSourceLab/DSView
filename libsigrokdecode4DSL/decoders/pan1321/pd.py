@@ -14,8 +14,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
@@ -25,14 +24,15 @@ RX = 0
 TX = 1
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'pan1321'
     name = 'PAN1321'
     longname = 'Panasonic PAN1321'
     desc = 'Bluetooth RF module with Serial Port Profile (SPP).'
     license = 'gplv2+'
     inputs = ['uart']
-    outputs = ['pan1321']
+    outputs = []
+    tags = ['Wireless/RF']
     annotations = (
         ('text-verbose', 'Human-readable text (verbose)'),
         ('text', 'Human-readable text'),
@@ -40,6 +40,9 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.cmd = ['', '']
         self.ss_block = None
 

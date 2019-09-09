@@ -23,7 +23,7 @@
 import sigrokdecode as srd
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'i2cfilter'
     name = 'I²C filter'
     longname = 'I²C filter'
@@ -31,6 +31,7 @@ class Decoder(srd.Decoder):
     license = 'gplv3+'
     inputs = ['i2c']
     outputs = ['i2c']
+    tags = ['Util']
     options = (
         {'id': 'address', 'desc': 'Address to filter out of the I²C stream',
             'default': 0},
@@ -39,6 +40,9 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.curslave = -1
         self.curdirection = None
         self.packets = [] # Local cache of I²C packets

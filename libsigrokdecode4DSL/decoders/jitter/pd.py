@@ -14,8 +14,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
@@ -31,14 +30,15 @@ class SamplerateError(Exception):
     pass
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'jitter'
     name = 'Jitter'
     longname = 'Timing jitter calculation'
     desc = 'Retrieves the timing jitter between two digital signals.'
     license = 'gplv2+'
     inputs = ['logic']
-    outputs = ['jitter']
+    outputs = []
+    tags = ['Clock/timing', 'Util']
     channels = (
         {'id': 'clk', 'name': 'Clock', 'desc': 'Clock reference channel'},
         {'id': 'sig', 'name': 'Resulting signal', 'desc': 'Resulting signal controlled by the clock'},
@@ -64,10 +64,12 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.state = 'CLK'
         self.samplerate = None
-        self.oldpin = None
-        self.oldclk = self.oldsig = None
+        self.oldclk, self.oldsig = 0, 0
         self.clk_start = None
         self.sig_start = None
         self.clk_missed = 0
@@ -111,8 +113,8 @@ class Decoder(srd.Decoder):
             return
         # Format the delta to an ASCII float value terminated by a newline.
         x = str(delta) + '\n'
-        #self.put(self.clk_start, self.sig_start, self.out_binary,
-        #         [0, x.encode('UTF-8')])
+        self.put(self.clk_start, self.sig_start, self.out_binary,
+                 [0, x.encode('UTF-8')])
 
     # Helper function for missed clock and signal annotations.
     def putm(self, data):
@@ -174,20 +176,12 @@ class Decoder(srd.Decoder):
             # everything we can with this sample.
             return True
 
-    def decode(self, ss, es, data):
+    def decode(self):
         if not self.samplerate:
             raise SamplerateError('Cannot decode without samplerate.')
-
-        for (self.samplenum, pins) in data:
-            data.itercnt += 1
-            # We are only interested in transitions.
-            if self.oldpin == pins:
-                continue
-
-            self.oldpin, (clk, sig) = pins, pins
-
-            if self.oldclk is None and self.oldsig is None:
-                self.oldclk, self.oldsig = clk, sig
+        while True:
+            # Wait for a transition on CLK and/or SIG.
+            (clk, sig) = self.wait([{0: 'e'}, {1: 'e'}])
 
             # State machine:
             # For each sample we can move 2 steps forward in the state machine.

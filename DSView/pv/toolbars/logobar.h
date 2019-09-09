@@ -26,6 +26,7 @@
 #include <QToolBar>
 #include <QToolButton>
 #include <QAction>
+#include <QMenu>
 
 #include "../sigsession.h"
 
@@ -46,28 +47,42 @@ public:
     void dsl_connected(bool conn);
 
 private:
+    void changeEvent(QEvent *event);
+    void retranslateUi();
+    void reStyle();
+
     void session_error(
         const QString text, const QString info_text);
     void show_session_error(
         const QString text, const QString info_text);
 
 signals:
+    void setLanguage(int language);
+    void openDoc();
 
 private slots:
+    void on_actionEn_triggered();
+    void on_actionCn_triggered();
     void on_actionAbout_triggered();
     void on_actionManual_triggered();
     void on_actionIssue_triggered();
 
 private:
     bool _enable;
+    bool _connected;
     SigSession& _session;
 
     QToolButton _logo_button;
 
+    QMenu *_menu;
+
+    QMenu *_language;
+    QAction *_action_en;
+    QAction *_action_cn;
+
     QAction *_about;
     QAction *_manual;
     QAction *_issue;
-
 };
 
 } // namespace toolbars

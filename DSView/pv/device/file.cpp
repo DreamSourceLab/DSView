@@ -91,9 +91,42 @@ QJsonArray File::get_decoders()
                 dec_array = sessionDoc.array();
             }
         }
+
+        zip_close(archive);
     }
 
     return dec_array;
+}
+
+QJsonDocument File::get_session()
+{
+    struct zip *archive;
+    struct zip_file *zf;
+    struct zip_stat zs;
+    int ret;
+    char *dec_file;
+    QJsonDocument sessionDoc;
+    QJsonParseError error;
+
+    archive = zip_open(_path.toLocal8Bit().data(), 0, &ret);
+    if (archive) {
+        /* read "decoders" */
+        if (zip_stat(archive, "session", 0, &zs) != -1) {
+            dec_file = (char *)g_try_malloc(zs.size);
+            if (dec_file) {
+                zf = zip_fopen_index(archive, zs.index, 0);
+                zip_fread(zf, dec_file, zs.size);
+                zip_fclose(zf);
+
+                //QString sessionData = QString::fromUtf8(dec_file);
+                sessionDoc = QJsonDocument::fromJson(QByteArray::fromRawData(dec_file, zs.size), &error);
+            }
+        }
+
+        zip_close(archive);
+    }
+
+    return sessionDoc;
 }
 
 } // device

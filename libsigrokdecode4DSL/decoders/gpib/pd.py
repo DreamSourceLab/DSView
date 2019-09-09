@@ -2,6 +2,7 @@
 ## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2016 Rudolf Reuter <reuterru@arcor.de>
+## Copyright (C) 2019 DreamSourceLab <support@dreamsourcelab.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -20,14 +21,15 @@
 import sigrokdecode as srd
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'gpib'
     name = 'GPIB'
     longname = 'General Purpose Interface Bus'
-    desc = 'IEEE-488 GPIB / HPIB protocol.'
+    desc = 'IEEE-488 General Purpose Interface Bus (GPIB / HPIB).'
     license = 'gplv2+'
     inputs = ['logic']
-    outputs = ['gpib']
+    outputs = []
+    tags = ['PC']
     channels = (
         {'id': 'dio1' , 'name': 'DIO1', 'desc': 'Data I/O bit 1'},
         {'id': 'dio2' , 'name': 'DIO2', 'desc': 'Data I/O bit 2'},
@@ -61,14 +63,15 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
-        self.olddav = None
+        self.reset()
+
+    def reset(self):
         self.items = []
         self.itemcount = 0
         self.saved_item = None
         self.saved_ATN = False
         self.saved_EOI = False
         self.samplenum = 0
-        self.oldpins = None
         self.ss_item = self.es_item = None
         self.first = True
 
@@ -160,29 +163,20 @@ class Decoder(srd.Decoder):
 
         self.itemcount, self.items = 0, []
 
-    def find_falling_dav_edge(self, dav, datapins):
-        # Ignore sample if the DAV pin hasn't changed.
-        if dav == self.olddav:
-            return
-        self.olddav = dav
-        # Sample on falling DAV edge.
-        if dav == 1:
-            return
+    def decode(self):
 
-        # Found the correct DAV edge, now get the bits.
-        self.handle_bits(datapins)
-
-    def decode(self, ss, es, data):
+        # Inspect samples at falling edge of DAV. But make sure to also
+        # start inspection when the capture happens to start with low
+        # DAV level. Optionally enforce processing when a user specified
+        # sample number was reached.
+        waitcond = [{9: 'l'}]
         lsn = self.options['sample_total']
-        data.itercnt += 1
-        for (self.samplenum, pins) in data:
-            if lsn > 0:
-                if (lsn - self.samplenum) == 1: # Show the last data word.
-                    self.handle_bits(pins)
-
-            # Ignore identical samples early on (for performance reasons).
-            if self.oldpins == pins:
-                continue
-            self.oldpins = pins
-
-            self.find_falling_dav_edge(pins[9], pins)
+        if lsn:
+            waitcond.append({'skip': lsn})
+        while True:
+            if lsn:
+                waitcond[1]['skip'] = lsn - self.samplenum - 1
+            (d1, d2, d3, d4, d5, d6, d7, d8, eoi, dav, nrfd, ndac, ifc, srq, atn, ren) = self.wait(waitcond)
+            pins = (d1, d2, d3, d4, d5, d6, d7, d8, eoi, dav, nrfd, ndac, ifc, srq, atn, ren)
+            self.handle_bits(pins)
+            waitcond[0][9] = 'f'

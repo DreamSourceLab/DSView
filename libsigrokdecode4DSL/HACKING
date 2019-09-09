@@ -5,28 +5,31 @@ HACKING
 Coding style
 ------------
 
-This project is programmed using the Linux kernel coding style, see
-http://lxr.linux.no/linux/Documentation/CodingStyle for details.
+This project is programmed using the Linux kernel coding style:
+
+  https://www.kernel.org/doc/html/latest/process/coding-style.html
 
 Please use the same style for any code contributions, thanks!
 
 The Python decoders should follow the usual Python conventions and use
 Python idioms as far as it makes sense. The coding style should mostly follow
-the Python PEP-8, which includes the convention of 4 spaces for indentation.
-See http://www.python.org/dev/peps/pep-0008/ for details.
+the Python PEP-8, which includes the convention of 4 spaces for indentation:
+
+  http://www.python.org/dev/peps/pep-0008/
 
 
 Contributions
 -------------
 
- - Patches should be sent to the development mailinglist at
+ - In order to contribute you should ideally clone the git repository and
+   let us know (preferably via IRC, or via the mailing list) from where to
+   pull/review your changes. You can use github.com, or any other public git
+   hosting site.
+
+ - Alternatively, patches can be sent to the development mailinglist at
    sigrok-devel@lists.sourceforge.net (please subscribe to the list first).
 
    https://lists.sourceforge.net/lists/listinfo/sigrok-devel
-
- - Alternatively, you can also clone the git repository and let us know
-   from where to pull/review your changes. You can use gitorious.org,
-   github.com, or any other public git hosting site.
 
 
 Random notes
@@ -172,6 +175,47 @@ Protocol decoder guidelines
      'FIND ADDRESS', 'GET TEMPERATURE', 'START'
    Not recommended:
      'FIND_ADDRESS', 'Get Temperature', 'start'
+
+ - Protocol decoder tags:
+
+   - Every decoder must have a "tags" list (>= 1 items, alphabetically sorted).
+
+   - All tag names start with a capital letter. Subsequent words of the name
+     are not capitalized, e.g. "Retro computing", "Debug/trace".
+
+   - All tag names should use singular form ("Sensor", not "Sensors").
+
+   Common tags:
+
+   - Analog/digital: Decoders related A/D conversion, e.g. ADCs and DACs.
+   - Audio: Decoders related to audio protocols, e.g. I2S, S/PDIF.
+   - Automotive: Decoders related to automotive protocols, e.g. CAN, FlexRay.
+   - Clock/timing: Decoders related to time keeping, timing, and clocks/RTCs.
+   - Debug/trace: Decoders related to microcontroller/CPU debugging, tracing,
+     programming/flashing protocols, e.g. SWD, JTAG, AVR ISP, ARM ETMv3.
+   - Display: Decoders related to display technologies, e.g. DVI, HDMI,
+     TFT, OLED, LCD, HD44780, EDID, and various LED protocols.
+   - Embedded/industrial: Decoders related to protocols used in embedded
+     systems, industrial systems, or automation (e.g. SPI, Modbus, Profibus).
+   - Encoding: Decoders related to generic encoding / line coding systems,
+     e.g. Manchester, Miller, Gray code, OOK, and similar.
+   - IC: Decoders for specific (families of) ICs (i.e. not IC-independent,
+     generic protocols like UART, SPI, CAN, or USB).
+   - IR: Decoders related to infrared (e.g. remote control) protocols.
+   - Lighting: Decoders related to lighting technologies, e.g. DALI, DMX512.
+   - Memory: Decoders related to memories (e.g. NOR/NAND flash, EEPROM,
+     SDRAM, SRAM, various other volatile or non-volatile memories).
+   - Networking: Decoders related to (wired) networking technologies.
+   - PC: Decoders related to protocols used in personal computers (desktop,
+     workstation, laptop, server). This is not meant to be restricted to
+     "IBM PC" or "x86/Intel", Apple/Commodore/Atari/SPARC etc. are fine too.
+   - RFID: Decoders related to RFID protocols, e.g. EM4100, T55xx.
+   - Retro computing: Decoders related to retro computing, e.g. MCS-48, Z80.
+   - Security/crypto: Decoders related to security or cryptography.
+   - Sensor: Decoders for sensors or all kinds, e.g. temperature or humidity.
+   - Util: Random utility/helper decoders.
+   - Wireless/RF: Decoders related to various wireless/RF technologies, e.g.
+     Bluetooth, BLE, Wifi, or 2.4GHz/433MHz custom protocols.
 
 
 Testsuite

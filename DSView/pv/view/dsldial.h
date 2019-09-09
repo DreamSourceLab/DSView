@@ -44,23 +44,27 @@ public:
      * @param dialRect the rectangle to draw the dial at.
      **/
     void paint(QPainter &p, QRectF dialRect, QColor dialColor,
-               const QPoint pt);
+               const QPoint pt, QString &pText);
 
     // set/get current select
     void set_sel(uint64_t sel);
-    uint64_t get_sel();
+    uint64_t get_sel() const;
+    uint64_t get_count() const;
 
     // boundary detection
     bool isMin();
     bool isMax();
+    uint64_t get_min() const;
+    uint64_t get_max() const;
 
     // get current value
-    uint64_t get_value();
+    uint64_t get_value() const;
+    uint64_t get_value(uint64_t i) const;
     void set_value(uint64_t value);
 
     // set/get factor
     void set_factor(uint64_t factor);
-    uint64_t get_factor();
+    uint64_t get_factor() const;
 
 private:
     uint64_t _div;

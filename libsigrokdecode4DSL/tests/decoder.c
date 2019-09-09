@@ -14,8 +14,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <config.h>
@@ -389,11 +388,14 @@ END_TEST
 START_TEST(test_doc_get)
 {
 	struct srd_decoder *dec;
+	char *doc;
 
 	srd_init(DECODERS_TESTDIR);
 	srd_decoder_load("uart");
 	dec = srd_decoder_get_by_id("uart");
-	fail_unless(srd_decoder_doc_get(dec) != NULL);
+	doc = srd_decoder_doc_get(dec);
+	fail_unless(doc != NULL);
+	g_free(doc);
 	srd_exit();
 }
 END_TEST

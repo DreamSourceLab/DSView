@@ -70,10 +70,10 @@ void StoreProgress::timeout()
         QTimer::singleShot(100, this, SLOT(timeout()));
 }
 
-void StoreProgress::save_run()
+void StoreProgress::save_run(QString session_file)
 {
-    _info.setText("Saving...");
-    if (_store_session.save_start())
+    _info.setText(tr("Saving..."));
+    if (_store_session.save_start(session_file))
         show();
     else
 		show_error();
@@ -83,7 +83,7 @@ void StoreProgress::save_run()
 
 void StoreProgress::export_run()
 {
-    _info.setText("Exporting...");
+    _info.setText(tr("Exporting..."));
     if (_store_session.export_start())
         show();
     else

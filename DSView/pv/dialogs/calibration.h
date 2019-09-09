@@ -46,6 +46,7 @@ class Calibration : public DSDialog
 private:
     static const QString VGAIN;
     static const QString VOFF;
+    static const QString VCOMB;
 
 public:
     Calibration(QWidget *parent);
@@ -55,9 +56,14 @@ protected:
 	void accept();
     void reject();
 
+private:
+    void changeEvent(QEvent *event);
+    void retranslateUi();
+
 private slots:
     void set_value(int value);
     void on_save();
+    void on_abort();
     void on_reset();
     void reload_value();
 
@@ -66,6 +72,7 @@ private:
 
     toolbars::TitleBar *_titlebar;
     QPushButton *_save_btn;
+    QPushButton *_abort_btn;
     QPushButton *_reset_btn;
     QPushButton *_exit_btn;
     QFormLayout *_flayout;

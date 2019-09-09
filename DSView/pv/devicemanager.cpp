@@ -72,6 +72,21 @@ void DeviceManager::add_device(boost::shared_ptr<pv::device::DevInst> device)
         _devices.push_front(device);
 }
 
+void DeviceManager::del_device(boost::shared_ptr<pv::device::DevInst> device)
+{
+    assert(device);
+    BOOST_FOREACH(shared_ptr<device::DevInst> dev, _devices) {
+        assert(dev);
+        if(dev == device) {
+            dev->release();
+            break;
+        }
+    }
+    if (std::find(_devices.begin(), _devices.end(), device) !=
+        _devices.end())
+        _devices.remove(device);
+}
+
 std::list<boost::shared_ptr<device::DevInst> > DeviceManager::driver_scan(
 	struct sr_dev_driver *const driver, GSList *const drvopts)
 {

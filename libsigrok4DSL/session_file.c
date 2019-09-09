@@ -100,6 +100,11 @@ SR_PRIV int sr_sessionfile_check(const char *filename)
         return SR_ERR;
     }
 
+    if ((ret = zip_close(archive)) == -1) {
+        sr_info("error saving session file: %s", zip_strerror(archive));
+        return SR_ERR;
+    }
+
     return SR_OK;
 }
 
@@ -219,6 +224,14 @@ SR_API int sr_session_load(const char *filename)
                     tmp_u64 = strtoull(val, NULL, 10);
                     sdi->driver->config_set(SR_CONF_UNIT_BITS,
                             g_variant_new_byte(tmp_u64), sdi, NULL, NULL);
+                } else if (!strcmp(keys[j], "ref min")) {
+                    tmp_u64 = strtoull(val, NULL, 10);
+                    sdi->driver->config_set(SR_CONF_REF_MIN,
+                            g_variant_new_uint32(tmp_u64), sdi, NULL, NULL);
+                } else if (!strcmp(keys[j], "ref max")) {
+                    tmp_u64 = strtoull(val, NULL, 10);
+                    sdi->driver->config_set(SR_CONF_REF_MAX,
+                            g_variant_new_uint32(tmp_u64), sdi, NULL, NULL);
                 } else if (!strcmp(keys[j], "trigger time")) {
                     tmp_64 = strtoll(val, NULL, 10);
                     sdi->driver->config_set(SR_CONF_TRIGGER_TIME,
@@ -300,17 +313,17 @@ SR_API int sr_session_load(const char *filename)
                         sdi->driver->config_set(SR_CONF_PROBE_FACTOR,
                             g_variant_new_uint64(tmp_u64), sdi, probe, NULL);
                     }
-                } else if (!strncmp(keys[j], "vPos", 4)) {
-                    probenum = strtoul(keys[j]+4, NULL, 10);
-                    tmp_double = strtod(val, NULL);
+                } else if (!strncmp(keys[j], "vOffset", 7)) {
+                    probenum = strtoul(keys[j]+7, NULL, 10);
+                    tmp_u64 = strtoull(val, NULL, 10);
                     if (probenum < g_slist_length(sdi->channels)) {
                         probe = g_slist_nth(sdi->channels, probenum)->data;
-                        sdi->driver->config_set(SR_CONF_PROBE_VPOS,
-                            g_variant_new_double(tmp_double), sdi, probe, NULL);
+                        sdi->driver->config_set(SR_CONF_PROBE_HW_OFFSET,
+                            g_variant_new_uint16(tmp_u64), sdi, probe, NULL);
                     }
                 } else if (!strncmp(keys[j], "vTrig", 5)) {
                     probenum = strtoul(keys[j]+5, NULL, 10);
-                    tmp_u64 = strtod(val, NULL);
+                    tmp_u64 = strtoull(val, NULL, 10);
                     if (probenum < g_slist_length(sdi->channels)) {
                         probe = g_slist_nth(sdi->channels, probenum)->data;
                         sdi->driver->config_set(SR_CONF_TRIGGER_VALUE,
@@ -322,7 +335,7 @@ SR_API int sr_session_load(const char *filename)
                     if (probenum < g_slist_length(sdi->channels)) {
                         probe = g_slist_nth(sdi->channels, probenum)->data;
                         sdi->driver->config_set(SR_CONF_STATUS_PERIOD,
-                            g_variant_new_uint64(tmp_u64), sdi, probe, NULL);
+                            g_variant_new_uint32(tmp_u64), sdi, probe, NULL);
                     }
                 } else if (!strncmp(keys[j], "pcnt", 4)) {
                     probenum = strtoul(keys[j]+4, NULL, 10);
@@ -330,7 +343,7 @@ SR_API int sr_session_load(const char *filename)
                     if (probenum < g_slist_length(sdi->channels)) {
                         probe = g_slist_nth(sdi->channels, probenum)->data;
                         sdi->driver->config_set(SR_CONF_STATUS_PCNT,
-                            g_variant_new_uint64(tmp_u64), sdi, probe, NULL);
+                            g_variant_new_uint32(tmp_u64), sdi, probe, NULL);
                     }
                 } else if (!strncmp(keys[j], "max", 3)) {
                     probenum = strtoul(keys[j]+3, NULL, 10);
@@ -338,7 +351,7 @@ SR_API int sr_session_load(const char *filename)
                     if (probenum < g_slist_length(sdi->channels)) {
                         probe = g_slist_nth(sdi->channels, probenum)->data;
                         sdi->driver->config_set(SR_CONF_STATUS_MAX,
-                            g_variant_new_uint64(tmp_u64), sdi, probe, NULL);
+                            g_variant_new_byte(tmp_u64), sdi, probe, NULL);
                     }
                 } else if (!strncmp(keys[j], "min", 3)) {
                     probenum = strtoul(keys[j]+3, NULL, 10);
@@ -346,7 +359,87 @@ SR_API int sr_session_load(const char *filename)
                     if (probenum < g_slist_length(sdi->channels)) {
                         probe = g_slist_nth(sdi->channels, probenum)->data;
                         sdi->driver->config_set(SR_CONF_STATUS_MIN,
+                            g_variant_new_byte(tmp_u64), sdi, probe, NULL);
+                    }
+                } else if (!strncmp(keys[j], "plen", 4)) {
+                    probenum = strtoul(keys[j]+4, NULL, 10);
+                    tmp_u64 = strtoull(val, NULL, 10);
+                    if (probenum < g_slist_length(sdi->channels)) {
+                        probe = g_slist_nth(sdi->channels, probenum)->data;
+                        sdi->driver->config_set(SR_CONF_STATUS_PLEN,
+                            g_variant_new_uint32(tmp_u64), sdi, probe, NULL);
+                    }
+                } else if (!strncmp(keys[j], "llen", 4)) {
+                    probenum = strtoul(keys[j]+4, NULL, 10);
+                    tmp_u64 = strtoull(val, NULL, 10);
+                    if (probenum < g_slist_length(sdi->channels)) {
+                        probe = g_slist_nth(sdi->channels, probenum)->data;
+                        sdi->driver->config_set(SR_CONF_STATUS_LLEN,
+                            g_variant_new_uint32(tmp_u64), sdi, probe, NULL);
+                    }
+                } else if (!strncmp(keys[j], "level", 5)) {
+                    probenum = strtoul(keys[j]+5, NULL, 10);
+                    tmp_u64 = strtoull(val, NULL, 10);
+                    if (probenum < g_slist_length(sdi->channels)) {
+                        probe = g_slist_nth(sdi->channels, probenum)->data;
+                        sdi->driver->config_set(SR_CONF_STATUS_LEVEL,
+                            g_variant_new_boolean(tmp_u64), sdi, probe, NULL);
+                    }
+                } else if (!strncmp(keys[j], "plevel", 6)) {
+                    probenum = strtoul(keys[j]+6, NULL, 10);
+                    tmp_u64 = strtoull(val, NULL, 10);
+                    if (probenum < g_slist_length(sdi->channels)) {
+                        probe = g_slist_nth(sdi->channels, probenum)->data;
+                        sdi->driver->config_set(SR_CONF_STATUS_PLEVEL,
+                            g_variant_new_boolean(tmp_u64), sdi, probe, NULL);
+                    }
+                } else if (!strncmp(keys[j], "low", 3)) {
+                    probenum = strtoul(keys[j]+3, NULL, 10);
+                    tmp_u64 = strtoull(val, NULL, 10);
+                    if (probenum < g_slist_length(sdi->channels)) {
+                        probe = g_slist_nth(sdi->channels, probenum)->data;
+                        sdi->driver->config_set(SR_CONF_STATUS_LOW,
+                            g_variant_new_byte(tmp_u64), sdi, probe, NULL);
+                    }
+                } else if (!strncmp(keys[j], "high", 4)) {
+                    probenum = strtoul(keys[j]+4, NULL, 10);
+                    tmp_u64 = strtoull(val, NULL, 10);
+                    if (probenum < g_slist_length(sdi->channels)) {
+                        probe = g_slist_nth(sdi->channels, probenum)->data;
+                        sdi->driver->config_set(SR_CONF_STATUS_HIGH,
+                            g_variant_new_byte(tmp_u64), sdi, probe, NULL);
+                    }
+                } else if (!strncmp(keys[j], "rlen", 4)) {
+                    probenum = strtoul(keys[j]+4, NULL, 10);
+                    tmp_u64 = strtoull(val, NULL, 10);
+                    if (probenum < g_slist_length(sdi->channels)) {
+                        probe = g_slist_nth(sdi->channels, probenum)->data;
+                        sdi->driver->config_set(SR_CONF_STATUS_RLEN,
+                            g_variant_new_uint32(tmp_u64), sdi, probe, NULL);
+                    }
+                } else if (!strncmp(keys[j], "flen", 4)) {
+                    probenum = strtoul(keys[j]+4, NULL, 10);
+                    tmp_u64 = strtoull(val, NULL, 10);
+                    if (probenum < g_slist_length(sdi->channels)) {
+                        probe = g_slist_nth(sdi->channels, probenum)->data;
+                        sdi->driver->config_set(SR_CONF_STATUS_FLEN,
+                            g_variant_new_uint32(tmp_u64), sdi, probe, NULL);
+                    }
+                } else if (!strncmp(keys[j], "rms", 3)) {
+                    probenum = strtoul(keys[j]+3, NULL, 10);
+                    tmp_u64 = strtoull(val, NULL, 10);
+                    if (probenum < g_slist_length(sdi->channels)) {
+                        probe = g_slist_nth(sdi->channels, probenum)->data;
+                        sdi->driver->config_set(SR_CONF_STATUS_RMS,
                             g_variant_new_uint64(tmp_u64), sdi, probe, NULL);
+                    }
+                } else if (!strncmp(keys[j], "mean", 4)) {
+                    probenum = strtoul(keys[j]+4, NULL, 10);
+                    tmp_u64 = strtoull(val, NULL, 10);
+                    if (probenum < g_slist_length(sdi->channels)) {
+                        probe = g_slist_nth(sdi->channels, probenum)->data;
+                        sdi->driver->config_set(SR_CONF_STATUS_MEAN,
+                            g_variant_new_uint32(tmp_u64), sdi, probe, NULL);
                     }
                 } else if (!strncmp(keys[j], "mapUnit", 7)) {
                     probenum = strtoul(keys[j]+7, NULL, 10);
@@ -380,6 +473,12 @@ SR_API int sr_session_load(const char *filename)
 	g_strfreev(sections);
 	g_key_file_free(kf);
 
+
+    if ((ret = zip_close(archive)) == -1) {
+        sr_info("error close session file: %s", zip_strerror(archive));
+        return SR_ERR;
+    }
+
 	return SR_OK;
 }
 
@@ -398,7 +497,7 @@ SR_API int sr_session_load(const char *filename)
  *
  * @since 0.3.0
  */
-SR_API int sr_session_save_init(const char *filename, const char *metafile, const char *decfile)
+SR_API int sr_session_save_init(const char *filename, const char *metafile, const char *decfile, const char *sesfile)
 {
     struct zip *zipfile;
     struct zip_source *metasrc;
@@ -434,6 +533,19 @@ SR_API int sr_session_save_init(const char *filename, const char *metafile, cons
 
         if (zip_add(zipfile, "decoders", metasrc) == -1) {
             unlink(decfile);
+            return SR_ERR;
+        }
+    }
+
+    // session file
+    if (sesfile != NULL) {
+        if (!(metasrc = zip_source_file(zipfile, sesfile, 0, -1))) {
+            unlink(sesfile);
+            return SR_ERR;
+        }
+
+        if (zip_add(zipfile, "session", metasrc) == -1) {
+            unlink(sesfile);
             return SR_ERR;
         }
     }
@@ -482,9 +594,11 @@ SR_API int sr_session_append(const char *filename, const unsigned char *buf,
 
 //    if ((ret = sr_sessionfile_check(filename)) != SR_OK)
 //        return ret;
+    if (buf == NULL)
+        goto err;
 
     if (!(archive = zip_open(filename, 0, &ret)))
-        return SR_ERR;
+        goto err;
 
     if (version == 2) {
         type_name = (type == SR_CHANNEL_LOGIC) ? "L" :
@@ -496,17 +610,21 @@ SR_API int sr_session_append(const char *filename, const unsigned char *buf,
     }
 
     if (!(logicsrc = zip_source_buffer(archive, buf, size, FALSE))) {
-        return SR_ERR;
+        goto err;
     }
     if (zip_file_add(archive, chunk_name, logicsrc, ZIP_FL_OVERWRITE) == -1) {
-        return SR_ERR;
+        goto err;
     }
     if ((ret = zip_close(archive)) == -1) {
         sr_info("error saving session file: %s", zip_strerror(archive));
-        return SR_ERR;
+        goto err;
     }
 
     return SR_OK;
+
+err:
+    unlink(filename);
+    return SR_ERR;
 }
 
 /** @} */

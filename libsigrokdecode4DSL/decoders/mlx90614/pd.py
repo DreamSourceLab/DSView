@@ -14,27 +14,30 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'mlx90614'
     name = 'MLX90614'
     longname = 'Melexis MLX90614'
-    desc = 'Infrared Thermometer protocol.'
+    desc = 'Melexis MLX90614 infrared thermometer protocol.'
     license = 'gplv2+'
     inputs = ['i2c']
-    outputs = ['mlx90614']
+    outputs = []
+    tags = ['IC', 'Sensor']
     annotations = (
         ('celsius', 'Temperature in degrees Celsius'),
         ('kelvin', 'Temperature in Kelvin'),
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.state = 'IGNORE START REPEAT'
         self.data = []
 

@@ -2,6 +2,7 @@
 ## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2014 Jens Steinhauser <jens.steinhauser@gmail.com>
+## Copyright (C) 2019 DreamSourceLab <support@dreamsourcelab.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -14,8 +15,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
@@ -60,14 +60,15 @@ xn297_regs = {
 }
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'nrf24l01'
     name = 'nRF24L01(+)'
-    longname = 'Nordic Semiconductor nRF24L01/nRF24L01+'
-    desc = '2.4GHz transceiver chip.'
+    longname = 'Nordic Semiconductor nRF24L01(+)'
+    desc = '2.4GHz RF transceiver chip.'
     license = 'gplv2+'
     inputs = ['spi']
-    outputs = ['nrf24l01']
+    outputs = []
+    tags = ['IC', 'Wireless/RF']
     options = (
         {'id': 'chip', 'desc': 'Chip type',
             'default': 'nrf24l01', 'values': ('nrf24l01', 'xn297')},
@@ -95,6 +96,9 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.next()
         self.requirements_met = True
         self.cs_was_released = False
@@ -314,8 +318,8 @@ class Decoder(srd.Decoder):
                         self.finish_command((self.mb_s, self.mb_e))
 
                 self.next()
-                self.cs_was_released = True            
-        elif ptype == 'DATA':
+                self.cs_was_released = True
+        elif ptype == 'DATA' and self.cs_was_released:
             mosi, miso = data1, data2
             pos = (ss, es)
 

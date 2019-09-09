@@ -24,6 +24,7 @@
 #include "trace.h"
 #include "../sigsession.h"
 #include "../device/devinst.h"
+#include "../device/file.h"
 
 #include <assert.h>
 
@@ -44,51 +45,97 @@ namespace view {
 
 DevMode::DevMode(QWidget *parent, SigSession &session) :
     QWidget(parent),
-    _session(session),
-    _layout(new QGridLayout(this))
+    _session(session)
     
 {
-    _layout->setMargin(5);
+    _layout = new QHBoxLayout(this);
+    _layout->setMargin(0);
     _layout->setSpacing(0);
+    _layout->setContentsMargins(2, 0, 0, 0);
+
+    _close_button = new QToolButton(this);
+    _close_button->setObjectName("FileCloseButton");
+    _close_button->setContentsMargins(0, 0, 0, 0);
+    _close_button->setFixedWidth(10);
+    _close_button->setFixedHeight(height());
+    _close_button->setIconSize(QSize(10, 10));
+    _close_button->setToolButtonStyle(Qt::ToolButtonIconOnly);
+
+    _pop_menu = new QMenu(this);
+
+    _mode_btn = new QToolButton(this);
+    _mode_btn->setObjectName("ModeButton");
+    _mode_btn->setIconSize(QSize(48, 48));
+    _mode_btn->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    _mode_btn->setContentsMargins(0, 0, 1000, 0);
+    _mode_btn->setMenu(_pop_menu);
+    _mode_btn->setPopupMode(QToolButton::InstantPopup);
+    _mode_btn->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Maximum);
+
+    _layout->addWidget(_close_button);
+    _layout->addWidget(_mode_btn);
+    //_layout->addWidget(new QWidget(this));
+    _layout->setStretch(1, 100);
     setLayout(_layout);
+}
+
+
+void DevMode::changeEvent(QEvent *event)
+{
+    if (event->type() == QEvent::LanguageChange)
+        set_device();
+    else if (event->type() == QEvent::StyleChange)
+        set_device();
+    QWidget::changeEvent(event);
 }
 
 void DevMode::set_device()
 {
-    int index = 0;
     const boost::shared_ptr<device::DevInst> dev_inst = _session.get_device();
-
     assert(dev_inst);
    
-    for(std::map<QPushButton *, const sr_dev_mode *>::const_iterator i = _mode_button_list.begin();
-        i != _mode_button_list.end(); i++) {
+    for(std::map<QAction *, const sr_dev_mode *>::const_iterator i = _mode_list.begin();
+        i != _mode_list.end(); i++) {
         (*i).first->setParent(NULL);
-        _layout->removeWidget((*i).first);
+        _pop_menu->removeAction((*i).first);
         delete (*i).first;
     }
-    _mode_button_list.clear();
+    _mode_list.clear();
+    _close_button->setIcon(QIcon());
+    _close_button->setDisabled(true);
+    disconnect(_close_button, SIGNAL(clicked()), this, SLOT(on_close()));
 
+    QString iconPath = ":/icons/" + qApp->property("Style").toString();
     for (const GSList *l = dev_inst->get_dev_mode_list();
          l; l = l->next) {
         const sr_dev_mode *mode = (const sr_dev_mode *)l->data;
+        QString icon_name = "/" + QString::fromLocal8Bit(mode->icon);
 
-        QPushButton *mode_button = new QPushButton(this);
-        //mode_button->setFlat(true);
-        mode_button->setMinimumWidth(32);
-        mode_button->setText(mode->name);
-        mode_button->setCheckable(true);
+        QAction *action = new QAction(this);
+        action->setIcon(QIcon(iconPath+icon_name));
+        if (qApp->property("Language") == QLocale::Chinese)
+            action->setText(mode->name_cn);
+        else
+            action->setText(mode->name);
+        connect(action, SIGNAL(triggered()), this, SLOT(on_mode_change()));
 
-        _mode_button_list[mode_button] = mode;
-        if (dev_inst->dev_inst()->mode == _mode_button_list[mode_button]->mode)
-            mode_button->setChecked(true);
+        _mode_list[action] = mode;
+        if (dev_inst->dev_inst()->mode == _mode_list[action]->mode) {
+            _mode_btn->setIcon(QIcon(iconPath+icon_name));
+            if (qApp->property("Language") == QLocale::Chinese)
+                _mode_btn->setText(mode->name_cn);
+            else
+                _mode_btn->setText(mode->name);
+        }
+        _pop_menu->addAction(action);
+    }
 
-        connect(mode_button, SIGNAL(clicked()), this, SLOT(on_mode_change()));
-
-        _layout->addWidget(mode_button, index / GRID_COLS, index % GRID_COLS);
-        //layout->addWidget(new QWidget(), index / GRID_COLS, GRID_COLS);
-        _layout->setColumnStretch(GRID_COLS, 1);
-        index++;
-    } 
+    boost::shared_ptr<pv::device::File> file_dev;
+    if((file_dev = dynamic_pointer_cast<pv::device::File>(dev_inst))) {
+        _close_button->setDisabled(false);
+        _close_button->setIcon(QIcon(iconPath+"/close.png"));
+        connect(_close_button, SIGNAL(clicked()), this, SLOT(on_close()));
+    }
     update();
 }
 
@@ -106,14 +153,14 @@ void DevMode::on_mode_change()
 {
     const boost::shared_ptr<device::DevInst> dev_inst = _session.get_device();
     assert(dev_inst);
-    QPushButton *button = qobject_cast<QPushButton *>(sender());
-    button->setChecked(true);
-    if (dev_inst->dev_inst()->mode == _mode_button_list[button]->mode)
+    QAction *action = qobject_cast<QAction *>(sender());
+    if (dev_inst->dev_inst()->mode == _mode_list[action]->mode)
         return;
 
-    for(std::map<QPushButton *, const sr_dev_mode *>::const_iterator i = _mode_button_list.begin();
-        i != _mode_button_list.end(); i++) {
-        if ((*i).first == button) {
+    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    for(std::map<QAction *, const sr_dev_mode *>::const_iterator i = _mode_list.begin();
+        i != _mode_list.end(); i++) {
+        if ((*i).first == action) {
             if (dev_inst->dev_inst()->mode != (*i).second->mode) {
                 _session.set_run_mode(SigSession::Single);
                 _session.set_repeating(false);
@@ -123,13 +170,26 @@ void DevMode::on_mode_change()
                 dev_inst->set_config(NULL, NULL,
                                      SR_CONF_DEVICE_MODE,
                                      g_variant_new_int16((*i).second->mode));
-                mode_changed();
-                button->setChecked(true);
+
+                QString icon_name = "/" + QString::fromLocal8Bit((*i).second->icon);
+                _mode_btn->setIcon(QIcon(iconPath+icon_name));
+                if (qApp->property("Language") == QLocale::Chinese)
+                    _mode_btn->setText((*i).second->name_cn);
+                else
+                    _mode_btn->setText((*i).second->name);
+                dev_changed(false);
             }
-        } else {
-            (*i).first->setChecked(false);
         }
     }
+}
+
+void DevMode::on_close()
+{
+    const boost::shared_ptr<device::DevInst> dev_inst = _session.get_device();
+    assert(dev_inst);
+
+    _session.close_file(dev_inst);
+    dev_changed(true);
 }
 
 void DevMode::mousePressEvent(QMouseEvent *event)

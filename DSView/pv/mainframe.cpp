@@ -69,13 +69,14 @@ MainFrame::MainFrame(DeviceManager &device_manager,
     _freezing = false;
     _minimized = false;
 
+    // Title
+    _titleBar = new toolbars::TitleBar(true, this);
+    _titleBar->installEventFilter(this);
+
     // MainWindow
     _mainWindow = new MainWindow(device_manager, open_file_name, this);
     _mainWindow->setWindowFlags(Qt::Widget);
 
-    // Title
-    _titleBar = new toolbars::TitleBar(true, this);
-    _titleBar->installEventFilter(this);
     _titleBar->setTitle(_mainWindow->windowTitle());
 
     QVBoxLayout *vbox = new QVBoxLayout();
@@ -349,9 +350,11 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
 
 void MainFrame::writeSettings()
 {
-    QSettings settings;
+    QSettings settings(QApplication::organizationName(), QApplication::applicationName());
 
     settings.beginGroup("MainFrame");
+    settings.setValue("style", qApp->property("Style").toString());
+    settings.setValue("language", qApp->property("Language").toInt());
     settings.setValue("isMax", isMaximized());
     settings.setValue("size", size());
     settings.setValue("pos", pos() +
@@ -361,7 +364,7 @@ void MainFrame::writeSettings()
 
 void MainFrame::readSettings()
 {
-    QSettings settings;
+    QSettings settings(QApplication::organizationName(), QApplication::applicationName());
     QDesktopWidget* desktopWidget = QApplication::desktop();
     QRect deskRect = desktopWidget->availableGeometry();
     QPoint default_upleft = QPoint((deskRect.width() - defWidth)/2, (deskRect.height() - defHeight)/2);
@@ -371,6 +374,13 @@ void MainFrame::readSettings()
     bool isMax = settings.value("isMax", false).toBool();
     QSize size = settings.value("size", default_size).toSize();
     QPoint pos = settings.value("pos", default_upleft).toPoint();
+    // defaut language
+    if (settings.contains("language")) {
+        _mainWindow->switchLanguage(settings.value("language").toInt());
+    } else {
+        QLocale locale;
+        _mainWindow->switchLanguage(locale.language());
+    }
     settings.endGroup();
 
     // check the restored position is vavlid or not
@@ -391,6 +401,9 @@ void MainFrame::readSettings()
         resize(size);
         move(pos);
     }
+
+    // restore dockwidgets
+    _mainWindow->restore_dock();
 }
 
 void MainFrame::setTaskbarProgress(int progress)
@@ -401,14 +414,13 @@ void MainFrame::setTaskbarProgress(int progress)
 void MainFrame::show_doc()
 {
     const QString DOC_KEY("ShowDocuments");
-    QSettings settings;
-
+    QSettings settings(QApplication::organizationName(), QApplication::applicationName());
     if (!settings.contains(DOC_KEY)) {
         dialogs::DSDialog dlg(this);
         dlg.setTitle(tr("Document"));
 
         QLabel tipsLabel;
-        tipsLabel.setPixmap(QPixmap(":/icons/showDoc.png"));
+        tipsLabel.setPixmap(QPixmap(":/icons/showDoc"+QString::number(_mainWindow->language())+".png"));
         QMessageBox msg;
         msg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
         msg.setContentsMargins(0, 0, 0, 0);
@@ -426,10 +438,7 @@ void MainFrame::show_doc()
         dlg.exec();
 
         if (msg.clickedButton() == openButton) {
-            QDir dir(DS_RES_PATH);
-            dir.cdUp();
-            QDesktopServices::openUrl(
-                        QUrl("file:///"+dir.absolutePath() + "/ug.pdf"));
+            _mainWindow->openDoc();
         }
         if (msg.clickedButton() == noMoreButton)
               settings.setValue(DOC_KEY, false);

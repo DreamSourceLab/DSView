@@ -1,7 +1,7 @@
 ##
 ## This file is part of the libsigrokdecode project.
 ##
-## Copyright (C) 2013 Uwe Hermann <uwe@hermann-uwe.de>
+## Copyright (C) 2013-2016 Uwe Hermann <uwe@hermann-uwe.de>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -14,11 +14,11 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
+from common.srdhelper import bitpack
 
 '''
 OUTPUT_PYTHON format:
@@ -64,8 +64,10 @@ def channel_list(num_channels):
 class ChannelError(Exception):
     pass
 
+NUM_CHANNELS = 8
+
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'parallel'
     name = 'Parallel'
     longname = 'Parallel sync bus'
@@ -73,11 +75,13 @@ class Decoder(srd.Decoder):
     license = 'gplv2+'
     inputs = ['logic']
     outputs = ['parallel']
-    optional_channels = channel_list(8)
+    tags = ['Util']
+    optional_channels = channel_list(NUM_CHANNELS)
     options = (
         {'id': 'clock_edge', 'desc': 'Clock edge to sample on',
             'default': 'rising', 'values': ('rising', 'falling')},
-        {'id': 'wordsize', 'desc': 'Data wordsize', 'default': 1},
+        {'id': 'wordsize', 'desc': 'Data wordsize (# bus cycles)',
+            'default': 0},
         {'id': 'endianness', 'desc': 'Data endianness',
             'default': 'little', 'values': ('little', 'big')},
     )
@@ -85,15 +89,20 @@ class Decoder(srd.Decoder):
         ('items', 'Items'),
         ('words', 'Words'),
     )
+    annotation_rows = (
+        ('items', 'Items', (0,)),
+        ('words', 'Words', (1,)),
+    )
 
     def __init__(self):
-        self.oldclk = None
+        self.reset()
+
+    def reset(self):
         self.items = []
-        self.itemcount = 0
         self.saved_item = None
-        self.samplenum = 0
-        self.oldpins = None
         self.ss_item = self.es_item = None
+        self.saved_word = None
+        self.ss_word = self.es_word = None
         self.first = True
 
     def start(self):
@@ -112,19 +121,20 @@ class Decoder(srd.Decoder):
     def putw(self, data):
         self.put(self.ss_word, self.es_word, self.out_ann, data)
 
-    def handle_bits(self, datapins):
-        # If this is the first item in a word, save its sample number.
-        if self.itemcount == 0:
-            self.ss_word = self.samplenum
+    def handle_bits(self, item, used_pins):
 
-        # Get the bits for this item.
-        item, used_pins = 0, datapins.count(b'\x01') + datapins.count(b'\x00')
-        for i in range(used_pins):
-            item |= datapins[i] << i
+        # If a word was previously accumulated, then emit its annotation
+        # now after its end samplenumber became available.
+        if self.saved_word is not None:
+            if self.options['wordsize'] > 0:
+                self.es_word = self.samplenum
+                self.putw([1, [self.fmt_word.format(self.saved_word)]])
+                self.putpw(['WORD', self.saved_word])
+            self.saved_word = None
 
-        self.items.append(item)
-        self.itemcount += 1
-
+        # Defer annotations for individual items until the next sample
+        # is taken, and the previous sample's end samplenumber has
+        # become available.
         if self.first:
             # Save the start sample and item for later (no output yet).
             self.ss_item = self.samplenum
@@ -134,59 +144,70 @@ class Decoder(srd.Decoder):
             # Output the saved item (from the last CLK edge to the current).
             self.es_item = self.samplenum
             self.putpb(['ITEM', self.saved_item])
-            self.putb([0, ['%X' % self.saved_item]])
+            self.putb([0, [self.fmt_item.format(self.saved_item)]])
             self.ss_item = self.samplenum
             self.saved_item = item
 
-        endian, ws = self.options['endianness'], self.options['wordsize']
-
-        # Get as many items as the configured wordsize says.
-        if self.itemcount < ws:
+        # Get as many items as the configured wordsize specifies.
+        if not self.items:
+            self.ss_word = self.samplenum
+        self.items.append(item)
+        ws = self.options['wordsize']
+        if len(self.items) < ws:
             return
 
-        # Output annotations/python for a word (a collection of items).
-        word = 0
-        for i in range(ws):
-            if endian == 'little':
-                word |= self.items[i] << ((ws - 1 - i) * used_pins)
-            elif endian == 'big':
-                word |= self.items[i] << (i * used_pins)
+        # Collect words and prepare annotation details, but defer emission
+        # until the end samplenumber becomes available.
+        endian = self.options['endianness']
+        if endian == 'big':
+            self.items.reverse()
+        word = sum([self.items[i] << (i * used_pins) for i in range(ws)])
+        self.saved_word = word
+        self.items = []
 
-        self.es_word = self.samplenum
-        # self.putpw(['WORD', word])
-        # self.putw([1, ['%X' % word]])
-        self.ss_word = self.samplenum
+    def decode(self):
+        # Determine which (optional) channels have input data. Insist in
+        # a non-empty input data set. Cope with sparse connection maps.
+        # Store enough state to later "compress" sampled input data.
+        max_possible = len(self.optional_channels)
+        idx_channels = [
+            idx if self.has_channel(idx) else None
+            for idx in range(max_possible)
+        ]
+        has_channels = [idx for idx in idx_channels if idx is not None]
+        if not has_channels:
+            raise ChannelError('At least one channel has to be supplied.')
+        max_connected = max(has_channels)
 
-        self.itemcount, self.items = 0, []
+        # Determine .wait() conditions, depending on the presence of a
+        # clock signal. Either inspect samples on the configured edge of
+        # the clock, or inspect samples upon ANY edge of ANY of the pins
+        # which provide input data.
+        if self.has_channel(0):
+            edge = self.options['clock_edge'][0]
+            conds = {0: edge}
+        else:
+            conds = [{idx: 'e'} for idx in has_channels]
 
-    def find_clk_edge(self, clk, datapins):
-        # Ignore sample if the clock pin hasn't changed.
-        if clk == self.oldclk:
-            return
-        self.oldclk = clk
+        # Pre-determine which input data to strip off, the width of
+        # individual items and multiplexed words, as well as format
+        # strings here. This simplifies call sites which run in tight
+        # loops later.
+        idx_strip = max_connected + 1
+        num_item_bits = idx_strip - 1
+        num_word_items = self.options['wordsize']
+        num_word_bits = num_item_bits * num_word_items
+        num_digits = (num_item_bits + 3) // 4
+        self.fmt_item = "{{:0{}x}}".format(num_digits)
+        num_digits = (num_word_bits + 3) // 4
+        self.fmt_word = "{{:0{}x}}".format(num_digits)
 
-        # Sample data on rising/falling clock edge (depends on config).
-        c = self.options['clock_edge']
-        if c == 'rising' and clk == 0: # Sample on rising clock edge.
-            return
-        elif c == 'falling' and clk == 1: # Sample on falling clock edge.
-            return
-
-        # Found the correct clock edge, now get the bits.
-        self.handle_bits(datapins)
-
-    def decode(self, ss, es, data):
-        for (self.samplenum, pins) in data:
-            data.itercnt += 1
-            # Ignore identical samples early on (for performance reasons).
-            if self.oldpins == pins:
-                continue
-            self.oldpins = pins
-
-            if sum(1 for p in pins if p in (0, 1)) == 0:
-                raise ChannelError('At least one channel has to be supplied.')
-
-            if pins[0] not in (0, 1):
-                self.handle_bits(pins[1:])
-            else:
-                self.find_clk_edge(pins[0], pins[1:])
+        # Keep processing the input stream. Assume "always zero" for
+        # not-connected input lines. Pass data bits (all inputs except
+        # clock) to the handle_bits() method.
+        while True:
+            (clk, d0, d1, d2, d3, d4, d5, d6, d7) = self.wait(conds)
+            pins = (clk, d0, d1, d2, d3, d4, d5, d6, d7)
+            bits = [0 if idx is None else pins[idx] for idx in idx_channels]
+            item = bitpack(bits[1:idx_strip])
+            self.handle_bits(item, num_item_bits)

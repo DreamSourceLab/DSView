@@ -14,14 +14,13 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'i2cdemux'
     name = 'I²C demux'
     longname = 'I²C demultiplexer'
@@ -29,8 +28,12 @@ class Decoder(srd.Decoder):
     license = 'gplv2+'
     inputs = ['i2c']
     outputs = [] # TODO: Only known at run-time.
+    tags = ['Util']
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.packets = [] # Local cache of I²C packets
         self.slaves = [] # List of known slave addresses
         self.stream = -1 # Current output stream

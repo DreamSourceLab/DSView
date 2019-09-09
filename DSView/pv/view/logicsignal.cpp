@@ -42,13 +42,6 @@ namespace view {
 
 //const float LogicSignal::Oversampling = 2.0f;
 const float LogicSignal::Oversampling = 1.0f;
-
-const QColor LogicSignal::EdgeColour(0x80, 0x80, 0x80);
-const QColor LogicSignal::HighColour(0x00, 0xC0, 0x00);
-const QColor LogicSignal::LowColour(0xC0, 0x00, 0x00);
-
-const QColor LogicSignal::DEFAULT_COLOR = QColor(150, 150, 150, 255);
-
 const int LogicSignal::StateHeight = 12;
 const int LogicSignal::StateRound = 5;
 
@@ -59,8 +52,6 @@ LogicSignal::LogicSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
     _data(data),
     _trig(NONTRIG)
 {
-    //_colour = PROBE_COLORS[probe->index % countof(PROBE_COLORS)];
-    _colour = DEFAULT_COLOR;
 }
 
 LogicSignal::LogicSignal(boost::shared_ptr<view::LogicSignal> s,
@@ -128,9 +119,11 @@ bool LogicSignal::commit_trig()
     }
 }
 
-void LogicSignal::paint_mid(QPainter &p, int left, int right)
+void LogicSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColor back)
 {
 	using pv::view::View;
+
+    (void)back;
 
 	assert(_data);
     assert(_view);
@@ -204,7 +197,7 @@ void LogicSignal::paint_mid(QPainter &p, int left, int right)
         wave_lines.push_back(QLine(preX, preY, x, preY));
     }
 
-    p.setPen(_colour);
+    p.setPen(_colour.isValid() ? _colour : fore);
     p.drawLines(wave_lines.data(), wave_lines.size());
 }
 
@@ -231,7 +224,7 @@ void LogicSignal::paint_caps(QPainter &p, QLineF *const lines,
 	p.drawLines(lines, line - lines);
 }
 
-void LogicSignal::paint_type_options(QPainter &p, int right, const QPoint pt)
+void LogicSignal::paint_type_options(QPainter &p, int right, const QPoint pt, QColor fore)
 {
     int y = get_y();
     const QRectF posTrig_rect  = get_rect(POSTRIG,  y, right);
@@ -241,36 +234,28 @@ void LogicSignal::paint_type_options(QPainter &p, int right, const QPoint pt)
     const QRectF edgeTrig_rect = get_rect(EDGTRIG, y, right);
 
     p.setPen(Qt::NoPen);
-    p.setBrush(posTrig_rect.contains(pt) ? dsBlue.lighter() :
-               (_trig == POSTRIG) ? dsBlue : DARK_BACK);
+    p.setBrush(posTrig_rect.contains(pt) ? View::Blue.lighter() :
+               (_trig == POSTRIG) ? View::Blue : Qt::transparent);
     p.drawRect(posTrig_rect);
-    p.setBrush(higTrig_rect.contains(pt) ? dsBlue.lighter() :
-               (_trig == HIGTRIG) ? dsBlue : DARK_BACK);
+    p.setBrush(higTrig_rect.contains(pt) ? View::Blue.lighter() :
+               (_trig == HIGTRIG) ? View::Blue : Qt::transparent);
     p.drawRect(higTrig_rect);
-    p.setBrush(negTrig_rect.contains(pt) ? dsBlue.lighter() :
-               (_trig == NEGTRIG) ? dsBlue : DARK_BACK);
+    p.setBrush(negTrig_rect.contains(pt) ? View::Blue.lighter() :
+               (_trig == NEGTRIG) ? View::Blue : Qt::transparent);
     p.drawRect(negTrig_rect);
-    p.setBrush(lowTrig_rect.contains(pt) ? dsBlue.lighter() :
-               (_trig == LOWTRIG) ? dsBlue : DARK_BACK);
+    p.setBrush(lowTrig_rect.contains(pt) ? View::Blue.lighter() :
+               (_trig == LOWTRIG) ? View::Blue : Qt::transparent);
     p.drawRect(lowTrig_rect);
-    p.setBrush(edgeTrig_rect.contains(pt) ? dsBlue.lighter() :
-               (_trig == EDGTRIG) ? dsBlue : DARK_BACK);
+    p.setBrush(edgeTrig_rect.contains(pt) ? View::Blue.lighter() :
+               (_trig == EDGTRIG) ? View::Blue : Qt::transparent);
     p.drawRect(edgeTrig_rect);
 
-    p.setPen(QPen(DARK_FORE, 1, Qt::DashLine));
+    p.setPen(QPen(fore, 1, Qt::DashLine));
     p.setBrush(Qt::transparent);
-//    p.drawLine(posTrig_rect.right(), posTrig_rect.top(),
-//               posTrig_rect.right(), posTrig_rect.bottom());
-//    p.drawLine(higTrig_rect.right(), higTrig_rect.top(),
-//               higTrig_rect.right(), higTrig_rect.bottom());
-//    p.drawLine(negTrig_rect.right(), negTrig_rect.top(),
-//               negTrig_rect.right(), negTrig_rect.bottom());
-//    p.drawLine(lowTrig_rect.right(), lowTrig_rect.top(),
-//               lowTrig_rect.right(), lowTrig_rect.bottom());
     p.drawLine(posTrig_rect.left(), posTrig_rect.bottom(),
                edgeTrig_rect.right(), edgeTrig_rect.bottom());
 
-    p.setPen(QPen(DARK_FORE, 2, Qt::SolidLine));
+    p.setPen(QPen(fore, 2, Qt::SolidLine));
     p.setBrush(Qt::transparent);
     p.drawLine(posTrig_rect.left() + 5, posTrig_rect.bottom() - 5,
                posTrig_rect.center().x(), posTrig_rect.bottom() - 5);

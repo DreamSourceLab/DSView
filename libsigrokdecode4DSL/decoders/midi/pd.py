@@ -2,7 +2,7 @@
 ## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2013-2016 Uwe Hermann <uwe@hermann-uwe.de>
-## Copyright (C) 2016 Chris Dreher <chrisdreher@hotmail.com> 
+## Copyright (C) 2016 Chris Dreher <chrisdreher@hotmail.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -15,8 +15,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
@@ -26,14 +25,15 @@ RX = 0
 TX = 1
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'midi'
     name = 'MIDI'
     longname = 'Musical Instrument Digital Interface'
     desc = 'Musical Instrument Digital Interface (MIDI) protocol.'
     license = 'gplv2+'
     inputs = ['uart']
-    outputs = ['midi']
+    outputs = []
+    tags = ['Audio', 'PC']
     annotations = (
         ('text-verbose', 'Human-readable text (verbose)'),
         ('text-sysreal-verbose', 'Human-readable SysReal text (verbose)'),
@@ -45,6 +45,9 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.state = 'IDLE'
         self.status_byte = 0
         self.explicit_status_byte = False

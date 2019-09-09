@@ -123,18 +123,16 @@ void AnalogSnapshot::first_payload(const sr_datafeed_analog &analog, uint64_t to
             for (unsigned int i = 0; i < _channel_num; i++) {
                 uint64_t envelop_count = _total_sample_count / EnvelopeScaleFactor;
                 for (unsigned int level = 0; level < ScaleStepCount; level++) {
-                    envelop_count = ((envelop_count + EnvelopeDataUnit - 1) /
-                            EnvelopeDataUnit) * EnvelopeDataUnit;
+//                    envelop_count = ((envelop_count + EnvelopeDataUnit - 1) /
+//                            EnvelopeDataUnit) * EnvelopeDataUnit;
+                    _envelope_levels[i][level].count = envelop_count;
+                    if (envelop_count == 0)
+                        break;
                     _envelope_levels[i][level].samples = (EnvelopeSample*)malloc(envelop_count * sizeof(EnvelopeSample));
-                    _envelope_levels[i][level].max = (uint8_t *)malloc(envelop_count * _unit_bytes);
-                    _envelope_levels[i][level].min = (uint8_t *)malloc(envelop_count * _unit_bytes);
-                    if (!_envelope_levels[i][level].samples ||
-                        !_envelope_levels[i][level].max ||
-                        !_envelope_levels[i][level].min) {
+                    if (!_envelope_levels[i][level].samples) {
                         isOk = false;
                         break;
                     }
-                    _envelope_levels[i][level].count = envelop_count;
                     envelop_count = envelop_count / EnvelopeScaleFactor;
                 }
                 if (!isOk)
@@ -277,7 +275,7 @@ void AnalogSnapshot::append_payload_to_envelope_levels()
         if (e0.length == 0)
             continue;
 
-        reallocate_envelope(e0);
+        //reallocate_envelope(e0);
 
         dest_ptr = e0.samples + prev_length;
 
@@ -324,13 +322,13 @@ void AnalogSnapshot::append_payload_to_envelope_levels()
             if (e.ring_length == prev_length)
                 break;
 
-            reallocate_envelope(e);
+            //reallocate_envelope(e);
 
             // Subsample the level lower level
             const EnvelopeSample *src_ptr =
                 el.samples + prev_length * EnvelopeScaleFactor;
-            const EnvelopeSample *const end_dest_ptr = e.samples + e.ring_length;
-            dest_ptr = e.samples + prev_length;
+            const EnvelopeSample *const end_dest_ptr = (e.ring_length == e.count) ? e.samples : e.samples + e.ring_length;
+            dest_ptr = (prev_length == e.count) ? e.samples : e.samples + prev_length;
             while(dest_ptr != end_dest_ptr) {
                 const EnvelopeSample * end_src_ptr =
                     src_ptr + EnvelopeScaleFactor;

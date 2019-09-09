@@ -22,9 +22,11 @@
 #ifndef DSVIEW_PV_WIDGETS_DECODERGROUPBOX_H
 #define DSVIEW_PV_WIDGETS_DECODERGROUPBOX_H
 
+#include <QApplication>
 #include <QPushButton>
 #include <QGridLayout>
 #include <QToolBar>
+#include <QScrollArea>
 #include <boost/shared_ptr.hpp>
 
 namespace pv {
@@ -38,16 +40,16 @@ class Decoder;
 
 namespace widgets {
 
-class DecoderGroupBox : public QWidget
+class DecoderGroupBox : public QScrollArea
 {
 	Q_OBJECT
 
 public:
     DecoderGroupBox(boost::shared_ptr<pv::data::DecoderStack> &decoder_stack,
-                    boost::shared_ptr<data::decode::Decoder> &dec,
+                    boost::shared_ptr<data::decode::Decoder> &dec, QLayout *dec_layout,
                     QWidget *parent = NULL);
     ~DecoderGroupBox();
-	void add_layout(QLayout *layout);
+    bool eventFilter(QObject *o, QEvent *e);
 
 signals:
 	void show_hide_decoder();
@@ -59,11 +61,13 @@ private slots:
     void on_del_stack();
 
 private:
+    QWidget *_widget;
+
     boost::shared_ptr<pv::data::DecoderStack> &_decoder_stack;
     boost::shared_ptr<data::decode::Decoder> &_dec;
     int _index;
 
-    QGridLayout *const _layout;
+    QGridLayout *_layout;
     QPushButton *_del_button;
     QPushButton *_show_button;
     std::list <QPushButton *> _row_show_button;

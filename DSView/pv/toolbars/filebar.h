@@ -45,6 +45,9 @@ public:
     void set_settings_en(bool enable);
 
 private:
+    void changeEvent(QEvent *event);
+    void retranslateUi();
+    void reStyle();
 
     void session_error(
         const QString text, const QString info_text);

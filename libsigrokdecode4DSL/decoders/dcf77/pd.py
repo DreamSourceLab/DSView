@@ -1,7 +1,7 @@
 ##
 ## This file is part of the libsigrokdecode project.
 ##
-## Copyright (C) 2012-2014 Uwe Hermann <uwe@hermann-uwe.de>
+## Copyright (C) 2012-2016 Uwe Hermann <uwe@hermann-uwe.de>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -14,29 +14,26 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
 import calendar
-
-# Return the specified BCD number (max. 8 bits) as integer.
-def bcd2int(b):
-    return (b & 0x0f) + ((b >> 4) * 10)
+from common.srdhelper import bcd2int
 
 class SamplerateError(Exception):
     pass
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'dcf77'
     name = 'DCF77'
     longname = 'DCF77 time protocol'
     desc = 'European longwave time signal (77.5kHz carrier signal).'
     license = 'gplv2+'
     inputs = ['logic']
-    outputs = ['dcf77']
+    outputs = []
+    tags = ['Clock/timing']
     channels = (
         {'id': 'data', 'name': 'DATA', 'desc': 'DATA line'},
     )
@@ -68,12 +65,12 @@ class Decoder(srd.Decoder):
         ('warnings', 'Warnings', (19,)),
     )
 
-    def __init__(self, **kwargs):
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.samplerate = None
         self.state = 'WAIT FOR RISING EDGE'
-        self.oldpins = None
-        self.oldval = None
-        self.samplenum = 0
         self.ss_bit = self.ss_bit_old = self.es_bit = self.ss_block = 0
         self.datebits = []
         self.bitcount = 0 # Counter for the DCF77 bits (0..58)
@@ -131,7 +128,7 @@ class Decoder(srd.Decoder):
             else:
                 self.tmp |= (bit << (c - 1))
             if c == 14:
-                s = bin(self.tmp)[2:].zfill(14)
+                s = '{:014b}'.format(self.tmp)
                 self.putb([1, ['Special bits: %s' % s, 'SB: %s' % s]])
         elif c == 15:
             s = '' if (bit == 1) else 'not '
@@ -214,9 +211,13 @@ class Decoder(srd.Decoder):
                 self.tmp |= (bit << (c - 42))
             if c == 44:
                 d = bcd2int(self.tmp)
-                dn = calendar.day_name[d - 1] # day_name[0] == Monday
-                self.putb([13, ['Day of week: %d (%s)' % (d, dn),
-                                'DoW: %d (%s)' % (d, dn)]])
+                try:
+                    dn = calendar.day_name[d - 1] # day_name[0] == Monday
+                    self.putb([13, ['Day of week: %d (%s)' % (d, dn),
+                                    'DoW: %d (%s)' % (d, dn)]])
+                except IndexError:
+                    self.putb([19, ['Day of week: %d (%s)' % (d, 'invalid'),
+                                    'DoW: %d (%s)' % (d, 'inv')]])
         elif c in range(45, 49 + 1):
             # Month (1-12): DCF77 bits 45-49 (BCD format).
             if c == 45:
@@ -226,9 +227,13 @@ class Decoder(srd.Decoder):
                 self.tmp |= (bit << (c - 45))
             if c == 49:
                 m = bcd2int(self.tmp)
-                mn = calendar.month_name[m] # month_name[1] == January
-                self.putb([14, ['Month: %d (%s)' % (m, mn),
-                                'Mon: %d (%s)' % (m, mn)]])
+                try:
+                    mn = calendar.month_name[m] # month_name[1] == January
+                    self.putb([14, ['Month: %d (%s)' % (m, mn),
+                                    'Mon: %d (%s)' % (m, mn)]])
+                except IndexError:
+                    self.putb([19, ['Month: %d (%s)' % (m, 'invalid'),
+                                    'Mon: %d (%s)' % (m, 'inv')]])
         elif c in range(50, 57 + 1):
             # Year (0-99): DCF77 bits 50-57 (BCD format).
             if c == 50:
@@ -245,23 +250,16 @@ class Decoder(srd.Decoder):
             self.putx([16, ['Date parity: %s' % s, 'DP: %s' % s]])
             self.datebits = []
         else:
-            raise Exception('Invalid DCF77 bit: %d' % c)
+            self.putx([19, ['Invalid DCF77 bit: %d' % c,
+                            'Invalid bit: %d' % c, 'Inv: %d' % c]])
 
-    def decode(self, ss, es, data):
+    def decode(self):
         if not self.samplerate:
             raise SamplerateError('Cannot decode without samplerate.')
-        for (self.samplenum, pins) in data:
-            data.itercnt += 1
-            # Ignore identical samples early on (for performance reasons).
-            if self.oldpins == pins:
-                continue
-            self.oldpins, (val,) = pins, pins
-
+        while True:
             if self.state == 'WAIT FOR RISING EDGE':
                 # Wait until the next rising edge occurs.
-                if not (self.oldval == 0 and val == 1):
-                    self.oldval = val
-                    continue
+                self.wait({0: 'r'})
 
                 # Save the sample number where the DCF77 bit begins.
                 self.ss_bit = self.samplenum
@@ -286,9 +284,7 @@ class Decoder(srd.Decoder):
 
             elif self.state == 'GET BIT':
                 # Wait until the next falling edge occurs.
-                if not (self.oldval == 1 and val == 0):
-                    self.oldval = val
-                    continue
+                self.wait({0: 'f'})
 
                 # Save the sample number where the DCF77 bit ends.
                 self.es_bit = self.samplenum
@@ -304,13 +300,12 @@ class Decoder(srd.Decoder):
                 elif len_high_ms in range(161, 260 + 1):
                     bit = 1
                 else:
-                    bit = -1 # TODO: Error?
+                    bit = -1
 
-                # There's no bit 59, make sure none is decoded.
-                if bit in (0, 1) and self.bitcount in range(0, 58 + 1):
+                if bit in (0, 1):
                     self.handle_dcf77_bit(bit)
                     self.bitcount += 1
+                else:
+                    self.putx([19, ['Invalid bit timing', 'Inv timing', 'Inv']])
 
                 self.state = 'WAIT FOR RISING EDGE'
-
-            self.oldval = val

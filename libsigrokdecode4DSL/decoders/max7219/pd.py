@@ -14,8 +14,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import re
@@ -42,14 +41,15 @@ registers = {
 ann_reg, ann_digit, ann_warning = range(3)
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'max7219'
     name = 'MAX7219'
     longname = 'Maxim MAX7219/MAX7221'
-    desc = '8-digit LED display driver.'
+    desc = 'Maxim MAX72xx series 8-digit LED display driver.'
     license = 'gplv2+'
     inputs = ['spi']
-    outputs = ['max7219']
+    outputs = []
+    tags = ['Display']
     annotations = (
         ('register', 'Registers written to the device'),
         ('digit', 'Digits displayed on the device'),
@@ -59,6 +59,12 @@ class Decoder(srd.Decoder):
         ('commands', 'Commands', (ann_reg, ann_digit)),
         ('warnings', 'Warnings', (ann_warning,)),
     )
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        pass
 
     def start(self):
         self.out_ann = self.register(srd.OUTPUT_ANN)

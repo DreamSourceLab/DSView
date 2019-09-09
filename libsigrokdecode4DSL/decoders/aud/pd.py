@@ -2,6 +2,7 @@
 ## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2016 fenugrec <fenugrec users.sourceforge.net>
+## Copyright (C) 2019 DreamSourceLab <support@dreamsourcelab.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -14,8 +15,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 # TODO:
@@ -26,14 +26,15 @@
 import sigrokdecode as srd
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'aud'
     name = 'AUD'
     longname = 'Advanced User Debugger'
     desc = 'Renesas/Hitachi Advanced User Debugger (AUD) protocol.'
     license = 'gplv2+'
     inputs = ['logic']
-    outputs = ['aud']
+    outputs = []
+    tags = ['Debug/trace']
     channels = (
         {'id': 'audck', 'name': 'AUDCK', 'desc': 'AUD clock'},
         {'id': 'naudsync', 'name': 'nAUDSYNC', 'desc': 'AUD sync'},
@@ -47,12 +48,13 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.ncnt = 0
         self.nmax = 0
         self.addr = 0
         self.lastaddr = 0
-        self.samplenum = 0
-        self.oldclk = 0
         self.ss = 0
 
     def start(self):
@@ -61,15 +63,7 @@ class Decoder(srd.Decoder):
     def putx(self, data):
         self.put(self.ss, self.samplenum, self.out_ann, data)
 
-    def find_clk_edge(self, clk, sync, datapins):
-        # Ignore sample if there's no edge.
-        if clk == self.oldclk:
-            return
-        self.oldclk = clk
-        # Ignore falling edges.
-        if clk == 0:
-            return
-
+    def handle_clk_edge(self, clk, sync, datapins):
         # Reconstruct nibble.
         nib = 0
         for i in range(4):
@@ -106,11 +100,8 @@ class Decoder(srd.Decoder):
                 self.addr |= nib << (self.ncnt * 4)
                 self.ncnt += 1
 
-    def decode(self, ss, es, data):
-        for (self.samplenum, pins) in data:
-            print("1")
-            data.itercnt += 1
-            clk = pins[0]
-            sync = pins[1]
-            d = pins[2:]
-            self.find_clk_edge(clk, sync, d)
+    def decode(self):
+        while True:
+            (clk, sync, d3, d2, d1, d0) = self.wait({0: 'r'})
+            d = (d3, d2, d1, d0)
+            self.handle_clk_edge(clk, sync, d)

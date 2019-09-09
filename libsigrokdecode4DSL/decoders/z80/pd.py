@@ -64,14 +64,15 @@ def signed_byte(byte):
     return byte if byte < 128 else byte - 256
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id       = 'z80'
     name     = 'Z80'
     longname = 'Zilog Z80 CPU'
     desc     = 'Zilog Z80 microprocessor disassembly.'
     license  = 'gplv3+'
     inputs   = ['logic']
-    outputs  = ['z80']
+    outputs  = []
+    tags     = ['Retro computing']
     channels = tuple({
             'id': 'd%d' % i,
             'name': 'D%d' % i,
@@ -111,6 +112,9 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.prev_cycle = Cycle.NONE
         self.op_state   = self.state_IDLE
 
@@ -129,9 +133,11 @@ class Decoder(srd.Decoder):
         self.op_state   = self.state_IDLE
         self.instr_len  = 0
 
-    def decode(self, ss, es, data):
-        for (self.samplenum, pins) in data:
-            data.itercnt += 1
+    def decode(self):
+        while True:
+            # TODO: Come up with more appropriate self.wait() conditions.
+            (d0, d1, d2, d3, d4, d5, d6, d7, m1, rd, wr, mreq, iorq, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15) = self.wait()
+            pins = (d0, d1, d2, d3, d4, d5, d6, d7, m1, rd, wr, mreq, iorq, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15)
             cycle = Cycle.NONE
             if pins[Pin.MREQ] != 1: # default to asserted
                 if pins[Pin.RD] == 0:
@@ -156,7 +162,6 @@ class Decoder(srd.Decoder):
                 else:
                     self.on_cycle_trans()
             self.prev_cycle = cycle
-
 
     def on_cycle_begin(self, bus_addr):
         if self.pend_addr is not None:

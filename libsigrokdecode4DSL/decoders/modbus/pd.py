@@ -2,6 +2,7 @@
 ## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2015 Bart de Waal <bart@waalamo.com>
+## Copyright (C) 2019 DreamSourceLab <support@dreamsourcelab.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -811,7 +812,7 @@ class Modbus_ADU_CS(Modbus_ADU):
         self.check_crc(bytecount + 12)
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'modbus'
     name = 'Modbus'
     longname = 'Modbus RTU over RS232/RS485'
@@ -819,6 +820,7 @@ class Decoder(srd.Decoder):
     license = 'gplv3+'
     inputs = ['uart']
     outputs = ['modbus']
+    tags = ['Embedded/industrial']
     annotations = (
         ('sc-server-id', ''),
         ('sc-function', ''),
@@ -837,16 +839,19 @@ class Decoder(srd.Decoder):
         ('error-indication', ''),
     )
     annotation_rows = (
-        ('sc', 'Server->client', (0, 1, 2, 3, 4, 5, 6)),
-        ('cs', 'Client->server', (7, 8, 9, 10, 11, 12, 13)),
+        ('sc', 'Server->client', (7, 8, 9, 10, 11, 12, 13)),
+        ('cs', 'Client->server', (0, 1, 2, 3, 4, 5, 6)),
         ('error-indicator', 'Errors in frame', (14,)),
     )
     options = (
-        {'id': 'channel', 'desc': 'Server -> client channel', 'default': 'RX',
-            'values': ('RX', 'TX')},
+        {'id': 'channel', 'desc': 'Direction', 'default': 'TX',
+            'values': ('TX', 'RX')},
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.ADUSc = None # Start off with empty slave -> client ADU.
         self.ADUCs = None # Start off with empty client -> slave ADU.
 
@@ -923,9 +928,7 @@ class Decoder(srd.Decoder):
 
         # Decide what ADU(s) we need this packet to go to.
         # Note that it's possible to go to both ADUs.
-        if rxtx == TX:
+        if self.options['channel'] == 'TX':
+            self.decode_adu(ss, es, data, 'Sc')
+        if self.options['channel'] == 'RX':
             self.decode_adu(ss, es, data, 'Cs')
-        if rxtx == TX and self.options['channel'] == 'TX':
-            self.decode_adu(ss, es, data, 'Sc')
-        if rxtx == RX and self.options['channel'] == 'RX':
-            self.decode_adu(ss, es, data, 'Sc')

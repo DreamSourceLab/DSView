@@ -26,6 +26,7 @@
 
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QFile>
 
 #include "devinst.h"
 
@@ -41,6 +42,8 @@ public:
     static File* create(QString name);
 
     QJsonArray get_decoders();
+
+    QJsonDocument get_session();
 
 public:
     QString format_device_title() const;

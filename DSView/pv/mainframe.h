@@ -47,8 +47,8 @@ class MainFrame : public QFrame
 {
     Q_OBJECT
 public:
-    static const int minWidth = 600;
-    static const int minHeight = 500;
+    static const int minWidth = 800;
+    static const int minHeight = 600;
     static const int defWidth = 900;
     static const int defHeight = 680;
 

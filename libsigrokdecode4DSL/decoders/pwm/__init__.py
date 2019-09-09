@@ -14,12 +14,11 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 '''
-Pulse-width modulation (a.k.a pulse-duration modulation, PDM) decoder.
+Pulse-width modulation (PWM) a.k.a pulse-duration modulation (PDM) decoder.
 '''
 
 from .pd import Decoder

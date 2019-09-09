@@ -41,14 +41,10 @@ namespace view {
 
 class LogicSignal : public Signal
 {
+    Q_OBJECT
+
 private:
 	static const float Oversampling;
-
-	static const QColor EdgeColour;
-	static const QColor HighColour;
-	static const QColor LowColour;
-
-    static const QColor DEFAULT_COLOR;
 
     static const int StateHeight;
     static const int StateRound;
@@ -95,7 +91,7 @@ public:
 	 * @param left the x-coordinate of the left edge of the signal.
 	 * @param right the x-coordinate of the right edge of the signal.
 	 **/
-    void paint_mid(QPainter &p, int left, int right);
+    void paint_mid(QPainter &p, int left, int right, QColor fore, QColor back);
 
     bool measure(const QPointF &p, uint64_t &index0, uint64_t &index1, uint64_t &index2) const;
 
@@ -112,7 +108,7 @@ public:
     void paint_mark(QPainter &p, int xstart, int xend, int type);
 
 protected:
-    void paint_type_options(QPainter &p, int right, const QPoint pt);
+    void paint_type_options(QPainter &p, int right, const QPoint pt, QColor fore);
 
 private:
 

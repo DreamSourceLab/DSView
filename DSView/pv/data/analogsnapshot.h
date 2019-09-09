@@ -54,8 +54,6 @@ public:
 		uint64_t length;
         uint64_t samples_num;
 		EnvelopeSample *samples;
-        uint8_t *max;
-        uint8_t *min;
 	};
 
 private:

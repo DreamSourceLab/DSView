@@ -14,15 +14,11 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
-
-# Return the specified BCD number (max. 8 bits) as integer.
-def bcd2int(b):
-    return (b & 0x0f) + ((b >> 4) * 10)
+from common.srdhelper import bcd2int
 
 def reg_list():
     l = []
@@ -32,14 +28,15 @@ def reg_list():
     return tuple(l)
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'rtc8564'
     name = 'RTC-8564'
     longname = 'Epson RTC-8564 JE/NB'
     desc = 'Realtime clock module protocol.'
     license = 'gplv2+'
     inputs = ['i2c']
-    outputs = ['rtc8564']
+    outputs = []
+    tags = ['Clock/timing']
     annotations = reg_list() + (
         ('read', 'Read date/time'),
         ('write', 'Write date/time'),
@@ -55,7 +52,10 @@ class Decoder(srd.Decoder):
         ('date-time', 'Date/time', (9, 10)),
     )
 
-    def __init__(self, **kwargs):
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.state = 'IDLE'
         self.hours = -1
         self.minutes = -1

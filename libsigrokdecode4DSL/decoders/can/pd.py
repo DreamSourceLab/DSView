@@ -2,6 +2,7 @@
 ## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2012-2013 Uwe Hermann <uwe@hermann-uwe.de>
+## Copyright (C) 2019 DreamSourceLab <support@dreamsourcelab.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -14,8 +15,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
@@ -24,14 +24,15 @@ class SamplerateError(Exception):
     pass
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'can'
     name = 'CAN'
     longname = 'Controller Area Network'
     desc = 'Field bus protocol for distributed realtime control.'
     license = 'gplv2+'
     inputs = ['logic']
-    outputs = ['can']
+    outputs = []
+    tags = ['Automotive']
     channels = (
         {'id': 'can_rx', 'name': 'CAN RX', 'desc': 'CAN bus line'},
     )
@@ -61,10 +62,14 @@ class Decoder(srd.Decoder):
     )
     annotation_rows = (
         ('bits', 'Bits', (15, 17)),
-        ('fields', 'Fields', tuple(range(15)) + (16,)),
+        ('fields', 'Fields', tuple(range(15))),
+        ('warnings', 'Warnings', (16,)),
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.samplerate = None
         self.reset_variables()
 
@@ -75,11 +80,11 @@ class Decoder(srd.Decoder):
         if key == srd.SRD_CONF_SAMPLERATE:
             self.samplerate = value
             self.bit_width = float(self.samplerate) / float(self.options['bitrate'])
-            self.bitpos = (self.bit_width / 100.0) * self.options['sample_point']
+            self.sample_point = (self.bit_width / 100.0) * self.options['sample_point']
 
     # Generic helper for CAN bit annotations.
     def putg(self, ss, es, data):
-        left, right = int(self.bitpos), int(self.bit_width - self.bitpos)
+        left, right = int(self.sample_point), int(self.bit_width - self.sample_point)
         self.put(ss - left, es + right, self.out_ann, data)
 
     # Single-CAN-bit annotation using the current samplenum.
@@ -105,16 +110,32 @@ class Decoder(srd.Decoder):
         self.ss_bit12 = None
         self.ss_databytebits = []
 
-    # Return True if we reached the desired bit position, False otherwise.
-    def reached_bit(self, bitnum):
-        bitpos = int(self.sof + (self.bit_width * bitnum) + self.bitpos)
-        if self.samplenum >= bitpos:
-            return True
-        return False
+    # Poor man's clock synchronization. Use signal edges which change to
+    # dominant state in rather simple ways. This naive approach is neither
+    # aware of the SYNC phase's width nor the specific location of the edge,
+    # but improves the decoder's reliability when the input signal's bitrate
+    # does not exactly match the nominal rate.
+    def dom_edge_seen(self, force = False):
+        self.dom_edge_snum = self.samplenum
+        self.dom_edge_bcount = self.curbit
+
+    def bit_sampled(self):
+        # EMPTY
+        pass
+
+    # Determine the position of the next desired bit's sample point.
+    def get_sample_point(self, bitnum):
+        samplenum = self.dom_edge_snum
+        samplenum += int(self.bit_width * (bitnum - self.dom_edge_bcount))
+        samplenum += int(self.sample_point)
+        return samplenum
 
     def is_stuff_bit(self):
         # CAN uses NRZ encoding and bit stuffing.
         # After 5 identical bits, a stuff bit of opposite value is added.
+        # But not in the CRC delimiter, ACK, and end of frame fields.
+        if len(self.bits) > self.last_databit + 17:
+            return False
         last_6_bits = self.rawbits[-6:]
         if last_6_bits not in ([0, 0, 0, 0, 0, 1], [1, 1, 1, 1, 1, 0]):
             return False
@@ -155,6 +176,8 @@ class Decoder(srd.Decoder):
         elif bitnum == (self.last_databit + 16):
             self.putx([12, ['CRC delimiter: %d' % can_rx,
                             'CRC d: %d' % can_rx, 'CRC d']])
+            if can_rx != 1:
+                self.putx([16, ['CRC delimiter must be a recessive bit']])
 
         # ACK slot bit (dominant: ACK, recessive: NACK)
         elif bitnum == (self.last_databit + 17):
@@ -165,6 +188,8 @@ class Decoder(srd.Decoder):
         elif bitnum == (self.last_databit + 18):
             self.putx([14, ['ACK delimiter: %d' % can_rx,
                             'ACK d: %d' % can_rx, 'ACK d']])
+            if can_rx != 1:
+                self.putx([16, ['ACK delimiter must be a recessive bit']])
 
         # Remember start of EOF (see below).
         elif bitnum == (self.last_databit + 19):
@@ -173,6 +198,8 @@ class Decoder(srd.Decoder):
         # End of frame (EOF), 7 recessive bits
         elif bitnum == (self.last_databit + 25):
             self.putb([2, ['End of frame', 'EOF', 'E']])
+            if self.rawbits[-7:] != [1, 1, 1, 1, 1, 1, 1]:
+                self.putb([16, ['End of frame (EOF) must be 7 recessive bits']])
             self.reset_variables()
             return True
 
@@ -204,6 +231,8 @@ class Decoder(srd.Decoder):
             self.putb([10, ['Data length code: %d' % self.dlc,
                             'DLC: %d' % self.dlc, 'DLC']])
             self.last_databit = 18 + (self.dlc * 8)
+            if self.dlc > 8:
+                self.putb([16, ['Data length code (DLC) > 8 is not allowed']])
 
         # Remember all databyte bits, except the very last one.
         elif bitnum in range(19, self.last_databit):
@@ -318,9 +347,8 @@ class Decoder(srd.Decoder):
 
         # Bit 0: Start of frame (SOF) bit
         if bitnum == 0:
-            if can_rx == 0:
-                self.putx([1, ['Start of frame', 'SOF', 'S']])
-            else:
+            self.putx([1, ['Start of frame', 'SOF', 'S']])
+            if can_rx != 0:
                 self.putx([16, ['Start of frame (SOF) must be a dominant bit']])
 
         # Remember start of ID (see below).
@@ -333,6 +361,8 @@ class Decoder(srd.Decoder):
             self.id = int(''.join(str(d) for d in self.bits[1:]), 2)
             s = '%d (0x%x)' % (self.id, self.id),
             self.putb([3, ['Identifier: %s' % s, 'ID: %s' % s, 'ID']])
+            if (self.id & 0x7f0) == 0x7f0:
+                self.putb([16, ['Identifier bits 10..4 must not be all recessive']])
 
         # RTR or SRR bit, depending on frame type (gets handled later).
         elif bitnum == 12:
@@ -362,24 +392,24 @@ class Decoder(srd.Decoder):
 
         self.curbit += 1
 
-    def decode(self, ss, es, data):
+    def decode(self):
         if not self.samplerate:
             raise SamplerateError('Cannot decode without samplerate.')
-        for (self.samplenum, pins) in data:
 
-            (can_rx,) = pins
-            data.itercnt += 1
-
+        while True:
             # State machine.
             if self.state == 'IDLE':
                 # Wait for a dominant state (logic 0) on the bus.
-                if can_rx == 1:
-                    continue
+                (can_rx,) = self.wait({0: 'l'})
                 self.sof = self.samplenum
+                self.dom_edge_seen(force = True)
                 self.state = 'GET BITS'
             elif self.state == 'GET BITS':
                 # Wait until we're in the correct bit/sampling position.
-                if not self.reached_bit(self.curbit):
-                    continue
-                self.handle_bit(can_rx)
-
+                pos = self.get_sample_point(self.curbit)
+                (can_rx,) = self.wait([{'skip': pos - self.samplenum}, {0: 'f'}])
+                if (self.matched & (0b1 << 1)):
+                    self.dom_edge_seen()
+                if (self.matched & (0b1 << 0)):
+                    self.handle_bit(can_rx)
+                    self.bit_sampled()

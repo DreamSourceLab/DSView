@@ -33,8 +33,10 @@
 
 #include <QWidget>
 #include <QPushButton>
-#include <QGridLayout>
+#include <QHBoxLayout>
 #include <QVector>
+#include <QToolButton>
+#include <QLabel>
 
 #include <libsigrok4DSL/libsigrok.h>
 
@@ -67,21 +69,27 @@ private:
 	void mouseMoveEvent(QMouseEvent *event);
 	void leaveEvent(QEvent *event);
 
+    void changeEvent(QEvent *event);
+
 public slots:
     void set_device();
     void on_mode_change();
+    void on_close();
 
 private slots:
 
 signals:
-    void mode_changed();
+    void dev_changed(bool close);
 
 private:
     SigSession &_session;
 
-    QGridLayout *  _layout;
-    std::map <QPushButton *, const sr_dev_mode *> _mode_button_list;
+    QHBoxLayout *  _layout;
+    std::map <QAction *, const sr_dev_mode *> _mode_list;
+    QToolButton *_mode_btn;
+    QMenu *_pop_menu;
     QPoint _mouse_point;
+    QToolButton *_close_button;
 };
 
 } // namespace view

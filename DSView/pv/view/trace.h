@@ -49,7 +49,6 @@ class Trace : public SelectableItem
 protected:
     static const int Margin = 3;
     static const int SquareNum = 5;
-	static const QPen AxisPen;
 	static const int LabelHitPadding;
 
 public:
@@ -57,24 +56,6 @@ public:
     static const int COLOR = 1;
     static const int NAME = 2;
     static const int LABEL = 8;
-
-    static const QColor dsBlue;
-    static const QColor dsYellow;
-    static const QColor dsRed;
-    static const QColor dsGreen;
-    static const QColor dsGray;
-    static const QColor dsFore;
-    static const QColor dsBack;
-    static const QColor dsDisable;
-    static const QColor dsActive;
-    static const QColor dsLightBlue;
-    static const QColor dsLightRed;
-    static const QPen SignalAxisPen;
-
-    static const QColor DARK_BACK;
-    static const QColor DARK_FORE;
-    static const QColor DARK_HIGHLIGHT;
-    static const QColor DARK_BLUE;
 
     static const QColor PROBE_COLORS[8];
 
@@ -178,7 +159,7 @@ public:
 	 * @param left the x-coordinate of the left edge of the signal
 	 * @param right the x-coordinate of the right edge of the signal
 	 **/
-	virtual void paint_back(QPainter &p, int left, int right);
+    virtual void paint_back(QPainter &p, int left, int right, QColor fore, QColor back);
 
 	/**
 	 * Paints the mid-layer of the trace with a QPainter
@@ -186,7 +167,7 @@ public:
 	 * @param left the x-coordinate of the left edge of the signal
 	 * @param right the x-coordinate of the right edge of the signal
 	 **/
-	virtual void paint_mid(QPainter &p, int left, int right);
+    virtual void paint_mid(QPainter &p, int left, int right, QColor fore, QColor back);
 
 	/**
 	 * Paints the foreground layer of the trace with a QPainter
@@ -194,7 +175,7 @@ public:
 	 * @param left the x-coordinate of the left edge of the signal
 	 * @param right the x-coordinate of the right edge of the signal
 	 **/
-	virtual void paint_fore(QPainter &p, int left, int right);
+    virtual void paint_fore(QPainter &p, int left, int right, QColor fore, QColor back);
 
 	/**
      * Paints the trace label.
@@ -203,7 +184,7 @@ public:
 	 * 	area.
      * @param point the mouse point.
 	 */
-    virtual void paint_label(QPainter &p, int right, const QPoint pt);
+    virtual void paint_label(QPainter &p, int right, const QPoint pt, QColor fore);
 
 	/**
 	 * Gets the y-offset of the axis.
@@ -258,15 +239,6 @@ protected:
 	 */
 	QColor get_text_colour() const;
 
-	/**
-	 * Paints a zero axis across the viewport.
-	 * @param p the QPainter to paint into.
-	 * @param y the y-offset of the axis.
-	 * @param left the x-coordinate of the left edge of the view.
-	 * @param right the x-coordinate of the right edge of the view.
-	 */
-	void paint_axis(QPainter &p, int y, int left, int right);
-
     /**
      * Paints optoins for different trace type.
      * @param p the QPainter to paint into.
@@ -274,7 +246,7 @@ protected:
      * 	area.
      * @param point the mouse point.
      */
-    virtual void paint_type_options(QPainter &p, int right, const QPoint pt);
+    virtual void paint_type_options(QPainter &p, int right, const QPoint pt, QColor fore);
 
 private:
 

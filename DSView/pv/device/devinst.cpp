@@ -50,7 +50,7 @@ void* DevInst::get_id() const
     return _id;
 }
 
-void DevInst::use(SigSession *owner) throw(QString)
+void DevInst::use(SigSession *owner)
 {
 	assert(owner);
 	assert(!_owner);
@@ -125,7 +125,7 @@ uint64_t DevInst::get_sample_limit()
 	uint64_t sample_limit;
     GVariant* gvar = get_config(NULL, NULL, SR_CONF_LIMIT_SAMPLES);
 	if (gvar != NULL) {
-		sample_limit = g_variant_get_uint64(gvar);
+        sample_limit = g_variant_get_uint64(gvar);
 		g_variant_unref(gvar);
 	} else {
 		sample_limit = 0U;

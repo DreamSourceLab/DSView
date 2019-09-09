@@ -14,15 +14,16 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 '''
 This protocol decoder tries to guess the bitrate / baudrate of the
-communication on the specified channel. Typically this will be used to
-guess / detect the baudrate used in a UART communication snippet, but it
-could also be used to guess bitrates of certain other protocols or buses.
+communication on the specified channel.
+
+Typically this will be used to guess / detect the baudrate used in a UART
+communication snippet, but it could also be used to guess bitrates of certain
+other protocols or buses.
 
 It should be noted that this is nothing more than a simple guess / heuristic,
 and that there are various cases in practice where the detection of the
@@ -32,6 +33,8 @@ The precision of the estimated bitrate / baudrate will also depend on the
 samplerate used to sample the respective channel. For good results it is
 recommended to use a logic analyzer samplerate that is much higher than
 the expected bitrate/baudrate that might be used on the channel.
+
+The last annotation emitted by the decoder will be the best bitrate guess.
 '''
 
 from .pd import Decoder

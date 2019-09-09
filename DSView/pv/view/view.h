@@ -41,13 +41,19 @@
 #include "../data/signaldata.h"
 #include "../view/viewport.h"
 #include "cursor.h"
+#include "xcursor.h"
 #include "signal.h"
-#include "../widgets/viewstatus.h"
+#include "viewstatus.h"
 
 namespace pv {
 
 namespace toolbars {
     class SamplingBar;
+}
+
+namespace dialogs {
+    class Calibration;
+    class Lissajous;
 }
 
 class SigSession;
@@ -59,6 +65,7 @@ class DevMode;
 class Ruler;
 class Trace;
 class Viewport;
+class LissajousFigure;
 
 class View : public QScrollArea {
 	Q_OBJECT
@@ -84,6 +91,16 @@ public:
     static const int MaxPixelsPerSample = 100;
 
     static const int StatusHeight = 20;
+    static const int DsoStatusHeight = 55;
+
+    static const int ForeAlpha = 200;
+    static const int BackAlpha = 100;
+    static const QColor Red;
+    static const QColor Orange;
+    static const QColor Blue;
+    static const QColor Green;
+    static const QColor Purple;
+    static const QColor LightBlue;
 
 public:
     explicit View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget *parent = 0);
@@ -164,6 +181,15 @@ public:
     uint64_t get_search_pos();
 
     /*
+     * horizental cursors
+     */
+    bool xcursors_shown();
+    void show_xcursors(bool show);
+    std::list<XCursor*>& get_xcursorList();
+    void add_xcursor(QColor color, double value0, double value1);
+    void del_xcursor(XCursor* xcursor);
+
+    /*
      *
      */
     double get_minscale() const;
@@ -193,10 +219,19 @@ public:
 
     bool get_dso_trig_moved() const;
 
+    ViewStatus* get_viewstatus();
+
+    /*
+     * back paint status
+     */
+    bool back_ready() const;
+    void set_back(bool ready);
+
 signals:
 	void hover_point_changed();
 
     void cursor_update();
+    void xcursor_update();
 
     void cursor_moving();
     void cursor_moved();
@@ -205,7 +240,7 @@ signals:
 
     void prgRate(int progress);
 
-    void update_device_list();
+    void device_changed(bool close);
 
     void resize();
 
@@ -222,6 +257,9 @@ private:
         const boost::shared_ptr<pv::view::Trace> &a,
         const boost::shared_ptr<pv::view::Trace> &b);
 
+    void clear();
+    void reconstruct();
+
 private:
 	bool eventFilter(QObject *object, QEvent *event);
 
@@ -237,16 +275,22 @@ public slots:
     void update_scale_offset();
     void show_region(uint64_t start, uint64_t end, bool keep);
     // -- calibration
-    void update_calibration();
     void hide_calibration();
     void status_clear();
     void repeat_unshow();
+
     // -- repeat
     void repeat_show();
     // --
     void timebase_changed();
     // --
+    void vDial_updated();
+    // --
     void update_hori_res();
+
+    // --
+    void set_trig_time();
+    bool trig_time_setted();
 
 private slots:
 
@@ -268,11 +312,13 @@ private slots:
 
     // calibration for oscilloscope
     void show_calibration();
+    // lissajous figure
+    void show_lissajous(bool show);
     void on_measure_updated();
 
     void splitterMoved(int pos, int index);
 
-    void mode_changed();
+    void dev_changed(bool close);
 
 private:
 
@@ -280,12 +326,13 @@ private:
     pv::toolbars::SamplingBar *_sampling_bar;
 
     QWidget *_viewcenter;
-    widgets::ViewStatus *_viewbottom;
+    ViewStatus *_viewbottom;
     QSplitter *_vsplitter;
     Viewport * _time_viewport;
     Viewport * _fft_viewport;
+    LissajousFigure *_lissajous;
     Viewport *_active_viewport;
-    std::list<Viewport *> _viewport_list;
+    std::list<QWidget *> _viewport_list;
     std::map<int, int> _trace_view_map;
 	Ruler *_ruler;
 	Header *_header;
@@ -313,9 +360,16 @@ private:
     uint64_t _search_pos;
     bool _search_hit;
 
+    bool _show_xcursors;
+    std::list<XCursor*> _xcursorList;
+
     QPoint _hover_point;
     dialogs::Calibration *_cali;
+
     bool _dso_auto;
+    bool _show_lissajous;
+    bool _back_ready;
+    bool _trig_time_setted;
 };
 
 } // namespace view

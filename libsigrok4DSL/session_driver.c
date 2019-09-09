@@ -65,6 +65,7 @@ static const uint64_t vdivs[] = {
 };
 
 struct session_vdev {
+    int language;
     int version;
 	char *sessionfile;
 	char *capturefile;
@@ -85,6 +86,8 @@ struct session_vdev {
     int enabled_probes;
     uint64_t timebase;
     uint8_t unit_bits;
+    uint32_t ref_min;
+    uint32_t ref_max;
     uint8_t max_height;
     struct sr_status mstatus;
 };
@@ -92,6 +95,10 @@ struct session_vdev {
 static GSList *dev_insts = NULL;
 
 static const int hwoptions[] = {
+    SR_CONF_MAX_HEIGHT,
+};
+
+static const int32_t sessions[] = {
     SR_CONF_MAX_HEIGHT,
 };
 
@@ -109,6 +116,12 @@ static const char *probeMapUnits[] = {
     "g",
     "m",
     "m/s",
+};
+
+static struct sr_dev_mode mode_list[] = {
+    {LOGIC, "Logic Analyzer", "逻辑分析仪", "la.png"},
+    {ANALOG, "Data Acquisition", "数据记录仪", "daq.png"},
+    {DSO, "Oscilloscope", "示波器", "osc.png"},
 };
 
 static int trans_data(struct sr_dev_inst *sdi)
@@ -142,6 +155,16 @@ static int trans_data(struct sr_dev_inst *sdi)
         }
     }
 
+    return SR_OK;
+}
+
+static int file_close(struct session_vdev *vdev)
+{
+    int ret = zip_close(vdev->archive);
+    if (ret  == -1) {
+        sr_info("error close session file: %s", zip_strerror(vdev->archive));
+        return SR_ERR;
+    }
     return SR_OK;
 }
 
@@ -208,6 +231,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
                 packet.status = SR_PKT_SOURCE_ERROR;
                 sr_session_send(cb_sdi, &packet);
                 sr_session_source_remove(-1);
+                file_close(vdev);
                 return FALSE;
             }
 
@@ -277,6 +301,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
 		packet.type = SR_DF_END;
 		sr_session_send(cb_sdi, &packet);
 		sr_session_source_remove(-1);
+        file_close(vdev);
 	}
 
 	return TRUE;
@@ -290,6 +315,19 @@ static int init(struct sr_context *sr_ctx)
 	(void)sr_ctx;
 
 	return SR_OK;
+}
+
+static const GSList *dev_mode_list(const struct sr_dev_inst *sdi)
+{
+    GSList *l = NULL;
+    unsigned int i;
+
+    for (i = 0; i < ARRAY_SIZE(mode_list); i++) {
+        if (sdi->mode == mode_list[i].mode)
+            l = g_slist_append(l, &mode_list[i]);
+    }
+
+    return l;
 }
 
 static int dev_clear(void)
@@ -324,7 +362,10 @@ static int dev_open(struct sr_dev_inst *sdi)
     vdev->file_opened = FALSE;
     vdev->num_blocks = 0;
     vdev->unit_bits = 1;
+    vdev->ref_min = 0;
+    vdev->ref_max = 0;
     vdev->max_height = 0;
+    vdev->mstatus.measure_valid = TRUE;
 
 	dev_insts = g_slist_append(dev_insts, sdi);
 
@@ -355,6 +396,12 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
 	struct session_vdev *vdev;
 
 	switch (id) {
+    case SR_CONF_LANGUAGE:
+        if (!sdi)
+            return SR_ERR;
+        vdev = sdi->priv;
+        *data = g_variant_new_int16(vdev->language);
+        break;
 	case SR_CONF_SAMPLERATE:
 		if (sdi) {
 			vdev = sdi->priv;
@@ -395,6 +442,26 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         } else
             return SR_ERR;
         break;
+    case SR_CONF_REF_MIN:
+        if (sdi) {
+            vdev = sdi->priv;
+            if (vdev->ref_min == 0)
+                return SR_ERR;
+            else
+                *data = g_variant_new_uint32(vdev->ref_min);
+        } else
+            return SR_ERR;
+        break;
+    case SR_CONF_REF_MAX:
+        if (sdi) {
+            vdev = sdi->priv;
+            if (vdev->ref_max == 0)
+                return SR_ERR;
+            else
+                *data = g_variant_new_uint32(vdev->ref_max);
+        } else
+            return SR_ERR;
+        break;
     case SR_CONF_PROBE_EN:
         if (sdi && ch) {
             *data = g_variant_new_boolean(ch->enabled);
@@ -419,12 +486,18 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         } else
             return SR_ERR;
         break;
-    case SR_CONF_PROBE_VPOS:
+    case SR_CONF_PROBE_OFFSET:
         if (sdi && ch) {
-            *data = g_variant_new_double(ch->vpos);
+            *data = g_variant_new_uint16(ch->offset);
         } else
             return SR_ERR;
         break;
+    case SR_CONF_PROBE_HW_OFFSET:
+        if (sdi && ch) {
+            *data = g_variant_new_uint16(ch->hw_offset);
+        } else
+            return SR_ERR;
+        break;      
     case SR_CONF_PROBE_MAP_UNIT:
         if (!sdi || !ch)
             return SR_ERR;
@@ -508,6 +581,9 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 	vdev = sdi->priv;
 
 	switch (id) {
+    case SR_CONF_LANGUAGE:
+        vdev->language = g_variant_get_int16(data);
+        break;
 	case SR_CONF_SAMPLERATE:
 		vdev->samplerate = g_variant_get_uint64(data);
         samplerates[0] = vdev->samplerate;
@@ -520,6 +596,14 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     case SR_CONF_UNIT_BITS:
         vdev->unit_bits = g_variant_get_byte(data);
         sr_info("Setting unit bits to %d.", vdev->unit_bits);
+        break;
+    case SR_CONF_REF_MIN:
+        vdev->ref_min = g_variant_get_uint32(data);
+        sr_info("Setting ref min to %d.", vdev->ref_min);
+        break;
+    case SR_CONF_REF_MAX:
+        vdev->ref_max = g_variant_get_uint32(data);
+        sr_info("Setting ref max to %d.", vdev->ref_max);
         break;
     case SR_CONF_SESSIONFILE:
         vdev->sessionfile = g_strdup(g_variant_get_bytestring(data));
@@ -552,10 +636,14 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         break;
     case SR_CONF_CAPTURE_NUM_PROBES:
 		vdev->num_probes = g_variant_get_uint64(data);
-        if (sdi->mode == LOGIC) {
-            if (!(vdev->logic_buf = g_try_malloc(CHUNKSIZE/16*vdev->num_probes))) {
-                sr_err("%s: vdev->logic_buf malloc failed", __func__);
+        if (vdev->version == 1) {
+            if (sdi->mode == LOGIC) {
+                if (!(vdev->logic_buf = g_try_malloc(CHUNKSIZE/16*vdev->num_probes))) {
+                    sr_err("%s: vdev->logic_buf malloc failed", __func__);
+                }
             }
+        } else {
+            vdev->logic_buf = NULL;
         }
 		break;
     case SR_CONF_PROBE_EN:
@@ -570,9 +658,13 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     case SR_CONF_PROBE_FACTOR:
         ch->vfactor = g_variant_get_uint64(data);
         break;
-    case SR_CONF_PROBE_VPOS:
-        ch->vpos = g_variant_get_double(data);
+    case SR_CONF_PROBE_OFFSET:
+        ch->offset = g_variant_get_uint16(data);
         break;
+    case SR_CONF_PROBE_HW_OFFSET:
+        ch->hw_offset = g_variant_get_uint16(data);
+        ch->offset = ch->hw_offset;
+        break;       
     case SR_CONF_PROBE_MAP_UNIT:
         ch->map_unit = g_variant_get_string(data, NULL);
         break;
@@ -587,27 +679,87 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         break;
     case SR_CONF_STATUS_PERIOD:
         if (ch->index == 0)
-            vdev->mstatus.ch0_period = g_variant_get_uint64(data);
+            vdev->mstatus.ch0_cyc_tlen = g_variant_get_uint32(data);
         else
-            vdev->mstatus.ch1_period = g_variant_get_uint64(data);
+            vdev->mstatus.ch1_cyc_tlen = g_variant_get_uint32(data);
         break;
     case SR_CONF_STATUS_PCNT:
         if (ch->index == 0)
-            vdev->mstatus.ch0_pcnt = g_variant_get_uint64(data);
+            vdev->mstatus.ch0_cyc_cnt = g_variant_get_uint32(data);
         else
-            vdev->mstatus.ch1_pcnt = g_variant_get_uint64(data);
+            vdev->mstatus.ch1_cyc_cnt = g_variant_get_uint32(data);
         break;
     case SR_CONF_STATUS_MAX:
         if (ch->index == 0)
-            vdev->mstatus.ch0_max = g_variant_get_uint64(data);
+            vdev->mstatus.ch0_max = g_variant_get_byte(data);
         else
-            vdev->mstatus.ch1_max = g_variant_get_uint64(data);
+            vdev->mstatus.ch1_max = g_variant_get_byte(data);
         break;
     case SR_CONF_STATUS_MIN:
         if (ch->index == 0)
-            vdev->mstatus.ch0_min = g_variant_get_uint64(data);
+            vdev->mstatus.ch0_min = g_variant_get_byte(data);
         else
-            vdev->mstatus.ch1_min = g_variant_get_uint64(data);
+            vdev->mstatus.ch1_min = g_variant_get_byte(data);
+        break;
+    case SR_CONF_STATUS_PLEN:
+        if (ch->index == 0)
+            vdev->mstatus.ch0_cyc_plen = g_variant_get_uint32(data);
+        else
+            vdev->mstatus.ch1_cyc_plen = g_variant_get_uint32(data);
+        break;
+    case SR_CONF_STATUS_LLEN:
+        if (ch->index == 0)
+            vdev->mstatus.ch0_cyc_llen = g_variant_get_uint32(data);
+        else
+            vdev->mstatus.ch0_cyc_llen = g_variant_get_uint32(data);
+        break;
+    case SR_CONF_STATUS_LEVEL:
+        if (ch->index == 0)
+            vdev->mstatus.ch0_level_valid = g_variant_get_boolean(data);
+        else
+            vdev->mstatus.ch1_level_valid = g_variant_get_boolean(data);
+        break;
+    case SR_CONF_STATUS_PLEVEL:
+        if (ch->index == 0)
+            vdev->mstatus.ch0_plevel = g_variant_get_boolean(data);
+        else
+            vdev->mstatus.ch1_plevel = g_variant_get_boolean(data);
+        break;
+    case SR_CONF_STATUS_LOW:
+        if (ch->index == 0)
+            vdev->mstatus.ch0_low_level = g_variant_get_byte(data);
+        else
+            vdev->mstatus.ch1_low_level = g_variant_get_byte(data);
+        break;
+    case SR_CONF_STATUS_HIGH:
+        if (ch->index == 0)
+            vdev->mstatus.ch0_high_level = g_variant_get_byte(data);
+        else
+            vdev->mstatus.ch1_high_level = g_variant_get_byte(data);
+        break;
+    case SR_CONF_STATUS_RLEN:
+        if (ch->index == 0)
+            vdev->mstatus.ch0_cyc_rlen = g_variant_get_uint32(data);
+        else
+            vdev->mstatus.ch1_cyc_rlen = g_variant_get_uint32(data);
+        break;
+    case SR_CONF_STATUS_FLEN:
+        if (ch->index == 0)
+            vdev->mstatus.ch0_cyc_flen = g_variant_get_uint32(data);
+        else
+            vdev->mstatus.ch1_cyc_flen = g_variant_get_uint32(data);
+        break;
+    case SR_CONF_STATUS_RMS:
+        if (ch->index == 0)
+            vdev->mstatus.ch0_acc_square = g_variant_get_uint64(data);
+        else
+            vdev->mstatus.ch1_acc_square = g_variant_get_uint64(data);
+        break;
+    case SR_CONF_STATUS_MEAN:
+        if (ch->index == 0)
+            vdev->mstatus.ch0_acc_mean = g_variant_get_uint32(data);
+        else
+            vdev->mstatus.ch1_acc_mean = g_variant_get_uint32(data);
         break;
     case SR_CONF_MAX_HEIGHT:
         stropt = g_variant_get_string(data, NULL);
@@ -619,6 +771,9 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         }
         sr_dbg("%s: setting Signal Max Height to %d",
             __func__, vdev->max_height);
+        break;
+    case SR_CONF_INSTANT:
+    case SR_CONF_RLE:
         break;
     default:
 		sr_err("Unknown capability: %d.", id);
@@ -645,6 +800,10 @@ static int config_list(int key, GVariant **data,
 //				hwcaps, ARRAY_SIZE(hwcaps), sizeof(int32_t));
         *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
                 hwoptions, ARRAY_SIZE(hwoptions)*sizeof(int32_t), TRUE, NULL, NULL);
+        break;
+    case SR_CONF_DEVICE_SESSIONS:
+        *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
+                sessions, ARRAY_SIZE(sessions)*sizeof(int32_t), TRUE, NULL, NULL);
         break;
     case SR_CONF_SAMPLERATE:
         g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));
@@ -786,7 +945,7 @@ SR_PRIV struct sr_dev_driver session_driver = {
     .cleanup = dev_clear,
     .scan = NULL,
     .dev_list = NULL,
-    .dev_mode_list = NULL,
+    .dev_mode_list = dev_mode_list,
     .dev_clear = dev_clear,
     .config_get = config_get,
     .config_set = config_set,

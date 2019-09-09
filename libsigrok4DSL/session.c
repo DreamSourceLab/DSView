@@ -422,8 +422,8 @@ SR_API int sr_session_run(void)
 
     g_mutex_lock(&session->stop_mutex);
     sr_session_stop_sync();
-    session->running = FALSE;
     session->abort_session = FALSE;
+    session->running = FALSE;
     g_mutex_unlock(&session->stop_mutex);
 	return SR_OK;
 }

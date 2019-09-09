@@ -72,16 +72,16 @@ DecoderOptions::DecoderOptions(
 		shared_ptr<Property> prop;
 
 		if (opt->values)
-			prop = bind_enum(name, opt, getter, setter);
+            prop = bind_enum(name, opt, getter, setter);
 		else if (g_variant_is_of_type(opt->def, G_VARIANT_TYPE("d")))
-			prop = shared_ptr<Property>(new Double(name, 2, "",
+            prop = shared_ptr<Property>(new Double(name, name, 2, "",
 				none, none, getter, setter));
 		else if (g_variant_is_of_type(opt->def, G_VARIANT_TYPE("x")))
 			prop = shared_ptr<Property>(
-				new Int(name, "", none, getter, setter));
+                new Int(name, name, "", none, getter, setter));
 		else if (g_variant_is_of_type(opt->def, G_VARIANT_TYPE("s")))
 			prop = shared_ptr<Property>(
-				new String(name, getter, setter));
+                new String(name, name, getter, setter));
 		else
 			continue;
 
@@ -100,7 +100,7 @@ shared_ptr<Property> DecoderOptions::bind_enum(
 		values.push_back(make_pair(var, print_gvariant(var)));
 	}
 
-	return shared_ptr<Property>(new Enum(name, values, getter, setter));
+    return shared_ptr<Property>(new Enum(name, name, values, getter, setter));
 }
 
 GVariant* DecoderOptions::getter(const char *id)

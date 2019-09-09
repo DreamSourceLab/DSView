@@ -44,10 +44,11 @@ public:
 	typedef boost::function<void (GVariant*)> Setter;
 
 protected:
-    Property(QString name, Getter getter, Setter setter);
+    Property(QString name, QString label, Getter getter, Setter setter);
 
 public:
     const QString& name() const;
+    const QString& label() const;
 
     virtual QWidget* get_widget(QWidget *parent,
         bool auto_commit = false) = 0;
@@ -63,6 +64,7 @@ protected:
 
 private:
     QString _name;
+    QString _label;
 };
 
 } // prop

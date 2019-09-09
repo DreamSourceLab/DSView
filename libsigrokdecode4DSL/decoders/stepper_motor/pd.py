@@ -14,24 +14,21 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
 
-class SamplerateError(Exception):
-    pass
-
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'stepper_motor'
     name = 'Stepper motor'
     longname = 'Stepper motor position / speed'
     desc = 'Absolute position and movement speed from step/dir.'
     license = 'gplv2+'
     inputs = ['logic']
-    outputs = ['stepper_motor']
+    outputs = []
+    tags = ['Embedded/industrial']
     channels = (
         {'id': 'step', 'name': 'Step', 'desc': 'Step pulse'},
         {'id': 'dir', 'name': 'Direction', 'desc': 'Direction select'},
@@ -51,8 +48,12 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.samplerate = None
         self.oldstep = None
-        self.prev_step_ss = None
+        self.ss_prev_step = None
         self.pos = 0
         self.prev_speed = None
         self.prev_pos = None
@@ -70,29 +71,25 @@ class Decoder(srd.Decoder):
             self.unit = 'mm'
 
     def step(self, ss, direction):
-        if self.prev_step_ss is not None:
-            delta = ss - self.prev_step_ss
-            speed = self.samplerate / delta / self.scale
-            speed_txt = self.format % speed
+        if self.ss_prev_step is not None:
+            if self.samplerate:
+                delta = ss - self.ss_prev_step
+                speed = self.samplerate / delta / self.scale
+                speed_txt = self.format % speed
+                self.put(self.ss_prev_step, ss, self.out_ann,
+                    [0, [speed_txt + ' ' + self.unit + '/s', speed_txt]])
             pos_txt = self.format % (self.pos / self.scale)
-            self.put(self.prev_step_ss, ss, self.out_ann,
-                [0, [speed_txt + ' ' + self.unit + '/s', speed_txt]])
-            self.put(self.prev_step_ss, ss, self.out_ann,
+            self.put(self.ss_prev_step, ss, self.out_ann,
                 [1, [pos_txt + ' ' + self.unit, pos_txt]])
 
         self.pos += (1 if direction else -1)
-        self.prev_step_ss = ss
+        self.ss_prev_step = ss
 
     def metadata(self, key, value):
         if key == srd.SRD_CONF_SAMPLERATE:
             self.samplerate = value
 
-    def decode(self, ss, es, data):
-        if not self.samplerate:
-            raise SamplerateError('Cannot decode without samplerate.')
-
-        for (self.samplenum, (step, direction)) in data:
-            data.itercnt += 1
-            if step == 1 and self.oldstep == 0:
-                self.step(self.samplenum, direction)
-            self.oldstep = step
+    def decode(self):
+        while True:
+            (step, direction) = self.wait({0: 'r'})
+            self.step(self.samplenum, direction)

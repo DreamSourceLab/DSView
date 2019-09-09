@@ -88,14 +88,15 @@ regs = {
 ANN_REG = 0
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'adf435x'
     name = 'ADF435x'
     longname = 'Analog Devices ADF4350/1'
     desc = 'Wideband synthesizer with integrated VCO.'
     license = 'gplv3+'
     inputs = ['spi']
-    outputs = ['adf435x']
+    outputs = []
+    tags = ['Clock/timing', 'IC', 'Wireless/RF']
     annotations = (
         # Sent from the host to the chip.
         ('register', 'Register written to the device'),
@@ -105,6 +106,9 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.bits = []
 
     def start(self):

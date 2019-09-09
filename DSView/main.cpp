@@ -63,12 +63,15 @@ int main(int argc, char *argv[])
 	struct sr_context *sr_ctx = NULL;
 	const char *open_file = NULL;
 
+    QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+    QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
     QApplication a(argc, argv);
 
     // Set some application metadata
     QApplication::setApplicationVersion(DS_VERSION_STRING);
     QApplication::setApplicationName("DSView");
-    QApplication::setOrganizationDomain("http://www.DreamSourceLab.com");
+    QApplication::setOrganizationName("DreamSourceLab");
+    QApplication::setOrganizationDomain("www.DreamSourceLab.com");
 
 	// Parse arguments
 	while (1) {
@@ -115,7 +118,7 @@ int main(int argc, char *argv[])
 	} else if (argc - optind == 1)
 		open_file = argv[argc - 1];
 
-    // Initialise DS_RES_PATH
+	// Initialise DS_RES_PATH
     QDir dir(QCoreApplication::applicationDirPath());
     if (dir.cd("..") &&
         dir.cd("share") &&
@@ -153,11 +156,6 @@ int main(int argc, char *argv[])
 
             // Initialise the main frame
             pv::MainFrame w(device_manager, open_file);
-            //QFile qss(":/stylesheet.qss");
-            QFile qss(":darkstyle/style.qss");
-            qss.open(QFile::ReadOnly);
-            a.setStyleSheet(qss.readAll());
-            qss.close();
 			w.show();
             w.readSettings();
             w.show_doc();

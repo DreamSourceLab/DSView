@@ -50,16 +50,8 @@ private:
 	static const int HoverArrowSize;
     static const int CursorSelWidth;
 
-    static const QColor dsBlue;
-    static const QColor dsYellow;
-    static const QColor dsRed;
-    static const QColor dsGreen;
-    static const QColor RULER_COLOR;
-
 public:
     static const QColor CursorColor[8];
-    static const QColor HitColor;
-    static const QColor WarnColor;
 
 public:
 	Ruler(View &parent);
@@ -86,7 +78,6 @@ private:
     void leaveEvent(QEvent *);
 
 private:
-    void draw_tick_mark(QPainter &p);
     void draw_logic_tick_mark(QPainter &p);
 	/**
 	 * Draw a hover arrow under the cursor position.

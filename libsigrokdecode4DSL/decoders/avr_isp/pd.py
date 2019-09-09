@@ -14,8 +14,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
@@ -24,14 +23,15 @@ from .parts import *
 VENDOR_CODE_ATMEL = 0x1e
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'avr_isp'
     name = 'AVR ISP'
     longname = 'AVR In-System Programming'
-    desc = 'Protocol for in-system programming Atmel AVR MCUs.'
+    desc = 'Atmel AVR In-System Programming (ISP) protocol.'
     license = 'gplv2+'
     inputs = ['spi']
-    outputs = ['avr_isp']
+    outputs = []
+    tags = ['Debug/trace']
     annotations = (
         ('pe', 'Programming enable'),
         ('rsb0', 'Read signature byte 0'),
@@ -52,6 +52,9 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.state = 'IDLE'
         self.mosi_bytes, self.miso_bytes = [], []
         self.ss_cmd, self.es_cmd = 0, 0

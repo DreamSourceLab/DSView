@@ -61,7 +61,7 @@ void Binding::add_properties_to_form(QFormLayout *layout,
         if (p->labeled_widget())
             layout->addRow(widget);
         else
-            layout->addRow(p->name(), widget);
+            layout->addRow(p->label(), widget);
     }
 }
 

@@ -24,6 +24,7 @@
 #include <glib.h>
 #include "libsigrok.h"
 #include "libsigrok-internal.h"
+#include "command.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -73,6 +74,16 @@
 #define CAPS_FEATURE_SEEP (1 << 3)
 // zero calibration ability
 #define CAPS_FEATURE_ZERO (1 << 4)
+// use HMCAD1511 adc chip
+#define CAPS_FEATURE_HMCAD1511 (1 << 5)
+// usb 3.0
+#define CAPS_FEATURE_USB30 (1 << 6)
+// pogopin panel
+#define CAPS_FEATURE_POGOPIN (1 << 7)
+// use ADF4360-7 vco chip
+#define CAPS_FEATURE_ADF4360 (1 << 8)
+// 20M bandwidth limitation
+#define CAPS_FEATURE_20M (1 << 8)
 /* end */
 
 
@@ -106,6 +117,8 @@
 #define bmFORCE_STOP    (1 << 2)
 #define bmSCOPE_SET     (1 << 3)
 #define bmSCOPE_CLR     (1 << 4)
+#define bmBW20M_SET     (1 << 5)
+#define bmBW20M_CLR     (1 << 6)
 
 /*
  * packet content check
@@ -134,6 +147,11 @@
  */
 #define CALI_VGAIN_RANGE 100
 
+enum LANGUAGE {
+    LANGUAGE_CN = 25,
+    LANGUAGE_EN = 31,
+};
+
 struct DSL_caps {
     uint64_t mode_caps;
     uint64_t feature_caps;
@@ -142,12 +160,16 @@ struct DSL_caps {
     uint64_t dso_depth;
     uint8_t intest_channel;
     const uint64_t *vdivs;
+    const uint64_t *samplerates;
     uint8_t vga_id;
     uint16_t default_channelmode;
     uint64_t default_samplerate;
     uint64_t default_samplelimit;
     uint16_t default_pwmtrans;
     uint16_t default_pwmmargin;
+    uint32_t ref_min;
+    uint32_t ref_max;
+    uint16_t default_comb_comp;
 };
 
 struct DSL_profile {
@@ -178,12 +200,108 @@ static const uint64_t vdivs10to2000[] = {
     0,
 };
 
+static const uint64_t samplerates100[] = {
+    SR_HZ(10),
+    SR_HZ(20),
+    SR_HZ(50),
+    SR_HZ(100),
+    SR_HZ(200),
+    SR_HZ(500),
+    SR_KHZ(1),
+    SR_KHZ(2),
+    SR_KHZ(5),
+    SR_KHZ(10),
+    SR_KHZ(20),
+    SR_KHZ(40),
+    SR_KHZ(50),
+    SR_KHZ(100),
+    SR_KHZ(200),
+    SR_KHZ(400),
+    SR_KHZ(500),
+    SR_MHZ(1),
+    SR_MHZ(2),
+    SR_MHZ(4),
+    SR_MHZ(5),
+    SR_MHZ(10),
+    SR_MHZ(20),
+    SR_MHZ(25),
+    SR_MHZ(50),
+    SR_MHZ(100),
+    0,
+};
+
+static const uint64_t samplerates400[] = {
+    SR_HZ(10),
+    SR_HZ(20),
+    SR_HZ(50),
+    SR_HZ(100),
+    SR_HZ(200),
+    SR_HZ(500),
+    SR_KHZ(1),
+    SR_KHZ(2),
+    SR_KHZ(5),
+    SR_KHZ(10),
+    SR_KHZ(20),
+    SR_KHZ(40),
+    SR_KHZ(50),
+    SR_KHZ(100),
+    SR_KHZ(200),
+    SR_KHZ(400),
+    SR_KHZ(500),
+    SR_MHZ(1),
+    SR_MHZ(2),
+    SR_MHZ(4),
+    SR_MHZ(5),
+    SR_MHZ(10),
+    SR_MHZ(20),
+    SR_MHZ(25),
+    SR_MHZ(50),
+    SR_MHZ(100),
+    SR_MHZ(200),
+    SR_MHZ(400),
+    0,
+};
+
+static const uint64_t samplerates1000[] = {
+    SR_HZ(10),
+    SR_HZ(20),
+    SR_HZ(50),
+    SR_HZ(100),
+    SR_HZ(200),
+    SR_HZ(500),
+    SR_KHZ(1),
+    SR_KHZ(2),
+    SR_KHZ(5),
+    SR_KHZ(10),
+    SR_KHZ(20),
+    SR_KHZ(40),
+    SR_KHZ(50),
+    SR_KHZ(100),
+    SR_KHZ(200),
+    SR_KHZ(400),
+    SR_KHZ(500),
+    SR_MHZ(1),
+    SR_MHZ(2),
+    SR_MHZ(4),
+    SR_MHZ(5),
+    SR_MHZ(10),
+    SR_MHZ(20),
+    SR_MHZ(25),
+    SR_MHZ(50),
+    SR_MHZ(100),
+    SR_MHZ(125),
+    SR_MHZ(250),
+    SR_MHZ(500),
+    SR_GHZ(1),
+    0,
+};
+
 struct DSL_vga {
     uint8_t id;
     uint64_t key;
     uint64_t vgain;
-    uint16_t voff;
-    uint16_t voff_comp;
+    uint16_t preoff;
+    uint16_t preoff_comp;
 };
 static const struct DSL_vga vga_defaults[] = {
     {1, 10,   0x162400, (32<<10)+558, (32<<10)+558},
@@ -213,6 +331,15 @@ static const struct DSL_vga vga_defaults[] = {
     {3, 1000, 0x57200,  45, 1024-920-45},
     {3, 2000, 0x2DD00,  45, 1024-920-45},
 
+    {4, 10,   0x1C6C00, 45, 1024-945-45},
+    {4, 20,   0x19E000, 45, 1024-945-45},
+    {4, 50,   0x16A800, 45, 1024-945-45},
+    {4, 100,  0x142800, 45, 1024-945-45},
+    {4, 200,  0xC7F00,  45, 1024-945-45},
+    {4, 500,  0x94000,  45, 1024-945-45},
+    {4, 1000, 0x6CF00,  45, 1024-945-45},
+    {4, 2000, 0x44F00,  45, 1024-945-45},
+
     {0, 0, 0, 0, 0}
 };
 
@@ -221,11 +348,22 @@ enum CHANNEL_ID {
     DSL_STREAM25x12,
     DSL_STREAM50x6,
     DSL_STREAM100x3,
+    DSL_STREAM100x16,
+    DSL_STREAM125x16,
+    DSL_STREAM250x12,
+    DSL_STREAM500x6,
+    DSL_STREAM1000x3,
+
     DSL_BUFFER100x16,
     DSL_BUFFER200x8,
     DSL_BUFFER400x4,
+    DSL_BUFFER500x16,
+    DSL_BUFFER1000x8,
+
     DSL_ANALOG10x2,
+
     DSL_DSO200x2,
+    DSL_DSO1000x2,
 };
 
 struct DSL_channels {
@@ -234,40 +372,59 @@ struct DSL_channels {
     enum CHANNEL_TYPE type;
     gboolean stream;
     uint16_t num;
+    uint16_t vld_num;
     uint8_t unit_bits;
     uint64_t min_samplerate;
     uint64_t max_samplerate;
     uint64_t hw_min_samplerate;
     uint64_t hw_max_samplerate;
+    uint8_t pre_div;
     const char *descr;
+    const char *descr_cn;
 };
 
 static const struct DSL_channels channel_modes[] = {
     // LA Stream
-    {DSL_STREAM20x16,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE,  16, 1, SR_KHZ(10), SR_MHZ(20),
-     SR_KHZ(10), SR_MHZ(100), "Use 16 Channels (Max 20MHz)"},
-    {DSL_STREAM25x12,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE,  12, 1, SR_KHZ(10), SR_MHZ(25),
-     SR_KHZ(10), SR_MHZ(100), "Use 12 Channels (Max 25MHz)"},
-    {DSL_STREAM50x6,   LOGIC,  SR_CHANNEL_LOGIC,  TRUE,  6,  1, SR_KHZ(10), SR_MHZ(50),
-     SR_KHZ(10), SR_MHZ(100), "Use 6 Channels (Max 50MHz)"},
-    {DSL_STREAM100x3,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE,  3,  1, SR_KHZ(10), SR_MHZ(100),
-     SR_KHZ(10), SR_MHZ(100), "Use 3 Channels (Max 100MHz)"},
+    {DSL_STREAM20x16,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE,  16, 16, 1, SR_KHZ(10), SR_MHZ(20),
+     SR_KHZ(10), SR_MHZ(100), 1, "Use 16 Channels (Max 20MHz)", "使用16个通道(最大采样率 20MHz)"},
+    {DSL_STREAM25x12,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE,  16, 12, 1, SR_KHZ(10), SR_MHZ(25),
+     SR_KHZ(10), SR_MHZ(100), 1, "Use 12 Channels (Max 25MHz)", "使用12个通道(最大采样率 25MHz)"},
+    {DSL_STREAM50x6,   LOGIC,  SR_CHANNEL_LOGIC,  TRUE,  16, 6,  1, SR_KHZ(10), SR_MHZ(50),
+     SR_KHZ(10), SR_MHZ(100), 1, "Use 6 Channels (Max 50MHz)", "使用6个通道(最大采样率 50MHz)"},
+    {DSL_STREAM100x3,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE,  16, 3,  1, SR_KHZ(10), SR_MHZ(100),
+     SR_KHZ(10), SR_MHZ(100), 1, "Use 3 Channels (Max 100MHz)", "使用3个通道(最大采样率 100MHz)"},
+    {DSL_STREAM100x16,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 16, 16, 1, SR_KHZ(10), SR_MHZ(100),
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 16 Channels (Max 100MHz)", "使用16个通道(最大采样率 100MHz)"},
+    {DSL_STREAM125x16,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 16, 16, 1, SR_KHZ(10), SR_MHZ(125),
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 16 Channels (Max 125MHz)", "使用16个通道(最大采样率 125MHz)"},
+    {DSL_STREAM250x12,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 16, 12, 1, SR_KHZ(10), SR_MHZ(250),
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 12 Channels (Max 250MHz)", "使用12个通道(最大采样率 250MHz)"},
+    {DSL_STREAM500x6,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE,  16, 6,  1, SR_KHZ(10), SR_MHZ(500),
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 6 Channels (Max 500MHz)", "使用6个通道(最大采样率 500MHz)"},
+    {DSL_STREAM1000x3,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 16, 3,  1, SR_KHZ(10), SR_GHZ(1),
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 3 Channels (Max 1GHz)", "使用3个通道(最大采样率 1GHz)"},
 
     // LA Buffer
-    {DSL_BUFFER100x16, LOGIC,  SR_CHANNEL_LOGIC,  FALSE, 16, 1, SR_KHZ(10), SR_MHZ(100),
-     SR_KHZ(10), SR_MHZ(100), "Use Channels 0~15 (Max 100MHz)"},
-    {DSL_BUFFER200x8,  LOGIC,  SR_CHANNEL_LOGIC,  FALSE, 8,  1, SR_KHZ(10), SR_MHZ(200),
-     SR_KHZ(10), SR_MHZ(100), "Use Channels 0~7 (Max 200MHz)"},
-    {DSL_BUFFER400x4,  LOGIC,  SR_CHANNEL_LOGIC,  FALSE, 4,  1, SR_KHZ(10), SR_MHZ(400),
-     SR_KHZ(10), SR_MHZ(100), "Use Channels 0~3 (Max 400MHz)"},
+    {DSL_BUFFER100x16, LOGIC,  SR_CHANNEL_LOGIC,  FALSE, 16, 16, 1, SR_KHZ(10), SR_MHZ(100),
+     SR_KHZ(10), SR_MHZ(100), 1, "Use Channels 0~15 (Max 100MHz)", "使用通道 0~15 (最大采样率 100MHz)"},
+    {DSL_BUFFER200x8,  LOGIC,  SR_CHANNEL_LOGIC,  FALSE, 8, 8,  1, SR_KHZ(10), SR_MHZ(200),
+     SR_KHZ(10), SR_MHZ(100), 1, "Use Channels 0~7 (Max 200MHz)", "使用通道 0~7 (最大采样率 200MHz)"},
+    {DSL_BUFFER400x4,  LOGIC,  SR_CHANNEL_LOGIC,  FALSE, 4, 4,  1, SR_KHZ(10), SR_MHZ(400),
+     SR_KHZ(10), SR_MHZ(100), 1, "Use Channels 0~3 (Max 400MHz)", "使用通道 0~3 (最大采样率 400MHz)"},
+    {DSL_BUFFER500x16,  LOGIC,  SR_CHANNEL_LOGIC,  FALSE, 16, 16,  1, SR_KHZ(10), SR_MHZ(500),
+     SR_KHZ(10), SR_MHZ(500), 5, "Use Channels 0~15 (Max 500MHz)", "使用通道 0~15 (最大采样率 500MHz)"},
+    {DSL_BUFFER1000x8,  LOGIC,  SR_CHANNEL_LOGIC,  FALSE, 8, 8,  1, SR_KHZ(10), SR_GHZ(1),
+     SR_KHZ(10), SR_MHZ(500), 5, "Use Channels 0~7 (Max 1GHz)", "使用通道 0~7 (最大采样率 1GHz)"},
 
     // DAQ
-    {DSL_ANALOG10x2,   ANALOG, SR_CHANNEL_ANALOG, TRUE,  2,  8, SR_HZ(10),  SR_MHZ(10),
-     SR_KHZ(10), SR_MHZ(100), "Use Channels 0~1 (Max 10MHz)"},
+    {DSL_ANALOG10x2,   ANALOG, SR_CHANNEL_ANALOG, TRUE,  2, 2,  8, SR_HZ(10),  SR_MHZ(10),
+     SR_KHZ(10), SR_MHZ(100), 1, "Use Channels 0~1 (Max 10MHz)", "使用通道 0~1 (最大采样率 10MHz)"},
 
     // OSC
-    {DSL_DSO200x2,     DSO,    SR_CHANNEL_DSO,    FALSE, 2,  8, SR_KHZ(10), SR_MHZ(200),
-     SR_KHZ(10), SR_MHZ(100), "Use Channels 0~1 (Max 200MHz)"}
+    {DSL_DSO200x2,     DSO,    SR_CHANNEL_DSO,    FALSE, 2, 2,  8, SR_KHZ(10), SR_MHZ(200),
+     SR_KHZ(10), SR_MHZ(100), 1, "Use Channels 0~1 (Max 200MHz)", "使用通道 0~1 (最大采样率 200MHz)"},
+    {DSL_DSO1000x2,    DSO,    SR_CHANNEL_DSO,    FALSE, 2, 2,  8, SR_KHZ(10), SR_GHZ(1),
+     SR_KHZ(10), SR_MHZ(100), 1, "Use Channels 0~1 (Max 1GHz)", "使用通道 0~1 (最大采样率 1GHz)"}
 };
 
 static const struct DSL_profile supported_DSLogic[] = {
@@ -278,7 +435,7 @@ static const struct DSL_profile supported_DSLogic[] = {
      "DSLogic.fw",
      "DSLogic33.bin",
      "DSLogic50.bin",
-     {CAPS_MODE_LOGIC | CAPS_MODE_ANALOG | CAPS_MODE_DSO,
+     {CAPS_MODE_LOGIC,
       CAPS_FEATURE_SEEP | CAPS_FEATURE_BUF,
       (1 << DSL_STREAM20x16) | (1 << DSL_STREAM25x12) | (1 << DSL_STREAM50x6) | (1 << DSL_STREAM100x3) |
       (1 << DSL_BUFFER100x16) | (1 << DSL_BUFFER200x8) | (1 << DSL_BUFFER400x4) |
@@ -288,10 +445,14 @@ static const struct DSL_profile supported_DSLogic[] = {
       SR_Mn(2),
       DSL_BUFFER100x16,
       vdivs10to2000,
+      samplerates400,
       0,
       DSL_STREAM20x16,
       SR_MHZ(1),
       SR_Mn(1),
+      0,
+      0,
+      0,
       0,
       0}
     },
@@ -308,10 +469,14 @@ static const struct DSL_profile supported_DSLogic[] = {
       0,
       DSL_BUFFER100x16,
       0,
+      samplerates400,
       0,
       DSL_STREAM20x16,
       SR_MHZ(1),
       SR_Mn(1),
+      0,
+      0,
+      0,
       0,
       0}
     },
@@ -328,10 +493,14 @@ static const struct DSL_profile supported_DSLogic[] = {
       0,
       DSL_BUFFER100x16,
       0,
+      samplerates400,
       0,
       DSL_STREAM20x16,
       SR_MHZ(1),
       SR_Mn(1),
+      0,
+      0,
+      0,
       0,
       0}
     },
@@ -348,15 +517,43 @@ static const struct DSL_profile supported_DSLogic[] = {
       0,
       DSL_STREAM20x16,
       0,
+      samplerates400,
       0,
       DSL_STREAM20x16,
       SR_MHZ(1),
       SR_Mn(1),
       0,
+      0,
+      0,
+      0,
       0}
     },
 
-    { 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
+    {0x2A0E, 0x0029, "DreamSourceLab", "DSLogic U2Basic", NULL,
+     "DSLogicU2Basic.fw",
+     "DSLogicU2Basic.bin",
+     "DSLogicU2Basic.bin",
+     {CAPS_MODE_LOGIC,
+      CAPS_FEATURE_VTH,
+      (1 << DSL_STREAM20x16) | (1 << DSL_STREAM25x12) | (1 << DSL_STREAM50x6) | (1 << DSL_STREAM100x3) |
+      (1 << DSL_BUFFER100x16),
+      SR_MB(64),
+      0,
+      DSL_STREAM20x16,
+      0,
+      samplerates100,
+      0,
+      DSL_STREAM20x16,
+      SR_MHZ(1),
+      SR_Mn(1),
+      0,
+      0,
+      0,
+      0,
+      0}
+    },
+
+    { 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 };
 
 static const struct DSL_profile supported_DSCope[] = {
@@ -375,12 +572,16 @@ static const struct DSL_profile supported_DSCope[] = {
       SR_Mn(2),
       0,
       vdivs10to2000,
+      samplerates400,
       1,
       DSL_DSO200x2,
       SR_MHZ(100),
       SR_Mn(1),
       (129<<8)+167,
-      1024-920}
+      1024-920,
+      1,
+      255,
+      0}
     },
 
     {0x2A0E, 0x0004, "DreamSourceLab", "DSCope20", NULL,
@@ -395,12 +596,16 @@ static const struct DSL_profile supported_DSCope[] = {
       SR_Mn(2),
       0,
       vdivs10to2000,
+      samplerates400,
       2,
       DSL_DSO200x2,
       SR_MHZ(100),
       SR_Mn(1),
       920,
-      1024-920}
+      1024-920,
+      1,
+      255,
+      0}
     },
 
     {0x2A0E, 0x0022, "DreamSourceLab", "DSCope B20", NULL,
@@ -415,18 +620,22 @@ static const struct DSL_profile supported_DSCope[] = {
       SR_Mn(2),
       0,
       vdivs10to2000,
+      samplerates400,
       2,
       DSL_DSO200x2,
       SR_MHZ(100),
       SR_Mn(1),
       920,
-      1024-920}
+      1024-920,
+      1,
+      255,
+      0}
     },
 
     {0x2A0E, 0x0023, "DreamSourceLab", "DSCope C20", NULL,
      "DSCopeC20.fw",
-     "DSCopeC20.bin",
-     "DSCopeC20.bin",
+     "DSCopeC20P.bin",
+     "DSCopeC20P.bin",
      {CAPS_MODE_ANALOG | CAPS_MODE_DSO,
       CAPS_FEATURE_ZERO | CAPS_FEATURE_BUF,
       (1 << DSL_ANALOG10x2) |
@@ -435,12 +644,16 @@ static const struct DSL_profile supported_DSCope[] = {
       SR_Mn(2),
       0,
       vdivs10to2000,
+      samplerates400,
       3,
       DSL_DSO200x2,
       SR_MHZ(100),
       SR_Mn(1),
       920,
-      1024-920}
+      1024-920,
+      1,
+      255,
+      0}
     },
 
 
@@ -449,19 +662,23 @@ static const struct DSL_profile supported_DSCope[] = {
      "DSCopeC20P.bin",
      "DSCopeC20P.bin",
      {CAPS_MODE_ANALOG | CAPS_MODE_DSO,
-      CAPS_FEATURE_ZERO | CAPS_FEATURE_BUF,
+      CAPS_FEATURE_ZERO | CAPS_FEATURE_BUF | CAPS_FEATURE_POGOPIN,
       (1 << DSL_ANALOG10x2) |
       (1 << DSL_DSO200x2),
       SR_MB(256),
       SR_Mn(2),
       0,
       vdivs10to2000,
+      samplerates400,
       3,
       DSL_DSO200x2,
       SR_MHZ(100),
       SR_Mn(1),
       920,
-      1024-920}
+      1024-920,
+      1,
+      255,
+      0}
     },
 
     {0x2A0E, 0x0025, "DreamSourceLab", "DSCope C20", NULL,
@@ -476,15 +693,68 @@ static const struct DSL_profile supported_DSCope[] = {
       SR_Kn(20),
       0,
       vdivs10to2000,
+      samplerates400,
       3,
       DSL_DSO200x2,
       SR_MHZ(100),
       SR_Kn(10),
       920,
-      1024-920}
+      1024-920,
+      1,
+      255,
+      0}
     },
 
-    { 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
+    {0x2A0E, 0x0026, "DreamSourceLab", "DSCope U2B20", NULL,
+     "DSCopeU2B20.fw",
+     "DSCopeU2B20.bin",
+     "DSCopeU2B20.bin",
+     {CAPS_MODE_ANALOG | CAPS_MODE_DSO,
+      CAPS_FEATURE_ZERO,
+      (1 << DSL_ANALOG10x2) |
+      (1 << DSL_DSO200x2),
+      SR_KB(256),
+      SR_Kn(20),
+      0,
+      vdivs10to2000,
+      samplerates400,
+      4,
+      DSL_DSO200x2,
+      SR_MHZ(100),
+      SR_Kn(10),
+      945,
+      1024-945,
+      10,
+      245,
+      22}
+    },
+
+    {0x2A0E, 0x0027, "DreamSourceLab", "DSCope U2P20", NULL,
+     "DSCopeU2P20.fw",
+     "DSCopeU2P20.bin",
+     "DSCopeU2P20.bin",
+     {CAPS_MODE_ANALOG | CAPS_MODE_DSO,
+      CAPS_FEATURE_ZERO | CAPS_FEATURE_BUF | CAPS_FEATURE_POGOPIN,
+      (1 << DSL_ANALOG10x2) |
+      (1 << DSL_DSO200x2),
+      SR_MB(256),
+      SR_Mn(2),
+      0,
+      vdivs10to2000,
+      samplerates400,
+      4,
+      DSL_DSO200x2,
+      SR_MHZ(100),
+      SR_Mn(1),
+      945,
+      1024-945,
+      10,
+      245,
+      22}
+    },
+
+
+    { 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 };
 
 static const gboolean default_ms_en[] = {
@@ -553,13 +823,17 @@ struct DSL_context {
     uint8_t trigger_source;
     uint8_t trigger_hrate;
     uint32_t trigger_hpos;
-    uint32_t trigger_holdoff;
+    uint64_t trigger_holdoff;
     uint8_t trigger_margin;
     gboolean zero;
     gboolean cali;
+    gboolean tune;
+    int16_t tune_index;
     int zero_stage;
     int zero_pcnt;
-    int zero_comb;
+    int tune_stage;
+    int tune_pcnt;
+    struct sr_channel *tune_probe;
     gboolean roll;
     gboolean data_lock;
     uint16_t unit_pitch;
@@ -568,6 +842,7 @@ struct DSL_context {
     uint64_t num_bytes;
 	int submitted_transfers;
 	int empty_transfer_count;
+    int instant_tail_bytes;
 
 	void *cb_data;
 	unsigned int num_transfers;
@@ -583,6 +858,9 @@ struct DSL_context {
     struct sr_status mstatus;
     gboolean abort;
     gboolean overflow;
+    int bw_limit;
+
+    int language;
 };
 
 /*
@@ -606,6 +884,10 @@ struct DSL_setting {
     uint16_t trig_glb;
     uint16_t ch_en_header;                  // 8
     uint16_t ch_en;
+    uint16_t dso_count_header;              // 9-10
+    uint16_t dso_cnt_l;
+    uint16_t dso_cnt_h;
+    uint16_t misc_align;
 
     uint16_t trig_header;                   // 64
     uint16_t trig_mask0[NUM_TRIGGER_STAGES];
@@ -621,42 +903,99 @@ struct DSL_setting {
     uint32_t end_sync;
 };
 
-static const uint64_t samplerates[] = {
-    SR_HZ(10),
-    SR_HZ(20),
-    SR_HZ(50),
-    SR_HZ(100),
-    SR_HZ(200),
-    SR_HZ(500),
-    SR_KHZ(1),
-    SR_KHZ(2),
-    SR_KHZ(5),
-    SR_KHZ(10),
-    SR_KHZ(20),
-    SR_KHZ(40),
-    SR_KHZ(50),
-    SR_KHZ(100),
-    SR_KHZ(200),
-    SR_KHZ(400),
-    SR_KHZ(500),
-    SR_MHZ(1),
-    SR_MHZ(2),
-    SR_MHZ(4),
-    SR_MHZ(5),
-    SR_MHZ(10),
-    SR_MHZ(20),
-    SR_MHZ(25),
-    SR_MHZ(40),
-    SR_MHZ(50),
-    SR_MHZ(100),
-    SR_MHZ(200),
-    SR_MHZ(400),
-    SR_MHZ(500),
-    SR_MHZ(800),
-    SR_GHZ(1),
-    SR_GHZ(2),
-    SR_GHZ(5),
-    SR_GHZ(10),
+struct DSL_adc_config {
+    uint8_t dest;
+    uint8_t cnt;
+    uint8_t delay;
+    uint8_t byte[4];
+};
+static const struct DSL_adc_config adc_single_ch0[] = {
+    {ADCC_ADDR+1, 3,   0,   {0x03, 0x01, 0x00, 0x00}}, // reset & power down
+    {ADCC_ADDR,   4,   0,   {0x00, 0x01, 0x00, 0x31}}, // 1x channel 1/1 clock
+    {ADCC_ADDR+1, 1,   0,   {0x01, 0x00, 0x00, 0x00}}, // power up
+    {ADCC_ADDR,   4,   0,   {0x00, 0x02, 0x02, 0x3A}}, // adc0: ch0 adc1: ch0
+    {ADCC_ADDR,   4,   0,   {0x00, 0x02, 0x02, 0x3B}}, // adc2: ch0 adc3: ch0
+    {ADCC_ADDR,   4,   0,   {0x00, 0x00, 0x00, 0x42}}, // phase_ddr: 270 deg
+    {ADCC_ADDR,   4,   0,   {0x00, 0x34, 0x00, 0x50}}, // adc core current: -40% (lower performance) / VCM: +-700uA
+    {ADCC_ADDR,   4,   0,   {0x00, 0x22, 0x02, 0x11}}, // lvds drive strength: 1.5mA(RSDS)
+    {ADCC_ADDR,   4,   0,   {0x00, 0x7F, 0x00, 0x24}}, // invert all channel
+    {ADCC_ADDR,   4,   0,   {0x00, 0x00, 0x00, 0x55}}, // full-scale range: -10%
+    {ADCC_ADDR,   4,   0,   {0x00, 0x02, 0x00, 0x33}}, // x-gain disabled / fine-gain enabled
+    {ADCC_ADDR,   4,   0,   {0x00, 0x00, 0x03, 0x2B}}, // coarse_gain: 3dB(1.4125x)
+    {0, 0, 0, {0, 0, 0, 0}}
+};
+static const struct DSL_adc_config adc_single_ch3[] = {
+    {ADCC_ADDR+1, 3,   0,   {0x03, 0x01, 0x00, 0x00}}, // reset & power down
+    {ADCC_ADDR,   4,   0,   {0x00, 0x01, 0x00, 0x31}}, // 1x channel 1/1 clock
+    {ADCC_ADDR+1, 1,   0,   {0x01, 0x00, 0x00, 0x00}}, // power up
+    {ADCC_ADDR,   4,   0,   {0x00, 0x10, 0x10, 0x3A}}, // adc0: ch3 adc1: ch3
+    {ADCC_ADDR,   4,   0,   {0x00, 0x10, 0x10, 0x3B}}, // adc2: ch3 adc3: ch3
+    {ADCC_ADDR,   4,   0,   {0x00, 0x00, 0x00, 0x42}}, // phase_ddr: 270 deg
+    {ADCC_ADDR,   4,   0,   {0x00, 0x34, 0x00, 0x50}}, // adc core current: -40% (lower performance) / VCM: +-700uA
+    {ADCC_ADDR,   4,   0,   {0x00, 0x22, 0x02, 0x11}}, // lvds drive strength: 1.5mA(RSDS)
+    {ADCC_ADDR,   4,   0,   {0x00, 0x00, 0x00, 0x24}}, // invert none channel
+    {ADCC_ADDR,   4,   0,   {0x00, 0x00, 0x00, 0x55}}, // full-scale range: -10%
+    {ADCC_ADDR,   4,   0,   {0x00, 0x02, 0x00, 0x33}}, // x-gain disabled / fine-gain enabled
+    {ADCC_ADDR,   4,   0,   {0x00, 0x00, 0x03, 0x2B}}, // coarse_gain: 3dB(1.4125x)
+    {0, 0, 0, {0, 0, 0, 0}}
+};
+static const struct DSL_adc_config adc_dual_ch03[] = {
+    {ADCC_ADDR+1, 3,   0,   {0x03, 0x01, 0x00, 0x00}}, // reset & power down
+    {ADCC_ADDR,   4,   0,   {0x00, 0x02, 0x01, 0x31}}, // 2x channel 1/2 clock
+    {ADCC_ADDR+1, 1,   0,   {0x01, 0x00, 0x00, 0x00}}, // power up
+    {ADCC_ADDR,   4,   0,   {0x00, 0x02, 0x02, 0x3A}}, // adc0: ch0 adc1: ch0
+    {ADCC_ADDR,   4,   0,   {0x00, 0x10, 0x10, 0x3B}}, // adc2: ch3 adc3: ch3
+    {ADCC_ADDR,   4,   0,   {0x00, 0x00, 0x00, 0x42}}, // phase_ddr: 270 deg
+    {ADCC_ADDR,   4,   0,   {0x00, 0x34, 0x00, 0x50}}, // adc core current: -40% (lower performance) / VCM: +-700uA
+    {ADCC_ADDR,   4,   0,   {0x00, 0x22, 0x02, 0x11}}, // lvds drive strength: 1.5mA(RSDS)
+    {ADCC_ADDR,   4,   0,   {0x00, 0x11, 0x00, 0x24}}, // invert 0 channel
+    {ADCC_ADDR,   4,   0,   {0x00, 0x00, 0x00, 0x55}}, // full-scale range: -10%
+    {ADCC_ADDR,   4,   0,   {0x00, 0x02, 0x00, 0x33}}, // x-gain disabled / fine-gain enabled
+    {ADCC_ADDR,   4,   0,   {0x00, 0x33, 0x00, 0x2B}}, // coarse_gain: 3dB(1.4125x)
+//    {ADCC_ADDR,   4,   0,   {0x00, 0x03, 0x00, 0x33}}, // x-gain enabled / fine-gain enabled
+//    {ADCC_ADDR,   4,   0,   {0x00, 0x11, 0x00, 0x2B}}, // coarse_gain: 1.25x
+    //{ADCC_ADDR,   4,   0,   {0x00, 0x40, 0x00, 0x34}}, // fine_gain: 1.0077x
+    //{ADCC_ADDR,   4,   0,   {0x00, 0x00, 0x60, 0x35}}, // fine_gain: 1.0077x
+    //{ADCC_ADDR,   4,   0,   {0x00, 0x10, 0x00, 0x25}}, // fix pattern test
+    //{ADCC_ADDR,   4,   0,   {0x00, 0x00, 0xab, 0x26}}, // test pattern
+    {0, 0, 0, {0, 0, 0, 0}}
+};
+static const struct DSL_adc_config adc_init_fix[] = {
+    {ADCC_ADDR+1, 3,   0,   {0x03, 0x01, 0x00, 0x00}}, // reset & power down
+    {ADCC_ADDR,   4,   0,   {0x00, 0x02, 0x01, 0x31}}, // 2x channel 1/2 clock
+    {ADCC_ADDR+1, 1,   0,   {0x01, 0x00, 0x00, 0x00}}, // power up
+    {ADCC_ADDR,   4,   0,   {0x00, 0x02, 0x02, 0x3A}}, // adc0: ch0 adc1: ch0
+    {ADCC_ADDR,   4,   0,   {0x00, 0x10, 0x10, 0x3B}}, // adc2: ch3 adc3: ch3
+    {ADCC_ADDR,   4,   0,   {0x00, 0x00, 0x00, 0x42}}, // phase_ddr: 270 deg
+    {ADCC_ADDR,   4,   0,   {0x00, 0x34, 0x00, 0x50}}, // adc core current: -40% (lower performance) / VCM: +-700uA
+    {ADCC_ADDR,   4,   0,   {0x00, 0x22, 0x02, 0x11}}, // lvds drive strength: 1.5mA(RSDS)
+    {ADCC_ADDR,   4,   0,   {0x00, 0x10, 0x00, 0x25}}, // fix pattern test
+    {ADCC_ADDR,   4,   0,   {0x00, 0x00, 0x55, 0x26}}, // test pattern
+    {0, 0, 0, {0, 0, 0, 0}}
+};
+static const struct DSL_adc_config adc_clk_init_1g[] = {
+    {ADCC_ADDR+2, 1,   0,   {0x01, 0x00, 0x00, 0x00}}, // power up
+    {ADCC_ADDR,   4,   0,   {0x01, 0x61, 0x00, 0x30}}, //
+    {ADCC_ADDR,   4,   0,   {0x01, 0x40, 0xF1, 0x46}}, //
+    {ADCC_ADDR,   4,   10,  {0x01, 0x62, 0x3D, 0x00}}, //
+    {0, 0, 0, {0, 0, 0, 0}}
+};
+static const struct DSL_adc_config adc_clk_init_500m[] = {
+    {ADCC_ADDR+2, 1,   0,   {0x01, 0x00, 0x00, 0x00}}, // power up
+    {ADCC_ADDR,   4,   0,   {0x01, 0x61, 0x00, 0x30}}, //
+    {ADCC_ADDR,   4,   0,   {0x01, 0x40, 0xF1, 0x46}}, //
+    {ADCC_ADDR,   4,   10,  {0x01, 0x62, 0x3D, 0x40}}, //
+    {0, 0, 0, {0, 0, 0, 0}}
+};
+static const struct DSL_adc_config adc_power_down[] = {
+    //{ADCC_ADDR+2, 1,   0,   {0x00, 0x00, 0x00, 0x00}}, // ADC_CLK power down
+    {ADCC_ADDR+1, 1,   0,   {0x00, 0x00, 0x00, 0x00}}, // ADC power down
+    {0, 0, 0, {0, 0, 0, 0}}
+};
+static const struct DSL_adc_config adc_power_up[] = {
+    {ADCC_ADDR+1, 1,   0,   {0x01, 0x00, 0x00, 0x00}}, // ADC power up
+    //{ADCC_ADDR+2, 1,   0,   {0x01, 0x00, 0x00, 0x00}}, // ADC_CLK power up
+    {0, 0, 0, {0, 0, 0, 0}}
 };
 
 SR_PRIV int dsl_adjust_probes(struct sr_dev_inst *sdi, int num_probes);
@@ -677,6 +1016,9 @@ SR_PRIV int dsl_rd_ext(const struct sr_dev_inst *sdi, unsigned char *ctx, uint16
 SR_PRIV int dsl_wr_dso(const struct sr_dev_inst *sdi, uint64_t cmd);
 SR_PRIV int dsl_wr_nvm(const struct sr_dev_inst *sdi, unsigned char *ctx, uint16_t addr, uint8_t len);
 SR_PRIV int dsl_rd_nvm(const struct sr_dev_inst *sdi, unsigned char *ctx, uint16_t addr, uint8_t len);
+SR_PRIV int dsl_rd_probe(const struct sr_dev_inst *sdi, unsigned char *ctx, uint16_t addr, uint8_t len);
+
+SR_PRIV int dsl_config_adc(const struct sr_dev_inst *sdi, const struct DSL_adc_config *config);
 
 SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi);
 SR_PRIV int dsl_fpga_config(struct libusb_device_handle *hdl, const char *filename);
@@ -684,6 +1026,9 @@ SR_PRIV int dsl_fpga_config(struct libusb_device_handle *hdl, const char *filena
 SR_PRIV int dsl_config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
                       const struct sr_channel *ch,
                       const struct sr_channel_group *cg);
+SR_PRIV int dsl_config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
+                      struct sr_channel *ch,
+                      struct sr_channel_group *cg );
 SR_PRIV int dsl_config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
                        const struct sr_channel_group *cg);
 
@@ -692,7 +1037,8 @@ SR_PRIV int dsl_dev_close(struct sr_dev_inst *sdi);
 SR_PRIV int dsl_dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data);
 SR_PRIV int dsl_dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, gboolean prg, int begin, int end);
 
-SR_PRIV unsigned int dsl_get_timeout(struct DSL_context *devc);
+SR_PRIV unsigned int dsl_get_timeout(const struct sr_dev_inst *sdi);
 SR_PRIV int dsl_start_transfers(const struct sr_dev_inst *sdi);
+SR_PRIV int dsl_header_size(const struct DSL_context *devc);
 
 #endif

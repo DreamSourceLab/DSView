@@ -36,24 +36,6 @@
 namespace pv {
 namespace view {
 
-const QColor Trace::dsBlue = QColor(17, 133, 209,  255);
-const QColor Trace::dsYellow = QColor(238, 178, 17, 255);
-const QColor Trace::dsRed = QColor(213, 15, 37, 255);
-const QColor Trace::dsGreen = QColor(0, 153, 37, 200);
-const QColor Trace::dsGray = QColor(0x88, 0x8A, 0x85, 60);
-const QColor Trace::dsFore = QColor(0xff, 0xff, 0xff, 60);
-const QColor Trace::dsBack = QColor(0x16, 0x18, 0x23, 200);
-const QColor Trace::dsDisable = QColor(0x88, 0x8A, 0x85, 200);
-const QColor Trace::dsActive = QColor(17, 133, 209, 255);
-const QColor Trace::dsLightBlue = QColor(17, 133, 209,  150);
-const QColor Trace::dsLightRed = QColor(213, 15, 37, 150);
-const QPen Trace::SignalAxisPen = QColor(128, 128, 128, 64);
-
-const QColor Trace::DARK_BACK = QColor(48, 47, 47, 255);
-const QColor Trace::DARK_FORE = QColor(150, 150, 150, 255);
-const QColor Trace::DARK_HIGHLIGHT = QColor(32, 32, 32, 255);
-const QColor Trace::DARK_BLUE = QColor(17, 133, 209,  255);
-
 const QColor Trace::PROBE_COLORS[8] = {
     QColor(0x50, 0x50, 0x50),	// Black
     QColor(0x8F, 0x52, 0x02),	// Brown
@@ -63,17 +45,7 @@ const QColor Trace::PROBE_COLORS[8] = {
     QColor(0x73, 0xD2, 0x16),	// Green
     QColor(0x34, 0x65, 0xA4),	// Blue
     QColor(0x75, 0x50, 0x7B),	// Violet
-//    QColor(17, 133, 209),
-//    QColor(17, 133, 209),
-//    QColor(17, 133, 209),
-//    QColor(17, 133, 209),
-//    QColor(17, 133, 209),
-//    QColor(17, 133, 209),
-//    QColor(17, 133, 209),
-//    QColor(17, 133, 209),
 };
-
-const QPen Trace::AxisPen(QColor(128, 128, 128, 64));
 const int Trace::LabelHitPadding = 2;
 
 Trace::Trace(QString name, uint16_t index, int type) :
@@ -239,30 +211,37 @@ pv::view::Viewport* Trace::get_viewport() const
     return _viewport;
 }
 
-void Trace::paint_back(QPainter &p, int left, int right)
+void Trace::paint_back(QPainter &p, int left, int right, QColor fore, QColor back)
 {
-    QPen pen(Signal::dsGray);
+    (void)back;
+
+    fore.setAlpha(View::BackAlpha);
+    QPen pen(fore);
     pen.setStyle(Qt::DotLine);
     p.setPen(pen);
     const double sigY = get_y();
     p.drawLine(left, sigY, right, sigY);
 }
 
-void Trace::paint_mid(QPainter &p, int left, int right)
+void Trace::paint_mid(QPainter &p, int left, int right, QColor fore, QColor back)
 {
 	(void)p;
 	(void)left;
 	(void)right;
+    (void)fore;
+    (void)back;
 }
 
-void Trace::paint_fore(QPainter &p, int left, int right)
+void Trace::paint_fore(QPainter &p, int left, int right, QColor fore, QColor back)
 {
 	(void)p;
 	(void)left;
 	(void)right;
+    (void)fore;
+    (void)back;
 }
 
-void Trace::paint_label(QPainter &p, int right, const QPoint pt)
+void Trace::paint_label(QPainter &p, int right, const QPoint pt, QColor fore)
 {
     if (_type == SR_CHANNEL_FFT && !enabled())
         return;
@@ -274,24 +253,26 @@ void Trace::paint_label(QPainter &p, int right, const QPoint pt)
     const QRectF name_rect  = get_rect("name",  y, right);
     const QRectF label_rect = get_rect("label", get_zero_vpos(), right);
 
-    //p.setRenderHint(QPainter::Antialiasing);
     // Paint the ColorButton
+    QColor foreBack = fore;
+    foreBack.setAlpha(View::BackAlpha);
     p.setPen(Qt::transparent);
-    p.setBrush(enabled() ? _colour : dsDisable);
+    p.setBrush(enabled() ? (_colour.isValid() ? _colour : fore) : foreBack);
     p.drawRect(color_rect);
-    if (_type == SR_CHANNEL_DSO) {
-        p.setPen(enabled() ?  Qt::white: dsDisable);
+    if (_type == SR_CHANNEL_DSO ||
+        _type == SR_CHANNEL_MATH) {
+        p.setPen(enabled() ?  Qt::white: foreBack);
         p.drawText(color_rect, Qt::AlignCenter | Qt::AlignVCenter, _name);
     }
 
     if (_type != SR_CHANNEL_DSO) {
         // Paint the signal name
-        p.setPen(enabled() ?  DARK_FORE: dsDisable);
+        p.setPen(enabled() ?  fore: foreBack);
         p.drawText(name_rect, Qt::AlignLeft | Qt::AlignVCenter, _name);
     }
 
     // Paint the trigButton
-    paint_type_options(p, right, pt);
+    paint_type_options(p, right, pt, fore);
 
     // Paint the label
     if (enabled()) {
@@ -306,7 +287,8 @@ void Trace::paint_label(QPainter &p, int right, const QPoint pt)
         p.setPen(Qt::transparent);
         if (_type == SR_CHANNEL_DSO ||
             _type == SR_CHANNEL_FFT ||
-            _type == SR_CHANNEL_ANALOG) {
+            _type == SR_CHANNEL_ANALOG ||
+            _type == SR_CHANNEL_MATH) {
             p.setBrush(_colour);
             p.drawPolygon(points, countof(points));
         } else {
@@ -349,17 +331,20 @@ void Trace::paint_label(QPainter &p, int right, const QPoint pt)
         else if (_type == SR_CHANNEL_DECODER)
             p.drawText(label_rect, Qt::AlignCenter | Qt::AlignVCenter, "D");
         else if (_type == SR_CHANNEL_FFT)
+            p.drawText(label_rect, Qt::AlignCenter | Qt::AlignVCenter, "F");
+        else if (_type == SR_CHANNEL_MATH)
             p.drawText(label_rect, Qt::AlignCenter | Qt::AlignVCenter, "M");
         else
             p.drawText(label_rect, Qt::AlignCenter | Qt::AlignVCenter, QString::number(_index_list.front()));
     }
 }
 
-void Trace::paint_type_options(QPainter &p, int right, const QPoint pt)
+void Trace::paint_type_options(QPainter &p, int right, const QPoint pt, QColor fore)
 {
     (void)p;
     (void)right;
     (void)pt;
+    (void)fore;
 }
 
 bool Trace::mouse_double_click(int right, const QPoint pt)
@@ -398,12 +383,6 @@ int Trace::pt_in_rect(int y, int right, const QPoint &point)
         return LABEL;
     else
         return 0;
-}
-
-void Trace::paint_axis(QPainter &p, int y, int left, int right)
-{
-    p.setPen(SignalAxisPen);
-    p.drawLine(QPointF(left, y + 0.5f), QPointF(right, y + 0.5f));
 }
 
 void Trace::compute_text_size(QPainter &p)

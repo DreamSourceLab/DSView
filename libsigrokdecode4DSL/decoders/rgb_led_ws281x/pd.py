@@ -2,6 +2,7 @@
 ## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2016 Vladimir Ermakov <vooon341@gmail.com>
+## Copyright (C) 2019 DreamSourceLab <support@dreamsourcelab.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -14,8 +15,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
@@ -25,14 +25,15 @@ class SamplerateError(Exception):
     pass
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'rgb_led_ws281x'
     name = 'RGB LED (WS281x)'
     longname = 'RGB LED string decoder (WS281x)'
     desc = 'RGB LED string protocol (WS281x).'
     license = 'gplv3+'
     inputs = ['logic']
-    outputs = ['rgb_led_ws281x']
+    outputs = []
+    tags = ['Display', 'IC']
     channels = (
         {'id': 'din', 'name': 'DIN', 'desc': 'DIN data line'},
     )
@@ -47,13 +48,15 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.state = 'FIND RESET'
         self.samplerate = None
-        self.oldpin = None
-        self.packet_ss = None
+        self.ss_packet = None
         self.ss = None
         self.es = None
         self.bits = []
-        self.inreset = False
 
     def start(self):
         self.out_ann = self.register(srd.OUTPUT_ANN)
@@ -66,64 +69,51 @@ class Decoder(srd.Decoder):
         if len(self.bits) == 24:
             grb = reduce(lambda a, b: (a << 1) | b, self.bits)
             rgb = (grb & 0xff0000) >> 8 | (grb & 0x00ff00) << 8 | (grb & 0x0000ff)
-            self.put(self.packet_ss, samplenum, self.out_ann,
+            self.put(self.ss_packet, samplenum, self.out_ann,
                      [2, ['#%06x' % rgb]])
             self.bits = []
-            self.packet_ss = None
+            self.ss_packet = samplenum
 
-    def decode(self, ss, es, data):
+    def decode(self):
         if not self.samplerate:
             raise SamplerateError('Cannot decode without samplerate.')
 
-        for (samplenum, (pin, )) in data:
-            data.itercnt += 1
-            if self.oldpin is None:
-                self.oldpin = pin
-                continue
-
-            # Check RESET condition (manufacturer recommends 50 usec minimal,
-            # but real minimum is ~10 usec).
-            if not self.inreset and not pin and self.es is not None and \
-                    (samplenum - self.es) / self.samplerate > 50e-6:
-
-                # Decode last bit value.
-                tH = (self.es - self.ss) / self.samplerate
-                bit_ = True if tH >= 625e-9 else False
-
-                self.bits.append(bit_)
-                self.handle_bits(self.es)
-
-                self.put(self.ss, self.es, self.out_ann, [0, ['%d' % bit_]])
-                self.put(self.es, samplenum, self.out_ann,
-                         [1, ['RESET', 'RST', 'R']])
-
-                self.inreset = True
+        while True:
+            if self.state == 'FIND RESET':
+                self.wait({0: 'f'})
+                self.ss = self.samplenum
+                self.wait({0: 'r'})
+                self.es = self.samplenum
+                if ((self.es - self.ss) / self.samplerate > 50e-6):
+                    self.state = 'RESET'
+            elif self.state == 'RESET':
+                self.put(self.ss, self.es, self.out_ann, [1, ['RESET', 'RST', 'R']])
                 self.bits = []
-                self.packet_ss = None
-                self.ss = None
+                self.ss = self.samplenum
+                self.ss_packet = self.samplenum
+                self.wait({0: 'f'})
+                self.state = 'BIT FALLING'
+            elif self.state == 'BIT FALLING':
+                self.es = self.samplenum
+                self.wait({0: 'r'})
+                if ((self.es - self.ss) / self.samplerate > 50e-6):
+                    self.ss = self.es
+                    self.es = self.samplenum
+                    self.state = 'RESET'
+                else:
+                    self.state = 'BIT RISING'
+            elif self.state == 'BIT RISING':
+                period = self.samplenum - self.ss
+                duty = self.es - self.ss
+                # Ideal duty for T0H: 33%, T1H: 66%.
+                bit_ = (duty / period) > 0.5
+                
+                self.put(self.ss, self.samplenum, self.out_ann,
+                         [0, ['%d' % bit_]])
+                
+                self.bits.append(bit_)
+                self.handle_bits(self.samplenum)
 
-            if not self.oldpin and pin:
-                # Rising edge.
-                if self.ss and self.es:
-                    period = samplenum - self.ss
-                    duty = self.es - self.ss
-                    # Ideal duty for T0H: 33%, T1H: 66%.
-                    bit_ = (duty / period) > 0.5
-
-                    self.put(self.ss, samplenum, self.out_ann,
-                             [0, ['%d' % bit_]])
-
-                    self.bits.append(bit_)
-                    self.handle_bits(samplenum)
-
-                if self.packet_ss is None:
-                    self.packet_ss = samplenum
-
-                self.ss = samplenum
-
-            elif self.oldpin and not pin:
-                # Falling edge.
-                self.inreset = False
-                self.es = samplenum
-
-            self.oldpin = pin
+                self.ss = self.samplenum
+                self.wait({0: 'f'})
+                self.state = 'BIT FALLING'

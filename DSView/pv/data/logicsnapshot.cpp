@@ -222,11 +222,14 @@ void LogicSnapshot::append_cross_payload(
 
     _src_ptr = logic.data;
     uint64_t len = logic.length;
+    // samples not accurate, lead to a larger _sampole_count
+    // _sample_count should be fixed in the last packet
+    // so _total_sample_count must be align to LeafBlock
     uint64_t samples = ceil(logic.length * 8.0 / _channel_num);
     if (_sample_count + samples < _total_sample_count) {
         _sample_count += samples;
     } else {
-        len = ceil((_total_sample_count - _sample_count) * _channel_num / 8.0);
+        //len = ceil((_total_sample_count - _sample_count) * _channel_num / 8.0);
         _sample_count = _total_sample_count;
     }
 
@@ -471,7 +474,7 @@ const uint8_t *LogicSnapshot::get_samples(uint64_t start_sample, uint64_t &end_s
 {
     //assert(data);
     assert(start_sample < get_sample_count());
-    assert(end_sample < get_sample_count());
+    assert(end_sample <= get_sample_count());
     assert(start_sample <= end_sample);
 
     int order = get_ch_order(sig_index);
@@ -481,7 +484,7 @@ const uint8_t *LogicSnapshot::get_samples(uint64_t start_sample, uint64_t &end_s
     end_sample = (root_index << (LeafBlockPower + RootScalePower)) +
                  (root_pos << LeafBlockPower) +
                  ~(~0ULL << LeafBlockPower);
-    end_sample = min(end_sample, get_sample_count() - 1);
+    end_sample = min(end_sample + 1, get_sample_count());
 
     if (order == -1 ||
         _ch_data[order][root_index].lbp[root_pos] == NULL)

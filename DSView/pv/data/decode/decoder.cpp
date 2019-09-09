@@ -43,7 +43,8 @@ Decoder::~Decoder()
 {
     for (map<string, GVariant*>::const_iterator i = _options_back.begin();
         i != _options_back.end(); i++)
-        g_variant_unref((*i).second);
+        if ((*i).second)
+            g_variant_unref((*i).second);
 }
 
 const srd_decoder* Decoder::decoder() const
@@ -81,7 +82,9 @@ const std::map<std::string, GVariant*>& Decoder::options() const
 void Decoder::set_option(const char *id, GVariant *value)
 {
 	assert(value);
-    g_variant_unref(_options_back[id]);
+    if (_options_back[id]) {
+        g_variant_unref(_options_back[id]);
+    }
 	g_variant_ref(value);
     _options_back[id] = value;
     _setted = true;

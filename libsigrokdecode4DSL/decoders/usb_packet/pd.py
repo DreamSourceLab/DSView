@@ -15,8 +15,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
@@ -148,7 +147,7 @@ def reverse_number(num, count):
     out = list(count * '0')
     for i in range(0, count):
         if num >> i & 1:
-            out[i] = '1';
+            out[i] = '1'
     return int(''.join(out), 2)
 
 def calc_crc5(bitstr):
@@ -174,7 +173,7 @@ def calc_crc16(bitstr):
     return reverse_number(crc16, 16)
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'usb_packet'
     name = 'USB packet'
     longname = 'Universal Serial Bus (LS/FS) packet'
@@ -182,6 +181,7 @@ class Decoder(srd.Decoder):
     license = 'gplv2+'
     inputs = ['usb_signalling']
     outputs = ['usb_packet']
+    tags = ['PC']
     options = (
         {'id': 'signalling', 'desc': 'Signalling',
             'default': 'full-speed', 'values': ('full-speed', 'low-speed')},
@@ -223,6 +223,9 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.bits = []
         self.packet = []
         self.packet_summary = ''

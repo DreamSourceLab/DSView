@@ -478,7 +478,6 @@ void DecoderStack::decode_data(
     }
 
     uint64_t entry_cnt = 0;
-    uint8_t chunk_type = 0;
     uint64_t i = decode_start;
     char *error = NULL;
     while(!boost::this_thread::interruption_requested() &&
@@ -492,6 +491,7 @@ void DecoderStack::decode_data(
             int sig_index = logic_di->dec_channelmap[j];
             if (sig_index == -1) {
                 chunk.push_back(NULL);
+                chunk_const.push_back(0);
             } else {
                 if (_snapshot->has_data(sig_index)) {
                     chunk.push_back(_snapshot->get_samples(i, chunk_end, sig_index));
@@ -502,57 +502,17 @@ void DecoderStack::decode_data(
                 }
             }
         }
+        if (chunk_end > decode_end)
+            chunk_end = decode_end;
         if (chunk_end - i > MaxChunkSize)
             chunk_end = i + MaxChunkSize;
 
-        if (srd_session_send(session, chunk_type, i, chunk_end,
-                             chunk.data(), chunk_const.data(), &error) != SRD_OK) {
+        if (srd_session_send(session, i, chunk_end,
+                             chunk.data(), chunk_const.data(), chunk_end - i, &error) != SRD_OK) {
             _error_message = QString::fromLocal8Bit(error);
             break;
         }
-
-        if (logic_di && logic_di->logic_mask != 0 && logic_di->cur_pos < decode_end) {
-            uint64_t cur_pos = logic_di->cur_pos;
-            uint64_t sample;
-            if (logic_di->edge_index == -1) {
-                std::vector<uint64_t> pos_vector;
-                cur_pos++;
-                for (int j =0 ; j < logic_di->dec_num_channels; j++) {
-                    int index = logic_di->dec_channelmap[j];
-                    if (index != -1 && (logic_di->logic_mask & (1 << j))) {
-                        bool last_sample = _snapshot->get_sample(cur_pos - 1, index);
-                        pos_vector.push_back(cur_pos);
-                        _snapshot->get_nxt_edge(pos_vector.back(), last_sample, decode_end, 1, index);
-                    }
-                }
-                cur_pos = *std::min_element(pos_vector.begin(), pos_vector.end());
-            } else {
-                bool last_sample = _snapshot->get_sample(cur_pos, logic_di->edge_index);
-                do {
-                    sample = 0;
-                    cur_pos++;
-                    if (!_snapshot->get_nxt_edge(cur_pos, last_sample, decode_end, 1, logic_di->edge_index))
-                        break;
-                    for (int j =0 ; j < logic_di->dec_num_channels; j++) {
-                        if (logic_di->logic_mask & (1 << j)) {
-                            int index = logic_di->dec_channelmap[j];
-                            bool index_sample = _snapshot->get_sample(cur_pos, index);
-                            sample +=  index_sample << j;
-                            if (index == logic_di->edge_index)
-                                last_sample = index_sample;
-                        }
-                    }
-                } while(sample != logic_di->exp_logic);
-            }
-
-            i = cur_pos;
-            if (i >= decode_end)
-                i = decode_end;
-            chunk_type = 0;
-        } else {
-            i = chunk_end + 1;
-            chunk_type = 1;
-        }
+        i = chunk_end;
 
         {
             boost::lock_guard<boost::recursive_mutex> lock(_output_mutex);

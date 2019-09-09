@@ -14,8 +14,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
@@ -24,14 +23,15 @@ class SamplerateError(Exception):
     pass
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'spdif'
     name = 'S/PDIF'
     longname = 'Sony/Philips Digital Interface Format'
     desc = 'Serial bus for connecting digital audio devices.'
     license = 'gplv2+'
     inputs = ['logic']
-    outputs = ['spdif']
+    outputs = []
+    tags = ['Audio', 'PC']
     channels = (
         {'id': 'data', 'name': 'Data', 'desc': 'Data line'},
     )
@@ -59,10 +59,13 @@ class Decoder(srd.Decoder):
         self.put(self.ss_edge, self.samplenum, self.out_ann, data)
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.state = 'GET FIRST PULSE WIDTH'
-        self.olddata = None
         self.ss_edge = None
         self.first_edge = True
+        self.samplenum_prev_edge = 0
         self.pulse_width = 0
 
         self.clocks = []
@@ -218,41 +221,26 @@ class Decoder(srd.Decoder):
 
         self.last_preamble = self.samplenum
 
-    def decode(self, ss, es, logic):
+    def decode(self):
         if not self.samplerate:
             raise SamplerateError('Cannot decode without samplerate.')
 
-        for (self.samplenum, pins) in logic:
-            data = pins[0]
-            logic.itercnt += 1
+        # Throw away first detected edge as it might be mangled data.
+        self.wait({0: 'e'})
 
-            # Initialize self.olddata with the first sample value.
-            if self.olddata is None:
-                self.olddata = data
-                continue
+        while True:
+            # Wait for any edge (rising or falling).
+            (data,) = self.wait({0: 'e'})
+            self.pulse_width = self.samplenum - self.samplenum_prev_edge - 1
+            self.samplenum_prev_edge = self.samplenum
 
-            # First we need to recover the clock.
-            if self.olddata == data:
-                self.pulse_width += 1
-                continue
-
-            # Found rising or falling edge.
-            if self.first_edge:
-                # Throw away first detected edge as it might be mangled data.
-                self.first_edge = False
-                self.pulse_width = 0
-            else:
-                if self.state == 'GET FIRST PULSE WIDTH':
-                    self.find_first_pulse_width()
-                elif self.state == 'GET SECOND PULSE WIDTH':
-                    self.find_second_pulse_width()
-                elif self.state == 'GET THIRD PULSE WIDTH':
-                    self.find_third_pulse_width()
-                elif self.state == 'DECODE STREAM':
-                    self.decode_stream()
-                elif self.state == 'DECODE PREAMBLE':
-                    self.decode_preamble()
-
-            self.pulse_width = 0
-
-            self.olddata = data
+            if self.state == 'GET FIRST PULSE WIDTH':
+                self.find_first_pulse_width()
+            elif self.state == 'GET SECOND PULSE WIDTH':
+                self.find_second_pulse_width()
+            elif self.state == 'GET THIRD PULSE WIDTH':
+                self.find_third_pulse_width()
+            elif self.state == 'DECODE STREAM':
+                self.decode_stream()
+            elif self.state == 'DECODE PREAMBLE':
+                self.decode_preamble()

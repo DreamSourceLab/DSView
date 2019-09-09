@@ -74,6 +74,20 @@ Header::Header(View &parent) :
 
     connect(nameEdit, SIGNAL(editingFinished()),
             this, SLOT(on_action_set_name_triggered()));
+
+    retranslateUi();
+}
+
+void Header::changeEvent(QEvent *event)
+{
+    if (event->type() == QEvent::LanguageChange)
+        retranslateUi();
+    QWidget::changeEvent(event);
+}
+
+void Header::retranslateUi()
+{
+    update();
 }
 
 
@@ -111,20 +125,19 @@ void Header::paintEvent(QPaintEvent*)
     QStyleOption o;
     o.initFrom(this);
     QPainter painter(this);
-    //painter.setRenderHint(QPainter::Antialiasing);
     style()->drawPrimitive(QStyle::PE_Widget, &o, &painter, this);
-
-    //painter.begin(this);
 
 	const int w = width();
     const vector< boost::shared_ptr<Trace> > traces(
         _view.get_traces(ALL_VIEW));
 
     const bool dragging = !_drag_traces.empty();
+    QColor fore(QWidget::palette().color(QWidget::foregroundRole()));
+    fore.setAlpha(View::ForeAlpha);
     BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
 	{
         assert(t);
-        t->paint_label(painter, w, dragging ? QPoint(-1, -1) : _mouse_point);
+        t->paint_label(painter, w, dragging ? QPoint(-1, -1) : _mouse_point, fore);
 	}
 
 	painter.end();
@@ -303,7 +316,14 @@ void Header::mouseMoveEvent(QMouseEvent *event)
                         _moveFlag = true;
                         traces_moved();
                     }
-                } else if (sig->get_type() == SR_CHANNEL_ANALOG) {
+                } else if (sig->get_type() == SR_CHANNEL_MATH) {
+                    boost::shared_ptr<MathTrace> mathTrace;
+                    if ((mathTrace = dynamic_pointer_cast<MathTrace>(sig))) {
+                       mathTrace->set_zero_vpos(y);
+                       _moveFlag = true;
+                       traces_moved();
+                    }
+                 } else if (sig->get_type() == SR_CHANNEL_ANALOG) {
                     boost::shared_ptr<AnalogSignal> analogSig;
                     if ((analogSig = dynamic_pointer_cast<AnalogSignal>(sig))) {
                         analogSig->set_zero_vpos(y);

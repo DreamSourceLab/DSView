@@ -1,7 +1,8 @@
 /*
- * This file is part of the PulseView project.
+ * This file is part of the DSView project.
+ * DSView is based on PulseView.
  *
- * Copyright (C) 2016 DreamSourceLab <support@dreamsourcelab.com>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,20 +20,22 @@
  */
 
 #include <extdef.h>
-#include <algorithm>
 #include <math.h>
 
-#include <boost/foreach.hpp>
-#include <boost/functional/hash.hpp>
-
+#include "../../extdef.h"
 #include "mathtrace.h"
-#include "../sigsession.h"
 #include "../data/dso.h"
 #include "../data/dsosnapshot.h"
-#include "../view/dsosignal.h"
-#include "../view/viewport.h"
-#include "../device/devinst.h"
 #include "../data/mathstack.h"
+#include "view.h"
+#include "../sigsession.h"
+#include "../device/devinst.h"
+#include "../view/dsosignal.h"
+
+#include <boost/foreach.hpp>
+
+#include <QDebug>
+#include <QTimer>
 
 using namespace boost;
 using namespace std;
@@ -40,57 +43,33 @@ using namespace std;
 namespace pv {
 namespace view {
 
-const int MathTrace::UpMargin = 0;
-const int MathTrace::DownMargin = 0;
-const int MathTrace::RightMargin = 30;
-const QString MathTrace::FFT_ViewMode[2] = {
-    "Linear RMS",
-    "DBV RMS"
-};
-
-const QString MathTrace::FreqPrefixes[9] =
-    {"", "", "", "", "K", "M", "G", "T", "P"};
-const int MathTrace::FirstSIPrefixPower = -9;
-const int MathTrace::LastSIPrefixPower = 15;
-const int MathTrace::Pricision = 2;
-const int MathTrace::FreqMinorDivNum = 10;
-const int MathTrace::TickHeight = 15;
-const int MathTrace::VolDivNum = 5;
-
-const int MathTrace::DbvRanges[4] = {
-    100,
-    120,
-    150,
-    200,
-};
-
-const int MathTrace::HoverPointSize = 3;
-const double MathTrace::VerticalRate = 1.0 / 2000.0;
-
-MathTrace::MathTrace(pv::SigSession &session,
-    boost::shared_ptr<pv::data::MathStack> math_stack, int index) :
-    Trace("FFT("+QString::number(index)+")", index, SR_CHANNEL_FFT),
-    _session(session),
+MathTrace::MathTrace(bool enable,
+                     boost::shared_ptr<data::MathStack> math_stack,
+                     boost::shared_ptr<view::DsoSignal> dsoSig1,
+                     boost::shared_ptr<view::DsoSignal> dsoSig2):
+    Trace("M", dsoSig1->get_index(), SR_CHANNEL_MATH),
     _math_stack(math_stack),
-    _enable(false),
-    _view_mode(0),
+    _dsoSig1(dsoSig1),
+    _dsoSig2(dsoSig2),
+    _enable(enable),
+    _show(true),
+    _scale(0),
+    _zero_vrate(0.5),
+    _hw_offset(0x80),
     _hover_en(false),
-    _scale(1),
-    _offset(0)
+    _hover_index(0),
+    _hover_point(QPointF(0, 0)),
+    _hover_voltage(0)
 {
-    _typeWidth = 0;
-    const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
-    for(size_t i = 0; i < sigs.size(); i++) {
-        const boost::shared_ptr<view::Signal> s(sigs[i]);
-        assert(s);
-        if (dynamic_pointer_cast<DsoSignal>(s) && index == s->get_index())
-            _colour = s->get_colour();
-    }
+    _vDial = _math_stack->get_vDial();
+    update_vDial();
+    _colour = View::Red;
+    _ref_min = dsoSig1->get_ref_min();
+    _ref_max = dsoSig1->get_ref_max();
 }
 
 MathTrace::~MathTrace()
 {
-
 }
 
 bool MathTrace::enabled() const
@@ -103,385 +82,436 @@ void MathTrace::set_enable(bool enable)
     _enable = enable;
 }
 
-int MathTrace::view_mode() const
+int MathTrace::src1() const
 {
-    return _view_mode;
+    return _dsoSig1->get_index();
 }
 
-void MathTrace::set_view_mode(unsigned int mode)
+int MathTrace::src2() const
 {
-    assert(mode < sizeof(FFT_ViewMode)/sizeof(FFT_ViewMode[0]));
-    _view_mode = mode;
+    return _dsoSig2->get_index();
 }
 
-std::vector<QString> MathTrace::get_view_modes_support()
-{
-    std::vector<QString> modes;
-    for (unsigned int i = 0; i < sizeof(FFT_ViewMode)/sizeof(FFT_ViewMode[0]); i++) {
-        modes.push_back(FFT_ViewMode[i]);
-    }
-    return modes;
-}
-
-const boost::shared_ptr<pv::data::MathStack>& MathTrace::get_math_stack() const
-{
-    return _math_stack;
-}
-
-void MathTrace::init_zoom()
-{
-    _scale = 1;
-    _offset = 0;
-}
-
-void MathTrace::zoom(double steps, int offset)
-{
-    if (!_view)
-        return;
-
-    const int width = get_view_rect().width();
-    double pre_offset = _offset + _scale*offset/width;
-    _scale *= std::pow(3.0/2.0, -steps);
-    _scale = max(min(_scale, 1.0), 100.0/_math_stack->get_sample_num());
-    _offset = pre_offset - _scale*offset/width;
-    _offset = max(min(_offset, 1-_scale), 0.0);
-
-    _view->set_update(_viewport, true);
-    _view->update();
-}
-
-void MathTrace::set_offset(double delta)
-{
-    int width = get_view_rect().width();
-    _offset = _offset + (delta*_scale / width);
-    _offset = max(min(_offset, 1-_scale), 0.0);
-
-    _view->set_update(_viewport, true);
-    _view->update();
-}
-
-double MathTrace::get_offset() const
-{
-    return _offset;
-}
-
-void MathTrace::set_scale(double scale)
-{
-    _scale = max(min(scale, 1.0), 100.0/_math_stack->get_sample_num());
-
-    _view->set_update(_viewport, true);
-    _view->update();
-}
-
-double MathTrace::get_scale() const
+float MathTrace::get_scale()
 {
     return _scale;
 }
 
-void MathTrace::set_dbv_range(int range)
+int MathTrace::get_name_width() const
 {
-    _dbv_range = range;
+    return 0;
 }
 
-int MathTrace::dbv_range() const
+void MathTrace::update_vDial()
 {
-    return _dbv_range;
+    _vDial->set_value(_math_stack->default_vDialValue());
 }
 
-std::vector<int> MathTrace::get_dbv_ranges()
+void MathTrace::go_vDialPre()
 {
-    std::vector<int> range;
-    for (unsigned int i = 0; i < sizeof(DbvRanges)/sizeof(DbvRanges[0]); i++) {
-        range.push_back(DbvRanges[i]);
-    }
-    return range;
-}
+    if (enabled() && !_vDial->isMin()) {
+        if (_view->session().get_capture_state() == SigSession::Running)
+            _view->session().refresh(DsoSignal::RefreshShort);
+        const double pre_vdiv = _vDial->get_value();
+        _vDial->set_sel(_vDial->get_sel() - 1);
 
-QString MathTrace::format_freq(double freq, unsigned precision)
-{
-    if (freq <= 0) {
-        return "0Hz";
-    } else {
-        const int order = floor(log10f(freq));
-        assert(order >= FirstSIPrefixPower);
-        assert(order <= LastSIPrefixPower);
-        const int prefix = floor((order - FirstSIPrefixPower)/ 3.0f);
-        const double divider = pow(10.0, max(prefix * 3.0 + FirstSIPrefixPower, 0.0));
+        if (_view->session().get_capture_state() == SigSession::Stopped)
+            _scale *= pre_vdiv/_vDial->get_value();
 
-        QString s;
-        QTextStream ts(&s);
-        ts.setRealNumberPrecision(precision);
-        ts << fixed << freq / divider <<
-            FreqPrefixes[prefix] << "Hz";
-        return s;
+        _view->set_update(_viewport, true);
+        _view->update();
     }
 }
 
-bool MathTrace::measure(const QPoint &p)
+void MathTrace::go_vDialNext()
 {
-    _hover_en = false;
-    if(!_view || !enabled())
-        return false;
+    if (enabled() && !_vDial->isMax()) {
+        if (_view->session().get_capture_state() == SigSession::Running)
+            _view->session().refresh(DsoSignal::RefreshShort);
+        const double pre_vdiv = _vDial->get_value();
+        _vDial->set_sel(_vDial->get_sel() + 1);
 
-    const QRect window = get_view_rect();
-    if (!window.contains(p))
-        return false;
+        if (_view->session().get_capture_state() == SigSession::Stopped)
+            _scale *= pre_vdiv/_vDial->get_value();
 
-    const std::vector<double> samples(_math_stack->get_fft_spectrum());
-    if(samples.empty())
-        return false;
-
-    const unsigned int full_size = (_math_stack->get_sample_num()/2);
-    const double view_off = full_size * _offset;
-    const double view_size = full_size*_scale;
-    const double sample_per_pixels = view_size/window.width();
-    _hover_index = std::round(p.x() * sample_per_pixels + view_off);
-
-    if (_hover_index < full_size)
-        _hover_en = true;
-
-    //_view->set_update(_viewport, true);
-    _view->update();
-    return true;
+        _view->set_update(_viewport, true);
+        _view->update();
+    }
 }
 
-
-void MathTrace::paint_back(QPainter &p, int left, int right)
+uint64_t MathTrace::get_vDialValue() const
 {
-    if(!_view)
-        return;
-
-    const int height = get_view_rect().height();
-    const int width = right - left;
-
-    QPen solidPen(Signal::dsFore);
-    solidPen.setStyle(Qt::SolidLine);
-    p.setPen(solidPen);
-    p.setBrush(Trace::dsBack);
-    p.drawRect(left, UpMargin, width, height);
+    return _vDial->get_value();
 }
 
-void MathTrace::paint_mid(QPainter &p, int left, int right)
+uint16_t MathTrace::get_vDialSel() const
 {
-    if(!_view)
-        return;
-    assert(right >= left);
+    return _vDial->get_sel();
+}
 
+double MathTrace::get_zero_ratio()
+{
+    return _zero_vrate;
+}
+
+void MathTrace::set_zero_vrate(double rate)
+{
+    _zero_vrate = rate;
+    _hw_offset = _zero_vrate * (_ref_max - _ref_min) + _ref_min;
+}
+
+int MathTrace::get_zero_vpos() const
+{
+    return _zero_vrate * get_view_rect().height() + DsoSignal::UpMargin;
+}
+
+void MathTrace::set_zero_vpos(int pos)
+{
     if (enabled()) {
-        const std::vector<double> samples(_math_stack->get_fft_spectrum());
-        if(samples.empty())
-            return;
-
-        QColor trace_colour = _colour;
-        trace_colour.setAlpha(150);
-        p.setPen(trace_colour);
-
-        const int full_size = (_math_stack->get_sample_num()/2);
-        const double view_off = full_size * _offset;
-        const int view_start = floor(view_off);
-        const int view_size = full_size*_scale;
-        QPointF *points = new QPointF[samples.size()];
-        QPointF *point = points;
-
-        const bool dc_ignored = _math_stack->dc_ignored();
-        const double height = get_view_rect().height();
-        const double width = right - left;
-        const double pixels_per_sample = width/view_size;
-
-        double vdiv = 0;
-        double vfactor = 0;
-        BOOST_FOREACH(const boost::shared_ptr<Signal> s, _session.get_signals()) {
-            boost::shared_ptr<DsoSignal> dsoSig;
-            if ((dsoSig = dynamic_pointer_cast<DsoSignal>(s))) {
-                if(dsoSig->get_index() == _math_stack->get_index()) {
-                    vdiv = dsoSig->get_vDialValue();
-                    vfactor = dsoSig->get_factor();
-                    break;
-                }
-            }
-        }
-        if (_view_mode == 0) {
-            _vmin = 0;
-            _vmax = (vdiv*DS_CONF_DSO_HDIVS*vfactor)*VerticalRate;
-        } else {
-            _vmax = 20*log10((vdiv*DS_CONF_DSO_HDIVS*vfactor)*VerticalRate);
-            _vmin = _vmax - _dbv_range;
-        }
-
-        //const double max_value = *std::max_element(dc_ignored ? ++samples.begin() : samples.begin(), samples.end());
-        //const double min_value = *std::min_element(dc_ignored ? ++samples.begin() : samples.begin(), samples.end());
-        //_vmax = (_view_mode == 0) ? max_value : 20*log10(max_value);
-        //_vmin = (_view_mode == 0) ? min_value : 20*log10(min_value);
-        const double scale = height / (_vmax - _vmin);
-
-        double x = (view_start-view_off)*pixels_per_sample;
-        uint64_t sample = view_start;
-        if (dc_ignored && sample == 0) {
-            sample++;
-            x += pixels_per_sample;
-        }
-        double min_mag = pow(10.0, _vmin/20);
-        do{
-            double mag = samples[sample];
-            if (_view_mode != 0) {
-                if (mag < min_mag)
-                    mag = _vmin;
-                else
-                    mag = 20*log10(mag);
-            }
-            const double y = height - (scale * (mag - _vmin));
-            *point++ = QPointF(x, y);
-            x += pixels_per_sample;
-            sample++;
-        }while(x<right && sample < samples.size());
-
-        p.drawPolyline(points, point - points);
-        delete[] points;
+        set_zero_vrate(min(max(pos - DsoSignal::UpMargin, 0),
+                           get_view_rect().height()) * 1.0 / get_view_rect().height());
     }
 }
 
-void MathTrace::paint_fore(QPainter &p, int left, int right)
+void MathTrace::set_show(bool show)
 {
-    using namespace Qt;
-
-    if(!_view)
-        return;
-    assert(right >= left);
-
-    (void)left;
-    (void)right;
-    const int text_height = p.boundingRect(0, 0, INT_MAX, INT_MAX,
-        AlignLeft | AlignTop, "8").height();
-    const double width = get_view_rect().width();
-    const double height = get_view_rect().height();
-    double blank_top = 0;
-    double blank_right = width;
-
-    // horizontal ruler
-    const double NyFreq = _session.cur_samplerate() / (2.0 * _math_stack->get_sample_interval());
-    const double deltaFreq = _session.cur_samplerate() * 1.0 /
-                            (_math_stack->get_sample_num() * _math_stack->get_sample_interval());
-    const double FreqRange = NyFreq * _scale;
-    const double FreqOffset = NyFreq * _offset;
-
-    const int order = (int)floor(log10(FreqRange));
-    const double multiplier = (pow(10.0, order) == FreqRange) ? FreqRange/10 : pow(10.0, order);
-    const double freq_per_pixel = FreqRange / width;
-
-    p.setPen(Trace::DARK_FORE);
-    p.setBrush(Qt::NoBrush);
-    double tick_freq = multiplier * (int)floor(FreqOffset / multiplier);
-    int division = (int)round(tick_freq * FreqMinorDivNum / multiplier);
-    double x = (tick_freq - FreqOffset) / freq_per_pixel;
-    do{
-        if (division%FreqMinorDivNum == 0) {
-            QString freq_str = format_freq(tick_freq);
-            double typical_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
-                AlignLeft | AlignTop, freq_str).width() + 10;
-            p.drawLine(x, 1, x, TickHeight);
-            if (x > typical_width/2 && (width-x) > typical_width/2)
-                p.drawText(x-typical_width/2, TickHeight, typical_width, text_height,
-                           AlignCenter | AlignTop | TextDontClip, freq_str);
-        } else {
-                p.drawLine(x, 1, x, TickHeight/2);
-        }
-        tick_freq += multiplier/FreqMinorDivNum;
-        division++;
-        x =  (tick_freq - FreqOffset) / freq_per_pixel;
-    } while(x < width);
-    blank_top = max(blank_top, (double)TickHeight + text_height);
-
-    // delta Frequency
-    QString freq_str =  QString::fromWCharArray(L" \u0394") + "Freq: " + format_freq(deltaFreq,4);
-    p.drawText(0, 0, width, get_view_rect().height(),
-               AlignRight | AlignBottom | TextDontClip, freq_str);
-    double delta_left = width-p.boundingRect(0, 0, INT_MAX, INT_MAX,
-                                             AlignLeft | AlignTop, freq_str).width();
-    blank_right = min(delta_left, blank_right);
-
-    // Vertical ruler
-    const double vRange = _vmax - _vmin;
-    const double vOffset = _vmin;
-    const double vol_per_tick = vRange / VolDivNum;
-
-    p.setPen(Trace::DARK_FORE);
-    p.setBrush(Qt::NoBrush);
-    double tick_vol = vol_per_tick + vOffset;
-    double y = height - height / VolDivNum;
-    const QString unit = (_view_mode == 0) ? "" : "dbv";
-    do{
-        if (y > text_height && y < (height - text_height)) {
-            QString vol_str = QString::number(tick_vol, 'f', Pricision) + unit;
-            double vol_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
-                AlignLeft | AlignTop, vol_str).width();
-            p.drawLine(width, y, width-TickHeight/2, y);
-            p.drawText(width-TickHeight-vol_width, y-text_height/2, vol_width, text_height,
-                       AlignCenter | AlignTop | TextDontClip, vol_str);
-            blank_right = min(width-TickHeight-vol_width, blank_right);
-        }
-        tick_vol += vol_per_tick;
-        y -=  height / VolDivNum;
-    } while(y > 0);
-
-    // Hover measure
-    if (_hover_en) {
-        const std::vector<double> samples(_math_stack->get_fft_spectrum());
-        if(samples.empty())
-            return;
-        const int full_size = (_math_stack->get_sample_num()/2);
-        const double view_off = full_size * _offset;
-        const int view_size = full_size*_scale;
-        const double scale = height / (_vmax - _vmin);
-        const double pixels_per_sample = width/view_size;
-        double x = (_hover_index-view_off)*pixels_per_sample;
-        double min_mag = pow(10.0, _vmin/20);
-        _hover_value = samples[_hover_index];
-        if (_view_mode != 0) {
-            if (_hover_value < min_mag)
-                _hover_value = _vmin;
-            else
-                _hover_value = 20*log10(_hover_value);
-        }
-        const double y = height - (scale * (_hover_value - _vmin));
-        _hover_point = QPointF(x, y);
-
-        p.setPen(QPen(Trace::DARK_FORE, 1, Qt::DashLine));
-        p.setBrush(Qt::NoBrush);
-        p.drawLine(_hover_point.x(), 0, _hover_point.x(), height);
-
-        QString hover_str = QString::number(_hover_value, 'f', 4) + unit + "@" + format_freq(deltaFreq * _hover_index, 4);
-        const int hover_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
-            AlignLeft | AlignTop, hover_str).width();
-        const int hover_height = p.boundingRect(0, 0, INT_MAX, INT_MAX,
-            AlignLeft | AlignTop, hover_str).height();
-        QRectF hover_rect(_hover_point.x(), _hover_point.y()-hover_height, hover_width, hover_height);
-        if (hover_rect.right() > blank_right)
-            hover_rect.moveRight(min(_hover_point.x(), blank_right));
-        if (hover_rect.top() < blank_top)
-            hover_rect.moveTop(max(_hover_point.y(), blank_top));
-        if (hover_rect.top() > 0)
-            p.drawText(hover_rect, AlignCenter | AlignTop | TextDontClip, hover_str);
-
-        p.setPen(Qt::NoPen);
-        p.setBrush(Trace::DARK_FORE);
-        p.drawEllipse(_hover_point, HoverPointSize, HoverPointSize);
-    }
-}
-
-void MathTrace::paint_type_options(QPainter &p, int right, const QPoint pt)
-{
-    (void)p;
-    (void)pt;
-    (void)right;
+    _show = show;
 }
 
 QRect MathTrace::get_view_rect() const
 {
     assert(_viewport);
-    return QRect(0, UpMargin,
-                  _viewport->width() - RightMargin,
-                  _viewport->height() - UpMargin - DownMargin);
+    return QRect(0, DsoSignal::UpMargin,
+                  _viewport->width() - DsoSignal::RightMargin,
+                  _viewport->height() - DsoSignal::UpMargin - DsoSignal::DownMargin);
 }
+
+void MathTrace::paint_back(QPainter &p, int left, int right, QColor fore, QColor back)
+{
+    (void)p;
+    (void)left;
+    (void)right;
+    (void)fore;
+    (void)back;
+}
+
+void MathTrace::paint_mid(QPainter &p, int left, int right, QColor fore, QColor back)
+{
+    (void)fore;
+    (void)back;
+
+    if (!_show)
+        return;
+
+    assert(_math_stack);
+    assert(_view);
+    assert(right >= left);
+
+    if (enabled()) {
+        const float top = get_view_rect().top();
+        const int height = get_view_rect().height();
+        const int width = right - left;
+        const float zeroY = _zero_vrate * height + top;
+
+        const double scale = _view->scale();
+        assert(scale > 0);
+        const int64_t offset = _view->offset();
+
+        const double pixels_offset = offset;
+        const double samplerate = _view->session().cur_samplerate();
+        const int64_t last_sample = max((int64_t)(_math_stack->get_sample_num() - 1), (int64_t)0);
+        const double samples_per_pixel = samplerate * scale;
+        const double start = offset * samples_per_pixel;
+        const double end = start + samples_per_pixel * width;
+
+        const int64_t start_sample = min(max((int64_t)floor(start),
+            (int64_t)0), last_sample);
+        const int64_t end_sample = min(max((int64_t)ceil(end) + 1,
+            (int64_t)0), last_sample);
+
+        _scale = get_view_rect().height() * _math_stack->get_math_scale() * 1000.0 / get_vDialValue();
+
+        if (samples_per_pixel < DsoSignal::EnvelopeThreshold) {
+            _math_stack->enable_envelope(false);
+            paint_trace(p, zeroY, left,
+                start_sample, end_sample,
+                pixels_offset, samples_per_pixel);
+        } else {
+            _math_stack->enable_envelope(true);
+            paint_envelope(p, zeroY, left,
+                start_sample, end_sample,
+                pixels_offset, samples_per_pixel);
+        }
+    }
+}
+
+void MathTrace::paint_fore(QPainter &p, int left, int right, QColor fore, QColor back)
+{
+    if (!_show)
+        return;
+
+    assert(_view);
+
+    fore.setAlpha(View::BackAlpha);
+    QPen pen(fore);
+    pen.setStyle(Qt::DotLine);
+    p.setPen(pen);
+    p.drawLine(left, get_zero_vpos(), right, get_zero_vpos());
+
+    // Paint measure
+    fore.setAlpha(View::ForeAlpha);
+    if (_view->session().get_capture_state() == SigSession::Stopped)
+        paint_hover_measure(p, fore, back);
+}
+
+void MathTrace::paint_trace(QPainter &p,
+    int zeroY, int left, const int64_t start, const int64_t end,
+    const double pixels_offset, const double samples_per_pixel)
+{
+    const int64_t sample_count = end - start + 1;
+
+    if (sample_count > 0) {
+        QColor trace_colour = _colour;
+        trace_colour.setAlpha(View::ForeAlpha);
+        p.setPen(trace_colour);
+
+        if ((uint64_t)end >= _math_stack->get_sample_num())
+            return;
+
+        const double *const values = _math_stack->get_math(start);
+        assert(values);
+
+        QPointF *points = new QPointF[sample_count];
+        QPointF *point = points;
+
+        double top = get_view_rect().top();
+        double bottom = get_view_rect().bottom();
+        float x = (start / samples_per_pixel - pixels_offset) + left;
+        double  pixels_per_sample = 1.0/samples_per_pixel;
+
+        for (int64_t index = 0; index < sample_count; index++) {
+            *point++ = QPointF(x, min(max(top, zeroY - (values[index] * _scale)), bottom));
+            x += pixels_per_sample;
+        }
+
+        p.drawPolyline(points, point - points);
+        p.eraseRect(get_view_rect().right()+1, get_view_rect().top(),
+                    _view->viewport()->width() - get_view_rect().width(), get_view_rect().height());
+
+        delete[] points;
+    }
+}
+
+void MathTrace::paint_envelope(QPainter &p,
+    int zeroY, int left, const int64_t start, const int64_t end,
+    const double pixels_offset, const double samples_per_pixel)
+{
+	using namespace Qt;
+
+    data::MathStack::EnvelopeSection e;
+    _math_stack->get_math_envelope_section(e, start, end, samples_per_pixel);
+
+	if (e.length < 2)
+		return;
+
+    p.setPen(QPen(NoPen));
+    QColor envelope_colour = _colour;
+    envelope_colour.setAlpha(View::ForeAlpha);
+    p.setBrush(envelope_colour);
+
+	QRectF *const rects = new QRectF[e.length];
+	QRectF *rect = rects;
+    double top = get_view_rect().top();
+    double bottom = get_view_rect().bottom();
+    for(uint64_t sample = 0; sample < e.length-1; sample++) {
+		const float x = ((e.scale * sample + e.start) /
+			samples_per_pixel - pixels_offset) + left;
+        const data::MathStack::EnvelopeSample *const s =
+			e.samples + sample;
+
+		// We overlap this sample with the next so that vertical
+		// gaps do not appear during steep rising or falling edges
+        const float b = min(max(top, zeroY - max(s->max, (s+1)->min) * _scale), bottom);
+        const float t = min(max(top, zeroY - min(s->min, (s+1)->max) * _scale), bottom);
+
+		float h = b - t;
+		if(h >= 0.0f && h <= 1.0f)
+			h = 1.0f;
+		if(h <= 0.0f && h >= -1.0f)
+			h = -1.0f;
+
+		*rect++ = QRectF(x, t, 1.0f, h);
+	}
+
+	p.drawRects(rects, e.length);
+
+	delete[] rects;
+}
+
+void MathTrace::paint_type_options(QPainter &p, int right, const QPoint pt, QColor fore)
+{
+    p.setRenderHint(QPainter::Antialiasing, true);
+
+    QColor foreBack = fore;
+    foreBack.setAlpha(View::BackAlpha);
+    int y = get_y();
+    const QRectF vDial_rect = get_rect(DSO_VDIAL, y, right);
+
+    QString pText;
+    _vDial->paint(p, vDial_rect, _colour, pt, pText);
+    QFontMetrics fm(p.font());
+    const QRectF valueRect = QRectF(0, vDial_rect.top()-fm.height()-10, right, fm.height());
+    p.drawText(valueRect, Qt::AlignCenter, pText);
+
+    p.setRenderHint(QPainter::Antialiasing, false);
+}
+
+bool MathTrace::mouse_wheel(int right, const QPoint pt, const int shift)
+{
+    int y = get_y();
+    const QRectF vDial_rect = get_rect(DSO_VDIAL, y, right);
+
+    if (vDial_rect.contains(pt)) {
+        if (shift > 0.5)
+            go_vDialPre();
+        else if (shift < -0.5)
+            go_vDialNext();
+        return true;
+    } else {
+        return false;
+    }
+
+    return true;
+}
+
+QRectF MathTrace::get_rect(MathSetRegions type, int y, int right)
+{
+    (void)right;
+
+    if (type == DSO_VDIAL)
+        return QRectF(
+            get_leftWidth() + SquareWidth*0.5 + Margin,
+            y - SquareWidth * SquareNum + SquareWidth * 3,
+            SquareWidth * (SquareNum-1), SquareWidth * (SquareNum-1));
+    else
+        return QRectF(0, 0, 0, 0);
+}
+
+void MathTrace::paint_hover_measure(QPainter &p, QColor fore, QColor back)
+{
+    // Hover measure
+    if (_hover_en) {
+        QString hover_str = get_voltage(_hover_voltage, 2);
+        const int hover_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
+            Qt::AlignLeft | Qt::AlignTop, hover_str).width() + 10;
+        const int hover_height = p.boundingRect(0, 0, INT_MAX, INT_MAX,
+            Qt::AlignLeft | Qt::AlignTop, hover_str).height();
+        QRectF hover_rect(_hover_point.x(), _hover_point.y()-hover_height/2, hover_width, hover_height);
+        if (hover_rect.right() > get_view_rect().right())
+            hover_rect.moveRight(_hover_point.x());
+        if (hover_rect.top() < get_view_rect().top())
+            hover_rect.moveTop(_hover_point.y());
+        if (hover_rect.bottom() > get_view_rect().bottom())
+            hover_rect.moveBottom(_hover_point.y());
+
+        p.setPen(fore);
+        p.setBrush(back);
+        p.drawRect(_hover_point.x()-1, _hover_point.y()-1,
+                   DsoSignal::HoverPointSize, DsoSignal::HoverPointSize);
+        p.drawText(hover_rect, Qt::AlignCenter | Qt::AlignTop | Qt::TextDontClip, hover_str);
+    }
+
+    list<Cursor*>::iterator i = _view->get_cursorList().begin();
+    while (i != _view->get_cursorList().end()) {
+        float pt_value;
+        const QPointF pt = get_point((*i)->index(), pt_value);
+        QString pt_str = get_voltage(pt_value, 2);
+        const int pt_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
+            Qt::AlignLeft | Qt::AlignTop, pt_str).width() + 10;
+        const int pt_height = p.boundingRect(0, 0, INT_MAX, INT_MAX,
+            Qt::AlignLeft | Qt::AlignTop, pt_str).height();
+        QRectF pt_rect(pt.x(), pt.y()-pt_height/2, pt_width, pt_height);
+        if (pt_rect.right() > get_view_rect().right())
+            pt_rect.moveRight(pt.x());
+        if (pt_rect.top() < get_view_rect().top())
+            pt_rect.moveTop(pt.y());
+        if (pt_rect.bottom() > get_view_rect().bottom())
+            pt_rect.moveBottom(pt.y());
+
+        p.drawRect(pt.x()-1, pt.y()-1, 2, 2);
+        p.drawLine(pt.x()-2, pt.y()-2, pt.x()+2, pt.y()+2);
+        p.drawLine(pt.x()+2, pt.y()-2, pt.x()-2, pt.y()+2);
+        p.drawText(pt_rect, Qt::AlignCenter | Qt::AlignTop | Qt::TextDontClip, pt_str);
+
+        i++;
+    }
+}
+
+bool MathTrace::measure(const QPointF &p)
+{
+    _hover_en = false;
+    if (!enabled())
+        return false;
+
+    const QRectF window = get_view_rect();
+    if (!window.contains(p))
+        return false;
+
+    const double scale = _view->scale();
+    assert(scale > 0);
+    const int64_t pixels_offset = _view->offset();
+    const double samplerate = _view->session().cur_samplerate();
+    const double samples_per_pixel = samplerate * scale;
+
+    _hover_index = floor((p.x() + pixels_offset) * samples_per_pixel+0.5);
+    if (_hover_index >= _math_stack->get_sample_num())
+        return false;
+
+    _hover_point = get_point(_hover_index, _hover_voltage);
+    _hover_en = true;
+    return true;
+}
+
+QPointF MathTrace::get_point(uint64_t index, float &value)
+{
+    QPointF pt = QPointF(0, 0);
+
+    const double scale = _view->scale();
+    assert(scale > 0);
+    const int64_t pixels_offset = _view->offset();
+    const double samplerate = _view->session().cur_samplerate();
+    const double samples_per_pixel = samplerate * scale;
+
+    const float top = get_view_rect().top();
+    const float bottom = get_view_rect().bottom();
+    const float zeroP = _zero_vrate * get_view_rect().height() + top;
+    const float x = (index / samples_per_pixel - pixels_offset);
+
+    value = *_math_stack->get_math(index);
+    float y = min(max(top, zeroP - (value * _scale)), bottom);
+    pt = QPointF(x, y);
+    return pt;
+}
+
+QString MathTrace::get_voltage(double v, int p)
+{
+    return abs(v) >= 1 ? QString::number(v, 'f', p) + _math_stack->get_unit(1) :
+                         QString::number(v * 1000, 'f', p) + _math_stack->get_unit(0);
+}
+
+QString MathTrace::get_time(double t)
+{
+    QString str = (abs(t) > 1000000000 ? QString::number(t/1000000000, 'f', 2) + "S" :
+                   abs(t) > 1000000 ? QString::number(t/1000000, 'f', 2) + "mS" :
+                   abs(t) > 1000 ? QString::number(t/1000, 'f', 2) + "uS" : QString::number(t, 'f', 2) + "nS");
+    return str;
+}
+
+const boost::shared_ptr<pv::data::MathStack>& MathTrace::get_math_stack() const
+{
+   return _math_stack;
+}
+
 
 } // namespace view
 } // namespace pv

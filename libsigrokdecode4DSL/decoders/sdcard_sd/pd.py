@@ -1,5 +1,5 @@
 ##
-## This file is part of the sigrok project.
+## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2015 Uwe Hermann <uwe@hermann-uwe.de>
 ##
@@ -14,22 +14,22 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
-from .lists import *
+from common.sdcard import (cmd_names, acmd_names, accepted_voltages, card_status, sd_status)
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'sdcard_sd'
     name = 'SD card (SD mode)'
     longname = 'Secure Digital card (SD mode)'
     desc = 'Secure Digital card (SD mode) low-level protocol.'
     license = 'gplv2+'
     inputs = ['logic']
-    outputs = ['sdcard_sd']
+    outputs = []
+    tags = ['Memory']
     channels = (
         {'id': 'cmd',  'name': 'CMD',  'desc': 'Command'},
         {'id': 'clk',  'name': 'CLK',  'desc': 'Clock'},
@@ -61,13 +61,15 @@ class Decoder(srd.Decoder):
         ('cmd', 'Commands', tuple(range(128))),
     )
 
-    def __init__(self, **kwargs):
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.state = 'GET COMMAND TOKEN'
         self.token = []
-        self.oldpins = None
-        self.oldclk = 0
         self.is_acmd = False # Indicates CMD vs. ACMD
         self.cmd = None
+        self.last_cmd = None
         self.arg = None
 
     def start(self):
@@ -79,9 +81,6 @@ class Decoder(srd.Decoder):
     def putt(self, data):
         self.put(self.token[0][0], self.token[47][1], self.out_ann, data)
 
-    def putt2(self, data):
-        self.put(self.token[47][0], self.token[0][1], self.out_ann, data)
-
     def putf(self, s, e, data):
         self.put(self.token[s][0], self.token[e][1], self.out_ann, data)
 
@@ -90,18 +89,12 @@ class Decoder(srd.Decoder):
                  self.out_ann, data)
 
     def putc(self, cmd, desc):
+        self.last_cmd = cmd
         self.putt([cmd, ['%s: %s' % (self.cmd_str, desc), self.cmd_str,
                          self.cmd_str.split(' ')[0]]])
 
-    def putr(self, cmd, desc):
-        self.putt([cmd, ['Reply: %s' % desc]])
-
-    def putr2(self, cmd, desc):
-        self.putt2([cmd, ['Reply: %s' % desc]])
-
-    def reset(self):
-        self.cmd, self.arg = None, None
-        self.token, self.state = [], 'GET COMMAND TOKEN'
+    def putr(self, desc):
+        self.putt([self.last_cmd, ['Reply: %s' % desc]])
 
     def cmd_name(self, cmd):
         c = acmd_names if self.is_acmd else cmd_names
@@ -138,7 +131,8 @@ class Decoder(srd.Decoder):
                                'CMD%d' % self.cmd, 'Cmd', 'C']])
 
         # CMD[39:08]: Argument
-        self.putf(8, 39, [132, ['Argument', 'Arg', 'A']])
+        self.arg = int('0b' + ''.join([str(s[i][2]) for i in range(8, 40)]), 2)
+        self.putf(8, 39, [132, ['Argument: 0x%08x' % self.arg, 'Arg', 'A']])
 
         # CMD[07:01]: CRC7
         self.crc = int('0b' + ''.join([str(s[i][2]) for i in range(40, 47)]), 2)
@@ -206,7 +200,7 @@ class Decoder(srd.Decoder):
         self.puta(12, 31, [136, ['Reserved', 'Res', 'R']])
         self.puta(8, 11, [136, ['Supply voltage', 'Voltage', 'VHS', 'V']])
         self.puta(0, 7, [136, ['Check pattern', 'Check pat', 'Check', 'C']])
-        self.putc(0, 'Send interface condition to card')
+        self.putc(8, 'Send interface condition to card')
         self.token, self.state = [], 'GET RESPONSE R7'
         # TODO: Handle case when card doesn't reply with R7 (no reply at all).
 
@@ -233,9 +227,8 @@ class Decoder(srd.Decoder):
 
     def handle_cmd16(self):
         # CMD16 (SET_BLOCKLEN) -> R1
-        self.blocklen = self.arg
         self.puta(0, 31, [136, ['Block length', 'Blocklen', 'BL', 'B']])
-        self.putc(16, 'Set the block length to %d bytes' % self.blocklen)
+        self.putc(16, 'Set the block length to %d bytes' % self.arg)
         self.token, self.state = [], 'GET RESPONSE R1'
 
     def handle_cmd55(self):
@@ -297,7 +290,7 @@ class Decoder(srd.Decoder):
         if not self.get_token_bits(cmd, 48):
             return
         self.handle_common_token_fields()
-        self.putr(55, 'R1')
+        self.putr('R1')
         self.puta(0, 31, [136, ['Card status', 'Status', 'S']])
         for i in range(32):
             self.putbit(8 + i, [card_status[31 - i]])
@@ -309,7 +302,7 @@ class Decoder(srd.Decoder):
             return
         self.handle_common_token_fields()
         self.puta(0, 31, [136, ['Card status', 'Status', 'S']])
-        self.putr(55, 'R1b')
+        self.putr('R1b')
         self.token, self.state = [], 'GET COMMAND TOKEN'
 
     def handle_response_r2(self, cmd):
@@ -344,7 +337,7 @@ class Decoder(srd.Decoder):
         #  - Bits[00:00]: End bit (always 1)
         if not self.get_token_bits(cmd, 48):
             return
-        self.putr(55, 'R3')
+        self.putr('R3')
         # Annotations for each individual bit.
         for bit in range(len(self.token)):
             self.putf(bit, bit, [128, ['%d' % self.token[bit][2]]])
@@ -372,7 +365,7 @@ class Decoder(srd.Decoder):
         self.handle_common_token_fields()
         self.puta(0, 15, [136, ['Card status bits', 'Status', 'S']])
         self.puta(16, 31, [136, ['Relative card address', 'RCA', 'R']])
-        self.putr(55, 'R6')
+        self.putr('R6')
         self.token, self.state = [], 'GET COMMAND TOKEN'
 
     def handle_response_r7(self, cmd):
@@ -389,7 +382,7 @@ class Decoder(srd.Decoder):
             return
         self.handle_common_token_fields()
 
-        self.putr(55, 'R7')
+        self.putr('R7')
 
         # Arg[31:12]: Reserved bits (all-zero)
         self.puta(12, 31, [136, ['Reserved', 'Res', 'R']])
@@ -404,19 +397,10 @@ class Decoder(srd.Decoder):
 
         self.token, self.state = [], 'GET COMMAND TOKEN'
 
-    def decode(self, ss, es, data):
-        for (self.samplenum, pins) in data:
-            data.itercnt += 1
-            # Ignore identical samples early on (for performance reasons).
-            if self.oldpins == pins:
-                continue
-            self.oldpins, (cmd, clk, dat0, dat1, dat2, dat3) = pins, pins
-
+    def decode(self):
+        while True:
             # Wait for a rising CLK edge.
-            if not (self.oldclk == 0 and clk == 1):
-                self.oldclk = clk
-                continue
-            self.oldclk = clk
+            (cmd, clk, dat0, dat1, dat2, dat3) = self.wait({1: 'r'})
 
             # State machine.
             if self.state == 'GET COMMAND TOKEN':

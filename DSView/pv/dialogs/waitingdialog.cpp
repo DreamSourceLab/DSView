@@ -41,8 +41,9 @@ namespace dialogs {
 const QString WaitingDialog::TIPS_WAIT = QT_TR_NOOP("Waiting");
 const QString WaitingDialog::TIPS_FINISHED = QT_TR_NOOP("Finished!");
 
-WaitingDialog::WaitingDialog(QWidget *parent, boost::shared_ptr<pv::device::DevInst> dev_inst) :
+WaitingDialog::WaitingDialog(QWidget *parent, boost::shared_ptr<pv::device::DevInst> dev_inst, int key) :
     DSDialog(parent),
+    _key(key),
     _dev_inst(dev_inst),
     _button_box(QDialogButtonBox::Abort,
         Qt::Horizontal, this)
@@ -50,8 +51,9 @@ WaitingDialog::WaitingDialog(QWidget *parent, boost::shared_ptr<pv::device::DevI
     this->setFixedSize((GIF_WIDTH+TIP_WIDTH)*1.2, (GIF_HEIGHT+TIP_HEIGHT)*4);
     this->setWindowOpacity(0.7);
 
+    QString iconPath = ":/icons/" + qApp->property("Style").toString();
     label = new QLabel(this);
-    movie = new QMovie(":/icons/wait.gif");
+    movie = new QMovie(iconPath+"/wait.gif");
     label->setMovie(movie);
     label->setAlignment(Qt::AlignCenter);
 
@@ -89,13 +91,11 @@ void WaitingDialog::accept()
 
     QFuture<void> future;
     future = QtConcurrent::run([&]{
-        //QTime dieTime = QTime::currentTime().addSecs(1);
         _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO_SET,
                               g_variant_new_boolean(true));
-        //while( QTime::currentTime() < dieTime );
     });
     Qt::WindowFlags flags = Qt::CustomizeWindowHint;
-    QProgressDialog dlg(tr("Save Auto Zero Result... It can take a while."),
+    QProgressDialog dlg(tr("Save calibration Result... It can take a while."),
                         tr("Cancel"),0,0,this,flags);
     dlg.setWindowModality(Qt::WindowModal);
     dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
@@ -103,8 +103,8 @@ void WaitingDialog::accept()
     dlg.setCancelButton(NULL);
 
     QFutureWatcher<void> watcher;
-    watcher.setFuture(future);
     connect(&watcher,SIGNAL(finished()),&dlg,SLOT(cancel()));
+    watcher.setFuture(future);
 
     dlg.exec();
 }
@@ -119,14 +119,12 @@ void WaitingDialog::reject()
 
     QFuture<void> future;
     future = QtConcurrent::run([&]{
-        //QTime dieTime = QTime::currentTime().addSecs(1);
-        _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO, g_variant_new_boolean(false));
+        _dev_inst->set_config(NULL, NULL, _key, g_variant_new_boolean(false));
         _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO_LOAD,
                               g_variant_new_boolean(true));
-        //while( QTime::currentTime() < dieTime );
     });
     Qt::WindowFlags flags = Qt::CustomizeWindowHint;
-    QProgressDialog dlg(tr("Load Current Setting... It can take a while."),
+    QProgressDialog dlg(tr("Load current setting... It can take a while."),
                         tr("Cancel"),0,0,this,flags);
     dlg.setWindowModality(Qt::WindowModal);
     dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
@@ -164,7 +162,7 @@ void WaitingDialog::changeText()
         tips->setText(TIPS_WAIT);
         index = 0;
 
-        GVariant* gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_ZERO);
+        GVariant* gvar = _dev_inst->get_config(NULL, NULL, _key);
         if (gvar != NULL) {
             bool zero = g_variant_get_boolean(gvar);
             g_variant_unref(gvar);

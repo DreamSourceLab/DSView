@@ -14,15 +14,15 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 '''
-This decoder stacks on top of the 'uart' decoder and decodes the frame format
-of ARMv7m Trace Port Interface Unit. It filters the data coming from various
-trace sources (such as ARMv7m ITM and ETM blocks) into separate streams that
-can be further decoded by other PDs.
+This decoder stacks on top of the 'uart' PD and decodes the frame format
+of ARMv7m Trace Port Interface Unit.
+
+It filters the data coming from various trace sources (such as ARMv7m ITM
+and ETM blocks) into separate streams that can be further decoded by other PDs.
 '''
 
 from .pd import Decoder

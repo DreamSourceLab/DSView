@@ -39,6 +39,10 @@ public:
     QPoint get_startPos() const;
     QString title() const;
 
+private:
+    void changeEvent(QEvent *event);
+    void reStyle();
+
 signals:
     void normalShow();
     void maximizedShow();
@@ -48,7 +52,7 @@ public slots:
     void setRestoreButton(bool max);
 
 protected:
-    void paintEvent(QPaintEvent *);
+    void paintEvent(QPaintEvent *event);
     void mousePressEvent(QMouseEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);

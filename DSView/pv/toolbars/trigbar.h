@@ -37,6 +37,11 @@ namespace toolbars {
 class TrigBar : public QToolBar
 {
     Q_OBJECT
+
+protected:
+    static const QString DARK_STYLE;
+    static const QString LIGHT_STYLE;
+
 public:
     explicit TrigBar(SigSession &session, QWidget *parent = 0);
 
@@ -45,11 +50,23 @@ public:
     void close_all();
     void reload();
 
+private:
+    void changeEvent(QEvent *event);
+    void retranslateUi();
+    void reStyle();
+
 signals:
+    void setTheme(QString style);
     void on_protocol(bool visible);
     void on_trigger(bool visible);
     void on_measure(bool visible);
     void on_search(bool visible);
+    void show_lissajous(bool visible);
+
+private slots:
+    void on_actionDark_triggered();
+    void on_actionLight_triggered();
+    void on_actionLissajous_triggered();
 
 public slots:
     void protocol_clicked();
@@ -58,8 +75,12 @@ public slots:
     void search_clicked();
 
     void update_trig_btn(bool checked);
+    void update_protocol_btn(bool checked);
+    void update_measure_btn(bool checked);
+    void update_search_btn(bool checked);
 
     void on_actionFft_triggered();
+    void on_actionMath_triggered();
 
 private:
     SigSession& _session;
@@ -68,16 +89,24 @@ private:
     QToolButton _protocol_button;
     QToolButton _measure_button;
     QToolButton _search_button;
-    QToolButton _math_button;
+    QToolButton _function_button;
+    QToolButton _display_button;
     QAction* _trig_action;
     QAction* _protocol_action;
     QAction* _measure_action;
     QAction* _search_action;
-    QAction* _math_action;
+    QAction* _function_action;
+    QAction* _display_action;
 
-    QMenu* _math_menu;
+    QMenu* _function_menu;
     QAction* _action_fft;
+    QAction* _action_math;
 
+    QMenu* _display_menu;
+    QMenu *_themes;
+    QAction *_dark_style;
+    QAction *_light_style;
+    QAction* _action_lissajous;
 };
 
 } // namespace toolbars

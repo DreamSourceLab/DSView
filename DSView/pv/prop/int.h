@@ -39,7 +39,7 @@ class Int : public Property
     Q_OBJECT;
 
 public:
-	Int(QString name, QString suffix,
+    Int(QString name, QString label, QString suffix,
 		boost::optional< std::pair<int64_t, int64_t> > range,
 		Getter getter, Setter setter);
 

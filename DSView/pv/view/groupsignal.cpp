@@ -70,8 +70,10 @@ void GroupSignal::set_scale(float scale)
 	_scale = scale;
 }
 
-void GroupSignal::paint_mid(QPainter &p, int left, int right)
+void GroupSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColor back)
 {
+    (void)fore;
+    (void)back;
     assert(_data);
     assert(_view);
     assert(right >= left);
@@ -187,7 +189,7 @@ void GroupSignal::paint_envelope(QPainter &p,
 	delete[] e.samples;
 }
 
-void GroupSignal::paint_type_options(QPainter &p, int right, const QPoint pt)
+void GroupSignal::paint_type_options(QPainter &p, int right, const QPoint pt, QColor fore)
 {
     (void)pt;
 
@@ -195,7 +197,7 @@ void GroupSignal::paint_type_options(QPainter &p, int right, const QPoint pt)
     const QRectF group_index_rect = get_rect(CHNLREG, y, right);
     QString index_string;
     int last_index;
-    p.setPen(QPen(DARK_FORE, 1, Qt::DashLine));
+    p.setPen(QPen(fore, 1, Qt::DashLine));
     p.drawLine(group_index_rect.bottomLeft(), group_index_rect.bottomRight());
     std::list<int>::iterator i = _index_list.begin();
     last_index = (*i);
@@ -209,7 +211,7 @@ void GroupSignal::paint_type_options(QPainter &p, int right, const QPoint pt)
             index_string = QString::number((*i)) + "," + index_string;
         last_index = (*i);
     }
-    p.setPen(DARK_FORE);
+    p.setPen(fore);
     p.drawText(group_index_rect, Qt::AlignRight | Qt::AlignVCenter, index_string);
 }
 

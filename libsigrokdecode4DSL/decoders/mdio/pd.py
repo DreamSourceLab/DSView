@@ -2,6 +2,7 @@
 ## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2016 Elias Oenal <sigrok@eliasoenal.com>
+## Copyright (C) 2019 DreamSourceLab <support@dreamsourcelab.com>
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -29,14 +30,15 @@
 import sigrokdecode as srd
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'mdio'
     name = 'MDIO'
     longname = 'Management Data Input/Output'
-    desc = 'Half-duplex sync serial bus for MII management between MAC and PHY.'
+    desc = 'MII management bus between MAC and PHY.'
     license = 'bsd'
     inputs = ['logic']
     outputs = ['mdio']
+    tags = ['Networking']
     channels = (
         {'id': 'mdc', 'name': 'MDC', 'desc': 'Clock'},
         {'id': 'mdio', 'name': 'MDIO', 'desc': 'Data'},
@@ -62,7 +64,9 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
-        self.last_mdc = 1
+        self.reset()
+
+    def reset(self):
         self.illegal_bus = 0
         self.samplenum = -1
         self.clause45_addr = -1 # Clause 45 is context sensitive.
@@ -93,7 +97,7 @@ class Decoder(srd.Decoder):
             if self.clause45 and self.clause45_addr != -1:
                 decoded_min += str.format('ADDR: %04X ' % self.clause45_addr)
             elif self.clause45:
-                decoded_min += str.format('ADDR: UKWN ' % self.clause45_addr)
+                decoded_min += str.format('ADDR: UKWN ')
 
             if self.clause45 and self.opcode > 1 \
             or (not self.clause45 and self.opcode):
@@ -273,10 +277,9 @@ class Decoder(srd.Decoder):
     def state_DATA(self, mdio):
         if self.data == -1:
             self.data = 0
-            self.putff([2, ['TURNAROUND', 'TA', 'T']])
+            self.putff([2, ['TA', 'T']])
             if self.ta_invalid:
-                self.putff([4, ['TURNAROUND%s' % self.ta_invalid,
-                                'TA%s' % self.ta_invalid, 'TA', 'T']])
+                self.putff([4, ['TA%s' % self.ta_invalid, 'TA', 'T']])
             self.ss_frame_field = self.samplenum
         self.data_bits -= 1
         self.data |= mdio << self.data_bits
@@ -317,15 +320,8 @@ class Decoder(srd.Decoder):
 
         self.process_state(self.state, mdio)
 
-    def decode(self, ss, es, data):
-        for (self.samplenum, pins) in data:
-            data.itercnt += 1
-            # Ignore identical samples early on (for performance reasons).
-            if self.last_mdc == pins[0]:
-                continue
-            self.last_mdc = pins[0]
-            if pins[0] == 0: # Check for rising edge.
-                continue
-
-            # Found the correct clock edge, now get/handle the bit(s).
-            self.handle_bit(pins[1])
+    def decode(self):
+        while True:
+            # Process pin state upon rising MDC edge.
+            (mdc, mdio) = self.wait({0: 'r'})
+            self.handle_bit(mdio)

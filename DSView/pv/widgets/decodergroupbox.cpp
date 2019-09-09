@@ -32,6 +32,8 @@ extern "C" {
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QVariant>
+#include <QScrollBar>
+#include <QScreen>
 
 #include <boost/foreach.hpp>
 
@@ -42,17 +44,21 @@ namespace widgets {
 
 DecoderGroupBox::DecoderGroupBox(boost::shared_ptr<data::DecoderStack> &decoder_stack,
                                  boost::shared_ptr<data::decode::Decoder> &dec,
+                                 QLayout *dec_layout,
                                  QWidget *parent) :
-    QWidget(parent),
+    QScrollArea(parent),
     _decoder_stack(decoder_stack),
-    _dec(dec),
-    _layout(new QGridLayout(this))
+    _dec(dec)
 {
+    _widget = new QWidget(this);
+    _layout = new QGridLayout(_widget);
     _layout->setContentsMargins(0, 0, 0, 0);
     _layout->setVerticalSpacing(5);
-    setLayout(_layout);
+    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    setWidgetResizable(true);
 
-    _layout->addWidget(new QLabel(QString("<h3>%1</h3>").arg(_dec->decoder()->name), this),
+    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    _layout->addWidget(new QLabel(QString("<h3>%1</h3>").arg(_dec->decoder()->name), _widget),
         0, 0);
 	_layout->setColumnStretch(0, 1);
 
@@ -60,7 +66,7 @@ DecoderGroupBox::DecoderGroupBox(boost::shared_ptr<data::DecoderStack> &decoder_
     assert(d);
     const bool have_probes = (d->channels || d->opt_channels) != 0;
     if (!have_probes) {
-        _del_button = new QPushButton(QIcon(":/icons/del.png"), QString(), this);
+        _del_button = new QPushButton(QIcon(iconPath+"/del.png"), QString(), _widget);
         _layout->addWidget(_del_button, 0, 1);
         connect(_del_button, SIGNAL(clicked()), this, SLOT(on_del_stack()));
     }
@@ -73,8 +79,8 @@ DecoderGroupBox::DecoderGroupBox(boost::shared_ptr<data::DecoderStack> &decoder_
         _index++;
     }
     _show_button = new QPushButton(QIcon(_dec->shown() ?
-                                             ":/icons/shown.png" :
-                                             ":/icons/hidden.png"), QString(), this);
+                                             iconPath+"/shown.png" :
+                                             iconPath+"/hidden.png"), QString(), _widget);
     _show_button->setProperty("index", -1);
     connect(_show_button, SIGNAL(clicked()),
         this, SLOT(tog_icon()));
@@ -88,30 +94,44 @@ DecoderGroupBox::DecoderGroupBox(boost::shared_ptr<data::DecoderStack> &decoder_
         i != rows.end(); i++) {
         if ((*i).first.decoder() == _dec->decoder()) {
             QPushButton *show_button = new QPushButton(QIcon((*i).second ?
-                                                                 ":/icons/shown.png" :
-                                                                 ":/icons/hidden.png"), QString(), this);
+                                                                 iconPath+"/shown.png" :
+                                                                 iconPath+"/hidden.png"), QString(), _widget);
             show_button->setProperty("index", index);
             connect(show_button, SIGNAL(clicked()), this, SLOT(tog_icon()));
             _row_show_button.push_back(show_button);
-            _layout->addWidget(new QLabel((*i).first.title(), this), _row_show_button.size(), 0);
+            _layout->addWidget(new QLabel((*i).first.title(), _widget), _row_show_button.size(), 0);
             _layout->addWidget(show_button, _row_show_button.size(), 2);
         }
         index++;
     }
+
+    _layout->addLayout(dec_layout, _row_show_button.size()+1, 0, 1, 3);
+
+    _widget->setLayout(_layout);
+    setWidget(_widget);
+    _widget->installEventFilter(this);
 }
 
 DecoderGroupBox::~DecoderGroupBox()
 {
 }
 
-void DecoderGroupBox::add_layout(QLayout *layout)
+bool DecoderGroupBox::eventFilter(QObject *o, QEvent *e)
 {
-	assert(layout);
-    _layout->addLayout(layout, _row_show_button.size()+1, 0, 1, 3);
+    if(o == _widget && e->type() == QEvent::Resize) {
+        setMinimumWidth(_widget->minimumSizeHint().width() + verticalScrollBar()->width());
+        QScreen *screen=QGuiApplication::primaryScreen ();
+        QRect mm=screen->availableGeometry() ;
+        if (_widget->minimumSizeHint().height() < mm.height()/2)
+            setMinimumHeight(_widget->minimumSizeHint().height());
+    }
+
+    return false;
 }
 
 void DecoderGroupBox::tog_icon()
 {
+    QString iconPath = ":/icons/" + qApp->property("Style").toString();
     QPushButton *sc = dynamic_cast<QPushButton*>(sender());
     QVariant id = sc->property("index");
     int index = id.toInt();
@@ -121,8 +141,8 @@ void DecoderGroupBox::tog_icon()
             _decoder_stack->stack()) {
             if (i-- == 0) {
                 dec->show(!dec->shown());
-                sc->setIcon(QIcon(dec->shown() ? ":/icons/shown.png" :
-                                                 ":/icons/hidden.png"));
+                sc->setIcon(QIcon(dec->shown() ? iconPath+"/shown.png" :
+                                                 iconPath+"/hidden.png"));
                 break;
             }
         }
@@ -133,8 +153,8 @@ void DecoderGroupBox::tog_icon()
             if (index-- == 0) {
                 _decoder_stack->set_rows_gshow((*i).first, !(*i).second);
                 //rows[(*i).first] = !(*i).second;
-                sc->setIcon(QIcon(rows[(*i).first] ? ":/icons/hidden.png" :
-                                                    ":/icons/shown.png"));
+                sc->setIcon(QIcon(rows[(*i).first] ? iconPath+"/hidden.png" :
+                                                    iconPath+"/shown.png"));
                 break;
             }
         }

@@ -73,14 +73,15 @@ ANN_FIELDS = 0
 ANN_SECTIONS = 1
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'edid'
     name = 'EDID'
     longname = 'Extended Display Identification Data'
     desc = 'Data structure describing display device capabilities.'
     license = 'gplv3+'
     inputs = ['i2c']
-    outputs = ['edid']
+    outputs = []
+    tags = ['Display', 'Memory', 'PC']
     annotations = (
         ('fields', 'EDID structure fields'),
         ('sections', 'EDID structure sections'),
@@ -91,6 +92,9 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.state = None
         # Received data items, used as an index into samplenum/data
         self.cnt = 0
@@ -98,6 +102,12 @@ class Decoder(srd.Decoder):
         self.sn = []
         # Received data
         self.cache = []
+        # Random read offset
+        self.offset = 0
+        # Extensions
+        self.extension = 0
+        self.ext_sn = [[]]
+        self.ext_cache = [[]]
 
     def start(self):
         self.out_ann = self.register(srd.OUTPUT_ANN)
@@ -105,16 +115,55 @@ class Decoder(srd.Decoder):
     def decode(self, ss, es, data):
         cmd, data = data
 
+        if cmd == 'ADDRESS WRITE' and data == 0x50:
+            self.state = 'offset'
+            self.ss = ss
+            return
+
+        if cmd == 'ADDRESS READ' and data == 0x50:
+            if self.extension > 0:
+                self.state = 'extensions'
+                s = str(self.extension)
+                t = ["Extension: " + s, "X: " + s, s]
+            else:
+                self.state = 'header'
+                t = ["EDID"]
+            self.put(ss, es, self.out_ann, [ANN_SECTIONS, t])
+            return
+
+        if cmd == 'DATA WRITE' and self.state == 'offset':
+            self.offset = data
+            self.extension = self.offset // 128
+            self.cnt = self.offset % 128
+            if self.extension > 0:
+                ext = self.extension - 1
+                l = len(self.ext_sn[ext])
+                # Truncate or extend to self.cnt.
+                self.sn = self.ext_sn[ext][0:self.cnt] + [0] * max(0, self.cnt - l)
+                self.cache = self.ext_cache[ext][0:self.cnt] + [0] * max(0, self.cnt - l)
+            else:
+                l = len(self.sn)
+                self.sn = self.sn[0:self.cnt] + [0] * max(0, self.cnt - l)
+                self.cache = self.cache[0:self.cnt] + [0] * max(0, self.cnt - l)
+            ss = self.ss if self.ss else ss
+            s = str(data)
+            t = ["Offset: " + s, "O: " + s, s]
+            self.put(ss, es, self.out_ann, [ANN_SECTIONS, t])
+            return
+
         # We only care about actual data bytes that are read (for now).
         if cmd != 'DATA READ':
             return
 
         self.cnt += 1
-        self.sn.append([ss, es])
-        self.cache.append(data)
-        # debug
+        if self.extension > 0:
+            self.ext_sn[self.extension - 1].append([ss, es])
+            self.ext_cache[self.extension - 1].append(data)
+        else:
+            self.sn.append([ss, es])
+            self.cache.append(data)
 
-        if self.state is None:
+        if self.state is None or self.state == 'header':
             # Wait for the EDID header
             if self.cnt >= OFF_VENDOR:
                 if self.cache[-8:] == EDID_HEADER:
@@ -176,12 +225,52 @@ class Decoder(srd.Decoder):
                 self.put(ss, es, self.out_ann, [0, ['Checksum: %d (%s)' % (
                          self.cache[self.cnt-1], csstr)]])
                 self.state = 'extensions'
+
         elif self.state == 'extensions':
-            pass
+            cache = self.ext_cache[self.extension - 1]
+            sn = self.ext_sn[self.extension - 1]
+            v = cache[self.cnt - 1]
+            if self.cnt == 1:
+                if v == 2:
+                    self.put(ss, es, self.out_ann, [1, ['Extensions Tag', 'Tag']])
+                else:
+                    self.put(ss, es, self.out_ann, [1, ['Bad Tag']])
+            elif self.cnt == 2:
+                self.put(ss, es, self.out_ann, [1, ['Version']])
+                self.put(ss, es, self.out_ann, [0, [str(v)]])
+            elif self.cnt == 3:
+                self.put(ss, es, self.out_ann, [1, ['DTD offset']])
+                self.put(ss, es, self.out_ann, [0, [str(v)]])
+            elif self.cnt == 4:
+                self.put(ss, es, self.out_ann, [1, ['Format support | DTD count']])
+                support = "Underscan: {0}, {1} Audio, YCbCr: {2}".format(
+                        "yes" if v & 0x80 else "no",
+                        "Basic" if v & 0x40 else "No",
+                        ["None", "422", "444", "422+444"][(v & 0x30) >> 4])
+                self.put(ss, es, self.out_ann, [0, ['{0}, DTDs: {1}'.format(support, v & 0xf)]])
+            elif self.cnt <= cache[2]:
+                if self.cnt == cache[2]:
+                    self.put(sn[4][0], es, self.out_ann, [1, ['Data block collection']])
+                    self.decode_data_block_collection(cache[4:], sn[4:])
+            elif (self.cnt - cache[2]) % 18 == 0:
+                n = (self.cnt - cache[2]) / 18
+                if n <= cache[3] & 0xf:
+                    self.put(sn[self.cnt - 18][0], es, self.out_ann, [1, ['DTD']])
+                    self.decode_descriptors(-18)
+
+            elif self.cnt == 127:
+                dtd_last = cache[2] + (cache[3] & 0xf) * 18
+                self.put(sn[dtd_last][0], es, self.out_ann, [1, ['Padding']])
+            elif self.cnt == 128:
+                checksum = sum(cache) % 256
+                self.put(ss, es, self.out_ann, [0, ['Checksum: %d (%s)' % (
+                         cache[self.cnt-1], 'Wrong' if checksum else 'OK')]])
 
     def ann_field(self, start, end, annotation):
-        self.put(self.sn[start][0], self.sn[end][1],
-                 self.out_ann, [ANN_FIELDS, [annotation]])
+        annotation = annotation if isinstance(annotation, list) else [annotation]
+        sn = self.ext_sn[self.extension - 1] if self.extension else self.sn
+        self.put(sn[start][0], sn[end][1],
+                 self.out_ann, [ANN_FIELDS, annotation])
 
     def lookup_pnpid(self, pnpid):
         pnpid_file = os.path.join(os.path.dirname(__file__), 'pnpids.txt')
@@ -226,7 +315,7 @@ class Decoder(srd.Decoder):
             datestr += 'week %d, ' % self.cache[offset]
         datestr += str(1990 + self.cache[offset+1])
         if datestr:
-            self.ann_field(offset, offset+1, 'Manufactured ' + datestr)
+            self.ann_field(offset, offset+1, ['Manufactured ' + datestr, datestr])
 
     def decode_basicdisplay(self, offset):
         # Video input definition
@@ -351,60 +440,53 @@ class Decoder(srd.Decoder):
             self.ann_field(offset, offset + 15,
                     'Supported standard modes: %s' % modestr[:-2])
 
-    def decode_detailed_timing(self, offset):
-        if offset == -72 and self.have_preferred_timing:
+    def decode_detailed_timing(self, cache, sn, offset, is_first):
+        if is_first and self.have_preferred_timing:
             # Only on first detailed timing descriptor
             section = 'Preferred'
         else:
             section = 'Detailed'
         section += ' timing descriptor'
-        self.put(self.sn[offset][0], self.sn[offset+17][1],
+
+        self.put(sn[0][0], sn[17][1],
              self.out_ann, [ANN_SECTIONS, [section]])
 
-        pixclock = float((self.cache[offset+1] << 8) + self.cache[offset]) / 100
+        pixclock = float((cache[1] << 8) + cache[0]) / 100
         self.ann_field(offset, offset+1, 'Pixel clock: %.2f MHz' % pixclock)
 
-        horiz_active = ((self.cache[offset+4] & 0xf0) << 4) + self.cache[offset+2]
-        self.ann_field(offset+2, offset+4, 'Horizontal active: %d' % horiz_active)
+        horiz_active = ((cache[4] & 0xf0) << 4) + cache[2]
+        horiz_blank = ((cache[4] & 0x0f) << 8) + cache[3]
+        self.ann_field(offset+2, offset+4, 'Horizontal active: %d, blanking: %d' % (horiz_active, horiz_blank))
 
-        horiz_blank = ((self.cache[offset+4] & 0x0f) << 8) + self.cache[offset+3]
-        self.ann_field(offset+2, offset+4, 'Horizontal blanking: %d' % horiz_blank)
+        vert_active = ((cache[7] & 0xf0) << 4) + cache[5]
+        vert_blank = ((cache[7] & 0x0f) << 8) + cache[6]
+        self.ann_field(offset+5, offset+7, 'Vertical active: %d, blanking: %d' % (vert_active, vert_blank))
 
-        vert_active = ((self.cache[offset+7] & 0xf0) << 4) + self.cache[offset+5]
-        self.ann_field(offset+5, offset+7, 'Vertical active: %d' % vert_active)
+        horiz_sync_off = ((cache[11] & 0xc0) << 2) + cache[8]
+        horiz_sync_pw  = ((cache[11] & 0x30) << 4) + cache[9]
+        vert_sync_off  = ((cache[11] & 0x0c) << 2) + ((cache[10] & 0xf0) >> 4)
+        vert_sync_pw   = ((cache[11] & 0x03) << 4) +  (cache[10] & 0x0f)
 
-        vert_blank = ((self.cache[offset+7] & 0x0f) << 8) + self.cache[offset+6]
-        self.ann_field(offset+5, offset+7, 'Vertical blanking: %d' % vert_blank)
+        syncs = (horiz_sync_off, horiz_sync_pw, vert_sync_off, vert_sync_pw)
+        self.ann_field(offset+8, offset+11, [
+            'Horizontal sync offset: %d, pulse width: %d, Vertical sync offset: %d, pulse width: %d' % syncs,
+            'HSync off: %d, pw: %d, VSync off: %d, pw: %d' % syncs])
 
-        horiz_sync_off = ((self.cache[offset+11] & 0xc0) << 2) + self.cache[offset+8]
-        self.ann_field(offset+8, offset+11, 'Horizontal sync offset: %d' % horiz_sync_off)
-
-        horiz_sync_pw = ((self.cache[offset+11] & 0x30) << 4) + self.cache[offset+9]
-        self.ann_field(offset+8, offset+11, 'Horizontal sync pulse width: %d' % horiz_sync_pw)
-
-        vert_sync_off = ((self.cache[offset+11] & 0x0c) << 2) \
-                    + ((self.cache[offset+10] & 0xf0) >> 4)
-        self.ann_field(offset+8, offset+11, 'Vertical sync offset: %d' % vert_sync_off)
-
-        vert_sync_pw = ((self.cache[offset+11] & 0x03) << 4) \
-                    + (self.cache[offset+10] & 0x0f)
-        self.ann_field(offset+8, offset+11, 'Vertical sync pulse width: %d' % vert_sync_pw)
-
-        horiz_size = ((self.cache[offset+14] & 0xf0) << 4) + self.cache[offset+12]
-        vert_size = ((self.cache[offset+14] & 0x0f) << 8) + self.cache[offset+13]
+        horiz_size = ((cache[14] & 0xf0) << 4) + cache[12]
+        vert_size  = ((cache[14] & 0x0f) << 8) + cache[13]
         self.ann_field(offset+12, offset+14, 'Physical size: %dx%dmm' % (horiz_size, vert_size))
 
-        horiz_border = self.cache[offset+15]
+        horiz_border = cache[15]
         self.ann_field(offset+15, offset+15, 'Horizontal border: %d pixels' % horiz_border)
-        vert_border = self.cache[offset+16]
+        vert_border = cache[16]
         self.ann_field(offset+16, offset+16, 'Vertical border: %d lines' % vert_border)
 
         features = 'Flags: '
-        if self.cache[offset+17] & 0x80:
+        if cache[17] & 0x80:
             features += 'interlaced, '
-        stereo = (self.cache[offset+17] & 0x60) >> 5
+        stereo = (cache[17] & 0x60) >> 5
         if stereo:
-            if self.cache[offset+17] & 0x01:
+            if cache[17] & 0x01:
                 features += '2-way interleaved stereo ('
                 features += ['right image on even lines',
                              'left image on even lines',
@@ -415,8 +497,8 @@ class Decoder(srd.Decoder):
                 features += ['right image on sync=1', 'left image on sync=1',
                              '4-way interleaved'][stereo-1]
                 features += '), '
-        sync = (self.cache[offset+17] & 0x18) >> 3
-        sync2 = (self.cache[offset+17] & 0x06) >> 1
+        sync = (cache[17] & 0x18) >> 3
+        sync2 = (cache[17] & 0x06) >> 1
         posneg = ['negative', 'positive']
         features += 'sync type '
         if sync == 0x00:
@@ -434,60 +516,153 @@ class Decoder(srd.Decoder):
         features += ', '
         self.ann_field(offset+17, offset+17, features[:-2])
 
-    def decode_descriptor(self, offset):
-        tag = self.cache[offset+3]
+    def decode_descriptor(self, cache, offset):
+        tag = cache[3]
+        self.ann_field(offset, offset+1, "Flag")
+        self.ann_field(offset+2, offset+2, "Flag (reserved)")
+        self.ann_field(offset+3, offset+3, "Tag: {0:X}".format(tag))
+        self.ann_field(offset+4, offset+4, "Flag")
+
+        sn = self.ext_sn[self.extension - 1] if self.extension else self.sn
+
         if tag == 0xff:
             # Monitor serial number
-            self.put(self.sn[offset][0], self.sn[offset+17][1], self.out_ann,
+            self.put(sn[offset][0], sn[offset+17][1], self.out_ann,
                      [ANN_SECTIONS, ['Serial number']])
-            text = bytes(self.cache[offset+5:][:13]).decode(encoding='cp437', errors='replace')
-            self.ann_field(offset, offset+17, text.strip())
+            text = bytes(cache[5:][:13]).decode(encoding='cp437', errors='replace')
+            self.ann_field(offset+5, offset+17, text.strip())
         elif tag == 0xfe:
             # Text
-            self.put(self.sn[offset][0], self.sn[offset+17][1], self.out_ann,
+            self.put(sn[offset][0], sn[offset+17][1], self.out_ann,
                      [ANN_SECTIONS, ['Text']])
-            text = bytes(self.cache[offset+5:][:13]).decode(encoding='cp437', errors='replace')
-            self.ann_field(offset, offset+17, text.strip())
+            text = bytes(cache[5:][:13]).decode(encoding='cp437', errors='replace')
+            self.ann_field(offset+5, offset+17, text.strip())
         elif tag == 0xfc:
             # Monitor name
-            self.put(self.sn[offset][0], self.sn[offset+17][1], self.out_ann,
+            self.put(sn[offset][0], sn[offset+17][1], self.out_ann,
                      [ANN_SECTIONS, ['Monitor name']])
-            text = bytes(self.cache[offset+5:][:13]).decode(encoding='cp437', errors='replace')
-            self.ann_field(offset, offset+17, text.strip())
+            text = bytes(cache[5:][:13]).decode(encoding='cp437', errors='replace')
+            self.ann_field(offset+5, offset+17, text.strip())
         elif tag == 0xfd:
             # Monitor range limits
-            self.put(self.sn[offset][0], self.sn[offset+17][1], self.out_ann,
+            self.put(sn[offset][0], sn[offset+17][1], self.out_ann,
                      [ANN_SECTIONS, ['Monitor range limits']])
-            self.ann_field(offset+5, offset+5, 'Minimum vertical rate: %dHz' %
-                           self.cache[offset+5])
-            self.ann_field(offset+6, offset+6, 'Maximum vertical rate: %dHz' %
-                           self.cache[offset+6])
-            self.ann_field(offset+7, offset+7, 'Minimum horizontal rate: %dkHz' %
-                           self.cache[offset+7])
-            self.ann_field(offset+8, offset+8, 'Maximum horizontal rate: %dkHz' %
-                           self.cache[offset+8])
-            self.ann_field(offset+9, offset+9, 'Maximum pixel clock: %dMHz' %
-                           (self.cache[offset+9] * 10))
-            if self.cache[offset+10] == 0x02:
-                # Secondary GTF curve supported
-                self.ann_field(offset+10, offset+17, 'Secondary timing formula supported')
+            self.ann_field(offset+5, offset+5, [
+                           'Minimum vertical rate: {0}Hz'.format(cache[5]),
+                           'VSync >= {0}Hz'.format(cache[5])])
+            self.ann_field(offset+6, offset+6, [
+                           'Maximum vertical rate: {0}Hz'.format(cache[6]),
+                           'VSync <= {0}Hz'.format(cache[6])])
+            self.ann_field(offset+7, offset+7, [
+                           'Minimum horizontal rate: {0}kHz'.format(cache[7]),
+                           'HSync >= {0}kHz'.format(cache[7])])
+            self.ann_field(offset+8, offset+8, [
+                           'Maximum horizontal rate: {0}kHz'.format(cache[8]),
+                           'HSync <= {0}kHz'.format(cache[8])])
+            self.ann_field(offset+9, offset+9, [
+                           'Maximum pixel clock: {0}MHz'.format(cache[9] * 10),
+                           'PixClk <= {0}MHz'.format(cache[9] * 10)])
+            if cache[10] == 0x02:
+                self.ann_field(offset+10, offset+10, ['Secondary timing formula supported', '2nd GTF: yes'])
+                self.ann_field(offset+11, offset+17, ['GTF'])
+            else:
+                self.ann_field(offset+10, offset+10, ['Secondary timing formula unsupported', '2nd GTF: no'])
+                self.ann_field(offset+11, offset+17, ['Padding'])
         elif tag == 0xfb:
             # Additional color point data
-            self.put(self.sn[offset][0], self.sn[offset+17][1], self.out_ann,
+            self.put(sn[offset][0], sn[offset+17][1], self.out_ann,
                      [ANN_SECTIONS, ['Additional color point data']])
         elif tag == 0xfa:
             # Additional standard timing definitions
-            self.put(self.sn[offset][0], self.sn[offset+17][1], self.out_ann,
+            self.put(sn[offset][0], sn[offset+17][1], self.out_ann,
                      [ANN_SECTIONS, ['Additional standard timing definitions']])
         else:
-            self.put(self.sn[offset][0], self.sn[offset+17][1], self.out_ann,
+            self.put(sn[offset][0], sn[offset+17][1], self.out_ann,
                      [ANN_SECTIONS, ['Unknown descriptor']])
 
     def decode_descriptors(self, offset):
         # 4 consecutive 18-byte descriptor blocks
+        cache = self.ext_cache[self.extension - 1] if self.extension else self.cache
+        sn = self.ext_sn[self.extension - 1] if self.extension else self.sn
+
         for i in range(offset, 0, 18):
-            if self.cache[i] != 0 and self.cache[i+1] != 0:
-                self.decode_detailed_timing(i)
+            if cache[i] != 0 or cache[i+1] != 0:
+                self.decode_detailed_timing(cache[i:], sn[i:], i, i == offset)
             else:
-                if self.cache[i+2] == 0 or self.cache[i+4] == 0:
-                    self.decode_descriptor(i)
+                if cache[i+2] == 0 or cache[i+4] == 0:
+                    self.decode_descriptor(cache[i:], i)
+
+    def decode_data_block(self, tag, cache, sn):
+        codes = { 0: ['0: Reserved'],
+                  1: ['1: Audio Data Block', 'Audio'],
+                  2: ['2: Video Data Block', 'Video'],
+                  3: ['3: Vendor Specific Data Block', 'VSDB'],
+                  4: ['4: Speacker Allocation Data Block', 'SADB'],
+                  5: ['5: VESA DTC Data Block', 'DTC'],
+                  6: ['6: Reserved'],
+                  7: ['7: Extended', 'Ext'] }
+        ext_codes = {  0: [ '0: Video Capability Data Block', 'VCDB'],
+                       1: [ '1: Vendor Specific Video Data Block', 'VSVDB'],
+                      17: ['17: Vendor Specific Audio Data Block', 'VSADB'], }
+        if tag < 7:
+            code = codes[tag]
+            ext_len = 0
+            if tag == 1:
+                aformats = { 1: '1 (LPCM)' }
+                rates = [ '192', '176', '96', '88', '48', '44', '32' ]
+
+                aformat = cache[1] >> 3
+                sup_rates = [ i for i in range(0, 8) if (1 << i) & cache[2] ]
+
+                data = "Format: {0} Channels: {1}".format(
+                    aformats.get(aformat, aformat), (cache[1] & 0x7) + 1)
+                data += " Rates: " + " ".join(rates[6 - i] for i in sup_rates)
+                data += " Extra: [{0:02X}]".format(cache[3])
+
+            elif tag ==2:
+                data = "VIC: "
+                data += ", ".join("{0}{1}".format(v & 0x7f,
+                        ['', ' (Native)'][v >> 7])
+                        for v in cache[1:])
+
+            elif tag ==3:
+                ouis = { b'\x00\x0c\x03': 'HDMI Licensing, LLC' }
+                oui = bytes(cache[3:0:-1])
+                ouis = ouis.get(oui, None)
+                data = "OUI: " + " ".join('{0:02X}'.format(x) for x in oui)
+                data += " ({0})".format(ouis) if ouis else ""
+                data += ", PhyAddr: {0}.{1}.{2}.{3}".format(
+                        cache[4] >> 4, cache[4] & 0xf, cache[5] >> 4, cache[5] & 0xf)
+                data += ", [" + " ".join('{0:02X}'.format(x) for x in cache[6:]) + "]"
+
+            elif tag ==4:
+                speakers = [ 'FL/FR', 'LFE', 'FC', 'RL/RR',
+                             'RC', 'FLC/FRC', 'RLC/RRC', 'FLW/FRW',
+                             'FLH/FRH', 'TC', 'FCH' ]
+                sup_speakers = cache[1] + (cache[2] << 8)
+                sup_speakers = [ i for i in range(0, 8) if (1 << i) & sup_speakers ]
+                data = "Speakers: " + " ".join(speakers[i] for i in sup_speakers)
+
+            else:
+                data = " ".join('{0:02X}'.format(x) for x in cache[1:])
+
+        else:
+            # Extended tags
+            ext_len = 1
+            ext_code = ext_codes.get(cache[1], ['Unknown', '?'])
+            code = zip(codes[7], [", ", ": "], ext_code)
+            code = [ "".join(x) for x in code ]
+            data = " ".join('{0:02X}'.format(x) for x in cache[2:])
+
+        self.put(sn[0][0], sn[0 + ext_len][1], self.out_ann,
+                 [ANN_FIELDS, code])
+        self.put(sn[1 + ext_len][0], sn[len(cache) - 1][1], self.out_ann,
+                 [ANN_FIELDS, [data]])
+
+    def decode_data_block_collection(self, cache, sn):
+        offset = 0
+        while offset < len(cache):
+            length = 1 + cache[offset] & 0x1f
+            tag = cache[offset] >> 5
+            self.decode_data_block(tag, cache[offset:offset + length], sn[offset:])
+            offset += length

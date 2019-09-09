@@ -28,10 +28,10 @@
 namespace pv {
 namespace prop {
 
-String::String(QString name,
+String::String(QString name, QString label,
 	Getter getter,
 	Setter setter) :
-	Property(name, getter, setter),
+    Property(name, label, getter, setter),
 	_line_edit(NULL)
 {
 }

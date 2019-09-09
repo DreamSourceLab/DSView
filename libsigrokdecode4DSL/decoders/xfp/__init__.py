@@ -14,8 +14,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 '''
@@ -32,9 +31,8 @@ module startup. Other table are either reserved for future expansion, or
 available for vendor-specific extensions. This decoder supports both lower
 memory and table 0x01.
 
-The XFP specification is available here:
-
-  ftp://ftp.seagate.com/sff/INF-8077.PDF
+Details:
+ftp://ftp.seagate.com/sff/INF-8077.PDF (XFP specification)
 '''
 
 from .pd import Decoder

@@ -14,8 +14,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "config.h"
@@ -131,6 +130,28 @@ SRD_API int srd_log_callback_set(srd_log_callback cb, void *cb_data)
 }
 
 /**
+ * Get the libsigrokdecode log callback routine and callback data.
+ *
+ * @param[out] cb Pointer to a function pointer to receive the log callback
+ *	function. Optional, can be NULL.
+ * @param[out] cb_data Pointer to a void pointer to receive the log callback's
+ *	additional arguments. Optional, can be NULL.
+ *
+ * @return SRD_OK upon success.
+ *
+ * @since 0.5.2
+ */
+SRD_API int srd_log_callback_get(srd_log_callback *cb, void **cb_data)
+{
+	if (cb)
+		*cb = srd_log_cb;
+	if (cb_data)
+		*cb_data = srd_log_cb_data;
+
+	return SRD_OK;
+}
+
+/**
  * Set the libsigrokdecode log callback to the default built-in one.
  *
  * Additionally, the internal 'srd_log_cb_data' pointer is set to NULL.
@@ -157,14 +178,14 @@ static int srd_logv(void *cb_data, int loglevel, const char *format,
 	/* This specific log callback doesn't need the void pointer data. */
 	(void)cb_data;
 
-	/* Only output messages of at least the selected loglevel(s). */
-	if (loglevel > cur_loglevel)
-		return SRD_OK;
+	(void)loglevel;
 
 	if (fputs("srd: ", stderr) < 0
-			|| g_vfprintf(stderr, format, args) < 0
+            || vfprintf(stderr, format, args) < 0
 			|| putc('\n', stderr) < 0)
 		return SRD_ERR;
+
+	fflush(stderr);
 
 	return SRD_OK;
 }
@@ -174,6 +195,10 @@ SRD_PRIV int srd_log(int loglevel, const char *format, ...)
 {
 	int ret;
 	va_list args;
+
+	/* Only output messages of at least the selected loglevel(s). */
+	if (loglevel > cur_loglevel)
+		return SRD_OK;
 
 	va_start(args, format);
 	ret = srd_log_cb(srd_log_cb_data, loglevel, format, args);

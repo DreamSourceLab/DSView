@@ -16,8 +16,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef LIBSIGROKDECODE_LIBSIGROKDECODE_INTERNAL_H
@@ -30,41 +29,52 @@
 #include "libsigrokdecode.h"
 #include <structmember.h>
 
+enum {
+	SRD_TERM_HIGH,
+	SRD_TERM_LOW,
+	SRD_TERM_RISING_EDGE,
+	SRD_TERM_FALLING_EDGE,
+	SRD_TERM_EITHER_EDGE,
+	SRD_TERM_NO_EDGE,
+	SRD_TERM_SKIP,
+};
+
+struct srd_term {
+	int type;
+	int channel;
+	uint64_t num_samples_to_skip;
+	uint64_t num_samples_already_skipped;
+};
+
 /* Custom Python types: */
 
 typedef struct {
 	PyObject_HEAD
 	struct srd_decoder_inst *di;
-	uint64_t start_samplenum;
-	float itercnt;
-	uint8_t **inbuf;
-	const uint8_t *inbuf_const;
-	uint64_t samplenum;
+	uint64_t abs_start_samplenum;
+	unsigned int itercnt;
+	uint8_t *inbuf;
+	uint64_t inbuflen;
 	PyObject *sample;
-
-	uint64_t exp_logic;
-	int edge_index;
-	uint64_t logic_mask;
-	uint64_t cur_pos;
 } srd_logic;
 
 /* srd.c */
 SRD_PRIV int srd_decoder_searchpath_add(const char *path);
 
 /* session.c */
-SRD_PRIV int session_is_valid(struct srd_session *sess);
 SRD_PRIV struct srd_pd_callback *srd_pd_output_callback_find(struct srd_session *sess,
 		int output_type);
 
 /* instance.c */
-SRD_PRIV struct srd_decoder_inst *srd_inst_find_by_obj( const GSList *stack,
-		const PyObject *obj);
 SRD_PRIV int srd_inst_start(struct srd_decoder_inst *di, char **error);
-SRD_PRIV int srd_inst_decode(const struct srd_decoder_inst *di, uint8_t chunk_type,
-		uint64_t start_samplenum, uint64_t end_samplenum,
-		const uint8_t **inbuf, const uint8_t *inbuf_const, char **error);
+SRD_PRIV void condition_list_free(struct srd_decoder_inst *di);
+SRD_PRIV int srd_inst_decode(struct srd_decoder_inst *di,
+        uint64_t abs_start_samplenum, uint64_t abs_end_samplenum,
+        const uint8_t **inbuf, const uint8_t *inbuf_const, uint64_t inbuflen, char **error);
+SRD_PRIV int process_samples_until_condition_match(struct srd_decoder_inst *di, gboolean *found_match);
+SRD_PRIV int srd_inst_terminate_reset(struct srd_decoder_inst *di);
 SRD_PRIV void srd_inst_free(struct srd_decoder_inst *di);
-SRD_PRIV void srd_inst_free_all(struct srd_session *sess, GSList *stack);
+SRD_PRIV void srd_inst_free_all(struct srd_session *sess);
 
 /* log.c */
 #if defined(G_OS_WIN32) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4))
@@ -89,6 +99,7 @@ SRD_PRIV long srd_decoder_apiver(const struct srd_decoder *d);
 
 /* type_decoder.c */
 SRD_PRIV PyObject *srd_Decoder_type_new(void);
+SRD_PRIV const char *output_type_name(unsigned int idx);
 
 /* type_logic.c */
 SRD_PRIV PyObject *srd_logic_type_new(void);
@@ -99,8 +110,12 @@ PyMODINIT_FUNC PyInit_sigrokdecode(void);
 /* util.c */
 SRD_PRIV PyObject *py_import_by_name(const char *name);
 SRD_PRIV int py_attr_as_str(PyObject *py_obj, const char *attr, char **outstr);
+SRD_PRIV int py_attr_as_strlist(PyObject *py_obj, const char *attr, GSList **outstrlist);
 SRD_PRIV int py_dictitem_as_str(PyObject *py_obj, const char *key, char **outstr);
 SRD_PRIV int py_dictitem_to_int(PyObject *py_obj, const char *key);
+SRD_PRIV int py_listitem_as_str(PyObject *py_obj, int idx, char **outstr);
+SRD_PRIV int py_pydictitem_as_str(PyObject *py_obj, PyObject *py_key, char **outstr);
+SRD_PRIV int py_pydictitem_as_long(PyObject *py_obj, PyObject *py_key, uint64_t *out);
 SRD_PRIV int py_str_as_str(PyObject *py_str, char **outstr);
 SRD_PRIV int py_strseq_to_char(PyObject *py_strseq, char ***out_strv);
 SRD_PRIV GVariant *py_obj_to_variant(PyObject *py_obj);

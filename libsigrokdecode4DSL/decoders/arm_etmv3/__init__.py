@@ -14,12 +14,11 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 '''
-This decoder stacks on top of the 'uart' decoder and decodes packets of
+This decoder stacks on top of the 'uart' PD and decodes packets of
 the ARMv7m Embedded Trace Macroblock v3.x.
 '''
 

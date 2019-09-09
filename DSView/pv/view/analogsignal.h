@@ -39,12 +39,17 @@ namespace view {
 
 class AnalogSignal : public Signal
 {
+    Q_OBJECT
+
 private:
 	static const QColor SignalColours[4];
 	static const float EnvelopeThreshold;
     static const int NumSpanY = 5;
     static const int NumMiniSpanY = 5;
     static const int NumSpanX = 10;
+
+    static const uint8_t DefaultBits = 8;
+
 public:
     AnalogSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
                  boost::shared_ptr<pv::data::Analog> data,
@@ -57,9 +62,11 @@ public:
 
     boost::shared_ptr<pv::data::SignalData> data() const;
 
-	void set_scale(float scale);
+    void set_scale(int height);
     float get_scale() const;
     int get_bits() const;
+    double get_ref_min() const;
+    double get_ref_max() const;
     int get_hw_offset() const;
     int commit_settings();
 
@@ -68,19 +75,28 @@ public:
      **/
     uint64_t get_vdiv() const;
     uint8_t get_acCoupling() const;
+    bool get_mapDefault() const;
     QString get_mapUnit() const;
     double get_mapMin() const;
     double get_mapMax() const;
+    uint64_t get_factor() const;
 
     /**
      *
      **/
     void set_zero_vpos(int pos);
     int get_zero_vpos() const;
-    void set_zero_vrate(double rate, bool force_update);
-    double get_zero_vrate() const;
-    void update_vpos();
-    void update_offset();
+    void set_zero_ratio(double ratio);
+    double get_zero_ratio() const;
+    int get_zero_offset() const;
+
+    /**
+     *
+     */
+    int ratio2value(double ratio) const;
+    int ratio2pos(double ratio) const;
+    double value2ratio(int value) const;
+    double pos2ratio(int pos) const;
 
     /**
      * Event
@@ -93,7 +109,7 @@ public:
      * @param left the x-coordinate of the left edge of the signal
      * @param right the x-coordinate of the right edge of the signal
      **/
-    void paint_back(QPainter &p, int left, int right);
+    void paint_back(QPainter &p, int left, int right, QColor fore, QColor back);
 
 	/**
 	 * Paints the signal with a QPainter
@@ -101,7 +117,7 @@ public:
 	 * @param left the x-coordinate of the left edge of the signal.
 	 * @param right the x-coordinate of the right edge of the signal.
 	 **/
-    void paint_mid(QPainter &p, int left, int right);
+    void paint_mid(QPainter &p, int left, int right, QColor fore, QColor back);
 
 private:
     void paint_trace(QPainter &p,
@@ -109,14 +125,14 @@ private:
                      int zeroY, const int start_pixel,
                      const uint64_t start_index, const int64_t sample_count,
                      const double samples_per_pixel, const int order,
-                     const int top, const int bottom, const int width);
+                     const float top, const float bottom, const int width);
 
     void paint_envelope(QPainter &p,
                         const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot,
                         int zeroY, const int start_pixel,
                         const uint64_t start_index, const int64_t sample_count,
                         const double samples_per_pixel, const int order,
-                        const int top, const int bottom, const int width);
+                        const float top, const float bottom, const int width);
 
 private:
 	boost::shared_ptr<pv::data::Analog> _data;
@@ -125,8 +141,10 @@ private:
 
 	float _scale;
     double _zero_vrate;
-    int _hw_offset;
+    int _zero_offset;
     int _bits;
+    double _ref_min;
+    double _ref_max;
 };
 
 } // namespace view

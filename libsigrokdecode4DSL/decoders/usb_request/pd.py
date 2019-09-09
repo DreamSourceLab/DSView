@@ -14,8 +14,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
@@ -113,14 +112,15 @@ class pcap_usb_pkt():
         return 64 + len(self.data)
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'usb_request'
     name = 'USB request'
     longname = 'Universal Serial Bus (LS/FS) transaction/request'
-    desc = 'USB (low-speed and full-speed) transaction/request protocol.'
+    desc = 'USB (low-speed/full-speed) transaction/request protocol.'
     license = 'gplv2+'
     inputs = ['usb_packet']
     outputs = ['usb_request']
+    tags = ['PC']
     annotations = (
         ('request-setup-read', 'Setup: Device-to-host'),
         ('request-setup-write', 'Setup: Host-to-device'),
@@ -137,12 +137,15 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.samplerate = None
         self.request = {}
         self.request_id = 0
         self.transaction_state = 'IDLE'
-        self.transaction_ss = None
-        self.transaction_es = None
+        self.ss_transaction = None
+        self.es_transaction = None
         self.transaction_ep = None
         self.transaction_addr = None
         self.wrote_pcap_header = False
@@ -169,7 +172,8 @@ class Decoder(srd.Decoder):
     def metadata(self, key, value):
         if key == srd.SRD_CONF_SAMPLERATE:
             self.samplerate = value
-            self.secs_per_sample = float(1) / float(self.samplerate)
+            if self.samplerate:
+                self.secs_per_sample = float(1) / float(self.samplerate)
 
     def start(self):
         self.out_binary = self.register(srd.OUTPUT_BINARY)
@@ -180,28 +184,38 @@ class Decoder(srd.Decoder):
         request_end = self.handshake in ('ACK', 'STALL', 'timeout')
         ep = self.transaction_ep
         addr = self.transaction_addr
+
+        # Handle protocol STALLs, condition lasts until next SETUP transfer (8.5.3.4)
+        if self.transaction_type == 'SETUP' and (addr, ep) in self.request:
+            request = self.request[(addr,ep)]
+            if request['type'] in ('SETUP IN', 'SETUP OUT'):
+                request['es'] = self.ss_transaction
+                self.handle_request(0, 1)
+
         if not (addr, ep) in self.request:
             self.request[(addr, ep)] = {'setup_data': [], 'data': [],
-                'type': None, 'ss': self.transaction_ss, 'es': None,
+                'type': None, 'ss': self.ss_transaction, 'es': None,
                 'id': self.request_id, 'addr': addr, 'ep': ep}
             self.request_id += 1
             request_started = 1
         request = self.request[(addr,ep)]
 
+        if request_end:
+            request['es'] = self.es_transaction
+            request['handshake'] = self.handshake
+
         # BULK or INTERRUPT transfer
         if request['type'] in (None, 'BULK IN') and self.transaction_type == 'IN':
             request['type'] = 'BULK IN'
             request['data'] += self.transaction_data
-            request['es'] = self.transaction_es
             self.handle_request(request_started, request_end)
         elif request['type'] in (None, 'BULK OUT') and self.transaction_type == 'OUT':
             request['type'] = 'BULK OUT'
             request['data'] += self.transaction_data
-            request['es'] = self.transaction_es
             self.handle_request(request_started, request_end)
 
         # CONTROL, SETUP stage
-        elif request['type'] == None and self.transaction_type == 'SETUP':
+        elif request['type'] is None and self.transaction_type == 'SETUP':
             request['setup_data'] = self.transaction_data
             request['wLength'] = struct.unpack('<H',
                 bytes(self.transaction_data[6:8]))[0]
@@ -223,11 +237,9 @@ class Decoder(srd.Decoder):
 
         # CONTROL, STATUS stage
         elif request['type'] == 'SETUP IN' and self.transaction_type == 'OUT':
-            request['es'] = self.transaction_es
             self.handle_request(0, request_end)
 
         elif request['type'] == 'SETUP OUT' and self.transaction_type == 'IN':
-            request['es'] = self.transaction_es
             self.handle_request(0, request_end)
 
         else:
@@ -241,7 +253,7 @@ class Decoder(srd.Decoder):
 
     def write_pcap_header(self):
         if not self.wrote_pcap_header:
-            #self.put(0, 0, self.out_binary, [0, self.pcap_global_header()])
+            self.put(0, 0, self.out_binary, [0, self.pcap_global_header()])
             self.wrote_pcap_header = True
 
     def request_summary(self, request):
@@ -252,7 +264,7 @@ class Decoder(srd.Decoder):
             s += ' ]['
         for b in request['data']:
             s += ' %02X' % b
-        s += ' ] : %s' % self.handshake
+        s += ' ] : %s' % request['handshake']
         return s
 
     def handle_request(self, request_start, request_end):
@@ -269,8 +281,8 @@ class Decoder(srd.Decoder):
             # Issue PCAP 'SUBMIT' packet.
             ts = self.ts_from_samplenum(ss)
             pkt = pcap_usb_pkt(request, ts, True)
-            #self.putb(ss, [0, pkt.record_header()])
-            #self.putb(ss, [0, pkt.packet()])
+            self.putb(ss, [0, pkt.record_header()])
+            self.putb(ss, [0, pkt.packet()])
 
         if request_end == 1:
             # Write annotation.
@@ -287,8 +299,8 @@ class Decoder(srd.Decoder):
             # Issue PCAP 'COMPLETE' packet.
             ts = self.ts_from_samplenum(es)
             pkt = pcap_usb_pkt(request, ts, False)
-            #self.putb(ss, [0, pkt.record_header()])
-            #self.putb(ss, [0, pkt.packet()])
+            self.putb(ss, [0, pkt.record_header()])
+            self.putb(ss, [0, pkt.packet()])
             del self.request[(addr, ep)]
 
     def decode(self, ss, es, data):
@@ -306,12 +318,12 @@ class Decoder(srd.Decoder):
             if pname == 'SOF':
                 return
             if self.transaction_state == 'TOKEN RECEIVED':
-                transaction_timeout = self.transaction_es
+                transaction_timeout = self.es_transaction
                 # Token length is 35 bits, timeout is 16..18 bit times
                 # (USB 2.0 7.1.19.1).
-                transaction_timeout += int((self.transaction_es - self.transaction_ss) / 2)
+                transaction_timeout += int((self.es_transaction - self.ss_transaction) / 2)
                 if ss > transaction_timeout:
-                    self.transaction_es = transaction_timeout
+                    self.es_transaction = transaction_timeout
                     self.handshake = 'timeout'
                     self.handle_transfer()
                     self.transaction_state = 'IDLE'
@@ -323,8 +335,8 @@ class Decoder(srd.Decoder):
 
             sync, pid, addr, ep, crc5 = pinfo
             self.transaction_data = []
-            self.transaction_ss = ss
-            self.transaction_es = es
+            self.ss_transaction = ss
+            self.es_transaction = es
             self.transaction_state = 'TOKEN RECEIVED'
             self.transaction_ep = ep
             self.transaction_addr = addr
@@ -347,7 +359,7 @@ class Decoder(srd.Decoder):
 
             self.handshake = pname
             self.transaction_state = 'IDLE'
-            self.transaction_es = es
+            self.es_transaction = es
             self.handle_transfer()
 
         elif pname == 'PRE':

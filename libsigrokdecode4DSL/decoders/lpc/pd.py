@@ -2,6 +2,7 @@
 ## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2012-2013 Uwe Hermann <uwe@hermann-uwe.de>
+## Copyright (C) 2019 DreamSourceLab <support@dreamsourcelab.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -14,8 +15,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
@@ -104,14 +104,15 @@ fields = {
 }
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'lpc'
     name = 'LPC'
-    longname = 'Low-Pin-Count'
+    longname = 'Low Pin Count'
     desc = 'Protocol for low-bandwidth devices on PC mainboards.'
     license = 'gplv2+'
     inputs = ['logic']
-    outputs = ['lpc']
+    outputs = []
+    tags = ['PC']
     channels = (
         {'id': 'lframe', 'name': 'LFRAME#', 'desc': 'Frame'},
         {'id': 'lclk',   'name': 'LCLK',    'desc': 'Clock'},
@@ -146,22 +147,19 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.state = 'IDLE'
         self.oldlclk = -1
-        self.oldlframe = -1
-        self.oldlad = -1
-        self.oldlad_bits = -1
         self.samplenum = 0
-        self.clocknum = 0
         self.lad = -1
         self.addr = 0
         self.cur_nibble = 0
-        self.start_type = -1
         self.cycle_type = -1
         self.databyte = 0
         self.tarcount = 0
         self.synccount = 0
-        self.timeoutcount = 0
         self.oldpins = None
         self.ss_block = self.es_block = None
 
@@ -174,19 +172,14 @@ class Decoder(srd.Decoder):
     def handle_get_start(self, lframe):
         # LAD[3:0]: START field (1 clock cycle).
 
-        self.start_type = fields['START'][self.oldlad]
         # The last value of LAD[3:0] before LFRAME# gets de-asserted is what
         # the peripherals must use. However, the host can keep LFRAME# asserted
         # multiple clocks, and we output all START fields that occur, even
         # though the peripherals are supposed to ignore all but the last one.
         self.es_block = self.samplenum
-        self.putb([1, [self.start_type, 'START', 'St', 'S']])
+        self.putb([1, [fields['START'][self.oldlad], 'START', 'St', 'S']])
         self.ss_block = self.samplenum
 
-        # Output a warning if LAD[3:0] changes while LFRAME# is low.
-        # TODO
-        #if (self.lad != -1 and self.lad != lad):
-        #    self.putb([0, ['LAD[3:0] changed while LFRAME# was asserted']])
 
         # LFRAME# is asserted (low). Wait until it gets de-asserted again
         # (the host is allowed to keep it asserted multiple clocks).
@@ -250,6 +243,7 @@ class Decoder(srd.Decoder):
 
         self.es_block = self.samplenum
         self.putb([4, ['TAR, cycle %d: %s' % (self.tarcount, self.oldlad_bits)]])
+        self.ss_block = self.samplenum
 
         # On the first TAR clock cycle LAD[3:0] is driven to 1111 by
         # either the host or peripheral. On the second clock cycle,
@@ -258,7 +252,6 @@ class Decoder(srd.Decoder):
         if self.oldlad_bits != '1111':
             self.putb([0, ['TAR, cycle %d: %s (expected 1111)' % \
                            (self.tarcount, self.oldlad_bits)]])
-        self.ss_block = self.samplenum
 
         if (self.tarcount != 1):
             self.tarcount += 1
@@ -279,6 +272,7 @@ class Decoder(srd.Decoder):
             self.putb([0, ['SYNC, cycle %d: %s (reserved value)' % \
                            (self.synccount, self.sync_val)]])
 
+        self.es_block = self.samplenum
         self.putb([5, ['SYNC, cycle %d: %s' % (self.synccount, self.sync_val)]])
         self.ss_block = self.samplenum
 
@@ -309,7 +303,6 @@ class Decoder(srd.Decoder):
 
         self.timeoutcount = 0
         self.state = 'IDLE'
-
     def handle_get_data(self):
         # LAD[3:0]: DATA field (2 clock cycles).
 
@@ -354,26 +347,17 @@ class Decoder(srd.Decoder):
         self.tarcount = 0
         self.state = 'IDLE'
 
-    def decode(self, ss, es, logic):
-        for (self.samplenum, pins) in logic:
-
-            # Get individual pin values into local variables.
-            (lframe, lclk, lad0, lad1, lad2, lad3) = pins[:6]
-            (lreset, ldrq, serirq, clkrun, lpme, lpcpd, lsmi) = pins[6:]
+    def decode(self):
+        while True:
 
             # Only look at the signals upon rising LCLK edges. The LPC clock
             # is the same as the PCI clock (which is sampled at rising edges).
-            logic.logic_mask = 0b0000000000010
-            logic.exp_logic = 0b0000000000010
-            logic.edge_index = 1
-            logic.cur_pos = self.samplenum
-            #if not (self.oldlclk == 0 and lclk == 1):
-            #    continue
+            (lframe, lclk, lad0, lad1, lad2, lad3, lreset, ldrq, serirq, clkrun, lpme, lpcpd, lsmi) = self.wait({1: 'r'})
 
             # Store LAD[3:0] bit values (one nibble) in local variables.
             # Most (but not all) states need this.
             lad = (lad3 << 3) | (lad2 << 2) | (lad1 << 1) | lad0
-            lad_bits = bin(lad)[2:].zfill(4)
+            lad_bits = '{:04b}'.format(lad)
             # self.putb([0, ['LAD: %s' % lad_bits]])
 
             # TODO: Only memory read/write is currently supported/tested.
@@ -381,18 +365,12 @@ class Decoder(srd.Decoder):
             # State machine
             if self.state == 'IDLE':
                 # A valid LPC cycle starts with LFRAME# being asserted (low).
-                #if lframe != 0:
-                #    continue
-                if (lframe == 0):
-                    if (self.oldlclk == 0 and lclk == 1):
-                        self.ss_block = self.samplenum
-                        self.state = 'GET START'
-                        self.lad = -1
-                        # self.clocknum = 0
+                if lframe == 0:
+                    self.ss_block = self.samplenum
+                    self.state = 'GET START'
+                    self.lad = -1
                 else:
-                    logic.logic_mask = 0b0000000000001
-                    logic.exp_logic = 0b0000000000000
-                    logic.edge_index = 0
+                    self.wait({0: 'f'})
             elif self.state == 'GET START':
                 self.handle_get_start(lframe)
             elif self.state == 'GET CT/DR':
@@ -410,16 +388,6 @@ class Decoder(srd.Decoder):
             elif self.state == 'GET TAR2':
                 self.handle_get_tar2()
 
-            # Store current pin values for the next round.
-            self.oldpins = pins
-            if (logic.edge_index == 1):
-                self.oldlclk = 0
-            else:
-                self.oldlclk = -1
-            if (logic.edge_index == 0):
-                self.oldlframe = 1
-            else:
-                self.oldlframe = lframe
+            self.oldlframe = lframe
             self.oldlad = lad
             self.oldlad_bits = lad_bits
-

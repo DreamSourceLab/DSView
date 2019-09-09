@@ -39,7 +39,7 @@ class Double : public Property
     Q_OBJECT;
 
 public:
-	Double(QString name, int decimals, QString suffix,
+    Double(QString name, QString label, int decimals, QString suffix,
 		boost::optional< std::pair<double, double> > range,
 		boost::optional<double> step,
 		Getter getter,

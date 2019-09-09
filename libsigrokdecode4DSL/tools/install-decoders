@@ -18,6 +18,7 @@
 ## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
+import errno
 import os
 import sys
 from shutil import copy
@@ -64,7 +65,7 @@ def install(srcdir, dstdir, s):
         try:
             os.mkdir(pd_dst)
         except OSError as e:
-            if e.errno != os.errno.EEXIST:
+            if e.errno != errno.EEXIST:
                 raise
             else:
                 pass
@@ -119,5 +120,6 @@ if len(args) != 0 or dst is None:
     usage()
 
 install(src, dst, 'protocol decoders')
+install(src + '/common', dst + '/common', 'common modules')
 
 

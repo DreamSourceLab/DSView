@@ -114,7 +114,7 @@ public:
 	 * @param left the x-coordinate of the left edge of the signal.
 	 * @param right the x-coordinate of the right edge of the signal.
 	 **/
-	void paint_back(QPainter &p, int left, int right);
+    void paint_back(QPainter &p, int left, int right, QColor fore, QColor back);
 
 	/**
 	 * Paints the mid-layer of the trace with a QPainter
@@ -122,7 +122,7 @@ public:
 	 * @param left the x-coordinate of the left edge of the signal
 	 * @param right the x-coordinate of the right edge of the signal
 	 **/
-	void paint_mid(QPainter &p, int left, int right);
+    void paint_mid(QPainter &p, int left, int right, QColor fore, QColor back);
 
 	/**
 	 * Paints the foreground layer of the trace with a QPainter
@@ -130,7 +130,7 @@ public:
 	 * @param left the x-coordinate of the left edge of the signal
 	 * @param right the x-coordinate of the right edge of the signal
 	 **/
-	void paint_fore(QPainter &p, int left, int right);
+    void paint_fore(QPainter &p, int left, int right, QColor fore, QColor back);
 
     bool create_popup();
 
@@ -146,34 +146,34 @@ public:
     int get_progress() const;
 
 protected:
-    void paint_type_options(QPainter &p, int right, const QPoint pt);
+    void paint_type_options(QPainter &p, int right, const QPoint pt, QColor fore);
 
 private:
     void create_popup_form();
 
 	void populate_popup_form(QWidget *parent, QFormLayout *form);
 
-	void draw_annotation(const pv::data::decode::Annotation &a, QPainter &p,
-		QColor text_colour, int text_height, int left, int right,
-		double samples_per_pixel, double pixels_offset, int y,
-        size_t base_colour, double min_annWidth) const;
+    void draw_annotation(const pv::data::decode::Annotation &a, QPainter &p,
+        QColor text_colour, int text_height, int left, int right,
+        double samples_per_pixel, double pixels_offset, int y,
+        size_t base_colour, double min_annWidth, QColor fore, QColor back) const;
     void draw_nodetail(QPainter &p,
         int text_height, int left, int right, int y,
-        size_t base_colour) const;
+        size_t base_colour, QColor fore, QColor back) const;
 
 	void draw_instant(const pv::data::decode::Annotation &a, QPainter &p,
 		QColor fill, QColor outline, QColor text_color, int h, double x,
         int y, double min_annWidth) const;
 
-	void draw_range(const pv::data::decode::Annotation &a, QPainter &p,
-		QColor fill, QColor outline, QColor text_color, int h, double start,
-		double end, int y) const;
+    void draw_range(const pv::data::decode::Annotation &a, QPainter &p,
+        QColor fill, QColor outline, QColor text_color, int h, double start,
+        double end, int y, QColor fore, QColor back) const;
 
 	void draw_error(QPainter &p, const QString &message,
 		int left, int right);
 
     void draw_unshown_row(QPainter &p, int y, int h, int left,
-                          int right, QString info);
+                          int right, QString info, QColor fore, QColor back);
 
     void create_decoder_form(boost::shared_ptr<data::DecoderStack> &decoder_stack,
         boost::shared_ptr<pv::data::decode::Decoder> &dec,

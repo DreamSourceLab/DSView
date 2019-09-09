@@ -14,8 +14,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
@@ -25,14 +24,15 @@ class SamplerateError(Exception):
     pass
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'ir_rc5'
     name = 'IR RC-5'
     longname = 'IR RC-5'
     desc = 'RC-5 infrared remote control protocol.'
     license = 'gplv2+'
     inputs = ['logic']
-    outputs = ['ir_rc5']
+    outputs = []
+    tags = ['IR']
     channels = (
         {'id': 'ir', 'name': 'IR', 'desc': 'IR data line'},
     )
@@ -57,6 +57,9 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.samplerate = None
         self.samplenum = None
         self.edges, self.bits, self.ss_es_bits = [], [], []
@@ -135,13 +138,12 @@ class Decoder(srd.Decoder):
         self.edges, self.bits, self.ss_es_bits = [], [], []
         self.state = 'IDLE'
 
-    def decode(self, ss, es, data):
+    def decode(self):
         if not self.samplerate:
             raise SamplerateError('Cannot decode without samplerate.')
-        for (self.samplenum, pins) in data:
+        while True:
 
-            self.ir = pins[0]
-            data.itercnt += 1
+            (self.ir,) = self.wait()
 
             # Wait for any edge (rising or falling).
             if self.old_ir == self.ir:
@@ -149,8 +151,9 @@ class Decoder(srd.Decoder):
 
             # State machine.
             if self.state == 'IDLE':
+                bit = 1
                 self.edges.append(self.samplenum)
-                self.bits.append([self.samplenum, 1])
+                self.bits.append([self.samplenum, bit])
                 self.state = 'MID1'
                 self.old_ir = self.ir
                 continue

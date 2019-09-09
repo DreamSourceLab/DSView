@@ -14,21 +14,21 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'rfm12'
     name = 'RFM12'
-    longname = 'RFM12 control protocol'
+    longname = 'HopeRF RFM12'
     desc = 'HopeRF RFM12 wireless transceiver control protocol.'
     license = 'gplv2+'
     inputs = ['spi']
-    outputs = ['rfm12']
+    outputs = []
+    tags = ['Wireless/RF']
     annotations = (
         ('cmd', 'Command'),
         ('params', 'Command parameters'),
@@ -44,6 +44,9 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.mosi_bytes, self.miso_bytes = [], []
         self.mosi_bits, self.miso_bits = [], []
         self.row_pos = [0, 0, 0]

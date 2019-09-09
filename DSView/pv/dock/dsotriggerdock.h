@@ -28,6 +28,8 @@
 #include <QButtonGroup>
 #include <QScrollArea>
 #include <QComboBox>
+#include <QLabel>
+#include <QRadioButton>
 
 #include <vector>
 
@@ -51,6 +53,11 @@ public:
 
     void init();
 
+private:
+    void changeEvent(QEvent *event);
+    void retranslateUi();
+    void reStyle();
+
 signals:
     void set_trig_pos(int percent);
 
@@ -72,18 +79,32 @@ private:
 
     QWidget *_widget;
 
-    QComboBox *holdoff_comboBox;
-    QSpinBox *holdoff_spinBox;
-    QSlider *holdoff_slider;
+    QComboBox *_holdoff_comboBox;
+    QSpinBox *_holdoff_spinBox;
+    QSlider *_holdoff_slider;
 
-    QSlider *margin_slider;
+    QSlider *_margin_slider;
 
-    QSpinBox *position_spinBox;
-    QSlider *position_slider;
+    QSpinBox *_position_spinBox;
+    QSlider *_position_slider;
 
-    QButtonGroup *source_group;
-    QComboBox *channel_comboBox;
-    QButtonGroup *type_group;
+    QButtonGroup *_source_group;
+    QComboBox *_channel_comboBox;
+    QButtonGroup *_type_group;
+
+    QLabel *_position_label;
+    QLabel *_holdoff_label;
+    QLabel *_margin_label;
+    QLabel *_tSource_label;
+    QLabel *_tType_label;
+    QRadioButton *_rising_radioButton;
+    QRadioButton *_falling_radioButton;
+
+    QRadioButton *_auto_radioButton;
+    QRadioButton *_ch0_radioButton;
+    QRadioButton *_ch1_radioButton;
+    QRadioButton *_ch0a1_radioButton;
+    QRadioButton *_ch0o1_radioButton;
 };
 
 } // namespace dock

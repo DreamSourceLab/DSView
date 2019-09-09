@@ -29,8 +29,6 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 
-#include <fftw3.h>
-
 #include <QObject>
 #include <QString>
 
@@ -40,6 +38,7 @@ class SigSession;
 
 namespace view {
 class DsoSignal;
+class dslDial;
 }
 
 namespace data {
@@ -51,10 +50,6 @@ class MathStack : public QObject, public SignalData
 {
     Q_OBJECT
 
-private:
-    static const QString windows_support[5];
-    static const uint64_t length_support[5];
-
 public:
     enum math_state {
         Init,
@@ -62,56 +57,95 @@ public:
         Running
     };
 
+    enum MathType {
+        MATH_ADD,
+        MATH_SUB,
+        MATH_MUL,
+        MATH_DIV,
+    };
+
+    struct EnvelopeSample
+    {
+        double min;
+        double max;
+    };
+
+    struct EnvelopeSection
+    {
+        uint64_t start;
+        unsigned int scale;
+        uint64_t length;
+        EnvelopeSample *samples;
+    };
+
+private:
+    struct Envelope
+    {
+        uint64_t length;
+        uint64_t data_length;
+        EnvelopeSample *samples;
+    };
+
+private:
+    static const unsigned int ScaleStepCount = 10;
+    static const int EnvelopeScalePower;
+    static const int EnvelopeScaleFactor;
+    static const float LogEnvelopeScaleFactor;
+    static const uint64_t EnvelopeDataUnit;
+
+    static const uint64_t vDialValueStep = 1000;
+    static const int vDialValueCount = 19;
+    static const uint64_t vDialValue[vDialValueCount];
+    static const int vDialUnitCount = 2;
+    static const QString vDialAddUnit[vDialUnitCount];
+    static const QString vDialMulUnit[vDialUnitCount];
+    static const QString vDialDivUnit[vDialUnitCount];
+
 public:
-    MathStack(pv::SigSession &_session, int index);
+    MathStack(pv::SigSession &_session,
+              boost::shared_ptr<view::DsoSignal> dsoSig1,
+              boost::shared_ptr<view::DsoSignal> dsoSig2, MathType type);
     virtual ~MathStack();
     void clear();
     void init();
+    void free_envelop();
+    void realloc(uint64_t num);
 
-    int get_index() const;
-
+    MathType get_type() const;
     uint64_t get_sample_num() const;
-    void set_sample_num(uint64_t num);
 
-    int get_windows_index() const;
-    void set_windows_index(int index);
+    void enable_envelope(bool enable);
 
-    const std::vector<QString> get_windows_support() const;
-    const std::vector<uint64_t> get_length_support() const;
+    uint64_t default_vDialValue();
+    view::dslDial *get_vDial();
+    QString get_unit(int level);
+    double get_math_scale();
 
-    bool dc_ignored() const;
-    void set_dc_ignore(bool ignore);
+    const double *get_math(uint64_t start) const;
+    void get_math_envelope_section(EnvelopeSection &s,
+        uint64_t start, uint64_t end, float min_length) const;
 
-    int get_sample_interval() const;
-    void set_sample_interval(int interval);
-
-    const std::vector<double> get_fft_spectrum() const;
-    double get_fft_spectrum(uint64_t index);
-
-    void calc_fft();
-
-    double window(uint64_t i, int type);
+    void calc_math();
+    void reallocate_envelope(Envelope &e);
+    void append_to_envelope_level(bool header);
 
 signals:
 
 private:
     pv::SigSession &_session;
+    boost::shared_ptr<view::DsoSignal> _dsoSig1;
+    boost::shared_ptr<view::DsoSignal> _dsoSig2;
 
-    int _index;
+    MathType _type;
     uint64_t _sample_num;
-    int _windows_index;
-    bool _dc_ignore;
-    int _sample_interval;
-
-    boost::shared_ptr<pv::data::DsoSnapshot> _snapshot;
-
-    std::unique_ptr<boost::thread> _math_thread;
+    uint64_t _total_sample_num;
     math_state _math_state;
 
-    fftw_plan _fft_plan;
-    std::vector<double> _xn;
-    std::vector<double> _xk;
-    std::vector<double> _power_spectrum;
+    struct Envelope _envelope_level[ScaleStepCount];
+    std::vector<double> _math;
+
+    bool _envelope_en;
+    bool _envelope_done;
 };
 
 } // namespace data

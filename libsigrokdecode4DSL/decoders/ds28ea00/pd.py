@@ -35,19 +35,23 @@ command = {
 }
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'ds28ea00'
     name = 'DS28EA00'
     longname = 'Maxim DS28EA00 1-Wire digital thermometer'
     desc = '1-Wire digital thermometer with Sequence Detect and PIO.'
     license = 'gplv2+'
     inputs = ['onewire_network']
-    outputs = ['ds28ea00']
+    outputs = []
+    tags = ['IC', 'Sensor']
     annotations = (
         ('text', 'Human-readable text'),
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.trn_beg = 0
         self.trn_end = 0
         self.state = 'ROM'

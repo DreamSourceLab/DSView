@@ -168,7 +168,7 @@ SR_API char *sr_samplerate_string(uint64_t samplerate)
  */
 SR_API char *sr_samplecount_string(uint64_t samplecount)
 {
-    return sr_iec_string_u64(samplecount, " Samples");
+    return sr_si_string_u64(samplecount, " Samples");
 }
 
 /**

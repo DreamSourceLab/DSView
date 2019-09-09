@@ -23,6 +23,7 @@
 
 #include <boost/foreach.hpp>
 
+#include <QApplication>
 #include <QFormLayout>
 #include <QListWidget>
 #include <QFile>
@@ -118,7 +119,7 @@ void ProtocolExp::accept()
                 filter.append(";;");
         }
         const QString DIR_KEY("ProtocolExportPath");
-        QSettings settings;
+        QSettings settings(QApplication::organizationName(), QApplication::applicationName());
         QString default_filter = _format_combobox->currentText();
         QString file_name = QFileDialog::getSaveFileName(
                     this, tr("Export Data"), settings.value(DIR_KEY).toString(),filter,&default_filter);
@@ -136,7 +137,7 @@ void ProtocolExp::accept()
             file.open(QIODevice::WriteOnly | QIODevice::Text);
             QTextStream out(&file);
             out.setCodec("UTF-8");
-            out.setGenerateByteOrderMark(true);
+            //out.setGenerateByteOrderMark(true); // UTF-8 without BOM
 
             QFuture<void> future;
             future = QtConcurrent::run([&]{

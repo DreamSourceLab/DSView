@@ -14,26 +14,29 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'rgb_led_spi'
     name = 'RGB LED (SPI)'
     longname = 'RGB LED string decoder (SPI)'
     desc = 'RGB LED string protocol (RGB values clocked over SPI).'
     license = 'gplv2+'
     inputs = ['spi']
-    outputs = ['rgb_led_spi']
+    outputs = []
+    tags = ['Display']
     annotations = (
         ('rgb', 'RGB values'),
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.ss_cmd, self.es_cmd = 0, 0
         self.mosi_bytes = []
 

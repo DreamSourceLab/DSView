@@ -39,7 +39,7 @@ public:
 
 	sr_dev_inst* dev_inst() const;
 
-	virtual void use(SigSession *owner) throw(QString);
+    virtual void use(SigSession *owner);
 
 	virtual void release();
 

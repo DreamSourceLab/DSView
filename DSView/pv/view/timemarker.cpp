@@ -84,9 +84,12 @@ void TimeMarker::paint(QPainter &p, const QRect &rect, const bool highlight, int
     const double scale = _view.scale();
     const double samples_per_pixel = sample_rate * scale;
     const int64_t x = _index/samples_per_pixel - _view.offset();
-    QColor color = (order == -1) ? _colour : Ruler::CursorColor[order%8];
-    p.setPen((_grabbed | highlight) ? QPen(color.lighter(), 2, Qt::DashLine) : QPen(color, 1, Qt::DashLine));
-    p.drawLine(QPoint(x, rect.top()), QPoint(x, rect.bottom()));
+    if (x <= rect.right()) {
+        QColor color = (order == -1) ? _colour : Ruler::CursorColor[order%8];
+        p.setPen((_grabbed | highlight) ? QPen(color.lighter(), 2, Qt::DashLine) : QPen(color, 1, Qt::DashLine));
+        //p.drawLine(QPoint(x, rect.top()), QPoint(x, rect.bottom()));
+        p.drawLine(QPoint(x, 0), QPoint(x, rect.bottom()));
+    }
 }
 
 } // namespace view

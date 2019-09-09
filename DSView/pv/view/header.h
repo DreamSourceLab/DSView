@@ -52,6 +52,8 @@ private:
 		const QPoint &pt);
 
 private:
+    void changeEvent(QEvent *event);
+    void retranslateUi();
 	void paintEvent(QPaintEvent *event);
 
 private:

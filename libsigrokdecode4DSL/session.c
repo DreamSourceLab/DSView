@@ -3,7 +3,6 @@
  *
  * Copyright (C) 2010 Uwe Hermann <uwe@hermann-uwe.de>
  * Copyright (C) 2013 Bert Vermeulen <bert@biot.com>
- * Copyright (C) 2016 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,16 +45,6 @@ SRD_PRIV int max_session_id = -1;
 
 /** @endcond */
 
-/** @private */
-SRD_PRIV int session_is_valid(struct srd_session *sess)
-{
-
-	if (!sess || sess->session_id < 1)
-		return SRD_ERR;
-
-	return SRD_OK;
-}
-
 /**
  * Create a decoding session.
  *
@@ -63,7 +52,7 @@ SRD_PRIV int session_is_valid(struct srd_session *sess)
  * output callbacks.
  *
  * @param sess A pointer which will hold a pointer to a newly
- *             initialized session on return.
+ *             initialized session on return. Must not be NULL.
  *
  * @return SRD_OK upon success, a (negative) error code otherwise.
  *
@@ -71,11 +60,8 @@ SRD_PRIV int session_is_valid(struct srd_session *sess)
  */
 SRD_API int srd_session_new(struct srd_session **sess)
 {
-
-	if (!sess) {
-		srd_err("Invalid session pointer.");
+	if (!sess)
 		return SRD_ERR_ARG;
-	}
 
 	*sess = g_malloc(sizeof(struct srd_session));
 	(*sess)->session_id = ++max_session_id;
@@ -84,7 +70,7 @@ SRD_API int srd_session_new(struct srd_session **sess)
 	/* Keep a list of all sessions, so we can clean up as needed. */
 	sessions = g_slist_append(sessions, *sess);
 
-	srd_dbg("Created session %d.", (*sess)->session_id);
+	srd_dbg("Creating session %d.", (*sess)->session_id);
 
 	return SRD_OK;
 }
@@ -95,7 +81,7 @@ SRD_API int srd_session_new(struct srd_session **sess)
  * Decoders, instances and stack must have been prepared beforehand,
  * and all SRD_CONF parameters set.
  *
- * @param sess The session to start.
+ * @param sess The session to start. Must not be NULL.
  *
  * @return SRD_OK upon success, a (negative) error code otherwise.
  *
@@ -107,18 +93,16 @@ SRD_API int srd_session_start(struct srd_session *sess, char **error)
 	struct srd_decoder_inst *di;
 	int ret;
 
-	if (session_is_valid(sess) != SRD_OK) {
-		srd_err("Invalid session pointer.");
-		return SRD_ERR;
-	}
+	if (!sess)
+		return SRD_ERR_ARG;
 
-	srd_dbg("Calling start() on all instances in session %d.", sess->session_id);
+	srd_dbg("Calling start() of all instances in session %d.", sess->session_id);
 
-	/* Run the start() method on all decoders receiving frontend data. */
+	/* Run the start() method of all decoders receiving frontend data. */
 	ret = SRD_OK;
 	for (d = sess->di_list; d; d = d->next) {
 		di = d->data;
-		if ((ret = srd_inst_start(di, error)) != SRD_OK)
+        if ((ret = srd_inst_start(di, error)) != SRD_OK)
 			break;
 	}
 
@@ -132,10 +116,13 @@ static int srd_inst_send_meta(struct srd_decoder_inst *di, int key,
 	GSList *l;
 	struct srd_decoder_inst *next_di;
 	int ret;
+	PyGILState_STATE gstate;
 
 	if (key != SRD_CONF_SAMPLERATE)
 		/* This is the only key we pass on to the decoder for now. */
 		return SRD_OK;
+
+	gstate = PyGILState_Ensure();
 
 	if (PyObject_HasAttrString(di->py_inst, "metadata")) {
 		py_ret = PyObject_CallMethod(di->py_inst, "metadata", "lK",
@@ -143,6 +130,8 @@ static int srd_inst_send_meta(struct srd_decoder_inst *di, int key,
 				(unsigned long long)g_variant_get_uint64(data));
 		Py_XDECREF(py_ret);
 	}
+
+	PyGILState_Release(gstate);
 
 	/* Push metadata to all the PDs stacked on top of this one. */
 	for (l = di->next_di; l; l = l->next) {
@@ -157,7 +146,7 @@ static int srd_inst_send_meta(struct srd_decoder_inst *di, int key,
 /**
  * Set a metadata configuration key in a session.
  *
- * @param sess The session to configure.
+ * @param sess The session to configure. Must not be NULL.
  * @param key The configuration key (SRD_CONF_*).
  * @param data The new value for the key, as a GVariant with GVariantType
  *             appropriate to that key. A floating reference can be passed
@@ -173,10 +162,8 @@ SRD_API int srd_session_metadata_set(struct srd_session *sess, int key,
 	GSList *l;
 	int ret;
 
-	if (session_is_valid(sess) != SRD_OK) {
-		srd_err("Invalid session.");
+	if (!sess)
 		return SRD_ERR_ARG;
-	}
 
 	if (!key) {
 		srd_err("Invalid key.");
@@ -200,7 +187,7 @@ SRD_API int srd_session_metadata_set(struct srd_session *sess, int key,
 		return SRD_ERR_ARG;
 	}
 
-	srd_dbg("Setting session %d samplerate to %"PRIu64".",
+	srd_dbg("Setting session %d samplerate to %"G_GUINT64_FORMAT".",
 			sess->session_id, g_variant_get_uint64(data));
 
 	ret = SRD_OK;
@@ -221,31 +208,109 @@ SRD_API int srd_session_metadata_set(struct srd_session *sess, int key,
  * in channel order, in the least amount of space possible. The default
  * channel set consists of all required channels + all optional channels.
  *
- * @param sess The session to use.
- * @param start_samplenum The sample number of the first sample in this chunk.
- * @param end_samplenum The sample number of the last sample in this chunk.
- * @param inbuf Pointer to sample data.
- * @param inbuflen Length in bytes of the buffer.
+ * The size of a sample in inbuf is 'unitsize' bytes. If no channel map
+ * has been configured, it is the minimum number of bytes needed to store
+ * the default channels.
+ *
+ * The calls to this function must provide the samples that shall be
+ * used by the protocol decoder
+ *  - in the correct order ([...]5, 6, 4, 7, 8[...] is a bug),
+ *  - starting from sample zero (2, 3, 4, 5, 6[...] is a bug),
+ *  - consecutively, with no gaps (0, 1, 2, 4, 5[...] is a bug).
+ *
+ * The start- and end-sample numbers are absolute sample numbers (relative
+ * to the start of the whole capture/file/stream), i.e. they are not relative
+ * sample numbers within the chunk specified by 'inbuf' and 'inbuflen'.
+ *
+ * Correct example (4096 samples total, 4 chunks @ 1024 samples each):
+ *   srd_session_send(s, 0,    1023, inbuf, 1024, 1);
+ *   srd_session_send(s, 1024, 2047, inbuf, 1024, 1);
+ *   srd_session_send(s, 2048, 3071, inbuf, 1024, 1);
+ *   srd_session_send(s, 3072, 4095, inbuf, 1024, 1);
+ *
+ * The chunk size ('inbuflen') can be arbitrary and can differ between calls.
+ *
+ * Correct example (4096 samples total, 7 chunks @ various samples each):
+ *   srd_session_send(s, 0,    1023, inbuf, 1024, 1);
+ *   srd_session_send(s, 1024, 1123, inbuf,  100, 1);
+ *   srd_session_send(s, 1124, 1423, inbuf,  300, 1);
+ *   srd_session_send(s, 1424, 1642, inbuf,  219, 1);
+ *   srd_session_send(s, 1643, 2047, inbuf,  405, 1);
+ *   srd_session_send(s, 2048, 3071, inbuf, 1024, 1);
+ *   srd_session_send(s, 3072, 4095, inbuf, 1024, 1);
+ *
+ * INCORRECT example (4096 samples total, 4 chunks @ 1024 samples each, but
+ * the start- and end-samplenumbers are not absolute):
+ *   srd_session_send(s, 0,    1023, inbuf, 1024, 1);
+ *   srd_session_send(s, 0,    1023, inbuf, 1024, 1);
+ *   srd_session_send(s, 0,    1023, inbuf, 1024, 1);
+ *   srd_session_send(s, 0,    1023, inbuf, 1024, 1);
+ *
+ * @param sess The session to use. Must not be NULL.
+ * @param abs_start_samplenum The absolute starting sample number for the
+ *              buffer's sample set, relative to the start of capture.
+ * @param abs_end_samplenum The absolute ending sample number for the
+ *              buffer's sample set, relative to the start of capture.
+ * @param inbuf Pointer to sample data. Must not be NULL.
+ * @param inbuflen Length in bytes of the buffer. Must be > 0.
+ * @param unitsize The number of bytes per sample. Must be > 0.
  *
  * @return SRD_OK upon success, a (negative) error code otherwise.
  *
  * @since 0.4.0
  */
-SRD_API int srd_session_send(struct srd_session *sess, uint8_t chunk_type,
-		uint64_t start_samplenum, uint64_t end_samplenum,
-		const uint8_t **inbuf, const uint8_t *inbuf_const, char **error)
+SRD_API int srd_session_send(struct srd_session *sess,
+		uint64_t abs_start_samplenum, uint64_t abs_end_samplenum,
+        const uint8_t **inbuf, const uint8_t *inbuf_const, uint64_t inbuflen, char **error)
 {
 	GSList *d;
 	int ret;
 
-	if (session_is_valid(sess) != SRD_OK) {
-		srd_err("Invalid session.");
+	if (!sess)
 		return SRD_ERR_ARG;
-	}
 
 	for (d = sess->di_list; d; d = d->next) {
-		if ((ret = srd_inst_decode(d->data, chunk_type, start_samplenum,
-				end_samplenum, inbuf, inbuf_const, error)) != SRD_OK)
+		if ((ret = srd_inst_decode(d->data, abs_start_samplenum,
+                abs_end_samplenum, inbuf, inbuf_const, inbuflen, error)) != SRD_OK)
+			return ret;
+	}
+
+	return SRD_OK;
+}
+
+/**
+ * Terminate currently executing decoders in a session, reset internal state.
+ *
+ * All decoder instances have their .wait() method terminated, which
+ * shall terminate .decode() as well. Afterwards the decoders' optional
+ * .reset() method gets executed.
+ *
+ * This routine allows callers to abort pending expensive operations,
+ * when they are no longer interested in the decoders' results. Note
+ * that the decoder state is lost and aborted work cannot resume.
+ *
+ * This routine also allows callers to re-use previously created decoder
+ * stacks to process new input data which is not related to previously
+ * processed input data. This avoids the necessity to re-construct the
+ * decoder stack.
+ *
+ * @param sess The session in which to terminate decoders. Must not be NULL.
+ *
+ * @return SRD_OK upon success, a (negative) error code otherwise.
+ *
+ * @since 0.5.1
+ */
+SRD_API int srd_session_terminate_reset(struct srd_session *sess)
+{
+	GSList *d;
+	int ret;
+
+	if (!sess)
+		return SRD_ERR_ARG;
+
+	for (d = sess->di_list; d; d = d->next) {
+		ret = srd_inst_terminate_reset(d->data);
+		if (ret != SRD_OK)
 			return ret;
 	}
 
@@ -257,7 +322,7 @@ SRD_API int srd_session_send(struct srd_session *sess, uint8_t chunk_type,
  *
  * All decoder instances and output callbacks are properly released.
  *
- * @param sess The session to be destroyed.
+ * @param sess The session to be destroyed. Must not be NULL.
  *
  * @return SRD_OK upon success, a (negative) error code otherwise.
  *
@@ -267,14 +332,12 @@ SRD_API int srd_session_destroy(struct srd_session *sess)
 {
 	int session_id;
 
-	if (!sess) {
-		srd_err("Invalid session.");
+	if (!sess)
 		return SRD_ERR_ARG;
-	}
 
 	session_id = sess->session_id;
 	if (sess->di_list)
-		srd_inst_free_all(sess, NULL);
+		srd_inst_free_all(sess);
 	if (sess->callbacks)
 		g_slist_free_full(sess->callbacks, g_free);
 	sessions = g_slist_remove(sessions, sess);
@@ -293,6 +356,7 @@ SRD_API int srd_session_destroy(struct srd_session *sess)
  * stack).
  *
  * @param sess The output session in which to register the callback.
+ *             Must not be NULL.
  * @param output_type The output type this callback will receive. Only one
  *                    callback per output type can be registered.
  * @param cb The function to call. Must not be NULL.
@@ -305,12 +369,11 @@ SRD_API int srd_pd_output_callback_add(struct srd_session *sess,
 {
 	struct srd_pd_callback *pd_cb;
 
-	if (session_is_valid(sess) != SRD_OK) {
-		srd_err("Invalid session.");
+	if (!sess)
 		return SRD_ERR_ARG;
-	}
 
-	srd_dbg("Registering new callback for output type %d.", output_type);
+	srd_dbg("Registering new callback for output type %s.",
+		output_type_name(output_type));
 
 	pd_cb = g_malloc(sizeof(struct srd_pd_callback));
 	pd_cb->output_type = output_type;
@@ -328,10 +391,8 @@ SRD_PRIV struct srd_pd_callback *srd_pd_output_callback_find(
 	GSList *l;
 	struct srd_pd_callback *tmp, *pd_cb;
 
-	if (session_is_valid(sess) != SRD_OK) {
-		srd_err("Invalid session.");
+	if (!sess)
 		return NULL;
-	}
 
 	pd_cb = NULL;
 	for (l = sess->callbacks; l; l = l->next) {

@@ -22,6 +22,7 @@
 #include "border.h"
 #include "../mainframe.h"
 
+#include <QApplication>
 #include <QPainter>
 #include <QLinearGradient>
 #include <QRadialGradient>
@@ -29,11 +30,17 @@
 namespace pv {
 namespace widgets {
 
-const QColor Border::color_border0 = QColor(80, 80, 80, 255);
-const QColor Border::color_border1 = QColor(48, 47, 47, 200);
-const QColor Border::color_border2 = QColor(48, 47, 47, 150);
-const QColor Border::color_border3 = QColor(48, 47, 47, 100);
-const QColor Border::color_border4 = QColor(48, 47, 47, 10);
+const QColor Border::dark_border0 = QColor(80, 80, 80, 255);
+const QColor Border::dark_border1 = QColor(48, 47, 47, 200);
+const QColor Border::dark_border2 = QColor(48, 47, 47, 150);
+const QColor Border::dark_border3 = QColor(48, 47, 47, 100);
+const QColor Border::dark_border4 = QColor(48, 47, 47, 10);
+
+const QColor Border::light_border0 = QColor(100, 100, 100, 255);
+const QColor Border::light_border1 = QColor(150, 150, 150, 150);
+const QColor Border::light_border2 = QColor(150, 150, 150, 100);
+const QColor Border::light_border3 = QColor(150, 150, 150, 50);
+const QColor Border::light_border4 = QColor(150, 150, 150, 0);
 
 Border::Border(int type, QWidget *parent) :
     QWidget(parent),
@@ -49,18 +56,34 @@ void Border::paintEvent(QPaintEvent *)
     painter.setPen(Qt::NoPen);
     painter.setRenderHint(QPainter::Antialiasing, true);
     QLinearGradient linearGrad(QPointF(width(), height()), QPointF(0, 0));
-    linearGrad.setColorAt(0, color_border0);
-    linearGrad.setColorAt(0.25, color_border1);
-    linearGrad.setColorAt(0.5, color_border2);
-    linearGrad.setColorAt(0.75, color_border3);
-    linearGrad.setColorAt(1, color_border4);
+    if (qApp->property("Style").toString() == "dark") {
+        linearGrad.setColorAt(0, dark_border0);
+        linearGrad.setColorAt(0.25, dark_border1);
+        linearGrad.setColorAt(0.5, dark_border2);
+        linearGrad.setColorAt(0.75, dark_border3);
+        linearGrad.setColorAt(1, dark_border4);
+    } else {
+        linearGrad.setColorAt(0, light_border0);
+        linearGrad.setColorAt(0.25, light_border1);
+        linearGrad.setColorAt(0.5, light_border2);
+        linearGrad.setColorAt(0.75, light_border3);
+        linearGrad.setColorAt(1, light_border4);
+    }
 
     QRadialGradient radialGrad(QPointF(0, 0), width());
-    radialGrad.setColorAt(0, color_border0);
-    radialGrad.setColorAt(0.25, color_border1);
-    radialGrad.setColorAt(0.5, color_border2);
-    radialGrad.setColorAt(0.75, color_border3);
-    radialGrad.setColorAt(1, color_border4);
+    if (qApp->property("Style").toString() == "dark") {
+        radialGrad.setColorAt(0, dark_border0);
+        radialGrad.setColorAt(0.25, dark_border1);
+        radialGrad.setColorAt(0.5, dark_border2);
+        radialGrad.setColorAt(0.75, dark_border3);
+        radialGrad.setColorAt(1, dark_border4);
+    } else {
+        radialGrad.setColorAt(0, light_border0);
+        radialGrad.setColorAt(0.25, light_border1);
+        radialGrad.setColorAt(0.5, light_border2);
+        radialGrad.setColorAt(0.75, light_border3);
+        radialGrad.setColorAt(1, light_border4);
+    }
 
     if (_type == pv::MainFrame::TopLeft) {
         QRectF rectangle(0, 0, width()*2, height()*2);

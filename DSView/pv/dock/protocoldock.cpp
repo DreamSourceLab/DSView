@@ -67,12 +67,8 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession &sessio
 
     _add_button = new QPushButton(_up_widget);
     _add_button->setFlat(true);
-    _add_button->setIcon(QIcon::fromTheme("protocol",
-                         QIcon(":/icons/add.png")));
     _del_all_button = new QPushButton(_up_widget);
     _del_all_button->setFlat(true);
-    _del_all_button->setIcon(QIcon::fromTheme("protocol",
-                             QIcon(":/icons/del.png")));
     _del_all_button->setCheckable(true);
     _protocol_combobox = new QComboBox(_up_widget);
 
@@ -115,29 +111,24 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession &sessio
 
     _dn_set_button = new QPushButton(_dn_widget);
     _dn_set_button->setFlat(true);
-    _dn_set_button->setIcon(QIcon::fromTheme("protocol",
-                             QIcon(":/icons/gear.png")));
     connect(_dn_set_button, SIGNAL(clicked()),
             this, SLOT(set_model()));
 
     _dn_save_button = new QPushButton(_dn_widget);
     _dn_save_button->setFlat(true);
-    _dn_save_button->setIcon(QIcon::fromTheme("protocol",
-                             QIcon(":/icons/save.png")));
     connect(_dn_save_button, SIGNAL(clicked()),
             this, SLOT(export_table_view()));
 
     _dn_nav_button = new QPushButton(_dn_widget);
     _dn_nav_button->setFlat(true);
-    _dn_nav_button->setIcon(QIcon::fromTheme("protocol",
-                             QIcon(":/icons/nav.png")));
     connect(_dn_nav_button, SIGNAL(clicked()),
             this, SLOT(nav_table_view()));
 
     QHBoxLayout *dn_title_layout = new QHBoxLayout();
+    _dn_title_label = new QLabel(_dn_widget);
     dn_title_layout->addWidget(_dn_set_button, 0, Qt::AlignLeft);
     dn_title_layout->addWidget(_dn_save_button, 0, Qt::AlignLeft);
-    dn_title_layout->addWidget(new QLabel(tr("Protocol List Viewer"), _dn_widget), 1, Qt::AlignLeft);
+    dn_title_layout->addWidget(_dn_title_label, 1, Qt::AlignLeft);
     dn_title_layout->addWidget(_dn_nav_button, 0, Qt::AlignRight);
     //dn_title_layout->addStretch(1);
 
@@ -151,29 +142,22 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession &sessio
 
     _pre_button = new QPushButton(_dn_widget);
     _nxt_button = new QPushButton(_dn_widget);
-    _pre_button->setIcon(QIcon::fromTheme("protocol",
-                         QIcon(":/icons/pre.png")));
-    _nxt_button->setIcon(QIcon::fromTheme("protocol",
-                         QIcon(":/icons/next.png")));
     connect(_pre_button, SIGNAL(clicked()),
             this, SLOT(search_pre()));
     connect(_nxt_button, SIGNAL(clicked()),
             this, SLOT(search_nxt()));
 
-    QPushButton *search_button = new QPushButton(this);
-    search_button->setIcon(QIcon::fromTheme("protocol",
-                           QIcon(":/icons/search.png")));
-    search_button->setFixedWidth(search_button->height());
-    search_button->setDisabled(true);
+    _search_button = new QPushButton(this);
+    _search_button->setFixedWidth(_search_button->height());
+    _search_button->setDisabled(true);
     _search_edit = new QLineEdit(_dn_widget);
     _search_edit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    _search_edit->setPlaceholderText(tr("search"));
     QHBoxLayout *search_layout = new QHBoxLayout();
-    search_layout->addWidget(search_button);
+    search_layout->addWidget(_search_button);
     search_layout->addStretch(1);
     search_layout->setContentsMargins(0, 0, 0, 0);
     _search_edit->setLayout(search_layout);
-    _search_edit->setTextMargins(search_button->width(), 0, 0, 0);
+    _search_edit->setTextMargins(_search_button->width(), 0, 0, 0);
 
     _dn_search_layout = new QHBoxLayout();
     _dn_search_layout->addWidget(_pre_button, 0, Qt::AlignLeft);
@@ -181,8 +165,9 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession &sessio
     _dn_search_layout->addWidget(_nxt_button, 0, Qt::AlignRight);
 
     _matchs_label = new QLabel(_dn_widget);
+    _matchs_title_label = new QLabel(_dn_widget);
     QHBoxLayout *dn_match_layout = new QHBoxLayout();
-    dn_match_layout->addWidget(new QLabel(tr("Matching Items:")), 0, Qt::AlignLeft);
+    dn_match_layout->addWidget(_matchs_title_label, 0, Qt::AlignLeft);
     dn_match_layout->addWidget(_matchs_label, 0, Qt::AlignLeft);
     dn_match_layout->addStretch(1);
 
@@ -215,10 +200,50 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession &sessio
     connect(_table_view->horizontalHeader(), SIGNAL(sectionResized(int,int,int)), this, SLOT(column_resize(int, int, int)));
     //connect(_table_view->verticalScrollBar(), SIGNAL(sliderMoved()), this, SLOT(sliderMoved()));
     connect(_search_edit, SIGNAL(editingFinished()), this, SLOT(search_changed()));
+
+    retranslateUi();
 }
 
 ProtocolDock::~ProtocolDock()
 {
+}
+
+void ProtocolDock::changeEvent(QEvent *event)
+{
+    if (event->type() == QEvent::LanguageChange)
+        retranslateUi();
+    else if (event->type() == QEvent::StyleChange)
+        reStyle();
+    QScrollArea::changeEvent(event);
+}
+
+void ProtocolDock::retranslateUi()
+{
+    _search_edit->setPlaceholderText(tr("search"));
+    _matchs_title_label->setText(tr("Matching Items:"));
+    _dn_title_label->setText(tr("Protocol List Viewer"));
+}
+
+void ProtocolDock::reStyle()
+{
+    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+
+    _add_button->setIcon(QIcon(iconPath+"/add.png"));
+    _del_all_button->setIcon(QIcon(iconPath+"/del.png"));
+    _dn_set_button->setIcon(QIcon(iconPath+"/gear.png"));
+    _dn_save_button->setIcon(QIcon(iconPath+"/save.png"));
+    _dn_nav_button->setIcon(QIcon(iconPath+"/nav.png"));
+    _pre_button->setIcon(QIcon(iconPath+"/pre.png"));
+    _nxt_button->setIcon(QIcon(iconPath+"/next.png"));
+    _search_button->setIcon(QIcon(iconPath+"/search.png"));
+
+    for (QVector <QPushButton *>::const_iterator i = _del_button_list.begin();
+         i != _del_button_list.end(); i++)
+        (*i)->setIcon(QIcon(iconPath+"/del.png"));
+
+    for (QVector <QPushButton *>::const_iterator i = _set_button_list.begin();
+         i != _set_button_list.end(); i++)
+        (*i)->setIcon(QIcon(iconPath+"/gear.png"));
 }
 
 void ProtocolDock::paintEvent(QPaintEvent *)
@@ -295,14 +320,13 @@ void ProtocolDock::add_protocol(bool silent)
             //QMap <QString, QVariant>& _options = dlg.get_options();
             //QMap <QString, int> _options_index = dlg.get_options_index();
 
+            QString iconPath = ":/icons/" + qApp->property("Style").toString();
             QPushButton *_del_button = new QPushButton(_up_widget);
             QPushButton *_set_button = new QPushButton(_up_widget);
             _del_button->setFlat(true);
-            _del_button->setIcon(QIcon::fromTheme("protocol",
-                                 QIcon(":/icons/del.png")));
+            _del_button->setIcon(QIcon(iconPath+"/del.png"));
             _set_button->setFlat(true);
-            _set_button->setIcon(QIcon::fromTheme("protocol",
-                                 QIcon(":/icons/gear.png")));
+            _set_button->setIcon(QIcon(iconPath+"/gear.png"));
             QLabel *_protocol_label = new QLabel(_up_widget);
             QLabel *_progress_label = new QLabel(_up_widget);
 
@@ -801,8 +825,8 @@ void ProtocolDock::search_update()
         dlg.setCancelButton(NULL);
 
         QFutureWatcher<void> watcher;
-        watcher.setFuture(future);
         connect(&watcher,SIGNAL(finished()),&dlg,SLOT(cancel()));
+        watcher.setFuture(future);
 
         dlg.exec();
     } else {

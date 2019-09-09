@@ -52,34 +52,34 @@ using namespace pv::view;
 MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession &session) :
     QScrollArea(parent),
     _session(session),
-    _view(view),
-    _icon_add(":/icons/add.png"),
-    _icon_add_dis(":/icons/add_dis.png"),
-    _icon_del(":/icons/del.png"),
-    _icon_del_dis(":/icons/del_dis.png")
+    _view(view)
 {
 
     _widget = new QWidget(this);
     //_widget->setSizePolicy();
 
-    _mouse_groupBox = new QGroupBox(tr("Mouse measurement"), _widget);
-    _fen_checkBox = new QCheckBox(tr("Enable floating measurement"), _widget);
+    _mouse_groupBox = new QGroupBox(_widget);
+    _fen_checkBox = new QCheckBox(_widget);
     _fen_checkBox->setChecked(true);
     _width_label = new QLabel("#####", _widget);
     _period_label = new QLabel("#####", _widget);
     _freq_label = new QLabel("#####", _widget);
     _duty_label = new QLabel("#####", _widget);
 
+    _w_label = new QLabel(_widget);
+    _p_label = new QLabel(_widget);
+    _f_label = new QLabel(_widget);
+    _d_label = new QLabel(_widget);
     _mouse_layout = new QGridLayout();
     _mouse_layout->setVerticalSpacing(5);
     _mouse_layout->addWidget(_fen_checkBox, 0, 0, 1, 6);
-    _mouse_layout->addWidget(new QLabel(tr("W: "), _widget), 1, 0);
+    _mouse_layout->addWidget(_w_label, 1, 0);
     _mouse_layout->addWidget(_width_label, 1, 1);
-    _mouse_layout->addWidget(new QLabel(tr("P: "), _widget), 1, 4);
+    _mouse_layout->addWidget(_p_label, 1, 4);
     _mouse_layout->addWidget(_period_label, 1, 5);
-    _mouse_layout->addWidget(new QLabel(tr("F: "), _widget), 2, 4);
+    _mouse_layout->addWidget(_f_label, 2, 4);
     _mouse_layout->addWidget(_freq_label, 2, 5);
-    _mouse_layout->addWidget(new QLabel(tr("D: "), _widget), 2, 0);
+    _mouse_layout->addWidget(_d_label, 2, 0);
     _mouse_layout->addWidget(_duty_label, 2, 1);
     _mouse_layout->addWidget(new QLabel(_widget), 0, 6);
     _mouse_layout->addWidget(new QLabel(_widget), 1, 6);
@@ -88,10 +88,9 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession &session) :
     _mouse_groupBox->setLayout(_mouse_layout);
 
     /* cursor distance group */
-    _dist_groupBox = new QGroupBox(tr("Cursor Distance"), _widget);
+    _dist_groupBox = new QGroupBox(_widget);
     _dist_groupBox->setMinimumWidth(300);
     _dist_add_btn = new QToolButton(_widget);
-    _dist_add_btn->setIcon(_icon_add);
     connect(_dist_add_btn, SIGNAL(clicked()), this, SLOT(add_dist_measure()));
 
     _dist_layout = new QGridLayout(_widget);
@@ -102,31 +101,32 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession &session) :
     _dist_layout->addWidget(new QLabel(_widget), 0, 5, 1, 2);
     _dist_layout->setColumnStretch(1, 50);
     _dist_layout->setColumnStretch(6, 100);
-    add_dist_measure();
     _dist_groupBox->setLayout(_dist_layout);
 
     /* cursor edges group */
-    _edge_groupBox = new QGroupBox(tr("Edges"), _widget);
+    _edge_groupBox = new QGroupBox(_widget);
     _edge_groupBox->setMinimumWidth(300);
     _edge_add_btn = new QToolButton(_widget);
-    _edge_add_btn->setIcon(_icon_add);
     connect(_edge_add_btn, SIGNAL(clicked()), this, SLOT(add_edge_measure()));
 
+    _channel_label = new QLabel(_widget);
+    _edge_label = new QLabel(_widget);
     _edge_layout = new QGridLayout(_widget);
     _edge_layout->setVerticalSpacing(5);
     _edge_layout->addWidget(_edge_add_btn, 0, 0);
     _edge_layout->addWidget(new QLabel(_widget), 0, 1, 1, 4);
-    _edge_layout->addWidget(new QLabel(tr("Channel"), _widget), 0, 5);
-    _edge_layout->addWidget(new QLabel(tr("Rising/Falling/Edges"), _widget), 0, 6);
+    _edge_layout->addWidget(_channel_label, 0, 5);
+    _edge_layout->addWidget(_edge_label, 0, 6);
     _edge_layout->setColumnStretch(1, 50);
     //_edge_layout->setColumnStretch(6, 100);
     //add_edge_measure();
     _edge_groupBox->setLayout(_edge_layout);
 
     /* cursors group */
-    _cursor_groupBox = new QGroupBox(tr("Cursors"), _widget);
+    _time_label = new QLabel(_widget);
+    _cursor_groupBox = new QGroupBox(_widget);
     _cursor_layout = new QGridLayout(_widget);
-    _cursor_layout->addWidget(new QLabel(tr("Time/Samples"), _widget), 0, 2);
+    _cursor_layout->addWidget(_time_label, 0, 2);
     _cursor_layout->addWidget(new QLabel(_widget), 0, 3);
     _cursor_layout->setColumnStretch(3, 1);
 
@@ -146,10 +146,54 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession &session) :
     this->setWidget(_widget);
     _widget->setGeometry(0, 0, sizeHint().width(), 2000);
     _widget->setObjectName("measureWidget");
+
+    retranslateUi();
 }
 
 MeasureDock::~MeasureDock()
 {
+}
+
+void MeasureDock::changeEvent(QEvent *event)
+{
+    if (event->type() == QEvent::LanguageChange)
+        retranslateUi();
+    else if (event->type() == QEvent::StyleChange)
+        reStyle();
+    QScrollArea::changeEvent(event);
+}
+
+void MeasureDock::retranslateUi()
+{
+    _mouse_groupBox->setTitle(tr("Mouse measurement"));
+    _fen_checkBox->setText(tr("Enable floating measurement"));
+    _dist_groupBox->setTitle(tr("Cursor Distance"));
+    _edge_groupBox->setTitle(tr("Edges"));
+    _cursor_groupBox->setTitle(tr("Cursors"));
+
+    _channel_label->setText(tr("Channel"));
+    _edge_label->setText(tr("Rising/Falling/Edges"));
+    _time_label->setText(tr("Time/Samples"));
+
+    _w_label->setText(tr("W: "));
+    _p_label->setText(tr("P: "));
+    _f_label->setText(tr("F: "));
+    _d_label->setText(tr("D: "));
+}
+
+void MeasureDock::reStyle()
+{
+    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+
+    _dist_add_btn->setIcon(QIcon(iconPath+"/add.png"));
+    _edge_add_btn->setIcon(QIcon(iconPath+"/add.png"));
+
+    for (QVector <QToolButton *>::const_iterator i = _dist_del_btn_vec.begin();
+         i != _dist_del_btn_vec.end(); i++)
+        (*i)->setIcon(QIcon(iconPath+"/del.png"));
+    for (QVector <QToolButton *>::const_iterator i = _edge_del_btn_vec.begin();
+         i != _edge_del_btn_vec.end(); i++)
+        (*i)->setIcon(QIcon(iconPath+"/del.png"));
 }
 
 void MeasureDock::paintEvent(QPaintEvent *)
@@ -167,6 +211,11 @@ void MeasureDock::refresh()
 
 void MeasureDock::reload()
 {
+    if (_session.get_device()->dev_inst()->mode == LOGIC)
+        _edge_groupBox->setDisabled(false);
+    else
+        _edge_groupBox->setDisabled(true);
+
     for (QVector <QComboBox *>::const_iterator i = _edge_ch_cmb_vec.begin();
          i != _edge_ch_cmb_vec.end(); i++) {
         update_probe_selector(*i);
@@ -181,13 +230,13 @@ void MeasureDock::cursor_update()
     if (!_cursor_pushButton_list.empty()) {
         for (QVector <QToolButton *>::const_iterator i = _cursor_del_btn_vec.begin();
              i != _cursor_del_btn_vec.end(); i++)
-            delete (*i);
+            (*i)->deleteLater();
         for (QVector<QPushButton *>::Iterator i = _cursor_pushButton_list.begin();
              i != _cursor_pushButton_list.end(); i++)
-            delete (*i);
+            (*i)->deleteLater();
         for (QVector<QLabel *>::Iterator i = _curpos_label_list.begin();
              i != _curpos_label_list.end(); i++)
-            delete (*i);
+            (*i)->deleteLater();
 
         _cursor_del_btn_vec.clear();
         _cursor_pushButton_list.clear();
@@ -198,13 +247,13 @@ void MeasureDock::cursor_update()
     update_edge();
 
     int index = 1;
+    QString iconPath = ":/icons/" + qApp->property("Style").toString();
     for(std::list<Cursor*>::iterator i = _view.get_cursorList().begin();
         i != _view.get_cursorList().end(); i++) {
         QString curCursor = QString::number(index);
 
         QToolButton *del_btn = new QToolButton(_widget);
-        del_btn->setIcon(QIcon::fromTheme("measure",
-                                 QIcon(":/icons/del.png")));
+        del_btn->setIcon(QIcon(iconPath+"/del.png"));
         del_btn->setCheckable(true);
         QPushButton *_cursor_pushButton = new QPushButton(curCursor, _widget);
         set_cursor_btn_color(_cursor_pushButton);
@@ -287,9 +336,9 @@ void MeasureDock::add_dist_measure()
     row_widget->setLayout(row_layout);
     _dist_row_widget_vec.push_back(row_widget);
 
+    QString iconPath = ":/icons/" + qApp->property("Style").toString();
     QToolButton *del_btn = new QToolButton(row_widget);
-    del_btn->setIcon(QIcon::fromTheme("measure",
-                             QIcon(":/icons/del.png")));
+    del_btn->setIcon(QIcon(iconPath+"/del.png"));
     del_btn->setCheckable(true);
     QPushButton *s_btn = new QPushButton(tr(" "), row_widget);
     s_btn->setObjectName("dist");
@@ -326,12 +375,7 @@ void MeasureDock::del_dist_measure()
          i != _dist_del_btn_vec.end(); i++) {
         if ((*i)->isChecked()) {
             _dist_layout->removeWidget(_dist_row_widget_vec.at(del_index));
-
-            delete _dist_del_btn_vec.at(del_index);
-            delete _dist_s_btn_vec.at(del_index);
-            delete _dist_e_btn_vec.at(del_index);
-            delete _dist_r_label_vec.at(del_index);
-            delete _dist_row_widget_vec.at(del_index);
+            _dist_row_widget_vec.at(del_index)->deleteLater();
 
             _dist_del_btn_vec.remove(del_index);
             _dist_s_btn_vec.remove(del_index);
@@ -358,9 +402,9 @@ void MeasureDock::add_edge_measure()
     row_widget->setLayout(row_layout);
     _edge_row_widget_vec.push_back(row_widget);
 
+    QString iconPath = ":/icons/" + qApp->property("Style").toString();
     QToolButton *del_btn = new QToolButton(row_widget);
-    del_btn->setIcon(QIcon::fromTheme("measure",
-                             QIcon(":/icons/del.png")));
+    del_btn->setIcon(QIcon(iconPath+"/del.png"));
     del_btn->setCheckable(true);
     QPushButton *s_btn = new QPushButton(tr(" "), row_widget);
     s_btn->setObjectName("edge");
@@ -404,13 +448,7 @@ void MeasureDock::del_edge_measure()
          i != _edge_del_btn_vec.end(); i++) {
         if ((*i)->isChecked()) {
             _edge_layout->removeWidget(_edge_row_widget_vec.at(del_index));
-
-            delete _edge_del_btn_vec.at(del_index);
-            delete _edge_s_btn_vec.at(del_index);
-            delete _edge_e_btn_vec.at(del_index);
-            delete _edge_r_label_vec.at(del_index);
-            delete _edge_ch_cmb_vec.at(del_index);
-            delete _edge_row_widget_vec.at(del_index);
+            _edge_row_widget_vec.at(del_index)->deleteLater();
 
             _edge_del_btn_vec.remove(del_index);
             _edge_s_btn_vec.remove(del_index);
@@ -440,31 +478,23 @@ void MeasureDock::show_all_coursor()
 
     _sel_btn = qobject_cast<QPushButton *>(sender());
 
-    //dialogs::DSDialog cursor_dlg(_widget);
     QDialog cursor_dlg(_widget);
     cursor_dlg.setWindowFlags(Qt::FramelessWindowHint | Qt::Popup | Qt::WindowSystemMenuHint |
                               Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
+
     int index = 0;
-    QHBoxLayout *hlayout = NULL;
-    QVBoxLayout *vlayout = new QVBoxLayout(&cursor_dlg);
+    QGridLayout *glayout = new QGridLayout(&cursor_dlg);
     for(std::list<Cursor*>::iterator i = _view.get_cursorList().begin();
         i != _view.get_cursorList().end(); i++) {
         QPushButton *cursor_btn = new QPushButton(QString::number(index+1), &cursor_dlg);
         set_cursor_btn_color(cursor_btn);
-        if ((index % 4) == 0) {
-            hlayout = new QHBoxLayout(&cursor_dlg);
-            vlayout->addLayout(hlayout);
-            //cursor_dlg.layout()->addLayout(hlayout);
-        }
-        hlayout->addWidget(cursor_btn);
+        glayout->addWidget(cursor_btn, index/4, index%4, 1, 1);
+
         connect(cursor_btn, SIGNAL(clicked()), &cursor_dlg, SLOT(accept()));
         connect(cursor_btn, SIGNAL(clicked()), this, SLOT(set_se_cursor()));
         index++;
     }
-    while((index++ % 4) != 0)
-        hlayout->addWidget(new QLabel(&cursor_dlg));
 
-    cursor_dlg.setLayout(vlayout);
     QRect sel_btn_rect = _sel_btn->geometry();
     sel_btn_rect.moveTopLeft(_sel_btn->parentWidget()->mapToGlobal(sel_btn_rect.topLeft()));
     cursor_dlg.setGeometry(sel_btn_rect.left(), sel_btn_rect.bottom()+10,

@@ -32,8 +32,8 @@ using namespace boost;
 namespace pv {
 namespace prop {
 
-Bool::Bool(QString name, Getter getter, Setter setter) :
-	Property(name, getter, setter),
+Bool::Bool(QString name, QString label, Getter getter, Setter setter) :
+    Property(name, label, getter, setter),
 	_check_box(NULL)
 {
 }
@@ -47,7 +47,7 @@ QWidget* Bool::get_widget(QWidget *parent, bool auto_commit)
 	if (_check_box)
 		return _check_box;
 
-	_check_box = new QCheckBox(name(), parent);
+    _check_box = new QCheckBox(label(), parent);
 
 	GVariant *const value = _getter ? _getter() : NULL;
 

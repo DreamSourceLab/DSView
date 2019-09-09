@@ -59,7 +59,7 @@ const QString Ruler::FreqPrefixes[9] =
 const int Ruler::FirstSIPrefixPower = -15;
 const int Ruler::pricision = 2;
 
-const int Ruler::HoverArrowSize = 5;
+const int Ruler::HoverArrowSize = 4;
 
 const int Ruler::CursorSelWidth = 20;
 const QColor Ruler::CursorColor[8] =
@@ -71,15 +71,6 @@ const QColor Ruler::CursorColor[8] =
      QColor(242, 196, 15, 200),
      QColor(231, 126, 34, 200),
      QColor(232, 76, 61, 200)};
-
-const QColor Ruler::dsBlue = QColor(17, 133, 209,  255);
-const QColor Ruler::dsYellow = QColor(238, 178, 17, 255);
-const QColor Ruler::dsRed = QColor(213, 15, 37, 255);
-const QColor Ruler::dsGreen = QColor(0, 153, 37, 255);
-const QColor Ruler::RULER_COLOR = QColor(255, 255, 255, 255);
-
-const QColor Ruler::HitColor = dsYellow;
-const QColor Ruler::WarnColor = dsRed;
 
 Ruler::Ruler(View &parent) :
 	QWidget(&parent),
@@ -183,14 +174,10 @@ void Ruler::paintEvent(QPaintEvent*)
     QPainter p(this);
     style()->drawPrimitive(QStyle::PE_Widget, &o, &p, this);
 
-    //p.begin(this);
-    //QPainter p(this);
-    //p.setRenderHint(QPainter::Antialiasing);
-
     // Draw tick mark
     draw_logic_tick_mark(p);
 
-    p.setRenderHint(QPainter::Antialiasing);
+    p.setRenderHint(QPainter::Antialiasing, true);
 	// Draw the hover mark
 	draw_hover_mark(p);
 
@@ -335,105 +322,6 @@ void Ruler::mouseReleaseEvent(QMouseEvent *event)
     }
 }
 
-void Ruler::draw_tick_mark(QPainter &p)
-{
-    using namespace Qt;
-
-    const double SpacingIncrement = 32.0;
-    const double MinValueSpacing = 16.0;
-    const int ValueMargin = 15;
-
-    double min_width = SpacingIncrement, typical_width;
-    double tick_period;
-    unsigned int prefix;
-
-    // Find tick spacing, and number formatting that does not cause
-    // value to collide.
-    do
-    {
-        _min_period = _view.scale() * min_width;
-
-        //const int order = (int)floorf(log10f(_min_period));
-        const int order = ceil(log10f(_min_period));
-        const double order_decimal = pow(10.0, static_cast<double>(order));
-
-        unsigned int unit = 0;
-
-        do
-        {
-            tick_period = order_decimal * ScaleUnits[unit++];
-        } while (tick_period < _min_period && unit < countof(ScaleUnits));
-
-        prefix = ceil((order - FirstSIPrefixPower) / 3.0f);
-        assert(prefix < countof(SIPrefixes));
-
-
-        typical_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
-            AlignLeft | AlignTop, format_time(_view.offset() * _view.scale(),
-            prefix)).width() + MinValueSpacing;
-
-        min_width += SpacingIncrement;
-
-    } while(typical_width > tick_period / _view.scale());
-
-    const int text_height = p.boundingRect(0, 0, INT_MAX, INT_MAX,
-        AlignLeft | AlignTop, "8").height();
-
-    // Draw the tick marks
-    p.setPen(dsBlue);
-
-    const double minor_tick_period = tick_period / MinorTickSubdivision;
-    const double first_major_division =
-        floor(_view.offset() * _view.scale() / tick_period);
-    const double first_minor_division =
-        ceil(_view.offset() * _view.scale() / minor_tick_period);
-    const double t0 = first_major_division * tick_period;
-
-    int division = (int)round(first_minor_division -
-        first_major_division * MinorTickSubdivision) - 1;
-
-    const int major_tick_y1 = text_height + ValueMargin * 3;
-    const int tick_y2 = height();
-    const int minor_tick_y1 = (major_tick_y1 + tick_y2) / 2;
-
-    double x;
-
-    do {
-        const double t = t0 + division * minor_tick_period;
-        x = t / _view.scale() - _view.offset();
-
-        if (division % MinorTickSubdivision == 0)
-        {
-            // Draw a major tick
-            p.drawText(x, 2 * ValueMargin, 0, text_height,
-                AlignCenter | AlignTop | TextDontClip,
-                format_time(t, prefix));
-            p.drawLine(QPointF(x, major_tick_y1),
-                QPointF(x, tick_y2));
-        }
-        else
-        {
-            // Draw a minor tick
-            p.drawLine(QPointF(x, minor_tick_y1),
-                QPointF(x, tick_y2));
-        }
-
-        division++;
-
-    } while (x < _view.get_view_width());
-
-    // Draw the cursors
-    if (!_view.get_cursorList().empty()) {
-        list<Cursor*>::iterator i = _view.get_cursorList().begin();
-        int index = 1;
-        while (i != _view.get_cursorList().end()) {
-            (*i)->paint_label(p, rect(), prefix, index);
-            index++;
-            i++;
-        }
-    }
-}
-
 void Ruler::draw_logic_tick_mark(QPainter &p)
 {
     using namespace Qt;
@@ -476,7 +364,9 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
         AlignLeft | AlignTop, "8").height();
 
     // Draw the tick marks
-    p.setPen(Trace::DARK_FORE);
+    QColor fore(QWidget::palette().color(QWidget::foregroundRole()));
+    fore.setAlpha(View::ForeAlpha);
+    p.setPen(fore);
 
     const double minor_tick_period = tick_period / MinPeriodScale;
     const int minor_order = (int)floorf(log10f(minor_tick_period));
@@ -564,16 +454,14 @@ void Ruler::draw_hover_mark(QPainter &p)
 	if (x == -1 || _grabbed_marker)
 		return;
 
-	p.setPen(QPen(Qt::NoPen));
-    p.setBrush(RULER_COLOR);
+    QColor fore(QWidget::palette().color(QWidget::foregroundRole()));
+    p.setPen(fore);
+    p.setBrush(fore);
 
 	const int b = height() - 1;
-	const QPointF points[] = {
-		QPointF(x, b),
-		QPointF(x - HoverArrowSize, b - HoverArrowSize),
-		QPointF(x + HoverArrowSize, b - HoverArrowSize)
-	};
-	p.drawPolygon(points, countof(points));
+    for (int i = 0; i < HoverArrowSize; i++)
+        for (int j = -i; j <= i; j++)
+            p.drawPoint(x-j, b-i);
 }
 
 void Ruler::draw_cursor_sel(QPainter &p)
@@ -582,11 +470,11 @@ void Ruler::draw_cursor_sel(QPainter &p)
         return;
 
     p.setPen(QPen(Qt::NoPen));
-    p.setBrush(dsBlue);
+    p.setBrush(View::Blue);
 
     const QPoint pos = QPoint(_view.hover_point().x(), _view.hover_point().y());
     if (in_cursor_sel_rect(pos) == 0)
-        p.setBrush(HitColor);
+        p.setBrush(View::Orange);
 
     const int y = height();
     const QRectF selRect = get_cursor_sel_rect(0);
@@ -616,7 +504,7 @@ void Ruler::draw_cursor_sel(QPainter &p)
                        cursorRect.left(), cursorRect.bottom() - 3);
             p.setPen(QPen(Qt::NoPen));
             if (in_cursor_sel_rect(pos) == index)
-                p.setBrush(HitColor);
+                p.setBrush(View::Orange);
             else
                 p.setBrush(CursorColor[(index - 1)%8]);
             p.drawRect(cursorRect);

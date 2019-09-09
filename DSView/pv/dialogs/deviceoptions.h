@@ -78,6 +78,7 @@ private slots:
     void zero_adj();
     void mode_check();
     void channel_check();
+    void analog_channel_check();
     void on_calibration();
     void channel_enable();
 

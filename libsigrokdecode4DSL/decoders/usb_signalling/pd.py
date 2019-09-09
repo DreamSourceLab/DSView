@@ -3,6 +3,7 @@
 ##
 ## Copyright (C) 2011 Gareth McMullin <gareth@blacksphere.co.nz>
 ## Copyright (C) 2012-2013 Uwe Hermann <uwe@hermann-uwe.de>
+## Copyright (C) 2019 DreamSourceLab <support@dreamsourcelab.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -15,8 +16,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
@@ -101,14 +101,15 @@ class SamplerateError(Exception):
     pass
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'usb_signalling'
     name = 'USB signalling'
     longname = 'Universal Serial Bus (LS/FS) signalling'
-    desc = 'USB (low-speed and full-speed) signalling protocol.'
+    desc = 'USB (low-speed/full-speed) signalling protocol.'
     license = 'gplv2+'
     inputs = ['logic']
     outputs = ['usb_signalling']
+    tags = ['PC']
     channels = (
         {'id': 'dp', 'name': 'D+', 'desc': 'USB D+ signal'},
         {'id': 'dm', 'name': 'D-', 'desc': 'USB D- signal'},
@@ -136,6 +137,9 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.samplerate = None
         self.oldsym = 'J' # The "idle" state is J.
         self.ss_block = None
@@ -146,11 +150,10 @@ class Decoder(srd.Decoder):
         self.samplenum_target = None
         self.samplenum_edge = None
         self.samplenum_lastedge = 0
-        self.oldpins = None
         self.edgepins = None
         self.consecutive_ones = 0
         self.bits = None
-        self.state = 'INIT'
+        self.state = 'IDLE'
 
     def start(self):
         self.out_python = self.register(srd.OUTPUT_PYTHON)
@@ -192,7 +195,7 @@ class Decoder(srd.Decoder):
         self.put(s, e, self.out_ann, data)
 
     def set_new_target_samplenum(self):
-        self.samplepos += self.bitwidth;
+        self.samplepos += self.bitwidth
         self.samplenum_target = int(self.samplepos)
         self.samplenum_lastedge = self.samplenum_edge
         self.samplenum_edge = int(self.samplepos - (self.bitwidth / 2))
@@ -290,57 +293,60 @@ class Decoder(srd.Decoder):
             self.putpb(['KEEP ALIVE', None])
             self.putb([9, ['Keep-alive', 'KA', 'A']])
 
-        if sym == 'FS_J':
+        if self.options['signalling'] == 'automatic' and sym == 'FS_J':
             self.signalling = 'full-speed'
-            self.update_bitrate()
-        elif sym == 'LS_J':
+        elif self.options['signalling'] == 'automatic' and sym == 'LS_J':
             self.signalling = 'low-speed'
-            self.update_bitrate()
+        else:
+            self.signalling = self.options['signalling']
+        self.update_bitrate()
+
         self.oldsym = 'J'
         self.state = 'IDLE'
 
-    def decode(self, ss, es, data):
+    def decode(self):
         if not self.samplerate:
             raise SamplerateError('Cannot decode without samplerate.')
-        for (self.samplenum, pins) in data:
-            data.itercnt += 1
+
+        # Seed internal state from the very first sample.
+        (dp, dm) = self.wait()
+        sym = symbols[self.options['signalling']][(dp, dm)]
+        self.handle_idle(sym)
+
+        while True:
             # State machine.
             if self.state == 'IDLE':
-                # Ignore identical samples early on (for performance reasons).
-                if self.oldpins == pins:
-                    continue
-                self.oldpins = pins
-                sym = symbols[self.signalling][tuple(pins)]
+                # Wait for any edge on either DP and/or DM.
+                (dp, dm) = self.wait([{0: 'e'}, {1: 'e'}])
+                sym = symbols[self.signalling][(dp, dm)]
                 if sym == 'SE0':
                     self.samplenum_lastedge = self.samplenum
                     self.state = 'WAIT IDLE'
                 else:
                     self.wait_for_sop(sym)
-                self.edgepins = pins
+                self.edgepins = (dp, dm)
             elif self.state in ('GET BIT', 'GET EOP'):
                 # Wait until we're in the middle of the desired bit.
-                if self.samplenum == self.samplenum_edge:
-                    self.edgepins = pins
-                if self.samplenum < self.samplenum_target:
-                    continue
-                sym = symbols[self.signalling][tuple(pins)]
+                if (self.samplenum_edge > self.samplenum):
+                    (dp, dm) = self.wait([{'skip': self.samplenum_edge - self.samplenum}])
+                    self.edgepins = (dp, dm)
+                if (self.samplenum_target > self.samplenum):
+                    (dp, dm) = self.wait([{'skip': self.samplenum_target - self.samplenum}])
+
+                sym = symbols[self.signalling][(dp, dm)]
                 if self.state == 'GET BIT':
                     self.get_bit(sym)
                 elif self.state == 'GET EOP':
                     self.get_eop(sym)
-                self.oldpins = pins
             elif self.state == 'WAIT IDLE':
-                if tuple(pins) == (0, 0):
-                    continue
+                # Skip "all-low" input. Wait for high level on either DP or DM.
+                (dp, dm) = self.wait()
+                while not dp and not dm:
+                    (dp, dm) = self.wait([{0: 'h'}, {1: 'h'}])
                 if self.samplenum - self.samplenum_lastedge > 1:
-                    sym = symbols[self.options['signalling']][tuple(pins)]
+                    sym = symbols[self.options['signalling']][(dp, dm)]
                     self.handle_idle(sym)
                 else:
-                    sym = symbols[self.signalling][tuple(pins)]
+                    sym = symbols[self.signalling][(dp, dm)]
                     self.wait_for_sop(sym)
-                self.oldpins = pins
-                self.edgepins = pins
-            elif self.state == 'INIT':
-                sym = symbols[self.options['signalling']][tuple(pins)]
-                self.handle_idle(sym)
-                self.oldpins = pins
+                self.edgepins = (dp, dm)

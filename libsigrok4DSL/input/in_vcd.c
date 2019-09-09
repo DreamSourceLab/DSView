@@ -63,6 +63,7 @@
 #include <glib.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 /* Message logging helpers with subsystem-specific prefix string. */
 #define LOG_PREFIX "input/vcd: "
@@ -97,10 +98,10 @@ static gboolean read_until(FILE *file, GString *dest, char mode)
 			return FALSE;
 		}
 		
-		if (mode == 'W' && g_ascii_isspace(c))
+        if (mode == 'W' && isspace(c))
 			return TRUE;
 		
-		if (mode == 'N' && !g_ascii_isspace(c))
+        if (mode == 'N' && !isspace(c))
 		{
 			ungetc(c, file);
 			return TRUE;
@@ -436,7 +437,7 @@ static void parse_contents(FILE *file, const struct sr_dev_inst *sdi, struct con
 	/* Read one space-delimited token at a time. */
 	while (read_until(file, NULL, 'N') && read_until(file, token, 'W'))
 	{
-		if (token->str[0] == '#' && g_ascii_isdigit(token->str[1]))
+        if (token->str[0] == '#' && isdigit(token->str[1]))
 		{
 			/* Numeric value beginning with # is a new timestamp value */
 			uint64_t timestamp;

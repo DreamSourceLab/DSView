@@ -2,7 +2,6 @@
  * This file is part of the libsigrokdecode project.
  *
  * Copyright (C) 2012 Bert Vermeulen <bert@biot.com>
- * Copyright (C) 2016 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,12 +22,13 @@
 #include "libsigrokdecode.h"
 #include <stdarg.h>
 #include <glib.h>
-#include <glib/gprintf.h>
 
 static char *py_stringify(PyObject *py_obj)
 {
 	PyObject *py_str, *py_bytes;
 	char *str = NULL;
+
+	/* Note: Caller already ran PyGILState_Ensure(). */
 
 	if (!py_obj)
 		return NULL;
@@ -50,6 +50,7 @@ cleanup:
 		PyErr_Clear();
 		srd_dbg("Failed to stringify object.");
 	}
+
 	return str;
 }
 
@@ -57,6 +58,8 @@ static char *py_get_string_attr(PyObject *py_obj, const char *attr)
 {
 	PyObject *py_str, *py_bytes;
 	char *str = NULL;
+
+	/* Note: Caller already ran PyGILState_Ensure(). */
 
 	if (!py_obj)
 		return NULL;
@@ -78,17 +81,21 @@ cleanup:
 		PyErr_Clear();
 		srd_dbg("Failed to get object attribute %s.", attr);
 	}
+
 	return str;
 }
 
 /** @private */
 SRD_PRIV void srd_exception_catch(char **error, const char *format, ...)
 {
+	int i, ret;
 	va_list args;
 	PyObject *py_etype, *py_evalue, *py_etraceback;
 	PyObject *py_mod, *py_func, *py_tracefmt;
-	char *msg, *etype_name, *evalue_str, *tracefmt_str;
+	char *msg, *etype_name, *evalue_str, *outstr;
 	const char *etype_name_fallback;
+	PyGILState_STATE gstate;
+	GString *s;
 	char *final_msg;
 
 	py_etype = py_evalue = py_etraceback = py_mod = py_func = NULL;
@@ -96,6 +103,8 @@ SRD_PRIV void srd_exception_catch(char **error, const char *format, ...)
 	va_start(args, format);
 	msg = g_strdup_vprintf(format, args);
 	va_end(args);
+
+	gstate = PyGILState_Ensure();
 
 	PyErr_Fetch(&py_etype, &py_evalue, &py_etraceback);
 	if (!py_etype) {
@@ -135,17 +144,21 @@ SRD_PRIV void srd_exception_catch(char **error, const char *format, ...)
 	/* Call into Python to format the stack trace. */
 	py_tracefmt = PyObject_CallFunctionObjArgs(py_func,
 			py_etype, py_evalue, py_etraceback, NULL);
-	if (!py_tracefmt)
+	if (!py_tracefmt || !PyList_Check(py_tracefmt))
 		goto cleanup;
 
-	tracefmt_str = py_stringify(py_tracefmt);
-	Py_DECREF(py_tracefmt);
-
-	/* Log the detailed stack trace. */
-	if (tracefmt_str) {
-		srd_dbg("%s", tracefmt_str);
-		g_free(tracefmt_str);
+	s = g_string_sized_new(128);
+	for (i = 0; i < PyList_Size(py_tracefmt); i++) {
+		ret = py_listitem_as_str(py_tracefmt, i, &outstr);
+		if (ret == 0) {
+			s = g_string_append(s, outstr);
+			g_free(outstr);
+		}
 	}
+	srd_err("%s", s->str);
+	g_string_free(s, TRUE);
+
+	Py_DECREF(py_tracefmt);
 
 cleanup:
 	if (error)
@@ -158,6 +171,8 @@ cleanup:
 
 	/* Just in case. */
 	PyErr_Clear();
+
+	PyGILState_Release(gstate);
 
 	g_free(msg);
 	g_free(final_msg);

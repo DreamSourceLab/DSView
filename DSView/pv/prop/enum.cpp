@@ -33,10 +33,10 @@ using namespace std;
 namespace pv {
 namespace prop {
 
-Enum::Enum(QString name,
-	vector<pair<GVariant*, QString> > values,
-	Getter getter, Setter setter) :
-	Property(name, getter, setter),
+Enum::Enum(QString name, QString label,
+    vector<pair<GVariant*, QString> > values,
+    Getter getter, Setter setter) :
+    Property(name, label, getter, setter),
 	_values(values),
 	_selector(NULL)
 {
@@ -48,7 +48,8 @@ Enum::Enum(QString name,
 Enum::~Enum()
 {
 	for (unsigned int i = 0; i < _values.size(); i++)
-		g_variant_unref(_values[i].first);
+        if (_values[i].first)
+            g_variant_unref(_values[i].first);
 }
 
 QWidget* Enum::get_widget(QWidget *parent, bool auto_commit)
@@ -62,14 +63,12 @@ QWidget* Enum::get_widget(QWidget *parent, bool auto_commit)
     }
 
 	_selector = new QComboBox(parent);
-    _selector->setSizeAdjustPolicy(QComboBox::AdjustToContents);
 	for (unsigned int i = 0; i < _values.size(); i++) {
 		const pair<GVariant*, QString> &v = _values[i];
 		_selector->addItem(v.second, qVariantFromValue((void*)v.first));
 		if (value && g_variant_compare(v.first, value) == 0)
 			_selector->setCurrentIndex(i);
 	}
-    _selector->view()->setMinimumWidth(_selector->width()+30);
 
 	g_variant_unref(value);
 

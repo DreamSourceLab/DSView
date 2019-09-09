@@ -35,7 +35,7 @@ class Bool : public Property
     Q_OBJECT;
 
 public:
-	Bool(QString name, Getter getter, Setter setter);
+    Bool(QString name, QString label, Getter getter, Setter setter);
 
 	virtual ~Bool();
 

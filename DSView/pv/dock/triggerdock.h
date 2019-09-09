@@ -73,6 +73,10 @@ public:
      *        1: advanced trigger
      */
     bool commit_trigger();
+private:
+    void changeEvent(QEvent *event);
+    void retranslateUi();
+    void reStyle();
 
 signals:
 
@@ -92,17 +96,17 @@ private:
 
     QWidget *_widget;
 
-    QRadioButton *simple_radioButton;
-    QRadioButton *adv_radioButton;
+    QRadioButton *_simple_radioButton;
+    QRadioButton *_adv_radioButton;
 
-    QLabel *position_label;
-    QSpinBox *position_spinBox;
-    QSlider *position_slider;
+    QLabel *_position_label;
+    QSpinBox *_position_spinBox;
+    QSlider *_position_slider;
 
-    QLabel *stages_label;
+    QLabel *_stages_label;
     QComboBox *stages_comboBox;
 
-    QTabWidget *stage_tabWidget;
+    QTabWidget *_stage_tabWidget;
 
     QVector <QGroupBox *> _stage_groupBox_list;
     QVector <QLabel *>    _mu_label_list;
@@ -122,12 +126,20 @@ private:
     QLineEdit *_serial_stop_lineEdit;
     QLabel *_serial_edge_label;
     QLineEdit *_serial_edge_lineEdit;
-    QLabel *_serial_data_lable;
+    QLabel *_serial_data_label;
     QComboBox *_serial_data_comboBox;
-    QLabel *_serial_value_lable;
+    QLabel *_serial_value_label;
     QLineEdit *_serial_value_lineEdit;
-    QLabel *_serial_vcnt_lable;
     QComboBox *_serial_bits_comboBox;
+
+    QLabel *_serial_note_label;
+    QLabel *_data_bits_label;
+
+    QVector <QLabel *>  _inv_exp_label_list;
+    QVector <QLabel *>  _count_exp_label_list;
+    QVector <QLabel *>  _contiguous_label_list;
+    QVector <QLabel *>  _stage_note_label_list;
+
 };
 
 } // namespace dock

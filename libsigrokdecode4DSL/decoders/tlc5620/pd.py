@@ -2,6 +2,7 @@
 ## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2012-2015 Uwe Hermann <uwe@hermann-uwe.de>
+## Copyright (C) 2019 DreamSourceLab <support@dreamsourcelab.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -14,8 +15,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
@@ -28,14 +28,15 @@ dacs = {
 }
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'tlc5620'
     name = 'TI TLC5620'
     longname = 'Texas Instruments TLC5620'
     desc = 'Texas Instruments TLC5620 8-bit quad DAC.'
     license = 'gplv2+'
     inputs = ['logic']
-    outputs = ['tlc5620']
+    outputs = []
+    tags = ['IC', 'Analog/digital']
     channels = (
         {'id': 'clk', 'name': 'CLK', 'desc': 'Serial interface clock'},
         {'id': 'data', 'name': 'DATA', 'desc': 'Serial interface data'},
@@ -72,7 +73,9 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
-        self.oldpins = self.oldclk = self.oldload = self.oldldac = None
+        self.reset()
+
+    def reset(self):
         self.bits = []
         self.ss_dac_first = None
         self.ss_dac = self.es_dac = 0
@@ -183,28 +186,25 @@ class Decoder(srd.Decoder):
                  [8, ['Updating voltages: %s' % s, s, s.replace('DAC', '')]])
         self.ss_dac_first = None
 
-    def handle_new_dac_bit(self):
-        self.bits.append([self.datapin, self.samplenum])
+    def handle_new_dac_bit(self, datapin):
+        self.bits.append([datapin, self.samplenum])
 
-    def decode(self, ss, es, data):
-        for (self.samplenum, pins) in data:
-            data.itercnt += 1
-            # Ignore identical samples early on (for performance reasons).
-            if self.oldpins == pins:
-                continue
-            self.oldpins, (clk, self.datapin, load, ldac) = pins, pins
-            self.ldac = ldac
-
+    def decode(self):
+        while True:
             # DATA is shifted in the DAC on the falling CLK edge (MSB-first).
             # A falling edge of LOAD will latch the data.
 
-            if self.oldload == 1 and load == 0:
-                self.handle_falling_edge_load()
-            if self.oldldac == 1 and ldac == 0:
-                self.handle_falling_edge_ldac()
-            if self.oldclk == 1 and clk == 0:
-                self.handle_new_dac_bit()
+            # Wait for one (or multiple) of the following conditions:
+            #   a) Falling edge on CLK, and/or
+            #   b) Falling edge on LOAD, and/or
+            #   b) Falling edge on LDAC
+            (clk, data, load, ldac) = self.wait([{0: 'f'}, {2: 'f'}, {3: 'f'}])
+            self.ldac = ldac
 
-            self.oldclk = clk
-            self.oldload = load
-            self.oldldac = ldac
+            # Handle those conditions (one or more) that matched this time.
+            if (self.matched & (0b1 << 0)):
+                self.handle_new_dac_bit(data)
+            if (self.matched & (0b1 << 1)):
+                self.handle_falling_edge_load()
+            if (self.matched & (0b1 << 2)):
+                self.handle_falling_edge_ldac()

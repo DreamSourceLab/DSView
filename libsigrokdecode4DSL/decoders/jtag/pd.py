@@ -2,6 +2,7 @@
 ## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2012-2015 Uwe Hermann <uwe@hermann-uwe.de>
+## Copyright (C) 2019 DreamSourceLab <support@dreamsourcelab.com>
 ##
 ## Version: 
 ## Modified by Shiqiu Nie(369614718@qq.com)
@@ -22,16 +23,17 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
 
 '''
 OUTPUT_PYTHON format:
+
 Packet:
 [<ptype>, <pdata>]
+
 <ptype>:
  - 'NEW STATE': <pdata> is the new state of the JTAG state machine.
    Valid values: 'TEST-LOGIC-RESET', 'RUN-TEST/IDLE', 'SELECT-DR-SCAN',
@@ -42,6 +44,7 @@ Packet:
  - 'IR TDO': Bitstring that was clocked out of the IR register.
  - 'DR TDI': Bitstring that was clocked into the DR register.
  - 'DR TDO': Bitstring that was clocked out of the DR register.
+
 All bitstrings are a list consisting of two items. The first is a sequence
 of '1' and '0' characters (the right-most character is the LSB. Example:
 '01110001', where 1 is the LSB). The second item is a list of ss/es values
@@ -60,7 +63,7 @@ jtag_states = [
 ]
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'jtag'
     name = 'JTAG'
     longname = 'Joint Test Action Group (IEEE 1149.1)'
@@ -68,6 +71,7 @@ class Decoder(srd.Decoder):
     license = 'gplv2+'
     inputs = ['logic']
     outputs = ['jtag']
+    tags = ['Debug/trace']
     channels = (
         {'id': 'tdi',  'name': 'TDI',  'desc': 'Test data input'},
         {'id': 'tdo',  'name': 'TDO',  'desc': 'Test data output'},
@@ -94,16 +98,16 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         # self.state = 'TEST-LOGIC-RESET'
         self.state = 'RUN-TEST/IDLE'
         self.oldstate = None
-        self.oldpins = (-1, -1, -1, -1)
-        self.oldtck = -1
         self.bits_tdi = []
         self.bits_tdo = []
         self.bits_samplenums_tdi = []
         self.bits_samplenums_tdo = []
-        self.samplenum = 0
         self.ss_item = self.es_item = None
         self.ss_bitstring = self.es_bitstring = None
         self.saved_item = None
@@ -169,7 +173,7 @@ class Decoder(srd.Decoder):
         elif self.state == 'UPDATE-IR':
             self.state = 'SELECT-DR-SCAN' if (tms) else 'RUN-TEST/IDLE'
 
-    def handle_rising_tck_edge(self, tdi, tdo, tck, tms):
+    def handle_rising_tck_edge(self, tdi, tdo, tck, tms, trst, srst, rtck):
         # Rising TCK edges always advance the state machine.
         self.advance_state_machine(tms)
 
@@ -278,28 +282,8 @@ class Decoder(srd.Decoder):
         
         self.ss_item = self.samplenum
 
-    def decode(self, ss, es, data):
-        for (self.samplenum, pins) in data:
-            data.itercnt += 1
-            # If none of the pins changed, there's nothing to do.
-            if self.oldpins == pins:
-                continue
-
-            # Store current pin values for the next round.
-            self.oldpins = pins
-
-            # Get individual pin values into local variables.
-            # Unused channels will have a value of > 1.
-            (tdi, tdo, tck, tms, trst, srst, rtck) = pins
-
-            # We only care about TCK edges (either rising or falling).
-            if (self.oldtck == tck):
-                continue
-
-            # Store start/end sample for later usage.
-            self.ss, self.es = ss, es
-
-            if (self.oldtck == 0 and tck == 1):
-                self.handle_rising_tck_edge(tdi, tdo, tck, tms)
-
-            self.oldtck = tck
+    def decode(self):
+        while True:
+            # Wait for a rising edge on TCK.
+            (tdi, tdo, tck, tms, trst, srst, rtck) = self.wait({2: 'r'})
+            self.handle_rising_tck_edge(tdi, tdo, tck, tms, trst, srst, rtck)

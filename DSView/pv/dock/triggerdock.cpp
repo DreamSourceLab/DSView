@@ -50,31 +50,31 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
     font.setStyleHint(QFont::Monospace);
     font.setFixedPitch(true);
 
-    simple_radioButton = new QRadioButton(tr("Simple Trigger"), _widget);
-    simple_radioButton->setChecked(true);
-    adv_radioButton = new QRadioButton(tr("Advanced Trigger"), _widget);
+    _simple_radioButton = new QRadioButton(_widget);
+    _simple_radioButton->setChecked(true);
+    _adv_radioButton = new QRadioButton(_widget);
 
-    position_label = new QLabel(tr("Trigger Position: "), _widget);
-    position_spinBox = new QSpinBox(_widget);
-    position_spinBox->setRange(MinTrigPosition, DS_MAX_TRIG_PERCENT);
-    position_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    position_slider = new QSlider(Qt::Horizontal, _widget);
-    position_slider->setRange(MinTrigPosition, DS_MAX_TRIG_PERCENT);
-    connect(position_slider, SIGNAL(valueChanged(int)), position_spinBox, SLOT(setValue(int)));
-    connect(position_spinBox, SIGNAL(valueChanged(int)), position_slider, SLOT(setValue(int)));
+    _position_label = new QLabel(_widget);
+    _position_spinBox = new QSpinBox(_widget);
+    _position_spinBox->setRange(MinTrigPosition, DS_MAX_TRIG_PERCENT);
+    _position_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
+    _position_slider = new QSlider(Qt::Horizontal, _widget);
+    _position_slider->setRange(MinTrigPosition, DS_MAX_TRIG_PERCENT);
+    connect(_position_slider, SIGNAL(valueChanged(int)), _position_spinBox, SLOT(setValue(int)));
+    connect(_position_spinBox, SIGNAL(valueChanged(int)), _position_slider, SLOT(setValue(int)));
 
-    stages_label = new QLabel(tr("Total Trigger Stages: "), _widget);
-    stages_label->setDisabled(true);
+    _stages_label = new QLabel(_widget);
+    _stages_label->setDisabled(true);
     stages_comboBox = new QComboBox(_widget);
     for (i = 1; i <= TriggerStages; i++)
         stages_comboBox->addItem(QString::number(i));
     //stages_comboBox->setCurrentIndex(stages_comboBox->count() - 1);
     stages_comboBox->setDisabled(true);
 
-    stage_tabWidget = new QTabWidget(_widget);
-    stage_tabWidget->setTabPosition(QTabWidget::East);
-    //stage_tabWidget->setDisabled(true);
-    stage_tabWidget->setUsesScrollButtons(false);
+    _stage_tabWidget = new QTabWidget(_widget);
+    _stage_tabWidget->setTabPosition(QTabWidget::East);
+    //_stage_tabWidget->setDisabled(true);
+    _stage_tabWidget->setUsesScrollButtons(false);
 
     QRegExp value_rx("[10XRFCxrfc ]+");
     QValidator *value_validator = new QRegExpValidator(value_rx, _widget);
@@ -117,8 +117,10 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
         _contiguous_checkbox_list.push_back(_contiguous_checkbox);
 
         QLabel *value_exp_label = new QLabel("1 1 1 1 1 1\n5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 ", _widget);
-        QLabel *inv_exp_label = new QLabel(tr("Inv"), _widget);
-        QLabel *count_exp_label = new QLabel(tr("Counter"), _widget);
+        QLabel *inv_exp_label = new QLabel(_widget);
+        _inv_exp_label_list.push_back(inv_exp_label);
+        QLabel *count_exp_label = new QLabel(_widget);
+        _count_exp_label_list.push_back(count_exp_label);
         value_exp_label->setFont(font);
 
         QVBoxLayout *stage_layout = new QVBoxLayout();
@@ -135,28 +137,32 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
 
         stage_glayout->addWidget(new QLabel(_widget), 4, 0);
 
-        stage_glayout->addWidget(new QLabel(tr("Contiguous")), 5, 1, 1, 2);
+        QLabel *contiguous_label = new QLabel(_widget);
+        _contiguous_label_list.push_back(contiguous_label);
+        stage_glayout->addWidget(contiguous_label, 5, 1, 1, 2);
         stage_glayout->addWidget(_contiguous_checkbox, 5, 0, 1, 1, Qt::AlignRight);
         stage_glayout->addWidget(count_exp_label, 6, 1, 1, 2);
         stage_glayout->addWidget(_count_spinBox, 6, 0);
 
         stage_layout->addLayout(stage_glayout);
         stage_layout->addSpacing(20);
-        stage_layout->addWidget(new QLabel(tr("X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge")));
+        QLabel *stage_note_label = new QLabel(_widget);
+        _stage_note_label_list.push_back(stage_note_label);
+        stage_layout->addWidget(stage_note_label);
         stage_layout->addStretch(1);
 
-        QGroupBox *_stage_groupBox = new QGroupBox(tr("Stage")+QString::number(i), _widget);
-        _stage_groupBox->setFlat(true);
-        _stage_groupBox->setLayout(stage_layout);
-        _stage_groupBox_list.push_back(_stage_groupBox);
+        QGroupBox *stage_groupBox = new QGroupBox(_widget);
+        stage_groupBox->setFlat(true);
+        stage_groupBox->setLayout(stage_layout);
+        _stage_groupBox_list.push_back(stage_groupBox);
 
-        stage_tabWidget->addTab((QWidget *)_stage_groupBox, QString::number(i));
+        _stage_tabWidget->addTab((QWidget *)stage_groupBox, QString::number(i));
 
         connect(_value0_lineEdit, SIGNAL(editingFinished()), this, SLOT(value_changed()));
         connect(_value1_lineEdit, SIGNAL(editingFinished()), this, SLOT(value_changed()));
     }
 
-    _serial_start_label = new QLabel(tr("Start Flag: "), _widget);
+    _serial_start_label = new QLabel(_widget);
     _serial_start_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", _widget);
     _serial_start_lineEdit->setFont(font);
     _serial_start_lineEdit->setValidator(value_validator);
@@ -164,7 +170,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
     _serial_start_lineEdit->setInputMask("X X X X X X X X X X X X X X X X");
     _serial_start_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
-    _serial_stop_label = new QLabel(tr("Stop Flag: "), _widget);
+    _serial_stop_label = new QLabel(_widget);
     _serial_stop_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", _widget);
     _serial_stop_lineEdit->setFont(font);
     _serial_stop_lineEdit->setValidator(value_validator);
@@ -172,7 +178,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
     _serial_stop_lineEdit->setInputMask("X X X X X X X X X X X X X X X X");
     _serial_stop_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
-    _serial_edge_label = new QLabel(tr("Clock Flag: "), _widget);
+    _serial_edge_label = new QLabel(_widget);
     _serial_edge_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", _widget);
     _serial_edge_lineEdit->setFont(font);
     _serial_edge_lineEdit->setValidator(value_validator);
@@ -180,12 +186,12 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
     _serial_edge_lineEdit->setInputMask("X X X X X X X X X X X X X X X X");
     _serial_edge_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
-    _serial_data_lable = new QLabel(tr("Data Channel: "), _widget);
+    _serial_data_label = new QLabel(_widget);
     _serial_data_comboBox = new QComboBox(_widget);
     for(i = 0; i < TriggerProbes; i++)
         _serial_data_comboBox->addItem(QString::number(i));
 
-    _serial_value_lable = new QLabel(tr("Data Value: "), _widget);
+    _serial_value_label = new QLabel(_widget);
     _serial_value_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", _widget);
     _serial_value_lineEdit->setFont(font);
     _serial_value_lineEdit->setValidator(value_validator);
@@ -213,19 +219,21 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
     serial_glayout->addWidget(_serial_edge_lineEdit, 4, 1, 1, 3);
 
     serial_glayout->addWidget(new QLabel(_widget), 5, 0, 1, 5);
-    serial_glayout->addWidget(_serial_data_lable, 6, 0);
+    serial_glayout->addWidget(_serial_data_label, 6, 0);
     serial_glayout->addWidget(_serial_data_comboBox, 6, 1);
-    serial_glayout->addWidget(new QLabel(tr("Data Bits"), _widget), 7, 0);
+    _data_bits_label = new QLabel(_widget);
+    serial_glayout->addWidget(_data_bits_label, 7, 0);
     serial_glayout->addWidget(_serial_bits_comboBox, 7, 1);
-    serial_glayout->addWidget(_serial_value_lable, 8, 0);
+    serial_glayout->addWidget(_serial_value_label, 8, 0);
     serial_glayout->addWidget(_serial_value_lineEdit, 8, 1, 1, 3);
 
+    _serial_note_label = new QLabel(_widget);
     serial_layout->addLayout(serial_glayout);
     serial_layout->addSpacing(20);
-    serial_layout->addWidget(new QLabel(tr("X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge")));
+    serial_layout->addWidget(_serial_note_label);
     serial_layout->addStretch(1);
 
-    _serial_groupBox = new QGroupBox(tr("Serial Trigger"), _widget);
+    _serial_groupBox = new QGroupBox(_widget);
     _serial_groupBox->setFlat(true);
     _serial_groupBox->setLayout(serial_layout);
     //_serial_groupBox->setDisabled(true);
@@ -239,24 +247,24 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
     _adv_tabWidget = new QTabWidget(_widget);
     _adv_tabWidget->setTabPosition(QTabWidget::North);
     _adv_tabWidget->setDisabled(true);
-    _adv_tabWidget->addTab((QWidget *)stage_tabWidget, tr("Stage Trigger"));
+    _adv_tabWidget->addTab((QWidget *)_stage_tabWidget, tr("Stage Trigger"));
     _adv_tabWidget->addTab((QWidget *)_serial_groupBox, tr("Serial Trigger"));
 
-    connect(simple_radioButton, SIGNAL(clicked()), this, SLOT(simple_trigger()));
-    connect(adv_radioButton, SIGNAL(clicked()), this, SLOT(adv_trigger()));
+    connect(_simple_radioButton, SIGNAL(clicked()), this, SLOT(simple_trigger()));
+    connect(_adv_radioButton, SIGNAL(clicked()), this, SLOT(adv_trigger()));
     connect(stages_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(widget_enable(int)));
 
 
     QVBoxLayout *layout = new QVBoxLayout(_widget);
     QGridLayout *gLayout = new QGridLayout();
     gLayout->setVerticalSpacing(5);
-    gLayout->addWidget(simple_radioButton, 0, 0);
-    gLayout->addWidget(adv_radioButton, 1, 0);
-    gLayout->addWidget(position_label, 2, 0);
-    gLayout->addWidget(position_spinBox, 2, 1);
+    gLayout->addWidget(_simple_radioButton, 0, 0);
+    gLayout->addWidget(_adv_radioButton, 1, 0);
+    gLayout->addWidget(_position_label, 2, 0);
+    gLayout->addWidget(_position_spinBox, 2, 1);
     gLayout->addWidget(new QLabel(tr("%"), _widget), 2, 2);
-    gLayout->addWidget(position_slider, 3, 0, 1, 3);
-    gLayout->addWidget(stages_label, 4, 0);
+    gLayout->addWidget(_position_slider, 3, 0, 1, 3);
+    gLayout->addWidget(_stages_label, 4, 0);
     gLayout->addWidget(stages_comboBox, 4, 1);
     gLayout->addWidget(new QLabel(_widget), 4, 2);
     gLayout->setColumnStretch(2, 1);
@@ -269,10 +277,60 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
     this->setWidget(_widget);
     //_widget->setGeometry(0, 0, sizeHint().width(), 1000);
     _widget->setObjectName("triggerWidget");
+
+    retranslateUi();
 }
 
 TriggerDock::~TriggerDock()
 {
+}
+
+void TriggerDock::changeEvent(QEvent *event)
+{
+    if (event->type() == QEvent::LanguageChange)
+        retranslateUi();
+    else if (event->type() == QEvent::StyleChange)
+        reStyle();
+    QScrollArea::changeEvent(event);
+}
+
+void TriggerDock::retranslateUi()
+{
+    _simple_radioButton->setText(tr("Simple Trigger"));
+    _adv_radioButton->setText(tr("Advanced Trigger"));
+    _position_label->setText(tr("Trigger Position: "));
+    _stages_label->setText(tr("Total Trigger Stages: "));
+    _serial_start_label->setText(tr("Start Flag: "));
+    _serial_stop_label->setText(tr("Stop Flag: "));
+    _serial_edge_label->setText(tr("Clock Flag: "));
+    _serial_data_label->setText(tr("Data Channel: "));
+    _serial_value_label->setText(tr("Data Value: "));
+    _serial_groupBox->setTitle(tr("Serial Trigger"));
+
+    _adv_tabWidget->setTabText(0, tr("Stage Trigger"));
+    _adv_tabWidget->setTabText(1, tr("Serial Trigger"));
+    _serial_note_label->setText(tr("X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge"));
+    _data_bits_label->setText(tr("Data Bits"));
+
+    for (int i = 0; i < _inv_exp_label_list.length(); i++)
+        _inv_exp_label_list.at(i)->setText(tr("Inv"));
+
+    for (int i = 0; i < _count_exp_label_list.length(); i++)
+        _count_exp_label_list.at(i)->setText(tr("Counter"));
+
+    for (int i = 0; i < _contiguous_label_list.length(); i++)
+        _contiguous_label_list.at(i)->setText(tr("Contiguous"));
+
+    for (int i = 0; i < _stage_groupBox_list.length(); i++)
+        _stage_groupBox_list.at(i)->setTitle(tr("Stage")+QString::number(i));
+
+    for (int i = 0; i < _stage_note_label_list.length(); i++)
+        _stage_note_label_list.at(i)->setText(tr("X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge"));
+}
+
+void TriggerDock::reStyle()
+{
+    //QString iconPath = ":/icons/" + qApp->property("Style").toString();
 }
 
 void TriggerDock::paintEvent(QPaintEvent *)
@@ -285,7 +343,7 @@ void TriggerDock::paintEvent(QPaintEvent *)
 
 void TriggerDock::simple_trigger()
 {
-    stages_label->setDisabled(true);
+    _stages_label->setDisabled(true);
     stages_comboBox->setDisabled(true);
     _adv_tabWidget->setDisabled(true);
 }
@@ -306,7 +364,7 @@ void TriggerDock::adv_trigger()
             msg.mBox()->setStandardButtons(QMessageBox::Ok);
             msg.mBox()->setIcon(QMessageBox::Warning);
             msg.exec();
-            simple_radioButton->setChecked(true);
+            _simple_radioButton->setChecked(true);
         } else {
             widget_enable(0);
         }
@@ -317,7 +375,7 @@ void TriggerDock::adv_trigger()
         msg.mBox()->setStandardButtons(QMessageBox::Ok);
         msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
-        simple_radioButton->setChecked(true);
+        _simple_radioButton->setChecked(true);
     }
 }
 
@@ -327,16 +385,16 @@ void TriggerDock::widget_enable(int index)
 
     int i;
     int enable_stages;
-    stages_label->setDisabled(false);
+    _stages_label->setDisabled(false);
     stages_comboBox->setVisible(true);
     stages_comboBox->setDisabled(false);
     _adv_tabWidget->setDisabled(false);
     enable_stages = stages_comboBox->currentText().toInt();
     for (i = 0; i < enable_stages; i++) {
-        stage_tabWidget->setTabEnabled(i, true);
+        _stage_tabWidget->setTabEnabled(i, true);
     }
     for (i = enable_stages; i < TriggerStages; i++) {
-          stage_tabWidget->setTabEnabled(i, false);
+          _stage_tabWidget->setTabEnabled(i, false);
     }
 }
 
@@ -373,12 +431,12 @@ void TriggerDock::device_updated()
                 maxRange = DS_MAX_TRIG_PERCENT;
             else
                 maxRange = ceil(hw_depth * DS_MAX_TRIG_PERCENT / sample_limits);
-            position_spinBox->setRange(MinTrigPosition, maxRange);
-            position_slider->setRange(MinTrigPosition, maxRange);
+            _position_spinBox->setRange(MinTrigPosition, maxRange);
+            _position_slider->setRange(MinTrigPosition, maxRange);
 
             if (_session.get_device()->name().contains("virtual") ||
                 stream) {
-                simple_radioButton->setChecked(true);
+                _simple_radioButton->setChecked(true);
                 simple_trigger();
             }
         }
@@ -388,10 +446,10 @@ void TriggerDock::device_updated()
 bool TriggerDock::commit_trigger()
 {
     // trigger position update
-    ds_trigger_set_pos(position_slider->value());
+    ds_trigger_set_pos(_position_slider->value());
 
     // trigger mode update
-    if (simple_radioButton->isChecked()) {
+    if (_simple_radioButton->isChecked()) {
         ds_trigger_set_mode(SIMPLE_TRIGGER);
         return 0;
     } else {
@@ -477,14 +535,14 @@ void TriggerDock::init()
 {
     // TRIGGERPOS
     //uint16_t pos = ds_trigger_get_pos();
-    //position_slider->setValue(pos);
+    //_position_slider->setValue(pos);
 }
 
 QJsonObject TriggerDock::get_session()
 {
     QJsonObject trigSes;
-    trigSes["advTriggerMode"] = adv_radioButton->isChecked();
-    trigSes["triggerPos"] = position_slider->value();
+    trigSes["advTriggerMode"] = _adv_radioButton->isChecked();
+    trigSes["triggerPos"] = _position_slider->value();
     trigSes["triggerStages"] = stages_comboBox->currentIndex();
     trigSes["triggerTab"] = _adv_tabWidget->currentIndex();
 
@@ -520,13 +578,13 @@ QJsonObject TriggerDock::get_session()
 
 void TriggerDock::set_session(QJsonObject ses)
 {
-    position_slider->setValue(ses["triggerPos"].toDouble());
+    _position_slider->setValue(ses["triggerPos"].toDouble());
     stages_comboBox->setCurrentIndex(ses["triggerStages"].toDouble());
     _adv_tabWidget->setCurrentIndex(ses["triggerTab"].toDouble());
     if (ses["advTriggerMode"].toBool())
-        adv_radioButton->click();
+        _adv_radioButton->click();
     else
-        simple_radioButton->click();
+        _simple_radioButton->click();
 
     for (int i = 0; i < stages_comboBox->count(); i++) {
         QString value0_str = "stageTriggerValue0" + QString::number(i);

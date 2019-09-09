@@ -14,8 +14,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
@@ -65,7 +64,7 @@ BIT_CTRLSTAT_ORUNDETECT = 1
 ANNOTATIONS = ['reset', 'enable', 'read', 'write', 'ack', 'data', 'parity']
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'swd'
     name = 'SWD'
     longname = 'Serial Wire Debug'
@@ -73,6 +72,7 @@ class Decoder(srd.Decoder):
     license = 'gplv2+'
     inputs = ['logic']
     outputs = ['swd']
+    tags = ['Debug/trace']
     channels = (
         {'id': 'swclk', 'name': 'SWCLK', 'desc': 'Master clock'},
         {'id': 'swdio', 'name': 'SWDIO', 'desc': 'Data input/output'},
@@ -93,9 +93,11 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         # SWD data/clock state
         self.state = 'UNKNOWN'
-        self.oldclk = -1
         self.sample_edge = RISING
         self.ack = None # Ack state of the current phase
         self.ss_req = 0 # Start sample of current req
@@ -142,12 +144,10 @@ class Decoder(srd.Decoder):
         }[(self.apdp, self.rw)]
         self.putp(ptype, (self.addr, self.data, self.ack))
 
-    def decode(self, ss, es, data):
-        for (self.samplenum, (clk, dio)) in data:
-            data.itercnt += 1
-            if clk == self.oldclk:
-                continue # Not a clock edge.
-            self.oldclk = clk
+    def decode(self):
+        while True:
+            # Wait for any clock edge.
+            (clk, dio) = self.wait({0: 'e'})
 
             # Count rising edges with DIO held high,
             # as a line reset (50+ high edges) can happen from any state.
@@ -201,15 +201,15 @@ class Decoder(srd.Decoder):
         elif self.state == 'DATA':
             self.state = 'DPARITY'
         elif self.state == 'DPARITY':
-            self.put_python_data()
+            #self.put_python_data()
             self.state = 'REQ'
             self.sample_edge = RISING
             self.turnaround = 1 if self.rw == 'R' else 0
 
     def reset_state(self):
         '''Line reset (or equivalent), wait for a new pending SWD request.'''
-        if self.state != 'REQ': # Emit a Python data item.
-            self.put_python_data()
+        #if self.state != 'REQ': # Emit a Python data item.
+        #    self.put_python_data()
         # Clear state.
         self.bits = ''
         self.samplenums = []

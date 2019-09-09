@@ -28,14 +28,10 @@
 
 extern struct ds_trigger *trigger;
 
-static const unsigned int single_buffer_time = 20;
-static const unsigned int total_buffer_time = 100;
-static const unsigned int instant_buffer_size = 1024 * 1024;
-static uint16_t test_init = 1;
-
 static const int32_t probeOptions[] = {
     SR_CONF_PROBE_COUPLING,
     SR_CONF_PROBE_VDIV,
+    SR_CONF_PROBE_MAP_DEFAULT,
     SR_CONF_PROBE_MAP_UNIT,
     SR_CONF_PROBE_MAP_MIN,
     SR_CONF_PROBE_MAP_MAX,
@@ -44,6 +40,7 @@ static const int32_t probeOptions[] = {
 static const int32_t probeSessions[] = {
     SR_CONF_PROBE_COUPLING,
     SR_CONF_PROBE_VDIV,
+    SR_CONF_PROBE_MAP_DEFAULT,
     SR_CONF_PROBE_MAP_UNIT,
     SR_CONF_PROBE_MAP_MIN,
     SR_CONF_PROBE_MAP_MAX,
@@ -71,44 +68,56 @@ static const char *probe_names[] = {
 };
 
 static struct sr_dev_mode mode_list[] = {
-    {"LA", LOGIC},
-    {"DAQ", ANALOG},
-    {"OSC", DSO},
+    {LOGIC, "Logic Analyzer", "逻辑分析仪", "la.png"},
+    {ANALOG, "Data Acquisition", "数据记录仪", "daq.png"},
+    {DSO, "Oscilloscope", "示波器", "osc.png"},
 };
 
 SR_PRIV void dsl_probe_init(struct sr_dev_inst *sdi)
 {
-    int i;
+    unsigned int i, j;
     GSList *l;
     struct DSL_context *devc = sdi->priv;
 
     for (l = sdi->channels; l; l = l->next) {
         struct sr_channel *probe = (struct sr_channel *)l->data;
+        probe->bits = channel_modes[devc->ch_mode].unit_bits;
         probe->vdiv = 1000;
         probe->vfactor = 1;
-        probe->vpos = 0;
+        probe->offset = (1 << (probe->bits - 1));
+        probe->hw_offset = (1 << (probe->bits - 1));
         probe->coupling = SR_DC_COUPLING;
-        probe->trig_value = 0x80;
+        probe->trig_value = (1 << (probe->bits - 1));
         probe->vpos_trans = devc->profile->dev_caps.default_pwmtrans;
-        probe->ms_show = TRUE;
-        for (i = DSO_MS_BEGIN; i < DSO_MS_END; i++)
-            probe->ms_en[i] = default_ms_en[i];
+        probe->comb_comp = devc->profile->dev_caps.default_comb_comp;
+
+        probe->map_default = TRUE;
         probe->map_unit = probeMapUnits[0];
-        probe->map_min = -1;
-        probe->map_max = 1;
-        if (devc->profile->dev_caps.vdivs &&
-            probe->vga_ptr == NULL) {
+        probe->map_min = -(probe->vdiv * probe->vfactor * DS_CONF_DSO_VDIVS / 2000.0);
+        probe->map_max = probe->vdiv * probe->vfactor * DS_CONF_DSO_VDIVS / 2000.0;
+        if (devc->profile->dev_caps.vdivs && probe->vga_ptr == NULL) {
             for (i = 0; devc->profile->dev_caps.vdivs[i]; i++);
             probe->vga_ptr = g_try_malloc((i+1)*sizeof(struct DSL_vga));
-            (probe->vga_ptr + i)->id = 0;
-            (probe->vga_ptr + i)->key = 0;
-            (probe->vga_ptr + i)->vgain = 0;
-            (probe->vga_ptr + i)->voff = 0;
-            (probe->vga_ptr + i)->voff_comp = 0;
+
             for (i = 0; devc->profile->dev_caps.vdivs[i]; i++) {
                 (probe->vga_ptr + i)->id = devc->profile->dev_caps.vga_id;
                 (probe->vga_ptr + i)->key = devc->profile->dev_caps.vdivs[i];
+                for (j = 0; j < ARRAY_SIZE(vga_defaults); j++) {
+                    if (vga_defaults[j].id == devc->profile->dev_caps.vga_id &&
+                        vga_defaults[j].key == devc->profile->dev_caps.vdivs[i]) {
+                        (probe->vga_ptr+i)->vgain = vga_defaults[j].vgain;
+                        (probe->vga_ptr+i)->preoff = vga_defaults[j].preoff;
+                        (probe->vga_ptr + i)->preoff_comp = 0;
+                    }
+                }
             }
+
+            // end flag must have
+            (probe->vga_ptr + i)->id = 0;
+            (probe->vga_ptr + i)->key = 0;
+            (probe->vga_ptr+i)->vgain = 0;
+            (probe->vga_ptr+i)->preoff = 0;
+            (probe->vga_ptr + i)->preoff_comp = 0;
         }
     }
 }
@@ -177,23 +186,28 @@ SR_PRIV const GSList *dsl_mode_list(const struct sr_dev_inst *sdi)
 
 SR_PRIV void dsl_adjust_samplerate(struct DSL_context *devc)
 {
-    devc->samplerates_max_index = ARRAY_SIZE(samplerates) - 1;
-    while (samplerates[devc->samplerates_max_index] >
-           channel_modes[devc->ch_mode].max_samplerate)
-        devc->samplerates_max_index--;
+    int i;
+    for (i = 0; devc->profile->dev_caps.samplerates[i]; i++) {
+        if (devc->profile->dev_caps.samplerates[i] >
+                channel_modes[devc->ch_mode].max_samplerate)
+            break;
+    }
+    devc->samplerates_max_index = i-1;
 
-    devc->samplerates_min_index = 0;
-    while (samplerates[devc->samplerates_min_index] <
-           channel_modes[devc->ch_mode].min_samplerate)
-        devc->samplerates_min_index++;
+    for (i = 0; devc->profile->dev_caps.samplerates[i]; i++) {
+        if (devc->profile->dev_caps.samplerates[i] >=
+                channel_modes[devc->ch_mode].min_samplerate)
+            break;
+    }
+    devc->samplerates_min_index = i;
 
     assert(devc->samplerates_max_index >= devc->samplerates_min_index);
 
-    if (devc->cur_samplerate > samplerates[devc->samplerates_max_index])
-        devc->cur_samplerate = samplerates[devc->samplerates_max_index];
+    if (devc->cur_samplerate > devc->profile->dev_caps.samplerates[devc->samplerates_max_index])
+        devc->cur_samplerate = devc->profile->dev_caps.samplerates[devc->samplerates_max_index];
 
-    if (devc->cur_samplerate < samplerates[devc->samplerates_min_index])
-        devc->cur_samplerate = samplerates[devc->samplerates_min_index];
+    if (devc->cur_samplerate < devc->profile->dev_caps.samplerates[devc->samplerates_min_index])
+        devc->cur_samplerate = devc->profile->dev_caps.samplerates[devc->samplerates_min_index];
 }
 
 SR_PRIV int dsl_en_ch_num(const struct sr_dev_inst *sdi)
@@ -452,37 +466,55 @@ SR_PRIV int dsl_rd_reg(const struct sr_dev_inst *sdi, uint8_t addr, uint8_t *val
 
 SR_PRIV int dsl_wr_ext(const struct sr_dev_inst *sdi, uint8_t addr, uint8_t value)
 {
+    struct sr_usb_dev_inst *usb;
+    struct libusb_device_handle *hdl;
+    struct ctl_wr_cmd wr_cmd;
+    struct DSL_context *devc = sdi->priv;
     uint8_t rdata;
     int ret;
 
-    // write addr + wr
-    ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_TXR_OFF, EI2C_AWR);
-    ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STA | bmEI2C_WR);
-    // check done
-    ret = dsl_rd_reg(sdi, EI2C_ADDR+EI2C_SR_OFF, &rdata);
-    if (rdata & bmEI2C_RXNACK) {
-        ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STO | bmEI2C_WR);
-        return SR_ERR;
-    }
+    if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_POGOPIN) {
+        usb = sdi->conn;
+        hdl = usb->devhdl;
 
-    // write offset + wr
-    ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_TXR_OFF, addr);
-    ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_WR);
-    // check done
-    ret = dsl_rd_reg(sdi, EI2C_ADDR+EI2C_SR_OFF, &rdata);
-    if (rdata & bmEI2C_RXNACK) {
-        ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STO | bmEI2C_WR);
-        return SR_ERR;
-    }
+        wr_cmd.header.dest = DSL_CTL_I2C_EXT;
+        wr_cmd.header.offset = addr;
+        wr_cmd.header.size = 1;
+        wr_cmd.data[0] = value;
+        if ((ret = command_ctl_wr(hdl, wr_cmd)) != SR_OK) {
+            sr_err("Sent DSL_CTL_I2C_EXT command failed.");
+            return SR_ERR;
+        }
+    } else {
+        // write addr + wr
+        ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_TXR_OFF, EI2C_AWR);
+        ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STA | bmEI2C_WR);
+        // check done
+        ret = dsl_rd_reg(sdi, EI2C_ADDR+EI2C_SR_OFF, &rdata);
+        if (rdata & bmEI2C_RXNACK) {
+            ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STO | bmEI2C_WR);
+            return SR_ERR;
+        }
 
-    // write value + wr
-    ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_TXR_OFF, value);
-    ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STO | bmEI2C_WR);
-    // check done
-    ret = dsl_rd_reg(sdi, EI2C_ADDR+EI2C_SR_OFF, &rdata);
-    if (rdata & bmEI2C_RXNACK) {
+        // write offset + wr
+        ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_TXR_OFF, addr);
+        ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_WR);
+        // check done
+        ret = dsl_rd_reg(sdi, EI2C_ADDR+EI2C_SR_OFF, &rdata);
+        if (rdata & bmEI2C_RXNACK) {
+            ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STO | bmEI2C_WR);
+            return SR_ERR;
+        }
+
+        // write value + wr
+        ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_TXR_OFF, value);
         ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STO | bmEI2C_WR);
-        return SR_ERR;
+        // check done
+        ret = dsl_rd_reg(sdi, EI2C_ADDR+EI2C_SR_OFF, &rdata);
+        if (rdata & bmEI2C_RXNACK) {
+            ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STO | bmEI2C_WR);
+            return SR_ERR;
+        }
     }
 
     return ret;
@@ -490,46 +522,64 @@ SR_PRIV int dsl_wr_ext(const struct sr_dev_inst *sdi, uint8_t addr, uint8_t valu
 
 SR_PRIV int dsl_rd_ext(const struct sr_dev_inst *sdi, unsigned char *ctx, uint16_t addr, uint8_t len)
 {
+    struct sr_usb_dev_inst *usb;
+    struct libusb_device_handle *hdl;
+    struct ctl_rd_cmd rd_cmd;
+    struct DSL_context *devc = sdi->priv;
     uint8_t rdata;
     int ret;
 
-    // write addr + wr
-    ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_TXR_OFF, EI2C_AWR);
-    ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STA | bmEI2C_WR);
-    // check done
-    ret = dsl_rd_reg(sdi, EI2C_ADDR+EI2C_SR_OFF, &rdata);
-    if (rdata & bmEI2C_RXNACK) {
-        ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STO | bmEI2C_WR);
-        return SR_ERR;
-    }
+    if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_POGOPIN) {
+        usb = sdi->conn;
+        hdl = usb->devhdl;
 
-    // write offset + wr
-    ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_TXR_OFF, addr);
-    ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_WR);
-    // check done
-    ret = dsl_rd_reg(sdi, EI2C_ADDR+EI2C_SR_OFF, &rdata);
-    if (rdata & bmEI2C_RXNACK) {
-        ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STO | bmEI2C_WR);
-        return SR_ERR;
-    }
+        rd_cmd.header.dest = DSL_CTL_I2C_EXT;
+        rd_cmd.header.size = len;
+        rd_cmd.header.offset = addr;
+        rd_cmd.data = ctx;
+        if ((ret = command_ctl_rd(hdl, rd_cmd)) != SR_OK) {
+            sr_err("Sent DSL_CTL_I2C_EXT read command failed.");
+            return SR_ERR;
+        }
+    } else {
+        // write addr + wr
+        ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_TXR_OFF, EI2C_AWR);
+        ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STA | bmEI2C_WR);
+        // check done
+        ret = dsl_rd_reg(sdi, EI2C_ADDR+EI2C_SR_OFF, &rdata);
+        if (rdata & bmEI2C_RXNACK) {
+            ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STO | bmEI2C_WR);
+            return SR_ERR;
+        }
 
-    // write read addr + wr
-    ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_TXR_OFF, EI2C_ARD);
-    ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STA | bmEI2C_WR);
-    // check done
-    ret = dsl_rd_reg(sdi, EI2C_ADDR+EI2C_SR_OFF, &rdata);
-    if (rdata & bmEI2C_RXNACK) {
-        ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STO | bmEI2C_WR);
-        return SR_ERR;
-    }
+        // write offset + wr
+        ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_TXR_OFF, addr);
+        ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_WR);
+        // check done
+        ret = dsl_rd_reg(sdi, EI2C_ADDR+EI2C_SR_OFF, &rdata);
+        if (rdata & bmEI2C_RXNACK) {
+            ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STO | bmEI2C_WR);
+            return SR_ERR;
+        }
 
-    while(--len) {
-        ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_RD);
+        // write read addr + wr
+        ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_TXR_OFF, EI2C_ARD);
+        ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STA | bmEI2C_WR);
+        // check done
+        ret = dsl_rd_reg(sdi, EI2C_ADDR+EI2C_SR_OFF, &rdata);
+        if (rdata & bmEI2C_RXNACK) {
+            ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STO | bmEI2C_WR);
+            return SR_ERR;
+        }
+
+        while(--len) {
+            ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_RD);
+            ret = dsl_rd_reg(sdi, EI2C_ADDR+EI2C_RXR_OFF, ctx);
+            ctx++;
+        }
+        ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STO | bmEI2C_RD | bmEI2C_NACK);
         ret = dsl_rd_reg(sdi, EI2C_ADDR+EI2C_RXR_OFF, ctx);
-        ctx++;
     }
-    ret = dsl_wr_reg(sdi, EI2C_ADDR+EI2C_CR_OFF, bmEI2C_STO | bmEI2C_RD | bmEI2C_NACK);
-    ret = dsl_rd_reg(sdi, EI2C_ADDR+EI2C_RXR_OFF, ctx);
 
     return ret;
 }
@@ -609,6 +659,42 @@ SR_PRIV int dsl_rd_nvm(const struct sr_dev_inst *sdi, unsigned char *ctx, uint16
     return SR_OK;
 }
 
+SR_PRIV int dsl_config_adc(const struct sr_dev_inst *sdi, const struct DSL_adc_config *config)
+{
+    while(config->dest) {
+        assert((config->cnt > 0) && (config->cnt <= 4));
+        if (config->delay >0)
+            g_usleep(config->delay*1000);
+        for (int i = 0; i < config->cnt; i++) {
+            dsl_wr_reg(sdi, config->dest, config->byte[i]);
+        }
+        config++;
+    }
+    return SR_OK;
+}
+
+SR_PRIV int dsl_rd_probe(const struct sr_dev_inst *sdi, unsigned char *ctx, uint16_t addr, uint8_t len)
+{
+    struct sr_usb_dev_inst *usb;
+    struct libusb_device_handle *hdl;
+    struct ctl_rd_cmd rd_cmd;
+    int ret;
+
+    usb = sdi->conn;
+    hdl = usb->devhdl;
+
+    rd_cmd.header.dest = DSL_CTL_I2C_PROBE;
+    rd_cmd.header.size = len;
+    rd_cmd.header.offset = addr;
+    rd_cmd.data = ctx;
+    if ((ret = command_ctl_rd(hdl, rd_cmd)) != SR_OK) {
+        sr_err("Sent DSL_CTL_NVM read command failed.");
+        return SR_ERR;
+    }
+
+    return SR_OK;
+}
+
 SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
 {
     struct DSL_context *devc;
@@ -638,25 +724,12 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
     setting.trig_pos_header = 0x0502;
     setting.trig_glb_header = 0x0701;
     setting.ch_en_header = 0x0801;
+    setting.dso_count_header = 0x0902;
     setting.trig_header = 0x40a0;
     setting.end_sync = 0xfa5afa5a;
+    setting.misc_align = 0xffff;
 
     // basic configuration
-//    setting.mode = (trigger->trigger_en << TRIG_EN_BIT) +
-//                   (devc->clock_type << CLK_TYPE_BIT) +
-//                   (devc->clock_edge << CLK_EDGE_BIT) +
-//                   (devc->rle_mode << RLE_MODE_BIT) +
-//                   ((sdi->mode == DSO) << DSO_MODE_BIT) +
-//                   ((((devc->cur_samplerate == (2 * DSLOGIC_MAX_LOGIC_SAMPLERATE)) && sdi->mode != DSO) || (sdi->mode == ANALOG)) << HALF_MODE_BIT) +
-//                   ((devc->cur_samplerate == (4 * DSLOGIC_MAX_LOGIC_SAMPLERATE)) << QUAR_MODE_BIT) +
-//                   ((sdi->mode == ANALOG) << ANALOG_MODE_BIT) +
-//                   ((devc->filter == SR_FILTER_1T) << FILTER_BIT) +
-//                   (devc->instant << INSTANT_BIT) +
-//                   ((trigger->trigger_mode == SERIAL_TRIGGER) << STRIG_MODE_BIT) +
-//                   ((devc->stream) << STREAM_MODE_BIT) +
-//                   ((devc->op_mode == SR_OP_LA_LPTEST) << LPB_TEST_BIT) +
-//                   ((devc->op_mode == SR_OP_LA_EXTEST) << EXT_TEST_BIT) +
-//                   ((devc->op_mode == SR_OP_LA_INTEST) << INT_TEST_BIT);
     setting.mode = (trigger->trigger_en << TRIG_EN_BIT) +
                    (devc->clock_type << CLK_TYPE_BIT) +
                    (devc->clock_edge << CLK_EDGE_BIT) +
@@ -678,15 +751,21 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
                (sdi->mode == ANALOG) ? (uint32_t)ceil(channel_modes[devc->ch_mode].hw_max_samplerate * 1.0 / max(devc->cur_samplerate, channel_modes[devc->ch_mode].hw_min_samplerate)) :
                                        (uint32_t)ceil(channel_modes[devc->ch_mode].hw_max_samplerate * 1.0 / devc->cur_samplerate);
     devc->unit_pitch = ceil(channel_modes[devc->ch_mode].hw_min_samplerate * 1.0 / devc->cur_samplerate);
+    setting.div_h = ((tmp_u32 >= channel_modes[devc->ch_mode].pre_div) ? channel_modes[devc->ch_mode].pre_div - 1U : tmp_u32 - 1U) << 8;
+    tmp_u32 = (uint32_t)ceil(tmp_u32 * 1.0 / channel_modes[devc->ch_mode].pre_div);
     setting.div_l = tmp_u32 & 0x0000ffff;
-    setting.div_h = tmp_u32 >> 16;
+    setting.div_h += tmp_u32 >> 16;
 
     // capture counter
     tmp_u64 = (sdi->mode == DSO) ? (devc->actual_samples / (channel_modes[devc->ch_mode].num / ch_num)) :
-                                   (devc->limit_samples);
+                                   (devc->actual_samples);
     tmp_u64 >>= 4; // hardware minimum unit 64
     setting.cnt_l = tmp_u64 & 0x0000ffff;
     setting.cnt_h = tmp_u64 >> 16;
+    tmp_u64 = (sdi->mode == DSO) ? (devc->limit_samples / (channel_modes[devc->ch_mode].num / ch_num)) :
+                                   (devc->actual_samples);
+    setting.dso_cnt_l = tmp_u64 & 0x0000ffff;
+    setting.dso_cnt_h = tmp_u64 >> 16;
 
     // trigger position
     // must be align to minimum parallel bits
@@ -842,13 +921,15 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
         }
     }
 
-    // set GPIF to be wordwide
-    wr_cmd.header.dest = DSL_CTL_WORDWIDE;
-    wr_cmd.header.size = 1;
-    wr_cmd.data[0] = bmWR_WORDWIDE;
-    if ((ret = command_ctl_wr(hdl, wr_cmd)) != SR_OK) {
-        sr_err("Sent DSL_CTL_WORDWIDE command failed.");
-        return SR_ERR;
+    if (!(devc->profile->dev_caps.feature_caps & CAPS_FEATURE_USB30)) {
+        // set GPIF to be wordwide
+        wr_cmd.header.dest = DSL_CTL_WORDWIDE;
+        wr_cmd.header.size = 1;
+        wr_cmd.data[0] = bmWR_WORDWIDE;
+        if ((ret = command_ctl_wr(hdl, wr_cmd)) != SR_OK) {
+            sr_err("Sent DSL_CTL_WORDWIDE command failed.");
+            return SR_ERR;
+        }
     }
 
     // send bulk write control command
@@ -862,7 +943,17 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
         sr_err("Sent bulk write command of arm FPGA failed.");
         return SR_ERR;
     }
-    //command_fpga_setting(hdl, arm_size);
+    // check sys_clr dessert
+    rd_cmd.header.dest = DSL_CTL_HW_STATUS;
+    rd_cmd.header.size = 1;
+    rd_cmd_data = 0;
+    rd_cmd.data = &rd_cmd_data;
+    while(1) {
+        if ((ret = command_ctl_rd(hdl, rd_cmd)) != SR_OK)
+            return SR_ERR;
+        if (rd_cmd_data & bmSYS_CLR)
+            break;
+    }
 
     // send bulk data
     ret = libusb_bulk_transfer(hdl, 2 | LIBUSB_ENDPOINT_OUT,
@@ -965,13 +1056,6 @@ SR_PRIV int dsl_fpga_config(struct libusb_device_handle *hdl, const char *filena
     }
 
 	// step4: send config ctl command
-    wr_cmd.header.dest = DSL_CTL_WORDWIDE;
-    wr_cmd.header.size = 1;
-    wr_cmd.data[0] = ~bmWR_WORDWIDE;
-    if ((ret = command_ctl_wr(hdl, wr_cmd)) != SR_OK) {
-        sr_err("Sent DSL_CTL_WORDWIDE command failed.");
-        return SR_ERR;
-    }
     wr_cmd.header.dest = DSL_CTL_INTRDY;
     wr_cmd.header.size = 1;
     wr_cmd.data[0] = (uint8_t)~bmWR_INTRDY;
@@ -1039,17 +1123,24 @@ SR_PRIV int dsl_fpga_config(struct libusb_device_handle *hdl, const char *filena
     rd_cmd.header.size = 1;
 	rd_cmd_data = 0;
     rd_cmd.data = &rd_cmd_data;
-    if ((ret = command_ctl_rd(hdl, rd_cmd)) != SR_OK)
-		return SR_ERR;
-    if (rd_cmd_data & bmFPGA_DONE) {
-        // step10: turn on GREEN led
-        wr_cmd.header.dest = DSL_CTL_LED;
-        wr_cmd.data[0] = bmLED_GREEN;
-        if ((ret = command_ctl_wr(hdl, wr_cmd)) != SR_OK)
-			return SR_ERR;
-	} else {
-		return SR_ERR;
-	}
+    while ((ret = command_ctl_rd(hdl, rd_cmd)) == SR_OK) {
+        if (rd_cmd_data & bmFPGA_DONE) {
+            // step10: turn on GREEN led
+            wr_cmd.header.dest = DSL_CTL_LED;
+            wr_cmd.data[0] = bmLED_GREEN;
+            if ((ret = command_ctl_wr(hdl, wr_cmd)) == SR_OK)
+                break;
+        }
+    }
+
+    // step10: recover GPIF to be wordwide
+    wr_cmd.header.dest = DSL_CTL_WORDWIDE;
+    wr_cmd.header.size = 1;
+    wr_cmd.data[0] = bmWR_WORDWIDE;
+    if ((ret = command_ctl_wr(hdl, wr_cmd)) != SR_OK) {
+        sr_err("Sent DSL_CTL_WORDWIDE command failed.");
+        return SR_ERR;
+    }
 
     sr_info("FPGA configure done: %d bytes.", chunksize);
     return SR_OK;
@@ -1066,6 +1157,11 @@ SR_PRIV int dsl_config_get(int id, GVariant **data, const struct sr_dev_inst *sd
     (void)cg;
 
     switch (id) {
+    case SR_CONF_LANGUAGE:
+        if (!sdi)
+            return SR_ERR;
+        *data = g_variant_new_int16(devc->language);
+        break;
     case SR_CONF_CONN:
         if (!sdi || !sdi->conn)
             return SR_ERR_ARG;
@@ -1117,10 +1213,15 @@ SR_PRIV int dsl_config_get(int id, GVariant **data, const struct sr_dev_inst *sd
             return SR_ERR;
         *data = g_variant_new_uint64(ch->vfactor);
         break;
-    case SR_CONF_PROBE_VPOS:
+    case SR_CONF_PROBE_OFFSET:
         if (!ch)
             return SR_ERR;
-        *data = g_variant_new_double(ch->vpos);
+        *data = g_variant_new_uint16(ch->offset);
+        break;
+    case SR_CONF_PROBE_HW_OFFSET:
+        if (!ch)
+            return SR_ERR;
+        *data = g_variant_new_uint16(ch->hw_offset);
         break;
     case SR_CONF_TIMEBASE:
         if (!sdi)
@@ -1209,6 +1310,21 @@ SR_PRIV int dsl_config_get(int id, GVariant **data, const struct sr_dev_inst *sd
             return SR_ERR;
         *data = g_variant_new_byte(channel_modes[devc->ch_mode].unit_bits);
         break;
+    case SR_CONF_REF_MIN:
+        if (!sdi)
+            return SR_ERR;
+        *data = g_variant_new_uint32(devc->profile->dev_caps.ref_min);
+        break;
+    case SR_CONF_REF_MAX:
+        if (!sdi)
+            return SR_ERR;
+        *data = g_variant_new_uint32(devc->profile->dev_caps.ref_max);
+        break;
+    case SR_CONF_PROBE_MAP_DEFAULT:
+        if (!sdi || !ch)
+            return SR_ERR;
+        *data = g_variant_new_boolean(ch->map_default);
+        break;
     case SR_CONF_PROBE_MAP_UNIT:
         if (!sdi || !ch)
             return SR_ERR;
@@ -1224,11 +1340,60 @@ SR_PRIV int dsl_config_get(int id, GVariant **data, const struct sr_dev_inst *sd
             return SR_ERR;
         *data = g_variant_new_double(ch->map_max);
         break;
+    case SR_CONF_ACTUAL_SAMPLES:
+        if (!sdi)
+            return SR_ERR;
+        *data = g_variant_new_uint64(devc->actual_samples);
+        break;
+    case SR_CONF_BANDWIDTH:
+        if (!sdi)
+            return SR_ERR;
+        *data = g_variant_new_boolean(devc->profile->dev_caps.feature_caps & CAPS_FEATURE_20M);
+        break;
     default:
         return SR_ERR_NA;
     }
 
     return SR_OK;
+}
+
+SR_PRIV int dsl_config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
+                      struct sr_channel *ch,
+                      struct sr_channel_group *cg )
+{
+    (void)cg;
+    struct DSL_context *devc = sdi->priv;
+    int ret = SR_OK;
+
+    if (id == SR_CONF_LANGUAGE) {
+        devc->language = g_variant_get_int16(data);
+    } else if (id == SR_CONF_PROBE_MAP_DEFAULT) {
+        ch->map_default = g_variant_get_boolean(data);
+        if (ch->map_default) {
+            ch->map_unit = probeMapUnits[0];
+            ch->map_min = -(ch->vdiv * ch->vfactor * DS_CONF_DSO_VDIVS / 2000.0);
+            ch->map_max = ch->vdiv * ch->vfactor * DS_CONF_DSO_VDIVS / 2000.0;
+        }
+    } else if (id == SR_CONF_PROBE_MAP_UNIT) {
+        if (ch->map_default)
+            ch->map_unit = probeMapUnits[0];
+        else
+            ch->map_unit = g_variant_get_string(data, NULL);
+    } else if (id == SR_CONF_PROBE_MAP_MIN) {
+        if (ch->map_default)
+            ch->map_min = -(ch->vdiv * ch->vfactor * DS_CONF_DSO_VDIVS / 2000.0);
+        else
+            ch->map_min = g_variant_get_double(data);
+    } else if (id == SR_CONF_PROBE_MAP_MAX) {
+        if (ch->map_default)
+            ch->map_max = ch->vdiv * ch->vfactor * DS_CONF_DSO_VDIVS / 2000.0;
+        else
+            ch->map_max = g_variant_get_double(data);
+    } else {
+        ret = SR_ERR_NA;
+    }
+
+    return ret;
 }
 
 SR_PRIV int dsl_config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
@@ -1248,7 +1413,7 @@ SR_PRIV int dsl_config_list(int key, GVariant **data, const struct sr_dev_inst *
 //		gvar = g_variant_new_fixed_array(G_VARIANT_TYPE("t"), samplerates,
 //				ARRAY_SIZE(samplerates), sizeof(uint64_t));
         gvar = g_variant_new_from_data(G_VARIANT_TYPE("at"),
-               samplerates + devc->samplerates_min_index,
+               devc->profile->dev_caps.samplerates + devc->samplerates_min_index,
                (devc->samplerates_max_index - devc->samplerates_min_index + 1) * sizeof(uint64_t), TRUE, NULL, NULL);
         g_variant_builder_add(&gvb, "{sv}", "samplerates", gvar);
         *data = g_variant_builder_end(&gvb);
@@ -1445,14 +1610,27 @@ SR_PRIV int dsl_dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *
     return ret;
 }
 
+static unsigned int get_single_buffer_time(const struct DSL_context *devc)
+{
+    if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_USB30)
+        return 100;
+    else
+        return 20;
+}
+
+static unsigned int get_total_buffer_time(const struct DSL_context *devc)
+{
+    if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_USB30)
+        return 500;
+    else
+        return 100;
+}
+
 static unsigned int to_bytes_per_ms(struct DSL_context *devc)
 {
     struct sr_dev_inst *sdi = devc->cb_data;
     if (sdi->mode == LOGIC) {
-        if (devc->cur_samplerate > SR_MHZ(100))
-            return SR_MHZ(100) / 1000 * dsl_en_ch_num(sdi) / 8;
-        else
-            return ceil(devc->cur_samplerate / 1000.0 * dsl_en_ch_num(sdi) / 8);
+        return ceil(devc->cur_samplerate / 1000.0 * dsl_en_ch_num(sdi) / 8);
     } else {
         if (devc->cur_samplerate > SR_MHZ(100))
             return SR_MHZ(100) / 1000.0 * dsl_en_ch_num(sdi);
@@ -1461,24 +1639,47 @@ static unsigned int to_bytes_per_ms(struct DSL_context *devc)
     }
 }
 
-static size_t get_buffer_size(struct DSL_context *devc)
+SR_PRIV int dsl_header_size(const struct DSL_context *devc)
+{
+    int size;
+
+    if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_USB30)
+        size = SR_KB(1);
+    else
+        size = SR_B(512);
+    return size;
+}
+
+static size_t get_buffer_size(const struct sr_dev_inst *sdi)
 {
     size_t s;
+    struct DSL_context *devc;
+    devc = sdi->priv;
 
     /*
      * The buffer should be large enough to hold 10ms of data and
      * a multiple of 512.
      */
-    s = single_buffer_time * to_bytes_per_ms(devc);
-    //s = to_bytes_per_ms(devc->cur_samplerate);
-    return (s + 511) & ~511;
+    if (sdi->mode == DSO) {
+        s = (devc->instant) ? devc->profile->dev_caps.dso_depth : devc->actual_samples * dsl_en_ch_num(sdi) + dsl_header_size(devc);
+    } else {
+        s = (devc->stream) ? get_single_buffer_time(devc) * to_bytes_per_ms(devc) : 1024*1024;
+    }
+    return (s + 511ULL) & ~511ULL;
 }
 
-static unsigned int get_number_of_transfers(struct DSL_context *devc)
+static unsigned int get_number_of_transfers(const struct sr_dev_inst *sdi)
 {
     unsigned int n;
+    struct DSL_context *devc;
+    devc = sdi->priv;
+
+    #ifndef _WIN32
     /* Total buffer size should be able to hold about 100ms of data. */
-    n = ceil(total_buffer_time * 1.0f * to_bytes_per_ms(devc) / get_buffer_size(devc));
+    n = (devc->stream) ? ceil(get_total_buffer_time(devc) * 1.0f * to_bytes_per_ms(devc) / get_buffer_size(sdi)) : 1;
+    #else
+    n = (devc->stream) ? ceil(get_total_buffer_time(devc) * 1.0f * to_bytes_per_ms(devc) / get_buffer_size(sdi)) : 4;
+    #endif
 
     if (n > NUM_SIMUL_TRANSFERS)
         return NUM_SIMUL_TRANSFERS;
@@ -1486,12 +1687,14 @@ static unsigned int get_number_of_transfers(struct DSL_context *devc)
     return n;
 }
 
-SR_PRIV unsigned int dsl_get_timeout(struct DSL_context *devc)
+SR_PRIV unsigned int dsl_get_timeout(const struct sr_dev_inst *sdi)
 {
     size_t total_size;
     unsigned int timeout;
+    struct DSL_context *devc;
+    devc = sdi->priv;
 
-    total_size = get_buffer_size(devc) * get_number_of_transfers(devc);
+    total_size = get_buffer_size(sdi) * get_number_of_transfers(sdi);
     timeout = total_size / to_bytes_per_ms(devc);
 
     if (devc->stream)
@@ -1554,6 +1757,59 @@ static void resubmit_transfer(struct libusb_transfer *transfer)
     sr_err("%s: %s", __func__, libusb_error_name(ret));
 }
 
+static void get_measure(const struct sr_dev_inst *sdi, uint8_t *buf, uint32_t offset)
+{
+    uint64_t u64_tmp;
+    struct DSL_context *devc = sdi->priv;
+
+    devc->mstatus.pkt_id = *((const uint16_t*)buf + offset);
+    devc->mstatus.vlen = *((const uint32_t*)buf + offset/2 + 2/2) & 0x0fffffff;
+    devc->mstatus.stream_mode = (*((const uint32_t*)buf + offset/2 + 2/2) & 0x80000000) != 0;
+    devc->mstatus.measure_valid = *((const uint32_t*)buf + offset/2 + 2/2) & 0x40000000;
+    devc->mstatus.sample_divider = *((const uint32_t*)buf + offset/2 + 4/2) & 0x0fffffff;
+    devc->mstatus.sample_divider_tog = (*((const uint32_t*)buf + offset/2 + 4/2) & 0x80000000) != 0;
+    devc->mstatus.trig_flag = (*((const uint32_t*)buf + offset/2 + 4/2) & 0x40000000) != 0;
+
+    devc->mstatus.ch0_max = *((const uint8_t*)buf + offset*2 + 33*2);
+    devc->mstatus.ch0_min = *((const uint8_t*)buf + offset*2 + 33*2+1);
+    devc->mstatus.ch0_cyc_cnt = *((const uint32_t*)buf + offset/2 + 34/2);
+    devc->mstatus.ch0_cyc_tlen = *((const uint32_t*)buf + offset/2 + 36/2);
+    devc->mstatus.ch0_cyc_plen = *((const uint32_t*)buf + offset/2 + 38/2);
+    devc->mstatus.ch0_cyc_llen = *((const uint32_t*)buf + offset/2 + 40/2);
+    devc->mstatus.ch0_level_valid = (*((const uint32_t*)buf + offset/2 + 42/2) & 0x00008000) != 0;
+    devc->mstatus.ch0_plevel = (*((const uint32_t*)buf + offset/2 + 42/2) & 0x00004000) != 0;
+    devc->mstatus.ch0_high_level = *((const uint8_t*)buf + offset*2 + 43*2);
+    devc->mstatus.ch0_low_level = *((const uint8_t*)buf + offset*2 + 43*2+1);
+    devc->mstatus.ch0_cyc_rlen = *((const uint32_t*)buf + offset/2 + 44/2);
+    devc->mstatus.ch0_cyc_flen = *((const uint32_t*)buf + offset/2 + 46/2);
+    devc->mstatus.ch0_acc_square = *((const uint64_t*)buf + offset/4 + 48/4);
+    devc->mstatus.ch0_acc_mean = *((const uint32_t*)buf + offset/2 + 52/2);
+
+    devc->mstatus.ch1_max = *((const uint8_t*)buf + offset*2 + 65*2);
+    devc->mstatus.ch1_min = *((const uint8_t*)buf + offset*2 + 65*2+1);
+    devc->mstatus.ch1_cyc_cnt = *((const uint32_t*)buf + offset/2 + 66/2);
+    devc->mstatus.ch1_cyc_tlen = *((const uint32_t*)buf + offset/2 + 68/2);
+    devc->mstatus.ch1_cyc_plen = *((const uint32_t*)buf + offset/2 + 70/2);
+    devc->mstatus.ch1_cyc_llen = *((const uint32_t*)buf + offset/2 + 72/2);
+    devc->mstatus.ch1_level_valid = (*((const uint32_t*)buf + offset/2 + 74/2) & 0x00008000) != 0;
+    devc->mstatus.ch1_plevel = (*((const uint32_t*)buf + offset/2 + 74/2) & 0x00004000) != 0;
+    devc->mstatus.ch1_high_level = *((const uint8_t*)buf + offset*2 + 75*2);
+    devc->mstatus.ch1_low_level = *((const uint8_t*)buf + offset*2 + 75*2+1);
+    devc->mstatus.ch1_cyc_rlen = *((const uint32_t*)buf + offset/2 + 76/2);
+    devc->mstatus.ch1_cyc_flen = *((const uint32_t*)buf + offset/2 + 78/2);
+    devc->mstatus.ch1_acc_square = *((const uint64_t*)buf + offset/4 + 80/4);
+    devc->mstatus.ch1_acc_mean = *((const uint32_t*)buf + offset/2 + 84/2);
+
+    if (1 == dsl_en_ch_num(sdi)) {
+        u64_tmp = devc->mstatus.ch0_acc_square + devc->mstatus.ch1_acc_square;
+        devc->mstatus.ch0_acc_square = u64_tmp;
+        devc->mstatus.ch1_acc_square = u64_tmp;
+        u64_tmp = devc->mstatus.ch0_acc_mean + devc->mstatus.ch1_acc_mean;
+        devc->mstatus.ch0_acc_mean = u64_tmp;
+        devc->mstatus.ch0_acc_mean = u64_tmp;
+    }
+}
+
 static void receive_transfer(struct libusb_transfer *transfer)
 {
     struct sr_datafeed_packet packet;
@@ -1599,39 +1855,24 @@ static void receive_transfer(struct libusb_transfer *transfer)
             logic.data = cur_buf;
         } else if (sdi->mode == DSO) {
             if (!devc->instant) {
-                const uint32_t mstatus_offset = devc->actual_samples / (channel_modes[devc->ch_mode].num/dsl_en_ch_num(sdi));
-                devc->mstatus.pkt_id = *((const uint16_t*)cur_buf + mstatus_offset);
-                devc->mstatus.ch0_max = *((const uint8_t*)cur_buf + mstatus_offset*2 + 1*2);
-                devc->mstatus.ch0_min = *((const uint8_t*)cur_buf + mstatus_offset*2 + 3);
-                devc->mstatus.ch0_period = *((const uint32_t*)cur_buf + mstatus_offset/2 + 2/2);
-                devc->mstatus.ch0_period += ((uint64_t)*((const uint32_t*)cur_buf + mstatus_offset/2 + 4/2)) << 32;
-                devc->mstatus.ch0_pcnt = *((const uint32_t*)cur_buf + mstatus_offset/2 + 6/2);
-                devc->mstatus.ch1_max = *((const uint8_t*)cur_buf + mstatus_offset*2 + 9*2);
-                devc->mstatus.ch1_min = *((const uint8_t*)cur_buf + mstatus_offset*2 + 19);
-                devc->mstatus.ch1_period = *((const uint32_t*)cur_buf + mstatus_offset/2 + 10/2);
-                devc->mstatus.ch1_period += ((uint64_t)*((const uint32_t*)cur_buf + mstatus_offset/2 + 12/2)) << 32;
-                devc->mstatus.ch1_pcnt = *((const uint32_t*)cur_buf + mstatus_offset/2 + 14/2);
-                devc->mstatus.vlen = *((const uint32_t*)cur_buf + mstatus_offset/2 + 16/2) & 0x7fffffff;
-                devc->mstatus.stream_mode = *((const uint32_t*)cur_buf + mstatus_offset/2 + 16/2) & 0x80000000;
-                devc->mstatus.sample_divider = *((const uint32_t*)cur_buf + mstatus_offset/2 + 18/2) & 0x0fffffff;
-                devc->mstatus.sample_divider_tog = *((const uint32_t*)cur_buf + mstatus_offset/2 + 18/2) & 0x80000000;
-                devc->mstatus.trig_flag = *((const uint32_t*)cur_buf + mstatus_offset/2 + 18/2) & 0x40000000;
+                const uint32_t offset = devc->actual_samples / (channel_modes[devc->ch_mode].num/dsl_en_ch_num(sdi));
+                get_measure(sdi, cur_buf, offset);
             } else {
-                devc->mstatus.vlen = instant_buffer_size;
+                devc->mstatus.vlen = get_buffer_size(sdi) / channel_modes[devc->ch_mode].num;
             }
 
             const uint32_t divider = devc->zero ? 0x1 : (uint32_t)ceil(channel_modes[devc->ch_mode].max_samplerate * 1.0 / devc->cur_samplerate / dsl_en_ch_num(sdi));
             if ((devc->mstatus.pkt_id == DSO_PKTID &&
                  devc->mstatus.sample_divider == divider &&
                  devc->mstatus.vlen != 0 &&
-                 devc->mstatus.vlen <= (uint32_t)(transfer->actual_length - 512) / 2) ||
+                 devc->mstatus.vlen <= (uint32_t)(transfer->actual_length - dsl_header_size(devc)) / 2) ||
                 devc->instant) {
                 devc->roll = (devc->mstatus.stream_mode != 0);
                 devc->mstatus_valid = devc->instant ? FALSE : TRUE;
                 packet.type = SR_DF_DSO;
                 packet.payload = &dso;
                 dso.probes = sdi->channels;
-                cur_sample_count = min(2 * devc->mstatus.vlen / dsl_en_ch_num(sdi), devc->limit_samples);
+                cur_sample_count = min(channel_modes[devc->ch_mode].num * devc->mstatus.vlen / dsl_en_ch_num(sdi), devc->limit_samples);
                 dso.num_samples = cur_sample_count;
                 dso.mq = SR_MQ_VOLTAGE;
                 dso.unit = SR_UNIT_VOLT;
@@ -1683,7 +1924,16 @@ static void receive_transfer(struct libusb_transfer *transfer)
         } else if ((sdi->mode == DSO && devc->instant) &&
                    devc->limit_samples &&
                    devc->num_samples >= devc->actual_samples) {
-            devc->status = DSL_STOP;
+            int over_bytes = (devc->num_samples - devc->actual_samples) * dsl_en_ch_num(sdi);
+            if (over_bytes >= devc->instant_tail_bytes) {
+                const uint32_t offset = (transfer->actual_length - over_bytes) / 2;
+                get_measure(sdi, cur_buf, offset);
+                if (devc->mstatus.pkt_id == DSO_PKTID)
+                    devc->mstatus_valid = TRUE;
+                devc->status = DSL_STOP;
+            } else {
+
+            }
         }
     }
 
@@ -1695,7 +1945,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
     devc->trf_completed = 1;
 }
 
-static void receive_trigger_pos(struct libusb_transfer *transfer)
+static void receive_header(struct libusb_transfer *transfer)
 {
     struct DSL_context *devc;
     struct sr_datafeed_packet packet;
@@ -1707,6 +1957,7 @@ static void receive_trigger_pos(struct libusb_transfer *transfer)
     devc = transfer->user_data;
     sdi = devc->cb_data;
     trigger_pos = (struct ds_trigger_pos *)transfer->buffer;
+
     if (devc->status != DSL_ABORT)
         devc->status = DSL_ERROR;
     if (!devc->abort && transfer->status == LIBUSB_TRANSFER_COMPLETED &&
@@ -1715,7 +1966,7 @@ static void receive_trigger_pos(struct libusb_transfer *transfer)
             g_get_monotonic_time(), transfer->status, transfer->timeout, transfer->actual_length);
         remain_cnt = trigger_pos->remain_cnt_h;
         remain_cnt = (remain_cnt << 32) + trigger_pos->remain_cnt_l;
-        if (transfer->actual_length == sizeof(struct ds_trigger_pos)) {
+        if (transfer->actual_length == dsl_header_size(devc)) {
             if (sdi->mode != LOGIC ||
                 devc->stream ||
                 remain_cnt < devc->limit_samples) {
@@ -1752,28 +2003,20 @@ SR_PRIV int dsl_start_transfers(const struct sr_dev_inst *sdi)
     int ret;
     unsigned char *buf;
     size_t size;
-    unsigned int dso_buffer_size;
     struct ds_trigger_pos *trigger_pos;
 
     devc = sdi->priv;
     usb = sdi->conn;
-    test_init = 1;
 
-    if (devc->instant)
-        dso_buffer_size = min(instant_buffer_size * channel_modes[devc->ch_mode].num,
-                              devc->profile->dev_caps.hw_depth / channel_modes[devc->ch_mode].unit_bits);
-    else
-        dso_buffer_size = devc->actual_samples * dsl_en_ch_num(sdi) + 512;
-
-    num_transfers = (devc->stream) ? get_number_of_transfers(devc) : 1;
-    size = (sdi->mode == DSO) ? dso_buffer_size :
-           (devc->stream) ? get_buffer_size(devc) : instant_buffer_size;
+    num_transfers = get_number_of_transfers(sdi);
+    size = get_buffer_size(sdi);
 
     /* trigger packet transfer */
-    if (!(trigger_pos = g_try_malloc0(sizeof(struct ds_trigger_pos)))) {
+    if (!(trigger_pos = g_try_malloc0(dsl_header_size(devc)))) {
         sr_err("%s: USB trigger_pos buffer malloc failed.", __func__);
         return SR_ERR_MALLOC;
     }
+
     devc->transfers = g_try_malloc0(sizeof(*devc->transfers) * (num_transfers + 1));
     if (!devc->transfers) {
         sr_err("%s: USB transfer malloc failed.", __func__);
@@ -1781,8 +2024,8 @@ SR_PRIV int dsl_start_transfers(const struct sr_dev_inst *sdi)
     }
     transfer = libusb_alloc_transfer(0);
     libusb_fill_bulk_transfer(transfer, usb->devhdl,
-            6 | LIBUSB_ENDPOINT_IN, (unsigned char *)trigger_pos, sizeof(struct ds_trigger_pos),
-            (libusb_transfer_cb_fn)receive_trigger_pos, devc, 0);
+            6 | LIBUSB_ENDPOINT_IN, (unsigned char *)trigger_pos, dsl_header_size(devc),
+            (libusb_transfer_cb_fn)receive_header, devc, 0);
     if ((ret = libusb_submit_transfer(transfer)) != 0) {
         sr_err("%s: Failed to submit trigger_pos transfer: %s.",
                __func__, libusb_error_name(ret));

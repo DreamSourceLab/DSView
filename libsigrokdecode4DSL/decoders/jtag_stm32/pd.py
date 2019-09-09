@@ -14,8 +14,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
@@ -30,6 +29,11 @@ ir = {
     '1010': ['DPACC', 35],  # Debug port access register
     '1011': ['APACC', 35],  # Access port access register
     '1000': ['ABORT', 35],  # Abort register # TODO: 32 bits? Datasheet typo?
+}
+
+# Boundary scan data registers (in IR[8:4]) and their sizes (in bits)
+bs_ir = {
+    '11111': ['BYPASS', 1], # Bypass register
 }
 
 # ARM Cortex-M3 r1p1-01rel0 ID code
@@ -135,14 +139,15 @@ def data_out(bits):
            % (data_hex, ack_meaning)
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'jtag_stm32'
     name = 'JTAG / STM32'
     longname = 'Joint Test Action Group / ST STM32'
     desc = 'ST STM32-specific JTAG protocol.'
     license = 'gplv2+'
     inputs = ['jtag']
-    outputs = ['jtag_stm32']
+    outputs = []
+    tags = ['Debug/trace']
     annotations = (
         ('item', 'Item'),
         ('field', 'Field'),
@@ -157,6 +162,9 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.state = 'IDLE'
         self.samplenums = None
 
@@ -173,37 +181,35 @@ class Decoder(srd.Decoder):
         self.putx([0, ['BYPASS: ' + bits]])
 
     def handle_reg_idcode(self, cmd, bits):
-        # IDCODE is a read-only register which is always accessible.
-        # IR == IDCODE: The 32bit device ID code is shifted out via DR next.
+        bits = bits[1:]
 
-        id_hex, manuf, ver, part = decode_device_id_code(bits[:-1])
-        cc = '0x%x' % int('0b' + bits[:-1][-12:-8], 2)
-        ic = '0x%x' % int('0b' + bits[:-1][-7:-1], 2)
+        id_hex, manuf, ver, part = decode_device_id_code(bits)
+        cc = '0x%x' % int('0b' + bits[-12:-8], 2)
+        ic = '0x%x' % int('0b' + bits[-7:-1], 2)
 
-        self.putf(0, 0, [1, ['Reserved (BS TAP)', 'BS', 'B']])
-        self.putf(1, 1, [1, ['Reserved', 'Res', 'R']])
-        self.putf(9, 12, [0, ['Continuation code: %s' % cc, 'CC', 'C']])
-        self.putf(2, 8, [0, ['Identity code: %s' % ic, 'IC', 'I']])
-        self.putf(2, 12, [1, ['Manufacturer: %s' % manuf, 'Manuf', 'M']])
-        self.putf(13, 28, [1, ['Part: %s' % part, 'Part', 'P']])
-        self.putf(29, 32, [1, ['Version: %s' % ver, 'Version', 'V']])
+        self.putf(0, 0, [1, ['Reserved', 'Res', 'R']])
+        self.putf(8, 11, [0, ['Continuation code: %s' % cc, 'CC', 'C']])
+        self.putf(1, 7, [0, ['Identity code: %s' % ic, 'IC', 'I']])
+        self.putf(1, 11, [1, ['Manufacturer: %s' % manuf, 'Manuf', 'M']])
+        self.putf(12, 27, [1, ['Part: %s' % part, 'Part', 'P']])
+        self.putf(28, 31, [1, ['Version: %s' % ver, 'Version', 'V']])
+        self.putf(32, 32, [1, ['BYPASS (BS TAP)', 'BS', 'B']])
 
-        self.ss = self.samplenums[1][0]
         self.putx([2, ['IDCODE: %s (%s: %s/%s)' % \
-                  decode_device_id_code(bits[:-1])]])
+                  decode_device_id_code(bits)]])
 
     def handle_reg_dpacc(self, cmd, bits):
-        bits = bits[:-1]
+        bits = bits[1:]
         s = data_in('DPACC', bits) if (cmd == 'DR TDI') else data_out(bits)
         self.putx([2, [s]])
 
     def handle_reg_apacc(self, cmd, bits):
-        bits = bits[:-1]
+        bits = bits[1:]
         s = data_in('APACC', bits) if (cmd == 'DR TDI') else data_out(bits)
         self.putx([2, [s]])
 
     def handle_reg_abort(self, cmd, bits):
-        bits = bits[:-1]
+        bits = bits[1:]
         # Bits[31:1]: reserved. Bit[0]: DAPABORT.
         a = '' if (bits[0] == '1') else 'No '
         s = 'DAPABORT = %s: %sDAP abort generated' % (bits[0], a)
@@ -214,7 +220,7 @@ class Decoder(srd.Decoder):
             self.putx([3, ['WARNING: DAPABORT[31:1] reserved!']])
 
     def handle_reg_unknown(self, cmd, bits):
-        bits = bits[:-1]
+        bits = bits[1:]
         self.putx([2, ['Unknown instruction: %s' % bits]])
 
     def decode(self, ss, es, data):
@@ -227,22 +233,19 @@ class Decoder(srd.Decoder):
             val, self.samplenums = val
             self.samplenums.reverse()
 
-        # State machine
-        if self.state == 'IDLE':
-            # Wait until a new instruction is shifted into the IR register.
-            if cmd != 'IR TDI':
-                return
+        if cmd == 'IR TDI':
             # Switch to the state named after the instruction, or 'UNKNOWN'.
             # The STM32F10xxx has two serially connected JTAG TAPs, the
             # boundary scan tap (5 bits) and the Cortex-M3 TAP (4 bits).
             # See UM 31.5 "STM32F10xxx JTAG TAP connection" for details.
-            self.state = ir.get(val[:-1][-4:], ['UNKNOWN', 0])[0]
-            bstap_ir = ir.get(val[:-1][:4], ['UNKNOWN', 0])[0]
-            self.putf(5, 8, [1, ['IR (BS TAP): ' + bstap_ir]])
-            self.putf(1, 4, [1, ['IR (M3 TAP): ' + self.state]])
-            self.putf(0, 0, [1, ['Reserved (BS TAP)', 'BS', 'B']])
+            self.state = ir.get(val[5:9], ['UNKNOWN', 0])[0]
+            bstap_ir = bs_ir.get(val[:5], ['UNKNOWN', 0])[0]
+            self.putf(4, 8, [1, ['IR (BS TAP): ' + bstap_ir]])
+            self.putf(0, 3, [1, ['IR (M3 TAP): ' + self.state]])
             self.putx([2, ['IR: %s' % self.state]])
-        elif self.state == 'BYPASS':
+
+        # State machine
+        if self.state == 'BYPASS':
             # Here we're interested in incoming bits (TDI).
             if cmd != 'DR TDI':
                 return

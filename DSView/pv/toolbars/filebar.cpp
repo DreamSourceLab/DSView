@@ -43,72 +43,46 @@ FileBar::FileBar(SigSession &session, QWidget *parent) :
     _file_button(this)
 {
     setMovable(false);
+    setContentsMargins(0,0,0,0);
+    setIconSize(QSize(40, 28));
 
     _action_load = new QAction(this);
-    _action_load->setText(QApplication::translate(
-        "File", "&Load...", 0));
-    _action_load->setIcon(QIcon::fromTheme("file",
-        QIcon(":/icons/open.png")));
     _action_load->setObjectName(QString::fromUtf8("actionLoad"));
     connect(_action_load, SIGNAL(triggered()), this, SLOT(on_actionLoad_triggered()));
 
     _action_store = new QAction(this);
-    _action_store->setText(QApplication::translate(
-        "File", "S&tore...", 0));
-    _action_store->setIcon(QIcon::fromTheme("file",
-        QIcon(":/icons/save.png")));
     _action_store->setObjectName(QString::fromUtf8("actionStore"));
     connect(_action_store, SIGNAL(triggered()), this, SLOT(on_actionStore_triggered()));
 
     _action_default = new QAction(this);
-    _action_default->setText(QApplication::translate(
-        "File", "&Default...", 0));
-    _action_default->setIcon(QIcon::fromTheme("file",
-        QIcon(":/icons/gear.png")));
     _action_default->setObjectName(QString::fromUtf8("actionDefault"));
     connect(_action_default, SIGNAL(triggered()), this, SLOT(on_actionDefault_triggered()));
 
-    _menu_session = new QMenu(tr("Settings"), parent);
-    _menu_session->setIcon(QIcon::fromTheme("file",
-        QIcon(":/icons/gear.png")));
+    _menu_session = new QMenu(this);
     _menu_session->setObjectName(QString::fromUtf8("menuSession"));
     _menu_session->addAction(_action_load);
     _menu_session->addAction(_action_store);
     _menu_session->addAction(_action_default);
 
     _action_open = new QAction(this);
-    _action_open->setText(QApplication::translate(
-        "File", "&Open...", 0));
-    _action_open->setIcon(QIcon::fromTheme("file",
-        QIcon(":/icons/open.png")));
     _action_open->setObjectName(QString::fromUtf8("actionOpen"));
     connect(_action_open, SIGNAL(triggered()), this, SLOT(on_actionOpen_triggered()));
 
     _action_save = new QAction(this);
-    _action_save->setText(QApplication::translate(
-        "File", "&Save...", 0));
-    _action_save->setIcon(QIcon::fromTheme("file",
-        QIcon(":/icons/save.png")));
     _action_save->setObjectName(QString::fromUtf8("actionSave"));
     connect(_action_save, SIGNAL(triggered()), this, SIGNAL(on_save()));
 
     _action_export = new QAction(this);
-    _action_export->setText(QApplication::translate("File", "&Export...", 0));
-    _action_export->setIcon(QIcon::fromTheme("file",QIcon(":/icons/export.png")));
     _action_export->setObjectName(QString::fromUtf8("actionExport"));
     connect(_action_export, SIGNAL(triggered()), this, SIGNAL(on_export()));
 
 
     _action_capture = new QAction(this);
-    _action_capture->setText(QApplication::translate(
-        "File", "&Capture...", 0));
-    _action_capture->setIcon(QIcon::fromTheme("file",
-        QIcon(":/icons/capture.png")));
     _action_capture->setObjectName(QString::fromUtf8("actionCapture"));
     connect(_action_capture, SIGNAL(triggered()), this, SLOT(on_actionCapture_triggered()));
 
+    _file_button.setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     _file_button.setPopupMode(QToolButton::InstantPopup);
-    _file_button.setIcon(QIcon(":/icons/file.png"));
 
     _menu = new QMenu(this);
     _menu->addMenu(_menu_session);
@@ -118,12 +92,51 @@ FileBar::FileBar(SigSession &session, QWidget *parent) :
     _menu->addAction(_action_capture);
     _file_button.setMenu(_menu);
     addWidget(&_file_button);
+
+    retranslateUi();
+}
+
+void FileBar::changeEvent(QEvent *event)
+{
+    if (event->type() == QEvent::LanguageChange)
+        retranslateUi();
+    else if (event->type() == QEvent::StyleChange)
+        reStyle();
+    QToolBar::changeEvent(event);
+}
+
+void FileBar::retranslateUi()
+{
+    _file_button.setText(tr("File"));
+    _menu_session->setTitle(tr("Settings"));
+    _action_load->setText(tr("&Load..."));
+    _action_store->setText(tr("S&tore..."));
+    _action_default->setText(tr("&Default..."));
+    _action_open->setText(tr("&Open..."));
+    _action_save->setText(tr("&Save..."));
+    _action_export->setText(tr("&Export..."));
+    _action_capture->setText(tr("&Capture..."));
+}
+
+void FileBar::reStyle()
+{
+    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+
+    _action_load->setIcon(QIcon(iconPath+"/open.png"));
+    _action_store->setIcon(QIcon(iconPath+"/save.png"));
+    _action_default->setIcon(QIcon(iconPath+"/gear.png"));
+    _menu_session->setIcon(QIcon(iconPath+"/gear.png"));
+    _action_open->setIcon(QIcon(iconPath+"/open.png"));
+    _action_save->setIcon(QIcon(iconPath+"/save.png"));
+    _action_export->setIcon(QIcon(iconPath+"/export.png"));
+    _action_capture->setIcon(QIcon(iconPath+"/capture.png"));
+    _file_button.setIcon(QIcon(iconPath+"/file.png"));
 }
 
 void FileBar::on_actionOpen_triggered()
 {
     const QString DIR_KEY("OpenPath");
-    QSettings settings;
+    QSettings settings(QApplication::organizationName(), QApplication::applicationName());
     // Show the dialog
     const QString file_name = QFileDialog::getOpenFileName(
         this, tr("Open File"), settings.value(DIR_KEY).toString(), tr(
@@ -157,7 +170,7 @@ void FileBar::show_session_error(
 void FileBar::on_actionLoad_triggered()
 {
     const QString DIR_KEY("SessionLoadPath");
-    QSettings settings;
+    QSettings settings(QApplication::organizationName(), QApplication::applicationName());
     // Show the dialog
     const QString file_name = QFileDialog::getOpenFileName(
         this, tr("Open Session"), settings.value(DIR_KEY).toString(), tr(
@@ -171,7 +184,12 @@ void FileBar::on_actionLoad_triggered()
 
 void FileBar::on_actionDefault_triggered()
 {
+#ifdef Q_OS_LINUX
     QDir dir(DS_RES_PATH);
+#else
+    QDir dir(QCoreApplication::applicationDirPath());
+    assert(dir.cd("res"));
+#endif
     if (!dir.exists()) {
         dialogs::DSMessageBox msg(this);
         msg.mBox()->setText(tr("Session Load"));
@@ -184,7 +202,14 @@ void FileBar::on_actionDefault_triggered()
 
     QString driver_name = _session.get_device()->name();
     QString mode_name = QString::number(_session.get_device()->dev_inst()->mode);
-    QString file_name = dir.absolutePath() + "/" + driver_name + mode_name + ".def.dsc";
+    int language = QLocale::English;
+    GVariant *gvar_tmp = _session.get_device()->get_config(NULL, NULL, SR_CONF_LANGUAGE);
+    if (gvar_tmp != NULL) {
+        language = g_variant_get_int16(gvar_tmp);
+        g_variant_unref(gvar_tmp);
+    }
+    QString file_name = dir.absolutePath() + "/" + driver_name + mode_name +
+                        ".def"+QString::number(language)+".dsc";
     if (!file_name.isEmpty())
         load_session(file_name);
 }
@@ -192,7 +217,7 @@ void FileBar::on_actionDefault_triggered()
 void FileBar::on_actionStore_triggered()
 {
     const QString DIR_KEY("SessionStorePath");
-    QSettings settings;
+    QSettings settings(QApplication::organizationName(), QApplication::applicationName());
     QString file_name = QFileDialog::getSaveFileName(
                 this, tr("Save Session"), settings.value(DIR_KEY).toString(),
                 tr("DSView Session (*.dsc)"));
@@ -216,8 +241,6 @@ void FileBar::on_actionCapture_triggered()
 void FileBar::enable_toggle(bool enable)
 {
     _file_button.setDisabled(!enable);
-    _file_button.setIcon(enable ? QIcon(":/icons/file.png") :
-                                  QIcon(":/icons/file_dis.png"));
 }
 
 void FileBar::set_settings_en(bool enable)

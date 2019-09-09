@@ -49,6 +49,9 @@
 #include <libsigrok4DSL/libsigrok.h>
 #include <libusb.h>
 
+#include "view/mathtrace.h"
+#include "data/mathstack.h"
+
 struct srd_decoder;
 struct srd_channel;
 
@@ -68,6 +71,7 @@ class LogicSnapshot;
 class Group;
 class GroupSnapshot;
 class DecoderModel;
+class MathStack;
 }
 
 namespace device {
@@ -78,6 +82,8 @@ namespace view {
 class Signal;
 class GroupSignal;
 class DecodeTrace;
+class SpectrumTrace;
+class LissajousTrace;
 class MathTrace;
 }
 
@@ -131,11 +137,11 @@ public:
 	/**
 	 * Sets device instance that will be used in the next capture session.
 	 */
-    void set_device(boost::shared_ptr<device::DevInst> dev_inst)
-        throw(QString);
+    void set_device(boost::shared_ptr<device::DevInst> dev_inst);
 
-    void set_file(QString name)
-        throw(QString);
+    void set_file(QString name);
+
+    void close_file(boost::shared_ptr<pv::device::DevInst> dev_inst);
 
     void set_default_device(boost::function<void (const QString)> error_handler);
 
@@ -148,6 +154,7 @@ public:
     double cur_sampletime() const;
     void set_cur_samplerate(uint64_t samplerate);
     void set_cur_samplelimits(uint64_t samplelimits);
+    void set_trigger_time(QDateTime time);
     QDateTime get_trigger_time() const;
     uint64_t get_trigger_pos() const;
 
@@ -182,8 +189,14 @@ public:
     pv::data::DecoderModel* get_decoder_model() const;
 #endif
 
-    std::vector< boost::shared_ptr<view::MathTrace> >
-        get_math_signals();
+    std::vector< boost::shared_ptr<view::SpectrumTrace> >
+        get_spectrum_traces();
+
+    boost::shared_ptr<view::LissajousTrace>
+        get_lissajous_trace();
+
+    boost::shared_ptr<view::MathTrace>
+        get_math_trace();
 
     void init_signals();
 
@@ -204,7 +217,14 @@ public:
     void data_auto_lock(int lock);
     void data_auto_unlock();
     bool get_data_auto_lock();
-    void mathTraces_rebuild();
+    void spectrum_rebuild();
+    void lissajous_rebuild(bool enable, int xindex, int yindex, double percent);
+    void lissajous_disable();
+    void math_rebuild(bool enable,
+                      boost::shared_ptr<pv::view::DsoSignal> dsoSig1,
+                      boost::shared_ptr<pv::view::DsoSignal> dsoSig2,
+                      data::MathStack::MathType type);
+    void math_disable();
 
     bool trigd() const;
 
@@ -224,6 +244,14 @@ public:
     int get_repeat_hold() const;
 
     int get_map_zoom() const;
+
+    void set_save_start(uint64_t start);
+    void set_save_end(uint64_t end);
+    uint64_t get_save_start() const;
+    uint64_t get_save_end() const;
+
+    bool dso_feed() const;
+    void set_dso_feed(bool feed);
 
 private:
 	void set_capture_state(capture_state state);
@@ -286,7 +314,9 @@ private:
     std::vector< boost::shared_ptr<view::DecodeTrace> > _decode_traces;
     pv::data::DecoderModel *_decoder_model;
 #endif
-    std::vector< boost::shared_ptr<view::MathTrace> > _math_traces;
+    std::vector< boost::shared_ptr<view::SpectrumTrace> > _spectrum_traces;
+    boost::shared_ptr<view::LissajousTrace> _lissajous_trace;
+    boost::shared_ptr<view::MathTrace> _math_trace;
 
     mutable boost::mutex _data_mutex;
 	boost::shared_ptr<data::Logic> _logic_data;
@@ -326,6 +356,11 @@ private:
     int _repeat_hold_prg;
 
     int _map_zoom;
+
+    uint64_t _save_start;
+    uint64_t _save_end;
+
+    bool _dso_feed;
 
 signals:
 	void capture_state_changed(int state);
@@ -380,6 +415,8 @@ public slots:
     // repeat
     void set_repeating(bool repeat);
     void set_map_zoom(int index);
+    // OSC auto
+    void auto_end();
 
 private slots:
     void data_lock();

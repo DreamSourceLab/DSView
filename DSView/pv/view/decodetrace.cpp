@@ -170,9 +170,13 @@ void DecodeTrace::set_view(pv::view::View *view)
 	Trace::set_view(view);
 }
 
-void DecodeTrace::paint_back(QPainter &p, int left, int right)
+void DecodeTrace::paint_back(QPainter &p, int left, int right, QColor fore, QColor back)
 {
-    QPen pen(Signal::dsGray);
+    (void)back;
+
+    QColor backFore = fore;
+    backFore.setAlpha(View::BackAlpha);
+    QPen pen(backFore);
     pen.setStyle(Qt::DotLine);
     p.setPen(pen);
     const double sigY = get_y() - (_totalHeight - _view->get_signalHeight())*0.5;
@@ -184,7 +188,7 @@ void DecodeTrace::paint_back(QPainter &p, int left, int right)
     const double endX = _decode_end/samples_per_pixel - _view->offset();
     const double regionY = get_y() - _totalHeight*0.5 - ControlRectWidth;
 
-    p.setBrush(Signal::dsBlue);
+    p.setBrush(View::Blue);
     p.drawLine(startX, regionY, startX, regionY + _totalHeight + ControlRectWidth);
     p.drawLine(endX, regionY, endX, regionY + _totalHeight + ControlRectWidth);
     const QPointF start_points[] = {
@@ -232,12 +236,12 @@ void DecodeTrace::paint_back(QPainter &p, int left, int right)
 //					p.drawText(r.translated(dx, dy), f, h);
 
         // Draw the text
-        p.setPen(DARK_FORE);
+        p.setPen(fore);
         p.drawText(r, f, h);
     }
 }
 
-void DecodeTrace::paint_mid(QPainter &p, int left, int right)
+void DecodeTrace::paint_mid(QPainter &p, int left, int right, QColor fore, QColor back)
 {
     using namespace pv::data::decode;
 
@@ -246,7 +250,6 @@ void DecodeTrace::paint_mid(QPainter &p, int left, int right)
     if (!err.isEmpty())
     {
         draw_error(p, err, left, right);
-        //return;
     }
 
     const double scale = _view->scale();
@@ -312,10 +315,10 @@ void DecodeTrace::paint_mid(QPainter &p, int left, int right)
                                     draw_annotation(a, p, get_text_colour(),
                                         annotation_height, left, right,
                                         samples_per_pixel, pixels_offset, y,
-                                        0, min_annWidth);
+                                        0, min_annWidth, fore, back);
                             }
                         } else {
-                            draw_nodetail(p, annotation_height, left, right, y, 0);
+                            draw_nodetail(p, annotation_height, left, right, y, 0, fore, back);
                         }
                         y += annotation_height;
                         _cur_row_headings.push_back(row.title());
@@ -323,20 +326,22 @@ void DecodeTrace::paint_mid(QPainter &p, int left, int right)
                 }
             }
         } else {
-            draw_unshown_row(p, y, annotation_height, left, right, tr("Unshown"));
+            draw_unshown_row(p, y, annotation_height, left, right, tr("Unshown"), fore, back);
             y += annotation_height;
             _cur_row_headings.push_back(dec->decoder()->name);
         }
     }
 }
 
-void DecodeTrace::paint_fore(QPainter &p, int left, int right)
+void DecodeTrace::paint_fore(QPainter &p, int left, int right, QColor fore, QColor back)
 {
 	using namespace pv::data::decode;
 
     (void)p;
     (void)left;
 	(void)right;
+    (void)fore;
+    (void)back;
 }
 
 bool DecodeTrace::create_popup()
@@ -483,7 +488,7 @@ void DecodeTrace::populate_popup_form(QWidget *parent, QFormLayout *form)
 void DecodeTrace::draw_annotation(const pv::data::decode::Annotation &a,
     QPainter &p, QColor text_color, int h, int left, int right,
     double samples_per_pixel, double pixels_offset, int y,
-    size_t base_colour, double min_annWidth) const
+    size_t base_colour, double min_annWidth, QColor fore, QColor back) const
 {
     const double start = max(a.start_sample() / samples_per_pixel -
         pixels_offset, (double)left);
@@ -498,7 +503,7 @@ void DecodeTrace::draw_annotation(const pv::data::decode::Annotation &a,
 		return;
 
     if (_decoder_stack->get_mark_index() == (int64_t)(a.start_sample()+ a.end_sample())/2) {
-        p.setPen(Signal::dsBlue);
+        p.setPen(View::Blue);
         int xpos = (start+end)/2;
         int ypos = get_y()+_totalHeight*0.5 + 1;
         const QPoint triangle[] = {
@@ -520,7 +525,7 @@ void DecodeTrace::draw_annotation(const pv::data::decode::Annotation &a,
             start, y, min_annWidth);
     else {
 		draw_range(a, p, fill, outline, text_color, h,
-			start, end, y);
+            start, end, y, fore, back);
         if ((a.type()/100 == 2) && (end - start > 20)) {
             BOOST_FOREACH(boost::shared_ptr<data::decode::Decoder> dec,
                 _decoder_stack->stack()) {
@@ -545,16 +550,18 @@ void DecodeTrace::draw_annotation(const pv::data::decode::Annotation &a,
 
 void DecodeTrace::draw_nodetail(QPainter &p,
     int h, int left, int right, int y,
-    size_t base_colour) const
+    size_t base_colour, QColor fore, QColor back) const
 {
     (void)base_colour;
+    (void)back;
+
     const QRectF nodetail_rect(left, y - h/2 + 0.5, right - left, h);
     QString info = tr("Zoom in for details");
     int info_left = nodetail_rect.center().x() - p.boundingRect(QRectF(), 0, info).width();
     int info_right = nodetail_rect.center().x() + p.boundingRect(QRectF(), 0, info).width();
     int height = p.boundingRect(QRectF(), 0, info).height();
 
-    p.setPen(Trace::DARK_FORE);
+    p.setPen(fore);
     p.drawLine(left, y, info_left, y);
     p.drawLine(info_right, y, right, y);
     p.drawLine(info_left, y, info_left+5, y - height/2 + 0.5);
@@ -562,13 +569,15 @@ void DecodeTrace::draw_nodetail(QPainter &p,
     p.drawLine(info_right, y, info_right-5, y - height/2 + 0.5);
     p.drawLine(info_right, y, info_right-5, y + height/2 + 0.5);
 
-    p.setPen(Trace::DARK_FORE);
+    p.setPen(fore);
     p.drawText(nodetail_rect, Qt::AlignCenter | Qt::AlignVCenter, info);
 }
 
 void DecodeTrace::draw_instant(const pv::data::decode::Annotation &a, QPainter &p,
     QColor fill, QColor outline, QColor text_color, int h, double x, int y, double min_annWidth) const
 {
+    (void)outline;
+
 	const QString text = a.annotations().empty() ?
 		QString() : a.annotations().back();
 //	const double w = min((double)p.boundingRect(QRectF(), 0, text).width(),
@@ -576,7 +585,8 @@ void DecodeTrace::draw_instant(const pv::data::decode::Annotation &a, QPainter &
     const double w = min(min_annWidth, (double)h);
 	const QRectF rect(x - w / 2, y - h / 2, w, h);
 
-	p.setPen(outline);
+    //p.setPen(outline);
+    p.setPen(QPen(Qt::NoPen));
 	p.setBrush(fill);
 	p.drawRoundedRect(rect, h / 2, h / 2);
 
@@ -589,8 +599,10 @@ void DecodeTrace::draw_instant(const pv::data::decode::Annotation &a, QPainter &
 
 void DecodeTrace::draw_range(const pv::data::decode::Annotation &a, QPainter &p,
 	QColor fill, QColor outline, QColor text_color, int h, double start,
-	double end, int y) const
+    double end, int y, QColor fore, QColor back) const
 {
+    (void)fore;
+
 	const double top = y + .5 - h / 2;
 	const double bottom = y + .5 + h / 2;
 	const vector<QString> annotations = a.annotations();
@@ -616,7 +628,7 @@ void DecodeTrace::draw_range(const pv::data::decode::Annotation &a, QPainter &p,
 		QPointF(start + cap_width, bottom)
 	};
 
-    p.setPen(DARK_BACK);
+    p.setPen(back);
     p.drawConvexPolygon(pts, countof(pts));
 
 	if (annotations.empty())
@@ -646,8 +658,8 @@ void DecodeTrace::draw_range(const pv::data::decode::Annotation &a, QPainter &p,
     QFont font=p.font();
     font.setPointSize(DefaultFontSize);
     p.setFont(font);
-	p.drawText(rect, Qt::AlignCenter, p.fontMetrics().elidedText(
-		best_annotation, Qt::ElideRight, rect.width()));
+    p.drawText(rect, Qt::AlignCenter, p.fontMetrics().elidedText(
+        best_annotation, Qt::ElideRight, rect.width()));
 }
 
 void DecodeTrace::draw_error(QPainter &p, const QString &message,
@@ -670,14 +682,16 @@ void DecodeTrace::draw_error(QPainter &p, const QString &message,
 }
 
 void DecodeTrace::draw_unshown_row(QPainter &p, int y, int h, int left,
-    int right, QString info)
+    int right, QString info, QColor fore, QColor back)
 {
+    (void)back;
+
     const QRectF unshown_rect(left, y - h/2 + 0.5, right - left, h);
     int info_left = unshown_rect.center().x() - p.boundingRect(QRectF(), 0, info).width();
     int info_right = unshown_rect.center().x() + p.boundingRect(QRectF(), 0, info).width();
     int height = p.boundingRect(QRectF(), 0, info).height();
 
-    p.setPen(Trace::DARK_FORE);
+    p.setPen(fore);
     p.drawLine(left, y, info_left, y);
     p.drawLine(info_right, y, right, y);
     p.drawLine(info_left, y, info_left+5, y - height/2 + 0.5);
@@ -685,7 +699,7 @@ void DecodeTrace::draw_unshown_row(QPainter &p, int y, int h, int left,
     p.drawLine(info_right, y, info_right-5, y - height/2 + 0.5);
     p.drawLine(info_right, y, info_right-5, y + height/2 + 0.5);
 
-    p.setPen(Trace::DARK_FORE);
+    p.setPen(fore);
     p.drawText(unshown_rect, Qt::AlignCenter | Qt::AlignVCenter, info);
 }
 
@@ -700,18 +714,12 @@ void DecodeTrace::create_decoder_form(
 	const srd_decoder *const decoder = dec->decoder();
 	assert(decoder);
 
-    pv::widgets::DecoderGroupBox *const group =
-        new pv::widgets::DecoderGroupBox(decoder_stack, dec, parent);
-    connect(group, SIGNAL(del_stack(boost::shared_ptr<data::decode::Decoder>&)),
-        this, SLOT(on_del_stack(boost::shared_ptr<data::decode::Decoder>&)));
-
     QFormLayout *const decoder_form = new QFormLayout();
     decoder_form->setContentsMargins(0,0,0,0);
     decoder_form->setVerticalSpacing(5);
     decoder_form->setFormAlignment(Qt::AlignLeft);
     decoder_form->setLabelAlignment(Qt::AlignLeft);
     decoder_form->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
-	group->add_layout(decoder_form);
 
 	// Add the mandatory channels
 	for(l = decoder->channels; l; l = l->next) {
@@ -749,6 +757,12 @@ void DecodeTrace::create_decoder_form(
     binding->add_properties_to_form(decoder_form, true);
 
 	_bindings.push_back(binding);
+
+    //
+    pv::widgets::DecoderGroupBox *const group =
+        new pv::widgets::DecoderGroupBox(decoder_stack, dec, decoder_form, parent);
+    connect(group, SIGNAL(del_stack(boost::shared_ptr<data::decode::Decoder>&)),
+        this, SLOT(on_del_stack(boost::shared_ptr<data::decode::Decoder>&)));
 
 	form->addRow(group);
 	_decoder_forms.push_back(group);
@@ -916,7 +930,7 @@ int DecodeTrace::rows_size()
     return size == 0 ? 1 : size;
 }
 
-void DecodeTrace::paint_type_options(QPainter &p, int right, const QPoint pt)
+void DecodeTrace::paint_type_options(QPainter &p, int right, const QPoint pt, QColor fore)
 {
     (void)pt;
 
@@ -924,7 +938,7 @@ void DecodeTrace::paint_type_options(QPainter &p, int right, const QPoint pt)
     const QRectF group_index_rect = get_rect(CHNLREG, y, right);
     QString index_string;
     int last_index;
-    p.setPen(QPen(DARK_FORE, 1, Qt::DashLine));
+    p.setPen(QPen(fore, 1, Qt::DashLine));
     p.drawLine(group_index_rect.bottomLeft(), group_index_rect.bottomRight());
     std::list<int>::iterator i = _index_list.begin();
     last_index = (*i);
@@ -938,7 +952,7 @@ void DecodeTrace::paint_type_options(QPainter &p, int right, const QPoint pt)
             index_string = QString::number((*i)) + "," + index_string;
         last_index = (*i);
     }
-    p.setPen(DARK_FORE);
+    p.setPen(fore);
     p.drawText(group_index_rect, Qt::AlignRight | Qt::AlignVCenter, index_string);
 }
 

@@ -23,8 +23,10 @@
 #ifndef DSVIEW_PV_DSOMEASURE_H
 #define DSVIEW_PV_DSOMEASURE_H
 
-#include <QDialogButtonBox>
 #include <QVBoxLayout>
+#include <QToolButton>
+#include <QDialogButtonBox>
+#include <QTabWidget>
 
 #include <boost/shared_ptr.hpp>
 
@@ -34,8 +36,10 @@
 
 namespace pv {
 
+class SigSession;
+
 namespace view {
-class DsoSignal;
+class View;
 }
 
 namespace dialogs {
@@ -45,20 +49,33 @@ class DsoMeasure : public DSDialog
 	Q_OBJECT
 
 public:
-    DsoMeasure(QWidget *parent, boost::shared_ptr<pv::view::DsoSignal> dsoSig);
+    DsoMeasure(SigSession &session, view::View &parent,
+               unsigned int position, int last_sig_index);
+
+    static QString get_ms_icon(int ms_type);
+    static QString get_ms_text(int ms_type);
+
+private:
+    void add_measure(QWidget *widget, const boost::shared_ptr<view::DsoSignal> dsoSig);
 
 private slots:
     void set_measure(bool en);
+    void reset();
 
 protected:
 	void accept();
     void reject();
 
 private:
-    boost::shared_ptr<pv::view::DsoSignal> _dsoSig;
+    SigSession &_session;
+    view::View &_view;
+    unsigned int _position;
+
     toolbars::TitleBar *_titlebar;
-    QVBoxLayout _layout;
     QDialogButtonBox _button_box;
+    QTabWidget *_measure_tab;
+    QVBoxLayout _layout;
+    std::vector<QToolButton *> _mbtn_vec;
 };
 
 } // namespace dialogs

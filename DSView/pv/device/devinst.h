@@ -53,7 +53,7 @@ protected:
 public:
 	virtual sr_dev_inst* dev_inst() const = 0;
 
-	virtual void use(SigSession *owner) throw(QString);
+    virtual void use(SigSession *owner);
 
 	virtual void release();
 

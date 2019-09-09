@@ -2,6 +2,7 @@
 ## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2014 Gump Yang <gump.yang@gmail.com>
+## Copyright (C) 2019 DreamSourceLab <support@dreamsourcelab.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -14,8 +15,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
@@ -25,20 +25,22 @@ class SamplerateError(Exception):
     pass
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'ir_nec'
     name = 'IR NEC'
     longname = 'IR NEC'
     desc = 'NEC infrared remote control protocol.'
     license = 'gplv2+'
     inputs = ['logic']
-    outputs = ['ir_nec']
+    outputs = []
+    tags = ['IR']
     channels = (
         {'id': 'ir', 'name': 'IR', 'desc': 'Data line'},
     )
     options = (
         {'id': 'polarity', 'desc': 'Polarity', 'default': 'active-low',
             'values': ('active-low', 'active-high')},
+        {'id': 'cd_freq', 'desc': 'Carrier Frequency', 'default': 0},
     )
     annotations = (
         ('bit', 'Bit'),
@@ -100,31 +102,37 @@ class Decoder(srd.Decoder):
                  '%s' % btn[1]]])
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.state = 'IDLE'
         self.ss_bit = self.ss_start = self.ss_other_edge = self.ss_remote = 0
-        self.data = self.count = self.active = self.old_ir = None
+        self.data = self.count = self.active = None
         self.addr = self.cmd = None
 
     def start(self):
         self.out_ann = self.register(srd.OUTPUT_ANN)
         self.active = 0 if self.options['polarity'] == 'active-low' else 1
-        self.old_ir = 1 if self.active == 0 else 0
 
     def metadata(self, key, value):
         if key == srd.SRD_CONF_SAMPLERATE:
             self.samplerate = value
-        self.margin = int(self.samplerate * 0.0001) - 1 # 0.1ms
+        self.tolerance = 0.05 # +/-5%
         self.lc = int(self.samplerate * 0.0135) - 1 # 13.5ms
         self.rc = int(self.samplerate * 0.01125) - 1 # 11.25ms
         self.dazero = int(self.samplerate * 0.001125) - 1 # 1.125ms
         self.daone = int(self.samplerate * 0.00225) - 1 # 2.25ms
         self.stop = int(self.samplerate * 0.000652) - 1 # 0.652ms
 
+    def compare_with_tolerance(self, measured, base):
+        return (measured >= base * (1 - self.tolerance)
+                and measured <= base * (1 + self.tolerance))
+
     def handle_bit(self, tick):
         ret = None
-        if tick in range(self.dazero - self.margin, self.dazero + self.margin):
+        if self.compare_with_tolerance(tick, self.dazero):
             ret = 0
-        elif tick in range(self.daone - self.margin, self.daone + self.margin):
+        elif self.compare_with_tolerance(tick, self.daone):
             ret = 1
         if ret in (0, 1):
             self.putb([0, ['%d' % ret]])
@@ -150,32 +158,56 @@ class Decoder(srd.Decoder):
         self.ss_bit = self.ss_start = self.samplenum
         return ret == 0
 
-    def decode(self, ss, es, data):
+    def decode(self):
         if not self.samplerate:
             raise SamplerateError('Cannot decode without samplerate.')
-        for (self.samplenum, pins) in data:
-            self.ir = pins[0]
-            data.itercnt += 1
 
-            # Wait for an "interesting" edge, but also record the other ones.
-            if self.old_ir == self.ir:
-                continue
+        cd_count = None
+        if self.options['cd_freq']:
+            cd_count = int(self.samplerate / self.options['cd_freq']) + 1
+            prev_ir = None
+
+        while True:
+            # Detect changes in the presence of an active input signal.
+            # The decoder can either be fed an already filtered RX signal
+            # or optionally can detect the presence of a carrier. Periods
+            # of inactivity (signal changes slower than the carrier freq,
+            # if specified) pass on the most recently sampled level. This
+            # approach works for filtered and unfiltered input alike, and
+            # only slightly extends the active phase of input signals with
+            # carriers included by one period of the carrier frequency.
+            # IR based communication protocols can cope with this slight
+            # inaccuracy just fine by design. Enabling carrier detection
+            # on already filtered signals will keep the length of their
+            # active period, but will shift their signal changes by one
+            # carrier period before they get passed to decoding logic.
+            if cd_count:
+                (cur_ir,) = self.wait([{0: 'e'}, {'skip': cd_count}])
+                if (self.matched & (0b1 << 0)):
+                    cur_ir = self.active
+                if cur_ir == prev_ir:
+                    continue
+                prev_ir = cur_ir
+                self.ir = cur_ir
+            else:
+                (self.ir,) = self.wait({0: 'e'})
+
             if self.ir != self.active:
+                # Save the non-active edge, then wait for the next edge.
                 self.ss_other_edge = self.samplenum
-                self.old_ir = self.ir
                 continue
 
             b = self.samplenum - self.ss_bit
 
             # State machine.
             if self.state == 'IDLE':
-                if b in range(self.lc - self.margin, self.lc + self.margin):
+                if self.compare_with_tolerance(b, self.lc):
                     self.putpause('Long')
                     self.putx([5, ['Leader code', 'Leader', 'LC', 'L']])
                     self.ss_remote = self.ss_start
                     self.data = self.count = 0
                     self.state = 'ADDRESS'
-                elif b in range(self.rc - self.margin, self.rc + self.margin):
+                elif self.compare_with_tolerance(b, self.rc):
                     self.putpause('Short')
                     self.putstop(self.samplenum)
                     self.samplenum += self.stop
@@ -203,5 +235,3 @@ class Decoder(srd.Decoder):
                 self.putremote()
                 self.ss_bit = self.ss_start = self.samplenum
                 self.state = 'IDLE'
-
-            self.old_ir = self.ir

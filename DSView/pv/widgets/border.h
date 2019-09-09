@@ -31,11 +31,17 @@ class Border : public QWidget
 {
     Q_OBJECT
 private:
-    static const QColor color_border0;
-    static const QColor color_border1;
-    static const QColor color_border2;
-    static const QColor color_border3;
-    static const QColor color_border4;
+    static const QColor dark_border0;
+    static const QColor dark_border1;
+    static const QColor dark_border2;
+    static const QColor dark_border3;
+    static const QColor dark_border4;
+
+    static const QColor light_border0;
+    static const QColor light_border1;
+    static const QColor light_border2;
+    static const QColor light_border3;
+    static const QColor light_border4;
 
 public:
     explicit Border(int type, QWidget *parent = 0);

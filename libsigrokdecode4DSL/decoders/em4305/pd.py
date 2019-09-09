@@ -14,8 +14,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
@@ -24,14 +23,15 @@ class SamplerateError(Exception):
     pass
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'em4305'
     name = 'EM4305'
     longname = 'RFID EM4205/EM4305'
     desc = 'EM4205/EM4305 100-150kHz RFID protocol.'
     license = 'gplv2+'
     inputs = ['logic']
-    outputs = ['em4305']
+    outputs = []
+    tags = ['IC', 'RFID']
     channels = (
         {'id': 'data', 'name': 'Data', 'desc': 'Data line'},
     )
@@ -66,8 +66,10 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.samplerate = None
-        self.oldpin = None
         self.last_samplenum = None
         self.state = 'FFS_SEARCH'
         self.bits_pos = [[0 for col in range(3)] for row in range(70)]
@@ -325,73 +327,68 @@ class Decoder(srd.Decoder):
             self.bits_pos[self.bit_nr][2] = es_bit
             self.bit_nr += 1
 
-    def decode(self, ss, es, data):
+    def decode(self):
         if not self.samplerate:
             raise SamplerateError('Cannot decode without samplerate.')
-        for (self.samplenum, (pin,)) in data:
-            data.itercnt += 1
-            # Ignore identical samples early on (for performance reasons).
-            if self.oldpin == pin:
-                continue
 
-            if self.oldpin is None:
-                self.oldpin = pin
-                self.last_samplenum = self.samplenum
-                self.oldsamplenum = 0
-                self.old_gap_end = 0
-                self.gap_detected = 0
-                self.bit_nr = 0
-                continue
+        # Initialize internal state.
+        self.last_samplenum = self.samplenum
+        self.oldsamplenum = 0
+        self.old_gap_end = 0
+        self.gap_detected = 0
+        self.bit_nr = 0
 
-            if self.oldpin != pin:
-                pl = self.samplenum - self.oldsamplenum
-                pp = pin
-                samples = self.samplenum - self.last_samplenum
+        while True:
+            # Ignore identical samples, only process edges.
+            (pin,) = self.wait({0: 'e'})
 
-                if self.state == 'FFS_DETECTED':
-                    if pl > self.writegap:
-                        self.gap_detected = 1
-                    if (self.last_samplenum - self.old_gap_end) > self.nogap:
-                        self.gap_detected = 0
-                        self.state = 'FFS_SEARCH'
-                        self.put(self.old_gap_end, self.last_samplenum,
-                                 self.out_ann, [3, ['Write mode exit']])
-                        self.put_fields()
+            pl = self.samplenum - self.oldsamplenum
+            pp = pin
+            samples = self.samplenum - self.last_samplenum
 
-                if self.state == 'FFS_SEARCH':
-                    if pl > self.ffs:
-                        self.gap_detected = 1
-                        self.put(self.last_samplenum, self.samplenum,
-                                 self.out_ann, [1, ['First field stop', 'Field stop', 'FFS']])
-                        self.state = 'FFS_DETECTED'
-
-                if self.gap_detected == 1:
+            if self.state == 'FFS_DETECTED':
+                if pl > self.writegap:
+                    self.gap_detected = 1
+                if (self.last_samplenum - self.old_gap_end) > self.nogap:
                     self.gap_detected = 0
-                    if (self.last_samplenum - self.old_gap_end) > self.wzmin \
-                            and (self.last_samplenum - self.old_gap_end) < self.wzmax:
-                        self.put(self.old_gap_end, self.samplenum,
-                                 self.out_ann, [0, ['0']])
-                        self.add_bits_pos(0, self.old_gap_end, self.samplenum)
-                    if (self.last_samplenum - self.old_gap_end) > self.womax \
-                            and (self.last_samplenum-self.old_gap_end) < self.nogap:
-                        # One or more 1 bits
-                        one_bits = (int)((self.last_samplenum - self.old_gap_end) / self.womax)
-                        for ox in range(0, one_bits):
-                            bs = (int)(self.old_gap_end+ox*self.womax)
-                            be = (int)(self.old_gap_end+ox*self.womax + self.womax)
-                            self.put(bs, be, self.out_ann, [0, ['1']])
-                            self.add_bits_pos(1, bs, be)
-                        if (self.samplenum - self.last_samplenum) > self.wzmin \
-                                and (self.samplenum - self.last_samplenum) < self.wzmax:
-                            bs = (int)(self.old_gap_end+one_bits*self.womax)
-                            self.put(bs, self.samplenum, self.out_ann, [0, ['0']])
-                            self.add_bits_pos(0, bs, self.samplenum)
-
-                    self.old_gap_end = self.samplenum
-
-                if self.state == 'SKIP':
                     self.state = 'FFS_SEARCH'
+                    self.put(self.old_gap_end, self.last_samplenum,
+                             self.out_ann, [3, ['Write mode exit']])
+                    self.put_fields()
 
-                self.oldsamplenum = self.samplenum
-                self.last_samplenum = self.samplenum
-                self.oldpin = pin
+            if self.state == 'FFS_SEARCH':
+                if pl > self.ffs:
+                    self.gap_detected = 1
+                    self.put(self.last_samplenum, self.samplenum,
+                             self.out_ann, [1, ['First field stop', 'Field stop', 'FFS']])
+                    self.state = 'FFS_DETECTED'
+
+            if self.gap_detected == 1:
+                self.gap_detected = 0
+                if (self.last_samplenum - self.old_gap_end) > self.wzmin \
+                        and (self.last_samplenum - self.old_gap_end) < self.wzmax:
+                    self.put(self.old_gap_end, self.samplenum,
+                             self.out_ann, [0, ['0']])
+                    self.add_bits_pos(0, self.old_gap_end, self.samplenum)
+                if (self.last_samplenum - self.old_gap_end) > self.womax \
+                        and (self.last_samplenum-self.old_gap_end) < self.nogap:
+                    # One or more 1 bits
+                    one_bits = (int)((self.last_samplenum - self.old_gap_end) / self.womax)
+                    for ox in range(0, one_bits):
+                        bs = (int)(self.old_gap_end+ox*self.womax)
+                        be = (int)(self.old_gap_end+ox*self.womax + self.womax)
+                        self.put(bs, be, self.out_ann, [0, ['1']])
+                        self.add_bits_pos(1, bs, be)
+                    if (self.samplenum - self.last_samplenum) > self.wzmin \
+                            and (self.samplenum - self.last_samplenum) < self.wzmax:
+                        bs = (int)(self.old_gap_end+one_bits*self.womax)
+                        self.put(bs, self.samplenum, self.out_ann, [0, ['0']])
+                        self.add_bits_pos(0, bs, self.samplenum)
+
+                self.old_gap_end = self.samplenum
+
+            if self.state == 'SKIP':
+                self.state = 'FFS_SEARCH'
+
+            self.oldsamplenum = self.samplenum
+            self.last_samplenum = self.samplenum

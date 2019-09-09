@@ -102,7 +102,7 @@ void Cursor::paint_label(QPainter &p, const QRect &rect,
     if (close.contains(QPoint(_view.hover_point().x(), _view.hover_point().y())))
         p.setBrush(Ruler::CursorColor[(index - 1) % 8]);
     else if (r.contains(QPoint(_view.hover_point().x(), _view.hover_point().y())))
-        p.setBrush(Ruler::HitColor);
+        p.setBrush(View::Orange);
     else
         p.setBrush(Ruler::CursorColor[(index - 1) % 8]);
     p.drawRect(r);
@@ -115,9 +115,9 @@ void Cursor::paint_label(QPainter &p, const QRect &rect,
     p.drawPolygon(points, countof(points));
 
     if (close.contains(QPoint(_view.hover_point().x(), _view.hover_point().y())))
-        p.setBrush(Ruler::WarnColor);
+        p.setBrush(View::Red);
     else
-        p.setBrush(Ruler::HitColor);
+        p.setBrush(View::Orange);
     p.drawRect(close);
     p.setPen(Qt::black);
     p.drawLine(close.left() + 2, close.top() + 2, close.right() - 2, close.bottom() - 2);

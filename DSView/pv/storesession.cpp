@@ -42,6 +42,7 @@
 
 #include <boost/foreach.hpp>
 
+#include <QApplication>
 #include <QFileDialog>
 
 using boost::dynamic_pointer_cast;
@@ -115,7 +116,7 @@ QList<QString> StoreSession::getSuportedExportFormats(){
     return list;
 }
 
-bool StoreSession::save_start()
+bool StoreSession::save_start(QString session_file)
 {
     std::set<int> type_set;
     BOOST_FOREACH(const boost::shared_ptr<view::Signal> sig, _session.get_signals()) {
@@ -141,7 +142,7 @@ bool StoreSession::save_start()
     }
 
     const QString DIR_KEY("SavePath");
-    QSettings settings;
+    QSettings settings(QApplication::organizationName(), QApplication::applicationName());
 
     // Show the dialog
     _file_name = QFileDialog::getSaveFileName(
@@ -167,7 +168,8 @@ bool StoreSession::save_start()
         } else {
             int ret = sr_session_save_init(_file_name.toLocal8Bit().data(),
                                  meta_file.toLocal8Bit().data(),
-                                 decoders_file.toLocal8Bit().data());
+                                 decoders_file.toLocal8Bit().data(),
+                                 session_file.toLocal8Bit().data());
             if (ret != SR_OK) {
                 _error = tr("Failed to create zip file. Please check write permission of this path.");
                 return false;
@@ -186,6 +188,7 @@ void StoreSession::save_proc(shared_ptr<data::Snapshot> snapshot)
 {
 	assert(snapshot);
 
+    int ret = SR_ERR;
     shared_ptr<data::LogicSnapshot> logic_snapshot;
     shared_ptr<data::AnalogSnapshot> analog_snapshot;
     shared_ptr<data::DsoSnapshot> dso_snapshot;
@@ -214,13 +217,21 @@ void StoreSession::save_proc(shared_ptr<data::Snapshot> snapshot)
                         buf = (uint8_t *)malloc(size);
                         if (buf == NULL) {
                             _has_error = true;
-                            _error = tr("Malloc failed.");
-                            return;
+                            _error = tr("Failed to create zip file. Malloc error.");
+                        } else {
+                            memset(buf, sample ? 0xff : 0x0, size);
                         }
-                        memset(buf, sample ? 0xff : 0x0, size);
                     }
-                    sr_session_append(_file_name.toLocal8Bit().data(), buf, size,
+                    ret = sr_session_append(_file_name.toLocal8Bit().data(), buf, size,
                                       i, ch_index, ch_type, File_Version);
+                    if (ret != SR_OK) {
+                        if (!_has_error) {
+                            _has_error = true;
+                            _error = tr("Failed to create zip file. Please check write permission of this path.");
+                        }
+                        progress_updated();
+                        return;
+                    }
                     _units_stored += size;
                     if (need_malloc)
                         free(buf);
@@ -250,26 +261,34 @@ void StoreSession::save_proc(shared_ptr<data::Snapshot> snapshot)
                     uint8_t *tmp = (uint8_t *)malloc(size);
                     if (tmp == NULL) {
                         _has_error = true;
-                        _error = tr("Malloc failed.");
-                        return;
+                        _error = tr("Failed to create zip file. Malloc error.");
+                    } else {
+                        memcpy(tmp, buf, buf_end-buf);
+                        memcpy(tmp+(buf_end-buf), buf_start, buf+size-buf_end);
                     }
-                    memcpy(tmp, buf, buf_end-buf);
-                    memcpy(tmp+(buf_end-buf), buf_start, buf+size-buf_end);
-                    sr_session_append(_file_name.toLocal8Bit().data(), tmp, size,
+                    ret = sr_session_append(_file_name.toLocal8Bit().data(), tmp, size,
                                       i, 0, ch_type, File_Version);
                     buf += (size - _unit_count);
-                    free(tmp);
+                    if (tmp)
+                        free(tmp);
                 } else {
-                    sr_session_append(_file_name.toLocal8Bit().data(), buf, size,
+                    ret = sr_session_append(_file_name.toLocal8Bit().data(), buf, size,
                                       i, 0, ch_type, File_Version);
                     buf += size;
+                }
+                if (ret != SR_OK) {
+                    if (!_has_error) {
+                        _has_error = true;
+                        _error = tr("Failed to create zip file. Please check write permission of this path.");
+                    }
+                    progress_updated();
+                    return;
                 }
                 _units_stored += size;
                 progress_updated();
             }
         }
     }
-
 	progress_updated();
 }
 
@@ -306,14 +325,9 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
     }
 
     fprintf(meta, "[version]\n");
-//    if (sdi->mode != LOGIC)
-//        fprintf(meta, "version = %d\n", 1); // should be updated in next version
-//    else
-//        fprintf(meta, "version = %d\n", File_Version);
     fprintf(meta, "version = %d\n", File_Version);
 
     /* metadata */
-
     fprintf(meta, "[header]\n");
     if (sdi->driver) {
         fprintf(meta, "driver = %s\n", sdi->driver->name);
@@ -357,6 +371,18 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
             fprintf(meta, "bits = %d\n", tmp_u8);
             g_variant_unref(gvar);
         }
+        gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_REF_MIN);
+        if (gvar != NULL) {
+            uint32_t tmp_u32 = g_variant_get_uint32(gvar);
+            fprintf(meta, "ref min = %d\n", tmp_u32);
+            g_variant_unref(gvar);
+        }
+        gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_REF_MAX);
+        if (gvar != NULL) {
+            uint32_t tmp_u32 = g_variant_get_uint32(gvar);
+            fprintf(meta, "ref max = %d\n", tmp_u32);
+            g_variant_unref(gvar);
+        }
     } else if (sdi->mode == LOGIC) {
         fprintf(meta, "trigger time = %lld\n", _session.get_trigger_time().toMSecsSinceEpoch());
     } else if (sdi->mode == ANALOG) {
@@ -365,6 +391,18 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
             uint8_t tmp_u8 = analog_snapshot->get_unit_bytes();
             fprintf(meta, "bits = %d\n", tmp_u8*8);
         }
+        gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_REF_MIN);
+        if (gvar != NULL) {
+            uint32_t tmp_u32 = g_variant_get_uint32(gvar);
+            fprintf(meta, "ref min = %d\n", tmp_u32);
+            g_variant_unref(gvar);
+        }
+        gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_REF_MAX);
+        if (gvar != NULL) {
+            uint32_t tmp_u32 = g_variant_get_uint32(gvar);
+            fprintf(meta, "ref max = %d\n", tmp_u32);
+            g_variant_unref(gvar);
+        }
     }
     fprintf(meta, "trigger pos = %" PRIu64 "\n", _session.get_trigger_pos());
 
@@ -372,6 +410,9 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
     for (l = sdi->channels; l; l = l->next) {
         probe = (struct sr_channel *)l->data;
         if (snapshot->has_data(probe->index)) {
+            if (sdi->mode == LOGIC && !probe->enabled)
+                continue;
+
             if (probe->name)
                 fprintf(meta, "probe%d = %s\n", (sdi->mode == LOGIC) ? probe->index : probecnt, probe->name);
             if (probe->trigger)
@@ -380,27 +421,47 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
                 fprintf(meta, " enable%d = %d\n", probecnt, probe->enabled);
                 fprintf(meta, " coupling%d = %d\n", probecnt, probe->coupling);
                 fprintf(meta, " vDiv%d = %" PRIu64 "\n", probecnt, probe->vdiv);
-                fprintf(meta, " vFactor%d = %d\n", probecnt, probe->vfactor);
-                fprintf(meta, " vPos%d = %lf\n", probecnt, probe->vpos);
+                fprintf(meta, " vFactor%d = %" PRIu64 "\n", probecnt, probe->vfactor);
+                fprintf(meta, " vOffset%d = %d\n", probecnt, probe->hw_offset);
                 fprintf(meta, " vTrig%d = %d\n", probecnt, probe->trig_value);
                 if (sr_status_get(sdi, &status, false, 0, 0) == SR_OK) {
                     if (probe->index == 0) {
-                        fprintf(meta, " period%d = %" PRIu64 "\n", probecnt, status.ch0_period);
-                        fprintf(meta, " pcnt%d = %" PRIu32 "\n", probecnt, status.ch0_pcnt);
+                        fprintf(meta, " period%d = %" PRIu32 "\n", probecnt, status.ch0_cyc_tlen);
+                        fprintf(meta, " pcnt%d = %" PRIu32 "\n", probecnt, status.ch0_cyc_cnt);
                         fprintf(meta, " max%d = %d\n", probecnt, status.ch0_max);
                         fprintf(meta, " min%d = %d\n", probecnt, status.ch0_min);
+                        fprintf(meta, " plen%d = %" PRIu32 "\n", probecnt, status.ch0_cyc_plen);
+                        fprintf(meta, " llen%d = %" PRIu32 "\n", probecnt, status.ch0_cyc_llen);
+                        fprintf(meta, " level%d = %d\n", probecnt, status.ch0_level_valid);
+                        fprintf(meta, " plevel%d = %d\n", probecnt, status.ch0_plevel);
+                        fprintf(meta, " low%d = %" PRIu32 "\n", probecnt, status.ch0_low_level);
+                        fprintf(meta, " high%d = %" PRIu32 "\n", probecnt, status.ch0_high_level);
+                        fprintf(meta, " rlen%d = %" PRIu32 "\n", probecnt, status.ch0_cyc_rlen);
+                        fprintf(meta, " flen%d = %" PRIu32 "\n", probecnt, status.ch0_cyc_flen);
+                        fprintf(meta, " rms%d = %" PRIu64 "\n", probecnt, status.ch0_acc_square);
+                        fprintf(meta, " mean%d = %" PRIu32 "\n", probecnt, status.ch0_acc_mean);
                     } else {
-                        fprintf(meta, " period%d = %" PRIu64 "\n", probecnt, status.ch1_period);
-                        fprintf(meta, " pcnt%d = %" PRIu32 "\n", probecnt, status.ch1_pcnt);
+                        fprintf(meta, " period%d = %" PRIu32 "\n", probecnt, status.ch1_cyc_tlen);
+                        fprintf(meta, " pcnt%d = %" PRIu32 "\n", probecnt, status.ch1_cyc_cnt);
                         fprintf(meta, " max%d = %d\n", probecnt, status.ch1_max);
                         fprintf(meta, " min%d = %d\n", probecnt, status.ch1_min);
+                        fprintf(meta, " plen%d = %" PRIu32 "\n", probecnt, status.ch1_cyc_plen);
+                        fprintf(meta, " llen%d = %" PRIu32 "\n", probecnt, status.ch1_cyc_llen);
+                        fprintf(meta, " level%d = %d\n", probecnt, status.ch1_level_valid);
+                        fprintf(meta, " plevel%d = %d\n", probecnt, status.ch1_plevel);
+                        fprintf(meta, " low%d = %" PRIu32 "\n", probecnt, status.ch1_low_level);
+                        fprintf(meta, " high%d = %" PRIu32 "\n", probecnt, status.ch1_high_level);
+                        fprintf(meta, " rlen%d = %" PRIu32 "\n", probecnt, status.ch1_cyc_rlen);
+                        fprintf(meta, " flen%d = %" PRIu32 "\n", probecnt, status.ch1_cyc_flen);
+                        fprintf(meta, " rms%d = %" PRIu64 "\n", probecnt, status.ch1_acc_square);
+                        fprintf(meta, " mean%d = %" PRIu32 "\n", probecnt, status.ch1_acc_mean);
                     }
                 }
             } else if (sdi->mode == ANALOG) {
                 fprintf(meta, " enable%d = %d\n", probecnt, probe->enabled);
                 fprintf(meta, " coupling%d = %d\n", probecnt, probe->coupling);
                 fprintf(meta, " vDiv%d = %" PRIu64 "\n", probecnt, probe->vdiv);
-                fprintf(meta, " vPos%d = %lf\n", probecnt, probe->vpos);
+                fprintf(meta, " vOffset%d = %d\n", probecnt, probe->hw_offset);
                 fprintf(meta, " mapUnit%d = %s\n", probecnt, probe->map_unit);
                 fprintf(meta, " mapMax%d = %lf\n", probecnt, probe->map_max);
                 fprintf(meta, " mapMin%d = %lf\n", probecnt, probe->map_min);
@@ -440,7 +501,7 @@ bool StoreSession::export_start()
     }
 
     const QString DIR_KEY("ExportPath");
-    QSettings settings;
+    QSettings settings(QApplication::organizationName(), QApplication::applicationName());
 
     // Show the dialog
     QList<QString> supportedFormats = getSuportedExportFormats();
@@ -521,7 +582,7 @@ void StoreSession::export_proc(shared_ptr<data::Snapshot> snapshot)
     file.open(QIODevice::WriteOnly | QIODevice::Text);
     QTextStream out(&file);
     out.setCodec("UTF-8");
-    out.setGenerateByteOrderMark(true);
+    //out.setGenerateByteOrderMark(true);  // UTF-8 without BOM
 
     // Meta
     GString *data_out;
@@ -664,7 +725,8 @@ void StoreSession::export_proc(shared_ptr<data::Snapshot> snapshot)
     file.close();
     _outModule->cleanup(&output);
     g_hash_table_destroy(params);
-    g_variant_unref(filenameGVariant);
+    if (filenameGVariant != NULL)
+        g_variant_unref(filenameGVariant);
 
     progress_updated();
 }
@@ -689,7 +751,7 @@ QString StoreSession::decoders_gen()
         }
         QTextStream outStream(&sessionFile);
         outStream.setCodec("UTF-8");
-        outStream.setGenerateByteOrderMark(true);
+        //outStream.setGenerateByteOrderMark(true); // UTF-8 without BOM
 
         QJsonArray dec_array = json_decoders();
         QJsonDocument sessionDoc(dec_array);
@@ -733,32 +795,24 @@ QJsonArray StoreSession::json_decoders()
                 const srd_decoder_option *const opt =
                     (srd_decoder_option*)l->data;
 
-                const std::map<string, GVariant*>& options = dec->options();
-                std::map<string, GVariant*>::const_iterator iter = options.find(opt->id);
-                if (opt->values) {
-                    for (GSList *vl = opt->values; vl; vl = vl->next) {
-                        GVariant *const var = (GVariant*)vl->data;
-                        assert(var);
-                        if (iter == options.end()) {
-                            options_obj[opt->id] = QJsonValue::fromVariant(dec_binding->print_gvariant(opt->def));
-                            break;
-                        } else if (g_variant_compare((*iter).second, var) == 0) {
-                            options_obj[opt->id] = QJsonValue::fromVariant(dec_binding->print_gvariant(var));
-                            break;
-                        }
-                    }
-                } else if (g_variant_is_of_type(opt->def, G_VARIANT_TYPE("d"))) {
+                if (g_variant_is_of_type(opt->def, G_VARIANT_TYPE("d"))) {
                     GVariant *const var = dec_binding->getter(opt->id);
-                    options_obj[opt->id] = QJsonValue::fromVariant(g_variant_get_double(var));
-                    g_variant_unref(var);
+                    if (var != NULL) {
+                        options_obj[opt->id] = QJsonValue::fromVariant(g_variant_get_double(var));
+                        g_variant_unref(var);
+                    }
                 } else if (g_variant_is_of_type(opt->def, G_VARIANT_TYPE("x"))) {
                     GVariant *const var = dec_binding->getter(opt->id);
-                    options_obj[opt->id] = QJsonValue::fromVariant(get_double(var));
-                    g_variant_unref(var);
+                    if (var != NULL) {
+                        options_obj[opt->id] = QJsonValue::fromVariant(get_integer(var));
+                        g_variant_unref(var);
+                    }
                 } else if (g_variant_is_of_type(opt->def, G_VARIANT_TYPE("s"))) {
                     GVariant *const var = dec_binding->getter(opt->id);
-                    options_obj[opt->id] = QJsonValue::fromVariant(g_variant_get_string(var, NULL));
-                    g_variant_unref(var);
+                    if (var != NULL) {
+                        options_obj[opt->id] = QJsonValue::fromVariant(g_variant_get_string(var, NULL));
+                        g_variant_unref(var);
+                    }
                 }else {
                     continue;
                 }
@@ -879,43 +933,31 @@ void StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_arra
                     const srd_decoder_option *const opt =
                         (srd_decoder_option*)l->data;
                     if (options_obj.contains(opt->id)) {
-                        if (opt->values) {
-                            QString enum_option = options_obj[opt->id].toString();
-                            for (GSList *vl = opt->values; vl; vl = vl->next) {
-                                GVariant *const var = (GVariant*)vl->data;
-                                assert(var);
-                                if (enum_option == QString::fromUtf8(g_variant_get_string(var, NULL))) {
-                                    dec->set_option(opt->id, var);
-                                    break;
-                                }
-                            }
-                        } else if (g_variant_is_of_type(opt->def, G_VARIANT_TYPE("d"))) {
-                            double d_option = options_obj[opt->id].toDouble();
-                            dec->set_option(opt->id, g_variant_new_double(d_option));
+                        GVariant *new_value = NULL;
+                        if (g_variant_is_of_type(opt->def, G_VARIANT_TYPE("d"))) {
+                            new_value = g_variant_new_double(options_obj[opt->id].toDouble());
                         } else if (g_variant_is_of_type(opt->def, G_VARIANT_TYPE("x"))) {
-                            int64_t d_option = options_obj[opt->id].toDouble();
-                            GVariant *new_value = NULL;
                             const GVariantType *const type = g_variant_get_type(opt->def);
                             if (g_variant_type_equal(type, G_VARIANT_TYPE_BYTE))
-                                new_value = g_variant_new_byte(d_option);
+                                new_value = g_variant_new_byte(options_obj[opt->id].toInt());
                             else if (g_variant_type_equal(type, G_VARIANT_TYPE_INT16))
-                                new_value = g_variant_new_int16(d_option);
+                                new_value = g_variant_new_int16(options_obj[opt->id].toInt());
                             else if (g_variant_type_equal(type, G_VARIANT_TYPE_UINT16))
-                                new_value = g_variant_new_uint16(d_option);
+                                new_value = g_variant_new_uint16(options_obj[opt->id].toInt());
                             else if (g_variant_type_equal(type, G_VARIANT_TYPE_INT32))
-                                new_value = g_variant_new_int32(d_option);
+                                new_value = g_variant_new_int32(options_obj[opt->id].toInt());
                             else if (g_variant_type_equal(type, G_VARIANT_TYPE_UINT32))
-                                new_value = g_variant_new_int32(d_option);
+                                new_value = g_variant_new_uint32(options_obj[opt->id].toInt());
                             else if (g_variant_type_equal(type, G_VARIANT_TYPE_INT64))
-                                new_value = g_variant_new_int64(d_option);
+                                new_value = g_variant_new_int64(options_obj[opt->id].toInt());
                             else if (g_variant_type_equal(type, G_VARIANT_TYPE_UINT64))
-                                new_value = g_variant_new_uint64(d_option);
-                            if (new_value != NULL)
-                                dec->set_option(opt->id, new_value);
+                                new_value = g_variant_new_uint64(options_obj[opt->id].toInt());
                         } else if (g_variant_is_of_type(opt->def, G_VARIANT_TYPE("s"))) {
-                            QString s_option = options_obj[opt->id].toString();
-                            dec->set_option(opt->id, g_variant_new_string(s_option.toLocal8Bit().data()));
+                            new_value = g_variant_new_string(options_obj[opt->id].toString().toLocal8Bit().data());
                         }
+
+                        if (new_value != NULL)
+                            dec->set_option(opt->id, new_value);
                     }
                 }
                 dec->commit();
@@ -944,7 +986,7 @@ void StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_arra
 }
 #endif
 
-double StoreSession::get_double(GVariant *var)
+double StoreSession::get_integer(GVariant *var)
 {
     double val = 0;
     const GVariantType *const type = g_variant_get_type(var);
@@ -969,5 +1011,6 @@ double StoreSession::get_double(GVariant *var)
 
     return val;
 }
+
 
 } // pv

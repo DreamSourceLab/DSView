@@ -82,7 +82,8 @@ public:
     void clear();
     void init();
 
-    void first_payload(const sr_datafeed_dso &dso, uint64_t total_sample_count, std::map<int, bool> ch_enable, bool instant);
+    void first_payload(const sr_datafeed_dso &dso, uint64_t total_sample_count,
+                       std::map<int, bool> ch_enable, bool instant);
 
     void append_payload(const sr_datafeed_dso &dso);
 

@@ -14,8 +14,7 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import sigrokdecode as srd
@@ -32,30 +31,30 @@ exc_names = [
 for i in range(8, 496):
     exc_names.append('IRQ%d' % i)
 
-def parse_varint(bytes):
+def parse_varint(bytes_):
     '''Parse an integer where the top bit is the continuation bit.
     Returns value and number of parsed bytes.'''
     v = 0
-    for i, b in enumerate(bytes):
+    for i, b in enumerate(bytes_):
         v |= (b & 0x7F) << (i * 7)
         if b & 0x80 == 0:
             return v, i+1
-    return v, len(bytes)
+    return v, len(bytes_)
 
-def parse_uint(bytes):
+def parse_uint(bytes_):
     '''Parse little-endian integer.'''
     v = 0
-    for i, b in enumerate(bytes):
+    for i, b in enumerate(bytes_):
         v |= b << (i * 8)
     return v
 
-def parse_exc_info(bytes):
+def parse_exc_info(bytes_):
     '''Parse exception information bytes from a branch packet.'''
-    if len(bytes) < 1:
+    if len(bytes_) < 1:
         return None
 
-    excv, exclen = parse_varint(bytes)
-    if bytes[exclen - 1] & 0x80 != 0x00:
+    excv, exclen = parse_varint(bytes_)
+    if bytes_[exclen - 1] & 0x80 != 0x00:
         return None # Exception info not complete.
 
     if exclen == 2 and excv & (1 << 13):
@@ -70,21 +69,21 @@ def parse_exc_info(bytes):
     resume = (excv >> 14) & 0x0F
     return (ns, exc, cancel, altisa, hyp, resume)
 
-def parse_branch_addr(bytes, ref_addr, cpu_state, branch_enc):
+def parse_branch_addr(bytes_, ref_addr, cpu_state, branch_enc):
     '''Parse encoded branch address.
        Returns addr, addrlen, cpu_state, exc_info.
        Returns None if packet is not yet complete'''
 
-    addr, addrlen = parse_varint(bytes)
+    addr, addrlen = parse_varint(bytes_)
 
-    if bytes[addrlen-1] & 0x80 != 0x00:
+    if bytes_[addrlen - 1] & 0x80 != 0x00:
         return None # Branch address not complete.
 
     addr_bits = 7 * addrlen
 
     have_exc_info = False
     if branch_enc == 'original':
-        if addrlen == 5 and bytes[4] & 0x40:
+        if addrlen == 5 and bytes_[4] & 0x40:
             have_exc_info = True
     elif branch_enc == 'alternative':
         addr_bits -= 1 # Top bit of address indicates exc_info.
@@ -94,20 +93,20 @@ def parse_branch_addr(bytes, ref_addr, cpu_state, branch_enc):
 
     exc_info = None
     if have_exc_info:
-        exc_info = parse_exc_info(bytes[addrlen:])
+        exc_info = parse_exc_info(bytes_[addrlen:])
         if exc_info is None:
             return None # Exception info not complete.
 
     if addrlen == 5:
         # Possible change in CPU state.
-        if bytes[4] & 0xB8 == 0x08:
+        if bytes_[4] & 0xB8 == 0x08:
             cpu_state = 'arm'
-        elif bytes[4] & 0xB0 == 0x10:
+        elif bytes_[4] & 0xB0 == 0x10:
             cpu_state = 'thumb'
-        elif bytes[4] & 0xA0 == 0x20:
+        elif bytes_[4] & 0xA0 == 0x20:
             cpu_state = 'jazelle'
         else:
-            raise NotImplementedError('Unhandled branch byte 4: 0x%02x' % bytes[4])
+            raise NotImplementedError('Unhandled branch byte 4: 0x%02x' % bytes_[4])
 
     # Shift the address according to current CPU state.
     if cpu_state == 'arm':
@@ -128,14 +127,15 @@ def parse_branch_addr(bytes, ref_addr, cpu_state, branch_enc):
     return addr, addrlen, cpu_state, exc_info
 
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'arm_etmv3'
     name = 'ARM ETMv3'
-    longname = 'ARM Embedded Trace Macroblock'
-    desc = 'Decode ETM instruction trace packets.'
+    longname = 'ARM Embedded Trace Macroblock v3'
+    desc = 'ARM ETM v3 instruction trace protocol.'
     license = 'gplv2+'
     inputs = ['uart']
-    outputs = ['arm_etmv3']
+    outputs = []
+    tags = ['Debug/trace']
     annotations = (
         ('trace', 'Trace info'),
         ('branch', 'Branches'),
@@ -171,6 +171,9 @@ class Decoder(srd.Decoder):
     )
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.buf = []
         self.syncbuf = []
         self.prevsample = 0

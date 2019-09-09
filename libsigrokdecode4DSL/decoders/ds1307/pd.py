@@ -15,12 +15,12 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
 import re
 import sigrokdecode as srd
+from common.srdhelper import bcd2int
 
 days_of_week = (
     'Sunday', 'Monday', 'Tuesday', 'Wednesday',
@@ -39,9 +39,9 @@ bits = (
 
 rates = {
     0b00: '1Hz',
-    0b01: '4096kHz',
-    0b10: '8192kHz',
-    0b11: '32768kHz',
+    0b01: '4096Hz',
+    0b10: '8192Hz',
+    0b11: '32768Hz',
 }
 
 DS1307_I2C_ADDRESS = 0x68
@@ -51,19 +51,16 @@ def regs_and_bits():
     l += [('bit-' + re.sub('\/| ', '-', b).lower(), b + ' bit') for b in bits]
     return tuple(l)
 
-# Return the specified BCD number (max. 8 bits) as integer.
-def bcd2int(b):
-    return (b & 0x0f) + ((b >> 4) * 10)
-
 class Decoder(srd.Decoder):
-    api_version = 2
+    api_version = 3
     id = 'ds1307'
     name = 'DS1307'
     longname = 'Dallas DS1307'
-    desc = 'Realtime clock module protocol.'
+    desc = 'Dallas DS1307 realtime clock module protocol.'
     license = 'gplv2+'
     inputs = ['i2c']
-    outputs = ['ds1307']
+    outputs = []
+    tags = ['Clock/timing', 'IC']
     annotations =  regs_and_bits() + (
         ('read-datetime', 'Read date/time'),
         ('write-datetime', 'Write date/time'),
@@ -78,7 +75,10 @@ class Decoder(srd.Decoder):
         ('warnings', 'Warnings', (28,)),
     )
 
-    def __init__(self, **kwargs):
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.state = 'IDLE'
         self.hours = -1
         self.minutes = -1
@@ -122,7 +122,7 @@ class Decoder(srd.Decoder):
         ampm_mode = True if (b & (1 << 6)) else False
         if ampm_mode:
             self.putd(6, 6, [13, ['12-hour mode', '12h mode', '12h']])
-            a = 'AM' if (b & (1 << 6)) else 'PM'
+            a = 'PM' if (b & (1 << 5)) else 'AM'
             self.putd(5, 5, [14, [a, a[0]]])
             h = self.hours = bcd2int(b & 0x1f)
             self.putd(4, 0, [15, ['Hour: %d' % h, 'H: %d' % h, 'H']])

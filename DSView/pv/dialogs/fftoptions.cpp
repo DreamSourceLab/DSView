@@ -27,10 +27,10 @@
 #include <QListWidget>
 
 #include "../sigsession.h"
-#include "../data/mathstack.h"
+#include "../data/spectrumstack.h"
 #include "../view/trace.h"
 #include "../view/dsosignal.h"
-#include "../view/mathtrace.h"
+#include "../view/spectrumtrace.h"
 
 using namespace boost;
 using namespace std;
@@ -75,13 +75,13 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
     std::vector<uint64_t> length;
     std::vector<QString> view_modes;
     std::vector<int> dbv_ranges;
-    BOOST_FOREACH(const boost::shared_ptr<view::Trace> t, _session.get_math_signals()) {
-        boost::shared_ptr<view::MathTrace> mathTrace;
-        if ((mathTrace = dynamic_pointer_cast<view::MathTrace>(t))) {
-            windows = mathTrace->get_math_stack()->get_windows_support();
-            length = mathTrace->get_math_stack()->get_length_support();
-            view_modes = mathTrace->get_view_modes_support();
-            dbv_ranges = mathTrace->get_dbv_ranges();
+    BOOST_FOREACH(const boost::shared_ptr<view::Trace> t, _session.get_spectrum_traces()) {
+        boost::shared_ptr<view::SpectrumTrace> spectrumTraces;
+        if ((spectrumTraces = dynamic_pointer_cast<view::SpectrumTrace>(t))) {
+            windows = spectrumTraces->get_spectrum_stack()->get_windows_support();
+            length = spectrumTraces->get_spectrum_stack()->get_length_support();
+            view_modes = spectrumTraces->get_view_modes_support();
+            dbv_ranges = spectrumTraces->get_dbv_ranges();
             break;
         }
     }
@@ -125,19 +125,19 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
     }
 
     // load current settings
-    BOOST_FOREACH(const boost::shared_ptr<view::Trace> t, _session.get_math_signals()) {
-        boost::shared_ptr<view::MathTrace> mathTrace;
-        if ((mathTrace = dynamic_pointer_cast<view::MathTrace>(t))) {
-            if (mathTrace->enabled()) {
+    BOOST_FOREACH(const boost::shared_ptr<view::Trace> t, _session.get_spectrum_traces()) {
+        boost::shared_ptr<view::SpectrumTrace> spectrumTraces;
+        if ((spectrumTraces = dynamic_pointer_cast<view::SpectrumTrace>(t))) {
+            if (spectrumTraces->enabled()) {
                 _en_checkbox->setChecked(true);
                 for (int i = 0; i < _ch_combobox->count(); i++) {
-                    if (mathTrace->get_index() == _ch_combobox->itemData(i).toInt()) {
+                    if (spectrumTraces->get_index() == _ch_combobox->itemData(i).toInt()) {
                         _ch_combobox->setCurrentIndex(i);
                         break;
                     }
                 }
                 for (int i = 0; i < _len_combobox->count(); i++) {
-                    if (mathTrace->get_math_stack()->get_sample_num() == _len_combobox->itemData(i).toULongLong()) {
+                    if (spectrumTraces->get_spectrum_stack()->get_sample_num() == _len_combobox->itemData(i).toULongLong()) {
                         _len_combobox->setCurrentIndex(i);
                         break;
                     }
@@ -150,20 +150,20 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
                         qVariantFromValue(i));
                 }
                 for (int i = 0; i < _interval_combobox->count(); i++) {
-                    if (mathTrace->get_math_stack()->get_sample_interval() == _interval_combobox->itemData(i).toInt()) {
+                    if (spectrumTraces->get_spectrum_stack()->get_sample_interval() == _interval_combobox->itemData(i).toInt()) {
                         _interval_combobox->setCurrentIndex(i);
                         break;
                     }
                 }
                 for (int i = 0; i < _dbv_combobox->count(); i++) {
-                    if (mathTrace->dbv_range() == _dbv_combobox->itemData(i).toLongLong()) {
+                    if (spectrumTraces->dbv_range() == _dbv_combobox->itemData(i).toLongLong()) {
                         _dbv_combobox->setCurrentIndex(i);
                         break;
                     }
                 }
-                _window_combobox->setCurrentIndex(mathTrace->get_math_stack()->get_windows_index());
-                _dc_checkbox->setChecked(mathTrace->get_math_stack()->dc_ignored());
-                _view_combobox->setCurrentIndex(mathTrace->view_mode());
+                _window_combobox->setCurrentIndex(spectrumTraces->get_spectrum_stack()->get_windows_index());
+                _dc_checkbox->setChecked(spectrumTraces->get_spectrum_stack()->dc_ignored());
+                _view_combobox->setCurrentIndex(spectrumTraces->view_mode());
             }
         }
     }
@@ -214,26 +214,26 @@ void FftOptions::accept()
 
     QDialog::accept();
 
-    BOOST_FOREACH(const boost::shared_ptr<view::Trace> t, _session.get_math_signals()) {
-        boost::shared_ptr<view::MathTrace> mathTrace;
-        if ((mathTrace = dynamic_pointer_cast<view::MathTrace>(t))) {
-            mathTrace->set_enable(false);
-            if (mathTrace->get_index() == _ch_combobox->currentData().toInt()) {
-                mathTrace->get_math_stack()->set_dc_ignore(_dc_checkbox->isChecked());
-                mathTrace->get_math_stack()->set_sample_num(_len_combobox->currentData().toULongLong());
-                mathTrace->get_math_stack()->set_sample_interval(_interval_combobox->currentData().toInt());
-                mathTrace->get_math_stack()->set_windows_index(_window_combobox->currentData().toInt());
-                mathTrace->set_view_mode(_view_combobox->currentData().toUInt());
-                //mathTrace->init_zoom();
-                mathTrace->set_dbv_range(_dbv_combobox->currentData().toInt());
-                mathTrace->set_enable(_en_checkbox->isChecked());
+    BOOST_FOREACH(const boost::shared_ptr<view::Trace> t, _session.get_spectrum_traces()) {
+        boost::shared_ptr<view::SpectrumTrace> spectrumTraces;
+        if ((spectrumTraces = dynamic_pointer_cast<view::SpectrumTrace>(t))) {
+            spectrumTraces->set_enable(false);
+            if (spectrumTraces->get_index() == _ch_combobox->currentData().toInt()) {
+                spectrumTraces->get_spectrum_stack()->set_dc_ignore(_dc_checkbox->isChecked());
+                spectrumTraces->get_spectrum_stack()->set_sample_num(_len_combobox->currentData().toULongLong());
+                spectrumTraces->get_spectrum_stack()->set_sample_interval(_interval_combobox->currentData().toInt());
+                spectrumTraces->get_spectrum_stack()->set_windows_index(_window_combobox->currentData().toInt());
+                spectrumTraces->set_view_mode(_view_combobox->currentData().toUInt());
+                //spectrumTraces->init_zoom();
+                spectrumTraces->set_dbv_range(_dbv_combobox->currentData().toInt());
+                spectrumTraces->set_enable(_en_checkbox->isChecked());
                 if (_session.get_capture_state() == SigSession::Stopped &&
-                    mathTrace->enabled())
-                    mathTrace->get_math_stack()->calc_fft();
+                    spectrumTraces->enabled())
+                    spectrumTraces->get_spectrum_stack()->calc_fft();
             }
         }
     }
-    _session.mathTraces_rebuild();
+    _session.spectrum_rebuild();
 }
 
 void FftOptions::reject()
