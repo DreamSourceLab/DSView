@@ -2,6 +2,7 @@
 ## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2016 Daniel Schulte <trilader@schroedingers-bit.net>
+## Copyright (C) 2019 DreamSourceLab <support@dreamsourcelab.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -120,3 +121,6 @@ class Decoder(srd.Decoder):
             # Sample data bits on falling clock edge.
             (clock_pin, data_pin) = self.wait({0: 'f'})
             self.handle_bits(data_pin)
+            if (self.bitcount == 11):
+                (clock_pin, data_pin) = self.wait({0: 'r'})
+                self.handle_bits(data_pin)
