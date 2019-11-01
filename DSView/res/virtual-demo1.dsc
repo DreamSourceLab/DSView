@@ -1,7 +1,6 @@
 {
     "Device": "virtual-demo",
     "DeviceMode": 1,
-    "Language": 25,
     "Pattern mode": "Sine",
     "Sample count": "10000",
     "Sample rate": "100000000",

@@ -877,7 +877,7 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev)
     // check language
     if (sessionObj.contains("Language")) {
         switchLanguage(sessionObj["Language"].toInt());
-    } else {
+    } else if (sessionObj.contains("Operation Mode")) {
         bool language_matched = _session.get_device()->set_config(NULL, NULL, SR_CONF_OPERATION_MODE,
                                           g_variant_new_string(sessionObj["Operation Mode"].toString().toUtf8()));
         if (!language_matched) {
