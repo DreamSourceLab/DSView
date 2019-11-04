@@ -29,6 +29,7 @@
 #include <QMainWindow>
 
 #include "sigsession.h"
+#include "dialogs/dsmessagebox.h"
 
 class QAction;
 class QMenuBar;
@@ -106,7 +107,7 @@ private slots:
 
     void reload();
 
-	void show_session_error(
+    void show_session_error(
 		const QString text, const QString info_text);
 
 	void run_stop();
@@ -161,6 +162,7 @@ private:
 	SigSession _session;
 
 	pv::view::View *_view;
+    dialogs::DSMessageBox *_msg;
 
 	QMenuBar *_menu_bar;
 	QMenu *_menu_file;

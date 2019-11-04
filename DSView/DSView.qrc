@@ -133,5 +133,9 @@
         <file>icons/dark/osc.png</file>
         <file>icons/showDoc25.png</file>
         <file>icons/showDoc31.png</file>
+        <file>icons/usb2.png</file>
+        <file>icons/usb3.png</file>
+        <file>icons/data.png</file>
+        <file>icons/demo.png</file>
     </qresource>
 </RCC>

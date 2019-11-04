@@ -264,6 +264,7 @@ static GSList *scan(GSList *options)
 	libusb_device **devlist;
     int devcnt, ret, i, j;
 	const char *conn;
+    enum libusb_speed usb_speed;
 
 	drvc = di->priv;
 
@@ -305,10 +306,16 @@ static GSList *scan(GSList *options)
 			continue;
 		}
 
+        usb_speed = libusb_get_device_speed( devlist[i]);
+        if ((usb_speed != LIBUSB_SPEED_HIGH) &&
+            (usb_speed != LIBUSB_SPEED_SUPER))
+            continue;
+
 		prof = NULL;
         for (j = 0; supported_DSLogic[j].vid; j++) {
             if (des.idVendor == supported_DSLogic[j].vid &&
-                des.idProduct == supported_DSLogic[j].pid) {
+                des.idProduct == supported_DSLogic[j].pid &&
+                usb_speed == supported_DSLogic[j].usb_speed) {
                 prof = &supported_DSLogic[j];
 			}
 		}
@@ -939,15 +946,17 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         stropt = g_variant_get_string(data, NULL);
         if (sdi->mode == LOGIC) {
             for (i = 0; i < ARRAY_SIZE(channel_modes); i++) {
-                if (devc->language == LANGUAGE_CN) {
-                    if (!strcmp(stropt, channel_modes[i].descr_cn)) {
-                        devc->ch_mode = channel_modes[i].id;
-                        break;
-                    }
-                } else {
-                    if (!strcmp(stropt, channel_modes[i].descr)) {
-                        devc->ch_mode = channel_modes[i].id;
-                        break;
+                if (devc->profile->dev_caps.channels & (1 << i)) {
+                    if (devc->language == LANGUAGE_CN) {
+                        if (!strcmp(stropt, channel_modes[i].descr_cn)) {
+                            devc->ch_mode = channel_modes[i].id;
+                            break;
+                        }
+                    } else {
+                        if (!strcmp(stropt, channel_modes[i].descr)) {
+                            devc->ch_mode = channel_modes[i].id;
+                            break;
+                        }
                     }
                 }
             }

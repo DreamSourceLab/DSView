@@ -22,6 +22,7 @@
 #include <extdef.h>
 #include <assert.h>
 #include <boost/foreach.hpp>
+#include <libusb.h>
 
 #include <QAction>
 #include <QDebug>
@@ -30,7 +31,6 @@
 #include <QApplication>
 
 #include "samplingbar.h"
-
 #include "../devicemanager.h"
 #include "../device/devinst.h"
 #include "../dialogs/deviceoptions.h"
@@ -57,6 +57,7 @@ SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
     _session(session),
     _enable(true),
     _sampling(false),
+    _device_type(this),
     _device_selector(this),
     _updating_device_selector(false),
     _configure_button(this),
@@ -104,6 +105,8 @@ SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
     leftMargin->setFixedWidth(4);
     addWidget(leftMargin);
 
+    _device_type.setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+    addWidget(&_device_type);
     addWidget(&_device_selector);
     _configure_button.setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     addWidget(&_configure_button);
@@ -146,6 +149,27 @@ void SamplingBar::changeEvent(QEvent *event)
 
 void SamplingBar::retranslateUi()
 {
+    shared_ptr<pv::device::DevInst> dev_inst = get_selected_device();
+    if (dev_inst && dev_inst->dev_inst()) {
+        if (dev_inst->name().contains("virtual-demo"))
+            _device_type.setText(tr("Demo"));
+        else if (dev_inst->name().contains("virtual"))
+            _device_type.setText(tr("File"));
+        else {
+            int usb_speed;
+            GVariant *gvar = dev_inst->get_config(NULL, NULL, SR_CONF_USB_SPEED);
+            if (gvar != NULL) {
+                usb_speed = g_variant_get_int32(gvar);
+                g_variant_unref(gvar);
+            }
+            if (usb_speed == LIBUSB_SPEED_HIGH)
+                _device_type.setText(tr("USB 2.0"));
+            else if (usb_speed == LIBUSB_SPEED_SUPER)
+                _device_type.setText(tr("USB 3.0"));
+            else
+                _device_type.setText(tr("USB UNKNOWN"));
+        }
+    }
     _configure_button.setText(tr("Options"));
     _mode_button.setText(tr("Mode"));
     if (_instant) {
@@ -172,6 +196,26 @@ void SamplingBar::reStyle()
 {
     QString iconPath = ":/icons/" + qApp->property("Style").toString();
 
+    shared_ptr<pv::device::DevInst> dev_inst = get_selected_device();
+    if (dev_inst && dev_inst->dev_inst()) {
+        if (dev_inst->name().contains("virtual-demo"))
+            _device_type.setIcon(QIcon(":/icons/demo.png"));
+        else if (dev_inst->name().contains("virtual"))
+            _device_type.setIcon(QIcon(":/icons/data.png"));
+        else {
+            int usb_speed;
+            GVariant *gvar = dev_inst->get_config(NULL, NULL, SR_CONF_USB_SPEED);
+            if (gvar != NULL) {
+                usb_speed = g_variant_get_int32(gvar);
+                g_variant_unref(gvar);
+            }
+            if (usb_speed == LIBUSB_SPEED_SUPER)
+                _device_type.setIcon(QIcon(":/icons/usb3.png"));
+            else
+                _device_type.setIcon(QIcon(":/icons/usb2.png"));
+
+        }
+    }
     _configure_button.setIcon(QIcon(iconPath+"/params.png"));
     _mode_button.setIcon(_session.get_run_mode() == pv::SigSession::Single ? QIcon(iconPath+"/modes.png") :
                                                                              QIcon(iconPath+"/moder.png"));
@@ -964,6 +1008,7 @@ void SamplingBar::reload()
         enable_toggle(true);
     }
     retranslateUi();
+    reStyle();
     update();
 }
 

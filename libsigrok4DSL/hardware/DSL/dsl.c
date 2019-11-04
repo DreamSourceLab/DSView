@@ -921,7 +921,7 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
         }
     }
 
-    if (!(devc->profile->dev_caps.feature_caps & CAPS_FEATURE_USB30)) {
+    if (!(devc->profile->usb_speed == LIBUSB_SPEED_SUPER)) {
         // set GPIF to be wordwide
         wr_cmd.header.dest = DSL_CTL_WORDWIDE;
         wr_cmd.header.size = 1;
@@ -1172,6 +1172,16 @@ SR_PRIV int dsl_config_get(int id, GVariant **data, const struct sr_dev_inst *sd
             return SR_ERR;
         snprintf(str, 128, "%d.%d", usb->bus, usb->address);
         *data = g_variant_new_string(str);
+        break;
+    case SR_CONF_USB_SPEED:
+        if (!sdi)
+            return SR_ERR;
+        *data = g_variant_new_int32(devc->profile->usb_speed);
+        break;
+    case SR_CONF_USB30_SUPPORT:
+        if (!sdi)
+            return SR_ERR;
+        *data = g_variant_new_boolean(devc->profile->dev_caps.feature_caps & CAPS_FEATURE_USB30);
         break;
     case SR_CONF_LIMIT_SAMPLES:
         if (!sdi)
@@ -1612,16 +1622,16 @@ SR_PRIV int dsl_dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *
 
 static unsigned int get_single_buffer_time(const struct DSL_context *devc)
 {
-    if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_USB30)
-        return 100;
+    if (devc->profile->usb_speed == LIBUSB_SPEED_SUPER)
+        return 10;
     else
         return 20;
 }
 
 static unsigned int get_total_buffer_time(const struct DSL_context *devc)
 {
-    if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_USB30)
-        return 500;
+    if (devc->profile->usb_speed == LIBUSB_SPEED_SUPER)
+        return 40;
     else
         return 100;
 }
@@ -1643,7 +1653,7 @@ SR_PRIV int dsl_header_size(const struct DSL_context *devc)
 {
     int size;
 
-    if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_USB30)
+    if (devc->profile->usb_speed == LIBUSB_SPEED_SUPER)
         size = SR_KB(1);
     else
         size = SR_B(512);

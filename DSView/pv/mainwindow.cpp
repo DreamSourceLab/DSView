@@ -58,7 +58,6 @@
 #include "dialogs/deviceoptions.h"
 #include "dialogs/storeprogress.h"
 #include "dialogs/waitingdialog.h"
-#include "dialogs/dsmessagebox.h"
 #include "dialogs/regionoptions.h"
 
 #include "toolbars/samplingbar.h"
@@ -86,6 +85,7 @@
 #include <stdarg.h>
 #include <glib.h>
 #include <list>
+#include <libusb.h>
 
 using boost::shared_ptr;
 using boost::dynamic_pointer_cast;
@@ -99,7 +99,8 @@ MainWindow::MainWindow(DeviceManager &device_manager,
 	QWidget *parent) :
     QMainWindow(parent),
     _device_manager(device_manager),
-    _session(device_manager)
+    _session(device_manager),
+    _msg(NULL)
 {
 	setup_ui();
 	if (open_file_name) {
@@ -346,6 +347,9 @@ void MainWindow::update_device_list()
 {
     assert(_sampling_bar);
 
+    if (_msg)
+        _msg->close();
+
     switchLanguage(_language);
     _session.stop_capture();
     _view->reload();
@@ -434,6 +438,29 @@ void MainWindow::update_device_list()
     _trigger_widget->init();
     _dso_trigger_widget->init();
 	_measure_widget->reload();
+
+    // USB device speed check
+    if (!selected_device->name().contains("virtual")) {
+        int usb_speed;
+        GVariant *gvar = selected_device->get_config(NULL, NULL, SR_CONF_USB_SPEED);
+        if (gvar != NULL) {
+            usb_speed = g_variant_get_int32(gvar);
+            g_variant_unref(gvar);
+        }
+
+        bool usb30_support = false;
+        gvar = selected_device->get_config(NULL, NULL, SR_CONF_USB30_SUPPORT);
+        if (gvar != NULL) {
+            usb30_support = g_variant_get_boolean(gvar);
+            g_variant_unref(gvar);
+
+            if (usb30_support && usb_speed == LIBUSB_SPEED_HIGH)
+                show_session_error(tr("Speed limited"), tr("This is a super-speed usb device(USB 3.0). "
+                                                           "Plug it into a USB 2.0 port will seriously affect its performance."
+                                                           "Please replug it into a USB 3.0 port."));
+        }
+    }
+
 }
 
 void MainWindow::reload()
@@ -464,11 +491,13 @@ void MainWindow::show_session_error(
 	const QString text, const QString info_text)
 {
     dialogs::DSMessageBox msg(this);
+    _msg = &msg;
     msg.mBox()->setText(text);
     msg.mBox()->setInformativeText(info_text);
     msg.mBox()->setStandardButtons(QMessageBox::Ok);
     msg.mBox()->setIcon(QMessageBox::Warning);
 	msg.exec();
+    _msg = NULL;
 }
 
 void MainWindow::device_attach()

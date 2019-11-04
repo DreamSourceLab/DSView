@@ -139,6 +139,8 @@ private:
     bool _enable;
     bool _sampling;
 
+    QToolButton _device_type;
+
     QComboBox _device_selector;
     std::map<const void*, boost::weak_ptr<device::DevInst> >
         _device_selector_map;
