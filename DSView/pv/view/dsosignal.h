@@ -123,6 +123,7 @@ public:
     uint64_t get_factor();
     void set_show(bool show);
     bool show() const;
+    void set_mValid(bool valid);
 
     bool load_settings();
     int commit_settings();
@@ -224,6 +225,7 @@ private:
 private:
     boost::shared_ptr<pv::data::Dso> _data;
 	float _scale;
+    float _stop_scale;
     bool _en_lock;
     bool _show;
 

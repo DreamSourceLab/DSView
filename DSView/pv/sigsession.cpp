@@ -419,6 +419,14 @@ void SigSession::start_capture(bool instant,
 
     // stop previous capture
 	stop_capture();
+    // reset measure of dso signal
+    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
+    {
+        assert(s);
+        boost::shared_ptr<view::DsoSignal> dsoSig;
+        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)))
+            dsoSig->set_mValid(false);
+    }
 
     // update setting
     if (_dev_inst->name() != "virtual-session")
@@ -1010,7 +1018,14 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
     if (dso.num_samples != 0) {
         if (_dso_data)
             _dso_data->set_samplerate(_dev_inst->get_sample_rate());
-        set_dso_feed(true);
+        // reset measure of dso signal
+        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
+        {
+            assert(s);
+            boost::shared_ptr<view::DsoSignal> dsoSig;
+            if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)))
+                dsoSig->set_mValid(false);
+        }
     }
 
     if (_cur_dso_snapshot->memory_failed()) {
@@ -1706,16 +1721,6 @@ uint64_t SigSession::get_save_start() const
 uint64_t SigSession::get_save_end() const
 {
     return _save_end;
-}
-
-bool SigSession::dso_feed() const
-{
-    return _dso_feed;
-}
-
-void SigSession::set_dso_feed(bool feed)
-{
-    _dso_feed = feed;
 }
 
 } // namespace pv

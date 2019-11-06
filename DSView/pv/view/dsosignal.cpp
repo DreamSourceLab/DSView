@@ -565,6 +565,11 @@ bool DsoSignal::show() const
     return _show;
 }
 
+void DsoSignal::set_mValid(bool valid)
+{
+    _mValid = valid;
+}
+
 QString DsoSignal::get_measure(enum DSO_MEASURE_TYPE type)
 {
     const QString mNone = "--";
@@ -777,12 +782,6 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColor 
     assert(_view);
     assert(right >= left);
 
-    {
-        if (_view->session().dso_feed()) {
-            _mValid = false;
-            _view->session().set_dso_feed(false);
-        }
-    }
 
     if (enabled()) {
         const int index = get_index();

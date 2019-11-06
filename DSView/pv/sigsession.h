@@ -250,9 +250,6 @@ public:
     uint64_t get_save_start() const;
     uint64_t get_save_end() const;
 
-    bool dso_feed() const;
-    void set_dso_feed(bool feed);
-
 private:
 	void set_capture_state(capture_state state);
 
