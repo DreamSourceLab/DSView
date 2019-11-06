@@ -880,14 +880,14 @@ QTabBar::close-button:pressed
 
 QTabBar::tab
 {
-    color: white;
+    color: 2A2A2A;
     background-color: #3d8ec9;
     padding: 5px;
 }
 
 QTabBar::tab:!selected
 {
-    color: white;
+    color: 2A2A2A;
     background-color: #F8F8F8;
 }
 
