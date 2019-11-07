@@ -154,8 +154,8 @@ public:
     double cur_sampletime() const;
     void set_cur_samplerate(uint64_t samplerate);
     void set_cur_samplelimits(uint64_t samplelimits);
-    void set_trigger_time(QDateTime time);
-    QDateTime get_trigger_time() const;
+    void set_session_time(QDateTime time);
+    QDateTime get_session_time() const;
     uint64_t get_trigger_pos() const;
 
     void start_capture(bool instant,
@@ -339,7 +339,7 @@ private:
     bool _data_updated;
     int _data_auto_lock;
 
-    QDateTime _trigger_time;
+    QDateTime _session_time;
     uint64_t _trigger_pos;
     bool _trigger_flag;
     bool _hw_replied;

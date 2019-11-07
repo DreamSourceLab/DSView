@@ -143,10 +143,20 @@ bool StoreSession::save_start(QString session_file)
 
     const QString DIR_KEY("SavePath");
     QSettings settings(QApplication::organizationName(), QApplication::applicationName());
+    QString default_name = settings.value(DIR_KEY).toString() + "/" + _session.get_device()->name() + "-";
+    for (const GSList *l = _session.get_device()->get_dev_mode_list();
+         l; l = l->next) {
+        const sr_dev_mode *mode = (const sr_dev_mode *)l->data;
+        if (_session.get_device()->dev_inst()->mode == mode->mode) {
+            default_name += mode->acronym;
+            break;
+        }
+    }
+    default_name += _session.get_session_time().toString("-yyMMdd-hhmmss");
 
     // Show the dialog
     _file_name = QFileDialog::getSaveFileName(
-                    NULL, tr("Save File"), settings.value(DIR_KEY).toString(),
+                    NULL, tr("Save File"), default_name,
                     tr("DSView Data (*.dsl)"));
 
     if (!_file_name.isEmpty()) {
@@ -154,7 +164,7 @@ bool StoreSession::save_start(QString session_file)
         if(f.suffix().compare("dsl"))
             _file_name.append(tr(".dsl"));
         QDir CurrentDir;
-        settings.setValue(DIR_KEY, CurrentDir.absoluteFilePath(_file_name));
+        settings.setValue(DIR_KEY, CurrentDir.filePath(_file_name));
 
         QString meta_file = meta_gen(snapshot);
     #ifdef ENABLE_DECODE
@@ -502,6 +512,16 @@ bool StoreSession::export_start()
 
     const QString DIR_KEY("ExportPath");
     QSettings settings(QApplication::organizationName(), QApplication::applicationName());
+    QString default_name = settings.value(DIR_KEY).toString() + "/" + _session.get_device()->name() + "-";
+    for (const GSList *l = _session.get_device()->get_dev_mode_list();
+         l; l = l->next) {
+        const sr_dev_mode *mode = (const sr_dev_mode *)l->data;
+        if (_session.get_device()->dev_inst()->mode == mode->mode) {
+            default_name += mode->acronym;
+            break;
+        }
+    }
+    default_name += _session.get_session_time().toString("-yyMMdd-hhmmss");
 
     // Show the dialog
     QList<QString> supportedFormats = getSuportedExportFormats();
@@ -512,7 +532,7 @@ bool StoreSession::export_start()
             filter.append(";;");
     }
     _file_name = QFileDialog::getSaveFileName(
-                NULL, tr("Export Data"), settings.value(DIR_KEY).toString(),filter,&filter);
+                NULL, tr("Export Data"), default_name,filter,&filter);
     if (!_file_name.isEmpty()) {
         QFileInfo f(_file_name);
         QStringList list = filter.split('.').last().split(')');
@@ -520,7 +540,7 @@ bool StoreSession::export_start()
         if(f.suffix().compare(_suffix))
             _file_name += tr(".") + _suffix;
         QDir CurrentDir;
-        settings.setValue(DIR_KEY, CurrentDir.absoluteFilePath(_file_name));
+        settings.setValue(DIR_KEY, CurrentDir.filePath(_file_name));
 
         const struct sr_output_module** supportedModules = sr_output_list();
         while(*supportedModules){

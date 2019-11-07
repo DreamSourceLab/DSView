@@ -1181,6 +1181,8 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
             session_error();
         }
         frame_ended();
+        if (get_device()->dev_inst()->mode != LOGIC)
+            set_session_time(QDateTime::currentDateTime());
 		break;
 	}
 	}
@@ -1550,14 +1552,14 @@ boost::shared_ptr<view::MathTrace> SigSession::get_math_trace()
     return _math_trace;
 }
 
-void SigSession::set_trigger_time(QDateTime time)
+void SigSession::set_session_time(QDateTime time)
 {
-    _trigger_time = time;
+    _session_time = time;
 }
 
-QDateTime SigSession::get_trigger_time() const
+QDateTime SigSession::get_session_time() const
 {
-    return _trigger_time;
+    return _session_time;
 }
 
 uint64_t  SigSession::get_trigger_pos() const

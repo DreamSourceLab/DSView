@@ -814,6 +814,7 @@ void MainWindow::on_screenShot()
 {
     const QString DIR_KEY("ScreenShotPath");
     QSettings settings(QApplication::organizationName(), QApplication::applicationName());
+    QString default_name = settings.value(DIR_KEY).toString() + "/DSView" + QDateTime::currentDateTime().toString("-yyMMdd-hhmmss");
     QPixmap pixmap;
     QDesktopWidget *desktop = QApplication::desktop();
     pixmap = QPixmap::grabWindow(desktop->winId(), parentWidget()->pos().x(), parentWidget()->pos().y(),
@@ -821,12 +822,12 @@ void MainWindow::on_screenShot()
     QString format = "png";
 
     QString fileName = QFileDialog::getSaveFileName(this,
-                       tr("Save As"),settings.value(DIR_KEY).toString(),
+                       tr("Save As"), default_name,
                        tr("%1 Files (*.%2);;All Files (*)")
                        .arg(format.toUpper()).arg(format));
     if (!fileName.isEmpty()) {
         QDir CurrentDir;
-        settings.setValue(DIR_KEY, CurrentDir.absoluteFilePath(fileName));
+        settings.setValue(DIR_KEY, CurrentDir.filePath(fileName));
         pixmap.save(fileName, format.toLatin1());
     }
 }
