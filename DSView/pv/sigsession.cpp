@@ -1016,16 +1016,22 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
     }
 
     if (dso.num_samples != 0) {
+        // update current sample rate
         if (_dso_data)
             _dso_data->set_samplerate(_dev_inst->get_sample_rate());
-        // reset measure of dso signal
-        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
-        {
-            assert(s);
-            boost::shared_ptr<view::DsoSignal> dsoSig;
-            if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)))
-                dsoSig->set_mValid(false);
-        }
+        if (_math_trace && _math_trace->enabled())
+            _math_trace->get_math_stack()->set_samplerate(_dev_inst->get_sample_rate());
+        BOOST_FOREACH(const boost::shared_ptr<view::SpectrumTrace> m, _spectrum_traces)
+            m->get_spectrum_stack()->set_samplerate(_cur_samplerate);
+
+//        // reset measure of dso signal
+//        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
+//        {
+//            assert(s);
+//            boost::shared_ptr<view::DsoSignal> dsoSig;
+//            if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)))
+//                dsoSig->set_mValid(false);
+//        }
     }
 
     if (_cur_dso_snapshot->memory_failed()) {

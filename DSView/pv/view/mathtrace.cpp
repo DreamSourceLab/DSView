@@ -218,7 +218,8 @@ void MathTrace::paint_mid(QPainter &p, int left, int right, QColor fore, QColor 
         const int64_t offset = _view->offset();
 
         const double pixels_offset = offset;
-        const double samplerate = _view->session().cur_samplerate();
+        //const double samplerate = _view->session().cur_samplerate();
+        const double samplerate = _math_stack->samplerate();
         const int64_t last_sample = max((int64_t)(_math_stack->get_sample_num() - 1), (int64_t)0);
         const double samples_per_pixel = samplerate * scale;
         const double start = offset * samples_per_pixel;
