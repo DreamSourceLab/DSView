@@ -364,8 +364,8 @@ void SpectrumTrace::paint_fore(QPainter &p, int left, int right, QColor fore, QC
     double blank_right = width;
 
     // horizontal ruler
-    const double NyFreq = _session.cur_samplerate() / (2.0 * _spectrum_stack->get_sample_interval());
-    const double deltaFreq = _session.cur_samplerate() * 1.0 /
+    const double NyFreq = _session.cur_snap_samplerate() / (2.0 * _spectrum_stack->get_sample_interval());
+    const double deltaFreq = _session.cur_snap_samplerate() * 1.0 /
                             (_spectrum_stack->get_sample_num() * _spectrum_stack->get_sample_interval());
     const double FreqRange = NyFreq * _scale;
     const double FreqOffset = NyFreq * _offset;

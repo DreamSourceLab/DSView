@@ -175,7 +175,7 @@ void SigSession::set_device(boost::shared_ptr<device::DevInst> dev_inst)
     if (_dev_inst) {
         try {
             _dev_inst->use(this);
-            _cur_samplerate = _dev_inst->get_sample_rate();
+            _cur_snap_samplerate = _dev_inst->get_sample_rate();
             _cur_samplelimits = _dev_inst->get_sample_limit();
 
             if (_dev_inst->dev_inst()->mode == DSO)
@@ -274,43 +274,63 @@ uint64_t SigSession::cur_samplelimits() const
 
 uint64_t SigSession::cur_samplerate() const
 {
-    return _cur_samplerate;
+    // samplerate for current viewport
+    if (_dev_inst->dev_inst()->mode == DSO)
+        return _dev_inst->get_sample_rate();
+    else
+        return cur_snap_samplerate();
+}
+
+uint64_t SigSession::cur_snap_samplerate() const
+{
+    // samplerate for current snapshot
+    return _cur_snap_samplerate;
 }
 
 double SigSession::cur_sampletime() const
 {
-    if (_cur_samplerate == 0)
-        return 0;
-    else
-        return  cur_samplelimits() * 1.0 / cur_samplerate();
+    return  cur_samplelimits() * 1.0 / cur_samplerate();
 }
 
-void SigSession::set_cur_samplerate(uint64_t samplerate)
+double SigSession::cur_snap_sampletime() const
+{
+    return  cur_samplelimits() * 1.0 / cur_snap_samplerate();
+}
+
+double SigSession::cur_view_time() const
+{
+    return _dev_inst->get_time_base() * DS_CONF_DSO_HDIVS * 1.0 / SR_SEC(1);
+}
+
+void SigSession::set_cur_snap_samplerate(uint64_t samplerate)
 {
     assert(samplerate != 0);
-    _cur_samplerate = samplerate;
+    _cur_snap_samplerate = samplerate;
     // sample rate for all SignalData
     // Logic/Analog/Dso
     if (_logic_data)
-        _logic_data->set_samplerate(_cur_samplerate);
+        _logic_data->set_samplerate(_cur_snap_samplerate);
     if (_analog_data)
-        _analog_data->set_samplerate(_cur_samplerate);
-//    if (_dso_data)
-//        _dso_data->set_samplerate(_cur_samplerate);
+        _analog_data->set_samplerate(_cur_snap_samplerate);
+    if (_dso_data)
+        _dso_data->set_samplerate(_cur_snap_samplerate);
     // Group
     if (_group_data)
-        _group_data->set_samplerate(_cur_samplerate);
+        _group_data->set_samplerate(_cur_snap_samplerate);
 
 #ifdef ENABLE_DECODE
     // DecoderStack
     BOOST_FOREACH(const boost::shared_ptr<view::DecodeTrace> d, _decode_traces)
-        d->decoder()->set_samplerate(_cur_samplerate);
+        d->decoder()->set_samplerate(_cur_snap_samplerate);
 #endif
+    // Math
+    if (_math_trace && _math_trace->enabled())
+        _math_trace->get_math_stack()->set_samplerate(_dev_inst->get_sample_rate());
     // SpectrumStack
     BOOST_FOREACH(const boost::shared_ptr<view::SpectrumTrace> m, _spectrum_traces)
-        m->get_spectrum_stack()->set_samplerate(_cur_samplerate);
+        m->get_spectrum_stack()->set_samplerate(_cur_snap_samplerate);
 
-    cur_samplerate_changed();
+    cur_snap_samplerate_changed();
 }
 
 void SigSession::set_cur_samplelimits(uint64_t samplelimits)
@@ -328,7 +348,7 @@ void SigSession::capture_init()
     _dev_inst->set_config(NULL, NULL, SR_CONF_INSTANT, g_variant_new_boolean(_instant));
     update_capture();
 
-    set_cur_samplerate(_dev_inst->get_sample_rate());
+    set_cur_snap_samplerate(_dev_inst->get_sample_rate());
     set_cur_samplelimits(_dev_inst->get_sample_limit());
     _data_updated = false;
     _trigger_flag = false;
@@ -598,7 +618,7 @@ void SigSession::add_group()
 //        if (_group_data->get_snapshots().empty())
 //            _group_data->set_samplerate(_dev_inst->get_sample_rate());
         _group_data->init();
-        _group_data->set_samplerate(_cur_samplerate);
+        _group_data->set_samplerate(_cur_snap_samplerate);
         const boost::shared_ptr<view::GroupSignal> signal(
                     new view::GroupSignal("New Group",
                                           _group_data, probe_index_list, _group_cnt));
@@ -1017,13 +1037,7 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
 
     if (dso.num_samples != 0) {
         // update current sample rate
-        if (_dso_data)
-            _dso_data->set_samplerate(_dev_inst->get_sample_rate());
-        if (_math_trace && _math_trace->enabled())
-            _math_trace->get_math_stack()->set_samplerate(_dev_inst->get_sample_rate());
-        BOOST_FOREACH(const boost::shared_ptr<view::SpectrumTrace> m, _spectrum_traces)
-            m->get_spectrum_stack()->set_samplerate(_cur_samplerate);
-
+        set_cur_snap_samplerate(_dev_inst->get_sample_rate());
 //        // reset measure of dso signal
 //        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
 //        {
@@ -1540,6 +1554,7 @@ void SigSession::math_rebuild(bool enable,
         new data::MathStack(*this, dsoSig1, dsoSig2, type));
     _math_trace.reset(new view::MathTrace(enable, math_stack, dsoSig1, dsoSig2));
     if (_math_trace && _math_trace->enabled()) {
+        _math_trace->get_math_stack()->set_samplerate(_dev_inst->get_sample_rate());
         _math_trace->get_math_stack()->realloc(_dev_inst->get_sample_limit());
         _math_trace->get_math_stack()->calc_math();
     }

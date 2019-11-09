@@ -218,7 +218,7 @@ void MathTrace::paint_mid(QPainter &p, int left, int right, QColor fore, QColor 
         const int64_t offset = _view->offset();
 
         const double pixels_offset = offset;
-        //const double samplerate = _view->session().cur_samplerate();
+        //const double samplerate = _view->session().cur_snap_samplerate();
         const double samplerate = _math_stack->samplerate();
         const int64_t last_sample = max((int64_t)(_math_stack->get_sample_num() - 1), (int64_t)0);
         const double samples_per_pixel = samplerate * scale;
@@ -461,7 +461,7 @@ bool MathTrace::measure(const QPointF &p)
     const double scale = _view->scale();
     assert(scale > 0);
     const int64_t pixels_offset = _view->offset();
-    const double samplerate = _view->session().cur_samplerate();
+    const double samplerate = _view->session().cur_snap_samplerate();
     const double samples_per_pixel = samplerate * scale;
 
     _hover_index = floor((p.x() + pixels_offset) * samples_per_pixel+0.5);
@@ -480,7 +480,7 @@ QPointF MathTrace::get_point(uint64_t index, float &value)
     const double scale = _view->scale();
     assert(scale > 0);
     const int64_t pixels_offset = _view->offset();
-    const double samplerate = _view->session().cur_samplerate();
+    const double samplerate = _view->session().cur_snap_samplerate();
     const double samples_per_pixel = samplerate * scale;
 
     const float top = get_view_rect().top();

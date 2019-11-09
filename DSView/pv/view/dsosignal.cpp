@@ -719,7 +719,7 @@ void DsoSignal::paint_back(QPainter &p, int left, int right, QColor fore, QColor
     fore.setAlpha(View::ForeAlpha);
     p.setPen(fore);
     const uint64_t sample_len = _view->session().cur_samplelimits();
-    const double samplerate = _view->session().cur_samplerate();
+    const double samplerate = _view->session().cur_snap_samplerate();
     const double samples_per_pixel = samplerate * _view->scale();
     const double shown_rate = min(samples_per_pixel * width * 1.0 / sample_len, 1.0);
     const double start = _view->offset() * samples_per_pixel;
@@ -808,7 +808,7 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColor 
         const double pixels_offset = offset;
         const double samplerate = _data->samplerate();
         //const double samplerate = _dev_inst->get_sample_rate();
-        //const double samplerate = _view->session().cur_samplerate();
+        //const double samplerate = _view->session().cur_snap_samplerate();
         const int64_t last_sample = max((int64_t)(snapshot->get_sample_count() - 1), (int64_t)0);
         const double samples_per_pixel = samplerate * scale;
         const double start = offset * samples_per_pixel;
@@ -1424,7 +1424,7 @@ bool DsoSignal::measure(const QPointF &p)
     const double scale = _view->scale();
     assert(scale > 0);
     const int64_t pixels_offset = _view->offset();
-    const double samplerate = _view->session().cur_samplerate();
+    const double samplerate = _view->session().cur_snap_samplerate();
     const double samples_per_pixel = samplerate * scale;
 
     _hover_index = floor((p.x() + pixels_offset) * samples_per_pixel+0.5);
@@ -1467,7 +1467,7 @@ QPointF DsoSignal::get_point(uint64_t index, float &value)
     const double scale = _view->scale();
     assert(scale > 0);
     const int64_t pixels_offset = _view->offset();
-    const double samplerate = _view->session().cur_samplerate();
+    const double samplerate = _view->session().cur_snap_samplerate();
     const double samples_per_pixel = samplerate * scale;
 
     if (index >= snapshot->get_sample_count())

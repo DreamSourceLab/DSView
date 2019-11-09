@@ -276,7 +276,7 @@ void MainWindow::setup_ui()
     connect(&_session, SIGNAL(update_capture()), _view,
             SLOT(update_hori_res()), Qt::DirectConnection);
 
-    connect(&_session, SIGNAL(cur_samplerate_changed()), _measure_widget,
+    connect(&_session, SIGNAL(cur_snap_samplerate_changed()), _measure_widget,
             SLOT(cursor_update()));
     connect(_view, SIGNAL(cursor_update()), _measure_widget,
             SLOT(cursor_update()));

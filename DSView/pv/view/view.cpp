@@ -283,40 +283,38 @@ void View::update_hori_res()
 
 void View::zoom(double steps, int offset)
 {
-    //if (_session.get_capture_state() == SigSession::Stopped) {
-        _preScale = _scale;
-        _preOffset = _offset;
+    _preScale = _scale;
+    _preOffset = _offset;
 
-        if (_session.get_device()->dev_inst()->mode != DSO) {
-            _scale *= std::pow(3.0/2.0, -steps);
-            _scale = max(min(_scale, _maxscale), _minscale);
-        } else {
-            if (_session.get_capture_state() == SigSession::Running &&
-                _session.get_instant())
-                return;
+    if (_session.get_device()->dev_inst()->mode != DSO) {
+        _scale *= std::pow(3.0/2.0, -steps);
+        _scale = max(min(_scale, _maxscale), _minscale);
+    } else {
+        if (_session.get_capture_state() == SigSession::Running &&
+            _session.get_instant())
+            return;
 
-            double hori_res = -1;
-            if(steps > 0.5)
-                hori_res = _sampling_bar->hori_knob(-1);
-            else if (steps < -0.5)
-                hori_res = _sampling_bar->hori_knob(1);
+        double hori_res = -1;
+        if(steps > 0.5)
+            hori_res = _sampling_bar->hori_knob(-1);
+        else if (steps < -0.5)
+            hori_res = _sampling_bar->hori_knob(1);
 
-            if (hori_res > 0) {
-                const double scale = hori_res * DS_CONF_DSO_HDIVS / SR_SEC(1) / get_view_width();
-                _scale = max(min(scale, _maxscale), _minscale);
-            }
+        if (hori_res > 0) {
+            const double scale = _session.cur_view_time() / get_view_width();
+            _scale = max(min(scale, _maxscale), _minscale);
         }
+    }
 
-        _offset = floor((_offset + offset) * (_preScale / _scale) - offset);
-        _offset = max(min(_offset, get_max_offset()), get_min_offset());
+    _offset = floor((_offset + offset) * (_preScale / _scale) - offset);
+    _offset = max(min(_offset, get_max_offset()), get_min_offset());
 
-        if (_scale != _preScale || _offset != _preOffset) {
-            _header->update();
-            _ruler->update();
-            viewport_update();
-            update_scroll();
-        }
-    //}
+    if (_scale != _preScale || _offset != _preOffset) {
+        _header->update();
+        _ruler->update();
+        viewport_update();
+        update_scroll();
+    }
 }
 
 void View::timebase_changed()
@@ -327,7 +325,7 @@ void View::timebase_changed()
     double scale = this->scale();
     double hori_res = _sampling_bar->get_hori_res();
     if (hori_res > 0)
-        scale = hori_res * DS_CONF_DSO_HDIVS / SR_SEC(1) / get_view_width();
+        scale = _session.cur_view_time() / get_view_width();
     set_scale_offset(scale, this->offset());
 }
 
@@ -511,7 +509,7 @@ void View::receive_end()
 
 void View::receive_trigger(quint64 trig_pos)
 {
-    const double time = trig_pos * 1.0 / _session.cur_samplerate();
+    const double time = trig_pos * 1.0 / _session.cur_snap_samplerate();
     _trig_cursor->set_index(trig_pos);
     if (ds_trigger_get_en() ||
         _session.get_device()->name() == "virtual-session" ||
@@ -536,7 +534,7 @@ void View::set_search_pos(uint64_t search_pos, bool hit)
     QColor fore(QWidget::palette().color(QWidget::foregroundRole()));
     fore.setAlpha(View::BackAlpha);
 
-    const double time = search_pos * 1.0 / _session.cur_samplerate();
+    const double time = search_pos * 1.0 / _session.cur_snap_samplerate();
     _search_pos = search_pos;
     _search_hit = hit;
     _search_cursor->set_index(search_pos);
@@ -597,7 +595,7 @@ void View::get_scroll_layout(int64_t &length, int64_t &offset) const
     if (data_set.empty())
 		return;
 
-    length = ceil(_session.cur_sampletime() / _scale);
+    length = ceil(_session.cur_snap_sampletime() / _scale);
     offset = _offset;
 }
 
@@ -635,14 +633,11 @@ void View::update_scroll()
 
 void View::update_scale_offset()
 {
-    const uint64_t sample_rate = _session.cur_samplerate();
-    assert(sample_rate > 0);
-
     if (_session.get_device()->dev_inst()->mode != DSO) {
         _maxscale = _session.cur_sampletime() / (get_view_width() * MaxViewRate);
-        _minscale = (1.0 / sample_rate) / MaxPixelsPerSample;
+        _minscale = (1.0 / _session.cur_snap_samplerate()) / MaxPixelsPerSample;
     } else {
-        _scale = _session.get_device()->get_time_base() * 10.0 / get_view_width() * std::pow(10.0, -9.0);
+        _scale = _session.cur_view_time() / get_view_width();
         _maxscale = 1e9;
         _minscale = 1e-15;
     }
@@ -662,11 +657,8 @@ void View::update_scale_offset()
 void View::dev_changed(bool close)
 {
     if (!close) {
-        const uint64_t sample_rate = _session.cur_samplerate();
-        assert(sample_rate > 0);
-
         if (_session.get_device()->name().contains("virtual"))
-            _scale = WellSamplesPerPixel * 1.0 / sample_rate;
+            _scale = WellSamplesPerPixel * 1.0 / _session.cur_snap_samplerate();
         _scale = max(min(_scale, _maxscale), _minscale);
     }
 
@@ -843,7 +835,7 @@ void View::resizeEvent(QResizeEvent*)
     update_scroll();
     signals_changed();
     if (_session.get_device()->dev_inst()->mode == DSO)
-        _scale = _session.get_device()->get_time_base() * std::pow(10.0, -9.0) * DS_CONF_DSO_HDIVS / get_view_width();
+        _scale = _session.cur_view_time() / get_view_width();
 
     if (_session.get_device()->dev_inst()->mode != DSO)
         _maxscale = _session.cur_sampletime() / (get_view_width() * MaxViewRate);
@@ -899,11 +891,15 @@ void View::data_updated()
 	// Update the scroll bars
 	update_scroll();
 
+    // update scale & offset
+    update_scale_offset();
+
 	// Repaint the view
     _time_viewport->unshow_wait_trigger();
     set_update(_time_viewport, true);
     set_update(_fft_viewport, true);
     viewport_update();
+    _ruler->update();
 }
 
 void View::update_margins()
@@ -987,7 +983,7 @@ void View::set_cursor_middle(int index)
     list<Cursor*>::iterator i = _cursorList.begin();
     while (index-- != 0)
             i++;
-    set_scale_offset(_scale, (*i)->index() / (_session.cur_samplerate() * _scale) - (get_view_width() / 2));
+    set_scale_offset(_scale, (*i)->index() / (_session.cur_snap_samplerate() * _scale) - (get_view_width() / 2));
 }
 
 void View::on_measure_updated()
@@ -1006,7 +1002,7 @@ QString View::get_measure(QString option)
 
 QString View::get_cm_time(int index)
 {
-    return _ruler->format_real_time(get_cursor_samples(index), _session.cur_samplerate());
+    return _ruler->format_real_time(get_cursor_samples(index), _session.cur_snap_samplerate());
 }
 
 QString View::get_cm_delta(int index1, int index2)
@@ -1017,7 +1013,7 @@ QString View::get_cm_delta(int index1, int index2)
     uint64_t samples1 = get_cursor_samples(index1);
     uint64_t samples2 = get_cursor_samples(index2);
     uint64_t delta_sample = (samples1 > samples2) ? samples1 - samples2 : samples2 - samples1;
-    return _ruler->format_real_time(delta_sample, _session.cur_samplerate());
+    return _ruler->format_real_time(delta_sample, _session.cur_snap_samplerate());
 }
 
 QString View::get_index_delta(uint64_t start, uint64_t end)
@@ -1026,7 +1022,7 @@ QString View::get_index_delta(uint64_t start, uint64_t end)
         return "0";
 
     uint64_t delta_sample = (start > end) ? start - end : end - start;
-    return _ruler->format_real_time(delta_sample, _session.cur_samplerate());
+    return _ruler->format_real_time(delta_sample, _session.cur_snap_samplerate());
 }
 
 uint64_t View::get_cursor_samples(int index)
@@ -1112,7 +1108,7 @@ int64_t View::get_min_offset()
 
 int64_t View::get_max_offset()
 {
-    return ceil((_session.cur_sampletime() / _scale) -
+    return ceil((_session.cur_snap_sampletime() / _scale) -
                 (get_view_width() * MaxViewRate));
 }
 
@@ -1153,13 +1149,13 @@ void View::show_region(uint64_t start, uint64_t end, bool keep)
         set_all_update(true);
         update();
     } else if (_session.get_map_zoom() == 0) {
-        const double ideal_scale = (end-start) * 2.0 / _session.cur_samplerate() / get_view_width();
+        const double ideal_scale = (end-start) * 2.0 / _session.cur_snap_samplerate() / get_view_width();
         const double new_scale = max(min(ideal_scale, _maxscale), _minscale);
-        const double new_off = (start + end)  * 0.5 / (_session.cur_samplerate() * new_scale) - (get_view_width() / 2);
+        const double new_off = (start + end)  * 0.5 / (_session.cur_snap_samplerate() * new_scale) - (get_view_width() / 2);
         set_scale_offset(new_scale, new_off);
     } else {
         const double new_scale = scale();
-        const double new_off = (start + end)  * 0.5 / (_session.cur_samplerate() * new_scale) - (get_view_width() / 2);
+        const double new_off = (start + end)  * 0.5 / (_session.cur_snap_samplerate() * new_scale) - (get_view_width() / 2);
         set_scale_offset(new_scale, new_off);
     }
 }

@@ -195,7 +195,7 @@ void Ruler::mouseMoveEvent(QMouseEvent *e)
 
     if (_grabbed_marker) {
         _grabbed_marker->set_index((_view.offset() + _view.hover_point().x()) *
-                                   _view.scale() * _view.session().cur_samplerate());
+                                   _view.scale() * _view.session().cur_snap_samplerate());
         _view.cursor_moving();
         _curs_moved = true;
     }
@@ -253,7 +253,7 @@ void Ruler::mouseReleaseEvent(QMouseEvent *event)
                     _cursor_sel_visible = true;
                 } else {
                     int overCursor;
-                    uint64_t index = (_view.offset() + _cursor_sel_x + 0.5) * _view.scale() * _view.session().cur_samplerate();
+                    uint64_t index = (_view.offset() + _cursor_sel_x + 0.5) * _view.scale() * _view.session().cur_snap_samplerate();
                     overCursor = in_cursor_sel_rect(event->pos());
                     if (overCursor == 0) {
                         _view.add_cursor(CursorColor[_view.get_cursorList().size() % 8], index);
@@ -329,7 +329,7 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
     const double SpacingIncrement = 32.0;
     const double MinValueSpacing = 16.0;
     const int ValueMargin = 5;
-    const double abs_min_period = 10.0 / _view.session().cur_samplerate();
+    const double abs_min_period = 10.0 / _view.session().cur_snap_samplerate();
 
     double min_width = SpacingIncrement;
     double typical_width;

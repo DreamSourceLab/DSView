@@ -229,7 +229,7 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
     // plot cursors
     //const QRect xrect = QRect(rect().left(), rect().top(), _view.get_view_width(), rect().height());
     const QRect xrect = _view.get_view_rect();
-    const double samples_per_pixel = _view.session().cur_samplerate() * _view.scale();
+    const double samples_per_pixel = _view.session().cur_snap_samplerate() * _view.scale();
     if (_view.cursors_shown() && _type == TIME_VIEW) {
         list<Cursor*>::iterator i = _view.get_cursorList().begin();
         int index = 0;
@@ -490,7 +490,7 @@ void Viewport::mousePressEvent(QMouseEvent *event)
             _action_type = LOGIC_ZOOM;
         } else if (_view.session().get_device()->dev_inst()->mode == DSO) {
             if (_hover_hit) {
-                const int64_t index = (_view.offset() + event->pos().x()) * _view.scale() * _view.session().cur_samplerate();
+                const int64_t index = (_view.offset() + event->pos().x()) * _view.scale() * _view.session().cur_snap_samplerate();
                 _view.add_cursor(view::Ruler::CursorColor[_view.get_cursorList().size() % 8], index);
                 _view.show_cursors(true);
             }
@@ -518,7 +518,7 @@ void Viewport::mousePressEvent(QMouseEvent *event)
 
     if (_action_type == NO_ACTION &&
         event->button() == Qt::LeftButton) {
-        uint64_t sample_rate = _view.session().cur_samplerate();
+        uint64_t sample_rate = _view.session().cur_snap_samplerate();
         const double samples_per_pixel = sample_rate * _view.scale();
         if (_action_type == NO_ACTION && _view.search_cursor_shown()) {
             const int64_t searchX = _view.get_search_cursor()->index()/samples_per_pixel - _view.offset();
@@ -643,7 +643,7 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
                 }
             }
             if (_action_type == CURS_MOVE) {
-                uint64_t sample_rate = _view.session().cur_samplerate();
+                uint64_t sample_rate = _view.session().cur_snap_samplerate();
                 TimeMarker* grabbed_marker = _view.get_ruler()->get_grabbed_cursor();
                 if (grabbed_marker) {
                     int curX = _view.hover_point().x();
@@ -740,7 +740,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
     assert(event);
 
     if (_type == TIME_VIEW) {
-        const double samples_per_pixel = _view.session().cur_samplerate() * _view.scale();
+        const double samples_per_pixel = _view.session().cur_snap_samplerate() * _view.scale();
         if ((_action_type == NO_ACTION) &&
             (event->button() == Qt::LeftButton)) {
             if (_view.session().get_device()->dev_inst()->mode == LOGIC &&
@@ -771,7 +771,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                             if ((logicSig = dynamic_pointer_cast<view::LogicSignal>(s))) {
                                 if (logicSig->edge(event->pos(), _edge_start, 10)) {
                                     _action_type = LOGIC_JUMP;
-                                    const double samples_per_pixel = _view.session().cur_samplerate() * _view.scale();
+                                    const double samples_per_pixel = _view.session().cur_snap_samplerate() * _view.scale();
                                     _cur_preX = _edge_start / samples_per_pixel - _view.offset();
                                     _cur_preY = logicSig->get_y();
                                     _cur_preY_top = logicSig->get_y() - logicSig->get_totalHeight()/2 - 12;
@@ -793,7 +793,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                             assert(s);
                             if (abs(event->pos().y() - s->get_y()) < _view.get_signalHeight()) {
                                 _action_type = LOGIC_EDGE;
-                                _edge_start = (_view.offset() + event->pos().x()) * _view.scale() * _view.session().cur_samplerate();
+                                _edge_start = (_view.offset() + event->pos().x()) * _view.scale() * _view.session().cur_snap_samplerate();
                                 break;
                             }
                         }
@@ -954,7 +954,7 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
                     }
                 }
             }
-            const uint64_t sample_rate = _view.session().cur_samplerate();
+            const uint64_t sample_rate = _view.session().cur_snap_samplerate();
             const double curX = event->pos().x();
             const double samples_per_pixel = sample_rate * _view.scale();
             const double curP = index0 / samples_per_pixel - _view.offset();
@@ -981,7 +981,7 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
             BOOST_FOREACH(const boost::shared_ptr<Signal> s, _view.session().get_signals()) {
                 assert(s);
                 if (s->get_view_rect().contains(event->pos())) {
-                    uint64_t sample_rate = _view.session().cur_samplerate();
+                    uint64_t sample_rate = _view.session().cur_snap_samplerate();
                     double scale = _view.scale();
                     const double samples_per_pixel =  sample_rate * scale;
                     _dso_xm_index[0] = (event->pos().x() + _view.offset()) * samples_per_pixel;
@@ -999,7 +999,7 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
 //        }
 //        } else if (event->button() == Qt::LeftButton) {
 //            uint64_t index;
-//            const uint64_t sample_rate = _view.session().cur_samplerate();
+//            const uint64_t sample_rate = _view.session().cur_snap_samplerate();
 //            const double curX = event->pos().x();
 //            index = (_view.offset() + curX) * _view.scale() * sample_rate;;
 //            _view.add_cursor(view::Ruler::CursorColor[_view.get_cursorList().size() % 8], index);
@@ -1008,7 +1008,7 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
     } else if (_view.session().get_device()->dev_inst()->mode == ANALOG) {
         if (event->button() == Qt::LeftButton) {
             uint64_t index;
-            const uint64_t sample_rate = _view.session().cur_samplerate();
+            const uint64_t sample_rate = _view.session().cur_snap_samplerate();
             const double curX = event->pos().x();
             index = (_view.offset() + curX) * _view.scale() * sample_rate;;
             _view.add_cursor(view::Ruler::CursorColor[_view.get_cursorList().size() % 8], index);
@@ -1122,7 +1122,7 @@ void Viewport::measure()
         return;
     _measure_type = NO_MEASURE;
     if (_type == TIME_VIEW) {
-        const uint64_t sample_rate = _view.session().cur_samplerate();
+        const uint64_t sample_rate = _view.session().cur_snap_samplerate();
         const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
         BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
             assert(s);
@@ -1167,7 +1167,7 @@ void Viewport::measure()
                         break;
                     }
                 } else if (_action_type == LOGIC_JUMP) {
-                    const double samples_per_pixel = _view.session().cur_samplerate() * _view.scale();
+                    const double samples_per_pixel = _view.session().cur_snap_samplerate() * _view.scale();
                     if (logicSig->edge(_view.hover_point(), _edge_end, 10)) {
                         _cur_aftX = _edge_end / samples_per_pixel - _view.offset();
                         _cur_aftY = logicSig->get_y();
@@ -1298,7 +1298,7 @@ void Viewport::paintMeasure(QPainter &p, QColor fore, QColor back)
                     p.setPen(QPen(dsoSig->get_colour(), 1, Qt::DotLine));
                     const int text_height = p.boundingRect(0, 0, INT_MAX, INT_MAX,
                         Qt::AlignLeft | Qt::AlignTop, "W").height();
-                    const uint64_t sample_rate = _view.session().cur_samplerate();
+                    const uint64_t sample_rate = _view.session().cur_snap_samplerate();
                     const int64_t x = (_dso_ym_index / (sample_rate * _view.scale())) -
                         _view.offset();
                     p.drawLine(x-10, _dso_ym_start,
@@ -1344,7 +1344,7 @@ void Viewport::paintMeasure(QPainter &p, QColor fore, QColor back)
         int measure_line_count = 6;
         const int text_height = p.boundingRect(0, 0, INT_MAX, INT_MAX,
             Qt::AlignLeft | Qt::AlignTop, "W").height();
-        const uint64_t sample_rate = _view.session().cur_samplerate();
+        const uint64_t sample_rate = _view.session().cur_snap_samplerate();
         QLineF *line;
         QLineF *const measure_lines = new QLineF[measure_line_count];
         line = measure_lines;
@@ -1622,7 +1622,7 @@ void Viewport::show_contextmenu(const QPoint& pos)
 void Viewport::add_cursor_y()
 {
     uint64_t index;
-    const uint64_t sample_rate = _view.session().cur_samplerate();
+    const uint64_t sample_rate = _view.session().cur_snap_samplerate();
     //const double curX = _menu_pos.x();
     index = (_view.offset() + _cur_preX) * _view.scale() * sample_rate;;
     _view.add_cursor(view::Ruler::CursorColor[_view.get_cursorList().size() % 8], index);

@@ -80,7 +80,7 @@ void TimeMarker::set_index(uint64_t index)
 
 void TimeMarker::paint(QPainter &p, const QRect &rect, const bool highlight, int order)
 {
-    const uint64_t sample_rate = _view.session().cur_samplerate();
+    const uint64_t sample_rate = _view.session().cur_snap_samplerate();
     const double scale = _view.scale();
     const double samples_per_pixel = sample_rate * scale;
     const int64_t x = _index/samples_per_pixel - _view.offset();

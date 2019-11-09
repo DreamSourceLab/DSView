@@ -150,9 +150,13 @@ public:
 	capture_state get_capture_state() const;
 
     uint64_t cur_samplerate() const;
+    uint64_t cur_snap_samplerate() const;
     uint64_t cur_samplelimits() const;
     double cur_sampletime() const;
-    void set_cur_samplerate(uint64_t samplerate);
+    double cur_snap_sampletime() const;
+    double cur_view_time() const;
+
+    void set_cur_snap_samplerate(uint64_t samplerate);
     void set_cur_samplelimits(uint64_t samplelimits);
     void set_session_time(QDateTime time);
     QDateTime get_session_time() const;
@@ -301,7 +305,7 @@ private:
     mutable boost::mutex _sampling_mutex;
 	capture_state _capture_state;
     bool _instant;
-    uint64_t _cur_samplerate;
+    uint64_t _cur_snap_samplerate;
     uint64_t _cur_samplelimits;
 
     //mutable boost::mutex _signals_mutex;
@@ -401,7 +405,7 @@ signals:
     void repeat_hold(int percent);
     void repeat_resume();
 
-    void cur_samplerate_changed();
+    void cur_snap_samplerate_changed();
 
     void update_capture();
 

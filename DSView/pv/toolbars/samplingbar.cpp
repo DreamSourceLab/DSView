@@ -761,8 +761,6 @@ double SamplingBar::commit_hori_res()
                                      (uint64_t)(max_sample_rate /
                                                 (_session.get_ch_num(SR_CHANNEL_DSO) ? _session.get_ch_num(SR_CHANNEL_DSO) : 1)));
     set_sample_rate(sample_rate);
-    if (_session.get_capture_state() != SigSession::Stopped)
-        _session.set_cur_samplerate(dev_inst->get_sample_rate());
 
     dev_inst->set_config(NULL, NULL, SR_CONF_TIMEBASE,
                          g_variant_new_uint64(hori_res));

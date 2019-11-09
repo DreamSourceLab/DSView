@@ -365,7 +365,7 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
         fprintf(meta, "total blocks = %d\n", logic_snapshot->get_block_num());
     }
 
-    s = sr_samplerate_string(_session.cur_samplerate());
+    s = sr_samplerate_string(_session.cur_snap_samplerate());
     fprintf(meta, "samplerate = %s\n", s);
 
     if (sdi->mode == DSO) {
@@ -610,7 +610,7 @@ void StoreSession::export_proc(shared_ptr<data::Snapshot> snapshot)
     struct sr_datafeed_meta meta;
     struct sr_config *src;
     src = sr_config_new(SR_CONF_SAMPLERATE,
-            g_variant_new_uint64(_session.cur_samplerate()));
+            g_variant_new_uint64(_session.cur_snap_samplerate()));
     meta.config = g_slist_append(NULL, src);
     src = sr_config_new(SR_CONF_LIMIT_SAMPLES,
             g_variant_new_uint64(snapshot->get_sample_count()));
