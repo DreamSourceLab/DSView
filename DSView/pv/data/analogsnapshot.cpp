@@ -171,7 +171,8 @@ void AnalogSnapshot::append_payload(
     append_data(analog.data, analog.num_samples, analog.unit_pitch);
 
 	// Generate the first mip-map from the data
-	append_payload_to_envelope_levels();
+    if (analog.num_samples != 0) // guarantee new samples to compute
+        append_payload_to_envelope_levels();
 }
 
 void AnalogSnapshot::append_data(void *data, uint64_t samples, uint16_t pitch)
@@ -269,9 +270,9 @@ void AnalogSnapshot::append_payload_to_envelope_levels()
         prev_length = e0.ring_length;
         e0.ring_length = _ring_sample_count / EnvelopeScaleFactor;
 
-        // Break off if there are no new samples to compute
-    	if (e0.ring_length == prev_length)
-            continue;
+//        // Break off if there are no new samples to compute
+//    	if (e0.ring_length == prev_length)
+//            continue;
         if (e0.length == 0)
             continue;
 
