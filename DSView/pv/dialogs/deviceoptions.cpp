@@ -307,7 +307,7 @@ void DeviceOptions::zero_adj()
 
     dialogs::DSMessageBox msg(this);
     msg.mBox()->setText(tr("Information"));
-    msg.mBox()->setInformativeText(tr("Auto Calibration program will be started. Please keep all channels out of singal input. It can take a while!"));
+    msg.mBox()->setInformativeText(tr("Auto Calibration program will be started. Don't connect any probes. It can take a while!"));
     msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
     msg.mBox()->addButton(tr("Cancel"), QMessageBox::RejectRole);
     msg.mBox()->setIcon(QMessageBox::Information);

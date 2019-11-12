@@ -896,7 +896,7 @@ void SamplingBar::on_instant_stop()
                 if (zero) {
                     dialogs::DSMessageBox msg(this);
                     msg.mBox()->setText(tr("Auto Calibration"));
-                    msg.mBox()->setInformativeText(tr("Auto Calibration program will be started. Please keep all channels out of singal input. It can take a while!"));
+                    msg.mBox()->setInformativeText(tr("Auto Calibration program will be started. Don't connect any probes. It can take a while!"));
                     //msg.mBox()->setStandardButtons(QMessageBox::Ok);
                     msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
                     msg.mBox()->addButton(tr("Skip"), QMessageBox::RejectRole);
