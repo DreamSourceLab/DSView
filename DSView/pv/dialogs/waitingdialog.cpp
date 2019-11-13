@@ -31,6 +31,7 @@
 #include <QVBoxLayout>
 
 #include "../view/trace.h"
+#include "../view/dsosignal.h"
 
 using namespace boost;
 using namespace std;
@@ -41,10 +42,10 @@ namespace dialogs {
 const QString WaitingDialog::TIPS_WAIT = "Waiting";
 const QString WaitingDialog::TIPS_FINISHED = "Finished!";
 
-WaitingDialog::WaitingDialog(QWidget *parent, boost::shared_ptr<pv::device::DevInst> dev_inst, int key) :
+WaitingDialog::WaitingDialog(QWidget *parent, SigSession &session, int key) :
     DSDialog(parent),
     _key(key),
-    _dev_inst(dev_inst),
+    _session(session),
     _button_box(QDialogButtonBox::Abort,
         Qt::Horizontal, this)
 {

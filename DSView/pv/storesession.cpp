@@ -394,7 +394,7 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
             g_variant_unref(gvar);
         }
     } else if (sdi->mode == LOGIC) {
-        fprintf(meta, "trigger time = %lld\n", _session.get_trigger_time().toMSecsSinceEpoch());
+        fprintf(meta, "trigger time = %lld\n", _session.get_session_time().toMSecsSinceEpoch());
     } else if (sdi->mode == ANALOG) {
         shared_ptr<data::AnalogSnapshot> analog_snapshot;
         if ((analog_snapshot = dynamic_pointer_cast<data::AnalogSnapshot>(snapshot))) {

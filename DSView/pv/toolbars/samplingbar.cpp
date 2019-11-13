@@ -354,8 +354,8 @@ void SamplingBar::zero_adj()
 
     run_stop();
 
-    pv::dialogs::WaitingDialog wait(this, get_selected_device(), SR_CONF_ZERO);
-    if (wait.start() ==QDialog::Rejected) {
+    pv::dialogs::WaitingDialog wait(this, _session, SR_CONF_ZERO);
+    if (wait.start() == QDialog::Rejected) {
         BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals())
         {
             if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)))

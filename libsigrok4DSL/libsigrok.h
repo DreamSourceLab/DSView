@@ -1154,6 +1154,7 @@ struct sr_dev_mode {
     int mode;
     char *name;
     char *name_cn;
+    char *acronym;
     char *icon;
 };
 

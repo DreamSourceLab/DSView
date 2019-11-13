@@ -30,7 +30,8 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include <pv/device/devinst.h>
+#include "../sigsession.h"
+#include "../device/devinst.h"
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
 
@@ -52,7 +53,7 @@ private:
     static const QString TIPS_FINISHED;
 
 public:
-    WaitingDialog(QWidget *parent, boost::shared_ptr<pv::device::DevInst> dev_inst, int key);
+    WaitingDialog(QWidget *parent, SigSession &session, int key);
     int start();
 
 protected:
@@ -65,6 +66,7 @@ private slots:
 
 private:
     int _key;
+    SigSession &_session;
     boost::shared_ptr<pv::device::DevInst>  _dev_inst;
     toolbars::TitleBar *_titlebar;
     QDialogButtonBox _button_box;
