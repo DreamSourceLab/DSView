@@ -47,7 +47,7 @@ private:
     static const int NumSpanY = 5;
     static const int NumMiniSpanY = 5;
     static const int NumSpanX = 10;
-
+    static const int HoverPointSize = 2;
     static const uint8_t DefaultBits = 8;
 
 public:
@@ -69,6 +69,14 @@ public:
     double get_ref_max() const;
     int get_hw_offset() const;
     int commit_settings();
+
+    /**
+      *
+      */
+    bool measure(const QPointF &p);
+    bool get_hover(uint64_t &index, QPointF &p, double &value);
+    QPointF get_point(uint64_t index, float &value);
+    QString get_voltage(double v, int p, bool scaled = false);
 
     /**
      * Probe options
@@ -119,6 +127,14 @@ public:
 	 **/
     void paint_mid(QPainter &p, int left, int right, QColor fore, QColor back);
 
+    /**
+     * Paints the signal with a QPainter
+     * @param p the QPainter to paint into.
+     * @param left the x-coordinate of the left edge of the signal.
+     * @param right the x-coordinate of the right edge of the signal.
+     **/
+    void paint_fore(QPainter &p, int left, int right, QColor fore, QColor back);
+
 private:
     void paint_trace(QPainter &p,
                      const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot,
@@ -134,6 +150,8 @@ private:
                         const double samples_per_pixel, const int order,
                         const float top, const float bottom, const int width);
 
+    void paint_hover_measure(QPainter &p, QColor fore, QColor back);
+
 private:
 	boost::shared_ptr<pv::data::Analog> _data;
 
@@ -145,6 +163,11 @@ private:
     int _bits;
     double _ref_min;
     double _ref_max;
+
+    bool _hover_en;
+    uint64_t _hover_index;
+    QPointF _hover_point;
+    float _hover_value;
 };
 
 } // namespace view

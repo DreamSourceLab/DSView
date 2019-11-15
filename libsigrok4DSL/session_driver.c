@@ -119,9 +119,9 @@ static const char *probeMapUnits[] = {
 };
 
 static struct sr_dev_mode mode_list[] = {
-    {LOGIC, "Logic Analyzer", "逻辑分析仪", "la.png"},
-    {ANALOG, "Data Acquisition", "数据记录仪", "daq.png"},
-    {DSO, "Oscilloscope", "示波器", "osc.png"},
+    {LOGIC, "Logic Analyzer", "逻辑分析仪", "la", "la.png"},
+    {ANALOG, "Data Acquisition", "数据记录仪", "daq", "daq.png"},
+    {DSO, "Oscilloscope", "示波器", "osc", "osc.png"},
 };
 
 static int trans_data(struct sr_dev_inst *sdi)

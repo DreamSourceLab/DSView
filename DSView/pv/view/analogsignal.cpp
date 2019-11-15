@@ -52,7 +52,11 @@ AnalogSignal::AnalogSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
                            sr_channel *probe) :
     Signal(dev_inst, probe),
     _data(data),
-    _rects(NULL)
+    _rects(NULL),
+    _hover_en(false),
+    _hover_index(0),
+    _hover_point(QPointF(-1, -1)),
+    _hover_value(0)
 {
     _typeWidth = 5;
     _colour = SignalColours[probe->index % countof(SignalColours)];
@@ -97,7 +101,11 @@ AnalogSignal::AnalogSignal(boost::shared_ptr<view::AnalogSignal> s,
                          sr_channel *probe) :
     Signal(*s.get(), probe),
     _data(data),
-    _rects(NULL)
+    _rects(NULL),
+    _hover_en(false),
+    _hover_index(0),
+    _hover_point(QPointF(-1, -1)),
+    _hover_value(0)
 {
     _typeWidth = 5;
     _bits = s->get_bits();
@@ -182,6 +190,99 @@ int AnalogSignal::commit_settings()
                           g_variant_new_byte(_probe->trig_value));
 
     return ret;
+}
+
+bool AnalogSignal::measure(const QPointF &p)
+{
+    _hover_en = false;
+    if (!enabled())
+        return false;
+
+    if (_view->session().get_capture_state() != SigSession::Stopped)
+        return false;
+
+    const QRectF window = get_view_rect();
+    if (!window.contains(p))
+        return false;
+
+    const deque< boost::shared_ptr<pv::data::AnalogSnapshot> > &snapshots =
+        _data->get_snapshots();
+    if (snapshots.empty())
+        return false;
+
+    const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot =
+        snapshots.front();
+    if (snapshot->empty())
+        return false;
+
+    const double scale = _view->scale();
+    assert(scale > 0);
+    const int64_t pixels_offset = _view->offset();
+    const double samplerate = _view->session().cur_snap_samplerate();
+    const double samples_per_pixel = samplerate * scale;
+
+    _hover_index = floor((p.x() + pixels_offset) * samples_per_pixel+0.5);
+    if (_hover_index >= snapshot->get_sample_count())
+        return false;
+
+    _hover_point = get_point(_hover_index, _hover_value);
+    _hover_en = true;
+    return true;
+}
+
+bool AnalogSignal::get_hover(uint64_t &index, QPointF &p, double &value)
+{
+    if (_hover_en) {
+        index = _hover_index;
+        p = _hover_point;
+        value = _hover_value;
+        return true;
+    }
+    return false;
+}
+
+QPointF AnalogSignal::get_point(uint64_t index, float &value)
+{
+    QPointF pt = QPointF(-1, -1);
+
+    if (!enabled())
+        return pt;
+
+    const deque< boost::shared_ptr<pv::data::AnalogSnapshot> > &snapshots =
+        _data->get_snapshots();
+    if (snapshots.empty())
+        return pt;
+
+    const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot =
+        snapshots.front();
+    if (snapshot->empty())
+        return pt;
+
+    const int order = snapshot->get_ch_order(get_index());
+    if (order == -1)
+        return pt;
+
+    const double scale = _view->scale();
+    assert(scale > 0);
+    const int64_t pixels_offset = _view->offset();
+    const double samplerate = _view->session().cur_snap_samplerate();
+    const double samples_per_pixel = samplerate * scale;
+
+    if (index >= snapshot->get_sample_count())
+        return pt;
+
+    const uint64_t ring_index = (uint64_t)(snapshot->get_ring_start() + floor(index)) % snapshot->get_sample_count();
+    value = *(snapshot->get_samples(ring_index) + order*snapshot->get_unit_bytes());
+
+    const int height = get_totalHeight();
+    const float top = get_y() - height * 0.5;
+    const float bottom = get_y() + height * 0.5;
+    const int hw_offset = get_hw_offset();
+    const float x = (index / samples_per_pixel - pixels_offset);
+    const float y = min(max(top, get_zero_vpos() + (value - hw_offset)* _scale), bottom);
+    pt = QPointF(x, y);
+
+    return pt;
 }
 
 /**
@@ -451,6 +552,24 @@ void AnalogSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QCol
             top, bottom, width);
 }
 
+void AnalogSignal::paint_fore(QPainter &p, int left, int right, QColor fore, QColor back)
+{
+    assert(_view);
+
+    fore.setAlpha(View::BackAlpha);
+    QPen pen(fore);
+    pen.setStyle(Qt::DotLine);
+    p.setPen(pen);
+    p.drawLine(left, get_zero_vpos(), right, get_zero_vpos());
+
+    fore.setAlpha(View::ForeAlpha);
+    if(enabled()) {
+        // Paint measure
+        if (_view->session().get_capture_state() == SigSession::Stopped)
+            paint_hover_measure(p, fore, back);
+    }
+}
+
 void AnalogSignal::paint_trace(QPainter &p,
     const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot,
     int zeroY, const int start_pixel,
@@ -566,6 +685,80 @@ void AnalogSignal::paint_envelope(QPainter &p,
     }
 
     p.drawRects(_rects, pcnt);
+}
+
+void AnalogSignal::paint_hover_measure(QPainter &p, QColor fore, QColor back)
+{
+    const int hw_offset = get_hw_offset();
+    const int height = get_totalHeight();
+    const float top = get_y() - height * 0.5;
+    const float bottom = get_y() + height * 0.5;
+
+    // Hover measure
+    if (_hover_en && _hover_point != QPointF(-1, -1)) {
+        QString hover_str = get_voltage(hw_offset - _hover_value, 2);
+        if (_hover_point.y() <= top || _hover_point.y() >= bottom)
+            hover_str += "/out";
+        const int hover_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
+            Qt::AlignLeft | Qt::AlignTop, hover_str).width() + 10;
+        const int hover_height = p.boundingRect(0, 0, INT_MAX, INT_MAX,
+            Qt::AlignLeft | Qt::AlignTop, hover_str).height();
+        QRectF hover_rect(_hover_point.x(), _hover_point.y()-hover_height/2, hover_width, hover_height);
+        if (hover_rect.right() > get_view_rect().right())
+            hover_rect.moveRight(_hover_point.x());
+        if (hover_rect.top() < get_view_rect().top())
+            hover_rect.moveTop(_hover_point.y());
+        if (hover_rect.bottom() > get_view_rect().bottom())
+            hover_rect.moveBottom(_hover_point.y());
+
+        p.setPen(fore);
+        p.setBrush(back);
+        p.drawRect(_hover_point.x()-1, _hover_point.y()-1, HoverPointSize, HoverPointSize);
+        p.drawText(hover_rect, Qt::AlignCenter | Qt::AlignTop | Qt::TextDontClip, hover_str);
+    }
+
+    list<Cursor*>::iterator i = _view->get_cursorList().begin();
+    while (i != _view->get_cursorList().end()) {
+        float pt_value;
+        const QPointF pt = get_point((*i)->index(), pt_value);
+        if (pt == QPointF(-1, -1)) {
+            i++;
+            continue;
+        }
+        QString pt_str = get_voltage(hw_offset - pt_value, 2);
+        if (pt.y() <= top || pt.y() >= bottom)
+            pt_str += "/out";
+        const int pt_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
+            Qt::AlignLeft | Qt::AlignTop, pt_str).width() + 10;
+        const int pt_height = p.boundingRect(0, 0, INT_MAX, INT_MAX,
+            Qt::AlignLeft | Qt::AlignTop, pt_str).height();
+        QRectF pt_rect(pt.x(), pt.y()-pt_height/2, pt_width, pt_height);
+        if (pt_rect.right() > get_view_rect().right())
+            pt_rect.moveRight(pt.x());
+        if (pt_rect.top() < get_view_rect().top())
+            pt_rect.moveTop(pt.y());
+        if (pt_rect.bottom() > get_view_rect().bottom())
+            pt_rect.moveBottom(pt.y());
+
+        p.drawRect(pt.x()-1, pt.y()-1, 2, 2);
+        p.drawLine(pt.x()-2, pt.y()-2, pt.x()+2, pt.y()+2);
+        p.drawLine(pt.x()+2, pt.y()-2, pt.x()-2, pt.y()+2);
+        p.drawText(pt_rect, Qt::AlignCenter | Qt::AlignTop | Qt::TextDontClip, pt_str);
+
+        i++;
+    }
+}
+
+QString AnalogSignal::get_voltage(double v, int p, bool scaled)
+{
+    const double mapRange = (get_mapMax() - get_mapMin()) * 1000;
+    const QString mapUnit = get_mapUnit();
+
+    if (scaled)
+        v = v / get_totalHeight() * mapRange;
+    else
+        v = v * _scale / get_totalHeight() * mapRange;
+    return abs(v) >= 1000 ? QString::number(v/1000.0, 'f', p) + mapUnit : QString::number(v, 'f', p) + "m" + mapUnit;
 }
 
 } // namespace view

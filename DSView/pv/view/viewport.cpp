@@ -26,6 +26,7 @@
 #include "signal.h"
 #include "dsosignal.h"
 #include "logicsignal.h"
+#include "analogsignal.h"
 #include "spectrumtrace.h"
 #include "../device/devinst.h"
 #include "../data/logic.h"
@@ -1128,6 +1129,7 @@ void Viewport::measure()
             assert(s);
             boost::shared_ptr<view::LogicSignal> logicSig;
             boost::shared_ptr<view::DsoSignal> dsoSig;
+            boost::shared_ptr<view::AnalogSignal> analogSig;
             if ((logicSig = dynamic_pointer_cast<view::LogicSignal>(s))) {
                 if (_action_type == NO_ACTION) {
                     if (logicSig->measure(_mouse_point, _cur_sample, _nxt_sample, _thd_sample)) {
@@ -1184,6 +1186,14 @@ void Viewport::measure()
             } else if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
                 if (dsoSig->enabled()) {
                     if (_measure_en && dsoSig->measure(_view.hover_point())) {
+                        _measure_type = DSO_VALUE;
+                    } else {
+                        _measure_type = NO_MEASURE;
+                    }
+                }
+            } else if ((analogSig = dynamic_pointer_cast<view::AnalogSignal>(s))) {
+                if (analogSig->enabled()) {
+                    if (_measure_en && analogSig->measure(_view.hover_point())) {
                         _measure_type = DSO_VALUE;
                     } else {
                         _measure_type = NO_MEASURE;
@@ -1276,6 +1286,7 @@ void Viewport::paintMeasure(QPainter &p, QColor fore, QColor back)
         _measure_type == DSO_VALUE) {
         BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
             boost::shared_ptr<view::DsoSignal> dsoSig;
+            boost::shared_ptr<view::AnalogSignal> analogSig;
             if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
                 uint64_t index;
                 double value;
@@ -1285,6 +1296,16 @@ void Viewport::paintMeasure(QPainter &p, QColor fore, QColor back)
                     p.setBrush(Qt::NoBrush);
                     p.drawLine(hpoint.x(), dsoSig->get_view_rect().top(),
                                hpoint.x(), dsoSig->get_view_rect().bottom());
+                }
+            } else if ((analogSig = dynamic_pointer_cast<view::AnalogSignal>(s))) {
+                uint64_t index;
+                double value;
+                QPointF hpoint;
+                if (analogSig->get_hover(index, hpoint, value)) {
+                    p.setPen(QPen(fore, 1, Qt::DashLine));
+                    p.setBrush(Qt::NoBrush);
+                    p.drawLine(hpoint.x(), analogSig->get_view_rect().top(),
+                               hpoint.x(), analogSig->get_view_rect().bottom());
                 }
             }
         }
