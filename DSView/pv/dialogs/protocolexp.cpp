@@ -157,7 +157,7 @@ void ProtocolExp::accept()
                     }
                 }
                 out << QString("%1,%2,%3\n")
-                       .arg("ID")
+                       .arg("Id")
                        .arg("Time[s]")
                        .arg(title);
 
