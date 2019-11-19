@@ -184,6 +184,9 @@ void ViewStatus::mousePressEvent(QMouseEvent *event)
 {
     assert(event);
 
+    if (_session.get_device()->dev_inst()->mode != DSO)
+        return;
+
     if (event->button() == Qt::LeftButton) {
         //BOOST_FOREACH(QRect rect, std::get<0>(_mrects)) {
         for(size_t i = 0; i < _mrects.size(); i++) {
