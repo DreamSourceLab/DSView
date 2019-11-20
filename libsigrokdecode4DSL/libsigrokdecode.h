@@ -309,6 +309,9 @@ struct srd_decoder_inst {
     /** First entry of wait(). */
     gboolean first_pos;
 
+    /** skip zero flag. */
+    gboolean skip_zero;
+
 	/** Indicates the current state of the decoder stack. */
 	int decoder_state;
 

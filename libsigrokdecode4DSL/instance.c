@@ -699,6 +699,9 @@ SRD_PRIV int srd_inst_start(struct srd_decoder_inst *di, char **error)
     /* none matched */
     di->abs_cur_matched = FALSE;
 
+    /* skip zero flag */
+    di->skip_zero = FALSE;
+
 	/* Set self.samplenum to 0. */
 	PyObject_SetAttrString(di->py_inst, "samplenum", PyLong_FromLong(0));
 
@@ -859,7 +862,7 @@ static void update_old_pins_array_initial_pins(struct srd_decoder_inst *di)
 	}
 }
 
-static gboolean term_matches(const struct srd_decoder_inst *di,
+static gboolean term_matches(struct srd_decoder_inst *di,
         struct srd_term *term, gboolean *skip_allow)
 {
 	uint8_t old_sample, sample;
@@ -869,8 +872,11 @@ static gboolean term_matches(const struct srd_decoder_inst *di,
 	/* Caller ensures di, di->dec_channelmap, term, sample_pos != NULL. */
 
     *skip_allow = FALSE;
-	if (term->type == SRD_TERM_SKIP)
+    if (term->type == SRD_TERM_SKIP) {
+        if (di->abs_cur_matched && term->num_samples_to_skip == 0)
+            di->skip_zero = TRUE;
 		return sample_matches(0, 0, term);
+    }
 
 	ch = term->channel;
     if (*(di->inbuf + ch) == NULL) {
@@ -886,7 +892,7 @@ static gboolean term_matches(const struct srd_decoder_inst *di,
 	return sample_matches(old_sample, sample, term);
 }
 
-static gboolean all_terms_match(const struct srd_decoder_inst *di,
+static gboolean all_terms_match(struct srd_decoder_inst *di,
         const GSList *cond, gboolean *skip_allow)
 {
 	const GSList *l;
@@ -900,6 +906,10 @@ static gboolean all_terms_match(const struct srd_decoder_inst *di,
 			return FALSE;
 	}
 
+    if (di->skip_zero) {
+        di->abs_cur_samplenum--;
+        di->skip_zero = FALSE;
+    }
 	return TRUE;
 }
 

@@ -685,7 +685,7 @@ static int create_term_list(PyObject *py_dict, GSList **term_list, gboolean cur_
 			term = g_malloc(sizeof(struct srd_term));
 			term->type = SRD_TERM_SKIP;
 			term->num_samples_to_skip = num_samples_to_skip;
-            term->num_samples_already_skipped = cur_matched ? 1 : 0;
+            term->num_samples_already_skipped = cur_matched ? (term->num_samples_to_skip != 0) : 0;
 		} else {
 			srd_err("Term key is neither a string nor a number.");
 			goto err;
@@ -841,7 +841,7 @@ static int set_skip_condition(struct srd_decoder_inst *di, uint64_t count)
 	term = g_malloc(sizeof(*term));
 	term->type = SRD_TERM_SKIP;
 	term->num_samples_to_skip = count;
-    term->num_samples_already_skipped = di->abs_cur_matched ? 1 : 0;
+    term->num_samples_already_skipped = di->abs_cur_matched ? (term->num_samples_to_skip != 0) : 0;
 	term_list = g_slist_append(NULL, term);
 	di->condition_list = g_slist_append(di->condition_list, term_list);
 
