@@ -85,6 +85,8 @@ struct session_vdev {
 	int num_probes;
     int enabled_probes;
     uint64_t timebase;
+    uint64_t max_timebase;
+    uint64_t min_timebase;
     uint8_t unit_bits;
     uint32_t ref_min;
     uint32_t ref_max;
@@ -364,6 +366,8 @@ static int dev_open(struct sr_dev_inst *sdi)
     vdev->unit_bits = 1;
     vdev->ref_min = 0;
     vdev->ref_max = 0;
+    vdev->max_timebase = MAX_TIMEBASE;
+    vdev->min_timebase = MIN_TIMEBASE;
     vdev->max_height = 0;
     vdev->mstatus.measure_valid = TRUE;
 
@@ -431,9 +435,18 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
             return SR_ERR;
         break;
     case SR_CONF_MAX_TIMEBASE:
-        if (!sdi)
+        if (sdi) {
+            vdev = sdi->priv;
+            *data = g_variant_new_uint64(vdev->max_timebase);
+        } else
             return SR_ERR;
-        *data = g_variant_new_uint64(MAX_TIMEBASE);
+        break;
+    case SR_CONF_MIN_TIMEBASE:
+        if (sdi) {
+            vdev = sdi->priv;
+            *data = g_variant_new_uint64(vdev->min_timebase);
+        } else
+            return SR_ERR;
         break;
     case SR_CONF_UNIT_BITS:
         if (sdi) {
@@ -592,6 +605,14 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     case SR_CONF_TIMEBASE:
         vdev->timebase = g_variant_get_uint64(data);
         sr_info("Setting timebase to %" PRIu64 ".", vdev->timebase);
+        break;
+    case SR_CONF_MAX_TIMEBASE:
+        vdev->max_timebase = g_variant_get_uint64(data);
+        sr_info("Setting max timebase to %" PRIu64 ".", vdev->max_timebase);
+        break;
+    case SR_CONF_MIN_TIMEBASE:
+        vdev->min_timebase = g_variant_get_uint64(data);
+        sr_info("Setting min timebase to %" PRIu64 ".", vdev->min_timebase);
         break;
     case SR_CONF_UNIT_BITS:
         vdev->unit_bits = g_variant_get_byte(data);

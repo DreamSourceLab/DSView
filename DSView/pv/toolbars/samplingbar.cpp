@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
+#include "samplingbar.h"
+
 #include <extdef.h>
 #include <assert.h>
 #include <boost/foreach.hpp>
@@ -30,7 +32,6 @@
 #include <QAbstractItemView>
 #include <QApplication>
 
-#include "samplingbar.h"
 #include "../devicemanager.h"
 #include "../device/devinst.h"
 #include "../dialogs/deviceoptions.h"
@@ -156,7 +157,7 @@ void SamplingBar::retranslateUi()
         else if (dev_inst->name().contains("virtual"))
             _device_type.setText(tr("File"));
         else {
-            int usb_speed;
+            int usb_speed = LIBUSB_SPEED_HIGH;
             GVariant *gvar = dev_inst->get_config(NULL, NULL, SR_CONF_USB_SPEED);
             if (gvar != NULL) {
                 usb_speed = g_variant_get_int32(gvar);
@@ -203,7 +204,7 @@ void SamplingBar::reStyle()
         else if (dev_inst->name().contains("virtual"))
             _device_type.setIcon(QIcon(":/icons/data.png"));
         else {
-            int usb_speed;
+            int usb_speed = LIBUSB_SPEED_HIGH;
             GVariant *gvar = dev_inst->get_config(NULL, NULL, SR_CONF_USB_SPEED);
             if (gvar != NULL) {
                 usb_speed = g_variant_get_int32(gvar);
@@ -521,6 +522,7 @@ void SamplingBar::update_sample_count_selector()
     uint64_t sw_depth;
     uint64_t rle_depth = 0;
     uint64_t max_timebase = 0;
+    uint64_t min_timebase = SR_NS(10);
     double pre_duration = SR_SEC(1);
     double duration;
     bool rle_support = false;
@@ -572,6 +574,11 @@ void SamplingBar::update_sample_count_selector()
         gvar = dev_inst->get_config(NULL, NULL, SR_CONF_MAX_TIMEBASE);
         if (gvar != NULL) {
             max_timebase = g_variant_get_uint64(gvar);
+            g_variant_unref(gvar);
+        }
+        gvar = dev_inst->get_config(NULL, NULL, SR_CONF_MIN_TIMEBASE);
+        if (gvar != NULL) {
+            min_timebase = g_variant_get_uint64(gvar);
             g_variant_unref(gvar);
         }
     }
@@ -626,7 +633,7 @@ void SamplingBar::update_sample_count_selector()
                         unit == SR_MIN(1) ? SR_SEC(50) : duration * 0.5);
 
         if (dev_inst->dev_inst()->mode == DSO)
-            not_last = duration >= SR_NS(10);
+            not_last = duration >= min_timebase;
         else if (dev_inst->dev_inst()->mode == ANALOG)
             not_last = (duration >= SR_MS(100)) &&
                        (duration / SR_SEC(1) * samplerate >= SR_KB(1));
@@ -957,6 +964,11 @@ void SamplingBar::enable_toggle(bool enable)
         _sample_count.setDisabled(true);
         _sample_rate.setDisabled(true);
     }
+
+    if (_session.get_device()->name() == "virtual-session") {
+        _sample_count.setDisabled(true);
+        _sample_rate.setDisabled(true);
+    }
 }
 
 void SamplingBar::enable_run_stop(bool enable)
@@ -1005,6 +1017,7 @@ void SamplingBar::reload()
         _instant_action->setVisible(true);
         enable_toggle(true);
     }
+
     retranslateUi();
     reStyle();
     update();

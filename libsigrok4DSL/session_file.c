@@ -220,6 +220,14 @@ SR_API int sr_session_load(const char *filename)
                     tmp_u64 = strtoull(val, NULL, 10);
                     sdi->driver->config_set(SR_CONF_TIMEBASE,
                             g_variant_new_uint64(tmp_u64), sdi, NULL, NULL);
+                } else if (!strcmp(keys[j], "hDiv min")) {
+                    tmp_u64 = strtoull(val, NULL, 10);
+                    sdi->driver->config_set(SR_CONF_MIN_TIMEBASE,
+                            g_variant_new_uint64(tmp_u64), sdi, NULL, NULL);
+                } else if (!strcmp(keys[j], "hDiv max")) {
+                    tmp_u64 = strtoull(val, NULL, 10);
+                    sdi->driver->config_set(SR_CONF_MAX_TIMEBASE,
+                            g_variant_new_uint64(tmp_u64), sdi, NULL, NULL);
                 } else if (!strcmp(keys[j], "bits")) {
                     tmp_u64 = strtoull(val, NULL, 10);
                     sdi->driver->config_set(SR_CONF_UNIT_BITS,

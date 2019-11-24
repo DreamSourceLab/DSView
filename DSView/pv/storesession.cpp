@@ -375,6 +375,18 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
             fprintf(meta, "hDiv = %" PRIu64 "\n", tmp_u64);
             g_variant_unref(gvar);
         }
+        gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_MAX_TIMEBASE);
+        if (gvar != NULL) {
+            uint64_t tmp_u64 = g_variant_get_uint64(gvar);
+            fprintf(meta, "hDiv max = %" PRIu64 "\n", tmp_u64);
+            g_variant_unref(gvar);
+        }
+        gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_MIN_TIMEBASE);
+        if (gvar != NULL) {
+            uint64_t tmp_u64 = g_variant_get_uint64(gvar);
+            fprintf(meta, "hDiv min = %" PRIu64 "\n", tmp_u64);
+            g_variant_unref(gvar);
+        }
         gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_UNIT_BITS);
         if (gvar != NULL) {
             uint8_t tmp_u8 = g_variant_get_byte(gvar);

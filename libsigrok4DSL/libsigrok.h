@@ -129,6 +129,7 @@ enum {
  * Oscilloscope
  */
 #define MAX_TIMEBASE SR_SEC(10)
+#define MIN_TIMEBASE SR_NS(10)
 
 extern char DS_RES_PATH[256];
 
@@ -842,6 +843,7 @@ enum {
 
 	/** Time base. */
     SR_CONF_MAX_TIMEBASE,
+    SR_CONF_MIN_TIMEBASE,
 	SR_CONF_TIMEBASE,
 
 	/** Filter. */

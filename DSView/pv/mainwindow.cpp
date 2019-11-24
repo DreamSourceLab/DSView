@@ -441,7 +441,7 @@ void MainWindow::update_device_list()
 
     // USB device speed check
     if (!selected_device->name().contains("virtual")) {
-        int usb_speed;
+        int usb_speed = LIBUSB_SPEED_HIGH;
         GVariant *gvar = selected_device->get_config(NULL, NULL, SR_CONF_USB_SPEED);
         if (gvar != NULL) {
             usb_speed = g_variant_get_int32(gvar);

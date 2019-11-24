@@ -23,6 +23,8 @@
 #ifndef DSVIEW_PV_TOOLBARS_SAMPLINGBAR_H
 #define DSVIEW_PV_TOOLBARS_SAMPLINGBAR_H
 
+#include "../sigsession.h"
+
 #include <stdint.h>
 #include <list>
 #include <map>
@@ -34,8 +36,6 @@
 #include <QToolButton>
 #include <QAction>
 #include <QMenu>
-
-#include "../sigsession.h"
 
 struct st_dev_inst;
 class QAction;
@@ -67,7 +67,7 @@ private:
     static const uint64_t AnalogMaxSWDepth = SR_Mn(100);
     static const QString RLEString;
     static const QString DIVString;
-    static const uint64_t ZeroTimeBase = SR_US(10);
+    static const uint64_t ZeroTimeBase = SR_US(2);
 
 public:
     SamplingBar(SigSession &session, QWidget *parent);
