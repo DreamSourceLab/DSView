@@ -1248,6 +1248,11 @@ SR_PRIV int dsl_config_get(int id, GVariant **data, const struct sr_dev_inst *sd
                                          channel_modes[devc->ch_mode].min_samplerate /
                                          DS_CONF_DSO_HDIVS));
         break;
+    case SR_CONF_MIN_TIMEBASE:
+        if (!sdi)
+            return SR_ERR;
+        *data = g_variant_new_uint64(SR_SEC(1) / channel_modes[devc->ch_mode].hw_max_samplerate);
+        break;
     case SR_CONF_PROBE_COUPLING:
         if (!ch)
             return SR_ERR;

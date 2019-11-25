@@ -62,6 +62,7 @@ DsoSignal::DsoSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
     Signal(dev_inst, probe),
     _data(data),
     _scale(0),
+    _stop_scale(1),
     _en_lock(false),
     _show(true),
     _vDialActive(false),
@@ -120,7 +121,7 @@ boost::shared_ptr<pv::data::Dso> DsoSignal::dso_data() const
 
 void DsoSignal::set_scale(int height)
 {
-    _scale = height / (_ref_max - _ref_min);
+    _scale = height / (_ref_max - _ref_min) * _stop_scale;
 }
 
 float DsoSignal::get_scale()
@@ -216,8 +217,10 @@ bool DsoSignal::go_vDialPre(bool manul)
         _vDial->set_sel(_vDial->get_sel() - 1);
         _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_VDIV,
                               g_variant_new_uint64(_vDial->get_value()));
-        if (_view->session().get_capture_state() == SigSession::Stopped)
-            _scale *= pre_vdiv/_vDial->get_value();
+        if (_view->session().get_capture_state() == SigSession::Stopped) {
+            _stop_scale *= pre_vdiv/_vDial->get_value();
+            set_scale(get_view_rect().height());
+        }
         _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_OFFSET,
                               g_variant_new_uint16(_zero_offset));
 
@@ -244,8 +247,10 @@ bool DsoSignal::go_vDialNext(bool manul)
         _vDial->set_sel(_vDial->get_sel() + 1);
         _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_VDIV,
                               g_variant_new_uint64(_vDial->get_value()));
-        if (_view->session().get_capture_state() == SigSession::Stopped)
-            _scale *= pre_vdiv/_vDial->get_value();
+        if (_view->session().get_capture_state() == SigSession::Stopped) {
+            _stop_scale *= pre_vdiv/_vDial->get_value();
+            set_scale(get_view_rect().height());
+        }
         _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_OFFSET,
                               g_variant_new_uint16(_zero_offset));
 
@@ -782,6 +787,8 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColor 
     assert(_view);
     assert(right >= left);
 
+    if (_view->session().get_capture_state() == SigSession::Running)
+        _stop_scale = 1;
 
     if (enabled()) {
         const int index = get_index();
