@@ -92,6 +92,7 @@ endif()
 
 find_package(Threads)
 
+find_package(PythonLibs 3 EXACT)
 find_package(Boost 1.42 COMPONENTS filesystem system thread REQUIRED)
 find_package(libusb-1.0 REQUIRED)
 find_package(libzip REQUIRED)
@@ -390,6 +391,7 @@ else()
 	list(APPEND DSVIEW_LINK_LIBS ${PKGDEPS_LIBRARIES})
 endif()
 
+list(APPEND DSVIEW_LINK_LIBS ${PYTHON_LIBRARIES})
 
 add_executable(${PROJECT_NAME}
 	${DSView_SOURCES}
