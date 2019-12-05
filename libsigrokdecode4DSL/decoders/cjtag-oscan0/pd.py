@@ -4,6 +4,7 @@
 ## Copyright (C) 2012-2015 Uwe Hermann <uwe@hermann-uwe.de>
 ## Copyright (C) 2019 DreamSourceLab <support@dreamsourcelab.com>
 ## Copyright (C) 2019 Zhiyuan Wan   <dv.xw@qq.com>
+## Copyright (C) 2019 Kongou Hikari <hikari@iloli.bid>
 ##
 ## Version: 
 ## Modified by Shiqiu Nie(369614718@qq.com)
@@ -380,7 +381,7 @@ class Decoder(srd.Decoder):
                 self.handle_rising_tck_edge(tdi, tdo, tck, tms, trst, srst, rtck)
 
             while (tck == 1):
-                (tdi, tdo, tck, tms_n, trst, srst, rtck) = self.wait() # Skip one sample
+                (tdi, tdo, tck, tms_n, trst, srst, rtck) = self.wait([{2: 'f'}, {3: 'e'}]) 
                 if(tms_n != tms):
                     tms = tms_n
                     self.handle_tms_edge(tck, tms)
