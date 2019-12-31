@@ -141,6 +141,7 @@ void Viewport::paintEvent(QPaintEvent *event)
     QPainter p(this);
     style()->drawPrimitive(QStyle::PE_Widget, &o, &p, this);
 
+    _view.session().check_update();
     QColor fore(QWidget::palette().color(QWidget::foregroundRole()));
     QColor back(QWidget::palette().color(QWidget::backgroundRole()));
     fore.setAlpha(View::ForeAlpha);
@@ -328,7 +329,7 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
                 } else if (_waiting_trig > 0) {
                     type_str = "Waiting Trig";
                     for (int i = 1; i < _waiting_trig; i++)
-                        if (i % (WaitLoopTime / SigSession::ViewTime) == 0)
+                        if (i % (WaitLoopTime / SigSession::FeedInterval) == 0)
                             type_str += ".";
                 } else {
                     type_str = "Trig'd";
@@ -1613,7 +1614,7 @@ void Viewport::set_need_update(bool update)
 
 void Viewport::show_wait_trigger()
 {
-    _waiting_trig %= (WaitLoopTime / SigSession::ViewTime) * 4;
+    _waiting_trig %= (WaitLoopTime / SigSession::FeedInterval) * 4;
     _waiting_trig++;
     update();
 }

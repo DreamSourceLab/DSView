@@ -105,7 +105,7 @@ SigSession::SigSession(DeviceManager &device_manager) :
     _hot_detach = false;
     _group_cnt = 0;
 	register_hotplug_callback();
-    _view_timer.stop();
+    _feed_timer.stop();
     _noData_cnt = 0;
     _data_lock = false;
     _data_updated = false;
@@ -129,7 +129,7 @@ SigSession::SigSession(DeviceManager &device_manager) :
     _group_data.reset(new data::Group());
     _group_cnt = 0;
 
-    connect(&_view_timer, SIGNAL(timeout()), this, SLOT(check_update()));
+    connect(&_feed_timer, SIGNAL(timeout()), this, SLOT(data_unlock()));
 }
 
 SigSession::~SigSession()
@@ -354,9 +354,10 @@ void SigSession::capture_init()
     _trigger_flag = false;
     _hw_replied = false;
     if (_dev_inst->dev_inst()->mode != LOGIC)
-        _view_timer.start(ViewTime);
+        _feed_timer.start(FeedInterval);
     else
-        _view_timer.stop();
+        _feed_timer.stop();
+
     _noData_cnt = 0;
     data_unlock();
 
@@ -587,7 +588,9 @@ void SigSession::sample_thread_proc(boost::shared_ptr<device::DevInst> dev_inst,
 
 void SigSession::check_update()
 {
-    data_unlock();
+    boost::lock_guard<boost::mutex> lock(_data_mutex);
+
+    //data_unlock(); unlock after wave rendering
     if (_capture_state != Running)
         return;
 
@@ -597,7 +600,7 @@ void SigSession::check_update()
         _noData_cnt = 0;
         data_auto_unlock();
     } else {
-        if (++_noData_cnt >= (WaitShowTime/ViewTime))
+        if (++_noData_cnt >= (WaitShowTime/FeedInterval))
             nodata_timeout();
     }
 }
@@ -1070,7 +1073,7 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
 
     _trigger_flag = dso.trig_flag;
     receive_data(dso.num_samples);
-    //data_updated();
+
     if (!_instant)
         data_lock();
     _data_updated = true;

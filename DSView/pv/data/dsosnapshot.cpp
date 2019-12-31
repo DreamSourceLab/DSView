@@ -195,6 +195,7 @@ void DsoSnapshot::enable_envelope(bool enable)
 const uint8_t *DsoSnapshot::get_samples(
     int64_t start_sample, int64_t end_sample, uint16_t index) const
 {
+    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
     (void)end_sample;
 
 	assert(start_sample >= 0);

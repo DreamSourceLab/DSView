@@ -102,7 +102,7 @@ private:
     static const int RepeatHoldDiv = 20;
 
 public:
-    static const int ViewTime = 50;
+    static const int FeedInterval = 50;
     static const int WaitShowTime = 500;
 
 public:
@@ -337,7 +337,7 @@ private:
     bool _hot_attach;
     bool _hot_detach;
 
-    QTimer _view_timer;
+    QTimer _feed_timer;
     int    _noData_cnt;
     bool _data_lock;
     bool _data_updated;
@@ -413,6 +413,7 @@ public slots:
     void reload();
     void refresh(int holdtime);
     void stop_capture();
+    void check_update();
     // repeat
     void set_repeating(bool repeat);
     void set_map_zoom(int index);
@@ -422,7 +423,6 @@ public slots:
 private slots:
     void data_lock();
     void data_unlock();
-    void check_update();
     void nodata_timeout();
     void repeat_update();
 

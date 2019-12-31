@@ -39,6 +39,8 @@ DSView/DSView
 DSView/install_manifest.txt
 DSView/qrc_DSView.cpp
 DSView/qrc_style.cpp
+DSView/qrc_breeze.cpp
+DSView/qrc_language.cpp
 
 moc_*.cpp
 moc_*.cpp_parameters

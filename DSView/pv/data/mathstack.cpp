@@ -109,10 +109,13 @@ void MathStack::free_envelop()
 
 void MathStack::clear()
 {
+    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
 }
 
 void MathStack::init()
 {
+    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+
     _sample_num = 0;
     _envelope_done = false;
 }
@@ -312,6 +315,8 @@ void MathStack::get_math_envelope_section(EnvelopeSection &s,
 
 void MathStack::calc_math()
 {
+    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+
     _math_state = Running;
 
     const boost::shared_ptr<pv::data::Dso> data = _dsoSig1->dso_data();
