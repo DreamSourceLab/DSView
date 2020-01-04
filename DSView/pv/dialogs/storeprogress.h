@@ -60,6 +60,9 @@ private:
 	void show_error();
     void closeEvent(QCloseEvent* e);
 
+signals:
+    void save_done();
+
 public slots:
     void save_run(QString session_file);
     void export_run();

@@ -114,6 +114,7 @@ SigSession::SigSession(DeviceManager &device_manager) :
     #endif
     _lissajous_trace = NULL;
     _math_trace = NULL;
+    _saving = false;
     _dso_feed = false;
 
     // Create snapshots & data containers
@@ -1747,6 +1748,16 @@ uint64_t SigSession::get_save_start() const
 uint64_t SigSession::get_save_end() const
 {
     return _save_end;
+}
+
+bool SigSession::get_saving() const
+{
+    return _saving;
+}
+
+void SigSession::set_saving(bool saving)
+{
+    _saving = saving;
 }
 
 } // namespace pv

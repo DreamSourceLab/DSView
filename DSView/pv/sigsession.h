@@ -253,6 +253,8 @@ public:
     void set_save_end(uint64_t end);
     uint64_t get_save_start() const;
     uint64_t get_save_end() const;
+    bool get_saving() const;
+    void set_saving(bool saving);
 
 private:
 	void set_capture_state(capture_state state);
@@ -360,6 +362,7 @@ private:
 
     uint64_t _save_start;
     uint64_t _save_end;
+    bool _saving;
 
     bool _dso_feed;
 

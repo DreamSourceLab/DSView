@@ -56,6 +56,8 @@ public:
 
 	~StoreSession();
 
+    SigSession& session();
+
 	std::pair<uint64_t, uint64_t> progress() const;
 
 	const QString& error() const;
@@ -103,6 +105,7 @@ private:
 	uint64_t _unit_count;
     bool _has_error;
 	QString _error;
+    bool _canceled;
 };
 
 } // pv
