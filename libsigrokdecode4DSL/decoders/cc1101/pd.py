@@ -27,6 +27,9 @@ ANN_STROBE, ANN_SINGLE_READ, ANN_SINGLE_WRITE, ANN_BURST_READ, \
 Pos = namedtuple('Pos', ['ss', 'es'])
 Data = namedtuple('Data', ['mosi', 'miso'])
 
+class ChannelError(Exception):
+    pass
+
 class Decoder(srd.Decoder):
     api_version = 3
     id = 'cc1101'

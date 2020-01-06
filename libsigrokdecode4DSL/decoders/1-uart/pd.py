@@ -103,6 +103,8 @@ class Decoder(srd.Decoder):
             'values': ('ascii', 'dec', 'hex', 'oct', 'bin')},
         {'id': 'invert', 'desc': 'Invert Signal?', 'default': 'no',
             'values': ('yes', 'no')},
+	{'id': 'anno_startstop', 'desc': 'Display Start/Stop?', 'default': 'yes',
+            'values': ('yes', 'no')},
     )
     annotations = (
         ('108', 'data', 'data'),
@@ -127,7 +129,10 @@ class Decoder(srd.Decoder):
 
     def putx(self, data):
         s, halfbit = self.startsample, self.bit_width / 2.0
-        self.put(s - floor(halfbit), self.samplenum + ceil(halfbit), self.out_ann, data)
+        if self.options['anno_startstop'] == 'yes' :
+            self.put(s - floor(halfbit), self.samplenum + ceil(halfbit), self.out_ann, data)
+        else :
+            self.put(self.frame_start, self.samplenum + ceil(halfbit * (1+self.options['num_stop_bits'])), self.out_ann, data)
 
     def putpx(self, data):
         s, halfbit = self.startsample, self.bit_width / 2.0
@@ -220,7 +225,8 @@ class Decoder(srd.Decoder):
         self.startsample = -1
 
         self.putp(['STARTBIT', 0, self.startbit])
-        self.putg([1, ['Start bit', 'Start', 'S']])
+        if self.options['anno_startstop'] == 'yes':
+            self.putg([1, ['Start bit', 'Start', 'S']])
 
         self.state = 'GET DATA BITS'
 
@@ -332,7 +338,8 @@ class Decoder(srd.Decoder):
             self.frame_valid = False
 
         self.putp(['STOPBIT', 0, self.stopbit1])
-        self.putg([2, ['Stop bit', 'Stop', 'T']])
+        if self.options['anno_startstop'] == 'yes':
+            self.putg([2, ['Stop bit', 'Stop', 'T']])
 
         # Pass the complete UART frame to upper layers.
         es = self.samplenum + ceil(self.bit_width / 2.0)
