@@ -83,7 +83,13 @@
 // use ADF4360-7 vco chip
 #define CAPS_FEATURE_ADF4360 (1 << 8)
 // 20M bandwidth limitation
-#define CAPS_FEATURE_20M (1 << 8)
+#define CAPS_FEATURE_20M (1 << 9)
+// use startup flash (fx3)
+#define CAPS_FEATURE_FLASH (1 << 10)
+// 32 channels
+#define CAPS_FEATURE_LA_CH32 (1 << 11)
+// auto tunning vgain
+#define CAPS_FEATURE_AUTO_VGAIN (1 << 12)
 /* end */
 
 
@@ -156,6 +162,7 @@ struct DSL_caps {
     uint64_t mode_caps;
     uint64_t feature_caps;
     uint64_t channels;
+    uint64_t total_ch_num;
     uint64_t hw_depth;
     uint64_t dso_depth;
     uint8_t intest_channel;
@@ -170,6 +177,8 @@ struct DSL_caps {
     uint32_t ref_min;
     uint32_t ref_max;
     uint16_t default_comb_comp;
+    uint64_t half_samplerate;
+    uint64_t quarter_samplerate;
 };
 
 struct DSL_profile {
@@ -442,6 +451,7 @@ static const struct DSL_profile supported_DSLogic[] = {
       (1 << DSL_BUFFER100x16) | (1 << DSL_BUFFER200x8) | (1 << DSL_BUFFER400x4) |
       (1 << DSL_ANALOG10x2) |
       (1 << DSL_DSO200x2),
+      16,
       SR_MB(256),
       SR_Mn(2),
       DSL_BUFFER100x16,
@@ -455,7 +465,9 @@ static const struct DSL_profile supported_DSLogic[] = {
       0,
       0,
       0,
-      0}
+      0,
+      SR_MHZ(200),
+      SR_MHZ(400)}
     },
 
     {0x2A0E, 0x0003, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic Pro", NULL,
@@ -466,6 +478,7 @@ static const struct DSL_profile supported_DSLogic[] = {
       CAPS_FEATURE_SEEP | CAPS_FEATURE_VTH | CAPS_FEATURE_BUF,
       (1 << DSL_STREAM20x16) | (1 << DSL_STREAM25x12) | (1 << DSL_STREAM50x6) | (1 << DSL_STREAM100x3) |
       (1 << DSL_BUFFER100x16) | (1 << DSL_BUFFER200x8) | (1 << DSL_BUFFER400x4),
+      16,
       SR_MB(256),
       0,
       DSL_BUFFER100x16,
@@ -479,7 +492,9 @@ static const struct DSL_profile supported_DSLogic[] = {
       0,
       0,
       0,
-      0}
+      0,
+      SR_MHZ(200),
+      SR_MHZ(400)}
     },
 
     {0x2A0E, 0x0020, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic PLus", NULL,
@@ -490,6 +505,7 @@ static const struct DSL_profile supported_DSLogic[] = {
       CAPS_FEATURE_VTH | CAPS_FEATURE_BUF,
       (1 << DSL_STREAM20x16) | (1 << DSL_STREAM25x12) | (1 << DSL_STREAM50x6) | (1 << DSL_STREAM100x3) |
       (1 << DSL_BUFFER100x16) | (1 << DSL_BUFFER200x8) | (1 << DSL_BUFFER400x4),
+      16,
       SR_MB(256),
       0,
       DSL_BUFFER100x16,
@@ -503,7 +519,9 @@ static const struct DSL_profile supported_DSLogic[] = {
       0,
       0,
       0,
-      0}
+      0,
+      SR_MHZ(200),
+      SR_MHZ(400)}
     },
 
     {0x2A0E, 0x0021, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic Basic", NULL,
@@ -514,6 +532,7 @@ static const struct DSL_profile supported_DSLogic[] = {
       CAPS_FEATURE_VTH,
       (1 << DSL_STREAM20x16) | (1 << DSL_STREAM25x12) | (1 << DSL_STREAM50x6) | (1 << DSL_STREAM100x3) |
       (1 << DSL_BUFFER100x16) | (1 << DSL_BUFFER200x8) | (1 << DSL_BUFFER400x4),
+      16,
       SR_KB(256),
       0,
       DSL_STREAM20x16,
@@ -527,7 +546,9 @@ static const struct DSL_profile supported_DSLogic[] = {
       0,
       0,
       0,
-      0}
+      0,
+      SR_MHZ(200),
+      SR_MHZ(400)}
     },
 
     {0x2A0E, 0x0029, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic U2Basic", NULL,
@@ -538,6 +559,7 @@ static const struct DSL_profile supported_DSLogic[] = {
       CAPS_FEATURE_VTH | CAPS_FEATURE_BUF,
       (1 << DSL_STREAM20x16) | (1 << DSL_STREAM25x12) | (1 << DSL_STREAM50x6) | (1 << DSL_STREAM100x3) |
       (1 << DSL_BUFFER100x16),
+      16,
       SR_MB(64),
       0,
       DSL_BUFFER100x16,
@@ -551,10 +573,12 @@ static const struct DSL_profile supported_DSLogic[] = {
       0,
       0,
       0,
-      0}
+      0,
+      SR_MHZ(200),
+      SR_MHZ(400)}
     },
 
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 };
 
 static const struct DSL_profile supported_DSCope[] = {
@@ -569,6 +593,7 @@ static const struct DSL_profile supported_DSCope[] = {
       CAPS_FEATURE_ZERO | CAPS_FEATURE_PREOFF | CAPS_FEATURE_SEEP | CAPS_FEATURE_BUF,
       (1 << DSL_ANALOG10x2) |
       (1 << DSL_DSO200x2),
+      2,
       SR_MB(256),
       SR_Mn(2),
       0,
@@ -582,7 +607,9 @@ static const struct DSL_profile supported_DSCope[] = {
       1024-920,
       1,
       255,
-      0}
+      0,
+      SR_HZ(0),
+      SR_HZ(0)}
     },
 
     {0x2A0E, 0x0004, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope20", NULL,
@@ -593,6 +620,7 @@ static const struct DSL_profile supported_DSCope[] = {
       CAPS_FEATURE_ZERO | CAPS_FEATURE_SEEP | CAPS_FEATURE_BUF,
       (1 << DSL_ANALOG10x2) |
       (1 << DSL_DSO200x2),
+      2,
       SR_MB(256),
       SR_Mn(2),
       0,
@@ -606,7 +634,9 @@ static const struct DSL_profile supported_DSCope[] = {
       1024-920,
       1,
       255,
-      0}
+      0,
+      SR_HZ(0),
+      SR_HZ(0)}
     },
 
     {0x2A0E, 0x0022, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope B20", NULL,
@@ -617,6 +647,7 @@ static const struct DSL_profile supported_DSCope[] = {
       CAPS_FEATURE_ZERO | CAPS_FEATURE_BUF,
       (1 << DSL_ANALOG10x2) |
       (1 << DSL_DSO200x2),
+      2,
       SR_MB(256),
       SR_Mn(2),
       0,
@@ -630,7 +661,9 @@ static const struct DSL_profile supported_DSCope[] = {
       1024-920,
       1,
       255,
-      0}
+      0,
+      SR_HZ(0),
+      SR_HZ(0)}
     },
 
     {0x2A0E, 0x0023, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope C20", NULL,
@@ -641,6 +674,7 @@ static const struct DSL_profile supported_DSCope[] = {
       CAPS_FEATURE_ZERO | CAPS_FEATURE_BUF,
       (1 << DSL_ANALOG10x2) |
       (1 << DSL_DSO200x2),
+      2,
       SR_MB(256),
       SR_Mn(2),
       0,
@@ -654,7 +688,9 @@ static const struct DSL_profile supported_DSCope[] = {
       1024-920,
       1,
       255,
-      0}
+      0,
+      SR_HZ(0),
+      SR_HZ(0)}
     },
 
 
@@ -666,6 +702,7 @@ static const struct DSL_profile supported_DSCope[] = {
       CAPS_FEATURE_ZERO | CAPS_FEATURE_BUF | CAPS_FEATURE_POGOPIN,
       (1 << DSL_ANALOG10x2) |
       (1 << DSL_DSO200x2),
+      2,
       SR_MB(256),
       SR_Mn(2),
       0,
@@ -679,7 +716,9 @@ static const struct DSL_profile supported_DSCope[] = {
       1024-920,
       1,
       255,
-      0}
+      0,
+      SR_HZ(0),
+      SR_HZ(0)}
     },
 
     {0x2A0E, 0x0025, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope C20", NULL,
@@ -690,6 +729,7 @@ static const struct DSL_profile supported_DSCope[] = {
       CAPS_FEATURE_ZERO,
       (1 << DSL_ANALOG10x2) |
       (1 << DSL_DSO200x2),
+      2,
       SR_KB(256),
       SR_Kn(20),
       0,
@@ -703,7 +743,9 @@ static const struct DSL_profile supported_DSCope[] = {
       1024-920,
       1,
       255,
-      0}
+      0,
+      SR_HZ(0),
+      SR_HZ(0)}
     },
 
     {0x2A0E, 0x0026, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope U2B20", NULL,
@@ -714,6 +756,7 @@ static const struct DSL_profile supported_DSCope[] = {
       CAPS_FEATURE_ZERO,
       (1 << DSL_ANALOG10x2) |
       (1 << DSL_DSO200x2),
+      2,
       SR_KB(256),
       SR_Kn(20),
       0,
@@ -727,7 +770,9 @@ static const struct DSL_profile supported_DSCope[] = {
       1024-945,
       10,
       245,
-      22}
+      22,
+      SR_HZ(0),
+      SR_HZ(0)}
     },
 
     {0x2A0E, 0x0027, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope U2P20", NULL,
@@ -738,6 +783,7 @@ static const struct DSL_profile supported_DSCope[] = {
       CAPS_FEATURE_ZERO | CAPS_FEATURE_BUF | CAPS_FEATURE_POGOPIN,
       (1 << DSL_ANALOG10x2) |
       (1 << DSL_DSO200x2),
+      2,
       SR_MB(256),
       SR_Mn(2),
       0,
@@ -751,11 +797,13 @@ static const struct DSL_profile supported_DSCope[] = {
       1024-945,
       10,
       245,
-      22}
+      22,
+      SR_HZ(0),
+      SR_HZ(0)}
     },
 
 
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 };
 
 static const gboolean default_ms_en[] = {
@@ -883,12 +931,14 @@ struct DSL_setting {
     uint16_t tpos_h;
     uint16_t trig_glb_header;               // 7
     uint16_t trig_glb;
-    uint16_t ch_en_header;                  // 8
-    uint16_t ch_en;
-    uint16_t dso_count_header;              // 9-10
+    uint16_t dso_count_header;              // 8-9
     uint16_t dso_cnt_l;
     uint16_t dso_cnt_h;
-    uint16_t misc_align;
+    uint16_t ch_en_header;                  // 10-11
+    uint16_t ch_en_l;
+    uint16_t ch_en_h;
+    uint16_t fgain_header;                  // 12
+    uint16_t fgain;
 
     uint16_t trig_header;                   // 64
     uint16_t trig_mask0[NUM_TRIGGER_STAGES];
@@ -901,6 +951,21 @@ struct DSL_setting {
     uint16_t trig_logic1[NUM_TRIGGER_STAGES];
     uint32_t trig_count[NUM_TRIGGER_STAGES];
 
+    uint32_t end_sync;
+};
+
+struct DSL_setting_ext32 {
+    uint32_t sync;
+
+    uint16_t trig_header;                   // 96
+    uint16_t trig_mask0[NUM_TRIGGER_STAGES];
+    uint16_t trig_mask1[NUM_TRIGGER_STAGES];
+    uint16_t trig_value0[NUM_TRIGGER_STAGES];
+    uint16_t trig_value1[NUM_TRIGGER_STAGES];
+    uint16_t trig_edge0[NUM_TRIGGER_STAGES];
+    uint16_t trig_edge1[NUM_TRIGGER_STAGES];
+
+    uint16_t align_bytes;
     uint32_t end_sync;
 };
 

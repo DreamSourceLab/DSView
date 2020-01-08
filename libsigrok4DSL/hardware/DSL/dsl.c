@@ -63,7 +63,9 @@ const char *probeMapUnits[] = {
 
 static const char *probe_names[] = {
     "0",  "1",  "2",  "3",  "4",  "5",  "6",  "7",
-    "8",  "9", "10", "11", "12", "13", "14", "15",
+    "8",  "9",  "10", "11", "12", "13", "14", "15",
+    "16", "17", "18", "19", "20", "21", "22", "23",
+    "24", "25", "26", "27", "28", "29", "30", "31",
     NULL,
 };
 
@@ -701,6 +703,7 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
     struct sr_usb_dev_inst *usb;
     struct libusb_device_handle *hdl;
     struct DSL_setting setting;
+    struct DSL_setting_ext32 setting_ext32;
     int ret;
     int transferred;
     int i;
@@ -712,6 +715,8 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
     struct ctl_wr_cmd wr_cmd;
     struct ctl_rd_cmd rd_cmd;
     uint8_t rd_cmd_data;
+    gboolean qutr_trig;
+    gboolean half_trig;
 
     devc = sdi->priv;
     usb = sdi->conn;
@@ -727,7 +732,11 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
     setting.dso_count_header = 0x0902;
     setting.trig_header = 0x40a0;
     setting.end_sync = 0xfa5afa5a;
-    setting.misc_align = 0xffff;
+
+    setting_ext32.sync = 0xf5a5f5a5;
+    setting_ext32.trig_header = 0x6060;
+    setting_ext32.align_bytes = 0xffff;
+    setting_ext32.end_sync = 0xfa5afa5a;
 
     // basic configuration
     setting.mode = (trigger->trigger_en << TRIG_EN_BIT) +
@@ -735,8 +744,8 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
                    (devc->clock_edge << CLK_EDGE_BIT) +
                    (devc->rle_mode << RLE_MODE_BIT) +
                    ((sdi->mode == DSO) << DSO_MODE_BIT) +
-                   (((devc->cur_samplerate == (2 * channel_modes[devc->ch_mode].hw_max_samplerate)) && sdi->mode != DSO) << HALF_MODE_BIT) +
-                   ((devc->cur_samplerate == (4 * channel_modes[devc->ch_mode].hw_max_samplerate)) << QUAR_MODE_BIT) +
+                   ((devc->cur_samplerate == devc->profile->dev_caps.half_samplerate) << HALF_MODE_BIT) +
+                   ((devc->cur_samplerate == devc->profile->dev_caps.quarter_samplerate) << QUAR_MODE_BIT) +
                    ((sdi->mode == ANALOG) << ANALOG_MODE_BIT) +
                    ((devc->filter == SR_FILTER_1T) << FILTER_BIT) +
                    (devc->instant << INSTANT_BIT) +
@@ -778,66 +787,39 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
     setting.tpos_h = tmp_u32 >> 16;
 
     // trigger global settings
-    setting.trig_glb = ((ch_num & 0xf) << 4) +
-                       trigger->trigger_stages;
+    setting.trig_glb = ((ch_num & 0x1f) << 8) +
+                       (trigger->trigger_stages & 0x00ff);
 
     // channel enable mapping
-    setting.ch_en = 0;
+    setting.ch_en_l = 0;
+    setting.ch_en_h = 0;
     for (l = sdi->channels; l; l = l->next) {
         struct sr_channel *probe = (struct sr_channel *)l->data;
-        setting.ch_en += probe->enabled << probe->index;
+        if (probe->index < 16)
+            setting.ch_en_l += probe->enabled << probe->index;
+        else
+            setting.ch_en_h += probe->enabled << (probe->index - 16);
     }
 
     // trigger advanced configuration
     if (trigger->trigger_mode == SIMPLE_TRIGGER) {
-        setting.trig_mask0[0] = ds_trigger_get_mask0(TriggerStages);
-        setting.trig_mask1[0] = ds_trigger_get_mask1(TriggerStages);
+        qutr_trig = !(devc->profile->dev_caps.feature_caps & CAPS_FEATURE_USB30) && (setting.mode & (1 << QUAR_MODE_BIT));
+        half_trig = (!(devc->profile->dev_caps.feature_caps & CAPS_FEATURE_USB30) && setting.mode & (1 << HALF_MODE_BIT)) ||
+                    ((devc->profile->dev_caps.feature_caps & CAPS_FEATURE_USB30) && setting.mode & (1 << QUAR_MODE_BIT));
 
-        setting.trig_value0[0] = ds_trigger_get_value0(TriggerStages);
-        setting.trig_value1[0] = ds_trigger_get_value1(TriggerStages);
+        setting.trig_mask0[0] = ds_trigger_get_mask0(TriggerStages, TriggerProbes-1, 0, qutr_trig, half_trig);
+        setting.trig_mask1[0] = ds_trigger_get_mask1(TriggerStages, TriggerProbes-1, 0, qutr_trig, half_trig);
+        setting.trig_value0[0] = ds_trigger_get_value0(TriggerStages, TriggerProbes-1, 0, qutr_trig, half_trig);
+        setting.trig_value1[0] = ds_trigger_get_value1(TriggerStages, TriggerProbes-1, 0, qutr_trig, half_trig);
+        setting.trig_edge0[0] = ds_trigger_get_edge0(TriggerStages, TriggerProbes-1, 0, qutr_trig, half_trig);
+        setting.trig_edge1[0] = ds_trigger_get_edge1(TriggerStages, TriggerProbes-1, 0, qutr_trig, half_trig);
 
-        setting.trig_edge0[0] = ds_trigger_get_edge0(TriggerStages);
-        setting.trig_edge1[0] = ds_trigger_get_edge1(TriggerStages);
-
-        if (setting.mode & (1 << QUAR_MODE_BIT)) {
-            setting.trig_mask0[0] = ((setting.trig_mask0[0] & 0x0f) << 12) +
-                                    ((setting.trig_mask0[0] & 0x0f) << 8) +
-                                    ((setting.trig_mask0[0] & 0x0f) << 4) +
-                                    ((setting.trig_mask0[0] & 0x0f) << 0);
-            setting.trig_mask1[0] = ((setting.trig_mask1[0] & 0x0f) << 12) +
-                                    ((setting.trig_mask1[0] & 0x0f) << 8) +
-                                    ((setting.trig_mask1[0] & 0x0f) << 4) +
-                                    ((setting.trig_mask1[0] & 0x0f) << 0);
-            setting.trig_value0[0] = ((setting.trig_value0[0] & 0x0f) << 12) +
-                                     ((setting.trig_value0[0] & 0x0f) << 8) +
-                                     ((setting.trig_value0[0] & 0x0f) << 4) +
-                                     ((setting.trig_value0[0] & 0x0f) << 0);
-            setting.trig_value1[0] = ((setting.trig_value1[0] & 0x0f) << 12) +
-                                     ((setting.trig_value1[0] & 0x0f) << 8) +
-                                     ((setting.trig_value1[0] & 0x0f) << 4) +
-                                     ((setting.trig_value1[0] & 0x0f) << 0);
-            setting.trig_edge0[0] = ((setting.trig_edge0[0] & 0x0f) << 12) +
-                                    ((setting.trig_edge0[0] & 0x0f) << 8) +
-                                    ((setting.trig_edge0[0] & 0x0f) << 4) +
-                                    ((setting.trig_edge0[0] & 0x0f) << 0);
-            setting.trig_edge1[0] = ((setting.trig_edge1[0] & 0x0f) << 12) +
-                                    ((setting.trig_edge1[0] & 0x0f) << 8) +
-                                    ((setting.trig_edge1[0] & 0x0f) << 4) +
-                                    ((setting.trig_edge1[0] & 0x0f) << 0);
-        } else if (setting.mode & (1 << HALF_MODE_BIT)) {
-            setting.trig_mask0[0] = ((setting.trig_mask0[0] & 0xff) << 8) +
-                                    ((setting.trig_mask0[0] & 0xff) << 0);
-            setting.trig_mask1[0] = ((setting.trig_mask1[0] & 0xff) << 8) +
-                                    ((setting.trig_mask1[0] & 0xff) << 0);
-            setting.trig_value0[0] = ((setting.trig_value0[0] & 0xff) << 8) +
-                                     ((setting.trig_value0[0] & 0xff) << 0);
-            setting.trig_value1[0] = ((setting.trig_value1[0] & 0xff) << 8) +
-                                     ((setting.trig_value1[0] & 0xff) << 0);
-            setting.trig_edge0[0] = ((setting.trig_edge0[0] & 0xff) << 8) +
-                                    ((setting.trig_edge0[0] & 0xff) << 0);
-            setting.trig_edge1[0] = ((setting.trig_edge1[0] & 0xff) << 8) +
-                                    ((setting.trig_edge1[0] & 0xff) << 0);
-        }
+        setting_ext32.trig_mask0[0] = ds_trigger_get_mask0(TriggerStages, 2*TriggerProbes-1, TriggerProbes, qutr_trig, half_trig);
+        setting_ext32.trig_mask1[0] = ds_trigger_get_mask1(TriggerStages, 2*TriggerProbes-1, TriggerProbes, qutr_trig, half_trig);
+        setting_ext32.trig_value0[0] = ds_trigger_get_value0(TriggerStages, 2*TriggerProbes-1, TriggerProbes, qutr_trig, half_trig);
+        setting_ext32.trig_value1[0] = ds_trigger_get_value1(TriggerStages, 2*TriggerProbes-1, TriggerProbes, qutr_trig, half_trig);
+        setting_ext32.trig_edge0[0] = ds_trigger_get_edge0(TriggerStages, 2*TriggerProbes-1, TriggerProbes, qutr_trig, half_trig);
+        setting_ext32.trig_edge1[0] = ds_trigger_get_edge1(TriggerStages, 2*TriggerProbes-1, TriggerProbes, qutr_trig, half_trig);
 
         setting.trig_logic0[0] = (trigger->trigger_logic[TriggerStages] << 1) + trigger->trigger0_inv[TriggerStages];
         setting.trig_logic1[0] = (trigger->trigger_logic[TriggerStages] << 1) + trigger->trigger1_inv[TriggerStages];
@@ -847,12 +829,17 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
         for (i = 1; i < NUM_TRIGGER_STAGES; i++) {
             setting.trig_mask0[i] = 0xffff;
             setting.trig_mask1[i] = 0xffff;
-
             setting.trig_value0[i] = 0;
             setting.trig_value1[i] = 0;
-
             setting.trig_edge0[i] = 0;
             setting.trig_edge1[i] = 0;
+
+            setting_ext32.trig_mask0[i] = 0xffff;
+            setting_ext32.trig_mask1[i] = 0xffff;
+            setting_ext32.trig_value0[i] = 0;
+            setting_ext32.trig_value1[i] = 0;
+            setting_ext32.trig_edge0[i] = 0;
+            setting_ext32.trig_edge1[i] = 0;
 
             setting.trig_logic0[i] = 2;
             setting.trig_logic1[i] = 2;
@@ -861,58 +848,28 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
         }
     } else {
         for (i = 0; i < NUM_TRIGGER_STAGES; i++) {
-            setting.trig_mask0[i] = ds_trigger_get_mask0(i);
-            setting.trig_mask1[i] = ds_trigger_get_mask1(i);
-
-            setting.trig_value0[i] = ds_trigger_get_value0(i);
-            setting.trig_value1[i] = ds_trigger_get_value1(i);
-
-            setting.trig_edge0[i] = ds_trigger_get_edge0(i);
-            setting.trig_edge1[i] = ds_trigger_get_edge1(i);
-
             if (setting.mode & (1 << STRIG_MODE_BIT) && i == STriggerDataStage) {
-                // serial trigger, data mask/value should not be duplicated
+                qutr_trig = FALSE;
+                half_trig = FALSE;
             } else {
-                if (setting.mode & (1 << QUAR_MODE_BIT)) {
-                    setting.trig_mask0[i] = ((setting.trig_mask0[i] & 0x0f) << 12) +
-                                            ((setting.trig_mask0[i] & 0x0f) << 8) +
-                                            ((setting.trig_mask0[i] & 0x0f) << 4) +
-                                            ((setting.trig_mask0[i] & 0x0f) << 0);
-                    setting.trig_mask1[i] = ((setting.trig_mask1[i] & 0x0f) << 12) +
-                                            ((setting.trig_mask1[i] & 0x0f) << 8) +
-                                            ((setting.trig_mask1[i] & 0x0f) << 4) +
-                                            ((setting.trig_mask1[i] & 0x0f) << 0);
-                    setting.trig_value0[i] = ((setting.trig_value0[i] & 0x0f) << 12) +
-                                             ((setting.trig_value0[i] & 0x0f) << 8) +
-                                             ((setting.trig_value0[i] & 0x0f) << 4) +
-                                             ((setting.trig_value0[i] & 0x0f) << 0);
-                    setting.trig_value1[i] = ((setting.trig_value1[i] & 0x0f) << 12) +
-                                             ((setting.trig_value1[i] & 0x0f) << 8) +
-                                             ((setting.trig_value1[i] & 0x0f) << 4) +
-                                             ((setting.trig_value1[i] & 0x0f) << 0);
-                    setting.trig_edge0[i] = ((setting.trig_edge0[i] & 0x0f) << 12) +
-                                            ((setting.trig_edge0[i] & 0x0f) << 8) +
-                                            ((setting.trig_edge0[i] & 0x0f) << 4) +
-                                            ((setting.trig_edge0[i] & 0x0f) << 0);
-                    setting.trig_edge1[i] = ((setting.trig_edge1[i] & 0x0f) << 12) +
-                                            ((setting.trig_edge1[i] & 0x0f) << 8) +
-                                            ((setting.trig_edge1[i] & 0x0f) << 4) +
-                                            ((setting.trig_edge1[i] & 0x0f) << 0);
-                } else if (setting.mode & (1 << HALF_MODE_BIT)) {
-                    setting.trig_mask0[i] = ((setting.trig_mask0[i] & 0xff) << 8) +
-                                            ((setting.trig_mask0[i] & 0xff) << 0);
-                    setting.trig_mask1[i] = ((setting.trig_mask1[i] & 0xff) << 8) +
-                                            ((setting.trig_mask1[i] & 0xff) << 0);
-                    setting.trig_value0[i] = ((setting.trig_value0[i] & 0xff) << 8) +
-                                             ((setting.trig_value0[i] & 0xff) << 0);
-                    setting.trig_value1[i] = ((setting.trig_value1[i] & 0xff) << 8) +
-                                             ((setting.trig_value1[i] & 0xff) << 0);
-                    setting.trig_edge0[i] = ((setting.trig_edge0[i] & 0xff) << 8) +
-                                            ((setting.trig_edge0[i] & 0xff) << 0);
-                    setting.trig_edge1[i] = ((setting.trig_edge1[i] & 0xff) << 8) +
-                                            ((setting.trig_edge1[i] & 0xff) << 0);
-                }
+                qutr_trig = !(devc->profile->dev_caps.feature_caps & CAPS_FEATURE_USB30) && (setting.mode & (1 << QUAR_MODE_BIT));
+                half_trig = (!(devc->profile->dev_caps.feature_caps & CAPS_FEATURE_USB30) && setting.mode & (1 << HALF_MODE_BIT)) ||
+                            ((devc->profile->dev_caps.feature_caps & CAPS_FEATURE_USB30) && setting.mode & (1 << QUAR_MODE_BIT));
             }
+
+            setting.trig_mask0[i] = ds_trigger_get_mask0(i, TriggerProbes-1 , 0, qutr_trig, half_trig);
+            setting.trig_mask1[i] = ds_trigger_get_mask1(i, TriggerProbes-1, 0, qutr_trig, half_trig);
+            setting.trig_value0[i] = ds_trigger_get_value0(i, TriggerProbes-1, 0, qutr_trig, half_trig);
+            setting.trig_value1[i] = ds_trigger_get_value1(i, TriggerProbes-1, 0, qutr_trig, half_trig);
+            setting.trig_edge0[i] = ds_trigger_get_edge0(i, TriggerProbes-1, 0, qutr_trig, half_trig);
+            setting.trig_edge1[i] = ds_trigger_get_edge1(i, TriggerProbes-1, 0, qutr_trig, half_trig);
+
+            setting_ext32.trig_mask0[i] = ds_trigger_get_mask0(i, 2*TriggerProbes-1, TriggerProbes, qutr_trig, half_trig);
+            setting_ext32.trig_mask1[i] = ds_trigger_get_mask1(i, 2*TriggerProbes-1, TriggerProbes, qutr_trig, half_trig);
+            setting_ext32.trig_value0[i] = ds_trigger_get_value0(i, 2*TriggerProbes-1, TriggerProbes, qutr_trig, half_trig);
+            setting_ext32.trig_value1[i] = ds_trigger_get_value1(i, 2*TriggerProbes-1, TriggerProbes, qutr_trig, half_trig);
+            setting_ext32.trig_edge0[i] = ds_trigger_get_edge0(i, 2*TriggerProbes-1, TriggerProbes, qutr_trig, half_trig);
+            setting_ext32.trig_edge1[i] = ds_trigger_get_edge1(i, 2*TriggerProbes-1, TriggerProbes, qutr_trig, half_trig);
 
             setting.trig_logic0[i] = (trigger->trigger_logic[i] << 1) + trigger->trigger0_inv[i];
             setting.trig_logic1[i] = (trigger->trigger_logic[i] << 1) + trigger->trigger1_inv[i];
@@ -956,6 +913,7 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
     }
 
     // send bulk data
+    // setting
     ret = libusb_bulk_transfer(hdl, 2 | LIBUSB_ENDPOINT_OUT,
                                (unsigned char *)&setting,
                                sizeof(struct DSL_setting),
@@ -968,6 +926,22 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
         sr_err("Arm FPGA error: expacted transfer size %d; actually %d",
                 sizeof(struct DSL_setting), transferred);
         return SR_ERR;
+    }
+    // setting_ext32
+    if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_LA_CH32) {
+        ret = libusb_bulk_transfer(hdl, 2 | LIBUSB_ENDPOINT_OUT,
+                                   (unsigned char *)&setting_ext32,
+                                   sizeof(struct DSL_setting_ext32),
+                                   &transferred, 1000);
+        if (ret < 0) {
+            sr_err("Unable to arm FPGA(setting_ext32) of dsl device: %s.",
+                    libusb_error_name(ret));
+            return SR_ERR;
+        } else if (transferred != sizeof(struct DSL_setting_ext32)) {
+            sr_err("Arm FPGA(setting_ext32) error: expacted transfer size %d; actually %d",
+                    sizeof(struct DSL_setting_ext32), transferred);
+            return SR_ERR;
+        }
     }
 
     // assert INTRDY high (indicate data end)
@@ -1363,7 +1337,12 @@ SR_PRIV int dsl_config_get(int id, GVariant **data, const struct sr_dev_inst *sd
     case SR_CONF_BANDWIDTH:
         if (!sdi)
             return SR_ERR;
-        *data = g_variant_new_boolean(devc->profile->dev_caps.feature_caps & CAPS_FEATURE_20M);
+        *data = g_variant_new_boolean((devc->profile->dev_caps.feature_caps & CAPS_FEATURE_20M) != 0);
+        break;
+    case SR_CONF_LA_CH32:
+        if (!sdi)
+            return SR_ERR;
+        *data = g_variant_new_boolean((devc->profile->dev_caps.feature_caps & CAPS_FEATURE_LA_CH32) != 0);
         break;
     default:
         return SR_ERR_NA;

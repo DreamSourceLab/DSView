@@ -662,6 +662,11 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
                 return SR_ERR;
             *data = g_variant_new_int16(channel_modes[devc->ch_mode].vld_num);
             break;
+        case SR_CONF_TOTAL_CH_NUM:
+            if (!sdi)
+                return SR_ERR;
+            *data = g_variant_new_int16(devc->profile->dev_caps.total_ch_num);
+            break;
         default:
             return SR_ERR_NA;
         }

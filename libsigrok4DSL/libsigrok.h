@@ -118,6 +118,7 @@ enum {
 #define DS_MAX_DSO_PROBES_NUM 2
 #define TriggerStages 16
 #define TriggerProbes 16
+#define MaxTriggerProbes 32
 #define TriggerCountBits 16
 #define STriggerDataStage 3
 
@@ -858,7 +859,13 @@ enum {
     SR_CONF_REF_MAX,
 
     /** Valid channel number */
+    SR_CONF_TOTAL_CH_NUM,
+
+    /** Valid channel number */
     SR_CONF_VLD_CH_NUM,
+
+    /** 32 channel support */
+    SR_CONF_LA_CH32,
 
     /** Zero */
     SR_CONF_HAVE_ZERO,
@@ -1254,8 +1261,8 @@ struct ds_trigger {
     unsigned char trigger_logic[TriggerStages+1];
     unsigned char trigger0_inv[TriggerStages+1];
     unsigned char trigger1_inv[TriggerStages+1];
-    char trigger0[TriggerStages+1][TriggerProbes];
-    char trigger1[TriggerStages+1][TriggerProbes];
+    char trigger0[TriggerStages+1][MaxTriggerProbes];
+    char trigger1[TriggerStages+1][MaxTriggerProbes];
     uint32_t trigger0_count[TriggerStages+1];
     uint32_t trigger1_count[TriggerStages+1];
 };

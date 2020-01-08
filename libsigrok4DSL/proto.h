@@ -173,10 +173,10 @@ SR_API int ds_trigger_set_en(uint16_t enable);
 SR_API uint16_t ds_trigger_get_en();
 SR_API int ds_trigger_set_mode(uint16_t mode);
 
-SR_PRIV uint64_t ds_trigger_get_mask0(uint16_t stage);
-SR_PRIV uint64_t ds_trigger_get_value0(uint16_t stage);
-SR_PRIV uint64_t ds_trigger_get_edge0(uint16_t stage);
-SR_PRIV uint64_t ds_trigger_get_mask1(uint16_t stage);
-SR_PRIV uint64_t ds_trigger_get_value1(uint16_t stage);
-SR_PRIV uint64_t ds_trigger_get_edge1(uint16_t stage);
+SR_PRIV uint16_t ds_trigger_get_mask0(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
+SR_PRIV uint16_t ds_trigger_get_value0(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
+SR_PRIV uint16_t ds_trigger_get_edge0(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
+SR_PRIV uint16_t ds_trigger_get_mask1(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
+SR_PRIV uint16_t ds_trigger_get_value1(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
+SR_PRIV uint16_t ds_trigger_get_edge1(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
 #endif
