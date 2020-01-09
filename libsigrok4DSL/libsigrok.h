@@ -387,6 +387,8 @@ struct sr_datafeed_dso {
     gboolean samplerate_tog;
     /** trig flag */
     gboolean trig_flag;
+    /** trig channel */
+    uint8_t trig_ch;
     /** The analog value(s). The data is interleaved according to
      * the probes list. */
     void *data;
@@ -703,6 +705,8 @@ struct sr_status {
     uint32_t sample_divider;
     gboolean sample_divider_tog;
     gboolean trig_flag;
+    uint8_t  trig_ch;
+    uint8_t  trig_offset;
 
     uint8_t ch0_max;
     uint8_t ch0_min;

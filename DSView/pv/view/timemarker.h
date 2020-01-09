@@ -84,7 +84,7 @@ public:
 	 * @param p The painter to draw with.
 	 * @param rect The rectangle of the viewport client area.
 	 */
-    virtual void paint(QPainter &p, const QRect &rect, const bool highlight, int order);
+    virtual void paint(QPainter &p, const QRect &rect, const bool highlight, int order, bool trig_hoff = true);
 
 	/**
 	 * Gets the marker label rectangle.
@@ -92,7 +92,7 @@ public:
      * @param visible is this marker in visible area
 	 * @return Returns the label rectangle.
 	 */
-    virtual QRect get_label_rect(const QRect &rect, bool &visible) const = 0;
+    virtual QRect get_label_rect(const QRect &rect, bool &visible, bool has_hoff = true) const = 0;
 
 	/**
 	 * Paints the marker's label to the ruler.
@@ -102,9 +102,6 @@ public:
 	 */
 	virtual void paint_label(QPainter &p, const QRect &rect,
         unsigned int prefix, int index) = 0;
-
-    virtual void paint_fix_label(QPainter &p, const QRect &rect,
-        unsigned int prefix, QChar label, QColor color) = 0;
 
 signals:
 	void time_changed();

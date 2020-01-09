@@ -1048,7 +1048,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             for(l = sdi->channels; l; l = l->next) {
                 struct sr_channel *probe = (struct sr_channel *)l->data;
                 probe->vpos_trans = devc->profile->dev_caps.default_pwmtrans;
-                probe->comb_comp = devc->profile->dev_caps.default_comb_comp;
+                //probe->comb_comp = devc->profile->dev_caps.default_comb_comp;
+                //probe->digi_fgain = 0;
                 if (probe->vga_ptr != NULL) {
                     for (i = 0; devc->profile->dev_caps.vdivs[i]; i++) {
                         for (j = 0; j < ARRAY_SIZE(vga_defaults); j++) {
@@ -1206,6 +1207,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     } else if (id == SR_CONF_PROBE_COMB_COMP) {
         ch->comb_comp = g_variant_get_int16(data);
         ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, ch, SR_CONF_PROBE_VDIV));
+        ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, ch, SR_CONF_PROBE_OFFSET));
         if (ret == SR_OK)
             sr_dbg("%s: setting COMB_COMP of channel %d to %d mv",
                 __func__, ch->index, ch->comb_comp);

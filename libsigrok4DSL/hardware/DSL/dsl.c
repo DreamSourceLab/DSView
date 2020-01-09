@@ -728,8 +728,9 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
     setting.count_header = 0x0302;
     setting.trig_pos_header = 0x0502;
     setting.trig_glb_header = 0x0701;
-    setting.ch_en_header = 0x0801;
-    setting.dso_count_header = 0x0902;
+    setting.dso_count_header = 0x0802;
+    setting.ch_en_header = 0x0a02;
+    setting.fgain_header = 0x0c01;
     setting.trig_header = 0x40a0;
     setting.end_sync = 0xfa5afa5a;
 
@@ -1760,9 +1761,11 @@ static void get_measure(const struct sr_dev_inst *sdi, uint8_t *buf, uint32_t of
     devc->mstatus.vlen = *((const uint32_t*)buf + offset/2 + 2/2) & 0x0fffffff;
     devc->mstatus.stream_mode = (*((const uint32_t*)buf + offset/2 + 2/2) & 0x80000000) != 0;
     devc->mstatus.measure_valid = *((const uint32_t*)buf + offset/2 + 2/2) & 0x40000000;
-    devc->mstatus.sample_divider = *((const uint32_t*)buf + offset/2 + 4/2) & 0x0fffffff;
+    devc->mstatus.sample_divider = *((const uint32_t*)buf + offset/2 + 4/2) & 0x00ffffff;
     devc->mstatus.sample_divider_tog = (*((const uint32_t*)buf + offset/2 + 4/2) & 0x80000000) != 0;
     devc->mstatus.trig_flag = (*((const uint32_t*)buf + offset/2 + 4/2) & 0x40000000) != 0;
+    devc->mstatus.trig_ch = (*((const uint8_t*)buf + offset*2 + 5*2+1) & 0x38) >> 3;
+    devc->mstatus.trig_offset = *((const uint8_t*)buf + offset*2 + 5*2+1) & 0x07;
 
     devc->mstatus.ch0_max = *((const uint8_t*)buf + offset*2 + 33*2);
     devc->mstatus.ch0_min = *((const uint8_t*)buf + offset*2 + 33*2+1);

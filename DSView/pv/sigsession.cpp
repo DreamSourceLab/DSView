@@ -130,7 +130,7 @@ SigSession::SigSession(DeviceManager &device_manager) :
     _group_data.reset(new data::Group());
     _group_cnt = 0;
 
-    connect(&_feed_timer, SIGNAL(timeout()), this, SLOT(data_unlock()));
+    connect(&_feed_timer, SIGNAL(timeout()), this, SLOT(feed_timeout()));
 }
 
 SigSession::~SigSession()
@@ -353,6 +353,7 @@ void SigSession::capture_init()
     set_cur_samplelimits(_dev_inst->get_sample_limit());
     _data_updated = false;
     _trigger_flag = false;
+    _trigger_ch = 0;
     _hw_replied = false;
     if (_dev_inst->dev_inst()->mode != LOGIC)
         _feed_timer.start(FeedInterval);
@@ -591,7 +592,6 @@ void SigSession::check_update()
 {
     boost::lock_guard<boost::mutex> lock(_data_mutex);
 
-    //data_unlock(); unlock after wave rendering
     if (_capture_state != Running)
         return;
 
@@ -883,7 +883,7 @@ void SigSession::refresh(int holdtime)
         //_cur_analog_snapshot.reset();
     }
 
-    QTimer::singleShot(holdtime, this, SLOT(data_unlock()));
+    QTimer::singleShot(holdtime, this, SLOT(feed_timeout()));
     //data_updated();
     _data_updated = true;
 }
@@ -1039,6 +1039,12 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
         _cur_dso_snapshot->append_payload(dso);
     }
 
+    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals) {
+        boost::shared_ptr<view::DsoSignal> dsoSig;
+        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) && (dsoSig->enabled()))
+            dsoSig->paint_prepare();
+    }
+
     if (dso.num_samples != 0) {
         // update current sample rate
         set_cur_snap_samplerate(_dev_inst->get_sample_rate());
@@ -1073,6 +1079,7 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
     }
 
     _trigger_flag = dso.trig_flag;
+    _trigger_ch = dso.trig_ch;
     receive_data(dso.num_samples);
 
     if (!_instant)
@@ -1597,6 +1604,11 @@ bool SigSession::trigd() const
     return _trigger_flag;
 }
 
+uint8_t SigSession::trigd_ch() const
+{
+    return _trigger_ch;
+}
+
 void SigSession::nodata_timeout()
 {
     GVariant *gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_TRIGGER_SOURCE);
@@ -1604,6 +1616,15 @@ void SigSession::nodata_timeout()
         return;
     if (g_variant_get_byte(gvar) != DSO_TRIGGER_AUTO) {
         show_wait_trigger();
+    }
+}
+
+void SigSession::feed_timeout()
+{
+    data_unlock();
+    if (!_data_updated) {
+        if (++_noData_cnt >= (WaitShowTime/FeedInterval))
+            nodata_timeout();
     }
 }
 

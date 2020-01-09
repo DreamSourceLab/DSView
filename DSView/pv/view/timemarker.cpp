@@ -78,12 +78,9 @@ void TimeMarker::set_index(uint64_t index)
     time_changed();
 }
 
-void TimeMarker::paint(QPainter &p, const QRect &rect, const bool highlight, int order)
+void TimeMarker::paint(QPainter &p, const QRect &rect, const bool highlight, int order, bool trig_hoff)
 {
-    const uint64_t sample_rate = _view.session().cur_snap_samplerate();
-    const double scale = _view.scale();
-    const double samples_per_pixel = sample_rate * scale;
-    const int64_t x = _index/samples_per_pixel - _view.offset();
+    const int64_t x = _view.index2pixel(_index, trig_hoff);
     if (x <= rect.right()) {
         QColor color = (order == -1) ? _colour : Ruler::CursorColor[order%8];
         p.setPen((_grabbed | highlight) ? QPen(color.lighter(), 2, Qt::DashLine) : QPen(color, 1, Qt::DashLine));

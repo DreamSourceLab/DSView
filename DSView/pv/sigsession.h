@@ -23,6 +23,7 @@
 #ifndef DSVIEW_PV_SIGSESSION_H
 #define DSVIEW_PV_SIGSESSION_H
 
+#include <libsigrok4DSL/libsigrok.h>
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
@@ -46,7 +47,6 @@
 #include <QtConcurrent/QtConcurrent>
 #include <QJsonObject>
 
-#include <libsigrok4DSL/libsigrok.h>
 #include <libusb.h>
 
 #include "view/mathtrace.h"
@@ -231,6 +231,7 @@ public:
     void math_disable();
 
     bool trigd() const;
+    uint8_t trigd_ch() const;
 
     boost::shared_ptr<data::Snapshot> get_snapshot(int type);
 
@@ -348,6 +349,7 @@ private:
     QDateTime _session_time;
     uint64_t _trigger_pos;
     bool _trigger_flag;
+    uint8_t _trigger_ch;
     bool _hw_replied;
 
     error_state _error;
@@ -427,6 +429,7 @@ private slots:
     void data_lock();
     void data_unlock();
     void nodata_timeout();
+    void feed_timeout();
     void repeat_update();
 
 private:

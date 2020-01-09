@@ -64,7 +64,7 @@ public:
 	 * @param rect The rectangle of the ruler client area.
 	 * @return Returns the label rectangle.
 	 */
-    QRect get_label_rect(const QRect &rect, bool &visible) const;
+    QRect get_label_rect(const QRect &rect, bool &visible, bool has_hoff = true) const;
 
     QRect get_close_rect(const QRect &rect) const;
 
@@ -78,7 +78,7 @@ public:
         unsigned int prefix, int index);
 
     void paint_fix_label(QPainter &p, const QRect &rect,
-        unsigned int prefix, QChar label, QColor color);
+        unsigned int prefix, QChar label, QColor color, bool has_hoff);
 
 private:
 	void compute_text_size(QPainter &p, unsigned int prefix);
