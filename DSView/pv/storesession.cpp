@@ -460,7 +460,7 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
                 fprintf(meta, " vFactor%d = %" PRIu64 "\n", probecnt, probe->vfactor);
                 fprintf(meta, " vOffset%d = %d\n", probecnt, probe->hw_offset);
                 fprintf(meta, " vTrig%d = %d\n", probecnt, probe->trig_value);
-                if (sr_status_get(sdi, &status, false, 0, 0) == SR_OK) {
+                if (sr_status_get(sdi, &status, false) == SR_OK) {
                     if (probe->index == 0) {
                         fprintf(meta, " period%d = %" PRIu32 "\n", probecnt, status.ch0_cyc_tlen);
                         fprintf(meta, " pcnt%d = %" PRIu32 "\n", probecnt, status.ch0_cyc_cnt);

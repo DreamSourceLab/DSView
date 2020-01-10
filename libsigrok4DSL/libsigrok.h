@@ -126,6 +126,8 @@ enum {
 #define DS_CONF_DSO_VDIVS 10
 
 #define DS_MAX_TRIG_PERCENT 90
+
+#define SAMPLES_ALIGN 1023ULL
 /*
  * Oscilloscope
  */
@@ -647,6 +649,16 @@ struct sr_channel {
     int8_t comb_diff_top;
     int8_t comb_diff_bom;
     int8_t comb_comp;
+    uint16_t digi_fgain;
+
+    double cali_fgain0;
+    double cali_fgain1;
+    double cali_fgain2;
+    double cali_fgain3;
+    double cali_comb_fgain0;
+    double cali_comb_fgain1;
+    double cali_comb_fgain2;
+    double cali_comb_fgain3;
 
     gboolean map_default;
     const char *map_unit;
@@ -680,17 +692,6 @@ struct sr_config_info {
 	char *description;
 };
 
-enum {
-    SR_STATUS_TRIG_BEGIN = 0,
-    SR_STATUS_TRIG_END = 4,
-    SR_STATUS_CH0_BEGIN = 5,
-    SR_STATUS_CH0_END = 14,
-    SR_STATUS_CH1_BEGIN = 15,
-    SR_STATUS_CH1_END = 24,
-    SR_STATUS_ZERO_BEGIN = 128,
-    SR_STATUS_ZERO_END = 135,
-};
-
 struct sr_status {
     uint8_t trig_hit;
     uint8_t captured_cnt3;
@@ -722,6 +723,9 @@ struct sr_status {
     uint32_t ch0_cyc_flen;
     uint64_t ch0_acc_square;
     uint32_t ch0_acc_mean;
+    uint32_t ch0_acc_mean_p1;
+    uint32_t ch0_acc_mean_p2;
+    uint32_t ch0_acc_mean_p3;
 
     uint8_t ch1_max;
     uint8_t ch1_min;
@@ -737,6 +741,9 @@ struct sr_status {
     uint32_t ch1_cyc_flen;
     uint64_t ch1_acc_square;
     uint32_t ch1_acc_mean;
+    uint32_t ch1_acc_mean_p1;
+    uint32_t ch1_acc_mean_p2;
+    uint32_t ch1_acc_mean_p3;
 };
 
 enum {
@@ -877,6 +884,8 @@ enum {
     SR_CONF_ZERO_SET,
     SR_CONF_ZERO_LOAD,
     SR_CONF_ZERO_DEFAULT,
+    SR_CONF_ZERO_COMB_FGAIN,
+    SR_CONF_ZERO_COMB,
     SR_CONF_VOCM,
     SR_CONF_CALI,
 
@@ -1199,8 +1208,7 @@ struct sr_dev_driver {
 	int (*dev_open) (struct sr_dev_inst *sdi);
 	int (*dev_close) (struct sr_dev_inst *sdi);
     int (*dev_status_get) (const struct sr_dev_inst *sdi,
-                           struct sr_status *status,
-                           gboolean prg, int begin, int end);
+                           struct sr_status *status, gboolean prg);
     int (*dev_acquisition_start) (struct sr_dev_inst *sdi,
 			void *cb_data);
     int (*dev_acquisition_stop) (const struct sr_dev_inst *sdi,

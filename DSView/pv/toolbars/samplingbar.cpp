@@ -804,7 +804,7 @@ void SamplingBar::commit_settings()
                                      g_variant_new_uint64(sample_rate));
             if (dev_inst->dev_inst()->mode != DSO) {
                 const uint64_t sample_count = ((uint64_t)ceil(sample_duration / SR_SEC(1) *
-                                                    sample_rate) + 1023ULL) & ~1023ULL;
+                                                    sample_rate) + SAMPLES_ALIGN) & ~SAMPLES_ALIGN;
                 if (sample_count != dev_inst->get_sample_limit())
                     dev_inst->set_config(NULL, NULL,
                                          SR_CONF_LIMIT_SAMPLES,

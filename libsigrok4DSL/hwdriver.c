@@ -425,8 +425,7 @@ SR_API const struct sr_config_info *sr_config_info_get(int key)
  *         as an indication that it's not applicable.
  */
 SR_API int sr_status_get(const struct sr_dev_inst *sdi,
-                         struct sr_status *status,
-                         gboolean prg, int begin, int end)
+                         struct sr_status *status, gboolean prg)
 {
     int ret;
 
@@ -435,7 +434,7 @@ SR_API int sr_status_get(const struct sr_dev_inst *sdi,
     else if (!sdi->driver->dev_status_get)
         ret = SR_ERR_ARG;
     else
-        ret = sdi->driver->dev_status_get(sdi, status, prg, begin, end);
+        ret = sdi->driver->dev_status_get(sdi, status, prg);
 
     return ret;
 }

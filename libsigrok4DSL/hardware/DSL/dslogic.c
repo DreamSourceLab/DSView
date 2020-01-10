@@ -228,6 +228,9 @@ static struct DSL_context *DSLogic_dev_new(const struct DSL_profile *prof)
     devc->trigger_hrate = 0;
     devc->trigger_holdoff = 0;
     devc->zero = FALSE;
+    devc->zero_branch = FALSE;
+    devc->zero_comb_fgain = FALSE;
+    devc->zero_comb = FALSE;
     devc->status = DSL_FINISH;
 
     devc->mstatus_valid = FALSE;
@@ -932,7 +935,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             dsl_adjust_samplerate(devc);
             if (devc->op_mode == OP_INTEST) {
                 devc->cur_samplerate = devc->stream ? channel_modes[devc->ch_mode].max_samplerate / 10 :
-                                                      channel_modes[devc->ch_mode].max_samplerate;
+                                                      SR_MHZ(100);
                 devc->limit_samples = devc->stream ? devc->cur_samplerate * 3 :
                                                      devc->profile->dev_caps.hw_depth / dsl_en_ch_num(sdi);
             }
@@ -1042,10 +1045,6 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         ch->offset = g_variant_get_uint16(data);
         sr_dbg("%s: setting OFFSET of channel %d to %d", __func__,
                ch->index, ch->offset);
-    } else if (id == SR_CONF_PROBE_HW_OFFSET) {
-        ch->hw_offset = g_variant_get_uint16(data);
-        sr_dbg("%s: setting OFFSET of channel %d to %d", __func__,
-               ch->index, ch->offset);
     } else if (id == SR_CONF_TRIGGER_SOURCE) {
         devc->trigger_source = g_variant_get_byte(data);
         if (sdi->mode == DSO) {
@@ -1119,12 +1118,12 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
         for (i = 0; i < ARRAY_SIZE(channel_modes); i++) {
             if (channel_modes[i].stream == devc->stream &&
                 devc->profile->dev_caps.channels & (1 << i)) {
+                if (devc->test_mode != SR_TEST_NONE && devc->profile->dev_caps.intest_channel != channel_modes[i].id)
+                    continue;
                 if (devc->language == LANGUAGE_CN)
                     g_variant_builder_add(&gvb, "s", channel_modes[i].descr_cn);
                 else
                     g_variant_builder_add(&gvb, "s", channel_modes[i].descr);
-                if (devc->test_mode != SR_TEST_NONE)
-                    break;
             }
         }
         *data = g_variant_builder_end(&gvb);
@@ -1197,6 +1196,17 @@ static void remove_sources(struct DSL_context *devc)
     g_free(devc->usbfd);
 }
 
+static void report_overflow(struct DSL_context *devc)
+{
+    struct sr_datafeed_packet packet;
+    struct sr_dev_inst *sdi = devc->cb_data;
+
+    packet.status = SR_PKT_OK;
+    packet.type = SR_DF_OVERFLOW;
+    packet.payload = NULL;
+    sr_session_send(sdi, &packet);
+}
+
 static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
 {
     int completed = 0;
@@ -1218,16 +1228,44 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
     tv.tv_sec = tv.tv_usec = 0;
     libusb_handle_events_timeout_completed(drvc->sr_ctx->libusb_ctx, &tv, &completed);
 
-    // overflow check
-    if (devc->stream && devc->trf_completed) {
-        rd_cmd.header.dest = DSL_CTL_HW_STATUS;
-        rd_cmd.header.size = 1;
-        hw_info = 0;
-        rd_cmd.data = &hw_info;
+    if (devc->trf_completed)
+        devc->empty_poll_count = 0;
+    else
+        devc->empty_poll_count++;
+
+    // --
+    // progress check
+    // must before overflow check (1ch@10K)
+    // --
+    if ((devc->empty_poll_count > MAX_EMPTY_POLL) && (devc->status == DSL_START)) {
+        devc->mstatus.captured_cnt0 = 0;
+        rd_cmd.header.dest = DSL_CTL_I2C_STATUS;
+        rd_cmd.header.offset = 0;
+        rd_cmd.header.size = 4;
+        rd_cmd.data = (unsigned char*)&devc->mstatus;
         if ((ret = command_ctl_rd(usb->devhdl, rd_cmd)) != SR_OK)
-            sr_err("Failed to get hardware infos.");
-        else
-            devc->overflow = (hw_info & bmSYS_OVERFLOW) != 0;
+            sr_err("Failed to get progress infos.");
+
+        devc->empty_poll_count = 0;
+    }
+
+    // overflow check
+    if (devc->stream) {
+        if (devc->empty_poll_count > MAX_EMPTY_POLL) {
+            rd_cmd.header.dest = DSL_CTL_HW_STATUS;
+            rd_cmd.header.size = 1;
+            hw_info = 0;
+            rd_cmd.data = &hw_info;
+            if ((ret = command_ctl_rd(usb->devhdl, rd_cmd)) != SR_OK)
+                sr_err("Failed to get hardware infos.");
+            else
+                devc->overflow = (hw_info & bmSYS_OVERFLOW) != 0;
+
+            if (devc->overflow)
+                report_overflow(devc);
+
+            devc->empty_poll_count = 0;
+        }
     }
 
     if (devc->status == DSL_FINISH) {
@@ -1263,13 +1301,19 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
     devc->num_samples = 0;
     devc->num_bytes = 0;
     devc->empty_transfer_count = 0;
+    devc->empty_poll_count = 0;
     devc->status = DSL_INIT;
     devc->num_transfers = 0;
     devc->submitted_transfers = 0;
-    devc->actual_samples = (devc->limit_samples + 1023ULL) & ~1023ULL;
+    devc->actual_samples = (devc->limit_samples + SAMPLES_ALIGN) & ~SAMPLES_ALIGN;
     devc->actual_bytes = devc->actual_samples / DSLOGIC_ATOMIC_SAMPLES * dsl_en_ch_num(sdi) * DSLOGIC_ATOMIC_SIZE;
 	devc->abort = FALSE;
     devc->mstatus_valid = FALSE;
+    devc->mstatus.captured_cnt0 = 0;
+    devc->mstatus.captured_cnt1 = 0;
+    devc->mstatus.captured_cnt2 = 0;
+    devc->mstatus.captured_cnt3 = 0;
+    devc->mstatus.trig_hit = 0;
     devc->overflow = FALSE;
 
 	/* Configures devc->trigger_* and devc->sample_wide */
@@ -1346,9 +1390,9 @@ static int dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data)
     return ret;
 }
 
-static int dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, gboolean prg, int begin, int end)
+static int dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, gboolean prg)
 {
-    int ret = dsl_dev_status_get(sdi, status, prg, begin, end);
+    int ret = dsl_dev_status_get(sdi, status, prg);
     return ret;
 }
 

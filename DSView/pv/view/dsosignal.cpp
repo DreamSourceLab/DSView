@@ -892,7 +892,7 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColor 
         }
 
         sr_status status;
-        if (sr_status_get(_dev_inst->dev_inst(), &status, false, 0, 0) == SR_OK) {
+        if (sr_status_get(_dev_inst->dev_inst(), &status, false) == SR_OK) {
             _mValid = true;
             if (status.measure_valid) {
                 _min = (index == 0) ? status.ch0_min : status.ch1_min;

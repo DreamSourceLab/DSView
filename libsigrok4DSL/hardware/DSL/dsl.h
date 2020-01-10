@@ -54,6 +54,7 @@
 #define USB_CONFIGURATION	1
 #define NUM_TRIGGER_STAGES	16
 #define NUM_SIMUL_TRANSFERS	64
+#define MAX_EMPTY_POLL      16
 
 #define DSL_REQUIRED_VERSION_MAJOR	2
 #define DSL_REQUIRED_VERSION_MINOR	0
@@ -132,6 +133,11 @@
 #define TRIG_CHECKID 0x55555555
 #define DSO_PKTID 0xa500
 
+/*
+ * zero configuration
+ */
+#define DSO_ZERO_PAGE 8
+#define MAX_ACC_VARIANCE 0.0005
 /*
  * for DSCope device
  * trans: x << 8 + y
@@ -341,14 +347,14 @@ static const struct DSL_vga vga_defaults[] = {
     {3, 1000, 0x57200,  45, 1024-920-45},
     {3, 2000, 0x2DD00,  45, 1024-920-45},
 
-    {4, 10,   0x1C6C00, 45, 1024-945-45},
-    {4, 20,   0x19E000, 45, 1024-945-45},
-    {4, 50,   0x16A800, 45, 1024-945-45},
-    {4, 100,  0x142800, 45, 1024-945-45},
-    {4, 200,  0xC7F00,  45, 1024-945-45},
-    {4, 500,  0x94000,  45, 1024-945-45},
-    {4, 1000, 0x6CF00,  45, 1024-945-45},
-    {4, 2000, 0x44F00,  45, 1024-945-45},
+    {4, 10,   0x1C6C00, 60, 1024-900-60},
+    {4, 20,   0x19E000, 60, 1024-900-60},
+    {4, 50,   0x16A800, 60, 1024-900-60},
+    {4, 100,  0x142800, 60, 1024-900-60},
+    {4, 200,  0xC7F00,  60, 1024-900-60},
+    {4, 500,  0x94000,  60, 1024-900-60},
+    {4, 1000, 0x6CF00,  60, 1024-900-60},
+    {4, 2000, 0x44F00,  60, 1024-900-60},
 
     {0, 0, 0, 0, 0}
 };
@@ -358,19 +364,36 @@ enum CHANNEL_ID {
     DSL_STREAM25x12,
     DSL_STREAM50x6,
     DSL_STREAM100x3,
-    DSL_STREAM100x16,
-    DSL_STREAM125x16,
+
+    DSL_STREAM20x16_3DN2,
+    DSL_STREAM25x12_3DN2,
+    DSL_STREAM50x6_3DN2,
+    DSL_STREAM100x3_3DN2,
+
+    DSL_STREAM10x32_32_3DN2,
+    DSL_STREAM20x16_32_3DN2,
+    DSL_STREAM25x12_32_3DN2,
+    DSL_STREAM50x6_32_3DN2,
+    DSL_STREAM100x3_32_3DN2,
+
+    DSL_STREAM50x32,
+    DSL_STREAM100x30,
     DSL_STREAM250x12,
+    DSL_STREAM125x16_16,
+    DSL_STREAM250x12_16,
     DSL_STREAM500x6,
     DSL_STREAM1000x3,
 
     DSL_BUFFER100x16,
     DSL_BUFFER200x8,
     DSL_BUFFER400x4,
+
+    DSL_BUFFER250x32,
     DSL_BUFFER500x16,
     DSL_BUFFER1000x8,
 
     DSL_ANALOG10x2,
+    DSL_ANALOG10x2_500,
 
     DSL_DSO200x2,
     DSL_DSO1000x2,
@@ -403,15 +426,40 @@ static const struct DSL_channels channel_modes[] = {
      SR_KHZ(10), SR_MHZ(100), 1, "Use 6 Channels (Max 50MHz)", "使用6个通道(最大采样率 50MHz)"},
     {DSL_STREAM100x3,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE,  16, 3,  1, SR_KHZ(10), SR_MHZ(100),
      SR_KHZ(10), SR_MHZ(100), 1, "Use 3 Channels (Max 100MHz)", "使用3个通道(最大采样率 100MHz)"},
-    {DSL_STREAM100x16,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 16, 16, 1, SR_KHZ(10), SR_MHZ(100),
-     SR_KHZ(10), SR_MHZ(500), 5, "Use 16 Channels (Max 100MHz)", "使用16个通道(最大采样率 100MHz)"},
-    {DSL_STREAM125x16,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 16, 16, 1, SR_KHZ(10), SR_MHZ(125),
+
+    {DSL_STREAM20x16_3DN2,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 16, 16, 1, SR_KHZ(10), SR_MHZ(20),
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 16 Channels (Max 20MHz)", "使用16个通道(最大采样率 20MHz)"},
+    {DSL_STREAM25x12_3DN2,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 16, 12, 1, SR_KHZ(10), SR_MHZ(25),
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 12 Channels (Max 25MHz)", "使用12个通道(最大采样率 25MHz)"},
+    {DSL_STREAM50x6_3DN2,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 16, 6, 1, SR_KHZ(10), SR_MHZ(50),
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 6 Channels (Max 50MHz)", "使用6个通道(最大采样率 50MHz)"},
+    {DSL_STREAM100x3_3DN2,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 16, 3, 1, SR_KHZ(10), SR_MHZ(100),
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 3 Channels (Max 100MHz)", "使用3个通道(最大采样率 100MHz)"},
+
+    {DSL_STREAM10x32_32_3DN2,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 32, 32, 1, SR_KHZ(10), SR_MHZ(10),
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 32 Channels (Max 10MHz)", "使用32个通道(最大采样率 10MHz)"},
+    {DSL_STREAM20x16_32_3DN2,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 32, 16, 1, SR_KHZ(10), SR_MHZ(20),
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 16 Channels (Max 20MHz)", "使用16个通道(最大采样率 20MHz)"},
+    {DSL_STREAM25x12_32_3DN2,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 32, 12, 1, SR_KHZ(10), SR_MHZ(25),
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 12 Channels (Max 25MHz)", "使用12个通道(最大采样率 25MHz)"},
+    {DSL_STREAM50x6_32_3DN2,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 32, 6, 1, SR_KHZ(10), SR_MHZ(50),
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 6 Channels (Max 50MHz)", "使用6个通道(最大采样率 50MHz)"},
+    {DSL_STREAM100x3_32_3DN2,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 32, 3, 1, SR_KHZ(10), SR_MHZ(100),
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 3 Channels (Max 100MHz)", "使用3个通道(最大采样率 100MHz)"},
+
+    {DSL_STREAM50x32,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 32, 32, 1, SR_KHZ(10), SR_MHZ(50),
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 32 Channels (Max 50MHz)", "使用32个通道(最大采样率 50MHz)"},
+    {DSL_STREAM100x30,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 32, 30, 1, SR_KHZ(10), SR_MHZ(100),
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 30 Channels (Max 100MHz)", "使用30个通道(最大采样率 100MHz)"},
+    {DSL_STREAM250x12,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 32, 12, 1, SR_KHZ(10), SR_MHZ(250),
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 12 Channels (Max 250MHz)", "使用12个通道(最大采样率 250MHz)"},
+    {DSL_STREAM125x16_16,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 16, 16, 1, SR_KHZ(10), SR_MHZ(125),
      SR_KHZ(10), SR_MHZ(500), 5, "Use 16 Channels (Max 125MHz)", "使用16个通道(最大采样率 125MHz)"},
-    {DSL_STREAM250x12,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 16, 12, 1, SR_KHZ(10), SR_MHZ(250),
+    {DSL_STREAM250x12_16,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 16, 12, 1, SR_KHZ(10), SR_MHZ(250),
      SR_KHZ(10), SR_MHZ(500), 5, "Use 12 Channels (Max 250MHz)", "使用12个通道(最大采样率 250MHz)"},
     {DSL_STREAM500x6,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE,  16, 6,  1, SR_KHZ(10), SR_MHZ(500),
      SR_KHZ(10), SR_MHZ(500), 5, "Use 6 Channels (Max 500MHz)", "使用6个通道(最大采样率 500MHz)"},
-    {DSL_STREAM1000x3,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 16, 3,  1, SR_KHZ(10), SR_GHZ(1),
+    {DSL_STREAM1000x3,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 8, 3,  1, SR_KHZ(10), SR_GHZ(1),
      SR_KHZ(10), SR_MHZ(500), 5, "Use 3 Channels (Max 1GHz)", "使用3个通道(最大采样率 1GHz)"},
 
     // LA Buffer
@@ -421,6 +469,9 @@ static const struct DSL_channels channel_modes[] = {
      SR_KHZ(10), SR_MHZ(100), 1, "Use Channels 0~7 (Max 200MHz)", "使用通道 0~7 (最大采样率 200MHz)"},
     {DSL_BUFFER400x4,  LOGIC,  SR_CHANNEL_LOGIC,  FALSE, 4, 4,  1, SR_KHZ(10), SR_MHZ(400),
      SR_KHZ(10), SR_MHZ(100), 1, "Use Channels 0~3 (Max 400MHz)", "使用通道 0~3 (最大采样率 400MHz)"},
+
+    {DSL_BUFFER250x32,  LOGIC,  SR_CHANNEL_LOGIC,  FALSE, 32, 32,  1, SR_KHZ(10), SR_MHZ(250),
+     SR_KHZ(10), SR_MHZ(500), 5, "Use Channels 0~31 (Max 250MHz)", "使用通道 0~31 (最大采样率 250MHz)"},
     {DSL_BUFFER500x16,  LOGIC,  SR_CHANNEL_LOGIC,  FALSE, 16, 16,  1, SR_KHZ(10), SR_MHZ(500),
      SR_KHZ(10), SR_MHZ(500), 5, "Use Channels 0~15 (Max 500MHz)", "使用通道 0~15 (最大采样率 500MHz)"},
     {DSL_BUFFER1000x8,  LOGIC,  SR_CHANNEL_LOGIC,  FALSE, 8, 8,  1, SR_KHZ(10), SR_GHZ(1),
@@ -429,12 +480,14 @@ static const struct DSL_channels channel_modes[] = {
     // DAQ
     {DSL_ANALOG10x2,   ANALOG, SR_CHANNEL_ANALOG, TRUE,  2, 2,  8, SR_HZ(10),  SR_MHZ(10),
      SR_KHZ(10), SR_MHZ(100), 1, "Use Channels 0~1 (Max 10MHz)", "使用通道 0~1 (最大采样率 10MHz)"},
+    {DSL_ANALOG10x2_500,   ANALOG, SR_CHANNEL_ANALOG, TRUE,  2, 2,  8, SR_HZ(10),  SR_MHZ(10),
+     SR_KHZ(10), SR_MHZ(500), 1, "Use Channels 0~1 (Max 10MHz)", "使用通道 0~1 (最大采样率 10MHz)"},
 
     // OSC
     {DSL_DSO200x2,     DSO,    SR_CHANNEL_DSO,    FALSE, 2, 2,  8, SR_KHZ(10), SR_MHZ(200),
      SR_KHZ(10), SR_MHZ(100), 1, "Use Channels 0~1 (Max 200MHz)", "使用通道 0~1 (最大采样率 200MHz)"},
     {DSL_DSO1000x2,    DSO,    SR_CHANNEL_DSO,    FALSE, 2, 2,  8, SR_KHZ(10), SR_GHZ(1),
-     SR_KHZ(10), SR_MHZ(100), 1, "Use Channels 0~1 (Max 1GHz)", "使用通道 0~1 (最大采样率 1GHz)"}
+     SR_KHZ(10), SR_MHZ(500), 1, "Use Channels 0~1 (Max 1GHz)", "使用通道 0~1 (最大采样率 1GHz)"}
 };
 
 static const struct DSL_profile supported_DSLogic[] = {
@@ -576,6 +629,114 @@ static const struct DSL_profile supported_DSLogic[] = {
       0,
       SR_MHZ(200),
       SR_MHZ(400)}
+    },
+
+    {0x2A0E, 0x002A, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic U3Pro16", NULL,
+     "DSLogicU3Pro16.fw",
+     "DSLogicU3Pro16.bin",
+     "DSLogicU3Pro16.bin",
+     {CAPS_MODE_LOGIC,
+      CAPS_FEATURE_VTH | CAPS_FEATURE_BUF | CAPS_FEATURE_USB30  | CAPS_FEATURE_ADF4360,
+      (1 << DSL_STREAM20x16_3DN2) | (1 << DSL_STREAM25x12_3DN2) | (1 << DSL_STREAM50x6_3DN2) | (1 << DSL_STREAM100x3_3DN2) |
+      (1 << DSL_BUFFER500x16) | (1 << DSL_BUFFER1000x8),
+      16,
+      SR_GB(2),
+      0,
+      DSL_BUFFER500x16,
+      0,
+      samplerates1000,
+      0,
+      DSL_STREAM20x16_3DN2,
+      SR_MHZ(1),
+      SR_Mn(1),
+      0,
+      0,
+      0,
+      0,
+      0,
+      SR_MHZ(500),
+      SR_GHZ(1)}
+    },
+
+    {0x2A0E, 0x002A, LIBUSB_SPEED_SUPER, "DreamSourceLab", "DSLogic U3Pro16", NULL,
+     "DSLogicU3Pro16.fw",
+     "DSLogicU3Pro16.bin",
+     "DSLogicU3Pro16.bin",
+     {CAPS_MODE_LOGIC,
+      CAPS_FEATURE_VTH | CAPS_FEATURE_BUF | CAPS_FEATURE_USB30 | CAPS_FEATURE_ADF4360,
+      (1 << DSL_STREAM125x16_16) | (1 << DSL_STREAM250x12_16) | (1 << DSL_STREAM500x6) | (1 << DSL_STREAM1000x3) |
+      (1 << DSL_BUFFER500x16) | (1 << DSL_BUFFER1000x8),
+      16,
+      SR_GB(2),
+      0,
+      DSL_BUFFER500x16,
+      0,
+      samplerates1000,
+      0,
+      DSL_STREAM125x16_16,
+      SR_MHZ(1),
+      SR_Mn(1),
+      0,
+      0,
+      0,
+      0,
+      0,
+      SR_MHZ(500),
+      SR_GHZ(1)}
+    },
+
+    {0x2A0E, 0x002C, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic U3Pro32", NULL,
+     "DSLogicU3Pro32.fw",
+     "DSLogicU3Pro32.bin",
+     "DSLogicU3Pro32.bin",
+     {CAPS_MODE_LOGIC,
+      CAPS_FEATURE_VTH | CAPS_FEATURE_BUF | CAPS_FEATURE_USB30  | CAPS_FEATURE_ADF4360 | CAPS_FEATURE_LA_CH32,
+      (1 << DSL_STREAM10x32_32_3DN2) | (1 << DSL_STREAM20x16_32_3DN2) | (1 << DSL_STREAM25x12_32_3DN2) | (1 << DSL_STREAM50x6_32_3DN2) | (1 << DSL_STREAM100x3_32_3DN2) |
+      (1 << DSL_BUFFER500x16) | (1 << DSL_BUFFER1000x8),
+      32,
+      SR_GB(2),
+      0,
+      DSL_BUFFER250x32,
+      0,
+      samplerates1000,
+      0,
+      DSL_STREAM10x32_32_3DN2,
+      SR_MHZ(1),
+      SR_Mn(1),
+      0,
+      0,
+      0,
+      0,
+      0,
+      SR_MHZ(500),
+      SR_GHZ(1)}
+    },
+
+    {0x2A0E, 0x002C, LIBUSB_SPEED_SUPER, "DreamSourceLab", "DSLogic U3Pro32", NULL,
+     "DSLogicU3Pro32.fw",
+     "DSLogicU3Pro32.bin",
+     "DSLogicU3Pro32.bin",
+     {CAPS_MODE_LOGIC,
+      CAPS_FEATURE_VTH | CAPS_FEATURE_BUF | CAPS_FEATURE_USB30 | CAPS_FEATURE_ADF4360 | CAPS_FEATURE_LA_CH32,
+      (1 << DSL_STREAM50x32) | (1 << DSL_STREAM100x30) | (1 << DSL_STREAM250x12) | (1 << DSL_STREAM500x6) | (1 << DSL_STREAM1000x3) |
+      (1 << DSL_BUFFER250x32) | (1 << DSL_BUFFER500x16) | (1 << DSL_BUFFER1000x8),
+      32,
+      SR_GB(2),
+      0,
+      DSL_BUFFER250x32,
+      0,
+      samplerates1000,
+      0,
+      DSL_STREAM50x32,
+      SR_MHZ(1),
+      SR_Mn(1),
+      0,
+      0,
+      0,
+      0,
+      0,
+      SR_MHZ(500),
+      SR_GHZ(1)}
     },
 
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
@@ -753,7 +914,7 @@ static const struct DSL_profile supported_DSCope[] = {
      "DSCopeU2B20.bin",
      "DSCopeU2B20.bin",
      {CAPS_MODE_ANALOG | CAPS_MODE_DSO,
-      CAPS_FEATURE_ZERO,
+      CAPS_FEATURE_ZERO | CAPS_FEATURE_AUTO_VGAIN,
       (1 << DSL_ANALOG10x2) |
       (1 << DSL_DSO200x2),
       2,
@@ -766,8 +927,8 @@ static const struct DSL_profile supported_DSCope[] = {
       DSL_DSO200x2,
       SR_MHZ(100),
       SR_Kn(10),
-      945,
-      1024-945,
+      930,
+      1024-930,
       10,
       245,
       22,
@@ -780,7 +941,7 @@ static const struct DSL_profile supported_DSCope[] = {
      "DSCopeU2P20.bin",
      "DSCopeU2P20.bin",
      {CAPS_MODE_ANALOG | CAPS_MODE_DSO,
-      CAPS_FEATURE_ZERO | CAPS_FEATURE_BUF | CAPS_FEATURE_POGOPIN,
+      CAPS_FEATURE_ZERO | CAPS_FEATURE_BUF | CAPS_FEATURE_POGOPIN | CAPS_FEATURE_AUTO_VGAIN,
       (1 << DSL_ANALOG10x2) |
       (1 << DSL_DSO200x2),
       2,
@@ -793,8 +954,8 @@ static const struct DSL_profile supported_DSCope[] = {
       DSL_DSO200x2,
       SR_MHZ(100),
       SR_Mn(1),
-      945,
-      1024-945,
+      930,
+      1024-930,
       10,
       245,
       22,
@@ -802,6 +963,86 @@ static const struct DSL_profile supported_DSCope[] = {
       SR_HZ(0)}
     },
 
+    {0x2A0E, 0x0028, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope U2B100", NULL,
+     "DSCopeU2B100.fw",
+     "DSCopeU2B100.bin",
+     "DSCopeU2B100.bin",
+     {CAPS_MODE_ANALOG | CAPS_MODE_DSO,
+      CAPS_FEATURE_ZERO | CAPS_FEATURE_HMCAD1511 | CAPS_FEATURE_20M,
+      (1 << DSL_ANALOG10x2_500) |
+      (1 << DSL_DSO1000x2),
+      2,
+      SR_KB(256),
+      SR_Kn(20),
+      0,
+      vdivs10to2000,
+      samplerates1000,
+      4,
+      DSL_DSO1000x2,
+      SR_MHZ(500),
+      SR_Kn(10),
+      850,
+      1024-850,
+      10,
+      245,
+      80,
+      SR_HZ(0),
+      SR_HZ(0)}
+    },
+
+    {0x2A0E, 0x002B, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope U3P100", NULL,
+     "DSCopeU3P100.fw",
+     "DSCopeU3P100.bin",
+     "DSCopeU3P100.bin",
+     {CAPS_MODE_ANALOG | CAPS_MODE_DSO,
+      CAPS_FEATURE_ZERO | CAPS_FEATURE_FLASH | CAPS_FEATURE_USB30 | CAPS_FEATURE_HMCAD1511 | CAPS_FEATURE_20M,
+      (1 << DSL_ANALOG10x2_500) |
+      (1 << DSL_DSO1000x2),
+      2,
+      SR_GB(2),
+      SR_Mn(2),
+      0,
+      vdivs10to2000,
+      samplerates1000,
+      4,
+      DSL_DSO1000x2,
+      SR_MHZ(500),
+      SR_Mn(1),
+      900,
+      1024-900,
+      10,
+      245,
+      60,
+      SR_HZ(0),
+      SR_HZ(0)}
+    },
+
+    {0x2A0E, 0x002B, LIBUSB_SPEED_SUPER, "DreamSourceLab", "DSCope U3P100", NULL,
+     "DSCopeU3P100.fw",
+     "DSCopeU3P100.bin",
+     "DSCopeU3P100.bin",
+     {CAPS_MODE_ANALOG | CAPS_MODE_DSO,
+      CAPS_FEATURE_ZERO | CAPS_FEATURE_FLASH | CAPS_FEATURE_USB30 | CAPS_FEATURE_HMCAD1511 | CAPS_FEATURE_20M,
+      (1 << DSL_ANALOG10x2_500) |
+      (1 << DSL_DSO1000x2),
+      2,
+      SR_GB(2),
+      SR_Mn(2),
+      0,
+      vdivs10to2000,
+      samplerates1000,
+      4,
+      DSL_DSO1000x2,
+      SR_MHZ(500),
+      SR_Mn(1),
+      900,
+      1024-900,
+      10,
+      245,
+      60,
+      SR_HZ(0),
+      SR_HZ(0)}
+    },
 
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 };
@@ -880,6 +1121,9 @@ struct DSL_context {
     int16_t tune_index;
     int zero_stage;
     int zero_pcnt;
+    gboolean zero_branch;
+    gboolean zero_comb_fgain;
+    gboolean zero_comb;
     int tune_stage;
     int tune_pcnt;
     struct sr_channel *tune_probe;
@@ -908,6 +1152,7 @@ struct DSL_context {
     gboolean abort;
     gboolean overflow;
     int bw_limit;
+    int empty_poll_count;
 
     int language;
 };
@@ -1085,6 +1330,13 @@ SR_PRIV int dsl_rd_nvm(const struct sr_dev_inst *sdi, unsigned char *ctx, uint16
 SR_PRIV int dsl_rd_probe(const struct sr_dev_inst *sdi, unsigned char *ctx, uint16_t addr, uint8_t len);
 
 SR_PRIV int dsl_config_adc(const struct sr_dev_inst *sdi, const struct DSL_adc_config *config);
+SR_PRIV double dsl_adc_code2fgain(uint8_t code);
+SR_PRIV uint8_t dsl_adc_fgain2code(double gain);
+SR_PRIV int dsl_config_adc_fgain(const struct sr_dev_inst *sdi, uint8_t branch, double gain0, double gain1);
+SR_PRIV int dsl_config_fpga_fgain(const struct sr_dev_inst *sdi);
+SR_PRIV int dsl_skew_fpga_fgain(const struct sr_dev_inst *sdi, gboolean comb, double skew[]);
+SR_PRIV int dsl_probe_cali_fgain(struct DSL_context *devc, struct sr_channel *probe, double mean, gboolean comb, gboolean reset);
+SR_PRIV gboolean dsl_probe_fgain_inrange(struct sr_channel *probe, gboolean comb, double skew[]);
 
 SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi);
 SR_PRIV int dsl_fpga_config(struct libusb_device_handle *hdl, const char *filename);
@@ -1101,7 +1353,7 @@ SR_PRIV int dsl_config_list(int key, GVariant **data, const struct sr_dev_inst *
 SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboolean *fpga_done);
 SR_PRIV int dsl_dev_close(struct sr_dev_inst *sdi);
 SR_PRIV int dsl_dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data);
-SR_PRIV int dsl_dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, gboolean prg, int begin, int end);
+SR_PRIV int dsl_dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, gboolean prg);
 
 SR_PRIV unsigned int dsl_get_timeout(const struct sr_dev_inst *sdi);
 SR_PRIV int dsl_start_transfers(const struct sr_dev_inst *sdi);
