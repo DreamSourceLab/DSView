@@ -58,6 +58,7 @@
 
 #define DSL_REQUIRED_VERSION_MAJOR	2
 #define DSL_REQUIRED_VERSION_MINOR	0
+#define DSL_HDL_VERSION             0x0D
 
 /* hardware Capabilities */
 #define CAPS_MODE_LOGIC (1 << 0)

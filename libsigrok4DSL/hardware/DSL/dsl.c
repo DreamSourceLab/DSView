@@ -432,6 +432,30 @@ SR_PRIV uint64_t dsl_channel_depth(const struct sr_dev_inst *sdi)
     return (devc->profile->dev_caps.hw_depth / (ch_num ? ch_num : 1)) & ~SAMPLES_ALIGN;
 }
 
+SR_PRIV int dsl_hdl_version(const struct sr_dev_inst *sdi, uint8_t *value)
+{
+    struct sr_usb_dev_inst *usb;
+    struct libusb_device_handle *hdl;
+    struct ctl_rd_cmd rd_cmd;
+    int ret;
+    uint8_t rdata[HDL_VERSION_ADDR+1];
+
+    usb = sdi->conn;
+    hdl = usb->devhdl;
+
+    rd_cmd.header.dest = DSL_CTL_I2C_STATUS;
+    rd_cmd.header.offset = 0;
+    rd_cmd.header.size = HDL_VERSION_ADDR+1;
+    rd_cmd.data = rdata;
+    if ((ret = command_ctl_rd(hdl, rd_cmd)) != SR_OK) {
+        sr_err("Sent DSL_CTL_I2C_STATUS command failed.");
+        return SR_ERR;
+    }
+
+    *value = rdata[HDL_VERSION_ADDR];
+    return SR_OK;
+}
+
 SR_PRIV int dsl_wr_reg(const struct sr_dev_inst *sdi, uint8_t addr, uint8_t value)
 {
     struct sr_usb_dev_inst *usb;
@@ -1805,28 +1829,39 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
     }
     *fpga_done = (hw_info & bmFPGA_DONE) != 0;
 
-    if ((sdi->status == SR_ST_ACTIVE) && !(*fpga_done)) {
-        char *fpga_bit;
-        if (!(fpga_bit = g_try_malloc(strlen(DS_RES_PATH)+strlen(devc->profile->fpga_bit33)+1))) {
-            sr_err("fpag_bit path malloc error!");
-            return SR_ERR_MALLOC;
-        }
-        strcpy(fpga_bit, DS_RES_PATH);
-        switch(devc->th_level) {
-        case SR_TH_3V3:
-            strcat(fpga_bit, devc->profile->fpga_bit33);
-            break;
-        case SR_TH_5V0:
-            strcat(fpga_bit, devc->profile->fpga_bit50);
-            break;
-        default:
-            return SR_ERR;
-        }
-        ret = dsl_fpga_config(usb->devhdl, fpga_bit);
-        g_free(fpga_bit);
-        if (ret != SR_OK) {
-            sr_err("%s: Configure FPGA failed!", __func__);
-            return SR_ERR;
+    if (sdi->status == SR_ST_ACTIVE) {
+        if (!(*fpga_done)) {
+            char *fpga_bit;
+            if (!(fpga_bit = g_try_malloc(strlen(DS_RES_PATH)+strlen(devc->profile->fpga_bit33)+1))) {
+                sr_err("fpag_bit path malloc error!");
+                return SR_ERR_MALLOC;
+            }
+            strcpy(fpga_bit, DS_RES_PATH);
+            switch(devc->th_level) {
+            case SR_TH_3V3:
+                strcat(fpga_bit, devc->profile->fpga_bit33);
+                break;
+            case SR_TH_5V0:
+                strcat(fpga_bit, devc->profile->fpga_bit50);
+                break;
+            default:
+                return SR_ERR;
+            }
+            ret = dsl_fpga_config(usb->devhdl, fpga_bit);
+            g_free(fpga_bit);
+            if (ret != SR_OK) {
+                sr_err("%s: Configure FPGA failed!", __func__);
+                return SR_ERR;
+            }
+        } else {
+            ret = dsl_wr_reg(sdi, CTR0_ADDR, bmNONE); // dessert clear
+            /* Check HDL version */
+            ret = dsl_hdl_version(sdi, &hw_info);
+            if ((ret != SR_OK) || (hw_info != DSL_HDL_VERSION)) {
+               sr_err("%s: HDL verison incompatible!", __func__);
+               sdi->status = SR_ST_INCOMPATIBLE;
+               return SR_ERR;
+            }
         }
     }
 

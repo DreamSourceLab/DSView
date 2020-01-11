@@ -54,6 +54,7 @@
 #define COMB_ADDR 0x68
 #define EI2C_ADDR 0x60
 #define ADCC_ADDR 0x48
+#define HDL_VERSION_ADDR 0x04
 
 #define EI2C_CTR_OFF   0x2
 #define EI2C_RXR_OFF   0x3
