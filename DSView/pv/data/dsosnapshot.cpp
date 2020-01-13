@@ -163,10 +163,8 @@ void DsoSnapshot::append_payload(const sr_datafeed_dso &dso)
         append_data(dso.data, dso.num_samples, _instant);
 
         // Generate the first mip-map from the data
-        //if (_envelope_en)
-        //    append_payload_to_envelope_levels(dso.samplerate_tog);
         if (_envelope_en)
-            append_payload_to_envelope_levels(true);
+            append_payload_to_envelope_levels(dso.samplerate_tog);
     }
 }
 
