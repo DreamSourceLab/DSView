@@ -256,6 +256,10 @@ public:
     uint64_t get_save_end() const;
     bool get_saving() const;
     void set_saving(bool saving);
+    void set_stop_scale(float scale);
+    float stop_scale() const;
+
+    void exit_capture();
 
 private:
 	void set_capture_state(capture_state state);
@@ -367,6 +371,7 @@ private:
     bool _saving;
 
     bool _dso_feed;
+    float _stop_scale;
 
 signals:
 	void capture_state_changed(int state);

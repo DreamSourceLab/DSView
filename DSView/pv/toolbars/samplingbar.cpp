@@ -822,19 +822,7 @@ void SamplingBar::commit_settings()
 void SamplingBar::on_run_stop()
 {
     if (get_sampling() || _session.isRepeating()) {
-        _session.set_repeating(false);
-        bool wait_upload = false;
-        if (_session.get_run_mode() != SigSession::Repetitive) {
-            GVariant *gvar = get_selected_device()->get_config(NULL, NULL, SR_CONF_WAIT_UPLOAD);
-            if (gvar != NULL) {
-                wait_upload = g_variant_get_boolean(gvar);
-                g_variant_unref(gvar);
-            }
-        }
-        if (!wait_upload) {
-            _session.stop_capture();
-            _session.capture_state_changed(SigSession::Stopped);
-        }
+        _session.exit_capture();
     } else {
         enable_run_stop(false);
         enable_instant(false);

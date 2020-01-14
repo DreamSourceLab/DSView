@@ -232,7 +232,6 @@ private:
 private:
     boost::shared_ptr<pv::data::Dso> _data;
 	float _scale;
-    float _stop_scale;
     bool _en_lock;
     bool _show;
 

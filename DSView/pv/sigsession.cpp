@@ -116,6 +116,7 @@ SigSession::SigSession(DeviceManager &device_manager) :
     _math_trace = NULL;
     _saving = false;
     _dso_feed = false;
+    _stop_scale = 1;
 
     // Create snapshots & data containers
     _cur_logic_snapshot.reset(new data::LogicSnapshot());
@@ -351,6 +352,7 @@ void SigSession::capture_init()
 
     set_cur_snap_samplerate(_dev_inst->get_sample_rate());
     set_cur_samplelimits(_dev_inst->get_sample_limit());
+    set_stop_scale(1);
     _data_updated = false;
     _trigger_flag = false;
     _trigger_ch = 0;
@@ -1779,6 +1781,33 @@ bool SigSession::get_saving() const
 void SigSession::set_saving(bool saving)
 {
     _saving = saving;
+}
+
+void SigSession::exit_capture()
+{
+    set_repeating(false);
+    bool wait_upload = false;
+    if (get_run_mode() != SigSession::Repetitive) {
+        GVariant *gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_WAIT_UPLOAD);
+        if (gvar != NULL) {
+            wait_upload = g_variant_get_boolean(gvar);
+            g_variant_unref(gvar);
+        }
+    }
+    if (!wait_upload) {
+        stop_capture();
+        capture_state_changed(SigSession::Stopped);
+    }
+}
+
+float SigSession::stop_scale() const
+{
+    return _stop_scale;
+}
+
+void SigSession::set_stop_scale(float scale)
+{
+    _stop_scale = scale;
 }
 
 } // namespace pv
