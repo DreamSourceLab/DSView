@@ -38,7 +38,8 @@ namespace dialogs {
 About::About(QWidget *parent) :
     DSDialog(parent, true)
 {
-    setFixedHeight(360);
+    setFixedHeight(600);
+    setFixedWidth(800);
 
     #if defined(__x86_64__) || defined(_M_X64)
         QString arch = "x64";
@@ -57,8 +58,8 @@ About::About(QWidget *parent) :
                       .arg(arch);
 
     QString url = tr("Website: <a href=\"%1\" style=\"color:#C0C0C0\">%1</a><br />"
-                     "Gitbub: <a href=\"%2\" style=\"color:#C0C0C0\">%2</a><br />"
-                     "Copyright：<a href=\"%3\" style=\"color:#C0C0C0\">%3</a><br />"
+                     "Github: <a href=\"%2\" style=\"color:#C0C0C0\">%2</a><br />"
+                     "Copyright:<a href=\"%3\" style=\"color:#C0C0C0\">%3</a><br />"
                      "<br /><br />")
                   .arg(QApplication::organizationDomain())
                   .arg("https://github.com/DreamSourceLab/DSView")
@@ -109,7 +110,6 @@ About::About(QWidget *parent) :
 
     layout()->addLayout(xlayout);
     setTitle(tr("About"));
-    setFixedWidth(500);
 }
 
 About::~About()

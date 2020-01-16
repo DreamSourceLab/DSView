@@ -73,7 +73,7 @@ DsoSignal::DsoSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
     _auto_cnt(0),
     _hover_en(false),
     _hover_index(0),
-    _hover_point(QPointF(0, 0)),
+    _hover_point(QPointF(-1, -1)),
     _hover_value(0)
 {
     QVector<uint64_t> vValue;
@@ -1307,7 +1307,7 @@ void DsoSignal::paint_hover_measure(QPainter &p, QColor fore, QColor back)
 {
     const int hw_offset = get_hw_offset();
     // Hover measure
-    if (_hover_en) {
+    if (_hover_en && _hover_point != QPointF(-1, -1)) {
         QString hover_str = get_voltage(hw_offset - _hover_value, 2);
         const int hover_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
             Qt::AlignLeft | Qt::AlignTop, hover_str).width() + 10;
@@ -1331,6 +1331,10 @@ void DsoSignal::paint_hover_measure(QPainter &p, QColor fore, QColor back)
     while (i != _view->get_cursorList().end()) {
         float pt_value;
         const QPointF pt = get_point((*i)->index(), pt_value);
+        if (pt == QPointF(-1, -1)) {
+            i++;
+            continue;
+        }
         QString pt_str = get_voltage(hw_offset - pt_value, 2);
         const int pt_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
             Qt::AlignLeft | Qt::AlignTop, pt_str).width() + 10;
@@ -1500,7 +1504,7 @@ bool DsoSignal::get_hover(uint64_t &index, QPointF &p, double &value)
 
 QPointF DsoSignal::get_point(uint64_t index, float &value)
 {
-    QPointF pt = QPointF(0, 0);
+    QPointF pt = QPointF(-1, -1);
 
     if (!enabled())
         return pt;
