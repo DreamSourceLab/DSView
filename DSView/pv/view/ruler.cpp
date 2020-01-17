@@ -194,8 +194,7 @@ void Ruler::mouseMoveEvent(QMouseEvent *e)
     (void)e;
 
     if (_grabbed_marker) {
-        _grabbed_marker->set_index((_view.offset() + _view.hover_point().x()) *
-                                   _view.scale() * _view.session().cur_snap_samplerate());
+        _grabbed_marker->set_index(_view.pixel2index(_view.hover_point().x()));
         _view.cursor_moving();
         _curs_moved = true;
     }
@@ -253,7 +252,7 @@ void Ruler::mouseReleaseEvent(QMouseEvent *event)
                     _cursor_sel_visible = true;
                 } else {
                     int overCursor;
-                    uint64_t index = (_view.offset() + _cursor_sel_x + 0.5) * _view.scale() * _view.session().cur_snap_samplerate();
+                    uint64_t index = _view.pixel2index(_cursor_sel_x);
                     overCursor = in_cursor_sel_rect(event->pos());
                     if (overCursor == 0) {
                         _view.add_cursor(CursorColor[_view.get_cursorList().size() % 8], index);
@@ -440,10 +439,10 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
         }
     }
     if (_view.trig_cursor_shown()) {
-        _view.get_trig_cursor()->paint_fix_label(p, rect(), prefix, 'T', _view.get_trig_cursor()->colour());
+        _view.get_trig_cursor()->paint_fix_label(p, rect(), prefix, 'T', _view.get_trig_cursor()->colour(), false);
     }
     if (_view.search_cursor_shown()) {
-        _view.get_search_cursor()->paint_fix_label(p, rect(), prefix, 'S', _view.get_search_cursor()->colour());
+        _view.get_search_cursor()->paint_fix_label(p, rect(), prefix, 'S', _view.get_search_cursor()->colour(), true);
     }
 }
 

@@ -57,7 +57,7 @@ Cursor::Cursor(View &view, QColor color, uint64_t index) :
 {
 }
 
-QRect Cursor::get_label_rect(const QRect &rect, bool &visible) const
+QRect Cursor::get_label_rect(const QRect &rect, bool &visible, bool has_hoff) const
 {
     const double samples_per_pixel = _view.session().cur_snap_samplerate() * _view.scale();
     const double cur_offset = _index / samples_per_pixel;
@@ -66,7 +66,7 @@ QRect Cursor::get_label_rect(const QRect &rect, bool &visible) const
         visible = false;
         return QRect(-1, -1, 0, 0);
     }
-    const int64_t x = _index/samples_per_pixel - _view.offset();
+    const int64_t x = _view.index2pixel(_index, has_hoff);
 
     const QSize label_size(
 		_text_size.width() + View::LabelPadding.width() * 2,
@@ -131,13 +131,13 @@ void Cursor::paint_label(QPainter &p, const QRect &rect,
 }
 
 void Cursor::paint_fix_label(QPainter &p, const QRect &rect,
-    unsigned int prefix, QChar label, QColor color)
+    unsigned int prefix, QChar label, QColor color, bool has_hoff)
 {
     using pv::view::Ruler;
     bool visible;
 
     compute_text_size(p, prefix);
-    const QRect r(get_label_rect(rect, visible));
+    const QRect r(get_label_rect(rect, visible, has_hoff));
     if (!visible)
         return;
 

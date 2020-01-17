@@ -153,6 +153,11 @@ public:
     virtual void set_viewport(pv::view::Viewport *viewport);
     pv::view::Viewport* get_viewport() const;
 
+    /**
+     * Paints prepare
+     **/
+    virtual void paint_prepare();
+
 	/**
 	 * Paints the background layer of the trace with a QPainter
 	 * @param p the QPainter to paint into.

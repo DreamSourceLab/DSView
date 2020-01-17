@@ -63,6 +63,8 @@ private:
     static const int AutoTime = 10000;
     static const int AutoLock = 3;
 
+    static const int TrigHRng = 2;
+
 public:
     enum DsoSetRegions {
         DSO_NONE = -1,
@@ -167,6 +169,11 @@ public:
     double pos2ratio(int pos) const;
 
     /**
+     * paint prepare
+     **/
+    void paint_prepare();
+
+    /**
      * Paints the background layer of the trace with a QPainter
      * @param p the QPainter to paint into.
      * @param left the x-coordinate of the left edge of the signal
@@ -225,7 +232,6 @@ private:
 private:
     boost::shared_ptr<pv::data::Dso> _data;
 	float _scale;
-    float _stop_scale;
     bool _en_lock;
     bool _show;
 

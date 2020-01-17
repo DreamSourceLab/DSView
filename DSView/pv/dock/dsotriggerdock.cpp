@@ -53,10 +53,10 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession &session) :
 
     _position_label = new QLabel(_widget);
     _position_spinBox = new QSpinBox(_widget);
-    _position_spinBox->setRange(0, 99);
+    _position_spinBox->setRange(1, 99);
     _position_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     _position_slider = new QSlider(Qt::Horizontal, _widget);
-    _position_slider->setRange(0, 99);
+    _position_slider->setRange(1, 99);
     connect(_position_slider, SIGNAL(valueChanged(int)), _position_spinBox, SLOT(setValue(int)));
     connect(_position_spinBox, SIGNAL(valueChanged(int)), _position_slider, SLOT(setValue(int)));
     connect(_position_slider, SIGNAL(valueChanged(int)), this, SLOT(pos_changed(int)));

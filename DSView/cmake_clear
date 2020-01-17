@@ -3,6 +3,10 @@ rm ./cmake_install.cmake
 rm -r ./CMakeFiles
 rm ./Makefile
 rm ./CMakeCache.txt
+rm ./*.cmake
+rm ./DSView
+rm ./DSView.qrc.depends
+rm ./install_manifest.txt
 find . -name 'moc_*.cpp*' | xargs rm -rf
 find . -name 'qrc_*.cpp' | xargs rm -rf
 echo "rm cmake cache end..."

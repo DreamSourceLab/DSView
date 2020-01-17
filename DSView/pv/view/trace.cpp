@@ -211,6 +211,13 @@ pv::view::Viewport* Trace::get_viewport() const
     return _viewport;
 }
 
+
+void Trace::paint_prepare()
+{
+    assert(_view);
+    _view->set_trig_hoff(0);
+}
+
 void Trace::paint_back(QPainter &p, int left, int right, QColor fore, QColor back)
 {
     (void)back;

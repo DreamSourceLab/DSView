@@ -159,6 +159,9 @@ static struct DSL_context *DSCope_dev_new(const struct DSL_profile *prof)
     devc->trigger_hpos = 0x0;
     devc->trigger_hrate = 0;
     devc->zero = FALSE;
+    devc->zero_branch = FALSE;
+    devc->zero_comb_fgain = FALSE;
+    devc->zero_comb = FALSE;
     devc->tune = FALSE;
     devc->data_lock = FALSE;
     devc->cali = FALSE;
@@ -195,6 +198,7 @@ static GSList *scan(GSList *options)
 	libusb_device **devlist;
     int devcnt, ret, i, j;
 	const char *conn;
+    enum libusb_speed usb_speed;
 
 	drvc = di->priv;
 
@@ -236,10 +240,16 @@ static GSList *scan(GSList *options)
 			continue;
 		}
 
+        usb_speed = libusb_get_device_speed( devlist[i]);
+        if ((usb_speed != LIBUSB_SPEED_HIGH) &&
+            (usb_speed != LIBUSB_SPEED_SUPER))
+            continue;
+
 		prof = NULL;
         for (j = 0; supported_DSCope[j].vid; j++) {
             if (des.idVendor == supported_DSCope[j].vid &&
-                des.idProduct == supported_DSCope[j].pid) {
+                des.idProduct == supported_DSCope[j].pid &&
+                usb_speed == supported_DSCope[j].usb_speed) {
                 prof = &supported_DSCope[j];
 			}
 		}
@@ -343,8 +353,9 @@ static uint64_t dso_offset(const struct sr_dev_inst *sdi, const struct sr_channe
     struct DSL_context *devc = sdi->priv;
     const double offset_mid = (1 << (ch->bits - 1));
     const double offset_max = ((1 << ch->bits) - 1.0);
-    const uint64_t offset = devc->zero ? ch->zero_offset : ch->hw_offset;
-    double comb_off = 2.0 / (pow(10, 24.0*ch->comb_comp/20/4096) - 1);
+    const uint64_t offset = devc->zero ? ch->zero_offset : ch->offset;
+    double comb_off = (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_HMCAD1511) ? 0.57 / (pow(10, 24.0*ch->comb_comp/20/4096) - 1) :
+                                                                                        2.0 / (pow(10, 24.0*ch->comb_comp/20/4096) - 1);
 //    const double comb_compensate = ((devc->profile->dev_caps.feature_caps & CAPS_FEATURE_HMCAD1511) &&
 //                                    (dsl_en_ch_num(sdi) == 1))? (offset - offset_mid) / comb_off : 0;
     const double comb_compensate = ((ch->comb_comp != 0) && (dsl_en_ch_num(sdi) == 1)) ? (offset - offset_mid) / comb_off : 0;
@@ -385,9 +396,8 @@ static uint64_t dso_cmd_gen(const struct sr_dev_inst *sdi, struct sr_channel* ch
     switch (id) {
     case SR_CONF_PROBE_EN:
     case SR_CONF_PROBE_COUPLING:
-        if (devc->zero || sdi->mode == ANALOG || dsl_en_ch_num(sdi) == 2) {
+        if (sdi->mode == ANALOG || dsl_en_ch_num(sdi) == 2) {
             cmd += 0x0E00;
-            //cmd += 0x000;
         } else if (dsl_en_ch_num(sdi) == 1) {
             if (((ch->index == 0) && ch->enabled) || ((ch->index == 1) && !ch->enabled))
                 cmd += 0x1600;
@@ -418,7 +428,6 @@ static uint64_t dso_cmd_gen(const struct sr_dev_inst *sdi, struct sr_channel* ch
     case SR_CONF_PROBE_OFFSET:
         cmd += 0x10;
         cmd += ch->index << ch_bit;
-        ch->hw_offset = ch->offset;
         offset = dso_offset(sdi, ch);
         cmd += (offset << 8);
         break;
@@ -429,7 +438,7 @@ static uint64_t dso_cmd_gen(const struct sr_dev_inst *sdi, struct sr_channel* ch
         break;
     case SR_CONF_HORIZ_TRIGGERPOS:
         cmd += 0x20;
-        cmd += devc->trigger_hpos << 8;
+        cmd += ((uint64_t)devc->trigger_hpos << 8);
         break;
     case SR_CONF_TRIGGER_SLOPE:
         cmd += 0x28;
@@ -539,6 +548,8 @@ static gboolean dso_load_eep(struct sr_dev_inst *sdi, struct sr_channel *probe, 
     zero_info.zero_addr = dst_addr;
     if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_SEEP)
         real_zero_addr = zero_info.zero_addr;
+    else if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_FLASH)
+        real_zero_addr = probe->index * DSO_ZERO_PAGE;
     else
         real_zero_addr = (zero_big_addr << 8) + zero_info.zero_addr;
     if ((ret = dsl_rd_nvm(sdi, (unsigned char *)&zero_info, real_zero_addr, sizeof(struct cmd_zero_info))) != SR_OK) {
@@ -555,6 +566,16 @@ static gboolean dso_load_eep(struct sr_dev_inst *sdi, struct sr_channel *probe, 
                  probe->comb_diff_bom = *(preoff_ptr + 2*i + 1);
                  probe->vpos_trans = *(preoff_ptr + 2*i + 2) + (*(preoff_ptr + 2*i + 3) << 8);
                  probe->comb_comp = *(preoff_ptr + 2*i + 4);
+                 probe->digi_fgain = *(preoff_ptr + 2*i + 5) + (*(preoff_ptr + 2*i + 6) << 8);
+                 probe->cali_fgain0 = dsl_adc_code2fgain(*(preoff_ptr + 2*i + 7));
+                 probe->cali_fgain1 = dsl_adc_code2fgain(*(preoff_ptr + 2*i + 8));
+                 probe->cali_fgain2 = dsl_adc_code2fgain(*(preoff_ptr + 2*i + 9));
+                 probe->cali_fgain3 = dsl_adc_code2fgain(*(preoff_ptr + 2*i + 10));
+                 probe->cali_comb_fgain0 = dsl_adc_code2fgain(*(preoff_ptr + 2*i + 11));
+                 probe->cali_comb_fgain1 = dsl_adc_code2fgain(*(preoff_ptr + 2*i + 12));
+                 probe->cali_comb_fgain2 = dsl_adc_code2fgain(*(preoff_ptr + 2*i + 13));
+                 probe->cali_comb_fgain3 = dsl_adc_code2fgain(*(preoff_ptr + 2*i + 14));
+
                  if (!fpga_done) {
                      const double slope = (probe->comb_diff_bom - probe->comb_diff_top)/(2.0*255.0);
                      for (i = 0; i < 256; i++) {
@@ -575,6 +596,8 @@ static gboolean dso_load_eep(struct sr_dev_inst *sdi, struct sr_channel *probe, 
     vga_info.vga_addr = dst_addr + sizeof(struct cmd_zero_info);
     if (devc ->profile->dev_caps.feature_caps & CAPS_FEATURE_SEEP)
         real_zero_addr = vga_info.vga_addr;
+    else if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_FLASH)
+        real_zero_addr = probe->index * DSO_ZERO_PAGE + 1;
     else
         real_zero_addr = (zero_big_addr << 8) + vga_info.vga_addr;
     if ((ret = dsl_rd_nvm(sdi, (unsigned char *)&vga_info, real_zero_addr, sizeof(struct cmd_vga_info))) != SR_OK) {
@@ -592,6 +615,396 @@ static gboolean dso_load_eep(struct sr_dev_inst *sdi, struct sr_channel *probe, 
     }
 
     return TRUE;
+}
+
+static int dso_zero(const struct sr_dev_inst *sdi, gboolean reset)
+{
+    struct DSL_context *devc = sdi->priv;
+    GSList *l;
+    int ret = SR_OK;
+    struct sr_usb_dev_inst *usb;
+    struct libusb_device_handle *hdl;
+    struct ctl_wr_cmd wr_cmd;
+
+    static uint64_t vdiv_back[2] = {0, 0};
+    struct sr_channel *probe0 = NULL, *probe1 = NULL;
+    uint16_t offset_top;
+    if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_HMCAD1511)
+        offset_top = 15;
+    else
+        offset_top = 20;
+    const uint16_t offset_bom = ((1 << channel_modes[devc->ch_mode].unit_bits) - 1) - offset_top;
+    const uint16_t offset_mid = (1 << (channel_modes[devc->ch_mode].unit_bits - 1));
+    const uint16_t max_trans = ((1 << 10) - 1);
+
+    #ifdef _WIN32
+    const int zero_interval = (devc->profile->usb_speed == LIBUSB_SPEED_SUPER) ? 10 : 4;
+    #else
+    const int zero_interval = 50;
+    #endif
+    const double margin_pass = 0.3;
+    int end_cnt = 0;
+    const int branch_done_cnt = (devc->profile->usb_speed == LIBUSB_SPEED_SUPER) ? 10 : 2;
+    static gboolean warm_done = FALSE;
+    static gboolean trans_fix_done = FALSE;
+    static gboolean mid_zero_done = FALSE;
+    static double margin[2];
+    //static double offset[2];
+    double acc_mean = 0;
+    double acc_mean0 = 0;
+    double acc_mean1 = 0;
+    double acc_skew[8];
+    double acc_max_skew;
+
+    if (reset) {
+        warm_done = FALSE;
+        trans_fix_done = FALSE;
+        mid_zero_done = FALSE;
+        vdiv_back[0] = 0;
+        vdiv_back[1] = 0;
+        return SR_OK;
+    }
+    if (!devc->mstatus_valid)
+        return SR_ERR_ARG;
+
+    usb = sdi->conn;
+    hdl = usb->devhdl;
+    for(l = sdi->channels; l; l = l->next) {
+        struct sr_channel *probe = (struct sr_channel *)l->data;
+        if (probe->index == 0)
+            probe0 = probe;
+        if (probe->index == 1)
+            probe1 = probe;
+        if (vdiv_back[probe->index] == 0)
+            vdiv_back[probe->index] = probe->vdiv;
+    }
+
+    if (!trans_fix_done && devc->zero_stage == 0) {
+        ret = SR_OK;
+        if (!warm_done) {
+            if (devc->zero_pcnt == 0*zero_interval) {
+                for(l = sdi->channels; l; l = l->next) {
+                    struct sr_channel *probe = (struct sr_channel *)l->data;
+                    for (int i = 0; (probe->vga_ptr+i)->key; i++)
+                        probe->vdiv = (probe->vga_ptr+i)->key;
+                    ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe, SR_CONF_PROBE_VDIV));
+                    probe->zero_offset = offset_mid;
+                    ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe, SR_CONF_PROBE_OFFSET));
+                }
+            }
+            if (!(devc->profile->dev_caps.feature_caps & CAPS_FEATURE_HMCAD1511) ||
+                (devc->zero_pcnt == 1*zero_interval)) {
+                warm_done = TRUE;
+                devc->zero_pcnt = 0*zero_interval-1;
+            }
+        } else if (!(devc->profile->dev_caps.feature_caps & CAPS_FEATURE_PREOFF)) {
+            if (devc->zero_pcnt == 0*zero_interval) {
+                for(l = sdi->channels; l; l = l->next) {
+                    struct sr_channel *probe = (struct sr_channel *)l->data;
+                    probe->zero_offset = offset_bom;
+                    ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe, SR_CONF_PROBE_OFFSET));
+                }
+            }
+            if (devc->zero_pcnt == 1*zero_interval) {
+                margin[0] = (devc->mstatus.ch0_acc_mean * 1.0 / devc->limit_samples);
+                margin[1] = (devc->mstatus.ch1_acc_mean * 1.0 / devc->limit_samples);
+//                if (margin[0] >= value_max || margin[1] >= value_max)
+//                    ret = SR_ERR;
+            }
+            if (devc->zero_pcnt == 1*zero_interval+1) {
+                for(l = sdi->channels; l; l = l->next) {
+                    struct sr_channel *probe = (struct sr_channel *)l->data;
+                    probe->zero_offset = offset_top;
+                    ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe, SR_CONF_PROBE_OFFSET));
+                }
+            }
+            if (devc->zero_pcnt == 2*zero_interval) {
+                double top0 = (devc->mstatus.ch0_acc_mean * 1.0 / devc->limit_samples);
+                double top1 = (devc->mstatus.ch1_acc_mean * 1.0 / devc->limit_samples);
+//                if (top0 <= value_min || top1 <= value_min) {
+//                    ret = SR_ERR;
+                //} else {
+                    margin[0] -= top0;
+                    margin[1] -= top1;
+                    for(l = sdi->channels; l; l = l->next) {
+                        struct sr_channel *probe = (struct sr_channel *)l->data;
+                        margin[probe->index] -= (offset_bom - offset_top);
+                        if (fabs(margin[probe->index]) > margin_pass) {
+                            margin[probe->index] = margin[probe->index] > 0 ? ceil(margin[probe->index]) : floor(margin[probe->index]);
+                            probe->vpos_trans = min(probe->vpos_trans - margin[probe->index], max_trans);
+                            ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe0, SR_CONF_PROBE_OFFSET));
+                        } else {
+                            margin[probe->index] = 0;
+                        }
+                    }
+                    trans_fix_done = (margin[0] == 0) && (margin[1] == 0);
+                    devc->zero_pcnt = trans_fix_done ? 0*zero_interval : 0*zero_interval-1;
+                //}
+            }
+        } else {
+            trans_fix_done = TRUE;
+        }
+
+        if (!trans_fix_done && ret == SR_OK)
+            devc->zero_pcnt++;
+    } else if (!mid_zero_done) {
+        if (devc->zero_pcnt == 0) {
+            for(l = sdi->channels; l; l = l->next) {
+                struct sr_channel *probe = (struct sr_channel *)l->data;
+                probe->vdiv = (probe->vga_ptr+devc->zero_stage)->key;
+                if (probe->vdiv == 0) {
+                    probe->vdiv = (probe->vga_ptr+devc->zero_stage-1)->key;
+                    mid_zero_done = TRUE;
+                    break;
+                }
+                ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe, SR_CONF_PROBE_VDIV));
+                probe->zero_offset = offset_mid;
+                ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe, SR_CONF_PROBE_OFFSET));
+                // must after offset setting
+                probe->vdiv = vdiv_back[probe->index];
+            }
+        }
+
+        if (devc->zero_pcnt == zero_interval) {
+            margin[0] = offset_mid - (devc->mstatus.ch0_acc_mean * 1.0 / devc->limit_samples);
+            margin[1] = offset_mid - (devc->mstatus.ch1_acc_mean * 1.0 / devc->limit_samples);
+            if (fabs(margin[0]) < margin_pass && fabs(margin[1]) < margin_pass) {
+                devc->zero_stage++;
+            } else {
+                if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_PREOFF) {
+                    for(l = sdi->channels; l; l = l->next) {
+                        struct sr_channel *probe = (struct sr_channel *)l->data;
+                        double trans_coarse = ((probe->vga_ptr+devc->zero_stage)->key < 500) ? (probe->vpos_trans >> 8)/DSCOPE_TRANS_CMULTI : (probe->vpos_trans >> 8);
+                        double trans_fine = ((probe->vga_ptr+devc->zero_stage)->key < 500) ? (probe->vpos_trans & 0x00ff) / 1000.0 : (probe->vpos_trans & 0x00ff) / DSCOPE_TRANS_FMULTI;
+
+                        double voltage_margin = margin[probe->index] * (probe->vga_ptr+devc->zero_stage)->key * 10 / 255.0;
+                        uint16_t last_preoff = (probe->vga_ptr+devc->zero_stage)->preoff;
+                        int preoff_coarse = floor(voltage_margin / trans_coarse + 0.5);
+                        int preoff_fine = floor(-(voltage_margin - preoff_coarse*trans_coarse)/trans_fine + 0.5);
+                        preoff_coarse = (last_preoff >> 10) + preoff_coarse;
+                        preoff_fine = (last_preoff&0x03ff) + preoff_fine;
+                        (probe->vga_ptr+devc->zero_stage)->preoff = (preoff_coarse << 10) + preoff_fine;
+                    }
+                } else {
+                    for(l = sdi->channels; l; l = l->next) {
+                        struct sr_channel *probe = (struct sr_channel *)l->data;
+                        (probe->vga_ptr+devc->zero_stage)->preoff += margin[probe->index] > 0 ? ceil(margin[probe->index]) : floor(margin[probe->index]);
+                    }
+                }
+            }
+            devc->zero_pcnt = 0;
+        } else if (!mid_zero_done) {
+            devc->zero_pcnt++;
+        }
+    } else {
+        ret = SR_OK;
+        end_cnt = 0*zero_interval + 1;
+        if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_HMCAD1511) {
+            if (!devc->zero_comb_fgain) {
+                if (devc->zero_pcnt == 0*zero_interval+1) {
+                    devc->zero_branch = TRUE;
+
+                    probe0->zero_offset = offset_bom;
+                    ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe0, SR_CONF_PROBE_OFFSET));
+                    probe1->zero_offset = offset_bom;
+                    ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe1, SR_CONF_PROBE_OFFSET));
+
+                    dsl_probe_cali_fgain(devc, probe0, 1, FALSE, TRUE);
+                    dsl_probe_cali_fgain(devc, probe1, 1, FALSE, TRUE);
+                    dsl_config_adc_fgain(sdi, 0, probe0->cali_fgain0, probe0->cali_fgain1);
+                    dsl_config_adc_fgain(sdi, 1, probe0->cali_fgain2, probe0->cali_fgain3);
+                    dsl_config_adc_fgain(sdi, 2, probe1->cali_fgain0, probe1->cali_fgain1);
+                    dsl_config_adc_fgain(sdi, 3, probe1->cali_fgain2, probe1->cali_fgain3);
+                    acc_mean0 = 0;
+                    acc_mean1 = 0;
+                } else if (devc->zero_pcnt == branch_done_cnt*zero_interval) {
+                    acc_mean0 = (devc->mstatus.ch0_acc_mean + devc->mstatus.ch0_acc_mean_p1 +
+                                 devc->mstatus.ch0_acc_mean_p2 + devc->mstatus.ch0_acc_mean_p3) / 4.0;
+                    acc_mean1 = (devc->mstatus.ch1_acc_mean + devc->mstatus.ch1_acc_mean_p1 +
+                                 devc->mstatus.ch1_acc_mean_p2 + devc->mstatus.ch1_acc_mean_p3) / 4.0;
+
+                    acc_skew[0] = devc->mstatus.ch0_acc_mean / acc_mean0 - 1;
+                    acc_skew[1] = devc->mstatus.ch0_acc_mean_p1 / acc_mean0 - 1;
+                    acc_skew[2] = devc->mstatus.ch0_acc_mean_p2 / acc_mean0 - 1;
+                    acc_skew[3] = devc->mstatus.ch0_acc_mean_p3 / acc_mean0 - 1;
+                    acc_skew[4] = devc->mstatus.ch1_acc_mean / acc_mean1 - 1;
+                    acc_skew[5] = devc->mstatus.ch1_acc_mean_p1 / acc_mean1 - 1;
+                    acc_skew[6] = devc->mstatus.ch1_acc_mean_p2 / acc_mean1 - 1;
+                    acc_skew[7] = devc->mstatus.ch1_acc_mean_p3 / acc_mean1 - 1;
+                    acc_max_skew = fabs(acc_skew[0]);
+                    for (int i=1; i <8; i++)
+                        acc_max_skew = max(acc_max_skew, fabs(acc_skew[i]));
+                    if ((acc_max_skew > MAX_ACC_VARIANCE) && (dsl_probe_fgain_inrange(probe0, FALSE, acc_skew) ||
+                                                              dsl_probe_fgain_inrange(probe1, FALSE, acc_skew))) {
+                        devc->zero_pcnt = 0*zero_interval+1;
+
+                        dsl_probe_cali_fgain(devc, probe0, acc_mean0, FALSE, FALSE);
+                        dsl_probe_cali_fgain(devc, probe1, acc_mean1, FALSE, FALSE);
+
+                        dsl_config_adc_fgain(sdi, 0, probe0->cali_fgain0, probe0->cali_fgain1);
+                        dsl_config_adc_fgain(sdi, 1, probe0->cali_fgain2, probe0->cali_fgain3);
+                        dsl_config_adc_fgain(sdi, 2, probe1->cali_fgain0, probe1->cali_fgain1);
+                        dsl_config_adc_fgain(sdi, 3, probe1->cali_fgain2, probe1->cali_fgain3);
+                    } else {
+                        if (acc_max_skew <= MAX_ACC_VARIANCE) {
+                            devc->zero_comb_fgain = TRUE;
+                            devc->zero_pcnt = 0*zero_interval;
+                        } else {
+                            devc->zero_pcnt = 0*zero_interval;
+                            dsl_skew_fpga_fgain(sdi, FALSE, acc_skew);
+                        }
+                    }
+                }
+            }
+            if (devc->zero_comb_fgain) {
+                if (devc->zero_pcnt == 0*zero_interval+1) {
+                    probe0->zero_offset = offset_bom;
+                    ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe0, SR_CONF_PROBE_OFFSET));
+                    probe1->zero_offset = offset_bom;
+                    ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe1, SR_CONF_PROBE_OFFSET));
+
+                    acc_mean = 0;
+                    devc->zero_comb = FALSE;
+                    dsl_probe_cali_fgain(devc, probe0, 1, TRUE, TRUE);
+                    dsl_probe_cali_fgain(devc, probe1, 1, TRUE, TRUE);
+                    dsl_config_adc_fgain(sdi, 0, probe0->cali_comb_fgain0, probe0->cali_comb_fgain1);
+                    dsl_config_adc_fgain(sdi, 1, probe0->cali_comb_fgain2, probe0->cali_comb_fgain3);
+                    dsl_config_adc_fgain(sdi, 2, probe1->cali_comb_fgain0, probe1->cali_comb_fgain1);
+                    dsl_config_adc_fgain(sdi, 3, probe1->cali_comb_fgain2, probe1->cali_comb_fgain3);
+                } else if (devc->zero_pcnt == 1*zero_interval) {
+                    if (!devc->zero_comb)
+                        devc->zero_pcnt = 0*zero_interval+1;
+                } else if (devc->zero_pcnt == branch_done_cnt*zero_interval) {
+                    acc_mean = (devc->mstatus.ch0_acc_mean + devc->mstatus.ch0_acc_mean_p1 +
+                                devc->mstatus.ch0_acc_mean_p2 + devc->mstatus.ch0_acc_mean_p3 +
+                                devc->mstatus.ch1_acc_mean + devc->mstatus.ch1_acc_mean_p1 +
+                                devc->mstatus.ch1_acc_mean_p2 + devc->mstatus.ch1_acc_mean_p3) / 8.0;
+
+                    acc_skew[0] = devc->mstatus.ch0_acc_mean / acc_mean - 1;
+                    acc_skew[1] = devc->mstatus.ch0_acc_mean_p1 / acc_mean - 1;
+                    acc_skew[2] = devc->mstatus.ch0_acc_mean_p2 / acc_mean - 1;
+                    acc_skew[3] = devc->mstatus.ch0_acc_mean_p3 / acc_mean - 1;
+                    acc_skew[4] = devc->mstatus.ch1_acc_mean / acc_mean - 1;
+                    acc_skew[5] = devc->mstatus.ch1_acc_mean_p1 / acc_mean - 1;
+                    acc_skew[6] = devc->mstatus.ch1_acc_mean_p2 / acc_mean - 1;
+                    acc_skew[7] = devc->mstatus.ch1_acc_mean_p3 / acc_mean - 1;
+                    acc_max_skew = fabs(acc_skew[0]);
+                    for (int i=1; i <8; i++)
+                        acc_max_skew = max(acc_max_skew, fabs(acc_skew[i]));
+                    if ((acc_max_skew > MAX_ACC_VARIANCE) && (dsl_probe_fgain_inrange(probe0, TRUE, acc_skew) ||
+                                                              dsl_probe_fgain_inrange(probe1, TRUE, acc_skew))) {
+                        devc->zero_pcnt = 0*zero_interval+1;
+
+                        dsl_probe_cali_fgain(devc, probe0, acc_mean, TRUE, FALSE);
+                        dsl_probe_cali_fgain(devc, probe1, acc_mean, TRUE, FALSE);
+
+                        dsl_config_adc_fgain(sdi, 0, probe0->cali_comb_fgain0, probe0->cali_comb_fgain1);
+                        dsl_config_adc_fgain(sdi, 1, probe0->cali_comb_fgain2, probe0->cali_comb_fgain3);
+                        dsl_config_adc_fgain(sdi, 2, probe1->cali_comb_fgain0, probe1->cali_comb_fgain1);
+                        dsl_config_adc_fgain(sdi, 3, probe1->cali_comb_fgain2, probe1->cali_comb_fgain3);
+                    } else {
+                        if (acc_max_skew <= MAX_ACC_VARIANCE) {
+                            devc->zero_comb_fgain = FALSE;
+                            devc->zero_branch = FALSE;
+                        } else {
+                            devc->zero_pcnt = 0*zero_interval;
+                            dsl_skew_fpga_fgain(sdi, TRUE, acc_skew);
+                        }
+                    }
+                }
+            }
+            end_cnt = branch_done_cnt*zero_interval + 1;
+        } else {
+            if (devc->zero_pcnt == 0*zero_interval+1) {
+                ret = dsl_wr_reg(sdi, COMB_ADDR+6, 0b1101);
+                wr_cmd.header.dest = DSL_CTL_DSO_EN1;
+                wr_cmd.data[0] = (uint8_t)~bmCH_CH1;
+                wr_cmd.header.size = 1;
+                ret = command_ctl_wr(hdl, wr_cmd);
+
+                probe0->zero_offset = offset_top;
+                ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe0, SR_CONF_PROBE_OFFSET));
+            } else if (devc->zero_pcnt == 1*zero_interval) {
+                probe0->comb_diff_top = ((devc->mstatus.ch0_acc_mean * 2.0 - devc->mstatus.ch1_acc_mean * 2.0) / devc->limit_samples);
+                probe0->zero_offset = offset_bom;
+                ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe0, SR_CONF_PROBE_OFFSET));
+            } else if (devc->zero_pcnt == 2*zero_interval) {
+                probe0->comb_diff_bom = ((devc->mstatus.ch0_acc_mean * 2.0 - devc->mstatus.ch1_acc_mean * 2.0) / devc->limit_samples);
+            }
+
+            if (devc->zero_pcnt == 2*zero_interval+1) {
+                ret = dsl_wr_reg(sdi, COMB_ADDR+6, 0b1110);
+                wr_cmd.header.dest = DSL_CTL_DSO_EN1;
+                wr_cmd.data[0] = bmCH_CH1;
+                wr_cmd.header.size = 1;
+                ret = command_ctl_wr(hdl, wr_cmd);
+                wr_cmd.header.dest = DSL_CTL_DSO_EN0;
+                wr_cmd.data[0] = (uint8_t)~bmCH_CH0;
+                wr_cmd.header.size = 1;
+                ret = command_ctl_wr(hdl, wr_cmd);
+
+                probe1->zero_offset = offset_top;
+                ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe1, SR_CONF_PROBE_OFFSET));
+            } else if (devc->zero_pcnt == 3*zero_interval) {
+                probe1->comb_diff_top = ((devc->mstatus.ch1_acc_mean * 2.0 - devc->mstatus.ch0_acc_mean * 2.0) / devc->limit_samples);
+                probe1->zero_offset = offset_bom;
+                ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe1, SR_CONF_PROBE_OFFSET));
+            } else if (devc->zero_pcnt == 4*zero_interval) {
+                probe1->comb_diff_bom = ((devc->mstatus.ch1_acc_mean * 2.0 - devc->mstatus.ch0_acc_mean * 2.0) / devc->limit_samples);
+            }
+
+            end_cnt = 4*zero_interval+1;
+        }
+
+        if (ret == SR_OK)
+            devc->zero_pcnt++;
+
+        if (devc->zero_pcnt == end_cnt) {
+            for(l = sdi->channels; l; l = l->next) {
+                struct sr_channel *probe = (struct sr_channel *)l->data;
+                probe->vdiv = vdiv_back[probe->index];
+                ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe, SR_CONF_PROBE_VDIV));
+
+                // vgain tunning
+                if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_AUTO_VGAIN) {
+                    if (probe->vga_ptr != NULL) {
+                        for (uint16_t i = 0; devc->profile->dev_caps.vdivs[i]; i++) {
+                            for (uint16_t j = 0; j < ARRAY_SIZE(vga_defaults); j++) {
+                                if (vga_defaults[j].id == devc->profile->dev_caps.vga_id &&
+                                    vga_defaults[j].key == devc->profile->dev_caps.vdivs[i]) {
+                                    const int64_t vgain_delta = probe->vpos_trans > devc->profile->dev_caps.default_pwmtrans ?
+                                                ((int64_t)(probe->vpos_trans - devc->profile->dev_caps.default_pwmtrans) << 8) :
+                                                (((int64_t)(probe->vpos_trans - devc->profile->dev_caps.default_pwmtrans) << 7) & 0xFFFFFF00);
+                                    (probe->vga_ptr+i)->vgain = vga_defaults[j].vgain + vgain_delta;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            ret = dsl_wr_reg(sdi, COMB_ADDR+6, 0b0011);
+            wr_cmd.header.dest = DSL_CTL_DSO_EN0;
+            wr_cmd.data[0] = bmCH_CH0;
+            wr_cmd.header.size = 1;
+            ret = command_ctl_wr(hdl, wr_cmd);
+            wr_cmd.header.dest = DSL_CTL_DSO_EN1;
+            wr_cmd.data[0] = bmCH_CH1;
+            wr_cmd.header.size = 1;
+            ret = command_ctl_wr(hdl, wr_cmd);
+
+            devc->zero = FALSE;
+            warm_done = FALSE;
+            trans_fix_done = FALSE;
+            mid_zero_done = FALSE;
+            vdiv_back[0] = 0;
+            vdiv_back[1] = 0;
+            dso_init(sdi);
+        }
+    }
+
+    return ret;
 }
 
 static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
@@ -651,9 +1064,9 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
             *data = g_variant_new_uint64(dso_vga(ch)>>8);
             break;
         case SR_CONF_PROBE_COMB_COMP_EN:
-            if (!sdi || !ch)
+            if (!sdi)
                 return SR_ERR;
-            *data = g_variant_new_boolean(devc->profile->dev_caps.feature_caps & CAPS_FEATURE_HMCAD1511);
+            *data = g_variant_new_boolean((devc->profile->dev_caps.feature_caps & CAPS_FEATURE_HMCAD1511) != 0);
             break;
         case SR_CONF_PROBE_COMB_COMP:
             if (!sdi || !ch)
@@ -1048,7 +1461,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             for(l = sdi->channels; l; l = l->next) {
                 struct sr_channel *probe = (struct sr_channel *)l->data;
                 probe->vpos_trans = devc->profile->dev_caps.default_pwmtrans;
-                probe->comb_comp = devc->profile->dev_caps.default_comb_comp;
+                //probe->comb_comp = devc->profile->dev_caps.default_comb_comp;
+                //probe->digi_fgain = 0;
                 if (probe->vga_ptr != NULL) {
                     for (i = 0; devc->profile->dev_caps.vdivs[i]; i++) {
                         for (j = 0; j < ARRAY_SIZE(vga_defaults); j++) {
@@ -1064,6 +1478,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                     }
                 }
             }  
+        } else {
+            dso_zero(sdi, TRUE);
         }
     } else if (id == SR_CONF_ZERO_DEFAULT) {
         unsigned int i, j;
@@ -1071,6 +1487,15 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             struct sr_channel *probe = (struct sr_channel *)l->data;
             probe->vpos_trans = devc->profile->dev_caps.default_pwmtrans;
             probe->comb_comp = devc->profile->dev_caps.default_comb_comp;
+            probe->digi_fgain = 0;
+            probe->cali_fgain0 = 1;
+            probe->cali_fgain1 = 1;
+            probe->cali_fgain2 = 1;
+            probe->cali_fgain3 = 1;
+            probe->cali_comb_fgain0 = 1;
+            probe->cali_comb_fgain1 = 1;
+            probe->cali_comb_fgain2 = 1;
+            probe->cali_comb_fgain3 = 1;
             if (probe->vga_ptr != NULL) {
                 for (i = 0; devc->profile->dev_caps.vdivs[i]; i++) {
                     for (j = 0; j < ARRAY_SIZE(vga_defaults); j++) {
@@ -1119,6 +1544,16 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 *(preoff_ptr+2*i+2) = (probe->vpos_trans&0x00FF);
                 *(preoff_ptr+2*i+3) = (probe->vpos_trans>>8);
                 *(preoff_ptr+2*i+4) = probe->comb_comp;
+                *(preoff_ptr+2*i+5) = (probe->digi_fgain&0x00FF);
+                *(preoff_ptr+2*i+6) = (probe->digi_fgain>>8);
+                *(preoff_ptr+2*i+7) = dsl_adc_fgain2code(probe->cali_fgain0);
+                *(preoff_ptr+2*i+8) = dsl_adc_fgain2code(probe->cali_fgain1);
+                *(preoff_ptr+2*i+9) = dsl_adc_fgain2code(probe->cali_fgain2);
+                *(preoff_ptr+2*i+10) = dsl_adc_fgain2code(probe->cali_fgain3);
+                *(preoff_ptr+2*i+11) = dsl_adc_fgain2code(probe->cali_comb_fgain0);
+                *(preoff_ptr+2*i+12) = dsl_adc_fgain2code(probe->cali_comb_fgain1);
+                *(preoff_ptr+2*i+13) = dsl_adc_fgain2code(probe->cali_comb_fgain2);
+                *(preoff_ptr+2*i+14) = dsl_adc_fgain2code(probe->cali_comb_fgain3);
 
                 vga_info.vga_addr = zero_info.zero_addr + sizeof(struct cmd_zero_info);
                 uint16_t *vgain_ptr = &vga_info.vga0;
@@ -1129,6 +1564,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 if (ret == SR_OK) {
                     if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_SEEP)
                         real_zero_addr = zero_info.zero_addr;
+                    else if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_FLASH)
+                        real_zero_addr = probe->index * DSO_ZERO_PAGE;
                     else
                         real_zero_addr = (zero_big_addr << 8) + zero_info.zero_addr;
                     ret = dsl_wr_nvm(sdi, (unsigned char *)&zero_info, real_zero_addr, sizeof(struct cmd_zero_info));
@@ -1136,6 +1573,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 if (ret == SR_OK) {
                     if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_SEEP)
                         real_zero_addr = vga_info.vga_addr;
+                    else if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_FLASH)
+                        real_zero_addr = probe->index * DSO_ZERO_PAGE + 1;
                     else
                         real_zero_addr = (zero_big_addr << 8) + vga_info.vga_addr;
                     ret = dsl_wr_nvm(sdi, (unsigned char *)&vga_info, real_zero_addr, sizeof(struct cmd_vga_info));
@@ -1206,6 +1645,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     } else if (id == SR_CONF_PROBE_COMB_COMP) {
         ch->comb_comp = g_variant_get_int16(data);
         ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, ch, SR_CONF_PROBE_VDIV));
+        ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, ch, SR_CONF_PROBE_OFFSET));
         if (ret == SR_OK)
             sr_dbg("%s: setting COMB_COMP of channel %d to %d mv",
                 __func__, ch->index, ch->comb_comp);
@@ -1256,269 +1696,6 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
     }
 
     return SR_OK;
-}
-
-static int dso_zero(const struct sr_dev_inst *sdi)
-{
-    struct DSL_context *devc = sdi->priv;
-    GSList *l;
-    int ret;
-    struct sr_usb_dev_inst *usb;
-    struct libusb_device_handle *hdl;
-    struct ctl_wr_cmd wr_cmd;
-
-    static uint64_t vdiv_back[2];
-    struct sr_channel *probe0 = NULL, *probe1 = NULL;
-    const uint16_t offset_top = 20;
-    const uint16_t offset_bom = ((1 << channel_modes[devc->ch_mode].unit_bits) - 1) - offset_top;
-    const uint16_t offset_mid = (1 << (channel_modes[devc->ch_mode].unit_bits - 1));
-    const uint16_t max_trans = ((1 << 10) - 1);
-    const uint8_t value_min = 0;
-    const uint8_t value_max = (1 << channel_modes[devc->ch_mode].unit_bits) - 1;
-
-    const int zero_interval = 10;
-    const double margin_pass = 0.3;
-    int end_cnt = 0;
-    static gboolean trans_fix_done = FALSE;
-    static gboolean mid_zero_done = FALSE;
-    static double margin[2];
-    //static double offset[2];
-
-    usb = sdi->conn;
-    hdl = usb->devhdl;
-    for(l = sdi->channels; l; l = l->next) {
-        struct sr_channel *probe = (struct sr_channel *)l->data;
-        if (probe->index == 0)
-            probe0 = probe;
-        if (probe->index == 1)
-            probe1 = probe;
-        vdiv_back[probe->index] = probe->vdiv;
-    }
-
-    if (!trans_fix_done && devc->zero_stage == 0) {
-        ret = SR_OK;
-        if (!(devc->profile->dev_caps.feature_caps & CAPS_FEATURE_PREOFF)) {
-            if (devc->zero_pcnt == 0*zero_interval) {
-                for(l = sdi->channels; l; l = l->next) {
-                    struct sr_channel *probe = (struct sr_channel *)l->data;
-                    probe->zero_offset = offset_bom;
-                    ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe, SR_CONF_PROBE_OFFSET));
-                }
-            }
-            if (devc->zero_pcnt == 1*zero_interval) {
-                margin[0] = (devc->mstatus.ch0_acc_mean * 1.0 / devc->limit_samples);
-                margin[1] = (devc->mstatus.ch1_acc_mean * 1.0 / devc->limit_samples);
-                if (margin[0] >= value_max || margin[1] >= value_max)
-                    ret = SR_ERR;
-            }
-            if (devc->zero_pcnt == 1*zero_interval+1) {
-                for(l = sdi->channels; l; l = l->next) {
-                    struct sr_channel *probe = (struct sr_channel *)l->data;
-                    probe->zero_offset = offset_top;
-                    ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe, SR_CONF_PROBE_OFFSET));
-                }
-            }
-            if (devc->zero_pcnt == 2*zero_interval) {
-                double top0 = (devc->mstatus.ch0_acc_mean * 1.0 / devc->limit_samples);
-                double top1 = (devc->mstatus.ch1_acc_mean * 1.0 / devc->limit_samples);
-                if (top0 <= value_min || top1 <= value_min) {
-                    ret = SR_ERR;
-                } else {
-                    margin[0] -= top0;
-                    margin[1] -= top1;
-                    for(l = sdi->channels; l; l = l->next) {
-                        struct sr_channel *probe = (struct sr_channel *)l->data;
-                        margin[probe->index] -= (offset_bom - offset_top);
-                        if (fabs(margin[probe->index]) > margin_pass) {
-                            margin[probe->index] = margin[probe->index] > 0 ? ceil(margin[probe->index]) : floor(margin[probe->index]);
-                            probe->vpos_trans = min(probe->vpos_trans - margin[probe->index], max_trans);
-                            ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe0, SR_CONF_PROBE_OFFSET));
-                        } else {
-                            margin[probe->index] = 0;
-                        }
-                    }
-                    trans_fix_done = (margin[0] == 0) && (margin[1] == 0);
-                    devc->zero_pcnt = trans_fix_done ? 0*zero_interval : 0*zero_interval-1;
-                }
-            }
-        } else {
-            trans_fix_done = TRUE;
-        }
-
-        if (!trans_fix_done && ret == SR_OK)
-            devc->zero_pcnt++;
-    } else if (!mid_zero_done) {
-        if (devc->zero_pcnt == 0) {
-            for(l = sdi->channels; l; l = l->next) {
-                struct sr_channel *probe = (struct sr_channel *)l->data;
-                probe->vdiv = (probe->vga_ptr+devc->zero_stage)->key;
-                if (probe->vdiv == 0) {
-                    probe->vdiv = vdiv_back[probe->index];
-                    mid_zero_done = TRUE;
-                    break;
-                }
-                ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe, SR_CONF_PROBE_VDIV));
-                probe->zero_offset = offset_mid;
-                ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe, SR_CONF_PROBE_OFFSET));
-                // must after offset setting
-                probe->vdiv = vdiv_back[probe->index];
-            }
-        }
-
-        if (devc->zero_pcnt == zero_interval) {
-            margin[0] = offset_mid - (devc->mstatus.ch0_acc_mean * 1.0 / devc->limit_samples);
-            margin[1] = offset_mid - (devc->mstatus.ch1_acc_mean * 1.0 / devc->limit_samples);
-            if (fabs(margin[0]) < margin_pass && fabs(margin[1]) < margin_pass) {
-                devc->zero_stage++;
-            } else {
-                if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_PREOFF) {
-                    for(l = sdi->channels; l; l = l->next) {
-                        struct sr_channel *probe = (struct sr_channel *)l->data;
-                        double trans_coarse = ((probe->vga_ptr+devc->zero_stage)->key < 500) ? (probe->vpos_trans >> 8)/DSCOPE_TRANS_CMULTI : (probe->vpos_trans >> 8);
-                        double trans_fine = ((probe->vga_ptr+devc->zero_stage)->key < 500) ? (probe->vpos_trans & 0x00ff) / 1000.0 : (probe->vpos_trans & 0x00ff) / DSCOPE_TRANS_FMULTI;
-
-                        double voltage_margin = margin[probe->index] * (probe->vga_ptr+devc->zero_stage)->key * 10 / 255.0;
-                        uint16_t last_preoff = (probe->vga_ptr+devc->zero_stage)->preoff;
-                        int preoff_coarse = floor(voltage_margin / trans_coarse + 0.5);
-                        int preoff_fine = floor(-(voltage_margin - preoff_coarse*trans_coarse)/trans_fine + 0.5);
-                        preoff_coarse = (last_preoff >> 10) + preoff_coarse;
-                        preoff_fine = (last_preoff&0x03ff) + preoff_fine;
-                        (probe->vga_ptr+devc->zero_stage)->preoff = (preoff_coarse << 10) + preoff_fine;
-                    }
-                } else {
-                    for(l = sdi->channels; l; l = l->next) {
-                        struct sr_channel *probe = (struct sr_channel *)l->data;
-                        (probe->vga_ptr+devc->zero_stage)->preoff += margin[probe->index] > 0 ? ceil(margin[probe->index]) : floor(margin[probe->index]);
-                    }
-                }
-            }
-            devc->zero_pcnt = 0;
-        } else if (!mid_zero_done) {
-            devc->zero_pcnt++;
-        }
-    } else {
-        ret = SR_OK;
-        end_cnt = 0*zero_interval + 1;
-        if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_HMCAD1511) {
-//            if (devc->zero_pcnt == 0*zero_interval+1) {
-//                for(l = sdi->channels; l; l = l->next) {
-//                    struct sr_channel *probe = (struct sr_channel *)l->data;
-//                    probe->zero_offset = offset_bom;
-//                    ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe, SR_CONF_PROBE_OFFSET));
-//                }
-//            }
-//            if (devc->zero_pcnt == 1*zero_interval) {
-//                offset[0] = (devc->mstatus.ch0_acc_mean * 1.0 / devc->limit_samples);
-//                offset[1] = (devc->mstatus.ch1_acc_mean * 1.0 / devc->limit_samples);
-//                if (margin[0] >= value_max || margin[1] >= value_max)
-//                    ret = SR_ERR;
-//            }
-//            if (devc->zero_pcnt == 1*zero_interval+1) {
-//                dsl_config_adc(sdi, adc_single_ch0);
-//                probe0->enabled = TRUE;
-//                probe1->enabled = FALSE;
-
-//                probe0->zero_offset = offset_bom;
-//                ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe0, SR_CONF_PROBE_OFFSET));
-//            }
-//            if (devc->zero_pcnt == 2*zero_interval) {
-//                margin[0] = offset[0] - (devc->mstatus.ch0_acc_mean * 1.0 / devc->limit_samples);
-//                if (fabs(margin[0]) > margin_pass) {
-//                    probe0->comb_comp -= margin[0] > 0 ? ceil(margin[0]) : floor(margin[0]);
-//                    ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe0, SR_CONF_PROBE_OFFSET));
-//                    devc->zero_pcnt = 1*zero_interval+1;
-//                }
-//            }
-//            if (devc->zero_pcnt == 2*zero_interval+1) {
-//                dsl_config_adc(sdi, adc_single_ch3);
-//                probe0->enabled = FALSE;
-//                probe1->enabled = TRUE;
-
-//                probe1->zero_offset = offset_bom;
-//                ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe1, SR_CONF_PROBE_OFFSET));
-//            }
-//            if (devc->zero_pcnt == 3*zero_interval) {
-//                margin[1] = offset[1] - (devc->mstatus.ch1_acc_mean * 1.0 / devc->limit_samples);
-//                if (fabs(margin[1]) > margin_pass) {
-//                    probe1->comb_comp -= margin[1] > 0 ? ceil(margin[1]) : floor(margin[1]);
-//                    ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe1, SR_CONF_PROBE_OFFSET));
-//                    devc->zero_pcnt = 2*zero_interval+1;
-//                }
-//            }
-//            end_cnt = 3*zero_interval + 1;
-        } else {
-            if (devc->zero_pcnt == 0*zero_interval+1) {
-                ret = dsl_wr_reg(sdi, COMB_ADDR+6, 0b1101);
-                wr_cmd.header.dest = DSL_CTL_DSO_EN1;
-                wr_cmd.data[0] = (uint8_t)~bmCH_CH1;
-                wr_cmd.header.size = 1;
-                ret = command_ctl_wr(hdl, wr_cmd);
-
-                probe0->zero_offset = offset_top;
-                ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe0, SR_CONF_PROBE_OFFSET));
-            } else if (devc->zero_pcnt == 1*zero_interval) {
-                probe0->comb_diff_top = ((devc->mstatus.ch0_acc_mean * 2.0 - devc->mstatus.ch1_acc_mean * 2.0) / devc->limit_samples);
-                probe0->zero_offset = offset_bom;
-                ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe0, SR_CONF_PROBE_OFFSET));
-            } else if (devc->zero_pcnt == 2*zero_interval) {
-                probe0->comb_diff_bom = ((devc->mstatus.ch0_acc_mean * 2.0 - devc->mstatus.ch1_acc_mean * 2.0) / devc->limit_samples);
-            }
-
-            if (devc->zero_pcnt == 2*zero_interval+1) {
-                ret = dsl_wr_reg(sdi, COMB_ADDR+6, 0b1110);
-                wr_cmd.header.dest = DSL_CTL_DSO_EN1;
-                wr_cmd.data[0] = bmCH_CH1;
-                wr_cmd.header.size = 1;
-                ret = command_ctl_wr(hdl, wr_cmd);
-                wr_cmd.header.dest = DSL_CTL_DSO_EN0;
-                wr_cmd.data[0] = (uint8_t)~bmCH_CH0;
-                wr_cmd.header.size = 1;
-                ret = command_ctl_wr(hdl, wr_cmd);
-
-                probe1->zero_offset = offset_top;
-                ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe1, SR_CONF_PROBE_OFFSET));
-            } else if (devc->zero_pcnt == 3*zero_interval) {
-                probe1->comb_diff_top = ((devc->mstatus.ch1_acc_mean * 2.0 - devc->mstatus.ch0_acc_mean * 2.0) / devc->limit_samples);
-                probe1->zero_offset = offset_bom;
-                ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe1, SR_CONF_PROBE_OFFSET));
-            } else if (devc->zero_pcnt == 4*zero_interval) {
-                probe1->comb_diff_bom = ((devc->mstatus.ch1_acc_mean * 2.0 - devc->mstatus.ch0_acc_mean * 2.0) / devc->limit_samples);
-            }
-
-            end_cnt = 4*zero_interval+1;
-        }
-
-        if (ret == SR_OK)
-            devc->zero_pcnt++;
-
-        if (devc->zero_pcnt == end_cnt) {
-            for(l = sdi->channels; l; l = l->next) {
-                struct sr_channel *probe = (struct sr_channel *)l->data;
-                probe->vdiv = vdiv_back[probe->index];
-//                if (!(devc->profile->dev_caps.feature_caps & CAPS_FEATURE_HMCAD1511))
-//                    probe->comb_comp = ((1 << channel_modes[devc->ch_mode].unit_bits) - 1) * 0.7 * 2 /
-//                                       min(abs(probe->comb_diff_top), abs(probe->comb_diff_bom));
-
-            }
-
-            ret = dsl_wr_reg(sdi, COMB_ADDR+6, 0b0011);
-            wr_cmd.header.dest = DSL_CTL_DSO_EN0;
-            wr_cmd.data[0] = bmCH_CH0;
-            wr_cmd.header.size = 1;
-            ret = command_ctl_wr(hdl, wr_cmd);
-            wr_cmd.header.dest = DSL_CTL_DSO_EN1;
-            wr_cmd.data[0] = bmCH_CH1;
-            wr_cmd.header.size = 1;
-            ret = command_ctl_wr(hdl, wr_cmd);
-
-            devc->zero = FALSE;
-            trans_fix_done = FALSE;
-            mid_zero_done = FALSE;
-            dso_init(sdi);
-        }
-    }
-
-    return ret;
 }
 
 static int dso_tune(const struct sr_dev_inst *sdi)
@@ -1629,6 +1806,7 @@ static int dev_open(struct sr_dev_inst *sdi)
 static int dev_close(struct sr_dev_inst *sdi)
 {
     int ret;
+    dso_zero(sdi, TRUE);
     ret = dsl_dev_close(sdi);
     return ret;
 }
@@ -1665,21 +1843,43 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
     struct timeval tv;
     struct drv_context *drvc;
     struct DSL_context *devc;
+    struct ctl_rd_cmd rd_cmd;
+    struct sr_usb_dev_inst *usb;
+    int ret;
 
     (void)fd;
     (void)revents;
 
     drvc = di->priv;
     devc = sdi->priv;
+    usb = sdi->conn;
 
     tv.tv_sec = tv.tv_usec = 0;
     libusb_handle_events_timeout_completed(drvc->sr_ctx->libusb_ctx, &tv, &completed);
 
+    if (devc->trf_completed)
+        devc->empty_poll_count = 0;
+    else
+        devc->empty_poll_count++;
+
     if (devc->zero && devc->trf_completed) {
-        dso_zero(sdi);
+        dso_zero(sdi, FALSE);
     }
     if (devc->tune && devc->trf_completed) {
         dso_tune(sdi);
+    }
+
+    // progress check
+    if ((devc->empty_poll_count > MAX_EMPTY_POLL) && (devc->status == DSL_START)) {
+        devc->mstatus.captured_cnt0 = 0;
+        rd_cmd.header.dest = DSL_CTL_I2C_STATUS;
+        rd_cmd.header.offset = 0;
+        rd_cmd.header.size = 4;
+        rd_cmd.data = (unsigned char*)&devc->mstatus;
+        if ((ret = command_ctl_rd(usb->devhdl, rd_cmd)) != SR_OK)
+            sr_err("Failed to get progress infos.");
+
+        devc->empty_poll_count = 0;
     }
 
     if (devc->status == DSL_FINISH) {
@@ -1714,12 +1914,18 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
     devc->cb_data = sdi;
     devc->num_samples = 0;
     devc->empty_transfer_count = 0;
+    devc->empty_poll_count = 0;
     devc->status = DSL_INIT;
     devc->num_transfers = 0;
     devc->submitted_transfers = 0;
-    devc->actual_samples = (devc->limit_samples + 1023ULL) & ~1023ULL;
+    devc->actual_samples = (devc->limit_samples + SAMPLES_ALIGN) & ~SAMPLES_ALIGN;
 	devc->abort = FALSE;
     devc->mstatus_valid = FALSE;
+    devc->mstatus.captured_cnt0 = 0;
+    devc->mstatus.captured_cnt1 = 0;
+    devc->mstatus.captured_cnt2 = 0;
+    devc->mstatus.captured_cnt3 = 0;
+    devc->mstatus.trig_hit = 0;
     devc->overflow = FALSE;
     devc->instant_tail_bytes = dsl_header_size(devc);
 
@@ -1743,19 +1949,27 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
     if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_HMCAD1511) {
         if (dsl_en_ch_num(sdi) == 2) {
             dsl_config_adc(sdi, adc_dual_ch03);
+            for (l = sdi->channels; l; l = l->next) {
+                struct sr_channel *probe = (struct sr_channel *)l->data;
+                dsl_config_adc_fgain(sdi, probe->index*2 + 0, probe->cali_fgain0, probe->cali_fgain1);
+                dsl_config_adc_fgain(sdi, probe->index*2 + 1, probe->cali_fgain2, probe->cali_fgain3);
+            }
         } else if (dsl_en_ch_num(sdi) == 1) {
             for (l = sdi->channels; l; l = l->next) {
                 struct sr_channel *probe = (struct sr_channel *)l->data;
                 if (probe->enabled && probe->index == 0) {
                     dsl_config_adc(sdi, adc_single_ch0);
-                    break;
                 } else if (probe->enabled && probe->index == 1) {
                     dsl_config_adc(sdi, adc_single_ch3);
-                    break;
                 }
             }
+            for (l = sdi->channels; l; l = l->next) {
+                struct sr_channel *probe = (struct sr_channel *)l->data;
+                dsl_config_adc_fgain(sdi, probe->index*2 + 0, probe->cali_comb_fgain0, probe->cali_comb_fgain1);
+                dsl_config_adc_fgain(sdi, probe->index*2 + 1, probe->cali_comb_fgain2, probe->cali_comb_fgain3);
+            }
         }
-        //dsl_config_adc(sdi, adc_power_up);
+        dsl_config_fpga_fgain(sdi);
     }
     if ((ret = dsl_fpga_arm(sdi)) != SR_OK) {
         sr_err("%s: Arm FPGA failed!", __func__);
@@ -1769,12 +1983,14 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
             return ret;
         }
         devc->zero_stage = 0;
+        devc->zero_comb_fgain = FALSE;
+        devc->zero_branch = FALSE;
     }
 
     /*
      * settings must be updated before acquisition
      */
-    if (sdi->mode == DSO) {
+    if (sdi->mode != LOGIC) {
         devc->trigger_hpos =  devc->trigger_hrate * dsl_en_ch_num(sdi) * devc->limit_samples / 200.0;
         ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, NULL, SR_CONF_HORIZ_TRIGGERPOS));
         if (ret != SR_OK)
@@ -1788,6 +2004,7 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
             ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe, SR_CONF_PROBE_OFFSET));
             if (ret != SR_OK)
                 sr_err("%s: Set OFFSET of channel %d command failed!", __func__, probe->index);
+            probe->hw_offset = probe->offset;
         }
     }
 
@@ -1837,9 +2054,9 @@ static int dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data)
     return ret;
 }
 
-static int dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, gboolean prg, int begin, int end)
+static int dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, gboolean prg)
 {
-    int ret = dsl_dev_status_get(sdi, status, prg, begin, end);
+    int ret = dsl_dev_status_get(sdi, status, prg);
     return ret;
 }
 

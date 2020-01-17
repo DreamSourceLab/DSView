@@ -118,6 +118,12 @@ public:
     int64_t offset() const;
 	int v_offset() const;
 
+    /**
+     * trigger position fix
+     */
+    double trig_hoff() const;
+    void set_trig_hoff(double hoff);
+
     int64_t get_min_offset();
     int64_t get_max_offset();
 
@@ -226,6 +232,12 @@ public:
      */
     bool back_ready() const;
     void set_back(bool ready);
+
+    /*
+     * untils
+     */
+    double index2pixel(uint64_t index, bool has_hoff = true);
+    uint64_t pixel2index(double pixel);
 
 signals:
 	void hover_point_changed();
@@ -350,6 +362,9 @@ private:
     int _spanY;
     int _signalHeight;
     bool _updating_scroll;
+
+    // trigger position fix
+    double _trig_hoff;
 
 	bool _show_cursors;
     std::list<Cursor*> _cursorList;

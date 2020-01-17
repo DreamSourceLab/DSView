@@ -54,6 +54,10 @@
 #include "device/device.h"
 #include "device/file.h"
 
+#include "data/logicsnapshot.h"
+#include "data/dsosnapshot.h"
+#include "data/analogsnapshot.h"
+
 #include "dialogs/about.h"
 #include "dialogs/deviceoptions.h"
 #include "dialogs/storeprogress.h"
@@ -100,6 +104,7 @@ MainWindow::MainWindow(DeviceManager &device_manager,
     QMainWindow(parent),
     _device_manager(device_manager),
     _session(device_manager),
+    _hot_detach(false),
     _msg(NULL)
 {
 	setup_ui();
@@ -460,8 +465,8 @@ void MainWindow::update_device_list()
                                                            "Please replug it into a USB 3.0 port."));
         }
     }
-
 }
+
 
 void MainWindow::reload()
 {
@@ -534,7 +539,38 @@ void MainWindow::device_detach()
 
     session_save();
     _view->hide_calibration();
+    if (_session.get_device()->dev_inst()->mode != DSO &&
+        strncmp(_session.get_device()->name().toLocal8Bit(), "virtual", 7)) {
+        const boost::shared_ptr<data::Snapshot> logic_snapshot(_session.get_snapshot(SR_CHANNEL_LOGIC));
+        assert(logic_snapshot);
+        const boost::shared_ptr<data::Snapshot> analog_snapshot(_session.get_snapshot(SR_CHANNEL_ANALOG));
+        assert(analog_snapshot);
 
+        if (!logic_snapshot->empty() || !analog_snapshot->empty()) {
+            dialogs::DSMessageBox msg(this);
+            _msg = &msg;
+            msg.mBox()->setText(tr("Hardware Detached"));
+            msg.mBox()->setInformativeText(tr("Save captured data?"));
+            msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
+            msg.mBox()->addButton(tr("Cancel"), QMessageBox::RejectRole);
+            msg.mBox()->setIcon(QMessageBox::Warning);
+            if (msg.exec())
+                on_save();
+            _msg = NULL;
+        }
+    }
+
+    _hot_detach = true;
+    if (!_session.get_saving())
+        device_detach_post();
+}
+
+void MainWindow::device_detach_post()
+{
+    if (!_hot_detach)
+        return;
+
+    _hot_detach = false;
     struct sr_dev_driver **const drivers = sr_driver_list();
     struct sr_dev_driver **driver;
     for (driver = drivers; *driver; driver++)
@@ -839,6 +875,7 @@ void MainWindow::on_save()
 //    dialogs::RegionOptions *regionDlg = new dialogs::RegionOptions(_view, _session, this);
 //    regionDlg->exec();
 
+    _session.set_saving(true);
     QString session_file;
     QDir dir;
     #if QT_VERSION >= 0x050400
@@ -854,6 +891,7 @@ void MainWindow::on_save()
     }
 
     StoreProgress *dlg = new StoreProgress(_session, this);
+    connect(dlg, SIGNAL(save_done()), this, SLOT(device_detach_post()));
     dlg->save_run(session_file);
 }
 

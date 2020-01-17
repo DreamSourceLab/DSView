@@ -54,6 +54,7 @@
 #define COMB_ADDR 0x68
 #define EI2C_ADDR 0x60
 #define ADCC_ADDR 0x48
+#define HDL_VERSION_ADDR 0x04
 
 #define EI2C_CTR_OFF   0x2
 #define EI2C_RXR_OFF   0x3
@@ -137,6 +138,14 @@ struct cmd_zero_info {
     uint8_t trans0;
     uint8_t trans1;
     uint8_t comb_comp;
+    uint8_t fgain0_code;
+    uint8_t fgain1_code;
+    uint8_t fgain2_code;
+    uint8_t fgain3_code;
+    uint8_t comb_fgain0_code;
+    uint8_t comb_fgain1_code;
+    uint8_t comb_fgain2_code;
+    uint8_t comb_fgain3_code;
 };
 
 struct cmd_vga_info {

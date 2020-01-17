@@ -867,11 +867,9 @@ static int config_list(int key, GVariant **data,
 	return SR_OK;
 }
 
-static int dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, gboolean prg, int begin, int end)
+static int dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, gboolean prg)
 {
     (void)prg;
-    (void)begin;
-    (void)end;
 
     struct session_vdev *vdev;
 

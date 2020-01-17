@@ -23,6 +23,7 @@
 #ifndef DSVIEW_PV_SIGSESSION_H
 #define DSVIEW_PV_SIGSESSION_H
 
+#include <libsigrok4DSL/libsigrok.h>
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
@@ -46,7 +47,6 @@
 #include <QtConcurrent/QtConcurrent>
 #include <QJsonObject>
 
-#include <libsigrok4DSL/libsigrok.h>
 #include <libusb.h>
 
 #include "view/mathtrace.h"
@@ -102,7 +102,7 @@ private:
     static const int RepeatHoldDiv = 20;
 
 public:
-    static const int ViewTime = 50;
+    static const int FeedInterval = 50;
     static const int WaitShowTime = 500;
 
 public:
@@ -231,6 +231,7 @@ public:
     void math_disable();
 
     bool trigd() const;
+    uint8_t trigd_ch() const;
 
     boost::shared_ptr<data::Snapshot> get_snapshot(int type);
 
@@ -253,6 +254,12 @@ public:
     void set_save_end(uint64_t end);
     uint64_t get_save_start() const;
     uint64_t get_save_end() const;
+    bool get_saving() const;
+    void set_saving(bool saving);
+    void set_stop_scale(float scale);
+    float stop_scale() const;
+
+    void exit_capture();
 
 private:
 	void set_capture_state(capture_state state);
@@ -337,7 +344,7 @@ private:
     bool _hot_attach;
     bool _hot_detach;
 
-    QTimer _view_timer;
+    QTimer _feed_timer;
     int    _noData_cnt;
     bool _data_lock;
     bool _data_updated;
@@ -346,6 +353,7 @@ private:
     QDateTime _session_time;
     uint64_t _trigger_pos;
     bool _trigger_flag;
+    uint8_t _trigger_ch;
     bool _hw_replied;
 
     error_state _error;
@@ -360,8 +368,10 @@ private:
 
     uint64_t _save_start;
     uint64_t _save_end;
+    bool _saving;
 
     bool _dso_feed;
+    float _stop_scale;
 
 signals:
 	void capture_state_changed(int state);
@@ -413,6 +423,7 @@ public slots:
     void reload();
     void refresh(int holdtime);
     void stop_capture();
+    void check_update();
     // repeat
     void set_repeating(bool repeat);
     void set_map_zoom(int index);
@@ -422,8 +433,8 @@ public slots:
 private slots:
     void data_lock();
     void data_unlock();
-    void check_update();
     void nodata_timeout();
+    void feed_timeout();
     void repeat_update();
 
 private:

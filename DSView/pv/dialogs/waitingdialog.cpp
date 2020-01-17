@@ -170,8 +170,34 @@ void WaitingDialog::changeText()
     {
         tips->setText(tr("Waiting"));
         index = 0;
+        GVariant* gvar;
+        bool comb_comp_en = false;
+        bool zero_fgain = false;
 
-        GVariant* gvar = _dev_inst->get_config(NULL, NULL, _key);
+        gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_PROBE_COMB_COMP_EN);
+        if (gvar != NULL) {
+            comb_comp_en = g_variant_get_boolean(gvar);
+            g_variant_unref(gvar);
+            if (comb_comp_en) {
+                gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_ZERO_COMB_FGAIN);
+                if (gvar != NULL) {
+                    zero_fgain = g_variant_get_boolean(gvar);
+                    g_variant_unref(gvar);
+                    if (zero_fgain) {
+                        boost::shared_ptr<view::DsoSignal> dsoSig;
+                        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals())
+                        {
+                            if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)))
+                                dsoSig->set_enable(dsoSig->get_index() == 0);
+                        }
+                        boost::this_thread::sleep(boost::posix_time::millisec(100));
+                        _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO_COMB, g_variant_new_boolean(true));
+                    }
+                }
+            }
+        }
+
+        gvar = _dev_inst->get_config(NULL, NULL, _key);
         if (gvar != NULL) {
             bool zero = g_variant_get_boolean(gvar);
             g_variant_unref(gvar);

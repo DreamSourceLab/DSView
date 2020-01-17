@@ -90,6 +90,7 @@ View::View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget
 	_offset(0),
     _preOffset(0),
 	_updating_scroll(false),
+    _trig_hoff(0),
 	_show_cursors(false),
     _search_hit(false),
     _show_xcursors(false),
@@ -229,6 +230,16 @@ int64_t View::offset() const
 	return _offset;
 }
 
+double View::trig_hoff() const
+{
+    return _trig_hoff;
+}
+
+void View::set_trig_hoff(double hoff)
+{
+    _trig_hoff = hoff;
+}
+
 double View::get_minscale() const
 {
     return _minscale;
@@ -251,6 +262,7 @@ void View::capture_init()
         set_scale_offset(_maxscale, 0);
     status_clear();
     _trig_time_setted = false;
+    _trig_hoff = 0;
 }
 
 void View::zoom(double steps)
@@ -1273,6 +1285,26 @@ bool View::back_ready() const
 void View::set_back(bool ready)
 {
     _back_ready = ready;
+}
+
+double View::index2pixel(uint64_t index, bool has_hoff)
+{
+    const double samples_per_pixel = session().cur_snap_samplerate() * scale();
+    double pixels;
+    if (has_hoff)
+        pixels = index/samples_per_pixel - offset() + trig_hoff()/samples_per_pixel;
+    else
+        pixels = index/samples_per_pixel - offset();
+
+    return pixels;
+}
+
+uint64_t View::pixel2index(double pixel)
+{
+    const double samples_per_pixel = session().cur_snap_samplerate() * scale();
+    uint64_t index = (pixel + offset()) * samples_per_pixel - trig_hoff();
+
+    return index;
 }
 
 } // namespace view

@@ -72,6 +72,8 @@ class Decoder(srd.Decoder):
     options = (
         {'id': 'chip', 'desc': 'Chip type',
             'default': 'nrf24l01', 'values': ('nrf24l01', 'xn297')},
+        {'id': 'hex_display', 'desc': 'Display payload in Hex', 'default': 'yes',
+            'values': ('yes', 'no')},
     )
     annotations = (
         # Sent from the host to the chip.
@@ -250,12 +252,13 @@ class Decoder(srd.Decoder):
                 return c
 
         data = ''.join([escape(b) for b in data])
-        text = '{} = "{}"'.format(label, data)
+        text = '{} = "{}"'.format(label, data.strip())
         self.putp(pos, ann, text)
 
     def finish_command(self, pos):
         '''Decodes the remaining data bytes at position 'pos'.'''
 
+        always_hex = self.options['hex_display'] == 'yes'
         if self.cmd == 'R_REGISTER':
             self.decode_register(pos, self.ann_reg,
                                  self.dat, self.miso_bytes())
@@ -264,15 +267,15 @@ class Decoder(srd.Decoder):
                                  self.dat, self.mosi_bytes())
         elif self.cmd == 'R_RX_PAYLOAD':
             self.decode_mb_data(pos, self.ann_rx,
-                                self.miso_bytes(), 'RX payload', False)
+                                self.miso_bytes(), 'RX payload', always_hex)
         elif (self.cmd == 'W_TX_PAYLOAD' or
               self.cmd == 'W_TX_PAYLOAD_NOACK'):
             self.decode_mb_data(pos, self.ann_tx,
-                                self.mosi_bytes(), 'TX payload', False)
+                                self.mosi_bytes(), 'TX payload', always_hex)
         elif self.cmd == 'W_ACK_PAYLOAD':
             lbl = 'ACK payload for pipe {}'.format(self.dat)
             self.decode_mb_data(pos, self.ann_tx,
-                                self.mosi_bytes(), lbl, False)
+                                self.mosi_bytes(), lbl, always_hex)
         elif self.cmd == 'R_RX_PL_WID':
             msg = 'Payload width = {}'.format(self.mb[0][1])
             self.putp(pos, self.ann_reg, msg)

@@ -163,10 +163,8 @@ void DsoSnapshot::append_payload(const sr_datafeed_dso &dso)
         append_data(dso.data, dso.num_samples, _instant);
 
         // Generate the first mip-map from the data
-        //if (_envelope_en)
-        //    append_payload_to_envelope_levels(dso.samplerate_tog);
         if (_envelope_en)
-            append_payload_to_envelope_levels(true);
+            append_payload_to_envelope_levels(dso.samplerate_tog);
     }
 }
 
@@ -195,6 +193,7 @@ void DsoSnapshot::enable_envelope(bool enable)
 const uint8_t *DsoSnapshot::get_samples(
     int64_t start_sample, int64_t end_sample, uint16_t index) const
 {
+    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
     (void)end_sample;
 
 	assert(start_sample >= 0);

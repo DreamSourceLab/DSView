@@ -45,7 +45,7 @@ digits = {
 class Decoder(srd.Decoder):
     api_version = 3
     id = 'seven_segment'
-    name = '7-segment'
+    name = 'Segment-7'
     longname = '7-segment display'
     desc = '7-segment display protocol.'
     license = 'gplv2+'
@@ -91,7 +91,8 @@ class Decoder(srd.Decoder):
         return digits.get(pins, None)
 
     def decode(self):
-        oldpins = self.wait()
+        (s0, s1, s2, s3, s4, s5, s6, dp) = self.wait()
+        oldpins = (s0, s1, s2, s3, s4, s5, s6, dp)
 
         # Check if at least the 7 signals are present.
         if False in [p in (0, 1) for p in oldpins[:7]]:
@@ -108,7 +109,8 @@ class Decoder(srd.Decoder):
 
         while True:
             # Wait for any change.
-            pins = self.wait(conditions)
+            (s0, s1, s2, s3, s4, s5, s6, dp) = self.wait(conditions)
+            pins = (s0, s1, s2, s3, s4, s5, s6, dp)
 
             if self.options['polarity'] == 'common-anode':
                 # Invert all data lines if a common anode display is used.
