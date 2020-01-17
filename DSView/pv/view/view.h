@@ -130,7 +130,7 @@ public:
     void capture_init();
 
 	void zoom(double steps);
-	void zoom(double steps, int offset);
+    bool zoom(double steps, int offset);
 
 	/**
 	 * Sets the scale and offset.

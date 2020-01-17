@@ -264,7 +264,27 @@ void Header::wheelEvent(QWheelEvent *event)
         const vector< boost::shared_ptr<Trace> > traces(
             _view.get_traces(ALL_VIEW));
         // Vertical scrolling
-        double shift = event->delta() / 80.0;
+        double shift = 0;
+        #ifdef Q_OS_DARWIN
+        static bool active = true;
+        static int64_t last_time;
+        if (event->source() == Qt::MouseEventSynthesizedBySystem) {
+            if (active) {
+                last_time = QDateTime::currentMSecsSinceEpoch();
+                shift = event->delta() > 1.5 ? -1 :
+                        event->delta() < -1.5 ? 1 : 0;
+            }
+            int64_t cur_time = QDateTime::currentMSecsSinceEpoch();
+            if (cur_time - last_time > 100)
+                active = true;
+            else
+                active = false;
+        } else {
+            shift = -event->delta() / 80.0;
+        }
+        #else
+            shift = event->delta() / 80.0;
+        #endif
         BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
             if (t->mouse_wheel(width(), event->pos(), shift))
                 break;

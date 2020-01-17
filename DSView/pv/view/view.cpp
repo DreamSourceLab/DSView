@@ -293,8 +293,9 @@ void View::update_hori_res()
     }
 }
 
-void View::zoom(double steps, int offset)
+bool View::zoom(double steps, int offset)
 {
+    bool ret = true;
     _preScale = _scale;
     _preOffset = _offset;
 
@@ -304,7 +305,7 @@ void View::zoom(double steps, int offset)
     } else {
         if (_session.get_capture_state() == SigSession::Running &&
             _session.get_instant())
-            return;
+            return ret;
 
         double hori_res = -1;
         if(steps > 0.5)
@@ -315,6 +316,8 @@ void View::zoom(double steps, int offset)
         if (hori_res > 0) {
             const double scale = _session.cur_view_time() / get_view_width();
             _scale = max(min(scale, _maxscale), _minscale);
+        } else {
+            ret = false;
         }
     }
 
@@ -327,6 +330,8 @@ void View::zoom(double steps, int offset)
         viewport_update();
         update_scroll();
     }
+
+    return ret;
 }
 
 void View::timebase_changed()
@@ -816,6 +821,7 @@ bool View::viewportEvent(QEvent *e)
 	case QEvent::MouseButtonDblClick:
 	case QEvent::MouseMove:
 	case QEvent::Wheel:
+    case QEvent::Gesture:
 		return false;
 
 	default:
