@@ -32,6 +32,7 @@
 #include <QTime>
 #include <QTimer>
 #include <QWidget>
+#include <QNativeGestureEvent>
 
 #include "../view/view.h"
 #include "../../extdef.h"
@@ -107,16 +108,18 @@ public:
     bool get_dso_trig_moved() const;
 
 protected:
-	void paintEvent(QPaintEvent *event);
+    bool event(QEvent *event) override;
+    void paintEvent(QPaintEvent *event) override;
 
 private:
-    void mousePressEvent(QMouseEvent *event);
-    void mouseMoveEvent(QMouseEvent *event);
-    void mouseReleaseEvent(QMouseEvent *event);
-    void mouseDoubleClickEvent(QMouseEvent *event);
-    void wheelEvent(QWheelEvent *event);
-    void leaveEvent(QEvent *);
-    void resizeEvent(QResizeEvent *e);
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    void mouseDoubleClickEvent(QMouseEvent *event) override;
+    void wheelEvent(QWheelEvent *event) override;
+    void leaveEvent(QEvent *) override;
+    void resizeEvent(QResizeEvent *e) override;
+    bool gestureEvent(QNativeGestureEvent *event);
 
     void paintSignals(QPainter& p, QColor fore, QColor back);
     void paintProgress(QPainter& p, QColor fore, QColor back);

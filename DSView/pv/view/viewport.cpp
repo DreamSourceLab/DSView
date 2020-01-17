@@ -130,6 +130,13 @@ QPoint Viewport::get_mouse_point() const
     return _mouse_point;
 }
 
+bool Viewport::event(QEvent *event)
+{
+    if (event->type() == QEvent::NativeGesture)
+        return gestureEvent(static_cast<QNativeGestureEvent*>(event));
+    return QWidget::event(event);
+}
+
 void Viewport::paintEvent(QPaintEvent *event)
 {
     (void)event;
@@ -1007,11 +1014,32 @@ void Viewport::wheelEvent(QWheelEvent *event)
         if (event->orientation() == Qt::Vertical) {
             // Vertical scrolling is interpreted as zooming in/out
             const int offset = event->x();
+            #ifdef Q_OS_DARWIN
+            static bool active = true;
+            static int64_t last_time;
+            if (event->source() == Qt::MouseEventSynthesizedBySystem) {
+                if (active && (event->modifiers() & Qt::ShiftModifier)) {
+                    last_time = QDateTime::currentMSecsSinceEpoch();
+                    const double scale = event->delta() > 1.5 ? 1 :
+                                         event->delta() < -1.5 ? -1 : 0;
+                    _view.zoom(scale, offset);
+                }
+                int64_t cur_time = QDateTime::currentMSecsSinceEpoch();
+                if (cur_time - last_time > 50)
+                    active = true;
+                else
+                    active = false;
+            } else {
+                _view.zoom(-event->delta() / 80, offset);
+            }
+            #else
             _view.zoom(event->delta() / 80, offset);
+            #endif
         } else if (event->orientation() == Qt::Horizontal) {
             // Horizontal scrolling is interpreted as moving left/right
-            _view.set_scale_offset(_view.scale(),
-                           event->delta() + _view.offset());
+            if (!(event->modifiers() & Qt::ShiftModifier))
+                _view.set_scale_offset(_view.scale(),
+                                       _view.offset() - event->delta());
         }
     }
 
@@ -1025,6 +1053,32 @@ void Viewport::wheelEvent(QWheelEvent *event)
     }
 
     measure();
+}
+
+bool Viewport::gestureEvent(QNativeGestureEvent *event)
+{
+    static double total_scale = 0;
+    switch(event->gestureType()) {
+        case Qt::BeginNativeGesture:
+            break;
+        case Qt::EndNativeGesture:
+            total_scale = 0;
+            break;
+        case Qt::ZoomNativeGesture: {
+            total_scale += event->value() * 2;
+            if (_view.zoom(total_scale, _view.hover_point().x()))
+                total_scale = 0;
+            }
+            break;
+        case Qt::SmartZoomNativeGesture:
+            _view.zoom(-1, _view.hover_point().x());
+            break;
+        default:
+            return QWidget::event(event);
+    }
+
+    measure();
+    return true;
 }
 
 void Viewport::leaveEvent(QEvent *)
