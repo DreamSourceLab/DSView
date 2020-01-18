@@ -1733,13 +1733,13 @@ static int dso_tune(const struct sr_dev_inst *sdi)
             else
                 margin -= (devc->mstatus.ch1_acc_mean * 1.0 / devc->limit_samples);
 
-            if ((devc->tune_probe->coupling == SR_AC_COUPLING) && (abs(margin) < 0.5)) {
+            if ((devc->tune_probe->coupling == SR_AC_COUPLING) && (fabs(margin) < 0.5)) {
                 devc->tune_probe->coupling = SR_DC_COUPLING;
                 ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, devc->tune_probe, SR_CONF_PROBE_COUPLING));
             } else if (devc->tune_probe->coupling == SR_AC_COUPLING){
                 (devc->tune_probe->vga_ptr+devc->tune_stage)->preoff += margin;
                 ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, devc->tune_probe, SR_CONF_PROBE_OFFSET));
-            } else if ((devc->tune_probe->coupling == SR_DC_COUPLING) && (abs(margin) < 0.5)) {
+            } else if ((devc->tune_probe->coupling == SR_DC_COUPLING) && (fabs(margin) < 0.5)) {
                 devc->tune_stage++;
                 if (devc->profile->dev_caps.vdivs[devc->tune_stage] != 0) {
                     ret = dsl_wr_ext(sdi, 0x01, mux[devc->tune_stage]);

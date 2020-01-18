@@ -34,7 +34,7 @@ class SignalData
 {
 public:
     SignalData();
-
+    virtual ~SignalData() = 0;
 public:
     double samplerate() const;
     void set_samplerate(double samplerate);

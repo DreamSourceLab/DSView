@@ -299,7 +299,7 @@ static int cleanup(struct sr_output *o)
 
 static struct sr_option options[] = {
 	{ "filename", "Filename", "File to write", NULL, NULL },
-	{0}
+    {0, 0, 0, 0, 0}
 };
 
 static const struct sr_option *get_options(void)

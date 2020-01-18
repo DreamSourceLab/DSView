@@ -24,6 +24,9 @@
 
 #include <map>
 #include <set>
+#include <string>
+#include <sstream>
+#include <iostream>
 
 #include <boost/shared_ptr.hpp>
 
