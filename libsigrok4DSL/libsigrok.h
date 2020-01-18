@@ -1223,8 +1223,7 @@ struct sr_session {
 	GSList *devs;
 	/** List of struct datafeed_callback pointers. */
 	GSList *datafeed_callbacks;
-	GTimeVal starttime;
-	gboolean running;
+    gboolean running;
 
 	unsigned int num_sources;
 

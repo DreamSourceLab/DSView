@@ -50,7 +50,7 @@ XCursor::XCursor(View &view, QColor &colour,
     const std::vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
     BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
         boost::shared_ptr<DsoSignal> dsoSig;
-        if (dsoSig = dynamic_pointer_cast<DsoSignal>(s))
+        if ((dsoSig = dynamic_pointer_cast<DsoSignal>(s)))
             if (dsoSig->enabled()) {
                 _dsoSig = dsoSig;
                 break;

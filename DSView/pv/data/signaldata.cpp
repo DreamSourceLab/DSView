@@ -32,6 +32,8 @@ SignalData::SignalData() :
 {
 }
 
+SignalData::~SignalData() {}
+
 double SignalData::samplerate() const
 {
 	return _samplerate;

@@ -45,7 +45,7 @@ const QString Calibration::VCOMB = QT_TR_NOOP(" VCOMB");
 Calibration::Calibration(QWidget *parent) :
     DSDialog(parent)
 {
-#ifdef Q_OS_OSX
+#ifdef Q_OS_DARWIN
     Qt::WindowFlags flags = windowFlags();
     this->setWindowFlags(flags | Qt::Tool);
 #endif
