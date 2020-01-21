@@ -99,6 +99,7 @@ void StoreProgress::export_run()
 
 void StoreProgress::show_error()
 {
+    _done = true;
     if (!_store_session.error().isEmpty()) {
         dialogs::DSMessageBox msg(parentWidget());
         msg.mBox()->setText(tr("Failed to save data."));
@@ -125,12 +126,9 @@ void StoreProgress::on_progress_updated()
     const QString err = _store_session.error();
 	if (!err.isEmpty()) {
 		show_error();
-        //close();
-        _done = true;
 	}
 
     if (p.first == p.second) {
-        //close();
         _done = true;
     }
 }

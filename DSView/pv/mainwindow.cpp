@@ -988,63 +988,105 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev)
     }
 
     // load channel settings
-    for (const GSList *l = _session.get_device()->dev_inst()->channels; l; l = l->next) {
-        sr_channel *const probe = (sr_channel*)l->data;
-        assert(probe);
-        bool isEnabled = false;
-        foreach (const QJsonValue &value, sessionObj["channel"].toArray()) {
-            QJsonObject obj = value.toObject();
-            if ((probe->index == obj["index"].toDouble()) &&
-                (probe->type == obj["type"].toDouble())) {
-                isEnabled = true;
-                probe->enabled = obj["enabled"].toBool();
-                probe->name = g_strdup(obj["name"].toString().toStdString().c_str());
-                probe->vdiv = obj["vdiv"].toDouble();
-                probe->coupling = obj["coupling"].toDouble();
-                probe->vfactor = obj["vfactor"].toDouble();
-                probe->trig_value = obj["trigValue"].toDouble();
-                probe->map_unit = g_strdup(obj["mapUnit"].toString().toStdString().c_str());
-                probe->map_min = obj["mapMin"].toDouble();
-                probe->map_max = obj["mapMax"].toDouble();
-                break;
+    if (file_dev && (sdi->mode == DSO)) {
+        for (const GSList *l = _session.get_device()->dev_inst()->channels; l; l = l->next) {
+            sr_channel *const probe = (sr_channel*)l->data;
+            assert(probe);
+            foreach (const QJsonValue &value, sessionObj["channel"].toArray()) {
+                QJsonObject obj = value.toObject();
+                if ((strcmp(probe->name, g_strdup(obj["name"].toString().toStdString().c_str())) == 0) &&
+                    (probe->type == obj["type"].toDouble())) {
+                    probe->vdiv = obj["vdiv"].toDouble();
+                    probe->coupling = obj["coupling"].toDouble();
+                    probe->vfactor = obj["vfactor"].toDouble();
+                    probe->trig_value = obj["trigValue"].toDouble();
+                    probe->map_unit = g_strdup(obj["mapUnit"].toString().toStdString().c_str());
+                    probe->map_min = obj["mapMin"].toDouble();
+                    probe->map_max = obj["mapMax"].toDouble();
+                    break;
+                }
             }
         }
-        if (!isEnabled)
-            probe->enabled = false;
+    } else {
+        for (const GSList *l = _session.get_device()->dev_inst()->channels; l; l = l->next) {
+            sr_channel *const probe = (sr_channel*)l->data;
+            assert(probe);
+            bool isEnabled = false;
+            foreach (const QJsonValue &value, sessionObj["channel"].toArray()) {
+                QJsonObject obj = value.toObject();
+                if ((probe->index == obj["index"].toDouble()) &&
+                    (probe->type == obj["type"].toDouble())) {
+                    isEnabled = true;
+                    probe->enabled = obj["enabled"].toBool();
+                    probe->name = g_strdup(obj["name"].toString().toStdString().c_str());
+                    probe->vdiv = obj["vdiv"].toDouble();
+                    probe->coupling = obj["coupling"].toDouble();
+                    probe->vfactor = obj["vfactor"].toDouble();
+                    probe->trig_value = obj["trigValue"].toDouble();
+                    probe->map_unit = g_strdup(obj["mapUnit"].toString().toStdString().c_str());
+                    probe->map_min = obj["mapMin"].toDouble();
+                    probe->map_max = obj["mapMax"].toDouble();
+                    break;
+                }
+            }
+            if (!isEnabled)
+                probe->enabled = false;
+        }
     }
 
     //_session.init_signals();
     _session.reload();
 
     // load signal setting
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
-        foreach (const QJsonValue &value, sessionObj["channel"].toArray()) {
-            QJsonObject obj = value.toObject();
-            if ((s->get_index() == obj["index"].toDouble()) &&
-                (s->get_type() == obj["type"].toDouble())) {
-                s->set_colour(QColor(obj["colour"].toString()));
-                s->set_name(g_strdup(obj["name"].toString().toStdString().c_str()));
+    if (file_dev && (sdi->mode == DSO)) {
+        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
+            foreach (const QJsonValue &value, sessionObj["channel"].toArray()) {
+                QJsonObject obj = value.toObject();
+                if ((strcmp(s->get_name().toStdString().c_str(), g_strdup(obj["name"].toString().toStdString().c_str())) == 0) &&
+                    (s->get_type() == obj["type"].toDouble())) {
+                    s->set_colour(QColor(obj["colour"].toString()));
 
-                boost::shared_ptr<view::LogicSignal> logicSig;
-                if ((logicSig = dynamic_pointer_cast<view::LogicSignal>(s))) {
-                    logicSig->set_trig(obj["strigger"].toDouble());
+                    boost::shared_ptr<view::DsoSignal> dsoSig;
+                    if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
+                        dsoSig->load_settings();
+                        dsoSig->set_zero_ratio(obj["zeroPos"].toDouble());
+                        dsoSig->set_trig_ratio(obj["trigValue"].toDouble());
+                        dsoSig->commit_settings();
+                    }
+                    break;
                 }
+            }
+        }
+    } else {
+        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
+            foreach (const QJsonValue &value, sessionObj["channel"].toArray()) {
+                QJsonObject obj = value.toObject();
+                if ((s->get_index() == obj["index"].toDouble()) &&
+                    (s->get_type() == obj["type"].toDouble())) {
+                    s->set_colour(QColor(obj["colour"].toString()));
+                    s->set_name(g_strdup(obj["name"].toString().toStdString().c_str()));
 
-                boost::shared_ptr<view::DsoSignal> dsoSig;
-                if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
-                    dsoSig->load_settings();
-                    dsoSig->set_zero_ratio(obj["zeroPos"].toDouble());
-                    dsoSig->set_trig_ratio(obj["trigValue"].toDouble());
-                    dsoSig->commit_settings();
+                    boost::shared_ptr<view::LogicSignal> logicSig;
+                    if ((logicSig = dynamic_pointer_cast<view::LogicSignal>(s))) {
+                        logicSig->set_trig(obj["strigger"].toDouble());
+                    }
+
+                    boost::shared_ptr<view::DsoSignal> dsoSig;
+                    if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
+                        dsoSig->load_settings();
+                        dsoSig->set_zero_ratio(obj["zeroPos"].toDouble());
+                        dsoSig->set_trig_ratio(obj["trigValue"].toDouble());
+                        dsoSig->commit_settings();
+                    }
+
+                    boost::shared_ptr<view::AnalogSignal> analogSig;
+                    if ((analogSig = dynamic_pointer_cast<view::AnalogSignal>(s))) {
+                        analogSig->set_zero_ratio(obj["zeroPos"].toDouble());
+                        analogSig->commit_settings();
+                    }
+
+                    break;
                 }
-
-                boost::shared_ptr<view::AnalogSignal> analogSig;
-                if ((analogSig = dynamic_pointer_cast<view::AnalogSignal>(s))) {
-                    analogSig->set_zero_ratio(obj["zeroPos"].toDouble());
-                    analogSig->commit_settings();
-                }
-
-                break;
             }
         }
     }
