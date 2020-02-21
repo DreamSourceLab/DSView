@@ -77,6 +77,7 @@ const QColor View::Blue = QColor(17, 133, 209,  255);
 const QColor View::Green = QColor(0, 153, 37, 255);
 const QColor View::Purple = QColor(109, 50, 156, 255);
 const QColor View::LightBlue = QColor(17, 133, 209, 200);
+const QColor View::LightRed = QColor(213, 15, 37, 200);
 
 
 View::View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget *parent) :
@@ -206,7 +207,7 @@ View::View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     fore.setAlpha(View::BackAlpha);
 
     _show_trig_cursor = false;
-    _trig_cursor = new Cursor(*this, View::Red, 0);
+    _trig_cursor = new Cursor(*this, View::LightRed, 0);
     _show_search_cursor = false;
     _search_pos = 0;
     _search_cursor = new Cursor(*this, fore, _search_pos);
