@@ -329,16 +329,16 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
                 type = g_variant_get_byte(gvar);
                 g_variant_unref(gvar);
                 if (type == DSO_TRIGGER_AUTO && roll) {
-                    type_str = "Auto(Roll)";
+                    type_str = tr("Auto(Roll)");
                 } else if (type == DSO_TRIGGER_AUTO && !_view.session().trigd()) {
-                    type_str = "Auto";
+                    type_str = tr("Auto");
                 } else if (_waiting_trig > 0) {
-                    type_str = "Waiting Trig";
+                    type_str = tr("Waiting Trig");
                     for (int i = 1; i < _waiting_trig; i++)
                         if (i % (WaitLoopTime / SigSession::FeedInterval) == 0)
                             type_str += ".";
                 } else {
-                    type_str = "Trig'd";
+                    type_str = tr("Trig'd");
                 }
             }
             p.setPen(fore);

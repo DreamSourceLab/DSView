@@ -101,6 +101,7 @@ public:
     static const QColor Green;
     static const QColor Purple;
     static const QColor LightBlue;
+    static const QColor LightRed;
 
 public:
     explicit View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget *parent = 0);
