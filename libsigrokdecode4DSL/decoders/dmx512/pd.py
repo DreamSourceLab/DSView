@@ -82,7 +82,7 @@ class Decoder(srd.Decoder):
             raise SamplerateError('Cannot decode without samplerate.')
 
         inv = self.options['invert'] == 'yes'
-        
+
         while True:
             # Seek for an interval with no state change with a length between
             # 88 and 1000000 us (BREAK).
@@ -111,7 +111,7 @@ class Decoder(srd.Decoder):
             # Mark and read a single transmitted byte
             # (start bit, 8 data bits, 2 stop bits).
             elif self.state == 'READ BYTE':
-                bit_start = self.samplenum 
+                bit_start = self.samplenum
                 bit_end = self.run_start + (self.bit + 1) * self.skip_per_bit
                 (dmx,) = self.wait({'skip': round(self.skip_per_bit/2)})
                 bit_value = not dmx if inv else dmx
@@ -136,7 +136,7 @@ class Decoder(srd.Decoder):
                             self.state = 'FIND BREAK'
                 else:
                     # Label and process one bit.
-                    self.put(bit_start, bit_end, 
+                    self.put(bit_start, bit_end,
                              self.out_ann, [0, [str(bit_value)]])
                     self.byte |= bit_value << (self.bit - 1)
 
@@ -161,14 +161,15 @@ class Decoder(srd.Decoder):
             # Mark the INTERFRAME-TIME between bytes / INTERPACKET-TIME between packets.
             elif self.state == 'MARK IFT':
                 self.run_start = self.samplenum
-                (dmx,) = self.wait({0: 'l' if inv else 'h'})
-                (dmx,) = self.wait({0: 'r' if inv else 'f'})
                 if self.channel > 512:
+                    (dmx,) = self.wait({0: 'h' if inv else 'l'})
                     self.putr([8, ['Interpacket']])
                     self.state = 'FIND BREAK'
                     self.run_start = self.samplenum
                 else:
-                    self.putr([7, ['Interframe']])
+                    if (not dmx if inv else dmx):
+                        (dmx,) = self.wait({0: 'h' if inv else 'l'})
+                        self.putr([7, ['Interframe']])
                     self.state = 'READ BYTE'
                     self.bit = 0
                     self.run_start = self.samplenum
