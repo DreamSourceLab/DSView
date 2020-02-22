@@ -101,7 +101,7 @@ public:
 	 * @param prefix The SI prefix to paint time value with.
 	 */
 	virtual void paint_label(QPainter &p, const QRect &rect,
-        unsigned int prefix, int index) = 0;
+        unsigned int prefix, int index, bool has_hoff) = 0;
 
 signals:
 	void time_changed();

@@ -85,7 +85,7 @@ QRect Cursor::get_close_rect(const QRect &rect) const
 }
 
 void Cursor::paint_label(QPainter &p, const QRect &rect,
-    unsigned int prefix, int index)
+    unsigned int prefix, int index, bool has_hoff)
 {
     assert(index > 0);
 
@@ -93,7 +93,7 @@ void Cursor::paint_label(QPainter &p, const QRect &rect,
     bool visible;
 
     compute_text_size(p, prefix);
-    const QRect r(get_label_rect(rect, visible));
+    const QRect r(get_label_rect(rect, visible, has_hoff));
     if (!visible)
         return;
     const QRect close(get_close_rect(r));
@@ -153,8 +153,9 @@ void Cursor::paint_fix_label(QPainter &p, const QRect &rect,
     p.drawPolygon(points, countof(points));
 
     p.setPen(Qt::white);
-    p.drawText(r, Qt::AlignCenter | Qt::AlignVCenter,
-        Ruler::format_real_time(_index, _view.session().cur_snap_samplerate()));
+    if (has_hoff)
+        p.drawText(r, Qt::AlignCenter | Qt::AlignVCenter,
+            Ruler::format_real_time(_index, _view.session().cur_snap_samplerate()));
 
     const QRect arrowRect = QRect(r.bottomLeft().x(), r.bottomLeft().y(), r.width(), ArrowSize);
     p.drawText(arrowRect, Qt::AlignCenter | Qt::AlignVCenter, label);
