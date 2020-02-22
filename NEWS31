@@ -1,3 +1,41 @@
+1.10 -- (2020-02-22)
+-----------------
+  --common
+  *add support for DSCope U3P100 device (100M bandwidth/1G samplerate/USB3.0 oscilloscope)
+  *add support for DSLogic U3Pro32 device (32 channels/1G samplerate/USB3.0 logic analyzer)
+  *add support for DSCope U2B100 device (100M bandwidth/1G samplerate/USB2.0 oscilloscope)
+  *add support for DSLogic U3Pro16 device (16 channels/1G samplerate/USB3.0 logic analyzer)
+  *add display of device type (USB 2.0 / USB 3.0 / Demo / File)
+  *add version check for FPGA firmware
+  *improve the default file name when saving/exporting files
+  *fix other display and language issue
+
+  --for logic analyzer
+  *extend channel support for trigger up to 32 channels
+  *fix issue of ps/2 decoder (#239)
+  *fix issue of cec decoder (#235)
+  *fix ID issue when export results of decoder (#237)
+  *fix "not" logic don't work in advance trigger
+  *fix other display issues
+
+  --for oscilloscope
+  *improve wave shake issue when trig high freqency signals
+  *fix sampling point selection issue of downsampling
+  *add 20M bandwidth limitation for DSCope U2B100 / DSCope U3P100 devices
+  *improve synchronism between data acquisition and wave dispaly
+  *fix wave display and measurement issue when change vdiv and offset after stop
+  *fix capture restart issue when change offset in roll mode
+  *fix issue of timebase of math channel can't be changed when waiting trigger
+  *fix issue of offset can't be changed when waiting trigger
+  *fix clear and flicker issue of auto measurements
+  *fix cursor and mouse measurements issue after change samplerate when waiting trigger
+  *fix trigger issue when toggle between different trigger source
+
+  --for data acquisiton
+  *fix hardware offset setting issue
+  *fix mipmap issue of long time data at some case
+  *add cursor and mouse measurements
+
 1.01 -- (2019-09-15)
 -----------------
   --common
