@@ -297,7 +297,7 @@ class Decoder(srd.Decoder):
                 if self.bit_edge[1][0] != 0 and swim == 0:
                     self.bit_maxlen = self.bit_reflen
 
-                if self.bit_edge[0][0] == 0 and self.bit_edge[1][0] == 1 and self.samplenum - self.bit_edge[0][1] <= self.bit_reflen + 2:
+                if self.bit_edge[0][0] == 0 and self.bit_edge[1][0] == 1 and self.samplenum - self.bit_edge[0][1] <= self.bit_reflen + 10:
                     self.bit(self.bit_edge[0][1], self.bit_edge[1][1], self.samplenum)
 
                 self.bit_edge.pop(0)

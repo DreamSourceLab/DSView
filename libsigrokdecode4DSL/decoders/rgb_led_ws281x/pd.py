@@ -57,6 +57,7 @@ class Decoder(srd.Decoder):
         self.ss = None
         self.es = None
         self.bits = []
+        self.bit_ = None
 
     def start(self):
         self.out_ann = self.register(srd.OUTPUT_ANN)
@@ -74,18 +75,35 @@ class Decoder(srd.Decoder):
             self.bits = []
             self.ss_packet = samplenum
 
+    def check_bit_(self, samplenum):
+        period = samplenum - self.ss
+        tH_samples = self.es - self.ss
+        tH = tH_samples / self.samplerate
+        if tH >= 625e-9:
+            self.bit_ = True
+        else:
+            # Ideal duty for T0H: 33%, T1H: 66%.
+            self.bit_ = (tH_samples / period) > 0.5
+
+
     def decode(self):
         if not self.samplerate:
             raise SamplerateError('Cannot decode without samplerate.')
 
         while True:
             if self.state == 'FIND RESET':
-                self.wait({0: 'f'})
+                self.wait({0: 'l'})
                 self.ss = self.samplenum
                 self.wait({0: 'r'})
                 self.es = self.samplenum
                 if ((self.es - self.ss) / self.samplerate > 50e-6):
                     self.state = 'RESET'
+                elif ((self.es - self.ss) / self.samplerate > 3e-6):
+                    self.bits = []
+                    self.ss = self.samplenum
+                    self.ss_packet = self.samplenum
+                    self.wait({0: 'f'})
+                    self.state = 'BIT FALLING'
             elif self.state == 'RESET':
                 self.put(self.ss, self.es, self.out_ann, [1, ['RESET', 'RST', 'R']])
                 self.bits = []
@@ -96,22 +114,23 @@ class Decoder(srd.Decoder):
             elif self.state == 'BIT FALLING':
                 self.es = self.samplenum
                 self.wait({0: 'r'})
-                if ((self.es - self.ss) / self.samplerate > 50e-6):
+                if ((self.samplenum - self.es) / self.samplerate > 50e-6):
+                    self.check_bit_(self.samplenum)
+                    self.put(self.ss, self.es, self.out_ann,
+                             [0, ['%d' % self.bit_]])
+                    self.bits.append(self.bit_)
+                    self.handle_bits(self.es)
+
                     self.ss = self.es
                     self.es = self.samplenum
                     self.state = 'RESET'
                 else:
                     self.state = 'BIT RISING'
             elif self.state == 'BIT RISING':
-                period = self.samplenum - self.ss
-                duty = self.es - self.ss
-                # Ideal duty for T0H: 33%, T1H: 66%.
-                bit_ = (duty / period) > 0.5
-                
+                self.check_bit_(self.samplenum)
                 self.put(self.ss, self.samplenum, self.out_ann,
-                         [0, ['%d' % bit_]])
-                
-                self.bits.append(bit_)
+                         [0, ['%d' % self.bit_]])
+                self.bits.append(self.bit_)
                 self.handle_bits(self.samplenum)
 
                 self.ss = self.samplenum
