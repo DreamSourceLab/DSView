@@ -1,7 +1,7 @@
 {
     "Device": "DSCope",
     "DeviceMode": 1,
-    "Horizontal trigger position": "0",
+    "Horizontal trigger position": "50",
     "Language": 25,
     "Operation Mode": "正常",
     "Time base": "10000",

@@ -4,7 +4,7 @@
     "DeviceMode": 1,
     "Enable RLE Compress": 1,
     "Filter Targets": "无",
-    "Horizontal trigger position": "0",
+    "Horizontal trigger position": "50",
     "Language": 25,
     "Max Height": "1X",
     "Operation Mode": "Stream模式",
