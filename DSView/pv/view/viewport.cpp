@@ -245,9 +245,9 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
             const int64_t cursorX = _view.index2pixel((*i)->index());
             if (xrect.contains(_view.hover_point().x(), _view.hover_point().y()) &&
                     qAbs(cursorX - _view.hover_point().x()) <= HitCursorMargin)
-                (*i)->paint(p, xrect, 1, index);
+                (*i)->paint(p, xrect, 1, index, _view.session().get_capture_state() == SigSession::Stopped);
             else
-                (*i)->paint(p, xrect, 0, index);
+                (*i)->paint(p, xrect, 0, index, _view.session().get_capture_state() == SigSession::Stopped);
             i++;
             index++;
         }

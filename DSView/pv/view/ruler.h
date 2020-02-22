@@ -79,6 +79,7 @@ private:
 
 private:
     void draw_logic_tick_mark(QPainter &p);
+    void draw_osc_tick_mark(QPainter &p);
 	/**
 	 * Draw a hover arrow under the cursor position.
 	 */

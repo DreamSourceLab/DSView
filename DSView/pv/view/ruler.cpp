@@ -175,7 +175,10 @@ void Ruler::paintEvent(QPaintEvent*)
     style()->drawPrimitive(QStyle::PE_Widget, &o, &p, this);
 
     // Draw tick mark
-    draw_logic_tick_mark(p);
+    if (_view.session().get_device()->dev_inst()->mode == DSO)
+        draw_osc_tick_mark(p);
+    else
+        draw_logic_tick_mark(p);
 
     p.setRenderHint(QPainter::Antialiasing, true);
 	// Draw the hover mark
@@ -340,11 +343,8 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
 
     // Find tick spacing, and number formatting that does not cause
     // value to collide.
-    if (_view.session().get_device()->dev_inst()->mode == DSO) {
-        _min_period = _view.session().get_device()->get_time_base() * std::pow(10.0, -9.0);
-    } else {
-        _min_period = cur_period_scale * abs_min_period;
-    }
+    _min_period = cur_period_scale * abs_min_period;
+
     const int order = (int)floorf(log10f(scale * _view.get_view_width()));
     //const double order_decimal = pow(10, order);
     const unsigned int prefix = (order - FirstSIPrefixPower) / 3;
@@ -433,7 +433,125 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
         list<Cursor*>::iterator i = _view.get_cursorList().begin();
         int index = 1;
         while (i != _view.get_cursorList().end()) {
-            (*i)->paint_label(p, rect(), prefix, index);
+            (*i)->paint_label(p, rect(), prefix, index, _view.session().get_capture_state() == SigSession::Stopped);
+            index++;
+            i++;
+        }
+    }
+    if (_view.trig_cursor_shown()) {
+        _view.get_trig_cursor()->paint_fix_label(p, rect(), prefix, 'T', _view.get_trig_cursor()->colour(), false);
+    }
+    if (_view.search_cursor_shown()) {
+        _view.get_search_cursor()->paint_fix_label(p, rect(), prefix, 'S', _view.get_search_cursor()->colour(), true);
+    }
+}
+
+void Ruler::draw_osc_tick_mark(QPainter &p)
+{
+    using namespace Qt;
+
+    const double MinValueSpacing = 16.0;
+    const int ValueMargin = 5;
+
+    double typical_width;
+    double tick_period = 0;
+    double scale = _view.scale();
+    //int64_t offset = _view.offset();
+    int64_t offset = 0;
+
+    // Find tick spacing, and number formatting that does not cause
+    // value to collide.
+    _min_period = _view.session().get_device()->get_time_base() * std::pow(10.0, -9.0);
+
+    const int order = (int)floorf(log10f(scale * _view.get_view_width()));
+    //const double order_decimal = pow(10, order);
+    const unsigned int prefix = (order - FirstSIPrefixPower) / 3;
+    _cur_prefix = prefix;
+    assert(prefix < countof(SIPrefixes));
+    typical_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
+        AlignLeft | AlignTop, format_time(offset * scale,
+        prefix)).width() + MinValueSpacing;
+    do
+    {
+        tick_period += _min_period;
+
+    } while(typical_width > tick_period / scale);
+
+    const int text_height = p.boundingRect(0, 0, INT_MAX, INT_MAX,
+        AlignLeft | AlignTop, "8").height();
+
+    // Draw the tick marks
+    QColor fore(QWidget::palette().color(QWidget::foregroundRole()));
+    fore.setAlpha(View::ForeAlpha);
+    p.setPen(fore);
+
+    const double minor_tick_period = tick_period / MinPeriodScale;
+    const int minor_order = (int)floorf(log10f(minor_tick_period));
+    //const double minor_order_decimal = pow(10, minor_order);
+    const unsigned int minor_prefix = (minor_order - FirstSIPrefixPower) / 3;
+    assert(minor_prefix < countof(SIPrefixes));
+
+    const double first_major_division =
+        floor(offset * scale / tick_period);
+    const double first_minor_division =
+        floor(offset * scale / minor_tick_period + 1);
+    const double t0 = first_major_division * tick_period;
+
+    int division = (int)round(first_minor_division -
+        first_major_division * MinPeriodScale) - 1;
+
+    const int major_tick_y1 = text_height + ValueMargin * 3;
+    const int tick_y2 = height();
+    const int minor_tick_y1 = (major_tick_y1 + tick_y2) / 2;
+
+    int x;
+
+    const double inc_text_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
+                                                 AlignLeft | AlignTop,
+                                                 format_time(minor_tick_period,
+                                                             minor_prefix)).width() + MinValueSpacing;
+    do {
+        const double t = t0 + division * minor_tick_period;
+        const double major_t = t0 + floor(division / MinPeriodScale) * tick_period;
+
+        x = t / scale - offset;
+
+        if (division % MinPeriodScale == 0)
+        {
+            // Draw a major tick
+            p.drawText(x, 2 * ValueMargin, 0, text_height,
+                AlignCenter | AlignTop | TextDontClip,
+                format_time(t, prefix));
+            p.drawLine(QPoint(x, major_tick_y1),
+                QPoint(x, tick_y2));
+        }
+        else
+        {
+            // Draw a minor tick
+            if (minor_tick_period / scale > 2 * typical_width)
+                p.drawText(x, 2 * ValueMargin, 0, text_height,
+                    AlignCenter | AlignTop | TextDontClip,
+                    format_time(t, prefix));
+            //else if ((tick_period / scale > width() / 4) && (minor_tick_period / scale > inc_text_width))
+            else if (minor_tick_period / scale > 1.1 * inc_text_width ||
+                     tick_period / scale > _view.get_view_width())
+                p.drawText(x, 2 * ValueMargin, 0, minor_tick_y1 + ValueMargin,
+                    AlignCenter | AlignTop | TextDontClip,
+                    format_time(t - major_t, minor_prefix));
+            p.drawLine(QPoint(x, minor_tick_y1),
+                QPoint(x, tick_y2));
+        }
+
+        division++;
+
+    } while (x < rect().right());
+
+    // Draw the cursors
+    if (!_view.get_cursorList().empty()) {
+        list<Cursor*>::iterator i = _view.get_cursorList().begin();
+        int index = 1;
+        while (i != _view.get_cursorList().end()) {
+            (*i)->paint_label(p, rect(), prefix, index, _view.session().get_capture_state() == SigSession::Stopped);
             index++;
             i++;
         }

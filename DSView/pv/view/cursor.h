@@ -74,8 +74,8 @@ public:
 	 * @param rect The rectangle of the ruler client area.
 	 * @param prefix The index of the SI prefix to use.
 	 */
-	void paint_label(QPainter &p, const QRect &rect,
-        unsigned int prefix, int index);
+    void paint_label(QPainter &p, const QRect &rect,
+        unsigned int prefix, int index, bool has_hoff);
 
     void paint_fix_label(QPainter &p, const QRect &rect,
         unsigned int prefix, QChar label, QColor color, bool has_hoff);
