@@ -3,6 +3,7 @@
 ##
 ## Copyright (C) 2012-2013 Uwe Hermann <uwe@hermann-uwe.de>
 ## Copyright (C) 2019 DreamSourceLab <support@dreamsourcelab.com>
+## Copyright (C) 2020 Raptor Engineering, LLC <support@raptorengineering.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -61,6 +62,26 @@ fields = {
         0b1101: 'Reserved / not allowed',
         0b1110: 'Reserved / not allowed',
         0b1111: 'Reserved / not allowed',
+    },
+    # Cycle type / direction field
+    # False for read cycle, True for write cycle
+    'CT_DR_WR': {
+        0b0000: False,
+        0b0001: False,
+        0b0010: True,
+        0b0011: True,
+        0b0100: False,
+        0b0101: False,
+        0b0110: True,
+        0b0111: True,
+        0b1000: False,
+        0b1001: False,
+        0b1010: True,
+        0b1011: True,
+        0b1100: False,
+        0b1101: False,
+        0b1110: False,
+        0b1111: False,
     },
     # SIZE field (determines how many bytes are to be transferred)
     # Bits[3:2] are reserved, must be driven to 0b00.
@@ -155,6 +176,7 @@ class Decoder(srd.Decoder):
         self.samplenum = 0
         self.lad = -1
         self.addr = 0
+        self.direction = 0
         self.cur_nibble = 0
         self.cycle_type = -1
         self.databyte = 0
@@ -196,6 +218,7 @@ class Decoder(srd.Decoder):
         # LAD[3:0]: Cycle type / direction field (1 clock cycle).
 
         self.cycle_type = fields['CT_DR'][self.oldlad]
+        self.direction = fields['CT_DR_WR'][self.oldlad]
 
         # TODO: Warning/error on invalid cycle types.
         if self.cycle_type == 'Reserved':
@@ -235,8 +258,12 @@ class Decoder(srd.Decoder):
         self.putb([3, [s % self.addr]])
         self.ss_block = self.samplenum
 
-        self.state = 'GET TAR'
-        self.tar_count = 0
+        if self.direction == 1:
+            self.state = 'GET DATA'
+            self.cycle_count = 0
+        else:
+            self.state = 'GET TAR'
+            self.tar_count = 0
 
     def handle_get_tar(self):
         # LAD[3:0]: First TAR (turn-around) field (2 clock cycles).
@@ -277,7 +304,6 @@ class Decoder(srd.Decoder):
         self.ss_block = self.samplenum
 
         # TODO
-
         self.cycle_count = 0
         if (lframe == 0):
             self.state = 'GET TIMEOUT'
