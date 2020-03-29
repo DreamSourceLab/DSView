@@ -182,6 +182,7 @@ class Decoder(srd.Decoder):
         self.databyte = 0
         self.tarcount = 0
         self.synccount = 0
+        self.timeoutcount = 0
         self.oldpins = None
         self.ss_block = self.es_block = None
 
