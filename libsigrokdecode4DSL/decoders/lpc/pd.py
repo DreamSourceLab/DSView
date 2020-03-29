@@ -212,6 +212,13 @@ class Decoder(srd.Decoder):
         if (self.oldlad == 0b0000 or self.oldlad == 0b0101):
             self.start_field = self.oldlad
             self.state = 'GET CT/DR'
+        elif (self.oldlad == 0b1101 or self.oldlad == 0b1110):
+            self.start_field = self.oldlad
+            if (self.oldlad == 0b1110):
+                self.direction = True
+            else:
+                self.direction = False
+            self.state = 'GET FW IDSEL'
         else:
             self.state = 'IDLE'
 
@@ -233,6 +240,58 @@ class Decoder(srd.Decoder):
         self.addr = 0
         self.cur_nibble = 0
 
+    def handle_get_fw_idsel(self):
+        # LAD[3:0]: IDSEL field (1 clock cycle).
+        self.es_block = self.samplenum
+        s = 'IDSEL: 0x%%0%dx' % self.oldlad
+        self.putb([3, [s % self.oldlad]])
+        self.ss_block = self.samplenum
+
+        self.state = 'GET FW ADDR'
+        self.addr = 0
+        self.cur_nibble = 0
+
+    def handle_get_fw_addr(self):
+        # LAD[3:0]: ADDR field (7 clock cycles).
+        addr_nibbles = 7 # Address is 28bits.
+
+        # Addresses are driven MSN-first.
+        offset = ((addr_nibbles - 1) - self.cur_nibble) * 4
+        if (offset < 0):
+            self.putb([0, ['Warning: Invalid address shift: %d' % offset]])
+            self.state = 'IDLE'
+            return
+        self.addr |= (self.oldlad << offset)
+
+        # Continue if we haven't seen all ADDR cycles, yet.
+        if (self.cur_nibble < addr_nibbles - 1):
+            self.cur_nibble += 1
+            return
+
+        self.es_block = self.samplenum
+        s = 'Address: 0x%%0%dx' % addr_nibbles
+        self.putb([3, [s % self.addr]])
+        self.ss_block = self.samplenum
+
+        self.state = 'GET FW MSIZE'
+
+    def handle_get_fw_msize(self):
+        # LAD[3:0]: MSIZE field (1 clock cycle).
+        self.es_block = self.samplenum
+        s = 'MSIZE: 0x%%0%dx' % self.oldlad
+        self.putb([3, [s % self.oldlad]])
+        self.ss_block = self.samplenum
+        self.msize = self.oldlad
+
+        if self.direction == 1:
+            self.state = 'GET FW DATA'
+            self.cycle_count = 0
+            self.dataword = 0
+            self.cur_nibble = 0
+        else:
+            self.state = 'GET TAR'
+            self.tar_count = 0
+
     def handle_get_addr(self):
         # LAD[3:0]: ADDR field (4/8/0 clock cycles).
 
@@ -247,6 +306,10 @@ class Decoder(srd.Decoder):
 
         # Addresses are driven MSN-first.
         offset = ((addr_nibbles - 1) - self.cur_nibble) * 4
+        if (offset < 0):
+            self.putb([0, ['Warning: Invalid address shift: %d' % offset]])
+            self.state = 'IDLE'
+            return
         self.addr |= (self.oldlad << offset)
 
         # Continue if we haven't seen all ADDR cycles, yet.
@@ -305,11 +368,17 @@ class Decoder(srd.Decoder):
         self.ss_block = self.samplenum
 
         # TODO
-        self.cycle_count = 0
-        if (lframe == 0):
-            self.state = 'GET TIMEOUT'
-        else:
-            self.state = 'GET DATA'
+        if (self.cycle_type != 'Short wait' and self.cycle_type != 'Long wait'):
+            self.cycle_count = 0
+            if (lframe == 0):
+                self.state = 'GET TIMEOUT'
+            elif (self.start_field == 0b1101 or self.start_field == 0b1110):
+                self.state = 'GET FW DATA'
+                self.cycle_count = 0
+                self.dataword = 0
+                self.cur_nibble = 0
+            else:
+                self.state = 'GET DATA'
 
     def handle_get_timeout(self):
         # LFRAME#: tie low (4 clock cycles).
@@ -330,6 +399,50 @@ class Decoder(srd.Decoder):
 
         self.timeoutcount = 0
         self.state = 'IDLE'
+
+    def handle_get_fw_data(self):
+        # LAD[3:0]: DATA field
+        if (self.msize == 0b0000):
+            data_nibbles = 2 # Data is 8bits.
+        elif (self.msize == 0b0001):
+            data_nibbles = 4 # Data is 16bits.
+        elif (self.msize == 0b0010):
+            data_nibbles = 8 # Data is 32bits.
+        elif (self.msize == 0b0100):
+            data_nibbles = 32 # Data is 128bits.
+        elif (self.msize == 0b0111):
+            data_nibbles = 256 # Data is 1024bits.
+        else:
+            self.putb([0, ['Warning: Invalid MSIZE: %d' % self.msize]])
+            self.state = 'IDLE'
+            return
+
+        # Data is driven LSN-first.
+        nibble_swap = self.cur_nibble % 2
+        offset = ((data_nibbles - 1) - self.cur_nibble) * 4
+        if (nibble_swap):
+            offset += 4
+        else:
+            offset -= 4
+        if (offset < 0):
+            self.putb([0, ['Warning: Invalid data shift: %d' % offset]])
+            self.state = 'IDLE'
+            return
+        self.dataword |= (self.oldlad << offset)
+
+        # Continue if we haven't seen all DATA cycles, yet.
+        if (self.cur_nibble < data_nibbles - 1):
+            self.cur_nibble += 1
+            return
+
+        self.es_block = self.samplenum
+        s = 'DATA: 0x%%0%dx' % data_nibbles
+        self.putb([3, [s % self.dataword]])
+        self.ss_block = self.samplenum
+
+        self.cycle_count = 0
+        self.state = 'GET TAR2'
+
     def handle_get_data(self):
         # LAD[3:0]: DATA field (2 clock cycles).
 
@@ -339,7 +452,9 @@ class Decoder(srd.Decoder):
         elif (self.cycle_count == 1):
             self.databyte |= (self.oldlad << 4)
         else:
-            raise Exception('Invalid cycle_count: %d' % self.cycle_count)
+            self.putb([0, ['Warning: Invalid cycle_count: %d' % self.cycle_count]])
+            self.state = 'IDLE'
+            return
 
         if (self.cycle_count != 1):
             self.cycle_count += 1
@@ -404,12 +519,20 @@ class Decoder(srd.Decoder):
                 self.handle_get_ct_dr()
             elif self.state == 'GET ADDR':
                 self.handle_get_addr()
+            elif self.state == 'GET FW IDSEL':
+                self.handle_get_fw_idsel()
+            elif self.state == 'GET FW ADDR':
+                self.handle_get_fw_addr()
+            elif self.state == 'GET FW MSIZE':
+                self.handle_get_fw_msize()
             elif self.state == 'GET TAR':
                 self.handle_get_tar()
             elif self.state == 'GET SYNC':
                 self.handle_get_sync(lframe)
             elif self.state == 'GET TIMEOUT':
                 self.handle_get_timeout()
+            elif self.state == 'GET FW DATA':
+                self.handle_get_fw_data()
             elif self.state == 'GET DATA':
                 self.handle_get_data()
             elif self.state == 'GET TAR2':
