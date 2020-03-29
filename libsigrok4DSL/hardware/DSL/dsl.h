@@ -740,7 +740,7 @@ static const struct DSL_profile supported_DSLogic[] = {
       SR_GHZ(1)}
     },
 
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
+    { 0, 0, LIBUSB_SPEED_UNKNOWN, 0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 };
 
 static const struct DSL_profile supported_DSCope[] = {
@@ -969,7 +969,7 @@ static const struct DSL_profile supported_DSCope[] = {
      "DSCopeU2B100.bin",
      "DSCopeU2B100.bin",
      {CAPS_MODE_ANALOG | CAPS_MODE_DSO,
-      CAPS_FEATURE_ZERO | CAPS_FEATURE_HMCAD1511 | CAPS_FEATURE_20M,
+      CAPS_FEATURE_ZERO  | CAPS_FEATURE_AUTO_VGAIN | CAPS_FEATURE_HMCAD1511 | CAPS_FEATURE_20M,
       (1 << DSL_ANALOG10x2_500) |
       (1 << DSL_DSO1000x2),
       2,
@@ -982,11 +982,11 @@ static const struct DSL_profile supported_DSCope[] = {
       DSL_DSO1000x2,
       SR_MHZ(500),
       SR_Kn(10),
-      850,
-      1024-850,
+      810,
+      1024-810,
       10,
       245,
-      80,
+      60,
       SR_HZ(0),
       SR_HZ(0)}
     },
@@ -996,7 +996,7 @@ static const struct DSL_profile supported_DSCope[] = {
      "DSCopeU3P100.bin",
      "DSCopeU3P100.bin",
      {CAPS_MODE_ANALOG | CAPS_MODE_DSO,
-      CAPS_FEATURE_ZERO | CAPS_FEATURE_FLASH | CAPS_FEATURE_USB30 | CAPS_FEATURE_HMCAD1511 | CAPS_FEATURE_20M,
+      CAPS_FEATURE_ZERO | CAPS_FEATURE_POGOPIN | CAPS_FEATURE_AUTO_VGAIN | CAPS_FEATURE_FLASH | CAPS_FEATURE_USB30 | CAPS_FEATURE_HMCAD1511 | CAPS_FEATURE_20M,
       (1 << DSL_ANALOG10x2_500) |
       (1 << DSL_DSO1000x2),
       2,
@@ -1009,8 +1009,8 @@ static const struct DSL_profile supported_DSCope[] = {
       DSL_DSO1000x2,
       SR_MHZ(500),
       SR_Mn(1),
-      900,
-      1024-900,
+      830,
+      1024-830,
       10,
       245,
       60,
@@ -1023,7 +1023,7 @@ static const struct DSL_profile supported_DSCope[] = {
      "DSCopeU3P100.bin",
      "DSCopeU3P100.bin",
      {CAPS_MODE_ANALOG | CAPS_MODE_DSO,
-      CAPS_FEATURE_ZERO | CAPS_FEATURE_FLASH | CAPS_FEATURE_USB30 | CAPS_FEATURE_HMCAD1511 | CAPS_FEATURE_20M,
+      CAPS_FEATURE_ZERO | CAPS_FEATURE_POGOPIN | CAPS_FEATURE_AUTO_VGAIN | CAPS_FEATURE_FLASH | CAPS_FEATURE_USB30 | CAPS_FEATURE_HMCAD1511 | CAPS_FEATURE_20M,
       (1 << DSL_ANALOG10x2_500) |
       (1 << DSL_DSO1000x2),
       2,
@@ -1036,8 +1036,8 @@ static const struct DSL_profile supported_DSCope[] = {
       DSL_DSO1000x2,
       SR_MHZ(500),
       SR_Mn(1),
-      900,
-      1024-900,
+      830,
+      1024-830,
       10,
       245,
       60,
@@ -1045,7 +1045,7 @@ static const struct DSL_profile supported_DSCope[] = {
       SR_HZ(0)}
     },
 
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
+    { 0, 0, LIBUSB_SPEED_UNKNOWN, 0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 };
 
 static const gboolean default_ms_en[] = {
