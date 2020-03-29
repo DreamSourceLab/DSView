@@ -419,8 +419,6 @@ static uint64_t dso_cmd_gen(const struct sr_dev_inst *sdi, struct sr_channel* ch
         cmd += ch->index << ch_bit;
         //  --VGAIN
         uint64_t vgain = dso_vga(ch);
-//        if ((devc->profile->dev_caps.feature_caps & CAPS_FEATURE_HMCAD1511) &&
-//            (dsl_en_ch_num(sdi) == 1))
         if ((ch->comb_comp != 0) && (dsl_en_ch_num(sdi) == 1))
             vgain += (uint64_t)(ch->comb_comp) << 8;
         cmd += vgain;
@@ -632,7 +630,7 @@ static int dso_zero(const struct sr_dev_inst *sdi, gboolean reset)
     if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_HMCAD1511)
         offset_top = 15;
     else
-        offset_top = 20;
+        offset_top = 30;
     const uint16_t offset_bom = ((1 << channel_modes[devc->ch_mode].unit_bits) - 1) - offset_top;
     const uint16_t offset_mid = (1 << (channel_modes[devc->ch_mode].unit_bits - 1));
     const uint16_t max_trans = ((1 << 10) - 1);
@@ -972,11 +970,12 @@ static int dso_zero(const struct sr_dev_inst *sdi, gboolean reset)
                             for (uint16_t j = 0; j < ARRAY_SIZE(vga_defaults); j++) {
                                 if (vga_defaults[j].id == devc->profile->dev_caps.vga_id &&
                                     vga_defaults[j].key == devc->profile->dev_caps.vdivs[i]) {
-                                    const int64_t vgain_delta = probe->vpos_trans > devc->profile->dev_caps.default_pwmtrans ?
-                                                ((int64_t)(probe->vpos_trans - devc->profile->dev_caps.default_pwmtrans) << 8) :
-                                                (((int64_t)(probe->vpos_trans - devc->profile->dev_caps.default_pwmtrans) << 7) & 0xFFFFFF00);
+                                    const int64_t cur_trans = probe->vpos_trans;
+                                    const int64_t def_trans = devc->profile->dev_caps.default_pwmtrans;
+                                    const int64_t vgain_delta = (cur_trans > def_trans) ? ((cur_trans - def_trans) << 8) :
+                                                                                          (((cur_trans - def_trans) << 7) & ~0xFFLL);
                                     (probe->vga_ptr+i)->vgain = vga_defaults[j].vgain + vgain_delta;
-                                    break;
+									break;
                                 }
                             }
                         }
