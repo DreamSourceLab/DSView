@@ -91,7 +91,7 @@ Ruler::Ruler(View &parent) :
 QString Ruler::format_freq(double period, unsigned precision)
 {
     if (period <= 0) {
-        return "#####";
+        return View::Unknown_Str;
     } else {
         const int order = ceil(log10f(period));
         assert(order >= FirstSIPrefixPower);

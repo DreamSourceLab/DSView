@@ -111,9 +111,9 @@ void SearchDock::reStyle()
 {
     QString iconPath = ":/icons/" + qApp->property("Style").toString();
 
-    _pre_button.setIcon(QIcon(iconPath+"/pre.png"));
-    _nxt_button.setIcon(QIcon(iconPath+"/next.png"));
-    _search_button->setIcon(QIcon(iconPath+"/search.png"));
+    _pre_button.setIcon(QIcon(iconPath+"/pre.svg"));
+    _nxt_button.setIcon(QIcon(iconPath+"/next.svg"));
+    _search_button->setIcon(QIcon(iconPath+"/search.svg"));
 }
 
 void SearchDock::paintEvent(QPaintEvent *)
@@ -165,7 +165,7 @@ void SearchDock::on_previous()
                             tr("Cancel"),0,0,this,flags);
         dlg.setWindowModality(Qt::WindowModal);
         dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
-                           Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
+                           Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint | Qt::WindowMinMaxButtonsHint);
         dlg.setCancelButton(NULL);
 
         QFutureWatcher<void> watcher;
@@ -225,7 +225,7 @@ void SearchDock::on_next()
                             tr("Cancel"),0,0,this,flags);
         dlg.setWindowModality(Qt::WindowModal);
         dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
-                           Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
+                           Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint | Qt::WindowMinMaxButtonsHint);
         dlg.setCancelButton(NULL);
 
         QFutureWatcher<void> watcher;

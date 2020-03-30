@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- 由 Microsoft Visio, SVG Export 生成 demo.svg 页-1 -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:ev="http://www.w3.org/2001/xml-events"
+		xmlns:v="http://schemas.microsoft.com/visio/2003/SVGExtensions/" width="5.33333in" height="3.84308in"
+		viewBox="0 0 384 276.702" xml:space="preserve" color-interpolation-filters="sRGB" class="st2">
+	<v:documentProperties v:langID="2052" v:viewMarkup="false"/>
+
+	<style type="text/css">
+	<![CDATA[
+		.st1 {fill:#eeb211;stroke:none;stroke-linecap:butt;stroke-width:8}
+		.st2 {fill:none;fill-rule:evenodd;font-size:12px;overflow:visible;stroke-linecap:square;stroke-miterlimit:3}
+	]]>
+	</style>
+
+	<g v:mID="0" v:index="1" v:groupContext="foregroundPage">
+		<title>页-1</title>
+		<v:pageProperties v:drawingScale="0.0393701" v:pageScale="0.0393701" v:drawingUnits="24" v:shadowOffsetX="9"
+				v:shadowOffsetY="-9"/>
+		<g id="group99-1" transform="translate(-6.39488E-14,-5.21689)" v:mID="99" v:groupContext="group">
+			<title>工作表.99</title>
+			<g id="shape127-2" v:mID="127" v:groupContext="shape" transform="translate(77.0079,-2.78311)">
+				<title>工作表.127</title>
+				<path d="M184.56 78.07 C184.56 40.1 152.95 16 114.71 16 C76.47 16 44.86 40.1 44.86 78.07 L44.86 89.76 L184.56 89.76
+							 L184.56 78.07 ZM88.97 78.07 C80.15 78.07 72.8 70.77 72.8 62.01 C72.8 53.25 80.15 45.94 88.97 45.94 C97.79
+							 45.94 105.15 53.25 105.15 62.01 C105.15 70.77 98.53 78.07 88.97 78.07 ZM140.45 78.07 C131.62 78.07 124.27
+							 70.77 124.27 62.01 C124.27 53.25 131.62 45.94 140.45 45.94 C149.27 45.94 156.62 53.25 156.62 62.01 C156.62
+							 70.77 149.27 78.07 140.45 78.07 ZM0 115.31 L16.91 115.31 L16.91 176.66 L0 176.66 L0 115.31 ZM23.53 177.39
+							 C23.53 200.76 32.35 219.75 47.06 233.62 L47.06 276.7 L93.39 276.7 L93.39 256.25 C100 257.71 107.35 258.44
+							 114.71 258.44 C122.06 258.44 129.41 257.7 136.03 256.25 L136.03 276.7 L182.35 276.7 L182.35 234.34 C197.06
+							 220.47 205.88 201.48 205.88 178.11 L205.88 100.71 L23.53 100.71 L23.53 177.39 ZM138.24 193.97 L177.21
+							 176.44 L138.24 158.91 L138.24 147.23 L188.98 171.33 L188.98 181.56 L138.25 205.66 L138.25 193.97 L138.24
+							 193.97 ZM121.33 136.28 L131.61 136.28 L108.82 215.87 L98.53 215.87 L121.33 136.28 ZM40.44 171.33 L91.18
+							 146.5 L91.18 158.91 L52.94 176.45 L91.18 193.98 L91.18 205.66 L40.44 180.83 L40.44 171.33 ZM229.42 115.31
+							 L229.42 176.66 L212.5 176.66 L212.5 115.31 L229.42 115.31 Z" class="st1"/>
+			</g>
+		</g>
+	</g>
+</svg>

@@ -68,8 +68,8 @@ const int View::SignalMargin = 7;
 const int View::SignalSnapGridSize = 10;
 
 const QColor View::CursorAreaColour(220, 231, 243);
-
 const QSizeF View::LabelPadding(4, 4);
+const QString View::Unknown_Str = "########";
 
 const QColor View::Red = QColor(213, 15, 37, 255);
 const QColor View::Orange = QColor(238, 178, 17, 255);
@@ -1016,7 +1016,7 @@ QString View::get_measure(QString option)
     if (_active_viewport) {
         return _active_viewport->get_measure(option);
     }
-    return "#####";
+    return Unknown_Str;
 }
 
 QString View::get_cm_time(int index)

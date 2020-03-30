@@ -44,7 +44,6 @@ LogoBar::LogoBar(SigSession &session, QWidget *parent) :
 {
     setMovable(false);
     setContentsMargins(0,0,0,0);
-    setIconSize(QSize(40, 28));
 
     _action_en = new QAction(this);
     _action_en->setObjectName(QString::fromUtf8("actionEn"));
@@ -59,8 +58,8 @@ LogoBar::LogoBar(SigSession &session, QWidget *parent) :
     _language->addAction(_action_cn);
     _language->addAction(_action_en);
 
-    _action_en->setIcon(QIcon(":/icons/English.png"));
-    _action_cn->setIcon(QIcon(":/icons/Chinese.png"));
+    _action_en->setIcon(QIcon(":/icons/English.svg"));
+    _action_cn->setIcon(QIcon(":/icons/Chinese.svg"));
 
     _about = new QAction(this);
     _about->setObjectName(QString::fromUtf8("actionAbout"));
@@ -118,22 +117,22 @@ void LogoBar::retranslateUi()
     _issue->setText(tr("&Bug Report"));
 
     if (qApp->property("Language") == QLocale::Chinese)
-        _language->setIcon(QIcon(":/icons/Chinese.png"));
+        _language->setIcon(QIcon(":/icons/Chinese.svg"));
     else
-        _language->setIcon(QIcon(":/icons/English.png"));
+        _language->setIcon(QIcon(":/icons/English.svg"));
 }
 
 void LogoBar::reStyle()
 {
     QString iconPath = ":/icons/" + qApp->property("Style").toString();
 
-    _about->setIcon(QIcon(iconPath+"/about.png"));
-    _manual->setIcon(QIcon(iconPath+"/manual.png"));
-    _issue->setIcon(QIcon(iconPath+"/bug.png"));
+    _about->setIcon(QIcon(iconPath+"/about.svg"));
+    _manual->setIcon(QIcon(iconPath+"/manual.svg"));
+    _issue->setIcon(QIcon(iconPath+"/bug.svg"));
     if (_connected)
-        _logo_button.setIcon(QIcon(iconPath+"/logo_color.png"));
+        _logo_button.setIcon(QIcon(iconPath+"/logo_color.svg"));
     else
-        _logo_button.setIcon(QIcon(iconPath+"/logo_noColor.png"));
+        _logo_button.setIcon(QIcon(iconPath+"/logo_noColor.svg"));
 }
 
 void LogoBar::dsl_connected(bool conn)
@@ -141,9 +140,9 @@ void LogoBar::dsl_connected(bool conn)
     _connected = conn;
     QString iconPath = ":/icons/" + qApp->property("Style").toString();
     if (_connected)
-        _logo_button.setIcon(QIcon(iconPath+"/logo_color.png"));
+        _logo_button.setIcon(QIcon(iconPath+"/logo_color.svg"));
     else
-        _logo_button.setIcon(QIcon(iconPath+"/logo_noColor.png"));
+        _logo_button.setIcon(QIcon(iconPath+"/logo_noColor.svg"));
 }
 
 void LogoBar::session_error(
@@ -168,14 +167,14 @@ void LogoBar::show_session_error(
 void LogoBar::on_actionEn_triggered()
 {
     _language->setIcon(QIcon::fromTheme("file",
-        QIcon(":/icons/English.png")));
+        QIcon(":/icons/English.svg")));
     setLanguage(QLocale::English);
 }
 
 void LogoBar::on_actionCn_triggered()
 {
     _language->setIcon(QIcon::fromTheme("file",
-        QIcon(":/icons/Chinese.png")));
+        QIcon(":/icons/Chinese.svg")));
     setLanguage(QLocale::Chinese);
 }
 

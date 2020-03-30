@@ -51,7 +51,7 @@ LissajousOptions::LissajousOptions(SigSession &session, QWidget *parent) :
     _enable = new QCheckBox(this);
 
     QLabel *lisa_label = new QLabel(this);
-    lisa_label->setPixmap(QPixmap(":/icons/lissajous.png"));
+    lisa_label->setPixmap(QPixmap(":/icons/lissajous.svg"));
 
     _percent = new QSlider(Qt::Horizontal, this);
     _percent->setRange(100, 100);

@@ -90,11 +90,14 @@ void TitleBar::reStyle()
     QString iconPath = ":/icons/" + qApp->property("Style").toString();
 
     if (_isTop) {
-        _minimizeButton->setIcon(QIcon(iconPath+"/minimize.png"));
-        _maximizeButton->setIcon(QIcon(iconPath+"/maximize.png"));
+        _minimizeButton->setIcon(QIcon(iconPath+"/minimize.svg"));
+        if (parentWidget()->isMaximized())
+            _maximizeButton->setIcon(QIcon(iconPath+"/restore.svg"));
+        else
+            _maximizeButton->setIcon(QIcon(iconPath+"/maximize.svg"));
     }
     if (_isTop || _hasClose)
-        _closeButton->setIcon(QIcon(iconPath+"/close.png"));
+        _closeButton->setIcon(QIcon(iconPath+"/close.svg"));
 }
 
 void TitleBar::paintEvent(QPaintEvent *event)
@@ -150,10 +153,10 @@ void TitleBar::showMaxRestore()
 {
     QString iconPath = ":/icons/" + qApp->property("Style").toString();
     if (parentWidget()->isMaximized()) {
-        _maximizeButton->setIcon(QIcon(iconPath+"/maximize.png"));
+        _maximizeButton->setIcon(QIcon(iconPath+"/maximize.svg"));
         normalShow();
     } else {
-        _maximizeButton->setIcon(QIcon(iconPath+"/restore.png"));
+        _maximizeButton->setIcon(QIcon(iconPath+"/restore.svg"));
         maximizedShow();
     }   
 }
@@ -162,9 +165,9 @@ void TitleBar::setRestoreButton(bool max)
 {
     QString iconPath = ":/icons/" + qApp->property("Style").toString();
     if (!max) {
-        _maximizeButton->setIcon(QIcon(iconPath+"/maximize.png"));
+        _maximizeButton->setIcon(QIcon(iconPath+"/maximize.svg"));
     } else {
-        _maximizeButton->setIcon(QIcon(iconPath+"/restore.png"));
+        _maximizeButton->setIcon(QIcon(iconPath+"/restore.svg"));
     }
 }
 

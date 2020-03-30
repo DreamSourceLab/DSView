@@ -83,8 +83,8 @@ public:
 	static const int SignalSnapGridSize;
 
 	static const QColor CursorAreaColour;
-
 	static const QSizeF LabelPadding;
+    static const QString Unknown_Str;
 
     static const int WellSamplesPerPixel = 2048;
     static constexpr double MaxViewRate = 1.0;

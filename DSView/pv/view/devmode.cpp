@@ -65,7 +65,7 @@ DevMode::DevMode(QWidget *parent, SigSession &session) :
 
     _mode_btn = new QToolButton(this);
     _mode_btn->setObjectName("ModeButton");
-    _mode_btn->setIconSize(QSize(48, 48));
+    _mode_btn->setIconSize(QSize(height()*1.8, height()));
     _mode_btn->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     _mode_btn->setContentsMargins(0, 0, 1000, 0);
     _mode_btn->setMenu(_pop_menu);
@@ -105,36 +105,38 @@ void DevMode::set_device()
     _close_button->setDisabled(true);
     disconnect(_close_button, SIGNAL(clicked()), this, SLOT(on_close()));
 
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
-    for (const GSList *l = dev_inst->get_dev_mode_list();
-         l; l = l->next) {
-        const sr_dev_mode *mode = (const sr_dev_mode *)l->data;
-        QString icon_name = "/" + QString::fromLocal8Bit(mode->icon);
+    if (!qApp->property("Style").isNull()) {
+        QString iconPath = ":/icons/" + qApp->property("Style").toString() + "/";
+        for (const GSList *l = dev_inst->get_dev_mode_list();
+             l; l = l->next) {
+            const sr_dev_mode *mode = (const sr_dev_mode *)l->data;
+            QString icon_name = QString::fromLocal8Bit(mode->icon);
 
-        QAction *action = new QAction(this);
-        action->setIcon(QIcon(iconPath+icon_name));
-        if (qApp->property("Language") == QLocale::Chinese)
-            action->setText(mode->name_cn);
-        else
-            action->setText(mode->name);
-        connect(action, SIGNAL(triggered()), this, SLOT(on_mode_change()));
-
-        _mode_list[action] = mode;
-        if (dev_inst->dev_inst()->mode == _mode_list[action]->mode) {
-            _mode_btn->setIcon(QIcon(iconPath+icon_name));
+            QAction *action = new QAction(this);
+            action->setIcon(QIcon(iconPath+"square-"+icon_name));
             if (qApp->property("Language") == QLocale::Chinese)
-                _mode_btn->setText(mode->name_cn);
+                action->setText(mode->name_cn);
             else
-                _mode_btn->setText(mode->name);
-        }
-        _pop_menu->addAction(action);
-    }
+                action->setText(mode->name);
+            connect(action, SIGNAL(triggered()), this, SLOT(on_mode_change()));
 
-    boost::shared_ptr<pv::device::File> file_dev;
-    if((file_dev = dynamic_pointer_cast<pv::device::File>(dev_inst))) {
-        _close_button->setDisabled(false);
-        _close_button->setIcon(QIcon(iconPath+"/close.png"));
-        connect(_close_button, SIGNAL(clicked()), this, SLOT(on_close()));
+            _mode_list[action] = mode;
+            if (dev_inst->dev_inst()->mode == _mode_list[action]->mode) {
+                _mode_btn->setIcon(QIcon(iconPath+icon_name));
+                if (qApp->property("Language") == QLocale::Chinese)
+                    _mode_btn->setText(mode->name_cn);
+                else
+                    _mode_btn->setText(mode->name);
+            }
+            _pop_menu->addAction(action);
+        }
+
+        boost::shared_ptr<pv::device::File> file_dev;
+        if((file_dev = dynamic_pointer_cast<pv::device::File>(dev_inst))) {
+            _close_button->setDisabled(false);
+            _close_button->setIcon(QIcon(iconPath+"/close.svg"));
+            connect(_close_button, SIGNAL(clicked()), this, SLOT(on_close()));
+        }
     }
     update();
 }

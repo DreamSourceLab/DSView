@@ -73,7 +73,6 @@ SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
 {
     setMovable(false);
     setContentsMargins(0,0,0,0);
-    setIconSize(QSize(40, 28));
     layout()->setMargin(0);
     layout()->setSpacing(0);
 
@@ -195,14 +194,12 @@ void SamplingBar::retranslateUi()
 
 void SamplingBar::reStyle()
 {
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
-
     shared_ptr<pv::device::DevInst> dev_inst = get_selected_device();
     if (dev_inst && dev_inst->dev_inst()) {
         if (dev_inst->name().contains("virtual-demo"))
-            _device_type.setIcon(QIcon(":/icons/demo.png"));
+            _device_type.setIcon(QIcon(":/icons/demo.svg"));
         else if (dev_inst->name().contains("virtual"))
-            _device_type.setIcon(QIcon(":/icons/data.png"));
+            _device_type.setIcon(QIcon(":/icons/data.svg"));
         else {
             int usb_speed = LIBUSB_SPEED_HIGH;
             GVariant *gvar = dev_inst->get_config(NULL, NULL, SR_CONF_USB_SPEED);
@@ -211,20 +208,24 @@ void SamplingBar::reStyle()
                 g_variant_unref(gvar);
             }
             if (usb_speed == LIBUSB_SPEED_SUPER)
-                _device_type.setIcon(QIcon(":/icons/usb3.png"));
+                _device_type.setIcon(QIcon(":/icons/usb3.svg"));
             else
-                _device_type.setIcon(QIcon(":/icons/usb2.png"));
+                _device_type.setIcon(QIcon(":/icons/usb2.svg"));
 
         }
     }
-    _configure_button.setIcon(QIcon(iconPath+"/params.png"));
-    _mode_button.setIcon(_session.get_run_mode() == pv::SigSession::Single ? QIcon(iconPath+"/modes.png") :
-                                                                             QIcon(iconPath+"/moder.png"));
-    _run_stop_button.setIcon(_sampling ? QIcon(iconPath+"/stop.png") :
-                                         QIcon(iconPath+"/start.png"));
-    _instant_button.setIcon(QIcon(iconPath+"/instant.png"));
-    _action_single->setIcon(QIcon(iconPath+"/oneloop.png"));
-    _action_repeat->setIcon(QIcon(iconPath+"/repeat.png"));
+
+    if (!qApp->property("Style").isNull()) {
+        QString iconPath = ":/icons/" + qApp->property("Style").toString();
+        _configure_button.setIcon(QIcon(iconPath+"/params.svg"));
+        _mode_button.setIcon(_session.get_run_mode() == pv::SigSession::Single ? QIcon(iconPath+"/modes.svg") :
+                                                                                 QIcon(iconPath+"/moder.svg"));
+        _run_stop_button.setIcon(_sampling ? QIcon(iconPath+"/stop.svg") :
+                                             QIcon(iconPath+"/start.svg"));
+        _instant_button.setIcon(QIcon(iconPath+"/single.svg"));
+        _action_single->setIcon(QIcon(iconPath+"/oneloop.svg"));
+        _action_repeat->setIcon(QIcon(iconPath+"/repeat.svg"));
+    }
 }
 
 void SamplingBar::set_device_list(
@@ -385,13 +386,6 @@ void SamplingBar::set_sampling(bool sampling)
 {
     lock_guard<boost::recursive_mutex> lock(_sampling_mutex);
     _sampling = sampling;
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
-
-    if (_instant) {
-        _instant_button.setIcon(sampling ? QIcon(iconPath+"/stop.png") : QIcon(iconPath+"/instant.png"));
-    } else {
-        _run_stop_button.setIcon(sampling ? QIcon(iconPath+"/stop.png") : QIcon(iconPath+"/start.png"));
-    }
 
     if (!sampling) {
         enable_run_stop(true);
@@ -404,10 +398,19 @@ void SamplingBar::set_sampling(bool sampling)
     }
 
     _mode_button.setEnabled(!sampling);
-    _mode_button.setIcon(_session.get_run_mode() == pv::SigSession::Single ? QIcon(iconPath+"/modes.png") :
-                                                                             QIcon(iconPath+"/moder.png"));
     _configure_button.setEnabled(!sampling);
     _device_selector.setEnabled(!sampling);
+
+    if (!qApp->property("Style").isNull()) {
+        QString iconPath = ":/icons/" + qApp->property("Style").toString();
+        if (_instant) {
+            _instant_button.setIcon(sampling ? QIcon(iconPath+"/stop.svg") : QIcon(iconPath+"/single.svg"));
+        } else {
+            _run_stop_button.setIcon(sampling ? QIcon(iconPath+"/stop.svg") : QIcon(iconPath+"/start.svg"));
+        }
+        _mode_button.setIcon(_session.get_run_mode() == pv::SigSession::Single ? QIcon(iconPath+"/modes.svg") :
+                                                                             QIcon(iconPath+"/moder.svg"));
+    }
 
     retranslateUi();
 }
@@ -987,8 +990,8 @@ void SamplingBar::reload()
         if (_session.get_device()->name() == "virtual-session") {
             _mode_action->setVisible(false);
         } else {
-            _mode_button.setIcon(_session.get_run_mode() == pv::SigSession::Single ? QIcon(iconPath+"/modes.png") :
-                                                                                     QIcon(iconPath+"/moder.png"));
+            _mode_button.setIcon(_session.get_run_mode() == pv::SigSession::Single ? QIcon(iconPath+"/modes.svg") :
+                                                                                     QIcon(iconPath+"/moder.svg"));
             _mode_action->setVisible(true);
         }
         _run_stop_action->setVisible(true);
@@ -1016,10 +1019,10 @@ void SamplingBar::on_mode()
     QString iconPath = ":/icons/" + qApp->property("Style").toString();
     QAction *act = qobject_cast<QAction *>(sender());
     if (act == _action_single) {
-        _mode_button.setIcon(QIcon(iconPath+"/modes.png"));
+        _mode_button.setIcon(QIcon(iconPath+"/modes.svg"));
         _session.set_run_mode(pv::SigSession::Single);
     } else if (act == _action_repeat) {
-        _mode_button.setIcon(QIcon(iconPath+"/moder.png"));
+        _mode_button.setIcon(QIcon(iconPath+"/moder.svg"));
         pv::dialogs::Interval interval_dlg(_session, this);
         interval_dlg.exec();
         _session.set_run_mode(pv::SigSession::Repetitive);

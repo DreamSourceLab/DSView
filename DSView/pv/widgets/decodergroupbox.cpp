@@ -66,7 +66,7 @@ DecoderGroupBox::DecoderGroupBox(boost::shared_ptr<data::DecoderStack> &decoder_
     assert(d);
     const bool have_probes = (d->channels || d->opt_channels) != 0;
     if (!have_probes) {
-        _del_button = new QPushButton(QIcon(iconPath+"/del.png"), QString(), _widget);
+        _del_button = new QPushButton(QIcon(iconPath+"/del.svg"), QString(), _widget);
         _layout->addWidget(_del_button, 0, 1);
         connect(_del_button, SIGNAL(clicked()), this, SLOT(on_del_stack()));
     }
@@ -79,8 +79,8 @@ DecoderGroupBox::DecoderGroupBox(boost::shared_ptr<data::DecoderStack> &decoder_
         _index++;
     }
     _show_button = new QPushButton(QIcon(_dec->shown() ?
-                                             iconPath+"/shown.png" :
-                                             iconPath+"/hidden.png"), QString(), _widget);
+                                             iconPath+"/shown.svg" :
+                                             iconPath+"/hidden.svg"), QString(), _widget);
     _show_button->setProperty("index", -1);
     connect(_show_button, SIGNAL(clicked()),
         this, SLOT(tog_icon()));
@@ -94,8 +94,8 @@ DecoderGroupBox::DecoderGroupBox(boost::shared_ptr<data::DecoderStack> &decoder_
         i != rows.end(); i++) {
         if ((*i).first.decoder() == _dec->decoder()) {
             QPushButton *show_button = new QPushButton(QIcon((*i).second ?
-                                                                 iconPath+"/shown.png" :
-                                                                 iconPath+"/hidden.png"), QString(), _widget);
+                                                                 iconPath+"/shown.svg" :
+                                                                 iconPath+"/hidden.svg"), QString(), _widget);
             show_button->setProperty("index", index);
             connect(show_button, SIGNAL(clicked()), this, SLOT(tog_icon()));
             _row_show_button.push_back(show_button);
@@ -141,8 +141,8 @@ void DecoderGroupBox::tog_icon()
             _decoder_stack->stack()) {
             if (i-- == 0) {
                 dec->show(!dec->shown());
-                sc->setIcon(QIcon(dec->shown() ? iconPath+"/shown.png" :
-                                                 iconPath+"/hidden.png"));
+                sc->setIcon(QIcon(dec->shown() ? iconPath+"/shown.svg" :
+                                                 iconPath+"/hidden.svg"));
                 break;
             }
         }
@@ -153,8 +153,8 @@ void DecoderGroupBox::tog_icon()
             if (index-- == 0) {
                 _decoder_stack->set_rows_gshow((*i).first, !(*i).second);
                 //rows[(*i).first] = !(*i).second;
-                sc->setIcon(QIcon(rows[(*i).first] ? iconPath+"/hidden.png" :
-                                                    iconPath+"/shown.png"));
+                sc->setIcon(QIcon(rows[(*i).first] ? iconPath+"/hidden.svg" :
+                                                    iconPath+"/shown.svg"));
                 break;
             }
         }
