@@ -480,7 +480,7 @@ void MeasureDock::show_all_coursor()
 
     QDialog cursor_dlg(_widget);
     cursor_dlg.setWindowFlags(Qt::FramelessWindowHint | Qt::Popup | Qt::WindowSystemMenuHint |
-                              Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint | Qt::WindowMinMaxButtonsHint);
+                              Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
 
     int index = 0;
     QGridLayout *glayout = new QGridLayout(&cursor_dlg);

@@ -200,7 +200,7 @@ void ProtocolExp::accept()
                                 tr("Cancel"),0,100,this,flags);
             dlg.setWindowModality(Qt::WindowModal);
             dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
-                               Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint | Qt::WindowMinMaxButtonsHint);
+                               Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
 
             QFutureWatcher<void> watcher;
             connect(&watcher,SIGNAL(finished()),&dlg,SLOT(cancel()));

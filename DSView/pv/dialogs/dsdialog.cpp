@@ -36,7 +36,7 @@ DSDialog::DSDialog(QWidget *parent, bool hasClose) :
     QDialog(parent),
     _moving(false)
 {
-    setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint | Qt::WindowMinMaxButtonsHint);
+    setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
     setAttribute(Qt::WA_TranslucentBackground);
 
     build_main(hasClose);

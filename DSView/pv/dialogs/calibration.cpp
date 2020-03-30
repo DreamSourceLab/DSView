@@ -270,7 +270,7 @@ void Calibration::on_save()
                         tr("Cancel"),0,0,this,flags);
     dlg.setWindowModality(Qt::WindowModal);
     dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
-                       Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint | Qt::WindowMinMaxButtonsHint);
+                       Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
     dlg.setCancelButton(NULL);
 
     QFutureWatcher<void> watcher;
@@ -297,7 +297,7 @@ void Calibration::on_abort()
                         tr("Cancel"),0,0,this,flags);
     dlg.setWindowModality(Qt::WindowModal);
     dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
-                       Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint | Qt::WindowMinMaxButtonsHint);
+                       Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
     dlg.setCancelButton(NULL);
 
     QFutureWatcher<void> watcher;

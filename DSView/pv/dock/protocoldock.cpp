@@ -821,7 +821,7 @@ void ProtocolDock::search_update()
                             tr("Cancel"),0,0,this,flags);
         dlg.setWindowModality(Qt::WindowModal);
         dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
-                           Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint | Qt::WindowMinMaxButtonsHint);
+                           Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
         dlg.setCancelButton(NULL);
 
         QFutureWatcher<void> watcher;
