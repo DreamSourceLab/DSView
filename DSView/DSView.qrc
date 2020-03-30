@@ -1,11 +1,9 @@
 <RCC>
     <qresource prefix="/">
         <file>icons/Blackman.png</file>
-        <file>icons/dsl_logo.png</file>
         <file>icons/Flat_top.png</file>
         <file>icons/Hamming.png</file>
         <file>icons/Hann.png</file>
-        <file>icons/logo.png</file>
         <file>icons/Rectangle.png</file>
         <file>icons/mAmplitude.png</file>
         <file>icons/mBurst.png</file>
@@ -139,5 +137,6 @@
         <file>icons/light/restore.svg</file>
         <file>icons/dsl_logo.svg</file>
         <file>icons/dark/minimize.svg</file>
+        <file>icons/logo.svg</file>
     </qresource>
 </RCC>

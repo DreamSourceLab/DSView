@@ -52,14 +52,18 @@ MainFrame::MainFrame(DeviceManager &device_manager,
     setAttribute(Qt::WA_TranslucentBackground);
     // Make this a borderless window which can't
     // be resized or moved via the window system
+    #ifdef _WIN32
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint | Qt::WindowMinMaxButtonsHint);
+    #else
+    setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
+    #endif
     setMinimumHeight(minHeight);
     setMinimumWidth(minWidth);
     //resize(1024, 768);
 
     // Set the window icon
     QIcon icon;
-    icon.addFile(QString::fromUtf8(":/icons/logo.png"),
+    icon.addFile(QString::fromUtf8(":/icons/logo.svg"),
         QSize(), QIcon::Normal, QIcon::Off);
     setWindowIcon(icon);
 
@@ -422,7 +426,7 @@ void MainFrame::show_doc()
         QLabel tipsLabel;
         tipsLabel.setPixmap(QPixmap(":/icons/showDoc"+QString::number(_mainWindow->language())+".png"));
         QMessageBox msg;
-        msg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint | Qt::WindowMinMaxButtonsHint);
+        msg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
         msg.setContentsMargins(0, 0, 0, 0);
         connect(&msg, SIGNAL(buttonClicked(QAbstractButton*)), &dlg, SLOT(accept()));
         QPushButton *noMoreButton = msg.addButton(tr("Not Show Again"), QMessageBox::ActionRole);

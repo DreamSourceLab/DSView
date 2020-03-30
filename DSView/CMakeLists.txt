@@ -281,6 +281,7 @@ set(DSView_HEADERS
     pv/view/logicsignal.h
     pv/view/analogsignal.h
     pv/view/dsosignal.h
+    mystyle.h
 )
 
 set(DSView_FORMS
@@ -421,7 +422,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_
 # Install the executable.
 install(TARGETS ${PROJECT_NAME} DESTINATION bin/)
 install(DIRECTORY res DESTINATION share/${PROJECT_NAME})
-install(FILES icons/logo.png DESTINATION share/${PROJECT_NAME} RENAME logo.png)
+install(FILES icons/logo.svg DESTINATION share/${PROJECT_NAME} RENAME logo.svg)
 install(FILES ../NEWS25 DESTINATION share/${PROJECT_NAME} RENAME NEWS25)
 install(FILES ../NEWS31 DESTINATION share/${PROJECT_NAME} RENAME NEWS31)
 install(FILES ../ug25.pdf DESTINATION share/${PROJECT_NAME} RENAME ug25.pdf)
