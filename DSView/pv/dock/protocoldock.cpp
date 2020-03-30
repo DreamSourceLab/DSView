@@ -228,22 +228,22 @@ void ProtocolDock::reStyle()
 {
     QString iconPath = ":/icons/" + qApp->property("Style").toString();
 
-    _add_button->setIcon(QIcon(iconPath+"/add.png"));
-    _del_all_button->setIcon(QIcon(iconPath+"/del.png"));
-    _dn_set_button->setIcon(QIcon(iconPath+"/gear.png"));
-    _dn_save_button->setIcon(QIcon(iconPath+"/save.png"));
-    _dn_nav_button->setIcon(QIcon(iconPath+"/nav.png"));
-    _pre_button->setIcon(QIcon(iconPath+"/pre.png"));
-    _nxt_button->setIcon(QIcon(iconPath+"/next.png"));
-    _search_button->setIcon(QIcon(iconPath+"/search.png"));
+    _add_button->setIcon(QIcon(iconPath+"/add.svg"));
+    _del_all_button->setIcon(QIcon(iconPath+"/del.svg"));
+    _dn_set_button->setIcon(QIcon(iconPath+"/gear.svg"));
+    _dn_save_button->setIcon(QIcon(iconPath+"/save.svg"));
+    _dn_nav_button->setIcon(QIcon(iconPath+"/nav.svg"));
+    _pre_button->setIcon(QIcon(iconPath+"/pre.svg"));
+    _nxt_button->setIcon(QIcon(iconPath+"/next.svg"));
+    _search_button->setIcon(QIcon(iconPath+"/search.svg"));
 
     for (QVector <QPushButton *>::const_iterator i = _del_button_list.begin();
          i != _del_button_list.end(); i++)
-        (*i)->setIcon(QIcon(iconPath+"/del.png"));
+        (*i)->setIcon(QIcon(iconPath+"/del.svg"));
 
     for (QVector <QPushButton *>::const_iterator i = _set_button_list.begin();
          i != _set_button_list.end(); i++)
-        (*i)->setIcon(QIcon(iconPath+"/gear.png"));
+        (*i)->setIcon(QIcon(iconPath+"/gear.svg"));
 }
 
 void ProtocolDock::paintEvent(QPaintEvent *)
@@ -324,9 +324,9 @@ void ProtocolDock::add_protocol(bool silent)
             QPushButton *_del_button = new QPushButton(_up_widget);
             QPushButton *_set_button = new QPushButton(_up_widget);
             _del_button->setFlat(true);
-            _del_button->setIcon(QIcon(iconPath+"/del.png"));
+            _del_button->setIcon(QIcon(iconPath+"/del.svg"));
             _set_button->setFlat(true);
-            _set_button->setIcon(QIcon(iconPath+"/gear.png"));
+            _set_button->setIcon(QIcon(iconPath+"/gear.svg"));
             QLabel *_protocol_label = new QLabel(_up_widget);
             QLabel *_progress_label = new QLabel(_up_widget);
 
@@ -821,7 +821,7 @@ void ProtocolDock::search_update()
                             tr("Cancel"),0,0,this,flags);
         dlg.setWindowModality(Qt::WindowModal);
         dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
-                           Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
+                           Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint | Qt::WindowMinMaxButtonsHint);
         dlg.setCancelButton(NULL);
 
         QFutureWatcher<void> watcher;

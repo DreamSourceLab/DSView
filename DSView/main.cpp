@@ -35,8 +35,10 @@
 #include <QTranslator>
 #include <QSettings>
 #include <QDesktopServices>
+#include <QStyle>
 
 #include "dsapplication.h"
+#include "mystyle.h"
 #include "pv/devicemanager.h"
 #include "pv/mainframe.h"
 
@@ -63,9 +65,13 @@ int main(int argc, char *argv[])
 	struct sr_context *sr_ctx = NULL;
 	const char *open_file = NULL;
 
-    QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-    QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+    #if QT_VERSION >= QT_VERSION_CHECK(5,6,0)
+        QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+        QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+    #endif // QT_VERSION
+
     QApplication a(argc, argv);
+    a.setStyle(new MyStyle);
 
     // Set some application metadata
     QApplication::setApplicationVersion(DS_VERSION_STRING);

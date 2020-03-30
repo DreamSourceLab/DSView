@@ -61,10 +61,10 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession &session) :
     _mouse_groupBox = new QGroupBox(_widget);
     _fen_checkBox = new QCheckBox(_widget);
     _fen_checkBox->setChecked(true);
-    _width_label = new QLabel("#####", _widget);
-    _period_label = new QLabel("#####", _widget);
-    _freq_label = new QLabel("#####", _widget);
-    _duty_label = new QLabel("#####", _widget);
+    _width_label = new QLabel(_widget);
+    _period_label = new QLabel(_widget);
+    _freq_label = new QLabel(_widget);
+    _duty_label = new QLabel(_widget);
 
     _w_label = new QLabel(_widget);
     _p_label = new QLabel(_widget);
@@ -185,15 +185,15 @@ void MeasureDock::reStyle()
 {
     QString iconPath = ":/icons/" + qApp->property("Style").toString();
 
-    _dist_add_btn->setIcon(QIcon(iconPath+"/add.png"));
-    _edge_add_btn->setIcon(QIcon(iconPath+"/add.png"));
+    _dist_add_btn->setIcon(QIcon(iconPath+"/add.svg"));
+    _edge_add_btn->setIcon(QIcon(iconPath+"/add.svg"));
 
     for (QVector <QToolButton *>::const_iterator i = _dist_del_btn_vec.begin();
          i != _dist_del_btn_vec.end(); i++)
-        (*i)->setIcon(QIcon(iconPath+"/del.png"));
+        (*i)->setIcon(QIcon(iconPath+"/del.svg"));
     for (QVector <QToolButton *>::const_iterator i = _edge_del_btn_vec.begin();
          i != _edge_del_btn_vec.end(); i++)
-        (*i)->setIcon(QIcon(iconPath+"/del.png"));
+        (*i)->setIcon(QIcon(iconPath+"/del.svg"));
 }
 
 void MeasureDock::paintEvent(QPaintEvent *)
@@ -253,7 +253,7 @@ void MeasureDock::cursor_update()
         QString curCursor = QString::number(index);
 
         QToolButton *del_btn = new QToolButton(_widget);
-        del_btn->setIcon(QIcon(iconPath+"/del.png"));
+        del_btn->setIcon(QIcon(iconPath+"/del.svg"));
         del_btn->setCheckable(true);
         QPushButton *_cursor_pushButton = new QPushButton(curCursor, _widget);
         set_cursor_btn_color(_cursor_pushButton);
@@ -338,7 +338,7 @@ void MeasureDock::add_dist_measure()
 
     QString iconPath = ":/icons/" + qApp->property("Style").toString();
     QToolButton *del_btn = new QToolButton(row_widget);
-    del_btn->setIcon(QIcon(iconPath+"/del.png"));
+    del_btn->setIcon(QIcon(iconPath+"/del.svg"));
     del_btn->setCheckable(true);
     QPushButton *s_btn = new QPushButton(tr(" "), row_widget);
     s_btn->setObjectName("dist");
@@ -404,7 +404,7 @@ void MeasureDock::add_edge_measure()
 
     QString iconPath = ":/icons/" + qApp->property("Style").toString();
     QToolButton *del_btn = new QToolButton(row_widget);
-    del_btn->setIcon(QIcon(iconPath+"/del.png"));
+    del_btn->setIcon(QIcon(iconPath+"/del.svg"));
     del_btn->setCheckable(true);
     QPushButton *s_btn = new QPushButton(tr(" "), row_widget);
     s_btn->setObjectName("edge");
@@ -480,7 +480,7 @@ void MeasureDock::show_all_coursor()
 
     QDialog cursor_dlg(_widget);
     cursor_dlg.setWindowFlags(Qt::FramelessWindowHint | Qt::Popup | Qt::WindowSystemMenuHint |
-                              Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
+                              Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint | Qt::WindowMinMaxButtonsHint);
 
     int index = 0;
     QGridLayout *glayout = new QGridLayout(&cursor_dlg);

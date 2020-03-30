@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- 由 Microsoft Visio, SVG Export 生成 osc.svg 页-1 -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:ev="http://www.w3.org/2001/xml-events"
+		xmlns:v="http://schemas.microsoft.com/visio/2003/SVGExtensions/" width="5.10433in" height="2.83574in"
+		viewBox="0 0 367.512 204.173" xml:space="preserve" color-interpolation-filters="sRGB" class="st2">
+	<v:documentProperties v:langID="2052" v:viewMarkup="false"/>
+
+	<style type="text/css">
+	<![CDATA[
+		.st1 {fill:#d7d7d7;stroke:none;stroke-linecap:butt;stroke-width:6.12}
+		.st2 {fill:none;fill-rule:evenodd;font-size:12px;overflow:visible;stroke-linecap:square;stroke-miterlimit:3}
+	]]>
+	</style>
+
+	<g v:mID="0" v:index="1" v:groupContext="foregroundPage">
+		<title>页-1</title>
+		<v:pageProperties v:drawingScale="0.0393701" v:pageScale="0.0393701" v:drawingUnits="24" v:shadowOffsetX="9"
+				v:shadowOffsetY="-9"/>
+		<g id="group309-1" v:mID="309" v:groupContext="group">
+			<title>工作表.309</title>
+			<g id="shape310-2" v:mID="310" v:groupContext="shape" transform="translate(42.3938,-19.6008)">
+				<title>工作表.310</title>
+				<path d="M281.93 204.17 C260.26 204.17 253.42 168.48 244.75 123.28 C240.63 101.81 233.04 62.18 225.61 57.45 C218.18
+							 62.18 210.58 101.81 206.46 123.28 C197.8 168.48 190.96 204.17 169.28 204.17 C147.62 204.17 140.78 168.48
+							 132.12 123.29 C128.01 101.82 120.42 62.21 113 57.45 C105.57 62.2 97.98 101.82 93.86 123.29 C85.2 168.48
+							 78.36 204.17 56.7 204.17 C35.04 204.17 28.19 168.48 19.54 123.28 C15.34 101.42 7.55 60.73 0 57.22 L0.41
+							 38.93 C22.07 38.93 28.9 74.63 37.56 119.82 C41.68 141.28 49.27 180.9 56.69 185.66 C64.11 180.9 71.71
+							 141.29 75.82 119.83 C84.49 74.63 91.32 38.93 112.99 38.93 C134.65 38.93 141.49 74.63 150.15 119.83 C154.26
+							 141.29 161.85 180.9 169.27 185.66 C176.7 180.92 184.3 141.29 188.42 119.82 C197.08 74.63 203.92 38.93
+							 225.6 38.93 C247.27 38.93 254.11 74.63 262.77 119.83 C266.97 141.69 274.77 182.39 282.33 185.89 L281.93
+							 204.17 Z" class="st1"/>
+			</g>
+		</g>
+	</g>
+</svg>

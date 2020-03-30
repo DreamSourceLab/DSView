@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- 由 Microsoft Visio, SVG Export 生成 trigger.svg 页-1 -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:ev="http://www.w3.org/2001/xml-events"
+		xmlns:v="http://schemas.microsoft.com/visio/2003/SVGExtensions/" width="5.33333in" height="3.69417in"
+		viewBox="0 0 384 265.98" xml:space="preserve" color-interpolation-filters="sRGB" class="st3">
+	<v:documentProperties v:langID="2052" v:viewMarkup="false"/>
+
+	<style type="text/css">
+	<![CDATA[
+		.st1 {stroke:#d7d7d7;stroke-linecap:round;stroke-linejoin:round;stroke-width:20}
+		.st2 {stroke:#d7d7d7;stroke-width:30}
+		.st3 {fill:none;fill-rule:evenodd;font-size:12px;overflow:visible;stroke-linecap:square;stroke-miterlimit:3}
+	]]>
+	</style>
+
+	<g v:mID="0" v:index="1" v:groupContext="foregroundPage">
+		<title>页-1</title>
+		<v:pageProperties v:drawingScale="0.0393701" v:pageScale="0.0393701" v:drawingUnits="24" v:shadowOffsetX="9"
+				v:shadowOffsetY="-9"/>
+		<g id="group83-1" v:mID="83" v:groupContext="group">
+			<title>工作表.83</title>
+			<g id="shape101-2" v:mID="101" v:groupContext="shape" transform="translate(90.7087,-175.748)">
+				<title>工作表.101</title>
+				<path d="M0 265.98 L45.35 265.98" class="st1"/>
+			</g>
+			<g id="shape102-5" v:mID="102" v:groupContext="shape" transform="translate(402.043,44.878) rotate(90)">
+				<title>工作表.102</title>
+				<path d="M0 265.98 L45.35 265.98" class="st1"/>
+			</g>
+			<g id="shape103-8" v:mID="103" v:groupContext="shape" transform="translate(273.116,-148.192) rotate(45)">
+				<title>工作表.103</title>
+				<path d="M0 265.98 L63.18 265.98" class="st1"/>
+			</g>
+			<g id="shape105-11" v:mID="105" v:groupContext="shape" transform="translate(583.461,42.0433) rotate(90)">
+				<title>工作表.105</title>
+				<path d="M0 265.98 L190.14 265.98" class="st2"/>
+			</g>
+			<g id="shape106-14" v:mID="106" v:groupContext="shape" transform="translate(513.007,136.628) rotate(109.379)">
+				<title>工作表.106</title>
+				<path d="M0 265.98 L192.54 265.98" class="st2"/>
+			</g>
+			<g id="shape107-17" v:mID="107" v:groupContext="shape" transform="translate(396.314,278.309) rotate(135)">
+				<title>工作表.107</title>
+				<path d="M0 265.98 L192.54 265.98" class="st2"/>
+			</g>
+		</g>
+	</g>
+</svg>

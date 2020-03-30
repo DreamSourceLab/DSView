@@ -93,7 +93,7 @@ About::About(QWidget *parent) :
         }
     }
 
-    QPixmap pix(":/icons/dsl_logo.png");
+    QPixmap pix(":/icons/dsl_logo.svg");
     QImage logo = pix.toImage();
 
     QTextBrowser *about = new QTextBrowser(this);

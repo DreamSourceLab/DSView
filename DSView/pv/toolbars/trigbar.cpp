@@ -50,7 +50,6 @@ TrigBar::TrigBar(SigSession &session, QWidget *parent) :
 {
     setMovable(false);
     setContentsMargins(0,0,0,0);
-    setIconSize(QSize(40, 28));
 
     connect(&_trig_button, SIGNAL(clicked()),
         this, SLOT(trigger_clicked()));
@@ -156,19 +155,19 @@ void TrigBar::reStyle()
 {
     QString iconPath = ":/icons/" + qApp->property("Style").toString();
 
-    _trig_button.setIcon(QIcon(iconPath+"/trigger.png"));
-    _protocol_button.setIcon(QIcon(iconPath+"/protocol.png"));
-    _measure_button.setIcon(QIcon(iconPath+"/measure.png"));
-    _search_button.setIcon(QIcon(iconPath+"/search-bar.png"));
-    _function_button.setIcon(QIcon(iconPath+"/function.png"));
-    _display_button.setIcon(QIcon(iconPath+"/display.png"));
+    _trig_button.setIcon(QIcon(iconPath+"/trigger.svg"));
+    _protocol_button.setIcon(QIcon(iconPath+"/protocol.svg"));
+    _measure_button.setIcon(QIcon(iconPath+"/measure.svg"));
+    _search_button.setIcon(QIcon(iconPath+"/search-bar.svg"));
+    _function_button.setIcon(QIcon(iconPath+"/function.svg"));
+    _display_button.setIcon(QIcon(iconPath+"/display.svg"));
 
-    _action_fft->setIcon(QIcon(iconPath+"/fft.png"));
-    _action_math->setIcon(QIcon(iconPath+"/math.png"));
-    _action_lissajous->setIcon(QIcon(iconPath+"/lissajous.png"));
-    _dark_style->setIcon(QIcon(iconPath+"/dark.png"));
-    _light_style->setIcon(QIcon(iconPath+"/light.png"));
-    _themes->setIcon(QIcon(iconPath+"/"+qApp->property("Style").toString()+".png"));
+    _action_fft->setIcon(QIcon(iconPath+"/fft.svg"));
+    _action_math->setIcon(QIcon(iconPath+"/math.svg"));
+    _action_lissajous->setIcon(QIcon(iconPath+"/lissajous.svg"));
+    _dark_style->setIcon(QIcon(iconPath+"/dark.svg"));
+    _light_style->setIcon(QIcon(iconPath+"/light.svg"));
+    _themes->setIcon(QIcon(iconPath+"/"+qApp->property("Style").toString()+".svg"));
 }
 
 void TrigBar::protocol_clicked()
@@ -290,13 +289,13 @@ void TrigBar::on_actionMath_triggered()
 void TrigBar::on_actionDark_triggered()
 {
     setTheme(DARK_STYLE);
-    _themes->setIcon(QIcon(":/icons/"+DARK_STYLE+"/"+DARK_STYLE+".png"));
+    _themes->setIcon(QIcon(":/icons/"+DARK_STYLE+"/"+DARK_STYLE+".svg"));
 }
 
 void TrigBar::on_actionLight_triggered()
 {
     setTheme(LIGHT_STYLE);
-    _themes->setIcon(QIcon(":/icons/"+LIGHT_STYLE+"/"+LIGHT_STYLE+".png"));
+    _themes->setIcon(QIcon(":/icons/"+LIGHT_STYLE+"/"+LIGHT_STYLE+".svg"));
 }
 
 void TrigBar::on_actionLissajous_triggered()

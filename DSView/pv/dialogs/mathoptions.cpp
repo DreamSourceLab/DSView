@@ -52,7 +52,7 @@ MathOptions::MathOptions(SigSession &session, QWidget *parent) :
     _enable = new QCheckBox(this);
 
     QLabel *lisa_label = new QLabel(this);
-    lisa_label->setPixmap(QPixmap(":/icons/math.png"));
+    lisa_label->setPixmap(QPixmap(":/icons/math.svg"));
 
     _math_group = new QGroupBox(this);
     QHBoxLayout *type_layout = new QHBoxLayout();

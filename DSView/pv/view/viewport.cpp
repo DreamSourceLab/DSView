@@ -79,10 +79,10 @@ Viewport::Viewport(View &parent, View_type type) :
     setBackgroundRole(QPalette::Base);
 
     //setFixedSize(QSize(600, 400));
-    _mm_width = "#####";
-    _mm_period = "#####";
-    _mm_freq = "#####";
-    _mm_duty = "#####";
+    _mm_width = View::Unknown_Str;
+    _mm_period = View::Unknown_Str;
+    _mm_freq = View::Unknown_Str;
+    _mm_duty = View::Unknown_Str;
     _measure_en = true;
     _edge_hit = false;
     transfer_started = false;
@@ -1137,10 +1137,10 @@ void Viewport::clear_measure()
 void Viewport::clear_dso_xm()
 {
     _dso_xm_valid = false;
-    _mm_width = "#####";
-    _mm_period = "#####";
-    _mm_freq = "#####";
-    _mm_duty = "#####";
+    _mm_width = View::Unknown_Str;
+    _mm_period = View::Unknown_Str;
+    _mm_freq = View::Unknown_Str;
+    _mm_duty = View::Unknown_Str;
     _action_type = NO_ACTION;
 }
 
@@ -1163,8 +1163,8 @@ void Viewport::measure()
                         _measure_type = LOGIC_FREQ;
 
                         _mm_width = _view.get_ruler()->format_real_time(_nxt_sample - _cur_sample, sample_rate);
-                        _mm_period = _thd_sample != 0 ? _view.get_ruler()->format_real_time(_thd_sample - _cur_sample, sample_rate) : "#####";
-                        _mm_freq = _thd_sample != 0 ? _view.get_ruler()->format_real_freq(_thd_sample - _cur_sample, sample_rate) : "#####";
+                        _mm_period = _thd_sample != 0 ? _view.get_ruler()->format_real_time(_thd_sample - _cur_sample, sample_rate) : View::Unknown_Str;
+                        _mm_freq = _thd_sample != 0 ? _view.get_ruler()->format_real_freq(_thd_sample - _cur_sample, sample_rate) : View::Unknown_Str;
 
                         _cur_preX = _view.index2pixel(_cur_sample);
                         _cur_aftX = _view.index2pixel(_nxt_sample);
@@ -1172,14 +1172,14 @@ void Viewport::measure()
                         _cur_midY = logicSig->get_y();
 
                         _mm_duty = _thd_sample != 0 ? QString::number((_nxt_sample - _cur_sample) * 100.0 / (_thd_sample - _cur_sample), 'f', 2)+"%" :
-                                                     "#####";
+                                                     View::Unknown_Str;
                         break;
                     } else {
                         _measure_type = NO_MEASURE;
-                        _mm_width = "#####";
-                        _mm_period = "#####";
-                        _mm_freq = "#####";
-                        _mm_duty = "#####";
+                        _mm_width = View::Unknown_Str;
+                        _mm_period = View::Unknown_Str;
+                        _mm_freq = View::Unknown_Str;
+                        _mm_duty = View::Unknown_Str;
                     }
                 } else if (_action_type == LOGIC_EDGE) {
                     if (logicSig->edges(_view.hover_point(), _edge_start, _edge_rising, _edge_falling)) {
@@ -1572,7 +1572,7 @@ QString Viewport::get_measure(QString option)
     else if (option.compare("duty") == 0)
         return _mm_duty;
     else
-        return "#####";
+        return View::Unknown_Str;
 }
 
 void Viewport::set_measure_en(int enable)

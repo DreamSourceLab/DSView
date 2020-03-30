@@ -50,7 +50,7 @@ DSMessageBox::DSMessageBox(QWidget *parent) :
     _main->setGraphicsEffect(bodyShadow);
 
     _msg = new QMessageBox(this);
-    _msg->setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
+    _msg->setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint | Qt::WindowMinMaxButtonsHint);
 
     _titlebar = new toolbars::TitleBar(false, this);
     _titlebar->setTitle(tr("Message"));

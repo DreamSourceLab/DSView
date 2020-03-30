@@ -44,7 +44,6 @@ FileBar::FileBar(SigSession &session, QWidget *parent) :
 {
     setMovable(false);
     setContentsMargins(0,0,0,0);
-    setIconSize(QSize(40, 28));
 
     _action_load = new QAction(this);
     _action_load->setObjectName(QString::fromUtf8("actionLoad"));
@@ -122,15 +121,15 @@ void FileBar::reStyle()
 {
     QString iconPath = ":/icons/" + qApp->property("Style").toString();
 
-    _action_load->setIcon(QIcon(iconPath+"/open.png"));
-    _action_store->setIcon(QIcon(iconPath+"/save.png"));
-    _action_default->setIcon(QIcon(iconPath+"/gear.png"));
-    _menu_session->setIcon(QIcon(iconPath+"/gear.png"));
-    _action_open->setIcon(QIcon(iconPath+"/open.png"));
-    _action_save->setIcon(QIcon(iconPath+"/save.png"));
-    _action_export->setIcon(QIcon(iconPath+"/export.png"));
-    _action_capture->setIcon(QIcon(iconPath+"/capture.png"));
-    _file_button.setIcon(QIcon(iconPath+"/file.png"));
+    _action_load->setIcon(QIcon(iconPath+"/open.svg"));
+    _action_store->setIcon(QIcon(iconPath+"/save.svg"));
+    _action_default->setIcon(QIcon(iconPath+"/settings.svg"));
+    _menu_session->setIcon(QIcon(iconPath+"/settings.svg"));
+    _action_open->setIcon(QIcon(iconPath+"/open.svg"));
+    _action_save->setIcon(QIcon(iconPath+"/save.svg"));
+    _action_export->setIcon(QIcon(iconPath+"/export.svg"));
+    _action_capture->setIcon(QIcon(iconPath+"/capture.svg"));
+    _file_button.setIcon(QIcon(iconPath+"/file.svg"));
 }
 
 void FileBar::on_actionOpen_triggered()

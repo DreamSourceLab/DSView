@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- 由 Microsoft Visio, SVG Export 生成 modes.svg 页-1 -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:ev="http://www.w3.org/2001/xml-events"
+		xmlns:v="http://schemas.microsoft.com/visio/2003/SVGExtensions/" width="5.33333in" height="3.69417in"
+		viewBox="0 0 384 265.98" xml:space="preserve" color-interpolation-filters="sRGB" class="st4">
+	<v:documentProperties v:langID="2052" v:viewMarkup="false"/>
+
+	<style type="text/css">
+	<![CDATA[
+		.st1 {fill:#d7d7d7;stroke:none;stroke-linecap:butt;stroke-width:1.37143}
+		.st2 {fill:#d7d7d7;stroke:#ffffff;stroke-linecap:round;stroke-linejoin:round;stroke-width:0.5}
+		.st3 {stroke:#d7d7d7;stroke-linecap:round;stroke-linejoin:round;stroke-width:20}
+		.st4 {fill:none;fill-rule:evenodd;font-size:12px;overflow:visible;stroke-linecap:square;stroke-miterlimit:3}
+	]]>
+	</style>
+
+	<g v:mID="0" v:index="1" v:groupContext="foregroundPage">
+		<title>页-1</title>
+		<v:pageProperties v:drawingScale="0.0393701" v:pageScale="0.0393701" v:drawingUnits="24" v:shadowOffsetX="9"
+				v:shadowOffsetY="-9"/>
+		<g id="group24-1" v:mID="24" v:groupContext="group">
+			<title>工作表.24</title>
+			<g id="group25-2" transform="translate(28.3465,-17.0079)" v:mID="25" v:groupContext="group">
+				<title>工作表.25</title>
+				<g id="shape26-3" v:mID="26" v:groupContext="shape">
+					<title>工作表.26</title>
+					<path d="M210.25 43.2 L111.39 43.2 C49.97 43.2 0 93.17 0 154.59 C0 216.01 49.97 265.98 111.39 265.98 L210.25
+								 265.98 C271.67 265.98 321.64 216.01 321.64 154.59 C321.64 93.17 271.67 43.2 210.25 43.2 ZM210.25
+								 245.3 L111.39 245.3 C61.37 245.3 20.68 204.61 20.68 154.59 C20.68 104.57 61.37 63.87 111.39 63.87
+								 L210.25 63.87 C260.27 63.87 300.96 104.57 300.96 154.59 C300.96 204.61 260.27 245.3 210.25 245.3
+								 Z" class="st1"/>
+				</g>
+			</g>
+			<g id="shape28-5" v:mID="28" v:groupContext="shape" transform="translate(132.337,-62.3622)">
+				<title>工作表.28</title>
+				<rect x="0" y="242.846" width="119.327" height="23.134" rx="11.567" ry="11.567" class="st2"/>
+			</g>
+			<g id="shape30-7" v:mID="30" v:groupContext="shape" transform="translate(457.98,81.7284) rotate(90)">
+				<title>工作表.30</title>
+				<path d="M0 265.98 L76.54 265.98" class="st3"/>
+			</g>
+			<g id="shape79-10" v:mID="79" v:groupContext="shape" transform="translate(406.688,320.452) rotate(135.754)">
+				<title>工作表.79</title>
+				<path d="M0 265.98 L40.63 265.98" class="st3"/>
+			</g>
+			<g id="shape80-13" v:mID="80" v:groupContext="shape" transform="translate(351.349,-58.5397) rotate(45)">
+				<title>工作表.80</title>
+				<path d="M0 265.98 L40.63 265.98" class="st3"/>
+			</g>
+		</g>
+	</g>
+</svg>

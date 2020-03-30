@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- 由 Microsoft Visio, SVG Export 生成 restore.svg 页-1 -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:ev="http://www.w3.org/2001/xml-events"
+		xmlns:v="http://schemas.microsoft.com/visio/2003/SVGExtensions/" width="5.33333in" height="5.33333in" viewBox="0 0 384 384"
+		xml:space="preserve" color-interpolation-filters="sRGB" class="st2">
+	<v:documentProperties v:langID="2052" v:viewMarkup="false"/>
+
+	<style type="text/css">
+	<![CDATA[
+		.st1 {fill:#d7d7d7;stroke:none;stroke-linecap:butt;stroke-width:0.758743}
+		.st2 {fill:none;fill-rule:evenodd;font-size:12px;overflow:visible;stroke-linecap:square;stroke-miterlimit:3}
+	]]>
+	</style>
+
+	<g v:mID="0" v:index="1" v:groupContext="foregroundPage">
+		<title>页-1</title>
+		<v:pageProperties v:drawingScale="0.0393701" v:pageScale="0.0393701" v:drawingUnits="24" v:shadowOffsetX="9"
+				v:shadowOffsetY="-9"/>
+		<g id="group445-1" v:mID="445" v:groupContext="group">
+			<title>工作表.445</title>
+			<g id="shape446-2" v:mID="446" v:groupContext="shape" transform="translate(53.4533,-51.0236)">
+				<title>工作表.446</title>
+				<path d="M168.01 384 L5.66 384 C2.53 384 0 381.47 0 378.34 L0 215.99 C0 212.86 2.53 210.33 5.66 210.33 L168.01 210.33
+							 C171.14 210.33 173.67 212.86 173.67 215.99 L173.67 378.34 C173.67 381.47 171.14 384 168.01 384 ZM11.32
+							 372.68 L162.35 372.68 L162.35 221.65 L11.32 221.65 L11.32 372.68 Z" class="st1"/>
+			</g>
+			<g id="shape447-4" v:mID="447" v:groupContext="shape" transform="translate(161.17,-160.994)">
+				<title>工作表.447</title>
+				<path d="M168.01 384 L5.66 384 C2.53 384 0 381.47 0 378.34 L0 215.99 C0 212.86 2.53 210.33 5.66 210.33 L168.01 210.33
+							 C171.14 210.33 173.67 212.86 173.67 215.99 L173.67 378.34 C173.67 381.47 171.14 384 168.01 384 ZM11.32
+							 372.68 L162.35 372.68 L162.35 221.65 L11.32 221.65 L11.32 372.68 Z" class="st1"/>
+			</g>
+		</g>
+	</g>
+</svg>

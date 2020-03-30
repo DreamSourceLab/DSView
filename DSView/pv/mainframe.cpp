@@ -52,7 +52,7 @@ MainFrame::MainFrame(DeviceManager &device_manager,
     setAttribute(Qt::WA_TranslucentBackground);
     // Make this a borderless window which can't
     // be resized or moved via the window system
-    setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
+    setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint | Qt::WindowMinMaxButtonsHint);
     setMinimumHeight(minHeight);
     setMinimumWidth(minWidth);
     //resize(1024, 768);
@@ -422,7 +422,7 @@ void MainFrame::show_doc()
         QLabel tipsLabel;
         tipsLabel.setPixmap(QPixmap(":/icons/showDoc"+QString::number(_mainWindow->language())+".png"));
         QMessageBox msg;
-        msg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
+        msg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint | Qt::WindowMinMaxButtonsHint);
         msg.setContentsMargins(0, 0, 0, 0);
         connect(&msg, SIGNAL(buttonClicked(QAbstractButton*)), &dlg, SLOT(accept()));
         QPushButton *noMoreButton = msg.addButton(tr("Not Show Again"), QMessageBox::ActionRole);

@@ -70,9 +70,9 @@ static const char *probe_names[] = {
 };
 
 static struct sr_dev_mode mode_list[] = {
-    {LOGIC, "Logic Analyzer", "逻辑分析仪", "la", "la.png"},
-    {ANALOG, "Data Acquisition", "数据记录仪", "daq", "daq.png"},
-    {DSO, "Oscilloscope", "示波器", "osc", "osc.png"},
+    {LOGIC, "Logic Analyzer", "逻辑分析仪", "la", "la.svg"},
+    {ANALOG, "Data Acquisition", "数据记录仪", "daq", "daq.svg"},
+    {DSO, "Oscilloscope", "示波器", "osc", "osc.svg"},
 };
 
 SR_PRIV void dsl_probe_init(struct sr_dev_inst *sdi)
