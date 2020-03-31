@@ -685,6 +685,7 @@ void View::dev_changed(bool close)
 
 void View::signals_changed()
 {
+    double actualMargin = SignalMargin;
     int total_rows = 0;
     int label_size = 0;
     uint8_t max_height = MaxHeightUnit;
@@ -737,7 +738,7 @@ void View::signals_changed()
         }
 
         const double height = (_time_viewport->height()
-                               - 2 * SignalMargin * label_size) * 1.0 / total_rows;
+                               - 2 * actualMargin * label_size) * 1.0 / total_rows;
 
         if (_session.get_device()->dev_inst()->mode == LOGIC) {
             GVariant* gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_MAX_HEIGHT_VALUE);
@@ -745,16 +746,22 @@ void View::signals_changed()
                 max_height = (g_variant_get_byte(gvar) + 1) * MaxHeightUnit;
                 g_variant_unref(gvar);
             }
-            _signalHeight = (int)((height <= 0) ? 1 : (height >= max_height) ? max_height : height);
+            if (height < 2*actualMargin) {
+                actualMargin /= 2;
+                _signalHeight = max(1.0, (_time_viewport->height()
+                                          - 2 * actualMargin * label_size) * 1.0 / total_rows);
+            } else {
+                _signalHeight = (height >= max_height) ? max_height : height;
+            }
         } else if (_session.get_device()->dev_inst()->mode == DSO) {
             _signalHeight = (_header->height()
                              - horizontalScrollBar()->height()
-                             - 2 * SignalMargin * label_size) * 1.0 / total_rows;
+                             - 2 * actualMargin * label_size) * 1.0 / total_rows;
         } else {
             _signalHeight = (int)((height <= 0) ? 1 : height);
         }
-        _spanY = _signalHeight + 2 * SignalMargin;
-        int next_v_offset = SignalMargin;
+        _spanY = _signalHeight + 2 * actualMargin;
+        int next_v_offset = actualMargin;
         BOOST_FOREACH(boost::shared_ptr<Trace> t, time_traces) {
             t->set_view(this);
             t->set_viewport(_time_viewport);
@@ -762,8 +769,8 @@ void View::signals_changed()
                 continue;
             const double traceHeight = _signalHeight*t->rows_size();
             t->set_totalHeight((int)traceHeight);
-            t->set_v_offset(next_v_offset + 0.5 * traceHeight + SignalMargin);
-            next_v_offset += traceHeight + 2 * SignalMargin;
+            t->set_v_offset(next_v_offset + 0.5 * traceHeight + actualMargin);
+            next_v_offset += traceHeight + 2 * actualMargin;
 
             boost::shared_ptr<view::DsoSignal> dsoSig;
             if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(t))) {

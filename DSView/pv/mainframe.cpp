@@ -41,6 +41,7 @@
 #include <QPushButton>
 #include <QMessageBox>
 #include <QApplication>
+#include <QScreen>
 
 #include <algorithm>
 
@@ -161,8 +162,8 @@ void MainFrame::resizeEvent(QResizeEvent *event)
 
 void MainFrame::closeEvent(QCloseEvent *event)
 {
-    _mainWindow->session_save();
     writeSettings();
+    _mainWindow->session_save();
     event->accept();
 }
 
@@ -359,25 +360,18 @@ void MainFrame::writeSettings()
     settings.beginGroup("MainFrame");
     settings.setValue("style", qApp->property("Style").toString());
     settings.setValue("language", qApp->property("Language").toInt());
+    settings.setValue("geometry", saveGeometry());
     settings.setValue("isMax", isMaximized());
-    settings.setValue("size", size());
-    settings.setValue("pos", pos() +
-                      QPoint(geometry().left() - frameGeometry().left(), frameGeometry().right() - geometry().right()));
     settings.endGroup();
 }
 
 void MainFrame::readSettings()
 {
     QSettings settings(QApplication::organizationName(), QApplication::applicationName());
-    QDesktopWidget* desktopWidget = QApplication::desktop();
-    QRect deskRect = desktopWidget->availableGeometry();
-    QPoint default_upleft = QPoint((deskRect.width() - defWidth)/2, (deskRect.height() - defHeight)/2);
-    QSize default_size = QSize(defWidth, defHeight);
 
     settings.beginGroup("MainFrame");
     bool isMax = settings.value("isMax", false).toBool();
-    QSize size = settings.value("size", default_size).toSize();
-    QPoint pos = settings.value("pos", default_upleft).toPoint();
+    const QByteArray geometry = settings.value("geometry", QByteArray()).toByteArray();
     // defaut language
     if (settings.contains("language")) {
         _mainWindow->switchLanguage(settings.value("language").toInt());
@@ -387,27 +381,20 @@ void MainFrame::readSettings()
     }
     settings.endGroup();
 
-    // check the restored position is vavlid or not
-    int i = 0;
-    for (; i < desktopWidget->screenCount(); i++) {
-        deskRect = desktopWidget->availableGeometry(i);
-        if (deskRect.contains(pos))
-            break;
-    }
-    if (i >= desktopWidget->screenCount())
-        pos = default_upleft;
-
-    if (isMax) {
-        resize(default_size);
-        move(default_upleft);
-        _titleBar->showMaxRestore();
+    if (geometry.isEmpty()) {
+        QScreen *screen=QGuiApplication::primaryScreen ();
+        const QRect availableGeometry = screen->availableGeometry();
+        resize(availableGeometry.width() / 2, availableGeometry.height() / 1.5);
+        const int origX = std::max(0, (availableGeometry.width() - width()) / 2);
+        const int origY = std::max(0, (availableGeometry.height() - height()) / 2);
+        move(origX, origY);
     } else {
-        resize(size);
-        move(pos);
+        restoreGeometry(geometry);
     }
 
     // restore dockwidgets
     _mainWindow->restore_dock();
+    _titleBar->setRestoreButton(isMax);
 }
 
 void MainFrame::setTaskbarProgress(int progress)
