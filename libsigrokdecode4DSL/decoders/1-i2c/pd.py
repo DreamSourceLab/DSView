@@ -285,6 +285,12 @@ class Decoder(srd.Decoder):
                 elif (self.matched & (0b1 << 2)):
                     self.handle_stop()
             elif self.state == 'FIND ACK':
-                # Wait for a data/ack bit: SCL = rising.
-                (scl, sda) = self.wait({0: 'r'})
-                self.get_ack(scl, sda)
+                # Wait for any of the following conditions (or combinations):
+                #  a) a data/ack bit: SCL = rising.
+                #  b) STOP condition (P): SCL = high, SDA = rising
+                (scl, sda) = self.wait([{0: 'r'}, {0: 'h', 1: 'r'}])
+                if (self.matched & (0b1 << 0)):
+                    self.get_ack(scl, sda)
+                elif (self.matched & (0b1 << 1)):
+                    self.handle_stop()
+
