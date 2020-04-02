@@ -83,12 +83,13 @@ class Decoder(srd.Decoder):
 
         inv = self.options['invert'] == 'yes'
 
+        (dmx,) = self.wait({0: 'h' if inv else 'l'})
+        self.run_start = self.samplenum
+
         while True:
             # Seek for an interval with no state change with a length between
             # 88 and 1000000 us (BREAK).
             if self.state == 'FIND BREAK':
-                (dmx,) = self.wait({0: 'h' if inv else 'l'})
-                self.run_start = self.samplenum
                 (dmx,) = self.wait({0: 'f' if inv else 'r'})
                 runlen = (self.samplenum - self.run_start) * self.sample_usec
                 if runlen > 88 and runlen < 1000000:
@@ -98,6 +99,9 @@ class Decoder(srd.Decoder):
                 elif runlen >= 1000000:
                     # Error condition.
                     self.putr([10, ['Invalid break length']])
+                else:
+                    (dmx,) = self.wait({0: 'h' if inv else 'l'})
+                    self.run_start = self.samplenum
             # Directly following the BREAK is the MARK AFTER BREAK.
             elif self.state == 'MARK MAB':
                 self.run_start = self.samplenum
