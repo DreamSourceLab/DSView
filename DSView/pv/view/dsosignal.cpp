@@ -1055,13 +1055,18 @@ void DsoSignal::paint_trace(QPainter &p,
         for (int64_t sample = 0; sample < sample_end; sample+=num_channels) {
             value = samples[sample];
             const float y = min(max(top, zeroY + (value - hw_offset) * _scale), bottom);
+            if (x > get_view_rect().right()) {
+                point--;
+                const float lastY = point->y() + (y - point->y()) / (x - point->x()) * (get_view_rect().right() - point->x());
+                point++;
+                *point++ = QPointF(get_view_rect().right(), lastY);
+                break;
+            }
             *point++ = QPointF(x, y);
             x += pixels_per_sample;
         }
 
         p.drawPolyline(points, point - points);
-        p.eraseRect(get_view_rect().right()+1, get_view_rect().top(),
-                    _view->viewport()->width() - get_view_rect().width(), get_view_rect().height());
 
         delete[] points;
     }
