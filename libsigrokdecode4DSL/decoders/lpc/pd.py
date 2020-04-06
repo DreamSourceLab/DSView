@@ -504,6 +504,10 @@ class Decoder(srd.Decoder):
 
             # TODO: Only memory read/write is currently supported/tested.
 
+            # Detect host cycle abort requests
+            if (lframe == 0) and (self.oldlframe == 0):
+                self.state = 'GET TIMEOUT'
+
             # State machine
             if self.state == 'IDLE':
                 # A valid LPC cycle starts with LFRAME# being asserted (low).
