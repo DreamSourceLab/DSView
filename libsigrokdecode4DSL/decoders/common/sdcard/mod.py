@@ -144,42 +144,8 @@ accepted_voltages = {
     # All other values: "not defined".
 }
 
-card_status = {
-    0:  'Reserved for manufacturer test mode',
-    1:  'Reserved for manufacturer test mode',
-    2:  'Reserved for application specific commands',
-    3:  'AKE_SEQ_ERROR',
-    4:  'Reserved for SDIO card',
-    5:  'APP_CMD',
-    6:  'Unknown',
-    7:  'Unknown',
-    8:  'READY_FOR_DATA',
-    9:  'CURRENT_STATE', # CURRENT_STATE is a 4-bit value (decimal: 0..15).
-    10: 'CURRENT_STATE',
-    11: 'CURRENT_STATE',
-    12: 'CURRENT_STATE',
-    13: 'ERASE_RESET',
-    14: 'CARD_ECC_DISABLED',
-    15: 'WP_ERASE_SKIP',
-    16: 'CSD_OVERWRITE',
-    17: 'Reserved for DEFERRED_RESPONSE', # See eSD addendum
-    18: 'Reserved',
-    19: 'ERROR',
-    20: 'CC_ERROR',
-    21: 'CARD_ECC_FAILED',
-    22: 'ILLEGAL_COMMAND',
-    23: 'COM_CRC_ERROR',
-    24: 'LOCK_UNLOCK_FAILED',
-    25: 'CARD_IS_LOCKED',
-    26: 'WP_VIOLATION',
-    27: 'ERASE_PARAM',
-    28: 'ERASE_SEQ_ERROR',
-    29: 'BLOCK_LEN_ERROR',
-    30: 'ADDRESS_ERROR',
-    31: 'OUT_OF_RANGE',
-}
-
 sd_status = {
     # 311:0: Reserved for manufacturer
     # 391:312: Reserved
 }
+
