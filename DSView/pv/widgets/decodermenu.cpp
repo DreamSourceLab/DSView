@@ -42,7 +42,7 @@ DecoderMenu::DecoderMenu(QWidget *parent, bool first_level_decoder) :
 		if (first_level_decoder == have_probes) {
 			QAction *const action =
 				addAction(QString::fromUtf8(d->name));
-			action->setData(qVariantFromValue(l->data));
+            action->setData(QVariant::fromValue(l->data));
 			_mapper.setMapping(action, action);
 			connect(action, SIGNAL(triggered()),
 				&_mapper, SLOT(map()));

@@ -66,7 +66,7 @@ ProtocolList::ProtocolList(QWidget *parent, SigSession &session) :
             _protocol_combobox->setCurrentIndex(index);
         index++;
     }
-    _protocol_combobox->addItem("", qVariantFromValue(NULL));
+    _protocol_combobox->addItem("", QVariant::fromValue(NULL));
     if (decoder_model->getDecoderStack() == NULL)
         _protocol_combobox->setCurrentIndex(index);
 

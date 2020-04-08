@@ -65,7 +65,7 @@ QWidget* Enum::get_widget(QWidget *parent, bool auto_commit)
 	_selector = new QComboBox(parent);
 	for (unsigned int i = 0; i < _values.size(); i++) {
 		const pair<GVariant*, QString> &v = _values[i];
-		_selector->addItem(v.second, qVariantFromValue((void*)v.first));
+        _selector->addItem(v.second, QVariant::fromValue((void*)v.first));
 		if (value && g_variant_compare(v.first, value) == 0)
 			_selector->setCurrentIndex(i);
 	}

@@ -81,7 +81,7 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession &sessio
 
         const bool have_probes = (d->channels || d->opt_channels) != 0;
         if (true == have_probes) {
-            _protocol_combobox->addItem(QString::fromUtf8(d->name), qVariantFromValue(l->data));
+            _protocol_combobox->addItem(QString::fromUtf8(d->name), QVariant::fromValue(l->data));
         }
     }
     g_slist_free(l);

@@ -782,7 +782,7 @@ QComboBox* DecodeTrace::create_probe_selector(
 
 	QComboBox *selector = new QComboBox(parent);
 
-    selector->addItem("-", qVariantFromValue(-1));
+    selector->addItem("-", QVariant::fromValue(-1));
 
 	if (probe_iter == dec->channels().end())
 		selector->setCurrentIndex(0);
@@ -794,7 +794,7 @@ QComboBox* DecodeTrace::create_probe_selector(
 		if (dynamic_pointer_cast<LogicSignal>(s) && s->enabled())
 		{
 			selector->addItem(s->get_name(),
-                qVariantFromValue(s->get_index()));
+                QVariant::fromValue(s->get_index()));
             if (probe_iter != dec->channels().end()) {
                 if ((*probe_iter).second == s->get_index())
                     selector->setCurrentIndex(i + 1);

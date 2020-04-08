@@ -223,7 +223,7 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
             pixmap.fill(Qt::transparent);
 
             QPainter dbp(&pixmap);
-            dbp.initFrom(this);
+            //dbp.begin(this);
             BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
             {
                 assert(t);
@@ -489,7 +489,7 @@ void Viewport::mousePressEvent(QMouseEvent *event)
 	_mouse_down_point = event->pos();
 	_mouse_down_offset = _view.offset();
     _drag_strength = 0;
-    _time.restart();
+    _elapsed_time.restart();
 
     if (_action_type == NO_ACTION &&
         event->button() == Qt::RightButton &&
@@ -638,7 +638,7 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
 
     if (_type == TIME_VIEW) {
         if ((event->buttons() & Qt::LeftButton) ||
-            !(event->buttons() || Qt::NoButton)) {
+            !(event->buttons() | Qt::NoButton)) {
             if (_action_type == DSO_TRIG_MOVE) {
                 if (_drag_sig) {
                     boost::shared_ptr<view::DsoSignal> dsoSig;
@@ -716,7 +716,7 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
                 }
             }
         }
-        if (!(event->buttons() || Qt::NoButton)) {
+        if (!(event->buttons() | Qt::NoButton)) {
             if (_action_type == DSO_XM_STEP1 || _action_type == DSO_XM_STEP2) {
                 BOOST_FOREACH(const boost::shared_ptr<Signal> s, _view.session().get_signals()) {
                     assert(s);
@@ -749,13 +749,13 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                 _view.session().get_capture_state() == SigSession::Stopped) {
                 // priority 1
                 if (_action_type == NO_ACTION) {
-                    const double strength = _drag_strength*DragTimerInterval*1.0/_time.elapsed();
-                    if (_time.elapsed() < 200 &&
+                    const double strength = _drag_strength*DragTimerInterval*1.0/_elapsed_time.elapsed();
+                    if (_elapsed_time.elapsed() < 200 &&
                         abs(_drag_strength) < MinorDragOffsetUp &&
                         abs(strength) > MinorDragRateUp) {
                         _drag_timer.start(DragTimerInterval);
                         _action_type = LOGIC_MOVE;
-                    } else if (_time.elapsed() < 200 &&
+                    } else if (_elapsed_time.elapsed() < 200 &&
                                abs(strength) > DragTimerInterval) {
                         _drag_strength = strength * 5;
                         _drag_timer.start(DragTimerInterval);
@@ -894,12 +894,12 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                 _drag_timer.stop();
                 _action_type = NO_ACTION;
             } else {
-                const double strength = _drag_strength*DragTimerInterval*1.0/_time.elapsed();
-                if (_time.elapsed() < 200 &&
+                const double strength = _drag_strength*DragTimerInterval*1.0/_elapsed_time.elapsed();
+                if (_elapsed_time.elapsed() < 200 &&
                     abs(_drag_strength) < MinorDragOffsetUp &&
                     abs(strength) > MinorDragRateUp) {
                     _drag_timer.start(DragTimerInterval);
-                } else if (_time.elapsed() < 200 &&
+                } else if (_elapsed_time.elapsed() < 200 &&
                            abs(strength) > DragTimerInterval) {
                     _drag_strength = strength * 5;
                     _drag_timer.start(DragTimerInterval);

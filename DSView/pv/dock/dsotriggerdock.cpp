@@ -63,9 +63,9 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession &session) :
 
     _holdoff_label = new QLabel(_widget);
     _holdoff_comboBox = new QComboBox(_widget);
-    _holdoff_comboBox->addItem(tr("uS"), qVariantFromValue(1000));
-    _holdoff_comboBox->addItem(tr("mS"), qVariantFromValue(1000000));
-    _holdoff_comboBox->addItem(tr("S"), qVariantFromValue(1000000000));
+    _holdoff_comboBox->addItem(tr("uS"), QVariant::fromValue(1000));
+    _holdoff_comboBox->addItem(tr("mS"), QVariant::fromValue(1000000));
+    _holdoff_comboBox->addItem(tr("S"), QVariant::fromValue(1000000000));
     _holdoff_comboBox->setCurrentIndex(0);
     _holdoff_spinBox = new QSpinBox(_widget);
     _holdoff_spinBox->setRange(0, 999);
@@ -390,7 +390,7 @@ void DsoTriggerDock::init()
     BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
         boost::shared_ptr<view::DsoSignal> dsoSig;
         if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
-            _channel_comboBox->addItem(dsoSig->get_name(), qVariantFromValue(dsoSig->get_index()));
+            _channel_comboBox->addItem(dsoSig->get_name(), QVariant::fromValue(dsoSig->get_index()));
         }
     }
     gvar = _session.get_device()->get_config(NULL, NULL,

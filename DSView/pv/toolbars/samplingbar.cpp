@@ -225,7 +225,7 @@ void SamplingBar::reStyle()
         _instant_button.setIcon(QIcon(iconPath+"/single.svg"));
         _action_single->setIcon(QIcon(iconPath+"/oneloop.svg"));
         _action_repeat->setIcon(QIcon(iconPath+"/repeat.svg"));
-    }
+	}   
 }
 
 void SamplingBar::set_device_list(
@@ -252,7 +252,7 @@ void SamplingBar::set_device_list(
 
         _device_selector_map[id] = dev_inst;
         _device_selector.addItem(title,
-            qVariantFromValue((void*)id));
+            QVariant::fromValue((void*)id));
     }
     int width = _device_selector.sizeHint().width();
     _device_selector.setFixedWidth(min(width+15, _device_selector.maximumWidth()));
@@ -465,7 +465,7 @@ void SamplingBar::update_sample_rate_selector()
 		{
 			char *const s = sr_samplerate_string(elements[i]);
             _sample_rate.addItem(QString(s),
-				qVariantFromValue(elements[i]));
+                QVariant::fromValue(elements[i]));
 			g_free(s);
 		}
 
@@ -609,7 +609,7 @@ void SamplingBar::update_sample_count_selector()
                          (!stream_mode && duration > hw_duration) ? RLEString : "";
         char *const s = sr_time_string(duration);
         _sample_count.addItem(QString(s) + suffix,
-            qVariantFromValue(duration));
+            QVariant::fromValue(duration));
         g_free(s);
 
         double unit;
