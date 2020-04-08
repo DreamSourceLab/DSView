@@ -58,7 +58,7 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
     BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
         boost::shared_ptr<view::DsoSignal> dsoSig;
         if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
-            _ch_combobox->addItem(dsoSig->get_name(), qVariantFromValue(dsoSig->get_index()));
+            _ch_combobox->addItem(dsoSig->get_name(), QVariant::fromValue(dsoSig->get_index()));
         }
     }
 
@@ -92,13 +92,13 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
     for (unsigned int i = 0; i < windows.size(); i++)
     {
         _window_combobox->addItem(windows[i],
-            qVariantFromValue(i));
+            QVariant::fromValue(i));
     }
     for (unsigned int i = 0; i < length.size(); i++)
     {
         if (length[i] < _sample_limit)
             _len_combobox->addItem(QString::number(length[i]),
-                qVariantFromValue(length[i]));
+                QVariant::fromValue(length[i]));
         else
             break;
     }
@@ -109,19 +109,19 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
     for (int i = 1; i <= max_interval; i*=2)
     {
         _interval_combobox->addItem(QString::number(i),
-            qVariantFromValue(i));
+            QVariant::fromValue(i));
     }
     for (unsigned int i = 0; i < view_modes.size(); i++)
     {
         _view_combobox->addItem(view_modes[i],
-            qVariantFromValue(i));
+            QVariant::fromValue(i));
     }
     assert(_view_combobox->count() > 0);
     _view_combobox->setCurrentIndex(_view_combobox->count()-1);
     for (unsigned int i = 0; i < dbv_ranges.size(); i++)
     {
         _dbv_combobox->addItem(QString::number(dbv_ranges[i]),
-            qVariantFromValue(dbv_ranges[i]));
+            QVariant::fromValue(dbv_ranges[i]));
     }
 
     // load current settings
@@ -147,7 +147,7 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
                 for (int i = 1; i <= max_interval; i*=2)
                 {
                     _interval_combobox->addItem(QString::number(i),
-                        qVariantFromValue(i));
+                        QVariant::fromValue(i));
                 }
                 for (int i = 0; i < _interval_combobox->count(); i++) {
                     if (spectrumTraces->get_spectrum_stack()->get_sample_interval() == _interval_combobox->itemData(i).toInt()) {
@@ -258,7 +258,7 @@ void FftOptions::len_changed(int index)
     for (int i = 1; i <= max_interval; i*=2)
     {
         _interval_combobox->addItem(QString::number(i),
-            qVariantFromValue(i));
+            QVariant::fromValue(i));
     }
     _interval_combobox->setCurrentIndex(pre_index);
 }

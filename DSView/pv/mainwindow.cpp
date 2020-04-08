@@ -47,6 +47,7 @@
 #include <QKeyEvent>
 #include <QEvent>
 #include <QtGlobal>
+#include <QScreen>
 
 #include "mainwindow.h"
 
@@ -83,7 +84,6 @@
 #include "view/analogsignal.h"
 
 /* __STDC_FORMAT_MACROS is required for PRIu64 and friends (in C++). */
-#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdarg.h>
@@ -852,9 +852,10 @@ void MainWindow::on_screenShot()
     QSettings settings(QApplication::organizationName(), QApplication::applicationName());
     QString default_name = settings.value(DIR_KEY).toString() + "/DSView" + QDateTime::currentDateTime().toString("-yyMMdd-hhmmss");
     QPixmap pixmap;
+    QScreen *screen = QGuiApplication::primaryScreen();
     QDesktopWidget *desktop = QApplication::desktop();
-    pixmap = QPixmap::grabWindow(desktop->winId(), parentWidget()->pos().x(), parentWidget()->pos().y(),
-                                                   parentWidget()->frameGeometry().width(), parentWidget()->frameGeometry().height());
+    pixmap = screen->grabWindow(desktop->winId(), parentWidget()->pos().x(), parentWidget()->pos().y(),
+                                                 parentWidget()->frameGeometry().width(), parentWidget()->frameGeometry().height());
     QString format = "png";
 
     QString fileName = QFileDialog::getSaveFileName(this,

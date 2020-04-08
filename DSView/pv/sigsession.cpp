@@ -1406,7 +1406,7 @@ bool SigSession::add_decoder(srd_decoder *const dec, bool silent)
             _decode_traces.push_back(d);
             ret = true;
         }
-    } catch(std::runtime_error e) {
+    } catch(const std::runtime_error &e) {
         return false;
     }
 

@@ -33,6 +33,7 @@
 #include <QTimer>
 #include <QWidget>
 #include <QNativeGestureEvent>
+#include <QElapsedTimer>
 
 #include "../view/view.h"
 #include "../../extdef.h"
@@ -201,7 +202,7 @@ private:
     uint16_t _hover_sig_index;
     double _hover_sig_value;
 
-    QTime _time;
+    QElapsedTimer _elapsed_time;
     QTimer _drag_timer;
     int _drag_strength;
 
