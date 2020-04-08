@@ -1086,7 +1086,7 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         case SR_CONF_PROBE_VGAIN_RANGE:
             if (!sdi)
                 return SR_ERR;
-            uint16_t vgain_default = 0;
+            uint64_t vgain_default = 0;
             for (i = 0; vga_defaults[i].id; i++) {
                 if (vga_defaults[i].id == devc->profile->dev_caps.vga_id &&
                     vga_defaults[i].key == ch->vdiv) {

@@ -158,7 +158,7 @@
  * trans: the whole windows offset map to the offset pwm(1024 total)
  * voff: offset pwm constant bias to balance circuit offset
  */
-#define CALI_VGAIN_RANGE 100
+#define CALI_VGAIN_RANGE 200
 
 enum LANGUAGE {
     LANGUAGE_CN = 25,
@@ -356,6 +356,15 @@ static const struct DSL_vga vga_defaults[] = {
     {4, 500,  0x94000,  60, 1024-900-60},
     {4, 1000, 0x6CF00,  60, 1024-900-60},
     {4, 2000, 0x44F00,  60, 1024-900-60},
+
+    {5, 10,   0x1C3400, 60, 1024-900-60},
+    {5, 20,   0x19BD00, 60, 1024-900-60},
+    {5, 50,   0x167400, 60, 1024-900-60},
+    {5, 100,  0x13F300, 60, 1024-900-60},
+    {5, 200,  0xC4F00,  60, 1024-900-60},
+    {5, 500,  0x91B00,  60, 1024-900-60},
+    {5, 1000, 0x69D00,  60, 1024-900-60},
+    {5, 2000, 0x41D00,  60, 1024-900-60},
 
     {0, 0, 0, 0, 0}
 };
@@ -969,7 +978,7 @@ static const struct DSL_profile supported_DSCope[] = {
      "DSCopeU2B100.bin",
      "DSCopeU2B100.bin",
      {CAPS_MODE_ANALOG | CAPS_MODE_DSO,
-      CAPS_FEATURE_ZERO  | CAPS_FEATURE_AUTO_VGAIN | CAPS_FEATURE_HMCAD1511 | CAPS_FEATURE_20M,
+      CAPS_FEATURE_ZERO | CAPS_FEATURE_HMCAD1511 | CAPS_FEATURE_20M,
       (1 << DSL_ANALOG10x2_500) |
       (1 << DSL_DSO1000x2),
       2,
@@ -982,8 +991,8 @@ static const struct DSL_profile supported_DSCope[] = {
       DSL_DSO1000x2,
       SR_MHZ(500),
       SR_Kn(10),
-      810,
-      1024-810,
+      835,
+      1024-835,
       10,
       245,
       60,
@@ -996,7 +1005,7 @@ static const struct DSL_profile supported_DSCope[] = {
      "DSCopeU3P100.bin",
      "DSCopeU3P100.bin",
      {CAPS_MODE_ANALOG | CAPS_MODE_DSO,
-      CAPS_FEATURE_ZERO | CAPS_FEATURE_POGOPIN | CAPS_FEATURE_AUTO_VGAIN | CAPS_FEATURE_FLASH | CAPS_FEATURE_USB30 | CAPS_FEATURE_HMCAD1511 | CAPS_FEATURE_20M,
+      CAPS_FEATURE_ZERO | CAPS_FEATURE_POGOPIN | CAPS_FEATURE_FLASH | CAPS_FEATURE_USB30 | CAPS_FEATURE_HMCAD1511 | CAPS_FEATURE_20M,
       (1 << DSL_ANALOG10x2_500) |
       (1 << DSL_DSO1000x2),
       2,
@@ -1005,12 +1014,12 @@ static const struct DSL_profile supported_DSCope[] = {
       0,
       vdivs10to2000,
       samplerates1000,
-      4,
+      5,
       DSL_DSO1000x2,
       SR_MHZ(500),
       SR_Mn(1),
-      830,
-      1024-830,
+      780,
+      1024-780,
       10,
       245,
       60,
@@ -1023,7 +1032,7 @@ static const struct DSL_profile supported_DSCope[] = {
      "DSCopeU3P100.bin",
      "DSCopeU3P100.bin",
      {CAPS_MODE_ANALOG | CAPS_MODE_DSO,
-      CAPS_FEATURE_ZERO | CAPS_FEATURE_POGOPIN | CAPS_FEATURE_AUTO_VGAIN | CAPS_FEATURE_FLASH | CAPS_FEATURE_USB30 | CAPS_FEATURE_HMCAD1511 | CAPS_FEATURE_20M,
+      CAPS_FEATURE_ZERO | CAPS_FEATURE_POGOPIN | CAPS_FEATURE_FLASH | CAPS_FEATURE_USB30 | CAPS_FEATURE_HMCAD1511 | CAPS_FEATURE_20M,
       (1 << DSL_ANALOG10x2_500) |
       (1 << DSL_DSO1000x2),
       2,
@@ -1032,12 +1041,12 @@ static const struct DSL_profile supported_DSCope[] = {
       0,
       vdivs10to2000,
       samplerates1000,
-      4,
+      5,
       DSL_DSO1000x2,
       SR_MHZ(500),
       SR_Mn(1),
-      830,
-      1024-830,
+      780,
+      1024-780,
       10,
       245,
       60,
