@@ -1,12 +1,56 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- 由 Microsoft Visio, SVG Export 生成 modes.svg 页-1 -->
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:ev="http://www.w3.org/2001/xml-events"
-		xmlns:v="http://schemas.microsoft.com/visio/2003/SVGExtensions/" width="5.33333in" height="3.69417in"
-		viewBox="0 0 384 265.98" xml:space="preserve" color-interpolation-filters="sRGB" class="st4">
-	<v:documentProperties v:langID="2052" v:viewMarkup="false"/>
 
-	<style type="text/css">
+<svg
+   xmlns:v="http://schemas.microsoft.com/visio/2003/SVGExtensions/"
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="512"
+   height="512"
+   viewBox="0 0 384.00023 383.99965"
+   xml:space="preserve"
+   class="st4"
+   version="1.1"
+   id="svg39"
+   sodipodi:docname="modes.svg"
+   style="font-size:12px;overflow:visible;color-interpolation-filters:sRGB;fill:none;fill-rule:evenodd;stroke-linecap:square;stroke-miterlimit:3"
+   inkscape:version="0.92.4 (5da689c313, 2019-01-14)"><metadata
+   id="metadata45"><rdf:RDF><cc:Work
+       rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
+         rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title></dc:title></cc:Work></rdf:RDF></metadata><defs
+   id="defs43" /><sodipodi:namedview
+   pagecolor="#ffffff"
+   bordercolor="#666666"
+   borderopacity="1"
+   objecttolerance="10"
+   gridtolerance="10"
+   guidetolerance="10"
+   inkscape:pageopacity="0"
+   inkscape:pageshadow="2"
+   inkscape:window-width="3840"
+   inkscape:window-height="2081"
+   id="namedview41"
+   showgrid="false"
+   units="px"
+   inkscape:zoom="0.66210977"
+   inkscape:cx="255.99985"
+   inkscape:cy="177.32016"
+   inkscape:window-x="-9"
+   inkscape:window-y="-9"
+   inkscape:window-maximized="1"
+   inkscape:current-layer="svg39" />
+	<v:documentProperties
+   v:langID="2052"
+   v:viewMarkup="false" />
+
+	<style
+   type="text/css"
+   id="style2">
 	<![CDATA[
 		.st1 {fill:#d7d7d7;stroke:none;stroke-linecap:butt;stroke-width:1.37143}
 		.st2 {fill:#d7d7d7;stroke:#ffffff;stroke-linecap:round;stroke-linejoin:round;stroke-width:0.5}
@@ -15,38 +59,106 @@
 	]]>
 	</style>
 
-	<g v:mID="0" v:index="1" v:groupContext="foregroundPage">
-		<title>页-1</title>
-		<v:pageProperties v:drawingScale="0.0393701" v:pageScale="0.0393701" v:drawingUnits="24" v:shadowOffsetX="9"
-				v:shadowOffsetY="-9"/>
-		<g id="group24-1" v:mID="24" v:groupContext="group">
-			<title>工作表.24</title>
-			<g id="group25-2" transform="translate(28.3465,-17.0079)" v:mID="25" v:groupContext="group">
-				<title>工作表.25</title>
-				<g id="shape26-3" v:mID="26" v:groupContext="shape">
-					<title>工作表.26</title>
-					<path d="M210.25 43.2 L111.39 43.2 C49.97 43.2 0 93.17 0 154.59 C0 216.01 49.97 265.98 111.39 265.98 L210.25
-								 265.98 C271.67 265.98 321.64 216.01 321.64 154.59 C321.64 93.17 271.67 43.2 210.25 43.2 ZM210.25
-								 245.3 L111.39 245.3 C61.37 245.3 20.68 204.61 20.68 154.59 C20.68 104.57 61.37 63.87 111.39 63.87
-								 L210.25 63.87 C260.27 63.87 300.96 104.57 300.96 154.59 C300.96 204.61 260.27 245.3 210.25 245.3
-								 Z" class="st1"/>
+	<g
+   v:mID="0"
+   v:index="1"
+   v:groupContext="foregroundPage"
+   id="g37"
+   transform="translate(2.833615,54.417725)">
+		<title
+   id="title4">页-1</title>
+		<v:pageProperties
+   v:drawingScale="0.0393701"
+   v:pageScale="0.0393701"
+   v:drawingUnits="24"
+   v:shadowOffsetX="9"
+   v:shadowOffsetY="-9" />
+		<g
+   id="group24-1"
+   v:mID="24"
+   v:groupContext="group">
+			<title
+   id="title6">工作表.24</title>
+			<g
+   id="group25-2"
+   transform="translate(28.3465,-17.0079)"
+   v:mID="25"
+   v:groupContext="group">
+				<title
+   id="title8">工作表.25</title>
+				<g
+   id="shape26-3"
+   v:mID="26"
+   v:groupContext="shape">
+					<title
+   id="title10">工作表.26</title>
+					<path
+   d="M 210.25,43.2 H 111.39 C 49.97,43.2 0,93.17 0,154.59 0,216.01 49.97,265.98 111.39,265.98 h 98.86 c 61.42,0 111.39,-49.97 111.39,-111.39 C 321.64,93.17 271.67,43.2 210.25,43.2 Z m 0,202.1 h -98.86 c -50.02,0 -90.71,-40.69 -90.71,-90.71 0,-50.02 40.69,-90.72 90.71,-90.72 h 98.86 c 50.02,0 90.71,40.7 90.71,90.72 0,50.02 -40.69,90.71 -90.71,90.71 z"
+   class="st1"
+   id="path12"
+   inkscape:connector-curvature="0"
+   style="fill:#d7d7d7;stroke:none;stroke-width:1.37143004;stroke-linecap:butt" />
 				</g>
 			</g>
-			<g id="shape28-5" v:mID="28" v:groupContext="shape" transform="translate(132.337,-62.3622)">
-				<title>工作表.28</title>
-				<rect x="0" y="242.846" width="119.327" height="23.134" rx="11.567" ry="11.567" class="st2"/>
+			<g
+   id="shape28-5"
+   v:mID="28"
+   v:groupContext="shape"
+   transform="translate(132.337,-62.3622)">
+				<title
+   id="title16">工作表.28</title>
+				<rect
+   x="0"
+   y="242.84599"
+   width="119.327"
+   height="23.134001"
+   rx="11.567"
+   ry="11.567"
+   class="st2"
+   id="rect18"
+   style="fill:#d7d7d7;stroke:#ffffff;stroke-width:0.5;stroke-linecap:round;stroke-linejoin:round" />
 			</g>
-			<g id="shape30-7" v:mID="30" v:groupContext="shape" transform="translate(457.98,81.7284) rotate(90)">
-				<title>工作表.30</title>
-				<path d="M0 265.98 L76.54 265.98" class="st3"/>
+			<g
+   id="shape30-7"
+   v:mID="30"
+   v:groupContext="shape"
+   transform="rotate(90,188.1258,269.8542)">
+				<title
+   id="title21">工作表.30</title>
+				<path
+   d="M 0,265.98 H 76.54"
+   class="st3"
+   id="path23"
+   inkscape:connector-curvature="0"
+   style="stroke:#d7d7d7;stroke-width:20;stroke-linecap:round;stroke-linejoin:round" />
 			</g>
-			<g id="shape79-10" v:mID="79" v:groupContext="shape" transform="translate(406.688,320.452) rotate(135.754)">
-				<title>工作表.79</title>
-				<path d="M0 265.98 L40.63 265.98" class="st3"/>
+			<g
+   id="shape79-10"
+   v:mID="79"
+   v:groupContext="shape"
+   transform="rotate(135.754,138.20803,242.89054)">
+				<title
+   id="title26">工作表.79</title>
+				<path
+   d="M 0,265.98 H 40.63"
+   class="st3"
+   id="path28"
+   inkscape:connector-curvature="0"
+   style="stroke:#d7d7d7;stroke-width:20;stroke-linecap:round;stroke-linejoin:round" />
 			</g>
-			<g id="shape80-13" v:mID="80" v:groupContext="shape" transform="translate(351.349,-58.5397) rotate(45)">
-				<title>工作表.80</title>
-				<path d="M0 265.98 L40.63 265.98" class="st3"/>
+			<g
+   id="shape80-13"
+   v:mID="80"
+   v:groupContext="shape"
+   transform="rotate(45,246.33817,394.84591)">
+				<title
+   id="title31">工作表.80</title>
+				<path
+   d="M 0,265.98 H 40.63"
+   class="st3"
+   id="path33"
+   inkscape:connector-curvature="0"
+   style="stroke:#d7d7d7;stroke-width:20;stroke-linecap:round;stroke-linejoin:round" />
 			</g>
 		</g>
 	</g>

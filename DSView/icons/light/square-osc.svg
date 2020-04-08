@@ -1,35 +1,95 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- 由 Microsoft Visio, SVG Export 生成 square-osc.svg 页-1 -->
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:ev="http://www.w3.org/2001/xml-events"
-		xmlns:v="http://schemas.microsoft.com/visio/2003/SVGExtensions/" width="3.1598in" height="2.83574in"
-		viewBox="0 0 227.506 204.173" xml:space="preserve" color-interpolation-filters="sRGB" class="st2">
-	<v:documentProperties v:langID="2052" v:viewMarkup="false"/>
 
-	<style type="text/css">
+<svg
+   xmlns:v="http://schemas.microsoft.com/visio/2003/SVGExtensions/"
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="512"
+   height="512"
+   viewBox="0 0 384.00065 383.99946"
+   xml:space="preserve"
+   class="st2"
+   version="1.1"
+   id="svg16"
+   sodipodi:docname="square-osc.svg"
+   style="font-size:12px;overflow:visible;color-interpolation-filters:sRGB;fill:none;fill-rule:evenodd;stroke-linecap:square;stroke-miterlimit:3"
+   inkscape:version="0.92.4 (5da689c313, 2019-01-14)"><metadata
+   id="metadata22"><rdf:RDF><cc:Work
+       rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
+         rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title></dc:title></cc:Work></rdf:RDF></metadata><defs
+   id="defs20" /><sodipodi:namedview
+   pagecolor="#ffffff"
+   bordercolor="#666666"
+   borderopacity="1"
+   objecttolerance="10"
+   gridtolerance="10"
+   guidetolerance="10"
+   inkscape:pageopacity="0"
+   inkscape:pageshadow="2"
+   inkscape:window-width="3840"
+   inkscape:window-height="2081"
+   id="namedview18"
+   showgrid="false"
+   units="px"
+   inkscape:zoom="0.86691067"
+   inkscape:cx="151.6704"
+   inkscape:cy="136.11552"
+   inkscape:window-x="-9"
+   inkscape:window-y="-9"
+   inkscape:window-maximized="1"
+   inkscape:current-layer="svg16" />
+	<v:documentProperties
+   v:langID="2052"
+   v:viewMarkup="false" />
+
+	<style
+   type="text/css"
+   id="style2">
 	<![CDATA[
 		.st1 {fill:#2a2a2a;stroke:none;stroke-linecap:butt;stroke-width:6.12}
 		.st2 {fill:none;fill-rule:evenodd;font-size:12px;overflow:visible;stroke-linecap:square;stroke-miterlimit:3}
 	]]>
 	</style>
 
-	<g v:mID="0" v:index="1" v:groupContext="foregroundPage">
-		<title>页-1</title>
-		<v:pageProperties v:drawingScale="0.0393701" v:pageScale="0.0393701" v:drawingUnits="24" v:shadowOffsetX="9"
-				v:shadowOffsetY="-9"/>
-		<g id="group980-1" v:mID="980" v:groupContext="group">
-			<title>工作表.980</title>
-			<g id="shape989-2" v:mID="989" v:groupContext="shape" transform="translate(6.64767,-19.6008)">
-				<title>工作表.989</title>
-				<path d="M213.87 204.17 C197.43 204.17 192.24 168.48 185.67 123.28 C182.54 101.81 176.78 62.18 171.14 57.45 C165.51
-							 62.18 159.74 101.81 156.62 123.28 C150.05 168.48 144.86 204.17 128.41 204.17 C111.98 204.17 106.8 168.48
-							 100.23 123.29 C97.11 101.82 91.35 62.21 85.72 57.45 C80.08 62.2 74.32 101.82 71.2 123.29 C64.63 168.48
-							 59.44 204.17 43.01 204.17 C26.58 204.17 21.39 168.48 14.82 123.28 C11.64 101.42 5.73 60.73 0 57.22 L0.31
-							 38.93 C16.74 38.93 21.93 74.63 28.5 119.82 C31.62 141.28 37.38 180.9 43 185.66 C48.64 180.9 54.4 141.29
-							 57.52 119.83 C64.09 74.63 69.28 38.93 85.71 38.93 C102.14 38.93 107.33 74.63 113.9 119.83 C117.02 141.29
-							 122.78 180.9 128.41 185.66 C134.04 180.92 139.81 141.29 142.93 119.82 C149.5 74.63 154.69 38.93 171.13
-							 38.93 C187.57 38.93 192.76 74.63 199.34 119.83 C202.52 141.69 208.44 182.39 214.17 185.89 L213.87 204.17
-							 Z" class="st1"/>
+	<g
+   v:mID="0"
+   v:index="1"
+   v:groupContext="foregroundPage"
+   id="g14"
+   transform="matrix(1.7509485,0,0,1.7509485,-7.1397229,13.491931)">
+		<title
+   id="title4">页-1</title>
+		<v:pageProperties
+   v:drawingScale="0.0393701"
+   v:pageScale="0.0393701"
+   v:drawingUnits="24"
+   v:shadowOffsetX="9"
+   v:shadowOffsetY="-9" />
+		<g
+   id="group980-1"
+   v:mID="980"
+   v:groupContext="group">
+			<title
+   id="title6">工作表.980</title>
+			<g
+   id="shape989-2"
+   v:mID="989"
+   v:groupContext="shape"
+   transform="translate(6.64767,-19.6008)">
+				<title
+   id="title8">工作表.989</title>
+				<path
+   d="m 213.87,204.17 c -16.44,0 -21.63,-35.69 -28.2,-80.89 -3.13,-21.47 -8.89,-61.1 -14.53,-65.83 -5.63,4.73 -11.4,44.36 -14.52,65.83 -6.57,45.2 -11.76,80.89 -28.21,80.89 -16.43,0 -21.61,-35.69 -28.18,-80.88 C 97.11,101.82 91.35,62.21 85.72,57.45 80.08,62.2 74.32,101.82 71.2,123.29 64.63,168.48 59.44,204.17 43.01,204.17 26.58,204.17 21.39,168.48 14.82,123.28 11.64,101.42 5.73,60.73 0,57.22 L 0.31,38.93 c 16.43,0 21.62,35.7 28.19,80.89 3.12,21.46 8.88,61.08 14.5,65.84 5.64,-4.76 11.4,-44.37 14.52,-65.83 6.57,-45.2 11.76,-80.9 28.19,-80.9 16.43,0 21.62,35.7 28.19,80.9 3.12,21.46 8.88,61.07 14.51,65.83 5.63,-4.74 11.4,-44.37 14.52,-65.84 6.57,-45.19 11.76,-80.89 28.2,-80.89 16.44,0 21.63,35.7 28.21,80.9 3.18,21.86 9.1,62.56 14.83,66.06 z"
+   class="st1"
+   id="path10"
+   inkscape:connector-curvature="0"
+   style="fill:#2a2a2a;stroke:none;stroke-width:6.11999989;stroke-linecap:butt" />
 			</g>
 		</g>
 	</g>

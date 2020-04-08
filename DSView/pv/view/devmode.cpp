@@ -65,7 +65,7 @@ DevMode::DevMode(QWidget *parent, SigSession &session) :
 
     _mode_btn = new QToolButton(this);
     _mode_btn->setObjectName("ModeButton");
-    _mode_btn->setIconSize(QSize(height()*1.8, height()));
+    _mode_btn->setIconSize(QSize(height()*2, height()));
     _mode_btn->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     _mode_btn->setContentsMargins(0, 0, 1000, 0);
     _mode_btn->setMenu(_pop_menu);

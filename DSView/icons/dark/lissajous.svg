@@ -1,44 +1,95 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- 由 Microsoft Visio, SVG Export 生成 lissajous.svg 页-1 -->
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:ev="http://www.w3.org/2001/xml-events"
-		xmlns:v="http://schemas.microsoft.com/visio/2003/SVGExtensions/" width="1.83044in" height="1.84709in"
-		viewBox="0 0 131.792 132.99" xml:space="preserve" color-interpolation-filters="sRGB" class="st2">
-	<v:documentProperties v:langID="2052" v:viewMarkup="false"/>
 
-	<style type="text/css">
+<svg
+   xmlns:v="http://schemas.microsoft.com/visio/2003/SVGExtensions/"
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="512"
+   height="512"
+   viewBox="0 0 384.00092 383.9986"
+   xml:space="preserve"
+   class="st2"
+   version="1.1"
+   id="svg16"
+   sodipodi:docname="lissajous.svg"
+   style="font-size:12px;overflow:visible;color-interpolation-filters:sRGB;fill:none;fill-rule:evenodd;stroke-linecap:square;stroke-miterlimit:3"
+   inkscape:version="0.92.4 (5da689c313, 2019-01-14)"><metadata
+   id="metadata22"><rdf:RDF><cc:Work
+       rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
+         rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title></dc:title></cc:Work></rdf:RDF></metadata><defs
+   id="defs20" /><sodipodi:namedview
+   pagecolor="#ffffff"
+   bordercolor="#666666"
+   borderopacity="1"
+   objecttolerance="10"
+   gridtolerance="10"
+   guidetolerance="10"
+   inkscape:pageopacity="0"
+   inkscape:pageshadow="2"
+   inkscape:window-width="3840"
+   inkscape:window-height="2081"
+   id="namedview18"
+   showgrid="false"
+   units="px"
+   inkscape:zoom="1.3309223"
+   inkscape:cx="-359.57296"
+   inkscape:cy="88.66032"
+   inkscape:window-x="-9"
+   inkscape:window-y="-9"
+   inkscape:window-maximized="1"
+   inkscape:current-layer="svg16" />
+	<v:documentProperties
+   v:langID="2052"
+   v:viewMarkup="false" />
+
+	<style
+   type="text/css"
+   id="style2">
 	<![CDATA[
 		.st1 {fill:none;stroke:#d7d7d7;stroke-linecap:round;stroke-linejoin:round;stroke-width:8}
 		.st2 {fill:none;fill-rule:evenodd;font-size:12px;overflow:visible;stroke-linecap:square;stroke-miterlimit:3}
 	]]>
 	</style>
 
-	<g v:mID="0" v:index="1" v:groupContext="foregroundPage">
-		<title>页-1</title>
-		<v:pageProperties v:drawingScale="0.0393701" v:pageScale="0.0393701" v:drawingUnits="24" v:shadowOffsetX="9"
-				v:shadowOffsetY="-9"/>
-		<g id="group275-1" v:mID="275" v:groupContext="group">
-			<title>工作表.275</title>
-			<g id="shape276-2" v:mID="276" v:groupContext="shape" transform="translate(145.513,120.353) rotate(90) scale(-1,1)">
-				<title>curve</title>
-				<path d="M53.86 79.62 C66.01 88.73 78.24 97.9 87.98 106.14 C94.3 111.5 99.97 116.79 103.5 121.3 C105.49 123.83 107.23
-							 126.67 107.23 128.93 C107.23 131.78 104.46 132.99 100.08 132.99 C93.57 132.99 83.2 130.31 71.56 125.62
-							 C62.21 121.85 52.04 116.78 42.36 110.74 C35.16 106.24 28.32 101.27 22.32 95.96 C17.62 91.8 12.01 86.18
-							 7.64 79.62 C2.36 71.7 0 64.1 0.57 57.15 C1.07 51.03 3.82 45.65 8.34 41.16 C12.09 37.42 16.48 34.86 19.97
-							 33.19 C29.57 28.59 41.67 26.24 53.86 26.24 C66.04 26.24 78.14 28.59 87.75 33.19 C91.23 34.86 95.63 37.42
-							 99.38 41.16 C103.89 45.65 106.65 51.03 107.15 57.15 C107.72 64.1 105.36 71.7 100.08 79.62 C95.71 86.18
-							 90.1 91.8 85.4 95.96 C79.4 101.27 72.56 106.24 65.36 110.74 C55.68 116.78 45.5 121.85 36.15 125.62 C24.52
-							 130.31 14.15 132.99 7.64 132.99 C3.26 132.99 0.49 131.78 0.49 128.93 C0.49 126.67 2.23 123.83 4.21 121.3
-							 C7.74 116.79 13.41 111.5 19.74 106.14 C29.48 97.9 41.7 88.73 53.86 79.62 C66.01 70.5 78.24 61.33 87.98
-							 53.09 C94.3 47.74 99.97 42.44 103.5 37.94 C105.49 35.4 107.23 32.57 107.23 30.31 C107.23 27.46 104.46
-							 26.24 100.08 26.24 C93.57 26.24 83.2 28.93 71.56 33.62 C62.21 37.39 52.04 42.46 42.36 48.49 C35.16 52.99
-							 28.32 57.97 22.32 63.27 C17.62 67.43 12.01 73.06 7.64 79.62 C2.36 87.53 0 95.14 0.57 102.08 C1.07 108.2
-							 3.82 113.58 8.34 118.08 C12.09 121.81 16.48 124.37 19.97 126.04 C29.57 130.64 41.67 132.99 53.86 132.99
-							 C66.04 132.99 78.14 130.64 87.75 126.04 C91.23 124.37 95.63 121.81 99.38 118.08 C103.89 113.58 106.65
-							 108.2 107.15 102.08 C107.72 95.14 105.36 87.53 100.08 79.62 C95.71 73.06 90.1 67.43 85.4 63.27 C79.4
-							 57.97 72.56 52.99 65.36 48.49 C55.68 42.46 45.5 37.39 36.15 33.62 C24.52 28.93 14.15 26.24 7.64 26.24
-							 C3.26 26.24 0.49 27.46 0.49 30.31 C0.49 32.57 2.23 35.4 4.21 37.94 C7.74 42.44 13.41 47.74 19.74 53.09
-							 C29.48 61.33 41.7 70.5 53.86 79.62 Z" class="st1"/>
+	<g
+   v:mID="0"
+   v:index="1"
+   v:groupContext="foregroundPage"
+   id="g14"
+   transform="matrix(3.3464132,0,0,3.3464132,-28.521477,-30.513753)">
+		<title
+   id="title4">页-1</title>
+		<v:pageProperties
+   v:drawingScale="0.0393701"
+   v:pageScale="0.0393701"
+   v:drawingUnits="24"
+   v:shadowOffsetX="9"
+   v:shadowOffsetY="-9" />
+		<g
+   id="group275-1"
+   v:mID="275"
+   v:groupContext="group">
+			<title
+   id="title6">工作表.275</title>
+			<g
+   id="shape276-2"
+   v:mID="276"
+   v:groupContext="shape"
+   transform="matrix(0,-1,-1,0,145.513,120.353)">
+				<title
+   id="title8">curve</title>
+				<path
+   d="m 53.86,79.62 c 12.15,9.11 24.38,18.28 34.12,26.52 6.32,5.36 11.99,10.65 15.52,15.16 1.99,2.53 3.73,5.37 3.73,7.63 0,2.85 -2.77,4.06 -7.15,4.06 -6.51,0 -16.88,-2.68 -28.52,-7.37 -9.35,-3.77 -19.52,-8.84 -29.2,-14.88 -7.2,-4.5 -14.04,-9.47 -20.04,-14.78 C 17.62,91.8 12.01,86.18 7.64,79.62 2.36,71.7 0,64.1 0.57,57.15 c 0.5,-6.12 3.25,-11.5 7.77,-15.99 3.75,-3.74 8.14,-6.3 11.63,-7.97 9.6,-4.6 21.7,-6.95 33.89,-6.95 12.18,0 24.28,2.35 33.89,6.95 3.48,1.67 7.88,4.23 11.63,7.97 4.51,4.49 7.27,9.87 7.77,15.99 0.57,6.95 -1.79,14.55 -7.07,22.47 -4.37,6.56 -9.98,12.18 -14.68,16.34 -6,5.31 -12.84,10.28 -20.04,14.78 -9.68,6.04 -19.86,11.11 -29.21,14.88 -11.63,4.69 -22,7.37 -28.51,7.37 -4.38,0 -7.15,-1.21 -7.15,-4.06 0,-2.26 1.74,-5.1 3.72,-7.63 3.53,-4.51 9.2,-9.8 15.53,-15.16 C 29.48,97.9 41.7,88.73 53.86,79.62 66.01,70.5 78.24,61.33 87.98,53.09 94.3,47.74 99.97,42.44 103.5,37.94 c 1.99,-2.54 3.73,-5.37 3.73,-7.63 0,-2.85 -2.77,-4.07 -7.15,-4.07 -6.51,0 -16.88,2.69 -28.52,7.38 -9.35,3.77 -19.52,8.84 -29.2,14.87 -7.2,4.5 -14.04,9.48 -20.04,14.78 -4.7,4.16 -10.31,9.79 -14.68,16.35 -5.28,7.91 -7.64,15.52 -7.07,22.46 0.5,6.12 3.25,11.5 7.77,16 3.75,3.73 8.14,6.29 11.63,7.96 9.6,4.6 21.7,6.95 33.89,6.95 12.18,0 24.28,-2.35 33.89,-6.95 3.48,-1.67 7.88,-4.23 11.63,-7.96 4.51,-4.5 7.27,-9.88 7.77,-16 0.57,-6.94 -1.79,-14.55 -7.07,-22.46 C 95.71,73.06 90.1,67.43 85.4,63.27 79.4,57.97 72.56,52.99 65.36,48.49 55.68,42.46 45.5,37.39 36.15,33.62 24.52,28.93 14.15,26.24 7.64,26.24 c -4.38,0 -7.15,1.22 -7.15,4.07 0,2.26 1.74,5.09 3.72,7.63 3.53,4.5 9.2,9.8 15.53,15.15 9.74,8.24 21.96,17.41 34.12,26.53 z"
+   class="st1"
+   id="path10"
+   inkscape:connector-curvature="0"
+   style="fill:none;stroke:#d7d7d7;stroke-width:8;stroke-linecap:round;stroke-linejoin:round" />
 			</g>
 		</g>
 	</g>
