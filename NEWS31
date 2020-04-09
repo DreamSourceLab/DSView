@@ -1,3 +1,18 @@
+1.11 -- (2020-04-09)
+-----------------
+  --common
+  *improve the icons with svg format for better high DPI display
+  *fix out of screen issue when DPI scale >= 1.5 @ 1080P
+
+  --for logic analyzer
+  *fix type-c orientation issue for U3Pro16/U3Pro32
+  *fix decoder issues (enhance detection of i2s stop and dmx512 break)
+
+  --for oscilloscope
+  *improve the auto gain control during auto calibration for U2B100/U3P100
+  *fix issue of first trigger be ignored 
+
+
 1.10 -- (2020-02-22)
 -----------------
   --common
