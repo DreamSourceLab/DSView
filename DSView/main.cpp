@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
 			// Run the application
             ret = a.exec();
 
-		} catch(std::exception e) {
+        } catch(const std::exception &e) {
 			qDebug() << e.what();
 		}
 
