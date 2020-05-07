@@ -131,8 +131,7 @@ int main(int argc, char *argv[])
         dir.cd(QApplication::applicationName()) &&
         dir.cd("res")) {
         QString res_dir = dir.absolutePath() + "/";
-        QByteArray str_tmp = res_dir.toLocal8Bit();
-        strcpy(DS_RES_PATH, str_tmp.data());
+        strcpy(DS_RES_PATH, res_dir.toUtf8().data());
     } else {
         qDebug() << "ERROR: config files don't exist.";
         return 1;

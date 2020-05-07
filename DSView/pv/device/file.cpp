@@ -47,7 +47,7 @@ QString File::format_device_title() const
 
 File* File::create(QString name)
 {
-    if (sr_session_load(name.toLocal8Bit().data()) == SR_OK) {
+    if (sr_session_load(name.toUtf8().data()) == SR_OK) {
 		GSList *devlist = NULL;
 		sr_session_dev_list(&devlist);
 		sr_session_destroy();
@@ -76,7 +76,7 @@ QJsonArray File::get_decoders()
     QJsonArray dec_array;
     QJsonParseError error;
 
-    archive = zip_open(_path.toLocal8Bit().data(), 0, &ret);
+    archive = zip_open(_path.toUtf8().data(), 0, &ret);
     if (archive) {
         /* read "decoders" */
         if (zip_stat(archive, "decoders", 0, &zs) != -1) {
@@ -108,7 +108,7 @@ QJsonDocument File::get_session()
     QJsonDocument sessionDoc;
     QJsonParseError error;
 
-    archive = zip_open(_path.toLocal8Bit().data(), 0, &ret);
+    archive = zip_open(_path.toUtf8().data(), 0, &ret);
     if (archive) {
         /* read "decoders" */
         if (zip_stat(archive, "session", 0, &zs) != -1) {

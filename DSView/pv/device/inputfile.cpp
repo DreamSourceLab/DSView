@@ -87,7 +87,7 @@ sr_input_format* InputFile::determine_input_file_format(const QString filename)
 
 	/* Otherwise, try to find an input module that can handle this file. */
 	for (i = 0; inputs[i]; i++) {
-        if (inputs[i]->format_match(filename.toLocal8Bit().data()))
+        if (inputs[i]->format_match(filename.toUtf8().data()))
 			break;
 	}
 
@@ -112,7 +112,7 @@ sr_input* InputFile::load_input_file_format(const QString filename,
 		throw tr("Failed to load file");
 	}
 
-    if (stat(filename.toLocal8Bit().data(), &st) == -1)
+    if (stat(filename.toUtf8().data(), &st) == -1)
 		throw tr("Failed to load file");
 
 	/* Initialize the input module. */
@@ -123,7 +123,7 @@ sr_input* InputFile::load_input_file_format(const QString filename,
 	in->format = format;
 	in->param = NULL;
 	if (in->format->init &&
-        in->format->init(in, filename.toLocal8Bit().data()) != SR_OK) {
+        in->format->init(in, filename.toUtf8().data()) != SR_OK) {
 		throw tr("Failed to load file");
 	}
 
@@ -139,7 +139,7 @@ void InputFile::run()
 	assert(_input);
 	assert(_input->format);
 	assert(_input->format->loadfile);
-    _input->format->loadfile(_input, _path.toLocal8Bit().data());
+    _input->format->loadfile(_input, _path.toUtf8().data());
 }
 
 } // device

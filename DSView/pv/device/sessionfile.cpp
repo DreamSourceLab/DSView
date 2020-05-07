@@ -39,7 +39,7 @@ void SessionFile::use(SigSession *owner)
 {
 	assert(!_sdi);
 
-    if (sr_session_load(_path.toLocal8Bit().data()) != SR_OK)
+    if (sr_session_load(_path.toUtf8().data()) != SR_OK)
 		throw tr("Failed to open file.\n");
 
 	GSList *devlist = NULL;

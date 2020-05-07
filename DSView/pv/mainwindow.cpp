@@ -478,7 +478,7 @@ void MainWindow::reload()
 void MainWindow::load_file(QString file_name)
 {
     try {
-        if (strncmp(_session.get_device()->name().toLocal8Bit(), "virtual", 7))
+        if (strncmp(_session.get_device()->name().toUtf8(), "virtual", 7))
             session_save();
         _session.set_file(file_name);
     } catch(QString e) {
@@ -540,7 +540,7 @@ void MainWindow::device_detach()
     session_save();
     _view->hide_calibration();
     if (_session.get_device()->dev_inst()->mode != DSO &&
-        strncmp(_session.get_device()->name().toLocal8Bit(), "virtual", 7)) {
+        strncmp(_session.get_device()->name().toUtf8(), "virtual", 7)) {
         const boost::shared_ptr<data::Snapshot> logic_snapshot(_session.get_snapshot(SR_CHANNEL_LOGIC));
         assert(logic_snapshot);
         const boost::shared_ptr<data::Snapshot> analog_snapshot(_session.get_snapshot(SR_CHANNEL_ANALOG));
@@ -744,7 +744,7 @@ void MainWindow::session_save()
         QString file_name = dir.absolutePath() + "/" +
                             driver_name + mode_name +
                             lang_name + ".dsc";
-        if (strncmp(driver_name.toLocal8Bit(), "virtual", 7) &&
+        if (strncmp(driver_name.toUtf8(), "virtual", 7) &&
             !file_name.isEmpty()) {
             store_session(file_name);
         }
@@ -932,7 +932,7 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev)
 
     // check device and mode
     const sr_dev_inst *const sdi = _session.get_device()->dev_inst();
-    if ((!file_dev && strcmp(sdi->driver->name, sessionObj["Device"].toString().toLocal8Bit()) != 0) ||
+    if ((!file_dev && strcmp(sdi->driver->name, sessionObj["Device"].toString().toUtf8()) != 0) ||
         sdi->mode != sessionObj["DeviceMode"].toDouble()) {
         dialogs::DSMessageBox msg(this);
         msg.mBox()->setText(tr("Session Error"));
@@ -1065,7 +1065,7 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev)
                 if ((s->get_index() == obj["index"].toDouble()) &&
                     (s->get_type() == obj["type"].toDouble())) {
                     s->set_colour(QColor(obj["colour"].toString()));
-                    s->set_name(g_strdup(obj["name"].toString().toStdString().c_str()));
+                    s->set_name(g_strdup(obj["name"].toString().toUtf8().data()));
 
                     boost::shared_ptr<view::LogicSignal> logicSig;
                     if ((logicSig = dynamic_pointer_cast<view::LogicSignal>(s))) {
@@ -1095,6 +1095,7 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev)
     // update UI settings
     _sampling_bar->update_sample_rate_selector();
     _trigger_widget->device_updated();
+    _view->header_updated();
 
     // load trigger settings
     if (sessionObj.contains("trigger")) {
