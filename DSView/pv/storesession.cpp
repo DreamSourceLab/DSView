@@ -182,12 +182,12 @@ bool StoreSession::save_start(QString session_file)
         if (meta_file == NULL) {
             _error = tr("Generate temp file failed.");
         } else {
-            int ret = sr_session_save_init(_file_name.toLocal8Bit().data(),
-                                 meta_file.toLocal8Bit().data(),
-                                 decoders_file.toLocal8Bit().data(),
-                                 session_file.toLocal8Bit().data());
+            int ret = sr_session_save_init(_file_name.toUtf8().data(),
+                                 meta_file.toUtf8().data(),
+                                 decoders_file.toUtf8().data(),
+                                 session_file.toUtf8().data());
             if (ret != SR_OK) {
-                _error = tr("Failed to create zip file. Please check write permission of this path.");
+                _error = tr("Failed to create zip file. Initialization error.");
             } else {
                 _thread = boost::thread(&StoreSession::save_proc, this, snapshot);
                 return !_has_error;
@@ -196,7 +196,7 @@ bool StoreSession::save_start(QString session_file)
     }
 
     QFile::remove(_file_name);
-    _error.clear();
+    //_error.clear();
     return false;
 }
 
@@ -239,7 +239,7 @@ void StoreSession::save_proc(shared_ptr<data::Snapshot> snapshot)
                             memset(buf, sample ? 0xff : 0x0, size);
                         }
                     }
-                    ret = sr_session_append(_file_name.toLocal8Bit().data(), buf, size,
+                    ret = sr_session_append(_file_name.toUtf8().data(), buf, size,
                                       i, ch_index, ch_type, File_Version);
                     if (ret != SR_OK) {
                         if (!_has_error) {
@@ -285,13 +285,13 @@ void StoreSession::save_proc(shared_ptr<data::Snapshot> snapshot)
                         memcpy(tmp, buf, buf_end-buf);
                         memcpy(tmp+(buf_end-buf), buf_start, buf+size-buf_end);
                     }
-                    ret = sr_session_append(_file_name.toLocal8Bit().data(), tmp, size,
+                    ret = sr_session_append(_file_name.toUtf8().data(), tmp, size,
                                       i, 0, ch_type, File_Version);
                     buf += (size - _unit_count);
                     if (tmp)
                         free(tmp);
                 } else {
-                    ret = sr_session_append(_file_name.toLocal8Bit().data(), buf, size,
+                    ret = sr_session_append(_file_name.toUtf8().data(), buf, size,
                                       i, 0, ch_type, File_Version);
                     buf += size;
                 }
@@ -342,7 +342,7 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
     }
 
     const sr_dev_inst *sdi = _session.get_device()->dev_inst();
-    meta = fopen(metafile.toLocal8Bit().data(), "wb");
+    meta = fopen(metafile.toUtf8().data(), "wb");
     if (meta == NULL) {
         qDebug() << "Failed to create temp meta file.";
         return NULL;
@@ -572,7 +572,7 @@ bool StoreSession::export_start()
         while(*supportedModules){
             if(*supportedModules == NULL)
                 break;
-            if(!strcmp((*supportedModules)->id, _suffix.toLocal8Bit().data())){
+            if(!strcmp((*supportedModules)->id, _suffix.toUtf8().data())){
                 _outModule = *supportedModules;
                 break;
             }
@@ -613,7 +613,7 @@ void StoreSession::export_proc(shared_ptr<data::Snapshot> snapshot)
     }
 
     GHashTable *params = g_hash_table_new(g_str_hash, g_str_equal);
-    GVariant* filenameGVariant = g_variant_new_bytestring(_file_name.toLocal8Bit().data());
+    GVariant* filenameGVariant = g_variant_new_bytestring(_file_name.toUtf8().data());
     g_hash_table_insert(params, (char*)"filename", filenameGVariant);
     GVariant* typeGVariant = g_variant_new_int16(channel_type);
     g_hash_table_insert(params, (char*)"type", typeGVariant);
@@ -999,7 +999,7 @@ void StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_arra
                             else if (g_variant_type_equal(type, G_VARIANT_TYPE_UINT64))
                                 new_value = g_variant_new_uint64(options_obj[opt->id].toInt());
                         } else if (g_variant_is_of_type(opt->def, G_VARIANT_TYPE("s"))) {
-                            new_value = g_variant_new_string(options_obj[opt->id].toString().toLocal8Bit().data());
+                            new_value = g_variant_new_string(options_obj[opt->id].toString().toUtf8().data());
                         }
 
                         if (new_value != NULL)

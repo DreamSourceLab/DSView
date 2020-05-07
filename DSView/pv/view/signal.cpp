@@ -57,7 +57,7 @@ void Signal::set_name(QString name)
 {
     Trace::set_name(name);
     g_free(_probe->name);
-    _probe->name = g_strdup(name.toLocal8Bit().data());
+    _probe->name = g_strdup(name.toUtf8().data());
 }
 
 boost::shared_ptr<device::DevInst> Signal::get_device() const

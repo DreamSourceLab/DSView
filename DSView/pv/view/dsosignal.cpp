@@ -287,7 +287,7 @@ bool DsoSignal::load_settings()
     } else {
         _bits = DefaultBits;
         qDebug("Warning: config_get SR_CONF_UNIT_BITS failed, set to %d(default).", DefaultBits);
-        if (strncmp(_dev_inst->name().toLocal8Bit(), "virtual", 7))
+        if (strncmp(_dev_inst->name().toUtf8().data(), "virtual", 7))
             return false;
     }
     gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_REF_MIN);
@@ -361,7 +361,7 @@ bool DsoSignal::load_settings()
         g_variant_unref(gvar);
     } else {
         qDebug() << "ERROR: config_get SR_CONF_TRIGGER_VALUE failed.";
-        if (strncmp(_dev_inst->name().toLocal8Bit(), "virtual", 7))
+        if (strncmp(_dev_inst->name().toUtf8().data(), "virtual", 7))
             return false;
     }
 

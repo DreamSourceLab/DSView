@@ -305,6 +305,9 @@ public slots:
     void set_trig_time();
     bool trig_time_setted();
 
+    //
+    void header_updated();
+
 private slots:
 
 	void h_scroll_value_changed(int value);
@@ -313,8 +316,6 @@ private slots:
 	void marker_time_changed();
 
     void on_traces_moved();
-
-    void header_updated();
 
     void receive_trigger(quint64 trig_pos);
     void set_trig_pos(int percent);
