@@ -70,7 +70,38 @@ int main(int argc, char *argv[])
         QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
     #endif // QT_VERSION
 
-    QApplication a(argc, argv);
+    #ifdef _WIN32
+        // Under Windows, we need to manually retrieve the command-line arguments and convert them from UTF-16 to UTF-8.
+        // This prevents data loss if there are any characters that wouldn't fit in the local ANSI code page.
+        int argcUTF16 = 0;
+        LPWSTR* argvUTF16 = CommandLineToArgvW(GetCommandLineW(), &argcUTF16);
+
+        std::vector<QByteArray> argvUTF8Q;
+
+        std::for_each(argvUTF16, argvUTF16 + argcUTF16, [&argvUTF8Q](const LPWSTR& arg) {
+            argvUTF8Q.emplace_back(QString::fromUtf16(reinterpret_cast<const char16_t*>(arg), -1).toUtf8());
+        });
+
+        LocalFree(argvUTF16);
+
+        // Ms::runApplication() wants an argv-style array of raw pointers to the arguments, so let's create a vector of them.
+        std::vector<char*> argvUTF8;
+
+        for (auto& arg : argvUTF8Q)
+              argvUTF8.push_back(arg.data());
+
+        // Don't use the arguments passed to main(), because they're in the local ANSI code page.
+        Q_UNUSED(argc);
+        Q_UNUSED(argv);
+
+        int argcFinal = argcUTF16;
+        char** argvFinal = argvUTF8.data();
+    #else
+        int argcFinal = argc;
+        char** argvFinal = argv;
+    #endif
+
+    QApplication a(argcFinal, argvFinal);
     a.setStyle(new MyStyle);
 
     // Set some application metadata
@@ -88,7 +119,7 @@ int main(int argc, char *argv[])
 			{0, 0, 0, 0}
 		};
 
-		const int c = getopt_long(argc, argv,
+        const int c = getopt_long(argcFinal, argvFinal,
 			"l:Vh?", long_options, NULL);
 		if (c == -1)
 			break;
@@ -118,11 +149,11 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (argc - optind > 1) {
+    if (argcFinal - optind > 1) {
 		fprintf(stderr, "Only one file can be openened.\n");
 		return 1;
-	} else if (argc - optind == 1)
-		open_file = argv[argc - 1];
+    } else if (argcFinal - optind == 1)
+        open_file = argvFinal[argcFinal - 1];
 
 	// Initialise DS_RES_PATH
     QDir dir(QCoreApplication::applicationDirPath());

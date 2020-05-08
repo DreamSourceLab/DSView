@@ -109,7 +109,8 @@ MainWindow::MainWindow(DeviceManager &device_manager,
 {
 	setup_ui();
 	if (open_file_name) {
-		const QString s(QString::fromUtf8(open_file_name));
+        qDebug("Open file: %s", open_file_name);
+        const QString s(QString::fromUtf8(open_file_name));
 		QMetaObject::invokeMethod(this, "load_file",
 			Qt::QueuedConnection,
 			Q_ARG(QString, s));
