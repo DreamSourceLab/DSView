@@ -158,7 +158,7 @@ void ProtocolExp::accept()
                 }
                 out << QString("%1,%2,%3\n")
                        .arg("Id")
-                       .arg("Time[s]")
+                       .arg("Time[ns]")
                        .arg(title);
 
                 pv::data::DecoderModel* decoder_model = _session.get_decoder_model();
@@ -178,7 +178,7 @@ void ProtocolExp::accept()
                 }
 
                 uint64_t exported = 0;
-                double time_pre_samples = 1.0 / decoder_stack->samplerate();
+                double ns_per_sample = SR_SEC(1) * 1.0 / decoder_stack->samplerate();
                 vector<Annotation> annotations;
                 decoder_stack->get_annotation_subset(annotations, row,
                     0, decoder_stack->sample_count()-1);
@@ -186,7 +186,7 @@ void ProtocolExp::accept()
                     BOOST_FOREACH(const Annotation &a, annotations) {
                         out << QString("%1,%2,%3\n")
                                .arg(QString::number(exported))
-                               .arg(QString::number(a.start_sample()*time_pre_samples))
+                               .arg(QString::number(a.start_sample()*ns_per_sample, 'f', 20))
                                .arg(a.annotations().at(0));
                         exported++;
                         emit  export_progress(exported*100/annotations.size());
