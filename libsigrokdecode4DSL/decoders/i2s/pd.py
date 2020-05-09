@@ -60,7 +60,8 @@ class Decoder(srd.Decoder):
             'values': ('left-aligned', 'right-aligned')},
         {'id': 'bitorder', 'desc': 'Bit order',
             'default': 'msb-first', 'values': ('msb-first', 'lsb-first')},
-        {'id': 'wordsize', 'desc': 'Word size', 'default': 16},
+        {'id': 'wordsize', 'desc': 'Word size', 'default': 16,
+            'values': tuple(range(4,129,1))},
     )
     annotations = (
         ('left', 'Left channel'),
@@ -187,7 +188,7 @@ class Decoder(srd.Decoder):
             else:
                 if (left_algined and msb) or (not left_algined and not msb):
                     self.data >>= self.bitcount - self.wordlength
-                else: 
+                else:
                     self.data &= int("1"*self.wordlength, 2)
                 self.oldws = self.oldws if left_high else not self.oldws
                 idx = 0 if self.oldws else 1

@@ -90,13 +90,13 @@ class Decoder(srd.Decoder):
     options = (
         {'id': 'baudrate', 'desc': 'Baud rate', 'default': 115200},
         {'id': 'num_data_bits', 'desc': 'Data bits', 'default': 8,
-            'values': (5, 6, 7, 8, 9)},
+            'values': tuple(range(4,129,1))},
         {'id': 'parity_type', 'desc': 'Parity type', 'default': 'none',
             'values': ('none', 'odd', 'even', 'zero', 'one')},
         {'id': 'parity_check', 'desc': 'Check parity?', 'default': 'yes',
             'values': ('yes', 'no')},
         {'id': 'num_stop_bits', 'desc': 'Stop bits', 'default': 1.0,
-            'values': (0.0, 0.5, 1.0, 1.5)},
+            'values': (0.0, 0.5, 1.0, 1.5, 2.0, 2.5)},
         {'id': 'bit_order', 'desc': 'Bit order', 'default': 'lsb-first',
             'values': ('lsb-first', 'msb-first')},
         {'id': 'format', 'desc': 'Data format', 'default': 'hex',
@@ -216,7 +216,7 @@ class Decoder(srd.Decoder):
             self.frame_valid = False
             es = self.samplenum + ceil(self.bit_width / 2.0)
             self.putpse(self.frame_start, es, ['FRAME', 0,
-                (self.datavalue[rxtx], self.frame_valid[rxtx])])
+                (self.datavalue, self.frame_valid)])
             self.state = 'WAIT FOR START BIT'
             return
 

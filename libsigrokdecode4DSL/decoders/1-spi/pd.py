@@ -101,7 +101,8 @@ class Decoder(srd.Decoder):
             'values': (0, 1)},
         {'id': 'bitorder', 'desc': 'Bit order',
             'default': 'msb-first', 'values': ('msb-first', 'lsb-first')},
-        {'id': 'wordsize', 'desc': 'Word size', 'default': 8},
+        {'id': 'wordsize', 'desc': 'Word size', 'default': 8,
+            'values': tuple(range(5,129,1))},
         {'id': 'frame', 'desc': 'Frame Decoder', 'default': 'no',
             'values': ('yes', 'no')},
     )
