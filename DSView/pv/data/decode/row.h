@@ -39,7 +39,8 @@ public:
     ~Row();
 
 	Row(const srd_decoder *decoder,
-		const srd_decoder_annotation_row *row = NULL);
+        const srd_decoder_annotation_row *row = NULL,
+        const int order = -1);
 
 	const srd_decoder* decoder() const;
 	const srd_decoder_annotation_row* row() const;
@@ -51,6 +52,7 @@ public:
 private:
 	const srd_decoder *_decoder;
 	const srd_decoder_annotation_row *_row;
+    int _order;
 };
 
 } // decode
