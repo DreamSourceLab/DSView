@@ -28,13 +28,15 @@ namespace decode {
 
 Row::Row() :
 	_decoder(NULL),
-	_row(NULL)
+    _row(NULL),
+    _order(-1)
 {
 }
 
-Row::Row(const srd_decoder *decoder, const srd_decoder_annotation_row *row) :
+Row::Row(const srd_decoder *decoder, const srd_decoder_annotation_row *row, const int order) :
 	_decoder(decoder),
-	_row(row)
+    _row(row),
+    _order(order)
 {
 }
 
@@ -69,7 +71,7 @@ const QString Row::title() const
 bool Row::operator<(const Row &other) const
 {
     return (_decoder < other._decoder) ||
-        (_decoder == other._decoder && _row < other._row);
+        (_decoder == other._decoder && _order < other._order);
 }
 
 } // decode

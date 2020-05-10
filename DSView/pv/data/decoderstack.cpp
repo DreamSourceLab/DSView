@@ -147,13 +147,14 @@ void DecoderStack::build_row()
         }
 
         // Add the decoder rows
+        int order = 0;
         for (const GSList *l = decc->annotation_rows; l; l = l->next)
         {
             const srd_decoder_annotation_row *const ann_row =
                 (srd_decoder_annotation_row *)l->data;
             assert(ann_row);
 
-            const Row row(decc, ann_row);
+            const Row row(decc, ann_row, order);
 
             // Add a new empty row data object
             _rows[row] = decode::RowData();
@@ -173,6 +174,8 @@ void DecoderStack::build_row()
                 ll; ll = ll->next)
                 _class_rows[make_pair(decc,
                     GPOINTER_TO_INT(ll->data))] = row;
+
+            order++;
         }
     }
 }
