@@ -1,3 +1,17 @@
+1.12 -- (2020-05-11)
+-----------------
+  --common
+  *fix issue of saving/loading file with special characters
+  *fix issue #226, double-click open dsl file on Windows
+
+  --for logic analyzer
+  *improve range settings in decoders
+  *add QSPI and MIPI DSI decoders
+  *merge enhancement of LPC decoder
+  *fix issue #300, time precision for csv export of decoder results
+  *fix out-of-order issue of multiple annotation rows in one decoder
+  *fix issue #306, VCD file export uses the wrong identifier codes
+
 1.11 -- (2020-04-09)
 -----------------
   --common
