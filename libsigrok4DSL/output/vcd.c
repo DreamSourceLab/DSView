@@ -88,7 +88,7 @@ static GString *gen_header(const struct sr_output *o)
 	GString *header;
 	GSList *l;
 	time_t t;
-	int num_channels, i;
+    int num_channels, i, p;
 	char *samplerate_s, *frequency_s, *timestamp;
 
 	ctx = o->priv;
@@ -140,6 +140,7 @@ static GString *gen_header(const struct sr_output *o)
 	g_string_append_printf(header, "$scope module %s $end\n", PACKAGE);
 
 	/* Wires / channels */
+    p = 0;
 	for (i = 0, l = o->sdi->channels; l; l = l->next, i++) {
 		ch = l->data;
 		if (ch->type != SR_CHANNEL_LOGIC)
@@ -147,7 +148,8 @@ static GString *gen_header(const struct sr_output *o)
 		if (!ch->enabled)
 			continue;
 		g_string_append_printf(header, "$var wire 1 %c %s $end\n",
-				(char)('!' + i), ch->name);
+                (char)('!' + p), ch->name);
+        p++;
 	}
 
 	g_string_append(header, "$upscope $end\n$enddefinitions $end\n");
