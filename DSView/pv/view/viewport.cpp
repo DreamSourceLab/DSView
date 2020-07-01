@@ -37,7 +37,7 @@
 
 #include <QMouseEvent>
 #include <QStyleOption>
-
+#include <QPainterPath>
 
 #include <math.h>
 
