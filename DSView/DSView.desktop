@@ -1,8 +1,9 @@
 [Desktop Entry]
-Exec=/usr/local/bin/DSView
+Type=Application
+Encoding=UTF-8
 Name=DSView
 Comment=GUI Program for DreamSourceLab USB-based Instruments
+Exec=/usr/local/bin/DSView
 Icon=/usr/local/share/DSView/logo.png
-Type=Application
 Terminal=false
-Categories=Development
+Categories=Development;Electronics;Qt;
