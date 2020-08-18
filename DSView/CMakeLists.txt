@@ -423,12 +423,14 @@ set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_
 install(TARGETS ${PROJECT_NAME} DESTINATION bin/)
 install(DIRECTORY res DESTINATION share/${PROJECT_NAME})
 install(FILES icons/logo.svg DESTINATION share/${PROJECT_NAME} RENAME logo.svg)
+install(FILES icons/logo.svg DESTINATION share/icons/hicolor/scalable/apps RENAME dsview.svg)
+install(FILES icons/logo.svg DESTINATION share/pixmaps RENAME dsview.svg)
 install(FILES ../NEWS25 DESTINATION share/${PROJECT_NAME} RENAME NEWS25)
 install(FILES ../NEWS31 DESTINATION share/${PROJECT_NAME} RENAME NEWS31)
 install(FILES ../ug25.pdf DESTINATION share/${PROJECT_NAME} RENAME ug25.pdf)
 install(FILES ../ug31.pdf DESTINATION share/${PROJECT_NAME} RENAME ug31.pdf)
 install(FILES DreamSourceLab.rules DESTINATION /etc/udev/rules.d/)
-install(FILES DSView.desktop DESTINATION /usr/share/applications/)
+install(FILES DSView.desktop DESTINATION /usr/share/applications/ RENAME dsview.desktop)
 
 #===============================================================================
 #= Packaging (handled by CPack)
