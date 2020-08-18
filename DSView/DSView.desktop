@@ -3,6 +3,7 @@ Type=Application
 Encoding=UTF-8
 Name=DSView
 Comment=GUI Program for DreamSourceLab USB-based Instruments
+TryExec=DSView
 Exec=DSView
 Icon=/usr/local/share/DSView/logo.png
 Terminal=false
