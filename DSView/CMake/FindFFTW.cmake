@@ -16,7 +16,7 @@ FIND_PATH(FFTW_INCLUDE_DIR
     /usr/include
 )
 
-SET(FFTW_NAMES ${FFTW_NAMES} fftw3 fftw3f fftw3-3 fftw3l)
+SET(FFTW_NAMES ${FFTW_NAMES} fftw3 fftw3f fftw3l fftw3-3)
 FIND_LIBRARY(FFTW_LIBRARY
   NAMES
     ${FFTW_NAMES}
@@ -31,7 +31,7 @@ FIND_LIBRARY(FFTW_LIBRARY
 
 # Find threads part of FFTW
 
-SET(FFTW_THREADS_NAMES ${FFTW_THREADS_NAMES} fftw3f_threads fftw3_threads fftw3-3_threads)
+SET(FFTW_THREADS_NAMES ${FFTW_THREADS_NAMES} fftw3_threads fftw3f_threads fftw3l_threads fftw3-3_threads)
 FIND_LIBRARY(FFTW_THREADS_LIBRARY
   NAMES
     ${FFTW_THREADS_NAMES}
