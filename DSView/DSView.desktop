@@ -5,6 +5,6 @@ Name=DSView
 Comment=GUI Program for DreamSourceLab USB-based Instruments
 TryExec=DSView
 Exec=DSView
-Icon=dsview.svg
+Icon=dsview
 Terminal=false
 Categories=Development;Electronics;Qt;
