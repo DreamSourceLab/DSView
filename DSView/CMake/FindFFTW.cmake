@@ -16,7 +16,7 @@ FIND_PATH(FFTW_INCLUDE_DIR fftw3.h
 SET(FFTW_NAMES ${FFTW_NAMES} fftw3 fftw3f fftw3-3)
 FIND_LIBRARY(FFTW_LIBRARY
   NAMES ${FFTW_NAMES}
-  PATHS /usr/lib /usr/local/lib /opt/locala/lib
+  PATHS /usr/lib /usr/local/lib /opt/local/lib
   )
 
 # Find threads part of FFTW
