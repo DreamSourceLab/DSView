@@ -96,12 +96,11 @@ COMMAND_MAP = {
 }
 
 
-class channel_index:
-    CSX, DCX, SDO, WRX = range(4)
-
-
-class annotation_index:
-    BITS, CMD, DATA, CMD_DATA, ASRT = range(5)
+def _get_annotation_index(annotations, name):
+    for index, annotation in enumerate(annotations):
+        if annotation[0] == name:
+            return index
+    raise RuntimeError(f"Unknown annotation {repr(name)}: {repr(annotations)}")
 
 
 class Decoder(srd.Decoder):
@@ -128,12 +127,30 @@ class Decoder(srd.Decoder):
         ("cmd_data", "Command + Data"),
         ("asserted", "Assertion"),
     )
+
     annotation_rows = (
-        ("bits", "Bits", (annotation_index.BITS,)),
-        ("bytes", "Bytes", (annotation_index.CMD, annotation_index.DATA,)),
-        ("cmd_data", "Command + Data", (annotation_index.CMD_DATA,)),
-        ("asserted", "Assertion", (annotation_index.ASRT,)),
+        ("bits", "Bits", (_get_annotation_index(annotations, "bit"),)),
+        (
+            "bytes",
+            "Bytes",
+            (
+                _get_annotation_index(annotations, "command"),
+                _get_annotation_index(annotations, "data"),
+            ),
+        ),
+        (
+            "cmd_data",
+            "Command + Data",
+            (_get_annotation_index(annotations, "cmd_data"),),
+        ),
+        ("asserted", "Assertion", (_get_annotation_index(annotations, "asserted"),)),
     )
+
+    def _get_channel_index(self, name):
+        for index, channel in enumerate(self.channels):
+            if channel["name"] == name:
+                return index
+        raise RuntimeError("Implementation bug.")
 
     def __init__(self):
         self.reset()
@@ -168,7 +185,7 @@ class Decoder(srd.Decoder):
         last_cmd_data_list = []
 
         while True:
-            self.wait({channel_index.CSX: "f"})
+            self.wait({self._get_channel_index("CSX"): "f"})
             csx_start_samplenum = self.samplenum
 
             bit = None
@@ -177,16 +194,22 @@ class Decoder(srd.Decoder):
             byte_sample_startnum = None
 
             while True:
-                # FIXME {channel_index.DCX: "r"}
+                # FIXME {self._get_channel_index("DCX"): "r"}
                 (csx, dcx, sdo, wrx) = self.wait(
-                    [{channel_index.CSX: "r"}, {channel_index.DCX: "e"}]
+                    [
+                        {self._get_channel_index("CSX"): "r"},
+                        {self._get_channel_index("DCX"): "e"},
+                    ]
                 )
                 if csx == 1:
                     self.put(
                         csx_start_samplenum,
                         self.samplenum,
                         self.out_ann,
-                        [annotation_index.ASRT, ["Asserted"]],
+                        [
+                            _get_annotation_index(self.annotations, "asserted"),
+                            ["Asserted"],
+                        ],
                     )
 
                     if last_cmd is not None:
@@ -195,7 +218,7 @@ class Decoder(srd.Decoder):
                             last_cmd_data_sample_endnum,
                             self.out_ann,
                             [
-                                annotation_index.CMD_DATA,
+                                _get_annotation_index(self.annotations, "cmd_data"),
                                 [self._get_cmd_data_str(last_cmd, last_cmd_data_list)],
                             ],
                         )
@@ -219,7 +242,7 @@ class Decoder(srd.Decoder):
                         bit_start_samplenum,
                         self.samplenum,
                         self.out_ann,
-                        [annotation_index.BITS, [str(bit)]],
+                        [_get_annotation_index(self.annotations, "bit"), [str(bit)]],
                     )
                     bit = None
                     if bit_count == 8:
@@ -230,14 +253,20 @@ class Decoder(srd.Decoder):
                                 byte_sample_startnum,
                                 self.samplenum,
                                 self.out_ann,
-                                [annotation_index.DATA, ["Data(%02X)" % byte]],
+                                [
+                                    _get_annotation_index(self.annotations, "data"),
+                                    ["Data(%02X)" % byte],
+                                ],
                             )
                         else:
                             self.put(
                                 byte_sample_startnum,
                                 self.samplenum,
                                 self.out_ann,
-                                [annotation_index.CMD, [self._get_cmd_str(byte)]],
+                                [
+                                    _get_annotation_index(self.annotations, "command"),
+                                    [self._get_cmd_str(byte)],
+                                ],
                             )
 
                             if last_cmd is not None:
@@ -246,7 +275,9 @@ class Decoder(srd.Decoder):
                                     last_cmd_data_sample_endnum,
                                     self.out_ann,
                                     [
-                                        annotation_index.CMD_DATA,
+                                        _get_annotation_index(
+                                            self.annotations, "cmd_data"
+                                        ),
                                         [
                                             self._get_cmd_data_str(
                                                 last_cmd, last_cmd_data_list
