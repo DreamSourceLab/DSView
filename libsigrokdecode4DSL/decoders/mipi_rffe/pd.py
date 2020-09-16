@@ -75,13 +75,13 @@ proto = {
 
 class Decoder(srd.Decoder):
     api_version = 3
-    id = 'rffe'
-    name = 'RFFE'
+    id = 'mipi_rffe'
+    name = 'MIPI_RFFE'
     longname = 'RF Front-End Control Interface'
     desc = 'Two-wire, single-master, serial bus.'
     license = 'gplv2+'
     inputs = ['logic']
-    outputs = ['rffe']
+    outputs = ['mipi_rffe']
     tags = ['Embedded/industrial']
     channels = (
         {'id': 'sclk', 'type': 8, 'name': 'SCLK', 'desc': 'Serial clock line'},
