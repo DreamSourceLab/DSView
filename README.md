@@ -8,11 +8,11 @@ The sigrok project aims at creating a portable, cross-platform, Free/Libre/Open-
 
 DSView software is in a usable state and has had official tarball releases. However, it is still work in progress. Some basic functionality is available and working, but other things are still on the TODO list.
 
-# Usefull links
+# Useful links
 
-- [dreamsourcelab.com](http://www.dreamsourcelab.com)
-- [kickstarter.com](www.kickstarter.com/projects/dreamsourcelab/dslogic-multifunction-instruments-for-everyone)
-- [sigrok.org](http://sigrok.org)
+- [dreamsourcelab.com](https://www.dreamsourcelab.com)
+- [kickstarter.com](https://www.kickstarter.com/projects/dreamsourcelab/dslogic-multifunction-instruments-for-everyone)
+- [sigrok.org](https://sigrok.org)
 
 # Copyright and license
 
