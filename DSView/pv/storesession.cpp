@@ -641,6 +641,31 @@ void StoreSession::export_proc(shared_ptr<data::Snapshot> snapshot)
     src = sr_config_new(SR_CONF_LIMIT_SAMPLES,
             g_variant_new_uint64(snapshot->get_sample_count()));
     meta.config = g_slist_append(meta.config, src);
+
+    GVariant *gvar;
+    uint8_t bits;
+    gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_UNIT_BITS);
+    if (gvar != NULL) {
+        bits = g_variant_get_byte(gvar);
+        g_variant_unref(gvar);
+    }
+    gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_REF_MIN);
+    if (gvar != NULL) {
+        src = sr_config_new(SR_CONF_REF_MIN, gvar);
+        g_variant_unref(gvar);
+    } else {
+        src = sr_config_new(SR_CONF_REF_MIN, g_variant_new_uint32(1));
+    }
+    meta.config = g_slist_append(meta.config, src);
+    gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_REF_MAX);
+    if (gvar != NULL) {
+        src = sr_config_new(SR_CONF_REF_MAX, gvar);
+        g_variant_unref(gvar);
+    } else {
+        src = sr_config_new(SR_CONF_REF_MAX, g_variant_new_uint32((1 << bits) - 1));
+    }
+    meta.config = g_slist_append(meta.config, src);
+
     p.type = SR_DF_META;
     p.status = SR_PKT_OK;
     p.payload = &meta;
