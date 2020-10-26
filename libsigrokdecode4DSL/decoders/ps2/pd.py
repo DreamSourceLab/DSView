@@ -22,7 +22,7 @@ import sigrokdecode as srd
 from collections import namedtuple
 
 class Ann:
-    BIT, START, STOP, PARITY_OK, PARITY_ERR, DATA, WORD = range(7)
+    BIT, START, STOP, PARITY_OK, PARITY_ERR, DATA, WORD, ACK = range(8)
 
 Bit = namedtuple('Bit', 'val ss es')
 
@@ -40,6 +40,12 @@ class Decoder(srd.Decoder):
         {'id': 'clk', 'name': 'Clock', 'desc': 'Clock line'},
         {'id': 'data', 'name': 'Data', 'desc': 'Data line'},
     )
+    options = (
+        {'id': 'HtoD_sampling_edge', 'desc': 'HtoD_sampling_edge',
+            'default': 'rise', 'values': ('rise', 'fall')},
+        {'id': 'DtoH_sampling_edge', 'desc': 'DtoH_sampling_edge',
+            'default': 'fall', 'values': ('fall', 'rise')},
+    )
     annotations = (
         ('bit', 'Bit'),
         ('start-bit', 'Start bit'),
@@ -48,10 +54,11 @@ class Decoder(srd.Decoder):
         ('parity-err', 'Parity error bit'),
         ('data-bit', 'Data bit'),
         ('word', 'Word'),
+        ('ACK', 'ACK'),
     )
     annotation_rows = (
         ('bits', 'Bits', (0,)),
-        ('fields', 'Fields', (1, 2, 3, 4, 5, 6)),
+        ('fields', 'Fields', (1, 2, 3, 4, 5, 6, 7)),
     )
 
     def __init__(self):
@@ -61,10 +68,13 @@ class Decoder(srd.Decoder):
         self.bits = []
         self.samplenum = 0
         self.bitcount = 0
+        self.state = 'NULL'
+        self.ss = self.es = 0
 
     def start(self):
         self.out_ann = self.register(srd.OUTPUT_ANN)
-
+        self.HtoD = 1 if self.options['HtoD_sampling_edge'] == 'rise' else 0
+        self.DtoH = 1 if self.options['DtoH_sampling_edge'] == 'fall' else 0
     def putb(self, bit, ann_idx):
         b = self.bits[bit]
         self.put(b.ss, b.es, self.out_ann, [ann_idx, [str(b.val)]])
@@ -75,6 +85,7 @@ class Decoder(srd.Decoder):
     def handle_bits(self, datapin):
         # Ignore non start condition bits (useful during keyboard init).
         if self.bitcount == 0 and datapin == 1:
+            self.state = 'HtoD'
             return
 
         # Store individual bits and their start/end samplenumbers.
@@ -115,12 +126,37 @@ class Decoder(srd.Decoder):
         self.putx(10, [Ann.STOP, ['Stop bit', 'Stop', 'St', 'T']])
 
         self.bits, self.bitcount = [], 0
+        self.state == 'NULL'
 
     def decode(self):
         while True:
             # Sample data bits on falling clock edge.
-            (clock_pin, data_pin) = self.wait({0: 'f'})
-            self.handle_bits(data_pin)
-            if (self.bitcount == 11):
-                (clock_pin, data_pin) = self.wait({0: 'r'})
+            if self.bitcount == 0:
+                (clock_pin, data_pin) = self.wait([{0: 'f',1: 'e'},{0: 'f'}])
+                if (self.matched & (0b1 << 1)):
+                    self.state = 'DtoH'
+                    self.handle_bits(data_pin)
+                if (self.matched & (0b1 << 0)):
+                    self.state = 'HtoD'
+            if self.state == 'HtoD':
+                if self.HtoD :
+                    (clock_pin, data_pin) = self.wait({0: 'f'})
+                else:
+                    (clock_pin, data_pin) = self.wait({0: 'r'})
                 self.handle_bits(data_pin)
+                if (self.bitcount == 11):
+                    (clock_pin, data_pin) = self.wait({0: 'r'})
+                    self.handle_bits(data_pin)
+                    self.ss = self.samplenum
+                    (clock_pin, data_pin) = self.wait({1: 'r'})
+                    self.es = self.samplenum
+                    self.put(self.ss,self.es,self.out_ann,[Ann.ACK, ['ACK', 'ACK', 'ACK', 'A']])
+            if self.state == 'DtoH':
+                if self.DtoH :
+                    (clock_pin, data_pin) = self.wait({0: 'f'})
+                else:
+                    (clock_pin, data_pin) = self.wait({0: 'r'})
+                self.handle_bits(data_pin)
+                if (self.bitcount == 11):
+                    (clock_pin, data_pin) = self.wait({0: 'r'})
+                    self.handle_bits(data_pin)
