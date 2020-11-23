@@ -37,9 +37,10 @@ struct context {
     int *channel_unit;
     float *channel_scale;
     uint16_t *channel_offset;
-    uint8_t *channel_bits;
     double *channel_mmin;
     double *channel_mmax;
+    uint32_t ref_min;
+    uint32_t ref_max;
     uint64_t mask;
     uint64_t pre_data;
     uint64_t index;
@@ -89,7 +90,6 @@ static int init(struct sr_output *o, GHashTable *options)
     ctx->channel_unit = g_malloc(sizeof(int) * ctx->num_enabled_channels);
     ctx->channel_scale = g_malloc(sizeof(float) * ctx->num_enabled_channels);
     ctx->channel_offset = g_malloc(sizeof(uint16_t) * ctx->num_enabled_channels);
-    ctx->channel_bits = g_malloc(sizeof(uint8_t) * ctx->num_enabled_channels);
     ctx->channel_mmax = g_malloc(sizeof(double) * ctx->num_enabled_channels);
     ctx->channel_mmin = g_malloc(sizeof(double) * ctx->num_enabled_channels);
 
@@ -108,7 +108,6 @@ static int init(struct sr_output *o, GHashTable *options)
                                 (range >= 5000) ? 1000 : 1;
         ctx->channel_scale[i] = range / ctx->channel_unit[i];
         ctx->channel_offset[i] = ch->hw_offset;
-        ctx->channel_bits[i] = ch->bits;
         ctx->channel_mmax[i] = ch->map_max;
         ctx->channel_mmin[i] = ch->map_min;
         i++;
@@ -199,7 +198,7 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
     const struct sr_datafeed_dso *dso;
     const struct sr_datafeed_analog *analog;
 	const struct sr_config *src;
-	GSList *l;
+    GSList *l;
 	struct context *ctx;
 	int idx;
 	uint64_t i, j;
@@ -220,7 +219,11 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
                 ctx->samplerate = g_variant_get_uint64(src->data);
             else if (src->key == SR_CONF_LIMIT_SAMPLES)
                 ctx->limit_samples = g_variant_get_uint64(src->data);
-		}
+            else if (src->key == SR_CONF_REF_MIN)
+                ctx->ref_min = g_variant_get_uint32(src->data);
+            else if (src->key == SR_CONF_REF_MAX)
+                ctx->ref_max = g_variant_get_uint32(src->data);
+        }
 		break;
 	case SR_DF_LOGIC:
 		logic = packet->payload;
@@ -261,9 +264,9 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
             for (j = 0; j < ctx->num_enabled_channels; j++) {
                 idx = ctx->channel_index[j];
                 p = dso->data + i * ctx->num_enabled_channels + idx * ((ctx->num_enabled_channels > 1) ? 1 : 0);
-                g_string_append_printf(*out, "%0.3f", (ctx->channel_offset[j] - *p) *
+                g_string_append_printf(*out, "%0.5f", (ctx->channel_offset[j] - *p) *
                                                        ctx->channel_scale[j] /
-                                                      ((1 << ctx->channel_bits[j]) - 2.0));
+                                                      (ctx->ref_max - ctx->ref_min));
                 g_string_append_c(*out, ctx->separator);
             }
 
@@ -285,8 +288,9 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
            for (j = 0; j < ctx->num_enabled_channels; j++) {
                idx = ctx->channel_index[j];
                p = analog->data + i * ctx->num_enabled_channels + idx * ((ctx->num_enabled_channels > 1) ? 1 : 0);
-               g_string_append_printf(*out, "%0.2f",
-                                      ctx->channel_mmin[j] + (255.0 - *p) / 255.0 * (ctx->channel_mmax[j] - ctx->channel_mmin[j]));
+               g_string_append_printf(*out, "%0.5f",  (ctx->channel_offset[j] - *p) *
+                                                      (ctx->channel_mmax[j] - ctx->channel_mmin[j]) /
+                                                      (ctx->ref_max - ctx->ref_min));
                g_string_append_c(*out, ctx->separator);
            }
 
