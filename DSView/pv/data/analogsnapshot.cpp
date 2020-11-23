@@ -203,7 +203,7 @@ void AnalogSnapshot::append_data(void *data, uint64_t samples, uint16_t pitch)
                     _sample_count++;
                 memcpy((uint8_t*)_data + _ring_sample_count * bytes_per_sample,
                     data, bytes_per_sample);
-                data = (uint8_t*)data + bytes_per_sample;
+                data = (uint8_t*)data + bytes_per_sample*pitch;
                 _ring_sample_count = (_ring_sample_count + 1) % _total_sample_count;
                 _unit_pitch = pitch;
             }
