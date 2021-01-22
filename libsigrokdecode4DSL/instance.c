@@ -370,6 +370,8 @@ SRD_API struct srd_decoder_inst *srd_inst_new(struct srd_session *sess,
 		}
 	}
 
+	gstate = PyGILState_Ensure();
+
 	/*
 	 * Prepare a default channel map, where samples come in the
 	 * order in which the decoder class defined them.
@@ -388,8 +390,6 @@ SRD_API struct srd_decoder_inst *srd_inst_new(struct srd_session *sess,
 
 	/* Default to the initial pins being the same as in sample 0. */
 	oldpins_array_seed(di);
-
-	gstate = PyGILState_Ensure();
 
 	/* Create a new instance of this decoder class. */
 	if (!(di->py_inst = PyObject_CallObject(dec->py_dec, NULL))) {
