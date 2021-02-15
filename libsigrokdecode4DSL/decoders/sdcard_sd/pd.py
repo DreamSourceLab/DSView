@@ -525,15 +525,19 @@ class Decoder(srd.Decoder):
 
     def decode(self):
         while True:
+            conds = {Pin.CLK: 'r'}
+
+            # Wait for start bit (CMD = 0).
+            if ((self.state == St.GET_COMMAND_TOKEN or
+                    self.state.value.startswith('GET_RESPONSE')) and
+                    (len(self.token) == 0)):
+                conds.update({Pin.CMD: 'l'})
+
             # Wait for a rising CLK edge.
-            (cmd_pin, clk, dat0, dat1, dat2, dat3) = self.wait({Pin.CLK: 'r'})
+            (cmd_pin, clk, dat0, dat1, dat2, dat3) = self.wait(conds)
 
             # State machine.
             if self.state == St.GET_COMMAND_TOKEN:
-                if len(self.token) == 0:
-                    # Wait for start bit (CMD = 0).
-                    if cmd_pin != 0:
-                        continue
                 self.get_command_token(cmd_pin)
             elif self.state.value.startswith('HANDLE_CMD'):
                 # Call the respective handler method for the command.
@@ -544,12 +548,7 @@ class Decoder(srd.Decoder):
                 if self.is_acmd and cmdstr not in ('55', '63'):
                     self.is_acmd = False
             elif self.state.value.startswith('GET_RESPONSE'):
-                if len(self.token) == 0:
-                    # Wait for start bit (CMD = 0).
-                    if cmd_pin != 0:
-                        continue
                 # Call the respective handler method for the response.
                 s = 'handle_response_%s' % self.state.value[13:].lower()
                 handle_response = getattr(self, s)
                 handle_response(cmd_pin)
-
