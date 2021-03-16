@@ -1,18 +1,20 @@
-# DSView 
+![DreamSourceLab Logo](DSView/icons/dsl_logo.svg)
 
-DSView is an GUI programe for supporting various instruments from [DreamSourceLab](http://www.dreamsourcelab.com), including logic analyzer, oscilloscope, etc. DSView is based on sigrok project.
+
+# DSView 
+DSView is a GUI program for supporting various instruments from [DreamSourceLab](http://www.dreamsourcelab.com), including logic analyzers, oscilloscopes, etc. DSView is based on the [sigrok project](https://sigrok.org).
 
 The sigrok project aims at creating a portable, cross-platform, Free/Libre/Open-Source signal analysis software suite that supports various device types (such as logic analyzers, oscilloscopes, multimeters, and more).
 
 # Status
 
-DSView software is in a usable state and has had official tarball releases. However, it is still work in progress. Some basic functionality is available and working, but other things are still on the TODO list.
+The DSView software is in a usable state and has official tarball releases. However, it is still a work in progress. Some basic functionality is available and working, but other things are always on the TODO list.
 
-# Usefull links
+# Useful links
 
-- [dreamsourcelab.com](http://www.dreamsourcelab.com)
-- [kickstarter.com](www.kickstarter.com/projects/dreamsourcelab/dslogic-multifunction-instruments-for-everyone)
-- [sigrok.org](http://sigrok.org)
+- [dreamsourcelab.com](https://www.dreamsourcelab.com)
+- [kickstarter.com](https://www.kickstarter.com/projects/dreamsourcelab/dslogic-multifunction-instruments-for-everyone)
+- [sigrok.org](https://sigrok.org)
 
 # Copyright and license
 
