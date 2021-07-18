@@ -48,12 +48,12 @@ Fedora (18, 19):
    python3-devel qt-devel boost-devel check libfftw3-devel
 
 Arch:
- $ pacman -S base-devel git cmake glib2 libzip libusb check 
+ $ pacman -S base-devel git cmake glib2 libzip libusb check
    python boost qt5 fftw
 
 
 Step3: Building
- 
+
  $ cd libsigrok4DSL
  $ ./autogen.sh
  $ ./configure
@@ -72,11 +72,13 @@ Step3: Building
  $ cmake .
 
 /*
- * If this step fails, 
- * make sure that your pkg-config is properly configured 
- * to find the libsigrok and libsigrokdecode libraries 
- * (It's not by default in Fedora 23). 
- * To do this add "export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig" 
+ * If this step fails,
+ * make sure that your pkg-config is properly configured
+ * to find the libsigrok and libsigrokdecode libraries
+ * (It's not by default in Fedora 23).
+ * To do this add "export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig"
+ * or "export PKG_CONFIG_PATH=/usr/lib/pkgconfig"
+ * or "export PKG_CONFIG_PATH=/usr/lib64/pkgconfig"
  * to your ~/.bashrc and reload it `. ~/.bashrc`.
  */
 

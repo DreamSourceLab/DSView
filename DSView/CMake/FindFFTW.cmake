@@ -7,42 +7,59 @@
 # also defined, but not for general use are
 #  FFTW_LIBRARY, where to find the FFTW library.
 
-FIND_PATH(FFTW_INCLUDE_DIR fftw3.h
-/usr/local/include
-/usr/include
-/opt/local/lib
+FIND_PATH(FFTW_INCLUDE_DIR
+  NAMES
+    fftw3.h
+  PATHS
+    /usr/local/include
+    /opt/local/include
+    /usr/include
 )
 
-SET(FFTW_NAMES ${FFTW_NAMES} fftw3 fftw3f fftw3-3)
+SET(FFTW_NAMES ${FFTW_NAMES} fftw3 fftw3f fftw3l fftw3-3)
 FIND_LIBRARY(FFTW_LIBRARY
-  NAMES ${FFTW_NAMES}
-  PATHS /usr/lib /usr/local/lib /opt/locala/lib
+  NAMES
+    ${FFTW_NAMES}
+  PATHS
+    /usr/local/lib64
+    /opt/local/lib64
+    /usr/lib64
+    /usr/local/lib
+    /opt/local/lib
+    /usr/lib
   )
 
 # Find threads part of FFTW
 
-SET(FFTW_THREADS_NAMES ${FFTW_THREADS_NAMES} fftw3f_threads fftw3_threads fftw3-3_threads)
+SET(FFTW_THREADS_NAMES ${FFTW_THREADS_NAMES} fftw3_threads fftw3f_threads fftw3l_threads fftw3-3_threads)
 FIND_LIBRARY(FFTW_THREADS_LIBRARY
-  NAMES ${FFTW_THREADS_NAMES}
-  PATHS /usr/lib /usr/local/lib /opt/local/lib
+  NAMES
+    ${FFTW_THREADS_NAMES}
+  PATHS
+    /usr/local/lib64
+    /opt/local/lib64
+    /usr/lib64
+    /usr/local/lib
+    /opt/local/lib
+    /usr/lib
   )
 
 IF (FFTW_THREADS_LIBRARY AND FFTW_INCLUDE_DIR)
-    SET(FFTW_THREADS_LIBRARIES ${FFTW_THREADS_LIBRARY})
-    SET(FFTW_THREADS_FOUND "YES")
+  SET(FFTW_THREADS_LIBRARIES ${FFTW_THREADS_LIBRARY})
+  SET(FFTW_THREADS_FOUND "YES")
 ELSE (FFTW_THREADS_LIBRARY AND FFTW_INCLUDE_DIR)
   SET(FFTW_THREADS_FOUND "NO")
 ENDIF (FFTW_THREADS_LIBRARY AND FFTW_INCLUDE_DIR)
 
 
 IF (FFTW_THREADS_FOUND)
-   IF (NOT FFTW_THREADS_FIND_QUIETLY)
-      MESSAGE(STATUS "Found FFTW threads: ${FFTW_THREADS_LIBRARIES}")
-   ENDIF (NOT FFTW_THREADS_FIND_QUIETLY)
+  IF (NOT FFTW_THREADS_FIND_QUIETLY)
+    MESSAGE(STATUS "Found FFTW threads: ${FFTW_THREADS_LIBRARIES}")
+  ENDIF (NOT FFTW_THREADS_FIND_QUIETLY)
 ELSE (FFTW_THREADS_FOUND)
-   IF (FFTW_THREADS_FIND_REQUIRED)
-      MESSAGE(FATAL_ERROR "Could not find FFTW threads library")
-   ENDIF (FFTW_THREADS_FIND_REQUIRED)
+  IF (FFTW_THREADS_FIND_REQUIRED)
+    MESSAGE(FATAL_ERROR "Could not find FFTW threads library")
+  ENDIF (FFTW_THREADS_FIND_REQUIRED)
 ENDIF (FFTW_THREADS_FOUND)
 
 
