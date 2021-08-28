@@ -429,7 +429,7 @@ install(FILES ../NEWS25 DESTINATION share/${PROJECT_NAME} RENAME NEWS25)
 install(FILES ../NEWS31 DESTINATION share/${PROJECT_NAME} RENAME NEWS31)
 install(FILES ../ug25.pdf DESTINATION share/${PROJECT_NAME} RENAME ug25.pdf)
 install(FILES ../ug31.pdf DESTINATION share/${PROJECT_NAME} RENAME ug31.pdf)
-install(FILES DreamSourceLab.rules DESTINATION /lib/udev/rules.d RENAME 60-dreamsourcelab.rules)
+install(FILES DreamSourceLab.rules DESTINATION /usr/lib/udev/rules.d RENAME 60-dreamsourcelab.rules)
 install(FILES DSView.desktop DESTINATION /usr/share/applications RENAME dsview.desktop)
 
 #===============================================================================
