@@ -111,15 +111,19 @@ class Decoder(srd.Decoder):
         ('108', 'mosi-data', 'MOSI data'),
         ('207', 'miso-bits', 'MISO bits'),
         ('209', 'mosi-bits', 'MOSI bits'),
+        ('310', 'miso-chars', 'MISO chars'),
+        ('311', 'mosi-chars', 'MOSI chars'),
         ('1000', 'warnings', 'Human-readable warnings'),
 
         ('6', 'miso-transfer', 'MISO transfer'),
         ('8', 'mosi-transfer', 'MOSI transfer'),
     )
     annotation_rows = (
+        ('miso-chars', 'MISO chars', (7,)),
         ('miso-bits', 'MISO bits', (2,)),
         ('miso-data', 'MISO data', (0,)),
         ('miso-transfer', 'MISO transfer', (5,)),
+        ('mosi-chars', 'MOSI chars', (8,)),
         ('mosi-bits', 'MOSI bits', (3,)),
         ('mosi-data', 'MOSI data', (1,)),
         ('mosi-transfer', 'MOSI transfer', (6,)),
@@ -198,8 +202,10 @@ class Decoder(srd.Decoder):
         # Dataword annotations.
         if self.have_miso:
             self.put(ss, es, self.out_ann, [0, ['%02X' % self.misodata]])
+            self.put(ss, es, self.out_ann, [7, ['%c' % self.misodata]])
         if self.have_mosi:
             self.put(ss, es, self.out_ann, [1, ['%02X' % self.mosidata]])
+            self.put(ss, es, self.out_ann, [8, ['%c' % self.mosidata]])
 
     def reset_decoder_state(self):
         self.misodata = 0 if self.have_miso else None
