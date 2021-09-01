@@ -559,17 +559,18 @@ class Decoder(srd.Decoder):
                     cond_idle_idx[TX] = len(conds)
                     conds.append(idle_cond)
             (rx, tx) = self.wait(conds)
-            if cond_data_idx[RX] is not None and self.matched[cond_data_idx[RX]]:
+
+            if cond_data_idx[RX] is not None and (self.matched & (0b1 << cond_data_idx[RX])):
                 self.inspect_sample(RX, rx, inv[RX])
-            if cond_edge_idx[RX] is not None and self.matched[cond_edge_idx[RX]]:
+            if cond_edge_idx[RX] is not None and (self.matched & (0b1 << cond_edge_idx[RX])):
                 self.inspect_edge(RX, rx, inv[RX])
                 self.inspect_idle(RX, rx, inv[RX])
-            if cond_idle_idx[RX] is not None and self.matched[cond_idle_idx[RX]]:
+            if cond_idle_idx[RX] is not None and (self.matched & (0b1 << cond_idle_idx[RX])):
                 self.inspect_idle(RX, rx, inv[RX])
-            if cond_data_idx[TX] is not None and self.matched[cond_data_idx[TX]]:
+            if cond_data_idx[TX] is not None and (self.matched & (0b1 << cond_data_idx[TX])):
                 self.inspect_sample(TX, tx, inv[TX])
-            if cond_edge_idx[TX] is not None and self.matched[cond_edge_idx[TX]]:
+            if cond_edge_idx[TX] is not None and (self.matched & (0b1 << cond_edge_idx[TX])):
                 self.inspect_edge(TX, tx, inv[TX])
                 self.inspect_idle(TX, tx, inv[TX])
-            if cond_idle_idx[TX] is not None and self.matched[cond_idle_idx[TX]]:
+            if cond_idle_idx[TX] is not None and (self.matched & (0b1 << cond_idle_idx[TX])):
                 self.inspect_idle(TX, tx, inv[TX])
