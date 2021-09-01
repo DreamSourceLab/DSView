@@ -22,30 +22,6 @@ import sigrokdecode as srd
 from common.srdhelper import bitpack
 from math import floor, ceil
 
-'''
-OUTPUT_PYTHON format:
-
-Packet:
-[<ptype>, <rxtx>, <pdata>]
-
-This is the list of <ptype>s and their respective <pdata> values:
- - 'STARTBIT': The data is the (integer) value of the start bit (0/1).
- - 'DATA': This is always a tuple containing two items:
-   - 1st item: the (integer) value of the UART data. Valid values
-     range from 0 to 511 (as the data can be up to 9 bits in size).
-   - 2nd item: the list of individual data bits and their ss/es numbers.
- - 'PARITYBIT': The data is the (integer) value of the parity bit (0/1).
- - 'STOPBIT': The data is the (integer) value of the stop bit (0 or 1).
- - 'INVALID STARTBIT': The data is the (integer) value of the start bit (0/1).
- - 'INVALID STOPBIT': The data is the (integer) value of the stop bit (0/1).
- - 'PARITY ERROR': The data is a tuple with two entries. The first one is
-   the expected parity value, the second is the actual parity value.
- - 'FRAME': The data is always a tuple containing two items: The (integer)
-   value of the UART data, and a boolean which reflects the validity of the
-   UART frame.
-
-'''
-
 # Given a parity type to check (odd, even, zero, one), the value of the
 # parity bit, the value of the data, and the length of the data (5-9 bits,
 # usually 8 bits) return True if the parity is correct, False otherwise.
@@ -81,7 +57,7 @@ class Decoder(srd.Decoder):
     desc = 'Asynchronous, serial bus.'
     license = 'gplv2+'
     inputs = ['logic']
-    outputs = ['uart']
+    outputs = []
     tags = ['Embedded/industrial']
     channels = (
         {'id': 'rxtx', 'type': 209, 'name': 'RX/TX', 'desc': 'UART transceive line'},
