@@ -64,7 +64,7 @@ def channel_list(num_channels):
 class ChannelError(Exception):
     pass
 
-NUM_CHANNELS = 8
+NUM_CHANNELS = 16
 
 class Decoder(srd.Decoder):
     api_version = 3
@@ -206,8 +206,8 @@ class Decoder(srd.Decoder):
         # not-connected input lines. Pass data bits (all inputs except
         # clock) to the handle_bits() method.
         while True:
-            (clk, d0, d1, d2, d3, d4, d5, d6, d7) = self.wait(conds)
-            pins = (clk, d0, d1, d2, d3, d4, d5, d6, d7)
+            (clk, d0, d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12, d13, d14, d15) = self.wait(conds)
+            pins = (clk, d0, d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12, d13, d14, d15)
             bits = [0 if idx is None else pins[idx] for idx in idx_channels]
             item = bitpack(bits[1:idx_strip])
             self.handle_bits(item, num_item_bits)
