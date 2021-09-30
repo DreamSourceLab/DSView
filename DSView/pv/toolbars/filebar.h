@@ -33,6 +33,8 @@
 namespace pv {
 namespace toolbars {
 
+//toolbar button,referenced by MainWindow
+//TODO: load session file, sorte session, load log data file, sorte data, export data
 class FileBar : public QToolBar
 {
     Q_OBJECT
@@ -55,12 +57,12 @@ private:
         const QString text, const QString info_text);
 
 signals:
-    void load_file(QString);
+    void load_file(QString); 
     void on_save();
     void on_export();
-    void on_screenShot();
-    void load_session(QString);
-    void store_session(QString);
+    void on_screenShot(); //post screen capture event message
+    void load_session(QString); //post load session event message
+    void store_session(QString); //post store session event message
 
 private slots:
     void on_actionLoad_triggered();
@@ -77,7 +79,7 @@ private:
 
     QMenu *_menu;
 
-    QMenu *_menu_session;
+    QMenu *_menu_session; //when the hardware device is connected,it will be enable
     QAction *_action_load;
     QAction *_action_store;
     QAction *_action_default;

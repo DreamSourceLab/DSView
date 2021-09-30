@@ -19,7 +19,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-
 #ifndef DSVIEW_PV_TOOLBARS_SAMPLINGBAR_H
 #define DSVIEW_PV_TOOLBARS_SAMPLINGBAR_H
 
@@ -40,134 +39,137 @@
 struct st_dev_inst;
 class QAction;
 
-namespace pv {
+namespace pv
+{ 
+    class SigSession;
 
-class SigSession;
+    namespace device
+    {
+       // class DevInst;
+    } 
 
-namespace device {
-class DevInst;
-}
+    namespace dialogs
+    {
+        class deviceoptions;
+        class Calibration;
+    }
 
-namespace dialogs {
-class deviceoptions;
-class Calibration;
-}
+    namespace toolbars
+    {
 
-namespace toolbars {
+        class SamplingBar : public QToolBar
+        {
+            Q_OBJECT
 
-class SamplingBar : public QToolBar
-{
-	Q_OBJECT
+        private:
+            static const int ComboBoxMaxWidth = 200;
+            static const int RefreshShort = 500;
+            static const uint64_t LogicMaxSWDepth64 = SR_GB(16);
+            static const uint64_t LogicMaxSWDepth32 = SR_GB(8);
+            static const uint64_t AnalogMaxSWDepth = SR_Mn(100);
+            static const QString RLEString;
+            static const QString DIVString;
+            static const uint64_t ZeroTimeBase = SR_US(2);
 
-private:
-    static const int ComboBoxMaxWidth = 200;
-    static const int RefreshShort = 500;
-    static const uint64_t LogicMaxSWDepth64 = SR_GB(16);
-    static const uint64_t LogicMaxSWDepth32 = SR_GB(8);
-    static const uint64_t AnalogMaxSWDepth = SR_Mn(100);
-    static const QString RLEString;
-    static const QString DIVString;
-    static const uint64_t ZeroTimeBase = SR_US(2);
+        public:
+            SamplingBar(SigSession &session, QWidget *parent);
 
-public:
-    SamplingBar(SigSession &session, QWidget *parent);
+            void set_device_list(const std::list<boost::shared_ptr<pv::device::DevInst>> &devices,
+                                 boost::shared_ptr<pv::device::DevInst> selected);
 
-    void set_device_list(const std::list< boost::shared_ptr<pv::device::DevInst> > &devices,
-                         boost::shared_ptr<pv::device::DevInst> selected);
+            boost::shared_ptr<pv::device::DevInst> get_selected_device() const;
 
-    boost::shared_ptr<pv::device::DevInst> get_selected_device() const;
+            void update_sample_rate_selector();
 
-    void update_sample_rate_selector();
+            void set_sampling(bool sampling);
+            bool get_sampling() const;
+            bool get_instant() const;
 
-	void set_sampling(bool sampling);
-    bool get_sampling() const;
-    bool get_instant() const;
+            void enable_toggle(bool enable);
 
-    void enable_toggle(bool enable);
+            void enable_run_stop(bool enable);
 
-    void enable_run_stop(bool enable);
+            void enable_instant(bool enable);
 
-    void enable_instant(bool enable);
+            double hori_knob(int dir);
+            double commit_hori_res();
+            double get_hori_res();
 
-    double hori_knob(int dir);
-    double commit_hori_res();
-    double get_hori_res();
+        public slots:
+            void set_sample_rate(uint64_t sample_rate);
 
-public slots:
-    void set_sample_rate(uint64_t sample_rate);
+        signals:
+            void run_stop();
+            void instant_stop();
+            void device_selected();
+            void device_updated();
+            void duration_changed();
+            void show_calibration();
+            void hide_calibration();
 
-signals:
-	void run_stop();
-    void instant_stop();
-    void device_selected();
-    void device_updated();
-    void duration_changed();
-    void show_calibration();
-    void hide_calibration();
+        private:
+            void changeEvent(QEvent *event);
+            void retranslateUi();
+            void reStyle();
 
-private:
-    void changeEvent(QEvent *event);
-    void retranslateUi();
-    void reStyle();
+            void update_sample_rate_selector_value();
+            void update_sample_count_selector();
+            void update_sample_count_selector_value();
+            void commit_settings();
+            void setting_adj();
 
-	void update_sample_rate_selector_value();
-    void update_sample_count_selector();
-    void update_sample_count_selector_value();
-    void commit_settings();
-    void setting_adj();
+        private slots:
+            void on_mode();
+            void on_run_stop();
+            void on_instant_stop();
+            void on_device_selected();
+            void on_samplerate_sel(int index);
+            void on_samplecount_sel(int index);
 
-private slots:
-    void on_mode();
-	void on_run_stop();
-    void on_instant_stop();
-    void on_device_selected();
-    void on_samplerate_sel(int index);
-    void on_samplecount_sel(int index);
+            void show_session_error(
+                const QString text, const QString info_text);
 
-    void show_session_error(
-        const QString text, const QString info_text);
+        public slots:
+            void on_configure();
+            void zero_adj();
+            void reload();
 
-public slots:
-    void on_configure();
-    void zero_adj();
-    void reload();
+        private:
+            SigSession &_session;
 
-private:
-    SigSession &_session;
+            mutable boost::recursive_mutex _sampling_mutex;
+            bool _enable;
+            bool _sampling;
 
-    mutable boost::recursive_mutex _sampling_mutex;
-    bool _enable;
-    bool _sampling;
+            QToolButton _device_type;
 
-    QToolButton _device_type;
+            QComboBox _device_selector;
+            std::map<const void *, boost::weak_ptr<device::DevInst>>
+                _device_selector_map;
+            bool _updating_device_selector;
 
-    QComboBox _device_selector;
-    std::map<const void*, boost::weak_ptr<device::DevInst> >
-        _device_selector_map;
-    bool _updating_device_selector;
+            QToolButton _configure_button;
 
-    QToolButton _configure_button;
+            QComboBox _sample_count;
+            QComboBox _sample_rate;
+            bool _updating_sample_rate;
+            bool _updating_sample_count;
 
-    QComboBox _sample_count;
-    QComboBox _sample_rate;
-    bool _updating_sample_rate;
-    bool _updating_sample_count;
+            QToolButton _run_stop_button;
+            QToolButton _instant_button;
+            QAction *_run_stop_action;
+            QAction *_instant_action;
 
-	QToolButton _run_stop_button;
-    QToolButton _instant_button;
-    QAction* _run_stop_action;
-    QAction* _instant_action;
+            QAction *_mode_action;
+            QToolButton _mode_button;
+            QMenu *_mode_menu;
+            QAction *_action_repeat;
+            QAction *_action_single;
 
-    QAction* _mode_action;
-    QToolButton _mode_button;
-    QMenu *_mode_menu;
-    QAction *_action_repeat;
-    QAction *_action_single;
+            bool _instant;
+        };
 
-    bool _instant;
-};
-
-} // namespace toolbars
+    } // namespace toolbars
 } // namespace pv
 
 #endif // DSVIEW_PV_TOOLBARS_SAMPLINGBAR_H

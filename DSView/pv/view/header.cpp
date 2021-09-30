@@ -131,12 +131,15 @@ void Header::paintEvent(QPaintEvent*)
     const vector< boost::shared_ptr<Trace> > traces(
         _view.get_traces(ALL_VIEW));
 
+  //  auto num = traces.size();
+
     const bool dragging = !_drag_traces.empty();
     QColor fore(QWidget::palette().color(QWidget::foregroundRole()));
     fore.setAlpha(View::ForeAlpha);
     BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
 	{
         assert(t);
+       // auto ptr = t.get();
         t->paint_label(painter, w, dragging ? QPoint(-1, -1) : _mouse_point, fore);
 	}
 

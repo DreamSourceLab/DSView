@@ -105,7 +105,7 @@ std::list<boost::shared_ptr<device::DevInst> > DeviceManager::driver_scan(
         } else {
 			i++;
         }
-	}
+    }
 
     // Clear all the old device instances from this driver
     sr_dev_clear(driver);

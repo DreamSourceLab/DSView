@@ -39,6 +39,8 @@ class Analog;
 
 namespace view {
 
+//when device is logic analyzer mode, to draw logic signal trace
+//created by SigSession
 class LogicSignal : public Signal
 {
     Q_OBJECT

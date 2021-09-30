@@ -33,6 +33,8 @@ namespace view {
 class TimeMarker;
 class View;
 
+//the rule panel on the top
+//created by View
 class Ruler : public QWidget
 {
 	Q_OBJECT

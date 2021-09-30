@@ -870,6 +870,7 @@ void MainWindow::on_screenShot()
     }
 }
 
+//save file
 void MainWindow::on_save()
 {
     using pv::dialogs::StoreProgress;
@@ -1227,7 +1228,7 @@ bool MainWindow::store_session(QString name)
     QJsonDocument sessionDoc(sessionVar);
     //sessionFile.write(QString::fromUtf8(sessionDoc.toJson()));
     outStream << QString::fromUtf8(sessionDoc.toJson());
-    sessionFile.close();
+    sessionFile.close(); 
     return true;
 }
 

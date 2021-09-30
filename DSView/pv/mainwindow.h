@@ -63,6 +63,8 @@ namespace view {
 class View;
 }
 
+//The mainwindow,referenced by MainFrame
+//TODO: create graph view,toolbar,and show device list
 class MainWindow : public QMainWindow
 {
 	Q_OBJECT
@@ -186,7 +188,7 @@ private:
 	toolbars::SamplingBar *_sampling_bar;
     toolbars::TrigBar *_trig_bar;
     toolbars::FileBar *_file_bar;
-    toolbars::LogoBar *_logo_bar;
+    toolbars::LogoBar *_logo_bar; //help button, on top right
 
 #ifdef ENABLE_DECODE
     QDockWidget *_protocol_dock;

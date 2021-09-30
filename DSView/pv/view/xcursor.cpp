@@ -132,7 +132,7 @@ void XCursor::set_value(XCur_type type, double value)
 }
 
 void XCursor::paint(QPainter &p, const QRect &rect, XCur_type highlight,  int order)
-{
+{ 
     const int arrow = 3;
     const int x = rect.left() + _yvalue * rect.width();
     const int y0 = rect.top() + _value0 * rect.height();

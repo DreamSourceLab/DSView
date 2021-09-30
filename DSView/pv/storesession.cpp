@@ -60,6 +60,20 @@ using std::vector;
 
 namespace pv {
 
+      char chunk_name[30] = {0};
+
+    void MakeChunkName(int chunk_num, int index, int type, int version){       
+        if (version == 2) {
+            const char *type_name = NULL;
+            type_name = (type == SR_CHANNEL_LOGIC) ? "L" :
+                    (type == SR_CHANNEL_DSO) ? "O" :
+                    (type == SR_CHANNEL_ANALOG) ? "A" : "U";
+            snprintf(chunk_name, 15, "%s-%d/%d", type_name, index, chunk_num);
+        } else {
+            snprintf(chunk_name, 15, "data");
+        }
+    }
+
 StoreSession::StoreSession(SigSession &session) :
 	_session(session),
     _outModule(NULL),
@@ -179,6 +193,8 @@ bool StoreSession::save_start(QString session_file)
     #else
         QString decoders_file = NULL;
     #endif
+
+       /*
         if (meta_file == NULL) {
             _error = tr("Generate temp file failed.");
         } else {
@@ -192,6 +208,23 @@ bool StoreSession::save_start(QString session_file)
                 _thread = boost::thread(&StoreSession::save_proc, this, snapshot);
                 return !_has_error;
             }
+        }
+        */
+
+            //make zip file
+        if (meta_file != NULL && m_zipDoc.CreateNew())
+        {
+            if (   !m_zipDoc.AddFromFile(meta_file.toUtf8().data(), "header")
+                || !m_zipDoc.AddFromFile(decoders_file.toUtf8().data(), "decoders")
+                || !m_zipDoc.AddFromFile(session_file.toUtf8().data(), "session"))
+                {
+                        _has_error = true;
+                        _error = m_zipDoc.GetError();
+                }
+                else{
+                        _thread = boost::thread(&StoreSession::save_proc, this, snapshot);
+                        return !_has_error;
+                }        
         }
     }
 
@@ -239,8 +272,13 @@ void StoreSession::save_proc(shared_ptr<data::Snapshot> snapshot)
                             memset(buf, sample ? 0xff : 0x0, size);
                         }
                     }
-                    ret = sr_session_append(_file_name.toUtf8().data(), buf, size,
-                                      i, ch_index, ch_type, File_Version);
+                    
+                   // ret = sr_session_append(_file_name.toUtf8().data(), buf, size,
+                    //                  i, ch_index, ch_type, File_Version);
+                    
+                    MakeChunkName(i, ch_index, ch_type, File_Version);
+                    ret = m_zipDoc.AddFromBuffer(chunk_name, (const char*)buf, size) ? SR_OK : -1;
+
                     if (ret != SR_OK) {
                         if (!_has_error) {
                             _has_error = true;
@@ -285,19 +323,30 @@ void StoreSession::save_proc(shared_ptr<data::Snapshot> snapshot)
                         memcpy(tmp, buf, buf_end-buf);
                         memcpy(tmp+(buf_end-buf), buf_start, buf+size-buf_end);
                     }
-                    ret = sr_session_append(_file_name.toUtf8().data(), tmp, size,
-                                      i, 0, ch_type, File_Version);
+
+                   ret = sr_session_append(_file_name.toUtf8().data(), tmp, size,
+                                     i, 0, ch_type, File_Version);
+
+                    MakeChunkName(i, 0, ch_type, File_Version);
+                    ret = m_zipDoc.AddFromBuffer(chunk_name, (const char*)tmp, size) ? SR_OK : -1;
+
                     buf += (size - _unit_count);
                     if (tmp)
                         free(tmp);
                 } else {
-                    ret = sr_session_append(_file_name.toUtf8().data(), buf, size,
-                                      i, 0, ch_type, File_Version);
+
+                  //  ret = sr_session_append(_file_name.toUtf8().data(), buf, size,
+                  //                 i, 0, ch_type, File_Version);
+
+                    MakeChunkName(i, 0, ch_type, File_Version);
+                    ret = m_zipDoc.AddFromBuffer(chunk_name, (const char*)buf, size) ? SR_OK : -1;
+
                     buf += size;
                 }
                 if (ret != SR_OK) {
                     if (!_has_error) {
                         _has_error = true;
+                        auto err = m_zipDoc.GetError();
                         _error = tr("Failed to create zip file. Please check write permission of this path.");
                     }
                     progress_updated();
@@ -314,6 +363,15 @@ void StoreSession::save_proc(shared_ptr<data::Snapshot> snapshot)
 
     if (_canceled || num == 0)
         QFile::remove(_file_name);
+    else {
+        bool bret = m_zipDoc.SaveToFile(_file_name.toUtf8().data());
+        m_zipDoc.Release();
+
+        if (!bret){
+            _has_error = true;
+            _error = m_zipDoc.GetError();
+        }
+    } 
 }
 
 QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)

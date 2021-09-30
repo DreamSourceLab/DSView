@@ -26,50 +26,55 @@
 class QLabel;
 class QToolButton;
 
-namespace pv {
-namespace toolbars {
-
-class TitleBar : public QWidget
+namespace pv
 {
-    Q_OBJECT
+    namespace toolbars
+    {
 
-public:
-    TitleBar(bool top, QWidget *parent, bool hasClose = false);
-    void setTitle(QString title);
-    QPoint get_startPos() const;
-    QString title() const;
+//Window's titlebar, referenced by MainFrame,
+//The title area above the main screen,
+//Display logo and maximize \ minimize button
+        class TitleBar : public QWidget
+        {
+            Q_OBJECT
 
-private:
-    void changeEvent(QEvent *event);
-    void reStyle();
+        public:
+            TitleBar(bool top, QWidget *parent, bool hasClose = false);
+            void setTitle(QString title);
+            QPoint get_startPos() const;
+            QString title() const;
 
-signals:
-    void normalShow();
-    void maximizedShow();
+        private:
+            void changeEvent(QEvent *event);
+            void reStyle();
 
-public slots:
-    void showMaxRestore();
-    void setRestoreButton(bool max);
+        signals:
+            void normalShow();
+            void maximizedShow();
 
-protected:
-    void paintEvent(QPaintEvent *event);
-    void mousePressEvent(QMouseEvent *event);
-    void mouseMoveEvent(QMouseEvent *event);
-    void mouseReleaseEvent(QMouseEvent *event);
-    void mouseDoubleClickEvent(QMouseEvent *event);
+        public slots:
+            void showMaxRestore();
+            void setRestoreButton(bool max);
 
-    QLabel *_title;
-    QToolButton *_minimizeButton;
-    QToolButton *_maximizeButton;
-    QToolButton *_closeButton;
+        protected:
+            void paintEvent(QPaintEvent *event);
+            void mousePressEvent(QMouseEvent *event);
+            void mouseMoveEvent(QMouseEvent *event);
+            void mouseReleaseEvent(QMouseEvent *event);
+            void mouseDoubleClickEvent(QMouseEvent *event);
 
-    bool _moving;
-    bool _isTop;
-    bool _hasClose;
-    QPoint _startPos;
-};
+            QLabel *_title;
+            QToolButton *_minimizeButton;
+            QToolButton *_maximizeButton;
+            QToolButton *_closeButton;
 
-} // namespace toolbars
+            bool _moving;
+            bool _isTop;
+            bool _hasClose;
+            QPoint _startPos;
+        };
+
+    } // namespace toolbars
 } // namespace pv
 
 #endif // DSVIEW_PV_TOOLBARS_TITLEBAR_H

@@ -50,6 +50,7 @@ class DevInst;
 
 namespace view {
 
+//draw signal trace base class
 class Signal : public Trace
 {
     Q_OBJECT

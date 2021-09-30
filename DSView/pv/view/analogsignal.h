@@ -37,6 +37,8 @@ class AnalogSnapshot;
 
 namespace view {
 
+//when device is data acquisition model, to draw trace
+//created by SigSession
 class AnalogSignal : public Signal
 {
     Q_OBJECT

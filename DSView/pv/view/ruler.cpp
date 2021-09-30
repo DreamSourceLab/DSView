@@ -168,7 +168,7 @@ void Ruler::rel_grabbed_cursor()
 }
 
 void Ruler::paintEvent(QPaintEvent*)
-{
+{   
     QStyleOption o;
     o.initFrom(this);
     QPainter p(this);

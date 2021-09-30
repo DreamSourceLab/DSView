@@ -37,6 +37,7 @@ namespace view {
 
 class View;
 
+//the Cursor's base class
 class TimeMarker : public QObject
 {
 	Q_OBJECT
