@@ -38,12 +38,14 @@ class DsoSnapshot;
 
 namespace view {
 
+//when device is oscilloscope mode, it can use to draw Lissajous graph
+//created by SigSession
 class LissajousTrace : public Trace
 {
     Q_OBJECT
 
 private:
-    static const int DIV_NUM = 10;
+    static const int DIV_NUM = 10; 
 
 public:
     LissajousTrace(bool enable,

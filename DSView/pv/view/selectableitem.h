@@ -35,6 +35,7 @@ namespace pv {
 
 namespace view {
 
+//Trace's base class
 class SelectableItem : public QObject
 {
 	Q_OBJECT

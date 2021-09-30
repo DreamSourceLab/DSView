@@ -38,6 +38,8 @@ class DsoSnapshot;
 
 namespace view {
 
+//when device is oscilloscope model,to draw trace
+//created by SigSession
 class DsoSignal : public Signal
 {
     Q_OBJECT

@@ -41,9 +41,11 @@ namespace view {
 class View;
 class DsoSignal;
 
+//created by View
 class XCursor : public QObject
 {
 	Q_OBJECT
+  
 public:
     enum XCur_type {
         XCur_None = -2,

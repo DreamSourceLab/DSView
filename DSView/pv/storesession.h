@@ -31,6 +31,7 @@
 
 #include <libsigrok4DSL/libsigrok.h>
 #include <libsigrokdecode4DSL/libsigrokdecode.h>
+#include "ZipMaker.h"
 
 namespace pv {
 
@@ -106,6 +107,7 @@ private:
     bool _has_error;
 	QString _error;
     bool _canceled;
+    ZipMaker m_zipDoc;
 };
 
 } // pv

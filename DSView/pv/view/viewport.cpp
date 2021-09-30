@@ -138,7 +138,7 @@ bool Viewport::event(QEvent *event)
 }
 
 void Viewport::paintEvent(QPaintEvent *event)
-{
+{   
     (void)event;
 
     using pv::view::Signal;
@@ -156,11 +156,14 @@ void Viewport::paintEvent(QPaintEvent *event)
     const vector< boost::shared_ptr<Trace> > traces(_view.get_traces(_type));
     BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
     {
-        assert(t);
+        assert(t); 
+    
         t->paint_back(p, 0, _view.get_view_width(), fore, back);
         if (_view.back_ready())
             break;
     }
+
+    //auto st = _view.session().get_capture_state();
 
     if (_view.session().get_device()->dev_inst()->mode == LOGIC ||
         _view.session().get_instant()) {
@@ -207,6 +210,10 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
         BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
         {
             assert(t);
+           // auto ptr = t.get();
+           // ptr->paint_mid(p, 0, t->get_view_rect().right(), fore, back);
+         //   continue;
+
             if (t->enabled())
                 t->paint_mid(p, 0, t->get_view_rect().right(), fore, back);
         }
@@ -228,7 +235,7 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
             {
                 assert(t);
                 if (t->enabled())
-                    t->paint_mid(dbp, 0, t->get_view_rect().right(), fore, back);
+                    t->paint_mid(dbp, 0, t->get_view_rect().right(), fore, back);      
             }
             _need_update = false;
         }

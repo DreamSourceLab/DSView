@@ -40,6 +40,8 @@ class SpectrumStack;
 
 namespace view {
 
+//draw Scope signal trace
+//created by SigSession
 class SpectrumTrace : public Trace
 {
     Q_OBJECT

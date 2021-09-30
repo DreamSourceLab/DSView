@@ -67,6 +67,7 @@ class Trace;
 class Viewport;
 class LissajousFigure;
 
+//created by MainWindow
 class View : public QScrollArea {
 	Q_OBJECT
 

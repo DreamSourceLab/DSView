@@ -40,6 +40,7 @@ class GroupSnapshot;
 
 namespace view {
 
+//created by SigSession
 class GroupSignal : public Trace
 {
 private:

@@ -28,6 +28,8 @@
 namespace pv {
 namespace view {
 
+//when device is oscilloscope model, to draw the dail on the left
+//created by DsoSignal
 class dslDial : public QObject
 {
     //Q_OBJECT

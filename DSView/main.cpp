@@ -161,16 +161,17 @@ int main(int argc, char *argv[])
         dir.cd("share") &&
         dir.cd(QApplication::applicationName()) &&
         dir.cd("res")) {
+		// the path command like: cd ../share/DSView/res
         QString res_dir = dir.absolutePath() + "/";
         strcpy(DS_RES_PATH, res_dir.toUtf8().data());
     } else {
-        qDebug() << "ERROR: config files don't exist.";
+        qDebug() << "DSView run ERROR: config files don't exist.";
         return 1;
     }
 
 	// Initialise libsigrok
 	if (sr_init(&sr_ctx) != SR_OK) {
-		qDebug() << "ERROR: libsigrok init failed.";
+		qDebug() << "DSView run ERROR: libsigrok init failed.";
 		return 1;
 	}
 
@@ -194,7 +195,7 @@ int main(int argc, char *argv[])
             pv::MainFrame w(device_manager, open_file);
 			w.show();
             w.readSettings();
-            w.show_doc();
+            w.show_doc();  // to show the dailog for open help document
 
 			// Run the application
             ret = a.exec();

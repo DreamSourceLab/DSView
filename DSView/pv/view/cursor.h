@@ -33,6 +33,7 @@ class QPainter;
 namespace pv {
 namespace view {
 
+//created by View
 class Cursor : public TimeMarker
 {
 	Q_OBJECT

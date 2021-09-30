@@ -101,7 +101,7 @@ void TitleBar::reStyle()
 }
 
 void TitleBar::paintEvent(QPaintEvent *event)
-{
+{  
     QStyleOption o;
     o.initFrom(this);
     QPainter p(this);
@@ -109,6 +109,7 @@ void TitleBar::paintEvent(QPaintEvent *event)
 
     p.setRenderHint(QPainter::Antialiasing, true);
 
+    //To draw product logo
     const int xgap = 2;
     const int xstart = 10;
     p.setPen(QPen(QColor(213, 15, 37, 255), 2, Qt::SolidLine));

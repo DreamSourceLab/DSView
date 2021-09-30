@@ -77,11 +77,10 @@ MainFrame::MainFrame(DeviceManager &device_manager,
     // Title
     _titleBar = new toolbars::TitleBar(true, this);
     _titleBar->installEventFilter(this);
-
+     
     // MainWindow
     _mainWindow = new MainWindow(device_manager, open_file_name, this);
     _mainWindow->setWindowFlags(Qt::Widget);
-
     _titleBar->setTitle(_mainWindow->windowTitle());
 
     QVBoxLayout *vbox = new QVBoxLayout();
@@ -185,7 +184,7 @@ void MainFrame::hide_border()
 }
 
 void MainFrame::show_border()
-{
+{ 
     _top_left->setVisible(true);
     _top_right->setVisible(true);
     _top->setVisible(true);

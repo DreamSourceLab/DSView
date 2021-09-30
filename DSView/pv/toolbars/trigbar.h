@@ -34,6 +34,8 @@ class SigSession;
 
 namespace toolbars {
 
+//boolbar, referenced by MainWindow
+//TODO:show the property panel about protocol\trigger
 class TrigBar : public QToolBar
 {
     Q_OBJECT
@@ -57,9 +59,9 @@ private:
 
 signals:
     void setTheme(QString style);
-    void on_protocol(bool visible);
-    void on_trigger(bool visible);
-    void on_measure(bool visible);
+    void on_protocol(bool visible); //post decode button click event,to show or hide protocol property panel
+    void on_trigger(bool visible); //post decode button click event,to show or hide trigger property panel
+    void on_measure(bool visible);//post decode button click event,to show or hide measure property panel
     void on_search(bool visible);
     void show_lissajous(bool visible);
 

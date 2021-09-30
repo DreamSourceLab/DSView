@@ -48,6 +48,9 @@ namespace view {
 class Signal;
 class View;
 
+//main graph view port, in the middle region
+//draw the left and right rule scale
+//created by View
 class Viewport : public QWidget
 {
 	Q_OBJECT

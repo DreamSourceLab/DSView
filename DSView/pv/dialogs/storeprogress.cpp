@@ -69,7 +69,7 @@ void StoreProgress::timeout()
     if (_done) {
         _store_session.session().set_saving(false);
         save_done();
-        close();
+        close(); 
     } else {
         QTimer::singleShot(100, this, SLOT(timeout()));
     }

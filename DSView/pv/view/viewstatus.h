@@ -41,12 +41,15 @@ namespace view {
 class View;
 class DsoSignal;
 
-
+//created by View
 class ViewStatus : public QWidget
 {
     Q_OBJECT
+
 public:
-    ViewStatus(SigSession &session, View &parent);
+   ViewStatus(SigSession &session, View &parent);
+
+public: 
 
     void paintEvent(QPaintEvent *);
     void mousePressEvent(QMouseEvent *);

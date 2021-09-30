@@ -48,7 +48,7 @@ dslDial::~dslDial()
 }
 
 void dslDial::paint(QPainter &p, QRectF dialRect, QColor dialColor, const QPoint pt, QString &pText)
-{
+{  
     p.setPen(dialColor);
     p.setBrush(dialColor);
 
@@ -108,6 +108,8 @@ void dslDial::paint(QPainter &p, QRectF dialRect, QColor dialColor, const QPoint
                    inc ? 10 : -10, hoverRect.width()/2 + 4);
         p.restore();
     }
+
+    (void*)0;
 }
 
 void dslDial::set_sel(uint64_t sel)

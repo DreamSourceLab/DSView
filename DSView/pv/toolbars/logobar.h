@@ -35,6 +35,8 @@
 namespace pv {
 namespace toolbars {
 
+//The tool button for help,is a ui class,referenced by MainWindow
+//TODO: switch language,submit bug descript,
 class LogoBar : public QToolBar
 {
     Q_OBJECT
@@ -44,6 +46,7 @@ public:
 
     void enable_toggle(bool enable);
 
+   //show the hardware device conneted status with logo picture
     void dsl_connected(bool conn);
 
 private:
@@ -57,8 +60,11 @@ private:
         const QString text, const QString info_text);
 
 signals:
-    void setLanguage(int language);
-    void openDoc();
+    //post event message to set language, MainWindow class receive it
+    void setLanguage(int language);  
+
+    //post event message to open user help document, MainWindow class receive it
+    void openDoc(); 
 
 private slots:
     void on_actionEn_triggered();

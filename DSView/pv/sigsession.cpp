@@ -156,6 +156,9 @@ boost::shared_ptr<device::DevInst> SigSession::get_device() const
     return _dev_inst;
 }
 
+/*
+  when be called, it will call 4DSL lib sr_session_new, and create a session struct in the lib
+*/
 void SigSession::set_device(boost::shared_ptr<device::DevInst> dev_inst)
 {
     using pv::device::Device;
@@ -746,8 +749,8 @@ void SigSession::init_signals()
             switch(probe->type) {
             case SR_CHANNEL_LOGIC:
                 if (probe->enabled)
-                    signal = boost::shared_ptr<view::Signal>(
-                        new view::LogicSignal(_dev_inst, _logic_data, probe));
+                   signal = boost::shared_ptr<view::Signal>(
+                       new view::LogicSignal(_dev_inst, _logic_data, probe));
                 break;
 
             case SR_CHANNEL_DSO:
@@ -803,7 +806,7 @@ void SigSession::reload()
                             boost::shared_ptr<view::LogicSignal> logicSig;
                             if ((logicSig = dynamic_pointer_cast<view::LogicSignal>(*i)))
                                 signal = boost::shared_ptr<view::Signal>(
-                                    new view::LogicSignal(logicSig, _logic_data, probe));
+                                  new view::LogicSignal(logicSig, _logic_data, probe));
                             break;
                         }
                         i++;

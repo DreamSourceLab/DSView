@@ -39,6 +39,8 @@ namespace view {
 class Trace;
 class View;
 
+//the left panel of main graph
+//created by View
 class Header : public QWidget
 {
 	Q_OBJECT
