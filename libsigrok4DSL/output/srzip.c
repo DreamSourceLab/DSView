@@ -20,7 +20,6 @@
 #include "libsigrok.h"
 #include "libsigrok-internal.h"
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
 #include <errno.h>
 #include <glib.h>
@@ -28,11 +27,18 @@
 #include <zip.h>
 
 #define LOG_PREFIX "output/srzip"
+#define CHUNK_SIZE (4 * 1024 * 1024)
 
 struct out_context {
 	gboolean zip_created;
 	uint64_t samplerate;
 	char *filename;
+	struct logic_buff {
+		size_t unit_size;
+		size_t alloc_size;
+		uint8_t *samples;
+		size_t fill_size;
+	} logic_buff;
 };
 
 static int init(struct sr_output *o, GHashTable *options)
@@ -51,157 +57,274 @@ static int init(struct sr_output *o, GHashTable *options)
 static int zip_create(const struct sr_output *o)
 {
 	struct out_context *outc;
-	struct sr_channel *ch;
-	FILE *meta;
 	struct zip *zipfile;
 	struct zip_source *versrc, *metasrc;
+	struct sr_channel *ch;
+	size_t ch_nr;
+	size_t alloc_size;
 	GVariant *gvar;
+	GKeyFile *meta;
 	GSList *l;
-	int tmpfile, ret;
-	char version[1], metafile[32], *s;
+	const char *devgroup;
+	char *s, *metabuf;
+	gsize metalen;
+	guint logic_channels, enabled_logic_channels;
 
 	outc = o->priv;
-	if (outc->samplerate == 0) {
-		if (sr_config_get(o->sdi->driver, o->sdi, NULL, NULL, SR_CONF_SAMPLERATE,
-				&gvar) == SR_OK) {
-            if (gvar != NULL) {
-                outc->samplerate = g_variant_get_uint64(gvar);
-                g_variant_unref(gvar);
-            }
-		}
+
+	if (outc->samplerate == 0 && sr_config_get(o->sdi->driver, o->sdi, NULL, NULL,
+					SR_CONF_SAMPLERATE, &gvar) == SR_OK) {
+		outc->samplerate = g_variant_get_uint64(gvar);
+		g_variant_unref(gvar);
 	}
 
 	/* Quietly delete it first, libzip wants replace ops otherwise. */
-	unlink(outc->filename);
-	if (!(zipfile = zip_open(outc->filename, ZIP_CREATE, &ret)))
+	g_unlink(outc->filename);
+	zipfile = zip_open(outc->filename, ZIP_CREATE, NULL);
+	if (!zipfile)
 		return SR_ERR;
 
 	/* "version" */
-	version[0] = '2';
-	if (!(versrc = zip_source_buffer(zipfile, version, 1, 0)))
-		return SR_ERR;
-	if (zip_add(zipfile, "version", versrc) == -1) {
-		sr_info("Error saving version into zipfile: %s.",
+	versrc = zip_source_buffer(zipfile, "2", 1, FALSE);
+	if (zip_add(zipfile, "version", versrc) < 0) {
+		sr_err("Error saving version into zipfile: %s",
 			zip_strerror(zipfile));
+		zip_source_free(versrc);
+		zip_discard(zipfile);
 		return SR_ERR;
 	}
 
 	/* init "metadata" */
-	strcpy(metafile, "sigrok-meta-XXXXXX");
-	if ((tmpfile = g_mkstemp(metafile)) == -1)
-		return SR_ERR;
-	close(tmpfile);
-	meta = g_fopen(metafile, "wb");
-	fprintf(meta, "[global]\n");
-	fprintf(meta, "sigrok version = %s\n", PACKAGE_VERSION);
-	fprintf(meta, "[device 1]\ncapturefile = logic-1\n");
-	fprintf(meta, "total probes = %d\n", g_slist_length(o->sdi->channels));
+	meta = g_key_file_new();
+
+	g_key_file_set_string(meta, "global", "sigrok version",
+			sr_package_version_string_get());
+
+	devgroup = "device 1";
+
+	logic_channels = 0;
+	enabled_logic_channels = 0;
+	for (l = o->sdi->channels; l; l = l->next) {
+		ch = l->data;
+
+		switch (ch->type) {
+		case SR_CHANNEL_LOGIC:
+			if (ch->enabled)
+				enabled_logic_channels++;
+			logic_channels++;
+			break;
+		}
+	}
+
+	/* Only set capturefile and probes if we will actually save logic data. */
+	if (enabled_logic_channels > 0) {
+		g_key_file_set_string(meta, devgroup, "capturefile", "logic-1");
+		g_key_file_set_integer(meta, devgroup, "total probes", logic_channels);
+	}
+
 	s = sr_samplerate_string(outc->samplerate);
-	fprintf(meta, "samplerate = %s\n", s);
+	g_key_file_set_string(meta, devgroup, "samplerate", s);
 	g_free(s);
 
 	for (l = o->sdi->channels; l; l = l->next) {
 		ch = l->data;
-		if (ch->type != SR_CHANNEL_LOGIC)
-			continue;
 		if (!ch->enabled)
 			continue;
-		fprintf(meta, "probe%d = %s\n", ch->index + 1, ch->name);
-	}
-	fclose(meta);
 
-	if (!(metasrc = zip_source_file(zipfile, metafile, 0, -1))) {
-		unlink(metafile);
-		return SR_ERR;
-	}
-	if (zip_add(zipfile, "metadata", metasrc) == -1) {
-		unlink(metafile);
-		return SR_ERR;
-	}
-
-	if ((ret = zip_close(zipfile)) == -1) {
-		sr_info("Error saving zipfile: %s.", zip_strerror(zipfile));
-		unlink(metafile);
-		return SR_ERR;
+		s = NULL;
+		switch (ch->type) {
+		case SR_CHANNEL_LOGIC:
+			ch_nr = ch->index + 1;
+			s = g_strdup_printf("probe%zu", ch_nr);
+			break;
+		}
+		if (s) {
+			g_key_file_set_string(meta, devgroup, s, ch->name);
+			g_free(s);
+		}
 	}
 
-	unlink(metafile);
+	/*
+	 * Allocate one samples buffer for all logic channels. Allocate
+	 * buffers of CHUNK_SIZE size (in bytes), and determine the
+	 * sample counts from the respective channel counts and data
+	 * type widths.
+	 *
+	 * These buffers are intended to reduce the number of ZIP
+	 * archive update calls, and decouple the srzip output module
+	 * from implementation details in other acquisition device
+	 * drivers and input modules.
+	 *
+	 * Avoid allocating zero bytes, to not depend on platform
+	 * specific malloc(0) return behaviour. Avoid division by zero,
+	 * holding a local buffer won't harm when no data is seen later
+	 * during execution. This simplifies other locations.
+	 */
+	alloc_size = CHUNK_SIZE;
+	outc->logic_buff.unit_size = logic_channels;
+	outc->logic_buff.unit_size += 8 - 1;
+	outc->logic_buff.unit_size /= 8;
+	outc->logic_buff.samples = g_try_malloc0(alloc_size);
+	if (!outc->logic_buff.samples)
+		return SR_ERR_MALLOC;
+	if (outc->logic_buff.unit_size)
+		alloc_size /= outc->logic_buff.unit_size;
+	outc->logic_buff.alloc_size = alloc_size;
+	outc->logic_buff.fill_size = 0;
+
+	metabuf = g_key_file_to_data(meta, &metalen, NULL);
+	g_key_file_free(meta);
+
+	metasrc = zip_source_buffer(zipfile, metabuf, metalen, FALSE);
+	if (zip_add(zipfile, "metadata", metasrc) < 0) {
+		sr_err("Error saving metadata into zipfile: %s",
+			zip_strerror(zipfile));
+		zip_source_free(metasrc);
+		zip_discard(zipfile);
+		g_free(metabuf);
+		return SR_ERR;
+	}
+
+	if (zip_close(zipfile) < 0) {
+		sr_err("Error saving zipfile: %s", zip_strerror(zipfile));
+		zip_discard(zipfile);
+		g_free(metabuf);
+		return SR_ERR;
+	}
+	g_free(metabuf);
 
 	return SR_OK;
 }
 
-static int zip_append(const struct sr_output *o, unsigned char *buf,
-		int unitsize, int length)
+/**
+ * Read metadata entries from a session archive.
+ *
+ * @param[in] archive An open ZIP archive.
+ * @param[in] entry Stat buffer filled in for the metadata archive member.
+ *
+ * @return A new key/value store containing the session metadata.
+ *
+ * @private
+ */
+SR_PRIV GKeyFile *sr_sessionfile_read_metadata(struct zip *archive,
+			const struct zip_stat *entry)
+{
+	GKeyFile *keyfile;
+	GError *error;
+	struct zip_file *zf;
+	char *metabuf;
+	int metalen;
+
+	if (entry->size > G_MAXINT || !(metabuf = g_try_malloc(entry->size))) {
+		sr_err("Metadata buffer allocation failed.");
+		return NULL;
+	}
+	zf = zip_fopen_index(archive, entry->index, 0);
+	if (!zf) {
+		sr_err("Failed to open metadata: %s", zip_strerror(archive));
+		g_free(metabuf);
+		return NULL;
+	}
+	metalen = zip_fread(zf, metabuf, entry->size);
+	if (metalen < 0) {
+		sr_err("Failed to read metadata: %s", zip_file_strerror(zf));
+		zip_fclose(zf);
+		g_free(metabuf);
+		return NULL;
+	}
+	zip_fclose(zf);
+
+	keyfile = g_key_file_new();
+	error = NULL;
+	g_key_file_load_from_data(keyfile, metabuf, metalen,
+			G_KEY_FILE_NONE, &error);
+	g_free(metabuf);
+
+	if (error) {
+		sr_err("Failed to parse metadata: %s", error->message);
+		g_error_free(error);
+		g_key_file_free(keyfile);
+		return NULL;
+	}
+	return keyfile;
+}
+
+
+/**
+ * Append a block of logic data to an srzip archive.
+ *
+ * @param[in] o Output module instance.
+ * @param[in] buf Logic data samples as byte sequence.
+ * @param[in] unitsize Logic data unit size (bytes per sample).
+ * @param[in] length Byte sequence length (in bytes, not samples).
+ *
+ * @returns SR_OK et al error codes.
+ */
+static int zip_append(const struct sr_output *o,
+	uint8_t *buf, size_t unitsize, size_t length)
 {
 	struct out_context *outc;
 	struct zip *archive;
 	struct zip_source *logicsrc;
-	zip_int64_t num_files;
-	struct zip_file *zf;
+	int64_t i, num_files;
 	struct zip_stat zs;
 	struct zip_source *metasrc;
 	GKeyFile *kf;
 	GError *error;
-	gsize len;
-	int chunk_num, next_chunk_num, tmpfile, ret, i;
+	uint64_t chunk_num;
 	const char *entry_name;
-	char *metafile, tmpname[32], chunkname[16];
+	char *metabuf;
+	gsize metalen;
+	char *chunkname;
+	unsigned int next_chunk_num;
+
+	if (!length)
+		return SR_OK;
 
 	outc = o->priv;
-	if (!(archive = zip_open(outc->filename, 0, &ret)))
+	if (!(archive = zip_open(outc->filename, 0, NULL)))
 		return SR_ERR;
 
-	if (zip_stat(archive, "metadata", 0, &zs) == -1)
+	if (zip_stat(archive, "metadata", 0, &zs) < 0) {
+		sr_err("Failed to open metadata: %s", zip_strerror(archive));
+		zip_discard(archive);
 		return SR_ERR;
-
-	metafile = g_malloc(zs.size);
-	zf = zip_fopen_index(archive, zs.index, 0);
-	zip_fread(zf, metafile, zs.size);
-	zip_fclose(zf);
-
+	}
+	kf = sr_sessionfile_read_metadata(archive, &zs);
+	if (!kf) {
+		zip_discard(archive);
+		return SR_ERR;
+	}
 	/*
 	 * If the file was only initialized but doesn't yet have any
 	 * data it in, it won't have a unitsize field in metadata yet.
 	 */
 	error = NULL;
-	kf = g_key_file_new();
-	if (!g_key_file_load_from_data(kf, metafile, zs.size, 0, &error)) {
-		sr_err("Failed to parse metadata: %s.", error->message);
-		return SR_ERR;
-	}
-	g_free(metafile);
-	tmpname[0] = '\0';
+	metabuf = NULL;
 	if (!g_key_file_has_key(kf, "device 1", "unitsize", &error)) {
 		if (error && error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
-			sr_err("Failed to check unitsize key: %s", error ? error->message : "?");
+			sr_err("Failed to check unitsize key: %s", error->message);
+			g_error_free(error);
+			g_key_file_free(kf);
+			zip_discard(archive);
 			return SR_ERR;
 		}
+		g_clear_error(&error);
+
 		/* Add unitsize field. */
 		g_key_file_set_integer(kf, "device 1", "unitsize", unitsize);
-		metafile = g_key_file_to_data(kf, &len, &error);
-		strcpy(tmpname, "sigrok-meta-XXXXXX");
-		if ((tmpfile = g_mkstemp(tmpname)) == -1)
-			return SR_ERR;
-		if (write(tmpfile, metafile, len) < 0) {
-			sr_dbg("Failed to create new metadata: %s", strerror(errno));
-			g_free(metafile);
-			unlink(tmpname);
-			return SR_ERR;
-		}
-		close(tmpfile);
-		if (!(metasrc = zip_source_file(archive, tmpname, 0, -1))) {
-			sr_err("Failed to create zip source for metadata.");
-			g_free(metafile);
-			unlink(tmpname);
+		metabuf = g_key_file_to_data(kf, &metalen, NULL);
+		metasrc = zip_source_buffer(archive, metabuf, metalen, FALSE);
+
+		if (zip_replace(archive, zs.index, metasrc) < 0) {
+			sr_err("Failed to replace metadata: %s",
+				zip_strerror(archive));
+			g_key_file_free(kf);
+			zip_source_free(metasrc);
+			zip_discard(archive);
+			g_free(metabuf);
 			return SR_ERR;
 		}
-		if (zip_replace(archive, zs.index, metasrc) == -1) {
-			sr_err("Failed to replace metadata file.");
-			g_free(metafile);
-			unlink(tmpname);
-			return SR_ERR;
-		}
-		g_free(metafile);
 	}
 	g_key_file_free(kf);
 
@@ -209,39 +332,119 @@ static int zip_append(const struct sr_output *o, unsigned char *buf,
 	num_files = zip_get_num_entries(archive, 0);
 	for (i = 0; i < num_files; i++) {
 		entry_name = zip_get_name(archive, i, 0);
-		if (strncmp(entry_name, "logic-1", 7))
+		if (!entry_name || strncmp(entry_name, "logic-1", 7) != 0)
 			continue;
-		if (strlen(entry_name) == 7) {
-			/* This file has no extra chunks, just a single "logic-1".
-			 * Rename it to "logic-1-1" * and continue with chunk 2. */
-			if (zip_rename(archive, i, "logic-1-1") == -1) {
-				sr_err("Failed to rename 'logic-1' to 'logic-1-1'.");
-				unlink(tmpname);
+		if (entry_name[7] == '\0') {
+			/*
+			 * This file has no extra chunks, just a single
+			 * "logic-1". Rename it to "logic-1-1" and continue
+			 * with chunk 2.
+			 */
+			if (zip_rename(archive, i, "logic-1-1") < 0) {
+				sr_err("Failed to rename 'logic-1' to 'logic-1-1': %s",
+					zip_strerror(archive));
+				zip_discard(archive);
+				g_free(metabuf);
 				return SR_ERR;
 			}
 			next_chunk_num = 2;
 			break;
-		} else if (strlen(entry_name) > 8 && entry_name[7] == '-') {
-			chunk_num = strtoull(entry_name + 8, NULL, 10);
-			if (chunk_num >= next_chunk_num)
+		} else if (entry_name[7] == '-') {
+			chunk_num = g_ascii_strtoull(entry_name + 8, NULL, 10);
+			if (chunk_num < G_MAXINT && chunk_num >= next_chunk_num)
 				next_chunk_num = chunk_num + 1;
 		}
 	}
-	snprintf(chunkname, 15, "logic-1-%d", next_chunk_num);
-	if (!(logicsrc = zip_source_buffer(archive, buf, length, FALSE))) {
-		unlink(tmpname);
+
+	if (length % unitsize != 0) {
+		sr_warn("Chunk size %zu not a multiple of the"
+			" unit size %zu.", length, unitsize);
+	}
+	logicsrc = zip_source_buffer(archive, buf, length, FALSE);
+	chunkname = g_strdup_printf("logic-1-%u", next_chunk_num);
+	i = zip_add(archive, chunkname, logicsrc);
+	g_free(chunkname);
+	if (i < 0) {
+		sr_err("Failed to add chunk 'logic-1-%u': %s",
+			next_chunk_num, zip_strerror(archive));
+		zip_source_free(logicsrc);
+		zip_discard(archive);
+		g_free(metabuf);
 		return SR_ERR;
 	}
-	if (zip_add(archive, chunkname, logicsrc) == -1) {
-		unlink(tmpname);
+	if (zip_close(archive) < 0) {
+		sr_err("Error saving session file: %s", zip_strerror(archive));
+		zip_discard(archive);
+		g_free(metabuf);
 		return SR_ERR;
 	}
-	if ((ret = zip_close(archive)) == -1) {
-		sr_info("error saving session file: %s", zip_strerror(archive));
-		unlink(tmpname);
-		return SR_ERR;
+	g_free(metabuf);
+
+	return SR_OK;
+}
+
+/**
+ * Queue a block of logic data for srzip archive writes.
+ *
+ * @param[in] o Output module instance.
+ * @param[in] buf Logic data samples as byte sequence.
+ * @param[in] unitsize Logic data unit size (bytes per sample).
+ * @param[in] length Number of bytes of sample data.
+ * @param[in] flush Force ZIP archive update (queue by default).
+ *
+ * @returns SR_OK et al error codes.
+ */
+static int zip_append_queue(const struct sr_output *o,
+	uint8_t *buf, size_t unitsize, size_t length, gboolean flush)
+{
+	struct out_context *outc;
+	struct logic_buff *buff;
+	size_t send_size, remain, copy_size;
+	uint8_t *wrptr, *rdptr;
+	int ret;
+
+	outc = o->priv;
+	buff = &outc->logic_buff;
+	if (length && unitsize != buff->unit_size) {
+		sr_warn("Unexpected unit size, discarding logic data.");
+		return SR_ERR_ARG;
 	}
-	unlink(tmpname);
+
+	/*
+	 * Queue most recently received samples to the local buffer.
+	 * Flush to the ZIP archive when the buffer space is exhausted.
+	 */
+	rdptr = buf;
+	send_size = buff->unit_size ? length / buff->unit_size : 0;
+	while (send_size) {
+		remain = buff->alloc_size - buff->fill_size;
+		if (remain) {
+			wrptr = &buff->samples[buff->fill_size * buff->unit_size];
+			copy_size = MIN(send_size, remain);
+			send_size -= copy_size;
+			buff->fill_size += copy_size;
+			memcpy(wrptr, rdptr, copy_size * buff->unit_size);
+			rdptr += copy_size * buff->unit_size;
+			remain -= copy_size;
+		}
+		if (send_size && !remain) {
+			ret = zip_append(o, buff->samples, buff->unit_size,
+				buff->fill_size * buff->unit_size);
+			if (ret != SR_OK)
+				return ret;
+			buff->fill_size = 0;
+			remain = buff->alloc_size - buff->fill_size;
+		}
+	}
+
+	/* Flush to the ZIP archive if the caller wants us to. */
+	if (flush && buff->fill_size) {
+		ret = zip_append(o, buff->samples, buff->unit_size,
+			buff->fill_size * buff->unit_size);
+		if (ret != SR_OK)
+			return ret;
+		buff->fill_size = 0;
+	}
 
 	return SR_OK;
 }
@@ -254,7 +457,6 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
 	const struct sr_datafeed_logic *logic;
 	const struct sr_config *src;
 	GSList *l;
-
 	int ret;
 
 	*out = NULL;
@@ -278,7 +480,17 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
 			outc->zip_created = TRUE;
 		}
 		logic = packet->payload;
-		ret = zip_append(o, logic->data, logic->unitsize, logic->length);
+		ret = zip_append_queue(o, logic->data,
+			logic->unitsize, logic->length, FALSE);
+		if (ret != SR_OK)
+			return ret;
+		break;
+	case SR_DF_END:
+		if (outc->zip_created) {
+			ret = zip_append_queue(o, NULL, 0, 0, TRUE);
+			if (ret != SR_OK)
+				return ret;
+		}
 		break;
 	}
 
@@ -291,6 +503,7 @@ static int cleanup(struct sr_output *o)
 
 	outc = o->priv;
 	g_free(outc->filename);
+	g_free(outc->logic_buff.samples);
 	g_free(outc);
 	o->priv = NULL;
 
