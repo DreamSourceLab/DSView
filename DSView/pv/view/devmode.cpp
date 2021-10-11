@@ -90,7 +90,7 @@ void DevMode::changeEvent(QEvent *event)
 }
 
 void DevMode::set_device()
-{
+{ 
     const boost::shared_ptr<device::DevInst> dev_inst = _session.get_device();
     assert(dev_inst);
    
@@ -142,7 +142,7 @@ void DevMode::set_device()
 }
 
 void DevMode::paintEvent(QPaintEvent*)
-{
+{ 
     using pv::view::Trace;
 
     QStyleOption o;

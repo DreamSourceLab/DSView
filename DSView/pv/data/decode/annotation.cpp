@@ -25,10 +25,15 @@
 #include <assert.h>
 
 #include "annotation.h"
-
+#include "AnnotationResTable.h"
+#include <cstring>
+ 
 namespace pv {
 namespace data {
 namespace decode {
+
+//a find talbe instance
+AnnotationResTable *Annotation::m_resTable = new AnnotationResTable();
 
 Annotation::Annotation(const srd_proto_data *const pdata) :
 	_start_sample(pdata->start_sample),
@@ -40,13 +45,31 @@ Annotation::Annotation(const srd_proto_data *const pdata) :
 	assert(pda);
 
     _format = pda->ann_class;
-    _type = pda->ann_type;
+    _type = pda->ann_type; 
 
+	_strIndex = 0;
+
+	std::string key; 
+	//make resource find key
     const char *const *annotations = (char**)pda->ann_text;
-    while(*annotations) {
-        _annotations.push_back(QString::fromUtf8(*annotations));
-		annotations++;
+    while(*annotations) { 
+        const char *ptr = *annotations;
+		key.append(ptr, strlen(ptr));
+		annotations++;  
 	}
+
+	AnnotationStringList *annotationArray = NULL;
+    _strIndex = Annotation::m_resTable->MakeIndex(key, annotationArray);
+     
+    //save new string lines
+	if (annotationArray){
+        annotations = (char **)pda->ann_text;
+		while (*annotations)
+		{
+			annotationArray->push_back(QString::fromUtf8(*annotations));
+			annotations++;
+		}
+	} 
 }
 
 Annotation::Annotation()
@@ -57,7 +80,7 @@ Annotation::Annotation()
 
 Annotation::~Annotation()
 {
-    _annotations.clear();
+     
 }
 
 uint64_t Annotation::start_sample() const
@@ -82,8 +105,9 @@ int Annotation::type() const
 
 const std::vector<QString>& Annotation::annotations() const
 {
-	return _annotations;
-}
+     return Annotation::m_resTable->GetString(_strIndex);
+} 
+ 
 
 } // namespace decode
 } // namespace data
