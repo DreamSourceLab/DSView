@@ -61,7 +61,7 @@ Annotation::Annotation(const srd_proto_data *const pdata) :
 	AnnotationStringList *annotationArray = NULL;
     _strIndex = Annotation::m_resTable->MakeIndex(key, annotationArray);
      
-    //save new string lines
+     //save new string lines
 	if (annotationArray){
         annotations = (char **)pda->ann_text;
 		while (*annotations)
