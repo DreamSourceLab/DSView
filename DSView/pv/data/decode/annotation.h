@@ -26,6 +26,8 @@
 
 #include <QString>
 
+class AnnotationResTable;
+
 struct srd_proto_data;
 
 namespace pv {
@@ -37,20 +39,26 @@ class Annotation
 public:
 	Annotation(const srd_proto_data *const pdata);
     Annotation();
+public:
+
     ~Annotation();
 
 	uint64_t start_sample() const;
 	uint64_t end_sample() const;
 	int format() const;
-    int type() const;
+    int type() const;  
+
+public:
 	const std::vector<QString>& annotations() const;
 
 private:
 	uint64_t _start_sample;
 	uint64_t _end_sample;
-	int _format;
-    int _type;
-	std::vector<QString> _annotations; 
+	short 	_format;
+    short 	_type;
+	short 	_strIndex;
+ 
+	static AnnotationResTable *  m_resTable;
 };
 
 } // namespace decode

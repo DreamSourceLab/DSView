@@ -658,7 +658,7 @@ void DecoderStack::annotation_callback(srd_proto_data *pdata, void *decoder)
 	// Add the annotation
     boost::lock_guard<boost::recursive_mutex> lock(d->_output_mutex);
     if (!(*row_iter).second.push_annotation(a))
-        d->_no_memory = true;
+        d->_no_memory = true; 
 }
 
 void DecoderStack::on_new_frame()

@@ -77,8 +77,10 @@ public:
     };
 
 public:
-	DecoderStack(pv::SigSession &_session,
+   	DecoderStack(pv::SigSession &_session,
 		const srd_decoder *const decoder);
+
+public:
 
 	virtual ~DecoderStack();
 

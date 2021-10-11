@@ -157,7 +157,7 @@ void Viewport::paintEvent(QPaintEvent *event)
     BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
     {
         assert(t); 
-    
+  
         t->paint_back(p, 0, _view.get_view_width(), fore, back);
         if (_view.back_ready())
             break;
@@ -234,6 +234,15 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
             BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
             {
                 assert(t);
+
+                /*
+                auto ptr = t->get();
+                if (ptr->enabled()){
+                     ptr->paint_mid(dbp, 0, t->get_view_rect().right(), fore, back); 
+                     continue;
+                }
+               */
+
                 if (t->enabled())
                     t->paint_mid(dbp, 0, t->get_view_rect().right(), fore, back);      
             }
