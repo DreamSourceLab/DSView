@@ -50,6 +50,7 @@ class SigSession;
 
 namespace view {
 
+//devece work mode select list
 class DevMode : public QWidget
 {
 	Q_OBJECT

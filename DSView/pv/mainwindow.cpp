@@ -518,9 +518,11 @@ void MainWindow::device_attach()
 
     struct sr_dev_driver **const drivers = sr_driver_list();
     struct sr_dev_driver **driver;
+ 
     for (driver = drivers; *driver; driver++)
-        if (*driver)
-            _device_manager.driver_scan(*driver);
+         if (*driver)
+          _device_manager.driver_scan(*driver);
+
 
     _session.set_default_device(boost::bind(&MainWindow::session_error, this,
                                             QString(tr("Set Default Device failed")), _1));

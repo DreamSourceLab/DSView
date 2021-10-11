@@ -1,7 +1,8 @@
 /*
  * This file is part of the PulseView project.
  *
- * Copyright (C) 2014 Joel Holdsworth <joel@airwebreathe.org.uk>
+ * Copyright (C) 2013 Joel Holdsworth <joel@airwebreathe.org.uk>
+ * Copyright (C) 2014 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,45 +19,30 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#ifndef DSVIEW_PV_DATA_DECODE_ROW_H
-#define DSVIEW_PV_DATA_DECODE_ROW_H
+#pragma once
 
+#include <map>
+#include <string>
 #include <vector>
+#include <QString>
 
-#include "annotation.h"
+typedef std::vector<QString> AnnotationStringList;
+ 
+class AnnotationResTable{
 
-struct srd_decoder;
-struct srd_decoder_annotation_row;
+    public:
+       AnnotationResTable();
 
-namespace pv {
-namespace data {
-namespace decode {
+       ~AnnotationResTable();
 
-class Row
-{
-public:
-	Row();
-    ~Row();
+       int MakeIndex(const std::string &key, AnnotationStringList *&ls);
 
-	Row(const srd_decoder *decoder,
-        const srd_decoder_annotation_row *row = NULL,
-        const int order = -1);
+       const AnnotationStringList& GetString(int index);
 
-	const srd_decoder* decoder() const;
-	const srd_decoder_annotation_row* row() const;
+       inline int GetCount(){return m_resourceTable.size();}
+ 
 
-	const QString title() const;
-
-    bool operator<(const Row &other) const;
-
-private:
-	const srd_decoder *_decoder;
-	const srd_decoder_annotation_row *_row;
-    int _order; 
+    private:
+        std::map<std::string, int> m_indexs;
+        std::vector<AnnotationStringList> m_resourceTable;
 };
-
-} // decode
-} // data
-} // pv
-
-#endif // DSVIEW_PV_DATA_DECODE_ROW_H

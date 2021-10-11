@@ -37,7 +37,7 @@ class AnalogSnapshot;
 
 namespace view {
 
-//when device is data acquisition model, to draw trace
+//when device is data acquisition model, to draw signal trace
 //created by SigSession
 class AnalogSignal : public Signal
 {
