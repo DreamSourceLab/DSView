@@ -48,7 +48,7 @@ class Transaction:
     Args:
         start_sample: The absolute samplenumber of the first sample of this transaction.
         operation: Transaction type.
-        size: The number of data bytes.
+        transfer_size: The number of data bytes.
     Attributes:
         start_sample (int): The absolute samplenumber of the first sample of this transaction.
         end_sample (int): The absolute samplenumber of the last sample of this transaction.
@@ -59,7 +59,7 @@ class Transaction:
         wait_count (int): Holds the number of wait states between the address and data .
     """
 
-    def __init__(self, start_sample, operation):
+    def __init__(self, start_sample, operation, transfer_size):
         self.start_sample = start_sample
         self.end_sample_op = None
         self.end_sample_addr = None
@@ -67,7 +67,7 @@ class Transaction:
         self.operation = operation
         self.address = bytearray()
         self.data = bytearray()
-        self.size = 0
+        self.size = transfer_size
         self.wait_count = 0
 
     def is_complete(self):
@@ -132,6 +132,8 @@ class Decoder(srd.Decoder):
 
     def __init__(self):
         self.end_wait = 0x01
+        self.operation_mask = 0x80
+        self.address_mask = 0x3f
         # Circular buffer to detect VMK header on transaction data
         self.queue = deque(maxlen=12)
         self.vmk_meta = {"s_queue": deque(maxlen=12), "vmk_ss": 0, "vmk_es": 0}
@@ -165,11 +167,10 @@ class Decoder(srd.Decoder):
     def _return(self, mosi, miso):
         return
 
-    @staticmethod
-    def transaction_state(mosi):
-        if mosi == Operation.READ:
+    def transaction_state(self, mosi):
+        if (mosi & self.operation_mask) == Operation.READ:
             return TransactionState.READ
-        elif mosi == Operation.WRITE:
+        elif (mosi & self.operation_mask) == Operation.WRITE:
             return TransactionState.WRITE
         else:
             return None
@@ -180,14 +181,18 @@ class Decoder(srd.Decoder):
             self.state = TransactionState.TRANSFER_DATA
 
     def _transaction_read(self, mosi, miso):
-        # TPM operation is one byte long (0x80: Read, 0x00: Write)
-        self.current_transaction = Transaction(self.ss, Operation.READ)
+        # TPM operation is defined on the 7th bit of the first byte of the transaction (1=read / 0=write)
+        # transfer size is defined on bits 0 to 5 of the first byte of the transaction
+        transfer_size = (mosi & 0x3f) + 1
+        self.current_transaction = Transaction(self.ss, Operation.READ, transfer_size)
         self.current_transaction.end_sample_op = self.es
         self.state = TransactionState.READ_ADDRESS
 
     def _transaction_write(self, mosi, miso):
-        # TPM operation is one byte long (0x80: Read, 0x00: Write)
-        self.current_transaction = Transaction(self.ss, Operation.WRITE)
+        # TPM operation is defined on the 7th bit of the first byte of the transaction (1=read / 0=write)
+        # transfer size is defined on bits 0 to 5 of the first byte of the transaction
+        transfer_size = (mosi & 0x3f) + 1
+        self.current_transaction = Transaction(self.ss, Operation.WRITE, transfer_size)
         self.current_transaction.end_sample_op = self.es
         self.state = TransactionState.READ_ADDRESS
 
@@ -198,7 +203,6 @@ class Decoder(srd.Decoder):
         # The transfer size byte is sent at the same time than the last byte address
         if self.current_transaction.is_address_complete():
             self.current_transaction.end_sample_addr = self.es
-            self.current_transaction.size = miso
             self.state = TransactionState.TRANSFER_DATA
             return
 
