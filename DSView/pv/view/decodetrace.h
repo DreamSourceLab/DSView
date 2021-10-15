@@ -213,6 +213,7 @@ private:
     int _start_index, _end_index;
     int _start_count, _end_count;
     QComboBox *_start_comboBox, *_end_comboBox;
+	QFormLayout *_pub_input_layer;
     int _progress;
 
 	std::list< boost::shared_ptr<pv::prop::binding::DecoderOptions> >

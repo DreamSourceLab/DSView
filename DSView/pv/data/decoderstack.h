@@ -36,10 +36,12 @@
 #include "../data/decode/rowdata.h"
 #include "../data/signaldata.h"
 
+class DecoderStatus;
+
 namespace DecoderStackTest {
 class TwoDecoderStack;
 }
-
+ 
 namespace pv {
 
 class SigSession;
@@ -78,7 +80,7 @@ public:
 
 public:
    	DecoderStack(pv::SigSession &_session,
-		const srd_decoder *const decoder);
+		const srd_decoder *const decoder, DecoderStatus *decoder_status);
 
 public:
 
@@ -203,6 +205,7 @@ private:
     bool _no_memory;
 
     int64_t _mark_index;
+    DecoderStatus *_decoder_status;
 
 	friend class DecoderStackTest::TwoDecoderStack;
 };

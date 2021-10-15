@@ -90,6 +90,7 @@
 #include <glib.h>
 #include <list>
 #include <libusb.h>
+#include "../ui/msgbox.h"
 
 using boost::shared_ptr;
 using boost::dynamic_pointer_cast;
@@ -938,12 +939,7 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev)
     const sr_dev_inst *const sdi = _session.get_device()->dev_inst();
     if ((!file_dev && strcmp(sdi->driver->name, sessionObj["Device"].toString().toUtf8()) != 0) ||
         sdi->mode != sessionObj["DeviceMode"].toDouble()) {
-        dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(tr("Session Error"));
-        msg.mBox()->setInformativeText(tr("Session File is not compatible with current device or mode!"));
-        msg.mBox()->setStandardButtons(QMessageBox::Ok);
-        msg.mBox()->setIcon(QMessageBox::Warning);
-        msg.exec();
+        MsgBox::Show(NULL, "Session File is not compatible with current device or mode!", this);
         return false;
     }
 
@@ -1128,12 +1124,6 @@ bool MainWindow::store_session(QString name)
 {
     QFile sessionFile(name);
     if (!sessionFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-//        dialogs::DSMessageBox msg(this);
-//        msg.mBox()->setText(tr("File Error"));
-//        msg.mBox()->setInformativeText(tr("Couldn't open session file to write!"));
-//        msg.mBox()->setStandardButtons(QMessageBox::Ok);
-//        msg.mBox()->setIcon(QMessageBox::Warning);
-//        msg.exec();
         qDebug("Warning: Couldn't open session file to write!");
         return false;
     }

@@ -346,7 +346,6 @@ void StoreSession::save_proc(shared_ptr<data::Snapshot> snapshot)
                 if (ret != SR_OK) {
                     if (!_has_error) {
                         _has_error = true;
-                        auto err = m_zipDoc.GetError();
                         _error = tr("Failed to create zip file. Please check write permission of this path.");
                     }
                     progress_updated();

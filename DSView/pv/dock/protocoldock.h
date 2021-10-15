@@ -41,11 +41,11 @@
 #include <boost/thread.hpp>
 
 #include "../data/decodermodel.h"
-
+#include "protocolitemlayer.h"
 namespace pv {
 
 class SigSession;
-
+  
 namespace data {
 class DecoderModel;
 }
@@ -55,8 +55,8 @@ class View;
 }
 
 namespace dock {
-
-class ProtocolDock : public QScrollArea
+  
+class ProtocolDock : public QScrollArea,public IProtocolItemLayerCallback
 {
     Q_OBJECT
 
@@ -79,13 +79,18 @@ protected:
     void paintEvent(QPaintEvent *);
     void resizeEvent(QResizeEvent *);
 
+private:
+    //IProtocolItemLayerCallback
+    void OnProtocolSetting(void *handle);
+    void OnProtocolDelete(void *handle);
+    void OnProtocolFormatChanged(QString format, void *handle);
+
 signals:
     void protocol_updated();
 
 private slots:
-    void add_protocol();
-    void rst_protocol();
-    void del_protocol();
+    void on_add_protocol(); 
+    void on_del_all_protocol();
     void decoded_progress(int progress);
     void set_model();
     void update_model();
@@ -125,19 +130,14 @@ private:
 
     QPushButton *_add_button;
     QPushButton *_del_all_button;
-    QComboBox *_protocol_combobox;
-    QVector <QPushButton *> _del_button_list;
-    QVector <QPushButton *> _set_button_list;
-    QVector <QLabel *> _protocol_label_list;
-    QVector <QLabel *> _progress_label_list;
-    QVector <int > _protocol_index_list;
-    QVector <QHBoxLayout *> _hori_layout_list;
+    QComboBox *_protocol_combobox; 
+    QVector <int > _protocol_index_list; 
     QVBoxLayout *_up_layout;
+    QVector <ProtocolItemLayer*> _protocolItems; //protocol item layers
 
     QPushButton *_dn_set_button;
     QPushButton *_dn_save_button;
     QPushButton *_dn_nav_button;
-
     QPushButton *_search_button;
 
     mutable boost::mutex _search_mutex;

@@ -66,6 +66,7 @@
 #include <QtConcurrent/QtConcurrent>
 
 #include <boost/foreach.hpp>
+#include "data/decode/decoderstatus.h"
 
 //using boost::dynamic_pointer_cast;
 //using boost::function;
@@ -1366,8 +1367,8 @@ uint16_t SigSession::get_ch_num(int type)
 }
 
 #ifdef ENABLE_DECODE
-bool SigSession::add_decoder(srd_decoder *const dec, bool silent)
-{
+bool SigSession::add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus)
+{ 
     bool ret = false;
     map<const srd_channel*, int> probes;
     boost::shared_ptr<data::DecoderStack> decoder_stack;
@@ -1377,7 +1378,7 @@ bool SigSession::add_decoder(srd_decoder *const dec, bool silent)
 
         // Create the decoder
         decoder_stack = boost::shared_ptr<data::DecoderStack>(
-            new data::DecoderStack(*this, dec));
+            new data::DecoderStack(*this, dec, dstatus));
 
         // Make a list of all the probes
         std::vector<const srd_channel*> all_probes;

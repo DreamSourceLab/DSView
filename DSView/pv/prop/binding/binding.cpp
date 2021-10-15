@@ -56,12 +56,18 @@ void Binding::add_properties_to_form(QFormLayout *layout,
     {
         assert(p);
 
-        QWidget *const widget = p->get_widget(layout->parentWidget(),
-            auto_commit);
+        QWidget *const widget = p->get_widget(layout->parentWidget(), auto_commit);
+
         if (p->labeled_widget())
             layout->addRow(widget);
-        else
-            layout->addRow(p->label(), widget);
+        else{
+            const QString &lbstr = p->label();
+            //remove data format options
+            if (lbstr == "Data format"){
+                continue;                
+            }   
+            layout->addRow(p->label(), widget);             
+        } 
     }
 }
 
