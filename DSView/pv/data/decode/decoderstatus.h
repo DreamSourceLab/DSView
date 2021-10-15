@@ -1,7 +1,8 @@
 /*
  * This file is part of the PulseView project.
  *
- * Copyright (C) 2014 Joel Holdsworth <joel@airwebreathe.org.uk>
+ * Copyright (C) 2013 Joel Holdsworth <joel@airwebreathe.org.uk>
+ * Copyright (C) 2014 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,48 +19,20 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#ifndef DSVIEW_PV_DATA_DECODE_ROW_H
-#define DSVIEW_PV_DATA_DECODE_ROW_H
+#pragma once
 
-#include <vector>
-
-#include "annotation.h"
-
-struct srd_decoder;
-struct srd_decoder_annotation_row;
-
-namespace pv {
-namespace data {
-namespace decode {
-
-class Row
+class DecoderStatus
 {
 public:
-	Row();
-
-	Row(const srd_decoder *decoder,
-        const srd_decoder_annotation_row *row = NULL,
-        const int order = -1);
+    DecoderStatus()
+    {
+        m_bNumerical = false;
+        m_format = 0;
+        sdr_decoder_handle = NULL;
+    }
 
 public:
-	
-    ~Row(); 
-
-	const srd_decoder* decoder() const;
-	const srd_decoder_annotation_row* row() const;
-
-	const QString title() const;
-
-    bool operator<(const Row &other) const;
-
-private:
-	const srd_decoder *_decoder;
-	const srd_decoder_annotation_row *_row;
-    int _order; 
+    bool m_bNumerical; //when decoder get any numerical data,it will be set
+    int  m_format; //protocol format code
+    void *sdr_decoder_handle;
 };
-
-} // decode
-} // data
-} // pv
-
-#endif // DSVIEW_PV_DATA_DECODE_ROW_H

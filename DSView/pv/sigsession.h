@@ -55,6 +55,8 @@
 struct srd_decoder;
 struct srd_channel;
 
+class DecoderStatus;
+
 namespace pv {
 
 class DeviceManager;
@@ -178,7 +180,7 @@ public:
         get_group_signals();
 
 #ifdef ENABLE_DECODE
-    bool add_decoder(srd_decoder *const dec, bool silent);
+    bool add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus);
 
     std::vector< boost::shared_ptr<view::DecodeTrace> >
         get_decode_signals() const;

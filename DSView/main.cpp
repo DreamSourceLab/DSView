@@ -41,6 +41,7 @@
 #include "mystyle.h"
 #include "pv/devicemanager.h"
 #include "pv/mainframe.h"
+#include "pv/config/appconfig.h"
 
 #include "config.h"
 
@@ -186,6 +187,8 @@ int main(int argc, char *argv[])
 		// Load the protocol decoders
 		srd_decoder_load_all();
 #endif
+		//load app config
+		AppConfig::Instance().Load("./appconfig.json");
 
 		try {
 			// Create the device manager, initialise the drivers

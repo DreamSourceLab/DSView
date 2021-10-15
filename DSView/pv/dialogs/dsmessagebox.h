@@ -38,10 +38,13 @@ class DSMessageBox : public QDialog
 	Q_OBJECT
 
 public:
-    DSMessageBox(QWidget *parent);
+    DSMessageBox(QWidget *parent, const char *title=0);
+
     QMessageBox *mBox();
 
     int exec();
+    
+    inline int GetLastClick(){return _clickType;}
 
 protected:
     void accept();
@@ -60,6 +63,7 @@ private:
     toolbars::TitleBar *_titlebar;
     bool _moving;
     QPoint _startPos;
+    int _clickType;
 };
 
 } // namespace dialogs

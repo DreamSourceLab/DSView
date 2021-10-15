@@ -27,6 +27,7 @@
 #include <QString>
 
 class AnnotationResTable;
+class DecoderStatus;
 
 struct srd_proto_data;
 
@@ -37,7 +38,7 @@ namespace decode {
 class Annotation
 {
 public:
-	Annotation(const srd_proto_data *const pdata);
+	Annotation(const srd_proto_data *const pdata, DecoderStatus *status);
     Annotation();
 public:
 
@@ -55,8 +56,9 @@ private:
 	uint64_t _start_sample;
 	uint64_t _end_sample;
 	short 	_format;
-    short 	_type;
+    short 	_type; //100-199: is a numerical value type,can show hex/oct format
 	short 	_strIndex;
+	DecoderStatus *_status;
  
 	static AnnotationResTable *  m_resTable;
 };

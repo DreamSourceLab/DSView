@@ -53,7 +53,7 @@ const unsigned int DecoderStack::DecodeNotifyPeriod = 1024;
 boost::mutex DecoderStack::_global_decode_mutex;
 
 DecoderStack::DecoderStack(pv::SigSession &session,
-	const srd_decoder *const dec) :
+	const srd_decoder *const dec, DecoderStatus *decoder_status) :
 	_session(session),
 	_sample_count(0),
 	_frame_complete(false),
@@ -72,6 +72,8 @@ DecoderStack::DecoderStack(pv::SigSession &session,
 
     _stack.push_back(boost::shared_ptr<decode::Decoder>(
 		new decode::Decoder(dec)));
+
+        _decoder_status = decoder_status;
 
     build_row();
 }
@@ -612,6 +614,7 @@ uint64_t DecoderStack::sample_rate() const
     return _samplerate;
 }
 
+//the decode callback, annotation object will be create
 void DecoderStack::annotation_callback(srd_proto_data *pdata, void *decoder)
 {
 	assert(pdata);
@@ -626,7 +629,7 @@ void DecoderStack::annotation_callback(srd_proto_data *pdata, void *decoder)
         return;
     }
 
-	const Annotation a(pdata);
+    const Annotation a(pdata, d->_decoder_status);
 
 	// Find the row
 	assert(pdata->pdo);

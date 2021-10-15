@@ -52,10 +52,11 @@
 #include "../device/devinst.h"
 #include "../view/cursor.h"
 #include "../toolbars/titlebar.h"
+#include "../dsvdef.h"
 
 using namespace boost;
 using namespace std;
-
+ 
 namespace pv {
 namespace view {
 
@@ -138,14 +139,20 @@ DecodeTrace::DecodeTrace(pv::SigSession &session,
         this, SLOT(on_new_decode_data()));
     connect(_decoder_stack.get(), SIGNAL(decode_done()),
         this, SLOT(on_decode_done()));
+
+        _start_comboBox = NULL;
+        _end_comboBox = NULL; 
+        _pub_input_layer = NULL;
 }
 
 DecodeTrace::~DecodeTrace()
 {
-    if (_popup_form)
-        delete _popup_form;
-    if (_popup)
-        delete _popup;
+    DESTROY_OBJECT(_start_comboBox);
+    DESTROY_OBJECT(_end_comboBox); 
+    DESTROY_OBJECT(_pub_input_layer);
+    DESTROY_OBJECT(_popup_form);
+    DESTROY_OBJECT(_popup);
+
     _cur_row_headings.clear();
     _decoder_forms.clear();
     _probe_selectors.clear();
@@ -342,6 +349,7 @@ void DecodeTrace::paint_fore(QPainter &p, int left, int right, QColor fore, QCol
     (void)back;
 }
 
+//to show decoder's property setting dialog
 bool DecodeTrace::create_popup()
 {
     int ret = false;
@@ -363,10 +371,12 @@ bool DecodeTrace::create_popup()
         }
     }
 
-    delete _popup_form;
-    delete _popup;
-    _popup = NULL;
-    _popup_form = NULL;
+    //destroy object   
+    DESTROY_OBJECT(_start_comboBox);
+    DESTROY_OBJECT(_end_comboBox);  
+    DESTROY_OBJECT(_pub_input_layer);
+    DESTROY_OBJECT(_popup_form);
+    DESTROY_OBJECT(_popup);
 
     return ret;
 }
@@ -409,7 +419,7 @@ void DecodeTrace::populate_popup_form(QWidget *parent, QFormLayout *form)
 
     if (stack.empty()) {
 		QLabel *const l = new QLabel(
-			tr("<p><i>No decoders in the stack</i></p>"));
+			tr("<p><i>No decoders in the stack</i></p>")); 
 		l->setAlignment(Qt::AlignCenter);
 		form->addRow(l);
     } else {
@@ -422,7 +432,11 @@ void DecodeTrace::populate_popup_form(QWidget *parent, QFormLayout *form)
 			tr("<i>* Required channels</i>"), parent));
 	}
 
-    // Add region combobox
+    //public input layer
+   // QFormLayout *publay =  new QFormLayout();
+   // form->addRow(publay); 
+
+    //Add region combobox
     _start_comboBox = new QComboBox(parent);
     _end_comboBox = new QComboBox(parent);
     _start_comboBox->addItem(RegionStart);

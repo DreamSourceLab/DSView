@@ -26,8 +26,7 @@
 #include "../data/decodermodel.h"
 #include "../data/decoderstack.h"
 #include "../dialogs/protocollist.h"
-#include "../dialogs/protocolexp.h"
-#include "../dialogs/dsmessagebox.h"
+#include "../dialogs/protocolexp.h" 
 #include "../view/view.h"
 
 #include <QObject>
@@ -44,14 +43,19 @@
 #include <QProgressDialog>
 #include <QtConcurrent/QtConcurrent>
 #include <QSizePolicy>
+#include <assert.h>
 
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 #include <algorithm>
+#include "../ui/msgbox.h"
+#include "../dsvdef.h"
+#include "../config/appconfig.h"
+#include "../data/decode/decoderstatus.h"
 
 namespace pv {
 namespace dock {
-
+   
 ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession &session) :
     QScrollArea(parent),
     _session(session),
@@ -90,12 +94,7 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession &sessio
     hori_layout->addWidget(_del_all_button);
     hori_layout->addWidget(_protocol_combobox);
     hori_layout->addStretch(1);
-
-    connect(_add_button, SIGNAL(clicked()),
-            this, SLOT(add_protocol()));
-    connect(_del_all_button, SIGNAL(clicked()),
-            this, SLOT(del_protocol()));
-
+ 
     _up_layout = new QVBoxLayout();
     _up_layout->addLayout(hori_layout);
     _up_layout->addStretch(1);
@@ -111,18 +110,12 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession &sessio
 
     _dn_set_button = new QPushButton(_dn_widget);
     _dn_set_button->setFlat(true);
-    connect(_dn_set_button, SIGNAL(clicked()),
-            this, SLOT(set_model()));
 
     _dn_save_button = new QPushButton(_dn_widget);
-    _dn_save_button->setFlat(true);
-    connect(_dn_save_button, SIGNAL(clicked()),
-            this, SLOT(export_table_view()));
+    _dn_save_button->setFlat(true);   
 
     _dn_nav_button = new QPushButton(_dn_widget);
-    _dn_nav_button->setFlat(true);
-    connect(_dn_nav_button, SIGNAL(clicked()),
-            this, SLOT(nav_table_view()));
+    _dn_nav_button->setFlat(true);  
 
     QHBoxLayout *dn_title_layout = new QHBoxLayout();
     _dn_title_label = new QLabel(_dn_widget);
@@ -142,10 +135,6 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession &sessio
 
     _pre_button = new QPushButton(_dn_widget);
     _nxt_button = new QPushButton(_dn_widget);
-    connect(_pre_button, SIGNAL(clicked()),
-            this, SLOT(search_pre()));
-    connect(_nxt_button, SIGNAL(clicked()),
-            this, SLOT(search_nxt()));
 
     _search_button = new QPushButton(this);
     _search_button->setFixedWidth(_search_button->height());
@@ -194,6 +183,20 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession &sessio
     //_split_widget->setGeometry(0, 0, sizeHint().width(), 500);
     _split_widget->setObjectName("protocolWidget");
 
+    connect(_dn_nav_button, SIGNAL(clicked()),this, SLOT(nav_table_view()));
+
+    connect(_dn_save_button, SIGNAL(clicked()),this, SLOT(export_table_view()));
+
+    connect(_dn_set_button, SIGNAL(clicked()),this, SLOT(set_model()));
+
+    connect(_pre_button, SIGNAL(clicked()),this, SLOT(search_pre()));
+
+    connect(_nxt_button, SIGNAL(clicked()),this, SLOT(search_nxt()));
+
+    connect(_add_button, SIGNAL(clicked()),this, SLOT(on_add_protocol()));
+
+    connect(_del_all_button, SIGNAL(clicked()),this, SLOT(on_del_all_protocol()));
+
     connect(&_session, SIGNAL(decode_done()), this, SLOT(update_model()));
     connect(this, SIGNAL(protocol_updated()), this, SLOT(update_model()));
     connect(_table_view, SIGNAL(clicked(QModelIndex)), this, SLOT(item_clicked(QModelIndex)));
@@ -206,6 +209,11 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession &sessio
 
 ProtocolDock::~ProtocolDock()
 {
+    //destroy protocol item layers
+   for (auto it = _protocolItems.begin(); it != _protocolItems.end(); it++){
+       delete (*it);
+   }
+   _protocolItems.clear();
 }
 
 void ProtocolDock::changeEvent(QEvent *event)
@@ -237,21 +245,13 @@ void ProtocolDock::reStyle()
     _nxt_button->setIcon(QIcon(iconPath+"/next.svg"));
     _search_button->setIcon(QIcon(iconPath+"/search.svg"));
 
-    for (QVector <QPushButton *>::const_iterator i = _del_button_list.begin();
-         i != _del_button_list.end(); i++)
-        (*i)->setIcon(QIcon(iconPath+"/del.svg"));
-
-    for (QVector <QPushButton *>::const_iterator i = _set_button_list.begin();
-         i != _set_button_list.end(); i++)
-        (*i)->setIcon(QIcon(iconPath+"/gear.svg"));
+    for (auto it = _protocolItems.begin(); it != _protocolItems.end(); it++){
+       (*it)->ResetStyle();
+    } 
 }
 
 void ProtocolDock::paintEvent(QPaintEvent *)
-{
-//    QStyleOption opt;
-//    opt.init(this);
-//    QPainter p(this);
-//    style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
+{ 
 }
 
 void ProtocolDock::resizeEvent(QResizeEvent *event)
@@ -298,179 +298,72 @@ bool ProtocolDock::sel_protocol(QString id)
         return false;
 }
 
-void ProtocolDock::add_protocol()
+void ProtocolDock::on_add_protocol()
 {
     add_protocol(false);
 }
 
 void ProtocolDock::add_protocol(bool silent)
-{
-    if (_session.get_device()->dev_inst()->mode != LOGIC) {
-        dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(tr("Protocol Analyzer"));
-        msg.mBox()->setInformativeText(tr("Protocol Analyzer is only valid in Digital Mode!"));
-        msg.mBox()->setStandardButtons(QMessageBox::Ok);
-        msg.mBox()->setIcon(QMessageBox::Warning);
-        msg.exec();
-    } else {
-        srd_decoder *const decoder =
-            (srd_decoder*)(_protocol_combobox->itemData(_protocol_combobox->currentIndex())).value<void*>();
-        if (_session.add_decoder(decoder, silent)) {
-            //std::list <int > _sel_probes = dlg.get_sel_probes();
-            //QMap <QString, QVariant>& _options = dlg.get_options();
-            //QMap <QString, int> _options_index = dlg.get_options_index();
+{    
+    if (_session.get_device()->dev_inst()->mode != LOGIC) {         
+        MsgBox::Show(NULL, "Protocol Analyzer\nProtocol Analyzer is only valid in Digital Mode!", this);
+        return;
+    } 
 
-            QString iconPath = ":/icons/" + qApp->property("Style").toString();
-            QPushButton *_del_button = new QPushButton(_up_widget);
-            QPushButton *_set_button = new QPushButton(_up_widget);
-            _del_button->setFlat(true);
-            _del_button->setIcon(QIcon(iconPath+"/del.svg"));
-            _set_button->setFlat(true);
-            _set_button->setIcon(QIcon(iconPath+"/gear.svg"));
-            QLabel *_protocol_label = new QLabel(_up_widget);
-            QLabel *_progress_label = new QLabel(_up_widget);
+    srd_decoder *const decoder = 
+          (srd_decoder *)(_protocol_combobox->itemData(_protocol_combobox->currentIndex())).value<void *>();
 
-            _del_button->setCheckable(true);
-            _protocol_label->setText(_protocol_combobox->currentText());
+    DecoderStatus *dstatus = new DecoderStatus();
+    dstatus->m_format = (int)DecoderDataFormat::hex;
 
-            connect(_del_button, SIGNAL(clicked()),
-                    this, SLOT(del_protocol()));
-            connect(_set_button, SIGNAL(clicked()),
-                    this, SLOT(rst_protocol()));
+    if (_session.add_decoder(decoder, silent, dstatus))
+    {
+        //crate item layer
+        QString protocolName = _protocol_combobox->currentText();
+        ProtocolItemLayer *layer = new ProtocolItemLayer(_up_widget, protocolName, this);
+        _protocolItems.push_back(layer);
+        _up_layout->insertLayout(_protocolItems.size(), layer);
+        layer->m_decoderStatus = dstatus;
 
-            _del_button_list.push_back(_del_button);
-            _set_button_list.push_back(_set_button);
-            _protocol_label_list.push_back(_protocol_label);
-            _progress_label_list.push_back(_progress_label);
-            _protocol_index_list.push_back(_protocol_combobox->currentIndex());
-
-            QHBoxLayout *hori_layout = new QHBoxLayout();
-            hori_layout->addWidget(_set_button);
-            hori_layout->addWidget(_del_button);
-            hori_layout->addWidget(_protocol_label);
-            hori_layout->addWidget(_progress_label);
-            hori_layout->addStretch(1);
-            _hori_layout_list.push_back(hori_layout);
-            _up_layout->insertLayout(_del_button_list.size(), hori_layout);
-
-            // progress connection
-            const std::vector< boost::shared_ptr<pv::view::DecodeTrace> > decode_sigs(
-                _session.get_decode_signals());
-            connect(decode_sigs.back().get(), SIGNAL(decoded_progress(int)), this, SLOT(decoded_progress(int)));
-
-            protocol_updated();
+        //set current protocol format
+        string fmt = AppConfig::Instance().GetProtocolFormat(protocolName.toStdString());
+        if (fmt != ""){
+            layer->SetProtocolFormat(fmt.c_str());
+             dstatus->m_format = DecoderDataFormat::Parse(fmt.c_str());
         }
+
+        //progress connection
+        const std::vector<boost::shared_ptr<pv::view::DecodeTrace>> decode_sigs(_session.get_decode_signals());
+
+        connect(decode_sigs.back().get(), SIGNAL(decoded_progress(int)), this, SLOT(decoded_progress(int)));
+
+        protocol_updated(); 
     }
 }
+ 
+ void ProtocolDock::on_del_all_protocol(){
+     if (_protocolItems.size() == 0){
+        MsgBox::Show(NULL, "No Protocol Analyzer to delete!", this);
+        return;
+     }
 
-void ProtocolDock::rst_protocol()
-{
-    int rst_index = 0;
-    for (QVector <QPushButton *>::const_iterator i = _set_button_list.begin();
-         i != _set_button_list.end(); i++) {
-        QPushButton *button = qobject_cast<QPushButton *>(sender());
-        if ((*i) == button) {
-            //pv::decoder::DemoConfig dlg(this, _session.get_device(), _protocol_index_list.at(rst_index));
-            //dlg.set_config(_session.get_decode_probes(rst_index), _session.get_decode_options_index(rst_index));
-            //if (dlg.exec()) {
-                //std::list <int > _sel_probes = dlg.get_sel_probes();
-                //QMap <QString, QVariant>& _options = dlg.get_options();
-                //QMap <QString, int> _options_index = dlg.get_options_index();
-
-                //_session.rst_protocol_analyzer(rst_index, _sel_probes, _options, _options_index);
-            //}
-            _session.rst_decoder(rst_index);
-            break;
-        }
-        rst_index++;
+    if (MsgBox::Confirm("Are you sure to remove all protocol analyzer?", this)){
+         del_all_protocol();
     }
-    protocol_updated();
-}
-
-void ProtocolDock::del_protocol()
-{
-    if (_del_all_button->isChecked()) {
-        _del_all_button->setChecked(false);
-        if (_hori_layout_list.size() > 0) {
-            int del_index = 0;
-            for (QVector <QHBoxLayout *>::const_iterator i = _hori_layout_list.begin();
-                 i != _hori_layout_list.end(); i++) {
-                _up_layout->removeItem((*i));
-                delete (*i);
-                delete _del_button_list.at(del_index);
-                delete _set_button_list.at(del_index);
-                delete _protocol_label_list.at(del_index);
-                delete _progress_label_list.at(del_index);
-
-                _session.remove_decode_signal(0);
-                del_index++;
-            }
-            _hori_layout_list.clear();
-            _del_button_list.clear();
-            _set_button_list.clear();
-            _protocol_label_list.clear();
-            _progress_label_list.clear();
-            _protocol_index_list.clear();
-        } else {
-            dialogs::DSMessageBox msg(NULL);
-            msg.mBox()->setText(tr("Protocol Analyzer"));
-            msg.mBox()->setInformativeText(tr("No Protocol Analyzer to delete!"));
-            msg.mBox()->setStandardButtons(QMessageBox::Ok);
-            msg.mBox()->setIcon(QMessageBox::Warning);
-            msg.exec();
-        }
-    } else {
-       int del_index = 0;
-       for (QVector <QPushButton *>::const_iterator i = _del_button_list.begin();
-            i != _del_button_list.end(); i++) {
-           if ((*i)->isChecked()) {
-               _up_layout->removeItem(_hori_layout_list.at(del_index));
-
-               delete _hori_layout_list.at(del_index);
-               delete _del_button_list.at(del_index);
-               delete _set_button_list.at(del_index);
-               delete _protocol_label_list.at(del_index);
-               delete _progress_label_list.at(del_index);
-
-               _hori_layout_list.remove(del_index);
-               _del_button_list.remove(del_index);
-               _set_button_list.remove(del_index);
-               _protocol_label_list.remove(del_index);
-               _progress_label_list.remove(del_index);
-               _protocol_index_list.remove(del_index);
-
-               _session.remove_decode_signal(del_index);
-               break;
-           }
-           del_index++;
-       }
-    }
-    protocol_updated();
-}
+ }
+ 
 
 void ProtocolDock::del_all_protocol()
-{
-    if (_hori_layout_list.size() > 0) {
-        int del_index = 0;
-        for (QVector <QHBoxLayout *>::const_iterator i = _hori_layout_list.begin();
-             i != _hori_layout_list.end(); i++) {
-            _up_layout->removeItem((*i));
-            delete (*i);
-            delete _del_button_list.at(del_index);
-            delete _set_button_list.at(del_index);
-            delete _protocol_label_list.at(del_index);
-            delete _progress_label_list.at(del_index);
-
+{  
+    if (_protocolItems.size() > 0)
+    {
+        for (auto it = _protocolItems.begin(); it != _protocolItems.end(); it++)
+        {
+            _up_layout->removeItem((*it));
+            delete (*it); //destory control
             _session.remove_decode_signal(0);
-            del_index++;
         }
-        _hori_layout_list.clear();
-        _del_button_list.clear();
-        _set_button_list.clear();
-        _protocol_label_list.clear();
-        _progress_label_list.clear();
-        _protocol_index_list.clear();
-
+        _protocolItems.clear();
         protocol_updated();
     }
 }
@@ -484,20 +377,33 @@ void ProtocolDock::decoded_progress(int progress)
     const std::vector< boost::shared_ptr<pv::view::DecodeTrace> > decode_sigs(
         _session.get_decode_signals());
     int index = 0;
+
     BOOST_FOREACH(boost::shared_ptr<pv::view::DecodeTrace> d, decode_sigs) {
         pg = d->get_progress();
         if (d->decoder()->out_of_memory())
             err = tr("(Out of Memory)");
-        QString progress_str = QString::number(pg) + "%" + err;
-        if (pg == 100)
-            _progress_label_list.at(index)->setStyleSheet("color:green;");
-        else
-            _progress_label_list.at(index)->setStyleSheet("color:red;");
-        _progress_label_list.at(index)->setText(progress_str);
+
+        if (index < _protocolItems.size())
+        {
+            ProtocolItemLayer &lay =  *(_protocolItems.at(index));
+            lay.SetProgress(pg, err);
+
+            //when decode complete, check data format
+            if (pg == 100)
+            {
+              // bool flag = ((DecoderStatus*)lay.m_decoderStatus)->m_bNumerical;
+              // lay.LoadFormatSelect(!flag);
+              // QString &protocolName = lay.GetProtocolName();
+              // lay.SetProtocolFormat(protocolName.toStdString().c_str());
+            }
+        }
+
         index++;
     }
-    if (pg == 0 || pg % 10 == 1)
-        update_model();
+
+    if (pg == 0 || pg % 10 == 1){
+         update_model();
+    }  
 }
 
 void ProtocolDock::set_model()
@@ -835,6 +741,52 @@ void ProtocolDock::search_update()
     _search_edited = false;
     //search_done();
 }
+
+ //-------------------IProtocolItemLayerCallback
+void ProtocolDock::OnProtocolSetting(void *handle){
+     int dex = 0;
+    for (auto it = _protocolItems.begin(); it != _protocolItems.end(); it++){
+       if ((*it) == handle){
+           _session.rst_decoder(dex);         
+            protocol_updated();
+           break;
+       }
+       dex++;
+   }
+}
+
+void ProtocolDock::OnProtocolDelete(void *handle){
+    if (!MsgBox::Confirm("Are you sure to remove this protocol analyzer?", this)){
+         return;
+    }
+
+     int dex = 0;
+     for (auto it = _protocolItems.begin(); it != _protocolItems.end(); it++){
+       if ((*it) == handle){
+           delete (*it);
+           _up_layout->removeItem((*it)); //remove child control
+           _protocolItems.remove(dex);
+           _session.remove_decode_signal(dex);
+            protocol_updated();
+           break;
+       }
+       dex++;
+   }
+}
+
+void ProtocolDock::OnProtocolFormatChanged(QString format, void *handle){
+    for (auto it = _protocolItems.begin(); it != _protocolItems.end(); it++){
+       if ((*it) == handle){
+           QString &name = (*it)->GetProtocolName();
+           AppConfig::Instance().SetProtocolFormat(name.toStdString(), format.toStdString());
+           AppConfig::Instance().Save();
+           (*it)->m_decoderStatus->m_format = DecoderDataFormat::Parse(format.toStdString().c_str());
+           protocol_updated();
+           break;
+       }
+   }
+} 
+//-------------------------
 
 
 } // namespace dock

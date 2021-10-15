@@ -109,6 +109,7 @@ uint64_t Decoder::decode_end() const
     return _decode_end;
 }
 
+//apply setting
 bool Decoder::commit()
 {
     if (_setted) {

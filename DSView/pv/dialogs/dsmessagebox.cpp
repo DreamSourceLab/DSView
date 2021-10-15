@@ -32,9 +32,10 @@
 namespace pv {
 namespace dialogs {
 
-DSMessageBox::DSMessageBox(QWidget *parent) :
+DSMessageBox::DSMessageBox(QWidget *parent,const char *title) :
     QDialog(parent),
-    _moving(false)
+    _moving(false),
+    _clickType(0)
 {
     setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
     setAttribute(Qt::WA_TranslucentBackground);
@@ -53,7 +54,14 @@ DSMessageBox::DSMessageBox(QWidget *parent) :
     _msg->setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
 
     _titlebar = new toolbars::TitleBar(false, this);
-    _titlebar->setTitle(tr("Message"));
+
+    if (title){ 
+        _titlebar->setTitle(QString(title));
+    }
+    else{
+        _titlebar->setTitle(tr("Message"));
+    }
+   
     _titlebar->installEventFilter(this);
 
     mlayout->addWidget(_titlebar);
@@ -120,6 +128,8 @@ int DSMessageBox::exec()
 void DSMessageBox::on_button(QAbstractButton *btn)
 {
     QMessageBox::ButtonRole role = _msg->buttonRole(btn);
+    _clickType  = (int)role;
+    
     if (role == QMessageBox::AcceptRole)
         accept();
     else
