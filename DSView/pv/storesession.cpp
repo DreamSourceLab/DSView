@@ -212,7 +212,7 @@ bool StoreSession::save_start(QString session_file)
         */
 
             //make zip file
-        if (meta_file != NULL && m_zipDoc.CreateNew())
+        if (meta_file != NULL && m_zipDoc.CreateNew(_file_name.toUtf8().data(), false))
         {
             if (   !m_zipDoc.AddFromFile(meta_file.toUtf8().data(), "header")
                 || !m_zipDoc.AddFromFile(decoders_file.toUtf8().data(), "decoders")
@@ -324,8 +324,8 @@ void StoreSession::save_proc(shared_ptr<data::Snapshot> snapshot)
                         memcpy(tmp+(buf_end-buf), buf_start, buf+size-buf_end);
                     }
 
-                   ret = sr_session_append(_file_name.toUtf8().data(), tmp, size,
-                                     i, 0, ch_type, File_Version);
+                  // ret = sr_session_append(_file_name.toUtf8().data(), tmp, size,
+                    //                 i, 0, ch_type, File_Version);
 
                     MakeChunkName(i, 0, ch_type, File_Version);
                     ret = m_zipDoc.AddFromBuffer(chunk_name, (const char*)tmp, size) ? SR_OK : -1;
@@ -363,7 +363,7 @@ void StoreSession::save_proc(shared_ptr<data::Snapshot> snapshot)
     if (_canceled || num == 0)
         QFile::remove(_file_name);
     else {
-        bool bret = m_zipDoc.SaveToFile(_file_name.toUtf8().data());
+        bool bret = m_zipDoc.Close();
         m_zipDoc.Release();
 
         if (!bret){
