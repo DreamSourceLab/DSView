@@ -42,7 +42,6 @@
 #include "pv/devicemanager.h"
 #include "pv/mainframe.h"
 #include "pv/config/appconfig.h"
-
 #include "config.h"
 
 char DS_RES_PATH[256];
@@ -58,10 +57,10 @@ void usage()
 		"  -V, --version                   Show release version\n"
 		"  -h, -?, --help                  Show help option\n"
 		"\n", DS_BIN_NAME, DS_DESCRIPTION);
-}
+} 
 
 int main(int argc, char *argv[])
-{
+{  
 	int ret = 0;
 	struct sr_context *sr_ctx = NULL;
 	const char *open_file = NULL;
