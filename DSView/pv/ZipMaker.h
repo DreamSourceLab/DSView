@@ -22,14 +22,17 @@
 
 //test git 2
 
-#pragma once
+#pragma once 
 
-struct  zip_source;
-struct  zip_error;
+typedef struct
+{
+    char  inFileName[256];
+    int   inFileNameLen;
+    void *pData;
+    long long dataLen;
+} UnZipFileInfo;
 
-typedef struct zip_source zip_archive_source_t;
-typedef struct zip_error zip_err_t;
-
+ 
 class ZipMaker
 {
 public:
@@ -38,16 +41,16 @@ public:
     ~ZipMaker();
 
     //create new zip archive in the memory
-    bool CreateNew();
+    bool CreateNew(const char *fileName, bool bAppend);
 
     //free the source
     void Release();
 
     //save data to file
-    bool SaveToFile(const char *fileName);
+    bool Close();
 
     //add a inner file from  buffer
-    bool AddFromBuffer(const char *innerFile, const char *buffer, int buferSize);
+    bool AddFromBuffer(const char *innerFile, const char *buffer, unsigned int buferSize);
 
     //add a inner file from local file
     bool AddFromFile(const char *localFile, const char *innerFile);
@@ -55,8 +58,34 @@ public:
     //get the last error
     const char *GetError();
 
+public:
+    int m_opt_compress_level;
+
 private:
-    zip_archive_source_t    *m_docSource; //zip file handle
-    zip_err_t               *m_errobj;
-    char                     m_error[500];
+    void    *m_zDoc; //zip file handle
+    void    *m_zi; //life must as m_zDoc; 
+    char     m_error[500];
+};
+
+class ZipDecompress
+{
+public:
+    ZipDecompress();
+
+    ~ZipDecompress();
+
+    bool Open(const char *fileName);
+
+    void Close();
+
+    bool ReadNextFileData(UnZipFileInfo &inf);
+
+private:
+    void    *m_uzDoc;
+    void    *m_uzi;
+    int      m_fileCount;
+    int      m_curIndex;
+    char     m_error[500];
+    void    *m_buffer; // file read buffer
+    long long m_bufferSize;
 };
