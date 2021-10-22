@@ -51,6 +51,5 @@ bool MsgBox::Confirm(const char *text, QWidget *parent)
     msg.mBox()->setStandardButtons(QMessageBox::Yes | QMessageBox::No);
     msg.mBox()->setIcon(QMessageBox::Question);
     msg.exec();
-    int click = msg.GetLastClick();
-    return (click == (int)QMessageBox::YesRole);
+    return msg.IsYes();
 }

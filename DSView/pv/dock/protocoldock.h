@@ -133,7 +133,7 @@ private:
     QComboBox *_protocol_combobox; 
     QVector <int > _protocol_index_list; 
     QVBoxLayout *_up_layout;
-    QVector <ProtocolItemLayer*> _protocolItems; //protocol item layers
+    QVector <ProtocolItemLayer*> _protocol_items; //protocol item layers
 
     QPushButton *_dn_set_button;
     QPushButton *_dn_save_button;

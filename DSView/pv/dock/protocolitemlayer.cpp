@@ -22,11 +22,11 @@
 #include "protocolitemlayer.h"
 #include "../dsvdef.h"
 #include <QtCore> 
-#include <assert.h>
+#include <assert.h> 
  
 namespace pv {
 namespace dock {
-
+  
 ProtocolItemLayer::ProtocolItemLayer(QWidget *parent, QString protocolName, IProtocolItemLayerCallback *callback){
         assert(parent);
         assert(callback);
@@ -58,7 +58,7 @@ ProtocolItemLayer::ProtocolItemLayer(QWidget *parent, QString protocolName, IPro
         hori_layout->addWidget(_del_button);
         hori_layout->addWidget(_format_combox);
         hori_layout->addWidget(_protocol_label);
-        hori_layout->addWidget(_progress_label);      
+        hori_layout->addWidget(_progress_label);   
 
         hori_layout->addStretch(1);
 
@@ -69,13 +69,14 @@ ProtocolItemLayer::ProtocolItemLayer(QWidget *parent, QString protocolName, IPro
         connect(_format_combox, SIGNAL(currentIndexChanged(int)),this, SLOT(on_format_select_changed(int)));
 }
 
-ProtocolItemLayer::~ProtocolItemLayer(){
-        DESTROY_OBJECT(_set_button);
-        DESTROY_OBJECT(_del_button);
-        DESTROY_OBJECT(_protocol_label);
-        DESTROY_OBJECT(_progress_label);
-        DESTROY_OBJECT(_format_combox);
+ProtocolItemLayer::~ProtocolItemLayer(){ 
+     DESTROY_QT_OBJECT(_progress_label);
+     DESTROY_QT_OBJECT(_protocol_label);
+     DESTROY_QT_OBJECT(_set_button);
+     DESTROY_QT_OBJECT(_del_button);
+     DESTROY_QT_OBJECT(_format_combox);
 }
+ 
 
 //-------------control event
 void ProtocolItemLayer::on_set_protocol()

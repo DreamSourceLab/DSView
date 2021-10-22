@@ -2,8 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
+ * Copyright (C) 2015 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,29 +21,32 @@
 
 #pragma once
 
-class QWidget;
+#include <QObject>
+#include <QWidget> 
+#include "../interface/uicallback.h"
 
-#define DESTROY_OBJECT(p) if((p)){delete (p); p = NULL;} 
-#define DESTROY_QT_OBJECT(p) if((p)){((p))->deleteLater(); p = NULL;}
-#define DESTROY_QT_LATER(p) ((p))->deleteLater();
-
-namespace DecoderDataFormat
+namespace pv
 {
-    enum _data_format
+ namespace dialogs
+{
+
+    class ApplicationParamDlg : private IDlgCallback
     {
-        ascii = 0,
-        dec,
-        hex,
-        oct,
-        bin
+       // Q_OBJECT
+
+    public:
+        ApplicationParamDlg();
+        ~ApplicationParamDlg();
+
+        bool ShowDlg(QWidget *parent);
+
+    //IDlgCallback
+    private:
+        void OnDlgResult(bool bYes);
+
+    private:
+        bool  m_ret; 
     };
 
-    int Parse(const char *name);       
-}
-
-namespace app
-{
-    QWidget* get_app_window_instance(QWidget *ins, bool bSet);
-
-    bool is_app_top_window(QWidget* w);
-}
+}//
+}//

@@ -501,7 +501,7 @@ void Viewport::paintProgress(QPainter &p, QColor fore, QColor back)
 void Viewport::mousePressEvent(QMouseEvent *event)
 {
 	assert(event);
-
+    
 	_mouse_down_point = event->pos();
 	_mouse_down_offset = _view.offset();
     _drag_strength = 0;

@@ -28,8 +28,8 @@
 #include <QApplication>
 
 #include "filebar.h"
-#include "../device/devinst.h"
-#include "../dialogs/dsmessagebox.h"
+#include "../device/devinst.h" 
+#include "../ui/msgbox.h"
 
 #include <deque>
 
@@ -107,7 +107,7 @@ void FileBar::changeEvent(QEvent *event)
 void FileBar::retranslateUi()
 {
     _file_button.setText(tr("File"));
-    _menu_session->setTitle(tr("Settings"));
+    _menu_session->setTitle(tr("Con&fig..."));
     _action_load->setText(tr("&Load..."));
     _action_store->setText(tr("S&tore..."));
     _action_default->setText(tr("&Default..."));
@@ -157,13 +157,8 @@ void FileBar::session_error(
 
 void FileBar::show_session_error(
     const QString text, const QString info_text)
-{
-    dialogs::DSMessageBox msg(this);
-    msg.mBox()->setText(text);
-    msg.mBox()->setInformativeText(info_text);
-    msg.mBox()->setStandardButtons(QMessageBox::Ok);
-    msg.mBox()->setIcon(QMessageBox::Warning);
-    msg.exec();
+{  
+    MsgBox::Show(NULL, info_text.toStdString().c_str(), this);
 }
 
 void FileBar::on_actionLoad_triggered()
@@ -189,14 +184,9 @@ void FileBar::on_actionDefault_triggered()
     QDir dir(QCoreApplication::applicationDirPath());
     assert(dir.cd("res"));
 #endif
-    if (!dir.exists()) {
-        dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(tr("Session Load"));
-        msg.mBox()->setInformativeText(tr("Cannot find default session file for this device!"));
-        msg.mBox()->setStandardButtons(QMessageBox::Ok);
-        msg.mBox()->setIcon(QMessageBox::Warning);
-        msg.exec();
-        return;
+    if (!dir.exists()) { 
+          MsgBox::Show(NULL, "Cannot find default session file for this device!", this);
+          return;
     }
 
     QString driver_name = _session.get_device()->name();

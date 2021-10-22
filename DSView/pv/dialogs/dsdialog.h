@@ -26,40 +26,56 @@
 #include <QDialog>
 #include <QWidget>
 #include <QVBoxLayout>
+#include <QDialogButtonBox>
 
 #include "../toolbars/titlebar.h"
+#include "../interface/uicallback.h"
 
+class QDialogButtonBox;
+ 
+ 
 namespace pv {
 namespace dialogs {
 
+    class Shadow;
+
+//DSView any dialog base class
 class DSDialog : public QDialog
 {
 	Q_OBJECT
 
 public:
-    DSDialog(QWidget *parent = 0, bool hasClose = false);
-    QVBoxLayout *layout();
-    QWidget *mainWidget();
+    DSDialog();
+    DSDialog(QWidget *parent);
+    DSDialog(QWidget *parent, bool hasClose);
+    DSDialog(QWidget *parent, bool hasClose, bool bBaseButton);
+    ~DSDialog();
 
+    inline void SetCallback(IDlgCallback *callback){m_callback = callback;}
+    inline QVBoxLayout *layout(){return _main_layout;}
     void setTitle(QString title);
-    void reload(bool hasClose);
+    void reload(); 
+    int exec();
 
 protected:
     void accept();
     void reject();
-    //void mousePressEvent(QMouseEvent *event);
-    //void mouseReleaseEvent(QMouseEvent *event);
-    bool eventFilter(QObject *object, QEvent *event);
-private:
-    void build_main(bool hasClose);
 
 private:
-    QVBoxLayout *_layout;
-    QVBoxLayout *_mlayout;
-    QWidget *_main;
-    toolbars::TitleBar *_titlebar;
-    bool _moving;
-    QPoint _startPos;
+    void build_base(bool hasClose); 
+
+private:
+    QVBoxLayout         *_base_layout;
+    QWidget             *_main_widget;
+    QVBoxLayout         *_main_layout;
+    toolbars::TitleBar  *_titlebar;
+    Shadow              *_shadow;
+    QDialogButtonBox    *_base_button; 
+   
+    QPoint              _startPos; 
+    bool                 m_bBaseButton; 
+
+    IDlgCallback        *m_callback;
 };
 
 } // namespace dialogs

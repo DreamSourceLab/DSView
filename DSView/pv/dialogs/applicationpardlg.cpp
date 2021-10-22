@@ -2,8 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
+ * Copyright (C) 2015 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,31 +19,35 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#pragma once
+#include "applicationpardlg.h"
+#include "dsdialog.h"
 
-class QWidget;
-
-#define DESTROY_OBJECT(p) if((p)){delete (p); p = NULL;} 
-#define DESTROY_QT_OBJECT(p) if((p)){((p))->deleteLater(); p = NULL;}
-#define DESTROY_QT_LATER(p) ((p))->deleteLater();
-
-namespace DecoderDataFormat
+namespace pv
 {
-    enum _data_format
-    {
-        ascii = 0,
-        dec,
-        hex,
-        oct,
-        bin
-    };
+namespace dialogs
+{
 
-    int Parse(const char *name);       
+ApplicationParamDlg::ApplicationParamDlg()
+{
+    m_ret = false;
 }
 
-namespace app
+ApplicationParamDlg::~ApplicationParamDlg()
 {
-    QWidget* get_app_window_instance(QWidget *ins, bool bSet);
-
-    bool is_app_top_window(QWidget* w);
 }
+
+bool ApplicationParamDlg::ShowDlg(QWidget *parent)
+{
+    DSDialog dlg(parent, true, true);
+    dlg.exec();
+    return m_ret;
+}
+
+//------------IDlgCallback
+void ApplicationParamDlg::OnDlgResult(bool bYes){
+    m_ret = bYes;
+ }
+
+} //
+}//
+

@@ -42,6 +42,7 @@
 #include <QMessageBox>
 #include <QApplication>
 #include <QScreen>
+#include "dsvdef.h"
 
 #include <algorithm>
 
@@ -68,15 +69,15 @@ MainFrame::MainFrame(DeviceManager &device_manager,
         QSize(), QIcon::Normal, QIcon::Off);
     setWindowIcon(icon);
 
-    _moving = false;
-    _draging = false;
-    _startPos = None;
+    app::get_app_window_instance(this, true);
+ 
+    _bDraging = false;
+    _hit_border = None;
     _freezing = false;
     _minimized = false;
 
     // Title
     _titleBar = new toolbars::TitleBar(true, this);
-    _titleBar->installEventFilter(this);
      
     // MainWindow
     _mainWindow = new MainWindow(device_manager, open_file_name, this);
@@ -223,41 +224,55 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
     int newLeft;
     int newTop;
 
-    if (type == QEvent::MouseMove && !isMaximized()) {
-        if (!(mouse_event->buttons() || Qt::NoButton)) {
-            if (object == _top_left) {
-                _startPos = TopLeft;
+    if (type != QEvent::MouseMove 
+        && type != QEvent::MouseButtonPress 
+        && type != QEvent::MouseButtonRelease
+        && type != QEvent::Leave){
+        return QFrame::eventFilter(object, event);
+    }
+
+    //when window is maximized, or is moving, call return 
+    if (isMaximized() || _titleBar->IsMoving()){
+       return QFrame::eventFilter(object, event);
+    }
+
+    if (!_bDraging && type == QEvent::MouseMove && (!(mouse_event->buttons() || Qt::NoButton))){
+           if (object == _top_left) {
+                _hit_border = TopLeft;
                 setCursor(Qt::SizeFDiagCursor);
             } else if (object == _bottom_right) {
-                _startPos = BottomRight;
+                _hit_border = BottomRight;
                 setCursor(Qt::SizeFDiagCursor);
             } else if (object == _top_right) {
-                _startPos = TopRight;
+                _hit_border = TopRight;
                 setCursor(Qt::SizeBDiagCursor);
             } else if (object == _bottom_left) {
-                _startPos = BottomLeft;
+                _hit_border = BottomLeft;
                 setCursor(Qt::SizeBDiagCursor);
             } else if (object == _left) {
-                _startPos = Left;
+                _hit_border = Left;
                 setCursor(Qt::SizeHorCursor);
             } else if (object == _right) {
-                _startPos = Right;
+                _hit_border = Right;
                 setCursor(Qt::SizeHorCursor);
             } else if (object == _bottom) {
-                _startPos = Bottom;
+                _hit_border = Bottom;
                 setCursor(Qt::SizeVerCursor);
             } else if (object == _top) {
-                _startPos = Top;
+                _hit_border = Top;
                 setCursor(Qt::SizeVerCursor);
             } else {
-                _startPos = None;
+                _hit_border = None;
                 setCursor(Qt::ArrowCursor);
             }
-        } else if(mouse_event->buttons().testFlag(Qt::LeftButton)) {
-            if (_moving) {
-                this->move(mouse_event->globalPos() - _lastMousePosition);
-            } else if (!_freezing) {
-                switch (_startPos) {
+
+            return QFrame::eventFilter(object, event);
+    }
+
+  if (type == QEvent::MouseMove) {
+         if(mouse_event->buttons().testFlag(Qt::LeftButton)) {
+            if (!_freezing) {
+                switch (_hit_border) {
                 case TopLeft:
                     newWidth = std::max(_dragStartGeometry.right() - mouse_event->globalX(), minimumWidth());
                     newHeight = std::max(_dragStartGeometry.bottom() - mouse_event->globalY(), minimumHeight());
@@ -325,31 +340,27 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
             } 
             return true;
         }
-    } else if (type == QEvent::MouseButtonPress) {
-        if (mouse_event->button() == Qt::LeftButton)
-            if (_titleBar->rect().contains(mouse_event->pos()) &&
-                _startPos == None) {
-            _moving = true;
-            _lastMousePosition = mouse_event->pos() +
-                                 //QPoint(Margin, Margin) +
-                                 QPoint(geometry().left() - frameGeometry().left(), frameGeometry().right() - geometry().right());
-        }
-        if (_startPos != None)
-            _draging = true;
+    }
+     else if (type == QEvent::MouseButtonPress) {
+        if (mouse_event->button() == Qt::LeftButton) 
+        if (_hit_border != None)
+            _bDraging = true;
         _timer.start(50);
         _dragStartGeometry = geometry();
-    } else if (type == QEvent::MouseButtonRelease) {
+    } 
+    else if (type == QEvent::MouseButtonRelease) {
         if (mouse_event->button() == Qt::LeftButton) {
-            _moving = false;
-            _draging = false;
+         
+            _bDraging = false;
             _timer.stop();
         }
-    } else if (!_draging && type == QEvent::Leave) {
-        _startPos = None;
+    } else if (!_bDraging && type == QEvent::Leave) {
+        _hit_border = None;
         setCursor(Qt::ArrowCursor);
-    }
-
-    return QObject::eventFilter(object, event);
+    } 
+    
+ 
+    return QFrame::eventFilter(object, event);
 }
 
 void MainFrame::writeSettings()
@@ -406,7 +417,7 @@ void MainFrame::show_doc()
     const QString DOC_KEY("ShowDocuments");
     QSettings settings(QApplication::organizationName(), QApplication::applicationName());
     if (!settings.contains(DOC_KEY)) {
-        dialogs::DSDialog dlg(this);
+        dialogs::DSDialog dlg(this, true);
         dlg.setTitle(tr("Document"));
 
         QLabel tipsLabel;

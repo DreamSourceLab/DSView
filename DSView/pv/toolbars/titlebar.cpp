@@ -30,24 +30,35 @@
 #include <QApplication>
 #include <QPainter>
 #include <QStyleOption>
+#include <assert.h>
 
+#include "../dsvdef.h"
 
 namespace pv {
 namespace toolbars {
 
 TitleBar::TitleBar(bool top, QWidget *parent, bool hasClose) :
     QWidget(parent),
+    _parent(parent),
     _moving(false),
     _isTop(top),
     _hasClose(hasClose)
 {
+   _title = NULL;
+   _minimizeButton = NULL;
+   _maximizeButton = NULL;
+   _closeButton = NULL;
+   _lay = NULL;
+
+   assert(parent);
+
     setObjectName("TitleBar");
     setContentsMargins(0,0,0,0);
     setFixedHeight(32);
 
     _title = new QLabel(this);
-    QHBoxLayout *hbox = new QHBoxLayout(this);
-    hbox->addWidget(_title);
+    _lay = new QHBoxLayout(this);
+    _lay->addWidget(_title);
 
     if (_isTop) {
         _minimizeButton = new QToolButton(this);
@@ -55,8 +66,8 @@ TitleBar::TitleBar(bool top, QWidget *parent, bool hasClose) :
         _maximizeButton = new QToolButton(this);
         _maximizeButton->setObjectName("MaximizeButton");
 
-        hbox->addWidget(_minimizeButton);
-        hbox->addWidget(_maximizeButton);
+        _lay->addWidget(_minimizeButton);
+        _lay->addWidget(_maximizeButton);
 
         connect(this, SIGNAL( normalShow() ), parent, SLOT(showNormal() ) );
         connect(this, SIGNAL( maximizedShow() ), parent, SLOT(showMaximized() ) );
@@ -67,15 +78,24 @@ TitleBar::TitleBar(bool top, QWidget *parent, bool hasClose) :
     if (_isTop || _hasClose) {
         _closeButton= new QToolButton(this);
         _closeButton->setObjectName("CloseButton");
-        hbox->addWidget(_closeButton);
+        _lay->addWidget(_closeButton);
         connect(_closeButton, SIGNAL( clicked() ), parent, SLOT(close() ) );
     }
 
-    hbox->insertStretch(0, 500);
-    hbox->insertStretch(2, 500);
-    hbox->setMargin(0);
-    hbox->setSpacing(0);
+    _lay->insertStretch(0, 500);
+    _lay->insertStretch(2, 500);
+    _lay->setMargin(0);
+    _lay->setSpacing(0);
+
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+}
+
+TitleBar::~TitleBar(){
+    DESTROY_QT_OBJECT(_title);
+    DESTROY_QT_OBJECT(_minimizeButton);
+    DESTROY_QT_OBJECT(_maximizeButton);
+    DESTROY_QT_OBJECT(_closeButton);
+    DESTROY_QT_OBJECT(_lay);
 }
 
 void TitleBar::changeEvent(QEvent *event)
@@ -101,7 +121,8 @@ void TitleBar::reStyle()
 }
 
 void TitleBar::paintEvent(QPaintEvent *event)
-{  
+{ 
+    //draw logo icon
     QStyleOption o;
     o.initFrom(this);
     QPainter p(this);
@@ -109,7 +130,6 @@ void TitleBar::paintEvent(QPaintEvent *event)
 
     p.setRenderHint(QPainter::Antialiasing, true);
 
-    //To draw product logo
     const int xgap = 2;
     const int xstart = 10;
     p.setPen(QPen(QColor(213, 15, 37, 255), 2, Qt::SolidLine));
@@ -139,12 +159,7 @@ void TitleBar::setTitle(QString title)
 {
     _title->setText(title);
 }
-
-QPoint TitleBar::get_startPos() const
-{
-    return _startPos;
-}
-
+  
 QString TitleBar::title() const
 {
     return _title->text();
@@ -171,35 +186,49 @@ void TitleBar::setRestoreButton(bool max)
         _maximizeButton->setIcon(QIcon(iconPath+"/restore.svg"));
     }
 }
-
+  
 void TitleBar::mousePressEvent(QMouseEvent* event)
-{
+{ 
     if(event->button() == Qt::LeftButton && !parentWidget()->isMaximized()) {
-        _moving = true;
-        _startPos = mapToParent(event->pos());
-    }
+        int x = event->pos().x();
+        int y = event->pos().y(); 
+        bool bTopWidow = app::is_app_top_window(_parent);
+        bool bClick = (x >= 6 && y >= 5 && x <= width() - 6);  //top window need resize hit check
+ 
+        if (!bTopWidow || bClick ){
+            _moving = true; 
+            _startPos = event->globalPos() - _parent->frameGeometry().topLeft();
+            event->accept();
+            return;
+        } 
+    }  
+    QWidget::mousePressEvent(event);
 }
 
 void TitleBar::mouseMoveEvent(QMouseEvent *event)
-{
-    if(_moving && event->buttons().testFlag(Qt::LeftButton)) {
-        parentWidget()->move(event->globalPos() - _startPos);
-    }
+{ 
+    if(_moving){ 
+      _parent->move(event->globalPos() - _startPos); 
+       event->accept();
+       return;
+    } 
+    QWidget::mouseMoveEvent(event);
 }
 
 void TitleBar::mouseReleaseEvent(QMouseEvent* event)
 {
-    if(event->button() == Qt::LeftButton) {
-        _moving = false;
-    }
+    _moving = false;
+    QWidget::mouseReleaseEvent(event);
 }
 
 void TitleBar::mouseDoubleClickEvent(QMouseEvent *event)
 {
-    if (_isTop)
-        showMaxRestore();
+    if (_isTop){
+         showMaxRestore();
+    }       
     QWidget::mouseDoubleClickEvent(event);
 }
 
+ 
 } // namespace toolbars
 } // namespace pv

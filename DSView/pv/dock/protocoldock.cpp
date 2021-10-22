@@ -210,10 +210,10 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession &sessio
 ProtocolDock::~ProtocolDock()
 {
     //destroy protocol item layers
-   for (auto it = _protocolItems.begin(); it != _protocolItems.end(); it++){
-       delete (*it);
+   for (auto it = _protocol_items.begin(); it != _protocol_items.end(); it++){
+       DESTROY_QT_LATER(*it);
    }
-   _protocolItems.clear();
+   _protocol_items.clear();
 }
 
 void ProtocolDock::changeEvent(QEvent *event)
@@ -245,7 +245,7 @@ void ProtocolDock::reStyle()
     _nxt_button->setIcon(QIcon(iconPath+"/next.svg"));
     _search_button->setIcon(QIcon(iconPath+"/search.svg"));
 
-    for (auto it = _protocolItems.begin(); it != _protocolItems.end(); it++){
+    for (auto it = _protocol_items.begin(); it != _protocol_items.end(); it++){
        (*it)->ResetStyle();
     } 
 }
@@ -321,8 +321,8 @@ void ProtocolDock::add_protocol(bool silent)
         //crate item layer
         QString protocolName = _protocol_combobox->currentText();
         ProtocolItemLayer *layer = new ProtocolItemLayer(_up_widget, protocolName, this);
-        _protocolItems.push_back(layer);
-        _up_layout->insertLayout(_protocolItems.size(), layer);
+        _protocol_items.push_back(layer);
+        _up_layout->insertLayout(_protocol_items.size(), layer);
         layer->m_decoderStatus = dstatus;
 
         //set current protocol format
@@ -342,7 +342,7 @@ void ProtocolDock::add_protocol(bool silent)
 }
  
  void ProtocolDock::on_del_all_protocol(){
-     if (_protocolItems.size() == 0){
+     if (_protocol_items.size() == 0){
         MsgBox::Show(NULL, "No Protocol Analyzer to delete!", this);
         return;
      }
@@ -355,15 +355,14 @@ void ProtocolDock::add_protocol(bool silent)
 
 void ProtocolDock::del_all_protocol()
 {  
-    if (_protocolItems.size() > 0)
+    if (_protocol_items.size() > 0)
     {
-        for (auto it = _protocolItems.begin(); it != _protocolItems.end(); it++)
+        for (auto it = _protocol_items.begin(); it != _protocol_items.end(); it++)
         {
-            _up_layout->removeItem((*it));
-            delete (*it); //destory control
+             DESTROY_QT_LATER((*it)); //destory control
             _session.remove_decode_signal(0);
         }
-        _protocolItems.clear();
+        _protocol_items.clear();
         protocol_updated();
     }
 }
@@ -383,9 +382,9 @@ void ProtocolDock::decoded_progress(int progress)
         if (d->decoder()->out_of_memory())
             err = tr("(Out of Memory)");
 
-        if (index < _protocolItems.size())
+        if (index < _protocol_items.size())
         {
-            ProtocolItemLayer &lay =  *(_protocolItems.at(index));
+            ProtocolItemLayer &lay =  *(_protocol_items.at(index));
             lay.SetProgress(pg, err);
 
             //when decode complete, check data format
@@ -745,7 +744,7 @@ void ProtocolDock::search_update()
  //-------------------IProtocolItemLayerCallback
 void ProtocolDock::OnProtocolSetting(void *handle){
      int dex = 0;
-    for (auto it = _protocolItems.begin(); it != _protocolItems.end(); it++){
+    for (auto it = _protocol_items.begin(); it != _protocol_items.end(); it++){
        if ((*it) == handle){
            _session.rst_decoder(dex);         
             protocol_updated();
@@ -761,13 +760,12 @@ void ProtocolDock::OnProtocolDelete(void *handle){
     }
 
      int dex = 0;
-     for (auto it = _protocolItems.begin(); it != _protocolItems.end(); it++){
+     for (auto it = _protocol_items.begin(); it != _protocol_items.end(); it++){
        if ((*it) == handle){
-           delete (*it);
-           _up_layout->removeItem((*it)); //remove child control
-           _protocolItems.remove(dex);
+           DESTROY_QT_LATER(*it); 
+           _protocol_items.remove(dex);
            _session.remove_decode_signal(dex);
-            protocol_updated();
+           protocol_updated();
            break;
        }
        dex++;
@@ -775,7 +773,7 @@ void ProtocolDock::OnProtocolDelete(void *handle){
 }
 
 void ProtocolDock::OnProtocolFormatChanged(QString format, void *handle){
-    for (auto it = _protocolItems.begin(); it != _protocolItems.end(); it++){
+    for (auto it = _protocol_items.begin(); it != _protocol_items.end(); it++){
        if ((*it) == handle){
            QString &name = (*it)->GetProtocolName();
            AppConfig::Instance().SetProtocolFormat(name.toStdString(), format.toStdString());

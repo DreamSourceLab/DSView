@@ -40,8 +40,7 @@ namespace dialogs {
 DeviceOptions::DeviceOptions(QWidget *parent, boost::shared_ptr<pv::device::DevInst> dev_inst) :
     DSDialog(parent),
     _dev_inst(dev_inst),
-    _button_box(QDialogButtonBox::Ok,
-		Qt::Horizontal, this),
+    _button_box(QDialogButtonBox::Ok, Qt::Horizontal, this),
     _device_options_binding(_dev_inst->dev_inst())
 {
     _props_box = new QGroupBox(tr("Mode"), this);

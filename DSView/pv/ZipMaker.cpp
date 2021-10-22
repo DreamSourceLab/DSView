@@ -36,7 +36,7 @@ ZipMaker::ZipMaker() :
     m_zDoc(NULL)
 {
     m_error[0] = 0; 
-    m_opt_compress_level = Z_DEFAULT_COMPRESSION;
+    m_opt_compress_level = Z_BEST_SPEED;
     m_zi = NULL;
 }
 

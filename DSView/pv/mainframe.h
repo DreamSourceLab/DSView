@@ -104,15 +104,13 @@ private:
     widgets::Border *_top_right;
     widgets::Border *_bottom_left;
     widgets::Border *_bottom_right;
-
-    bool _moving;
-    bool _draging;
-    QPoint _lastMousePosition;
-    QRect _dragStartGeometry;
-    int _startPos;
-    QTimer _timer;
-    bool _freezing;
-    bool _minimized;
+ 
+    bool    _bDraging; 
+    QRect   _dragStartGeometry;
+    int     _hit_border;
+    QTimer  _timer;
+    bool    _freezing;
+    bool    _minimized;
 };
 
 } // namespace pv

@@ -44,3 +44,24 @@ namespace DecoderDataFormat
         return (int)ascii;
     }
 }
+
+
+namespace app
+{
+    QWidget* get_app_window_instance(QWidget *ins, bool bSet){
+
+        static QWidget *g_ins = NULL;
+        if (bSet){
+            g_ins = ins;
+        }
+        return g_ins;
+    }
+
+    bool is_app_top_window(QWidget* w){
+         QWidget *top =get_app_window_instance(NULL, NULL);
+         if (top && top == w){
+             return true;
+         }
+         return false;
+      }
+}

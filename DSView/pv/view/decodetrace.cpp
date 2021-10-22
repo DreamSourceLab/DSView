@@ -146,14 +146,7 @@ DecodeTrace::DecodeTrace(pv::SigSession &session,
 }
 
 DecodeTrace::~DecodeTrace()
-{
-    DESTROY_OBJECT(_start_comboBox);
-    DESTROY_OBJECT(_end_comboBox); 
-    DESTROY_OBJECT(_pub_input_layer);
-    DESTROY_OBJECT(_popup_form);
-    DESTROY_OBJECT(_popup);
-
-    _cur_row_headings.clear();
+{   _cur_row_headings.clear();
     _decoder_forms.clear();
     _probe_selectors.clear();
     _bindings.clear();
@@ -371,13 +364,7 @@ bool DecodeTrace::create_popup()
         }
     }
 
-    //destroy object   
-    DESTROY_OBJECT(_start_comboBox);
-    DESTROY_OBJECT(_end_comboBox);  
-    DESTROY_OBJECT(_pub_input_layer);
-    DESTROY_OBJECT(_popup_form);
-    DESTROY_OBJECT(_popup);
-
+    //destroy object
     return ret;
 }
 
@@ -389,7 +376,7 @@ void DecodeTrace::create_popup_form()
     // which then goes out of scope destroying the layout and all the child
     // widgets.
     if (_popup_form)
-        _popup->reload(false);
+        _popup->reload();
 
     _popup_form = new QFormLayout();
     _popup_form->setVerticalSpacing(5);

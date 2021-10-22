@@ -168,8 +168,8 @@ static const struct DEMO_profile supported_Demo[] = {
       (1 << DEMO_LOGIC100x16) |
       (1 << DEMO_ANALOG10x2) |
       (1 << DEMO_DSO200x2),
-     SR_Mn(100),
-     // SR_Gn(16),
+     //SR_Mn(100),
+      SR_Gn(16),
       SR_Kn(20),              
       0,
       vdivs10to2000,

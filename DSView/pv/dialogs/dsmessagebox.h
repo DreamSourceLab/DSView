@@ -33,6 +33,8 @@
 namespace pv {
 namespace dialogs {
 
+     class Shadow;
+
 class DSMessageBox : public QDialog
 {
 	Q_OBJECT
@@ -40,30 +42,29 @@ class DSMessageBox : public QDialog
 public:
     DSMessageBox(QWidget *parent, const char *title=0);
 
-    QMessageBox *mBox();
+    ~DSMessageBox();
 
-    int exec();
+    QMessageBox *mBox(); 
     
-    inline int GetLastClick(){return _clickType;}
+    inline int IsYes(){return _bClickYes;}
 
 protected:
     void accept();
-    void reject();
-    //void mousePressEvent(QMouseEvent *event);
-    //void mouseReleaseEvent(QMouseEvent *event);
-    bool eventFilter(QObject *object, QEvent *event);
+    void reject();  
 
 private slots:
     void on_button(QAbstractButton* btn);
 
 private:
-    QVBoxLayout *_layout;
-    QWidget *_main;
-    QMessageBox *_msg;
-    toolbars::TitleBar *_titlebar;
-    bool _moving;
-    QPoint _startPos;
-    int _clickType;
+    QVBoxLayout         *_layout;
+    QVBoxLayout         *_main_layout;
+    QWidget             *_main_widget;
+    QMessageBox         *_msg;
+    toolbars::TitleBar  *_titlebar;
+    Shadow              *_shadow;
+ 
+    QPoint              _startPos;
+    bool                _bClickYes;
 };
 
 } // namespace dialogs

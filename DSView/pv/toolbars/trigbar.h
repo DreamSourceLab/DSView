@@ -83,6 +83,7 @@ public slots:
 
     void on_actionFft_triggered();
     void on_actionMath_triggered();
+    void on_application_param();
 
 private:
     SigSession& _session;
@@ -97,7 +98,7 @@ private:
     QAction* _protocol_action;
     QAction* _measure_action;
     QAction* _search_action;
-    QAction* _function_action;
+    QAction* _function_action; 
     QAction* _display_action;
 
     QMenu* _function_menu;
@@ -106,6 +107,7 @@ private:
 
     QMenu* _display_menu;
     QMenu *_themes;
+    QAction *_appParam_action;
     QAction *_dark_style;
     QAction *_light_style;
     QAction* _action_lissajous;

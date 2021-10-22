@@ -28,32 +28,42 @@
 #include <QMouseEvent>
 #include <QVBoxLayout>
 #include <QAbstractButton>
+#include "../dsvdef.h"
 
 namespace pv {
 namespace dialogs {
 
 DSMessageBox::DSMessageBox(QWidget *parent,const char *title) :
-    QDialog(parent),
-    _moving(false),
-    _clickType(0)
+    QDialog(NULL) //must be null, otherwise window can not able to move
 {
+    _layout = NULL;
+    _main_widget = NULL;
+    _msg = NULL;
+    _titlebar = NULL;
+    _shadow = NULL;  
+    _main_layout = NULL;
+
+    _bClickYes = false;
+
     setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
     setAttribute(Qt::WA_TranslucentBackground);
-    _main = new QWidget(this);
-    QVBoxLayout *mlayout = new QVBoxLayout(_main);
-    _main->setLayout(mlayout);
 
-    Shadow *bodyShadow = new Shadow();
-    bodyShadow->setBlurRadius(10.0);
-    bodyShadow->setDistance(3.0);
-    bodyShadow->setColor(QColor(0, 0, 0, 80));
-    _main->setAutoFillBackground(true);
-    _main->setGraphicsEffect(bodyShadow);
+    _main_widget = new QWidget(this);
+    _main_layout = new QVBoxLayout(_main_widget);
+    _main_widget->setLayout(_main_layout);  
 
+    _shadow = new Shadow();
     _msg = new QMessageBox(this);
-    _msg->setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
-
     _titlebar = new toolbars::TitleBar(false, this);
+    _layout = new QVBoxLayout(this);
+ 
+    _shadow->setBlurRadius(10.0);
+    _shadow->setDistance(3.0);
+    _shadow->setColor(QColor(0, 0, 0, 80));
+
+    _main_widget->setAutoFillBackground(true);
+    _main_widget->setGraphicsEffect(_shadow);  
+    _msg->setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);   
 
     if (title){ 
         _titlebar->setTitle(QString(title));
@@ -61,18 +71,25 @@ DSMessageBox::DSMessageBox(QWidget *parent,const char *title) :
     else{
         _titlebar->setTitle(tr("Message"));
     }
-   
-    _titlebar->installEventFilter(this);
+    
+    _main_layout->addWidget(_titlebar);
+    _main_layout->addWidget(_msg);   
+    _layout->addWidget(_main_widget);
 
-    mlayout->addWidget(_titlebar);
-    mlayout->addWidget(_msg);
-
-    _layout = new QVBoxLayout(this);
-    _layout->addWidget(_main);
     setLayout(_layout);
 
-    //connect(_msg, SIGNAL(finished(int)), this, SLOT(accept()));
     connect(_msg, SIGNAL(buttonClicked(QAbstractButton*)), this, SLOT(on_button(QAbstractButton*)));
+}
+
+
+DSMessageBox::~DSMessageBox()
+{
+    DESTROY_QT_OBJECT(_layout);
+    DESTROY_QT_OBJECT(_main_widget);
+    DESTROY_QT_OBJECT(_msg);
+    DESTROY_QT_OBJECT(_titlebar);
+    DESTROY_QT_OBJECT(_shadow);
+    DESTROY_QT_OBJECT(_main_layout);
 }
 
 void DSMessageBox::accept()
@@ -88,50 +105,20 @@ void DSMessageBox::reject()
 
     QDialog::reject();
 }
-
-bool DSMessageBox::eventFilter(QObject *object, QEvent *event)
-{
-    (void)object;
-    const QEvent::Type type = event->type();
-    const QMouseEvent *const mouse_event = (QMouseEvent*)event;
-    if (type == QEvent::MouseMove) {
-        if (_moving && mouse_event->buttons().testFlag(Qt::LeftButton)) {
-            move(mouse_event->globalPos() - _startPos);
-        }
-        return true;
-    } else if (type == QEvent::MouseButtonPress) {
-        if (mouse_event->buttons().testFlag(Qt::LeftButton)) {
-            _moving = true;
-            _startPos = mouse_event->pos() +
-                        QPoint(_layout->margin(), _layout->margin()) +
-                        QPoint(_layout->spacing(), _layout->spacing());
-        }
-    } else if (type == QEvent::MouseButtonRelease) {
-        if (mouse_event->buttons().testFlag(Qt::LeftButton)) {
-            _moving = false;
-        }
-    }
-    return false;
-}
-
+  
 QMessageBox* DSMessageBox::mBox()
 {
     return _msg;
 }
-
-int DSMessageBox::exec()
-{
-    //_msg->show();
-    return QDialog::exec();
-}
-
+  
 void DSMessageBox::on_button(QAbstractButton *btn)
 {
     QMessageBox::ButtonRole role = _msg->buttonRole(btn);
-    _clickType  = (int)role;
-    
-    if (role == QMessageBox::AcceptRole)
-        accept();
+
+    if (role == QMessageBox::AcceptRole || role == QMessageBox::YesRole){
+        _bClickYes = true;
+         accept();
+    } 
     else
         reject();
 }

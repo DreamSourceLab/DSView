@@ -54,7 +54,7 @@ public:
     void LoadFormatSelect(bool bSingle);
     inline QString &GetProtocolName(){return _protocolName;}
     void SetProtocolFormat(const char *format);
-
+  
 private slots: 
     void on_set_protocol(); 
     void on_del_protocol();

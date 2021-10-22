@@ -28,27 +28,61 @@
 #include <QMouseEvent>
 #include <QVBoxLayout>
 #include <QAbstractButton>
+#include "../dsvdef.h"
 
 namespace pv {
 namespace dialogs {
 
-DSDialog::DSDialog(QWidget *parent, bool hasClose) :
-    QDialog(parent),
-    _moving(false)
+DSDialog::DSDialog() : DSDialog(NULL, false, false)
 {
+}
+
+DSDialog::DSDialog(QWidget *parent): DSDialog(parent, false, false)
+{
+}
+
+DSDialog::DSDialog(QWidget *parent, bool hasClose): DSDialog(parent, hasClose, false)
+{
+}
+
+DSDialog::DSDialog(QWidget *parent, bool hasClose, bool bBaseButton) :
+    QDialog(NULL), //must be null, otherwise window can not able to move
+    m_bBaseButton(bBaseButton)
+{
+    (void)parent;
+
+    _base_layout = NULL;
+    _main_layout = NULL;
+    _main_widget = NULL;
+    _titlebar = NULL;
+    _shadow = NULL; 
+    _base_button = NULL;
+
+    m_callback = NULL; 
+    
     setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
     setAttribute(Qt::WA_TranslucentBackground);
 
-    build_main(hasClose);
+    build_base(hasClose); 
+}
 
-    _layout = new QVBoxLayout(this);
-    _layout->addWidget(_main);
-    setLayout(_layout);
+DSDialog::~DSDialog()
+{ 
+    DESTROY_QT_OBJECT(_base_layout);
+    DESTROY_QT_OBJECT(_main_layout);
+    DESTROY_QT_OBJECT(_main_widget);
+    DESTROY_QT_OBJECT(_titlebar);
+    DESTROY_QT_OBJECT(_shadow);
+    DESTROY_QT_OBJECT(_base_button);
 }
 
 void DSDialog::accept()
 {
     using namespace Qt;
+
+    if (m_callback){
+        m_callback->OnDlgResult(true);
+    }
 
     QDialog::accept();
 }
@@ -56,90 +90,59 @@ void DSDialog::accept()
 void DSDialog::reject()
 {
     using namespace Qt;
+    if (m_callback){
+        m_callback->OnDlgResult(false);
+    }
 
     QDialog::reject();
 }
-
-bool DSDialog::eventFilter(QObject *object, QEvent *event)
-{
-    (void)object;
-    const QEvent::Type type = event->type();
-    const QMouseEvent *const mouse_event = (QMouseEvent*)event;
-    if (type == QEvent::MouseMove) {
-        if (_moving && mouse_event->buttons().testFlag(Qt::LeftButton)) {
-            move(mouse_event->globalPos() - _startPos);
-        }
-        return true;
-    } else if (type == QEvent::MouseButtonPress) {
-        if (mouse_event->buttons().testFlag(Qt::LeftButton)) {
-            _moving = true;
-#ifndef _WIN32
-            _startPos = mouse_event->pos() +
-                        QPoint(_layout->margin(), _layout->margin()) +
-                        QPoint(_layout->spacing(), _layout->spacing()) +
-                        QPoint(_mlayout->margin(), _mlayout->margin()) +
-                        QPoint(_mlayout->spacing(), _mlayout->spacing());
-#else
-            _startPos = mouse_event->pos() +
-                        QPoint(_layout->margin(), _layout->margin()) +
-                        QPoint(_layout->spacing(), _layout->spacing());
-#endif
-        }
-    } else if (type == QEvent::MouseButtonRelease) {
-        if (mouse_event->buttons().testFlag(Qt::LeftButton)) {
-            _moving = false;
-        }
-    }
-    return false;
-}
-
-QVBoxLayout* DSDialog::layout()
-{
-    return _mlayout;
-}
-
-QWidget* DSDialog::mainWidget()
-{
-    return _main;
-}
-
+  
 void DSDialog::setTitle(QString title)
 {
-    _titlebar->setTitle(title);
+    if (_titlebar){
+         _titlebar->setTitle(title);
+    } 
 }
 
-void DSDialog::reload(bool hasClose)
+void DSDialog::reload()
 {
-    QString title;
-    if (_titlebar)
-        title = _titlebar->title();
-    if (_main)
-        delete _main;
-
-    build_main(hasClose);
-    _titlebar->setTitle(title);
-    _layout->addWidget(_main);
+    show();
 }
 
-void DSDialog::build_main(bool hasClose)
-{
-    _main = new QWidget(this);
-    _mlayout = new QVBoxLayout(_main);
-    _main->setLayout(_mlayout);
-    //_mlayout->setMargin(5);
-    //_mlayout->setSpacing(5);
+int DSDialog::exec()
+{ 
+      //ok,cancel
+    if (m_bBaseButton){
+        _base_button = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,Qt::Horizontal, this);
+        _main_layout->addWidget(_base_button);//, 5, 1, 1, 1, Qt::AlignHCenter | Qt::AlignBottom);
+        connect(_base_button, SIGNAL(rejected()), this, SLOT(reject()));
+        connect(_base_button, SIGNAL(accepted()), this, SLOT(accept()));
+    }
+ 
+    return QDialog::exec();
+}
 
-    Shadow *bodyShadow = new Shadow(_main);
-    bodyShadow->setBlurRadius(10.0);
-    bodyShadow->setDistance(3.0);
-    bodyShadow->setColor(QColor(0, 0, 0, 80));
-    _main->setAutoFillBackground(true);
-    _main->setGraphicsEffect(bodyShadow);
 
+void DSDialog::build_base(bool hasClose)
+{    
+    _main_widget = new QWidget(this);
+    _main_layout = new QVBoxLayout(_main_widget);
     _titlebar = new toolbars::TitleBar(false, this, hasClose);
-    _titlebar->installEventFilter(this);
-    _mlayout->addWidget(_titlebar);
-}
+    _base_layout = new QVBoxLayout(this); 
+  
+    _main_widget->setLayout(_main_layout);
+    _main_widget->setAutoFillBackground(true);
+
+    _shadow  = new Shadow(_main_widget);
+    _shadow->setBlurRadius(10.0);
+    _shadow->setDistance(3.0);
+    _shadow->setColor(QColor(0, 0, 0, 80));
+    _main_widget->setGraphicsEffect(_shadow);
+  
+    _main_layout->addWidget(_titlebar);  
+    _base_layout->addWidget(_main_widget);
+    setLayout(_base_layout);  
+} 
 
 } // namespace dialogs
 } // namespace pv
