@@ -568,6 +568,7 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
     return metafile;
 }
 
+//export as csv file
 bool StoreSession::export_start()
 {
     std::set<int> type_set;
@@ -596,6 +597,7 @@ bool StoreSession::export_start()
     const QString DIR_KEY("ExportPath");
     QSettings settings(QApplication::organizationName(), QApplication::applicationName());
     QString default_name = settings.value(DIR_KEY).toString() + "/" + _session.get_device()->name() + "-";
+
     for (const GSList *l = _session.get_device()->get_dev_mode_list();
          l; l = l->next) {
         const sr_dev_mode *mode = (const sr_dev_mode *)l->data;
@@ -616,6 +618,7 @@ bool StoreSession::export_start()
     }
     _file_name = QFileDialog::getSaveFileName(
                 NULL, tr("Export Data"), default_name,filter,&filter);
+
     if (!_file_name.isEmpty()) {
         QFileInfo f(_file_name);
         QStringList list = filter.split('.').last().split(')');
@@ -681,6 +684,7 @@ void StoreSession::export_proc(shared_ptr<data::Snapshot> snapshot)
     output.param = NULL;
     if(_outModule->init)
         _outModule->init(&output, params);
+
     QFile file(_file_name);
     file.open(QIODevice::WriteOnly | QIODevice::Text);
     QTextStream out(&file);
@@ -692,9 +696,11 @@ void StoreSession::export_proc(shared_ptr<data::Snapshot> snapshot)
     struct sr_datafeed_packet p;
     struct sr_datafeed_meta meta;
     struct sr_config *src;
+
     src = sr_config_new(SR_CONF_SAMPLERATE,
             g_variant_new_uint64(_session.cur_snap_samplerate()));
     meta.config = g_slist_append(NULL, src);
+
     src = sr_config_new(SR_CONF_LIMIT_SAMPLES,
             g_variant_new_uint64(snapshot->get_sample_count()));
     meta.config = g_slist_append(meta.config, src);
@@ -743,6 +749,7 @@ void StoreSession::export_proc(shared_ptr<data::Snapshot> snapshot)
         bool sample;
         std::vector<uint8_t *> buf_vec;
         std::vector<bool> buf_sample;
+
         for (int blk = 0; !boost::this_thread::interruption_requested()  &&
                           blk < blk_num; blk++) {
             uint64_t buf_sample_num = logic_snapshot->get_block_size(blk) * 8;
@@ -764,6 +771,7 @@ void StoreSession::export_proc(shared_ptr<data::Snapshot> snapshot)
             unsigned int usize = 8192;
             unsigned int size = usize;
             struct sr_datafeed_logic lp;
+
             for(uint64_t i = 0; !boost::this_thread::interruption_requested() &&
                                 i < buf_sample_num; i+=usize){
                 if(buf_sample_num - i < usize)
@@ -773,8 +781,9 @@ void StoreSession::export_proc(shared_ptr<data::Snapshot> snapshot)
                     _has_error = true;
                     _error = tr("xbuffer malloc failed.");
                     return;
-                }
+                }                
                 memset(xbuf, 0, size * unitsize);
+
                 for (uint64_t j = 0; j < size; j++) {
                     for (unsigned int k = 0; k < buf_vec.size(); k++) {
                         if (buf_vec[k] == NULL && buf_sample[k])
@@ -783,6 +792,7 @@ void StoreSession::export_proc(shared_ptr<data::Snapshot> snapshot)
                             xbuf[j*unitsize+k/8] +=  1 << k%8;
                     }
                 }
+
                 lp.data = xbuf;
                 lp.length = size * unitsize;
                 lp.unitsize = unitsize;
@@ -790,6 +800,7 @@ void StoreSession::export_proc(shared_ptr<data::Snapshot> snapshot)
                 p.status = SR_PKT_OK;
                 p.payload = &lp;
                 _outModule->receive(&output, &p, &data_out);
+
                 if(data_out){
                     out << QString::fromUtf8((char*) data_out->str);
                     g_string_free(data_out,TRUE);
@@ -801,35 +812,41 @@ void StoreSession::export_proc(shared_ptr<data::Snapshot> snapshot)
                 progress_updated();
             }
         }
+
     } else if (channel_type == SR_CHANNEL_DSO) {
         _unit_count = snapshot->get_sample_count();
         unsigned char* datat = (unsigned char*)snapshot->get_data();
         unsigned int usize = 8192;
         unsigned int size = usize;
-        struct sr_datafeed_dso dp;
+        struct sr_datafeed_dso dp; 
+
         for(uint64_t i = 0; !boost::this_thread::interruption_requested() && i < _unit_count; i+=usize){
             if(_unit_count - i < usize)
                 size = _unit_count - i;
+
             dp.data = &datat[i*snapshot->get_channel_num()];
             dp.num_samples = size;
             p.type = SR_DF_DSO;
             p.status = SR_PKT_OK;
             p.payload = &dp;
             _outModule->receive(&output, &p, &data_out);
+
             if(data_out){
                 out << (char*) data_out->str;
                 g_string_free(data_out,TRUE);
             }
-
+            
             _units_stored += size;
             progress_updated();
         }
+
     } else if (channel_type == SR_CHANNEL_ANALOG) {
         _unit_count = snapshot->get_sample_count();
         unsigned char* datat = (unsigned char*)snapshot->get_data();
         unsigned int usize = 8192;
         unsigned int size = usize;
         struct sr_datafeed_analog ap;
+
         for(uint64_t i = 0; !boost::this_thread::interruption_requested() && i < _unit_count; i+=usize){
             if(_unit_count - i < usize)
                 size = _unit_count - i;

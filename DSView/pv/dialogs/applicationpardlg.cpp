@@ -43,6 +43,7 @@ ApplicationParamDlg::~ApplicationParamDlg()
 bool ApplicationParamDlg::ShowDlg(QWidget *parent)
 {
     DSDialog dlg(parent, true, true);
+    dlg.setTitle("Application options");
     dlg.setMinimumSize(300, 200);
     QFormLayout &lay = *(new QFormLayout());
     lay.setContentsMargins(0,20,0,30);

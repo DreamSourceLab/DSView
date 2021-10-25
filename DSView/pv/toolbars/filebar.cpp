@@ -47,16 +47,13 @@ FileBar::FileBar(SigSession &session, QWidget *parent) :
 
     _action_load = new QAction(this);
     _action_load->setObjectName(QString::fromUtf8("actionLoad"));
-    connect(_action_load, SIGNAL(triggered()), this, SLOT(on_actionLoad_triggered()));
-
+ 
     _action_store = new QAction(this);
     _action_store->setObjectName(QString::fromUtf8("actionStore"));
-    connect(_action_store, SIGNAL(triggered()), this, SLOT(on_actionStore_triggered()));
-
+ 
     _action_default = new QAction(this);
     _action_default->setObjectName(QString::fromUtf8("actionDefault"));
-    connect(_action_default, SIGNAL(triggered()), this, SLOT(on_actionDefault_triggered()));
-
+  
     _menu_session = new QMenu(this);
     _menu_session->setObjectName(QString::fromUtf8("menuSession"));
     _menu_session->addAction(_action_load);
@@ -65,21 +62,16 @@ FileBar::FileBar(SigSession &session, QWidget *parent) :
 
     _action_open = new QAction(this);
     _action_open->setObjectName(QString::fromUtf8("actionOpen"));
-    connect(_action_open, SIGNAL(triggered()), this, SLOT(on_actionOpen_triggered()));
-
+    
     _action_save = new QAction(this);
     _action_save->setObjectName(QString::fromUtf8("actionSave"));
-    connect(_action_save, SIGNAL(triggered()), this, SIGNAL(on_save()));
-
+     
     _action_export = new QAction(this);
     _action_export->setObjectName(QString::fromUtf8("actionExport"));
-    connect(_action_export, SIGNAL(triggered()), this, SIGNAL(on_export()));
-
-
+     
     _action_capture = new QAction(this);
     _action_capture->setObjectName(QString::fromUtf8("actionCapture"));
-    connect(_action_capture, SIGNAL(triggered()), this, SLOT(on_actionCapture_triggered()));
-
+ 
     _file_button.setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     _file_button.setPopupMode(QToolButton::InstantPopup);
 
@@ -93,6 +85,14 @@ FileBar::FileBar(SigSession &session, QWidget *parent) :
     addWidget(&_file_button);
 
     retranslateUi();
+
+    connect(_action_load, SIGNAL(triggered()), this, SLOT(on_actionLoad_triggered()));
+    connect(_action_store, SIGNAL(triggered()), this, SLOT(on_actionStore_triggered()));
+    connect(_action_default, SIGNAL(triggered()), this, SLOT(on_actionDefault_triggered()));
+    connect(_action_open, SIGNAL(triggered()), this, SLOT(on_actionOpen_triggered()));
+    connect(_action_save, SIGNAL(triggered()), this, SIGNAL(on_save()));
+    connect(_action_export, SIGNAL(triggered()), this, SIGNAL(on_export()));
+    connect(_action_capture, SIGNAL(triggered()), this, SLOT(on_actionCapture_triggered()));
 }
 
 void FileBar::changeEvent(QEvent *event)

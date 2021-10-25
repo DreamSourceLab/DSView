@@ -109,6 +109,9 @@ MainWindow::MainWindow(DeviceManager &device_manager,
     _msg(NULL)
 {
 	setup_ui();
+
+    setContextMenuPolicy(Qt::NoContextMenu);
+
 	if (open_file_name) {
         qDebug("Open file: %s", open_file_name);
         const QString s(QString::fromUtf8(open_file_name));
@@ -119,7 +122,7 @@ MainWindow::MainWindow(DeviceManager &device_manager,
 }
 
 void MainWindow::setup_ui()
-{
+{ 
 	setObjectName(QString::fromUtf8("MainWindow"));
     setContentsMargins(0,0,0,0);
     layout()->setMargin(0);
@@ -141,34 +144,7 @@ void MainWindow::setup_ui()
     _file_bar->setObjectName("file_bar");
     _logo_bar = new toolbars::LogoBar(_session, this);
     _logo_bar->setObjectName("logo_bar");
-
-    connect(_trig_bar, SIGNAL(on_protocol(bool)), this,
-            SLOT(on_protocol(bool)));
-    connect(_trig_bar, SIGNAL(on_trigger(bool)), this,
-            SLOT(on_trigger(bool)));
-    connect(_trig_bar, SIGNAL(on_measure(bool)), this,
-            SLOT(on_measure(bool)));
-    connect(_trig_bar, SIGNAL(on_search(bool)), this,
-            SLOT(on_search(bool)));
-    connect(_trig_bar, SIGNAL(setTheme(QString)), this,
-            SLOT(switchTheme(QString)));
-    connect(_file_bar, SIGNAL(load_file(QString)), this,
-            SLOT(load_file(QString)));
-    connect(_file_bar, SIGNAL(on_save()), this,
-            SLOT(on_save()));
-    connect(_file_bar, SIGNAL(on_export()), this,
-            SLOT(on_export()));
-    connect(_file_bar, SIGNAL(on_screenShot()), this,
-            SLOT(on_screenShot()), Qt::QueuedConnection);
-    connect(_file_bar, SIGNAL(load_session(QString)), this,
-            SLOT(load_session(QString)));
-    connect(_file_bar, SIGNAL(store_session(QString)), this,
-            SLOT(store_session(QString)));
-    connect(_logo_bar, SIGNAL(setLanguage(int)), this,
-            SLOT(switchLanguage(int)));
-    connect(_logo_bar, SIGNAL(openDoc()), this,
-            SLOT(openDoc()));
-
+ 
     // trigger dock
     _trigger_dock=new QDockWidget(tr("Trigger Setting..."),this);
     _trigger_dock->setObjectName("trigger_dock");
@@ -190,28 +166,7 @@ void MainWindow::setup_ui()
     // Setup _view widget
     _view = new pv::view::View(_session, _sampling_bar, this);
     _vertical_layout->addWidget(_view);
-
-    connect(_sampling_bar, SIGNAL(device_selected()), this,
-            SLOT(update_device_list()));
-    connect(_sampling_bar, SIGNAL(device_updated()), this,
-        SLOT(reload()));
-    connect(_sampling_bar, SIGNAL(run_stop()), this,
-        SLOT(run_stop()));
-    connect(_sampling_bar, SIGNAL(instant_stop()), this,
-        SLOT(instant_stop()));
-    connect(_sampling_bar, SIGNAL(duration_changed()), _trigger_widget,
-        SLOT(device_updated()));
-    connect(_sampling_bar, SIGNAL(duration_changed()), _view,
-        SLOT(timebase_changed()));
-    connect(_sampling_bar, SIGNAL(show_calibration()), _view,
-        SLOT(show_calibration()));
-    connect(_trig_bar, SIGNAL(show_lissajous(bool)), _view,
-        SLOT(show_lissajous(bool)));
-    connect(_dso_trigger_widget, SIGNAL(set_trig_pos(int)), _view,
-        SLOT(set_trig_pos(int)));
-    connect(_view, SIGNAL(auto_trig(int)), _dso_trigger_widget,
-        SLOT(auto_trig(int)));
-
+ 
     setIconSize(QSize(40,40));
     addToolBar(_sampling_bar);
     addToolBar(_trig_bar);
@@ -230,8 +185,7 @@ void MainWindow::setup_ui()
     _protocol_widget = new dock::ProtocolDock(_protocol_dock, *_view, _session);
     _protocol_dock->setWidget(_protocol_widget);
     qDebug() << "Protocol decoder enabled!\n";
-
-    connect(_protocol_widget, SIGNAL(protocol_updated()), _view, SLOT(signals_changed()));
+ 
 #endif
     // measure dock
     _measure_dock=new QDockWidget(tr("Measurement"),this);
@@ -265,35 +219,6 @@ void MainWindow::setup_ui()
     std::string std_title = title.toStdString();
     setWindowTitle(QApplication::translate("MainWindow", std_title.c_str(), 0));
 
-	// Setup _session events
-	connect(&_session, SIGNAL(capture_state_changed(int)), this,
-		SLOT(capture_state_changed(int)));
-    connect(&_session, SIGNAL(device_attach()), this,
-            SLOT(device_attach()), Qt::QueuedConnection);
-    connect(&_session, SIGNAL(device_detach()), this,
-            SLOT(device_detach()), Qt::QueuedConnection);
-    connect(&_session, SIGNAL(session_error()), this,
-            SLOT(show_error()), Qt::QueuedConnection);
-    connect(&_session, SIGNAL(session_save()), this,
-            SLOT(session_save()));
-    connect(&_session, SIGNAL(data_updated()), _measure_widget,
-            SLOT(reCalc()));
-    connect(&_session, SIGNAL(repeat_resume()), this,
-            SLOT(repeat_resume()));
-    connect(&_session, SIGNAL(update_capture()), _view,
-            SLOT(update_hori_res()), Qt::DirectConnection);
-
-    connect(&_session, SIGNAL(cur_snap_samplerate_changed()), _measure_widget,
-            SLOT(cursor_update()));
-    connect(_view, SIGNAL(cursor_update()), _measure_widget,
-            SLOT(cursor_update()));
-    connect(_view, SIGNAL(cursor_moving()), _measure_widget,
-            SLOT(cursor_moving()));
-    connect(_view, SIGNAL(cursor_moved()), _measure_widget,
-            SLOT(reCalc()));
-    connect(_view, SIGNAL(prgRate(int)), this, SIGNAL(prgRate(int)));
-    connect(_view, SIGNAL(device_changed(bool)),
-            this, SLOT(device_changed(bool)), Qt::DirectConnection);
 
     // event filter
     _view->installEventFilter(this);
@@ -330,6 +255,53 @@ void MainWindow::setup_ui()
                                              QString(tr("Hotplug failed")), _1));
 
     retranslateUi();
+
+
+	// Setup _session events
+    connect(&_session, SIGNAL(capture_state_changed(int)), this, SLOT(capture_state_changed(int)));
+    connect(&_session, SIGNAL(device_attach()), this, SLOT(device_attach()), Qt::QueuedConnection);
+    connect(&_session, SIGNAL(device_detach()), this, SLOT(device_detach()), Qt::QueuedConnection);
+    connect(&_session, SIGNAL(session_error()), this, SLOT(show_error()), Qt::QueuedConnection);
+    connect(&_session, SIGNAL(session_save()), this, SLOT(session_save()));
+    connect(&_session, SIGNAL(data_updated()), _measure_widget, SLOT(reCalc()));
+    connect(&_session, SIGNAL(repeat_resume()), this, SLOT(repeat_resume()));
+    connect(&_session, SIGNAL(update_capture()), _view, SLOT(update_hori_res()), Qt::DirectConnection);
+    connect(&_session, SIGNAL(cur_snap_samplerate_changed()), _measure_widget, SLOT(cursor_update()));
+    connect(_view, SIGNAL(cursor_update()), _measure_widget, SLOT(cursor_update()));
+    connect(_view, SIGNAL(cursor_moving()), _measure_widget, SLOT(cursor_moving()));
+    connect(_view, SIGNAL(cursor_moved()), _measure_widget, SLOT(reCalc()));
+    connect(_view, SIGNAL(prgRate(int)), this, SIGNAL(prgRate(int)));
+    connect(_view, SIGNAL(device_changed(bool)), this, SLOT(device_changed(bool)), Qt::DirectConnection);
+
+    //tool bar event
+    connect(_trig_bar, SIGNAL(on_protocol(bool)), this, SLOT(on_protocol(bool)));
+    connect(_trig_bar, SIGNAL(on_trigger(bool)), this, SLOT(on_trigger(bool)));
+    connect(_trig_bar, SIGNAL(on_measure(bool)), this, SLOT(on_measure(bool)));
+    connect(_trig_bar, SIGNAL(on_search(bool)), this, SLOT(on_search(bool)));
+    connect(_trig_bar, SIGNAL(setTheme(QString)), this, SLOT(switchTheme(QString)));
+    connect(_file_bar, SIGNAL(load_file(QString)), this, SLOT(load_file(QString)));
+    connect(_file_bar, SIGNAL(on_save()), this, SLOT(on_save()));
+    connect(_file_bar, SIGNAL(on_export()), this, SLOT(on_export()));
+    connect(_file_bar, SIGNAL(on_screenShot()), this, SLOT(on_screenShot()), Qt::QueuedConnection);
+    connect(_file_bar, SIGNAL(load_session(QString)), this, SLOT(load_session(QString)));
+    connect(_file_bar, SIGNAL(store_session(QString)), this, SLOT(store_session(QString)));
+    connect(_logo_bar, SIGNAL(setLanguage(int)), this, SLOT(switchLanguage(int)));
+    connect(_logo_bar, SIGNAL(openDoc()), this, SLOT(openDoc()));
+
+#ifdef ENABLE_DECODE
+    connect(_protocol_widget, SIGNAL(protocol_updated()), _view, SLOT(signals_changed()));
+#endif
+
+    connect(_sampling_bar, SIGNAL(device_selected()), this, SLOT(update_device_list()));
+    connect(_sampling_bar, SIGNAL(device_updated()), this, SLOT(reload()));
+    connect(_sampling_bar, SIGNAL(run_stop()), this, SLOT(run_stop()));
+    connect(_sampling_bar, SIGNAL(instant_stop()), this, SLOT(instant_stop()));
+    connect(_sampling_bar, SIGNAL(duration_changed()), _trigger_widget, SLOT(device_updated()));
+    connect(_sampling_bar, SIGNAL(duration_changed()), _view, SLOT(timebase_changed()));
+    connect(_sampling_bar, SIGNAL(show_calibration()), _view, SLOT(show_calibration()));
+    connect(_trig_bar, SIGNAL(show_lissajous(bool)), _view, SLOT(show_lissajous(bool)));
+    connect(_dso_trigger_widget, SIGNAL(set_trig_pos(int)), _view, SLOT(set_trig_pos(int)));
+    connect(_view, SIGNAL(auto_trig(int)), _dso_trigger_widget, SLOT(auto_trig(int)));
 }
 
 
