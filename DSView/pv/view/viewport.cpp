@@ -764,7 +764,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
             if (_view.session().get_device()->dev_inst()->mode == LOGIC &&
                 _view.session().get_capture_state() == SigSession::Stopped) {
                 //priority 1
-                //try to quick scroll view
+                //try to quick scroll view...
                 if (_action_type == NO_ACTION && AppConfig::Instance()._appOptions.quickScroll) {
                     const double strength = _drag_strength*DragTimerInterval*1.0/_elapsed_time.elapsed();
                     if (_elapsed_time.elapsed() < 200 &&
