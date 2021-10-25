@@ -59,6 +59,7 @@ DSDialog::DSDialog(QWidget *parent, bool hasClose, bool bBaseButton) :
     _base_button = NULL;
 
     m_callback = NULL; 
+    _clickYes = false;
     
     setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
     setAttribute(Qt::WA_TranslucentBackground);
@@ -80,9 +81,11 @@ void DSDialog::accept()
 {
     using namespace Qt;
 
+    _clickYes = true;
     if (m_callback){
         m_callback->OnDlgResult(true);
     }
+
 
     QDialog::accept();
 }
@@ -90,9 +93,11 @@ void DSDialog::accept()
 void DSDialog::reject()
 {
     using namespace Qt;
+    _clickYes = false;
+
     if (m_callback){
         m_callback->OnDlgResult(false);
-    }
+    } 
 
     QDialog::reject();
 }
@@ -114,7 +119,8 @@ int DSDialog::exec()
       //ok,cancel
     if (m_bBaseButton){
         _base_button = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,Qt::Horizontal, this);
-        _main_layout->addWidget(_base_button);//, 5, 1, 1, 1, Qt::AlignHCenter | Qt::AlignBottom);
+         _main_layout->addWidget(_base_button);//, 5, 1, 1, 1, Qt::AlignHCenter | Qt::AlignBottom);
+        //_main_layout->addWidget(_base_button,0, Qt::AlignHCenter | Qt::AlignBottom);
         connect(_base_button, SIGNAL(rejected()), this, SLOT(reject()));
         connect(_base_button, SIGNAL(accepted()), this, SLOT(accept()));
     }
@@ -142,6 +148,9 @@ void DSDialog::build_base(bool hasClose)
     _main_layout->addWidget(_titlebar);  
     _base_layout->addWidget(_main_widget);
     setLayout(_base_layout);  
+
+    _main_layout->setAlignment(Qt::AlignCenter | Qt::AlignTop);
+  
 } 
 
 } // namespace dialogs

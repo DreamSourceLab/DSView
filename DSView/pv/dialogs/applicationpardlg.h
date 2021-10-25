@@ -23,14 +23,13 @@
 
 #include <QObject>
 #include <QWidget> 
-#include "../interface/uicallback.h"
 
 namespace pv
 {
  namespace dialogs
 {
 
-    class ApplicationParamDlg : private IDlgCallback
+    class ApplicationParamDlg 
     {
        // Q_OBJECT
 
@@ -44,8 +43,7 @@ namespace pv
     private:
         void OnDlgResult(bool bYes);
 
-    private:
-        bool  m_ret; 
+ 
     };
 
 }//

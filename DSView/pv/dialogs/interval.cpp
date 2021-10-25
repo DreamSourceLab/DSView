@@ -32,6 +32,11 @@ Interval::Interval(SigSession &session, QWidget *parent) :
     _button_box(QDialogButtonBox::Ok,
         Qt::Horizontal, this)
 {
+    _interval_label = NULL;
+    _interval_spinBox = NULL;
+    _interval_slider = NULL;
+
+
     setMinimumWidth(300);
     _interval_label = new QLabel(tr("Interval(s): "), this);
     _interval_spinBox = new QSpinBox(this);

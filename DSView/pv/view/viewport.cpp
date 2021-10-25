@@ -37,11 +37,11 @@
 
 #include <QMouseEvent>
 #include <QStyleOption>
-#include <QPainterPath>
-
-#include <math.h>
-
+#include <QPainterPath> 
+#include <math.h> 
 #include <boost/foreach.hpp>
+
+#include "../config/appconfig.h"
 
 using namespace boost;
 using namespace std;
@@ -91,24 +91,20 @@ Viewport::Viewport(View &parent, View_type type) :
     // drag inertial
     _drag_strength = 0;
     _drag_timer.setSingleShot(true);
-
-    connect(&trigger_timer, SIGNAL(timeout()),
-            this, SLOT(on_trigger_timer()));
-    connect(&_drag_timer, SIGNAL(timeout()),
-            this, SLOT(on_drag_timer()));
-
-    connect(&_view.session(), &SigSession::receive_data,
-            this, &Viewport::set_receive_len);
-
+ 
     _cmenu = new QMenu(this);
     QAction *yAction = _cmenu->addAction(tr("Add Y-cursor"));
     QAction *xAction = _cmenu->addAction(tr("Add X-cursor"));
+ 
+    setContextMenuPolicy(Qt::CustomContextMenu);
+
+    connect(&trigger_timer, SIGNAL(timeout()),this, SLOT(on_trigger_timer()));
+    connect(&_drag_timer, SIGNAL(timeout()),this, SLOT(on_drag_timer()));
+    connect(&_view.session(), &SigSession::receive_data, this, &Viewport::set_receive_len);
+
     connect(yAction, SIGNAL(triggered(bool)), this, SLOT(add_cursor_y()));
     connect(xAction, SIGNAL(triggered(bool)), this, SLOT(add_cursor_x()));
-
-    setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(this, SIGNAL(customContextMenuRequested(const QPoint&)),
-            this, SLOT(show_contextmenu(const QPoint&)));
+    connect(this, SIGNAL(customContextMenuRequested(const QPoint&)),this, SLOT(show_contextmenu(const QPoint&)));
 }
 
 int Viewport::get_total_height() const
@@ -757,14 +753,19 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
 void Viewport::mouseReleaseEvent(QMouseEvent *event)
 {
     assert(event);
-
-    if (_type == TIME_VIEW) {
+    
+    if (_type != TIME_VIEW){
+        update();
+        return;
+    }
+  
         if ((_action_type == NO_ACTION) &&
             (event->button() == Qt::LeftButton)) {
             if (_view.session().get_device()->dev_inst()->mode == LOGIC &&
                 _view.session().get_capture_state() == SigSession::Stopped) {
-                // priority 1
-                if (_action_type == NO_ACTION) {
+                //priority 1
+                //try to quick scroll view
+                if (_action_type == NO_ACTION && AppConfig::Instance()._appOptions.quickScroll) {
                     const double strength = _drag_strength*DragTimerInterval*1.0/_elapsed_time.elapsed();
                     if (_elapsed_time.elapsed() < 200 &&
                         abs(_drag_strength) < MinorDragOffsetUp &&
@@ -936,7 +937,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
             }
             _action_type = NO_ACTION;
         }
-    }
+    
     update();
 }
 
@@ -1621,7 +1622,7 @@ void Viewport::on_trigger_timer()
 }
 
 void Viewport::on_drag_timer()
-{
+{   
     const int64_t offset = _view.offset();
     const double scale = _view.scale();
     if (_view.session().get_capture_state() == SigSession::Stopped &&

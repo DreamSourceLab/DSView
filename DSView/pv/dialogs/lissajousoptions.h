@@ -73,10 +73,11 @@ private:
     QGroupBox *_x_group;
     QGroupBox *_y_group;
     QSlider *_percent;
+    QGridLayout *_layout;
+
     QVector<QRadioButton *> _x_radio;
     QVector<QRadioButton *> _y_radio;
-    QDialogButtonBox _button_box;
-    QGridLayout *_layout;
+    QDialogButtonBox _button_box;  
 };
 
 } // namespace dialogs

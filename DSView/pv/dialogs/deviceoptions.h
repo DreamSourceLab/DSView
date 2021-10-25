@@ -57,6 +57,8 @@ class DeviceOptions : public DSDialog
 public:
     DeviceOptions(QWidget *parent, boost::shared_ptr<pv::device::DevInst> dev_inst);
 
+    ~DeviceOptions();
+
 protected:
 	void accept();
     void reject();
@@ -84,8 +86,7 @@ private slots:
 
 private:
     boost::shared_ptr<pv::device::DevInst>  _dev_inst;
-	QVBoxLayout _layout;
-    toolbars::TitleBar *_titlebar;
+	QVBoxLayout _layout; 
 
     QGroupBox *_dynamic_box;
     QGridLayout _dynamic_layout;

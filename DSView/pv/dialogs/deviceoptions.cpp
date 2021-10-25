@@ -30,10 +30,11 @@
 
 #include "dsmessagebox.h"
 #include <pv/prop/property.h>
+#include "../dsvdef.h"
 
 using namespace boost;
 using namespace std;
-
+ 
 namespace pv {
 namespace dialogs {
 
@@ -43,6 +44,11 @@ DeviceOptions::DeviceOptions(QWidget *parent, boost::shared_ptr<pv::device::DevI
     _button_box(QDialogButtonBox::Ok, Qt::Horizontal, this),
     _device_options_binding(_dev_inst->dev_inst())
 {
+     _dynamic_box = NULL;
+     _props_box = NULL;
+     _config_button = NULL;
+     _cali_button = NULL;
+
     _props_box = new QGroupBox(tr("Mode"), this);
     _props_box->setLayout(get_property_form(_props_box));
     _layout.addWidget(_props_box);
@@ -71,6 +77,13 @@ DeviceOptions::DeviceOptions(QWidget *parent, boost::shared_ptr<pv::device::DevI
     connect(&_mode_check, SIGNAL(timeout()), this, SLOT(mode_check()));
     _mode_check.setInterval(100);
     _mode_check.start();
+}
+
+DeviceOptions::~DeviceOptions(){
+    DESTROY_QT_OBJECT(_dynamic_box);
+    DESTROY_QT_OBJECT(_props_box);
+    DESTROY_QT_OBJECT(_config_button);
+    DESTROY_QT_OBJECT(_cali_button);
 }
 
 void DeviceOptions::accept()

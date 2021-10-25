@@ -56,6 +56,7 @@ public:
     void setTitle(QString title);
     void reload(); 
     int exec();
+    inline bool IsClickYes(){return _clickYes;}
 
 protected:
     void accept();
@@ -74,6 +75,7 @@ private:
    
     QPoint              _startPos; 
     bool                 m_bBaseButton; 
+    bool                _clickYes;
 
     IDlgCallback        *m_callback;
 };

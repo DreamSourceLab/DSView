@@ -33,6 +33,7 @@
 
 #include <boost/foreach.hpp>
 
+
 using namespace boost;
 using namespace std;
 using namespace pv::view;
@@ -46,6 +47,12 @@ LissajousOptions::LissajousOptions(SigSession &session, QWidget *parent) :
     _button_box(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
         Qt::Horizontal, this)
 {
+    _enable = NULL;
+    _x_group = NULL;
+    _y_group = NULL;
+    _percent = NULL;
+    _layout = NULL;
+
     setMinimumSize(300, 300);
 
     _enable = new QCheckBox(this);

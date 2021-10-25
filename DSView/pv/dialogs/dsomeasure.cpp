@@ -31,6 +31,7 @@
 #include <QBitmap>
 
 #include <boost/foreach.hpp>
+#include "../dsvdef.h"
 
 using namespace boost;
 using namespace std;
@@ -48,6 +49,8 @@ DsoMeasure::DsoMeasure(SigSession &session, View &parent,
     _button_box(QDialogButtonBox::Reset | QDialogButtonBox::Cancel,
         Qt::Horizontal, this)
 {
+    _measure_tab = NULL;
+
     setMinimumSize(500, 400);
 
     _measure_tab = new QTabWidget(this);
@@ -79,6 +82,10 @@ DsoMeasure::DsoMeasure(SigSession &session, View &parent,
     connect(_session.get_device().get(), SIGNAL(device_updated()), this, SLOT(reject()));
 }
 
+DsoMeasure::~DsoMeasure(){
+    DESTROY_QT_OBJECT(_measure_tab);
+}
+
 void DsoMeasure::add_measure(QWidget *widget, const boost::shared_ptr<view::DsoSignal> dsoSig)
 {
     const int Column = 5;
@@ -86,6 +93,7 @@ void DsoMeasure::add_measure(QWidget *widget, const boost::shared_ptr<view::DsoS
     QGridLayout *layout = new QGridLayout(widget);
     layout->setMargin(0);
     layout->setSpacing(0);
+    
     for (int i=DSO_MS_BEGIN+1; i<DSO_MS_END; i++) {
         QToolButton *button = new QToolButton(this);
         button->setProperty("id", QVariant(i));

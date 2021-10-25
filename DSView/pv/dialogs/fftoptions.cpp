@@ -34,7 +34,7 @@
 
 using namespace boost;
 using namespace std;
-
+ 
 namespace pv {
 namespace dialogs {
 
@@ -44,6 +44,18 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
     _button_box(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
         Qt::Horizontal, this)
 {
+    _len_combobox = NULL;
+    _interval_combobox = NULL;
+    _en_checkbox = NULL;
+    _ch_combobox = NULL;
+    _window_combobox = NULL;
+    _dc_checkbox = NULL;
+    _view_combobox = NULL;
+    _dbv_combobox = NULL;
+    _hint_label = NULL;
+    _glayout = NULL;
+    _layout = NULL;
+
     _en_checkbox = new QCheckBox(this);
     _len_combobox = new QComboBox(this);
     _interval_combobox = new QComboBox(this);
@@ -173,7 +185,7 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
     QPixmap pixmap(hint_pic);
     _hint_label->setPixmap(pixmap);
 
-    _glayout = new QGridLayout();
+    _glayout = new QGridLayout();  //QGridLayout
     _glayout->setVerticalSpacing(5);
     _glayout->addWidget(new QLabel(tr("FFT Enable: "), this), 0, 0);
     _glayout->addWidget(_en_checkbox, 0, 1);
@@ -206,6 +218,10 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
     connect(_window_combobox, SIGNAL(currentIndexChanged(QString)), this, SLOT(window_changed(QString)));
     connect(_len_combobox, SIGNAL(currentIndexChanged(int)), this, SLOT(len_changed(int)));
     connect(_session.get_device().get(), SIGNAL(device_updated()), this, SLOT(reject()));
+}
+
+FftOptions::~FftOptions(){
+
 }
 
 void FftOptions::accept()

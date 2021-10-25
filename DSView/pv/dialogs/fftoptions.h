@@ -52,6 +52,8 @@ private:
 public:
     FftOptions(QWidget *parent, SigSession &session);
 
+    ~FftOptions();
+
 protected:
     void accept();
     void reject();
@@ -63,8 +65,7 @@ private slots:
 private:
     SigSession &_session;
     uint64_t _sample_limit;
-
-    toolbars::TitleBar *_titlebar;
+ 
     QComboBox *_len_combobox;
     QComboBox *_interval_combobox;
     QCheckBox *_en_checkbox;

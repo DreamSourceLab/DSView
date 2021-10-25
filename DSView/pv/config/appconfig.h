@@ -26,13 +26,7 @@
 #include <vector>
 
 using namespace std;
-
-struct app_status{
-
-
-};
-
-
+  
 class StringPair
 {
 public:
@@ -41,13 +35,12 @@ public:
    string m_value;
 };
 
-class config_data
-{
-  public:
-
-    
+struct AppOptions
+{  
+    bool  quickScroll;    
 };
 
+  
 class AppConfig
 {
 private:
@@ -63,11 +56,10 @@ public:
   void FromJson(string &json);
 
   void SetProtocolFormat(const string &protocolName, const string &value);
-  string GetProtocolFormat(const string &protocolName);  
+  string GetProtocolFormat(const string &protocolName); 
 
 public:
-  config_data m_data;
-  app_status  m_status;
+  AppOptions _appOptions;
 
 private:
   string m_fileName;

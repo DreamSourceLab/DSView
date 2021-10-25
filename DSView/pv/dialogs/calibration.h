@@ -50,6 +50,7 @@ private:
 
 public:
     Calibration(QWidget *parent);
+    ~Calibration();
 
     void set_device(boost::shared_ptr<pv::device::DevInst> dev_inst);
 protected:
@@ -69,8 +70,7 @@ private slots:
 
 private:
     boost::shared_ptr<pv::device::DevInst>  _dev_inst;
-
-    toolbars::TitleBar *_titlebar;
+ 
     QPushButton *_save_btn;
     QPushButton *_abort_btn;
     QPushButton *_reset_btn;

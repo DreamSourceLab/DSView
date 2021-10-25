@@ -21,6 +21,10 @@
 
 #include "applicationpardlg.h"
 #include "dsdialog.h"
+#include <QFormLayout>
+#include <QCheckBox>
+#include <QString>
+#include "../config/appconfig.h"
 
 namespace pv
 {
@@ -29,7 +33,7 @@ namespace dialogs
 
 ApplicationParamDlg::ApplicationParamDlg()
 {
-    m_ret = false;
+   
 }
 
 ApplicationParamDlg::~ApplicationParamDlg()
@@ -39,14 +43,32 @@ ApplicationParamDlg::~ApplicationParamDlg()
 bool ApplicationParamDlg::ShowDlg(QWidget *parent)
 {
     DSDialog dlg(parent, true, true);
-    dlg.exec();
-    return m_ret;
-}
+    dlg.setMinimumSize(300, 200);
+    QFormLayout &lay = *(new QFormLayout());
+    lay.setContentsMargins(0,20,0,30);
 
-//------------IDlgCallback
-void ApplicationParamDlg::OnDlgResult(bool bYes){
-    m_ret = bYes;
- }
+    //show config
+    AppOptions &_app = AppConfig::Instance()._appOptions;
+
+    QCheckBox *ck_quickScroll = new QCheckBox();
+    ck_quickScroll->setChecked(_app.quickScroll);
+    lay.addRow("Quick scroll", ck_quickScroll);
+    dlg.layout()->addLayout(&lay);  
+     
+    dlg.exec();
+
+    bool ret = dlg.IsClickYes();
+
+    //save config
+    if (ret){
+        _app.quickScroll = ck_quickScroll->isChecked();
+
+        AppConfig::Instance().Save();
+    }
+   
+   return ret;
+}
+ 
 
 } //
 }//

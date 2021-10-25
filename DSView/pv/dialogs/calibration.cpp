@@ -31,6 +31,7 @@
 
 #include "../view/trace.h"
 #include "../dialogs/dsmessagebox.h"
+#include "../dsvdef.h"
 
 using namespace boost;
 using namespace std;
@@ -44,7 +45,13 @@ const QString Calibration::VCOMB = QT_TR_NOOP(" VCOMB");
 
 Calibration::Calibration(QWidget *parent) :
     DSDialog(parent)
-{
+{ 
+    _save_btn = NULL;
+    _abort_btn = NULL;
+    _reset_btn = NULL;
+    _exit_btn = NULL;
+    _flayout = NULL;
+
 #ifdef Q_OS_DARWIN
     Qt::WindowFlags flags = windowFlags();
     this->setWindowFlags(flags | Qt::Tool);
@@ -87,6 +94,14 @@ Calibration::Calibration(QWidget *parent) :
     connect(_exit_btn, SIGNAL(clicked()), this, SLOT(reject()));
 
     retranslateUi();
+}
+
+Calibration::~Calibration(){ 
+    DESTROY_QT_OBJECT(_save_btn);
+    DESTROY_QT_OBJECT(_abort_btn);
+    DESTROY_QT_OBJECT(_reset_btn);
+    DESTROY_QT_OBJECT(_exit_btn);
+    DESTROY_QT_OBJECT(_flayout);
 }
 
 void Calibration::changeEvent(QEvent *event)

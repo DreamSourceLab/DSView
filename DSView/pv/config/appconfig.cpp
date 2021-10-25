@@ -72,7 +72,7 @@ void StringToFormatArray(const QString &str, vector<StringPair> &protocolFormats
 
 AppConfig::AppConfig()
 {
-    
+    _appOptions.quickScroll = true;
 }
 
 AppConfig::~AppConfig()
@@ -135,6 +135,12 @@ bool AppConfig::Save()
       QString  profomats = FormatArrayToString(m_protocolFormats);
       jobj["ProtocolFormats"] = QJsonValue::fromVariant(profomats);
 
+      //application options
+      QJsonObject app; 
+      app["QuickScroll"] = QJsonValue::fromVariant(_appOptions.quickScroll);
+  
+      jobj["Application"] = QJsonValue::fromVariant(app);
+
       QJsonDocument jdoc(jobj);
       QByteArray bytes = jdoc.toJson();
       string json;
@@ -154,6 +160,12 @@ bool AppConfig::Save()
       if (jobj.contains("ProtocolFormats")){
           m_protocolFormats.clear();
           StringToFormatArray(jobj["ProtocolFormats"].toString(), m_protocolFormats);
+      } 
+
+      //application node
+      if (jobj.contains("Application")){
+          QJsonObject app = jobj["Application"].toObject();
+          _appOptions.quickScroll = app["QuickScroll"].toBool();
       } 
   }
 

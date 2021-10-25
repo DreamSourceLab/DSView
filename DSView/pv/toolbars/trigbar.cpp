@@ -316,9 +316,8 @@ void TrigBar::on_actionLissajous_triggered()
 }
 
  void TrigBar::on_application_param(){
-     pv::dialogs::MathOptions math_dlg(_session, this);
-    math_dlg.exec();
-    return;
+   //  pv::dialogs::MathOptions math_dlg(_session, this);  math_dlg.exec();   return;
+    
      pv::dialogs::ApplicationParamDlg dlg;
      dlg.ShowDlg(this);
  }

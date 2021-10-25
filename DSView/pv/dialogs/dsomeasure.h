@@ -49,8 +49,9 @@ class DsoMeasure : public DSDialog
 	Q_OBJECT
 
 public:
-    DsoMeasure(SigSession &session, view::View &parent,
-               unsigned int position, int last_sig_index);
+    DsoMeasure(SigSession &session, view::View &parent, unsigned int position, int last_sig_index);
+
+    ~DsoMeasure();
 
     static QString get_ms_icon(int ms_type);
     static QString get_ms_text(int ms_type);
@@ -70,12 +71,10 @@ private:
     SigSession &_session;
     view::View &_view;
     unsigned int _position;
-
-    toolbars::TitleBar *_titlebar;
+ 
     QDialogButtonBox _button_box;
     QTabWidget *_measure_tab;
-    QVBoxLayout _layout;
-    std::vector<QToolButton *> _mbtn_vec;
+    QVBoxLayout _layout; 
 };
 
 } // namespace dialogs
