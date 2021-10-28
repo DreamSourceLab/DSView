@@ -35,14 +35,16 @@ class Decoder(srd.Decoder):
     annotations = (
         ('data', 'FLP data'),
         ('format', 'format describe'),
+        ('bitd', 'Bit desc'),
         ('bit', 'Bit'),
         ('NLP', 'Normal link pulses'),
     )
     annotation_rows = (
         ('data',  'Data', (0,)),
         ('format',  'Format', (1,)),
-        ('bit', 'Bit', (2,)),
-        ('NLP', 'NLP', (3,)),
+        ('bitd',  'Bit desc', (2,)),
+        ('bit', 'Bit', (3,)),
+        ('NLP', 'NLP', (4,)),
     )
 
     def __init__(self):
@@ -50,12 +52,16 @@ class Decoder(srd.Decoder):
 
     def reset(self):
         self.ss = self.es = 0
-        self.last_ss = self.last_es = 0
+        self.pre_ss = self.pre_es = 0
         self.last_vaild_ss = 0
         self.samplerate = None
         self.samplenum = 0
         self.hex = 0
-
+        self.pre_hex = 0
+        self.index = 0
+        self.data_list = []
+        self.state = 'base page'
+        
     def start(self):
         self.out_python = self.register(srd.OUTPUT_PYTHON)
         self.out_ann = self.register(srd.OUTPUT_ANN)
@@ -66,8 +72,6 @@ class Decoder(srd.Decoder):
             self.samplerate = value
 
     def decode(self):
-        index = 0
-        data_list = []
         while True:
             self.wait({0: 'r'})
             self.ss = self.samplenum
@@ -76,28 +80,141 @@ class Decoder(srd.Decoder):
 
             length = float(self.es - self.ss)/self.samplerate
             if length <= 1.0e-5 and length >= 1.0e-6: # 1us ~ 10us 
-                self.put(self.ss, self.es, self.out_ann, [3, ['NLP']])
+                self.put(self.ss, self.es, self.out_ann, [4, ['NLP']])
                 temp_length = self.ss - self.last_vaild_ss
                 length = float(temp_length)/self.samplerate
                 self.last_vaild_ss = self.ss
                 if length <= 7.0e-5 and length >= 6.0e-5: # 60us ~ 70us
-                    self.put(self.last_ss, self.es, self.out_ann, [2, ['0x1']])
-                    self.hex = self.hex|0x1<<index
-                    data_list.append([self.ss, self.es,self.last_ss,self.last_es])
-                    index = index + 1
+                    self.hex = self.hex|0x1<<self.index
+                    self.data_list.append({'start':self.ss, 
+                                      'end':self.es,
+                                      'Pre start':self.pre_ss, 
+                                      'Pre end':self.pre_es})
+                    self.index = self.index + 1
                     self.last_vaild_ss = 0
                 elif length <= 1.4e-4 and length >= 1.2e-4: # 120us ~ 140us
-                    self.put(self.last_ss, self.es-(temp_length>>1), self.out_ann, [2, ['0x0']])
-                    data_list.append([self.ss-(temp_length>>1), self.es-(temp_length>>1),self.last_ss,self.last_es])
-                    index = index + 1
-                self.last_ss = self.ss
-                self.last_es = self.es
+                    self.data_list.append({'start':self.ss-(temp_length>>1),
+                                      'end':self.es-(temp_length>>1),
+                                      'Pre start':self.pre_ss,
+                                      'Pre end':self.pre_es})
+                    self.index = self.index + 1
+                self.pre_ss = self.ss
+                self.pre_es = self.es
 
-            if index == 16:
-                self.put(data_list[0][2], data_list[15][1], self.out_ann, [0, ["Data:"+str(hex(self.hex))]])
-                self.put(data_list[0][2], data_list[4][1], self.out_ann, [1, ["Selector field:"+str(hex(self.hex&0x1f))]])
-                self.put(data_list[5][2], data_list[12][1], self.out_ann, [1, ["Technology ability field:"+str(hex(((self.hex>>5)&0xff)))]])
-                self.put(data_list[13][2], data_list[15][1], self.out_ann, [1, ["Other fields:"+str(hex(((self.hex>>13)&0x7)))]])
-                data_list = []
-                index = 0
+            if self.index == 16:
+                if self.pre_hex != self.hex:
+                    if self.state == 'base page':
+                        if ((self.hex>>14)&0x3) == 0x3:
+                            self.state = 'base page ack'
+                    elif self.state == 'base page ack':
+                        self.state = 'next page'
+                    elif self.state == 'next page':
+                        if ((self.hex>>14)&0x3) == 0x1:
+                            self.state = 'next page ack'
+                    elif self.state == 'next page ack':
+                        self.state = 'base page'
+                if self.state == 'base page' or self.state == 'base page ack':
+                    base_page_ta_dict = {
+                        5:'10BaseT-HD',
+                        6:'10BaseT-FD',
+                        7:'100BaseTX-HD',
+                        8:'100BaseTX-FD',
+                        9:'100BaseT4',
+                        10:'FC',
+                        11:'AsyFC',
+                        12:'Reserved',
+                        13:'RF',
+                        14:'ACK',
+                        15:'NP',
+                    }
+                    if (self.hex&0x1f) == 0x1:
+                        type_desc = '802.3'
+                    elif (self.hex&0x1f) == 0x2:
+                        type_desc = '802.9'
+                    else:
+                        type_desc = 'unknow'
+                    for i in range(16):
+                        self.put(self.data_list[i]['Pre start'],
+                                 self.data_list[i]['end'], 
+                                 self.out_ann, 
+                                 [3, [str(hex(((self.hex>>i)&0x1)))]])
+                        if i in base_page_ta_dict.keys():
+                            self.put(self.data_list[i]['Pre start'],
+                                     self.data_list[i]['end'], 
+                                     self.out_ann, 
+                                     [2, [base_page_ta_dict[i]]])
+                    self.put(self.data_list[0]['Pre start'],
+                            self.data_list[15]['end'],
+                            self.out_ann,
+                            [0, ["base page:"+str(hex(self.hex))]])
+                    self.put(self.data_list[0]['Pre start'], 
+                            self.data_list[4]['end'], 
+                            self.out_ann, 
+                            [1, ["Selector field:"+str(hex(self.hex&0x1f))]])
+                    self.put(self.data_list[0]['Pre start'], 
+                            self.data_list[4]['end'], 
+                            self.out_ann, 
+                            [2, [type_desc]])
+                    self.put(self.data_list[5]['Pre start'],
+                            self.data_list[12]['end'], 
+                            self.out_ann, 
+                            [1, ["Technology ability field:"+str(hex(((self.hex>>5)&0xff)))]])
+                    self.put(self.data_list[13]['Pre start'],
+                            self.data_list[15]['end'], 
+                            self.out_ann, 
+                            [1, ["Other fields:"+str(hex(((self.hex>>13)&0x7)))]])
+                elif self.state == 'next page' or self.state == 'next page ack':
+                    next_page_ta_dict = {
+                        0:'1000BaseT M/S CFG EN',
+                        1:'1000BaseT M/S CFG Vale',
+                        2:'Port type',
+                        3:'1000BaseT-FD',
+                        4:'1000BaseT-HD',
+                        5:'10GBaseT-FD',
+                        6:'10GBaseT M/S CFG EN',
+                        7:'10GBaseT M/S CFG Vale',
+                        8:'Reserved',
+                        9:'Reserved',
+                        10:'Reserved',
+                        11:'T',
+                        12:'ACK2',
+                        13:'MP',
+                        14:'ACK',
+                        15:'NP',
+                    }
+                    if ((self.hex>>13)&0x1) == 0x1:
+                        mp = "Technology ability field:"
+                    else :
+                        mp = "Unformatted code field:"
+                    for i in range(16):
+                        self.put(self.data_list[i]['Pre start'],
+                                self.data_list[i]['end'], 
+                                self.out_ann, 
+                                [3, [str(hex(((self.hex>>i)&0x1)))]])
+                        if i in [11,12,13,14,15] or mp == "Technology ability field:":
+                            if i in next_page_ta_dict.keys():
+                                self.put(self.data_list[i]['Pre start'],
+                                        self.data_list[i]['end'], 
+                                        self.out_ann, 
+                                        [2, [next_page_ta_dict[i]]])
+                    self.put(self.data_list[0]['Pre start'],
+                             self.data_list[15]['end'],
+                             self.out_ann,
+                             [0, ["next page:"+str(hex(self.hex))]])
+                    self.put(self.data_list[0]['Pre start'], 
+                            self.data_list[10]['end'], 
+                            self.out_ann, 
+                            [1, [mp+str(hex((self.hex&0x7ff)))]])
+                    if mp == "Unformatted code field:":
+                        self.put(self.data_list[0]['Pre start'], 
+                                 self.data_list[10]['end'], 
+                                 self.out_ann,
+                                 [2, ["Master-Slave seed value (MSB)"]])
+                    self.put(self.data_list[11]['Pre start'],
+                            self.data_list[15]['end'], 
+                            self.out_ann, 
+                            [1, ["Other fields:"+str(hex(((self.hex>>11)&0x1f)))]])
+                self.pre_hex = self.hex
+                self.data_list = []
+                self.index = 0
                 self.hex = 0
