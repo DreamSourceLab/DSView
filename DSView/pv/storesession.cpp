@@ -43,6 +43,7 @@
 #include <boost/foreach.hpp>
  
 #include <QFileDialog>
+#include <QDir>
 
 #include "config/appconfig.h"
 
@@ -137,8 +138,14 @@ QList<QString> StoreSession::getSuportedExportFormats(){
     return list;
 }
 
-bool StoreSession::save_start(QString session_file)
+bool StoreSession::save_start()
 {
+    if (_sessionFile == "")
+    {
+        _error = tr("No set session file name.");
+        return false;
+    }
+
     std::set<int> type_set;
     BOOST_FOREACH(const boost::shared_ptr<view::Signal> sig, _session.get_signals()) {
         assert(sig);
@@ -149,8 +156,14 @@ bool StoreSession::save_start(QString session_file)
         _error = tr("DSView does not currently support"
                     "file saving for multiple data types.");
         return false;
+
     } else if (type_set.size() == 0) {
         _error = tr("No data to save.");
+        return false;
+    }
+
+    if (_file_name == ""){
+        _error = tr("No set file name.");
         return false;
     }
 
@@ -161,56 +174,12 @@ bool StoreSession::save_start(QString session_file)
         _error = tr("No data to save.");
         return false;
     }
- 
 
-    //root dir 
-    QString default_name;
+    QString meta_file = meta_gen(snapshot);
 
-    AppConfig &app = AppConfig::Instance(); 
-    if (app._userHistory.saveDir != "")
-    {
-        default_name = app._userHistory.saveDir + "/"  + _session.get_device()->name() + "-";
-    } 
-    else{
-        default_name =  _session.get_device()->name() + "-";
-    } 
+    QString decoders_file = decoders_gen();
 
-    for (const GSList *l = _session.get_device()->get_dev_mode_list();
-         l; l = l->next) {
-        const sr_dev_mode *mode = (const sr_dev_mode *)l->data;
-        if (_session.get_device()->dev_inst()->mode == mode->mode) {
-            default_name += mode->acronym;
-            break;
-        }
-    }
-
-    default_name += _session.get_session_time().toString("-yyMMdd-hhmmss");
-
-    // Show the dialog
-    QString svFilePath = QFileDialog::getSaveFileName(
-                    NULL, 
-                    tr("Save File"), 
-                    default_name,
-                    tr("DSView Data (*.dsl)"));
-
-    if (!svFilePath.isEmpty()) {
-        QFileInfo f(svFilePath);
-        if(f.suffix().compare("dsl"))
-            svFilePath.append(tr(".dsl"));
-
-        _file_name =  svFilePath;  
-        svFilePath = GetDirectoryName(svFilePath);
-
-        if (svFilePath != app._userHistory.saveDir){
-           app._userHistory.saveDir = svFilePath; 
-            app.SaveHistory();
-        }     
-
-        QString meta_file = meta_gen(snapshot);
-   
-        QString decoders_file = decoders_gen();
-
-       /*
+    /*
         if (meta_file == NULL) {
             _error = tr("Generate temp file failed.");
         } else {
@@ -227,20 +196,20 @@ bool StoreSession::save_start(QString session_file)
         }
         */
 
-            //make zip file
-        if (meta_file != NULL && m_zipDoc.CreateNew(_file_name.toUtf8().data(), false))
+    //make zip file
+    if (meta_file != NULL && m_zipDoc.CreateNew(_file_name.toUtf8().data(), false))
+    {
+        if (!m_zipDoc.AddFromFile(meta_file.toUtf8().data(), "header") 
+        || !m_zipDoc.AddFromFile(decoders_file.toUtf8().data(), "decoders") 
+        || !m_zipDoc.AddFromFile(_sessionFile.toUtf8().data(), "session"))
         {
-            if (   !m_zipDoc.AddFromFile(meta_file.toUtf8().data(), "header")
-                || !m_zipDoc.AddFromFile(decoders_file.toUtf8().data(), "decoders")
-                || !m_zipDoc.AddFromFile(session_file.toUtf8().data(), "session"))
-                {
-                        _has_error = true;
-                        _error = m_zipDoc.GetError();
-                }
-                else{
-                        _thread = boost::thread(&StoreSession::save_proc, this, snapshot);
-                        return !_has_error;
-                }        
+            _has_error = true;
+            _error = m_zipDoc.GetError();
+        }
+        else
+        {
+            _thread = boost::thread(&StoreSession::save_proc, this, snapshot);
+            return !_has_error;
         }
     }
 
@@ -611,75 +580,37 @@ bool StoreSession::export_start()
         return false;
     }
 
-    AppConfig &app = AppConfig::Instance(); 
- 
-    QString default_name;
-    if (app._userHistory.exportDir != "")
-    {
-       default_name = app._userHistory.exportDir  + "/"  + _session.get_device()->name() + "-";
-    } 
-    else{
-        default_name =  _session.get_device()->name() + "-";
-    }  
+    if (_file_name == ""){
+        _error = tr("No set file name.");
+        return false;
+    }
 
-    for (const GSList *l = _session.get_device()->get_dev_mode_list();
-         l; l = l->next) {
-        const sr_dev_mode *mode = (const sr_dev_mode *)l->data;
-        if (_session.get_device()->dev_inst()->mode == mode->mode) {
-            default_name += mode->acronym;
+    //set export all data flag
+    AppConfig &app = AppConfig::Instance();
+    int flag = app._appOptions.originalData ? 1 : 0;
+    sr_set_export_original_data(flag);
+
+    const struct sr_output_module **supportedModules = sr_output_list();
+    while (*supportedModules)
+    {
+        if (*supportedModules == NULL)
+            break;
+        if (!strcmp((*supportedModules)->id, _suffix.toUtf8().data()))
+        {
+            _outModule = *supportedModules;
             break;
         }
-    }
-    default_name += _session.get_session_time().toString("-yyMMdd-hhmmss");
-
-    // Show the dialog
-    QList<QString> supportedFormats = getSuportedExportFormats();
-    QString filter;
-    for(int i = 0; i < supportedFormats.count();i++){
-        filter.append(supportedFormats[i]);
-        if(i < supportedFormats.count() - 1)
-            filter.append(";;");
+        supportedModules++;
     }
 
-    QString svFilePath = QFileDialog::getSaveFileName(
-                NULL, 
-                tr("Export Data"), 
-                default_name,
-                filter,
-                &filter);
-
-    if (!svFilePath.isEmpty()) {
-        QFileInfo f(_file_name);
-        QStringList list = filter.split('.').last().split(')');
-        _suffix = list.first();
-        if(f.suffix().compare(_suffix))
-            svFilePath += tr(".") + _suffix;
-
-         _file_name =  svFilePath;  
-        svFilePath = GetDirectoryName(svFilePath);
-
-        if (svFilePath != app._userHistory.exportDir ){
-            app._userHistory.exportDir  = svFilePath;
-            app.SaveHistory();
-        }      
-
-        const struct sr_output_module** supportedModules = sr_output_list();
-        while(*supportedModules){
-            if(*supportedModules == NULL)
-                break;
-            if(!strcmp((*supportedModules)->id, _suffix.toUtf8().data())){
-                _outModule = *supportedModules;
-                break;
-            }
-            supportedModules++;
-        }
-
-        if(_outModule == NULL) {
-            _error = tr("Invalid export format.");
-        } else {
-            _thread = boost::thread(&StoreSession::export_proc, this, snapshot);
-            return !_has_error;
-        }
+    if (_outModule == NULL)
+    {
+        _error = tr("Invalid export format.");
+    }
+    else
+    {
+        _thread = boost::thread(&StoreSession::export_proc, this, snapshot);
+        return !_has_error;
     }
 
     _error.clear();
@@ -1190,6 +1121,167 @@ double StoreSession::get_integer(GVariant *var)
         assert(0);
 
     return val;
+}
+
+QString StoreSession::MakeSaveFile(bool bDlg)
+{
+    QString default_name;
+
+    AppConfig &app = AppConfig::Instance(); 
+    if (app._userHistory.saveDir != "")
+    {
+        default_name = app._userHistory.saveDir + "/"  + _session.get_device()->name() + "-";
+    } 
+    else{
+        QDir _dir;
+        QString _root = _dir.home().path();                
+        default_name =  _root + "/" + _session.get_device()->name() + "-";
+    } 
+
+    for (const GSList *l = _session.get_device()->get_dev_mode_list();
+         l; l = l->next) {
+        const sr_dev_mode *mode = (const sr_dev_mode *)l->data;
+        if (_session.get_device()->dev_inst()->mode == mode->mode) {
+            default_name += mode->acronym;
+            break;
+        }
+    }
+
+    default_name += _session.get_session_time().toString("-yyMMdd-hhmmss");
+
+    // Show the dialog
+    if (bDlg)
+    {
+        default_name = QFileDialog::getSaveFileName(
+            NULL,
+            tr("Save File"),
+            default_name,
+            tr("DSView Data (*.dsl)"));
+
+        if (default_name.isEmpty())
+        {
+            return ""; //no select file
+        }
+
+        QString _dir_path = GetDirectoryName(default_name);
+
+        if (_dir_path != app._userHistory.saveDir)
+        {
+            app._userHistory.saveDir = _dir_path;
+            app.SaveHistory();
+        }
+    }
+
+    QFileInfo f(default_name);
+    if (f.suffix().compare("dsl"))
+    {
+        default_name.append(tr(".dsl"));
+    }
+    _file_name = default_name;
+    return default_name;     
+}
+
+QString StoreSession::MakeExportFile(bool bDlg)
+{
+    QString default_name;
+    AppConfig &app = AppConfig::Instance();  
+    
+    if (app._userHistory.exportDir != "")
+    {
+        default_name = app._userHistory.exportDir  + "/"  + _session.get_device()->name() + "-";
+    } 
+    else{
+        QDir _dir;
+        QString _root = _dir.home().path();    
+        default_name =  _root + "/" + _session.get_device()->name() + "-";
+    }  
+
+    for (const GSList *l = _session.get_device()->get_dev_mode_list();
+         l; l = l->next) {
+        const sr_dev_mode *mode = (const sr_dev_mode *)l->data;
+        if (_session.get_device()->dev_inst()->mode == mode->mode) {
+            default_name += mode->acronym;
+            break;
+        }
+    }
+    default_name += _session.get_session_time().toString("-yyMMdd-hhmmss");
+
+    //ext name
+    QList<QString> supportedFormats = getSuportedExportFormats();
+    QString filter;
+    for(int i = 0; i < supportedFormats.count();i++){
+        filter.append(supportedFormats[i]);
+        if(i < supportedFormats.count() - 1)
+            filter.append(";;");
+    }
+
+    QString selfilter;
+    if (app._userHistory.exportFormat != ""){
+        selfilter.append(app._userHistory.exportFormat);
+    }
+
+    if (bDlg)
+    {
+        default_name = QFileDialog::getSaveFileName(
+            NULL,
+            tr("Export Data"),
+            default_name,
+            filter,
+            &selfilter);
+
+        if (default_name == "")
+        {
+            return "";
+        }
+
+        bool bChange = false;
+        QString _dir_path = GetDirectoryName(default_name);
+        if (_dir_path != app._userHistory.exportDir)
+        {
+            app._userHistory.exportDir = _dir_path;
+            bChange = true;
+        }
+        if (selfilter != app._userHistory.exportFormat){
+            app._userHistory.exportFormat = selfilter;
+             bChange = true;            
+        }
+
+        if (bChange){
+            app.SaveHistory();            
+        }
+    }
+
+    QString extName = selfilter;
+    if (extName == ""){
+        extName = filter;
+    }
+
+    QStringList list = extName.split('.').last().split(')');
+    _suffix = list.first();
+
+    QFileInfo f(default_name);
+    if(f.suffix().compare(_suffix)){
+         default_name += tr(".") + _suffix;
+    }           
+
+    _file_name = default_name;
+    return default_name;    
+}
+
+bool StoreSession::IsLogicDataType()
+{
+    std::set<int> type_set;
+    BOOST_FOREACH(const boost::shared_ptr<view::Signal> sig, _session.get_signals()) {
+        assert(sig);
+        type_set.insert(sig->get_type());
+    }
+
+    if (type_set.size()){
+        int type = *(type_set.begin());
+        return type == SR_CHANNEL_LOGIC;
+    }
+
+    return false;
 }
 
 

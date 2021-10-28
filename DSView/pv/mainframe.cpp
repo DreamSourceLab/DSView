@@ -379,7 +379,9 @@ void MainFrame::readSettings()
 {
     AppConfig &app = AppConfig::Instance(); 
    
-    _mainWindow->switchLanguage(app._frameOptions.language);
+    if (app._frameOptions.language > 0){
+         _mainWindow->switchLanguage(app._frameOptions.language);
+    }   
 
     if (app._frameOptions.geometry.isEmpty()) {
         QScreen *screen=QGuiApplication::primaryScreen ();

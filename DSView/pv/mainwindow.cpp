@@ -887,9 +887,6 @@ void MainWindow::on_export()
 {
     using pv::dialogs::StoreProgress;
 
-//    dialogs::RegionOptions *regionDlg = new dialogs::RegionOptions(_view, _session, this);
-//    regionDlg->exec();
-
     StoreProgress *dlg = new StoreProgress(_session, this);
     dlg->export_run();
 }
@@ -1356,7 +1353,7 @@ void MainWindow::switchLanguage(int language)
     dev->set_config(NULL, NULL, SR_CONF_LANGUAGE, g_variant_new_int16(language));
     AppConfig &app = AppConfig::Instance();
 
-    if (app._frameOptions.language != language)
+    if (app._frameOptions.language != language && language > 0)
     {
         app._frameOptions.language = language;
         app.SaveFrame();

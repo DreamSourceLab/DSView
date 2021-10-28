@@ -90,7 +90,7 @@ void _loadApp(AppOptions &o, QSettings &st){
     st.beginGroup("Application"); 
     getFiled("quickScroll", st, o.quickScroll, true);
     getFiled("warnofMultiTrig", st, o.warnofMultiTrig, true);
-
+    getFiled("originalData", st, o.originalData, false);
 
     QString fmt;
     getFiled("protocalFormats", st, fmt, "");
@@ -105,6 +105,7 @@ void _saveApp(AppOptions &o, QSettings &st){
     st.beginGroup("Application");
     setFiled("quickScroll", st, o.quickScroll);
     setFiled("warnofMultiTrig", st, o.warnofMultiTrig);
+    setFiled("originalData", st, o.originalData);
 
 
     QString fmt =  FormatArrayToString(o.m_protocolFormats);
@@ -149,6 +150,7 @@ void _loadHistory(UserHistory &o, QSettings &st){
     getFiled("sessionDir", st, o.sessionDir, ""); 
     getFiled("openDir", st, o.openDir, ""); 
     getFiled("protocolExportPath", st, o.protocolExportPath, ""); 
+    getFiled("exportFormat", st, o.exportFormat, ""); 
     st.endGroup();
 }
  
@@ -160,7 +162,8 @@ void _saveHistory(UserHistory &o, QSettings &st){
     setFiled("screenShotPath", st, o.screenShotPath); 
     setFiled("sessionDir", st, o.sessionDir); 
     setFiled("openDir", st, o.openDir); 
-    setFiled("protocolExportPath", st, o.protocolExportPath); 
+    setFiled("protocolExportPath", st, o.protocolExportPath);
+    setFiled("exportFormat", st, o.exportFormat); 
     st.endGroup();
 }
 

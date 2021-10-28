@@ -63,7 +63,7 @@ public:
 
 	const QString& error() const;
 
-    bool save_start(QString session_file);
+    bool save_start();
 
     bool export_start();
 
@@ -79,10 +79,16 @@ private:
     QString decoders_gen();
  
 
-public:
-    
+public:    
     QJsonArray json_decoders();
     void load_decoders(dock::ProtocolDock *widget, QJsonArray dec_array);
+    QString MakeSaveFile(bool bDlg);
+    QString MakeExportFile(bool bDlg);
+
+    inline QString GetFileName()
+        { return _file_name;}
+
+    bool IsLogicDataType();
  
 
 private:
@@ -92,22 +98,24 @@ private:
 signals:
 	void progress_updated();
 
-private:
-    QString _file_name;
-    QString _suffix;
-    SigSession &_session;
+public:
+    QString          _sessionFile;
 
-	boost::thread _thread;
+private:
+    QString         _file_name;
+    QString         _suffix;
+    SigSession      &_session;
+
+	boost::thread   _thread;
 
     const struct sr_output_module* _outModule;
-
-    //mutable boost::mutex _mutex;
-	uint64_t _units_stored;
-	uint64_t _unit_count;
-    bool _has_error;
-	QString _error;
-    bool _canceled;
-    ZipMaker m_zipDoc;
+ 
+	uint64_t        _units_stored;
+	uint64_t        _unit_count;
+    bool            _has_error;
+	QString         _error;
+    bool            _canceled;
+    ZipMaker        m_zipDoc;
 };
 
 } // pv

@@ -22,18 +22,16 @@
 #ifndef DSVIEW_PV_DIALOGS_SAVEPROGRESS_H
 #define DSVIEW_PV_DIALOGS_SAVEPROGRESS_H
 
-#include <set>
+//#include <set>
 
 #include <boost/shared_ptr.hpp>
-
-#include <QLabel>
 #include <QProgressBar>
-#include <QDialogButtonBox>
-#include <QTimer>
-
 #include "../storesession.h"
-#include "../dialogs/dsdialog.h"
-#include "../toolbars/titlebar.h"
+#include "../dialogs/dsdialog.h" 
+
+class QLineEdit;
+class QCheckBox;
+class QGridLayout;
 
 namespace pv {
 
@@ -51,10 +49,10 @@ public:
 
 	virtual ~StoreProgress();
 
-
-
+ 
 protected:
     void reject();
+    void accept();
 
 private:
 	void show_error();
@@ -70,17 +68,16 @@ public slots:
 private slots:
 	void on_progress_updated();
     void timeout();
+    void on_change_file();
 
 private:
-    pv::StoreSession _store_session;
-
-    QLabel _info;
-    QProgressBar _progress;
-    QDialogButtonBox _button_box;
-
-    toolbars::TitleBar *_titlebar;
-
-    bool _done;
+    pv::StoreSession    _store_session;
+    QProgressBar        _progress;
+    bool                _done;
+    bool                _isExport;
+    QLineEdit           *_fileLab;
+    QCheckBox           *_ckOrigin;
+    QGridLayout         *_grid;
 };
 
 } // dialogs

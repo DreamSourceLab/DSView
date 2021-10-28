@@ -176,6 +176,7 @@ enum {
 #define SR_PRIV
 #endif
 
+  
 /** Data types used by sr_config_info(). */
 enum {
 	SR_T_UINT64 = 10000,

@@ -19,36 +19,70 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include "storeprogress.h"
-#include "dsmessagebox.h"
+#include "storeprogress.h" 
 #include "pv/sigsession.h"
+#include <QGridLayout>
+#include <QDialogButtonBox>
+#include <QTimer>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QCheckBox> 
 
-#include "QVBoxLayout"
+#include "../ui/msgbox.h"
+#include "../config/appconfig.h"
 
 namespace pv {
 namespace dialogs {
 
 StoreProgress::StoreProgress(SigSession &session, QWidget *parent) :
     DSDialog(parent),
-    _store_session(session),
-    _button_box(QDialogButtonBox::Cancel, Qt::Horizontal, this),
-    _done(false)
+    _store_session(session)
 {
-    this->setModal(true);
+    _fileLab = NULL;
+    _ckOrigin = NULL;
 
-    _info.setText("...");
+    this->setMinimumSize(550, 220);
+    this->setModal(true);
+ 
     _progress.setValue(0);
     _progress.setMaximum(100);
 
-    QVBoxLayout* add_layout = new QVBoxLayout();
-    add_layout->addWidget(&_info, 0, Qt::AlignCenter);
-    add_layout->addWidget(&_progress);
-    add_layout->addWidget(&_button_box);
-    layout()->addLayout(add_layout);
+    _isExport = false;
+    _done = false;
 
-    connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
+    QGridLayout *grid = new QGridLayout(); 
+    _grid = grid;
+    grid->setContentsMargins(10, 20, 10, 10);
+    grid->setVerticalSpacing(25);
+
+    grid->setColumnStretch(0, 2);
+    grid->setColumnStretch(1, 2);
+    grid->setColumnStretch(2, 1);
+    grid->setColumnStretch(3, 1);
+
+    _fileLab = new QLineEdit();
+    _fileLab->setEnabled(false);    
+
+    QPushButton *openButton = new QPushButton(this);
+    openButton->setText(tr("change"));
+
+    grid->addWidget(&_progress, 0, 0, 1, 4);
+    grid->addWidget(_fileLab, 1, 0, 1, 3);
+    grid->addWidget(openButton, 1, 3, 1, 1);    
+
+    QDialogButtonBox  *_button_box = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, 
+                                        Qt::Horizontal, this);
+    grid->addWidget(_button_box, 2, 2, 1, 2, Qt::AlignRight | Qt::AlignBottom);
+
+    layout()->addLayout(grid);
+
+    connect(_button_box, SIGNAL(rejected()), this, SLOT(reject()));
+    connect(_button_box, SIGNAL(accepted()), this, SLOT(accept()));
+
     connect(&_store_session, SIGNAL(progress_updated()),
         this, SLOT(on_progress_updated()), Qt::QueuedConnection);
+
+    connect(openButton, SIGNAL(clicked()),this, SLOT(on_change_file()));
 }
 
 StoreProgress::~StoreProgress()
@@ -56,12 +90,66 @@ StoreProgress::~StoreProgress()
     _store_session.wait();
 }
 
+ void StoreProgress::on_change_file()
+ {
+     if (_isExport){
+        QString file = _store_session.MakeExportFile(true);
+        if (file != "")
+            _fileLab->setText(file);
+     }
+     else{
+      QString file = _store_session.MakeSaveFile(true);
+       if (file != "")
+          _fileLab->setText(file);
+     }
+ }
+
 void StoreProgress::reject()
 {
     using namespace Qt;
     _store_session.cancel();
     save_done();
-    QDialog::reject();
+    DSDialog::reject();
+}
+
+void StoreProgress::accept()
+{
+    if (_store_session.GetFileName() == ""){
+        MsgBox::Show(NULL, "you need to select a file name.");
+        return;
+    }
+
+    if (_isExport && _store_session.IsLogicDataType()){
+        bool ck  = _ckOrigin->isChecked();
+        AppConfig &app = AppConfig::Instance();
+        if (app._appOptions.originalData != ck){
+            app._appOptions.originalData = ck;
+            app.SaveApp();
+        }
+    }
+
+    //start done 
+    if (_isExport){
+        if (_store_session.export_start()){
+              QTimer::singleShot(100, this, SLOT(timeout()));        
+        }
+        else{
+            save_done();
+            close(); 
+            show_error();
+        }
+    }
+    else{
+         if (_store_session.save_start()){
+              QTimer::singleShot(100, this, SLOT(timeout()));        
+        }
+        else{
+            save_done();
+            close(); 
+            show_error();
+        }
+    }
+    //do not to call base class method, otherwise the window will be closed;
 }
 
 void StoreProgress::timeout()
@@ -77,36 +165,40 @@ void StoreProgress::timeout()
 
 void StoreProgress::save_run(QString session_file)
 {
-    _info.setText(tr("Saving..."));
-    if (_store_session.save_start(session_file))
-        show();
-    else
-        show_error();
-
-    QTimer::singleShot(100, this, SLOT(timeout()));
+    _isExport = false;
+    setTitle(tr("Saving..."));
+    QString file = _store_session.MakeSaveFile(false);
+    _fileLab->setText(file);
+    _store_session._sessionFile = session_file;
+    show();  
 }
 
 void StoreProgress::export_run()
 {
-    _info.setText(tr("Exporting..."));
-    if (_store_session.export_start())
-        show();
-    else
-        show_error();
+    if (_store_session.IsLogicDataType())
+    { 
+        QGridLayout *lay = new QGridLayout();
+        lay->setContentsMargins(15, 0, 0, 0);
+        AppConfig &app = AppConfig::Instance();
+        _ckOrigin  = new QCheckBox();
+        _ckOrigin->setChecked(app._appOptions.originalData);
+        _ckOrigin->setText(tr("all original data"));
+        lay->addWidget(_ckOrigin);
+        _grid->addLayout(lay, 2, 0, 1, 2);
+    }
 
-    QTimer::singleShot(100, this, SLOT(timeout()));
+    _isExport = true;
+    setTitle(tr("Exporting..."));
+    QString file = _store_session.MakeExportFile(false);
+    _fileLab->setText(file);
+    show();
 }
 
 void StoreProgress::show_error()
 {
     _done = true;
-    if (!_store_session.error().isEmpty()) {
-        dialogs::DSMessageBox msg(parentWidget());
-        msg.mBox()->setText(tr("Failed to save data."));
-        msg.mBox()->setInformativeText(_store_session.error());
-        msg.mBox()->setStandardButtons(QMessageBox::Ok);
-        msg.mBox()->setIcon(QMessageBox::Warning);
-        msg.exec();
+    if (!_store_session.error().isEmpty()) { 
+        MsgBox::Show(NULL, _store_session.error().toStdString().c_str(), NULL);
     }
 }
 

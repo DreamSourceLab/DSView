@@ -34,6 +34,8 @@
 #define sr_warn(s, args...) sr_warn(LOG_PREFIX s, ## args)
 #define sr_err(s, args...) sr_err(LOG_PREFIX s, ## args)
 
+int bExportOriginalData = 0; //able export all data
+
 /**
  * @file
  *
@@ -811,6 +813,16 @@ SR_API int sr_session_source_remove_pollfd(GPollFD *pollfd)
 SR_API int sr_session_source_remove_channel(GIOChannel *channel)
 {
 	return _sr_session_source_remove((gintptr)channel);
+}
+
+SR_API void sr_set_export_original_data(int flag)
+{
+	bExportOriginalData = flag;
+}
+
+SR_API int sr_get_export_original_flag()
+{
+	return bExportOriginalData;
 }
 
 /** @} */

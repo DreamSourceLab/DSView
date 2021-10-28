@@ -45,19 +45,17 @@ public:
    string m_value;
 };
 
-class AppOptions
-{  
-  public:
+struct AppOptions
+{   
     bool  quickScroll;
     bool  warnofMultiTrig;
-
+    bool  originalData;
 
     vector<StringPair> m_protocolFormats;
 };
  
-class FrameOptions
-{
-public:
+struct FrameOptions
+{ 
   QString     style;
   int         language;
   QByteArray  geometry;
@@ -65,9 +63,8 @@ public:
   QByteArray  windowState;
 };
 
-class UserHistory
-{
-public:
+struct UserHistory
+{ 
   QString   exportDir;
   QString   saveDir;
   bool      showDocuments;
@@ -75,6 +72,7 @@ public:
   QString   sessionDir;
   QString   openDir;
   QString   protocolExportPath;
+  QString   exportFormat;
 };
 
 class AppConfig
