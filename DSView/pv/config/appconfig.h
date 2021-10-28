@@ -29,7 +29,7 @@
 
 using namespace std;
 
-//--------------------api
+//--------------------api --
 
 QString GetDirectoryName(QString path);
 
