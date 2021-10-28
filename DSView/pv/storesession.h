@@ -26,7 +26,7 @@
 #include <string>
 
 #include <boost/thread.hpp>
-
+#include <boost/shared_ptr.hpp>
 #include <QObject>
 
 #include <libsigrok4DSL/libsigrok.h>
@@ -75,15 +75,15 @@ private:
     void save_proc(boost::shared_ptr<pv::data::Snapshot> snapshot);
     QString meta_gen(boost::shared_ptr<data::Snapshot> snapshot);
     void export_proc(boost::shared_ptr<pv::data::Snapshot> snapshot);
-    #ifdef ENABLE_DECODE
+   
     QString decoders_gen();
-    #endif
+ 
 
 public:
-    #ifdef ENABLE_DECODE
+    
     QJsonArray json_decoders();
     void load_decoders(dock::ProtocolDock *widget, QJsonArray dec_array);
-    #endif
+ 
 
 private:
     QList<QString> getSuportedExportFormats();

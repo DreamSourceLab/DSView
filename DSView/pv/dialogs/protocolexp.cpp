@@ -22,8 +22,7 @@
 #include "protocolexp.h"
 
 #include <boost/foreach.hpp>
-
-#include <QApplication>
+ 
 #include <QFormLayout>
 #include <QListWidget>
 #include <QFile>
@@ -39,6 +38,7 @@
 #include "../data/decode/annotation.h"
 #include "../view/decodetrace.h"
 #include "../data/decodermodel.h"
+#include "../config/appconfig.h"
 
 using namespace boost;
 using namespace std;
@@ -118,15 +118,20 @@ void ProtocolExp::accept()
             if(i < supportedFormats.count() - 1)
                 filter.append(";;");
         }
-        const QString DIR_KEY("ProtocolExportPath");
-        QSettings settings(QApplication::organizationName(), QApplication::applicationName());
+
+        AppConfig &app = AppConfig::Instance();         
+        
         QString default_filter = _format_combobox->currentText();
 
-        QString default_name = settings.value(DIR_KEY).toString() + "/" + "decoder-";
+        QString default_name = app._userHistory.protocolExportPath + "/" + "decoder-";
         default_name += _session.get_session_time().toString("-yyMMdd-hhmmss");
 
         QString file_name = QFileDialog::getSaveFileName(
-                    this, tr("Export Data"), default_name,filter,&default_filter);
+                    this, 
+                    tr("Export Data"), 
+                    default_name,filter,
+                    &default_filter);
+
         if (!file_name.isEmpty()) {
             QFileInfo f(file_name);
             QStringList list = default_filter.split('.').last().split(')');
@@ -134,8 +139,12 @@ void ProtocolExp::accept()
             if(f.suffix().compare(ext))
                 file_name+=tr(".")+ext;
 
-            QDir CurrentDir;
-            settings.setValue(DIR_KEY, CurrentDir.filePath(file_name));
+            QString fname = GetDirectoryName(file_name);
+            if (fname != app._userHistory.openDir)
+            {
+                app._userHistory.protocolExportPath = fname;
+                app.SaveHistory();
+            }
 
             QFile file(file_name);
             file.open(QIODevice::WriteOnly | QIODevice::Text);

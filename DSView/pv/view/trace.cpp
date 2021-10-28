@@ -22,16 +22,16 @@
 
 #include <extdef.h>
 #include <assert.h>
-#include <math.h>
-
-#include <QApplication>
+#include <math.h> 
 #include <QFormLayout>
 #include <QLineEdit>
+#include <QApplication>
 
 #include "trace.h"
 #include "view.h"
 #include "../device/devinst.h"
 #include "../sigsession.h"
+
 
 namespace pv {
 namespace view {

@@ -35,17 +35,17 @@ class SignalData
 public:
     SignalData();
     virtual ~SignalData() = 0;
+
 public:
-    double samplerate() const;
+    inline double samplerate()const 
+        {return _samplerate; }
+
     void set_samplerate(double samplerate);
-
     virtual void clear() = 0;
-
     virtual void init() = 0;
 
 protected:
     mutable boost::recursive_mutex _mutex;
-
     double _samplerate;
 };
 

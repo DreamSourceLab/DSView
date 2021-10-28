@@ -24,12 +24,12 @@
 #include <boost/shared_ptr.hpp>
 
 #include <QMetaObject>
-#include <QFileDialog>
-#include <QApplication>
+#include <QFileDialog> 
 
 #include "filebar.h"
 #include "../device/devinst.h" 
 #include "../ui/msgbox.h"
+#include "../config/appconfig.h"
 
 #include <deque>
 
@@ -54,6 +54,7 @@ FileBar::FileBar(SigSession &session, QWidget *parent) :
     _action_default = new QAction(this);
     _action_default->setObjectName(QString::fromUtf8("actionDefault"));
   
+    //second level menu
     _menu_session = new QMenu(this);
     _menu_session->setObjectName(QString::fromUtf8("menuSession"));
     _menu_session->addAction(_action_load);
@@ -107,7 +108,7 @@ void FileBar::changeEvent(QEvent *event)
 void FileBar::retranslateUi()
 {
     _file_button.setText(tr("File"));
-    _menu_session->setTitle(tr("Con&fig..."));
+    _menu_session->setTitle(tr("Con&fig...")); //load,save session file
     _action_load->setText(tr("&Load..."));
     _action_store->setText(tr("S&tore..."));
     _action_default->setText(tr("&Default..."));
@@ -119,7 +120,7 @@ void FileBar::retranslateUi()
 
 void FileBar::reStyle()
 {
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    QString iconPath = GetIconPath();
 
     _action_load->setIcon(QIcon(iconPath+"/open.svg"));
     _action_store->setIcon(QIcon(iconPath+"/save.svg"));
@@ -134,15 +135,23 @@ void FileBar::reStyle()
 
 void FileBar::on_actionOpen_triggered()
 {
-    const QString DIR_KEY("OpenPath");
-    QSettings settings(QApplication::organizationName(), QApplication::applicationName());
+    //open data file
+    AppConfig &app = AppConfig::Instance(); 
+
     // Show the dialog
     const QString file_name = QFileDialog::getOpenFileName(
-        this, tr("Open File"), settings.value(DIR_KEY).toString(), tr(
-            "DSView Data (*.dsl)"));
-    if (!file_name.isEmpty()) {
-        QDir CurrentDir;
-        settings.setValue(DIR_KEY, CurrentDir.absoluteFilePath(file_name));
+        this, 
+        tr("Open File"), 
+        app._userHistory.openDir,
+        tr("DSView Data (*.dsl)"));
+
+    if (!file_name.isEmpty()) { 
+        QString fname = GetDirectoryName(file_name);
+        if (fname != app._userHistory.openDir){
+            app._userHistory.openDir = fname;
+            app.SaveHistory();
+        }
+
         load_file(file_name);
     }
 }
@@ -162,16 +171,23 @@ void FileBar::show_session_error(
 }
 
 void FileBar::on_actionLoad_triggered()
-{
-    const QString DIR_KEY("SessionLoadPath");
-    QSettings settings(QApplication::organizationName(), QApplication::applicationName());
-    // Show the dialog
+{ 
+    //load session file
+    AppConfig &app = AppConfig::Instance();      
+
     const QString file_name = QFileDialog::getOpenFileName(
-        this, tr("Open Session"), settings.value(DIR_KEY).toString(), tr(
-            "DSView Session (*.dsc)"));
+        this, 
+        tr("Open Session"), 
+        app._userHistory.sessionDir, 
+        tr("DSView Session (*.dsc)"));
+
     if (!file_name.isEmpty()) {
-        QDir CurrentDir;
-        settings.setValue(DIR_KEY, CurrentDir.absoluteFilePath(file_name));
+        QString fname = GetDirectoryName(file_name);
+        if (fname != app._userHistory.sessionDir){
+            app._userHistory.sessionDir = fname;
+            app.SaveHistory();
+        }
+         
         load_session(file_name);
     }
 }
@@ -205,17 +221,27 @@ void FileBar::on_actionDefault_triggered()
 
 void FileBar::on_actionStore_triggered()
 {
-    const QString DIR_KEY("SessionStorePath");
-    QSettings settings(QApplication::organizationName(), QApplication::applicationName());
+    //store session file
+  
+      AppConfig &app = AppConfig::Instance();  
+
     QString file_name = QFileDialog::getSaveFileName(
-                this, tr("Save Session"), settings.value(DIR_KEY).toString(),
+                this, 
+                tr("Save Session"),
+                app._userHistory.sessionDir,
                 tr("DSView Session (*.dsc)"));
+
     if (!file_name.isEmpty()) {
         QFileInfo f(file_name);
         if(f.suffix().compare("dsc"))
             file_name.append(tr(".dsc"));
-        QDir CurrentDir;
-        settings.setValue(DIR_KEY, CurrentDir.absoluteFilePath(file_name));
+
+        QString fname = GetDirectoryName(file_name);
+        if (fname != app._userHistory.sessionDir){
+            app._userHistory.sessionDir = fname;
+            app.SaveHistory();
+        }
+         
         store_session(file_name);
     }
 }

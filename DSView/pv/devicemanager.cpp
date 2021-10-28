@@ -29,8 +29,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
-
-#include <QApplication>
+ 
 #include <QObject>
 #include <QDebug>
 #include <QDir>

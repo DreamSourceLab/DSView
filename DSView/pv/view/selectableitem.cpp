@@ -21,10 +21,10 @@
  */
 
 #include "selectableitem.h"
-
-#include <QApplication>
+ 
 #include <QMenu>
 #include <QPalette>
+#include <QApplication>
 
 namespace pv {
 namespace view {

@@ -32,6 +32,7 @@
 
 #include "../view/trace.h"
 #include "../view/dsosignal.h"
+#include "../config/appconfig.h"
 
 using namespace boost;
 using namespace std;
@@ -62,7 +63,7 @@ WaitingDialog::WaitingDialog(QWidget *parent, SigSession &session, int key) :
     warning_tips->setFont(font);
     warning_tips->setAlignment(Qt::AlignCenter);
 
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    QString iconPath = GetIconPath();
     label = new QLabel(this);
     movie = new QMovie(iconPath+"/wait.gif");
     label->setMovie(movie);

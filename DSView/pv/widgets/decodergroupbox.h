@@ -22,7 +22,7 @@
 #ifndef DSVIEW_PV_WIDGETS_DECODERGROUPBOX_H
 #define DSVIEW_PV_WIDGETS_DECODERGROUPBOX_H
 
-#include <QApplication>
+ 
 #include <QPushButton>
 #include <QGridLayout>
 #include <QToolBar>

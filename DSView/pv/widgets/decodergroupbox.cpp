@@ -32,8 +32,10 @@
 #include <QVariant>
 #include <QScrollBar>
 #include <QScreen>
+#include <QApplication>
 
 #include <boost/foreach.hpp>
+#include "../config/appconfig.h"
 
 #include <assert.h>
 
@@ -55,7 +57,7 @@ DecoderGroupBox::DecoderGroupBox(boost::shared_ptr<data::DecoderStack> &decoder_
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setWidgetResizable(true);
 
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    QString iconPath = GetIconPath();
     _layout->addWidget(new QLabel(QString("<h3>%1</h3>").arg(_dec->decoder()->name), _widget),
         0, 0);
 	_layout->setColumnStretch(0, 1);
@@ -129,7 +131,7 @@ bool DecoderGroupBox::eventFilter(QObject *o, QEvent *e)
 
 void DecoderGroupBox::tog_icon()
 {
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    QString iconPath = GetIconPath();
     QPushButton *sc = dynamic_cast<QPushButton*>(sender());
     QVariant id = sc->property("index");
     int index = id.toInt();

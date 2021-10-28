@@ -49,10 +49,10 @@ bool ApplicationParamDlg::ShowDlg(QWidget *parent)
     lay.setContentsMargins(0,20,0,30);
 
     //show config
-    AppOptions &_app = AppConfig::Instance()._appOptions;
+    AppConfig &app = AppConfig::Instance();
 
     QCheckBox *ck_quickScroll = new QCheckBox();
-    ck_quickScroll->setChecked(_app.quickScroll);
+    ck_quickScroll->setChecked(app._appOptions.quickScroll);
     lay.addRow("Quick scroll", ck_quickScroll);
     dlg.layout()->addLayout(&lay);  
      
@@ -62,9 +62,8 @@ bool ApplicationParamDlg::ShowDlg(QWidget *parent)
 
     //save config
     if (ret){
-        _app.quickScroll = ck_quickScroll->isChecked();
-
-        AppConfig::Instance().Save();
+        app._appOptions.quickScroll = ck_quickScroll->isChecked();
+        app.SaveApp();
     }
    
    return ret;

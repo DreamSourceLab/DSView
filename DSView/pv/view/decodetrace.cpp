@@ -26,8 +26,7 @@
 #include <boost/foreach.hpp>
 #include <boost/functional/hash.hpp>
 
-#include <QAction>
-#include <QApplication>
+#include <QAction> 
 #include <QComboBox>
 #include <QFormLayout>
 #include <QLabel>
@@ -36,6 +35,7 @@
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QScrollArea>
+#include <QApplication>
 
 #include "decodetrace.h"
 

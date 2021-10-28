@@ -27,10 +27,10 @@
 #include "../dialogs/mathoptions.h"
 #include "../view/trace.h"
 
-#include <QApplication>
 #include <QBitmap>
 #include <QPainter>
 #include "../dialogs/applicationpardlg.h"
+#include "../config/appconfig.h"
 
 namespace pv {
 namespace toolbars {
@@ -47,15 +47,15 @@ TrigBar::TrigBar(SigSession &session, QWidget *parent) :
     _measure_button(this),
     _search_button(this),
     _function_button(this),
-    _display_button(this)
+    _setting_button(this)
 {
     setMovable(false);
     setContentsMargins(0,0,0,0);
  
     _trig_button.setCheckable(true);
-#ifdef ENABLE_DECODE
+ 
     _protocol_button.setCheckable(true);
-#endif
+ 
     _measure_button.setCheckable(true);
     _search_button.setCheckable(true);
 
@@ -95,15 +95,15 @@ TrigBar::TrigBar(SigSession &session, QWidget *parent) :
     _display_menu->addAction(_action_lissajous);    
     _display_menu->addMenu(_themes);
 
-    _display_button.setPopupMode(QToolButton::InstantPopup);
-    _display_button.setMenu(_display_menu);
+    _setting_button.setPopupMode(QToolButton::InstantPopup);
+    _setting_button.setMenu(_display_menu);
 
     _trig_button.setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     _protocol_button.setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     _measure_button.setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     _search_button.setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     _function_button.setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-    _display_button.setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+    _setting_button.setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
 
     _protocol_button.setContentsMargins(0,0,0,0);
 
@@ -112,7 +112,7 @@ TrigBar::TrigBar(SigSession &session, QWidget *parent) :
     _measure_action = addWidget(&_measure_button);
     _search_action = addWidget(&_search_button);
     _function_action = addWidget(&_function_button); 
-    _display_action = addWidget(&_display_button); //must be created
+    _display_action = addWidget(&_setting_button); //must be created
  
     retranslateUi();
 
@@ -145,7 +145,7 @@ void TrigBar::retranslateUi()
     _measure_button.setText(tr("Measure"));
     _search_button.setText(tr("Search"));
     _function_button.setText(tr("Function"));
-    _display_button.setText(tr("Setting"));
+    _setting_button.setText(tr("Setting"));
  
     _action_lissajous->setText(tr("&Lissajous"));
 
@@ -161,14 +161,14 @@ void TrigBar::retranslateUi()
 
 void TrigBar::reStyle()
 {
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    QString iconPath = GetIconPath();
 
     _trig_button.setIcon(QIcon(iconPath+"/trigger.svg"));
     _protocol_button.setIcon(QIcon(iconPath+"/protocol.svg"));
     _measure_button.setIcon(QIcon(iconPath+"/measure.svg"));
     _search_button.setIcon(QIcon(iconPath+"/search-bar.svg"));
     _function_button.setIcon(QIcon(iconPath+"/function.svg"));
-    _display_button.setIcon(QIcon(iconPath+"/display.svg"));
+    _setting_button.setIcon(QIcon(iconPath+"/display.svg"));
 
     _action_fft->setIcon(QIcon(iconPath+"/fft.svg"));
     _action_math->setIcon(QIcon(iconPath+"/math.svg"));
@@ -178,7 +178,9 @@ void TrigBar::reStyle()
 
      _appParam_action->setIcon(QIcon(iconPath+"/params.svg"));
 
-    _themes->setIcon(QIcon(iconPath+"/"+qApp->property("Style").toString()+".svg"));
+     AppConfig &app = AppConfig::Instance();    
+
+    _themes->setIcon(QIcon(iconPath+"/"+ app._frameOptions.language +".svg"));
 }
 
 void TrigBar::protocol_clicked()
@@ -228,7 +230,7 @@ void TrigBar::enable_toggle(bool enable)
     _measure_button.setDisabled(!enable);
     _search_button.setDisabled(!enable);
     _function_button.setDisabled(!enable);
-    _display_button.setDisabled(!enable);
+    _setting_button.setDisabled(!enable);
 }
 
 void TrigBar::enable_protocol(bool enable)

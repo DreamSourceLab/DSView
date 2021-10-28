@@ -29,13 +29,13 @@
 #include <assert.h>
 
 #include <boost/foreach.hpp>
-
-#include <QApplication>
+ 
 #include <QStyleOption>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QRect>
 #include <QDebug>
+#include "../config/appconfig.h"
 
 using boost::shared_ptr;
 using namespace std;
@@ -105,8 +105,11 @@ void DevMode::set_device()
     _close_button->setDisabled(true);
     disconnect(_close_button, SIGNAL(clicked()), this, SLOT(on_close()));
 
-    if (!qApp->property("Style").isNull()) {
-        QString iconPath = ":/icons/" + qApp->property("Style").toString() + "/";
+    AppConfig &app = AppConfig::Instance(); 
+    int lan = app._frameOptions.language;
+
+    if (true) {
+        QString iconPath = GetIconPath() + "/";
         for (const GSList *l = dev_inst->get_dev_mode_list();
              l; l = l->next) {
             const sr_dev_mode *mode = (const sr_dev_mode *)l->data;
@@ -114,7 +117,7 @@ void DevMode::set_device()
 
             QAction *action = new QAction(this);
             action->setIcon(QIcon(iconPath+"square-"+icon_name));
-            if (qApp->property("Language") == QLocale::Chinese)
+            if (lan == QLocale::Chinese)
                 action->setText(mode->name_cn);
             else
                 action->setText(mode->name);
@@ -123,7 +126,7 @@ void DevMode::set_device()
             _mode_list[action] = mode;
             if (dev_inst->dev_inst()->mode == _mode_list[action]->mode) {
                 _mode_btn->setIcon(QIcon(iconPath+icon_name));
-                if (qApp->property("Language") == QLocale::Chinese)
+                if (lan== QLocale::Chinese)
                     _mode_btn->setText(mode->name_cn);
                 else
                     _mode_btn->setText(mode->name);
@@ -159,7 +162,10 @@ void DevMode::on_mode_change()
     if (dev_inst->dev_inst()->mode == _mode_list[action]->mode)
         return;
 
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    QString iconPath = GetIconPath();
+    AppConfig &app = AppConfig::Instance(); 
+    int lan = app._frameOptions.language;
+
     for(std::map<QAction *, const sr_dev_mode *>::const_iterator i = _mode_list.begin();
         i != _mode_list.end(); i++) {
         if ((*i).first == action) {
@@ -175,7 +181,7 @@ void DevMode::on_mode_change()
 
                 QString icon_name = "/" + QString::fromLocal8Bit((*i).second->icon);
                 _mode_btn->setIcon(QIcon(iconPath+icon_name));
-                if (qApp->property("Language") == QLocale::Chinese)
+                if (lan == QLocale::Chinese)
                     _mode_btn->setText((*i).second->name_cn);
                 else
                     _mode_btn->setText((*i).second->name);

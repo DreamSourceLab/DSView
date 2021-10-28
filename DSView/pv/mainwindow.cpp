@@ -21,17 +21,16 @@
  */
 
 
-#ifdef ENABLE_DECODE
+
 #include <libsigrokdecode4DSL/libsigrokdecode.h>
 #include "dock/protocoldock.h"
-#endif
+
 
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <QAction>
-#include <QApplication>
 #include <QButtonGroup>
 #include <QFileDialog>
 #include <QMessageBox>
@@ -48,6 +47,7 @@
 #include <QEvent>
 #include <QtGlobal>
 #include <QScreen>
+#include <QApplication>
 
 #include "mainwindow.h"
 
@@ -91,6 +91,7 @@
 #include <list>
 #include <libusb.h>
 #include "../ui/msgbox.h"
+#include "config/appconfig.h"
 
 using boost::shared_ptr;
 using boost::dynamic_pointer_cast;
@@ -174,7 +175,7 @@ void MainWindow::setup_ui()
     addToolBar(_logo_bar);
 
     // Setup the dockWidget
-#ifdef ENABLE_DECODE
+
     // protocol dock
     _protocol_dock=new QDockWidget(tr("Protocol"),this);
     _protocol_dock->setObjectName("protocol_dock");
@@ -186,7 +187,7 @@ void MainWindow::setup_ui()
     _protocol_dock->setWidget(_protocol_widget);
     qDebug() << "Protocol decoder enabled!\n";
  
-#endif
+
     // measure dock
     _measure_dock=new QDockWidget(tr("Measurement"),this);
     _measure_dock->setObjectName("measure_dock");
@@ -206,9 +207,9 @@ void MainWindow::setup_ui()
     _search_widget = new dock::SearchDock(_search_dock, *_view, _session);
     _search_dock->setWidget(_search_widget);
 
-#ifdef ENABLE_DECODE
+
     addDockWidget(Qt::RightDockWidgetArea,_protocol_dock);
-#endif
+
     addDockWidget(Qt::RightDockWidgetArea,_trigger_dock);
     addDockWidget(Qt::RightDockWidgetArea,_dso_trigger_dock);
     addDockWidget(Qt::RightDockWidgetArea, _measure_dock);
@@ -228,9 +229,9 @@ void MainWindow::setup_ui()
     _logo_bar->installEventFilter(this);
     _dso_trigger_dock->installEventFilter(this);
     _trigger_dock->installEventFilter(this);
-#ifdef ENABLE_DECODE
+
     _protocol_dock->installEventFilter(this);
-#endif
+
     _measure_dock->installEventFilter(this);
     _search_dock->installEventFilter(this);
 
@@ -239,13 +240,10 @@ void MainWindow::setup_ui()
                                             QString(tr("Set Default Device failed")), _1));
 
     // defaut language
-    QSettings settings(QApplication::organizationName(), QApplication::applicationName());
-    QLocale locale;
-    settings.beginGroup("MainFrame");
-    switchLanguage(settings.value("language", locale.language()).toInt());
-    switchTheme(settings.value("style", "dark").toString());
-    settings.endGroup();
-
+    AppConfig &app = AppConfig::Instance();
+    switchLanguage(app._frameOptions.language);
+    switchTheme(app._frameOptions.style);
+  
     // UI initial
     _measure_widget->add_dist_measure();
 
@@ -288,9 +286,9 @@ void MainWindow::setup_ui()
     connect(_logo_bar, SIGNAL(setLanguage(int)), this, SLOT(switchLanguage(int)));
     connect(_logo_bar, SIGNAL(openDoc()), this, SLOT(openDoc()));
 
-#ifdef ENABLE_DECODE
+
     connect(_protocol_widget, SIGNAL(protocol_updated()), _view, SLOT(signals_changed()));
-#endif
+
 
     connect(_sampling_bar, SIGNAL(device_selected()), this, SLOT(update_device_list()));
     connect(_sampling_bar, SIGNAL(device_updated()), this, SLOT(reload()));
@@ -329,21 +327,23 @@ void MainWindow::update_device_list()
     if (_msg)
         _msg->close();
 
-    switchLanguage(_language);
+    AppConfig &app = AppConfig::Instance(); 
+
+    switchLanguage(app._frameOptions.language);
     _session.stop_capture();
     _view->reload();
     _trigger_widget->device_updated();
-#ifdef ENABLE_DECODE
+
     _protocol_widget->del_all_protocol();
-#endif
+
     _trig_bar->reload();
 
-    shared_ptr<pv::device::DevInst> selected_device = _session.get_device();
+    boost::shared_ptr<pv::device::DevInst> selected_device = _session.get_device();
     _device_manager.add_device(selected_device);
     _session.init_signals();
     _sampling_bar->set_device_list(_device_manager.devices(), selected_device);
 
-    shared_ptr<pv::device::File> file_dev;
+    boost::shared_ptr<pv::device::File> file_dev;
     if((file_dev = dynamic_pointer_cast<pv::device::File>(selected_device))) {
         // check version
         if (selected_device->dev_inst()->mode == LOGIC) {
@@ -360,11 +360,11 @@ void MainWindow::update_device_list()
             }
         }
 
-        #ifdef ENABLE_DECODE
+  
         // load decoders
         StoreSession ss(_session);
         ss.load_decoders(_protocol_widget, file_dev->get_decoders());
-        #endif
+    
 
         // load session
         load_session_json(file_dev->get_session(), true);
@@ -386,7 +386,7 @@ void MainWindow::update_device_list()
         #endif
         if (dir.exists()) {
             QString str = dir.absolutePath() + "/";
-            QString lang_name = ".ses" + QString::number(_language);
+            QString lang_name = ".ses" + QString::number(app._frameOptions.language);
             QString ses_name = str +
                                selected_device->name() +
                                QString::number(selected_device->dev_inst()->mode) +
@@ -712,11 +712,14 @@ void MainWindow::session_save()
     #else
     QString path = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
     #endif
+
+     AppConfig &app = AppConfig::Instance();
+
     if(dir.mkpath(path)) {
         dir.cd(path);
         QString driver_name = _session.get_device()->name();
         QString mode_name = QString::number(_session.get_device()->dev_inst()->mode);
-        QString lang_name = ".ses" + QString::number(_language);
+        QString lang_name = ".ses" + QString::number(app._frameOptions.language);
         QString file_name = dir.absolutePath() + "/" +
                             driver_name + mode_name +
                             lang_name + ".dsc";
@@ -725,9 +728,9 @@ void MainWindow::session_save()
             store_session(file_name);
         }
     }
-
-    QSettings settings(QApplication::organizationName(), QApplication::applicationName());
-    settings.setValue("windowState", saveState());
+ 
+    app._frameOptions.windowState = saveState();
+    app.SaveFrame(); 
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
@@ -739,9 +742,9 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 void MainWindow::on_protocol(bool visible)
 {
-#ifdef ENABLE_DECODE
+
     _protocol_dock->setVisible(visible);
-#endif
+
 }
 
 void MainWindow::on_trigger(bool visible)
@@ -761,8 +764,8 @@ void MainWindow::on_trigger(bool visible)
 void MainWindow::commit_trigger(bool instant)
 {
     int i = 0;
-    const QString TRIG_KEY("WarnofMultiTrig");
-    QSettings settings(QApplication::organizationName(), QApplication::applicationName());
+    
+     AppConfig &app = AppConfig::Instance();  
 
     ds_trigger_init();
 
@@ -781,8 +784,7 @@ void MainWindow::commit_trigger(bool instant)
                     i++;
             }
         }
-        if (!settings.contains(TRIG_KEY) &&
-            i > 1) {
+        if (app._appOptions.warnofMultiTrig && i > 1) {
             dialogs::DSMessageBox msg(this);
             msg.mBox()->setText(tr("Trigger"));
             msg.mBox()->setInformativeText(tr("Trigger setted on multiple channels! "
@@ -806,7 +808,10 @@ void MainWindow::commit_trigger(bool instant)
                 }
             }
             if (msg.mBox()->clickedButton() == noMoreButton)
-                  settings.setValue(TRIG_KEY, false);
+            {
+                app._appOptions.warnofMultiTrig  = false;
+                app.SaveApp();                
+            }
         }
     }
 }
@@ -824,9 +829,8 @@ void MainWindow::on_search(bool visible)
 
 void MainWindow::on_screenShot()
 {
-    const QString DIR_KEY("ScreenShotPath");
-    QSettings settings(QApplication::organizationName(), QApplication::applicationName());
-    QString default_name = settings.value(DIR_KEY).toString() + "/DSView" + QDateTime::currentDateTime().toString("-yyMMdd-hhmmss");
+    AppConfig &app = AppConfig::Instance();     
+    QString default_name = app._userHistory.screenShotPath + "/DSView" + QDateTime::currentDateTime().toString("-yyMMdd-hhmmss");
     QPixmap pixmap;
     QScreen *screen = QGuiApplication::primaryScreen();
     QDesktopWidget *desktop = QApplication::desktop();
@@ -838,10 +842,16 @@ void MainWindow::on_screenShot()
                        tr("Save As"), default_name,
                        tr("%1 Files (*.%2);;All Files (*)")
                        .arg(format.toUpper()).arg(format));
-    if (!fileName.isEmpty()) {
-        QDir CurrentDir;
-        settings.setValue(DIR_KEY, CurrentDir.filePath(fileName));
+
+    if (!fileName.isEmpty()) { 
         pixmap.save(fileName, format.toLatin1());
+ 
+        fileName = GetDirectoryName(fileName);
+
+        if (app._userHistory.screenShotPath != fileName){
+            app._userHistory.screenShotPath = fileName;
+            app.SaveHistory();            
+        }
     }
 }
 
@@ -915,6 +925,8 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev)
         return false;
     }
 
+    AppConfig &app = AppConfig::Instance(); 
+
     // check language
     if (sessionObj.contains("Language")) {
         switchLanguage(sessionObj["Language"].toInt());
@@ -922,7 +934,7 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev)
         bool language_matched = _session.get_device()->set_config(NULL, NULL, SR_CONF_OPERATION_MODE,
                                           g_variant_new_string(sessionObj["Operation Mode"].toString().toUtf8()));
         if (!language_matched) {
-            if (_language != QLocale::Chinese)
+            if (app._frameOptions.language != QLocale::Chinese)
                 switchLanguage(QLocale::Chinese);
             else
                 switchLanguage(QLocale::English);
@@ -930,11 +942,11 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev)
     }
 
     // clear decoders
-    #ifdef ENABLE_DECODE
+  
     if (sdi->mode == LOGIC) {
         _protocol_widget->del_all_protocol();
     }
-    #endif
+ 
 
     // load device settings
     GVariant *gvar_opts;
@@ -1075,13 +1087,13 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev)
     }
     on_trigger(false);
 
-    #ifdef ENABLE_DECODE
+    
     // load decoders
     if (sessionObj.contains("decoder")) {
         StoreSession ss(_session);
         ss.load_decoders(_protocol_widget, sessionObj["decoder"].toArray());
     }
-    #endif
+
 
     // load measure
     if (sessionObj.contains("measure")) {
@@ -1103,6 +1115,8 @@ bool MainWindow::store_session(QString name)
     outStream.setCodec("UTF-8");
     //outStream.setGenerateByteOrderMark(true); // UTF-8 without BOM
 
+    AppConfig &app = AppConfig::Instance(); 
+
     GVariant *gvar_opts;
     GVariant *gvar;
     gsize num_opts;
@@ -1112,7 +1126,7 @@ bool MainWindow::store_session(QString name)
     sessionVar["Version"]= QJsonValue::fromVariant(Session_Version);
     sessionVar["Device"] = QJsonValue::fromVariant(sdi->driver->name);
     sessionVar["DeviceMode"] = QJsonValue::fromVariant(sdi->mode);
-    sessionVar["Language"] = QJsonValue::fromVariant(_language);
+    sessionVar["Language"] = QJsonValue::fromVariant(app._frameOptions.language);
 
     if ((sr_config_list(sdi->driver, sdi, NULL, SR_CONF_DEVICE_SESSIONS, &gvar_opts) != SR_OK))
         return false;   /* Driver supports no device instance sessions. */
@@ -1180,10 +1194,10 @@ bool MainWindow::store_session(QString name)
         sessionVar["trigger"] = _trigger_widget->get_session();
     }
 
-    #ifdef ENABLE_DECODE
+   
     StoreSession ss(_session);
     sessionVar["decoder"] = ss.json_decoders();
-    #endif
+
 
     if (_session.get_device()->dev_inst()->mode == DSO) {
         sessionVar["measure"] = _view->get_viewstatus()->get_session();
@@ -1198,9 +1212,20 @@ bool MainWindow::store_session(QString name)
 
 void MainWindow::restore_dock()
 {
-    // default dockwidget size
-    QSettings settings(QApplication::organizationName(), QApplication::applicationName());
-    restoreState(settings.value("windowState").toByteArray());
+    // default dockwidget size 
+    AppConfig &app = AppConfig::Instance(); 
+    QByteArray st = app._frameOptions.windowState;
+    if (!st.isEmpty()){
+        try
+        {
+            restoreState(st);     
+        }        
+        catch(...)
+        { 
+            MsgBox::Show(NULL, "restore window status error!");
+        } 
+    } 
+
     if (_session.get_device()->dev_inst()->mode != DSO) {
         _dso_trigger_dock->setVisible(false);
         _trig_bar->update_trig_btn(_trigger_dock->isVisible());
@@ -1209,9 +1234,9 @@ void MainWindow::restore_dock()
         _trig_bar->update_trig_btn(_dso_trigger_dock->isVisible());
     }
     if (_session.get_device()->dev_inst()->mode != LOGIC) {
-#ifdef ENABLE_DECODE
+
         on_protocol(false);
-#endif
+
     }
     _trig_bar->update_protocol_btn(_protocol_dock->isVisible());
     _trig_bar->update_measure_btn(_measure_dock->isVisible());
@@ -1223,7 +1248,7 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
     (void) object;
 
     if ( event->type() == QEvent::KeyPress ) {
-        const vector< shared_ptr<view::Signal> > sigs(_session.get_signals());
+        const vector< boost::shared_ptr<view::Signal> > sigs(_session.get_signals());
         QKeyEvent *ke = (QKeyEvent *) event;
         switch(ke->key()) {
         case Qt::Key_S:
@@ -1238,11 +1263,11 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
             else
                 on_trigger(!_trigger_dock->isVisible());
             break;
-#ifdef ENABLE_DECODE
+
         case Qt::Key_D:
             on_protocol(!_protocol_dock->isVisible());
             break;
-#endif
+
         case Qt::Key_M:
             on_measure(!_measure_dock->isVisible());
             break;
@@ -1268,8 +1293,8 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
             _view->zoom(-1);
             break;
         case Qt::Key_0:
-            BOOST_FOREACH(const shared_ptr<view::Signal> s, sigs) {
-                shared_ptr<view::DsoSignal> dsoSig;
+            BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, sigs) {
+                boost::shared_ptr<view::DsoSignal> dsoSig;
                 if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
                     if (dsoSig->get_index() == 0)
                         dsoSig->set_vDialActive(!dsoSig->get_vDialActive());
@@ -1281,8 +1306,8 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
             update();
             break;
         case Qt::Key_1:
-            BOOST_FOREACH(const shared_ptr<view::Signal> s, sigs) {
-                shared_ptr<view::DsoSignal> dsoSig;
+            BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, sigs) {
+                boost::shared_ptr<view::DsoSignal> dsoSig;
                 if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
                     if (dsoSig->get_index() == 1)
                         dsoSig->set_vDialActive(!dsoSig->get_vDialActive());
@@ -1294,8 +1319,8 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
             update();
             break;
         case Qt::Key_Up:
-            BOOST_FOREACH(const shared_ptr<view::Signal> s, sigs) {
-                shared_ptr<view::DsoSignal> dsoSig;
+            BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, sigs) {
+                boost::shared_ptr<view::DsoSignal> dsoSig;
                 if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
                     if (dsoSig->get_vDialActive()) {
                         dsoSig->go_vDialNext(true);
@@ -1306,8 +1331,8 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
             }
             break;
         case Qt::Key_Down:
-            BOOST_FOREACH(const shared_ptr<view::Signal> s, sigs) {
-                shared_ptr<view::DsoSignal> dsoSig;
+            BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, sigs) {
+                boost::shared_ptr<view::DsoSignal> dsoSig;
                 if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
                     if (dsoSig->get_vDialActive()) {
                         dsoSig->go_vDialPre(true);
@@ -1324,46 +1349,51 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
     }
     return false;
 }
-
-int MainWindow::language() const
-{
-    return _language;
-}
-
+ 
 void MainWindow::switchLanguage(int language)
 {
-    shared_ptr<pv::device::DevInst> dev = _session.get_device();
+    boost::shared_ptr<pv::device::DevInst> dev = _session.get_device();
     dev->set_config(NULL, NULL, SR_CONF_LANGUAGE, g_variant_new_int16(language));
+    AppConfig &app = AppConfig::Instance();
 
-    if (_language != language) {
-        _language = language;
-        if (_language != QLocale::English) {
-            _qtTrans.load(":/qt_"+QString::number(_language));
-            qApp->installTranslator(&_qtTrans);
-            _myTrans.load(":/my_"+QString::number(_language));
-            qApp->installTranslator(&_myTrans);
-            retranslateUi();
-        } else {
-            qApp->removeTranslator(&_qtTrans);
-            qApp->removeTranslator(&_myTrans);
-            retranslateUi();
-        }
-        qApp->setProperty("Language", _language);
+    if (app._frameOptions.language != language)
+    {
+        app._frameOptions.language = language;
+        app.SaveFrame();
+    }
+
+    if (language != QLocale::English)
+    {
+        _qtTrans.load(":/qt_" + QString::number(language));
+        qApp->installTranslator(&_qtTrans);
+        _myTrans.load(":/my_" + QString::number(language));
+        qApp->installTranslator(&_myTrans);
+        retranslateUi();
+    }
+    else
+    {
+        qApp->removeTranslator(&_qtTrans);
+        qApp->removeTranslator(&_myTrans);
+        retranslateUi();
     }
 }
 
 void MainWindow::switchTheme(QString style)
 {
-    if (_style != style) {
-        _style = style;
-        qApp->setProperty("Style", _style);
-        QString qssRes = ":/"+_style+".qss";
-        QFile qss(qssRes);
-        qss.open(QFile::ReadOnly | QFile::Text);
-        qApp->setStyleSheet(qss.readAll());
-        qss.close();
-        _session.data_updated();
+    AppConfig &app = AppConfig::Instance();
+
+    if (app._frameOptions.style != style)
+    {
+        app._frameOptions.style = style;
+        app.SaveFrame();
     }
+
+    QString qssRes = ":/" + style + ".qss";
+    QFile qss(qssRes);
+    qss.open(QFile::ReadOnly | QFile::Text);
+    qApp->setStyleSheet(qss.readAll());
+    qss.close();
+    _session.data_updated();
 }
 
 void MainWindow::openDoc()
@@ -1374,8 +1404,10 @@ void MainWindow::openDoc()
     QDir dir(DS_RES_PATH);
     dir.cdUp();
     #endif
+    AppConfig &app = AppConfig::Instance(); 
+    int lan = app._frameOptions.language;
     QDesktopServices::openUrl(
-                QUrl("file:///"+dir.absolutePath() + "/ug"+QString::number(_language)+".pdf"));
+                QUrl("file:///"+dir.absolutePath() + "/ug"+QString::number(lan)+".pdf"));
 }
 
 } // namespace pv

@@ -36,8 +36,7 @@
 #include <assert.h>
 
 #include <boost/foreach.hpp>
-
-#include <QApplication>
+ 
 #include <QColorDialog>
 #include <QInputDialog>
 #include <QMenu>
@@ -45,6 +44,7 @@
 #include <QPainter>
 #include <QRect>
 #include <QStyleOption>
+#include <QApplication>
 
 using namespace boost;
 using namespace std;

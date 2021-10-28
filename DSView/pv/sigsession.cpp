@@ -20,9 +20,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#ifdef ENABLE_DECODE
+
 #include <libsigrokdecode4DSL/libsigrokdecode.h>
-#endif
+
 
 #include "sigsession.h"
 #include "mainwindow.h"
@@ -110,9 +110,9 @@ SigSession::SigSession(DeviceManager &device_manager) :
     _noData_cnt = 0;
     _data_lock = false;
     _data_updated = false;
-    #ifdef ENABLE_DECODE
+
     _decoder_model = new pv::data::DecoderModel(this);
-    #endif
+
     _lissajous_trace = NULL;
     _math_trace = NULL;
     _saving = false;
@@ -173,9 +173,9 @@ void SigSession::set_device(boost::shared_ptr<device::DevInst> dev_inst)
     }
 
     _dev_inst = dev_inst;
-#ifdef ENABLE_DECODE
+
     _decode_traces.clear();
-#endif
+
     _group_traces.clear();
 
     if (_dev_inst) {
@@ -324,11 +324,11 @@ void SigSession::set_cur_snap_samplerate(uint64_t samplerate)
     if (_group_data)
         _group_data->set_samplerate(_cur_snap_samplerate);
 
-#ifdef ENABLE_DECODE
+
     // DecoderStack
     BOOST_FOREACH(const boost::shared_ptr<view::DecodeTrace> d, _decode_traces)
         d->decoder()->set_samplerate(_cur_snap_samplerate);
-#endif
+
     // Math
     if (_math_trace && _math_trace->enabled())
         _math_trace->get_math_stack()->set_samplerate(_dev_inst->get_sample_rate());
@@ -415,7 +415,7 @@ void SigSession::container_init()
     if (_math_trace)
         _math_trace->get_math_stack()->init();
 
-#ifdef ENABLE_DECODE
+
     // DecoderModel
     //pv::data::DecoderModel *decoder_model = get_decoder_model();
     //decoder_model->setDecoderStack(NULL);
@@ -425,7 +425,7 @@ void SigSession::container_init()
         assert(d);
         d->decoder()->init();
     }
-#endif
+
 }
 
 void SigSession::start_capture(bool instant,
@@ -489,13 +489,13 @@ void SigSession::start_capture(bool instant,
 void SigSession::stop_capture()
 {
     data_unlock();
-#ifdef ENABLE_DECODE
+
     for (vector< boost::shared_ptr<view::DecodeTrace> >::iterator i =
         _decode_traces.begin();
         i != _decode_traces.end();
         i++)
         (*i)->decoder()->stop_decode();
-#endif
+
     if (get_capture_state() != Running)
 		return;
 
@@ -707,10 +707,10 @@ void SigSession::init_signals()
     if (_group_data)
         _group_data->clear();
 
-#ifdef ENABLE_DECODE
+
     // Clear the decode traces
     _decode_traces.clear();
-#endif
+
 
     // Detect what data types we will receive
     if(_dev_inst) {
@@ -865,13 +865,13 @@ void SigSession::refresh(int holdtime)
     if (_logic_data) {
         _logic_data->init();
         //_cur_logic_snapshot.reset();
-#ifdef ENABLE_DECODE
+
         BOOST_FOREACH(const boost::shared_ptr<view::DecodeTrace> d, _decode_traces)
         {
             assert(d);
             d->decoder()->init();
         }
-#endif
+
     }
     if (_dso_data) {
         _dso_data->init();
@@ -1143,6 +1143,7 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
 
     if (_data_lock && packet->type != SR_DF_END)
         return;
+        
     if (packet->type != SR_DF_END &&
         packet->status != SR_PKT_OK) {
         _error = Pkt_data_err;
@@ -1207,10 +1208,10 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
             _cur_logic_snapshot->capture_ended();
             _cur_dso_snapshot->capture_ended();
             _cur_analog_snapshot->capture_ended();
-#ifdef ENABLE_DECODE
+
             BOOST_FOREACH(const boost::shared_ptr<view::DecodeTrace> d, _decode_traces)
                 d->frame_ended();
-#endif
+
 		}
 
         if (packet->status != SR_PKT_OK) {
@@ -1366,7 +1367,7 @@ uint16_t SigSession::get_ch_num(int type)
     return num_channels;
 }
 
-#ifdef ENABLE_DECODE
+
 bool SigSession::add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus)
 { 
     bool ret = false;
@@ -1506,7 +1507,7 @@ pv::data::DecoderModel* SigSession::get_decoder_model() const
 {
     return _decoder_model;
 }
-#endif
+
 
 void SigSession::spectrum_rebuild()
 {

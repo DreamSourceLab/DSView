@@ -21,9 +21,7 @@
  */
 
 #include <libsigrok4DSL/libsigrok.h>
-#ifdef ENABLE_DECODE
 #include <libsigrokdecode4DSL/libsigrokdecode.h>
-#endif
 
 #include <stdint.h>
 #include <getopt.h>
@@ -33,7 +31,6 @@
 #include <QFile>
 #include <QDir>
 #include <QTranslator>
-#include <QSettings>
 #include <QDesktopServices>
 #include <QStyle>
 
@@ -130,9 +127,9 @@ int main(int argc, char *argv[])
 			const int loglevel = atoi(optarg);
 			sr_log_loglevel_set(loglevel);
 
-#ifdef ENABLE_DECODE
+
 			srd_log_loglevel_set(loglevel);
-#endif
+
 
 			break;
 		}
@@ -176,7 +173,7 @@ int main(int argc, char *argv[])
 	}
 
 	do {
-#ifdef ENABLE_DECODE
+
 		// Initialise libsigrokdecode
 		if (srd_init(NULL) != SRD_OK) {
 			qDebug() << "ERROR: libsigrokdecode init failed.";
@@ -185,9 +182,9 @@ int main(int argc, char *argv[])
 
 		// Load the protocol decoders
 		srd_decoder_load_all();
-#endif
+
 		//load app config
-		AppConfig::Instance().Load("./appconfig.json");
+		AppConfig::Instance().LoadAll();
 
 		try {
 			// Create the device manager, initialise the drivers
@@ -206,10 +203,10 @@ int main(int argc, char *argv[])
 			qDebug() << e.what();
 		}
 
-#ifdef ENABLE_DECODE
+
 		// Destroy libsigrokdecode
 		srd_exit();
-#endif
+
 
 	} while (0);
 

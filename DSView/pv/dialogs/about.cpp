@@ -31,6 +31,7 @@
 #include <QTextCodec>
 
 #include "about.h"
+#include "../config/appconfig.h"
 
 namespace pv {
 namespace dialogs {
@@ -80,7 +81,11 @@ About::About(QWidget *parent) :
     QDir dir(DS_RES_PATH);
     dir.cdUp();
     #endif
-    QString filename = dir.absolutePath() + "/NEWS" + QString::number(qApp->property("Language").toInt());
+
+    AppConfig &app = AppConfig::Instance(); 
+    int lan = app._frameOptions.language;
+
+    QString filename = dir.absolutePath() + "/NEWS" + QString::number(lan);
     QFile news(filename);
     if (news.open(QIODevice::ReadOnly)) {
         QTextCodec *code=QTextCodec::codecForName("UTF-8");

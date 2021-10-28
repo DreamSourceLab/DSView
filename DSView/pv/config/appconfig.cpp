@@ -20,15 +20,11 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include "appconfig.h"
-#include <assert.h>
-#include <QFile>
-#include <QFileInfo>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QTextStream>
-#include <QStringList>
-
+#include "appconfig.h" 
+#include <QApplication>
+#include <QSettings>
+#include <QLocale>
+  
 #define MAX_PROTOCOL_FORMAT_LIST 15
 
 StringPair::StringPair(const string &key, const string &value)
@@ -44,12 +40,10 @@ QString FormatArrayToString(vector<StringPair> &protocolFormats){
     for (StringPair &o : protocolFormats){
          if (!str.isEmpty()){
              str += ";";
-         }
-         std::string line;
-         line += o.m_key;
-         line += "=";
-         line += o.m_value;
-         str += line.c_str();
+         } 
+         str += o.m_key.c_str();
+         str += "=";
+         str += o.m_value.c_str(); 
     }
 
     return str;
@@ -68,11 +62,112 @@ void StringToFormatArray(const QString &str, vector<StringPair> &protocolFormats
     }
 }
 
+//read write field
+
+void getFiled(const char *key, QSettings &st, QString &f, const char *dv){
+    f = st.value(key, dv).toString();
+}
+void getFiled(const char *key, QSettings &st, int &f, int dv){
+    f = st.value(key, dv).toInt();
+}
+void getFiled(const char *key, QSettings &st, bool &f, bool dv){
+    f = st.value(key, dv).toBool();
+}
+ 
+void setFiled(const char *key, QSettings &st, QString f){
+    st.setValue(key, f);
+}
+void setFiled(const char *key, QSettings &st, int f){
+    st.setValue(key, f);
+}
+void setFiled(const char *key, QSettings &st, bool f){
+    st.setValue(key, f);
+}
+
+
+///------ app
+void _loadApp(AppOptions &o, QSettings &st){
+    st.beginGroup("Application"); 
+    getFiled("quickScroll", st, o.quickScroll, true);
+    getFiled("warnofMultiTrig", st, o.warnofMultiTrig, true);
+
+
+    QString fmt;
+    getFiled("protocalFormats", st, fmt, "");
+    if (fmt != ""){
+         StringToFormatArray(fmt, o.m_protocolFormats);
+    }
+   
+    st.endGroup();  
+}
+
+void _saveApp(AppOptions &o, QSettings &st){
+    st.beginGroup("Application");
+    setFiled("quickScroll", st, o.quickScroll);
+    setFiled("warnofMultiTrig", st, o.warnofMultiTrig);
+
+
+    QString fmt =  FormatArrayToString(o.m_protocolFormats);
+    setFiled("protocalFormats", st, fmt);
+    st.endGroup();  
+}
+
+//-----frame
+void _loadFrame(FrameOptions &o, QSettings &st){
+    st.beginGroup("MainFrame"); 
+    getFiled("style", st, o.style, "dark");
+    getFiled("language", st, o.language, -1);
+    getFiled("isMax", st, o.isMax, false);  
+    o.geometry = st.value("geometry", QByteArray()).toByteArray();
+    o.windowState = st.value("windowState", QByteArray()).toByteArray();
+    st.endGroup();
+
+    if (o.language == -1){
+        //get local language
+        QLocale locale;
+        o.language = locale.language();
+    }
+}
+
+void _saveFrame(FrameOptions &o, QSettings &st){
+    st.beginGroup("MainFrame");
+    setFiled("style", st, o.style);
+    setFiled("language", st, o.language);
+    setFiled("isMax", st, o.isMax);  
+    st.setValue("geometry", o.geometry); 
+    st.setValue("windowState", o.windowState); 
+    st.endGroup();
+}
+
+//------history
+void _loadHistory(UserHistory &o, QSettings &st){
+    st.beginGroup("UserHistory");
+    getFiled("exportDir", st, o.exportDir, ""); 
+    getFiled("saveDir", st, o.saveDir, ""); 
+    getFiled("showDocuments", st, o.showDocuments, true);
+    getFiled("screenShotPath", st, o.screenShotPath, ""); 
+    getFiled("sessionDir", st, o.sessionDir, ""); 
+    getFiled("openDir", st, o.openDir, ""); 
+    getFiled("protocolExportPath", st, o.protocolExportPath, ""); 
+    st.endGroup();
+}
+ 
+void _saveHistory(UserHistory &o, QSettings &st){
+    st.beginGroup("UserHistory");
+    setFiled("exportDir", st, o.exportDir); 
+    setFiled("saveDir", st, o.saveDir); 
+    setFiled("showDocuments", st, o.showDocuments); 
+    setFiled("screenShotPath", st, o.screenShotPath); 
+    setFiled("sessionDir", st, o.sessionDir); 
+    setFiled("openDir", st, o.openDir); 
+    setFiled("protocolExportPath", st, o.protocolExportPath); 
+    st.endGroup();
+}
+
 //------------AppConfig
 
 AppConfig::AppConfig()
-{
-    _appOptions.quickScroll = true;
+{ 
 }
 
 AppConfig::~AppConfig()
@@ -88,111 +183,88 @@ AppConfig::~AppConfig()
      return *ins;
  }
 
-bool AppConfig::Load(const char *file)
-{
-    assert(file);
-    m_fileName = file;
-
-    QFile qf(file);
-    if (qf.open(QIODevice::ReadOnly))
-    {
-        QByteArray bytes = qf.readAll();
-        qf.close();
-
-        string json;
-        json.append(bytes.data(), bytes.size());
-        FromJson(json);
-        return true;
-    }
-
-    return false;
+void AppConfig::LoadAll()
+{   
+    QSettings st(QApplication::organizationName(), QApplication::applicationName());
+    _loadApp(_appOptions, st);
+    _loadHistory(_userHistory, st);
+    _loadFrame(_frameOptions, st);
 }
 
-bool AppConfig::Save()
-{
-    if (m_fileName != "")
-    { 
-        QFile qf(m_fileName.c_str());
-        if (qf.open(QIODevice::WriteOnly | QIODevice::Text))
-        { 
-            string json = ToJsonString();
-            QByteArray bytes(json.c_str(), json.size());
-
-            QTextStream _stream(&qf);
-            _stream.setCodec("UTF-8");
-            _stream << QString::fromUtf8(bytes);
-            qf.close();
-
-            return true;
-        }
-    }
-    return false;
-}
-
-  string AppConfig::ToJsonString()
+  void AppConfig::SaveApp()
   {
-      QJsonObject jobj; 
-      QString  profomats = FormatArrayToString(m_protocolFormats);
-      jobj["ProtocolFormats"] = QJsonValue::fromVariant(profomats);
-
-      //application options
-      QJsonObject app; 
-      app["QuickScroll"] = QJsonValue::fromVariant(_appOptions.quickScroll);
-  
-      jobj["Application"] = QJsonValue::fromVariant(app);
-
-      QJsonDocument jdoc(jobj);
-      QByteArray bytes = jdoc.toJson();
-      string json;
-      json.append(bytes.data(), bytes.size());
-      return json;  
+      QSettings st(QApplication::organizationName(), QApplication::applicationName());
+      _saveApp(_appOptions, st);
   }
 
-  void AppConfig::FromJson(string &json)
+  void AppConfig::SaveHistory()
   {
-      if (!json.size())
-        return;
-
-      QByteArray bytes(json.c_str(), json.size());
-      QJsonDocument jdoc = QJsonDocument::fromJson(bytes);
-      QJsonObject jobj = jdoc.object();
-
-      if (jobj.contains("ProtocolFormats")){
-          m_protocolFormats.clear();
-          StringToFormatArray(jobj["ProtocolFormats"].toString(), m_protocolFormats);
-      } 
-
-      //application node
-      if (jobj.contains("Application")){
-          QJsonObject app = jobj["Application"].toObject();
-          _appOptions.quickScroll = app["QuickScroll"].toBool();
-      } 
+      QSettings st(QApplication::organizationName(), QApplication::applicationName());
+       _saveHistory(_userHistory, st);
   }
+
+  void AppConfig::SaveFrame()
+  {
+      QSettings st(QApplication::organizationName(), QApplication::applicationName());
+      _saveFrame(_frameOptions, st);
+  }
+ 
 
 void AppConfig::SetProtocolFormat(const string &protocolName, const string &value)
 {
-    for (StringPair &o : m_protocolFormats){
+    bool bChange = false;
+    for (StringPair &o : _appOptions.m_protocolFormats){
         if (o.m_key == protocolName){
             o.m_value = value;
-            return;
+            bChange = true;
+            break;
         }    
     }
-    if (m_protocolFormats.size() > MAX_PROTOCOL_FORMAT_LIST){
-        while (m_protocolFormats.size() < MAX_PROTOCOL_FORMAT_LIST)
+
+    if (!bChange)
+    {
+        if (_appOptions.m_protocolFormats.size() > MAX_PROTOCOL_FORMAT_LIST)
         {
-           m_protocolFormats.erase(m_protocolFormats.begin());
+            while (_appOptions.m_protocolFormats.size() < MAX_PROTOCOL_FORMAT_LIST)
+            {
+                _appOptions.m_protocolFormats.erase(_appOptions.m_protocolFormats.begin());
+            }
         }
+        _appOptions.m_protocolFormats.push_back(StringPair(protocolName, value));
+        bChange = true;
     }
 
-    m_protocolFormats.push_back(StringPair(protocolName,value));    
+    if (bChange){
+        SaveApp();
+    }
 }
 
 string AppConfig::GetProtocolFormat(const string &protocolName)
 {
-     for (StringPair &o : m_protocolFormats){
+     for (StringPair &o : _appOptions.m_protocolFormats){
         if (o.m_key == protocolName){ 
             return o.m_value;
         }
     }
     return "";
+}
+
+//-------------api
+QString GetDirectoryName(QString path)
+{
+    int lstdex = path.lastIndexOf('/');
+    if (lstdex != -1)
+    {
+        return path.left(lstdex);
+    }
+    return path;
+}
+
+QString GetIconPath()
+{ 
+    QString style = AppConfig::Instance()._frameOptions.style;
+    if (style == ""){
+        style = "dark";
+    }
+    return ":/icons/" + style;
 }

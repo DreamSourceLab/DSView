@@ -93,7 +93,7 @@ private:
     QToolButton _measure_button;
     QToolButton _search_button;
     QToolButton _function_button;
-    QToolButton _display_button;
+    QToolButton _setting_button;
     QAction* _trig_action;
     QAction* _protocol_action;
     QAction* _measure_action;

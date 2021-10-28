@@ -23,8 +23,7 @@
 #include <extdef.h>
 
 #include <math.h>
-
-#include <QApplication>
+ 
 
 #include "signal.h"
 #include "view.h"

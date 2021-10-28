@@ -234,7 +234,7 @@ void ProtocolDock::retranslateUi()
 
 void ProtocolDock::reStyle()
 {
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    QString iconPath = GetIconPath();
 
     _add_button->setIcon(QIcon(iconPath+"/add.svg"));
     _del_all_button->setIcon(QIcon(iconPath+"/del.svg"));
@@ -777,7 +777,6 @@ void ProtocolDock::OnProtocolFormatChanged(QString format, void *handle){
        if ((*it) == handle){
            QString &name = (*it)->GetProtocolName();
            AppConfig::Instance().SetProtocolFormat(name.toStdString(), format.toStdString());
-           AppConfig::Instance().Save();
            (*it)->m_decoderStatus->m_format = DecoderDataFormat::Parse(format.toStdString().c_str());
            protocol_updated();
            break;

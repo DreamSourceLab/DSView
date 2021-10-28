@@ -25,8 +25,7 @@
 #include <math.h>
 
 #include <boost/foreach.hpp>
-
-#include <QApplication>
+ 
 #include <QEvent>
 #include <QMouseEvent>
 #include <QScrollBar>
@@ -378,10 +377,10 @@ vector< boost::shared_ptr<Trace> > View::get_traces(int type)
 {
     const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
     const vector< boost::shared_ptr<GroupSignal> > groups(_session.get_group_signals());
-#ifdef ENABLE_DECODE
+ 
     const vector< boost::shared_ptr<DecodeTrace> > decode_sigs(
         _session.get_decode_signals());
-#endif
+ 
     const vector< boost::shared_ptr<SpectrumTrace> > spectrums(_session.get_spectrum_traces());
 
     vector< boost::shared_ptr<Trace> > traces;
@@ -389,12 +388,12 @@ vector< boost::shared_ptr<Trace> > View::get_traces(int type)
         if (type == ALL_VIEW || _trace_view_map[t->get_type()] == type)
             traces.push_back(t);
     }
-#ifdef ENABLE_DECODE
+ 
     BOOST_FOREACH(boost::shared_ptr<Trace> t, decode_sigs) {
         if (type == ALL_VIEW || _trace_view_map[t->get_type()] == type)
             traces.push_back(t);
     }
-#endif
+ 
     BOOST_FOREACH(boost::shared_ptr<Trace> t, groups) {
         if (type == ALL_VIEW || _trace_view_map[t->get_type()] == type)
             traces.push_back(t);

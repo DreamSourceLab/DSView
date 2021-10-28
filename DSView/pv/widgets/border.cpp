@@ -21,11 +21,11 @@
 
 #include "border.h"
 #include "../mainframe.h"
-
-#include <QApplication>
+ 
 #include <QPainter>
 #include <QLinearGradient>
 #include <QRadialGradient>
+#include "../config/appconfig.h"
 
 namespace pv {
 namespace widgets {
@@ -56,7 +56,10 @@ void Border::paintEvent(QPaintEvent *)
     painter.setPen(Qt::NoPen);
     painter.setRenderHint(QPainter::Antialiasing, true);
     QLinearGradient linearGrad(QPointF(width(), height()), QPointF(0, 0));
-    if (qApp->property("Style").toString() == "dark") {
+    AppConfig &app = AppConfig::Instance(); 
+    QString style = app._frameOptions.style;
+
+    if (style == "dark") {
         linearGrad.setColorAt(0, dark_border0);
         linearGrad.setColorAt(0.25, dark_border1);
         linearGrad.setColorAt(0.5, dark_border2);
@@ -71,7 +74,7 @@ void Border::paintEvent(QPaintEvent *)
     }
 
     QRadialGradient radialGrad(QPointF(0, 0), width());
-    if (qApp->property("Style").toString() == "dark") {
+    if (style == "dark") {
         radialGrad.setColorAt(0, dark_border0);
         radialGrad.setColorAt(0.25, dark_border1);
         radialGrad.setColorAt(0.5, dark_border2);

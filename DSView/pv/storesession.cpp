@@ -41,13 +41,13 @@
 #include <pv/dock/protocoldock.h>
 
 #include <boost/foreach.hpp>
-
-#include <QApplication>
+ 
 #include <QFileDialog>
+
+#include "config/appconfig.h"
 
 using boost::dynamic_pointer_cast;
 using boost::mutex;
-using boost::shared_ptr;
 using boost::thread;
 using boost::lock_guard;
 using std::deque;
@@ -161,10 +161,20 @@ bool StoreSession::save_start(QString session_file)
         _error = tr("No data to save.");
         return false;
     }
+ 
 
-    const QString DIR_KEY("SavePath");
-    QSettings settings(QApplication::organizationName(), QApplication::applicationName());
-    QString default_name = settings.value(DIR_KEY).toString() + "/" + _session.get_device()->name() + "-";
+    //root dir 
+    QString default_name;
+
+    AppConfig &app = AppConfig::Instance(); 
+    if (app._userHistory.saveDir != "")
+    {
+        default_name = app._userHistory.saveDir + "/"  + _session.get_device()->name() + "-";
+    } 
+    else{
+        default_name =  _session.get_device()->name() + "-";
+    } 
+
     for (const GSList *l = _session.get_device()->get_dev_mode_list();
          l; l = l->next) {
         const sr_dev_mode *mode = (const sr_dev_mode *)l->data;
@@ -173,26 +183,32 @@ bool StoreSession::save_start(QString session_file)
             break;
         }
     }
+
     default_name += _session.get_session_time().toString("-yyMMdd-hhmmss");
 
     // Show the dialog
-    _file_name = QFileDialog::getSaveFileName(
-                    NULL, tr("Save File"), default_name,
+    QString svFilePath = QFileDialog::getSaveFileName(
+                    NULL, 
+                    tr("Save File"), 
+                    default_name,
                     tr("DSView Data (*.dsl)"));
 
-    if (!_file_name.isEmpty()) {
-        QFileInfo f(_file_name);
+    if (!svFilePath.isEmpty()) {
+        QFileInfo f(svFilePath);
         if(f.suffix().compare("dsl"))
-            _file_name.append(tr(".dsl"));
-        QDir CurrentDir;
-        settings.setValue(DIR_KEY, CurrentDir.filePath(_file_name));
+            svFilePath.append(tr(".dsl"));
+
+        _file_name =  svFilePath;  
+        svFilePath = GetDirectoryName(svFilePath);
+
+        if (svFilePath != app._userHistory.saveDir){
+           app._userHistory.saveDir = svFilePath; 
+            app.SaveHistory();
+        }     
 
         QString meta_file = meta_gen(snapshot);
-    #ifdef ENABLE_DECODE
+   
         QString decoders_file = decoders_gen();
-    #else
-        QString decoders_file = NULL;
-    #endif
 
        /*
         if (meta_file == NULL) {
@@ -233,15 +249,15 @@ bool StoreSession::save_start(QString session_file)
     return false;
 }
 
-void StoreSession::save_proc(shared_ptr<data::Snapshot> snapshot)
+void StoreSession::save_proc(boost::shared_ptr<data::Snapshot> snapshot)
 {
 	assert(snapshot);
 
     int ret = SR_ERR;
     int num = 0;
-    shared_ptr<data::LogicSnapshot> logic_snapshot;
-    shared_ptr<data::AnalogSnapshot> analog_snapshot;
-    shared_ptr<data::DsoSnapshot> dso_snapshot;
+    boost::shared_ptr<data::LogicSnapshot> logic_snapshot;
+    boost::shared_ptr<data::AnalogSnapshot> analog_snapshot;
+    boost::shared_ptr<data::DsoSnapshot> dso_snapshot;
 
     if ((logic_snapshot = boost::dynamic_pointer_cast<data::LogicSnapshot>(snapshot))) {
         uint16_t to_save_probes = 0;
@@ -424,7 +440,7 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
         fprintf(meta, "total blocks = %d\n", snapshot->get_block_num());
     }
 
-    shared_ptr<data::LogicSnapshot> logic_snapshot;
+    boost::shared_ptr<data::LogicSnapshot> logic_snapshot;
     if ((logic_snapshot = dynamic_pointer_cast<data::LogicSnapshot>(snapshot))) {
         uint16_t to_save_probes = 0;
         for (l = sdi->channels; l; l = l->next) {
@@ -479,7 +495,7 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
     } else if (sdi->mode == LOGIC) {
         fprintf(meta, "trigger time = %lld\n", _session.get_session_time().toMSecsSinceEpoch());
     } else if (sdi->mode == ANALOG) {
-        shared_ptr<data::AnalogSnapshot> analog_snapshot;
+        boost::shared_ptr<data::AnalogSnapshot> analog_snapshot;
         if ((analog_snapshot = dynamic_pointer_cast<data::AnalogSnapshot>(snapshot))) {
             uint8_t tmp_u8 = analog_snapshot->get_unit_bytes();
             fprintf(meta, "bits = %d\n", tmp_u8*8);
@@ -574,7 +590,8 @@ bool StoreSession::export_start()
     std::set<int> type_set;
     BOOST_FOREACH(const boost::shared_ptr<view::Signal> sig, _session.get_signals()) {
         assert(sig);
-        type_set.insert(sig->get_type());
+        int _tp = sig->get_type();
+        type_set.insert(_tp);
     }
 
     if (type_set.size() > 1) {
@@ -594,9 +611,16 @@ bool StoreSession::export_start()
         return false;
     }
 
-    const QString DIR_KEY("ExportPath");
-    QSettings settings(QApplication::organizationName(), QApplication::applicationName());
-    QString default_name = settings.value(DIR_KEY).toString() + "/" + _session.get_device()->name() + "-";
+    AppConfig &app = AppConfig::Instance(); 
+ 
+    QString default_name;
+    if (app._userHistory.exportDir != "")
+    {
+       default_name = app._userHistory.exportDir  + "/"  + _session.get_device()->name() + "-";
+    } 
+    else{
+        default_name =  _session.get_device()->name() + "-";
+    }  
 
     for (const GSList *l = _session.get_device()->get_dev_mode_list();
          l; l = l->next) {
@@ -616,17 +640,28 @@ bool StoreSession::export_start()
         if(i < supportedFormats.count() - 1)
             filter.append(";;");
     }
-    _file_name = QFileDialog::getSaveFileName(
-                NULL, tr("Export Data"), default_name,filter,&filter);
 
-    if (!_file_name.isEmpty()) {
+    QString svFilePath = QFileDialog::getSaveFileName(
+                NULL, 
+                tr("Export Data"), 
+                default_name,
+                filter,
+                &filter);
+
+    if (!svFilePath.isEmpty()) {
         QFileInfo f(_file_name);
         QStringList list = filter.split('.').last().split(')');
         _suffix = list.first();
         if(f.suffix().compare(_suffix))
-            _file_name += tr(".") + _suffix;
-        QDir CurrentDir;
-        settings.setValue(DIR_KEY, CurrentDir.filePath(_file_name));
+            svFilePath += tr(".") + _suffix;
+
+         _file_name =  svFilePath;  
+        svFilePath = GetDirectoryName(svFilePath);
+
+        if (svFilePath != app._userHistory.exportDir ){
+            app._userHistory.exportDir  = svFilePath;
+            app.SaveHistory();
+        }      
 
         const struct sr_output_module** supportedModules = sr_output_list();
         while(*supportedModules){
@@ -651,13 +686,13 @@ bool StoreSession::export_start()
     return false;
 }
 
-void StoreSession::export_proc(shared_ptr<data::Snapshot> snapshot)
+void StoreSession::export_proc(boost::shared_ptr<data::Snapshot> snapshot)
 {
     assert(snapshot);
 
-    shared_ptr<data::LogicSnapshot> logic_snapshot;
-    shared_ptr<data::AnalogSnapshot> analog_snapshot;
-    shared_ptr<data::DsoSnapshot> dso_snapshot;
+    boost::shared_ptr<data::LogicSnapshot> logic_snapshot;
+    boost::shared_ptr<data::AnalogSnapshot> analog_snapshot;
+    boost::shared_ptr<data::DsoSnapshot> dso_snapshot;
     int channel_type;
 
     if ((logic_snapshot = boost::dynamic_pointer_cast<data::LogicSnapshot>(snapshot))) {
@@ -835,7 +870,7 @@ void StoreSession::export_proc(shared_ptr<data::Snapshot> snapshot)
                 out << (char*) data_out->str;
                 g_string_free(data_out,TRUE);
             }
-            
+
             _units_stored += size;
             progress_updated();
         }
@@ -876,7 +911,7 @@ void StoreSession::export_proc(shared_ptr<data::Snapshot> snapshot)
     progress_updated();
 }
 
-#ifdef ENABLE_DECODE
+ 
 QString StoreSession::decoders_gen()
 {
     QDir dir;
@@ -1129,7 +1164,7 @@ void StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_arra
     }
 
 }
-#endif
+ 
 
 double StoreSession::get_integer(GVariant *var)
 {

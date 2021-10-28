@@ -26,11 +26,11 @@
 #include <QToolButton>
 #include <QHBoxLayout>
 #include <QEvent>
-#include <QMouseEvent>
-#include <QApplication>
+#include <QMouseEvent> 
 #include <QPainter>
 #include <QStyleOption>
 #include <assert.h>
+#include "../config/appconfig.h"
 
 #include "../dsvdef.h"
 
@@ -107,7 +107,7 @@ void TitleBar::changeEvent(QEvent *event)
 
 void TitleBar::reStyle()
 {
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    QString iconPath = GetIconPath();
 
     if (_isTop) {
         _minimizeButton->setIcon(QIcon(iconPath+"/minimize.svg"));
@@ -167,7 +167,7 @@ QString TitleBar::title() const
 
 void TitleBar::showMaxRestore()
 {
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    QString iconPath = GetIconPath();
     if (parentWidget()->isMaximized()) {
         _maximizeButton->setIcon(QIcon(iconPath+"/maximize.svg"));
         normalShow();
@@ -179,7 +179,7 @@ void TitleBar::showMaxRestore()
 
 void TitleBar::setRestoreButton(bool max)
 {
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    QString iconPath = GetIconPath();
     if (!max) {
         _maximizeButton->setIcon(QIcon(iconPath+"/maximize.svg"));
     } else {

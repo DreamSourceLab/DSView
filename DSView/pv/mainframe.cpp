@@ -39,10 +39,13 @@
 #include <QDesktopWidget>
 #include <QDesktopServices>
 #include <QPushButton>
-#include <QMessageBox>
-#include <QApplication>
+#include <QMessageBox> 
 #include <QScreen>
+#include <QApplication>
+
 #include "dsvdef.h"
+#include "config/appconfig.h"
+#include "../ui/msgbox.h"
 
 #include <algorithm>
 
@@ -132,6 +135,7 @@ MainFrame::MainFrame(DeviceManager &device_manager,
 
     connect(&_timer, SIGNAL(timeout()), this, SLOT(unfreezing()));
     //readSettings();
+  
 }
 
 void MainFrame::changeEvent(QEvent* event)
@@ -364,34 +368,20 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
 }
 
 void MainFrame::writeSettings()
-{
-    QSettings settings(QApplication::organizationName(), QApplication::applicationName());
-
-    settings.beginGroup("MainFrame");
-    settings.setValue("style", qApp->property("Style").toString());
-    settings.setValue("language", qApp->property("Language").toInt());
-    settings.setValue("geometry", saveGeometry());
-    settings.setValue("isMax", isMaximized());
-    settings.endGroup();
+{  
+    AppConfig &app = AppConfig::Instance();
+    app._frameOptions.isMax = isMaximized();
+    app._frameOptions.geometry = saveGeometry();
+    app.SaveFrame(); 
 }
 
 void MainFrame::readSettings()
 {
-    QSettings settings(QApplication::organizationName(), QApplication::applicationName());
+    AppConfig &app = AppConfig::Instance(); 
+   
+    _mainWindow->switchLanguage(app._frameOptions.language);
 
-    settings.beginGroup("MainFrame");
-    bool isMax = settings.value("isMax", false).toBool();
-    const QByteArray geometry = settings.value("geometry", QByteArray()).toByteArray();
-    // defaut language
-    if (settings.contains("language")) {
-        _mainWindow->switchLanguage(settings.value("language").toInt());
-    } else {
-        QLocale locale;
-        _mainWindow->switchLanguage(locale.language());
-    }
-    settings.endGroup();
-
-    if (geometry.isEmpty()) {
+    if (app._frameOptions.geometry.isEmpty()) {
         QScreen *screen=QGuiApplication::primaryScreen ();
         const QRect availableGeometry = screen->availableGeometry();
         resize(availableGeometry.width() / 2, availableGeometry.height() / 1.5);
@@ -399,12 +389,20 @@ void MainFrame::readSettings()
         const int origY = std::max(0, (availableGeometry.height() - height()) / 2);
         move(origX, origY);
     } else {
-        restoreGeometry(geometry);
+        try
+        {            
+         QByteArray ge = app._frameOptions.geometry;
+         restoreGeometry(ge);
+        }
+        catch(...)
+        {
+             MsgBox::Show(NULL, "restore frame status error!");
+        } 
     }
 
     // restore dockwidgets
     _mainWindow->restore_dock();
-    _titleBar->setRestoreButton(isMax);
+    _titleBar->setRestoreButton(app._frameOptions.isMax);
 }
 
 void MainFrame::setTaskbarProgress(int progress)
@@ -414,14 +412,15 @@ void MainFrame::setTaskbarProgress(int progress)
 
 void MainFrame::show_doc()
 {
-    const QString DOC_KEY("ShowDocuments");
-    QSettings settings(QApplication::organizationName(), QApplication::applicationName());
-    if (!settings.contains(DOC_KEY)) {
+     AppConfig &app = AppConfig::Instance(); 
+     int lan = app._frameOptions.language;
+      
+    if (app._userHistory.showDocuments) {
         dialogs::DSDialog dlg(this, true);
         dlg.setTitle(tr("Document"));
 
         QLabel tipsLabel;
-        tipsLabel.setPixmap(QPixmap(":/icons/showDoc"+QString::number(_mainWindow->language())+".png"));
+        tipsLabel.setPixmap(QPixmap(":/icons/showDoc"+QString::number(lan)+".png"));
         QMessageBox msg;
         msg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
         msg.setContentsMargins(0, 0, 0, 0);
@@ -441,8 +440,10 @@ void MainFrame::show_doc()
         if (msg.clickedButton() == openButton) {
             _mainWindow->openDoc();
         }
-        if (msg.clickedButton() == noMoreButton)
-              settings.setValue(DOC_KEY, false);
+        if (msg.clickedButton() == noMoreButton){
+            app._userHistory.showDocuments = false;
+            app.SaveHistory();
+        }   
     }
 }
 

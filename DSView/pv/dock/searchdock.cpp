@@ -42,6 +42,7 @@
 
 #include <stdint.h>
 #include <boost/shared_ptr.hpp>
+#include "../config/appconfig.h"
 
 namespace pv {
 namespace dock {
@@ -109,7 +110,7 @@ void SearchDock::retranslateUi()
 
 void SearchDock::reStyle()
 {
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    QString iconPath = GetIconPath();
 
     _pre_button.setIcon(QIcon(iconPath+"/pre.svg"));
     _nxt_button.setIcon(QIcon(iconPath+"/next.svg"));

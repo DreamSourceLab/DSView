@@ -24,8 +24,18 @@
 
 #include <string>
 #include <vector>
+#include <QString>
+#include <QByteArray>
 
 using namespace std;
+
+//--------------------api
+
+QString GetDirectoryName(QString path);
+
+QString GetIconPath();
+
+//------------------class
   
 class StringPair
 {
@@ -35,33 +45,57 @@ public:
    string m_value;
 };
 
-struct AppOptions
+class AppOptions
 {  
-    bool  quickScroll;    
+  public:
+    bool  quickScroll;
+    bool  warnofMultiTrig;
+
+
+    vector<StringPair> m_protocolFormats;
+};
+ 
+class FrameOptions
+{
+public:
+  QString     style;
+  int         language;
+  QByteArray  geometry;
+  bool        isMax;
+  QByteArray  windowState;
 };
 
-  
+class UserHistory
+{
+public:
+  QString   exportDir;
+  QString   saveDir;
+  bool      showDocuments;
+  QString   screenShotPath;
+  QString   sessionDir;
+  QString   openDir;
+  QString   protocolExportPath;
+};
+
 class AppConfig
 {
 private:
   AppConfig();
-
   ~AppConfig();
 
 public:
   static AppConfig &Instance();
-  bool Load(const char *file);
-  bool Save();
-  string ToJsonString();
-  void FromJson(string &json);
 
+  void LoadAll();
+  void SaveApp();  
+  void SaveHistory();
+  void SaveFrame();
+  
   void SetProtocolFormat(const string &protocolName, const string &value);
   string GetProtocolFormat(const string &protocolName); 
 
 public:
-  AppOptions _appOptions;
-
-private:
-  string m_fileName;
-  vector<StringPair> m_protocolFormats;
+  AppOptions    _appOptions;
+  UserHistory   _userHistory;
+  FrameOptions  _frameOptions; 
 };

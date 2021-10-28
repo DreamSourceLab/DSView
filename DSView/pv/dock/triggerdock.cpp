@@ -160,7 +160,7 @@ void TriggerDock::retranslateUi()
 
 void TriggerDock::reStyle()
 {
-    //QString iconPath = ":/icons/" + qApp->property("Style").toString();
+     
 }
 
 void TriggerDock::paintEvent(QPaintEvent *)

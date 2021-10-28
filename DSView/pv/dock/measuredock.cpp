@@ -41,6 +41,7 @@
 #include <QPainter>
 #include <QRegExpValidator>
 #include <QMessageBox>
+#include "../config/appconfig.h"
 
 using namespace boost;
 
@@ -183,7 +184,7 @@ void MeasureDock::retranslateUi()
 
 void MeasureDock::reStyle()
 {
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    QString iconPath = GetIconPath();
 
     _dist_add_btn->setIcon(QIcon(iconPath+"/add.svg"));
     _edge_add_btn->setIcon(QIcon(iconPath+"/add.svg"));
@@ -247,7 +248,7 @@ void MeasureDock::cursor_update()
     update_edge();
 
     int index = 1;
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    QString iconPath = GetIconPath();
     for(std::list<Cursor*>::iterator i = _view.get_cursorList().begin();
         i != _view.get_cursorList().end(); i++) {
         QString curCursor = QString::number(index);
@@ -336,7 +337,7 @@ void MeasureDock::add_dist_measure()
     row_widget->setLayout(row_layout);
     _dist_row_widget_vec.push_back(row_widget);
 
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    QString iconPath = GetIconPath();
     QToolButton *del_btn = new QToolButton(row_widget);
     del_btn->setIcon(QIcon(iconPath+"/del.svg"));
     del_btn->setCheckable(true);
@@ -402,7 +403,7 @@ void MeasureDock::add_edge_measure()
     row_widget->setLayout(row_layout);
     _edge_row_widget_vec.push_back(row_widget);
 
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    QString iconPath = GetIconPath();
     QToolButton *del_btn = new QToolButton(row_widget);
     del_btn->setIcon(QIcon(iconPath+"/del.svg"));
     del_btn->setCheckable(true);

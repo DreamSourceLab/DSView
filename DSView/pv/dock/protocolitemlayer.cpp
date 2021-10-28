@@ -23,6 +23,7 @@
 #include "../dsvdef.h"
 #include <QtCore> 
 #include <assert.h> 
+#include "../config/appconfig.h"
  
 namespace pv {
 namespace dock {
@@ -41,7 +42,7 @@ ProtocolItemLayer::ProtocolItemLayer(QWidget *parent, QString protocolName, IPro
         _del_button = new QPushButton(parent);
         _format_combox = new QComboBox(parent);
 
-        QString iconPath = ":/icons/" + qApp->property("Style").toString();
+        QString iconPath = GetIconPath();
         _del_button->setFlat(true);
         _del_button->setIcon(QIcon(iconPath + "/del.svg"));
         _set_button->setFlat(true);
@@ -107,7 +108,7 @@ void ProtocolItemLayer::on_format_select_changed(int index){
  }
 
 void ProtocolItemLayer::ResetStyle(){
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    QString iconPath = GetIconPath();
      _del_button->setIcon(QIcon(iconPath + "/del.svg"));
     _set_button->setIcon(QIcon(iconPath + "/gear.svg"));
 }

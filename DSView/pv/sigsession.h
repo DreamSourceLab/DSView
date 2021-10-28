@@ -179,7 +179,7 @@ public:
     std::vector< boost::shared_ptr<view::GroupSignal> >
         get_group_signals();
 
-#ifdef ENABLE_DECODE
+
     bool add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus);
 
     std::vector< boost::shared_ptr<view::DecodeTrace> >
@@ -194,7 +194,7 @@ public:
     void rst_decoder(view::DecodeTrace *signal);
 
     pv::data::DecoderModel* get_decoder_model() const;
-#endif
+
 
     std::vector< boost::shared_ptr<view::SpectrumTrace> >
         get_spectrum_traces();
@@ -323,10 +323,10 @@ private:
     //mutable boost::mutex _signals_mutex;
 	std::vector< boost::shared_ptr<view::Signal> > _signals;
     std::vector< boost::shared_ptr<view::GroupSignal> > _group_traces;
-#ifdef ENABLE_DECODE
+
     std::vector< boost::shared_ptr<view::DecodeTrace> > _decode_traces;
     pv::data::DecoderModel *_decoder_model;
-#endif
+
     std::vector< boost::shared_ptr<view::SpectrumTrace> > _spectrum_traces;
     boost::shared_ptr<view::LissajousTrace> _lissajous_trace;
     boost::shared_ptr<view::MathTrace> _math_trace;

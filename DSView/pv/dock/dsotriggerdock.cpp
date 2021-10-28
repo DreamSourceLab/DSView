@@ -200,7 +200,7 @@ void DsoTriggerDock::retranslateUi()
 
 void DsoTriggerDock::reStyle()
 {
-    //QString iconPath = ":/icons/" + qApp->property("Style").toString();
+     
 }
 
 void DsoTriggerDock::paintEvent(QPaintEvent *)

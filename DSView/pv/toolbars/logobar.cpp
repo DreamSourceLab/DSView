@@ -23,14 +23,14 @@
 #include <boost/foreach.hpp>
 
 #include <QMetaObject>
-#include <QFileDialog>
-#include <QApplication>
+#include <QFileDialog> 
 #include <QDesktopServices>
 #include <QUrl>
 
 #include "logobar.h"
 #include "../dialogs/about.h"
 #include "../dialogs/dsmessagebox.h"
+#include "../config/appconfig.h"
 
 namespace pv {
 namespace toolbars {
@@ -116,7 +116,8 @@ void LogoBar::retranslateUi()
     _manual->setText(tr("&Manual"));
     _issue->setText(tr("&Bug Report"));
 
-    if (qApp->property("Language") == QLocale::Chinese)
+    AppConfig &app = AppConfig::Instance(); 
+    if (app._frameOptions.language == QLocale::Chinese)
         _language->setIcon(QIcon(":/icons/Chinese.svg"));
     else
         _language->setIcon(QIcon(":/icons/English.svg"));
@@ -124,7 +125,7 @@ void LogoBar::retranslateUi()
 
 void LogoBar::reStyle()
 {
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    QString iconPath = GetIconPath();
 
     _about->setIcon(QIcon(iconPath+"/about.svg"));
     _manual->setIcon(QIcon(iconPath+"/manual.svg"));
@@ -138,7 +139,7 @@ void LogoBar::reStyle()
 void LogoBar::dsl_connected(bool conn)
 {
     _connected = conn;
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    QString iconPath =  GetIconPath();
     if (_connected)
         _logo_button.setIcon(QIcon(iconPath+"/logo_color.svg"));
     else
@@ -175,7 +176,7 @@ void LogoBar::on_actionCn_triggered()
 {
     _language->setIcon(QIcon::fromTheme("file",
         QIcon(":/icons/Chinese.svg")));
-    setLanguage(QLocale::Chinese);
+    setLanguage(QLocale::Chinese);   
 }
 
 void LogoBar::on_actionAbout_triggered()

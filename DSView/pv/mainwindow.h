@@ -88,7 +88,7 @@ private:
 
 public slots:
     void session_save();
-    int language() const;
+ 
     void openDoc();
 
     void switchLanguage(int language);
@@ -190,10 +190,10 @@ private:
     toolbars::FileBar *_file_bar;
     toolbars::LogoBar *_logo_bar; //help button, on top right
 
-#ifdef ENABLE_DECODE
+
     QDockWidget *_protocol_dock;
     dock::ProtocolDock *_protocol_widget;
-#endif
+
 
     QDockWidget *_trigger_dock;
     QDockWidget *_dso_trigger_dock;
@@ -204,8 +204,6 @@ private:
     QDockWidget *_search_dock;
     dock::SearchDock * _search_widget;
 
-    int _language;
-    QString _style;
     QTranslator _qtTrans;
     QTranslator _myTrans;
 };
