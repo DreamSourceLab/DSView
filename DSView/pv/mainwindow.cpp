@@ -259,47 +259,55 @@ void MainWindow::setup_ui()
     connect(&_session, SIGNAL(capture_state_changed(int)), this, SLOT(capture_state_changed(int)));
     connect(&_session, SIGNAL(device_attach()), this, SLOT(device_attach()), Qt::QueuedConnection);
     connect(&_session, SIGNAL(device_detach()), this, SLOT(device_detach()), Qt::QueuedConnection);
-    connect(&_session, SIGNAL(session_error()), this, SLOT(show_error()), Qt::QueuedConnection);
+    connect(&_session, SIGNAL(session_error()), this, SLOT(on_show_error()), Qt::QueuedConnection);
     connect(&_session, SIGNAL(session_save()), this, SLOT(session_save()));
     connect(&_session, SIGNAL(data_updated()), _measure_widget, SLOT(reCalc()));
     connect(&_session, SIGNAL(repeat_resume()), this, SLOT(repeat_resume()));
     connect(&_session, SIGNAL(update_capture()), _view, SLOT(update_hori_res()), Qt::DirectConnection);
     connect(&_session, SIGNAL(cur_snap_samplerate_changed()), _measure_widget, SLOT(cursor_update()));
+
+    //view
     connect(_view, SIGNAL(cursor_update()), _measure_widget, SLOT(cursor_update()));
     connect(_view, SIGNAL(cursor_moving()), _measure_widget, SLOT(cursor_moving()));
     connect(_view, SIGNAL(cursor_moved()), _measure_widget, SLOT(reCalc()));
     connect(_view, SIGNAL(prgRate(int)), this, SIGNAL(prgRate(int)));
     connect(_view, SIGNAL(device_changed(bool)), this, SLOT(device_changed(bool)), Qt::DirectConnection);
+    connect(_view, SIGNAL(auto_trig(int)), _dso_trigger_widget, SLOT(auto_trig(int)));
 
-    //tool bar event
-    connect(_trig_bar, SIGNAL(on_protocol(bool)), this, SLOT(on_protocol(bool)));
-    connect(_trig_bar, SIGNAL(on_trigger(bool)), this, SLOT(on_trigger(bool)));
-    connect(_trig_bar, SIGNAL(on_measure(bool)), this, SLOT(on_measure(bool)));
-    connect(_trig_bar, SIGNAL(on_search(bool)), this, SLOT(on_search(bool)));
-    connect(_trig_bar, SIGNAL(setTheme(QString)), this, SLOT(switchTheme(QString)));
-    connect(_file_bar, SIGNAL(load_file(QString)), this, SLOT(load_file(QString)));
-    connect(_file_bar, SIGNAL(on_save()), this, SLOT(on_save()));
-    connect(_file_bar, SIGNAL(on_export()), this, SLOT(on_export()));
-    connect(_file_bar, SIGNAL(on_screenShot()), this, SLOT(on_screenShot()), Qt::QueuedConnection);
-    connect(_file_bar, SIGNAL(load_session(QString)), this, SLOT(load_session(QString)));
-    connect(_file_bar, SIGNAL(store_session(QString)), this, SLOT(store_session(QString)));
-    connect(_logo_bar, SIGNAL(setLanguage(int)), this, SLOT(switchLanguage(int)));
-    connect(_logo_bar, SIGNAL(openDoc()), this, SLOT(openDoc()));
+    //trig_bar
+    connect(_trig_bar, SIGNAL(sig_protocol(bool)), this, SLOT(on_protocol(bool)));
+    connect(_trig_bar, SIGNAL(sig_trigger(bool)), this, SLOT(on_trigger(bool)));
+    connect(_trig_bar, SIGNAL(sig_measure(bool)), this, SLOT(on_measure(bool)));
+    connect(_trig_bar, SIGNAL(sig_search(bool)), this, SLOT(on_search(bool)));
+    connect(_trig_bar, SIGNAL(sig_setTheme(QString)), this, SLOT(switchTheme(QString)));
+    connect(_trig_bar, SIGNAL(sig_show_lissajous(bool)), _view, SLOT(show_lissajous(bool)));
+
+    //file toolbar
+    connect(_file_bar, SIGNAL(sig_load_file(QString)), this, SLOT(on_load_file(QString)));
+    connect(_file_bar, SIGNAL(sig_save()), this, SLOT(on_save()));
+    connect(_file_bar, SIGNAL(sig_export()), this, SLOT(on_export()));
+    connect(_file_bar, SIGNAL(sig_screenShot()), this, SLOT(on_screenShot()), Qt::QueuedConnection);
+    connect(_file_bar, SIGNAL(sig_load_session(QString)), this, SLOT(on_load_session(QString)));
+    connect(_file_bar, SIGNAL(sig_store_session(QString)), this, SLOT(on_store_session(QString)));
+
+    //logobar
+    connect(_logo_bar, SIGNAL(sig_setLanguage(int)), this, SLOT(on_setLanguage(int)));
+    connect(_logo_bar, SIGNAL(sig_open_doc()), this, SLOT(on_open_doc()));
 
 
     connect(_protocol_widget, SIGNAL(protocol_updated()), _view, SLOT(signals_changed()));
 
+    //SamplingBar
+    connect(_sampling_bar, SIGNAL(sig_device_selected()), this, SLOT(on_device_selected()));
+    connect(_sampling_bar, SIGNAL(sig_device_updated()), this, SLOT(on_device_updated_reload()));
+    connect(_sampling_bar, SIGNAL(sig_run_stop()), this, SLOT(on_run_stop()));
+    connect(_sampling_bar, SIGNAL(sig_instant_stop()), this, SLOT(on_instant_stop()));
+    connect(_sampling_bar, SIGNAL(sig_duration_changed()), _trigger_widget, SLOT(device_updated()));
+    connect(_sampling_bar, SIGNAL(sig_duration_changed()), _view, SLOT(timebase_changed()));
+    connect(_sampling_bar, SIGNAL(sig_show_calibration()), _view, SLOT(show_calibration()));
 
-    connect(_sampling_bar, SIGNAL(device_selected()), this, SLOT(update_device_list()));
-    connect(_sampling_bar, SIGNAL(device_updated()), this, SLOT(reload()));
-    connect(_sampling_bar, SIGNAL(run_stop()), this, SLOT(run_stop()));
-    connect(_sampling_bar, SIGNAL(instant_stop()), this, SLOT(instant_stop()));
-    connect(_sampling_bar, SIGNAL(duration_changed()), _trigger_widget, SLOT(device_updated()));
-    connect(_sampling_bar, SIGNAL(duration_changed()), _view, SLOT(timebase_changed()));
-    connect(_sampling_bar, SIGNAL(show_calibration()), _view, SLOT(show_calibration()));
-    connect(_trig_bar, SIGNAL(show_lissajous(bool)), _view, SLOT(show_lissajous(bool)));
     connect(_dso_trigger_widget, SIGNAL(set_trig_pos(int)), _view, SLOT(set_trig_pos(int)));
-    connect(_view, SIGNAL(auto_trig(int)), _dso_trigger_widget, SLOT(auto_trig(int)));
+  
 }
 
 
@@ -318,6 +326,11 @@ void MainWindow::session_error(
 	QMetaObject::invokeMethod(this, "show_session_error",
 		Qt::QueuedConnection, Q_ARG(QString, text),
 		Q_ARG(QString, info_text));
+}
+
+void MainWindow::on_device_selected()
+{
+    update_device_list();
 }
 
 void MainWindow::update_device_list()
@@ -391,7 +404,7 @@ void MainWindow::update_device_list()
                                selected_device->name() +
                                QString::number(selected_device->dev_inst()->mode) +
                                lang_name + ".dsc";
-            load_session(ses_name);
+            on_load_session(ses_name);
         }
     } else {
         _file_bar->set_settings_en(false);
@@ -409,7 +422,7 @@ void MainWindow::update_device_list()
                                QString::number(selected_device->dev_inst()->mode) +
                                ".dsc";
             if (QFileInfo(ses_name).exists())
-                load_session(ses_name);
+                on_load_session(ses_name);
         }
     }
     _sampling_bar->reload();
@@ -442,14 +455,14 @@ void MainWindow::update_device_list()
 }
 
 
-void MainWindow::reload()
+void MainWindow::on_device_updated_reload()
 {
     _trigger_widget->device_updated();
     _session.reload();
     _measure_widget->reload();
 }
 
-void MainWindow::load_file(QString file_name)
+void MainWindow::on_load_file(QString file_name)
 {
     try {
         if (strncmp(_session.get_device()->name().toUtf8(), "virtual", 7))
@@ -568,7 +581,7 @@ void MainWindow::device_changed(bool close)
     update_device_list();
 }
 
-void MainWindow::run_stop()
+void MainWindow::on_run_stop()
 {
     switch(_session.get_capture_state()) {
     case SigSession::Init:
@@ -586,7 +599,7 @@ void MainWindow::run_stop()
     }
 }
 
-void MainWindow::instant_stop()
+void MainWindow::on_instant_stop()
 {
     switch(_session.get_capture_state()) {
     case SigSession::Init:
@@ -608,10 +621,10 @@ void MainWindow::repeat_resume()
 {
     while(_view->session().get_capture_state() == SigSession::Running)
         QCoreApplication::processEvents();
-    run_stop();
+    on_run_stop();
 }
 
-void MainWindow::show_error()
+void MainWindow::on_show_error()
 {
     QString title;
     QString details;
@@ -725,7 +738,7 @@ void MainWindow::session_save()
                             lang_name + ".dsc";
         if (strncmp(driver_name.toUtf8(), "virtual", 7) &&
             !file_name.isEmpty()) {
-            store_session(file_name);
+            on_store_session(file_name);
         }
     }
  
@@ -875,7 +888,7 @@ void MainWindow::on_save()
         dir.cd(path);
 
         session_file = dir.absolutePath() + "/DSView-session-XXXXXX";
-        store_session(session_file);
+        on_store_session(session_file);
     }
 
     StoreProgress *dlg = new StoreProgress(_session, this);
@@ -891,7 +904,7 @@ void MainWindow::on_export()
     dlg->export_run();
 }
 
-bool MainWindow::load_session(QString name)
+bool MainWindow::on_load_session(QString name)
 {
     QFile sessionFile(name);
     if (!sessionFile.open(QIODevice::ReadOnly)) {
@@ -1101,7 +1114,7 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev)
 }
 
 
-bool MainWindow::store_session(QString name)
+bool MainWindow::on_store_session(QString name)
 {
     QFile sessionFile(name);
     if (!sessionFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
@@ -1249,10 +1262,10 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
         QKeyEvent *ke = (QKeyEvent *) event;
         switch(ke->key()) {
         case Qt::Key_S:
-            run_stop();
+            on_run_stop();
             break;
         case Qt::Key_I:
-            instant_stop();
+            on_instant_stop();
             break;
         case Qt::Key_T:
             if (_session.get_device()->dev_inst()->mode == DSO)
@@ -1346,6 +1359,11 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
     }
     return false;
 }
+
+ void MainWindow::on_setLanguage(int language)
+ {
+     switchLanguage(language);
+ }
  
 void MainWindow::switchLanguage(int language)
 {
@@ -1391,6 +1409,10 @@ void MainWindow::switchTheme(QString style)
     qApp->setStyleSheet(qss.readAll());
     qss.close();
     _session.data_updated();
+}
+
+void MainWindow::on_open_doc(){
+    openDoc();
 }
 
 void MainWindow::openDoc()

@@ -45,6 +45,7 @@ public:
    string m_value;
 };
 
+
 struct AppOptions
 {   
     bool  quickScroll;

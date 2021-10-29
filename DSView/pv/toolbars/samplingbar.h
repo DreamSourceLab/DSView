@@ -99,13 +99,13 @@ namespace pv
             void set_sample_rate(uint64_t sample_rate);
 
         signals:
-            void run_stop();
-            void instant_stop();
-            void device_selected();
-            void device_updated();
-            void duration_changed();
-            void show_calibration();
-            void hide_calibration();
+            void sig_run_stop();
+            void sig_instant_stop();
+            void sig_device_selected();
+            void sig_device_updated();
+            void sig_duration_changed();
+            void sig_show_calibration();
+            void sig_hide_calibration();
 
         private:
             void changeEvent(QEvent *event);

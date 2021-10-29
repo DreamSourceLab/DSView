@@ -473,8 +473,9 @@ const uint8_t *LogicSnapshot::get_samples(uint64_t start_sample, uint64_t &end_s
                                      int sig_index)
 {
     //assert(data);
-    assert(start_sample < get_sample_count());
-    assert(end_sample <= get_sample_count());
+    uint64_t sample_count = get_sample_count();
+    assert(start_sample < sample_count);
+    assert(end_sample <= sample_count);
     assert(start_sample <= end_sample);
 
     int order = get_ch_order(sig_index);

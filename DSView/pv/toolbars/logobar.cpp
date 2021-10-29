@@ -69,7 +69,7 @@ LogoBar::LogoBar(SigSession &session, QWidget *parent) :
     _manual = new QAction(this);
     _manual->setObjectName(QString::fromUtf8("actionManual"));
     _logo_button.addAction(_manual);
-    connect(_manual, SIGNAL(triggered()), this, SIGNAL(openDoc()));
+    connect(_manual, SIGNAL(triggered()), this, SIGNAL(sig_open_doc()));
 
     _issue = new QAction(this);
     _issue->setObjectName(QString::fromUtf8("actionManual"));
@@ -169,14 +169,14 @@ void LogoBar::on_actionEn_triggered()
 {
     _language->setIcon(QIcon::fromTheme("file",
         QIcon(":/icons/English.svg")));
-    setLanguage(QLocale::English);
+    sig_setLanguage(QLocale::English);
 }
 
 void LogoBar::on_actionCn_triggered()
 {
     _language->setIcon(QIcon::fromTheme("file",
         QIcon(":/icons/Chinese.svg")));
-    setLanguage(QLocale::Chinese);   
+    sig_setLanguage(QLocale::Chinese);   
 }
 
 void LogoBar::on_actionAbout_triggered()

@@ -57,12 +57,12 @@ private:
         const QString text, const QString info_text);
 
 signals:
-    void load_file(QString); 
-    void on_save();
-    void on_export();
-    void on_screenShot(); //post screen capture event message
-    void load_session(QString); //post load session event message
-    void store_session(QString); //post store session event message
+    void sig_load_file(QString); 
+    void sig_save();
+    void sig_export();
+    void sig_screenShot(); //post screen capture event message
+    void sig_load_session(QString); //post load session event message
+    void sig_store_session(QString); //post store session event message
 
 private slots:
     void on_actionLoad_triggered();

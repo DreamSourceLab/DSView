@@ -91,8 +91,8 @@ FileBar::FileBar(SigSession &session, QWidget *parent) :
     connect(_action_store, SIGNAL(triggered()), this, SLOT(on_actionStore_triggered()));
     connect(_action_default, SIGNAL(triggered()), this, SLOT(on_actionDefault_triggered()));
     connect(_action_open, SIGNAL(triggered()), this, SLOT(on_actionOpen_triggered()));
-    connect(_action_save, SIGNAL(triggered()), this, SIGNAL(on_save()));
-    connect(_action_export, SIGNAL(triggered()), this, SIGNAL(on_export()));
+    connect(_action_save, SIGNAL(triggered()), this, SIGNAL(sig_save()));
+    connect(_action_export, SIGNAL(triggered()), this, SIGNAL(sig_export()));
     connect(_action_capture, SIGNAL(triggered()), this, SLOT(on_actionCapture_triggered()));
 }
 
@@ -152,7 +152,7 @@ void FileBar::on_actionOpen_triggered()
             app.SaveHistory();
         }
 
-        load_file(file_name);
+        sig_load_file(file_name);
     }
 }
 
@@ -188,7 +188,7 @@ void FileBar::on_actionLoad_triggered()
             app.SaveHistory();
         }
          
-        load_session(file_name);
+        sig_load_session(file_name);
     }
 }
 
@@ -216,7 +216,7 @@ void FileBar::on_actionDefault_triggered()
     QString file_name = dir.absolutePath() + "/" + driver_name + mode_name +
                         ".def"+QString::number(language)+".dsc";
     if (!file_name.isEmpty())
-        load_session(file_name);
+        sig_load_session(file_name);
 }
 
 void FileBar::on_actionStore_triggered()
@@ -242,7 +242,7 @@ void FileBar::on_actionStore_triggered()
             app.SaveHistory();
         }
          
-        store_session(file_name);
+        sig_store_session(file_name);
     }
 }
 
@@ -250,7 +250,7 @@ void FileBar::on_actionCapture_triggered()
 {
     _file_button.close();
     QCoreApplication::sendPostedEvents();
-    QTimer::singleShot(100, this, SIGNAL(on_screenShot()));
+    QTimer::singleShot(100, this, SIGNAL(sig_screenShot()));
 }
 
 void FileBar::enable_toggle(bool enable)

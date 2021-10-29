@@ -80,24 +80,32 @@ public:
 protected:
     void closeEvent(QCloseEvent *event);
 
+public:
+    void openDoc();
+
+    void switchLanguage(int language);
+
 private:
 	void setup_ui();
     void retranslateUi();
 	void session_error(const QString text, const QString info_text);
     bool eventFilter(QObject *object, QEvent *event);
 
-public slots:
-    void session_save();
- 
-    void openDoc();
+    bool load_session_json(QJsonDocument json, bool file_dev);
 
-    void switchLanguage(int language);
+    void update_device_list();
+
+public slots:
+    void session_save();  
+    
     void switchTheme(QString style);
 
     void restore_dock();
 
 private slots:
-	void load_file(QString file_name);
+	void on_load_file(QString file_name);
+
+    void on_open_doc();
 
     /**
      * Updates the device list in the sampling bar, and updates the
@@ -105,16 +113,15 @@ private slots:
      * @param selected_device The device to select, or NULL if the
      * first device in the device list should be selected.
      */
-    void update_device_list();
+   
 
-    void reload();
+    void on_device_updated_reload();
 
-    void show_session_error(
-		const QString text, const QString info_text);
+    void show_session_error(const QString text, const QString info_text);
 
-	void run_stop();
+	void on_run_stop();
 
-    void instant_stop();
+    void on_instant_stop();
 
     void capture_state_changed(int state);
 
@@ -134,9 +141,9 @@ private slots:
 
     void on_export();
 
-    bool load_session(QString name);
-    bool load_session_json(QJsonDocument json, bool file_dev);
-    bool store_session(QString name);
+    bool on_load_session(QString name);
+  
+    bool on_store_session(QString name);
 
     /*
      * repeat
@@ -150,12 +157,15 @@ private slots:
     void device_detach();
     void device_detach_post();
     void device_changed(bool close);
+    void on_device_selected();
 
     /*
      * errors
      */
-    void show_error();
+    void on_show_error();
 
+    void on_setLanguage(int language);
+  
 signals:
     void prgRate(int progress);
 

@@ -61,10 +61,10 @@ private:
 
 signals:
     //post event message to set language, MainWindow class receive it
-    void setLanguage(int language);  
+    void sig_setLanguage(int language);  
 
     //post event message to open user help document, MainWindow class receive it
-    void openDoc(); 
+    void sig_open_doc(); 
 
 private slots:
     void on_actionEn_triggered();

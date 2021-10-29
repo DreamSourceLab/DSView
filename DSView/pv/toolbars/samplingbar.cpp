@@ -74,32 +74,17 @@ SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
     setContentsMargins(0,0,0,0);
     layout()->setMargin(0);
     layout()->setSpacing(0);
-
-    connect(&_device_selector, SIGNAL(currentIndexChanged (int)),
-        this, SLOT(on_device_selected()));
-    connect(&_configure_button, SIGNAL(clicked()),
-        this, SLOT(on_configure()));
-	connect(&_run_stop_button, SIGNAL(clicked()),
-        this, SLOT(on_run_stop()), Qt::DirectConnection);
-    connect(&_instant_button, SIGNAL(clicked()),
-        this, SLOT(on_instant_stop()));
-
+ 
     _mode_button.setPopupMode(QToolButton::InstantPopup);
 
     _device_selector.setSizeAdjustPolicy(QComboBox::AdjustToContents);
     _sample_rate.setSizeAdjustPolicy(QComboBox::AdjustToContents);
     _sample_count.setSizeAdjustPolicy(QComboBox::AdjustToContents);
     _device_selector.setMaximumWidth(ComboBoxMaxWidth);
-
-    connect(&_sample_count, SIGNAL(currentIndexChanged(int)),
-        this, SLOT(on_samplecount_sel(int)));
-
+ 
     //_run_stop_button.setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     _run_stop_button.setObjectName(tr("run_stop_button"));
-
-    connect(&_sample_rate, SIGNAL(currentIndexChanged(int)),
-        this, SLOT(on_samplerate_sel(int)));
-
+ 
     QWidget *leftMargin = new QWidget(this);
     leftMargin->setFixedWidth(4);
     addWidget(leftMargin);
@@ -115,10 +100,8 @@ SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
     addWidget(&_sample_rate);
 
     _action_single = new QAction(this);
-    connect(_action_single, SIGNAL(triggered()), this, SLOT(on_mode()));
 
     _action_repeat = new QAction(this);
-    connect(_action_repeat, SIGNAL(triggered()), this, SLOT(on_mode()));
 
     _mode_menu = new QMenu(this);
     _mode_menu->addAction(_action_single);
@@ -135,6 +118,15 @@ SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
 
     set_sampling(false);
     //retranslateUi();
+
+    connect(&_device_selector, SIGNAL(currentIndexChanged (int)), this, SLOT(on_device_selected()));
+    connect(&_configure_button, SIGNAL(clicked()),this, SLOT(on_configure()));
+	connect(&_run_stop_button, SIGNAL(clicked()),this, SLOT(on_run_stop()), Qt::DirectConnection);
+    connect(&_instant_button, SIGNAL(clicked()), this, SLOT(on_instant_stop()));
+    connect(&_sample_count, SIGNAL(currentIndexChanged(int)), this, SLOT(on_samplecount_sel(int)));
+    connect(_action_single, SIGNAL(triggered()), this, SLOT(on_mode()));
+    connect(_action_repeat, SIGNAL(triggered()), this, SLOT(on_mode()));
+    connect(&_sample_rate, SIGNAL(currentIndexChanged(int)), this, SLOT(on_samplerate_sel(int)));
 }
 
 void SamplingBar::changeEvent(QEvent *event)
@@ -286,7 +278,7 @@ boost::shared_ptr<pv::device::DevInst> SamplingBar::get_selected_device() const
 
 void SamplingBar::on_configure()
 {
-    hide_calibration();
+    sig_hide_calibration();
 
     int  ret;
     boost::shared_ptr<pv::device::DevInst> dev_inst = get_selected_device();
@@ -295,7 +287,7 @@ void SamplingBar::on_configure()
     pv::dialogs::DeviceOptions dlg(this, dev_inst);
     ret = dlg.exec();
     if (ret == QDialog::Accepted) {
-        device_updated();
+        sig_device_updated();
         update_sample_rate_selector();
 
         GVariant* gvar;
@@ -315,7 +307,7 @@ void SamplingBar::on_configure()
                 bool cali = g_variant_get_boolean(gvar);
                 g_variant_unref(gvar);
                 if (cali) {
-                    show_calibration();
+                    sig_show_calibration();
                     return;
                 }
             }
@@ -353,7 +345,7 @@ void SamplingBar::zero_adj()
     _sample_count.setCurrentIndex(i);
     commit_hori_res();
 
-    run_stop();
+    sig_run_stop();
 
     pv::dialogs::WaitingDialog wait(this, _session, SR_CONF_ZERO);
     if (wait.start() == QDialog::Rejected) {
@@ -717,7 +709,7 @@ void SamplingBar::on_samplecount_sel(int index)
     const boost::shared_ptr<device::DevInst> dev_inst = get_selected_device();
     if (dev_inst->dev_inst()->mode == DSO)
         commit_hori_res();
-    duration_changed();
+    sig_duration_changed();
 }
 
 double SamplingBar::get_hori_res()
@@ -857,7 +849,8 @@ void SamplingBar::on_run_stop()
                 }
             }
         }
-        run_stop();
+
+        sig_run_stop();
     }
 }
 
@@ -882,9 +875,12 @@ void SamplingBar::on_instant_stop()
         enable_instant(false);
         commit_settings();
         _instant = true;
+
         const boost::shared_ptr<device::DevInst> dev_inst = get_selected_device();
+
         if (!dev_inst)
             return;
+
         if (dev_inst->dev_inst()->mode == DSO) {
             GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_ZERO);
             if (gvar != NULL) {
@@ -909,7 +905,8 @@ void SamplingBar::on_instant_stop()
                 }
             }
         }
-        instant_stop();
+
+        sig_instant_stop();
     }
 }
 
@@ -930,7 +927,7 @@ void SamplingBar::on_device_selected()
     } catch(QString e) {
         show_session_error(tr("Failed to select ") + dev_inst->dev_inst()->model, e);
     }
-    device_selected();
+    sig_device_selected();
 }
 
 void SamplingBar::enable_toggle(bool enable)

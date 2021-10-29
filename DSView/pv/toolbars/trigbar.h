@@ -58,12 +58,12 @@ private:
     void reStyle();
 
 signals:
-    void setTheme(QString style);
-    void on_protocol(bool visible); //post decode button click event,to show or hide protocol property panel
-    void on_trigger(bool visible); //post decode button click event,to show or hide trigger property panel
-    void on_measure(bool visible);//post decode button click event,to show or hide measure property panel
-    void on_search(bool visible);
-    void show_lissajous(bool visible);
+    void sig_setTheme(QString style);
+    void sig_protocol(bool visible); //post decode button click event,to show or hide protocol property panel
+    void sig_trigger(bool visible); //post decode button click event,to show or hide trigger property panel
+    void sig_measure(bool visible);//post decode button click event,to show or hide measure property panel
+    void sig_search(bool visible);
+    void sig_show_lissajous(bool visible);
 
 private slots:
     void on_actionDark_triggered();

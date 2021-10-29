@@ -185,12 +185,12 @@ void TrigBar::reStyle()
 
 void TrigBar::protocol_clicked()
 {
-    on_protocol(_protocol_button.isChecked());
+    sig_protocol(_protocol_button.isChecked());
 }
 
 void TrigBar::trigger_clicked()
 {
-    on_trigger(_trig_button.isChecked());
+    sig_trigger(_trig_button.isChecked());
 }
 
 void TrigBar::update_trig_btn(bool checked)
@@ -215,12 +215,12 @@ void TrigBar::update_search_btn(bool checked)
 
 void TrigBar::measure_clicked()
 {
-    on_measure(_measure_button.isChecked());
+    sig_measure(_measure_button.isChecked());
 }
 
 void TrigBar::search_clicked()
 {
-    on_search(_search_button.isChecked());
+    sig_search(_search_button.isChecked());
 }
 
 void TrigBar::enable_toggle(bool enable)
@@ -242,19 +242,19 @@ void TrigBar::close_all()
 {
     if (_trig_button.isChecked()) {
         _trig_button.setChecked(false);
-        on_trigger(false);
+        sig_trigger(false);
     }
     if (_protocol_button.isChecked()) {
         _protocol_button.setChecked(false);
-        on_protocol(false);
+        sig_protocol(false);
     }
     if (_measure_button.isChecked()) {
         _measure_button.setChecked(false);
-        on_measure(false);
+        sig_measure(false);
     }
     if(_search_button.isChecked()) {
         _search_button.setChecked(false);
-        on_search(false);
+        sig_search(false);
     }
 }
 
@@ -301,13 +301,13 @@ void TrigBar::on_actionMath_triggered()
 
 void TrigBar::on_actionDark_triggered()
 {
-    setTheme(DARK_STYLE);
+    sig_setTheme(DARK_STYLE);
     _themes->setIcon(QIcon(":/icons/"+DARK_STYLE+"/"+DARK_STYLE+".svg"));
 }
 
 void TrigBar::on_actionLight_triggered()
 {
-    setTheme(LIGHT_STYLE);
+    sig_setTheme(LIGHT_STYLE);
     _themes->setIcon(QIcon(":/icons/"+LIGHT_STYLE+"/"+LIGHT_STYLE+".svg"));
 }
 
