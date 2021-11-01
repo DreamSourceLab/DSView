@@ -48,6 +48,8 @@ namespace device {
 class DevInst;
 }
 
+using namespace pv::device;
+
 namespace view {
 
 //draw signal trace base class
@@ -59,8 +61,7 @@ private:
 
 
 protected:
-    Signal(boost::shared_ptr<pv::device::DevInst> dev_inst,
-           sr_channel * const probe);
+    Signal(DevInst* dev_inst,sr_channel * const probe);
 
     /**
      * Copy constructor
@@ -90,10 +91,10 @@ public:
 	 */
     //virtual void paint_label(QPainter &p, int right, bool hover, int action);
 
-    boost::shared_ptr<device::DevInst> get_device() const;
+    DevInst* get_device() const;
 
 protected:
-    boost::shared_ptr<pv::device::DevInst> _dev_inst;
+    DevInst* _dev_inst;
     sr_channel *const _probe;
 };
 

@@ -59,7 +59,7 @@ private:
     static const int GRID_COLS = 3;
 
 public:
-    DevMode(QWidget *parent, SigSession &session);
+    DevMode(QWidget *parent, SigSession *ession);
 
 private:
 	void paintEvent(QPaintEvent *event);
@@ -83,7 +83,7 @@ signals:
     void dev_changed(bool close);
 
 private:
-    SigSession &_session;
+    SigSession *_session;
 
     QHBoxLayout *  _layout;
     std::map <QAction *, const sr_dev_mode *> _mode_list;

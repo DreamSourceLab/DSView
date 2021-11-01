@@ -43,14 +43,14 @@ namespace dialogs {
 const QString WaitingDialog::TIPS_WAIT = "Waiting";
 const QString WaitingDialog::TIPS_FINISHED = "Finished!";
 
-WaitingDialog::WaitingDialog(QWidget *parent, SigSession &session, int key) :
+WaitingDialog::WaitingDialog(QWidget *parent, SigSession *session, int key) :
     DSDialog(parent),
     _key(key),
     _session(session),
     _button_box(QDialogButtonBox::Abort,
         Qt::Horizontal, this)
 {
-    _dev_inst = _session.get_device();
+    _dev_inst = _session->get_device();
     this->setFixedSize((GIF_WIDTH+2*TIP_WIDTH)*1.2, (GIF_HEIGHT+2*TIP_HEIGHT)*4);
     this->setWindowOpacity(0.7);
 
@@ -79,7 +79,7 @@ WaitingDialog::WaitingDialog(QWidget *parent, SigSession &session, int key) :
     connect(timer, SIGNAL(timeout()), this, SLOT(changeText()));
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
     connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
-    connect(_dev_inst.get(), SIGNAL(device_updated()), this, SLOT(stop()));
+    connect(_dev_inst, SIGNAL(device_updated()), this, SLOT(stop()));
 
 
     QVBoxLayout *mlayout = new QVBoxLayout();
@@ -186,7 +186,7 @@ void WaitingDialog::changeText()
                     g_variant_unref(gvar);
                     if (zero_fgain) {
                         boost::shared_ptr<view::DsoSignal> dsoSig;
-                        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals())
+                        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals())
                         {
                             if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)))
                                 dsoSig->set_enable(dsoSig->get_index() == 0);

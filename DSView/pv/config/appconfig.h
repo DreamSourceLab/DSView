@@ -81,6 +81,7 @@ class AppConfig
 private:
   AppConfig();
   ~AppConfig();
+  AppConfig(AppConfig &o);
 
 public:
   static AppConfig &Instance();

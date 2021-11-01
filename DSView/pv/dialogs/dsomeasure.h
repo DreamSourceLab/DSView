@@ -49,7 +49,7 @@ class DsoMeasure : public DSDialog
 	Q_OBJECT
 
 public:
-    DsoMeasure(SigSession &session, view::View &parent, unsigned int position, int last_sig_index);
+    DsoMeasure(SigSession *session, view::View &parent, unsigned int position, int last_sig_index);
 
     ~DsoMeasure();
 
@@ -68,7 +68,7 @@ protected:
     void reject();
 
 private:
-    SigSession &_session;
+    SigSession *_session;
     view::View &_view;
     unsigned int _position;
  

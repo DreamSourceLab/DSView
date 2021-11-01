@@ -39,6 +39,10 @@ File::File(QString path) :
 {
 }
 
+File::~File(){
+
+}
+
 QString File::format_device_title() const
 {
     QFileInfo fi(_path);

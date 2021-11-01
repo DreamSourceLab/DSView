@@ -46,13 +46,15 @@ using std::max;
 using std::min;
 using std::string;
 
+using namespace pv::device;
+
 namespace pv {
 namespace toolbars {
 
 const QString SamplingBar::RLEString = tr("(RLE)");
 const QString SamplingBar::DIVString = tr(" / div");
 
-SamplingBar::SamplingBar(SigSession &session, QWidget *parent) :
+SamplingBar::SamplingBar(SigSession *session, QWidget *parent) :
 	QToolBar("Sampling Bar", parent),
     _session(session),
     _enable(true),
@@ -140,7 +142,7 @@ void SamplingBar::changeEvent(QEvent *event)
 
 void SamplingBar::retranslateUi()
 {
-    boost::shared_ptr<pv::device::DevInst> dev_inst = get_selected_device();
+    DevInst *dev_inst = get_selected_device();
     if (dev_inst && dev_inst->dev_inst()) {
         if (dev_inst->name().contains("virtual-demo"))
             _device_type.setText(tr("Demo"));
@@ -163,17 +165,18 @@ void SamplingBar::retranslateUi()
     }
     _configure_button.setText(tr("Options"));
     _mode_button.setText(tr("Mode"));
+
+   sr_dev_inst *dev_c = _session->get_dev_inst_c();
+
     if (_instant) {
-        if (_session.get_device() &&
-            _session.get_device()->dev_inst()->mode == DSO)
+        if (dev_c && dev_c->mode == DSO)
             _instant_button.setText(_sampling ? tr("Stop") : tr("Single"));
         else
             _instant_button.setText(_sampling ? tr("Stop") : tr("Instant"));
         _run_stop_button.setText(tr("Start"));
     } else {
         _run_stop_button.setText(_sampling ? tr("Stop") : tr("Start"));
-        if (_session.get_device() &&
-            _session.get_device()->dev_inst()->mode == DSO)
+        if (dev_c && dev_c->mode == DSO)
             _instant_button.setText(tr("Single"));
         else
             _instant_button.setText(tr("Instant"));
@@ -185,7 +188,7 @@ void SamplingBar::retranslateUi()
 
 void SamplingBar::reStyle()
 {
-    boost::shared_ptr<pv::device::DevInst> dev_inst = get_selected_device();
+    DevInst *dev_inst = get_selected_device();
     if (dev_inst && dev_inst->dev_inst()) {
         if (dev_inst->name().contains("virtual-demo"))
             _device_type.setIcon(QIcon(":/icons/demo.svg"));
@@ -209,7 +212,7 @@ void SamplingBar::reStyle()
     if (true) {
         QString iconPath = GetIconPath();
         _configure_button.setIcon(QIcon(iconPath+"/params.svg"));
-        _mode_button.setIcon(_session.get_run_mode() == pv::SigSession::Single ? QIcon(iconPath+"/modes.svg") :
+        _mode_button.setIcon(_session->get_run_mode() == pv::SigSession::Single ? QIcon(iconPath+"/modes.svg") :
                                                                                  QIcon(iconPath+"/moder.svg"));
         _run_stop_button.setIcon(_sampling ? QIcon(iconPath+"/stop.svg") :
                                              QIcon(iconPath+"/start.svg"));
@@ -219,9 +222,7 @@ void SamplingBar::reStyle()
 	}   
 }
 
-void SamplingBar::set_device_list(
-    const std::list<boost::shared_ptr<pv::device::DevInst> > &devices,
-    boost::shared_ptr<pv::device::DevInst> selected)
+void SamplingBar::set_device_list(const std::list<DevInst*> &devices, DevInst *selected)
 {
     int selected_index = -1;
 
@@ -232,7 +233,7 @@ void SamplingBar::set_device_list(
     _device_selector.clear();
     _device_selector_map.clear();
 
-    BOOST_FOREACH (boost::shared_ptr<pv::device::DevInst> dev_inst, devices) {
+    for (DevInst *dev_inst : devices) {
         assert(dev_inst);
         const QString title = dev_inst->format_device_title();
         const void *id = dev_inst->get_id();
@@ -258,22 +259,21 @@ void SamplingBar::set_device_list(
     _updating_device_selector = false;
 }
 
-boost::shared_ptr<pv::device::DevInst> SamplingBar::get_selected_device() const
+DevInst* SamplingBar::get_selected_device() const
 {
     const int index = _device_selector.currentIndex();
     if (index < 0)
-        return boost::shared_ptr<pv::device::DevInst>();
+        return NULL;
 
     const void *const id =
         _device_selector.itemData(index).value<void*>();
     assert(id);
 
-    map<const void*, boost::weak_ptr<device::DevInst> >::
-        const_iterator iter = _device_selector_map.find(id);
-    if (iter == _device_selector_map.end())
-        return boost::shared_ptr<pv::device::DevInst>();
+    auto it = _device_selector_map.find(id);
+    if (it == _device_selector_map.end())
+        return NULL;
 
-    return boost::shared_ptr<pv::device::DevInst>((*iter).second);
+    return (*it).second;
 }
 
 void SamplingBar::on_configure()
@@ -281,7 +281,7 @@ void SamplingBar::on_configure()
     sig_hide_calibration();
 
     int  ret;
-    boost::shared_ptr<pv::device::DevInst> dev_inst = get_selected_device();
+    DevInst *dev_inst = get_selected_device();
     assert(dev_inst);
 
     pv::dialogs::DeviceOptions dlg(this, dev_inst);
@@ -332,7 +332,7 @@ void SamplingBar::on_configure()
 void SamplingBar::zero_adj()
 {
     boost::shared_ptr<view::DsoSignal> dsoSig;
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals())
+    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals())
     {
         if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)))
             dsoSig->set_enable(true);
@@ -349,14 +349,14 @@ void SamplingBar::zero_adj()
 
     pv::dialogs::WaitingDialog wait(this, _session, SR_CONF_ZERO);
     if (wait.start() == QDialog::Rejected) {
-        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals())
+        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals())
         {
             if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)))
                 dsoSig->commit_settings();
         }
     }
 
-    if (_session.get_capture_state() == pv::SigSession::Running)
+    if (_session->get_capture_state() == pv::SigSession::Running)
         on_run_stop();
 
     _sample_count.setCurrentIndex(index_back);
@@ -399,7 +399,7 @@ void SamplingBar::set_sampling(bool sampling)
         } else {
             _run_stop_button.setIcon(sampling ? QIcon(iconPath+"/stop.svg") : QIcon(iconPath+"/start.svg"));
         }
-        _mode_button.setIcon(_session.get_run_mode() == pv::SigSession::Single ? QIcon(iconPath+"/modes.svg") :
+        _mode_button.setIcon(_session->get_run_mode() == pv::SigSession::Single ? QIcon(iconPath+"/modes.svg") :
                                                                              QIcon(iconPath+"/moder.svg"));
     }
 
@@ -430,7 +430,7 @@ void SamplingBar::update_sample_rate_selector()
 
     disconnect(&_sample_rate, SIGNAL(currentIndexChanged(int)),
         this, SLOT(on_samplerate_sel(int)));
-    const boost::shared_ptr<device::DevInst> dev_inst = get_selected_device();
+    DevInst *dev_inst = get_selected_device();
     if (!dev_inst)
         return;
 
@@ -504,7 +504,7 @@ void SamplingBar::update_sample_rate_selector_value()
 void SamplingBar::on_samplerate_sel(int index)
 {
     (void)index;
-    const boost::shared_ptr<device::DevInst> dev_inst = get_selected_device();
+    const DevInst *dev_inst = get_selected_device();
     if (dev_inst->dev_inst()->mode != DSO)
         update_sample_count_selector();
 }
@@ -530,7 +530,7 @@ void SamplingBar::update_sample_count_selector()
     assert(!_updating_sample_count);
     _updating_sample_count = true;
 
-    const boost::shared_ptr<device::DevInst> dev_inst = get_selected_device();
+    DevInst *dev_inst = get_selected_device();
     GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_STREAM);
     if (gvar != NULL) {
         stream_mode = g_variant_get_boolean(gvar);
@@ -546,7 +546,7 @@ void SamplingBar::update_sample_count_selector()
         #if defined(__x86_64__) || defined(_M_X64)
             sw_depth = LogicMaxSWDepth64;
         #elif defined(__i386) || defined(_M_IX86)
-            int ch_num = _session.get_ch_num(SR_CHANNEL_LOGIC);
+            int ch_num = _session->get_ch_num(SR_CHANNEL_LOGIC);
             if (ch_num <= 0)
                 sw_depth = LogicMaxSWDepth32;
             else
@@ -663,7 +663,7 @@ void SamplingBar::update_sample_count_selector_value()
 
     GVariant* gvar;
     double duration;
-    const boost::shared_ptr<device::DevInst> dev_inst = get_selected_device();
+    DevInst *dev_inst = get_selected_device();
     if (dev_inst->dev_inst()->mode == DSO) {
         gvar = dev_inst->get_config(NULL, NULL, SR_CONF_TIMEBASE);
         if (gvar != NULL) {
@@ -706,7 +706,7 @@ void SamplingBar::on_samplecount_sel(int index)
 {
     (void)index;
 
-    const boost::shared_ptr<device::DevInst> dev_inst = get_selected_device();
+    const DevInst *dev_inst = get_selected_device();
     if (dev_inst->dev_inst()->mode == DSO)
         commit_hori_res();
     sig_duration_changed();
@@ -744,7 +744,7 @@ double SamplingBar::commit_hori_res()
     const double hori_res = _sample_count.itemData(
                            _sample_count.currentIndex()).value<double>();
 
-    const boost::shared_ptr<device::DevInst> dev_inst = get_selected_device();
+    DevInst *dev_inst = get_selected_device();
     const uint64_t sample_limit = dev_inst->get_sample_limit();
     GVariant* gvar;
     uint64_t max_sample_rate;
@@ -760,7 +760,7 @@ double SamplingBar::commit_hori_res()
     const uint64_t sample_rate = min((uint64_t)(sample_limit * SR_SEC(1) /
                                                 (hori_res * DS_CONF_DSO_HDIVS)),
                                      (uint64_t)(max_sample_rate /
-                                                (_session.get_ch_num(SR_CHANNEL_DSO) ? _session.get_ch_num(SR_CHANNEL_DSO) : 1)));
+                                                (_session->get_ch_num(SR_CHANNEL_DSO) ? _session->get_ch_num(SR_CHANNEL_DSO) : 1)));
     set_sample_rate(sample_rate);
 
     dev_inst->set_config(NULL, NULL, SR_CONF_TIMEBASE,
@@ -772,7 +772,7 @@ double SamplingBar::commit_hori_res()
 void SamplingBar::commit_settings()
 {
     bool test = false;
-    const boost::shared_ptr<device::DevInst> dev_inst = get_selected_device();
+    DevInst *dev_inst = get_selected_device();
     if (dev_inst && dev_inst->owner()) {
         GVariant *gvar = dev_inst->get_config(NULL, NULL, SR_CONF_TEST);
         if (gvar != NULL) {
@@ -790,7 +790,7 @@ void SamplingBar::commit_settings()
         const uint64_t sample_rate = _sample_rate.itemData(
                 _sample_rate.currentIndex()).value<uint64_t>();
 
-        const boost::shared_ptr<device::DevInst> dev_inst = get_selected_device();
+        DevInst *dev_inst = get_selected_device();
         if (dev_inst) {
             if (sample_rate != dev_inst->get_sample_rate())
                 dev_inst->set_config(NULL, NULL,
@@ -815,16 +815,18 @@ void SamplingBar::commit_settings()
 
 void SamplingBar::on_run_stop()
 {
-    if (get_sampling() || _session.isRepeating()) {
-        _session.exit_capture();
+    if (get_sampling() || _session->isRepeating()) {
+        _session->exit_capture();
     } else {
         enable_run_stop(false);
         enable_instant(false);
         commit_settings();
         _instant = false;
-        const boost::shared_ptr<device::DevInst> dev_inst = get_selected_device();
+
+        DevInst *dev_inst = get_selected_device();
         if (!dev_inst)
             return;
+
         if (dev_inst->dev_inst()->mode == DSO) {
             GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_ZERO);
             if (gvar != NULL) {
@@ -857,9 +859,9 @@ void SamplingBar::on_run_stop()
 void SamplingBar::on_instant_stop()
 {
     if (get_sampling()) {
-        _session.set_repeating(false);
+        _session->set_repeating(false);
         bool wait_upload = false;
-        if (_session.get_run_mode() != SigSession::Repetitive) {
+        if (_session->get_run_mode() != SigSession::Repetitive) {
             GVariant *gvar = get_selected_device()->get_config(NULL, NULL, SR_CONF_WAIT_UPLOAD);
             if (gvar != NULL) {
                 wait_upload = g_variant_get_boolean(gvar);
@@ -867,8 +869,8 @@ void SamplingBar::on_instant_stop()
             }
         }
         if (!wait_upload) {
-            _session.stop_capture();
-            _session.capture_state_changed(SigSession::Stopped);
+            _session->stop_capture();
+            _session->capture_state_changed(SigSession::Stopped);
         }
     } else {
         enable_run_stop(false);
@@ -876,7 +878,7 @@ void SamplingBar::on_instant_stop()
         commit_settings();
         _instant = true;
 
-        const boost::shared_ptr<device::DevInst> dev_inst = get_selected_device();
+        DevInst *dev_inst = get_selected_device();
 
         if (!dev_inst)
             return;
@@ -915,15 +917,15 @@ void SamplingBar::on_device_selected()
     if (_updating_device_selector)
         return;
 
-    _session.stop_capture();
-    _session.session_save();
+    _session->stop_capture();
+    _session->session_save();
 
-    const boost::shared_ptr<device::DevInst> dev_inst = get_selected_device();
+    DevInst* dev_inst = get_selected_device();
     if (!dev_inst)
         return;
 
     try {
-        _session.set_device(dev_inst);
+        _session->set_device(dev_inst);
     } catch(QString e) {
         show_session_error(tr("Failed to select ") + dev_inst->dev_inst()->model, e);
     }
@@ -933,7 +935,7 @@ void SamplingBar::on_device_selected()
 void SamplingBar::enable_toggle(bool enable)
 {
     bool test = false;
-    const boost::shared_ptr<device::DevInst> dev_inst = get_selected_device();
+    DevInst *dev_inst = get_selected_device();
     if (dev_inst && dev_inst->owner()) {
         GVariant *gvar = dev_inst->get_config(NULL, NULL, SR_CONF_TEST);
         if (gvar != NULL) {
@@ -952,7 +954,7 @@ void SamplingBar::enable_toggle(bool enable)
         _sample_rate.setDisabled(true);
     }
 
-    if (_session.get_device()->name() == "virtual-session") {
+    if (_session->get_device()->name() == "virtual-session") {
         _sample_count.setDisabled(true);
         _sample_rate.setDisabled(true);
     }
@@ -982,23 +984,23 @@ void SamplingBar::show_session_error(
 void SamplingBar::reload()
 {
     QString iconPath = GetIconPath();
-    if (_session.get_device()->dev_inst()->mode == LOGIC) {
-        if (_session.get_device()->name() == "virtual-session") {
+    if (_session->get_device()->dev_inst()->mode == LOGIC) {
+        if (_session->get_device()->name() == "virtual-session") {
             _mode_action->setVisible(false);
         } else {
-            _mode_button.setIcon(_session.get_run_mode() == pv::SigSession::Single ? QIcon(iconPath+"/modes.svg") :
+            _mode_button.setIcon(_session->get_run_mode() == pv::SigSession::Single ? QIcon(iconPath+"/modes.svg") :
                                                                                      QIcon(iconPath+"/moder.svg"));
             _mode_action->setVisible(true);
         }
         _run_stop_action->setVisible(true);
         _instant_action->setVisible(true);
         enable_toggle(true);
-    } else if (_session.get_device()->dev_inst()->mode == ANALOG) {
+    } else if (_session->get_device()->dev_inst()->mode == ANALOG) {
         _mode_action->setVisible(false);
         _run_stop_action->setVisible(true);
         _instant_action->setVisible(false);
         enable_toggle(true);
-    } else if (_session.get_device()->dev_inst()->mode == DSO) {
+    } else if (_session->get_device()->dev_inst()->mode == DSO) {
         _mode_action->setVisible(false);
         _run_stop_action->setVisible(true);
         _instant_action->setVisible(true);
@@ -1016,12 +1018,12 @@ void SamplingBar::on_mode()
     QAction *act = qobject_cast<QAction *>(sender());
     if (act == _action_single) {
         _mode_button.setIcon(QIcon(iconPath+"/modes.svg"));
-        _session.set_run_mode(pv::SigSession::Single);
+        _session->set_run_mode(pv::SigSession::Single);
     } else if (act == _action_repeat) {
         _mode_button.setIcon(QIcon(iconPath+"/moder.svg"));
         pv::dialogs::Interval interval_dlg(_session, this);
         interval_dlg.exec();
-        _session.set_run_mode(pv::SigSession::Repetitive);
+        _session->set_run_mode(pv::SigSession::Repetitive);
     }
 }
 

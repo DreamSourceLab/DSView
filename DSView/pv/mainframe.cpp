@@ -51,8 +51,7 @@
 
 namespace pv {
 
-MainFrame::MainFrame(DeviceManager &device_manager,
-    const char *open_file_name)
+MainFrame::MainFrame()
 {
     setAttribute(Qt::WA_TranslucentBackground);
     // Make this a borderless window which can't
@@ -83,7 +82,7 @@ MainFrame::MainFrame(DeviceManager &device_manager,
     _titleBar = new toolbars::TitleBar(true, this);
      
     // MainWindow
-    _mainWindow = new MainWindow(device_manager, open_file_name, this);
+    _mainWindow = new MainWindow(this);
     _mainWindow->setWindowFlags(Qt::Widget);
     _titleBar->setTitle(_mainWindow->windowTitle());
 

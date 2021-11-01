@@ -40,7 +40,7 @@ using namespace std;
 namespace pv {
 namespace view {
 
-ViewStatus::ViewStatus(SigSession &session, View &parent) :
+ViewStatus::ViewStatus(SigSession *session, View &parent) :
     QWidget(&parent),
     _session(session),
     _view(parent),
@@ -57,7 +57,7 @@ void ViewStatus::paintEvent(QPaintEvent *)
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 
     QColor fore(QWidget::palette().color(QWidget::foregroundRole()));
-    if (_session.get_device()->dev_inst()->mode == LOGIC) {
+    if (_session->get_device()->dev_inst()->mode == LOGIC) {
         fore.setAlpha(View::ForeAlpha);
         p.setPen(fore);
         p.drawText(this->rect(), Qt::AlignLeft | Qt::AlignVCenter, _rle_depth);
@@ -66,16 +66,16 @@ void ViewStatus::paintEvent(QPaintEvent *)
         p.setPen(Qt::NoPen);
         p.setBrush(View::Blue);
         p.drawRect(this->rect().left(), this->rect().bottom() - 3,
-                   _session.get_repeat_hold() * this->rect().width() / 100, 3);
+                   _session->get_repeat_hold() * this->rect().width() / 100, 3);
 
         p.setPen(View::Blue);
         p.drawText(this->rect(), Qt::AlignCenter | Qt::AlignVCenter, _capture_status);
-    } else if (_session.get_device()->dev_inst()->mode == DSO) {
+    } else if (_session->get_device()->dev_inst()->mode == DSO) {
         fore.setAlpha(View::BackAlpha);
         for(size_t i = 0; i < _mrects.size(); i++) {
             int sig_index = std::get<1>(_mrects[i]);
             boost::shared_ptr<view::DsoSignal> dsoSig = NULL;
-            const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
+            const vector< boost::shared_ptr<Signal> > sigs(_session->get_signals());
             BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
                 assert(s);
                 if (!s->enabled())
@@ -133,7 +133,7 @@ void ViewStatus::reload()
     const int COLUMN = 5;
     const int ROW = 2;
     const int MARGIN = 3;
-    if (_session.get_device()->dev_inst()->mode == DSO)
+    if (_session->get_device()->dev_inst()->mode == DSO)
     {
         const double width = _view.get_view_width() * 1.0 / COLUMN;
         const int height = (this->height() - 2*MARGIN) / ROW;
@@ -184,7 +184,7 @@ void ViewStatus::mousePressEvent(QMouseEvent *event)
 {
     assert(event);
 
-    if (_session.get_device()->dev_inst()->mode != DSO)
+    if (_session->get_device()->dev_inst()->mode != DSO)
         return;
 
     if (event->button() == Qt::LeftButton) {
@@ -233,7 +233,7 @@ QJsonArray ViewStatus::get_session()
 
 void ViewStatus::load_session(QJsonArray measure_array)
 {
-    if (_session.get_device()->dev_inst()->mode != DSO ||
+    if (_session->get_device()->dev_inst()->mode != DSO ||
         measure_array.empty())
         return;
 

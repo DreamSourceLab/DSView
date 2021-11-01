@@ -1,7 +1,9 @@
+
 /*
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
+ * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -19,54 +21,48 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
+#pragma once
 
-#ifndef DSVIEW_PV_SEARCH_H
-#define DSVIEW_PV_SEARCH_H
+#include <string>
 
-#include <QLabel>
-#include <QLineEdit>
-#include <QVBoxLayout>
-#include <QGridLayout>
-#include <QDialogButtonBox>
+struct sr_context;
 
-#include "../sigsession.h"
-#include "../toolbars/titlebar.h"
-#include "dsdialog.h"
-#include "../device/devinst.h"
+namespace pv{
+    class DeviceManager;
+    class SigSession;
+}
 
-#include <boost/shared_ptr.hpp>
-
-namespace pv {
-namespace dialogs {
-
-class Search : public DSDialog
+class AppControl
 {
-    Q_OBJECT
+private:
+    explicit AppControl();
+    ~AppControl();
+    AppControl(AppControl &o);
 
 public:
+    static AppControl* Instance();
 
-    Search(QWidget *parent, SigSession *session, std::map<uint16_t, QString> pattern);
-    ~Search();
+    void Destroy();
 
-    std::map<uint16_t, QString> get_pattern();
+    bool Init();
 
-protected:
-    void accept();
+    bool Start();
 
-signals:
-    
-private slots:
-    void format();
-    
+    void UnInit();
+
+    const char* GetLastError();
+
+    void SetLogLevel(int level);
+
+    inline pv::SigSession*  GetSession()
+        { return _session;}
+
+    inline pv::DeviceManager& GetDeviceManager()
+        { return *_device_manager;}
+
 private:
-    SigSession *_session;
-
-    toolbars::TitleBar *_titlebar;
-    QVector<QLineEdit *> _search_lineEdit_vec;
-    QDialogButtonBox search_buttonBox;
+    std::string         m_error;
+    struct sr_context   *sr_ctx;
+    pv::DeviceManager   *_device_manager;
+    pv::SigSession      *_session;
 };
-
-} // namespace decoder
-} // namespace pv
-
-#endif // DSVIEW_PV_SEARCH_H

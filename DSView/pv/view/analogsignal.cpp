@@ -47,7 +47,7 @@ const QColor AnalogSignal::SignalColours[4] = {
 
 const float AnalogSignal::EnvelopeThreshold = 16.0f;
 
-AnalogSignal::AnalogSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
+AnalogSignal::AnalogSignal(DevInst *dev_inst,
                            boost::shared_ptr<data::Analog> data,
                            sr_channel *probe) :
     Signal(dev_inst, probe),

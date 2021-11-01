@@ -36,6 +36,8 @@
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
 
+using namespace pv::device;
+
 namespace pv {
 namespace dialogs {
 
@@ -52,7 +54,7 @@ public:
     Calibration(QWidget *parent);
     ~Calibration();
 
-    void set_device(boost::shared_ptr<pv::device::DevInst> dev_inst);
+    void set_device(DevInst *dev_inst);
 protected:
 	void accept();
     void reject();
@@ -69,7 +71,7 @@ private slots:
     void reload_value();
 
 private:
-    boost::shared_ptr<pv::device::DevInst>  _dev_inst;
+    DevInst *_dev_inst;
  
     QPushButton *_save_btn;
     QPushButton *_abort_btn;

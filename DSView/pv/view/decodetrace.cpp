@@ -115,7 +115,7 @@ const QColor DecodeTrace::OutlineColours[16] = {
 const QString DecodeTrace::RegionStart = QT_TR_NOOP("Start");
 const QString DecodeTrace::RegionEnd = QT_TR_NOOP("End  ");
 
-DecodeTrace::DecodeTrace(pv::SigSession &session,
+DecodeTrace::DecodeTrace(pv::SigSession *session,
 	boost::shared_ptr<pv::data::DecoderStack> decoder_stack, int index) :
 	Trace(QString::fromUtf8(
         decoder_stack->stack().front()->decoder()->name), index, SR_CHANNEL_DECODER),
@@ -181,7 +181,7 @@ void DecodeTrace::paint_back(QPainter &p, int left, int right, QColor fore, QCol
     p.drawLine(left, sigY, right, sigY);
 
     // --draw decode region control
-    const double samples_per_pixel = _session.cur_snap_samplerate() * _view->scale();
+    const double samples_per_pixel = _session->cur_snap_samplerate() * _view->scale();
     const double startX = _decode_start/samples_per_pixel - _view->offset();
     const double endX = _decode_end/samples_per_pixel - _view->offset();
     const double regionY = get_y() - _totalHeight*0.5 - ControlRectWidth;
@@ -534,7 +534,7 @@ void DecodeTrace::draw_annotation(const pv::data::decode::Annotation &a,
                         ((type%100 != a.type()%100) && (type%100 != 0)))
                         continue;
                     boost::shared_ptr<LogicSignal> logic_sig;
-                    BOOST_FOREACH(boost::shared_ptr<view::Signal> sig, _session.get_signals()) {
+                    BOOST_FOREACH(boost::shared_ptr<view::Signal> sig, _session->get_signals()) {
                         if((sig->get_index() == iter.second) &&
                            (logic_sig = dynamic_pointer_cast<view::LogicSignal>(sig))) {
                             logic_sig->paint_mark(p, start, end, type/100);
@@ -773,7 +773,7 @@ QComboBox* DecodeTrace::create_probe_selector(
 {
 	assert(dec);
 
-    const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
+    const vector< boost::shared_ptr<Signal> > sigs(_session->get_signals());
 
 	assert(_decoder_stack);
     const map<const srd_channel*, int>::const_iterator probe_iter =
@@ -809,7 +809,7 @@ void DecodeTrace::commit_decoder_probes(boost::shared_ptr<data::decode::Decoder>
 	assert(dec);
 
     map<const srd_channel*, int> probe_map;
-    const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
+    const vector< boost::shared_ptr<Signal> > sigs(_session->get_signals());
 
     _index_list.clear();
 	BOOST_FOREACH(const ProbeSelector &s, _probe_selectors)
@@ -873,12 +873,12 @@ void DecodeTrace::on_decode_done()
 //        _view->signals_changed();
 //    }
     on_new_decode_data();
-    _session.decode_done();
+    _session->decode_done();
 }
 
 void DecodeTrace::on_delete()
 {
-    _session.remove_decode_signal(this);
+    _session->remove_decode_signal(this);
 }
 
 void DecodeTrace::on_probe_selected(int)
@@ -971,7 +971,7 @@ QRectF DecodeTrace::get_rect(DecodeSetRegions type, int y, int right)
 void DecodeTrace::on_region_set(int index)
 {
     (void)index;
-    const uint64_t last_samples = _session.cur_samplelimits() - 1;
+    const uint64_t last_samples = _session->cur_samplelimits() - 1;
     const int index1 = _start_comboBox->currentIndex();
     const int index2 = _end_comboBox->currentIndex();
     uint64_t decode_start, decode_end;
@@ -1008,7 +1008,7 @@ void DecodeTrace::on_region_set(int index)
 
 void DecodeTrace::frame_ended()
 {
-    const uint64_t last_samples = _session.cur_samplelimits() - 1;
+    const uint64_t last_samples = _session->cur_samplelimits() - 1;
     if (_decode_start > last_samples) {
         _decode_start = 0;
         _start_index = 0;

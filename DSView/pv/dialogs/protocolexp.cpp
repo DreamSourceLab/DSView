@@ -46,7 +46,7 @@ using namespace std;
 namespace pv {
 namespace dialogs {
 
-ProtocolExp::ProtocolExp(QWidget *parent, SigSession &session) :
+ProtocolExp::ProtocolExp(QWidget *parent, SigSession *session) :
     DSDialog(parent),
     _session(session),
     _button_box(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
@@ -64,7 +64,7 @@ ProtocolExp::ProtocolExp(QWidget *parent, SigSession &session) :
     _flayout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
     _flayout->addRow(new QLabel(tr("Export Format: "), this), _format_combobox);
 
-    pv::data::DecoderModel* decoder_model = _session.get_decoder_model();
+    pv::data::DecoderModel* decoder_model = _session->get_decoder_model();
     const boost::shared_ptr<pv::data::DecoderStack>& decoder_stack = decoder_model->getDecoderStack();
     if (decoder_stack) {
         int row_index = 0;
@@ -96,7 +96,7 @@ ProtocolExp::ProtocolExp(QWidget *parent, SigSession &session) :
 
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
     connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
-    connect(_session.get_device().get(), SIGNAL(device_updated()), this, SLOT(reject()));
+    connect(_session->get_device(), SIGNAL(device_updated()), this, SLOT(reject()));
 
 }
 
@@ -124,7 +124,7 @@ void ProtocolExp::accept()
         QString default_filter = _format_combobox->currentText();
 
         QString default_name = app._userHistory.protocolExportPath + "/" + "decoder-";
-        default_name += _session.get_session_time().toString("-yyMMdd-hhmmss");
+        default_name += _session->get_session_time().toString("-yyMMdd-hhmmss");
 
         QString file_name = QFileDialog::getSaveFileName(
                     this, 
@@ -170,7 +170,7 @@ void ProtocolExp::accept()
                        .arg("Time[ns]")
                        .arg(title);
 
-                pv::data::DecoderModel* decoder_model = _session.get_decoder_model();
+                pv::data::DecoderModel* decoder_model = _session->get_decoder_model();
                 const boost::shared_ptr<pv::data::DecoderStack>& decoder_stack = decoder_model->getDecoderStack();
                 int row_index = 0;
                 Row row;

@@ -63,7 +63,7 @@ public:
     };
 
 public:
-    SpectrumStack(pv::SigSession &_session, int index);
+    SpectrumStack(pv::SigSession *_session, int index);
     virtual ~SpectrumStack();
     void clear();
     void init();
@@ -95,7 +95,7 @@ public:
 signals:
 
 private:
-    pv::SigSession &_session;
+    pv::SigSession *_session;
 
     int _index;
     uint64_t _sample_num;

@@ -36,7 +36,7 @@
 namespace pv {
 namespace toolbars {
 
-FileBar::FileBar(SigSession &session, QWidget *parent) :
+FileBar::FileBar(SigSession *session, QWidget *parent) :
     QToolBar("File Bar", parent),
     _enable(true),
     _session(session),
@@ -205,10 +205,10 @@ void FileBar::on_actionDefault_triggered()
           return;
     }
 
-    QString driver_name = _session.get_device()->name();
-    QString mode_name = QString::number(_session.get_device()->dev_inst()->mode);
+    QString driver_name = _session->get_device()->name();
+    QString mode_name = QString::number(_session->get_device()->dev_inst()->mode);
     int language = QLocale::English;
-    GVariant *gvar_tmp = _session.get_device()->get_config(NULL, NULL, SR_CONF_LANGUAGE);
+    GVariant *gvar_tmp = _session->get_device()->get_config(NULL, NULL, SR_CONF_LANGUAGE);
     if (gvar_tmp != NULL) {
         language = g_variant_get_int16(gvar_tmp);
         g_variant_unref(gvar_tmp);

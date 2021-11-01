@@ -54,7 +54,7 @@ class ProtocolExp : public DSDialog
     Q_OBJECT
 
 public:
-    ProtocolExp(QWidget *parent, SigSession &session);
+    ProtocolExp(QWidget *parent, SigSession *session);
 
 protected:
     void accept();
@@ -67,7 +67,7 @@ private slots:
     void cancel_export();
 
 private:
-    SigSession &_session;
+    SigSession *_session;
 
     toolbars::TitleBar *_titlebar;
     QComboBox *_format_combobox;

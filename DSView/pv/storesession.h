@@ -53,11 +53,11 @@ private:
     const static int File_Version = 2;
 
 public:
-    StoreSession(SigSession &session);
+    StoreSession(SigSession *session);
 
 	~StoreSession();
 
-    SigSession& session();
+    SigSession* session();
 
 	std::pair<uint64_t, uint64_t> progress() const;
 
@@ -104,7 +104,7 @@ public:
 private:
     QString         _file_name;
     QString         _suffix;
-    SigSession      &_session;
+    SigSession      *_session;
 
 	boost::thread   _thread;
 

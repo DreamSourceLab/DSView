@@ -27,8 +27,8 @@
 #include <list>
 
 #include <QMainWindow>
-
-#include "sigsession.h"
+#include <QTranslator>
+ 
 #include "dialogs/dsmessagebox.h"
 
 class QAction;
@@ -40,9 +40,10 @@ class QToolBar;
 class QWidget;
 class QDockWidget;
 
-namespace pv {
+class AppControl;
 
-class DeviceManager;
+namespace pv {
+ 
 
 namespace toolbars {
 class SamplingBar;
@@ -63,6 +64,12 @@ namespace view {
 class View;
 }
 
+namespace device{
+    class DevInst;
+}
+
+using namespace pv::device;
+ 
 //The mainwindow,referenced by MainFrame
 //TODO: create graph view,toolbar,and show device list
 class MainWindow : public QMainWindow
@@ -73,9 +80,7 @@ private:
     static constexpr int Session_Version = 2;
 
 public:
-	explicit MainWindow(DeviceManager &device_manager,
-		const char *open_file_name = NULL,
-		QWidget *parent = 0);
+	explicit MainWindow(QWidget *parent = 0);
 
 protected:
     void closeEvent(QCloseEvent *event);
@@ -170,10 +175,8 @@ signals:
     void prgRate(int progress);
 
 private:
-	DeviceManager &_device_manager;
-
-	SigSession _session;
-    bool _hot_detach;
+    AppControl     *_control; 
+    bool           _hot_detach;
 
 	pv::view::View *_view;
     dialogs::DSMessageBox *_msg;

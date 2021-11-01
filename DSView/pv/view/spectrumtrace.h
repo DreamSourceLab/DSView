@@ -67,7 +67,7 @@ private:
     static const double VerticalRate;
 
 public:
-    SpectrumTrace(pv::SigSession &session,
+    SpectrumTrace(pv::SigSession *session,
         boost::shared_ptr<pv::data::SpectrumStack> spectrum_stack, int index);
     ~SpectrumTrace();
 
@@ -133,7 +133,7 @@ private:
 private slots:
 
 private:
-    pv::SigSession &_session;
+    pv::SigSession *_session;
     boost::shared_ptr<pv::data::SpectrumStack> _spectrum_stack;
 
     bool _enable;

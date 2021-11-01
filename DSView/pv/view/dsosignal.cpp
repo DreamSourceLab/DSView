@@ -56,7 +56,7 @@ const QColor DsoSignal::SignalColours[4] = {
 
 const float DsoSignal::EnvelopeThreshold = 256.0f;
 
-DsoSignal::DsoSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
+DsoSignal::DsoSignal(DevInst *dev_inst,
                      boost::shared_ptr<data::Dso> data,
                      sr_channel *probe):
     Signal(dev_inst, probe),

@@ -61,7 +61,7 @@ private:
     static const int Max_Measure_Limits = 16;
 
 public:
-    MeasureDock(QWidget *parent, pv::view::View &view, SigSession &session);
+    MeasureDock(QWidget *parent, pv::view::View &view, SigSession *session);
     ~MeasureDock();
 
     void paintEvent(QPaintEvent *);
@@ -101,7 +101,7 @@ public slots:
     void refresh();
 
 private:
-    SigSession &_session;
+    SigSession *_session;
     view::View &_view;
 
     QWidget *_widget;

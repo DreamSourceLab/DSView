@@ -79,7 +79,7 @@ public:
     };
 
 public:
-   	DecoderStack(pv::SigSession &_session,
+   	DecoderStack(pv::SigSession *_session,
 		const srd_decoder *const decoder, DecoderStatus *decoder_status);
 
 public:
@@ -168,7 +168,7 @@ signals:
     void decode_done();
 
 private:
-	pv::SigSession &_session;
+	pv::SigSession *_session;
 
 	/**
 	 * This mutex prevents more than one decode operation occuring

@@ -44,7 +44,7 @@ class StoreProgress : public DSDialog
 	Q_OBJECT
 
 public:
-    StoreProgress(SigSession &session,
+    StoreProgress(SigSession *session,
         QWidget *parent = 0);
 
 	virtual ~StoreProgress();

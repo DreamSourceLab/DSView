@@ -87,7 +87,7 @@ private:
     static const uint16_t MS_RectHeight = 25;
 
 public:
-    DsoSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
+    DsoSignal(DevInst* dev_inst,
               boost::shared_ptr<pv::data::Dso> data,
               sr_channel *probe);
 

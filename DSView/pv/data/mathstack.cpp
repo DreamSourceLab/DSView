@@ -75,7 +75,7 @@ const QString MathStack::vDialDivUnit[MathStack::vDialUnitCount] = {
     "V/V",
 };
 
-MathStack::MathStack(pv::SigSession &session,
+MathStack::MathStack(pv::SigSession *session,
                      boost::shared_ptr<view::DsoSignal> dsoSig1,
                      boost::shared_ptr<view::DsoSignal> dsoSig2,
                      MathType type) :

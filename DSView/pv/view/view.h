@@ -105,7 +105,7 @@ public:
     static const QColor LightRed;
 
 public:
-    explicit View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget *parent = 0);
+    explicit View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget *parent = 0);
 
 	SigSession& session();
 
@@ -260,7 +260,7 @@ signals:
 
     void auto_trig(int index);
 
-private:
+private: 
     void get_scroll_layout(int64_t &length, int64_t &offset) const;
 	
 	void update_scroll();
@@ -337,7 +337,7 @@ private slots:
 
 private:
 
-	SigSession &_session;
+	SigSession  *_session;
     pv::toolbars::SamplingBar *_sampling_bar;
 
     QWidget *_viewcenter;

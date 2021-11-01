@@ -40,7 +40,7 @@ using namespace pv::view;
 namespace pv {
 namespace dialogs {
 
-DsoMeasure::DsoMeasure(SigSession &session, View &parent,
+DsoMeasure::DsoMeasure(SigSession *session, View &parent,
                        unsigned int position, int last_sig_index) :
     DSDialog((QWidget *)&parent),
     _session(session),
@@ -57,7 +57,7 @@ DsoMeasure::DsoMeasure(SigSession &session, View &parent,
     _measure_tab->setTabPosition(QTabWidget::West);
     _measure_tab->setUsesScrollButtons(false);
 
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
+    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals()) {
         boost::shared_ptr<view::DsoSignal> dsoSig;
         if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) && dsoSig->enabled()) {
             QWidget *measure_widget = new QWidget(this);
@@ -79,7 +79,7 @@ DsoMeasure::DsoMeasure(SigSession &session, View &parent,
 
     connect(_button_box.button(QDialogButtonBox::Cancel), SIGNAL(clicked()), this, SLOT(reject()));
     connect(_button_box.button(QDialogButtonBox::Reset), SIGNAL(clicked()), this, SLOT(reset()));
-    connect(_session.get_device().get(), SIGNAL(device_updated()), this, SLOT(reject()));
+    connect(_session->get_device(), SIGNAL(device_updated()), this, SLOT(reject()));
 }
 
 DsoMeasure::~DsoMeasure(){
@@ -158,7 +158,7 @@ void DsoMeasure::accept()
     if(sc != NULL) {
         QVariant id = sc->property("id");
         enum DSO_MEASURE_TYPE ms_type = DSO_MEASURE_TYPE(id.toInt());
-        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
+        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals()) {
             boost::shared_ptr<view::DsoSignal> dsoSig;
             if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
                 if (_measure_tab->currentWidget()->property("index").toInt() == dsoSig->get_index()) {

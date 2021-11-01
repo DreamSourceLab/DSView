@@ -43,7 +43,7 @@ using namespace std;
 namespace pv {
 namespace view {
 
-DevMode::DevMode(QWidget *parent, SigSession &session) :
+DevMode::DevMode(QWidget *parent, SigSession *session) :
     QWidget(parent),
     _session(session)
     
@@ -91,7 +91,7 @@ void DevMode::changeEvent(QEvent *event)
 
 void DevMode::set_device()
 { 
-    const boost::shared_ptr<device::DevInst> dev_inst = _session.get_device();
+    DevInst* dev_inst = _session->get_device();
     assert(dev_inst);
    
     for(std::map<QAction *, const sr_dev_mode *>::const_iterator i = _mode_list.begin();
@@ -134,8 +134,8 @@ void DevMode::set_device()
             _pop_menu->addAction(action);
         }
 
-        boost::shared_ptr<pv::device::File> file_dev;
-        if((file_dev = dynamic_pointer_cast<pv::device::File>(dev_inst))) {
+        File *file_dev;
+        if((file_dev = dynamic_cast<File*>(dev_inst))) {
             _close_button->setDisabled(false);
             _close_button->setIcon(QIcon(iconPath+"/close.svg"));
             connect(_close_button, SIGNAL(clicked()), this, SLOT(on_close()));
@@ -156,7 +156,7 @@ void DevMode::paintEvent(QPaintEvent*)
 
 void DevMode::on_mode_change()
 {
-    const boost::shared_ptr<device::DevInst> dev_inst = _session.get_device();
+    DevInst* dev_inst = _session->get_device();
     assert(dev_inst);
     QAction *action = qobject_cast<QAction *>(sender());
     if (dev_inst->dev_inst()->mode == _mode_list[action]->mode)
@@ -170,11 +170,11 @@ void DevMode::on_mode_change()
         i != _mode_list.end(); i++) {
         if ((*i).first == action) {
             if (dev_inst->dev_inst()->mode != (*i).second->mode) {
-                _session.set_run_mode(SigSession::Single);
-                _session.set_repeating(false);
-                _session.stop_capture();
-                _session.capture_state_changed(SigSession::Stopped);
-                _session.session_save();
+                _session->set_run_mode(SigSession::Single);
+                _session->set_repeating(false);
+                _session->stop_capture();
+                _session->capture_state_changed(SigSession::Stopped);
+                _session->session_save();
                 dev_inst->set_config(NULL, NULL,
                                      SR_CONF_DEVICE_MODE,
                                      g_variant_new_int16((*i).second->mode));
@@ -193,10 +193,10 @@ void DevMode::on_mode_change()
 
 void DevMode::on_close()
 {
-    const boost::shared_ptr<device::DevInst> dev_inst = _session.get_device();
+    DevInst *dev_inst = _session->get_device();
     assert(dev_inst);
 
-    _session.close_file(dev_inst);
+    _session->close_file(dev_inst);
     dev_changed(true);
 }
 

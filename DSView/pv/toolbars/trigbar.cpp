@@ -38,7 +38,7 @@ namespace toolbars {
 const QString TrigBar::DARK_STYLE = "dark";
 const QString TrigBar::LIGHT_STYLE = "light";
 
-TrigBar::TrigBar(SigSession &session, QWidget *parent) :
+TrigBar::TrigBar(SigSession *session, QWidget *parent) :
     QToolBar("Trig Bar", parent),
     _session(session),
     _enable(true),
@@ -261,21 +261,21 @@ void TrigBar::close_all()
 void TrigBar::reload()
 {
     close_all();
-    if (_session.get_device()->dev_inst()->mode == LOGIC) {
+    if (_session->get_device()->dev_inst()->mode == LOGIC) {
         _trig_action->setVisible(true);
         _protocol_action->setVisible(true);
         _measure_action->setVisible(true);
         _search_action->setVisible(true);
         _function_action->setVisible(false);
         _action_lissajous->setVisible(false);
-    } else if (_session.get_device()->dev_inst()->mode == ANALOG) {
+    } else if (_session->get_device()->dev_inst()->mode == ANALOG) {
         _trig_action->setVisible(false);
         _protocol_action->setVisible(false);
         _measure_action->setVisible(true);
         _search_action->setVisible(false);
         _function_action->setVisible(false);
         _action_lissajous->setVisible(false);
-    } else if (_session.get_device()->dev_inst()->mode == DSO) {
+    } else if (_session->get_device()->dev_inst()->mode == DSO) {
         _trig_action->setVisible(true);
         _protocol_action->setVisible(false);
         _measure_action->setVisible(true);

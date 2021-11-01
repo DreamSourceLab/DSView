@@ -45,7 +45,7 @@ const float LogicSignal::Oversampling = 1.0f;
 const int LogicSignal::StateHeight = 12;
 const int LogicSignal::StateRound = 5;
 
-LogicSignal::LogicSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
+LogicSignal::LogicSignal(DevInst *dev_inst,
                          boost::shared_ptr<data::Logic> data,
                          sr_channel *probe) :
     Signal(dev_inst, probe),

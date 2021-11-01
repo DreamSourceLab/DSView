@@ -50,7 +50,7 @@ private:
 
 
 public:
-    FftOptions(QWidget *parent, SigSession &session);
+    FftOptions(QWidget *parent, SigSession *session);
 
     ~FftOptions();
 
@@ -63,7 +63,7 @@ private slots:
     void len_changed(int index);
 
 private:
-    SigSession &_session;
+    SigSession *_session;
     uint64_t _sample_limit;
  
     QComboBox *_len_combobox;

@@ -75,7 +75,7 @@ namespace pv {
         }
     }
 
-StoreSession::StoreSession(SigSession &session) :
+StoreSession::StoreSession(SigSession *session) :
 	_session(session),
     _outModule(NULL),
 	_units_stored(0),
@@ -90,7 +90,7 @@ StoreSession::~StoreSession()
 	wait();
 }
 
-SigSession& StoreSession::session()
+SigSession* StoreSession::session()
 {
     return _session;
 }
@@ -125,7 +125,7 @@ QList<QString> StoreSession::getSuportedExportFormats(){
     while(*supportedModules){
         if(*supportedModules == NULL)
             break;
-        if (_session.get_device()->dev_inst()->mode != LOGIC &&
+        if (_session->get_device()->dev_inst()->mode != LOGIC &&
             strcmp((*supportedModules)->id, "csv"))
             break;
         QString format((*supportedModules)->desc);
@@ -147,7 +147,7 @@ bool StoreSession::save_start()
     }
 
     std::set<int> type_set;
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> sig, _session.get_signals()) {
+    BOOST_FOREACH(const boost::shared_ptr<view::Signal> sig, _session->get_signals()) {
         assert(sig);
         type_set.insert(sig->get_type());
     }
@@ -167,7 +167,7 @@ bool StoreSession::save_start()
         return false;
     }
 
-    const boost::shared_ptr<data::Snapshot> snapshot(_session.get_snapshot(*type_set.begin()));
+    const boost::shared_ptr<data::Snapshot> snapshot(_session->get_snapshot(*type_set.begin()));
 	assert(snapshot);
     // Check we have data
     if (snapshot->empty()) {
@@ -230,7 +230,7 @@ void StoreSession::save_proc(boost::shared_ptr<data::Snapshot> snapshot)
 
     if ((logic_snapshot = boost::dynamic_pointer_cast<data::LogicSnapshot>(snapshot))) {
         uint16_t to_save_probes = 0;
-        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
+        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals()) {
             if (s->enabled() && logic_snapshot->has_data(s->get_index()))
                 to_save_probes++;
         }
@@ -238,7 +238,7 @@ void StoreSession::save_proc(boost::shared_ptr<data::Snapshot> snapshot)
         num = logic_snapshot->get_block_num();
         bool sample;
 
-        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
+        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals()) {
             int ch_type = s->get_type();
             if (ch_type == SR_CHANNEL_LOGIC) {
                 int ch_index = s->get_index();
@@ -283,7 +283,7 @@ void StoreSession::save_proc(boost::shared_ptr<data::Snapshot> snapshot)
         }
     } else {
         int ch_type = -1;
-        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
+        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals()) {
             ch_type = s->get_type();
             break;
         }
@@ -383,7 +383,7 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
         return NULL;
     }
 
-    const sr_dev_inst *sdi = _session.get_device()->dev_inst();
+    const sr_dev_inst *sdi = _session->get_device()->dev_inst();
     meta = fopen(metafile.toUtf8().data(), "wb");
     if (meta == NULL) {
         qDebug() << "Failed to create temp meta file.";
@@ -421,68 +421,68 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
         fprintf(meta, "total blocks = %d\n", logic_snapshot->get_block_num());
     }
 
-    s = sr_samplerate_string(_session.cur_snap_samplerate());
+    s = sr_samplerate_string(_session->cur_snap_samplerate());
     fprintf(meta, "samplerate = %s\n", s);
 
     if (sdi->mode == DSO) {
-        gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_TIMEBASE);
+        gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_TIMEBASE);
         if (gvar != NULL) {
             uint64_t tmp_u64 = g_variant_get_uint64(gvar);
             fprintf(meta, "hDiv = %" PRIu64 "\n", tmp_u64);
             g_variant_unref(gvar);
         }
-        gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_MAX_TIMEBASE);
+        gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_MAX_TIMEBASE);
         if (gvar != NULL) {
             uint64_t tmp_u64 = g_variant_get_uint64(gvar);
             fprintf(meta, "hDiv max = %" PRIu64 "\n", tmp_u64);
             g_variant_unref(gvar);
         }
-        gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_MIN_TIMEBASE);
+        gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_MIN_TIMEBASE);
         if (gvar != NULL) {
             uint64_t tmp_u64 = g_variant_get_uint64(gvar);
             fprintf(meta, "hDiv min = %" PRIu64 "\n", tmp_u64);
             g_variant_unref(gvar);
         }
-        gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_UNIT_BITS);
+        gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_UNIT_BITS);
         if (gvar != NULL) {
             uint8_t tmp_u8 = g_variant_get_byte(gvar);
             fprintf(meta, "bits = %d\n", tmp_u8);
             g_variant_unref(gvar);
         }
-        gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_REF_MIN);
+        gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MIN);
         if (gvar != NULL) {
             uint32_t tmp_u32 = g_variant_get_uint32(gvar);
             fprintf(meta, "ref min = %d\n", tmp_u32);
             g_variant_unref(gvar);
         }
-        gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_REF_MAX);
+        gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MAX);
         if (gvar != NULL) {
             uint32_t tmp_u32 = g_variant_get_uint32(gvar);
             fprintf(meta, "ref max = %d\n", tmp_u32);
             g_variant_unref(gvar);
         }
     } else if (sdi->mode == LOGIC) {
-        fprintf(meta, "trigger time = %lld\n", _session.get_session_time().toMSecsSinceEpoch());
+        fprintf(meta, "trigger time = %lld\n", _session->get_session_time().toMSecsSinceEpoch());
     } else if (sdi->mode == ANALOG) {
         boost::shared_ptr<data::AnalogSnapshot> analog_snapshot;
         if ((analog_snapshot = dynamic_pointer_cast<data::AnalogSnapshot>(snapshot))) {
             uint8_t tmp_u8 = analog_snapshot->get_unit_bytes();
             fprintf(meta, "bits = %d\n", tmp_u8*8);
         }
-        gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_REF_MIN);
+        gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MIN);
         if (gvar != NULL) {
             uint32_t tmp_u32 = g_variant_get_uint32(gvar);
             fprintf(meta, "ref min = %d\n", tmp_u32);
             g_variant_unref(gvar);
         }
-        gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_REF_MAX);
+        gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MAX);
         if (gvar != NULL) {
             uint32_t tmp_u32 = g_variant_get_uint32(gvar);
             fprintf(meta, "ref max = %d\n", tmp_u32);
             g_variant_unref(gvar);
         }
     }
-    fprintf(meta, "trigger pos = %" PRIu64 "\n", _session.get_trigger_pos());
+    fprintf(meta, "trigger pos = %" PRIu64 "\n", _session->get_trigger_pos());
 
     probecnt = 0;
     for (l = sdi->channels; l; l = l->next) {
@@ -557,7 +557,7 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
 bool StoreSession::export_start()
 {
     std::set<int> type_set;
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> sig, _session.get_signals()) {
+    BOOST_FOREACH(const boost::shared_ptr<view::Signal> sig, _session->get_signals()) {
         assert(sig);
         int _tp = sig->get_type();
         type_set.insert(_tp);
@@ -572,7 +572,7 @@ bool StoreSession::export_start()
         return false;
     }
 
-    const boost::shared_ptr<data::Snapshot> snapshot(_session.get_snapshot(*type_set.begin()));
+    const boost::shared_ptr<data::Snapshot> snapshot(_session->get_snapshot(*type_set.begin()));
     assert(snapshot);
     // Check we have data
     if (snapshot->empty()) {
@@ -646,7 +646,7 @@ void StoreSession::export_proc(boost::shared_ptr<data::Snapshot> snapshot)
 
     struct sr_output output;
     output.module = (sr_output_module*) _outModule;
-    output.sdi = _session.get_device()->dev_inst();
+    output.sdi = _session->get_device()->dev_inst();
     output.param = NULL;
     if(_outModule->init)
         _outModule->init(&output, params);
@@ -664,7 +664,7 @@ void StoreSession::export_proc(boost::shared_ptr<data::Snapshot> snapshot)
     struct sr_config *src;
 
     src = sr_config_new(SR_CONF_SAMPLERATE,
-            g_variant_new_uint64(_session.cur_snap_samplerate()));
+            g_variant_new_uint64(_session->cur_snap_samplerate()));
     meta.config = g_slist_append(NULL, src);
 
     src = sr_config_new(SR_CONF_LIMIT_SAMPLES,
@@ -673,12 +673,12 @@ void StoreSession::export_proc(boost::shared_ptr<data::Snapshot> snapshot)
 
     GVariant *gvar;
     uint8_t bits;
-    gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_UNIT_BITS);
+    gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_UNIT_BITS);
     if (gvar != NULL) {
         bits = g_variant_get_byte(gvar);
         g_variant_unref(gvar);
     }
-    gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_REF_MIN);
+    gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MIN);
     if (gvar != NULL) {
         src = sr_config_new(SR_CONF_REF_MIN, gvar);
         g_variant_unref(gvar);
@@ -686,7 +686,7 @@ void StoreSession::export_proc(boost::shared_ptr<data::Snapshot> snapshot)
         src = sr_config_new(SR_CONF_REF_MIN, g_variant_new_uint32(1));
     }
     meta.config = g_slist_append(meta.config, src);
-    gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_REF_MAX);
+    gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MAX);
     if (gvar != NULL) {
         src = sr_config_new(SR_CONF_REF_MAX, gvar);
         g_variant_unref(gvar);
@@ -721,7 +721,7 @@ void StoreSession::export_proc(boost::shared_ptr<data::Snapshot> snapshot)
             uint64_t buf_sample_num = logic_snapshot->get_block_size(blk) * 8;
             buf_vec.clear();
             buf_sample.clear();
-            BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
+            BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals()) {
                 int ch_type = s->get_type();
                 if (ch_type == SR_CHANNEL_LOGIC) {
                     int ch_index = s->get_index();
@@ -879,7 +879,7 @@ QString StoreSession::decoders_gen()
 QJsonArray StoreSession::json_decoders()
 {
     QJsonArray dec_array;
-    BOOST_FOREACH(boost::shared_ptr<view::DecodeTrace> t, _session.get_decode_signals()) {
+    BOOST_FOREACH(boost::shared_ptr<view::DecodeTrace> t, _session->get_decode_signals()) {
         QJsonObject dec_obj;
         QJsonArray stack_array;
         QJsonObject show_obj;
@@ -959,18 +959,18 @@ QJsonArray StoreSession::json_decoders()
 
 void StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_array)
 {
-    if (_session.get_device()->dev_inst()->mode != LOGIC ||
+    if (_session->get_device()->dev_inst()->mode != LOGIC ||
         dec_array.empty())
         return;
 
     foreach (const QJsonValue &dec_value, dec_array) {
         QJsonObject dec_obj = dec_value.toObject();
         const vector< boost::shared_ptr<view::DecodeTrace> > pre_dsigs(
-            _session.get_decode_signals());
+            _session->get_decode_signals());
         if (widget->sel_protocol(dec_obj["id"].toString()))
             widget->add_protocol(true);
         const vector< boost::shared_ptr<view::DecodeTrace> > aft_dsigs(
-            _session.get_decode_signals());
+            _session->get_decode_signals());
 
         if (aft_dsigs.size() > pre_dsigs.size()) {
             const GSList *l;
@@ -1130,24 +1130,24 @@ QString StoreSession::MakeSaveFile(bool bDlg)
     AppConfig &app = AppConfig::Instance(); 
     if (app._userHistory.saveDir != "")
     {
-        default_name = app._userHistory.saveDir + "/"  + _session.get_device()->name() + "-";
+        default_name = app._userHistory.saveDir + "/"  + _session->get_device()->name() + "-";
     } 
     else{
         QDir _dir;
         QString _root = _dir.home().path();                
-        default_name =  _root + "/" + _session.get_device()->name() + "-";
+        default_name =  _root + "/" + _session->get_device()->name() + "-";
     } 
 
-    for (const GSList *l = _session.get_device()->get_dev_mode_list();
+    for (const GSList *l = _session->get_device()->get_dev_mode_list();
          l; l = l->next) {
         const sr_dev_mode *mode = (const sr_dev_mode *)l->data;
-        if (_session.get_device()->dev_inst()->mode == mode->mode) {
+        if (_session->get_device()->dev_inst()->mode == mode->mode) {
             default_name += mode->acronym;
             break;
         }
     }
 
-    default_name += _session.get_session_time().toString("-yyMMdd-hhmmss");
+    default_name += _session->get_session_time().toString("-yyMMdd-hhmmss");
 
     // Show the dialog
     if (bDlg)
@@ -1188,23 +1188,23 @@ QString StoreSession::MakeExportFile(bool bDlg)
     
     if (app._userHistory.exportDir != "")
     {
-        default_name = app._userHistory.exportDir  + "/"  + _session.get_device()->name() + "-";
+        default_name = app._userHistory.exportDir  + "/"  + _session->get_device()->name() + "-";
     } 
     else{
         QDir _dir;
         QString _root = _dir.home().path();    
-        default_name =  _root + "/" + _session.get_device()->name() + "-";
+        default_name =  _root + "/" + _session->get_device()->name() + "-";
     }  
 
-    for (const GSList *l = _session.get_device()->get_dev_mode_list();
+    for (const GSList *l = _session->get_device()->get_dev_mode_list();
          l; l = l->next) {
         const sr_dev_mode *mode = (const sr_dev_mode *)l->data;
-        if (_session.get_device()->dev_inst()->mode == mode->mode) {
+        if (_session->get_device()->dev_inst()->mode == mode->mode) {
             default_name += mode->acronym;
             break;
         }
     }
-    default_name += _session.get_session_time().toString("-yyMMdd-hhmmss");
+    default_name += _session->get_session_time().toString("-yyMMdd-hhmmss");
 
     //ext name
     QList<QString> supportedFormats = getSuportedExportFormats();
@@ -1271,7 +1271,7 @@ QString StoreSession::MakeExportFile(bool bDlg)
 bool StoreSession::IsLogicDataType()
 {
     std::set<int> type_set;
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> sig, _session.get_signals()) {
+    BOOST_FOREACH(const boost::shared_ptr<view::Signal> sig, _session->get_signals()) {
         assert(sig);
         type_set.insert(sig->get_type());
     }

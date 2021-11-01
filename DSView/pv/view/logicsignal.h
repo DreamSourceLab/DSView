@@ -37,6 +37,8 @@ class Logic;
 class Analog;
 }
 
+using namespace pv::device;
+
 namespace view {
 
 //when device is logic analyzer mode, to draw logic signal trace
@@ -64,7 +66,7 @@ public:
     };
 
 public:
-    LogicSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
+    LogicSignal(DevInst *dev_inst,
                 boost::shared_ptr<pv::data::Logic> data,
                 sr_channel *probe);
 

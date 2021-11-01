@@ -38,7 +38,7 @@ using namespace std;
 namespace pv {
 namespace dialogs {
 
-DeviceOptions::DeviceOptions(QWidget *parent, boost::shared_ptr<pv::device::DevInst> dev_inst) :
+DeviceOptions::DeviceOptions(QWidget *parent, DevInst *dev_inst) :
     DSDialog(parent),
     _dev_inst(dev_inst),
     _button_box(QDialogButtonBox::Ok, Qt::Horizontal, this),
@@ -67,7 +67,7 @@ DeviceOptions::DeviceOptions(QWidget *parent, boost::shared_ptr<pv::device::DevI
 
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
     //connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
-    connect(_dev_inst.get(), SIGNAL(device_updated()), this, SLOT(reject()));
+    connect(_dev_inst, SIGNAL(device_updated()), this, SLOT(reject()));
 
     GVariant* gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_OPERATION_MODE);
     if (gvar != NULL) {

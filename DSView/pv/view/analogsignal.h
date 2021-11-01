@@ -53,7 +53,7 @@ private:
     static const uint8_t DefaultBits = 8;
 
 public:
-    AnalogSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
+    AnalogSignal(DevInst* dev_inst,
                  boost::shared_ptr<pv::data::Analog> data,
                  sr_channel *probe);
     AnalogSignal(boost::shared_ptr<view::AnalogSignal> s,

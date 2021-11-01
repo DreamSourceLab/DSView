@@ -40,14 +40,14 @@ class Interval : public DSDialog
 	Q_OBJECT
 
 public:
-    Interval(SigSession &session, QWidget *parent);
+    Interval(SigSession *session, QWidget *parent);
 
 protected:
 	void accept();
     void reject();
 
 private:
-    SigSession &_session;
+    SigSession *_session;
 
     QLabel *_interval_label;
     QSpinBox *_interval_spinBox;

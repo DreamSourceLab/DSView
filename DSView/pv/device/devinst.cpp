@@ -61,7 +61,6 @@ void DevInst::release()
 {
 	if (_owner) {
 		_owner->release_device(this);
-		_owner = NULL;
 	}
 }
 
@@ -208,6 +207,11 @@ void DevInst::run()
 bool DevInst::is_usable() const
 {
     return _usable;
+}
+
+void DevInst::destroy(){
+	release();
+    delete this;
 }
 
 } // device

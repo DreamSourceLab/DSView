@@ -28,9 +28,11 @@ namespace pv {
 namespace device {
 
 class Device : public DevInst
-{
+{ 
 public:
 	Device(sr_dev_inst *dev_inst);
+
+	~Device();
 
 	sr_dev_inst* dev_inst() const;
 

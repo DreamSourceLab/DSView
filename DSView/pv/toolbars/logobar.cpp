@@ -35,7 +35,7 @@
 namespace pv {
 namespace toolbars {
 
-LogoBar::LogoBar(SigSession &session, QWidget *parent) :
+LogoBar::LogoBar(SigSession *session, QWidget *parent) :
     QToolBar("File Bar", parent),
     _enable(true),
     _connected(false),

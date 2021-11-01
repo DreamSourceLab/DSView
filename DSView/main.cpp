@@ -19,10 +19,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
-
-#include <libsigrok4DSL/libsigrok.h>
-#include <libsigrokdecode4DSL/libsigrokdecode.h>
-
+ 
 #include <stdint.h>
 #include <getopt.h>
 
@@ -35,11 +32,11 @@
 #include <QStyle>
 
 #include "dsapplication.h"
-#include "mystyle.h"
-#include "pv/devicemanager.h"
+#include "mystyle.h" 
 #include "pv/mainframe.h"
 #include "pv/config/appconfig.h"
 #include "config.h"
+#include "pv/appcontrol.h"
 
 char DS_RES_PATH[256];
 
@@ -58,10 +55,9 @@ void usage()
 
 int main(int argc, char *argv[])
 {  
-	int ret = 0;
-	struct sr_context *sr_ctx = NULL;
+	int ret = 0; 
 	const char *open_file = NULL;
-
+ 
     #if QT_VERSION >= QT_VERSION_CHECK(5,6,0)
         QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
         QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
@@ -107,6 +103,8 @@ int main(int argc, char *argv[])
     QApplication::setOrganizationName("DreamSourceLab");
     QApplication::setOrganizationDomain("www.DreamSourceLab.com");
 
+	AppControl *control = AppControl::Instance();
+
 	// Parse arguments
 	while (1) {
 		static const struct option long_options[] = {
@@ -125,12 +123,7 @@ int main(int argc, char *argv[])
 		case 'l':
 		{
 			const int loglevel = atoi(optarg);
-			sr_log_loglevel_set(loglevel);
-
-
-			srd_log_loglevel_set(loglevel);
-
-
+			control->SetLogLevel(loglevel);
 			break;
 		}
 
@@ -166,53 +159,41 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-	// Initialise libsigrok
-	if (sr_init(&sr_ctx) != SR_OK) {
-		qDebug() << "DSView run ERROR: libsigrok init failed.";
+	//load app config
+	AppConfig::Instance().LoadAll();
+
+	//init core
+	if (!control->Init()){
+        fprintf(stderr, "init error!");
+        qDebug() << control->GetLastError();
 		return 1;
 	}
 
-	do {
+	try
+	{  
+	   control->Start();
+	   
+		// Initialise the main frame
+        pv::MainFrame w;
+		w.show(); 
+		w.readSettings();
+		 
+		//to show the dailog for open help document
+		w.show_doc();
 
-		// Initialise libsigrokdecode
-		if (srd_init(NULL) != SRD_OK) {
-			qDebug() << "ERROR: libsigrokdecode init failed.";
-			break;
-		}
+		//Run the application
+		ret = a.exec();
+	}
+	catch (const std::exception &e)
+	{
+        fprintf(stderr, "main() catch a except!");
+		const char *exstr = e.what();
+		qDebug() << exstr;
+	}
 
-		// Load the protocol decoders
-		srd_decoder_load_all();
-
-		//load app config
-		AppConfig::Instance().LoadAll();
-
-		try {
-			// Create the device manager, initialise the drivers
-			pv::DeviceManager device_manager(sr_ctx);
-
-            // Initialise the main frame
-            pv::MainFrame w(device_manager, open_file);
-			w.show();
-            w.readSettings();
-            w.show_doc();  // to show the dailog for open help document
-
-			// Run the application
-            ret = a.exec();
-
-        } catch(const std::exception &e) {
-			qDebug() << e.what();
-		}
-
-
-		// Destroy libsigrokdecode
-		srd_exit();
-
-
-	} while (0);
-
-	// Destroy libsigrok
-	if (sr_ctx)
-		sr_exit(sr_ctx);
+	//uninit
+	control->UnInit();  
+	control->Destroy();
 
 	return ret;
 }

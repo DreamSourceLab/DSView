@@ -37,7 +37,7 @@ namespace dialogs {
 const QString RegionOptions::RegionStart = QT_TR_NOOP("Start");
 const QString RegionOptions::RegionEnd = QT_TR_NOOP("End");
 
-RegionOptions::RegionOptions(view::View *view, SigSession &session, QWidget *parent) :
+RegionOptions::RegionOptions(view::View *view, SigSession *session, QWidget *parent) :
     DSDialog(parent),
     _session(session),
     _view(view),
@@ -75,19 +75,19 @@ RegionOptions::RegionOptions(view::View *view, SigSession &session, QWidget *par
     setTitle(tr("Region"));
 
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(set_region()));
-    connect(_session.get_device().get(), SIGNAL(device_updated()), this, SLOT(reject()));
+    connect(_session->get_device(), SIGNAL(device_updated()), this, SLOT(reject()));
 
 }
 
 void RegionOptions::set_region()
 {
-    const uint64_t last_samples = _session.cur_samplelimits() - 1;
+    const uint64_t last_samples = _session->cur_samplelimits() - 1;
     const int index1 = _start_comboBox->currentIndex();
     const int index2 = _end_comboBox->currentIndex();
     uint64_t start, end;
 
-    _session.set_save_start(0);
-    _session.set_save_end(last_samples);
+    _session->set_save_start(0);
+    _session->set_save_end(last_samples);
 
     if (index1 == 0) {
         start = 0;
@@ -105,8 +105,8 @@ void RegionOptions::set_region()
     if (end > last_samples)
         end = last_samples;
 
-    _session.set_save_start(min(start, end));
-    _session.set_save_end(max(start, end));
+    _session->set_save_start(min(start, end));
+    _session->set_save_end(max(start, end));
 
     QDialog::accept();
 }

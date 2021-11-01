@@ -173,6 +173,11 @@ AppConfig::AppConfig()
 { 
 }
 
+AppConfig::AppConfig(AppConfig &o) 
+{
+    (void)o;
+}
+
 AppConfig::~AppConfig()
 {
 }

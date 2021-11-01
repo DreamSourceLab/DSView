@@ -44,7 +44,7 @@ class DsoTriggerDock : public QScrollArea
     Q_OBJECT
 
 public:
-    DsoTriggerDock(QWidget *parent, SigSession &session);
+    DsoTriggerDock(QWidget *parent, SigSession *session);
     ~DsoTriggerDock();
 
     void paintEvent(QPaintEvent *);
@@ -75,7 +75,7 @@ private slots:
 private:
 
 private:
-    SigSession &_session;
+    SigSession *_session;
 
     QWidget *_widget;
 

@@ -32,8 +32,7 @@
 namespace pv {
 namespace view {
 
-Signal::Signal(boost::shared_ptr<pv::device::DevInst> dev_inst,
-               sr_channel *probe) :
+Signal::Signal(DevInst *dev_inst,sr_channel *probe) :
     Trace(probe->name, probe->index, probe->type),
     _dev_inst(dev_inst),
     _probe(probe)
@@ -59,7 +58,7 @@ void Signal::set_name(QString name)
     _probe->name = g_strdup(name.toUtf8().data());
 }
 
-boost::shared_ptr<device::DevInst> Signal::get_device() const
+DevInst* Signal::get_device() const
 {
     return _dev_inst;
 }

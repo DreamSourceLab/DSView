@@ -47,7 +47,7 @@ class ViewStatus : public QWidget
     Q_OBJECT
 
 public:
-   ViewStatus(SigSession &session, View &parent);
+   ViewStatus(SigSession *session, View &parent);
 
 public: 
 
@@ -71,7 +71,7 @@ public slots:
     void set_capture_status(bool triggered, int progess);
 
 private:
-    SigSession &_session;
+    SigSession *_session;
     View &_view;
     int _hit_rect;
 

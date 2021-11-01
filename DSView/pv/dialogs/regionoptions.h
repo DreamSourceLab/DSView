@@ -52,13 +52,13 @@ private:
     static const QString RegionEnd;
 
 public:
-    RegionOptions(view::View *view, SigSession &session, QWidget *parent = 0);
+    RegionOptions(view::View *view, SigSession *session, QWidget *parent = 0);
 
 private slots:
     void set_region();
 
 private:
-    SigSession &_session;
+    SigSession *_session;
     view::View *_view;
 
     QComboBox *_start_comboBox;

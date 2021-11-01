@@ -30,8 +30,7 @@
 #include <QTimer>
 
 namespace pv {
-
-class DeviceManager;
+ 
 class MainWindow;
 
 namespace toolbars {
@@ -66,8 +65,7 @@ public:
     }borderTypes;
 
 public:
-    MainFrame(DeviceManager &device_manager,
-        const char *open_file_name = NULL);
+    MainFrame();
 
     void readSettings();
 

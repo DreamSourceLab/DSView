@@ -97,7 +97,7 @@ private:
     static const QString RegionEnd;
 
 public:
-	DecodeTrace(pv::SigSession &session,
+	DecodeTrace(pv::SigSession *session,
 		boost::shared_ptr<pv::data::DecoderStack> decoder_stack,
 		int index);
     ~DecodeTrace();
@@ -206,7 +206,7 @@ private slots:
     void on_region_set(int index);
 
 private:
-	pv::SigSession &_session;
+	pv::SigSession *_session;
 	boost::shared_ptr<pv::data::DecoderStack> _decoder_stack;
 
 	uint64_t _decode_start, _decode_end;

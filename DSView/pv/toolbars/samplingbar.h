@@ -45,7 +45,7 @@ namespace pv
 
     namespace device
     {
-       // class DevInst;
+        class DevInst;
     } 
 
     namespace dialogs
@@ -72,12 +72,11 @@ namespace pv
             static const uint64_t ZeroTimeBase = SR_US(2);
 
         public:
-            SamplingBar(SigSession &session, QWidget *parent);
+            SamplingBar(SigSession *session, QWidget *parent);
 
-            void set_device_list(const std::list<boost::shared_ptr<pv::device::DevInst>> &devices,
-                                 boost::shared_ptr<pv::device::DevInst> selected);
+            void set_device_list(const std::list<DevInst*> &devices, DevInst* selected);
 
-            boost::shared_ptr<pv::device::DevInst> get_selected_device() const;
+            DevInst *get_selected_device() const;
 
             void update_sample_rate_selector();
 
@@ -135,7 +134,7 @@ namespace pv
             void reload();
 
         private:
-            SigSession &_session;
+            SigSession *_session;
 
             mutable boost::recursive_mutex _sampling_mutex;
             bool _enable;
@@ -144,8 +143,7 @@ namespace pv
             QToolButton _device_type;
 
             QComboBox _device_selector;
-            std::map<const void *, boost::weak_ptr<device::DevInst>>
-                _device_selector_map;
+            std::map<const void *, DevInst*> _device_selector_map;
             bool _updating_device_selector;
 
             QToolButton _configure_button;

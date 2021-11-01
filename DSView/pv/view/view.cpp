@@ -79,7 +79,7 @@ const QColor View::LightBlue = QColor(17, 133, 209, 200);
 const QColor View::LightRed = QColor(213, 15, 37, 200);
 
 
-View::View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget *parent) :
+View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget *parent) :
     QScrollArea(parent),
 	_session(session),
     _sampling_bar(sampling_bar),
@@ -98,7 +98,9 @@ View::View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     _dso_auto(true),
     _show_lissajous(false),
     _back_ready(false)
-{
+{ 
+    assert(session);
+
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
 
 	connect(horizontalScrollBar(), SIGNAL(valueChanged(int)),
@@ -165,23 +167,23 @@ View::View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     connect(_vsplitter, SIGNAL(splitterMoved(int,int)),
         this, SLOT(splitterMoved(int, int)));
 
-    connect(&_session, SIGNAL(device_setted()),
+    connect(_session, SIGNAL(device_setted()),
             _devmode, SLOT(set_device()));
-    connect(&_session, SIGNAL(signals_changed()),
+    connect(_session, SIGNAL(signals_changed()),
         this, SLOT(signals_changed()), Qt::DirectConnection);
-    connect(&_session, SIGNAL(data_updated()),
+    connect(_session, SIGNAL(data_updated()),
         this, SLOT(data_updated()));
-    connect(&_session, SIGNAL(receive_trigger(quint64)),
+    connect(_session, SIGNAL(receive_trigger(quint64)),
             this, SLOT(receive_trigger(quint64)));
-    connect(&_session, SIGNAL(frame_ended()),
+    connect(_session, SIGNAL(frame_ended()),
             this, SLOT(receive_end()));
-    connect(&_session, SIGNAL(frame_began()),
+    connect(_session, SIGNAL(frame_began()),
             this, SLOT(frame_began()));
-    connect(&_session, SIGNAL(show_region(uint64_t, uint64_t, bool)),
+    connect(_session, SIGNAL(show_region(uint64_t, uint64_t, bool)),
             this, SLOT(show_region(uint64_t, uint64_t, bool)));
-    connect(&_session, SIGNAL(show_wait_trigger()),
+    connect(_session, SIGNAL(show_wait_trigger()),
             _time_viewport, SLOT(show_wait_trigger()));
-    connect(&_session, SIGNAL(repeat_hold(int)),
+    connect(_session, SIGNAL(repeat_hold(int)),
             this, SLOT(repeat_show()));
 
     connect(_devmode, SIGNAL(dev_changed(bool)),
@@ -217,7 +219,7 @@ View::View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget
 
 SigSession& View::session()
 {
-	return _session;
+	return *_session;
 }
 
 double View::scale() const
@@ -252,13 +254,13 @@ double View::get_maxscale() const
 
 void View::capture_init()
 {
-    if (_session.get_device()->dev_inst()->mode == DSO)
+    if (_session->get_device()->dev_inst()->mode == DSO)
         show_trig_cursor(true);
-    else if (!_session.isRepeating())
+    else if (!_session->isRepeating())
         show_trig_cursor(false);
 
-    _maxscale = _session.cur_sampletime() / (get_view_width() * MaxViewRate);
-    if (_session.get_device()->dev_inst()->mode == ANALOG)
+    _maxscale = _session->cur_sampletime() / (get_view_width() * MaxViewRate);
+    if (_session->get_device()->dev_inst()->mode == ANALOG)
         set_scale_offset(_maxscale, 0);
     status_clear();
     _trig_time_setted = false;
@@ -288,7 +290,7 @@ double View::get_hori_res()
 
 void View::update_hori_res()
 {
-    if (_session.get_device()->dev_inst()->mode == DSO) {
+    if (_session->get_device()->dev_inst()->mode == DSO) {
         _sampling_bar->hori_knob(0);
     }
 }
@@ -299,12 +301,12 @@ bool View::zoom(double steps, int offset)
     _preScale = _scale;
     _preOffset = _offset;
 
-    if (_session.get_device()->dev_inst()->mode != DSO) {
+    if (_session->get_device()->dev_inst()->mode != DSO) {
         _scale *= std::pow(3.0/2.0, -steps);
         _scale = max(min(_scale, _maxscale), _minscale);
     } else {
-        if (_session.get_capture_state() == SigSession::Running &&
-            _session.get_instant())
+        if (_session->get_capture_state() == SigSession::Running &&
+            _session->get_instant())
             return ret;
 
         double hori_res = -1;
@@ -314,7 +316,7 @@ bool View::zoom(double steps, int offset)
             hori_res = _sampling_bar->hori_knob(1);
 
         if (hori_res > 0) {
-            const double scale = _session.cur_view_time() / get_view_width();
+            const double scale = _session->cur_view_time() / get_view_width();
             _scale = max(min(scale, _maxscale), _minscale);
         } else {
             ret = false;
@@ -336,19 +338,19 @@ bool View::zoom(double steps, int offset)
 
 void View::timebase_changed()
 {
-    if (_session.get_device()->dev_inst()->mode != DSO)
+    if (_session->get_device()->dev_inst()->mode != DSO)
         return;
 
     double scale = this->scale();
     double hori_res = _sampling_bar->get_hori_res();
     if (hori_res > 0)
-        scale = _session.cur_view_time() / get_view_width();
+        scale = _session->cur_view_time() / get_view_width();
     set_scale_offset(scale, this->offset());
 }
 
 void View::set_scale_offset(double scale, int64_t offset)
 {
-    //if (_session.get_capture_state() == SigSession::Stopped) {
+    //if (_session->get_capture_state() == SigSession::Stopped) {
         _preScale = _scale;
         _preOffset = _offset;
 
@@ -375,13 +377,16 @@ void View::set_preScale_preOffset()
 
 vector< boost::shared_ptr<Trace> > View::get_traces(int type)
 {
-    const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
-    const vector< boost::shared_ptr<GroupSignal> > groups(_session.get_group_signals());
+    assert(_session);
+
+    auto array = _session->get_signals();
+    const vector< boost::shared_ptr<Signal> > sigs(array);
+    const vector< boost::shared_ptr<GroupSignal> > groups(_session->get_group_signals());
  
     const vector< boost::shared_ptr<DecodeTrace> > decode_sigs(
-        _session.get_decode_signals());
+        _session->get_decode_signals());
  
-    const vector< boost::shared_ptr<SpectrumTrace> > spectrums(_session.get_spectrum_traces());
+    const vector< boost::shared_ptr<SpectrumTrace> > spectrums(_session->get_spectrum_traces());
 
     vector< boost::shared_ptr<Trace> > traces;
     BOOST_FOREACH(boost::shared_ptr<Trace> t, sigs) {
@@ -404,12 +409,12 @@ vector< boost::shared_ptr<Trace> > View::get_traces(int type)
             traces.push_back(t);
     }
 
-    boost::shared_ptr<LissajousTrace> lissajous = _session.get_lissajous_trace();
+    boost::shared_ptr<LissajousTrace> lissajous = _session->get_lissajous_trace();
     if (lissajous && lissajous->enabled() &&
         (type == ALL_VIEW || _trace_view_map[lissajous->get_type()] == type))
         traces.push_back(lissajous);
 
-    boost::shared_ptr<MathTrace> math = _session.get_math_trace();
+    boost::shared_ptr<MathTrace> math = _session->get_math_trace();
     if (math && math->enabled() &&
         (type == ALL_VIEW || _trace_view_map[math->get_type()] == type))
         traces.push_back(math);
@@ -481,8 +486,8 @@ void View::repeat_unshow()
 
 void View::frame_began()
 {
-//    if (_session.get_device()->dev_inst()->mode == LOGIC)
-//        _viewbottom->set_trig_time(_session.get_session_time());
+//    if (_session->get_device()->dev_inst()->mode == LOGIC)
+//        _viewbottom->set_trig_time(_session->get_session_time());
     _search_hit = false;
     _search_pos = 0;
     set_search_pos(_search_pos, _search_hit);
@@ -490,9 +495,9 @@ void View::frame_began()
 
 void View::set_trig_time()
 {
-    if (!_trig_time_setted && _session.get_device()->dev_inst()->mode == LOGIC) {
-        _session.set_session_time(QDateTime::currentDateTime());
-        _viewbottom->set_trig_time(_session.get_session_time());
+    if (!_trig_time_setted && _session->get_device()->dev_inst()->mode == LOGIC) {
+        _session->set_session_time(QDateTime::currentDateTime());
+        _viewbottom->set_trig_time(_session->get_session_time());
     }
     _trig_time_setted = true;
 }
@@ -504,17 +509,17 @@ bool View::trig_time_setted()
 
 void View::receive_end()
 {
-    if (_session.get_device()->dev_inst()->mode == LOGIC) {
-        GVariant *gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_RLE);
+    if (_session->get_device()->dev_inst()->mode == LOGIC) {
+        GVariant *gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_RLE);
         if (gvar != NULL) {
             bool rle = g_variant_get_boolean(gvar);
             g_variant_unref(gvar);
             if (rle) {
-                gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_ACTUAL_SAMPLES);
+                gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_ACTUAL_SAMPLES);
                 if (gvar != NULL) {
                     uint64_t actual_samples = g_variant_get_uint64(gvar);
                     g_variant_unref(gvar);
-                    if (actual_samples != _session.cur_samplelimits()) {
+                    if (actual_samples != _session->cur_samplelimits()) {
                         _viewbottom->set_rle_depth(actual_samples);
                     }
                 }
@@ -526,11 +531,11 @@ void View::receive_end()
 
 void View::receive_trigger(quint64 trig_pos)
 {
-    const double time = trig_pos * 1.0 / _session.cur_snap_samplerate();
+    const double time = trig_pos * 1.0 / _session->cur_snap_samplerate();
     _trig_cursor->set_index(trig_pos);
     if (ds_trigger_get_en() ||
-        _session.get_device()->name() == "virtual-session" ||
-        _session.get_device()->dev_inst()->mode == DSO) {
+        _session->get_device()->name() == "virtual-session" ||
+        _session->get_device()->dev_inst()->mode == DSO) {
         _show_trig_cursor = true;
         set_scale_offset(_scale,  (time / _scale) - (get_view_width() / 2));
     }
@@ -541,7 +546,7 @@ void View::receive_trigger(quint64 trig_pos)
 
 void View::set_trig_pos(int percent)
 {
-    uint64_t index = _session.cur_samplelimits() * percent / 100;
+    uint64_t index = _session->cur_samplelimits() * percent / 100;
     receive_trigger(index);
 }
 
@@ -551,7 +556,7 @@ void View::set_search_pos(uint64_t search_pos, bool hit)
     QColor fore(QWidget::palette().color(QWidget::foregroundRole()));
     fore.setAlpha(View::BackAlpha);
 
-    const double time = search_pos * 1.0 / _session.cur_snap_samplerate();
+    const double time = search_pos * 1.0 / _session->cur_snap_samplerate();
     _search_pos = search_pos;
     _search_hit = hit;
     _search_cursor->set_index(search_pos);
@@ -608,11 +613,11 @@ int View::get_signalHeight()
 
 void View::get_scroll_layout(int64_t &length, int64_t &offset) const
 {
-    const set< boost::shared_ptr<data::SignalData> > data_set = _session.get_data();
+    const set< boost::shared_ptr<data::SignalData> > data_set = _session->get_data();
     if (data_set.empty())
 		return;
 
-    length = ceil(_session.cur_snap_sampletime() / _scale);
+    length = ceil(_session->cur_snap_sampletime() / _scale);
     offset = _offset;
 }
 
@@ -650,11 +655,11 @@ void View::update_scroll()
 
 void View::update_scale_offset()
 {
-    if (_session.get_device()->dev_inst()->mode != DSO) {
-        _maxscale = _session.cur_sampletime() / (get_view_width() * MaxViewRate);
-        _minscale = (1.0 / _session.cur_snap_samplerate()) / MaxPixelsPerSample;
+    if (_session->get_device()->dev_inst()->mode != DSO) {
+        _maxscale = _session->cur_sampletime() / (get_view_width() * MaxViewRate);
+        _minscale = (1.0 / _session->cur_snap_samplerate()) / MaxPixelsPerSample;
     } else {
-        _scale = _session.cur_view_time() / get_view_width();
+        _scale = _session->cur_view_time() / get_view_width();
         _maxscale = 1e9;
         _minscale = 1e-15;
     }
@@ -665,7 +670,7 @@ void View::update_scale_offset()
     _preScale = _scale;
     _preOffset = _offset;
 
-    //_trig_cursor->set_index(_session.get_trigger_pos());
+    //_trig_cursor->set_index(_session->get_trigger_pos());
 
     _ruler->update();
     viewport_update();
@@ -674,8 +679,8 @@ void View::update_scale_offset()
 void View::dev_changed(bool close)
 {
     if (!close) {
-        if (_session.get_device()->name().contains("virtual"))
-            _scale = WellSamplesPerPixel * 1.0 / _session.cur_snap_samplerate();
+        if (_session->get_device()->name().contains("virtual"))
+            _scale = WellSamplesPerPixel * 1.0 / _session->cur_snap_samplerate();
         _scale = max(min(_scale, _maxscale), _minscale);
     }
 
@@ -739,8 +744,8 @@ void View::signals_changed()
         const double height = (_time_viewport->height()
                                - 2 * actualMargin * label_size) * 1.0 / total_rows;
 
-        if (_session.get_device()->dev_inst()->mode == LOGIC) {
-            GVariant* gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_MAX_HEIGHT_VALUE);
+        if (_session->get_device()->dev_inst()->mode == LOGIC) {
+            GVariant* gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_MAX_HEIGHT_VALUE);
             if (gvar != NULL) {
                 max_height = (g_variant_get_byte(gvar) + 1) * MaxHeightUnit;
                 g_variant_unref(gvar);
@@ -752,7 +757,7 @@ void View::signals_changed()
             } else {
                 _signalHeight = (height >= max_height) ? max_height : height;
             }
-        } else if (_session.get_device()->dev_inst()->mode == DSO) {
+        } else if (_session->get_device()->dev_inst()->mode == DSO) {
             _signalHeight = (_header->height()
                              - horizontalScrollBar()->height()
                              - 2 * actualMargin * label_size) * 1.0 / total_rows;
@@ -800,7 +805,7 @@ bool View::eventFilter(QObject *object, QEvent *event)
             double cur_periods = (mouse_event->pos().x() + _offset) * _scale / _ruler->get_min_period();
             int integer_x = round(cur_periods) * _ruler->get_min_period() / _scale - _offset;
             double cur_deviate_x = qAbs(mouse_event->pos().x() - integer_x);
-            if (_session.get_device()->dev_inst()->mode == LOGIC &&
+            if (_session->get_device()->dev_inst()->mode == LOGIC &&
                 cur_deviate_x < 10)
                 _hover_point = QPoint(integer_x, mouse_event->pos().y());
             else
@@ -859,11 +864,11 @@ void View::resizeEvent(QResizeEvent*)
     update_margins();
     update_scroll();
     signals_changed();
-    if (_session.get_device()->dev_inst()->mode == DSO)
-        _scale = _session.cur_view_time() / get_view_width();
+    if (_session->get_device()->dev_inst()->mode == DSO)
+        _scale = _session->cur_view_time() / get_view_width();
 
-    if (_session.get_device()->dev_inst()->mode != DSO)
-        _maxscale = _session.cur_sampletime() / (get_view_width() * MaxViewRate);
+    if (_session->get_device()->dev_inst()->mode != DSO)
+        _maxscale = _session->cur_sampletime() / (get_view_width() * MaxViewRate);
     else
         _maxscale = 1e9;
 
@@ -1008,7 +1013,7 @@ void View::set_cursor_middle(int index)
     list<Cursor*>::iterator i = _cursorList.begin();
     while (index-- != 0)
             i++;
-    set_scale_offset(_scale, (*i)->index() / (_session.cur_snap_samplerate() * _scale) - (get_view_width() / 2));
+    set_scale_offset(_scale, (*i)->index() / (_session->cur_snap_samplerate() * _scale) - (get_view_width() / 2));
 }
 
 void View::on_measure_updated()
@@ -1027,7 +1032,7 @@ QString View::get_measure(QString option)
 
 QString View::get_cm_time(int index)
 {
-    return _ruler->format_real_time(get_cursor_samples(index), _session.cur_snap_samplerate());
+    return _ruler->format_real_time(get_cursor_samples(index), _session->cur_snap_samplerate());
 }
 
 QString View::get_cm_delta(int index1, int index2)
@@ -1038,7 +1043,7 @@ QString View::get_cm_delta(int index1, int index2)
     uint64_t samples1 = get_cursor_samples(index1);
     uint64_t samples2 = get_cursor_samples(index2);
     uint64_t delta_sample = (samples1 > samples2) ? samples1 - samples2 : samples2 - samples1;
-    return _ruler->format_real_time(delta_sample, _session.cur_snap_samplerate());
+    return _ruler->format_real_time(delta_sample, _session->cur_snap_samplerate());
 }
 
 QString View::get_index_delta(uint64_t start, uint64_t end)
@@ -1047,7 +1052,7 @@ QString View::get_index_delta(uint64_t start, uint64_t end)
         return "0";
 
     uint64_t delta_sample = (start > end) ? start - end : end - start;
-    return _ruler->format_real_time(delta_sample, _session.cur_snap_samplerate());
+    return _ruler->format_real_time(delta_sample, _session->cur_snap_samplerate());
 }
 
 uint64_t View::get_cursor_samples(int index)
@@ -1083,8 +1088,8 @@ void View::on_state_changed(bool stop)
 
 QRect View::get_view_rect()
 {
-    if (_session.get_device()->dev_inst()->mode == DSO) {
-        const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
+    if (_session->get_device()->dev_inst()->mode == DSO) {
+        const vector< boost::shared_ptr<Signal> > sigs(_session->get_signals());
         BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
             return s->get_view_rect();
         }
@@ -1096,8 +1101,8 @@ QRect View::get_view_rect()
 int View::get_view_width()
 {
     int view_width = 0;
-    if (_session.get_device()->dev_inst()->mode == DSO) {
-        const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
+    if (_session->get_device()->dev_inst()->mode == DSO) {
+        const vector< boost::shared_ptr<Signal> > sigs(_session->get_signals());
         BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
             view_width = max(view_width, s->get_view_rect().width());
         }
@@ -1111,8 +1116,8 @@ int View::get_view_width()
 int View::get_view_height()
 {
     int view_height = 0;
-    if (_session.get_device()->dev_inst()->mode == DSO) {
-        const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
+    if (_session->get_device()->dev_inst()->mode == DSO) {
+        const vector< boost::shared_ptr<Signal> > sigs(_session->get_signals());
         BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
             view_height = max(view_height, s->get_view_rect().height());
         }
@@ -1133,14 +1138,14 @@ int64_t View::get_min_offset()
 
 int64_t View::get_max_offset()
 {
-    return ceil((_session.cur_snap_sampletime() / _scale) -
+    return ceil((_session->cur_snap_sampletime() / _scale) -
                 (get_view_width() * MaxViewRate));
 }
 
 // -- calibration dialog
 void View::show_calibration()
 {
-    _cali->set_device(_session.get_device());
+    _cali->set_device(_session->get_device());
     _cali->show();
 }
 
@@ -1152,9 +1157,9 @@ void View::hide_calibration()
 void View::vDial_updated()
 {
     if (_cali->isVisible()) {
-        _cali->set_device(_session.get_device());
+        _cali->set_device(_session->get_device());
     }
-    boost::shared_ptr<view::MathTrace> math_trace = _session.get_math_trace();
+    boost::shared_ptr<view::MathTrace> math_trace = _session->get_math_trace();
     if (math_trace && math_trace->enabled()) {
         math_trace->update_vDial();
     }
@@ -1173,14 +1178,14 @@ void View::show_region(uint64_t start, uint64_t end, bool keep)
     if (keep) {
         set_all_update(true);
         update();
-    } else if (_session.get_map_zoom() == 0) {
-        const double ideal_scale = (end-start) * 2.0 / _session.cur_snap_samplerate() / get_view_width();
+    } else if (_session->get_map_zoom() == 0) {
+        const double ideal_scale = (end-start) * 2.0 / _session->cur_snap_samplerate() / get_view_width();
         const double new_scale = max(min(ideal_scale, _maxscale), _minscale);
-        const double new_off = (start + end)  * 0.5 / (_session.cur_snap_samplerate() * new_scale) - (get_view_width() / 2);
+        const double new_off = (start + end)  * 0.5 / (_session->cur_snap_samplerate() * new_scale) - (get_view_width() / 2);
         set_scale_offset(new_scale, new_off);
     } else {
         const double new_scale = scale();
-        const double new_off = (start + end)  * 0.5 / (_session.cur_snap_samplerate() * new_scale) - (get_view_width() / 2);
+        const double new_off = (start + end)  * 0.5 / (_session->cur_snap_samplerate() * new_scale) - (get_view_width() / 2);
         set_scale_offset(new_scale, new_off);
     }
 }
@@ -1214,7 +1219,7 @@ void View::clear()
 {
     show_trig_cursor(false);
 
-    if (_session.get_device()->dev_inst()->mode != DSO) {
+    if (_session->get_device()->dev_inst()->mode != DSO) {
         show_xcursors(false);
     } else {
         if (!get_xcursorList().empty())
@@ -1224,7 +1229,7 @@ void View::clear()
 
 void View::reconstruct()
 {
-    if (_session.get_device()->dev_inst()->mode == DSO)
+    if (_session->get_device()->dev_inst()->mode == DSO)
         _viewbottom->setFixedHeight(DsoStatusHeight);
     else
         _viewbottom->setFixedHeight(StatusHeight);
@@ -1240,7 +1245,7 @@ void View::set_capture_status()
 {
     bool triggered;
     int progress;
-    if (_session.get_capture_status(triggered, progress)) {
+    if (_session->get_capture_status(triggered, progress)) {
         _viewbottom->set_capture_status(triggered, progress);
         _viewbottom->update();
     }

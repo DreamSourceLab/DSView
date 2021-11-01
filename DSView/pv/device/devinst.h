@@ -22,8 +22,6 @@
 #ifndef DSVIEW_PV_DEVICE_DEVINST_H
 #define DSVIEW_PV_DEVICE_DEVINST_H
 
-#include <boost/shared_ptr.hpp>
-
 #include <QObject>
 
 #include <string>
@@ -48,19 +46,12 @@ class DevInst : public QObject
 
 protected:
 	DevInst();
-    ~DevInst();
 
-public:
-	virtual sr_dev_inst* dev_inst() const = 0;
+    virtual ~DevInst();
 
-    virtual void use(SigSession *owner);
-
-	virtual void release();
-
+public: 
 	SigSession* owner() const;
-
-    virtual QString format_device_title() const = 0;
-
+ 
     GVariant* get_config(const sr_channel *ch, const sr_channel_group *group, int key);
 
     bool set_config(sr_channel *ch, sr_channel_group *group, int key, GVariant *data);
@@ -115,10 +106,11 @@ public:
      * @return device name
      */
     QString name();
-
-	virtual bool is_trigger_enabled() const;
+ 
 
     bool is_usable() const;
+
+    void destroy();
 
 public:
 	virtual void start();
@@ -126,6 +118,16 @@ public:
 	virtual void run();
 
     virtual void* get_id() const;
+
+    virtual sr_dev_inst* dev_inst() const = 0;
+
+    virtual void use(SigSession *owner);
+
+	virtual void release();
+
+    virtual bool is_trigger_enabled() const;
+
+    virtual QString format_device_title() const = 0;
 
 signals:
     void device_updated();

@@ -56,7 +56,7 @@ private:
     static const int WellLen = SR_Kn(16);
 
 public:
-    LissajousOptions(SigSession &session, QWidget *parent);
+    LissajousOptions(SigSession *session, QWidget *parent);
 
 private:
     void changeEvent(QEvent *event);
@@ -67,7 +67,7 @@ protected:
     void reject();
 
 private:
-    SigSession &_session;
+    SigSession *_session;
 
     QCheckBox *_enable;
     QGroupBox *_x_group;

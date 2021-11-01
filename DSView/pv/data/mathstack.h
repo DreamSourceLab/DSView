@@ -102,7 +102,7 @@ private:
     static const QString vDialDivUnit[vDialUnitCount];
 
 public:
-    MathStack(pv::SigSession &_session,
+    MathStack(pv::SigSession *_session,
               boost::shared_ptr<view::DsoSignal> dsoSig1,
               boost::shared_ptr<view::DsoSignal> dsoSig2, MathType type);
     virtual ~MathStack();
@@ -132,7 +132,7 @@ public:
 signals:
 
 private:
-    pv::SigSession &_session;
+    pv::SigSession *_session;
     boost::shared_ptr<view::DsoSignal> _dsoSig1;
     boost::shared_ptr<view::DsoSignal> _dsoSig2;
 

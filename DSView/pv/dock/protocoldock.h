@@ -64,7 +64,7 @@ public:
     static const uint64_t ProgressRows = 100000;
 
 public:
-    ProtocolDock(QWidget *parent, view::View &view, SigSession &session);
+    ProtocolDock(QWidget *parent, view::View &view, SigSession *session);
     ~ProtocolDock();
 
     void del_all_protocol();
@@ -109,7 +109,7 @@ private:
     void resize_table_view(data::DecoderModel *decoder_model);
 
 private:
-    SigSession &_session;
+    SigSession *_session;
     view::View &_view;
     QSortFilterProxyModel _model_proxy;
     double _cur_search_index;

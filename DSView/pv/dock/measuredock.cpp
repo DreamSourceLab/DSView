@@ -50,7 +50,7 @@ namespace dock {
 
 using namespace pv::view;
 
-MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession &session) :
+MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
     QScrollArea(parent),
     _session(session),
     _view(view)
@@ -212,7 +212,7 @@ void MeasureDock::refresh()
 
 void MeasureDock::reload()
 {
-    if (_session.get_device()->dev_inst()->mode == LOGIC)
+    if (_session->get_device()->dev_inst()->mode == LOGIC)
         _edge_groupBox->setDisabled(false);
     else
         _edge_groupBox->setDisabled(true);
@@ -598,7 +598,7 @@ void MeasureDock::update_edge()
         if (start_ret && end_ret) {
             uint64_t rising_edges;
             uint64_t falling_edges;
-            const std::vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
+            const std::vector< boost::shared_ptr<Signal> > sigs(_session->get_signals());
             for(size_t i = 0; i < sigs.size(); i++) {
                 const boost::shared_ptr<view::Signal> s(sigs[i]);
                 boost::shared_ptr<view::LogicSignal> logicSig;
@@ -650,7 +650,7 @@ QComboBox* MeasureDock::create_probe_selector(QWidget *parent)
 void MeasureDock::update_probe_selector(QComboBox *selector)
 {
     selector->clear();
-    const std::vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
+    const std::vector< boost::shared_ptr<Signal> > sigs(_session->get_signals());
     for(size_t i = 0; i < sigs.size(); i++) {
         const boost::shared_ptr<view::Signal> s(sigs[i]);
         assert(s);

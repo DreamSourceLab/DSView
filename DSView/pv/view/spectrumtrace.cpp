@@ -67,7 +67,7 @@ const int SpectrumTrace::DbvRanges[4] = {
 const int SpectrumTrace::HoverPointSize = 3;
 const double SpectrumTrace::VerticalRate = 1.0 / 2000.0;
 
-SpectrumTrace::SpectrumTrace(pv::SigSession &session,
+SpectrumTrace::SpectrumTrace(pv::SigSession *session,
     boost::shared_ptr<pv::data::SpectrumStack> spectrum_stack, int index) :
     Trace("FFT("+QString::number(index)+")", index, SR_CHANNEL_FFT),
     _session(session),
@@ -79,7 +79,7 @@ SpectrumTrace::SpectrumTrace(pv::SigSession &session,
     _offset(0)
 {
     _typeWidth = 0;
-    const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
+    const vector< boost::shared_ptr<Signal> > sigs(_session->get_signals());
     for(size_t i = 0; i < sigs.size(); i++) {
         const boost::shared_ptr<view::Signal> s(sigs[i]);
         assert(s);
@@ -294,7 +294,7 @@ void SpectrumTrace::paint_mid(QPainter &p, int left, int right, QColor fore, QCo
 
         double vdiv = 0;
         double vfactor = 0;
-        BOOST_FOREACH(const boost::shared_ptr<Signal> s, _session.get_signals()) {
+        BOOST_FOREACH(const boost::shared_ptr<Signal> s, _session->get_signals()) {
             boost::shared_ptr<DsoSignal> dsoSig;
             if ((dsoSig = dynamic_pointer_cast<DsoSignal>(s))) {
                 if(dsoSig->get_index() == _spectrum_stack->get_index()) {
@@ -364,8 +364,8 @@ void SpectrumTrace::paint_fore(QPainter &p, int left, int right, QColor fore, QC
     double blank_right = width;
 
     // horizontal ruler
-    const double NyFreq = _session.cur_snap_samplerate() / (2.0 * _spectrum_stack->get_sample_interval());
-    const double deltaFreq = _session.cur_snap_samplerate() * 1.0 /
+    const double NyFreq = _session->cur_snap_samplerate() / (2.0 * _spectrum_stack->get_sample_interval());
+    const double deltaFreq = _session->cur_snap_samplerate() * 1.0 /
                             (_spectrum_stack->get_sample_num() * _spectrum_stack->get_sample_interval());
     const double FreqRange = NyFreq * _scale;
     const double FreqOffset = NyFreq * _offset;

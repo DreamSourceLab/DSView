@@ -33,6 +33,13 @@ Device::Device(sr_dev_inst *sdi) :
     _sdi(sdi)
 {
 	assert(_sdi);
+    void *p = this;
+    (void)p;
+}
+
+Device::~Device()
+{
+
 }
 
 sr_dev_inst* Device::dev_inst() const

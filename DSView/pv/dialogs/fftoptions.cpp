@@ -38,7 +38,7 @@ using namespace std;
 namespace pv {
 namespace dialogs {
 
-FftOptions::FftOptions(QWidget *parent, SigSession &session) :
+FftOptions::FftOptions(QWidget *parent, SigSession *session) :
     DSDialog(parent),
     _session(session),
     _button_box(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
@@ -67,7 +67,7 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
     _dbv_combobox = new QComboBox(this);
 
     // setup _ch_combobox
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
+    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals()) {
         boost::shared_ptr<view::DsoSignal> dsoSig;
         if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
             _ch_combobox->addItem(dsoSig->get_name(), QVariant::fromValue(dsoSig->get_index()));
@@ -76,7 +76,7 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
 
     // setup _window_combobox _len_combobox
     _sample_limit = 0;
-    GVariant* gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_MAX_DSO_SAMPLELIMITS);
+    GVariant* gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_MAX_DSO_SAMPLELIMITS);
     if (gvar != NULL) {
         _sample_limit = g_variant_get_uint64(gvar) * 0.5;
         g_variant_unref(gvar);
@@ -87,7 +87,7 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
     std::vector<uint64_t> length;
     std::vector<QString> view_modes;
     std::vector<int> dbv_ranges;
-    BOOST_FOREACH(const boost::shared_ptr<view::Trace> t, _session.get_spectrum_traces()) {
+    BOOST_FOREACH(const boost::shared_ptr<view::Trace> t, _session->get_spectrum_traces()) {
         boost::shared_ptr<view::SpectrumTrace> spectrumTraces;
         if ((spectrumTraces = dynamic_pointer_cast<view::SpectrumTrace>(t))) {
             windows = spectrumTraces->get_spectrum_stack()->get_windows_support();
@@ -137,7 +137,7 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
     }
 
     // load current settings
-    BOOST_FOREACH(const boost::shared_ptr<view::Trace> t, _session.get_spectrum_traces()) {
+    BOOST_FOREACH(const boost::shared_ptr<view::Trace> t, _session->get_spectrum_traces()) {
         boost::shared_ptr<view::SpectrumTrace> spectrumTraces;
         if ((spectrumTraces = dynamic_pointer_cast<view::SpectrumTrace>(t))) {
             if (spectrumTraces->enabled()) {
@@ -217,7 +217,7 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
     connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
     connect(_window_combobox, SIGNAL(currentIndexChanged(QString)), this, SLOT(window_changed(QString)));
     connect(_len_combobox, SIGNAL(currentIndexChanged(int)), this, SLOT(len_changed(int)));
-    connect(_session.get_device().get(), SIGNAL(device_updated()), this, SLOT(reject()));
+    connect(_session->get_device(), SIGNAL(device_updated()), this, SLOT(reject()));
 }
 
 FftOptions::~FftOptions(){
@@ -230,7 +230,7 @@ void FftOptions::accept()
 
     QDialog::accept();
 
-    BOOST_FOREACH(const boost::shared_ptr<view::Trace> t, _session.get_spectrum_traces()) {
+    BOOST_FOREACH(const boost::shared_ptr<view::Trace> t, _session->get_spectrum_traces()) {
         boost::shared_ptr<view::SpectrumTrace> spectrumTraces;
         if ((spectrumTraces = dynamic_pointer_cast<view::SpectrumTrace>(t))) {
             spectrumTraces->set_enable(false);
@@ -243,13 +243,13 @@ void FftOptions::accept()
                 //spectrumTraces->init_zoom();
                 spectrumTraces->set_dbv_range(_dbv_combobox->currentData().toInt());
                 spectrumTraces->set_enable(_en_checkbox->isChecked());
-                if (_session.get_capture_state() == SigSession::Stopped &&
+                if (_session->get_capture_state() == SigSession::Stopped &&
                     spectrumTraces->enabled())
                     spectrumTraces->get_spectrum_stack()->calc_fft();
             }
         }
     }
-    _session.spectrum_rebuild();
+    _session->spectrum_rebuild();
 }
 
 void FftOptions::reject()

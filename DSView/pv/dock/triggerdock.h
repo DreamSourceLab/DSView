@@ -57,7 +57,7 @@ private:
     static const int MinTrigPosition;
 
 public:
-    TriggerDock(QWidget *parent, SigSession &session);
+    TriggerDock(QWidget *parent, SigSession *session);
     ~TriggerDock();
 
     void paintEvent(QPaintEvent *);
@@ -95,7 +95,7 @@ public slots:
 private:
 
 private:
-    SigSession &_session;
+    SigSession *_session;
 
     int _cur_ch_num;
     QWidget *_widget;

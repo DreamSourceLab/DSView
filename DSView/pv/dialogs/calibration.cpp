@@ -121,7 +121,7 @@ void Calibration::retranslateUi()
     setTitle(tr("Manual Calibration"));
 }
 
-void Calibration::set_device(boost::shared_ptr<device::DevInst> dev_inst)
+void Calibration::set_device(DevInst *dev_inst)
 {
     assert(dev_inst);
     _dev_inst = dev_inst;

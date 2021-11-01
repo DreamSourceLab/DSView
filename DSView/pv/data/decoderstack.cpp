@@ -52,7 +52,7 @@ const unsigned int DecoderStack::DecodeNotifyPeriod = 1024;
 
 boost::mutex DecoderStack::_global_decode_mutex;
 
-DecoderStack::DecoderStack(pv::SigSession &session,
+DecoderStack::DecoderStack(pv::SigSession *session,
 	const srd_decoder *const dec, DecoderStatus *decoder_status) :
 	_session(session),
 	_sample_count(0),
@@ -63,11 +63,11 @@ DecoderStack::DecoderStack(pv::SigSession &session,
     _no_memory(false),
     _mark_index(-1)
 {
-	connect(&_session, SIGNAL(frame_began()),
+	connect(_session, SIGNAL(frame_began()),
 		this, SLOT(on_new_frame()));
-	connect(&_session, SIGNAL(data_received()),
+	connect(_session, SIGNAL(data_received()),
 		this, SLOT(on_data_received()));
-	connect(&_session, SIGNAL(frame_ended()),
+	connect(_session, SIGNAL(frame_ended()),
 		this, SLOT(on_frame_ended()));
 
     _stack.push_back(boost::shared_ptr<decode::Decoder>(
@@ -419,7 +419,7 @@ void DecoderStack::begin_decode()
 	// LogicSignals have the same data/snapshot
     BOOST_FOREACH (const boost::shared_ptr<decode::Decoder> &dec, _stack) {
         if (dec && !dec->channels().empty()) {
-            BOOST_FOREACH(boost::shared_ptr<view::Signal> sig, _session.get_signals()) {
+            BOOST_FOREACH(boost::shared_ptr<view::Signal> sig, _session->get_signals()) {
                 if((sig->get_index() == (*dec->channels().begin()).second) &&
                    (logic_signal = dynamic_pointer_cast<view::LogicSignal>(sig)) &&
                    (data = logic_signal->logic_data()))

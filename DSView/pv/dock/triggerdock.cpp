@@ -40,13 +40,13 @@ namespace dock {
 
 const int TriggerDock::MinTrigPosition = 1;
 
-TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
+TriggerDock::TriggerDock(QWidget *parent, SigSession *session) :
     QScrollArea(parent),
     _session(session)
 {
     _cur_ch_num = 16;
-    if (_session.get_device()) {
-        GVariant *gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_TOTAL_CH_NUM);
+    if (_session->get_device()) {
+        GVariant *gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_TOTAL_CH_NUM);
         if (gvar != NULL) {
             _cur_ch_num = g_variant_get_int16(gvar);
             g_variant_unref(gvar);
@@ -180,9 +180,9 @@ void TriggerDock::simple_trigger()
 
 void TriggerDock::adv_trigger()
 {
-    if (_session.get_device()->name() == "DSLogic") {
+    if (_session->get_device()->name() == "DSLogic") {
         bool stream = false;
-        GVariant *gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_STREAM);
+        GVariant *gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_STREAM);
         if (gvar != NULL) {
             stream = g_variant_get_boolean(gvar);
             g_variant_unref(gvar);
@@ -248,20 +248,20 @@ void TriggerDock::device_updated()
     bool stream = false;
     uint8_t maxRange;
     uint64_t sample_limits;
-    GVariant *gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_HW_DEPTH);
+    GVariant *gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_HW_DEPTH);
     if (gvar != NULL) {
         hw_depth = g_variant_get_uint64(gvar);
         g_variant_unref(gvar);
 
-        if (_session.get_device()->dev_inst()->mode == LOGIC) {
+        if (_session->get_device()->dev_inst()->mode == LOGIC) {
 
-            gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_STREAM);
+            gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_STREAM);
             if (gvar != NULL) {
                 stream = g_variant_get_boolean(gvar);
                 g_variant_unref(gvar);
             }
 
-            sample_limits = _session.get_device()->get_sample_limit();
+            sample_limits = _session->get_device()->get_sample_limit();
             if (stream)
                 maxRange = 1;
             else if (hw_depth >= sample_limits)
@@ -271,7 +271,7 @@ void TriggerDock::device_updated()
             _position_spinBox->setRange(MinTrigPosition, maxRange);
             _position_slider->setRange(MinTrigPosition, maxRange);
 
-            if (_session.get_device()->name().contains("virtual") ||
+            if (_session->get_device()->name().contains("virtual") ||
                 stream) {
                 _simple_radioButton->setChecked(true);
                 simple_trigger();
@@ -279,7 +279,7 @@ void TriggerDock::device_updated()
         }
     }
 
-    gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_TOTAL_CH_NUM);
+    gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_TOTAL_CH_NUM);
     if (gvar != NULL) {
         int ch_num = g_variant_get_int16(gvar);
         g_variant_unref(gvar);

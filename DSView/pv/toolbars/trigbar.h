@@ -45,7 +45,7 @@ protected:
     static const QString LIGHT_STYLE;
 
 public:
-    explicit TrigBar(SigSession &session, QWidget *parent = 0);
+    explicit TrigBar(SigSession *session, QWidget *parent = 0);
 
     void enable_toggle(bool enable);
     void enable_protocol(bool enable);
@@ -86,8 +86,8 @@ public slots:
     void on_application_param();
 
 private:
-    SigSession& _session;
-    bool _enable;
+    SigSession      *_session;
+    bool            _enable;
     QToolButton _trig_button;
     QToolButton _protocol_button;
     QToolButton _measure_button;

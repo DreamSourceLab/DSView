@@ -35,10 +35,13 @@ namespace device {
 
 class File : public DevInst
 {
+
 protected:
     File(QString path);
 
 public:
+    ~File();
+
     static File* create(QString name);
 
     QJsonArray get_decoders();

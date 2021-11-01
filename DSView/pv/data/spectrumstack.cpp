@@ -52,7 +52,7 @@ const uint64_t SpectrumStack::length_support[5] = {
     16384,
 };
 
-SpectrumStack::SpectrumStack(pv::SigSession &session, int index) :
+SpectrumStack::SpectrumStack(pv::SigSession *session, int index) :
     _session(session),
     _index(index),
     _dc_ignore(true),
@@ -173,7 +173,7 @@ void SpectrumStack::calc_fft()
     // Get the dso data
     boost::shared_ptr<pv::data::Dso> data;
     boost::shared_ptr<pv::view::DsoSignal> dsoSig;
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
+    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals()) {
         if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
             if (dsoSig->get_index() == _index && dsoSig->enabled()) {
                 data = dsoSig->dso_data();

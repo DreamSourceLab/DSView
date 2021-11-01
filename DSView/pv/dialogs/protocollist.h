@@ -48,7 +48,7 @@ class ProtocolList : public DSDialog
     Q_OBJECT
 
 public:
-    ProtocolList(QWidget *parent, SigSession &session);
+    ProtocolList(QWidget *parent, SigSession *session);
 
 protected:
     void accept();
@@ -59,7 +59,7 @@ private slots:
     void on_row_check(bool show);
 
 private:
-    SigSession &_session;
+    SigSession *_session;
 
     toolbars::TitleBar *_titlebar;
     QComboBox *_map_zoom_combobox;

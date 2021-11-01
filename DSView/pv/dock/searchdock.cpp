@@ -50,7 +50,7 @@ namespace dock {
 using namespace pv::view;
 using namespace pv::widgets;
 
-SearchDock::SearchDock(QWidget *parent, View &view, SigSession &session) :
+SearchDock::SearchDock(QWidget *parent, View &view, SigSession *session) :
     QWidget(parent),
     _session(session),
     _view(view)
@@ -130,7 +130,7 @@ void SearchDock::on_previous()
     bool ret;
     int64_t last_pos;
     bool last_hit;
-    const boost::shared_ptr<data::Snapshot> snapshot(_session.get_snapshot(SR_CHANNEL_LOGIC));
+    const boost::shared_ptr<data::Snapshot> snapshot(_session->get_snapshot(SR_CHANNEL_LOGIC));
     assert(snapshot);
     const boost::shared_ptr<data::LogicSnapshot> logic_snapshot = boost::dynamic_pointer_cast<data::LogicSnapshot>(snapshot);
 
@@ -192,7 +192,7 @@ void SearchDock::on_next()
 {
     bool ret;
     int64_t last_pos;
-    const boost::shared_ptr<data::Snapshot> snapshot(_session.get_snapshot(SR_CHANNEL_LOGIC));
+    const boost::shared_ptr<data::Snapshot> snapshot(_session->get_snapshot(SR_CHANNEL_LOGIC));
     assert(snapshot);
     const boost::shared_ptr<data::LogicSnapshot> logic_snapshot = boost::dynamic_pointer_cast<data::LogicSnapshot>(snapshot);
 

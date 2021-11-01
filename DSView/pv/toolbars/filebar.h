@@ -40,7 +40,7 @@ class FileBar : public QToolBar
     Q_OBJECT
 
 public:
-    explicit FileBar(SigSession &session, QWidget *parent = 0);
+    explicit FileBar(SigSession *session, QWidget *parent = 0);
 
     void enable_toggle(bool enable);
 
@@ -73,7 +73,7 @@ private slots:
 
 private:
     bool _enable;
-    SigSession& _session;
+    SigSession* _session;
 
     QToolButton _file_button;
 
