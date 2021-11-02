@@ -38,22 +38,7 @@ Row::Row(const srd_decoder *decoder, const srd_decoder_annotation_row *row, cons
     _row(row),
     _order(order)
 {
-}
-
-Row::~Row()
-{
-    
-}
-
-const srd_decoder* Row::decoder() const
-{
-	return _decoder;
-}
-
-const srd_decoder_annotation_row* Row::row() const
-{
-	return _row;
-}
+} 
 
 const QString Row::title() const
 {

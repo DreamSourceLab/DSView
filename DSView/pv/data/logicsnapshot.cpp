@@ -28,12 +28,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
-
-#include <boost/foreach.hpp>
-
+ 
 #include "logicsnapshot.h"
 
-using namespace boost;
 using namespace std;
 
 namespace pv {
@@ -80,8 +77,13 @@ void LogicSnapshot::free_data()
 
 void LogicSnapshot::init()
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
-    _sample_count = 0;
+    std::lock_guard<std::mutex> lock(_mutex);
+    init_all(); 
+}
+
+void LogicSnapshot::init_all()
+{
+   _sample_count = 0;
     _ring_sample_count = 0;
     _block_num = 0;
     _byte_fraction = 0;
@@ -95,9 +97,9 @@ void LogicSnapshot::init()
 
 void LogicSnapshot::clear()
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     free_data();
-    init();
+    init_all();
 }
 
 void LogicSnapshot::capture_ended()
@@ -203,7 +205,7 @@ void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total
 void LogicSnapshot::append_payload(
 	const sr_datafeed_logic &logic)
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+   std::lock_guard<std::mutex> lock(_mutex);
 
     if (logic.format == LA_CROSS_DATA)
         append_cross_payload(logic);

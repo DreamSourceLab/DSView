@@ -25,6 +25,7 @@
 
 #include <utility>
 #include <vector>
+#include <map>
 
 #include <libsigrok4DSL/libsigrok.h>
 #include "snapshot.h"
@@ -74,6 +75,9 @@ private:
 
     static const int VrmsScaleFactor;
 
+private:
+    void init_all();
+
 public:
     DsoSnapshot();
 
@@ -88,7 +92,7 @@ public:
     void append_payload(const sr_datafeed_dso &dso);
 
     const uint8_t* get_samples(int64_t start_sample,
-        int64_t end_sample, uint16_t index) const;
+        int64_t end_sample, uint16_t index);
 
 	void get_envelope_section(EnvelopeSection &s,
         uint64_t start, uint64_t end, float min_length, int probe_index) const;

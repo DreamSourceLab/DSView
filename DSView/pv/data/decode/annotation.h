@@ -25,6 +25,7 @@
 #include <stdint.h>
 
 #include <QString>
+#include <vector>
 
 class AnnotationResTable;
 class DecoderStatus;
@@ -35,6 +36,7 @@ namespace pv {
 namespace data {
 namespace decode {
 
+//create at DecoderStack.annotation_callback
 class Annotation
 {
 public:

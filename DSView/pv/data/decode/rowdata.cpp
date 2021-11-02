@@ -31,10 +31,13 @@ namespace pv {
 namespace data {
 namespace decode {
 
+std::mutex RowData::_global_visitor_mutex;
+
 RowData::RowData() :
     _max_annotation(0),
     _min_annotation(UINT64_MAX)
 {
+    _item_count = 0;
 }
 
 RowData::~RowData()
@@ -44,14 +47,23 @@ RowData::~RowData()
 
 void RowData::clear()
 {
+    std::lock_guard<std::mutex> lock(_global_visitor_mutex);
+
+    //destroy objercts
+    for (Annotation *p : _annotations){
+        delete p;
+    }
     _annotations.clear();
+    _item_count = 0;
 }
 
 uint64_t RowData::get_max_sample() const
 {
+    std::lock_guard<std::mutex> lock(_global_visitor_mutex); 
+
 	if (_annotations.empty())
 		return 0;
-	return _annotations.back().end_sample();
+	return _annotations.back()->end_sample();
 }
 
 uint64_t RowData::get_max_annotation() const
@@ -67,52 +79,64 @@ uint64_t RowData::get_min_annotation() const
         return _min_annotation;
 }
 
-void RowData::get_annotation_subset(
-	vector<pv::data::decode::Annotation> &dest,
-	uint64_t start_sample, uint64_t end_sample) const
-{
-	for (vector<Annotation>::const_iterator i = _annotations.begin();
-		i != _annotations.end(); i++)
-		if ((*i).end_sample() > start_sample &&
-			(*i).start_sample() <= end_sample)
-			dest.push_back(*i);
+void RowData::get_annotation_subset(std::vector<pv::data::decode::Annotation> &dest,
+		                        uint64_t start_sample, uint64_t end_sample) const
+{  
+    std::lock_guard<std::mutex> lock(_global_visitor_mutex);
+
+    for (Annotation *p : _annotations){
+        if (p->end_sample() > start_sample &&
+            p->start_sample() <= end_sample){
+            Annotation a = *p;
+            dest.push_back(a);
+        }			               
+    }
 }
 
 uint64_t RowData::get_annotation_index(uint64_t start_sample) const
 {
+    std::lock_guard<std::mutex> lock(_global_visitor_mutex);
     uint64_t index = 0;
-    for (vector<Annotation>::const_iterator i = _annotations.begin();
-        i != _annotations.end(); i++) {
-        if ((*i).start_sample() > start_sample)
-            break;
-        index++;
-    }
+
+     for (Annotation *p : _annotations){
+         if (p->start_sample() > start_sample)
+             break;
+         index++;
+     }
+
     return index;
 }
 
-bool RowData::push_annotation(const Annotation &a)
+bool RowData::push_annotation(Annotation *a)
 {
+    if (a == NULL){
+        return false;
+    }
+
+    std::lock_guard<std::mutex> lock(_global_visitor_mutex);
+
     try {
       _annotations.push_back(a);
-      _max_annotation = max(_max_annotation, a.end_sample() - a.start_sample());
-      if (a.end_sample() != a.start_sample())
-          _min_annotation = min(_min_annotation, a.end_sample() - a.start_sample());
+      _item_count = _annotations.size();
+      _max_annotation = max(_max_annotation, a->end_sample() - a->start_sample());
+
+      if (a->end_sample() != a->start_sample())
+          _min_annotation = min(_min_annotation, a->end_sample() - a->start_sample());
+          
       return true;
+      
     } catch (const std::bad_alloc&) {
       return false;
     }
 }
+ 
 
-uint64_t RowData::get_annotation_size() const
+bool RowData::get_annotation(Annotation &ann, uint64_t index) const
 {
-    return _annotations.size();
-}
+    std::lock_guard<std::mutex> lock(_global_visitor_mutex);
 
-bool RowData::get_annotation(Annotation &ann,
-                             uint64_t index) const
-{
     if (index < _annotations.size()) {
-        ann = _annotations[index];
+        ann = *_annotations[index];
         return true;
     } else {
         return false;

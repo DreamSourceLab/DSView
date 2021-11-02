@@ -20,8 +20,7 @@
  */
 
 #include "protocollist.h"
-
-#include <boost/foreach.hpp>
+ 
 
 #include <QFormLayout>
 #include <QListWidget>
@@ -60,7 +59,8 @@ ProtocolList::ProtocolList(QWidget *parent, SigSession *session) :
     const std::vector< boost::shared_ptr<pv::view::DecodeTrace> > decode_sigs(
         _session->get_decode_signals());
     int index = 0;
-    BOOST_FOREACH(boost::shared_ptr<pv::view::DecodeTrace> d, decode_sigs) {
+
+    for(auto &d : decode_sigs) {
         _protocol_combobox->addItem(d->get_name());
         if (decoder_model->getDecoderStack() == d->decoder())
             _protocol_combobox->setCurrentIndex(index);
@@ -130,7 +130,8 @@ void ProtocolList::set_protocol(int index)
     const std::vector< boost::shared_ptr<pv::view::DecodeTrace> > decode_sigs(
         _session->get_decode_signals());
     int cur_index = 0;
-    BOOST_FOREACH(boost::shared_ptr<pv::view::DecodeTrace> d, decode_sigs) {
+
+    for(auto &d : decode_sigs) {
         if (index == cur_index) {
             decoder_stack = d->decoder();
             break;
@@ -172,7 +173,8 @@ void ProtocolList::on_row_check(bool show)
     const std::vector< boost::shared_ptr<pv::view::DecodeTrace> > decode_sigs(
         _session->get_decode_signals());
     int cur_index = 0;
-    BOOST_FOREACH(boost::shared_ptr<pv::view::DecodeTrace> d, decode_sigs) {
+
+    for(auto &d : decode_sigs) {
         if (cur_index == _protocol_combobox->currentIndex()) {
             decoder_stack = d->decoder();
             break;

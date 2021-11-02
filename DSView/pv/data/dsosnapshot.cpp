@@ -27,12 +27,9 @@
 #include <math.h>
 
 #include <algorithm>
-
-#include <boost/foreach.hpp>
-
+ 
 #include "dsosnapshot.h"
 
-using namespace boost;
 using namespace std;
 
 namespace pv {
@@ -63,7 +60,7 @@ DsoSnapshot::~DsoSnapshot()
 void DsoSnapshot::free_envelop()
 {
     for (unsigned int i = 0; i < _channel_num; i++) {
-        BOOST_FOREACH(Envelope &e, _envelope_levels[i]) {
+        for(auto &e : _envelope_levels[i]) {
             if (e.samples)
                 free(e.samples);
         }
@@ -73,13 +70,19 @@ void DsoSnapshot::free_envelop()
 
 void DsoSnapshot::init()
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
+    init_all();    
+}
+
+void DsoSnapshot::init_all()
+{
     _sample_count = 0;
     _ring_sample_count = 0;
     _memory_failed = false;
     _last_ended = true;
     _envelope_done = false;
     _ch_enable.clear();
+
     for (unsigned int i = 0; i < _channel_num; i++) {
         for (unsigned int level = 0; level < ScaleStepCount; level++) {
             _envelope_levels[i][level].length = 0;
@@ -90,10 +93,10 @@ void DsoSnapshot::init()
 
 void DsoSnapshot::clear()
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     free_data();
     free_envelop();
-    init();
+    init_all();
 }
 
 void DsoSnapshot::first_payload(const sr_datafeed_dso &dso, uint64_t total_sample_count,
@@ -157,7 +160,7 @@ void DsoSnapshot::first_payload(const sr_datafeed_dso &dso, uint64_t total_sampl
 
 void DsoSnapshot::append_payload(const sr_datafeed_dso &dso)
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
 
     if (_channel_num > 0 && dso.num_samples != 0) {
         append_data(dso.data, dso.num_samples, _instant);
@@ -184,16 +187,16 @@ void DsoSnapshot::append_data(void *data, uint64_t samples, bool instant)
 
 void DsoSnapshot::enable_envelope(bool enable)
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     if (!_envelope_done && enable)
         append_payload_to_envelope_levels(true);
     _envelope_en = enable;
 }
 
 const uint8_t *DsoSnapshot::get_samples(
-    int64_t start_sample, int64_t end_sample, uint16_t index) const
+    int64_t start_sample, int64_t end_sample, uint16_t index)
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+   std::lock_guard<std::mutex> lock(_mutex);
     (void)end_sample;
 
 	assert(start_sample >= 0);
@@ -202,10 +205,7 @@ const uint8_t *DsoSnapshot::get_samples(
     assert(end_sample < (int64_t)get_sample_count());
 	assert(start_sample <= end_sample);
 
-//    uint16_t *const data = new uint16_t[end_sample - start_sample];
-//    memcpy(data, (uint16_t*)_data + start_sample, sizeof(uint16_t) *
-//		(end_sample - start_sample));
-//	return data;
+
     return (uint8_t*)_data + start_sample * _channel_num + index * (_channel_num != 1);
 }
 

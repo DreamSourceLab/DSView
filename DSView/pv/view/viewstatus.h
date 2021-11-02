@@ -28,7 +28,7 @@
 #include <QPushButton>
 #include <QToolButton>
 
-#include <boost/foreach.hpp>
+ 
 #include <boost/shared_ptr.hpp>
 
 #include <libsigrok4DSL/libsigrok.h>

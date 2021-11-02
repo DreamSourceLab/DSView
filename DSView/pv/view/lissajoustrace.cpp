@@ -30,7 +30,7 @@
 #include "../sigsession.h"
 #include "../device/devinst.h"
 
-#include <boost/foreach.hpp>
+ 
 
 #include <QDebug>
 #include <QTimer>

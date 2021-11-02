@@ -20,9 +20,7 @@
  */
 
 #include "protocolexp.h"
-
-#include <boost/foreach.hpp>
- 
+  
 #include <QFormLayout>
 #include <QListWidget>
 #include <QFile>
@@ -192,7 +190,7 @@ void ProtocolExp::accept()
                 decoder_stack->get_annotation_subset(annotations, row,
                     0, decoder_stack->sample_count()-1);
                 if (!annotations.empty()) {
-                    BOOST_FOREACH(const Annotation &a, annotations) {
+                    for(auto &a : annotations) {
                         out << QString("%1,%2,%3\n")
                                .arg(QString::number(exported))
                                .arg(QString::number(a.start_sample()*ns_per_sample, 'f', 20))

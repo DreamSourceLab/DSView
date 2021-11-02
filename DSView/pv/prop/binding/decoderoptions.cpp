@@ -23,7 +23,7 @@
 #include "decoderoptions.h"
 
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
+ 
 #include <boost/none_t.hpp>
 
 #include <pv/data/decoderstack.h>

@@ -19,13 +19,9 @@
  */
 
 #include <libsigrokdecode4DSL/libsigrokdecode.h>
-
-#include <boost/foreach.hpp>
-#include <boost/thread/thread.hpp>
-
-#include <pv/data/decode/annotation.h>
-#include <pv/data/decode/rowdata.h>
-
+  
+#include "decode/annotation.h"
+#include "decode/rowdata.h"
 #include "decoderstack.h"
 #include "decodermodel.h"
 

@@ -32,6 +32,7 @@
 
 #include <utility>
 #include <vector>
+#include <map>
 
 namespace LogicSnapshotTest {
 class Pow2;
@@ -76,13 +77,19 @@ private:
 public:
     typedef std::pair<uint64_t, bool> EdgePair;
 
+private:
+    void init_all();
+
 public:
     LogicSnapshot();
 
 	virtual ~LogicSnapshot();
+
     void free_data();
+
     void clear();
-    void init();
+
+    void init();   
 
     void first_payload(const sr_datafeed_logic &logic, uint64_t total_sample_count, GSList *channels);
 

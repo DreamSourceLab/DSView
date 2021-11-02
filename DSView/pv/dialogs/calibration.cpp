@@ -20,9 +20,7 @@
  */
 
 #include "calibration.h"
-
-#include <boost/foreach.hpp>
-
+  
 #include <QGridLayout>
 #include <QFuture>
 #include <QProgressDialog>

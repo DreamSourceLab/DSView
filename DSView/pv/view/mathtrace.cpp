@@ -31,8 +31,7 @@
 #include "../sigsession.h"
 #include "../device/devinst.h"
 #include "../view/dsosignal.h"
-
-#include <boost/foreach.hpp>
+ 
 
 #include <QDebug>
 #include <QTimer>

@@ -59,10 +59,9 @@ void SessionFile::use(SigSession *owner)
 
 void SessionFile::release()
 {
-	if (!_owner)
+    if (!_owner || !_sdi)
 		return;
 
-	assert(_sdi);
 	File::release();
 	sr_dev_close(_sdi);
 	sr_dev_clear(_sdi->driver);

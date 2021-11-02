@@ -76,7 +76,8 @@ void ViewStatus::paintEvent(QPaintEvent *)
             int sig_index = std::get<1>(_mrects[i]);
             boost::shared_ptr<view::DsoSignal> dsoSig = NULL;
             const vector< boost::shared_ptr<Signal> > sigs(_session->get_signals());
-            BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+
+            for(auto &s : sigs) {
                 assert(s);
                 if (!s->enabled())
                     continue;
@@ -187,8 +188,7 @@ void ViewStatus::mousePressEvent(QMouseEvent *event)
     if (_session->get_device()->dev_inst()->mode != DSO)
         return;
 
-    if (event->button() == Qt::LeftButton) {
-        //BOOST_FOREACH(QRect rect, std::get<0>(_mrects)) {
+    if (event->button() == Qt::LeftButton) { 
         for(size_t i = 0; i < _mrects.size(); i++) {
             const QRect rect = std::get<0>(_mrects[i]);
             if (rect.contains(event->pos())) {

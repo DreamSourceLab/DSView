@@ -27,8 +27,7 @@
 #include "../device/file.h"
 
 #include <assert.h>
-
-#include <boost/foreach.hpp>
+ 
  
 #include <QStyleOption>
 #include <QMouseEvent>

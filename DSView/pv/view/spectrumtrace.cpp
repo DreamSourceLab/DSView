@@ -22,7 +22,7 @@
 #include <algorithm>
 #include <math.h>
 
-#include <boost/foreach.hpp>
+ 
 #include <boost/functional/hash.hpp>
 
 #include "spectrumtrace.h"
@@ -294,7 +294,8 @@ void SpectrumTrace::paint_mid(QPainter &p, int left, int right, QColor fore, QCo
 
         double vdiv = 0;
         double vfactor = 0;
-        BOOST_FOREACH(const boost::shared_ptr<Signal> s, _session->get_signals()) {
+        
+        for(auto &s : _session->get_signals()) {
             boost::shared_ptr<DsoSignal> dsoSig;
             if ((dsoSig = dynamic_pointer_cast<DsoSignal>(s))) {
                 if(dsoSig->get_index() == _spectrum_stack->get_index()) {

@@ -31,8 +31,7 @@
 #include <QLabel>
 #include <QTabBar>
 #include <QBitmap>
-
-#include <boost/foreach.hpp>
+  
 
 using namespace boost;
 using namespace std;
@@ -78,7 +77,8 @@ MathOptions::MathOptions(SigSession *session, QWidget *parent) :
     _src2_group = new QGroupBox(this);
     QHBoxLayout *src1_layout = new QHBoxLayout();
     QHBoxLayout *src2_layout = new QHBoxLayout();
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals()) {
+
+    for(auto &s : _session->get_signals()) {
         boost::shared_ptr<view::DsoSignal> dsoSig;
         if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
             QString index_str = QString::number(dsoSig->get_index());
@@ -206,7 +206,8 @@ void MathOptions::accept()
     bool enable = (src1 != -1 && src2 != -1 && _enable->isChecked());
     boost::shared_ptr<view::DsoSignal> dsoSig1;
     boost::shared_ptr<view::DsoSignal> dsoSig2;
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals()) {
+
+    for(auto &s : _session->get_signals()) {
         boost::shared_ptr<view::DsoSignal> dsoSig;
         if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
             if (dsoSig->get_index() == src1)

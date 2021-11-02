@@ -27,7 +27,6 @@
 
 
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <QAction>
@@ -520,8 +519,12 @@ void MainWindow::device_attach()
     DeviceManager &_device_manager = _control->GetDeviceManager();
 
     for (driver = drivers; *driver; driver++)
-         if (*driver)
-          _device_manager.driver_scan(*driver);
+    {
+         if (*driver){
+            std::list<DevInst*> driver_devices;
+          _device_manager.driver_scan(driver_devices, *driver);
+        }
+    }
 
 
     _session->set_default_device(boost::bind(&MainWindow::session_error, this,
@@ -581,9 +584,12 @@ void MainWindow::device_detach_post()
     _hot_detach = false;
     struct sr_dev_driver **const drivers = sr_driver_list();
     struct sr_dev_driver **driver;
-    for (driver = drivers; *driver; driver++)
-        if (*driver)
-            _device_manager.driver_scan(*driver);
+    for (driver = drivers; *driver; driver++){
+        if (*driver){
+            std::list<DevInst*> driver_devices;
+            _device_manager.driver_scan(driver_devices, *driver);
+        }
+    }
 
     _session->set_default_device(boost::bind(&MainWindow::session_error, this,
                                             QString(tr("Set Default Device failed")), _1));
@@ -821,7 +827,7 @@ void MainWindow::commit_trigger(bool instant)
 
     if (!_trigger_widget->commit_trigger()) {
         /* simple trigger check trigger_enable */
-        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals())
+        for(auto &s : _session->get_signals())
         {
             assert(s);
             boost::shared_ptr<view::LogicSignal> logicSig;
@@ -843,7 +849,7 @@ void MainWindow::commit_trigger(bool instant)
 
             msg.exec();
             if (msg.mBox()->clickedButton() == cancelButton) {
-                BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals())
+                for(auto &s : _session->get_signals())
                 {
                     assert(s);
                     boost::shared_ptr<view::LogicSignal> logicSig;
@@ -1055,7 +1061,7 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev)
 
     // load signal setting
     if (file_dev && (sdi->mode == DSO)) {
-        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals()) {
+         for(auto &s :  _session->get_signals()) {
             foreach (const QJsonValue &value, sessionObj["channel"].toArray()) {
                 QJsonObject obj = value.toObject();
                 if ((strcmp(s->get_name().toStdString().c_str(), g_strdup(obj["name"].toString().toStdString().c_str())) == 0) &&
@@ -1074,7 +1080,7 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev)
             }
         }
     } else {
-        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals()) {
+         for(auto &s : _session->get_signals()) {
             foreach (const QJsonValue &value, sessionObj["channel"].toArray()) {
                 QJsonObject obj = value.toObject();
                 if ((s->get_index() == obj["index"].toDouble()) &&
@@ -1183,7 +1189,7 @@ bool MainWindow::on_store_session(QString name)
         }
     }
 
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals()) {
+     for(auto &s :  _session->get_signals()) {
         QJsonObject s_obj;
         s_obj["index"] = s->get_index();
         s_obj["type"] = s->get_type();
@@ -1328,7 +1334,7 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
             _view->zoom(-1);
             break;
         case Qt::Key_0:
-            BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, sigs) {
+             for(auto & s : sigs) {
                 boost::shared_ptr<view::DsoSignal> dsoSig;
                 if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
                     if (dsoSig->get_index() == 0)
@@ -1341,7 +1347,7 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
             update();
             break;
         case Qt::Key_1:
-            BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, sigs) {
+             for(auto & s : sigs) {
                 boost::shared_ptr<view::DsoSignal> dsoSig;
                 if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
                     if (dsoSig->get_index() == 1)
@@ -1354,7 +1360,7 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
             update();
             break;
         case Qt::Key_Up:
-            BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, sigs) {
+             for(auto &s : sigs) {
                 boost::shared_ptr<view::DsoSignal> dsoSig;
                 if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
                     if (dsoSig->get_vDialActive()) {
@@ -1366,7 +1372,7 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
             }
             break;
         case Qt::Key_Down:
-            BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, sigs) {
+             for(auto &s : sigs) {
                 boost::shared_ptr<view::DsoSignal> dsoSig;
                 if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
                     if (dsoSig->get_vDialActive()) {

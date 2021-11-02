@@ -28,9 +28,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-
-using namespace boost;
-
+ 
 namespace pv {
 namespace data {
 
@@ -91,13 +89,13 @@ void Snapshot::set_last_ended(bool ended)
 
 uint64_t Snapshot::get_sample_count() const
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     return _sample_count;
 }
 
 uint64_t Snapshot::get_ring_start() const
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     if (_sample_count < _total_sample_count)
         return 0;
     else
@@ -106,7 +104,7 @@ uint64_t Snapshot::get_ring_start() const
 
 uint64_t Snapshot::get_ring_end() const
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     if (_sample_count == 0)
         return 0;
     else if (_ring_sample_count == 0)

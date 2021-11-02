@@ -28,8 +28,7 @@
 #include "dsosignal.h"
 
 #include <QPainter>
-
-#include <boost/foreach.hpp>
+ 
 
 using namespace boost;
 using namespace std;
@@ -48,7 +47,8 @@ XCursor::XCursor(View &view, QColor &colour,
 {
     _dsoSig = NULL;
     const std::vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
-    BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+    
+    for(auto &s : sigs) {
         boost::shared_ptr<DsoSignal> dsoSig;
         if ((dsoSig = dynamic_pointer_cast<DsoSignal>(s)))
             if (dsoSig->enabled()) {

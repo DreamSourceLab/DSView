@@ -26,7 +26,7 @@
 #include "../view/dsosignal.h"
 
 #include <boost/shared_ptr.hpp>
-#include <boost/foreach.hpp>
+ 
 
 #include <QObject>
 #include <QLabel>
@@ -387,7 +387,8 @@ void DsoTriggerDock::init()
     // setup _channel_comboBox
     disconnect(_channel_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(channel_changed(int)));
     _channel_comboBox->clear();
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals()) {
+    
+    for(auto &s : _session->get_signals()) {
         boost::shared_ptr<view::DsoSignal> dsoSig;
         if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
             _channel_comboBox->addItem(dsoSig->get_name(), QVariant::fromValue(dsoSig->get_index()));

@@ -20,9 +20,7 @@
  */
 
 #include "regionoptions.h"
-
-#include <boost/foreach.hpp>
-
+ 
 #include "../sigsession.h"
 #include "../view/cursor.h"
 #include "../view/view.h"

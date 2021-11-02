@@ -29,8 +29,7 @@
 #include <QLabel>
 #include <QTabBar>
 #include <QBitmap>
-
-#include <boost/foreach.hpp>
+ 
 #include "../dsvdef.h"
 
 using namespace boost;
@@ -57,7 +56,7 @@ DsoMeasure::DsoMeasure(SigSession *session, View &parent,
     _measure_tab->setTabPosition(QTabWidget::West);
     _measure_tab->setUsesScrollButtons(false);
 
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals()) {
+    for(auto &s : _session->get_signals()) {
         boost::shared_ptr<view::DsoSignal> dsoSig;
         if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) && dsoSig->enabled()) {
             QWidget *measure_widget = new QWidget(this);
@@ -158,7 +157,8 @@ void DsoMeasure::accept()
     if(sc != NULL) {
         QVariant id = sc->property("id");
         enum DSO_MEASURE_TYPE ms_type = DSO_MEASURE_TYPE(id.toInt());
-        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals()) {
+        
+        for(auto &s : _session->get_signals()) {
             boost::shared_ptr<view::DsoSignal> dsoSig;
             if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
                 if (_measure_tab->currentWidget()->property("index").toInt() == dsoSig->get_index()) {

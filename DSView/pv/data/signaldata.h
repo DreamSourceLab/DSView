@@ -25,7 +25,7 @@
 #define DSVIEW_PV_DATA_SIGNALDATA_H
 
 #include <stdint.h>
-#include <boost/thread.hpp>
+#include <mutex>
 
 namespace pv {
 namespace data {
@@ -45,7 +45,7 @@ public:
     virtual void init() = 0;
 
 protected:
-    mutable boost::recursive_mutex _mutex;
+    mutable std::mutex _mutex;
     double _samplerate;
 };
 

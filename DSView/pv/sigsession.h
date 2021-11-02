@@ -26,8 +26,7 @@
 #include <libsigrok4DSL/libsigrok.h>
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#include <boost/thread.hpp>
+#include <boost/weak_ptr.hpp> 
 
 #include <string>
 #include <utility>
@@ -386,10 +385,8 @@ private slots:
     void nodata_timeout();
     void feed_timeout();
     void repeat_update();
-
-public: 
-    void *_appCntrol;
-
+ 
+ 
 private:
 	DeviceManager   *_device_manager;
 
@@ -398,13 +395,13 @@ private:
 	 */
     DevInst     *_dev_inst;
 
-    mutable boost::mutex _sampling_mutex;
+    mutable std::mutex _sampling_mutex;
 	capture_state _capture_state;
     bool _instant;
     uint64_t _cur_snap_samplerate;
     uint64_t _cur_samplelimits;
 
-    //mutable boost::mutex _signals_mutex;
+    //mutable std::mutex _signals_mutex;
 	std::vector< boost::shared_ptr<view::Signal> > _signals;
     std::vector< boost::shared_ptr<view::GroupSignal> > _group_traces;
 
@@ -415,7 +412,7 @@ private:
     boost::shared_ptr<view::LissajousTrace> _lissajous_trace;
     boost::shared_ptr<view::MathTrace> _math_trace;
 
-    mutable boost::mutex _data_mutex;
+    mutable std::mutex _data_mutex;
 	boost::shared_ptr<data::Logic> _logic_data;
 	boost::shared_ptr<data::LogicSnapshot> _cur_logic_snapshot;
     boost::shared_ptr<data::Dso> _dso_data;
@@ -426,10 +423,12 @@ private:
     boost::shared_ptr<data::GroupSnapshot> _cur_group_snapshot;
     int _group_cnt;
 
-	std::unique_ptr<boost::thread> _sampling_thread;
+	std::thread     *_sampling_thread;
+    std::thread     *_hotplug;
+    volatile bool    _bHotplugStop;
 
 	libusb_hotplug_callback_handle _hotplug_handle;
-    std::unique_ptr<boost::thread> _hotplug;
+    
     bool _hot_attach;
     bool _hot_detach;
 
@@ -461,6 +460,7 @@ private:
 
     bool _dso_feed;
     float _stop_scale;
+   
 
 private:
 	// TODO: This should not be necessary. Multiple concurrent

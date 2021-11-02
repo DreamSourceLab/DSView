@@ -90,11 +90,11 @@ void DeviceManager::del_device(DevInst *device)
     }
 }
 
-std::list<DevInst*>& DeviceManager::driver_scan(
-	struct sr_dev_driver *const driver, GSList *const drvopts)
-{
-    list<DevInst*> driver_devices;
-
+void DeviceManager::driver_scan(
+    std::list<DevInst*> &driver_devices,
+	struct sr_dev_driver *const driver, 
+    GSList *const drvopts)
+{  
 	assert(driver);
 
 	// Remove any device instances from this driver from the device
@@ -118,7 +118,7 @@ std::list<DevInst*>& DeviceManager::driver_scan(
     if (strncmp(driver->name, "virtual", 7)) {
         QDir dir(DS_RES_PATH);
         if (!dir.exists())
-            return driver_devices;
+            return;
     }
 
 	// Do the scan
@@ -133,8 +133,6 @@ std::list<DevInst*>& DeviceManager::driver_scan(
 
 	// append the scanned devices to the main list
 	_devices.insert(_devices.end(), driver_devices.begin(), driver_devices.end());
-
-	return driver_devices;
 }
 
 void DeviceManager::init_drivers()
@@ -167,8 +165,10 @@ void DeviceManager::scan_all_drivers()
 {
 	// Scan all drivers for all devices.
 	struct sr_dev_driver **const drivers = sr_driver_list();
-	for (struct sr_dev_driver **driver = drivers; *driver; driver++)
-		driver_scan(*driver);
+    for (struct sr_dev_driver **driver = drivers; *driver; driver++){
+        std::list<DevInst*> driver_devices;
+        driver_scan(driver_devices, *driver);
+    }
 }
 
 void DeviceManager::release_driver(struct sr_dev_driver *const driver)

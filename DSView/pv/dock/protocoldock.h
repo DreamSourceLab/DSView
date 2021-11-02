@@ -38,10 +38,12 @@
 #include <QSortFilterProxyModel>
 
 #include <vector>
-#include <boost/thread.hpp>
+#include <mutex>
 
 #include "../data/decodermodel.h"
 #include "protocolitemlayer.h"
+
+
 namespace pv {
 
 class SigSession;
@@ -140,7 +142,7 @@ private:
     QPushButton *_dn_nav_button;
     QPushButton *_search_button;
 
-    mutable boost::mutex _search_mutex;
+    mutable std::mutex _search_mutex;
     bool _search_edited;
     bool _searching;
 

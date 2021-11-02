@@ -23,7 +23,7 @@
 #ifndef DSVIEW_PV_DATA_GROUPSNAPSHOT_H
 #define DSVIEW_PV_DATA_GROUPSNAPSHOT_H
 
-#include <boost/thread.hpp>
+ 
 #include <boost/shared_ptr.hpp>
 
 #include "../view/signal.h"
@@ -99,7 +99,7 @@ private:
 
 private:
 	struct Envelope _envelope_levels[ScaleStepCount];
-    //mutable boost::recursive_mutex _mutex;
+  
     const void *_data;
     uint64_t _sample_count;
     int _unit_size;

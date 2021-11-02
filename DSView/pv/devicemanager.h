@@ -30,8 +30,7 @@
 #include <map>
 #include <string>
 
-#include <boost/function.hpp> 
-#include <boost/thread.hpp>
+#include <boost/function.hpp>  
 
 #include <QObject>
 #include <QString>
@@ -69,7 +68,10 @@ public:
     void add_device(DevInst *device);
     void del_device(DevInst *device);
 
-    std::list<DevInst*>& driver_scan(struct sr_dev_driver *const driver, GSList *const drvopts = NULL);
+    void driver_scan(
+                std::list<DevInst*> &driver_devices,
+	            struct sr_dev_driver *const driver=NULL, 
+                GSList *const drvopts=NULL);
 
     void initAll(struct sr_context *sr_ctx);
 

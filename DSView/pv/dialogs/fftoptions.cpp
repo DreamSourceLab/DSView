@@ -21,8 +21,7 @@
 
 #include "fftoptions.h"
 
-#include <boost/foreach.hpp>
-
+  
 #include <QFormLayout>
 #include <QListWidget>
 
@@ -67,7 +66,7 @@ FftOptions::FftOptions(QWidget *parent, SigSession *session) :
     _dbv_combobox = new QComboBox(this);
 
     // setup _ch_combobox
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals()) {
+    for(auto &s : _session->get_signals()) {
         boost::shared_ptr<view::DsoSignal> dsoSig;
         if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
             _ch_combobox->addItem(dsoSig->get_name(), QVariant::fromValue(dsoSig->get_index()));
@@ -87,7 +86,8 @@ FftOptions::FftOptions(QWidget *parent, SigSession *session) :
     std::vector<uint64_t> length;
     std::vector<QString> view_modes;
     std::vector<int> dbv_ranges;
-    BOOST_FOREACH(const boost::shared_ptr<view::Trace> t, _session->get_spectrum_traces()) {
+
+    for(auto &t : _session->get_spectrum_traces()) {
         boost::shared_ptr<view::SpectrumTrace> spectrumTraces;
         if ((spectrumTraces = dynamic_pointer_cast<view::SpectrumTrace>(t))) {
             windows = spectrumTraces->get_spectrum_stack()->get_windows_support();
@@ -137,7 +137,7 @@ FftOptions::FftOptions(QWidget *parent, SigSession *session) :
     }
 
     // load current settings
-    BOOST_FOREACH(const boost::shared_ptr<view::Trace> t, _session->get_spectrum_traces()) {
+    for(auto &t : _session->get_spectrum_traces()) {
         boost::shared_ptr<view::SpectrumTrace> spectrumTraces;
         if ((spectrumTraces = dynamic_pointer_cast<view::SpectrumTrace>(t))) {
             if (spectrumTraces->enabled()) {
@@ -230,7 +230,7 @@ void FftOptions::accept()
 
     QDialog::accept();
 
-    BOOST_FOREACH(const boost::shared_ptr<view::Trace> t, _session->get_spectrum_traces()) {
+   for(auto &t : _session->get_spectrum_traces()) {
         boost::shared_ptr<view::SpectrumTrace> spectrumTraces;
         if ((spectrumTraces = dynamic_pointer_cast<view::SpectrumTrace>(t))) {
             spectrumTraces->set_enable(false);

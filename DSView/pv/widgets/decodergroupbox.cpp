@@ -33,8 +33,7 @@
 #include <QScrollBar>
 #include <QScreen>
 #include <QApplication>
-
-#include <boost/foreach.hpp>
+ 
 #include "../config/appconfig.h"
 
 #include <assert.h>
@@ -72,8 +71,7 @@ DecoderGroupBox::DecoderGroupBox(boost::shared_ptr<data::DecoderStack> &decoder_
     }
 
     _index = 0;
-    BOOST_FOREACH(boost::shared_ptr<data::decode::Decoder> dec,
-        _decoder_stack->stack()) {
+    for(auto &dec : _decoder_stack->stack()) {
         if (dec == _dec)
             break;
         _index++;
@@ -137,8 +135,8 @@ void DecoderGroupBox::tog_icon()
     int index = id.toInt();
     if (index == -1) {
         int i = _index;
-        BOOST_FOREACH(boost::shared_ptr<data::decode::Decoder> dec,
-            _decoder_stack->stack()) {
+
+       for(auto &dec : _decoder_stack->stack()) {
             if (i-- == 0) {
                 dec->show(!dec->shown());
                 sc->setIcon(QIcon(dec->shown() ? iconPath+"/shown.svg" :
@@ -164,8 +162,7 @@ void DecoderGroupBox::tog_icon()
 void DecoderGroupBox::on_del_stack()
 {
     int i = _index;
-    BOOST_FOREACH(boost::shared_ptr<data::decode::Decoder> dec,
-        _decoder_stack->stack()) {
+    for(auto &dec : _decoder_stack->stack()) {
         if (i-- == 0) {
             del_stack(dec);
             break;

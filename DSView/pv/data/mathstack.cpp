@@ -19,10 +19,7 @@
  */
 
 #include "mathstack.h"
-
-#include <boost/foreach.hpp>
-#include <boost/thread/thread.hpp>
-
+ 
 #include <pv/data/dso.h>
 #include <pv/data/dsosnapshot.h>
 #include <pv/sigsession.h>
@@ -100,7 +97,7 @@ MathStack::~MathStack()
 
 void MathStack::free_envelop()
 {
-    BOOST_FOREACH(Envelope &e, _envelope_level) {
+    for(auto &e : _envelope_level) {
         if (e.samples)
             free(e.samples);
     }
@@ -109,12 +106,12 @@ void MathStack::free_envelop()
 
 void MathStack::clear()
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
 }
 
 void MathStack::init()
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
 
     _sample_num = 0;
     _envelope_done = false;
@@ -315,7 +312,7 @@ void MathStack::get_math_envelope_section(EnvelopeSection &s,
 
 void MathStack::calc_math()
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
 
     _math_state = Running;
 

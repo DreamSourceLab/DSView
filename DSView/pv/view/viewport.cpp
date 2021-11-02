@@ -39,7 +39,7 @@
 #include <QStyleOption>
 #include <QPainterPath> 
 #include <math.h> 
-#include <boost/foreach.hpp>
+ 
 
 #include "../config/appconfig.h"
 
@@ -112,7 +112,7 @@ int Viewport::get_total_height() const
 	int h = 0;
 
     const vector< boost::shared_ptr<Trace> > traces(_view.get_traces(_type));
-    BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces) {
+    for(auto &t : traces) {
         assert(t);
         h += (int)(t->get_totalHeight());
     }
@@ -150,7 +150,8 @@ void Viewport::paintEvent(QPaintEvent *event)
     fore.setAlpha(View::ForeAlpha);
     _view.set_back(false);
     const vector< boost::shared_ptr<Trace> > traces(_view.get_traces(_type));
-    BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
+
+    for(auto &t : traces)
     {
         assert(t); 
   
@@ -186,7 +187,7 @@ void Viewport::paintEvent(QPaintEvent *event)
         paintSignals(p, fore, back);
     }
 
-    BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
+    for(auto &t : traces)
     {
         assert(t);
         if (t->enabled())
@@ -203,7 +204,8 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
 {
     const vector< boost::shared_ptr<Trace> > traces(_view.get_traces(_type));
     if (_view.session().get_device()->dev_inst()->mode == LOGIC) {
-        BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
+
+        for(auto &t : traces)
         {
             assert(t);
            // auto ptr = t.get();
@@ -227,7 +229,7 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
 
             QPainter dbp(&pixmap);
             //dbp.begin(this);
-            BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
+            for(auto &t : traces)
             {
                 assert(t);
 
@@ -520,7 +522,8 @@ void Viewport::mousePressEvent(QMouseEvent *event)
         event->button() == Qt::LeftButton &&
         _view.session().get_device()->dev_inst()->mode == DSO) {
         const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
-        BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+
+       for(auto &s : sigs) {
             assert(s);
             if (!s->enabled())
                 continue;
@@ -637,7 +640,7 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
             }
             _drag_strength = (_mouse_down_point - event->pos()).x();
         } else if (_type == FFT_VIEW) {
-            BOOST_FOREACH(const boost::shared_ptr<view::SpectrumTrace> t, _view.session().get_spectrum_traces()) {
+            for(auto &t: _view.session().get_spectrum_traces()) {
                 assert(t);
                 if(t->enabled()) {
                     double delta = (_mouse_point - event->pos()).x();
@@ -667,7 +670,8 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
                     uint64_t index0 = 0, index1 = 0, index2 = 0;
                     bool logic = false;
                     const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
-                    BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+
+                   for(auto &s: sigs) {
                         assert(s);
                         boost::shared_ptr<view::LogicSignal> logicSig;
                         boost::shared_ptr<view::DsoSignal> dsoSig;
@@ -730,7 +734,7 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
         }
         if (!(event->buttons() | Qt::NoButton)) {
             if (_action_type == DSO_XM_STEP1 || _action_type == DSO_XM_STEP2) {
-                BOOST_FOREACH(const boost::shared_ptr<Signal> s, _view.session().get_signals()) {
+                for(auto &s : _view.session().get_signals()) {
                     assert(s);
                     if (!s->get_view_rect().contains(event->pos())) {
                         clear_dso_xm();
@@ -784,7 +788,8 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                 if (_action_type == NO_ACTION) {
                     if (_mouse_down_point.x() == event->pos().x()) {
                         const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
-                        BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+
+                        for(auto &s : sigs) {
                             assert(s);
                             boost::shared_ptr<view::LogicSignal> logicSig;
                             if ((logicSig = dynamic_pointer_cast<view::LogicSignal>(s))) {
@@ -807,7 +812,8 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                 if (_action_type == NO_ACTION) {
                     if (_mouse_down_point.x() == event->pos().x()) {
                         const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
-                        BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+
+                        for(auto &s : sigs) {
                             assert(s);
                             if (abs(event->pos().y() - s->get_y()) < _view.get_signalHeight()) {
                                 _action_type = LOGIC_EDGE;
@@ -844,7 +850,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
 
                 const vector< boost::shared_ptr<Trace> > traces(
                     _view.get_traces(ALL_VIEW));
-                BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
+                for(auto &t : traces)
                     t->select(false);
             }
         } else if (_action_type == DSO_XM_STEP0) {
@@ -961,7 +967,7 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
             uint64_t index0 = 0, index1 = 0, index2 = 0;
             if (_view.session().get_device()->dev_inst()->mode == LOGIC) {
                 const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
-                BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+                for(auto &s : sigs) {
                     assert(s);
                     boost::shared_ptr<view::LogicSignal> logicSig;
                     if ((logicSig = dynamic_pointer_cast<view::LogicSignal>(s))) {
@@ -994,7 +1000,7 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
             clear_dso_xm();
             measure_updated();
         } else if (_action_type == NO_ACTION) {
-            BOOST_FOREACH(const boost::shared_ptr<Signal> s, _view.session().get_signals()) {
+            for(auto &s : _view.session().get_signals()) {
                 assert(s);
                 if (s->get_view_rect().contains(event->pos())) {
                     _dso_xm_index[0] = _view.pixel2index(event->pos().x());
@@ -1020,7 +1026,7 @@ void Viewport::wheelEvent(QWheelEvent *event)
 	assert(event);
 
     if (_type == FFT_VIEW) {
-        BOOST_FOREACH(const boost::shared_ptr<view::SpectrumTrace> t, _view.session().get_spectrum_traces()) {
+        for(auto &t : _view.session().get_spectrum_traces()) {
             assert(t);
             if(t->enabled()) {
                 t->zoom(event->delta() / 80, event->x());
@@ -1061,7 +1067,7 @@ void Viewport::wheelEvent(QWheelEvent *event)
     }
 
     const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
-    BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+    for(auto &s : sigs) {
         assert(s);
         boost::shared_ptr<view::DsoSignal> dsoSig;
         if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
@@ -1169,7 +1175,8 @@ void Viewport::measure()
     if (_type == TIME_VIEW) {
         const uint64_t sample_rate = _view.session().cur_snap_samplerate();
         const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
-        BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+
+        for(auto &s : sigs) {
             assert(s);
             boost::shared_ptr<view::LogicSignal> logicSig;
             boost::shared_ptr<view::DsoSignal> dsoSig;
@@ -1251,7 +1258,7 @@ void Viewport::measure()
             }
         }
     } else if (_type == FFT_VIEW) {
-        BOOST_FOREACH(const boost::shared_ptr<view::SpectrumTrace> t, _view.session().get_spectrum_traces()) {
+        for(auto &t : _view.session().get_spectrum_traces()) {
             assert(t);
             if(t->enabled()) {
                 t->measure(_mouse_point);
@@ -1325,7 +1332,8 @@ void Viewport::paintMeasure(QPainter &p, QColor fore, QColor back)
     const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
     if (_action_type == NO_ACTION &&
         _measure_type == DSO_VALUE) {
-        BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+
+        for(auto &s : sigs) {
             boost::shared_ptr<view::DsoSignal> dsoSig;
             boost::shared_ptr<view::AnalogSignal> analogSig;
             if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
@@ -1353,7 +1361,7 @@ void Viewport::paintMeasure(QPainter &p, QColor fore, QColor back)
     }
 
     if (_dso_ym_valid) {
-        BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+        for(auto &s : sigs) {
             boost::shared_ptr<view::DsoSignal> dsoSig;
             if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
                 if (dsoSig->get_index() == _dso_ym_sig_index) {

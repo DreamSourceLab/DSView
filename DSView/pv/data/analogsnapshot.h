@@ -79,6 +79,9 @@ private:
     static const uint64_t LeafBlockSamples = 1 << LeafBlockPower;
     static const uint64_t LeafMask = ~(~0ULL << LeafBlockPower);
 
+private:
+    void init_all();
+
 public:
     AnalogSnapshot();
 

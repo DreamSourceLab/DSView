@@ -32,6 +32,7 @@ namespace pv {
 namespace data {
 namespace decode {
 
+//map find key data
 class Row
 {
 public:
@@ -41,12 +42,15 @@ public:
         const srd_decoder_annotation_row *row = NULL,
         const int order = -1);
 
-public:
-	
-    ~Row(); 
+public: 
 
-	const srd_decoder* decoder() const;
-	const srd_decoder_annotation_row* row() const;
+	inline const srd_decoder* decoder() const{
+		return _decoder;
+	}
+
+	inline const srd_decoder_annotation_row* row() const{
+		return _row;
+	}
 
 	const QString title() const;
 

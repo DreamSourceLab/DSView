@@ -27,7 +27,7 @@
 
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/thread.hpp>
+ 
 
 #include <QObject>
 #include <QString>

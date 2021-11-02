@@ -223,8 +223,7 @@ private:
 	std::vector<pv::widgets::DecoderGroupBox*> _decoder_forms;
 
 	std::vector<QString> _cur_row_headings;
-
-    QFormLayout *_popup_form;
+ 
     dialogs::DSDialog *_popup;
 };
 

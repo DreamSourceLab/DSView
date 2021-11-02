@@ -35,7 +35,7 @@
 
 #include <assert.h>
 
-#include <boost/foreach.hpp>
+ 
  
 #include <QColorDialog>
 #include <QInputDialog>
@@ -107,7 +107,7 @@ boost::shared_ptr<pv::view::Trace> Header::get_mTrace(
     const vector< boost::shared_ptr<Trace> > traces(
         _view.get_traces(ALL_VIEW));
 
-    BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
+    for(auto &t : traces)
     {
         assert(t);
 
@@ -136,7 +136,8 @@ void Header::paintEvent(QPaintEvent*)
     const bool dragging = !_drag_traces.empty();
     QColor fore(QWidget::palette().color(QWidget::foregroundRole()));
     fore.setAlpha(View::ForeAlpha);
-    BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
+
+    for(auto &t : traces)
 	{
         assert(t);
        // auto ptr = t.get();
@@ -157,13 +158,13 @@ void Header::mouseDoubleClickEvent(QMouseEvent *event)
         _mouse_down_point = event->pos();
 
         // Save the offsets of any Traces which will be dragged
-        BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
+        for(auto &t : traces)
             if (t->selected())
                 _drag_traces.push_back(
                     make_pair(t, t->get_v_offset()));
 
         // Select the Trace if it has been clicked
-        BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
+        for(auto &t : traces)
             if (t->mouse_double_click(width(), event->pos()))
                 break;
     }
@@ -186,7 +187,7 @@ void Header::mousePressEvent(QMouseEvent *event)
 		_mouse_down_point = event->pos();
 
         // Save the offsets of any Traces which will be dragged
-        BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
+        for(auto &t : traces)
             if (t->selected())
                 _drag_traces.push_back(
                     make_pair(t, t->get_v_offset()));
@@ -207,14 +208,14 @@ void Header::mousePressEvent(QMouseEvent *event)
             mTrace->set_old_v_offset(mTrace->get_v_offset());
         }
 
-        BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
+        for(auto &t : traces)
             if (t->mouse_press(width(), event->pos()))
                 break;
 
         if (~QApplication::keyboardModifiers() & Qt::ControlModifier) {
             // Unselect all other Traces because the Ctrl is not
             // pressed
-            BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
+            for(auto &t : traces)
                 if (t != mTrace)
                     t->select(false);
         }
@@ -248,7 +249,7 @@ void Header::mouseReleaseEvent(QMouseEvent *event)
 
         const vector< boost::shared_ptr<Trace> > traces(
             _view.get_traces(ALL_VIEW));
-        BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
+        for(auto &t : traces)
             t->select(false);
     }
 
@@ -288,7 +289,7 @@ void Header::wheelEvent(QWheelEvent *event)
         #else
             shift = event->delta() / 80.0;
         #endif
-        BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
+        for(auto &t : traces)
             if (t->mouse_wheel(width(), event->pos(), shift))
                 break;
         update();

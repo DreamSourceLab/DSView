@@ -21,9 +21,7 @@
  */
 
 #include "deviceoptions.h"
-
-#include <boost/foreach.hpp>
-
+ 
 #include <QListWidget>
 #include <QSpinBox>
 #include <QDoubleSpinBox>
@@ -94,7 +92,7 @@ void DeviceOptions::accept()
 	// Commit the properties
     const vector< boost::shared_ptr<pv::prop::Property> > &dev_props =
 		_device_options_binding.properties();
-    BOOST_FOREACH(boost::shared_ptr<pv::prop::Property> p, dev_props) {
+    for(auto &p : dev_props) {
 		assert(p);
 		p->commit();
 	}
@@ -120,7 +118,7 @@ void DeviceOptions::accept()
         while(i != _probe_options_binding_list.end()) {
             const vector< boost::shared_ptr<pv::prop::Property> > &probe_props =
                     (*i)->properties();
-            BOOST_FOREACH(boost::shared_ptr<pv::prop::Property> p, probe_props) {
+            for(auto &p :probe_props) {
                 assert(p);
                 p->commit();
             }
@@ -153,7 +151,7 @@ QGridLayout * DeviceOptions::get_property_form(QWidget * parent)
 	const vector< boost::shared_ptr<pv::prop::Property> > &properties =
 		_device_options_binding.properties();
     int i = 0;
-    BOOST_FOREACH(boost::shared_ptr<pv::prop::Property> p, properties)
+    for(auto &p : properties)
 	{
 		assert(p);
         const QString label = p->labeled_widget() ? QString() : p->label();
@@ -527,7 +525,8 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
         const vector< boost::shared_ptr<pv::prop::Property> > &properties =
             probe_options_binding->properties();
         int i = 1;
-        BOOST_FOREACH(boost::shared_ptr<pv::prop::Property> p, properties)
+        
+        for(auto &p : properties)
         {
             assert(p);
             const QString label = p->labeled_widget() ? QString() : p->label();

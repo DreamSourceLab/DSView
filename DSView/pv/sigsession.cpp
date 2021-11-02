@@ -65,21 +65,10 @@
 #include <QFuture>
 #include <QtConcurrent/QtConcurrent>
 
-#include <boost/foreach.hpp>
+ 
 #include "data/decode/decoderstatus.h"
+#include "dsvdef.h"
 
-//using boost::dynamic_pointer_cast;
-//using boost::function;
-//using boost::lock_guard;
-//using boost::mutex;
-//using boost::shared_ptr;
-//using std::list;
-//using std::map;
-//using std::set;
-//using std::string;
-//using std::vector;
-//using std::deque;
-//using std::min;
 
 using namespace boost;
 using namespace std;
@@ -99,9 +88,6 @@ SigSession::SigSession(DeviceManager *device_manager) :
     _repeat_hold_prg(0),
     _map_zoom(0)
 {
-     void *p = this;
-     _appCntrol = NULL;
-     
     _hotplug_handle = 0;
     _dev_inst = NULL;
     _device_manager = device_manager;
@@ -110,6 +96,9 @@ SigSession::SigSession(DeviceManager *device_manager) :
     _hot_attach = false;
     _hot_detach = false;
     _group_cnt = 0;
+    _bHotplugStop = false;
+    _hotplug = NULL;
+    _sampling_thread = NULL;
  
 
     _feed_timer.stop();
@@ -145,7 +134,6 @@ SigSession::SigSession(DeviceManager *device_manager) :
 
 SigSession::~SigSession()
 {
-   Close();
 }
 
 DevInst* SigSession::get_device() const
@@ -279,7 +267,7 @@ void SigSession::release_device(DevInst *dev_inst)
 
 SigSession::capture_state SigSession::get_capture_state() const
 {
-    boost::lock_guard<boost::mutex> lock(_sampling_mutex);
+    std::lock_guard<std::mutex> lock(_sampling_mutex);
     return _capture_state;
 }
 
@@ -336,14 +324,14 @@ void SigSession::set_cur_snap_samplerate(uint64_t samplerate)
 
 
     // DecoderStack
-    BOOST_FOREACH(const boost::shared_ptr<view::DecodeTrace> d, _decode_traces)
+    for(auto &d : _decode_traces)
         d->decoder()->set_samplerate(_cur_snap_samplerate);
 
     // Math
     if (_math_trace && _math_trace->enabled())
         _math_trace->get_math_stack()->set_samplerate(_dev_inst->get_sample_rate());
     // SpectrumStack
-    BOOST_FOREACH(const boost::shared_ptr<view::SpectrumTrace> m, _spectrum_traces)
+    for(auto & m : _spectrum_traces)
         m->get_spectrum_stack()->set_samplerate(_cur_snap_samplerate);
 
     cur_snap_samplerate_changed();
@@ -383,7 +371,7 @@ void SigSession::capture_init()
     container_init();
 
     // update current hw offset
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
+    for(auto &s : _signals)
     {
         assert(s);
         boost::shared_ptr<view::DsoSignal> dsoSig;
@@ -416,7 +404,7 @@ void SigSession::container_init()
         _dso_data->init();
 
     // SpectrumStack
-    BOOST_FOREACH(const boost::shared_ptr<view::SpectrumTrace> m, _spectrum_traces)
+    for(auto &m : _spectrum_traces)
     {
         assert(m);
         m->get_spectrum_stack()->init();
@@ -430,7 +418,7 @@ void SigSession::container_init()
     //pv::data::DecoderModel *decoder_model = get_decoder_model();
     //decoder_model->setDecoderStack(NULL);
     // DecoderStack
-    BOOST_FOREACH(const boost::shared_ptr<view::DecodeTrace> d, _decode_traces)
+    for(auto &d : _decode_traces)
     {
         assert(d);
         d->decoder()->init();
@@ -459,7 +447,7 @@ void SigSession::start_capture(bool instant,
     // stop previous capture
     stop_capture();
     // reset measure of dso signal
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
+    for(auto &s : _signals)
     {
         assert(s);
         boost::shared_ptr<view::DsoSignal> dsoSig;
@@ -490,10 +478,11 @@ void SigSession::start_capture(bool instant,
         return;
     }
 
-    // Begin the session
-    _sampling_thread.reset(new boost::thread(
-        &SigSession::sample_thread_proc, this, _dev_inst,
-        error_handler));
+    if (_sampling_thread && _sampling_thread->joinable()){
+        _sampling_thread->join();
+    }
+    DESTROY_OBJECT(_sampling_thread);
+    _sampling_thread  = new std::thread(&SigSession::sample_thread_proc, this, _dev_inst, error_handler);
 }
 
 void SigSession::stop_capture()
@@ -512,9 +501,10 @@ void SigSession::stop_capture()
     sr_session_stop();
 
     // Check that sampling stopped
-    if (_sampling_thread.get())
+     if (_sampling_thread && _sampling_thread->joinable()){
         _sampling_thread->join();
-    _sampling_thread.reset();
+    }
+    DESTROY_OBJECT(_sampling_thread);
 }
 
 bool SigSession::get_capture_status(bool &triggered, int &progress)
@@ -542,13 +532,13 @@ bool SigSession::get_capture_status(bool &triggered, int &progress)
 
 vector< boost::shared_ptr<view::Signal> >& SigSession::get_signals()
 {
-    //boost::lock_guard<boost::mutex> lock(_signals_mutex);
+    //boost::lock_guard<std::mutex> lock(_signals_mutex);
     return _signals;
 }
 
 vector< boost::shared_ptr<view::GroupSignal> > SigSession::get_group_signals()
 {
-    //boost::lock_guard<boost::mutex> lock(_signals_mutex);
+    //boost::lock_guard<std::mutex> lock(_signals_mutex);
     return _group_traces;
 }
 
@@ -556,7 +546,8 @@ set< boost::shared_ptr<data::SignalData> > SigSession::get_data() const
 {
     //lock_guard<mutex> lock(_signals_mutex);
     set< boost::shared_ptr<data::SignalData> > data;
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> sig, _signals) {
+
+    for(auto &sig : _signals) {
         assert(sig);
         data.insert(sig->data());
     }
@@ -571,7 +562,7 @@ bool SigSession::get_instant()
 
 void SigSession::set_capture_state(capture_state state)
 {
-    boost::lock_guard<boost::mutex> lock(_sampling_mutex);
+    std::lock_guard<std::mutex> lock(_sampling_mutex);
     _capture_state = state;
     data_updated();
     capture_state_changed(state);
@@ -606,7 +597,7 @@ void SigSession::sample_thread_proc(DevInst *dev_inst,
 
 void SigSession::check_update()
 {
-    boost::lock_guard<boost::mutex> lock(_data_mutex);
+    std::lock_guard<std::mutex> lock(_data_mutex);
 
     if (_capture_state != Running)
         return;
@@ -868,7 +859,7 @@ void SigSession::reload()
 
 void SigSession::refresh(int holdtime)
 {
-    boost::lock_guard<boost::mutex> lock(_data_mutex);
+    std::lock_guard<std::mutex> lock(_data_mutex);
 
     data_lock();
 
@@ -876,7 +867,7 @@ void SigSession::refresh(int holdtime)
         _logic_data->init();
         //_cur_logic_snapshot.reset();
 
-        BOOST_FOREACH(const boost::shared_ptr<view::DecodeTrace> d, _decode_traces)
+        for(auto &d : _decode_traces)
         {
             assert(d);
             d->decoder()->init();
@@ -886,7 +877,7 @@ void SigSession::refresh(int holdtime)
     if (_dso_data) {
         _dso_data->init();
         // SpectrumStack
-        BOOST_FOREACH(const boost::shared_ptr<view::SpectrumTrace> m, _spectrum_traces)
+        for(auto &m : _spectrum_traces)
         {
             assert(m);
             m->get_spectrum_stack()->init();
@@ -988,7 +979,7 @@ void SigSession::feed_in_trigger(const ds_trigger_pos &trigger_pos)
 
 void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
 {
-    //boost::lock_guard<boost::mutex> lock(_data_mutex);
+    //boost::lock_guard<std::mutex> lock(_data_mutex);
     if (!_logic_data || _cur_logic_snapshot->memory_failed()) {
         qDebug() << "Unexpected logic packet";
         return;
@@ -1026,7 +1017,7 @@ void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
 
 void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
 {
-    //boost::lock_guard<boost::mutex> lock(_data_mutex);
+    //boost::lock_guard<std::mutex> lock(_data_mutex);
 
     if(!_dso_data || _cur_dso_snapshot->memory_failed())
     {
@@ -1038,7 +1029,7 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
     {
         std::map<int, bool> sig_enable;
         // reset scale of dso signal
-        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
+        for(auto &s : _signals)
         {
             assert(s);
             boost::shared_ptr<view::DsoSignal> dsoSig;
@@ -1055,7 +1046,7 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
         _cur_dso_snapshot->append_payload(dso);
     }
 
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals) {
+    for(auto &s : _signals) {
         boost::shared_ptr<view::DsoSignal> dsoSig;
         if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) && (dsoSig->enabled()))
             dsoSig->paint_prepare();
@@ -1064,14 +1055,7 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
     if (dso.num_samples != 0) {
         // update current sample rate
         set_cur_snap_samplerate(_dev_inst->get_sample_rate());
-//        // reset measure of dso signal
-//        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
-//        {
-//            assert(s);
-//            boost::shared_ptr<view::DsoSignal> dsoSig;
-//            if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)))
-//                dsoSig->set_mValid(false);
-//        }
+ 
     }
 
     if (_cur_dso_snapshot->memory_failed()) {
@@ -1081,7 +1065,7 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
     }
 
     // calculate related spectrum results
-    BOOST_FOREACH(const boost::shared_ptr<view::SpectrumTrace> m, _spectrum_traces)
+    for(auto &m : _spectrum_traces)
     {
         assert(m);
         if (m->enabled())
@@ -1105,7 +1089,7 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
 
 void SigSession::feed_in_analog(const sr_datafeed_analog &analog)
 {
-    //boost::lock_guard<boost::mutex> lock(_data_mutex);
+    //boost::lock_guard<std::mutex> lock(_data_mutex);
 
     if(!_analog_data || _cur_analog_snapshot->memory_failed())
     {
@@ -1116,7 +1100,7 @@ void SigSession::feed_in_analog(const sr_datafeed_analog &analog)
     if (_cur_analog_snapshot->last_ended())
     {
         // reset scale of analog signal
-        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
+        for(auto &s : _signals)
         {
             assert(s);
             boost::shared_ptr<view::AnalogSignal> analogSig;
@@ -1149,7 +1133,7 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
     assert(sdi);
     assert(packet);
 
-    boost::lock_guard<boost::mutex> lock(_data_mutex);
+    std::lock_guard<std::mutex> lock(_data_mutex);
 
     if (_data_lock && packet->type != SR_DF_END)
         return;
@@ -1203,9 +1187,9 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
     case SR_DF_END:
     {
         {
-            //boost::lock_guard<boost::mutex> lock(_data_mutex);
+            //boost::lock_guard<std::mutex> lock(_data_mutex);
             if (!_cur_logic_snapshot->empty()) {
-                BOOST_FOREACH(const boost::shared_ptr<view::GroupSignal> g, _group_traces)
+                for(auto &g : _group_traces)
                 {
                     assert(g);
 
@@ -1219,7 +1203,7 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
             _cur_dso_snapshot->capture_ended();
             _cur_analog_snapshot->capture_ended();
 
-            BOOST_FOREACH(const boost::shared_ptr<view::DecodeTrace> d, _decode_traces)
+            for(auto &d : _decode_traces)
                 d->frame_ended();
 
         }
@@ -1278,7 +1262,7 @@ void SigSession::hotplug_proc(boost::function<void (const QString)> error_handle
 
     tv.tv_sec = tv.tv_usec = 0;
     try {
-        while(_session) {
+        while(_session && !_bHotplugStop) {
             libusb_handle_events_timeout(NULL, &tv);
             if (_hot_attach) {
                 qDebug("DreamSourceLab hardware attached!");
@@ -1290,7 +1274,7 @@ void SigSession::hotplug_proc(boost::function<void (const QString)> error_handle
                 device_detach();
                 _hot_detach = false;
             }
-            boost::this_thread::sleep(boost::posix_time::millisec(100));
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     } catch(...) {
         qDebug("Interrupt exception for hotplug thread was thrown.");
@@ -1324,18 +1308,21 @@ void SigSession::start_hotplug_proc(boost::function<void (const QString)> error_
     qDebug() << "Starting a hotplug thread...\n";
     _hot_attach = false;
     _hot_detach = false;
-    _hotplug.reset(new boost::thread(
-        &SigSession::hotplug_proc, this, error_handler));
 
+    if (_hotplug && _hotplug->joinable()){
+        _hotplug->join();
+    }
+    DESTROY_OBJECT(_hotplug);
+    _hotplug = new std::thread(&SigSession::hotplug_proc, this, error_handler);
 }
 
 void SigSession::stop_hotplug_proc()
-{
-    if (_hotplug.get()) {
-        _hotplug->interrupt();
+{  
+    _bHotplugStop = true;
+     if (_hotplug && _hotplug->joinable()){
         _hotplug->join();
     }
-    _hotplug.reset();
+     DESTROY_OBJECT(_hotplug);
 }
 
 uint16_t SigSession::get_ch_num(int type)
@@ -1345,7 +1332,7 @@ uint16_t SigSession::get_ch_num(int type)
     uint16_t dso_ch_num = 0;
     uint16_t analog_ch_num = 0;
     if (_dev_inst->dev_inst()) {
-        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
+        for(auto &s : _signals)
         {
             assert(s);
             if (dynamic_pointer_cast<view::LogicSignal>(s) && s->enabled()) {
@@ -1408,7 +1395,7 @@ bool SigSession::add_decoder(srd_decoder *const dec, bool silent, DecoderStatus 
             new view::DecodeTrace(this, decoder_stack,
                 _decode_traces.size()));
         // set view early for decode start/end region setting
-        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals) {
+        for(auto &s : _signals) {
             if (s->get_view()) {
                 d->set_view(s->get_view());
                 break;
@@ -1465,6 +1452,8 @@ void SigSession::remove_decode_signal(int index)
     {
         if (cur_index == index)
         {
+            auto d = (*i)->decoder().get();
+            d->stop_decode(); //stop decoder thread
             _decode_traces.erase(i);
             signals_changed();
             return;
@@ -1522,7 +1511,7 @@ pv::data::DecoderModel* SigSession::get_decoder_model() const
 void SigSession::spectrum_rebuild()
 {
     bool has_dso_signal = false;
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals) {
+    for(auto &s : _signals) {
         boost::shared_ptr<view::DsoSignal> dsoSig;
         if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
             has_dso_signal = true;
@@ -1577,7 +1566,7 @@ void SigSession::math_rebuild(bool enable,
                               boost::shared_ptr<view::DsoSignal> dsoSig2,
                               data::MathStack::MathType type)
 {
-    boost::lock_guard<boost::mutex> lock(_data_mutex);
+    std::lock_guard<std::mutex> lock(_data_mutex);
     boost::shared_ptr<data::MathStack> math_stack(
         new data::MathStack(this, dsoSig1, dsoSig2, type));
     _math_trace.reset(new view::MathTrace(enable, math_stack, dsoSig1, dsoSig2));
@@ -1760,7 +1749,7 @@ int SigSession::get_map_zoom() const
 
 void SigSession::auto_end()
 {
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals) {
+    for(auto &s : _signals) {
         boost::shared_ptr<view::DsoSignal> dsoSig;
         if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
             dsoSig->auto_end();
@@ -1827,8 +1816,6 @@ void SigSession::set_stop_scale(float scale)
 
  sr_dev_inst* SigSession::get_dev_inst_c()
  {
-     void *p = this;
-     void *p2 = this->_appCntrol;
      if (_dev_inst != NULL){
          return _dev_inst->dev_inst();
      }
@@ -1844,7 +1831,7 @@ void SigSession::set_stop_scale(float scale)
  {
      if (_session == NULL)
         return;
-
+ 
      stop_capture();
 
      ds_trigger_destroy();
@@ -1861,7 +1848,7 @@ void SigSession::set_stop_scale(float scale)
      {
          stop_hotplug_proc();
          deregister_hotplug_callback();
-         _hotplug_handle = NULL;
+         _hotplug_handle = 0;
      }
  }
 

@@ -39,26 +39,13 @@
 #include <pv/view/decodetrace.h>
 #include <pv/device/devinst.h>
 #include <pv/dock/protocoldock.h>
-
-#include <boost/foreach.hpp>
+ 
  
 #include <QFileDialog>
 #include <QDir>
 
 #include "config/appconfig.h"
-
-using boost::dynamic_pointer_cast;
-using boost::mutex;
-using boost::thread;
-using boost::lock_guard;
-using std::deque;
-using std::make_pair;
-using std::min;
-using std::pair;
-using std::set;
-using std::string;
-using std::vector;
-
+ 
 namespace pv {
 
       char chunk_name[30] = {0};
@@ -82,7 +69,7 @@ StoreSession::StoreSession(SigSession *session) :
     _unit_count(0),
     _has_error(false),
     _canceled(false)
-{
+{ 
 }
 
 StoreSession::~StoreSession()
@@ -114,9 +101,8 @@ void StoreSession::wait()
 }
 
 void StoreSession::cancel()
-{
-    _canceled = true;
-    _thread.interrupt();
+{ 
+    _canceled = true; 
 }
 
 QList<QString> StoreSession::getSuportedExportFormats(){
@@ -147,7 +133,7 @@ bool StoreSession::save_start()
     }
 
     std::set<int> type_set;
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> sig, _session->get_signals()) {
+    for(auto &sig : _session->get_signals()) {
         assert(sig);
         type_set.insert(sig->get_type());
     }
@@ -190,7 +176,7 @@ bool StoreSession::save_start()
             if (ret != SR_OK) {
                 _error = tr("Failed to create zip file. Initialization error.");
             } else {
-                _thread = boost::thread(&StoreSession::save_proc, this, snapshot);
+                _thread = std::thread(&StoreSession::save_proc, this, snapshot);
                 return !_has_error;
             }
         }
@@ -208,7 +194,8 @@ bool StoreSession::save_start()
         }
         else
         {
-            _thread = boost::thread(&StoreSession::save_proc, this, snapshot);
+            if (_thread.joinable()) _thread.join();
+            _thread = std::thread(&StoreSession::save_proc, this, snapshot);
             return !_has_error;
         }
     }
@@ -230,7 +217,7 @@ void StoreSession::save_proc(boost::shared_ptr<data::Snapshot> snapshot)
 
     if ((logic_snapshot = boost::dynamic_pointer_cast<data::LogicSnapshot>(snapshot))) {
         uint16_t to_save_probes = 0;
-        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals()) {
+        for(auto &s : _session->get_signals()) {
             if (s->enabled() && logic_snapshot->has_data(s->get_index()))
                 to_save_probes++;
         }
@@ -238,13 +225,13 @@ void StoreSession::save_proc(boost::shared_ptr<data::Snapshot> snapshot)
         num = logic_snapshot->get_block_num();
         bool sample;
 
-        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals()) {
+        for(auto &s : _session->get_signals()) {
             int ch_type = s->get_type();
             if (ch_type == SR_CHANNEL_LOGIC) {
                 int ch_index = s->get_index();
                 if (!s->enabled() || !logic_snapshot->has_data(ch_index))
                     continue;
-                for (int i = 0; !boost::this_thread::interruption_requested() && i < num; i++) {
+                for (int i = 0; !_canceled && i < num; i++) {
                     uint8_t *buf = logic_snapshot->get_block_buf(i, ch_index, sample);
                     uint64_t size = logic_snapshot->get_block_size(i);
                     bool need_malloc = (buf == NULL);
@@ -283,7 +270,7 @@ void StoreSession::save_proc(boost::shared_ptr<data::Snapshot> snapshot)
         }
     } else {
         int ch_type = -1;
-        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals()) {
+        for(auto &s : _session->get_signals()) {
             ch_type = s->get_type();
             break;
         }
@@ -297,7 +284,7 @@ void StoreSession::save_proc(boost::shared_ptr<data::Snapshot> snapshot)
             const uint8_t *buf_start = (uint8_t *)snapshot->get_data();
             const uint8_t *buf_end = buf_start + _unit_count;
 
-            for (int i = 0; !boost::this_thread::interruption_requested() && i < num; i++) {
+            for (int i = 0; !_canceled && i < num; i++) {
                 const uint64_t size = snapshot->get_block_size(i);
                 if ((buf + size) > buf_end) {
                     uint8_t *tmp = (uint8_t *)malloc(size);
@@ -557,7 +544,7 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
 bool StoreSession::export_start()
 {
     std::set<int> type_set;
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> sig, _session->get_signals()) {
+    for(auto &sig : _session->get_signals()) {
         assert(sig);
         int _tp = sig->get_type();
         type_set.insert(_tp);
@@ -609,7 +596,8 @@ bool StoreSession::export_start()
     }
     else
     {
-        _thread = boost::thread(&StoreSession::export_proc, this, snapshot);
+        if (_thread.joinable()) _thread.join();
+        _thread = std::thread(&StoreSession::export_proc, this, snapshot);
         return !_has_error;
     }
 
@@ -716,12 +704,12 @@ void StoreSession::export_proc(boost::shared_ptr<data::Snapshot> snapshot)
         std::vector<uint8_t *> buf_vec;
         std::vector<bool> buf_sample;
 
-        for (int blk = 0; !boost::this_thread::interruption_requested()  &&
-                          blk < blk_num; blk++) {
+        for (int blk = 0; !_canceled  &&  blk < blk_num; blk++) {
             uint64_t buf_sample_num = logic_snapshot->get_block_size(blk) * 8;
             buf_vec.clear();
             buf_sample.clear();
-            BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals()) {
+
+            for(auto &s : _session->get_signals()) {
                 int ch_type = s->get_type();
                 if (ch_type == SR_CHANNEL_LOGIC) {
                     int ch_index = s->get_index();
@@ -738,8 +726,7 @@ void StoreSession::export_proc(boost::shared_ptr<data::Snapshot> snapshot)
             unsigned int size = usize;
             struct sr_datafeed_logic lp;
 
-            for(uint64_t i = 0; !boost::this_thread::interruption_requested() &&
-                                i < buf_sample_num; i+=usize){
+            for(uint64_t i = 0; !_canceled && i < buf_sample_num; i+=usize){
                 if(buf_sample_num - i < usize)
                     size = buf_sample_num - i;
                 uint8_t *xbuf = (uint8_t *)malloc(size * unitsize);
@@ -786,7 +773,7 @@ void StoreSession::export_proc(boost::shared_ptr<data::Snapshot> snapshot)
         unsigned int size = usize;
         struct sr_datafeed_dso dp; 
 
-        for(uint64_t i = 0; !boost::this_thread::interruption_requested() && i < _unit_count; i+=usize){
+        for(uint64_t i = 0; !_canceled && i < _unit_count; i+=usize){
             if(_unit_count - i < usize)
                 size = _unit_count - i;
 
@@ -813,7 +800,7 @@ void StoreSession::export_proc(boost::shared_ptr<data::Snapshot> snapshot)
         unsigned int size = usize;
         struct sr_datafeed_analog ap;
 
-        for(uint64_t i = 0; !boost::this_thread::interruption_requested() && i < _unit_count; i+=usize){
+        for(uint64_t i = 0; !_canceled && i < _unit_count; i+=usize){
             if(_unit_count - i < usize)
                 size = _unit_count - i;
             ap.data = &datat[i*snapshot->get_channel_num()];
@@ -879,13 +866,15 @@ QString StoreSession::decoders_gen()
 QJsonArray StoreSession::json_decoders()
 {
     QJsonArray dec_array;
-    BOOST_FOREACH(boost::shared_ptr<view::DecodeTrace> t, _session->get_decode_signals()) {
+
+    for(auto &t : _session->get_decode_signals()) {
         QJsonObject dec_obj;
         QJsonArray stack_array;
         QJsonObject show_obj;
         const boost::shared_ptr<data::DecoderStack>& stack = t->decoder();
         const std::list< boost::shared_ptr<data::decode::Decoder> >& decoder = stack->stack();
-        BOOST_FOREACH(boost::shared_ptr<data::decode::Decoder> dec, decoder) {
+
+        for(auto &dec : decoder) {
             QJsonArray ch_array;
             const srd_decoder *const d = dec->decoder();;
             const bool have_probes = (d->channels || d->opt_channels) != 0;
@@ -997,7 +986,8 @@ void StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_arra
             }
 
             const std::list< boost::shared_ptr<data::decode::Decoder> >& decoder = stack->stack();
-            BOOST_FOREACH(boost::shared_ptr<data::decode::Decoder> dec, decoder) {
+
+            for(auto &dec : decoder) {
                 const srd_decoder *const d = dec->decoder();
                 QJsonObject options_obj;
 
@@ -1271,7 +1261,7 @@ QString StoreSession::MakeExportFile(bool bDlg)
 bool StoreSession::IsLogicDataType()
 {
     std::set<int> type_set;
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> sig, _session->get_signals()) {
+    for(auto &sig : _session->get_signals()) {
         assert(sig);
         type_set.insert(sig->get_type());
     }

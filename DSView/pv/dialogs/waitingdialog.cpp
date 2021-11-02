@@ -20,8 +20,7 @@
  */
 
 #include "waitingdialog.h"
-
-#include <boost/foreach.hpp>
+ 
 
 #include <QMovie>
 #include <QAbstractButton>
@@ -186,12 +185,13 @@ void WaitingDialog::changeText()
                     g_variant_unref(gvar);
                     if (zero_fgain) {
                         boost::shared_ptr<view::DsoSignal> dsoSig;
-                        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals())
+                        
+                        for(auto &s : _session->get_signals())
                         {
                             if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)))
                                 dsoSig->set_enable(dsoSig->get_index() == 0);
                         }
-                        boost::this_thread::sleep(boost::posix_time::millisec(100));
+                        std::this_thread::sleep_for(std::chrono::milliseconds(100));
                         _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO_COMB, g_variant_new_boolean(true));
                     }
                 }

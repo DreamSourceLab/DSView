@@ -24,8 +24,7 @@
 
 #include <assert.h>
 #include <QRegExpValidator>
-
-#include <boost/foreach.hpp>
+ 
 
 namespace pv {
 namespace dialogs {
@@ -50,8 +49,8 @@ Search::Search(QWidget *parent, SigSession *session, std::map<uint16_t, QString>
     search_layout->setVerticalSpacing(0);
 
     int index = 0;
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> sig,
-                  _session->get_signals()) {
+
+    for(auto &sig :  _session->get_signals()) {
         assert(sig);
         boost::shared_ptr<view::LogicSignal> logic_sig;
         if ((logic_sig = boost::dynamic_pointer_cast<view::LogicSignal>(sig))) {
@@ -111,8 +110,7 @@ std::map<uint16_t, QString> Search::get_pattern()
     std::map<uint16_t, QString> pattern;
 
     int index = 0;
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> sig,
-                  _session->get_signals()) {
+    for(auto &sig :_session->get_signals()) {
         assert(sig);
         boost::shared_ptr<view::LogicSignal> logic_sig;
         if ((logic_sig = boost::dynamic_pointer_cast<view::LogicSignal>(sig))) {

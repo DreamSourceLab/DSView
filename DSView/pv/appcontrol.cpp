@@ -36,7 +36,6 @@ AppControl::AppControl()
 
     _device_manager = new pv::DeviceManager();
     _session = new pv::SigSession(_device_manager);
-    _session->_appCntrol = this;
 }
 
 AppControl::AppControl(AppControl &o)

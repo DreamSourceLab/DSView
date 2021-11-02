@@ -31,9 +31,7 @@
 #include <QTabBar>
 #include <QBitmap>
 
-#include <boost/foreach.hpp>
-
-
+  
 using namespace boost;
 using namespace std;
 using namespace pv::view;
@@ -74,7 +72,8 @@ LissajousOptions::LissajousOptions(SigSession *session, QWidget *parent) :
     _y_group = new QGroupBox(this);
     QHBoxLayout *xlayout = new QHBoxLayout();
     QHBoxLayout *ylayout = new QHBoxLayout();
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals()) {
+
+    for(auto &s : _session->get_signals()) {
         boost::shared_ptr<view::DsoSignal> dsoSig;
         if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
             QString index_str = QString::number(dsoSig->get_index());
@@ -182,7 +181,7 @@ void LissajousOptions::accept()
     bool enable = (xindex != -1 && yindex != -1 && _enable->isChecked());
     _session->lissajous_rebuild(enable, xindex, yindex, _percent->value());
 
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session->get_signals()) {
+    for(auto &s : _session->get_signals()) {
         boost::shared_ptr<view::DsoSignal> dsoSig;
         if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
             dsoSig->set_show(!enable);

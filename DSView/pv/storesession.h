@@ -24,8 +24,8 @@
 
 #include <stdint.h>
 #include <string>
-
-#include <boost/thread.hpp>
+#include <thread>
+ 
 #include <boost/shared_ptr.hpp>
 #include <QObject>
 
@@ -106,7 +106,7 @@ private:
     QString         _suffix;
     SigSession      *_session;
 
-	boost::thread   _thread;
+	std::thread   _thread;
 
     const struct sr_output_module* _outModule;
  
@@ -114,8 +114,8 @@ private:
 	uint64_t        _unit_count;
     bool            _has_error;
 	QString         _error;
-    bool            _canceled;
-    ZipMaker        m_zipDoc;
+    volatile bool   _canceled;
+    ZipMaker        m_zipDoc;  
 };
 
 } // pv

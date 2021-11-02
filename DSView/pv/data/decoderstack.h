@@ -27,13 +27,14 @@
 
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/thread.hpp>
+ 
 
 #include <QObject>
 #include <QString>
+#include <mutex>
+#include <thread>
 
-#include "../data/decode/row.h"
-#include "../data/decode/rowdata.h"
+#include "decode/row.h" 
 #include "../data/signaldata.h"
 
 class DecoderStatus;
@@ -57,6 +58,7 @@ class LogicSnapshot;
 namespace decode {
 class Annotation;
 class Decoder;
+class RowData;
 }
 
 class Logic;
@@ -86,9 +88,14 @@ public:
 
 	virtual ~DecoderStack();
 
-    const std::list< boost::shared_ptr<decode::Decoder> >& stack() const;
+    inline std::list< boost::shared_ptr<decode::Decoder> >& stack(){
+        return _stack;
+    }
+
 	void push(boost::shared_ptr<decode::Decoder> decoder);
+
     void remove(boost::shared_ptr<decode::Decoder>& decoder);
+
     void build_row();
 
 	int64_t samples_decoded() const;
@@ -153,8 +160,7 @@ private:
 
 	void decode_proc();
 
-	static void annotation_callback(srd_proto_data *pdata,
-		void *decoder);
+	static void annotation_callback(srd_proto_data *pdata, void *decoder);
 
 private slots:
 	void on_new_frame();
@@ -167,45 +173,39 @@ signals:
 	void new_decode_data();
     void decode_done();
 
-private:
-	pv::SigSession *_session;
+private: 
+	std::list< boost::shared_ptr<decode::Decoder> > _stack;
+
+	boost::shared_ptr<pv::data::LogicSnapshot> _snapshot;
+  
+    std::map<const decode::Row, decode::RowData*>   _rows;
+    std::map<const decode::Row, bool>       _rows_gshow;
+    std::map<const decode::Row, bool>       _rows_lshow;
+    std::map<std::pair<const srd_decoder*, int>, decode::Row> _class_rows;
+  
+    SigSession      *_session;
+    decode_state    _decode_state;
+    bool            _options_changed;
+    bool            _no_memory;
+    int64_t         _mark_index;
+    DecoderStatus   *_decoder_status;
+    QString         _error_message;
+    int64_t	        _samples_decoded;
+    uint64_t        _sample_count;
+	bool            _frame_complete;
+    volatile bool   _bThreadStop;
+    
+
+    std::thread     *_decode_thread;
+    mutable std::mutex _output_mutex;
 
 	/**
 	 * This mutex prevents more than one decode operation occuring
 	 * concurrently.
 	 * @todo A proper solution should be implemented to allow multiple
 	 * decode operations.
-	 */
-    static boost::mutex _global_decode_mutex;
-
-	std::list< boost::shared_ptr<decode::Decoder> > _stack;
-
-	boost::shared_ptr<pv::data::LogicSnapshot> _snapshot;
-
-    //mutable boost::mutex _input_mutex;
-    //mutable boost::condition_variable _input_cond;
-    uint64_t _sample_count;
-	bool _frame_complete;
-
-    mutable boost::recursive_mutex _output_mutex;
-    //mutable boost::mutex _output_mutex;
-	int64_t	_samples_decoded;
-
-    std::map<const decode::Row, decode::RowData> _rows;
-    std::map<const decode::Row, bool> _rows_gshow;
-    std::map<const decode::Row, bool> _rows_lshow;
-    std::map<std::pair<const srd_decoder*, int>, decode::Row> _class_rows;
-
-	QString _error_message;
-
-    std::unique_ptr<boost::thread> _decode_thread;
-    decode_state _decode_state;
-
-    bool _options_changed;
-    bool _no_memory;
-
-    int64_t _mark_index;
-    DecoderStatus *_decoder_status;
+	 */ 
+    static std::mutex _global_decode_mutex;
 
 	friend class DecoderStackTest::TwoDecoderStack;
 };

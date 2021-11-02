@@ -23,8 +23,7 @@
 #include <assert.h>
 #include <limits.h>
 #include <math.h>
-
-#include <boost/foreach.hpp>
+ 
  
 #include <QEvent>
 #include <QMouseEvent>
@@ -389,22 +388,22 @@ vector< boost::shared_ptr<Trace> > View::get_traces(int type)
     const vector< boost::shared_ptr<SpectrumTrace> > spectrums(_session->get_spectrum_traces());
 
     vector< boost::shared_ptr<Trace> > traces;
-    BOOST_FOREACH(boost::shared_ptr<Trace> t, sigs) {
+    for(auto &t : sigs) {
         if (type == ALL_VIEW || _trace_view_map[t->get_type()] == type)
             traces.push_back(t);
     }
  
-    BOOST_FOREACH(boost::shared_ptr<Trace> t, decode_sigs) {
+    for(auto &t : decode_sigs) {
         if (type == ALL_VIEW || _trace_view_map[t->get_type()] == type)
             traces.push_back(t);
     }
  
-    BOOST_FOREACH(boost::shared_ptr<Trace> t, groups) {
+    for(auto &t : groups) {
         if (type == ALL_VIEW || _trace_view_map[t->get_type()] == type)
             traces.push_back(t);
     }
 
-    BOOST_FOREACH(boost::shared_ptr<Trace> t, spectrums) {
+    for(auto &t : spectrums) {
         if (type == ALL_VIEW || _trace_view_map[t->get_type()] == type)
             traces.push_back(t);
     }
@@ -586,15 +585,18 @@ const QPoint& View::hover_point() const
 
 void View::normalize_layout()
 {
-    const vector< boost::shared_ptr<Trace> > traces(get_traces(ALL_VIEW));
+    vector< boost::shared_ptr<Trace> > traces(get_traces(ALL_VIEW));
 
 	int v_min = INT_MAX;
-    BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
-        v_min = min(t->get_v_offset(), v_min);
+    for(auto &t : traces){
+          v_min = min(t->get_v_offset(), v_min);
+    }
 
 	const int delta = -min(v_min, 0);
-    BOOST_FOREACH(boost::shared_ptr<Trace> t, traces)
+
+    for(auto &t : traces){
         t->set_v_offset(t->get_v_offset() + delta);
+    }        
 
     verticalScrollBar()->setSliderPosition(delta);
 	v_scroll_value_changed(verticalScrollBar()->sliderPosition());
@@ -696,7 +698,7 @@ void View::signals_changed()
     vector< boost::shared_ptr<Trace> > time_traces;
     vector< boost::shared_ptr<Trace> > fft_traces;
 
-    BOOST_FOREACH(const boost::shared_ptr<Trace> t, get_traces(ALL_VIEW)) {
+    for(auto &t : get_traces(ALL_VIEW)) {
         if (_trace_view_map[t->get_type()] == TIME_VIEW)
             time_traces.push_back(t);
         else if (_trace_view_map[t->get_type()] == FFT_VIEW)
@@ -711,7 +713,7 @@ void View::signals_changed()
             _viewport_list.push_back(_fft_viewport);
             _vsplitter->refresh();
         }
-        BOOST_FOREACH(boost::shared_ptr<Trace> t, fft_traces) {
+        for(auto &t : fft_traces) {
             t->set_view(this);
             t->set_viewport(_fft_viewport);
             t->set_totalHeight(_fft_viewport->height());
@@ -732,7 +734,7 @@ void View::signals_changed()
     }
 
     if (!time_traces.empty() && _time_viewport) {
-        BOOST_FOREACH(const boost::shared_ptr<Trace> t, time_traces) {
+        for(auto &t : time_traces) {
             assert(t);
             if (dynamic_pointer_cast<DsoSignal>(t) ||
                 t->enabled())
@@ -766,7 +768,8 @@ void View::signals_changed()
         }
         _spanY = _signalHeight + 2 * actualMargin;
         int next_v_offset = actualMargin;
-        BOOST_FOREACH(boost::shared_ptr<Trace> t, time_traces) {
+
+        for(auto &t : time_traces) {
             t->set_view(this);
             t->set_viewport(_time_viewport);
             if (t->rows_size() == 0)
@@ -847,7 +850,7 @@ int View::headerWidth()
 
     const vector< boost::shared_ptr<Trace> > traces(get_traces(ALL_VIEW));
     if (!traces.empty()) {
-        BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
+        for(auto &t : traces)
             headerWidth = max(t->get_name_width() + t->get_leftWidth() + t->get_rightWidth(),
                               headerWidth);
     }
@@ -1090,7 +1093,7 @@ QRect View::get_view_rect()
 {
     if (_session->get_device()->dev_inst()->mode == DSO) {
         const vector< boost::shared_ptr<Signal> > sigs(_session->get_signals());
-        BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+        for(auto &s : sigs) {
             return s->get_view_rect();
         }
     }
@@ -1103,7 +1106,7 @@ int View::get_view_width()
     int view_width = 0;
     if (_session->get_device()->dev_inst()->mode == DSO) {
         const vector< boost::shared_ptr<Signal> > sigs(_session->get_signals());
-        BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+        for(auto &s : sigs) {
             view_width = max(view_width, s->get_view_rect().width());
         }
     } else {
@@ -1118,7 +1121,7 @@ int View::get_view_height()
     int view_height = 0;
     if (_session->get_device()->dev_inst()->mode == DSO) {
         const vector< boost::shared_ptr<Signal> > sigs(_session->get_signals());
-        BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+        for(auto &s : sigs) {
             view_height = max(view_height, s->get_view_rect().height());
         }
     } else {
@@ -1193,7 +1196,7 @@ void View::show_region(uint64_t start, uint64_t end, bool keep)
 void View::viewport_update()
 {
     _viewcenter->update();
-    BOOST_FOREACH(QWidget *viewport, _viewport_list)
+    for(QWidget *viewport : _viewport_list)
         viewport->update();
 }
 

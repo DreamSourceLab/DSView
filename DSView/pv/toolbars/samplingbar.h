@@ -136,7 +136,7 @@ namespace pv
         private:
             SigSession *_session;
 
-            mutable boost::recursive_mutex _sampling_mutex;
+            mutable std::mutex _sampling_mutex;
             bool _enable;
             bool _sampling;
 

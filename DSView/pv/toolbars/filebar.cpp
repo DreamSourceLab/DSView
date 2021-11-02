@@ -20,7 +20,7 @@
  */
 
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
+ 
 #include <boost/shared_ptr.hpp>
 
 #include <QMetaObject>
@@ -167,6 +167,7 @@ void FileBar::session_error(
 void FileBar::show_session_error(
     const QString text, const QString info_text)
 {  
+    (void)text;
     MsgBox::Show(NULL, info_text.toStdString().c_str(), this);
 }
 

@@ -23,7 +23,8 @@
 #ifndef DSVIEW_PV_DATA_SNAPSHOT_H
 #define DSVIEW_PV_DATA_SNAPSHOT_H
 
-#include <boost/thread.hpp>
+#include <mutex>
+#include <vector>
 
 namespace pv {
 namespace data {
@@ -64,11 +65,11 @@ protected:
     virtual void free_data();
 
 protected:
-    mutable boost::recursive_mutex _mutex;
+     mutable std::mutex  _mutex;
 
     //std::vector<uint8_t> _data;
     void* _data;
-    std::vector<uint16_t> _ch_index;
+    mutable std::vector<uint16_t> _ch_index;
 
     uint64_t _capacity;
     unsigned int _channel_num;

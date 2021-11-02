@@ -45,7 +45,7 @@
 #include <QSizePolicy>
 #include <assert.h>
 
-#include <boost/foreach.hpp>
+ 
 #include <boost/shared_ptr.hpp>
 #include <algorithm>
 #include "../ui/msgbox.h"
@@ -377,7 +377,7 @@ void ProtocolDock::decoded_progress(int progress)
         _session->get_decode_signals());
     int index = 0;
 
-    BOOST_FOREACH(boost::shared_ptr<pv::view::DecodeTrace> d, decode_sigs) {
+    for(auto &d : decode_sigs) {
         pg = d->get_progress();
         if (d->decoder()->out_of_memory())
             err = tr("(Out of Memory)");
@@ -416,7 +416,8 @@ void ProtocolDock::set_model()
     // clear mark_index of all DecoderStacks
     const std::vector< boost::shared_ptr<pv::view::DecodeTrace> > decode_sigs(
         _session->get_decode_signals());
-    BOOST_FOREACH(boost::shared_ptr<pv::view::DecodeTrace> d, decode_sigs) {
+        
+    for(auto &d : decode_sigs) {
         d->decoder()->set_mark_index(-1);
     }
 }
@@ -432,7 +433,7 @@ void ProtocolDock::update_model()
         decoder_model->setDecoderStack(decode_sigs.at(0)->decoder());
     else {
         unsigned int index = 0;
-        BOOST_FOREACH(const boost::shared_ptr<pv::view::DecodeTrace> d, decode_sigs) {
+        for(auto &d : decode_sigs) {
             if (d->decoder() == decoder_model->getDecoderStack()) {
                 decoder_model->setDecoderStack(d->decoder());
                 break;
@@ -473,9 +474,11 @@ void ProtocolDock::item_clicked(const QModelIndex &index)
         if (decoder_stack->list_annotation(ann, index.column(), index.row())) {
             const std::vector< boost::shared_ptr<pv::view::DecodeTrace> > decode_sigs(
                 _session->get_decode_signals());
-            BOOST_FOREACH(boost::shared_ptr<pv::view::DecodeTrace> d, decode_sigs) {
+
+            for(auto &d : decode_sigs) {
                 d->decoder()->set_mark_index(-1);
             }
+
             decoder_stack->set_mark_index((ann.start_sample()+ann.end_sample())/2);
             _session->show_region(ann.start_sample(), ann.end_sample(), false);
         }
@@ -566,7 +569,8 @@ void ProtocolDock::nav_table_view()
             decoder_stack->list_annotation(ann, index.column(), index.row());
             const std::vector< boost::shared_ptr<pv::view::DecodeTrace> > decode_sigs(
                 _session->get_decode_signals());
-            BOOST_FOREACH(boost::shared_ptr<pv::view::DecodeTrace> d, decode_sigs) {
+
+            for(auto &d : decode_sigs) {
                 d->decoder()->set_mark_index(-1);
             }
             decoder_stack->set_mark_index((ann.start_sample()+ann.end_sample())/2);
