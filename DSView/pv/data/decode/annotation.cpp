@@ -172,26 +172,8 @@ Annotation::~Annotation()
 {
      
 }
-
-uint64_t Annotation::start_sample() const
-{
-	return _start_sample;
-}
-
-uint64_t Annotation::end_sample() const
-{
-	return _end_sample;
-}
-
-int Annotation::format() const
-{
-	return _format;
-}
-
-int Annotation::type() const
-{
-    return _type;
-}
+ 
+ 
 
 const std::vector<QString>& Annotation::annotations() const
 {

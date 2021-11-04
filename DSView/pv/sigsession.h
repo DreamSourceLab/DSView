@@ -24,9 +24,7 @@
 #define DSVIEW_PV_SIGSESSION_H
 
 #include <libsigrok4DSL/libsigrok.h>
-#include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp> 
+#include <boost/function.hpp>  
 
 #include <string>
 #include <utility>
@@ -139,7 +137,7 @@ public:
 
 	~SigSession(); 
 
-    DevInst* get_device() const;
+    DevInst* get_device();
 
 	/**
 	 * Sets device instance that will be used in the next capture session.
@@ -156,20 +154,20 @@ public:
 
     void release_device(DevInst *dev_inst);
 
-	capture_state get_capture_state() const;
+	capture_state get_capture_state();
 
-    uint64_t cur_samplerate() const;
-    uint64_t cur_snap_samplerate() const;
-    uint64_t cur_samplelimits() const;
-    double cur_sampletime() const;
-    double cur_snap_sampletime() const;
-    double cur_view_time() const;
+    uint64_t cur_samplerate();
+    uint64_t cur_snap_samplerate();
+    uint64_t cur_samplelimits();
+    double cur_sampletime();
+    double cur_snap_sampletime();
+    double cur_view_time();
 
     void set_cur_snap_samplerate(uint64_t samplerate);
     void set_cur_samplelimits(uint64_t samplelimits);
     void set_session_time(QDateTime time);
-    QDateTime get_session_time() const;
-    uint64_t get_trigger_pos() const;
+    QDateTime get_session_time();
+    uint64_t get_trigger_pos();
 
     void start_capture(bool instant,
 		boost::function<void (const QString)> error_handler);
@@ -177,19 +175,15 @@ public:
     bool get_capture_status(bool &triggered, int &progress);
     void container_init();
 
-    std::set< boost::shared_ptr<data::SignalData> > get_data() const;
+    std::set<data::SignalData*> get_data();
 
-	std::vector< boost::shared_ptr<view::Signal> >&
-		get_signals();
+	std::vector<view::Signal*>& get_signals();
 
-    std::vector< boost::shared_ptr<view::GroupSignal> >
-        get_group_signals();
-
+    std::vector<view::GroupSignal*>& get_group_signals();
 
     bool add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus);
 
-    std::vector< boost::shared_ptr<view::DecodeTrace> >
-        get_decode_signals() const;
+    std::vector<view::DecodeTrace*>& get_decode_signals();
 
     void remove_decode_signal(view::DecodeTrace *signal);
 
@@ -199,17 +193,13 @@ public:
 
     void rst_decoder(view::DecodeTrace *signal);
 
-    pv::data::DecoderModel* get_decoder_model() const;
+    pv::data::DecoderModel* get_decoder_model();
 
+    std::vector<view::SpectrumTrace*>& get_spectrum_traces();
 
-    std::vector< boost::shared_ptr<view::SpectrumTrace> >
-        get_spectrum_traces();
+    view::LissajousTrace* get_lissajous_trace();
 
-    boost::shared_ptr<view::LissajousTrace>
-        get_lissajous_trace();
-
-    boost::shared_ptr<view::MathTrace>
-        get_math_trace();
+    view::MathTrace* get_math_trace();
 
     void init_signals();
 
@@ -232,40 +222,39 @@ public:
     void spectrum_rebuild();
     void lissajous_rebuild(bool enable, int xindex, int yindex, double percent);
     void lissajous_disable();
-    void math_rebuild(bool enable,
-                      boost::shared_ptr<pv::view::DsoSignal> dsoSig1,
-                      boost::shared_ptr<pv::view::DsoSignal> dsoSig2,
+    void math_rebuild(bool enable,pv::view::DsoSignal *dsoSig1,
+                      pv::view::DsoSignal *dsoSig2,
                       data::MathStack::MathType type);
     void math_disable();
 
-    bool trigd() const;
-    uint8_t trigd_ch() const;
+    bool trigd();
+    uint8_t trigd_ch();
 
-    boost::shared_ptr<data::Snapshot> get_snapshot(int type);
+    data::Snapshot* get_snapshot(int type);
 
-    error_state get_error() const;
+    error_state get_error();
     void set_error(error_state state);
     void clear_error();
-    uint64_t get_error_pattern() const;
+    uint64_t get_error_pattern();
 
-    run_mode get_run_mode() const;
+    run_mode get_run_mode();
     void set_run_mode(run_mode mode);
-    int get_repeat_intvl() const;
+    int get_repeat_intvl();
     void set_repeat_intvl(int interval);
-    bool isRepeating() const;
+    bool isRepeating();
     bool repeat_check();
-    int get_repeat_hold() const;
+    int get_repeat_hold();
 
-    int get_map_zoom() const;
+    int get_map_zoom();
 
     void set_save_start(uint64_t start);
     void set_save_end(uint64_t end);
-    uint64_t get_save_start() const;
-    uint64_t get_save_end() const;
-    bool get_saving() const;
+    uint64_t get_save_start();
+    uint64_t get_save_end();
+    bool get_saving();
     void set_saving(bool saving);
     void set_stop_scale(float scale);
-    float stop_scale() const;
+    float stop_scale();
 
     void exit_capture();
 
@@ -402,25 +391,24 @@ private:
     uint64_t _cur_samplelimits;
 
     //mutable std::mutex _signals_mutex;
-	std::vector< boost::shared_ptr<view::Signal> > _signals;
-    std::vector< boost::shared_ptr<view::GroupSignal> > _group_traces;
+	std::vector<view::Signal*> _signals;
+    std::vector<view::GroupSignal*> _group_traces;
 
-    std::vector< boost::shared_ptr<view::DecodeTrace> > _decode_traces;
-    pv::data::DecoderModel *_decoder_model;
+    std::vector<view::DecodeTrace*> _decode_traces;
+    pv::data::DecoderModel  *_decoder_model;
 
-    std::vector< boost::shared_ptr<view::SpectrumTrace> > _spectrum_traces;
-    boost::shared_ptr<view::LissajousTrace> _lissajous_trace;
-    boost::shared_ptr<view::MathTrace> _math_trace;
+    std::vector<view::SpectrumTrace*> _spectrum_traces;
+    view::LissajousTrace    *_lissajous_trace;
+    view::MathTrace *_math_trace;
 
     mutable std::mutex _data_mutex;
-	boost::shared_ptr<data::Logic> _logic_data;
-	boost::shared_ptr<data::LogicSnapshot> _cur_logic_snapshot;
-    boost::shared_ptr<data::Dso> _dso_data;
-    boost::shared_ptr<data::DsoSnapshot> _cur_dso_snapshot;
-	boost::shared_ptr<data::Analog> _analog_data;
-	boost::shared_ptr<data::AnalogSnapshot> _cur_analog_snapshot;
-    boost::shared_ptr<data::Group> _group_data;
-    boost::shared_ptr<data::GroupSnapshot> _cur_group_snapshot;
+	data::Logic *_logic_data;
+	data::LogicSnapshot *_cur_logic_snapshot;
+    data::Dso *_dso_data;
+    data::DsoSnapshot *_cur_dso_snapshot;
+	data::Analog *_analog_data;
+	data::AnalogSnapshot *_cur_analog_snapshot;
+    data::Group *_group_data; 
     int _group_cnt;
 
 	std::thread     *_sampling_thread;

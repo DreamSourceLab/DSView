@@ -69,7 +69,7 @@ public:
     void set_grabbed_cursor(TimeMarker* grabbed_marker);
     void rel_grabbed_cursor();
 
-    double get_min_period() const;
+    double get_min_period();
 
 private:
 	void paintEvent(QPaintEvent *event);

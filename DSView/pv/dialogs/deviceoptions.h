@@ -36,9 +36,7 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QRadioButton>
-#include <QTimer>
-
-#include <boost/shared_ptr.hpp>
+#include <QTimer> 
 
 #include <libsigrok4DSL/libsigrok.h>
 #include "../device/devinst.h"

@@ -46,11 +46,11 @@ XCursor::XCursor(View &view, QColor &colour,
 	_colour(colour)
 {
     _dsoSig = NULL;
-    const std::vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
+    const auto &sigs = _view.session().get_signals();
     
     for(auto &s : sigs) {
-        boost::shared_ptr<DsoSignal> dsoSig;
-        if ((dsoSig = dynamic_pointer_cast<DsoSignal>(s)))
+        DsoSignal *dsoSig = NULL;
+        if ((dsoSig = dynamic_cast<DsoSignal*>(s)))
             if (dsoSig->enabled()) {
                 _dsoSig = dsoSig;
                 break;
@@ -70,7 +70,7 @@ XCursor::XCursor(const XCursor &x) :
 {
 }
 
-QColor XCursor::colour() const
+QColor XCursor::colour()
 {
     return _colour;
 }
@@ -83,16 +83,16 @@ void XCursor::set_colour(QColor color)
 /**
  * Gets/Sets the mapping channel of the marker
  */
-boost::shared_ptr<DsoSignal> XCursor::channel() const
+DsoSignal* XCursor::channel()
 {
     return _dsoSig;
 }
-void XCursor::set_channel(boost::shared_ptr<DsoSignal> sig)
+void XCursor::set_channel(DsoSignal *sig)
 {
     _dsoSig = sig;
 }
 
-enum XCursor::XCur_type XCursor::grabbed() const
+enum XCursor::XCur_type XCursor::grabbed()
 {
     return _grabbed;
 }
@@ -108,7 +108,7 @@ void XCursor::rel_grabbed()
     _grabbed = XCur_None;
 }
 
-double XCursor::value(XCur_type type) const
+double XCursor::value(XCur_type type)
 {
     if (type == XCur_Y)
         return _yvalue;
@@ -182,7 +182,7 @@ void XCursor::paint(QPainter &p, const QRect &rect, XCur_type highlight,  int or
  * @param rect The rectangle of the xcursor area.
  * @return Returns the map label rectangle.
  */
-QRect XCursor::get_map_rect(const QRect &rect) const
+QRect XCursor::get_map_rect(const QRect &rect)
 {
     const int width = 10;
     const int64_t y = rect.top() + _value0 * rect.height() - width/2;
@@ -194,7 +194,7 @@ QRect XCursor::get_map_rect(const QRect &rect) const
  * @param rect The rectangle of the xcursor area.
  * @return Returns the close label rectangle.
  */
-QRect XCursor::get_close_rect(const QRect &rect) const
+QRect XCursor::get_close_rect(const QRect &rect)
 {
     const int width = 10;
     const int64_t y = rect.top() + _value1 * rect.height() - width/2;

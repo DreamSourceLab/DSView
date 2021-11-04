@@ -34,13 +34,13 @@ namespace pv {
 namespace prop {
 
 Enum::Enum(QString name, QString label,
-    vector<pair<GVariant*, QString> > values,
+    std::vector<pair<GVariant*, QString> > values,
     Getter getter, Setter setter) :
     Property(name, label, getter, setter),
 	_values(values),
 	_selector(NULL)
 {
-    for (vector< pair<GVariant*, QString> >::const_iterator i =
+    for (std::vector< pair<GVariant*, QString> >::const_iterator i =
         _values.begin(); i != _values.end(); i++)
         g_variant_ref((*i).first);
 }

@@ -27,9 +27,7 @@
 #include <QDateTime>
 #include <QPushButton>
 #include <QToolButton>
-
  
-#include <boost/shared_ptr.hpp>
 
 #include <libsigrok4DSL/libsigrok.h>
 

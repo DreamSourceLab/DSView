@@ -31,8 +31,7 @@
 #include <QCheckBox>
 #include <QRadioButton>
 #include <QSlider>
-
-#include <boost/shared_ptr.hpp>
+ 
 
 #include "../view/dsosignal.h"
 #include "../toolbars/titlebar.h"

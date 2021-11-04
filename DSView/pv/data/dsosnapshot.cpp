@@ -210,7 +210,7 @@ const uint8_t *DsoSnapshot::get_samples(
 }
 
 void DsoSnapshot::get_envelope_section(EnvelopeSection &s,
-    uint64_t start, uint64_t end, float min_length, int probe_index) const
+    uint64_t start, uint64_t end, float min_length, int probe_index)
 {
 	assert(end <= get_sample_count());
 	assert(start <= end);
@@ -348,7 +348,7 @@ void DsoSnapshot::append_payload_to_envelope_levels(bool header)
     _envelope_done = true;
 }
 
-double DsoSnapshot::cal_vrms(double zero_off, int index) const
+double DsoSnapshot::cal_vrms(double zero_off, int index)
 {
     assert(index >= 0);
     //assert(index < _channel_num);
@@ -383,7 +383,7 @@ double DsoSnapshot::cal_vrms(double zero_off, int index) const
     return vrms;
 }
 
-double DsoSnapshot::cal_vmean(int index) const
+double DsoSnapshot::cal_vmean(int index)
 {
     assert(index >= 0);
     //assert(index < _channel_num);

@@ -22,8 +22,7 @@
 
 #include "logic.h"
 #include "logicsnapshot.h"
- 
-using namespace boost;
+
 using namespace std;
 
 namespace pv {
@@ -34,13 +33,12 @@ Logic::Logic() :
 {
 }
 
-void Logic::push_snapshot(
-	boost::shared_ptr<LogicSnapshot> &snapshot)
+void Logic::push_snapshot(LogicSnapshot *snapshot)
 {
 	_snapshots.push_front(snapshot);
 }
 
-deque< boost::shared_ptr<LogicSnapshot> >& Logic::get_snapshots()
+std::deque<LogicSnapshot*>& Logic::get_snapshots()
 {
 	return _snapshots;
 }

@@ -64,12 +64,12 @@ void Snapshot::free_data()
     _ch_index.clear();
 }
 
-bool Snapshot::memory_failed() const
+bool Snapshot::memory_failed()
 {
     return _memory_failed;
 }
 
-bool Snapshot::empty() const
+bool Snapshot::empty()
 {
     if (get_sample_count() == 0)
         return true;
@@ -77,7 +77,7 @@ bool Snapshot::empty() const
         return false;
 }
 
-bool Snapshot::last_ended() const
+bool Snapshot::last_ended()
 {
     return _last_ended;
 }
@@ -87,13 +87,13 @@ void Snapshot::set_last_ended(bool ended)
     _last_ended = ended;
 }
 
-uint64_t Snapshot::get_sample_count() const
+uint64_t Snapshot::get_sample_count()
 {
     std::lock_guard<std::mutex> lock(_mutex);
     return _sample_count;
 }
 
-uint64_t Snapshot::get_ring_start() const
+uint64_t Snapshot::get_ring_start()
 {
     std::lock_guard<std::mutex> lock(_mutex);
     if (_sample_count < _total_sample_count)
@@ -102,7 +102,7 @@ uint64_t Snapshot::get_ring_start() const
         return _ring_sample_count;
 }
 
-uint64_t Snapshot::get_ring_end() const
+uint64_t Snapshot::get_ring_end()
 {
     std::lock_guard<std::mutex> lock(_mutex);
     if (_sample_count == 0)
@@ -113,22 +113,22 @@ uint64_t Snapshot::get_ring_end() const
         return _ring_sample_count - 1;
 }
 
-const void* Snapshot::get_data() const
+const void* Snapshot::get_data()
 {
     return _data;
 }
 
-int Snapshot::unit_size() const
+int Snapshot::unit_size()
 {
     return _unit_size;
 }
 
-uint8_t Snapshot::get_unit_bytes() const
+uint8_t Snapshot::get_unit_bytes()
 {
     return _unit_bytes;
 }
 
-unsigned int Snapshot::get_channel_num() const
+unsigned int Snapshot::get_channel_num()
 {
     return _channel_num;
 }

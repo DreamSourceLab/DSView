@@ -24,8 +24,7 @@
 #define DSVIEW_PV_DATA_GROUP_H
 
 #include "signaldata.h"
-
-#include <boost/shared_ptr.hpp>
+ 
 #include <deque>
 
 namespace pv {
@@ -38,17 +37,15 @@ class Group : public SignalData
 public:
     Group();
 
-	void push_snapshot(
-        boost::shared_ptr<GroupSnapshot> &snapshot);
+	void push_snapshot(GroupSnapshot *snapshot);
 
-    std::deque< boost::shared_ptr<GroupSnapshot> >&
-		get_snapshots();
+    std::deque<GroupSnapshot*>& get_snapshots();
 
     void clear();
     void init();
 
 private:
-    std::deque< boost::shared_ptr<GroupSnapshot> > _snapshots;
+    std::deque<GroupSnapshot*> _snapshots;
 };
 
 } // namespace data

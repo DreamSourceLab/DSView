@@ -50,7 +50,7 @@ protected:
     virtual ~DevInst();
 
 public: 
-	SigSession* owner() const;
+	SigSession* owner();
  
     GVariant* get_config(const sr_channel *ch, const sr_channel_group *group, int key);
 
@@ -108,7 +108,7 @@ public:
     QString name();
  
 
-    bool is_usable() const;
+    bool is_usable();
 
     void destroy();
 
@@ -117,17 +117,17 @@ public:
 
 	virtual void run();
 
-    virtual void* get_id() const;
+    virtual void* get_id();
 
-    virtual sr_dev_inst* dev_inst() const = 0;
+    virtual sr_dev_inst* dev_inst() = 0;
 
     virtual void use(SigSession *owner);
 
 	virtual void release();
 
-    virtual bool is_trigger_enabled() const;
+    virtual bool is_trigger_enabled();
 
-    virtual QString format_device_title() const = 0;
+    virtual QString format_device_title() = 0;
 
 signals:
     void device_updated();

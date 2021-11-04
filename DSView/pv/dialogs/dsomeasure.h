@@ -27,8 +27,7 @@
 #include <QToolButton>
 #include <QDialogButtonBox>
 #include <QTabWidget>
-
-#include <boost/shared_ptr.hpp>
+ 
 
 #include "../view/dsosignal.h"
 #include "../toolbars/titlebar.h"
@@ -57,7 +56,7 @@ public:
     static QString get_ms_text(int ms_type);
 
 private:
-    void add_measure(QWidget *widget, const boost::shared_ptr<view::DsoSignal> dsoSig);
+    void add_measure(QWidget *widget, const view::DsoSignal *dsoSig);
 
 private slots:
     void set_measure(bool en);

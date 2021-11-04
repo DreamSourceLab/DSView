@@ -33,9 +33,7 @@
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
 #include "../device/devinst.h"
-
-#include <boost/shared_ptr.hpp>
-
+ 
 namespace pv {
 namespace dialogs {
 

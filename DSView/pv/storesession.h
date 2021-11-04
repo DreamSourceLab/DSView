@@ -25,8 +25,7 @@
 #include <stdint.h>
 #include <string>
 #include <thread>
- 
-#include <boost/shared_ptr.hpp>
+  
 #include <QObject>
 
 #include <libsigrok4DSL/libsigrok.h>
@@ -59,9 +58,9 @@ public:
 
     SigSession* session();
 
-	std::pair<uint64_t, uint64_t> progress() const;
+	std::pair<uint64_t, uint64_t> progress();
 
-	const QString& error() const;
+	const QString& error();
 
     bool save_start();
 
@@ -72,9 +71,9 @@ public:
 	void cancel();
 
 private:
-    void save_proc(boost::shared_ptr<pv::data::Snapshot> snapshot);
-    QString meta_gen(boost::shared_ptr<data::Snapshot> snapshot);
-    void export_proc(boost::shared_ptr<pv::data::Snapshot> snapshot);
+    void save_proc(pv::data::Snapshot *snapshot);
+    QString meta_gen(data::Snapshot *snapshot);
+    void export_proc(pv::data::Snapshot *snapshot);
    
     QString decoders_gen();
  

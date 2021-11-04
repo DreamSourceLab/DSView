@@ -36,7 +36,7 @@ SelectableItem::SelectableItem() :
 {
 }
 
-bool SelectableItem::selected() const
+bool SelectableItem::selected()
 {
 	return _selected;
 }

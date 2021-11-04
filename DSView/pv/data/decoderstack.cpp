@@ -35,12 +35,11 @@
 #include "../sigsession.h"
 #include "../view/logicsignal.h"
 #include "../dsvdef.h"
-
-
-using namespace boost;
-using namespace std;
+#include <assert.h>
 
 using namespace pv::data::decode;
+using namespace std;
+using namespace boost;
 
 namespace pv {
 namespace data {
@@ -57,6 +56,10 @@ DecoderStack::DecoderStack(pv::SigSession *session,
 	const srd_decoder *const dec, DecoderStatus *decoder_status) :
 	_session(session)
 {
+    assert(session);
+    assert(dec);
+    assert(decoder_status);
+    
     _samples_decoded = 0;
     _sample_count = 0;
     _frame_complete = false;
@@ -75,8 +78,7 @@ DecoderStack::DecoderStack(pv::SigSession *session,
 	connect(_session, SIGNAL(frame_ended()),
 		this, SLOT(on_frame_ended()));
 
-    _stack.push_back(boost::shared_ptr<decode::Decoder>(
-		new decode::Decoder(dec)));
+    _stack.push_back(new decode::Decoder(dec));
  
     build_row();
 }
@@ -97,7 +99,7 @@ DecoderStack::~DecoderStack()
     _class_rows.clear();
 }
  
-void DecoderStack::push(boost::shared_ptr<decode::Decoder> decoder)
+void DecoderStack::push(decode::Decoder *decoder)
 {
 	assert(decoder);
 	_stack.push_back(decoder);
@@ -105,10 +107,10 @@ void DecoderStack::push(boost::shared_ptr<decode::Decoder> decoder)
     _options_changed = true;
 }
 
-void DecoderStack::remove(boost::shared_ptr<Decoder> &decoder)
+void DecoderStack::remove(Decoder *decoder)
 {
 	// Find the decoder in the stack
-    list< boost::shared_ptr<Decoder> >::iterator iter = _stack.begin();
+    auto  iter = _stack.begin();
     for(unsigned int i = 0; i < _stack.size(); i++, iter++)
         if ((*iter) == decoder)
             break;
@@ -187,7 +189,7 @@ void DecoderStack::build_row()
     }
 }
 
-int64_t DecoderStack::samples_decoded() const
+int64_t DecoderStack::samples_decoded()
 {
     std::lock_guard<std::mutex> decode_lock(_output_mutex);
 	return _samples_decoded;
@@ -196,7 +198,7 @@ int64_t DecoderStack::samples_decoded() const
 void DecoderStack::get_annotation_subset(
 	std::vector<pv::data::decode::Annotation> &dest,
 	const Row &row, uint64_t start_sample,
-	uint64_t end_sample) const
+	uint64_t end_sample)
 {  
     auto iter = _rows.find(row);
     if (iter != _rows.end())
@@ -206,7 +208,7 @@ void DecoderStack::get_annotation_subset(
 
 
 uint64_t DecoderStack::get_annotation_index(
-    const Row &row, uint64_t start_sample) const
+    const Row &row, uint64_t start_sample)
 {  
     uint64_t index = 0;
     auto iter = _rows.find(row);
@@ -270,7 +272,7 @@ void DecoderStack::set_rows_lshow(const decode::Row row, bool show)
     }
 }
 
-bool DecoderStack::has_annotations(const Row &row) const
+bool DecoderStack::has_annotations(const Row &row)
 {  
     auto iter =
         _rows.find(row);
@@ -283,13 +285,13 @@ bool DecoderStack::has_annotations(const Row &row) const
         return false;
 }
 
-uint64_t DecoderStack::list_annotation_size() const
+uint64_t DecoderStack::list_annotation_size()
 {
     std::lock_guard<std::mutex> lock(_output_mutex);
     uint64_t max_annotation_size = 0;
     for (auto i = _rows.begin();
         i != _rows.end(); i++) {
-        map<const Row, bool>::const_iterator iter = _rows_lshow.find((*i).first);
+        auto iter = _rows_lshow.find((*i).first);
         if (iter != _rows_lshow.end() && (*iter).second)
             max_annotation_size = max(max_annotation_size,
                 (*i).second->get_annotation_size());
@@ -298,11 +300,11 @@ uint64_t DecoderStack::list_annotation_size() const
     return max_annotation_size;
 }
 
-uint64_t DecoderStack::list_annotation_size(uint16_t row_index) const
+uint64_t DecoderStack::list_annotation_size(uint16_t row_index)
 { 
     for (auto i = _rows.begin();
         i != _rows.end(); i++) {
-        map<const Row, bool>::const_iterator iter = _rows_lshow.find((*i).first);
+        auto iter = _rows_lshow.find((*i).first);
         if (iter != _rows_lshow.end() && (*iter).second)
             if (row_index-- == 0) {
                 return (*i).second->get_annotation_size();
@@ -312,11 +314,11 @@ uint64_t DecoderStack::list_annotation_size(uint16_t row_index) const
 }
 
 bool DecoderStack::list_annotation(pv::data::decode::Annotation &ann,
-                                  uint16_t row_index, uint64_t col_index) const
+                                  uint16_t row_index, uint64_t col_index)
 { 
     for (auto i = _rows.begin();
         i != _rows.end(); i++) {
-        map<const Row, bool>::const_iterator iter = _rows_lshow.find((*i).first);
+        auto iter = _rows_lshow.find((*i).first);
         if (iter != _rows_lshow.end() && (*iter).second) {
             if (row_index-- == 0) {
                 return (*i).second->get_annotation(ann, col_index);
@@ -328,11 +330,11 @@ bool DecoderStack::list_annotation(pv::data::decode::Annotation &ann,
 }
 
 
-bool DecoderStack::list_row_title(int row, QString &title) const
+bool DecoderStack::list_row_title(int row, QString &title)
 { 
     for (auto i = _rows.begin();
         i != _rows.end(); i++) {
-        map<const Row, bool>::const_iterator iter = _rows_lshow.find((*i).first);
+        auto iter = _rows_lshow.find((*i).first);
         if (iter != _rows_lshow.end() && (*iter).second) {
             if (row-- == 0) {
                 title = (*i).first.title();
@@ -385,8 +387,8 @@ void DecoderStack::stop_decode()
 
 void DecoderStack::begin_decode()
 {
-    boost::shared_ptr<pv::view::LogicSignal> logic_signal;
-    boost::shared_ptr<pv::data::Logic> data;
+    pv::view::LogicSignal *logic_signal = NULL;
+    pv::data::Logic *data = NULL;
 
     if (!_options_changed)
         return;
@@ -409,7 +411,7 @@ void DecoderStack::begin_decode()
         if (dec && !dec->channels().empty()) {
             for(auto &sig :  _session->get_signals()) {
                 if((sig->get_index() == (*dec->channels().begin()).second) &&
-                   (logic_signal = dynamic_pointer_cast<view::LogicSignal>(sig)) &&
+                   (logic_signal = dynamic_cast<view::LogicSignal*>(sig)) &&
                    (data = logic_signal->logic_data()))
                     break;
             }
@@ -422,8 +424,7 @@ void DecoderStack::begin_decode()
 		return;
 
 	// Check we have a snapshot of data
-    const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
-		data->get_snapshots();
+    const auto &snapshots = data->get_snapshots();
 	if (snapshots.empty())
 		return;
 	_snapshot = snapshots.front();
@@ -445,7 +446,7 @@ void DecoderStack::begin_decode()
     _decode_thread =  new std::thread(&DecoderStack::decode_proc, this);
 }
 
-uint64_t DecoderStack::get_max_sample_count() const
+uint64_t DecoderStack::get_max_sample_count()
 {
 	uint64_t max_sample_count = 0;
 
@@ -596,7 +597,7 @@ void DecoderStack::decode_proc()
     _decode_state = Stopped;
 }
 
-uint64_t DecoderStack::sample_count() const
+uint64_t DecoderStack::sample_count()
 {
     if (_snapshot)
         return _snapshot->get_sample_count();
@@ -604,7 +605,7 @@ uint64_t DecoderStack::sample_count() const
         return 0;
 }
 
-uint64_t DecoderStack::sample_rate() const
+uint64_t DecoderStack::sample_rate()
 {
     return _samplerate;
 }
@@ -679,14 +680,14 @@ int DecoderStack::list_rows_size()
 { 
     int rows_size = 0;
     for (auto i = _rows.begin(); i != _rows.end(); i++) {
-        map<const Row, bool>::const_iterator iter = _rows_lshow.find((*i).first);
+        auto iter = _rows_lshow.find((*i).first);
         if (iter != _rows_lshow.end() && (*iter).second)
             rows_size++;
     }
     return rows_size;
 }
 
-bool DecoderStack::options_changed() const
+bool DecoderStack::options_changed()
 {
     return _options_changed;
 }
@@ -696,7 +697,7 @@ void DecoderStack::set_options_changed(bool changed)
     _options_changed = changed;
 }
 
-bool DecoderStack::out_of_memory() const
+bool DecoderStack::out_of_memory()
 {
     return _no_memory;
 }
@@ -706,7 +707,7 @@ void DecoderStack::set_mark_index(int64_t index)
     _mark_index = index;
 }
 
-int64_t DecoderStack::get_mark_index() const
+int64_t DecoderStack::get_mark_index()
 {
     return _mark_index;
 }

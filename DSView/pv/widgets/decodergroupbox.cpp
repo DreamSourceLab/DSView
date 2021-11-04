@@ -41,8 +41,8 @@
 namespace pv {
 namespace widgets {
 
-DecoderGroupBox::DecoderGroupBox(boost::shared_ptr<data::DecoderStack> &decoder_stack,
-                                 boost::shared_ptr<data::decode::Decoder> &dec,
+DecoderGroupBox::DecoderGroupBox(data::DecoderStack *decoder_stack,
+                                 data::decode::Decoder *dec,
                                  QLayout *dec_layout,
                                  QWidget *parent) :
     QScrollArea(parent),

@@ -184,11 +184,11 @@ void WaitingDialog::changeText()
                     zero_fgain = g_variant_get_boolean(gvar);
                     g_variant_unref(gvar);
                     if (zero_fgain) {
-                        boost::shared_ptr<view::DsoSignal> dsoSig;
+                        view::DsoSignal *dsoSig = NULL;
                         
                         for(auto &s : _session->get_signals())
                         {
-                            if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)))
+                            if ((dsoSig = dynamic_cast<view::DsoSignal*>(s)))
                                 dsoSig->set_enable(dsoSig->get_index() == 0);
                         }
                         std::this_thread::sleep_for(std::chrono::milliseconds(100));

@@ -90,8 +90,7 @@ void DeviceOptions::accept()
     bool hasEnabled = false;
 
 	// Commit the properties
-    const vector< boost::shared_ptr<pv::prop::Property> > &dev_props =
-		_device_options_binding.properties();
+    const auto &dev_props = _device_options_binding.properties();
     for(auto &p : dev_props) {
 		assert(p);
 		p->commit();
@@ -116,8 +115,8 @@ void DeviceOptions::accept()
     if (hasEnabled) {
         QVector<pv::prop::binding::ProbeOptions *>::iterator i = _probe_options_binding_list.begin();
         while(i != _probe_options_binding_list.end()) {
-            const vector< boost::shared_ptr<pv::prop::Property> > &probe_props =
-                    (*i)->properties();
+            const auto &probe_props = (*i)->properties();
+
             for(auto &p :probe_props) {
                 assert(p);
                 p->commit();
@@ -148,8 +147,8 @@ QGridLayout * DeviceOptions::get_property_form(QWidget * parent)
     QGridLayout *const layout = new QGridLayout(parent);
     layout->setVerticalSpacing(5);
 
-	const vector< boost::shared_ptr<pv::prop::Property> > &properties =
-		_device_options_binding.properties();
+	const auto &properties =_device_options_binding.properties();
+
     int i = 0;
     for(auto &p : properties)
 	{
@@ -522,8 +521,7 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
 
         pv::prop::binding::ProbeOptions *probe_options_binding =
                 new pv::prop::binding::ProbeOptions(_dev_inst->dev_inst(), probe);
-        const vector< boost::shared_ptr<pv::prop::Property> > &properties =
-            probe_options_binding->properties();
+        const auto &properties = probe_options_binding->properties();
         int i = 1;
         
         for(auto &p : properties)

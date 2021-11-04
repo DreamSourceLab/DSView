@@ -24,7 +24,6 @@
 #include "analogsnapshot.h"
  
 
-using namespace boost;
 using namespace std;
 
 namespace pv {
@@ -35,12 +34,12 @@ Analog::Analog() :
 {
 }
 
-void Analog::push_snapshot(boost::shared_ptr<AnalogSnapshot> &snapshot)
+void Analog::push_snapshot(AnalogSnapshot *snapshot)
 {
 	_snapshots.push_front(snapshot);
 }
 
-deque< boost::shared_ptr<AnalogSnapshot> >& Analog::get_snapshots()
+std::deque<AnalogSnapshot*>& Analog::get_snapshots()
 {
 	return _snapshots;
 }

@@ -25,8 +25,7 @@
 
 #include <list>
 
-#include <boost/optional.hpp>
-#include <boost/shared_ptr.hpp>
+#include <boost/optional.hpp> 
   
 #include <fftw3.h>
 
@@ -67,24 +66,24 @@ public:
     void clear();
     void init();
 
-    int get_index() const;
+    int get_index();
 
-    uint64_t get_sample_num() const;
+    uint64_t get_sample_num();
     void set_sample_num(uint64_t num);
 
-    int get_windows_index() const;
+    int get_windows_index();
     void set_windows_index(int index);
 
-    const std::vector<QString> get_windows_support() const;
-    const std::vector<uint64_t> get_length_support() const;
+    const std::vector<QString> get_windows_support();
+    const std::vector<uint64_t> get_length_support();
 
-    bool dc_ignored() const;
+    bool dc_ignored();
     void set_dc_ignore(bool ignore);
 
-    int get_sample_interval() const;
+    int get_sample_interval();
     void set_sample_interval(int interval);
 
-    const std::vector<double> get_fft_spectrum() const;
+    const std::vector<double> get_fft_spectrum();
     double get_fft_spectrum(uint64_t index);
 
     void calc_fft();
@@ -102,7 +101,7 @@ private:
     bool _dc_ignore;
     int _sample_interval;
 
-    boost::shared_ptr<pv::data::DsoSnapshot> _snapshot;
+    pv::data::DsoSnapshot *_snapshot;
     spectrum_state _spectrum_state;
 
     fftw_plan _fft_plan;

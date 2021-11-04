@@ -26,10 +26,7 @@
 #include <QColor>
 #include <QObject>
 #include <QRectF>
-
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-
+ 
 #include <stdint.h>
 
 class QPainter;
@@ -74,25 +71,25 @@ public:
 	/**
      * Gets/Set the value of the marker.
 	 */
-    double value(enum XCur_type type) const;
+    double value(enum XCur_type type);
     void set_value(enum XCur_type type, double value);
 
     /**
      * Gets/Sets colour of the marker
      */
-    QColor colour() const;
+    QColor colour();
     void set_colour(QColor color);
 
     /**
      * Gets/Sets the mapping channel of the marker
      */
-    boost::shared_ptr<DsoSignal> channel() const;
-    void set_channel(boost::shared_ptr<DsoSignal> sig);
+    DsoSignal* channel();
+    void set_channel(DsoSignal *sig);
 
     /**
      * grab & move
      */
-    enum XCur_type grabbed() const;
+    enum XCur_type grabbed();
     void set_grabbed(enum XCur_type type, bool grabbed);
     void rel_grabbed();
 
@@ -108,14 +105,14 @@ public:
      * @param rect The rectangle of the xcursor area.
      * @return Returns the map label rectangle.
 	 */
-    QRect get_map_rect(const QRect &rect) const;
+    QRect get_map_rect(const QRect &rect);
 
     /**
      * Gets the close label rectangle.
      * @param rect The rectangle of the xcursor area.
      * @return Returns the close label rectangle.
      */
-    QRect get_close_rect(const QRect &rect) const;
+    QRect get_close_rect(const QRect &rect);
 
 	/**
      * Paints the labels to the xcursor.
@@ -128,8 +125,8 @@ signals:
     void value_changed();
 
 protected:
-    View &_view;
-    boost::shared_ptr<DsoSignal> _dsoSig;
+    View        &_view;
+    DsoSignal   *_dsoSig;
 
     double _yvalue;
     double _value0;

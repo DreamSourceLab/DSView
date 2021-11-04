@@ -67,8 +67,8 @@ FftOptions::FftOptions(QWidget *parent, SigSession *session) :
 
     // setup _ch_combobox
     for(auto &s : _session->get_signals()) {
-        boost::shared_ptr<view::DsoSignal> dsoSig;
-        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
+        view::DsoSignal *dsoSig = NULL;
+        if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
             _ch_combobox->addItem(dsoSig->get_name(), QVariant::fromValue(dsoSig->get_index()));
         }
     }
@@ -88,8 +88,8 @@ FftOptions::FftOptions(QWidget *parent, SigSession *session) :
     std::vector<int> dbv_ranges;
 
     for(auto &t : _session->get_spectrum_traces()) {
-        boost::shared_ptr<view::SpectrumTrace> spectrumTraces;
-        if ((spectrumTraces = dynamic_pointer_cast<view::SpectrumTrace>(t))) {
+        view::SpectrumTrace *spectrumTraces = NULL;
+        if ((spectrumTraces = dynamic_cast<view::SpectrumTrace*>(t))) {
             windows = spectrumTraces->get_spectrum_stack()->get_windows_support();
             length = spectrumTraces->get_spectrum_stack()->get_length_support();
             view_modes = spectrumTraces->get_view_modes_support();
@@ -138,8 +138,8 @@ FftOptions::FftOptions(QWidget *parent, SigSession *session) :
 
     // load current settings
     for(auto &t : _session->get_spectrum_traces()) {
-        boost::shared_ptr<view::SpectrumTrace> spectrumTraces;
-        if ((spectrumTraces = dynamic_pointer_cast<view::SpectrumTrace>(t))) {
+         view::SpectrumTrace *spectrumTraces = NULL;
+        if ((spectrumTraces = dynamic_cast<view::SpectrumTrace*>(t))) {
             if (spectrumTraces->enabled()) {
                 _en_checkbox->setChecked(true);
                 for (int i = 0; i < _ch_combobox->count(); i++) {
@@ -231,8 +231,8 @@ void FftOptions::accept()
     QDialog::accept();
 
    for(auto &t : _session->get_spectrum_traces()) {
-        boost::shared_ptr<view::SpectrumTrace> spectrumTraces;
-        if ((spectrumTraces = dynamic_pointer_cast<view::SpectrumTrace>(t))) {
+        view::SpectrumTrace *spectrumTraces = NULL;
+        if ((spectrumTraces = dynamic_cast<view::SpectrumTrace*>(t))) {
             spectrumTraces->set_enable(false);
             if (spectrumTraces->get_index() == _ch_combobox->currentData().toInt()) {
                 spectrumTraces->get_spectrum_stack()->set_dc_ignore(_dc_checkbox->isChecked());

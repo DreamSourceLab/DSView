@@ -37,18 +37,13 @@ DecoderModel::DecoderModel(QObject *parent)
 {
 }
 
-void DecoderModel::setDecoderStack(boost::shared_ptr<pv::data::DecoderStack> decoder_stack)
+void DecoderModel::setDecoderStack(DecoderStack *decoder_stack)
 {
     beginResetModel();
     _decoder_stack = decoder_stack;
     endResetModel();
 }
-
-const boost::shared_ptr<pv::data::DecoderStack>& DecoderModel::getDecoderStack() const
-{
-    return _decoder_stack;
-}
-
+ 
 int DecoderModel::rowCount(const QModelIndex & /* parent */) const
 {
     if (_decoder_stack)

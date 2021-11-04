@@ -56,8 +56,7 @@ ProtocolList::ProtocolList(QWidget *parent, SigSession *session) :
     connect(_map_zoom_combobox, SIGNAL(currentIndexChanged(int)), _session, SLOT(set_map_zoom(int)));
 
     _protocol_combobox = new QComboBox(this);
-    const std::vector< boost::shared_ptr<pv::view::DecodeTrace> > decode_sigs(
-        _session->get_decode_signals());
+    auto &decode_sigs = _session->get_decode_signals();
     int index = 0;
 
     for(auto &d : decode_sigs) {
@@ -126,9 +125,8 @@ void ProtocolList::set_protocol(int index)
     }
     _show_label_list.clear();
 
-    boost::shared_ptr<pv::data::DecoderStack> decoder_stack;
-    const std::vector< boost::shared_ptr<pv::view::DecodeTrace> > decode_sigs(
-        _session->get_decode_signals());
+    pv::data::DecoderStack *decoder_stack = NULL;
+    const auto &decode_sigs = _session->get_decode_signals();
     int cur_index = 0;
 
     for(auto &d : decode_sigs) {
@@ -146,9 +144,9 @@ void ProtocolList::set_protocol(int index)
 
     _session->get_decoder_model()->setDecoderStack(decoder_stack);
     int row_index = 0;
-    const std::map<const pv::data::decode::Row, bool> rows = decoder_stack->get_rows_lshow();
-    for (std::map<const pv::data::decode::Row, bool>::const_iterator i = rows.begin();
-        i != rows.end(); i++) {
+    const auto rows = decoder_stack->get_rows_lshow();
+
+    for (auto i = rows.begin();i != rows.end(); i++) {
         QLabel *row_label = new QLabel((*i).first.title(), this);
         QCheckBox *row_checkbox = new QCheckBox(this);
         //row_checkbox->setChecked(false);
@@ -169,9 +167,8 @@ void ProtocolList::on_row_check(bool show)
     QVariant id = sc->property("index");
     int index = id.toInt();
 
-    boost::shared_ptr<pv::data::DecoderStack> decoder_stack;
-    const std::vector< boost::shared_ptr<pv::view::DecodeTrace> > decode_sigs(
-        _session->get_decode_signals());
+    pv::data::DecoderStack *decoder_stack = NULL;
+    const auto &decode_sigs = _session->get_decode_signals();
     int cur_index = 0;
 
     for(auto &d : decode_sigs) {

@@ -23,6 +23,13 @@
 #include "dsvdef.h"
 #include <string.h>
 
+#ifdef DS_DEBUG_TRACE
+#include <stdio.h>
+    void ds_print(const char *s){
+        printf(s);
+    }     
+#endif
+
 namespace DecoderDataFormat
 {
       int Parse(const char *name){

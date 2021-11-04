@@ -42,7 +42,7 @@ Device::~Device()
 
 }
 
-sr_dev_inst* Device::dev_inst() const
+sr_dev_inst* Device::dev_inst()
 {
 	return _sdi;
 }
@@ -70,7 +70,7 @@ void Device::release()
 	sr_dev_close(_sdi);
 }
 
-QString Device::format_device_title() const
+QString Device::format_device_title()
 {
 	ostringstream s;
 
@@ -95,7 +95,7 @@ QString Device::format_device_title() const
     return QString::fromStdString(s.str());
 }
 
-bool Device::is_trigger_enabled() const
+bool Device::is_trigger_enabled()
 {
 	assert(_sdi);
 	for (const GSList *l = _sdi->channels; l; l = l->next) {

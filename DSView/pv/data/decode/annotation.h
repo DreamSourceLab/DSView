@@ -46,10 +46,21 @@ public:
 
     ~Annotation();
 
-	uint64_t start_sample() const;
-	uint64_t end_sample() const;
-	int format() const;
-    int type() const;  
+	inline uint64_t start_sample() const{
+		return _start_sample;
+	}
+
+	inline uint64_t end_sample() const{
+		return _end_sample;
+	}
+
+	inline int format() const{
+		return _format;
+	}
+
+    inline int type() const{
+		return _type;
+	}  
 
 public:
 	const std::vector<QString>& annotations() const;

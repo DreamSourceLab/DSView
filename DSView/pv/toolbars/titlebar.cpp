@@ -69,17 +69,17 @@ TitleBar::TitleBar(bool top, QWidget *parent, bool hasClose) :
         _lay->addWidget(_minimizeButton);
         _lay->addWidget(_maximizeButton);
 
-        connect(this, SIGNAL(normalShow() ), parent, SLOT(showNormal() ) );
-        connect(this, SIGNAL( maximizedShow() ), parent, SLOT(showMaximized() ) );
-        connect(_minimizeButton, SIGNAL( clicked() ), parent, SLOT(showMinimized() ) );
-        connect(_maximizeButton, SIGNAL( clicked() ), this, SLOT(showMaxRestore() ) );
+        connect(this, SIGNAL(normalShow()), parent, SLOT(showNormal()));
+        connect(this, SIGNAL( maximizedShow()), parent, SLOT(showMaximized()));
+        connect(_minimizeButton, SIGNAL( clicked()), parent, SLOT(showMinimized()));
+        connect(_maximizeButton, SIGNAL( clicked()), this, SLOT(showMaxRestore()));
     }
 
     if (_isTop || _hasClose) {
         _closeButton= new QToolButton(this);
         _closeButton->setObjectName("CloseButton");
         _lay->addWidget(_closeButton);
-        connect(_closeButton, SIGNAL( clicked() ), parent, SLOT(close() ) );
+        connect(_closeButton, SIGNAL( clicked()), parent, SLOT(close()));
     }
 
     _lay->insertStretch(0, 500);
@@ -160,7 +160,7 @@ void TitleBar::setTitle(QString title)
     _title->setText(title);
 }
   
-QString TitleBar::title() const
+QString TitleBar::title()
 {
     return _title->text();
 }

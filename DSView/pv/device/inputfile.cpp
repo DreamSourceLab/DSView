@@ -37,7 +37,7 @@ InputFile::InputFile(QString path) :
 {
 }
 
-sr_dev_inst* InputFile::dev_inst() const
+sr_dev_inst* InputFile::dev_inst()
 {
 	assert(_input);
 	return _input->sdi;

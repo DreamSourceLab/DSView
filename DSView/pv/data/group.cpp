@@ -23,7 +23,6 @@
 #include "groupsnapshot.h"
  
 
-using namespace boost;
 using namespace std;
 
 namespace pv {
@@ -34,12 +33,12 @@ Group::Group() :
 {
 }
 
-void Group::push_snapshot(boost::shared_ptr<GroupSnapshot> &snapshot)
+void Group::push_snapshot(GroupSnapshot *snapshot)
 {
     _snapshots.push_back(snapshot);
 }
 
-deque< boost::shared_ptr<GroupSnapshot> >& Group::get_snapshots()
+std::deque<GroupSnapshot*>& Group::get_snapshots()
 {
 	return _snapshots;
 }

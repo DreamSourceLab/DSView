@@ -42,7 +42,7 @@ namespace pv {
 namespace view {
 
 LissajousTrace::LissajousTrace(bool enable,
-                     boost::shared_ptr<data::Dso> data,
+                     data::Dso *data,
                      int xIndex, int yIndex, int percent):
     Trace("Lissajous", xIndex, SR_CHANNEL_LISSAJOUS),
     _data(data),
@@ -58,7 +58,7 @@ LissajousTrace::~LissajousTrace()
 {
 }
 
-bool LissajousTrace::enabled() const
+bool LissajousTrace::enabled()
 {
     return _enable;
 }
@@ -68,27 +68,27 @@ void LissajousTrace::set_enable(bool enable)
     _enable = enable;
 }
 
-int LissajousTrace::xIndex() const
+int LissajousTrace::xIndex()
 {
     return _xIndex;
 }
 
-int LissajousTrace::yIndex() const
+int LissajousTrace::yIndex()
 {
     return _yIndex;
 }
 
-int LissajousTrace::percent() const
+int LissajousTrace::percent()
 {
     return _percent;
 }
 
-boost::shared_ptr<pv::data::Dso> LissajousTrace::get_data() const
+pv::data::Dso* LissajousTrace::get_data()
 {
     return _data;
 }
 
-void LissajousTrace::set_data(boost::shared_ptr<data::Dso> data)
+void LissajousTrace::set_data(data::Dso *data)
 {
     _data = data;
 }
@@ -151,12 +151,11 @@ void LissajousTrace::paint_mid(QPainter &p, int left, int right, QColor fore, QC
     assert(right >= left);
 
     if (enabled()) {
-        const deque< boost::shared_ptr<pv::data::DsoSnapshot> > &snapshots =
-            _data->get_snapshots();
+        const auto &snapshots = _data->get_snapshots();
         if (snapshots.empty())
             return;
-        const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
-            snapshots.front();
+
+        auto snapshot = snapshots.front();
         if (snapshot->empty())
             return;
 

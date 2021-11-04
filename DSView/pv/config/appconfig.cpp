@@ -27,14 +27,14 @@
   
 #define MAX_PROTOCOL_FORMAT_LIST 15
 
-StringPair::StringPair(const string &key, const string &value)
+StringPair::StringPair(const std::string &key, const std::string &value)
 {
     m_key = key;
     m_value = value;
 }
 
 //------------function
-QString FormatArrayToString(vector<StringPair> &protocolFormats){
+QString FormatArrayToString(std::vector<StringPair> &protocolFormats){
     QString str;
 
     for (StringPair &o : protocolFormats){
@@ -49,7 +49,7 @@ QString FormatArrayToString(vector<StringPair> &protocolFormats){
     return str;
 }
 
-void StringToFormatArray(const QString &str, vector<StringPair> &protocolFormats){
+void StringToFormatArray(const QString &str, std::vector<StringPair> &protocolFormats){
     QStringList arr = str.split(";");
     for (int i=0; i<arr.size(); i++){
         QString line = arr[i];
@@ -218,7 +218,7 @@ void AppConfig::LoadAll()
   }
  
 
-void AppConfig::SetProtocolFormat(const string &protocolName, const string &value)
+void AppConfig::SetProtocolFormat(const std::string &protocolName, const std::string &value)
 {
     bool bChange = false;
     for (StringPair &o : _appOptions.m_protocolFormats){
@@ -247,7 +247,7 @@ void AppConfig::SetProtocolFormat(const string &protocolName, const string &valu
     }
 }
 
-string AppConfig::GetProtocolFormat(const string &protocolName)
+std::string AppConfig::GetProtocolFormat(const std::string &protocolName)
 {
      for (StringPair &o : _appOptions.m_protocolFormats){
         if (o.m_key == protocolName){ 

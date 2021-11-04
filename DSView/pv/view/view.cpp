@@ -23,8 +23,7 @@
 #include <assert.h>
 #include <limits.h>
 #include <math.h>
- 
- 
+
 #include <QEvent>
 #include <QMouseEvent>
 #include <QScrollBar>
@@ -49,7 +48,7 @@
 #include "pv/dialogs/calibration.h"
 #include "pv/dialogs/lissajousoptions.h"
 
-using namespace boost;
+
 using namespace std;
 
 namespace pv {
@@ -221,17 +220,17 @@ SigSession& View::session()
 	return *_session;
 }
 
-double View::scale() const
+double View::scale()
 {
 	return _scale;
 }
 
-int64_t View::offset() const
+int64_t View::offset()
 {
 	return _offset;
 }
 
-double View::trig_hoff() const
+double View::trig_hoff()
 {
     return _trig_hoff;
 }
@@ -241,12 +240,12 @@ void View::set_trig_hoff(double hoff)
     _trig_hoff = hoff;
 }
 
-double View::get_minscale() const
+double View::get_minscale()
 {
     return _minscale;
 }
 
-double View::get_maxscale() const
+double View::get_maxscale()
 {
     return _maxscale;
 }
@@ -323,7 +322,7 @@ bool View::zoom(double steps, int offset)
     }
 
     _offset = floor((_offset + offset) * (_preScale / _scale) - offset);
-    _offset = max(min(_offset, get_max_offset()), get_min_offset());
+    _offset = max (min(_offset, get_max_offset()), get_min_offset());
 
     if (_scale != _preScale || _offset != _preOffset) {
         _header->update();
@@ -374,20 +373,18 @@ void View::set_preScale_preOffset()
     set_scale_offset(_preScale, _preOffset);
 }
 
-vector< boost::shared_ptr<Trace> > View::get_traces(int type)
+std::vector<Trace*> View::get_traces(int type)
 {
     assert(_session);
 
-    auto array = _session->get_signals();
-    const vector< boost::shared_ptr<Signal> > sigs(array);
-    const vector< boost::shared_ptr<GroupSignal> > groups(_session->get_group_signals());
+    auto &sigs = _session->get_signals();
+    const auto &groups = _session->get_group_signals();
  
-    const vector< boost::shared_ptr<DecodeTrace> > decode_sigs(
-        _session->get_decode_signals());
+    const auto &decode_sigs = _session->get_decode_signals();
  
-    const vector< boost::shared_ptr<SpectrumTrace> > spectrums(_session->get_spectrum_traces());
+    const auto &spectrums = _session->get_spectrum_traces();
 
-    vector< boost::shared_ptr<Trace> > traces;
+    std::vector<Trace*> traces;
     for(auto &t : sigs) {
         if (type == ALL_VIEW || _trace_view_map[t->get_type()] == type)
             traces.push_back(t);
@@ -408,12 +405,12 @@ vector< boost::shared_ptr<Trace> > View::get_traces(int type)
             traces.push_back(t);
     }
 
-    boost::shared_ptr<LissajousTrace> lissajous = _session->get_lissajous_trace();
+    auto lissajous = _session->get_lissajous_trace();
     if (lissajous && lissajous->enabled() &&
         (type == ALL_VIEW || _trace_view_map[lissajous->get_type()] == type))
         traces.push_back(lissajous);
 
-    boost::shared_ptr<MathTrace> math = _session->get_math_trace();
+    auto math = _session->get_math_trace();
     if (math && math->enabled() &&
         (type == ALL_VIEW || _trace_view_map[math->get_type()] == type))
         traces.push_back(math);
@@ -422,30 +419,34 @@ vector< boost::shared_ptr<Trace> > View::get_traces(int type)
     return traces;
 }
 
-bool View::compare_trace_v_offsets(const boost::shared_ptr<Trace> &a,
-    const boost::shared_ptr<Trace> &b)
+bool View::compare_trace_v_offsets(const Trace *a,
+    const Trace *b)
 {
     assert(a);
     assert(b);
-    if (a->get_type() != b->get_type())
-        return a->get_type() < b->get_type();
-    else if (a->get_type() == SR_CHANNEL_DSO || a->get_type() == SR_CHANNEL_ANALOG)
-        return a->get_index() < b->get_index();
+
+    Trace *a1 = const_cast<Trace*>(a);
+    Trace *b1 = const_cast<Trace*>(b);
+
+    if (a1->get_type() != b1->get_type())
+        return a1->get_type() < b1->get_type();
+    else if (a1->get_type() == SR_CHANNEL_DSO || a1->get_type() == SR_CHANNEL_ANALOG)
+        return a1->get_index() < b1->get_index();
     else
-        return a->get_v_offset() < b->get_v_offset();
+        return a1->get_v_offset() < b1->get_v_offset();
 }
 
-bool View::cursors_shown() const
+bool View::cursors_shown()
 {
 	return _show_cursors;
 }
 
-bool View::trig_cursor_shown() const
+bool View::trig_cursor_shown()
 {
     return _show_trig_cursor;
 }
 
-bool View::search_cursor_shown() const
+bool View::search_cursor_shown()
 {
     return _show_search_cursor;
 }
@@ -578,14 +579,14 @@ bool View::get_search_hit()
     return _search_hit;
 }
 
-const QPoint& View::hover_point() const
+const QPoint& View::hover_point()
 {
 	return _hover_point;
 }
 
 void View::normalize_layout()
 {
-    vector< boost::shared_ptr<Trace> > traces(get_traces(ALL_VIEW));
+    auto traces = get_traces(ALL_VIEW);
 
 	int v_min = INT_MAX;
     for(auto &t : traces){
@@ -613,9 +614,9 @@ int View::get_signalHeight()
     return _signalHeight;
 }
 
-void View::get_scroll_layout(int64_t &length, int64_t &offset) const
+void View::get_scroll_layout(int64_t &length, int64_t &offset)
 {
-    const set< boost::shared_ptr<data::SignalData> > data_set = _session->get_data();
+    const auto data_set = _session->get_data();
     if (data_set.empty())
 		return;
 
@@ -695,8 +696,8 @@ void View::signals_changed()
     int total_rows = 0;
     int label_size = 0;
     uint8_t max_height = MaxHeightUnit;
-    vector< boost::shared_ptr<Trace> > time_traces;
-    vector< boost::shared_ptr<Trace> > fft_traces;
+    std::vector<Trace*> time_traces;
+    std::vector<Trace*> fft_traces;
 
     for(auto &t : get_traces(ALL_VIEW)) {
         if (_trace_view_map[t->get_type()] == TIME_VIEW)
@@ -736,7 +737,7 @@ void View::signals_changed()
     if (!time_traces.empty() && _time_viewport) {
         for(auto &t : time_traces) {
             assert(t);
-            if (dynamic_pointer_cast<DsoSignal>(t) ||
+            if (dynamic_cast<DsoSignal*>(t) ||
                 t->enabled())
                 total_rows += t->rows_size();
             if (t->rows_size() != 0)
@@ -779,13 +780,13 @@ void View::signals_changed()
             t->set_v_offset(next_v_offset + 0.5 * traceHeight + actualMargin);
             next_v_offset += traceHeight + 2 * actualMargin;
 
-            boost::shared_ptr<view::DsoSignal> dsoSig;
-            if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(t))) {
+            view::DsoSignal *dsoSig = NULL;
+            if ((dsoSig = dynamic_cast<view::DsoSignal*>(t))) {
                 dsoSig->set_scale(dsoSig->get_view_rect().height());
             }
 
-            boost::shared_ptr<view::AnalogSignal> analogSig;
-            if ((analogSig = dynamic_pointer_cast<view::AnalogSignal>(t))) {
+            view::AnalogSignal *analogSig = NULL;
+            if ((analogSig = dynamic_cast<view::AnalogSignal*>(t))) {
                 analogSig->set_scale(analogSig->get_totalHeight());
             }
         }
@@ -848,7 +849,7 @@ int View::headerWidth()
 {
     int headerWidth = _header->get_nameEditWidth();
 
-    const vector< boost::shared_ptr<Trace> > traces(get_traces(ALL_VIEW));
+    const auto &traces = get_traces(ALL_VIEW);
     if (!traces.empty()) {
         for(auto &t : traces)
             headerWidth = max(t->get_name_width() + t->get_leftWidth() + t->get_rightWidth(),
@@ -1013,7 +1014,7 @@ void View::set_cursor_middle(int index)
 {
     assert(index < (int)_cursorList.size());
 
-    list<Cursor*>::iterator i = _cursorList.begin();
+    auto i = _cursorList.begin();
     while (index-- != 0)
             i++;
     set_scale_offset(_scale, (*i)->index() / (_session->cur_snap_samplerate() * _scale) - (get_view_width() / 2));
@@ -1092,7 +1093,7 @@ void View::on_state_changed(bool stop)
 QRect View::get_view_rect()
 {
     if (_session->get_device()->dev_inst()->mode == DSO) {
-        const vector< boost::shared_ptr<Signal> > sigs(_session->get_signals());
+        const auto &sigs = _session->get_signals();
         for(auto &s : sigs) {
             return s->get_view_rect();
         }
@@ -1105,7 +1106,7 @@ int View::get_view_width()
 {
     int view_width = 0;
     if (_session->get_device()->dev_inst()->mode == DSO) {
-        const vector< boost::shared_ptr<Signal> > sigs(_session->get_signals());
+        const auto &sigs = _session->get_signals();
         for(auto &s : sigs) {
             view_width = max(view_width, s->get_view_rect().width());
         }
@@ -1120,7 +1121,7 @@ int View::get_view_height()
 {
     int view_height = 0;
     if (_session->get_device()->dev_inst()->mode == DSO) {
-        const vector< boost::shared_ptr<Signal> > sigs(_session->get_signals());
+        const auto &sigs = _session->get_signals();
         for(auto &s : sigs) {
             view_height = max(view_height, s->get_view_rect().height());
         }
@@ -1162,7 +1163,7 @@ void View::vDial_updated()
     if (_cali->isVisible()) {
         _cali->set_device(_session->get_device());
     }
-    boost::shared_ptr<view::MathTrace> math_trace = _session->get_math_trace();
+    auto math_trace = _session->get_math_trace();
     if (math_trace && math_trace->enabled()) {
         math_trace->update_vDial();
     }
@@ -1183,7 +1184,7 @@ void View::show_region(uint64_t start, uint64_t end, bool keep)
         update();
     } else if (_session->get_map_zoom() == 0) {
         const double ideal_scale = (end-start) * 2.0 / _session->cur_snap_samplerate() / get_view_width();
-        const double new_scale = max(min(ideal_scale, _maxscale), _minscale);
+        const double new_scale = max (min(ideal_scale, _maxscale), _minscale);
         const double new_off = (start + end)  * 0.5 / (_session->cur_snap_samplerate() * new_scale) - (get_view_width() / 2);
         set_scale_offset(new_scale, new_off);
     } else {
@@ -1254,7 +1255,7 @@ void View::set_capture_status()
     }
 }
 
-bool View::get_dso_trig_moved() const
+bool View::get_dso_trig_moved()
 {
     return _time_viewport->get_dso_trig_moved();
 }
@@ -1298,7 +1299,7 @@ ViewStatus* View::get_viewstatus()
     return _viewbottom;
 }
 
-bool View::back_ready() const
+bool View::back_ready()
 {
     return _back_ready;
 }

@@ -95,14 +95,14 @@ public:
 
 	void append_payload(const sr_datafeed_analog &analog);
 
-    const uint8_t *get_samples(int64_t start_sample) const;
+    const uint8_t *get_samples(int64_t start_sample);
 
     void get_envelope_section(EnvelopeSection &s,
-        uint64_t start, int64_t count, float min_length, int probe_index) const;
+        uint64_t start, int64_t count, float min_length, int probe_index);
 
     int get_ch_order(int sig_index);
 
-    int get_scale_factor() const;
+    int get_scale_factor();
 
     bool has_data(int index);
     int get_block_num();

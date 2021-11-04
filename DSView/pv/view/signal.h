@@ -23,8 +23,7 @@
 
 #ifndef DSVIEW_PV_SIGNAL_H
 #define DSVIEW_PV_SIGNAL_H
-
-#include <boost/shared_ptr.hpp>
+ 
 
 #include <QColor>
 #include <QPainter>
@@ -69,12 +68,12 @@ protected:
     Signal(const Signal &s, sr_channel * const probe);
 
 public:
-    virtual boost::shared_ptr<pv::data::SignalData> data() const = 0;
+    virtual pv::data::SignalData* data() = 0;
 
     /**
      * Returns true if the trace is visible and enabled.
      */
-    bool enabled() const;
+    bool enabled();
 
     /**
      * Sets the name of the signal.
@@ -91,7 +90,7 @@ public:
 	 */
     //virtual void paint_label(QPainter &p, int right, bool hover, int action);
 
-    DevInst* get_device() const;
+    DevInst* get_device();
 
 protected:
     DevInst* _dev_inst;

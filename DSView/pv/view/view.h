@@ -27,10 +27,7 @@
 #include <stdint.h>
 #include <set>
 #include <vector>
-
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-
+   
 #include <QScrollArea>
 #include <QSizeF>
 #include <QDateTime>
@@ -112,18 +109,18 @@ public:
 	/**
 	 * Returns the view time scale in seconds per pixel.
 	 */
-	double scale() const;
+	double scale();
 
 	/**
      * Returns the pixels offset of the left edge of the view
 	 */
-    int64_t offset() const;
-	int v_offset() const;
+    int64_t offset();
+	int v_offset();
 
     /**
      * trigger position fix
      */
-    double trig_hoff() const;
+    double trig_hoff();
     void set_trig_hoff(double hoff);
 
     int64_t get_min_offset();
@@ -142,14 +139,14 @@ public:
     void set_scale_offset(double scale, int64_t offset);
     void set_preScale_preOffset();
 
-    std::vector< boost::shared_ptr<Trace> > get_traces(int type);
+    std::vector<Trace*> get_traces(int type);
 
 	/**
 	 * Returns true if cursors are displayed. false otherwise.
 	 */
-	bool cursors_shown() const;
-    bool trig_cursor_shown() const;
-    bool search_cursor_shown() const;
+	bool cursors_shown();
+    bool trig_cursor_shown();
+    bool search_cursor_shown();
 
     int get_spanY();
 
@@ -164,7 +161,7 @@ public:
 	 */
 	void show_cursors(bool show = true);
 
-    const QPoint& hover_point() const;
+    const QPoint& hover_point();
 
 	void normalize_layout();
 
@@ -200,8 +197,8 @@ public:
     /*
      *
      */
-    double get_minscale() const;
-    double get_maxscale() const;
+    double get_minscale();
+    double get_maxscale();
 
     void set_update(Viewport *viewport, bool need_update);
     void set_all_update(bool need_update);
@@ -225,14 +222,14 @@ public:
 
     void set_capture_status();
 
-    bool get_dso_trig_moved() const;
+    bool get_dso_trig_moved();
 
     ViewStatus* get_viewstatus();
 
     /*
      * back paint status
      */
-    bool back_ready() const;
+    bool back_ready();
     void set_back(bool ready);
 
     /*
@@ -261,15 +258,15 @@ signals:
     void auto_trig(int index);
 
 private: 
-    void get_scroll_layout(int64_t &length, int64_t &offset) const;
+    void get_scroll_layout(int64_t &length, int64_t &offset);
 	
 	void update_scroll();
 
     void update_margins();
 
     static bool compare_trace_v_offsets(
-        const boost::shared_ptr<pv::view::Trace> &a,
-        const boost::shared_ptr<pv::view::Trace> &b);
+        const pv::view::Trace *a,
+        const pv::view::Trace *b);
 
     void clear();
     void reconstruct();

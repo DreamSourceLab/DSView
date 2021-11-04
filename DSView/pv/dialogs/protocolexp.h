@@ -29,9 +29,7 @@
 #include <QLabel>
 #include <QRadioButton>
 #include <QComboBox>
-
-#include <boost/shared_ptr.hpp>
-
+ 
 #include "../device/devinst.h"
 #include "../prop/binding/deviceoptions.h"
 #include "../toolbars/titlebar.h"

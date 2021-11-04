@@ -23,7 +23,6 @@
 #include "dsosnapshot.h"
  
 
-using namespace boost;
 using namespace std;
 
 namespace pv {
@@ -34,12 +33,12 @@ Dso::Dso() :
 {
 }
 
-void Dso::push_snapshot(boost::shared_ptr<DsoSnapshot> &snapshot)
+void Dso::push_snapshot(DsoSnapshot *snapshot)
 {
 	_snapshots.push_front(snapshot);
 }
 
-deque< boost::shared_ptr<DsoSnapshot> >& Dso::get_snapshots()
+std::deque<DsoSnapshot*>& Dso::get_snapshots()
 {
 	return _snapshots;
 }

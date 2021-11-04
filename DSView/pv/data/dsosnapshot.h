@@ -95,12 +95,12 @@ public:
         int64_t end_sample, uint16_t index);
 
 	void get_envelope_section(EnvelopeSection &s,
-        uint64_t start, uint64_t end, float min_length, int probe_index) const;
+        uint64_t start, uint64_t end, float min_length, int probe_index);
 
     void enable_envelope(bool enable);
 
-    double cal_vrms(double zero_off, int index) const;
-    double cal_vmean(int index) const;
+    double cal_vrms(double zero_off, int index);
+    double cal_vmean(int index);
 
     bool has_data(int index);
     int get_block_num();

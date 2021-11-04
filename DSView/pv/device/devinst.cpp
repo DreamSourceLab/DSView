@@ -43,7 +43,7 @@ DevInst::~DevInst()
     free(_id);
 }
 
-void* DevInst::get_id() const
+void* DevInst::get_id()
 {
     assert(_id);
 
@@ -64,7 +64,7 @@ void DevInst::release()
 	}
 }
 
-SigSession* DevInst::owner() const
+SigSession* DevInst::owner()
 {
 	return _owner;
 }
@@ -188,7 +188,7 @@ QString DevInst::name()
     return QString::fromLocal8Bit(sdi->driver->name);
 }
 
-bool DevInst::is_trigger_enabled() const
+bool DevInst::is_trigger_enabled()
 {
 	return false;
 }
@@ -204,7 +204,7 @@ void DevInst::run()
 	sr_session_run();
 }
 
-bool DevInst::is_usable() const
+bool DevInst::is_usable()
 {
     return _usable;
 }

@@ -60,8 +60,8 @@ public:
 	/**
 	 * Gets the time of the marker.
 	 */
-	double time() const;
-    uint64_t index() const;
+	double time();
+    uint64_t index();
 
 	/**
 	 * Sets the time of the marker.
@@ -71,13 +71,13 @@ public:
     /**
      * Gets/Sets colour of the marker
      */
-    QColor colour() const;
+    QColor colour();
     void set_colour(QColor color);
 
     /*
      *
      */
-    bool grabbed() const;
+    bool grabbed();
     void set_grabbed(bool grabbed);
 
 	/**
@@ -93,7 +93,7 @@ public:
      * @param visible is this marker in visible area
 	 * @return Returns the label rectangle.
 	 */
-    virtual QRect get_label_rect(const QRect &rect, bool &visible, bool has_hoff = true) const = 0;
+    virtual QRect get_label_rect(const QRect &rect, bool &visible, bool has_hoff = true) = 0;
 
 	/**
 	 * Paints the marker's label to the ruler.

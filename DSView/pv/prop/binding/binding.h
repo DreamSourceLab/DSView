@@ -27,8 +27,7 @@
 #include <glib.h>
 
 #include <vector>
-#include <map>
-#include <boost/shared_ptr.hpp>
+#include <map> 
 
 #include <QString>
 
@@ -45,23 +44,22 @@ namespace binding {
 class Binding
 {
 public:
-	const std::vector< boost::shared_ptr<Property> >& properties();
+    const std::vector<Property*>& properties();
 
     void commit();
 
     void add_properties_to_form(QFormLayout *layout,
-        bool auto_commit = false) const;
+        bool auto_commit = false);
 
     QWidget* get_property_form(QWidget *parent,
-        bool auto_commit = false) const;
+        bool auto_commit = false);
 
-    std::map< boost::shared_ptr<Property>,
-              GVariant* > get_property_value() const;
+    std::map<Property*,GVariant*> get_property_value();
 
     static QString print_gvariant(GVariant *const gvar);
 
 protected:
-	std::vector< boost::shared_ptr<Property> > _properties;
+	std::vector<Property*> _properties;
 
 	QWidget *_form;
 };

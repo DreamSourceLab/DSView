@@ -25,8 +25,7 @@
 
 #include <list>
 
-#include <boost/optional.hpp>
-#include <boost/shared_ptr.hpp>
+#include <boost/optional.hpp> 
  
 
 #include <QObject>
@@ -88,17 +87,17 @@ public:
 
 	virtual ~DecoderStack();
 
-    inline std::list< boost::shared_ptr<decode::Decoder> >& stack(){
+    inline std::list<decode::Decoder*>& stack(){
         return _stack;
     }
 
-	void push(boost::shared_ptr<decode::Decoder> decoder);
+	void push(decode::Decoder *decoder);
 
-    void remove(boost::shared_ptr<decode::Decoder>& decoder);
+    void remove(decode::Decoder *decoder);
 
     void build_row();
 
-	int64_t samples_decoded() const;
+	int64_t samples_decoded();
 
 	/**
 	 * Extracts sorted annotations between two period into a vector.
@@ -106,10 +105,10 @@ public:
 	void get_annotation_subset(
 		std::vector<pv::data::decode::Annotation> &dest,
 		const decode::Row &row, uint64_t start_sample,
-		uint64_t end_sample) const;
+		uint64_t end_sample);
 
     uint64_t get_annotation_index(
-        const decode::Row &row, uint64_t start_sample) const;
+        const decode::Row &row, uint64_t start_sample);
 
     uint64_t get_max_annotation(const decode::Row &row);
     uint64_t get_min_annotation(const decode::Row &row); // except instant(end=start) annotation
@@ -119,24 +118,24 @@ public:
     void set_rows_gshow(const decode::Row row, bool show);
     void set_rows_lshow(const decode::Row row, bool show);
 
-    bool has_annotations(const decode::Row &row) const;
+    bool has_annotations(const decode::Row &row);
 
-    uint64_t list_annotation_size() const;
-    uint64_t list_annotation_size(uint16_t row_index) const;
+    uint64_t list_annotation_size();
+    uint64_t list_annotation_size(uint16_t row_index);
 
 
     bool list_annotation(decode::Annotation &ann,
-                        uint16_t row_index, uint64_t col_index) const;
+                        uint16_t row_index, uint64_t col_index);
 
 
-    bool list_row_title(int row, QString &title) const;
+    bool list_row_title(int row, QString &title);
 
 	QString error_message();
 
 	void clear();
     void init();
 
-	uint64_t get_max_sample_count() const;
+	uint64_t get_max_sample_count();
 
 	void begin_decode();
 
@@ -144,16 +143,16 @@ public:
 
     int list_rows_size();
 
-    bool options_changed() const;
+    bool options_changed();
     void set_options_changed(bool changed);
 
-    uint64_t sample_count() const;
-    uint64_t sample_rate() const;
+    uint64_t sample_count();
+    uint64_t sample_rate();
 
-    bool out_of_memory() const;
+    bool out_of_memory();
 
     void set_mark_index(int64_t index);
-    int64_t get_mark_index() const;
+    int64_t get_mark_index();
 
 private:
     void decode_data(const uint64_t decode_start, const uint64_t decode_end, srd_session *const session);
@@ -174,9 +173,9 @@ signals:
     void decode_done();
 
 private: 
-	std::list< boost::shared_ptr<decode::Decoder> > _stack;
+	std::list<decode::Decoder*> _stack;
 
-	boost::shared_ptr<pv::data::LogicSnapshot> _snapshot;
+	pv::data::LogicSnapshot *_snapshot;
   
     std::map<const decode::Row, decode::RowData*>   _rows;
     std::map<const decode::Row, bool>       _rows_gshow;

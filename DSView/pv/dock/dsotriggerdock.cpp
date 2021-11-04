@@ -24,8 +24,6 @@
 #include "../device/devinst.h"
 #include "../dialogs/dsmessagebox.h"
 #include "../view/dsosignal.h"
-
-#include <boost/shared_ptr.hpp>
  
 
 #include <QObject>
@@ -389,8 +387,8 @@ void DsoTriggerDock::init()
     _channel_comboBox->clear();
     
     for(auto &s : _session->get_signals()) {
-        boost::shared_ptr<view::DsoSignal> dsoSig;
-        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
+        view::DsoSignal *dsoSig = NULL;
+        if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
             _channel_comboBox->addItem(dsoSig->get_name(), QVariant::fromValue(dsoSig->get_index()));
         }
     }

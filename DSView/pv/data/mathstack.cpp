@@ -73,8 +73,8 @@ const QString MathStack::vDialDivUnit[MathStack::vDialUnitCount] = {
 };
 
 MathStack::MathStack(pv::SigSession *session,
-                     boost::shared_ptr<view::DsoSignal> dsoSig1,
-                     boost::shared_ptr<view::DsoSignal> dsoSig2,
+                     view::DsoSignal* dsoSig1,
+                     view::DsoSignal* dsoSig2,
                      MathType type) :
     _session(session),
     _dsoSig1(dsoSig1),
@@ -117,12 +117,12 @@ void MathStack::init()
     _envelope_done = false;
 }
 
-MathStack::MathType MathStack::get_type() const
+MathStack::MathType MathStack::get_type()
 {
     return _type;
 }
 
-uint64_t MathStack::get_sample_num() const
+uint64_t MathStack::get_sample_num()
 {
     return _sample_num;
 }
@@ -276,13 +276,13 @@ double MathStack::get_math_scale()
     return scale;
 }
 
-const double* MathStack::get_math(uint64_t start) const
+const double* MathStack::get_math(uint64_t start)
 {
     return _math.data() + start;
 }
 
 void MathStack::get_math_envelope_section(EnvelopeSection &s,
-    uint64_t start, uint64_t end, float min_length) const
+    uint64_t start, uint64_t end, float min_length)
 {
     assert(end <= get_sample_num());
     assert(start <= end);
@@ -316,14 +316,12 @@ void MathStack::calc_math()
 
     _math_state = Running;
 
-    const boost::shared_ptr<pv::data::Dso> data = _dsoSig1->dso_data();
-    const deque< boost::shared_ptr<pv::data::DsoSnapshot> > &snapshots =
-        data->get_snapshots();
+    const auto data = _dsoSig1->dso_data();
+    const auto &snapshots = data->get_snapshots();
     if (snapshots.empty())
         return;
 
-    const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
-        snapshots.front();
+    const auto snapshot = snapshots.front();
     if (snapshot->empty())
         return;
 

@@ -40,8 +40,7 @@
 #include <QProgressDialog>
 #include <QtConcurrent/QtConcurrent>
 
-#include <stdint.h>
-#include <boost/shared_ptr.hpp>
+#include <stdint.h> 
 #include "../config/appconfig.h"
 
 namespace pv {
@@ -130,9 +129,9 @@ void SearchDock::on_previous()
     bool ret;
     int64_t last_pos;
     bool last_hit;
-    const boost::shared_ptr<data::Snapshot> snapshot(_session->get_snapshot(SR_CHANNEL_LOGIC));
+    const auto snapshot = _session->get_snapshot(SR_CHANNEL_LOGIC);
     assert(snapshot);
-    const boost::shared_ptr<data::LogicSnapshot> logic_snapshot = boost::dynamic_pointer_cast<data::LogicSnapshot>(snapshot);
+    const auto logic_snapshot = dynamic_cast<data::LogicSnapshot*>(snapshot);
 
     if (!logic_snapshot || logic_snapshot->empty()) {
         dialogs::DSMessageBox msg(this);
@@ -192,9 +191,9 @@ void SearchDock::on_next()
 {
     bool ret;
     int64_t last_pos;
-    const boost::shared_ptr<data::Snapshot> snapshot(_session->get_snapshot(SR_CHANNEL_LOGIC));
+    const auto snapshot = _session->get_snapshot(SR_CHANNEL_LOGIC);
     assert(snapshot);
-    const boost::shared_ptr<data::LogicSnapshot> logic_snapshot = boost::dynamic_pointer_cast<data::LogicSnapshot>(snapshot);
+    const auto logic_snapshot = dynamic_cast<data::LogicSnapshot*>(snapshot);
 
     if (!logic_snapshot || logic_snapshot->empty()) {
         dialogs::DSMessageBox msg(this);

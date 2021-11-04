@@ -38,26 +38,26 @@ public:
     ~RowData();
 
 public:
-	uint64_t get_max_sample() const;
+	uint64_t get_max_sample();
 
-    uint64_t get_max_annotation() const;
-    uint64_t get_min_annotation() const;	
+    uint64_t get_max_annotation();
+    uint64_t get_min_annotation();	
 
-    uint64_t get_annotation_index(uint64_t start_sample) const;
+    uint64_t get_annotation_index(uint64_t start_sample);
 
     bool push_annotation(Annotation *a);
 
-    inline uint64_t get_annotation_size() const{
+    inline uint64_t get_annotation_size(){
         return _item_count;
     }
 
-    bool get_annotation(pv::data::decode::Annotation &ann, uint64_t index) const;
+    bool get_annotation(pv::data::decode::Annotation &ann, uint64_t index);
 
      /**
 	 * Extracts sorted annotations between two period into a vector.
 	 */
 	void get_annotation_subset(std::vector<pv::data::decode::Annotation> &dest,
-		                        uint64_t start_sample, uint64_t end_sample) const;
+		                        uint64_t start_sample, uint64_t end_sample);
 
     void clear();
 

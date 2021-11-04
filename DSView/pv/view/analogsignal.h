@@ -24,8 +24,7 @@
 #define DSVIEW_PV_ANALOGSIGNAL_H
 
 #include "signal.h"
-
-#include <boost/shared_ptr.hpp>
+ 
 
 namespace pv {
 
@@ -53,23 +52,21 @@ private:
     static const uint8_t DefaultBits = 8;
 
 public:
-    AnalogSignal(DevInst* dev_inst,
-                 boost::shared_ptr<pv::data::Analog> data,
+    AnalogSignal(DevInst* dev_inst, pv::data::Analog *data,
                  sr_channel *probe);
-    AnalogSignal(boost::shared_ptr<view::AnalogSignal> s,
-                 boost::shared_ptr<pv::data::Analog> data,
-                 sr_channel *probe);
+
+    AnalogSignal(view::AnalogSignal* s, pv::data::Analog *data,  sr_channel *probe);
 
 	virtual ~AnalogSignal();
 
-    boost::shared_ptr<pv::data::SignalData> data() const;
+    pv::data::SignalData* data();
 
     void set_scale(int height);
-    float get_scale() const;
-    int get_bits() const;
-    double get_ref_min() const;
-    double get_ref_max() const;
-    int get_hw_offset() const;
+    float get_scale();
+    int get_bits();
+    double get_ref_min();
+    double get_ref_max();
+    int get_hw_offset();
     int commit_settings();
 
     /**
@@ -83,30 +80,30 @@ public:
     /**
      * Probe options
      **/
-    uint64_t get_vdiv() const;
-    uint8_t get_acCoupling() const;
-    bool get_mapDefault() const;
-    QString get_mapUnit() const;
-    double get_mapMin() const;
-    double get_mapMax() const;
-    uint64_t get_factor() const;
+    uint64_t get_vdiv();
+    uint8_t get_acCoupling();
+    bool get_mapDefault();
+    QString get_mapUnit();
+    double get_mapMin();
+    double get_mapMax();
+    uint64_t get_factor();
 
     /**
      *
      **/
     void set_zero_vpos(int pos);
-    int get_zero_vpos() const;
+    int get_zero_vpos();
     void set_zero_ratio(double ratio);
-    double get_zero_ratio() const;
-    int get_zero_offset() const;
+    double get_zero_ratio();
+    int get_zero_offset();
 
     /**
      *
      */
-    int ratio2value(double ratio) const;
-    int ratio2pos(double ratio) const;
-    double value2ratio(int value) const;
-    double pos2ratio(int pos) const;
+    int ratio2value(double ratio);
+    int ratio2pos(double ratio);
+    double value2ratio(int value);
+    double pos2ratio(int pos);
 
     /**
      * Event
@@ -139,14 +136,14 @@ public:
 
 private:
     void paint_trace(QPainter &p,
-                     const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot,
+                     const pv::data::AnalogSnapshot *snapshot,
                      int zeroY, const int start_pixel,
                      const uint64_t start_index, const int64_t sample_count,
                      const double samples_per_pixel, const int order,
                      const float top, const float bottom, const int width);
 
     void paint_envelope(QPainter &p,
-                        const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot,
+                        const pv::data::AnalogSnapshot *snapshot,
                         int zeroY, const int start_pixel,
                         const uint64_t start_index, const int64_t sample_count,
                         const double samples_per_pixel, const int order,
@@ -155,7 +152,7 @@ private:
     void paint_hover_measure(QPainter &p, QColor fore, QColor back);
 
 private:
-	boost::shared_ptr<pv::data::Analog> _data;
+	pv::data::Analog *_data;
 
     QRectF *_rects;
 

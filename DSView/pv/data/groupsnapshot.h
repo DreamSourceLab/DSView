@@ -22,10 +22,7 @@
 
 #ifndef DSVIEW_PV_DATA_GROUPSNAPSHOT_H
 #define DSVIEW_PV_DATA_GROUPSNAPSHOT_H
-
  
-#include <boost/shared_ptr.hpp>
-
 #include "../view/signal.h"
 
 #include <utility>
@@ -75,7 +72,7 @@ private:
     static const uint16_t value_mask[16];
 
 public:
-    GroupSnapshot(const boost::shared_ptr<LogicSnapshot> &_logic_snapshot, std::list<int> index_list);
+    GroupSnapshot(const LogicSnapshot *_logic_snapshot, std::list<int> index_list);
 
     virtual ~GroupSnapshot();
 
@@ -84,13 +81,13 @@ public:
 
     void append_payload();
 
-    uint64_t get_sample_count() const;
+    uint64_t get_sample_count();
 
     const uint16_t* get_samples(int64_t start_sample,
         int64_t end_sample);
 
 	void get_envelope_section(EnvelopeSection &s,
-		uint64_t start, uint64_t end, float min_length) const;
+		uint64_t start, uint64_t end, float min_length);
 
 private:
 	void reallocate_envelope(Envelope &l);
@@ -103,7 +100,7 @@ private:
     const void *_data;
     uint64_t _sample_count;
     int _unit_size;
-    boost::shared_ptr<view::Signal> _signal;
+    view::Signal *_signal;
     std::list<int> _index_list;
     uint16_t _mask;
     int _bubble_start[32];

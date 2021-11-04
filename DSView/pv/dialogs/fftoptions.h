@@ -29,8 +29,7 @@
 #include <QLabel>
 #include <QCheckBox>
 #include <QComboBox>
-
-#include <boost/shared_ptr.hpp>
+ 
 
 #include "../device/devinst.h"
 #include "../toolbars/titlebar.h"

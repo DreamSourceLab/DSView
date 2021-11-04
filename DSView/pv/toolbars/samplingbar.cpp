@@ -259,7 +259,7 @@ void SamplingBar::set_device_list(const std::list<DevInst*> &devices, DevInst *s
     _updating_device_selector = false;
 }
 
-DevInst* SamplingBar::get_selected_device() const
+DevInst* SamplingBar::get_selected_device()
 {
     const int index = _device_selector.currentIndex();
     if (index < 0)
@@ -331,11 +331,11 @@ void SamplingBar::on_configure()
 
 void SamplingBar::zero_adj()
 {
-    boost::shared_ptr<view::DsoSignal> dsoSig;
+    view::DsoSignal *dsoSig = NULL;
 
     for(auto &s : _session->get_signals())
     {
-        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)))
+        if ((dsoSig = dynamic_cast<view::DsoSignal*>(s)))
             dsoSig->set_enable(true);
     }
     const int index_back = _sample_count.currentIndex();
@@ -352,7 +352,7 @@ void SamplingBar::zero_adj()
     if (wait.start() == QDialog::Rejected) {
         for(auto &s : _session->get_signals())
         {
-            if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)))
+            if ((dsoSig = dynamic_cast<view::DsoSignal*>(s)))
                 dsoSig->commit_settings();
         }
     }
@@ -364,19 +364,19 @@ void SamplingBar::zero_adj()
     commit_hori_res();
 }
 
-bool SamplingBar::get_sampling() const
+bool SamplingBar::get_sampling()
 {
     return _sampling;
 }
 
-bool SamplingBar::get_instant() const
+bool SamplingBar::get_instant()
 {
     return _instant;
 }
 
 void SamplingBar::set_sampling(bool sampling)
 {
-    lock_guard<std::mutex> lock(_sampling_mutex);
+    std::lock_guard<std::mutex> lock(_sampling_mutex);
     _sampling = sampling;
 
     if (!sampling) {
@@ -505,7 +505,7 @@ void SamplingBar::update_sample_rate_selector_value()
 void SamplingBar::on_samplerate_sel(int index)
 {
     (void)index;
-    const DevInst *dev_inst = get_selected_device();
+    DevInst *dev_inst = get_selected_device();
     if (dev_inst->dev_inst()->mode != DSO)
         update_sample_count_selector();
 }
@@ -707,7 +707,7 @@ void SamplingBar::on_samplecount_sel(int index)
 {
     (void)index;
 
-    const DevInst *dev_inst = get_selected_device();
+    DevInst *dev_inst = get_selected_device();
     if (dev_inst->dev_inst()->mode == DSO)
         commit_hori_res();
     sig_duration_changed();

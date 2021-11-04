@@ -99,13 +99,10 @@ int Header::get_nameEditWidth()
         return 0;
 }
 
-boost::shared_ptr<pv::view::Trace> Header::get_mTrace(
-    int &action,
-    const QPoint &pt)
+pv::view::Trace* Header::get_mTrace(int &action, const QPoint &pt)
 {
     const int w = width();
-    const vector< boost::shared_ptr<Trace> > traces(
-        _view.get_traces(ALL_VIEW));
+    const auto &traces = _view.get_traces(ALL_VIEW);
 
     for(auto &t : traces)
     {
@@ -115,7 +112,7 @@ boost::shared_ptr<pv::view::Trace> Header::get_mTrace(
             return t;
     }
 
-    return boost::shared_ptr<Trace>();
+    return NULL;
 }
 
 void Header::paintEvent(QPaintEvent*)
@@ -128,10 +125,7 @@ void Header::paintEvent(QPaintEvent*)
     style()->drawPrimitive(QStyle::PE_Widget, &o, &painter, this);
 
 	const int w = width();
-    const vector< boost::shared_ptr<Trace> > traces(
-        _view.get_traces(ALL_VIEW));
-
-  //  auto num = traces.size();
+    const auto &traces = _view.get_traces(ALL_VIEW);
 
     const bool dragging = !_drag_traces.empty();
     QColor fore(QWidget::palette().color(QWidget::foregroundRole()));
@@ -140,7 +134,6 @@ void Header::paintEvent(QPaintEvent*)
     for(auto &t : traces)
 	{
         assert(t);
-       // auto ptr = t.get();
         t->paint_label(painter, w, dragging ? QPoint(-1, -1) : _mouse_point, fore);
 	}
 
@@ -151,8 +144,7 @@ void Header::mouseDoubleClickEvent(QMouseEvent *event)
 {
     assert(event);
 
-    const vector< boost::shared_ptr<Trace> > traces(
-        _view.get_traces(ALL_VIEW));
+    const auto  &traces = _view.get_traces(ALL_VIEW);
 
     if (event->button() & Qt::LeftButton) {
         _mouse_down_point = event->pos();
@@ -175,8 +167,7 @@ void Header::mousePressEvent(QMouseEvent *event)
 {
 	assert(event);
 
-    const vector< boost::shared_ptr<Trace> > traces(
-        _view.get_traces(ALL_VIEW));
+    const auto &traces = _view.get_traces(ALL_VIEW);
     int action;
     const bool instant = _view.session().get_instant();
     if (instant && _view.session().get_capture_state() == SigSession::Running) {
@@ -193,8 +184,7 @@ void Header::mousePressEvent(QMouseEvent *event)
                     make_pair(t, t->get_v_offset()));
 
         // Select the Trace if it has been clicked
-        const boost::shared_ptr<Trace> mTrace =
-            get_mTrace(action, event->pos());
+        const auto mTrace = get_mTrace(action, event->pos());
         if (action == Trace::COLOR && mTrace) {
             _colorFlag = true;
         } else if (action == Trace::NAME && mTrace) {
@@ -229,8 +219,7 @@ void Header::mouseReleaseEvent(QMouseEvent *event)
 
     // judge for color / name / trigger / move
     int action;
-    const boost::shared_ptr<Trace> mTrace =
-        get_mTrace(action, event->pos());
+    const auto mTrace = get_mTrace(action, event->pos());
     if (mTrace){
         if (action == Trace::COLOR && _colorFlag) {
             _context_trace = mTrace;
@@ -247,10 +236,11 @@ void Header::mouseReleaseEvent(QMouseEvent *event)
         _view.signals_changed();
         _view.set_all_update(true);
 
-        const vector< boost::shared_ptr<Trace> > traces(
-            _view.get_traces(ALL_VIEW));
-        for(auto &t : traces)
+        const auto &traces = _view.get_traces(ALL_VIEW);
+
+        for(auto &t : traces){
             t->select(false);
+        }            
     }
 
     _colorFlag = false;
@@ -265,8 +255,7 @@ void Header::wheelEvent(QWheelEvent *event)
     assert(event);
 
     if (event->orientation() == Qt::Vertical) {
-        const vector< boost::shared_ptr<Trace> > traces(
-            _view.get_traces(ALL_VIEW));
+        const auto &traces = _view.get_traces(ALL_VIEW);
         // Vertical scrolling
         double shift = 0;
         #ifdef Q_OS_DARWIN
@@ -327,29 +316,27 @@ void Header::mouseMoveEvent(QMouseEvent *event)
     if (!_drag_traces.empty()) {
 		const int delta = event->pos().y() - _mouse_down_point.y();
 
-        for (std::list<std::pair<boost::weak_ptr<Trace>,
-            int> >::iterator i = _drag_traces.begin();
-            i != _drag_traces.end(); i++) {
-            const boost::shared_ptr<Trace> sig((*i).first);
+        for (auto i = _drag_traces.begin(); i != _drag_traces.end(); i++) {
+            const auto sig = (*i).first;
 			if (sig) {
                 int y = (*i).second + delta;
                 if (sig->get_type() == SR_CHANNEL_DSO) {
-                    boost::shared_ptr<DsoSignal> dsoSig;
-                    if ((dsoSig = dynamic_pointer_cast<DsoSignal>(sig))) {
+                    DsoSignal *dsoSig = NULL;
+                    if ((dsoSig = dynamic_cast<DsoSignal*>(sig))) {
                         dsoSig->set_zero_vpos(y);
                         _moveFlag = true;
                         traces_moved();
                     }
                 } else if (sig->get_type() == SR_CHANNEL_MATH) {
-                    boost::shared_ptr<MathTrace> mathTrace;
-                    if ((mathTrace = dynamic_pointer_cast<MathTrace>(sig))) {
+                    MathTrace *mathTrace = NULL;
+                    if ((mathTrace = dynamic_cast<MathTrace*>(sig))) {
                        mathTrace->set_zero_vpos(y);
                        _moveFlag = true;
                        traces_moved();
                     }
                  } else if (sig->get_type() == SR_CHANNEL_ANALOG) {
-                    boost::shared_ptr<AnalogSignal> analogSig;
-                    if ((analogSig = dynamic_pointer_cast<AnalogSignal>(sig))) {
+                    AnalogSignal *analogSig = NULL;
+                    if ((analogSig = dynamic_cast<AnalogSignal*>(sig))) {
                         analogSig->set_zero_vpos(y);
                         _moveFlag = true;
                         traces_moved();
@@ -384,7 +371,7 @@ void Header::contextMenuEvent(QContextMenuEvent *event)
 
     int action;
 
-    const boost::shared_ptr<Trace> t = get_mTrace(action, _mouse_point);
+    const auto t = get_mTrace(action, _mouse_point);
 
     if (!t || !t->selected() || action != Trace::LABEL)
         return;
@@ -400,12 +387,12 @@ void Header::contextMenuEvent(QContextMenuEvent *event)
 
 //    _context_trace = t;
 //    menu.exec(event->globalPos());
-//    _context_trace.reset();
+//    _context_trace.r-eset();
 }
 
 void Header::on_action_set_name_triggered()
 {
-    boost::shared_ptr<view::Trace> context_Trace = _context_trace;
+    auto context_Trace = _context_trace;
     if (!context_Trace)
 		return;
 

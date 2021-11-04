@@ -27,9 +27,7 @@
 #include <stdint.h>
 #include <list>
 #include <map>
-
-#include <boost/shared_ptr.hpp>
-
+  
 #include <QComboBox>
 #include <QToolBar>
 #include <QToolButton>
@@ -76,13 +74,13 @@ namespace pv
 
             void set_device_list(const std::list<DevInst*> &devices, DevInst* selected);
 
-            DevInst *get_selected_device() const;
+            DevInst *get_selected_device();
 
             void update_sample_rate_selector();
 
             void set_sampling(bool sampling);
-            bool get_sampling() const;
-            bool get_instant() const;
+            bool get_sampling();
+            bool get_instant();
 
             void enable_toggle(bool enable);
 

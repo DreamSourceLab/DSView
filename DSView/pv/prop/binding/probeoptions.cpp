@@ -138,9 +138,9 @@ void ProbeOptions::config_setter(
 
 void ProbeOptions::bind_bool(const QString &name, const QString label, int key)
 {
-	_properties.push_back(boost::shared_ptr<Property>(
+	_properties.push_back(
         new Bool(name, label, bind(config_getter, _sdi, _probe, key),
-            bind(config_setter, _sdi, _probe, key, _1))));
+            bind(config_setter, _sdi, _probe, key, _1)));
 }
 
 void ProbeOptions::bind_enum(const QString &name, const QString label, int key,
@@ -148,7 +148,7 @@ void ProbeOptions::bind_enum(const QString &name, const QString label, int key,
 {
 	GVariant *gvar;
 	GVariantIter iter;
-	vector< pair<GVariant*, QString> > values;
+	std::vector< pair<GVariant*, QString> > values;
 
 	assert(gvar_list);
 
@@ -156,29 +156,29 @@ void ProbeOptions::bind_enum(const QString &name, const QString label, int key,
 	while ((gvar = g_variant_iter_next_value (&iter)))
 		values.push_back(make_pair(gvar, printer(gvar)));
 
-	_properties.push_back(boost::shared_ptr<Property>(
+	_properties.push_back(
         new Enum(name, label, values,
             bind(config_getter, _sdi, _probe, key),
-            bind(config_setter, _sdi, _probe, key, _1))));
+            bind(config_setter, _sdi, _probe, key, _1)));
 }
 
 void ProbeOptions::bind_int(const QString &name, const QString label, int key, QString suffix,
     optional< std::pair<int64_t, int64_t> > range)
 {
-	_properties.push_back(boost::shared_ptr<Property>(
+	_properties.push_back(
         new Int(name, label, suffix, range,
             bind(config_getter, _sdi, _probe, key),
-            bind(config_setter, _sdi, _probe, key, _1))));
+            bind(config_setter, _sdi, _probe, key, _1)));
 }
 
 void ProbeOptions::bind_double(const QString &name, const QString label, int key, QString suffix,
     optional< std::pair<double, double> > range,
     int decimals, boost::optional<double> step)
 {
-    _properties.push_back(boost::shared_ptr<Property>(
+    _properties.push_back(
         new Double(name, label, decimals, suffix, range, step,
             bind(config_getter, _sdi, _probe, key),
-            bind(config_setter, _sdi, _probe, key, _1))));
+            bind(config_setter, _sdi, _probe, key, _1)));
 }
 
 void ProbeOptions::bind_vdiv(const QString &name, const QString label,

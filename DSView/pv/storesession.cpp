@@ -82,13 +82,13 @@ SigSession* StoreSession::session()
     return _session;
 }
 
-pair<uint64_t, uint64_t> StoreSession::progress() const
+std::pair<uint64_t, uint64_t> StoreSession::progress()
 {
     //lock_guard<mutex> lock(_mutex);
-	return make_pair(_units_stored, _unit_count);
+    return std::make_pair(_units_stored, _unit_count);
 }
 
-const QString& StoreSession::error() const
+const QString& StoreSession::error()
 {
     //lock_guard<mutex> lock(_mutex);
 	return _error;
@@ -153,7 +153,7 @@ bool StoreSession::save_start()
         return false;
     }
 
-    const boost::shared_ptr<data::Snapshot> snapshot(_session->get_snapshot(*type_set.begin()));
+    const auto snapshot = _session->get_snapshot(*type_set.begin());
 	assert(snapshot);
     // Check we have data
     if (snapshot->empty()) {
@@ -205,17 +205,17 @@ bool StoreSession::save_start()
     return false;
 }
 
-void StoreSession::save_proc(boost::shared_ptr<data::Snapshot> snapshot)
+void StoreSession::save_proc(data::Snapshot *snapshot)
 {
 	assert(snapshot);
 
     int ret = SR_ERR;
     int num = 0;
-    boost::shared_ptr<data::LogicSnapshot> logic_snapshot;
-    boost::shared_ptr<data::AnalogSnapshot> analog_snapshot;
-    boost::shared_ptr<data::DsoSnapshot> dso_snapshot;
+    data::LogicSnapshot *logic_snapshot = NULL;
+    //data::AnalogSnapshot *analog_snapshot = NULL;
+    //data::DsoSnapshot *dso_snapshot = NULL;
 
-    if ((logic_snapshot = boost::dynamic_pointer_cast<data::LogicSnapshot>(snapshot))) {
+    if ((logic_snapshot = dynamic_cast<data::LogicSnapshot*>(snapshot))) {
         uint16_t to_save_probes = 0;
         for(auto &s : _session->get_signals()) {
             if (s->enabled() && logic_snapshot->has_data(s->get_index()))
@@ -345,7 +345,7 @@ void StoreSession::save_proc(boost::shared_ptr<data::Snapshot> snapshot)
     } 
 }
 
-QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
+QString StoreSession::meta_gen(data::Snapshot *snapshot)
 {
     GSList *l;
     GVariant *gvar;
@@ -396,8 +396,8 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
         fprintf(meta, "total blocks = %d\n", snapshot->get_block_num());
     }
 
-    boost::shared_ptr<data::LogicSnapshot> logic_snapshot;
-    if ((logic_snapshot = dynamic_pointer_cast<data::LogicSnapshot>(snapshot))) {
+    data::LogicSnapshot *logic_snapshot = NULL;
+    if ((logic_snapshot = dynamic_cast<data::LogicSnapshot*>(snapshot))) {
         uint16_t to_save_probes = 0;
         for (l = sdi->channels; l; l = l->next) {
             probe = (struct sr_channel *)l->data;
@@ -451,8 +451,8 @@ QString StoreSession::meta_gen(boost::shared_ptr<data::Snapshot> snapshot)
     } else if (sdi->mode == LOGIC) {
         fprintf(meta, "trigger time = %lld\n", _session->get_session_time().toMSecsSinceEpoch());
     } else if (sdi->mode == ANALOG) {
-        boost::shared_ptr<data::AnalogSnapshot> analog_snapshot;
-        if ((analog_snapshot = dynamic_pointer_cast<data::AnalogSnapshot>(snapshot))) {
+        data::AnalogSnapshot *analog_snapshot = NULL;
+        if ((analog_snapshot = dynamic_cast<data::AnalogSnapshot*>(snapshot))) {
             uint8_t tmp_u8 = analog_snapshot->get_unit_bytes();
             fprintf(meta, "bits = %d\n", tmp_u8*8);
         }
@@ -559,7 +559,7 @@ bool StoreSession::export_start()
         return false;
     }
 
-    const boost::shared_ptr<data::Snapshot> snapshot(_session->get_snapshot(*type_set.begin()));
+    const auto snapshot = _session->get_snapshot(*type_set.begin());
     assert(snapshot);
     // Check we have data
     if (snapshot->empty()) {
@@ -605,20 +605,20 @@ bool StoreSession::export_start()
     return false;
 }
 
-void StoreSession::export_proc(boost::shared_ptr<data::Snapshot> snapshot)
+void StoreSession::export_proc(data::Snapshot *snapshot)
 {
     assert(snapshot);
 
-    boost::shared_ptr<data::LogicSnapshot> logic_snapshot;
-    boost::shared_ptr<data::AnalogSnapshot> analog_snapshot;
-    boost::shared_ptr<data::DsoSnapshot> dso_snapshot;
+    data::LogicSnapshot *logic_snapshot = NULL;
+    data::AnalogSnapshot *analog_snapshot = NULL;
+    data::DsoSnapshot *dso_snapshot = NULL;
     int channel_type;
 
-    if ((logic_snapshot = boost::dynamic_pointer_cast<data::LogicSnapshot>(snapshot))) {
+    if ((logic_snapshot = dynamic_cast<data::LogicSnapshot*>(snapshot))) {
         channel_type = SR_CHANNEL_LOGIC;
-    } else if ((dso_snapshot = boost::dynamic_pointer_cast<data::DsoSnapshot>(snapshot))) {
+    } else if ((dso_snapshot = dynamic_cast<data::DsoSnapshot*>(snapshot))) {
         channel_type = SR_CHANNEL_DSO;
-    } else if ((analog_snapshot = boost::dynamic_pointer_cast<data::AnalogSnapshot>(snapshot))) {
+    } else if ((analog_snapshot = dynamic_cast<data::AnalogSnapshot*>(snapshot))) {
         channel_type = SR_CHANNEL_ANALOG;
     } else {
         _has_error = true;
@@ -871,15 +871,15 @@ QJsonArray StoreSession::json_decoders()
         QJsonObject dec_obj;
         QJsonArray stack_array;
         QJsonObject show_obj;
-        const boost::shared_ptr<data::DecoderStack>& stack = t->decoder();
-        const std::list< boost::shared_ptr<data::decode::Decoder> >& decoder = stack->stack();
+        const auto &stack = t->decoder();
+        const auto &decoder = stack->stack();
 
         for(auto &dec : decoder) {
             QJsonArray ch_array;
             const srd_decoder *const d = dec->decoder();;
             const bool have_probes = (d->channels || d->opt_channels) != 0;
             if (have_probes) {
-                for(std::map<const srd_channel*, int>::const_iterator i = dec->channels().begin();
+                for(auto i = dec->channels().begin();
                     i != dec->channels().end(); i++) {
                     QJsonObject ch_obj;
                     ch_obj[(*i).first->id] = QJsonValue::fromVariant((*i).second);
@@ -888,8 +888,8 @@ QJsonArray StoreSession::json_decoders()
             }
 
             QJsonObject options_obj;
-            boost::shared_ptr<prop::binding::DecoderOptions> dec_binding(
-                new prop::binding::DecoderOptions(stack, dec));
+            auto dec_binding = new prop::binding::DecoderOptions(stack, dec);
+
             for (GSList *l = d->options; l; l = l->next)
             {
                 const srd_decoder_option *const opt =
@@ -934,10 +934,10 @@ QJsonArray StoreSession::json_decoders()
         dec_obj["stacked decoders"] = stack_array;
 
 
-        std::map<const pv::data::decode::Row, bool> rows = stack->get_rows_gshow();
-        for (std::map<const pv::data::decode::Row, bool>::const_iterator i = rows.begin();
-            i != rows.end(); i++) {
-            show_obj[(*i).first.title()] = QJsonValue::fromVariant((*i).second);
+        auto rows = stack->get_rows_gshow();
+        for (auto i = rows.begin(); i != rows.end(); i++) {
+            pv::data::decode::Row _row = (*i).first;
+            show_obj[_row.title()] = QJsonValue::fromVariant((*i).second);
         }
         dec_obj["show"] = show_obj;
 
@@ -954,17 +954,18 @@ void StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_arra
 
     foreach (const QJsonValue &dec_value, dec_array) {
         QJsonObject dec_obj = dec_value.toObject();
-        const vector< boost::shared_ptr<view::DecodeTrace> > pre_dsigs(
-            _session->get_decode_signals());
+
+        auto &pre_dsigs = _session->get_decode_signals();
         if (widget->sel_protocol(dec_obj["id"].toString()))
             widget->add_protocol(true);
-        const vector< boost::shared_ptr<view::DecodeTrace> > aft_dsigs(
-            _session->get_decode_signals());
+
+        auto &aft_dsigs = _session->get_decode_signals();
 
         if (aft_dsigs.size() > pre_dsigs.size()) {
             const GSList *l;
-            boost::shared_ptr<view::DecodeTrace> new_dsig = aft_dsigs.back();
-            const boost::shared_ptr<data::DecoderStack>& stack = new_dsig->decoder();
+            
+            auto new_dsig = aft_dsigs.back();
+            auto stack = new_dsig->decoder();
 
             if (dec_obj.contains("stacked decoders")) {
                 foreach(const QJsonValue &value, dec_obj["stacked decoders"].toArray()) {
@@ -976,8 +977,7 @@ void StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_arra
                         assert(d);
 
                         if (QString::fromUtf8(d->id) == stacked_obj["id"].toString()) {
-                            stack->push(boost::shared_ptr<data::decode::Decoder>(
-                                new data::decode::Decoder(d)));
+                            stack->push(new data::decode::Decoder(d));
                             break;
                         }
                     }
@@ -985,7 +985,7 @@ void StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_arra
                 }
             }
 
-            const std::list< boost::shared_ptr<data::decode::Decoder> >& decoder = stack->stack();
+            auto &decoder = stack->stack();
 
             for(auto &dec : decoder) {
                 const srd_decoder *const d = dec->decoder();
@@ -1074,10 +1074,13 @@ void StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_arra
             if (dec_obj.contains("show")) {
                 QJsonObject show_obj = dec_obj["show"].toObject();
                 std::map<const pv::data::decode::Row, bool> rows = stack->get_rows_gshow();
-                for (std::map<const pv::data::decode::Row, bool>::const_iterator i = rows.begin();
-                    i != rows.end(); i++) {
-                    if (show_obj.contains((*i).first.title())) {
-                        stack->set_rows_gshow((*i).first, show_obj[(*i).first.title()].toBool());
+
+                for (auto i = rows.begin();i != rows.end(); i++) {
+                        QString key = (*i).first.title();
+                    if (show_obj.contains(key)) {
+                        bool bShow = show_obj[key].toBool();
+                        const pv::data::decode::Row r = (*i).first;
+                        stack->set_rows_gshow(r, bShow);
                     }
                 }
             }

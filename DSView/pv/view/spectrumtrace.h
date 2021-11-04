@@ -25,8 +25,7 @@
 
 #include <list>
 #include <map>
-
-#include <boost/shared_ptr.hpp>
+ 
 
 struct srd_channel;
 
@@ -67,33 +66,32 @@ private:
     static const double VerticalRate;
 
 public:
-    SpectrumTrace(pv::SigSession *session,
-        boost::shared_ptr<pv::data::SpectrumStack> spectrum_stack, int index);
+    SpectrumTrace(pv::SigSession *session, pv::data::SpectrumStack *spectrum_stack, int index);
     ~SpectrumTrace();
 
-    bool enabled() const;
+    bool enabled();
     void set_enable(bool enable);
 
     void init_zoom();
     void zoom(double steps, int offset);
-    bool zoom_hit() const;
+    bool zoom_hit();
     void set_zoom_hit(bool hit);
 
     void set_offset(double delta);
-    double get_offset() const;
+    double get_offset();
 
     void set_scale(double scale);
-    double get_scale() const;
+    double get_scale();
 
     void set_dbv_range(int range);
-    int dbv_range() const;
+    int dbv_range();
     std::vector<int> get_dbv_ranges();
 
-    int view_mode() const;
+    int view_mode();
     void set_view_mode(unsigned int mode);
     std::vector<QString> get_view_modes_support();
 
-    const boost::shared_ptr<pv::data::SpectrumStack>& get_spectrum_stack() const;
+    pv::data::SpectrumStack* get_spectrum_stack();
 
     static QString format_freq(double freq, unsigned precision = Pricision);
 
@@ -123,7 +121,7 @@ public:
      **/
     void paint_fore(QPainter &p, int left, int right, QColor fore, QColor back);
 
-    QRect get_view_rect() const;
+    QRect get_view_rect();
 
 protected:
     void paint_type_options(QPainter &p, int right, const QPoint pt, QColor fore);
@@ -134,7 +132,7 @@ private slots:
 
 private:
     pv::SigSession *_session;
-    boost::shared_ptr<pv::data::SpectrumStack> _spectrum_stack;
+    pv::data::SpectrumStack *_spectrum_stack;
 
     bool _enable;
     int _view_mode;

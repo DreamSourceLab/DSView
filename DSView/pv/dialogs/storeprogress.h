@@ -21,10 +21,7 @@
 
 #ifndef DSVIEW_PV_DIALOGS_SAVEPROGRESS_H
 #define DSVIEW_PV_DIALOGS_SAVEPROGRESS_H
-
-//#include <set>
-
-#include <boost/shared_ptr.hpp>
+ 
 #include <QProgressBar>
 #include "../storesession.h"
 #include "../dialogs/dsdialog.h" 

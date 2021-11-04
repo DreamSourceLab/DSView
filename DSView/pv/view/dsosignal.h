@@ -24,11 +24,8 @@
 #define DSVIEW_PV_DSOSIGNAL_H
 
 #include "signal.h"
-
-#include <boost/shared_ptr.hpp>
-
+  
 namespace pv {
-
 namespace data {
 class Logic;
 class Dso;
@@ -87,46 +84,45 @@ private:
     static const uint16_t MS_RectHeight = 25;
 
 public:
-    DsoSignal(DevInst* dev_inst,
-              boost::shared_ptr<pv::data::Dso> data,
+    DsoSignal(DevInst* dev_inst, pv::data::Dso *data,
               sr_channel *probe);
 
     virtual ~DsoSignal();
 
-    boost::shared_ptr<pv::data::SignalData> data() const;
-    boost::shared_ptr<pv::data::Dso> dso_data() const;
+    pv::data::SignalData* data();
+    pv::data::Dso* dso_data();
 
     void set_scale(int height);
     float get_scale();
     uint8_t get_bits();
-    double get_ref_min() const;
-    double get_ref_max() const;
+    double get_ref_min();
+    double get_ref_max();
 
-    int get_name_width() const;
+    int get_name_width();
 
     /**
      *
      */
     void set_enable(bool enable);
-    bool get_vDialActive() const;
+    bool get_vDialActive();
     void set_vDialActive(bool active);
     bool go_vDialPre(bool manul);
     bool go_vDialNext(bool manul);
     bool update_capture(bool instant);
-    dslDial *get_vDial() const;
-    uint64_t get_vDialValue() const;
-    uint16_t get_vDialSel() const;
-    uint8_t get_acCoupling() const;
+    dslDial *get_vDial();
+    uint64_t get_vDialValue();
+    uint16_t get_vDialSel();
+    uint8_t get_acCoupling();
     void set_acCoupling(uint8_t coupling);
 
     void set_trig_vpos(int pos, bool delta_change = true);
     void set_trig_ratio(double ratio, bool delta_change = true);
-    double get_trig_vrate() const;
+    double get_trig_vrate();
 
     void set_factor(uint64_t factor);
     uint64_t get_factor();
     void set_show(bool show);
-    bool show() const;
+    bool show();
     void set_mValid(bool valid);
 
     bool load_settings();
@@ -150,9 +146,9 @@ public:
     /**
      * Gets the mid-Y position of this signal.
      */
-    int get_zero_vpos() const;
-    double get_zero_ratio() const;
-    int get_hw_offset() const;
+    int get_zero_vpos();
+    double get_zero_ratio();
+    int get_hw_offset();
     /**
      * Sets the mid-Y position of this signal.
      */
@@ -165,10 +161,10 @@ public:
     /**
      *
      */
-    int ratio2value(double ratio) const;
-    int ratio2pos(double ratio) const;
-    double value2ratio(int value) const;
-    double pos2ratio(int pos) const;
+    int ratio2value(double ratio);
+    int ratio2pos(double ratio);
+    double value2ratio(int value);
+    double pos2ratio(int pos);
 
     /**
      * paint prepare
@@ -199,9 +195,9 @@ public:
      **/
     void paint_fore(QPainter &p, int left, int right, QColor fore, QColor back);
 
-    QRect get_view_rect() const;
+    QRect get_view_rect();
 
-    QRectF get_trig_rect(int left, int right) const;
+    QRectF get_trig_rect(int left, int right);
 
     QString get_measure(enum DSO_MEASURE_TYPE type);
 
@@ -217,13 +213,13 @@ protected:
 
 private:
     void paint_trace(QPainter &p,
-        const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot,
+        const pv::data::DsoSnapshot* snapshot,
         int zeroY, int left, const int64_t start, const int64_t end, int hw_offset,
         const double pixels_offset, const double samples_per_pixel,
         uint64_t num_channels);
 
     void paint_envelope(QPainter &p,
-        const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot,
+        const pv::data::DsoSnapshot *snapshot,
         int zeroY, int left, const int64_t start, const int64_t end, int hw_offset,
         const double pixels_offset, const double samples_per_pixel,
         uint64_t num_channels);
@@ -232,7 +228,7 @@ private:
     void auto_set();
 
 private:
-    boost::shared_ptr<pv::data::Dso> _data;
+    pv::data::Dso *_data;
 	float _scale;
     bool _en_lock;
     bool _show;

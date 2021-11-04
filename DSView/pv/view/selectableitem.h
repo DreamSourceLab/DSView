@@ -43,14 +43,14 @@ class SelectableItem : public QObject
 private:
 	static const int HighlightRadius;
 
-public:
+protected:
 	SelectableItem();
 
 public:
 	/**
 	 * Returns true if the signal has been selected by the user.
 	 */
-	bool selected() const;
+	bool selected();
 
 	/**
 	 * Selects or deselects the signal.

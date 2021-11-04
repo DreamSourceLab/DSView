@@ -39,22 +39,22 @@ public:
     virtual void clear() = 0;
     virtual void init() = 0;
 
-	uint64_t get_sample_count() const;
-    uint64_t get_ring_start() const;
-    uint64_t get_ring_end() const;
+	uint64_t get_sample_count();
+    uint64_t get_ring_start();
+    uint64_t get_ring_end();
 
-    const void * get_data() const;
+    const void * get_data();
 
-    int unit_size() const;
-    uint8_t get_unit_bytes() const;
+    int unit_size();
+    uint8_t get_unit_bytes();
 
-    bool memory_failed() const;
-    bool empty() const;
+    bool memory_failed();
+    bool empty();
 
-    bool last_ended() const;
+    bool last_ended();
     void set_last_ended(bool ended);
 
-    unsigned int get_channel_num() const;
+    unsigned int get_channel_num();
 
     virtual void capture_ended();
     virtual bool has_data(int index) = 0;
@@ -67,7 +67,7 @@ protected:
 protected:
      mutable std::mutex  _mutex;
 
-    //std::vector<uint8_t> _data;
+  
     void* _data;
     mutable std::vector<uint16_t> _ch_index;
 

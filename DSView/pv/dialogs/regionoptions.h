@@ -28,9 +28,7 @@
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QComboBox>
-
-#include <boost/shared_ptr.hpp>
-
+ 
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
 

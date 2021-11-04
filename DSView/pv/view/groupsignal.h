@@ -26,8 +26,7 @@
 #include "signal.h"
 #include "../data/groupsnapshot.h"
 
-#include <list>
-#include <boost/shared_ptr.hpp>
+#include <list> 
 
 namespace pv {
 
@@ -55,7 +54,7 @@ private:
 
 public:
     GroupSignal(QString name,
-        boost::shared_ptr<pv::data::Group> data,
+        pv::data::Group *data,
                 std::list<int> probe_index_list, int group_index);
 
     virtual ~GroupSignal();
@@ -63,9 +62,9 @@ public:
     /**
      * Returns true if the trace is visible and enabled.
      */
-    bool enabled() const;
+    bool enabled();
 
-    boost::shared_ptr<pv::data::SignalData> data() const;
+    pv::data::SignalData* data();
 
 	void set_scale(float scale);
 
@@ -84,17 +83,17 @@ protected:
 
 private:
 	void paint_trace(QPainter &p,
-        const boost::shared_ptr<pv::data::GroupSnapshot> &snapshot,
+        const pv::data::GroupSnapshot *snapshot,
 		int y, int left, const int64_t start, const int64_t end,
 		const double pixels_offset, const double samples_per_pixel);
 
 	void paint_envelope(QPainter &p,
-        const boost::shared_ptr<pv::data::GroupSnapshot> &snapshot,
+        const pv::data::GroupSnapshot *snapshot,
 		int y, int left, const int64_t start, const int64_t end,
 		const double pixels_offset, const double samples_per_pixel);
 
 private:
-    boost::shared_ptr<pv::data::Group> _data;
+    pv::data::Group *_data;
 	float _scale;
 };
 

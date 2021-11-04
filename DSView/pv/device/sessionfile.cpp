@@ -30,7 +30,7 @@ SessionFile::SessionFile(QString path) :
 {
 }
 
-sr_dev_inst* SessionFile::dev_inst() const
+sr_dev_inst* SessionFile::dev_inst()
 {
 	return _sdi;
 }

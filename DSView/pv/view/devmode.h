@@ -22,10 +22,7 @@
 
 #ifndef DSVIEW_PV_VIEW_DEVMODE_H
 #define DSVIEW_PV_VIEW_DEVMODE_H
-
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-
+ 
 #include <list>
 #include <utility>
 #include <map>

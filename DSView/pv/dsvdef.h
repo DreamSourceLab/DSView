@@ -22,6 +22,17 @@
 
 #pragma once
 
+#include "../config.h"
+
+
+#ifdef DS_DEBUG_TRACE
+    void ds_print(const char *s);
+    
+    #define ds_debug(x) ds_print((x))
+#else
+    #define ds_debug(x)
+#endif
+
 class QWidget;
 
 #define DESTROY_OBJECT(p) if((p)){delete (p); p = NULL;} 
@@ -48,3 +59,4 @@ namespace app
 
     bool is_app_top_window(QWidget* w);
 }
+

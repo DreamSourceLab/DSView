@@ -65,12 +65,12 @@ QWidget* Bool::get_widget(QWidget *parent, bool auto_commit)
 	return _check_box;
 }
 
-bool Bool::labeled_widget() const
+bool Bool::labeled_widget()
 {
 	return true;
 }
 
-GVariant* Bool::get_value() const
+GVariant* Bool::get_value()
 {
     GVariant *const value = _getter ? _getter() : NULL;
 

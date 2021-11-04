@@ -74,8 +74,8 @@ LissajousOptions::LissajousOptions(SigSession *session, QWidget *parent) :
     QHBoxLayout *ylayout = new QHBoxLayout();
 
     for(auto &s : _session->get_signals()) {
-        boost::shared_ptr<view::DsoSignal> dsoSig;
-        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
+        view::DsoSignal *dsoSig = NULL;
+        if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
             QString index_str = QString::number(dsoSig->get_index());
             QRadioButton *xradio = new QRadioButton(index_str, _x_group);
             xradio->setProperty("index", dsoSig->get_index());
@@ -91,7 +91,7 @@ LissajousOptions::LissajousOptions(SigSession *session, QWidget *parent) :
     _y_group->setLayout(ylayout);
 
 
-    boost::shared_ptr<LissajousTrace> lissajous = _session->get_lissajous_trace();
+    auto lissajous = _session->get_lissajous_trace();
     if (lissajous) {
         _enable->setChecked(lissajous->enabled());
         _percent->setValue(lissajous->percent());
@@ -182,12 +182,12 @@ void LissajousOptions::accept()
     _session->lissajous_rebuild(enable, xindex, yindex, _percent->value());
 
     for(auto &s : _session->get_signals()) {
-        boost::shared_ptr<view::DsoSignal> dsoSig;
-        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
+        view::DsoSignal *dsoSig = NULL;
+        if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
             dsoSig->set_show(!enable);
         }
     }
-    boost::shared_ptr<view::MathTrace> mathTrace = _session->get_math_trace();
+    auto mathTrace = _session->get_math_trace();
     if (mathTrace && mathTrace->enabled()) {
         mathTrace->set_show(!enable);
     }

@@ -22,12 +22,9 @@
 #include <libsigrokdecode4DSL/libsigrokdecode.h>
 
 #include "decoder.h"
+#include <assert.h>
 
-using boost::shared_ptr;
-using std::set;
-using std::map;
-using std::string;
-
+  
 namespace pv {
 namespace data {
 namespace decode {
@@ -41,44 +38,18 @@ Decoder::Decoder(const srd_decoder *const dec) :
 
 Decoder::~Decoder()
 {
-    for (map<string, GVariant*>::const_iterator i = _options_back.begin();
+    for (auto i = _options_back.begin();
         i != _options_back.end(); i++)
         if ((*i).second)
             g_variant_unref((*i).second);
 }
-
-const srd_decoder* Decoder::decoder() const
-{
-	return _decoder;
-}
-
-bool Decoder::shown() const
-{
-	return _shown;
-}
-
-void Decoder::show(bool show)
-{
-    _shown = show;
-}
-
-const map<const srd_channel*, int>&
-Decoder::channels() const
-{
-	return _probes;
-}
-
-void Decoder::set_probes(std::map<const srd_channel *, int> probes)
+  
+void Decoder::set_probes(std::map<const srd_channel*, int> probes)
 {
     _probes_back = probes;
     _setted = true;
 }
-
-const std::map<std::string, GVariant*>& Decoder::options() const
-{
-	return _options;
-}
-
+  
 void Decoder::set_option(const char *id, GVariant *value)
 {
 	assert(value);
@@ -98,17 +69,7 @@ void Decoder::set_decode_region(uint64_t start, uint64_t end)
         _decode_end != end)
         _setted = true;
 }
-
-uint64_t Decoder::decode_start() const
-{
-    return _decode_start;
-}
-
-uint64_t Decoder::decode_end() const
-{
-    return _decode_end;
-}
-
+  
 //apply setting
 bool Decoder::commit()
 {
@@ -124,7 +85,7 @@ bool Decoder::commit()
     }
 }
 
-bool Decoder::have_required_probes() const
+bool Decoder::have_required_probes()
 {
 	for (GSList *l = _decoder->channels; l; l = l->next) {
 		const srd_channel *const pdch = (const srd_channel*)l->data;
@@ -136,12 +97,12 @@ bool Decoder::have_required_probes() const
 	return true;
 }
 
-srd_decoder_inst* Decoder::create_decoder_inst(srd_session *session) const
+srd_decoder_inst* Decoder::create_decoder_inst(srd_session *session)
 {
 	GHashTable *const opt_hash = g_hash_table_new_full(g_str_hash,
 		g_str_equal, g_free, (GDestroyNotify)g_variant_unref);
 
-	for (map<string, GVariant*>::const_iterator i = _options.begin();
+	for (auto i = _options.begin();
 		i != _options.end(); i++)
 	{
 		GVariant *const value = (*i).second;
@@ -161,7 +122,7 @@ srd_decoder_inst* Decoder::create_decoder_inst(srd_session *session) const
 	GHashTable *const probes = g_hash_table_new_full(g_str_hash,
 		g_str_equal, g_free, (GDestroyNotify)g_variant_unref);
 
-    for(map<const srd_channel*, int>::
+    for(std::map<const srd_channel*, int>::
 		const_iterator i = _probes.begin();
 		i != _probes.end(); i++)
 	{
@@ -174,11 +135,7 @@ srd_decoder_inst* Decoder::create_decoder_inst(srd_session *session) const
 
 	return decoder_inst;
 }
-
-int Decoder::get_channel_type(const srd_channel *ch)
-{
-    return ch->type;
-}
+ 
 
 } // decode
 } // data

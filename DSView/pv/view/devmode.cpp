@@ -35,9 +35,7 @@
 #include <QRect>
 #include <QDebug>
 #include "../config/appconfig.h"
-
-using boost::shared_ptr;
-using namespace std;
+ 
 
 namespace pv {
 namespace view {

@@ -24,9 +24,6 @@
 #ifndef DSVIEW_PV_VIEW_HEADER_H
 #define DSVIEW_PV_VIEW_HEADER_H
 
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-
 #include <list>
 #include <utility>
 
@@ -49,9 +46,7 @@ public:
 	Header(View &parent);
 
 private:
-    boost::shared_ptr<pv::view::Trace> get_mTrace(
-        int &action,
-		const QPoint &pt);
+    pv::view::Trace* get_mTrace(int &action, const QPoint &pt);
 
 private:
     void changeEvent(QEvent *event);
@@ -100,10 +95,9 @@ private:
 
     QLineEdit *nameEdit;
 
-    std::list<std::pair<boost::weak_ptr<Trace>, int> >
-        _drag_traces;
+    std::list<std::pair<Trace*, int> > _drag_traces;
 
-    boost::shared_ptr<Trace> _context_trace;
+    Trace *_context_trace;
 
     QAction *_action_add_group;
     QAction *_action_del_group;

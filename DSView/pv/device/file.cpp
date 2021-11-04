@@ -43,7 +43,7 @@ File::~File(){
 
 }
 
-QString File::format_device_title() const
+QString File::format_device_title()
 {
     QFileInfo fi(_path);
     return fi.fileName();

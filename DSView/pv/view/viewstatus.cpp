@@ -74,14 +74,14 @@ void ViewStatus::paintEvent(QPaintEvent *)
         fore.setAlpha(View::BackAlpha);
         for(size_t i = 0; i < _mrects.size(); i++) {
             int sig_index = std::get<1>(_mrects[i]);
-            boost::shared_ptr<view::DsoSignal> dsoSig = NULL;
-            const vector< boost::shared_ptr<Signal> > sigs(_session->get_signals());
+            view::DsoSignal *dsoSig = NULL;
+            const auto &sigs = _session->get_signals();
 
             for(auto &s : sigs) {
                 assert(s);
                 if (!s->enabled())
                     continue;
-                if ((dsoSig = dynamic_pointer_cast<DsoSignal>(s))) {
+                if ((dsoSig = dynamic_cast<DsoSignal*>(s))) {
                     if (sig_index == dsoSig->get_index())
                         break;
                     else

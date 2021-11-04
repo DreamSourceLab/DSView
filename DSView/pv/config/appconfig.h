@@ -27,8 +27,7 @@
 #include <QString>
 #include <QByteArray>
 
-using namespace std;
-
+  
 //--------------------api---
 
 QString GetDirectoryName(QString path);
@@ -40,9 +39,9 @@ QString GetIconPath();
 class StringPair
 {
 public:
-   StringPair(const string &key, const string &value);
-   string m_key;
-   string m_value;
+   StringPair(const std::string &key, const std::string &value);
+   std::string m_key;
+   std::string m_value;
 };
 
 
@@ -52,7 +51,7 @@ struct AppOptions
     bool  warnofMultiTrig;
     bool  originalData;
 
-    vector<StringPair> m_protocolFormats;
+    std::vector<StringPair> m_protocolFormats;
 };
  
 struct FrameOptions
@@ -91,8 +90,8 @@ public:
   void SaveHistory();
   void SaveFrame();
   
-  void SetProtocolFormat(const string &protocolName, const string &value);
-  string GetProtocolFormat(const string &protocolName); 
+  void SetProtocolFormat(const std::string &protocolName, const std::string &value);
+  std::string GetProtocolFormat(const std::string &protocolName); 
 
 public:
   AppOptions    _appOptions;

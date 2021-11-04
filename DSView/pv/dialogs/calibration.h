@@ -29,8 +29,7 @@
 #include <QFormLayout>
 #include <QSlider>
 
-#include <list>
-#include <boost/shared_ptr.hpp>
+#include <list> 
 
 #include <pv/device/devinst.h>
 #include "../toolbars/titlebar.h"

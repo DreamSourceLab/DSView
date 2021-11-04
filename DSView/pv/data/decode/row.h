@@ -42,6 +42,8 @@ public:
         const srd_decoder_annotation_row *row = NULL,
         const int order = -1);
 
+	Row(const Row &o);
+
 public: 
 
 	inline const srd_decoder* decoder() const{
@@ -52,9 +54,9 @@ public:
 		return _row;
 	}
 
-	const QString title() const;
+    QString title() const;
 
-    bool operator<(const Row &other) const;
+    bool operator<(const Row &other)const;
 
 private:
 	const srd_decoder *_decoder;

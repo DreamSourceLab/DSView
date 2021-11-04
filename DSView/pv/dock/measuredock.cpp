@@ -598,12 +598,15 @@ void MeasureDock::update_edge()
         if (start_ret && end_ret) {
             uint64_t rising_edges;
             uint64_t falling_edges;
-            const std::vector< boost::shared_ptr<Signal> > sigs(_session->get_signals());
+
+            const auto &sigs = _session->get_signals();
+
             for(size_t i = 0; i < sigs.size(); i++) {
-                const boost::shared_ptr<view::Signal> s(sigs[i]);
-                boost::shared_ptr<view::LogicSignal> logicSig;
+                view::Signal *s = sigs[i];
+                view::LogicSignal *logicSig = NULL;
                 assert(s);
-                if ((logicSig = dynamic_pointer_cast<view::LogicSignal>(s)) &&
+
+                if ((logicSig = dynamic_cast<view::LogicSignal*>(s)) &&
                     (logicSig->enabled()) &&
                     (logicSig->get_index() == _edge_ch_cmb_vec[edge_index]->currentText().toInt())){
                     if (logicSig->edges(_view.get_cursor_samples(end), _view.get_cursor_samples(start), rising_edges, falling_edges)) {
@@ -650,12 +653,13 @@ QComboBox* MeasureDock::create_probe_selector(QWidget *parent)
 void MeasureDock::update_probe_selector(QComboBox *selector)
 {
     selector->clear();
-    const std::vector< boost::shared_ptr<Signal> > sigs(_session->get_signals());
+    const auto &sigs = _session->get_signals();
+
     for(size_t i = 0; i < sigs.size(); i++) {
-        const boost::shared_ptr<view::Signal> s(sigs[i]);
+        const auto s = sigs[i];
         assert(s);
 
-        if (dynamic_pointer_cast<LogicSignal>(s) && s->enabled())
+        if (dynamic_cast<LogicSignal*>(s) && s->enabled())
         {
             selector->addItem(QString::number(s->get_index()));
         }

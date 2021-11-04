@@ -27,12 +27,10 @@
 #include <math.h>
 
 #include <algorithm>
- 
 
 #include "logicsnapshot.h"
 #include "groupsnapshot.h"
 
-using namespace boost;
 using namespace std;
 
 namespace pv {
@@ -48,15 +46,17 @@ const uint16_t GroupSnapshot::value_mask[16] = {0x1, 0x2, 0x4, 0x8,
                                                 0x100, 0x200, 0x400, 0x800,
                                                 0x1000, 0x2000, 0x4000, 0x8000};
 
-GroupSnapshot::GroupSnapshot(const boost::shared_ptr<LogicSnapshot> &_logic_snapshot, std::list<int> index_list)
+GroupSnapshot::GroupSnapshot(const LogicSnapshot *_logic_snapshot, std::list<int> index_list)
 {
     assert(_logic_snapshot);
 
+	LogicSnapshot *logic_snapshot = const_cast<LogicSnapshot*>(_logic_snapshot);
+
    
 	memset(_envelope_levels, 0, sizeof(_envelope_levels));
-    _data = _logic_snapshot->get_data();
-    _sample_count = _logic_snapshot->get_sample_count();
-    _unit_size = _logic_snapshot->unit_size();
+    _data = logic_snapshot->get_data();
+    _sample_count = logic_snapshot->get_sample_count();
+    _unit_size = logic_snapshot->unit_size();
     _index_list = index_list;
 
     _mask = 0;
@@ -108,7 +108,7 @@ void GroupSnapshot::clear()
 
 }
 
-uint64_t GroupSnapshot::get_sample_count() const
+uint64_t GroupSnapshot::get_sample_count()
 { 
     return _sample_count;
 }
@@ -150,7 +150,7 @@ const uint16_t* GroupSnapshot::get_samples(
 }
 
 void GroupSnapshot::get_envelope_section(EnvelopeSection &s,
-	uint64_t start, uint64_t end, float min_length) const
+	uint64_t start, uint64_t end, float min_length)
 {
     assert(end <= _sample_count);
 	assert(start <= end);

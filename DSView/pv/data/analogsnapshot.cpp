@@ -214,7 +214,7 @@ void AnalogSnapshot::append_data(void *data, uint64_t samples, uint16_t pitch)
     }
 }
 
-const uint8_t* AnalogSnapshot::get_samples(int64_t start_sample) const
+const uint8_t* AnalogSnapshot::get_samples(int64_t start_sample)
 {
 	assert(start_sample >= 0);
     assert(start_sample < (int64_t)get_sample_count());
@@ -227,7 +227,7 @@ const uint8_t* AnalogSnapshot::get_samples(int64_t start_sample) const
 }
 
 void AnalogSnapshot::get_envelope_section(EnvelopeSection &s,
-    uint64_t start, int64_t count, float min_length, int probe_index) const
+    uint64_t start, int64_t count, float min_length, int probe_index)
 {
     assert(count >= 0);
 	assert(min_length > 0);
@@ -371,7 +371,7 @@ int AnalogSnapshot::get_ch_order(int sig_index)
         return order;
 }
 
-int AnalogSnapshot::get_scale_factor() const
+int AnalogSnapshot::get_scale_factor()
 {
     return EnvelopeScaleFactor;
 }

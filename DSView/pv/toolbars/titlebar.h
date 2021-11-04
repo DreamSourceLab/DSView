@@ -39,7 +39,7 @@ public:
     ~TitleBar();
     
     void setTitle(QString title); 
-    QString title() const;
+    QString title();
 
 private:
     void changeEvent(QEvent *event);

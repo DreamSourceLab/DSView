@@ -262,7 +262,7 @@ const char *ZipMaker::GetError()
             break;
         }
         rdlen += dlen;
-        buf = buf + dlen; //move pointer
+        buf   += dlen; //move pointer
         buflen = inf.dataLen - rdlen;
     } 
  

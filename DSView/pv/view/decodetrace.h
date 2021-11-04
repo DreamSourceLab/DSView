@@ -30,8 +30,6 @@
 #include <QSignalMapper>
 #include <QFormLayout>
 
-#include <boost/shared_ptr.hpp>
-
 #include <pv/prop/binding/decoderoptions.h>
 #include "../dialogs/dsdialog.h"
 
@@ -68,7 +66,7 @@ private:
 	struct ProbeSelector
 	{
 		const QComboBox *_combo;
-		const boost::shared_ptr<pv::data::decode::Decoder> _decoder;
+        const pv::data::decode::Decoder *_decoder;
 		const srd_channel *_pdch;
 	};
 
@@ -98,13 +96,13 @@ private:
 
 public:
 	DecodeTrace(pv::SigSession *session,
-		boost::shared_ptr<pv::data::DecoderStack> decoder_stack,
+		pv::data::DecoderStack *decoder_stack,
 		int index);
     ~DecodeTrace();
 
-	bool enabled() const;
+	bool enabled();
 
-	const boost::shared_ptr<pv::data::DecoderStack>& decoder() const;
+	pv::data::DecoderStack* decoder();
 
 	void set_view(pv::view::View *view);
 
@@ -143,7 +141,7 @@ public:
      **/
     void frame_ended();
 
-    int get_progress() const;
+    int get_progress();
 
 protected:
     void paint_type_options(QPainter &p, int right, const QPoint pt, QColor fore);
@@ -156,18 +154,18 @@ private:
     void draw_annotation(const pv::data::decode::Annotation &a, QPainter &p,
         QColor text_colour, int text_height, int left, int right,
         double samples_per_pixel, double pixels_offset, int y,
-        size_t base_colour, double min_annWidth, QColor fore, QColor back) const;
+        size_t base_colour, double min_annWidth, QColor fore, QColor back);
     void draw_nodetail(QPainter &p,
         int text_height, int left, int right, int y,
-        size_t base_colour, QColor fore, QColor back) const;
+        size_t base_colour, QColor fore, QColor back);
 
 	void draw_instant(const pv::data::decode::Annotation &a, QPainter &p,
 		QColor fill, QColor outline, QColor text_color, int h, double x,
-        int y, double min_annWidth) const;
+        int y, double min_annWidth);
 
     void draw_range(const pv::data::decode::Annotation &a, QPainter &p,
         QColor fill, QColor outline, QColor text_color, int h, double start,
-        double end, int y, QColor fore, QColor back) const;
+        double end, int y, QColor fore, QColor back);
 
 	void draw_error(QPainter &p, const QString &message,
 		int left, int right);
@@ -175,16 +173,16 @@ private:
     void draw_unshown_row(QPainter &p, int y, int h, int left,
                           int right, QString info, QColor fore, QColor back);
 
-    void create_decoder_form(boost::shared_ptr<data::DecoderStack> &decoder_stack,
-        boost::shared_ptr<pv::data::decode::Decoder> &dec,
+    void create_decoder_form(data::DecoderStack *decoder_stack,
+        pv::data::decode::Decoder *dec,
         QWidget *parent, QFormLayout *form);
 
 	QComboBox* create_probe_selector(QWidget *parent,
-		const boost::shared_ptr<pv::data::decode::Decoder> &dec,
+		const pv::data::decode::Decoder *dec,
 		const srd_channel *const pdch);
 
 	void commit_decoder_probes(
-		boost::shared_ptr<data::decode::Decoder> &dec);
+		data::decode::Decoder *dec);
 
 	void commit_probes();
 
@@ -199,32 +197,34 @@ private slots:
 	void on_probe_selected(int);
 
 	void on_stack_decoder(srd_decoder *decoder);
-    void on_del_stack(boost::shared_ptr<data::decode::Decoder> &dec);
+
+    void on_del_stack(data::decode::Decoder *dec);
 
     void on_decode_done();
 
     void on_region_set(int index);
 
 private:
-	pv::SigSession *_session;
-	boost::shared_ptr<pv::data::DecoderStack> _decoder_stack;
+	pv::SigSession 			*_session;
+	pv::data::DecoderStack 	*_decoder_stack;
 
-	uint64_t _decode_start, _decode_end;
-    int _start_index, _end_index;
-    int _start_count, _end_count;
-    QComboBox *_start_comboBox, *_end_comboBox;
-	QFormLayout *_pub_input_layer;
-    int _progress;
+	uint64_t 		_decode_start;
+	uint64_t	 	_decode_end;
+    int 			_start_index;
+	int 	 		_end_index;
+    int 			_start_count;
+	int			 	_end_count;
+    QComboBox 		*_start_comboBox;
+	QComboBox 		*_end_comboBox;
+	QFormLayout 	*_pub_input_layer;
+    int				 _progress;
 
-	std::list< boost::shared_ptr<pv::prop::binding::DecoderOptions> >
-		_bindings;
-
+	std::list<pv::prop::binding::DecoderOptions*> _bindings;
 	std::list<ProbeSelector> _probe_selectors;
 	std::vector<pv::widgets::DecoderGroupBox*> _decoder_forms;
 
-	std::vector<QString> _cur_row_headings;
- 
-    dialogs::DSDialog *_popup;
+	std::vector<QString> 	_cur_row_headings; 
+    dialogs::DSDialog 		*_popup;
 };
 
 } // namespace view

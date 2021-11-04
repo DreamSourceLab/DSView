@@ -46,7 +46,7 @@ Signal::Signal(const Signal &s, sr_channel *probe) :
 {
 }
 
-bool Signal::enabled() const
+bool Signal::enabled()
 {
     return _probe->enabled;
 }
@@ -58,7 +58,7 @@ void Signal::set_name(QString name)
     _probe->name = g_strdup(name.toUtf8().data());
 }
 
-DevInst* Signal::get_device() const
+DevInst* Signal::get_device()
 {
     return _dev_inst;
 }

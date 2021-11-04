@@ -49,7 +49,7 @@ public:
     QJsonDocument get_session();
 
 public:
-    QString format_device_title() const;
+    QString format_device_title();
 
 protected:
     const QString _path;

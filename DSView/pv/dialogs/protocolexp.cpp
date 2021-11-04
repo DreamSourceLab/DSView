@@ -63,12 +63,13 @@ ProtocolExp::ProtocolExp(QWidget *parent, SigSession *session) :
     _flayout->addRow(new QLabel(tr("Export Format: "), this), _format_combobox);
 
     pv::data::DecoderModel* decoder_model = _session->get_decoder_model();
-    const boost::shared_ptr<pv::data::DecoderStack>& decoder_stack = decoder_model->getDecoderStack();
+
+    const auto decoder_stack = decoder_model->getDecoderStack();
     if (decoder_stack) {
         int row_index = 0;
-        const std::map<const pv::data::decode::Row, bool> rows = decoder_stack->get_rows_lshow();
-        for (std::map<const pv::data::decode::Row, bool>::const_iterator i = rows.begin();
-            i != rows.end(); i++) {
+        auto rows = decoder_stack->get_rows_lshow();
+
+        for (auto i = rows.begin();i != rows.end(); i++) {
             if ((*i).second) {
                 QLabel *row_label = new QLabel((*i).first.title(), this);
                 QRadioButton *row_sel = new QRadioButton(this);
@@ -169,7 +170,7 @@ void ProtocolExp::accept()
                        .arg(title);
 
                 pv::data::DecoderModel* decoder_model = _session->get_decoder_model();
-                const boost::shared_ptr<pv::data::DecoderStack>& decoder_stack = decoder_model->getDecoderStack();
+                const auto decoder_stack = decoder_model->getDecoderStack();
                 int row_index = 0;
                 Row row;
                 const std::map<const Row, bool> rows_lshow = decoder_stack->get_rows_lshow();
@@ -186,7 +187,7 @@ void ProtocolExp::accept()
 
                 uint64_t exported = 0;
                 double ns_per_sample = SR_SEC(1) * 1.0 / decoder_stack->samplerate();
-                vector<Annotation> annotations;
+                std::vector<Annotation> annotations;
                 decoder_stack->get_annotation_subset(annotations, row,
                     0, decoder_stack->sample_count()-1);
                 if (!annotations.empty()) {

@@ -25,10 +25,7 @@
 #define DSVIEW_PV_VIEW_VIEWPORT_H
 
 #include <stdint.h>
-
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-
+ 
 #include <QTime>
 #include <QTimer>
 #include <QWidget>
@@ -92,9 +89,9 @@ public:
 public:
     explicit Viewport(View &parent, View_type type);
 
-    int get_total_height() const;
+    int get_total_height();
 
-    QPoint get_mouse_point() const;
+    QPoint get_mouse_point();
 
     QString get_measure(QString option);
 
@@ -109,7 +106,7 @@ public:
 
     void set_need_update(bool update);
 
-    bool get_dso_trig_moved() const;
+    bool get_dso_trig_moved();
 
 protected:
     bool event(QEvent *event) override;
@@ -198,7 +195,7 @@ private:
     bool transfer_started;
     int timer_cnt;
 
-    boost::shared_ptr<Signal> _drag_sig;
+    Signal *_drag_sig;
 
     uint64_t _hover_index;
     bool _hover_hit;

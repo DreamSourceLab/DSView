@@ -27,9 +27,7 @@
 #include <QTimer>
 #include <QLabel>
 #include <QMovie>
-
-#include <boost/shared_ptr.hpp>
-
+  
 #include "../sigsession.h"
 #include "../device/devinst.h"
 #include "../toolbars/titlebar.h"

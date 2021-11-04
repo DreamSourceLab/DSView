@@ -24,9 +24,7 @@
 #define DSVIEW_PV_LISSAJOUSTRACE_H
 
 #include "trace.h"
-
-#include <boost/shared_ptr.hpp>
-
+  
 namespace pv {
 
 namespace data {
@@ -48,20 +46,19 @@ private:
     static const int DIV_NUM = 10; 
 
 public:
-    LissajousTrace(bool enable,
-                   boost::shared_ptr<pv::data::Dso> data,
+    LissajousTrace(bool enable, pv::data::Dso *data,
                    int xIndex, int yIndex, int percent);
 
     virtual ~LissajousTrace();
 
-    bool enabled() const;
+    bool enabled();
     void set_enable(bool enable);
-    int xIndex() const;
-    int yIndex() const;
-    int percent() const;
+    int xIndex();
+    int yIndex();
+    int percent();
 
-    boost::shared_ptr<pv::data::Dso> get_data() const;
-    void set_data(boost::shared_ptr<pv::data::Dso> data);
+    pv::data::Dso* get_data();
+    void set_data(pv::data::Dso* data);
 
     int rows_size();
 
@@ -92,7 +89,7 @@ public:
     void paint_label(QPainter &p, int right, const QPoint pt, QColor fore);
 
 private:
-    boost::shared_ptr<pv::data::Dso> _data;
+    pv::data::Dso *_data;
 
     bool _enable;
     int _xIndex;

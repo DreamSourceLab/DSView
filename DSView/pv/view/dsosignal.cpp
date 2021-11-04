@@ -57,7 +57,7 @@ const QColor DsoSignal::SignalColours[4] = {
 const float DsoSignal::EnvelopeThreshold = 256.0f;
 
 DsoSignal::DsoSignal(DevInst *dev_inst,
-                     boost::shared_ptr<data::Dso> data,
+                     data::Dso *data,
                      sr_channel *probe):
     Signal(dev_inst, probe),
     _data(data),
@@ -108,12 +108,12 @@ DsoSignal::~DsoSignal()
 {
 }
 
-boost::shared_ptr<pv::data::SignalData> DsoSignal::data() const
+pv::data::SignalData* DsoSignal::data()
 {
     return _data;
 }
 
-boost::shared_ptr<pv::data::Dso> DsoSignal::dso_data() const
+pv::data::Dso* DsoSignal::dso_data()
 {
     return _data;
 }
@@ -133,17 +133,17 @@ uint8_t DsoSignal::get_bits()
     return _bits;
 }
 
-double DsoSignal::get_ref_min() const
+double DsoSignal::get_ref_min()
 {
     return _ref_min;
 }
 
-double DsoSignal::get_ref_max() const
+double DsoSignal::get_ref_max()
 {
     return _ref_max;
 }
 
-int DsoSignal::get_name_width() const
+int DsoSignal::get_name_width()
 {
     return 0;
 }
@@ -193,7 +193,7 @@ void DsoSignal::set_enable(bool enable)
     _en_lock = false;
 }
 
-bool DsoSignal::get_vDialActive() const
+bool DsoSignal::get_vDialActive()
 {
     return _vDialActive;
 }
@@ -400,22 +400,22 @@ int DsoSignal::commit_settings()
     return ret;
 }
 
-dslDial * DsoSignal::get_vDial() const
+dslDial * DsoSignal::get_vDial()
 {
     return _vDial;
 }
 
-uint64_t DsoSignal::get_vDialValue() const
+uint64_t DsoSignal::get_vDialValue()
 {
     return _vDial->get_value();
 }
 
-uint16_t DsoSignal::get_vDialSel() const
+uint16_t DsoSignal::get_vDialSel()
 {
     return _vDial->get_sel();
 }
 
-uint8_t DsoSignal::get_acCoupling() const
+uint8_t DsoSignal::get_acCoupling()
 {
     return _acCoupling;
 }
@@ -429,27 +429,27 @@ void DsoSignal::set_acCoupling(uint8_t coupling)
     }
 }
 
-int DsoSignal::ratio2value(double ratio) const
+int DsoSignal::ratio2value(double ratio)
 {
     return ratio * (_ref_max - _ref_min) + _ref_min;
 }
 
-int DsoSignal::ratio2pos(double ratio) const
+int DsoSignal::ratio2pos(double ratio)
 {
     return ratio * get_view_rect().height() + get_view_rect().top();
 }
 
-double DsoSignal::value2ratio(int value) const
+double DsoSignal::value2ratio(int value)
 {
     return max(0.0, (value - _ref_min) / (_ref_max - _ref_min));
 }
 
-double DsoSignal::pos2ratio(int pos) const
+double DsoSignal::pos2ratio(int pos)
 {
     return min(max(pos - get_view_rect().top(), 0), get_view_rect().height()) * 1.0 / get_view_rect().height();
 }
 
-double DsoSignal::get_trig_vrate() const
+double DsoSignal::get_trig_vrate()
 {
     if (_dev_inst->name() == "DSLogic")
         return value2ratio(_trig_value - ratio2value(0.5)) + get_zero_ratio();
@@ -485,17 +485,17 @@ void DsoSignal::set_trig_ratio(double ratio, bool delta_change)
                           g_variant_new_byte(_trig_value));
 }
 
-int DsoSignal::get_zero_vpos() const
+int DsoSignal::get_zero_vpos()
 {
     return ratio2pos(get_zero_ratio());
 }
 
-double DsoSignal::get_zero_ratio() const
+double DsoSignal::get_zero_ratio()
 {
     return value2ratio(_zero_offset);
 }
 
-int DsoSignal::get_hw_offset() const
+int DsoSignal::get_hw_offset()
 {
     int hw_offset = 0;
     GVariant *gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_HW_OFFSET);
@@ -564,7 +564,7 @@ void DsoSignal::set_show(bool show)
     _show = show;
 }
 
-bool DsoSignal::show() const
+bool DsoSignal::show()
 {
     return _show;
 }
@@ -692,7 +692,7 @@ QString DsoSignal::get_measure(enum DSO_MEASURE_TYPE type)
     return mString;
 }
 
-QRect DsoSignal::get_view_rect() const
+QRect DsoSignal::get_view_rect()
 {
     assert(_viewport);
     return QRect(0, UpMargin,
@@ -704,12 +704,11 @@ void DsoSignal::paint_prepare()
 {
     assert(_view);
 
-    const deque< boost::shared_ptr<pv::data::DsoSnapshot> > &snapshots =
-        _data->get_snapshots();
+    const auto &snapshots = _data->get_snapshots();
     if (snapshots.empty())
         return;
-    const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
-        snapshots.front();
+
+    const auto snapshot = snapshots.front();
     if (snapshot->empty())
         return;
 
@@ -847,12 +846,11 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColor 
         assert(scale > 0);
         const int64_t offset = _view->offset();
 
-        const deque< boost::shared_ptr<pv::data::DsoSnapshot> > &snapshots =
-            _data->get_snapshots();
+        const auto &snapshots = _data->get_snapshots();
         if (snapshots.empty())
             return;
-        const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
-            snapshots.front();
+
+        const auto snapshot = snapshots.front();
         if (snapshot->empty())
             return;
 
@@ -1018,7 +1016,7 @@ void DsoSignal::paint_fore(QPainter &p, int left, int right, QColor fore, QColor
     }
 }
 
-QRectF DsoSignal::get_trig_rect(int left, int right) const
+QRectF DsoSignal::get_trig_rect(int left, int right)
 {
     (void)left;
 
@@ -1028,14 +1026,16 @@ QRectF DsoSignal::get_trig_rect(int left, int right) const
 }
 
 void DsoSignal::paint_trace(QPainter &p,
-    const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot,
+    const pv::data::DsoSnapshot *snapshot,
     int zeroY, int left, const int64_t start, const int64_t end, int hw_offset,
     const double pixels_offset, const double samples_per_pixel, uint64_t num_channels)
 {
     const int64_t sample_count = end - start + 1;
 
     if (sample_count > 0) {
-        const uint8_t *const samples = snapshot->get_samples(start, end, get_index());
+        pv::data::DsoSnapshot *pshot = const_cast<pv::data::DsoSnapshot*>(snapshot);
+        auto pdata = pshot->get_samples(start, end, get_index());
+        const uint8_t *const samples = pdata;
         assert(samples);
 
         QColor trace_colour = _colour;
@@ -1073,16 +1073,18 @@ void DsoSignal::paint_trace(QPainter &p,
 }
 
 void DsoSignal::paint_envelope(QPainter &p,
-    const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot,
+    const pv::data::DsoSnapshot *snapshot,
     int zeroY, int left, const int64_t start, const int64_t end, int hw_offset,
     const double pixels_offset, const double samples_per_pixel, uint64_t num_channels)
 {
 	using namespace Qt;
     using pv::data::DsoSnapshot;
 
+    data::DsoSnapshot *pshot = const_cast<data::DsoSnapshot*>(snapshot);
+
     DsoSnapshot::EnvelopeSection e;
     const uint16_t index = get_index() % num_channels;
-    snapshot->get_envelope_section(e, start, end, samples_per_pixel, index);
+    pshot->get_envelope_section(e, start, end, samples_per_pixel, index);
 
 	if (e.length < 2)
 		return;
@@ -1332,7 +1334,7 @@ void DsoSignal::paint_hover_measure(QPainter &p, QColor fore, QColor back)
         p.drawText(hover_rect, Qt::AlignCenter | Qt::AlignTop | Qt::TextDontClip, hover_str);
     }
 
-    list<Cursor*>::iterator i = _view->get_cursorList().begin();
+    auto i = _view->get_cursorList().begin();
     while (i != _view->get_cursorList().end()) {
         float pt_value;
         const QPointF pt = get_point((*i)->index(), pt_value);
@@ -1477,13 +1479,11 @@ bool DsoSignal::measure(const QPointF &p)
     if (!window.contains(p))
         return false;
 
-    const deque< boost::shared_ptr<pv::data::DsoSnapshot> > &snapshots =
-        _data->get_snapshots();
+    const auto &snapshots = _data->get_snapshots();
     if (snapshots.empty())
         return false;
 
-    const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
-        snapshots.front();
+    auto snapshot = const_cast<data::DsoSnapshot*>(snapshots.front());
     if (snapshot->empty())
         return false;
 
@@ -1514,13 +1514,11 @@ QPointF DsoSignal::get_point(uint64_t index, float &value)
     if (!enabled())
         return pt;
 
-    const deque< boost::shared_ptr<pv::data::DsoSnapshot> > &snapshots =
-        _data->get_snapshots();
+    const auto &snapshots = _data->get_snapshots();
     if (snapshots.empty())
         return pt;
 
-    const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
-        snapshots.front();
+    const auto snapshot = snapshots.front();
     if (snapshot->empty())
         return pt;
 
@@ -1543,13 +1541,11 @@ double DsoSignal::get_voltage(uint64_t index)
     if (!enabled())
         return 1;
 
-    const deque< boost::shared_ptr<pv::data::DsoSnapshot> > &snapshots =
-        _data->get_snapshots();
+    auto &snapshots = _data->get_snapshots();
     if (snapshots.empty())
         return 1;
 
-    const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
-        snapshots.front();
+    auto snapshot = const_cast<data::DsoSnapshot*>(snapshots.front());
     if (snapshot->empty())
         return 1;
 
