@@ -64,6 +64,12 @@ public:
 protected:
     virtual void free_data();
 
+    uint64_t  sample_count();
+
+    uint64_t ring_start();
+
+    uint64_t ring_end();
+
 protected:
      mutable std::mutex  _mutex;
 

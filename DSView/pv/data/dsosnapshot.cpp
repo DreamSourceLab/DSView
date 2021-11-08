@@ -200,9 +200,9 @@ const uint8_t *DsoSnapshot::get_samples(
     (void)end_sample;
 
 	assert(start_sample >= 0);
-    assert(start_sample < (int64_t)get_sample_count());
+    assert(start_sample < (int64_t)sample_count());
 	assert(end_sample >= 0);
-    assert(end_sample < (int64_t)get_sample_count());
+    assert(end_sample < (int64_t)sample_count());
 	assert(start_sample <= end_sample);
 
 

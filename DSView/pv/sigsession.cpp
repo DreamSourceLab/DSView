@@ -64,6 +64,7 @@
 #include <QJsonDocument>
 #include <QFuture>
 #include <QtConcurrent/QtConcurrent>
+#include <QDebug>
 
  
 #include "data/decode/decoderstatus.h"
@@ -95,12 +96,8 @@ SigSession::SigSession(DeviceManager *device_manager) :
     _hot_attach = false;
     _hot_detach = false;
     _group_cnt = 0;
-    _bHotplugStop = false;
-    _hotplug = NULL;
-    _sampling_thread = NULL;
- 
-
-    _feed_timer.stop();
+    _bHotplugStop = false;  
+  
     _noData_cnt = 0;
     _data_lock = false;
     _data_updated = false;
@@ -111,7 +108,9 @@ SigSession::SigSession(DeviceManager *device_manager) :
     _math_trace = NULL;
     _saving = false;
     _dso_feed = false;
-    _stop_scale = 1;
+    _stop_scale = 1; 
+    _bDecodeRunning = false;
+    _bClose = false;
 
     // Create snapshots & data containers
     _cur_logic_snapshot = new data::LogicSnapshot();
@@ -126,13 +125,15 @@ SigSession::SigSession(DeviceManager *device_manager) :
     _group_data = new data::Group();
     _group_cnt = 0;
 
+    _feed_timer.stop();
+
     connect(&_feed_timer, SIGNAL(timeout()), this, SLOT(feed_timeout()));
 }
 
 //SigSession::SigSession(SigSession &o){(void)o;}
 
 SigSession::~SigSession()
-{
+{ 
 }
 
 DevInst* SigSession::get_device()
@@ -142,7 +143,11 @@ DevInst* SigSession::get_device()
 
 void SigSession::deselect_device()
 {
+    for (auto p : _decode_traces){
+        delete p;
+    }
     _decode_traces.clear();
+
     _group_traces.clear();
     _dev_inst = NULL;
 }
@@ -153,8 +158,7 @@ void SigSession::deselect_device()
 void SigSession::set_device(DevInst *dev_inst)
 {
     // Ensure we are not capturing before setting the device
-    //stop_capture();
-
+    
     assert(dev_inst);
 
      if (_dev_inst){
@@ -168,6 +172,9 @@ void SigSession::set_device(DevInst *dev_inst)
 
     _dev_inst = dev_inst;
 
+     for (auto p : _decode_traces){
+        delete p;
+    }
     _decode_traces.clear();
 
     _group_traces.clear();
@@ -358,6 +365,7 @@ void SigSession::capture_init()
     _trigger_flag = false;
     _trigger_ch = 0;
     _hw_replied = false;
+    
     if (_dev_inst->dev_inst()->mode != LOGIC)
         _feed_timer.start(FeedInterval);
     else
@@ -418,8 +426,7 @@ void SigSession::container_init()
     //decoder_model->setDecoderStack(NULL);
     // DecoderStack
     for(auto &d : _decode_traces)
-    {
-        assert(d);
+    { 
         d->decoder()->init();
     }
 
@@ -427,7 +434,7 @@ void SigSession::container_init()
 
 void SigSession::start_capture(bool instant,
     boost::function<void (const QString)> error_handler)
-{
+{  
     // Check that a device instance has been selected.
     if (!_dev_inst) {
         qDebug() << "No device selected";
@@ -445,6 +452,7 @@ void SigSession::start_capture(bool instant,
 
     // stop previous capture
     stop_capture();
+
     // reset measure of dso signal
     for(auto &s : _signals)
     {
@@ -455,10 +463,13 @@ void SigSession::start_capture(bool instant,
     }
 
     // update setting
+    qDebug()<<"device name:"<<_dev_inst->name();
+
     if (_dev_inst->name() != "virtual-session")
         _instant = instant;
     else
         _instant = true;
+
     capture_init();
 
     // Check that at least one probe is enabled
@@ -477,30 +488,59 @@ void SigSession::start_capture(bool instant,
         return;
     }
 
-    if (_sampling_thread && _sampling_thread->joinable()){
-        _sampling_thread->join();
+    if (_sampling_thread.joinable()){
+        _sampling_thread.join();
+    } 
+    _sampling_thread  = std::thread(&SigSession::sample_thread_proc, this, _dev_inst, error_handler);
+}
+
+
+void SigSession::sample_thread_proc(DevInst *dev_inst,
+                                    boost::function<void (const QString)> error_handler)
+{
+    assert(dev_inst);
+    assert(dev_inst->dev_inst());
+    assert(error_handler);
+
+    try {
+        dev_inst->start();
+    } catch(const QString e) {
+        error_handler(e);
+        return;
     }
-    DESTROY_OBJECT(_sampling_thread);
-    _sampling_thread  = new std::thread(&SigSession::sample_thread_proc, this, _dev_inst, error_handler);
+
+    receive_data(0);
+    set_capture_state(Running);
+
+    dev_inst->run();
+
+    set_capture_state(Stopped);
+
+    // Confirm that SR_DF_END was received
+    assert(_cur_logic_snapshot->last_ended());
+    assert(_cur_dso_snapshot->last_ended());
+    assert(_cur_analog_snapshot->last_ended());
 }
 
 void SigSession::stop_capture()
 {
-    data_unlock();
+    do_stop_capture();
+    int dex = 0;
+    clear_all_decode_task(dex);
+}
 
-    for (auto i = _decode_traces.begin(); i != _decode_traces.end(); i++)
-        (*i)->decoder()->stop_decode();
+void SigSession::do_stop_capture()
+{
+    data_unlock(); 
 
-    if (get_capture_state() != Running)
-        return;
-
-    sr_session_stop();
+    if (_dev_inst){
+        _dev_inst->stop();
+    }
 
     // Check that sampling stopped
-     if (_sampling_thread && _sampling_thread->joinable()){
-        _sampling_thread->join();
+    if (_sampling_thread.joinable()){
+        _sampling_thread.join();
     }
-    DESTROY_OBJECT(_sampling_thread);
 }
 
 bool SigSession::get_capture_status(bool &triggered, int &progress)
@@ -561,37 +601,10 @@ void SigSession::set_capture_state(capture_state state)
     data_updated();
     capture_state_changed(state);
 }
-
-void SigSession::sample_thread_proc(DevInst *dev_inst,
-                                    boost::function<void (const QString)> error_handler)
-{
-    assert(dev_inst);
-    assert(dev_inst->dev_inst());
-    assert(error_handler);
-
-    try {
-        dev_inst->start();
-    } catch(const QString e) {
-        error_handler(e);
-        return;
-    }
-
-    receive_data(0);
-    set_capture_state(Running);
-
-    dev_inst->run();
-
-    set_capture_state(Stopped);
-
-    // Confirm that SR_DF_END was received
-    assert(_cur_logic_snapshot->last_ended());
-    assert(_cur_dso_snapshot->last_ended());
-    assert(_cur_analog_snapshot->last_ended());
-}
-
+ 
 void SigSession::check_update()
 {
-    std::lock_guard<std::mutex> lock(_data_mutex);
+    ds_lock_guard lock(_data_mutex);
 
     if (_capture_state != Running)
         return;
@@ -699,6 +712,9 @@ void SigSession::init_signals()
 
 
     // Clear the decode traces
+     for (auto p : _decode_traces){
+        delete p;
+    }
     _decode_traces.clear();
 
 
@@ -842,7 +858,7 @@ void SigSession::reload()
 
 void SigSession::refresh(int holdtime)
 {
-    std::lock_guard<std::mutex> lock(_data_mutex);
+    ds_lock_guard lock(_data_mutex);
 
     data_lock();
 
@@ -850,8 +866,7 @@ void SigSession::refresh(int holdtime)
         _logic_data->init(); 
 
         for(auto &d : _decode_traces)
-        {
-            assert(d);
+        { 
             d->decoder()->init();
         }
 
@@ -1062,6 +1077,7 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
 
     if (!_instant)
         data_lock();
+
     _data_updated = true;
 }
 
@@ -1103,18 +1119,18 @@ void SigSession::feed_in_analog(const sr_datafeed_analog &analog)
     //data_updated();
     _data_updated = true;
 }
-
+  
 void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
     const struct sr_datafeed_packet *packet)
 {
     assert(sdi);
     assert(packet);
-
-    std::lock_guard<std::mutex> lock(_data_mutex);
-
+   
+    ds_lock_guard lock(_data_mutex);
+  
     if (_data_lock && packet->type != SR_DF_END)
         return;
-
+  
     if (packet->type != SR_DF_END &&
         packet->status != SR_PKT_OK) {
         _error = Pkt_data_err;
@@ -1162,34 +1178,40 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
         break;
     }
     case SR_DF_END:
-    {
+    { 
+        if (!_cur_logic_snapshot->empty())
         {
-            
-            if (!_cur_logic_snapshot->empty()) {
-                for(auto &g : _group_traces)
-                {
-                    assert(g);
+            for (auto &g : _group_traces)
+            {
+                assert(g);
 
-                    auto p = new data::GroupSnapshot(_logic_data->get_snapshots().front(), g->get_index_list());
-                    _group_data->push_snapshot(p); 
-                }
+                auto p = new data::GroupSnapshot(_logic_data->get_snapshots().front(), g->get_index_list());
+                _group_data->push_snapshot(p);
             }
-            _cur_logic_snapshot->capture_ended();
-            _cur_dso_snapshot->capture_ended();
-            _cur_analog_snapshot->capture_ended();
-
-            for(auto &d : _decode_traces)
-                d->frame_ended();
-
         }
+        _cur_logic_snapshot->capture_ended();
+        _cur_dso_snapshot->capture_ended();
+        _cur_analog_snapshot->capture_ended();
+
+        qDebug()<<"data frame end";
+
+        for (auto trace : _decode_traces){
+            trace->decoder()->frame_ended();
+            trace->frame_ended();
+            add_decode_task(trace);
+        } 
 
         if (packet->status != SR_PKT_OK) {
             _error = Pkt_data_err;
             session_error();
         }
+
         frame_ended();
-        if (get_device()->dev_inst()->mode != LOGIC)
-            set_session_time(QDateTime::currentDateTime());
+
+        if (get_device()->dev_inst()->mode != LOGIC){
+             set_session_time(QDateTime::currentDateTime());
+        }
+           
         break;
     }
     }
@@ -1276,7 +1298,7 @@ void SigSession::deregister_hotplug_callback()
     libusb_hotplug_deregister_callback(NULL, _hotplug_handle);
 }
 
-void SigSession::start_hotplug_proc(boost::function<void (const QString)> error_handler)
+void SigSession::start_hotplug_work(boost::function<void (const QString)> error_handler)
 {
 
     // Begin the session
@@ -1284,20 +1306,18 @@ void SigSession::start_hotplug_proc(boost::function<void (const QString)> error_
     _hot_attach = false;
     _hot_detach = false;
 
-    if (_hotplug && _hotplug->joinable()){
-        _hotplug->join();
-    }
-    DESTROY_OBJECT(_hotplug);
-    _hotplug = new std::thread(&SigSession::hotplug_proc, this, error_handler);
+    if (_hotplug_thread.joinable()){
+        return;
+    } 
+    _hotplug_thread =  std::thread(&SigSession::hotplug_proc, this, error_handler);
 }
 
-void SigSession::stop_hotplug_proc()
+void SigSession::stop_hotplug_work()
 {  
     _bHotplugStop = true;
-     if (_hotplug && _hotplug->joinable()){
-        _hotplug->join();
-    }
-     DESTROY_OBJECT(_hotplug);
+     if (_hotplug_thread.joinable()){
+        _hotplug_thread.join();
+    } 
 }
 
 uint16_t SigSession::get_ch_num(int type)
@@ -1337,8 +1357,11 @@ uint16_t SigSession::get_ch_num(int type)
     return num_channels;
 }
 
+bool SigSession::add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus){
+    return do_add_decoder(dec, silent, dstatus);
+}
 
-bool SigSession::add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus)
+bool SigSession::do_add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus)
 {     
     try { 
 
@@ -1370,22 +1393,21 @@ bool SigSession::add_decoder(srd_decoder *const dec, bool silent, DecoderStatus 
                 break;
             }
         }
-        if (silent) {
-            _decode_traces.push_back(trace);
+        if (silent) { 
             ret = true;
-        } else if (trace->create_popup()) {
-            _decode_traces.push_back(trace);
+        } else if (trace->create_popup()) { 
             ret = true;
         }
 
         if (ret)
         {
+           _decode_traces.push_back(trace);
+            add_decode_task(trace);
             signals_changed();
-            // Do an initial decode
-            decoder_stack->begin_decode();
             data_updated();
         }
-        else{
+        else
+        {
             delete trace;
         }
 
@@ -1397,71 +1419,46 @@ bool SigSession::add_decoder(srd_decoder *const dec, bool silent, DecoderStatus 
  
     return false;
 }
-
+ 
 std::vector<view::DecodeTrace*>& SigSession::get_decode_signals()
 { 
     return _decode_traces;
 }
 
-void SigSession::remove_decode_signal(view::DecodeTrace *signal)
+void SigSession::remove_decoder(int index)
 {
-    for (auto i = _decode_traces.begin();  i != _decode_traces.end(); i++)
-        if ((*i) == signal)
-        {
-            _decode_traces.erase(i);
-            signals_changed();
-            return;
-        }
-}
+    int size = (int)_decode_traces.size();
+    assert(index < size);
 
-void SigSession::remove_decode_signal(int index)
-{
-    int cur_index = 0;
+    auto it = _decode_traces.begin() + index;
+    auto trace = (*it);
+    _decode_traces.erase(it);
 
-    for (auto i = _decode_traces.begin(); i != _decode_traces.end(); i++)
-    {
-        if (cur_index == index)
-        {
-            auto d = (*i)->decoder();
-            d->stop_decode(); //stop decoder thread
-            _decode_traces.erase(i);
-            signals_changed();
-            return;
-        }
-        cur_index++;
+    bool isRunning = trace->decoder()->IsRunning();
+
+    remove_decode_task(trace);
+
+    if (isRunning){
+        //destroy it in thread
+        trace->_delete_flag = true;
     }
+    else{
+        delete trace;
+        signals_changed();
+    } 
 }
 
 void SigSession::rst_decoder(int index)
 {
-    if (index >= 0 && index < (int)_decode_traces.size()){
-        auto p = _decode_traces[index];
-         if (p->create_popup())
-            {
-                p->decoder()->stop_decode();
-                p->decoder()->begin_decode();
-                data_updated();
-            }
+     auto trace = get_decoder_trace(index);
+    
+    if (trace && trace->create_popup() ){
+        remove_decode_task(trace); //remove old task
+        add_decode_task(trace);
+        data_updated();
     }
 }
-
-void SigSession::rst_decoder(view::DecodeTrace *signal)
-{ 
-  for (auto p : _decode_traces)
-  {  
-      if (p == signal)
-      {
-          if (p->create_popup())
-          { 
-              p->decoder()->stop_decode();
-              p->decoder()->begin_decode();
-              data_updated();
-          }
-          break;
-      }
-  }
-}
-
+  
 pv::data::DecoderModel* SigSession::get_decoder_model()
 {
     return _decoder_model;
@@ -1521,7 +1518,8 @@ void SigSession::math_rebuild(bool enable,view::DsoSignal *dsoSig1,
                               view::DsoSignal *dsoSig2,
                               data::MathStack::MathType type)
 {
-    std::lock_guard<std::mutex> lock(_data_mutex);
+    ds_lock_guard lock(_data_mutex);
+
     auto math_stack = new data::MathStack(this, dsoSig1, dsoSig2, type);
     DESTROY_OBJECT(_math_trace);
     _math_trace = new view::MathTrace(enable, math_stack, dsoSig1, dsoSig2);
@@ -1581,7 +1579,7 @@ void SigSession::nodata_timeout()
 }
 
 void SigSession::feed_timeout()
-{
+{  
     data_unlock();
     if (!_data_updated) {
         if (++_noData_cnt >= (WaitShowTime/FeedInterval))
@@ -1783,11 +1781,15 @@ void SigSession::set_stop_scale(float scale)
  }
 
  void SigSession::Close()
- {
-     if (_session == NULL)
-        return;
+ { 
+     if (_bClose)
+        return; 
+
+     _bClose = true;
  
-     stop_capture();
+     do_stop_capture(); //stop capture
+
+     clear_all_decoder(); //clear all decode task, and stop decode thread
 
      ds_trigger_destroy();
 
@@ -1799,12 +1801,158 @@ void SigSession::set_stop_scale(float scale)
      // TODO: This should not be necessary
      _session = NULL;
 
+     stop_hotplug_work();
+
      if (_hotplug_handle)
-     {
-         stop_hotplug_proc();
+     { 
          deregister_hotplug_callback();
          _hotplug_handle = 0;
      }
  }
+
+//append a decode task, and try create a thread
+ void SigSession::add_decode_task(view::DecodeTrace *trace)
+ { 
+     qDebug()<<"add a decode task";
+
+     std::lock_guard<std::mutex> lock(_decode_task_mutex);
+     _decode_tasks.push_back(trace);
+
+     if (!_bDecodeRunning)
+     {
+         if (_decode_thread.joinable())
+             _decode_thread.join();
+
+         _decode_thread = std::thread(&SigSession::decode_task_proc, this);
+         _bDecodeRunning = true;
+     }
+ }
+
+ void SigSession::remove_decode_task(view::DecodeTrace *trace)
+ {
+     std::lock_guard<std::mutex> lock(_decode_task_mutex);
+
+     for (auto it = _decode_tasks.begin(); it != _decode_tasks.end(); it++){
+         if ((*it) == trace){
+              (*it)->decoder()->stop_decode_work();
+             _decode_tasks.erase(it);
+             qDebug()<<"remove a wait decode task";
+             return;  
+         }
+     }
+
+     //the task maybe is running 
+     qDebug()<<"remove a running decode task";
+     trace->decoder()->stop_decode_work();
+ }
+
+ void SigSession::clear_all_decoder()
+ {
+     //create the wait task deque
+     int dex = -1;
+     clear_all_decode_task(dex);
+
+     view::DecodeTrace *runningTrace = NULL;
+     if (dex != -1){
+         runningTrace = _decode_traces[dex];
+         runningTrace->_delete_flag = true;  //destroy it in thread
+     }
+
+     for (auto trace : _decode_traces)
+     {
+         if (trace != runningTrace){
+             delete trace;
+         }
+     }     
+     _decode_traces.clear();
+
+    //wait thread end
+     if (_decode_thread.joinable())
+     {
+         qDebug() << "wait the decode thread end";
+         _decode_thread.join();
+     }
+
+     if (!is_closed())
+        signals_changed();
+ }
+
+ void SigSession::clear_all_decode_task(int &runningDex)
+ {
+     std::lock_guard<std::mutex> lock(_decode_task_mutex);
+  
+     //remove wait task
+      for (auto trace : _decode_tasks){
+          trace->decoder()->stop_decode_work(); //set decode proc stop flag
+      } 
+      _decode_tasks.clear();
+
+      //make sure the running task can stop
+      runningDex = -1;
+      int dex = 0; 
+      for (auto trace : _decode_traces)
+      {
+          if (trace->IsRunning())
+          {
+              trace->decoder()->stop_decode_work();
+              runningDex = dex;
+          }
+          dex++;
+      }
+ }
+ 
+ view::DecodeTrace* SigSession::get_decoder_trace(int index)
+  { 
+      int size = (int)_decode_traces.size();
+      assert(index < size);
+      return   _decode_traces[index];    
+  }
+
+  view::DecodeTrace* SigSession::get_top_decode_task()
+  {
+      std::lock_guard<std::mutex> lock(_decode_task_mutex);
+
+      auto it = _decode_tasks.begin();
+      if (it != _decode_tasks.end()){
+          auto p = (*it);
+          _decode_tasks.erase(it);
+          return p;
+      } 
+
+      return NULL;
+  }
+
+  //the decode task thread proc
+  void SigSession::decode_task_proc(){ 
+
+      qDebug()<<"decode thread start";
+      auto task = get_top_decode_task();
+      
+      while (task != NULL)
+      {
+          qDebug()<<"one decode task be actived";
+ 
+          if (!task->_delete_flag){
+              task->decoder()->begin_decode_work();
+          }
+
+          if (task->_delete_flag){
+             qDebug()<<"desroy a decoder in task thread";
+
+             DESTROY_QT_LATER(task);
+             std::this_thread::sleep_for(std::chrono::milliseconds(100));
+             if (!_bClose){
+                  signals_changed();  
+             }     
+          } 
+
+          task = get_top_decode_task();
+      }  
+
+      qDebug()<<"decode thread end";
+      _bDecodeRunning = false;
+  }
+
+
 
 } // namespace pv

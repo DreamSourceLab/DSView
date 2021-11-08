@@ -319,6 +319,9 @@ void ProtocolDock::add_protocol(bool silent)
     DecoderStatus *dstatus = new DecoderStatus();
     dstatus->m_format = (int)DecoderDataFormat::hex;
 
+    int numm= _protocol_items.size();
+    numm += 0;
+  
     if (_session->add_decoder(decoder, silent, dstatus))
     {
         //crate item layer
@@ -360,11 +363,13 @@ void ProtocolDock::del_all_protocol()
 {  
     if (_protocol_items.size() > 0)
     {
+        _session->clear_all_decoder();
+
         for (auto it = _protocol_items.begin(); it != _protocol_items.end(); it++)
         {
              DESTROY_QT_LATER((*it)); //destory control
-            _session->remove_decode_signal(0);
         }
+
         _protocol_items.clear();
         protocol_updated();
     }
@@ -772,7 +777,7 @@ void ProtocolDock::OnProtocolDelete(void *handle){
        if ((*it) == handle){
            DESTROY_QT_LATER(*it); 
            _protocol_items.remove(dex);
-           _session->remove_decode_signal(dex);
+           _session->remove_decoder(dex);
            protocol_updated();
            break;
        }

@@ -117,31 +117,30 @@ const QString DecodeTrace::RegionEnd = QT_TR_NOOP("End  ");
 
 DecodeTrace::DecodeTrace(pv::SigSession *session,
 	pv::data::DecoderStack *decoder_stack, int index) :
-	Trace(QString::fromUtf8(
-        decoder_stack->stack().front()->decoder()->name), index, SR_CHANNEL_DECODER),
-	_session(session),
-	_decoder_stack(decoder_stack),
-    _decode_start(0),
-    _decode_end(INT64_MAX),
-    _start_index(0),
-    _end_index(0),
-    _start_count(0),
-    _end_count(0),
-    _progress(0), 
-    _popup(NULL)
+	Trace(QString::fromUtf8(decoder_stack->stack().front()->decoder()->name), index, SR_CHANNEL_DECODER)
 {
-	assert(_decoder_stack);
+    assert(decoder_stack);
 
-	_colour = DecodeColours[index % countof(DecodeColours)];
+    _colour = DecodeColours[index % countof(DecodeColours)];
+    _start_comboBox = NULL;
+    _end_comboBox = NULL;
+    _pub_input_layer = NULL;
+    _progress = 0;
 
-    connect(_decoder_stack, SIGNAL(new_decode_data()),
-        this, SLOT(on_new_decode_data()));
-    connect(_decoder_stack, SIGNAL(decode_done()),
-        this, SLOT(on_decode_done()));
+    _decode_start = 0;
+    _decode_end  = INT64_MAX; 
+    _end_count = 0;
+    _start_count = 0;
+    _end_index = 0;
+    _start_index = 0; 
 
-        _start_comboBox = NULL;
-        _end_comboBox = NULL; 
-        _pub_input_layer = NULL;
+    _decoder_stack = decoder_stack;
+    _session = session;
+    _delete_flag = false;
+
+    connect(_decoder_stack, SIGNAL(new_decode_data()), this, SLOT(on_new_decode_data()));
+
+    connect(_decoder_stack, SIGNAL(decode_done()), this, SLOT(on_decode_done()));
 }
 
 DecodeTrace::~DecodeTrace()
@@ -150,10 +149,7 @@ DecodeTrace::~DecodeTrace()
     _probe_selectors.clear();
     _bindings.clear();
 
-    if (_popup){
-        delete _popup;
-        _popup = NULL;
-    }
+    DESTROY_OBJECT(_decoder_stack);
 }
 
 bool DecodeTrace::enabled()
@@ -351,18 +347,13 @@ void DecodeTrace::paint_fore(QPainter &p, int left, int right, QColor fore, QCol
 
 //to show decoder's property setting dialog
 bool DecodeTrace::create_popup()
-{
-    if (_popup != NULL){
-         _popup->reload();          
-        return true;
-    } 
+{ 
+    int ret = false;   //setting have changed flag
+    
+    dialogs::DSDialog dlg;
+    create_popup_form(&dlg);
 
-    int ret = false;
-    _popup = new dialogs::DSDialog();
-
-    create_popup_form();
-
-    if (QDialog::Accepted == _popup->exec())
+    if (QDialog::Accepted == dlg.exec())
     {
         for(auto &dec : _decoder_stack->stack())
         {
@@ -375,26 +366,25 @@ bool DecodeTrace::create_popup()
         }
     }
 
-    //destroy object
     return ret;
 }
 
-void DecodeTrace::create_popup_form()
+void DecodeTrace::create_popup_form(dialogs::DSDialog *dlg)
 {
     // Clear the layout
 
     // Transfer the layout and the child widgets to a temporary widget
     // which then goes out of scope destroying the layout and all the child
     // widgets. 
-   QFormLayout *_popup_form = new QFormLayout();
-    _popup_form->setVerticalSpacing(5);
-    _popup_form->setFormAlignment(Qt::AlignLeft);
-    _popup_form->setLabelAlignment(Qt::AlignLeft);
-    _popup_form->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
-    _popup->layout()->addLayout(_popup_form);
-    _popup->setTitle(tr("Decoder Options"));
+   QFormLayout *form = new QFormLayout();
+    form->setVerticalSpacing(5);
+    form->setFormAlignment(Qt::AlignLeft);
+    form->setLabelAlignment(Qt::AlignLeft);
+    form->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
+    dlg->layout()->addLayout(form);
+    dlg->setTitle(tr("Decoder Options"));
 
-    populate_popup_form(_popup, _popup_form);
+    populate_popup_form(dlg, form);
 }
 
 void DecodeTrace::populate_popup_form(QWidget *parent, QFormLayout *form)
@@ -424,15 +414,14 @@ void DecodeTrace::populate_popup_form(QWidget *parent, QFormLayout *form)
 
 		form->addRow(new QLabel(
 			tr("<i>* Required channels</i>"), parent));
-	}
-
- 
+	} 
 
     //Add region combobox
     _start_comboBox = new QComboBox(parent);
     _end_comboBox = new QComboBox(parent);
     _start_comboBox->addItem(RegionStart);
     _end_comboBox->addItem(RegionEnd);
+
     if (_view) {
         int index = 1;
         for(std::list<Cursor*>::iterator i = _view->get_cursorList().begin();
@@ -443,6 +432,7 @@ void DecodeTrace::populate_popup_form(QWidget *parent, QFormLayout *form)
             index++;
         }
     }
+
     if (_start_count > _start_comboBox->count())
         _start_index = 0;
     if (_end_count > _end_comboBox->count())
@@ -452,10 +442,7 @@ void DecodeTrace::populate_popup_form(QWidget *parent, QFormLayout *form)
 
     _start_comboBox->setCurrentIndex(_start_index);
     _end_comboBox->setCurrentIndex(_end_index);
-    connect(_start_comboBox, SIGNAL(currentIndexChanged(int)),
-        this, SLOT(on_region_set(int)));
-    connect(_end_comboBox, SIGNAL(currentIndexChanged(int)),
-        this, SLOT(on_region_set(int)));
+
     on_region_set(_start_index);
     form->addRow(_start_comboBox, new QLabel(
                      tr("Decode Start From")));
@@ -465,11 +452,8 @@ void DecodeTrace::populate_popup_form(QWidget *parent, QFormLayout *form)
 	// Add stacking button
 	pv::widgets::DecoderMenu *const decoder_menu =
 		new pv::widgets::DecoderMenu(parent);
-	connect(decoder_menu, SIGNAL(decoder_selected(srd_decoder*)),
-		this, SLOT(on_stack_decoder(srd_decoder*)));
-    //connect(decoder_menu, SIGNAL(selected()),
-    //        parent, SLOT(accept()));
 
+	 
 	QPushButton *const stack_button =
 		new QPushButton(tr("Stack Decoder"), parent);
 	stack_button->setMenu(decoder_menu);
@@ -481,12 +465,21 @@ void DecodeTrace::populate_popup_form(QWidget *parent, QFormLayout *form)
     // Add ButtonBox (OK/Cancel)
     QDialogButtonBox *button_box = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
                                 Qt::Horizontal, parent);
-    connect(button_box, SIGNAL(accepted()), parent, SLOT(accept()));
-    connect(button_box, SIGNAL(rejected()), parent, SLOT(reject()));
+
 
     QHBoxLayout *confirm_button_box = new QHBoxLayout;
     confirm_button_box->addWidget(button_box, 0, Qt::AlignRight);
     form->addRow(confirm_button_box);
+
+    connect(_start_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_region_set(int)));
+
+    connect(_end_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_region_set(int)));
+
+    connect(decoder_menu, SIGNAL(decoder_selected(srd_decoder *)), this, SLOT(on_stack_decoder(srd_decoder *)));
+
+    connect(button_box, SIGNAL(accepted()), parent, SLOT(accept()));
+
+    connect(button_box, SIGNAL(rejected()), parent, SLOT(reject()));
 }
 
 void DecodeTrace::draw_annotation(const pv::data::decode::Annotation &a,
@@ -733,14 +726,15 @@ void DecodeTrace::create_decoder_form(
 		const struct srd_channel *const pdch =
 			(struct srd_channel *)l->data;
 		QComboBox *const combo = create_probe_selector(parent, dec, pdch);
-		connect(combo, SIGNAL(currentIndexChanged(int)),
-			this, SLOT(on_probe_selected(int)));
+
 		decoder_form->addRow(tr("<b>%1</b> (%2) *")
 			.arg(QString::fromUtf8(pdch->name))
 			.arg(QString::fromUtf8(pdch->desc)), combo);
 
 		const ProbeSelector s = {combo, dec, pdch};
 		_probe_selectors.push_back(s);
+
+         connect(combo, SIGNAL(currentIndexChanged(int)), this, SLOT(on_probe_selected(int)));
 	}
 
 	// Add the optional channels
@@ -748,14 +742,15 @@ void DecodeTrace::create_decoder_form(
 		const struct srd_channel *const pdch =
 			(struct srd_channel *)l->data;
 		QComboBox *const combo = create_probe_selector(parent, dec, pdch);
-		connect(combo, SIGNAL(currentIndexChanged(int)),
-			this, SLOT(on_probe_selected(int)));
+		
 		decoder_form->addRow(tr("<b>%1</b> (%2)")
 			.arg(QString::fromUtf8(pdch->name))
 			.arg(QString::fromUtf8(pdch->desc)), combo);
 
 		const ProbeSelector s = {combo, dec, pdch};
 		_probe_selectors.push_back(s);
+
+        connect(combo, SIGNAL(currentIndexChanged(int)), this, SLOT(on_probe_selected(int)));
 	}
 
 	// Add the options
@@ -767,12 +762,11 @@ void DecodeTrace::create_decoder_form(
     //
     pv::widgets::DecoderGroupBox *const group =
         new pv::widgets::DecoderGroupBox(decoder_stack, dec, decoder_form, parent);
-
-    connect(group, SIGNAL(del_stack(data::decode::Decoder*)),
-        this, SLOT(on_del_stack(data::decode::Decoder*)));
-
+ 
 	form->addRow(group);
 	_decoder_forms.push_back(group);
+
+      connect(group, SIGNAL(del_stack(data::decode::Decoder*)), this, SLOT(on_del_stack(data::decode::Decoder*)));
 }
 
 QComboBox* DecodeTrace::create_probe_selector(
@@ -873,19 +867,11 @@ int DecodeTrace::get_progress()
 }
 
 void DecodeTrace::on_decode_done()
-{
-//    if (_view) {
-//        _view->set_update(_viewport, true);
-//        _view->signals_changed();
-//    }
+{ 
     on_new_decode_data();
     _session->decode_done();
 }
-
-void DecodeTrace::on_delete()
-{
-    _session->remove_decode_signal(this);
-}
+ 
 
 void DecodeTrace::on_probe_selected(int)
 {
@@ -899,7 +885,7 @@ void DecodeTrace::on_stack_decoder(srd_decoder *decoder)
 
     _decoder_stack->push(new data::decode::Decoder(decoder));
      
-    create_popup_form();
+  //  create_popup_form();
 }
 
 void DecodeTrace::on_del_stack(data::decode::Decoder *dec)
@@ -908,7 +894,7 @@ void DecodeTrace::on_del_stack(data::decode::Decoder *dec)
     assert(_decoder_stack);
 
     _decoder_stack->remove(dec);
-    create_popup_form();
+ //   create_popup_form();
 }
 
 int DecodeTrace::rows_size()

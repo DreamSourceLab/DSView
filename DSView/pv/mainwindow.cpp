@@ -246,7 +246,8 @@ void MainWindow::setup_ui()
 
     // update device
     update_device_list();
-    _session->start_hotplug_proc(boost::bind(&MainWindow::session_error, this,
+    
+    _session->start_hotplug_work(boost::bind(&MainWindow::session_error, this,
                                              QString(tr("Hotplug failed")), _1));
 
     retranslateUi();
@@ -375,13 +376,12 @@ void MainWindow::update_device_list()
         }
 
   
-        // load decoders
+        // load decoders 
         StoreSession ss(_session);
-        ss.load_decoders(_protocol_widget, file_dev->get_decoders());
-    
+        bool bFlag = ss.load_decoders(_protocol_widget, file_dev->get_decoders());    
 
         // load session
-        load_session_json(file_dev->get_session(), true);
+        load_session_json(file_dev->get_session(), true, !bFlag);
 
         // load data
         const QString errorMessage(
@@ -957,7 +957,7 @@ bool MainWindow::on_load_session(QString name)
     return load_session_json(sessionDoc, false);
 }
 
-bool MainWindow::load_session_json(QJsonDocument json, bool file_dev)
+bool MainWindow::load_session_json(QJsonDocument json, bool file_dev, bool bDecoder)
 {
     QJsonObject sessionObj = json.object();
 
@@ -976,9 +976,9 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev)
         return false;
     }
  
-    // clear decoders
-  
-    if (sdi->mode == LOGIC) {
+    // clear decoders  
+    if (sdi->mode == LOGIC && !file_dev) 
+    {
         _protocol_widget->del_all_protocol();
     } 
 
@@ -1011,7 +1011,8 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev)
         for (const GSList *l = _session->get_device()->dev_inst()->channels; l; l = l->next) {
             sr_channel *const probe = (sr_channel*)l->data;
             assert(probe);
-            foreach (const QJsonValue &value, sessionObj["channel"].toArray()) {
+
+            for (const QJsonValue &value : sessionObj["channel"].toArray()) {
                 QJsonObject obj = value.toObject();
                 if ((strcmp(probe->name, g_strdup(obj["name"].toString().toStdString().c_str())) == 0) &&
                     (probe->type == obj["type"].toDouble())) {
@@ -1031,7 +1032,8 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev)
             sr_channel *const probe = (sr_channel*)l->data;
             assert(probe);
             bool isEnabled = false;
-            foreach (const QJsonValue &value, sessionObj["channel"].toArray()) {
+
+            for (const QJsonValue &value : sessionObj["channel"].toArray()) {
                 QJsonObject obj = value.toObject();
                 if ((probe->index == obj["index"].toDouble()) &&
                     (probe->type == obj["type"].toDouble())) {
@@ -1058,8 +1060,9 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev)
 
     // load signal setting
     if (file_dev && (sdi->mode == DSO)) {
+
          for(auto &s :  _session->get_signals()) {
-            foreach (const QJsonValue &value, sessionObj["channel"].toArray()) {
+            for (const QJsonValue &value : sessionObj["channel"].toArray()) {
                 QJsonObject obj = value.toObject();
                 if ((strcmp(s->get_name().toStdString().c_str(), g_strdup(obj["name"].toString().toStdString().c_str())) == 0) &&
                     (s->get_type() == obj["type"].toDouble())) {
@@ -1078,7 +1081,7 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev)
         }
     } else {
          for(auto &s : _session->get_signals()) {
-            foreach (const QJsonValue &value, sessionObj["channel"].toArray()) {
+            for (const QJsonValue &value : sessionObj["channel"].toArray()) {
                 QJsonObject obj = value.toObject();
                 if ((s->get_index() == obj["index"].toDouble()) &&
                     (s->get_type() == obj["type"].toDouble())) {
@@ -1123,11 +1126,10 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev)
 
     
     // load decoders
-    if (sessionObj.contains("decoder")) {
+    if (bDecoder && sessionObj.contains("decoder")) {
         StoreSession ss(_session);
         ss.load_decoders(_protocol_widget, sessionObj["decoder"].toArray());
     }
-
 
     // load measure
     if (sessionObj.contains("measure")) {

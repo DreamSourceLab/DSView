@@ -44,6 +44,8 @@ class Decoder
 public:
 	Decoder(const srd_decoder *const decoder);
 
+public: 
+
 	virtual ~Decoder();
 
 	inline const srd_decoder* decoder(){
@@ -92,19 +94,19 @@ public:
 
 private:
 	const srd_decoder *const _decoder;
+ 
+    std::map<const srd_channel*, int>   _probes;
+	std::map<std::string, GVariant*>    _options;
+    std::map<const srd_channel*, int>   _probes_back;
+    std::map<std::string, GVariant*>    _options_back;
 
-	bool _shown;
+    uint64_t        _decode_start;
+    uint64_t        _decode_end;
+    uint64_t        _decode_start_back;
+    uint64_t        _decode_end_back;
 
-    std::map<const srd_channel*, int> _probes;
-	std::map<std::string, GVariant*> _options;
-
-    std::map<const srd_channel*, int> _probes_back;
-    std::map<std::string, GVariant*> _options_back;
-
-    uint64_t _decode_start, _decode_end;
-    uint64_t _decode_start_back, _decode_end_back;
-
-    bool _setted;
+    bool            _setted;
+    bool            _shown;
 };
 
 } // namespace decode

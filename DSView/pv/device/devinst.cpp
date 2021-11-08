@@ -204,6 +204,11 @@ void DevInst::run()
 	sr_session_run();
 }
 
+void DevInst::stop()
+{
+ 	sr_session_stop();
+} 
+
 bool DevInst::is_usable()
 {
     return _usable;

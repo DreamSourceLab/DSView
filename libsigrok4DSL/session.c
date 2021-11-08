@@ -36,6 +36,8 @@
 
 int bExportOriginalData = 0; //able export all data
 
+int session_loop_stop_flag = 0;
+
 /**
  * @file
  *
@@ -403,12 +405,14 @@ SR_API int sr_session_run(void)
 
     session->running = TRUE;
 
+    session_loop_stop_flag = 0;
+
 	sr_info("Running...");
 
 	/* Do we have real sources? */
 	if (session->num_sources == 1 && session->pollfds[0].fd == -1) {
 		/* Dummy source, freewheel over it. */
-        while (session->num_sources) {
+        while (session->num_sources && !session_loop_stop_flag) {
             if (session->abort_session) {
                 session->sources[0].cb(-1, -1, session->sources[0].cb_data);
                 break;
@@ -418,8 +422,9 @@ SR_API int sr_session_run(void)
         }
 	} else {
 		/* Real sources, use g_poll() main loop. */
-        while (session->num_sources)
-            sr_session_iteration(TRUE);
+        while (session->num_sources && !session_loop_stop_flag){
+			sr_session_iteration(TRUE);
+		}            
 	}
 
     g_mutex_lock(&session->stop_mutex);
@@ -484,9 +489,11 @@ SR_API int sr_session_stop(void)
 		return SR_ERR_BUG;
 	}
 
+	session_loop_stop_flag = 1; //set flag, the run loop will exit
+
     g_mutex_lock(&session->stop_mutex);
     if (session->running)
-        session->abort_session = TRUE;
+        session->abort_session = TRUE;  
     g_mutex_unlock(&session->stop_mutex);
 
 	return SR_OK;

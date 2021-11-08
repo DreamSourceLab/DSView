@@ -80,7 +80,7 @@ private:
 
 public:    
     QJsonArray json_decoders();
-    void load_decoders(dock::ProtocolDock *widget, QJsonArray dec_array);
+    bool load_decoders(dock::ProtocolDock *widget, QJsonArray dec_array);
     QString MakeSaveFile(bool bDlg);
     QString MakeExportFile(bool bDlg);
 

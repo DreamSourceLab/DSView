@@ -183,6 +183,8 @@ int main(int argc, char *argv[])
 
 		//Run the application
 		ret = a.exec();
+
+		control->Stop();
 	}
 	catch (const std::exception &e)
 	{

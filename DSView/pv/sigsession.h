@@ -54,6 +54,8 @@ struct srd_channel;
 
 class DecoderStatus;
 
+typedef std::lock_guard<std::mutex> ds_lock_guard;
+
 namespace pv {
 
 class DeviceManager;
@@ -157,22 +159,31 @@ public:
 	capture_state get_capture_state();
 
     uint64_t cur_samplerate();
+
     uint64_t cur_snap_samplerate();
+
     uint64_t cur_samplelimits();
+
     double cur_sampletime();
+
     double cur_snap_sampletime();
+
     double cur_view_time();
 
     void set_cur_snap_samplerate(uint64_t samplerate);
+
     void set_cur_samplelimits(uint64_t samplelimits);
+
     void set_session_time(QDateTime time);
+
     QDateTime get_session_time();
+
     uint64_t get_trigger_pos();
 
-    void start_capture(bool instant,
-		boost::function<void (const QString)> error_handler);
-    void capture_init();
+    void start_capture(bool instant, boost::function<void (const QString)> error_handler);
+
     bool get_capture_status(bool &triggered, int &progress);
+
     void container_init();
 
     std::set<data::SignalData*> get_data();
@@ -183,16 +194,12 @@ public:
 
     bool add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus);
 
+    void remove_decoder(int index);
+  
     std::vector<view::DecodeTrace*>& get_decode_signals();
-
-    void remove_decode_signal(view::DecodeTrace *signal);
-
-    void remove_decode_signal(int index);
-
+ 
     void rst_decoder(int index);
-
-    void rst_decoder(view::DecodeTrace *signal);
-
+ 
     pv::data::DecoderModel* get_decoder_model();
 
     std::vector<view::SpectrumTrace*>& get_spectrum_traces();
@@ -207,53 +214,78 @@ public:
 
     void del_group();
 
-    void start_hotplug_proc(boost::function<void (const QString)> error_handler);
-    void stop_hotplug_proc();
-	
+    void start_hotplug_work(boost::function<void (const QString)> error_handler);
+
+    void stop_hotplug_work();	
 
     uint16_t get_ch_num(int type);
     
     bool get_instant();
 
     bool get_data_lock();
+
     void data_auto_lock(int lock);
+
     void data_auto_unlock();
+
     bool get_data_auto_lock();
+
     void spectrum_rebuild();
+
     void lissajous_rebuild(bool enable, int xindex, int yindex, double percent);
+
     void lissajous_disable();
+
     void math_rebuild(bool enable,pv::view::DsoSignal *dsoSig1,
                       pv::view::DsoSignal *dsoSig2,
                       data::MathStack::MathType type);
+
     void math_disable();
 
     bool trigd();
+
     uint8_t trigd_ch();
 
     data::Snapshot* get_snapshot(int type);
 
     error_state get_error();
+
     void set_error(error_state state);
+
     void clear_error();
+
     uint64_t get_error_pattern();
 
     run_mode get_run_mode();
+
     void set_run_mode(run_mode mode);
+
     int get_repeat_intvl();
+
     void set_repeat_intvl(int interval);
+
     bool isRepeating();
+
     bool repeat_check();
+
     int get_repeat_hold();
 
     int get_map_zoom();
 
     void set_save_start(uint64_t start);
+
     void set_save_end(uint64_t end);
+
     uint64_t get_save_start();
+
     uint64_t get_save_end();
+
     bool get_saving();
+
     void set_saving(bool saving);
+
     void set_stop_scale(float scale);
+
     float stop_scale();
 
     void exit_capture();
@@ -264,11 +296,36 @@ public:
 
     void Close();
 
+    void clear_all_decoder(); 
+
+    inline bool is_closed(){
+        return _bClose;
+    }
+ 
 private:
 	void set_capture_state(capture_state state);
 
     void register_hotplug_callback();
+
     void deregister_hotplug_callback();
+
+    bool do_add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus);
+
+    void add_decode_task(view::DecodeTrace *trace);
+
+    void remove_decode_task(view::DecodeTrace *trace);
+
+    void clear_all_decode_task(int &runningDex); 
+  
+    view::DecodeTrace* get_decoder_trace(int index);
+
+    void decode_task_proc();
+
+    view::DecodeTrace* get_top_decode_task();
+    
+    void capture_init();
+
+    void do_stop_capture();
 
 private:
     /**
@@ -291,11 +348,16 @@ private:
 
     // data feed
 	void feed_in_header(const sr_dev_inst *sdi);
+
 	void feed_in_meta(const sr_dev_inst *sdi,
 		const sr_datafeed_meta &meta);
+
     void feed_in_trigger(const ds_trigger_pos &trigger_pos);
+
 	void feed_in_logic(const sr_datafeed_logic &logic);
+
     void feed_in_dso(const sr_datafeed_dso &dso);
+
 	void feed_in_analog(const sr_datafeed_analog &analog);
     
 	void data_feed_in(const struct sr_dev_inst *sdi,
@@ -306,6 +368,7 @@ private:
 
     // thread for hotplug
     void hotplug_proc(boost::function<void (const QString)> error_handler);
+
     static int hotplug_callback(struct libusb_context *ctx, struct libusb_device *dev,
                                 libusb_hotplug_event event, void *user_data);
 
@@ -321,6 +384,7 @@ signals:
     void receive_data(quint64 length);
 
     void device_attach();
+
     void device_detach();
 
     void receive_trigger(quint64 trigger_pos);
@@ -338,6 +402,7 @@ signals:
     void device_setted();
 
     void zero_adj();
+
     void progressSaveFileValueChanged(int percent);
 
     void decode_done();
@@ -351,6 +416,7 @@ signals:
     void session_error();
 
     void repeat_hold(int percent);
+
     void repeat_resume();
 
     void cur_snap_samplerate_changed();
@@ -359,22 +425,29 @@ signals:
 
 public slots:
     void reload();
+
     void refresh(int holdtime);
+
     void stop_capture();
+
     void check_update();
     // repeat
     void set_repeating(bool repeat);
+    
     void set_map_zoom(int index);
     // OSC auto
     void auto_end();
 
 private slots:
     void data_lock();
+
     void data_unlock();
+
     void nodata_timeout();
+
     void feed_timeout();
-    void repeat_update();
- 
+
+    void repeat_update(); 
  
 private:
 	DeviceManager   *_device_manager;
@@ -382,73 +455,77 @@ private:
 	/**
 	 * The device instance that will be used in the next capture session.
 	 */
-    DevInst     *_dev_inst;
+    DevInst                 *_dev_inst;
+    mutable std::mutex      _sampling_mutex;
+    mutable std::mutex      _data_mutex;
+    mutable std::mutex      _decode_task_mutex;
+ 
+    std::thread             _hotplug_thread;
+    std::thread             _sampling_thread;   
+    std::thread             _decode_thread;
 
-    mutable std::mutex _sampling_mutex;
-	capture_state _capture_state;
-    bool _instant;
-    uint64_t _cur_snap_samplerate;
-    uint64_t _cur_samplelimits;
+    volatile bool           _bHotplugStop;
+    volatile bool           _bDecodeRunning;
 
-    //mutable std::mutex _signals_mutex;
-	std::vector<view::Signal*> _signals;
+	capture_state           _capture_state;
+    bool                    _instant;
+    uint64_t                _cur_snap_samplerate;
+    uint64_t                _cur_samplelimits;
+ 
+	std::vector<view::Signal*>      _signals;
     std::vector<view::GroupSignal*> _group_traces;
 
     std::vector<view::DecodeTrace*> _decode_traces;
-    pv::data::DecoderModel  *_decoder_model;
+    std::vector<view::DecodeTrace*> _decode_tasks;
+    pv::data::DecoderModel          *_decoder_model;
 
     std::vector<view::SpectrumTrace*> _spectrum_traces;
-    view::LissajousTrace    *_lissajous_trace;
-    view::MathTrace *_math_trace;
-
-    mutable std::mutex _data_mutex;
-	data::Logic *_logic_data;
-	data::LogicSnapshot *_cur_logic_snapshot;
-    data::Dso *_dso_data;
-    data::DsoSnapshot *_cur_dso_snapshot;
-	data::Analog *_analog_data;
-	data::AnalogSnapshot *_cur_analog_snapshot;
-    data::Group *_group_data; 
-    int _group_cnt;
-
-	std::thread     *_sampling_thread;
-    std::thread     *_hotplug;
-    volatile bool    _bHotplugStop;
-
+    view::LissajousTrace            *_lissajous_trace;
+    view::MathTrace                 *_math_trace;
+  
+	data::Logic              *_logic_data;
+	data::LogicSnapshot      *_cur_logic_snapshot;
+    data::Dso                *_dso_data;
+    data::DsoSnapshot        *_cur_dso_snapshot;
+	data::Analog             *_analog_data;
+	data::AnalogSnapshot     *_cur_analog_snapshot;
+    data::Group              *_group_data; 
+    int                      _group_cnt;
+ 
 	libusb_hotplug_callback_handle _hotplug_handle;
     
-    bool _hot_attach;
-    bool _hot_detach;
+    bool        _hot_attach;
+    bool        _hot_detach;
 
-    QTimer _feed_timer;
-    int    _noData_cnt;
-    bool _data_lock;
-    bool _data_updated;
-    int _data_auto_lock;
+    QTimer      _feed_timer;
+    int         _noData_cnt;
+    bool        _data_lock;
+    bool        _data_updated;
+    int         _data_auto_lock;
 
-    QDateTime _session_time;
-    uint64_t _trigger_pos;
-    bool _trigger_flag;
-    uint8_t _trigger_ch;
-    bool _hw_replied;
+    QDateTime   _session_time;
+    uint64_t    _trigger_pos;
+    bool        _trigger_flag;
+    uint8_t     _trigger_ch;
+    bool        _hw_replied;
 
     error_state _error;
-    uint64_t _error_pattern;
+    uint64_t    _error_pattern;
 
-    run_mode _run_mode;
-    int _repeat_intvl;
-    bool _repeating;
-    int _repeat_hold_prg;
+    run_mode    _run_mode;
+    int         _repeat_intvl;
+    bool        _repeating;
+    int         _repeat_hold_prg;
 
-    int _map_zoom;
+    int         _map_zoom;
 
-    uint64_t _save_start;
-    uint64_t _save_end;
-    bool _saving;
+    uint64_t    _save_start;
+    uint64_t    _save_end;
+    bool        _saving;
 
-    bool _dso_feed;
-    float _stop_scale;
-   
+    bool        _dso_feed;
+    float       _stop_scale; 
+    bool        _bClose;
 
 private:
 	// TODO: This should not be necessary. Multiple concurrent

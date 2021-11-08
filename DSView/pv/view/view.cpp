@@ -100,12 +100,7 @@ View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     assert(session);
 
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-
-	connect(horizontalScrollBar(), SIGNAL(valueChanged(int)),
-		this, SLOT(h_scroll_value_changed(int)));
-	connect(verticalScrollBar(), SIGNAL(valueChanged(int)),
-		this, SLOT(v_scroll_value_changed(int)));
-
+  
     // trace viewport map
     _trace_view_map[SR_CHANNEL_LOGIC] = TIME_VIEW;
     _trace_view_map[SR_CHANNEL_GROUP] = TIME_VIEW;
@@ -128,16 +123,12 @@ View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     _time_viewport = new Viewport(*this, TIME_VIEW);
     _time_viewport->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     _time_viewport->setMinimumHeight(100);
-    connect(_time_viewport, SIGNAL(measure_updated()),
-            this, SLOT(on_measure_updated()));
-    connect(_time_viewport, SIGNAL(prgRate(int)), this, SIGNAL(prgRate(int)));
+  
     _fft_viewport = new Viewport(*this, FFT_VIEW);
     _fft_viewport->setVisible(false);
     _fft_viewport->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     _fft_viewport->setMinimumHeight(100);
-    connect(_fft_viewport, SIGNAL(measure_updated()),
-            this, SLOT(on_measure_updated()));
-
+ 
     _vsplitter = new QSplitter(this);
     _vsplitter->setOrientation(Qt::Vertical);
     _vsplitter->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
@@ -162,35 +153,6 @@ View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     _viewbottom->setFixedHeight(StatusHeight);
     layout->addWidget(_viewbottom, 1, 0);
     setViewport(_viewcenter);
-    connect(_vsplitter, SIGNAL(splitterMoved(int,int)),
-        this, SLOT(splitterMoved(int, int)));
-
-    connect(_session, SIGNAL(device_setted()),
-            _devmode, SLOT(set_device()));
-    connect(_session, SIGNAL(signals_changed()),
-        this, SLOT(signals_changed()), Qt::DirectConnection);
-    connect(_session, SIGNAL(data_updated()),
-        this, SLOT(data_updated()));
-    connect(_session, SIGNAL(receive_trigger(quint64)),
-            this, SLOT(receive_trigger(quint64)));
-    connect(_session, SIGNAL(frame_ended()),
-            this, SLOT(receive_end()));
-    connect(_session, SIGNAL(frame_began()),
-            this, SLOT(frame_began()));
-    connect(_session, SIGNAL(show_region(uint64_t, uint64_t, bool)),
-            this, SLOT(show_region(uint64_t, uint64_t, bool)));
-    connect(_session, SIGNAL(show_wait_trigger()),
-            _time_viewport, SLOT(show_wait_trigger()));
-    connect(_session, SIGNAL(repeat_hold(int)),
-            this, SLOT(repeat_show()));
-
-    connect(_devmode, SIGNAL(dev_changed(bool)),
-            this, SLOT(dev_changed(bool)), Qt::DirectConnection);
-
-    connect(_header, SIGNAL(traces_moved()),
-        this, SLOT(on_traces_moved()));
-    connect(_header, SIGNAL(header_updated()),
-        this, SLOT(header_updated()));
 
     _time_viewport->installEventFilter(this);
     _fft_viewport->installEventFilter(this);
@@ -213,6 +175,28 @@ View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget
 
     _cali = new pv::dialogs::Calibration(this);
     _cali->hide();
+
+	connect(horizontalScrollBar(), SIGNAL(valueChanged(int)), this, SLOT(h_scroll_value_changed(int)));
+	connect(verticalScrollBar(), SIGNAL(valueChanged(int)), this, SLOT(v_scroll_value_changed(int)));
+
+    connect(_time_viewport, SIGNAL(measure_updated()),this, SLOT(on_measure_updated()));
+    connect(_time_viewport, SIGNAL(prgRate(int)), this, SIGNAL(prgRate(int)));
+    connect(_fft_viewport, SIGNAL(measure_updated()), this, SLOT(on_measure_updated()));
+
+    connect(_vsplitter, SIGNAL(splitterMoved(int,int)), this, SLOT(splitterMoved(int, int)));
+    connect(_session, SIGNAL(device_setted()),  _devmode, SLOT(set_device()));
+    connect(_session, SIGNAL(signals_changed()), this, SLOT(signals_changed()), Qt::DirectConnection);
+    connect(_session, SIGNAL(data_updated()), this, SLOT(data_updated()));
+    connect(_session, SIGNAL(receive_trigger(quint64)), this, SLOT(receive_trigger(quint64)));
+    connect(_session, SIGNAL(frame_ended()), this, SLOT(receive_end()));
+    connect(_session, SIGNAL(frame_began()),  this, SLOT(frame_began()));
+    connect(_session, SIGNAL(show_region(uint64_t, uint64_t, bool)), this, SLOT(show_region(uint64_t, uint64_t, bool)));
+
+    connect(_session, SIGNAL(show_wait_trigger()),  _time_viewport, SLOT(show_wait_trigger()));
+    connect(_session, SIGNAL(repeat_hold(int)), this, SLOT(repeat_show()));
+    connect(_devmode, SIGNAL(dev_changed(bool)),this, SLOT(dev_changed(bool)), Qt::DirectConnection);
+    connect(_header, SIGNAL(traces_moved()),this, SLOT(on_traces_moved()));
+    connect(_header, SIGNAL(header_updated()),this, SLOT(header_updated()));
 }
 
 SigSession& View::session()

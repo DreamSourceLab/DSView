@@ -48,6 +48,8 @@ public:
 
     bool Start();
 
+    void Stop();
+
     void UnInit();
 
     const char* GetLastError();

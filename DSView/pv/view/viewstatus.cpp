@@ -237,7 +237,7 @@ void ViewStatus::load_session(QJsonArray measure_array)
         measure_array.empty())
         return;
 
-    foreach (const QJsonValue &measure_value, measure_array) {
+    for (const QJsonValue &measure_value : measure_array) {
         QJsonObject m_obj = measure_value.toObject();
         int index = m_obj["site"].toInt();
         int sig_index = m_obj["index"].toInt();

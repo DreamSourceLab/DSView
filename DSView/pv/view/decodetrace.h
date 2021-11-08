@@ -58,6 +58,7 @@ class DecoderGroupBox;
 
 namespace view {
 
+//create by  SigSession
 class DecodeTrace : public Trace
 {
 	Q_OBJECT
@@ -98,6 +99,8 @@ public:
 	DecodeTrace(pv::SigSession *session,
 		pv::data::DecoderStack *decoder_stack,
 		int index);
+
+public:
     ~DecodeTrace();
 
 	bool enabled();
@@ -147,7 +150,7 @@ protected:
     void paint_type_options(QPainter &p, int right, const QPoint pt, QColor fore);
 
 private:
-    void create_popup_form();
+    void create_popup_form(dialogs::DSDialog *dlg);
 
 	void populate_popup_form(QWidget *parent, QFormLayout *form);
 
@@ -191,9 +194,7 @@ signals:
 
 private slots:
 	void on_new_decode_data();
-
-	void on_delete();
-
+  
 	void on_probe_selected(int);
 
 	void on_stack_decoder(srd_decoder *decoder);
@@ -203,6 +204,9 @@ private slots:
     void on_decode_done();
 
     void on_region_set(int index);
+
+public:
+	volatile bool _delete_flag; //detroy it when deocde task end
 
 private:
 	pv::SigSession 			*_session;
@@ -214,6 +218,7 @@ private:
 	int 	 		_end_index;
     int 			_start_count;
 	int			 	_end_count;
+	
     QComboBox 		*_start_comboBox;
 	QComboBox 		*_end_comboBox;
 	QFormLayout 	*_pub_input_layer;
@@ -224,7 +229,6 @@ private:
 	std::vector<pv::widgets::DecoderGroupBox*> _decoder_forms;
 
 	std::vector<QString> 	_cur_row_headings; 
-    dialogs::DSDialog 		*_popup;
 };
 
 } // namespace view

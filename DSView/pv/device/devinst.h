@@ -117,6 +117,8 @@ public:
 
 	virtual void run();
 
+    virtual void stop();
+
     virtual void* get_id();
 
     virtual sr_dev_inst* dev_inst() = 0;

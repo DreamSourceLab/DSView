@@ -95,11 +95,14 @@ bool AppControl::Start()
     return true;
 }
 
-void AppControl::UnInit()
-{
+ void AppControl::Stop()
+ {
     _session->Close();
     _device_manager->UnInitAll();    
-    
+ }
+
+void AppControl::UnInit()
+{  
     // Destroy libsigrokdecode
     srd_exit();
 

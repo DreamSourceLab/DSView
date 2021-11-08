@@ -343,10 +343,12 @@ void DsoTriggerDock::device_change()
 void DsoTriggerDock::init()
 {
     if (_session->get_device()->name().contains("virtual")) {
-        foreach(QAbstractButton * btn, _source_group->buttons())
+        for(QAbstractButton * btn :  _source_group->buttons())
             btn->setDisabled(true);
-        foreach(QAbstractButton * btn, _type_group->buttons())
+
+        for(QAbstractButton * btn : _type_group->buttons())
             btn->setDisabled(true);
+
         _holdoff_slider->setDisabled(true);
         _holdoff_spinBox->setDisabled(true);
         _holdoff_comboBox->setDisabled(true);
@@ -354,10 +356,12 @@ void DsoTriggerDock::init()
         _channel_comboBox->setDisabled(true);
         return;
     } else {
-        foreach(QAbstractButton * btn, _source_group->buttons())
+        for(QAbstractButton * btn :  _source_group->buttons())
             btn->setDisabled(false);
-        foreach(QAbstractButton * btn, _type_group->buttons())
+
+        for(QAbstractButton * btn : _type_group->buttons())
             btn->setDisabled(false);
+            
         _holdoff_slider->setDisabled(false);
         _holdoff_spinBox->setDisabled(false);
         _holdoff_comboBox->setDisabled(false);

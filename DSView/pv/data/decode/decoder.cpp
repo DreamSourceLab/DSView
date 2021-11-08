@@ -29,11 +29,15 @@ namespace pv {
 namespace data {
 namespace decode {
 
-Decoder::Decoder(const srd_decoder *const dec) :
-	_decoder(dec),
-    _shown(true),
-    _setted(true)
+Decoder::Decoder(const srd_decoder *const dec):
+    _decoder(dec)
 {
+	_shown = true;
+	_setted = true;
+	_decode_start = 0;
+	_decode_end = 0;
+	_decode_start_back = 0;
+	_decode_end_back = 0;
 }
 
 Decoder::~Decoder()
@@ -65,9 +69,10 @@ void Decoder::set_decode_region(uint64_t start, uint64_t end)
 {
     _decode_start_back = start;
     _decode_end_back = end;
-    if (_decode_start != start ||
-        _decode_end != end)
-        _setted = true;
+	
+    if (_decode_start != start || _decode_end != end){
+		_setted = true;
+	} 
 }
   
 //apply setting

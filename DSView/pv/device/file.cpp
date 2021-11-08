@@ -96,7 +96,7 @@ QJsonArray File::get_decoders()
             }
         }
 
-        zip_close(archive);
+        zip_close(archive);        
     }
 
     return dec_array;

@@ -96,7 +96,7 @@ private:
 	void session_error(const QString text, const QString info_text);
     bool eventFilter(QObject *object, QEvent *event);
 
-    bool load_session_json(QJsonDocument json, bool file_dev);
+    bool load_session_json(QJsonDocument json, bool file_dev,bool bDecoder=true);
 
     void update_device_list();
 

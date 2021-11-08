@@ -21,22 +21,23 @@
 
 #ifndef DSVIEW_PV_DATA_DECODERSTACK_H
 #define DSVIEW_PV_DATA_DECODERSTACK_H
+
 #include <libsigrokdecode4DSL/libsigrokdecode.h>
-
 #include <list>
-
-#include <boost/optional.hpp> 
- 
-
+#include <boost/optional.hpp>
 #include <QObject>
 #include <QString>
-#include <mutex>
-#include <thread>
+#include <mutex> 
 
 #include "decode/row.h" 
 #include "../data/signaldata.h"
 
 class DecoderStatus;
+
+struct decode_task_status
+{  
+    volatile bool m_bStop;
+};
 
 namespace DecoderStackTest {
 class TwoDecoderStack;
@@ -62,6 +63,7 @@ class RowData;
 
 class Logic;
 
+ //a torotocol have a DecoderStack, destroy by DecodeTrace
 class DecoderStack : public QObject, public SignalData
 {
 	Q_OBJECT
@@ -133,14 +135,21 @@ public:
 	QString error_message();
 
 	void clear();
+
     void init();
 
 	uint64_t get_max_sample_count();
 
-	void begin_decode();
+    inline bool IsRunning(){
+        return _decode_state == Running;
+    }
+ 
+	void begin_decode_work();
 
-    void stop_decode();
+    void do_decode_work();
 
+    void stop_decode_work();
+  
     int list_rows_size();
 
     bool options_changed();
@@ -154,6 +163,8 @@ public:
     void set_mark_index(int64_t index);
     int64_t get_mark_index();
 
+    void frame_ended();
+
 private:
     void decode_data(const uint64_t decode_start, const uint64_t decode_end, srd_session *const session);
 
@@ -164,14 +175,12 @@ private:
 private slots:
 	void on_new_frame();
 
-	void on_data_received();
-
-	void on_frame_ended();
+	void on_data_received(); 
 
 signals:
 	void new_decode_data();
     void decode_done();
-
+  
 private: 
 	std::list<decode::Decoder*> _stack;
 
@@ -184,28 +193,18 @@ private:
   
     SigSession      *_session;
     decode_state    _decode_state;
-    bool            _options_changed;
-    bool            _no_memory;
+    volatile bool   _options_changed;
+    volatile bool   _no_memory;
     int64_t         _mark_index;
     DecoderStatus   *_decoder_status;
     QString         _error_message;
     int64_t	        _samples_decoded;
-    uint64_t        _sample_count;
-	bool            _frame_complete;
-    volatile bool   _bThreadStop;
+    uint64_t        _sample_count; 
+ 
+    decode_task_status  *_stask_stauts;
     
-
-    std::thread     *_decode_thread;
     mutable std::mutex _output_mutex;
-
-	/**
-	 * This mutex prevents more than one decode operation occuring
-	 * concurrently.
-	 * @todo A proper solution should be implemented to allow multiple
-	 * decode operations.
-	 */ 
-    static std::mutex _global_decode_mutex;
-
+  
 	friend class DecoderStackTest::TwoDecoderStack;
 };
 

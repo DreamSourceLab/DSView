@@ -42,7 +42,7 @@ RowData::RowData() :
 
 RowData::~RowData()
 {
-    clear();
+    //stack object can not destory the sources
 }
 
 void RowData::clear()
@@ -108,10 +108,8 @@ uint64_t RowData::get_annotation_index(uint64_t start_sample)
 }
 
 bool RowData::push_annotation(Annotation *a)
-{
-    if (a == NULL){
-        return false;
-    }
+{ 
+    assert(a);
 
     std::lock_guard<std::mutex> lock(_global_visitor_mutex);
 

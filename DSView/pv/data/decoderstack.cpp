@@ -46,12 +46,9 @@ namespace data {
 
 const double DecoderStack::DecodeMargin = 1.0;
 const double DecoderStack::DecodeThreshold = 0.2;
-const int64_t DecoderStack::DecodeChunkLength = 4 * 1024;
-//const int64_t DecoderStack::DecodeChunkLength = 1024 * 1024;
+const int64_t DecoderStack::DecodeChunkLength = 4 * 1024; 
 const unsigned int DecoderStack::DecodeNotifyPeriod = 1024;
-
-std::mutex DecoderStack::_global_decode_mutex;
-
+ 
 DecoderStack::DecoderStack(pv::SigSession *session,
 	const srd_decoder *const dec, DecoderStatus *decoder_status) :
 	_session(session)
@@ -61,22 +58,17 @@ DecoderStack::DecoderStack(pv::SigSession *session,
     assert(decoder_status);
     
     _samples_decoded = 0;
-    _sample_count = 0;
-    _frame_complete = false;
+    _sample_count = 0; 
     _decode_state = Stopped;
     _options_changed = false;
     _no_memory = false;
     _mark_index = -1;
     _decoder_status = decoder_status;
-    _bThreadStop = false;
-    _decode_thread = NULL;
+    _stask_stauts = NULL;
 
-	connect(_session, SIGNAL(frame_began()),
-		this, SLOT(on_new_frame()));
-	connect(_session, SIGNAL(data_received()),
-		this, SLOT(on_data_received()));
-	connect(_session, SIGNAL(frame_ended()),
-		this, SLOT(on_frame_ended()));
+	connect(_session, SIGNAL(frame_began()), this, SLOT(on_new_frame()));
+
+	connect(_session, SIGNAL(data_received()), this, SLOT(on_data_received())); 
 
     _stack.push_back(new decode::Decoder(dec));
  
@@ -84,16 +76,21 @@ DecoderStack::DecoderStack(pv::SigSession *session,
 }
 
 DecoderStack::~DecoderStack()
-{ 
-    stop_decode();
-
+{   
+    //release source
     for (auto &kv : _rows)
     {
+        kv.second->clear();
         delete kv.second;
     }
     _rows.clear();
 
+    //Decoder
+    for (auto *p : _stack){
+        delete p;
+    }
     _stack.clear();
+    
     _rows_gshow.clear();
     _rows_lshow.clear();
     _class_rows.clear();
@@ -117,7 +114,10 @@ void DecoderStack::remove(Decoder *decoder)
 
 	// Delete the element
     if (iter != _stack.end())
+    {
         _stack.erase(iter);
+        delete decoder;
+    }        
 
     build_row();
     _options_changed = true;
@@ -125,7 +125,7 @@ void DecoderStack::remove(Decoder *decoder)
 
 void DecoderStack::build_row()
 {
-    //destory data
+    //release source
     for (auto &kv : _rows)
     {
         delete kv.second;
@@ -357,8 +357,7 @@ void DecoderStack::clear()
 
 void DecoderStack::init()
 {
-    _sample_count = 0;
-    _frame_complete = false;
+    _sample_count = 0; 
     _samples_decoded = 0;
     _error_message = QString();
     _no_memory = false;
@@ -370,30 +369,44 @@ void DecoderStack::init()
 
     set_mark_index(-1);
 }
-
-void DecoderStack::stop_decode()
-{ 
-    _bThreadStop = true;
-
-     if (_decode_thread && _decode_thread->joinable()) { 
-        _decode_thread->join(); 
+ 
+void DecoderStack::stop_decode_work()
+{  
+    //set the flag to exit from task thread 
+     if (_stask_stauts){
+         _stask_stauts->m_bStop = true;
      }
-     DESTROY_OBJECT(_decode_thread);
-
-    if(_decode_state != Stopped) {       
-       _decode_state = Stopped;
-    }
+    _decode_state = Stopped; 
 }
 
-void DecoderStack::begin_decode()
+void DecoderStack::begin_decode_work()
 {
+     assert(_decode_state == Stopped);
+
+     _decode_state = Running;
+      do_decode_work();
+     _decode_state = Stopped;
+}
+
+void DecoderStack::do_decode_work()
+{
+    //set the flag to exit from task thread 
+     if (_stask_stauts){
+         _stask_stauts->m_bStop = true;
+     }
+     _stask_stauts = new decode_task_status();
+     _stask_stauts->m_bStop = false;
+  
     pv::view::LogicSignal *logic_signal = NULL;
     pv::data::Logic *data = NULL;
 
     if (!_options_changed)
+    {
+        qDebug()<<"data not be ready";
         return;
+    } 
     _options_changed = false;
-    stop_decode();
+
     init();
 
 	// Check that all decoders have the required channels
@@ -427,6 +440,7 @@ void DecoderStack::begin_decode()
     const auto &snapshots = data->get_snapshots();
 	if (snapshots.empty())
 		return;
+
 	_snapshot = snapshots.front();
     if (_snapshot->empty())
         return;
@@ -435,15 +449,8 @@ void DecoderStack::begin_decode()
 	_samplerate = data->samplerate();
     if (_samplerate == 0.0)
         return;
-
-    if (_decode_thread && _decode_thread->joinable()) { 
-            _bThreadStop = true;
-            _decode_thread->join(); 
-    }
-    DESTROY_OBJECT(_decode_thread);
-
-    _bThreadStop = false; //reset stop flag
-    _decode_thread =  new std::thread(&DecoderStack::decode_proc, this);
+     
+    decode_proc();   
 }
 
 uint64_t DecoderStack::get_max_sample_count()
@@ -457,10 +464,10 @@ uint64_t DecoderStack::get_max_sample_count()
 	return max_sample_count;
 }
 
-void DecoderStack::decode_data(
-    const uint64_t decode_start, const uint64_t decode_end,
-    srd_session *const session)
+void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decode_end, srd_session *const session)
 {
+    decode_task_status *status = _stask_stauts;    
+
     //uint8_t *chunk = NULL;
     uint64_t last_cnt = 0;
     uint64_t notify_cnt = (decode_end - decode_start + 1)/100;
@@ -480,8 +487,16 @@ void DecoderStack::decode_data(
     uint64_t i = decode_start;
     char *error = NULL;
 
-    while(!_bThreadStop && i < decode_end && !_no_memory)
-    { 
+    if( i >= decode_end){
+        qDebug()<<"decode data index have been end:"<<i;
+    }
+
+    while(i < decode_end && !_no_memory)
+    {    
+        if (status->m_bStop){
+            break;
+        }        
+
         std::vector<const uint8_t *> chunk;
         std::vector<uint8_t> chunk_const;
         uint64_t chunk_end = decode_end;
@@ -523,21 +538,19 @@ void DecoderStack::decode_data(
             new_decode_data();
         }
         entry_cnt++;
-    }
+    } 
+
     if (error)
         g_free(error);
-    decode_done();
+
+    qDebug()<<"decode tack proc end";
+    
+    if (!_session->is_closed())
+        decode_done();
 }
 
 void DecoderStack::decode_proc()
-{ 
-    std::lock_guard<std::mutex> decode_lock(_global_decode_mutex);
-    
-    if (_bThreadStop){
-        return;
-    }
-
-    optional<uint64_t> sample_count;
+{  
 	srd_session *session;
 	srd_decoder_inst *prev_di = NULL;
     uint64_t decode_start = 0;
@@ -547,12 +560,13 @@ void DecoderStack::decode_proc()
 
 	// Create the session
 	srd_session_new(&session);
+
 	assert(session);
-
-    _decode_state = Running;
-
+    
     // Get the intial sample count
-    sample_count = _sample_count = _snapshot->get_sample_count();
+    _sample_count = _snapshot->get_sample_count();
+
+    qDebug()<<"sample count:"<<_sample_count;
 
     // Create the decoders
     for(auto &dec : _stack)
@@ -592,9 +606,7 @@ void DecoderStack::decode_proc()
     if (error) {
         g_free(error);
     }
-	srd_session_destroy(session);
-
-    _decode_state = Stopped;
+	srd_session_destroy(session); 
 }
 
 uint64_t DecoderStack::sample_count()
@@ -662,18 +674,16 @@ void DecoderStack::annotation_callback(srd_proto_data *pdata, void *decoder)
 }
 
 void DecoderStack::on_new_frame()
-{
-    //begin_decode();
+{ 
 }
 
 void DecoderStack::on_data_received()
 {  
 }
 
-void DecoderStack::on_frame_ended()
+void DecoderStack::frame_ended()
 { 
-    _options_changed = true;
-    begin_decode();
+    _options_changed = true; 
 }
 
 int DecoderStack::list_rows_size()

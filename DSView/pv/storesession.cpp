@@ -83,14 +83,12 @@ SigSession* StoreSession::session()
 }
 
 std::pair<uint64_t, uint64_t> StoreSession::progress()
-{
-    //lock_guard<mutex> lock(_mutex);
+{ 
     return std::make_pair(_units_stored, _unit_count);
 }
 
 const QString& StoreSession::error()
-{
-    //lock_guard<mutex> lock(_mutex);
+{ 
 	return _error;
 }
 
@@ -878,6 +876,7 @@ QJsonArray StoreSession::json_decoders()
             QJsonArray ch_array;
             const srd_decoder *const d = dec->decoder();;
             const bool have_probes = (d->channels || d->opt_channels) != 0;
+
             if (have_probes) {
                 for(auto i = dec->channels().begin();
                     i != dec->channels().end(); i++) {
@@ -946,29 +945,38 @@ QJsonArray StoreSession::json_decoders()
     return dec_array;
 }
 
-void StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_array)
+bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_array)
 {
-    if (_session->get_device()->dev_inst()->mode != LOGIC ||
-        dec_array.empty())
-        return;
+    if (_session->get_device()->dev_inst()->mode != LOGIC || dec_array.empty())
+    {
+         return false;
+    }
+       
 
-    foreach (const QJsonValue &dec_value, dec_array) {
-        QJsonObject dec_obj = dec_value.toObject();
+    for (const QJsonValue &dec_value : dec_array) {
 
-        auto &pre_dsigs = _session->get_decode_signals();
+        QJsonObject dec_obj = dec_value.toObject(); 
+        std::vector<view::DecodeTrace*> &pre_dsigs = _session->get_decode_signals();
+
+        //set current protocol
         if (widget->sel_protocol(dec_obj["id"].toString()))
-            widget->add_protocol(true);
+        {
+             widget->add_protocol(true);
+        }
+        else{
+            continue; //protocol is not exists;
+        }           
 
-        auto &aft_dsigs = _session->get_decode_signals();
+        std::vector<view::DecodeTrace*> &aft_dsigs = _session->get_decode_signals();
 
-        if (aft_dsigs.size() > pre_dsigs.size()) {
+        if (aft_dsigs.size() >= pre_dsigs.size()) {
             const GSList *l;
             
             auto new_dsig = aft_dsigs.back();
             auto stack = new_dsig->decoder();
 
             if (dec_obj.contains("stacked decoders")) {
-                foreach(const QJsonValue &value, dec_obj["stacked decoders"].toArray()) {
+                for(const QJsonValue &value : dec_obj["stacked decoders"].toArray()) {
                     QJsonObject stacked_obj = value.toObject();
 
                     GSList *dl = g_slist_copy((GSList*)srd_decoder_list());
@@ -995,9 +1003,9 @@ void StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_arra
                     std::map<const srd_channel*, int> probe_map;
                     // Load the mandatory channels
                     for(l = d->channels; l; l = l->next) {
-                        const struct srd_channel *const pdch =
-                            (struct srd_channel *)l->data;
-                        foreach (const QJsonValue &value, dec_obj["channel"].toArray()) {
+                        const struct srd_channel *const pdch = (struct srd_channel *)l->data;
+
+                        for (const QJsonValue &value : dec_obj["channel"].toArray()) {
                             QJsonObject ch_obj = value.toObject();
                             if (ch_obj.contains(pdch->id)) {
                                 probe_map[pdch] = ch_obj[pdch->id].toInt();
@@ -1008,9 +1016,9 @@ void StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_arra
 
                     // Load the optional channels
                     for(l = d->opt_channels; l; l = l->next) {
-                        const struct srd_channel *const pdch =
-                            (struct srd_channel *)l->data;
-                        foreach (const QJsonValue &value, dec_obj["channel"].toArray()) {
+                        const struct srd_channel *const pdch = (struct srd_channel *)l->data;
+
+                        for (const QJsonValue &value : dec_obj["channel"].toArray()) {
                             QJsonObject ch_obj = value.toObject();
                             if (ch_obj.contains(pdch->id)) {
                                 probe_map[pdch] = ch_obj[pdch->id].toInt();
@@ -1021,7 +1029,7 @@ void StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_arra
                     dec->set_probes(probe_map);
                     options_obj = dec_obj["options"].toObject();
                 } else {
-                    foreach(const QJsonValue &value, dec_obj["stacked decoders"].toArray()) {
+                    for(const QJsonValue &value : dec_obj["stacked decoders"].toArray()) {
                         QJsonObject stacked_obj = value.toObject();
                         if (QString::fromUtf8(d->id) == stacked_obj["id"].toString()) {
                             options_obj = stacked_obj["options"].toObject();
@@ -1087,6 +1095,7 @@ void StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_arra
         }
     }
 
+    return true;
 }
  
 
