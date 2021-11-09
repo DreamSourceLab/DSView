@@ -28,14 +28,10 @@
 #include "pv/data/dsosnapshot.h"
 #include "view.h"
 #include "../sigsession.h"
-#include "../device/devinst.h"
-
- 
-
+#include "../device/devinst.h" 
 #include <QDebug>
 #include <QTimer>
-
-using namespace boost;
+ 
 using namespace std;
 
 namespace pv {

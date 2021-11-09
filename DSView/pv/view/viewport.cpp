@@ -42,8 +42,7 @@
  
 #include "../config/appconfig.h"
 #include "../dsvdef.h"
-
-using namespace boost;
+ 
 using namespace std;
 
 namespace pv {

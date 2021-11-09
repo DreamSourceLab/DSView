@@ -599,8 +599,9 @@ void MainWindow::device_changed(bool close)
         _sampling_bar->set_sampling(false);
         _session->set_default_device(boost::bind(&MainWindow::session_error, this,
                                                 QString(tr("Set Default Device failed")), _1));
-    }
-    update_device_list();
+    }    
+
+     update_device_list();
 }
 
 void MainWindow::on_run_stop()

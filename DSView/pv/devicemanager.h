@@ -29,9 +29,6 @@
 #include <list>
 #include <map>
 #include <string>
-
-#include <boost/function.hpp>  
-
 #include <QObject>
 #include <QString>
 

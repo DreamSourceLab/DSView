@@ -35,6 +35,7 @@
 #include <QRect>
 #include <QDebug>
 #include "../config/appconfig.h"
+#include "../ui/msgbox.h"
  
 
 namespace pv {
@@ -196,8 +197,10 @@ void DevMode::on_close()
     DevInst *dev_inst = _session->get_device();
     assert(dev_inst);
 
-    _session->close_file(dev_inst);
-    dev_changed(true);
+    if (MsgBox::Confirm("are you sure to close the device?")){
+        _session->close_file(dev_inst);
+        dev_changed(true);
+    }
 }
 
 void DevMode::mousePressEvent(QMouseEvent *event)

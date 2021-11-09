@@ -202,7 +202,7 @@ SRD_API int srd_init(const char *path)
 	PyImport_AppendInittab("sigrokdecode", PyInit_sigrokdecode);
 
 	/* Initialize the Python interpreter. */
-	Py_InitializeEx(0);
+    Py_InitializeEx(0);
 
 	/* Locations relative to the XDG system data directories. */
 	sys_datadirs = g_get_system_data_dirs();

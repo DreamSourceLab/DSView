@@ -214,8 +214,8 @@ bool DevInst::is_usable()
 }
 
 void DevInst::destroy(){
-	release();
-    delete this;
+	release(); 
+	//delete this;  //do not to destroy
 }
 
 } // device

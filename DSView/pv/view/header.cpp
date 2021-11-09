@@ -34,9 +34,7 @@
 #include "../device/devinst.h"
 
 #include <assert.h>
-
- 
- 
+  
 #include <QColorDialog>
 #include <QInputDialog>
 #include <QMenu>
@@ -45,8 +43,7 @@
 #include <QRect>
 #include <QStyleOption>
 #include <QApplication>
-
-using namespace boost;
+ 
 using namespace std;
 
 namespace pv {

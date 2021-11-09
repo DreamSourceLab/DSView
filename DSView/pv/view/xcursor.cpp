@@ -28,9 +28,7 @@
 #include "dsosignal.h"
 
 #include <QPainter>
- 
-
-using namespace boost;
+  
 using namespace std;
 
 namespace pv {

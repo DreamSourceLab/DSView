@@ -26,8 +26,7 @@
 #include "pv/data/group.h"
 #include "pv/data/groupsnapshot.h"
 #include "view.h"
-
-using namespace boost;
+ 
 using namespace std;
 
 namespace pv {

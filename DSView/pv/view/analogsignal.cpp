@@ -30,7 +30,6 @@
 #include "../view/view.h"
 #include "../device/devinst.h"
 
-using namespace boost;
 using namespace std;
 
 #define byte(x) uint##x##_t

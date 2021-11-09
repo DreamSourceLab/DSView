@@ -35,7 +35,7 @@
 #include <QDebug>
 #include <QTimer>
 
-using namespace boost;
+ 
 using namespace std;
 
 namespace pv {

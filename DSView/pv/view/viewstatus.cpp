@@ -34,7 +34,7 @@
 #include "../view/trace.h"
 #include "../dialogs/dsomeasure.h"
 
-using namespace boost;
+ 
 using namespace std;
 
 namespace pv {

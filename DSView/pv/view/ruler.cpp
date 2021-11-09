@@ -40,8 +40,7 @@
 #include <QTextStream>
 #include <QStyleOption>
  
-
-using namespace boost;
+ 
 using namespace std;
 
 namespace pv {
