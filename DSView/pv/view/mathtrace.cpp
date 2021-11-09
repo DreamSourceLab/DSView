@@ -31,8 +31,8 @@
 #include "../sigsession.h"
 #include "../device/devinst.h"
 #include "../view/dsosignal.h"
- 
-
+#include "../dsvdef.h"
+  
 #include <QDebug>
 #include <QTimer>
 
@@ -67,6 +67,7 @@ MathTrace::MathTrace(bool enable,data::MathStack *math_stack,
 
 MathTrace::~MathTrace()
 {
+    DESTROY_OBJECT(_math_stack);
 }
 
 bool MathTrace::enabled()

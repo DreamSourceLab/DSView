@@ -21,6 +21,7 @@
 
 #include "dso.h"
 #include "dsosnapshot.h"
+#include <assert.h>
  
 
 using namespace std;
@@ -28,9 +29,11 @@ using namespace std;
 namespace pv {
 namespace data {
 
-Dso::Dso() :
+Dso::Dso(DsoSnapshot *snapshot) :
     SignalData()
 {
+    assert(snapshot);
+    _snapshots.push_front(snapshot);
 }
 
 void Dso::push_snapshot(DsoSnapshot *snapshot)
@@ -56,6 +59,11 @@ void Dso::init()
     for(auto &s : _snapshots)
         s->init();
 }
+
+ DsoSnapshot* Dso::snapshot()
+ {
+     return _snapshots[0];
+ }
 
 } // namespace data
 } // namespace pv

@@ -36,7 +36,7 @@ class LogicSnapshot;
 class Logic : public SignalData
 {
 public:
-    Logic();
+    Logic(LogicSnapshot *snapshot);
 
 	void push_snapshot(LogicSnapshot *snapshot);
 
@@ -45,6 +45,8 @@ public:
     void clear();
 
     void init();
+
+    LogicSnapshot* snapshot();
 
 private:
 	std::deque<LogicSnapshot*> _snapshots;

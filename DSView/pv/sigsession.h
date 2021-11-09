@@ -483,12 +483,9 @@ private:
     view::LissajousTrace            *_lissajous_trace;
     view::MathTrace                 *_math_trace;
   
-	data::Logic              *_logic_data;
-	data::LogicSnapshot      *_cur_logic_snapshot;
-    data::Dso                *_dso_data;
-    data::DsoSnapshot        *_cur_dso_snapshot;
+	data::Logic              *_logic_data; 
+    data::Dso                *_dso_data; 
 	data::Analog             *_analog_data;
-	data::AnalogSnapshot     *_cur_analog_snapshot;
     data::Group              *_group_data; 
     int                      _group_cnt;
  

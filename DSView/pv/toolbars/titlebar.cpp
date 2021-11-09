@@ -38,17 +38,17 @@ namespace pv {
 namespace toolbars {
 
 TitleBar::TitleBar(bool top, QWidget *parent, bool hasClose) :
-    QWidget(parent),
-    _parent(parent),
-    _moving(false),
-    _isTop(top),
-    _hasClose(hasClose)
+    QWidget(parent)
 {
    _title = NULL;
    _minimizeButton = NULL;
    _maximizeButton = NULL;
    _closeButton = NULL;
    _lay = NULL;
+   _moving = false;
+   _parent = parent;
+   _isTop = top;
+   _hasClose = hasClose;
 
    assert(parent);
 

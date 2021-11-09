@@ -35,7 +35,7 @@ class DsoSnapshot;
 class Dso : public SignalData
 {
 public:
-    Dso();
+    Dso(DsoSnapshot *snapshot);
 
 	void push_snapshot(DsoSnapshot *snapshot);
 
@@ -43,6 +43,8 @@ public:
 
     void clear();
     void init();
+
+    DsoSnapshot* snapshot();
 
 private:
     std::deque<DsoSnapshot*> _snapshots;

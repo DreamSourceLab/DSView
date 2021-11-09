@@ -36,6 +36,7 @@ namespace dialogs {
 DSMessageBox::DSMessageBox(QWidget *parent,const char *title) :
     QDialog(NULL) //must be null, otherwise window can not able to move
 {
+    (void)parent;
     _layout = NULL;
     _main_widget = NULL;
     _msg = NULL;

@@ -269,7 +269,7 @@ QString GetDirectoryName(QString path)
 }
 
 QString GetIconPath()
-{ 
+{   
     QString style = AppConfig::Instance()._frameOptions.style;
     if (style == ""){
         style = "dark";

@@ -22,15 +22,18 @@
 
 #include "logic.h"
 #include "logicsnapshot.h"
+#include <assert.h>
 
 using namespace std;
 
 namespace pv {
 namespace data {
 
-Logic::Logic() :
+Logic::Logic(LogicSnapshot *snapshot) :
     SignalData()
 {
+    assert(snapshot);
+    _snapshots.push_front(snapshot);
 }
 
 void Logic::push_snapshot(LogicSnapshot *snapshot)
@@ -56,6 +59,11 @@ void Logic::init()
     for(auto &s : _snapshots)
         s->init();
 }
+
+ LogicSnapshot* Logic::snapshot()
+ {
+    return _snapshots[0];
+ }
 
 } // namespace data
 } // namespace pv

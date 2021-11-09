@@ -37,12 +37,14 @@ class AnalogSnapshot;
 class Analog : public SignalData
 {
 public:
-    Analog();
+    Analog(AnalogSnapshot *snapshot);
 
 	void push_snapshot(AnalogSnapshot *snapshot);
 	std::deque<AnalogSnapshot*>& get_snapshots();
     void clear();
     void init();
+
+    AnalogSnapshot* snapshot();
 
 private:
 	std::deque<AnalogSnapshot*> _snapshots;

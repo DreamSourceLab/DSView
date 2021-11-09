@@ -111,18 +111,20 @@ void DevMode::set_device()
              l; l = l->next) {
             const sr_dev_mode *mode = (const sr_dev_mode *)l->data;
             QString icon_name = QString::fromLocal8Bit(mode->icon);
-
+ 
             QAction *action = new QAction(this);
             action->setIcon(QIcon(iconPath+"square-"+icon_name));
             if (lan == QLocale::Chinese)
                 action->setText(mode->name_cn);
             else
                 action->setText(mode->name);
+
             connect(action, SIGNAL(triggered()), this, SLOT(on_mode_change()));
 
             _mode_list[action] = mode;
             if (dev_inst->dev_inst()->mode == _mode_list[action]->mode) {
-                _mode_btn->setIcon(QIcon(iconPath+icon_name));
+                QString icon_fname = iconPath + icon_name;
+                _mode_btn->setIcon(QIcon(icon_fname));
                 if (lan== QLocale::Chinese)
                     _mode_btn->setText(mode->name_cn);
                 else
@@ -176,8 +178,9 @@ void DevMode::on_mode_change()
                                      SR_CONF_DEVICE_MODE,
                                      g_variant_new_int16((*i).second->mode));
 
-                QString icon_name = "/" + QString::fromLocal8Bit((*i).second->icon);
-                _mode_btn->setIcon(QIcon(iconPath+icon_name));
+                QString icon_fname = iconPath + "/" + QString::fromLocal8Bit((*i).second->icon);
+             
+                _mode_btn->setIcon(QIcon(icon_fname));
                 if (lan == QLocale::Chinese)
                     _mode_btn->setText((*i).second->name_cn);
                 else

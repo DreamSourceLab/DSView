@@ -22,6 +22,7 @@
 
 #include "analog.h"
 #include "analogsnapshot.h"
+#include <assert.h>
  
 
 using namespace std;
@@ -29,9 +30,11 @@ using namespace std;
 namespace pv {
 namespace data {
 
-Analog::Analog() :
+Analog::Analog(AnalogSnapshot *snapshot) :
     SignalData()
 {
+    assert(snapshot);
+    _snapshots.push_front(snapshot);
 }
 
 void Analog::push_snapshot(AnalogSnapshot *snapshot)
@@ -55,6 +58,11 @@ void Analog::init()
     //_snapshots.clear();
     for(auto &s : _snapshots)
         s->init();
+}
+
+AnalogSnapshot* Analog::snapshot()
+{
+    return _snapshots[0];
 }
 
 } // namespace data

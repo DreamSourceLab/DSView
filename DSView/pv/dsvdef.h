@@ -39,6 +39,8 @@ class QWidget;
 #define DESTROY_QT_OBJECT(p) if((p)){((p))->deleteLater(); p = NULL;}
 #define DESTROY_QT_LATER(p) ((p))->deleteLater();
 
+#define RELEASE_ARRAY(a)   for (auto ptr : (a)){delete ptr;} (a).clear();
+
 namespace DecoderDataFormat
 {
     enum _data_format

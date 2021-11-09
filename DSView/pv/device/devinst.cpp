@@ -53,7 +53,6 @@ void* DevInst::get_id()
 void DevInst::use(SigSession *owner)
 {
 	assert(owner);
-	assert(!_owner);
 	_owner = owner;
 }
 

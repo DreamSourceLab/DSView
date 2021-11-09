@@ -33,6 +33,7 @@
 #include "../view/viewport.h"
 #include "../device/devinst.h"
 #include "../data/spectrumstack.h"
+#include "../dsvdef.h"
 
 using namespace boost;
 using namespace std;
@@ -90,7 +91,7 @@ SpectrumTrace::SpectrumTrace(pv::SigSession *session,
 
 SpectrumTrace::~SpectrumTrace()
 {
-
+    DESTROY_OBJECT(_spectrum_stack);
 }
 
 bool SpectrumTrace::enabled()

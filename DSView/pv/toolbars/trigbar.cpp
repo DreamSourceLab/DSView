@@ -180,7 +180,8 @@ void TrigBar::reStyle()
 
      AppConfig &app = AppConfig::Instance();    
 
-    _themes->setIcon(QIcon(iconPath+"/"+ app._frameOptions.language +".svg"));
+     QString icon_fname = iconPath +"/"+ app._frameOptions.style +".svg";  
+    _themes->setIcon(QIcon(icon_fname));
 }
 
 void TrigBar::protocol_clicked()
@@ -302,13 +303,15 @@ void TrigBar::on_actionMath_triggered()
 void TrigBar::on_actionDark_triggered()
 {
     sig_setTheme(DARK_STYLE);
-    _themes->setIcon(QIcon(":/icons/"+DARK_STYLE+"/"+DARK_STYLE+".svg"));
+    QString icon = GetIconPath() + "/" + DARK_STYLE + ".svg";
+    _themes->setIcon(QIcon(icon));
 }
 
 void TrigBar::on_actionLight_triggered()
 {
     sig_setTheme(LIGHT_STYLE);
-    _themes->setIcon(QIcon(":/icons/"+LIGHT_STYLE+"/"+LIGHT_STYLE+".svg"));
+    QString icon = GetIconPath() + "/" + LIGHT_STYLE +".svg";
+    _themes->setIcon(QIcon(icon));
 }
 
 void TrigBar::on_actionLissajous_triggered()

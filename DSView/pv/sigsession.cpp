@@ -78,15 +78,7 @@ namespace pv {
 // TODO: This should not be necessary
 SigSession* SigSession::_session = NULL;
 
-SigSession::SigSession(DeviceManager *device_manager) :
-    _capture_state(Init),
-    _instant(false),
-    _error(No_err),
-    _run_mode(Single),
-    _repeat_intvl(1),
-    _repeating(false),
-    _repeat_hold_prg(0),
-    _map_zoom(0)
+SigSession::SigSession(DeviceManager *device_manager) 
 {
     _hotplug_handle = 0;
     _dev_inst = NULL;
@@ -97,6 +89,15 @@ SigSession::SigSession(DeviceManager *device_manager) :
     _hot_detach = false;
     _group_cnt = 0;
     _bHotplugStop = false;  
+
+    _map_zoom = 0;
+    _repeat_hold_prg = 0;
+    _repeating = false;
+    _repeat_intvl = 1;
+    _run_mode = Single;    
+    _error = No_err;
+    _instant = false;
+    _capture_state = Init;
   
     _noData_cnt = 0;
     _data_lock = false;
@@ -112,16 +113,10 @@ SigSession::SigSession(DeviceManager *device_manager) :
     _bDecodeRunning = false;
     _bClose = false;
 
-    // Create snapshots & data containers
-    _cur_logic_snapshot = new data::LogicSnapshot();
-    _logic_data = new data::Logic();
-    _logic_data->push_snapshot(_cur_logic_snapshot);
-    _cur_dso_snapshot = new data::DsoSnapshot();
-    _dso_data = new data::Dso();
-    _dso_data->push_snapshot(_cur_dso_snapshot);
-    _cur_analog_snapshot = new data::AnalogSnapshot();
-    _analog_data = new data::Analog();
-    _analog_data->push_snapshot(_cur_analog_snapshot);
+    // Create snapshots & data containers 
+    _logic_data = new data::Logic(new data::LogicSnapshot()); 
+    _dso_data = new data::Dso(new data::DsoSnapshot()); 
+    _analog_data = new data::Analog(new data::AnalogSnapshot()); 
     _group_data = new data::Group();
     _group_cnt = 0;
 
@@ -142,13 +137,9 @@ DevInst* SigSession::get_device()
 }
 
 void SigSession::deselect_device()
-{
-    for (auto p : _decode_traces){
-        delete p;
-    }
-    _decode_traces.clear();
-
-    _group_traces.clear();
+{ 
+    RELEASE_ARRAY(_decode_traces);
+    RELEASE_ARRAY(_group_traces);
     _dev_inst = NULL;
 }
 
@@ -172,12 +163,8 @@ void SigSession::set_device(DevInst *dev_inst)
 
     _dev_inst = dev_inst;
 
-     for (auto p : _decode_traces){
-        delete p;
-    }
-    _decode_traces.clear();
-
-    _group_traces.clear();
+    RELEASE_ARRAY(_decode_traces);
+    RELEASE_ARRAY(_group_traces);
 
     if (_dev_inst) {
         try {
@@ -517,9 +504,9 @@ void SigSession::sample_thread_proc(DevInst *dev_inst,
     set_capture_state(Stopped);
 
     // Confirm that SR_DF_END was received
-    assert(_cur_logic_snapshot->last_ended());
-    assert(_cur_dso_snapshot->last_ended());
-    assert(_cur_analog_snapshot->last_ended());
+    assert(_logic_data->snapshot()->last_ended());
+    assert(_dso_data->snapshot()->last_ended());
+    assert(_analog_data->snapshot()->last_ended());
 }
 
 void SigSession::stop_capture()
@@ -654,7 +641,8 @@ void SigSession::del_group()
 {
     auto i = _group_traces.begin();
 
-    while (i != _group_traces.end()) {
+    while (i != _group_traces.end()) { 
+        
         pv::view::GroupSignal *psig = *(i);
 
         if (psig->selected()) {
@@ -711,12 +699,8 @@ void SigSession::init_signals()
         _group_data->clear();
 
 
-    // Clear the decode traces
-     for (auto p : _decode_traces){
-        delete p;
-    }
-    _decode_traces.clear();
-
+    // Clear the decode traces 
+    RELEASE_ARRAY(_decode_traces);
 
     // Detect what data types we will receive
     if(_dev_inst) {
@@ -743,40 +727,41 @@ void SigSession::init_signals()
         }
     }
 
-    // Make the logic probe list
+    // Make the logic probe list 
+    RELEASE_ARRAY(_group_traces);
+
+    std::vector<view::GroupSignal *>().swap(_group_traces);
+
+    for (GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next)
     {
-        _group_traces.clear();
-        std::vector<view::GroupSignal*>().swap(_group_traces);
+        sr_channel *probe =
+            (sr_channel *)l->data;
+        assert(probe);
+        signal = NULL;
 
-        for (GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next) {
-            sr_channel *probe =
-                ( sr_channel *)l->data;
-            assert(probe);
-            signal = NULL;
+        switch (probe->type)
+        {
+        case SR_CHANNEL_LOGIC:
+            if (probe->enabled)
+                signal = new view::LogicSignal(_dev_inst, _logic_data, probe);
+            break;
 
-            switch(probe->type) {
-            case SR_CHANNEL_LOGIC:
-                if (probe->enabled)
-                   signal = new view::LogicSignal(_dev_inst, _logic_data, probe);
-                break;
+        case SR_CHANNEL_DSO:
+            signal = new view::DsoSignal(_dev_inst, _dso_data, probe);
+            break;
 
-            case SR_CHANNEL_DSO:
-                signal = new view::DsoSignal(_dev_inst, _dso_data, probe);
-                break;
-
-            case SR_CHANNEL_ANALOG:
-                if (probe->enabled)
-                    signal = new view::AnalogSignal(_dev_inst, _analog_data, probe);
-                break;
-            }
-            if(signal != NULL)
-                sigs.push_back(signal);
+        case SR_CHANNEL_ANALOG:
+            if (probe->enabled)
+                signal = new view::AnalogSignal(_dev_inst, _analog_data, probe);
+            break;
         }
-
-        _signals.clear();
-        std::vector<view::Signal*>().swap(_signals);
-        _signals = sigs;
+        if (signal != NULL)
+            sigs.push_back(signal);
     }
+
+    RELEASE_ARRAY(_signals);
+    std::vector<view::Signal *>().swap(_signals);
+    _signals = sigs;
 
     spectrum_rebuild();
     lissajous_disable();
@@ -846,8 +831,8 @@ void SigSession::reload()
                 sigs.push_back(signal);
         }
 
-        if (!sigs.empty()) {
-            _signals.clear();
+        if (!sigs.empty()) { 
+            RELEASE_ARRAY(_signals);
             std::vector<view::Signal*>().swap(_signals);
             _signals = sigs;
         }
@@ -869,8 +854,8 @@ void SigSession::refresh(int holdtime)
         { 
             d->decoder()->init();
         }
-
     }
+
     if (_dso_data) {
         _dso_data->init();
         // SpectrumStack
@@ -879,9 +864,11 @@ void SigSession::refresh(int holdtime)
             assert(m);
             m->get_spectrum_stack()->init();
         }
+
         if (_math_trace)
             _math_trace->get_math_stack()->init();
     }
+
     if (_analog_data) {
         _analog_data->init(); 
     }
@@ -975,7 +962,7 @@ void SigSession::feed_in_trigger(const ds_trigger_pos &trigger_pos)
 
 void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
 { 
-    if (!_logic_data || _cur_logic_snapshot->memory_failed()) {
+    if (!_logic_data || _logic_data->snapshot()->memory_failed()) {
         qDebug() << "Unexpected logic packet";
         return;
     }
@@ -986,8 +973,8 @@ void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
         session_error();
     }
 
-    if (_cur_logic_snapshot->last_ended()) {
-        _cur_logic_snapshot->first_payload(logic, _dev_inst->get_sample_limit(), _dev_inst->dev_inst()->channels);
+    if (_logic_data->snapshot()->last_ended()) {
+        _logic_data->snapshot()->first_payload(logic, _dev_inst->get_sample_limit(), _dev_inst->dev_inst()->channels);
         // @todo Putting this here means that only listeners querying
         // for logic will be notified. Currently the only user of
         // frame_began is DecoderStack, but in future we need to signal
@@ -995,10 +982,10 @@ void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
         frame_began();
     } else {
         // Append to the existing data snapshot
-        _cur_logic_snapshot->append_payload(logic);
+        _logic_data->snapshot()->append_payload(logic);
     }
 
-    if (_cur_logic_snapshot->memory_failed()) {
+    if (_logic_data->snapshot()->memory_failed()) {
         _error = Malloc_err;
         session_error();
         return;
@@ -1012,13 +999,13 @@ void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
 
 void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
 {  
-    if(!_dso_data || _cur_dso_snapshot->memory_failed())
+    if(!_dso_data || _dso_data->snapshot()->memory_failed())
     {
         qDebug() << "Unexpected dso packet";
         return;	// This dso packet was not expected.
     }
 
-    if (_cur_dso_snapshot->last_ended())
+    if (_dso_data->snapshot()->last_ended())
     {
         std::map<int, bool> sig_enable;
         // reset scale of dso signal
@@ -1033,10 +1020,10 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
         }
 
         // first payload
-        _cur_dso_snapshot->first_payload(dso, _dev_inst->get_sample_limit(), sig_enable, _instant);
+        _dso_data->snapshot()->first_payload(dso, _dev_inst->get_sample_limit(), sig_enable, _instant);
     } else {
         // Append to the existing data snapshot
-        _cur_dso_snapshot->append_payload(dso);
+        _dso_data->snapshot()->append_payload(dso);
     }
 
     for(auto &s : _signals) {
@@ -1051,7 +1038,7 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
  
     }
 
-    if (_cur_dso_snapshot->memory_failed()) {
+    if (_dso_data->snapshot()->memory_failed()) {
         _error = Malloc_err;
         session_error();
         return;
@@ -1084,13 +1071,13 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
 void SigSession::feed_in_analog(const sr_datafeed_analog &analog)
 { 
 
-    if(!_analog_data || _cur_analog_snapshot->memory_failed())
+    if(!_analog_data || _analog_data->snapshot()->memory_failed())
     {
         qDebug() << "Unexpected analog packet";
         return;	// This analog packet was not expected.
     }
 
-    if (_cur_analog_snapshot->last_ended())
+    if (_analog_data->snapshot()->last_ended())
     {
         // reset scale of analog signal
         for(auto &s : _signals)
@@ -1103,13 +1090,13 @@ void SigSession::feed_in_analog(const sr_datafeed_analog &analog)
         }
 
         // first payload
-        _cur_analog_snapshot->first_payload(analog, _dev_inst->get_sample_limit(), _dev_inst->dev_inst()->channels);
+        _analog_data->snapshot()->first_payload(analog, _dev_inst->get_sample_limit(), _dev_inst->dev_inst()->channels);
     } else {
         // Append to the existing data snapshot
-        _cur_analog_snapshot->append_payload(analog);
+        _analog_data->snapshot()->append_payload(analog);
     }
 
-    if (_cur_analog_snapshot->memory_failed()) {
+    if (_analog_data->snapshot()->memory_failed()) {
         _error = Malloc_err;
         session_error();
         return;
@@ -1179,7 +1166,7 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
     }
     case SR_DF_END:
     { 
-        if (!_cur_logic_snapshot->empty())
+        if (!_logic_data->snapshot()->empty())
         {
             for (auto &g : _group_traces)
             {
@@ -1189,9 +1176,9 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
                 _group_data->push_snapshot(p);
             }
         }
-        _cur_logic_snapshot->capture_ended();
-        _cur_dso_snapshot->capture_ended();
-        _cur_analog_snapshot->capture_ended();
+        _logic_data->snapshot()->capture_ended();
+        _dso_data->snapshot()->capture_ended();
+        _analog_data->snapshot()->capture_ended();
 
         qDebug()<<"data frame end";
 
@@ -1486,8 +1473,9 @@ void SigSession::spectrum_rebuild()
         }
     }
 
-    if (!has_dso_signal)
-        _spectrum_traces.clear();
+    if (!has_dso_signal){
+        RELEASE_ARRAY(_spectrum_traces);
+    }      
 
     signals_changed();
 }
@@ -1499,6 +1487,7 @@ std::vector<view::SpectrumTrace*>& SigSession::get_spectrum_traces()
 
 void SigSession::lissajous_rebuild(bool enable, int xindex, int yindex, double percent)
 {
+    DESTROY_OBJECT(_lissajous_trace);
     _lissajous_trace = new view::LissajousTrace(enable, _dso_data, xindex, yindex, percent);
     signals_changed();
 }
@@ -1590,11 +1579,11 @@ void SigSession::feed_timeout()
 data::Snapshot* SigSession::get_snapshot(int type)
 {
     if (type == SR_CHANNEL_LOGIC)
-        return _cur_logic_snapshot;
+        return _logic_data->snapshot();
     else if (type == SR_CHANNEL_ANALOG)
-        return _cur_analog_snapshot;
+        return _analog_data->snapshot();
     else if (type == SR_CHANNEL_DSO)
-        return _cur_dso_snapshot;
+        return _dso_data->snapshot();
     else
         return NULL;
 }
@@ -1892,7 +1881,7 @@ void SigSession::set_stop_scale(float scale)
       int dex = 0; 
       for (auto trace : _decode_traces)
       {
-          if (trace->IsRunning())
+          if (trace->decoder()->IsRunning())
           {
               trace->decoder()->stop_decode_work();
               runningDex = dex;

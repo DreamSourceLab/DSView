@@ -1432,7 +1432,7 @@ void MainWindow::switchTheme(QString style)
     {
         app._frameOptions.style = style;
         app.SaveFrame();
-    }
+    } 
 
     QString qssRes = ":/" + style + ".qss";
     QFile qss(qssRes);

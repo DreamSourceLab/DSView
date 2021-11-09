@@ -401,8 +401,7 @@ void DecoderStack::do_decode_work()
     pv::data::Logic *data = NULL;
 
     if (!_options_changed)
-    {
-        qDebug()<<"data not be ready";
+    { 
         return;
     } 
     _options_changed = false;
@@ -542,9 +541,7 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
 
     if (error)
         g_free(error);
-
-    qDebug()<<"decode tack proc end";
-    
+  
     if (!_session->is_closed())
         decode_done();
 }
@@ -565,8 +562,7 @@ void DecoderStack::decode_proc()
     
     // Get the intial sample count
     _sample_count = _snapshot->get_sample_count();
-
-    qDebug()<<"sample count:"<<_sample_count;
+ 
 
     // Create the decoders
     for(auto &dec : _stack)
