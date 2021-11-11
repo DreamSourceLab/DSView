@@ -43,6 +43,14 @@
  
 #include <QFileDialog>
 #include <QDir>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QStandardPaths>
+#include <math.h>
+#include <QTextStream>
+#include <QDebug>
+
 
 #include "config/appconfig.h"
  

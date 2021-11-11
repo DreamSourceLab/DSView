@@ -35,6 +35,7 @@
 #include <QVector>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QEvent>
 
 using namespace boost;
 using namespace std;

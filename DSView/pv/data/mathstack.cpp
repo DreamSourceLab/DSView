@@ -20,10 +20,11 @@
 
 #include "mathstack.h"
  
-#include <pv/data/dso.h>
-#include <pv/data/dsosnapshot.h>
-#include <pv/sigsession.h>
-#include <pv/view/dsosignal.h>
+#include  "dso.h"
+#include  "dsosnapshot.h"
+#include  "../sigsession.h"
+#include  "../view/dsosignal.h"
+#include <math.h>
 
 #define PI 3.1415
 

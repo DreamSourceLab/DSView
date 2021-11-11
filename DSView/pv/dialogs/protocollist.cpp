@@ -49,11 +49,13 @@ ProtocolList::ProtocolList(QWidget *parent, SigSession *session) :
     _map_zoom_combobox->addItem(tr("Fit to Window"));
     _map_zoom_combobox->addItem(tr("Fixed"));
     int cur_map_zoom = _session->get_map_zoom();
+
     if (cur_map_zoom >= _map_zoom_combobox->count())
         _map_zoom_combobox->setCurrentIndex(0);
     else
         _map_zoom_combobox->setCurrentIndex(cur_map_zoom);
-    connect(_map_zoom_combobox, SIGNAL(currentIndexChanged(int)), _session, SLOT(set_map_zoom(int)));
+
+    connect(_map_zoom_combobox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_set_map_zoom(int)));
 
     _protocol_combobox = new QComboBox(this);
     auto &decode_sigs = _session->get_decode_signals();
@@ -193,5 +195,11 @@ void ProtocolList::on_row_check(bool show)
 
     _session->get_decoder_model()->setDecoderStack(decoder_stack);
 }
+
+ void ProtocolList::on_set_map_zoom(int index)
+ {
+     _session->set_map_zoom(index);
+ }
+
 } // namespace dialogs
 } // namespace pv

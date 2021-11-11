@@ -308,6 +308,7 @@ void MeasureDock::reCalc()
     update_dist();
     update_edge();
 }
+ 
 
 void MeasureDock::goto_cursor()
 {

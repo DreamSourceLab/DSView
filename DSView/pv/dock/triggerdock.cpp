@@ -32,6 +32,8 @@
 #include <QRegExpValidator>
 #include <QSplitter>
 #include <QInputMethodEvent>
+#include <QApplication>
+#include <math.h>
 
 #include "libsigrok4DSL/libsigrok.h"
 

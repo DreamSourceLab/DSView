@@ -24,6 +24,7 @@
 #define DSVIEW_PV_DSOSIGNAL_H
 
 #include "signal.h"
+#include "../dstimer.h"
   
 namespace pv {
 namespace data {
@@ -107,8 +108,7 @@ public:
     bool get_vDialActive();
     void set_vDialActive(bool active);
     bool go_vDialPre(bool manul);
-    bool go_vDialNext(bool manul);
-    bool update_capture(bool instant);
+    bool go_vDialNext(bool manul); 
     dslDial *get_vDial();
     uint64_t get_vDialValue();
     uint16_t get_vDialSel();
@@ -227,6 +227,8 @@ private:
     void paint_hover_measure(QPainter &p, QColor fore, QColor back);
     void auto_set();
 
+    void call_auto_end();
+
 private:
     pv::data::Dso *_data;
 	float _scale;
@@ -268,6 +270,7 @@ private:
     uint64_t _hover_index;
     QPointF _hover_point;
     float _hover_value;
+    DsTimer _end_timer;
 };
 
 } // namespace view

@@ -56,6 +56,7 @@ protected:
 private slots:
     void set_protocol(int index);
     void on_row_check(bool show);
+    void on_set_map_zoom(int index);
 
 private:
     SigSession *_session;

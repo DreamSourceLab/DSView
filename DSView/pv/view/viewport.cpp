@@ -98,8 +98,7 @@ Viewport::Viewport(View &parent, View_type type) :
     setContextMenuPolicy(Qt::CustomContextMenu);
 
     connect(&trigger_timer, SIGNAL(timeout()),this, SLOT(on_trigger_timer()));
-    connect(&_drag_timer, SIGNAL(timeout()),this, SLOT(on_drag_timer()));
-    connect(&_view.session(), &SigSession::receive_data, this, &Viewport::set_receive_len);
+    connect(&_drag_timer, SIGNAL(timeout()),this, SLOT(on_drag_timer())); 
 
     connect(yAction, SIGNAL(triggered(bool)), this, SLOT(add_cursor_y()));
     connect(xAction, SIGNAL(triggered(bool)), this, SLOT(add_cursor_x()));

@@ -30,6 +30,7 @@
 #include <QDebug>
 #include <QLabel>
 #include <QAbstractItemView>
+#include <math.h>
 
 #include "../devicemanager.h"
 #include "../device/devinst.h"
@@ -814,6 +815,7 @@ void SamplingBar::commit_settings()
     }
 }
 
+//start or stop capture
 void SamplingBar::on_run_stop()
 {
     if (get_sampling() || _session->isRepeating()) {
@@ -886,14 +888,16 @@ void SamplingBar::on_instant_stop()
 
         if (dev_inst->dev_inst()->mode == DSO) {
             GVariant* gvar = dev_inst->get_config(NULL, NULL, SR_CONF_ZERO);
+
             if (gvar != NULL) {
                 bool zero = g_variant_get_boolean(gvar);
                 g_variant_unref(gvar);
+
                 if (zero) {
                     dialogs::DSMessageBox msg(this);
                     msg.mBox()->setText(tr("Auto Calibration"));
                     msg.mBox()->setInformativeText(tr("Auto Calibration program will be started. Don't connect any probes. It can take a while!"));
-                    //msg.mBox()->setStandardButtons(QMessageBox::Ok);
+                  
                     msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
                     msg.mBox()->addButton(tr("Skip"), QMessageBox::RejectRole);
                     msg.mBox()->setIcon(QMessageBox::Warning);

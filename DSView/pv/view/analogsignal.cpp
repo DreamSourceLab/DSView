@@ -21,7 +21,7 @@
  */
 
 #include <extdef.h>
-
+#include <QDebug>
 #include <math.h>
 
 #include "../view/analogsignal.h"
@@ -29,6 +29,7 @@
 #include "../data/analogsnapshot.h"
 #include "../view/view.h"
 #include "../device/devinst.h"
+
 
 using namespace std;
 

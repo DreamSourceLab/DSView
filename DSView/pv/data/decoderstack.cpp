@@ -64,12 +64,8 @@ DecoderStack::DecoderStack(pv::SigSession *session,
     _no_memory = false;
     _mark_index = -1;
     _decoder_status = decoder_status;
-    _stask_stauts = NULL;
-
-	connect(_session, SIGNAL(frame_began()), this, SLOT(on_new_frame()));
-
-	connect(_session, SIGNAL(data_received()), this, SLOT(on_data_received())); 
-
+    _stask_stauts = NULL; 
+    
     _stack.push_back(new decode::Decoder(dec));
  
     build_row();
@@ -668,15 +664,7 @@ void DecoderStack::annotation_callback(srd_proto_data *pdata, void *decoder)
     if (!(*row_iter).second->push_annotation(a))
         d->_no_memory = true; 
 }
-
-void DecoderStack::on_new_frame()
-{ 
-}
-
-void DecoderStack::on_data_received()
-{  
-}
-
+ 
 void DecoderStack::frame_ended()
 { 
     _options_changed = true; 

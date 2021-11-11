@@ -117,7 +117,6 @@ View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     _devmode = new DevMode(this, session);
 
     setViewportMargins(headerWidth(), RulerHeight, 0, 0);
-    //setViewport(_viewport);
 
     // windows splitter
     _time_viewport = new Viewport(*this, TIME_VIEW);
@@ -184,19 +183,20 @@ View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     connect(_fft_viewport, SIGNAL(measure_updated()), this, SLOT(on_measure_updated()));
 
     connect(_vsplitter, SIGNAL(splitterMoved(int,int)), this, SLOT(splitterMoved(int, int)));
-    connect(_session, SIGNAL(device_setted()),  _devmode, SLOT(set_device()));
-    connect(_session, SIGNAL(signals_changed()), this, SLOT(signals_changed()), Qt::DirectConnection);
-    connect(_session, SIGNAL(data_updated()), this, SLOT(data_updated()));
-    connect(_session, SIGNAL(receive_trigger(quint64)), this, SLOT(receive_trigger(quint64)));
-    connect(_session, SIGNAL(frame_ended()), this, SLOT(receive_end()));
-    connect(_session, SIGNAL(frame_began()),  this, SLOT(frame_began()));
-    connect(_session, SIGNAL(show_region(uint64_t, uint64_t, bool)), this, SLOT(show_region(uint64_t, uint64_t, bool)));
-
-    connect(_session, SIGNAL(show_wait_trigger()),  _time_viewport, SLOT(show_wait_trigger()));
-    connect(_session, SIGNAL(repeat_hold(int)), this, SLOT(repeat_show()));
+      
     connect(_devmode, SIGNAL(dev_changed(bool)),this, SLOT(dev_changed(bool)), Qt::DirectConnection);
     connect(_header, SIGNAL(traces_moved()),this, SLOT(on_traces_moved()));
     connect(_header, SIGNAL(header_updated()),this, SLOT(header_updated()));
+}
+
+void View::show_wait_trigger()
+{
+    _time_viewport->show_wait_trigger();
+}
+
+void View::set_device()
+{
+    _devmode->set_device();
 }
 
 SigSession& View::session()
@@ -1311,6 +1311,15 @@ uint64_t View::pixel2index(double pixel)
     uint64_t index = (pixel + offset()) * samples_per_pixel - trig_hoff();
 
     return index;
+}
+
+void View::set_receive_len(uint64_t len)
+{
+    if (_time_viewport)
+        _time_viewport->set_receive_len(len);
+        
+    if (_fft_viewport)
+        _fft_viewport->set_receive_len(len);
 }
 
 } // namespace view

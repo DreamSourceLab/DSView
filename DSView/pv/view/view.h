@@ -306,6 +306,12 @@ public slots:
     //
     void header_updated();
 
+    void receive_trigger(quint64 trig_pos);
+
+    void receive_end();
+
+    void frame_began();
+
 private slots:
 
 	void h_scroll_value_changed(int value);
@@ -315,13 +321,9 @@ private slots:
 
     void on_traces_moved();
 
-    void receive_trigger(quint64 trig_pos);
+   
     void set_trig_pos(int percent);
-
-    void receive_end();
-
-    void frame_began();
-
+ 
     // calibration for oscilloscope
     void show_calibration();
     // lissajous figure
@@ -332,59 +334,65 @@ private slots:
 
     void dev_changed(bool close);
 
+public:
+    void show_wait_trigger();
+    void set_device();
+    void set_receive_len(uint64_t len);
+
 private:
 
-	SigSession  *_session;
-    pv::toolbars::SamplingBar *_sampling_bar;
+	SigSession                  *_session;
+    pv::toolbars::SamplingBar   *_sampling_bar;
 
-    QWidget *_viewcenter;
-    ViewStatus *_viewbottom;
-    QSplitter *_vsplitter;
-    Viewport * _time_viewport;
-    Viewport * _fft_viewport;
-    LissajousFigure *_lissajous;
-    Viewport *_active_viewport;
-    std::list<QWidget *> _viewport_list;
-    std::map<int, int> _trace_view_map;
-	Ruler *_ruler;
-	Header *_header;
-    DevMode *_devmode;
+    QWidget                 *_viewcenter;
+    ViewStatus              *_viewbottom;
+    QSplitter               *_vsplitter;
+    Viewport                *_time_viewport;
+    Viewport                *_fft_viewport;
+    Viewport                *_active_viewport;
+    LissajousFigure         *_lissajous;
+    std::list<QWidget *>    _viewport_list;
+    std::map<int, int>      _trace_view_map;
+	Ruler                   *_ruler;
+	Header                  *_header;
+    DevMode                 *_devmode;
+    
 
 	/// The view time scale in seconds per pixel.
-	double _scale;
-    double _preScale;
-    double _maxscale;
-    double _minscale;
+	double      _scale;
+    double      _preScale;
+    double      _maxscale;
+    double      _minscale;
 
     /// The pixels offset of the left edge of the view
-    int64_t _offset;
-    int64_t _preOffset;
-    int _spanY;
-    int _signalHeight;
-    bool _updating_scroll;
+    int64_t     _offset;
+    int64_t     _preOffset;
+    int         _spanY;
+    int         _signalHeight;
+    bool        _updating_scroll;
 
     // trigger position fix
-    double _trig_hoff;
+    double      _trig_hoff;
 
-	bool _show_cursors;
+	bool        _show_cursors;
     std::list<Cursor*> _cursorList;
-    Cursor *_trig_cursor;
-    bool _show_trig_cursor;
-    Cursor *_search_cursor;
-    bool _show_search_cursor;
-    uint64_t _search_pos;
-    bool _search_hit;
+    Cursor      *_trig_cursor;
+    bool        _show_trig_cursor;
+    Cursor      *_search_cursor;
+    bool        _show_search_cursor;
+    uint64_t    _search_pos;
+    bool        _search_hit;
 
-    bool _show_xcursors;
+    bool        _show_xcursors;
     std::list<XCursor*> _xcursorList;
 
-    QPoint _hover_point;
+    QPoint      _hover_point;
     dialogs::Calibration *_cali;
 
-    bool _dso_auto;
-    bool _show_lissajous;
-    bool _back_ready;
-    bool _trig_time_setted;
+    bool        _dso_auto;
+    bool        _show_lissajous;
+    bool        _back_ready;
+    bool        _trig_time_setted;
 };
 
 } // namespace view

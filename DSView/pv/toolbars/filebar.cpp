@@ -19,17 +19,16 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <boost/bind.hpp>
-   
+#include <boost/bind.hpp>   
 #include <QMetaObject>
 #include <QFileDialog> 
+#include <deque>
+#include <QApplication>
 
 #include "filebar.h"
 #include "../device/devinst.h" 
 #include "../ui/msgbox.h"
 #include "../config/appconfig.h"
-
-#include <deque>
 
 namespace pv {
 namespace toolbars {

@@ -26,6 +26,7 @@
 #include <QFileDialog> 
 #include <QDesktopServices>
 #include <QUrl>
+#include <QApplication>
 
 #include "logobar.h"
 #include "../dialogs/about.h"

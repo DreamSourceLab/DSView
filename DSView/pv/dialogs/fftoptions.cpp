@@ -24,12 +24,14 @@
   
 #include <QFormLayout>
 #include <QListWidget>
+#include <QDebug>
 
 #include "../sigsession.h"
 #include "../data/spectrumstack.h"
 #include "../view/trace.h"
 #include "../view/dsosignal.h"
 #include "../view/spectrumtrace.h"
+
 
 using namespace boost;
 using namespace std;

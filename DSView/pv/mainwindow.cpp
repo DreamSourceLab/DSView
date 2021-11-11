@@ -24,10 +24,7 @@
 
 #include <libsigrokdecode4DSL/libsigrokdecode.h>
 #include "dock/protocoldock.h"
-
-
-#include <boost/bind.hpp> 
-
+ 
 #include <QAction>
 #include <QButtonGroup>
 #include <QFileDialog>
@@ -91,7 +88,7 @@
 #include "../ui/msgbox.h"
 #include "config/appconfig.h"
 #include "appcontrol.h"
- 
+  
 
 namespace pv {
 
@@ -101,6 +98,7 @@ MainWindow::MainWindow(QWidget *parent) :
     _msg(NULL)
 {
     _control = AppControl::Instance();
+    _control->GetSession()->set_callback(this);
 
 	setup_ui();
 
@@ -233,8 +231,7 @@ void MainWindow::setup_ui()
     _search_dock->installEventFilter(this);
 
     // Populate the device list and select the initially selected device
-    _session->set_default_device(boost::bind(&MainWindow::session_error, this,
-                                            QString(tr("Set Default Device failed")), _1));
+    _session->set_default_device();
 
     // defaut language
     AppConfig &app = AppConfig::Instance();
@@ -247,22 +244,25 @@ void MainWindow::setup_ui()
     // update device
     update_device_list();
     
-    _session->start_hotplug_work(boost::bind(&MainWindow::session_error, this,
-                                             QString(tr("Hotplug failed")), _1));
+    _session->start_hotplug_work();
 
     retranslateUi();
 
+    //event
+    connect(&_event, SIGNAL(capture_state_changed(int)), this, SLOT(on_capture_state_changed(int)));
+    connect(&_event, SIGNAL(device_attach()), this, SLOT(on_device_attach()));
+    connect(&_event, SIGNAL(device_detach()), this, SLOT(on_device_detach())); 
+    connect(&_event, SIGNAL(session_error()), this, SLOT(on_session_error()));
+    connect(&_event, SIGNAL(show_error(QString)), this, SLOT(on_show_error(QString)));
+    connect(&_event, SIGNAL(signals_changed()), this, SLOT(on_signals_changed()));
+    connect(&_event, SIGNAL(receive_trigger(quint64)), this, SLOT(on_receive_trigger(quint64)));
+    connect(&_event, SIGNAL(frame_ended()), this, SLOT(on_frame_ended()));
+    connect(&_event, SIGNAL(frame_began()), this, SLOT(on_frame_began()));
+    connect(&_event, SIGNAL(decode_done()), this, SLOT(on_decode_done()));
+    connect(&_event, SIGNAL(data_updated()), this, SLOT(on_data_updated()));
+    connect(&_event, SIGNAL(cur_snap_samplerate_changed()), this, SLOT(on_cur_snap_samplerate_changed()));
+    connect(&_event, SIGNAL(receive_data_len(quint64)), this, SLOT(on_receive_data_len(quint64)));
 
-	// Setup _session events
-    connect(_session, SIGNAL(capture_state_changed(int)), this, SLOT(capture_state_changed(int)));
-    connect(_session, SIGNAL(device_attach()), this, SLOT(device_attach()), Qt::QueuedConnection);
-    connect(_session, SIGNAL(device_detach()), this, SLOT(device_detach()), Qt::QueuedConnection);
-    connect(_session, SIGNAL(session_error()), this, SLOT(on_show_error()), Qt::QueuedConnection);
-    connect(_session, SIGNAL(session_save()), this, SLOT(session_save()));
-    connect(_session, SIGNAL(data_updated()), _measure_widget, SLOT(reCalc()));
-    connect(_session, SIGNAL(repeat_resume()), this, SLOT(repeat_resume()));
-    connect(_session, SIGNAL(update_capture()), _view, SLOT(update_hori_res()), Qt::DirectConnection);
-    connect(_session, SIGNAL(cur_snap_samplerate_changed()), _measure_widget, SLOT(cursor_update()));
 
     //view
     connect(_view, SIGNAL(cursor_update()), _measure_widget, SLOT(cursor_update()));
@@ -293,7 +293,7 @@ void MainWindow::setup_ui()
     connect(_logo_bar, SIGNAL(sig_open_doc()), this, SLOT(on_open_doc()));
 
 
-    connect(_protocol_widget, SIGNAL(protocol_updated()), _view, SLOT(signals_changed()));
+    connect(_protocol_widget, SIGNAL(protocol_updated()), this, SLOT(on_signals_changed()));
 
     //SamplingBar
     connect(_sampling_bar, SIGNAL(sig_device_selected()), this, SLOT(on_device_selected()));
@@ -304,8 +304,7 @@ void MainWindow::setup_ui()
     connect(_sampling_bar, SIGNAL(sig_duration_changed()), _view, SLOT(timebase_changed()));
     connect(_sampling_bar, SIGNAL(sig_show_calibration()), _view, SLOT(show_calibration()));
 
-    connect(_dso_trigger_widget, SIGNAL(set_trig_pos(int)), _view, SLOT(set_trig_pos(int)));
-  
+    connect(_dso_trigger_widget, SIGNAL(set_trig_pos(int)), _view, SLOT(set_trig_pos(int))); 
 }
 
 
@@ -318,14 +317,7 @@ void MainWindow::retranslateUi()
     _search_dock->setWindowTitle(tr("Search..."));
 }
 
-void MainWindow::session_error(
-	const QString text, const QString info_text)
-{
-	QMetaObject::invokeMethod(this, "show_session_error",
-		Qt::QueuedConnection, Q_ARG(QString, text),
-		Q_ARG(QString, info_text));
-}
-
+  
 void MainWindow::on_device_selected()
 {
     update_device_list();
@@ -367,8 +359,7 @@ void MainWindow::update_device_list()
                 int16_t version = g_variant_get_int16(gvar);
                 g_variant_unref(gvar);
                 if (version == 1) {
-                    show_session_error(tr("Attension"),
-                                       tr("Current loading file has an old format. "
+                    show_error(tr("Current loading file has an old format. "
                                           "This will lead to a slow loading speed. "
                                           "Please resave it after loaded."));
                 }
@@ -386,8 +377,7 @@ void MainWindow::update_device_list()
         // load data
         const QString errorMessage(
             QString(tr("Failed to capture file data!")));
-        _session->start_capture(true, boost::bind(&MainWindow::session_error, this,
-            errorMessage, _1));
+        _session->start_capture(true);
     }
 
     if (!selected_device->name().contains("virtual")) {
@@ -448,9 +438,8 @@ void MainWindow::update_device_list()
             g_variant_unref(gvar);
 
             if (usb30_support && usb_speed == LIBUSB_SPEED_HIGH)
-                show_session_error(tr("Speed limited"), tr("This is a super-speed usb device(USB 3.0). "
-                                                           "Plug it into a USB 2.0 port will seriously affect its performance."
-                                                           "Please replug it into a USB 3.0 port."));
+                show_error("Plug it into a USB 2.0 port will seriously affect its performance."
+                                                           "Please replug it into a USB 3.0 port.");
         }
     }
 }
@@ -473,9 +462,8 @@ void MainWindow::on_load_file(QString file_name)
             session_save();
         _session->set_file(file_name);
     } catch(QString e) {
-        show_session_error(tr("Failed to load ") + file_name, e);
-        _session->set_default_device(boost::bind(&MainWindow::session_error, this,
-                                                QString(tr("Set Default Device failed")), _1));
+        show_error(tr("Failed to load ") + file_name);
+        _session->set_default_device();
         update_device_list();
         return;
     }
@@ -483,26 +471,27 @@ void MainWindow::on_load_file(QString file_name)
     update_device_list();
 }
 
-void MainWindow::show_session_error(
-	const QString text, const QString info_text)
+void MainWindow::show_error(QString error)
 {
-    dialogs::DSMessageBox msg(this);
-    _msg = &msg;
-    msg.mBox()->setText(text);
-    msg.mBox()->setInformativeText(info_text);
-    msg.mBox()->setStandardButtons(QMessageBox::Ok);
-    msg.mBox()->setIcon(QMessageBox::Warning);
-	msg.exec();
-    _msg = NULL;
+    _event.show_error(error); //safe call
+}
+
+void MainWindow::on_show_error(QString error)
+{ 
+    MsgBox::Show(NULL, error.toStdString().c_str(), this);
 }
 
 void MainWindow::device_attach()
 {
+    _event.device_attach(); //safe call
+}
+
+void MainWindow::on_device_attach()
+{
     SigSession *_session = _control->GetSession();
 
     _session->get_device()->device_updated();
-    //_session->stop_hot_plug_proc();
-
+ 
     _session->set_repeating(false);
     _session->stop_capture();
     _sampling_bar->set_sampling(false);
@@ -521,14 +510,15 @@ void MainWindow::device_attach()
         }
     }
 
-
-    _session->set_default_device(boost::bind(&MainWindow::session_error, this,
-                                            QString(tr("Set Default Device failed")), _1));
+    _session->set_default_device();
     update_device_list();
-
 }
 
-void MainWindow::device_detach()
+void MainWindow::device_detach(){
+    _event.device_detach(); //safe call
+}
+
+void MainWindow::on_device_detach()
 {
     SigSession *_session = _control->GetSession();
 
@@ -586,8 +576,7 @@ void MainWindow::device_detach_post()
         }
     }
 
-    _session->set_default_device(boost::bind(&MainWindow::session_error, this,
-                                            QString(tr("Set Default Device failed")), _1));
+    _session->set_default_device();
     update_device_list();
 }
 
@@ -597,24 +586,21 @@ void MainWindow::device_changed(bool close)
 
     if (close) {
         _sampling_bar->set_sampling(false);
-        _session->set_default_device(boost::bind(&MainWindow::session_error, this,
-                                                QString(tr("Set Default Device failed")), _1));
+        _session->set_default_device();
     }    
 
      update_device_list();
 }
 
 void MainWindow::on_run_stop()
-{
+{ 
     SigSession *_session = _control->GetSession();
 
     switch(_session->get_capture_state()) {
     case SigSession::Init:
     case SigSession::Stopped:
         commit_trigger(false);
-        _session->start_capture(false,
-            boost::bind(&MainWindow::session_error, this,
-                QString(tr("Capture failed")), _1));
+        _session->start_capture(false);
         _view->capture_init();
         break;
 
@@ -632,9 +618,7 @@ void MainWindow::on_instant_stop()
     case SigSession::Init:
     case SigSession::Stopped:
         commit_trigger(true);
-        _session->start_capture(true,
-            boost::bind(&MainWindow::session_error, this,
-                QString(tr("Capture failed")), _1));
+        _session->start_capture(true);
         _view->capture_init();
         break;
 
@@ -651,7 +635,12 @@ void MainWindow::repeat_resume()
     on_run_stop();
 }
 
-void MainWindow::on_show_error()
+void MainWindow::session_error()
+{
+    _event.session_error();
+}
+
+void MainWindow::on_session_error()
 {
     QString title;
     QString details;
@@ -725,6 +714,11 @@ void MainWindow::on_show_error()
 }
 
 void MainWindow::capture_state_changed(int state)
+{
+    _event.capture_state_changed(state);//safe call
+}
+
+void MainWindow::on_capture_state_changed(int state)
 {
     SigSession *_session = _control->GetSession();
 
@@ -1441,8 +1435,17 @@ void MainWindow::switchTheme(QString style)
     qApp->setStyleSheet(qss.readAll());
     qss.close();
 
-    SigSession *_session = _control->GetSession();
-    _session->data_updated();
+    data_updated();
+}
+
+void MainWindow::data_updated()
+{
+    _event.data_updated(); //safe call
+}
+
+void MainWindow::on_data_updated(){
+    _measure_widget->reCalc();
+    _view->data_updated();
 }
 
 void MainWindow::on_open_doc(){
@@ -1461,6 +1464,100 @@ void MainWindow::openDoc()
     int lan = app._frameOptions.language;
     QDesktopServices::openUrl(
                 QUrl("file:///"+dir.absolutePath() + "/ug"+QString::number(lan)+".pdf"));
+}
+
+void MainWindow::update_capture(){
+    _view->update_hori_res();
+}
+
+void MainWindow::cur_snap_samplerate_changed(){
+    _event.cur_snap_samplerate_changed(); //safe call
+}
+
+void MainWindow::on_cur_snap_samplerate_changed()
+{
+    _measure_widget->cursor_update();
+}
+
+void MainWindow::device_setted(){
+    _view->set_device();
+}
+
+ void MainWindow::signals_changed()
+ {
+     _event.signals_changed(); //safe call
+ }
+
+ void MainWindow::on_signals_changed()
+ {
+     _view->signals_changed();
+ }
+
+ void MainWindow::receive_trigger(quint64 trigger_pos)
+ {
+     _event.receive_trigger(trigger_pos); //save call
+ }
+
+ void MainWindow::on_receive_trigger(quint64 trigger_pos)
+ {
+     _view->receive_trigger(trigger_pos);
+ }
+
+ void MainWindow::frame_ended()
+ {
+     _event.frame_ended(); //save call
+ }
+
+ void MainWindow::on_frame_ended()
+ {
+     _view->receive_end();
+ }
+
+ void MainWindow::frame_began()
+ {
+     _event.frame_began(); //save call
+ }
+
+ void MainWindow::on_frame_began()
+ {
+     _view->frame_began();
+ }
+
+ void MainWindow::show_region(uint64_t start, uint64_t end, bool keep){
+     _view->show_region(start, end, keep);
+ }
+
+ void MainWindow::show_wait_trigger(){
+     _view->show_wait_trigger();
+ }
+
+ void MainWindow::repeat_hold(int percent){
+     (void)percent;
+     _view->repeat_show();
+ }
+
+ void MainWindow::decode_done(){
+     _event.decode_done(); //safe call
+ }
+
+ void MainWindow::on_decode_done(){
+     _protocol_widget->update_model();
+ }
+
+ void MainWindow::receive_data_len(quint64 len){
+     _event.receive_data_len(len);//safe call
+ }
+
+void MainWindow::on_receive_data_len(quint64 len){
+     _view->set_receive_len(len);
+}
+
+void MainWindow::receive_header(){
+
+}
+
+void MainWindow::data_received(){
+
 }
 
 } // namespace pv

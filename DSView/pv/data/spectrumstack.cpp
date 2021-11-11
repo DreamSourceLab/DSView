@@ -24,6 +24,7 @@
 #include <pv/data/dsosnapshot.h>
 #include <pv/sigsession.h>
 #include <pv/view/dsosignal.h>
+#include <math.h>
 
 #define PI 3.1415
 

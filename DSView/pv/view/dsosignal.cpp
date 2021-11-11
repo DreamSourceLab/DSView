@@ -31,6 +31,8 @@
 #include "../device/devinst.h" 
 #include <QDebug>
 #include <QTimer>
+#include <functional>
+#include <QApplication>
  
 using namespace std;
 
@@ -1457,8 +1459,8 @@ void DsoSignal::auto_start()
         _view->session().data_auto_lock(AutoLock);
         _autoV = true;
         _autoH = true;
-        _view->auto_trig(get_index());
-        QTimer::singleShot(AutoTime, &_view->session(), SLOT(auto_end()));
+        _view->auto_trig(get_index()); 
+        _end_timer.TimeOut(AutoTime, std::bind(&DsoSignal::call_auto_end, this)); //start a timeout
     }
 }
 
@@ -1570,6 +1572,10 @@ QString DsoSignal::get_time(double t)
                    abs(t) > 1000000 ? QString::number(t/1000000, 'f', 2) + "mS" :
                    abs(t) > 1000 ? QString::number(t/1000, 'f', 2) + "uS" : QString::number(t, 'f', 2) + "nS");
     return str;
+}
+
+void DsoSignal::call_auto_end(){
+    _view->session().auto_end();
 }
 
 } // namespace view

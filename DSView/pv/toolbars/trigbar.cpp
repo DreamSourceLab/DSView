@@ -20,15 +20,17 @@
  */
 
 #include "trigbar.h"
+
+#include <QBitmap>
+#include <QPainter>
+#include <QEvent>
+
 #include "../sigsession.h"
 #include "../device/devinst.h"
 #include "../dialogs/fftoptions.h"
 #include "../dialogs/lissajousoptions.h"
 #include "../dialogs/mathoptions.h"
 #include "../view/trace.h"
-
-#include <QBitmap>
-#include <QPainter>
 #include "../dialogs/applicationpardlg.h"
 #include "../config/appconfig.h"
 

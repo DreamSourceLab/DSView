@@ -30,6 +30,7 @@
 #include <QLabel>
 #include <QTabBar>
 #include <QBitmap>
+#include <math.h>
 
   
 using namespace boost;

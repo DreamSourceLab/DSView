@@ -176,33 +176,23 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     _split_widget->setOrientation(Qt::Vertical);
     _split_widget->setCollapsible(0, false);
     _split_widget->setCollapsible(1, false);
-    //_split_widget->setStretchFactor(1, 1);
-    //_split_widget
 
     this->setWidgetResizable(true);
     this->setWidget(_split_widget);
-    //_split_widget->setGeometry(0, 0, sizeHint().width(), 500);
+
     _split_widget->setObjectName("protocolWidget");
 
     connect(_dn_nav_button, SIGNAL(clicked()),this, SLOT(nav_table_view()));
-
     connect(_dn_save_button, SIGNAL(clicked()),this, SLOT(export_table_view()));
-
     connect(_dn_set_button, SIGNAL(clicked()),this, SLOT(set_model()));
-
     connect(_pre_button, SIGNAL(clicked()),this, SLOT(search_pre()));
-
     connect(_nxt_button, SIGNAL(clicked()),this, SLOT(search_nxt()));
-
     connect(_add_button, SIGNAL(clicked()),this, SLOT(on_add_protocol()));
+    connect(_del_all_button, SIGNAL(clicked()),this, SLOT(on_del_all_protocol())); 
 
-    connect(_del_all_button, SIGNAL(clicked()),this, SLOT(on_del_all_protocol()));
-
-    connect(_session, SIGNAL(decode_done()), this, SLOT(update_model()));
     connect(this, SIGNAL(protocol_updated()), this, SLOT(update_model()));
     connect(_table_view, SIGNAL(clicked(QModelIndex)), this, SLOT(item_clicked(QModelIndex)));
     connect(_table_view->horizontalHeader(), SIGNAL(sectionResized(int,int,int)), this, SLOT(column_resize(int, int, int)));
-    //connect(_table_view->verticalScrollBar(), SIGNAL(sliderMoved()), this, SLOT(sliderMoved()));
     connect(_search_edit, SIGNAL(editingFinished()), this, SLOT(search_changed()));
 
     retranslateUi();

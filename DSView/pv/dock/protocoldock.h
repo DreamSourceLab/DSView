@@ -72,6 +72,7 @@ public:
     void del_all_protocol();
     bool sel_protocol(QString name);
     void add_protocol(bool silent);
+
 private:
     void changeEvent(QEvent *event);
     void retranslateUi();
@@ -90,12 +91,14 @@ private:
 signals:
     void protocol_updated();
 
+public slots:
+    void update_model();
+
 private slots:
     void on_add_protocol(); 
     void on_del_all_protocol();
     void decoded_progress(int progress);
-    void set_model();
-    void update_model();
+    void set_model();   
     void export_table_view();
     void nav_table_view();
     void item_clicked(const QModelIndex &index);

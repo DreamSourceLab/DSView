@@ -23,7 +23,6 @@
 
 #include <libsigrokdecode4DSL/libsigrokdecode.h>
 
-
 #include "sigsession.h"
 #include "mainwindow.h"
 #include "devicemanager.h"
@@ -55,23 +54,13 @@
 
 #include <assert.h>
 #include <stdexcept>
-#include <sys/stat.h>
-
+#include <sys/stat.h> 
 #include <QDebug>
-#include <QProgressDialog>
-#include <QFile>
-#include <QJsonArray>
-#include <QJsonDocument>
-#include <QFuture>
-#include <QtConcurrent/QtConcurrent>
-#include <QDebug>
-
+#include <map>
  
 #include "data/decode/decoderstatus.h"
 #include "dsvdef.h"
 
-
-using namespace boost;
   
 namespace pv {
 
@@ -103,7 +92,7 @@ SigSession::SigSession(DeviceManager *device_manager)
     _data_lock = false;
     _data_updated = false;
 
-    _decoder_model = new pv::data::DecoderModel(this);
+    _decoder_model = new pv::data::DecoderModel(NULL);
 
     _lissajous_trace = NULL;
     _math_trace = NULL;
@@ -112,6 +101,7 @@ SigSession::SigSession(DeviceManager *device_manager)
     _stop_scale = 1; 
     _bDecodeRunning = false;
     _bClose = false;
+    _callback = NULL;
 
     // Create snapshots & data containers 
     _logic_data = new data::Logic(new data::LogicSnapshot()); 
@@ -120,12 +110,11 @@ SigSession::SigSession(DeviceManager *device_manager)
     _group_data = new data::Group();
     _group_cnt = 0;
 
-    _feed_timer.stop();
-
-    connect(&_feed_timer, SIGNAL(timeout()), this, SLOT(feed_timeout()));
+    _feed_timer.Stop(); 
+    _feed_timer.SetCallback(std::bind(&SigSession::feed_timeout, this)); 
 }
 
-//SigSession::SigSession(SigSession &o){(void)o;}
+SigSession::SigSession(SigSession &o){(void)o;}
 
 SigSession::~SigSession()
 { 
@@ -181,7 +170,7 @@ void SigSession::set_device(DevInst *dev_inst)
             return;
         }
         sr_session_datafeed_callback_add(data_feed_in_proc, NULL);
-        device_setted();
+        _callback->device_setted();
     }
 }
 
@@ -217,7 +206,7 @@ void SigSession::close_file(DevInst *dev_inst)
     }
 }
 
-void SigSession::set_default_device(boost::function<void (const QString)> error_handler)
+void SigSession::set_default_device()
 {
     assert(_device_manager);
 
@@ -240,7 +229,7 @@ void SigSession::set_default_device(boost::function<void (const QString)> error_
            try {
             set_device(default_device);
         } catch(const QString e) {
-            error_handler(e);
+            _callback->show_error(e);
             return;
         }
     }
@@ -252,14 +241,14 @@ void SigSession::release_device(DevInst *dev_inst)
         return;
 
     assert(dev_inst);
-    assert(_dev_inst == dev_inst);
+   // assert(_dev_inst == dev_inst);
     assert(get_capture_state() != Running);
 
     _dev_inst =  NULL;
 }
 
 SigSession::capture_state SigSession::get_capture_state()
-{
+{ 
     std::lock_guard<std::mutex> lock(_sampling_mutex);
     return _capture_state;
 }
@@ -327,7 +316,7 @@ void SigSession::set_cur_snap_samplerate(uint64_t samplerate)
     for(auto & m : _spectrum_traces)
         m->get_spectrum_stack()->set_samplerate(_cur_snap_samplerate);
 
-    cur_snap_samplerate_changed();
+    _callback->cur_snap_samplerate_changed();
 }
 
 void SigSession::set_cur_samplelimits(uint64_t samplelimits)
@@ -343,7 +332,7 @@ void SigSession::capture_init()
         set_repeating(get_run_mode() == Repetitive);
     // update instant setting
     _dev_inst->set_config(NULL, NULL, SR_CONF_INSTANT, g_variant_new_boolean(_instant));
-    update_capture();
+    _callback->update_capture();
 
     set_cur_snap_samplerate(_dev_inst->get_sample_rate());
     set_cur_samplelimits(_dev_inst->get_sample_limit());
@@ -354,9 +343,9 @@ void SigSession::capture_init()
     _hw_replied = false;
     
     if (_dev_inst->dev_inst()->mode != LOGIC)
-        _feed_timer.start(FeedInterval);
+        _feed_timer.Start(FeedInterval);
     else
-        _feed_timer.stop();
+        _feed_timer.Stop();
 
     _noData_cnt = 0;
     data_unlock();
@@ -419,8 +408,7 @@ void SigSession::container_init()
 
 }
 
-void SigSession::start_capture(bool instant,
-    boost::function<void (const QString)> error_handler)
+void SigSession::start_capture(bool instant)
 {  
     // Check that a device instance has been selected.
     if (!_dev_inst) {
@@ -432,7 +420,7 @@ void SigSession::start_capture(bool instant,
 
     if (!_dev_inst->is_usable()) {
         _error = Hw_err;
-        session_error();
+        _callback->session_error();
         capture_state_changed(SigSession::Stopped);
         return;
     }
@@ -468,7 +456,7 @@ void SigSession::start_capture(bool instant,
             break;
     }
     if (!l) {
-        error_handler(tr("No probes enabled."));
+        _callback->show_error("No probes enabled.");
         data_updated();
         set_repeating(false);
         capture_state_changed(SigSession::Stopped);
@@ -478,29 +466,25 @@ void SigSession::start_capture(bool instant,
     if (_sampling_thread.joinable()){
         _sampling_thread.join();
     } 
-    _sampling_thread  = std::thread(&SigSession::sample_thread_proc, this, _dev_inst, error_handler);
+    _sampling_thread  = std::thread(&SigSession::sample_thread_proc, this, _dev_inst);
 }
 
 
-void SigSession::sample_thread_proc(DevInst *dev_inst,
-                                    boost::function<void (const QString)> error_handler)
+void SigSession::sample_thread_proc(DevInst *dev_inst)
 {
     assert(dev_inst);
     assert(dev_inst->dev_inst());
-    assert(error_handler);
 
     try {
         dev_inst->start();
     } catch(const QString e) {
-        error_handler(e);
+        _callback->show_error(e);
         return;
     }
 
     receive_data(0);
     set_capture_state(Running);
-
     dev_inst->run();
-
     set_capture_state(Stopped);
 
     // Confirm that SR_DF_END was received
@@ -564,8 +548,7 @@ std::vector<view::GroupSignal*>& SigSession::get_group_signals()
 }
 
 std::set<data::SignalData*> SigSession::get_data()
-{
-    //lock_guard<mutex> lock(_signals_mutex);
+{ 
     std::set<data::SignalData*> data;
 
     for(auto &sig : _signals) {
@@ -582,7 +565,7 @@ bool SigSession::get_instant()
 }
 
 void SigSession::set_capture_state(capture_state state)
-{
+{ 
     std::lock_guard<std::mutex> lock(_sampling_mutex);
     _capture_state = state;
     data_updated();
@@ -766,7 +749,6 @@ void SigSession::init_signals()
     spectrum_rebuild();
     lissajous_disable();
     math_disable();
-    //data_updated();
 }
 
 void SigSession::reload()
@@ -776,66 +758,72 @@ void SigSession::reload()
     if (_capture_state == Running)
         stop_capture();
 
-    //refresh(0);
     std::vector<view::Signal*> sigs;
     view::Signal *signal = NULL;
 
     // Make the logic probe list
+    for (GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next)
     {
-        for (GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next) {
-            sr_channel *probe =
-                (sr_channel *)l->data;
-            assert(probe);
-            signal = NULL;
+        sr_channel *probe =
+            (sr_channel *)l->data;
+        assert(probe);
+        signal = NULL;
 
-            switch(probe->type) {
-            case SR_CHANNEL_LOGIC:
-                if (probe->enabled) {
-                    auto i = _signals.begin();
-                    while (i != _signals.end()) {
-                        if ((*i)->get_index() == probe->index) {
-                            view::LogicSignal *logicSig = NULL;
-                            if ((logicSig = dynamic_cast<view::LogicSignal*>(*i)))
-                                signal = new view::LogicSignal(logicSig, _logic_data, probe);
-                            break;
-                        }
-                        i++;
+        switch (probe->type)
+        {
+        case SR_CHANNEL_LOGIC:
+            if (probe->enabled)
+            {
+                auto i = _signals.begin();
+                while (i != _signals.end())
+                {
+                    if ((*i)->get_index() == probe->index)
+                    {
+                        view::LogicSignal *logicSig = NULL;
+                        if ((logicSig = dynamic_cast<view::LogicSignal *>(*i)))
+                            signal = new view::LogicSignal(logicSig, _logic_data, probe);
+                        break;
                     }
-                    if (signal == NULL){
-                         signal =  new view::LogicSignal(_dev_inst, _logic_data, probe);
-                    }                       
+                    i++;
                 }
-                break;
-
-  
-            case SR_CHANNEL_ANALOG:
-                if (probe->enabled) {
-                    auto i = _signals.begin();
-                    while (i != _signals.end()) {
-                        if ((*i)->get_index() == probe->index) {
-                            view::AnalogSignal *analogSig = NULL;
-                            if ((analogSig = dynamic_cast<view::AnalogSignal*>(*i)))
-                                signal = new view::AnalogSignal(analogSig, _analog_data, probe);
-                            break;
-                        }
-                        i++;
-                    }
-                    if (signal == NULL){
-                        signal =  new view::AnalogSignal(_dev_inst, _analog_data, probe);
-                    }
-                        
+                if (signal == NULL)
+                {
+                    signal = new view::LogicSignal(_dev_inst, _logic_data, probe);
                 }
-                break;
             }
-            if (signal != NULL)
-                sigs.push_back(signal);
-        }
+            break;
 
-        if (!sigs.empty()) { 
-            RELEASE_ARRAY(_signals);
-            std::vector<view::Signal*>().swap(_signals);
-            _signals = sigs;
+        case SR_CHANNEL_ANALOG:
+            if (probe->enabled)
+            {
+                auto i = _signals.begin();
+                while (i != _signals.end())
+                {
+                    if ((*i)->get_index() == probe->index)
+                    {
+                        view::AnalogSignal *analogSig = NULL;
+                        if ((analogSig = dynamic_cast<view::AnalogSignal *>(*i)))
+                            signal = new view::AnalogSignal(analogSig, _analog_data, probe);
+                        break;
+                    }
+                    i++;
+                }
+                if (signal == NULL)
+                {
+                    signal = new view::AnalogSignal(_dev_inst, _analog_data, probe);
+                }
+            }
+            break;
         }
+        if (signal != NULL)
+            sigs.push_back(signal);
+    }
+
+    if (!sigs.empty())
+    {
+        RELEASE_ARRAY(_signals);
+        std::vector<view::Signal *>().swap(_signals);
+        _signals = sigs;
     }
 
     spectrum_rebuild();
@@ -872,9 +860,8 @@ void SigSession::refresh(int holdtime)
     if (_analog_data) {
         _analog_data->init(); 
     }
-
-    QTimer::singleShot(holdtime, this, SLOT(feed_timeout()));
-    //data_updated();
+ 
+    _out_timer.TimeOut(holdtime, std::bind(&SigSession::feed_timeout, this));
     _data_updated = true;
 }
 
@@ -912,7 +899,7 @@ void SigSession::feed_in_header(const sr_dev_inst *sdi)
 {
     (void)sdi;
     _trigger_pos = 0;
-    receive_header();
+   _callback->receive_header();
 }
 
 void SigSession::feed_in_meta(const sr_dev_inst *sdi,
@@ -941,7 +928,7 @@ void SigSession::feed_in_trigger(const ds_trigger_pos &trigger_pos)
         _trigger_flag = (trigger_pos.status & 0x01);
         if (_trigger_flag) {
             _trigger_pos = trigger_pos.real_pos;
-            receive_trigger(_trigger_pos);
+            _callback->receive_trigger(_trigger_pos);
         }
     } else {
         int probe_count = 0;
@@ -956,7 +943,7 @@ void SigSession::feed_in_trigger(const ds_trigger_pos &trigger_pos)
             }
         }
         _trigger_pos = trigger_pos.real_pos * probe_count / probe_en_count;
-        receive_trigger(_trigger_pos);
+        _callback->receive_trigger(_trigger_pos);
     }
 }
 
@@ -970,7 +957,7 @@ void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
     if (logic.data_error == 1) {
         _error = Test_data_err;
         _error_pattern = logic.error_pattern;
-        session_error();
+        _callback->session_error();
     }
 
     if (_logic_data->snapshot()->last_ended()) {
@@ -979,7 +966,7 @@ void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
         // for logic will be notified. Currently the only user of
         // frame_began is DecoderStack, but in future we need to signal
         // this after both analog and logic sweeps have begun.
-        frame_began();
+        _callback->frame_began();
     } else {
         // Append to the existing data snapshot
         _logic_data->snapshot()->append_payload(logic);
@@ -987,13 +974,14 @@ void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
 
     if (_logic_data->snapshot()->memory_failed()) {
         _error = Malloc_err;
-        session_error();
+        _callback->session_error();
         return;
     }
 
-    emit receive_data(logic.length * 8 / get_ch_num(SR_CHANNEL_LOGIC));
-    data_received();
-    //data_updated();
+    receive_data(logic.length * 8 / get_ch_num(SR_CHANNEL_LOGIC));
+    
+    _callback->data_received(); 
+    
     _data_updated = true;
 }
 
@@ -1040,7 +1028,7 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
 
     if (_dso_data->snapshot()->memory_failed()) {
         _error = Malloc_err;
-        session_error();
+        _callback->session_error();
         return;
     }
 
@@ -1098,12 +1086,11 @@ void SigSession::feed_in_analog(const sr_datafeed_analog &analog)
 
     if (_analog_data->snapshot()->memory_failed()) {
         _error = Malloc_err;
-        session_error();
+        _callback->session_error();
         return;
     }
 
     receive_data(analog.num_samples);
-    //data_updated();
     _data_updated = true;
 }
   
@@ -1121,7 +1108,7 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
     if (packet->type != SR_DF_END &&
         packet->status != SR_PKT_OK) {
         _error = Pkt_data_err;
-        session_error();
+        _callback->session_error();
         return;
     }
 
@@ -1160,7 +1147,7 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
     {
         if (_error == No_err) {
             _error = Data_overflow;
-            session_error();
+            _callback->session_error();
         }
         break;
     }
@@ -1190,10 +1177,10 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
 
         if (packet->status != SR_PKT_OK) {
             _error = Pkt_data_err;
-            session_error();
+            _callback->session_error();
         }
 
-        frame_ended();
+        _callback->frame_ended();
 
         if (get_device()->dev_inst()->mode != LOGIC){
              set_session_time(QDateTime::currentDateTime());
@@ -1235,11 +1222,9 @@ int SigSession::hotplug_callback(struct libusb_context *ctx, struct libusb_devic
     return 0;
 }
 
-void SigSession::hotplug_proc(boost::function<void (const QString)> error_handler)
+void SigSession::hotplug_proc()
 {
-    struct timeval tv;
-
-    (void)error_handler;
+    struct timeval tv; 
 
     if (!_dev_inst)
         return;
@@ -1250,12 +1235,12 @@ void SigSession::hotplug_proc(boost::function<void (const QString)> error_handle
             libusb_handle_events_timeout(NULL, &tv);
             if (_hot_attach) {
                 qDebug("DreamSourceLab hardware attached!");
-                device_attach();
+                _callback->device_attach();
                 _hot_attach = false;
             }
             if (_hot_detach) {
                 qDebug("DreamSourceLab hardware detached!");
-                device_detach();
+                _callback->device_detach();
                 _hot_detach = false;
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -1285,7 +1270,7 @@ void SigSession::deregister_hotplug_callback()
     libusb_hotplug_deregister_callback(NULL, _hotplug_handle);
 }
 
-void SigSession::start_hotplug_work(boost::function<void (const QString)> error_handler)
+void SigSession::start_hotplug_work()
 {
 
     // Begin the session
@@ -1296,7 +1281,7 @@ void SigSession::start_hotplug_work(boost::function<void (const QString)> error_
     if (_hotplug_thread.joinable()){
         return;
     } 
-    _hotplug_thread =  std::thread(&SigSession::hotplug_proc, this, error_handler);
+    _hotplug_thread =  std::thread(&SigSession::hotplug_proc, this);
 }
 
 void SigSession::stop_hotplug_work()
@@ -1563,7 +1548,7 @@ void SigSession::nodata_timeout()
     if (gvar == NULL)
         return;
     if (g_variant_get_byte(gvar) != DSO_TRIGGER_AUTO) {
-        show_wait_trigger();
+        _callback->show_wait_trigger();
     }
 }
 
@@ -1651,8 +1636,8 @@ bool SigSession::repeat_check()
 
     if (_dev_inst->dev_inst()->mode == LOGIC) {
         _repeat_hold_prg = 100;
-        repeat_hold(_repeat_hold_prg);
-        QTimer::singleShot(_repeat_intvl*1000/RepeatHoldDiv, this, SLOT(repeat_update()));
+        _callback->repeat_hold(_repeat_hold_prg); 
+        _out_timer.TimeOut(_repeat_intvl*1000/RepeatHoldDiv, std::bind(&SigSession::repeat_update, this));
         return true;
     } else {
         return false;
@@ -1663,9 +1648,10 @@ void SigSession::repeat_update()
 {
     if (isRepeating()) {
         _repeat_hold_prg -= 100/RepeatHoldDiv;
-        if (_repeat_hold_prg != 0)
-            QTimer::singleShot(_repeat_intvl*1000/RepeatHoldDiv, this, SLOT(repeat_update()));
-        repeat_hold(_repeat_hold_prg);
+        if (_repeat_hold_prg != 0){
+            _out_timer.TimeOut(_repeat_intvl*1000/RepeatHoldDiv, std::bind(&SigSession::repeat_update, this));
+        }
+        _callback->repeat_hold(_repeat_hold_prg);
         if (_repeat_hold_prg == 0)
             repeat_resume();
     }

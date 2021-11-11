@@ -21,8 +21,7 @@
 #include <extdef.h>
 #include <algorithm>
 #include <math.h>
-
- 
+#include <QTextStream>
 #include <boost/functional/hash.hpp>
 
 #include "spectrumtrace.h"

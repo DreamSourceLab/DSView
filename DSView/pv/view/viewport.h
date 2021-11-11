@@ -131,8 +131,7 @@ private:
 private slots:
     void on_trigger_timer();
     void on_drag_timer();
-    void set_receive_len(quint64 length);
-
+  
     void show_contextmenu(const QPoint& pos);
     void add_cursor_x();
     void add_cursor_y();
@@ -140,6 +139,7 @@ private slots:
 public slots:
     void show_wait_trigger();
     void unshow_wait_trigger();
+    void set_receive_len(quint64 length);
 
 signals:
     void measure_updated();
