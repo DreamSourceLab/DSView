@@ -58,6 +58,8 @@ Header::Header(View &parent) :
     _moveFlag = false;
     _colorFlag = false;
     _nameFlag = false;
+    _context_trace = NULL;
+    
     nameEdit = new QLineEdit(this);
     nameEdit->setFixedWidth(100);
     nameEdit->hide();

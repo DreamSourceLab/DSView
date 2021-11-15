@@ -21,9 +21,6 @@
  */
 
 
-
-#include <libsigrokdecode4DSL/libsigrokdecode.h>
-#include "dock/protocoldock.h"
  
 #include <QAction>
 #include <QButtonGroup>
@@ -70,6 +67,7 @@
 #include "dock/dsotriggerdock.h"
 #include "dock/measuredock.h"
 #include "dock/searchdock.h"
+#include "dock/protocoldock.h"
 
 #include "view/view.h"
 #include "view/trace.h"
@@ -168,19 +166,16 @@ void MainWindow::setup_ui()
     addToolBar(_trig_bar);
     addToolBar(_file_bar);
     addToolBar(_logo_bar);
-
-    // Setup the dockWidget
-
-    // protocol dock
+  
+    //Setup the dockWidget
     _protocol_dock=new QDockWidget(tr("Protocol"),this);
     _protocol_dock->setObjectName("protocol_dock");
     _protocol_dock->setFeatures(QDockWidget::DockWidgetMovable);
     _protocol_dock->setAllowedAreas(Qt::RightDockWidgetArea);
-    _protocol_dock->setVisible(false);
-    //dock::ProtocolDock *_protocol_widget = new dock::ProtocolDock(_protocol_dock, _session);
+    _protocol_dock->setVisible(false); 
     _protocol_widget = new dock::ProtocolDock(_protocol_dock, *_view, _session);
     _protocol_dock->setWidget(_protocol_widget);
-    qDebug() << "Protocol decoder enabled!\n";
+    //qDebug() << "Protocol decoder enabled!\n";
  
 
     // measure dock
@@ -224,9 +219,7 @@ void MainWindow::setup_ui()
     _logo_bar->installEventFilter(this);
     _dso_trigger_dock->installEventFilter(this);
     _trigger_dock->installEventFilter(this);
-
     _protocol_dock->installEventFilter(this);
-
     _measure_dock->installEventFilter(this);
     _search_dock->installEventFilter(this);
 

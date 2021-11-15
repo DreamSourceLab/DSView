@@ -29,7 +29,7 @@
 #include <QObject>
 
 #include <libsigrok4DSL/libsigrok.h>
-#include <libsigrokdecode4DSL/libsigrokdecode.h>
+
 #include "ZipMaker.h"
 
 namespace pv {

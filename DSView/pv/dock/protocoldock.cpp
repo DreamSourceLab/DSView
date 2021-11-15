@@ -195,9 +195,7 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     connect(_table_view->horizontalHeader(), SIGNAL(sectionResized(int,int,int)), this, SLOT(column_resize(int, int, int)));
     connect(_search_edit, SIGNAL(editingFinished()), this, SLOT(search_changed()));
 
-    retranslateUi();
-
-    ds_debug("protocol panel\n");
+    retranslateUi(); 
 }
 
 ProtocolDock::~ProtocolDock()
@@ -303,14 +301,19 @@ void ProtocolDock::add_protocol(bool silent)
         return;
     } 
 
+    //have no protocol
+    if (_protocol_combobox->count() == 0){
+        if (!silent){
+            MsgBox::Show(NULL, "Protocol list is empty!");
+        }
+        return;
+    }
+
     srd_decoder *const decoder = 
           (srd_decoder *)(_protocol_combobox->itemData(_protocol_combobox->currentIndex())).value<void *>();
 
     DecoderStatus *dstatus = new DecoderStatus();
     dstatus->m_format = (int)DecoderDataFormat::hex;
-
-    int numm= _protocol_items.size();
-    numm += 0;
   
     if (_session->add_decoder(decoder, silent, dstatus))
     {

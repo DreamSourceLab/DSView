@@ -274,7 +274,6 @@ private:
 	void set_capture_state(capture_state state);
     void register_hotplug_callback();
     void deregister_hotplug_callback();
-
     bool do_add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus);
 
     void add_decode_task(view::DecodeTrace *trace);
@@ -301,25 +300,17 @@ private:
      * 	used, or NULL if no input format was selected or
      * 	auto-detected.
      */
-    static sr_input_format* determine_input_file_format(
-        const std::string &filename);
-  
+    static sr_input_format* determine_input_file_format(const std::string &filename);  
     void sample_thread_proc(DevInst *dev_inst);
 
     // data feed
 	void feed_in_header(const sr_dev_inst *sdi);
-
-	void feed_in_meta(const sr_dev_inst *sdi,
-		const sr_datafeed_meta &meta);
-
+	void feed_in_meta(const sr_dev_inst *sdi, const sr_datafeed_meta &meta);
     void feed_in_trigger(const ds_trigger_pos &trigger_pos);
-
 	void feed_in_logic(const sr_datafeed_logic &logic);
 
     void feed_in_dso(const sr_datafeed_dso &dso);
-
-	void feed_in_analog(const sr_datafeed_analog &analog);
-    
+	void feed_in_analog(const sr_datafeed_analog &analog);    
 	void data_feed_in(const struct sr_dev_inst *sdi,
 		const struct sr_datafeed_packet *packet);
 

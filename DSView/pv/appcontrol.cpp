@@ -71,8 +71,10 @@ bool AppControl::Init()
         return false;
     }
 
+    const char *decoderScriptDir = "/home/lala/tmpdir/any";
+
     // Initialise libsigrokdecode
-    if (srd_init(NULL) != SRD_OK)
+    if (srd_init(decoderScriptDir) != SRD_OK)
     {
         m_error = "ERROR: libsigrokdecode init failed.";
         return false;

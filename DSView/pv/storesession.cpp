@@ -23,23 +23,22 @@
 #define __STDC_FORMAT_MACROS
 
 #include "storesession.h"
+#include "sigsession.h"
 
-#include <pv/sigsession.h>
-#include <pv/data/logic.h>
-#include <pv/data/logicsnapshot.h>
-#include <pv/data/dsosnapshot.h>
-#include <pv/data/analogsnapshot.h>
-#include <pv/data/decoderstack.h>
-#include <pv/data/decode/decoder.h>
-#include <pv/data/decode/row.h>
-#include <pv/view/trace.h>
-#include <pv/view/signal.h>
-#include <pv/view/logicsignal.h>
-#include <pv/view/dsosignal.h>
-#include <pv/view/decodetrace.h>
-#include <pv/device/devinst.h>
-#include <pv/dock/protocoldock.h>
- 
+#include "data/logic.h"
+#include "data/logicsnapshot.h"
+#include "data/dsosnapshot.h"
+#include "data/analogsnapshot.h"
+#include "data/decoderstack.h"
+#include "data/decode/decoder.h"
+#include "data/decode/row.h"
+#include "view/trace.h"
+#include "view/signal.h"
+#include "view/logicsignal.h"
+#include "view/dsosignal.h"
+#include "view/decodetrace.h"
+#include "device/devinst.h"
+#include "dock/protocoldock.h" 
  
 #include <QFileDialog>
 #include <QDir>
@@ -51,7 +50,7 @@
 #include <QTextStream>
 #include <QDebug>
 
-
+#include <libsigrokdecode4DSL/libsigrokdecode.h> 
 #include "config/appconfig.h"
  
 namespace pv {

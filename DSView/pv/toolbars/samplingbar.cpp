@@ -339,11 +339,14 @@ void SamplingBar::zero_adj()
         if ((dsoSig = dynamic_cast<view::DsoSignal*>(s)))
             dsoSig->set_enable(true);
     }
+    
     const int index_back = _sample_count.currentIndex();
     int i = 0;
+
     for (i = 0; i < _sample_count.count(); i++)
         if (_sample_count.itemData(i).value<uint64_t>() == ZeroTimeBase)
             break;
+
     _sample_count.setCurrentIndex(i);
     commit_hori_res();
 
@@ -722,8 +725,6 @@ double SamplingBar::get_hori_res()
 double SamplingBar::hori_knob(int dir)
 {
     double hori_res = -1;
-    disconnect(&_sample_count, SIGNAL(currentIndexChanged(int)),
-        this, SLOT(on_samplecount_sel(int)));
 
     if (0 == dir) {
         hori_res = commit_hori_res();
@@ -734,6 +735,9 @@ double SamplingBar::hori_knob(int dir)
         _sample_count.setCurrentIndex(_sample_count.currentIndex() + 1);
         hori_res = commit_hori_res();
     }
+
+    disconnect(&_sample_count, SIGNAL(currentIndexChanged(int)),
+        this, SLOT(on_samplecount_sel(int)));
 
     connect(&_sample_count, SIGNAL(currentIndexChanged(int)),
         this, SLOT(on_samplecount_sel(int)));

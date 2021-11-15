@@ -437,8 +437,7 @@ void SigSession::start_capture(bool instant)
             dsoSig->set_mValid(false);
     }
 
-    // update setting
-    qDebug()<<"device name:"<<_dev_inst->name();
+    // update setting 
 
     if (_dev_inst->name() != "virtual-session")
         _instant = instant;
@@ -1167,8 +1166,6 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
         _dso_data->snapshot()->capture_ended();
         _analog_data->snapshot()->capture_ended();
 
-        qDebug()<<"data frame end";
-
         for (auto trace : _decode_traces){
             trace->decoder()->frame_ended();
             trace->frame_ended();
@@ -1248,7 +1245,7 @@ void SigSession::hotplug_proc()
     } catch(...) {
         qDebug("Interrupt exception for hotplug thread was thrown.");
     }
-    qDebug("Hotplug thread exit!");
+   // qDebug("Hotplug thread exit!");
 }
 
 void SigSession::register_hotplug_callback()
@@ -1271,10 +1268,9 @@ void SigSession::deregister_hotplug_callback()
 }
 
 void SigSession::start_hotplug_work()
-{
-
+{ 
     // Begin the session
-    qDebug() << "Starting a hotplug thread...\n";
+   // qDebug() << "Starting a hotplug thread...\n";
     _hot_attach = false;
     _hot_detach = false;
 
@@ -1788,7 +1784,7 @@ void SigSession::set_stop_scale(float scale)
 //append a decode task, and try create a thread
  void SigSession::add_decode_task(view::DecodeTrace *trace)
  { 
-     qDebug()<<"add a decode task";
+     //qDebug()<<"add a decode task";
 
      std::lock_guard<std::mutex> lock(_decode_task_mutex);
      _decode_tasks.push_back(trace);
@@ -1844,7 +1840,7 @@ void SigSession::set_stop_scale(float scale)
     //wait thread end
      if (_decode_thread.joinable())
      {
-         qDebug() << "wait the decode thread end";
+       //  qDebug() << "wait the decode thread end";
          _decode_thread.join();
      }
 
@@ -1900,12 +1896,12 @@ void SigSession::set_stop_scale(float scale)
   //the decode task thread proc
   void SigSession::decode_task_proc(){ 
 
-      qDebug()<<"decode thread start";
+      //qDebug()<<"decode thread start";
       auto task = get_top_decode_task();
       
       while (task != NULL)
       {
-          qDebug()<<"one decode task be actived";
+         // qDebug()<<"one decode task be actived";
  
           if (!task->_delete_flag){
               task->decoder()->begin_decode_work();
@@ -1924,7 +1920,7 @@ void SigSession::set_stop_scale(float scale)
           task = get_top_decode_task();
       }  
 
-      qDebug()<<"decode thread end";
+     // qDebug()<<"decode thread end";
       _bDecodeRunning = false;
   }
 

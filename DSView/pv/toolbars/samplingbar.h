@@ -64,6 +64,7 @@ namespace pv
             static const int RefreshShort = 500;
             static const uint64_t LogicMaxSWDepth64 = SR_GB(16);
             static const uint64_t LogicMaxSWDepth32 = SR_GB(8);
+            
             static const uint64_t AnalogMaxSWDepth = SR_Mn(100);
             static const QString RLEString;
             static const QString DIVString;
@@ -71,11 +72,8 @@ namespace pv
 
         public:
             SamplingBar(SigSession *session, QWidget *parent);
-
             void set_device_list(const std::list<DevInst*> &devices, DevInst* selected);
-
             DevInst *get_selected_device();
-
             void update_sample_rate_selector();
 
             void set_sampling(bool sampling);
@@ -83,9 +81,7 @@ namespace pv
             bool get_instant();
 
             void enable_toggle(bool enable);
-
             void enable_run_stop(bool enable);
-
             void enable_instant(bool enable);
 
             double hori_knob(int dir);
@@ -132,37 +128,33 @@ namespace pv
             void reload();
 
         private:
-            SigSession *_session;
+            SigSession          *_session;
+            mutable std::mutex  _sampling_mutex;
+            bool                _enable;
+            bool                _sampling;
 
-            mutable std::mutex _sampling_mutex;
-            bool _enable;
-            bool _sampling;
-
-            QToolButton _device_type;
-
-            QComboBox _device_selector;
+            QToolButton         _device_type;
+            QComboBox           _device_selector;
             std::map<const void *, DevInst*> _device_selector_map;
-            bool _updating_device_selector;
+            bool                _updating_device_selector;
 
-            QToolButton _configure_button;
+            QToolButton         _configure_button;
+            QComboBox           _sample_count;
+            QComboBox           _sample_rate;
+            bool                _updating_sample_rate;
+            bool                _updating_sample_count;
 
-            QComboBox _sample_count;
-            QComboBox _sample_rate;
-            bool _updating_sample_rate;
-            bool _updating_sample_count;
+            QToolButton         _run_stop_button;
+            QToolButton         _instant_button;
+            QAction             *_run_stop_action;
+            QAction             *_instant_action;
+            QAction             *_mode_action;
+            QToolButton         _mode_button;
 
-            QToolButton _run_stop_button;
-            QToolButton _instant_button;
-            QAction *_run_stop_action;
-            QAction *_instant_action;
-
-            QAction *_mode_action;
-            QToolButton _mode_button;
-            QMenu *_mode_menu;
-            QAction *_action_repeat;
-            QAction *_action_single;
-
-            bool _instant;
+            QMenu               *_mode_menu;
+            QAction             *_action_repeat;
+            QAction             *_action_single;
+            bool                _instant;
         };
 
     } // namespace toolbars

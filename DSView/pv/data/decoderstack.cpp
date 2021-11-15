@@ -516,11 +516,18 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
         if (chunk_end - i > MaxChunkSize)
             chunk_end = i + MaxChunkSize;
 
-        if (srd_session_send(session, i, chunk_end,
-                             chunk.data(), chunk_const.data(), chunk_end - i, &error) != SRD_OK) {
+        if (srd_session_send(
+                session,
+                i,
+                chunk_end,
+                chunk.data(),
+                chunk_const.data(),
+                chunk_end - i,
+                &error) != SRD_OK){
             _error_message = QString::fromLocal8Bit(error);
             break;
         }
+
         i = chunk_end;
 
         {

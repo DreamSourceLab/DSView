@@ -94,9 +94,7 @@ public:
     }
 
 	void push(decode::Decoder *decoder);
-
     void remove(decode::Decoder *decoder);
-
     void build_row();
 
 	int64_t samples_decoded();
@@ -111,7 +109,6 @@ public:
 
     uint64_t get_annotation_index(
         const decode::Row &row, uint64_t start_sample);
-
     uint64_t get_max_annotation(const decode::Row &row);
     uint64_t get_min_annotation(const decode::Row &row); // except instant(end=start) annotation
 
@@ -119,9 +116,7 @@ public:
     std::map<const decode::Row, bool> get_rows_lshow();
     void set_rows_gshow(const decode::Row row, bool show);
     void set_rows_lshow(const decode::Row row, bool show);
-
     bool has_annotations(const decode::Row &row);
-
     uint64_t list_annotation_size();
     uint64_t list_annotation_size(uint16_t row_index);
 
@@ -131,13 +126,9 @@ public:
 
 
     bool list_row_title(int row, QString &title);
-
 	QString error_message();
-
 	void clear();
-
     void init();
-
 	uint64_t get_max_sample_count();
 
     inline bool IsRunning(){
@@ -145,31 +136,22 @@ public:
     }
  
 	void begin_decode_work();
-
     void do_decode_work();
-
-    void stop_decode_work();
-  
+    void stop_decode_work();  
     int list_rows_size();
-
     bool options_changed();
     void set_options_changed(bool changed);
 
     uint64_t sample_count();
     uint64_t sample_rate();
-
     bool out_of_memory();
-
     void set_mark_index(int64_t index);
     int64_t get_mark_index();
-
     void frame_ended();
 
 private:
     void decode_data(const uint64_t decode_start, const uint64_t decode_end, srd_session *const session);
-
 	void decode_proc();
-
 	static void annotation_callback(srd_proto_data *pdata, void *decoder);
 
   
@@ -179,7 +161,6 @@ signals:
   
 private: 
 	std::list<decode::Decoder*> _stack;
-
 	pv::data::LogicSnapshot *_snapshot;
   
     std::map<const decode::Row, decode::RowData*>   _rows;
@@ -192,15 +173,15 @@ private:
     volatile bool   _options_changed;
     volatile bool   _no_memory;
     int64_t         _mark_index;
+
     DecoderStatus   *_decoder_status;
     QString         _error_message;
     int64_t	        _samples_decoded;
     uint64_t        _sample_count; 
  
-    decode_task_status  *_stask_stauts;
-    
+    decode_task_status  *_stask_stauts;    
     mutable std::mutex _output_mutex;
-  
+
 	friend class DecoderStackTest::TwoDecoderStack;
 };
 
