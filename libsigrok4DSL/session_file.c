@@ -570,6 +570,19 @@ SR_API int sr_session_save_init(const char *filename, const char *metafile, cons
     if (decfile != NULL)
         unlink(decfile);
 
+
+
+    return SR_OK;
+}
+
+SR_API int sr_session_append_open(struct zip *archive, const char *filename)
+{
+    int ret;
+    if (!(archive = zip_open(filename, 0, &ret)))
+    {
+        sr_err("error opening zipfile: %s", zip_strerror(archive));
+        return SR_ERR;
+    }
     return SR_OK;
 }
 
@@ -592,12 +605,11 @@ SR_API int sr_session_save_init(const char *filename, const char *metafile, cons
  *
  * @since 0.3.0
  */
-SR_API int sr_session_append(const char *filename, const unsigned char *buf,
+SR_API int sr_session_append(struct zip *archive, const char *filename, const unsigned char *buf,
         uint64_t size, int chunk_num, int index, int type, int version)
 {
-    struct zip *archive;
     struct zip_source *logicsrc;
-    int ret;
+    //int ret;
     char chunk_name[16], *type_name;
 
 //    if ((ret = sr_sessionfile_check(filename)) != SR_OK)
@@ -605,8 +617,8 @@ SR_API int sr_session_append(const char *filename, const unsigned char *buf,
     if (buf == NULL)
         goto err;
 
-    if (!(archive = zip_open(filename, 0, &ret)))
-        goto err;
+    /*if (!(archive = zip_open(filename, 0, &ret)))
+        goto err;*/
 
     if (version == 2) {
         type_name = (type == SR_CHANNEL_LOGIC) ? "L" :
@@ -620,19 +632,37 @@ SR_API int sr_session_append(const char *filename, const unsigned char *buf,
     if (!(logicsrc = zip_source_buffer(archive, buf, size, FALSE))) {
         goto err;
     }
-    if (zip_file_add(archive, chunk_name, logicsrc, ZIP_FL_OVERWRITE) == -1) {
+    zip_int64_t file_index = zip_file_add(archive, chunk_name, logicsrc, ZIP_FL_OVERWRITE);
+    if (file_index == -1) {
         goto err;
     }
-    if ((ret = zip_close(archive)) == -1) {
+
+    if(zip_set_file_compression(archive,file_index,ZIP_CM_STORE,0) != 0)
+    {
+        goto err;
+    }
+
+    /*if ((ret = zip_close(archive)) == -1) {
         sr_info("error saving session file: %s", zip_strerror(archive));
         goto err;
-    }
+    }*/
 
     return SR_OK;
 
 err:
+    sr_session_close(archive);
     unlink(filename);
     return SR_ERR;
+}
+
+SR_API int sr_session_close(struct zip *archive)
+{
+    int ret = zip_close(archive);
+    if(ret == -1)
+    {
+        sr_err("error saving session file: %s", zip_strerror(archive));
+    }
+    return ret;
 }
 
 /** @} */

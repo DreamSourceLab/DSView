@@ -210,6 +210,21 @@ void StoreSession::save_proc(shared_ptr<data::Snapshot> snapshot)
     shared_ptr<data::AnalogSnapshot> analog_snapshot;
     shared_ptr<data::DsoSnapshot> dso_snapshot;
 
+    struct zip *zipfile = nullptr;
+
+    ret = sr_session_append_open(zipfile, _file_name.toUtf8().data());
+    if(ret != SR_OK)
+    {
+        if (!_has_error) {
+            _has_error = true;
+            _error = tr("Failed to create zip file. Please check write permission of this path.");
+        }
+        progress_updated();
+        if (_has_error)
+            QFile::remove(_file_name);
+        return;
+    }
+
     if ((logic_snapshot = boost::dynamic_pointer_cast<data::LogicSnapshot>(snapshot))) {
         uint16_t to_save_probes = 0;
         BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
@@ -219,6 +234,8 @@ void StoreSession::save_proc(shared_ptr<data::Snapshot> snapshot)
         _unit_count = logic_snapshot->get_sample_count() / 8 * to_save_probes;
         num = logic_snapshot->get_block_num();
         bool sample;
+
+        _unit_count += 100; // to trick progressbar that we will finish later
 
         BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
             int ch_type = s->get_type();
@@ -239,7 +256,7 @@ void StoreSession::save_proc(shared_ptr<data::Snapshot> snapshot)
                             memset(buf, sample ? 0xff : 0x0, size);
                         }
                     }
-                    ret = sr_session_append(_file_name.toUtf8().data(), buf, size,
+                    ret = sr_session_append(zipfile, _file_name.toUtf8().data(), buf, size,
                                       i, ch_index, ch_type, File_Version);
                     if (ret != SR_OK) {
                         if (!_has_error) {
@@ -285,13 +302,13 @@ void StoreSession::save_proc(shared_ptr<data::Snapshot> snapshot)
                         memcpy(tmp, buf, buf_end-buf);
                         memcpy(tmp+(buf_end-buf), buf_start, buf+size-buf_end);
                     }
-                    ret = sr_session_append(_file_name.toUtf8().data(), tmp, size,
+                    ret = sr_session_append(zipfile, _file_name.toUtf8().data(), tmp, size,
                                       i, 0, ch_type, File_Version);
                     buf += (size - _unit_count);
                     if (tmp)
                         free(tmp);
                 } else {
-                    ret = sr_session_append(_file_name.toUtf8().data(), buf, size,
+                    ret = sr_session_append(zipfile, _file_name.toUtf8().data(), buf, size,
                                       i, 0, ch_type, File_Version);
                     buf += size;
                 }
@@ -311,6 +328,11 @@ void StoreSession::save_proc(shared_ptr<data::Snapshot> snapshot)
         }
     }
 	progress_updated();
+
+    sr_session_close(zipfile);
+
+    _units_stored = _unit_count;
+    progress_updated();
 
     if (_canceled || num == 0)
         QFile::remove(_file_name);
