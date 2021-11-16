@@ -105,7 +105,7 @@ SR_API int sr_session_start(void);
 SR_API int sr_session_run(void);
 SR_API int sr_session_stop(void);
 SR_API int sr_session_save_init(const char *filename, const char *metafile, const char *decfile, const char *sesfile);
-SR_API int sr_session_append_open(struct zip *archive, const char *filename);
+SR_API int sr_session_append_open(struct zip **archive, const char *filename);
 SR_API int sr_session_append(struct zip *archive, const char *filename, const unsigned char *buf,
         uint64_t size, int chunk_num, int index, int type, int version);
 SR_API int sr_session_close(struct zip *archive);

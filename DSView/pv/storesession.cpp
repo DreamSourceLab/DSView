@@ -212,7 +212,7 @@ void StoreSession::save_proc(shared_ptr<data::Snapshot> snapshot)
 
     struct zip *zipfile = nullptr;
 
-    ret = sr_session_append_open(zipfile, _file_name.toUtf8().data());
+    ret = sr_session_append_open(&zipfile, _file_name.toUtf8().data());
     if(ret != SR_OK)
     {
         if (!_has_error) {

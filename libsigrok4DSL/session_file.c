@@ -575,12 +575,12 @@ SR_API int sr_session_save_init(const char *filename, const char *metafile, cons
     return SR_OK;
 }
 
-SR_API int sr_session_append_open(struct zip *archive, const char *filename)
+SR_API int sr_session_append_open(struct zip **archive, const char *filename)
 {
     int ret;
-    if (!(archive = zip_open(filename, 0, &ret)))
+    if (!(*archive = zip_open(filename, 0, &ret)))
     {
-        sr_err("error opening zipfile: %s", zip_strerror(archive));
+        sr_err("error opening zipfile: %s", zip_strerror(*archive));
         return SR_ERR;
     }
     return SR_OK;
