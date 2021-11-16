@@ -30,10 +30,8 @@
 #include <QMenuBar>
 #include <QStatusBar>
 #include <QVBoxLayout>
-#include <QWidget>
-#include <QDockWidget>
-#include <QDebug>
-#include <QDesktopWidget>
+#include <QWidget> 
+#include <QDebug> 
 #include <QDesktopServices>
 #include <QKeyEvent>
 #include <QEvent>
@@ -868,20 +866,29 @@ void MainWindow::on_screenShot()
 {
     AppConfig &app = AppConfig::Instance();     
     QString default_name = app._userHistory.screenShotPath + "/DSView" + QDateTime::currentDateTime().toString("-yyMMdd-hhmmss");
-    QPixmap pixmap;
-    QScreen *screen = QGuiApplication::primaryScreen();
-    QDesktopWidget *desktop = QApplication::desktop();
-    pixmap = screen->grabWindow(desktop->winId(), parentWidget()->pos().x(), parentWidget()->pos().y(),
-                                                 parentWidget()->frameGeometry().width(), parentWidget()->frameGeometry().height());
+    QPixmap pixmap = QPixmap::grabWindow(winId()); 
     QString format = "png";
 
-    QString fileName = QFileDialog::getSaveFileName(this,
-                       tr("Save As"), default_name,
-                       tr("%1 Files (*.%2);;All Files (*)")
-                       .arg(format.toUpper()).arg(format));
+    QString fileName = QFileDialog::getSaveFileName(
+                       this,
+                       tr("Save As"), 
+                       default_name,
+                      // tr("%1 Files (*.%2);;All Files (*)")
+                      "png file(*.png);;jpeg file(*.jpeg)",
+                       &format);
 
-    if (!fileName.isEmpty()) { 
-        pixmap.save(fileName, format.toLatin1());
+    if (!fileName.isEmpty()) {
+
+        QStringList list = format.split('.').last().split(')');
+        QString suffix = list.first();
+
+        QFileInfo f(fileName);
+        if (f.suffix().compare(suffix))
+        {
+            fileName += tr(".") + suffix;
+        }
+
+        pixmap.save(fileName, suffix.toLatin1());
  
         fileName = GetDirectoryName(fileName);
 
@@ -895,10 +902,7 @@ void MainWindow::on_screenShot()
 //save file
 void MainWindow::on_save()
 {
-    using pv::dialogs::StoreProgress;
-
-//    dialogs::RegionOptions *regionDlg = new dialogs::RegionOptions(_view, _session, this);
-//    regionDlg->exec();
+    using pv::dialogs::StoreProgress; 
 
     SigSession *_session = _control->GetSession();
 
