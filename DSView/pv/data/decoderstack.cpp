@@ -480,7 +480,7 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
 
     uint64_t entry_cnt = 0;
     uint64_t i = decode_start;
-    char *error = NULL;
+    char *error = NULL; 
 
     if( i >= decode_end){
         qDebug()<<"decode data index have been end:"<<i;
@@ -541,6 +541,8 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
         }
         entry_cnt++;
     } 
+
+    qDebug()<<"send to decoder times:"<<entry_cnt;
 
     if (error)
         g_free(error);

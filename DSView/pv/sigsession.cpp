@@ -1813,7 +1813,7 @@ void SigSession::set_stop_scale(float scale)
      }
 
      //the task maybe is running 
-     qDebug()<<"remove a running decode task";
+  //   qDebug()<<"remove a running decode task";
      trace->decoder()->stop_decode_work();
  }
 
