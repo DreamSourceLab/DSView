@@ -78,9 +78,7 @@ DSDialog::~DSDialog()
 }
 
 void DSDialog::accept()
-{
-    using namespace Qt;
-
+{  
     _clickYes = true;
     if (m_callback){
         m_callback->OnDlgResult(true);
@@ -91,8 +89,7 @@ void DSDialog::accept()
 }
 
 void DSDialog::reject()
-{
-    using namespace Qt;
+{ 
     _clickYes = false;
 
     if (m_callback){
@@ -133,24 +130,28 @@ void DSDialog::build_base(bool hasClose)
 {    
     _main_widget = new QWidget(this);
     _main_layout = new QVBoxLayout(_main_widget);
-    _titlebar = new toolbars::TitleBar(false, this, hasClose);
-    _base_layout = new QVBoxLayout(this); 
-  
     _main_widget->setLayout(_main_layout);
-    _main_widget->setAutoFillBackground(true);
 
-    _shadow  = new Shadow(_main_widget);
+    _shadow  = new Shadow(this);
     _shadow->setBlurRadius(10.0);
     _shadow->setDistance(3.0);
     _shadow->setColor(QColor(0, 0, 0, 80));
-    _main_widget->setGraphicsEffect(_shadow);
-  
-    _main_layout->addWidget(_titlebar);  
+    _main_widget->setAutoFillBackground(true); 
+    this->setGraphicsEffect(_shadow);
+
+    _titlebar = new toolbars::TitleBar(false, this, hasClose);
+     _main_layout->addWidget(_titlebar);
+
+     QWidget *space = new QWidget(this);
+     space->setFixedHeight(15);
+    _main_layout->addWidget(space);
+
+    _base_layout = new QVBoxLayout(this);   
     _base_layout->addWidget(_main_widget);
-    setLayout(_base_layout);  
+    setLayout(_base_layout); 
 
     _main_layout->setAlignment(Qt::AlignCenter | Qt::AlignTop);
-  
+    _main_layout->setContentsMargins(10,5,10,10);   
 } 
 
 } // namespace dialogs

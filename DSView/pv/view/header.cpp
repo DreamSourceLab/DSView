@@ -20,20 +20,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include "header.h"
-#include "view.h"
-
-#include "../../extdef.h"
-#include "trace.h"
-#include "dsosignal.h"
-#include "logicsignal.h"
-#include "analogsignal.h"
-#include "groupsignal.h"
-#include "decodetrace.h"
-#include "../sigsession.h"
-#include "../device/devinst.h"
-
-#include <assert.h>
+#include "header.h" 
   
 #include <QColorDialog>
 #include <QInputDialog>
@@ -43,6 +30,20 @@
 #include <QRect>
 #include <QStyleOption>
 #include <QApplication>
+#include <assert.h>
+
+#include "view.h"
+#include "trace.h"
+#include "dsosignal.h"
+#include "logicsignal.h"
+#include "analogsignal.h"
+#include "groupsignal.h"
+#include "decodetrace.h"
+#include "../sigsession.h"
+#include "../device/devinst.h"
+#include "../../extdef.h"
+#include "../dsvdef.h"
+
  
 using namespace std;
 
@@ -253,33 +254,74 @@ void Header::wheelEvent(QWheelEvent *event)
 {
     assert(event);
 
-    if (event->orientation() == Qt::Vertical) {
+    int x = 0;
+    int y = 0;
+    int delta = 0;
+    bool isVertical = true;
+    QPoint pos;
+    (void)x;
+    (void)y;
+     
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    x = (int)event->position().x();
+    y = (int)event->position().y();    
+    int anglex = event->angleDelta().x();
+    int angley = event->angleDelta().y();
+
+    pos.setX(x);
+    pos.setY(y);
+
+    if (anglex == 0 || ABS_VAL(angley) >= ABS_VAL(anglex)){
+        delta = angley;
+        isVertical = true;
+    }
+    else{
+        delta = anglex;
+        isVertical = false; //hori direction
+    }
+#else
+    x = event->x();
+    delta = event->delta();
+    isVertical = event->orientation() == Qt::Vertical;
+    pos = event->pos(); 
+#endif
+
+    if (isVertical)
+    {
         const auto &traces = _view.get_traces(ALL_VIEW);
         // Vertical scrolling
         double shift = 0;
-        #ifdef Q_OS_DARWIN
+
+#ifdef Q_OS_DARWIN
         static bool active = true;
         static int64_t last_time;
-        if (event->source() == Qt::MouseEventSynthesizedBySystem) {
-            if (active) {
+        if (event->source() == Qt::MouseEventSynthesizedBySystem)
+        {
+            if (active)
+            {
                 last_time = QDateTime::currentMSecsSinceEpoch();
-                shift = event->delta() > 1.5 ? -1 :
-                        event->delta() < -1.5 ? 1 : 0;
+                shift = delta > 1.5 ? -1 : delta < -1.5 ? 1 : 0;
             }
             int64_t cur_time = QDateTime::currentMSecsSinceEpoch();
             if (cur_time - last_time > 100)
                 active = true;
             else
                 active = false;
-        } else {
-            shift = -event->delta() / 80.0;
         }
-        #else
-            shift = event->delta() / 80.0;
-        #endif
-        for(auto &t : traces)
-            if (t->mouse_wheel(width(), event->pos(), shift))
+        else
+        {
+            shift = -delta / 80.0;
+        }
+#else
+        shift = delta / 80.0;
+#endif
+
+        for (auto &t : traces)
+        {
+            if (t->mouse_wheel(width(), pos, shift))
                 break;
+        }
+
         update();
     }
 }

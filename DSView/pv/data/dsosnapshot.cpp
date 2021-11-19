@@ -378,7 +378,7 @@ double DsoSnapshot::cal_vrms(double zero_off, int index)
         vrms = vrms_pre + vrms / get_sample_count();
         vrms_pre = vrms;
     }
-    vrms = std::pow(vrms, 0.5);
+    vrms = pow(vrms, 0.5);
 
     return vrms;
 }

@@ -52,22 +52,9 @@
 
 #include <libsigrokdecode4DSL/libsigrokdecode.h> 
 #include "config/appconfig.h"
+#include "dsvdef.h"
  
-namespace pv {
-
-      char chunk_name[30] = {0};
-
-    void MakeChunkName(int chunk_num, int index, int type, int version){       
-        if (version == 2) {
-            const char *type_name = NULL;
-            type_name = (type == SR_CHANNEL_LOGIC) ? "L" :
-                    (type == SR_CHANNEL_DSO) ? "O" :
-                    (type == SR_CHANNEL_ANALOG) ? "A" : "U";
-            snprintf(chunk_name, 15, "%s-%d/%d", type_name, index, chunk_num);
-        } else {
-            snprintf(chunk_name, 15, "data");
-        }
-    }
+namespace pv { 
 
 StoreSession::StoreSession(SigSession *session) :
 	_session(session),
@@ -188,7 +175,7 @@ bool StoreSession::save_start()
         */
 
     //make zip file
-    if (meta_file != NULL && m_zipDoc.CreateNew(_file_name.toUtf8().data(), false))
+    if (meta_file != "" && m_zipDoc.CreateNew(_file_name.toUtf8().data(), false))
     {
         if (!m_zipDoc.AddFromFile(meta_file.toUtf8().data(), "header") 
         || !m_zipDoc.AddFromFile(decoders_file.toUtf8().data(), "decoders") 
@@ -213,6 +200,8 @@ bool StoreSession::save_start()
 void StoreSession::save_proc(data::Snapshot *snapshot)
 {
 	assert(snapshot);
+
+    char chunk_name[20] = {0};
 
     int ret = SR_ERR;
     int num = 0;
@@ -253,7 +242,7 @@ void StoreSession::save_proc(data::Snapshot *snapshot)
                    // ret = sr_session_append(_file_name.toUtf8().data(), buf, size,
                     //                  i, ch_index, ch_type, File_Version);
                     
-                    MakeChunkName(i, ch_index, ch_type, File_Version);
+                    MakeChunkName(chunk_name, i, ch_index, ch_type, File_Version);
                     ret = m_zipDoc.AddFromBuffer(chunk_name, (const char*)buf, size) ? SR_OK : -1;
 
                     if (ret != SR_OK) {
@@ -304,7 +293,7 @@ void StoreSession::save_proc(data::Snapshot *snapshot)
                   // ret = sr_session_append(_file_name.toUtf8().data(), tmp, size,
                     //                 i, 0, ch_type, File_Version);
 
-                    MakeChunkName(i, 0, ch_type, File_Version);
+                    MakeChunkName(chunk_name, i, 0, ch_type, File_Version);
                     ret = m_zipDoc.AddFromBuffer(chunk_name, (const char*)tmp, size) ? SR_OK : -1;
 
                     buf += (size - _unit_count);
@@ -315,7 +304,7 @@ void StoreSession::save_proc(data::Snapshot *snapshot)
                   //  ret = sr_session_append(_file_name.toUtf8().data(), buf, size,
                   //                 i, 0, ch_type, File_Version);
 
-                    MakeChunkName(i, 0, ch_type, File_Version);
+                    MakeChunkName(chunk_name, i, 0, ch_type, File_Version);
                     ret = m_zipDoc.AddFromBuffer(chunk_name, (const char*)buf, size) ? SR_OK : -1;
 
                     buf += size;
@@ -646,8 +635,8 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
 
     QFile file(_file_name);
     file.open(QIODevice::WriteOnly | QIODevice::Text);
-    QTextStream out(&file);
-    out.setCodec("UTF-8");
+    QTextStream out(&file); 
+    app::set_utf8(out);
     //out.setGenerateByteOrderMark(true);  // UTF-8 without BOM
 
     // Meta
@@ -853,7 +842,7 @@ QString StoreSession::decoders_gen()
             return NULL;
         }
         QTextStream outStream(&sessionFile);
-        outStream.setCodec("UTF-8");
+        app::set_utf8(outStream);
         //outStream.setGenerateByteOrderMark(true); // UTF-8 without BOM
 
         QJsonArray dec_array = json_decoders();
@@ -1293,5 +1282,22 @@ bool StoreSession::IsLogicDataType()
     return false;
 }
 
+void StoreSession::MakeChunkName(char *chunk_name, int chunk_num, int index, int type, int version)
+{ 
+    chunk_name[0] = 0;
+
+    if (version == 2)
+    {
+        const char *type_name = NULL;
+        type_name = (type == SR_CHANNEL_LOGIC) ? "L" : (type == SR_CHANNEL_DSO)  ? "O"
+                                                   : (type == SR_CHANNEL_ANALOG) ? "A"
+                                                                                 : "U";
+        snprintf(chunk_name, 15, "%s-%d/%d", type_name, index, chunk_num);
+    }
+    else
+    {
+        snprintf(chunk_name, 15, "data");
+    }
+}
 
 } // pv

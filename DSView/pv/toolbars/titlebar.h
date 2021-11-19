@@ -23,9 +23,10 @@
 #define DSVIEW_PV_TOOLBARS_TITLEBAR_H
 
 #include <QWidget>
-class QLabel;
+
 class QToolButton;
 class QHBoxLayout;
+class QLabel;
 
 namespace pv {
 namespace toolbars {
@@ -61,12 +62,12 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event);
     void mouseDoubleClickEvent(QMouseEvent *event);
  
-    QLabel *_title;
+    
     QToolButton *_minimizeButton;
     QToolButton *_maximizeButton;
     QToolButton *_closeButton;
-    QHBoxLayout *_lay;
-
+    QLabel      *_title;
+  
     bool _moving;
     bool _isTop;
     bool _hasClose;

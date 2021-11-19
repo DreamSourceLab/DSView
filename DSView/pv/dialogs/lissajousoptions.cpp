@@ -125,7 +125,6 @@ LissajousOptions::LissajousOptions(SigSession *session, QWidget *parent) :
     }
 
     _layout = new QGridLayout();
-    _layout->setMargin(0);
     _layout->setSpacing(0);
     _layout->addWidget(lisa_label, 0, 0, 1, 2, Qt::AlignCenter);
     _layout->addWidget(_enable, 1, 0, 1, 1);

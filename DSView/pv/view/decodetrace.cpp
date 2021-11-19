@@ -351,6 +351,7 @@ bool DecodeTrace::create_popup()
     int ret = false;   //setting have changed flag
     
     dialogs::DSDialog dlg;
+    //dlg.setMinimumSize(500,600);
     create_popup_form(&dlg);
 
     if (QDialog::Accepted == dlg.exec())

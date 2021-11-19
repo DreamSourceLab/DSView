@@ -38,7 +38,7 @@
 #include <QHeaderView>
 #include <QScrollBar>
 #include <QLineEdit>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QFuture>
 #include <QProgressDialog>
 #include <QtConcurrent/QtConcurrent>
@@ -696,7 +696,7 @@ void ProtocolDock::search_nxt()
 void ProtocolDock::search_done()
 {
     QString str = _search_edit->text().trimmed();
-    QRegExp rx("(-)");
+    QRegularExpression rx("(-)");
     _str_list = str.split(rx);
     _model_proxy.setFilterFixedString(_str_list.first());
     if (_str_list.size() > 1)

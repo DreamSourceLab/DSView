@@ -23,7 +23,7 @@
 #include "../view/logicsignal.h"
 
 #include <assert.h>
-#include <QRegExpValidator>
+#include <QRegularExpressionValidator>
  
 
 namespace pv {
@@ -39,8 +39,8 @@ Search::Search(QWidget *parent, SigSession *session, std::map<uint16_t, QString>
     font.setFixedPitch(true);
     //this->setMinimumWidth(350);
 
-    QRegExp value_rx("[10XRFCxrfc]+");
-    QValidator *value_validator = new QRegExpValidator(value_rx, this);
+    QRegularExpression value_rx("[10XRFCxrfc]+");
+    QValidator *value_validator = new QRegularExpressionValidator(value_rx, this);
 
     search_buttonBox.addButton(QDialogButtonBox::Ok);
     search_buttonBox.addButton(QDialogButtonBox::Cancel);

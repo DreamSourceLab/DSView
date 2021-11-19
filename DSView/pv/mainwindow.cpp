@@ -38,6 +38,7 @@
 #include <QtGlobal>
 #include <QScreen>
 #include <QApplication>
+#include <QStandardPaths>
 
 #include "mainwindow.h"
 
@@ -84,6 +85,7 @@
 #include "../ui/msgbox.h"
 #include "config/appconfig.h"
 #include "appcontrol.h"
+#include "../dsvdef.h"
   
 
 namespace pv {
@@ -117,7 +119,6 @@ void MainWindow::setup_ui()
 
 	setObjectName(QString::fromUtf8("MainWindow"));
     setContentsMargins(0,0,0,0);
-    layout()->setMargin(0);
     layout()->setSpacing(0);
 
 	// Setup the central widget
@@ -1140,7 +1141,8 @@ bool MainWindow::on_store_session(QString name)
         return false;
     }
     QTextStream outStream(&sessionFile);
-    outStream.setCodec("UTF-8");
+    app::set_utf8(outStream); 
+
     //outStream.setGenerateByteOrderMark(true); // UTF-8 without BOM
 
     AppConfig &app = AppConfig::Instance(); 

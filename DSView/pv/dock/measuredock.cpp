@@ -38,8 +38,7 @@
 #include "../dialogs/dsmessagebox.h"
 
 #include <QObject>
-#include <QPainter>
-#include <QRegExpValidator>
+#include <QPainter> 
 #include <QMessageBox>
 #include "../config/appconfig.h"
 

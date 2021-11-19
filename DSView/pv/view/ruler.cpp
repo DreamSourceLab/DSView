@@ -28,8 +28,7 @@
 #include "../sigsession.h"
 #include "../device/devinst.h"
 #include "dsosignal.h"
-
-#include <extdef.h>
+#include "../../extdef.h"
 
 #include <assert.h>
 #include <math.h>
@@ -38,10 +37,11 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QTextStream>
-#include <QStyleOption>
+#include <QStyleOption>  
  
  
 using namespace std;
+using namespace Qt;
 
 namespace pv {
 namespace view {

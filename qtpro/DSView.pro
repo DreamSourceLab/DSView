@@ -12,8 +12,10 @@ QT += svg
 }
 CONFIG += exceptions
 CONFIG += object_parallel_to_source
+
 greaterThan(QT_MAJOR_VERSION, 4): CONFIG += c++11
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+
 #QMAKE_CFLAGS_ISYSTEM = -I
 
 TARGET = DSView

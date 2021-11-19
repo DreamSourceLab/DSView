@@ -55,7 +55,7 @@ DeviceOptions::DeviceOptions(QWidget *parent, DevInst *dev_inst) :
                                           this);
     _dynamic_box->setLayout(&_dynamic_layout);
     _layout.addWidget(_dynamic_box);
-    _dynamic_box->setVisible(_dynamic_box->title() != NULL);
+    _dynamic_box->setVisible(_dynamic_box->title() != "");
 
     _layout.addStretch(1);
 	_layout.addWidget(&_button_box);
@@ -346,7 +346,7 @@ void DeviceOptions::mode_check()
 
         if (mode != _mode) {
             dynamic_widget(_dynamic_layout);
-            _dynamic_box->setVisible(_dynamic_box->title() != NULL);
+            _dynamic_box->setVisible(_dynamic_box->title() != "");
             _mode = mode;
         }
     }
@@ -375,7 +375,7 @@ void DeviceOptions::channel_check()
     if(sc != NULL)
         _dev_inst->set_config(NULL, NULL, SR_CONF_CHANNEL_MODE, g_variant_new_string(text.toUtf8().data()));
     dynamic_widget(_dynamic_layout);
-    _dynamic_box->setVisible(_dynamic_box->title() != NULL);
+    _dynamic_box->setVisible(_dynamic_box->title() != "");
 }
 
 void DeviceOptions::analog_channel_check()

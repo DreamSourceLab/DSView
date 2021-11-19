@@ -94,7 +94,7 @@ void Shadow::draw(QPainter* painter)
     painter->setWorldTransform(restoreTransform);
 }
 
-QRectF Shadow::boundingRectFor(const QRectF& rect)
+QRectF Shadow::boundingRectFor(const QRectF& rect) const
 {
     qreal delta = blurRadius() + distance();
     return rect.united(rect.adjusted(-delta, -delta, delta, delta));

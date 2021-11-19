@@ -29,7 +29,7 @@
 #include <QGridLayout>
 #include <QVBoxLayout>
 #include <QPainter>
-#include <QRegExpValidator>
+#include <QRegularExpressionValidator>
 #include <QSplitter>
 #include <QInputMethodEvent>
 #include <QApplication>
@@ -566,8 +566,8 @@ void TriggerDock::setup_adv_tab()
     _stage_tabWidget->setUsesScrollButtons(false);
 
     const QString mask = "N N N N N N N N N N N N N N N N";
-    QRegExp value_rx("[10XRFCxrfc ]+");
-    QValidator *value_validator = new QRegExpValidator(value_rx, _stage_tabWidget);
+    QRegularExpression value_rx("[10XRFCxrfc ]+");
+    QValidator *value_validator = new QRegularExpressionValidator(value_rx, _stage_tabWidget);
     for (int i = 0; i < TriggerStages; i++) {
         QComboBox *_logic_comboBox = new QComboBox(_stage_tabWidget);
         _logic_comboBox->addItem(tr("Or"));

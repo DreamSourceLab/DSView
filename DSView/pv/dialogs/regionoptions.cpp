@@ -43,7 +43,7 @@ RegionOptions::RegionOptions(view::View *view, SigSession *session, QWidget *par
         Qt::Horizontal, this)
 {
     QHBoxLayout *hlayout = new QHBoxLayout();
-    hlayout->setMargin(0);
+    hlayout->setContentsMargins(0,0,0,0);
     hlayout->setSpacing(0);
     _start_comboBox = new QComboBox(this);
     _end_comboBox = new QComboBox(this);

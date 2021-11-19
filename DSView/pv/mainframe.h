@@ -69,8 +69,7 @@ public:
 
     void readSettings();
 
-protected:
-    void changeEvent(QEvent* event);
+protected: 
     void resizeEvent(QResizeEvent *event);
     void closeEvent(QCloseEvent *event);
     bool eventFilter(QObject *object, QEvent *event);
@@ -86,8 +85,8 @@ public slots:
 private:
     void hide_border();
     void show_border();
-
     void writeSettings();
+    void saveWindowRegion();
 
 private:
     toolbars::TitleBar *_titleBar;
@@ -107,8 +106,7 @@ private:
     QRect   _dragStartGeometry;
     int     _hit_border;
     QTimer  _timer;
-    bool    _freezing;
-    bool    _minimized;
+    bool    _freezing; 
 };
 
 } // namespace pv

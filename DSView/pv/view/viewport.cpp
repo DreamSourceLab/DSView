@@ -38,7 +38,9 @@
 #include <QMouseEvent>
 #include <QStyleOption>
 #include <QPainterPath> 
-#include <math.h> 
+#include <math.h>
+#include <QWheelEvent>
+#include <QDebug>
  
 #include "../config/appconfig.h"
 #include "../dsvdef.h"
@@ -1023,54 +1025,86 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
 
 void Viewport::wheelEvent(QWheelEvent *event)
 {
-	assert(event);
+    assert(event);
 
-    if (_type == FFT_VIEW) {
-        for(auto &t : _view.session().get_spectrum_traces()) {
-            assert(t);
-            if(t->enabled()) {
-                t->zoom(event->delta() / 80, event->x());
+    int x = 0;  //mouse x pos
+    int delta = 0;
+    bool isVertical = true;
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    x = (int)event->position().x(); 
+    int anglex = event->angleDelta().x();
+    int angley = event->angleDelta().y();
+
+    if (anglex == 0 || ABS_VAL(angley) >= ABS_VAL(anglex)){
+        delta = angley;
+        isVertical = true;
+    }
+    else{
+        delta = anglex;
+        isVertical = false; //hori direction
+    }
+#else
+    x = event->x();
+    delta = event->delta();
+    isVertical = event->orientation() == Qt::Vertical;
+#endif
+
+    if (_type == FFT_VIEW)
+    {
+        for (auto &t : _view.session().get_spectrum_traces())
+        { 
+            if (t->enabled())
+            {
+                t->zoom(delta / 80, x);
                 break;
             }
         }
-    } else if (_type == TIME_VIEW){
-        if (event->orientation() == Qt::Vertical) {
+    }
+    else if (_type == TIME_VIEW)
+    {
+        if (isVertical)
+        {
             // Vertical scrolling is interpreted as zooming in/out
-            const int offset = event->x();
-            #ifdef Q_OS_DARWIN
+#ifdef Q_OS_DARWIN
             static bool active = true;
             static int64_t last_time;
-            if (event->source() == Qt::MouseEventSynthesizedBySystem) {
-                if (active && (event->modifiers() & Qt::ShiftModifier)) {
+            if (event->source() == Qt::MouseEventSynthesizedBySystem)
+            {
+                if (active && (event->modifiers() & Qt::ShiftModifier))
+                {
                     last_time = QDateTime::currentMSecsSinceEpoch();
-                    const double scale = event->delta() > 1.5 ? 1 :
-                                         event->delta() < -1.5 ? -1 : 0;
-                    _view.zoom(scale, offset);
+                    const double scale = delta > 1.5 ? 1 : (delta < -1.5 ? -1 : 0);
+                    _view.zoom(scale, x);
                 }
                 int64_t cur_time = QDateTime::currentMSecsSinceEpoch();
                 if (cur_time - last_time > 50)
                     active = true;
                 else
                     active = false;
-            } else {
-                _view.zoom(-event->delta() / 80, offset);
             }
-            #else
-            _view.zoom(event->delta() / 80, offset);
-            #endif
-        } else if (event->orientation() == Qt::Horizontal) {
+            else
+            {
+                _view.zoom(-delta / 80, x);
+            }
+#else
+            _view.zoom(delta / 80, x);
+#endif
+        }
+        else
+        {
             // Horizontal scrolling is interpreted as moving left/right
             if (!(event->modifiers() & Qt::ShiftModifier))
-                _view.set_scale_offset(_view.scale(),
-                                       _view.offset() - event->delta());
+                _view.set_scale_offset(_view.scale(), _view.offset() - delta);
         }
     }
 
     const auto &sigs = _view.session().get_signals();
-    for(auto &s : sigs) {
-        assert(s);
+    for (auto &s : sigs)
+    { 
         view::DsoSignal *dsoSig = NULL;
-        if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
+        if ((dsoSig = dynamic_cast<view::DsoSignal *>(s)))
+        {
             dsoSig->auto_end();
         }
     }

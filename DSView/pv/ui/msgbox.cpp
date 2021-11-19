@@ -34,8 +34,12 @@ void MsgBox::Show(const char *title, const char *text, QWidget *parent)
 {
     assert(text);
 
+    QString str;
+    str.append("\n");
+    str.append(text);
+
     pv::dialogs::DSMessageBox msg(parent, title);
-     msg.mBox()->setText(QString(text));
+     msg.mBox()->setText(str);
    // msg.mBox()->setInformativeText(QString(text));
     msg.mBox()->setStandardButtons(QMessageBox::Ok);
     msg.mBox()->setIcon(QMessageBox::Warning);
@@ -46,8 +50,12 @@ bool MsgBox::Confirm(const char *text, QWidget *parent)
 {
     assert(text);
 
+    QString str;
+    str.append("\n");
+    str.append(text);
+
     pv::dialogs::DSMessageBox msg(parent, "Question");
-    msg.mBox()->setText(QString(text));
+    msg.mBox()->setText(str);
     msg.mBox()->setStandardButtons(QMessageBox::Yes | QMessageBox::No);
     msg.mBox()->setIcon(QMessageBox::Question);
     msg.exec();

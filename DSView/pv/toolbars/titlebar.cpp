@@ -25,6 +25,7 @@
 #include <QLabel>
 #include <QToolButton>
 #include <QHBoxLayout>
+#include <QVBoxLayout>
 #include <QEvent>
 #include <QMouseEvent> 
 #include <QPainter>
@@ -39,26 +40,26 @@ namespace toolbars {
 
 TitleBar::TitleBar(bool top, QWidget *parent, bool hasClose) :
     QWidget(parent)
-{
-   _title = NULL;
+{ 
    _minimizeButton = NULL;
    _maximizeButton = NULL;
    _closeButton = NULL;
-   _lay = NULL;
    _moving = false;
    _parent = parent;
    _isTop = top;
    _hasClose = hasClose;
+   _title = NULL;
 
    assert(parent);
 
     setObjectName("TitleBar");
     setContentsMargins(0,0,0,0);
-    setFixedHeight(32);
+    setFixedHeight(32); 
+
+    QHBoxLayout *lay1 = new QHBoxLayout(this);
 
     _title = new QLabel(this);
-    _lay = new QHBoxLayout(this);
-    _lay->addWidget(_title);
+    lay1->addWidget(_title);
 
     if (_isTop) {
         _minimizeButton = new QToolButton(this);
@@ -66,8 +67,8 @@ TitleBar::TitleBar(bool top, QWidget *parent, bool hasClose) :
         _maximizeButton = new QToolButton(this);
         _maximizeButton->setObjectName("MaximizeButton");
 
-        _lay->addWidget(_minimizeButton);
-        _lay->addWidget(_maximizeButton);
+        lay1->addWidget(_minimizeButton);
+        lay1->addWidget(_maximizeButton);
 
         connect(this, SIGNAL(normalShow()), parent, SLOT(showNormal()));
         connect(this, SIGNAL( maximizedShow()), parent, SLOT(showMaximized()));
@@ -78,24 +79,22 @@ TitleBar::TitleBar(bool top, QWidget *parent, bool hasClose) :
     if (_isTop || _hasClose) {
         _closeButton= new QToolButton(this);
         _closeButton->setObjectName("CloseButton");
-        _lay->addWidget(_closeButton);
+        lay1->addWidget(_closeButton);
         connect(_closeButton, SIGNAL( clicked()), parent, SLOT(close()));
     }
 
-    _lay->insertStretch(0, 500);
-    _lay->insertStretch(2, 500);
-    _lay->setMargin(0);
-    _lay->setSpacing(0);
+    lay1->insertStretch(0, 500);
+    lay1->insertStretch(2, 500);
+    lay1->setContentsMargins(0,0,0,0);
+    lay1->setSpacing(0);
 
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 }
 
-TitleBar::~TitleBar(){
-    DESTROY_QT_OBJECT(_title);
+TitleBar::~TitleBar(){ 
     DESTROY_QT_OBJECT(_minimizeButton);
     DESTROY_QT_OBJECT(_maximizeButton);
     DESTROY_QT_OBJECT(_closeButton);
-    DESTROY_QT_OBJECT(_lay);
 }
 
 void TitleBar::changeEvent(QEvent *event)

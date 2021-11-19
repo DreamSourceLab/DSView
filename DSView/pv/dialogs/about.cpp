@@ -21,6 +21,8 @@
  */
 
 
+#include "about.h"
+
 #include <QPixmap>
 #include <QApplication>
 #include <QTextBrowser>
@@ -28,10 +30,9 @@
 #include <QDir>
 #include <QTextStream>
 #include <QScrollBar>
-#include <QTextCodec>
-
-#include "about.h"
+  
 #include "../config/appconfig.h"
+#include "../dsvdef.h"
 
 namespace pv {
 namespace dialogs {
@@ -88,9 +89,10 @@ About::About(QWidget *parent) :
     QString filename = dir.absolutePath() + "/NEWS" + QString::number(lan);
     QFile news(filename);
     if (news.open(QIODevice::ReadOnly)) {
-        QTextCodec *code=QTextCodec::codecForName("UTF-8");
+   
         QTextStream stream(&news);
-        stream.setCodec(code);
+        app::set_utf8(stream);
+
         QString line;
         while (!stream.atEnd()){
             line = stream.readLine();

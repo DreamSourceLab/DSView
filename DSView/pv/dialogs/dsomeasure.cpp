@@ -90,7 +90,6 @@ void DsoMeasure::add_measure(QWidget *widget, const view::DsoSignal *dsoSig)
     const int Column = 5;
     const int IconSizeForText = 5;
     QGridLayout *layout = new QGridLayout(widget);
-    layout->setMargin(0);
     layout->setSpacing(0);
 
     pv::view::DsoSignal *psig = const_cast<pv::view::DsoSignal*>(dsoSig);

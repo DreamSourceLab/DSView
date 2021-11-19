@@ -57,8 +57,11 @@ struct AppOptions
 struct FrameOptions
 { 
   QString     style;
-  int         language;
-  QByteArray  geometry;
+  int         language; 
+  int         left; //frame region
+  int         top;
+  int         right;
+  int         bottom;
   bool        isMax;
   QByteArray  windowState;
 };

@@ -163,7 +163,7 @@ void ProbeOptions::bind_enum(const QString &name, const QString label, int key,
 }
 
 void ProbeOptions::bind_int(const QString &name, const QString label, int key, QString suffix,
-    optional< std::pair<int64_t, int64_t> > range)
+    boost::optional< std::pair<int64_t, int64_t> > range)
 {
 	_properties.push_back(
         new Int(name, label, suffix, range,
@@ -172,7 +172,7 @@ void ProbeOptions::bind_int(const QString &name, const QString label, int key, Q
 }
 
 void ProbeOptions::bind_double(const QString &name, const QString label, int key, QString suffix,
-    optional< std::pair<double, double> > range,
+    boost::optional< std::pair<double, double> > range,
     int decimals, boost::optional<double> step)
 {
     _properties.push_back(

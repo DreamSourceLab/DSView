@@ -34,12 +34,15 @@
 #endif
 
 class QWidget;
+class QTextStream;
 
 #define DESTROY_OBJECT(p) if((p)){delete (p); p = NULL;} 
 #define DESTROY_QT_OBJECT(p) if((p)){((p))->deleteLater(); p = NULL;}
 #define DESTROY_QT_LATER(p) ((p))->deleteLater();
 
 #define RELEASE_ARRAY(a)   for (auto ptr : (a)){delete ptr;} (a).clear();
+
+#define ABS_VAL(x) (x>0?x:-x)
 
 namespace DecoderDataFormat
 {
@@ -60,5 +63,7 @@ namespace app
     QWidget* get_app_window_instance(QWidget *ins, bool bSet);
 
     bool is_app_top_window(QWidget* w);
+
+    void set_utf8(QTextStream &stream);
 }
 

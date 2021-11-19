@@ -47,7 +47,6 @@ DevMode::DevMode(QWidget *parent, SigSession *session) :
     
 {
     _layout = new QHBoxLayout(this);
-    _layout->setMargin(0);
     _layout->setSpacing(0);
     _layout->setContentsMargins(2, 0, 0, 0);
 
@@ -71,8 +70,7 @@ DevMode::DevMode(QWidget *parent, SigSession *session) :
     _mode_btn->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Maximum);
 
     _layout->addWidget(_close_button);
-    _layout->addWidget(_mode_btn);
-    //_layout->addWidget(new QWidget(this));
+    _layout->addWidget(_mode_btn); 
     _layout->setStretch(1, 100);
     setLayout(_layout);
 }

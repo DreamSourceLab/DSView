@@ -119,7 +119,10 @@ void _loadFrame(FrameOptions &o, QSettings &st){
     getFiled("style", st, o.style, "dark");
     getFiled("language", st, o.language, -1);
     getFiled("isMax", st, o.isMax, false);  
-    o.geometry = st.value("geometry", QByteArray()).toByteArray();
+    getFiled("left", st, o.left, 0);
+    getFiled("top", st, o.top, 0);
+    getFiled("right", st, o.right, 0);
+    getFiled("bottom", st, o.bottom, 0);
     o.windowState = st.value("windowState", QByteArray()).toByteArray();
     st.endGroup();
 
@@ -135,7 +138,10 @@ void _saveFrame(FrameOptions &o, QSettings &st){
     setFiled("style", st, o.style);
     setFiled("language", st, o.language);
     setFiled("isMax", st, o.isMax);  
-    st.setValue("geometry", o.geometry); 
+    setFiled("left", st, o.left);
+    setFiled("top", st, o.top);
+    setFiled("right", st, o.right);
+    setFiled("bottom", st, o.bottom); 
     st.setValue("windowState", o.windowState); 
     st.endGroup();
 }

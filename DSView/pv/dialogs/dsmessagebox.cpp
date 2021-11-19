@@ -53,7 +53,7 @@ DSMessageBox::DSMessageBox(QWidget *parent,const char *title) :
     _main_layout = new QVBoxLayout(_main_widget);
     _main_widget->setLayout(_main_layout);  
 
-    _shadow = new Shadow();
+    _shadow = new Shadow(this);
     _msg = new QMessageBox(this);
     _titlebar = new toolbars::TitleBar(false, this);
     _layout = new QVBoxLayout(this);
@@ -63,7 +63,8 @@ DSMessageBox::DSMessageBox(QWidget *parent,const char *title) :
     _shadow->setColor(QColor(0, 0, 0, 80));
 
     _main_widget->setAutoFillBackground(true);
-    _main_widget->setGraphicsEffect(_shadow);  
+    this->setGraphicsEffect(_shadow);  
+
     _msg->setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);   
 
     if (title){ 
@@ -77,7 +78,7 @@ DSMessageBox::DSMessageBox(QWidget *parent,const char *title) :
     _main_layout->addWidget(_msg);   
     _layout->addWidget(_main_widget);
 
-    setLayout(_layout);
+    setLayout(_layout); 
 
     connect(_msg, SIGNAL(buttonClicked(QAbstractButton*)), this, SLOT(on_button(QAbstractButton*)));
 }
