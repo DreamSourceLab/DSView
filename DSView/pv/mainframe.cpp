@@ -36,7 +36,6 @@
 #include <QDialogButtonBox>
 #include <QBitmap>
 #include <QResizeEvent>
-#include <QDesktopWidget>
 #include <QDesktopServices>
 #include <QPushButton>
 #include <QMessageBox> 
@@ -229,7 +228,15 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
        return QFrame::eventFilter(object, event);
     }
 
-    if (!_bDraging && type == QEvent::MouseMove && (!(mouse_event->buttons() || Qt::NoButton))){
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    int x0 = (int)mouse_event->globalPosition().x();
+    int y0 = (int)mouse_event->globalPosition().y();
+#else
+    int x0 = mouse_event->globalX();
+    int y0 = mouse_event->globalY();
+#endif
+
+    if (!_bDraging && type == QEvent::MouseMove && (!(mouse_event->buttons() | Qt::NoButton))){
            if (object == _top_left) {
                 _hit_border = TopLeft;
                 setCursor(Qt::SizeFDiagCursor);
@@ -267,55 +274,55 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
             if (!_freezing) {
                 switch (_hit_border) {
                 case TopLeft:
-                    newWidth = std::max(_dragStartGeometry.right() - mouse_event->globalX(), minimumWidth());
-                    newHeight = std::max(_dragStartGeometry.bottom() - mouse_event->globalY(), minimumHeight());
+                    newWidth = std::max(_dragStartGeometry.right() - x0, minimumWidth());
+                    newHeight = std::max(_dragStartGeometry.bottom() - y0, minimumHeight());
                     newLeft = geometry().left();
                     newTop = geometry().top();
                     if (newWidth > minimumWidth())
-                        newLeft = mouse_event->globalX();
+                        newLeft = x0;
                     if (newHeight > minimumHeight())
-                        newTop = mouse_event->globalY();
+                        newTop = y0;
                     setGeometry(newLeft, newTop, newWidth, newHeight);
                     saveWindowRegion();                    
                    break;
 
                 case BottomLeft:
-                    newWidth = std::max(_dragStartGeometry.right() - mouse_event->globalX(), minimumWidth());
-                    newHeight = std::max(mouse_event->globalY() - _dragStartGeometry.top(), minimumHeight());
+                    newWidth = std::max(_dragStartGeometry.right() - x0, minimumWidth());
+                    newHeight = std::max(y0 - _dragStartGeometry.top(), minimumHeight());
                     newLeft = geometry().left();
                     if (newWidth > minimumWidth())
-                        newLeft = mouse_event->globalX();
+                        newLeft = x0;
                     setGeometry(newLeft, _dragStartGeometry.top(), newWidth, newHeight);
                     saveWindowRegion();
                    break;
 
                 case TopRight:
-                    newWidth = std::max(mouse_event->globalX() - _dragStartGeometry.left(), minimumWidth());
-                    newHeight = std::max(_dragStartGeometry.bottom() - mouse_event->globalY(), minimumHeight());
+                    newWidth = std::max(x0 - _dragStartGeometry.left(), minimumWidth());
+                    newHeight = std::max(_dragStartGeometry.bottom() - y0, minimumHeight());
                     newTop = geometry().top();
                     if (newHeight > minimumHeight())
-                        newTop = mouse_event->globalY();
+                        newTop = y0;
                     setGeometry(_dragStartGeometry.left(), newTop, newWidth, newHeight);
                     saveWindowRegion();
                    break;
 
                 case BottomRight:
-                    newWidth = std::max(mouse_event->globalX() - _dragStartGeometry.left(), minimumWidth());
-                    newHeight = std::max(mouse_event->globalY() - _dragStartGeometry.top(), minimumHeight());
+                    newWidth = std::max(x0 - _dragStartGeometry.left(), minimumWidth());
+                    newHeight = std::max(y0 - _dragStartGeometry.top(), minimumHeight());
                     setGeometry(_dragStartGeometry.left(), _dragStartGeometry.top(), newWidth, newHeight);
                     saveWindowRegion();
                    break;
 
                 case Left:
-                    newWidth = _dragStartGeometry.right() - mouse_event->globalX();
+                    newWidth = _dragStartGeometry.right() - x0;
                     if (newWidth > minimumWidth()){
-                         setGeometry(mouse_event->globalX(), _dragStartGeometry.top(), newWidth, height());
+                         setGeometry(x0, _dragStartGeometry.top(), newWidth, height());
                          saveWindowRegion();
                     }                       
                    break;
 
                 case Right:
-                    newWidth = mouse_event->globalX() - _dragStartGeometry.left();
+                    newWidth = x0 - _dragStartGeometry.left();
                     if (newWidth > minimumWidth()){
                          setGeometry(_dragStartGeometry.left(), _dragStartGeometry.top(), newWidth, height());
                          saveWindowRegion();
@@ -323,15 +330,15 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
                    break;
 
                 case Top:
-                    newHeight = _dragStartGeometry.bottom() - mouse_event->globalY();
+                    newHeight = _dragStartGeometry.bottom() - y0;
                     if (newHeight > minimumHeight()){
-                        setGeometry(_dragStartGeometry.left(), mouse_event->globalY(),width(), newHeight);
+                        setGeometry(_dragStartGeometry.left(), y0,width(), newHeight);
                         saveWindowRegion();
                     }                        
                    break;
 
                 case Bottom:
-                    newHeight = mouse_event->globalY() - _dragStartGeometry.top();
+                    newHeight = y0 - _dragStartGeometry.top();
                     if (newHeight > minimumHeight()){
                         setGeometry(_dragStartGeometry.left(), _dragStartGeometry.top(), width(), newHeight);
                         saveWindowRegion();

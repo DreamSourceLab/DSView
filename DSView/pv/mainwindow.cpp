@@ -39,6 +39,11 @@
 #include <QScreen>
 #include <QApplication>
 #include <QStandardPaths>
+#include <QScreen>
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#include <QGuiApplication>
+#endif
 
 #include "mainwindow.h"
 
@@ -867,7 +872,14 @@ void MainWindow::on_screenShot()
 {
     AppConfig &app = AppConfig::Instance();     
     QString default_name = app._userHistory.screenShotPath + "/DSView" + QDateTime::currentDateTime().toString("-yyMMdd-hhmmss");
-    QPixmap pixmap = QPixmap::grabWindow(winId()); 
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    QScreen *scr = QGuiApplication::primaryScreen();
+    QPixmap pixmap = scr->grabWindow(winId());
+#else
+    QPixmap pixmap = QPixmap::grabWindow(winId());
+#endif
+
     QString format = "png";
 
     QString fileName = QFileDialog::getSaveFileName(

@@ -34,7 +34,6 @@
 #include <QVector>
 #include <QLabel>
 #include <QCheckBox>
-#include <QComboBox>
 #include <QRadioButton>
 #include <QTimer> 
 
@@ -44,6 +43,7 @@
 #include "../prop/binding/probeoptions.h"
 #include "../toolbars/titlebar.h"
 #include "../dialogs/dsdialog.h"
+#include "../ui/dscombobox.h"
 
 using namespace pv::device;
 

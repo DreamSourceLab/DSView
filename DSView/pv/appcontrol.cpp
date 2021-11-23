@@ -25,6 +25,8 @@
 
 #include <libsigrok4DSL/libsigrok.h>
 #include <libsigrokdecode4DSL/libsigrokdecode.h>
+#include <QDir>
+#include <QCoreApplication>
 
 #include "devicemanager.h"
 #include "sigsession.h"
@@ -72,7 +74,17 @@ bool AppControl::Init()
     }
 
    // const char *decoderScriptDir = "/home/lala/tmpdir/any";
-    const char * decoderScriptDir = NULL;
+    //const char * decoderScriptDir = NULL;
+
+    char decoderScriptDir[256] = {0};
+    QDir dir(QCoreApplication::applicationDirPath());
+#ifdef Q_OS_LINUX  
+    dir.cd("../share/DSView/decoders");    
+#else
+    dir.cd("decoders");
+#endif
+
+    strcpy(decoderScriptDir, dir.absolutePath().toUtf8().data());
 
     // Initialise libsigrokdecode
     if (srd_init(decoderScriptDir) != SRD_OK)

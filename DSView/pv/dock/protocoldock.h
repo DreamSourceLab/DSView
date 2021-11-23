@@ -27,7 +27,6 @@
 
 #include <QDockWidget>
 #include <QPushButton>
-#include <QComboBox>
 #include <QLabel>
 #include <QVector>
 #include <QVBoxLayout>
@@ -42,6 +41,7 @@
 
 #include "../data/decodermodel.h"
 #include "protocolitemlayer.h"
+#include "../ui/dscombobox.h"
 
 
 namespace pv {
@@ -135,7 +135,7 @@ private:
 
     QPushButton *_add_button;
     QPushButton *_del_all_button;
-    QComboBox *_protocol_combobox; 
+    DsComboBox *_protocol_combobox; 
     QVector <int > _protocol_index_list; 
     QVBoxLayout *_up_layout;
     QVector <ProtocolItemLayer*> _protocol_items; //protocol item layers

@@ -25,7 +25,6 @@
 
 #include <QDockWidget>
 #include <QPushButton>
-#include <QComboBox>
 #include <QLabel>
 #include <QRadioButton>
 #include <QSlider>
@@ -42,6 +41,8 @@
 #include <QScrollArea>
 
 #include <vector>
+
+#include "../ui/dscombobox.h"
 
 namespace pv {
 
@@ -108,20 +109,20 @@ private:
     QSlider *_position_slider;
 
     QLabel *_stages_label;
-    QComboBox *stages_comboBox;
+    DsComboBox *stages_comboBox;
 
     QTabWidget *_stage_tabWidget;
 
     QVector <QGroupBox *> _stage_groupBox_list;
     QVector <QLabel *>    _mu_label_list;
-    QVector <QComboBox *> _logic_comboBox_list;
+    QVector <DsComboBox *> _logic_comboBox_list;
     QVector <QLineEdit *> _value0_lineEdit_list;
     QVector <QLineEdit *> _value0_ext32_lineEdit_list;
     QVector <QSpinBox *> _count_spinBox_list;
-    QVector <QComboBox *> _inv0_comboBox_list;
+    QVector <DsComboBox *> _inv0_comboBox_list;
     QVector <QLineEdit *> _value1_lineEdit_list;
     QVector <QLineEdit *> _value1_ext32_lineEdit_list;
-    QVector <QComboBox *> _inv1_comboBox_list;
+    QVector <DsComboBox *> _inv1_comboBox_list;
     QVector <QCheckBox *> _contiguous_checkbox_list;
 
     QTabWidget *_adv_tabWidget;
@@ -136,10 +137,10 @@ private:
     QLineEdit *_serial_edge_lineEdit;
     QLineEdit *_serial_edge_ext32_lineEdit;
     QLabel *_serial_data_label;
-    QComboBox *_serial_data_comboBox;
+    DsComboBox *_serial_data_comboBox;
     QLabel *_serial_value_label;
     QLineEdit *_serial_value_lineEdit;
-    QComboBox *_serial_bits_comboBox;
+    DsComboBox *_serial_bits_comboBox;
 
     QLabel *_serial_note_label;
     QLabel *_data_bits_label;

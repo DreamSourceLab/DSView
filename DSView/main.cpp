@@ -144,12 +144,13 @@ int main(int argc, char *argv[])
 		return 1;
     } else if (argcFinal - optind == 1)
         open_file = argvFinal[argcFinal - 1];
-
-	// Initialise DS_RES_PATH
+ 
     QDir dir(QCoreApplication::applicationDirPath());
+ 
+#ifdef Q_OS_LINUX
     if (dir.cd("..") &&
         dir.cd("share") &&
-        dir.cd(QApplication::applicationName()) &&
+        dir.cd("DSView") &&
         dir.cd("res")) {
 		// the path command like: cd ../share/DSView/res
         QString res_dir = dir.absolutePath() + "/";
@@ -158,6 +159,10 @@ int main(int argc, char *argv[])
         qDebug() << "DSView run ERROR: config files don't exist.";
         return 1;
     }
+#endif
+
+//#ifdef Q_OS_DARWIN 
+//#endif
 
 	//load app config
 	AppConfig::Instance().LoadAll();

@@ -28,11 +28,11 @@
 #include <list>
 #include <map>
   
-#include <QComboBox>
 #include <QToolBar>
 #include <QToolButton>
 #include <QAction>
 #include <QMenu>
+#include "../ui/dscombobox.h"
 
 struct st_dev_inst;
 class QAction;
@@ -134,13 +134,13 @@ namespace pv
             bool                _sampling;
 
             QToolButton         _device_type;
-            QComboBox           _device_selector;
+            DsComboBox           _device_selector;
             std::map<const void *, DevInst*> _device_selector_map;
             bool                _updating_device_selector;
 
             QToolButton         _configure_button;
-            QComboBox           _sample_count;
-            QComboBox           _sample_rate;
+            DsComboBox           _sample_count;
+            DsComboBox           _sample_rate;
             bool                _updating_sample_rate;
             bool                _updating_sample_count;
 

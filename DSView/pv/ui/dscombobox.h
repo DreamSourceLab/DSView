@@ -1,8 +1,10 @@
+
 /*
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
+ * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,43 +22,25 @@
  */
 
 
-#ifndef DSVIEW_PV_PROP_ENUM_H
-#define DSVIEW_PV_PROP_ENUM_H
+#ifndef DSCOMBOBOX_H
+#define DSCOMBOBOX_H
 
-#include <utility>
-#include <vector>
+#include <QComboBox>
 
-#include "property.h"
-
-class DsComboBox;
-
-namespace pv {
-namespace prop {
-
-class Enum : public Property
+class DsComboBox : public QComboBox
 {
-    Q_OBJECT;
+    Q_OBJECT
 
 public:
-    Enum(QString name, QString label, std::vector<std::pair<GVariant*, QString> > values,
-		Getter getter, Setter setter);
+    explicit DsComboBox(QWidget *parent = nullptr);
 
-	virtual ~Enum();
+    void addItem(const QString &atext, const QVariant &userData = QVariant());
 
-    QWidget* get_widget(QWidget *parent, bool auto_commit);
-
-	void commit();
-
-private slots:
-    void on_current_item_changed(int);
+protected:
+    void showPopup();
 
 private:
-	const std::vector< std::pair<GVariant*, QString> > _values;
-
-	DsComboBox *_selector;
+    int _contentWidth;
 };
 
-} // prop
-} // pv
-
-#endif // DSVIEW_PV_PROP_ENUM_H
+#endif // DSCOMBOBOX_H

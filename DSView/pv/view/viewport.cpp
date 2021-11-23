@@ -1597,7 +1597,9 @@ void Viewport::paintMeasure(QPainter &p, QColor fore, QColor back)
             QString delta_text = _view.get_index_delta(_edge_start, _edge_end) +
                                  "/" + QString::number(delta);
             QFontMetrics fm = this->fontMetrics();
-            const int rectW = fm.width(delta_text) + 60;
+          //  const int rectW = fm.width(delta_text) + 60;
+            const int rectW = fm.boundingRect(delta_text).width() + 60;
+
             const int rectH = fm.height() + 10;
             //const int rectY = (_cur_aftY >= _cur_preY) ? _cur_preY_top : _cur_preY_bottom;
             //const int rectX = (_cur_aftX >= _cur_preX) ? _cur_preX : _cur_preX - rectW;

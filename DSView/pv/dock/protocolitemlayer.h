@@ -23,10 +23,9 @@
 
 #include <QHBoxLayout>
 #include <QPushButton>
-#include <QComboBox>
 #include <QLabel>
-#include <QComboBox>
 #include <QString>
+#include "../ui/dscombobox.h"
 
 class DecoderStatus;
  
@@ -68,7 +67,7 @@ private:
     QLabel *_progress_label;
     QPushButton *_set_button;
     QPushButton *_del_button;
-    QComboBox  *_format_combox;
+    DsComboBox  *_format_combox;
     IProtocolItemLayerCallback *m_callback;
     QString _protocolName;
     bool    m_bSetting;

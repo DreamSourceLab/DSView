@@ -261,7 +261,9 @@ void SearchDock::on_set()
 
         _search_value->setText(search_label);
         QFontMetrics fm = this->fontMetrics();
-        _search_value->setFixedWidth(fm.width(search_label)+_search_button->width()+20);
+        //fm.width(search_label)
+        int tw = fm.boundingRect(search_label).width();
+        _search_value->setFixedWidth(tw + _search_button->width()+20);
 
         if (new_pattern != _pattern) {
             _view.set_search_pos(_view.get_search_pos(), false);

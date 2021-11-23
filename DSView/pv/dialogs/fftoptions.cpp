@@ -31,6 +31,7 @@
 #include "../view/trace.h"
 #include "../view/dsosignal.h"
 #include "../view/spectrumtrace.h"
+#include "../dsvdef.h"
 
 
 using namespace boost;
@@ -58,15 +59,15 @@ FftOptions::FftOptions(QWidget *parent, SigSession *session) :
     _layout = NULL;
 
     _en_checkbox = new QCheckBox(this);
-    _len_combobox = new QComboBox(this);
-    _interval_combobox = new QComboBox(this);
-    _ch_combobox = new QComboBox(this);
-    _window_combobox = new QComboBox(this);
+    _len_combobox = new DsComboBox(this);
+    _interval_combobox = new DsComboBox(this);
+    _ch_combobox = new DsComboBox(this);
+    _window_combobox = new DsComboBox(this);
     _dc_checkbox = new QCheckBox(this);
     _dc_checkbox->setChecked(true);
-    _view_combobox = new QComboBox(this);
-    _dbv_combobox = new QComboBox(this);
-
+    _view_combobox = new DsComboBox(this);
+    _dbv_combobox = new DsComboBox(this);
+ 
     // setup _ch_combobox
     for(auto &s : _session->get_signals()) {
         view::DsoSignal *dsoSig = NULL;
@@ -217,9 +218,9 @@ FftOptions::FftOptions(QWidget *parent, SigSession *session) :
 
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
     connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
-    connect(_window_combobox, SIGNAL(currentIndexChanged(QString)), this, SLOT(window_changed(QString)));
+    connect(_window_combobox, SIGNAL(currentIndexChanged(int)), this, SLOT(window_changed(int)));
     connect(_len_combobox, SIGNAL(currentIndexChanged(int)), this, SLOT(len_changed(int)));
-    connect(_session->get_device(), SIGNAL(device_updated()), this, SLOT(reject()));
+    connect(_session->get_device(), SIGNAL(device_updated()), this, SLOT(reject()));    
 }
 
 FftOptions::~FftOptions(){
@@ -261,8 +262,9 @@ void FftOptions::reject()
     QDialog::reject();
 }
 
-void FftOptions::window_changed(QString str)
+void FftOptions::window_changed(int index)
 {
+    QString str = _window_combobox->itemText(index);
     QString hint_pic= ":/icons/" + str +".png";
     QPixmap pixmap(hint_pic);
     _hint_label->setPixmap(pixmap);

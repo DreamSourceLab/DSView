@@ -27,14 +27,13 @@
 #include <QFormLayout>
 #include <QVBoxLayout>
 #include <QLabel>
-#include <QCheckBox>
-#include <QComboBox>
- 
+#include <QCheckBox> 
 
 #include "../device/devinst.h"
 #include "../prop/binding/deviceoptions.h"
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
+#include "../ui/dscombobox.h"
 
 namespace pv {
 
@@ -62,8 +61,8 @@ private:
     SigSession *_session;
 
     toolbars::TitleBar *_titlebar;
-    QComboBox *_map_zoom_combobox;
-    QComboBox *_protocol_combobox;
+    DsComboBox *_map_zoom_combobox;
+    DsComboBox *_protocol_combobox;
     std::list<QCheckBox *> _show_checkbox_list;
     std::list<QLabel *> _show_label_list;
     QFormLayout *_flayout;

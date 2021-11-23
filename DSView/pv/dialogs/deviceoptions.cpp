@@ -391,7 +391,7 @@ void DeviceOptions::analog_channel_check()
         }
     }
     dynamic_widget(_dynamic_layout);
-    _dynamic_box->setVisible(_dynamic_box->title() != NULL);
+    _dynamic_box->setVisible(_dynamic_box->title() != "");
 }
 
 void DeviceOptions::channel_enable()

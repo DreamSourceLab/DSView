@@ -36,7 +36,7 @@
 struct srd_channel;
 struct srd_decoder;
 
-class QComboBox;
+class DsComboBox;
 
 namespace pv {
 
@@ -66,7 +66,7 @@ class DecodeTrace : public Trace
 private:
 	struct ProbeSelector
 	{
-		const QComboBox *_combo;
+		const DsComboBox *_combo;
         const pv::data::decode::Decoder *_decoder;
 		const srd_channel *_pdch;
 	};
@@ -180,7 +180,7 @@ private:
         pv::data::decode::Decoder *dec,
         QWidget *parent, QFormLayout *form);
 
-	QComboBox* create_probe_selector(QWidget *parent,
+	DsComboBox* create_probe_selector(QWidget *parent,
 		const pv::data::decode::Decoder *dec,
 		const srd_channel *const pdch);
 
@@ -219,8 +219,8 @@ private:
     int 			_start_count;
 	int			 	_end_count;
 	
-    QComboBox 		*_start_comboBox;
-	QComboBox 		*_end_comboBox;
+    DsComboBox 		*_start_comboBox;
+	DsComboBox 		*_end_comboBox;
 	QFormLayout 	*_pub_input_layer;
     int				 _progress;
 

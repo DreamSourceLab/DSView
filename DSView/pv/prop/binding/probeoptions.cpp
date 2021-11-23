@@ -23,6 +23,7 @@
 
 #include <QDebug>
 #include <QObject>
+#include <QLocale>
 
 #include <stdint.h>
 

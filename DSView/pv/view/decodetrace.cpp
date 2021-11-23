@@ -27,7 +27,6 @@
 #include <boost/functional/hash.hpp>
 
 #include <QAction> 
-#include <QComboBox>
 #include <QFormLayout>
 #include <QLabel>
 #include <QMenu>
@@ -53,6 +52,7 @@
 #include "../view/cursor.h"
 #include "../toolbars/titlebar.h"
 #include "../dsvdef.h"
+#include "../ui/dscombobox.h"
 
 using namespace boost;
 using namespace std;
@@ -418,8 +418,8 @@ void DecodeTrace::populate_popup_form(QWidget *parent, QFormLayout *form)
 	} 
 
     //Add region combobox
-    _start_comboBox = new QComboBox(parent);
-    _end_comboBox = new QComboBox(parent);
+    _start_comboBox = new DsComboBox(parent);
+    _end_comboBox = new DsComboBox(parent);
     _start_comboBox->addItem(RegionStart);
     _end_comboBox->addItem(RegionEnd);
 
@@ -726,7 +726,7 @@ void DecodeTrace::create_decoder_form(
 	for(l = decoder->channels; l; l = l->next) {
 		const struct srd_channel *const pdch =
 			(struct srd_channel *)l->data;
-		QComboBox *const combo = create_probe_selector(parent, dec, pdch);
+		DsComboBox *const combo = create_probe_selector(parent, dec, pdch);
 
 		decoder_form->addRow(tr("<b>%1</b> (%2) *")
 			.arg(QString::fromUtf8(pdch->name))
@@ -742,7 +742,7 @@ void DecodeTrace::create_decoder_form(
 	for(l = decoder->opt_channels; l; l = l->next) {
 		const struct srd_channel *const pdch =
 			(struct srd_channel *)l->data;
-		QComboBox *const combo = create_probe_selector(parent, dec, pdch);
+		DsComboBox *const combo = create_probe_selector(parent, dec, pdch);
 		
 		decoder_form->addRow(tr("<b>%1</b> (%2)")
 			.arg(QString::fromUtf8(pdch->name))
@@ -770,7 +770,7 @@ void DecodeTrace::create_decoder_form(
       connect(group, SIGNAL(del_stack(data::decode::Decoder*)), this, SLOT(on_del_stack(data::decode::Decoder*)));
 }
 
-QComboBox* DecodeTrace::create_probe_selector(
+DsComboBox* DecodeTrace::create_probe_selector(
     QWidget *parent, const data::decode::Decoder *dec,
 	const srd_channel *const pdch)
 {
@@ -783,7 +783,7 @@ QComboBox* DecodeTrace::create_probe_selector(
     data::decode::Decoder *_dec = const_cast<data::decode::Decoder*>(dec);
 
     auto probe_iter = _dec->channels().find(pdch);
-	QComboBox *selector = new QComboBox(parent);
+	DsComboBox *selector = new DsComboBox(parent);
 
     selector->addItem("-", QVariant::fromValue(-1));
 

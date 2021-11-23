@@ -27,10 +27,10 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QLabel>
-#include <QComboBox>
  
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
+#include "../ui/dscombobox.h"
 
 namespace pv {
 
@@ -59,8 +59,8 @@ private:
     SigSession *_session;
     view::View *_view;
 
-    QComboBox *_start_comboBox;
-    QComboBox *_end_comboBox;
+    DsComboBox *_start_comboBox;
+    DsComboBox *_end_comboBox;
 
     QDialogButtonBox _button_box;
 

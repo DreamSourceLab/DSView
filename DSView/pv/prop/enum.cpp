@@ -22,10 +22,10 @@
 
 #include <assert.h>
 
-#include <QComboBox>
 #include <QAbstractItemView>
 
 #include "enum.h"
+#include "../ui/dscombobox.h"
 
 using namespace boost;
 using namespace std;
@@ -62,7 +62,7 @@ QWidget* Enum::get_widget(QWidget *parent, bool auto_commit)
         return NULL;
     }
 
-	_selector = new QComboBox(parent);
+	_selector = new DsComboBox(parent);
 	for (unsigned int i = 0; i < _values.size(); i++) {
 		const pair<GVariant*, QString> &v = _values[i];
         _selector->addItem(v.second, QVariant::fromValue((void*)v.first));

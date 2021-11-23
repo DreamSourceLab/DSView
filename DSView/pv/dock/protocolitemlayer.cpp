@@ -21,7 +21,6 @@
 
 #include "protocolitemlayer.h"
 #include "../dsvdef.h"
-#include <QtCore> 
 #include <assert.h> 
 #include "../config/appconfig.h"
  
@@ -40,7 +39,7 @@ ProtocolItemLayer::ProtocolItemLayer(QWidget *parent, QString protocolName, IPro
         _progress_label = new QLabel(parent);
         _set_button = new QPushButton(parent);
         _del_button = new QPushButton(parent);
-        _format_combox = new QComboBox(parent);
+        _format_combox = new DsComboBox(parent);
 
         QString iconPath = GetIconPath();
         _del_button->setFlat(true);

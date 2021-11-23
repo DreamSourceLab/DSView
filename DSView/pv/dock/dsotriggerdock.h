@@ -27,11 +27,12 @@
 #include <QSpinBox>
 #include <QButtonGroup>
 #include <QScrollArea>
-#include <QComboBox>
 #include <QLabel>
 #include <QRadioButton>
 
 #include <vector>
+
+#include "../ui/dscombobox.h"
 
 namespace pv {
 
@@ -79,7 +80,7 @@ private:
 
     QWidget *_widget;
 
-    QComboBox *_holdoff_comboBox;
+    DsComboBox *_holdoff_comboBox;
     QSpinBox *_holdoff_spinBox;
     QSlider *_holdoff_slider;
 
@@ -89,7 +90,7 @@ private:
     QSlider *_position_slider;
 
     QButtonGroup *_source_group;
-    QComboBox *_channel_comboBox;
+    DsComboBox *_channel_comboBox;
     QButtonGroup *_type_group;
 
     QLabel *_position_label;

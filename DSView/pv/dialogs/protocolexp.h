@@ -28,12 +28,12 @@
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QRadioButton>
-#include <QComboBox>
  
 #include "../device/devinst.h"
 #include "../prop/binding/deviceoptions.h"
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
+#include "../ui/dscombobox.h"
 
 namespace pv {
 
@@ -68,7 +68,7 @@ private:
     SigSession *_session;
 
     toolbars::TitleBar *_titlebar;
-    QComboBox *_format_combobox;
+    DsComboBox *_format_combobox;
     std::list<QRadioButton *> _row_sel_list;
     std::list<QLabel *> _row_label_list;
     QFormLayout *_flayout;

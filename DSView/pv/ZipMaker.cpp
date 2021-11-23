@@ -23,7 +23,7 @@
 
 #include "ZipMaker.h" 
 #include <assert.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <time.h>
@@ -251,7 +251,7 @@ const char *ZipMaker::GetError()
      unzOpenCurrentFile((unzFile)m_uzDoc);
 
      //read file data to buffer
-     void *buf = inf.pData;
+     char *buf = (char*)inf.pData;
      long long buflen = inf.dataLen;
      long long rdlen = 0;
 

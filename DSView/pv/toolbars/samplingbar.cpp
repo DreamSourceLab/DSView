@@ -79,9 +79,9 @@ SamplingBar::SamplingBar(SigSession *session, QWidget *parent) :
  
     _mode_button.setPopupMode(QToolButton::InstantPopup);
 
-    _device_selector.setSizeAdjustPolicy(QComboBox::AdjustToContents);
-    _sample_rate.setSizeAdjustPolicy(QComboBox::AdjustToContents);
-    _sample_count.setSizeAdjustPolicy(QComboBox::AdjustToContents);
+    _device_selector.setSizeAdjustPolicy(DsComboBox::AdjustToContents);
+    _sample_rate.setSizeAdjustPolicy(DsComboBox::AdjustToContents);
+    _sample_count.setSizeAdjustPolicy(DsComboBox::AdjustToContents);
     _device_selector.setMaximumWidth(ComboBoxMaxWidth);
  
     //_run_stop_button.setToolButtonStyle(Qt::ToolButtonTextBesideIcon);

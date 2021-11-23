@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <glib.h>
-#include "config.h" /* Needed for PACKAGE_STRING and others. */
+#include "../config.h" /* Needed for PACKAGE_STRING and others. */
 
 #define LOG_PREFIX "output/gnuplot"
 

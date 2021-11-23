@@ -71,7 +71,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession *session) :
 
     _stages_label = new QLabel(_widget);
     _stages_label->setDisabled(true);
-    stages_comboBox = new QComboBox(_widget);
+    stages_comboBox = new DsComboBox(_widget);
     for (int i = 1; i <= TriggerStages; i++)
         stages_comboBox->addItem(QString::number(i));
     //stages_comboBox->setCurrentIndex(stages_comboBox->count() - 1);
@@ -569,7 +569,7 @@ void TriggerDock::setup_adv_tab()
     QRegularExpression value_rx("[10XRFCxrfc ]+");
     QValidator *value_validator = new QRegularExpressionValidator(value_rx, _stage_tabWidget);
     for (int i = 0; i < TriggerStages; i++) {
-        QComboBox *_logic_comboBox = new QComboBox(_stage_tabWidget);
+        DsComboBox *_logic_comboBox = new DsComboBox(_stage_tabWidget);
         _logic_comboBox->addItem(tr("Or"));
         _logic_comboBox->addItem(tr("And"));
         _logic_comboBox->setCurrentIndex(1);
@@ -586,7 +586,7 @@ void TriggerDock::setup_adv_tab()
         _count_spinBox->setRange(1, INT32_MAX);
         _count_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
         _count_spinBox_list.push_back(_count_spinBox);
-        QComboBox *_inv0_comboBox = new QComboBox(_stage_tabWidget);
+        DsComboBox *_inv0_comboBox = new DsComboBox(_stage_tabWidget);
         _inv0_comboBox->addItem(tr("=="));
         _inv0_comboBox->addItem(tr("!="));
         _inv0_comboBox_list.push_back(_inv0_comboBox);
@@ -598,7 +598,7 @@ void TriggerDock::setup_adv_tab()
         _value1_lineEdit->setInputMask(mask);
         _value1_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
         _value1_lineEdit_list.push_back(_value1_lineEdit);
-        QComboBox *_inv1_comboBox = new QComboBox(_stage_tabWidget);
+        DsComboBox *_inv1_comboBox = new DsComboBox(_stage_tabWidget);
         _inv1_comboBox->addItem(tr("=="));
         _inv1_comboBox->addItem(tr("!="));
         _inv1_comboBox_list.push_back(_inv1_comboBox);
@@ -734,7 +734,7 @@ void TriggerDock::setup_adv_tab()
     _serial_edge_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
     _serial_data_label = new QLabel(_serial_groupBox);
-    _serial_data_comboBox = new QComboBox(_serial_groupBox);
+    _serial_data_comboBox = new DsComboBox(_serial_groupBox);
     for(int i = 0; i < _cur_ch_num; i++)
         _serial_data_comboBox->addItem(QString::number(i));
 
@@ -746,7 +746,7 @@ void TriggerDock::setup_adv_tab()
     _serial_value_lineEdit->setInputMask(mask);
     _serial_value_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
-    _serial_bits_comboBox = new QComboBox(_serial_groupBox);
+    _serial_bits_comboBox = new DsComboBox(_serial_groupBox);
     for(int i = 1; i <= 16; i++)
         _serial_bits_comboBox->addItem(QString::number(i));
 

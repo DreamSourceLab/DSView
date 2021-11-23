@@ -61,7 +61,7 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession *session) :
     connect(_position_slider, SIGNAL(valueChanged(int)), this, SLOT(pos_changed(int)));
 
     _holdoff_label = new QLabel(_widget);
-    _holdoff_comboBox = new QComboBox(_widget);
+    _holdoff_comboBox = new DsComboBox(_widget);
     _holdoff_comboBox->addItem(tr("uS"), QVariant::fromValue(1000));
     _holdoff_comboBox->addItem(tr("mS"), QVariant::fromValue(1000000));
     _holdoff_comboBox->addItem(tr("S"), QVariant::fromValue(1000000000));
@@ -103,7 +103,7 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession *session) :
     connect(_falling_radioButton, SIGNAL(clicked()), this, SLOT(type_changed()));
 
     _source_group=new QButtonGroup(_widget);
-    _channel_comboBox = new QComboBox(_widget);
+    _channel_comboBox = new DsComboBox(_widget);
     _type_group=new QButtonGroup(_widget);
 
     _source_group->addButton(_auto_radioButton);

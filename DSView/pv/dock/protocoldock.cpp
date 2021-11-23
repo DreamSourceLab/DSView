@@ -75,7 +75,7 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     _del_all_button = new QPushButton(_up_widget);
     _del_all_button->setFlat(true);
     _del_all_button->setCheckable(true);
-    _protocol_combobox = new QComboBox(_up_widget);
+    _protocol_combobox = new DsComboBox(_up_widget);
 
     GSList *l = g_slist_sort(g_slist_copy(
         (GSList*)srd_decoder_list()), decoder_name_cmp);
@@ -248,8 +248,12 @@ void ProtocolDock::paintEvent(QPaintEvent *)
 void ProtocolDock::resizeEvent(QResizeEvent *event)
 {
     int width = this->visibleRegion().boundingRect().width();
-    width = width - _dn_layout->margin() * 2 -
-            _dn_search_layout->margin() * 2 -
+
+    int mg1 = 10;
+    int mg2 = 10;
+
+    width = width - mg1 * 2 -
+            mg2 * 2 -
             _dn_search_layout->spacing() * 2 -
             _pre_button->width()-_nxt_button->width();
     width = std::max(width, 0);

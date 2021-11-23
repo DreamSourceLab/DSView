@@ -25,7 +25,6 @@
 
 #include <QDockWidget>
 #include <QPushButton>
-#include <QComboBox>
 #include <QLabel>
 #include <QRadioButton>
 #include <QSlider>
@@ -43,6 +42,7 @@
 #include <vector>
 
 #include "../widgets/fakelineedit.h"
+#include "../ui/dscombobox.h"
 
 namespace pv {
 

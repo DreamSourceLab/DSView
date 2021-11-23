@@ -23,6 +23,7 @@
 #pragma once
 
 #include "../config.h"
+#include <QString>
 
 
 #ifdef DS_DEBUG_TRACE

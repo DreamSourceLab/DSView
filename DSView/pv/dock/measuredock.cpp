@@ -216,7 +216,7 @@ void MeasureDock::reload()
     else
         _edge_groupBox->setDisabled(true);
 
-    for (QVector <QComboBox *>::const_iterator i = _edge_ch_cmb_vec.begin();
+    for (QVector <DsComboBox *>::const_iterator i = _edge_ch_cmb_vec.begin();
          i != _edge_ch_cmb_vec.end(); i++) {
         update_probe_selector(*i);
     }
@@ -416,7 +416,7 @@ void MeasureDock::add_edge_measure()
     g_label->setContentsMargins(0,0,0,0);
     QLabel *a_label = new QLabel(tr("@"), row_widget);
     a_label->setContentsMargins(0,0,0,0);
-    QComboBox *ch_cmb = create_probe_selector(row_widget);
+    DsComboBox *ch_cmb = create_probe_selector(row_widget);
     _edge_del_btn_vec.push_back(del_btn);
     _edge_s_btn_vec.push_back(s_btn);
     _edge_e_btn_vec.push_back(e_btn);
@@ -643,14 +643,14 @@ void MeasureDock::set_cursor_btn_color(QPushButton *btn)
     btn->setStyleSheet(style);
 }
 
-QComboBox* MeasureDock::create_probe_selector(QWidget *parent)
+DsComboBox* MeasureDock::create_probe_selector(QWidget *parent)
 {
-    QComboBox *selector = new QComboBox(parent);
+    DsComboBox *selector = new DsComboBox(parent);
     update_probe_selector(selector);
     return selector;
 }
 
-void MeasureDock::update_probe_selector(QComboBox *selector)
+void MeasureDock::update_probe_selector(DsComboBox *selector)
 {
     selector->clear();
     const auto &sigs = _session->get_signals();

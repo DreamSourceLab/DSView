@@ -163,6 +163,7 @@ SOURCES += \
     ../DSView/pv/ZipMaker.cpp \
     ../DSView/pv/data/decode/AnnotationResTable.cpp \
     ../DSView/pv/ui/msgbox.cpp \
+    ../DSView/pv/ui/dscombobox.cpp \
     ../DSView/pv/dock/protocolitemlayer.cpp \
     ../DSView/pv/config/appconfig.cpp \
     ../DSView/pv/dsvdef.cpp \
@@ -262,6 +263,7 @@ HEADERS  += \
     ../DSView/pv/ZipMaker.h \
     ../DSView/pv/data/decode/AnnotationResTable.h \
     ../DSView/pv/ui/msgbox.h \
+    ../DSView/pv/ui/dscombobox.h \
     ../DSView/pv/dock/protocolitemlayer.h \
     ../DSView/pv/config/appconfig.h \
     ../DSView/pv/dsvdef.h \

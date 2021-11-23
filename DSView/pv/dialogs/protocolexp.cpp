@@ -52,7 +52,7 @@ ProtocolExp::ProtocolExp(QWidget *parent, SigSession *session) :
         Qt::Horizontal, this),
     _export_cancel(false)
 {
-    _format_combobox = new QComboBox(this);
+    _format_combobox = new DsComboBox(this);
     _format_combobox->addItem(tr("Comma-Separated Values (*.csv)"));
     _format_combobox->addItem(tr("Text files (*.txt)"));
 

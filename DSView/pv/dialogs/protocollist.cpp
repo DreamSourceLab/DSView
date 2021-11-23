@@ -45,7 +45,7 @@ ProtocolList::ProtocolList(QWidget *parent, SigSession *session) :
 {
     pv::data::DecoderModel* decoder_model = _session->get_decoder_model();
 
-    _map_zoom_combobox = new QComboBox(this);
+    _map_zoom_combobox = new DsComboBox(this);
     _map_zoom_combobox->addItem(tr("Fit to Window"));
     _map_zoom_combobox->addItem(tr("Fixed"));
     int cur_map_zoom = _session->get_map_zoom();
@@ -57,7 +57,7 @@ ProtocolList::ProtocolList(QWidget *parent, SigSession *session) :
 
     connect(_map_zoom_combobox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_set_map_zoom(int)));
 
-    _protocol_combobox = new QComboBox(this);
+    _protocol_combobox = new DsComboBox(this);
     auto &decode_sigs = _session->get_decode_signals();
     int index = 0;
 
