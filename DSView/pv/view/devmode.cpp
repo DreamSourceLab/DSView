@@ -113,7 +113,7 @@ void DevMode::set_device()
  
             QAction *action = new QAction(this);
             action->setIcon(QIcon(iconPath+"square-"+icon_name));
-            if (lan == QLocale::Chinese)
+            if (lan == LAN_CN)
                 action->setText(mode->name_cn);
             else
                 action->setText(mode->name);
@@ -124,7 +124,7 @@ void DevMode::set_device()
             if (dev_inst->dev_inst()->mode == _mode_list[action]->mode) {
                 QString icon_fname = iconPath + icon_name;
                 _mode_btn->setIcon(QIcon(icon_fname));
-                if (lan== QLocale::Chinese)
+                if (lan== LAN_CN)
                     _mode_btn->setText(mode->name_cn);
                 else
                     _mode_btn->setText(mode->name);
@@ -180,7 +180,7 @@ void DevMode::on_mode_change()
                 QString icon_fname = iconPath + "/" + QString::fromLocal8Bit((*i).second->icon);
              
                 _mode_btn->setIcon(QIcon(icon_fname));
-                if (lan == QLocale::Chinese)
+                if (lan == LAN_CN)
                     _mode_btn->setText((*i).second->name_cn);
                 else
                     _mode_btn->setText((*i).second->name);

@@ -76,13 +76,8 @@ About::About(QWidget *parent) :
                         .arg("http://sigrok.org/");
 
     QString changlogs = tr("<font size=16>Changelogs</font><br />");
-    #ifndef Q_OS_LINUX
-    QDir dir(QCoreApplication::applicationDirPath());
-    #else
-    QDir dir(DS_RES_PATH);
-    dir.cdUp();
-    #endif
 
+    QDir dir(GetAppDataDir());
     AppConfig &app = AppConfig::Instance(); 
     int lan = app._frameOptions.language;
 

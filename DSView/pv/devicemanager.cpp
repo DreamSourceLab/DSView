@@ -33,6 +33,7 @@
 #include <QObject>
 #include <QDebug>
 #include <QDir>
+#include "config/appconfig.h"
 
 using std::list;
 using std::map;
@@ -116,7 +117,7 @@ void DeviceManager::driver_scan(
 
     // Check If DSL hardware driver
     if (strncmp(driver->name, "virtual", 7)) {
-        QDir dir(DS_RES_PATH);
+        QDir dir(GetResourceDir());
         if (!dir.exists())
             return;
     }

@@ -27,3 +27,8 @@ class IDlgCallback
 public:
     virtual void OnDlgResult(bool bYes)=0;
 };
+
+class IMainForm{
+public:
+    virtual void switchLanguage(int language)=0;
+};

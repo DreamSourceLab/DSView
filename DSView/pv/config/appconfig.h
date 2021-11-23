@@ -27,12 +27,18 @@
 #include <QString>
 #include <QByteArray>
 
+#define LAN_CN  25
+#define LAN_EN  31
   
 //--------------------api---
 
 QString GetDirectoryName(QString path);
 
 QString GetIconPath();
+
+QString GetAppDataDir();
+
+QString GetResourceDir();
 
 //------------------class
   

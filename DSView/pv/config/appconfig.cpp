@@ -24,6 +24,9 @@
 #include <QApplication>
 #include <QSettings>
 #include <QLocale>
+#include <QDir>
+#include <QDebug>
+#include <assert.h>
   
 #define MAX_PROTOCOL_FORMAT_LIST 15
 
@@ -126,10 +129,14 @@ void _loadFrame(FrameOptions &o, QSettings &st){
     o.windowState = st.value("windowState", QByteArray()).toByteArray();
     st.endGroup();
 
-    if (o.language == -1){
+    if (o.language == -1 || (o.language != LAN_CN && o.language != LAN_EN)){
         //get local language
         QLocale locale;
-        o.language = locale.language();
+
+        if (QLocale::languageToString(locale.language()) == "Chinese")
+            o.language = LAN_CN;            
+        else
+            o.language = LAN_EN; 
     }
 }
 
@@ -281,4 +288,24 @@ QString GetIconPath()
         style = "dark";
     }
     return ":/icons/" + style;
+}
+
+QString GetAppDataDir()
+{
+//applicationDirPath not end with '/'
+#ifdef Q_OS_LINUX
+    QDir dir(QCoreApplication::applicationDirPath());
+    if (dir.cd("..") && dir.cd("share") &&dir.cd("DSView"))
+    {
+         return dir.absolutePath();        
+    }
+    qDebug() << "dir is not exists:" << QCoreApplication::applicationDirPath() + "/../share/DSView";
+    assert(false);   
+#else
+    return QCoreApplication::applicationDirPath();
+#endif
+}
+
+QString GetResourceDir(){
+    return GetAppDataDir() + "/res";
 }

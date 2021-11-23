@@ -20,20 +20,18 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <boost/bind.hpp>
-
-#include <QDebug>
-#include <QObject>
-#include <QLocale>
-
-#include <stdint.h>
-
 #include "deviceoptions.h"
 
-#include <pv/prop/bool.h>
-#include <pv/prop/double.h>
-#include <pv/prop/enum.h>
-#include <pv/prop/int.h>
+#include <boost/bind.hpp>
+#include <QDebug>
+#include <QObject>
+#include <stdint.h>
+
+#include "../bool.h"
+#include "../double.h"
+#include "../enum.h"
+#include "../int.h"
+#include "../config/appconfig.h"
 
 using namespace boost;
 using namespace std;
@@ -73,7 +71,7 @@ DeviceOptions::DeviceOptions(struct sr_dev_inst *sdi) :
         if (sr_config_get(_sdi->driver, _sdi, NULL, NULL, SR_CONF_LANGUAGE, &gvar_tmp) == SR_OK) {
             if (gvar_tmp != NULL) {
                 int language = g_variant_get_int16(gvar_tmp);
-                if (language == QLocale::Chinese)
+                if (language == LAN_CN)
                     label_char = info->label_cn;
                 g_variant_unref(gvar_tmp);
             }

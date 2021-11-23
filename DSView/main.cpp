@@ -38,8 +38,6 @@
 #include "config.h"
 #include "pv/appcontrol.h"
 
-char DS_RES_PATH[256];
-
 void usage()
 {
 	fprintf(stdout,
@@ -52,6 +50,8 @@ void usage()
 		"  -h, -?, --help                  Show help option\n"
 		"\n", DS_BIN_NAME, DS_DESCRIPTION);
 } 
+
+char DS_RES_PATH[256] = {0};
 
 int main(int argc, char *argv[])
 {  
@@ -142,24 +142,12 @@ int main(int argc, char *argv[])
     if (argcFinal - optind > 1) {
 		fprintf(stderr, "Only one file can be openened.\n");
 		return 1;
-    } else if (argcFinal - optind == 1)
+    } else if (argcFinal - optind == 1){
         open_file = argvFinal[argcFinal - 1];
- 
-    QDir dir(QCoreApplication::applicationDirPath());
- 
-#ifdef Q_OS_LINUX
-    if (dir.cd("..") &&
-        dir.cd("share") &&
-        dir.cd("DSView") &&
-        dir.cd("res")) {
-		// the path command like: cd ../share/DSView/res
-        QString res_dir = dir.absolutePath() + "/";
-        strcpy(DS_RES_PATH, res_dir.toUtf8().data());
-    } else {
-        qDebug() << "DSView run ERROR: config files don't exist.";
-        return 1;
-    }
-#endif
+	}
+
+	QString path = GetAppDataDir();
+	strcpy(DS_RES_PATH, path.toUtf8().data());
 
 //#ifdef Q_OS_DARWIN 
 //#endif

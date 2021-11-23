@@ -30,6 +30,7 @@
 #include "dialogs/dsmessagebox.h"
 #include "interface/icallbacks.h"
 #include "eventobject.h"
+#include "interface/uicallback.h"
 
 class QAction;
 class QMenuBar;
@@ -72,7 +73,7 @@ using namespace pv::device;
  
 //The mainwindow,referenced by MainFrame
 //TODO: create graph view,toolbar,and show device list
-class MainWindow : public QMainWindow, public ISessionCallback
+class MainWindow : public QMainWindow, public ISessionCallback, public IMainForm
 {
 	Q_OBJECT
 
@@ -83,8 +84,7 @@ public:
     explicit MainWindow(QWidget *parent = 0);
 
     void openDoc();
-    void switchLanguage(int language);
-
+  
 private:
     void closeEvent(QCloseEvent *event);
 
@@ -119,8 +119,7 @@ private slots:
     bool on_store_session(QString name);     
     void device_detach_post();
     void device_changed(bool close);
-    void on_device_selected();      
-    void on_setLanguage(int language);
+    void on_device_selected();       
 
     void on_capture_state_changed(int state);
     void on_data_updated();
@@ -138,6 +137,10 @@ private slots:
   
 signals:
     void prgRate(int progress);
+
+//IMainForm
+public:
+   void switchLanguage(int language);
 
 //ISessionCallback
 public:

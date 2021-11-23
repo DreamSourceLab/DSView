@@ -286,7 +286,6 @@ void MainWindow::setup_ui()
     connect(_file_bar, SIGNAL(sig_store_session(QString)), this, SLOT(on_store_session(QString)));
 
     //logobar
-    connect(_logo_bar, SIGNAL(sig_setLanguage(int)), this, SLOT(on_setLanguage(int)));
     connect(_logo_bar, SIGNAL(sig_open_doc()), this, SLOT(on_open_doc()));
 
 
@@ -302,6 +301,8 @@ void MainWindow::setup_ui()
     connect(_sampling_bar, SIGNAL(sig_show_calibration()), _view, SLOT(show_calibration()));
 
     connect(_dso_trigger_widget, SIGNAL(set_trig_pos(int)), _view, SLOT(set_trig_pos(int))); 
+
+    _logo_bar->set_mainform_callback(this);
 }
 
 
@@ -397,12 +398,8 @@ void MainWindow::update_device_list()
     } else {
         _file_bar->set_settings_en(false);
         _logo_bar->dsl_connected(false);
-        #ifdef Q_OS_LINUX
-            QDir dir(DS_RES_PATH);
-        #else
-            QDir dir(QCoreApplication::applicationDirPath());
-            assert(dir.cd("res"));
-        #endif
+
+        QDir dir(GetResourceDir());
         if (dir.exists()) {
             QString str = dir.absolutePath() + "/";
             QString ses_name = str +
@@ -1395,11 +1392,7 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
     }
     return false;
 }
-
- void MainWindow::on_setLanguage(int language)
- {
-     switchLanguage(language);
- }
+ 
  
 void MainWindow::switchLanguage(int language)
 {
@@ -1414,7 +1407,7 @@ void MainWindow::switchLanguage(int language)
         app.SaveFrame();
     }
 
-    if (language != QLocale::English)
+    if (language == LAN_CN)
     {
         _qtTrans.load(":/qt_" + QString::number(language));
         qApp->installTranslator(&_qtTrans);
@@ -1464,13 +1457,8 @@ void MainWindow::on_open_doc(){
 }
 
 void MainWindow::openDoc()
-{
-    #ifndef Q_OS_LINUX
-    QDir dir(QCoreApplication::applicationDirPath());
-    #else
-    QDir dir(DS_RES_PATH);
-    dir.cdUp();
-    #endif
+{ 
+    QDir dir(GetAppDataDir());
     AppConfig &app = AppConfig::Instance(); 
     int lan = app._frameOptions.language;
     QDesktopServices::openUrl(

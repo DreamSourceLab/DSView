@@ -27,6 +27,7 @@
 #include <QDesktopServices>
 #include <QUrl>
 #include <QApplication>
+#include <assert.h>
 
 #include "logobar.h"
 #include "../dialogs/about.h"
@@ -43,6 +44,8 @@ LogoBar::LogoBar(SigSession *session, QWidget *parent) :
     _session(session),
     _logo_button(this)
 {
+    _mainForm  = NULL;
+
     setMovable(false);
     setContentsMargins(0,0,0,0);
 
@@ -118,7 +121,7 @@ void LogoBar::retranslateUi()
     _issue->setText(tr("&Bug Report"));
 
     AppConfig &app = AppConfig::Instance(); 
-    if (app._frameOptions.language == QLocale::Chinese)
+    if (app._frameOptions.language == LAN_CN)
         _language->setIcon(QIcon(":/icons/Chinese.svg"));
     else
         _language->setIcon(QIcon(":/icons/English.svg"));
@@ -170,14 +173,17 @@ void LogoBar::on_actionEn_triggered()
 {
     _language->setIcon(QIcon::fromTheme("file",
         QIcon(":/icons/English.svg")));
-    sig_setLanguage(QLocale::English);
+
+    assert(_mainForm);
+    _mainForm->switchLanguage(LAN_EN);
 }
 
 void LogoBar::on_actionCn_triggered()
 {
     _language->setIcon(QIcon::fromTheme("file",
         QIcon(":/icons/Chinese.svg")));
-    sig_setLanguage(QLocale::Chinese);   
+    assert(_mainForm);
+    _mainForm->switchLanguage(LAN_CN);  
 }
 
 void LogoBar::on_actionAbout_triggered()
@@ -187,22 +193,15 @@ void LogoBar::on_actionAbout_triggered()
 }
 
 void LogoBar::on_actionManual_triggered()
-{
-    #ifndef Q_OS_LINUX
-    QDir dir(QCoreApplication::applicationDirPath());
-    #else
-    QDir dir(DS_RES_PATH);
-    dir.cdUp();
-    #endif
-    QDesktopServices::openUrl(
-                QUrl("file:///"+dir.absolutePath() + "/ug.pdf"));
+{ 
+    QDir dir(GetAppDataDir());
+    QDesktopServices::openUrl( QUrl("file:///"+dir.absolutePath() + "/ug.pdf"));
 }
 
 void LogoBar::on_actionIssue_triggered()
 {
-    QDir dir(QCoreApplication::applicationDirPath());
-    QDesktopServices::openUrl(
-                QUrl(QLatin1String("https://github.com/DreamSourceLab/DSView/issues")));
+    QDir dir(GetAppDataDir());
+    QDesktopServices::openUrl(QUrl(QLatin1String("https://github.com/DreamSourceLab/DSView/issues")));
 }
 
 void LogoBar::enable_toggle(bool enable)

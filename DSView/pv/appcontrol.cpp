@@ -31,6 +31,7 @@
 #include "devicemanager.h"
 #include "sigsession.h"
 #include "dsvdef.h"
+#include "config/appconfig.h"
 
 AppControl::AppControl()
 {
@@ -71,23 +72,14 @@ bool AppControl::Init()
     {
         m_error = "DSView run ERROR: libsigrok init failed.";
         return false;
-    }
-
-   // const char *decoderScriptDir = "/home/lala/tmpdir/any";
-    //const char * decoderScriptDir = NULL;
-
-    char decoderScriptDir[256] = {0};
-    QDir dir(QCoreApplication::applicationDirPath());
-#ifdef Q_OS_LINUX  
-    dir.cd("../share/DSView/decoders");    
-#else
-    dir.cd("decoders");
-#endif
-
-    strcpy(decoderScriptDir, dir.absolutePath().toUtf8().data());
+    } 
+    
+    QString dir = GetAppDataDir() + "/decoders";
+    char path[256] = {0};
+    strcpy(path, dir.toUtf8().data());
 
     // Initialise libsigrokdecode
-    if (srd_init(decoderScriptDir) != SRD_OK)
+    if (srd_init(path) != SRD_OK)
     {
         m_error = "ERROR: libsigrokdecode init failed.";
         return false;

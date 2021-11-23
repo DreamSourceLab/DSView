@@ -27,10 +27,11 @@
 #include <QToolButton>
 #include <QAction>
 #include <QMenu>
+#include <libsigrok4DSL/libsigrok.h>
 
 #include "../sigsession.h"
+#include "../interface/uicallback.h"
 
-#include <libsigrok4DSL/libsigrok.h>
 
 namespace pv {
 namespace toolbars {
@@ -49,6 +50,10 @@ public:
    //show the hardware device conneted status with logo picture
     void dsl_connected(bool conn);
 
+    inline void set_mainform_callback(IMainForm *callback){
+        _mainForm = callback;
+    }
+
 private:
     void changeEvent(QEvent *event);
     void retranslateUi();
@@ -59,10 +64,7 @@ private:
     void show_session_error(
         const QString text, const QString info_text);
 
-signals:
-    //post event message to set language, MainWindow class receive it
-    void sig_setLanguage(int language);  
-
+signals: 
     //post event message to open user help document, MainWindow class receive it
     void sig_open_doc(); 
 
@@ -89,6 +91,7 @@ private:
     QAction *_about;
     QAction *_manual;
     QAction *_issue;
+    IMainForm *_mainForm;
 };
 
 } // namespace toolbars

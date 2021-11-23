@@ -191,13 +191,8 @@ void FileBar::on_actionLoad_triggered()
 }
 
 void FileBar::on_actionDefault_triggered()
-{
-#ifdef Q_OS_LINUX
-    QDir dir(DS_RES_PATH);
-#else
-    QDir dir(QCoreApplication::applicationDirPath());
-    assert(dir.cd("res"));
-#endif
+{ 
+    QDir dir(GetResourceDir());
     if (!dir.exists()) { 
           MsgBox::Show(NULL, "Cannot find default session file for this device!", this);
           return;
@@ -205,7 +200,7 @@ void FileBar::on_actionDefault_triggered()
 
     QString driver_name = _session->get_device()->name();
     QString mode_name = QString::number(_session->get_device()->dev_inst()->mode);
-    int language = QLocale::English;
+    int language = LAN_EN;
     GVariant *gvar_tmp = _session->get_device()->get_config(NULL, NULL, SR_CONF_LANGUAGE);
     if (gvar_tmp != NULL) {
         language = g_variant_get_int16(gvar_tmp);

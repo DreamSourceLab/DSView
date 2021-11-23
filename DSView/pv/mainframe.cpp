@@ -42,6 +42,7 @@
 #include <QScreen>
 #include <QApplication>
 #include <QDebug>
+#include <QFile>
 
 #include "dsvdef.h"
 #include "config/appconfig.h"
@@ -449,12 +450,18 @@ void MainFrame::show_doc()
         dialogs::DSDialog dlg(this, true);
         dlg.setTitle(tr("Document"));
 
+        QString path = GetAppDataDir() + "/showDoc" + QString::number(lan)+ ".png";
+        if (!QFile::exists(path)){
+            path = ":/icons/showDoc"+QString::number(lan)+".png";
+        }
+
         QLabel tipsLabel;
-        tipsLabel.setPixmap(QPixmap(":/icons/showDoc"+QString::number(lan)+".png"));
+        tipsLabel.setPixmap(path);
+
         QMessageBox msg;
         msg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
         msg.setContentsMargins(0, 0, 0, 0);
-        connect(&msg, SIGNAL(buttonClicked(QAbstractButton*)), &dlg, SLOT(accept()));
+       
         QPushButton *noMoreButton = msg.addButton(tr("Not Show Again"), QMessageBox::ActionRole);
         msg.addButton(tr("Ignore"), QMessageBox::ActionRole);
         QPushButton *openButton = msg.addButton(tr("Open"), QMessageBox::ActionRole);
@@ -465,6 +472,8 @@ void MainFrame::show_doc()
         layout.setContentsMargins(0, 0, 0, 0);
 
         dlg.layout()->addLayout(&layout);
+        connect(&msg, SIGNAL(buttonClicked(QAbstractButton*)), &dlg, SLOT(accept()));
+
         dlg.exec();
 
         if (msg.clickedButton() == openButton) {
