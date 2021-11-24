@@ -46,7 +46,7 @@
 
 #include "dsvdef.h"
 #include "config/appconfig.h"
-#include "../ui/msgbox.h"
+#include "ui/msgbox.h"
 
 #include <algorithm>
 

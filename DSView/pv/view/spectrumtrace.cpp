@@ -18,7 +18,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <extdef.h>
+ 
 #include <algorithm>
 #include <math.h>
 #include <QTextStream>
@@ -34,6 +34,7 @@
 #include "../device/devinst.h"
 #include "../data/spectrumstack.h"
 #include "../dsvdef.h"
+#include "../extdef.h"
 
 using namespace boost;
 using namespace std;

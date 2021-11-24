@@ -87,10 +87,10 @@
 #include <glib.h>
 #include <list>
 #include <libusb.h>
-#include "../ui/msgbox.h"
+#include "ui/msgbox.h"
 #include "config/appconfig.h"
 #include "appcontrol.h"
-#include "../dsvdef.h"
+#include "dsvdef.h"
   
 
 namespace pv {

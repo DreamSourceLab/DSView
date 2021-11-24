@@ -19,10 +19,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <extdef.h>
+
 #include <math.h>
 
-#include "../../extdef.h"
 #include "mathtrace.h"
 #include "../data/dso.h"
 #include "../data/dsosnapshot.h"
@@ -32,6 +31,7 @@
 #include "../device/devinst.h"
 #include "../view/dsosignal.h"
 #include "../dsvdef.h"
+#include "../extdef.h"
   
 #include <QDebug>
 #include <QTimer>

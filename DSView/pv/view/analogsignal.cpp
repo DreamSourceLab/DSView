@@ -20,7 +20,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <extdef.h>
+ 
 #include <QDebug>
 #include <math.h>
 
@@ -29,6 +29,7 @@
 #include "../data/analogsnapshot.h"
 #include "../view/view.h"
 #include "../device/devinst.h"
+#include "../extdef.h"
 
 
 using namespace std;

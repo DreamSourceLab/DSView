@@ -22,8 +22,8 @@
 #define LIBDSL_HARDWARE_DEMO_H
 
 #include <glib.h>
-#include "libsigrok.h"
-#include "libsigrok-internal.h"
+#include "../../libsigrok.h"
+#include "../../libsigrok-internal.h"
 
 #include <stdio.h>
 #include <stdlib.h>

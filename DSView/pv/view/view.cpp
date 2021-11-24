@@ -42,11 +42,11 @@
 #include "analogsignal.h"
 
 #include "../device/devinst.h"
-#include "pv/sigsession.h"
-#include "pv/data/logic.h"
-#include "pv/data/logicsnapshot.h"
-#include "pv/dialogs/calibration.h"
-#include "pv/dialogs/lissajousoptions.h"
+#include "../sigsession.h"
+#include "../data/logic.h"
+#include "../data/logicsnapshot.h"
+#include "../dialogs/calibration.h"
+#include "../dialogs/lissajousoptions.h"
 
 
 using namespace std;

@@ -33,7 +33,7 @@
 #include <QDateTime>
 #include <QSplitter>
 
-#include "../../extdef.h"
+ 
 #include "../toolbars/samplingbar.h"
 #include "../data/signaldata.h"
 #include "../view/viewport.h"
@@ -41,6 +41,7 @@
 #include "xcursor.h"
 #include "signal.h"
 #include "viewstatus.h"
+#include "../extdef.h"
 
 namespace pv {
 

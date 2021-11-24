@@ -28,7 +28,7 @@
 #include "../sigsession.h"
 #include "../device/devinst.h"
 #include "dsosignal.h"
-#include "../../extdef.h"
+#include "../extdef.h"
 
 #include <assert.h>
 #include <math.h>

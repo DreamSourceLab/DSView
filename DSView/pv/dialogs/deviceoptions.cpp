@@ -27,7 +27,7 @@
 #include <QDoubleSpinBox>
 
 #include "dsmessagebox.h"
-#include <pv/prop/property.h>
+#include "../prop/property.h"
 #include "../dsvdef.h"
 
 using namespace boost;

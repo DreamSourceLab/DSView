@@ -25,7 +25,7 @@
 
 #include "devinst.h"
 
-#include <pv/sigsession.h>
+#include "../sigsession.h"
 
 namespace pv {
 namespace device {

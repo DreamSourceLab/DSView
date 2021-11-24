@@ -19,13 +19,13 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <extdef.h>
-#include <math.h>
-
+#include "../extdef.h"
 #include "groupsignal.h"
-#include "pv/data/group.h"
-#include "pv/data/groupsnapshot.h"
+#include "../data/group.h"
+#include "../data/groupsnapshot.h"
 #include "view.h"
+
+#include <math.h>
  
 using namespace std;
 

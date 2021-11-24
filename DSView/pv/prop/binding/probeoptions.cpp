@@ -26,10 +26,10 @@
 #include <QDebug>
 #include <QObject>
 #include <stdint.h>
-#include <pv/prop/bool.h>
-#include <pv/prop/double.h>
-#include <pv/prop/enum.h>
-#include <pv/prop/int.h>
+#include "../bool.h"
+#include "../double.h"
+#include "../enum.h"
+#include "../int.h"
 
 #include "../../config/appconfig.h"
 

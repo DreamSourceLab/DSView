@@ -20,14 +20,12 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <extdef.h>
-
-#include <math.h>
- 
-
+  
+#include <math.h> 
 #include "signal.h"
 #include "view.h"
 #include "../device/devinst.h"
+#include "../extdef.h"
 
 namespace pv {
 namespace view {

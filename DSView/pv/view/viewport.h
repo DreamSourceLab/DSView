@@ -33,7 +33,7 @@
 #include <QElapsedTimer>
 
 #include "../view/view.h"
-#include "../../extdef.h"
+#include "../extdef.h"
 
 class QPainter;
 class QPaintEvent;

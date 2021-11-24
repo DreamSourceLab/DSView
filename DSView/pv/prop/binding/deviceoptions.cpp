@@ -31,7 +31,7 @@
 #include "../double.h"
 #include "../enum.h"
 #include "../int.h"
-#include "../config/appconfig.h"
+#include "../../config/appconfig.h"
 
 using namespace boost;
 using namespace std;

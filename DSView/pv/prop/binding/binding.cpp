@@ -23,8 +23,7 @@
 
 #include <QFormLayout>
 
-#include <pv/prop/property.h>
-
+#include "../property.h"
 #include "binding.h"
  
 

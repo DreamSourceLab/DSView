@@ -19,9 +19,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
-
-#include <extdef.h>
-
+  
 #include <QDebug>
 
 #include <assert.h>
@@ -30,6 +28,7 @@
 #include <math.h>
  
 #include "logicsnapshot.h"
+#include "../extdef.h"
 
 using namespace std;
 

@@ -20,7 +20,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <extdef.h>
+ 
 #include <assert.h>
 #include <math.h> 
 #include <QFormLayout>
@@ -31,6 +31,7 @@
 #include "view.h"
 #include "../device/devinst.h"
 #include "../sigsession.h"
+#include "../extdef.h"
 
 
 namespace pv {

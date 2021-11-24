@@ -31,7 +31,7 @@
 
 #include <list> 
 
-#include <pv/device/devinst.h>
+#include "../device/devinst.h"
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
 

@@ -27,16 +27,14 @@ CONFIG += decoders
 DEFINES += decoders
 
 unix:!macx {
-INCLUDEPATH += /usr/local/include/
 INCLUDEPATH += /usr/include/glib-2.0
 INCLUDEPATH += /usr/lib/x86_64-linux-gnu/glib-2.0/include
 INCLUDEPATH += /usr/include/libusb-1.0
 INCLUDEPATH += /usr/include/boost
 INCLUDEPATH += /usr/include/python3.8
 INCLUDEPATH += ..
-INCLUDEPATH += ../libsigrok4DSL
-INCLUDEPATH += ../DSView
-INCLUDEPATH += ../DSView/pv/dialogs
+#INCLUDEPATH += ../libsigrok4DSL
+#INCLUDEPATH += ../DSView
 
 LIBS += /usr/lib/x86_64-linux-gnu/libglib-2.0.so
 LIBS += /usr/lib/x86_64-linux-gnu/libusb-1.0.so
@@ -57,9 +55,8 @@ INCLUDEPATH += /usr/local/include/libusb-1.0
 INCLUDEPATH += /usr/local/include/boost
 INCLUDEPATH += /Library/Frameworks/Python.framework/Versions/3.4/include/python3.4m
 INCLUDEPATH += ..
-INCLUDEPATH += ../libsigrok4DSL
-INCLUDEPATH += ../DSView
-INCLUDEPATH += ../DSView/pv/dialogs
+#INCLUDEPATH += ../libsigrok4DSL
+#INCLUDEPATH += ../DSView
 
 #LIBS += -framework CoreFoundation
 #LIBS += -framework CoreServices
@@ -176,7 +173,7 @@ SOURCES += \
     ../DSView/pv/dstimer.cpp
 
 HEADERS  += \
-    ../DSView/extdef.h \
+    ../DSView/pv/extdef.h \
     ../DSView/config.h \
     ../DSView/pv/sigsession.h \
     ../DSView/pv/mainwindow.h \

@@ -19,14 +19,14 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <extdef.h>
+ 
 #include <math.h>
 
-#include "../../extdef.h"
-#include "lissajoustrace.h"
-#include "pv/data/dso.h"
-#include "pv/data/dsosnapshot.h"
 #include "view.h"
+#include "../extdef.h"
+#include "lissajoustrace.h"
+#include "../data/dso.h"
+#include "../data/dsosnapshot.h"
 #include "../sigsession.h"
 #include "../device/devinst.h"
 

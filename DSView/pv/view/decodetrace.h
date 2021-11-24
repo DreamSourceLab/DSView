@@ -30,7 +30,7 @@
 #include <QSignalMapper>
 #include <QFormLayout>
 
-#include <pv/prop/binding/decoderoptions.h>
+#include "../prop/binding/decoderoptions.h"
 #include "../dialogs/dsdialog.h"
 
 struct srd_channel;

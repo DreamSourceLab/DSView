@@ -50,7 +50,7 @@
 #include <QTextStream>
 #include <QDebug>
 
-#include <libsigrokdecode4DSL/libsigrokdecode.h> 
+#include <libsigrokdecode4DSL/libsigrokdecode.h>
 #include "config/appconfig.h"
 #include "dsvdef.h"
  

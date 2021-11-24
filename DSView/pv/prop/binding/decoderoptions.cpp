@@ -26,12 +26,12 @@
  
 #include <boost/none_t.hpp>
 
-#include <pv/data/decoderstack.h>
-#include <pv/data/decode/decoder.h>
-#include <pv/prop/double.h>
-#include <pv/prop/enum.h>
-#include <pv/prop/int.h>
-#include <pv/prop/string.h>
+#include "../../data/decoderstack.h"
+#include "../../data/decode/decoder.h"
+#include "../double.h"
+#include "../enum.h"
+#include "../int.h"
+#include "../string.h"
 
 using namespace boost;
 using namespace std;

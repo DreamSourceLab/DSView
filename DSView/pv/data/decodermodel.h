@@ -23,7 +23,7 @@
 
 #include <QAbstractTableModel>
   
-#include <pv/data/decode/rowdata.h>
+#include "decode/rowdata.h"
 
 namespace pv {
 namespace data {

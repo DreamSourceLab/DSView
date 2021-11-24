@@ -19,13 +19,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <extdef.h>
-#include <math.h>
-
-#include "../../extdef.h"
+#include "../extdef.h"
 #include "dsosignal.h"
-#include "pv/data/dso.h"
-#include "pv/data/dsosnapshot.h"
+#include "../data/dso.h"
+#include "../data/dsosnapshot.h"
 #include "view.h"
 #include "../sigsession.h"
 #include "../device/devinst.h" 
@@ -33,6 +30,7 @@
 #include <QTimer>
 #include <functional>
 #include <QApplication>
+#include <math.h>
  
 using namespace std;
 

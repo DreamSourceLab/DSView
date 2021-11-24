@@ -21,7 +21,7 @@
 
 #include <libsigrokdecode4DSL/libsigrokdecode.h>
 
-#include <extdef.h>
+#include "../extdef.h"
 
  
 #include <boost/functional/hash.hpp>

@@ -21,18 +21,15 @@
  */
 
 #include <libsigrokdecode4DSL/libsigrokdecode.h>
-
-#include <extdef.h>
-
+ 
 #include <QDebug>
-
 #include <math.h>
-
 #include "logicsignal.h"
 #include "view.h"
-#include "pv/data/logic.h"
-#include "pv/data/logicsnapshot.h"
+#include "../data/logic.h"
+#include "../data/logicsnapshot.h"
 #include "view.h"
+#include "../extdef.h"
 
 using namespace boost;
 using namespace std;

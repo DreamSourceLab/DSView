@@ -20,7 +20,7 @@
  */
 
 #include "storeprogress.h" 
-#include "pv/sigsession.h"
+#include "../sigsession.h"
 #include <QGridLayout>
 #include <QDialogButtonBox>
 #include <QTimer>
