@@ -1279,7 +1279,7 @@ QToolButton::menu-arrow:open
 
 QToolButton#ModeButton::menu-arrow
 {
-   /* image: url(:/dark/mode_down_arrow.svg);*/
+   /*image: url(:/dark/mode_down_arrow.svg);*/
    image:none;
 }
 
