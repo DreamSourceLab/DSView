@@ -26,53 +26,60 @@
 #include "../device/devinst.h"
 #include "../device/file.h"
 
-#include <assert.h>
- 
- 
+#include <assert.h> 
 #include <QStyleOption>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QRect>
 #include <QDebug>
+#include <QHBoxLayout>
+
 #include "../config/appconfig.h"
 #include "../ui/msgbox.h"
- 
-
+  
 namespace pv {
 namespace view {
 
 DevMode::DevMode(QWidget *parent, SigSession *session) :
     QWidget(parent),
-    _session(session)
-    
+    _session(session)    
 {
-    _layout = new QHBoxLayout(this);
-    _layout->setSpacing(0);
-    _layout->setContentsMargins(2, 0, 0, 0);
+    _bFile = false;
 
-    _close_button = new QToolButton(this);
+   QHBoxLayout *layout = new QHBoxLayout(this);
+    layout->setSpacing(0);
+    layout->setContentsMargins(2, 0, 0, 0);
+
+    _close_button = new QToolButton();
     _close_button->setObjectName("FileCloseButton");
     _close_button->setContentsMargins(0, 0, 0, 0);
     _close_button->setFixedWidth(10);
     _close_button->setFixedHeight(height());
     _close_button->setIconSize(QSize(10, 10));
-    _close_button->setToolButtonStyle(Qt::ToolButtonIconOnly);
+    _close_button->setToolButtonStyle(Qt::ToolButtonIconOnly); 
+    _close_button->setMinimumWidth(10);
 
-    _pop_menu = new QMenu(this);
-
-    _mode_btn = new QToolButton(this);
+    _mode_btn = new QToolButton();
     _mode_btn->setObjectName("ModeButton");
-    _mode_btn->setIconSize(QSize(height()*2, height()));
+    _mode_btn->setIconSize(QSize(height() * 1.5, height()));
     _mode_btn->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    _mode_btn->setContentsMargins(0, 0, 1000, 0);
-    _mode_btn->setMenu(_pop_menu);
+    _mode_btn->setContentsMargins(0, 0, 0, 0);  
     _mode_btn->setPopupMode(QToolButton::InstantPopup);
     _mode_btn->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Maximum);
 
-    _layout->addWidget(_close_button);
-    _layout->addWidget(_mode_btn); 
-    _layout->setStretch(1, 100);
-    setLayout(_layout);
+   // _mode_btn->setArrowType(Qt::NoArrow);
+
+    _pop_menu = new QMenu(this);
+    _pop_menu->setContentsMargins(15,0,0,0);
+    _mode_btn->setMenu(_pop_menu);
+
+    layout->addWidget(_close_button);
+    layout->addWidget(_mode_btn); 
+
+    layout->setStretch(1, 100); 
+    setLayout(layout);
+
+    connect(_close_button, SIGNAL(clicked()), this, SLOT(on_close()));
 }
 
 
@@ -89,7 +96,10 @@ void DevMode::set_device()
 { 
     DevInst* dev_inst = _session->get_device();
     assert(dev_inst);
+
+    _bFile = false;
    
+   //remove all action object
     for(std::map<QAction *, const sr_dev_mode *>::const_iterator i = _mode_list.begin();
         i != _mode_list.end(); i++) {
         (*i).first->setParent(NULL);
@@ -97,53 +107,54 @@ void DevMode::set_device()
         delete (*i).first;
     }
     _mode_list.clear();
+
     _close_button->setIcon(QIcon());
-    _close_button->setDisabled(true);
-    disconnect(_close_button, SIGNAL(clicked()), this, SLOT(on_close()));
+    _close_button->setDisabled(true); 
 
     AppConfig &app = AppConfig::Instance(); 
     int lan = app._frameOptions.language;
 
-    if (true) {
-        QString iconPath = GetIconPath() + "/";
-        for (const GSList *l = dev_inst->get_dev_mode_list();
-             l; l = l->next) {
-            const sr_dev_mode *mode = (const sr_dev_mode *)l->data;
-            QString icon_name = QString::fromLocal8Bit(mode->icon);
- 
-            QAction *action = new QAction(this);
-            action->setIcon(QIcon(iconPath+"square-"+icon_name));
+    QString iconPath = GetIconPath() + "/";
+
+    for (const GSList *l = dev_inst->get_dev_mode_list(); l; l = l->next)
+    {
+        const sr_dev_mode *mode = (const sr_dev_mode *)l->data;
+        QString icon_name = QString::fromLocal8Bit(mode->icon);
+
+        QAction *action = new QAction(this);
+        action->setIcon(QIcon(iconPath + "square-" + icon_name));
+        if (lan == LAN_CN)
+            action->setText(mode->name_cn);
+        else
+            action->setText(mode->name);
+
+        connect(action, SIGNAL(triggered()), this, SLOT(on_mode_change()));
+
+        _mode_list[action] = mode;
+        if (dev_inst->dev_inst()->mode == _mode_list[action]->mode)
+        {
+            QString icon_fname = iconPath + icon_name;
+            _mode_btn->setIcon(QIcon(icon_fname));
             if (lan == LAN_CN)
-                action->setText(mode->name_cn);
+                _mode_btn->setText(mode->name_cn);
             else
-                action->setText(mode->name);
-
-            connect(action, SIGNAL(triggered()), this, SLOT(on_mode_change()));
-
-            _mode_list[action] = mode;
-            if (dev_inst->dev_inst()->mode == _mode_list[action]->mode) {
-                QString icon_fname = iconPath + icon_name;
-                _mode_btn->setIcon(QIcon(icon_fname));
-                if (lan== LAN_CN)
-                    _mode_btn->setText(mode->name_cn);
-                else
-                    _mode_btn->setText(mode->name);
-            }
-            _pop_menu->addAction(action);
+                _mode_btn->setText(mode->name);
         }
-
-        File *file_dev;
-        if((file_dev = dynamic_cast<File*>(dev_inst))) {
-            _close_button->setDisabled(false);
-            _close_button->setIcon(QIcon(iconPath+"/close.svg"));
-            connect(_close_button, SIGNAL(clicked()), this, SLOT(on_close()));
-        }
+        _pop_menu->addAction(action);
     }
+
+    if ((dynamic_cast<File *>(dev_inst)))
+    {
+        _close_button->setDisabled(false);
+        _close_button->setIcon(QIcon(iconPath + "/close.svg"));
+        _bFile = true;
+    }
+
     update();
 }
 
 void DevMode::paintEvent(QPaintEvent*)
-{ 
+{  
     using pv::view::Trace;
 
     QStyleOption o;
@@ -164,8 +175,8 @@ void DevMode::on_mode_change()
     AppConfig &app = AppConfig::Instance(); 
     int lan = app._frameOptions.language;
 
-    for(std::map<QAction *, const sr_dev_mode *>::const_iterator i = _mode_list.begin();
-        i != _mode_list.end(); i++) {
+    for(auto i = _mode_list.begin();i != _mode_list.end(); i++)
+    {
         if ((*i).first == action) {
             if (dev_inst->dev_inst()->mode != (*i).second->mode) {
                 _session->set_run_mode(SigSession::Single);
@@ -186,6 +197,8 @@ void DevMode::on_mode_change()
                     _mode_btn->setText((*i).second->name);
                 dev_changed(false);
             }
+
+            break;
         }
     }
 }
@@ -195,7 +208,7 @@ void DevMode::on_close()
     DevInst *dev_inst = _session->get_device();
     assert(dev_inst);
 
-    if (MsgBox::Confirm("are you sure to close the device?")){
+    if (_bFile && MsgBox::Confirm("are you sure to close the device?")){
         _session->close_file(dev_inst);
         dev_changed(true);
     }

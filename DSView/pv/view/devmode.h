@@ -30,13 +30,12 @@
 
 #include <QWidget>
 #include <QPushButton>
-#include <QHBoxLayout>
 #include <QVector>
 #include <QToolButton>
 #include <QLabel>
 
 #include <libsigrok4DSL/libsigrok.h>
-
+ 
 namespace pv {
 
 namespace device{
@@ -81,13 +80,12 @@ signals:
 
 private:
     SigSession *_session;
-
-    QHBoxLayout *  _layout;
     std::map <QAction *, const sr_dev_mode *> _mode_list;
-    QToolButton *_mode_btn;
-    QMenu *_pop_menu;
-    QPoint _mouse_point;
-    QToolButton *_close_button;
+    QToolButton     *_mode_btn;
+    QMenu           *_pop_menu;
+    QPoint          _mouse_point;
+    QToolButton     *_close_button;
+    bool            _bFile;
 };
 
 } // namespace view
