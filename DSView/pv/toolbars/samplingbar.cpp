@@ -23,7 +23,6 @@
 #include "../extdef.h"
 
 #include <assert.h> 
-#include <libusb.h>
 #include <QAction>
 #include <QDebug>
 #include <QLabel>

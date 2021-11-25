@@ -34,6 +34,8 @@
 #define sr_warn(s, args...) sr_warn(LOG_PREFIX s, ## args)
 #define sr_err(s, args...) sr_err(LOG_PREFIX s, ## args)
 
+char DS_RES_PATH[256] = {0};
+
 int bExportOriginalData = 0; //able export all data
 
 int session_loop_stop_flag = 0;
@@ -830,6 +832,19 @@ SR_API void sr_set_export_original_data(int flag)
 SR_API int sr_get_export_original_flag()
 {
 	return bExportOriginalData;
+}
+
+void sr_set_firmware_resource_dir(const char *dir)
+{
+	if (dir){
+		strcpy(DS_RES_PATH, dir);
+
+		int len = strlen(DS_RES_PATH);
+		if (DS_RES_PATH[len-1] != '/'){
+			DS_RES_PATH[len] = '/';
+			DS_RES_PATH[len+1] = 0;
+		}
+	}
 }
 
 /** @} */

@@ -307,5 +307,10 @@ QString GetAppDataDir()
 }
 
 QString GetResourceDir(){
-    return GetAppDataDir() + "/res";
+    QDir dir =  GetAppDataDir() + "/res";
+    if (dir.exists()){
+        return dir.absolutePath();
+    }
+    qDebug() << "dir is not exists:" << dir.absolutePath();
+    assert(false);
 }

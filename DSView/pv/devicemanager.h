@@ -35,9 +35,7 @@
 struct sr_context;
 struct sr_dev_driver;
 struct sr_dev_inst;
-struct libusbhp_t;
-struct libusbhp_device_t;
-
+  
 namespace pv {
 
 class SigSession;

@@ -186,5 +186,7 @@ SR_API void sr_set_export_original_data(int flag);
 
 SR_API int sr_get_export_original_flag();
 
+SR_API void sr_set_firmware_resource_dir(const char *dir);
+
 
 #endif

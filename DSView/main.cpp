@@ -51,7 +51,6 @@ void usage()
 		"\n", DS_BIN_NAME, DS_DESCRIPTION);
 } 
 
-char DS_RES_PATH[256] = {0};
 
 int main(int argc, char *argv[])
 {  
@@ -146,9 +145,7 @@ int main(int argc, char *argv[])
         open_file = argvFinal[argcFinal - 1];
 	}
 
-	QString path = GetAppDataDir();
-	strcpy(DS_RES_PATH, path.toUtf8().data());
-
+	
 //#ifdef Q_OS_DARWIN 
 //#endif
 

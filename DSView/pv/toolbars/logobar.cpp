@@ -200,7 +200,6 @@ void LogoBar::on_actionManual_triggered()
 
 void LogoBar::on_actionIssue_triggered()
 {
-    QDir dir(GetAppDataDir());
     QDesktopServices::openUrl(QUrl(QLatin1String("https://github.com/DreamSourceLab/DSView/issues")));
 }
 

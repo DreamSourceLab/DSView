@@ -134,8 +134,6 @@ enum {
 #define MAX_TIMEBASE SR_SEC(10)
 #define MIN_TIMEBASE SR_NS(10)
 
-extern char DS_RES_PATH[256];
-
 /** libsigrok loglevels. */
 enum {
 	SR_LOG_NONE = 0, /**< Output no messages at all. */

@@ -27,6 +27,9 @@
 #include <libusb.h>
 #endif
 
+// firmware binary file directory, endswith letter '/'
+extern char DS_RES_PATH[256];
+
 /**
  * @file
  *
@@ -118,6 +121,9 @@ SR_PRIV int sr_source_add(int fd, int events, int timeout,
 SR_PRIV int sr_session_send(const struct sr_dev_inst *sdi,
 		const struct sr_datafeed_packet *packet);
 SR_PRIV int sr_session_stop_sync(void);
+
+SR_PRIV int usb_hotplug_callback(struct libusb_context *ctx, struct libusb_device *dev,
+                                  libusb_hotplug_event event, void *user_data);
 
 /*--- std.c -----------------------------------------------------------------*/
 
