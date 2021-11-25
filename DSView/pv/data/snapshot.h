@@ -43,18 +43,35 @@ public:
     uint64_t get_ring_start();
     uint64_t get_ring_end();
 
-    const void * get_data();
+    inline const void* get_data(){
+        return _data;
+    }
 
-    int unit_size();
-    uint8_t get_unit_bytes();
+    inline int unit_size(){
+        return _unit_size;
+    }
 
-    bool memory_failed();
+    inline uint8_t get_unit_bytes(){
+        return _unit_bytes;
+    }
+
+    inline bool memory_failed(){
+        return _memory_failed;
+    }
+
     bool empty();
 
-    bool last_ended();
-    void set_last_ended(bool ended);
+    inline bool last_ended(){
+        return _last_ended;
+    }
 
-    unsigned int get_channel_num();
+    inline void set_last_ended(bool ended){
+        _last_ended = ended;
+    }
+
+    inline unsigned int get_channel_num(){
+        return _channel_num;
+    }
 
     virtual void capture_ended();
     virtual bool has_data(int index) = 0;
@@ -64,10 +81,11 @@ public:
 protected:
     virtual void free_data();
 
-    uint64_t  sample_count();
+    inline uint64_t sample_count(){
+        return _sample_count;
+    }
 
     uint64_t ring_start();
-
     uint64_t ring_end();
 
 protected:

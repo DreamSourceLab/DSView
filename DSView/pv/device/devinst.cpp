@@ -200,7 +200,12 @@ void DevInst::start()
 
 void DevInst::run()
 {
-	sr_session_run();
+	qDebug()<<"session run loop start";
+	int ret = sr_session_run();
+	if (ret != SR_OK){
+        qDebug()<<"start session error!";
+	}
+    qDebug()<<"session run loop end";
 }
 
 void DevInst::stop()

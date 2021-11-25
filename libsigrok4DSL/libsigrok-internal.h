@@ -28,7 +28,7 @@
 #endif
 
 // firmware binary file directory, endswith letter '/'
-extern char DS_RES_PATH[256];
+extern char DS_RES_PATH[500];
 
 /**
  * @file

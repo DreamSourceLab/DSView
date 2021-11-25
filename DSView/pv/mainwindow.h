@@ -91,8 +91,7 @@ private:
 	void setup_ui();
     void retranslateUi(); 
     bool eventFilter(QObject *object, QEvent *event);
-    bool load_session_json(QJsonDocument json, bool file_dev,bool bDecoder=true);
-    void update_device_list();
+    bool load_session_json(QJsonDocument json, bool file_dev,bool bDecoder=true);  
 
 public slots: 
     void switchTheme(QString style);
@@ -102,6 +101,7 @@ private slots:
 	void on_load_file(QString file_name);
     void on_open_doc(); 
     void on_device_updated_reload();
+    void update_device_list();
  
 	void on_run_stop();
     void on_instant_stop(); 

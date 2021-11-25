@@ -34,11 +34,9 @@
 #define sr_warn(s, args...) sr_warn(LOG_PREFIX s, ## args)
 #define sr_err(s, args...) sr_err(LOG_PREFIX s, ## args)
 
-char DS_RES_PATH[256] = {0};
+char DS_RES_PATH[500] = {0};
 
 int bExportOriginalData = 0; //able export all data
-
-int session_loop_stop_flag = 0;
 
 /**
  * @file
@@ -407,14 +405,12 @@ SR_API int sr_session_run(void)
 
     session->running = TRUE;
 
-    session_loop_stop_flag = 0;
-
 	sr_info("Running...");
 
 	/* Do we have real sources? */
 	if (session->num_sources == 1 && session->pollfds[0].fd == -1) {
 		/* Dummy source, freewheel over it. */
-        while (session->num_sources && !session_loop_stop_flag) {
+        while (session->num_sources) {
             if (session->abort_session) {
                 session->sources[0].cb(-1, -1, session->sources[0].cb_data);
                 break;
@@ -424,7 +420,7 @@ SR_API int sr_session_run(void)
         }
 	} else {
 		/* Real sources, use g_poll() main loop. */
-        while (session->num_sources && !session_loop_stop_flag){
+        while (session->num_sources){
 			sr_session_iteration(TRUE);
 		}            
 	}
@@ -490,8 +486,6 @@ SR_API int sr_session_stop(void)
 		sr_err("%s: session was NULL", __func__);
 		return SR_ERR_BUG;
 	}
-
-	session_loop_stop_flag = 1; //set flag, the run loop will exit
 
     g_mutex_lock(&session->stop_mutex);
     if (session->running)
@@ -841,8 +835,8 @@ void sr_set_firmware_resource_dir(const char *dir)
 
 		int len = strlen(DS_RES_PATH);
 		if (DS_RES_PATH[len-1] != '/'){
-			DS_RES_PATH[len] = '/';
-			DS_RES_PATH[len+1] = 0;
+			DS_RES_PATH[len] = '/'; 
+			DS_RES_PATH[len + 1] = 0;
 		}
 	}
 }

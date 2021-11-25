@@ -40,6 +40,7 @@
 #include <QApplication>
 #include <QStandardPaths>
 #include <QScreen>
+#include <QTimer>
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 #include <QGuiApplication>
@@ -236,10 +237,7 @@ void MainWindow::setup_ui()
   
     // UI initial
     _measure_widget->add_dist_measure();
-
-    // update device
-    update_device_list();
-    
+ 
     _session->start_hotplug_work();
 
     retranslateUi();
@@ -302,6 +300,9 @@ void MainWindow::setup_ui()
     connect(_dso_trigger_widget, SIGNAL(set_trig_pos(int)), _view, SLOT(set_trig_pos(int))); 
 
     _logo_bar->set_mainform_callback(this);
+
+    //delay to update device list
+    QTimer::singleShot(200, this, SLOT(update_device_list()));
 }
 
 
@@ -457,8 +458,6 @@ void MainWindow::on_load_file(QString file_name)
     } catch(QString e) {
         show_error(tr("Failed to load ") + file_name);
         _session->set_default_device();
-        update_device_list();
-        return;
     }
 
     update_device_list();
