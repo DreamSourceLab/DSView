@@ -418,6 +418,8 @@ void SigSession::start_capture(bool instant)
     }
     assert(_dev_inst->dev_inst());
 
+    qDebug()<<"start capture, device title:"<<_dev_inst->format_device_title();
+
     if (!_dev_inst->is_usable()) {
         _error = Hw_err;
         _callback->session_error();
@@ -431,7 +433,6 @@ void SigSession::start_capture(bool instant)
     // reset measure of dso signal
     for(auto &s : _signals)
     {
-        assert(s);
         view::DsoSignal *dsoSig = NULL;
         if ((dsoSig = dynamic_cast<view::DsoSignal*>(s)))
             dsoSig->set_mValid(false);
@@ -465,6 +466,10 @@ void SigSession::start_capture(bool instant)
     if (_sampling_thread.joinable()){
         _sampling_thread.join();
     } 
+
+    if (sr_check_session_start_before() != 0){
+        assert(false);
+    }
     _sampling_thread  = std::thread(&SigSession::sample_thread_proc, this, _dev_inst);
 }
 
@@ -483,6 +488,7 @@ void SigSession::sample_thread_proc(DevInst *dev_inst)
 
     receive_data(0);
     set_capture_state(Running);
+     //session loop
     dev_inst->run();
     set_capture_state(Stopped);
 

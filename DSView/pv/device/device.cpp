@@ -33,8 +33,6 @@ Device::Device(sr_dev_inst *sdi) :
     _sdi(sdi)
 {
 	assert(_sdi);
-    void *p = this;
-    (void)p;
 }
 
 Device::~Device()
@@ -52,9 +50,8 @@ void Device::use(SigSession *owner)
     DevInst::use(owner);
 
     sr_session_new();
-
-    assert(_sdi);
     sr_dev_open(_sdi);
+
     _usable = (_sdi->status == SR_ST_ACTIVE);
     if (sr_session_dev_add(_sdi) != SR_OK)
         throw QString(tr("Failed to use device."));
@@ -74,15 +71,6 @@ QString Device::format_device_title()
 {
 	ostringstream s;
 
-	assert(_sdi);
-
-//	if (_sdi->vendor && _sdi->vendor[0]) {
-//		s << _sdi->vendor;
-//		if ((_sdi->model && _sdi->model[0]) ||
-//			(_sdi->version && _sdi->version[0]))
-//			s << ' ';
-//	}
-
 	if (_sdi->model && _sdi->model[0]) {
 		s << _sdi->model;
 		if (_sdi->version && _sdi->version[0])
@@ -97,7 +85,6 @@ QString Device::format_device_title()
 
 bool Device::is_trigger_enabled()
 {
-	assert(_sdi);
 	for (const GSList *l = _sdi->channels; l; l = l->next) {
 		const sr_channel *const p = (const sr_channel *)l->data;
 		assert(p);

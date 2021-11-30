@@ -24,11 +24,11 @@
 
 #include <stdint.h>
 #include <string>
-#include <thread>
-  
+#include <thread>  
 #include <QObject>
-
 #include <libsigrok4DSL/libsigrok.h>
+
+#include "interface/icallbacks.h"
 
 #include "ZipMaker.h"
 
@@ -72,14 +72,13 @@ public:
 
 private:
     void save_proc(pv::data::Snapshot *snapshot);
-    QString meta_gen(data::Snapshot *snapshot);
-    void export_proc(pv::data::Snapshot *snapshot);
-   
-    QString decoders_gen();
+    bool meta_gen(data::Snapshot *snapshot, std::string &str);
+    void export_proc(pv::data::Snapshot *snapshot);   
+    bool decoders_gen(std::string &str);
  
 
 public:    
-    QJsonArray json_decoders();
+    bool json_decoders(QJsonArray &array);
     bool load_decoders(dock::ProtocolDock *widget, QJsonArray dec_array);
     QString MakeSaveFile(bool bDlg);
     QString MakeExportFile(bool bDlg);
@@ -94,12 +93,13 @@ private:
     QList<QString> getSuportedExportFormats();
     double get_integer(GVariant * var);
     void MakeChunkName(char *chunk_name, int chunk_num, int index, int type, int version);
+    std:: string getFileName(QString fileName);
 
 signals:
 	void progress_updated();
 
 public:
-    QString          _sessionFile;
+   ISessionDataGetter   *_sessionDataGetter;
 
 private:
     QString         _file_name;

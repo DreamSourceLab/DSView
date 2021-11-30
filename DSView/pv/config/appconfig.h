@@ -33,12 +33,10 @@
 //--------------------api---
 
 QString GetDirectoryName(QString path);
-
 QString GetIconPath();
-
 QString GetAppDataDir();
-
 QString GetResourceDir();
+QString GetUserDataDir();
 
 //------------------class
   

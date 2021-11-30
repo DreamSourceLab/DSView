@@ -195,7 +195,8 @@ bool DevInst::is_trigger_enabled()
 void DevInst::start()
 {
 	if (sr_session_start() != SR_OK)
-		throw tr("Failed to start session.");
+		 throw tr("Failed to start session.");
+		//assert(false);
 }
 
 void DevInst::run()

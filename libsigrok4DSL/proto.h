@@ -117,6 +117,9 @@ SR_API int sr_session_source_remove(int fd);
 SR_API int sr_session_source_remove_pollfd(GPollFD *pollfd);
 SR_API int sr_session_source_remove_channel(GIOChannel *channel);
 
+//0:ok, 1:error
+SR_API int sr_check_session_start_before();
+
 /*--- input/input.c ---------------------------------------------------------*/
 
 SR_API struct sr_input_format **sr_input_list(void);

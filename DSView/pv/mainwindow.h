@@ -73,7 +73,7 @@ using namespace pv::device;
  
 //The mainwindow,referenced by MainFrame
 //TODO: create graph view,toolbar,and show device list
-class MainWindow : public QMainWindow, public ISessionCallback, public IMainForm
+class MainWindow : public QMainWindow, public ISessionCallback, public IMainForm, ISessionDataGetter
 {
 	Q_OBJECT
 
@@ -146,6 +146,10 @@ public:
 public:
     void session_save(); 
 
+    //ISessionDataGetter
+private:
+    bool genSessionData(std::string &str);
+
 //ISessionCallback
 private:
     void show_error(QString error);
@@ -172,6 +176,9 @@ private:
     void receive_data_len(quint64 len);
     void receive_header();    
     void data_received();
+
+    //------private
+    bool gen_session_json(QJsonArray &array);
 
 private:
     AppControl              *_control; 

@@ -49,10 +49,11 @@
 #include <math.h>
 #include <QTextStream>
 #include <QDebug>
-
+ 
 #include <libsigrokdecode4DSL/libsigrokdecode.h>
 #include "config/appconfig.h"
 #include "dsvdef.h"
+
  
 namespace pv { 
 
@@ -64,6 +65,7 @@ StoreSession::StoreSession(SigSession *session) :
     _has_error(false),
     _canceled(false)
 { 
+    _sessionDataGetter = NULL;
 }
 
 StoreSession::~StoreSession()
@@ -117,12 +119,8 @@ QList<QString> StoreSession::getSuportedExportFormats(){
 }
 
 bool StoreSession::save_start()
-{
-    if (_sessionFile == "")
-    {
-        _error = tr("No set session file name.");
-        return false;
-    }
+{ 
+    assert(_sessionDataGetter);
 
     std::set<int> type_set;
     for(auto &sig : _session->get_signals()) {
@@ -151,11 +149,7 @@ bool StoreSession::save_start()
     if (snapshot->empty()) {
         _error = tr("No data to save.");
         return false;
-    }
-
-    QString meta_file = meta_gen(snapshot);
-
-    QString decoders_file = decoders_gen();
+    } 
 
     /*
         if (meta_file == NULL) {
@@ -174,13 +168,37 @@ bool StoreSession::save_start()
         }
         */
 
-    //make zip file
-    if (meta_file != "" && m_zipDoc.CreateNew(_file_name.toUtf8().data(), false))
-    {
-        if (!m_zipDoc.AddFromFile(meta_file.toUtf8().data(), "header") 
-        || !m_zipDoc.AddFromFile(decoders_file.toUtf8().data(), "decoders") 
-        || !m_zipDoc.AddFromFile(_sessionFile.toUtf8().data(), "session"))
-        {
+    std::string meta_data;
+    std::string decoder_data;
+    std::string session_data;
+    
+    meta_gen(snapshot, meta_data);
+    decoders_gen(decoder_data);
+    _sessionDataGetter->genSessionData(session_data);
+
+    if (meta_data.empty()) {
+        _error = tr("Generate temp file data failed.");
+        QFile::remove(_file_name);
+        return false;
+    }
+    if (decoder_data.empty()){
+        _error = tr("Generate decoder file data failed.");
+        QFile::remove(_file_name);
+        return false;
+    }
+    if (session_data.empty()){
+        _error = tr("Generate session file data failed.");
+        QFile::remove(_file_name);
+        return false;
+    }
+   
+    std::string _filename = getFileName(_file_name);
+    if (m_zipDoc.CreateNew(_filename.c_str(), false))
+    {    
+        if ( !m_zipDoc.AddFromBuffer("header", meta_data.c_str(), meta_data.size())
+            || !m_zipDoc.AddFromBuffer("decoders", decoder_data.c_str(), decoder_data.size())
+            || !m_zipDoc.AddFromBuffer("session", session_data.c_str(), session_data.size())
+        ){
             _has_error = true;
             _error = m_zipDoc.GetError();
         }
@@ -191,9 +209,11 @@ bool StoreSession::save_start()
             return !_has_error;
         }
     }
+    else{
+         _error = tr("Generate zip file failed.");
+    }
 
     QFile::remove(_file_name);
-    //_error.clear();
     return false;
 }
 
@@ -339,55 +359,35 @@ void StoreSession::save_proc(data::Snapshot *snapshot)
     } 
 }
 
-QString StoreSession::meta_gen(data::Snapshot *snapshot)
+bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
 {
     GSList *l;
-    GVariant *gvar;
-    FILE *meta = NULL;
+    GVariant *gvar; 
     struct sr_channel *probe;
     int probecnt;
     char *s;
     struct sr_status status;
-    QString metafile;
+    const sr_dev_inst *sdi = NULL;
+    char meta[300] = {0};
+ 
+    sdi = _session->get_device()->dev_inst();
+  
+    sprintf(meta, "%s", "[version]\n"); str += meta;
+    sprintf(meta, "version = %d\n", File_Version); str += meta;
+    sprintf(meta, "%s", "[header]\n"); str += meta;
 
-    /* init "metadata" */
-    QDir dir;
-    #if QT_VERSION >= 0x050400
-    QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-    #else
-    QString path = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
-    #endif
-    if(dir.mkpath(path)) {
-        dir.cd(path);
-        metafile = dir.absolutePath() + "/DSView-meta-XXXXXX";
-    } else {
-        return NULL;
-    }
-
-    const sr_dev_inst *sdi = _session->get_device()->dev_inst();
-    meta = fopen(metafile.toUtf8().data(), "wb");
-    if (meta == NULL) {
-        qDebug() << "Failed to create temp meta file.";
-        return NULL;
-    }
-
-    fprintf(meta, "[version]\n");
-    fprintf(meta, "version = %d\n", File_Version);
-
-    /* metadata */
-    fprintf(meta, "[header]\n");
     if (sdi->driver) {
-        fprintf(meta, "driver = %s\n", sdi->driver->name);
-        fprintf(meta, "device mode = %d\n", sdi->mode);
+        sprintf(meta, "driver = %s\n", sdi->driver->name); str += meta;
+        sprintf(meta, "device mode = %d\n", sdi->mode); str += meta;
     }
 
     /* metadata */
-    fprintf(meta, "capturefile = data\n");
-    fprintf(meta, "total samples = %" PRIu64 "\n", snapshot->get_sample_count());
+    sprintf(meta, "capturefile = data\n"); str += meta;
+    sprintf(meta, "total samples = %" PRIu64 "\n", snapshot->get_sample_count()); str += meta;
 
     if (sdi->mode != LOGIC) {
-        fprintf(meta, "total probes = %d\n", snapshot->get_channel_num());
-        fprintf(meta, "total blocks = %d\n", snapshot->get_block_num());
+        sprintf(meta, "total probes = %d\n", snapshot->get_channel_num()); str += meta;
+        sprintf(meta, "total blocks = %d\n", snapshot->get_block_num()); str += meta;
     }
 
     data::LogicSnapshot *logic_snapshot = NULL;
@@ -398,140 +398,198 @@ QString StoreSession::meta_gen(data::Snapshot *snapshot)
             if (probe->enabled && logic_snapshot->has_data(probe->index))
                 to_save_probes++;
         }
-        fprintf(meta, "total probes = %d\n", to_save_probes);
-        fprintf(meta, "total blocks = %d\n", logic_snapshot->get_block_num());
+        sprintf(meta, "total probes = %d\n", to_save_probes); str += meta;
+        sprintf(meta, "total blocks = %d\n", logic_snapshot->get_block_num()); str += meta;
     }
 
     s = sr_samplerate_string(_session->cur_snap_samplerate());
-    fprintf(meta, "samplerate = %s\n", s);
+
+    sprintf(meta, "samplerate = %s\n", s); str += meta;
 
     if (sdi->mode == DSO) {
         gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_TIMEBASE);
         if (gvar != NULL) {
             uint64_t tmp_u64 = g_variant_get_uint64(gvar);
-            fprintf(meta, "hDiv = %" PRIu64 "\n", tmp_u64);
+            sprintf(meta, "hDiv = %" PRIu64 "\n", tmp_u64); str += meta;
             g_variant_unref(gvar);
         }
         gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_MAX_TIMEBASE);
         if (gvar != NULL) {
             uint64_t tmp_u64 = g_variant_get_uint64(gvar);
-            fprintf(meta, "hDiv max = %" PRIu64 "\n", tmp_u64);
+            sprintf(meta, "hDiv max = %" PRIu64 "\n", tmp_u64); str += meta;
             g_variant_unref(gvar);
         }
         gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_MIN_TIMEBASE);
         if (gvar != NULL) {
             uint64_t tmp_u64 = g_variant_get_uint64(gvar);
-            fprintf(meta, "hDiv min = %" PRIu64 "\n", tmp_u64);
+            sprintf(meta, "hDiv min = %" PRIu64 "\n", tmp_u64); str += meta;
             g_variant_unref(gvar);
         }
         gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_UNIT_BITS);
         if (gvar != NULL) {
             uint8_t tmp_u8 = g_variant_get_byte(gvar);
-            fprintf(meta, "bits = %d\n", tmp_u8);
+            sprintf(meta, "bits = %d\n", tmp_u8); str += meta;
             g_variant_unref(gvar);
         }
         gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MIN);
         if (gvar != NULL) {
             uint32_t tmp_u32 = g_variant_get_uint32(gvar);
-            fprintf(meta, "ref min = %d\n", tmp_u32);
+            sprintf(meta, "ref min = %d\n", tmp_u32); str += meta;
             g_variant_unref(gvar);
         }
         gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MAX);
         if (gvar != NULL) {
             uint32_t tmp_u32 = g_variant_get_uint32(gvar);
-            fprintf(meta, "ref max = %d\n", tmp_u32);
+            sprintf(meta, "ref max = %d\n", tmp_u32); str += meta;
             g_variant_unref(gvar);
         }
     } else if (sdi->mode == LOGIC) {
-        fprintf(meta, "trigger time = %lld\n", _session->get_session_time().toMSecsSinceEpoch());
+        sprintf(meta, "trigger time = %lld\n", _session->get_session_time().toMSecsSinceEpoch()); str += meta;
     } else if (sdi->mode == ANALOG) {
         data::AnalogSnapshot *analog_snapshot = NULL;
         if ((analog_snapshot = dynamic_cast<data::AnalogSnapshot*>(snapshot))) {
             uint8_t tmp_u8 = analog_snapshot->get_unit_bytes();
-            fprintf(meta, "bits = %d\n", tmp_u8*8);
+            sprintf(meta, "bits = %d\n", tmp_u8*8); str += meta;
         }
         gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MIN);
         if (gvar != NULL) {
             uint32_t tmp_u32 = g_variant_get_uint32(gvar);
-            fprintf(meta, "ref min = %d\n", tmp_u32);
+            sprintf(meta, "ref min = %d\n", tmp_u32); str += meta;
             g_variant_unref(gvar);
         }
         gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MAX);
         if (gvar != NULL) {
             uint32_t tmp_u32 = g_variant_get_uint32(gvar);
-            fprintf(meta, "ref max = %d\n", tmp_u32);
+            sprintf(meta, "ref max = %d\n", tmp_u32); str += meta;
             g_variant_unref(gvar);
         }
     }
-    fprintf(meta, "trigger pos = %" PRIu64 "\n", _session->get_trigger_pos());
+    sprintf(meta, "trigger pos = %" PRIu64 "\n", _session->get_trigger_pos()); str += meta;
 
-    probecnt = 0;
+    probecnt = 0; 
+
     for (l = sdi->channels; l; l = l->next) {
+        
         probe = (struct sr_channel *)l->data;
-        if (snapshot->has_data(probe->index)) {
-            if (sdi->mode == LOGIC && !probe->enabled)
-                continue;
+        if (!snapshot->has_data(probe->index))
+            continue;
+        if (sdi->mode == LOGIC && !probe->enabled)
+            continue;
 
-            if (probe->name)
-                fprintf(meta, "probe%d = %s\n", (sdi->mode == LOGIC) ? probe->index : probecnt, probe->name);
-            if (probe->trigger)
-                fprintf(meta, " trigger%d = %s\n", probecnt, probe->trigger);
-            if (sdi->mode == DSO) {
-                fprintf(meta, " enable%d = %d\n", probecnt, probe->enabled);
-                fprintf(meta, " coupling%d = %d\n", probecnt, probe->coupling);
-                fprintf(meta, " vDiv%d = %" PRIu64 "\n", probecnt, probe->vdiv);
-                fprintf(meta, " vFactor%d = %" PRIu64 "\n", probecnt, probe->vfactor);
-                fprintf(meta, " vOffset%d = %d\n", probecnt, probe->hw_offset);
-                fprintf(meta, " vTrig%d = %d\n", probecnt, probe->trig_value);
-                if (sr_status_get(sdi, &status, false) == SR_OK) {
-                    if (probe->index == 0) {
-                        fprintf(meta, " period%d = %" PRIu32 "\n", probecnt, status.ch0_cyc_tlen);
-                        fprintf(meta, " pcnt%d = %" PRIu32 "\n", probecnt, status.ch0_cyc_cnt);
-                        fprintf(meta, " max%d = %d\n", probecnt, status.ch0_max);
-                        fprintf(meta, " min%d = %d\n", probecnt, status.ch0_min);
-                        fprintf(meta, " plen%d = %" PRIu32 "\n", probecnt, status.ch0_cyc_plen);
-                        fprintf(meta, " llen%d = %" PRIu32 "\n", probecnt, status.ch0_cyc_llen);
-                        fprintf(meta, " level%d = %d\n", probecnt, status.ch0_level_valid);
-                        fprintf(meta, " plevel%d = %d\n", probecnt, status.ch0_plevel);
-                        fprintf(meta, " low%d = %" PRIu32 "\n", probecnt, status.ch0_low_level);
-                        fprintf(meta, " high%d = %" PRIu32 "\n", probecnt, status.ch0_high_level);
-                        fprintf(meta, " rlen%d = %" PRIu32 "\n", probecnt, status.ch0_cyc_rlen);
-                        fprintf(meta, " flen%d = %" PRIu32 "\n", probecnt, status.ch0_cyc_flen);
-                        fprintf(meta, " rms%d = %" PRIu64 "\n", probecnt, status.ch0_acc_square);
-                        fprintf(meta, " mean%d = %" PRIu32 "\n", probecnt, status.ch0_acc_mean);
-                    } else {
-                        fprintf(meta, " period%d = %" PRIu32 "\n", probecnt, status.ch1_cyc_tlen);
-                        fprintf(meta, " pcnt%d = %" PRIu32 "\n", probecnt, status.ch1_cyc_cnt);
-                        fprintf(meta, " max%d = %d\n", probecnt, status.ch1_max);
-                        fprintf(meta, " min%d = %d\n", probecnt, status.ch1_min);
-                        fprintf(meta, " plen%d = %" PRIu32 "\n", probecnt, status.ch1_cyc_plen);
-                        fprintf(meta, " llen%d = %" PRIu32 "\n", probecnt, status.ch1_cyc_llen);
-                        fprintf(meta, " level%d = %d\n", probecnt, status.ch1_level_valid);
-                        fprintf(meta, " plevel%d = %d\n", probecnt, status.ch1_plevel);
-                        fprintf(meta, " low%d = %" PRIu32 "\n", probecnt, status.ch1_low_level);
-                        fprintf(meta, " high%d = %" PRIu32 "\n", probecnt, status.ch1_high_level);
-                        fprintf(meta, " rlen%d = %" PRIu32 "\n", probecnt, status.ch1_cyc_rlen);
-                        fprintf(meta, " flen%d = %" PRIu32 "\n", probecnt, status.ch1_cyc_flen);
-                        fprintf(meta, " rms%d = %" PRIu64 "\n", probecnt, status.ch1_acc_square);
-                        fprintf(meta, " mean%d = %" PRIu32 "\n", probecnt, status.ch1_acc_mean);
-                    }
-                }
-            } else if (sdi->mode == ANALOG) {
-                fprintf(meta, " enable%d = %d\n", probecnt, probe->enabled);
-                fprintf(meta, " coupling%d = %d\n", probecnt, probe->coupling);
-                fprintf(meta, " vDiv%d = %" PRIu64 "\n", probecnt, probe->vdiv);
-                fprintf(meta, " vOffset%d = %d\n", probecnt, probe->hw_offset);
-                fprintf(meta, " mapUnit%d = %s\n", probecnt, probe->map_unit);
-                fprintf(meta, " mapMax%d = %lf\n", probecnt, probe->map_max);
-                fprintf(meta, " mapMin%d = %lf\n", probecnt, probe->map_min);
-            }
-            probecnt++;
+        if (probe->name)
+        {
+            int sigdex = (sdi->mode == LOGIC) ? probe->index : probecnt;
+            sprintf(meta, "probe%d = %s\n", sigdex, probe->name);
+            str += meta;
         }
-    }
 
-    fclose(meta);
+        if (probe->trigger){
+            sprintf(meta, " trigger%d = %s\n", probecnt, probe->trigger); 
+            str += meta;
+        }
 
-    return metafile;
+        if (sdi->mode == DSO)
+        {
+            sprintf(meta, " enable%d = %d\n", probecnt, probe->enabled);
+            str += meta;
+            sprintf(meta, " coupling%d = %d\n", probecnt, probe->coupling);
+            str += meta;
+            sprintf(meta, " vDiv%d = %" PRIu64 "\n", probecnt, probe->vdiv);
+            str += meta;
+            sprintf(meta, " vFactor%d = %" PRIu64 "\n", probecnt, probe->vfactor);
+            str += meta;
+            sprintf(meta, " vOffset%d = %d\n", probecnt, probe->hw_offset);
+            str += meta;
+            sprintf(meta, " vTrig%d = %d\n", probecnt, probe->trig_value);
+            str += meta;
+
+            if (sr_status_get(sdi, &status, false) == SR_OK)
+            {
+                if (probe->index == 0)
+                {
+                    sprintf(meta, " period%d = %" PRIu32 "\n", probecnt, status.ch0_cyc_tlen);
+                    str += meta;
+                    sprintf(meta, " pcnt%d = %" PRIu32 "\n", probecnt, status.ch0_cyc_cnt);
+                    str += meta;
+                    sprintf(meta, " max%d = %d\n", probecnt, status.ch0_max);
+                    str += meta;
+                    sprintf(meta, " min%d = %d\n", probecnt, status.ch0_min);
+                    str += meta;
+                    sprintf(meta, " plen%d = %" PRIu32 "\n", probecnt, status.ch0_cyc_plen);
+                    str += meta;
+                    sprintf(meta, " llen%d = %" PRIu32 "\n", probecnt, status.ch0_cyc_llen);
+                    str += meta;
+                    sprintf(meta, " level%d = %d\n", probecnt, status.ch0_level_valid);
+                    str += meta;
+                    sprintf(meta, " plevel%d = %d\n", probecnt, status.ch0_plevel);
+                    str += meta;
+                    sprintf(meta, " low%d = %" PRIu32 "\n", probecnt, status.ch0_low_level);
+                    str += meta;
+                    sprintf(meta, " high%d = %" PRIu32 "\n", probecnt, status.ch0_high_level);
+                    str += meta;
+                    sprintf(meta, " rlen%d = %" PRIu32 "\n", probecnt, status.ch0_cyc_rlen);
+                    str += meta;
+                    sprintf(meta, " flen%d = %" PRIu32 "\n", probecnt, status.ch0_cyc_flen);
+                    str += meta;
+                    sprintf(meta, " rms%d = %" PRIu64 "\n", probecnt, status.ch0_acc_square);
+                    str += meta;
+                    sprintf(meta, " mean%d = %" PRIu32 "\n", probecnt, status.ch0_acc_mean);
+                    str += meta;
+                }
+                else
+                {
+                    sprintf(meta, " period%d = %" PRIu32 "\n", probecnt, status.ch1_cyc_tlen);
+                    str += meta;
+                    sprintf(meta, " pcnt%d = %" PRIu32 "\n", probecnt, status.ch1_cyc_cnt);
+                    str += meta;
+                    sprintf(meta, " max%d = %d\n", probecnt, status.ch1_max);
+                    str += meta;
+                    sprintf(meta, " min%d = %d\n", probecnt, status.ch1_min);
+                    str += meta;
+                    sprintf(meta, " plen%d = %" PRIu32 "\n", probecnt, status.ch1_cyc_plen);
+                    str += meta;
+                    sprintf(meta, " llen%d = %" PRIu32 "\n", probecnt, status.ch1_cyc_llen);
+                    str += meta;
+                    sprintf(meta, " level%d = %d\n", probecnt, status.ch1_level_valid);
+                    str += meta;
+                    sprintf(meta, " plevel%d = %d\n", probecnt, status.ch1_plevel);
+                    str += meta;
+                    sprintf(meta, " low%d = %" PRIu32 "\n", probecnt, status.ch1_low_level);
+                    str += meta;
+                    sprintf(meta, " high%d = %" PRIu32 "\n", probecnt, status.ch1_high_level);
+                    str += meta;
+                    sprintf(meta, " rlen%d = %" PRIu32 "\n", probecnt, status.ch1_cyc_rlen);
+                    str += meta;
+                    sprintf(meta, " flen%d = %" PRIu32 "\n", probecnt, status.ch1_cyc_flen);
+                    str += meta;
+                    sprintf(meta, " rms%d = %" PRIu64 "\n", probecnt, status.ch1_acc_square);
+                    str += meta;
+                    sprintf(meta, " mean%d = %" PRIu32 "\n", probecnt, status.ch1_acc_mean);
+                    str += meta;
+                }
+            }
+        }
+        else if (sdi->mode == ANALOG)
+        {
+            sprintf(meta, " enable%d = %d\n", probecnt, probe->enabled);
+            str += meta;
+            sprintf(meta, " coupling%d = %d\n", probecnt, probe->coupling);
+            str += meta;
+            sprintf(meta, " vDiv%d = %" PRIu64 "\n", probecnt, probe->vdiv);
+            str += meta;
+            sprintf(meta, " vOffset%d = %d\n", probecnt, probe->hw_offset);
+            str += meta;
+            sprintf(meta, " mapUnit%d = %s\n", probecnt, probe->map_unit);
+            str += meta;
+            sprintf(meta, " mapMax%d = %lf\n", probecnt, probe->map_max);
+            str += meta;
+            sprintf(meta, " mapMin%d = %lf\n", probecnt, probe->map_min);
+            str += meta;
+        }
+        probecnt++;
+    } 
+
+    return true;
 }
 
 //export as csv file
@@ -824,43 +882,19 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
 }
 
  
-QString StoreSession::decoders_gen()
-{
-    QDir dir;
-    #if QT_VERSION >= 0x050400
-    QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-    #else
-    QString path = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
-    #endif
-    if(dir.mkpath(path)) {
-        dir.cd(path);
-
-        QString file_name = dir.absolutePath() + "/DSView-decoders-XXXXXX";
-        QFile sessionFile(file_name);
-        if (!sessionFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            qDebug("Warning: Couldn't open session file to write!");
-            return NULL;
-        }
-        QTextStream outStream(&sessionFile);
-        app::set_utf8(outStream);
-        //outStream.setGenerateByteOrderMark(true); // UTF-8 without BOM
-
-        QJsonArray dec_array = json_decoders();
-        QJsonDocument sessionDoc(dec_array);
-        outStream << QString::fromUtf8(sessionDoc.toJson());
-        sessionFile.close();
-
-        return file_name;
-    } else {
-        return NULL;
-    }
-
+bool StoreSession::decoders_gen(std::string &str)
+{  
+    QJsonArray dec_array;
+    if (!json_decoders(dec_array))
+        return false;
+    QJsonDocument sessionDoc(dec_array);
+    QString data = QString::fromUtf8(sessionDoc.toJson());
+    str.append(data.toLatin1().data());
+    return true;
 }
 
-QJsonArray StoreSession::json_decoders()
-{
-    QJsonArray dec_array;
-
+bool StoreSession::json_decoders(QJsonArray &array)
+{  
     for(auto &t : _session->get_decode_signals()) {
         QJsonObject dec_obj;
         QJsonArray stack_array;
@@ -913,7 +947,6 @@ QJsonArray StoreSession::json_decoders()
                 }
             }
 
-
             if (have_probes) {
                 dec_obj["id"] = QJsonValue::fromVariant(d->id);
                 dec_obj["channel"] = ch_array;
@@ -936,9 +969,10 @@ QJsonArray StoreSession::json_decoders()
         }
         dec_obj["show"] = show_obj;
 
-        dec_array.push_back(dec_obj);
+        array.push_back(dec_obj);
     }
-    return dec_array;
+
+    return true;
 }
 
 bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_array)
@@ -1298,6 +1332,16 @@ void StoreSession::MakeChunkName(char *chunk_name, int chunk_num, int index, int
     {
         snprintf(chunk_name, 15, "data");
     }
+}
+
+std::string StoreSession::getFileName(QString fileName)
+{
+#if defined(_WIN32)
+    QTextCodec *code = QTextCodec::codecForName("GB2312");
+    return code->fromUnicode(fileName).data();
+#else
+    return _file_name.toUtf8().toStdString();
+#endif
 }
 
 } // pv

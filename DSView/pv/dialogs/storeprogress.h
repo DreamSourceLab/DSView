@@ -25,6 +25,7 @@
 #include <QProgressBar>
 #include "../storesession.h"
 #include "../dialogs/dsdialog.h" 
+#include "../interface/icallbacks.h"
 
 class QLineEdit;
 class QCheckBox;
@@ -59,7 +60,7 @@ signals:
     void save_done();
 
 public slots:
-    void save_run(QString session_file);
+    void save_run(ISessionDataGetter *getter);
     void export_run();
 
 private slots:

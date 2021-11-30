@@ -913,25 +913,11 @@ void MainWindow::on_save()
     using pv::dialogs::StoreProgress; 
 
     SigSession *_session = _control->GetSession();
-
     _session->set_saving(true);
-    QString session_file;
-    QDir dir;
-    #if QT_VERSION >= 0x050400
-    QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-    #else
-    QString path = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
-    #endif
-    if(dir.mkpath(path)) {
-        dir.cd(path);
-
-        session_file = dir.absolutePath() + "/DSView-session-XXXXXX";
-        on_store_session(session_file);
-    }
 
     StoreProgress *dlg = new StoreProgress(_session, this);
     connect(dlg, SIGNAL(save_done()), this, SLOT(device_detach_post()));
-    dlg->save_run(session_file);
+    dlg->save_run(this);
 }
 
 void MainWindow::on_export()
@@ -1139,21 +1125,9 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev, bool bDeco
     return true;
 }
 
-
-bool MainWindow::on_store_session(QString name)
-{
-    QFile sessionFile(name);
-    if (!sessionFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        qDebug("Warning: Couldn't open session file to write!");
-        return false;
-    }
-    QTextStream outStream(&sessionFile);
-    app::set_utf8(outStream); 
-
-    //outStream.setGenerateByteOrderMark(true); // UTF-8 without BOM
-
-    AppConfig &app = AppConfig::Instance(); 
+bool MainWindow::gen_session_json(QJsonArray &array){
     SigSession *_session = _control->GetSession();
+    AppConfig &app = AppConfig::Instance();
 
     GVariant *gvar_opts;
     GVariant *gvar;
@@ -1168,6 +1142,7 @@ bool MainWindow::on_store_session(QString name)
 
     if ((sr_config_list(sdi->driver, sdi, NULL, SR_CONF_DEVICE_SESSIONS, &gvar_opts) != SR_OK))
         return false;   /* Driver supports no device instance sessions. */
+
     const int *const options = (const int32_t *)g_variant_get_fixed_array(
         gvar_opts, &num_opts, sizeof(int32_t));
     for (unsigned int i = 0; i < num_opts; i++) {
@@ -1231,20 +1206,49 @@ bool MainWindow::on_store_session(QString name)
     if (_session->get_device()->dev_inst()->mode == LOGIC) {
         sessionVar["trigger"] = _trigger_widget->get_session();
     }
-
-   
+ 
     StoreSession ss(_session);
-    sessionVar["decoder"] = ss.json_decoders();
-
+    QJsonArray decodeJson;
+    ss.json_decoders(decodeJson);
+    sessionVar["decoder"] = decodeJson;
 
     if (_session->get_device()->dev_inst()->mode == DSO) {
         sessionVar["measure"] = _view->get_viewstatus()->get_session();
+    } 
+ 
+    array.push_back(sessionVar);
+    return true;
+}
+
+bool MainWindow::on_store_session(QString name)
+{
+    QFile sessionFile(name);
+    if (!sessionFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        qDebug("Warning: Couldn't open session file to write!");
+        return false;
     }
 
-    QJsonDocument sessionDoc(sessionVar);
+    QTextStream outStream(&sessionFile);
+    app::set_utf8(outStream);
+    
+    QJsonArray jsonArray;
+    if (!gen_session_json(jsonArray))
+        return false;
+    QJsonDocument sessionDoc(jsonArray);
     //sessionFile.write(QString::fromUtf8(sessionDoc.toJson()));
     outStream << QString::fromUtf8(sessionDoc.toJson());
     sessionFile.close(); 
+    return true;
+}
+
+bool MainWindow::genSessionData(std::string &str)
+{
+    QJsonArray jsonArray;
+    if (!gen_session_json(jsonArray))
+        return false;
+    QJsonDocument sessionDoc(jsonArray);
+    QString data = QString::fromUtf8(sessionDoc.toJson());
+    str.append(data.toLatin1().data());
     return true;
 }
 

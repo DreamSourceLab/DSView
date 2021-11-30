@@ -34,4 +34,10 @@ public:
   
 };
 
+class ISessionDataGetter
+{
+public:
+    virtual bool genSessionData(std::string &str) = 0;
+};
+
 #endif

@@ -18,6 +18,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 #QMAKE_CFLAGS_ISYSTEM = -I
 
+
 TARGET = DSView
 TEMPLATE = app
 

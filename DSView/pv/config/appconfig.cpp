@@ -27,6 +27,7 @@
 #include <QDir>
 #include <QDebug>
 #include <assert.h>
+#include <QStandardPaths>
   
 #define MAX_PROTOCOL_FORMAT_LIST 15
 
@@ -313,4 +314,13 @@ QString GetResourceDir(){
     }
     qDebug() << "dir is not exists:" << dir.absolutePath();
     assert(false);
+}
+
+QString GetUserDataDir()
+{
+    #if QT_VERSION >= 0x050400
+    return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    #else
+    return QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    #endif
 }

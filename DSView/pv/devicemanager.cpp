@@ -102,8 +102,7 @@ void DeviceManager::driver_scan(
 	// list. They will not be valid after the scan.
     auto i = _devices.begin();
 	while (i != _devices.end()) {
-        if ((*i)->dev_inst() &&
-            (*i)->dev_inst()->driver == driver) {
+        if ((*i)->dev_inst() && (*i)->dev_inst()->driver == driver) {
             (*i)->release();
 			i = _devices.erase(i);
         } else {

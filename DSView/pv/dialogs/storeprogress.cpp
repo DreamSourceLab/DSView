@@ -158,18 +158,20 @@ void StoreProgress::timeout()
         _store_session.session()->set_saving(false);
         save_done();
         close(); 
+        delete this;
+        
     } else {
         QTimer::singleShot(100, this, SLOT(timeout()));
     }
 }
 
-void StoreProgress::save_run(QString session_file)
+void StoreProgress::save_run(ISessionDataGetter *getter)
 {
     _isExport = false;
     setTitle(tr("Saving..."));
     QString file = _store_session.MakeSaveFile(false);
     _fileLab->setText(file);
-    _store_session._sessionFile = session_file;
+    _store_session._sessionDataGetter = getter;
     show();  
 }
 

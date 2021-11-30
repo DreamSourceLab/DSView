@@ -383,6 +383,17 @@ SR_API int sr_session_start(void)
 	return ret;
 }
 
+/*
+* check session if be created
+*/
+int sr_check_session_start_before(){
+
+	if (!session || !session->devs) {
+		return 1;		 
+	}
+	return 0;
+}
+
 /**
  * Run the session.
  *
