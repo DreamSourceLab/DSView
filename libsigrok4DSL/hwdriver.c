@@ -27,6 +27,8 @@
 #include <glib.h>
 #include "config.h" /* Needed for HAVE_LIBUSB_1_0 and others. */
 
+#include "hardware/DSL/dsl.h"
+
 /* Message logging helpers with subsystem-specific prefix string. */
 #define LOG_PREFIX "hwdriver: "
 #define sr_log(l, s, args...) sr_log(l, LOG_PREFIX s, ## args)
@@ -475,3 +477,79 @@ SR_PRIV int sr_source_add(int fd, int events, int timeout,
 }
 
 /** @} */
+
+/*
+test usb device api
+*/
+SR_API void sr_test_usb_api()
+{
+    libusb_context *ctx;
+    struct libusb_device_descriptor des;
+    int usb_speed;
+    int ret;
+    int i;
+    int num_devs;
+    libusb_device **devlist;
+    int stdnum = 0;
+    int j;
+    int bfind = 0;
+    int dlsnum = 0;
+    struct libusb_device_handle *devhandle;
+
+    printf("\n");
+
+    ret = libusb_init(&ctx);
+    if (ret) {
+	printf("unable to initialize libusb: %i\n", ret);
+    return;	 
+   }
+  
+    num_devs = libusb_get_device_list(ctx, &devlist);
+    printf("usb dev num:%d\n", num_devs);
+
+    for (i=0; i<num_devs; i++){
+        libusb_get_device_descriptor(devlist[i], &des);
+
+        usb_speed = libusb_get_device_speed( devlist[i]);
+
+        if ((usb_speed != LIBUSB_SPEED_HIGH) && (usb_speed != LIBUSB_SPEED_SUPER))
+            continue;
+        stdnum++;
+        bfind = 0;
+
+        for (j = 0; supported_DSLogic[j].vid; j++) {
+            if (des.idVendor == supported_DSLogic[j].vid &&
+                des.idProduct == supported_DSLogic[j].pid &&
+                usb_speed == supported_DSLogic[j].usb_speed) {
+                bfind = 1;
+                break;
+			}
+		}
+
+        if (bfind){
+            dlsnum++;
+
+            devhandle = NULL;
+            ret = libusb_open(devlist[i], &devhandle);
+            if (ret){
+                printf("open device error!%s\n", libusb_error_name(ret));
+            }
+            else{
+                //printf("dev open success\n");
+                  ret = libusb_claim_interface(devhandle, USB_INTERFACE);
+                  if (ret){
+                         printf("Unable to claim interface: %s\n", libusb_error_name(ret));
+                  }
+
+                libusb_close(devhandle);
+            }
+        }
+    }
+
+    printf("std usb dev num:%d\n", stdnum);
+    printf("dls dev num:%d\n", dlsnum);
+
+    libusb_free_device_list(devlist, 0);
+
+   libusb_exit(NULL);
+}

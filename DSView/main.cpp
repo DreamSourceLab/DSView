@@ -38,6 +38,8 @@
 #include "config.h"
 #include "pv/appcontrol.h"
 
+//#include <libsigrok4DSL/libsigrok.h>
+
 void usage()
 {
 	fprintf(stdout,
@@ -54,6 +56,8 @@ void usage()
 
 int main(int argc, char *argv[])
 {  
+   // sr_test_usb_api();return 0;
+	 
 	int ret = 0; 
 	const char *open_file = NULL;
  

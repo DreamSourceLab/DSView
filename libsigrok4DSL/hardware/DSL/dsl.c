@@ -1779,6 +1779,7 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
     int ret;
     uint8_t hw_info;
     struct ctl_rd_cmd rd_cmd;
+    int fdError = 0;
 
     devc = sdi->priv;
     usb = sdi->conn;
@@ -1799,7 +1800,7 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
         sr_err("%s: Unable to open device.", __func__);
         return SR_ERR;
     }
-
+  
     ret = libusb_claim_interface(usb->devhdl, USB_INTERFACE);
     if (ret != 0) {
         switch(ret) {
@@ -1810,13 +1811,27 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
         case LIBUSB_ERROR_NO_DEVICE:
             sr_err("%s: Device has been disconnected.", __func__);
             break;
+        case LIBUSB_ERROR_NOT_FOUND:
+            {
+                sr_err("%s: Unable to claim interface, try again: LIBUSB_ERROR_NOT_FOUND.", __func__);
+                ret = libusb_claim_interface(usb->devhdl, USB_INTERFACE);
+                fdError = 1;
+            }
+            break;
         default:
-            sr_err("%s: Unable to claim interface: %s.",
+            sr_err("%s: Unable to claim interface, try again: %s.",
                    __func__, libusb_error_name(ret));
             break;
         }
 
-        return SR_ERR;
+        if (ret != 0 && fdError == 1){
+             sr_err("%s: Unable to claim interface, the second time: %s.",
+                   __func__, libusb_error_name(ret));
+        }
+
+        if (ret != 0){
+            return SR_ERR;
+        } 
     }
 
     rd_cmd.header.dest = DSL_CTL_HW_STATUS;
