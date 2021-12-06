@@ -111,13 +111,31 @@ void _saveApp(AppOptions &o, QSettings &st){
     setFiled("warnofMultiTrig", st, o.warnofMultiTrig);
     setFiled("originalData", st, o.originalData);
 
-
     QString fmt =  FormatArrayToString(o.m_protocolFormats);
     setFiled("protocalFormats", st, fmt);
     st.endGroup();  
 }
 
 //-----frame
+
+void _loadDockOptions(DockOptions &o, QSettings &st, const char *group){
+    st.beginGroup(group);
+    getFiled("decodeDoc", st, o.decodeDoc, false);
+    getFiled("triggerDoc", st, o.triggerDoc, false);
+    getFiled("measureDoc", st, o.measureDoc, false);
+    getFiled("searchDoc", st, o.searchDoc, false);
+    st.endGroup();
+}
+
+void _saveDockOptions(DockOptions &o, QSettings &st, const char *group){
+    st.beginGroup(group);
+    setFiled("decodeDoc", st, o.decodeDoc);
+    setFiled("triggerDoc", st, o.triggerDoc);
+    setFiled("measureDoc", st, o.measureDoc);
+    setFiled("searchDoc", st, o.searchDoc);
+    st.endGroup();
+}
+
 void _loadFrame(FrameOptions &o, QSettings &st){
     st.beginGroup("MainFrame"); 
     getFiled("style", st, o.style, "dark");
@@ -127,6 +145,11 @@ void _loadFrame(FrameOptions &o, QSettings &st){
     getFiled("top", st, o.top, 0);
     getFiled("right", st, o.right, 0);
     getFiled("bottom", st, o.bottom, 0);
+
+    _loadDockOptions(o._logicDock, st, "LOGIC_DOCK");
+    _loadDockOptions(o._analogDock, st, "ANALOG_DOCK");
+    _loadDockOptions(o._dsoDock, st, "DSO_DOCK");
+
     o.windowState = st.value("windowState", QByteArray()).toByteArray();
     st.endGroup();
 
@@ -149,8 +172,13 @@ void _saveFrame(FrameOptions &o, QSettings &st){
     setFiled("left", st, o.left);
     setFiled("top", st, o.top);
     setFiled("right", st, o.right);
-    setFiled("bottom", st, o.bottom); 
+    setFiled("bottom", st, o.bottom);
     st.setValue("windowState", o.windowState); 
+
+    _saveDockOptions(o._logicDock, st, "LOGIC_DOCK");
+    _saveDockOptions(o._analogDock, st, "ANALOG_DOCK");
+    _saveDockOptions(o._dsoDock, st, "DSO_DOCK");
+    
     st.endGroup();
 }
 

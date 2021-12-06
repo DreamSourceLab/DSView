@@ -43,7 +43,7 @@ const QString TrigBar::LIGHT_STYLE = "light";
 TrigBar::TrigBar(SigSession *session, QWidget *parent) :
     QToolBar("Trig Bar", parent),
     _session(session),
-    _enable(true),
+ 
     _trig_button(this),
     _protocol_button(this),
     _measure_button(this),
@@ -51,6 +51,8 @@ TrigBar::TrigBar(SigSession *session, QWidget *parent) :
     _function_button(this),
     _setting_button(this)
 {
+    _enable = true;
+
     setMovable(false);
     setContentsMargins(0,0,0,0);
  
@@ -187,13 +189,21 @@ void TrigBar::reStyle()
 }
 
 void TrigBar::protocol_clicked()
-{
+{  
     sig_protocol(_protocol_button.isChecked());
+ 
+    DockOptions *opt = getDockOptions();
+    opt->decodeDoc = _protocol_button.isChecked();
+    AppConfig::Instance().SaveFrame();
 }
 
 void TrigBar::trigger_clicked()
 {
     sig_trigger(_trig_button.isChecked());
+ 
+    DockOptions *opt = getDockOptions();
+    opt->triggerDoc = _trig_button.isChecked();
+    AppConfig::Instance().SaveFrame();
 }
 
 void TrigBar::update_trig_btn(bool checked)
@@ -219,11 +229,19 @@ void TrigBar::update_search_btn(bool checked)
 void TrigBar::measure_clicked()
 {
     sig_measure(_measure_button.isChecked());
+    
+    DockOptions *opt = getDockOptions();
+    opt->measureDoc = _measure_button.isChecked();
+    AppConfig::Instance().SaveFrame();
 }
 
 void TrigBar::search_clicked()
 {
     sig_search(_search_button.isChecked());
+    
+    DockOptions *opt = getDockOptions();
+    opt->searchDoc = _search_button.isChecked();
+    AppConfig::Instance().SaveFrame();
 }
 
 void TrigBar::enable_toggle(bool enable)
@@ -264,6 +282,7 @@ void TrigBar::close_all()
 void TrigBar::reload()
 {
     close_all();
+
     if (_session->get_device()->dev_inst()->mode == LOGIC) {
         _trig_action->setVisible(true);
         _protocol_action->setVisible(true);
@@ -271,6 +290,7 @@ void TrigBar::reload()
         _search_action->setVisible(true);
         _function_action->setVisible(false);
         _action_lissajous->setVisible(false);
+
     } else if (_session->get_device()->dev_inst()->mode == ANALOG) {
         _trig_action->setVisible(false);
         _protocol_action->setVisible(false);
@@ -278,6 +298,7 @@ void TrigBar::reload()
         _search_action->setVisible(false);
         _function_action->setVisible(false);
         _action_lissajous->setVisible(false);
+
     } else if (_session->get_device()->dev_inst()->mode == DSO) {
         _trig_action->setVisible(true);
         _protocol_action->setVisible(false);
@@ -286,6 +307,7 @@ void TrigBar::reload()
         _function_action->setVisible(true);
         _action_lissajous->setVisible(true);
     }
+
     enable_toggle(true);
     update();
 }
@@ -327,6 +349,46 @@ void TrigBar::on_actionLissajous_triggered()
     
      pv::dialogs::ApplicationParamDlg dlg;
      dlg.ShowDlg(this);
+ }
+
+ 
+void TrigBar::restore_status()
+{ 
+    DockOptions *opt = getDockOptions();
+    int mode = _session->get_device()->dev_inst()->mode;
+
+    if (opt->decodeDoc){
+         _protocol_button.setChecked(true);
+         sig_protocol(true);
+    }
+
+    if (opt->triggerDoc){
+         _trig_button.setChecked(true);
+         sig_trigger(true);
+    }
+
+    if (opt->measureDoc){
+        _measure_button.setChecked(true);
+        sig_measure(true);
+    }
+
+    if (opt->searchDoc){
+        _search_button.setChecked(true);
+        sig_search(true);
+    }
+}
+
+ DockOptions* TrigBar::getDockOptions()
+ {
+     AppConfig &app = AppConfig::Instance(); 
+     int mode = _session->get_device()->dev_inst()->mode;
+
+     if (mode == LOGIC)
+        return &app._frameOptions._logicDock;
+     else if (mode == DSO)
+        return &app._frameOptions._dsoDock;
+    else
+        return &app._frameOptions._analogDock;
  }
 
 } // namespace toolbars

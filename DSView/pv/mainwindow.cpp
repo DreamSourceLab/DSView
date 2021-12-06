@@ -303,6 +303,7 @@ void MainWindow::setup_ui()
 
     //delay to update device list
     QTimer::singleShot(200, this, SLOT(update_device_list()));
+
 }
 
 
@@ -436,6 +437,8 @@ void MainWindow::update_device_list()
                                                            "Please replug it into a USB 3.0 port.");
         }
     }
+
+       _trig_bar->restore_status();
 }
 
 
@@ -1260,7 +1263,7 @@ void MainWindow::restore_dock()
     if (!st.isEmpty()){
         try
         {
-            restoreState(st);     
+            restoreState(st); 
         }        
         catch(...)
         { 

@@ -28,6 +28,8 @@
 #include <QAction>
 #include <QMenu>
 
+class DockOptions;
+
 namespace pv {
 
 class SigSession;
@@ -56,6 +58,7 @@ private:
     void changeEvent(QEvent *event);
     void retranslateUi();
     void reStyle();
+    DockOptions* getDockOptions();
 
 signals:
     void sig_setTheme(QString style);
@@ -85,32 +88,35 @@ public slots:
     void on_actionMath_triggered();
     void on_application_param();
 
+public:
+    void restore_status();
+
 private:
-    SigSession      *_session;
-    bool            _enable;
+    SigSession  *_session;
+    bool        _enable;
     QToolButton _trig_button;
     QToolButton _protocol_button;
     QToolButton _measure_button;
     QToolButton _search_button;
     QToolButton _function_button;
     QToolButton _setting_button;
-    QAction* _trig_action;
-    QAction* _protocol_action;
-    QAction* _measure_action;
-    QAction* _search_action;
-    QAction* _function_action; 
-    QAction* _display_action;
+    QAction     *_trig_action;
+    QAction     *_protocol_action;
+    QAction     *_measure_action;
+    QAction     *_search_action;
+    QAction     *_function_action; 
+    QAction     *_display_action;
 
-    QMenu* _function_menu;
-    QAction* _action_fft;
-    QAction* _action_math;
+    QMenu       *_function_menu;
+    QAction     *_action_fft;
+    QAction     *_action_math;
 
-    QMenu* _display_menu;
-    QMenu *_themes;
-    QAction *_appParam_action;
-    QAction *_dark_style;
-    QAction *_light_style;
-    QAction* _action_lissajous;
+    QMenu       *_display_menu;
+    QMenu       *_themes;
+    QAction     *_appParam_action;
+    QAction     *_dark_style;
+    QAction     *_light_style;
+    QAction     *_action_lissajous;
 };
 
 } // namespace toolbars

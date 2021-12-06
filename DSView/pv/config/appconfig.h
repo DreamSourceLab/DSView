@@ -58,6 +58,13 @@ struct AppOptions
     std::vector<StringPair> m_protocolFormats;
 };
  
+ struct DockOptions{
+  bool        decodeDoc;
+  bool        triggerDoc;
+  bool        measureDoc;
+  bool        searchDoc;
+};
+
 struct FrameOptions
 { 
   QString     style;
@@ -68,6 +75,10 @@ struct FrameOptions
   int         bottom;
   bool        isMax;
   QByteArray  windowState;
+
+  DockOptions   _logicDock;
+  DockOptions   _analogDock;
+  DockOptions   _dsoDock;
 };
 
 struct UserHistory
@@ -103,5 +114,5 @@ public:
 public:
   AppOptions    _appOptions;
   UserHistory   _userHistory;
-  FrameOptions  _frameOptions; 
+  FrameOptions  _frameOptions;
 };
