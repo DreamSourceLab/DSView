@@ -224,6 +224,7 @@ private:
     QTranslator     _qtTrans;
     QTranslator     _myTrans;
     EventObject     _event;
+    bool            _bFirstLoad;
 };
 
 } // namespace pv

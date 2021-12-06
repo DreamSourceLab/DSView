@@ -91,6 +91,7 @@
 #include "config/appconfig.h"
 #include "appcontrol.h"
 #include "dsvdef.h"
+#include "appcontrol.h"
   
 
 namespace pv {
@@ -102,20 +103,11 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     _control = AppControl::Instance();
     _control->GetSession()->set_callback(this);
+    _bFirstLoad = true;
 
 	setup_ui();
 
-    setContextMenuPolicy(Qt::NoContextMenu);
-
-    /*
-	if (open_file_name) {
-        qDebug("Open file: %s", open_file_name);
-        const QString s(QString::fromUtf8(open_file_name));
-		QMetaObject::invokeMethod(this, "on_load_file",
-			Qt::QueuedConnection,
-			Q_ARG(QString, s));
-	}
-    */
+    setContextMenuPolicy(Qt::NoContextMenu); 
 }
 
 void MainWindow::setup_ui()
@@ -439,6 +431,17 @@ void MainWindow::update_device_list()
     }
 
        _trig_bar->restore_status();
+
+        //load specified file name from application startup param
+       if (_bFirstLoad){
+           _bFirstLoad = false;
+
+           if (AppControl::Instance()->_open_file_name != ""){
+                QString f(QString::fromUtf8(AppControl::Instance()->_open_file_name.c_str()));
+                qDebug()<<"auto load file:"<<f;
+		        on_load_file(f);
+           } 
+       }
 }
 
 

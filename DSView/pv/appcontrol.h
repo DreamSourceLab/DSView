@@ -62,6 +62,9 @@ public:
     inline pv::DeviceManager& GetDeviceManager()
         { return *_device_manager;}
 
+public:
+    std::string        _open_file_name; 
+
 private:
     std::string         m_error;
     struct sr_context   *sr_ctx;

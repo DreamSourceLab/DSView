@@ -147,6 +147,7 @@ int main(int argc, char *argv[])
 		return 1;
     } else if (argcFinal - optind == 1){
         open_file = argvFinal[argcFinal - 1];
+		control->_open_file_name = open_file;
 	}
 
 	
