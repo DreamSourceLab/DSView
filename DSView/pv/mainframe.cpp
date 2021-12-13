@@ -228,15 +228,7 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
     if (isMaximized() || _titleBar->IsMoving()){
        return QFrame::eventFilter(object, event);
     }
-
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    int x0 = (int)mouse_event->globalPosition().x();
-    int y0 = (int)mouse_event->globalPosition().y();
-#else
-    int x0 = mouse_event->globalX();
-    int y0 = mouse_event->globalY();
-#endif
-
+ 
     if (!_bDraging && type == QEvent::MouseMove && (!(mouse_event->buttons() | Qt::NoButton))){
            if (object == _top_left) {
                 _hit_border = TopLeft;
@@ -271,6 +263,15 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
     }
 
   if (type == QEvent::MouseMove) {
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    int x0 = (int)mouse_event->globalPosition().x();
+    int y0 = (int)mouse_event->globalPosition().y();
+#else
+    int x0 = mouse_event->globalX();
+    int y0 = mouse_event->globalY();
+#endif
+
          if(mouse_event->buttons().testFlag(Qt::LeftButton)) {
             if (!_freezing) {
                 switch (_hit_border) {
@@ -362,8 +363,7 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
         _dragStartGeometry = geometry();
     } 
     else if (type == QEvent::MouseButtonRelease) {
-        if (mouse_event->button() == Qt::LeftButton) {
-         
+        if (mouse_event->button() == Qt::LeftButton) {         
             _bDraging = false;
             _timer.stop();
         }

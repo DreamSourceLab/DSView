@@ -165,12 +165,13 @@ int main(int argc, char *argv[])
 	}
 
 	try
-	{  
-	   control->Start();
-	   
+	{   
+		control->Start();
+		
 		// Initialise the main frame
         pv::MainFrame w;
 		w.show(); 
+ 
 		w.readSettings();
 		 
 		//to show the dailog for open help document

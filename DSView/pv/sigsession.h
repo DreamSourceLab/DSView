@@ -411,7 +411,7 @@ private:
     bool        _bClose;
 
     ISessionCallback *_callback;
-
+   
 private:
 	// TODO: This should not be necessary. Multiple concurrent
 	// sessions should should be supported and it should be

@@ -61,8 +61,7 @@
  
 #include "data/decode/decoderstatus.h"
 #include "dsvdef.h"
-
-  
+ 
 namespace pv {
 
 // TODO: This should not be necessary
@@ -1259,13 +1258,17 @@ void SigSession::register_hotplug_callback()
 {
     int ret;
 
-    ret = libusb_hotplug_register_callback(NULL, (libusb_hotplug_event)(LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED |
-                                           LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT),
-                                           (libusb_hotplug_flag)LIBUSB_HOTPLUG_ENUMERATE, 0x2A0E, LIBUSB_HOTPLUG_MATCH_ANY,
-                                           LIBUSB_HOTPLUG_MATCH_ANY, hotplug_callback, NULL,
+    ret = libusb_hotplug_register_callback(NULL,
+                                           (libusb_hotplug_event)(LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED | LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT),
+                                           (libusb_hotplug_flag)LIBUSB_HOTPLUG_ENUMERATE,
+                                           0x2A0E,
+                                           LIBUSB_HOTPLUG_MATCH_ANY,
+                                           LIBUSB_HOTPLUG_MATCH_ANY, 
+                                           hotplug_callback,
+                                           NULL,
                                            &_hotplug_handle);
     if (LIBUSB_SUCCESS != ret){
-    qDebug() << "Error creating a hotplug callback\n";
+        qDebug() << "Error creating a hotplug callback,code:"<<ret;
     }
 }
 
