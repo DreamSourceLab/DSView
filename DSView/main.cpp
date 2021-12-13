@@ -42,7 +42,7 @@
 
 void usage()
 {
-	fprintf(stdout,
+	printf(
 		"Usage:\n"
 		"  %s [OPTION…] [FILE] — %s\n"
 		"\n"
@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
 
 		case 'V':
 			// Print version info
-			fprintf(stdout, "%s %s\n", DS_TITLE, DS_VERSION_STRING);
+			printf("%s %s\n", DS_TITLE, DS_VERSION_STRING);
 			return 0;
 
 		case 'h':
@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
 	}
 
     if (argcFinal - optind > 1) {
-		fprintf(stderr, "Only one file can be openened.\n");
+		printf("Only one file can be openened.\n");
 		return 1;
     } else if (argcFinal - optind == 1){
         open_file = argvFinal[argcFinal - 1];
@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
 
 	//init core
 	if (!control->Init()){
-        fprintf(stderr, "init error!");
+        printf("init error!");
         qDebug() << control->GetLastError();
 		return 1;
 	}
@@ -183,7 +183,7 @@ int main(int argc, char *argv[])
 	}
 	catch (const std::exception &e)
 	{
-        fprintf(stderr, "main() catch a except!");
+        printf("main() catch a except!");
 		const char *exstr = e.what();
 		qDebug() << exstr;
 	}

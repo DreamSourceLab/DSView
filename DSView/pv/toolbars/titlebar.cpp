@@ -188,7 +188,8 @@ void TitleBar::setRestoreButton(bool max)
   
 void TitleBar::mousePressEvent(QMouseEvent* event)
 { 
-    if(event->button() == Qt::LeftButton && !parentWidget()->isMaximized()) {
+    if(event->button() == Qt::LeftButton && !parentWidget()->isMaximized()) 
+    {
         int x = event->pos().x();
         int y = event->pos().y(); 
         bool bTopWidow = app::is_app_top_window(_parent);

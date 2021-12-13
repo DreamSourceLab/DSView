@@ -22,9 +22,7 @@
 
 #ifndef DSVIEW_PV_SIGSESSION_H
 #define DSVIEW_PV_SIGSESSION_H
-
-#include <libsigrok4DSL/libsigrok.h>
-   
+ 
 #include <set>
 #include <string>
 #include <vector>
@@ -39,8 +37,11 @@
 #include "interface/icallbacks.h"
 #include "dstimer.h"
 
+#include <libsigrok4DSL/libsigrok.h>
+
 struct srd_decoder;
 struct srd_channel;
+ 
 
 class DecoderStatus;
 

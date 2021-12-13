@@ -23,6 +23,7 @@
 
 #include <libsigrokdecode4DSL/libsigrokdecode.h>
 
+
 #include "sigsession.h"
 #include "mainwindow.h"
 #include "devicemanager.h"
