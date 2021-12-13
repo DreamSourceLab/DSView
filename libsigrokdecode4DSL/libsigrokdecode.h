@@ -361,7 +361,7 @@ struct srd_pd_callback {
 SRD_API int srd_init(const char *path);
 SRD_API int srd_exit(void);
 SRD_API GSList *srd_searchpaths_get(void);
-SRD_API void srd_set_python_home(const char *path);
+SRD_API void srd_set_python_home(const wchar_t *path);
 
 /* session.c */
 SRD_API int srd_session_new(struct srd_session **sess);

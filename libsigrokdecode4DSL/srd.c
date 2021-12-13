@@ -387,7 +387,7 @@ SRD_API GSList *srd_searchpaths_get(void)
 }
 
 //set python home directory
-SRD_API void srd_set_python_home(const char *path)
+SRD_API void srd_set_python_home(const wchar_t *path)
 {
 	Py_SetPythonHome((wchar_t*)path);
 }

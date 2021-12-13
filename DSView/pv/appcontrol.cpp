@@ -77,19 +77,22 @@ bool AppControl::Init()
     QString resdir = GetResourceDir();
 	sr_set_firmware_resource_dir(resdir.toUtf8().data());
 
+     
+
 #ifdef _WIN32
     QString pythonHome = GetAppDataDir() + "/Python";   
     QDir pydir;
     if (pydir.exists(pythonHome)){
-          srd_set_python_home(pythonHome.toUtf8().data());
+        const wchar_t *pyhome = reinterpret_cast<const wchar_t*>(pythonHome.utf16());
+        srd_set_python_home(pyhome);
     }else{
         qDebug()<<"python home directory not exists,"<<pythonHome;        
     }
   
 #endif
     
-    QString dir = GetAppDataDir() + "/decoders";
     char path[256] = {0};
+    QString dir = GetAppDataDir() + "/decoders";   
     strcpy(path, dir.toUtf8().data());
 
     // Initialise libsigrokdecode
