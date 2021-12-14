@@ -62,6 +62,7 @@ int main(int argc, char *argv[])
 	const char *open_file = NULL;
  
     #if QT_VERSION >= QT_VERSION_CHECK(5,6,0)
+		//On Windows, need to compile with the QT5 version of the library, which makes the interface slightly larger.
         QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
         QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
     #endif // QT_VERSION

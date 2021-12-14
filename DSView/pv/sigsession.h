@@ -321,7 +321,7 @@ private:
     // thread for hotplug
     void hotplug_proc();
 
-    static int hotplug_callback(struct libusb_context *ctx, struct libusb_device *dev,
+    static LIBUSB_CALL int hotplug_callback(struct libusb_context *ctx, struct libusb_device *dev,
                                 libusb_hotplug_event event, void *user_data);
 
 public:

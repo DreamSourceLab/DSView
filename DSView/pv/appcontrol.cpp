@@ -27,6 +27,7 @@
 #include <libsigrokdecode4DSL/libsigrokdecode.h>
 #include <QDir>
 #include <QCoreApplication>
+#include <QDebug>
 
 #include "devicemanager.h"
 #include "sigsession.h"

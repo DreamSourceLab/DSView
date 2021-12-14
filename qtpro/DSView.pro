@@ -375,4 +375,9 @@ RESOURCES += \
 
 ICON = DSView.icns
 
+RC_FILE += ../applogo.rc
+
 MOC_DIR  = ../../DSView_tmp/DSView_moc
+
+DISTFILES += \
+    ../applogo.rc
