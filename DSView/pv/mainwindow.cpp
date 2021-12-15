@@ -435,11 +435,19 @@ void MainWindow::update_device_list()
         //load specified file name from application startup param
        if (_bFirstLoad){
            _bFirstLoad = false;
-
+ 
            if (AppControl::Instance()->_open_file_name != ""){
-                QString f(QString::fromUtf8(AppControl::Instance()->_open_file_name.c_str()));
-                qDebug()<<"auto load file:"<<f;
-		        on_load_file(f);
+                QString opf(QString::fromUtf8(AppControl::Instance()->_open_file_name.c_str()));
+                QFile fpath;   
+
+                if (fpath.exists(opf)){             
+                    qDebug()<<"auto load file:"<<opf;
+                    on_load_file(opf);
+                }
+                else{
+                    qDebug()<<"file is not exists:"<<opf;
+                    MsgBox::Show("Open file error!", opf.toStdString().c_str());      
+                }              
            } 
        }
 }
