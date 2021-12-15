@@ -38,6 +38,10 @@
 #include "config.h"
 #include "pv/appcontrol.h"
 
+#if _WIN32
+#include <windows.h>
+#endif
+
 //#include <libsigrok4DSL/libsigrok.h>
 
 void usage()
