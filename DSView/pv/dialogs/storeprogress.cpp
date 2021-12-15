@@ -62,6 +62,7 @@ StoreProgress::StoreProgress(SigSession *session, QWidget *parent) :
 
     _fileLab = new QLineEdit();
     _fileLab->setEnabled(false);    
+    _fileLab->setObjectName("PathLine");
 
     QPushButton *openButton = new QPushButton(this);
     openButton->setText(tr("change"));

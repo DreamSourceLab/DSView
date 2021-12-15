@@ -13,7 +13,10 @@ QT += svg
 CONFIG += exceptions
 CONFIG += object_parallel_to_source
 
-//QT += core5compat
+#QT += core5compat
+#able to show console log on widnows
+#CONFIG += console thread
+
 CONFIG += c++11
 QT += widgets
 
@@ -378,6 +381,11 @@ ICON = DSView.icns
 #RC_FILE += ../applogo.rc
 
 MOC_DIR  = ../../DSView_tmp/DSView_moc
+RCC_DIR  = ../../DSView_tmp/RCC_DIR
+UI_HEADERS_DIR  = ../../DSView_tmp/UI_HEADERS_DIR
+UI_SOURCES_DIR = ../../DSView_tmp/UI_SOURCES_DIR
+UI_DIR   = ../../DSView_tmp/UI_DIR
+OBJECTS_DIR = ../../DSView_tmp/OBJECTS_DIR
 
 DISTFILES += \
     ../applogo.rc

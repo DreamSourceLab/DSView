@@ -1622,3 +1622,7 @@ QTextBrowser:hover
 {
    border: 1px transparent;
 }
+
+QLineEdit#PathLine{
+    color:#eff0f1;
+}
