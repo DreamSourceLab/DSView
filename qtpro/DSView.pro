@@ -366,7 +366,6 @@ HEADERS  += \
 #}
 }
 
-FORMS +=
 
 RESOURCES += \
     ../DSView/DSView.qrc \
@@ -375,7 +374,8 @@ RESOURCES += \
 
 ICON = DSView.icns
 
-RC_FILE += ../applogo.rc
+# make app logo on windows
+#RC_FILE += ../applogo.rc
 
 MOC_DIR  = ../../DSView_tmp/DSView_moc
 
