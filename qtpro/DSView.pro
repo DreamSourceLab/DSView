@@ -22,6 +22,10 @@ QT += widgets
 
 #QMAKE_CFLAGS_ISYSTEM = -I
 
+win32:{
+ #QMAKE_LFLAGS += -shared
+}
+
 
 TARGET = DSView
 TEMPLATE = app
