@@ -429,6 +429,21 @@ install(FILES ../NEWS25 DESTINATION share/${PROJECT_NAME} RENAME NEWS25)
 install(FILES ../NEWS31 DESTINATION share/${PROJECT_NAME} RENAME NEWS31)
 install(FILES ../ug25.pdf DESTINATION share/${PROJECT_NAME} RENAME ug25.pdf)
 install(FILES ../ug31.pdf DESTINATION share/${PROJECT_NAME} RENAME ug31.pdf)
+if(IS_DIRECTORY /usr/lib/udev/rules.d)
+	# The udev rules are read from the files located in the system rules
+	# directories /usr/lib/udev/rules.d
+	# https://www.freedesktop.org/software/systemd/man/udev.html
+	install(FILES DreamSourceLab.rules DESTINATION /usr/lib/udev/rules.d RENAME 60-dreamsourcelab.rules)
+elseif(IS_DIRECTORY /lib/udev/rules.d)
+	# Packages install rules in /lib/udev/rules.d
+	# https://wiki.debian.org/udev
+	# https://wiki.gentoo.org/wiki/Udev
+	install(FILES DreamSourceLab.rules DESTINATION /lib/udev/rules.d RENAME 60-dreamsourcelab.rules)
+else()
+	# For compatibility reasons, if neither of them work, then installed to
+	# local administration directory /etc/udev/rules.d
+	install(FILES DreamSourceLab.rules DESTINATION /etc/udev/rules.d RENAME 60-dreamsourcelab.rules)
+endif()
 install(FILES DreamSourceLab.rules DESTINATION /lib/udev/rules.d RENAME 60-dreamsourcelab.rules)
 install(FILES DSView.desktop DESTINATION /usr/share/applications RENAME dsview.desktop)
 
