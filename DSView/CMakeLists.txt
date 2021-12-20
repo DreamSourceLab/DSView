@@ -444,7 +444,6 @@ else()
 	# local administration directory /etc/udev/rules.d
 	install(FILES DreamSourceLab.rules DESTINATION /etc/udev/rules.d RENAME 60-dreamsourcelab.rules)
 endif()
-install(FILES DreamSourceLab.rules DESTINATION /lib/udev/rules.d RENAME 60-dreamsourcelab.rules)
 install(FILES DSView.desktop DESTINATION /usr/share/applications RENAME dsview.desktop)
 
 #===============================================================================
