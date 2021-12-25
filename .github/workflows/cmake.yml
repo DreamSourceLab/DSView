@@ -32,6 +32,9 @@ jobs:
 
     - name: show pkgconfig
       run: ls ${{github.workspace}}/staging/AppDir/usr/local/lib/pkgconfig/*
+      
+    - name: fix AppImage pkgconfig files 
+      run: find ${{github.workspace}}/staging/AppDir/usr/local/lib/pkgconfig/*pc|xargs sed -i "s#/usr/local#${{github.workspace}}/staging/AppDir/usr/local#g"
 
     - name: build DSView
       run: cd DSView && PKG_CONFIG_PATH="${{github.workspace}}/staging/AppDir/usr/local/lib/pkgconfig" cmake .
