@@ -23,7 +23,7 @@ jobs:
     - name: Setup Container
       run: sudo apt-get update && sudo apt-get install -y git-core build-essential cmake autoconf automake libtool pkg-config libglib2.0-dev libzip-dev libudev-dev libusb-1.0-0-dev python3-dev qt5-default libboost-dev libboost-test-dev libboost-thread-dev libboost-system-dev libboost-filesystem-dev check libfftw3-dev
     - name: make staging area
-      run: mkdir -k ${{github.workspace}}/staging/AppDir
+      run: mkdir -p ${{github.workspace}}/staging/AppDir
     - name: build libsigrok4DSL
       run: cd libsigrok4DSL && ./autogen.sh && ./configure && make && make install DESTDIR=${{github.workspace}}/staging/AppDir && cd ..
       
