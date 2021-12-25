@@ -31,7 +31,7 @@ jobs:
       run: cd libsigrokdecode4DSL && ./autogen.sh && ./configure && make && make install DESTDIR=${{github.workspace}}/staging/AppDir && cd ..
 
     - name: show pkgconfig
-      run: cat ${{github.workspace}}/staging/AppDir/usr/local/lib/pkgconfig/*
+      run: ls ${{github.workspace}}/staging/AppDir/usr/local/lib/pkgconfig/*
 
     - name: build DSView
       run: cd DSView && PKG_CONFIG_PATH="${{github.workspace}}/staging/AppDir/usr/local/lib/pkgconfig" cmake .
