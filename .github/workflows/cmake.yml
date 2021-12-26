@@ -31,10 +31,7 @@ jobs:
       run: cd libsigrokdecode4DSL && ./autogen.sh && ./configure && make && make install DESTDIR=${{github.workspace}}/staging/AppDir && cd ..
 
     - name: fix AppImage pkgconfig files 
-      run: find ${{github.workspace}}/staging/AppDir/usr/local/lib/pkgconfig/*pc|xargs sed -i "s#/usr/local#${{github.workspace}}/staging/AppDir/usr/local#g"
-    - name: show pkgconfig
-      run: cat ${{github.workspace}}/staging/AppDir/usr/local/lib/pkgconfig/*pc
-      
+      run: find ${{github.workspace}}/staging/AppDir/usr/local/lib/pkgconfig/*pc|xargs sed -i "s#/usr/local#${{github.workspace}}/staging/AppDir/usr/local#g"    
 
     - name: build DSView
-      run: cd DSView && PKG_CONFIG_PATH="${{github.workspace}}/staging/AppDir/usr/local/lib/pkgconfig" cmake .
+      run: cd DSView && PKG_CONFIG_PATH="${{github.workspace}}/staging/AppDir/usr/local/lib/pkgconfig" cmake . && make
