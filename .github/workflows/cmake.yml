@@ -40,3 +40,8 @@ jobs:
       run: cd ${{github.workspace}}/staging && wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage && chmod +x linuxdeploy-x86_64.AppImage
     - name: create AppImage
       run: cd ${{github.workspace}}/staging &&  LD_LIBRARY_PATH="${{github.workspace}}/staging/AppDir/usr/local/lib" ./linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage || ls -l
+    - name: Upload Artifact GitHub Action
+      uses: actions/upload-artifact@v2
+      with: 
+        name: DSView.AppImage
+        path: ${{github.workspace}}/staging/*.AppImage
