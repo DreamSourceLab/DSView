@@ -33,7 +33,7 @@ jobs:
     - name: fix AppImage pkgconfig files 
       run: find ${{github.workspace}}/staging/AppDir/usr/local/lib/pkgconfig/*pc|xargs sed -i "s#/usr/local#${{github.workspace}}/staging/AppDir/usr/local#g"
     - name: show pkgconfig
-      run: ls ${{github.workspace}}/staging/AppDir/usr/local/lib/pkgconfig/*
+      run: cat ${{github.workspace}}/staging/AppDir/usr/local/lib/pkgconfig/*pc
       
 
     - name: build DSView
