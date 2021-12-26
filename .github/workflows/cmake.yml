@@ -39,4 +39,4 @@ jobs:
     - name: get AppImage util
       run: cd ${{github.workspace}}/staging && wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage && chmod +x linuxdeploy-x86_64.AppImage
     - name: create AppImage
-      run: cd ${{github.workspace}}/staging &&  ./linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage || ls -l
+      run: cd ${{github.workspace}}/staging &&  LD_LIBRARY_PATH="${{github.workspace}}/staging/AppDir/usr/local/lib" ./linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage || ls -l
