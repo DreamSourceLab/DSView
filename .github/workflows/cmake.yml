@@ -34,4 +34,4 @@ jobs:
       run: find ${{github.workspace}}/staging/AppDir/usr/local/lib/pkgconfig/*pc|xargs sed -i "s#/usr/local#${{github.workspace}}/staging/AppDir/usr/local#g"    
 
     - name: build DSView
-      run: cd DSView && PKG_CONFIG_PATH="${{github.workspace}}/staging/AppDir/usr/local/lib/pkgconfig" cmake . && make
+      run: cd DSView && PKG_CONFIG_PATH="${{github.workspace}}/staging/AppDir/usr/local/lib/pkgconfig" cmake . -DCMAKE_INSTALL_PREFIX=/usr&& make && make install DESTDIR="${{github.workspace}}/staging/AppDir"
