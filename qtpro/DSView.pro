@@ -5,26 +5,32 @@
 #-------------------------------------------------
 
 QT += core gui
+
+win32{
+QT += winextras
+QT += svg
+QMAKE_LFLAGS += -static
+}else{
 CONFIG -= lib_bundle
 CONFIG += app_bundle
+}
+
 macx {
 QT += svg
+#QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.12
+QMAKE_CXXFLAGS += -fvisibility=hidden
+QMAKE_CXXFLAGS += -fvisibility-inlines-hidden
 }
+
 CONFIG += exceptions
 CONFIG += object_parallel_to_source
 
 #QT += core5compat
-#able to show console log on widnows
 #CONFIG += console thread
 
 CONFIG += c++11
 QT += widgets
-
-#QMAKE_CFLAGS_ISYSTEM = -I
-
-win32:{
- #QMAKE_LFLAGS += -shared
-}
+QMAKE_CFLAGS_ISYSTEM = -I
 
 
 TARGET = DSView
@@ -34,6 +40,24 @@ TRANSLATIONS = my_CN.ts
 
 CONFIG += decoders
 DEFINES += decoders
+
+win32:{
+#INCLUDEPATH += C:\Qt\Tools\mingw730_32\i686-w64-mingw32\include
+INCLUDEPATH += D:\msys64\mingw32\lib\glib-2.0\include
+INCLUDEPATH += D:\msys64\mingw32\include\glib-2.0
+INCLUDEPATH += D:\msys64\mingw32\include
+INCLUDEPATH += D:\msys64\mingw32\include\libusb-1.0
+INCLUDEPATH += C:\Python\Python310-32\include
+INCLUDEPATH += D:\msys64\mingw32\include\boost
+INCLUDEPATH += ..
+
+LIBS += D:\msys64\mingw32\lib\libglib-2.0.a
+LIBS += D:\msys64\mingw32\lib\libzip.a
+LIBS += D:\msys64\mingw32\lib\libusb-1.0.a
+LIBS += D:\msys64\mingw32\lib\libz.a
+LIBS += D:\msys64\mingw32\lib\libfftw3.a
+LIBS += C:\Python\Python310-32\libs\python310.lib
+}
 
 unix:!macx {
 INCLUDEPATH += /usr/include/glib-2.0
@@ -78,7 +102,6 @@ LIBS += /usr/local/lib/libboost_thread-mt.a
 LIBS += /usr/local/lib/libboost_system-mt.a
 LIBS += /usr/local/lib/libboost_filesystem-mt.a
 LIBS += /Library/Frameworks/Python.framework/Versions/3.4/lib/libpython3.4.dylib
-#LIBS += /opt/local/lib/libsetupapi.a
 LIBS += /usr/local/lib/libfftw3.a
 }
 
@@ -379,17 +402,19 @@ RESOURCES += \
     ../DSView/themes/breeze.qrc \
     language.qrc
 
-ICON = DSView.icns
-
 # make app logo on windows
-#RC_FILE += ../applogo.rc
 
-MOC_DIR  = ../../DSView_tmp/DSView_moc
-RCC_DIR  = ../../DSView_tmp/RCC_DIR
-UI_HEADERS_DIR  = ../../DSView_tmp/UI_HEADERS_DIR
-UI_SOURCES_DIR = ../../DSView_tmp/UI_SOURCES_DIR
-UI_DIR   = ../../DSView_tmp/UI_DIR
-OBJECTS_DIR = ../../DSView_tmp/OBJECTS_DIR
+win32 {
+RC_FILE += ../applogo.rc
+}else{
+ICON = DSView.icns
+}
 
-DISTFILES += \
-    ../applogo.rc
+MOC_DIR  = ../../DSView-build/MOC_DIR
+RCC_DIR  = ../../DSView-build/RCC_DIR
+UI_HEADERS_DIR  = ../../DSView-build/UI_HEADERS_DIR
+UI_SOURCES_DIR = ../../DSView-build/UI_SOURCES_DIR
+UI_DIR   = ../../DSView-build/UI_DIR
+OBJECTS_DIR = ../../DSView-build/OBJECTS_DIR
+DESTDIR  = ../../DSView-build/bin
+

@@ -49,6 +49,10 @@
 #include <math.h>
 #include <QTextStream>
 #include <QDebug>
+
+#ifdef _WIN32
+#include <QTextCodec>
+#endif
  
 #include <libsigrokdecode4DSL/libsigrokdecode.h>
 #include "config/appconfig.h"

@@ -81,13 +81,12 @@ bool AppControl::Init()
      
 
 #ifdef _WIN32
-    QString pythonHome = GetAppDataDir() + "/Python";   
+    //able run debug with qtcreator
+    QString pythonHome = "c:/python";
     QDir pydir;
     if (pydir.exists(pythonHome)){
         const wchar_t *pyhome = reinterpret_cast<const wchar_t*>(pythonHome.utf16());
         srd_set_python_home(pyhome);
-    }else{
-        qDebug()<<"python home directory not exists,"<<pythonHome;        
     }
   
 #endif
