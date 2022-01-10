@@ -484,6 +484,8 @@ void ProtocolDock::item_clicked(const QModelIndex &index)
 
             decoder_stack->set_mark_index((ann.start_sample()+ann.end_sample())/2);
             _session->show_region(ann.start_sample(), ann.end_sample(), false);
+
+           // qDebug()<<ann.annotations().at(0)<<"type:"<<ann.type();
         }
     }
     _table_view->resizeRowToContents(index.row());
@@ -652,31 +654,44 @@ void ProtocolDock::search_nxt()
         _cur_search_index = -1;
         return;
     }
+
     int i = 0;
     uint64_t rowCount = _model_proxy.rowCount();
     QModelIndex matchingIndex;
     pv::data::DecoderModel *decoder_model = _session->get_decoder_model();
+    auto decoder_stack = decoder_model->getDecoderStack();
 
-   auto decoder_stack = decoder_model->getDecoderStack();
+    if (decoder_stack == NULL){
+        qDebug()<<"decoder_stack is null";
+        return;
+    }  
+
     do {
         _cur_search_index++;
         if (_cur_search_index < 0 || _cur_search_index >= _model_proxy.rowCount())
             _cur_search_index = 0;
 
         matchingIndex = _model_proxy.mapToSource(_model_proxy.index(floor(_cur_search_index),_model_proxy.filterKeyColumn()));
-        if (!decoder_stack || !matchingIndex.isValid())
+        
+        if (!matchingIndex.isValid())
             break;
+
+      //  qDebug()<<"row:"<<matchingIndex.row();
+
         i = 1;
         uint64_t row = matchingIndex.row() + 1;
         uint64_t col = matchingIndex.column();
         pv::data::decode::Annotation ann;
         bool ann_valid;
+
         while(i < _str_list.size()) {
             QString nxt = _str_list.at(i);
             do {
                 ann_valid = decoder_stack->list_annotation(ann, col, row);
                 row++;
             }while(ann_valid && (ann.type() < 100 || ann.type() > 999));
+
+            auto strlist = ann.annotations();
             QString source = ann.annotations().at(0);
             if (ann_valid && source.contains(nxt))
                 i++;
@@ -748,7 +763,6 @@ void ProtocolDock::search_update()
         search_done();
     }
     _search_edited = false;
-    //search_done();
 }
 
  //-------------------IProtocolItemLayerCallback

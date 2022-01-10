@@ -379,9 +379,10 @@ SRD_API struct srd_decoder_inst *srd_inst_new(struct srd_session *sess,
     di->py_pinvalues = NULL;
 	di->dec_num_channels = g_slist_length(di->decoder->channels) +
 			g_slist_length(di->decoder->opt_channels);
+			
 	if (di->dec_num_channels) {
-		di->dec_channelmap =
-				g_malloc(sizeof(int) * di->dec_num_channels);
+		di->dec_channelmap = g_malloc(sizeof(int) * di->dec_num_channels);
+
 		for (i = 0; i < di->dec_num_channels; i++)
 			di->dec_channelmap[i] = i;
 
@@ -913,7 +914,8 @@ static gboolean all_terms_match(struct srd_decoder_inst *di,
 	return TRUE;
 }
 
-static gboolean find_match(struct srd_decoder_inst *di)
+static gboolean 
+find_match(struct srd_decoder_inst *di)
 {
     uint64_t j;
 	GSList *l, *cond;
@@ -1059,9 +1061,11 @@ static gpointer di_thread(gpointer data)
 	 * "Regular" termination of the decode() method is not expected.
 	 */
     //Py_IncRef(di->py_inst);
+	//srd_err("start call decode()");
 	srd_dbg("%s: Calling decode().", di->inst_id);
 	py_res = PyObject_CallMethod(di->py_inst, "decode", NULL);
 	srd_dbg("%s: decode() terminated.", di->inst_id);
+ 	//srd_err("end call decode()");
 
 	if (!py_res)
 		di->decoder_state = SRD_ERR;
@@ -1210,7 +1214,10 @@ SRD_PRIV int srd_inst_decode(struct srd_decoder_inst *di,
         abs_start_samplenum, abs_end_samplenum,
         abs_end_samplenum - abs_start_samplenum, inbuflen, di->inst_id);
 
-	/* If this is the first call, start the worker thread. */
+	/* 
+		If this is the first call, start the worker thread. 
+		One session may be have more decoder,so more thread will be created
+	*/
 	if (!di->thread_handle) {
 		srd_dbg("No worker thread for this decoder stack "
 			"exists yet, creating one: %s.", di->inst_id);

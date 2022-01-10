@@ -49,9 +49,8 @@ namespace DecoderDataFormat
 {
     enum _data_format
     {
-        ascii = 0,
-        dec,
         hex,
+        dec,       
         oct,
         bin
     };

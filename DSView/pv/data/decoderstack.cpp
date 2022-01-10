@@ -463,6 +463,8 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
 {
     decode_task_status *status = _stask_stauts;    
 
+   // qDebug()<<"decode start:"<<decode_start<<",  decode end:"<<decode_end;
+
     //uint8_t *chunk = NULL;
     uint64_t last_cnt = 0;
     uint64_t notify_cnt = (decode_end - decode_start + 1)/100;
@@ -530,6 +532,7 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
 
         i = chunk_end;
 
+        //use mutex
         {
             std::lock_guard<std::mutex> lock(_output_mutex);
             _samples_decoded = i - decode_start + 1;

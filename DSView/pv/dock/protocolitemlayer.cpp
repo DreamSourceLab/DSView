@@ -120,20 +120,14 @@ void ProtocolItemLayer::LoadFormatSelect(bool bSingle)
     m_singleFlag = bSingle;
 
     m_bSetting = true;
-    _format_combox->clear();
-    _format_combox->addItem("ascii");
-    int dex = 0;
+    _format_combox->clear(); 
 
-    if (!bSingle)
-    {
-        _format_combox->addItem("dec");
-        _format_combox->addItem("hex");
-        _format_combox->addItem("oct");
-        _format_combox->addItem("bin");
-        dex = 2;
-    }
+    _format_combox->addItem("hex");
+    _format_combox->addItem("dec");       
+    _format_combox->addItem("oct");
+    _format_combox->addItem("bin");
     
-    _format_combox->setCurrentIndex(dex);
+    _format_combox->setCurrentIndex(0);
     m_bSetting = false;
 }
 

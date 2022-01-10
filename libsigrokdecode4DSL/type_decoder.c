@@ -53,6 +53,91 @@ static void release_annotation(struct srd_proto_data_annotation *pda)
 		g_strfreev(pda->ann_text);
 }
 
+static int py_parse_ann_data(PyObject *list_obj, char ***out_strv, int list_size, char *hex_str_buf)
+{
+	PyObject *py_item, *py_bytes;
+	char **strv, *str; 
+	PyGILState_STATE gstate;
+	int ret = SRD_ERR_PYTHON;
+	int ijmp = 0;
+	int text_num = 0;
+	PyObject* text_items[10];
+	PyObject *py_tmp;
+	PyObject *py_numobj = NULL;	
+	int i; 
+	long long lv; 
+	 
+	gstate = PyGILState_Ensure();
+
+    str = NULL;
+    strv = NULL;  
+
+	//get annotation text count
+	for (i = 0; i < list_size; i++){
+		py_tmp = PyList_GetItem(list_obj, i);
+
+		//is a string
+		if (PyUnicode_Check(py_tmp)){
+			text_items[text_num] = py_tmp;
+			text_num++;
+		}
+		else if (PyLong_Check(py_tmp)){
+			py_numobj = py_tmp;	
+		}	
+	}
+
+	if (py_numobj == NULL && text_num == 0){
+		srd_err("list element type must be string or numberical");
+		goto err;
+	}
+
+	if (py_numobj != NULL){
+		lv = PyLong_AsLongLong(py_numobj);
+		sprintf(hex_str_buf, "%02llX", lv); 
+	}
+
+	//have no text, only one numberical
+	if (text_num == 0){
+		PyGILState_Release(gstate);
+		return SRD_OK;
+	}
+ 
+	//more annotation text
+	strv = g_try_new0(char *, text_num + 1);
+	if (!strv) {
+		srd_err("Failed to allocate result string vector.");
+		ret = SRD_ERR_MALLOC;
+		goto err;
+	}
+
+	for (i = 0; i < text_num; i++) { 
+		py_bytes = PyUnicode_AsUTF8String(text_items[i]);
+		if (!py_bytes)
+			goto err;
+
+		str = g_strdup(PyBytes_AsString(py_bytes));
+		Py_DECREF(py_bytes);
+		if (!str)
+			goto err;
+
+		strv[i] = str;
+	}
+
+	*out_strv = strv;
+	PyGILState_Release(gstate);
+	return SRD_OK;
+
+err:
+	if (strv)
+		g_strfreev(strv);
+    srd_exception_catch(NULL, "Failed to obtain string item");
+	PyGILState_Release(gstate);
+	return ret;
+}
+
+/*
+ @obj is the fourth param from python calls put()
+*/
 static int convert_annotation(struct srd_decoder_inst *di, PyObject *obj,
 		struct srd_proto_data *pdata)
 {
@@ -62,6 +147,9 @@ static int convert_annotation(struct srd_decoder_inst *di, PyObject *obj,
     char **ann_text;
 	gpointer ann_type_ptr;
 	PyGILState_STATE gstate;
+	int ann_size; 
+
+	pda = pdata->data;
 
 	gstate = PyGILState_Ensure();
 
@@ -96,27 +184,37 @@ static int convert_annotation(struct srd_decoder_inst *di, PyObject *obj,
 //			"annotation class %d.", di->decoder->name, ann_class);
 //		return SRD_ERR_PYTHON;
 //	}
-	if (ann_class >= g_slist_length(di->decoder->ann_types)) {
+	if (ann_class >= g_slist_length(di->decoder->ann_types) || ann_class < 0) {
 		srd_err("Protocol decoder %s submitted data to unregistered "
 			"annotation class %d.", di->decoder->name, ann_class);
 		goto err;
 	}
 	ann_type_ptr = g_slist_nth_data(di->decoder->ann_types, ann_class);
 
-	/* Second element must be a list. */
+	/* 
+		Second element must be a list.
+	 */
 	py_tmp = PyList_GetItem(obj, 1);
 	if (!PyList_Check(py_tmp)) {
 		srd_err("Protocol decoder %s submitted annotation list, but "
 			"second element was not a list.", di->decoder->name);
 		goto err;
 	}
-    if (py_strseq_to_char(py_tmp, &ann_text) != SRD_OK) {
+
+	ann_size = PyList_Size(py_tmp);
+	if (ann_size == 0){
+			srd_err("Protocol decoder %s, put() param, the annotation list is empty.", di->decoder->name);
+		goto err;
+	}
+	 
+	pda->str_number_hex[0] = 0;
+	ann_text = NULL;
+    if (py_parse_ann_data(py_tmp, &ann_text, ann_size, pda->str_number_hex) != SRD_OK) {
         srd_err("Protocol decoder %s submitted annotation list, but "
             "second element was malformed.", di->decoder->name);
         goto err;
     }
-
-	pda = pdata->data;
+ 
 	pda->ann_class = ann_class;
 	pda->ann_type = GPOINTER_TO_INT(ann_type_ptr);
     pda->ann_text = ann_text;
@@ -334,7 +432,7 @@ static PyObject *Decoder_put(PyObject *self, PyObject *args)
 	struct srd_pd_callback *cb;
 	PyGILState_STATE gstate;
 
-	py_data = NULL;
+	py_data = NULL; //the fourth param from python
 
 	gstate = PyGILState_Ensure();
 
@@ -394,17 +492,20 @@ static PyObject *Decoder_put(PyObject *self, PyObject *args)
     case SRD_OUTPUT_PYTHON:
         for (l = di->next_di; l; l = l->next) {
             next_di = l->data;
+
             srd_spew("Instance %s put %" PRIu64 "-%" PRIu64 " %s "
                  "on oid %d (%s) to instance %s.", di->inst_id,
                  start_sample,
                  end_sample, output_type_name(pdo->output_type),
                  output_id, pdo->proto_id, next_di->inst_id);
+
             if (!(py_res = PyObject_CallMethod(
                 next_di->py_inst, "decode", "KKO", start_sample,
                 end_sample, py_data))) {
                 srd_exception_catch(NULL, "Calling %s decode() failed",
                             next_di->inst_id);
             }
+
             Py_XDECREF(py_res);
         }
         if ((cb = srd_pd_output_callback_find(di->sess, pdo->output_type))) {
@@ -459,6 +560,9 @@ err:
 	return NULL;
 }
 
+/*
+ return output info index
+*/
 static PyObject *Decoder_register(PyObject *self, PyObject *args,
 		PyObject *kwargs)
 {
@@ -612,7 +716,9 @@ static int get_current_pinvalues(const struct srd_decoder_inst *di)
 	for (i = 0; i < di->dec_num_channels; i++) {
 		/* A channelmap value of -1 means "unused optional channel". */
 		if (di->dec_channelmap[i] == -1) {
-			/* Value of unused channel is 0xff, instead of 0 or 1. */
+			/* Value of unused channel is 0xff, instead of 0 or 1. 
+			   Done set -1 by srd_inst_channel_set_all()
+			*/
             PyTuple_SetItem(di->py_pinvalues, i, PyLong_FromLong(0xff));
 		} else {
             if (*(di->inbuf + i) == NULL) {
@@ -905,6 +1011,7 @@ static PyObject *Decoder_wait(PyObject *self, PyObject *args)
         while (!di->got_new_samples && !di->want_wait_terminate)
             g_cond_wait(&di->got_new_samples_cond, &di->data_mutex);
 
+ 
         /*
          * Check whether any of the current condition(s) match.
          * Arrange for termination requests to take a code path which
@@ -915,7 +1022,7 @@ static PyObject *Decoder_wait(PyObject *self, PyObject *args)
         found_match = FALSE;
 
         /* Ignore return value for now, should never be negative. */
-        (void)process_samples_until_condition_match(di, &found_match);
+        process_samples_until_condition_match(di, &found_match);
 
         Py_END_ALLOW_THREADS
 
@@ -940,7 +1047,7 @@ static PyObject *Decoder_wait(PyObject *self, PyObject *args)
             Py_INCREF(di->py_pinvalues);
             return (PyObject *)di->py_pinvalues;
         }
-
+ 
 		/* No match, reset state for the next chunk. */
 		di->got_new_samples = FALSE;
 		di->handled_all_samples = TRUE;
@@ -1032,12 +1139,16 @@ err:
 static PyMethodDef Decoder_methods[] = {
 	{ "put", Decoder_put, METH_VARARGS,
 	  "Accepts a dictionary with the following keys: startsample, endsample, data" },
+
 	{ "register", (PyCFunction)Decoder_register, METH_VARARGS|METH_KEYWORDS,
 			"Register a new output stream" },
+
 	{ "wait", Decoder_wait, METH_VARARGS,
 			"Wait for one or more conditions to occur" },
+
 	{ "has_channel", Decoder_has_channel, METH_VARARGS,
 			"Report whether a channel was supplied" },
+
 	{NULL, NULL, 0, NULL}
 };
 

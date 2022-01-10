@@ -41,9 +41,6 @@
 namespace DecoderDataFormat
 {
       int Parse(const char *name){
-        if (strcmp(name, "ascii") == 0){
-            return (int)ascii;
-        }
         if (strcmp(name, "dec") == 0){
             return (int)dec;
         }
@@ -56,7 +53,7 @@ namespace DecoderDataFormat
          if (strcmp(name, "bin") == 0){
             return (int)bin;
         }
-        return (int)ascii;
+        return (int)hex;
     }
 }
 

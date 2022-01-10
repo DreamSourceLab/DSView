@@ -269,6 +269,7 @@ SRD_API int srd_session_send(struct srd_session *sess,
 	if (!sess)
 		return SRD_ERR_ARG;
 
+	//foreach srd_decoder_inst* stack
 	for (d = sess->di_list; d; d = d->next) {
 		if ((ret = srd_inst_decode(d->data, abs_start_samplenum,
                 abs_end_samplenum, inbuf, inbuf_const, inbuflen, error)) != SRD_OK)

@@ -127,9 +127,7 @@ srd_decoder_inst* Decoder::create_decoder_inst(srd_session *session)
 	GHashTable *const probes = g_hash_table_new_full(g_str_hash,
 		g_str_equal, g_free, (GDestroyNotify)g_variant_unref);
 
-    for(std::map<const srd_channel*, int>::
-		const_iterator i = _probes.begin();
-		i != _probes.end(); i++)
+    for(auto i = _probes.begin(); i != _probes.end(); i++)
 	{
         GVariant *const gvar = g_variant_new_int32((*i).second);
 		g_variant_ref_sink(gvar);

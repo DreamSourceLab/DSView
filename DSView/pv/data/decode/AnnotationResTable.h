@@ -26,23 +26,27 @@
 #include <vector>
 #include <QString>
 
-typedef std::vector<QString> AnnotationStringList;
+struct AnnotationSourceItem
+{
+    bool    is_numerical;
+    char    str_number_hex[18]; //numerical value hex format string
+    std::vector<QString> src_lines; //the origin source string lines
+    std::vector<QString> cvt_lines; //the converted to bin/hex/oct format string lines
+    int     cur_display_format; //current format  as bin/ex/oct..., init with -1
+};
  
-class AnnotationResTable{
-
+class AnnotationResTable
+{ 
     public:
-       AnnotationResTable();
+       int MakeIndex(const std::string &key, AnnotationSourceItem* &newItem);
+       AnnotationSourceItem* GetItem(int index);
 
-       ~AnnotationResTable();
+       inline int GetCount(){
+           return m_resourceTable.size();} 
 
-       int MakeIndex(const std::string &key, AnnotationStringList *&ls);
-
-       const AnnotationStringList& GetString(int index);
-
-       inline int GetCount(){return m_resourceTable.size();}
- 
+       static const char* format_numberic(const char *hex_str, int fmt);
 
     private:
-        std::map<std::string, int> m_indexs;
-        std::vector<AnnotationStringList> m_resourceTable;
+        std::map<std::string, int>          m_indexs;
+        std::vector<AnnotationSourceItem*>  m_resourceTable;
 };

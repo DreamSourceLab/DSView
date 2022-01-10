@@ -255,7 +255,7 @@ SRD_API int srd_init(const char *path)
 	PyEval_InitThreads();
 
 	/* Release the GIL (ignore return value, we don't need it here). */
-	(void)PyEval_SaveThread();
+	PyEval_SaveThread();
 
 	max_session_id = 0;
 
@@ -359,6 +359,7 @@ SRD_PRIV int srd_decoder_searchpath_add(const char *path)
 
 	PyGILState_Release(gstate);
 
+	//append the directory to search list
 	searchpaths = g_slist_prepend(searchpaths, g_strdup(path));
 
 	return SRD_OK;
