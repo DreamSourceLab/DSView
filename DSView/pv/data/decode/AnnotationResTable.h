@@ -28,8 +28,9 @@
 
 struct AnnotationSourceItem
 {
-    bool    is_numerical;
+    bool    is_numeric;
     char    str_number_hex[18]; //numerical value hex format string
+    long long numberic_value;
     std::vector<QString> src_lines; //the origin source string lines
     std::vector<QString> cvt_lines; //the converted to bin/hex/oct format string lines
     int     cur_display_format; //current format  as bin/ex/oct..., init with -1

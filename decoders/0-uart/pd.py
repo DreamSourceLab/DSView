@@ -218,11 +218,11 @@ class Decoder(srd.Decoder):
         if self.options['bit_order'] == 'msb-first':
             bits.reverse()
         self.datavalue = bitpack(bits)
-
-        b = self.datavalue
-        formatted = self.format_value(b)
-        if formatted is not None:
-            self.putx([0, [formatted]])
+        self.putx([0, [self.datavalue]])
+        #b = self.datavalue
+        #formatted = self.format_value(b)
+        #if formatted is not None:
+        #   self.putx([0, [formatted]])
 
         self.databits = []
 

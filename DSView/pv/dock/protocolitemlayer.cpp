@@ -122,10 +122,13 @@ void ProtocolItemLayer::LoadFormatSelect(bool bSingle)
     m_bSetting = true;
     _format_combox->clear(); 
 
-    _format_combox->addItem("hex");
-    _format_combox->addItem("dec");       
-    _format_combox->addItem("oct");
-    _format_combox->addItem("bin");
+    if (!bSingle){
+        _format_combox->addItem("hex");
+        _format_combox->addItem("dec");       
+        _format_combox->addItem("oct");
+        _format_combox->addItem("bin");
+    }
+     _format_combox->addItem("ascii");
     
     _format_combox->setCurrentIndex(0);
     m_bSetting = false;

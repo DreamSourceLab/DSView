@@ -53,7 +53,7 @@ static void release_annotation(struct srd_proto_data_annotation *pda)
 		g_strfreev(pda->ann_text);
 }
 
-static int py_parse_ann_data(PyObject *list_obj, char ***out_strv, int list_size, char *hex_str_buf)
+static int py_parse_ann_data(PyObject *list_obj, char ***out_strv, int list_size, char *hex_str_buf, long long *numberic_value)
 {
 	PyObject *py_item, *py_bytes;
 	char **strv, *str; 
@@ -93,7 +93,8 @@ static int py_parse_ann_data(PyObject *list_obj, char ***out_strv, int list_size
 
 	if (py_numobj != NULL){
 		lv = PyLong_AsLongLong(py_numobj);
-		sprintf(hex_str_buf, "%02llX", lv); 
+		sprintf(hex_str_buf, "%02llX", lv);
+		*numberic_value = lv;
 	}
 
 	//have no text, only one numberical
@@ -209,7 +210,9 @@ static int convert_annotation(struct srd_decoder_inst *di, PyObject *obj,
 	 
 	pda->str_number_hex[0] = 0;
 	ann_text = NULL;
-    if (py_parse_ann_data(py_tmp, &ann_text, ann_size, pda->str_number_hex) != SRD_OK) {
+	pda->numberic_value = 0;
+
+    if (py_parse_ann_data(py_tmp, &ann_text, ann_size, pda->str_number_hex, &pda->numberic_value) != SRD_OK) {
         srd_err("Protocol decoder %s submitted annotation list, but "
             "second element was malformed.", di->decoder->name);
         goto err;

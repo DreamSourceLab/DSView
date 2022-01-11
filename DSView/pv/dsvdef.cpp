@@ -44,14 +44,17 @@ namespace DecoderDataFormat
         if (strcmp(name, "dec") == 0){
             return (int)dec;
         }
-         if (strcmp(name, "hex") == 0){
+        if (strcmp(name, "hex") == 0){
             return (int)hex;
         }
-         if (strcmp(name, "oct") == 0){
+        if (strcmp(name, "oct") == 0){
             return (int)oct;
         }
-         if (strcmp(name, "bin") == 0){
+        if (strcmp(name, "bin") == 0){
             return (int)bin;
+        }
+        if (strcmp(name, "ascii") == 0){
+            return (int)ascii;
         }
         return (int)hex;
     }

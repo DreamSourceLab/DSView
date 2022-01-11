@@ -213,11 +213,10 @@ class Decoder(srd.Decoder):
         if cmd.startswith('ADDRESS'):
             self.ss, self.es = self.samplenum, self.samplenum + self.bitwidth
             w = ['Write', 'Wr', 'W'] if self.wr else ['Read', 'Rd', 'R']
-            self.putx([proto[cmd][0], w])
+            self.putx([0, w])
             self.ss, self.es = self.ss_byte, self.samplenum
 
-        self.putx([proto[cmd][0], ['%s: %02X' % (proto[cmd][1], d),
-                   '%s: %02X' % (proto[cmd][2], d), '%02X' % d]])
+        self.putx([proto[cmd][0], ['%s: {$}' % proto[cmd][1], '%s: {$}' % proto[cmd][2], '{$}', d]])
 
         # Done with this packet.
         self.bitcount = self.databyte = 0

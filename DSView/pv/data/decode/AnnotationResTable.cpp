@@ -24,11 +24,10 @@
 #include "../../dsvdef.h"
 
 #define DECODER_MAX_DATA_BLOCK_LEN 25
-#define FORMAT_TMP_BUFFER_SIZE 100
 
 const char g_bin_cvt_table[] = "0000000100100011010001010110011110001001101010111100110111101111";
-char g_bin_format_tmp_buffer[FORMAT_TMP_BUFFER_SIZE + 3];
-char g_oct_format_tmp_buffer[FORMAT_TMP_BUFFER_SIZE + 6];
+char g_bin_format_tmp_buffer[DECODER_MAX_DATA_BLOCK_LEN * 4 + 2];
+char g_oct_format_tmp_buffer[DECODER_MAX_DATA_BLOCK_LEN * 3 + 2];
 char g_number_tmp_64[30];
  
  char* bin2oct_string(char *buf, int size, const char *bin, int len){
@@ -111,7 +110,7 @@ int AnnotationResTable::MakeIndex(const std::string &key, AnnotationSourceItem* 
     m_resourceTable.push_back(item);
 
     item->cur_display_format = -1;
-    item->is_numerical = false;
+    item->is_numeric = false;
     newItem = item;
    
     int dex = m_indexs.size();
@@ -135,9 +134,9 @@ const char* AnnotationResTable::format_numberic(const char *hex_str, int fmt)
 	 }
 	
 	 //convert to bin format
-	 char *buf = g_bin_format_tmp_buffer + FORMAT_TMP_BUFFER_SIZE;
-	 *(buf + 1) = 0; //set the end flag
-	 *buf = 0;
+	 char *buf = g_bin_format_tmp_buffer + sizeof(g_bin_format_tmp_buffer) - 2;
+	 buf[1] = 0; //set the end flag
+	 buf[0] = 0;
 
 	 int len = strlen(data);
 	  //buffer is not enough
@@ -178,9 +177,27 @@ const char* AnnotationResTable::format_numberic(const char *hex_str, int fmt)
 
 	//64 bit integer
 	 if (fmt == DecoderDataFormat::dec && len * 4 <= 64){
-         long long lv = bin2long_string(buf, len *4);
+         long long lv = bin2long_string(buf, len * 4);
 		 g_number_tmp_64[0] = 0;
     	 sprintf(g_number_tmp_64, "%lld", lv);
+         return g_number_tmp_64;
+	 }
+	 
+	 //ascii
+	 if (fmt == DecoderDataFormat::ascii && len < 30 - 3){
+		 if (len == 2){
+             int lv = (int)bin2long_string(buf, len * 4);
+			 //can display chars
+			 if (lv >= 33 && lv <= 126){
+				 sprintf(g_number_tmp_64, "%c", (char)lv);
+				 return g_number_tmp_64;
+			 }
+		 }
+		 char * const wr_buf = g_number_tmp_64;
+         g_number_tmp_64[0] = '[';
+         strcpy(g_number_tmp_64 + 1, data);
+         g_number_tmp_64[len+1] = ']';
+         g_number_tmp_64[len+2] = 0;
          return g_number_tmp_64;
 	 }
 

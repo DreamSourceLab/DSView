@@ -618,10 +618,12 @@ void ProtocolDock::search_pre()
         bool ann_valid;
         while(i < _str_list.size()) {
             QString nxt = _str_list.at(i);
+
             do {
                 ann_valid = decoder_stack->list_annotation(ann, col, row);
                 row++;
-            }while(ann_valid && (ann.type() < 100 || ann.type() > 999));
+            }while(ann_valid && !ann.is_numberic());
+
             QString source = ann.annotations().at(0);
             if (ann_valid && source.contains(nxt))
                 i++;
@@ -686,10 +688,11 @@ void ProtocolDock::search_nxt()
 
         while(i < _str_list.size()) {
             QString nxt = _str_list.at(i);
+
             do {
                 ann_valid = decoder_stack->list_annotation(ann, col, row);
                 row++;
-            }while(ann_valid && (ann.type() < 100 || ann.type() > 999));
+            }while(ann_valid && !ann.is_numberic());
 
             auto strlist = ann.annotations();
             QString source = ann.annotations().at(0);

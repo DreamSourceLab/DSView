@@ -62,6 +62,8 @@ public:
 		return _type;
 	}  
 
+	bool is_numberic();
+
 public:
 	const std::vector<QString>& annotations() const;
 

@@ -151,9 +151,9 @@ class Decoder(srd.Decoder):
 
         # Dataword annotations.
         if self.have_miso:
-            self.put(ss, es, self.out_ann, [0, ['%02X' % self.misodata]])
+            self.put(ss, es, self.out_ann, [0, [self.misodata]])
         if self.have_mosi:
-            self.put(ss, es, self.out_ann, [1, ['%02X' % self.mosidata]])
+            self.put(ss, es, self.out_ann, [1, [self.mosidata]])
 
     def reset_decoder_state(self):
         self.misodata = 0 if self.have_miso else None

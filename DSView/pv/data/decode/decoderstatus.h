@@ -26,13 +26,13 @@ class DecoderStatus
 public:
     DecoderStatus()
     {
-        m_bNumerical = false;
+        m_bNumeric = false;
         m_format = 0;
         sdr_decoder_handle = NULL;
     }
 
 public:
-    bool m_bNumerical; //when decoder get any numerical data,it will be set
+    bool m_bNumeric; //when decoder get any numerical data,it will be set
     int  m_format; //protocol format code
     void *sdr_decoder_handle;
 };

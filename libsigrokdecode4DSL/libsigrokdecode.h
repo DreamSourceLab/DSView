@@ -348,6 +348,7 @@ struct srd_proto_data_annotation {
 	int ann_class;
     int ann_type; 
 	char str_number_hex[18]; //numerical value hex format string
+	long long numberic_value;
 	char **ann_text; //text string lines
 };
 struct srd_proto_data_binary {

@@ -253,10 +253,12 @@ class Decoder(srd.Decoder):
         self.datavalue = bitpack(bits)
         self.putpx(['DATA', 0, (self.datavalue, self.databits)])
 
+        self.putx([0, [self.datavalue]])
+
         b = self.datavalue
-        formatted = self.format_value(b)
-        if formatted is not None:
-            self.putx([0, [formatted]])
+        #formatted = self.format_value(b)
+        #if formatted is not None:
+        #   self.putx([0, [formatted]])
 
         bdata = b.to_bytes(self.bw, byteorder='big')
         self.putbin([0, bdata])

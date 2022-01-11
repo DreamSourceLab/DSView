@@ -49,10 +49,11 @@ namespace DecoderDataFormat
 {
     enum _data_format
     {
-        hex,
-        dec,       
-        oct,
-        bin
+        hex=0,
+        dec=1,       
+        oct=2,
+        bin=3,
+        ascii=4
     };
 
     int Parse(const char *name);       

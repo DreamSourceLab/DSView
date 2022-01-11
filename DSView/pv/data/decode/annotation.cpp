@@ -40,9 +40,11 @@ char sz_format_tmp_buf[50];
 bool is_hex_number_str(const char *str)
 { 
 	char c = *str;
+	int len = 0;
 
 	while (c)
 	{
+		++len;
 		if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F')){
 			c = *str;
 			str++;
@@ -50,8 +52,7 @@ bool is_hex_number_str(const char *str)
 		}
 		return false;		
 	}
-	
-	return true;
+	return len % 2 == 0 && len > 0;
 }
 
 namespace pv {
@@ -96,19 +97,19 @@ Annotation::Annotation(const srd_proto_data *const pdata, DecoderStatus *status)
 			resItem->src_lines.push_back(QString::fromUtf8(*annotations));
 			annotations++;  
 		}
-
-		//get numerical data
+ 
+		//get numeric data
 		if (pda->str_number_hex[0]){
 			strcpy(resItem->str_number_hex, pda->str_number_hex);
-			resItem->is_numerical = true;
+			resItem->is_numeric = true;
 		}
 		else if (resItem->src_lines.size() == 1 && _type >= 100 && _type < 200){
 			if (is_hex_number_str(resItem->src_lines[0].toLatin1().data())){
-              	resItem->is_numerical = true;
+              	resItem->is_numeric = true;
 			}
 		}
 
-		_status->m_bNumerical |= resItem->is_numerical;
+		_status->m_bNumeric |= resItem->is_numeric;
 	}
 }
 
@@ -126,11 +127,11 @@ Annotation::~Annotation()
 const std::vector<QString>& Annotation::annotations() const
 {
 	 assert(_status);
- 
+
      AnnotationSourceItem &resItem = *annTable.GetItem(_resIndex);
- 
-	//get origin data, is not a numberical value
-     if (!resItem.is_numerical){
+
+	//get origin data, is not a numberic value
+     if (!resItem.is_numeric){
         return resItem.src_lines;
      }
   
@@ -167,8 +168,13 @@ const std::vector<QString>& Annotation::annotations() const
 	 }
 
 	return resItem.cvt_lines;
-}                   
- 
+}       
+
+bool Annotation::is_numberic()
+{
+	AnnotationSourceItem *resItem = annTable.GetItem(_resIndex);
+	return resItem->is_numeric;
+} 
 
 } // namespace decode
 } // namespace data
