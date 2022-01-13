@@ -22,19 +22,25 @@
 #ifndef DSVIEW_PV_VIEW_DECODETRACE_H
 #define DSVIEW_PV_VIEW_DECODETRACE_H
 
-#include "trace.h"
 
 #include <list>
 #include <map>
-
 #include <QSignalMapper>
 #include <QFormLayout>
+#include <QWidget>
 
+#include "trace.h"
 #include "../prop/binding/decoderoptions.h"
 #include "../dialogs/dsdialog.h"
 
 struct srd_channel;
 struct srd_decoder;
+
+struct decoder_panel_item{
+	QWidget *panel;
+	void 	*decoder_handle;
+	int 	panel_height;
+};
 
 class DsComboBox;
 
@@ -188,22 +194,20 @@ private:
 		data::decode::Decoder *dec);
 
 	void commit_probes();
+	void load_all_decoder_property(std::list<pv::data::decode::Decoder*> &ls);
 
 signals:
     void decoded_progress(int progress);
 
 private slots:
-	void on_new_decode_data();
-  
+	void on_new_decode_data();  
 	void on_probe_selected(int);
-
 	void on_stack_decoder(srd_decoder *decoder);
-
     void on_del_stack(data::decode::Decoder *dec);
 
     void on_decode_done();
-
     void on_region_set(int index);
+	void on_resize_decoder_panel();
 
 public:
 	volatile bool _delete_flag; //detroy it when deocde task end
@@ -223,6 +227,9 @@ private:
 	DsComboBox 		*_end_comboBox;
 	QFormLayout 	*_pub_input_layer;
     int				 _progress;
+	QWidget			*_decoder_container;
+	std::list<decoder_panel_item> 	_decoder_panels;
+	int 			_form_base_height;
 
 	std::list<pv::prop::binding::DecoderOptions*> _bindings;
 	std::list<ProbeSelector> _probe_selectors;

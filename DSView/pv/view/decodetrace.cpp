@@ -53,6 +53,7 @@
 #include "../toolbars/titlebar.h"
 #include "../dsvdef.h"
 #include "../ui/dscombobox.h"
+#include <QDebug>
 
 using namespace boost;
 using namespace std;
@@ -133,6 +134,8 @@ DecodeTrace::DecodeTrace(pv::SigSession *session,
     _start_count = 0;
     _end_index = 0;
     _start_index = 0; 
+    _decoder_container = NULL;
+    _form_base_height = 0;
 
     _decoder_stack = decoder_stack;
     _session = session;
@@ -349,6 +352,8 @@ void DecodeTrace::paint_fore(QPainter &p, int left, int right, QColor fore, QCol
 bool DecodeTrace::create_popup()
 { 
     int ret = false;   //setting have changed flag
+    _form_base_height = 0;
+    _decoder_container = NULL;
     
     dialogs::DSDialog dlg;
     //dlg.setMinimumSize(500,600);
@@ -367,25 +372,57 @@ bool DecodeTrace::create_popup()
         }
     }
 
+    _decoder_container = NULL;
     return ret;
 }
 
 void DecodeTrace::create_popup_form(dialogs::DSDialog *dlg)
 {
-    // Clear the layout
-
     // Transfer the layout and the child widgets to a temporary widget
     // which then goes out of scope destroying the layout and all the child
     // widgets. 
-   QFormLayout *form = new QFormLayout();
+    QFormLayout *form = new QFormLayout();
     form->setVerticalSpacing(5);
     form->setFormAlignment(Qt::AlignLeft);
     form->setLabelAlignment(Qt::AlignLeft);
     form->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
+
+    _decoder_container = new QWidget(dlg);
+    dlg->layout()->addWidget(_decoder_container);
+    
+    QVBoxLayout *decoder_lay = new QVBoxLayout();
+    decoder_lay->setContentsMargins(0, 0, 0, 0);
+    decoder_lay->setDirection(QBoxLayout::TopToBottom);
+    _decoder_container->setLayout(decoder_lay);
+    
     dlg->layout()->addLayout(form);
     dlg->setTitle(tr("Decoder Options"));
 
     populate_popup_form(dlg, form);
+}
+
+void DecodeTrace::load_all_decoder_property(std::list<pv::data::decode::Decoder*> &ls)
+{ 
+    assert(_decoder_container); 
+    QVBoxLayout *lay = dynamic_cast<QVBoxLayout*>(_decoder_container->layout());
+    assert(lay);
+ 
+    for(auto &dec : ls) 
+    { 
+        QWidget *panel = new QWidget(_decoder_container);
+        QFormLayout *form = new QFormLayout();
+        form->setContentsMargins(0,0,0,0);
+        panel->setLayout(form);
+        lay->addWidget(panel);
+       
+        create_decoder_form(_decoder_stack, dec, panel, form);
+
+        decoder_panel_item inf;
+        inf.decoder_handle = dec; 
+        inf.panel = panel;
+        inf.panel_height = 0;
+        _decoder_panels.push_back(inf); 
+	}
 }
 
 void DecodeTrace::populate_popup_form(QWidget *parent, QFormLayout *form)
@@ -401,21 +438,11 @@ void DecodeTrace::populate_popup_form(QWidget *parent, QFormLayout *form)
 	_probe_selectors.clear();
 	_decoder_forms.clear();
 
-    auto &stack = _decoder_stack->stack();
+    load_all_decoder_property(_decoder_stack->stack());
 
-    if (stack.empty()) {
-		QLabel *const l = new QLabel(
-			tr("<p><i>No decoders in the stack</i></p>")); 
-		l->setAlignment(Qt::AlignCenter);
-		form->addRow(l);
-    } else {
-        for(auto &dec : stack) { 
-            create_decoder_form(_decoder_stack, dec, parent, form);
-		}
-
-		form->addRow(new QLabel(
-			tr("<i>* Required channels</i>"), parent));
-	} 
+    if (_decoder_stack->stack().size() > 0){
+        form->addRow(new QLabel(tr("<i>* Required channels</i>"), parent));
+    }
 
     //Add region combobox
     _start_comboBox = new DsComboBox(parent);
@@ -473,13 +500,9 @@ void DecodeTrace::populate_popup_form(QWidget *parent, QFormLayout *form)
     form->addRow(confirm_button_box);
 
     connect(_start_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_region_set(int)));
-
     connect(_end_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_region_set(int)));
-
     connect(decoder_menu, SIGNAL(decoder_selected(srd_decoder *)), this, SLOT(on_stack_decoder(srd_decoder *)));
-
     connect(button_box, SIGNAL(accepted()), parent, SLOT(accept()));
-
     connect(button_box, SIGNAL(rejected()), parent, SLOT(reject()));
 }
 
@@ -775,16 +798,12 @@ DsComboBox* DecodeTrace::create_probe_selector(
 	const srd_channel *const pdch)
 {
 	assert(dec);
-
     const auto &sigs = _session->get_signals();
-
 	assert(_decoder_stack);
 
     data::decode::Decoder *_dec = const_cast<data::decode::Decoder*>(dec);
-
     auto probe_iter = _dec->channels().find(pdch);
 	DsComboBox *selector = new DsComboBox(parent);
-
     selector->addItem("-", QVariant::fromValue(-1));
 
 	if (probe_iter == _dec->channels().end())
@@ -877,25 +896,104 @@ void DecodeTrace::on_decode_done()
 void DecodeTrace::on_probe_selected(int)
 {
 	commit_probes();
-}
+} 
 
 void DecodeTrace::on_stack_decoder(srd_decoder *decoder)
 {
 	assert(decoder);
 	assert(_decoder_stack);
 
-    _decoder_stack->push(new data::decode::Decoder(decoder));
-     
-  //  create_popup_form();
-}
+    auto dec = new data::decode::Decoder(decoder);
 
+    _decoder_stack->push(dec);   
+    std::list<pv::data::decode::Decoder*> items;
+    items.push_back(dec);
+
+    if (_decoder_panels.size()){
+        auto it = _decoder_panels.end();
+        --it;
+        if ((*it).panel_height == 0){
+            (*it).panel_height = (*it).panel->geometry().height();
+        }
+    }
+    
+    if (_decoder_panels.size() == 1 && _decoder_container && _form_base_height == 0){
+        QWidget *dlg = dynamic_cast<QWidget*>(_decoder_container->parent());
+        assert(dlg);
+        _form_base_height = dlg->geometry().height(); 
+    }
+ 
+    load_all_decoder_property(items);
+}
+ 
 void DecodeTrace::on_del_stack(data::decode::Decoder *dec)
 {
     assert(dec);
     assert(_decoder_stack);
 
     _decoder_stack->remove(dec);
- //   create_popup_form();
+
+    std::list<decoder_panel_item> dels; 
+    std::list<pv::data::decode::Decoder*> adds;
+
+    for (auto it = _decoder_panels.begin(); it != _decoder_panels.end(); it++){
+        if ((*it).decoder_handle == dec){
+            dels.push_back((*it));
+            auto del_it = it;
+
+            it++;
+            while (it != _decoder_panels.end())
+            { 
+                 dels.push_back((*it));
+                 adds.push_back((pv::data::decode::Decoder*)(*it).decoder_handle);
+                 it++;
+            }
+            _decoder_panels.erase(del_it);            
+            break;
+        }
+    }   
+  
+    while (true)
+    {
+         if (dels.empty())
+            break;
+
+        auto it = dels.end();
+        it--;
+        auto inf = (*it);
+        assert(inf.panel);     
+ 
+        inf.panel->deleteLater();
+        dels.erase(it);
+
+       for (auto fd = _decoder_panels.begin(); fd != _decoder_panels.end(); ++fd){
+           if ((*fd).decoder_handle == inf.decoder_handle){
+               _decoder_panels.erase(fd);
+               break;
+           }
+       }
+    }
+
+     if (adds.size() > 0){
+        load_all_decoder_property(adds);
+    }
+ 
+// QTimer::singleShot(200, this, SLOT(on_resize_decoder_panel())); 
+}
+
+void DecodeTrace::on_resize_decoder_panel()
+{ 
+    /*
+    int dex = 0;
+  
+    for (auto &panel : _decoder_panels){
+        assert(panel.panel);       
+        dex++;
+        if (dex > 1){
+            panel.panel->setMaximumHeight(panel.panel_height);
+        }
+    } 
+    */
 }
 
 int DecodeTrace::rows_size()
