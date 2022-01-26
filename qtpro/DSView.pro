@@ -32,6 +32,7 @@ CONFIG += c++11
 QT += widgets
 QMAKE_CFLAGS_ISYSTEM = -I
 
+CONFIG += release
 
 TARGET = DSView
 TEMPLATE = app
@@ -69,9 +70,6 @@ INCLUDEPATH += ..
 
 LIBS += /usr/lib/x86_64-linux-gnu/libglib-2.0.so
 LIBS += /usr/lib/x86_64-linux-gnu/libusb-1.0.so
-LIBS += /usr/lib/x86_64-linux-gnu/libboost_thread.so
-LIBS += /usr/lib/x86_64-linux-gnu/libboost_system.so
-LIBS += /usr/lib/x86_64-linux-gnu/libboost_filesystem.so
 LIBS += /usr/lib/x86_64-linux-gnu/libpython3.8.so
 LIBS += /usr/lib/x86_64-linux-gnu/libfftw3.so
 LIBS += /usr/local/lib/libz.so.1.2.11
@@ -87,20 +85,12 @@ INCLUDEPATH += /usr/local/include/boost
 INCLUDEPATH += /Library/Frameworks/Python.framework/Versions/3.4/include/python3.4m
 INCLUDEPATH += ..
 
-#LIBS += -framework CoreFoundation
-#LIBS += -framework CoreServices
-#LIBS += /usr/lib/libiconv.2.dylib
-#LIBS += /usr/local/lib/libpcre.a
-#LIBS += /usr/local/opt/gettext/lib/libintl.a
-#LIBS += /usr/lib/libz.1.dylib
-#LIBS += /usr/lib/libobjc.dylib
-
 LIBS += /usr/local/lib/libglib-2.0.dylib
 LIBS += /usr/local/lib/libusb-1.0.dylib
-LIBS += /usr/local/lib/libboost_atomic-mt.a
-LIBS += /usr/local/lib/libboost_thread-mt.a
-LIBS += /usr/local/lib/libboost_system-mt.a
-LIBS += /usr/local/lib/libboost_filesystem-mt.a
+#LIBS += /usr/local/lib/libboost_atomic-mt.a
+#LIBS += /usr/local/lib/libboost_thread-mt.a
+#LIBS += /usr/local/lib/libboost_system-mt.a
+#LIBS += /usr/local/lib/libboost_filesystem-mt.a
 LIBS += /Library/Frameworks/Python.framework/Versions/3.4/lib/libpython3.4.dylib
 LIBS += /usr/local/lib/libfftw3.a
 }

@@ -111,6 +111,11 @@ int main(int argc, char *argv[])
     QApplication::setOrganizationName("DreamSourceLab");
     QApplication::setOrganizationDomain("www.DreamSourceLab.com");
 
+#ifdef Q_OS_LINUX
+	QCoreApplication::addLibraryPath("/usr/lib/x86_64-linux-gnu/qt5/plugins");
+	printf("qt plugins root:/usr/lib/x86_64-linux-gnu/qt5/plugins\n");
+#endif
+
 	AppControl *control = AppControl::Instance();
 
 	// Parse arguments
