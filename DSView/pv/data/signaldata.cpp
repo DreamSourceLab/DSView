@@ -33,11 +33,7 @@ SignalData::SignalData() :
 }
 
 SignalData::~SignalData() {}
-
-double SignalData::samplerate() const
-{
-	return _samplerate;
-}
+ 
 
 void SignalData::set_samplerate(double samplerate)
 {

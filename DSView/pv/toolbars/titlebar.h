@@ -23,8 +23,10 @@
 #define DSVIEW_PV_TOOLBARS_TITLEBAR_H
 
 #include <QWidget>
-class QLabel;
+
 class QToolButton;
+class QHBoxLayout;
+class QLabel;
 
 namespace pv {
 namespace toolbars {
@@ -35,9 +37,10 @@ class TitleBar : public QWidget
 
 public:
     TitleBar(bool top, QWidget *parent, bool hasClose = false);
-    void setTitle(QString title);
-    QPoint get_startPos() const;
-    QString title() const;
+    ~TitleBar();
+    
+    void setTitle(QString title); 
+    QString title();
 
 private:
     void changeEvent(QEvent *event);
@@ -50,6 +53,7 @@ signals:
 public slots:
     void showMaxRestore();
     void setRestoreButton(bool max);
+    inline bool IsMoving(){return _moving;}
 
 protected:
     void paintEvent(QPaintEvent *event);
@@ -57,16 +61,18 @@ protected:
     void mouseMoveEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
     void mouseDoubleClickEvent(QMouseEvent *event);
-
-    QLabel *_title;
+ 
+    
     QToolButton *_minimizeButton;
     QToolButton *_maximizeButton;
     QToolButton *_closeButton;
-
+    QLabel      *_title;
+  
     bool _moving;
     bool _isTop;
     bool _hasClose;
     QPoint _startPos;
+    QWidget *_parent;
 };
 
 } // namespace toolbars

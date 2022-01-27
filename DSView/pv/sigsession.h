@@ -22,38 +22,30 @@
 
 #ifndef DSVIEW_PV_SIGSESSION_H
 #define DSVIEW_PV_SIGSESSION_H
-
-#include <libsigrok4DSL/libsigrok.h>
-#include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#include <boost/thread.hpp>
-
-#include <string>
-#include <utility>
-#include <map>
+ 
 #include <set>
 #include <string>
 #include <vector>
-#include <stdint.h>
-
-#include <QObject>
-#include <QString>
-#include <QLine>
-#include <QVector>
-#include <QMap>
-#include <QVariant>
-#include <QTimer>
-#include <QtConcurrent/QtConcurrent>
-#include <QJsonObject>
-
+#include <stdint.h> 
+#include <QString>  
 #include <libusb.h>
+#include <thread>
+#include <QDateTime>
 
 #include "view/mathtrace.h"
 #include "data/mathstack.h"
+#include "interface/icallbacks.h"
+#include "dstimer.h"
+
+#include <libsigrok4DSL/libsigrok.h>
 
 struct srd_decoder;
 struct srd_channel;
+ 
+
+class DecoderStatus;
+
+typedef std::lock_guard<std::mutex> ds_lock_guard;
 
 namespace pv {
 
@@ -92,10 +84,11 @@ class Decoder;
 class DecoderFactory;
 }
 
-class SigSession : public QObject
-{
-        Q_OBJECT
+using namespace pv::device;
 
+//created by MainWindow
+class SigSession
+{
 private:
     static constexpr float Oversampling = 2.0f;
     static const int RefreshTime = 500;
@@ -127,142 +120,178 @@ public:
         Data_overflow
     };
 
+private:
+    SigSession(SigSession &o);
+  
 public:
-	SigSession(DeviceManager &device_manager);
+    explicit SigSession(DeviceManager *device_manager);
 
-	~SigSession();
+	~SigSession(); 
 
-    boost::shared_ptr<device::DevInst> get_device() const;
+    DevInst* get_device();
 
 	/**
 	 * Sets device instance that will be used in the next capture session.
 	 */
-    void set_device(boost::shared_ptr<device::DevInst> dev_inst);
-
+    void set_device(DevInst *dev_inst);
+    void deselect_device();
     void set_file(QString name);
+    void close_file(DevInst *dev_inst);
+    void set_default_device();
 
-    void close_file(boost::shared_ptr<pv::device::DevInst> dev_inst);
+    void release_device(DevInst *dev_inst);
+	capture_state get_capture_state();
+    uint64_t cur_samplerate();
+    uint64_t cur_snap_samplerate();
+    uint64_t cur_samplelimits();
 
-    void set_default_device(boost::function<void (const QString)> error_handler);
-
-    void release_device(device::DevInst *dev_inst);
-
-	capture_state get_capture_state() const;
-
-    uint64_t cur_samplerate() const;
-    uint64_t cur_snap_samplerate() const;
-    uint64_t cur_samplelimits() const;
-    double cur_sampletime() const;
-    double cur_snap_sampletime() const;
-    double cur_view_time() const;
+    double cur_sampletime();
+    double cur_snap_sampletime();
+    double cur_view_time();
 
     void set_cur_snap_samplerate(uint64_t samplerate);
     void set_cur_samplelimits(uint64_t samplelimits);
     void set_session_time(QDateTime time);
-    QDateTime get_session_time() const;
-    uint64_t get_trigger_pos() const;
 
-    void start_capture(bool instant,
-		boost::function<void (const QString)> error_handler);
-    void capture_init();
+    QDateTime get_session_time();
+    uint64_t get_trigger_pos();
+  
     bool get_capture_status(bool &triggered, int &progress);
-    void container_init();
 
-    std::set< boost::shared_ptr<data::SignalData> > get_data() const;
+    void container_init();    
+    std::set<data::SignalData*> get_data();
+	std::vector<view::Signal*>& get_signals();
+    std::vector<view::GroupSignal*>& get_group_signals();
 
-	std::vector< boost::shared_ptr<view::Signal> >
-		get_signals();
-
-    std::vector< boost::shared_ptr<view::GroupSignal> >
-        get_group_signals();
-
-#ifdef ENABLE_DECODE
-    bool add_decoder(srd_decoder *const dec, bool silent);
-
-    std::vector< boost::shared_ptr<view::DecodeTrace> >
-        get_decode_signals() const;
-
-    void remove_decode_signal(view::DecodeTrace *signal);
-
-    void remove_decode_signal(int index);
-
-    void rst_decoder(int index);
-
-    void rst_decoder(view::DecodeTrace *signal);
-
-    pv::data::DecoderModel* get_decoder_model() const;
-#endif
-
-    std::vector< boost::shared_ptr<view::SpectrumTrace> >
-        get_spectrum_traces();
-
-    boost::shared_ptr<view::LissajousTrace>
-        get_lissajous_trace();
-
-    boost::shared_ptr<view::MathTrace>
-        get_math_trace();
+    bool add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus);
+    void remove_decoder(int index);  
+    std::vector<view::DecodeTrace*>& get_decode_signals();
+ 
+    void rst_decoder(int index); 
+    pv::data::DecoderModel* get_decoder_model();
+    std::vector<view::SpectrumTrace*>& get_spectrum_traces();
+    view::LissajousTrace* get_lissajous_trace();
+    view::MathTrace* get_math_trace();
 
     void init_signals();
-
     void add_group();
-
     void del_group();
-
-    void start_hotplug_proc(boost::function<void (const QString)> error_handler);
-    void stop_hotplug_proc();
-	void register_hotplug_callback();
-    void deregister_hotplug_callback();
-
+    void start_hotplug_work();
+    void stop_hotplug_work();
     uint16_t get_ch_num(int type);
     
     bool get_instant();
-
     bool get_data_lock();
     void data_auto_lock(int lock);
     void data_auto_unlock();
     bool get_data_auto_lock();
+
     void spectrum_rebuild();
     void lissajous_rebuild(bool enable, int xindex, int yindex, double percent);
     void lissajous_disable();
-    void math_rebuild(bool enable,
-                      boost::shared_ptr<pv::view::DsoSignal> dsoSig1,
-                      boost::shared_ptr<pv::view::DsoSignal> dsoSig2,
+
+    void math_rebuild(bool enable,pv::view::DsoSignal *dsoSig1,
+                      pv::view::DsoSignal *dsoSig2,
                       data::MathStack::MathType type);
+
     void math_disable();
-
-    bool trigd() const;
-    uint8_t trigd_ch() const;
-
-    boost::shared_ptr<data::Snapshot> get_snapshot(int type);
-
-    error_state get_error() const;
+    bool trigd();
+    uint8_t trigd_ch();
+    data::Snapshot* get_snapshot(int type);
+    error_state get_error();
     void set_error(error_state state);
     void clear_error();
-    uint64_t get_error_pattern() const;
 
-    run_mode get_run_mode() const;
+    uint64_t get_error_pattern();
+    run_mode get_run_mode();
     void set_run_mode(run_mode mode);
-    int get_repeat_intvl() const;
+    int get_repeat_intvl();
     void set_repeat_intvl(int interval);
-    bool isRepeating() const;
+
+    bool isRepeating();
     bool repeat_check();
-    int get_repeat_hold() const;
-
-    int get_map_zoom() const;
-
+    int get_repeat_hold();
+    int get_map_zoom();
     void set_save_start(uint64_t start);
+
     void set_save_end(uint64_t end);
-    uint64_t get_save_start() const;
-    uint64_t get_save_end() const;
-    bool get_saving() const;
+    uint64_t get_save_start();
+    uint64_t get_save_end();
+    bool get_saving();
+
     void set_saving(bool saving);
     void set_stop_scale(float scale);
-    float stop_scale() const;
+    float stop_scale();
 
     void exit_capture();
+    sr_dev_inst* get_dev_inst_c();
+    void Open();
+    void Close();
+    void clear_all_decoder(); 
+
+    inline bool is_closed(){
+        return _bClose;
+    }
+
+    inline void set_callback(ISessionCallback *callback){
+        _callback = callback;
+    }
+ 
+public:
+    inline void capture_state_changed(int state){
+        _callback->capture_state_changed(state);
+    }
+
+    inline void session_save(){
+         _callback->session_save();
+    }
+
+    inline void repeat_resume(){
+         _callback->repeat_resume();
+    }
+
+    inline void show_region(uint64_t start, uint64_t end, bool keep){
+        _callback->show_region(start, end, keep);
+    }
+
+     inline void decode_done(){
+         _callback->decode_done();
+     }
 
 private:
+    inline void data_updated(){
+        _callback->data_updated();
+    }
+
+    inline void signals_changed(){
+        _callback->signals_changed();
+    }
+
+    inline void receive_data(quint64 len){
+        _callback->receive_data_len(len);
+    } 
+ 
+private:
 	void set_capture_state(capture_state state);
+    void register_hotplug_callback();
+    void deregister_hotplug_callback();
+    bool do_add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus);
+
+    void add_decode_task(view::DecodeTrace *trace);
+    void remove_decode_task(view::DecodeTrace *trace);
+    void clear_all_decode_task(int &runningDex);   
+
+    view::DecodeTrace* get_decoder_trace(int index);
+    void decode_task_proc();
+    view::DecodeTrace* get_top_decode_task();    
+
+    void capture_init();
+    void do_stop_capture();
+    void data_lock();
+    void data_unlock();
+    void nodata_timeout();
+    void feed_timeout();
+    void repeat_update(); 
 
 private:
     /**
@@ -272,171 +301,117 @@ private:
      * 	used, or NULL if no input format was selected or
      * 	auto-detected.
      */
-    static sr_input_format* determine_input_file_format(
-        const std::string &filename);
-
-    static sr_input* load_input_file_format(
-        const std::string &filename,
-        boost::function<void (const QString)> error_handler,
-        sr_input_format *format = NULL);
-
-    void sample_thread_proc(boost::shared_ptr<device::DevInst> dev_inst,
-                            boost::function<void (const QString)> error_handler);
+    static sr_input_format* determine_input_file_format(const std::string &filename);  
+    void sample_thread_proc(DevInst *dev_inst);
 
     // data feed
 	void feed_in_header(const sr_dev_inst *sdi);
-	void feed_in_meta(const sr_dev_inst *sdi,
-		const sr_datafeed_meta &meta);
+	void feed_in_meta(const sr_dev_inst *sdi, const sr_datafeed_meta &meta);
     void feed_in_trigger(const ds_trigger_pos &trigger_pos);
 	void feed_in_logic(const sr_datafeed_logic &logic);
+
     void feed_in_dso(const sr_datafeed_dso &dso);
-	void feed_in_analog(const sr_datafeed_analog &analog);
+	void feed_in_analog(const sr_datafeed_analog &analog);    
 	void data_feed_in(const struct sr_dev_inst *sdi,
 		const struct sr_datafeed_packet *packet);
+
 	static void data_feed_in_proc(const struct sr_dev_inst *sdi,
 		const struct sr_datafeed_packet *packet, void *cb_data);
 
     // thread for hotplug
-    void hotplug_proc(boost::function<void (const QString)> error_handler);
-    static int hotplug_callback(struct libusb_context *ctx, struct libusb_device *dev,
+    void hotplug_proc();
+
+    static LIBUSB_CALL int hotplug_callback(struct libusb_context *ctx, struct libusb_device *dev,
                                 libusb_hotplug_event event, void *user_data);
 
+public:
+    void reload();
+    void refresh(int holdtime);
+    void start_capture(bool instant);
+    void stop_capture();
+    void check_update();
+    void set_repeating(bool repeat);
+    void set_map_zoom(int index);
+    void auto_end(); 
+ 
 private:
-	DeviceManager &_device_manager;
+	DeviceManager   *_device_manager;
 
 	/**
 	 * The device instance that will be used in the next capture session.
 	 */
-    boost::shared_ptr<device::DevInst> _dev_inst;
+    DevInst                 *_dev_inst;
+    mutable std::mutex      _sampling_mutex;
+    mutable std::mutex      _data_mutex;
+    mutable std::mutex      _decode_task_mutex;
+ 
+    std::thread             _hotplug_thread;
+    std::thread             _sampling_thread;   
+    std::thread             _decode_thread;
 
-    mutable boost::mutex _sampling_mutex;
-	capture_state _capture_state;
-    bool _instant;
-    uint64_t _cur_snap_samplerate;
-    uint64_t _cur_samplelimits;
+    volatile bool           _bHotplugStop;
+    volatile bool           _bDecodeRunning;
 
-    //mutable boost::mutex _signals_mutex;
-	std::vector< boost::shared_ptr<view::Signal> > _signals;
-    std::vector< boost::shared_ptr<view::GroupSignal> > _group_traces;
-#ifdef ENABLE_DECODE
-    std::vector< boost::shared_ptr<view::DecodeTrace> > _decode_traces;
-    pv::data::DecoderModel *_decoder_model;
-#endif
-    std::vector< boost::shared_ptr<view::SpectrumTrace> > _spectrum_traces;
-    boost::shared_ptr<view::LissajousTrace> _lissajous_trace;
-    boost::shared_ptr<view::MathTrace> _math_trace;
+	capture_state           _capture_state;
+    bool                    _instant;
+    uint64_t                _cur_snap_samplerate;
+    uint64_t                _cur_samplelimits;
+ 
+	std::vector<view::Signal*>      _signals;
+    std::vector<view::GroupSignal*> _group_traces;
 
-    mutable boost::mutex _data_mutex;
-	boost::shared_ptr<data::Logic> _logic_data;
-	boost::shared_ptr<data::LogicSnapshot> _cur_logic_snapshot;
-    boost::shared_ptr<data::Dso> _dso_data;
-    boost::shared_ptr<data::DsoSnapshot> _cur_dso_snapshot;
-	boost::shared_ptr<data::Analog> _analog_data;
-	boost::shared_ptr<data::AnalogSnapshot> _cur_analog_snapshot;
-    boost::shared_ptr<data::Group> _group_data;
-    boost::shared_ptr<data::GroupSnapshot> _cur_group_snapshot;
-    int _group_cnt;
+    std::vector<view::DecodeTrace*> _decode_traces;
+    std::vector<view::DecodeTrace*> _decode_tasks;
+    pv::data::DecoderModel          *_decoder_model;
 
-	std::unique_ptr<boost::thread> _sampling_thread;
-
+    std::vector<view::SpectrumTrace*> _spectrum_traces;
+    view::LissajousTrace            *_lissajous_trace;
+    view::MathTrace                 *_math_trace;
+  
+	data::Logic              *_logic_data; 
+    data::Dso                *_dso_data; 
+	data::Analog             *_analog_data;
+    data::Group              *_group_data; 
+    int                      _group_cnt;
+ 
 	libusb_hotplug_callback_handle _hotplug_handle;
-    std::unique_ptr<boost::thread> _hotplug;
-    bool _hot_attach;
-    bool _hot_detach;
+    
+    bool        _hot_attach;
+    bool        _hot_detach;
 
-    QTimer _feed_timer;
-    int    _noData_cnt;
-    bool _data_lock;
-    bool _data_updated;
-    int _data_auto_lock;
+    DsTimer     _feed_timer;
+    DsTimer     _out_timer;
+    int         _noData_cnt;
+    bool        _data_lock;
+    bool        _data_updated;
+    int         _data_auto_lock;
 
-    QDateTime _session_time;
-    uint64_t _trigger_pos;
-    bool _trigger_flag;
-    uint8_t _trigger_ch;
-    bool _hw_replied;
+    QDateTime   _session_time;
+    uint64_t    _trigger_pos;
+    bool        _trigger_flag;
+    uint8_t     _trigger_ch;
+    bool        _hw_replied;
 
     error_state _error;
-    uint64_t _error_pattern;
+    uint64_t    _error_pattern;
 
-    run_mode _run_mode;
-    int _repeat_intvl;
-    bool _repeating;
-    int _repeat_hold_prg;
+    run_mode    _run_mode;
+    int         _repeat_intvl;
+    bool        _repeating;
+    int         _repeat_hold_prg;
 
-    int _map_zoom;
+    int         _map_zoom;
 
-    uint64_t _save_start;
-    uint64_t _save_end;
-    bool _saving;
+    uint64_t    _save_start;
+    uint64_t    _save_end;
+    bool        _saving;
 
-    bool _dso_feed;
-    float _stop_scale;
+    bool        _dso_feed;
+    float       _stop_scale; 
+    bool        _bClose;
 
-signals:
-	void capture_state_changed(int state);
-
-	void signals_changed();
-
-	void data_updated();
-
-    void receive_data(quint64 length);
-
-    void device_attach();
-    void device_detach();
-
-    void receive_trigger(quint64 trigger_pos);
-
-    void receive_header();
-
-    void dso_ch_changed(uint16_t num);
-
-    void frame_began();
-
-    void data_received();
-
-    void frame_ended();
-
-    void device_setted();
-
-    void zero_adj();
-    void progressSaveFileValueChanged(int percent);
-
-    void decode_done();
-
-    void show_region(uint64_t start, uint64_t end, bool keep);
-
-    void show_wait_trigger();
-
-    void session_save();
-
-    void session_error();
-
-    void repeat_hold(int percent);
-    void repeat_resume();
-
-    void cur_snap_samplerate_changed();
-
-    void update_capture();
-
-public slots:
-    void reload();
-    void refresh(int holdtime);
-    void stop_capture();
-    void check_update();
-    // repeat
-    void set_repeating(bool repeat);
-    void set_map_zoom(int index);
-    // OSC auto
-    void auto_end();
-
-private slots:
-    void data_lock();
-    void data_unlock();
-    void nodata_timeout();
-    void feed_timeout();
-    void repeat_update();
-
+    ISessionCallback *_callback;
+   
 private:
 	// TODO: This should not be necessary. Multiple concurrent
 	// sessions should should be supported and it should be

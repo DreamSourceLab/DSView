@@ -22,10 +22,7 @@
 
 #ifndef DSVIEW_PV_VIEW_DEVMODE_H
 #define DSVIEW_PV_VIEW_DEVMODE_H
-
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-
+ 
 #include <list>
 #include <utility>
 #include <map>
@@ -33,13 +30,12 @@
 
 #include <QWidget>
 #include <QPushButton>
-#include <QHBoxLayout>
 #include <QVector>
 #include <QToolButton>
 #include <QLabel>
 
 #include <libsigrok4DSL/libsigrok.h>
-
+ 
 namespace pv {
 
 namespace device{
@@ -50,6 +46,7 @@ class SigSession;
 
 namespace view {
 
+//devece work mode select list
 class DevMode : public QWidget
 {
 	Q_OBJECT
@@ -58,7 +55,7 @@ private:
     static const int GRID_COLS = 3;
 
 public:
-    DevMode(QWidget *parent, SigSession &session);
+    DevMode(QWidget *parent, SigSession *ession);
 
 private:
 	void paintEvent(QPaintEvent *event);
@@ -82,14 +79,13 @@ signals:
     void dev_changed(bool close);
 
 private:
-    SigSession &_session;
-
-    QHBoxLayout *  _layout;
+    SigSession *_session;
     std::map <QAction *, const sr_dev_mode *> _mode_list;
-    QToolButton *_mode_btn;
-    QMenu *_pop_menu;
-    QPoint _mouse_point;
-    QToolButton *_close_button;
+    QToolButton     *_mode_btn;
+    QMenu           *_pop_menu;
+    QPoint          _mouse_point;
+    QToolButton     *_close_button;
+    bool            _bFile;
 };
 
 } // namespace view

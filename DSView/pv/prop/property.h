@@ -47,14 +47,16 @@ protected:
     Property(QString name, QString label, Getter getter, Setter setter);
 
 public:
-    const QString& name() const;
-    const QString& label() const;
+    const QString& name();
+    const QString& label();
+
+    virtual ~Property();
 
     virtual QWidget* get_widget(QWidget *parent,
         bool auto_commit = false) = 0;
-	virtual bool labeled_widget() const;
+	virtual bool labeled_widget();
 
-    virtual GVariant* get_value() const;
+    virtual GVariant* get_value();
 
 	virtual void commit() = 0;
 

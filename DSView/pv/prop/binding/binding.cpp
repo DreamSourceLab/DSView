@@ -19,54 +19,57 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
-
-#include <boost/foreach.hpp>
+ 
 
 #include <QFormLayout>
 
-#include <pv/prop/property.h>
-
+#include "../property.h"
 #include "binding.h"
-
-using boost::shared_ptr;
+ 
 
 namespace pv {
 namespace prop {
 namespace binding {
 
-const std::vector< boost::shared_ptr<Property> >& Binding::properties()
+const std::vector<Property*>& Binding::properties()
 {
 	return _properties;
 }
 
 void Binding::commit()
 {
-    BOOST_FOREACH(shared_ptr<pv::prop::Property> p, _properties) {
+    for(auto &p : _properties) {
         assert(p);
         p->commit();
     }
 }
 
 void Binding::add_properties_to_form(QFormLayout *layout,
-    bool auto_commit) const
+    bool auto_commit)
 {
     assert(layout);
 
-    BOOST_FOREACH(shared_ptr<pv::prop::Property> p, _properties)
+    for(auto &p : _properties)
     {
         assert(p);
 
-        QWidget *const widget = p->get_widget(layout->parentWidget(),
-            auto_commit);
+        QWidget *const widget = p->get_widget(layout->parentWidget(), auto_commit);
+
         if (p->labeled_widget())
             layout->addRow(widget);
-        else
-            layout->addRow(p->label(), widget);
+        else{
+            const QString &lbstr = p->label();
+            //remove data format options
+            if (lbstr == "Data format"){
+                continue;                
+            }   
+            layout->addRow(p->label(), widget);             
+        } 
     }
 }
 
 QWidget* Binding::get_property_form(QWidget *parent,
-    bool auto_commit) const
+    bool auto_commit)
 {
     QWidget *const form = new QWidget(parent);
     QFormLayout *const layout = new QFormLayout(form);
@@ -79,12 +82,11 @@ QWidget* Binding::get_property_form(QWidget *parent,
     return form;
 }
 
-std::map< boost::shared_ptr<Property>,
-          GVariant* > Binding::get_property_value() const
+std::map<Property*,GVariant*> Binding::get_property_value()
 {
-    std::map < boost::shared_ptr<Property>,
-            GVariant* > pvalue;
-    BOOST_FOREACH(shared_ptr<pv::prop::Property> p, _properties)
+    std::map <Property*,GVariant*> pvalue;
+            
+    for(auto &p : _properties)
     {
         assert(p);
         pvalue[p] = p->get_value();

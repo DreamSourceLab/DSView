@@ -29,8 +29,8 @@
 #include <QLabel>
 #include <QTabBar>
 #include <QBitmap>
-
-#include <boost/foreach.hpp>
+ 
+#include "../dsvdef.h"
 
 using namespace boost;
 using namespace std;
@@ -39,7 +39,7 @@ using namespace pv::view;
 namespace pv {
 namespace dialogs {
 
-DsoMeasure::DsoMeasure(SigSession &session, View &parent,
+DsoMeasure::DsoMeasure(SigSession *session, View &parent,
                        unsigned int position, int last_sig_index) :
     DSDialog((QWidget *)&parent),
     _session(session),
@@ -48,15 +48,17 @@ DsoMeasure::DsoMeasure(SigSession &session, View &parent,
     _button_box(QDialogButtonBox::Reset | QDialogButtonBox::Cancel,
         Qt::Horizontal, this)
 {
+    _measure_tab = NULL;
+
     setMinimumSize(500, 400);
 
     _measure_tab = new QTabWidget(this);
     _measure_tab->setTabPosition(QTabWidget::West);
     _measure_tab->setUsesScrollButtons(false);
 
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
-        boost::shared_ptr<view::DsoSignal> dsoSig;
-        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) && dsoSig->enabled()) {
+    for(auto &s : _session->get_signals()) {
+        view::DsoSignal *dsoSig;
+        if ((dsoSig = dynamic_cast<view::DsoSignal*>(s)) && dsoSig->enabled()) {
             QWidget *measure_widget = new QWidget(this);
             this->add_measure(measure_widget, dsoSig);
             _measure_tab->addTab(measure_widget, QString::number(dsoSig->get_index()));
@@ -76,23 +78,29 @@ DsoMeasure::DsoMeasure(SigSession &session, View &parent,
 
     connect(_button_box.button(QDialogButtonBox::Cancel), SIGNAL(clicked()), this, SLOT(reject()));
     connect(_button_box.button(QDialogButtonBox::Reset), SIGNAL(clicked()), this, SLOT(reset()));
-    connect(_session.get_device().get(), SIGNAL(device_updated()), this, SLOT(reject()));
+    connect(_session->get_device(), SIGNAL(device_updated()), this, SLOT(reject()));
 }
 
-void DsoMeasure::add_measure(QWidget *widget, const boost::shared_ptr<view::DsoSignal> dsoSig)
+DsoMeasure::~DsoMeasure(){
+    DESTROY_QT_OBJECT(_measure_tab);
+}
+
+void DsoMeasure::add_measure(QWidget *widget, const view::DsoSignal *dsoSig)
 {
     const int Column = 5;
     const int IconSizeForText = 5;
     QGridLayout *layout = new QGridLayout(widget);
-    layout->setMargin(0);
     layout->setSpacing(0);
+
+    pv::view::DsoSignal *psig = const_cast<pv::view::DsoSignal*>(dsoSig);
+    
     for (int i=DSO_MS_BEGIN+1; i<DSO_MS_END; i++) {
         QToolButton *button = new QToolButton(this);
         button->setProperty("id", QVariant(i));
         button->setIconSize(QSize(48, 48));
         QPixmap msPix(get_ms_icon(i));
         QBitmap msMask = msPix.createMaskFromColor(QColor("black"), Qt::MaskOutColor);
-        msPix.fill(dsoSig->get_colour());
+        msPix.fill(psig->get_colour());
         msPix.setMask(msMask);
         button->setIcon(QIcon(msPix));
         layout->addWidget(button,
@@ -150,9 +158,10 @@ void DsoMeasure::accept()
     if(sc != NULL) {
         QVariant id = sc->property("id");
         enum DSO_MEASURE_TYPE ms_type = DSO_MEASURE_TYPE(id.toInt());
-        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
-            boost::shared_ptr<view::DsoSignal> dsoSig;
-            if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
+        
+        for(auto &s : _session->get_signals()) {
+            view::DsoSignal *dsoSig = NULL;
+            if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
                 if (_measure_tab->currentWidget()->property("index").toInt() == dsoSig->get_index()) {
                     _view.get_viewstatus()->set_measure(_position, false, dsoSig->get_index(), ms_type);
                     break;

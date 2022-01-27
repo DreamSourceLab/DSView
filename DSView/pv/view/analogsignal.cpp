@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <extdef.h>
-
+ 
+#include <QDebug>
 #include <math.h>
 
 #include "../view/analogsignal.h"
@@ -29,8 +29,9 @@
 #include "../data/analogsnapshot.h"
 #include "../view/view.h"
 #include "../device/devinst.h"
+#include "../extdef.h"
 
-using namespace boost;
+
 using namespace std;
 
 #define byte(x) uint##x##_t
@@ -47,8 +48,7 @@ const QColor AnalogSignal::SignalColours[4] = {
 
 const float AnalogSignal::EnvelopeThreshold = 16.0f;
 
-AnalogSignal::AnalogSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
-                           boost::shared_ptr<data::Analog> data,
+AnalogSignal::AnalogSignal(DevInst *dev_inst,data::Analog *data,
                            sr_channel *probe) :
     Signal(dev_inst, probe),
     _data(data),
@@ -96,10 +96,8 @@ AnalogSignal::AnalogSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
     }
 }
 
-AnalogSignal::AnalogSignal(boost::shared_ptr<view::AnalogSignal> s,
-                         boost::shared_ptr<pv::data::Analog> data,
-                         sr_channel *probe) :
-    Signal(*s.get(), probe),
+AnalogSignal::AnalogSignal(view::AnalogSignal *s, pv::data::Analog *data, sr_channel *probe) :
+    Signal(*s, probe),
     _data(data),
     _rects(NULL),
     _hover_en(false),
@@ -124,7 +122,7 @@ AnalogSignal::~AnalogSignal()
     }
 }
 
-boost::shared_ptr<pv::data::SignalData> AnalogSignal::data() const
+pv::data::SignalData* AnalogSignal::data()
 {
     return _data;
 }
@@ -134,27 +132,27 @@ void AnalogSignal::set_scale(int height)
     _scale = height / (_ref_max - _ref_min);
 }
 
-float AnalogSignal::get_scale() const
+float AnalogSignal::get_scale()
 {
     return _scale;
 }
 
-int AnalogSignal::get_bits() const
+int AnalogSignal::get_bits()
 {
     return _bits;
 }
 
-double AnalogSignal::get_ref_min() const
+double AnalogSignal::get_ref_min()
 {
     return _ref_min;
 }
 
-double AnalogSignal::get_ref_max() const
+double AnalogSignal::get_ref_max()
 {
     return _ref_max;
 }
 
-int AnalogSignal::get_hw_offset() const
+int AnalogSignal::get_hw_offset()
 {
     int hw_offset = 0;
     GVariant *gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_HW_OFFSET);
@@ -205,13 +203,11 @@ bool AnalogSignal::measure(const QPointF &p)
     if (!window.contains(p))
         return false;
 
-    const deque< boost::shared_ptr<pv::data::AnalogSnapshot> > &snapshots =
-        _data->get_snapshots();
+    const auto &snapshots = _data->get_snapshots();
     if (snapshots.empty())
         return false;
 
-    const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot =
-        snapshots.front();
+    const auto snapshot = snapshots.front();
     if (snapshot->empty())
         return false;
 
@@ -248,13 +244,11 @@ QPointF AnalogSignal::get_point(uint64_t index, float &value)
     if (!enabled())
         return pt;
 
-    const deque< boost::shared_ptr<pv::data::AnalogSnapshot> > &snapshots =
-        _data->get_snapshots();
+    const auto &snapshots = _data->get_snapshots();
     if (snapshots.empty())
         return pt;
 
-    const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot =
-        snapshots.front();
+    const auto snapshot = snapshots.front();
     if (snapshot->empty())
         return pt;
 
@@ -288,7 +282,7 @@ QPointF AnalogSignal::get_point(uint64_t index, float &value)
 /**
  * Probe options
  **/
-uint64_t AnalogSignal::get_vdiv() const
+uint64_t AnalogSignal::get_vdiv()
 {
     uint64_t vdiv = 0;
     GVariant* gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_VDIV);
@@ -299,7 +293,7 @@ uint64_t AnalogSignal::get_vdiv() const
     return vdiv;
 }
 
-uint8_t AnalogSignal::get_acCoupling() const
+uint8_t AnalogSignal::get_acCoupling()
 {
     uint64_t coupling = 0;
     GVariant* gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_COUPLING);
@@ -310,7 +304,7 @@ uint8_t AnalogSignal::get_acCoupling() const
     return coupling;
 }
 
-bool AnalogSignal::get_mapDefault() const
+bool AnalogSignal::get_mapDefault()
 {
     bool isDefault = true;
     GVariant* gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_MAP_DEFAULT);
@@ -321,7 +315,7 @@ bool AnalogSignal::get_mapDefault() const
     return isDefault;
 }
 
-QString AnalogSignal::get_mapUnit() const
+QString AnalogSignal::get_mapUnit()
 {
     QString unit;
     GVariant* gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_MAP_UNIT);
@@ -332,7 +326,7 @@ QString AnalogSignal::get_mapUnit() const
     return unit;
 }
 
-double AnalogSignal::get_mapMin() const
+double AnalogSignal::get_mapMin()
 {
     double min = -1;
     GVariant* gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_MAP_MIN);
@@ -343,7 +337,7 @@ double AnalogSignal::get_mapMin() const
     return min;
 }
 
-double AnalogSignal::get_mapMax() const
+double AnalogSignal::get_mapMax()
 {
     double max = 1;
     GVariant* gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_MAP_MAX);
@@ -354,7 +348,7 @@ double AnalogSignal::get_mapMax() const
     return max;
 }
 
-uint64_t AnalogSignal::get_factor() const
+uint64_t AnalogSignal::get_factor()
 {
     GVariant* gvar;
     uint64_t factor;
@@ -369,24 +363,24 @@ uint64_t AnalogSignal::get_factor() const
     }
 }
 
-int AnalogSignal::ratio2value(double ratio) const
+int AnalogSignal::ratio2value(double ratio)
 {
     return ratio * (_ref_max - _ref_min) + _ref_min;
 }
 
-int AnalogSignal::ratio2pos(double ratio) const
+int AnalogSignal::ratio2pos(double ratio)
 {
     const int height = get_totalHeight();
     const int top = get_y() - height * 0.5;
     return ratio * height + top;
 }
 
-double AnalogSignal::value2ratio(int value) const
+double AnalogSignal::value2ratio(int value)
 {
     return max(0.0, (value - _ref_min) / (_ref_max - _ref_min));
 }
 
-double AnalogSignal::pos2ratio(int pos) const
+double AnalogSignal::pos2ratio(int pos)
 {
     const int height = get_totalHeight();
     const int top = get_y() - height / 2;
@@ -403,7 +397,7 @@ void AnalogSignal::set_zero_vpos(int pos)
     }
 }
 
-int AnalogSignal::get_zero_vpos() const
+int AnalogSignal::get_zero_vpos()
 {
     return ratio2pos(get_zero_ratio());
 }
@@ -418,12 +412,12 @@ void AnalogSignal::set_zero_ratio(double ratio)
                           g_variant_new_uint16(_zero_offset));
 }
 
-double AnalogSignal::get_zero_ratio() const
+double AnalogSignal::get_zero_ratio()
 {
     return value2ratio(_zero_offset);
 }
 
-int AnalogSignal::get_zero_offset() const
+int AnalogSignal::get_zero_offset()
 {
     return _zero_offset;
 }
@@ -510,13 +504,11 @@ void AnalogSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QCol
     assert(scale > 0);
     const int64_t offset = _view->offset();
 
-    const deque< boost::shared_ptr<pv::data::AnalogSnapshot> > &snapshots =
-        _data->get_snapshots();
+    const auto &snapshots = _data->get_snapshots();
     if (snapshots.empty())
         return;
 
-    const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot =
-        snapshots.front();
+    const auto snapshot = snapshots.front();
     if (snapshot->empty())
         return;
 
@@ -571,7 +563,7 @@ void AnalogSignal::paint_fore(QPainter &p, int left, int right, QColor fore, QCo
 }
 
 void AnalogSignal::paint_trace(QPainter &p,
-    const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot,
+    const pv::data::AnalogSnapshot *snapshot,
     int zeroY, const int start_pixel,
     const uint64_t start_index, const int64_t sample_count,
     const double samples_per_pixel, const int order,
@@ -579,10 +571,12 @@ void AnalogSignal::paint_trace(QPainter &p,
 {
     (void)width;
 
-    const int64_t channel_num = snapshot->get_channel_num();
+    pv::data::AnalogSnapshot *pshot = const_cast<pv::data::AnalogSnapshot*>(snapshot);
+
+    int64_t channel_num = (int64_t)pshot->get_channel_num();
     if (sample_count > 0) {
-        const uint8_t unit_bytes = snapshot->get_unit_bytes();
-        const uint8_t *const samples = snapshot->get_samples(0);
+        const uint8_t unit_bytes = pshot->get_unit_bytes();
+        const uint8_t *const samples = pshot->get_samples(0);
         assert(samples);
 
         p.setPen(_colour);
@@ -603,10 +597,10 @@ void AnalogSignal::paint_trace(QPainter &p,
             yvalue = zeroY + (yvalue - hw_offset) * _scale;
             yvalue = min(max(yvalue, top), bottom);
             *point++ = QPointF(x, yvalue);
-            if (yindex == snapshot->get_ring_end())
+            if (yindex == pshot->get_ring_end())
                 break;
             yindex++;
-            yindex %= snapshot->get_sample_count();
+            yindex %= pshot->get_sample_count();
             x += pixels_per_sample;
         }
         p.drawPolyline(points, point - points);
@@ -615,7 +609,7 @@ void AnalogSignal::paint_trace(QPainter &p,
 }
 
 void AnalogSignal::paint_envelope(QPainter &p,
-    const boost::shared_ptr<pv::data::AnalogSnapshot> &snapshot,
+    const pv::data::AnalogSnapshot *snapshot,
     int zeroY, const int start_pixel,
     const uint64_t start_index, const int64_t sample_count,
     const double samples_per_pixel, const int order,
@@ -623,9 +617,10 @@ void AnalogSignal::paint_envelope(QPainter &p,
 {
     using namespace Qt;
     using pv::data::AnalogSnapshot;
+    pv::data::AnalogSnapshot *pshot = const_cast<pv::data::AnalogSnapshot*>(snapshot);
 
     AnalogSnapshot::EnvelopeSection e;
-    snapshot->get_envelope_section(e, start_index, sample_count,
+    pshot->get_envelope_section(e, start_index, sample_count,
                                    samples_per_pixel, order);
     if (e.samples_num == 0)
         return;
@@ -640,7 +635,8 @@ void AnalogSignal::paint_envelope(QPainter &p,
     float y_min = zeroY, y_max = zeroY, pre_y_min = zeroY, pre_y_max = zeroY;
     int pcnt = 0;
     const double scale_pixels_per_samples = e.scale / samples_per_pixel;
-    const uint64_t ring_end = max((int64_t)0, (int64_t)snapshot->get_ring_end() / e.scale - 1);
+    int64_t end_v = pshot->get_ring_end();
+    const uint64_t ring_end = max((int64_t)0, end_v / e.scale - 1);
     const int hw_offset = get_hw_offset();
 
     float x = start_pixel;
@@ -717,7 +713,7 @@ void AnalogSignal::paint_hover_measure(QPainter &p, QColor fore, QColor back)
         p.drawText(hover_rect, Qt::AlignCenter | Qt::AlignTop | Qt::TextDontClip, hover_str);
     }
 
-    list<Cursor*>::iterator i = _view->get_cursorList().begin();
+    auto i = _view->get_cursorList().begin();
     while (i != _view->get_cursorList().end()) {
         float pt_value;
         const QPointF pt = get_point((*i)->index(), pt_value);

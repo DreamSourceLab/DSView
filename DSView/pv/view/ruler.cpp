@@ -28,8 +28,7 @@
 #include "../sigsession.h"
 #include "../device/devinst.h"
 #include "dsosignal.h"
-
-#include <extdef.h>
+#include "../extdef.h"
 
 #include <assert.h>
 #include <math.h>
@@ -38,12 +37,11 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QTextStream>
-#include <QStyleOption>
-
-#include <boost/shared_ptr.hpp>
-
-using namespace boost;
+#include <QStyleOption>  
+ 
+ 
 using namespace std;
+using namespace Qt;
 
 namespace pv {
 namespace view {
@@ -98,12 +96,21 @@ QString Ruler::format_freq(double period, unsigned precision)
         const int prefix = ceil((order - FirstSIPrefixPower) / 3.0f);
         const double multiplier = pow(10.0, max(-prefix * 3.0 - FirstSIPrefixPower, 0.0));
 
+      /*
         QString s;
         QTextStream ts(&s);
         ts.setRealNumberPrecision(precision);
         ts << fixed << 1 / (period  * multiplier) <<
             FreqPrefixes[prefix] << "Hz";
         return s;
+        */
+
+        char buf[20] = {0};
+        char format[10] = {0}; 
+        sprintf(format, "%%.%df%%s", precision);
+        QString prev = FreqPrefixes[prefix] + "Hz";
+        sprintf(buf, format, 1 / (period  * multiplier), prev.toLatin1().data());
+        return QString(buf);  
     }
 }
 
@@ -112,12 +119,21 @@ QString Ruler::format_time(double t, int prefix,
 {
     const double multiplier = pow(10.0, -prefix * 3 - FirstSIPrefixPower + 6.0);
 
+  /*
 	QString s;
 	QTextStream ts(&s);
 	ts.setRealNumberPrecision(precision);
     ts << fixed << forcesign << (t  * multiplier) / 1000000.0 <<
 		SIPrefixes[prefix] << "s";
 	return s;
+    */
+
+    char buf[20] = {0};
+    char format[10] = {0}; 
+    sprintf(format, "%%.%df%%s", precision);
+    QString prev = FreqPrefixes[prefix] + "s";
+    sprintf(buf, format, (t  * multiplier) / 1000000.0, prev.toLatin1().data());
+    return QString(buf);  
 }
 
 QString Ruler::format_time(double t)
@@ -168,7 +184,7 @@ void Ruler::rel_grabbed_cursor()
 }
 
 void Ruler::paintEvent(QPaintEvent*)
-{
+{   
     QStyleOption o;
     o.initFrom(this);
     QPainter p(this);
@@ -219,7 +235,7 @@ void Ruler::mousePressEvent(QMouseEvent *event)
         bool visible;
         if (!_cursor_sel_visible & !_view.get_cursorList().empty()) {
             _view.show_cursors(true);
-            list<Cursor*>::iterator i = _view.get_cursorList().begin();
+            auto i = _view.get_cursorList().begin();
             while (i != _view.get_cursorList().end()) {
                 const QRect cursor_rect((*i)->get_label_rect(rect(), visible));
                 if ((*i)->get_close_rect(cursor_rect).contains(event->pos())) {
@@ -262,7 +278,7 @@ void Ruler::mouseReleaseEvent(QMouseEvent *event)
                         _view.show_cursors(true);
                         updatedCursor = true;
                     } else if (overCursor > 0) {
-                        list<Cursor*>::iterator i = _view.get_cursorList().begin();
+                        auto i = _view.get_cursorList().begin();
                         while (--overCursor != 0)
                                 i++;
                         (*i)->set_index(index);
@@ -304,7 +320,7 @@ void Ruler::mouseReleaseEvent(QMouseEvent *event)
             int overCursor;
             overCursor = in_cursor_sel_rect(event->pos());
             if (overCursor > 0) {
-                list<Cursor*>::iterator i = _view.get_cursorList().begin();
+                auto i = _view.get_cursorList().begin();
                 while (--overCursor != 0)
                         i++;
                 _view.del_cursor(*i);
@@ -430,7 +446,7 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
 
     // Draw the cursors
     if (!_view.get_cursorList().empty()) {
-        list<Cursor*>::iterator i = _view.get_cursorList().begin();
+        auto i = _view.get_cursorList().begin();
         int index = 1;
         while (i != _view.get_cursorList().end()) {
             (*i)->paint_label(p, rect(), prefix, index, _view.session().get_capture_state() == SigSession::Stopped);
@@ -548,7 +564,7 @@ void Ruler::draw_osc_tick_mark(QPainter &p)
 
     // Draw the cursors
     if (!_view.get_cursorList().empty()) {
-        list<Cursor*>::iterator i = _view.get_cursorList().begin();
+        auto i = _view.get_cursorList().begin();
         int index = 1;
         while (i != _view.get_cursorList().end()) {
             (*i)->paint_label(p, rect(), prefix, index, _view.session().get_capture_state() == SigSession::Stopped);
@@ -613,7 +629,7 @@ void Ruler::draw_cursor_sel(QPainter &p)
 
     if (!_view.get_cursorList().empty()) {
         int index = 1;
-        list<Cursor*>::iterator i = _view.get_cursorList().begin();
+        auto i = _view.get_cursorList().begin();
         while (i != _view.get_cursorList().end()) {
             const QRectF cursorRect = get_cursor_sel_rect(index);
             p.setPen(QPen(Qt::black, 1, Qt::DotLine));
@@ -662,7 +678,7 @@ void Ruler::hover_point_changed()
 	update();
 }
 
-double Ruler::get_min_period() const
+double Ruler::get_min_period()
 {
     return _min_period / MinPeriodScale;
 }

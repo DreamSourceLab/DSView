@@ -19,10 +19,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <extdef.h>
+
 #include <math.h>
 
-#include "../../extdef.h"
 #include "mathtrace.h"
 #include "../data/dso.h"
 #include "../data/dsosnapshot.h"
@@ -31,22 +30,20 @@
 #include "../sigsession.h"
 #include "../device/devinst.h"
 #include "../view/dsosignal.h"
-
-#include <boost/foreach.hpp>
-
+#include "../dsvdef.h"
+#include "../extdef.h"
+  
 #include <QDebug>
 #include <QTimer>
 
-using namespace boost;
 using namespace std;
 
 namespace pv {
 namespace view {
 
-MathTrace::MathTrace(bool enable,
-                     boost::shared_ptr<data::MathStack> math_stack,
-                     boost::shared_ptr<view::DsoSignal> dsoSig1,
-                     boost::shared_ptr<view::DsoSignal> dsoSig2):
+MathTrace::MathTrace(bool enable,data::MathStack *math_stack,
+                     view::DsoSignal *dsoSig1,
+                     view::DsoSignal *dsoSig2):
     Trace("M", dsoSig1->get_index(), SR_CHANNEL_MATH),
     _math_stack(math_stack),
     _dsoSig1(dsoSig1),
@@ -70,9 +67,10 @@ MathTrace::MathTrace(bool enable,
 
 MathTrace::~MathTrace()
 {
+    DESTROY_OBJECT(_math_stack);
 }
 
-bool MathTrace::enabled() const
+bool MathTrace::enabled()
 {
     return _enable;
 }
@@ -82,12 +80,12 @@ void MathTrace::set_enable(bool enable)
     _enable = enable;
 }
 
-int MathTrace::src1() const
+int MathTrace::src1()
 {
     return _dsoSig1->get_index();
 }
 
-int MathTrace::src2() const
+int MathTrace::src2()
 {
     return _dsoSig2->get_index();
 }
@@ -97,7 +95,7 @@ float MathTrace::get_scale()
     return _scale;
 }
 
-int MathTrace::get_name_width() const
+int MathTrace::get_name_width()
 {
     return 0;
 }
@@ -139,12 +137,12 @@ void MathTrace::go_vDialNext()
     }
 }
 
-uint64_t MathTrace::get_vDialValue() const
+uint64_t MathTrace::get_vDialValue()
 {
     return _vDial->get_value();
 }
 
-uint16_t MathTrace::get_vDialSel() const
+uint16_t MathTrace::get_vDialSel()
 {
     return _vDial->get_sel();
 }
@@ -160,7 +158,7 @@ void MathTrace::set_zero_vrate(double rate)
     _hw_offset = _zero_vrate * (_ref_max - _ref_min) + _ref_min;
 }
 
-int MathTrace::get_zero_vpos() const
+int MathTrace::get_zero_vpos()
 {
     return _zero_vrate * get_view_rect().height() + DsoSignal::UpMargin;
 }
@@ -178,7 +176,7 @@ void MathTrace::set_show(bool show)
     _show = show;
 }
 
-QRect MathTrace::get_view_rect() const
+QRect MathTrace::get_view_rect()
 {
     assert(_viewport);
     return QRect(0, DsoSignal::UpMargin,
@@ -427,7 +425,7 @@ void MathTrace::paint_hover_measure(QPainter &p, QColor fore, QColor back)
         p.drawText(hover_rect, Qt::AlignCenter | Qt::AlignTop | Qt::TextDontClip, hover_str);
     }
 
-    list<Cursor*>::iterator i = _view->get_cursorList().begin();
+    auto i = _view->get_cursorList().begin();
     while (i != _view->get_cursorList().end()) {
         float pt_value;
         const QPointF pt = get_point((*i)->index(), pt_value);
@@ -501,7 +499,7 @@ QString MathTrace::get_time(double t)
     return str;
 }
 
-const boost::shared_ptr<pv::data::MathStack>& MathTrace::get_math_stack() const
+pv::data::MathStack* MathTrace::get_math_stack()
 {
    return _math_stack;
 }

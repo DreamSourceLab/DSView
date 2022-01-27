@@ -20,10 +20,7 @@
  */
 
 #include "protocolexp.h"
-
-#include <boost/foreach.hpp>
-
-#include <QApplication>
+  
 #include <QFormLayout>
 #include <QListWidget>
 #include <QFile>
@@ -39,6 +36,8 @@
 #include "../data/decode/annotation.h"
 #include "../view/decodetrace.h"
 #include "../data/decodermodel.h"
+#include "../config/appconfig.h"
+#include "../dsvdef.h"
 
 using namespace boost;
 using namespace std;
@@ -46,14 +45,14 @@ using namespace std;
 namespace pv {
 namespace dialogs {
 
-ProtocolExp::ProtocolExp(QWidget *parent, SigSession &session) :
+ProtocolExp::ProtocolExp(QWidget *parent, SigSession *session) :
     DSDialog(parent),
     _session(session),
     _button_box(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
         Qt::Horizontal, this),
     _export_cancel(false)
 {
-    _format_combobox = new QComboBox(this);
+    _format_combobox = new DsComboBox(this);
     _format_combobox->addItem(tr("Comma-Separated Values (*.csv)"));
     _format_combobox->addItem(tr("Text files (*.txt)"));
 
@@ -64,13 +63,14 @@ ProtocolExp::ProtocolExp(QWidget *parent, SigSession &session) :
     _flayout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
     _flayout->addRow(new QLabel(tr("Export Format: "), this), _format_combobox);
 
-    pv::data::DecoderModel* decoder_model = _session.get_decoder_model();
-    const boost::shared_ptr<pv::data::DecoderStack>& decoder_stack = decoder_model->getDecoderStack();
+    pv::data::DecoderModel* decoder_model = _session->get_decoder_model();
+
+    const auto decoder_stack = decoder_model->getDecoderStack();
     if (decoder_stack) {
         int row_index = 0;
-        const std::map<const pv::data::decode::Row, bool> rows = decoder_stack->get_rows_lshow();
-        for (std::map<const pv::data::decode::Row, bool>::const_iterator i = rows.begin();
-            i != rows.end(); i++) {
+        auto rows = decoder_stack->get_rows_lshow();
+
+        for (auto i = rows.begin();i != rows.end(); i++) {
             if ((*i).second) {
                 QLabel *row_label = new QLabel((*i).first.title(), this);
                 QRadioButton *row_sel = new QRadioButton(this);
@@ -96,7 +96,7 @@ ProtocolExp::ProtocolExp(QWidget *parent, SigSession &session) :
 
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
     connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
-    connect(_session.get_device().get(), SIGNAL(device_updated()), this, SLOT(reject()));
+    connect(_session->get_device(), SIGNAL(device_updated()), this, SLOT(reject()));
 
 }
 
@@ -118,15 +118,20 @@ void ProtocolExp::accept()
             if(i < supportedFormats.count() - 1)
                 filter.append(";;");
         }
-        const QString DIR_KEY("ProtocolExportPath");
-        QSettings settings(QApplication::organizationName(), QApplication::applicationName());
+
+        AppConfig &app = AppConfig::Instance();         
+        
         QString default_filter = _format_combobox->currentText();
 
-        QString default_name = settings.value(DIR_KEY).toString() + "/" + "decoder-";
-        default_name += _session.get_session_time().toString("-yyMMdd-hhmmss");
+        QString default_name = app._userHistory.protocolExportPath + "/" + "decoder-";
+        default_name += _session->get_session_time().toString("-yyMMdd-hhmmss");
 
         QString file_name = QFileDialog::getSaveFileName(
-                    this, tr("Export Data"), default_name,filter,&default_filter);
+                    this, 
+                    tr("Export Data"), 
+                    default_name,filter,
+                    &default_filter);
+
         if (!file_name.isEmpty()) {
             QFileInfo f(file_name);
             QStringList list = default_filter.split('.').last().split(')');
@@ -134,13 +139,17 @@ void ProtocolExp::accept()
             if(f.suffix().compare(ext))
                 file_name+=tr(".")+ext;
 
-            QDir CurrentDir;
-            settings.setValue(DIR_KEY, CurrentDir.filePath(file_name));
+            QString fname = GetDirectoryName(file_name);
+            if (fname != app._userHistory.openDir)
+            {
+                app._userHistory.protocolExportPath = fname;
+                app.SaveHistory();
+            }
 
             QFile file(file_name);
             file.open(QIODevice::WriteOnly | QIODevice::Text);
             QTextStream out(&file);
-            out.setCodec("UTF-8");
+            app::set_utf8(out);
             //out.setGenerateByteOrderMark(true); // UTF-8 without BOM
 
             QFuture<void> future;
@@ -161,8 +170,8 @@ void ProtocolExp::accept()
                        .arg("Time[ns]")
                        .arg(title);
 
-                pv::data::DecoderModel* decoder_model = _session.get_decoder_model();
-                const boost::shared_ptr<pv::data::DecoderStack>& decoder_stack = decoder_model->getDecoderStack();
+                pv::data::DecoderModel* decoder_model = _session->get_decoder_model();
+                const auto decoder_stack = decoder_model->getDecoderStack();
                 int row_index = 0;
                 Row row;
                 const std::map<const Row, bool> rows_lshow = decoder_stack->get_rows_lshow();
@@ -179,11 +188,11 @@ void ProtocolExp::accept()
 
                 uint64_t exported = 0;
                 double ns_per_sample = SR_SEC(1) * 1.0 / decoder_stack->samplerate();
-                vector<Annotation> annotations;
+                std::vector<Annotation> annotations;
                 decoder_stack->get_annotation_subset(annotations, row,
                     0, decoder_stack->sample_count()-1);
                 if (!annotations.empty()) {
-                    BOOST_FOREACH(const Annotation &a, annotations) {
+                    for(auto &a : annotations) {
                         out << QString("%1,%2,%3\n")
                                .arg(QString::number(exported))
                                .arg(QString::number(a.start_sample()*ns_per_sample, 'f', 20))

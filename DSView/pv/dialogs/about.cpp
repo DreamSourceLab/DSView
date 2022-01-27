@@ -21,6 +21,8 @@
  */
 
 
+#include "about.h"
+
 #include <QPixmap>
 #include <QApplication>
 #include <QTextBrowser>
@@ -28,9 +30,9 @@
 #include <QDir>
 #include <QTextStream>
 #include <QScrollBar>
-#include <QTextCodec>
-
-#include "about.h"
+  
+#include "../config/appconfig.h"
+#include "../dsvdef.h"
 
 namespace pv {
 namespace dialogs {
@@ -74,18 +76,18 @@ About::About(QWidget *parent) :
                         .arg("http://sigrok.org/");
 
     QString changlogs = tr("<font size=16>Changelogs</font><br />");
-    #ifndef Q_OS_LINUX
-    QDir dir(QCoreApplication::applicationDirPath());
-    #else
-    QDir dir(DS_RES_PATH);
-    dir.cdUp();
-    #endif
-    QString filename = dir.absolutePath() + "/NEWS" + QString::number(qApp->property("Language").toInt());
+
+    QDir dir(GetAppDataDir());
+    AppConfig &app = AppConfig::Instance(); 
+    int lan = app._frameOptions.language;
+
+    QString filename = dir.absolutePath() + "/NEWS" + QString::number(lan);
     QFile news(filename);
     if (news.open(QIODevice::ReadOnly)) {
-        QTextCodec *code=QTextCodec::codecForName("UTF-8");
+   
         QTextStream stream(&news);
-        stream.setCodec(code);
+        app::set_utf8(stream);
+
         QString line;
         while (!stream.atEnd()){
             line = stream.readLine();

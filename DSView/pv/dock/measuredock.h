@@ -24,7 +24,6 @@
 
 #include <QDockWidget>
 #include <QPushButton>
-#include <QComboBox>
 #include <QLabel>
 #include <QRadioButton>
 #include <QSlider>
@@ -41,6 +40,8 @@
 #include <QScrollArea>
 
 #include <vector>
+
+#include "../ui/dscombobox.h"
 
 namespace pv {
 
@@ -61,7 +62,7 @@ private:
     static const int Max_Measure_Limits = 16;
 
 public:
-    MeasureDock(QWidget *parent, pv::view::View &view, SigSession &session);
+    MeasureDock(QWidget *parent, pv::view::View &view, SigSession *session);
     ~MeasureDock();
 
     void paintEvent(QPaintEvent *);
@@ -73,8 +74,8 @@ private:
     void reStyle();
 
 private:
-    QComboBox* create_probe_selector(QWidget *parent);
-    void update_probe_selector(QComboBox *selector);
+    DsComboBox* create_probe_selector(QWidget *parent);
+    void update_probe_selector(DsComboBox *selector);
 
 signals:
 
@@ -101,7 +102,7 @@ public slots:
     void refresh();
 
 private:
-    SigSession &_session;
+    SigSession *_session;
     view::View &_view;
 
     QWidget *_widget;
@@ -129,7 +130,7 @@ private:
     QVector<QToolButton *> _edge_del_btn_vec;
     QVector<QPushButton *> _edge_s_btn_vec;
     QVector<QPushButton *> _edge_e_btn_vec;
-    QVector<QComboBox *> _edge_ch_cmb_vec;
+    QVector<DsComboBox *> _edge_ch_cmb_vec;
     QVector<QLabel *> _edge_r_label_vec;
 
     QPushButton *_sel_btn;

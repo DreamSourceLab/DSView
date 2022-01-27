@@ -23,8 +23,7 @@
 
 #ifndef DSVIEW_PV_SIGNAL_H
 #define DSVIEW_PV_SIGNAL_H
-
-#include <boost/shared_ptr.hpp>
+ 
 
 #include <QColor>
 #include <QPainter>
@@ -48,8 +47,11 @@ namespace device {
 class DevInst;
 }
 
+using namespace pv::device;
+
 namespace view {
 
+//draw signal trace base class
 class Signal : public Trace
 {
     Q_OBJECT
@@ -58,8 +60,7 @@ private:
 
 
 protected:
-    Signal(boost::shared_ptr<pv::device::DevInst> dev_inst,
-           sr_channel * const probe);
+    Signal(DevInst* dev_inst,sr_channel * const probe);
 
     /**
      * Copy constructor
@@ -67,12 +68,12 @@ protected:
     Signal(const Signal &s, sr_channel * const probe);
 
 public:
-    virtual boost::shared_ptr<pv::data::SignalData> data() const = 0;
+    virtual pv::data::SignalData* data() = 0;
 
     /**
      * Returns true if the trace is visible and enabled.
      */
-    bool enabled() const;
+    bool enabled();
 
     /**
      * Sets the name of the signal.
@@ -89,10 +90,10 @@ public:
 	 */
     //virtual void paint_label(QPainter &p, int right, bool hover, int action);
 
-    boost::shared_ptr<device::DevInst> get_device() const;
+    DevInst* get_device();
 
 protected:
-    boost::shared_ptr<pv::device::DevInst> _dev_inst;
+    DevInst* _dev_inst;
     sr_channel *const _probe;
 };
 

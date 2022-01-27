@@ -20,21 +20,17 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <extdef.h>
-
-#include <math.h>
-
-#include <QApplication>
-
+  
+#include <math.h> 
 #include "signal.h"
 #include "view.h"
 #include "../device/devinst.h"
+#include "../extdef.h"
 
 namespace pv {
 namespace view {
 
-Signal::Signal(boost::shared_ptr<pv::device::DevInst> dev_inst,
-               sr_channel *probe) :
+Signal::Signal(DevInst *dev_inst,sr_channel *probe) :
     Trace(probe->name, probe->index, probe->type),
     _dev_inst(dev_inst),
     _probe(probe)
@@ -48,7 +44,7 @@ Signal::Signal(const Signal &s, sr_channel *probe) :
 {
 }
 
-bool Signal::enabled() const
+bool Signal::enabled()
 {
     return _probe->enabled;
 }
@@ -60,7 +56,7 @@ void Signal::set_name(QString name)
     _probe->name = g_strdup(name.toUtf8().data());
 }
 
-boost::shared_ptr<device::DevInst> Signal::get_device() const
+DevInst* Signal::get_device()
 {
     return _dev_inst;
 }

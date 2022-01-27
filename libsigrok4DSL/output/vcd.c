@@ -19,12 +19,12 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include "libsigrok.h"
-#include "libsigrok-internal.h"
+#include "../libsigrok.h"
+#include "../libsigrok-internal.h"
 #include <stdlib.h>
 #include <string.h>
 #include <glib.h>
-#include "config.h" /* Needed for PACKAGE and others. */
+#include "../config.h" /* Needed for PACKAGE and others. */
 
 #define LOG_PREFIX "output/vcd"
 

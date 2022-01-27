@@ -19,12 +19,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
-
-#include <libsigrok4DSL/libsigrok.h>
-#ifdef ENABLE_DECODE
-#include <libsigrokdecode4DSL/libsigrokdecode.h>
-#endif
-
+ 
 #include <stdint.h>
 #include <getopt.h>
 
@@ -33,22 +28,25 @@
 #include <QFile>
 #include <QDir>
 #include <QTranslator>
-#include <QSettings>
 #include <QDesktopServices>
 #include <QStyle>
 
 #include "dsapplication.h"
-#include "mystyle.h"
-#include "pv/devicemanager.h"
+#include "mystyle.h" 
 #include "pv/mainframe.h"
-
+#include "pv/config/appconfig.h"
 #include "config.h"
+#include "pv/appcontrol.h"
 
-char DS_RES_PATH[256];
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
+//#include <libsigrok4DSL/libsigrok.h>
 
 void usage()
 {
-	fprintf(stdout,
+	printf(
 		"Usage:\n"
 		"  %s [OPTION…] [FILE] — %s\n"
 		"\n"
@@ -57,15 +55,18 @@ void usage()
 		"  -V, --version                   Show release version\n"
 		"  -h, -?, --help                  Show help option\n"
 		"\n", DS_BIN_NAME, DS_DESCRIPTION);
-}
+} 
+
 
 int main(int argc, char *argv[])
-{
-	int ret = 0;
-	struct sr_context *sr_ctx = NULL;
+{  
+   // sr_test_usb_api();return 0;
+	 
+	int ret = 0; 
 	const char *open_file = NULL;
-
+ 
     #if QT_VERSION >= QT_VERSION_CHECK(5,6,0)
+		//On Windows, need to compile with the QT5 version of the library, which makes the interface slightly larger.
         QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
         QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
     #endif // QT_VERSION
@@ -110,6 +111,13 @@ int main(int argc, char *argv[])
     QApplication::setOrganizationName("DreamSourceLab");
     QApplication::setOrganizationDomain("www.DreamSourceLab.com");
 
+#ifdef Q_OS_LINUX
+	QCoreApplication::addLibraryPath("/usr/lib/x86_64-linux-gnu/qt5/plugins");
+	printf("qt plugins root:/usr/lib/x86_64-linux-gnu/qt5/plugins\n");
+#endif
+
+	AppControl *control = AppControl::Instance();
+
 	// Parse arguments
 	while (1) {
 		static const struct option long_options[] = {
@@ -128,18 +136,13 @@ int main(int argc, char *argv[])
 		case 'l':
 		{
 			const int loglevel = atoi(optarg);
-			sr_log_loglevel_set(loglevel);
-
-#ifdef ENABLE_DECODE
-			srd_log_loglevel_set(loglevel);
-#endif
-
+			control->SetLogLevel(loglevel);
 			break;
 		}
 
 		case 'V':
 			// Print version info
-			fprintf(stdout, "%s %s\n", DS_TITLE, DS_VERSION_STRING);
+			printf("%s %s\n", DS_TITLE, DS_VERSION_STRING);
 			return 0;
 
 		case 'h':
@@ -150,69 +153,55 @@ int main(int argc, char *argv[])
 	}
 
     if (argcFinal - optind > 1) {
-		fprintf(stderr, "Only one file can be openened.\n");
+		printf("Only one file can be openened.\n");
 		return 1;
-    } else if (argcFinal - optind == 1)
+    } else if (argcFinal - optind == 1){
         open_file = argvFinal[argcFinal - 1];
+		control->_open_file_name = open_file;
+	}
 
-	// Initialise DS_RES_PATH
-    QDir dir(QCoreApplication::applicationDirPath());
-    if (dir.cd("..") &&
-        dir.cd("share") &&
-        dir.cd(QApplication::applicationName()) &&
-        dir.cd("res")) {
-        QString res_dir = dir.absolutePath() + "/";
-        strcpy(DS_RES_PATH, res_dir.toUtf8().data());
-    } else {
-        qDebug() << "ERROR: config files don't exist.";
-        return 1;
-    }
+	
+//#ifdef Q_OS_DARWIN 
+//#endif
 
-	// Initialise libsigrok
-	if (sr_init(&sr_ctx) != SR_OK) {
-		qDebug() << "ERROR: libsigrok init failed.";
+	//load app config
+	AppConfig::Instance().LoadAll();
+
+	//init core
+	if (!control->Init()){
+        printf("init error!");
+        qDebug() << control->GetLastError();
 		return 1;
 	}
 
-	do {
-#ifdef ENABLE_DECODE
-		// Initialise libsigrokdecode
-		if (srd_init(NULL) != SRD_OK) {
-			qDebug() << "ERROR: libsigrokdecode init failed.";
-			break;
-		}
+	try
+	{   
+		control->Start();
+		
+		// Initialise the main frame
+        pv::MainFrame w;
+		w.show(); 
+ 
+		w.readSettings();
+		 
+		//to show the dailog for open help document
+		w.show_doc();
 
-		// Load the protocol decoders
-		srd_decoder_load_all();
-#endif
+		//Run the application
+		ret = a.exec();
 
-		try {
-			// Create the device manager, initialise the drivers
-			pv::DeviceManager device_manager(sr_ctx);
+		control->Stop();
+	}
+	catch (const std::exception &e)
+	{
+        printf("main() catch a except!");
+		const char *exstr = e.what();
+		qDebug() << exstr;
+	}
 
-            // Initialise the main frame
-            pv::MainFrame w(device_manager, open_file);
-			w.show();
-            w.readSettings();
-            w.show_doc();
-
-			// Run the application
-            ret = a.exec();
-
-        } catch(const std::exception &e) {
-			qDebug() << e.what();
-		}
-
-#ifdef ENABLE_DECODE
-		// Destroy libsigrokdecode
-		srd_exit();
-#endif
-
-	} while (0);
-
-	// Destroy libsigrok
-	if (sr_ctx)
-		sr_exit(sr_ctx);
+	//uninit
+	control->UnInit();  
+	control->Destroy();
 
 	return ret;
 }

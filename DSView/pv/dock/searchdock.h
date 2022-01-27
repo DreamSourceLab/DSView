@@ -25,7 +25,6 @@
 
 #include <QDockWidget>
 #include <QPushButton>
-#include <QComboBox>
 #include <QLabel>
 #include <QRadioButton>
 #include <QSlider>
@@ -43,6 +42,7 @@
 #include <vector>
 
 #include "../widgets/fakelineedit.h"
+#include "../ui/dscombobox.h"
 
 namespace pv {
 
@@ -63,7 +63,7 @@ class SearchDock : public QWidget
     Q_OBJECT
 
 public:
-    SearchDock(QWidget *parent, pv::view::View &view, SigSession &session);
+    SearchDock(QWidget *parent, pv::view::View &view, SigSession *session);
     ~SearchDock();
 
     void paintEvent(QPaintEvent *);
@@ -78,7 +78,7 @@ public slots:
     void on_set();
 
 private:
-    SigSession &_session;
+    SigSession *_session;
     view::View &_view;
     std::map<uint16_t, QString> _pattern;
 

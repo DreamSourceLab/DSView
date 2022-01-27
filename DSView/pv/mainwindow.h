@@ -25,11 +25,12 @@
 #define DSVIEW_PV_MAINWINDOW_H
 
 #include <list>
-
 #include <QMainWindow>
-
-#include "sigsession.h"
+#include <QTranslator> 
 #include "dialogs/dsmessagebox.h"
+#include "interface/icallbacks.h"
+#include "eventobject.h"
+#include "interface/uicallback.h"
 
 class QAction;
 class QMenuBar;
@@ -40,9 +41,10 @@ class QToolBar;
 class QWidget;
 class QDockWidget;
 
-namespace pv {
+class AppControl;
 
-class DeviceManager;
+namespace pv {
+ 
 
 namespace toolbars {
 class SamplingBar;
@@ -63,149 +65,166 @@ namespace view {
 class View;
 }
 
-class MainWindow : public QMainWindow
+namespace device{
+    class DevInst;
+}
+
+using namespace pv::device;
+ 
+//The mainwindow,referenced by MainFrame
+//TODO: create graph view,toolbar,and show device list
+class MainWindow : public QMainWindow, public ISessionCallback, public IMainForm, ISessionDataGetter
 {
 	Q_OBJECT
 
 private:
     static constexpr int Session_Version = 2;
-
+   
 public:
-	explicit MainWindow(DeviceManager &device_manager,
-		const char *open_file_name = NULL,
-		QWidget *parent = 0);
+    explicit MainWindow(QWidget *parent = 0);
 
-protected:
+    void openDoc();
+  
+private:
     void closeEvent(QCloseEvent *event);
 
-private:
 	void setup_ui();
-    void retranslateUi();
-	void session_error(const QString text, const QString info_text);
+    void retranslateUi(); 
     bool eventFilter(QObject *object, QEvent *event);
+    bool load_session_json(QJsonDocument json, bool file_dev,bool bDecoder=true);  
 
-public slots:
-    void session_save();
-    int language() const;
-    void openDoc();
-
-    void switchLanguage(int language);
+public slots: 
     void switchTheme(QString style);
-
     void restore_dock();
 
 private slots:
-	void load_file(QString file_name);
-
-    /**
-     * Updates the device list in the sampling bar, and updates the
-     * selection.
-     * @param selected_device The device to select, or NULL if the
-     * first device in the device list should be selected.
-     */
+	void on_load_file(QString file_name);
+    void on_open_doc(); 
+    void on_device_updated_reload();
     void update_device_list();
-
-    void reload();
-
-    void show_session_error(
-		const QString text, const QString info_text);
-
-	void run_stop();
-
-    void instant_stop();
-
-    void capture_state_changed(int state);
-
+ 
+	void on_run_stop();
+    void on_instant_stop(); 
     void on_protocol(bool visible);
-
     void on_trigger(bool visible);
-
     void commit_trigger(bool instant);
 
     void on_measure(bool visible);
-
     void on_search(bool visible);
-
     void on_screenShot();
-
     void on_save();
 
     void on_export();
-
-    bool load_session(QString name);
-    bool load_session_json(QJsonDocument json, bool file_dev);
-    bool store_session(QString name);
-
-    /*
-     * repeat
-     */
-    void repeat_resume();
-
-    /*
-     * hotplug slot function
-     */
-    void device_attach();
-    void device_detach();
+    bool on_load_session(QString name);  
+    bool on_store_session(QString name);     
     void device_detach_post();
     void device_changed(bool close);
+    void on_device_selected();       
 
-    /*
-     * errors
-     */
-    void show_error();
-
+    void on_capture_state_changed(int state);
+    void on_data_updated();
+    void on_device_attach();
+    void on_device_detach();
+    void on_show_error(QString str);
+    void on_session_error();
+    void on_signals_changed();
+    void on_receive_trigger(quint64 trigger_pos);
+    void on_frame_ended();
+    void on_frame_began();
+    void on_decode_done();
+    void on_receive_data_len(quint64 len);
+    void on_cur_snap_samplerate_changed();
+  
 signals:
     void prgRate(int progress);
 
+//IMainForm
+public:
+   void switchLanguage(int language);
+
+//ISessionCallback
+public:
+    void session_save(); 
+
+    //ISessionDataGetter
 private:
-	DeviceManager &_device_manager;
+    bool genSessionData(std::string &str);
 
-	SigSession _session;
-    bool _hot_detach;
+//ISessionCallback
+private:
+    void show_error(QString error);
+    void session_error();
+    void capture_state_changed(int state);
+    void device_attach();
+    void device_detach();
 
-	pv::view::View *_view;
-    dialogs::DSMessageBox *_msg;
+    void data_updated();
+    void repeat_resume();
+    void update_capture();
+    void cur_snap_samplerate_changed();
+    void device_setted();
 
-	QMenuBar *_menu_bar;
-	QMenu *_menu_file;
-	QAction *_action_open;
-	QAction *_action_connect;
-	QAction *_action_quit;
+    void signals_changed();
+    void receive_trigger(quint64 trigger_pos);
+    void frame_ended();
+    void frame_began();
+    void show_region(uint64_t start, uint64_t end, bool keep);
 
-	QMenu *_menu_view;
-	QAction *_action_view_zoom_in;
-	QAction *_action_view_zoom_out;
-	QAction *_action_view_show_cursors;
+    void show_wait_trigger();
+    void repeat_hold(int percent);
+    void decode_done();
+    void receive_data_len(quint64 len);
+    void receive_header();    
+    void data_received();
 
-	QMenu *_menu_help;
-	QAction *_action_about;
+    //------private
+    bool gen_session_json(QJsonArray &array);
 
-	QWidget *_central_widget;
-	QVBoxLayout *_vertical_layout;
+private:
+    AppControl              *_control; 
+    bool                    _hot_detach;
 
-	toolbars::SamplingBar *_sampling_bar;
-    toolbars::TrigBar *_trig_bar;
-    toolbars::FileBar *_file_bar;
-    toolbars::LogoBar *_logo_bar;
+	pv::view::View          *_view;
+    dialogs::DSMessageBox   *_msg;
 
-#ifdef ENABLE_DECODE
-    QDockWidget *_protocol_dock;
-    dock::ProtocolDock *_protocol_widget;
-#endif
+	QMenuBar                *_menu_bar;
+	QMenu                   *_menu_file;
+	QAction                 *_action_open;
+	QAction                 *_action_connect;
+	QAction                 *_action_quit;
 
-    QDockWidget *_trigger_dock;
-    QDockWidget *_dso_trigger_dock;
-    dock::TriggerDock *_trigger_widget;
-    dock::DsoTriggerDock *_dso_trigger_widget;
-    QDockWidget *_measure_dock;
-    dock::MeasureDock *_measure_widget;
-    QDockWidget *_search_dock;
-    dock::SearchDock * _search_widget;
+	QMenu                   *_menu_view;
+	QAction                 *_action_view_zoom_in;
+	QAction                 *_action_view_zoom_out;
+	QAction                 *_action_view_show_cursors;
 
-    int _language;
-    QString _style;
-    QTranslator _qtTrans;
-    QTranslator _myTrans;
+	QMenu                   *_menu_help;
+	QAction                 *_action_about;
+
+	QWidget                 *_central_widget;
+	QVBoxLayout             *_vertical_layout;
+
+	toolbars::SamplingBar   *_sampling_bar;
+    toolbars::TrigBar       *_trig_bar;
+    toolbars::FileBar       *_file_bar;
+    toolbars::LogoBar       *_logo_bar; //help button, on top right
+
+
+    QDockWidget             *_protocol_dock;
+    dock::ProtocolDock      *_protocol_widget;
+    QDockWidget             *_trigger_dock;
+    QDockWidget             *_dso_trigger_dock;
+    dock::TriggerDock       *_trigger_widget;
+    dock::DsoTriggerDock    *_dso_trigger_widget;
+    QDockWidget             *_measure_dock;
+    dock::MeasureDock       *_measure_widget;
+    QDockWidget             *_search_dock;
+    dock::SearchDock        *_search_widget;
+
+    QTranslator     _qtTrans;
+    QTranslator     _myTrans;
+    EventObject     _event;
+    bool            _bFirstLoad;
 };
 
 } // namespace pv

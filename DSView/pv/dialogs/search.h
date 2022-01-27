@@ -33,9 +33,7 @@
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
 #include "../device/devinst.h"
-
-#include <boost/shared_ptr.hpp>
-
+ 
 namespace pv {
 namespace dialogs {
 
@@ -45,7 +43,7 @@ class Search : public DSDialog
 
 public:
 
-    Search(QWidget *parent, SigSession &session, std::map<uint16_t, QString> pattern);
+    Search(QWidget *parent, SigSession *session, std::map<uint16_t, QString> pattern);
     ~Search();
 
     std::map<uint16_t, QString> get_pattern();
@@ -59,7 +57,7 @@ private slots:
     void format();
     
 private:
-    SigSession &_session;
+    SigSession *_session;
 
     toolbars::TitleBar *_titlebar;
     QVector<QLineEdit *> _search_lineEdit_vec;

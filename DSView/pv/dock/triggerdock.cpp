@@ -29,24 +29,26 @@
 #include <QGridLayout>
 #include <QVBoxLayout>
 #include <QPainter>
-#include <QRegExpValidator>
+#include <QRegularExpressionValidator>
 #include <QSplitter>
 #include <QInputMethodEvent>
+#include <QApplication>
+#include <math.h>
 
-#include "libsigrok4DSL/libsigrok.h"
+#include <libsigrok4DSL/libsigrok.h>
 
 namespace pv {
 namespace dock {
 
 const int TriggerDock::MinTrigPosition = 1;
 
-TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
+TriggerDock::TriggerDock(QWidget *parent, SigSession *session) :
     QScrollArea(parent),
     _session(session)
 {
     _cur_ch_num = 16;
-    if (_session.get_device()) {
-        GVariant *gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_TOTAL_CH_NUM);
+    if (_session->get_device()) {
+        GVariant *gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_TOTAL_CH_NUM);
         if (gvar != NULL) {
             _cur_ch_num = g_variant_get_int16(gvar);
             g_variant_unref(gvar);
@@ -69,7 +71,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession &session) :
 
     _stages_label = new QLabel(_widget);
     _stages_label->setDisabled(true);
-    stages_comboBox = new QComboBox(_widget);
+    stages_comboBox = new DsComboBox(_widget);
     for (int i = 1; i <= TriggerStages; i++)
         stages_comboBox->addItem(QString::number(i));
     //stages_comboBox->setCurrentIndex(stages_comboBox->count() - 1);
@@ -160,7 +162,7 @@ void TriggerDock::retranslateUi()
 
 void TriggerDock::reStyle()
 {
-    //QString iconPath = ":/icons/" + qApp->property("Style").toString();
+     
 }
 
 void TriggerDock::paintEvent(QPaintEvent *)
@@ -180,9 +182,9 @@ void TriggerDock::simple_trigger()
 
 void TriggerDock::adv_trigger()
 {
-    if (_session.get_device()->name() == "DSLogic") {
+    if (_session->get_device()->name() == "DSLogic") {
         bool stream = false;
-        GVariant *gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_STREAM);
+        GVariant *gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_STREAM);
         if (gvar != NULL) {
             stream = g_variant_get_boolean(gvar);
             g_variant_unref(gvar);
@@ -248,20 +250,20 @@ void TriggerDock::device_updated()
     bool stream = false;
     uint8_t maxRange;
     uint64_t sample_limits;
-    GVariant *gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_HW_DEPTH);
+    GVariant *gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_HW_DEPTH);
     if (gvar != NULL) {
         hw_depth = g_variant_get_uint64(gvar);
         g_variant_unref(gvar);
 
-        if (_session.get_device()->dev_inst()->mode == LOGIC) {
+        if (_session->get_device()->dev_inst()->mode == LOGIC) {
 
-            gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_STREAM);
+            gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_STREAM);
             if (gvar != NULL) {
                 stream = g_variant_get_boolean(gvar);
                 g_variant_unref(gvar);
             }
 
-            sample_limits = _session.get_device()->get_sample_limit();
+            sample_limits = _session->get_device()->get_sample_limit();
             if (stream)
                 maxRange = 1;
             else if (hw_depth >= sample_limits)
@@ -271,7 +273,7 @@ void TriggerDock::device_updated()
             _position_spinBox->setRange(MinTrigPosition, maxRange);
             _position_slider->setRange(MinTrigPosition, maxRange);
 
-            if (_session.get_device()->name().contains("virtual") ||
+            if (_session->get_device()->name().contains("virtual") ||
                 stream) {
                 _simple_radioButton->setChecked(true);
                 simple_trigger();
@@ -279,7 +281,7 @@ void TriggerDock::device_updated()
         }
     }
 
-    gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_TOTAL_CH_NUM);
+    gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_TOTAL_CH_NUM);
     if (gvar != NULL) {
         int ch_num = g_variant_get_int16(gvar);
         g_variant_unref(gvar);
@@ -564,10 +566,10 @@ void TriggerDock::setup_adv_tab()
     _stage_tabWidget->setUsesScrollButtons(false);
 
     const QString mask = "N N N N N N N N N N N N N N N N";
-    QRegExp value_rx("[10XRFCxrfc ]+");
-    QValidator *value_validator = new QRegExpValidator(value_rx, _stage_tabWidget);
+    QRegularExpression value_rx("[10XRFCxrfc ]+");
+    QValidator *value_validator = new QRegularExpressionValidator(value_rx, _stage_tabWidget);
     for (int i = 0; i < TriggerStages; i++) {
-        QComboBox *_logic_comboBox = new QComboBox(_stage_tabWidget);
+        DsComboBox *_logic_comboBox = new DsComboBox(_stage_tabWidget);
         _logic_comboBox->addItem(tr("Or"));
         _logic_comboBox->addItem(tr("And"));
         _logic_comboBox->setCurrentIndex(1);
@@ -584,7 +586,7 @@ void TriggerDock::setup_adv_tab()
         _count_spinBox->setRange(1, INT32_MAX);
         _count_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
         _count_spinBox_list.push_back(_count_spinBox);
-        QComboBox *_inv0_comboBox = new QComboBox(_stage_tabWidget);
+        DsComboBox *_inv0_comboBox = new DsComboBox(_stage_tabWidget);
         _inv0_comboBox->addItem(tr("=="));
         _inv0_comboBox->addItem(tr("!="));
         _inv0_comboBox_list.push_back(_inv0_comboBox);
@@ -596,7 +598,7 @@ void TriggerDock::setup_adv_tab()
         _value1_lineEdit->setInputMask(mask);
         _value1_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
         _value1_lineEdit_list.push_back(_value1_lineEdit);
-        QComboBox *_inv1_comboBox = new QComboBox(_stage_tabWidget);
+        DsComboBox *_inv1_comboBox = new DsComboBox(_stage_tabWidget);
         _inv1_comboBox->addItem(tr("=="));
         _inv1_comboBox->addItem(tr("!="));
         _inv1_comboBox_list.push_back(_inv1_comboBox);
@@ -732,7 +734,7 @@ void TriggerDock::setup_adv_tab()
     _serial_edge_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
     _serial_data_label = new QLabel(_serial_groupBox);
-    _serial_data_comboBox = new QComboBox(_serial_groupBox);
+    _serial_data_comboBox = new DsComboBox(_serial_groupBox);
     for(int i = 0; i < _cur_ch_num; i++)
         _serial_data_comboBox->addItem(QString::number(i));
 
@@ -744,7 +746,7 @@ void TriggerDock::setup_adv_tab()
     _serial_value_lineEdit->setInputMask(mask);
     _serial_value_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
-    _serial_bits_comboBox = new QComboBox(_serial_groupBox);
+    _serial_bits_comboBox = new DsComboBox(_serial_groupBox);
     for(int i = 1; i <= 16; i++)
         _serial_bits_comboBox->addItem(QString::number(i));
 

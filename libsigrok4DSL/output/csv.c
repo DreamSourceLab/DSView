@@ -18,14 +18,15 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include "libsigrok.h"
-#include "libsigrok-internal.h"
+#include "../libsigrok.h"
+#include "../libsigrok-internal.h"
 #include <stdlib.h>
 #include <string.h>
 #include <glib.h>
-#include "config.h" /* Needed for PACKAGE_STRING and others. */
+#include "../config.h" /* Needed for PACKAGE_STRING and others. */
 
 #define LOG_PREFIX "output/csv"
+ 
 
 struct context {
 	unsigned int num_enabled_channels;
@@ -234,10 +235,16 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
 			*out = g_string_sized_new(512);
 		}
 
+        int bflag = sr_get_export_original_flag();
+
 		for (i = 0; i <= logic->length - logic->unitsize; i += logic->unitsize) {
             ctx->index++;
-            if (ctx->index > 1 && (*(uint64_t *)(logic->data + i) & ctx->mask) == ctx->pre_data)
-                continue;
+
+            if (bflag == 0){
+                if (ctx->index > 1 && (*(uint64_t *)(logic->data + i) & ctx->mask) == ctx->pre_data)
+                   continue;
+            } 
+
             g_string_append_printf(*out, "%0.10g", (ctx->index-1)*1.0/ctx->samplerate);
             for (j = 0; j < ctx->num_enabled_channels; j++) {
                 //idx = ctx->channel_index[j];
@@ -331,3 +338,4 @@ SR_PRIV struct sr_output_module output_csv = {
 	.receive = receive,
 	.cleanup = cleanup,
 };
+ 

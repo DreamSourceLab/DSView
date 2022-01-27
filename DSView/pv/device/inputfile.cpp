@@ -37,7 +37,7 @@ InputFile::InputFile(QString path) :
 {
 }
 
-sr_dev_inst* InputFile::dev_inst() const
+sr_dev_inst* InputFile::dev_inst()
 {
 	assert(_input);
 	return _input->sdi;
@@ -51,15 +51,7 @@ void InputFile::use(SigSession *owner)
     // only *.dsl file is valid
     // don't allow other types of file input
     throw tr("Not a valid DSView data file.");
-    return;
-
-//	_input = load_input_file_format(_path, NULL);
-//	File::use(owner);
-
-//	sr_session_new();
-
-//	if (sr_session_dev_add(_input->sdi) != SR_OK)
-//		throw tr("Failed to add session device.");
+    return; 
 }
 
 void InputFile::release()

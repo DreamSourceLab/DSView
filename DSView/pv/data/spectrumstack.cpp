@@ -19,14 +19,12 @@
  */
 
 #include "spectrumstack.h"
-
-#include <boost/foreach.hpp>
-#include <boost/thread/thread.hpp>
-
-#include <pv/data/dso.h>
-#include <pv/data/dsosnapshot.h>
-#include <pv/sigsession.h>
-#include <pv/view/dsosignal.h>
+ 
+#include "dso.h"
+#include "dsosnapshot.h"
+#include "../sigsession.h"
+#include "../view/dsosignal.h"
+#include <math.h>
 
 #define PI 3.1415
 
@@ -52,7 +50,7 @@ const uint64_t SpectrumStack::length_support[5] = {
     16384,
 };
 
-SpectrumStack::SpectrumStack(pv::SigSession &session, int index) :
+SpectrumStack::SpectrumStack(pv::SigSession *session, int index) :
     _session(session),
     _index(index),
     _dc_ignore(true),
@@ -79,12 +77,12 @@ void SpectrumStack::init()
 {
 }
 
-int SpectrumStack::get_index() const
+int SpectrumStack::get_index()
 {
     return _index;
 }
 
-uint64_t SpectrumStack::get_sample_num() const
+uint64_t SpectrumStack::get_sample_num()
 {
     return _sample_num;
 }
@@ -99,7 +97,7 @@ void SpectrumStack::set_sample_num(uint64_t num)
                                  FFTW_R2HC, FFTW_ESTIMATE);
 }
 
-int SpectrumStack::get_windows_index() const
+int SpectrumStack::get_windows_index()
 {
     return _windows_index;
 }
@@ -109,7 +107,7 @@ void SpectrumStack::set_windows_index(int index)
     _windows_index = index;
 }
 
-bool SpectrumStack::dc_ignored() const
+bool SpectrumStack::dc_ignored()
 {
     return _dc_ignore;
 }
@@ -119,7 +117,7 @@ void SpectrumStack::set_dc_ignore(bool ignore)
     _dc_ignore = ignore;
 }
 
-int SpectrumStack::get_sample_interval() const
+int SpectrumStack::get_sample_interval()
 {
     return _sample_interval;
 }
@@ -129,7 +127,7 @@ void SpectrumStack::set_sample_interval(int interval)
     _sample_interval = interval;
 }
 
-const std::vector<QString> SpectrumStack::get_windows_support() const
+const std::vector<QString> SpectrumStack::get_windows_support()
 {
     std::vector<QString> windows;
     for (size_t i = 0; i < sizeof(windows_support)/sizeof(windows_support[0]); i++)
@@ -139,7 +137,7 @@ const std::vector<QString> SpectrumStack::get_windows_support() const
     return windows;
 }
 
-const std::vector<uint64_t> SpectrumStack::get_length_support() const
+const std::vector<uint64_t> SpectrumStack::get_length_support()
 {
     std::vector<uint64_t> length;
     for (size_t i = 0; i < sizeof(length_support)/sizeof(length_support[0]); i++)
@@ -149,7 +147,7 @@ const std::vector<uint64_t> SpectrumStack::get_length_support() const
     return length;
 }
 
-const std::vector<double> SpectrumStack::get_fft_spectrum() const
+const std::vector<double> SpectrumStack::get_fft_spectrum()
 {
     std::vector<double> empty;
     if (_spectrum_state == Stopped)
@@ -171,10 +169,11 @@ void SpectrumStack::calc_fft()
 {
     _spectrum_state = Running;
     // Get the dso data
-    boost::shared_ptr<pv::data::Dso> data;
-    boost::shared_ptr<pv::view::DsoSignal> dsoSig;
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
-        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
+    pv::data::Dso *data = NULL;
+    pv::view::DsoSignal *dsoSig = NULL;
+
+    for(auto &s : _session->get_signals()) {
+        if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
             if (dsoSig->get_index() == _index && dsoSig->enabled()) {
                 data = dsoSig->dso_data();
                 break;
@@ -186,10 +185,10 @@ void SpectrumStack::calc_fft()
         return;
 
     // Check we have a snapshot of data
-    const deque< boost::shared_ptr<pv::data::DsoSnapshot> > &snapshots =
-        data->get_snapshots();
+    const auto &snapshots = data->get_snapshots();
     if (snapshots.empty())
         return;
+        
     _snapshot = snapshots.front();
 
     if (_snapshot->get_sample_count() < _sample_num*_sample_interval)

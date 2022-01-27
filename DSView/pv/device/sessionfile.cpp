@@ -25,12 +25,12 @@ namespace pv {
 namespace device {
 
 SessionFile::SessionFile(QString path) :
-	File(path),
-	_sdi(NULL)
+	File(path)
 {
+	_sdi = NULL;
 }
 
-sr_dev_inst* SessionFile::dev_inst() const
+sr_dev_inst* SessionFile::dev_inst()
 {
 	return _sdi;
 }
@@ -38,6 +38,9 @@ sr_dev_inst* SessionFile::dev_inst() const
 void SessionFile::use(SigSession *owner)
 {
 	assert(!_sdi);
+	if (_sdi){
+		//return;
+	}
 
     if (sr_session_load(_path.toUtf8().data()) != SR_OK)
 		throw tr("Failed to open file.\n");
@@ -58,16 +61,15 @@ void SessionFile::use(SigSession *owner)
 }
 
 void SessionFile::release()
-{
-	if (!_owner)
-		return;
-
-	assert(_sdi);
-	File::release();
-	sr_dev_close(_sdi);
-	sr_dev_clear(_sdi->driver);
-	sr_session_destroy();
-	_sdi = NULL;
+{  
+    if (_owner != NULL && _sdi != NULL)
+	{
+		File::release();
+		sr_dev_close(_sdi);
+		sr_dev_clear(_sdi->driver);
+		sr_session_destroy();
+		_sdi = NULL;
+	}
 }
 
 } // device

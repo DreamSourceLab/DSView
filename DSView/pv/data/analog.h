@@ -26,7 +26,7 @@
 
 #include "signaldata.h"
 
-#include <boost/shared_ptr.hpp>
+ 
 #include <deque>
 
 namespace pv {
@@ -37,19 +37,17 @@ class AnalogSnapshot;
 class Analog : public SignalData
 {
 public:
-    Analog();
+    Analog(AnalogSnapshot *snapshot);
 
-	void push_snapshot(
-		boost::shared_ptr<AnalogSnapshot> &snapshot);
-
-	std::deque< boost::shared_ptr<AnalogSnapshot> >&
-		get_snapshots();
-
+	void push_snapshot(AnalogSnapshot *snapshot);
+	std::deque<AnalogSnapshot*>& get_snapshots();
     void clear();
     void init();
 
+    AnalogSnapshot* snapshot();
+
 private:
-	std::deque< boost::shared_ptr<AnalogSnapshot> > _snapshots;
+	std::deque<AnalogSnapshot*> _snapshots;
 };
 
 } // namespace data

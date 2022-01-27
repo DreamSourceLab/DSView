@@ -26,6 +26,7 @@ Requirements
 	This is part of the standard OpenBSD install (not an extra package), apparently.
  - check >= 0.9.4 (optional, only needed to run unit tests)
  - libfftw3 >= 3.3
+ - zlib
 
 Building and installing
 -----------------------

@@ -20,9 +20,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#ifdef ENABLE_DECODE
+
 #include <libsigrokdecode4DSL/libsigrokdecode.h>
-#endif
+
 
 #include "sigsession.h"
 #include "mainwindow.h"
@@ -55,113 +55,95 @@
 
 #include <assert.h>
 #include <stdexcept>
-#include <sys/stat.h>
-
+#include <sys/stat.h> 
 #include <QDebug>
-#include <QProgressDialog>
-#include <QFile>
-#include <QJsonArray>
-#include <QJsonDocument>
-#include <QFuture>
-#include <QtConcurrent/QtConcurrent>
-
-#include <boost/foreach.hpp>
-
-//using boost::dynamic_pointer_cast;
-//using boost::function;
-//using boost::lock_guard;
-//using boost::mutex;
-//using boost::shared_ptr;
-//using std::list;
-//using std::map;
-//using std::set;
-//using std::string;
-//using std::vector;
-//using std::deque;
-//using std::min;
-
-using namespace boost;
-using namespace std;
-
+#include <map>
+ 
+#include "data/decode/decoderstatus.h"
+#include "dsvdef.h"
+ 
 namespace pv {
 
 // TODO: This should not be necessary
 SigSession* SigSession::_session = NULL;
 
-SigSession::SigSession(DeviceManager &device_manager) :
-	_device_manager(device_manager),
-    _capture_state(Init),
-    _instant(false),
-    _error(No_err),
-    _run_mode(Single),
-    _repeat_intvl(1),
-    _repeating(false),
-    _repeat_hold_prg(0),
-    _map_zoom(0)
+SigSession::SigSession(DeviceManager *device_manager) 
 {
-	// TODO: This should not be necessary
-	_session = this;
+    _hotplug_handle = 0;
+    _dev_inst = NULL;
+    _device_manager = device_manager;
+    // TODO: This should not be necessary
+    _session = this;
     _hot_attach = false;
     _hot_detach = false;
     _group_cnt = 0;
-	register_hotplug_callback();
-    _feed_timer.stop();
+    _bHotplugStop = false;  
+
+    _map_zoom = 0;
+    _repeat_hold_prg = 0;
+    _repeating = false;
+    _repeat_intvl = 1;
+    _run_mode = Single;    
+    _error = No_err;
+    _instant = false;
+    _capture_state = Init;
+  
     _noData_cnt = 0;
     _data_lock = false;
     _data_updated = false;
-    #ifdef ENABLE_DECODE
-    _decoder_model = new pv::data::DecoderModel(this);
-    #endif
+
+    _decoder_model = new pv::data::DecoderModel(NULL);
+
     _lissajous_trace = NULL;
     _math_trace = NULL;
     _saving = false;
     _dso_feed = false;
-    _stop_scale = 1;
+    _stop_scale = 1; 
+    _bDecodeRunning = false;
+    _bClose = false;
+    _callback = NULL;
 
-    // Create snapshots & data containers
-    _cur_logic_snapshot.reset(new data::LogicSnapshot());
-    _logic_data.reset(new data::Logic());
-    _logic_data->push_snapshot(_cur_logic_snapshot);
-    _cur_dso_snapshot.reset(new data::DsoSnapshot());
-    _dso_data.reset(new data::Dso());
-    _dso_data->push_snapshot(_cur_dso_snapshot);
-    _cur_analog_snapshot.reset(new data::AnalogSnapshot());
-    _analog_data.reset(new data::Analog());
-    _analog_data->push_snapshot(_cur_analog_snapshot);
-    _group_data.reset(new data::Group());
+    // Create snapshots & data containers 
+    _logic_data = new data::Logic(new data::LogicSnapshot()); 
+    _dso_data = new data::Dso(new data::DsoSnapshot()); 
+    _analog_data = new data::Analog(new data::AnalogSnapshot()); 
+    _group_data = new data::Group();
     _group_cnt = 0;
 
-    connect(&_feed_timer, SIGNAL(timeout()), this, SLOT(feed_timeout()));
+    _feed_timer.Stop(); 
+    _feed_timer.SetCallback(std::bind(&SigSession::feed_timeout, this)); 
 }
+
+SigSession::SigSession(SigSession &o){(void)o;}
 
 SigSession::~SigSession()
-{
-	stop_capture();
-		       
-    ds_trigger_destroy();
-
-    _dev_inst->release();
-
-	// TODO: This should not be necessary
-	_session = NULL;
-
-    if (_hotplug_handle) {
-        stop_hotplug_proc();
-        deregister_hotplug_callback();
-    }
+{ 
 }
 
-boost::shared_ptr<device::DevInst> SigSession::get_device() const
+DevInst* SigSession::get_device()
 {
     return _dev_inst;
 }
 
-void SigSession::set_device(boost::shared_ptr<device::DevInst> dev_inst)
-{
-    using pv::device::Device;
+void SigSession::deselect_device()
+{ 
+    RELEASE_ARRAY(_decode_traces);
+    RELEASE_ARRAY(_group_traces);
+    _dev_inst = NULL;
+}
 
+/*
+  when be called, it will call 4DSL lib sr_session_new, and create a session struct in the lib
+*/
+void SigSession::set_device(DevInst *dev_inst)
+{
     // Ensure we are not capturing before setting the device
-    //stop_capture();
+    
+    assert(dev_inst);
+
+     if (_dev_inst){
+        _dev_inst->dev_inst();
+     }
 
     if (_dev_inst) {
         sr_session_datafeed_callback_remove_all();
@@ -169,10 +151,9 @@ void SigSession::set_device(boost::shared_ptr<device::DevInst> dev_inst)
     }
 
     _dev_inst = dev_inst;
-#ifdef ENABLE_DECODE
-    _decode_traces.clear();
-#endif
-    _group_traces.clear();
+
+    RELEASE_ARRAY(_decode_traces);
+    RELEASE_ARRAY(_group_traces);
 
     if (_dev_inst) {
         try {
@@ -189,7 +170,7 @@ void SigSession::set_device(boost::shared_ptr<device::DevInst> dev_inst)
             return;
         }
         sr_session_datafeed_callback_add(data_feed_in_proc, NULL);
-        device_setted();
+        _callback->device_setted();
     }
 }
 
@@ -198,83 +179,86 @@ void SigSession::set_file(QString name)
 {
     // Deslect the old device, because file type detection in File::create
     // destorys the old session inside libsigrok.
+    deselect_device();
+
     try {
-        set_device(boost::shared_ptr<device::DevInst>());
-    } catch(const QString e) {
-        throw(e);
-        return;
-    }
-    try {
-        set_device(boost::shared_ptr<device::DevInst>(device::File::create(name)));
+        set_device(device::File::create(name));
     } catch(const QString e) {
         throw(e);
         return;
     }
 }
 
-void SigSession::close_file(boost::shared_ptr<pv::device::DevInst> dev_inst)
+void SigSession::close_file(DevInst *dev_inst)
 {
     assert(dev_inst);
+    assert(_device_manager);
+
     try {
         dev_inst->device_updated();
         set_repeating(false);
         stop_capture();
         capture_state_changed(SigSession::Stopped);
-        _device_manager.del_device(dev_inst);
+        _device_manager->del_device(dev_inst);
     } catch(const QString e) {
         throw(e);
         return;
     }
 }
 
-void SigSession::set_default_device(boost::function<void (const QString)> error_handler)
+void SigSession::set_default_device()
 {
-    boost::shared_ptr<pv::device::DevInst> default_device;
-    const list<boost::shared_ptr<device::DevInst> > &devices =
-        _device_manager.devices();
+    assert(_device_manager);
 
+    DevInst *default_device = NULL;
+
+    const std::list<DevInst*> &devices = _device_manager->devices();
     if (!devices.empty()) {
         // Fall back to the first device in the list.
         default_device = devices.front();
 
         // Try and find the DreamSourceLab device and select that by default
-        BOOST_FOREACH (boost::shared_ptr<pv::device::DevInst> dev, devices)
-            if (dev->dev_inst() &&
-                !dev->name().contains("virtual")) {
+        for (DevInst *dev : devices)
+            if (dev->dev_inst() && !dev->name().contains("virtual")) {
                 default_device = dev;
                 break;
             }
-        try {
+    }
+
+    if (default_device != NULL){
+           try {
             set_device(default_device);
         } catch(const QString e) {
-            error_handler(e);
+            _callback->show_error(e);
             return;
         }
     }
 }
 
-void SigSession::release_device(device::DevInst *dev_inst)
+void SigSession::release_device(DevInst *dev_inst)
 {
-    (void)dev_inst;
-    assert(_dev_inst.get() == dev_inst);
+    if (_dev_inst == NULL)
+        return;
 
+    assert(dev_inst);
+   // assert(_dev_inst == dev_inst);
     assert(get_capture_state() != Running);
-    _dev_inst = boost::shared_ptr<device::DevInst>();
-    //_dev_inst.reset();
+
+    _dev_inst =  NULL;
 }
 
-SigSession::capture_state SigSession::get_capture_state() const
-{
-    boost::lock_guard<boost::mutex> lock(_sampling_mutex);
-	return _capture_state;
+SigSession::capture_state SigSession::get_capture_state()
+{ 
+    std::lock_guard<std::mutex> lock(_sampling_mutex);
+    return _capture_state;
 }
 
-uint64_t SigSession::cur_samplelimits() const
+uint64_t SigSession::cur_samplelimits()
 {
     return _cur_samplelimits;
 }
 
-uint64_t SigSession::cur_samplerate() const
+uint64_t SigSession::cur_samplerate()
 {
     // samplerate for current viewport
     if (_dev_inst->dev_inst()->mode == DSO)
@@ -283,23 +267,23 @@ uint64_t SigSession::cur_samplerate() const
         return cur_snap_samplerate();
 }
 
-uint64_t SigSession::cur_snap_samplerate() const
+uint64_t SigSession::cur_snap_samplerate()
 {
     // samplerate for current snapshot
     return _cur_snap_samplerate;
 }
 
-double SigSession::cur_sampletime() const
+double SigSession::cur_sampletime()
 {
     return  cur_samplelimits() * 1.0 / cur_samplerate();
 }
 
-double SigSession::cur_snap_sampletime() const
+double SigSession::cur_snap_sampletime()
 {
     return  cur_samplelimits() * 1.0 / cur_snap_samplerate();
 }
 
-double SigSession::cur_view_time() const
+double SigSession::cur_view_time()
 {
     return _dev_inst->get_time_base() * DS_CONF_DSO_HDIVS * 1.0 / SR_SEC(1);
 }
@@ -320,19 +304,19 @@ void SigSession::set_cur_snap_samplerate(uint64_t samplerate)
     if (_group_data)
         _group_data->set_samplerate(_cur_snap_samplerate);
 
-#ifdef ENABLE_DECODE
+
     // DecoderStack
-    BOOST_FOREACH(const boost::shared_ptr<view::DecodeTrace> d, _decode_traces)
+    for(auto &d : _decode_traces)
         d->decoder()->set_samplerate(_cur_snap_samplerate);
-#endif
+
     // Math
     if (_math_trace && _math_trace->enabled())
         _math_trace->get_math_stack()->set_samplerate(_dev_inst->get_sample_rate());
     // SpectrumStack
-    BOOST_FOREACH(const boost::shared_ptr<view::SpectrumTrace> m, _spectrum_traces)
+    for(auto & m : _spectrum_traces)
         m->get_spectrum_stack()->set_samplerate(_cur_snap_samplerate);
 
-    cur_snap_samplerate_changed();
+    _callback->cur_snap_samplerate_changed();
 }
 
 void SigSession::set_cur_samplelimits(uint64_t samplelimits)
@@ -348,7 +332,7 @@ void SigSession::capture_init()
         set_repeating(get_run_mode() == Repetitive);
     // update instant setting
     _dev_inst->set_config(NULL, NULL, SR_CONF_INSTANT, g_variant_new_boolean(_instant));
-    update_capture();
+    _callback->update_capture();
 
     set_cur_snap_samplerate(_dev_inst->get_sample_rate());
     set_cur_samplelimits(_dev_inst->get_sample_limit());
@@ -357,10 +341,11 @@ void SigSession::capture_init()
     _trigger_flag = false;
     _trigger_ch = 0;
     _hw_replied = false;
+    
     if (_dev_inst->dev_inst()->mode != LOGIC)
-        _feed_timer.start(FeedInterval);
+        _feed_timer.Start(FeedInterval);
     else
-        _feed_timer.stop();
+        _feed_timer.Stop();
 
     _noData_cnt = 0;
     data_unlock();
@@ -369,15 +354,15 @@ void SigSession::capture_init()
     container_init();
 
     // update current hw offset
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
+    for(auto &s : _signals)
     {
         assert(s);
-        boost::shared_ptr<view::DsoSignal> dsoSig;
-        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
+        view::DsoSignal *dsoSig = NULL;
+        if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
             dsoSig->set_zero_ratio(dsoSig->get_zero_ratio());
         }
-        boost::shared_ptr<view::AnalogSignal> analogSig;
-        if ((analogSig = dynamic_pointer_cast<view::AnalogSignal>(s))) {
+        view::AnalogSignal *analogSig = NULL;
+        if ((analogSig = dynamic_cast<view::AnalogSignal*>(s))) {
             analogSig->set_zero_ratio(analogSig->get_zero_ratio());
         }
     }
@@ -402,7 +387,7 @@ void SigSession::container_init()
         _dso_data->init();
 
     // SpectrumStack
-    BOOST_FOREACH(const boost::shared_ptr<view::SpectrumTrace> m, _spectrum_traces)
+    for(auto &m : _spectrum_traces)
     {
         assert(m);
         m->get_spectrum_stack()->init();
@@ -411,22 +396,20 @@ void SigSession::container_init()
     if (_math_trace)
         _math_trace->get_math_stack()->init();
 
-#ifdef ENABLE_DECODE
+
     // DecoderModel
     //pv::data::DecoderModel *decoder_model = get_decoder_model();
     //decoder_model->setDecoderStack(NULL);
     // DecoderStack
-    BOOST_FOREACH(const boost::shared_ptr<view::DecodeTrace> d, _decode_traces)
-    {
-        assert(d);
+    for(auto &d : _decode_traces)
+    { 
         d->decoder()->init();
     }
-#endif
+
 }
 
-void SigSession::start_capture(bool instant,
-    boost::function<void (const QString)> error_handler)
-{
+void SigSession::start_capture(bool instant)
+{  
     // Check that a device instance has been selected.
     if (!_dev_inst) {
         qDebug() << "No device selected";
@@ -435,72 +418,105 @@ void SigSession::start_capture(bool instant,
     }
     assert(_dev_inst->dev_inst());
 
+    qDebug()<<"start capture, device title:"<<_dev_inst->format_device_title();
+
     if (!_dev_inst->is_usable()) {
         _error = Hw_err;
-        session_error();
+        _callback->session_error();
         capture_state_changed(SigSession::Stopped);
         return;
     }
 
     // stop previous capture
-	stop_capture();
+    stop_capture();
+
     // reset measure of dso signal
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
+    for(auto &s : _signals)
     {
-        assert(s);
-        boost::shared_ptr<view::DsoSignal> dsoSig;
-        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)))
+        view::DsoSignal *dsoSig = NULL;
+        if ((dsoSig = dynamic_cast<view::DsoSignal*>(s)))
             dsoSig->set_mValid(false);
     }
 
-    // update setting
+    // update setting 
+
     if (_dev_inst->name() != "virtual-session")
         _instant = instant;
     else
         _instant = true;
+
     capture_init();
 
-	// Check that at least one probe is enabled
-	const GSList *l;
+    // Check that at least one probe is enabled
+    const GSList *l;
     for (l = _dev_inst->dev_inst()->channels; l; l = l->next) {
         sr_channel *const probe = (sr_channel*)l->data;
-		assert(probe);
-		if (probe->enabled)
-			break;
-	}
-	if (!l) {
-		error_handler(tr("No probes enabled."));
+        assert(probe);
+        if (probe->enabled)
+            break;
+    }
+    if (!l) {
+        _callback->show_error("No probes enabled.");
         data_updated();
         set_repeating(false);
         capture_state_changed(SigSession::Stopped);
-		return;
-	}
+        return;
+    }
 
-	// Begin the session
-	_sampling_thread.reset(new boost::thread(
-        &SigSession::sample_thread_proc, this, _dev_inst,
-        error_handler));
+    if (_sampling_thread.joinable()){
+        _sampling_thread.join();
+    } 
+
+    if (sr_check_session_start_before() != 0){
+        assert(false);
+    }
+    _sampling_thread  = std::thread(&SigSession::sample_thread_proc, this, _dev_inst);
+}
+
+
+void SigSession::sample_thread_proc(DevInst *dev_inst)
+{
+    assert(dev_inst);
+    assert(dev_inst->dev_inst());
+
+    try {
+        dev_inst->start();
+    } catch(const QString e) {
+        _callback->show_error(e);
+        return;
+    }
+
+    receive_data(0);
+    set_capture_state(Running);
+     //session loop
+    dev_inst->run();
+    set_capture_state(Stopped);
+
+    // Confirm that SR_DF_END was received
+    assert(_logic_data->snapshot()->last_ended());
+    assert(_dso_data->snapshot()->last_ended());
+    assert(_analog_data->snapshot()->last_ended());
 }
 
 void SigSession::stop_capture()
 {
-    data_unlock();
-#ifdef ENABLE_DECODE
-    for (vector< boost::shared_ptr<view::DecodeTrace> >::iterator i =
-        _decode_traces.begin();
-        i != _decode_traces.end();
-        i++)
-        (*i)->decoder()->stop_decode();
-#endif
-    if (get_capture_state() != Running)
-		return;
+    do_stop_capture();
+    int dex = 0;
+    clear_all_decode_task(dex);
+}
 
-	sr_session_stop();
+void SigSession::do_stop_capture()
+{
+    data_unlock(); 
 
-	// Check that sampling stopped
-    if (_sampling_thread.get())
-        _sampling_thread->join();
-    _sampling_thread.reset();
+    if (_dev_inst){
+        _dev_inst->stop();
+    }
+
+    // Check that sampling stopped
+    if (_sampling_thread.joinable()){
+        _sampling_thread.join();
+    }
 }
 
 bool SigSession::get_capture_status(bool &triggered, int &progress)
@@ -526,23 +542,21 @@ bool SigSession::get_capture_status(bool &triggered, int &progress)
     return false;
 }
 
-vector< boost::shared_ptr<view::Signal> > SigSession::get_signals()
-{
-    //boost::lock_guard<boost::mutex> lock(_signals_mutex);
-	return _signals;
+std::vector<view::Signal*>& SigSession::get_signals()
+{ 
+    return _signals;
 }
 
-vector< boost::shared_ptr<view::GroupSignal> > SigSession::get_group_signals()
-{
-    //boost::lock_guard<boost::mutex> lock(_signals_mutex);
+std::vector<view::GroupSignal*>& SigSession::get_group_signals()
+{ 
     return _group_traces;
 }
 
-set< boost::shared_ptr<data::SignalData> > SigSession::get_data() const
-{
-    //lock_guard<mutex> lock(_signals_mutex);
-    set< boost::shared_ptr<data::SignalData> > data;
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> sig, _signals) {
+std::set<data::SignalData*> SigSession::get_data()
+{ 
+    std::set<data::SignalData*> data;
+
+    for(auto &sig : _signals) {
         assert(sig);
         data.insert(sig->data());
     }
@@ -556,43 +570,16 @@ bool SigSession::get_instant()
 }
 
 void SigSession::set_capture_state(capture_state state)
-{
-    boost::lock_guard<boost::mutex> lock(_sampling_mutex);
-	_capture_state = state;
+{ 
+    std::lock_guard<std::mutex> lock(_sampling_mutex);
+    _capture_state = state;
     data_updated();
-	capture_state_changed(state);
+    capture_state_changed(state);
 }
-
-void SigSession::sample_thread_proc(boost::shared_ptr<device::DevInst> dev_inst,
-                                    boost::function<void (const QString)> error_handler)
-{
-    assert(dev_inst);
-    assert(dev_inst->dev_inst());
-    assert(error_handler);
-
-    try {
-        dev_inst->start();
-    } catch(const QString e) {
-        error_handler(e);
-        return;
-    }
-
-    receive_data(0);
-    set_capture_state(Running);
-
-    dev_inst->run();
-
-    set_capture_state(Stopped);
-
-    // Confirm that SR_DF_END was received
-    assert(_cur_logic_snapshot->last_ended());
-    assert(_cur_dso_snapshot->last_ended());
-    assert(_cur_analog_snapshot->last_ended());
-}
-
+ 
 void SigSession::check_update()
 {
-    boost::lock_guard<boost::mutex> lock(_data_mutex);
+    ds_lock_guard lock(_data_mutex);
 
     if (_capture_state != Running)
         return;
@@ -612,37 +599,25 @@ void SigSession::add_group()
 {
     std::list<int> probe_index_list;
 
-    std::vector< boost::shared_ptr<view::Signal> >::iterator i = _signals.begin();
+    auto i = _signals.begin();
     while (i != _signals.end()) {
         if ((*i)->get_type() == SR_CHANNEL_LOGIC && (*i)->selected())
             probe_index_list.push_back((*i)->get_index());
         i++;
     }
 
-    if (probe_index_list.size() > 1) {
-        //_group_data.reset(new data::Group(_last_sample_rate));
-//        if (_group_data->get_snapshots().empty())
-//            _group_data->set_samplerate(_dev_inst->get_sample_rate());
+    if (probe_index_list.size() > 1) { 
         _group_data->init();
         _group_data->set_samplerate(_cur_snap_samplerate);
-        const boost::shared_ptr<view::GroupSignal> signal(
-                    new view::GroupSignal("New Group",
-                                          _group_data, probe_index_list, _group_cnt));
+        auto signal =  new view::GroupSignal("New Group", _group_data, probe_index_list, _group_cnt);
         _group_traces.push_back(signal);
         _group_cnt++;
 
-        const deque< boost::shared_ptr<data::LogicSnapshot> > &snapshots =
-            _logic_data->get_snapshots();
-        if (!snapshots.empty()) {
-            //if (!_cur_group_snapshot)
-            //{
-                // Create a new data snapshot
-                _cur_group_snapshot = boost::shared_ptr<data::GroupSnapshot>(
-                            new data::GroupSnapshot(snapshots.front(), signal->get_index_list()));
-                //_cur_group_snapshot->append_payload();
-                _group_data->push_snapshot(_cur_group_snapshot);
-                _cur_group_snapshot.reset();
-            //}
+        const auto &snapshots = _logic_data->get_snapshots();
+        if (!snapshots.empty())
+        { 
+             auto p = new data::GroupSnapshot(snapshots.front(), signal->get_index_list());
+            _group_data->push_snapshot(p); 
         }
 
         signals_changed();
@@ -652,25 +627,33 @@ void SigSession::add_group()
 
 void SigSession::del_group()
 {
-    std::vector< boost::shared_ptr<view::GroupSignal> >::iterator i = _group_traces.begin();
-    while (i != _group_traces.end()) {
-        if ((*i)->selected()) {
-            std::vector< boost::shared_ptr<view::GroupSignal> >::iterator j = _group_traces.begin();
+    auto i = _group_traces.begin();
+
+    while (i != _group_traces.end()) { 
+        
+        pv::view::GroupSignal *psig = *(i);
+
+        if (psig->selected()) {
+            auto j = _group_traces.begin();
             while(j != _group_traces.end()) {
-                if ((*j)->get_sec_index() > (*i)->get_sec_index())
+                if ((*j)->get_sec_index() > psig->get_sec_index())
                     (*j)->set_sec_index((*j)->get_sec_index() - 1);
                 j++;
             }
 
-            std::deque< boost::shared_ptr<data::GroupSnapshot> > &snapshots = _group_data->get_snapshots();
+            auto &snapshots = _group_data->get_snapshots();
             if (!snapshots.empty()) {
-                _group_data->get_snapshots().at((*i)->get_sec_index()).reset();
-                std::deque< boost::shared_ptr<data::GroupSnapshot> >::iterator k = snapshots.begin();
+                int dex = psig->get_sec_index();
+                pv::data::GroupSnapshot *pshot =  _group_data->get_snapshots().at(dex);
+                delete pshot;      
+                 
+                auto k = snapshots.begin();
                 k += (*i)->get_sec_index();
                 _group_data->get_snapshots().erase(k);
             }
+             
+            delete psig;
 
-            (*i).reset();
             i = _group_traces.erase(i);
 
             _group_cnt--;
@@ -688,8 +671,8 @@ void SigSession::init_signals()
     assert(_dev_inst);
     stop_capture();
 
-    vector< boost::shared_ptr<view::Signal> > sigs;
-    boost::shared_ptr<view::Signal> signal;
+    std::vector<view::Signal*> sigs;
+    view::Signal *signal = NULL;
     unsigned int logic_probe_count = 0;
     unsigned int dso_probe_count = 0;
     unsigned int analog_probe_count = 0;
@@ -703,10 +686,9 @@ void SigSession::init_signals()
     if (_group_data)
         _group_data->clear();
 
-#ifdef ENABLE_DECODE
-    // Clear the decode traces
-    _decode_traces.clear();
-#endif
+
+    // Clear the decode traces 
+    RELEASE_ARRAY(_decode_traces);
 
     // Detect what data types we will receive
     if(_dev_inst) {
@@ -733,47 +715,45 @@ void SigSession::init_signals()
         }
     }
 
-    // Make the logic probe list
+    // Make the logic probe list 
+    RELEASE_ARRAY(_group_traces);
+
+    std::vector<view::GroupSignal *>().swap(_group_traces);
+
+    for (GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next)
     {
-        _group_traces.clear();
-        vector< boost::shared_ptr<view::GroupSignal> >().swap(_group_traces);
+        sr_channel *probe =
+            (sr_channel *)l->data;
+        assert(probe);
+        signal = NULL;
 
-        for (GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next) {
-            sr_channel *probe =
-                ( sr_channel *)l->data;
-            assert(probe);
-            signal.reset();
-            switch(probe->type) {
-            case SR_CHANNEL_LOGIC:
-                if (probe->enabled)
-                    signal = boost::shared_ptr<view::Signal>(
-                        new view::LogicSignal(_dev_inst, _logic_data, probe));
-                break;
+        switch (probe->type)
+        {
+        case SR_CHANNEL_LOGIC:
+            if (probe->enabled)
+                signal = new view::LogicSignal(_dev_inst, _logic_data, probe);
+            break;
 
-            case SR_CHANNEL_DSO:
-                signal = boost::shared_ptr<view::Signal>(
-                    new view::DsoSignal(_dev_inst, _dso_data, probe));
-                break;
+        case SR_CHANNEL_DSO:
+            signal = new view::DsoSignal(_dev_inst, _dso_data, probe);
+            break;
 
-            case SR_CHANNEL_ANALOG:
-                if (probe->enabled)
-                    signal = boost::shared_ptr<view::Signal>(
-                        new view::AnalogSignal(_dev_inst, _analog_data, probe));
-                break;
-            }
-            if(signal.get())
-                sigs.push_back(signal);
+        case SR_CHANNEL_ANALOG:
+            if (probe->enabled)
+                signal = new view::AnalogSignal(_dev_inst, _analog_data, probe);
+            break;
         }
-
-        _signals.clear();
-        vector< boost::shared_ptr<view::Signal> >().swap(_signals);
-        _signals = sigs;
+        if (signal != NULL)
+            sigs.push_back(signal);
     }
+
+    RELEASE_ARRAY(_signals);
+    std::vector<view::Signal *>().swap(_signals);
+    _signals = sigs;
 
     spectrum_rebuild();
     lissajous_disable();
     math_disable();
-    //data_updated();
 }
 
 void SigSession::reload()
@@ -783,70 +763,72 @@ void SigSession::reload()
     if (_capture_state == Running)
         stop_capture();
 
-    //refresh(0);
-    vector< boost::shared_ptr<view::Signal> > sigs;
-    boost::shared_ptr<view::Signal> signal;
+    std::vector<view::Signal*> sigs;
+    view::Signal *signal = NULL;
 
     // Make the logic probe list
+    for (GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next)
     {
-        for (GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next) {
-            sr_channel *probe =
-                (sr_channel *)l->data;
-            assert(probe);
-            signal.reset();
-            switch(probe->type) {
-            case SR_CHANNEL_LOGIC:
-                if (probe->enabled) {
-                    std::vector< boost::shared_ptr<view::Signal> >::iterator i = _signals.begin();
-                    while (i != _signals.end()) {
-                        if ((*i)->get_index() == probe->index) {
-                            boost::shared_ptr<view::LogicSignal> logicSig;
-                            if ((logicSig = dynamic_pointer_cast<view::LogicSignal>(*i)))
-                                signal = boost::shared_ptr<view::Signal>(
-                                    new view::LogicSignal(logicSig, _logic_data, probe));
-                            break;
-                        }
-                        i++;
-                    }
-                    if (!signal.get())
-                        signal = boost::shared_ptr<view::Signal>(
-                            new view::LogicSignal(_dev_inst, _logic_data, probe));
-                }
-                break;
+        sr_channel *probe =
+            (sr_channel *)l->data;
+        assert(probe);
+        signal = NULL;
 
-//            case SR_CHANNEL_DSO:
-//                signal = boost::shared_ptr<view::Signal>(
-//                    new view::DsoSignal(_dev_inst,_dso_data, probe));
-//                break;
-
-            case SR_CHANNEL_ANALOG:
-                if (probe->enabled) {
-                    std::vector< boost::shared_ptr<view::Signal> >::iterator i = _signals.begin();
-                    while (i != _signals.end()) {
-                        if ((*i)->get_index() == probe->index) {
-                            boost::shared_ptr<view::AnalogSignal> analogSig;
-                            if ((analogSig = dynamic_pointer_cast<view::AnalogSignal>(*i)))
-                                signal = boost::shared_ptr<view::Signal>(
-                                    new view::AnalogSignal(analogSig, _analog_data, probe));
-                            break;
-                        }
-                        i++;
+        switch (probe->type)
+        {
+        case SR_CHANNEL_LOGIC:
+            if (probe->enabled)
+            {
+                auto i = _signals.begin();
+                while (i != _signals.end())
+                {
+                    if ((*i)->get_index() == probe->index)
+                    {
+                        view::LogicSignal *logicSig = NULL;
+                        if ((logicSig = dynamic_cast<view::LogicSignal *>(*i)))
+                            signal = new view::LogicSignal(logicSig, _logic_data, probe);
+                        break;
                     }
-                    if (!signal.get())
-                        signal = boost::shared_ptr<view::Signal>(
-                            new view::AnalogSignal(_dev_inst, _analog_data, probe));
+                    i++;
                 }
-                break;
+                if (signal == NULL)
+                {
+                    signal = new view::LogicSignal(_dev_inst, _logic_data, probe);
+                }
             }
-            if (signal.get())
-                sigs.push_back(signal);
-        }
+            break;
 
-        if (!sigs.empty()) {
-            _signals.clear();
-            vector< boost::shared_ptr<view::Signal> >().swap(_signals);
-            _signals = sigs;
+        case SR_CHANNEL_ANALOG:
+            if (probe->enabled)
+            {
+                auto i = _signals.begin();
+                while (i != _signals.end())
+                {
+                    if ((*i)->get_index() == probe->index)
+                    {
+                        view::AnalogSignal *analogSig = NULL;
+                        if ((analogSig = dynamic_cast<view::AnalogSignal *>(*i)))
+                            signal = new view::AnalogSignal(analogSig, _analog_data, probe);
+                        break;
+                    }
+                    i++;
+                }
+                if (signal == NULL)
+                {
+                    signal = new view::AnalogSignal(_dev_inst, _analog_data, probe);
+                }
+            }
+            break;
         }
+        if (signal != NULL)
+            sigs.push_back(signal);
+    }
+
+    if (!sigs.empty())
+    {
+        RELEASE_ARRAY(_signals);
+        std::vector<view::Signal *>().swap(_signals);
+        _signals = sigs;
     }
 
     spectrum_rebuild();
@@ -854,39 +836,37 @@ void SigSession::reload()
 
 void SigSession::refresh(int holdtime)
 {
-    boost::lock_guard<boost::mutex> lock(_data_mutex);
+    ds_lock_guard lock(_data_mutex);
 
     data_lock();
 
     if (_logic_data) {
-        _logic_data->init();
-        //_cur_logic_snapshot.reset();
-#ifdef ENABLE_DECODE
-        BOOST_FOREACH(const boost::shared_ptr<view::DecodeTrace> d, _decode_traces)
-        {
-            assert(d);
+        _logic_data->init(); 
+
+        for(auto &d : _decode_traces)
+        { 
             d->decoder()->init();
         }
-#endif
     }
+
     if (_dso_data) {
         _dso_data->init();
         // SpectrumStack
-        BOOST_FOREACH(const boost::shared_ptr<view::SpectrumTrace> m, _spectrum_traces)
+        for(auto &m : _spectrum_traces)
         {
             assert(m);
             m->get_spectrum_stack()->init();
         }
+
         if (_math_trace)
             _math_trace->get_math_stack()->init();
     }
-    if (_analog_data) {
-        _analog_data->init();
-        //_cur_analog_snapshot.reset();
-    }
 
-    QTimer::singleShot(holdtime, this, SLOT(feed_timeout()));
-    //data_updated();
+    if (_analog_data) {
+        _analog_data->init(); 
+    }
+ 
+    _out_timer.TimeOut(holdtime, std::bind(&SigSession::feed_timeout, this));
     _data_updated = true;
 }
 
@@ -924,26 +904,26 @@ void SigSession::feed_in_header(const sr_dev_inst *sdi)
 {
     (void)sdi;
     _trigger_pos = 0;
-    receive_header();
+   _callback->receive_header();
 }
 
 void SigSession::feed_in_meta(const sr_dev_inst *sdi,
     const sr_datafeed_meta &meta)
 {
-	(void)sdi;
+    (void)sdi;
 
-	for (const GSList *l = meta.config; l; l = l->next) {
+    for (const GSList *l = meta.config; l; l = l->next) {
         const sr_config *const src = (const sr_config*)l->data;
-		switch (src->key) {
-		case SR_CONF_SAMPLERATE:
-			/// @todo handle samplerate changes
-			/// samplerate = (uint64_t *)src->value;
-			break;
-		default:
-			// Unknown metadata is not an error.
-			break;
-		}
-	}
+        switch (src->key) {
+        case SR_CONF_SAMPLERATE:
+            /// @todo handle samplerate changes
+            /// samplerate = (uint64_t *)src->value;
+            break;
+        default:
+            // Unknown metadata is not an error.
+            break;
+        }
+    }
 }
 
 void SigSession::feed_in_trigger(const ds_trigger_pos &trigger_pos)
@@ -953,7 +933,7 @@ void SigSession::feed_in_trigger(const ds_trigger_pos &trigger_pos)
         _trigger_flag = (trigger_pos.status & 0x01);
         if (_trigger_flag) {
             _trigger_pos = trigger_pos.real_pos;
-            receive_trigger(_trigger_pos);
+            _callback->receive_trigger(_trigger_pos);
         }
     } else {
         int probe_count = 0;
@@ -968,106 +948,97 @@ void SigSession::feed_in_trigger(const ds_trigger_pos &trigger_pos)
             }
         }
         _trigger_pos = trigger_pos.real_pos * probe_count / probe_en_count;
-        receive_trigger(_trigger_pos);
+        _callback->receive_trigger(_trigger_pos);
     }
 }
 
 void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
-{
-    //boost::lock_guard<boost::mutex> lock(_data_mutex);
-    if (!_logic_data || _cur_logic_snapshot->memory_failed()) {
-		qDebug() << "Unexpected logic packet";
-		return;
-	}
+{ 
+    if (!_logic_data || _logic_data->snapshot()->memory_failed()) {
+        qDebug() << "Unexpected logic packet";
+        return;
+    }
 
     if (logic.data_error == 1) {
         _error = Test_data_err;
         _error_pattern = logic.error_pattern;
-        session_error();
+        _callback->session_error();
     }
 
-    if (_cur_logic_snapshot->last_ended()) {
-        _cur_logic_snapshot->first_payload(logic, _dev_inst->get_sample_limit(), _dev_inst->dev_inst()->channels);
+    if (_logic_data->snapshot()->last_ended()) {
+        _logic_data->snapshot()->first_payload(logic, _dev_inst->get_sample_limit(), _dev_inst->dev_inst()->channels);
         // @todo Putting this here means that only listeners querying
         // for logic will be notified. Currently the only user of
         // frame_began is DecoderStack, but in future we need to signal
         // this after both analog and logic sweeps have begun.
-        frame_began();
+        _callback->frame_began();
     } else {
-		// Append to the existing data snapshot
-        _cur_logic_snapshot->append_payload(logic);
+        // Append to the existing data snapshot
+        _logic_data->snapshot()->append_payload(logic);
     }
 
-    if (_cur_logic_snapshot->memory_failed()) {
+    if (_logic_data->snapshot()->memory_failed()) {
         _error = Malloc_err;
-        session_error();
+        _callback->session_error();
         return;
     }
 
-    emit receive_data(logic.length * 8 / get_ch_num(SR_CHANNEL_LOGIC));
-    data_received();
-    //data_updated();
+    receive_data(logic.length * 8 / get_ch_num(SR_CHANNEL_LOGIC));
+    
+    _callback->data_received(); 
+    
     _data_updated = true;
 }
 
 void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
-{
-    //boost::lock_guard<boost::mutex> lock(_data_mutex);
-
-    if(!_dso_data || _cur_dso_snapshot->memory_failed())
+{  
+    if(!_dso_data || _dso_data->snapshot()->memory_failed())
     {
         qDebug() << "Unexpected dso packet";
         return;	// This dso packet was not expected.
     }
 
-    if (_cur_dso_snapshot->last_ended())
+    if (_dso_data->snapshot()->last_ended())
     {
         std::map<int, bool> sig_enable;
         // reset scale of dso signal
-        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
+        for(auto &s : _signals)
         {
             assert(s);
-            boost::shared_ptr<view::DsoSignal> dsoSig;
-            if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
+            view::DsoSignal *dsoSig = NULL;
+            if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
                 dsoSig->set_scale(dsoSig->get_view_rect().height());
                 sig_enable[dsoSig->get_index()] = dsoSig->enabled();
             }
         }
 
         // first payload
-        _cur_dso_snapshot->first_payload(dso, _dev_inst->get_sample_limit(), sig_enable, _instant);
+        _dso_data->snapshot()->first_payload(dso, _dev_inst->get_sample_limit(), sig_enable, _instant);
     } else {
         // Append to the existing data snapshot
-        _cur_dso_snapshot->append_payload(dso);
+        _dso_data->snapshot()->append_payload(dso);
     }
 
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals) {
-        boost::shared_ptr<view::DsoSignal> dsoSig;
-        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)) && (dsoSig->enabled()))
+    for(auto &s : _signals) {
+        view::DsoSignal *dsoSig = NULL;
+        if ((dsoSig = dynamic_cast<view::DsoSignal*>(s)) && (dsoSig->enabled()))
             dsoSig->paint_prepare();
     }
 
     if (dso.num_samples != 0) {
         // update current sample rate
         set_cur_snap_samplerate(_dev_inst->get_sample_rate());
-//        // reset measure of dso signal
-//        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
-//        {
-//            assert(s);
-//            boost::shared_ptr<view::DsoSignal> dsoSig;
-//            if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s)))
-//                dsoSig->set_mValid(false);
-//        }
+ 
     }
 
-    if (_cur_dso_snapshot->memory_failed()) {
+    if (_dso_data->snapshot()->memory_failed()) {
         _error = Malloc_err;
-        session_error();
+        _callback->session_error();
         return;
     }
 
     // calculate related spectrum results
-    BOOST_FOREACH(const boost::shared_ptr<view::SpectrumTrace> m, _spectrum_traces)
+    for(auto &m : _spectrum_traces)
     {
         assert(m);
         if (m->enabled())
@@ -1086,153 +1057,155 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
 
     if (!_instant)
         data_lock();
+
     _data_updated = true;
 }
 
 void SigSession::feed_in_analog(const sr_datafeed_analog &analog)
-{
-    //boost::lock_guard<boost::mutex> lock(_data_mutex);
+{ 
 
-    if(!_analog_data || _cur_analog_snapshot->memory_failed())
-	{
-		qDebug() << "Unexpected analog packet";
-		return;	// This analog packet was not expected.
-	}
+    if(!_analog_data || _analog_data->snapshot()->memory_failed())
+    {
+        qDebug() << "Unexpected analog packet";
+        return;	// This analog packet was not expected.
+    }
 
-    if (_cur_analog_snapshot->last_ended())
-	{
+    if (_analog_data->snapshot()->last_ended())
+    {
         // reset scale of analog signal
-        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
+        for(auto &s : _signals)
         {
             assert(s);
-            boost::shared_ptr<view::AnalogSignal> analogSig;
-            if ((analogSig = dynamic_pointer_cast<view::AnalogSignal>(s))) {
+            view::AnalogSignal *analogSig = NULL;
+            if ((analogSig = dynamic_cast<view::AnalogSignal*>(s))) {
                 analogSig->set_scale(analogSig->get_totalHeight());
             }
         }
 
         // first payload
-        _cur_analog_snapshot->first_payload(analog, _dev_inst->get_sample_limit(), _dev_inst->dev_inst()->channels);
+        _analog_data->snapshot()->first_payload(analog, _dev_inst->get_sample_limit(), _dev_inst->dev_inst()->channels);
     } else {
-		// Append to the existing data snapshot
-		_cur_analog_snapshot->append_payload(analog);
+        // Append to the existing data snapshot
+        _analog_data->snapshot()->append_payload(analog);
     }
 
-    if (_cur_analog_snapshot->memory_failed()) {
+    if (_analog_data->snapshot()->memory_failed()) {
         _error = Malloc_err;
-        session_error();
+        _callback->session_error();
         return;
     }
 
     receive_data(analog.num_samples);
-    //data_updated();
     _data_updated = true;
 }
-
+  
 void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
     const struct sr_datafeed_packet *packet)
 {
-	assert(sdi);
-	assert(packet);
-
-    boost::lock_guard<boost::mutex> lock(_data_mutex);
-
+    assert(sdi);
+    assert(packet);
+   
+    ds_lock_guard lock(_data_mutex);
+  
     if (_data_lock && packet->type != SR_DF_END)
         return;
+  
     if (packet->type != SR_DF_END &&
         packet->status != SR_PKT_OK) {
         _error = Pkt_data_err;
-        session_error();
+        _callback->session_error();
         return;
     }
 
-	switch (packet->type) {
-	case SR_DF_HEADER:
-		feed_in_header(sdi);
-		break;
+    switch (packet->type) {
+    case SR_DF_HEADER:
+        feed_in_header(sdi);
+        break;
 
-	case SR_DF_META:
-		assert(packet->payload);
-		feed_in_meta(sdi,
+    case SR_DF_META:
+        assert(packet->payload);
+        feed_in_meta(sdi,
             *(const sr_datafeed_meta*)packet->payload);
-		break;
+        break;
 
     case SR_DF_TRIGGER:
         assert(packet->payload);
         feed_in_trigger(*(const ds_trigger_pos*)packet->payload);
         break;
 
-	case SR_DF_LOGIC:
-		assert(packet->payload);
+    case SR_DF_LOGIC:
+        assert(packet->payload);
         feed_in_logic(*(const sr_datafeed_logic*)packet->payload);
-		break;
+        break;
 
     case SR_DF_DSO:
         assert(packet->payload);
         feed_in_dso(*(const sr_datafeed_dso*)packet->payload);
         break;
 
-	case SR_DF_ANALOG:
-		assert(packet->payload);
+    case SR_DF_ANALOG:
+        assert(packet->payload);
         feed_in_analog(*(const sr_datafeed_analog*)packet->payload);
-		break;
+        break;
 
     case SR_DF_OVERFLOW:
     {
         if (_error == No_err) {
             _error = Data_overflow;
-            session_error();
+            _callback->session_error();
         }
         break;
     }
-	case SR_DF_END:
-	{
-		{
-            //boost::lock_guard<boost::mutex> lock(_data_mutex);
-            if (!_cur_logic_snapshot->empty()) {
-                BOOST_FOREACH(const boost::shared_ptr<view::GroupSignal> g, _group_traces)
-                {
-                    assert(g);
+    case SR_DF_END:
+    { 
+        if (!_logic_data->snapshot()->empty())
+        {
+            for (auto &g : _group_traces)
+            {
+                assert(g);
 
-                    _cur_group_snapshot = boost::shared_ptr<data::GroupSnapshot>(
-                                new data::GroupSnapshot(_logic_data->get_snapshots().front(), g->get_index_list()));
-                    _group_data->push_snapshot(_cur_group_snapshot);
-                    _cur_group_snapshot.reset();
-                }
+                auto p = new data::GroupSnapshot(_logic_data->get_snapshots().front(), g->get_index_list());
+                _group_data->push_snapshot(p);
             }
-            _cur_logic_snapshot->capture_ended();
-            _cur_dso_snapshot->capture_ended();
-            _cur_analog_snapshot->capture_ended();
-#ifdef ENABLE_DECODE
-            BOOST_FOREACH(const boost::shared_ptr<view::DecodeTrace> d, _decode_traces)
-                d->frame_ended();
-#endif
-		}
+        }
+        _logic_data->snapshot()->capture_ended();
+        _dso_data->snapshot()->capture_ended();
+        _analog_data->snapshot()->capture_ended();
+
+        for (auto trace : _decode_traces){
+            trace->decoder()->frame_ended();
+            trace->frame_ended();
+            add_decode_task(trace);
+        } 
 
         if (packet->status != SR_PKT_OK) {
             _error = Pkt_data_err;
-            session_error();
+            _callback->session_error();
         }
-        frame_ended();
-        if (get_device()->dev_inst()->mode != LOGIC)
-            set_session_time(QDateTime::currentDateTime());
-		break;
-	}
-	}
+
+        _callback->frame_ended();
+
+        if (get_device()->dev_inst()->mode != LOGIC){
+             set_session_time(QDateTime::currentDateTime());
+        }
+           
+        break;
+    }
+    }
 }
 
 void SigSession::data_feed_in_proc(const struct sr_dev_inst *sdi,
     const struct sr_datafeed_packet *packet, void *cb_data)
 {
-	(void) cb_data;
-	assert(_session);
-	_session->data_feed_in(sdi, packet);
+    (void) cb_data;
+    assert(_session);
+    _session->data_feed_in(sdi, packet);
 }
 
 /*
  * hotplug function
  */
-int SigSession::hotplug_callback(struct libusb_context *ctx, struct libusb_device *dev, 
+int SigSession::hotplug_callback(struct libusb_context *ctx, struct libusb_device *dev,
                                   libusb_hotplug_event event, void *user_data) {
 
     (void)ctx;
@@ -1252,48 +1225,50 @@ int SigSession::hotplug_callback(struct libusb_context *ctx, struct libusb_devic
     return 0;
 }
 
-void SigSession::hotplug_proc(boost::function<void (const QString)> error_handler)
+void SigSession::hotplug_proc()
 {
-    struct timeval tv;
-
-    (void)error_handler;
+    struct timeval tv; 
 
     if (!_dev_inst)
         return;
 
     tv.tv_sec = tv.tv_usec = 0;
     try {
-        while(_session) {
+        while(_session && !_bHotplugStop) {
             libusb_handle_events_timeout(NULL, &tv);
             if (_hot_attach) {
                 qDebug("DreamSourceLab hardware attached!");
-                device_attach();
+                _callback->device_attach();
                 _hot_attach = false;
             }
             if (_hot_detach) {
                 qDebug("DreamSourceLab hardware detached!");
-                device_detach();
+                _callback->device_detach();
                 _hot_detach = false;
             }
-            boost::this_thread::sleep(boost::posix_time::millisec(100));
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     } catch(...) {
         qDebug("Interrupt exception for hotplug thread was thrown.");
     }
-    qDebug("Hotplug thread exit!");
+   // qDebug("Hotplug thread exit!");
 }
 
 void SigSession::register_hotplug_callback()
 {
     int ret;
 
-    ret = libusb_hotplug_register_callback(NULL, (libusb_hotplug_event)(LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED |
-                                           LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT), 
-                                           (libusb_hotplug_flag)LIBUSB_HOTPLUG_ENUMERATE, 0x2A0E, LIBUSB_HOTPLUG_MATCH_ANY,
-                                           LIBUSB_HOTPLUG_MATCH_ANY, hotplug_callback, NULL,
+    ret = libusb_hotplug_register_callback(NULL,
+                                           (libusb_hotplug_event)(LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED | LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT),
+                                           (libusb_hotplug_flag)LIBUSB_HOTPLUG_ENUMERATE,
+                                           0x2A0E,
+                                           LIBUSB_HOTPLUG_MATCH_ANY,
+                                           LIBUSB_HOTPLUG_MATCH_ANY, 
+                                           hotplug_callback,
+                                           NULL,
                                            &_hotplug_handle);
     if (LIBUSB_SUCCESS != ret){
-	qDebug() << "Error creating a hotplug callback\n";
+        qDebug() << "Error creating a hotplug callback,code:"<<ret;
     }
 }
 
@@ -1302,25 +1277,25 @@ void SigSession::deregister_hotplug_callback()
     libusb_hotplug_deregister_callback(NULL, _hotplug_handle);
 }
 
-void SigSession::start_hotplug_proc(boost::function<void (const QString)> error_handler)
-{
-
+void SigSession::start_hotplug_work()
+{ 
     // Begin the session
-    qDebug() << "Starting a hotplug thread...\n";
+   // qDebug() << "Starting a hotplug thread...\n";
     _hot_attach = false;
     _hot_detach = false;
-    _hotplug.reset(new boost::thread(
-        &SigSession::hotplug_proc, this, error_handler));
 
+    if (_hotplug_thread.joinable()){
+        return;
+    } 
+    _hotplug_thread =  std::thread(&SigSession::hotplug_proc, this);
 }
 
-void SigSession::stop_hotplug_proc()
-{
-    if (_hotplug.get()) {
-        _hotplug->interrupt();
-        _hotplug->join();
-    }
-    _hotplug.reset();
+void SigSession::stop_hotplug_work()
+{  
+    _bHotplugStop = true;
+     if (_hotplug_thread.joinable()){
+        _hotplug_thread.join();
+    } 
 }
 
 uint16_t SigSession::get_ch_num(int type)
@@ -1329,20 +1304,18 @@ uint16_t SigSession::get_ch_num(int type)
     uint16_t logic_ch_num = 0;
     uint16_t dso_ch_num = 0;
     uint16_t analog_ch_num = 0;
+
     if (_dev_inst->dev_inst()) {
-        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals)
+        for(auto &s : _signals)
         {
             assert(s);
-            if (dynamic_pointer_cast<view::LogicSignal>(s) && s->enabled()) {
-            //if (dynamic_pointer_cast<view::LogicSignal>(s)) {
+            if (dynamic_cast<view::LogicSignal*>(s) && s->enabled()) {
                     logic_ch_num++;
             }
-            if (dynamic_pointer_cast<view::DsoSignal>(s) && s->enabled()) {
-            //if (dynamic_pointer_cast<view::DsoSignal>(s)) {
+            if (dynamic_cast<view::DsoSignal*>(s) && s->enabled()) {
                     dso_ch_num++;
             }
-            if (dynamic_pointer_cast<view::AnalogSignal>(s) && s->enabled()) {
-            //if (dynamic_pointer_cast<view::AnalogSignal>(s)) {
+            if (dynamic_cast<view::AnalogSignal*>(s) && s->enabled()) {
                     analog_ch_num++;
             }
         }
@@ -1362,186 +1335,151 @@ uint16_t SigSession::get_ch_num(int type)
     return num_channels;
 }
 
-#ifdef ENABLE_DECODE
-bool SigSession::add_decoder(srd_decoder *const dec, bool silent)
-{
-    bool ret = false;
-    map<const srd_channel*, int> probes;
-    boost::shared_ptr<data::DecoderStack> decoder_stack;
+bool SigSession::add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus){
+    return do_add_decoder(dec, silent, dstatus);
+}
 
-    try {
-        //lock_guard<mutex> lock(_signals_mutex);
+bool SigSession::do_add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus)
+{     
+    try { 
+
+        bool ret = false;
 
         // Create the decoder
-        decoder_stack = boost::shared_ptr<data::DecoderStack>(
-            new data::DecoderStack(*this, dec));
+        std::map<const srd_channel*, int> probes; 
+        data::DecoderStack *decoder_stack = new data::DecoderStack(this, dec, dstatus);
+        assert(decoder_stack);
 
         // Make a list of all the probes
         std::vector<const srd_channel*> all_probes;
         for(const GSList *i = dec->channels; i; i = i->next)
             all_probes.push_back((const srd_channel*)i->data);
+
         for(const GSList *i = dec->opt_channels; i; i = i->next)
             all_probes.push_back((const srd_channel*)i->data);
-
-        assert(decoder_stack);
-        assert(!decoder_stack->stack().empty());
-        assert(decoder_stack->stack().front());
+ 
         decoder_stack->stack().front()->set_probes(probes);
 
         // Create the decode signal
-        boost::shared_ptr<view::DecodeTrace> d(
-            new view::DecodeTrace(*this, decoder_stack,
-                _decode_traces.size()));
+        view::DecodeTrace *trace = new view::DecodeTrace(this, decoder_stack, _decode_traces.size());
+        assert(trace);
+
         // set view early for decode start/end region setting
-        BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals) {
+        for(auto &s : _signals) {
             if (s->get_view()) {
-                d->set_view(s->get_view());
+                trace->set_view(s->get_view());
                 break;
             }
         }
-        if (silent) {
-            _decode_traces.push_back(d);
+        if (silent) { 
             ret = true;
-        } else if (d->create_popup()) {
-            _decode_traces.push_back(d);
+        } else if (trace->create_popup()) { 
             ret = true;
         }
-    } catch(const std::runtime_error &e) {
-        return false;
-    }
 
-    if (ret) {
-        signals_changed();
-        // Do an initial decode
-        decoder_stack->begin_decode();
-        data_updated();
-    }
+        if (ret)
+        {
+           _decode_traces.push_back(trace);
+            add_decode_task(trace);
+            signals_changed();
+            data_updated();
+        }
+        else
+        {
+            delete trace;
+        }
 
-    return ret;
+        return ret;
+
+    } catch(...) {
+         ds_debug("Starting a hotplug thread...\n");
+    }
+ 
+    return false;
 }
-
-vector< boost::shared_ptr<view::DecodeTrace> > SigSession::get_decode_signals() const
-{
-    //lock_guard<mutex> lock(_signals_mutex);
+ 
+std::vector<view::DecodeTrace*>& SigSession::get_decode_signals()
+{ 
     return _decode_traces;
 }
 
-void SigSession::remove_decode_signal(view::DecodeTrace *signal)
+void SigSession::remove_decoder(int index)
 {
-    for (vector< boost::shared_ptr<view::DecodeTrace> >::iterator i =
-        _decode_traces.begin();
-        i != _decode_traces.end();
-        i++)
-        if ((*i).get() == signal)
-        {
-            _decode_traces.erase(i);
-            signals_changed();
-            return;
-        }
-}
+    int size = (int)_decode_traces.size();
+    assert(index < size);
 
-void SigSession::remove_decode_signal(int index)
-{
-    int cur_index = 0;
-    for (vector< boost::shared_ptr<view::DecodeTrace> >::iterator i =
-        _decode_traces.begin();
-        i != _decode_traces.end();
-        i++)
-    {
-        if (cur_index == index)
-        {
-            _decode_traces.erase(i);
-            signals_changed();
-            return;
-        }
-        cur_index++;
+    auto it = _decode_traces.begin() + index;
+    auto trace = (*it);
+    _decode_traces.erase(it);
+
+    bool isRunning = trace->decoder()->IsRunning();
+
+    remove_decode_task(trace);
+
+    if (isRunning){
+        //destroy it in thread
+        trace->_delete_flag = true;
     }
+    else{
+        delete trace;
+        signals_changed();
+    } 
 }
 
 void SigSession::rst_decoder(int index)
 {
-    int cur_index = 0;
-    for (vector< boost::shared_ptr<view::DecodeTrace> >::iterator i =
-        _decode_traces.begin();
-        i != _decode_traces.end();
-        i++)
-    {
-        if (cur_index == index)
-        {
-            if ((*i)->create_popup())
-            {
-                (*i)->decoder()->stop_decode();
-                (*i)->decoder()->begin_decode();
-                data_updated();
-            }
-            return;
-        }
-        cur_index++;
+     auto trace = get_decoder_trace(index);
+    
+    if (trace && trace->create_popup() ){
+        remove_decode_task(trace); //remove old task
+        add_decode_task(trace);
+        data_updated();
     }
 }
-
-void SigSession::rst_decoder(view::DecodeTrace *signal)
-{
-    for (vector< boost::shared_ptr<view::DecodeTrace> >::iterator i =
-        _decode_traces.begin();
-        i != _decode_traces.end();
-        i++)
-        if ((*i).get() == signal)
-        {
-            if ((*i)->create_popup())
-            {
-                (*i)->decoder()->stop_decode();
-                (*i)->decoder()->begin_decode();
-                data_updated();
-            }
-            return;
-        }
-}
-
-pv::data::DecoderModel* SigSession::get_decoder_model() const
+  
+pv::data::DecoderModel* SigSession::get_decoder_model()
 {
     return _decoder_model;
 }
-#endif
+
 
 void SigSession::spectrum_rebuild()
 {
     bool has_dso_signal = false;
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals) {
-        boost::shared_ptr<view::DsoSignal> dsoSig;
-        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
+    for(auto &s : _signals) {
+        view::DsoSignal *dsoSig = NULL;
+        if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
             has_dso_signal = true;
             // check already have
-            std::vector< boost::shared_ptr<view::SpectrumTrace> >::iterator iter = _spectrum_traces.begin();
+            auto iter = _spectrum_traces.begin();
             for(unsigned int i = 0; i < _spectrum_traces.size(); i++, iter++)
                 if ((*iter)->get_index() == dsoSig->get_index())
                     break;
             // if not, rebuild
             if (iter == _spectrum_traces.end()) {
-                boost::shared_ptr<data::SpectrumStack> spectrum_stack(
-                    new data::SpectrumStack(*this, dsoSig->get_index()));
-                boost::shared_ptr<view::SpectrumTrace> spectrum_trace(
-                    new view::SpectrumTrace(*this, spectrum_stack, dsoSig->get_index()));
+                auto spectrum_stack = new data::SpectrumStack(this, dsoSig->get_index());
+                auto spectrum_trace = new view::SpectrumTrace(this, spectrum_stack, dsoSig->get_index());
                 _spectrum_traces.push_back(spectrum_trace);
             }
         }
     }
 
-    if (!has_dso_signal)
-        _spectrum_traces.clear();
+    if (!has_dso_signal){
+        RELEASE_ARRAY(_spectrum_traces);
+    }      
 
     signals_changed();
 }
 
-vector< boost::shared_ptr<view::SpectrumTrace> > SigSession::get_spectrum_traces()
-{
-    //lock_guard<mutex> lock(_signals_mutex);
+std::vector<view::SpectrumTrace*>& SigSession::get_spectrum_traces()
+{ 
     return _spectrum_traces;
 }
 
 void SigSession::lissajous_rebuild(bool enable, int xindex, int yindex, double percent)
 {
-    _lissajous_trace.reset(new view::LissajousTrace(enable, _dso_data, xindex, yindex, percent));
+    DESTROY_OBJECT(_lissajous_trace);
+    _lissajous_trace = new view::LissajousTrace(enable, _dso_data, xindex, yindex, percent);
     signals_changed();
 }
 
@@ -1551,21 +1489,21 @@ void SigSession::lissajous_disable()
         _lissajous_trace->set_enable(false);
 }
 
-boost::shared_ptr<view::LissajousTrace> SigSession::get_lissajous_trace()
-{
-    //lock_guard<mutex> lock(_signals_mutex);
+view::LissajousTrace* SigSession::get_lissajous_trace()
+{ 
     return _lissajous_trace;
 }
 
-void SigSession::math_rebuild(bool enable,
-                              boost::shared_ptr<view::DsoSignal> dsoSig1,
-                              boost::shared_ptr<view::DsoSignal> dsoSig2,
+void SigSession::math_rebuild(bool enable,view::DsoSignal *dsoSig1, 
+                              view::DsoSignal *dsoSig2,
                               data::MathStack::MathType type)
 {
-    boost::lock_guard<boost::mutex> lock(_data_mutex);
-    boost::shared_ptr<data::MathStack> math_stack(
-        new data::MathStack(*this, dsoSig1, dsoSig2, type));
-    _math_trace.reset(new view::MathTrace(enable, math_stack, dsoSig1, dsoSig2));
+    ds_lock_guard lock(_data_mutex);
+
+    auto math_stack = new data::MathStack(this, dsoSig1, dsoSig2, type);
+    DESTROY_OBJECT(_math_trace);
+    _math_trace = new view::MathTrace(enable, math_stack, dsoSig1, dsoSig2);
+
     if (_math_trace && _math_trace->enabled()) {
         _math_trace->get_math_stack()->set_samplerate(_dev_inst->get_sample_rate());
         _math_trace->get_math_stack()->realloc(_dev_inst->get_sample_limit());
@@ -1580,9 +1518,8 @@ void SigSession::math_disable()
         _math_trace->set_enable(false);
 }
 
-boost::shared_ptr<view::MathTrace> SigSession::get_math_trace()
+view::MathTrace* SigSession::get_math_trace()
 {
-    //lock_guard<mutex> lock(_signals_mutex);
     return _math_trace;
 }
 
@@ -1591,22 +1528,22 @@ void SigSession::set_session_time(QDateTime time)
     _session_time = time;
 }
 
-QDateTime SigSession::get_session_time() const
+QDateTime SigSession::get_session_time()
 {
     return _session_time;
 }
 
-uint64_t  SigSession::get_trigger_pos() const
+uint64_t  SigSession::get_trigger_pos()
 {
     return _trigger_pos;
 }
 
-bool SigSession::trigd() const
+bool SigSession::trigd()
 {
     return _trigger_flag;
 }
 
-uint8_t SigSession::trigd_ch() const
+uint8_t SigSession::trigd_ch()
 {
     return _trigger_ch;
 }
@@ -1617,12 +1554,12 @@ void SigSession::nodata_timeout()
     if (gvar == NULL)
         return;
     if (g_variant_get_byte(gvar) != DSO_TRIGGER_AUTO) {
-        show_wait_trigger();
+        _callback->show_wait_trigger();
     }
 }
 
 void SigSession::feed_timeout()
-{
+{  
     data_unlock();
     if (!_data_updated) {
         if (++_noData_cnt >= (WaitShowTime/FeedInterval))
@@ -1630,19 +1567,19 @@ void SigSession::feed_timeout()
     }
 }
 
-boost::shared_ptr<data::Snapshot> SigSession::get_snapshot(int type)
+data::Snapshot* SigSession::get_snapshot(int type)
 {
     if (type == SR_CHANNEL_LOGIC)
-        return _cur_logic_snapshot;
+        return _logic_data->snapshot();
     else if (type == SR_CHANNEL_ANALOG)
-        return _cur_analog_snapshot;
+        return _analog_data->snapshot();
     else if (type == SR_CHANNEL_DSO)
-        return _cur_dso_snapshot;
+        return _dso_data->snapshot();
     else
         return NULL;
 }
 
-SigSession::error_state SigSession::get_error() const
+SigSession::error_state SigSession::get_error()
 {
     return _error;
 }
@@ -1658,12 +1595,12 @@ void SigSession::clear_error()
     _error = No_err;
 }
 
-uint64_t SigSession::get_error_pattern() const
+uint64_t SigSession::get_error_pattern()
 {
     return _error_pattern;
 }
 
-SigSession::run_mode SigSession::get_run_mode() const
+SigSession::run_mode SigSession::get_run_mode()
 {
     return _run_mode;
 }
@@ -1673,7 +1610,7 @@ void SigSession::set_run_mode(run_mode mode)
     _run_mode = mode;
 }
 
-int SigSession::get_repeat_intvl() const
+int SigSession::get_repeat_intvl()
 {
     return _repeat_intvl;
 }
@@ -1690,7 +1627,7 @@ void SigSession::set_repeating(bool repeat)
         _repeat_hold_prg = 0;
 }
 
-bool SigSession::isRepeating() const
+bool SigSession::isRepeating()
 {
     return _repeating;
 }
@@ -1705,8 +1642,8 @@ bool SigSession::repeat_check()
 
     if (_dev_inst->dev_inst()->mode == LOGIC) {
         _repeat_hold_prg = 100;
-        repeat_hold(_repeat_hold_prg);
-        QTimer::singleShot(_repeat_intvl*1000/RepeatHoldDiv, this, SLOT(repeat_update()));
+        _callback->repeat_hold(_repeat_hold_prg); 
+        _out_timer.TimeOut(_repeat_intvl*1000/RepeatHoldDiv, std::bind(&SigSession::repeat_update, this));
         return true;
     } else {
         return false;
@@ -1717,15 +1654,16 @@ void SigSession::repeat_update()
 {
     if (isRepeating()) {
         _repeat_hold_prg -= 100/RepeatHoldDiv;
-        if (_repeat_hold_prg != 0)
-            QTimer::singleShot(_repeat_intvl*1000/RepeatHoldDiv, this, SLOT(repeat_update()));
-        repeat_hold(_repeat_hold_prg);
+        if (_repeat_hold_prg != 0){
+            _out_timer.TimeOut(_repeat_intvl*1000/RepeatHoldDiv, std::bind(&SigSession::repeat_update, this));
+        }
+        _callback->repeat_hold(_repeat_hold_prg);
         if (_repeat_hold_prg == 0)
             repeat_resume();
     }
 }
 
-int SigSession::get_repeat_hold() const
+int SigSession::get_repeat_hold()
 {
     if (isRepeating())
         return _repeat_hold_prg;
@@ -1738,16 +1676,16 @@ void SigSession::set_map_zoom(int index)
     _map_zoom = index;
 }
 
-int SigSession::get_map_zoom() const
+int SigSession::get_map_zoom()
 {
     return _map_zoom;
 }
 
 void SigSession::auto_end()
 {
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _signals) {
-        boost::shared_ptr<view::DsoSignal> dsoSig;
-        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
+    for(auto &s : _signals) {
+        view::DsoSignal *dsoSig = NULL;
+        if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
             dsoSig->auto_end();
         }
     }
@@ -1763,17 +1701,17 @@ void SigSession::set_save_end(uint64_t end)
     _save_end = end;
 }
 
-uint64_t SigSession::get_save_start() const
+uint64_t SigSession::get_save_start()
 {
     return _save_start;
 }
 
-uint64_t SigSession::get_save_end() const
+uint64_t SigSession::get_save_end()
 {
     return _save_end;
 }
 
-bool SigSession::get_saving() const
+bool SigSession::get_saving()
 {
     return _saving;
 }
@@ -1800,7 +1738,7 @@ void SigSession::exit_capture()
     }
 }
 
-float SigSession::stop_scale() const
+float SigSession::stop_scale()
 {
     return _stop_scale;
 }
@@ -1809,5 +1747,193 @@ void SigSession::set_stop_scale(float scale)
 {
     _stop_scale = scale;
 }
+
+ sr_dev_inst* SigSession::get_dev_inst_c()
+ {
+     if (_dev_inst != NULL){
+         return _dev_inst->dev_inst();
+     }
+     return NULL;
+ }
+
+ void SigSession::Open()
+ {
+     register_hotplug_callback();
+ }
+
+ void SigSession::Close()
+ { 
+     if (_bClose)
+        return; 
+
+     _bClose = true;
+ 
+     do_stop_capture(); //stop capture
+
+     clear_all_decoder(); //clear all decode task, and stop decode thread
+
+     ds_trigger_destroy();
+
+     if (_dev_inst)
+     {
+         _dev_inst->release();
+     }
+
+     // TODO: This should not be necessary
+     _session = NULL;
+
+     stop_hotplug_work();
+
+     if (_hotplug_handle)
+     { 
+         deregister_hotplug_callback();
+         _hotplug_handle = 0;
+     }
+ }
+
+//append a decode task, and try create a thread
+ void SigSession::add_decode_task(view::DecodeTrace *trace)
+ { 
+     //qDebug()<<"add a decode task";
+
+     std::lock_guard<std::mutex> lock(_decode_task_mutex);
+     _decode_tasks.push_back(trace);
+
+     if (!_bDecodeRunning)
+     {
+         if (_decode_thread.joinable())
+             _decode_thread.join();
+
+         _decode_thread = std::thread(&SigSession::decode_task_proc, this);
+         _bDecodeRunning = true;
+     }
+ }
+
+ void SigSession::remove_decode_task(view::DecodeTrace *trace)
+ {
+     std::lock_guard<std::mutex> lock(_decode_task_mutex);
+
+     for (auto it = _decode_tasks.begin(); it != _decode_tasks.end(); it++){
+         if ((*it) == trace){
+              (*it)->decoder()->stop_decode_work();
+             _decode_tasks.erase(it);
+             qDebug()<<"remove a wait decode task";
+             return;  
+         }
+     }
+
+     //the task maybe is running 
+  //   qDebug()<<"remove a running decode task";
+     trace->decoder()->stop_decode_work();
+ }
+
+ void SigSession::clear_all_decoder()
+ {
+     //create the wait task deque
+     int dex = -1;
+     clear_all_decode_task(dex);
+
+     view::DecodeTrace *runningTrace = NULL;
+     if (dex != -1){
+         runningTrace = _decode_traces[dex];
+         runningTrace->_delete_flag = true;  //destroy it in thread
+     }
+
+     for (auto trace : _decode_traces)
+     {
+         if (trace != runningTrace){
+             delete trace;
+         }
+     }     
+     _decode_traces.clear();
+
+    //wait thread end
+     if (_decode_thread.joinable())
+     {
+       //  qDebug() << "wait the decode thread end";
+         _decode_thread.join();
+     }
+
+     if (!is_closed())
+        signals_changed();
+ }
+
+ void SigSession::clear_all_decode_task(int &runningDex)
+ {
+     std::lock_guard<std::mutex> lock(_decode_task_mutex);
+  
+     //remove wait task
+      for (auto trace : _decode_tasks){
+          trace->decoder()->stop_decode_work(); //set decode proc stop flag
+      } 
+      _decode_tasks.clear();
+
+      //make sure the running task can stop
+      runningDex = -1;
+      int dex = 0; 
+      for (auto trace : _decode_traces)
+      {
+          if (trace->decoder()->IsRunning())
+          {
+              trace->decoder()->stop_decode_work();
+              runningDex = dex;
+          }
+          dex++;
+      }
+ }
+ 
+ view::DecodeTrace* SigSession::get_decoder_trace(int index)
+  { 
+      int size = (int)_decode_traces.size();
+      assert(index < size);
+      return   _decode_traces[index];    
+  }
+
+  view::DecodeTrace* SigSession::get_top_decode_task()
+  {
+      std::lock_guard<std::mutex> lock(_decode_task_mutex);
+
+      auto it = _decode_tasks.begin();
+      if (it != _decode_tasks.end()){
+          auto p = (*it);
+          _decode_tasks.erase(it);
+          return p;
+      } 
+
+      return NULL;
+  }
+
+  //the decode task thread proc
+  void SigSession::decode_task_proc(){ 
+
+      //qDebug()<<"decode thread start";
+      auto task = get_top_decode_task();
+      
+      while (task != NULL)
+      {
+         // qDebug()<<"one decode task be actived";
+ 
+          if (!task->_delete_flag){
+              task->decoder()->begin_decode_work();
+          }
+
+          if (task->_delete_flag){
+             qDebug()<<"desroy a decoder in task thread";
+
+             DESTROY_QT_LATER(task);
+             std::this_thread::sleep_for(std::chrono::milliseconds(100));
+             if (!_bClose){
+                  signals_changed();  
+             }     
+          } 
+
+          task = get_top_decode_task();
+      }  
+
+     // qDebug()<<"decode thread end";
+      _bDecodeRunning = false;
+  }
+
+
 
 } // namespace pv

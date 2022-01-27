@@ -28,7 +28,7 @@
 
 #include "property.h"
 
-class QComboBox;
+class DsComboBox;
 
 namespace pv {
 namespace prop {
@@ -53,7 +53,7 @@ private slots:
 private:
 	const std::vector< std::pair<GVariant*, QString> > _values;
 
-	QComboBox *_selector;
+	DsComboBox *_selector;
 };
 
 } // prop

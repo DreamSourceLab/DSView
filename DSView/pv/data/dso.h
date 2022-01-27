@@ -24,8 +24,7 @@
 #define DSVIEW_PV_DATA_DSO_H
 
 #include "signaldata.h"
-
-#include <boost/shared_ptr.hpp>
+ 
 #include <deque>
 
 namespace pv {
@@ -36,19 +35,19 @@ class DsoSnapshot;
 class Dso : public SignalData
 {
 public:
-    Dso();
+    Dso(DsoSnapshot *snapshot);
 
-	void push_snapshot(
-        boost::shared_ptr<DsoSnapshot> &snapshot);
+	void push_snapshot(DsoSnapshot *snapshot);
 
-    std::deque< boost::shared_ptr<DsoSnapshot> >&
-		get_snapshots();
+    std::deque<DsoSnapshot*>& get_snapshots();
 
     void clear();
     void init();
 
+    DsoSnapshot* snapshot();
+
 private:
-    std::deque< boost::shared_ptr<DsoSnapshot> > _snapshots;
+    std::deque<DsoSnapshot*> _snapshots;
 };
 
 } // namespace data

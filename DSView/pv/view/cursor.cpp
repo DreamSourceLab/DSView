@@ -35,7 +35,7 @@
 #include <assert.h>
 #include <stdio.h>
 
-#include <extdef.h>
+#include "../extdef.h"
 
 namespace pv {
 namespace view {
@@ -57,7 +57,7 @@ Cursor::Cursor(View &view, QColor color, uint64_t index) :
 {
 }
 
-QRect Cursor::get_label_rect(const QRect &rect, bool &visible, bool has_hoff) const
+QRect Cursor::get_label_rect(const QRect &rect, bool &visible, bool has_hoff)
 {
     const double samples_per_pixel = _view.session().cur_snap_samplerate() * _view.scale();
     const double cur_offset = _index / samples_per_pixel;
@@ -79,7 +79,7 @@ QRect Cursor::get_label_rect(const QRect &rect, bool &visible, bool has_hoff) co
     return QRect(x - label_size.width() / 2, top, label_size.width(), height);
 }
 
-QRect Cursor::get_close_rect(const QRect &rect) const
+QRect Cursor::get_close_rect(const QRect &rect)
 {
     return QRect(rect.right() - CloseSize, rect.top(), CloseSize, CloseSize);
 }

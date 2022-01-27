@@ -21,10 +21,10 @@
  */
 
 #include "selectableitem.h"
-
-#include <QApplication>
+ 
 #include <QMenu>
 #include <QPalette>
+#include <QApplication>
 
 namespace pv {
 namespace view {
@@ -36,7 +36,7 @@ SelectableItem::SelectableItem() :
 {
 }
 
-bool SelectableItem::selected() const
+bool SelectableItem::selected()
 {
 	return _selected;
 }

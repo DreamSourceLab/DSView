@@ -27,12 +27,10 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QLabel>
-#include <QComboBox>
-
-#include <boost/shared_ptr.hpp>
-
+ 
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
+#include "../ui/dscombobox.h"
 
 namespace pv {
 
@@ -52,17 +50,17 @@ private:
     static const QString RegionEnd;
 
 public:
-    RegionOptions(view::View *view, SigSession &session, QWidget *parent = 0);
+    RegionOptions(view::View *view, SigSession *session, QWidget *parent = 0);
 
 private slots:
     void set_region();
 
 private:
-    SigSession &_session;
+    SigSession *_session;
     view::View *_view;
 
-    QComboBox *_start_comboBox;
-    QComboBox *_end_comboBox;
+    DsComboBox *_start_comboBox;
+    DsComboBox *_end_comboBox;
 
     QDialogButtonBox _button_box;
 

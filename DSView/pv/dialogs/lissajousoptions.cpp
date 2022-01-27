@@ -30,9 +30,9 @@
 #include <QLabel>
 #include <QTabBar>
 #include <QBitmap>
+#include <math.h>
 
-#include <boost/foreach.hpp>
-
+  
 using namespace boost;
 using namespace std;
 using namespace pv::view;
@@ -40,12 +40,18 @@ using namespace pv::view;
 namespace pv {
 namespace dialogs {
 
-LissajousOptions::LissajousOptions(SigSession &session, QWidget *parent) :
+LissajousOptions::LissajousOptions(SigSession *session, QWidget *parent) :
     DSDialog(parent),
     _session(session),
     _button_box(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
         Qt::Horizontal, this)
 {
+    _enable = NULL;
+    _x_group = NULL;
+    _y_group = NULL;
+    _percent = NULL;
+    _layout = NULL;
+
     setMinimumSize(300, 300);
 
     _enable = new QCheckBox(this);
@@ -56,8 +62,8 @@ LissajousOptions::LissajousOptions(SigSession &session, QWidget *parent) :
     _percent = new QSlider(Qt::Horizontal, this);
     _percent->setRange(100, 100);
     _percent->setEnabled(false);
-    if (_session.cur_samplelimits() > WellLen) {
-        int min = ceil(WellLen*100.0/_session.cur_samplelimits());
+    if (_session->cur_samplelimits() > WellLen) {
+        int min = ceil(WellLen*100.0/_session->cur_samplelimits());
         _percent->setEnabled(true);
         _percent->setRange(min, 100);
         _percent->setValue(min);
@@ -67,9 +73,10 @@ LissajousOptions::LissajousOptions(SigSession &session, QWidget *parent) :
     _y_group = new QGroupBox(this);
     QHBoxLayout *xlayout = new QHBoxLayout();
     QHBoxLayout *ylayout = new QHBoxLayout();
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
-        boost::shared_ptr<view::DsoSignal> dsoSig;
-        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
+
+    for(auto &s : _session->get_signals()) {
+        view::DsoSignal *dsoSig = NULL;
+        if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
             QString index_str = QString::number(dsoSig->get_index());
             QRadioButton *xradio = new QRadioButton(index_str, _x_group);
             xradio->setProperty("index", dsoSig->get_index());
@@ -85,7 +92,7 @@ LissajousOptions::LissajousOptions(SigSession &session, QWidget *parent) :
     _y_group->setLayout(ylayout);
 
 
-    boost::shared_ptr<LissajousTrace> lissajous = _session.get_lissajous_trace();
+    auto lissajous = _session->get_lissajous_trace();
     if (lissajous) {
         _enable->setChecked(lissajous->enabled());
         _percent->setValue(lissajous->percent());
@@ -118,7 +125,6 @@ LissajousOptions::LissajousOptions(SigSession &session, QWidget *parent) :
     }
 
     _layout = new QGridLayout();
-    _layout->setMargin(0);
     _layout->setSpacing(0);
     _layout->addWidget(lisa_label, 0, 0, 1, 2, Qt::AlignCenter);
     _layout->addWidget(_enable, 1, 0, 1, 1);
@@ -173,15 +179,15 @@ void LissajousOptions::accept()
         }
     }
     bool enable = (xindex != -1 && yindex != -1 && _enable->isChecked());
-    _session.lissajous_rebuild(enable, xindex, yindex, _percent->value());
+    _session->lissajous_rebuild(enable, xindex, yindex, _percent->value());
 
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
-        boost::shared_ptr<view::DsoSignal> dsoSig;
-        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
+    for(auto &s : _session->get_signals()) {
+        view::DsoSignal *dsoSig = NULL;
+        if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
             dsoSig->set_show(!enable);
         }
     }
-    boost::shared_ptr<view::MathTrace> mathTrace = _session.get_math_trace();
+    auto mathTrace = _session->get_math_trace();
     if (mathTrace && mathTrace->enabled()) {
         mathTrace->set_show(!enable);
     }

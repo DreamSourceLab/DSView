@@ -28,9 +28,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-
-using namespace boost;
-
+ 
 namespace pv {
 namespace data {
 
@@ -66,12 +64,7 @@ void Snapshot::free_data()
     _ch_index.clear();
 }
 
-bool Snapshot::memory_failed() const
-{
-    return _memory_failed;
-}
-
-bool Snapshot::empty() const
+bool Snapshot::empty()
 {
     if (get_sample_count() == 0)
         return true;
@@ -79,60 +72,40 @@ bool Snapshot::empty() const
         return false;
 }
 
-bool Snapshot::last_ended() const
+uint64_t Snapshot::get_sample_count()
 {
-    return _last_ended;
-}
-
-void Snapshot::set_last_ended(bool ended)
-{
-    _last_ended = ended;
-}
-
-uint64_t Snapshot::get_sample_count() const
-{
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     return _sample_count;
 }
-
-uint64_t Snapshot::get_ring_start() const
+ 
+uint64_t Snapshot::get_ring_start()
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
+    return ring_start();    
+}
+
+uint64_t Snapshot::get_ring_end()
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    return ring_end();     
+}
+ 
+uint64_t Snapshot::ring_start()
+{ 
     if (_sample_count < _total_sample_count)
         return 0;
     else
         return _ring_sample_count;
 }
-
-uint64_t Snapshot::get_ring_end() const
-{
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+ 
+uint64_t Snapshot::ring_end()
+{ 
     if (_sample_count == 0)
         return 0;
     else if (_ring_sample_count == 0)
         return _total_sample_count - 1;
     else
         return _ring_sample_count - 1;
-}
-
-const void* Snapshot::get_data() const
-{
-    return _data;
-}
-
-int Snapshot::unit_size() const
-{
-    return _unit_size;
-}
-
-uint8_t Snapshot::get_unit_bytes() const
-{
-    return _unit_bytes;
-}
-
-unsigned int Snapshot::get_channel_num() const
-{
-    return _channel_num;
 }
 
 void Snapshot::capture_ended()

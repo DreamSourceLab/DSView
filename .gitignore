@@ -49,3 +49,4 @@ moc_*.cpp_parameters
 DSView-prj
 build*
 share
+.vscode

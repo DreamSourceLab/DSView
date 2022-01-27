@@ -26,12 +26,17 @@
 namespace pv {
 namespace dialogs {
 
-Interval::Interval(SigSession &session, QWidget *parent) :
+Interval::Interval(SigSession *session, QWidget *parent) :
     DSDialog(parent),
     _session(session),
     _button_box(QDialogButtonBox::Ok,
         Qt::Horizontal, this)
 {
+    _interval_label = NULL;
+    _interval_spinBox = NULL;
+    _interval_slider = NULL;
+
+
     setMinimumWidth(300);
     _interval_label = new QLabel(tr("Interval(s): "), this);
     _interval_spinBox = new QSpinBox(this);
@@ -42,7 +47,7 @@ Interval::Interval(SigSession &session, QWidget *parent) :
     connect(_interval_slider, SIGNAL(valueChanged(int)), _interval_spinBox, SLOT(setValue(int)));
     connect(_interval_spinBox, SIGNAL(valueChanged(int)), _interval_slider, SLOT(setValue(int)));
 
-    _interval_slider->setValue(_session.get_repeat_intvl());
+    _interval_slider->setValue(_session->get_repeat_intvl());
 
     QGridLayout *glayout = new QGridLayout(this);
     glayout->addWidget(_interval_label, 0, 0);
@@ -59,7 +64,7 @@ Interval::Interval(SigSession &session, QWidget *parent) :
 void Interval::accept()
 {
     using namespace Qt;
-    _session.set_repeat_intvl(_interval_slider->value());
+    _session->set_repeat_intvl(_interval_slider->value());
     QDialog::accept();
 }
 

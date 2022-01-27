@@ -21,29 +21,32 @@
  */
 
 #include "deviceoptions.h"
-
-#include <boost/foreach.hpp>
-
+ 
 #include <QListWidget>
 #include <QSpinBox>
 #include <QDoubleSpinBox>
 
 #include "dsmessagebox.h"
-#include <pv/prop/property.h>
+#include "../prop/property.h"
+#include "../dsvdef.h"
 
 using namespace boost;
 using namespace std;
-
+ 
 namespace pv {
 namespace dialogs {
 
-DeviceOptions::DeviceOptions(QWidget *parent, boost::shared_ptr<pv::device::DevInst> dev_inst) :
+DeviceOptions::DeviceOptions(QWidget *parent, DevInst *dev_inst) :
     DSDialog(parent),
     _dev_inst(dev_inst),
-    _button_box(QDialogButtonBox::Ok,
-		Qt::Horizontal, this),
+    _button_box(QDialogButtonBox::Ok, Qt::Horizontal, this),
     _device_options_binding(_dev_inst->dev_inst())
 {
+     _dynamic_box = NULL;
+     _props_box = NULL;
+     _config_button = NULL;
+     _cali_button = NULL;
+
     _props_box = new QGroupBox(tr("Mode"), this);
     _props_box->setLayout(get_property_form(_props_box));
     _layout.addWidget(_props_box);
@@ -52,7 +55,7 @@ DeviceOptions::DeviceOptions(QWidget *parent, boost::shared_ptr<pv::device::DevI
                                           this);
     _dynamic_box->setLayout(&_dynamic_layout);
     _layout.addWidget(_dynamic_box);
-    _dynamic_box->setVisible(_dynamic_box->title() != NULL);
+    _dynamic_box->setVisible(_dynamic_box->title() != "");
 
     _layout.addStretch(1);
 	_layout.addWidget(&_button_box);
@@ -62,7 +65,7 @@ DeviceOptions::DeviceOptions(QWidget *parent, boost::shared_ptr<pv::device::DevI
 
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
     //connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
-    connect(_dev_inst.get(), SIGNAL(device_updated()), this, SLOT(reject()));
+    connect(_dev_inst, SIGNAL(device_updated()), this, SLOT(reject()));
 
     GVariant* gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_OPERATION_MODE);
     if (gvar != NULL) {
@@ -74,15 +77,21 @@ DeviceOptions::DeviceOptions(QWidget *parent, boost::shared_ptr<pv::device::DevI
     _mode_check.start();
 }
 
+DeviceOptions::~DeviceOptions(){
+    DESTROY_QT_OBJECT(_dynamic_box);
+    DESTROY_QT_OBJECT(_props_box);
+    DESTROY_QT_OBJECT(_config_button);
+    DESTROY_QT_OBJECT(_cali_button);
+}
+
 void DeviceOptions::accept()
 {
 	using namespace Qt;
     bool hasEnabled = false;
 
 	// Commit the properties
-    const vector< boost::shared_ptr<pv::prop::Property> > &dev_props =
-		_device_options_binding.properties();
-    BOOST_FOREACH(boost::shared_ptr<pv::prop::Property> p, dev_props) {
+    const auto &dev_props = _device_options_binding.properties();
+    for(auto &p : dev_props) {
 		assert(p);
 		p->commit();
 	}
@@ -106,9 +115,9 @@ void DeviceOptions::accept()
     if (hasEnabled) {
         QVector<pv::prop::binding::ProbeOptions *>::iterator i = _probe_options_binding_list.begin();
         while(i != _probe_options_binding_list.end()) {
-            const vector< boost::shared_ptr<pv::prop::Property> > &probe_props =
-                    (*i)->properties();
-            BOOST_FOREACH(boost::shared_ptr<pv::prop::Property> p, probe_props) {
+            const auto &probe_props = (*i)->properties();
+
+            for(auto &p :probe_props) {
                 assert(p);
                 p->commit();
             }
@@ -138,10 +147,10 @@ QGridLayout * DeviceOptions::get_property_form(QWidget * parent)
     QGridLayout *const layout = new QGridLayout(parent);
     layout->setVerticalSpacing(5);
 
-	const vector< boost::shared_ptr<pv::prop::Property> > &properties =
-		_device_options_binding.properties();
+	const auto &properties =_device_options_binding.properties();
+
     int i = 0;
-    BOOST_FOREACH(boost::shared_ptr<pv::prop::Property> p, properties)
+    for(auto &p : properties)
 	{
 		assert(p);
         const QString label = p->labeled_widget() ? QString() : p->label();
@@ -337,7 +346,7 @@ void DeviceOptions::mode_check()
 
         if (mode != _mode) {
             dynamic_widget(_dynamic_layout);
-            _dynamic_box->setVisible(_dynamic_box->title() != NULL);
+            _dynamic_box->setVisible(_dynamic_box->title() != "");
             _mode = mode;
         }
     }
@@ -366,7 +375,7 @@ void DeviceOptions::channel_check()
     if(sc != NULL)
         _dev_inst->set_config(NULL, NULL, SR_CONF_CHANNEL_MODE, g_variant_new_string(text.toUtf8().data()));
     dynamic_widget(_dynamic_layout);
-    _dynamic_box->setVisible(_dynamic_box->title() != NULL);
+    _dynamic_box->setVisible(_dynamic_box->title() != "");
 }
 
 void DeviceOptions::analog_channel_check()
@@ -382,7 +391,7 @@ void DeviceOptions::analog_channel_check()
         }
     }
     dynamic_widget(_dynamic_layout);
-    _dynamic_box->setVisible(_dynamic_box->title() != NULL);
+    _dynamic_box->setVisible(_dynamic_box->title() != "");
 }
 
 void DeviceOptions::channel_enable()
@@ -512,10 +521,10 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
 
         pv::prop::binding::ProbeOptions *probe_options_binding =
                 new pv::prop::binding::ProbeOptions(_dev_inst->dev_inst(), probe);
-        const vector< boost::shared_ptr<pv::prop::Property> > &properties =
-            probe_options_binding->properties();
+        const auto &properties = probe_options_binding->properties();
         int i = 1;
-        BOOST_FOREACH(boost::shared_ptr<pv::prop::Property> p, properties)
+        
+        for(auto &p : properties)
         {
             assert(p);
             const QString label = p->labeled_widget() ? QString() : p->label();

@@ -26,9 +26,7 @@
 
 #include "signal.h"
 
-#include <vector>
-
-#include <boost/shared_ptr.hpp>
+#include <vector> 
 
 namespace pv {
 
@@ -37,8 +35,12 @@ class Logic;
 class Analog;
 }
 
+using namespace pv::device;
+
 namespace view {
 
+//when device is logic analyzer mode, to draw logic signal trace
+//created by SigSession
 class LogicSignal : public Signal
 {
     Q_OBJECT
@@ -62,26 +64,22 @@ public:
     };
 
 public:
-    LogicSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
-                boost::shared_ptr<pv::data::Logic> data,
-                sr_channel *probe);
+    LogicSignal(DevInst *dev_inst, data::Logic* data, sr_channel *probe);
 
-    LogicSignal(boost::shared_ptr<view::LogicSignal> s,
-                boost::shared_ptr<pv::data::Logic> data,
-                sr_channel *probe);
+    LogicSignal(view::LogicSignal*s, pv::data::Logic *data, sr_channel *probe);
 
 	virtual ~LogicSignal();
 
-    const sr_channel* probe() const;
+    const sr_channel* probe();
 
-    boost::shared_ptr<pv::data::SignalData> data() const;
+    pv::data::SignalData* data();
 
-    boost::shared_ptr<pv::data::Logic> logic_data() const;
+    pv::data::Logic* logic_data();
 
     /**
      *
      */
-    LogicSetRegions get_trig() const;
+    LogicSetRegions get_trig();
     void set_trig(int trig);
     bool commit_trig();
 
@@ -93,13 +91,13 @@ public:
 	 **/
     void paint_mid(QPainter &p, int left, int right, QColor fore, QColor back);
 
-    bool measure(const QPointF &p, uint64_t &index0, uint64_t &index1, uint64_t &index2) const;
+    bool measure(const QPointF &p, uint64_t &index0, uint64_t &index1, uint64_t &index2);
 
-    bool edge(const QPointF &p, uint64_t &index, int radius) const;
+    bool edge(const QPointF &p, uint64_t &index, int radius);
 
-    bool edges(const QPointF &p, uint64_t start, uint64_t &rising, uint64_t &falling) const;
+    bool edges(const QPointF &p, uint64_t start, uint64_t &rising, uint64_t &falling);
 
-    bool edges(uint64_t end, uint64_t start, uint64_t &rising, uint64_t &falling) const;
+    bool edges(uint64_t end, uint64_t start, uint64_t &rising, uint64_t &falling);
 
     bool mouse_press(int right, const QPoint pt);
 
@@ -118,7 +116,7 @@ private:
 		float x_offset, float y_offset);
 
 private:
-	boost::shared_ptr<pv::data::Logic> _data;
+	pv::data::Logic* _data;
     std::vector< std::pair<uint16_t, bool> > _cur_edges;
     std::vector<std::pair<bool, bool>> _cur_pulses;
     LogicSetRegions _trig;

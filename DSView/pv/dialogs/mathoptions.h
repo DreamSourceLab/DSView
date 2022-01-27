@@ -31,8 +31,7 @@
 #include <QCheckBox>
 #include <QRadioButton>
 #include <QSlider>
-
-#include <boost/shared_ptr.hpp>
+ 
 
 #include "../view/dsosignal.h"
 #include "../toolbars/titlebar.h"
@@ -56,7 +55,7 @@ private:
     static const int WellLen = SR_Kn(16);
 
 public:
-    MathOptions(SigSession &session, QWidget *parent);
+    MathOptions(SigSession *session, QWidget *parent);
 
 private:
     void changeEvent(QEvent *event);
@@ -67,7 +66,7 @@ protected:
     void reject();
 
 private:
-    SigSession &_session;
+    SigSession *_session;
 
     QCheckBox *_enable;
     QGroupBox *_src1_group;

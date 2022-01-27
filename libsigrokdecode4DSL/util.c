@@ -39,13 +39,13 @@ SRD_PRIV PyObject *py_import_by_name(const char *name)
 	PyGILState_STATE gstate;
 
 	gstate = PyGILState_Ensure();
-
+  
 	py_modname = PyUnicode_FromString(name);
 	if (!py_modname) {
 		PyGILState_Release(gstate);
 		return NULL;
-	}
-
+	} 
+ 
 	py_mod = PyImport_Import(py_modname);
 	Py_DECREF(py_modname);
 

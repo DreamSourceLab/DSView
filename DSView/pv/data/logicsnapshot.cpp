@@ -19,21 +19,17 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
-
-#include <extdef.h>
-
+  
 #include <QDebug>
 
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
-
-#include <boost/foreach.hpp>
-
+ 
 #include "logicsnapshot.h"
+#include "../extdef.h"
 
-using namespace boost;
 using namespace std;
 
 namespace pv {
@@ -80,8 +76,13 @@ void LogicSnapshot::free_data()
 
 void LogicSnapshot::init()
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
-    _sample_count = 0;
+    std::lock_guard<std::mutex> lock(_mutex);
+    init_all(); 
+}
+
+void LogicSnapshot::init_all()
+{
+   _sample_count = 0;
     _ring_sample_count = 0;
     _block_num = 0;
     _byte_fraction = 0;
@@ -95,9 +96,9 @@ void LogicSnapshot::init()
 
 void LogicSnapshot::clear()
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     free_data();
-    init();
+    init_all();
 }
 
 void LogicSnapshot::capture_ended()
@@ -203,7 +204,7 @@ void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total
 void LogicSnapshot::append_payload(
 	const sr_datafeed_logic &logic)
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+   std::lock_guard<std::mutex> lock(_mutex);
 
     if (logic.format == LA_CROSS_DATA)
         append_cross_payload(logic);
@@ -473,8 +474,9 @@ const uint8_t *LogicSnapshot::get_samples(uint64_t start_sample, uint64_t &end_s
                                      int sig_index)
 {
     //assert(data);
-    assert(start_sample < get_sample_count());
-    assert(end_sample <= get_sample_count());
+    uint64_t sample_count = get_sample_count();
+    assert(start_sample < sample_count);
+    assert(end_sample <= sample_count);
     assert(start_sample <= end_sample);
 
     int order = get_ch_order(sig_index);

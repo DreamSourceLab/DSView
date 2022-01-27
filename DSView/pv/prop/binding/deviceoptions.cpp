@@ -20,19 +20,18 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <boost/bind.hpp>
-
-#include <QDebug>
-#include <QObject>
-
-#include <stdint.h>
-
 #include "deviceoptions.h"
 
-#include <pv/prop/bool.h>
-#include <pv/prop/double.h>
-#include <pv/prop/enum.h>
-#include <pv/prop/int.h>
+#include <boost/bind.hpp>
+#include <QDebug>
+#include <QObject>
+#include <stdint.h>
+
+#include "../bool.h"
+#include "../double.h"
+#include "../enum.h"
+#include "../int.h"
+#include "../../config/appconfig.h"
 
 using namespace boost;
 using namespace std;
@@ -72,7 +71,7 @@ DeviceOptions::DeviceOptions(struct sr_dev_inst *sdi) :
         if (sr_config_get(_sdi->driver, _sdi, NULL, NULL, SR_CONF_LANGUAGE, &gvar_tmp) == SR_OK) {
             if (gvar_tmp != NULL) {
                 int language = g_variant_get_int16(gvar_tmp);
-                if (language == QLocale::Chinese)
+                if (language == LAN_CN)
                     label_char = info->label_cn;
                 g_variant_unref(gvar_tmp);
             }
@@ -166,9 +165,9 @@ void DeviceOptions::config_setter(
 
 void DeviceOptions::bind_bool(const QString &name, const QString label, int key)
 {
-	_properties.push_back(boost::shared_ptr<Property>(
+	_properties.push_back(
         new Bool(name, label, bind(config_getter, _sdi, key),
-			bind(config_setter, _sdi, key, _1))));
+			bind(config_setter, _sdi, key, _1)));
 }
 
 void DeviceOptions::bind_enum(const QString &name, const QString label, int key,
@@ -176,7 +175,7 @@ void DeviceOptions::bind_enum(const QString &name, const QString label, int key,
 {
 	GVariant *gvar;
 	GVariantIter iter;
-	vector< pair<GVariant*, QString> > values;
+	std::vector< pair<GVariant*, QString> > values;
 
 	assert(gvar_list);
 
@@ -184,29 +183,29 @@ void DeviceOptions::bind_enum(const QString &name, const QString label, int key,
 	while ((gvar = g_variant_iter_next_value (&iter)))
 		values.push_back(make_pair(gvar, printer(gvar)));
 
-	_properties.push_back(boost::shared_ptr<Property>(
+	_properties.push_back(
         new Enum(name, label, values,
 			bind(config_getter, _sdi, key),
-			bind(config_setter, _sdi, key, _1))));
+			bind(config_setter, _sdi, key, _1)));
 }
 
 void DeviceOptions::bind_int(const QString &name, const QString label, int key, QString suffix,
-    optional< std::pair<int64_t, int64_t> > range)
+    boost::optional< std::pair<int64_t, int64_t> > range)
 {
-	_properties.push_back(boost::shared_ptr<Property>(
+	_properties.push_back(
         new Int(name, label, suffix, range,
 			bind(config_getter, _sdi, key),
-			bind(config_setter, _sdi, key, _1))));
+			bind(config_setter, _sdi, key, _1)));
 }
 
 void DeviceOptions::bind_double(const QString &name, const QString label, int key, QString suffix,
-    optional< std::pair<double, double> > range,
+    boost::optional< std::pair<double, double> > range,
     int decimals, boost::optional<double> step)
 {
-    _properties.push_back(boost::shared_ptr<Property>(
+    _properties.push_back(
         new Double(name, label, decimals, suffix, range, step,
             bind(config_getter, _sdi, key),
-            bind(config_setter, _sdi, key, _1))));
+            bind(config_setter, _sdi, key, _1)));
 }
 
 QString DeviceOptions::print_gvariant(GVariant *const gvar)
@@ -242,12 +241,12 @@ void DeviceOptions::bind_samplerate(const QString &name, const QString label,
 
 		assert(num_elements == 3);
 
-		_properties.push_back(boost::shared_ptr<Property>(
+		_properties.push_back(
             new Double(name, label, 0, QObject::tr("Hz"),
 				make_pair((double)elements[0], (double)elements[1]),
 						(double)elements[2],
 				bind(samplerate_double_getter, _sdi),
-				bind(samplerate_double_setter, _sdi, _1))));
+				bind(samplerate_double_setter, _sdi, _1)));
 
 		g_variant_unref(gvar_list_samplerates);
 	}
@@ -312,7 +311,7 @@ void DeviceOptions::bind_bandwidths(const QString &name, const QString label, in
 {
     GVariant *gvar;
     GVariantIter iter;
-    vector< pair<GVariant*, QString> > values;
+    std::vector< pair<GVariant*, QString> > values;
     bool bw_limit = FALSE;
 
     assert(gvar_list);
@@ -332,10 +331,10 @@ void DeviceOptions::bind_bandwidths(const QString &name, const QString label, in
     while ((gvar = g_variant_iter_next_value (&iter)))
         values.push_back(make_pair(gvar, printer(gvar)));
 
-    _properties.push_back(boost::shared_ptr<Property>(
+    _properties.push_back(
         new Enum(name, label, values,
             bind(config_getter, _sdi, key),
-            bind(config_setter, _sdi, key, _1))));
+            bind(config_setter, _sdi, key, _1)));
 }
 
 } // binding

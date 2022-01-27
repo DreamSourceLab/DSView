@@ -29,12 +29,13 @@
 #include <QFormLayout>
 #include <QSlider>
 
-#include <list>
-#include <boost/shared_ptr.hpp>
+#include <list> 
 
-#include <pv/device/devinst.h>
+#include "../device/devinst.h"
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
+
+using namespace pv::device;
 
 namespace pv {
 namespace dialogs {
@@ -50,8 +51,9 @@ private:
 
 public:
     Calibration(QWidget *parent);
+    ~Calibration();
 
-    void set_device(boost::shared_ptr<pv::device::DevInst> dev_inst);
+    void set_device(DevInst *dev_inst);
 protected:
 	void accept();
     void reject();
@@ -68,9 +70,8 @@ private slots:
     void reload_value();
 
 private:
-    boost::shared_ptr<pv::device::DevInst>  _dev_inst;
-
-    toolbars::TitleBar *_titlebar;
+    DevInst *_dev_inst;
+ 
     QPushButton *_save_btn;
     QPushButton *_abort_btn;
     QPushButton *_reset_btn;

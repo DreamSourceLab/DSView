@@ -22,26 +22,27 @@
 
 #include "analog.h"
 #include "analogsnapshot.h"
+#include <assert.h>
+ 
 
-#include <boost/foreach.hpp>
-
-using namespace boost;
 using namespace std;
 
 namespace pv {
 namespace data {
 
-Analog::Analog() :
+Analog::Analog(AnalogSnapshot *snapshot) :
     SignalData()
 {
+    assert(snapshot);
+    _snapshots.push_front(snapshot);
 }
 
-void Analog::push_snapshot(boost::shared_ptr<AnalogSnapshot> &snapshot)
+void Analog::push_snapshot(AnalogSnapshot *snapshot)
 {
 	_snapshots.push_front(snapshot);
 }
 
-deque< boost::shared_ptr<AnalogSnapshot> >& Analog::get_snapshots()
+std::deque<AnalogSnapshot*>& Analog::get_snapshots()
 {
 	return _snapshots;
 }
@@ -49,14 +50,19 @@ deque< boost::shared_ptr<AnalogSnapshot> >& Analog::get_snapshots()
 void Analog::clear()
 {
     //_snapshots.clear();
-    BOOST_FOREACH(const boost::shared_ptr<AnalogSnapshot> s, _snapshots)
+    for(auto &s : _snapshots)
         s->clear();
 }
 void Analog::init()
 {
     //_snapshots.clear();
-    BOOST_FOREACH(const boost::shared_ptr<AnalogSnapshot> s, _snapshots)
+    for(auto &s : _snapshots)
         s->init();
+}
+
+AnalogSnapshot* Analog::snapshot()
+{
+    return _snapshots[0];
 }
 
 } // namespace data

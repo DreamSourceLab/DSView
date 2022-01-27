@@ -29,20 +29,13 @@
 #include <list>
 #include <map>
 #include <string>
-
-#include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/thread.hpp>
-
 #include <QObject>
 #include <QString>
 
 struct sr_context;
 struct sr_dev_driver;
 struct sr_dev_inst;
-struct libusbhp_t;
-struct libusbhp_device_t;
-
+  
 namespace pv {
 
 class SigSession;
@@ -51,21 +44,33 @@ namespace device {
 class DevInst;
 }
 
+using namespace pv::device;
+
 class DeviceManager
 {
+private:
+    DeviceManager(DeviceManager &o);
+
 public:
-	DeviceManager(struct sr_context *sr_ctx);
+	DeviceManager();
 
 	~DeviceManager();
 
-    const std::list< boost::shared_ptr<pv::device::DevInst> >& devices() const;
+    inline const std::list<DevInst*>& devices(){
+        return _devices;        
+    }
 
-    void add_device(boost::shared_ptr<pv::device::DevInst> device);
-    void del_device(boost::shared_ptr<pv::device::DevInst> device);
+    void add_device(DevInst *device);
+    void del_device(DevInst *device);
 
-    std::list< boost::shared_ptr<pv::device::DevInst> > driver_scan(
-		struct sr_dev_driver *const driver,
-		GSList *const drvopts = NULL);
+    void driver_scan(
+                std::list<DevInst*> &driver_devices,
+	            struct sr_dev_driver *const driver=NULL, 
+                GSList *const drvopts=NULL);
+
+    void initAll(struct sr_context *sr_ctx);
+
+    void UnInitAll();
 
 private:
 	void init_drivers();
@@ -76,12 +81,11 @@ private:
 
 	void release_driver(struct sr_dev_driver *const driver);
 
-    static bool compare_devices(boost::shared_ptr<device::DevInst> a,
-                                boost::shared_ptr<device::DevInst> b);
+    static bool compare_devices(DevInst *a, DevInst *b);
 
 private:
-	struct sr_context *const _sr_ctx;
-    std::list< boost::shared_ptr<pv::device::DevInst> > _devices;
+	struct sr_context*  _sr_ctx;
+    std::list<DevInst*> _devices;
 };
 
 } // namespace pv

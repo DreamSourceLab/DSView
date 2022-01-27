@@ -27,10 +27,7 @@
 #include <QDateTime>
 #include <QPushButton>
 #include <QToolButton>
-
-#include <boost/foreach.hpp>
-#include <boost/shared_ptr.hpp>
-
+ 
 #include <libsigrok4DSL/libsigrok.h>
 
 namespace pv {
@@ -41,12 +38,15 @@ namespace view {
 class View;
 class DsoSignal;
 
-
+//created by View
 class ViewStatus : public QWidget
 {
     Q_OBJECT
+
 public:
-    ViewStatus(SigSession &session, View &parent);
+   ViewStatus(SigSession *session, View &parent);
+
+public: 
 
     void paintEvent(QPaintEvent *);
     void mousePressEvent(QMouseEvent *);
@@ -68,7 +68,7 @@ public slots:
     void set_capture_status(bool triggered, int progess);
 
 private:
-    SigSession &_session;
+    SigSession *_session;
     View &_view;
     int _hit_rect;
 

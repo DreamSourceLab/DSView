@@ -25,9 +25,8 @@
 
 #include <list>
 
-#include <boost/optional.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/thread.hpp>
+#include <boost/optional.hpp> 
+  
 
 #include <QObject>
 #include <QString>
@@ -102,17 +101,17 @@ private:
     static const QString vDialDivUnit[vDialUnitCount];
 
 public:
-    MathStack(pv::SigSession &_session,
-              boost::shared_ptr<view::DsoSignal> dsoSig1,
-              boost::shared_ptr<view::DsoSignal> dsoSig2, MathType type);
+    MathStack(pv::SigSession *_session,
+              view::DsoSignal *dsoSig1,
+              view::DsoSignal *dsoSig2, MathType type);
     virtual ~MathStack();
     void clear();
     void init();
     void free_envelop();
     void realloc(uint64_t num);
 
-    MathType get_type() const;
-    uint64_t get_sample_num() const;
+    MathType get_type();
+    uint64_t get_sample_num();
 
     void enable_envelope(bool enable);
 
@@ -121,9 +120,9 @@ public:
     QString get_unit(int level);
     double get_math_scale();
 
-    const double *get_math(uint64_t start) const;
+    const double *get_math(uint64_t start);
     void get_math_envelope_section(EnvelopeSection &s,
-        uint64_t start, uint64_t end, float min_length) const;
+        uint64_t start, uint64_t end, float min_length);
 
     void calc_math();
     void reallocate_envelope(Envelope &e);
@@ -132,9 +131,9 @@ public:
 signals:
 
 private:
-    pv::SigSession &_session;
-    boost::shared_ptr<view::DsoSignal> _dsoSig1;
-    boost::shared_ptr<view::DsoSignal> _dsoSig2;
+    pv::SigSession  *_session;
+    view::DsoSignal *_dsoSig1;
+    view::DsoSignal *_dsoSig2;
 
     MathType _type;
     uint64_t _sample_num;

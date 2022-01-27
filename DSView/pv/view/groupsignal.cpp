@@ -19,15 +19,14 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <extdef.h>
-#include <math.h>
-
+#include "../extdef.h"
 #include "groupsignal.h"
-#include "pv/data/group.h"
-#include "pv/data/groupsnapshot.h"
+#include "../data/group.h"
+#include "../data/groupsnapshot.h"
 #include "view.h"
 
-using namespace boost;
+#include <math.h>
+ 
 using namespace std;
 
 namespace pv {
@@ -42,7 +41,7 @@ const QColor GroupSignal::SignalColours[4] = {
 
 const float GroupSignal::EnvelopeThreshold = 256.0f;
 
-GroupSignal::GroupSignal(QString name, boost::shared_ptr<data::Group> data,
+GroupSignal::GroupSignal(QString name, data::Group *data,
                          std::list<int> probe_index_list, int group_index) :
     Trace(name, probe_index_list, SR_CHANNEL_GROUP, group_index),
     _data(data)
@@ -55,12 +54,12 @@ GroupSignal::~GroupSignal()
 {
 }
 
-bool GroupSignal::enabled() const
+bool GroupSignal::enabled()
 {
     return true;
 }
 
-boost::shared_ptr<pv::data::SignalData> GroupSignal::data() const
+pv::data::SignalData* GroupSignal::data()
 {
     return _data;
 }
@@ -85,13 +84,11 @@ void GroupSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColo
 
     _scale = _totalHeight * 1.0f / std::pow(2.0, static_cast<int>(_index_list.size()));
 
-    const deque< boost::shared_ptr<pv::data::GroupSnapshot> > &snapshots =
-		_data->get_snapshots();
+    const auto &snapshots = _data->get_snapshots();
     if (snapshots.empty())
 		return;
 
-    const boost::shared_ptr<pv::data::GroupSnapshot> &snapshot =
-            snapshots.at(_sec_index);
+    const auto snapshot = snapshots.at(_sec_index);
 
     const double pixels_offset = offset;
     const double samplerate = _data->samplerate();
@@ -116,13 +113,15 @@ void GroupSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColo
 }
 
 void GroupSignal::paint_trace(QPainter &p,
-    const boost::shared_ptr<pv::data::GroupSnapshot> &snapshot,
+    const pv::data::GroupSnapshot *snapshot,
 	int y, int left, const int64_t start, const int64_t end,
 	const double pixels_offset, const double samples_per_pixel)
 {
 	const int64_t sample_count = end - start;
 
-    const uint16_t *samples = snapshot->get_samples(start, end);
+	pv::data::GroupSnapshot *pshot = const_cast<pv::data::GroupSnapshot*>(snapshot);
+
+    const uint16_t *samples = pshot->get_samples(start, end);
 	assert(samples);
 
 	p.setPen(_colour);
@@ -144,7 +143,7 @@ void GroupSignal::paint_trace(QPainter &p,
 }
 
 void GroupSignal::paint_envelope(QPainter &p,
-    const boost::shared_ptr<pv::data::GroupSnapshot> &snapshot,
+    const pv::data::GroupSnapshot *snapshot,
 	int y, int left, const int64_t start, const int64_t end,
 	const double pixels_offset, const double samples_per_pixel)
 {
@@ -152,7 +151,9 @@ void GroupSignal::paint_envelope(QPainter &p,
     using pv::data::GroupSnapshot;
 
     GroupSnapshot::EnvelopeSection e;
-	snapshot->get_envelope_section(e, start, end, samples_per_pixel);
+
+	pv::data::GroupSnapshot *pshot = const_cast<pv::data::GroupSnapshot*>(snapshot);
+	pshot->get_envelope_section(e, start, end, samples_per_pixel);
 
 	if (e.length < 2)
 		return;

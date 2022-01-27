@@ -35,8 +35,8 @@ namespace prop {
 Double::Double(QString name, QString label,
     int decimals,
     QString suffix,
-    optional< pair<double, double> > range,
-    optional<double> step,
+    boost::optional< pair<double, double> > range,
+    boost::optional<double> step,
     Getter getter,
     Setter setter) :
     Property(name, label, getter, setter),

@@ -32,16 +32,17 @@
 #include <QVariant>
 #include <QScrollBar>
 #include <QScreen>
-
-#include <boost/foreach.hpp>
+#include <QApplication>
+ 
+#include "../config/appconfig.h"
 
 #include <assert.h>
 
 namespace pv {
 namespace widgets {
 
-DecoderGroupBox::DecoderGroupBox(boost::shared_ptr<data::DecoderStack> &decoder_stack,
-                                 boost::shared_ptr<data::decode::Decoder> &dec,
+DecoderGroupBox::DecoderGroupBox(data::DecoderStack *decoder_stack,
+                                 data::decode::Decoder *dec,
                                  QLayout *dec_layout,
                                  QWidget *parent) :
     QScrollArea(parent),
@@ -55,7 +56,7 @@ DecoderGroupBox::DecoderGroupBox(boost::shared_ptr<data::DecoderStack> &decoder_
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setWidgetResizable(true);
 
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    QString iconPath = GetIconPath();
     _layout->addWidget(new QLabel(QString("<h3>%1</h3>").arg(_dec->decoder()->name), _widget),
         0, 0);
 	_layout->setColumnStretch(0, 1);
@@ -70,8 +71,7 @@ DecoderGroupBox::DecoderGroupBox(boost::shared_ptr<data::DecoderStack> &decoder_
     }
 
     _index = 0;
-    BOOST_FOREACH(boost::shared_ptr<data::decode::Decoder> dec,
-        _decoder_stack->stack()) {
+    for(auto &dec : _decoder_stack->stack()) {
         if (dec == _dec)
             break;
         _index++;
@@ -129,14 +129,14 @@ bool DecoderGroupBox::eventFilter(QObject *o, QEvent *e)
 
 void DecoderGroupBox::tog_icon()
 {
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    QString iconPath = GetIconPath();
     QPushButton *sc = dynamic_cast<QPushButton*>(sender());
     QVariant id = sc->property("index");
     int index = id.toInt();
     if (index == -1) {
         int i = _index;
-        BOOST_FOREACH(boost::shared_ptr<data::decode::Decoder> dec,
-            _decoder_stack->stack()) {
+
+       for(auto &dec : _decoder_stack->stack()) {
             if (i-- == 0) {
                 dec->show(!dec->shown());
                 sc->setIcon(QIcon(dec->shown() ? iconPath+"/shown.svg" :
@@ -162,8 +162,7 @@ void DecoderGroupBox::tog_icon()
 void DecoderGroupBox::on_del_stack()
 {
     int i = _index;
-    BOOST_FOREACH(boost::shared_ptr<data::decode::Decoder> dec,
-        _decoder_stack->stack()) {
+    for(auto &dec : _decoder_stack->stack()) {
         if (i-- == 0) {
             del_stack(dec);
             break;

@@ -55,17 +55,16 @@ proto = {
     'STOP':            [2, 'Stop',          'P'],
     'ACK':             [3, 'ACK',           'A'],
     'NACK':            [4, 'NACK',          'N'],
-    'BIT':             [5, 'Bit',           'B'],
-    'ADDRESS READ':    [6, 'Address read',  'AR'],
-    'ADDRESS WRITE':   [7, 'Address write', 'AW'],
-    'DATA READ':       [8, 'Data read',     'DR'],
-    'DATA WRITE':      [9, 'Data write',    'DW'],
+    'ADDRESS READ':    [5, 'Address read',  'AR'],
+    'ADDRESS WRITE':   [6, 'Address write', 'AW'],
+    'DATA READ':       [7, 'Data read',     'DR'],
+    'DATA WRITE':      [8, 'Data write',    'DW'],
 }
 
 class Decoder(srd.Decoder):
     api_version = 3
-    id = '1:i2c'
-    name = '1:I²C'
+    id = '0:i2c'
+    name = '0:I²C'
     longname = 'Inter-Integrated Circuit'
     desc = 'Two-wire, multi-master, serial bus.'
     license = 'gplv2+'
@@ -86,7 +85,6 @@ class Decoder(srd.Decoder):
         ('1', 'stop', 'Stop condition'),
         ('5', 'ack', 'ACK'),
         ('0', 'nack', 'NACK'),
-        ('208', 'bit', 'Data/address bit'),
         ('112', 'address-read', 'Address read'),
         ('111', 'address-write', 'Address write'),
         ('110', 'data-read', 'Data read'),
@@ -94,15 +92,8 @@ class Decoder(srd.Decoder):
         ('1000', 'warnings', 'Human-readable warnings'),
     )
     annotation_rows = (
-        ('bits', 'Bits', (5,)),
-        ('addr-data', 'Address/Data', (0, 1, 2, 3, 4, 6, 7, 8, 9)),
-        ('warnings', 'Warnings', (10,)),
-    )
-    binary = (
-        ('address-read', 'Address read'),
-        ('address-write', 'Address write'),
-        ('data-read', 'Data read'),
-        ('data-write', 'Data write'),
+        ('addr-data', 'Address/Data', (0, 1, 2, 3, 4, 5, 6, 7, 8)),
+        ('warnings', 'Warnings', (9,)),
     )
 
     def __init__(self):
@@ -125,27 +116,16 @@ class Decoder(srd.Decoder):
             self.samplerate = value
 
     def start(self):
-        self.out_python = self.register(srd.OUTPUT_PYTHON)
         self.out_ann = self.register(srd.OUTPUT_ANN)
-        self.out_binary = self.register(srd.OUTPUT_BINARY)
-        self.out_bitrate = self.register(srd.OUTPUT_META,
-                meta=(int, 'Bitrate', 'Bitrate from Start bit to Stop bit'))
 
     def putx(self, data):
         self.put(self.ss, self.es, self.out_ann, data)
-
-    def putp(self, data):
-        self.put(self.ss, self.es, self.out_python, data)
-
-    def putb(self, data):
-        self.put(self.ss, self.es, self.out_binary, data)
 
     def handle_start(self):
         self.ss, self.es = self.samplenum, self.samplenum
         self.pdu_start = self.samplenum
         self.pdu_bits = 0
         cmd = 'START REPEAT' if (self.is_repeat_start == 1) else 'START'
-        self.putp([cmd, None])
         self.putx([proto[cmd][0], proto[cmd][1:]])
         self.state = 'FIND ADDRESS'
         self.bitcount = self.databyte = 0
@@ -202,22 +182,13 @@ class Decoder(srd.Decoder):
 
         self.ss, self.es = self.ss_byte, self.samplenum + self.bitwidth
 
-        self.putp(['BITS', self.bits])
-        self.putp([cmd, d])
-
-        self.putb([bin_class, bytes([d])])
-
-        for bit in self.bits:
-            self.put(bit[1], bit[2], self.out_ann, [5, ['%d' % bit[0]]])
-
         if cmd.startswith('ADDRESS'):
             self.ss, self.es = self.samplenum, self.samplenum + self.bitwidth
             w = ['Write', 'Wr', 'W'] if self.wr else ['Read', 'Rd', 'R']
             self.putx([proto[cmd][0], w])
             self.ss, self.es = self.ss_byte, self.samplenum
 
-        self.putx([proto[cmd][0], ['%s: %02X' % (proto[cmd][1], d),
-                   '%s: %02X' % (proto[cmd][2], d), '%02X' % d]])
+        self.putx([proto[cmd][0], ['%s: {$}' % proto[cmd][1], '%s: {$}' % proto[cmd][2], '{$}', d]])
 
         # Done with this packet.
         self.bitcount = self.databyte = 0
@@ -227,22 +198,14 @@ class Decoder(srd.Decoder):
     def get_ack(self, scl, sda):
         self.ss, self.es = self.samplenum, self.samplenum + self.bitwidth
         cmd = 'NACK' if (sda == 1) else 'ACK'
-        self.putp([cmd, None])
         self.putx([proto[cmd][0], proto[cmd][1:]])
         # There could be multiple data bytes in a row, so either find
         # another data byte or a STOP condition next.
         self.state = 'FIND DATA'
 
     def handle_stop(self):
-        # Meta bitrate
-        if self.samplerate:
-            elapsed = 1 / float(self.samplerate) * (self.samplenum - self.pdu_start + 1)
-            bitrate = int(1 / elapsed * self.pdu_bits)
-            self.put(self.ss_byte, self.samplenum, self.out_bitrate, bitrate)
-
         cmd = 'STOP'
         self.ss, self.es = self.samplenum, self.samplenum
-        self.putp([cmd, None])
         self.putx([proto[cmd][0], proto[cmd][1:]])
         self.state = 'FIND START'
         self.is_repeat_start = 0

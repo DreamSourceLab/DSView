@@ -40,9 +40,9 @@ public:
 	virtual ~Bool();
 
     QWidget* get_widget(QWidget *parent, bool auto_commit);
-	bool labeled_widget() const;
+	bool labeled_widget();
 
-    GVariant* get_value() const;
+    GVariant* get_value();
 
 	void commit();
 

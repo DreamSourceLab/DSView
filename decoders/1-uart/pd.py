@@ -40,6 +40,7 @@ This is the list of <ptype>s and their respective <pdata> values:
  - 'INVALID STOPBIT': The data is the (integer) value of the stop bit (0/1).
  - 'PARITY ERROR': The data is a tuple with two entries. The first one is
    the expected parity value, the second is the actual parity value.
+ - 'BREAK': The data is always 0.
  - 'FRAME': The data is always a tuple containing two items: The (integer)
    value of the UART data, and a boolean which reflects the validity of the
    UART frame.
@@ -75,8 +76,8 @@ class ChannelError(Exception):
 
 class Decoder(srd.Decoder):
     api_version = 3
-    id = '0:uart'
-    name = '0:UART'
+    id = '1:uart'
+    name = '1:UART'
     longname = 'Universal Asynchronous Receiver/Transmitter'
     desc = 'Asynchronous, serial bus.'
     license = 'gplv2+'
@@ -102,7 +103,7 @@ class Decoder(srd.Decoder):
             'values': ('ascii', 'dec', 'hex', 'oct', 'bin')},
         {'id': 'invert', 'desc': 'Invert Signal?', 'default': 'no',
             'values': ('yes', 'no')},
-	{'id': 'anno_startstop', 'desc': 'Display Start/Stop?', 'default': 'no',
+	{'id': 'anno_startstop', 'desc': 'Display Start/Stop?', 'default': 'yes',
             'values': ('yes', 'no')},
     )
     annotations = (
@@ -112,10 +113,17 @@ class Decoder(srd.Decoder):
         ('0', 'parity-err', 'parity error bits'),
         ('1', 'stop', 'stop bits'),
         ('1000', 'warnings', 'warnings'),
+        ('209', 'data-bits', 'data bits'),
+        ('10', 'break', 'break'),
     )
     annotation_rows = (
         ('data', 'RX/TX', (0, 1, 2, 3, 4)),
+        ('data-bits', 'Bits', (6,)),
         ('warnings', 'Warnings', (5,)),
+        ('break', 'break', (7,)),
+    )
+    binary = (
+        ('rxtx', 'RX/TX dump'),
     )
     idle_state = 'WAIT FOR START BIT'
 
@@ -126,12 +134,28 @@ class Decoder(srd.Decoder):
         else :
             self.put(self.frame_start, self.samplenum + ceil(halfbit * (1+self.options['num_stop_bits'])), self.out_ann, data)
 
+    def putpx(self, data):
+        s, halfbit = self.startsample, self.bit_width / 2.0
+        self.put(s - floor(halfbit), self.samplenum + ceil(halfbit), self.out_python, data)
+
     def putg(self, data):
         s, halfbit = self.samplenum, self.bit_width / 2.0
         self.put(s - floor(halfbit), s + ceil(halfbit), self.out_ann, data)
 
+    def putp(self, data):
+        s, halfbit = self.samplenum, self.bit_width / 2.0
+        self.put(s - floor(halfbit), s + ceil(halfbit), self.out_python, data)
+
     def putgse(self, ss, es, data):
         self.put(ss, es, self.out_ann, data)
+
+    def putpse(self, ss, es, data):
+        self.put(ss, es, self.out_python, data)
+
+    def putbin(self, data):
+        s, halfbit = self.startsample, self.bit_width / 2.0
+        self.put(s - floor(halfbit), self.samplenum + ceil(halfbit), self.out_binary, data)
+
 
     def __init__(self):
         self.reset()
@@ -149,8 +173,11 @@ class Decoder(srd.Decoder):
         self.startsample = -1
         self.state = 'WAIT FOR START BIT'
         self.databits = []
+        self.break_start = None
 
     def start(self):
+        self.out_python = self.register(srd.OUTPUT_PYTHON)
+        self.out_binary = self.register(srd.OUTPUT_BINARY)
         self.out_ann = self.register(srd.OUTPUT_ANN)
         self.bw = (self.options['num_data_bits'] + 7) // 8
 
@@ -184,9 +211,12 @@ class Decoder(srd.Decoder):
         # The startbit must be 0. If not, we report an error and wait
         # for the next start bit (assuming this one was spurious).
         if self.startbit != 0:
+            self.putp(['INVALID STARTBIT', 0, self.startbit])
             self.putg([5, ['Frame error', 'Frame err', 'FE']])
             self.frame_valid = False
             es = self.samplenum + ceil(self.bit_width / 2.0)
+            self.putpse(self.frame_start, es, ['FRAME', 0,
+                (self.datavalue, self.frame_valid)])
             self.state = 'WAIT FOR START BIT'
             return
 
@@ -194,6 +224,7 @@ class Decoder(srd.Decoder):
         self.datavalue = 0
         self.startsample = -1
 
+        self.putp(['STARTBIT', 0, self.startbit])
         if self.options['anno_startstop'] == 'yes':
             self.putg([1, ['Start bit', 'Start', 'S']])
 
@@ -203,6 +234,8 @@ class Decoder(srd.Decoder):
         # Save the sample number of the middle of the first data bit.
         if self.startsample == -1:
             self.startsample = self.samplenum
+
+        self.putg([6, ['%d' % signal]])
 
         # Store individual data bits and their start/end samplenumbers.
         s, halfbit = self.samplenum, int(self.bit_width / 2)
@@ -218,11 +251,18 @@ class Decoder(srd.Decoder):
         if self.options['bit_order'] == 'msb-first':
             bits.reverse()
         self.datavalue = bitpack(bits)
+        self.putpx(['DATA', 0, (self.datavalue, self.databits)])
+
+        self.putx([0, [self.datavalue]])
 
         b = self.datavalue
-        formatted = self.format_value(b)
-        if formatted is not None:
-            self.putx([0, [formatted]])
+        #formatted = self.format_value(b)
+        #if formatted is not None:
+        #   self.putx([0, [formatted]])
+
+        bdata = b.to_bytes(self.bw, byteorder='big')
+        self.putbin([0, bdata])
+        self.putbin([1, bdata])
 
         self.databits = []
 
@@ -279,9 +319,11 @@ class Decoder(srd.Decoder):
 
         if parity_ok(self.options['parity_type'], self.paritybit,
                      self.datavalue, self.options['num_data_bits']):
+            self.putp(['PARITYBIT', 0, self.paritybit])
             self.putg([2, ['Parity bit', 'Parity', 'P']])
         else:
             # TODO: Return expected/actual parity values.
+            self.putp(['PARITY ERROR', 0, (0, 1)]) # FIXME: Dummy tuple...
             self.putg([3, ['Parity error', 'Parity err', 'PE']])
             self.frame_valid = False
 
@@ -293,15 +335,26 @@ class Decoder(srd.Decoder):
 
         # Stop bits must be 1. If not, we report an error.
         if self.stopbit1 != 1:
+            self.putp(['INVALID STOPBIT', 0, self.stopbit1])
             self.putg([5, ['Frame error', 'Frame err', 'FE']])
             self.frame_valid = False
 
+        self.putp(['STOPBIT', 0, self.stopbit1])
         if self.options['anno_startstop'] == 'yes':
             self.putg([2, ['Stop bit', 'Stop', 'T']])
 
         # Pass the complete UART frame to upper layers.
         es = self.samplenum + ceil(self.bit_width / 2.0)
+        self.putpse(self.frame_start, es, ['FRAME', 0,
+            (self.datavalue, self.frame_valid)])
 
+        self.state = 'WAIT FOR START BIT'
+
+    def handle_break(self):
+        self.putpse(self.frame_start, self.samplenum,
+                ['BREAK', 0, 0])
+        self.putgse(self.frame_start, self.samplenum,
+                [7, ['Break condition', 'Break', 'Brk', 'B']])
         self.state = 'WAIT FOR START BIT'
 
     def get_wait_cond(self, inv):
@@ -340,14 +393,49 @@ class Decoder(srd.Decoder):
         elif state == 'GET STOP BITS':
             self.get_stop_bits(signal)
 
+    def inspect_edge(self, signal, inv):
+        # Inspect edges, independently from traffic, to detect break conditions.
+        if inv:
+            signal = not signal
+        if not signal:
+            # Signal went low. Start another interval.
+            self.break_start = self.samplenum
+            return
+        # Signal went high. Was there an extended period with low signal?
+        if self.break_start is None:
+            return
+        diff = self.samplenum - self.break_start
+        if diff >= self.break_min_sample_count:
+            self.handle_break()
+        self.break_start = None
+
     def decode(self):
         if not self.samplerate:
             raise SamplerateError('Cannot decode without samplerate.')
 
         inv = self.options['invert'] == 'yes'
+        cond_data_idx = None
+
+        # Determine the number of samples for a complete frame's time span.
+        # A period of low signal (at least) that long is a break condition.
+        frame_samples = 1 # START
+        frame_samples += self.options['num_data_bits']
+        frame_samples += 0 if self.options['parity_type'] == 'none' else 1
+        frame_samples += self.options['num_stop_bits']
+        frame_samples *= self.bit_width
+        self.break_min_sample_count = ceil(frame_samples)
+        cond_edge_idx = None
 
         while True:
-            conds = self.get_wait_cond(inv)
+            conds = []
+
+            cond_data_idx = len(conds)
+            conds.append(self.get_wait_cond(inv))
+            cond_edge_idx = len(conds)
+            conds.append({0: 'e'})
+
             (rxtx, ) = self.wait(conds)
-            if (self.matched & (0b1 << 0)):
+            if cond_data_idx is not None and (self.matched & (0b1 << cond_data_idx)):
                 self.inspect_sample(rxtx, inv)
+            if cond_edge_idx is not None and (self.matched & (0b1 << cond_edge_idx)):
+                self.inspect_edge(rxtx, inv)

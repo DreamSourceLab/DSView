@@ -82,10 +82,16 @@ SR_API int sr_status_get(const struct sr_dev_inst *sdi, struct sr_status *status
 SR_API struct sr_config *sr_config_new(int key, GVariant *data);
 SR_API void sr_config_free(struct sr_config *src);
 
-/*--- session.c -------------------------------------------------------------*/
+SR_API void sr_test_usb_api();
 
+/*--------------------session.c----------------*/
 typedef void (*sr_datafeed_callback_t)(const struct sr_dev_inst *sdi,
 		const struct sr_datafeed_packet *packet, void *cb_data);
+                
+SR_API void sr_set_export_original_data(int flag);
+SR_API int sr_get_export_original_flag();
+SR_API void sr_set_firmware_resource_dir(const char *dir);
+
 
 /* Session setup */
 SR_API int sr_session_load(const char *filename);
@@ -116,6 +122,9 @@ SR_API int sr_session_source_add_channel(GIOChannel *channel, int events,
 SR_API int sr_session_source_remove(int fd);
 SR_API int sr_session_source_remove_pollfd(GPollFD *pollfd);
 SR_API int sr_session_source_remove_channel(GIOChannel *channel);
+
+//0:ok, 1:error
+SR_API int sr_check_session_start_before();
 
 /*--- input/input.c ---------------------------------------------------------*/
 
@@ -179,4 +188,6 @@ SR_PRIV uint16_t ds_trigger_get_edge0(uint16_t stage, uint16_t msc, uint16_t lsc
 SR_PRIV uint16_t ds_trigger_get_mask1(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
 SR_PRIV uint16_t ds_trigger_get_value1(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
 SR_PRIV uint16_t ds_trigger_get_edge1(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
+
+ 
 #endif

@@ -34,11 +34,8 @@
 #include <QVector>
 #include <QLabel>
 #include <QCheckBox>
-#include <QComboBox>
 #include <QRadioButton>
-#include <QTimer>
-
-#include <boost/shared_ptr.hpp>
+#include <QTimer> 
 
 #include <libsigrok4DSL/libsigrok.h>
 #include "../device/devinst.h"
@@ -46,6 +43,9 @@
 #include "../prop/binding/probeoptions.h"
 #include "../toolbars/titlebar.h"
 #include "../dialogs/dsdialog.h"
+#include "../ui/dscombobox.h"
+
+using namespace pv::device;
 
 namespace pv {
 namespace dialogs {
@@ -55,7 +55,9 @@ class DeviceOptions : public DSDialog
 	Q_OBJECT
 
 public:
-    DeviceOptions(QWidget *parent, boost::shared_ptr<pv::device::DevInst> dev_inst);
+    DeviceOptions(QWidget *parent, DevInst *dev_inst);
+
+    ~DeviceOptions();
 
 protected:
 	void accept();
@@ -83,9 +85,8 @@ private slots:
     void channel_enable();
 
 private:
-    boost::shared_ptr<pv::device::DevInst>  _dev_inst;
-	QVBoxLayout _layout;
-    toolbars::TitleBar *_titlebar;
+    DevInst *_dev_inst;
+	QVBoxLayout _layout; 
 
     QGroupBox *_dynamic_box;
     QGridLayout _dynamic_layout;
