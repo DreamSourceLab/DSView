@@ -23,7 +23,8 @@
 #ifndef DSVIEW_PV_DATA_SNAPSHOT_H
 #define DSVIEW_PV_DATA_SNAPSHOT_H
 
-#include <boost/thread.hpp>
+#include <mutex>
+#include <vector>
 
 namespace pv {
 namespace data {
@@ -38,22 +39,39 @@ public:
     virtual void clear() = 0;
     virtual void init() = 0;
 
-	uint64_t get_sample_count() const;
-    uint64_t get_ring_start() const;
-    uint64_t get_ring_end() const;
+	uint64_t get_sample_count();
+    uint64_t get_ring_start();
+    uint64_t get_ring_end();
 
-    const void * get_data() const;
+    inline const void* get_data(){
+        return _data;
+    }
 
-    int unit_size() const;
-    uint8_t get_unit_bytes() const;
+    inline int unit_size(){
+        return _unit_size;
+    }
 
-    bool memory_failed() const;
-    bool empty() const;
+    inline uint8_t get_unit_bytes(){
+        return _unit_bytes;
+    }
 
-    bool last_ended() const;
-    void set_last_ended(bool ended);
+    inline bool memory_failed(){
+        return _memory_failed;
+    }
 
-    unsigned int get_channel_num() const;
+    bool empty();
+
+    inline bool last_ended(){
+        return _last_ended;
+    }
+
+    inline void set_last_ended(bool ended){
+        _last_ended = ended;
+    }
+
+    inline unsigned int get_channel_num(){
+        return _channel_num;
+    }
 
     virtual void capture_ended();
     virtual bool has_data(int index) = 0;
@@ -63,12 +81,19 @@ public:
 protected:
     virtual void free_data();
 
-protected:
-    mutable boost::recursive_mutex _mutex;
+    inline uint64_t sample_count(){
+        return _sample_count;
+    }
 
-    //std::vector<uint8_t> _data;
+    uint64_t ring_start();
+    uint64_t ring_end();
+
+protected:
+     mutable std::mutex  _mutex;
+
+  
     void* _data;
-    std::vector<uint16_t> _ch_index;
+    mutable std::vector<uint16_t> _ch_index;
 
     uint64_t _capacity;
     unsigned int _channel_num;

@@ -190,7 +190,7 @@ SRD_API int srd_init(const char *path)
 	size_t i;
 	int ret;
 	const char *env_path;
-
+ 	
 	if (max_session_id != -1) {
 		srd_err("libsigrokdecode is already initialized.");
 		return SRD_ERR;
@@ -202,30 +202,15 @@ SRD_API int srd_init(const char *path)
 	PyImport_AppendInittab("sigrokdecode", PyInit_sigrokdecode);
 
 	/* Initialize the Python interpreter. */
-	Py_InitializeEx(0);
+    Py_InitializeEx(0); 
 
-	/* Locations relative to the XDG system data directories. */
-	sys_datadirs = g_get_system_data_dirs();
-	for (i = g_strv_length((char **)sys_datadirs); i > 0; i--) {
-		ret = searchpath_add_xdg_dir(sys_datadirs[i-1]);
-		if (ret != SRD_OK) {
-			Py_Finalize();
-			return ret;
-		}
-	}
 #ifdef DECODERS_DIR
 	/* Hardcoded decoders install location, if defined. */
 	if ((ret = srd_decoder_searchpath_add(DECODERS_DIR)) != SRD_OK) {
 		Py_Finalize();
 		return ret;
 	}
-#endif
-	/* Location relative to the XDG user data directory. */
-	ret = searchpath_add_xdg_dir(g_get_user_data_dir());
-	if (ret != SRD_OK) {
-		Py_Finalize();
-		return ret;
-	}
+#endif 
 
 	/* Path specified by the user. */
 	if (path) {
@@ -234,12 +219,35 @@ SRD_API int srd_init(const char *path)
 			return ret;
 		}
 	}
+	else{ 
+		/* Locations relative to the XDG system data directories. */
+		sys_datadirs = g_get_system_data_dirs();
+		for (i = g_strv_length((char **)sys_datadirs); i > 0; i--)
+		{
+			ret = searchpath_add_xdg_dir(sys_datadirs[i - 1]);
+			if (ret != SRD_OK)
+			{
+				Py_Finalize();
+				return ret;
+			}
+		}
 
-	/* Environment variable overrides everything, for debugging. */
-	if ((env_path = g_getenv("SIGROKDECODE_DIR"))) {
-		if ((ret = srd_decoder_searchpath_add(env_path)) != SRD_OK) {
+		/* Location relative to the XDG user data directory. */
+		ret = searchpath_add_xdg_dir(g_get_user_data_dir());
+		if (ret != SRD_OK)
+		{
 			Py_Finalize();
 			return ret;
+		}
+
+		/* Environment variable overrides everything, for debugging. */
+		if ((env_path = g_getenv("SIGROKDECODE_DIR")))
+		{
+			if ((ret = srd_decoder_searchpath_add(env_path)) != SRD_OK)
+			{
+				Py_Finalize();
+				return ret;
+			}
 		}
 	}
 
@@ -247,7 +255,7 @@ SRD_API int srd_init(const char *path)
 	PyEval_InitThreads();
 
 	/* Release the GIL (ignore return value, we don't need it here). */
-	(void)PyEval_SaveThread();
+	PyEval_SaveThread();
 
 	max_session_id = 0;
 
@@ -351,6 +359,7 @@ SRD_PRIV int srd_decoder_searchpath_add(const char *path)
 
 	PyGILState_Release(gstate);
 
+	//append the directory to search list
 	searchpaths = g_slist_prepend(searchpaths, g_strdup(path));
 
 	return SRD_OK;
@@ -376,6 +385,12 @@ SRD_API GSList *srd_searchpaths_get(void)
 		paths = g_slist_append(paths, g_strdup(l->data));
 
 	return paths;
+}
+
+//set python home directory
+SRD_API void srd_set_python_home(const wchar_t *path)
+{
+	Py_SetPythonHome((wchar_t*)path);
 }
 
 /** @} */

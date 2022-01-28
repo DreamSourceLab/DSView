@@ -1,7 +1,7 @@
 /*
- * This file is part of the libsigrokdecode project.
+ * This file is part of the PulseView project.
  *
- * Copyright (C) 2013 Uwe Hermann <uwe@hermann-uwe.de>
+ * Copyright (C) 2012 Alexandru Gagniuc <mr.nuke.me@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,18 +14,23 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBSIGROKDECODE_TESTS_LIB_H
-#define LIBSIGROKDECODE_TESTS_LIB_H
+#ifndef _DSVIEW_CONFIG_H
+#define _DSVIEW_CONFIG_H
 
-void srdtest_setup(void);
-void srdtest_teardown(void);
+/* Application details */
+#define DS_TITLE "DSView"
+#define DS_DESCRIPTION "A GUI for instruments of DreamSourceLab"
+#define DS_BIN_NAME "DSView"
 
-Suite *suite_core(void);
-Suite *suite_decoder(void);
-Suite *suite_inst(void);
-Suite *suite_session(void);
+/* DSView version information */
+#define DS_VERSION_MAJOR 1
+#define DS_VERSION_MINOR 2
+#define DS_VERSION_MICRO 0
+#define DS_VERSION_STRING "1.2.0"
+
+#define DS_DEBUG_TRACE
 
 #endif

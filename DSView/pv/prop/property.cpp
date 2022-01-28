@@ -33,22 +33,26 @@ Property::Property(QString name, QString label, Getter getter, Setter setter) :
 {
 }
 
-const QString& Property::name() const
+Property::~Property(){
+
+}
+
+const QString& Property::name()
 {
 	return _name;
 }
 
-const QString& Property::label() const
+const QString& Property::label()
 {
     return _label;
 }
 
-bool Property::labeled_widget() const
+bool Property::labeled_widget()
 {
 	return false;
 }
 
-GVariant* Property::get_value() const
+GVariant* Property::get_value()
 {
     return NULL;
 }

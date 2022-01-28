@@ -39,7 +39,11 @@ File::File(QString path) :
 {
 }
 
-QString File::format_device_title() const
+File::~File(){
+
+}
+
+QString File::format_device_title()
 {
     QFileInfo fi(_path);
     return fi.fileName();
@@ -92,7 +96,7 @@ QJsonArray File::get_decoders()
             }
         }
 
-        zip_close(archive);
+        zip_close(archive);        
     }
 
     return dec_array;

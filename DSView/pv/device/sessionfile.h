@@ -32,7 +32,7 @@ class SessionFile : public File
 public:
     SessionFile(QString path);
 
-	sr_dev_inst* dev_inst() const;
+	sr_dev_inst* dev_inst();
 
     virtual void use(SigSession *owner);
 

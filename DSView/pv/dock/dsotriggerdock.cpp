@@ -24,9 +24,7 @@
 #include "../device/devinst.h"
 #include "../dialogs/dsmessagebox.h"
 #include "../view/dsosignal.h"
-
-#include <boost/shared_ptr.hpp>
-#include <boost/foreach.hpp>
+ 
 
 #include <QObject>
 #include <QLabel>
@@ -37,6 +35,7 @@
 #include <QVector>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QEvent>
 
 using namespace boost;
 using namespace std;
@@ -44,7 +43,7 @@ using namespace std;
 namespace pv {
 namespace dock {
 
-DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession &session) :
+DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession *session) :
     QScrollArea(parent),
     _session(session)
 {
@@ -62,7 +61,7 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession &session) :
     connect(_position_slider, SIGNAL(valueChanged(int)), this, SLOT(pos_changed(int)));
 
     _holdoff_label = new QLabel(_widget);
-    _holdoff_comboBox = new QComboBox(_widget);
+    _holdoff_comboBox = new DsComboBox(_widget);
     _holdoff_comboBox->addItem(tr("uS"), QVariant::fromValue(1000));
     _holdoff_comboBox->addItem(tr("mS"), QVariant::fromValue(1000000));
     _holdoff_comboBox->addItem(tr("S"), QVariant::fromValue(1000000000));
@@ -104,7 +103,7 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession &session) :
     connect(_falling_radioButton, SIGNAL(clicked()), this, SLOT(type_changed()));
 
     _source_group=new QButtonGroup(_widget);
-    _channel_comboBox = new QComboBox(_widget);
+    _channel_comboBox = new DsComboBox(_widget);
     _type_group=new QButtonGroup(_widget);
 
     _source_group->addButton(_auto_radioButton);
@@ -200,7 +199,7 @@ void DsoTriggerDock::retranslateUi()
 
 void DsoTriggerDock::reStyle()
 {
-    //QString iconPath = ":/icons/" + qApp->property("Style").toString();
+     
 }
 
 void DsoTriggerDock::paintEvent(QPaintEvent *)
@@ -222,7 +221,7 @@ void DsoTriggerDock::auto_trig(int index)
 void DsoTriggerDock::pos_changed(int pos)
 {
     int ret;
-    ret = _session.get_device()->set_config(NULL, NULL,
+    ret = _session->get_device()->set_config(NULL, NULL,
                                             SR_CONF_HORIZ_TRIGGERPOS,
                                             g_variant_new_byte((uint8_t)pos));
     if (!ret) {
@@ -247,7 +246,7 @@ void DsoTriggerDock::hold_changed(int hold)
         _holdoff_slider->setRange(0, 999);
     }
     holdoff = _holdoff_slider->value() * _holdoff_comboBox->currentData().toDouble() / 10;
-    ret = _session.get_device()->set_config(NULL, NULL,
+    ret = _session->get_device()->set_config(NULL, NULL,
                                             SR_CONF_TRIGGER_HOLDOFF,
                                             g_variant_new_uint64(holdoff));
 
@@ -264,7 +263,7 @@ void DsoTriggerDock::hold_changed(int hold)
 void DsoTriggerDock::margin_changed(int margin)
 {
     int ret;
-    ret = _session.get_device()->set_config(NULL, NULL,
+    ret = _session->get_device()->set_config(NULL, NULL,
                                             SR_CONF_TRIGGER_MARGIN,
                                             g_variant_new_byte(margin));
     if (!ret) {
@@ -282,7 +281,7 @@ void DsoTriggerDock::source_changed()
     int id = _source_group->checkedId();
     int ret;
 
-    ret = _session.get_device()->set_config(NULL, NULL,
+    ret = _session->get_device()->set_config(NULL, NULL,
                                             SR_CONF_TRIGGER_SOURCE,
                                             g_variant_new_byte(id));
     if (!ret) {
@@ -300,7 +299,7 @@ void DsoTriggerDock::channel_changed(int ch)
     (void)ch;
     int ret;
 
-    ret = _session.get_device()->set_config(NULL, NULL,
+    ret = _session->get_device()->set_config(NULL, NULL,
                                             SR_CONF_TRIGGER_CHANNEL,
                                             g_variant_new_byte(_channel_comboBox->currentData().toInt()));
     if (!ret) {
@@ -318,7 +317,7 @@ void DsoTriggerDock::type_changed()
     int id = _type_group->checkedId();
     int ret;
 
-    ret = _session.get_device()->set_config(NULL, NULL,
+    ret = _session->get_device()->set_config(NULL, NULL,
                                             SR_CONF_TRIGGER_SLOPE,
                                             g_variant_new_byte(id));
     if (!ret) {
@@ -333,7 +332,7 @@ void DsoTriggerDock::type_changed()
 
 void DsoTriggerDock::device_change()
 {
-    if (_session.get_device()->name() != "DSLogic") {
+    if (_session->get_device()->name() != "DSLogic") {
         _position_spinBox->setDisabled(true);
         _position_slider->setDisabled(true);
     } else {
@@ -344,11 +343,13 @@ void DsoTriggerDock::device_change()
 
 void DsoTriggerDock::init()
 {
-    if (_session.get_device()->name().contains("virtual")) {
-        foreach(QAbstractButton * btn, _source_group->buttons())
+    if (_session->get_device()->name().contains("virtual")) {
+        for(QAbstractButton * btn :  _source_group->buttons())
             btn->setDisabled(true);
-        foreach(QAbstractButton * btn, _type_group->buttons())
+
+        for(QAbstractButton * btn : _type_group->buttons())
             btn->setDisabled(true);
+
         _holdoff_slider->setDisabled(true);
         _holdoff_spinBox->setDisabled(true);
         _holdoff_comboBox->setDisabled(true);
@@ -356,10 +357,12 @@ void DsoTriggerDock::init()
         _channel_comboBox->setDisabled(true);
         return;
     } else {
-        foreach(QAbstractButton * btn, _source_group->buttons())
+        for(QAbstractButton * btn :  _source_group->buttons())
             btn->setDisabled(false);
-        foreach(QAbstractButton * btn, _type_group->buttons())
+
+        for(QAbstractButton * btn : _type_group->buttons())
             btn->setDisabled(false);
+            
         _holdoff_slider->setDisabled(false);
         _holdoff_spinBox->setDisabled(false);
         _holdoff_comboBox->setDisabled(false);
@@ -368,7 +371,7 @@ void DsoTriggerDock::init()
     }
 
     // TRIGGERPOS
-    GVariant* gvar = _session.get_device()->get_config(NULL, NULL,
+    GVariant* gvar = _session->get_device()->get_config(NULL, NULL,
                                             SR_CONF_HORIZ_TRIGGERPOS);
     if (gvar != NULL) {
         uint16_t pos = g_variant_get_byte(gvar);
@@ -376,7 +379,7 @@ void DsoTriggerDock::init()
         _position_slider->setValue(pos);
     }
 
-    gvar = _session.get_device()->get_config(NULL, NULL,
+    gvar = _session->get_device()->get_config(NULL, NULL,
                                                 SR_CONF_TRIGGER_SOURCE);
     if (gvar != NULL) {
         uint8_t src = g_variant_get_byte(gvar);
@@ -387,13 +390,14 @@ void DsoTriggerDock::init()
     // setup _channel_comboBox
     disconnect(_channel_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(channel_changed(int)));
     _channel_comboBox->clear();
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
-        boost::shared_ptr<view::DsoSignal> dsoSig;
-        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
+    
+    for(auto &s : _session->get_signals()) {
+        view::DsoSignal *dsoSig = NULL;
+        if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
             _channel_comboBox->addItem(dsoSig->get_name(), QVariant::fromValue(dsoSig->get_index()));
         }
     }
-    gvar = _session.get_device()->get_config(NULL, NULL,
+    gvar = _session->get_device()->get_config(NULL, NULL,
                                                 SR_CONF_TRIGGER_CHANNEL);
     if (gvar != NULL) {
         uint8_t src = g_variant_get_byte(gvar);
@@ -407,7 +411,7 @@ void DsoTriggerDock::init()
     }
     connect(_channel_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(channel_changed(int)));
 
-    gvar = _session.get_device()->get_config(NULL, NULL,
+    gvar = _session->get_device()->get_config(NULL, NULL,
                                                 SR_CONF_TRIGGER_SLOPE);
     if (gvar != NULL) {
         uint8_t slope = g_variant_get_byte(gvar);
@@ -417,7 +421,7 @@ void DsoTriggerDock::init()
 
     disconnect(_holdoff_slider, SIGNAL(valueChanged(int)), this, SLOT(hold_changed(int)));
     disconnect(_holdoff_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(hold_changed(int)));
-    gvar = _session.get_device()->get_config(NULL, NULL,
+    gvar = _session->get_device()->get_config(NULL, NULL,
                                                 SR_CONF_TRIGGER_HOLDOFF);
     if (gvar != NULL) {
         uint64_t holdoff = g_variant_get_uint64(gvar);
@@ -439,7 +443,7 @@ void DsoTriggerDock::init()
     connect(_holdoff_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(hold_changed(int)));
 
     disconnect(_margin_slider, SIGNAL(valueChanged(int)), this, SLOT(margin_changed(int)));
-    gvar = _session.get_device()->get_config(NULL, NULL,
+    gvar = _session->get_device()->get_config(NULL, NULL,
                                                 SR_CONF_TRIGGER_MARGIN);
     if (gvar != NULL) {
         uint8_t margin = g_variant_get_byte(gvar);

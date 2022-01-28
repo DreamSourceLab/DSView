@@ -27,14 +27,13 @@
 #include <QFormLayout>
 #include <QVBoxLayout>
 #include <QLabel>
-#include <QCheckBox>
-#include <QComboBox>
-
-#include <boost/shared_ptr.hpp>
+#include <QCheckBox> 
+ 
 
 #include "../device/devinst.h"
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
+#include "../ui/dscombobox.h"
 
 namespace pv {
 
@@ -50,29 +49,30 @@ private:
 
 
 public:
-    FftOptions(QWidget *parent, SigSession &session);
+    FftOptions(QWidget *parent, SigSession *session);
+
+    ~FftOptions();
 
 protected:
     void accept();
     void reject();
 
 private slots:
-    void window_changed(QString str);
+    void window_changed(int index);
     void len_changed(int index);
 
 private:
-    SigSession &_session;
+    SigSession *_session;
     uint64_t _sample_limit;
-
-    toolbars::TitleBar *_titlebar;
-    QComboBox *_len_combobox;
-    QComboBox *_interval_combobox;
+ 
+    DsComboBox *_len_combobox;
+    DsComboBox *_interval_combobox;
     QCheckBox *_en_checkbox;
-    QComboBox *_ch_combobox;
-    QComboBox *_window_combobox;
+    DsComboBox *_ch_combobox;
+    DsComboBox *_window_combobox;
     QCheckBox *_dc_checkbox;
-    QComboBox *_view_combobox;
-    QComboBox *_dbv_combobox;
+    DsComboBox *_view_combobox;
+    DsComboBox *_dbv_combobox;
 
     QLabel *_hint_label;
     QGridLayout *_glayout;

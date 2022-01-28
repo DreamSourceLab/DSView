@@ -18,9 +18,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
-
-#include <extdef.h>
-
+ 
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
@@ -28,12 +26,10 @@
 
 #include <algorithm>
 
-#include <boost/foreach.hpp>
-
 #include "logicsnapshot.h"
 #include "groupsnapshot.h"
+#include "../extdef.h"
 
-using namespace boost;
 using namespace std;
 
 namespace pv {
@@ -49,15 +45,17 @@ const uint16_t GroupSnapshot::value_mask[16] = {0x1, 0x2, 0x4, 0x8,
                                                 0x100, 0x200, 0x400, 0x800,
                                                 0x1000, 0x2000, 0x4000, 0x8000};
 
-GroupSnapshot::GroupSnapshot(const boost::shared_ptr<LogicSnapshot> &_logic_snapshot, std::list<int> index_list)
+GroupSnapshot::GroupSnapshot(const LogicSnapshot *_logic_snapshot, std::list<int> index_list)
 {
     assert(_logic_snapshot);
 
-    //boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+	LogicSnapshot *logic_snapshot = const_cast<LogicSnapshot*>(_logic_snapshot);
+
+   
 	memset(_envelope_levels, 0, sizeof(_envelope_levels));
-    _data = _logic_snapshot->get_data();
-    _sample_count = _logic_snapshot->get_sample_count();
-    _unit_size = _logic_snapshot->unit_size();
+    _data = logic_snapshot->get_data();
+    _sample_count = logic_snapshot->get_sample_count();
+    _unit_size = logic_snapshot->unit_size();
     _index_list = index_list;
 
     _mask = 0;
@@ -94,9 +92,8 @@ GroupSnapshot::GroupSnapshot(const boost::shared_ptr<LogicSnapshot> &_logic_snap
 }
 
 GroupSnapshot::~GroupSnapshot()
-{
-    //boost::lock_guard<boost::recursive_mutex> lock(_mutex);
-	BOOST_FOREACH(Envelope &e, _envelope_levels)
+{ 
+	for(auto &e : _envelope_levels)
 		free(e.samples);
 }
 
@@ -110,17 +107,14 @@ void GroupSnapshot::clear()
 
 }
 
-uint64_t GroupSnapshot::get_sample_count() const
-{
-    //boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+uint64_t GroupSnapshot::get_sample_count()
+{ 
     return _sample_count;
 }
 
 void GroupSnapshot::append_payload()
 {
-    //boost::lock_guard<boost::recursive_mutex> lock(_mutex);
-
-	// Generate the first mip-map from the data
+    
 	append_payload_to_envelope_levels();
 }
 
@@ -134,13 +128,10 @@ const uint16_t* GroupSnapshot::get_samples(
 	assert(start_sample <= end_sample);
 
     int64_t i;
-    uint16_t tmpl, tmpr;
-    //boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    uint16_t tmpl, tmpr; 
 
     uint16_t *const data = new uint16_t[end_sample - start_sample];
-//    memcpy(data, (uint16_t*)_data + start_sample, sizeof(uint16_t) *
-//		(end_sample - start_sample));
-//    memset(data, 0, sizeof(uint16_t) * (end_sample - start_sample));
+ 
     for(i = start_sample; i < end_sample; i++) {
         if (_unit_size == 2)
             tmpl = *((uint16_t*)_data + i) & _mask;
@@ -158,13 +149,12 @@ const uint16_t* GroupSnapshot::get_samples(
 }
 
 void GroupSnapshot::get_envelope_section(EnvelopeSection &s,
-	uint64_t start, uint64_t end, float min_length) const
+	uint64_t start, uint64_t end, float min_length)
 {
     assert(end <= _sample_count);
 	assert(start <= end);
 	assert(min_length > 0);
-
-    //boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+ 
 
 	const unsigned int min_level = max((int)floorf(logf(min_length) /
 		LogEnvelopeScaleFactor) - 1, 0);

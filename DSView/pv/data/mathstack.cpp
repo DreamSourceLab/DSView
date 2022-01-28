@@ -19,14 +19,12 @@
  */
 
 #include "mathstack.h"
-
-#include <boost/foreach.hpp>
-#include <boost/thread/thread.hpp>
-
-#include <pv/data/dso.h>
-#include <pv/data/dsosnapshot.h>
-#include <pv/sigsession.h>
-#include <pv/view/dsosignal.h>
+ 
+#include  "dso.h"
+#include  "dsosnapshot.h"
+#include  "../sigsession.h"
+#include  "../view/dsosignal.h"
+#include <math.h>
 
 #define PI 3.1415
 
@@ -75,9 +73,9 @@ const QString MathStack::vDialDivUnit[MathStack::vDialUnitCount] = {
     "V/V",
 };
 
-MathStack::MathStack(pv::SigSession &session,
-                     boost::shared_ptr<view::DsoSignal> dsoSig1,
-                     boost::shared_ptr<view::DsoSignal> dsoSig2,
+MathStack::MathStack(pv::SigSession *session,
+                     view::DsoSignal* dsoSig1,
+                     view::DsoSignal* dsoSig2,
                      MathType type) :
     _session(session),
     _dsoSig1(dsoSig1),
@@ -100,7 +98,7 @@ MathStack::~MathStack()
 
 void MathStack::free_envelop()
 {
-    BOOST_FOREACH(Envelope &e, _envelope_level) {
+    for(auto &e : _envelope_level) {
         if (e.samples)
             free(e.samples);
     }
@@ -109,23 +107,23 @@ void MathStack::free_envelop()
 
 void MathStack::clear()
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
 }
 
 void MathStack::init()
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
 
     _sample_num = 0;
     _envelope_done = false;
 }
 
-MathStack::MathType MathStack::get_type() const
+MathStack::MathType MathStack::get_type()
 {
     return _type;
 }
 
-uint64_t MathStack::get_sample_num() const
+uint64_t MathStack::get_sample_num()
 {
     return _sample_num;
 }
@@ -279,13 +277,13 @@ double MathStack::get_math_scale()
     return scale;
 }
 
-const double* MathStack::get_math(uint64_t start) const
+const double* MathStack::get_math(uint64_t start)
 {
     return _math.data() + start;
 }
 
 void MathStack::get_math_envelope_section(EnvelopeSection &s,
-    uint64_t start, uint64_t end, float min_length) const
+    uint64_t start, uint64_t end, float min_length)
 {
     assert(end <= get_sample_num());
     assert(start <= end);
@@ -315,18 +313,16 @@ void MathStack::get_math_envelope_section(EnvelopeSection &s,
 
 void MathStack::calc_math()
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
 
     _math_state = Running;
 
-    const boost::shared_ptr<pv::data::Dso> data = _dsoSig1->dso_data();
-    const deque< boost::shared_ptr<pv::data::DsoSnapshot> > &snapshots =
-        data->get_snapshots();
+    const auto data = _dsoSig1->dso_data();
+    const auto &snapshots = data->get_snapshots();
     if (snapshots.empty())
         return;
 
-    const boost::shared_ptr<pv::data::DsoSnapshot> &snapshot =
-        snapshots.front();
+    const auto snapshot = snapshots.front();
     if (snapshot->empty())
         return;
 

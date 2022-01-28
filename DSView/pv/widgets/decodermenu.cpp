@@ -50,8 +50,11 @@ DecoderMenu::DecoderMenu(QWidget *parent, bool first_level_decoder) :
 	}
 	g_slist_free(l);
 
-	connect(&_mapper, SIGNAL(mapped(QObject*)),
-		this, SLOT(on_action(QObject*)));
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+	connect(&_mapper, SIGNAL(mappedObject(QObject*)), this, SLOT(on_action(QObject*)));
+#else
+	connect(&_mapper, SIGNAL(mapped(QObject*)), this, SLOT(on_action(QObject*)));
+#endif
 }
 
 int DecoderMenu::decoder_name_cmp(const void *a, const void *b)

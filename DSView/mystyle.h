@@ -7,7 +7,7 @@ class MyStyle : public QProxyStyle
 {
     Q_OBJECT
     public:
-    int pixelMetric(PixelMetric metric, const QStyleOption * option = 0, const QWidget * widget = 0 ) const {
+    int pixelMetric(PixelMetric metric, const QStyleOption * option = 0, const QWidget * widget = 0 ) {
         int s = QProxyStyle::pixelMetric(metric, option, widget);
         if (metric == QStyle::PM_SmallIconSize) {
             s = 24;

@@ -22,7 +22,8 @@
 #ifndef DSVIEW_PV_DATA_DECODE_ROWDATA_H
 #define DSVIEW_PV_DATA_DECODE_ROWDATA_H
 
-#include <vector>
+#include <vector> 
+#include <mutex>
 
 #include "annotation.h"
 
@@ -35,33 +36,37 @@ class RowData
 public:
 	RowData();
     ~RowData();
-public:
-	uint64_t get_max_sample() const;
 
-    uint64_t get_max_annotation() const;
-    uint64_t get_min_annotation() const;
-	/**
+public:
+	uint64_t get_max_sample();
+
+    uint64_t get_max_annotation();
+    uint64_t get_min_annotation();	
+
+    uint64_t get_annotation_index(uint64_t start_sample);
+
+    bool push_annotation(Annotation *a);
+
+    inline uint64_t get_annotation_size(){
+        return _item_count;
+    }
+
+    bool get_annotation(pv::data::decode::Annotation &ann, uint64_t index);
+
+     /**
 	 * Extracts sorted annotations between two period into a vector.
 	 */
-	void get_annotation_subset(
-		std::vector<pv::data::decode::Annotation> &dest,
-		uint64_t start_sample, uint64_t end_sample) const;
-
-    uint64_t get_annotation_index(uint64_t start_sample) const;
-
-    bool push_annotation(const Annotation &a);
-
-    uint64_t get_annotation_size() const;
-
-    bool get_annotation(pv::data::decode::Annotation &ann,
-                        uint64_t index) const;
+	void get_annotation_subset(std::vector<pv::data::decode::Annotation> &dest,
+		                        uint64_t start_sample, uint64_t end_sample);
 
     void clear();
 
 private:
-    uint64_t _max_annotation;
-    uint64_t _min_annotation;
-	std::vector<Annotation> _annotations;
+    uint64_t        _max_annotation;
+    uint64_t        _min_annotation;
+    uint64_t        _item_count;
+	std::vector<Annotation*> _annotations;
+    static std::mutex _global_visitor_mutex;
 };
 
 }

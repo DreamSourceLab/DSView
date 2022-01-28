@@ -25,7 +25,7 @@
 
 #include "devinst.h"
 
-#include <pv/sigsession.h>
+#include "../sigsession.h"
 
 namespace pv {
 namespace device {
@@ -43,7 +43,7 @@ DevInst::~DevInst()
     free(_id);
 }
 
-void* DevInst::get_id() const
+void* DevInst::get_id()
 {
     assert(_id);
 
@@ -53,7 +53,6 @@ void* DevInst::get_id() const
 void DevInst::use(SigSession *owner)
 {
 	assert(owner);
-	assert(!_owner);
 	_owner = owner;
 }
 
@@ -61,11 +60,10 @@ void DevInst::release()
 {
 	if (_owner) {
 		_owner->release_device(this);
-		_owner = NULL;
 	}
 }
 
-SigSession* DevInst::owner() const
+SigSession* DevInst::owner()
 {
 	return _owner;
 }
@@ -189,7 +187,7 @@ QString DevInst::name()
     return QString::fromLocal8Bit(sdi->driver->name);
 }
 
-bool DevInst::is_trigger_enabled() const
+bool DevInst::is_trigger_enabled()
 {
 	return false;
 }
@@ -197,17 +195,33 @@ bool DevInst::is_trigger_enabled() const
 void DevInst::start()
 {
 	if (sr_session_start() != SR_OK)
-		throw tr("Failed to start session.");
+		 throw tr("Failed to start session.");
+		//assert(false);
 }
 
 void DevInst::run()
 {
-	sr_session_run();
+	qDebug()<<"session run loop start";
+	int ret = sr_session_run();
+	if (ret != SR_OK){
+        qDebug()<<"start session error!";
+	}
+    qDebug()<<"session run loop end";
 }
 
-bool DevInst::is_usable() const
+void DevInst::stop()
+{
+ 	sr_session_stop();
+} 
+
+bool DevInst::is_usable()
 {
     return _usable;
+}
+
+void DevInst::destroy(){
+	release(); 
+	//delete this;  //do not to destroy
 }
 
 } // device

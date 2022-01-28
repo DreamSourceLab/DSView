@@ -34,6 +34,10 @@
 #define sr_warn(s, args...) sr_warn(LOG_PREFIX s, ## args)
 #define sr_err(s, args...) sr_err(LOG_PREFIX s, ## args)
 
+char DS_RES_PATH[500] = {0};
+
+int bExportOriginalData = 0; //able export all data
+
 /**
  * @file
  *
@@ -379,6 +383,17 @@ SR_API int sr_session_start(void)
 	return ret;
 }
 
+/*
+* check session if be created
+*/
+int sr_check_session_start_before(){
+
+	if (!session || !session->devs) {
+		return 1;		 
+	}
+	return 0;
+}
+
 /**
  * Run the session.
  *
@@ -416,8 +431,9 @@ SR_API int sr_session_run(void)
         }
 	} else {
 		/* Real sources, use g_poll() main loop. */
-        while (session->num_sources)
-            sr_session_iteration(TRUE);
+        while (session->num_sources){
+			sr_session_iteration(TRUE);
+		}            
 	}
 
     g_mutex_lock(&session->stop_mutex);
@@ -484,7 +500,7 @@ SR_API int sr_session_stop(void)
 
     g_mutex_lock(&session->stop_mutex);
     if (session->running)
-        session->abort_session = TRUE;
+        session->abort_session = TRUE;  
     g_mutex_unlock(&session->stop_mutex);
 
 	return SR_OK;
@@ -811,6 +827,29 @@ SR_API int sr_session_source_remove_pollfd(GPollFD *pollfd)
 SR_API int sr_session_source_remove_channel(GIOChannel *channel)
 {
 	return _sr_session_source_remove((gintptr)channel);
+}
+
+SR_API void sr_set_export_original_data(int flag)
+{
+	bExportOriginalData = flag;
+}
+
+SR_API int sr_get_export_original_flag()
+{
+	return bExportOriginalData;
+}
+
+void sr_set_firmware_resource_dir(const char *dir)
+{
+	if (dir){
+		strcpy(DS_RES_PATH, dir);
+
+		int len = strlen(DS_RES_PATH);
+		if (DS_RES_PATH[len-1] != '/'){
+			DS_RES_PATH[len] = '/'; 
+			DS_RES_PATH[len + 1] = 0;
+		}
+	}
 }
 
 /** @} */

@@ -51,7 +51,7 @@ namespace prop {
 
 Int::Int(QString name, QString label,
     QString suffix,
-    optional< pair<int64_t, int64_t> > range,
+    boost::optional< pair<int64_t, int64_t> > range,
     Getter getter,
     Setter setter) :
     Property(name, label, getter, setter),

@@ -26,6 +26,8 @@
 #include <QStyleOption>
 #include <QMouseEvent>
 #include <QBitmap>
+#include <QJsonObject>
+#include <QJsonArray>
 
 #include "../view/trace.h"
 #include "../sigsession.h"
@@ -34,13 +36,13 @@
 #include "../view/trace.h"
 #include "../dialogs/dsomeasure.h"
 
-using namespace boost;
+ 
 using namespace std;
 
 namespace pv {
 namespace view {
 
-ViewStatus::ViewStatus(SigSession &session, View &parent) :
+ViewStatus::ViewStatus(SigSession *session, View &parent) :
     QWidget(&parent),
     _session(session),
     _view(parent),
@@ -52,12 +54,17 @@ ViewStatus::ViewStatus(SigSession &session, View &parent) :
 void ViewStatus::paintEvent(QPaintEvent *)
 {
     QStyleOption opt;
-    opt.init(this);
+ #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+      opt.initFrom(this);
+ #else
+      opt.init(this);
+ #endif
+
     QPainter p(this);
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 
     QColor fore(QWidget::palette().color(QWidget::foregroundRole()));
-    if (_session.get_device()->dev_inst()->mode == LOGIC) {
+    if (_session->get_device()->dev_inst()->mode == LOGIC) {
         fore.setAlpha(View::ForeAlpha);
         p.setPen(fore);
         p.drawText(this->rect(), Qt::AlignLeft | Qt::AlignVCenter, _rle_depth);
@@ -66,21 +73,22 @@ void ViewStatus::paintEvent(QPaintEvent *)
         p.setPen(Qt::NoPen);
         p.setBrush(View::Blue);
         p.drawRect(this->rect().left(), this->rect().bottom() - 3,
-                   _session.get_repeat_hold() * this->rect().width() / 100, 3);
+                   _session->get_repeat_hold() * this->rect().width() / 100, 3);
 
         p.setPen(View::Blue);
         p.drawText(this->rect(), Qt::AlignCenter | Qt::AlignVCenter, _capture_status);
-    } else if (_session.get_device()->dev_inst()->mode == DSO) {
+    } else if (_session->get_device()->dev_inst()->mode == DSO) {
         fore.setAlpha(View::BackAlpha);
         for(size_t i = 0; i < _mrects.size(); i++) {
             int sig_index = std::get<1>(_mrects[i]);
-            boost::shared_ptr<view::DsoSignal> dsoSig = NULL;
-            const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
-            BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+            view::DsoSignal *dsoSig = NULL;
+            const auto &sigs = _session->get_signals();
+
+            for(auto &s : sigs) {
                 assert(s);
                 if (!s->enabled())
                     continue;
-                if ((dsoSig = dynamic_pointer_cast<DsoSignal>(s))) {
+                if ((dsoSig = dynamic_cast<DsoSignal*>(s))) {
                     if (sig_index == dsoSig->get_index())
                         break;
                     else
@@ -133,7 +141,7 @@ void ViewStatus::reload()
     const int COLUMN = 5;
     const int ROW = 2;
     const int MARGIN = 3;
-    if (_session.get_device()->dev_inst()->mode == DSO)
+    if (_session->get_device()->dev_inst()->mode == DSO)
     {
         const double width = _view.get_view_width() * 1.0 / COLUMN;
         const int height = (this->height() - 2*MARGIN) / ROW;
@@ -184,11 +192,10 @@ void ViewStatus::mousePressEvent(QMouseEvent *event)
 {
     assert(event);
 
-    if (_session.get_device()->dev_inst()->mode != DSO)
+    if (_session->get_device()->dev_inst()->mode != DSO)
         return;
 
-    if (event->button() == Qt::LeftButton) {
-        //BOOST_FOREACH(QRect rect, std::get<0>(_mrects)) {
+    if (event->button() == Qt::LeftButton) { 
         for(size_t i = 0; i < _mrects.size(); i++) {
             const QRect rect = std::get<0>(_mrects[i]);
             if (rect.contains(event->pos())) {
@@ -233,11 +240,11 @@ QJsonArray ViewStatus::get_session()
 
 void ViewStatus::load_session(QJsonArray measure_array)
 {
-    if (_session.get_device()->dev_inst()->mode != DSO ||
+    if (_session->get_device()->dev_inst()->mode != DSO ||
         measure_array.empty())
         return;
 
-    foreach (const QJsonValue &measure_value, measure_array) {
+    for (const QJsonValue &measure_value : measure_array) {
         QJsonObject m_obj = measure_value.toObject();
         int index = m_obj["site"].toInt();
         int sig_index = m_obj["index"].toInt();

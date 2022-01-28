@@ -30,8 +30,7 @@
 #include <QTimer>
 
 namespace pv {
-
-class DeviceManager;
+ 
 class MainWindow;
 
 namespace toolbars {
@@ -66,13 +65,11 @@ public:
     }borderTypes;
 
 public:
-    MainFrame(DeviceManager &device_manager,
-        const char *open_file_name = NULL);
+    MainFrame();
 
     void readSettings();
 
-protected:
-    void changeEvent(QEvent* event);
+protected: 
     void resizeEvent(QResizeEvent *event);
     void closeEvent(QCloseEvent *event);
     bool eventFilter(QObject *object, QEvent *event);
@@ -88,8 +85,8 @@ public slots:
 private:
     void hide_border();
     void show_border();
-
     void writeSettings();
+    void saveWindowRegion();
 
 private:
     toolbars::TitleBar *_titleBar;
@@ -104,15 +101,12 @@ private:
     widgets::Border *_top_right;
     widgets::Border *_bottom_left;
     widgets::Border *_bottom_right;
-
-    bool _moving;
-    bool _draging;
-    QPoint _lastMousePosition;
-    QRect _dragStartGeometry;
-    int _startPos;
-    QTimer _timer;
-    bool _freezing;
-    bool _minimized;
+ 
+    bool    _bDraging; 
+    QRect   _dragStartGeometry;
+    int     _hit_border;
+    QTimer  _timer;
+    bool    _freezing; 
 };
 
 } // namespace pv

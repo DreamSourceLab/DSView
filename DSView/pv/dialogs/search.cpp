@@ -23,14 +23,13 @@
 #include "../view/logicsignal.h"
 
 #include <assert.h>
-#include <QRegExpValidator>
-
-#include <boost/foreach.hpp>
+#include <QRegularExpressionValidator>
+ 
 
 namespace pv {
 namespace dialogs {
 
-Search::Search(QWidget *parent, SigSession &session, std::map<uint16_t, QString> pattern) :
+Search::Search(QWidget *parent, SigSession *session, std::map<uint16_t, QString> pattern) :
     DSDialog(parent),
     _session(session)
 {
@@ -40,8 +39,8 @@ Search::Search(QWidget *parent, SigSession &session, std::map<uint16_t, QString>
     font.setFixedPitch(true);
     //this->setMinimumWidth(350);
 
-    QRegExp value_rx("[10XRFCxrfc]+");
-    QValidator *value_validator = new QRegExpValidator(value_rx, this);
+    QRegularExpression value_rx("[10XRFCxrfc]+");
+    QValidator *value_validator = new QRegularExpressionValidator(value_rx, this);
 
     search_buttonBox.addButton(QDialogButtonBox::Ok);
     search_buttonBox.addButton(QDialogButtonBox::Cancel);
@@ -50,11 +49,11 @@ Search::Search(QWidget *parent, SigSession &session, std::map<uint16_t, QString>
     search_layout->setVerticalSpacing(0);
 
     int index = 0;
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> sig,
-                  _session.get_signals()) {
+
+    for(auto &sig :  _session->get_signals()) {
         assert(sig);
-        boost::shared_ptr<view::LogicSignal> logic_sig;
-        if ((logic_sig = boost::dynamic_pointer_cast<view::LogicSignal>(sig))) {
+        view::LogicSignal *logic_sig = NULL;
+        if ((logic_sig = dynamic_cast<view::LogicSignal*>(sig))) {
             QLineEdit *search_lineEdit = new QLineEdit(this);
             if (pattern.find(logic_sig->get_index()) != pattern.end())
                 search_lineEdit->setText(pattern[logic_sig->get_index()]);
@@ -86,7 +85,7 @@ Search::Search(QWidget *parent, SigSession &session, std::map<uint16_t, QString>
 
     connect(&search_buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
     connect(&search_buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
-    connect(_session.get_device().get(), SIGNAL(device_updated()), this, SLOT(reject()));
+    connect(_session->get_device(), SIGNAL(device_updated()), this, SLOT(reject()));
 }
 
 Search::~Search()
@@ -111,11 +110,10 @@ std::map<uint16_t, QString> Search::get_pattern()
     std::map<uint16_t, QString> pattern;
 
     int index = 0;
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> sig,
-                  _session.get_signals()) {
+    for(auto &sig :_session->get_signals()) {
         assert(sig);
-        boost::shared_ptr<view::LogicSignal> logic_sig;
-        if ((logic_sig = boost::dynamic_pointer_cast<view::LogicSignal>(sig))) {
+        view::LogicSignal *logic_sig = NULL;
+        if ((logic_sig = dynamic_cast<view::LogicSignal*>(sig))) {
             pattern[logic_sig->get_index()] = _search_lineEdit_vec[index]->text();
             index++;
         }

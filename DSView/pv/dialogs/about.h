@@ -27,8 +27,7 @@
 #include <QLabel>
 #include "dsdialog.h"
 
-#include <libsigrok4DSL/libsigrok.h>
-
+  
 namespace pv {
 namespace dialogs {
 

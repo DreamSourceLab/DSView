@@ -42,6 +42,7 @@ namespace view {
 class View;
 class Viewport;
 
+//base class
 class Trace : public SelectableItem
 {
 	Q_OBJECT
@@ -72,8 +73,8 @@ public:
 	/**
 	 * Gets the name of this signal.
 	 */
-	QString get_name() const;
-    virtual int get_name_width() const;
+	QString get_name();
+    virtual int get_name_width();
 
 	/**
 	 * Sets the name of the signal.
@@ -83,7 +84,7 @@ public:
 	/**
 	 * Get the colour of the signal.
 	 */
-	QColor get_colour() const;
+	QColor get_colour();
 
 	/**
 	 * Set the colour of the signal.
@@ -93,7 +94,7 @@ public:
 	/**
 	 * Gets the vertical layout offset of this signal.
 	 */
-	int get_v_offset() const;
+	int get_v_offset();
 
 	/**
 	 * Sets the vertical layout offset of this signal.
@@ -103,21 +104,21 @@ public:
     /**
      * Gets trace type
      */
-    int get_type() const;
+    int get_type();
 
     /**
      * Index process
      */
-    int get_index() const;
+    int get_index();
     std::list<int> &get_index_list();
     void set_index_list(std::list<int> index_list);
-    int get_sec_index() const;
+    int get_sec_index();
     void set_sec_index(int sec_index);
 
     /**
      * Gets the height of this signal.
      */
-    int get_totalHeight() const;
+    int get_totalHeight();
 
     /**
      * Sets the height of this signal.
@@ -127,31 +128,31 @@ public:
     /**
      * Geom
      */
-    int get_leftWidth() const;
-    int get_rightWidth() const;
-    int get_headerHeight() const;
+    int get_leftWidth();
+    int get_rightWidth();
+    int get_headerHeight();
 
     /**
      * Gets the old vertical layout offset of this signal.
      */
-    int get_old_v_offset() const;
+    int get_old_v_offset();
 
     /**
      * Sets the old vertical layout offset of this signal.
      */
     void set_old_v_offset(int v_offset);
 
-    virtual int get_zero_vpos() const;
+    virtual int get_zero_vpos();
 
 	/**
 	 * Returns true if the trace is visible and enabled.
 	 */
-	virtual bool enabled() const = 0;
+    virtual bool enabled() = 0;
 
 	virtual void set_view(pv::view::View *view);
-    pv::view::View* get_view() const;
+    pv::view::View* get_view();
     virtual void set_viewport(pv::view::Viewport *viewport);
-    pv::view::Viewport* get_viewport() const;
+    pv::view::Viewport* get_viewport();
 
     /**
      * Paints prepare
@@ -194,7 +195,7 @@ public:
 	/**
 	 * Gets the y-offset of the axis.
 	 */
-	int get_y() const;
+	int get_y();
 
     /**
      * Determines if a point is in the header rect.
@@ -222,11 +223,11 @@ public:
      * 	area.
      * @return Returns the rectangle of the signal label.
      */
-    QRectF get_rect(const char *s, int y, int right) const;
+    QRectF get_rect(const char *s, int y, int right);
 
     virtual int rows_size();
 
-    virtual QRect get_view_rect() const;
+    virtual QRect get_view_rect();
 
     virtual bool mouse_double_click(int right, const QPoint pt);
 
@@ -242,7 +243,7 @@ protected:
 	 * of the trace colour against a threshold to determine whether
 	 * white or black would be more visible.
 	 */
-	QColor get_text_colour() const;
+	QColor get_text_colour();
 
     /**
      * Paints optoins for different trace type.

@@ -22,27 +22,26 @@
 
 #include "logic.h"
 #include "logicsnapshot.h"
+#include <assert.h>
 
-#include <boost/foreach.hpp>
-
-using namespace boost;
 using namespace std;
 
 namespace pv {
 namespace data {
 
-Logic::Logic() :
+Logic::Logic(LogicSnapshot *snapshot) :
     SignalData()
 {
+    assert(snapshot);
+    _snapshots.push_front(snapshot);
 }
 
-void Logic::push_snapshot(
-	boost::shared_ptr<LogicSnapshot> &snapshot)
+void Logic::push_snapshot(LogicSnapshot *snapshot)
 {
 	_snapshots.push_front(snapshot);
 }
 
-deque< boost::shared_ptr<LogicSnapshot> >& Logic::get_snapshots()
+std::deque<LogicSnapshot*>& Logic::get_snapshots()
 {
 	return _snapshots;
 }
@@ -50,16 +49,21 @@ deque< boost::shared_ptr<LogicSnapshot> >& Logic::get_snapshots()
 void Logic::clear()
 {
     //_snapshots.clear();
-    BOOST_FOREACH(const boost::shared_ptr<LogicSnapshot> s, _snapshots)
+    for(auto &s : _snapshots)
         s->clear();
 }
 
 void Logic::init()
 {
     //_snapshots.clear();
-    BOOST_FOREACH(const boost::shared_ptr<LogicSnapshot> s, _snapshots)
+    for(auto &s : _snapshots)
         s->init();
 }
+
+ LogicSnapshot* Logic::snapshot()
+ {
+    return _snapshots[0];
+ }
 
 } // namespace data
 } // namespace pv

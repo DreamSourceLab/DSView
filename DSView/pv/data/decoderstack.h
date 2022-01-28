@@ -21,25 +21,28 @@
 
 #ifndef DSVIEW_PV_DATA_DECODERSTACK_H
 #define DSVIEW_PV_DATA_DECODERSTACK_H
+
 #include <libsigrokdecode4DSL/libsigrokdecode.h>
-
 #include <list>
-
 #include <boost/optional.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/thread.hpp>
-
 #include <QObject>
 #include <QString>
+#include <mutex> 
 
-#include "../data/decode/row.h"
-#include "../data/decode/rowdata.h"
+#include "decode/row.h" 
 #include "../data/signaldata.h"
+
+class DecoderStatus;
+
+struct decode_task_status
+{  
+    volatile bool m_bStop;
+};
 
 namespace DecoderStackTest {
 class TwoDecoderStack;
 }
-
+ 
 namespace pv {
 
 class SigSession;
@@ -55,10 +58,12 @@ class LogicSnapshot;
 namespace decode {
 class Annotation;
 class Decoder;
+class RowData;
 }
 
 class Logic;
 
+ //a torotocol have a DecoderStack, destroy by DecodeTrace
 class DecoderStack : public QObject, public SignalData
 {
 	Q_OBJECT
@@ -77,17 +82,22 @@ public:
     };
 
 public:
-	DecoderStack(pv::SigSession &_session,
-		const srd_decoder *const decoder);
+   	DecoderStack(pv::SigSession *_session,
+		const srd_decoder *const decoder, DecoderStatus *decoder_status);
+
+public:
 
 	virtual ~DecoderStack();
 
-    const std::list< boost::shared_ptr<decode::Decoder> >& stack() const;
-	void push(boost::shared_ptr<decode::Decoder> decoder);
-    void remove(boost::shared_ptr<decode::Decoder>& decoder);
+    inline std::list<decode::Decoder*>& stack(){
+        return _stack;
+    }
+
+	void push(decode::Decoder *decoder);
+    void remove(decode::Decoder *decoder);
     void build_row();
 
-	int64_t samples_decoded() const;
+	int64_t samples_decoded();
 
 	/**
 	 * Extracts sorted annotations between two period into a vector.
@@ -95,11 +105,10 @@ public:
 	void get_annotation_subset(
 		std::vector<pv::data::decode::Annotation> &dest,
 		const decode::Row &row, uint64_t start_sample,
-		uint64_t end_sample) const;
+		uint64_t end_sample);
 
     uint64_t get_annotation_index(
-        const decode::Row &row, uint64_t start_sample) const;
-
+        const decode::Row &row, uint64_t start_sample);
     uint64_t get_max_annotation(const decode::Row &row);
     uint64_t get_min_annotation(const decode::Row &row); // except instant(end=start) annotation
 
@@ -107,100 +116,71 @@ public:
     std::map<const decode::Row, bool> get_rows_lshow();
     void set_rows_gshow(const decode::Row row, bool show);
     void set_rows_lshow(const decode::Row row, bool show);
-
-    bool has_annotations(const decode::Row &row) const;
-
-    uint64_t list_annotation_size() const;
-    uint64_t list_annotation_size(uint16_t row_index) const;
+    bool has_annotations(const decode::Row &row);
+    uint64_t list_annotation_size();
+    uint64_t list_annotation_size(uint16_t row_index);
 
 
     bool list_annotation(decode::Annotation &ann,
-                        uint16_t row_index, uint64_t col_index) const;
+                        uint16_t row_index, uint64_t col_index);
 
 
-    bool list_row_title(int row, QString &title) const;
-
+    bool list_row_title(int row, QString &title);
 	QString error_message();
-
 	void clear();
     void init();
+	uint64_t get_max_sample_count();
 
-	uint64_t get_max_sample_count() const;
-
-	void begin_decode();
-
-    void stop_decode();
-
+    inline bool IsRunning(){
+        return _decode_state == Running;
+    }
+ 
+	void begin_decode_work();
+    void do_decode_work();
+    void stop_decode_work();  
     int list_rows_size();
-
-    bool options_changed() const;
+    bool options_changed();
     void set_options_changed(bool changed);
 
-    uint64_t sample_count() const;
-    uint64_t sample_rate() const;
-
-    bool out_of_memory() const;
-
+    uint64_t sample_count();
+    uint64_t sample_rate();
+    bool out_of_memory();
     void set_mark_index(int64_t index);
-    int64_t get_mark_index() const;
+    int64_t get_mark_index();
+    void frame_ended();
 
 private:
     void decode_data(const uint64_t decode_start, const uint64_t decode_end, srd_session *const session);
-
 	void decode_proc();
+	static void annotation_callback(srd_proto_data *pdata, void *decoder);
 
-	static void annotation_callback(srd_proto_data *pdata,
-		void *decoder);
-
-private slots:
-	void on_new_frame();
-
-	void on_data_received();
-
-	void on_frame_ended();
-
+  
 signals:
 	void new_decode_data();
     void decode_done();
-
-private:
-	pv::SigSession &_session;
-
-	/**
-	 * This mutex prevents more than one decode operation occuring
-	 * concurrently.
-	 * @todo A proper solution should be implemented to allow multiple
-	 * decode operations.
-	 */
-    static boost::mutex _global_decode_mutex;
-
-	std::list< boost::shared_ptr<decode::Decoder> > _stack;
-
-	boost::shared_ptr<pv::data::LogicSnapshot> _snapshot;
-
-    //mutable boost::mutex _input_mutex;
-    //mutable boost::condition_variable _input_cond;
-    uint64_t _sample_count;
-	bool _frame_complete;
-
-    mutable boost::recursive_mutex _output_mutex;
-    //mutable boost::mutex _output_mutex;
-	int64_t	_samples_decoded;
-
-    std::map<const decode::Row, decode::RowData> _rows;
-    std::map<const decode::Row, bool> _rows_gshow;
-    std::map<const decode::Row, bool> _rows_lshow;
+  
+private: 
+	std::list<decode::Decoder*> _stack;
+	pv::data::LogicSnapshot *_snapshot;
+  
+    std::map<const decode::Row, decode::RowData*>   _rows;
+    std::map<const decode::Row, bool>       _rows_gshow;
+    std::map<const decode::Row, bool>       _rows_lshow;
     std::map<std::pair<const srd_decoder*, int>, decode::Row> _class_rows;
+  
+    SigSession      *_session;
+    decode_state    _decode_state;
+    volatile bool   _options_changed;
+    volatile bool   _no_memory;
+    int64_t         _mark_index;
 
-	QString _error_message;
-
-    std::unique_ptr<boost::thread> _decode_thread;
-    decode_state _decode_state;
-
-    bool _options_changed;
-    bool _no_memory;
-
-    int64_t _mark_index;
+    DecoderStatus   *_decoder_status;
+    QString         _error_message;
+    int64_t	        _samples_decoded;
+    uint64_t        _sample_count; 
+ 
+    decode_task_status  *_stask_stauts;    
+    mutable std::mutex _output_mutex;
 
 	friend class DecoderStackTest::TwoDecoderStack;
 };

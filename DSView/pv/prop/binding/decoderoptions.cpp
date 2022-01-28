@@ -23,32 +23,26 @@
 #include "decoderoptions.h"
 
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
+ 
 #include <boost/none_t.hpp>
 
-#include <pv/data/decoderstack.h>
-#include <pv/data/decode/decoder.h>
-#include <pv/prop/double.h>
-#include <pv/prop/enum.h>
-#include <pv/prop/int.h>
-#include <pv/prop/string.h>
+#include "../../data/decoderstack.h"
+#include "../../data/decode/decoder.h"
+#include "../double.h"
+#include "../enum.h"
+#include "../int.h"
+#include "../string.h"
 
-using boost::bind;
-using boost::none;
-using boost::shared_ptr;
-using std::make_pair;
-using std::map;
-using std::pair;
-using std::string;
-using std::vector;
-
+using namespace boost;
+using namespace std;
+ 
 namespace pv {
 namespace prop {
 namespace binding {
 
 DecoderOptions::DecoderOptions(
-	shared_ptr<pv::data::DecoderStack> decoder_stack,
-	shared_ptr<data::decode::Decoder> decoder) :
+	pv::data::DecoderStack* decoder_stack,
+	data::decode::Decoder *decoder) :
 	_decoder_stack(decoder_stack),
 	_decoder(decoder)
 {
@@ -69,19 +63,16 @@ DecoderOptions::DecoderOptions(
 		const Property::Setter setter = bind(
 			&DecoderOptions::setter, this, opt->id, _1);
 
-		shared_ptr<Property> prop;
+		Property *prop = NULL;
 
 		if (opt->values)
             prop = bind_enum(name, opt, getter, setter);
 		else if (g_variant_is_of_type(opt->def, G_VARIANT_TYPE("d")))
-            prop = shared_ptr<Property>(new Double(name, name, 2, "",
-				none, none, getter, setter));
+            prop = new Double(name, name, 2, "",none, none, getter, setter);
 		else if (g_variant_is_of_type(opt->def, G_VARIANT_TYPE("x")))
-			prop = shared_ptr<Property>(
-                new Int(name, name, "", none, getter, setter));
+			prop = new Int(name, name, "", none, getter, setter);
 		else if (g_variant_is_of_type(opt->def, G_VARIANT_TYPE("s")))
-			prop = shared_ptr<Property>(
-                new String(name, name, getter, setter));
+			prop = new String(name, name, getter, setter);
 		else
 			continue;
 
@@ -89,18 +80,18 @@ DecoderOptions::DecoderOptions(
 	}
 }
 
-shared_ptr<Property> DecoderOptions::bind_enum(
+Property* DecoderOptions::bind_enum(
 	const QString &name, const srd_decoder_option *option,
 	Property::Getter getter, Property::Setter setter)
 {
-	vector< pair<GVariant*, QString> > values;
+    std::vector<std::pair<GVariant*, QString> > values;
 	for (GSList *l = option->values; l; l = l->next) {
 		GVariant *const var = (GVariant*)l->data;
 		assert(var);
 		values.push_back(make_pair(var, print_gvariant(var)));
 	}
 
-    return shared_ptr<Property>(new Enum(name, name, values, getter, setter));
+    return new Enum(name, name, values, getter, setter);
 }
 
 GVariant* DecoderOptions::getter(const char *id)
@@ -111,7 +102,7 @@ GVariant* DecoderOptions::getter(const char *id)
 
 	// Get the value from the hash table if it is already present
 	const map<string, GVariant*>& options = _decoder->options();
-	map<string, GVariant*>::const_iterator iter = options.find(id);
+	auto iter = options.find(id);
 
 	if (iter != options.end())
 		val = (*iter).second;

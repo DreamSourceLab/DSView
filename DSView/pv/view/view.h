@@ -27,16 +27,13 @@
 #include <stdint.h>
 #include <set>
 #include <vector>
-
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-
+   
 #include <QScrollArea>
 #include <QSizeF>
 #include <QDateTime>
 #include <QSplitter>
 
-#include "../../extdef.h"
+ 
 #include "../toolbars/samplingbar.h"
 #include "../data/signaldata.h"
 #include "../view/viewport.h"
@@ -44,6 +41,7 @@
 #include "xcursor.h"
 #include "signal.h"
 #include "viewstatus.h"
+#include "../extdef.h"
 
 namespace pv {
 
@@ -67,6 +65,7 @@ class Trace;
 class Viewport;
 class LissajousFigure;
 
+//created by MainWindow
 class View : public QScrollArea {
 	Q_OBJECT
 
@@ -104,25 +103,25 @@ public:
     static const QColor LightRed;
 
 public:
-    explicit View(SigSession &session, pv::toolbars::SamplingBar *sampling_bar, QWidget *parent = 0);
+    explicit View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget *parent = 0);
 
 	SigSession& session();
 
 	/**
 	 * Returns the view time scale in seconds per pixel.
 	 */
-	double scale() const;
+	double scale();
 
 	/**
      * Returns the pixels offset of the left edge of the view
 	 */
-    int64_t offset() const;
-	int v_offset() const;
+    int64_t offset();
+	int v_offset();
 
     /**
      * trigger position fix
      */
-    double trig_hoff() const;
+    double trig_hoff();
     void set_trig_hoff(double hoff);
 
     int64_t get_min_offset();
@@ -141,14 +140,14 @@ public:
     void set_scale_offset(double scale, int64_t offset);
     void set_preScale_preOffset();
 
-    std::vector< boost::shared_ptr<Trace> > get_traces(int type);
+    std::vector<Trace*> get_traces(int type);
 
 	/**
 	 * Returns true if cursors are displayed. false otherwise.
 	 */
-	bool cursors_shown() const;
-    bool trig_cursor_shown() const;
-    bool search_cursor_shown() const;
+	bool cursors_shown();
+    bool trig_cursor_shown();
+    bool search_cursor_shown();
 
     int get_spanY();
 
@@ -163,7 +162,7 @@ public:
 	 */
 	void show_cursors(bool show = true);
 
-    const QPoint& hover_point() const;
+    const QPoint& hover_point();
 
 	void normalize_layout();
 
@@ -199,8 +198,8 @@ public:
     /*
      *
      */
-    double get_minscale() const;
-    double get_maxscale() const;
+    double get_minscale();
+    double get_maxscale();
 
     void set_update(Viewport *viewport, bool need_update);
     void set_all_update(bool need_update);
@@ -224,14 +223,14 @@ public:
 
     void set_capture_status();
 
-    bool get_dso_trig_moved() const;
+    bool get_dso_trig_moved();
 
     ViewStatus* get_viewstatus();
 
     /*
      * back paint status
      */
-    bool back_ready() const;
+    bool back_ready();
     void set_back(bool ready);
 
     /*
@@ -259,16 +258,16 @@ signals:
 
     void auto_trig(int index);
 
-private:
-    void get_scroll_layout(int64_t &length, int64_t &offset) const;
+private: 
+    void get_scroll_layout(int64_t &length, int64_t &offset);
 	
 	void update_scroll();
 
     void update_margins();
 
     static bool compare_trace_v_offsets(
-        const boost::shared_ptr<pv::view::Trace> &a,
-        const boost::shared_ptr<pv::view::Trace> &b);
+        const pv::view::Trace *a,
+        const pv::view::Trace *b);
 
     void clear();
     void reconstruct();
@@ -308,6 +307,12 @@ public slots:
     //
     void header_updated();
 
+    void receive_trigger(quint64 trig_pos);
+
+    void receive_end();
+
+    void frame_began();
+
 private slots:
 
 	void h_scroll_value_changed(int value);
@@ -317,13 +322,9 @@ private slots:
 
     void on_traces_moved();
 
-    void receive_trigger(quint64 trig_pos);
+   
     void set_trig_pos(int percent);
-
-    void receive_end();
-
-    void frame_began();
-
+ 
     // calibration for oscilloscope
     void show_calibration();
     // lissajous figure
@@ -334,59 +335,65 @@ private slots:
 
     void dev_changed(bool close);
 
+public:
+    void show_wait_trigger();
+    void set_device();
+    void set_receive_len(uint64_t len);
+
 private:
 
-	SigSession &_session;
-    pv::toolbars::SamplingBar *_sampling_bar;
+	SigSession                  *_session;
+    pv::toolbars::SamplingBar   *_sampling_bar;
 
-    QWidget *_viewcenter;
-    ViewStatus *_viewbottom;
-    QSplitter *_vsplitter;
-    Viewport * _time_viewport;
-    Viewport * _fft_viewport;
-    LissajousFigure *_lissajous;
-    Viewport *_active_viewport;
-    std::list<QWidget *> _viewport_list;
-    std::map<int, int> _trace_view_map;
-	Ruler *_ruler;
-	Header *_header;
-    DevMode *_devmode;
+    QWidget                 *_viewcenter;
+    ViewStatus              *_viewbottom;
+    QSplitter               *_vsplitter;
+    Viewport                *_time_viewport;
+    Viewport                *_fft_viewport;
+    Viewport                *_active_viewport;
+    LissajousFigure         *_lissajous;
+    std::list<QWidget *>    _viewport_list;
+    std::map<int, int>      _trace_view_map;
+	Ruler                   *_ruler;
+	Header                  *_header;
+    DevMode                 *_devmode;
+    
 
 	/// The view time scale in seconds per pixel.
-	double _scale;
-    double _preScale;
-    double _maxscale;
-    double _minscale;
+	double      _scale;
+    double      _preScale;
+    double      _maxscale;
+    double      _minscale;
 
     /// The pixels offset of the left edge of the view
-    int64_t _offset;
-    int64_t _preOffset;
-    int _spanY;
-    int _signalHeight;
-    bool _updating_scroll;
+    int64_t     _offset;
+    int64_t     _preOffset;
+    int         _spanY;
+    int         _signalHeight;
+    bool        _updating_scroll;
 
     // trigger position fix
-    double _trig_hoff;
+    double      _trig_hoff;
 
-	bool _show_cursors;
+	bool        _show_cursors;
     std::list<Cursor*> _cursorList;
-    Cursor *_trig_cursor;
-    bool _show_trig_cursor;
-    Cursor *_search_cursor;
-    bool _show_search_cursor;
-    uint64_t _search_pos;
-    bool _search_hit;
+    Cursor      *_trig_cursor;
+    bool        _show_trig_cursor;
+    Cursor      *_search_cursor;
+    bool        _show_search_cursor;
+    uint64_t    _search_pos;
+    bool        _search_hit;
 
-    bool _show_xcursors;
+    bool        _show_xcursors;
     std::list<XCursor*> _xcursorList;
 
-    QPoint _hover_point;
+    QPoint      _hover_point;
     dialogs::Calibration *_cali;
 
-    bool _dso_auto;
-    bool _show_lissajous;
-    bool _back_ready;
-    bool _trig_time_setted;
+    bool        _dso_auto;
+    bool        _show_lissajous;
+    bool        _back_ready;
+    bool        _trig_time_setted;
 };
 
 } // namespace view

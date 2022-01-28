@@ -27,7 +27,6 @@
 
 #include <QDockWidget>
 #include <QPushButton>
-#include <QComboBox>
 #include <QLabel>
 #include <QVector>
 #include <QVBoxLayout>
@@ -38,14 +37,17 @@
 #include <QSortFilterProxyModel>
 
 #include <vector>
-#include <boost/thread.hpp>
+#include <mutex>
 
 #include "../data/decodermodel.h"
+#include "protocolitemlayer.h"
+#include "../ui/dscombobox.h"
+
 
 namespace pv {
 
 class SigSession;
-
+  
 namespace data {
 class DecoderModel;
 }
@@ -55,8 +57,8 @@ class View;
 }
 
 namespace dock {
-
-class ProtocolDock : public QScrollArea
+  
+class ProtocolDock : public QScrollArea,public IProtocolItemLayerCallback
 {
     Q_OBJECT
 
@@ -64,12 +66,13 @@ public:
     static const uint64_t ProgressRows = 100000;
 
 public:
-    ProtocolDock(QWidget *parent, view::View &view, SigSession &session);
+    ProtocolDock(QWidget *parent, view::View &view, SigSession *session);
     ~ProtocolDock();
 
     void del_all_protocol();
     bool sel_protocol(QString name);
     void add_protocol(bool silent);
+
 private:
     void changeEvent(QEvent *event);
     void retranslateUi();
@@ -79,16 +82,23 @@ protected:
     void paintEvent(QPaintEvent *);
     void resizeEvent(QResizeEvent *);
 
+private:
+    //IProtocolItemLayerCallback
+    void OnProtocolSetting(void *handle);
+    void OnProtocolDelete(void *handle);
+    void OnProtocolFormatChanged(QString format, void *handle);
+
 signals:
     void protocol_updated();
 
-private slots:
-    void add_protocol();
-    void rst_protocol();
-    void del_protocol();
-    void decoded_progress(int progress);
-    void set_model();
+public slots:
     void update_model();
+
+private slots:
+    void on_add_protocol(); 
+    void on_del_all_protocol();
+    void decoded_progress(int progress);
+    void set_model();   
     void export_table_view();
     void nav_table_view();
     void item_clicked(const QModelIndex &index);
@@ -104,10 +114,10 @@ private:
     void resize_table_view(data::DecoderModel *decoder_model);
 
 private:
-    SigSession &_session;
+    SigSession *_session;
     view::View &_view;
     QSortFilterProxyModel _model_proxy;
-    double _cur_search_index;
+    int _cur_search_index;
     QStringList _str_list;
 
     QSplitter *_split_widget;
@@ -125,22 +135,17 @@ private:
 
     QPushButton *_add_button;
     QPushButton *_del_all_button;
-    QComboBox *_protocol_combobox;
-    QVector <QPushButton *> _del_button_list;
-    QVector <QPushButton *> _set_button_list;
-    QVector <QLabel *> _protocol_label_list;
-    QVector <QLabel *> _progress_label_list;
-    QVector <int > _protocol_index_list;
-    QVector <QHBoxLayout *> _hori_layout_list;
+    DsComboBox *_protocol_combobox; 
+    QVector <int > _protocol_index_list; 
     QVBoxLayout *_up_layout;
+    QVector <ProtocolItemLayer*> _protocol_items; //protocol item layers
 
     QPushButton *_dn_set_button;
     QPushButton *_dn_save_button;
     QPushButton *_dn_nav_button;
-
     QPushButton *_search_button;
 
-    mutable boost::mutex _search_mutex;
+    mutable std::mutex _search_mutex;
     bool _search_edited;
     bool _searching;
 

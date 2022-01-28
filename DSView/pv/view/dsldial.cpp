@@ -48,7 +48,7 @@ dslDial::~dslDial()
 }
 
 void dslDial::paint(QPainter &p, QRectF dialRect, QColor dialColor, const QPoint pt, QString &pText)
-{
+{  
     p.setPen(dialColor);
     p.setBrush(dialColor);
 
@@ -108,6 +108,8 @@ void dslDial::paint(QPainter &p, QRectF dialRect, QColor dialColor, const QPoint
                    inc ? 10 : -10, hoverRect.width()/2 + 4);
         p.restore();
     }
+
+    (void*)0;
 }
 
 void dslDial::set_sel(uint64_t sel)
@@ -117,12 +119,12 @@ void dslDial::set_sel(uint64_t sel)
     _sel = sel;
 }
 
-uint64_t dslDial::get_sel() const
+uint64_t dslDial::get_sel()
 {
     return _sel;
 }
 
-uint64_t dslDial::get_count() const
+uint64_t dslDial::get_count()
 {
     return _div;
 }
@@ -143,22 +145,22 @@ bool dslDial::isMax()
         return false;
 }
 
-uint64_t dslDial::get_min() const
+uint64_t dslDial::get_min()
 {
     return _value[0];
 }
 
-uint64_t dslDial::get_max() const
+uint64_t dslDial::get_max()
 {
     return _value[_div-1];
 }
 
-uint64_t dslDial::get_value() const
+uint64_t dslDial::get_value()
 {
     return _value[_sel];
 }
 
-uint64_t dslDial::get_value(uint64_t i) const
+uint64_t dslDial::get_value(uint64_t i)
 {
     assert(i < _div);
     return _value[i];
@@ -177,7 +179,7 @@ void dslDial::set_factor(uint64_t factor)
     }
 }
 
-uint64_t dslDial::get_factor() const
+uint64_t dslDial::get_factor()
 {
     return _factor;
 }

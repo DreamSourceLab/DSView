@@ -1,0 +1,28 @@
+sigrokdecode module's types
+
+output types: 
+	1.OUTPUT_ANN
+	2.OUTPUT_PYTHON
+	3.OUTPUT_BINARY
+	4.OUTPUT_META
+	
+default sample rate name: SRD_CONF_SAMPLERATE,value is 10000
+
+sigrokdecode.Decoder methods:
+
+class Decoder{
+	PyObject* put(PyObject *self, PyObject *args);
+	PyObject* register(PyObject *self, PyObject *args,PyObject *kwargs);
+	PyObject* wait(PyObject *self, PyObject *args);
+	PyObject* has_channel(PyObject *self, PyObject *args);
+}
+
+
+c can call's method of python:
+	1.reset
+	2.start
+	3.decode
+	4.metadata
+
+	
+

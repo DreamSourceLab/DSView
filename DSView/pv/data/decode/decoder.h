@@ -27,9 +27,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
-
-#include <boost/shared_ptr.hpp>
-
+  
 #include <glib.h>
 
 struct srd_decoder;
@@ -46,47 +44,69 @@ class Decoder
 public:
 	Decoder(const srd_decoder *const decoder);
 
+public: 
+
 	virtual ~Decoder();
 
-	const srd_decoder* decoder() const;
+	inline const srd_decoder* decoder(){
+        return _decoder;
+    }
 
-	bool shown() const;
-	void show(bool show = true);
+	inline bool shown(){
+        return _shown;
+    }
 
-    const std::map<const srd_channel*, int>& channels() const;
+	inline void show(bool show = true){
+         _shown = show;
+    }
+
+    inline std::map<const srd_channel*, int>& channels(){
+        return _probes;
+    }
+
     void set_probes(std::map<const srd_channel*, int> probes);
 
-	const std::map<std::string, GVariant*>& options() const;
+	inline std::map<std::string, GVariant*>& options(){
+        return _options;
+    }
 
 	void set_option(const char *id, GVariant *value);
 
-	bool have_required_probes() const;
+	bool have_required_probes();
 
-    srd_decoder_inst* create_decoder_inst(srd_session *session) const;
+    srd_decoder_inst* create_decoder_inst(srd_session *session);
 
     void set_decode_region(uint64_t start, uint64_t end);
-    uint64_t decode_start() const;
-    uint64_t decode_end() const;
+
+    inline uint64_t decode_start(){
+        return _decode_start;
+    }
+
+    inline uint64_t decode_end(){
+        return _decode_end;
+    }
 
     bool commit();
 
-    int get_channel_type(const srd_channel* ch);
+    inline int get_channel_type(const srd_channel* ch){
+        return ch->type;
+    }
 
 private:
 	const srd_decoder *const _decoder;
+ 
+    std::map<const srd_channel*, int>   _probes;
+	std::map<std::string, GVariant*>    _options;
+    std::map<const srd_channel*, int>   _probes_back;
+    std::map<std::string, GVariant*>    _options_back;
 
-	bool _shown;
+    uint64_t        _decode_start;
+    uint64_t        _decode_end;
+    uint64_t        _decode_start_back;
+    uint64_t        _decode_end_back;
 
-    std::map<const srd_channel*, int> _probes;
-	std::map<std::string, GVariant*> _options;
-
-    std::map<const srd_channel*, int> _probes_back;
-    std::map<std::string, GVariant*> _options_back;
-
-    uint64_t _decode_start, _decode_end;
-    uint64_t _decode_start_back, _decode_end_back;
-
-    bool _setted;
+    bool            _setted;
+    bool            _shown;
 };
 
 } // namespace decode

@@ -22,8 +22,8 @@
 #define LIBDSL_HARDWARE_DSL_H
 
 #include <glib.h>
-#include "libsigrok.h"
-#include "libsigrok-internal.h"
+#include "../../libsigrok.h"
+#include "../../libsigrok-internal.h"
 #include "command.h"
 
 #include <stdio.h>

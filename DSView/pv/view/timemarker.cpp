@@ -48,7 +48,7 @@ TimeMarker::TimeMarker(const TimeMarker &s) :
 {
 }
 
-QColor TimeMarker::colour() const
+QColor TimeMarker::colour()
 {
     return _colour;
 }
@@ -58,7 +58,7 @@ void TimeMarker::set_colour(QColor color)
     _colour = color;
 }
 
-bool TimeMarker::grabbed() const
+bool TimeMarker::grabbed()
 {
     return _grabbed;
 }
@@ -67,7 +67,7 @@ void TimeMarker::set_grabbed(bool grabbed)
     _grabbed = grabbed;
 }
 
-uint64_t TimeMarker::index() const
+uint64_t TimeMarker::index()
 {
     return _index;
 }

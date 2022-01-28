@@ -32,7 +32,10 @@ extern "C" {
 struct srd_session {
     int session_id;
 
-    /* List of decoder instances. */
+    /* 
+		List of decoder instances.
+		srd_decoder_inst* type
+	*/
     GSList *di_list;
 
     /* List of frontend callbacks to receive decoder output. */
@@ -257,14 +260,16 @@ struct srd_decoder_inst {
 	struct srd_decoder *decoder;
 	struct srd_session *sess;
 	void *py_inst;
-    void *py_pinvalues;
+    void *py_pinvalues;  /* is a python duple type, like (1,0,255,255)*/
 	char *inst_id;
-	GSList *pd_output;
+	GSList *pd_output;   /* srd_pd_output* type */
 	int dec_num_channels;
 	int *dec_channelmap;
 	GSList *next_di;
 
-	/** List of conditions a PD wants to wait for. */
+	/** List of conditions a PD wants to wait for. 
+	 *  Type is srd_term* of GSList*
+	*/
 	GSList *condition_list;
 
 	/** Array of booleans denoting which conditions matched. */
@@ -291,7 +296,9 @@ struct srd_decoder_inst {
     /** Absolute current sample matched conditions. */
     gboolean abs_cur_matched;
 
-	/** Array of "old" (previous sample) pin values. */
+	/** Array of "old" (previous sample) pin values.
+	 *  Type of uint8_t
+	 */
 	GArray *old_pins_array;
 
 	/** Handle for this PD stack's worker thread. */
@@ -339,8 +346,10 @@ struct srd_proto_data {
 };
 struct srd_proto_data_annotation {
 	int ann_class;
-    int ann_type;
-	char **ann_text;
+    int ann_type; 
+	char str_number_hex[18]; //numerical value hex format string
+	long long numberic_value;
+	char **ann_text; //text string lines
 };
 struct srd_proto_data_binary {
 	int bin_class;
@@ -361,6 +370,7 @@ struct srd_pd_callback {
 SRD_API int srd_init(const char *path);
 SRD_API int srd_exit(void);
 SRD_API GSList *srd_searchpaths_get(void);
+SRD_API void srd_set_python_home(const wchar_t *path);
 
 /* session.c */
 SRD_API int srd_session_new(struct srd_session **sess);

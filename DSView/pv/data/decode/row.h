@@ -32,27 +32,36 @@ namespace pv {
 namespace data {
 namespace decode {
 
+//map find key data
 class Row
 {
 public:
 	Row();
-    ~Row();
 
 	Row(const srd_decoder *decoder,
         const srd_decoder_annotation_row *row = NULL,
         const int order = -1);
 
-	const srd_decoder* decoder() const;
-	const srd_decoder_annotation_row* row() const;
+	Row(const Row &o);
 
-	const QString title() const;
+public: 
 
-    bool operator<(const Row &other) const;
+	inline const srd_decoder* decoder() const{
+		return _decoder;
+	}
+
+	inline const srd_decoder_annotation_row* row() const{
+		return _row;
+	}
+
+    QString title() const;
+
+    bool operator<(const Row &other)const;
 
 private:
 	const srd_decoder *_decoder;
 	const srd_decoder_annotation_row *_row;
-    int _order;
+    int _order; 
 };
 
 } // decode

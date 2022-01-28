@@ -21,10 +21,8 @@
 
 #include "group.h"
 #include "groupsnapshot.h"
+ 
 
-#include <boost/foreach.hpp>
-
-using namespace boost;
 using namespace std;
 
 namespace pv {
@@ -35,25 +33,25 @@ Group::Group() :
 {
 }
 
-void Group::push_snapshot(boost::shared_ptr<GroupSnapshot> &snapshot)
+void Group::push_snapshot(GroupSnapshot *snapshot)
 {
     _snapshots.push_back(snapshot);
 }
 
-deque< boost::shared_ptr<GroupSnapshot> >& Group::get_snapshots()
+std::deque<GroupSnapshot*>& Group::get_snapshots()
 {
 	return _snapshots;
 }
 
 void Group::clear()
 {
-    BOOST_FOREACH(const boost::shared_ptr<GroupSnapshot> s, _snapshots)
+    for(auto &s : _snapshots)
         s->clear();
 }
 
 void Group::init()
 {
-    BOOST_FOREACH(const boost::shared_ptr<GroupSnapshot> s, _snapshots)
+    for(auto &s : _snapshots)
         s->init();
 }
 

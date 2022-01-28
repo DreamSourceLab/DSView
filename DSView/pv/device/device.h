@@ -28,19 +28,21 @@ namespace pv {
 namespace device {
 
 class Device : public DevInst
-{
+{ 
 public:
 	Device(sr_dev_inst *dev_inst);
 
-	sr_dev_inst* dev_inst() const;
+	~Device();
+
+	sr_dev_inst* dev_inst();
 
     void use(SigSession *owner);
 
 	void release();
 
-    QString format_device_title() const;
+    QString format_device_title();
 
-	bool is_trigger_enabled() const;
+	bool is_trigger_enabled();
 
 private:
 	sr_dev_inst *const _sdi;

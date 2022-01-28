@@ -25,8 +25,7 @@
 #define DSVIEW_PV_DATA_LOGIC_H
 
 #include "signaldata.h"
-
-#include <boost/shared_ptr.hpp>
+ 
 #include <deque>
 
 namespace pv {
@@ -37,20 +36,20 @@ class LogicSnapshot;
 class Logic : public SignalData
 {
 public:
-    Logic();
+    Logic(LogicSnapshot *snapshot);
 
-	void push_snapshot(
-		boost::shared_ptr<LogicSnapshot> &snapshot);
+	void push_snapshot(LogicSnapshot *snapshot);
 
-	std::deque< boost::shared_ptr<LogicSnapshot> >&
-		get_snapshots();
+	std::deque<LogicSnapshot*>& get_snapshots();
 
     void clear();
 
     void init();
 
+    LogicSnapshot* snapshot();
+
 private:
-	std::deque< boost::shared_ptr<LogicSnapshot> > _snapshots;
+	std::deque<LogicSnapshot*> _snapshots;
 };
 
 } // namespace data

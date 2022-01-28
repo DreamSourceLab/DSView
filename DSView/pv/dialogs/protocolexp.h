@@ -28,14 +28,12 @@
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QRadioButton>
-#include <QComboBox>
-
-#include <boost/shared_ptr.hpp>
-
+ 
 #include "../device/devinst.h"
 #include "../prop/binding/deviceoptions.h"
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
+#include "../ui/dscombobox.h"
 
 namespace pv {
 
@@ -54,7 +52,7 @@ class ProtocolExp : public DSDialog
     Q_OBJECT
 
 public:
-    ProtocolExp(QWidget *parent, SigSession &session);
+    ProtocolExp(QWidget *parent, SigSession *session);
 
 protected:
     void accept();
@@ -67,10 +65,10 @@ private slots:
     void cancel_export();
 
 private:
-    SigSession &_session;
+    SigSession *_session;
 
     toolbars::TitleBar *_titlebar;
-    QComboBox *_format_combobox;
+    DsComboBox *_format_combobox;
     std::list<QRadioButton *> _row_sel_list;
     std::list<QLabel *> _row_label_list;
     QFormLayout *_flayout;

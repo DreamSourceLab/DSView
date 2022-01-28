@@ -18,12 +18,12 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <extdef.h>
+ 
 #include <algorithm>
 #include <math.h>
-
-#include <boost/foreach.hpp>
+#include <QTextStream>
 #include <boost/functional/hash.hpp>
+#include <stdlib.h>
 
 #include "spectrumtrace.h"
 #include "../sigsession.h"
@@ -33,6 +33,8 @@
 #include "../view/viewport.h"
 #include "../device/devinst.h"
 #include "../data/spectrumstack.h"
+#include "../dsvdef.h"
+#include "../extdef.h"
 
 using namespace boost;
 using namespace std;
@@ -67,8 +69,8 @@ const int SpectrumTrace::DbvRanges[4] = {
 const int SpectrumTrace::HoverPointSize = 3;
 const double SpectrumTrace::VerticalRate = 1.0 / 2000.0;
 
-SpectrumTrace::SpectrumTrace(pv::SigSession &session,
-    boost::shared_ptr<pv::data::SpectrumStack> spectrum_stack, int index) :
+SpectrumTrace::SpectrumTrace(pv::SigSession *session,
+    pv::data::SpectrumStack *spectrum_stack, int index) :
     Trace("FFT("+QString::number(index)+")", index, SR_CHANNEL_FFT),
     _session(session),
     _spectrum_stack(spectrum_stack),
@@ -79,21 +81,21 @@ SpectrumTrace::SpectrumTrace(pv::SigSession &session,
     _offset(0)
 {
     _typeWidth = 0;
-    const vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
+    const auto &sigs = _session->get_signals();
     for(size_t i = 0; i < sigs.size(); i++) {
-        const boost::shared_ptr<view::Signal> s(sigs[i]);
+        const auto s = sigs[i];
         assert(s);
-        if (dynamic_pointer_cast<DsoSignal>(s) && index == s->get_index())
+        if (dynamic_cast<DsoSignal*>(s) && index == s->get_index())
             _colour = s->get_colour();
     }
 }
 
 SpectrumTrace::~SpectrumTrace()
 {
-
+    DESTROY_OBJECT(_spectrum_stack);
 }
 
-bool SpectrumTrace::enabled() const
+bool SpectrumTrace::enabled()
 {
     return _enable;
 }
@@ -103,7 +105,7 @@ void SpectrumTrace::set_enable(bool enable)
     _enable = enable;
 }
 
-int SpectrumTrace::view_mode() const
+int SpectrumTrace::view_mode()
 {
     return _view_mode;
 }
@@ -123,7 +125,7 @@ std::vector<QString> SpectrumTrace::get_view_modes_support()
     return modes;
 }
 
-const boost::shared_ptr<pv::data::SpectrumStack>& SpectrumTrace::get_spectrum_stack() const
+pv::data::SpectrumStack* SpectrumTrace::get_spectrum_stack()
 {
     return _spectrum_stack;
 }
@@ -160,7 +162,7 @@ void SpectrumTrace::set_offset(double delta)
     _view->update();
 }
 
-double SpectrumTrace::get_offset() const
+double SpectrumTrace::get_offset()
 {
     return _offset;
 }
@@ -173,7 +175,7 @@ void SpectrumTrace::set_scale(double scale)
     _view->update();
 }
 
-double SpectrumTrace::get_scale() const
+double SpectrumTrace::get_scale()
 {
     return _scale;
 }
@@ -183,7 +185,7 @@ void SpectrumTrace::set_dbv_range(int range)
     _dbv_range = range;
 }
 
-int SpectrumTrace::dbv_range() const
+int SpectrumTrace::dbv_range()
 {
     return _dbv_range;
 }
@@ -208,12 +210,17 @@ QString SpectrumTrace::format_freq(double freq, unsigned precision)
         const int prefix = floor((order - FirstSIPrefixPower)/ 3.0f);
         const double divider = pow(10.0, max(prefix * 3.0 + FirstSIPrefixPower, 0.0));
 
-        QString s;
-        QTextStream ts(&s);
-        ts.setRealNumberPrecision(precision);
-        ts << fixed << freq / divider <<
-            FreqPrefixes[prefix] << "Hz";
-        return s;
+        //QString s;
+        //QTextStream ts(&s);
+        //ts.setRealNumberPrecision(precision);
+        //ts << fixed << freq / divider << FreqPrefixes[prefix] << "Hz";
+        //return s;
+        char buf[20] = {0};
+        char format[10] = {0}; 
+        sprintf(format, "%%.%df%%s", precision);
+        QString prev = FreqPrefixes[prefix] + "Hz";
+        sprintf(buf, format, freq / divider, prev.toLatin1().data());
+        return QString(buf);        
     }
 }
 
@@ -294,9 +301,10 @@ void SpectrumTrace::paint_mid(QPainter &p, int left, int right, QColor fore, QCo
 
         double vdiv = 0;
         double vfactor = 0;
-        BOOST_FOREACH(const boost::shared_ptr<Signal> s, _session.get_signals()) {
-            boost::shared_ptr<DsoSignal> dsoSig;
-            if ((dsoSig = dynamic_pointer_cast<DsoSignal>(s))) {
+        
+        for(auto &s : _session->get_signals()) {
+            DsoSignal *dsoSig = NULL;
+            if ((dsoSig = dynamic_cast<DsoSignal*>(s))) {
                 if(dsoSig->get_index() == _spectrum_stack->get_index()) {
                     vdiv = dsoSig->get_vDialValue();
                     vfactor = dsoSig->get_factor();
@@ -364,8 +372,8 @@ void SpectrumTrace::paint_fore(QPainter &p, int left, int right, QColor fore, QC
     double blank_right = width;
 
     // horizontal ruler
-    const double NyFreq = _session.cur_snap_samplerate() / (2.0 * _spectrum_stack->get_sample_interval());
-    const double deltaFreq = _session.cur_snap_samplerate() * 1.0 /
+    const double NyFreq = _session->cur_snap_samplerate() / (2.0 * _spectrum_stack->get_sample_interval());
+    const double deltaFreq = _session->cur_snap_samplerate() * 1.0 /
                             (_spectrum_stack->get_sample_num() * _spectrum_stack->get_sample_interval());
     const double FreqRange = NyFreq * _scale;
     const double FreqOffset = NyFreq * _offset;
@@ -482,7 +490,7 @@ void SpectrumTrace::paint_type_options(QPainter &p, int right, const QPoint pt, 
     (void)fore;
 }
 
-QRect SpectrumTrace::get_view_rect() const
+QRect SpectrumTrace::get_view_rect()
 {
     assert(_viewport);
     return QRect(0, UpMargin,

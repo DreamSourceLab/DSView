@@ -22,10 +22,8 @@
 #define DSVIEW_PV_DATA_DECODERMODEL_H
 
 #include <QAbstractTableModel>
-
-#include <boost/shared_ptr.hpp>
-
-#include <pv/data/decode/rowdata.h>
+  
+#include "decode/rowdata.h"
 
 namespace pv {
 namespace data {
@@ -46,14 +44,16 @@ public:
     int rowCount(const QModelIndex & /*parent*/) const;
     int columnCount(const QModelIndex & /*parent*/) const;
     QVariant data(const QModelIndex &index, int role) const;
-    QVariant headerData(int section, Qt::Orientation orientation,
-                        int role) const;
+    QVariant headerData(int section, Qt::Orientation orientation,int role) const;
 
-    void setDecoderStack(boost::shared_ptr<pv::data::DecoderStack> decoder_stack);
-    const boost::shared_ptr<pv::data::DecoderStack>& getDecoderStack() const;
+    void setDecoderStack(DecoderStack *decoder_stack);
+
+    inline  DecoderStack* getDecoderStack(){
+        return _decoder_stack;
+    }
 
 private:
-    boost::shared_ptr<pv::data::DecoderStack> _decoder_stack;
+    DecoderStack   *_decoder_stack;
 };
 
 } // namespace data

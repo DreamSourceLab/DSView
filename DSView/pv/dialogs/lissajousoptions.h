@@ -31,8 +31,7 @@
 #include <QCheckBox>
 #include <QRadioButton>
 #include <QSlider>
-
-#include <boost/shared_ptr.hpp>
+ 
 
 #include "../view/dsosignal.h"
 #include "../toolbars/titlebar.h"
@@ -56,7 +55,7 @@ private:
     static const int WellLen = SR_Kn(16);
 
 public:
-    LissajousOptions(SigSession &session, QWidget *parent);
+    LissajousOptions(SigSession *session, QWidget *parent);
 
 private:
     void changeEvent(QEvent *event);
@@ -67,16 +66,17 @@ protected:
     void reject();
 
 private:
-    SigSession &_session;
+    SigSession *_session;
 
     QCheckBox *_enable;
     QGroupBox *_x_group;
     QGroupBox *_y_group;
     QSlider *_percent;
+    QGridLayout *_layout;
+
     QVector<QRadioButton *> _x_radio;
     QVector<QRadioButton *> _y_radio;
-    QDialogButtonBox _button_box;
-    QGridLayout *_layout;
+    QDialogButtonBox _button_box;  
 };
 
 } // namespace dialogs

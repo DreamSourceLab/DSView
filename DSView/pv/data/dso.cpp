@@ -21,26 +21,27 @@
 
 #include "dso.h"
 #include "dsosnapshot.h"
+#include <assert.h>
+ 
 
-#include <boost/foreach.hpp>
-
-using namespace boost;
 using namespace std;
 
 namespace pv {
 namespace data {
 
-Dso::Dso() :
+Dso::Dso(DsoSnapshot *snapshot) :
     SignalData()
 {
+    assert(snapshot);
+    _snapshots.push_front(snapshot);
 }
 
-void Dso::push_snapshot(boost::shared_ptr<DsoSnapshot> &snapshot)
+void Dso::push_snapshot(DsoSnapshot *snapshot)
 {
 	_snapshots.push_front(snapshot);
 }
 
-deque< boost::shared_ptr<DsoSnapshot> >& Dso::get_snapshots()
+std::deque<DsoSnapshot*>& Dso::get_snapshots()
 {
 	return _snapshots;
 }
@@ -48,16 +49,21 @@ deque< boost::shared_ptr<DsoSnapshot> >& Dso::get_snapshots()
 void Dso::clear()
 {
     //_snapshots.clear();
-    BOOST_FOREACH(const boost::shared_ptr<DsoSnapshot> s, _snapshots)
+    for(auto &s : _snapshots)
         s->clear();
 }
 
 void Dso::init()
 {
     //_snapshots.clear();
-    BOOST_FOREACH(const boost::shared_ptr<DsoSnapshot> s, _snapshots)
+    for(auto &s : _snapshots)
         s->init();
 }
+
+ DsoSnapshot* Dso::snapshot()
+ {
+     return _snapshots[0];
+ }
 
 } // namespace data
 } // namespace pv

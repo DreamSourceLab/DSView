@@ -23,9 +23,7 @@
 #ifndef DSVIEW_PV_MATHTRACE_H
 #define DSVIEW_PV_MATHTRACE_H
 
-#include "trace.h"
-
-#include <boost/shared_ptr.hpp>
+#include "trace.h" 
 
 namespace pv {
 
@@ -52,15 +50,15 @@ public:
     };
 
 public:
-    MathTrace(bool enable, boost::shared_ptr<pv::data::MathStack> math_stack,
-              boost::shared_ptr<view::DsoSignal> dsoSig1,
-              boost::shared_ptr<view::DsoSignal> dsoSig2);
+    MathTrace(bool enable, pv::data::MathStack *math_stack,
+              view::DsoSignal *dsoSig1,
+              view::DsoSignal *dsoSig2);
 
     virtual ~MathTrace();
 
     float get_scale();
 
-    int get_name_width() const;
+    int get_name_width();
 
     /**
      *
@@ -68,18 +66,18 @@ public:
     void update_vDial();
     void go_vDialPre();
     void go_vDialNext();
-    uint64_t get_vDialValue() const;
-    uint16_t get_vDialSel() const;
+    uint64_t get_vDialValue();
+    uint16_t get_vDialSel();
 
-    bool enabled() const;
+    bool enabled();
     void set_enable(bool enable);
     void set_show(bool show);
 
-    int get_zero_vpos() const;
+    int get_zero_vpos();
     void set_zero_vpos(int pos);
 
-    int src1() const;
-    int src2() const;
+    int src1();
+    int src2();
 
     /**
       *
@@ -125,13 +123,13 @@ public:
      **/
     void paint_fore(QPainter &p, int left, int right, QColor fore, QColor back);
 
-    QRect get_view_rect() const;
+    QRect get_view_rect();
 
     QRectF get_rect(MathSetRegions type, int y, int right);
 
     bool mouse_wheel(int right, const QPoint pt, const int shift);
 
-    const boost::shared_ptr<pv::data::MathStack>& get_math_stack() const;
+    pv::data::MathStack* get_math_stack();
 
 protected:
     void paint_type_options(QPainter &p, int right, const QPoint pt, QColor fore);
@@ -148,9 +146,9 @@ private:
     void paint_hover_measure(QPainter &p, QColor fore, QColor back);
 
 private:
-    boost::shared_ptr<pv::data::MathStack> _math_stack;
-    boost::shared_ptr<view::DsoSignal> _dsoSig1;
-    boost::shared_ptr<view::DsoSignal> _dsoSig2;
+    pv::data::MathStack *_math_stack;
+    view::DsoSignal *_dsoSig1;
+    view::DsoSignal *_dsoSig2;
     bool _enable;
     bool _show;
 

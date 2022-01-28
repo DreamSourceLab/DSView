@@ -23,7 +23,7 @@
 
 #include "binding.h"
 
-#include <pv/prop/property.h>
+#include "../property.h"
 
 struct srd_decoder_option;
 
@@ -42,23 +42,23 @@ namespace binding {
 class DecoderOptions : public Binding
 {
 public:
-	DecoderOptions(boost::shared_ptr<pv::data::DecoderStack> decoder_stack,
-		boost::shared_ptr<pv::data::decode::Decoder> decoder);
+	DecoderOptions(pv::data::DecoderStack *decoder_stack,
+		pv::data::decode::Decoder* decoder);
 
     GVariant* getter(const char *id);
 
     void setter(const char *id, GVariant *value);
 
 private:
-	static boost::shared_ptr<Property> bind_enum(const QString &name,
+	static Property* bind_enum(const QString &name,
 		const srd_decoder_option *option,
 		Property::Getter getter, Property::Setter setter);
 
 
 
 private:
-	boost::shared_ptr<pv::data::DecoderStack> _decoder_stack;
-	boost::shared_ptr<pv::data::decode::Decoder> _decoder;
+	pv::data::DecoderStack 		*_decoder_stack;
+	pv::data::decode::Decoder 	*_decoder;
 };
 
 } // binding

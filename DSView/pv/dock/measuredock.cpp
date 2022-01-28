@@ -38,9 +38,9 @@
 #include "../dialogs/dsmessagebox.h"
 
 #include <QObject>
-#include <QPainter>
-#include <QRegExpValidator>
+#include <QPainter> 
 #include <QMessageBox>
+#include "../config/appconfig.h"
 
 using namespace boost;
 
@@ -49,7 +49,7 @@ namespace dock {
 
 using namespace pv::view;
 
-MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession &session) :
+MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
     QScrollArea(parent),
     _session(session),
     _view(view)
@@ -183,7 +183,7 @@ void MeasureDock::retranslateUi()
 
 void MeasureDock::reStyle()
 {
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    QString iconPath = GetIconPath();
 
     _dist_add_btn->setIcon(QIcon(iconPath+"/add.svg"));
     _edge_add_btn->setIcon(QIcon(iconPath+"/add.svg"));
@@ -211,12 +211,12 @@ void MeasureDock::refresh()
 
 void MeasureDock::reload()
 {
-    if (_session.get_device()->dev_inst()->mode == LOGIC)
+    if (_session->get_device()->dev_inst()->mode == LOGIC)
         _edge_groupBox->setDisabled(false);
     else
         _edge_groupBox->setDisabled(true);
 
-    for (QVector <QComboBox *>::const_iterator i = _edge_ch_cmb_vec.begin();
+    for (QVector <DsComboBox *>::const_iterator i = _edge_ch_cmb_vec.begin();
          i != _edge_ch_cmb_vec.end(); i++) {
         update_probe_selector(*i);
     }
@@ -247,7 +247,7 @@ void MeasureDock::cursor_update()
     update_edge();
 
     int index = 1;
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    QString iconPath = GetIconPath();
     for(std::list<Cursor*>::iterator i = _view.get_cursorList().begin();
         i != _view.get_cursorList().end(); i++) {
         QString curCursor = QString::number(index);
@@ -307,6 +307,7 @@ void MeasureDock::reCalc()
     update_dist();
     update_edge();
 }
+ 
 
 void MeasureDock::goto_cursor()
 {
@@ -336,7 +337,7 @@ void MeasureDock::add_dist_measure()
     row_widget->setLayout(row_layout);
     _dist_row_widget_vec.push_back(row_widget);
 
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    QString iconPath = GetIconPath();
     QToolButton *del_btn = new QToolButton(row_widget);
     del_btn->setIcon(QIcon(iconPath+"/del.svg"));
     del_btn->setCheckable(true);
@@ -402,7 +403,7 @@ void MeasureDock::add_edge_measure()
     row_widget->setLayout(row_layout);
     _edge_row_widget_vec.push_back(row_widget);
 
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    QString iconPath = GetIconPath();
     QToolButton *del_btn = new QToolButton(row_widget);
     del_btn->setIcon(QIcon(iconPath+"/del.svg"));
     del_btn->setCheckable(true);
@@ -415,7 +416,7 @@ void MeasureDock::add_edge_measure()
     g_label->setContentsMargins(0,0,0,0);
     QLabel *a_label = new QLabel(tr("@"), row_widget);
     a_label->setContentsMargins(0,0,0,0);
-    QComboBox *ch_cmb = create_probe_selector(row_widget);
+    DsComboBox *ch_cmb = create_probe_selector(row_widget);
     _edge_del_btn_vec.push_back(del_btn);
     _edge_s_btn_vec.push_back(s_btn);
     _edge_e_btn_vec.push_back(e_btn);
@@ -597,12 +598,15 @@ void MeasureDock::update_edge()
         if (start_ret && end_ret) {
             uint64_t rising_edges;
             uint64_t falling_edges;
-            const std::vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
+
+            const auto &sigs = _session->get_signals();
+
             for(size_t i = 0; i < sigs.size(); i++) {
-                const boost::shared_ptr<view::Signal> s(sigs[i]);
-                boost::shared_ptr<view::LogicSignal> logicSig;
+                view::Signal *s = sigs[i];
+                view::LogicSignal *logicSig = NULL;
                 assert(s);
-                if ((logicSig = dynamic_pointer_cast<view::LogicSignal>(s)) &&
+
+                if ((logicSig = dynamic_cast<view::LogicSignal*>(s)) &&
                     (logicSig->enabled()) &&
                     (logicSig->get_index() == _edge_ch_cmb_vec[edge_index]->currentText().toInt())){
                     if (logicSig->edges(_view.get_cursor_samples(end), _view.get_cursor_samples(start), rising_edges, falling_edges)) {
@@ -639,22 +643,23 @@ void MeasureDock::set_cursor_btn_color(QPushButton *btn)
     btn->setStyleSheet(style);
 }
 
-QComboBox* MeasureDock::create_probe_selector(QWidget *parent)
+DsComboBox* MeasureDock::create_probe_selector(QWidget *parent)
 {
-    QComboBox *selector = new QComboBox(parent);
+    DsComboBox *selector = new DsComboBox(parent);
     update_probe_selector(selector);
     return selector;
 }
 
-void MeasureDock::update_probe_selector(QComboBox *selector)
+void MeasureDock::update_probe_selector(DsComboBox *selector)
 {
     selector->clear();
-    const std::vector< boost::shared_ptr<Signal> > sigs(_session.get_signals());
+    const auto &sigs = _session->get_signals();
+
     for(size_t i = 0; i < sigs.size(); i++) {
-        const boost::shared_ptr<view::Signal> s(sigs[i]);
+        const auto s = sigs[i];
         assert(s);
 
-        if (dynamic_pointer_cast<LogicSignal>(s) && s->enabled())
+        if (dynamic_cast<LogicSignal*>(s) && s->enabled())
         {
             selector->addItem(QString::number(s->get_index()));
         }

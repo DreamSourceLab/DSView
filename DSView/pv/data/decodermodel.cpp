@@ -19,13 +19,9 @@
  */
 
 #include <libsigrokdecode4DSL/libsigrokdecode.h>
-
-#include <boost/foreach.hpp>
-#include <boost/thread/thread.hpp>
-
-#include <pv/data/decode/annotation.h>
-#include <pv/data/decode/rowdata.h>
-
+  
+#include "decode/annotation.h"
+#include "decode/rowdata.h"
 #include "decoderstack.h"
 #include "decodermodel.h"
 
@@ -41,18 +37,13 @@ DecoderModel::DecoderModel(QObject *parent)
 {
 }
 
-void DecoderModel::setDecoderStack(boost::shared_ptr<pv::data::DecoderStack> decoder_stack)
+void DecoderModel::setDecoderStack(DecoderStack *decoder_stack)
 {
     beginResetModel();
     _decoder_stack = decoder_stack;
     endResetModel();
 }
-
-const boost::shared_ptr<pv::data::DecoderStack>& DecoderModel::getDecoderStack() const
-{
-    return _decoder_stack;
-}
-
+ 
 int DecoderModel::rowCount(const QModelIndex & /* parent */) const
 {
     if (_decoder_stack)

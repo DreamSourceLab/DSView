@@ -37,13 +37,14 @@
 
 #include <QMouseEvent>
 #include <QStyleOption>
-#include <QPainterPath>
-
+#include <QPainterPath> 
 #include <math.h>
-
-#include <boost/foreach.hpp>
-
-using namespace boost;
+#include <QWheelEvent>
+#include <QDebug>
+ 
+#include "../config/appconfig.h"
+#include "../dsvdef.h"
+ 
 using namespace std;
 
 namespace pv {
@@ -91,32 +92,27 @@ Viewport::Viewport(View &parent, View_type type) :
     // drag inertial
     _drag_strength = 0;
     _drag_timer.setSingleShot(true);
-
-    connect(&trigger_timer, SIGNAL(timeout()),
-            this, SLOT(on_trigger_timer()));
-    connect(&_drag_timer, SIGNAL(timeout()),
-            this, SLOT(on_drag_timer()));
-
-    connect(&_view.session(), &SigSession::receive_data,
-            this, &Viewport::set_receive_len);
-
+ 
     _cmenu = new QMenu(this);
     QAction *yAction = _cmenu->addAction(tr("Add Y-cursor"));
     QAction *xAction = _cmenu->addAction(tr("Add X-cursor"));
+ 
+    setContextMenuPolicy(Qt::CustomContextMenu);
+
+    connect(&trigger_timer, SIGNAL(timeout()),this, SLOT(on_trigger_timer()));
+    connect(&_drag_timer, SIGNAL(timeout()),this, SLOT(on_drag_timer())); 
+
     connect(yAction, SIGNAL(triggered(bool)), this, SLOT(add_cursor_y()));
     connect(xAction, SIGNAL(triggered(bool)), this, SLOT(add_cursor_x()));
-
-    setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(this, SIGNAL(customContextMenuRequested(const QPoint&)),
-            this, SLOT(show_contextmenu(const QPoint&)));
+    connect(this, SIGNAL(customContextMenuRequested(const QPoint&)),this, SLOT(show_contextmenu(const QPoint&)));
 }
 
-int Viewport::get_total_height() const
+int Viewport::get_total_height()
 {
 	int h = 0;
 
-    const vector< boost::shared_ptr<Trace> > traces(_view.get_traces(_type));
-    BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces) {
+    const auto &traces = _view.get_traces(_type);
+    for(auto &t : traces) {
         assert(t);
         h += (int)(t->get_totalHeight());
     }
@@ -125,7 +121,7 @@ int Viewport::get_total_height() const
 	return h;
 }
 
-QPoint Viewport::get_mouse_point() const
+QPoint Viewport::get_mouse_point()
 {
     return _mouse_point;
 }
@@ -138,7 +134,7 @@ bool Viewport::event(QEvent *event)
 }
 
 void Viewport::paintEvent(QPaintEvent *event)
-{
+{   
     (void)event;
 
     using pv::view::Signal;
@@ -153,14 +149,19 @@ void Viewport::paintEvent(QPaintEvent *event)
     QColor back(QWidget::palette().color(QWidget::backgroundRole()));
     fore.setAlpha(View::ForeAlpha);
     _view.set_back(false);
-    const vector< boost::shared_ptr<Trace> > traces(_view.get_traces(_type));
-    BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
+
+    const auto &traces = _view.get_traces(_type);
+
+    for(auto &t : traces)
     {
-        assert(t);
+        assert(t); 
+  
         t->paint_back(p, 0, _view.get_view_width(), fore, back);
         if (_view.back_ready())
             break;
     }
+
+    //auto st = _view.session().get_capture_state();
 
     if (_view.session().get_device()->dev_inst()->mode == LOGIC ||
         _view.session().get_instant()) {
@@ -187,7 +188,7 @@ void Viewport::paintEvent(QPaintEvent *event)
         paintSignals(p, fore, back);
     }
 
-    BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
+    for(auto &t : traces)
     {
         assert(t);
         if (t->enabled())
@@ -202,11 +203,14 @@ void Viewport::paintEvent(QPaintEvent *event)
 
 void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
 {
-    const vector< boost::shared_ptr<Trace> > traces(_view.get_traces(_type));
+    const auto &traces = _view.get_traces(_type);
+
     if (_view.session().get_device()->dev_inst()->mode == LOGIC) {
-        BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
+
+        for(auto &t : traces)
         {
-            assert(t);
+            assert(t); 
+
             if (t->enabled())
                 t->paint_mid(p, 0, t->get_view_rect().right(), fore, back);
         }
@@ -224,11 +228,20 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
 
             QPainter dbp(&pixmap);
             //dbp.begin(this);
-            BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
+            for(auto &t : traces)
             {
                 assert(t);
+
+                /*
+                auto ptr = t->get();
+                if (ptr->enabled()){
+                     ptr->paint_mid(dbp, 0, t->get_view_rect().right(), fore, back); 
+                     continue;
+                }
+               */
+
                 if (t->enabled())
-                    t->paint_mid(dbp, 0, t->get_view_rect().right(), fore, back);
+                    t->paint_mid(dbp, 0, t->get_view_rect().right(), fore, back);      
             }
             _need_update = false;
         }
@@ -239,7 +252,7 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
     //const QRect xrect = QRect(rect().left(), rect().top(), _view.get_view_width(), rect().height());
     const QRect xrect = _view.get_view_rect();
     if (_view.cursors_shown() && _type == TIME_VIEW) {
-        list<Cursor*>::iterator i = _view.get_cursorList().begin();
+        auto i = _view.get_cursorList().begin();
         int index = 0;
         while (i != _view.get_cursorList().end()) {
             const int64_t cursorX = _view.index2pixel((*i)->index());
@@ -254,7 +267,7 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
     }
 
     if (_view.xcursors_shown() && _type == TIME_VIEW) {
-        list<XCursor*>::iterator i = _view.get_xcursorList().begin();
+        auto i = _view.get_xcursorList().begin();
         int index = 0;
         bool hovered = false;
         while (i != _view.get_xcursorList().end()) {
@@ -485,7 +498,7 @@ void Viewport::paintProgress(QPainter &p, QColor fore, QColor back)
 void Viewport::mousePressEvent(QMouseEvent *event)
 {
 	assert(event);
-
+    
 	_mouse_down_point = event->pos();
 	_mouse_down_offset = _view.offset();
     _drag_strength = 0;
@@ -507,13 +520,15 @@ void Viewport::mousePressEvent(QMouseEvent *event)
     if (_action_type == NO_ACTION &&
         event->button() == Qt::LeftButton &&
         _view.session().get_device()->dev_inst()->mode == DSO) {
-        const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
-        BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+
+       const auto &sigs = _view.session().get_signals();
+
+       for(auto &s : sigs) {
             assert(s);
             if (!s->enabled())
                 continue;
-            boost::shared_ptr<DsoSignal> dsoSig;
-            if ((dsoSig = dynamic_pointer_cast<DsoSignal>(s))) {
+            DsoSignal *dsoSig = NULL;
+            if ((dsoSig = dynamic_cast<DsoSignal*>(s))) {
                 if (dsoSig->get_trig_rect(0, _view.get_view_width()).contains(_mouse_point)) {
                    _drag_sig = s;
                    _action_type = DSO_TRIG_MOVE;
@@ -536,7 +551,7 @@ void Viewport::mousePressEvent(QMouseEvent *event)
             }
         }
         if (_action_type == NO_ACTION && _view.cursors_shown()) {
-            list<Cursor*>::iterator i = _view.get_cursorList().begin();
+            auto i = _view.get_cursorList().begin();
             while (i != _view.get_cursorList().end()) {
                 const int64_t cursorX = _view.index2pixel((*i)->index());
                 if ((*i)->grabbed()) {
@@ -550,7 +565,7 @@ void Viewport::mousePressEvent(QMouseEvent *event)
             }
         }
         if (_action_type == NO_ACTION && _view.xcursors_shown()) {
-            list<XCursor*>::iterator i = _view.get_xcursorList().begin();
+            auto i = _view.get_xcursorList().begin();
             const QRect xrect = _view.get_view_rect();
             while (i != _view.get_xcursorList().end()) {
                 const double cursorX  = xrect.left() + (*i)->value(XCursor::XCur_Y)*xrect.width();
@@ -562,13 +577,13 @@ void Viewport::mousePressEvent(QMouseEvent *event)
                         _view.show_xcursors(false);
                     break;
                 } else if ((*i)->get_map_rect(xrect).contains(_view.hover_point())) {
-                    vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
-                    vector< boost::shared_ptr<Signal> >::iterator s = sigs.begin();
+                    auto &sigs = _view.session().get_signals();
+                    auto s = sigs.begin();
                     bool sig_looped = ((*i)->channel() == NULL);
                     bool no_dsoSig = true;
                     while (1) {
-                        boost::shared_ptr<view::DsoSignal> dsoSig;
-                        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(*s)) &&
+                        view::DsoSignal *dsoSig = NULL;
+                        if ((dsoSig = dynamic_cast<view::DsoSignal*>(*s)) &&
                             dsoSig->enabled()) {
                             no_dsoSig = false;
                             if (sig_looped) {
@@ -625,7 +640,7 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
             }
             _drag_strength = (_mouse_down_point - event->pos()).x();
         } else if (_type == FFT_VIEW) {
-            BOOST_FOREACH(const boost::shared_ptr<view::SpectrumTrace> t, _view.session().get_spectrum_traces()) {
+            for(auto &t: _view.session().get_spectrum_traces()) {
                 assert(t);
                 if(t->enabled()) {
                     double delta = (_mouse_point - event->pos()).x();
@@ -641,8 +656,8 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
             !(event->buttons() | Qt::NoButton)) {
             if (_action_type == DSO_TRIG_MOVE) {
                 if (_drag_sig) {
-                    boost::shared_ptr<view::DsoSignal> dsoSig;
-                    if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(_drag_sig))) {
+                    view::DsoSignal *dsoSig = NULL;
+                    if ((dsoSig = dynamic_cast<view::DsoSignal*>(_drag_sig))) {
                         dsoSig->set_trig_vpos(event->pos().y());
                         _dso_trig_moved = true;
                     }
@@ -654,20 +669,21 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
                     int curX = _view.hover_point().x();
                     uint64_t index0 = 0, index1 = 0, index2 = 0;
                     bool logic = false;
-                    const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
-                    BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+                    const auto &sigs = _view.session().get_signals();
+
+                   for(auto &s: sigs) {
                         assert(s);
-                        boost::shared_ptr<view::LogicSignal> logicSig;
-                        boost::shared_ptr<view::DsoSignal> dsoSig;
+                        view::LogicSignal *logicSig = NULL;
+                        view::DsoSignal *dsoSig = NULL;
                         if ((_view.session().get_device()->dev_inst()->mode == LOGIC) &&
-                            (logicSig = dynamic_pointer_cast<view::LogicSignal>(s))) {
+                            (logicSig = dynamic_cast<view::LogicSignal*>(s))) {
                             if (logicSig->measure(event->pos(), index0, index1, index2)) {
                                 logic = true;
                                 break;
                             }
                         }
                         if ((_view.session().get_device()->dev_inst()->mode == DSO) &&
-                            (dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
+                            (dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
                             curX = min(dsoSig->get_view_rect().right(), curX);
                             break;
                         }
@@ -696,7 +712,7 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
                     _curs_moved = true;
                 } else {
                     if (_view.xcursors_shown()) {
-                        list<XCursor*>::iterator i = _view.get_xcursorList().begin();
+                        auto i = _view.get_xcursorList().begin();
                         const QRect xrect = _view.get_view_rect();
                         while (i != _view.get_xcursorList().end()) {
                             if ((*i)->grabbed() != XCursor::XCur_None) {
@@ -718,7 +734,7 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
         }
         if (!(event->buttons() | Qt::NoButton)) {
             if (_action_type == DSO_XM_STEP1 || _action_type == DSO_XM_STEP2) {
-                BOOST_FOREACH(const boost::shared_ptr<Signal> s, _view.session().get_signals()) {
+                for(auto &s : _view.session().get_signals()) {
                     assert(s);
                     if (!s->get_view_rect().contains(event->pos())) {
                         clear_dso_xm();
@@ -741,14 +757,19 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
 void Viewport::mouseReleaseEvent(QMouseEvent *event)
 {
     assert(event);
-
-    if (_type == TIME_VIEW) {
+    
+    if (_type != TIME_VIEW){
+        update();
+        return;
+    }
+  
         if ((_action_type == NO_ACTION) &&
             (event->button() == Qt::LeftButton)) {
             if (_view.session().get_device()->dev_inst()->mode == LOGIC &&
                 _view.session().get_capture_state() == SigSession::Stopped) {
-                // priority 1
-                if (_action_type == NO_ACTION) {
+                //priority 1
+                //try to quick scroll view...
+                if (_action_type == NO_ACTION && AppConfig::Instance()._appOptions.quickScroll) {
                     const double strength = _drag_strength*DragTimerInterval*1.0/_elapsed_time.elapsed();
                     if (_elapsed_time.elapsed() < 200 &&
                         abs(_drag_strength) < MinorDragOffsetUp &&
@@ -766,11 +787,12 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                 // priority 2
                 if (_action_type == NO_ACTION) {
                     if (_mouse_down_point.x() == event->pos().x()) {
-                        const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
-                        BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+                        const auto &sigs = _view.session().get_signals();
+
+                        for(auto &s : sigs) {
                             assert(s);
-                            boost::shared_ptr<view::LogicSignal> logicSig;
-                            if ((logicSig = dynamic_pointer_cast<view::LogicSignal>(s))) {
+                            view::LogicSignal *logicSig = NULL;
+                            if ((logicSig = dynamic_cast<view::LogicSignal*>(s))) {
                                 if (logicSig->edge(event->pos(), _edge_start, 10)) {
                                     _action_type = LOGIC_JUMP;
                                     _cur_preX = _view.index2pixel(_edge_start);
@@ -789,8 +811,9 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                 // priority 3
                 if (_action_type == NO_ACTION) {
                     if (_mouse_down_point.x() == event->pos().x()) {
-                        const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
-                        BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+                        const auto  &sigs = _view.session().get_signals();
+
+                        for(auto &s : sigs) {
                             assert(s);
                             if (abs(event->pos().y() - s->get_y()) < _view.get_signalHeight()) {
                                 _action_type = LOGIC_EDGE;
@@ -821,15 +844,17 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
             }
         } else if (_action_type == DSO_TRIG_MOVE) {
             if (_dso_trig_moved && event->button() == Qt::LeftButton) {
-                _drag_sig.reset();
+                _drag_sig = NULL;
                 _action_type = NO_ACTION;
                 _dso_trig_moved = false;
 
-                const vector< boost::shared_ptr<Trace> > traces(
-                    _view.get_traces(ALL_VIEW));
-                BOOST_FOREACH(const boost::shared_ptr<Trace> t, traces)
-                    t->select(false);
+                const auto &traces = _view.get_traces(ALL_VIEW);
+
+                for(auto &t : traces){
+                     t->select(false);
+                }                   
             }
+
         } else if (_action_type == DSO_XM_STEP0) {
             if (event->button() == Qt::LeftButton) {
                 _action_type = DSO_XM_STEP1;
@@ -872,7 +897,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
             }
             if (_xcurs_moved && event->button() == Qt::LeftButton) {
                 _action_type = NO_ACTION;
-                list<XCursor*>::iterator i = _view.get_xcursorList().begin();
+                auto i = _view.get_xcursorList().begin();
                 while (i != _view.get_xcursorList().end()) {
                     (*i)->rel_grabbed();
                     i++;
@@ -920,7 +945,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
             }
             _action_type = NO_ACTION;
         }
-    }
+    
     update();
 }
 
@@ -943,11 +968,11 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
             uint64_t index;
             uint64_t index0 = 0, index1 = 0, index2 = 0;
             if (_view.session().get_device()->dev_inst()->mode == LOGIC) {
-                const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
-                BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+                const auto &sigs = _view.session().get_signals();
+                for(auto &s : sigs) {
                     assert(s);
-                    boost::shared_ptr<view::LogicSignal> logicSig;
-                    if ((logicSig = dynamic_pointer_cast<view::LogicSignal>(s))) {
+                    view::LogicSignal *logicSig = NULL;
+                    if ((logicSig = dynamic_cast<view::LogicSignal*>(s))) {
                         if (logicSig->measure(event->pos(), index0, index1, index2)) {
                             logic = true;
                             break;
@@ -977,7 +1002,7 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
             clear_dso_xm();
             measure_updated();
         } else if (_action_type == NO_ACTION) {
-            BOOST_FOREACH(const boost::shared_ptr<Signal> s, _view.session().get_signals()) {
+            for(auto &s : _view.session().get_signals()) {
                 assert(s);
                 if (s->get_view_rect().contains(event->pos())) {
                     _dso_xm_index[0] = _view.pixel2index(event->pos().x());
@@ -1000,54 +1025,86 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
 
 void Viewport::wheelEvent(QWheelEvent *event)
 {
-	assert(event);
+    assert(event);
 
-    if (_type == FFT_VIEW) {
-        BOOST_FOREACH(const boost::shared_ptr<view::SpectrumTrace> t, _view.session().get_spectrum_traces()) {
-            assert(t);
-            if(t->enabled()) {
-                t->zoom(event->delta() / 80, event->x());
+    int x = 0;  //mouse x pos
+    int delta = 0;
+    bool isVertical = true;
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    x = (int)event->position().x(); 
+    int anglex = event->angleDelta().x();
+    int angley = event->angleDelta().y();
+
+    if (anglex == 0 || ABS_VAL(angley) >= ABS_VAL(anglex)){
+        delta = angley;
+        isVertical = true;
+    }
+    else{
+        delta = anglex;
+        isVertical = false; //hori direction
+    }
+#else
+    x = event->x();
+    delta = event->delta();
+    isVertical = event->orientation() == Qt::Vertical;
+#endif
+
+    if (_type == FFT_VIEW)
+    {
+        for (auto &t : _view.session().get_spectrum_traces())
+        { 
+            if (t->enabled())
+            {
+                t->zoom(delta / 80, x);
                 break;
             }
         }
-    } else if (_type == TIME_VIEW){
-        if (event->orientation() == Qt::Vertical) {
+    }
+    else if (_type == TIME_VIEW)
+    {
+        if (isVertical)
+        {
             // Vertical scrolling is interpreted as zooming in/out
-            const int offset = event->x();
-            #ifdef Q_OS_DARWIN
+#ifdef Q_OS_DARWIN
             static bool active = true;
             static int64_t last_time;
-            if (event->source() == Qt::MouseEventSynthesizedBySystem) {
-                if (active && (event->modifiers() & Qt::ShiftModifier)) {
+            if (event->source() == Qt::MouseEventSynthesizedBySystem)
+            {
+                if (active && (event->modifiers() & Qt::ShiftModifier))
+                {
                     last_time = QDateTime::currentMSecsSinceEpoch();
-                    const double scale = event->delta() > 1.5 ? 1 :
-                                         event->delta() < -1.5 ? -1 : 0;
-                    _view.zoom(scale, offset);
+                    const double scale = delta > 1.5 ? 1 : (delta < -1.5 ? -1 : 0);
+                    _view.zoom(scale, x);
                 }
                 int64_t cur_time = QDateTime::currentMSecsSinceEpoch();
                 if (cur_time - last_time > 50)
                     active = true;
                 else
                     active = false;
-            } else {
-                _view.zoom(-event->delta() / 80, offset);
             }
-            #else
-            _view.zoom(event->delta() / 80, offset);
-            #endif
-        } else if (event->orientation() == Qt::Horizontal) {
+            else
+            {
+                _view.zoom(-delta / 80, x);
+            }
+#else
+            _view.zoom(delta / 80, x);
+#endif
+        }
+        else
+        {
             // Horizontal scrolling is interpreted as moving left/right
             if (!(event->modifiers() & Qt::ShiftModifier))
-                _view.set_scale_offset(_view.scale(),
-                                       _view.offset() - event->delta());
+                _view.set_scale_offset(_view.scale(), _view.offset() - delta);
         }
     }
 
-    const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
-    BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
-        assert(s);
-        boost::shared_ptr<view::DsoSignal> dsoSig;
-        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
+    const auto &sigs = _view.session().get_signals();
+    for (auto &s : sigs)
+    { 
+        view::DsoSignal *dsoSig = NULL;
+        if ((dsoSig = dynamic_cast<view::DsoSignal *>(s)))
+        {
             dsoSig->auto_end();
         }
     }
@@ -1151,13 +1208,15 @@ void Viewport::measure()
     _measure_type = NO_MEASURE;
     if (_type == TIME_VIEW) {
         const uint64_t sample_rate = _view.session().cur_snap_samplerate();
-        const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
-        BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
+        const auto &sigs = _view.session().get_signals();
+
+        for(auto &s : sigs) {
             assert(s);
-            boost::shared_ptr<view::LogicSignal> logicSig;
-            boost::shared_ptr<view::DsoSignal> dsoSig;
-            boost::shared_ptr<view::AnalogSignal> analogSig;
-            if ((logicSig = dynamic_pointer_cast<view::LogicSignal>(s))) {
+            view::LogicSignal *logicSig = NULL;
+            view::DsoSignal *dsoSig = NULL;
+            view::AnalogSignal *analogSig = NULL;
+
+            if ((logicSig = dynamic_cast<view::LogicSignal*>(s))) {
                 if (_action_type == NO_ACTION) {
                     if (logicSig->measure(_mouse_point, _cur_sample, _nxt_sample, _thd_sample)) {
                         _measure_type = LOGIC_FREQ;
@@ -1207,7 +1266,7 @@ void Viewport::measure()
                         _edge_hit = false;
                     }
                 }
-            } else if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
+            } else if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
                 if (dsoSig->enabled()) {
                     if (_measure_en && dsoSig->measure(_view.hover_point())) {
                         _measure_type = DSO_VALUE;
@@ -1215,7 +1274,7 @@ void Viewport::measure()
                         _measure_type = NO_MEASURE;
                     }
                 }
-            } else if ((analogSig = dynamic_pointer_cast<view::AnalogSignal>(s))) {
+            } else if ((analogSig = dynamic_cast<view::AnalogSignal*>(s))) {
                 if (analogSig->enabled()) {
                     if (_measure_en && analogSig->measure(_view.hover_point())) {
                         _measure_type = DSO_VALUE;
@@ -1225,7 +1284,7 @@ void Viewport::measure()
                 }
             }
         }
-        const boost::shared_ptr<MathTrace> mathTrace(_view.session().get_math_trace());
+        const auto mathTrace = _view.session().get_math_trace();
         if (mathTrace && mathTrace->enabled()) {
             if (_measure_en && mathTrace->measure(_view.hover_point())) {
                 _measure_type = DSO_VALUE;
@@ -1234,7 +1293,7 @@ void Viewport::measure()
             }
         }
     } else if (_type == FFT_VIEW) {
-        BOOST_FOREACH(const boost::shared_ptr<view::SpectrumTrace> t, _view.session().get_spectrum_traces()) {
+        for(auto &t : _view.session().get_spectrum_traces()) {
             assert(t);
             if(t->enabled()) {
                 t->measure(_mouse_point);
@@ -1305,13 +1364,15 @@ void Viewport::paintMeasure(QPainter &p, QColor fore, QColor back)
         }
     } 
 
-    const vector< boost::shared_ptr<Signal> > sigs(_view.session().get_signals());
+    const auto &sigs = _view.session().get_signals();
     if (_action_type == NO_ACTION &&
         _measure_type == DSO_VALUE) {
-        BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
-            boost::shared_ptr<view::DsoSignal> dsoSig;
-            boost::shared_ptr<view::AnalogSignal> analogSig;
-            if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
+
+        for(auto &s : sigs) {
+            view::DsoSignal *dsoSig = NULL;
+            view::AnalogSignal* analogSig = NULL;
+
+            if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
                 uint64_t index;
                 double value;
                 QPointF hpoint;
@@ -1321,7 +1382,7 @@ void Viewport::paintMeasure(QPainter &p, QColor fore, QColor back)
                     p.drawLine(hpoint.x(), dsoSig->get_view_rect().top(),
                                hpoint.x(), dsoSig->get_view_rect().bottom());
                 }
-            } else if ((analogSig = dynamic_pointer_cast<view::AnalogSignal>(s))) {
+            } else if ((analogSig = dynamic_cast<view::AnalogSignal*>(s))) {
                 uint64_t index;
                 double value;
                 QPointF hpoint;
@@ -1336,9 +1397,9 @@ void Viewport::paintMeasure(QPainter &p, QColor fore, QColor back)
     }
 
     if (_dso_ym_valid) {
-        BOOST_FOREACH(const boost::shared_ptr<Signal> s, sigs) {
-            boost::shared_ptr<view::DsoSignal> dsoSig;
-            if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
+        for(auto &s : sigs) {
+            view::DsoSignal *dsoSig = NULL;
+            if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
                 if (dsoSig->get_index() == _dso_ym_sig_index) {
                     p.setPen(QPen(dsoSig->get_colour(), 1, Qt::DotLine));
                     const int text_height = p.boundingRect(0, 0, INT_MAX, INT_MAX,
@@ -1536,7 +1597,9 @@ void Viewport::paintMeasure(QPainter &p, QColor fore, QColor back)
             QString delta_text = _view.get_index_delta(_edge_start, _edge_end) +
                                  "/" + QString::number(delta);
             QFontMetrics fm = this->fontMetrics();
-            const int rectW = fm.width(delta_text) + 60;
+          //  const int rectW = fm.width(delta_text) + 60;
+            const int rectW = fm.boundingRect(delta_text).width() + 60;
+
             const int rectH = fm.height() + 10;
             //const int rectY = (_cur_aftY >= _cur_preY) ? _cur_preY_top : _cur_preY_bottom;
             //const int rectX = (_cur_aftX >= _cur_preX) ? _cur_preX : _cur_preX - rectW;
@@ -1605,7 +1668,7 @@ void Viewport::on_trigger_timer()
 }
 
 void Viewport::on_drag_timer()
-{
+{   
     const int64_t offset = _view.offset();
     const double scale = _view.scale();
     if (_view.session().get_capture_state() == SigSession::Stopped &&
@@ -1645,7 +1708,7 @@ void Viewport::unshow_wait_trigger()
     update();
 }
 
-bool Viewport::get_dso_trig_moved() const
+bool Viewport::get_dso_trig_moved()
 {
     return _dso_trig_moved;
 }

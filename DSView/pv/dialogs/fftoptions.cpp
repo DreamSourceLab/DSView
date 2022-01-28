@@ -21,50 +21,64 @@
 
 #include "fftoptions.h"
 
-#include <boost/foreach.hpp>
-
+  
 #include <QFormLayout>
 #include <QListWidget>
+#include <QDebug>
 
 #include "../sigsession.h"
 #include "../data/spectrumstack.h"
 #include "../view/trace.h"
 #include "../view/dsosignal.h"
 #include "../view/spectrumtrace.h"
+#include "../dsvdef.h"
+
 
 using namespace boost;
 using namespace std;
-
+ 
 namespace pv {
 namespace dialogs {
 
-FftOptions::FftOptions(QWidget *parent, SigSession &session) :
+FftOptions::FftOptions(QWidget *parent, SigSession *session) :
     DSDialog(parent),
     _session(session),
     _button_box(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
         Qt::Horizontal, this)
 {
+    _len_combobox = NULL;
+    _interval_combobox = NULL;
+    _en_checkbox = NULL;
+    _ch_combobox = NULL;
+    _window_combobox = NULL;
+    _dc_checkbox = NULL;
+    _view_combobox = NULL;
+    _dbv_combobox = NULL;
+    _hint_label = NULL;
+    _glayout = NULL;
+    _layout = NULL;
+
     _en_checkbox = new QCheckBox(this);
-    _len_combobox = new QComboBox(this);
-    _interval_combobox = new QComboBox(this);
-    _ch_combobox = new QComboBox(this);
-    _window_combobox = new QComboBox(this);
+    _len_combobox = new DsComboBox(this);
+    _interval_combobox = new DsComboBox(this);
+    _ch_combobox = new DsComboBox(this);
+    _window_combobox = new DsComboBox(this);
     _dc_checkbox = new QCheckBox(this);
     _dc_checkbox->setChecked(true);
-    _view_combobox = new QComboBox(this);
-    _dbv_combobox = new QComboBox(this);
-
+    _view_combobox = new DsComboBox(this);
+    _dbv_combobox = new DsComboBox(this);
+ 
     // setup _ch_combobox
-    BOOST_FOREACH(const boost::shared_ptr<view::Signal> s, _session.get_signals()) {
-        boost::shared_ptr<view::DsoSignal> dsoSig;
-        if ((dsoSig = dynamic_pointer_cast<view::DsoSignal>(s))) {
+    for(auto &s : _session->get_signals()) {
+        view::DsoSignal *dsoSig = NULL;
+        if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
             _ch_combobox->addItem(dsoSig->get_name(), QVariant::fromValue(dsoSig->get_index()));
         }
     }
 
     // setup _window_combobox _len_combobox
     _sample_limit = 0;
-    GVariant* gvar = _session.get_device()->get_config(NULL, NULL, SR_CONF_MAX_DSO_SAMPLELIMITS);
+    GVariant* gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_MAX_DSO_SAMPLELIMITS);
     if (gvar != NULL) {
         _sample_limit = g_variant_get_uint64(gvar) * 0.5;
         g_variant_unref(gvar);
@@ -75,9 +89,10 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
     std::vector<uint64_t> length;
     std::vector<QString> view_modes;
     std::vector<int> dbv_ranges;
-    BOOST_FOREACH(const boost::shared_ptr<view::Trace> t, _session.get_spectrum_traces()) {
-        boost::shared_ptr<view::SpectrumTrace> spectrumTraces;
-        if ((spectrumTraces = dynamic_pointer_cast<view::SpectrumTrace>(t))) {
+
+    for(auto &t : _session->get_spectrum_traces()) {
+        view::SpectrumTrace *spectrumTraces = NULL;
+        if ((spectrumTraces = dynamic_cast<view::SpectrumTrace*>(t))) {
             windows = spectrumTraces->get_spectrum_stack()->get_windows_support();
             length = spectrumTraces->get_spectrum_stack()->get_length_support();
             view_modes = spectrumTraces->get_view_modes_support();
@@ -125,9 +140,9 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
     }
 
     // load current settings
-    BOOST_FOREACH(const boost::shared_ptr<view::Trace> t, _session.get_spectrum_traces()) {
-        boost::shared_ptr<view::SpectrumTrace> spectrumTraces;
-        if ((spectrumTraces = dynamic_pointer_cast<view::SpectrumTrace>(t))) {
+    for(auto &t : _session->get_spectrum_traces()) {
+         view::SpectrumTrace *spectrumTraces = NULL;
+        if ((spectrumTraces = dynamic_cast<view::SpectrumTrace*>(t))) {
             if (spectrumTraces->enabled()) {
                 _en_checkbox->setChecked(true);
                 for (int i = 0; i < _ch_combobox->count(); i++) {
@@ -173,7 +188,7 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
     QPixmap pixmap(hint_pic);
     _hint_label->setPixmap(pixmap);
 
-    _glayout = new QGridLayout();
+    _glayout = new QGridLayout();  //QGridLayout
     _glayout->setVerticalSpacing(5);
     _glayout->addWidget(new QLabel(tr("FFT Enable: "), this), 0, 0);
     _glayout->addWidget(_en_checkbox, 0, 1);
@@ -203,9 +218,13 @@ FftOptions::FftOptions(QWidget *parent, SigSession &session) :
 
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
     connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
-    connect(_window_combobox, SIGNAL(currentIndexChanged(QString)), this, SLOT(window_changed(QString)));
+    connect(_window_combobox, SIGNAL(currentIndexChanged(int)), this, SLOT(window_changed(int)));
     connect(_len_combobox, SIGNAL(currentIndexChanged(int)), this, SLOT(len_changed(int)));
-    connect(_session.get_device().get(), SIGNAL(device_updated()), this, SLOT(reject()));
+    connect(_session->get_device(), SIGNAL(device_updated()), this, SLOT(reject()));    
+}
+
+FftOptions::~FftOptions(){
+
 }
 
 void FftOptions::accept()
@@ -214,9 +233,9 @@ void FftOptions::accept()
 
     QDialog::accept();
 
-    BOOST_FOREACH(const boost::shared_ptr<view::Trace> t, _session.get_spectrum_traces()) {
-        boost::shared_ptr<view::SpectrumTrace> spectrumTraces;
-        if ((spectrumTraces = dynamic_pointer_cast<view::SpectrumTrace>(t))) {
+   for(auto &t : _session->get_spectrum_traces()) {
+        view::SpectrumTrace *spectrumTraces = NULL;
+        if ((spectrumTraces = dynamic_cast<view::SpectrumTrace*>(t))) {
             spectrumTraces->set_enable(false);
             if (spectrumTraces->get_index() == _ch_combobox->currentData().toInt()) {
                 spectrumTraces->get_spectrum_stack()->set_dc_ignore(_dc_checkbox->isChecked());
@@ -227,13 +246,13 @@ void FftOptions::accept()
                 //spectrumTraces->init_zoom();
                 spectrumTraces->set_dbv_range(_dbv_combobox->currentData().toInt());
                 spectrumTraces->set_enable(_en_checkbox->isChecked());
-                if (_session.get_capture_state() == SigSession::Stopped &&
+                if (_session->get_capture_state() == SigSession::Stopped &&
                     spectrumTraces->enabled())
                     spectrumTraces->get_spectrum_stack()->calc_fft();
             }
         }
     }
-    _session.spectrum_rebuild();
+    _session->spectrum_rebuild();
 }
 
 void FftOptions::reject()
@@ -243,8 +262,9 @@ void FftOptions::reject()
     QDialog::reject();
 }
 
-void FftOptions::window_changed(QString str)
+void FftOptions::window_changed(int index)
 {
+    QString str = _window_combobox->itemText(index);
     QString hint_pic= ":/icons/" + str +".png";
     QPixmap pixmap(hint_pic);
     _hint_label->setPixmap(pixmap);

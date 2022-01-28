@@ -21,18 +21,15 @@
  */
 
 #include <libsigrokdecode4DSL/libsigrokdecode.h>
-
-#include <extdef.h>
-
+ 
 #include <QDebug>
-
 #include <math.h>
-
 #include "logicsignal.h"
 #include "view.h"
-#include "pv/data/logic.h"
-#include "pv/data/logicsnapshot.h"
+#include "../data/logic.h"
+#include "../data/logicsnapshot.h"
 #include "view.h"
+#include "../extdef.h"
 
 using namespace boost;
 using namespace std;
@@ -45,8 +42,8 @@ const float LogicSignal::Oversampling = 1.0f;
 const int LogicSignal::StateHeight = 12;
 const int LogicSignal::StateRound = 5;
 
-LogicSignal::LogicSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
-                         boost::shared_ptr<data::Logic> data,
+LogicSignal::LogicSignal(DevInst *dev_inst,
+                         data::Logic *data,
                          sr_channel *probe) :
     Signal(dev_inst, probe),
     _data(data),
@@ -54,10 +51,10 @@ LogicSignal::LogicSignal(boost::shared_ptr<pv::device::DevInst> dev_inst,
 {
 }
 
-LogicSignal::LogicSignal(boost::shared_ptr<view::LogicSignal> s,
-                         boost::shared_ptr<pv::data::Logic> data,
+LogicSignal::LogicSignal(view::LogicSignal *s,
+                         data::Logic *data,
                          sr_channel *probe) :
-    Signal(*s.get(), probe),
+    Signal(*s, probe),
     _data(data),
     _trig(s->get_trig())
 {
@@ -69,22 +66,22 @@ LogicSignal::~LogicSignal()
     _cur_pulses.clear();
 }
 
-const sr_channel* LogicSignal::probe() const
+const sr_channel* LogicSignal::probe()
 {
     return _probe;
 }
 
-boost::shared_ptr<pv::data::SignalData> LogicSignal::data() const
+pv::data::SignalData* LogicSignal::data()
 {
     return _data;
 }
 
-boost::shared_ptr<pv::data::Logic> LogicSignal::logic_data() const
+pv::data::Logic* LogicSignal::logic_data()
 {
     return _data;
 }
 
-LogicSignal::LogicSetRegions LogicSignal::get_trig() const
+LogicSignal::LogicSetRegions LogicSignal::get_trig()
 {
     return _trig;
 }
@@ -137,14 +134,12 @@ void LogicSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColo
     const int high_offset = y - _totalHeight + 0.5f;
     const int low_offset = y + 0.5f;
 
-	const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
-		_data->get_snapshots();
+	const auto &snapshots =_data->get_snapshots();
     double samplerate = _data->samplerate();
     if (snapshots.empty() || samplerate == 0)
 		return;
-
-	const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
-		snapshots.front();
+  
+    auto snapshot =  const_cast<data::LogicSnapshot*>(snapshots.front());
     if (snapshot->empty() || !snapshot->has_data(_probe->index))
         return;
 
@@ -202,7 +197,7 @@ void LogicSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColo
 }
 
 void LogicSignal::paint_caps(QPainter &p, QLineF *const lines,
-    vector< pair<uint64_t, bool> > &edges, bool level,
+    std::vector< pair<uint64_t, bool> > &edges, bool level,
 	double samples_per_pixel, double pixels_offset, float x_offset,
 	float y_offset)
 {
@@ -210,7 +205,7 @@ void LogicSignal::paint_caps(QPainter &p, QLineF *const lines,
 
     uint64_t curX = 0;
     uint64_t nxtX = 0;
-	for (vector<pv::data::LogicSnapshot::EdgePair>::const_iterator i =
+	for (std::vector<pv::data::LogicSnapshot::EdgePair>::const_iterator i =
 		edges.begin(); i != (edges.end() - 1); i++)
 		if ((*i).second == level) {
             curX = ((*i).first / samples_per_pixel -
@@ -289,17 +284,15 @@ void LogicSignal::paint_type_options(QPainter &p, int right, const QPoint pt, QC
                edgeTrig_rect.right() - 5, edgeTrig_rect.bottom() - 5);
 }
 
-bool LogicSignal::measure(const QPointF &p, uint64_t &index0, uint64_t &index1, uint64_t &index2) const
+bool LogicSignal::measure(const QPointF &p, uint64_t &index0, uint64_t &index1, uint64_t &index2)
 {
     const float gap = abs(p.y() - get_y());
     if (gap < get_totalHeight() * 0.5) {
-        const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
-            _data->get_snapshots();
+        const auto &snapshots =_data->get_snapshots();
         if (snapshots.empty())
             return false;
 
-        const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
-            snapshots.front();
+        const auto snapshot = snapshots.front();
         if (snapshot->empty() || !snapshot->has_data(_probe->index))
             return false;
 
@@ -343,18 +336,16 @@ bool LogicSignal::measure(const QPointF &p, uint64_t &index0, uint64_t &index1, 
     return false;
 }
 
-bool LogicSignal::edge(const QPointF &p, uint64_t &index, int radius) const
+bool LogicSignal::edge(const QPointF &p, uint64_t &index, int radius)
 {
     uint64_t pre_index, nxt_index;
     const float gap = abs(p.y() - get_y());
     if (gap < get_totalHeight() * 0.5) {
-        const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
-            _data->get_snapshots();
+        const auto &snapshots = _data->get_snapshots();
         if (snapshots.empty())
             return false;
 
-        const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
-            snapshots.front();
+        const auto snapshot = snapshots.front();
         if (snapshot->empty() || !snapshot->has_data(_probe->index))
             return false;
 
@@ -397,7 +388,7 @@ bool LogicSignal::edge(const QPointF &p, uint64_t &index, int radius) const
     return false;
 }
 
-bool LogicSignal::edges(const QPointF &p, uint64_t start, uint64_t &rising, uint64_t &falling) const
+bool LogicSignal::edges(const QPointF &p, uint64_t start, uint64_t &rising, uint64_t &falling)
 {
     uint64_t end;
     const float gap = abs(p.y() - get_y());
@@ -408,15 +399,13 @@ bool LogicSignal::edges(const QPointF &p, uint64_t start, uint64_t &rising, uint
     return false;
 }
 
-bool LogicSignal::edges(uint64_t end, uint64_t start, uint64_t &rising, uint64_t &falling) const
+bool LogicSignal::edges(uint64_t end, uint64_t start, uint64_t &rising, uint64_t &falling)
 {
-    const deque< boost::shared_ptr<pv::data::LogicSnapshot> > &snapshots =
-        _data->get_snapshots();
+    const auto &snapshots = _data->get_snapshots();
     if (snapshots.empty())
         return false;
 
-    const boost::shared_ptr<pv::data::LogicSnapshot> &snapshot =
-        snapshots.front();
+    const auto snapshot = snapshots.front();
     if (snapshot->empty() || !snapshot->has_data(_probe->index))
         return false;
 

@@ -27,8 +27,7 @@
 #include <QToolButton>
 #include <QDialogButtonBox>
 #include <QTabWidget>
-
-#include <boost/shared_ptr.hpp>
+ 
 
 #include "../view/dsosignal.h"
 #include "../toolbars/titlebar.h"
@@ -49,14 +48,15 @@ class DsoMeasure : public DSDialog
 	Q_OBJECT
 
 public:
-    DsoMeasure(SigSession &session, view::View &parent,
-               unsigned int position, int last_sig_index);
+    DsoMeasure(SigSession *session, view::View &parent, unsigned int position, int last_sig_index);
+
+    ~DsoMeasure();
 
     static QString get_ms_icon(int ms_type);
     static QString get_ms_text(int ms_type);
 
 private:
-    void add_measure(QWidget *widget, const boost::shared_ptr<view::DsoSignal> dsoSig);
+    void add_measure(QWidget *widget, const view::DsoSignal *dsoSig);
 
 private slots:
     void set_measure(bool en);
@@ -67,15 +67,13 @@ protected:
     void reject();
 
 private:
-    SigSession &_session;
+    SigSession *_session;
     view::View &_view;
     unsigned int _position;
-
-    toolbars::TitleBar *_titlebar;
+ 
     QDialogButtonBox _button_box;
     QTabWidget *_measure_tab;
-    QVBoxLayout _layout;
-    std::vector<QToolButton *> _mbtn_vec;
+    QVBoxLayout _layout; 
 };
 
 } // namespace dialogs

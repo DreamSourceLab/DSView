@@ -24,13 +24,13 @@
 
 #include <stdint.h>
 #include <string>
-
-#include <boost/thread.hpp>
-
+#include <thread>  
 #include <QObject>
-
 #include <libsigrok4DSL/libsigrok.h>
-#include <libsigrokdecode4DSL/libsigrokdecode.h>
+
+#include "interface/icallbacks.h"
+
+#include "ZipMaker.h"
 
 namespace pv {
 
@@ -52,17 +52,17 @@ private:
     const static int File_Version = 2;
 
 public:
-    StoreSession(SigSession &session);
+    StoreSession(SigSession *session);
 
 	~StoreSession();
 
-    SigSession& session();
+    SigSession* session();
 
-	std::pair<uint64_t, uint64_t> progress() const;
+	std::pair<uint64_t, uint64_t> progress();
 
-	const QString& error() const;
+	const QString& error();
 
-    bool save_start(QString session_file);
+    bool save_start();
 
     bool export_start();
 
@@ -71,41 +71,51 @@ public:
 	void cancel();
 
 private:
-    void save_proc(boost::shared_ptr<pv::data::Snapshot> snapshot);
-    QString meta_gen(boost::shared_ptr<data::Snapshot> snapshot);
-    void export_proc(boost::shared_ptr<pv::data::Snapshot> snapshot);
-    #ifdef ENABLE_DECODE
-    QString decoders_gen();
-    #endif
+    void save_proc(pv::data::Snapshot *snapshot);
+    bool meta_gen(data::Snapshot *snapshot, std::string &str);
+    void export_proc(pv::data::Snapshot *snapshot);   
+    bool decoders_gen(std::string &str);
+ 
 
-public:
-    #ifdef ENABLE_DECODE
-    QJsonArray json_decoders();
-    void load_decoders(dock::ProtocolDock *widget, QJsonArray dec_array);
-    #endif
+public:    
+    bool json_decoders(QJsonArray &array);
+    bool load_decoders(dock::ProtocolDock *widget, QJsonArray dec_array);
+    QString MakeSaveFile(bool bDlg);
+    QString MakeExportFile(bool bDlg);
+
+    inline QString GetFileName()
+        { return _file_name;}
+
+    bool IsLogicDataType();
+ 
 
 private:
     QList<QString> getSuportedExportFormats();
     double get_integer(GVariant * var);
+    void MakeChunkName(char *chunk_name, int chunk_num, int index, int type, int version);
+    std:: string getFileName(QString fileName);
 
 signals:
 	void progress_updated();
 
-private:
-    QString _file_name;
-    QString _suffix;
-    SigSession &_session;
+public:
+   ISessionDataGetter   *_sessionDataGetter;
 
-	boost::thread _thread;
+private:
+    QString         _file_name;
+    QString         _suffix;
+    SigSession      *_session;
+
+	std::thread   _thread;
 
     const struct sr_output_module* _outModule;
-
-    //mutable boost::mutex _mutex;
-	uint64_t _units_stored;
-	uint64_t _unit_count;
-    bool _has_error;
-	QString _error;
-    bool _canceled;
+ 
+	uint64_t        _units_stored;
+	uint64_t        _unit_count;
+    bool            _has_error;
+	QString         _error;
+    volatile bool   _canceled;
+    ZipMaker        m_zipDoc;  
 };
 
 } // pv

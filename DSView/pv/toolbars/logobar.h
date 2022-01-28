@@ -27,24 +27,32 @@
 #include <QToolButton>
 #include <QAction>
 #include <QMenu>
+#include <libsigrok4DSL/libsigrok.h>
 
 #include "../sigsession.h"
+#include "../interface/uicallback.h"
 
-#include <libsigrok4DSL/libsigrok.h>
 
 namespace pv {
 namespace toolbars {
 
+//The tool button for help,is a ui class,referenced by MainWindow
+//TODO: switch language,submit bug descript,
 class LogoBar : public QToolBar
 {
     Q_OBJECT
 
 public:
-    explicit LogoBar(SigSession &session, QWidget *parent = 0);
+    explicit LogoBar(SigSession *session, QWidget *parent = 0);
 
     void enable_toggle(bool enable);
 
+   //show the hardware device conneted status with logo picture
     void dsl_connected(bool conn);
+
+    inline void set_mainform_callback(IMainForm *callback){
+        _mainForm = callback;
+    }
 
 private:
     void changeEvent(QEvent *event);
@@ -56,9 +64,9 @@ private:
     void show_session_error(
         const QString text, const QString info_text);
 
-signals:
-    void setLanguage(int language);
-    void openDoc();
+signals: 
+    //post event message to open user help document, MainWindow class receive it
+    void sig_open_doc(); 
 
 private slots:
     void on_actionEn_triggered();
@@ -70,7 +78,7 @@ private slots:
 private:
     bool _enable;
     bool _connected;
-    SigSession& _session;
+    SigSession* _session;
 
     QToolButton _logo_button;
 
@@ -83,6 +91,7 @@ private:
     QAction *_about;
     QAction *_manual;
     QAction *_issue;
+    IMainForm *_mainForm;
 };
 
 } // namespace toolbars

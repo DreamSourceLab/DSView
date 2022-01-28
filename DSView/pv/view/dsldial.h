@@ -28,6 +28,8 @@
 namespace pv {
 namespace view {
 
+//when device is oscilloscope model, to draw the dail on the left
+//created by DsoSignal
 class dslDial : public QObject
 {
     //Q_OBJECT
@@ -48,23 +50,23 @@ public:
 
     // set/get current select
     void set_sel(uint64_t sel);
-    uint64_t get_sel() const;
-    uint64_t get_count() const;
+    uint64_t get_sel();
+    uint64_t get_count();
 
     // boundary detection
     bool isMin();
     bool isMax();
-    uint64_t get_min() const;
-    uint64_t get_max() const;
+    uint64_t get_min();
+    uint64_t get_max();
 
     // get current value
-    uint64_t get_value() const;
-    uint64_t get_value(uint64_t i) const;
+    uint64_t get_value();
+    uint64_t get_value(uint64_t i);
     void set_value(uint64_t value);
 
     // set/get factor
     void set_factor(uint64_t factor);
-    uint64_t get_factor() const;
+    uint64_t get_factor();
 
 private:
     uint64_t _div;

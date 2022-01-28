@@ -40,7 +40,10 @@
 
 /** @cond PRIVATE */
 
-/* The list of loaded protocol decoders. */
+/* 
+	The list of loaded protocol decoders. 
+	Is srd_decoder* type
+*/
 static GSList *pd_list = NULL;
 
 /* srd.c */
@@ -719,6 +722,7 @@ SRD_API int srd_decoder_load(const char *module_name)
 	d = g_malloc0(sizeof(struct srd_decoder));
 	fail_txt = NULL;
 
+	//Load module from python script file,module_name is a sub directory
 	d->py_mod = py_import_by_name(module_name);
 	if (!d->py_mod) {
 		fail_txt = "import by name failed";
@@ -731,13 +735,19 @@ SRD_API int srd_decoder_load(const char *module_name)
 		goto err_out;
 	}
 
-	/* Get the 'Decoder' class as Python object. */
+	/* 
+		Get the 'Decoder' class as Python object. 
+		Here, Decoder is python class type
+	*/
 	d->py_dec = PyObject_GetAttrString(d->py_mod, "Decoder");
 	if (!d->py_dec) {
 		fail_txt = "no 'Decoder' attribute in imported module";
 		goto except_out;
 	}
 
+	/*
+	   Here, Decoder is c class type
+	*/
 	py_basedec = PyObject_GetAttrString(mod_sigrokdecode, "Decoder");
 	if (!py_basedec) {
 		fail_txt = "no 'Decoder' attribute in sigrokdecode(3)";

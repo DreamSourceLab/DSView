@@ -360,7 +360,7 @@ SR_API int sr_dev_open(struct sr_dev_inst *sdi)
 SR_API int sr_dev_close(struct sr_dev_inst *sdi)
 {
 	int ret;
-
+ 
 	if (!sdi || !sdi->driver || !sdi->driver->dev_close)
 		return SR_ERR;
 

@@ -1279,25 +1279,35 @@ QToolButton::menu-arrow:open
 
 QToolButton#ModeButton::menu-arrow
 {
-    image: url(:/dark/mode_down_arrow.svg);
+   /*image: url(:/dark/mode_down_arrow.svg);*/
+   image:none;
 }
 
 /* the subcontrol below is used only in the InstantPopup or DelayedPopup mode */
 QToolButton::menu-indicator
 {
     image: url(:/dark/down_arrow.svg);
-    top: -7px;
-    left: -2px;
+    top: -20px;
+    left: 0px;
+    width:8px;
+    height:10px;
 }
+
+QToolButton{
+    font-size:14px;
+}
+
 QToolButton#ModeButton::menu-indicator
 {
     image: url(:/dark/mode_down_arrow.svg);
-    top: -7px;
-    left: -3px;
+    top: 0px;
+    left: 0px;
+    width:12px;
+    height:12px;
 }
 QToolButton#ModeButton::menu-indicator:hover
 {
-    top: -5px;
+    top: 0px;
 }
 
 QPushButton::menu-indicator
@@ -1611,4 +1621,8 @@ QDoubleSpinBox::down-arrow:off
 QTextBrowser:hover
 {
    border: 1px transparent;
+}
+
+QLineEdit#PathLine{
+    color:#eff0f1;
 }

@@ -32,16 +32,15 @@
 #include "../dialogs/dsmessagebox.h"
 
 #include <QObject>
-#include <QPainter>
-#include <QRegExpValidator>
+#include <QPainter> 
 #include <QRect>
 #include <QMouseEvent>
 #include <QFuture>
 #include <QProgressDialog>
 #include <QtConcurrent/QtConcurrent>
 
-#include <stdint.h>
-#include <boost/shared_ptr.hpp>
+#include <stdint.h> 
+#include "../config/appconfig.h"
 
 namespace pv {
 namespace dock {
@@ -49,7 +48,7 @@ namespace dock {
 using namespace pv::view;
 using namespace pv::widgets;
 
-SearchDock::SearchDock(QWidget *parent, View &view, SigSession &session) :
+SearchDock::SearchDock(QWidget *parent, View &view, SigSession *session) :
     QWidget(parent),
     _session(session),
     _view(view)
@@ -109,7 +108,7 @@ void SearchDock::retranslateUi()
 
 void SearchDock::reStyle()
 {
-    QString iconPath = ":/icons/" + qApp->property("Style").toString();
+    QString iconPath = GetIconPath();
 
     _pre_button.setIcon(QIcon(iconPath+"/pre.svg"));
     _nxt_button.setIcon(QIcon(iconPath+"/next.svg"));
@@ -129,9 +128,9 @@ void SearchDock::on_previous()
     bool ret;
     int64_t last_pos;
     bool last_hit;
-    const boost::shared_ptr<data::Snapshot> snapshot(_session.get_snapshot(SR_CHANNEL_LOGIC));
+    const auto snapshot = _session->get_snapshot(SR_CHANNEL_LOGIC);
     assert(snapshot);
-    const boost::shared_ptr<data::LogicSnapshot> logic_snapshot = boost::dynamic_pointer_cast<data::LogicSnapshot>(snapshot);
+    const auto logic_snapshot = dynamic_cast<data::LogicSnapshot*>(snapshot);
 
     if (!logic_snapshot || logic_snapshot->empty()) {
         dialogs::DSMessageBox msg(this);
@@ -191,9 +190,9 @@ void SearchDock::on_next()
 {
     bool ret;
     int64_t last_pos;
-    const boost::shared_ptr<data::Snapshot> snapshot(_session.get_snapshot(SR_CHANNEL_LOGIC));
+    const auto snapshot = _session->get_snapshot(SR_CHANNEL_LOGIC);
     assert(snapshot);
-    const boost::shared_ptr<data::LogicSnapshot> logic_snapshot = boost::dynamic_pointer_cast<data::LogicSnapshot>(snapshot);
+    const auto logic_snapshot = dynamic_cast<data::LogicSnapshot*>(snapshot);
 
     if (!logic_snapshot || logic_snapshot->empty()) {
         dialogs::DSMessageBox msg(this);
@@ -262,7 +261,9 @@ void SearchDock::on_set()
 
         _search_value->setText(search_label);
         QFontMetrics fm = this->fontMetrics();
-        _search_value->setFixedWidth(fm.width(search_label)+_search_button->width()+20);
+        //fm.width(search_label)
+        int tw = fm.boundingRect(search_label).width();
+        _search_value->setFixedWidth(tw + _search_button->width()+20);
 
         if (new_pattern != _pattern) {
             _view.set_search_pos(_view.get_search_pos(), false);

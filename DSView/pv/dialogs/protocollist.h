@@ -27,15 +27,13 @@
 #include <QFormLayout>
 #include <QVBoxLayout>
 #include <QLabel>
-#include <QCheckBox>
-#include <QComboBox>
-
-#include <boost/shared_ptr.hpp>
+#include <QCheckBox> 
 
 #include "../device/devinst.h"
 #include "../prop/binding/deviceoptions.h"
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
+#include "../ui/dscombobox.h"
 
 namespace pv {
 
@@ -48,7 +46,7 @@ class ProtocolList : public DSDialog
     Q_OBJECT
 
 public:
-    ProtocolList(QWidget *parent, SigSession &session);
+    ProtocolList(QWidget *parent, SigSession *session);
 
 protected:
     void accept();
@@ -57,13 +55,14 @@ protected:
 private slots:
     void set_protocol(int index);
     void on_row_check(bool show);
+    void on_set_map_zoom(int index);
 
 private:
-    SigSession &_session;
+    SigSession *_session;
 
     toolbars::TitleBar *_titlebar;
-    QComboBox *_map_zoom_combobox;
-    QComboBox *_protocol_combobox;
+    DsComboBox *_map_zoom_combobox;
+    DsComboBox *_protocol_combobox;
     std::list<QCheckBox *> _show_checkbox_list;
     std::list<QLabel *> _show_label_list;
     QFormLayout *_flayout;

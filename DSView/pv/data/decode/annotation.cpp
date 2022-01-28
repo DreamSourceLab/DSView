@@ -25,27 +25,91 @@
 #include <assert.h>
 
 #include "annotation.h"
+#include "AnnotationResTable.h"
+#include <cstring>
+#include <assert.h>
+#include <string.h>
+#include "../../config/appconfig.h"
+#include "decoderstatus.h"
+#include "../../dsvdef.h"
+ 
+ //a find talbe instance
+AnnotationResTable annTable;
+char sz_format_tmp_buf[50];
+
+bool is_hex_number_str(const char *str)
+{ 
+	char c = *str;
+	int len = 0;
+
+	while (c)
+	{
+		++len;
+		if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F')){
+			c = *str;
+			str++;
+			continue;
+		}
+		return false;		
+	}
+	return len % 2 == 0 && len > 0;
+}
 
 namespace pv {
 namespace data {
 namespace decode {
-
-Annotation::Annotation(const srd_proto_data *const pdata) :
-	_start_sample(pdata->start_sample),
-	_end_sample(pdata->end_sample)
+ 
+Annotation::Annotation(const srd_proto_data *const pdata, DecoderStatus *status)
 {
 	assert(pdata);
 	const srd_proto_data_annotation *const pda =
 		(const srd_proto_data_annotation*)pdata->data;
 	assert(pda);
 
-    _format = pda->ann_class;
-    _type = pda->ann_type;
+	_start_sample =	pdata->start_sample;
+	_end_sample	  =	pdata->end_sample;
+	_format 	= pda->ann_class;
+    _type 		= pda->ann_type;
+	_resIndex 	= 0;
+	_status 	= status;
+ 
+	//make resource find key
+	std::string key;
 
-    const char *const *annotations = (char**)pda->ann_text;
-    while(*annotations) {
-        _annotations.push_back(QString::fromUtf8(*annotations));
-		annotations++;
+    char **annotations = pda->ann_text;
+    while(annotations && *annotations) {
+		key.append(*annotations, strlen(*annotations));
+		annotations++;  
+	}
+	
+	if (pda->str_number_hex[0]){
+		//append numeric string
+		key.append(pda->str_number_hex, strlen(pda->str_number_hex));
+	}
+ 
+	AnnotationSourceItem *resItem = NULL;
+    _resIndex = annTable.MakeIndex(key, resItem);
+     
+     //is a new item
+	if (resItem != NULL){ 
+        char **annotations = pda->ann_text;
+    	while(annotations && *annotations) {
+			resItem->src_lines.push_back(QString::fromUtf8(*annotations));
+			annotations++;  
+		}
+ 
+		//get numeric data
+		if (pda->str_number_hex[0]){
+			strcpy(resItem->str_number_hex, pda->str_number_hex);
+			resItem->is_numeric = true;
+		}
+		else if (resItem->src_lines.size() == 1 && _type >= 100 && _type < 200){
+			if (is_hex_number_str(resItem->src_lines[0].toLatin1().data())){
+              	resItem->is_numeric = true;
+			}
+		}
+
+		_status->m_bNumeric |= resItem->is_numeric;
 	}
 }
 
@@ -57,33 +121,60 @@ Annotation::Annotation()
 
 Annotation::~Annotation()
 {
-    _annotations.clear();
+     
 }
-
-uint64_t Annotation::start_sample() const
-{
-	return _start_sample;
-}
-
-uint64_t Annotation::end_sample() const
-{
-	return _end_sample;
-}
-
-int Annotation::format() const
-{
-	return _format;
-}
-
-int Annotation::type() const
-{
-    return _type;
-}
-
+  
 const std::vector<QString>& Annotation::annotations() const
 {
-	return _annotations;
-}
+	 assert(_status);
+
+     AnnotationSourceItem &resItem = *annTable.GetItem(_resIndex);
+
+	//get origin data, is not a numberic value
+     if (!resItem.is_numeric){
+        return resItem.src_lines;
+     }
+  
+	 if (resItem.cur_display_format !=  _status->m_format){
+		 resItem.cur_display_format = _status->m_format;
+		 resItem.cvt_lines.clear();
+
+		 if (resItem.src_lines.size() > 0)
+		 {
+			 for (QString &rd_src : resItem.src_lines)
+			 {
+				 if (resItem.str_number_hex[0] != 0)
+				 {
+					 QString src = rd_src.replace("{$}", "%s");
+					 const char *num_str = AnnotationResTable::format_numberic(resItem.str_number_hex, resItem.cur_display_format);
+					 sprintf(sz_format_tmp_buf, src.toLatin1().data(), num_str);
+					 resItem.cvt_lines.push_back(QString(sz_format_tmp_buf));
+				 }
+				 else
+				 {
+					 const char *src_str = rd_src.toLatin1().data();
+					 const char *num_str = AnnotationResTable::format_numberic(src_str, resItem.cur_display_format);
+					 if (src_str != num_str)
+						 resItem.cvt_lines.push_back(QString(num_str));
+					 else
+						 resItem.cvt_lines.push_back(QString(rd_src));
+				 }
+			 }
+		 }
+		 else{
+			 const char *num_str = AnnotationResTable::format_numberic(resItem.str_number_hex, resItem.cur_display_format);
+			 resItem.cvt_lines.push_back(QString(num_str));
+		 }
+	 }
+
+	return resItem.cvt_lines;
+}       
+
+bool Annotation::is_numberic()
+{
+	AnnotationSourceItem *resItem = annTable.GetItem(_resIndex);
+	return resItem->is_numeric;
+} 
 
 } // namespace decode
 } // namespace data

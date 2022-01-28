@@ -20,20 +20,15 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <extdef.h>
-
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
-
 #include <algorithm>
-
-#include <boost/foreach.hpp>
-
+ 
 #include "analogsnapshot.h"
+#include "../extdef.h"
 
-using namespace boost;
 using namespace std;
 
 namespace pv {
@@ -60,7 +55,7 @@ AnalogSnapshot::~AnalogSnapshot()
 void AnalogSnapshot::free_envelop()
 {
     for (unsigned int i = 0; i < _channel_num; i++) {
-        BOOST_FOREACH(Envelope &e, _envelope_levels[i]) {
+        for(auto &e : _envelope_levels[i]) {
             if (e.samples)
                 free(e.samples);
         }
@@ -70,7 +65,12 @@ void AnalogSnapshot::free_envelop()
 
 void AnalogSnapshot::init()
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
+    init_all();
+}
+
+void AnalogSnapshot::init_all()
+{
     _sample_count = 0;
     _ring_sample_count = 0;
     _memory_failed = false;
@@ -88,10 +88,10 @@ void AnalogSnapshot::init()
 
 void AnalogSnapshot::clear()
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     free_data();
     free_envelop();
-    init();
+    init_all();
 }
 
 void AnalogSnapshot::first_payload(const sr_datafeed_analog &analog, uint64_t total_sample_count, GSList *channels)
@@ -167,7 +167,7 @@ void AnalogSnapshot::first_payload(const sr_datafeed_analog &analog, uint64_t to
 void AnalogSnapshot::append_payload(
 	const sr_datafeed_analog &analog)
 {
-    boost::lock_guard<boost::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     append_data(analog.data, analog.num_samples, analog.unit_pitch);
 
 	// Generate the first mip-map from the data
@@ -212,7 +212,7 @@ void AnalogSnapshot::append_data(void *data, uint64_t samples, uint16_t pitch)
     }
 }
 
-const uint8_t* AnalogSnapshot::get_samples(int64_t start_sample) const
+const uint8_t* AnalogSnapshot::get_samples(int64_t start_sample)
 {
 	assert(start_sample >= 0);
     assert(start_sample < (int64_t)get_sample_count());
@@ -225,7 +225,7 @@ const uint8_t* AnalogSnapshot::get_samples(int64_t start_sample) const
 }
 
 void AnalogSnapshot::get_envelope_section(EnvelopeSection &s,
-    uint64_t start, int64_t count, float min_length, int probe_index) const
+    uint64_t start, int64_t count, float min_length, int probe_index)
 {
     assert(count >= 0);
 	assert(min_length > 0);
@@ -369,7 +369,7 @@ int AnalogSnapshot::get_ch_order(int sig_index)
         return order;
 }
 
-int AnalogSnapshot::get_scale_factor() const
+int AnalogSnapshot::get_scale_factor()
 {
     return EnvelopeScaleFactor;
 }
