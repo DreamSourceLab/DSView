@@ -50,3 +50,5 @@ DSView-prj
 build*
 share
 .vscode
+qtpro
+test
