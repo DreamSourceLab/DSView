@@ -2,7 +2,7 @@
  * This file is part of the PulseView project.
  *
  * Copyright (C) 2013 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2014 DreamSourceLab <support@dreamsourcelab.com>
+ * Copyright (C) 2022 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,8 @@
 #include <vector>
 #include <QString>
 
+#define DECODER_MAX_DATA_BLOCK_LEN 25
+
 struct AnnotationSourceItem
 {
     bool    is_numeric;
@@ -39,15 +41,24 @@ struct AnnotationSourceItem
 class AnnotationResTable
 { 
     public:
+    AnnotationResTable();
+    ~AnnotationResTable();
+
+    public:
        int MakeIndex(const std::string &key, AnnotationSourceItem* &newItem);
        AnnotationSourceItem* GetItem(int index);
 
        inline int GetCount(){
            return m_resourceTable.size();} 
 
-       static const char* format_numberic(const char *hex_str, int fmt);
+       const char* format_numberic(const char *hex_str, int fmt);
+
+       void reset();
 
     private:
         std::map<std::string, int>          m_indexs;
         std::vector<AnnotationSourceItem*>  m_resourceTable;
+        char g_bin_format_tmp_buffer[DECODER_MAX_DATA_BLOCK_LEN * 4 + 2];
+        char g_oct_format_tmp_buffer[DECODER_MAX_DATA_BLOCK_LEN * 3 + 2];
+        char g_number_tmp_64[30];
 };

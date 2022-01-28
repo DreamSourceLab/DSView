@@ -112,8 +112,14 @@ int main(int argc, char *argv[])
     QApplication::setOrganizationDomain("www.DreamSourceLab.com");
 
 #ifdef Q_OS_LINUX
-	QCoreApplication::addLibraryPath("/usr/lib/x86_64-linux-gnu/qt5/plugins");
-	printf("qt plugins root:/usr/lib/x86_64-linux-gnu/qt5/plugins\n");
+	// Use low version qt plugins, for able to debug
+	QDir qtdir;
+	qtdir.setPath(GetAppDataDir() + "/qt5.0/plugins");
+
+	if (qtdir.exists()){
+		printf("qt plugins root:%s\n", qtdir.absolutePath().toLatin1().data());
+		QCoreApplication::addLibraryPath(qtdir.absolutePath());
+	}	
 #endif
 
 	AppControl *control = AppControl::Instance();

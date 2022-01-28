@@ -27,7 +27,6 @@
 
 #include <zip.h>
 
-#include <boost/filesystem.hpp>
 
 using std::string;
 

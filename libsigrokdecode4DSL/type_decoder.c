@@ -91,6 +91,7 @@ static int py_parse_ann_data(PyObject *list_obj, char ***out_strv, int list_size
 		goto err;
 	}
 
+	//vet numberic value
 	if (py_numobj != NULL){
 		lv = PyLong_AsLongLong(py_numobj);
 		sprintf(hex_str_buf, "%02llX", lv);

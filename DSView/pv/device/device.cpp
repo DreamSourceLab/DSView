@@ -20,6 +20,7 @@
  */
 
 #include <sstream>
+#include <assert.h>
 
 #include "device.h"
 

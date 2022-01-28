@@ -73,6 +73,9 @@ DecoderStack::DecoderStack(pv::SigSession *session,
 
 DecoderStack::~DecoderStack()
 {   
+    //release resource talbe
+    DESTROY_OBJECT(_decoder_status);
+
     //release source
     for (auto &kv : _rows)
     {
@@ -392,6 +395,7 @@ void DecoderStack::do_decode_work()
      }
      _stask_stauts = new decode_task_status();
      _stask_stauts->m_bStop = false;
+     _decoder_status->clear(); //clear old items
   
     pv::view::LogicSignal *logic_signal = NULL;
     pv::data::Logic *data = NULL;

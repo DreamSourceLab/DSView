@@ -31,7 +31,6 @@
 #include "view.h"
 #include "../extdef.h"
 
-using namespace boost;
 using namespace std;
 
 namespace pv {

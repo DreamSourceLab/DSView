@@ -19,20 +19,17 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#pragma once
+#include "decoderstatus.h"
 
-#include "annotationrestable.h"
-
-class DecoderStatus
+DecoderStatus::DecoderStatus()
 {
-public:
-    DecoderStatus();
+        m_bNumeric = false;
+        m_format = 0;
+        sdr_decoder_handle = NULL;
+}
 
-    void clear(); 
+ void DecoderStatus::clear()
+ {
+         m_resTable.reset();
+ }
 
-public:
-    bool    m_bNumeric; //when decoder get any numerical data,it will be set
-    int     m_format; //protocol format code
-    void    *sdr_decoder_handle;
-    AnnotationResTable  m_resTable;
-};

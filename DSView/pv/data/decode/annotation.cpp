@@ -25,7 +25,7 @@
 #include <assert.h>
 
 #include "annotation.h"
-#include "AnnotationResTable.h"
+#include "annotationrestable.h"
 #include <cstring>
 #include <assert.h>
 #include <string.h>
@@ -33,10 +33,7 @@
 #include "decoderstatus.h"
 #include "../../dsvdef.h"
  
- //a find talbe instance
-AnnotationResTable annTable;
-char sz_format_tmp_buf[50];
-
+   
 bool is_hex_number_str(const char *str)
 { 
 	char c = *str;
@@ -65,6 +62,7 @@ Annotation::Annotation(const srd_proto_data *const pdata, DecoderStatus *status)
 	const srd_proto_data_annotation *const pda =
 		(const srd_proto_data_annotation*)pdata->data;
 	assert(pda);
+	assert(status);
 
 	_start_sample =	pdata->start_sample;
 	_end_sample	  =	pdata->end_sample;
@@ -88,7 +86,7 @@ Annotation::Annotation(const srd_proto_data *const pdata, DecoderStatus *status)
 	}
  
 	AnnotationSourceItem *resItem = NULL;
-    _resIndex = annTable.MakeIndex(key, resItem);
+    _resIndex = _status->m_resTable.MakeIndex(key, resItem);
      
      //is a new item
 	if (resItem != NULL){ 
@@ -103,11 +101,14 @@ Annotation::Annotation(const srd_proto_data *const pdata, DecoderStatus *status)
 			strcpy(resItem->str_number_hex, pda->str_number_hex);
 			resItem->is_numeric = true;
 		}
+		/*
+		//disable auto convert to numberic format
 		else if (resItem->src_lines.size() == 1 && _type >= 100 && _type < 200){
 			if (is_hex_number_str(resItem->src_lines[0].toLatin1().data())){
               	resItem->is_numeric = true;
 			}
 		}
+		*/
 
 		_status->m_bNumeric |= resItem->is_numeric;
 	}
@@ -125,44 +126,38 @@ Annotation::~Annotation()
 }
   
 const std::vector<QString>& Annotation::annotations() const
-{
-	 assert(_status);
-
-     AnnotationSourceItem &resItem = *annTable.GetItem(_resIndex);
+{  
+     AnnotationSourceItem &resItem = *(_status->m_resTable.GetItem(_resIndex));
 
 	//get origin data, is not a numberic value
      if (!resItem.is_numeric){
         return resItem.src_lines;
      }
-  
+
+	//resItem.str_number_hex must be not null
+	if (resItem.str_number_hex[0] == 0){
+		assert(false);
+	}
+ 
 	 if (resItem.cur_display_format !=  _status->m_format){
 		 resItem.cur_display_format = _status->m_format;
 		 resItem.cvt_lines.clear();
 
 		 if (resItem.src_lines.size() > 0)
 		 {
+			 //have custom string
 			 for (QString &rd_src : resItem.src_lines)
 			 {
-				 if (resItem.str_number_hex[0] != 0)
-				 {
-					 QString src = rd_src.replace("{$}", "%s");
-					 const char *num_str = AnnotationResTable::format_numberic(resItem.str_number_hex, resItem.cur_display_format);
-					 sprintf(sz_format_tmp_buf, src.toLatin1().data(), num_str);
-					 resItem.cvt_lines.push_back(QString(sz_format_tmp_buf));
-				 }
-				 else
-				 {
-					 const char *src_str = rd_src.toLatin1().data();
-					 const char *num_str = AnnotationResTable::format_numberic(src_str, resItem.cur_display_format);
-					 if (src_str != num_str)
-						 resItem.cvt_lines.push_back(QString(num_str));
-					 else
-						 resItem.cvt_lines.push_back(QString(rd_src));
-				 }
+				 char sz_format_tmp_buf[50] = {0};
+				 QString src = rd_src.replace("{$}", "%s");
+				 const char *num_str = _status->m_resTable.format_numberic(resItem.str_number_hex, resItem.cur_display_format);
+				 sprintf(sz_format_tmp_buf, src.toLatin1().data(), num_str);
+				 resItem.cvt_lines.push_back(QString(sz_format_tmp_buf));
 			 }
 		 }
 		 else{
-			 const char *num_str = AnnotationResTable::format_numberic(resItem.str_number_hex, resItem.cur_display_format);
+			 //have only numberic value
+			 const char *num_str = _status->m_resTable.format_numberic(resItem.str_number_hex, resItem.cur_display_format);
 			 resItem.cvt_lines.push_back(QString(num_str));
 		 }
 	 }
@@ -172,7 +167,7 @@ const std::vector<QString>& Annotation::annotations() const
 
 bool Annotation::is_numberic()
 {
-	AnnotationSourceItem *resItem = annTable.GetItem(_resIndex);
+    AnnotationSourceItem *resItem = _status->m_resTable.GetItem(_resIndex);
 	return resItem->is_numeric;
 } 
 

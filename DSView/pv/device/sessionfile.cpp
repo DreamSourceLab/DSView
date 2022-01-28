@@ -20,6 +20,7 @@
  */
 
 #include "sessionfile.h"
+#include <assert.h>
 
 namespace pv {
 namespace device {

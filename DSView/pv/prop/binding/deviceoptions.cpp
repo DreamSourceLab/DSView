@@ -33,7 +33,7 @@
 #include "../int.h"
 #include "../../config/appconfig.h"
 
-using namespace boost;
+ 
 using namespace std;
 
 namespace pv {

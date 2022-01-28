@@ -716,7 +716,7 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
     meta.config = g_slist_append(meta.config, src);
 
     GVariant *gvar;
-    uint8_t bits;
+    uint8_t bits=0;
     gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_UNIT_BITS);
     if (gvar != NULL) {
         bits = g_variant_get_byte(gvar);

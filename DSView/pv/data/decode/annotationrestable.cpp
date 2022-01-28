@@ -2,7 +2,7 @@
  * This file is part of the PulseView project.
  *
  * Copyright (C) 2013 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2014 DreamSourceLab <support@dreamsourcelab.com>
+ * Copyright (C) 2022 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,16 +19,11 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include "AnnotationResTable.h"
+#include "annotationrestable.h"
 #include <assert.h>
 #include "../../dsvdef.h"
-
-#define DECODER_MAX_DATA_BLOCK_LEN 25
-
+ 
 const char g_bin_cvt_table[] = "0000000100100011010001010110011110001001101010111100110111101111";
-char g_bin_format_tmp_buffer[DECODER_MAX_DATA_BLOCK_LEN * 4 + 2];
-char g_oct_format_tmp_buffer[DECODER_MAX_DATA_BLOCK_LEN * 3 + 2];
-char g_number_tmp_64[30];
  
  char* bin2oct_string(char *buf, int size, const char *bin, int len){
 	char *wr = buf + size - 1;
@@ -98,6 +93,15 @@ long long bin2long_string(const char *bin, int len)
 	return value;
 }
 
+//-----------------------------------
+
+AnnotationResTable::AnnotationResTable(){
+
+  }
+
+AnnotationResTable::~AnnotationResTable(){
+	reset();
+}
  
 int AnnotationResTable::MakeIndex(const std::string &key, AnnotationSourceItem* &newItem)
 {   
@@ -126,7 +130,7 @@ AnnotationSourceItem* AnnotationResTable::GetItem(int index){
 const char* AnnotationResTable::format_numberic(const char *hex_str, int fmt)
 {
     assert(hex_str);
-
+ 
     //flow, convert to oct\dec\bin format
 	 const char *data = hex_str;
 	 if (data[0] == 0 || fmt == DecoderDataFormat::hex){
@@ -202,5 +206,15 @@ const char* AnnotationResTable::format_numberic(const char *hex_str, int fmt)
 	 }
 
     return data;    
+}
+
+void AnnotationResTable::reset()
+{
+	//release all resource
+	for (auto p : m_resourceTable){
+		delete p;
+	}
+	m_resourceTable.clear();
+	m_indexs.clear();
 }
  

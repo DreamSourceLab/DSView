@@ -31,8 +31,8 @@
 
 #include "decode/row.h" 
 #include "../data/signaldata.h"
-
-class DecoderStatus;
+#include "decode/decoderstatus.h"
+ 
 
 struct decode_task_status
 {  

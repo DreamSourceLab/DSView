@@ -26,6 +26,7 @@
 #include <QProgressDialog>
 #include <QtConcurrent/QtConcurrent>
 #include <QTime>
+#include <assert.h>
 
 #include "../view/trace.h"
 #include "../dialogs/dsmessagebox.h"
