@@ -1,6 +1,0 @@
-<RCC>
-    <qresource prefix="/">
-        <file>my_25.qm</file>
-        <file>qt_25.qm</file>
-    </qresource>
-</RCC>
