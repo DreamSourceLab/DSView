@@ -637,10 +637,15 @@ SR_API int sr_session_append(struct zip *archive, const char *filename, const un
         goto err;
     }
 
-    if(zip_set_file_compression(archive,file_index,ZIP_CM_STORE,0) != 0)
+    if(zip_set_file_compression(archive,file_index,ZIP_CM_DEFLATE,1) != 0)
     {
         goto err;
     }
+
+    /*if(zip_set_file_compression(archive,file_index,ZIP_CM_STORE,0) != 0)
+    {
+        goto err;
+    }*/
 
     /*if ((ret = zip_close(archive)) == -1) {
         sr_info("error saving session file: %s", zip_strerror(archive));
