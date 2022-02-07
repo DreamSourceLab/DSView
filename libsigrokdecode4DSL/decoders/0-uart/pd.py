@@ -218,12 +218,8 @@ class Decoder(srd.Decoder):
         if self.options['bit_order'] == 'msb-first':
             bits.reverse()
         self.datavalue = bitpack(bits)
-        self.putx([0, [self.datavalue]])
-        #b = self.datavalue
-        #formatted = self.format_value(b)
-        #if formatted is not None:
-        #   self.putx([0, [formatted]])
-
+        self.putx([0, ['@%02X' % self.datavalue]])
+       
         self.databits = []
 
         # Advance to either reception of the parity bit, or reception of
@@ -231,49 +227,7 @@ class Decoder(srd.Decoder):
         self.state = 'GET PARITY BIT'
         if self.options['parity_type'] == 'none':
             self.state = 'GET STOP BITS'
-
-    def format_value(self, v):
-        # Format value 'v' according to configured options.
-        # Reflects the user selected kind of representation, as well as
-        # the number of data bits in the UART frames.
-
-        fmt, bits = self.options['format'], self.options['num_data_bits']
-
-        # Assume "is printable" for values from 32 to including 126,
-        # below 32 is "control" and thus not printable, above 127 is
-        # "not ASCII" in its strict sense, 127 (DEL) is not printable,
-        # fall back to hex representation for non-printables.
-        if fmt == 'ascii':
-            if v in range(32, 126 + 1):
-                return chr(v)
-            hexfmt = "[{:02X}]" if bits <= 8 else "[{:03X}]"
-            return hexfmt.format(v)
-
-        # Mere number to text conversion without prefix and padding
-        # for the "decimal" output format.
-        if fmt == 'dec':
-            return "{:d}".format(v)
-
-        # Padding with leading zeroes for hex/oct/bin formats, but
-        # without a prefix for density -- since the format is user
-        # specified, there is no ambiguity.
-        if fmt == 'hex':
-            digits = (bits + 4 - 1) // 4
-            fmtchar = "X"
-        elif fmt == 'oct':
-            digits = (bits + 3 - 1) // 3
-            fmtchar = "o"
-        elif fmt == 'bin':
-            digits = bits
-            fmtchar = "b"
-        else:
-            fmtchar = None
-        if fmtchar is not None:
-            fmt = "{{:0{:d}{:s}}}".format(digits, fmtchar)
-            return fmt.format(v)
-
-        return None
-
+  
     def get_parity_bit(self, signal):
         self.paritybit = signal
 

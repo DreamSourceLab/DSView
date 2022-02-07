@@ -22,6 +22,7 @@
 #include "libsigrokdecode-internal.h" /* First, so we avoid a _POSIX_C_SOURCE warning. */
 #include "libsigrokdecode.h"
 #include <inttypes.h>
+#include <string.h>
 
 /** @cond PRIVATE */
 extern SRD_PRIV GSList *sessions;
@@ -66,6 +67,7 @@ static int py_parse_ann_data(PyObject *list_obj, char ***out_strv, int list_size
 	PyObject *py_numobj = NULL;	
 	int i; 
 	long long lv; 
+	int nstr;
 	 
 	gstate = PyGILState_Ensure();
 
@@ -91,7 +93,7 @@ static int py_parse_ann_data(PyObject *list_obj, char ***out_strv, int list_size
 		goto err;
 	}
 
-	//vet numberic value
+	//get numberic value
 	if (py_numobj != NULL){
 		lv = PyLong_AsLongLong(py_numobj);
 		sprintf(hex_str_buf, "%02llX", lv);
@@ -121,6 +123,16 @@ static int py_parse_ann_data(PyObject *list_obj, char ***out_strv, int list_size
 		Py_DECREF(py_bytes);
 		if (!str)
 			goto err;
+
+		//check numberic field value
+		if (str[0]== '@'){
+			nstr = strlen(str) - 1;
+			if (nstr > 0 && nstr < DECODE_NUM_HEX_MAX_LEN){
+				strcpy(hex_str_buf, str + 1);
+				str[0] = '\n';  //set ignore flag
+				str[1] = 0;
+			}
+		}
 
 		strv[i] = str;
 	}

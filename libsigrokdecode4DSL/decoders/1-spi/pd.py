@@ -195,11 +195,11 @@ class Decoder(srd.Decoder):
             for bit in self.mosibits:
                 self.put(bit[1], bit[2], self.out_ann, [3, ['%d' % bit[0]]])
 
-        # Dataword annotations.
+        # Dataword annotations.  
         if self.have_miso:
-            self.put(ss, es, self.out_ann, [0, ['%02X' % self.misodata]])
+            self.put(ss, es, self.out_ann, [0, ['@%02X' % self.misodata]])
         if self.have_mosi:
-            self.put(ss, es, self.out_ann, [1, ['%02X' % self.mosidata]])
+            self.put(ss, es, self.out_ann, [1, ['@%02X' % self.mosidata]])
 
     def reset_decoder_state(self):
         self.misodata = 0 if self.have_miso else None
@@ -289,10 +289,10 @@ class Decoder(srd.Decoder):
                 elif self.ss_transfer != -1:
                     if self.have_miso:
                         self.put(self.ss_transfer, self.samplenum, self.out_ann,
-                            [5, [' '.join(format(x.val, '02X') for x in self.misobytes)]])
+                            [5, [' '.join('@' + format(x.val, '02X') for x in self.misobytes)]])
                     if self.have_mosi:
                         self.put(self.ss_transfer, self.samplenum, self.out_ann,
-                            [6, [' '.join(format(x.val, '02X') for x in self.mosibytes)]])
+                            [6, [' '.join('@' + format(x.val, '02X') for x in self.mosibytes)]])
                     self.put(self.ss_transfer, self.samplenum, self.out_python,
                         ['TRANSFER', self.mosibytes, self.misobytes])
 

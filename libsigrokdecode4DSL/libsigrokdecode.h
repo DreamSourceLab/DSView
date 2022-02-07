@@ -25,6 +25,8 @@
 #include <stdint.h>
 #include <glib.h>
 
+#define DECODE_NUM_HEX_MAX_LEN		35
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -347,7 +349,7 @@ struct srd_proto_data {
 struct srd_proto_data_annotation {
 	int ann_class;
     int ann_type; 
-	char str_number_hex[18]; //numerical value hex format string
+	char str_number_hex[DECODE_NUM_HEX_MAX_LEN]; //numerical value hex format string
 	long long numberic_value;
 	char **ann_text; //text string lines
 };

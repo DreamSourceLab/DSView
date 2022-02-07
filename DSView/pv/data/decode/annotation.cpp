@@ -76,7 +76,9 @@ Annotation::Annotation(const srd_proto_data *const pdata, DecoderStatus *status)
 
     char **annotations = pda->ann_text;
     while(annotations && *annotations) {
-		key.append(*annotations, strlen(*annotations));
+		if ((*annotations)[0] != '\n'){
+			key.append(*annotations, strlen(*annotations));
+		}		
 		annotations++;  
 	}
 	
@@ -92,7 +94,9 @@ Annotation::Annotation(const srd_proto_data *const pdata, DecoderStatus *status)
 	if (resItem != NULL){ 
         char **annotations = pda->ann_text;
     	while(annotations && *annotations) {
-			resItem->src_lines.push_back(QString::fromUtf8(*annotations));
+			if ((*annotations)[0] != '\n'){
+				resItem->src_lines.push_back(QString::fromUtf8(*annotations));
+			}
 			annotations++;  
 		}
  
@@ -101,14 +105,6 @@ Annotation::Annotation(const srd_proto_data *const pdata, DecoderStatus *status)
 			strcpy(resItem->str_number_hex, pda->str_number_hex);
 			resItem->is_numeric = true;
 		}
-		/*
-		//disable auto convert to numberic format
-		else if (resItem->src_lines.size() == 1 && _type >= 100 && _type < 200){
-			if (is_hex_number_str(resItem->src_lines[0].toLatin1().data())){
-              	resItem->is_numeric = true;
-			}
-		}
-		*/
 
 		_status->m_bNumeric |= resItem->is_numeric;
 	}
