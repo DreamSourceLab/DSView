@@ -134,7 +134,7 @@ bool Viewport::event(QEvent *event)
 }
 
 void Viewport::paintEvent(QPaintEvent *event)
-{   
+{    
     (void)event;
 
     using pv::view::Signal;

@@ -87,7 +87,7 @@ Ruler::Ruler(View &parent) :
 }
 
 QString Ruler::format_freq(double period, unsigned precision)
-{
+{   
     if (period <= 0) {
         return View::Unknown_Str;
     } else {
@@ -96,44 +96,44 @@ QString Ruler::format_freq(double period, unsigned precision)
         const int prefix = ceil((order - FirstSIPrefixPower) / 3.0f);
         const double multiplier = pow(10.0, max(-prefix * 3.0 - FirstSIPrefixPower, 0.0));
 
-      /*
         QString s;
         QTextStream ts(&s);
         ts.setRealNumberPrecision(precision);
         ts << fixed << 1 / (period  * multiplier) <<
             FreqPrefixes[prefix] << "Hz";
         return s;
-        */
 
+        /*
         char buf[20] = {0};
         char format[10] = {0}; 
         sprintf(format, "%%.%df%%s", precision);
         QString prev = FreqPrefixes[prefix] + "Hz";
         sprintf(buf, format, 1 / (period  * multiplier), prev.toLatin1().data());
         return QString(buf);  
+        */
     }
 }
 
 QString Ruler::format_time(double t, int prefix,
     unsigned int precision)
-{
+{ 
     const double multiplier = pow(10.0, -prefix * 3 - FirstSIPrefixPower + 6.0);
 
-  /*
 	QString s;
 	QTextStream ts(&s);
 	ts.setRealNumberPrecision(precision);
     ts << fixed << forcesign << (t  * multiplier) / 1000000.0 <<
 		SIPrefixes[prefix] << "s";
 	return s;
-    */
 
+    /*
     char buf[20] = {0};
     char format[10] = {0}; 
     sprintf(format, "%%.%df%%s", precision);
-    QString prev = FreqPrefixes[prefix] + "s";
+    QString prev = SIPrefixes[prefix] + "s";
     sprintf(buf, format, (t  * multiplier) / 1000000.0, prev.toLatin1().data());
     return QString(buf);  
+    */
 }
 
 QString Ruler::format_time(double t)
