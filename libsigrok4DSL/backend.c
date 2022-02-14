@@ -355,6 +355,13 @@ SR_API int sr_init(struct sr_context **ctx)
 		goto done;
 	}
 
+	context->libusb_ctx = NULL;
+	context->hotplug_handle = 0;
+	context->hotplug_callback = NULL;
+	context->hotplug_user_data = NULL;
+	context->hotplug_tv.tv_sec = 0;
+	context->hotplug_tv.tv_usec = 0;
+
 #ifdef HAVE_LIBUSB_1_0
 	ret = libusb_init(&context->libusb_ctx);
 	if (LIBUSB_SUCCESS != ret) {
@@ -399,6 +406,75 @@ SR_API int sr_exit(struct sr_context *ctx)
 	g_free(ctx);
 
 	return SR_OK;
+}
+
+LIBUSB_CALL int sr_hotplug_callback(struct libusb_context *ctx, struct libusb_device *dev,
+                                  libusb_hotplug_event event, void *user_data){
+
+	  if (user_data == NULL){
+		  sr_err("%s(): libsigrok usb event callback, userdata is NULL.", __func__);
+		 return 0;
+	  }
+
+      struct sr_context *user_ctx = (struct sr_context*)user_data;
+	  if (user_ctx->hotplug_callback != NULL){
+		  user_ctx->hotplug_callback(ctx, dev, (int)event, user_ctx->hotplug_user_data);
+	  }
+
+	  return 0;
+}
+
+SR_API int sr_listen_hotplug(struct sr_context *ctx, hotplug_event_callback callback, void *userdata)
+{
+	int ret;
+
+	if (!ctx) {
+		sr_err("%s(): libsigrok context was NULL.", __func__);
+		return SR_ERR;
+	}
+	if (callback == NULL){
+		sr_err("%s(): callback was NULL.", __func__);
+		return SR_ERR;		
+	}
+
+	ctx->hotplug_callback = callback;
+	ctx->hotplug_user_data = userdata;
+
+    ret = libusb_hotplug_register_callback(ctx->libusb_ctx,
+                                           (libusb_hotplug_event)(LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED | LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT),
+                                           (libusb_hotplug_flag)LIBUSB_HOTPLUG_ENUMERATE,
+                                           0x2A0E,
+                                           LIBUSB_HOTPLUG_MATCH_ANY,
+                                           LIBUSB_HOTPLUG_MATCH_ANY, 
+                                           (libusb_hotplug_callback_fn)sr_hotplug_callback,
+                                           ctx,
+                                           &ctx->hotplug_handle);
+    if (LIBUSB_SUCCESS != ret){
+       return -1;
+    }
+
+	return 0;
+}
+
+SR_API int sr_close_hotplug(struct sr_context *ctx)
+{
+	if (!ctx) {
+		sr_err("%s(): libsigrok context was NULL.", __func__);
+		return SR_ERR;
+	}
+
+	libusb_hotplug_deregister_callback(ctx->libusb_ctx, ctx->hotplug_handle);
+
+	return 0;
+}
+
+SR_API void sr_hotplug_wait_timout(struct sr_context *ctx)
+{
+	if (!ctx) {
+		sr_err("%s(): libsigrok context was NULL.", __func__);
+		return SR_ERR;
+	}
+	 libusb_handle_events_timeout(ctx->libusb_ctx, &ctx->hotplug_tv);
 }
 
 /** @} */

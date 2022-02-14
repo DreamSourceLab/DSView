@@ -28,8 +28,14 @@
 
 /*--- backend.c -------------------------------------------------------------*/
 
+//@event, 1:attach, 2:left
+typedef void (*hotplug_event_callback)(void *context,void *device, int event, void *userdata);
+
 SR_API int sr_init(struct sr_context **ctx);
 SR_API int sr_exit(struct sr_context *ctx);
+SR_API int sr_listen_hotplug(struct sr_context *ctx, hotplug_event_callback callback, void *userdata);
+SR_API int sr_close_hotplug(struct sr_context *ctx);
+SR_API void sr_hotplug_wait_timout(struct sr_context *ctx);
 
 /*--- log.c -----------------------------------------------------------------*/
 

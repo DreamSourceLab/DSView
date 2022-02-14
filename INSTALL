@@ -30,9 +30,10 @@ Requirements
 
 Building and installing
 -----------------------
-Step1: Get the DSView source code
+Step1: Get the DSView source code, and switch to right branch, the newest branch is dev-tai
 
  $ git clone git://github.com/DreamSourceLab/DSView
+  
 
 
 Step2: Installing the requirements:

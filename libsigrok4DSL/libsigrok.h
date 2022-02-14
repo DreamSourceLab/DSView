@@ -339,7 +339,7 @@ enum {
     SR_PKT_DATA_ERROR,
 };
 
-struct sr_context;
+struct sr_context; //hidden all field
 
 struct sr_datafeed_packet {
 	uint16_t type;

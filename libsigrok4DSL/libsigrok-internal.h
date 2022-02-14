@@ -49,6 +49,10 @@ extern char DS_RES_PATH[500];
 struct sr_context {
 #ifdef HAVE_LIBUSB_1_0
 	libusb_context *libusb_ctx;
+	libusb_hotplug_callback_handle hotplug_handle;
+	hotplug_event_callback  hotplug_callback;
+	void *hotplug_user_data;
+	struct timeval hotplug_tv; 
 #endif
 };
 

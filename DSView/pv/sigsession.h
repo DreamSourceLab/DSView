@@ -27,8 +27,7 @@
 #include <string>
 #include <vector>
 #include <stdint.h> 
-#include <QString>  
-#include <libusb.h>
+#include <QString>
 #include <thread>
 #include <QDateTime>
 
@@ -258,6 +257,10 @@ public:
          _callback->decode_done();
      }
 
+     inline void set_sr_context(struct sr_context *ctx){
+         _sr_ctx = ctx;
+     }
+
 private:
     inline void data_updated(){
         _callback->data_updated();
@@ -321,8 +324,7 @@ private:
     // thread for hotplug
     void hotplug_proc();
 
-    static LIBUSB_CALL int hotplug_callback(struct libusb_context *ctx, struct libusb_device *dev,
-                                libusb_hotplug_event event, void *user_data);
+    static  void hotplug_callback(void *ctx, void *dev, int event, void *user_data);
 
 public:
     void reload();
@@ -373,9 +375,7 @@ private:
 	data::Analog             *_analog_data;
     data::Group              *_group_data; 
     int                      _group_cnt;
- 
-	libusb_hotplug_callback_handle _hotplug_handle;
-    
+  
     bool        _hot_attach;
     bool        _hot_detach;
 
@@ -409,6 +409,7 @@ private:
     bool        _dso_feed;
     float       _stop_scale; 
     bool        _bClose;
+    struct sr_context  *_sr_ctx;
 
     ISessionCallback *_callback;
    

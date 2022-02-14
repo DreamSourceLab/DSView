@@ -69,7 +69,6 @@ SigSession* SigSession::_session = NULL;
 
 SigSession::SigSession(DeviceManager *device_manager) 
 {
-    _hotplug_handle = 0;
     _dev_inst = NULL;
     _device_manager = device_manager;
     // TODO: This should not be necessary
@@ -109,6 +108,8 @@ SigSession::SigSession(DeviceManager *device_manager)
     _analog_data = new data::Analog(new data::AnalogSnapshot()); 
     _group_data = new data::Group();
     _group_cnt = 0;
+
+    _sr_ctx = NULL;
 
     _feed_timer.Stop(); 
     _feed_timer.SetCallback(std::bind(&SigSession::feed_timeout, this)); 
@@ -1205,44 +1206,40 @@ void SigSession::data_feed_in_proc(const struct sr_dev_inst *sdi,
 /*
  * hotplug function
  */
-int SigSession::hotplug_callback(struct libusb_context *ctx, struct libusb_device *dev,
-                                  libusb_hotplug_event event, void *user_data) {
+void SigSession::hotplug_callback(void *ctx, void *dev, int event, void *user_data) {
 
     (void)ctx;
     (void)dev;
     (void)user_data;
 
-    if (LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED == event) {
+    if (1 == event) {
         _session->_hot_attach = true;
-        qDebug("DreamSourceLab Hardware Attached!\n");
-    }else if (LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT == event) {
+        qDebug("receive event:DreamSourceLab Hardware attached!");
+    }else if (2 == event) {
         _session->_hot_detach = true;
-        qDebug("DreamSourceLab Hardware Detached!\n");
+        qDebug("receive event:DreamSourceLab Hardware detached!");
     }else{
         qDebug("Unhandled event %d\n", event);
     }
-
-    return 0;
 }
 
 void SigSession::hotplug_proc()
-{
-    struct timeval tv; 
-
+{  
     if (!_dev_inst)
-        return;
-
-    tv.tv_sec = tv.tv_usec = 0;
+        return; 
+        
     try {
         while(_session && !_bHotplugStop) {
-            libusb_handle_events_timeout(NULL, &tv);
+
+            sr_hotplug_wait_timout(_sr_ctx);
+
             if (_hot_attach) {
-                qDebug("DreamSourceLab hardware attached!");
+                qDebug("process event:DreamSourceLab hardware attached!");
                 _callback->device_attach();
                 _hot_attach = false;
             }
             if (_hot_detach) {
-                qDebug("DreamSourceLab hardware detached!");
+                qDebug("process event:DreamSourceLab hardware detached!");
                 _callback->device_detach();
                 _hot_detach = false;
             }
@@ -1256,25 +1253,14 @@ void SigSession::hotplug_proc()
 
 void SigSession::register_hotplug_callback()
 {
-    int ret;
-
-    ret = libusb_hotplug_register_callback(NULL,
-                                           (libusb_hotplug_event)(LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED | LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT),
-                                           (libusb_hotplug_flag)LIBUSB_HOTPLUG_ENUMERATE,
-                                           0x2A0E,
-                                           LIBUSB_HOTPLUG_MATCH_ANY,
-                                           LIBUSB_HOTPLUG_MATCH_ANY, 
-                                           hotplug_callback,
-                                           NULL,
-                                           &_hotplug_handle);
-    if (LIBUSB_SUCCESS != ret){
-        qDebug() << "Error creating a hotplug callback,code:"<<ret;
+    if (sr_listen_hotplug(_sr_ctx, hotplug_callback, NULL) != 0){
+        qDebug() << "Error creating a hotplug callback,code:";
     }
 }
 
 void SigSession::deregister_hotplug_callback()
 {
-    libusb_hotplug_deregister_callback(NULL, _hotplug_handle);
+    sr_close_hotplug(_sr_ctx);
 }
 
 void SigSession::start_hotplug_work()
@@ -1784,11 +1770,7 @@ void SigSession::set_stop_scale(float scale)
 
      stop_hotplug_work();
 
-     if (_hotplug_handle)
-     { 
-         deregister_hotplug_callback();
-         _hotplug_handle = 0;
-     }
+     deregister_hotplug_callback();
  }
 
 //append a decode task, and try create a thread

@@ -74,6 +74,7 @@ bool AppControl::Init()
         m_error = "DSView run ERROR: libsigrok init failed.";
         return false;
     } 
+    _session->set_sr_context(sr_ctx);
 
     QString resdir = GetResourceDir();
 	sr_set_firmware_resource_dir(resdir.toUtf8().data());
