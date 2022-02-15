@@ -472,7 +472,7 @@ SR_API void sr_hotplug_wait_timout(struct sr_context *ctx)
 {
 	if (!ctx) {
 		sr_err("%s(): libsigrok context was NULL.", __func__);
-		return SR_ERR;
+		return;
 	}
 	 libusb_handle_events_timeout(ctx->libusb_ctx, &ctx->hotplug_tv);
 }

@@ -287,8 +287,9 @@ static GSList *scan(GSList *options)
 
     /* Find all DSLogic compatible devices and upload firmware to them. */
 	devices = NULL;
-    int usbnum = libusb_get_device_list(drvc->sr_ctx->libusb_ctx, &devlist);
+    libusb_get_device_list(drvc->sr_ctx->libusb_ctx, &devlist);
     int stdnum = 0;
+    
 
 	for (i = 0; devlist[i]; i++) {
 		if (conn) {

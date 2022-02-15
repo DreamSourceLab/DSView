@@ -324,11 +324,11 @@ QString GetAppDataDir()
 //applicationDirPath not end with '/'
 #ifdef Q_OS_LINUX
     QDir dir(QCoreApplication::applicationDirPath());
-    if (dir.cd("..") && dir.cd("share") &&dir.cd("DSView"))
+    if (dir.cd("..") && dir.cd("share") && dir.cd("DSView"))
     {
          return dir.absolutePath();        
     }
-    qDebug() << "dir is not exists:" << QCoreApplication::applicationDirPath() + "/../share/DSView";
+    qDebug() << "dir is not exists:" <<"../share/DSView";
     assert(false);   
 #else
     return QCoreApplication::applicationDirPath();
@@ -340,7 +340,7 @@ QString GetResourceDir(){
     if (dir.exists()){
         return dir.absolutePath();
     }
-    qDebug() << "dir is not exists:" << dir.absolutePath();
+    qDebug() << "app data dir is not exists:" << dir.absolutePath();
     assert(false);
 }
 
@@ -351,4 +351,27 @@ QString GetUserDataDir()
     #else
     return QStandardPaths::writableLocation(QStandardPaths::DataLocation);
     #endif
+}
+
+QString GetDecodeScriptDir()
+{
+    QString path = GetAppDataDir() + "/decoders";
+
+    #ifdef Q_OS_LINUX
+    QDir dir1;
+    // ../share/DSView/decoders
+    if (dir1.exists(path))
+    {
+         return path;     
+    }  
+
+    QDir dir(QCoreApplication::applicationDirPath());
+    // ../share/libsigrokdecode4DSL/decoders
+    if (dir.cd("..") && dir.cd("share") && dir.cd("libsigrokdecode4DSL") && dir.cd("decoders"))
+    {
+         return dir.absolutePath();        
+    } 
+#endif
+
+ return path;
 }

@@ -92,9 +92,12 @@ bool AppControl::Init()
   
 #endif
     
+    //the python script path of decoder
     char path[256] = {0};
-    QString dir = GetAppDataDir() + "/decoders";   
+    QString dir = GetDecodeScriptDir();   
     strcpy(path, dir.toUtf8().data());
+
+    qDebug()<<"decode script path is:"<<dir;
 
     // Initialise libsigrokdecode
     if (srd_init(path) != SRD_OK)

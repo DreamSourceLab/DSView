@@ -26,6 +26,14 @@ include(GNUInstallDirs)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake")
 
+#SET(CMAKE_C_FLAGS_RELEASE "-g -DNDEBUG -O3")
+#SET(CMAKE_CXX_FLAGS_RELEASE "-g -DNDEBUG -O3")
+
+set(CMAKE_CXX_FLAGS "-Wall -Wextra")
+set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+
 project(DSView)
 
 #===============================================================================
@@ -95,9 +103,11 @@ find_package(Threads)
 find_package(PythonLibs 3 EXACT)
 find_package(Boost 1.42 COMPONENTS filesystem system thread REQUIRED)
 find_package(libusb-1.0 REQUIRED)
+find_package(ZLIB REQUIRED)
 find_package(libzip REQUIRED)
 find_package(FFTW REQUIRED)
 
+  
 #===============================================================================
 #= Config Header
 #-------------------------------------------------------------------------------
@@ -106,8 +116,8 @@ set(DS_TITLE DSView)
 set(DS_DESCRIPTION "A GUI for instruments of DreamSourceLab")
 
 set(DS_VERSION_MAJOR 1)
-set(DS_VERSION_MINOR 1)
-set(DS_VERSION_MICRO 2)
+set(DS_VERSION_MINOR 2)
+set(DS_VERSION_MICRO 0)
 set(DS_VERSION_STRING
 	${DS_VERSION_MAJOR}.${DS_VERSION_MINOR}.${DS_VERSION_MICRO}
 )
@@ -214,6 +224,21 @@ set(DSView_SOURCES
     pv/dialogs/mathoptions.cpp
     pv/dialogs/regionoptions.cpp
     pv/view/xcursor.cpp
+    pv/config/appconfig.cpp
+    pv/appcontrol.cpp
+    pv/dstimer.cpp
+    pv/eventobject.cpp
+    pv/ZipMaker.cpp
+    pv/data/decode/annotationrestable.cpp
+    pv/data/decode/decoderstatus.cpp
+    pv/dock/protocolitemlayer.cpp
+    pv/ui/msgbox.cpp
+    pv/ui/dscombobox.cpp
+    pv/dsvdef.cpp
+    pv/minizip/zip.c
+    pv/minizip/unzip.c
+    pv/minizip/ioapi.c
+    pv/dialogs/applicationpardlg.cpp
 )
 
 set(DSView_HEADERS
@@ -282,6 +307,21 @@ set(DSView_HEADERS
     pv/view/analogsignal.h
     pv/view/dsosignal.h
     mystyle.h
+    pv/config/appconfig.h
+    pv/appcontrol.h
+    pv/dstimer.h
+    pv/eventobject.h
+    pv/ZipMaker.h
+    pv/data/decode/annotationrestable.h
+    pv/data/decode/decoderstatus.h
+    pv/dock/protocolitemlayer.h
+    pv/ui/msgbox.h
+    pv/ui/dscombobox.h
+    pv/dsvdef.h
+    pv/minizip/zip.h
+    pv/minizip/unzip.h
+    pv/minizip/ioapi.h
+    pv/dialogs/applicationpardlg.h
 )
 
 set(DSView_FORMS
@@ -407,6 +447,8 @@ if(WIN32)
 # Pass -mwindows so that no "DOS box" will open when PulseView is started.
 set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "-mwindows")
 endif()
+
+target_link_libraries(DSView -lz)
 
 
 if(ENABLE_COTIRE)

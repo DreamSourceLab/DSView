@@ -31,6 +31,4 @@
 #define DS_VERSION_MICRO 0
 #define DS_VERSION_STRING "1.2.0"
 
-#define DS_DEBUG_TRACE
-
 #endif

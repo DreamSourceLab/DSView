@@ -481,6 +481,7 @@ SR_PRIV int sr_source_add(int fd, int events, int timeout,
 /*
 test usb device api
 */
+/*
 SR_API void sr_test_usb_api()
 {
     libusb_context *ctx;
@@ -553,3 +554,4 @@ SR_API void sr_test_usb_api()
 
    libusb_exit(NULL);
 }
+*/

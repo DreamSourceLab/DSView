@@ -37,6 +37,7 @@ QString GetIconPath();
 QString GetAppDataDir();
 QString GetResourceDir();
 QString GetUserDataDir();
+QString GetDecodeScriptDir();
 
 //------------------class
   

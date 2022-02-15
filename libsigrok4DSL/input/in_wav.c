@@ -94,7 +94,7 @@ static int init(struct sr_input *in, const char *filename)
 {
 	struct sr_channel *probe;
 	struct context *ctx;
-	char buf[40], probename[8];
+	char buf[40], probename[15];
 	int i;
 
 	if (get_wav_header(filename, buf) != SR_OK)
@@ -120,7 +120,7 @@ static int init(struct sr_input *in, const char *filename)
 	}
 
 	for (i = 0; i < ctx->num_channels; i++) {
-		snprintf(probename, 8, "CH%d", i + 1);
+		sprintf(probename,"CH%d", i + 1);
 		if (!(probe = sr_channel_new(0, SR_CHANNEL_ANALOG, TRUE, probename)))
 			return SR_ERR;
 		in->sdi->channels = g_slist_append(in->sdi->channels, probe);

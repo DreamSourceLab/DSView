@@ -80,7 +80,7 @@
 #define SRD_PACKAGE_VERSION_MINOR 6
 
 /* Version of libsigrokdecode4DSL. */
-#define SRD_PACKAGE_VERSION_STRING "0.6.0-git-c708a00"
+#define SRD_PACKAGE_VERSION_STRING "0.6.0-git-f18df52"
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1

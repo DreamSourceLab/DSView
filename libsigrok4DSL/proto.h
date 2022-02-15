@@ -88,7 +88,7 @@ SR_API int sr_status_get(const struct sr_dev_inst *sdi, struct sr_status *status
 SR_API struct sr_config *sr_config_new(int key, GVariant *data);
 SR_API void sr_config_free(struct sr_config *src);
 
-SR_API void sr_test_usb_api();
+//SR_API void sr_test_usb_api();
 
 /*--------------------session.c----------------*/
 typedef void (*sr_datafeed_callback_t)(const struct sr_dev_inst *sdi,
