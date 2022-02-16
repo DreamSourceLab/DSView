@@ -25,7 +25,7 @@
 #include <QObject>
 
 #include <string>
-#include <glib-2.0/glib.h>
+#include <glib.h>
 #include <stdint.h>
 
 #include <libsigrok4DSL/libsigrok.h>

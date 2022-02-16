@@ -23,7 +23,7 @@
 #define LIBSIGROKDECODE_LIBSIGROKDECODE_H
 
 #include <stdint.h>
-#include <glib-2.0/glib.h>
+#include <glib.h>
 
 #define DECODE_NUM_HEX_MAX_LEN		35
 

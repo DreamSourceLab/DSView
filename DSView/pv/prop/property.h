@@ -23,7 +23,7 @@
 #ifndef DSVIEW_PV_PROP_PROPERTY_H
 #define DSVIEW_PV_PROP_PROPERTY_H
 
-#include <glib-2.0/glib.h>
+#include <glib.h>
 
 #include <boost/function.hpp>
 

@@ -24,7 +24,7 @@
 #ifndef DSVIEW_PV_DEVICEMANAGER_H
 #define DSVIEW_PV_DEVICEMANAGER_H
 
-#include <glib-2.0/glib.h>
+#include <glib.h>
 
 #include <list>
 #include <map>

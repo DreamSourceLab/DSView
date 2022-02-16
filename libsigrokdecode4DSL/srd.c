@@ -21,7 +21,7 @@
 #include "config.h"
 #include "libsigrokdecode-internal.h" /* First, so we avoid a _POSIX_C_SOURCE warning. */
 #include "libsigrokdecode.h"
-#include <glib-2.0/glib.h>
+#include <glib.h>
 
 /** @cond PRIVATE */
 

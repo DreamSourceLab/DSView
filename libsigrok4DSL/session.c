@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <glib-2.0/glib.h>
+#include <glib.h>
 
 /* Message logging helpers with subsystem-specific prefix string. */
 #define LOG_PREFIX "session: "

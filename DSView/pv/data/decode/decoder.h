@@ -28,7 +28,7 @@
 #include <sstream>
 #include <iostream>
   
-#include <glib-2.0/glib.h>
+#include <glib.h>
 
 struct srd_decoder;
 struct srd_decoder_inst;

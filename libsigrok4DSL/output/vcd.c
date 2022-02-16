@@ -23,7 +23,7 @@
 #include "../libsigrok-internal.h"
 #include <stdlib.h>
 #include <string.h>
-#include <glib-2.0/glib.h>
+#include <glib.h>
 #include "../config.h" /* Needed for PACKAGE and others. */
 
 #define LOG_PREFIX "output/vcd"

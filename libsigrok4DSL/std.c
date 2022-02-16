@@ -20,7 +20,7 @@
 
 #include "libsigrok.h"
 #include "libsigrok-internal.h"
-#include <glib-2.0/glib.h>
+#include <glib.h>
 
 /**
  * Standard sr_driver_init() API helper.

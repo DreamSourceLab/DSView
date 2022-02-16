@@ -24,7 +24,7 @@
 #ifndef DSVIEW_PV_PROP_BINDING_BINDING_H
 #define DSVIEW_PV_PROP_BINDING_BINDING_H
 
-#include <glib-2.0/glib.h>
+#include <glib.h>
 
 #include <vector>
 #include <map> 
