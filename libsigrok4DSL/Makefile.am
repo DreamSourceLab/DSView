@@ -20,7 +20,12 @@
 
 ACLOCAL_AMFLAGS = -I autostuff
 
-AM_CPPFLAGS = -I$(top_srcdir)
+AM_CPPFLAGS = \
+	-I$(top_srcdir) \
+	-I/usr/include/glib-2.0 
+	
+export AM_CPPFLAGS
+ 
 
 SUBDIRS = hardware input output tests
 
@@ -45,6 +50,7 @@ libsigrok4DSL_la_LIBADD = \
 	hardware/libsigrok4DSLhardware.la \
 	input/libsigrok4DSLinput.la \
 	output/libsigrok4DSLoutput.la
+	
 
 libsigrok4DSL_la_LDFLAGS = $(SR_LIB_LDFLAGS)
 
