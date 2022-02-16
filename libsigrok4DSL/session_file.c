@@ -26,7 +26,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
-#include <glib.h>
+#include <glib-2.0/glib.h>
 #include <glib/gstdio.h>
 #include "config.h" /* Needed for PACKAGE_VERSION and others. */
 

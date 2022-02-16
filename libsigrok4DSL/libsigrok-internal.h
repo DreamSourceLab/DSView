@@ -21,7 +21,7 @@
 #define LIBSIGROK_SIGROK_INTERNAL_H
 
 //#include <stdarg.h>
-#include <glib.h>
+#include <glib-2.0/glib.h>
 #include "config.h" /* Needed for HAVE_LIBUSB_1_0 and others. */
 #ifdef HAVE_LIBUSB_1_0
 #include <libusb.h>

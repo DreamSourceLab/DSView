@@ -24,7 +24,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <string.h>
-#include <glib.h>
+#include <glib-2.0/glib.h>
 #include "config.h" /* Needed for HAVE_LIBUSB_1_0 and others. */
 
 #include "hardware/DSL/dsl.h"

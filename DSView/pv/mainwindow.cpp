@@ -86,7 +86,7 @@
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdarg.h>
-#include <glib.h>
+#include <glib-2.0/glib.h>
 #include <list>
 #include "ui/msgbox.h"
 #include "config/appconfig.h"

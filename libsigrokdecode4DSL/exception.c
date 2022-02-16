@@ -21,7 +21,7 @@
 #include "libsigrokdecode-internal.h" /* First, so we avoid a _POSIX_C_SOURCE warning. */
 #include "libsigrokdecode.h"
 #include <stdarg.h>
-#include <glib.h>
+#include <glib-2.0/glib.h>
 
 static char *py_stringify(PyObject *py_obj)
 {

@@ -60,7 +60,7 @@
 #include "../libsigrok.h"
 #include "../libsigrok-internal.h"
 #include <stdlib.h>
-#include <glib.h>
+#include <glib-2.0/glib.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>

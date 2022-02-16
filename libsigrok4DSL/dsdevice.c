@@ -20,7 +20,7 @@
 #include "libsigrok.h"
 #include "libsigrok-internal.h"
 #include <stdio.h>
-#include <glib.h>
+#include <glib-2.0/glib.h>
 #include "config.h" /* Needed for HAVE_LIBUSB_1_0 and others. */
 
 /* Message logging helpers with subsystem-specific prefix string. */
