@@ -28,7 +28,7 @@
 #include <QLabel>
 #include <QAbstractItemView>
 #include <math.h>
-#include <libusb.h>
+#include <libusb-1.0/libusb.h>
 
 #include "../devicemanager.h"
 #include "../device/devinst.h"

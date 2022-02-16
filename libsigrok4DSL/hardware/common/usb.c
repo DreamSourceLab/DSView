@@ -21,7 +21,6 @@
 #include "../../libsigrok-internal.h"
 #include <stdlib.h>
 #include <glib-2.0/glib.h>
-//#include <libusb.h>
 
 /* SR_CONF_CONN takes one of these: */
 #define CONN_USB_VIDPID  "^([0-9a-z]{4})\\.([0-9a-z]{4})$"

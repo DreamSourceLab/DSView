@@ -41,7 +41,7 @@
 #include <QStandardPaths>
 #include <QScreen>
 #include <QTimer>
-#include <libusb.h>
+#include <libusb-1.0/libusb.h>
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 #include <QGuiApplication>

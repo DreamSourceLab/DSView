@@ -22,7 +22,6 @@
  */
 #include "../../libsigrok.h"
 #include "../../libsigrok-internal.h"
-//#include <libusb.h>
 #include <glib-2.0/glib.h>
 #include <glib/gstdio.h>
 #include <stdio.h>

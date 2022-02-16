@@ -24,7 +24,7 @@
 #include <glib-2.0/glib.h>
 #include "config.h" /* Needed for HAVE_LIBUSB_1_0 and others. */
 #ifdef HAVE_LIBUSB_1_0
-#include <libusb.h>
+#include <libusb-1.0/libusb.h>
 #endif
 
 // firmware binary file directory, endswith letter '/'
