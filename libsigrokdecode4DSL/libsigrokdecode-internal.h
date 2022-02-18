@@ -94,6 +94,8 @@ SRD_PRIV int srd_log(int loglevel, const char *format, ...) G_GNUC_PRINTF(2, 3);
 #define srd_warn(...)	srd_log(SRD_LOG_WARN, __VA_ARGS__)
 #define srd_err(...)	srd_log(SRD_LOG_ERR,  __VA_ARGS__)
 
+SRD_PRIV void debug_log(const char *str);
+
 /* decoder.c */
 SRD_PRIV long srd_decoder_apiver(const struct srd_decoder *d);
 
@@ -114,11 +116,21 @@ SRD_PRIV int py_attr_as_strlist(PyObject *py_obj, const char *attr, GSList **out
 SRD_PRIV int py_dictitem_as_str(PyObject *py_obj, const char *key, char **outstr);
 SRD_PRIV int py_dictitem_to_int(PyObject *py_obj, const char *key);
 SRD_PRIV int py_listitem_as_str(PyObject *py_obj, int idx, char **outstr);
-SRD_PRIV int py_pydictitem_as_str(PyObject *py_obj, PyObject *py_key, char **outstr);
+SRD_PRIV int py_dict_value_to_str(PyObject *py_obj, PyObject *py_key, char **outstr);
 SRD_PRIV int py_pydictitem_as_long(PyObject *py_obj, PyObject *py_key, uint64_t *out);
 SRD_PRIV int py_str_as_str(PyObject *py_str, char **outstr);
 SRD_PRIV int py_strseq_to_char(PyObject *py_strseq, char ***out_strv);
 SRD_PRIV GVariant *py_obj_to_variant(PyObject *py_obj);
+
+/*
+	python string object to c string, free by g_free()
+	if success, return 0;
+*/
+#define py_object_to_str_alloc py_str_as_str
+
+SRD_PRIV int py_object_to_int(PyObject *py_obj,int64_t *out);
+
+SRD_PRIV int py_object_to_uint(PyObject *py_obj,uint64_t *out);
 
 /* exception.c */
 #if defined(G_OS_WIN32) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4))

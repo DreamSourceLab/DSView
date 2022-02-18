@@ -207,4 +207,14 @@ SRD_PRIV int srd_log(int loglevel, const char *format, ...)
 	return ret;
 }
 
+/*
+*/
+void debug_log(const char *str)
+{
+	if (str && *str){
+		fputs(str, stdout);
+		fflush(stdout);
+	}
+}
+
 /** @} */

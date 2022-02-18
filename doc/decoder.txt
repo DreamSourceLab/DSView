@@ -23,6 +23,7 @@ c can call's method of python:
 	2.start
 	3.decode
 	4.metadata
+	5.printlog //print log to console, param type is string
 
 	
 

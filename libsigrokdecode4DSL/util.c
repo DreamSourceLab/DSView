@@ -291,7 +291,7 @@ err:
  *
  * @private
  */
-SRD_PRIV int py_pydictitem_as_str(PyObject *py_obj, PyObject *py_key,
+SRD_PRIV int py_dict_value_to_str(PyObject *py_obj, PyObject *py_key,
 				char **outstr)
 {
 	PyObject *py_value;
@@ -375,6 +375,7 @@ err:
 
 	return SRD_ERR_PYTHON;
 }
+ 
 
 /**
  * Get the value of a Python unicode string object, returned as a newly
@@ -416,6 +417,60 @@ SRD_PRIV int py_str_as_str(PyObject *py_str, char **outstr)
 
 	PyGILState_Release(gstate);
 
+	return SRD_ERR_PYTHON;
+}
+
+/*
+*/
+SRD_PRIV int py_object_to_int(PyObject *py_obj, int64_t *out)
+{
+	PyGILState_STATE gstate;
+
+	if (py_obj == NULL){
+		return SRD_ERR_PYTHON;
+	}
+
+	gstate = PyGILState_Ensure();
+
+	if (!PyLong_Check(py_obj))
+	{
+		srd_dbg("py_object_to_int param should be a long.");
+		goto err;
+	}
+
+   *out = PyLong_AsLongLong(py_obj);
+
+	PyGILState_Release(gstate);
+	return SRD_OK;
+
+err:
+	PyGILState_Release(gstate);
+	return SRD_ERR_PYTHON;
+}
+
+SRD_PRIV int py_object_to_uint(PyObject *py_obj, uint64_t *out)
+{
+	PyGILState_STATE gstate;
+
+	if (py_obj == NULL){
+		return SRD_ERR_PYTHON;
+	}
+
+	gstate = PyGILState_Ensure();
+
+	if (!PyLong_Check(py_obj))
+	{
+		srd_dbg("py_object_to_int param should be a long.");
+		goto err;
+	}
+
+   *out = PyLong_AsUnsignedLongLong(py_obj);
+
+	PyGILState_Release(gstate);
+	return SRD_OK;
+
+err:
+	PyGILState_Release(gstate);
 	return SRD_ERR_PYTHON;
 }
 

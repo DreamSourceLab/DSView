@@ -789,18 +789,21 @@ static int create_term_list(PyObject *py_dict, GSList **term_list, gboolean cur_
 			/* The key is a number. */
 			/* TODO: Check if the number is a valid channel. */
 			/* Get the value string. */
-			if ((py_pydictitem_as_str(py_dict, py_key, &term_str)) != SRD_OK) {
+			/* key defined channel id, value defined term type*/
+			if ((py_object_to_str_alloc(py_value, &term_str)) != SRD_OK) {
 				srd_err("Failed to get the value.");
 				goto err;
-			}
+			} 
+
 			term = g_malloc(sizeof(struct srd_term));
 			term->type = get_term_type(term_str);
 			term->channel = PyLong_AsLong(py_key);
 			g_free(term_str);
+
 		} else if (PyUnicode_Check(py_key)) {
 			/* The key is a string. */
 			/* TODO: Check if it's "skip". */
-			if ((py_pydictitem_as_long(py_dict, py_key, &num_samples_to_skip)) != SRD_OK) {
+			if ((py_object_to_uint(py_value, &num_samples_to_skip)) != SRD_OK) {
 				srd_err("Failed to get number of samples to skip.");
 				goto err;
 			}
@@ -808,6 +811,7 @@ static int create_term_list(PyObject *py_dict, GSList **term_list, gboolean cur_
 			term->type = SRD_TERM_SKIP;
 			term->num_samples_to_skip = num_samples_to_skip;
             term->num_samples_already_skipped = cur_matched ? (term->num_samples_to_skip != 0) : 0;
+			
 		} else {
 			srd_err("Term key is neither a string nor a number.");
 			goto err;
@@ -871,9 +875,11 @@ static int set_new_condition_list(struct srd_decoder_inst *di, PyObject *args)
 		/* Let Python raise this exception. */
 		goto err;
 	}
+
 	if (py_conds == Py_None) {
 		/* 'py_conds' is None. */
 		goto ret_9999;
+
 	} else if (PyList_Check(py_conds)) {
 		/* 'py_conds' is a list. */
 		py_conditionlist = py_conds;
@@ -881,6 +887,7 @@ static int set_new_condition_list(struct srd_decoder_inst *di, PyObject *args)
 		if (num_conditions == 0)
 			goto ret_9999; /* The PD invoked self.wait([]). */
         Py_IncRef(py_conditionlist);
+
 	} else if (PyDict_Check(py_conds)) {
 		/* 'py_conds' is a dict. */
 		if (PyDict_Size(py_conds) == 0)
@@ -890,6 +897,7 @@ static int set_new_condition_list(struct srd_decoder_inst *di, PyObject *args)
 		Py_IncRef(py_conds);
 		PyList_SetItem(py_conditionlist, 0, py_conds);
 		num_conditions = 1;
+
 	} else {
 		srd_err("Condition list is neither a list nor a dict.");
 		goto err;
@@ -900,6 +908,7 @@ static int set_new_condition_list(struct srd_decoder_inst *di, PyObject *args)
 
 	ret = SRD_OK;
 
+	/* py_conditionlist is a list */
 	/* Iterate over the conditions, set di->condition_list accordingly. */
 	for (i = 0; i < num_conditions; i++) {
 		/* Get a condition (dict) from the condition list. */
@@ -1152,9 +1161,60 @@ err:
 	return NULL;
 }
 
+/*
+ Receive python debug log, and print it to console
+*/
+static PyObject *Decoder_printlog(PyObject *self, PyObject *args)
+{    
+	if (self == NULL || args == NULL){
+		//PyErr_SetString(PyExc_Exception, "---------------xx");
+		return NULL;
+	} 
+
+	PyGILState_STATE gstate; 	
+	PyObject *py_bytes = NULL;
+	PyObject *py_data = NULL;
+	char *str = NULL;
+
+	gstate = PyGILState_Ensure();
+ 
+	if (!PyArg_ParseTuple(args, "U", &py_data)) {
+		srd_err("printlog() read param error!");
+		goto err;
+	}
+
+	if (py_data == NULL){
+		srd_err("printlog() param is null!");
+		goto err;
+	}
+
+	if (PyUnicode_Check(py_data) == FALSE){
+		srd_err("printlog() param type must be string!");	
+		goto err;
+	}
+
+	py_bytes = PyUnicode_AsUTF8String(py_data);
+	if (!py_bytes){
+		goto err;
+	}	
+
+	str = PyBytes_AsString(py_bytes);
+	debug_log(str);
+	Py_DECREF(py_bytes);
+
+    PyGILState_Release(gstate);
+    Py_RETURN_NONE;
+
+err:
+	PyGILState_Release(gstate);
+	return NULL;
+}
+
+//------------------------------------------------------- construct
+
 static PyMethodDef Decoder_methods[] = {
 	{ "put", Decoder_put, METH_VARARGS,
-	  "Accepts a dictionary with the following keys: startsample, endsample, data" },
+	  		"Accepts a dictionary with the following keys: startsample, endsample, data" },
 
 	{ "register", (PyCFunction)Decoder_register, METH_VARARGS|METH_KEYWORDS,
 			"Register a new output stream" },
@@ -1164,6 +1224,9 @@ static PyMethodDef Decoder_methods[] = {
 
 	{ "has_channel", Decoder_has_channel, METH_VARARGS,
 			"Report whether a channel was supplied" },
+
+	{ "printlog", Decoder_printlog, METH_VARARGS,
+			"Print string from python" },
 
 	{NULL, NULL, 0, NULL}
 };
@@ -1201,3 +1264,5 @@ SRD_PRIV PyObject *srd_Decoder_type_new(void)
 
 	return py_obj;
 }
+
+
