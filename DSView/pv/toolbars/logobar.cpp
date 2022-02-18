@@ -51,12 +51,10 @@ LogoBar::LogoBar(SigSession *session, QWidget *parent) :
 
     _action_en = new QAction(this);
     _action_en->setObjectName(QString::fromUtf8("actionEn"));
-    connect(_action_en, SIGNAL(triggered()), this, SLOT(on_actionEn_triggered()));
-
+   
     _action_cn = new QAction(this);
     _action_cn->setObjectName(QString::fromUtf8("actionCn"));
-    connect(_action_cn, SIGNAL(triggered()), this, SLOT(on_actionCn_triggered()));
-
+    
     _language = new QMenu(this);
     _language->setObjectName(QString::fromUtf8("menuLanguage"));
     _language->addAction(_action_cn);
@@ -68,23 +66,23 @@ LogoBar::LogoBar(SigSession *session, QWidget *parent) :
     _about = new QAction(this);
     _about->setObjectName(QString::fromUtf8("actionAbout"));
     _logo_button.addAction(_about);
-    connect(_about, SIGNAL(triggered()), this, SLOT(on_actionAbout_triggered()));
-
+     
     _manual = new QAction(this);
     _manual->setObjectName(QString::fromUtf8("actionManual"));
     _logo_button.addAction(_manual);
-    connect(_manual, SIGNAL(triggered()), this, SIGNAL(sig_open_doc()));
-
+   
     _issue = new QAction(this);
     _issue->setObjectName(QString::fromUtf8("actionManual"));
-    _logo_button.addAction(_issue);
-    connect(_issue, SIGNAL(triggered()), this, SLOT(on_actionIssue_triggered()));
+    _logo_button.addAction(_issue);   
+
+    _update = new QAction(this);
 
     _menu = new QMenu(this);
     _menu->addMenu(_language);
     _menu->addAction(_about);
     _menu->addAction(_manual);
     _menu->addAction(_issue);
+    _menu->addAction(_update);
     _logo_button.setMenu(_menu);
 
     _logo_button.setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
@@ -99,6 +97,13 @@ LogoBar::LogoBar(SigSession *session, QWidget *parent) :
     addWidget(margin);
 
     retranslateUi();
+
+    connect(_action_en, SIGNAL(triggered()), this, SLOT(on_actionEn_triggered()));
+    connect(_action_cn, SIGNAL(triggered()), this, SLOT(on_actionCn_triggered()));
+    connect(_about, SIGNAL(triggered()), this, SLOT(on_actionAbout_triggered()));
+    connect(_manual, SIGNAL(triggered()), this, SIGNAL(sig_open_doc()));
+    connect(_issue, SIGNAL(triggered()), this, SLOT(on_actionIssue_triggered()));
+    connect(_update, SIGNAL(triggered()), this, SLOT(on_action_update()));
 }
 
 void LogoBar::changeEvent(QEvent *event)
@@ -119,6 +124,7 @@ void LogoBar::retranslateUi()
     _about->setText(tr("&About..."));
     _manual->setText(tr("&Manual"));
     _issue->setText(tr("&Bug Report"));
+    _update->setText(tr("&Update"));
 
     AppConfig &app = AppConfig::Instance(); 
     if (app._frameOptions.language == LAN_CN)
@@ -134,6 +140,8 @@ void LogoBar::reStyle()
     _about->setIcon(QIcon(iconPath+"/about.svg"));
     _manual->setIcon(QIcon(iconPath+"/manual.svg"));
     _issue->setIcon(QIcon(iconPath+"/bug.svg"));
+    _update->setIcon(QIcon(iconPath+"/bug.svg"));
+
     if (_connected)
         _logo_button.setIcon(QIcon(iconPath+"/logo_color.svg"));
     else
@@ -202,6 +210,16 @@ void LogoBar::on_actionIssue_triggered()
 {
     QDesktopServices::openUrl(QUrl(QLatin1String("https://github.com/DreamSourceLab/DSView/issues")));
 }
+
+ void LogoBar::on_action_update()
+ {
+     if (AppConfig::Instance()._frameOptions.language == LAN_CN){
+         QDesktopServices::openUrl(QUrl(QLatin1String("https://dreamsourcelab.cn/download/")));
+     }
+     else{
+         QDesktopServices::openUrl(QUrl(QLatin1String("https://www.dreamsourcelab.com/download/")));
+     }
+ }
 
 void LogoBar::enable_toggle(bool enable)
 {
