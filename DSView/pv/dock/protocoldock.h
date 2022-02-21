@@ -35,6 +35,7 @@
 #include <QSplitter>
 #include <QTableView>
 #include <QSortFilterProxyModel>
+#include <QLineEdit>
 
 #include <vector>
 #include <mutex>
@@ -42,7 +43,16 @@
 #include "../data/decodermodel.h"
 #include "protocolitemlayer.h"
 #include "../ui/dscombobox.h"
+#include "../dstimer.h"
 
+#define DECODER_NAME_LEN 20
+
+struct DecoderInfoItem{
+    char    Name[DECODER_NAME_LEN];
+    char    Id[DECODER_NAME_LEN];
+    int     Index;
+    void    *ObjectHandle; //srd_decoder* type
+};
 
 namespace pv {
 
@@ -58,7 +68,7 @@ class View;
 
 namespace dock {
   
-class ProtocolDock : public QScrollArea,public IProtocolItemLayerCallback
+class ProtocolDock : public QScrollArea, public IProtocolItemLayerCallback
 {
     Q_OBJECT
 
@@ -69,9 +79,8 @@ public:
     ProtocolDock(QWidget *parent, view::View &view, SigSession *session);
     ~ProtocolDock();
 
-    void del_all_protocol();
-    bool sel_protocol(QString name);
-    void add_protocol(bool silent);
+    void del_all_protocol(); 
+    bool add_protocol_by_id(QString id, bool silent);
 
 private:
     void changeEvent(QEvent *event);
@@ -87,6 +96,7 @@ private:
     void OnProtocolSetting(void *handle);
     void OnProtocolDelete(void *handle);
     void OnProtocolFormatChanged(QString format, void *handle);
+    int get_protocol_index_by_id(QString id);
 
 signals:
     void protocol_updated();
@@ -108,10 +118,12 @@ private slots:
     void search_done();
     void search_changed();
     void search_update();
-
+    void on_decoder_name_edited(const QString &value);
+  
 private:
     static int decoder_name_cmp(const void *a, const void *b);
     void resize_table_view(data::DecoderModel *decoder_model);
+    static bool protocol_sort_callback(const DecoderInfoItem *o1, const DecoderInfoItem *o2);
 
 private:
     SigSession *_session;
@@ -136,14 +148,14 @@ private:
     QPushButton *_add_button;
     QPushButton *_del_all_button;
     DsComboBox *_protocol_combobox; 
-    QVector <int > _protocol_index_list; 
     QVBoxLayout *_up_layout;
-    QVector <ProtocolItemLayer*> _protocol_items; //protocol item layers
+    QVector <ProtocolItemLayer*> _protocol_lay_items; //protocol item layers
 
     QPushButton *_dn_set_button;
     QPushButton *_dn_save_button;
     QPushButton *_dn_nav_button;
     QPushButton *_search_button;
+    std::vector<DecoderInfoItem*> _decoderInfoList;
 
     mutable std::mutex _search_mutex;
     bool _search_edited;

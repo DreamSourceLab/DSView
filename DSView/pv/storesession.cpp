@@ -993,13 +993,11 @@ bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_arra
         std::vector<view::DecodeTrace*> &pre_dsigs = _session->get_decode_signals();
 
         //set current protocol
-        if (widget->sel_protocol(dec_obj["id"].toString()))
+        bool ret = widget->add_protocol_by_id(dec_obj["id"].toString(), true);
+        if (!ret)
         {
-             widget->add_protocol(true);
-        }
-        else{
             continue; //protocol is not exists;
-        }           
+        }        
 
         std::vector<view::DecodeTrace*> &aft_dsigs = _session->get_decode_signals();
 
