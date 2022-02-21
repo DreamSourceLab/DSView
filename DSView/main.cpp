@@ -111,6 +111,8 @@ int main(int argc, char *argv[])
     QApplication::setOrganizationName("DreamSourceLab");
     QApplication::setOrganizationDomain("www.DreamSourceLab.com");
 
+	printf("\n-----------------version: %s-----------------\n\n", DS_VERSION_STRING);
+
 #ifdef Q_OS_LINUX
 	// Use low version qt plugins, for able to debug
 	QDir qtdir;
