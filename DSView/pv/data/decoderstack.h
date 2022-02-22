@@ -126,7 +126,7 @@ public:
 
 
     bool list_row_title(int row, QString &title);
-	QString error_message();
+	 
 	void clear();
     void init();
 	uint64_t get_max_sample_count();
@@ -148,6 +148,10 @@ public:
     void set_mark_index(int64_t index);
     int64_t get_mark_index();
     void frame_ended();
+
+    inline QString error_message(){ 
+	    return _error_message;
+    }
 
 private:
     void decode_data(const uint64_t decode_start, const uint64_t decode_end, srd_session *const session);

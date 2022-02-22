@@ -344,11 +344,6 @@ bool DecoderStack::list_row_title(int row, QString &title)
     return 0;
 }
 
-QString DecoderStack::error_message()
-{ 
-	return _error_message;
-}
-
 void DecoderStack::clear()
 {
     init();

@@ -124,7 +124,7 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     if (repeatNammes != ""){
         QString err = "Any protocol have repeated id or name: ";
         err += repeatNammes;
-        MsgBox::Show("error", err.toLatin1().data());
+        MsgBox::Show("error", err.toUtf8().data());
     }
 
     hori_layout->addWidget(_add_button);

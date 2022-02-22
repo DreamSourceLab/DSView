@@ -210,20 +210,21 @@ QString SpectrumTrace::format_freq(double freq, unsigned precision)
         const int prefix = floor((order - FirstSIPrefixPower)/ 3.0f);
         const double divider = pow(10.0, max(prefix * 3.0 + FirstSIPrefixPower, 0.0));
 
+        /*
         QString s;
         QTextStream ts(&s);
         ts.setRealNumberPrecision(precision);
         ts << fixed << freq / divider << FreqPrefixes[prefix] << "Hz";
         return s;
+        */
 
-        /*
-        char buf[20] = {0};
+        char buffer[20] = {0};
         char format[10] = {0}; 
-        sprintf(format, "%%.%df%%s", precision);
-        QString prev = FreqPrefixes[prefix] + "Hz";
-        sprintf(buf, format, freq / divider, prev.toLatin1().data());
-        return QString(buf); 
-        */ 
+        QString units = FreqPrefixes[prefix] + "Hz";
+        sprintf(format, "%%.%df", (int)precision);    
+        sprintf(buffer, format, freq / divider);
+        strcat(buffer, units.toUtf8().data());
+        return QString(buffer);
     }
 }
 

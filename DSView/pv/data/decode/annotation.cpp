@@ -147,7 +147,7 @@ const std::vector<QString>& Annotation::annotations() const
 				 char sz_format_tmp_buf[50] = {0};
 				 QString src = rd_src.replace("{$}", "%s");
 				 const char *num_str = _status->m_resTable.format_numberic(resItem.str_number_hex, resItem.cur_display_format);
-				 sprintf(sz_format_tmp_buf, src.toLatin1().data(), num_str);
+				 sprintf(sz_format_tmp_buf, src.toUtf8().data(), num_str);
 				 resItem.cvt_lines.push_back(QString(sz_format_tmp_buf));
 			 }
 		 }

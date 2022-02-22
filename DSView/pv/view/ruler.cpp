@@ -36,7 +36,6 @@
 
 #include <QMouseEvent>
 #include <QPainter>
-#include <QTextStream>
 #include <QStyleOption>  
  
  
@@ -96,21 +95,22 @@ QString Ruler::format_freq(double period, unsigned precision)
         const int prefix = ceil((order - FirstSIPrefixPower) / 3.0f);
         const double multiplier = pow(10.0, max(-prefix * 3.0 - FirstSIPrefixPower, 0.0));
 
+        /*
         QString s;
         QTextStream ts(&s);
         ts.setRealNumberPrecision(precision);
         ts << fixed << 1 / (period  * multiplier) <<
             FreqPrefixes[prefix] << "Hz";
         return s;
-
-        /*
-        char buf[20] = {0};
-        char format[10] = {0}; 
-        sprintf(format, "%%.%df%%s", precision);
-        QString prev = FreqPrefixes[prefix] + "Hz";
-        sprintf(buf, format, 1 / (period  * multiplier), prev.toLatin1().data());
-        return QString(buf);  
         */
+       
+        char buffer[20] = {0};
+        char format[10] = {0};
+        QString units = FreqPrefixes[prefix] + "Hz";
+        sprintf(format, "%%.%df", (int)precision);       
+        sprintf(buffer, format, 1 / (period * multiplier));
+        strcat(buffer, units.toUtf8().data());
+        return QString(buffer);
     }
 }
 
@@ -119,21 +119,24 @@ QString Ruler::format_time(double t, int prefix,
 { 
     const double multiplier = pow(10.0, -prefix * 3 - FirstSIPrefixPower + 6.0);
 
+    /*
 	QString s;
 	QTextStream ts(&s);
 	ts.setRealNumberPrecision(precision);
     ts << fixed << forcesign << (t  * multiplier) / 1000000.0 <<
 		SIPrefixes[prefix] << "s";
 	return s;
-
-    /*
-    char buf[20] = {0};
-    char format[10] = {0}; 
-    sprintf(format, "%%.%df%%s", precision);
-    QString prev = SIPrefixes[prefix] + "s";
-    sprintf(buf, format, (t  * multiplier) / 1000000.0, prev.toLatin1().data());
-    return QString(buf);  
     */
+
+    char buffer[20] = {0};
+    char format[10] = {0}; 
+    QString units = SIPrefixes[prefix] + "s";
+    double v = (t * multiplier) / 1000000.0;
+    buffer[0] = v >= 0 ? '+' : '-';
+    sprintf(format, "%%.%df", (int)precision);   
+    sprintf(buffer + 1, format, v);
+    strcat(buffer + 1, units.toUtf8().data());
+    return QString(buffer);
 }
 
 QString Ruler::format_time(double t)
