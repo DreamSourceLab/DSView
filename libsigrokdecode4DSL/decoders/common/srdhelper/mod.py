@@ -31,6 +31,20 @@ def bin2int(s: str):
 def bitpack(bits):
     return sum([b << i for i, b in enumerate(bits)])
 
+def bitpack_lsb(bits, idx=None):
+    '''Conversion from LSB first bit sequence to integer.'''
+    if idx is not None:
+        bits = [b[idx] for b in bits]
+    return bitpack(bits)
+
+def bitpack_msb(bits, idx=None):
+    '''Conversion from MSB first bit sequence to integer.'''
+    bits = bits[:]
+    if idx is not None:
+        bits = [b[idx] for b in bits]
+    bits.reverse()
+    return bitpack(bits)
+
 def bitunpack(num, minbits=0):
     res = []
     while num or minbits > 0:

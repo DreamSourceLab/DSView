@@ -29,7 +29,7 @@
 #include <QDir>
 #include <QTranslator>
 #include <QDesktopServices>
-#include <QStyle>
+#include <QStyle> 
 
 #include "dsapplication.h"
 #include "mystyle.h" 
@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
     QApplication::setOrganizationName("DreamSourceLab");
     QApplication::setOrganizationDomain("www.DreamSourceLab.com");
 
-	printf("\n-----------------version: %s-----------------\n\n", DS_VERSION_STRING);
+	qDebug()<<"\n----------------- version:"<<DS_VERSION_STRING<<"-----------------\n\n";
 
 #ifdef Q_OS_LINUX
 	// Use low version qt plugins, for able to debug

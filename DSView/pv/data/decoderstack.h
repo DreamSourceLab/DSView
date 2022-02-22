@@ -136,7 +136,7 @@ public:
     }
  
 	void begin_decode_work();
-    void do_decode_work();
+    
     void stop_decode_work();  
     int list_rows_size();
     bool options_changed();
@@ -153,7 +153,7 @@ private:
     void decode_data(const uint64_t decode_start, const uint64_t decode_end, srd_session *const session);
 	void decode_proc();
 	static void annotation_callback(srd_proto_data *pdata, void *decoder);
-
+    void do_decode_work();
   
 signals:
 	void new_decode_data();
