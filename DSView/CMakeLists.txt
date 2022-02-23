@@ -101,7 +101,7 @@ endif()
 find_package(Threads)
 
 find_package(PythonLibs 3 EXACT)
-find_package(Boost 1.42 COMPONENTS filesystem system thread REQUIRED)
+find_package(Boost 1.42 REQUIRED)
 find_package(libusb-1.0 REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(libzip REQUIRED)
