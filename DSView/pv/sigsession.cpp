@@ -1900,7 +1900,7 @@ void SigSession::set_stop_scale(float scale)
           }
 
           if (task->_delete_flag){
-             qDebug()<<"desroy a decoder in task thread";
+             qDebug()<<"destroy a decoder in task thread";
 
              DESTROY_QT_LATER(task);
              std::this_thread::sleep_for(std::chrono::milliseconds(100));

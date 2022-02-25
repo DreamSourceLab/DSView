@@ -468,6 +468,7 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
     uint64_t last_cnt = 0;
     uint64_t notify_cnt = (decode_end - decode_start + 1)/100;
     srd_decoder_inst *logic_di = NULL;
+
     // find the first level decoder instant
     for (GSList *d = session->di_list; d; d = d->next) {
         srd_decoder_inst *di = (srd_decoder_inst *)d->data;
@@ -479,6 +480,8 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
         }
     }
 
+    assert(logic_di);
+
     uint64_t entry_cnt = 0;
     uint64_t i = decode_start;
     char *error = NULL; 
@@ -487,12 +490,8 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
         qDebug()<<"decode data index have been end:"<<i;
     }
 
-    while(i < decode_end && !_no_memory)
-    {    
-        if (status->m_bStop){
-            break;
-        }        
-
+    while(i < decode_end && !_no_memory && !status->m_bStop)
+    {
         std::vector<const uint8_t *> chunk;
         std::vector<uint8_t> chunk_const;
         uint64_t chunk_end = decode_end;

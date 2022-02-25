@@ -52,24 +52,55 @@
 #include "../config/appconfig.h"
 #include "../data/decode/decoderstatus.h"
 
+#define PROTOCOL_FIND_TITLE  "Protocol search..."
+
 using namespace std;
+
+//--------------------------class KeywordLineEdit
+
+KeywordLineEdit::KeywordLineEdit(QComboBox *comboBox)
+:QLineEdit()
+{
+    assert(comboBox);
+    _comboBox = comboBox;
+}
+
+
+ void KeywordLineEdit::focusInEvent(QFocusEvent *e)
+ {
+     QLineEdit::focusInEvent(e);
+     QString key(PROTOCOL_FIND_TITLE);
+     if (this->text() == key){
+         this->setText("");
+     }  
+ }
+
+void KeywordLineEdit::focusOutEvent(QFocusEvent *e)
+ {
+      QLineEdit::focusOutEvent(e);
+
+      if (this->text() == ""){
+         this->setText(PROTOCOL_FIND_TITLE);
+      } 
+ }
+
+//----------------------------------------------------------
  
 namespace pv {
 namespace dock {
    
 ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *session) :
     QScrollArea(parent),
-    _session(session),
-    _view(view),
-    _cur_search_index(-1),
-    _search_edited(false),
-    _searching(false),
-    _add_silent(false)
+    _view(view)
 {
+    _session = session;
+    _cur_search_index = -1;
+    _search_edited = false;
+    _searching = false;
+    _add_silent = false; 
+
     _up_widget = new QWidget(this);
-
-    QHBoxLayout *hori_layout = new QHBoxLayout();
-
+ 
     _add_button = new QPushButton(_up_widget);
     _add_button->setFlat(true);
     _del_all_button = new QPushButton(_up_widget);
@@ -78,6 +109,7 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
 
     _protocol_combobox = new DsComboBox(_up_widget);
     _protocol_combobox->setEditable(true);
+    _protocol_combobox->setLineEdit(new KeywordLineEdit(_protocol_combobox));
     _protocol_combobox->setCompleter(NULL);
 
     GSList *l = g_slist_sort(g_slist_copy((GSList*)srd_decoder_list()), decoder_name_cmp);
@@ -120,6 +152,8 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     for (auto info : _decoderInfoList){
          _protocol_combobox->addItem(QString::fromUtf8(info->Name), QVariant::fromValue(info->Index));
     }
+    _protocol_combobox->setCurrentIndex(-1);
+    _protocol_combobox->lineEdit()->setText(PROTOCOL_FIND_TITLE);
 
     if (repeatNammes != ""){
         QString err = "Any protocol have repeated id or name: ";
@@ -127,12 +161,14 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
         MsgBox::Show("error", err.toUtf8().data());
     }
 
+    _up_layout = new QVBoxLayout();
+
+    QHBoxLayout *hori_layout = new QHBoxLayout();
     hori_layout->addWidget(_add_button);
     hori_layout->addWidget(_del_all_button);
     hori_layout->addWidget(_protocol_combobox);
     hori_layout->addStretch(1);
- 
-    _up_layout = new QVBoxLayout();
+  
     _up_layout->addLayout(hori_layout);
     _up_layout->addStretch(1);
 
@@ -215,6 +251,12 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     _split_widget->setObjectName("protocolWidget");
 
     retranslateUi(); 
+
+    _key_find_timer.SetCallback(std::bind(&ProtocolDock::show_protocol_list_panel, this));
+     //when porotocol list panel was showPopup statu, receive key press event
+     QWidget *popup1 = _protocol_combobox->findChild<QFrame*>();
+     QWidget *wid1 = popup1->findChild<QWidget*>();
+     wid1->installEventFilter(this);
 
     connect(_dn_nav_button, SIGNAL(clicked()),this, SLOT(nav_table_view()));
     connect(_dn_save_button, SIGNAL(clicked()),this, SLOT(export_table_view()));
@@ -857,7 +899,24 @@ void ProtocolDock::on_decoder_name_edited(const QString &value)
     
     _protocol_combobox->setCurrentIndex(-1);
     _protocol_combobox->lineEdit()->setText(value);
+
+    if (_key_find_timer.IsActived() == false){
+        //check input keep time
+        _key_find_timer.Start(100);
+    }
+    else{
+        _key_find_timer.ResetActiveTime();
+    }
 }
+
+ void ProtocolDock::show_protocol_list_panel()
+ {  
+     //press key end, to popup list panel
+     if (_key_find_timer.GetActiveTimeLong() >= 1000){
+         _key_find_timer.Stop();
+         _protocol_combobox->showPopup();
+     }    
+ }
 
 bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const DecoderInfoItem *o2)
 {
@@ -889,6 +948,17 @@ bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const Decod
         return true;
 
     return true;
+}
+
+bool ProtocolDock::eventFilter(QObject *object, QEvent *event)
+{
+    if ( event->type() == QEvent::KeyPress )
+    {  
+        if (_protocol_combobox->IsPopup()){
+            _protocol_combobox->hidePopup();
+        }
+    }
+    return false;
 }
 
  

@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
     QApplication::setOrganizationName("DreamSourceLab");
     QApplication::setOrganizationDomain("www.DreamSourceLab.com");
 
-	qDebug()<<"\n----------------- version:"<<DS_VERSION_STRING<<"-----------------\n\n";
+	qDebug()<<"\n----------------- version:"<<DS_VERSION_STRING<<"-----------------\n";
 
 #ifdef Q_OS_LINUX
 	// Use low version qt plugins, for able to debug

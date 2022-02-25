@@ -36,6 +36,7 @@
 #include <QTableView>
 #include <QSortFilterProxyModel>
 #include <QLineEdit>
+#include <QFocusEvent>
 
 #include <vector>
 #include <mutex>
@@ -52,6 +53,21 @@ struct DecoderInfoItem{
     char    Id[DECODER_NAME_LEN];
     int     Index;
     void    *ObjectHandle; //srd_decoder* type
+};
+
+class KeywordLineEdit : public QLineEdit
+ {
+    Q_OBJECT
+
+public:
+    KeywordLineEdit(QComboBox *comboBox);
+
+protected:
+    void focusInEvent(QFocusEvent *e) override;
+    void focusOutEvent(QFocusEvent *e) override;
+
+private:
+    QComboBox   *_comboBox;  
 };
 
 namespace pv {
@@ -124,6 +140,8 @@ private:
     static int decoder_name_cmp(const void *a, const void *b);
     void resize_table_view(data::DecoderModel *decoder_model);
     static bool protocol_sort_callback(const DecoderInfoItem *o1, const DecoderInfoItem *o2);
+    void show_protocol_list_panel();
+    bool eventFilter(QObject *object, QEvent *event);
 
 private:
     SigSession *_session;
@@ -162,6 +180,7 @@ private:
     bool _searching;
 
     bool _add_silent;
+    DsTimer _key_find_timer;
 };
 
 } // namespace dock

@@ -4,7 +4,7 @@
  * DSView is based on PulseView.
  *
  * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
+ * Copyright (C) 2022 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #define DSCOMBOBOX_H
 
 #include <QComboBox>
+#include <QKeyEvent>
 
 class DsComboBox : public QComboBox
 {
@@ -35,11 +36,18 @@ public:
 
     void addItem(const QString &atext, const QVariant &userData = QVariant());
 
-protected:
-    void showPopup();
+public:
+    void showPopup() override;
+
+    void hidePopup() override;
+
+    inline bool  IsPopup(){
+        return _bPopup;
+    } 
 
 private:
-    int _contentWidth;
+    int     _contentWidth;
+    bool    _bPopup;
 };
 
 

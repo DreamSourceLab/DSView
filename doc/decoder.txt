@@ -26,4 +26,5 @@ c can call's method of python:
 	5.printlog //print log to console, param type is string
 
 	
+decode函数返回任意值，则表示解析任务终止
 

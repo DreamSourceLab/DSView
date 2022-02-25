@@ -5,12 +5,17 @@
 #include <QObject>
 #include <functional>
 #include <QTimer>
+#include <chrono>
+
+using std::chrono::high_resolution_clock;
+using std::chrono::milliseconds;
 
 typedef std::function<void()> CALLBACL_FUNC;
 
-class DsTimer : public QObject
+
+class DsTimer : protected QObject
 {
-    Q_OBJECT
+     Q_OBJECT
 
 public:
     DsTimer();
@@ -25,13 +30,23 @@ public:
 
     void Stop(); 
 
+    inline bool IsActived(){
+        return _isActived;
+    }
+
+    long long GetActiveTimeLong();
+
+    void ResetActiveTime();
+
 private slots:
     void on_timeout();
 
-private:
-    CALLBACL_FUNC   _call;
+private:    
     QTimer          _timer;
     bool            _binded;
+    bool            _isActived;
+    high_resolution_clock::time_point _beginTime;
+    CALLBACL_FUNC   _call;
 };
 
 #endif
