@@ -113,7 +113,7 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     _protocol_combobox->setCompleter(NULL);
 
     GSList *l = g_slist_sort(g_slist_copy((GSList*)srd_decoder_list()), decoder_name_cmp);
-    int protocol_index = 0;
+
     std::map<std::string, int> pro_key_table;
     QString repeatNammes;
 
@@ -127,9 +127,8 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
             DecoderInfoItem *info = new DecoderInfoItem();
             strncpy(info->Name, d->name, DECODER_NAME_LEN-1);
             strncpy(info->Id, d->id, DECODER_NAME_LEN-1);
-            info->Index = protocol_index;
-            info->ObjectHandle = l->data;
-            protocol_index++;
+          
+            info->ObjectHandle = l->data;           
 
             _decoderInfoList.push_back(info);  
 
@@ -145,11 +144,14 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
         }
     }
     g_slist_free(l);
-
+ 
     //sort protocol list
     sort(_decoderInfoList.begin(), _decoderInfoList.end(), ProtocolDock::protocol_sort_callback);
 
+    int protocol_index = 0;
     for (auto info : _decoderInfoList){
+         info->Index = protocol_index;
+         protocol_index++;
          _protocol_combobox->addItem(QString::fromUtf8(info->Name), QVariant::fromValue(info->Index));
     }
     _protocol_combobox->setCurrentIndex(-1);

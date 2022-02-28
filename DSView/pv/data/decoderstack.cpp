@@ -444,7 +444,7 @@ void DecoderStack::do_decode_work()
     if (_samplerate == 0.0)
         return;
      
-    decode_proc();   
+    execute_decode_stack();   
 }
 
 uint64_t DecoderStack::get_max_sample_count()
@@ -552,7 +552,7 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
         decode_done();
 }
 
-void DecoderStack::decode_proc()
+void DecoderStack::execute_decode_stack()
 {  
 	srd_session *session;
 	srd_decoder_inst *prev_di = NULL;
@@ -562,6 +562,8 @@ void DecoderStack::decode_proc()
 	assert(_snapshot);
 
 	// Create the session
+    // one decoderstatck onwer one session
+    // all decoderstatck execute in sequence
 	srd_session_new(&session);
 
 	assert(session);

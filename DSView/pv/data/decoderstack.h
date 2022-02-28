@@ -155,7 +155,7 @@ public:
 
 private:
     void decode_data(const uint64_t decode_start, const uint64_t decode_end, srd_session *const session);
-	void decode_proc();
+	void execute_decode_stack();
 	static void annotation_callback(srd_proto_data *pdata, void *decoder);
     void do_decode_work();
   
