@@ -204,6 +204,7 @@ void StoreSession::save_proc(shared_ptr<data::Snapshot> snapshot)
 {
 	assert(snapshot);
 
+    std::vector<std::vector<uint8_t>> empty_chunks;
     int ret = SR_ERR;
     int num = 0;
     shared_ptr<data::LogicSnapshot> logic_snapshot;
@@ -248,13 +249,8 @@ void StoreSession::save_proc(shared_ptr<data::Snapshot> snapshot)
                     uint64_t size = logic_snapshot->get_block_size(i);
                     bool need_malloc = (buf == NULL);
                     if (need_malloc) {
-                        buf = (uint8_t *)malloc(size);
-                        if (buf == NULL) {
-                            _has_error = true;
-                            _error = tr("Failed to create zip file. Malloc error.");
-                        } else {
-                            memset(buf, sample ? 0xff : 0x0, size);
-                        }
+			empty_chunks.emplace_back(std::vector<uint8_t>(size,sample ? 0xff : 0x0));
+                        buf = empty_chunks.back().data();
                     }
                     ret = sr_session_append(zipfile, _file_name.toUtf8().data(), buf, size,
                                       i, ch_index, ch_type, File_Version);
@@ -269,8 +265,6 @@ void StoreSession::save_proc(shared_ptr<data::Snapshot> snapshot)
                         return;
                     }
                     _units_stored += size;
-                    if (need_malloc)
-                        free(buf);
                     progress_updated();
                 }
             }
