@@ -48,7 +48,7 @@
 #define SRD_PACKAGE_VERSION_MICRO 0
 
 /** The libsigrokdecode package version ("major.minor.micro") as string. */
-#define SRD_PACKAGE_VERSION_STRING "0.6.0-git-936f99c"
+#define SRD_PACKAGE_VERSION_STRING "0.6.0-git-3914467"
 
 /*
  * Library/libtool version macros (can be used for conditional compilation).

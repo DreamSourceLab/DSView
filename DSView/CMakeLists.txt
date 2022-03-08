@@ -24,10 +24,9 @@ cmake_minimum_required(VERSION 2.8.6)
 include(FindPkgConfig)
 include(GNUInstallDirs)
 
+
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake")
 
-#SET(CMAKE_C_FLAGS_RELEASE "-g -DNDEBUG -O3")
-#SET(CMAKE_CXX_FLAGS_RELEASE "-g -DNDEBUG -O3")
 
 set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_BUILD_TYPE Release)
@@ -67,17 +66,24 @@ endif()
 #= Dependencies
 #-------------------------------------------------------------------------------
 
+
 list(APPEND PKGDEPS
-	"libsigrok4DSL >= 0.2.0"
-	"libusb-1.0 >= 1.0.16"
 	"libzip >= 0.10"
+	#"libsigrok4DSL >= 0.2.0"
+	"libusb-1.0 >= 1.0.16"
 )
 if(ENABLE_DECODE)
-	list(APPEND PKGDEPS "libsigrokdecode4DSL>=0.4.0")
+	#list(APPEND PKGDEPS "libsigrokdecode4DSL>=0.4.0")
 endif()
 
 find_package(PkgConfig)
 pkg_check_modules(PKGDEPS REQUIRED ${PKGDEPS})
+pkg_search_module(GLIB REQUIRED glib-2.0)
+
+MESSAGE(STATUS "glib-2.0 include:" ${GLIB_INCLUDE_DIRS})
+MESSAGE(STATUS "glib-2.0 lib:" ${GLIB_LIBRARIES})
+include_directories(${GLIB_INCLUDE_DIRS})
+link_directories(${GLIB_LIBRARIES_DIRS})
 
 if(FORCE_QT4)
 	set(Qt5Core_FOUND FALSE)
@@ -106,6 +112,8 @@ find_package(libusb-1.0 REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(libzip REQUIRED)
 find_package(FFTW REQUIRED)
+find_package(libsigrok4DSL REQUIRED)
+find_package(libsigrokdecode4DSL REQUIRED)
 
   
 #===============================================================================
@@ -119,7 +127,7 @@ set(DS_VERSION_MAJOR 1)
 set(DS_VERSION_MINOR 2)
 set(DS_VERSION_MICRO 0)
 set(DS_VERSION_STRING
-	${DS_VERSION_MAJOR}.${DS_VERSION_MINOR}.${DS_VERSION_MICRO}-RC5
+	${DS_VERSION_MAJOR}.${DS_VERSION_MINOR}.${DS_VERSION_MICRO}-RC5.1
 )
 
 configure_file (
@@ -448,8 +456,12 @@ if(WIN32)
 set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "-mwindows")
 endif()
 
-target_link_libraries(DSView -lz)
-
+target_link_libraries(${PROJECT_NAME} -lz)
+target_link_libraries(${PROJECT_NAME} ${GLIB_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${LIBSIGROK4DSL_LIBRARY})
+target_link_libraries(${PROJECT_NAME} ${LIBSIGROKDECODE4DSL_LIBRARY})
+target_link_libraries(${PROJECT_NAME} ${LIBUSB_1_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${PYTHON_LIBRARIES})
 
 if(ENABLE_COTIRE)
 	include(cotire)

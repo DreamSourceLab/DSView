@@ -494,6 +494,8 @@ SRD_PRIV int py_strseq_to_char(PyObject *py_strseq, char ***out_strv)
 	ssize_t seq_len, i;
 	PyGILState_STATE gstate;
 	int ret = SRD_ERR_PYTHON;
+	int lv = 0;
+	char dec_buf[15];
 
 	gstate = PyGILState_Ensure();
 
@@ -522,19 +524,28 @@ SRD_PRIV int py_strseq_to_char(PyObject *py_strseq, char ***out_strv)
 		if (!py_item)
 			goto err;
 
-		if (!PyUnicode_Check(py_item)) {
+		if (PyUnicode_Check(py_item))
+		{
+			py_bytes = PyUnicode_AsUTF8String(py_item);
+			Py_DECREF(py_item);
+			if (!py_bytes)
+				goto err;
+
+			str = g_strdup(PyBytes_AsString(py_bytes));
+			Py_DECREF(py_bytes);
+			if (!str)
+				goto err;
+		}
+		else if (PyLong_Check(py_item))
+		{
+			lv = PyLong_AsLong(py_item);
+			sprintf(dec_buf, "%d", lv);
+			str = g_strdup(dec_buf);
+		}
+		else{
 			Py_DECREF(py_item);
 			goto err;
 		}
-		py_bytes = PyUnicode_AsUTF8String(py_item);
-		Py_DECREF(py_item);
-		if (!py_bytes)
-			goto err;
-
-		str = g_strdup(PyBytes_AsString(py_bytes));
-		Py_DECREF(py_bytes);
-		if (!str)
-			goto err;
 
 		strv[i] = str;
 	}
