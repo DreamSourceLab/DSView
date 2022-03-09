@@ -24,9 +24,7 @@ cmake_minimum_required(VERSION 2.8.6)
 include(FindPkgConfig)
 include(GNUInstallDirs)
 
-
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake")
-
 
 set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_BUILD_TYPE Release)
@@ -78,21 +76,27 @@ endif()
 
 find_package(PkgConfig)
 pkg_check_modules(PKGDEPS REQUIRED ${PKGDEPS})
-pkg_search_module(GLIB REQUIRED glib-2.0)
 
-MESSAGE(STATUS "glib-2.0 include:" ${GLIB_INCLUDE_DIRS})
-MESSAGE(STATUS "glib-2.0 lib:" ${GLIB_LIBRARIES})
+pkg_search_module(GLIB REQUIRED glib-2.0)
+message("-- glib-2.0:")
+MESSAGE(STATUS "	- includes:" ${GLIB_INCLUDE_DIRS})
+MESSAGE(STATUS "	- libraries:" ${GLIB_LIBRARIES})
 include_directories(${GLIB_INCLUDE_DIRS})
 link_directories(${GLIB_LIBRARIES_DIRS})
 
 if(FORCE_QT4)
 	set(Qt5Core_FOUND FALSE)
+	message("- Set qt5core fond flase")
 else()
+	#=============
+	# try to find qt5 package
+	#=============
 	find_package(Qt5Core QUIET)
 endif()
 
 if(Qt5Core_FOUND)
-	message("-- Using Qt5")
+	message("-- Using Qt5:")
+	message("	- includes:${Qt5Core_INCLUDE_DIRS}")
 	find_package(Qt5Widgets REQUIRED)
 	find_package(Qt5Gui REQUIRED)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
@@ -100,6 +104,7 @@ if(Qt5Core_FOUND)
 	set(QT_LIBRARIES Qt5::Gui Qt5::Widgets)
 	add_definitions(${Qt5Gui_DEFINITIONS} ${Qt5Widgets_DEFINITIONS})
 else()
+	message(WARNING "-- Have not fond qt5 core, please install it!")
 	find_program(QT_QMAKE_EXECUTABLE NAMES qmake4 qmake-qt4 qmake-mac)
 	find_package(Qt4 REQUIRED)
 endif()
@@ -462,6 +467,7 @@ target_link_libraries(${PROJECT_NAME} ${LIBSIGROK4DSL_LIBRARY})
 target_link_libraries(${PROJECT_NAME} ${LIBSIGROKDECODE4DSL_LIBRARY})
 target_link_libraries(${PROJECT_NAME} ${LIBUSB_1_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} ${PYTHON_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${FFTW_LIBRARYS})
 
 if(ENABLE_COTIRE)
 	include(cotire)

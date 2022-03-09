@@ -3,16 +3,42 @@
 #LIBSIGROK4DSL
 
 
-FIND_PATH(LIBSIGROK4DSL_INCLUDE_DIR libsigrok4DSL/libsigrok.h 
-		/usr/local/include/
-		/usr/include/)
+FIND_PATH(LIBSIGROK4DSL_INCLUDE_DIR
+		NAMES
+			libsigrok.h
+			
+		PATHS
+			/usr/local/include
+			/usr/include
+			
+		PATH_SUFFIXES
+			libsigrok4DSL
+		 )
 	
-
-FIND_LIBRARY(LIBSIGROK4DSL_LIBRARY libsigrok4DSL.a 
-		/usr/local/lib/
-		/usr/lib/)
+FIND_LIBRARY(LIBSIGROK4DSL_LIBRARY
+		NAMES
+			sigrok4DSL
+			
+		PATHS
+			/usr/local/lib
+			/usr/lib
+			
+		PATH_SUFFIXES
+			libsigrok4DSL
+		)
 		
 if (LIBSIGROK4DSL_INCLUDE_DIR AND LIBSIGROK4DSL_LIBRARY)
-	set (LIBSIGROK4DSL_FOUND TRUE)
-	message("set LIBSIGROK4DSL_FOUND true")
+	  set (LIBSIGROK4DSL_FOUND TRUE)
+	 
+	  set(LIBSIGROK4DSL_INCLUDE_DIRS
+			${LIBSIGROK4DSL_INCLUDE_DIR}
+		)
+		
+	  set(LIBSIGROK4DSL_LIBRARYS
+			${LIBSIGROK4DSL_LIBRARY}
+		)
+    
+	  message(STATUS "Found libsigrok4DSL:")
+	  message(STATUS "	- includes: ${LIBSIGROK4DSL_INCLUDE_DIR}")
+	  message(STATUS "	- libraries: ${LIBSIGROK4DSL_LIBRARY}") 
 endif(LIBSIGROK4DSL_INCLUDE_DIR AND LIBSIGROK4DSL_LIBRARY)
