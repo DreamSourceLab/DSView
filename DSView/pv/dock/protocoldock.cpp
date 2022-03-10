@@ -894,7 +894,10 @@ void ProtocolDock::on_decoder_name_edited(const QString &value)
 
     for (auto &info: _decoderInfoList){
         QString name(info->Name);
-        if (value == "" || name.indexOf(value, 0, Qt::CaseInsensitive) != -1){
+        QString id(info->Id);
+        if (value == "" 
+        || name.indexOf(value, 0, Qt::CaseInsensitive) != -1 
+        || id.indexOf(value, 0, Qt::CaseInsensitive) != -1 ){
             _protocol_combobox->addItem(QString::fromUtf8(info->Name), QVariant::fromValue(info->Index));
         }
     } 
