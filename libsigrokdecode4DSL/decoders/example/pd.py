@@ -30,12 +30,13 @@
 ## text block fill color table:
 ##  [#EF2929,#F66A32,#FCAE3E,#FBCA47,#FCE94F,#CDF040,#8AE234,#4EDC44,#55D795,#64D1D2
 ##  ,#729FCF,#D476C4,#9D79B9,#AD7FA8,#C2629B,#D7476F]
-
+ 
 ## 导出核心模块类
 import sigrokdecode as srd
 
-## 本协议模块具体代码
+## 本协议模块类
 class Decoder(srd.Decoder):
+    ## 必须的
     api_version = 3
 
     ## 协议标识，必须唯一
@@ -70,7 +71,7 @@ class Decoder(srd.Decoder):
 
     ## 必须要绑定的通道定义，将在界面上可见
     ## id:通道标识, 任意命名
-    ## type:类型，根据需要设置一个值
+    ## type:类型，根据需要设置一个值, -1:COMMON,0:SCLK,1:SDATA,2:ADATA
     ## name:标签名
     ## desc:该通道的说明
     channels = (
@@ -88,14 +89,13 @@ class Decoder(srd.Decoder):
         {'id': 'mode', 'desc': 'work mode', 'default': 'up','values': ('up','low')},
      )
 
-    ##　解析结果定义
+    ##　解析结果项定义
     #＃ annotations里的每一项可以有2到3个属性，当有３个属性时，第一个表示类型
     ##  类型对应0-16个颜色，当类型范围在200-299时，将绘制边沿箭头
-
     annotations = (
-        (100, 'test-data1', 'example test data1'),
-        (201, 'test-data2', 'example test data2'), 
-        (1, 'test-data3', 'example test data3'), 
+        ('1', 'test-data1', 'example test data1'),
+        ('2', 'test-data2', 'example test data2'), 
+        ('222', 'test-data3', 'example test data3'), 
     )
 
     ## 解析结果的行定义
@@ -122,24 +122,20 @@ class Decoder(srd.Decoder):
     ## 定义一个输出函数
     ## a,b为采样起点和终点, value为要输出的数值
     def put_row1(self, a, b, value):
-        #'@%02X', 前边加@是告诉底层模块这是一个数值数据，显示格式可转化为hex/oct/bin/acii/dec
+        # '@%02X', 前边加@是告诉底层模块这是一个数值数据，显示格式可转化为hex/oct/bin/acii/dec
         # {$}是占位符,内容由数值部分填充
         # @特殊符号和{$}占位符的特性，只有DSView版本在1.2.0以上才支持
-        # []描述输出内容，第一个元素表示annotation序号,annotation的行号由annotation_row决定
-        self.put(a, b, self.out_ann, [0, ['{$}', '@%02X' % value]])
+        # []描述输出内容，第一个元素表示annotation序号,annotation的输出在哪一行由annotation_rows集合定决定
+        self.put(a, b, self.out_ann, [0, ['r1:{$}', '@%02X' % value]])
     
     def put_row2(self, a, b, value):
-        self.put(a, b, self.out_ann, [1, ['{$}', '@%02X' % value]])
-
-    def put_row3(self, a, b, value):
-        self.put(a, b, self.out_ann, [2, ['row3']])
+        self.put(a, b, self.out_ann, [2, ['r2:{$}', '@%02X' % value]])
+ 
 
     ## 触发解析工作
     def decode(self):
-        step = 0
         times = 0
         lst_dex = self.samplenum
-        b_f = False
         flag_arr = [{0:'r'}, {0:'f'}]
         flag_dex = 0
 
@@ -151,14 +147,12 @@ class Decoder(srd.Decoder):
            
            (a,b) = self.wait(flag_arr[flag_dex])
            
-           if b_f == False:
-               b_f = True
+           if flag_dex == 0:
                flag_dex = 1
                lst_dex = self.samplenum
            else:
                 flag_dex = 0
-                b_f = False
-                times += 1  
+                times += 1
                 if times % 2 == 0:
                     self.put_row1(lst_dex, self.samplenum, self.samplenum -  lst_dex)
                 else:
@@ -171,4 +165,3 @@ class Decoder(srd.Decoder):
            # h:高电平，l:低电平，r:上边沿，f:下边沿，e:上沿或下沿, n:要么０，要么１
            # (a,b) = self.wait([{0:'f'}])
   
-           step += 1
