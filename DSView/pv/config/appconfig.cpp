@@ -328,6 +328,10 @@ QString GetAppDataDir()
     {
          return dir.absolutePath();        
     }
+    QDir dir1("/usr/local/share/DSView");
+    if (dir1.exists()){
+        return dir1.absolutePath();
+    }
     qDebug() << "dir is not exists:" <<"../share/DSView";
     assert(false);   
 #else
