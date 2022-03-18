@@ -69,7 +69,7 @@ class Decoder(srd.Decoder):
     def reset(self):
         self.illegal_bus = 0
         self.samplenum = -1
-        self.clause45_addr = -1 # Clause 45 is context sensitive.
+        self.clause45_addr = -1 # Clause 45 is context sensitive.       
         self.reset_decoder_state()
 
     def start(self):
@@ -141,6 +141,7 @@ class Decoder(srd.Decoder):
         self.data = -1
         self.data_bits = 16
         self.state = 'PRE'
+        self.is_read = True 
 
     def state_PRE(self, mdio):
         if self.illegal_bus:
@@ -225,16 +226,22 @@ class Decoder(srd.Decoder):
                     op = ['OP: ADDR', 'OP: A']
                 elif self.opcode == 1:
                     op = ['OP: WRITE', 'OP: W']
+                    self.is_read = False
                 elif self.opcode == 2:
                     op = ['OP: READINC', 'OP: RI']
+                    self.is_read = True              
                 elif self.opcode == 3:
                     op = ['OP: READ', 'OP: R']
+                    self.is_read = True
             else:
                 op = ['OP: READ', 'OP: R'] if self.opcode else ['OP: WRITE', 'OP: W']
+                self.is_read = True if self.opcode else False
+
             self.putff([2, op + ['OP', 'O']])
             if self.op_invalid:
                 self.putff([4, ['OP %s' % self.op_invalid, 'OP', 'O']])
             self.ss_frame_field = self.samplenum
+
         self.portad_bits -= 1
         self.portad |= mdio << self.portad_bits
         if not self.portad_bits:
@@ -321,7 +328,15 @@ class Decoder(srd.Decoder):
         self.process_state(self.state, mdio)
 
     def decode(self):
+        find_flags = [{0: 'r'}, {0: 'f'}]
+        flag_dex = 0 
+
         while True:
             # Process pin state upon rising MDC edge.
-            (mdc, mdio) = self.wait({0: 'r'})
+            (mdc, mdio) = self.wait(find_flags[flag_dex])
             self.handle_bit(mdio)
+        
+            if self.state == 'DATA' and self.is_read: 
+                flag_dex = 1
+            else:
+                flag_dex = 0
