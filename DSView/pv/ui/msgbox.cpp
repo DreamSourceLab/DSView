@@ -1,9 +1,8 @@
 /*
  * This file is part of the DSView project.
  * DSView is based on PulseView.
- *
- * Copyright (C) 2012 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2013 DreamSourceLab <support@dreamsourcelab.com>
+ * 
+ * Copyright (C) 2021 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +18,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
+
 #include "msgbox.h"
 #include "../dialogs/dsmessagebox.h"
 #include <assert.h>

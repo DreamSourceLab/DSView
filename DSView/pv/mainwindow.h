@@ -73,7 +73,7 @@ using namespace pv::device;
  
 //The mainwindow,referenced by MainFrame
 //TODO: create graph view,toolbar,and show device list
-class MainWindow : public QMainWindow, public ISessionCallback, public IMainForm, ISessionDataGetter
+class MainWindow : public QMainWindow, public ISessionCallback, public IMainForm, public ISessionDataGetter
 {
 	Q_OBJECT
 

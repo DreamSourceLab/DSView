@@ -1,5 +1,6 @@
 /*
  * This file is part of the PulseView project.
+ * DSView is based on PulseView.
  *
  * Copyright (C) 2014 Joel Holdsworth <joel@airwebreathe.org.uk>
  * Copyright (C) 2016 DreamSourceLab <support@dreamsourcelab.com>

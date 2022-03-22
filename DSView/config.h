@@ -1,6 +1,7 @@
 /*
  * This file is part of the PulseView project.
- *
+ * DSView is based on PulseView.
+ * 
  * Copyright (C) 2012 Alexandru Gagniuc <mr.nuke.me@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
