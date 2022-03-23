@@ -29,7 +29,7 @@
 #define LAN_CN  25
 #define LAN_EN  31
 
-#define DARK_STYLE  "dark"
+//#define DARK_STYLE  "dark"
   
 //--------------------api---
 

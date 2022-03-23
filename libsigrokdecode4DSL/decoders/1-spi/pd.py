@@ -289,10 +289,10 @@ class Decoder(srd.Decoder):
                 elif self.ss_transfer != -1:
                     if self.have_miso:
                         self.put(self.ss_transfer, self.samplenum, self.out_ann,
-                            [5, [' '.join('@' + format(x.val, '02X') for x in self.misobytes)]])
+                            [5, ['@' + ' '.join(format(x.val, '02X') for x in self.misobytes)]])
                     if self.have_mosi:
                         self.put(self.ss_transfer, self.samplenum, self.out_ann,
-                            [6, [' '.join('@' + format(x.val, '02X') for x in self.mosibytes)]])
+                            [6, ['@' + ' '.join(format(x.val, '02X') for x in self.mosibytes)]])
                     self.put(self.ss_transfer, self.samplenum, self.out_python,
                         ['TRANSFER', self.mosibytes, self.misobytes])
 

@@ -1046,11 +1046,13 @@ static gpointer di_thread(gpointer data)
 	struct srd_decoder_inst *di;
 	int wanted_term;
 	PyGILState_STATE gstate;
+	char ** error_buffer = NULL;
 
 	if (!data)
 		return NULL;
 
 	di = data;
+	error_buffer = di->error_buffer;
 
 	srd_dbg("%s: Starting thread routine for decoder.", di->inst_id);
 
@@ -1093,7 +1095,7 @@ static gpointer di_thread(gpointer data)
 		 * Silently ignore errors upon return from decode() calls
 		 * when termination was requested. Terminate the thread
 		 * which executed this instance's decode() logic.
-		 */
+		 */ 
 		srd_dbg("%s: Thread done (!res, want_term).", di->inst_id);
 		PyErr_Clear();
 		PyGILState_Release(gstate);
@@ -1221,6 +1223,7 @@ SRD_PRIV int srd_inst_decode(struct srd_decoder_inst *di,
 	if (!di->thread_handle) {
 		srd_dbg("No worker thread for this decoder stack "
 			"exists yet, creating one: %s.", di->inst_id);
+		di->error_buffer = error;
 		di->thread_handle = g_thread_new(di->inst_id,
 						 di_thread, di);
 	}

@@ -80,7 +80,7 @@ DecoderStack::~DecoderStack()
     //release source
     for (auto &kv : _rows)
     {
-        kv.second->clear();
+        kv.second->clear(); //destory all annotations
         delete kv.second;
     }
     _rows.clear();
@@ -127,7 +127,8 @@ void DecoderStack::build_row()
 {
     //release source
     for (auto &kv : _rows)
-    {
+    {   
+        kv.second->clear(); //destory all annotations
         delete kv.second;
     }
     _rows.clear();
@@ -138,6 +139,8 @@ void DecoderStack::build_row()
         assert(dec);
         const srd_decoder *const decc = dec->decoder();
         assert(dec->decoder());
+
+        dec->reset_start();
 
         // Add a row for the decoder if it doesn't have a row list
         if (!decc->annotation_rows) {
@@ -378,6 +381,7 @@ void DecoderStack::begin_decode_work()
 {
      assert(_decode_state == Stopped);
 
+     _error_message = "";
      _decode_state = Running;
       do_decode_work();
      _decode_state = Stopped;
@@ -571,8 +575,9 @@ void DecoderStack::execute_decode_stack()
     
     // Get the intial sample count
     _sample_count = _snapshot->get_sample_count();
- 
 
+    qDebug()<<"decoder sample count:"<<_sample_count;
+ 
     // Create the decoders
     for(auto &dec : _stack)
 	{

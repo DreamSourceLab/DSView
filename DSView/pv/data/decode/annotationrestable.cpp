@@ -21,6 +21,7 @@
 
 #include "annotationrestable.h"
 #include <assert.h>
+#include <stdlib.h>
 #include "../../dsvdef.h"
  
 const char g_bin_cvt_table[] = "0000000100100011010001010110011110001001101010111100110111101111";
@@ -127,10 +128,8 @@ AnnotationSourceItem* AnnotationResTable::GetItem(int index){
     return m_resourceTable[index];
 }
 
-const char* AnnotationResTable::format_numberic(const char *hex_str, int fmt)
-{
-    assert(hex_str);
- 
+const char* AnnotationResTable::format_to_string(const char *hex_str, int fmt)
+{ 
     //flow, convert to oct\dec\bin format
 	 const char *data = hex_str;
 	 if (data[0] == 0 || fmt == DecoderDataFormat::hex){
@@ -206,6 +205,124 @@ const char* AnnotationResTable::format_numberic(const char *hex_str, int fmt)
 	 }
 
     return data;    
+}
+
+const char* AnnotationResTable::format_numberic(const char *hex_str, int fmt)
+{
+	 assert(hex_str);
+
+	 if (hex_str[0] == 0 || fmt == DecoderDataFormat::hex){
+		 return hex_str;
+	 }
+
+	 //check if have split letter
+	 const char *rd = hex_str;
+	 bool bMutil = false;
+	 char c = 0;
+
+	 while (*rd)
+	 {
+		 c = *rd;
+		 rd++;
+
+		 if (c >= '0' && c <= '9')
+		 {
+			 continue;
+		 }
+		 if (c >= 'A' && c <= 'F')
+		 {
+			 continue;
+		 }
+		 bMutil = true;
+		 break;
+	 }
+
+	 if (!bMutil){
+		 return format_to_string(hex_str, fmt);
+	 }
+
+	 //convert each sub string 
+	 char sub_buf[DECODER_MAX_DATA_BLOCK_LEN + 1];
+	 char *sub_wr = sub_buf;
+	 char *sub_end = sub_wr + DECODER_MAX_DATA_BLOCK_LEN;
+	 char *all_buf = g_all_buf;
+	 char *all_wr = all_buf;
+
+	 rd = hex_str; 
+
+	 while (*rd)
+	 {
+		  c = *rd;
+		  rd++;
+
+		  if (c >= '0' && c <= '9'){
+			  if (sub_wr == sub_end){
+				  printf("conver error,sub string length is too long!\n");
+				  return hex_str;
+			  }
+
+			  *sub_wr = c; //make sub string
+			  sub_wr++;
+			  continue;
+		  }
+		  
+		  if (c >= 'A' && c <= 'F'){
+			  if (sub_wr == sub_end){
+				  printf("convert error,sub string length is too long!\n");
+				  return hex_str;
+			  }
+
+			  *sub_wr = c;
+			  sub_wr++;
+			  continue;
+		  } 
+
+		  //convert sub string
+		  if (sub_wr != sub_buf){
+			  *sub_wr = 0;
+			  const char *sub_str = format_to_string(sub_buf, fmt);
+			  int sublen = strlen(sub_str);
+
+			  if ((all_wr - all_buf) + sublen >  CONVERT_STR_MAX_LEN){
+				printf("convert error,write buffer is full!\n");
+				return hex_str;
+			  }
+
+			  strncpy(all_wr, sub_str, sublen);
+			  all_wr += sublen;
+			  sub_wr = sub_buf; //reset write buffer
+		  }
+
+		  //the split letter
+		  if ((all_wr - all_buf) + 1 >  CONVERT_STR_MAX_LEN){
+				printf("convert error,write buffer is full!\n");
+				return hex_str;
+		  }
+
+		  *all_wr = c;
+		  all_wr++;
+	 }
+
+	  //convert the last sub string
+	 if (sub_wr != sub_buf)
+	 {
+		 *sub_wr = 0;
+		 const char *sub_str = format_to_string(sub_buf, fmt);
+		 int sublen = strlen(sub_str);
+
+		 if ((all_wr - all_buf) + sublen > CONVERT_STR_MAX_LEN)
+		 {
+			 printf("convert error,write buffer is full!\n");
+			 return hex_str;
+		 }
+
+		 strncpy(all_wr, sub_str, sublen);
+		 all_wr += sublen;		
+	 }
+
+	 *all_wr = 0;
+
+	 return all_buf;
 }
 
 void AnnotationResTable::reset()

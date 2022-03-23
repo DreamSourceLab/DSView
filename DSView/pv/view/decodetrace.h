@@ -203,15 +203,14 @@ signals:
 private slots:
 	void on_new_decode_data();  
 	void on_probe_selected(int);
-	void on_stack_decoder(srd_decoder *decoder);
+	void on_add_stack(srd_decoder *decoder);
     void on_del_stack(data::decode::Decoder *dec);
 
     void on_decode_done();
-    void on_region_set(int index);
-	void on_resize_decoder_panel();
+    void on_region_set(int index); 
 
 public:
-	volatile bool _delete_flag; //detroy it when deocde task end
+	volatile bool _delete_flag; //destroy it when deocde task end
 
 private:
 	pv::SigSession 			*_session;

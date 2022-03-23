@@ -327,6 +327,8 @@ struct srd_decoder_inst {
 	GCond got_new_samples_cond;
 	GCond handled_all_samples_cond;
 	GMutex data_mutex;
+
+	char **error_buffer;
 };
 
 struct srd_pd_output {

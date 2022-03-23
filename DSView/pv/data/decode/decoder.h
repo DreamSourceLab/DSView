@@ -83,6 +83,10 @@ public:
         return _decode_start;
     }
 
+    inline void reset_start(){
+        _decode_start = _decode_start_back;
+    }
+
     inline uint64_t decode_end(){
         return _decode_end;
     }

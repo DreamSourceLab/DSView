@@ -27,6 +27,7 @@
 #include <QString>
 
 #define DECODER_MAX_DATA_BLOCK_LEN 35
+#define CONVERT_STR_MAX_LEN 150
 
 struct AnnotationSourceItem
 {
@@ -56,9 +57,13 @@ class AnnotationResTable
        void reset();
 
     private:
+        const char* format_to_string(const char *hex_str, int fmt);
+
+    private:
         std::map<std::string, int>          m_indexs;
         std::vector<AnnotationSourceItem*>  m_resourceTable;
         char g_bin_format_tmp_buffer[DECODER_MAX_DATA_BLOCK_LEN * 4 + 2];
         char g_oct_format_tmp_buffer[DECODER_MAX_DATA_BLOCK_LEN * 3 + 2];
         char g_number_tmp_64[30];
+        char g_all_buf[CONVERT_STR_MAX_LEN + 1];
 };

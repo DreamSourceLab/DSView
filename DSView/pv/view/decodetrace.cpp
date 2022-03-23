@@ -374,6 +374,7 @@ bool DecodeTrace::create_popup()
     }
 
     _decoder_container = NULL;
+    _decoder_panels.clear();
     return ret;
 }
 
@@ -502,7 +503,7 @@ void DecodeTrace::populate_popup_form(QWidget *parent, QFormLayout *form)
 
     connect(_start_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_region_set(int)));
     connect(_end_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_region_set(int)));
-    connect(decoder_menu, SIGNAL(decoder_selected(srd_decoder *)), this, SLOT(on_stack_decoder(srd_decoder *)));
+    connect(decoder_menu, SIGNAL(decoder_selected(srd_decoder *)), this, SLOT(on_add_stack(srd_decoder *)));
     connect(button_box, SIGNAL(accepted()), parent, SLOT(accept()));
     connect(button_box, SIGNAL(rejected()), parent, SLOT(reject()));
 }
@@ -899,7 +900,7 @@ void DecodeTrace::on_probe_selected(int)
 	commit_probes();
 } 
 
-void DecodeTrace::on_stack_decoder(srd_decoder *decoder)
+void DecodeTrace::on_add_stack(srd_decoder *decoder)
 {
 	assert(decoder);
 	assert(_decoder_stack);
@@ -925,6 +926,8 @@ void DecodeTrace::on_stack_decoder(srd_decoder *decoder)
     }
  
     load_all_decoder_property(items);
+
+    on_region_set(_start_index);
 }
  
 void DecodeTrace::on_del_stack(data::decode::Decoder *dec)
@@ -942,29 +945,28 @@ void DecodeTrace::on_del_stack(data::decode::Decoder *dec)
             dels.push_back((*it));
             auto del_it = it;
 
+            //rebuild the panel
             it++;
             while (it != _decoder_panels.end())
             { 
                  dels.push_back((*it));
                  adds.push_back((pv::data::decode::Decoder*)(*it).decoder_handle);
                  it++;
-            }
-            _decoder_panels.erase(del_it);            
+            } 
+            _decoder_panels.erase(del_it); 
             break;
         }
     }   
   
-    while (true)
-    {
-         if (dels.empty())
-            break;
-
+    while (dels.size() > 0)
+    { 
         auto it = dels.end();
         it--;
         auto inf = (*it);
         assert(inf.panel);     
  
         inf.panel->deleteLater();
+        inf.panel = NULL;
         dels.erase(it);
 
        for (auto fd = _decoder_panels.begin(); fd != _decoder_panels.end(); ++fd){
@@ -977,25 +979,11 @@ void DecodeTrace::on_del_stack(data::decode::Decoder *dec)
 
      if (adds.size() > 0){
         load_all_decoder_property(adds);
-    }
- 
-// QTimer::singleShot(200, this, SLOT(on_resize_decoder_panel())); 
-}
-
-void DecodeTrace::on_resize_decoder_panel()
-{ 
-    /*
-    int dex = 0;
-  
-    for (auto &panel : _decoder_panels){
-        assert(panel.panel);       
-        dex++;
-        if (dex > 1){
-            panel.panel->setMaximumHeight(panel.panel_height);
-        }
     } 
-    */
+
+    on_region_set(_start_index);
 }
+ 
 
 int DecodeTrace::rows_size()
 {
