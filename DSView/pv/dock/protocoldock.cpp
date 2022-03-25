@@ -98,6 +98,7 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     _search_edited = false;
     _searching = false;
     _add_silent = false;  
+    _bSettingList = false;
 
     _up_widget = new QWidget(this);
     
@@ -148,14 +149,17 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     //sort protocol list
     sort(_decoderInfoList.begin(), _decoderInfoList.end(), ProtocolDock::protocol_sort_callback);
 
+    _bSettingList = true;
     int protocol_index = 0;
     for (auto info : _decoderInfoList){
          info->Index = protocol_index;
          protocol_index++;
          _protocol_combobox->addItem(QString::fromUtf8(info->Name), QVariant::fromValue(info->Index));
     }
+
     _protocol_combobox->setCurrentIndex(-1);
     _protocol_combobox->lineEdit()->setText(PROTOCOL_FIND_TITLE);
+    _bSettingList = false;
 
     if (repeatNammes != ""){
         QString err = "Any protocol have repeated id or name: ";
@@ -889,6 +893,8 @@ void ProtocolDock::OnProtocolFormatChanged(QString format, void *handle){
 
 void ProtocolDock::on_decoder_name_edited(const QString &value)
 {
+    _bSettingList = true;
+
     while (_protocol_combobox->count())
     {
         _protocol_combobox->removeItem(0);
@@ -902,10 +908,11 @@ void ProtocolDock::on_decoder_name_edited(const QString &value)
         || id.indexOf(value, 0, Qt::CaseInsensitive) != -1 ){
             _protocol_combobox->addItem(QString::fromUtf8(info->Name), QVariant::fromValue(info->Index));
         }
-    } 
-    
+    }    
+  
     _protocol_combobox->setCurrentIndex(-1);
     _protocol_combobox->lineEdit()->setText(value);
+    _bSettingList = false;
 
     if (_key_find_timer.IsActived() == false){
         //check input keep time
@@ -970,7 +977,7 @@ bool ProtocolDock::eventFilter(QObject *object, QEvent *event)
 
  void ProtocolDock::on_new_decoder_selected(int index)
  {
-     if (index >= 0){
+     if (index >= 0 && _bSettingList == false){
          on_add_protocol();
      }
  }

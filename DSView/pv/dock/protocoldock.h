@@ -182,6 +182,7 @@ private:
 
     bool _add_silent;
     DsTimer _key_find_timer;
+    bool _bSettingList;
 };
 
 } // namespace dock
