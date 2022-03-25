@@ -124,8 +124,8 @@ class Decoder(srd.Decoder):
             vali = self.miso_bytes[1]
 
         if write:
-            self.putx([1, ['%s: %#x' % (rblob[0], valo)]])
+            self.putx([1, ['%s: {$}' % rblob[0], '@%02X' % valo]])
         else:
-            self.putx([0, ['%s: %#x' % (rblob[0], vali)]])
+            self.putx([0, ['%s: {$}' % rblob[0], '@%02X' % valo]])
 
         self.reset_data()

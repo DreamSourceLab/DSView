@@ -146,7 +146,7 @@ class Decoder(srd.Decoder):
             (self.ir,) = self.wait(conditions)
 
             if len(conditions) == 2:
-                if self.matched[1]:
+                if self.matched & 0b10:
                     self.state = 'IDLE'
 
             self.edges.append(self.samplenum)

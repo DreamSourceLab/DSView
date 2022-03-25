@@ -132,7 +132,7 @@ class Decoder(srd.Decoder):
                 self.step = 0
 
             if self.step == 0:
-                # Don't use self.matched[1] here since we might come from
+                # Don't use self.matched_[1] here since we might come from
                 # a step with different conds due to the code above.
                 if data == 0 and clk == 1:
                     # Rising edge on CLK while DATA is low: Ready to send.

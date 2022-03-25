@@ -88,9 +88,7 @@ class Decoder(srd.Decoder):
     inputs = ['spi']
     outputs = []
     tags = ['IC', 'Wireless/RF']
-    options = (
-        {'id': 'hex_display', 'desc': 'Display payload in Hex', 'default': 'yes',
-            'values': ('yes', 'no')},
+    options = ( 
     )
     annotations = (
         # Sent from the host to the chip.
@@ -129,6 +127,9 @@ class Decoder(srd.Decoder):
     def putp(self, pos, ann, msg):
         '''Put an annotation message 'msg' at 'pos'.'''
         self.put(pos[0], pos[1], self.out_ann, [ann, [msg]])
+
+    def put_ann(self, pos, ann, msg_arr):
+        self.put(pos[0], pos[1], self.out_ann, [ann, msg_arr])
 
     def next(self):
         '''Resets the decoder after a complete command was decoded.'''
@@ -253,24 +254,18 @@ class Decoder(srd.Decoder):
         True, all bytes are decoded as hex codes, otherwise only non
         printable characters are escaped.'''
 
-        if always_hex:
-            def escape(b):
+        def escape(b):
                 return '{:02X}'.format(b)
-        else:
-            def escape(b):
-                c = chr(b)
-                if not str.isprintable(c):
-                    return '\\x{:02X}'.format(b)
-                return c
 
-        data = ''.join([escape(b) for b in data])
-        text = '{} = "{}"'.format(label, data.strip())
-        self.putp(pos, ann, text)
+        data = ''.join([escape(b) for b in data]) 
+        ann_arr = [label + ' = "{$}"', '@' + data]
+         
+        self.put_ann(pos, ann, ann_arr)
 
     def finish_command(self, pos):
         '''Decodes the remaining data bytes at position 'pos'.'''
-
-        always_hex = self.options['hex_display'] == 'yes'
+ 
+        always_hex = True
         if self.cmd == 'R_REGISTER':
             self.decode_register(pos, self.ann_cmd,
                                  self.dat, self.miso_bytes())

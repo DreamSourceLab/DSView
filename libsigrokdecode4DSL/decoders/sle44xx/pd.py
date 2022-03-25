@@ -443,6 +443,10 @@ class Decoder(srd.Decoder):
 
         self.handle_data_byte(ss, es, data, bits)
 
+    def check_bit(self, d):
+        v = self.matched & (1 << d)
+        return (v >> d) == 1
+
     def decode(self):
         '''Decoder's main data interpretation loop.'''
 
@@ -493,31 +497,31 @@ class Decoder(srd.Decoder):
 
             # Handle RESET conditions, including an optional CLK pulse
             # while RST is asserted.
-            if self.matched[COND_RESET_START]:
+            if self.check_bit(COND_RESET_START):
                 self.flush_queued()
                 ss_reset = self.samplenum
                 es_reset = ss_clk = es_clk = None
                 continue
-            if self.matched[COND_RESET_STOP]:
+            if self.check_bit(COND_RESET_STOP):
                 es_reset = self.samplenum
                 self.handle_reset(ss_reset or 0, es_reset, ss_clk and es_clk)
                 ss_reset = es_reset = ss_clk = es_clk = None
                 continue
-            if self.matched[COND_RSTCLK_START]:
+            if self.check_bit(COND_RSTCLK_START):
                 ss_clk = self.samplenum
                 es_clk = None
                 continue
-            if self.matched[COND_RSTCLK_STOP]:
+            if self.check_bit(COND_RSTCLK_STOP):
                 es_clk = self.samplenum
                 continue
 
             # Handle data bits' validity boundaries. Also covers the
             # periodic check for high I/O level and update of details
             # during internal processing.
-            if self.matched[COND_DATA_START]:
+            if self.check_bit(COND_DATA_START):
                 self.handle_data_bit(self.samplenum, None, io)
                 continue
-            if self.matched[COND_DATA_STOP]:
+            if self.check_bit(COND_DATA_STOP):
                 self.handle_data_bit(None, self.samplenum, None)
                 continue
 
@@ -525,7 +529,7 @@ class Decoder(srd.Decoder):
             # independent of CLK edges this time. This assures that the
             # decoder ends processing intervals as soon as possible, at
             # the most precise timestamp.
-            if is_processing and self.matched[COND_PROC_IOH]:
+            if is_processing and self.check_bit(COND_PROC_IOH):
                 self.handle_data_bit(self.samplenum, self.samplenum, io)
                 continue
 
@@ -533,9 +537,9 @@ class Decoder(srd.Decoder):
             # "outgoing data" or "internal processing" periods. This is
             # what the data sheet specifies.
             if not is_outgoing and not is_processing:
-                if self.matched[COND_CMD_START]:
+                if self.check_bit(COND_CMD_START):
                     self.handle_command(self.samplenum, True)
                     continue
-                if self.matched[COND_CMD_STOP]:
+                if self.check_bit(COND_CMD_STOP):
                     self.handle_command(self.samplenum, False)
                     continue

@@ -494,7 +494,7 @@ class Decoder(srd.Decoder):
             curr_level, = self.wait([{PIN_DATA: 'e'}, {'skip': self.lookahead_width}])
             self.carrier_check(curr_level, self.samplenum)
             bit_level = curr_level
-            edge_seen = self.matched[0]
+            edge_seen = self.matched & 0b1
             if edge_seen:
                 bit_level = 1 - bit_level
             if not self.edges:
@@ -687,7 +687,7 @@ class Decoder(srd.Decoder):
                 hold = self.hold_high_width
                 curr_level, = self.wait([{PIN_DATA: 'l'}, {'skip': int(hold)}])
                 self.carrier_check(curr_level, self.samplenum)
-                if self.matched[1]:
+                if self.matched & 0b10:
                     self.edges.append(curr_snum)
                     curr_level = 1 - curr_level
                 curr_snum = self.samplenum
