@@ -97,10 +97,10 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     _cur_search_index = -1;
     _search_edited = false;
     _searching = false;
-    _add_silent = false; 
+    _add_silent = false;  
 
     _up_widget = new QWidget(this);
- 
+    
     _add_button = new QPushButton(_up_widget);
     _add_button->setFlat(true);
     _del_all_button = new QPushButton(_up_widget);
@@ -278,6 +278,8 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
 
     connect(_protocol_combobox->lineEdit(), SIGNAL(textEdited(const QString &)), 
                     this, SLOT(on_decoder_name_edited(const QString &)));
+
+    connect(_protocol_combobox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_new_decoder_selected(int)));
 }
 
 ProtocolDock::~ProtocolDock()
@@ -966,6 +968,12 @@ bool ProtocolDock::eventFilter(QObject *object, QEvent *event)
     return false;
 }
 
+ void ProtocolDock::on_new_decoder_selected(int index)
+ {
+     if (index >= 0){
+         on_add_protocol();
+     }
+ }
  
 
 //-------------------------

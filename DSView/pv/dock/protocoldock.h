@@ -135,6 +135,7 @@ private slots:
     void search_changed();
     void search_update();
     void on_decoder_name_edited(const QString &value);
+    void on_new_decoder_selected(int index);
   
 private:
     static int decoder_name_cmp(const void *a, const void *b);
