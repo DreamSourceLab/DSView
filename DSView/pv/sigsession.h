@@ -30,6 +30,7 @@
 #include <QString>
 #include <thread>
 #include <QDateTime>
+#include <list>
 
 #include "view/mathtrace.h"
 #include "data/mathstack.h"
@@ -63,6 +64,11 @@ class Group;
 class GroupSnapshot;
 class DecoderModel;
 class MathStack;
+
+namespace decode {
+    class Decoder;
+}
+
 }
 
 namespace device {
@@ -76,11 +82,6 @@ class DecodeTrace;
 class SpectrumTrace;
 class LissajousTrace;
 class MathTrace;
-}
-
-namespace decoder {
-class Decoder;
-class DecoderFactory;
 }
 
 using namespace pv::device;
@@ -162,11 +163,16 @@ public:
 	std::vector<view::Signal*>& get_signals();
     std::vector<view::GroupSignal*>& get_group_signals();
 
-    bool add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus);
-    void remove_decoder(int index);  
-    std::vector<view::DecodeTrace*>& get_decode_signals();
- 
+    bool add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus, 
+            std::list<pv::data::decode::Decoder*> &sub_decoders);
+
+    int get_trace_index_by_key_handel(void *handel);
+    void remove_decoder(int index);
+    void remove_decoder_by_key_handel(void *handel); 
+    std::vector<view::DecodeTrace*>& get_decode_signals(); 
     void rst_decoder(int index); 
+    void rst_decoder_by_key_handel(void *handel);
+
     pv::data::DecoderModel* get_decoder_model();
     std::vector<view::SpectrumTrace*>& get_spectrum_traces();
     view::LissajousTrace* get_lissajous_trace();
@@ -277,8 +283,7 @@ private:
 private:
 	void set_capture_state(capture_state state);
     void register_hotplug_callback();
-    void deregister_hotplug_callback();
-    bool do_add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus);
+    void deregister_hotplug_callback(); 
 
     void add_decode_task(view::DecodeTrace *trace);
     void remove_decode_task(view::DecodeTrace *trace);

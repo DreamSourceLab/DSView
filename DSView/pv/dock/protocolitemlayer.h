@@ -53,6 +53,10 @@ public:
     void LoadFormatSelect(bool bSingle);
     inline QString &GetProtocolName(){return _protocolName;}
     void SetProtocolFormat(const char *format);
+
+    inline void* get_protocol_key_handel(){
+        return m_decoderStatus;
+    }
   
 private slots: 
     void on_set_protocol(); 
@@ -61,6 +65,7 @@ private slots:
 
 public:
     DecoderStatus *m_decoderStatus; //DecoderStatus
+    QString        m_protocolId;
   
 private:
     QLabel *_protocol_label;
@@ -69,9 +74,9 @@ private:
     QPushButton *_del_button;
     DsComboBox  *_format_combox;
     IProtocolItemLayerCallback *m_callback;
-    QString _protocolName;
-    bool    m_bSetting;
-    bool    m_singleFlag;
+    QString     _protocolName; //the lable text
+    bool        m_bSetting;
+    bool        m_singleFlag; 
 };
 
  } //dock

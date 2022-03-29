@@ -704,7 +704,7 @@ SRD_API int srd_decoder_load(const char *module_name)
 	int is_subclass;
 	const char *fail_txt;
 	PyGILState_STATE gstate;
-
+  
 	if (!srd_check_init())
 		return SRD_ERR;
 
@@ -798,7 +798,7 @@ SRD_API int srd_decoder_load(const char *module_name)
 		fail_txt = "no 'id' attribute";
 		goto err_out;
 	}
-
+ 
 	if (py_attr_as_str(d->py_dec, "name", &(d->name)) != SRD_OK) {
 		fail_txt = "no 'name' attribute";
 		goto err_out;
@@ -1066,6 +1066,7 @@ static void srd_decoder_load_all_path(char *path)
 {
 	GDir *dir;
 	const gchar *direntry;
+	int ldst = 0;
 
 	if (!(dir = g_dir_open(path, 0, NULL))) {
 		/* Not really fatal. Try zipimport method too. */
@@ -1080,7 +1081,7 @@ static void srd_decoder_load_all_path(char *path)
 	 */
 	while ((direntry = g_dir_read_name(dir)) != NULL) {
 		/* The directory name is the module name (e.g. "i2c"). */
-		srd_decoder_load(direntry);
+		ldst = srd_decoder_load(direntry);
 	}
 	g_dir_close(dir);
 }

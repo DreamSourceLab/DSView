@@ -50,6 +50,7 @@
 #include <math.h>
 #include <QTextStream>
 #include <QDebug>
+#include <list>
 
 #ifdef _WIN32
 #include <QTextCodec>
@@ -993,10 +994,36 @@ bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_arra
         QJsonObject dec_obj = dec_value.toObject(); 
         std::vector<view::DecodeTrace*> &pre_dsigs = _session->get_decode_signals();
 
-        //set current protocol
-        bool ret = widget->add_protocol_by_id(dec_obj["id"].toString(), true);
+        std::list<pv::data::decode::Decoder*> sub_decoders;
+
+        //get sub decoders
+        if (dec_obj.contains("stacked decoders")) {
+                for(const QJsonValue &value : dec_obj["stacked decoders"].toArray()) {
+                    QJsonObject stacked_obj = value.toObject();
+
+                    GSList *dl = g_slist_copy((GSList*)srd_decoder_list());
+                    for(; dl; dl = dl->next) {
+                        const srd_decoder *const d = (srd_decoder*)dl->data;
+                        assert(d);
+
+                        if (QString::fromUtf8(d->id) == stacked_obj["id"].toString()) {
+                            sub_decoders.push_back(new data::decode::Decoder(d));
+                            break;
+                        }
+                    }
+                    g_slist_free(dl);
+                }
+        }
+
+        //create protocol
+        bool ret = widget->add_protocol_by_id(dec_obj["id"].toString(), true, sub_decoders);
         if (!ret)
         {
+            for(auto sub : sub_decoders){
+                delete sub;
+            }
+            sub_decoders.clear();
+
             continue; //protocol is not exists;
         }        
 
@@ -1007,25 +1034,7 @@ bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_arra
             
             auto new_dsig = aft_dsigs.back();
             auto stack = new_dsig->decoder();
-
-            if (dec_obj.contains("stacked decoders")) {
-                for(const QJsonValue &value : dec_obj["stacked decoders"].toArray()) {
-                    QJsonObject stacked_obj = value.toObject();
-
-                    GSList *dl = g_slist_copy((GSList*)srd_decoder_list());
-                    for(; dl; dl = dl->next) {
-                        const srd_decoder *const d = (srd_decoder*)dl->data;
-                        assert(d);
-
-                        if (QString::fromUtf8(d->id) == stacked_obj["id"].toString()) {
-                            stack->push(new data::decode::Decoder(d));
-                            break;
-                        }
-                    }
-                    g_slist_free(dl);
-                }
-            }
-
+ 
             auto &decoder = stack->stack();
 
             for(auto &dec : decoder) {

@@ -122,5 +122,5 @@ std::map<uint16_t, QString> Search::get_pattern()
     return pattern;
 }
 
-} // namespace decoder
+} // namespace dialogs
 } // namespace pv

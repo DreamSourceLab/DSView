@@ -54,6 +54,7 @@
 #include "../toolbars/titlebar.h"
 #include "../dsvdef.h"
 #include "../ui/dscombobox.h"
+#include "../ui/msgbox.h"
 #include <QDebug>
 
 using namespace boost;
@@ -419,6 +420,13 @@ void DecodeTrace::load_all_decoder_property(std::list<pv::data::decode::Decoder*
        
         create_decoder_form(_decoder_stack, dec, panel, form);
 
+        //spacing
+        if (ls.size() > 1){
+            QWidget *spc = new QWidget();
+            spc->setMinimumHeight(15);
+            lay->addWidget(spc);
+        }
+
         decoder_panel_item inf;
         inf.decoder_handle = dec; 
         inf.panel = panel;
@@ -479,19 +487,7 @@ void DecodeTrace::populate_popup_form(QWidget *parent, QFormLayout *form)
     form->addRow(_end_comboBox, new QLabel(
                      tr("Decode End to")));
 
-	// Add stacking button
-	pv::widgets::DecoderMenu *const decoder_menu =
-		new pv::widgets::DecoderMenu(parent);
-
-	 
-	QPushButton *const stack_button =
-		new QPushButton(tr("Stack Decoder"), parent);
-	stack_button->setMenu(decoder_menu);
-
-	QHBoxLayout *stack_button_box = new QHBoxLayout;
-    stack_button_box->addWidget(stack_button, 0, Qt::AlignLeft);
-	form->addRow(stack_button_box);
-
+   
     // Add ButtonBox (OK/Cancel)
     QDialogButtonBox *button_box = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
                                 Qt::Horizontal, parent);
@@ -502,8 +498,7 @@ void DecodeTrace::populate_popup_form(QWidget *parent, QFormLayout *form)
     form->addRow(confirm_button_box);
 
     connect(_start_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_region_set(int)));
-    connect(_end_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_region_set(int)));
-    connect(decoder_menu, SIGNAL(decoder_selected(srd_decoder *)), this, SLOT(on_add_stack(srd_decoder *)));
+    connect(_end_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_region_set(int))); 
     connect(button_box, SIGNAL(accepted()), parent, SLOT(accept()));
     connect(button_box, SIGNAL(rejected()), parent, SLOT(reject()));
 }
@@ -785,14 +780,12 @@ void DecodeTrace::create_decoder_form(
 
 	_bindings.push_back(binding);
 
-    //
+    
     pv::widgets::DecoderGroupBox *const group =
         new pv::widgets::DecoderGroupBox(decoder_stack, dec, decoder_form, parent);
  
 	form->addRow(group);
 	_decoder_forms.push_back(group);
-
-      connect(group, SIGNAL(del_stack(data::decode::Decoder*)), this, SLOT(on_del_stack(data::decode::Decoder*)));
 }
 
 DsComboBox* DecodeTrace::create_probe_selector(
@@ -907,7 +900,7 @@ void DecodeTrace::on_add_stack(srd_decoder *decoder)
 
     auto dec = new data::decode::Decoder(decoder);
 
-    _decoder_stack->push(dec);   
+    _decoder_stack->add_sub_decoder(dec);
     std::list<pv::data::decode::Decoder*> items;
     items.push_back(dec);
 
@@ -935,7 +928,11 @@ void DecodeTrace::on_del_stack(data::decode::Decoder *dec)
     assert(dec);
     assert(_decoder_stack);
 
-    _decoder_stack->remove(dec);
+    if (MsgBox::Confirm("Are you sure to remove the sub protocol?") == false){
+        return;
+    }
+
+    _decoder_stack->remove_sub_decoder(dec);
 
     std::list<decoder_panel_item> dels; 
     std::list<pv::data::decode::Decoder*> adds;
@@ -1101,6 +1098,11 @@ void DecodeTrace::frame_ended()
         dec->set_decode_region(_decode_start, _decode_end);
         dec->commit();
     }
+}
+
+void* DecodeTrace::get_key_handel()
+{
+    return _decoder_stack->get_key_handel();
 }
 
 

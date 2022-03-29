@@ -27,8 +27,7 @@
 
 #include <QDockWidget>
 #include <QPushButton>
-#include <QLabel>
-#include <QVector>
+#include <QLabel> 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QScrollArea>
@@ -40,17 +39,14 @@
 
 #include <vector>
 #include <mutex>
+#include <list>
 
 #include "../data/decodermodel.h"
 #include "protocolitemlayer.h"
 #include "../ui/dscombobox.h"
 #include "../dstimer.h"
 
-#define DECODER_NAME_LEN 20
-
 struct DecoderInfoItem{
-    char    Name[DECODER_NAME_LEN];
-    char    Id[DECODER_NAME_LEN];
     int     Index;
     void    *ObjectHandle; //srd_decoder* type
 };
@@ -75,7 +71,10 @@ namespace pv {
 class SigSession;
   
 namespace data {
-class DecoderModel;
+    class DecoderModel;
+    namespace decode{
+        class Decoder;
+    }
 }
 
 namespace view {
@@ -96,7 +95,7 @@ public:
     ~ProtocolDock();
 
     void del_all_protocol(); 
-    bool add_protocol_by_id(QString id, bool silent);
+    bool add_protocol_by_id(QString id, bool silent, std::list<pv::data::decode::Decoder*> &sub_decoders);
 
 private:
     void changeEvent(QEvent *event);
@@ -106,13 +105,16 @@ private:
 protected:
     void paintEvent(QPaintEvent *);
     void resizeEvent(QResizeEvent *);
+    
+    int get_protocol_index_by_id(QString id);
+    static QString parse_protocol_id(const char *id);
+    int get_output_protocol_by_id(QString id);
 
 private:
     //IProtocolItemLayerCallback
     void OnProtocolSetting(void *handle);
     void OnProtocolDelete(void *handle);
     void OnProtocolFormatChanged(QString format, void *handle);
-    int get_protocol_index_by_id(QString id);
 
 signals:
     void protocol_updated();
@@ -168,7 +170,7 @@ private:
     QPushButton *_del_all_button;
     DsComboBox *_protocol_combobox; 
     QVBoxLayout *_up_layout;
-    QVector <ProtocolItemLayer*> _protocol_lay_items; //protocol item layers
+    std::vector <ProtocolItemLayer*> _protocol_lay_items; //protocol item layers
 
     QPushButton *_dn_set_button;
     QPushButton *_dn_save_button;

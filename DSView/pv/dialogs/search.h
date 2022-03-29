@@ -64,7 +64,7 @@ private:
     QDialogButtonBox search_buttonBox;
 };
 
-} // namespace decoder
+} // namespace dialogs
 } // namespace pv
 
 #endif // DSVIEW_PV_SEARCH_H

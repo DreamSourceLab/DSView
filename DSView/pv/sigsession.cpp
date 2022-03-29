@@ -1321,13 +1321,10 @@ uint16_t SigSession::get_ch_num(int type)
     return num_channels;
 }
 
-bool SigSession::add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus){
-    return do_add_decoder(dec, silent, dstatus);
-}
+bool SigSession::add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus, 
+        std::list<pv::data::decode::Decoder*> &sub_decoders){
 
-bool SigSession::do_add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus)
-{     
-    try { 
+      try { 
 
         bool ret = false;
 
@@ -1350,6 +1347,12 @@ bool SigSession::do_add_decoder(srd_decoder *const dec, bool silent, DecoderStat
         view::DecodeTrace *trace = new view::DecodeTrace(this, decoder_stack, _decode_traces.size());
         assert(trace);
 
+        //add sub decoder
+        for(auto sub : sub_decoders){
+            trace->decoder()->add_sub_decoder(sub);
+        }
+        sub_decoders.clear();
+
         // set view early for decode start/end region setting
         for(auto &s : _signals) {
             if (s->get_view()) {
@@ -1357,6 +1360,7 @@ bool SigSession::do_add_decoder(srd_decoder *const dec, bool silent, DecoderStat
                 break;
             }
         }
+
         if (silent) { 
             ret = true;
         } else if (trace->create_popup()) { 
@@ -1364,7 +1368,7 @@ bool SigSession::do_add_decoder(srd_decoder *const dec, bool silent, DecoderStat
         }
 
         if (ret)
-        {
+        { 
            _decode_traces.push_back(trace);
             add_decode_task(trace);
             signals_changed();
@@ -1381,12 +1385,26 @@ bool SigSession::do_add_decoder(srd_decoder *const dec, bool silent, DecoderStat
          ds_debug("Starting a hotplug thread...\n");
     }
  
-    return false;
+    return false;    
 }
  
 std::vector<view::DecodeTrace*>& SigSession::get_decode_signals()
 { 
     return _decode_traces;
+}
+
+int SigSession::get_trace_index_by_key_handel(void *handel)
+{
+    int dex = 0;
+
+     for(auto tr : _decode_traces){
+         if (tr->decoder()->get_key_handel() == handel){
+            return dex;
+         }
+         ++dex;
+     }
+
+    return -1;
 }
 
 void SigSession::remove_decoder(int index)
@@ -1412,9 +1430,15 @@ void SigSession::remove_decoder(int index)
     } 
 }
 
+ void SigSession::remove_decoder_by_key_handel(void *handel)
+ {
+     int dex = get_trace_index_by_key_handel(handel);
+     remove_decoder(dex);
+ }
+ 
 void SigSession::rst_decoder(int index)
 {
-     auto trace = get_decoder_trace(index);
+    auto trace = get_decoder_trace(index);
     
     if (trace && trace->create_popup() ){
         remove_decode_task(trace); //remove old task
@@ -1422,6 +1446,12 @@ void SigSession::rst_decoder(int index)
         data_updated();
     }
 }
+
+ void SigSession::rst_decoder_by_key_handel(void *handel)
+ { 
+     int dex = get_trace_index_by_key_handel(handel);
+     rst_decoder(dex);
+ }
   
 pv::data::DecoderModel* SigSession::get_decoder_model()
 {
@@ -1866,9 +1896,10 @@ void SigSession::set_stop_scale(float scale)
  
  view::DecodeTrace* SigSession::get_decoder_trace(int index)
   { 
-      int size = (int)_decode_traces.size();
-      assert(index < size);
-      return   _decode_traces[index];    
+      if (index >= 0 && index < (int)_decode_traces.size()){
+           return   _decode_traces[index];  
+      }
+      assert(false);      
   }
 
   view::DecodeTrace* SigSession::get_top_decode_task()

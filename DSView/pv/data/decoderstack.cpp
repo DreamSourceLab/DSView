@@ -56,7 +56,7 @@ DecoderStack::DecoderStack(pv::SigSession *session,
 {
     assert(session);
     assert(dec);
-    assert(decoder_status);
+    assert(decoder_status); 
     
     _samples_decoded = 0;
     _sample_count = 0; 
@@ -96,7 +96,7 @@ DecoderStack::~DecoderStack()
     _class_rows.clear();
 }
  
-void DecoderStack::push(decode::Decoder *decoder)
+void DecoderStack::add_sub_decoder(decode::Decoder *decoder)
 {
 	assert(decoder);
 	_stack.push_back(decoder);
@@ -104,7 +104,7 @@ void DecoderStack::push(decode::Decoder *decoder)
     _options_changed = true;
 }
 
-void DecoderStack::remove(Decoder *decoder)
+void DecoderStack::remove_sub_decoder(Decoder *decoder)
 {
 	// Find the decoder in the stack
     auto  iter = _stack.begin();
@@ -121,6 +121,22 @@ void DecoderStack::remove(Decoder *decoder)
 
     build_row();
     _options_changed = true;
+}
+
+void DecoderStack::remove_decoder_by_handel(const srd_decoder *dec)
+{
+    Decoder *decoder = NULL;
+
+    for (auto d : _stack){
+        if (d->get_dec_handel() == dec){
+            decoder = d;
+            break;
+        }
+    }
+
+    if (decoder){
+        remove_sub_decoder(decoder);
+    }
 }
 
 void DecoderStack::build_row()

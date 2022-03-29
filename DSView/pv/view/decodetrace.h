@@ -153,6 +153,8 @@ public:
 
     int get_progress();
 
+	void* get_key_handel();
+
 protected:
     void paint_type_options(QPainter &p, int right, const QPoint pt, QColor fore);
 

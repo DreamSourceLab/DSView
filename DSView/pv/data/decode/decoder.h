@@ -97,6 +97,10 @@ public:
         return ch->type;
     }
 
+    inline const srd_decoder* get_dec_handel(){
+        return _decoder;
+    }
+
 private:
 	const srd_decoder *const _decoder;
  

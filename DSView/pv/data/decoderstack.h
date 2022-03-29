@@ -94,8 +94,10 @@ public:
         return _stack;
     }
 
-	void push(decode::Decoder *decoder);
-    void remove(decode::Decoder *decoder);
+	void add_sub_decoder(decode::Decoder *decoder);
+    void remove_sub_decoder(decode::Decoder *decoder);
+    void remove_decoder_by_handel(const srd_decoder *dec);
+    
     void build_row();
 
 	int64_t samples_decoded();
@@ -152,6 +154,10 @@ public:
 
     inline QString error_message(){ 
 	    return _error_message;
+    }
+
+    inline void *get_key_handel(){
+        return _decoder_status;
     }
 
 private:

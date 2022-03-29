@@ -66,9 +66,9 @@ DecoderGroupBox::DecoderGroupBox(data::DecoderStack *decoder_stack,
     assert(d);
     const bool have_probes = (d->channels || d->opt_channels) != 0;
     if (!have_probes) {
-        _del_button = new QPushButton(QIcon(iconPath+"/del.svg"), QString(), _widget);
-        _layout->addWidget(_del_button, 0, 1);
-        connect(_del_button, SIGNAL(clicked()), this, SLOT(on_del_stack()));
+       // _del_button = new QPushButton(QIcon(iconPath+"/del.svg"), QString(), _widget);
+       // _layout->addWidget(_del_button, 0, 1);
+        //connect(_del_button, SIGNAL(clicked()), this, SLOT(on_del_stack()));
     }
 
     _index = 0;

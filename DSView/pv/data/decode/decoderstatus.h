@@ -34,5 +34,5 @@ public:
     bool    m_bNumeric; //when decoder get any numerical data,it will be set
     int     m_format; //protocol format code
     void    *sdr_decoder_handle;
-    AnnotationResTable  m_resTable;
+    AnnotationResTable  m_resTable; 
 };

@@ -46,6 +46,7 @@ class Decoder(srd.Decoder):
         ('single_write', 'Single register write'),
         ('burst_read', 'Burst register read'),
         ('burst_write', 'Burst register write'),
+        ('status_read', 'Status read'),
         ('status', 'Status register'),
         ('warning', 'Warning'),
     )
@@ -72,13 +73,8 @@ class Decoder(srd.Decoder):
         '''Put a warning message 'msg' at 'pos'.'''
         self.put(pos.ss, pos.es, self.out_ann, [ANN_WARN, [msg]])
 
-    def putp(self, pos, ann, msg):
-        '''Put an annotation message 'msg' at 'pos'.'''
-        self.put(pos.ss, pos.es, self.out_ann, [ann, [msg]])
-
-    def putp2(self, pos, ann, msg1, msg2):
-        '''Put an annotation message 'msg' at 'pos'.'''
-        self.put(pos.ss, pos.es, self.out_ann, [ann, [msg1, msg2]])
+    def put_ann(self, pos, ann, data): 
+        self.put(pos.ss, pos.es, self.out_ann, [ann, data])
 
     def next(self):
         '''Resets the decoder after a complete command was decoded.'''
@@ -116,7 +112,7 @@ class Decoder(srd.Decoder):
         self.cmd, self.dat, self.min, self.max = c
 
         if self.cmd == 'Strobe':
-            self.putp(pos, ANN_STROBE, self.format_command())
+            self.put_ann(pos, ANN_STROBE, [self.format_command()])
         else:
             # Don't output anything now, the command is merged with
             # the data bytes following it.
@@ -210,9 +206,10 @@ class Decoder(srd.Decoder):
         else:
             longtext_fifo = '{} bytes free in TX FIFO'.format(fifo_bytes)
 
-        text = '{} = {:02X}'.format(label, status)
+        text = '{} = '.format(label) + '{$}'
         longtext = ''.join([text, '; ', longtext_chiprdy, longtext_state, longtext_fifo])
-        self.putp2(pos, ann, longtext, text)
+        #self.printlog(longtext + '   ,' + text + '\n')
+        self.put_ann(pos, ann, [longtext, text, '@%02X' % status])
 
     def decode_mb_data(self, pos, ann, data, label):
         '''Decodes the data bytes 'data' of a multibyte command at position
@@ -222,8 +219,8 @@ class Decoder(srd.Decoder):
             return '{:02X}'.format(b)
 
         data = ' '.join([escape(b) for b in data])
-        text = '{} = {}'.format(label, data)
-        self.putp(pos, ann, text)
+        text = '{} = '.format(label) + '{$}' 
+        self.put_ann(pos, ann, [text, '@' + data])
 
     def finish_command(self, pos):
         '''Decodes the remaining data bytes at position 'pos'.'''

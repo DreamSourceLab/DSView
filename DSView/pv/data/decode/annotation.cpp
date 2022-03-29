@@ -30,6 +30,8 @@
 #include <cstring>
 #include <assert.h>
 #include <string.h>
+#include <QDebug>
+
 #include "../../config/appconfig.h"
 #include "decoderstatus.h"
 #include "../../dsvdef.h"
@@ -124,7 +126,10 @@ Annotation::~Annotation()
   
 const std::vector<QString>& Annotation::annotations() const
 {  
-     AnnotationSourceItem &resItem = *(_status->m_resTable.GetItem(_resIndex));
+	 AnnotationSourceItem *pobj = _status->m_resTable.GetItem(_resIndex);	 
+	 assert(pobj);
+	
+     AnnotationSourceItem &resItem = *pobj;
 
 	//get origin data, is not a numberic value
      if (!resItem.is_numeric){
@@ -142,13 +147,21 @@ const std::vector<QString>& Annotation::annotations() const
 
 		 if (resItem.src_lines.size() > 0)
 		 {
+			 char sz_format_tmp_buf[200] = {0};
+
 			 //have custom string
 			 for (QString &rd_src : resItem.src_lines)
-			 {
-				 char sz_format_tmp_buf[50] = {0};
+			 {			
 				 QString src = rd_src.replace("{$}", "%s");
 				 const char *num_str = _status->m_resTable.format_numberic(resItem.str_number_hex, resItem.cur_display_format);
-				 sprintf(sz_format_tmp_buf, src.toUtf8().data(), num_str);
+				 const char *src_str = src.toUtf8().data();
+
+				 if (strlen(src_str) + strlen(num_str) > sizeof(sz_format_tmp_buf)){
+					 qDebug()<<"Annotation string length is too long!";
+					 return resItem.src_lines;					 
+				 }
+				 
+				 sprintf(sz_format_tmp_buf, src_str, num_str);
 				 resItem.cvt_lines.push_back(QString(sz_format_tmp_buf));
 			 }
 		 }

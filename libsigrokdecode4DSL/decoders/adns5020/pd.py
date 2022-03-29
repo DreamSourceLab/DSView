@@ -108,9 +108,10 @@ class Decoder(srd.Decoder):
         reg_desc = regs.get(reg, 'Reserved %#x' % reg)
         if reg > 0x63:
             reg_desc = 'Unknown'
+        
         if write:
-            self.putx([1, ['%s: %#x' % (reg_desc, arg)]])
+            self.putx([1, ['%s: {$}' % reg_desc, '@%02X' % arg]])
         else:
-            self.putx([0, ['%s: %d' % (reg_desc, arg)]])
+            self.putx([0, ['%s: {$}' % reg_desc, '@%02X' % arg]])
 
         self.mosi_bytes = []

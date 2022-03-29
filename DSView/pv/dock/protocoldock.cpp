@@ -51,6 +51,7 @@
 #include "../dsvdef.h"
 #include "../config/appconfig.h"
 #include "../data/decode/decoderstatus.h"
+#include "../data/decode/decoder.h"
 
 #define PROTOCOL_FIND_TITLE  "Protocol search..."
 
@@ -113,7 +114,9 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     _protocol_combobox->setLineEdit(new KeywordLineEdit(_protocol_combobox));
     _protocol_combobox->setCompleter(NULL);
 
-    GSList *l = g_slist_sort(g_slist_copy((GSList*)srd_decoder_list()), decoder_name_cmp);
+    //GSList *l = g_slist_sort(g_slist_copy((GSList*)srd_decoder_list()), decoder_name_cmp);
+
+    GSList *l = const_cast<GSList*>(srd_decoder_list());
 
     std::map<std::string, int> pro_key_table;
     QString repeatNammes;
@@ -122,22 +125,19 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     {
         const srd_decoder *const d = (srd_decoder*)l->data;
         assert(d);
-        const bool have_probes = (d->channels || d->opt_channels) != 0;
-
-        if (true == have_probes) {
-            DecoderInfoItem *info = new DecoderInfoItem();
-            strncpy(info->Name, d->name, DECODER_NAME_LEN-1);
-            strncpy(info->Id, d->id, DECODER_NAME_LEN-1);
-          
-            info->ObjectHandle = l->data;           
-
+        // const bool have_probes = (d->channels || d->opt_channels) != 0;
+ 
+        if (true) {
+            DecoderInfoItem *info = new DecoderInfoItem(); 
+            srd_decoder *dec = (srd_decoder *)(l->data);
+            info->ObjectHandle = dec;
             _decoderInfoList.push_back(info);  
 
-            std::string prokey(info->Id);
+            std::string prokey(dec->id);
             if (pro_key_table.find(prokey) != pro_key_table.end()){
                 if (repeatNammes != "")
                         repeatNammes += ",";
-                repeatNammes += info->Id;
+                repeatNammes += QString(dec->id);
             }
             else{
                 pro_key_table[prokey] = 1;
@@ -154,7 +154,8 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     for (auto info : _decoderInfoList){
          info->Index = protocol_index;
          protocol_index++;
-         _protocol_combobox->addItem(QString::fromUtf8(info->Name), QVariant::fromValue(info->Index));
+         srd_decoder *dec = (srd_decoder *)(info->ObjectHandle);
+         _protocol_combobox->addItem(QString::fromUtf8(dec->name), QVariant::fromValue(info->Index));
     }
 
     _protocol_combobox->setCurrentIndex(-1);
@@ -362,7 +363,8 @@ int ProtocolDock::get_protocol_index_by_id(QString id)
 {
     int dex = 0;
     for (auto info : _decoderInfoList){
-        QString proid(info->Id);
+        srd_decoder *dec = (srd_decoder *)(info->ObjectHandle);
+        QString proid(dec->id);
         if (id == proid){
             return dex;
         }
@@ -383,12 +385,58 @@ void ProtocolDock::on_add_protocol()
     }
 
     int dex = _protocol_combobox->itemData(_protocol_combobox->currentIndex()).toInt();
-    QString pro_id(_decoderInfoList[dex]->Id);
 
-    add_protocol_by_id(pro_id, false);
+    //check the base protocol
+    srd_decoder *const dec = (srd_decoder *)(_decoderInfoList[dex]->ObjectHandle);
+    QString pro_id(dec->id);
+    std::list<data::decode::Decoder*> sub_decoders;
+    
+    assert(dec->inputs);
+
+    QString input_id = parse_protocol_id((char *)dec->inputs->data);
+
+    if (input_id != "logic")
+    {
+        pro_id = ""; //reset base protocol
+
+        int base_dex = get_output_protocol_by_id(input_id);
+        sub_decoders.push_front(new data::decode::Decoder(dec));
+
+        while (base_dex != -1)
+        {
+            srd_decoder *base_dec = (srd_decoder *)(_decoderInfoList[base_dex]->ObjectHandle);
+            pro_id = QString(base_dec->id); //change base protocol           
+
+            assert(base_dec->inputs);
+
+            input_id = parse_protocol_id((char *)base_dec->inputs->data);
+
+            if (input_id == "logic")
+            {
+                break;
+            }
+
+            sub_decoders.push_front(new data::decode::Decoder(base_dec));
+            pro_id = ""; //reset base protocol
+            base_dex = get_output_protocol_by_id(input_id);
+        }
+    }
+
+    if (pro_id == ""){
+        MsgBox::Show("error", "find the base protocol error!");
+
+        for(auto sub: sub_decoders){
+            delete sub;
+        }
+        sub_decoders.clear();
+
+        return;
+    }
+
+    add_protocol_by_id(pro_id, false, sub_decoders);
 }
 
-bool ProtocolDock::add_protocol_by_id(QString id, bool silent)
+bool ProtocolDock::add_protocol_by_id(QString id, bool silent, std::list<pv::data::decode::Decoder*> &sub_decoders)
 {    
     if (_session->get_device()->dev_inst()->mode != LOGIC) {         
         qDebug()<<"Protocol Analyzer\nProtocol Analyzer is only valid in Digital Mode!";
@@ -404,34 +452,42 @@ bool ProtocolDock::add_protocol_by_id(QString id, bool silent)
     srd_decoder *const decoder = (srd_decoder *)(_decoderInfoList[dex]->ObjectHandle);
     DecoderStatus *dstatus = new DecoderStatus();
     dstatus->m_format = (int)DecoderDataFormat::hex;
-  
-    if (_session->add_decoder(decoder, silent, dstatus))
-    {
-        //create item layer
-        QString protocolName(_decoderInfoList[dex]->Name);
-        ProtocolItemLayer *layer = new ProtocolItemLayer(_up_widget, protocolName, this);
-        _protocol_lay_items.push_back(layer);
-        _up_layout->insertLayout(_protocol_lay_items.size(), layer);
-        layer->m_decoderStatus = dstatus;
 
-        //set current protocol format
-        string fmt = AppConfig::Instance().GetProtocolFormat(protocolName.toStdString());
-        if (fmt != ""){
-            layer->SetProtocolFormat(fmt.c_str());
-             dstatus->m_format = DecoderDataFormat::Parse(fmt.c_str());
-        }
+    QString protocolName(decoder->name);
+    QString protocolId(decoder->id);
 
-        //progress connection
-        const auto &decode_sigs  = _session->get_decode_signals();
-
-        connect(decode_sigs.back(), SIGNAL(decoded_progress(int)), this, SLOT(decoded_progress(int)));
-
-        protocol_updated(); 
-
-        return true;
+    if (sub_decoders.size()){
+        auto it = sub_decoders.end();
+        it--;
+        protocolName = QString((*it)->decoder()->name);
+        protocolId = QString((*it)->decoder()->id); 
     }
 
-    return false;
+    if (_session->add_decoder(decoder, silent, dstatus, sub_decoders) == false){
+        return false;
+    }
+
+    // create item layer
+    ProtocolItemLayer *layer = new ProtocolItemLayer(_up_widget, protocolName, this);
+    _protocol_lay_items.push_back(layer);
+    _up_layout->insertLayout(_protocol_lay_items.size(), layer);
+    layer->m_decoderStatus = dstatus; 
+    layer->m_protocolId = protocolId;
+
+    // set current protocol format
+    string fmt = AppConfig::Instance().GetProtocolFormat(protocolId.toStdString());
+    if (fmt != "")
+    {
+        layer->SetProtocolFormat(fmt.c_str());
+        dstatus->m_format = DecoderDataFormat::Parse(fmt.c_str());
+    }
+
+    // progress connection
+    const auto &decode_sigs = _session->get_decode_signals();   
+    protocol_updated();
+    connect(decode_sigs.back(), SIGNAL(decoded_progress(int)), this, SLOT(decoded_progress(int)));
+
+    return true;
 }
  
  void ProtocolDock::on_del_all_protocol(){
@@ -850,42 +906,51 @@ void ProtocolDock::search_update()
 
  //-------------------IProtocolItemLayerCallback
 void ProtocolDock::OnProtocolSetting(void *handle){
-     int dex = 0;
+  
     for (auto it = _protocol_lay_items.begin(); it != _protocol_lay_items.end(); it++){
-       if ((*it) == handle){
-           _session->rst_decoder(dex);         
+       if ((*it) == handle){ 
+             void *key_handel = (*it)->get_protocol_key_handel();
+            _session->rst_decoder_by_key_handel(key_handel);
             protocol_updated();
            break;
-       }
-       dex++;
+       } 
    }
 }
 
 void ProtocolDock::OnProtocolDelete(void *handle){
     if (!MsgBox::Confirm("Are you sure to remove this protocol analyzer?", this)){
          return;
-    }
+    } 
 
-     int dex = 0;
-     for (auto it = _protocol_lay_items.begin(); it != _protocol_lay_items.end(); it++){
-       if ((*it) == handle){
-           DESTROY_QT_LATER(*it); 
-           _protocol_lay_items.remove(dex);
-           _session->remove_decoder(dex);
-           protocol_updated();
-           break;
-       }
-       dex++;
-   }
+     for (auto it = _protocol_lay_items.begin(); it != _protocol_lay_items.end(); it++)
+     {
+         if ((*it) == handle)
+         {
+             auto lay = (*it); 
+             void *key_handel = lay->get_protocol_key_handel();
+            _protocol_lay_items.erase(it);
+             DESTROY_QT_LATER(lay);
+             _session->remove_decoder_by_key_handel(key_handel);     
+             protocol_updated();
+             break;
+         } 
+     } 
+
+  
 }
 
 void ProtocolDock::OnProtocolFormatChanged(QString format, void *handle){
     for (auto it = _protocol_lay_items.begin(); it != _protocol_lay_items.end(); it++){
        if ((*it) == handle){
-           QString &name = (*it)->GetProtocolName();
-           AppConfig::Instance().SetProtocolFormat(name.toStdString(), format.toStdString());
-           (*it)->m_decoderStatus->m_format = DecoderDataFormat::Parse(format.toStdString().c_str());
-           protocol_updated();
+           auto lay = (*it); 
+           AppConfig::Instance().SetProtocolFormat(lay->m_protocolId.toStdString(), format.toStdString());
+
+           if (lay->m_decoderStatus != NULL)
+           {
+                  lay->m_decoderStatus->m_format = DecoderDataFormat::Parse(format.toStdString().c_str());
+                  protocol_updated();
+           }
+        
            break;
        }
    }
@@ -900,13 +965,15 @@ void ProtocolDock::on_decoder_name_edited(const QString &value)
         _protocol_combobox->removeItem(0);
     }
 
-    for (auto &info: _decoderInfoList){
-        QString name(info->Name);
-        QString id(info->Id);
+    for (auto info: _decoderInfoList){
+        srd_decoder *dec = (srd_decoder *)(info->ObjectHandle);
+        QString name(dec->name);
+        QString id(dec->id);
+
         if (value == "" 
         || name.indexOf(value, 0, Qt::CaseInsensitive) != -1 
         || id.indexOf(value, 0, Qt::CaseInsensitive) != -1 ){
-            _protocol_combobox->addItem(QString::fromUtf8(info->Name), QVariant::fromValue(info->Index));
+            _protocol_combobox->addItem(QString::fromUtf8(dec->name), QVariant::fromValue(info->Index));
         }
     }    
   
@@ -934,8 +1001,10 @@ void ProtocolDock::on_decoder_name_edited(const QString &value)
 
 bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const DecoderInfoItem *o2)
 {
-    const char *s1 = o1->Name;
-    const char *s2 = o2->Name;
+    srd_decoder *dec1 = (srd_decoder *)(o1->ObjectHandle);
+    srd_decoder *dec2 = (srd_decoder *)(o2->ObjectHandle);
+    const char *s1 = dec1->name;
+    const char *s2 = dec2->name;
     char c1 = 0;
     char c2 = 0;
 
@@ -981,6 +1050,61 @@ bool ProtocolDock::eventFilter(QObject *object, QEvent *event)
          on_add_protocol();
      }
  }
+
+ QString ProtocolDock::parse_protocol_id(const char *id)
+ {
+     if (id == NULL || *id == 0){
+         assert(false);
+     }
+     char buf[25];
+     strncpy(buf, id, sizeof(buf));
+     char *rd = buf;
+     char *start = NULL;
+     int len = 0;
+
+     while (*rd && len - 1 < sizeof(buf))
+     { 
+         if (*rd == '['){
+             start = rd++;
+         }
+         else if (*rd == ']'){
+             *rd = 0;
+             break;
+         }
+         ++rd;
+         len++;
+     }
+     if (start == NULL){
+         start = const_cast<char*>(id);
+     }
+
+     return QString(start);
+ }
+
+  int ProtocolDock::get_output_protocol_by_id(QString id)
+  {
+      int dex = 0;
+
+      for (auto info : _decoderInfoList)
+      {
+          srd_decoder *dec = (srd_decoder *)(info->ObjectHandle);
+          if (dec->outputs)
+          {
+              QString output_id = parse_protocol_id((char*)dec->outputs->data);
+              if (output_id == id)
+              {
+                  QString proid(dec->id);
+                  if (!proid.startsWith("0:") || output_id == proid){
+                      return dex;
+                  } 
+              }
+          }
+         
+          ++dex;
+      }
+
+      return -1;
+  }
  
 
 //-------------------------

@@ -34,6 +34,7 @@ ProtocolItemLayer::ProtocolItemLayer(QWidget *parent, QString protocolName, IPro
         m_callback = callback;
         _protocolName = protocolName;
         m_bSetting = false;
+        m_decoderStatus = NULL;
 
         _protocol_label = new QLabel(parent);
         _progress_label = new QLabel(parent);
@@ -48,8 +49,7 @@ ProtocolItemLayer::ProtocolItemLayer(QWidget *parent, QString protocolName, IPro
         _set_button->setIcon(QIcon(iconPath + "/gear.svg"));
         _protocol_label->setText(protocolName);
 
-        m_singleFlag = true;
-        m_decoderStatus = NULL;
+        m_singleFlag = true;     
 
         LoadFormatSelect(false);
  
