@@ -69,9 +69,9 @@ class Decoder(srd.Decoder):
         reg = (self.mosi_bytes[0] >> 1) & 0x3f
         reg_desc = sregs.get(reg, 'illegal')
         if write:
-            self.putx([1, ['%s: %#x' % (reg_desc, self.mosi_bytes[1])]])
+            self.putx([1, ['%s: {$}' % reg_desc, '@%02X' % self.mosi_bytes[1]]])
         else:
-            self.putx([0, ['%s: %#x' % (reg_desc, self.miso_bytes[1])]])
+            self.putx([0, ['%s: {$}' % reg_desc, '@%02X' % self.miso_bytes[1]]])
 
     def handle_long(self):
         dword = self.mosi_bytes[0] << 8 | self.mosi_bytes[1]
@@ -95,9 +95,9 @@ class Decoder(srd.Decoder):
             reg_desc = 'RX:%#x' % reg
 
         if write:
-            self.putx([3, ['%s: %#x' % (reg_desc, self.mosi_bytes[2])]])
+            self.putx([3, ['%s: {$}' % reg_desc, '@%02X' % self.mosi_bytes[2]]])
         else:
-            self.putx([2, ['%s: %#x' % (reg_desc, self.miso_bytes[2])]])
+            self.putx([2, ['%s: {$}' % reg_desc, '@%02X' % self.miso_bytes[2]]])
 
     def decode(self, ss, es, data):
         ptype = data[0]

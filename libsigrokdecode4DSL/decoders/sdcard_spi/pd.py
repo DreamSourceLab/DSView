@@ -30,6 +30,8 @@ class Decoder(srd.Decoder):
     inputs = ['spi']
     outputs = []
     tags = ['Memory']
+
+    # annotations length: 135 + 1
     annotations = \
         tuple(('cmd%d' % i, 'CMD%d' % i) for i in range(64)) + \
         tuple(('acmd%d' % i, 'ACMD%d' % i) for i in range(64)) + ( \
@@ -38,12 +40,13 @@ class Decoder(srd.Decoder):
         ('r2', 'R2 reply'),
         ('r3', 'R3 reply'),
         ('r7', 'R7 reply'),
+        ('bits:', 'Bits'),
         ('bits', 'Bits'),
         ('bit-warnings', 'Bit warnings'),
     )
     annotation_rows = (
-        ('bits', 'Bits', (133, 134)),
-        ('cmd-reply', 'Commands/replies', tuple(range(133))),
+        ('bits', 'Bits', (134, 135)),
+        ('cmd-reply', 'Commands/replies', tuple(range(133))), #0-132
     )
 
     def __init__(self):
@@ -71,6 +74,9 @@ class Decoder(srd.Decoder):
 
     def putc(self, cmd, desc):
         self.putx([cmd, ['%s: %s' % (self.cmd_str, desc)]])
+    
+    def putc_4(self, cmd, desc, v):
+        self.putx([cmd, ['%s: %s' % (self.cmd_str, desc), '@%04X' % v]])
 
     def putb(self, data):
         self.put(self.ss_bit, self.es_bit, self.out_ann, data)
@@ -137,13 +143,13 @@ class Decoder(srd.Decoder):
         # Bits[39:8]: Argument
         self.arg = (t[1] << 24) | (t[2] << 16) | (t[3] << 8) | t[4]
         self.ss_bit, self.es_bit = tb(4, 7)[1], tb(1, 0)[2]
-        self.putb([134, ['Argument: 0x%04x' % self.arg]])
+        self.putb([134, ['Argument: {$}', '@%04X' % self.arg]])
 
         # Bits[7:1]: CRC7
         # TODO: Check CRC7.
         crc = t[5] >> 1
         self.ss_bit, self.es_bit = tb(0, 7)[1], tb(0, 1)[2]
-        self.putb([134, ['CRC7: 0x%01x' % crc]])
+        self.putb([134, ['CRC7: {$}', '@%01X' % crc]])
 
         # Bits[0:0]: End bit (always 1)
         bit, self.ss_bit, self.es_bit = tb(0, 0)[0], tb(0, 0)[1], tb(0, 0)[2]
@@ -158,8 +164,8 @@ class Decoder(srd.Decoder):
             self.cmd_str = '%s%d (%s)' % (s, cmd, self.cmd_name(cmd))
         else:
             self.state = 'HANDLE CMD999'
-            a = '%s%d: %02x %02x %02x %02x %02x %02x' % ((s, cmd) + tuple(t))
-            self.putx([cmd, [a]])
+            a = '%s%d: {$}' % (s, cmd)
+            self.putx([cmd, [a, '@' + '%02x %02x %02x %02x %02x %02x' % (tuple(t))]])
 
     def handle_cmd0(self):
         # CMD0: GO_IDLE_STATE
@@ -213,7 +219,7 @@ class Decoder(srd.Decoder):
 
     def handle_cmd17(self):
         # CMD17: READ_SINGLE_BLOCK
-        self.putc(17, 'Read a block from address 0x%04x' % self.arg)
+        self.putc_4(17, 'Read a block from address {$}', self.arg)
         if len(self.read_buf) == 0:
             self.ss_cmd = self.ss
         self.read_buf.append(self.miso)
@@ -227,7 +233,7 @@ class Decoder(srd.Decoder):
 
     def handle_cmd24(self):
         # CMD24: WRITE_BLOCK
-        self.putc(24, 'Write a block to address 0x%04x' % self.arg)
+        self.putc_4(24, 'Write a block to address {$}', self.arg)
         self.is_cmd24 = True
         self.state = 'GET RESPONSE R1'
 
@@ -297,7 +303,7 @@ class Decoder(srd.Decoder):
         # Sent by the card after every command except for SEND_STATUS.
 
         self.ss_cmd, self.es_cmd = self.miso_bits[7][1], self.miso_bits[0][2]
-        self.putx([65, ['R1: 0x%02x' % res]])
+        self.putx([65, ['R1: {$}', '@%02x' % res]])
 
         def putbit(bit, data):
             b = self.miso_bits[bit]

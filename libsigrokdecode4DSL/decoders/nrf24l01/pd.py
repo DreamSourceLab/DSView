@@ -74,8 +74,6 @@ class Decoder(srd.Decoder):
     options = (
         {'id': 'chip', 'desc': 'Chip type',
             'default': 'nrf24l01', 'values': ('nrf24l01', 'xn297')},
-        {'id': 'hex_display', 'desc': 'Display payload in Hex', 'default': 'yes',
-            'values': ('yes', 'no')},
     )
     annotations = (
         # Sent from the host to the chip.
@@ -119,6 +117,10 @@ class Decoder(srd.Decoder):
     def putp(self, pos, ann, msg):
         '''Put an annotation message 'msg' at 'pos'.'''
         self.put(pos[0], pos[1], self.out_ann, [ann, [msg]])
+
+    def putp_ann(self, pos, ann, msg):
+        #msg is a list
+        self.put(pos[0], pos[1], self.out_ann, [ann, msg])
 
     def next(self):
         '''Resets the decoder after a complete command was decoded.'''
@@ -264,13 +266,14 @@ class Decoder(srd.Decoder):
                 return c
 
         data = ''.join([escape(b) for b in data])
-        text = '{} = "{}"'.format(label, data.strip())
-        self.putp(pos, ann, text)
+
+        self.putp_ann(pos, ann, [label + ' = "{$}"', '@' + data.strip()])
 
     def finish_command(self, pos):
         '''Decodes the remaining data bytes at position 'pos'.'''
+ 
+        always_hex = True
 
-        always_hex = self.options['hex_display'] == 'yes'
         if self.cmd == 'R_REGISTER':
             self.decode_register(pos, self.ann_reg,
                                  self.dat, self.miso_bytes())

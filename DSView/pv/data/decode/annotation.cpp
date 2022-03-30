@@ -153,6 +153,7 @@ const std::vector<QString>& Annotation::annotations() const
 			 for (QString &rd_src : resItem.src_lines)
 			 {			
 				 QString src = rd_src.replace("{$}", "%s");
+
 				 const char *num_str = _status->m_resTable.format_numberic(resItem.str_number_hex, resItem.cur_display_format);
 				 const char *src_str = src.toUtf8().data();
 

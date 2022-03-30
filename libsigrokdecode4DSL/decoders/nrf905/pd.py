@@ -175,7 +175,7 @@ class Decoder(srd.Decoder):
         for byte in cmd_bytes[1:]:
             data += format(byte[0], '02X') + ' '
             es = byte[2]
-        self.put(ss, es, self.out_ann, [ann, [prefix + data]])
+        self.put(ss, es, self.out_ann, [ann, [prefix + '{$}', '@' + data]])
 
     def handle_WC(self):
         start_addr = self.mosi_bytes[0][0] & 0x0F
@@ -206,11 +206,12 @@ class Decoder(srd.Decoder):
 
     def handle_CC(self):
         cmd, dta = self.mosi_bytes[0], self.mosi_bytes[1]
-        channel = ((cmd[0] & 0x01) << 8) + dta
+        channel = ((cmd[0] & 0x01) << 8) + dta[0]
         data = self.extract_vars(CHN_CFG, cmd[0])
         data += '| CHN = ' + str(channel)
         self.put(self.mosi_bytes[0][1], self.mosi_bytes[1][2],
                  self.out_ann, [Ann.REG_WR, [data]])
+
 
     def handle_STAT(self):
         status = 'STAT = ' + self.extract_vars(STAT_REG, self.miso_bytes[0][0])

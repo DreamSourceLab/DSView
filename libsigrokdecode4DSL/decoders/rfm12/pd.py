@@ -251,11 +251,11 @@ class Decoder(srd.Decoder):
         if self.last_fifo_and_reset & 0x08:
             self.putx(0, 8, ['Pattern: 0x2D%02X' % pattern])
         else:
-            self.putx(0, 8, ['Pattern: %02X' % pattern])
+            self.putx(0, 8, ['Pattern: {$}', '@%02X' % pattern])
 
     def handle_fifo_read_cmd(self, cmd, ret):
         self.putx(0, 8, ['FIFO read command', 'FIFO read'])
-        self.putx(3, 8, ['Data: %02X' % ret[1]])
+        self.putx(3, 8, ['Data: {$}', '@%02X' % ret[1]])
 
     def handle_afc_cmd(self, cmd, ret):
         self.putx(0, 8, ['AFC command'])

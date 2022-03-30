@@ -82,6 +82,9 @@ class Decoder(srd.Decoder):
     def putp2(self, pos, ann, msg1, msg2):
         '''Put an annotation message 'msg' at 'pos'.'''
         self.put(pos.ss, pos.es, self.out_ann, [ann, [msg1, msg2]])
+    
+    def put_ann(self, pos, ann, data):
+        self.put(pos.ss, pos.es, self.out_ann, [ann, data])
 
     def next(self):
         '''Resets the decoder after a complete command was decoded.'''
@@ -111,7 +114,7 @@ class Decoder(srd.Decoder):
     def decode_command(self, pos, b):
         '''Decodes the command byte 'b' at position 'pos' and prepares
         the decoding of the following data bytes.'''
-        c = self.parse_command(b)
+        c = self.parse_command(pos, b)
         if c is None:
             self.warn(pos, 'Unknown command')
             return
@@ -135,7 +138,7 @@ class Decoder(srd.Decoder):
         else:
             return 'TODO Cmd {}'.format(self.cmd)
 
-    def parse_command(self, b):
+    def parse_command(self, pos, b):
         '''Parses the command byte.
         Returns a tuple consisting of:
         - the name of the command
@@ -254,10 +257,11 @@ class Decoder(srd.Decoder):
 
         data = ' '.join([escape(b) for b in data])
         if (ann == Ann.FIFO_WRITE) or (ann == Ann.FIFO_READ):
-            text = '{}{}'.format(label, data)
+            text = label + '{$}'
         else:
-            text = '{} = {}'.format(label, data)
-        self.putp(pos, ann, text)
+            text = label + ' = {$}'
+
+        self.put_ann(pos, ann, [text, '@' + data])
 
     def finish_command(self, pos):
         '''Decodes the remaining data bytes at position 'pos'.'''

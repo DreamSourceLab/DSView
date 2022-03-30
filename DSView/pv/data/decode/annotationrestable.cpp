@@ -22,6 +22,8 @@
 #include "annotationrestable.h"
 #include <assert.h>
 #include <stdlib.h>
+#include <QDebug>
+
 #include "../../dsvdef.h"
  
 const char g_bin_cvt_table[] = "0000000100100011010001010110011110001001101010111100110111101111";
@@ -154,7 +156,21 @@ const char* AnnotationResTable::format_to_string(const char *hex_str, int fmt)
 	 while (rd >= data)
 	 {
 		 c = *rd;
-		 dex = (int)(c <= '9' ? (c - '0') : (c - 'A' + 10));
+
+ 		 if (c >= '0' && c <= '9'){
+			 dex = (int)(c - '0');	 
+		 }
+		 else if (c >= 'A' && c <= 'F'){
+			 dex = (int)(c - 'A') + 10;
+		 }
+		 else if (c >= 'a' && c <= 'f'){
+			 dex = (int)(c - 'a') + 10;
+		 }
+		 else{
+			 qDebug()<<"is not a hex string!";
+			 assert(false);
+		 }
+
          char *ptable = (char*)g_bin_cvt_table + dex * 4;
 
 		 buf -= 4; //move to left for 4 bytes
@@ -225,14 +241,11 @@ const char* AnnotationResTable::format_numberic(const char *hex_str, int fmt)
 		 c = *rd;
 		 rd++;
 
-		 if (c >= '0' && c <= '9')
+		 if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f'))
 		 {
-			 continue;
+			continue;
 		 }
-		 if (c >= 'A' && c <= 'F')
-		 {
-			 continue;
-		 }
+
 		 bMutil = true;
 		 break;
 	 }
@@ -255,7 +268,7 @@ const char* AnnotationResTable::format_numberic(const char *hex_str, int fmt)
 		  c = *rd;
 		  rd++;
 
-		  if (c >= '0' && c <= '9'){
+		  if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f')){
 			  if (sub_wr == sub_end){
 				  printf("conver error,sub string length is too long!\n");
 				  return hex_str;
@@ -265,17 +278,6 @@ const char* AnnotationResTable::format_numberic(const char *hex_str, int fmt)
 			  sub_wr++;
 			  continue;
 		  }
-		  
-		  if (c >= 'A' && c <= 'F'){
-			  if (sub_wr == sub_end){
-				  printf("convert error,sub string length is too long!\n");
-				  return hex_str;
-			  }
-
-			  *sub_wr = c;
-			  sub_wr++;
-			  continue;
-		  } 
 
 		  //convert sub string
 		  if (sub_wr != sub_buf){
