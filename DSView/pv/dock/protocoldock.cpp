@@ -42,8 +42,10 @@
 #include <QRegExp>
 #include <QFuture>
 #include <QProgressDialog>
-#include <QtConcurrent/QtConcurrent>
 #include <QSizePolicy>
+#include <QApplication>
+#include <QtConcurrent/qtconcurrentrun.h>
+#include <QFutureWatcher>
 
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>

@@ -48,6 +48,7 @@
 #include <QEvent>
 #include <QtGlobal>
 #include <QScreen>
+#include <QSettings>
 
 #include "mainwindow.h"
 

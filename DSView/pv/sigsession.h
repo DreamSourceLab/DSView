@@ -44,7 +44,7 @@
 #include <QMap>
 #include <QVariant>
 #include <QTimer>
-#include <QtConcurrent/QtConcurrent>
+//#include <QtConcurrent/QtConcurrent>
 #include <QJsonObject>
 
 #include <libusb.h>
@@ -214,7 +214,7 @@ public:
     void deregister_hotplug_callback();
 
     uint16_t get_ch_num(int type);
-    
+
     bool get_instant();
 
     bool get_data_lock();

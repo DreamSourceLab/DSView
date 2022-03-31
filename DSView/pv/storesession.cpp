@@ -44,6 +44,10 @@
 
 #include <QApplication>
 #include <QFileDialog>
+#include <QJsonArray>
+#include <QSettings>
+#include <QStandardPaths>
+#include <QJsonDocument>
 
 using boost::dynamic_pointer_cast;
 using boost::mutex;

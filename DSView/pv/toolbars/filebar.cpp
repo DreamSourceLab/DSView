@@ -26,6 +26,7 @@
 #include <QMetaObject>
 #include <QFileDialog>
 #include <QApplication>
+#include <QSettings>
 
 #include "filebar.h"
 #include "../device/devinst.h"

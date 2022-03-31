@@ -34,6 +34,7 @@
 
 #include <QDebug>
 #include <QTimer>
+#include <QCoreApplication>
 
 using namespace boost;
 using namespace std;

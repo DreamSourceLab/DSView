@@ -63,7 +63,8 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QFuture>
-#include <QtConcurrent/QtConcurrent>
+#include <qcoreapplication.h>
+//#include <QtConcurrent/QtConcurrent>
 
 #include <boost/foreach.hpp>
 
@@ -137,7 +138,7 @@ SigSession::SigSession(DeviceManager &device_manager) :
 SigSession::~SigSession()
 {
 	stop_capture();
-		       
+
     ds_trigger_destroy();
 
     _dev_inst->release();
@@ -1232,7 +1233,7 @@ void SigSession::data_feed_in_proc(const struct sr_dev_inst *sdi,
 /*
  * hotplug function
  */
-int SigSession::hotplug_callback(struct libusb_context *ctx, struct libusb_device *dev, 
+int SigSession::hotplug_callback(struct libusb_context *ctx, struct libusb_device *dev,
                                   libusb_hotplug_event event, void *user_data) {
 
     (void)ctx;
@@ -1288,7 +1289,7 @@ void SigSession::register_hotplug_callback()
     int ret;
 
     ret = libusb_hotplug_register_callback(NULL, (libusb_hotplug_event)(LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED |
-                                           LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT), 
+                                           LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT),
                                            (libusb_hotplug_flag)LIBUSB_HOTPLUG_ENUMERATE, 0x2A0E, LIBUSB_HOTPLUG_MATCH_ANY,
                                            LIBUSB_HOTPLUG_MATCH_ANY, hotplug_callback, NULL,
                                            &_hotplug_handle);

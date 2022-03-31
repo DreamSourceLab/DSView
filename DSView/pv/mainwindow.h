@@ -27,6 +27,7 @@
 #include <list>
 
 #include <QMainWindow>
+#include <QTranslator>
 
 #include "sigsession.h"
 #include "dialogs/dsmessagebox.h"

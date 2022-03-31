@@ -27,6 +27,7 @@
 
 #include <QObject>
 #include <QGridLayout>
+#include <QCoreApplication>
 #include <QVBoxLayout>
 #include <QPainter>
 #include <QRegExpValidator>

@@ -42,6 +42,7 @@
 #include <QMessageBox>
 #include <QApplication>
 #include <QScreen>
+#include <QSettings>
 
 #include <algorithm>
 
@@ -323,7 +324,7 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
                    break;
                 }
                 _freezing = true;
-            } 
+            }
             return true;
         }
     } else if (type == QEvent::MouseButtonPress) {

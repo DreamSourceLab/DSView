@@ -26,6 +26,7 @@
 #include <QStyleOption>
 #include <QMouseEvent>
 #include <QBitmap>
+#include <QJsonArray>
 
 #include "../view/trace.h"
 #include "../sigsession.h"

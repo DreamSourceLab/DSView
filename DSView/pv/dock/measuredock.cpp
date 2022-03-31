@@ -41,6 +41,7 @@
 #include <QPainter>
 #include <QRegExpValidator>
 #include <QMessageBox>
+#include <QCoreApplication>
 
 using namespace boost;
 
