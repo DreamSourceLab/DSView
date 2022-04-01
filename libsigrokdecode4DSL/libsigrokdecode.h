@@ -328,7 +328,10 @@ struct srd_decoder_inst {
 	GCond handled_all_samples_cond;
 	GMutex data_mutex;
 
-	char **error_buffer;
+	char *python_proc_error;
+
+	/** the task normal ends flag */
+	int  is_task_stop_signal;
 };
 
 struct srd_pd_output {

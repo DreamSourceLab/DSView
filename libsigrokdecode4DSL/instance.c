@@ -26,6 +26,7 @@
 #include <inttypes.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <assert.h>
 
 /** @cond PRIVATE */
 
@@ -418,6 +419,8 @@ SRD_API struct srd_decoder_inst *srd_inst_new(struct srd_session *sess,
 	di->handled_all_samples = FALSE;
 	di->want_wait_terminate = FALSE;
 	di->decoder_state = SRD_OK;
+	di->python_proc_error = NULL;
+	di->is_task_stop_signal = FALSE;
 
 	/*
 	 * Strictly speaking initialization of statically allocated
@@ -457,7 +460,9 @@ static void srd_inst_join_decode_thread(struct srd_decoder_inst *di)
 	 */
 	srd_dbg("%s: Raising want_term, sending got_new.", di->inst_id);
 	g_mutex_lock(&di->data_mutex);
+	//srd_err("set flag =true");
 	di->want_wait_terminate = TRUE;
+	di->is_task_stop_signal = TRUE;
 	g_cond_signal(&di->got_new_samples_cond);
 	g_mutex_unlock(&di->data_mutex);
 
@@ -1044,15 +1049,14 @@ static gpointer di_thread(gpointer data)
 {
 	PyObject *py_res;
 	struct srd_decoder_inst *di;
-	int wanted_term;
+	int wanted_term = 0;
 	PyGILState_STATE gstate;
 	char ** error_buffer = NULL;
+	int is_task_stop_signal = FALSE;
 
-	if (!data)
-		return NULL;
+	assert(data);
 
-	di = data;
-	error_buffer = di->error_buffer;
+	di = data; 
 
 	srd_dbg("%s: Starting thread routine for decoder.", di->inst_id);
 
@@ -1062,15 +1066,45 @@ static gpointer di_thread(gpointer data)
 	 * Call self.decode(). Only returns if the PD throws an exception.
 	 * "Regular" termination of the decode() method is not expected.
 	 */
-    //Py_IncRef(di->py_inst);
-	//srd_err("start call decode()");
 	srd_dbg("%s: Calling decode().", di->inst_id);
 	py_res = PyObject_CallMethod(di->py_inst, "decode", NULL);
 	srd_dbg("%s: decode() terminated.", di->inst_id);
- 	//srd_err("end call decode()");
 
-	if (!py_res)
+	is_task_stop_signal = di->is_task_stop_signal;
+	//srd_err("get flag:%d", is_task_stop_signal);
+
+	/**
+	 * decode() returns a error!
+	 * before the send thread exits, write the error
+	 * 
+	*/
+	if (py_res){
+		
 		di->decoder_state = SRD_ERR;
+
+		if (PyUnicode_Check(py_res))
+		{
+			PyObject *py_bytes = PyUnicode_AsUTF8String(py_res);
+			char *err_str = PyBytes_AsString(py_bytes);
+			srd_err("python method decode() returns an error:\n %s", err_str);
+			di->python_proc_error = g_strdup(err_str);
+		}
+		else{
+			di->python_proc_error = g_strdup("python method decode() returns an unknown type error!");
+		}
+
+		Py_DecRef(py_res);
+	}
+	
+	/**
+	 * decode() throw an except!
+	 * before the send thread exits, write the error
+	 * 
+	*/
+	if (!py_res && !is_task_stop_signal)
+	{
+		srd_exception_catch(&di->python_proc_error, "Protocol decoder instance %s: ", di->inst_id);
+	}
 
 	/*
 	 * Make sure to unblock potentially pending srd_inst_decode()
@@ -1085,47 +1119,19 @@ static gpointer di_thread(gpointer data)
 	di->handled_all_samples = TRUE;
 	g_cond_signal(&di->handled_all_samples_cond);
 	g_mutex_unlock(&di->data_mutex);
-
+ 
 	/*
-	 * Check for the termination cause of the decode() method.
-	 * Though this is mostly for information.
+	 * normal
+	 * except
+	 * returns a value
+	 * task_stop_signal
 	 */
-	if (!py_res && wanted_term) {
-		/*
-		 * Silently ignore errors upon return from decode() calls
-		 * when termination was requested. Terminate the thread
-		 * which executed this instance's decode() logic.
-		 */ 
-		srd_dbg("%s: Thread done (!res, want_term).", di->inst_id);
-		PyErr_Clear();
-		PyGILState_Release(gstate);
-		return NULL;
-	}
-	if (!py_res) {
-		/*
-		 * The decode() invocation terminated unexpectedly. Have
-		 * the back trace printed, and terminate the thread which
-		 * executed the decode() method.
-		 */
-		srd_dbg("%s: decode() terminated unrequested.", di->inst_id);
-        srd_exception_catch(NULL, "Protocol decoder instance %s: ", di->inst_id);
-		srd_dbg("%s: Thread done (!res, !want_term).", di->inst_id);
-		PyGILState_Release(gstate);
-		return NULL;
-	}
+	if (!is_task_stop_signal)
+		srd_dbg("%s: decode() terminated (req %d).", di->inst_id, wanted_term);
 
-	/*
-	 * TODO: By design the decode() method is not supposed to terminate.
-	 * Nevertheless we have the thread joined, and srd backend calls to
-	 * decode() will re-start another thread transparently.
-	 */
-	srd_dbg("%s: decode() terminated (req %d).", di->inst_id, wanted_term);
-	Py_DecRef(py_res);
-	PyErr_Clear();
-
+	PyErr_Clear();	
 	PyGILState_Release(gstate);
-
-	srd_dbg("%s: Thread done (with res).", di->inst_id);
+	//srd_dbg("%s: Thread done (with res).", di->inst_id);
 
 	return NULL;
 }
@@ -1223,7 +1229,6 @@ SRD_PRIV int srd_inst_decode(struct srd_decoder_inst *di,
 	if (!di->thread_handle) {
 		srd_dbg("No worker thread for this decoder stack "
 			"exists yet, creating one: %s.", di->inst_id);
-		di->error_buffer = error;
 		di->thread_handle = g_thread_new(di->inst_id,
 						 di_thread, di);
 	}
@@ -1248,8 +1253,14 @@ SRD_PRIV int srd_inst_decode(struct srd_decoder_inst *di,
 		g_cond_wait(&di->handled_all_samples_cond, &di->data_mutex);
 	g_mutex_unlock(&di->data_mutex);
 
-	if (di->want_wait_terminate)
+
+	//the python got error
+	if (di->python_proc_error)
+	{
+		*error = di->python_proc_error;
+		di->python_proc_error = NULL;
 		return SRD_ERR_TERM_REQ;
+	}				
 
 	return SRD_OK;
 }

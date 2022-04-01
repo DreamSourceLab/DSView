@@ -506,6 +506,8 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
     uint64_t entry_cnt = 0;
     uint64_t i = decode_start;
     char *error = NULL; 
+    bool bError = false;
+    bool bEndTime = false;
 
     if( i >= decode_end){
         qDebug()<<"decode data index have been end:"<<i;
@@ -537,6 +539,8 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
         if (chunk_end - i > MaxChunkSize)
             chunk_end = i + MaxChunkSize;
 
+        bEndTime = chunk_end == decode_end;
+
         if (srd_session_send(
                 session,
                 i,
@@ -545,7 +549,11 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
                 chunk_const.data(),
                 chunk_end - i,
                 &error) != SRD_OK){
-            _error_message = QString::fromLocal8Bit(error);
+
+            if (error)
+                 _error_message = QString::fromLocal8Bit(error);
+
+            bError = true;
             break;
         }
 
@@ -563,6 +571,11 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
         }
         entry_cnt++;
     } 
+
+    // the task is normal ends,so all samples was processed;
+    if (!bError && bEndTime){
+
+    }
 
     qDebug()<<"send to decoder times:"<<entry_cnt;
 
