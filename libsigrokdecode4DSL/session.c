@@ -407,4 +407,45 @@ SRD_PRIV struct srd_pd_callback *srd_pd_output_callback_find(
 	return pd_cb;
 }
 
+SRD_API int srd_session_end(struct srd_session *sess, char **error)
+{
+	GSList *d;
+	struct srd_decoder_inst *di;
+	PyGILState_STATE gstate;
+	PyObject *py_res;
+
+	if (!sess || !sess->di_list){
+		return SRD_ERR;
+	}
+
+	gstate = PyGILState_Ensure();
+
+	for (d = sess->di_list; d; d = d->next)
+	{
+		di = d->data;
+
+		if (PyObject_HasAttrString(di->py_inst, "end"))
+		{
+			//set the last sample index
+			PyObject *py_cur_samplenum = PyLong_FromUnsignedLongLong(di->abs_cur_samplenum);
+            PyObject_SetAttrString(di->py_inst, "last_samplenum", py_cur_samplenum);
+            Py_DECREF(py_cur_samplenum);
+
+			py_res = PyObject_CallMethod(di->py_inst, "end", NULL);
+
+			if (!py_res)
+			{ 
+				srd_exception_catch(error, "Protocol decoder instance %s",
+									di->inst_id);
+				PyGILState_Release(gstate);
+				return SRD_ERR_PYTHON;
+			}
+		}
+	}
+
+	PyGILState_Release(gstate);
+
+	return SRD_OK;
+}
+
 /** @} */

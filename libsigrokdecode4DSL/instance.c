@@ -381,7 +381,7 @@ SRD_API struct srd_decoder_inst *srd_inst_new(struct srd_session *sess,
 	di->dec_num_channels = g_slist_length(di->decoder->channels) +
 			g_slist_length(di->decoder->opt_channels);
 			
-	if (di->dec_num_channels) {
+	if (di->dec_num_channels > 0) {
 		di->dec_channelmap = g_malloc(sizeof(int) * di->dec_num_channels);
 
 		for (i = 0; i < di->dec_num_channels; i++)

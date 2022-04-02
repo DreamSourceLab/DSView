@@ -508,11 +508,12 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
     char *error = NULL; 
     bool bError = false;
     bool bEndTime = false;
+    //struct srd_push_param push_param;
 
     if( i >= decode_end){
         qDebug()<<"decode data index have been end:"<<i;
     }
-
+  
     while(i < decode_end && !_no_memory && !status->m_bStop)
     {
         std::vector<const uint8_t *> chunk;
@@ -521,6 +522,7 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
 
         for (int j =0 ; j < logic_di->dec_num_channels; j++) {
             int sig_index = logic_di->dec_channelmap[j];
+
             if (sig_index == -1) {
                 chunk.push_back(NULL);
                 chunk_const.push_back(0);
@@ -534,6 +536,7 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
                 }
             }
         }
+
         if (chunk_end > decode_end)
             chunk_end = decode_end;
         if (chunk_end - i > MaxChunkSize)
@@ -574,7 +577,10 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
 
     // the task is normal ends,so all samples was processed;
     if (!bError && bEndTime){
+       srd_session_end(session, &error);
 
+        if (error)
+            _error_message = QString::fromLocal8Bit(error);
     }
 
     qDebug()<<"send to decoder times:"<<entry_cnt;

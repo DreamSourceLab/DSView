@@ -64,7 +64,7 @@ def channel_list(num_channels):
 class ChannelError(Exception):
     pass
 
-NUM_CHANNELS = 8
+NUM_CHANNELS = 32
 
 class Decoder(srd.Decoder):
     api_version = 3
@@ -100,20 +100,16 @@ class Decoder(srd.Decoder):
     def reset(self):
         self.items = []
         self.saved_item = None
-        self.ss_item = self.es_item = None
         self.saved_word = None
         self.ss_word = self.es_word = None
-        self.first = True
+        self.first = True 
+        self.have_clock = True
+        self.prv_dex = 0
+        self.num_item_bits = None
 
     def start(self):
         self.out_python = self.register(srd.OUTPUT_PYTHON)
         self.out_ann = self.register(srd.OUTPUT_ANN)
-
-    def putpb(self, data):
-        self.put(self.ss_item, self.es_item, self.out_python, data)
-
-    def putb(self, data):
-        self.put(self.ss_item, self.es_item, self.out_ann, data)
 
     def putpw(self, data):
         self.put(self.ss_word, self.es_word, self.out_python, data)
@@ -121,74 +117,107 @@ class Decoder(srd.Decoder):
     def putw(self, data):
         self.put(self.ss_word, self.es_word, self.out_ann, data)
 
-    def handle_bits(self, item, used_pins):
+    def put_ann(self, s, e, data):
+        self.put(s, e, self.out_ann, data)
+    
+    def put_py(self, s, e, data):
+        self.put(s, e, self.out_python, data)
 
+    def handle_bits(self, item):
         # If a word was previously accumulated, then emit its annotation
         # now after its end samplenumber became available.
+        cur_dex = self.samplenum
+
+        # Defer annotations for individual items until the next sample
+        # is taken, and the previous sample's end samplenumber has
+        # become available. 
+        if self.first:
+            # Save the start sample and item for later (no output yet).
+            if not self.have_clock:
+                self.put_py(self.prv_dex, cur_dex, ['ITEM', self.saved_item])
+                self.put_ann(self.prv_dex, cur_dex, [0, [self.fmt_item.format(self.saved_item)]])
+             
+            self.first = False
+            self.saved_item = item
+        else:            
+            # Output the saved item (from the last CLK edge to the current).
+            self.put_py(self.prv_dex, cur_dex, ['ITEM', self.saved_item])
+            self.put_ann(self.prv_dex, cur_dex, [0, [self.fmt_item.format(self.saved_item)]])        
+            self.saved_item = item
+
+        self.prv_dex = cur_dex
+        self.handel_word(item, cur_dex)
+
+    #word 
+    def handel_word(self, item, cur_dex):
         if self.saved_word is not None:
             if self.options['wordsize'] > 0:
-                self.es_word = self.samplenum
+                self.es_word = cur_dex
                 self.putw([1, [self.fmt_word.format(self.saved_word)]])
                 self.putpw(['WORD', self.saved_word])
             self.saved_word = None
 
-        # Defer annotations for individual items until the next sample
-        # is taken, and the previous sample's end samplenumber has
-        # become available.
-        if self.first:
-            # Save the start sample and item for later (no output yet).
-            self.ss_item = self.samplenum
-            self.first = False
-            self.saved_item = item
-        else:
-            # Output the saved item (from the last CLK edge to the current).
-            self.es_item = self.samplenum
-            self.putpb(['ITEM', self.saved_item])
-            self.putb([0, [self.fmt_item.format(self.saved_item)]])
-            self.ss_item = self.samplenum
-            self.saved_item = item
+        if item is None:
+            return
 
-        # Get as many items as the configured wordsize specifies.
+         # Get as many items as the configured wordsize specifies.
         if not self.items:
-            self.ss_word = self.samplenum
+            self.ss_word = cur_dex
+
         self.items.append(item)
         ws = self.options['wordsize']
+
         if len(self.items) < ws:
             return
 
         # Collect words and prepare annotation details, but defer emission
         # until the end samplenumber becomes available.
         endian = self.options['endianness']
+
         if endian == 'big':
             self.items.reverse()
-        word = sum([self.items[i] << (i * used_pins) for i in range(ws)])
+
+        word = sum([self.items[i] << (i * self.num_item_bits) for i in range(ws)])
         self.saved_word = word
         self.items = []
+
+    def end(self): 
+        cur_dex = self.last_samplenum
+        #the last annotation
+        self.put_py(self.prv_dex, cur_dex, ['ITEM', self.saved_item])
+        self.put_ann(self.prv_dex, cur_dex, [0, [self.fmt_item.format(self.saved_item)]])
+        self.handel_word(None, cur_dex)
 
     def decode(self):
         # Determine which (optional) channels have input data. Insist in
         # a non-empty input data set. Cope with sparse connection maps.
         # Store enough state to later "compress" sampled input data.
         max_possible = len(self.optional_channels)
+
         idx_channels = [
             idx if self.has_channel(idx) else None
             for idx in range(max_possible)
         ]
+        
         has_channels = [idx for idx in idx_channels if idx is not None]
         if not has_channels:
             raise ChannelError('At least one channel has to be supplied.')
         max_connected = max(has_channels)
 
+        self.have_clock = self.has_channel(0)
+        self.prv_dex = self.samplenum
+        have_clock = self.have_clock
+    
         # Determine .wait() conditions, depending on the presence of a
         # clock signal. Either inspect samples on the configured edge of
         # the clock, or inspect samples upon ANY edge of ANY of the pins
         # which provide input data.
-        if self.has_channel(0):
+        if have_clock:
             edge = self.options['clock_edge'][0]
-            conds = {0: edge}
+            conds = {0: edge} #'f' or 'r'
         else:
             conds = [{idx: 'e'} for idx in has_channels]
-
+        
         # Pre-determine which input data to strip off, the width of
         # individual items and multiplexed words, as well as format
         # strings here. This simplifies call sites which run in tight
@@ -198,16 +227,33 @@ class Decoder(srd.Decoder):
         num_word_items = self.options['wordsize']
         num_word_bits = num_item_bits * num_word_items
         num_digits = (num_item_bits + 3) // 4
-        self.fmt_item = "{{:0{}x}}".format(num_digits)
+        self.fmt_item = "{{:0{}X}}".format(num_digits)
         num_digits = (num_word_bits + 3) // 4
-        self.fmt_word = "{{:0{}x}}".format(num_digits)
+        self.fmt_word = "{{:0{}X}}".format(num_digits)
+        self.num_item_bits = num_item_bits
 
         # Keep processing the input stream. Assume "always zero" for
         # not-connected input lines. Pass data bits (all inputs except
         # clock) to the handle_bits() method.
+
+        is_first = True
+        the_conds = conds
+
         while True:
-            (clk, d0, d1, d2, d3, d4, d5, d6, d7) = self.wait(conds)
-            pins = (clk, d0, d1, d2, d3, d4, d5, d6, d7)
+            if not have_clock and is_first:
+                #get the value at sample 0
+                conds = None
+            else:
+                conds = the_conds
+
+            (clk, d0, d1, d2, d3, d4, d5, d6, d7,d8, d9,d10 ,d11 ,d12 ,d13 ,d14 ,d15 ,d16 ,d17 ,d18 ,d19 ,d20 ,d21 ,d22 ,d23 ,d24 ,d25 ,d26 ,d27 ,d28 ,d29 ,d30 ,d31 ) = self.wait(conds)
+            pins = (clk, d0, d1, d2, d3, d4, d5, d6, d7,d8, d9, d10, d11, d12,d13 ,d14 ,d15 ,d16 ,d17 ,d18 ,d19 ,d20 ,d21 ,d22 ,d23 ,d24 ,d25 ,d26 ,d27 ,d28 ,d29 ,d30 ,d31 )
             bits = [0 if idx is None else pins[idx] for idx in idx_channels]
             item = bitpack(bits[1:idx_strip])
-            self.handle_bits(item, num_item_bits)
+
+            if not have_clock and is_first:
+                is_first = False 
+                self.saved_item = item
+                continue
+
+            self.handle_bits(item)

@@ -661,6 +661,7 @@ static PyObject *Decoder_register(PyObject *self, PyObject *args,
 		pdo = cmp;
 		break;
 	}
+
 	if (pdo) {
 		py_new_output_id = Py_BuildValue("i", pdo->pdo_id);
 		PyGILState_Release(gstate);
@@ -1002,7 +1003,7 @@ static PyObject *Decoder_wait(PyObject *self, PyObject *args)
 	uint64_t skip_count;
 	gboolean found_match;
 	struct srd_decoder_inst *di;
-    PyGILState_STATE gstate;
+    PyGILState_STATE gstate; 
 
 	if (!self || !args)
 		return NULL;
@@ -1088,7 +1089,7 @@ static PyObject *Decoder_wait(PyObject *self, PyObject *args)
 
             Py_INCREF(di->py_pinvalues);
             return (PyObject *)di->py_pinvalues;
-        }
+        } 
  
 		/* No match, reset state for the next chunk. */
 		di->got_new_samples = FALSE;
@@ -1170,7 +1171,14 @@ static PyObject *Decoder_has_channel(PyObject *self, PyObject *args)
 
 	PyGILState_Release(gstate);
 
-	return (di->dec_channelmap[idx] == -1) ? Py_False : Py_True;
+	if (di->dec_channelmap[idx] == -1){
+		Py_INCREF(Py_False);
+		return Py_False;
+	}
+	else{
+		Py_INCREF(Py_True);
+		return Py_True;
+	}
 
 err:
 	PyGILState_Release(gstate);
