@@ -53,39 +53,8 @@
 #include "../data/decode/decoderstatus.h"
 #include "../data/decode/decoder.h"
 
-#define PROTOCOL_FIND_TITLE  "Protocol search..."
-
 using namespace std;
 
-//--------------------------class KeywordLineEdit
-
-KeywordLineEdit::KeywordLineEdit(QComboBox *comboBox)
-:QLineEdit()
-{
-    assert(comboBox);
-    _comboBox = comboBox;
-}
-
-
- void KeywordLineEdit::focusInEvent(QFocusEvent *e)
- {
-     QLineEdit::focusInEvent(e);
-     QString key(PROTOCOL_FIND_TITLE);
-     if (this->text() == key){
-         this->setText("");
-     }  
- }
-
-void KeywordLineEdit::focusOutEvent(QFocusEvent *e)
- {
-      QLineEdit::focusOutEvent(e);
-
-      if (this->text() == ""){
-         this->setText(PROTOCOL_FIND_TITLE);
-      } 
- }
-
-//----------------------------------------------------------
  
 namespace pv {
 namespace dock {

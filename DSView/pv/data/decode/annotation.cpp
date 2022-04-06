@@ -36,24 +36,6 @@
 #include "decoderstatus.h"
 #include "../../dsvdef.h"
  
-   
-bool is_hex_number_str(const char *str)
-{ 
-	char c = *str;
-	int len = 0;
-
-	while (c)
-	{
-		++len;
-		if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F')){
-			c = *str;
-			str++;
-			continue;
-		}
-		return false;		
-	}
-	return len % 2 == 0 && len > 0;
-}
 
 namespace pv {
 namespace data {

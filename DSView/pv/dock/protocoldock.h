@@ -35,7 +35,6 @@
 #include <QTableView>
 #include <QSortFilterProxyModel>
 #include <QLineEdit>
-#include <QFocusEvent>
 
 #include <vector>
 #include <mutex>
@@ -45,25 +44,11 @@
 #include "protocolitemlayer.h"
 #include "../ui/dscombobox.h"
 #include "../dstimer.h"
+#include "keywordlineedit.h"
 
 struct DecoderInfoItem{
     int     Index;
     void    *ObjectHandle; //srd_decoder* type
-};
-
-class KeywordLineEdit : public QLineEdit
- {
-    Q_OBJECT
-
-public:
-    KeywordLineEdit(QComboBox *comboBox);
-
-protected:
-    void focusInEvent(QFocusEvent *e) override;
-    void focusOutEvent(QFocusEvent *e) override;
-
-private:
-    QComboBox   *_comboBox;  
 };
 
 namespace pv {
