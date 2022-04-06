@@ -94,8 +94,7 @@ SR_API void sr_config_free(struct sr_config *src);
 typedef void (*sr_datafeed_callback_t)(const struct sr_dev_inst *sdi,
 		const struct sr_datafeed_packet *packet, void *cb_data);
                 
-SR_API void sr_set_export_original_data(int flag);
-SR_API int sr_get_export_original_flag();
+ 
 SR_API void sr_set_firmware_resource_dir(const char *dir);
 
 

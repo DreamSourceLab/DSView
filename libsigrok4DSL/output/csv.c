@@ -235,12 +235,10 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
 			*out = g_string_sized_new(512);
 		}
 
-        int bflag = sr_get_export_original_flag();
-
 		for (i = 0; i <= logic->length - logic->unitsize; i += logic->unitsize) {
             ctx->index++;
 
-            if (bflag == 0){
+            if (packet->bExportOriginalData == 0){
                 if (ctx->index > 1 && (*(uint64_t *)(logic->data + i) & ctx->mask) == ctx->pre_data)
                    continue;
             } 

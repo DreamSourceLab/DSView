@@ -630,11 +630,6 @@ bool StoreSession::export_start()
         return false;
     }
 
-    //set export all data flag
-    AppConfig &app = AppConfig::Instance();
-    int flag = app._appOptions.originalData ? 1 : 0;
-    sr_set_export_original_data(flag);
-
     const struct sr_output_module **supportedModules = sr_output_list();
     while (*supportedModules)
     {
@@ -666,6 +661,10 @@ bool StoreSession::export_start()
 void StoreSession::export_proc(data::Snapshot *snapshot)
 {
     assert(snapshot);
+
+        //set export all data flag
+    AppConfig &app = AppConfig::Instance();
+    int origin_flag = app._appOptions.originalData ? 1 : 0;
 
     data::LogicSnapshot *logic_snapshot = NULL;
     data::AnalogSnapshot *analog_snapshot = NULL;
@@ -744,6 +743,7 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
     p.type = SR_DF_META;
     p.status = SR_PKT_OK;
     p.payload = &meta;
+    p.bExportOriginalData = 0;
     _outModule->receive(&output, &p, &data_out);
     if(data_out){
         out << QString::fromUtf8((char*) data_out->str);
@@ -810,6 +810,7 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
                 p.type = SR_DF_LOGIC;
                 p.status = SR_PKT_OK;
                 p.payload = &lp;
+                p.bExportOriginalData = origin_flag;
                 _outModule->receive(&output, &p, &data_out);
 
                 if(data_out){
@@ -840,6 +841,7 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
             p.type = SR_DF_DSO;
             p.status = SR_PKT_OK;
             p.payload = &dp;
+            p.bExportOriginalData = 0;
             _outModule->receive(&output, &p, &data_out);
 
             if(data_out){
@@ -866,6 +868,7 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
             p.type = SR_DF_ANALOG;
             p.status = SR_PKT_OK;
             p.payload = &ap;
+            p.bExportOriginalData = 0;
             _outModule->receive(&output, &p, &data_out);
             if(data_out){
                 out << (char*) data_out->str;

@@ -345,6 +345,7 @@ struct sr_datafeed_packet {
 	uint16_t type;
     uint16_t status;
 	const void *payload;
+	int bExportOriginalData;
 };
 
 struct sr_datafeed_header {
