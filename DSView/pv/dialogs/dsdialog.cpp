@@ -33,20 +33,23 @@
 namespace pv {
 namespace dialogs {
 
-DSDialog::DSDialog() : DSDialog(NULL, false, false)
+DSDialog::DSDialog() : 
+ DSDialog(NULL, false, false)
 {
 }
 
-DSDialog::DSDialog(QWidget *parent): DSDialog(parent, false, false)
+DSDialog::DSDialog(QWidget *parent):
+ DSDialog(parent, false, false)
 {
 }
 
-DSDialog::DSDialog(QWidget *parent, bool hasClose): DSDialog(parent, hasClose, false)
+DSDialog::DSDialog(QWidget *parent, bool hasClose):
+ DSDialog(parent, hasClose, false)
 {
 }
 
 DSDialog::DSDialog(QWidget *parent, bool hasClose, bool bBaseButton) :
-    QDialog(NULL), //must be null, otherwise window can not able to move
+    QDialog(parent), //must be null, otherwise window can not able to move
     m_bBaseButton(bBaseButton)
 {
     (void)parent;
