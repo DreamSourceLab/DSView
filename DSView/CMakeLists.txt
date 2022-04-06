@@ -39,7 +39,6 @@ project(DSView)
 
 option(DISABLE_WERROR "Build without -Werror" TRUE)
 option(ENABLE_SIGNALS "Build with UNIX signals" TRUE)
-option(ENABLE_DECODE "Build with libsigrokdecode4DSL" TRUE)
 option(ENABLE_COTIRE "Enable cotire" FALSE)
 option(ENABLE_TESTS "Enable unit tests" FALSE)
 option(STATIC_PKGDEPS_LIBS "Statically link to (pkg-config) libraries" FALSE)
@@ -67,12 +66,8 @@ endif()
 
 list(APPEND PKGDEPS
 	"libzip >= 0.10"
-	#"libsigrok4DSL >= 0.2.0"
 	"libusb-1.0 >= 1.0.16"
 )
-if(ENABLE_DECODE)
-	#list(APPEND PKGDEPS "libsigrokdecode4DSL>=0.4.0")
-endif()
 
 find_package(PkgConfig)
 pkg_check_modules(PKGDEPS REQUIRED ${PKGDEPS})
@@ -346,28 +341,28 @@ set(DSView_RESOURCES
     languages/language.qrc
 )
 
-if(ENABLE_DECODE)
-	list(APPEND DSView_SOURCES
-	        pv/dock/protocoldock.cpp
-		pv/data/decoderstack.cpp
-		pv/data/decode/annotation.cpp
-		pv/data/decode/decoder.cpp
-		pv/data/decode/row.cpp
-		pv/data/decode/rowdata.cpp
-		pv/prop/binding/decoderoptions.cpp
-		pv/view/decodetrace.cpp
-		pv/widgets/decodergroupbox.cpp
-		pv/widgets/decodermenu.cpp
-	)
 
-	list(APPEND DSView_HEADERS
-	        pv/dock/protocoldock.h
-		pv/data/decoderstack.h
-		pv/view/decodetrace.h
-		pv/widgets/decodergroupbox.h
-		pv/widgets/decodermenu.h
-	)
-endif()
+list(APPEND DSView_SOURCES
+        pv/dock/protocoldock.cpp
+	pv/data/decoderstack.cpp
+	pv/data/decode/annotation.cpp
+	pv/data/decode/decoder.cpp
+	pv/data/decode/row.cpp
+	pv/data/decode/rowdata.cpp
+	pv/prop/binding/decoderoptions.cpp
+	pv/view/decodetrace.cpp
+	pv/widgets/decodergroupbox.cpp
+	pv/widgets/decodermenu.cpp
+)
+
+list(APPEND DSView_HEADERS
+        pv/dock/protocoldock.h
+	pv/data/decoderstack.h
+	pv/view/decodetrace.h
+	pv/widgets/decodergroupbox.h
+	pv/widgets/decodermenu.h
+)
+
 
 if(WIN32)
 	# Use the DSView icon for the DSView.exe executable.
@@ -394,9 +389,7 @@ endif()
 add_definitions(${QT_DEFINITIONS})
 add_definitions(-std=c++11 -Wall -Wextra -Wno-return-type -Wno-ignored-qualifiers)
 
-if(ENABLE_DECODE)
-        add_definitions(-DENABLE_DECODE)
-endif()
+add_definitions(-DENABLE_DECODE)
 
 if(NOT DISABLE_WERROR)
         add_definitions(-Werror)
