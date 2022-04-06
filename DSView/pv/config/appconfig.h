@@ -29,7 +29,9 @@
 #define LAN_CN  25
 #define LAN_EN  31
 
-//#define DARK_STYLE  "dark"
+#define THEME_STYLE_DARK   "dark"
+#define THEME_STYLE_LIGHT  "light"
+
 #define APP_NAME  "DSView"
   
 //--------------------api---

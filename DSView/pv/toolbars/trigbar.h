@@ -42,10 +42,6 @@ class TrigBar : public QToolBar
 {
     Q_OBJECT
 
-protected:
-    static const QString DARK_STYLE;
-    static const QString LIGHT_STYLE;
-
 public:
     explicit TrigBar(SigSession *session, QWidget *parent = 0);
 

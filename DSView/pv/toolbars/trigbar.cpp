@@ -36,10 +36,7 @@
 
 namespace pv {
 namespace toolbars {
-
-const QString TrigBar::DARK_STYLE = "dark";
-const QString TrigBar::LIGHT_STYLE = "light";
-
+ 
 TrigBar::TrigBar(SigSession *session, QWidget *parent) :
     QToolBar("Trig Bar", parent),
     _session(session),
@@ -326,15 +323,15 @@ void TrigBar::on_actionMath_triggered()
 
 void TrigBar::on_actionDark_triggered()
 {
-    sig_setTheme(DARK_STYLE);
-    QString icon = GetIconPath() + "/" + DARK_STYLE + ".svg";
+    sig_setTheme(THEME_STYLE_DARK);
+    QString icon = GetIconPath() + "/" + THEME_STYLE_DARK + ".svg";
     _themes->setIcon(QIcon(icon));
 }
 
 void TrigBar::on_actionLight_triggered()
 {
-    sig_setTheme(LIGHT_STYLE);
-    QString icon = GetIconPath() + "/" + LIGHT_STYLE +".svg";
+    sig_setTheme(THEME_STYLE_LIGHT);
+    QString icon = GetIconPath() + "/" + THEME_STYLE_LIGHT +".svg";
     _themes->setIcon(QIcon(icon));
 }
 

@@ -55,7 +55,7 @@ private:
     static const int GRID_COLS = 3;
 
 public:
-    DevMode(QWidget *parent, SigSession *ession);
+    DevMode(QWidget *parent, SigSession *session);
 
 private:
 	void paintEvent(QPaintEvent *event);

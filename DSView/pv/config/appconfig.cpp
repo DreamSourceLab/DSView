@@ -137,7 +137,7 @@ void _saveDockOptions(DockOptions &o, QSettings &st, const char *group){
 
 void _loadFrame(FrameOptions &o, QSettings &st){
     st.beginGroup("MainFrame"); 
-    getFiled("style", st, o.style, "dark");
+    getFiled("style", st, o.style, THEME_STYLE_DARK);
     getFiled("language", st, o.language, -1);
     getFiled("isMax", st, o.isMax, false);  
     getFiled("left", st, o.left, 0);
@@ -313,7 +313,7 @@ QString GetIconPath()
 {   
     QString style = AppConfig::Instance()._frameOptions.style;
     if (style == ""){
-        style = "dark";
+        style = THEME_STYLE_DARK;
     }
     return ":/icons/" + style;
 }

@@ -65,7 +65,7 @@ DsComboBox::DsComboBox(QWidget *parent) : QComboBox(parent)
     int h = rc.bottom() - rc.top() + 15;
     popup->setGeometry(x, y, w, h);
     
-    if (AppConfig::Instance()._frameOptions.style == "dark"){       
+    if (AppConfig::Instance()._frameOptions.style == THEME_STYLE_DARK){       
         popup->setStyleSheet("background-color:#262626;");
     }
     else{
