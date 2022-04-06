@@ -30,6 +30,7 @@
 #define LAN_EN  31
 
 //#define DARK_STYLE  "dark"
+#define APP_NAME  "DSView"
   
 //--------------------api---
 

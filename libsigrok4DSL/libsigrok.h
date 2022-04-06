@@ -174,6 +174,11 @@ enum {
 #define SR_PRIV
 #endif
 
+
+#define USB_EV_HOTPLUG_UNKNOW		0
+#define USB_EV_HOTPLUG_ATTACH		1
+#define USB_EV_HOTPLUG_DETTACH		2
+
   
 /** Data types used by sr_config_info(). */
 enum {

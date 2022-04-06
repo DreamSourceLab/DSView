@@ -416,9 +416,15 @@ LIBUSB_CALL int sr_hotplug_callback(struct libusb_context *ctx, struct libusb_de
 		 return 0;
 	  }
 
+	  int ev = USB_EV_HOTPLUG_UNKNOW;
+	  if (event == (int)LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED)
+	  	 ev = USB_EV_HOTPLUG_ATTACH;
+	  else if (event == (int)LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT)
+	  	 ev = USB_EV_HOTPLUG_DETTACH;
+
       struct sr_context *user_ctx = (struct sr_context*)user_data;
 	  if (user_ctx->hotplug_callback != NULL){
-		  user_ctx->hotplug_callback(ctx, dev, (int)event, user_ctx->hotplug_user_data);
+		  user_ctx->hotplug_callback(ctx, dev, ev, user_ctx->hotplug_user_data);
 	  }
 
 	  return 0;

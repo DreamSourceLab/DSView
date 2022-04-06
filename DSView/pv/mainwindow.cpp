@@ -881,7 +881,7 @@ void MainWindow::on_search(bool visible)
 void MainWindow::on_screenShot()
 {
     AppConfig &app = AppConfig::Instance();     
-    QString default_name = app._userHistory.screenShotPath + "/DSView" + QDateTime::currentDateTime().toString("-yyMMdd-hhmmss");
+    QString default_name = app._userHistory.screenShotPath + "/" + APP_NAME + QDateTime::currentDateTime().toString("-yyMMdd-hhmmss");
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     QScreen *scr = QGuiApplication::primaryScreen();

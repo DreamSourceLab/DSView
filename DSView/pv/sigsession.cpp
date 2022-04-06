@@ -1212,10 +1212,10 @@ void SigSession::hotplug_callback(void *ctx, void *dev, int event, void *user_da
     (void)dev;
     (void)user_data;
 
-    if (1 == event) {
+    if (USB_EV_HOTPLUG_ATTACH == event) {
         _session->_hot_attach = true;
         qDebug("receive event:DreamSourceLab Hardware attached!");
-    }else if (2 == event) {
+    }else if (USB_EV_HOTPLUG_DETTACH == event) {
         _session->_hot_detach = true;
         qDebug("receive event:DreamSourceLab Hardware detached!");
     }else{
