@@ -31,7 +31,7 @@
 #include "view.h"
 #include "../device/devinst.h"
 #include "../sigsession.h"
-#include "../extdef.h"
+#include "../dsvdef.h"
 
 
 namespace pv {

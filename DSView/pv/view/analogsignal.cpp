@@ -29,7 +29,7 @@
 #include "../data/analogsnapshot.h"
 #include "../view/view.h"
 #include "../device/devinst.h"
-#include "../extdef.h"
+#include "../dsvdef.h"
 
 
 using namespace std;

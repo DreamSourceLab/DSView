@@ -31,7 +31,6 @@
 #include "../device/devinst.h"
 #include "../view/dsosignal.h"
 #include "../dsvdef.h"
-#include "../extdef.h"
   
 #include <QDebug>
 #include <QTimer>

@@ -29,7 +29,7 @@
 #include "../data/logic.h"
 #include "../data/logicsnapshot.h"
 #include "view.h"
-#include "../extdef.h"
+#include "../dsvdef.h"
 
 using namespace std;
 

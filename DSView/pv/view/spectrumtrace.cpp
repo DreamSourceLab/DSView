@@ -35,7 +35,6 @@
 #include "../device/devinst.h"
 #include "../data/spectrumstack.h"
 #include "../dsvdef.h"
-#include "../extdef.h"
 
 using namespace boost;
 using namespace std;

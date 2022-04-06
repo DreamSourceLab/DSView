@@ -28,7 +28,7 @@
 
 #include "logicsnapshot.h"
 #include "groupsnapshot.h"
-#include "../extdef.h"
+#include "../dsvdef.h"
 
 using namespace std;
 

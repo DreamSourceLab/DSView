@@ -28,7 +28,7 @@
 #include <math.h>
  
 #include "logicsnapshot.h"
-#include "../extdef.h"
+#include "../dsvdef.h"
 
 using namespace std;
 

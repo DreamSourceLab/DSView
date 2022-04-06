@@ -23,7 +23,7 @@
 #include <math.h>
 
 #include "view.h"
-#include "../extdef.h"
+#include "../dsvdef.h"
 #include "lissajoustrace.h"
 #include "../data/dso.h"
 #include "../data/dsosnapshot.h"

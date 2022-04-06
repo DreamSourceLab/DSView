@@ -25,7 +25,7 @@
 #include "signal.h"
 #include "view.h"
 #include "../device/devinst.h"
-#include "../extdef.h"
+#include "../dsvdef.h"
 
 namespace pv {
 namespace view {

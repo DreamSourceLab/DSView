@@ -26,7 +26,7 @@
 #include <algorithm>
  
 #include "dsosnapshot.h"
-#include "../extdef.h"
+#include "../dsvdef.h"
 
 using namespace std;
 

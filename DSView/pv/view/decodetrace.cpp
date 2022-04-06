@@ -22,7 +22,7 @@
 
 #include <libsigrokdecode4DSL/libsigrokdecode.h>
 
-#include "../extdef.h"
+#include "../dsvdef.h"
 
  
 #include <boost/functional/hash.hpp>

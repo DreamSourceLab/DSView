@@ -20,7 +20,7 @@
  */
 
 #include "samplingbar.h"
-#include "../extdef.h"
+#include "../dsvdef.h"
 
 #include <assert.h> 
 #include <QAction>

@@ -41,7 +41,7 @@
 #include "xcursor.h"
 #include "signal.h"
 #include "viewstatus.h"
-#include "../extdef.h"
+#include "../dsvdef.h"
 
 namespace pv {
 

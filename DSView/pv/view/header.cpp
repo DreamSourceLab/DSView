@@ -41,7 +41,6 @@
 #include "decodetrace.h"
 #include "../sigsession.h"
 #include "../device/devinst.h"
-#include "../extdef.h"
 #include "../dsvdef.h"
 
  

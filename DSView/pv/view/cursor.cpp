@@ -35,7 +35,7 @@
 #include <assert.h>
 #include <stdio.h>
 
-#include "../extdef.h"
+#include "../dsvdef.h"
 
 namespace pv {
 namespace view {

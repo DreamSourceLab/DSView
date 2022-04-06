@@ -24,6 +24,17 @@
 #include "../config.h"
 #include <QString>
 
+#define countof(x) (sizeof(x)/sizeof(x[0]))
+
+#define begin_element(x) (&x[0])
+#define end_element(x) (&x[countof(x)])
+
+enum View_type {
+    TIME_VIEW,
+    FFT_VIEW,
+    ALL_VIEW
+};
+
 
 #ifdef DS_DEBUG_TRACE
     void ds_print(const char *s);

@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include "../extdef.h"
+#include "../dsvdef.h"
 #include "dsosignal.h"
 #include "../data/dso.h"
 #include "../data/dsosnapshot.h"
