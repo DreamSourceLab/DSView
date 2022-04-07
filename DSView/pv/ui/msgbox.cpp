@@ -24,6 +24,7 @@
 #include <assert.h>
 #include <QMessageBox>
 #include <QString>
+#include "../dsvdef.h"
 
 //QMessageBox::information(NULL, "Title", "Content",QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
 //QMessageBox::information(NULL, "Title", "Content",QMessageBox::Yes|QMessageBox::No);
@@ -37,6 +38,10 @@ void MsgBox::Show(const char *title, const char *text, QWidget *parent)
     QString str;
     str.append("\n");
     str.append(text);
+
+    if (parent == NULL){
+        parent = app::get_app_window_instance(NULL, false);
+    }
 
     pv::dialogs::DSMessageBox msg(parent, title);
      msg.mBox()->setText(str);
@@ -53,6 +58,10 @@ bool MsgBox::Confirm(const char *text, QWidget *parent)
     QString str;
     str.append("\n");
     str.append(text);
+
+     if (parent == NULL){
+        parent = app::get_app_window_instance(NULL, false);
+    }
 
     pv::dialogs::DSMessageBox msg(parent, "Question");
     msg.mBox()->setText(str);

@@ -49,7 +49,7 @@ DSDialog::DSDialog(QWidget *parent, bool hasClose):
 }
 
 DSDialog::DSDialog(QWidget *parent, bool hasClose, bool bBaseButton) :
-    QDialog(parent), //must be null, otherwise window can not able to move
+    QDialog(NULL),
     m_bBaseButton(bBaseButton)
 {
     (void)parent;

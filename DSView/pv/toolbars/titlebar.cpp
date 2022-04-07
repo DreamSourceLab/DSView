@@ -197,7 +197,8 @@ void TitleBar::mousePressEvent(QMouseEvent* event)
  
         if (!bTopWidow || bClick ){
             _moving = true; 
-            _startPos = event->globalPos() - _parent->frameGeometry().topLeft();
+            _clickPos = event->globalPos(); 
+            _oldPos = _parent->pos();     
             event->accept();
             return;
         } 
@@ -206,9 +207,11 @@ void TitleBar::mousePressEvent(QMouseEvent* event)
 }
 
 void TitleBar::mouseMoveEvent(QMouseEvent *event)
-{ 
-    if(_moving){ 
-      _parent->move(event->globalPos() - _startPos); 
+{  
+    if(_moving){  
+       int x = _oldPos.x() + (event->globalPos().x() - _clickPos.x());
+       int y = _oldPos.y() + (event->globalPos().y() - _clickPos.y());
+       _parent->move(x, y);  
        event->accept();
        return;
     } 

@@ -68,11 +68,12 @@ protected:
     QToolButton *_closeButton;
     QLabel      *_title;
   
-    bool _moving;
-    bool _isTop;
-    bool _hasClose;
-    QPoint _startPos;
-    QWidget *_parent;
+    bool        _moving;
+    bool        _isTop;
+    bool        _hasClose;
+    QPoint      _clickPos;
+    QPoint      _oldPos;
+    QWidget     *_parent;
 };
 
 } // namespace toolbars
