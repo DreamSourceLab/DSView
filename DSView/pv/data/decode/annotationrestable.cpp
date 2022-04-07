@@ -126,7 +126,9 @@ int AnnotationResTable::MakeIndex(const std::string &key, AnnotationSourceItem* 
 }
 
 AnnotationSourceItem* AnnotationResTable::GetItem(int index){
-    assert(index >= 0 && index < m_resourceTable.size());
+    if (index < 0 || index >= (int)m_resourceTable.size()){
+        assert(false);
+    }
     return m_resourceTable[index];
 }
 

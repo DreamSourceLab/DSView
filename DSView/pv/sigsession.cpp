@@ -1442,6 +1442,7 @@ void SigSession::rst_decoder(int index)
     
     if (trace && trace->create_popup() ){
         remove_decode_task(trace); //remove old task
+        trace->decoder()->clear();
         add_decode_task(trace);
         data_updated();
     }
