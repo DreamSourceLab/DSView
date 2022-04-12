@@ -46,6 +46,8 @@ class Decoder(srd.Decoder):
     options = (
         {'id': 'show_debug_bits', 'desc': 'Show debug bits',
             'default': 'no', 'values': ('yes', 'no')},
+        {'id': 'read_edge', 'desc': 'read edge',
+            'default': 'falling', 'values': ('rising', 'falling')},
     )
     annotations = (
         ('bit-val', 'Bit value'),
@@ -330,13 +332,14 @@ class Decoder(srd.Decoder):
     def decode(self):
         find_flags = [{0: 'r'}, {0: 'f'}]
         flag_dex = 0 
+        read_edge = self.options["read_edge"][0] 
 
         while True:
             # Process pin state upon rising MDC edge.
             (mdc, mdio) = self.wait(find_flags[flag_dex])
             self.handle_bit(mdio)
         
-            if self.state == 'DATA' and self.is_read: 
+            if self.state == 'DATA' and self.is_read and read_edge == 'f':
                 flag_dex = 1
             else:
                 flag_dex = 0

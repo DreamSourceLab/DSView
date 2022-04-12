@@ -1224,7 +1224,7 @@ void SigSession::hotplug_callback(void *ctx, void *dev, int event, void *user_da
 }
 
 void SigSession::hotplug_proc()
-{  
+{   
     if (!_dev_inst)
         return; 
         
