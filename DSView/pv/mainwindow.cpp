@@ -103,7 +103,7 @@ MainWindow::MainWindow(QWidget *parent) :
     _msg(NULL)
 {
     _control = AppControl::Instance();
-    _control->GetSession()->set_callback(this);
+    _control->GetSession()->set_callback(this);  
     _bFirstLoad = true;
 
 	setup_ui();

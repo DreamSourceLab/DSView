@@ -53,7 +53,7 @@ class QTextStream;
 
 #define RELEASE_ARRAY(a)   for (auto ptr : (a)){delete ptr;} (a).clear();
 
-#define ABS_VAL(x) (x>0?x:-x)
+#define ABS_VAL(x) ((x) > 0 ? (x) : -(x))
 
 namespace DecoderDataFormat
 {
@@ -71,10 +71,6 @@ namespace DecoderDataFormat
 
 namespace app
 {
-    QWidget* get_app_window_instance(QWidget *ins, bool bSet);
-
-    bool is_app_top_window(QWidget* w);
-
     void set_utf8(QTextStream &stream);
 }
 

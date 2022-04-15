@@ -62,23 +62,6 @@ namespace DecoderDataFormat
 
 namespace app
 {
-    QWidget* get_app_window_instance(QWidget *ins, bool bSet){
-
-        static QWidget *g_ins = NULL;
-        if (bSet){
-            g_ins = ins;
-        }
-        return g_ins;
-    }
-
-    bool is_app_top_window(QWidget* w){
-         QWidget *top =get_app_window_instance(NULL, NULL);
-         if (top && top == w){
-             return true;
-         }
-         return false;
-      }
-
     void set_utf8(QTextStream &stream){
         #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         stream.setEncoding(QStringConverter::Utf8);      

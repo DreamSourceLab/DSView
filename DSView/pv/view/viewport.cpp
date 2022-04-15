@@ -44,6 +44,7 @@
  
 #include "../config/appconfig.h"
 #include "../dsvdef.h"
+#include "../appcontrol.h"
  
 using namespace std;
 
@@ -88,6 +89,7 @@ Viewport::Viewport(View &parent, View_type type) :
     _edge_hit = false;
     transfer_started = false;
     timer_cnt = 0;
+    _clickX = 0;
 
     // drag inertial
     _drag_strength = 0;
@@ -499,6 +501,7 @@ void Viewport::mousePressEvent(QMouseEvent *event)
 {
 	assert(event);
     
+    _clickX = event->globalPos().x();
 	_mouse_down_point = event->pos();
 	_mouse_down_offset = _view.offset();
     _drag_strength = 0;
@@ -757,6 +760,9 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
 void Viewport::mouseReleaseEvent(QMouseEvent *event)
 {
     assert(event);
+
+    bool quickScroll = AppConfig::Instance()._appOptions.quickScroll;
+    bool isMaxWindow = AppControl::Instance()->TopWindowIsMaximized();
     
     if (_type != TIME_VIEW){
         update();
@@ -769,7 +775,22 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                 _view.session().get_capture_state() == SigSession::Stopped) {
                 //priority 1
                 //try to quick scroll view...
-                if (_action_type == NO_ACTION && AppConfig::Instance()._appOptions.quickScroll) {
+                int curX = event->globalPos().x();
+                int moveLong = ABS_VAL(curX - _clickX);                
+                int maxWidth = this->geometry().width();
+                float mvk = (float) moveLong / (float)maxWidth;
+
+                if (quickScroll){
+                    quickScroll = false; 
+                    if (isMaxWindow && mvk > 0.5f){
+                        quickScroll = true;
+                    }
+                    else if (!isMaxWindow && mvk > 0.6f){
+                        quickScroll = true;
+                    }
+                }
+
+                if (_action_type == NO_ACTION && quickScroll) {
                     const double strength = _drag_strength*DragTimerInterval*1.0/_elapsed_time.elapsed();
                     if (_elapsed_time.elapsed() < 200 &&
                         abs(_drag_strength) < MinorDragOffsetUp &&
