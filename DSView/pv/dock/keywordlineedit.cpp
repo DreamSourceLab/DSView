@@ -21,28 +21,24 @@
 
 #include "keywordlineedit.h"
 
-KeywordLineEdit::KeywordLineEdit(QComboBox *comboBox)
-:QLineEdit()
-{
-    assert(comboBox);
-    _comboBox = comboBox;
+#define PROTOCOL_FIND_TITLE  "Protocol search..."
+
+KeywordLineEdit::KeywordLineEdit(QWidget *parent, IKeywordActive *active)
+:QLineEdit(parent)
+{ 
+    _active = active;
+    this->setText(PROTOCOL_FIND_TITLE);
 }
 
-
- void KeywordLineEdit::focusInEvent(QFocusEvent *e)
+ void KeywordLineEdit::mousePressEvent(QMouseEvent *e)
  {
-     QLineEdit::focusInEvent(e);
-     QString key(PROTOCOL_FIND_TITLE);
-     if (this->text() == key){
-         this->setText("");
-     }  
+      if (e->button() == Qt::LeftButton && _active != NULL){          
+         _active->BeginEditKeyword();
+     } 
+     QLineEdit::mousePressEvent(e); 
  }
 
-void KeywordLineEdit::focusOutEvent(QFocusEvent *e)
+ void KeywordLineEdit::ResetText()
  {
-      QLineEdit::focusOutEvent(e);
-
-      if (this->text() == ""){
-         this->setText(PROTOCOL_FIND_TITLE);
-      } 
+     this->setText(PROTOCOL_FIND_TITLE);
  }

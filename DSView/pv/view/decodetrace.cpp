@@ -55,6 +55,7 @@
 #include "../dsvdef.h"
 #include "../ui/dscombobox.h"
 #include "../ui/msgbox.h"
+#include "../appcontrol.h"
 #include <QDebug>
 
 using namespace boost;
@@ -357,7 +358,8 @@ bool DecodeTrace::create_popup()
     _form_base_height = 0;
     _decoder_container = NULL;
     
-    dialogs::DSDialog dlg;
+    QWidget *topWindow = AppControl::Instance()->GetTopWindow();
+    dialogs::DSDialog dlg(topWindow);
     //dlg.setMinimumSize(500,600);
     create_popup_form(&dlg);
 

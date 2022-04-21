@@ -248,6 +248,7 @@ set(DSView_SOURCES
     pv/minizip/ioapi.c
     pv/dialogs/applicationpardlg.cpp
     pv/dock/keywordlineedit.cpp
+    pv/dock/searchcombobox.cpp
 )
 
 set(DSView_HEADERS
@@ -332,6 +333,7 @@ set(DSView_HEADERS
     pv/minizip/ioapi.h
     pv/dialogs/applicationpardlg.h
     pv/dock/keywordlineedit.h
+    pv/dock/searchcombobox.h
 )
 
 set(DSView_FORMS
