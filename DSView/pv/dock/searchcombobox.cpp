@@ -4,7 +4,7 @@
 #include <QPoint>
 #include <QLineEdit>
 #include <QScrollBar>
- 
+#include <QDebug>
 
 //----------------------ComboButtonItem
 
@@ -29,9 +29,7 @@ SearchComboBox::SearchComboBox(QWidget *parent)
 { 
     _bShow = false;
     _item_click = NULL;
-
     setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
-    // setAttribute(Qt::WA_TranslucentBackground); 
 }
 
 SearchComboBox::~SearchComboBox(){
@@ -50,14 +48,14 @@ void SearchComboBox::ShowDlg(QWidget *editline)
     _bShow = true;
     
     int w = 350; 
-    int h = 450;
+    int h = 550;
+    int eh = 20;
 
     if (editline != NULL){
-       w = editline->width() + 7;
+       w = editline->width();
     } 
 
-    this->setMinimumSize(w, h);
-    this->setMaximumSize(w, h); 
+    this->setFixedSize(w, h);
 
     QVBoxLayout *grid = new QVBoxLayout(this);
     this->setLayout(grid);
@@ -67,19 +65,15 @@ void SearchComboBox::ShowDlg(QWidget *editline)
 
     QLineEdit *edit = new QLineEdit(this);
     edit->setMaximumWidth(this->width()); 
-    grid->addWidget(edit);
+    grid->addWidget(edit);    
+    eh = edit->height();
 
-    QWidget *panel = new QWidget(this);
-    grid->addWidget(panel);
-
+    QWidget *panel= new QWidget(this);
     panel->setContentsMargins(0,0,0,0);
-    panel->setMinimumSize(w, h - edit->height() - 5);
-    panel->setMaximumSize(w, h - edit->height() - 5); 
+    panel->setFixedSize(w, h - eh);
+    grid->addWidget(panel);   
 
     QWidget *listPanel =  new QWidget(panel);
-    listPanel->setMinimumSize(w-2, panel->height()); 
-    listPanel->setMaximumWidth(w-2);
-
     QVBoxLayout *listLay = new QVBoxLayout(listPanel);
     listLay->setContentsMargins(2, 2, 20, 2);
     listLay->setSpacing(0);
@@ -98,8 +92,9 @@ void SearchComboBox::ShowDlg(QWidget *editline)
  
     _scroll = new QScrollArea(panel);
     _scroll->setWidget(listPanel);
-   // pScrollArea->setStyleSheet("QScrollArea{border:none; background:red;}");
+    _scroll->setStyleSheet("QScrollArea{border:none;}");
     _scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    _scroll->setFixedSize(w, h - eh);
 
     if (editline != NULL)
     {
@@ -153,6 +148,9 @@ void SearchComboBox::AddDataItem(QString id, QString name, void *data_handle)
 
  void SearchComboBox::on_keyword_changed(const QString &value)
  {
+     if (_items.size() == 0)
+        return;
+
      for(auto o : _items)
      {
          if (value == "" 
@@ -166,6 +164,6 @@ void SearchComboBox::AddDataItem(QString id, QString name, void *data_handle)
              o->_control->hide();
          }
      }
-
+     
     _scroll->verticalScrollBar()->setValue(0);
  }

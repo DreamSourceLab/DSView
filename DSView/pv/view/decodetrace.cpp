@@ -743,7 +743,7 @@ void DecodeTrace::create_decoder_form(
     decoder_form->setFormAlignment(Qt::AlignLeft);
     decoder_form->setLabelAlignment(Qt::AlignLeft);
     decoder_form->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
-
+ 
 	// Add the mandatory channels
 	for(l = decoder->channels; l; l = l->next) {
 		const struct srd_channel *const pdch =
@@ -758,7 +758,7 @@ void DecodeTrace::create_decoder_form(
 		_probe_selectors.push_back(s);
 
          connect(combo, SIGNAL(currentIndexChanged(int)), this, SLOT(on_probe_selected(int)));
-	}
+	} 
 
 	// Add the optional channels
 	for(l = decoder->opt_channels; l; l = l->next) {
@@ -779,10 +779,8 @@ void DecodeTrace::create_decoder_form(
 	// Add the options
     auto binding = new prop::binding::DecoderOptions(decoder_stack, dec);
     binding->add_properties_to_form(decoder_form, true);
-
 	_bindings.push_back(binding);
-
-    
+ 
     pv::widgets::DecoderGroupBox *const group =
         new pv::widgets::DecoderGroupBox(decoder_stack, dec, decoder_form, parent);
  

@@ -78,7 +78,7 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     _del_all_button->setCheckable(true);
 
     _keyword_edit = new KeywordLineEdit(_up_widget, this);
-    _keyword_edit->setReadOnly(true);
+    _keyword_edit->setReadOnly(true); 
 
     GSList *l = const_cast<GSList*>(srd_decoder_list());
 
@@ -247,6 +247,8 @@ void ProtocolDock::retranslateUi()
     _search_edit->setPlaceholderText(tr("search"));
     _matchs_title_label->setText(tr("Matching Items:"));
     _dn_title_label->setText(tr("Protocol List Viewer"));
+
+     _keyword_edit->ResetText();
 }
 
 void ProtocolDock::reStyle()
@@ -265,7 +267,7 @@ void ProtocolDock::reStyle()
 
     for (auto it = _protocol_lay_items.begin(); it != _protocol_lay_items.end(); it++){
        (*it)->ResetStyle();
-    } 
+    }  
 }
 
 void ProtocolDock::changeEvent(QEvent *event)
@@ -292,6 +294,7 @@ void ProtocolDock::resizeEvent(QResizeEvent *event)
             _pre_button->width()-_nxt_button->width();
     width = std::max(width, 0);
     _search_edit->setMinimumWidth(width);
+    _keyword_edit->setMinimumWidth(width-20);
     QScrollArea::resizeEvent(event);
 }
 
@@ -1012,7 +1015,7 @@ bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const Decod
      if (data_handle != NULL){
          DecoderInfoItem *info = (DecoderInfoItem*)data_handle;
          srd_decoder *dec = (srd_decoder *)(info->_data_handle); 
-         this->_keyword_edit->setText( QString(dec->name)); 
+         this->_keyword_edit->SetInputText(QString(dec->name)); 
          _selected_protocol_id = QString(dec->id);
          this->on_add_protocol();       
      }

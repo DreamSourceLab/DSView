@@ -20,14 +20,17 @@
  */
 
 #include "keywordlineedit.h"
+#include "../config/appconfig.h"
 
 #define PROTOCOL_FIND_TITLE  "Protocol search..."
+#define PROTOCOL_FIND_TITLE_cn  "协议查找..."
 
 KeywordLineEdit::KeywordLineEdit(QWidget *parent, IKeywordActive *active)
 :QLineEdit(parent)
 { 
+    _bText = false;
     _active = active;
-    this->setText(PROTOCOL_FIND_TITLE);
+    this->ResetText();
 }
 
  void KeywordLineEdit::mousePressEvent(QMouseEvent *e)
@@ -39,6 +42,19 @@ KeywordLineEdit::KeywordLineEdit(QWidget *parent, IKeywordActive *active)
  }
 
  void KeywordLineEdit::ResetText()
+ { 
+     if (_bText){
+         return;         
+     }
+
+    if (AppConfig::Instance().IsLangCn())
+        this->setText(PROTOCOL_FIND_TITLE_cn);
+    else
+        this->setText(PROTOCOL_FIND_TITLE);
+ }
+
+ void KeywordLineEdit::SetInputText(QString text)
  {
-     this->setText(PROTOCOL_FIND_TITLE);
+     _bText = true;
+     this->setText(text);
  }

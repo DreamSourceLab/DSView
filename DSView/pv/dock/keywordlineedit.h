@@ -41,11 +41,14 @@ public:
 
     void ResetText();
 
+    void SetInputText(QString text);
+
 protected:
     void mousePressEvent(QMouseEvent *e); 
 
 private:
     IKeywordActive  *_active;
+    bool            _bText;
 };
 
 

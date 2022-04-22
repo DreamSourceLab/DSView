@@ -70,10 +70,10 @@ private:
     void OnItemClick(void *sender, void *data_handle);
 
 private: 
-    bool        _bShow;
+    bool    _bShow;
     std::vector<SearchDataItem*> _items;
-    ISearchItemClick    *_item_click;
-    QScrollArea     *_scroll;
+    ISearchItemClick *_item_click;
+    QScrollArea *_scroll;
 };
 
 #endif // SEARCHCOMBOBOX_H
