@@ -145,7 +145,7 @@ bool StoreSession::save_start()
     }
 
     if (_file_name == ""){
-        _error = tr("No set file name.");
+        _error = tr("No file name.");
         return false;
     }
 

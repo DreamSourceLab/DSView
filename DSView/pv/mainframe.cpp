@@ -134,7 +134,12 @@ MainFrame::MainFrame()
     _layout->addWidget(_bottom, 2, 1);
     _layout->addWidget(_bottom_right, 2, 2);
 
-    connect(&_timer, SIGNAL(timeout()), this, SLOT(unfreezing()));  
+#ifdef _WIN32
+    _taskBtn = new QWinTaskbarButton(this);
+	connect(_mainWindow, SIGNAL(prgRate(int)), this, SLOT(setTaskbarProgress(int)));
+#endif
+
+    connect(&_timer, SIGNAL(timeout()), this, SLOT(unfreezing()));
 }
  
 void MainFrame::resizeEvent(QResizeEvent *event)
@@ -436,9 +441,30 @@ void MainFrame::readSettings()
     _titleBar->setRestoreButton(app._frameOptions.isMax);
 }
 
+#ifdef _WIN32
+void MainFrame::showEvent(QShowEvent *event)
+{
+    // Taskbar Progress Effert for Win7 and Above
+    if (_taskBtn->window() == NULL) {
+        _taskBtn->setWindow(windowHandle());
+        _taskPrg = _taskBtn->progress();
+    }
+    event->accept();
+}
+#endif
+
 void MainFrame::setTaskbarProgress(int progress)
 {
-    (void)progress;
+#ifdef _WIN32
+    if (progress > 0) {
+        _taskPrg->setVisible(true);
+        _taskPrg->setValue(progress);
+    } else {
+        _taskPrg->setVisible(false);
+    }
+#else
+	(void)progress;
+#endif
 }
 
 void MainFrame::show_doc()

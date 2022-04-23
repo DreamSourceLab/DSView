@@ -28,6 +28,10 @@
 #include <QFrame>
 #include <QGridLayout>
 #include <QTimer>
+#ifdef _WIN32
+#include <QWinTaskbarButton>
+#include <QWinTaskbarProgress>
+#endif
 
 namespace pv {
  
@@ -73,6 +77,9 @@ protected:
     void resizeEvent(QResizeEvent *event);
     void closeEvent(QCloseEvent *event);
     bool eventFilter(QObject *object, QEvent *event);
+    #ifdef _WIN32
+    void showEvent(QShowEvent *event);
+    #endif
 
 public slots:
     void unfreezing();
@@ -107,6 +114,11 @@ private:
     int     _hit_border;
     QTimer  _timer;
     bool    _freezing; 
+    // Taskbar Progress Effert for Win7 and Above
+#ifdef _WIN32
+    QWinTaskbarButton *_taskBtn;
+    QWinTaskbarProgress *_taskPrg;
+#endif
 };
 
 } // namespace pv
