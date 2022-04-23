@@ -178,7 +178,7 @@ private:
     void data_received();
 
     //------private
-    bool gen_session_json(QJsonArray &array);
+    bool gen_session_json(QJsonObject &sessionVar);
 
 private:
     AppControl              *_control; 

@@ -26,6 +26,7 @@
 #include <QDir>
 #include <QCoreApplication>
 #include <QDebug>
+#include <QWidget>
 
 #include "devicemanager.h"
 #include "sigsession.h"
@@ -35,7 +36,8 @@
 AppControl::AppControl()
 {
     sr_ctx = NULL;
-
+    _topWindow = NULL;
+    
     _device_manager = new pv::DeviceManager();
     _session = new pv::SigSession(_device_manager);
 }
@@ -148,4 +150,12 @@ const char *AppControl::GetLastError()
  {
     sr_log_loglevel_set(level);
 	srd_log_loglevel_set(level);
+ }
+
+ bool AppControl::TopWindowIsMaximized()
+ {
+     if (_topWindow != NULL){
+         return _topWindow->isMaximized();
+     }
+     return false;
  }

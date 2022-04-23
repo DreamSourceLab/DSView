@@ -23,25 +23,32 @@
 #define KEY_WORD_LINE_EDIT_H
 
 #include <QObject>
-#include <QLineEdit>
-#include <QComboBox>
-#include <QFocusEvent>
+#include <QLineEdit> 
+#include <QMouseEvent>
+#include <QWidget>
 
-#define PROTOCOL_FIND_TITLE  "Protocol search..."
+class IKeywordActive{
+public:
+    virtual void BeginEditKeyword()=0;
+};
 
 class KeywordLineEdit : public QLineEdit
  {
     Q_OBJECT
 
 public:
-    KeywordLineEdit(QComboBox *comboBox);
+    KeywordLineEdit(QWidget *parent, IKeywordActive *active);
+
+    void ResetText();
+
+    void SetInputText(QString text);
 
 protected:
-    void focusInEvent(QFocusEvent *e) override;
-    void focusOutEvent(QFocusEvent *e) override;
+    void mousePressEvent(QMouseEvent *e); 
 
 private:
-    QComboBox   *_comboBox;  
+    IKeywordActive  *_active;
+    bool            _bText;
 };
 
 

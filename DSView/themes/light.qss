@@ -59,6 +59,18 @@ QWidget:item:selected
 }
 */
 
+QPushButton#flat{
+    text-align:left;
+    border:none;
+    font-size:14px;
+}
+
+QPushButton#flat:hover
+{
+    background-color: #44cef6;
+    color: #801dae;
+}
+
 QCheckBox
 {
     spacing: 0px;

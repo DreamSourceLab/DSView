@@ -32,6 +32,7 @@
 #include <QStyleOption>
 #include <assert.h>
 #include "../config/appconfig.h"
+#include "../appcontrol.h"
 
 #include "../dsvdef.h"
 
@@ -192,7 +193,8 @@ void TitleBar::mousePressEvent(QMouseEvent* event)
     {
         int x = event->pos().x();
         int y = event->pos().y(); 
-        bool bTopWidow = app::is_app_top_window(_parent);
+        
+        bool bTopWidow = AppControl::Instance()->GetTopWindow() == _parent;
         bool bClick = (x >= 6 && y >= 5 && x <= width() - 6);  //top window need resize hit check
  
         if (!bTopWidow || bClick ){

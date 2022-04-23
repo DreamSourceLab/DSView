@@ -24,6 +24,7 @@
 #include <string>
 
 struct sr_context;
+class QWidget;
 
 namespace pv{
     class DeviceManager;
@@ -54,11 +55,23 @@ public:
 
     void SetLogLevel(int level);
 
-    inline pv::SigSession*  GetSession()
-        { return _session;}
+    inline pv::SigSession*  GetSession(){
+        return _session;
+    }
 
-    inline pv::DeviceManager& GetDeviceManager()
-        { return *_device_manager;}
+    inline pv::DeviceManager& GetDeviceManager(){ 
+        return *_device_manager;
+    }
+
+    inline void SetTopWindow(QWidget *w){
+        _topWindow = w;
+    }
+
+    inline QWidget* GetTopWindow(){
+        return _topWindow;
+    }
+
+    bool TopWindowIsMaximized();
 
 public:
     std::string        _open_file_name; 
@@ -68,4 +81,5 @@ private:
     struct sr_context   *sr_ctx;
     pv::DeviceManager   *_device_manager;
     pv::SigSession      *_session;
+    QWidget             *_topWindow;
 };

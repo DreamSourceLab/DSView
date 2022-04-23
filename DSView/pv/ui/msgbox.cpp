@@ -25,6 +25,7 @@
 #include <QMessageBox>
 #include <QString>
 #include "../dsvdef.h"
+#include "../appcontrol.h"
 
 //QMessageBox::information(NULL, "Title", "Content",QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
 //QMessageBox::information(NULL, "Title", "Content",QMessageBox::Yes|QMessageBox::No);
@@ -40,7 +41,7 @@ void MsgBox::Show(const char *title, const char *text, QWidget *parent)
     str.append(text);
 
     if (parent == NULL){
-        parent = app::get_app_window_instance(NULL, false);
+        parent = AppControl::Instance()->GetTopWindow();
     }
 
     pv::dialogs::DSMessageBox msg(parent, title);
@@ -59,8 +60,8 @@ bool MsgBox::Confirm(const char *text, QWidget *parent)
     str.append("\n");
     str.append(text);
 
-     if (parent == NULL){
-        parent = app::get_app_window_instance(NULL, false);
+    if (parent == NULL){
+        parent = AppControl::Instance()->GetTopWindow();
     }
 
     pv::dialogs::DSMessageBox msg(parent, "Question");

@@ -45,6 +45,7 @@
 #include <assert.h>
 #include <map>
 #include <string>
+#include <QToolButton>
  
 #include <algorithm>
 #include "../ui/msgbox.h"
@@ -52,6 +53,7 @@
 #include "../config/appconfig.h"
 #include "../data/decode/decoderstatus.h"
 #include "../data/decode/decoder.h"
+
 
 using namespace std;
 
@@ -65,10 +67,7 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
 {
     _session = session;
     _cur_search_index = -1;
-    _search_edited = false;
-    _searching = false;
-    _add_silent = false;  
-    _bSettingList = false;
+    _search_edited = false; 
 
     _up_widget = new QWidget(this);
     
@@ -78,12 +77,8 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     _del_all_button->setFlat(true);
     _del_all_button->setCheckable(true);
 
-    _protocol_combobox = new DsComboBox(_up_widget);
-    _protocol_combobox->setEditable(true);
-    _protocol_combobox->setLineEdit(new KeywordLineEdit(_protocol_combobox));
-    _protocol_combobox->setCompleter(NULL);
-
-    //GSList *l = g_slist_sort(g_slist_copy((GSList*)srd_decoder_list()), decoder_name_cmp);
+    _keyword_edit = new KeywordLineEdit(_up_widget, this);
+    _keyword_edit->setReadOnly(true); 
 
     GSList *l = const_cast<GSList*>(srd_decoder_list());
 
@@ -93,13 +88,12 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     for(; l; l = l->next)
     {
         const srd_decoder *const d = (srd_decoder*)l->data;
-        assert(d);
-        // const bool have_probes = (d->channels || d->opt_channels) != 0;
+        assert(d); 
  
         if (true) {
             DecoderInfoItem *info = new DecoderInfoItem(); 
             srd_decoder *dec = (srd_decoder *)(l->data);
-            info->ObjectHandle = dec;
+            info->_data_handle = dec;
             _decoderInfoList.push_back(info);  
 
             std::string prokey(dec->id);
@@ -117,34 +111,23 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
  
     //sort protocol list
     sort(_decoderInfoList.begin(), _decoderInfoList.end(), ProtocolDock::protocol_sort_callback);
-
-    _bSettingList = true;
-    int protocol_index = 0;
-    for (auto info : _decoderInfoList){
-         info->Index = protocol_index;
-         protocol_index++;
-         srd_decoder *dec = (srd_decoder *)(info->ObjectHandle);
-         _protocol_combobox->addItem(QString::fromUtf8(dec->name), QVariant::fromValue(info->Index));
-    }
-
-    _protocol_combobox->setCurrentIndex(-1);
-    _protocol_combobox->lineEdit()->setText(PROTOCOL_FIND_TITLE);
-    _bSettingList = false;
-
+  
     if (repeatNammes != ""){
         QString err = "Any protocol have repeated id or name: ";
         err += repeatNammes;
         MsgBox::Show("error", err.toUtf8().data());
     }
-
-    _up_layout = new QVBoxLayout();
+ 
+    _arrow = new QToolButton(_up_widget);  
 
     QHBoxLayout *hori_layout = new QHBoxLayout();
     hori_layout->addWidget(_add_button);
     hori_layout->addWidget(_del_all_button);
-    hori_layout->addWidget(_protocol_combobox);
+    hori_layout->addWidget(_keyword_edit); 
+    hori_layout->addWidget(_arrow);
     hori_layout->addStretch(1);
   
+    _up_layout = new QVBoxLayout();
     _up_layout->addLayout(hori_layout);
     _up_layout->addStretch(1);
 
@@ -228,12 +211,6 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
 
     retranslateUi(); 
 
-    _key_find_timer.SetCallback(std::bind(&ProtocolDock::show_protocol_list_panel, this));
-     //when porotocol list panel was showPopup statu, receive key press event
-     QWidget *popup1 = _protocol_combobox->findChild<QFrame*>();
-     QWidget *wid1 = popup1->findChild<QWidget*>();
-     wid1->installEventFilter(this);
-
     connect(_dn_nav_button, SIGNAL(clicked()),this, SLOT(nav_table_view()));
     connect(_dn_save_button, SIGNAL(clicked()),this, SLOT(export_table_view()));
     connect(_dn_set_button, SIGNAL(clicked()),this, SLOT(set_model()));
@@ -250,10 +227,7 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
 
     connect(_search_edit, SIGNAL(editingFinished()), this, SLOT(search_changed()));
 
-    connect(_protocol_combobox->lineEdit(), SIGNAL(textEdited(const QString &)), 
-                    this, SLOT(on_decoder_name_edited(const QString &)));
-
-    connect(_protocol_combobox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_new_decoder_selected(int)));
+    connect(_arrow, SIGNAL(clicked()), this, SLOT(show_protocol_select()));
 }
 
 ProtocolDock::~ProtocolDock()
@@ -268,20 +242,13 @@ ProtocolDock::~ProtocolDock()
    RELEASE_ARRAY(_decoderInfoList);
 }
 
-void ProtocolDock::changeEvent(QEvent *event)
-{
-    if (event->type() == QEvent::LanguageChange)
-        retranslateUi();
-    else if (event->type() == QEvent::StyleChange)
-        reStyle();
-    QScrollArea::changeEvent(event);
-}
-
 void ProtocolDock::retranslateUi()
 {
     _search_edit->setPlaceholderText(tr("search"));
     _matchs_title_label->setText(tr("Matching Items:"));
     _dn_title_label->setText(tr("Protocol List Viewer"));
+
+     _keyword_edit->ResetText();
 }
 
 void ProtocolDock::reStyle()
@@ -296,15 +263,23 @@ void ProtocolDock::reStyle()
     _pre_button->setIcon(QIcon(iconPath+"/pre.svg"));
     _nxt_button->setIcon(QIcon(iconPath+"/next.svg"));
     _search_button->setIcon(QIcon(iconPath+"/search.svg"));
+    _arrow->setIcon(QIcon(iconPath + "/search.svg"));
 
     for (auto it = _protocol_lay_items.begin(); it != _protocol_lay_items.end(); it++){
        (*it)->ResetStyle();
-    } 
+    }  
 }
 
-void ProtocolDock::paintEvent(QPaintEvent *)
-{ 
+void ProtocolDock::changeEvent(QEvent *event)
+{
+    if (event->type() == QEvent::LanguageChange)
+        retranslateUi();
+    else if (event->type() == QEvent::StyleChange)
+        reStyle();
+    QScrollArea::changeEvent(event);
 }
+
+//void ProtocolDock::paintEvent(QPaintEvent *){} 
 
 void ProtocolDock::resizeEvent(QResizeEvent *event)
 {
@@ -319,6 +294,7 @@ void ProtocolDock::resizeEvent(QResizeEvent *event)
             _pre_button->width()-_nxt_button->width();
     width = std::max(width, 0);
     _search_edit->setMinimumWidth(width);
+    _keyword_edit->setMinimumWidth(width-20);
     QScrollArea::resizeEvent(event);
 }
 
@@ -332,7 +308,7 @@ int ProtocolDock::get_protocol_index_by_id(QString id)
 {
     int dex = 0;
     for (auto info : _decoderInfoList){
-        srd_decoder *dec = (srd_decoder *)(info->ObjectHandle);
+        srd_decoder *dec = (srd_decoder *)(info->_data_handle);
         QString proid(dec->id);
         if (id == proid){
             return dex;
@@ -340,23 +316,24 @@ int ProtocolDock::get_protocol_index_by_id(QString id)
         ++dex;
     }
     return -1;
-}
+} 
 
 void ProtocolDock::on_add_protocol()
 { 
-    if (_decoderInfoList.size() == 0){
+     if (_decoderInfoList.size() == 0){
         MsgBox::Show(NULL, "Protocol list is empty!");
         return;
     }
-    if (_protocol_combobox->currentIndex() == -1){
+    if (_selected_protocol_id == ""){
         MsgBox::Show(NULL, "Please select a protocol!");
         return;
     }
 
-    int dex = _protocol_combobox->itemData(_protocol_combobox->currentIndex()).toInt();
+    int dex = this->get_protocol_index_by_id(_selected_protocol_id);
+    assert(dex >= 0);
 
     //check the base protocol
-    srd_decoder *const dec = (srd_decoder *)(_decoderInfoList[dex]->ObjectHandle);
+    srd_decoder *const dec = (srd_decoder *)(_decoderInfoList[dex]->_data_handle);
     QString pro_id(dec->id);
     std::list<data::decode::Decoder*> sub_decoders;
     
@@ -373,7 +350,7 @@ void ProtocolDock::on_add_protocol()
 
         while (base_dex != -1)
         {
-            srd_decoder *base_dec = (srd_decoder *)(_decoderInfoList[base_dex]->ObjectHandle);
+            srd_decoder *base_dec = (srd_decoder *)(_decoderInfoList[base_dex]->_data_handle);
             pro_id = QString(base_dec->id); //change base protocol           
 
             assert(base_dec->inputs);
@@ -418,7 +395,7 @@ bool ProtocolDock::add_protocol_by_id(QString id, bool silent, std::list<pv::dat
         return false;
     }
 
-    srd_decoder *const decoder = (srd_decoder *)(_decoderInfoList[dex]->ObjectHandle);
+    srd_decoder *const decoder = (srd_decoder *)(_decoderInfoList[dex]->_data_handle);
     DecoderStatus *dstatus = new DecoderStatus();
     dstatus->m_format = (int)DecoderDataFormat::hex;
 
@@ -924,54 +901,12 @@ void ProtocolDock::OnProtocolFormatChanged(QString format, void *handle){
        }
    }
 } 
-
-void ProtocolDock::on_decoder_name_edited(const QString &value)
-{
-    _bSettingList = true;
-
-    while (_protocol_combobox->count())
-    {
-        _protocol_combobox->removeItem(0);
-    }
-
-    for (auto info: _decoderInfoList){
-        srd_decoder *dec = (srd_decoder *)(info->ObjectHandle);
-        QString name(dec->name);
-        QString id(dec->id);
-
-        if (value == "" 
-        || name.indexOf(value, 0, Qt::CaseInsensitive) != -1 
-        || id.indexOf(value, 0, Qt::CaseInsensitive) != -1 ){
-            _protocol_combobox->addItem(QString::fromUtf8(dec->name), QVariant::fromValue(info->Index));
-        }
-    }    
   
-    _protocol_combobox->setCurrentIndex(-1);
-    _protocol_combobox->lineEdit()->setText(value);
-    _bSettingList = false;
-
-    if (_key_find_timer.IsActived() == false){
-        //check input keep time
-        _key_find_timer.Start(100);
-    }
-    else{
-        _key_find_timer.ResetActiveTime();
-    }
-}
-
- void ProtocolDock::show_protocol_list_panel()
- {  
-     //press key end, to popup list panel
-     if (_key_find_timer.GetActiveTimeLong() >= 1000){
-         _key_find_timer.Stop();
-         _protocol_combobox->showPopup();
-     }    
- }
 
 bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const DecoderInfoItem *o2)
 {
-    srd_decoder *dec1 = (srd_decoder *)(o1->ObjectHandle);
-    srd_decoder *dec2 = (srd_decoder *)(o2->ObjectHandle);
+    srd_decoder *dec1 = (srd_decoder *)(o1->_data_handle);
+    srd_decoder *dec2 = (srd_decoder *)(o2->_data_handle);
     const char *s1 = dec1->name;
     const char *s2 = dec2->name;
     char c1 = 0;
@@ -1001,24 +936,6 @@ bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const Decod
 
     return true;
 }
-
-bool ProtocolDock::eventFilter(QObject *object, QEvent *event)
-{
-    if ( event->type() == QEvent::KeyPress )
-    {  
-        if (_protocol_combobox->IsPopup()){
-            _protocol_combobox->hidePopup();
-        }
-    }
-    return false;
-}
-
- void ProtocolDock::on_new_decoder_selected(int index)
- {
-     if (index >= 0 && _bSettingList == false){
-         on_add_protocol();
-     }
- }
 
  QString ProtocolDock::parse_protocol_id(const char *id)
  {
@@ -1056,7 +973,7 @@ bool ProtocolDock::eventFilter(QObject *object, QEvent *event)
 
       for (auto info : _decoderInfoList)
       {
-          srd_decoder *dec = (srd_decoder *)(info->ObjectHandle);
+          srd_decoder *dec = (srd_decoder *)(info->_data_handle);
           if (dec->outputs)
           {
               QString output_id = parse_protocol_id((char*)dec->outputs->data);
@@ -1074,10 +991,35 @@ bool ProtocolDock::eventFilter(QObject *object, QEvent *event)
 
       return -1;
   }
- 
 
-//-------------------------
+  void ProtocolDock::BeginEditKeyword()
+  {
+      show_protocol_select();
+  }
 
+  void ProtocolDock::show_protocol_select()
+  {
+      SearchComboBox *panel = new SearchComboBox(this);
+
+      for (auto info : _decoderInfoList)
+      {
+          srd_decoder *dec = (srd_decoder *)(info->_data_handle);
+          panel->AddDataItem(QString(dec->id), QString(dec->name), info);
+      }
+      panel->SetItemClickHandle(this);
+      panel->ShowDlg(_keyword_edit);
+  }
+
+ void ProtocolDock::OnItemClick(void *sender, void *data_handle)
+ {
+     if (data_handle != NULL){
+         DecoderInfoItem *info = (DecoderInfoItem*)data_handle;
+         srd_decoder *dec = (srd_decoder *)(info->_data_handle); 
+         this->_keyword_edit->SetInputText(QString(dec->name)); 
+         _selected_protocol_id = QString(dec->id);
+         this->on_add_protocol();       
+     }
+ } 
 
 } // namespace dock
 } // namespace pv

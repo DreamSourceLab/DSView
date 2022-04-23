@@ -116,6 +116,11 @@ public:
   void SetProtocolFormat(const std::string &protocolName, const std::string &value);
   std::string GetProtocolFormat(const std::string &protocolName); 
 
+  inline bool IsLangCn()
+  {
+    return _frameOptions.language == LAN_CN;
+  }
+
 public:
   AppOptions    _appOptions;
   UserHistory   _userHistory;

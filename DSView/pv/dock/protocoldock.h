@@ -35,6 +35,7 @@
 #include <QTableView>
 #include <QSortFilterProxyModel>
 #include <QLineEdit>
+#include <QToolButton>
 
 #include <vector>
 #include <mutex>
@@ -42,13 +43,11 @@
 
 #include "../data/decodermodel.h"
 #include "protocolitemlayer.h"
-#include "../ui/dscombobox.h"
-#include "../dstimer.h"
 #include "keywordlineedit.h"
+#include "searchcombobox.h"
 
 struct DecoderInfoItem{
-    int     Index;
-    void    *ObjectHandle; //srd_decoder* type
+    void  *_data_handle; //srd_decoder* type
 };
 
 namespace pv {
@@ -68,7 +67,10 @@ class View;
 
 namespace dock {
   
-class ProtocolDock : public QScrollArea, public IProtocolItemLayerCallback
+class ProtocolDock : public QScrollArea, 
+public IProtocolItemLayerCallback, 
+public IKeywordActive,
+public ISearchItemClick
 {
     Q_OBJECT
 
@@ -88,7 +90,7 @@ private:
     void reStyle();
 
 protected:
-    void paintEvent(QPaintEvent *);
+   //void paintEvent(QPaintEvent *);
     void resizeEvent(QResizeEvent *);
     
     int get_protocol_index_by_id(QString id);
@@ -100,6 +102,12 @@ private:
     void OnProtocolSetting(void *handle);
     void OnProtocolDelete(void *handle);
     void OnProtocolFormatChanged(QString format, void *handle);
+
+    //IKeywordActive
+    void BeginEditKeyword(); 
+
+    //ISearchItemClick
+    void OnItemClick(void *sender, void *data_handle);
 
 signals:
     void protocol_updated();
@@ -121,15 +129,12 @@ private slots:
     void search_done();
     void search_changed();
     void search_update();
-    void on_decoder_name_edited(const QString &value);
-    void on_new_decoder_selected(int index);
+    void show_protocol_select();
   
-private:
+private: 
     static int decoder_name_cmp(const void *a, const void *b);
     void resize_table_view(data::DecoderModel *decoder_model);
     static bool protocol_sort_callback(const DecoderInfoItem *o1, const DecoderInfoItem *o2);
-    void show_protocol_list_panel();
-    bool eventFilter(QObject *object, QEvent *event);
 
 private:
     SigSession *_session;
@@ -152,8 +157,7 @@ private:
     QLabel *_dn_title_label;
 
     QPushButton *_add_button;
-    QPushButton *_del_all_button;
-    DsComboBox *_protocol_combobox; 
+    QPushButton *_del_all_button; 
     QVBoxLayout *_up_layout;
     std::vector <ProtocolItemLayer*> _protocol_lay_items; //protocol item layers
 
@@ -162,14 +166,12 @@ private:
     QPushButton *_dn_nav_button;
     QPushButton *_search_button;
     std::vector<DecoderInfoItem*> _decoderInfoList;
+    KeywordLineEdit *_keyword_edit;
+    QString     _selected_protocol_id;
+    QToolButton *_arrow; 
 
     mutable std::mutex _search_mutex;
-    bool _search_edited;
-    bool _searching;
-
-    bool _add_silent;
-    DsTimer _key_find_timer;
-    bool _bSettingList;
+    bool _search_edited; 
 };
 
 } // namespace dock

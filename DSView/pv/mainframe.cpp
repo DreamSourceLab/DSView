@@ -47,6 +47,7 @@
 #include "dsvdef.h"
 #include "config/appconfig.h"
 #include "ui/msgbox.h"
+#include "appcontrol.h"
 
 #include <algorithm>
 
@@ -60,6 +61,8 @@ MainFrame::MainFrame()
     _freezing = false; 
     _titleBar = NULL;
     _mainWindow = NULL;
+
+    AppControl::Instance()->SetTopWindow(this);
 
     setAttribute(Qt::WA_TranslucentBackground);
     // Make this a borderless window which can't
@@ -77,8 +80,6 @@ MainFrame::MainFrame()
     QIcon icon;
     icon.addFile(QString::fromUtf8(":/icons/logo.svg"), QSize(), QIcon::Normal, QIcon::Off);
     setWindowIcon(icon);
-
-    app::get_app_window_instance(this, true);
   
     // Title
     _titleBar = new toolbars::TitleBar(true, this);

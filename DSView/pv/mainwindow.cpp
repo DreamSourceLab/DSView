@@ -103,7 +103,7 @@ MainWindow::MainWindow(QWidget *parent) :
     _msg(NULL)
 {
     _control = AppControl::Instance();
-    _control->GetSession()->set_callback(this);
+    _control->GetSession()->set_callback(this);  
     _bFirstLoad = true;
 
 	setup_ui();
@@ -1140,7 +1140,7 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev, bool bDeco
     return true;
 }
 
-bool MainWindow::gen_session_json(QJsonArray &array){
+bool MainWindow::gen_session_json(QJsonObject &sessionVar){
     SigSession *_session = _control->GetSession();
     AppConfig &app = AppConfig::Instance();
 
@@ -1148,7 +1148,7 @@ bool MainWindow::gen_session_json(QJsonArray &array){
     GVariant *gvar;
     gsize num_opts;
     const sr_dev_inst *const sdi = _session->get_device()->dev_inst();
-    QJsonObject sessionVar;
+   
     QJsonArray channelVar;
     sessionVar["Version"]= QJsonValue::fromVariant(Session_Version);
     sessionVar["Device"] = QJsonValue::fromVariant(sdi->driver->name);
@@ -1230,8 +1230,7 @@ bool MainWindow::gen_session_json(QJsonArray &array){
     if (_session->get_device()->dev_inst()->mode == DSO) {
         sessionVar["measure"] = _view->get_viewstatus()->get_session();
     } 
- 
-    array.push_back(sessionVar);
+  
     return true;
 }
 
@@ -1246,10 +1245,10 @@ bool MainWindow::on_store_session(QString name)
     QTextStream outStream(&sessionFile);
     app::set_utf8(outStream);
     
-    QJsonArray jsonArray;
-    if (!gen_session_json(jsonArray))
+    QJsonObject sessionVar;
+    if (!gen_session_json(sessionVar))
         return false;
-    QJsonDocument sessionDoc(jsonArray);
+    QJsonDocument sessionDoc(sessionVar);
     //sessionFile.write(QString::fromUtf8(sessionDoc.toJson()));
     outStream << QString::fromUtf8(sessionDoc.toJson());
     sessionFile.close(); 
@@ -1258,10 +1257,10 @@ bool MainWindow::on_store_session(QString name)
 
 bool MainWindow::genSessionData(std::string &str)
 {
-    QJsonArray jsonArray;
-    if (!gen_session_json(jsonArray))
+    QJsonObject sessionVar;
+    if (!gen_session_json(sessionVar))
         return false;
-    QJsonDocument sessionDoc(jsonArray);
+    QJsonDocument sessionDoc(sessionVar);
     QString data = QString::fromUtf8(sessionDoc.toJson());
     str.append(data.toLatin1().data());
     return true;
