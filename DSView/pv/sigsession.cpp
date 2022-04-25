@@ -1363,7 +1363,7 @@ bool SigSession::add_decoder(srd_decoder *const dec, bool silent, DecoderStatus 
 
         if (silent) { 
             ret = true;
-        } else if (trace->create_popup()) { 
+        } else if (trace->create_popup(true)) { 
             ret = true;
         }
 
@@ -1440,7 +1440,7 @@ void SigSession::rst_decoder(int index)
 {
     auto trace = get_decoder_trace(index);
     
-    if (trace && trace->create_popup() ){
+    if (trace && trace->create_popup(false) ){
         remove_decode_task(trace); //remove old task
         trace->decoder()->clear();
         add_decode_task(trace);

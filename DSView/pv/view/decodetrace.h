@@ -36,13 +36,7 @@
 
 struct srd_channel;
 struct srd_decoder;
-
-struct decoder_panel_item{
-	QWidget *panel;
-	void 	*decoder_handle;
-	int 	panel_height;
-};
-
+ 
 class DsComboBox;
 
 namespace pv {
@@ -59,10 +53,6 @@ class Row;
 }
 }
 
-namespace widgets {
-class DecoderGroupBox;
-}
-
 namespace view {
 
 //create by  SigSession
@@ -71,13 +61,6 @@ class DecodeTrace : public Trace
 	Q_OBJECT
 
 private:
-	struct ProbeSelector
-	{
-		const DsComboBox *_combo;
-        const pv::data::decode::Decoder *_decoder;
-		const srd_channel *_pdch;
-	};
-
     enum DecodeSetRegions{
         NONEREG = -1,
         CHNLREG,
@@ -112,7 +95,10 @@ public:
 
 	bool enabled();
 
-	pv::data::DecoderStack* decoder();
+	inline pv::data::DecoderStack* decoder()
+	{
+		return _decoder_stack;
+	}
 
 	void set_view(pv::view::View *view);
 
@@ -139,9 +125,7 @@ public:
 	 * @param right the x-coordinate of the right edge of the signal
 	 **/
     void paint_fore(QPainter &p, int left, int right, QColor fore, QColor back);
-
-    bool create_popup();
-
+ 
     int rows_size();
 
     QRectF get_rect(DecodeSetRegions type, int y, int right);
@@ -155,14 +139,17 @@ public:
 
 	void* get_key_handel();
 
+	inline std::list<int>* get_sig_index_list(){
+		return &_index_list;
+	}
+
+	bool create_popup(bool isnew);
+
 protected:
     void paint_type_options(QPainter &p, int right, const QPoint pt, QColor fore);
 
-private:
-    void create_popup_form(dialogs::DSDialog *dlg);
-
-	void populate_popup_form(QWidget *parent, QFormLayout *form);
-
+private: 
+ 
     void draw_annotation(const pv::data::decode::Annotation &a, QPainter &p,
         QColor text_colour, int text_height, int left, int right,
         double samples_per_pixel, double pixels_offset, int y,
@@ -184,32 +171,15 @@ private:
 
     void draw_unshown_row(QPainter &p, int y, int h, int left,
                           int right, QString info, QColor fore, QColor back);
-
-    void create_decoder_form(data::DecoderStack *decoder_stack,
-        pv::data::decode::Decoder *dec,
-        QWidget *parent, QFormLayout *form);
-
-	DsComboBox* create_probe_selector(QWidget *parent,
-		const pv::data::decode::Decoder *dec,
-		const srd_channel *const pdch);
-
-	void commit_decoder_probes(
-		data::decode::Decoder *dec);
-
-	void commit_probes();
-	void load_all_decoder_property(std::list<pv::data::decode::Decoder*> &ls);
+ 
 
 signals:
     void decoded_progress(int progress);
 
 private slots:
-	void on_new_decode_data();  
-	void on_probe_selected(int);
-	void on_add_stack(srd_decoder *decoder);
-    void on_del_stack(data::decode::Decoder *dec);
+	void on_new_decode_data();   
 
-    void on_decode_done();
-    void on_region_set(int index); 
+    void on_decode_done(); 
 
 public:
 	volatile bool _delete_flag; //destroy it when deocde task end
@@ -217,27 +187,18 @@ public:
 private:
 	pv::SigSession 			*_session;
 	pv::data::DecoderStack 	*_decoder_stack;
+	std::list<int> _index_list;
 
 	uint64_t 		_decode_start;
 	uint64_t	 	_decode_end;
     int 			_start_index;
 	int 	 		_end_index;
-    int 			_start_count;
-	int			 	_end_count;
-	
-    DsComboBox 		*_start_comboBox;
-	DsComboBox 		*_end_comboBox;
+	 
 	QFormLayout 	*_pub_input_layer;
-    int				 _progress;
-	QWidget			*_decoder_container;
-	std::list<decoder_panel_item> 	_decoder_panels;
-	int 			_form_base_height;
-
-	std::list<pv::prop::binding::DecoderOptions*> _bindings;
-	std::list<ProbeSelector> _probe_selectors;
-	std::vector<pv::widgets::DecoderGroupBox*> _decoder_forms;
+    int				 _progress;  
 
 	std::vector<QString> 	_cur_row_headings; 
+ 
 };
 
 } // namespace view

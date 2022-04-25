@@ -293,8 +293,11 @@ void ProtocolDock::resizeEvent(QResizeEvent *event)
             _dn_search_layout->spacing() * 2 -
             _pre_button->width()-_nxt_button->width();
     width = std::max(width, 0);
+    
     _search_edit->setMinimumWidth(width);
-    _keyword_edit->setMinimumWidth(width-20);
+    width = std::max(width-20, 0);
+    _keyword_edit->setMinimumWidth(width);
+    
     QScrollArea::resizeEvent(event);
 }
 

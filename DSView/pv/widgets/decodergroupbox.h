@@ -26,8 +26,9 @@
  
 #include <QPushButton>
 #include <QGridLayout>
-#include <QToolBar>
-#include <QScrollArea> 
+//#include <QToolBar>
+//#include <QScrollArea> 
+#include <QWidget>
 
 namespace pv {
 
@@ -40,7 +41,7 @@ class Decoder;
 
 namespace widgets {
 
-class DecoderGroupBox : public QScrollArea
+class DecoderGroupBox : public QWidget
 {
 	Q_OBJECT
 

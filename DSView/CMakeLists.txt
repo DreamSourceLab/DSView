@@ -249,6 +249,7 @@ set(DSView_SOURCES
     pv/dialogs/applicationpardlg.cpp
     pv/dock/keywordlineedit.cpp
     pv/dock/searchcombobox.cpp
+    pv/dialogs/decoderoptionsdlg.cpp
 )
 
 set(DSView_HEADERS
@@ -334,6 +335,7 @@ set(DSView_HEADERS
     pv/dialogs/applicationpardlg.h
     pv/dock/keywordlineedit.h
     pv/dock/searchcombobox.h
+    pv/dialogs/decoderoptionsdlg.h
 )
 
 set(DSView_FORMS

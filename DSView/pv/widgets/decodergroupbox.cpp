@@ -31,8 +31,8 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QVariant>
-#include <QScrollBar>
-#include <QScreen>
+//#include <QScrollBar>
+//#include <QScreen>
 #include <QApplication>
  
 #include "../config/appconfig.h"
@@ -46,19 +46,21 @@ DecoderGroupBox::DecoderGroupBox(data::DecoderStack *decoder_stack,
                                  data::decode::Decoder *dec,
                                  QLayout *dec_layout,
                                  QWidget *parent) :
-    QScrollArea(parent),
-    _decoder_stack(decoder_stack),
-    _dec(dec)
+    QWidget(parent)
 {
+    _dec = dec;
+    _decoder_stack = decoder_stack;
     _widget = new QWidget(this);
     _layout = new QGridLayout(_widget);
     _layout->setContentsMargins(0, 0, 0, 0);
-    _layout->setVerticalSpacing(5);
-    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    setWidgetResizable(true);
+    _layout->setVerticalSpacing(2);
+
+  //setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  //setWidgetResizable(true);
 
     QString iconPath = GetIconPath();
-    _layout->addWidget(new QLabel(QString("<h3>%1</h3>").arg(_dec->decoder()->name), _widget),
+    _layout->addWidget(new QLabel(QString("<h3 style='font-style:italic'>%1</h3>").arg(_dec->decoder()->name), _widget),
+   //_layout->addWidget(new QLabel(QString("<span style='text-decoration:underline'>%1</span>").arg(_dec->decoder()->name), _widget),
         0, 0);
 	_layout->setColumnStretch(0, 1);
 
@@ -81,15 +83,17 @@ DecoderGroupBox::DecoderGroupBox(data::DecoderStack *decoder_stack,
                                              iconPath+"/shown.svg" :
                                              iconPath+"/hidden.svg"), QString(), _widget);
     _show_button->setProperty("index", -1);
-    connect(_show_button, SIGNAL(clicked()),
-        this, SLOT(tog_icon()));
+
+    connect(_show_button, SIGNAL(clicked()), this, SLOT(tog_icon()));
+
     _layout->addWidget(_show_button, 0, 2);
 
 
     // add row show/hide
     int index = 0;
-    const std::map<const pv::data::decode::Row, bool> rows = _decoder_stack->get_rows_gshow();
-    for (std::map<const pv::data::decode::Row, bool>::const_iterator i = rows.begin();
+    auto rows = _decoder_stack->get_rows_gshow();
+
+    for (auto i = rows.begin();
         i != rows.end(); i++) {
         if ((*i).first.decoder() == _dec->decoder()) {
             QPushButton *show_button = new QPushButton(QIcon((*i).second ?
@@ -97,6 +101,7 @@ DecoderGroupBox::DecoderGroupBox(data::DecoderStack *decoder_stack,
                                                                  iconPath+"/hidden.svg"), QString(), _widget);
             show_button->setProperty("index", index);
             connect(show_button, SIGNAL(clicked()), this, SLOT(tog_icon()));
+
             _row_show_button.push_back(show_button);
             _layout->addWidget(new QLabel((*i).first.title(), _widget), _row_show_button.size(), 0);
             _layout->addWidget(show_button, _row_show_button.size(), 2);
@@ -107,8 +112,9 @@ DecoderGroupBox::DecoderGroupBox(data::DecoderStack *decoder_stack,
     _layout->addLayout(dec_layout, _row_show_button.size()+1, 0, 1, 3);
 
     _widget->setLayout(_layout);
-    setWidget(_widget);
-    _widget->installEventFilter(this);
+    parent->layout()->addWidget(_widget);
+   // setWidget(_widget);
+   // _widget->installEventFilter(this);
 }
 
 DecoderGroupBox::~DecoderGroupBox()
@@ -117,6 +123,7 @@ DecoderGroupBox::~DecoderGroupBox()
 
 bool DecoderGroupBox::eventFilter(QObject *o, QEvent *e)
 {
+    /*
     if(o == _widget && e->type() == QEvent::Resize) {
         setMinimumWidth(_widget->minimumSizeHint().width() + verticalScrollBar()->width());
         QScreen *screen=QGuiApplication::primaryScreen ();
@@ -124,6 +131,7 @@ bool DecoderGroupBox::eventFilter(QObject *o, QEvent *e)
         if (_widget->minimumSizeHint().height() < mm.height()/2)
             setMinimumHeight(_widget->minimumSizeHint().height());
     }
+    */
 
     return false;
 }
@@ -132,12 +140,12 @@ void DecoderGroupBox::tog_icon()
 {
     QString iconPath = GetIconPath();
     QPushButton *sc = dynamic_cast<QPushButton*>(sender());
-    QVariant id = sc->property("index");
-    int index = id.toInt();
+    int index = sc->property("index").toInt();
+
     if (index == -1) {
         int i = _index;
 
-       for(auto &dec : _decoder_stack->stack()) {
+       for(auto dec : _decoder_stack->stack()) {
             if (i-- == 0) {
                 dec->show(!dec->shown());
                 sc->setIcon(QIcon(dec->shown() ? iconPath+"/shown.svg" :
@@ -146,9 +154,9 @@ void DecoderGroupBox::tog_icon()
             }
         }
     } else {
-        std::map<const pv::data::decode::Row, bool> rows = _decoder_stack->get_rows_gshow();
-        for (std::map<const pv::data::decode::Row, bool>::const_iterator i = rows.begin();
-            i != rows.end(); i++) {
+        auto rows = _decoder_stack->get_rows_gshow();
+
+        for (auto i = rows.begin(); i != rows.end(); i++) {
             if (index-- == 0) {
                 _decoder_stack->set_rows_gshow((*i).first, !(*i).second);
                 //rows[(*i).first] = !(*i).second;
