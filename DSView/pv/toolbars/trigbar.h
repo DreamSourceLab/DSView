@@ -109,7 +109,7 @@ private:
 
     QMenu       *_display_menu;
     QMenu       *_themes;
-    QAction     *_appParam_action;
+    QAction     *_action_dispalyOptions;
     QAction     *_dark_style;
     QAction     *_light_style;
     QAction     *_action_lissajous;

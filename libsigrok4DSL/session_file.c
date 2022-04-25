@@ -621,7 +621,6 @@ SR_API int sr_session_append(const char *filename, const unsigned char *buf,
         goto err;
     }
     if (zip_file_add(archive, chunk_name, logicsrc, ZIP_FL_OVERWRITE) == -1) {
-   // if (zip_add(archive, chunk_name, logicsrc) == -1) {
         goto err;
     }
     if ((ret = zip_close(archive)) == -1) {

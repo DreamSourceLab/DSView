@@ -1206,7 +1206,8 @@ void SigSession::data_feed_in_proc(const struct sr_dev_inst *sdi,
 /*
  * hotplug function
  */
-void SigSession::hotplug_callback(void *ctx, void *dev, int event, void *user_data) {
+void SigSession::hotplug_callback(void *ctx, void *dev, int event, void *user_data)
+{
 
     (void)ctx;
     (void)dev;
@@ -1214,32 +1215,32 @@ void SigSession::hotplug_callback(void *ctx, void *dev, int event, void *user_da
 
     if (USB_EV_HOTPLUG_ATTACH == event) {
         _session->_hot_attach = true;
-        qDebug("receive event:DreamSourceLab Hardware attached!");
     }else if (USB_EV_HOTPLUG_DETTACH == event) {
         _session->_hot_detach = true;
-        qDebug("receive event:DreamSourceLab Hardware detached!");
     }else{
         qDebug("Unhandled event %d\n", event);
     }
 }
 
 void SigSession::hotplug_proc()
-{   
+{  
     if (!_dev_inst)
         return; 
-        
+
+    qDebug("Hotplug thread start!");
+
     try {
         while(_session && !_bHotplugStop) {
 
             sr_hotplug_wait_timout(_sr_ctx);
 
             if (_hot_attach) {
-                qDebug("process event:DreamSourceLab hardware attached!");
+                qDebug("process event: DreamSourceLab hardware attached!");
                 _callback->device_attach();
                 _hot_attach = false;
             }
             if (_hot_detach) {
-                qDebug("process event:DreamSourceLab hardware detached!");
+                qDebug("process event: DreamSourceLab hardware detached!");
                 _callback->device_detach();
                 _hot_detach = false;
             }
@@ -1248,7 +1249,7 @@ void SigSession::hotplug_proc()
     } catch(...) {
         qDebug("Interrupt exception for hotplug thread was thrown.");
     }
-   // qDebug("Hotplug thread exit!");
+    qDebug("Hotplug thread exit!");
 }
 
 void SigSession::register_hotplug_callback()

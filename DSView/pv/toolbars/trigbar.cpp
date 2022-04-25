@@ -87,14 +87,14 @@ TrigBar::TrigBar(SigSession *session, QWidget *parent) :
     _themes->addAction(_light_style);
     _themes->addAction(_dark_style);
 
-     _appParam_action = new QAction(this);
+     _action_dispalyOptions = new QAction(this);
 
     _display_menu = new QMenu(this);
     _display_menu->setContentsMargins(0,0,0,0);
     
-    _display_menu->addAction(_appParam_action);
     _display_menu->addAction(_action_lissajous);    
     _display_menu->addMenu(_themes);
+	_display_menu->addAction(_action_dispalyOptions);
 
     _setting_button.setPopupMode(QToolButton::InstantPopup);
     _setting_button.setMenu(_display_menu);
@@ -127,7 +127,7 @@ TrigBar::TrigBar(SigSession *session, QWidget *parent) :
     connect(_action_lissajous, SIGNAL(triggered()), this, SLOT(on_actionLissajous_triggered()));
     connect(_dark_style, SIGNAL(triggered()), this, SLOT(on_actionDark_triggered()));
     connect(_light_style, SIGNAL(triggered()), this, SLOT(on_actionLight_triggered()));
-    connect(_appParam_action, SIGNAL(triggered()), this, SLOT(on_application_param()));
+    connect(_action_dispalyOptions, SIGNAL(triggered()), this, SLOT(on_application_param()));
 }
 
 void TrigBar::changeEvent(QEvent *event)
@@ -146,7 +146,7 @@ void TrigBar::retranslateUi()
     _measure_button.setText(tr("Measure"));
     _search_button.setText(tr("Search"));
     _function_button.setText(tr("Function"));
-    _setting_button.setText(tr("Setting"));
+    _setting_button.setText(tr("Display"));
  
     _action_lissajous->setText(tr("&Lissajous"));
 
@@ -157,7 +157,7 @@ void TrigBar::retranslateUi()
     _action_fft->setText(tr("FFT"));
     _action_math->setText(tr("Math"));
 
-    _appParam_action->setText(tr("Application"));
+    _action_dispalyOptions->setText(tr("Options"));
 }
 
 void TrigBar::reStyle()
@@ -177,7 +177,7 @@ void TrigBar::reStyle()
     _dark_style->setIcon(QIcon(iconPath+"/dark.svg"));
     _light_style->setIcon(QIcon(iconPath+"/light.svg"));
 
-     _appParam_action->setIcon(QIcon(iconPath+"/params.svg"));
+     _action_dispalyOptions->setIcon(QIcon(iconPath+"/params.svg"));
 
      AppConfig &app = AppConfig::Instance();    
 

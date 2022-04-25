@@ -288,9 +288,6 @@ static GSList *scan(GSList *options)
     /* Find all DSLogic compatible devices and upload firmware to them. */
 	devices = NULL;
     libusb_get_device_list(drvc->sr_ctx->libusb_ctx, &devlist);
-    int stdnum = 0;
-    
-
 	for (i = 0; devlist[i]; i++) {
 		if (conn) {
 			usb = NULL;
@@ -316,8 +313,6 @@ static GSList *scan(GSList *options)
         if ((usb_speed != LIBUSB_SPEED_HIGH) &&
             (usb_speed != LIBUSB_SPEED_SUPER))
             continue;
-
-        stdnum++;
 
 		prof = NULL;
         for (j = 0; supported_DSLogic[j].vid; j++) {
