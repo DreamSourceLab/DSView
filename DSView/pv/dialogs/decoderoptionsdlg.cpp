@@ -29,6 +29,7 @@
 #include <QGridLayout>
 #include <QFormLayout>
 #include <QScrollArea> 
+#include <QVariant> 
 
 #include "../data/decoderstack.h"
 #include "../prop/binding/decoderoptions.h"
@@ -52,8 +53,6 @@ namespace dialogs {
 DecoderOptionsDlg::DecoderOptionsDlg(QWidget *parent)
 :DSDialog(parent)
 {
-    _start_index = 0;
-	_end_index = 0;
 }
 
 DecoderOptionsDlg::~DecoderOptionsDlg()
@@ -118,28 +117,46 @@ void DecoderOptionsDlg::load_options(view::DecodeTrace *trace)
     _start_comboBox->setMinimumContentsLength(7);
     _end_comboBox->setMinimumContentsLength(7);
 
+    // Add cursor list
     auto view = _trace->get_view();
-    if (view) {
-        int index = 1;
-        for(auto i = view->get_cursorList().begin();
-            i != view->get_cursorList().end(); i++) {
-            QString curCursor = tr("Cursor ")+QString::number(index);
-            _start_comboBox->addItem(curCursor);
-            _end_comboBox->addItem(curCursor);
-            index++;
+    int dex1 = 0;
+    int dex2 = 0;
+
+    if (view)
+    {  
+        int num = 1;
+        for (auto c : view->get_cursorList()){
+            QString curCursor = tr("Cursor") + QString::number(num);
+            _start_comboBox->addItem(curCursor, QVariant(c->get_key()));
+            _end_comboBox->addItem(curCursor, QVariant(c->get_key()));
+
+            if (c->get_key() == _cursor1)
+                dex1 = num;
+            if (c->get_key() == _cursor2) 
+                dex2 = num; 
+
+            num++;
         }
     }
-    
-    // invalid cursor index
-    if (_start_index >= _start_comboBox->count())
-        _start_index = 0;
-    if (_end_index >= _end_comboBox->count())
-        _end_index = 0; 
 
-    _start_comboBox->setCurrentIndex(_start_index);
-    _end_comboBox->setCurrentIndex(_end_index);
+    if (dex1 == 0)
+        _cursor1 = "";
+    if (dex2 == 0)
+        _cursor2 = "";
 
-    on_region_set(0); // set default sample range
+    if (dex1 > dex2 && false){
+        int tmp = dex1;
+        dex1 = dex2;
+        dex2 = tmp;
+        QString tmp_s = _cursor1;
+        _cursor1 = _cursor2;
+        _cursor1 = tmp_s;
+    }
+
+    _start_comboBox->setCurrentIndex(dex1);
+    _end_comboBox->setCurrentIndex(dex2);
+ 
+    update_decode_range(); // set default sample range
 
     form->addRow(_start_comboBox, new QLabel(
                      tr("Decode start cursor from")));
@@ -198,9 +215,7 @@ void DecoderOptionsDlg::load_decoder_forms(QWidget *container)
         if (dex > 1){
             QWidget *l = new QWidget();
             l->setMinimumHeight(1);
-            l->setMaximumHeight(1);
-           // l->setStyleSheet("background-color:#4b5cc4"); 
-            //container->layout()->addWidget(l);
+            l->setMaximumHeight(1); 
         } 
 
         QWidget *panel = new QWidget(container);
@@ -251,7 +266,11 @@ DsComboBox* DecoderOptionsDlg::create_probe_selector(
 void DecoderOptionsDlg::on_region_set(int index)
 {
     (void)index;
+    update_decode_range();
+}
 
+void DecoderOptionsDlg::update_decode_range()
+{ 
     const uint64_t last_samples = AppControl::Instance()->GetSession()->cur_samplelimits() - 1;
     const int index1 = _start_comboBox->currentIndex();
     const int index2 = _end_comboBox->currentIndex();
@@ -261,13 +280,34 @@ void DecoderOptionsDlg::on_region_set(int index)
 
     if (index1 == 0) {
         decode_start = 0;
+        _cursor1 = "";
+
     } else {
-        decode_start = view->get_cursor_samples(index1-1);
+        _cursor1 = _start_comboBox->itemData(index1).toString();
+        int cusrsor_index = view->get_cursor_index_by_key(_cursor1);
+        if (cusrsor_index != -1){
+            decode_start = view->get_cursor_samples(cusrsor_index);
+        }
+        else{
+            decode_start = 0;
+            _cursor1 = "";
+        }        
     }
+
     if (index2 == 0) {
         decode_end = last_samples;
+        _cursor2 = "";
+
     } else {
-        decode_end = view->get_cursor_samples(index2-1);
+        _cursor2 = _end_comboBox->itemData(index2).toString();
+        int cusrsor_index = view->get_cursor_index_by_key(_cursor2);
+        if (cusrsor_index != -1){
+            decode_end = view->get_cursor_samples(cusrsor_index);
+        }
+        else{
+            decode_end = last_samples;
+            _cursor2 = "";
+        }       
     }
 
     if (decode_start > last_samples)
@@ -280,8 +320,6 @@ void DecoderOptionsDlg::on_region_set(int index)
         decode_start = decode_end;
         decode_end = tmp;
     }
-    _start_index = index1;
-    _end_index = index2;
   
     for(auto &dec : _trace->decoder()->stack()) {
         dec->set_decode_region(decode_start, decode_end);
@@ -390,28 +428,16 @@ void DecoderOptionsDlg::commit_decoder_probes(data::decode::Decoder *dec)
 
 	dec->set_probes(probe_map);
 }
-
- void DecoderOptionsDlg::set_sample_range(int start, int end)
- {
-     _start_index = start;
-     _end_index = end;
- }
-
-void DecoderOptionsDlg::get_sample_range(int &start, int &end)
-{
-    start = _start_index;
-    end = _end_index; 
-}
-
+ 
 void DecoderOptionsDlg::on_accept()
 { 
-    if (_start_index > 0 && _start_index == _end_index){
+    if (_cursor1 != "" && _cursor1 == _cursor2){
         MsgBox::Show("error", "Invalid cursor index for sample range!");
         return;
     }
 
     this->accept();
-}
+} 
 
 }//dialogs
 }//pv

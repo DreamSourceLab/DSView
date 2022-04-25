@@ -24,7 +24,8 @@
 
 #include <QObject>
 #include <QWidget>
-#include <list>
+#include <vector>
+#include <QString>
 
 class QGridLayout;
 class DsComboBox;
@@ -71,8 +72,18 @@ public:
     DecoderOptionsDlg(QWidget *parent);
     ~DecoderOptionsDlg(); 
 
-    void set_sample_range(int start, int end);
-    void get_sample_range(int &start, int &end);
+    inline void set_cursor_range(QString cursor1, QString cursor2)
+    {
+        _cursor1 = cursor1;
+        _cursor2 = cursor2;
+    }
+
+    inline void get_cursor_range(QString &cursor1, QString &cursor2)
+    {
+        cursor1 = _cursor1;
+        cursor2 = _cursor2;
+    }
+
     void load_options(view::DecodeTrace *trace);
 
 private:
@@ -85,7 +96,8 @@ private:
             QWidget *parent, QFormLayout *form);
 
     void commit_probes();    
-    void commit_decoder_probes(data::decode::Decoder *dec);   
+    void commit_decoder_probes(data::decode::Decoder *dec);
+    void update_decode_range(); 
  
 private slots:
     void on_probe_selected(int);
@@ -93,13 +105,13 @@ private slots:
     void on_accept();
 
 private: 
-    std::list<prop::binding::DecoderOptions*> _bindings;
+    std::vector<prop::binding::DecoderOptions*> _bindings;
     DsComboBox 		*_start_comboBox;
 	DsComboBox 		*_end_comboBox;
     view::DecodeTrace   *_trace;
-    int 		    _start_index;
-	int 	 		_end_index; 
-    std::list<ProbeSelector> _probe_selectors;
+    QString     _cursor1;
+    QString     _cursor2;
+    std::vector<ProbeSelector> _probe_selectors;
 };
 
 }//dialogs

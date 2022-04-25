@@ -34,6 +34,8 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <ctime>
+#include <stdlib.h> 
 
 #include "../dsvdef.h"
 
@@ -55,6 +57,16 @@ Cursor::Cursor(View &view, QColor color, uint64_t index) :
     TimeMarker(view, color, index),
     _other(*this)
 {
+    static bool bSpeed = false;
+    if (!bSpeed){
+        bSpeed = true;
+        srand(std::time(NULL));
+    }
+
+    // make a rand key
+    char buf[8+1];
+    make_rand_str(buf, 8);
+    _key = QString(buf);
 }
 
 QRect Cursor::get_label_rect(const QRect &rect, bool &visible, bool has_hoff)
@@ -168,5 +180,15 @@ void Cursor::compute_text_size(QPainter &p, unsigned int prefix)
         Ruler::format_real_time(_index, _view.session().cur_snap_samplerate())).size();
 }
 
+void Cursor::make_rand_str(char *buf, int len)
+{
+    for (int i = 0; i < len; ++i)
+    {
+        buf[i] = 'a' + rand() % 26;
+    }
+
+    buf[len] = 0; 
+}
+ 
 } // namespace view
 } // namespace pv

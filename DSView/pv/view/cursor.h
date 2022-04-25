@@ -27,6 +27,7 @@
 #include "timemarker.h"
 
 #include <QSizeF>
+#include <QString>
 
 class QPainter;
 
@@ -81,13 +82,29 @@ public:
     void paint_fix_label(QPainter &p, const QRect &rect,
         unsigned int prefix, QChar label, QColor color, bool has_hoff);
 
+public: 
+	inline QString get_key(){
+		return _key;
+	}
+
+	inline void set_key(QString key){
+		_key = key;
+	}
+
+	inline uint64_t get_index()
+	{
+		return _index;
+	}
+
 private:
 	void compute_text_size(QPainter &p, unsigned int prefix);
 
+	void make_rand_str(char *buf, int len);
+
 private:
 	const Cursor &_other;
-
-	QSizeF _text_size;
+	QSizeF 		_text_size;
+	QString 	_key;
 };
 
 } // namespace view

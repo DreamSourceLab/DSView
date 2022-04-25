@@ -29,6 +29,7 @@
 #include <QSignalMapper>
 #include <QFormLayout>
 #include <QWidget>
+#include <QString>
 
 #include "trace.h"
 #include "../prop/binding/decoderoptions.h"
@@ -191,8 +192,9 @@ private:
 
 	uint64_t 		_decode_start;
 	uint64_t	 	_decode_end;
-    int 			_start_index;
-	int 	 		_end_index;
+	
+	QString			_decode_cursor1; // the cursor key name, sample start index 
+	QString			_decode_cursor2;
 	 
 	QFormLayout 	*_pub_input_layer;
     int				 _progress;  

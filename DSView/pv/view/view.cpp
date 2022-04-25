@@ -1321,5 +1321,17 @@ void View::set_receive_len(uint64_t len)
         _fft_viewport->set_receive_len(len);
 }
 
+int View::get_cursor_index_by_key(QString key)
+{
+    int dex = 0;
+    for (auto c : _cursorList){
+        if (c->get_key() == key){
+            return dex;
+        }
+        ++dex;
+    }
+    return -1;
+}
+
 } // namespace view
 } // namespace pv

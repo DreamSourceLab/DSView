@@ -239,6 +239,8 @@ public:
     double index2pixel(uint64_t index, bool has_hoff = true);
     uint64_t pixel2index(double pixel);
 
+    int get_cursor_index_by_key(QString key);
+
 signals:
 	void hover_point_changed();
 

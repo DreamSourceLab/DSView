@@ -130,12 +130,8 @@ DecodeTrace::DecodeTrace(pv::SigSession *session,
  
     _pub_input_layer = NULL;
     _progress = 0;
-
     _decode_start = 0;
     _decode_end  = INT64_MAX; 
-    _end_index = 0;
-    _start_index = 0;
-
     _decoder_stack = decoder_stack;
     _session = session;
     _delete_flag = false;
@@ -657,15 +653,18 @@ QRectF DecodeTrace::get_rect(DecodeSetRegions type, int y, int right)
 void DecodeTrace::frame_ended()
 {
     const uint64_t last_samples = _session->cur_samplelimits() - 1;
+
     if (_decode_start > last_samples) {
         _decode_start = 0;
-        _start_index = 0;
+        _decode_cursor1 = "";
     }
-    if (_end_index ==0 ||
+
+    if (_decode_cursor2 == "" ||
         _decode_end > last_samples) {
         _decode_end = last_samples;
-        _end_index = 0;
+        _decode_cursor2 = "";
     }
+
     for(auto &dec : _decoder_stack->stack()) {
         dec->set_decode_region(_decode_start, _decode_end);
         dec->commit();
@@ -683,7 +682,7 @@ bool DecodeTrace::create_popup(bool isnew)
     int ret = false;  //setting have changed flag 
     QWidget *top = AppControl::Instance()->GetTopWindow();
     dialogs::DecoderOptionsDlg dlg(top);
-    dlg.set_sample_range(_start_index, _end_index);
+    dlg.set_cursor_range(_decode_cursor1, _decode_cursor2);
     dlg.load_options(this);
 
     if (QDialog::Accepted == dlg.exec())
@@ -698,7 +697,7 @@ bool DecodeTrace::create_popup(bool isnew)
             }
         } 
 
-        dlg.get_sample_range(_start_index, _end_index);
+        dlg.get_cursor_range(_decode_cursor1, _decode_cursor2);
     }
  
     return ret;
