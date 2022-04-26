@@ -46,15 +46,17 @@ DeviceOptions::DeviceOptions(QWidget *parent, DevInst *dev_inst) :
      _props_box = NULL;
      _config_button = NULL;
      _cali_button = NULL;
+     
+     QWidget *dlg = this;
 
      setTitle(tr("Device Options"));
 
     _props_box = new QGroupBox(tr("Mode"), this);
     _props_box->setLayout(get_property_form(_props_box));
-    //_layout.addWidget(_props_box);
+    _layout.addWidget(_props_box);
 
-    _dynamic_box = new QGroupBox(dynamic_widget(_dynamic_layout),
-                                          this);
+    _dynamic_box = new QGroupBox(dynamic_widget(_dynamic_layout),this);
+
     _dynamic_box->setLayout(&_dynamic_layout);
     _layout.addWidget(_dynamic_box);
     _dynamic_box->setVisible(_dynamic_box->title() != "");
@@ -64,8 +66,7 @@ DeviceOptions::DeviceOptions(QWidget *parent, DevInst *dev_inst) :
 
     layout()->addLayout(&_layout);
  
-    connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
-    //connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
+    connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept())); 
     connect(_dev_inst, SIGNAL(device_updated()), this, SLOT(reject()));
 
     GVariant* gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_OPERATION_MODE);
@@ -73,6 +74,7 @@ DeviceOptions::DeviceOptions(QWidget *parent, DevInst *dev_inst) :
         _mode = QString::fromUtf8(g_variant_get_string(gvar, NULL));
         g_variant_unref(gvar);
     }
+
     connect(&_mode_check, SIGNAL(timeout()), this, SLOT(mode_check()));
     _mode_check.setInterval(100);
     _mode_check.start();
@@ -448,7 +450,6 @@ void DeviceOptions::channel_enable()
                     w->setEnabled(sc->isChecked());
                 }
             }
-            //dynamic_widget(_dynamic_layout);
         }
     }
 }
@@ -457,6 +458,7 @@ QString DeviceOptions::dynamic_widget(QGridLayout& inner_layout) {
     if (_dev_inst->dev_inst()->mode == LOGIC) {
         logic_probes(inner_layout);
         return tr("Channels");
+
     } else if (_dev_inst->dev_inst()->mode == DSO) {
         GVariant* gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_HAVE_ZERO);
         if (gvar != NULL) {

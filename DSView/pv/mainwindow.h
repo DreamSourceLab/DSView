@@ -77,9 +77,6 @@ class MainWindow : public QMainWindow, public ISessionCallback, public IMainForm
 {
 	Q_OBJECT
 
-private:
-    static constexpr int Session_Version = 2;
-   
 public:
     explicit MainWindow(QWidget *parent = 0);
 

@@ -93,6 +93,8 @@
 #include "appcontrol.h"
 #include "dsvdef.h"
 #include "appcontrol.h"
+
+#define BASE_SESSION_VERSION 2
   
 
 namespace pv {
@@ -963,9 +965,20 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev, bool bDeco
     QJsonObject sessionObj = json.object();
 
     // check session file version
-    if (!sessionObj.contains("Version") ||
-        sessionObj["Version"].toInt() != Session_Version)
+    if (!sessionObj.contains("Version")){
+        qDebug()<<"session file version is not exists!";
         return false;
+    }
+
+    if (sessionObj["Version"].toInt() < BASE_SESSION_VERSION){
+        qDebug()<<"session file version is error!"<<sessionObj["Version"].toInt();
+        return false;
+    }
+
+    // old version(<= 1.1.2), restore the language
+    if (sessionObj["Version"].toInt() == BASE_SESSION_VERSION){ 
+        switchLanguage(sessionObj["Language"].toInt());
+    }
 
     SigSession *_session = _control->GetSession();
 
@@ -1150,7 +1163,7 @@ bool MainWindow::gen_session_json(QJsonObject &sessionVar){
     const sr_dev_inst *const sdi = _session->get_device()->dev_inst();
    
     QJsonArray channelVar;
-    sessionVar["Version"]= QJsonValue::fromVariant(Session_Version);
+    sessionVar["Version"]= QJsonValue::fromVariant(BASE_SESSION_VERSION);
     sessionVar["Device"] = QJsonValue::fromVariant(sdi->driver->name);
     sessionVar["DeviceMode"] = QJsonValue::fromVariant(sdi->mode);
     sessionVar["Language"] = QJsonValue::fromVariant(app._frameOptions.language);
