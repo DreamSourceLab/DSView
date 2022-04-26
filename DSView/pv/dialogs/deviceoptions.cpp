@@ -47,9 +47,11 @@ DeviceOptions::DeviceOptions(QWidget *parent, DevInst *dev_inst) :
      _config_button = NULL;
      _cali_button = NULL;
 
+     setTitle(tr("Device Options"));
+
     _props_box = new QGroupBox(tr("Mode"), this);
     _props_box->setLayout(get_property_form(_props_box));
-    _layout.addWidget(_props_box);
+    //_layout.addWidget(_props_box);
 
     _dynamic_box = new QGroupBox(dynamic_widget(_dynamic_layout),
                                           this);
@@ -61,8 +63,7 @@ DeviceOptions::DeviceOptions(QWidget *parent, DevInst *dev_inst) :
 	_layout.addWidget(&_button_box);
 
     layout()->addLayout(&_layout);
-    setTitle(tr("Device Options"));
-
+ 
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
     //connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
     connect(_dev_inst, SIGNAL(device_updated()), this, SLOT(reject()));

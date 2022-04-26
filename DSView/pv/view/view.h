@@ -105,6 +105,8 @@ public:
 public:
     explicit View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget *parent = 0);
 
+    ~View();
+
 	SigSession& session();
 
 	/**
@@ -176,6 +178,7 @@ public:
     std::list<Cursor*>& get_cursorList();
     void add_cursor(QColor color, uint64_t index);
     void del_cursor(Cursor* cursor);
+    void clear_cursors();
     void set_cursor_middle(int index);
 
     Cursor* get_trig_cursor();
@@ -239,7 +242,7 @@ public:
     double index2pixel(uint64_t index, bool has_hoff = true);
     uint64_t pixel2index(double pixel);
 
-    int get_cursor_index_by_key(QString key);
+    int get_cursor_index_by_key(uint64_t key);
 
 signals:
 	void hover_point_changed();

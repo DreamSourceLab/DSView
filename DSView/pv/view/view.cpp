@@ -47,6 +47,7 @@
 #include "../data/logicsnapshot.h"
 #include "../dialogs/calibration.h"
 #include "../dialogs/lissajousoptions.h"
+#include "../dsvdef.h"
 
 
 using namespace std;
@@ -98,6 +99,9 @@ View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     _back_ready(false)
 { 
     assert(session);
+
+   _trig_cursor = NULL;
+   _search_cursor = NULL;
 
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
   
@@ -187,6 +191,11 @@ View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     connect(_devmode, SIGNAL(dev_changed(bool)),this, SLOT(dev_changed(bool)), Qt::DirectConnection);
     connect(_header, SIGNAL(traces_moved()),this, SLOT(on_traces_moved()));
     connect(_header, SIGNAL(header_updated()),this, SLOT(header_updated()));
+}
+
+View::~View(){
+    DESTROY_OBJECT(_trig_cursor);
+    DESTROY_OBJECT(_search_cursor);
 }
 
 void View::show_wait_trigger()
@@ -993,6 +1002,14 @@ void View::del_cursor(Cursor* cursor)
     cursor_update();
 }
 
+void View::clear_cursors()
+{
+    for (auto c : _cursorList){
+        delete c;
+    }
+    _cursorList.clear();
+}
+
 void View::set_cursor_middle(int index)
 {
     assert(index < (int)_cursorList.size());
@@ -1321,7 +1338,7 @@ void View::set_receive_len(uint64_t len)
         _fft_viewport->set_receive_len(len);
 }
 
-int View::get_cursor_index_by_key(QString key)
+int View::get_cursor_index_by_key(uint64_t key)
 {
     int dex = 0;
     for (auto c : _cursorList){

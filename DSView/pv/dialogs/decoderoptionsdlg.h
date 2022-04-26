@@ -72,13 +72,13 @@ public:
     DecoderOptionsDlg(QWidget *parent);
     ~DecoderOptionsDlg(); 
 
-    inline void set_cursor_range(QString cursor1, QString cursor2)
+    inline void set_cursor_range(uint64_t cursor1, uint64_t cursor2)
     {
         _cursor1 = cursor1;
         _cursor2 = cursor2;
     }
 
-    inline void get_cursor_range(QString &cursor1, QString &cursor2)
+    inline void get_cursor_range(uint64_t &cursor1, uint64_t &cursor2)
     {
         cursor1 = _cursor1;
         cursor2 = _cursor2;
@@ -109,8 +109,8 @@ private:
     DsComboBox 		*_start_comboBox;
 	DsComboBox 		*_end_comboBox;
     view::DecodeTrace   *_trace;
-    QString     _cursor1;
-    QString     _cursor2;
+    uint64_t     _cursor1; //cursor key
+    uint64_t     _cursor2;
     std::vector<ProbeSelector> _probe_selectors;
 };
 

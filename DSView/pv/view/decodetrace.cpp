@@ -135,6 +135,8 @@ DecodeTrace::DecodeTrace(pv::SigSession *session,
     _decoder_stack = decoder_stack;
     _session = session;
     _delete_flag = false;
+    _decode_cursor1 = 0;
+    _decode_cursor2 = 0;
 
     connect(_decoder_stack, SIGNAL(new_decode_data()), this, SLOT(on_new_decode_data()));
 
@@ -656,13 +658,13 @@ void DecodeTrace::frame_ended()
 
     if (_decode_start > last_samples) {
         _decode_start = 0;
-        _decode_cursor1 = "";
+        _decode_cursor1 = 0;
     }
 
-    if (_decode_cursor2 == "" ||
+    if (_decode_cursor2 == 0 ||
         _decode_end > last_samples) {
         _decode_end = last_samples;
-        _decode_cursor2 = "";
+        _decode_cursor2 = 0;
     }
 
     for(auto &dec : _decoder_stack->stack()) {

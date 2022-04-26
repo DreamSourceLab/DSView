@@ -193,8 +193,8 @@ private:
 	uint64_t 		_decode_start;
 	uint64_t	 	_decode_end;
 	
-	QString			_decode_cursor1; // the cursor key name, sample start index 
-	QString			_decode_cursor2;
+	uint64_t		_decode_cursor1; // the cursor key, sample start index 
+	uint64_t		_decode_cursor2;
 	 
 	QFormLayout 	*_pub_input_layer;
     int				 _progress;  

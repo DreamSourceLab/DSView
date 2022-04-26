@@ -83,14 +83,10 @@ public:
         unsigned int prefix, QChar label, QColor color, bool has_hoff);
 
 public: 
-	inline QString get_key(){
-		return _key;
+	inline uint64_t get_key(){
+		return (uint64_t)this;
 	}
-
-	inline void set_key(QString key){
-		_key = key;
-	}
-
+ 
 	inline uint64_t get_index()
 	{
 		return _index;
@@ -99,12 +95,9 @@ public:
 private:
 	void compute_text_size(QPainter &p, unsigned int prefix);
 
-	void make_rand_str(char *buf, int len);
-
 private:
 	const Cursor &_other;
 	QSizeF 		_text_size;
-	QString 	_key;
 };
 
 } // namespace view
