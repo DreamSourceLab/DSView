@@ -349,7 +349,7 @@ struct srd_proto_data {
 	uint64_t start_sample;
 	uint64_t end_sample;
 	struct srd_pd_output *pdo;
-	void *data;
+	void *data; 
 };
 struct srd_proto_data_annotation {
 	int ann_class;

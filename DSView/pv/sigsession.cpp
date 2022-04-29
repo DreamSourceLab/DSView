@@ -430,6 +430,10 @@ void SigSession::start_capture(bool instant)
         return;
     }
 
+    // stop all decode tasks
+    int run_dex = 0;
+    clear_all_decode_task(run_dex);
+
     // stop previous capture
     stop_capture();
 
@@ -1366,7 +1370,12 @@ bool SigSession::add_decoder(srd_decoder *const dec, bool silent, DecoderStatus 
         if (ret)
         { 
            _decode_traces.push_back(trace);
-            add_decode_task(trace);
+           
+            //add decode task from ui
+            if (!silent){
+                add_decode_task(trace);
+            }
+            
             signals_changed();
             data_updated();
         }
@@ -1917,7 +1926,7 @@ void SigSession::set_stop_scale(float scale)
   //the decode task thread proc
   void SigSession::decode_task_proc(){ 
 
-      //qDebug()<<"decode thread start";
+      qDebug()<<"------->decode thread start";
       auto task = get_top_decode_task();
       
       while (task != NULL)
@@ -1941,7 +1950,7 @@ void SigSession::set_stop_scale(float scale)
           task = get_top_decode_task();
       }  
 
-     // qDebug()<<"decode thread end";
+      qDebug()<<"------->decode thread end";
       _bDecodeRunning = false;
   }
 

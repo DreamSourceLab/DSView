@@ -463,7 +463,7 @@ static PyObject *Decoder_put(PyObject *self, PyObject *args)
 	uint64_t start_sample, end_sample;
 	int output_id;
 	struct srd_pd_callback *cb;
-	PyGILState_STATE gstate;
+	PyGILState_STATE gstate; 
 
 	py_data = NULL; //the fourth param from python
 

@@ -22,6 +22,7 @@
 #include "row.h"
 
 #include <libsigrokdecode4DSL/libsigrokdecode.h>
+#include <assert.h>
 
 namespace pv {
 namespace data {
@@ -63,6 +64,8 @@ QString Row::title() const
 
 bool Row::operator<(const Row &other) const
 {
+    assert(_decoder);
+
     return (_decoder < other._decoder) ||
         (_decoder == other._decoder && _order < other._order);
 }

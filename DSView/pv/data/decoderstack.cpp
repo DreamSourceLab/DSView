@@ -65,7 +65,7 @@ DecoderStack::DecoderStack(pv::SigSession *session,
     _no_memory = false;
     _mark_index = -1;
     _decoder_status = decoder_status;
-    _stask_stauts = NULL; 
+    _stask_stauts = NULL;  
     
     _stack.push_back(new decode::Decoder(dec));
  
@@ -595,7 +595,7 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
 
 void DecoderStack::execute_decode_stack()
 {  
-	srd_session *session;
+	srd_session *session = NULL;
 	srd_decoder_inst *prev_di = NULL;
     uint64_t decode_start = 0;
     uint64_t decode_end = 0;
@@ -655,6 +655,7 @@ void DecoderStack::execute_decode_stack()
     if (error) {
         g_free(error);
     }
+
 	srd_session_destroy(session); 
 }
 
@@ -683,7 +684,7 @@ void DecoderStack::annotation_callback(srd_proto_data *pdata, void *self)
 	assert(d);
 
     if (st->_bStop){
-        qDebug()<<"decode task was stoped.";
+      //  qDebug()<<"decode task was stoped.";
         return;
     }
     if (d->_decoder_status == NULL){

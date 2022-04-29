@@ -193,7 +193,7 @@ private:
     uint64_t        _sample_count; 
  
     decode_task_status  *_stask_stauts;    
-    mutable std::mutex _output_mutex;
+    mutable std::mutex _output_mutex; 
 
 	friend class DecoderStackTest::TwoDecoderStack;
 };
