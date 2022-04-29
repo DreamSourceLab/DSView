@@ -125,14 +125,7 @@ DevInst* SigSession::get_device()
 {
     return _dev_inst;
 }
-
-void SigSession::deselect_device()
-{ 
-    RELEASE_ARRAY(_decode_traces);
-    RELEASE_ARRAY(_group_traces);
-    _dev_inst = NULL;
-}
-
+ 
 /*
   when be called, it will call 4DSL lib sr_session_new, and create a session struct in the lib
 */
@@ -142,20 +135,18 @@ void SigSession::set_device(DevInst *dev_inst)
     
     assert(dev_inst);
 
-     if (_dev_inst){
-        _dev_inst->dev_inst();
-     }
+    clear_all_decoder(false);
 
+    RELEASE_ARRAY(_group_traces);
+ 
     if (_dev_inst) {
         sr_session_datafeed_callback_remove_all();
         _dev_inst->release();
+        _dev_inst = NULL;
     }
 
     _dev_inst = dev_inst;
-
-    RELEASE_ARRAY(_decode_traces);
-    RELEASE_ARRAY(_group_traces);
-
+ 
     if (_dev_inst) {
         try {
             _dev_inst->use(this);
@@ -179,8 +170,18 @@ void SigSession::set_device(DevInst *dev_inst)
 void SigSession::set_file(QString name)
 {
     // Deslect the old device, because file type detection in File::create
-    // destorys the old session inside libsigrok.
-    deselect_device();
+    // destorys the old session inside libsigrok.    
+  
+    clear_all_decoder(false);
+
+    RELEASE_ARRAY(_group_traces);
+     
+    //File::create(name) will get resource, so try to release old file before
+    if (_dev_inst) {
+        sr_session_datafeed_callback_remove_all();
+        _dev_inst->release();
+        _dev_inst = NULL;
+    }
 
     try {
         set_device(device::File::create(name));
@@ -196,6 +197,7 @@ void SigSession::close_file(DevInst *dev_inst)
     assert(_device_manager);
 
     try {
+        clear_all_decoder();
         dev_inst->device_updated();
         set_repeating(false);
         stop_capture();
@@ -501,13 +503,6 @@ void SigSession::sample_thread_proc(DevInst *dev_inst)
 
 void SigSession::stop_capture()
 {
-    do_stop_capture();
-    int dex = 0;
-    clear_all_decode_task(dex);
-}
-
-void SigSession::do_stop_capture()
-{
     data_unlock(); 
 
     if (_dev_inst){
@@ -517,7 +512,7 @@ void SigSession::do_stop_capture()
     // Check that sampling stopped
     if (_sampling_thread.joinable()){
         _sampling_thread.join();
-    }
+    }   
 }
 
 bool SigSession::get_capture_status(bool &triggered, int &progress)
@@ -689,7 +684,7 @@ void SigSession::init_signals()
 
 
     // Clear the decode traces 
-    RELEASE_ARRAY(_decode_traces);
+    clear_all_decoder();
 
     // Detect what data types we will receive
     if(_dev_inst) {
@@ -1786,7 +1781,7 @@ void SigSession::set_stop_scale(float scale)
 
      _bClose = true;
  
-     do_stop_capture(); //stop capture
+     stop_capture(); //stop capture
 
      clear_all_decoder(); //clear all decode task, and stop decode thread
 
@@ -1841,7 +1836,7 @@ void SigSession::set_stop_scale(float scale)
      trace->decoder()->stop_decode_work();
  }
 
- void SigSession::clear_all_decoder()
+ void SigSession::clear_all_decoder(bool bUpdateView)
  {
      //create the wait task deque
      int dex = -1;
@@ -1868,8 +1863,9 @@ void SigSession::set_stop_scale(float scale)
          _decode_thread.join();
      }
 
-     if (!is_closed())
-        signals_changed();
+     if (!is_closed() && bUpdateView){
+         signals_changed();
+     }        
  }
 
  void SigSession::clear_all_decode_task(int &runningDex)

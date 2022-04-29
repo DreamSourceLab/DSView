@@ -113,7 +113,12 @@ void LogicSnapshot::capture_ended()
         uint64_t index0 = block_index / RootScale;
         uint64_t index1 = block_index % RootScale;
         int order = 0;
+
         for(auto& iter:_ch_data) {
+            if (iter[index0].lbp[index1] == NULL){
+                assert(false);
+            }
+
             const uint64_t *end_ptr = (uint64_t *)iter[index0].lbp[index1] + (LeafBlockSamples / Scale);
             uint64_t *ptr = (uint64_t *)iter[index0].lbp[index1] + block_offset;
             while (ptr < end_ptr)

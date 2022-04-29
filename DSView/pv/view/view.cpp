@@ -740,7 +740,12 @@ void View::signals_changed()
         const double height = (_time_viewport->height()
                                - 2 * actualMargin * label_size) * 1.0 / total_rows;
 
-        if (_session->get_device()->dev_inst()->mode == LOGIC) {
+        auto dev = _session->get_device();
+        assert(dev);
+        auto ins = dev->dev_inst();
+        assert(ins);
+
+        if (ins->mode == LOGIC) {
             GVariant* gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_MAX_HEIGHT_VALUE);
             if (gvar != NULL) {
                 max_height = (g_variant_get_byte(gvar) + 1) * MaxHeightUnit;

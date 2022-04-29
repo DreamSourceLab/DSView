@@ -134,7 +134,7 @@ public:
 	 * Sets device instance that will be used in the next capture session.
 	 */
     void set_device(DevInst *dev_inst);
-    void deselect_device();
+   
     void set_file(QString name);
     void close_file(DevInst *dev_inst);
     void set_default_device();
@@ -232,7 +232,7 @@ public:
     sr_dev_inst* get_dev_inst_c();
     void Open();
     void Close();
-    void clear_all_decoder(); 
+    void clear_all_decoder(bool bUpdateView = true); 
 
     inline bool is_closed(){
         return _bClose;
@@ -293,8 +293,7 @@ private:
     void decode_task_proc();
     view::DecodeTrace* get_top_decode_task();    
 
-    void capture_init();
-    void do_stop_capture();
+    void capture_init(); 
     void data_lock();
     void data_unlock();
     void nodata_timeout();

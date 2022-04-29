@@ -388,7 +388,7 @@ void DecoderStack::stop_decode_work()
 {  
     //set the flag to exit from task thread 
      if (_stask_stauts){
-         _stask_stauts->m_bStop = true;
+         _stask_stauts->_bStop = true;
      }
     _decode_state = Stopped; 
 }
@@ -407,10 +407,11 @@ void DecoderStack::do_decode_work()
 {
     //set the flag to exit from task thread 
      if (_stask_stauts){
-         _stask_stauts->m_bStop = true;
+         _stask_stauts->_bStop = true;
      }
      _stask_stauts = new decode_task_status();
-     _stask_stauts->m_bStop = false;
+     _stask_stauts->_bStop = false;
+     _stask_stauts->_decoder = this;
      _decoder_status->clear(); //clear old items
   
     pv::view::LogicSignal *logic_signal = NULL;
@@ -514,7 +515,7 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
         qDebug()<<"decode data index have been end:"<<i;
     }
   
-    while(i < decode_end && !_no_memory && !status->m_bStop)
+    while(i < decode_end && !_no_memory && !status->_bStop)
     {
         std::vector<const uint8_t *> chunk;
         std::vector<uint8_t> chunk_const;
@@ -637,8 +638,11 @@ void DecoderStack::execute_decode_stack()
 	srd_session_metadata_set(session, SRD_CONF_SAMPLERATE,
 		g_variant_new_uint64((uint64_t)_samplerate));
 
-	srd_pd_output_callback_add(session, SRD_OUTPUT_ANN,
-		DecoderStack::annotation_callback, this);
+	srd_pd_output_callback_add(
+                    session, 
+                    SRD_OUTPUT_ANN,
+		            DecoderStack::annotation_callback,
+                    _stask_stauts);
 
     char *error = NULL;
     if (srd_session_start(session, &error) == SRD_OK)
@@ -668,13 +672,24 @@ uint64_t DecoderStack::sample_rate()
 }
 
 //the decode callback, annotation object will be create
-void DecoderStack::annotation_callback(srd_proto_data *pdata, void *decoder)
+void DecoderStack::annotation_callback(srd_proto_data *pdata, void *self)
 {
 	assert(pdata);
-	assert(decoder);
+	assert(self);
 
-	DecoderStack *const d = (DecoderStack*)decoder;
+    struct decode_task_status *st = (decode_task_status*)self;
+
+	DecoderStack *const d = st->_decoder;
 	assert(d);
+
+    if (st->_bStop){
+        qDebug()<<"decode task was stoped.";
+        return;
+    }
+    if (d->_decoder_status == NULL){
+        qDebug()<<"decode task was deleted.";
+        assert(false);
+    }
   
     if (d->_no_memory) {
         return;

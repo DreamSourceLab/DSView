@@ -35,11 +35,6 @@
 #include "decode/decoderstatus.h"
  
 
-struct decode_task_status
-{  
-    volatile bool m_bStop;
-};
-
 namespace DecoderStackTest {
 class TwoDecoderStack;
 }
@@ -63,6 +58,13 @@ class RowData;
 }
 
 class Logic;
+class DecoderStack;
+
+struct decode_task_status
+{  
+    volatile bool _bStop;
+    DecoderStack *_decoder;
+};
 
  //a torotocol have a DecoderStack, destroy by DecodeTrace
 class DecoderStack : public QObject, public SignalData
@@ -163,7 +165,7 @@ public:
 private:
     void decode_data(const uint64_t decode_start, const uint64_t decode_end, srd_session *const session);
 	void execute_decode_stack();
-	static void annotation_callback(srd_proto_data *pdata, void *decoder);
+	static void annotation_callback(srd_proto_data *pdata, void *self);
     void do_decode_work();
   
 signals:
