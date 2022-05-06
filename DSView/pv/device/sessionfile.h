@@ -31,12 +31,12 @@ class SessionFile : public File
 {
 public:
     SessionFile(QString path);
-
 	sr_dev_inst* dev_inst();
-
     virtual void use(SigSession *owner);
-
 	virtual void release();
+
+private:
+	void release_source();
 
 private:
 	sr_dev_inst *_sdi;

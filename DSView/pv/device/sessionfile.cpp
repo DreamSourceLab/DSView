@@ -37,10 +37,9 @@ sr_dev_inst* SessionFile::dev_inst()
 }
 
 void SessionFile::use(SigSession *owner)
-{
-	assert(!_sdi);
+{ 
 	if (_sdi){
-		//return;
+        release_source();
 	}
 
     if (sr_session_load(_path.toUtf8().data()) != SR_OK)
@@ -63,9 +62,14 @@ void SessionFile::use(SigSession *owner)
 
 void SessionFile::release()
 {  
-    if (_owner != NULL && _sdi != NULL)
-	{
-		File::release();
+   release_source();
+   File::release();
+}
+
+void SessionFile::release_source()
+{
+	if (_sdi != NULL)
+	{ 
 		sr_dev_close(_sdi);
 		sr_dev_clear(_sdi->driver);
 		sr_session_destroy();

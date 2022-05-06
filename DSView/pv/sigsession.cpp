@@ -69,7 +69,6 @@ SigSession* SigSession::_session = NULL;
 
 SigSession::SigSession(DeviceManager *device_manager) 
 {
-    _dev_inst = NULL;
     _device_manager = device_manager;
     // TODO: This should not be necessary
     _session = this;
@@ -100,7 +99,8 @@ SigSession::SigSession(DeviceManager *device_manager)
     _stop_scale = 1; 
     _bDecodeRunning = false;
     _bClose = false;
-    _callback = NULL;
+    _callback = NULL; 
+    _dev_inst = NULL;
 
     // Create snapshots & data containers 
     _logic_data = new data::Logic(new data::LogicSnapshot()); 
@@ -148,6 +148,9 @@ void SigSession::set_device(DevInst *dev_inst)
     _dev_inst = dev_inst;
  
     if (_dev_inst) {
+
+         qDebug()<<"Switch to device:"<<_dev_inst->format_device_title();
+
         try {
             _dev_inst->use(this);
             _cur_snap_samplerate = _dev_inst->get_sample_rate();
@@ -157,6 +160,7 @@ void SigSession::set_device(DevInst *dev_inst)
                 set_run_mode(Repetitive);
             else
                 set_run_mode(Single);
+
         } catch(const QString e) {
             throw(e);
             return;
@@ -244,10 +248,9 @@ void SigSession::release_device(DevInst *dev_inst)
         return;
 
     assert(dev_inst);
-   // assert(_dev_inst == dev_inst);
     assert(get_capture_state() != Running);
 
-    _dev_inst =  NULL;
+     _dev_inst =  NULL;
 }
 
 SigSession::capture_state SigSession::get_capture_state()
@@ -420,9 +423,7 @@ void SigSession::start_capture(bool instant)
         return;
     }
     assert(_dev_inst->dev_inst());
-
-    qDebug()<<"start capture, device title:"<<_dev_inst->format_device_title();
-
+  
     if (!_dev_inst->is_usable()) {
         _error = Hw_err;
         _callback->session_error();
