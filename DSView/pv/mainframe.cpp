@@ -43,6 +43,7 @@
 #include <QApplication>
 #include <QDebug>
 #include <QFile>
+#include <QDesktopWidget>
 
 #include "dsvdef.h"
 #include "config/appconfig.h"
@@ -413,29 +414,47 @@ void MainFrame::readSettings()
    
     if (app._frameOptions.language > 0){
          _mainWindow->switchLanguage(app._frameOptions.language);
-    }   
-
-    if (app._frameOptions.right == 0) {
-        QScreen *screen=QGuiApplication::primaryScreen ();
-        const QRect availableGeometry = screen->availableGeometry();
-        resize(availableGeometry.width() / 2, availableGeometry.height() / 1.5);
-        const int origX = std::max(0, (availableGeometry.width() - width()) / 2);
-        const int origY = std::max(0, (availableGeometry.height() - height()) / 2);
-        move(origX, origY);
-
-    } else {
-         if (app._frameOptions.isMax){
-            showMaximized(); //show max by system api
-         }
-         else{
-            int left = app._frameOptions.left;
-            int top = app._frameOptions.top;
-            int right = app._frameOptions.right;
-            int bottom = app._frameOptions.bottom;
-            resize(right-left, bottom-top);
-            move(left, top);         
-         }
     }
+
+      int left = app._frameOptions.left;
+      int top = app._frameOptions.top;
+      int right = app._frameOptions.right;
+      int bottom = app._frameOptions.bottom;
+
+      QRect scRect = QApplication::desktop()->screenGeometry();
+      bool bReset = false;
+
+      if (right == 0)
+      {
+          bReset = true;
+      }
+      if (right - left >= scRect.width())
+      {
+          bReset = true;
+      }
+      int sp = 70;
+      if (right < sp || bottom < sp || left + sp >= scRect.width() || top + sp >= scRect.height()){
+          bReset = true;
+      }
+
+      if (app._frameOptions.isMax)
+      {
+          showMaximized(); // show max by system api
+      }
+      else if (bReset)
+      {
+          QScreen *screen = QGuiApplication::primaryScreen();
+          const QRect availableGeometry = screen->availableGeometry();
+          resize(availableGeometry.width() / 2, availableGeometry.height() / 1.5);
+          const int origX = std::max(0, (availableGeometry.width() - width()) / 2);
+          const int origY = std::max(0, (availableGeometry.height() - height()) / 2);
+          move(origX, origY);
+      }
+      else
+      {
+          resize(right - left, bottom - top);
+          move(left, top);
+      }
 
     // restore dockwidgets
     _mainWindow->restore_dock();
