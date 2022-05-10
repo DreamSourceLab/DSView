@@ -81,6 +81,7 @@ void LogicSnapshot::init()
 {
     std::lock_guard<std::mutex> lock(_mutex);
     init_all(); 
+    _is_file = false;   
 }
 
 void LogicSnapshot::init_all()
@@ -104,8 +105,9 @@ void LogicSnapshot::clear()
     init_all();
 }
 
+
 void LogicSnapshot::capture_ended()
-{
+{ 
     Snapshot::capture_ended();
  
     uint64_t block_index = _ring_sample_count / LeafBlockSamples;
@@ -114,15 +116,29 @@ void LogicSnapshot::capture_ended()
     if (block_offset != 0) {
         uint64_t index0 = block_index / RootScale;
         uint64_t index1 = block_index % RootScale;
-        int order = 0;
+        int order = 0; 
 
-        for(auto& iter:_ch_data) {
-            if (iter[index0].lbp[index1] == NULL){
-                assert(false);
+        for(auto& iter:_ch_data) { 
+
+            // If load from file, process the last channel only
+            if (_is_file && order != _last_write_order){
+                order++;
+                continue;
             }
+
+            if (_is_file && (_last_index0 != index0 || _last_index1 != index1)){
+              //  qDebug()<<"deleted index:"<<index0<<index1;
+                break;
+            } 
+
+            if (iter[index0].lbp[index1] == NULL){
+               // qDebug()<<"crash:"<<index0<<index1;
+                assert(false);
+            } 
 
             const uint64_t *end_ptr = (uint64_t *)iter[index0].lbp[index1] + (LeafBlockSamples / Scale);
             uint64_t *ptr = (uint64_t *)iter[index0].lbp[index1] + block_offset;
+
             while (ptr < end_ptr)
                 *ptr++ = 0;
 
@@ -199,13 +215,6 @@ void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total
             for(auto& iter_rn : iter) {
                 iter_rn.tog = 0;
                 iter_rn.value = 0;
-
-                for (int i=0; i<(int)Scale; i++){
-                    if (iter_rn.lbp[i] != NULL){
-                        free(iter_rn.lbp[i]);
-                        iter_rn.lbp[i] = NULL;
-                    }
-                }
             }
         }
     }
@@ -243,7 +252,7 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
     assert(logic.length >= ScaleSize * _channel_num);
 
     if (_sample_count >= _total_sample_count)
-        return;
+        return; 
 
     _src_ptr = logic.data;
     uint64_t len = logic.length;
@@ -400,6 +409,9 @@ void LogicSnapshot::append_split_payload(const sr_datafeed_logic &logic)
     uint16_t order = logic.order;
     assert(order < _ch_data.size());
 
+     _last_write_order = order;
+     _is_file = true;
+
     uint64_t sample_read_num = _sample_cnt[order];
     uint64_t write_block_num = _block_cnt[order];
 
@@ -413,7 +425,7 @@ void LogicSnapshot::append_split_payload(const sr_datafeed_logic &logic)
         sample_read_num = _total_sample_count;
     }
 
-    _sample_cnt[order] = sample_read_num;
+    _sample_cnt[order] = sample_read_num; 
  
     // make buffer
     while (sample_read_num > write_block_num * LeafBlockSamples) {
@@ -431,12 +443,16 @@ void LogicSnapshot::append_split_payload(const sr_datafeed_logic &logic)
             }
 
             _ch_data[order][index0].lbp[index1] = pbuf;
+           // qDebug()<<"new:"<<index0<<index1;
         } 
 
         memset(pbuf, 0, LeafBlockSpace);
         write_block_num++;
+
+        _last_index0 = index0;
+        _last_index1 = index1;
     }
-   
+
     _block_cnt[order] = write_block_num;
 
     uint64_t ring_sample_num = _ring_sample_cnt[order];
@@ -470,6 +486,13 @@ void LogicSnapshot::append_split_payload(const sr_datafeed_logic &logic)
                 // trim leaf to free space
                 free(pbuf);
                 _ch_data[order][index0].lbp[index1] = NULL;
+
+                if (_last_index0 = index0 && _last_index1 == index1){
+                    _last_index0 = -1;
+                    _last_index1 = -1;
+                }
+            
+               // qDebug()<<"del:"<<index0<<index1;
             }
 
         } else {
