@@ -31,4 +31,5 @@ DecoderStatus::DecoderStatus()
 void DecoderStatus::clear()
 {
         m_resTable.reset();
-}
+        m_bNumeric = false;
+} 

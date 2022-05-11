@@ -62,10 +62,10 @@ ProtocolItemLayer::ProtocolItemLayer(QWidget *parent, QString protocolName, IPro
 
         hori_layout->addStretch(1);
 
-        connect(_del_button, SIGNAL(clicked()),this, SLOT(on_del_protocol()));
-        
-        connect(_set_button, SIGNAL(clicked()),this, SLOT(on_set_protocol()));
+        enable_format(false);
 
+        connect(_del_button, SIGNAL(clicked()),this, SLOT(on_del_protocol()));        
+        connect(_set_button, SIGNAL(clicked()),this, SLOT(on_set_protocol()));
         connect(_format_combox, SIGNAL(currentIndexChanged(int)),this, SLOT(on_format_select_changed(int)));
 }
 
@@ -144,6 +144,11 @@ void ProtocolItemLayer::LoadFormatSelect(bool bSingle)
          _format_combox->setCurrentIndex(dex);
      }
      m_bSetting = false;
+ }
+
+ void ProtocolItemLayer::enable_format(bool flag)
+ {  
+     _format_combox->setDisabled(!flag);
  }
 
 } //dock

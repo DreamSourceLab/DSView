@@ -33,10 +33,11 @@
 #include <assert.h>
 #include <math.h>
 #include <limits.h>
+#include <cmath>
 
 #include <QMouseEvent>
 #include <QPainter>
-#include <QStyleOption>  
+#include <QStyleOption>
  
  
 using namespace std;

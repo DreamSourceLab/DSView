@@ -28,7 +28,7 @@ class DecoderStatus
 public:
     DecoderStatus();
 
-    void clear(); 
+    void clear();  
 
 public:
     bool    m_bNumeric; //when decoder get any numerical data,it will be set

@@ -484,6 +484,11 @@ void ProtocolDock::decoded_progress(int progress)
         {
             ProtocolItemLayer &lay =  *(_protocol_lay_items.at(index));
             lay.SetProgress(pg, err);
+            
+            // have custom data format
+            if (progress == 100 && lay.m_decoderStatus != NULL){
+                lay.enable_format(lay.m_decoderStatus->m_bNumeric);
+            }
         }
 
         index++;

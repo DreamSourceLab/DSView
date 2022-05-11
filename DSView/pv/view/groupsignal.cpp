@@ -24,8 +24,7 @@
 #include "../data/group.h"
 #include "../data/groupsnapshot.h"
 #include "view.h"
-
-#include <math.h>
+#include <cmath>
  
 using namespace std;
 

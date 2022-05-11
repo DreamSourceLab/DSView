@@ -398,7 +398,7 @@ void DecoderStack::begin_decode_work()
      assert(_decode_state == Stopped);
 
      _error_message = "";
-     _decode_state = Running;
+     _decode_state = Running; 
       do_decode_work();
      _decode_state = Stopped;
 }

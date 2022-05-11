@@ -57,6 +57,8 @@ public:
     inline void* get_protocol_key_handel(){
         return m_decoderStatus;
     }
+
+    void enable_format(bool flag);
   
 private slots: 
     void on_set_protocol(); 
