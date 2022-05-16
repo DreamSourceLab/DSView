@@ -23,7 +23,7 @@
 #ifndef DSVIEW_PV_DATA_DECODERSTACK_H
 #define DSVIEW_PV_DATA_DECODERSTACK_H
 
-#include <libsigrokdecode4DSL/libsigrokdecode.h>
+#include "libsigrokdecode.h"
 #include <list>
 #include <boost/optional.hpp>
 #include <QObject>

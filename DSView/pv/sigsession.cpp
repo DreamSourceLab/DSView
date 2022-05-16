@@ -21,8 +21,7 @@
  */
 
 
-#include <libsigrokdecode4DSL/libsigrokdecode.h>
-
+#include "libsigrokdecode.h"
 
 #include "sigsession.h"
 #include "mainwindow.h"

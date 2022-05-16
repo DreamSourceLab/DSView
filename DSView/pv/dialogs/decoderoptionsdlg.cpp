@@ -20,7 +20,7 @@
  */
 
 #include "decoderoptionsdlg.h"
-#include <libsigrokdecode4DSL/libsigrokdecode.h>
+#include "libsigrokdecode.h"
 #include <QScrollArea> 
 #include <QDialogButtonBox>
 #include <assert.h>

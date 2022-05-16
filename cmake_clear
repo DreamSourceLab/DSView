@@ -1,13 +1,16 @@
 echo "rm cmake cache begin..."
-rm ./cmake_install.cmake
+
+sudo rm -r ./build
 rm -r ./CMakeFiles
+
+rm ./cmake_install.cmake
 rm ./Makefile
 rm ./CMakeCache.txt
 rm ./*.cmake
-rm ./DSView
 rm ./DSView.qrc.depends
-sudo rm ./install_manifest.txt
 
 find . -name 'moc_*.cpp*' | xargs rm -rf
 find . -name 'qrc_*.cpp' | xargs rm -rf
+
+rm ./install_manifest.txt
 echo "rm cmake cache end..."

@@ -41,8 +41,7 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
-
-//#include <libsigrok4DSL/libsigrok.h>
+ 
 
 void usage()
 {

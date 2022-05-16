@@ -27,7 +27,7 @@
 #include <string>
 #include <thread>  
 #include <QObject>
-#include <libsigrok4DSL/libsigrok.h>
+#include "libsigrok.h"
 
 #include "interface/icallbacks.h"
 

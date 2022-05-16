@@ -19,12 +19,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <libsigrokdecode4DSL/libsigrokdecode.h>
+#include "libsigrokdecode.h"
 
 #include "decoderoptions.h"
-
-#include <boost/bind.hpp>
- 
+#include <boost/bind.hpp> 
 #include <boost/none_t.hpp>
 
 #include "../../data/decoderstack.h"

@@ -37,7 +37,7 @@
 #include <QRadioButton>
 #include <QTimer> 
 
-#include <libsigrok4DSL/libsigrok.h>
+#include "libsigrok.h"
 #include "../device/devinst.h"
 #include "../prop/binding/deviceoptions.h"
 #include "../prop/binding/probeoptions.h"

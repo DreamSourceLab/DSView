@@ -28,7 +28,7 @@
 #include <QPushButton>
 #include <QToolButton>
  
-#include <libsigrok4DSL/libsigrok.h>
+#include "libsigrok.h"
 
 namespace pv {
 

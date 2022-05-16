@@ -37,7 +37,7 @@
 #include "interface/icallbacks.h"
 #include "dstimer.h"
 
-#include <libsigrok4DSL/libsigrok.h>
+#include "libsigrok.h"
 
 struct srd_decoder;
 struct srd_channel;

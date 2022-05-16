@@ -34,7 +34,7 @@
 #include <QToolButton>
 #include <QLabel>
 
-#include <libsigrok4DSL/libsigrok.h>
+#include "libsigrok.h"
  
 namespace pv {
 

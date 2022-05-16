@@ -26,16 +26,13 @@ Requirements
  - check >= 0.9.4 (optional, only needed to run unit tests)
  - libfftw3 >= 3.3
  - zlib (on ubuntu, zlib package name is zlib1g-dev)
+ 
+ 
 
 Building and installing
 -----------------------
-Step1: Get the DSView source code, and switch to right branch, the newest branch is dev-tai
 
- $ git clone git://github.com/DreamSourceLab/DSView
-  
-
-
-Step2: Installing the requirements:
+Step1: Installing the requirements:
 
 please check your respective distro's package manager tool if you use other distros
 Debian/Ubuntu:
@@ -53,39 +50,15 @@ Arch:
    python boost qt5 fftw
 
 
+Step2: Get the DSView source code
+ $ git clone https://github.com/DreamSourceLab/DSView
+
 Step3: Building
-
- $ cd libsigrok4DSL
- $ ./autogen.sh
- $ ./configure
- $ make
- $ sudo make install
- $ cd ..
-
- $ cd libsigrokdecode4DSL
- $ ./autogen.sh
- $ ./configure
- $ make
- $ sudo make install
- $ cd ..
-
- $ cd DSView
  $ cmake .
-
-/*
- * If this step fails,
- * make sure that your pkg-config is properly configured
- * to find the libsigrok and libsigrokdecode libraries
- * (It's not by default in Fedora 23).
- * To do this add "export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig"
- * or "export PKG_CONFIG_PATH=/usr/lib/pkgconfig"
- * or "export PKG_CONFIG_PATH=/usr/lib64/pkgconfig"
- * to your ~/.bashrc and reload it `. ~/.bashrc`.
- */
-
- $ make
+ $ make 
  $ sudo make install
 
 See the following wiki page for more (OS-specific) instructions:
 
  http://sigrok.org/wiki/Building
+ 

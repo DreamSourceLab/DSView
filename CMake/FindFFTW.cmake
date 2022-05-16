@@ -37,13 +37,10 @@ if (FFTW_INCLUDE_DIR AND FFTW_LIBRARY)
 			${FFTW_INCLUDE_DIR}
 		)
 		
-	  set(FFTW_LIBRARYS
+	  set(FFTW_LIBRARIES
 			${FFTW_LIBRARY}
 		)
-    
-	  message(STATUS "Found FFTW:")
-	  message(STATUS "	- includes: ${FFTW_INCLUDE_DIR}")
-	  message(STATUS "	- libraries: ${FFTW_LIBRARY}") 
+		
 endif(FFTW_INCLUDE_DIR AND FFTW_LIBRARY)
 
 
