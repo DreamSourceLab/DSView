@@ -1425,6 +1425,9 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
  
 void MainWindow::switchLanguage(int language)
 {
+    if (language == 0)
+        return;
+
     SigSession *_session = _control->GetSession();
     DevInst *dev = _session->get_device();
     dev->set_config(NULL, NULL, SR_CONF_LANGUAGE, g_variant_new_int16(language));
@@ -1444,11 +1447,14 @@ void MainWindow::switchLanguage(int language)
         qApp->installTranslator(&_myTrans);
         retranslateUi();
     }
-    else
+    else if (language == LAN_EN)
     {
         qApp->removeTranslator(&_qtTrans);
         qApp->removeTranslator(&_myTrans);
         retranslateUi();
+    }
+    else{
+        qDebug()<<"Unknown language code."<<language;
     }
 }
 
