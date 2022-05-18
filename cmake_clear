@@ -1,16 +1,36 @@
-echo "rm cmake cache begin..."
+echo "clean cmake cache begin..."
 
-sudo rm -r ./build
-rm -r ./CMakeFiles
+echo "rm ./build"
+rm -rf ./build
 
-rm ./cmake_install.cmake
-rm ./Makefile
-rm ./CMakeCache.txt
-rm ./*.cmake
-rm ./DSView.qrc.depends
+echo "rm ./CMakeFiles"
+rm -rf ./CMakeFiles
 
+echo "rm ./cmake_install.cmake"
+rm -f ./cmake_install.cmake
+
+echo "rm ./Makefile"
+rm -f ./Makefile
+
+echo "rm ./Makefile.tmp"
+rm -f ./Makefile.tmp
+
+echo "rm ./CMakeCache.txt"
+rm -f ./CMakeCache.txt
+
+echo "rm ./*.cmake"
+rm -f ./*.cmake
+
+echo "rm ./DSView.qrc.depends"
+rm -f ./DSView.qrc.depends
+
+echo "rm ./moc_*.cpp*"
 find . -name 'moc_*.cpp*' | xargs rm -rf
+
+echo "rm ./qrc_*.cpp"
 find . -name 'qrc_*.cpp' | xargs rm -rf
 
-rm ./install_manifest.txt
-echo "rm cmake cache end..."
+echo "rm ./install_manifest.txt"
+rm -f ./install_manifest.txt
+
+echo "clean cmake cache end."

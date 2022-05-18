@@ -40,14 +40,13 @@ configure_file (
 	${PROJECT_BINARY_DIR}/DSView/config.h
 )
 
-
 #===============================================================================
 #=pkg config
 #-------------------------------------------------------------------------------
 include(FindPkgConfig)
 include(GNUInstallDirs)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake") 
 
 find_package(PkgConfig)
 
@@ -84,7 +83,7 @@ message("-- glib-2.0:")
 MESSAGE(STATUS "	- includes:" ${GLIB_INCLUDE_DIRS})
 MESSAGE(STATUS "	- libraries:" ${GLIB_LIBRARIES})
 include_directories(${GLIB_INCLUDE_DIRS})
-link_directories(${GLIB_LIBRARIES_DIRS})
+link_directories(${GLIB_LIBRARIES})
 
 #===============================================================================
 #= python3
@@ -137,12 +136,13 @@ include_directories(${PC_LIBZIP_INCLUDE_DIRS})
 link_directories(${PC_LIBZIP_LIBRARIES})
 
 #===============================================================================
-#= Qt5
+#= Qt5 or Qt6
 #-------------------------------------------------------------------------------
-find_package(Qt5Core REQUIRED)
+
+find_package(Qt5Core QUIET)
 
 if(Qt5Core_FOUND)
-	message("-- Qt5:")
+	message("-- use Qt5:")
 	MESSAGE(STATUS "	- includes:" ${Qt5Core_INCLUDE_DIRS})
 	find_package(Qt5Widgets REQUIRED)
 	find_package(Qt5Gui REQUIRED)
@@ -151,19 +151,28 @@ if(Qt5Core_FOUND)
 	set(QT_LIBRARIES Qt5::Gui Qt5::Widgets)
 	add_definitions(${Qt5Gui_DEFINITIONS} ${Qt5Widgets_DEFINITIONS})
 else()
-	message(FATAL_ERROR "-- Have not fond qt5 core, please install it!") 
+	find_package(Qt6Core QUIET)
+endif()
+
+if(Qt6Core_FOUND)
+    message("-- use Qt6:")
+	MESSAGE(STATUS "	- includes:" ${Qt6Core_INCLUDE_DIRS})
+	find_package(Qt6Widgets REQUIRED)
+	find_package(Qt6Gui REQUIRED)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt6Widgets_EXECUTABLE_COMPILE_FLAGS}")
+	set(QT_INCLUDE_DIRS ${Qt6Gui_INCLUDE_DIRS} ${Qt6Widgets_INCLUDE_DIRS})
+	set(QT_LIBRARIES Qt6::Gui Qt6::Widgets)
+	add_definitions(${Qt6Gui_DEFINITIONS} ${Qt6Widgets_DEFINITIONS})
+endif()
+
+if(NOT Qt5Core_FOUND AND NOT Qt6Core_FOUND)
+	message(FATAL_ERROR  "Please install Qt5 or Qt6!")
 endif()
 
 #===============================================================================
 #= Dependencies
 #-------------------------------------------------------------------------------
 
-
-list(APPEND PKGDEPS
- 
-)
-
-###pkg_check_modules(PKGDEPS REQUIRED ${PKGDEPS})
 
 find_package(Threads)
 find_package(Boost 1.42 REQUIRED)
@@ -469,13 +478,20 @@ if(WIN32)
 	# Use the DSView icon for the DSView.exe executable.
 	set(CMAKE_RC_COMPILE_OBJECT "${CMAKE_RC_COMPILER} -O coff -I${CMAKE_CURRENT_SOURCE_DIR} <SOURCE> <OBJECT>")
 	enable_language(RC)
-	list(APPEND DSView_SOURCES DSView/DSView.rc)
+	# app icon
+	list(APPEND DSView_SOURCES DSView/applogo.rc)
 endif()
 
 if(Qt5Core_FOUND)
 	qt5_wrap_cpp(DSView_HEADERS_MOC ${DSView_HEADERS})
 	qt5_wrap_ui(DSView_FORMS_HEADERS ${DSView_FORMS})
 	qt5_add_resources(DSView_RESOURCES_RCC ${DSView_RESOURCES})
+endif()
+
+if(Qt6Core_FOUND)
+	qt6_wrap_cpp(DSView_HEADERS_MOC ${DSView_HEADERS})
+	qt6_wrap_ui(DSView_FORMS_HEADERS ${DSView_FORMS})
+	qt6_add_resources(DSView_RESOURCES_RCC ${DSView_RESOURCES})
 endif()
 
 #===============================================================================
@@ -530,7 +546,10 @@ add_compile_options(-O3)
 
 link_directories(${Boost_LIBRARY_DIRS})
 
+link_directories("/usr/local/lib")
+
 set(DSVIEW_LINK_LIBS
+	-lz
 	${CMAKE_THREAD_LIBS_INIT}
 	${Boost_LIBRARIES}
 	${QT_LIBRARIES}
@@ -538,7 +557,6 @@ set(DSVIEW_LINK_LIBS
 	${FFTW_LIBRARIES}
 	${PYTHON_LIBRARIES}
 	${GLIB_LIBRARIES}
-	${ZLIB_LIBRARIES}
 	${PC_LIBZIP_LIBRARIES}
 )
 
@@ -587,8 +605,11 @@ install(DIRECTORY DSView/res DESTINATION share/DSView)
 install(FILES DSView/icons/logo.svg DESTINATION share/DSView RENAME logo.svg)
 install(FILES DSView/icons/logo.svg DESTINATION share/icons/hicolor/scalable/apps RENAME dsview.svg)
 install(FILES DSView/icons/logo.svg DESTINATION share/pixmaps RENAME dsview.svg)
-install(FILES DSView/DreamSourceLab.rules DESTINATION /lib/udev/rules.d RENAME 60-dreamsourcelab.rules)
-install(FILES DSView/DSView.desktop DESTINATION /usr/share/applications RENAME dsview.desktop)
+
+if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+	install(FILES DSView/DreamSourceLab.rules DESTINATION /lib/udev/rules.d RENAME 60-dreamsourcelab.rules)
+	install(FILES DSView/DSView.desktop DESTINATION /usr/share/applications RENAME dsview.desktop)
+endif()
 
 install(FILES NEWS25 DESTINATION share/DSView RENAME NEWS25)
 install(FILES NEWS31 DESTINATION share/DSView RENAME NEWS31)
