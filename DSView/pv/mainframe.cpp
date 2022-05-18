@@ -42,8 +42,8 @@
 #include <QScreen>
 #include <QApplication>
 #include <QDebug>
-#include <QFile>
-#include <QDesktopWidget>
+#include <QFile> 
+#include <QGuiApplication>
 
 #include "dsvdef.h"
 #include "config/appconfig.h"
@@ -421,19 +421,21 @@ void MainFrame::readSettings()
       int right = app._frameOptions.right;
       int bottom = app._frameOptions.bottom;
 
-      QRect scRect = QApplication::desktop()->screenGeometry();
+      int screen_width = QGuiApplication::primaryScreen()->availableGeometry().width();
+      int screen_height = QGuiApplication::primaryScreen()->availableGeometry().height();
+
       bool bReset = false;
 
       if (right == 0)
       {
           bReset = true;
       }
-      if (right - left >= scRect.width())
+      if (right - left >= screen_width)
       {
           bReset = true;
       }
       int sp = 70;
-      if (right < sp || bottom < sp || left + sp >= scRect.width() || top + sp >= scRect.height()){
+      if (right < sp || bottom < sp || left + sp >= screen_width || top + sp >= screen_height){
           bReset = true;
       }
 
@@ -442,12 +444,10 @@ void MainFrame::readSettings()
           showMaximized(); // show max by system api
       }
       else if (bReset)
-      {
-          QScreen *screen = QGuiApplication::primaryScreen();
-          const QRect availableGeometry = screen->availableGeometry();
-          resize(availableGeometry.width() / 2, availableGeometry.height() / 1.5);
-          const int origX = std::max(0, (availableGeometry.width() - width()) / 2);
-          const int origY = std::max(0, (availableGeometry.height() - height()) / 2);
+      { 
+          resize(screen_width / 2, screen_height / 1.5);
+          const int origX = std::max(0, (screen_width - width()) / 2);
+          const int origY = std::max(0, (screen_height - height()) / 2);
           move(origX, origY);
       }
       else

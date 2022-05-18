@@ -113,8 +113,7 @@ DecoderGroupBox::DecoderGroupBox(data::DecoderStack *decoder_stack,
 
     _widget->setLayout(_layout);
     parent->layout()->addWidget(_widget);
-   // setWidget(_widget);
-   // _widget->installEventFilter(this);
+ 
 }
 
 DecoderGroupBox::~DecoderGroupBox()
@@ -122,16 +121,7 @@ DecoderGroupBox::~DecoderGroupBox()
 }
 
 bool DecoderGroupBox::eventFilter(QObject *o, QEvent *e)
-{
-    /*
-    if(o == _widget && e->type() == QEvent::Resize) {
-        setMinimumWidth(_widget->minimumSizeHint().width() + verticalScrollBar()->width());
-        QScreen *screen=QGuiApplication::primaryScreen ();
-        QRect mm=screen->availableGeometry() ;
-        if (_widget->minimumSizeHint().height() < mm.height()/2)
-            setMinimumHeight(_widget->minimumSizeHint().height());
-    }
-    */
+{ 
 
     return false;
 }
