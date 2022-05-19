@@ -212,9 +212,9 @@ void MeasureDock::refresh()
 void MeasureDock::reload()
 {
     if (_session->get_device()->dev_inst()->mode == LOGIC)
-        _edge_groupBox->setDisabled(false);
+        _edge_groupBox->setVisible(true);
     else
-        _edge_groupBox->setDisabled(true);
+        _edge_groupBox->setVisible(false);
 
     for (QVector <DsComboBox *>::const_iterator i = _edge_ch_cmb_vec.begin();
          i != _edge_ch_cmb_vec.end(); i++) {
