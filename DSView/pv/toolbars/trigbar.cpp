@@ -287,6 +287,7 @@ void TrigBar::reload()
         _search_action->setVisible(true);
         _function_action->setVisible(false);
         _action_lissajous->setVisible(false);
+        _action_dispalyOptions->setVisible(true);
 
     } else if (_session->get_device()->dev_inst()->mode == ANALOG) {
         _trig_action->setVisible(false);
@@ -295,6 +296,7 @@ void TrigBar::reload()
         _search_action->setVisible(false);
         _function_action->setVisible(false);
         _action_lissajous->setVisible(false);
+        _action_dispalyOptions->setVisible(false);
 
     } else if (_session->get_device()->dev_inst()->mode == DSO) {
         _trig_action->setVisible(true);
@@ -303,6 +305,7 @@ void TrigBar::reload()
         _search_action->setVisible(false);
         _function_action->setVisible(true);
         _action_lissajous->setVisible(true);
+        _action_dispalyOptions->setVisible(false);
     }
 
     enable_toggle(true);
