@@ -81,9 +81,9 @@ endif()
 pkg_search_module(GLIB REQUIRED glib-2.0)
 message("-- glib-2.0:")
 MESSAGE(STATUS "	- includes:" ${GLIB_INCLUDE_DIRS})
-MESSAGE(STATUS "	- libraries:" ${GLIB_LIBRARIES})
+MESSAGE(STATUS "	- libraries:" ${GLIB_LIBDIR}/libglib-2.0.*)
 include_directories(${GLIB_INCLUDE_DIRS})
-link_directories(${GLIB_LIBRARIES})
+link_directories(${GLIB_LIBDIR})
 
 #===============================================================================
 #= python3
@@ -93,7 +93,6 @@ message("-- python3:")
 MESSAGE(STATUS "	- includes:" ${PYTHON_INCLUDE_DIR})
 MESSAGE(STATUS "	- libraries:" ${PYTHON_LIBRARIES})
 include_directories(${PYTHON_INCLUDE_DIR})
-link_directories(${PYTHON_LIBRARIES})
 
 #===============================================================================
 #= FFTW
@@ -103,7 +102,6 @@ message("-- FFTW:")
 MESSAGE(STATUS "	- includes:" ${FFTW_INCLUDE_DIRS})
 MESSAGE(STATUS "	- libraries:" ${FFTW_LIBRARIES})
 include_directories(${FFTW_INCLUDE_DIRS})
-link_directories(${FFTW_LIBRARIES})
 
 #===============================================================================
 #= libusb-1.0
@@ -113,7 +111,6 @@ message("-- libusb-1.0:")
 MESSAGE(STATUS "	- includes:" ${LIBUSB_1_INCLUDE_DIRS})
 MESSAGE(STATUS "	- libraries:" ${LIBUSB_1_LIBRARIES})
 include_directories(${LIBUSB_1_INCLUDE_DIRS})
-link_directories(${LIBUSB_1_LIBRARIES})
 
 #===============================================================================
 #= zlib
@@ -123,17 +120,16 @@ message("-- zlib:")
 MESSAGE(STATUS "	- includes:" ${ZLIB_INCLUDE_DIRS})
 MESSAGE(STATUS "	- libraries:" ${ZLIB_LIBRARIES})
 include_directories(${ZLIB_INCLUDE_DIRS})
-link_directories(${ZLIB_LIBRARIES})
 
 #===============================================================================
 #= libzip
 #-------------------------------------------------------------------------------
-find_package(libzip REQUIRED)
+pkg_search_module(LIBZIP REQUIRED libzip)
 message("-- libzip:")
-MESSAGE(STATUS "	- includes:" ${PC_LIBZIP_INCLUDE_DIRS})
-MESSAGE(STATUS "	- libraries:" ${PC_LIBZIP_LIBRARIES})
-include_directories(${PC_LIBZIP_INCLUDE_DIRS})
-link_directories(${PC_LIBZIP_LIBRARIES})
+MESSAGE(STATUS "	- includes:" ${LIBZIP_INCLUDE_DIRS})
+MESSAGE(STATUS "	- libraries:" ${LIBZIP_LIBDIR}/lib${LIBZIP_LIBRARIES}.*)
+include_directories(${LIBZIP_INCLUDE_DIRS})
+link_directories(${LIBZIP_LIBDIR})
 
 #===============================================================================
 #= Qt5 or Qt6
@@ -177,6 +173,7 @@ endif()
 find_package(Threads)
 find_package(Boost 1.42 REQUIRED)
 
+link_directories(${Boost_LIBRARY_DIRS})
 
 #===============================================================================
 #= DSView sources
@@ -513,17 +510,18 @@ set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
 #-------------------------------------------------------------------------------
 
 include_directories(
+   ./DSView
+   ./libsigrok4DSL
+   ./libsigrokdecode4DSL
+)
+
+include_directories(
 	${CMAKE_CURRENT_BINARY_DIR}
 	${CMAKE_CURRENT_SOURCE_DIR}
 	${Boost_INCLUDE_DIRS}
 	${QT_INCLUDE_DIRS}
 )
 
-include_directories(
-   ./DSView
-   ./libsigrok4DSL
-   ./libsigrokdecode4DSL
-)
 
 if(STATIC_PKGDEPS_LIBS)
 	include_directories(${PKGDEPS_STATIC_INCLUDE_DIRS})
@@ -544,20 +542,17 @@ add_compile_options(-O3)
 #= Linker Configuration
 #-------------------------------------------------------------------------------
 
-link_directories(${Boost_LIBRARY_DIRS})
-
-link_directories("/usr/local/lib")
 
 set(DSVIEW_LINK_LIBS
 	-lz
+	-lglib-2.0
 	${CMAKE_THREAD_LIBS_INIT}
 	${Boost_LIBRARIES}
 	${QT_LIBRARIES}
 	${LIBUSB_1_LIBRARIES}
 	${FFTW_LIBRARIES}
 	${PYTHON_LIBRARIES}
-	${GLIB_LIBRARIES}
-	${PC_LIBZIP_LIBRARIES}
+	${LIBZIP_LIBRARIES}
 )
 
 if(STATIC_PKGDEPS_LIBS)

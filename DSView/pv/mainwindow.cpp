@@ -541,6 +541,7 @@ void MainWindow::on_device_detach()
 
     session_save();
     _view->hide_calibration();
+    
     if (_session->get_device()->dev_inst()->mode != DSO &&
         strncmp(_session->get_device()->name().toUtf8(), "virtual", 7)) {
         const auto logic_snapshot = _session->get_snapshot(SR_CHANNEL_LOGIC);
