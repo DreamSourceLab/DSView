@@ -210,8 +210,8 @@ public:
     uint64_t get_error_pattern();
     run_mode get_run_mode();
     void set_run_mode(run_mode mode);
-    int get_repeat_intvl();
-    void set_repeat_intvl(int interval);
+    double get_repeat_intvl();
+    void set_repeat_intvl(double interval);
 
     bool isRepeating();
     bool repeat_check();
@@ -400,7 +400,7 @@ private:
     uint64_t    _error_pattern;
 
     run_mode    _run_mode;
-    int         _repeat_intvl;
+    double         _repeat_intvl;
     bool        _repeating;
     int         _repeat_hold_prg;
 

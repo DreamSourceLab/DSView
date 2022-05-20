@@ -24,7 +24,7 @@
 #define DSVIEW_PV_INTERVAL_H
 
 #include <QLabel>
-#include <QSpinBox>
+#include <QDoubleSpinBox>
 #include <QSlider>
 #include <QDialogButtonBox>
 
@@ -46,14 +46,19 @@ protected:
 	void accept();
     void reject();
 
+private Q_SLOTS:
+        void on_slider_changed(int value);
+        void on_inputbox_changed(double value);
+
 private:
     SigSession *_session;
 
     QLabel *_interval_label;
-    QSpinBox *_interval_spinBox;
+    QDoubleSpinBox *_interval_spinBox;
     QSlider *_interval_slider;
 
     QDialogButtonBox _button_box;
+    bool    _bSetting;
 };
 
 } // namespace dialogs

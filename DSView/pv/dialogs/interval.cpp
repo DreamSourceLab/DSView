@@ -35,17 +35,19 @@ Interval::Interval(SigSession *session, QWidget *parent) :
     _interval_label = NULL;
     _interval_spinBox = NULL;
     _interval_slider = NULL;
-
+    _bSetting = false;
 
     setMinimumWidth(300);
     _interval_label = new QLabel(tr("Interval(s): "), this);
-    _interval_spinBox = new QSpinBox(this);
-    _interval_spinBox->setRange(1, 10);
+    _interval_spinBox = new QDoubleSpinBox(this);
+    _interval_spinBox->setRange(0.1, 10);
+    _interval_spinBox->setDecimals(1);
     _interval_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     _interval_slider = new QSlider(Qt::Horizontal, this);
-    _interval_slider->setRange(1, 10);
+    _interval_slider->setRange(0, 10);
 
-    _interval_slider->setValue(_session->get_repeat_intvl());
+    _interval_slider->setValue((int)_session->get_repeat_intvl());
+    _interval_spinBox->setValue(_session->get_repeat_intvl());
 
     QGridLayout *glayout = new QGridLayout(this);
     glayout->addWidget(_interval_label, 0, 0);
@@ -57,14 +59,14 @@ Interval::Interval(SigSession *session, QWidget *parent) :
     setTitle(tr("Repetitive Interval"));
 
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
-    connect(_interval_slider, SIGNAL(valueChanged(int)), _interval_spinBox, SLOT(setValue(int)));
-    connect(_interval_spinBox, SIGNAL(valueChanged(int)), _interval_slider, SLOT(setValue(int)));
+    connect(_interval_slider, SIGNAL(valueChanged(int)), this, SLOT(on_slider_changed(int)));
+    connect(_interval_spinBox, SIGNAL(valueChanged(double)), this, SLOT(on_inputbox_changed(double)));
 }
 
 void Interval::accept()
 {
     using namespace Qt;
-    _session->set_repeat_intvl(_interval_slider->value());
+    _session->set_repeat_intvl(_interval_spinBox->value());
     QDialog::accept();
 }
 
@@ -75,6 +77,25 @@ void Interval::reject()
     QDialog::reject();
 }
 
+void Interval::on_slider_changed(int value)
+{
+    if (!_bSetting){
+        _bSetting = true;
+        _interval_spinBox->setValue((double)value);
+        _bSetting = false;
+    }
+    
+}
+
+void Interval::on_inputbox_changed(double value)
+{
+    if (!_bSetting){
+        _bSetting = true;
+        _interval_slider->setValue((int)value);
+        _bSetting = false;
+    }
+    
+}
 
 } // namespace dialogs
 } // namespace pv

@@ -1632,12 +1632,12 @@ void SigSession::set_run_mode(run_mode mode)
     _run_mode = mode;
 }
 
-int SigSession::get_repeat_intvl()
+double SigSession::get_repeat_intvl()
 {
     return _repeat_intvl;
 }
 
-void SigSession::set_repeat_intvl(int interval)
+void SigSession::set_repeat_intvl(double interval)
 {
     _repeat_intvl = interval;
 }
@@ -1665,7 +1665,7 @@ bool SigSession::repeat_check()
     if (_dev_inst->dev_inst()->mode == LOGIC) {
         _repeat_hold_prg = 100;
         _callback->repeat_hold(_repeat_hold_prg); 
-        _out_timer.TimeOut(_repeat_intvl*1000/RepeatHoldDiv, std::bind(&SigSession::repeat_update, this));
+        _out_timer.TimeOut(_repeat_intvl * 1000 / RepeatHoldDiv, std::bind(&SigSession::repeat_update, this));
         return true;
     } else {
         return false;
@@ -1677,7 +1677,7 @@ void SigSession::repeat_update()
     if (isRepeating()) {
         _repeat_hold_prg -= 100/RepeatHoldDiv;
         if (_repeat_hold_prg != 0){
-            _out_timer.TimeOut(_repeat_intvl*1000/RepeatHoldDiv, std::bind(&SigSession::repeat_update, this));
+            _out_timer.TimeOut(_repeat_intvl * 1000 / RepeatHoldDiv, std::bind(&SigSession::repeat_update, this));
         }
         _callback->repeat_hold(_repeat_hold_prg);
         if (_repeat_hold_prg == 0)
