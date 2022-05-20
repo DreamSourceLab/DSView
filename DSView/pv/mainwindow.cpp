@@ -36,15 +36,15 @@
 #include <QKeyEvent>
 #include <QEvent>
 #include <QtGlobal>
-#include <QScreen>
 #include <QApplication>
 #include <QStandardPaths>
 #include <QScreen>
 #include <QTimer>
 #include <libusb-1.0/libusb.h>
-
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 #include <QGuiApplication>
+
+#ifdef _WIN32
+#include <QDesktopWidget>
 #endif
 
 #include "mainwindow.h"
@@ -886,15 +886,18 @@ void MainWindow::on_screenShot()
     AppConfig &app = AppConfig::Instance();     
     QString default_name = app._userHistory.screenShotPath + "/" + APP_NAME + QDateTime::currentDateTime().toString("-yyMMdd-hhmmss");
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    QScreen *scr = QGuiApplication::primaryScreen();
-    QPixmap pixmap = scr->grabWindow(winId());
+#ifdef _WIN32
+    int x = parentWidget()->pos().x();
+    int y = parentWidget()->pos().y();
+    int w = parentWidget()->frameGeometry().width();
+    int h = parentWidget()->frameGeometry().height();
+    QDesktopWidget *desktop = QApplication::desktop();
+    QPixmap pixmap = QGuiApplication::primaryScreen()->grabWindow(desktop->winId(), x, y, w, h);
 #else
-    QPixmap pixmap = QPixmap::grabWindow(winId());
+    QPixmap pixmap = QGuiApplication::primaryScreen()->grabWindow(winId());
 #endif
-
+ 
     QString format = "png";
-
     QString fileName = QFileDialog::getSaveFileName(
                        this,
                        tr("Save As"), 
