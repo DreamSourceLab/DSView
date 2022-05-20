@@ -77,7 +77,7 @@ class Decoder(srd.Decoder):
     )
     options = (
         {'id': 'address_format', 'desc': 'Displayed slave address format',
-            'default': 'shifted', 'values': ('shifted', 'unshifted')},
+            'default': 'unshifted', 'values': ('shifted', 'unshifted')},
     )
     annotations = (
         ('7', 'start', 'Start condition'),

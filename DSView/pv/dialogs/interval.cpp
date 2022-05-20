@@ -44,8 +44,6 @@ Interval::Interval(SigSession *session, QWidget *parent) :
     _interval_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     _interval_slider = new QSlider(Qt::Horizontal, this);
     _interval_slider->setRange(1, 10);
-    connect(_interval_slider, SIGNAL(valueChanged(int)), _interval_spinBox, SLOT(setValue(int)));
-    connect(_interval_spinBox, SIGNAL(valueChanged(int)), _interval_slider, SLOT(setValue(int)));
 
     _interval_slider->setValue(_session->get_repeat_intvl());
 
@@ -59,6 +57,8 @@ Interval::Interval(SigSession *session, QWidget *parent) :
     setTitle(tr("Repetitive Interval"));
 
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
+    connect(_interval_slider, SIGNAL(valueChanged(int)), _interval_spinBox, SLOT(setValue(int)));
+    connect(_interval_spinBox, SIGNAL(valueChanged(int)), _interval_slider, SLOT(setValue(int)));
 }
 
 void Interval::accept()
