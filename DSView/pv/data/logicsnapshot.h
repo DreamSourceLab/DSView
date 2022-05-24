@@ -25,11 +25,8 @@
 #define DSVIEW_PV_DATA_LOGICSNAPSHOT_H
 
 #include "libsigrok.h"
-
 #include "snapshot.h"
-
 #include <QString>
-
 #include <utility>
 #include <vector>
 #include <map>
@@ -78,7 +75,7 @@ public:
     typedef std::pair<uint64_t, bool> EdgePair;
 
 private:
-    void init_all(); 
+    void init_all();
 
 public:
     LogicSnapshot();
@@ -190,18 +187,16 @@ private:
     uint64_t _block_num;
     uint8_t _byte_fraction;
     uint16_t _ch_fraction;
-    void    *_src_ptr;
-    void    *_dest_ptr;
-    bool    _is_file;
-    int     _last_write_order;
-    uint64_t    _last_index0;
-    uint64_t    _last_index1;    
+    void *_src_ptr;
+    void *_dest_ptr;
 
     std::vector<uint64_t> _sample_cnt;
     std::vector<uint64_t> _block_cnt;
     std::vector<uint64_t> _ring_sample_cnt;
     std::vector<uint64_t> _last_sample;
 
+    int _times;
+ 
 	friend class LogicSnapshotTest::Pow2;
 	friend class LogicSnapshotTest::Basic;
 	friend class LogicSnapshotTest::LargeData;

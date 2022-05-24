@@ -1458,7 +1458,7 @@ void MainWindow::switchLanguage(int language)
         retranslateUi();
     }
     else{
-        qDebug()<<"Unknown language code."<<language;
+        qDebug()<<"Unknown language code:"<<language;
     }
 }
 

@@ -708,7 +708,7 @@ void SigSession::init_signals()
     }
     else{
         qDebug()<<"Device loose contact";
-    } 
+    }
 
     // Detect what data types we will receive
     if(_dev_inst) {
