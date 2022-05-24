@@ -60,6 +60,7 @@
  
 #include "data/decode/decoderstatus.h"
 #include "dsvdef.h"
+
  
 namespace pv {
 
@@ -100,6 +101,9 @@ SigSession::SigSession(DeviceManager *device_manager)
     _bClose = false;
     _callback = NULL; 
     _dev_inst = NULL;
+    _is_wait_reattch = false;
+    _wait_reattch_times = 0;
+    _is_device_reattach = false;
 
     // Create snapshots & data containers 
     _logic_data = new data::Logic(new data::LogicSnapshot()); 
@@ -134,7 +138,12 @@ void SigSession::set_device(DevInst *dev_inst)
     
     assert(dev_inst);
 
-    clear_all_decoder(false);
+    if (is_device_re_attach() == false){
+        clear_all_decoder(false);
+    }
+    else{
+        qDebug()<<"Keep current decoders";
+    }
 
     RELEASE_ARRAY(_group_traces);
  
@@ -148,7 +157,18 @@ void SigSession::set_device(DevInst *dev_inst)
  
     if (_dev_inst) {
 
-         qDebug()<<"Switch to device:"<<_dev_inst->format_device_title();
+        QString dev_name = _dev_inst->format_device_title();
+
+        if (_last_device_name != dev_name){
+            _last_device_name = dev_name;
+            _is_device_reattach = false;
+            clear_all_decoder(false);
+        }
+        else  if (is_device_re_attach() == false){
+            clear_all_decoder(false);
+        }
+
+        qDebug()<<"Switch to device:"<<dev_name;
 
         try {
             _dev_inst->use(this);
@@ -677,18 +697,18 @@ void SigSession::init_signals()
     unsigned int dso_probe_count = 0;
     unsigned int analog_probe_count = 0;
 
-    if (_logic_data)
+    if (is_device_re_attach() == false){
         _logic_data->clear();
-    if (_dso_data)
         _dso_data->clear();
-    if (_analog_data)
         _analog_data->clear();
-    if (_group_data)
         _group_data->clear();
 
-
-    // Clear the decode traces 
-    clear_all_decoder();
+        // Clear the decode traces 
+        clear_all_decoder();
+    }
+    else{
+        qDebug()<<"Device loose contact";
+    } 
 
     // Detect what data types we will receive
     if(_dev_inst) {
@@ -1207,17 +1227,33 @@ void SigSession::data_feed_in_proc(const struct sr_dev_inst *sdi,
  */
 void SigSession::hotplug_callback(void *ctx, void *dev, int event, void *user_data)
 {
+    if (_session != NULL){
+        _session->on_hotplug_event(ctx, dev, event, user_data);
+    }   
+}
 
+void SigSession::on_hotplug_event(void *ctx, void *dev, int event, void *user_data)
+{
     (void)ctx;
     (void)dev;
     (void)user_data;
 
-    if (USB_EV_HOTPLUG_ATTACH == event) {
-        _session->_hot_attach = true;
-    }else if (USB_EV_HOTPLUG_DETTACH == event) {
-        _session->_hot_detach = true;
-    }else{
+    if (USB_EV_HOTPLUG_ATTACH != event && USB_EV_HOTPLUG_DETTACH != event){
         qDebug("Unhandled event %d\n", event);
+        return;
+    }
+ 
+    if (USB_EV_HOTPLUG_ATTACH == event) 
+    {
+        _hot_attach = true;
+        _is_device_reattach = _is_wait_reattch;
+        _is_wait_reattch = false; //cancel detach event
+    }
+    else if (USB_EV_HOTPLUG_DETTACH == event) 
+    {
+        _wait_reattch_times = 0;
+        _is_wait_reattch = true;
+        _is_device_reattach = false;
     }
 }
 
@@ -1229,7 +1265,7 @@ void SigSession::hotplug_proc()
     qDebug("Hotplug thread start!");
 
     try {
-        while(_session && !_bHotplugStop) {
+        while(_session && !_bHotplugStop) { 
 
             sr_hotplug_wait_timout(_sr_ctx);
 
@@ -1244,6 +1280,17 @@ void SigSession::hotplug_proc()
                 _hot_detach = false;
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+            if (_is_wait_reattch){
+                _wait_reattch_times++;
+
+                // 500ms
+                if (_wait_reattch_times == 5)
+                {
+                    _hot_detach = true;
+                    _is_wait_reattch = false;
+                }              
+            }
         }
     } catch(...) {
         qDebug("Interrupt exception for hotplug thread was thrown.");
@@ -1953,7 +2000,6 @@ void SigSession::set_stop_scale(float scale)
       qDebug()<<"------->decode thread end";
       _bDecodeRunning = false;
   }
-
 
 
 } // namespace pv

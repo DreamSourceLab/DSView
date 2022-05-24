@@ -36,13 +36,11 @@
 #include "data/mathstack.h"
 #include "interface/icallbacks.h"
 #include "dstimer.h"
-
 #include "libsigrok.h"
+ 
 
 struct srd_decoder;
 struct srd_channel;
- 
-
 class DecoderStatus;
 
 typedef std::lock_guard<std::mutex> ds_lock_guard;
@@ -328,7 +326,9 @@ private:
     // thread for hotplug
     void hotplug_proc();
 
-    static  void hotplug_callback(void *ctx, void *dev, int event, void *user_data);
+    static void hotplug_callback(void *ctx, void *dev, int event, void *user_data);
+
+    void on_hotplug_event(void *ctx, void *dev, int event, void *user_data);
 
 public:
     void reload();
@@ -338,8 +338,12 @@ public:
     void check_update();
     void set_repeating(bool repeat);
     void set_map_zoom(int index);
-    void auto_end(); 
- 
+    void auto_end();
+    
+    inline bool is_device_re_attach(){
+        return _is_device_reattach;
+    }
+
 private:
 	DeviceManager   *_device_manager;
 
@@ -414,6 +418,10 @@ private:
     float       _stop_scale; 
     bool        _bClose;
     struct sr_context  *_sr_ctx;
+    volatile bool    _is_wait_reattch;
+    volatile int     _wait_reattch_times;
+    bool            _is_device_reattach;
+    QString         _last_device_name;
 
     ISessionCallback *_callback;
    

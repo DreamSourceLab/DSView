@@ -387,6 +387,11 @@ void ProtocolDock::on_add_protocol()
 
 bool ProtocolDock::add_protocol_by_id(QString id, bool silent, std::list<pv::data::decode::Decoder*> &sub_decoders)
 {    
+    if (_session->is_device_re_attach() == true){
+        qDebug()<<"Keep current decoders, cancel add new.";
+        return true;
+    }
+
     if (_session->get_device()->dev_inst()->mode != LOGIC) {         
         qDebug()<<"Protocol Analyzer\nProtocol Analyzer is only valid in Digital Mode!";
         return false;
@@ -452,7 +457,7 @@ bool ProtocolDock::add_protocol_by_id(QString id, bool silent, std::list<pv::dat
 
 void ProtocolDock::del_all_protocol()
 {  
-    if (_protocol_lay_items.size() > 0)
+    if (_protocol_lay_items.size() > 0 && _session->is_device_re_attach() == false)
     {
         _session->clear_all_decoder();
 
