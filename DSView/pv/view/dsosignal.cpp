@@ -826,13 +826,12 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColor 
     (void)fore;
     (void)back;
 
-    if (!_show || right >= left){
+    if (!_show || right <= left){
         return;
     }
 
     assert(_data);
-    assert(_view);
-    //assert(right >= left);
+    assert(_view); 
 
     if (enabled()) {
         const int index = get_index();
