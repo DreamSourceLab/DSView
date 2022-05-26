@@ -107,8 +107,6 @@ void LogicSnapshot::capture_ended()
 
    // qDebug()<<"total:"<<_total_sample_count<<","<<_times;
 
-    //assert(_ch_fraction == 0);
-    //assert(_byte_fraction == 0);
     uint64_t block_index = _ring_sample_count / LeafBlockSamples;
     uint64_t block_offset = (_ring_sample_count % LeafBlockSamples) / Scale;
     if (block_offset != 0) {
@@ -119,13 +117,18 @@ void LogicSnapshot::capture_ended()
         for(auto& iter:_ch_data) { 
 
             if (iter[index0].lbp[index1] == NULL){
-                qDebug()<<"LogicSnapshot::capture_ended(), pointer is null";
-                //assert(false);
-                continue;
+                iter[index0].lbp[index1] = malloc(LeafBlockSpace);
+                if (iter[index0].lbp[index1] == NULL)
+                {
+                    _memory_failed = true;
+                    return;
+                }
+                memset(iter[index0].lbp[index1], 0, LeafBlockSpace);
             }
 
             const uint64_t *end_ptr = (uint64_t *)iter[index0].lbp[index1] + (LeafBlockSamples / Scale);
             uint64_t *ptr = (uint64_t *)iter[index0].lbp[index1] + block_offset;
+
             while (ptr < end_ptr)
                 *ptr++ = 0;
 
