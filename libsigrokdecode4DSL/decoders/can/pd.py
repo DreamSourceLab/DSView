@@ -34,7 +34,7 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Automotive']
     channels = (
-        {'id': 'can_rx', 'name': 'CAN RX', 'desc': 'CAN bus line'},
+        {'id': 'can_rx', 'name': 'CAN', 'desc': 'CAN bus line'},
     )
     options = (
         {'id': 'bitrate', 'desc': 'Bitrate (bits/s)', 'default': 1000000},
