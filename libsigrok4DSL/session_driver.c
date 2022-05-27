@@ -24,9 +24,9 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/time.h>
-#include <zip.h>
 #include <assert.h>
 #include <string.h>
+#include "../DSView/pv/minizip/unzip.h"
 
 /* Message logging helpers with subsystem-specific prefix string. */
 #define LOG_PREFIX "virtual-session: "
@@ -69,15 +69,15 @@ struct session_vdev {
     int version;
 	char *sessionfile;
 	char *capturefile;
-	struct zip *archive;
-	struct zip_file *capfile;
+    unzFile archive; //zip document
+    int     capfile; //current inner file open status
+
     void *buf;
     void *logic_buf;
-	int bytes_read;
+	int64_t bytes_read;
     int cur_channel;
     int cur_block;
-    int num_blocks;
-    gboolean file_opened;
+    int num_blocks; 
 	uint64_t samplerate;
     uint64_t total_samples;
     int64_t trig_time;
@@ -160,14 +160,32 @@ static int trans_data(struct sr_dev_inst *sdi)
     return SR_OK;
 }
 
-static int file_close(struct session_vdev *vdev)
+static int close_archive(struct session_vdev *vdev)
 {
-    int ret = zip_close(vdev->archive);
-    if (ret  == -1) {
-        sr_info("error close session file: %s", zip_strerror(vdev->archive));
-        return SR_ERR;
+    assert(vdev->archive); 
+
+    //close current inner file
+    if (vdev->capfile){
+        unzCloseCurrentFile(vdev->archive);
+        vdev->capfile = 0;
     }
+
+    int ret = unzClose(vdev->archive);
+    if (ret != UNZ_OK){
+        sr_err("close zip archive error!");
+    }
+
+    vdev->archive = NULL;
     return SR_OK;
+}
+
+static void send_error_packet(const struct sr_dev_inst *cb_sdi, struct session_vdev *vdev, struct sr_datafeed_packet *packet)
+{
+    packet->type = SR_DF_END;
+    packet->status = SR_PKT_SOURCE_ERROR;
+    sr_session_send(cb_sdi, packet);
+    sr_session_source_remove(-1);
+    close_archive(vdev);
 }
 
 static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
@@ -192,51 +210,71 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
 
     ret = 0;
     packet.status = SR_PKT_OK;
+
 	for (l = dev_insts; l; l = l->next) {
 		sdi = l->data;
 		vdev = sdi->priv;
+
 		if (!vdev)
 			/* already done with this instance */
 			continue;
 
         assert(vdev->unit_bits > 0);
         assert(vdev->cur_channel >= 0);
-        if (vdev->cur_channel < vdev->num_probes) {
-            if (vdev->version == 1) {
-                ret = zip_fread(vdev->capfile, vdev->buf, CHUNKSIZE);
-            } else if (vdev->version == 2) {
+        assert(vdev->archive);
+
+        if (vdev->cur_channel < vdev->num_probes) 
+        {
+            if (vdev->version == 1) { 
+                ret = unzReadCurrentFile(vdev->archive, vdev->buf, CHUNKSIZE);
+                if (-1 == ret){
+                    sr_err("read zip inner file error:%s", vdev->capturefile);
+                    send_error_packet(cb_sdi, vdev, &packet);
+                    return FALSE;
+                }
+            }
+            else if (vdev->version == 2) {
                 channel = vdev->cur_channel;
                 pl = sdi->channels;
+
                 while (channel--)
                     pl = pl->next;
+
                 probe = (struct sr_channel *)pl->data;
 
-                if (!vdev->file_opened) {
+                if (vdev->capfile == 0) {
                     char *type_name = (probe->type == SR_CHANNEL_LOGIC) ? "L" :
                                 (probe->type == SR_CHANNEL_DSO) ? "O" :
                                 (probe->type == SR_CHANNEL_ANALOG) ? "A" : "U";
+
                     snprintf(file_name, 31, "%s-%d/%d", type_name,
                              sdi->mode == LOGIC ? probe->index : 0, vdev->cur_block);
-                    if (!(vdev->capfile = zip_fopen(vdev->archive, file_name, 0))) {
-                        sr_err("Failed to open capture file '%s' in "
-                               "session file '%s'.", file_name, vdev->sessionfile);
-                    } else {
-                        vdev->file_opened = TRUE;
+
+                   if (unzLocateFile(vdev->archive, file_name, 0) != UNZ_OK)
+                   {
+                       sr_err("cant't locate zip inner file:%s", file_name);
+                       send_error_packet(cb_sdi, vdev, &packet);
+                       return FALSE;
+                   }                   
+                   if(unzOpenCurrentFile(vdev->archive) != UNZ_OK){
+                       sr_err("cant't open zip inner file:%s", file_name);
+                       send_error_packet(cb_sdi, vdev, &packet);
+                       return FALSE;
+                   }
+                   vdev->capfile = 1;
+                }
+
+                if (vdev->capfile){ 
+                    ret = unzReadCurrentFile(vdev->archive, vdev->buf, CHUNKSIZE);
+
+                    if (-1 == ret){
+                        sr_err("read zip inner file error:%s", file_name);
+                        send_error_packet(cb_sdi, vdev, &packet);
+                        return FALSE;                        
                     }
                 }
-                if (vdev->file_opened)
-                    ret = zip_fread(vdev->capfile, vdev->buf, CHUNKSIZE);
             }
-
-            if (!vdev->file_opened) {
-                packet.type = SR_DF_END;
-                packet.status = SR_PKT_SOURCE_ERROR;
-                sr_session_send(cb_sdi, &packet);
-                sr_session_source_remove(-1);
-                file_close(vdev);
-                return FALSE;
-            }
-
+ 
             if (ret > 0) {
                 if (sdi->mode == DSO) {
                     packet.type = SR_DF_DSO;
@@ -247,7 +285,8 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
                     dso.mq = SR_MQ_VOLTAGE;
                     dso.unit = SR_UNIT_VOLT;
                     dso.mqflags = SR_MQFLAG_AC;
-                } else if (sdi->mode == ANALOG){
+                } 
+                else if (sdi->mode == ANALOG){
                     packet.type = SR_DF_ANALOG;
                     packet.payload = &analog;
                     analog.probes = sdi->channels;
@@ -257,7 +296,8 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
                     analog.unit = SR_UNIT_VOLT;
                     analog.mqflags = SR_MQFLAG_AC;
                     analog.data = vdev->buf;
-                } else {
+                } 
+                else {
                     packet.type = SR_DF_LOGIC;
                     packet.payload = &logic;
                     logic.length = ret;
@@ -272,22 +312,27 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
                         logic.length = ret / 16 * vdev->enabled_probes;
                         logic.data = vdev->logic_buf;
                         trans_data(sdi);
-                    } else if (vdev->version == 2) {
+                    } 
+                    else if (vdev->version == 2) {
                         logic.length = ret;
                         logic.data = vdev->buf;
                     }
                 }
+
                 vdev->bytes_read += ret;
                 sr_session_send(cb_sdi, &packet);
-            } else {
+            }
+            else{
                 /* done with this capture file */
-                zip_fclose(vdev->capfile);
-
-                if (vdev->version == 1) {
+                unzCloseCurrentFile(vdev->archive);
+                vdev->capfile = 0;
+  
+                if (vdev->version == 1){
                     vdev->cur_channel++;
-                } else if (vdev->version == 2) {
-                    vdev->file_opened = FALSE;
+                }
+                else if (vdev->version == 2) { 
                     vdev->cur_block++;
+                    // if read to the last block, move to next channel
                     if (vdev->cur_block == vdev->num_blocks) {
                         vdev->cur_block = 0;
                         vdev->cur_channel++;
@@ -297,13 +342,16 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
         }
 	}
 
-    if (!vdev ||
-        vdev->cur_channel >= vdev->num_probes ||
-        revents == -1) {
+    if (!vdev || vdev->cur_channel >= vdev->num_probes || revents == -1) {
 		packet.type = SR_DF_END;
 		sr_session_send(cb_sdi, &packet);
 		sr_session_source_remove(-1);
-        file_close(vdev);
+
+        if (NULL != vdev){
+            // abort 
+            close_archive(vdev); 
+            vdev->bytes_read = 0;
+        }    
 	}
 
 	return TRUE;
@@ -360,8 +408,7 @@ static int dev_open(struct sr_dev_inst *sdi)
     vdev->trig_pos = 0;
     vdev->trig_time = 0;
     vdev->cur_block = 0;
-    vdev->cur_channel = 0;
-    vdev->file_opened = FALSE;
+    vdev->cur_channel = 0; 
     vdev->num_blocks = 0;
     vdev->unit_bits = 1;
     vdev->ref_min = 0;
@@ -370,6 +417,8 @@ static int dev_open(struct sr_dev_inst *sdi)
     vdev->min_timebase = MIN_TIMEBASE;
     vdev->max_height = 0;
     vdev->mstatus.measure_valid = TRUE;
+    vdev->archive = NULL;
+    vdev->capfile = 0;
 
 	dev_insts = g_slist_append(dev_insts, sdi);
 
@@ -886,8 +935,7 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi,
 		void *cb_data)
 {
     (void)cb_data;
-
-	struct zip_stat zs;
+ 
 	struct session_vdev *vdev;
     struct sr_datafeed_packet packet;
 	int ret;
@@ -898,30 +946,43 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi,
     vdev->enabled_probes = 0;
     packet.status = SR_PKT_OK;
 
+    //reset status
+    vdev->cur_block = 0;
+    vdev->cur_channel = 0;
+
+    if (vdev->archive != NULL){
+        sr_err("history archive is not closed.");
+         
+    }
+
 	sr_info("Opening archive %s file %s", vdev->sessionfile,
 		vdev->capturefile);
 
-	if (!(vdev->archive = zip_open(vdev->sessionfile, 0, &ret))) {
+    vdev->archive = unzOpen64(vdev->sessionfile);
+
+	if (NULL == vdev->archive) {
 		sr_err("Failed to open session file '%s': "
 		       "zip error %d\n", vdev->sessionfile, ret);
 		return SR_ERR;
 	}
 
     if (vdev->version == 1) {
-        if (zip_stat(vdev->archive, vdev->capturefile, 0, &zs) == -1) {
-            sr_err("Failed to check capture file '%s' in "
-                   "session file '%s'.", vdev->capturefile, vdev->sessionfile);
-            return SR_ERR;
+        if (unzLocateFile(vdev->archive, vdev->capturefile, 0) != UNZ_OK)
+        {
+           sr_err("cant't locate zip inner file:%s", vdev->capturefile);
+           close_archive(vdev);
+           return SR_ERR;
         }
-
-        if (!(vdev->capfile = zip_fopen(vdev->archive, vdev->capturefile, 0))) {
-            sr_err("Failed to open capture file '%s' in "
-                   "session file '%s'.", vdev->capturefile, vdev->sessionfile);
-            return SR_ERR;
+        if (unzOpenCurrentFile(vdev->archive) != UNZ_OK)
+        {
+           sr_err("cant't open zip inner file:%s", vdev->capturefile);
+           close_archive(vdev);
+           return SR_ERR;
         }
-        vdev->file_opened = TRUE;
+        vdev->capfile = 1;
         vdev->cur_channel = vdev->num_probes - 1;
-    } else {
+    } 
+    else {
         if (sdi->mode == LOGIC)
             vdev->cur_channel = 0;
         else

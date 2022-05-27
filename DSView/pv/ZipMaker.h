@@ -23,6 +23,8 @@
 
 #pragma once 
 
+#include "minizip/zip.h" 
+
 typedef struct
 {
     char  inFileName[256];
@@ -61,30 +63,8 @@ public:
     int m_opt_compress_level;
 
 private:
-    void    *m_zDoc; //zip file handle
-    void    *m_zi; //life must as m_zDoc; 
+    zipFile         m_zDoc; //zip file handle
+    zip_fileinfo    *m_zi; //life must as m_zDoc; 
     char     m_error[500];
 };
-
-class ZipDecompress
-{
-public:
-    ZipDecompress();
-
-    ~ZipDecompress();
-
-    bool Open(const char *fileName);
-
-    void Close();
-
-    bool ReadNextFileData(UnZipFileInfo &inf);
-
-private:
-    void    *m_uzDoc;
-    void    *m_uzi;
-    int      m_fileCount;
-    int      m_curIndex;
-    char     m_error[500];
-    void    *m_buffer; // file read buffer
-    long long m_bufferSize;
-};
+ 

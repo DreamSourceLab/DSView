@@ -25,10 +25,6 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <time.h>
-
-#include "minizip/zip.h"
-#include "minizip/unzip.h"
-
   
 ZipMaker::ZipMaker() :
     m_zDoc(NULL)
@@ -164,108 +160,4 @@ const char *ZipMaker::GetError()
     if (m_error[0])
         return m_error;
     return NULL;
-}
-
-
-//------------------------ZipDecompress
-  ZipDecompress::ZipDecompress()
-  {
-      m_uzDoc = NULL;
-      m_curIndex = 0;
-      m_fileCount = 0;
-      m_bufferSize = 0;
-      m_buffer = NULL;
-  }
-
-  ZipDecompress::~ZipDecompress()
-  {
-      Close();    
-  }
-
-  bool ZipDecompress::Open(const char *fileName)
-  {
-      assert(fileName);
-      m_uzDoc = unzOpen64(fileName);
-
-      if (m_uzDoc){
-          m_uzi = new unz_file_info64();
-          unz_global_info64 inf;
-          unzGetGlobalInfo64((unzFile)m_uzDoc, &inf);
-          m_fileCount = (int)inf.number_entry;
-      }
-      return m_uzDoc != NULL;
-  }
-
-  void ZipDecompress::Close()
-  {
-      if (m_uzDoc)
-      {
-          unzClose((unzFile)m_uzDoc);
-          m_uzDoc = NULL;
-      }
-      if (m_uzi){
-          delete ((unz_file_info64*)m_uzi);
-          m_uzi = NULL;
-      }
-      if (m_buffer){
-          free(m_buffer);
-          m_buffer = NULL;
-      }
-  }
-
-  bool ZipDecompress::ReadNextFileData(UnZipFileInfo &inf)
-{
-    assert(m_uzDoc);
-
-    if (m_curIndex >= m_fileCount){
-        strcpy(m_error, "read index is last");
-        return false;
-    }
-    m_curIndex++;
- 
-    int ret = unzGetCurrentFileInfo64((unzFile)m_uzDoc, (unz_file_info64*)m_uzi, inf.inFileName, 256, NULL, 0, NULL, 0);
-    if (ret != UNZ_OK){
-        strcpy(m_error, "unzGetCurrentFileInfo64 error");
-        return false;
-     }
-     unz_file_info64 &uzinf = *(unz_file_info64*)m_uzi;
-     inf.dataLen = uzinf.uncompressed_size;
-     inf.inFileNameLen = uzinf.size_filename;
-
-     // need malloc memory buffer
-     if (m_buffer == NULL || inf.dataLen > m_bufferSize){
-         if (m_buffer) free(m_buffer);
-         m_buffer = NULL;
-
-         m_buffer = malloc(inf.dataLen + 10);
-         if (m_buffer == NULL){
-             strcpy(m_error, "malloc get null");
-            return false;
-         }
-     }
-
-     inf.pData = m_buffer; 
-
-     unzOpenCurrentFile((unzFile)m_uzDoc);
-
-     //read file data to buffer
-     char *buf = (char*)inf.pData;
-     long long buflen = inf.dataLen;
-     long long rdlen = 0;
-
-    while (rdlen < inf.dataLen)
-    {
-        int dlen = unzReadCurrentFile((unzFile)m_uzDoc, buf, buflen);
-        if (dlen == 0){
-            break;
-        }
-        rdlen += dlen;
-        buf   += dlen; //move pointer
-        buflen = inf.dataLen - rdlen;
-    } 
- 
-     unzCloseCurrentFile((unzFile)m_uzDoc);
-     unzGoToNextFile((unzFile)m_uzDoc);
-
-     return true;
 }
