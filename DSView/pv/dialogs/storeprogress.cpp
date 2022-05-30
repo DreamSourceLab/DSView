@@ -25,9 +25,10 @@
 #include <QGridLayout>
 #include <QDialogButtonBox>
 #include <QTimer>
-#include <QLineEdit>
+#include <QTextEdit>
 #include <QPushButton>
-#include <QCheckBox> 
+#include <QRadioButton>
+#include <QDebug>
 
 #include "../ui/msgbox.h"
 #include "../config/appconfig.h"
@@ -61,16 +62,22 @@ StoreProgress::StoreProgress(SigSession *session, QWidget *parent) :
     grid->setColumnStretch(2, 1);
     grid->setColumnStretch(3, 1);
 
-    _fileLab = new QLineEdit();
-    _fileLab->setEnabled(false);    
+    _fileLab = new QTextEdit();
+    _fileLab->setReadOnly(true);   
     _fileLab->setObjectName("PathLine");
+    _fileLab->setMaximumHeight(50); 
 
-    QPushButton *openButton = new QPushButton(this);
-    openButton->setText(tr("change"));
+    _openButton = new QPushButton(this);
+    _openButton->setText(tr("change"));
+
+    _space = new QWidget(this);
+    _space->setMinimumHeight(80);
+    _space->setVisible(false);
 
     grid->addWidget(&_progress, 0, 0, 1, 4);
     grid->addWidget(_fileLab, 1, 0, 1, 3);
-    grid->addWidget(openButton, 1, 3, 1, 1);    
+    grid->addWidget(_openButton, 1, 3, 1, 1);    
+    grid->addWidget(_space);
 
     QDialogButtonBox  *_button_box = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, 
                                         Qt::Horizontal, this);
@@ -84,7 +91,9 @@ StoreProgress::StoreProgress(SigSession *session, QWidget *parent) :
     connect(&_store_session, SIGNAL(progress_updated()),
         this, SLOT(on_progress_updated()), Qt::QueuedConnection);
 
-    connect(openButton, SIGNAL(clicked()),this, SLOT(on_change_file()));
+    connect(_openButton, SIGNAL(clicked()),this, SLOT(on_change_file()));
+
+    _progress.setVisible(false);
 }
 
 StoreProgress::~StoreProgress()
@@ -94,16 +103,15 @@ StoreProgress::~StoreProgress()
 
  void StoreProgress::on_change_file()
  {
-     if (_isExport){
-        QString file = _store_session.MakeExportFile(true);
-        if (file != "")
-            _fileLab->setText(file);
-     }
-     else{
-      QString file = _store_session.MakeSaveFile(true);
-       if (file != "")
-          _fileLab->setText(file);
-     }
+    QString file  = "";
+    if (_isExport)
+        file = _store_session.MakeExportFile(true);
+    else
+        file = _store_session.MakeSaveFile(true);
+
+    if (file != ""){
+        _fileLab->setText(file); 
+    }          
  }
 
 void StoreProgress::reject()
@@ -120,6 +128,18 @@ void StoreProgress::accept()
         MsgBox::Show(NULL, "you need to select a file name.");
         return;
     }
+
+     _progress.setVisible(true);
+     _fileLab->setVisible(false);     
+     _fileLab->setVisible(false);
+     _openButton->setVisible(false);
+
+     if (_ckOrigin != NULL){
+        _ckOrigin->setVisible(false);
+        _ckCompress->setVisible(false);
+     }
+     _space->setVisible(true);
+
 
     if (_isExport && _store_session.IsLogicDataType()){
         bool ck  = _ckOrigin->isChecked();
@@ -172,7 +192,7 @@ void StoreProgress::save_run(ISessionDataGetter *getter)
     _isExport = false;
     setTitle(tr("Saving..."));
     QString file = _store_session.MakeSaveFile(false);
-    _fileLab->setText(file);
+    _fileLab->setText(file); 
     _store_session._sessionDataGetter = getter;
     show();  
 }
@@ -182,19 +202,29 @@ void StoreProgress::export_run()
     if (_store_session.IsLogicDataType())
     { 
         QGridLayout *lay = new QGridLayout();
-        lay->setContentsMargins(15, 0, 0, 0);
-        AppConfig &app = AppConfig::Instance();
-        _ckOrigin  = new QCheckBox();
-        _ckOrigin->setChecked(app._appOptions.originalData);
-        _ckOrigin->setText(tr("all original data"));
+        lay->setContentsMargins(5, 0, 0, 0); 
+        bool isOrg = AppConfig::Instance()._appOptions.originalData;
+
+        _ckOrigin  = new QRadioButton();
+        _ckOrigin->setText(tr("Original data"));   
+        _ckOrigin->setChecked(isOrg);       
+
+        _ckCompress  = new QRadioButton();
+        _ckCompress->setText(tr("Compressed data"));
+        _ckCompress->setChecked(!isOrg);
+
         lay->addWidget(_ckOrigin);
+        lay->addWidget(_ckCompress);
         _grid->addLayout(lay, 2, 0, 1, 2);
+
+        connect(_ckOrigin, SIGNAL(clicked(bool)), this, SLOT(on_ck_origin(bool)));
+        connect(_ckCompress, SIGNAL(clicked(bool)), this, SLOT(on_ck_compress(bool)));
     }
 
     _isExport = true;
     setTitle(tr("Exporting..."));
     QString file = _store_session.MakeExportFile(false);
-    _fileLab->setText(file);
+    _fileLab->setText(file); 
     show();
 }
 
@@ -226,6 +256,20 @@ void StoreProgress::on_progress_updated()
 
     if (p.first == p.second) {
         _done = true;
+    }
+}
+
+void StoreProgress::on_ck_origin(bool ck)
+{
+    if (ck){
+        _ckCompress->setChecked(false);
+    }
+}
+
+void StoreProgress::on_ck_compress(bool ck)
+{
+    if (ck){
+        _ckOrigin->setChecked(false);
     }
 }
 

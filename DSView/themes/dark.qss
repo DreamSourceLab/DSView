@@ -359,6 +359,16 @@ QLineEdit
     color: #eff0f1;
 }
 
+QTextEdit
+{
+    background-color: #202020;
+    padding: 2px;
+    border-style: solid;
+    border: 1px solid #393939;
+    border-radius: 2px;
+    color: #eff0f1;
+}
+
 QGroupBox
 {
     border: 1px solid #393939;
@@ -1636,5 +1646,8 @@ QTextBrowser:hover
 }
 
 QLineEdit#PathLine{
+    color:#eff0f1;
+}
+QTextEdit#PathLine{
     color:#eff0f1;
 }

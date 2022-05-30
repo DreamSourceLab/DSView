@@ -28,9 +28,11 @@
 #include "../dialogs/dsdialog.h" 
 #include "../interface/icallbacks.h"
 
-class QLineEdit;
-class QCheckBox;
+class QTextEdit;
+class QRadioButton;
 class QGridLayout;
+class QPushButton;
+class QWidget;
 
 namespace pv {
 
@@ -68,15 +70,20 @@ private slots:
 	void on_progress_updated();
     void timeout();
     void on_change_file();
+    void on_ck_origin(bool ck);
+    void on_ck_compress(bool ck);
 
 private:
     pv::StoreSession    _store_session;
     QProgressBar        _progress;
     bool                _done;
     bool                _isExport;
-    QLineEdit           *_fileLab;
-    QCheckBox           *_ckOrigin;
+    QTextEdit           *_fileLab;
+    QRadioButton        *_ckOrigin;
+    QRadioButton        *_ckCompress;
+    QPushButton         *_openButton;
     QGridLayout         *_grid;
+    QWidget             *_space;
 };
 
 } // dialogs
