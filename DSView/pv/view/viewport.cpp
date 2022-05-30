@@ -785,7 +785,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                     if (isMaxWindow && mvk > 0.4f){
                         quickScroll = true;
                     }
-                    else if (!isMaxWindow && mvk > 0.5f){
+                    else if (!isMaxWindow && mvk > 0.25f){
                         quickScroll = true;
                     }
                 }
