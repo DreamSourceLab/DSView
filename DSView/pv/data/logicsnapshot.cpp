@@ -891,191 +891,107 @@ bool LogicSnapshot::block_pre_edge(uint64_t *lbp, uint64_t &index, bool last_sam
     return (index >= block_start) && (index != 0);
 }
 
-bool LogicSnapshot::pattern_search(int64_t start, int64_t end, bool nxt, int64_t &index,
-                    std::map<uint16_t, QString> pattern)
+bool LogicSnapshot::pattern_search(int64_t start, int64_t end, int64_t &index,
+                    std::map<uint16_t, QString> pattern, bool isNext)
 {
-    int start_match_pos = pattern.size() - 1;
-    int end_match_pos = 0;
     if (pattern.empty()) {
         return true;
-    } else {
-        for (auto& iter:pattern) {
-            int char_index = 0;
-            for (auto& iter_char:iter.second) {
-                if (iter_char != 'X') {
-                   start_match_pos = min(start_match_pos, char_index);
-                   end_match_pos = max(end_match_pos, char_index);
-                }
-                char_index++;
-            }
-        }
     }
+  
+    char flagList[CHANNEL_MAX_COUNT];
+    char lstValues[CHANNEL_MAX_COUNT];
+    int  chanIndexs[CHANNEL_MAX_COUNT];
+    int  count = 0;  
+    bool bEdgeFlag = false;
 
-    if (start_match_pos > end_match_pos)
+    int64_t to = isNext ? end + 1 : start - 1;
+    int64_t step = isNext ? 1 : -1;
+
+    for (auto it = pattern.begin(); it != pattern.end(); it++){
+         char flag = *(it->second.toStdString().c_str());
+         int channel = it->first;
+
+         if (flag != 'X' && has_data(channel)){
+             flagList[count]  = flag;
+             chanIndexs[count] = channel;
+             count++;
+
+             if (flag == 'R' || flag == 'F' || flag == 'C'){
+                 bEdgeFlag = true;
+             }
+         }
+    }
+    if (count == 0){
         return true;
+    }  
 
-    std::map<uint16_t, bool> cur_sample;
-    std::map<uint16_t, bool> exp_sample;
-    std::map<uint16_t, bool> cur_edge;
-    std::map<uint16_t, bool> exp_edge;
-    int nxt_match_pos = nxt ? start_match_pos : end_match_pos;
-    int cur_match_pos = nxt ? nxt_match_pos - 1 : nxt_match_pos + 1;
-    std::vector<uint64_t> exp_index;
-    bool find_edge;
-    typedef std::map<uint16_t, QString>::iterator it_type;
-    while(nxt ? index <= end : index >= start) {
-        // get expacted and current pattern
-        exp_index.clear();
-        cur_edge.clear();
-        for(it_type iterator = pattern.begin();
-            iterator != pattern.end(); iterator++) {
-            uint16_t ch_index = iterator->first;
-            if (!has_data(ch_index))
-                continue;
-            exp_index.push_back(index);
-            cur_sample[ch_index] = get_sample(index, ch_index);
+    //find
+    bool ret = false;
+    char val = 0;
+    int macthed = 0;  
 
-            if (iterator->second[nxt_match_pos] == '0') {
-                exp_sample[ch_index] = false;
-            } else if (iterator->second[nxt_match_pos] == '1') {
-                exp_sample[ch_index] = true;
-            } else if (iterator->second[nxt_match_pos] == 'X') {
-                exp_sample[ch_index] = cur_sample[ch_index];
-            } else if (iterator->second[nxt_match_pos] == 'F') {
-                exp_sample[ch_index] = false;
-                exp_edge[ch_index] = true;
-            } else if (iterator->second[nxt_match_pos] == 'R') {
-                exp_sample[ch_index] = true;
-                exp_edge[ch_index] = true;
-            } else if (iterator->second[nxt_match_pos] == 'C') {
-                exp_sample[ch_index] = cur_sample[ch_index];
-                exp_edge[ch_index] = true;
-            }
-
-            if (exp_edge.find(ch_index) != exp_edge.end()) {
-                if (index > start) {
-                    bool sample = get_sample(index - 1, ch_index);
-                    if (sample != cur_sample[ch_index])
-                        cur_edge[ch_index] = true;
-                }
-            }
+    //get first edge values
+    if (bEdgeFlag){
+        for (int i=0; i < count; i++){
+            lstValues[i] =  (char)get_sample(index, chanIndexs[i]);
         }
-        cur_match_pos = nxt_match_pos;
-
-        // pattern compare
-        if (cur_edge == exp_edge &&
-            cur_sample == exp_sample)
-            nxt_match_pos += nxt ? 1 : -1;
-
-        if (nxt ? nxt_match_pos > end_match_pos :
-                  nxt_match_pos < start_match_pos) {
-            // all matched
-            return true;
-        } else if (nxt ? nxt_match_pos > cur_match_pos :
-                         nxt_match_pos < cur_match_pos) {
-            // one stage matched
-            int64_t sub_index = nxt ? index + 1 : index - 1;
-            while((nxt ? cur_match_pos++ < end_match_pos : cur_match_pos-- > start_match_pos) &&
-                  (nxt ? sub_index <= end : sub_index >= start)) {
-                // get expacted and current pattern
-                exp_index.clear();
-                cur_edge.clear();
-                for(it_type iterator = pattern.begin();
-                    iterator != pattern.end(); iterator++) {
-                    uint16_t ch_index = iterator->first;
-                    if (!has_data(ch_index))
-                        continue;
-                    exp_index.push_back(sub_index);
-                    cur_sample[ch_index] = get_sample(sub_index, ch_index);
-
-                    if (iterator->second[cur_match_pos] == '0') {
-                        exp_sample[ch_index] = false;
-                    } else if (iterator->second[cur_match_pos] == '1') {
-                        exp_sample[ch_index] = true;
-                    } else if (iterator->second[cur_match_pos] == 'X') {
-                        exp_sample[ch_index] = cur_sample[ch_index];
-                    } else if (iterator->second[cur_match_pos] == 'F') {
-                        exp_sample[ch_index] = false;
-                        exp_edge[ch_index] = true;
-                    } else if (iterator->second[cur_match_pos] == 'R') {
-                        exp_sample[ch_index] = true;
-                        exp_edge[ch_index] = true;
-                    } else if (iterator->second[cur_match_pos] == 'C') {
-                        exp_sample[ch_index] = cur_sample[ch_index];
-                        exp_edge[ch_index] = true;
-                    }
-
-                    if (exp_edge.find(ch_index) != exp_edge.end()) {
-                        if (sub_index > start) {
-                            bool sample = get_sample(sub_index - 1, ch_index);
-                            if (sample != cur_sample[ch_index])
-                                cur_edge[ch_index] = true;
-                        }
-                    }
-                }
-
-                // pattern compare
-                if (cur_edge != exp_edge ||
-                    cur_sample != exp_sample) {
-                    cur_match_pos = nxt_match_pos - 1;
-                    index += nxt ? 1 : -1;
-                    break;
-                } else {
-                    sub_index += nxt ? 1 : -1;
-                }
-            }
-
-            if (nxt ? cur_match_pos > end_match_pos :
-                    cur_match_pos < start_match_pos) {
-                index = nxt ? sub_index - 1 : index;
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            // not matched, find the next index for pattern compare
-            find_edge = true;
-            int seq = 0;
-            for(it_type iterator = pattern.begin();
-                iterator != pattern.end(); iterator++) {
-                uint16_t ch_index = iterator->first;
-                if (!has_data(ch_index))
-                    continue;
-                if (exp_edge.find(ch_index) != exp_edge.end() ||
-                    cur_sample[ch_index] != exp_sample[ch_index]) {
-                    do {
-                        if (nxt) {
-                            exp_index[seq] += 1;
-                            find_edge = get_nxt_edge(exp_index[seq], cur_sample[ch_index], end, 1, ch_index);
-                        } else {
-                            exp_index[seq] -= 1;
-                            cur_sample[ch_index] = get_sample(exp_index[seq], ch_index);
-                            find_edge = get_pre_edge(exp_index[seq], cur_sample[ch_index], 1, ch_index);
-                        }
-                        if (find_edge) {
-                            cur_sample[ch_index] = get_sample(exp_index[seq], ch_index);
-                            if (iterator->second[cur_match_pos] == 'C')
-                                exp_sample[ch_index] = cur_sample[ch_index];
-                        } else
-                            break;
-                    }while(cur_sample[ch_index] != exp_sample[ch_index]);
-                }
-                if (find_edge)
-                    seq++;
-                else
-                    break;
-            }
-            if (find_edge) {
-                if (nxt)
-                    index = *max_element(exp_index.begin(), exp_index.end());
-                else
-                    index = *min_element(exp_index.begin(), exp_index.end());
-            } else {
-                break;
-            }
-        }
+        index += step;
     }
-    return false;
+
+    while (index != to)
+    {
+        macthed = 0;
+
+        for (int i = 0; i < count; i++)
+        {
+            val = (char)get_sample(index, chanIndexs[i]);
+
+            if (flagList[i] == '0')
+            {
+                macthed += !val;
+            }
+            else if (flagList[i] == '1')
+            {
+                macthed += val;
+            } 
+            else if (flagList[i] == 'R')
+            {
+                if (isNext)
+                    macthed += (lstValues[i] == 0 && val == 1);
+                else
+                    macthed += (lstValues[i] == 1 && val == 0);
+            }
+            else if (flagList[i] == 'F')
+            {
+                if (isNext)
+                    macthed += (lstValues[i] == 1 && val == 0);
+                else
+                    macthed += (lstValues[i] == 0 && val == 1);
+            }
+            else if (flagList[i] == 'C')
+            {   
+                if (isNext)
+                    macthed += (lstValues[i] == 0 && val == 1) || (lstValues[i] == 1 && val == 0);
+                else
+                    macthed += (lstValues[i] == 1 && val == 0) || (lstValues[i] == 0 && val == 1);
+            }
+            lstValues[i] = val;
+        }
+
+        // matched all
+        if (macthed == count)
+        {
+            ret = true;
+            if (!isNext){
+                index++; //move to prev position
+            }
+            break;
+        }
+
+        index += step;
+    }
+
+    return ret;
 }
 
 bool LogicSnapshot::has_data(int sig_index)

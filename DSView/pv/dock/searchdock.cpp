@@ -38,6 +38,7 @@
 #include <QFuture>
 #include <QProgressDialog>
 #include <QtConcurrent/QtConcurrent>
+#include <QDebug>
 
 #include <stdint.h> 
 #include "../config/appconfig.h"
@@ -157,7 +158,7 @@ void SearchDock::on_previous()
         QFuture<void> future;
         future = QtConcurrent::run([&]{
             last_pos -= last_hit;
-            ret = logic_snapshot->pattern_search(0, end, false, last_pos, _pattern);
+            ret = logic_snapshot->pattern_search(0, end, last_pos, _pattern, false);
         });
         Qt::WindowFlags flags = Qt::CustomizeWindowHint;
         QProgressDialog dlg(tr("Search Previous..."),
@@ -217,7 +218,7 @@ void SearchDock::on_next()
     } else {
         QFuture<void> future;
         future = QtConcurrent::run([&]{
-            ret = logic_snapshot->pattern_search(0, end, true, last_pos, _pattern);
+            ret = logic_snapshot->pattern_search(0, end, last_pos, _pattern, true);
         });
         Qt::WindowFlags flags = Qt::CustomizeWindowHint;
         QProgressDialog dlg(tr("Search Next..."),

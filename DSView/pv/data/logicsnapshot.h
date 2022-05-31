@@ -31,6 +31,8 @@
 #include <vector>
 #include <map>
 
+#define CHANNEL_MAX_COUNT 128
+
 namespace LogicSnapshotTest {
 class Pow2;
 class Basic;
@@ -114,9 +116,9 @@ public:
     int get_block_num();
     uint64_t get_block_size(int block_index);
     uint8_t *get_block_buf(int block_index, int sig_index, bool &sample);
-
-    bool pattern_search(int64_t start, int64_t end, bool nxt, int64_t& index,
-                        std::map<uint16_t, QString> pattern);
+ 
+    bool pattern_search(int64_t start, int64_t end, int64_t& index,
+                        std::map<uint16_t, QString> pattern, bool isNext);
 
 private:
     int get_ch_order(int sig_index);
