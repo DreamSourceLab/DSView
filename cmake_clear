@@ -1,7 +1,7 @@
 echo "clean cmake cache begin..."
 
-echo "rm ./build"
-rm -rf ./build
+echo "rm ./build.dir"
+rm -rf ./build.dir
 
 echo "rm ./CMakeFiles"
 rm -rf ./CMakeFiles

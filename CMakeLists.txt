@@ -597,7 +597,8 @@ if(ENABLE_COTIRE)
 	cotire(${PROJECT_NAME})
 endif()
 
-set(EXECUTABLE_OUTPUT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/build")
+message(STATUS "Output dir: ${CMAKE_CURRENT_SOURCE_DIR}/build.dir")
+set(EXECUTABLE_OUTPUT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/build.dir")
 
 #===============================================================================
 #= Installation
