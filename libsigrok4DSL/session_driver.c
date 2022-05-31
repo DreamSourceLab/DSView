@@ -26,7 +26,7 @@
 #include <sys/time.h>
 #include <assert.h>
 #include <string.h>
-#include "../DSView/pv/minizip/unzip.h"
+#include "../common/minizip/unzip.h"
 
 /* Message logging helpers with subsystem-specific prefix string. */
 #define LOG_PREFIX "virtual-session: "

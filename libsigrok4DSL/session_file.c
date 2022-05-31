@@ -22,12 +22,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <zip.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <glib.h>
 #include <glib/gstdio.h>
+#include "../common/minizip/unzip.h"
 #include "config.h" /* Needed for PACKAGE_VERSION and others. */
 
 /* Message logging helpers with subsystem-specific prefix string. */
@@ -54,59 +54,6 @@
 extern struct sr_session *session;
 extern SR_PRIV struct sr_dev_driver session_driver;
 
-/** @private */
-SR_PRIV int sr_sessionfile_check(const char *filename)
-{
-    struct stat st;
-    struct zip *archive;
-    struct zip_file *zf;
-    struct zip_stat zs;
-    int version, ret;
-    char s[11];
-
-    if (!filename)
-        return SR_ERR_ARG;
-
-    if (stat(filename, &st) == -1) {
-        sr_err("Couldn't stat %s: %s", filename, strerror(errno));
-        return SR_ERR;
-    }
-
-    if (!(archive = zip_open(filename, 0, &ret)))
-        /* No logging: this can be used just to check if it's
-         * a sigrok session file or not. */
-        return SR_ERR;
-
-    /* check "version" */
-    version = 0;
-    if (!(zf = zip_fopen(archive, "version", 0))) {
-        sr_dbg("Not a sigrok session file: no version found.");
-        return SR_ERR;
-    }
-    if ((ret = zip_fread(zf, s, 10)) == -1)
-        return SR_ERR;
-    zip_fclose(zf);
-    s[ret] = 0;
-    version = strtoull(s, NULL, 10);
-    if (version > 2) {
-        sr_dbg("Cannot handle sigrok session file version %d.", version);
-        return SR_ERR;
-    }
-    sr_spew("Detected sigrok session file version %d.", version);
-
-    /* read "metadata" */
-    if (zip_stat(archive, "metadata", 0, &zs) == -1) {
-        sr_dbg("Not a valid sigrok session file.");
-        return SR_ERR;
-    }
-
-    if ((ret = zip_close(archive)) == -1) {
-        sr_info("error saving session file: %s", zip_strerror(archive));
-        return SR_ERR;
-    }
-
-    return SR_OK;
-}
 
 /**
  * Load the session from the specified filename.
@@ -121,9 +68,10 @@ SR_API int sr_session_load(const char *filename)
 {
 	GKeyFile *kf;
 	GPtrArray *capturefiles;
-	struct zip *archive;
-	struct zip_file *zf;
-	struct zip_stat zs;
+	unzFile archive = NULL; 
+    char szFilePath[15];
+	unz_file_info64 fileInfo;
+ 
 	struct sr_dev_inst *sdi;
 	struct sr_channel *probe;
     int ret, devcnt, i, j;
@@ -136,35 +84,51 @@ SR_API int sr_session_load(const char *filename)
     int mode = LOGIC;
     int channel_type = SR_CHANNEL_LOGIC;
     double tmp_double;
-    int version = 1;
+    int version = 1; 
 
 	if (!filename) {
 		sr_err("%s: filename was NULL", __func__);
 		return SR_ERR_ARG;
 	}
 
-	if (!(archive = zip_open(filename, 0, &ret))) {
-		sr_dbg("Failed to open session file: zip error %d", ret);
+    archive = unzOpen64(filename);
+	if (NULL == archive) {
+		sr_err("load zip file error:%s", filename);
 		return SR_ERR;
 	}
-
-	/* read "metadata" */
-    if (zip_stat(archive, "header", 0, &zs) == -1) {
-        sr_dbg("Not a valid DSView data file.");
+	if (unzLocateFile(archive, "header", 0) != UNZ_OK){
+        unzClose(archive);
+        sr_err("unzLocateFile error:'header', %s", filename);
 		return SR_ERR;
-	}
+    } 
+    if (unzGetCurrentFileInfo64(archive, &fileInfo, szFilePath, 
+                sizeof(szFilePath), NULL, 0, NULL, 0) != UNZ_OK){
+        unzClose(archive);
+        sr_err("unzGetCurrentFileInfo64 error,'header', %s", filename);
+		return SR_ERR;
+    }
+    if(unzOpenCurrentFile(archive) != UNZ_OK){
+        sr_err("cant't open zip inner file:'header',%s", filename);
+        unzClose(archive);
+        return SR_ERR;
+    }
 
-	if (!(metafile = g_try_malloc(zs.size))) {
+	if (!(metafile = g_try_malloc(fileInfo.uncompressed_size))) {
 		sr_err("%s: metafile malloc failed", __func__);
 		return SR_ERR_MALLOC;
 	}
 
-	zf = zip_fopen_index(archive, zs.index, 0);
-	zip_fread(zf, metafile, zs.size);
-	zip_fclose(zf);
+	unzReadCurrentFile(archive, metafile, fileInfo.uncompressed_size);
+    unzCloseCurrentFile(archive);
+
+    if (unzClose(archive) != UNZ_OK){
+        sr_err("close zip archive error:%s", filename);
+        return SR_ERR;
+    }
+    archive = NULL;
 
 	kf = g_key_file_new();
-	if (!g_key_file_load_from_data(kf, metafile, zs.size, 0, NULL)) {
+	if (!g_key_file_load_from_data(kf, metafile, fileInfo.uncompressed_size, 0, NULL)) {
 		sr_dbg("Failed to parse metadata.");
 		return SR_ERR;
 	}
@@ -480,159 +444,8 @@ SR_API int sr_session_load(const char *filename)
 	}
 	g_strfreev(sections);
 	g_key_file_free(kf);
-
-
-    if ((ret = zip_close(archive)) == -1) {
-        sr_info("error close session file: %s", zip_strerror(archive));
-        return SR_ERR;
-    }
-
+   
 	return SR_OK;
-}
-
-/**
- * Initialize a saved session file.
- *
- * @param filename The name of the filename to save the current session as.
- *                 Must not be NULL.
- * @param samplerate The samplerate to store for this session.
- * @param channels A NULL-terminated array of strings containing the names
- * of all the channels active in this session.
- *
- * @retval SR_OK Success
- * @retval SR_ERR_ARG Invalid arguments
- * @retval SR_ERR Other errors
- *
- * @since 0.3.0
- */
-SR_API int sr_session_save_init(const char *filename, const char *metafile, const char *decfile, const char *sesfile)
-{
-    struct zip *zipfile;
-    struct zip_source *metasrc;
-    int ret;
-
-    if (!filename) {
-        sr_err("%s: filename was NULL", __func__);
-        return SR_ERR_ARG;
-    }
-
-    /* Quietly delete it first, libzip wants replace ops otherwise. */
-    unlink(filename);
-    if (!(zipfile = zip_open(filename, ZIP_CREATE, &ret)))
-        return SR_ERR;
-
-    // meta file
-    if (!(metasrc = zip_source_file(zipfile, metafile, 0, -1))) {
-        unlink(metafile);
-        return SR_ERR;
-    }
-
-    if (zip_add(zipfile, "header", metasrc) == -1) {
-        unlink(metafile);
-        return SR_ERR;
-    }
-
-    // decoders file
-    if (decfile != NULL) {
-        if (!(metasrc = zip_source_file(zipfile, decfile, 0, -1))) {
-            unlink(decfile);
-            return SR_ERR;
-        }
-
-        if (zip_add(zipfile, "decoders", metasrc) == -1) {
-            unlink(decfile);
-            return SR_ERR;
-        }
-    }
-
-    // session file
-    if (sesfile != NULL) {
-        if (!(metasrc = zip_source_file(zipfile, sesfile, 0, -1))) {
-            unlink(sesfile);
-            return SR_ERR;
-        }
-
-        if (zip_add(zipfile, "session", metasrc) == -1) {
-            unlink(sesfile);
-            return SR_ERR;
-        }
-    }
-
-    if ((ret = zip_close(zipfile)) == -1) {
-        sr_info("error saving zipfile: %s", zip_strerror(zipfile));
-        unlink(metafile);
-        if (decfile != NULL)
-            unlink(decfile);
-        return SR_ERR;
-    }
-
-    unlink(metafile);
-    if (decfile != NULL)
-        unlink(decfile);
-
-    return SR_OK;
-}
-
-/**
- * Append data to an existing session file.
- *
- * The session file must have been created with sr_session_save_init()
- * or sr_session_save() beforehand.
- *
- * @param filename The name of the filename to append to. Must not be NULL.
- * @param buf The data to be appended.
- * @param size Buffer size.
- * @param chunk_num chunk number
- * @param index channel index
- * @param type channel type
- *
- * @retval SR_OK Success
- * @retval SR_ERR_ARG Invalid arguments
- * @retval SR_ERR Other errors
- *
- * @since 0.3.0
- */
-SR_API int sr_session_append(const char *filename, const unsigned char *buf,
-        uint64_t size, int chunk_num, int index, int type, int version)
-{
-    struct zip *archive;
-    struct zip_source *logicsrc;
-    int ret;
-    char chunk_name[16], *type_name;
-
-//    if ((ret = sr_sessionfile_check(filename)) != SR_OK)
-//        return ret;
-    if (buf == NULL)
-        goto err;
-
-    if (!(archive = zip_open(filename, 0, &ret)))
-        goto err;
-
-    if (version == 2) {
-        type_name = (type == SR_CHANNEL_LOGIC) ? "L" :
-                    (type == SR_CHANNEL_DSO) ? "O" :
-                    (type == SR_CHANNEL_ANALOG) ? "A" : "U";
-        snprintf(chunk_name, 15, "%s-%d/%d", type_name, index, chunk_num);
-    } else {
-        snprintf(chunk_name, 15, "data");
-    }
-
-    if (!(logicsrc = zip_source_buffer(archive, buf, size, FALSE))) {
-        goto err;
-    }
-    if (zip_file_add(archive, chunk_name, logicsrc, ZIP_FL_OVERWRITE) == -1) {
-        goto err;
-    }
-    if ((ret = zip_close(archive)) == -1) {
-        sr_info("error saving session file: %s", zip_strerror(archive));
-        goto err;
-    }
-
-    return SR_OK;
-
-err:
-    unlink(filename);
-    return SR_ERR;
 }
 
 /** @} */

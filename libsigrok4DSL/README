@@ -38,7 +38,6 @@ Requirements
  - libtool
  - pkg-config >= 0.22
  - libglib >= 2.32.0
- - libzip >= 0.8
  - libusb-1.0 >= 1.0.9 (optional, used by most drivers)
  - libftdi >= 0.16 (optional, used by some drivers)
  - libasound / alsa-lib >= 1.0 (optional, only used by the alsa driver)

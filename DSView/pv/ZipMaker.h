@@ -23,7 +23,7 @@
 
 #pragma once 
 
-#include "minizip/zip.h" 
+#include "../../common/minizip/zip.h" 
 
 typedef struct
 {

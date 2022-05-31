@@ -383,4 +383,5 @@ QString GetDecodeScriptDir()
     {
          return dir.absolutePath();        
     }
+    return "";
 }

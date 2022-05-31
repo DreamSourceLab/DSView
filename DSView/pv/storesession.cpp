@@ -155,24 +155,7 @@ bool StoreSession::save_start()
     if (snapshot->empty()) {
         _error = tr("No data to save.");
         return false;
-    } 
-
-    /*
-        if (meta_file == NULL) {
-            _error = tr("Generate temp file failed.");
-        } else {
-            int ret = sr_session_save_init(_file_name.toUtf8().data(),
-                                 meta_file.toUtf8().data(),
-                                 decoders_file.toUtf8().data(),
-                                 session_file.toUtf8().data());
-            if (ret != SR_OK) {
-                _error = tr("Failed to create zip file. Initialization error.");
-            } else {
-                _thread = std::thread(&StoreSession::save_proc, this, snapshot);
-                return !_has_error;
-            }
-        }
-        */
+    }
 
     std::string meta_data;
     std::string decoder_data;
@@ -265,9 +248,6 @@ void StoreSession::save_proc(data::Snapshot *snapshot)
                         }
                     }
                     
-                   // ret = sr_session_append(_file_name.toUtf8().data(), buf, size,
-                    //                  i, ch_index, ch_type, File_Version);
-                    
                     MakeChunkName(chunk_name, i, ch_index, ch_type, File_Version);
                     ret = m_zipDoc.AddFromBuffer(chunk_name, (const char*)buf, size) ? SR_OK : -1;
 
@@ -314,10 +294,7 @@ void StoreSession::save_proc(data::Snapshot *snapshot)
                     } else {
                         memcpy(tmp, buf, buf_end-buf);
                         memcpy(tmp+(buf_end-buf), buf_start, buf+size-buf_end);
-                    }
-
-                  // ret = sr_session_append(_file_name.toUtf8().data(), tmp, size,
-                    //                 i, 0, ch_type, File_Version);
+                    } 
 
                     MakeChunkName(chunk_name, i, 0, ch_type, File_Version);
                     ret = m_zipDoc.AddFromBuffer(chunk_name, (const char*)tmp, size) ? SR_OK : -1;
@@ -325,10 +302,7 @@ void StoreSession::save_proc(data::Snapshot *snapshot)
                     buf += (size - _unit_count);
                     if (tmp)
                         free(tmp);
-                } else {
-
-                  //  ret = sr_session_append(_file_name.toUtf8().data(), buf, size,
-                  //                 i, 0, ch_type, File_Version);
+                } else { 
 
                     MakeChunkName(chunk_name, i, 0, ch_type, File_Version);
                     ret = m_zipDoc.AddFromBuffer(chunk_name, (const char*)buf, size) ? SR_OK : -1;

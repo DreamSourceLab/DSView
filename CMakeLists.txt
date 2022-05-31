@@ -293,9 +293,6 @@ set(DSView_SOURCES
     DSView/pv/ui/msgbox.cpp
     DSView/pv/ui/dscombobox.cpp
     DSView/pv/dsvdef.cpp
-    DSView/pv/minizip/zip.c
-    DSView/pv/minizip/unzip.c
-    DSView/pv/minizip/ioapi.c
     DSView/pv/dialogs/applicationpardlg.cpp
     DSView/pv/dock/keywordlineedit.cpp
     DSView/pv/dock/searchcombobox.cpp
@@ -384,9 +381,6 @@ set(DSView_HEADERS
     DSView/pv/ui/msgbox.h
     DSView/pv/ui/dscombobox.h
     DSView/pv/dsvdef.h
-    DSView/pv/minizip/zip.h
-    DSView/pv/minizip/unzip.h
-    DSView/pv/minizip/ioapi.h
     DSView/pv/dialogs/applicationpardlg.h
     DSView/pv/dock/keywordlineedit.h
     DSView/pv/dock/searchcombobox.h
@@ -461,6 +455,26 @@ set(libsigrokdecode4DSL_HEADERS
     libsigrokdecode4DSL/version.h
 )
 
+#===============================================================================
+#= common source
+#-------------------------------------------------------------------------------
+
+set(common_SOURCES
+    common/minizip/zip.c
+    common/minizip/unzip.c
+    common/minizip/ioapi.c  
+)
+
+set(common_HEADERS
+    common/minizip/zip.h
+    common/minizip/unzip.h
+    common/minizip/ioapi.h
+)
+
+#===============================================================================
+#= compile config
+#-------------------------------------------------------------------------------
+
 set(DSView_FORMS
 )
 
@@ -491,9 +505,6 @@ if(Qt6Core_FOUND)
 	qt6_add_resources(DSView_RESOURCES_RCC ${DSView_RESOURCES})
 endif()
 
-#===============================================================================
-#= Global Definitions
-#-------------------------------------------------------------------------------
 
 add_definitions(${QT_DEFINITIONS})
 add_definitions(-Wall -Wextra -Wno-return-type -Wno-ignored-qualifiers)
@@ -505,9 +516,6 @@ endif()
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
 
-#===============================================================================
-#= Global Include Directories
-#-------------------------------------------------------------------------------
 
 include_directories(
    ./DSView
@@ -568,6 +576,7 @@ else()
 endif()
 
 add_executable(${PROJECT_NAME}
+	${common_SOURCES}
 	${DSView_SOURCES}
 	${DSView_HEADERS_MOC}
 	${DSView_FORMS_HEADERS}
