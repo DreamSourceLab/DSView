@@ -29,7 +29,9 @@
 #include <QGridLayout>
 #include <QFormLayout>
 #include <QScrollArea> 
-#include <QVariant> 
+#include <QVariant>
+#include <QGuiApplication>
+#include <QScreen>
 
 #include "../data/decoderstack.h"
 #include "../prop/binding/decoderoptions.h"
@@ -173,18 +175,23 @@ void DecoderOptionsDlg::load_options(view::DecodeTrace *trace)
      // scroll     
     QSize tsize = dlg->sizeHint();
     int w = tsize.width();
-    int h = tsize.height();  
+    int h = tsize.height();
 
-    if (h > 700)
+    double sk = QGuiApplication::primaryScreen()->devicePixelRatio();
+    int srcHeight = QGuiApplication::primaryScreen()->availableSize().height();
+    if (srcHeight > 700)
+        srcHeight = 700;
+
+    if (h * sk > srcHeight)
     {
         int other_height = 235; 
         QScrollArea *scroll = new QScrollArea(scroll_pannel);
         scroll->setWidget(decoder_container);
         scroll->setStyleSheet("QScrollArea{border:none;}");
         scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        dlg->setFixedSize(w + 20, 700);
-        scroll_pannel->setFixedSize(w, 700 - other_height);
-        scroll->setFixedSize(w - 18, 700 - other_height);
+        dlg->setFixedSize(w + 20, srcHeight);
+        scroll_pannel->setFixedSize(w, srcHeight - other_height);
+        scroll->setFixedSize(w - 18, srcHeight - other_height);
     }
  
     connect(_start_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_region_set(int)));
