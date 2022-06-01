@@ -1574,7 +1574,7 @@ void SigSession::math_rebuild(bool enable,view::DsoSignal *dsoSig1,
     _math_trace = new view::MathTrace(enable, math_stack, dsoSig1, dsoSig2);
 
     if (_math_trace && _math_trace->enabled()) {
-        _math_trace->get_math_stack()->set_samplerate(_dev_inst->get_sample_rate());
+        _math_trace->get_math_stack()->set_samplerate(_dso_data->samplerate()); 
         _math_trace->get_math_stack()->realloc(_dev_inst->get_sample_limit());
         _math_trace->get_math_stack()->calc_math();
     }
