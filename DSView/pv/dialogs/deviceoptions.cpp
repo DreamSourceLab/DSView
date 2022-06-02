@@ -57,7 +57,7 @@ DeviceOptions::DeviceOptions(QWidget *parent, DevInst *dev_inst) :
 
     this->setTitle(tr("Device Options"));
     this->SetTitleSpace(0);
-    this->setFixedWidth(390);
+    this->setFixedWidth(360);
  
     _layout = new QVBoxLayout();
     _layout->setContentsMargins(0, 0, 0, 0);
@@ -502,7 +502,7 @@ void DeviceOptions::load_logic_channels(QGridLayout &_dynamic_layout)
         connect(disable_all_probes, SIGNAL(clicked()),
                 this, SLOT(disable_all_probes()));
        
-        int w = 335;
+        int w = 300;
 
         QGridLayout *button_lay = new QGridLayout(); 
         button_pannel->setFixedWidth(300);
@@ -518,7 +518,7 @@ void DeviceOptions::load_logic_channels(QGridLayout &_dynamic_layout)
 
         QSize tsize = _dynamic_pannel->sizeHint();
         double sk = QGuiApplication::primaryScreen()->devicePixelRatio();
-        int srcHeight = 200;  
+        int srcHeight = 150;  
 
         if (sk * tsize.height() > srcHeight)
         { 
