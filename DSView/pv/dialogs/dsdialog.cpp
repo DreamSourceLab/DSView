@@ -60,6 +60,7 @@ DSDialog::DSDialog(QWidget *parent, bool hasClose, bool bBaseButton) :
     _titlebar = NULL;
     _shadow = NULL; 
     _base_button = NULL;
+    _titleSpaceLine = NULL;
 
     m_callback = NULL; 
     _clickYes = false;
@@ -128,6 +129,18 @@ int DSDialog::exec()
     return QDialog::exec();
 }
 
+ void DSDialog::SetTitleSpace(int h)
+ {
+     if (_titleSpaceLine != NULL){ 
+         if (h > 0){
+             _titleSpaceLine->setFixedHeight(h);
+             _titleSpaceLine->setVisible(true);
+         }
+         else{
+             _titleSpaceLine->setVisible(false);
+         }        
+     }
+ }
 
 void DSDialog::build_base(bool hasClose)
 {    
@@ -145,9 +158,9 @@ void DSDialog::build_base(bool hasClose)
     _titlebar = new toolbars::TitleBar(false, this, hasClose);
      _main_layout->addWidget(_titlebar);
 
-     QWidget *space = new QWidget(this);
-     space->setFixedHeight(15);
-    _main_layout->addWidget(space);
+    _titleSpaceLine = new QWidget(this);
+    _titleSpaceLine->setFixedHeight(15);
+    _main_layout->addWidget(_titleSpaceLine);
 
     _base_layout = new QVBoxLayout(this);   
     _base_layout->addWidget(_main_widget);

@@ -89,7 +89,7 @@ TitleBar::TitleBar(bool top, QWidget *parent, bool hasClose) :
     lay1->setContentsMargins(0,0,0,0);
     lay1->setSpacing(0);
 
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);  
 }
 
 TitleBar::~TitleBar(){ 

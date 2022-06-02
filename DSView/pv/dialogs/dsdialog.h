@@ -58,6 +58,8 @@ public:
     int exec();
     inline bool IsClickYes(){return _clickYes;}
 
+    void SetTitleSpace(int h);
+
 protected:
     void accept();
     void reject();
@@ -76,6 +78,7 @@ private:
     QPoint              _startPos; 
     bool                 m_bBaseButton; 
     bool                _clickYes;
+    QWidget             *_titleSpaceLine;
 
     IDlgCallback        *m_callback;
 };

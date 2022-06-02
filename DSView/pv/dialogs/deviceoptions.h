@@ -70,9 +70,10 @@ private:
     void logic_probes(QGridLayout& layout);
     void analog_probes(QGridLayout& layout);
     QString dynamic_widget(QGridLayout &_dynamic_layout);
+    void load_logic_channels(QGridLayout &_dynamic_layout);
 
 	void set_all_probes(bool set);
-    void enable_max_probes();
+    void enable_max_probes(); 
 
 private slots:
 	void enable_all_probes();
@@ -85,23 +86,21 @@ private slots:
     void channel_enable();
 
 private:
-    DevInst *_dev_inst;
-	QVBoxLayout _layout; 
-
-    QGroupBox *_dynamic_box;
-    QGridLayout _dynamic_layout;
+    DevInst     *_dev_inst;
+	QVBoxLayout *_layout; 
+    QGroupBox   *_dynamic_box;
+    QGridLayout *_dynamic_layout;
     QVector <QLabel *> _probes_label_list;
     QVector <QCheckBox *> _probes_checkBox_list;
     QVector <QWidget *> _probe_widget_list;
-
     QGroupBox *_props_box;
-
     QPushButton *_config_button;
     QPushButton *_cali_button;
-	QDialogButtonBox _button_box;
+	QDialogButtonBox *_button_box;
 
     QTimer _mode_check;
-    QString _mode;
+    QString _mode; 
+    QWidget *_dynamic_pannel;
 
 	pv::prop::binding::DeviceOptions _device_options_binding;
     QVector <pv::prop::binding::ProbeOptions *> _probe_options_binding_list;

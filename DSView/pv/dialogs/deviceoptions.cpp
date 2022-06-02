@@ -24,11 +24,16 @@
  
 #include <QListWidget>
 #include <QSpinBox>
-#include <QDoubleSpinBox>
+#include <QDoubleSpinBox> 
+#include <QGuiApplication>
+#include <QScreen>
+#include <QScrollArea>
+#include <QDebug>
 
 #include "dsmessagebox.h"
 #include "../prop/property.h"
 #include "../dsvdef.h"
+#include "../config/appconfig.h"
 
 using namespace boost;
 using namespace std;
@@ -38,46 +43,56 @@ namespace dialogs {
 
 DeviceOptions::DeviceOptions(QWidget *parent, DevInst *dev_inst) :
     DSDialog(parent),
-    _dev_inst(dev_inst),
-    _button_box(QDialogButtonBox::Ok, Qt::Horizontal, this),
+    _dev_inst(dev_inst), 
     _device_options_binding(_dev_inst->dev_inst())
 {
-     _dynamic_box = NULL;
-     _props_box = NULL;
-     _config_button = NULL;
-     _cali_button = NULL;
-     
-     QWidget *dlg = this;
+    _dynamic_box = NULL;
+    _props_box = NULL;
+    _config_button = NULL;
+    _cali_button = NULL; 
+    _layout = NULL;
+    _dynamic_layout = NULL;
+    _button_box = NULL;
+    _dynamic_pannel = NULL;
 
-     setTitle(tr("Device Options"));
+    this->setTitle(tr("Device Options"));
+    this->SetTitleSpace(0);
+    this->setFixedWidth(390);
+ 
+    _layout = new QVBoxLayout();
+    _layout->setContentsMargins(0, 0, 0, 0);
+    _layout->setDirection(QBoxLayout::TopToBottom);
+    QWidget *mainPanel = new QWidget();
+    mainPanel->setLayout(_layout);
+    this->layout()->addWidget(mainPanel);
 
     _props_box = new QGroupBox(tr("Mode"), this);
     _props_box->setLayout(get_property_form(_props_box));
-    _layout.addWidget(_props_box);
+    _layout->addWidget(_props_box);
 
-    _dynamic_box = new QGroupBox(dynamic_widget(_dynamic_layout),this);
-
-    _dynamic_box->setLayout(&_dynamic_layout);
-    _layout.addWidget(_dynamic_box);
+    _dynamic_layout = new QGridLayout();
+    _dynamic_box = new QGroupBox(dynamic_widget(*_dynamic_layout),this);
+    _dynamic_box->setLayout(_dynamic_layout);
+    _layout->addWidget(_dynamic_box);
     _dynamic_box->setVisible(_dynamic_box->title() != "");
-
-    _layout.addStretch(1);
-	_layout.addWidget(&_button_box);
-
-    layout()->addLayout(&_layout);
  
-    connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept())); 
-    connect(_dev_inst, SIGNAL(device_updated()), this, SLOT(reject()));
+    _layout->addStretch(1);
 
+    _button_box = new QDialogButtonBox(QDialogButtonBox::Ok, Qt::Horizontal, this);
+	this->layout()->addWidget(_button_box); 
+   
     GVariant* gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_OPERATION_MODE);
     if (gvar != NULL) {
         _mode = QString::fromUtf8(g_variant_get_string(gvar, NULL));
         g_variant_unref(gvar);
     }
-
+  
     connect(&_mode_check, SIGNAL(timeout()), this, SLOT(mode_check()));
+    connect(_button_box, SIGNAL(accepted()), this, SLOT(accept())); 
+    connect(_dev_inst, SIGNAL(device_updated()), this, SLOT(reject()));
+
     _mode_check.setInterval(100);
-    _mode_check.start();
+    _mode_check.start();   
 }
 
 DeviceOptions::~DeviceOptions(){
@@ -85,7 +100,7 @@ DeviceOptions::~DeviceOptions(){
     DESTROY_QT_OBJECT(_props_box);
     DESTROY_QT_OBJECT(_config_button);
     DESTROY_QT_OBJECT(_cali_button);
-}
+} 
 
 void DeviceOptions::accept()
 {
@@ -148,9 +163,8 @@ void DeviceOptions::reject()
 QGridLayout * DeviceOptions::get_property_form(QWidget * parent)
 {
     QGridLayout *const layout = new QGridLayout(parent);
-    layout->setVerticalSpacing(5);
-
-	const auto &properties =_device_options_binding.properties();
+    layout->setVerticalSpacing(3);
+    const auto &properties =_device_options_binding.properties();
 
     int i = 0;
     for(auto &p : properties)
@@ -188,6 +202,7 @@ void DeviceOptions::logic_probes(QGridLayout &layout)
     _probes_label_list.clear();
     _probes_checkBox_list.clear();
 
+    //channel count checked
     if (_dev_inst->dev_inst()->mode == LOGIC) {
         GVariant *gvar_opts;
         gsize num_opts;
@@ -243,17 +258,6 @@ void DeviceOptions::logic_probes(QGridLayout &layout)
 
         connect(probe_checkBox, SIGNAL(released()), this, SLOT(channel_enable()));
 	}
-
-    QPushButton *_enable_all_probes = new QPushButton(tr("Enable All"), this);
-    QPushButton *_disable_all_probes = new QPushButton(tr("Disable All"), this);
-
-    connect(_enable_all_probes, SIGNAL(clicked()),
-        this, SLOT(enable_all_probes()));
-    connect(_disable_all_probes, SIGNAL(clicked()),
-        this, SLOT(disable_all_probes()));
-
-    layout.addWidget(_enable_all_probes, (row1 + 1) * 2 + row0, 0, 1, 4);
-    layout.addWidget(_disable_all_probes, (row1 + 1) * 2 + row0, 4, 1, 4);
 }
 
 void DeviceOptions::set_all_probes(bool set)
@@ -348,9 +352,9 @@ void DeviceOptions::mode_check()
         g_variant_unref(gvar);
 
         if (mode != _mode) {
-            dynamic_widget(_dynamic_layout);
+            dynamic_widget(*_dynamic_layout);
             _dynamic_box->setVisible(_dynamic_box->title() != "");
-            _mode = mode;
+            _mode = mode; 
         }
     }
 
@@ -367,7 +371,7 @@ void DeviceOptions::mode_check()
                 i++;
             }
         }
-    }
+    } 
 }
 
 void DeviceOptions::channel_check()
@@ -377,7 +381,7 @@ void DeviceOptions::channel_check()
     text.remove('&');
     if(sc != NULL)
         _dev_inst->set_config(NULL, NULL, SR_CONF_CHANNEL_MODE, g_variant_new_string(text.toUtf8().data()));
-    dynamic_widget(_dynamic_layout);
+    dynamic_widget(*_dynamic_layout);
     _dynamic_box->setVisible(_dynamic_box->title() != "");
 }
 
@@ -393,7 +397,7 @@ void DeviceOptions::analog_channel_check()
                                      g_variant_new_boolean(sc->isChecked()));
         }
     }
-    dynamic_widget(_dynamic_layout);
+    dynamic_widget(*_dynamic_layout);
     _dynamic_box->setVisible(_dynamic_box->title() != "");
 }
 
@@ -454,9 +458,85 @@ void DeviceOptions::channel_enable()
     }
 }
 
+void DeviceOptions::load_logic_channels(QGridLayout &_dynamic_layout)
+{
+      if (_dynamic_pannel != NULL){
+            _dynamic_layout.removeWidget(_dynamic_pannel);
+            _dynamic_pannel->deleteLater();
+            _dynamic_pannel = NULL;
+        }
+        _dynamic_pannel = new QWidget(); //dlg
+        _dynamic_layout.addWidget(_dynamic_pannel);
+        QVBoxLayout *body_lay = new QVBoxLayout();
+        body_lay->setContentsMargins(0,0,5,0);
+        _dynamic_pannel->setLayout(body_lay);
+
+        QWidget *scroll_pannel = new QWidget();
+        QVBoxLayout *scroll_lay = new QVBoxLayout();
+        scroll_lay->setContentsMargins(0, 0, 0, 0);
+        scroll_lay->setAlignment(Qt::AlignLeft);
+        scroll_pannel->setLayout(scroll_lay);
+        body_lay->addWidget(scroll_pannel);
+
+        //container
+        QWidget *container_pannel = new QWidget();  
+        QGridLayout *container_lay = new QGridLayout();
+        container_lay->setContentsMargins(0, 0, 0, 0);
+        container_pannel->setLayout(container_lay);
+        scroll_lay->addWidget(container_pannel);
+
+        if (AppConfig::Instance().IsLangCn())
+            container_lay->setVerticalSpacing(0);
+        else
+            container_lay->setVerticalSpacing(3);
+
+        logic_probes(*container_lay);
+
+        QWidget *button_pannel = new QWidget();
+        QPushButton *enable_all_probes = new QPushButton(tr("Enable All"));
+        QPushButton *disable_all_probes = new QPushButton(tr("Disable All"));
+
+        connect(enable_all_probes, SIGNAL(clicked()),
+                this, SLOT(enable_all_probes()));
+        connect(disable_all_probes, SIGNAL(clicked()),
+                this, SLOT(disable_all_probes()));
+       
+        int w = 335;
+
+        QGridLayout *button_lay = new QGridLayout(); 
+        button_pannel->setFixedWidth(300);
+        button_pannel->setFixedHeight(28);
+        button_pannel->setLayout(button_lay);
+        button_lay->setSpacing(5);
+        button_lay->addWidget(enable_all_probes,0, 0, 1, 1);
+        button_lay->addWidget(disable_all_probes, 0, 1, 1, 1);
+        button_lay->setColumnStretch(0, 1);
+        button_lay->setColumnStretch(1, 1);
+        button_lay->setContentsMargins(0,0,0,0);
+        body_lay->addWidget(button_pannel);
+
+        QSize tsize = _dynamic_pannel->sizeHint();
+        double sk = QGuiApplication::primaryScreen()->devicePixelRatio();
+        int srcHeight = 200;  
+
+        if (sk * tsize.height() > srcHeight)
+        { 
+            QScrollArea *scroll = new QScrollArea(scroll_pannel);
+            scroll->setWidget(container_pannel);
+            scroll->setStyleSheet("QScrollArea{border:none;}");
+            scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+            _dynamic_pannel->setFixedSize(w, srcHeight);
+            scroll_pannel->setFixedSize(w - 15, srcHeight - 50);
+            scroll->setFixedSize(w - 15, srcHeight - 50);
+        }
+        _dynamic_pannel->setFixedWidth(w);
+}
+
 QString DeviceOptions::dynamic_widget(QGridLayout& inner_layout) {
+ 
     if (_dev_inst->dev_inst()->mode == LOGIC) {
-        logic_probes(inner_layout);
+        load_logic_channels(inner_layout);
         return tr("Channels");
 
     } else if (_dev_inst->dev_inst()->mode == DSO) {

@@ -86,7 +86,7 @@ void DecoderOptionsDlg::load_options(view::DecodeTrace *trace)
     
     //scroll pannel
     QWidget *scroll_pannel  = new QWidget();
-    QHBoxLayout *scroll_lay = new QHBoxLayout();
+    QVBoxLayout *scroll_lay = new QVBoxLayout();
     scroll_lay->setContentsMargins(0, 0, 0, 0);
     scroll_lay->setAlignment(Qt::AlignLeft);
     scroll_pannel->setLayout(scroll_lay);
@@ -180,7 +180,7 @@ void DecoderOptionsDlg::load_options(view::DecodeTrace *trace)
     double sk = QGuiApplication::primaryScreen()->devicePixelRatio();
     int srcHeight = QGuiApplication::primaryScreen()->availableSize().height();
     if (srcHeight > 700)
-        srcHeight = 700;
+        srcHeight = 700; 
 
     if (h * sk > srcHeight)
     {
