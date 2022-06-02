@@ -206,7 +206,18 @@ void MainFrame::showNormal()
 void MainFrame::showMaximized()
 { 
     hide_border();
-    QFrame::showMaximized();
+
+#ifdef _WIN32
+    double sk = QGuiApplication::primaryScreen()->devicePixelRatio();
+    if (sk >= 1.5)
+    {
+        auto rect = QGuiApplication::primaryScreen()->availableGeometry();  
+        this->move(rect.left(), rect.top());
+        this->resize(rect.width(), rect.height());
+    }
+#endif
+
+    QFrame::showMaximized(); 
 }
 
 void MainFrame::showMinimized()
@@ -426,6 +437,7 @@ void MainFrame::readSettings()
 
       bool bReset = false;
 
+      //size from config is error
       if (right == 0)
       {
           bReset = true;

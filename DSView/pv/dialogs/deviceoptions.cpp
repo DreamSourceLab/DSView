@@ -93,6 +93,7 @@ DeviceOptions::DeviceOptions(QWidget *parent, DevInst *dev_inst) :
 
     _mode_check.setInterval(100);
     _mode_check.start();   
+ 
 }
 
 DeviceOptions::~DeviceOptions(){
