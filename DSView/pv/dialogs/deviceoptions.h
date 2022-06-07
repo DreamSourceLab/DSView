@@ -31,11 +31,12 @@
 #include <QHBoxLayout>
 #include <QGridLayout>
 #include <QPushButton>
-#include <QVector>
 #include <QLabel>
 #include <QCheckBox>
 #include <QRadioButton>
 #include <QTimer> 
+#include <QWidget>
+#include <vector>
 
 #include "libsigrok.h"
 #include "../device/devinst.h"
@@ -45,12 +46,38 @@
 #include "../dialogs/dsdialog.h"
 #include "../ui/dscombobox.h"
 
+class QScrollArea;
+
+class IChannelCheck{
+public:
+    virtual void ChannelChecked(int index)=0;
+};
+
+class ChannelLabel : public QWidget {
+Q_OBJECT
+
+public:
+    ChannelLabel(IChannelCheck *check, QWidget *parent, int chanIndex);
+
+    inline QCheckBox* getCheckBox(){
+        return _box;
+    }
+
+private slots:
+    void on_checked();
+
+private:
+    QCheckBox *_box;
+    IChannelCheck *_checked;
+    int     _index;
+};
+
 using namespace pv::device;
 
 namespace pv {
 namespace dialogs {
 
-class DeviceOptions : public DSDialog
+class DeviceOptions : public DSDialog, public IChannelCheck
 {
 	Q_OBJECT
 
@@ -64,16 +91,20 @@ protected:
     void reject();
 
 private:
+    QLayout *get_property_form(QWidget *parent);
 
-    QGridLayout *get_property_form(QWidget *parent);
-
-    void logic_probes(QGridLayout& layout);
+    void logic_probes(QVBoxLayout& layout);
     void analog_probes(QGridLayout& layout);
-    QString dynamic_widget(QGridLayout &_dynamic_layout);
-    void load_logic_channels(QGridLayout &_dynamic_layout);
+    QString dynamic_widget(QLayout *lay); 
 
 	void set_all_probes(bool set);
     void enable_max_probes(); 
+    void build_dynamic_panel();
+    void try_resize_scroll();
+
+private:
+    //IChannelCheck
+    void ChannelChecked(int index);
 
 private slots:
 	void enable_all_probes();
@@ -86,21 +117,22 @@ private slots:
     void channel_enable();
 
 private:
-    DevInst     *_dev_inst;
-	QVBoxLayout *_layout; 
-    QGroupBox   *_dynamic_box;
-    QGridLayout *_dynamic_layout;
-    QVector <QLabel *> _probes_label_list;
-    QVector <QCheckBox *> _probes_checkBox_list;
-    QVector <QWidget *> _probe_widget_list;
-    QGroupBox *_props_box;
-    QPushButton *_config_button;
-    QPushButton *_cali_button;
-	QDialogButtonBox *_button_box;
+    DevInst     *_dev_inst; 
+    std::vector<QCheckBox *> _probes_checkBox_list;
+    std::vector<QLayout *> _sub_lays;
 
-    QTimer _mode_check;
-    QString _mode; 
-    QWidget *_dynamic_pannel;
+    QTimer      _mode_check;
+    QString     _mode;  
+    QWidget     *_scroll_panel;
+    QScrollArea *_scroll;
+    QWidget     *_container_panel;
+    QVBoxLayout *_container_lay;   
+    QWidget     *_dynamic_panel;
+   // QWidget     *_dynamic_panel;
+    int     _width;
+    int     _groupHeight1;
+    int     _groupHeight2;
+    volatile    bool _isBuilding;
 
 	pv::prop::binding::DeviceOptions _device_options_binding;
     QVector <pv::prop::binding::ProbeOptions *> _probe_options_binding_list;
