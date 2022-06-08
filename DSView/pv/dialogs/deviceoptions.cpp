@@ -96,7 +96,7 @@ DeviceOptions::DeviceOptions(QWidget *parent, DevInst *dev_inst) :
     this->SetTitleSpace(0);
     this->layout()->setSpacing(0);
     this->layout()->setDirection(QBoxLayout::TopToBottom);
-    this->layout()->setAlignment(Qt::AlignTop);
+    this->layout()->setAlignment(Qt::AlignTop); 
 
     // scroll panel
     _scroll_panel  = new QWidget();
@@ -127,11 +127,12 @@ DeviceOptions::DeviceOptions(QWidget *parent, DevInst *dev_inst) :
     // chnnels group box
     this->build_dynamic_panel();
 
-    //button
+    // space
     QWidget *space = new QWidget();
-    space->setMinimumHeight(10);
+    space->setMinimumHeight(5);
     this->layout()->addWidget(space);
 
+    //button
     auto button_box = new QDialogButtonBox(QDialogButtonBox::Ok, Qt::Horizontal, this);
 	this->layout()->addWidget(button_box); 
    
@@ -233,7 +234,7 @@ QLayout * DeviceOptions::get_property_form(QWidget * parent)
 	}
 
     //_groupHeight1 = i * 22 + 180;
-    _groupHeight1 = parent->sizeHint().height();
+    _groupHeight1 = parent->sizeHint().height(); 
     parent->setFixedHeight(_groupHeight1); 
 
     return layout;
@@ -268,13 +269,15 @@ void DeviceOptions::logic_probes(QVBoxLayout &layout)
 
                 for (unsigned int i=0; i<num_opts; i++){
                     QRadioButton *ch_opts = new QRadioButton(options[i]);
+                    
                     layout.addWidget(ch_opts); 
                     contentHeight += ch_opts->sizeHint().height();  //radio button height
+                   
                     connect(ch_opts, SIGNAL(pressed()), this, SLOT(channel_check()));
 
                     row1++;
                     if (QString::fromUtf8(options[i]) == ch_mode)
-                        ch_opts->setChecked(true);
+                        ch_opts->setChecked(true); 
                 }
             }
             if (gvar_opts)
@@ -324,6 +327,7 @@ void DeviceOptions::logic_probes(QVBoxLayout &layout)
     QWidget *space = new QWidget();
     space->setFixedHeight(10);
     layout.addWidget(space);
+    contentHeight += 10;
  
     // buttons
      line_lay = new QHBoxLayout();
@@ -347,10 +351,8 @@ void DeviceOptions::logic_probes(QVBoxLayout &layout)
     line_lay->addWidget(enable_all_probes);
     line_lay->addWidget(disable_all_probes);
 
-    _groupHeight2 = contentHeight + (row1 + row2) * 2 + 60;
-
-    _dynamic_panel->setFixedHeight(_groupHeight2);
- 
+    _groupHeight2 = contentHeight + (row1 + row2) * 2 + 38;
+    _dynamic_panel->setFixedHeight(_groupHeight2); 
 }
 
 void DeviceOptions::set_all_probes(bool set)
@@ -621,7 +623,7 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
 
     layout.addWidget(tabWidget, 0, 0, 1, 1);
 
-    _groupHeight2 = tabWidget->sizeHint().height() + 50;
+    _groupHeight2 = tabWidget->height();
 }
 
 void DeviceOptions::ChannelChecked(int index)
@@ -702,38 +704,50 @@ void DeviceOptions::build_dynamic_panel()
 }
 
 void DeviceOptions::try_resize_scroll()
-{   
-        double sk = QGuiApplication::primaryScreen()->devicePixelRatio();    
-        int w = _width;
-        int h1 = _groupHeight1 + _groupHeight2 + 50;
-        _container_panel->setMinimumHeight(h1); 
-        int h = this->sizeHint().height();
-        
-        int srcHeight = 600;
-        int exth = 120; 
-         
-        if (w  == 0){
-            w = this->sizeHint().width();
-            _width = w;
-        } 
+{
+    // content area height
+    int contentHeight = _groupHeight1 + _groupHeight2 + 10; // +space
+    //dialog height
+    int dlgHeight = contentHeight + 95; // +bottom buttton
+    double sk = QGuiApplication::primaryScreen()->devicePixelRatio();
 
-        if (sk * h > srcHeight)
-        {   
-            QScrollArea *scroll = _scroll;
+    int srcHeight = 550; 
+    int w = _width; 
 
-            if (scroll == NULL)
-            {
-                scroll = new QScrollArea(_scroll_panel);
-                scroll->setWidget(_container_panel);
-                scroll->setStyleSheet("QScrollArea{border:none;}");
-                scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-                _scroll = scroll;
-            }
+    if (w == 0)
+    {
+        w = this->sizeHint().width();
+        _width = w;
+    }
 
-            this->setFixedSize(w + 20, srcHeight);
-            _scroll_panel->setFixedSize(w, srcHeight - exth);
-            scroll->setFixedSize(w - 18, srcHeight - exth);
-        } 
+    QScrollArea *scroll = _scroll;
+    if (scroll == NULL)
+    {
+        scroll = new QScrollArea(_scroll_panel);
+        scroll->setWidget(_container_panel);
+        scroll->setStyleSheet("QScrollArea{border:none;}");
+        scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        _scroll = scroll;
+    }
+
+    _container_panel->setFixedHeight(contentHeight);
+
+    if (sk * dlgHeight > srcHeight)
+    {
+        int exth = 120;
+        this->setFixedSize(w + 12, srcHeight);
+        _scroll_panel->setFixedSize(w, srcHeight - exth);
+        _scroll->setFixedSize(w - 23, srcHeight - exth);
+    }
+    else
+    { 
+        int realh = this->sizeHint().height();
+        if (realh > dlgHeight)
+            dlgHeight = realh;
+        this->setFixedSize(w + 12, dlgHeight);
+        _scroll_panel->setFixedSize(w, contentHeight);
+        _scroll->setFixedSize(w - 23, contentHeight);
+    }
 }
 
 } // namespace dialogs
