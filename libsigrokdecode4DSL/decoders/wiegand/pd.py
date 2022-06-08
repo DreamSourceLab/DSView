@@ -18,6 +18,7 @@
 ##
 
 import sigrokdecode as srd
+from common.srdhelper import bits2int
 
 class SamplerateError(Exception):
     pass
@@ -41,6 +42,7 @@ class Decoder(srd.Decoder):
          'default': 'low', 'values': ('low', 'high')},
         {'id': 'bitwidth_ms', 'desc': 'Single bit width in milliseconds',
          'default': 4, 'values': (1, 2, 4, 8, 16, 32)},
+        {'id': 'bit-start', 'desc': 'Data bit start index', 'default': -1},
     )
     annotations = (
         ('bits', 'Bits'),
@@ -101,9 +103,26 @@ class Decoder(srd.Decoder):
         if state != self._state:
             ann = None
             if self._state == 'data':
-                accum_bits = ''.join(str(x) for x in self._bits)
-                ann = [1, ['%d bits %s' % (len(self._bits), accum_bits),
-                           '%d bits' % len(self._bits)]]
+               #accum_bits = ''.join(str(x) for x in self._bits)
+                bstart = int(self.options['bit-start'])
+                bits = self._bits
+                blen = len(self._bits)
+
+                # get data block
+                if bstart != -1: 
+                    bits = []
+                    while bstart + 4 <= blen:
+                        bits.append(self._bits[bstart+0]);
+                        bits.append(self._bits[bstart+1]);
+                        bits.append(self._bits[bstart+2]);
+                        bits.append(self._bits[bstart+3]);
+                        bstart += 4
+
+                blen = len(bits)
+                s1 = '%d bits {$}' % blen
+                s2 = '%d bits' % blen
+                s3 = '@%02X' % (bits2int(bits))
+                ann = [1, [s1, s2, s3]]
             elif self._state == 'invalid':
                 ann = [1, [self._state]]
             if ann:

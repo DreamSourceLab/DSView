@@ -21,6 +21,15 @@ from enum import Enum, IntEnum, unique
 from itertools import chain
 import re
 
+#bits to int
+def bits2int(bs):
+    n = len(bs)
+    v = 0
+    for i in range(n):
+        if bs[i] == 1 or bs[i] == '1':
+            v += 1 << (n - i - 1)
+    return v
+
 # Return the specified BCD number (max. 8 bits) as integer.
 def bcd2int(b):
     return (b & 0x0f) + ((b >> 4) * 10)
