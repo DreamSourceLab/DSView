@@ -42,7 +42,7 @@ class Decoder(srd.Decoder):
          'default': 'low', 'values': ('low', 'high')},
         {'id': 'bitwidth_ms', 'desc': 'Single bit width in milliseconds',
          'default': 4, 'values': (1, 2, 4, 8, 16, 32)},
-        {'id': 'bit-start', 'desc': 'Data bit start index', 'default': -1},
+       # {'id': 'bit-start', 'desc': 'Data bit start index', 'default': -1},
     )
     annotations = (
         ('bits', 'Bits'),
@@ -103,8 +103,8 @@ class Decoder(srd.Decoder):
         if state != self._state:
             ann = None
             if self._state == 'data':
-               #accum_bits = ''.join(str(x) for x in self._bits)
-                bstart = int(self.options['bit-start'])
+                accum_bits = ''.join(str(x) for x in self._bits)
+                bstart = -1 #int(self.options['bit-start'])
                 bits = self._bits
                 blen = len(self._bits)
 
@@ -119,10 +119,12 @@ class Decoder(srd.Decoder):
                         bstart += 4
 
                 blen = len(bits)
-                s1 = '%d bits {$}' % blen
+                #s1 = '%d bits {$}' % blen
+                s1 = '%d bits %s' % (blen, accum_bits)
                 s2 = '%d bits' % blen
-                s3 = '@%02X' % (bits2int(bits))
-                ann = [1, [s1, s2, s3]]
+                #s3 = '@%02X' % (bits2int(bits))
+                #ann = [1, [s1, s2, s3]]
+                ann = [1, [s1, s2]]
             elif self._state == 'invalid':
                 ann = [1, [self._state]]
             if ann:
