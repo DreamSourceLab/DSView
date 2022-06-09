@@ -154,9 +154,9 @@ void DecoderOptionsDlg::load_options(view::DecodeTrace *trace)
     update_decode_range(); // set default sample range
 
     form->addRow(_start_comboBox, new QLabel(
-                     tr("Decode start cursor from")));
+                     tr("The cursor for decode start time")));
     form->addRow(_end_comboBox, new QLabel(
-                     tr("Decode end cursor to")));
+                     tr("The cursor for decode end time")));
 
     // Add ButtonBox (OK/Cancel)
     QDialogButtonBox *button_box = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
