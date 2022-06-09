@@ -179,8 +179,8 @@ void DecoderOptionsDlg::load_options(view::DecodeTrace *trace)
 
     float sk = QGuiApplication::primaryScreen()->logicalDotsPerInch() / 96;
     int srcHeight = QGuiApplication::primaryScreen()->availableSize().height();
-    if (srcHeight > 500)
-        srcHeight = 500; 
+    if (srcHeight > 600)
+        srcHeight = 600;
 
     if (h * sk > srcHeight)
     {
