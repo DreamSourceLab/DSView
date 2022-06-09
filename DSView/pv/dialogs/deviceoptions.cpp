@@ -709,7 +709,7 @@ void DeviceOptions::try_resize_scroll()
     int contentHeight = _groupHeight1 + _groupHeight2 + 10; // +space
     //dialog height
     int dlgHeight = contentHeight + 95; // +bottom buttton
-    double sk = QGuiApplication::primaryScreen()->devicePixelRatio();
+    float sk = QGuiApplication::primaryScreen()->logicalDotsPerInch() / 96;
 
     int srcHeight = 550; 
     int w = _width; 

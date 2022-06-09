@@ -24,12 +24,11 @@
 #include <getopt.h>
 
 #include <QApplication>
-#include <QDebug>
-#include <QFile>
+#include <QDebug> 
 #include <QDir>
-#include <QTranslator>
-#include <QDesktopServices>
 #include <QStyle> 
+#include <QGuiApplication>
+#include <QScreen>
 
 #include "dsapplication.h"
 #include "mystyle.h" 
@@ -58,19 +57,33 @@ void usage()
 
 
 int main(int argc, char *argv[])
-{  
-   // sr_test_usb_api();return 0;
-	 
+{   
 	int ret = 0; 
 	const char *open_file = NULL;
  
-    #if QT_VERSION >= QT_VERSION_CHECK(5,6,0)
-		//On Windows, need to compile with the QT5 version of the library, which makes the interface slightly larger.
-        QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-        QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
-    #endif // QT_VERSION
+#if QT_VERSION >= QT_VERSION_CHECK(5,6,0)
+bool bHighScale = true;
+#ifdef _WIN32
+	int argc1 = 0;
+ 	QApplication *a1 = new QApplication(argc1, NULL);
+	float sk = QGuiApplication::primaryScreen()->logicalDotsPerInch() / 96;
+	int sy = QGuiApplication::primaryScreen()->size().height(); //screen rect height
+    delete a1;
+	a1 = NULL;
 
-    #ifdef _WIN32
+	if (sk >= 1.5 && sy <= 1080){
+		QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
+        QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+		bHighScale = false;
+	} 
+#endif
+	if (bHighScale){
+		QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+      	QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+	}
+#endif
+
+#ifdef _WIN32
         // Under Windows, we need to manually retrieve the command-line arguments and convert them from UTF-16 to UTF-8.
         // This prevents data loss if there are any characters that wouldn't fit in the local ANSI code page.
         int argcUTF16 = 0;
@@ -111,6 +124,7 @@ int main(int argc, char *argv[])
     QApplication::setOrganizationDomain("www.DreamSourceLab.com");
 
 	qDebug()<<"\n----------------- version:"<<DS_VERSION_STRING<<"-----------------\n";
+	qDebug()<<"Qt:"<<QT_VERSION_STR;
 
 #ifdef Q_OS_LINUX
 	// Use low version qt plugins, for able to debug

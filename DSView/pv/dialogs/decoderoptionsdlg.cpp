@@ -177,7 +177,7 @@ void DecoderOptionsDlg::load_options(view::DecodeTrace *trace)
     int w = tsize.width();
     int h = tsize.height();
 
-    double sk = QGuiApplication::primaryScreen()->devicePixelRatio();
+    float sk = QGuiApplication::primaryScreen()->logicalDotsPerInch() / 96;
     int srcHeight = QGuiApplication::primaryScreen()->availableSize().height();
     if (srcHeight > 500)
         srcHeight = 500; 

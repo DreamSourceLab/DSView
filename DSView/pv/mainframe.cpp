@@ -79,7 +79,7 @@ MainFrame::MainFrame()
   
     // Set the window icon
     QIcon icon;
-    icon.addFile(QString::fromUtf8(":/icons/logo.svg"), QSize(), QIcon::Normal, QIcon::Off);
+    icon.addFile(QString::fromUtf8(":/icons/logo.svg"), QSize(), QIcon::Normal, QIcon::Off);    
     setWindowIcon(icon);
   
     // Title
@@ -208,7 +208,7 @@ void MainFrame::showMaximized()
     hide_border();
 
 #ifdef _WIN32
-    double sk = QGuiApplication::primaryScreen()->devicePixelRatio();
+    float sk = QGuiApplication::primaryScreen()->logicalDotsPerInch() / 96;
     if (sk >= 1.5)
     {
         auto rect = QGuiApplication::primaryScreen()->availableGeometry();  
