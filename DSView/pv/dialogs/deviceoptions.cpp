@@ -559,9 +559,10 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
     _probes_checkBox_list.clear();
     _probe_options_binding_list.clear();
 
-    QTabWidget *tabWidget = new QTabWidget(this);
+    QTabWidget *tabWidget = new QTabWidget();
     tabWidget->setTabPosition(QTabWidget::North);
     tabWidget->setUsesScrollButtons(false);
+    //layout.setContentsMargins(0,20, 0, 10);
 
     for (const GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next) {
         sr_channel *const probe = (sr_channel*)l->data;
@@ -623,7 +624,8 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
 
     layout.addWidget(tabWidget, 0, 0, 1, 1);
 
-    _groupHeight2 = tabWidget->height();
+    _groupHeight2 = tabWidget->sizeHint().height() + 10;
+    _dynamic_panel->setFixedHeight(_groupHeight2); 
 }
 
 void DeviceOptions::ChannelChecked(int index)
@@ -657,7 +659,8 @@ QString DeviceOptions::dynamic_widget(QLayout *lay) {
                 grid->addWidget(cali_button, 1, 0, 1, 1);
                 connect(cali_button, SIGNAL(clicked()), this, SLOT(on_calibration()));
 
-                _groupHeight2 = 80;
+                _groupHeight2 = 100;
+                _dynamic_panel->setFixedHeight(_groupHeight2); 
 
                 return tr("Calibration");
             }
@@ -703,12 +706,13 @@ void DeviceOptions::build_dynamic_panel()
     _isBuilding = false;
 }
 
+int bb = 0;
 void DeviceOptions::try_resize_scroll()
 {
     // content area height
     int contentHeight = _groupHeight1 + _groupHeight2 + 10; // +space
     //dialog height
-    int dlgHeight = contentHeight + 95; // +bottom buttton
+    int dlgHeight = contentHeight + 100; // +bottom buttton
     float sk = QGuiApplication::primaryScreen()->logicalDotsPerInch() / 96;
 
     int srcHeight = 600;
@@ -741,9 +745,6 @@ void DeviceOptions::try_resize_scroll()
     }
     else
     { 
-        int realh = this->sizeHint().height();
-        if (realh > dlgHeight)
-            dlgHeight = realh;
         this->setFixedSize(w + 12, dlgHeight);
         _scroll_panel->setFixedSize(w, contentHeight);
         _scroll->setFixedSize(w - 23, contentHeight);
