@@ -67,7 +67,7 @@ DecoderOptionsDlg::~DecoderOptionsDlg()
     _bindings.clear();
 }
 
-void DecoderOptionsDlg::load_options(view::DecodeTrace *trace)
+void DecoderOptionsDlg::load_options(view::DecodeTrace *trace, bool isNew)
 {  
     assert(trace);
 
@@ -82,7 +82,11 @@ void DecoderOptionsDlg::load_options(view::DecodeTrace *trace)
     form->setLabelAlignment(Qt::AlignLeft);
     form->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow); 
     dlg->layout()->addLayout(form);
-    dlg->setTitle(tr("Decoder Options"));
+
+    if (isNew)
+        dlg->setTitle(tr("New Decoder"));
+    else
+        dlg->setTitle(tr("Decoder Options"));        
     
     //scroll pannel
     QWidget *scroll_pannel  = new QWidget();

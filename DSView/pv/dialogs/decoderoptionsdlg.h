@@ -84,7 +84,7 @@ public:
         cursor2 = _cursor2;
     }
 
-    void load_options(view::DecodeTrace *trace);
+    void load_options(view::DecodeTrace *trace, bool isNew);
 
 private:
     void load_decoder_forms(QWidget *container);  
