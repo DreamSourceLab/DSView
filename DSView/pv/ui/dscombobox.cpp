@@ -25,6 +25,11 @@
 #include <QString>
 #include <QDebug>
 
+#ifdef Q_OS_DARWIN
+#include <QGuiApplication>
+#include <QScreen>
+#endif
+
 #include "../config/appconfig.h"
 
 DsComboBox::DsComboBox(QWidget *parent) : QComboBox(parent)
@@ -62,8 +67,13 @@ DsComboBox::DsComboBox(QWidget *parent) : QComboBox(parent)
     int x = rc.left() + 6;
     int y = rc.top();
     int w = rc.right() - rc.left();
-    int h = rc.bottom() - rc.top() + 15;
+    int h = rc.bottom() - rc.top() + 20;
     popup->setGeometry(x, y, w, h);
+
+    int sy = QGuiApplication::primaryScreen()->size().height(); 
+    if (sy <= 1080){
+         popup->setMaximumHeight(750); 
+    }
     
     if (AppConfig::Instance()._frameOptions.style == THEME_STYLE_DARK){       
         popup->setStyleSheet("background-color:#262626;");
