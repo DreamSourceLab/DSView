@@ -352,6 +352,11 @@ void DeviceOptions::logic_probes(QVBoxLayout &layout)
     line_lay->addWidget(disable_all_probes);
 
     _groupHeight2 = contentHeight + (row1 + row2) * 2 + 38;
+
+#ifdef Q_OS_DARWIN
+    _groupHeight2 += 5;
+#endif
+
     _dynamic_panel->setFixedHeight(_groupHeight2); 
 }
 
@@ -713,6 +718,11 @@ void DeviceOptions::try_resize_scroll()
     int contentHeight = _groupHeight1 + _groupHeight2 + 10; // +space
     //dialog height
     int dlgHeight = contentHeight + 100; // +bottom buttton
+
+#ifdef Q_OS_DARWIN
+    dlgHeight += 20;
+#endif
+
     float sk = QGuiApplication::primaryScreen()->logicalDotsPerInch() / 96;
 
     int srcHeight = 600;
@@ -735,19 +745,24 @@ void DeviceOptions::try_resize_scroll()
     }
 
     _container_panel->setFixedHeight(contentHeight);
+    int sclw = w - 23;
+
+#ifdef Q_OS_DARWIN
+    sclw -= 20;
+#endif
 
     if (sk * dlgHeight > srcHeight)
     {
         int exth = 120;
         this->setFixedSize(w + 12, srcHeight);
         _scroll_panel->setFixedSize(w, srcHeight - exth);
-        _scroll->setFixedSize(w - 23, srcHeight - exth);
+        _scroll->setFixedSize(sclw, srcHeight - exth);
     }
     else
     { 
         this->setFixedSize(w + 12, dlgHeight);
         _scroll_panel->setFixedSize(w, contentHeight);
-        _scroll->setFixedSize(w - 23, contentHeight);
+        _scroll->setFixedSize(sclw, contentHeight);
     }
 }
 
