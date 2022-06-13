@@ -111,6 +111,8 @@ private:
     view::DecodeTrace   *_trace;
     uint64_t     _cursor1; //cursor key
     uint64_t     _cursor2;
+    int          _contentHeight;
+    
     std::vector<ProbeSelector> _probe_selectors;
 };
 
