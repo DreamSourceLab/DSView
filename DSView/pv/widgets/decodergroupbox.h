@@ -52,6 +52,10 @@ public:
     ~DecoderGroupBox();
     bool eventFilter(QObject *o, QEvent *e);
 
+    inline int get_row_count(){
+        return _row_num;
+    }
+
 signals:
 	void show_hide_decoder();
     void show_hide_row();
@@ -72,6 +76,7 @@ private:
     QPushButton *_del_button;
     QPushButton *_show_button;
     std::list <QPushButton *> _row_show_button;
+    int _row_num;
 };
 
 } // widgets

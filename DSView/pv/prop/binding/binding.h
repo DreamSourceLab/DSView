@@ -44,6 +44,8 @@ namespace binding {
 class Binding
 {
 public:
+    Binding();
+
     const std::vector<Property*>& properties();
 
     void commit();
@@ -58,10 +60,16 @@ public:
 
     static QString print_gvariant(GVariant *const gvar);
 
+    inline int get_row_count(){
+        return _row_num;
+    }
+
 protected:
 	std::vector<Property*> _properties;
 
 	QWidget *_form;
+
+    int    _row_num;
 };
 
 } // binding

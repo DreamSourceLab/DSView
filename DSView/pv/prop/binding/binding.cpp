@@ -36,6 +36,10 @@ const std::vector<Property*>& Binding::properties()
 	return _properties;
 }
 
+Binding::Binding(){
+    _row_num = 0;    
+}
+
 void Binding::commit()
 {
     for(auto &p : _properties) {
@@ -55,15 +59,18 @@ void Binding::add_properties_to_form(QFormLayout *layout,
 
         QWidget *const widget = p->get_widget(layout->parentWidget(), auto_commit);
 
-        if (p->labeled_widget())
+        if (p->labeled_widget()){
             layout->addRow(widget);
+            _row_num++;
+        }
         else{
             const QString &lbstr = p->label();
             //remove data format options
             if (lbstr == "Data format"){
                 continue;                
             }   
-            layout->addRow(p->label(), widget);             
+            layout->addRow(p->label(), widget); 
+            _row_num++;
         } 
     }
 }

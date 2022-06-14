@@ -180,7 +180,7 @@ void DecoderOptionsDlg::load_options(view::DecodeTrace *trace, bool isNew)
      
     float sk = QGuiApplication::primaryScreen()->logicalDotsPerInch() / 96;
     int srcHeight = 600;
-    container_panel->setFixedHeight(_contentHeight);
+    container_panel->setFixedHeight(_contentHeight + 10);
 
     if (dlgHeight * sk > srcHeight)
     { 
