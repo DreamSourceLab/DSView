@@ -170,7 +170,7 @@ void DecoderOptionsDlg::load_options(view::DecodeTrace *trace, bool isNew)
     QSize tsize = dlg->sizeHint();
     int w = tsize.width(); 
     int other_height = 190; 
-    _contentHeight += 5;
+    _contentHeight += 10;
 
 #ifdef Q_OS_DARWIN
         other_height += 40;
@@ -180,7 +180,7 @@ void DecoderOptionsDlg::load_options(view::DecodeTrace *trace, bool isNew)
      
     float sk = QGuiApplication::primaryScreen()->logicalDotsPerInch() / 96;
     int srcHeight = 600;
-    container_panel->setFixedHeight(_contentHeight + 10);
+    container_panel->setFixedHeight(_contentHeight);
 
     if (dlgHeight * sk > srcHeight)
     { 
