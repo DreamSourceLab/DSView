@@ -33,7 +33,7 @@
 namespace pv {
 namespace dialogs {
 
-DSMessageBox::DSMessageBox(QWidget *parent,const char *title) :
+DSMessageBox::DSMessageBox(QWidget *parent,const QString title) :
     QDialog(parent)
 {
     (void)parent;
@@ -67,8 +67,8 @@ DSMessageBox::DSMessageBox(QWidget *parent,const char *title) :
 
     _msg->setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);   
 
-    if (title){ 
-        _titlebar->setTitle(QString(title));
+    if (!title.isEmpty()){
+        _titlebar->setTitle(title);
     }
     else{
         _titlebar->setTitle(tr("Message"));

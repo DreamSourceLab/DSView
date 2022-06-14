@@ -433,7 +433,7 @@ void DecoderOptionsDlg::commit_decoder_probes(data::decode::Decoder *dec)
 void DecoderOptionsDlg::on_accept()
 { 
     if (_cursor1 > 0 && _cursor1 == _cursor2){
-        MsgBox::Show("error", "Invalid cursor index for sample range!");
+        MsgBox::Show(tr("error"), tr("Invalid cursor index for sample range!"));
         return;
     }
 

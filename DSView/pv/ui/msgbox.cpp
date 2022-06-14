@@ -23,7 +23,6 @@
 #include "../dialogs/dsmessagebox.h"
 #include <assert.h>
 #include <QMessageBox>
-#include <QString>
 #include "../dsvdef.h"
 #include "../appcontrol.h"
 
@@ -32,9 +31,9 @@
 //QMessageBox::information(NULL, "Title", "Content");
 //QMessageBox::information(NULL, "Title", "Content",QMessageBox::Yes|QMessageBox::No|QMessageBox::Abort);
 
-void MsgBox::Show(const char *title, const char *text, QWidget *parent)
+void MsgBox::Show(const QString title, const QString text, QWidget *parent)
 {
-    assert(text);
+    assert(!text.isEmpty());
 
     QString str;
     str.append("\n");
@@ -52,9 +51,9 @@ void MsgBox::Show(const char *title, const char *text, QWidget *parent)
     msg.exec();
 }
 
-bool MsgBox::Confirm(const char *text, QWidget *parent)
+bool MsgBox::Confirm(const QString text, QWidget *parent)
 {
-    assert(text);
+    assert(!text.isEmpty());
 
     QString str;
     str.append("\n");

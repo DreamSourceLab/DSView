@@ -113,9 +113,9 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     sort(_decoderInfoList.begin(), _decoderInfoList.end(), ProtocolDock::protocol_sort_callback);
   
     if (repeatNammes != ""){
-        QString err = "Any protocol have repeated id or name: ";
+        QString err = tr("Any protocol have repeated id or name: ");
         err += repeatNammes;
-        MsgBox::Show("error", err.toUtf8().data());
+        MsgBox::Show(tr("error"), err.toUtf8().data());
     }
  
     _arrow = new QToolButton(_up_widget);  
@@ -324,11 +324,11 @@ int ProtocolDock::get_protocol_index_by_id(QString id)
 void ProtocolDock::on_add_protocol()
 { 
      if (_decoderInfoList.size() == 0){
-        MsgBox::Show(NULL, "Protocol list is empty!");
+        MsgBox::Show(NULL, tr("Protocol list is empty!"));
         return;
     }
     if (_selected_protocol_id == ""){
-        MsgBox::Show(NULL, "Please select a protocol!");
+        MsgBox::Show(NULL, tr("Please select a protocol!"));
         return;
     }
 
@@ -372,7 +372,7 @@ void ProtocolDock::on_add_protocol()
     }
 
     if (pro_id == ""){
-        MsgBox::Show("error", "find the base protocol error!");
+        MsgBox::Show(tr("error"), tr("find the base protocol error!"));
 
         for(auto sub: sub_decoders){
             delete sub;
@@ -446,11 +446,11 @@ bool ProtocolDock::add_protocol_by_id(QString id, bool silent, std::list<pv::dat
  
  void ProtocolDock::on_del_all_protocol(){
      if (_protocol_lay_items.size() == 0){
-        MsgBox::Show(NULL, "No Protocol Analyzer to delete!", this);
+        MsgBox::Show(NULL, tr("No Protocol Analyzer to delete!"), this);
         return;
      }
 
-    if (MsgBox::Confirm("Are you sure to remove all protocol analyzer?", this)){
+    if (MsgBox::Confirm(tr("Are you sure to remove all protocol analyzer?"), this)){
          del_all_protocol();
     }
  } 
@@ -877,7 +877,7 @@ void ProtocolDock::OnProtocolSetting(void *handle){
 }
 
 void ProtocolDock::OnProtocolDelete(void *handle){
-    if (!MsgBox::Confirm("Are you sure to remove this protocol analyzer?", this)){
+    if (!MsgBox::Confirm(tr("Are you sure to remove this protocol analyzer?"), this)){
          return;
     } 
 

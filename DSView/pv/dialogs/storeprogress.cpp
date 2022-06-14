@@ -125,7 +125,7 @@ void StoreProgress::reject()
 void StoreProgress::accept()
 {
     if (_store_session.GetFileName() == ""){
-        MsgBox::Show(NULL, "you need to select a file name.");
+        MsgBox::Show(NULL, tr("You need to select a file name."));
         return;
     }
 

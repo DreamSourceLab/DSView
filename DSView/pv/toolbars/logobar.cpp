@@ -72,7 +72,7 @@ LogoBar::LogoBar(SigSession *session, QWidget *parent) :
     _logo_button.addAction(_manual);
    
     _issue = new QAction(this);
-    _issue->setObjectName(QString::fromUtf8("actionManual"));
+    _issue->setObjectName(QString::fromUtf8("actionIssue"));
     _logo_button.addAction(_issue);   
 
     _update = new QAction(this);
@@ -140,7 +140,7 @@ void LogoBar::reStyle()
     _about->setIcon(QIcon(iconPath+"/about.svg"));
     _manual->setIcon(QIcon(iconPath+"/manual.svg"));
     _issue->setIcon(QIcon(iconPath+"/bug.svg"));
-    _update->setIcon(QIcon(iconPath+"/bug.svg"));
+    _update->setIcon(QIcon(iconPath+"/update.svg"));
 
     if (_connected)
         _logo_button.setIcon(QIcon(iconPath+"/logo_color.svg"));

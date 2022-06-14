@@ -21,12 +21,14 @@
 
 #pragma once
 
+#include <QString>
+
 class QWidget;
 
 class MsgBox
 {
 public:
-    static void Show(const char *title, const char *text, QWidget *parent=0);
+    static void Show(const QString title, const QString text, QWidget *parent=0);
 
-    static bool Confirm(const char *text, QWidget *parent=0);
+    static bool Confirm(const QString text, QWidget *parent=0);
 };

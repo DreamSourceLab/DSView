@@ -177,7 +177,7 @@ void TrigBar::reStyle()
     _dark_style->setIcon(QIcon(iconPath+"/dark.svg"));
     _light_style->setIcon(QIcon(iconPath+"/light.svg"));
 
-     _action_dispalyOptions->setIcon(QIcon(iconPath+"/params.svg"));
+     _action_dispalyOptions->setIcon(QIcon(iconPath+"/gear.svg"));
 
      AppConfig &app = AppConfig::Instance();    
 

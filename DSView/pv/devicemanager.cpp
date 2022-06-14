@@ -142,7 +142,7 @@ void DeviceManager::init_drivers()
 	for (sr_dev_driver **driver = drivers; *driver; driver++) {
 		if (sr_driver_init(_sr_ctx, *driver) != SR_OK) {
 			throw runtime_error(
-				string("Failed to initialize driver ") +
+                string("Failed to initialize driver ") +
 				string((*driver)->name));
 		}
 	}

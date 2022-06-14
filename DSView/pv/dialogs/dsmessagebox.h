@@ -40,7 +40,7 @@ class DSMessageBox : public QDialog
 	Q_OBJECT
 
 public:
-    DSMessageBox(QWidget *parent, const char *title=0);
+    DSMessageBox(QWidget *parent, const QString title=0);
 
     ~DSMessageBox();
 

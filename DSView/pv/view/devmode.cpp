@@ -208,7 +208,7 @@ void DevMode::on_close()
     DevInst *dev_inst = _session->get_device();
     assert(dev_inst);
 
-    if (_bFile && MsgBox::Confirm("are you sure to close the device?")){
+    if (_bFile && MsgBox::Confirm(tr("are you sure to close the device?"))){
         _session->close_file(dev_inst);
         dev_changed(true);
     }

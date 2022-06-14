@@ -121,8 +121,8 @@ void FileBar::reStyle()
 
     _action_load->setIcon(QIcon(iconPath+"/open.svg"));
     _action_store->setIcon(QIcon(iconPath+"/save.svg"));
-    _action_default->setIcon(QIcon(iconPath+"/settings.svg"));
-    _menu_session->setIcon(QIcon(iconPath+"/settings.svg"));
+    _action_default->setIcon(QIcon(iconPath+"/gear.svg"));
+    _menu_session->setIcon(QIcon(iconPath+"/gear.svg"));
     _action_open->setIcon(QIcon(iconPath+"/open.svg"));
     _action_save->setIcon(QIcon(iconPath+"/save.svg"));
     _action_export->setIcon(QIcon(iconPath+"/export.svg"));
@@ -194,7 +194,7 @@ void FileBar::on_actionDefault_triggered()
 { 
     QDir dir(GetResourceDir());
     if (!dir.exists()) { 
-          MsgBox::Show(NULL, "Cannot find default session file for this device!", this);
+          MsgBox::Show(NULL, tr("Cannot find default session file for this device!"), this);
           return;
     }
 

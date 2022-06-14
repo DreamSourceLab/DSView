@@ -43,7 +43,7 @@ ApplicationParamDlg::~ApplicationParamDlg()
 bool ApplicationParamDlg::ShowDlg(QWidget *parent)
 {
     DSDialog dlg(parent, true, true);
-    dlg.setTitle("Display options");
+    dlg.setTitle(tr("Display options"));
     dlg.setMinimumSize(300, 200);
     QFormLayout &lay = *(new QFormLayout());
     lay.setContentsMargins(0,20,0,30);
@@ -53,7 +53,7 @@ bool ApplicationParamDlg::ShowDlg(QWidget *parent)
 
     QCheckBox *ck_quickScroll = new QCheckBox();
     ck_quickScroll->setChecked(app._appOptions.quickScroll);
-    lay.addRow("Quick scroll", ck_quickScroll);
+    lay.addRow(tr("Quick scroll"), ck_quickScroll);
     dlg.layout()->addLayout(&lay);  
      
     dlg.exec();

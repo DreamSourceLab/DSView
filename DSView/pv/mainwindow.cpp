@@ -428,8 +428,8 @@ void MainWindow::update_device_list()
             g_variant_unref(gvar);
 
             if (usb30_support && usb_speed == LIBUSB_SPEED_HIGH)
-                show_error("Plug it into a USB 2.0 port will seriously affect its performance."
-                                                           "Please replug it into a USB 3.0 port.");
+                show_error(tr("Plug it into a USB 2.0 port will seriously affect its performance."
+                                                           "Please replug it into a USB 3.0 port."));
         }
     }
 
@@ -449,7 +449,7 @@ void MainWindow::update_device_list()
                 }
                 else{
                     qDebug()<<"file is not exists:"<<opf;
-                    MsgBox::Show("Open file error!", opf.toStdString().c_str());      
+                    MsgBox::Show(tr("Open file error!"), opf.toStdString().c_str());      
                 }              
            } 
        }
@@ -990,7 +990,7 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev, bool bDeco
     const sr_dev_inst *const sdi = _session->get_device()->dev_inst();
     if ((!file_dev && strcmp(sdi->driver->name, sessionObj["Device"].toString().toUtf8()) != 0) ||
         sdi->mode != sessionObj["DeviceMode"].toDouble()) {
-        MsgBox::Show(NULL, "Session File is not compatible with current device or mode!", this);
+        MsgBox::Show(NULL, tr("Session File is not compatible with current device or mode!"), this);
         return false;
     }
  
@@ -1295,7 +1295,7 @@ void MainWindow::restore_dock()
         }        
         catch(...)
         { 
-            MsgBox::Show(NULL, "restore window status error!");
+            MsgBox::Show(NULL, tr("restore window status error!"));
         } 
     } 
 
