@@ -144,8 +144,8 @@ private:
     QStringList _str_list;
 
     QSplitter *_split_widget;
-    QWidget *_up_widget;
-    QWidget *_dn_widget;
+    QWidget *_top_panel;
+    QWidget *_bot_panel;
     QTableView *_table_view;
     QPushButton *_pre_button;
     QPushButton *_nxt_button;

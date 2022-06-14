@@ -69,15 +69,18 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     _cur_search_index = -1;
     _search_edited = false; 
 
-    _up_widget = new QWidget(this);
-    
-    _add_button = new QPushButton(_up_widget);
+    _top_panel = new QWidget();
+    _bot_panel = new QWidget();
+
+    _top_panel->setMinimumHeight(70);
+
+    _add_button = new QPushButton(_top_panel);
     _add_button->setFlat(true);
-    _del_all_button = new QPushButton(_up_widget);
+    _del_all_button = new QPushButton(_top_panel);
     _del_all_button->setFlat(true);
     _del_all_button->setCheckable(true);
 
-    _keyword_edit = new KeywordLineEdit(_up_widget, this);
+    _keyword_edit = new KeywordLineEdit(_top_panel, this);
     _keyword_edit->setReadOnly(true); 
 
     GSList *l = const_cast<GSList*>(srd_decoder_list());
@@ -118,7 +121,7 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
         MsgBox::Show(tr("error"), err.toUtf8().data());
     }
  
-    _arrow = new QToolButton(_up_widget);  
+    _arrow = new QToolButton(_top_panel);  
 
     QHBoxLayout *hori_layout = new QHBoxLayout();
     hori_layout->addWidget(_add_button);
@@ -130,31 +133,29 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     _up_layout = new QVBoxLayout();
     _up_layout->addLayout(hori_layout);
     _up_layout->addStretch(1);
-
-    _up_widget->setLayout(_up_layout);
-    _up_widget->setMinimumHeight(150);
-
-
-    _dn_widget = new QWidget(this);
-
-    _dn_set_button = new QPushButton(_dn_widget);
+    _top_panel->setLayout(_up_layout); 
+ 
+    //----------------bottom
+    _dn_set_button = new QPushButton(_bot_panel);
     _dn_set_button->setFlat(true);
 
-    _dn_save_button = new QPushButton(_dn_widget);
+    _dn_save_button = new QPushButton(_bot_panel);
     _dn_save_button->setFlat(true);   
 
-    _dn_nav_button = new QPushButton(_dn_widget);
+    _dn_nav_button = new QPushButton(_bot_panel);
     _dn_nav_button->setFlat(true);  
 
     QHBoxLayout *dn_title_layout = new QHBoxLayout();
-    _dn_title_label = new QLabel(_dn_widget);
+    _dn_title_label = new QLabel(_bot_panel);
+#ifndef _WIN32
+    _dn_title_label->setWordWrap(true);
+#endif
     dn_title_layout->addWidget(_dn_set_button, 0, Qt::AlignLeft);
     dn_title_layout->addWidget(_dn_save_button, 0, Qt::AlignLeft);
     dn_title_layout->addWidget(_dn_title_label, 1, Qt::AlignLeft);
     dn_title_layout->addWidget(_dn_nav_button, 0, Qt::AlignRight);
-    //dn_title_layout->addStretch(1);
 
-    _table_view = new QTableView(_dn_widget);
+    _table_view = new QTableView(_bot_panel);
     _table_view->setModel(_session->get_decoder_model());
     _table_view->setAlternatingRowColors(true);
     _table_view->setShowGrid(false);
@@ -162,13 +163,13 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     _table_view->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
     _table_view->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
 
-    _pre_button = new QPushButton(_dn_widget);
-    _nxt_button = new QPushButton(_dn_widget);
+    _pre_button = new QPushButton(_bot_panel);
+    _nxt_button = new QPushButton(_bot_panel);
 
     _search_button = new QPushButton(this);
     _search_button->setFixedWidth(_search_button->height());
     _search_button->setDisabled(true);
-    _search_edit = new QLineEdit(_dn_widget);
+    _search_edit = new QLineEdit(_bot_panel);
     _search_edit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     QHBoxLayout *search_layout = new QHBoxLayout();
     search_layout->addWidget(_search_button);
@@ -182,8 +183,8 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     _dn_search_layout->addWidget(_search_edit, 1, Qt::AlignLeft);
     _dn_search_layout->addWidget(_nxt_button, 0, Qt::AlignRight);
 
-    _matchs_label = new QLabel(_dn_widget);
-    _matchs_title_label = new QLabel(_dn_widget);
+    _matchs_label = new QLabel(_bot_panel);
+    _matchs_title_label = new QLabel(_bot_panel);
     QHBoxLayout *dn_match_layout = new QHBoxLayout();
     dn_match_layout->addWidget(_matchs_title_label, 0, Qt::AlignLeft);
     dn_match_layout->addWidget(_matchs_label, 0, Qt::AlignLeft);
@@ -194,13 +195,11 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     _dn_layout->addLayout(_dn_search_layout);
     _dn_layout->addLayout(dn_match_layout);
     _dn_layout->addWidget(_table_view);
-
-    _dn_widget->setLayout(_dn_layout);
-    _dn_widget->setMinimumHeight(350);
+    _bot_panel->setLayout(_dn_layout); 
 
     _split_widget = new QSplitter(this);
-    _split_widget->insertWidget(0, _up_widget);
-    _split_widget->insertWidget(1, _dn_widget);
+    _split_widget->insertWidget(0, _top_panel);
+    _split_widget->insertWidget(1, _bot_panel);
     _split_widget->setOrientation(Qt::Vertical);
     _split_widget->setCollapsible(0, false);
     _split_widget->setCollapsible(1, false);
@@ -422,7 +421,7 @@ bool ProtocolDock::add_protocol_by_id(QString id, bool silent, std::list<pv::dat
     }
 
     // create item layer
-    ProtocolItemLayer *layer = new ProtocolItemLayer(_up_widget, protocolName, this);
+    ProtocolItemLayer *layer = new ProtocolItemLayer(_top_panel, protocolName, this);
     _protocol_lay_items.push_back(layer);
     _up_layout->insertLayout(_protocol_lay_items.size(), layer);
     layer->m_decoderStatus = dstatus; 
