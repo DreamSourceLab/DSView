@@ -40,8 +40,8 @@ namespace pv {
 namespace prop {
 namespace binding {
 
-ProbeOptions::ProbeOptions(struct sr_dev_inst *sdi, 
-			   struct sr_channel *probe) :
+ProbeOptions::ProbeOptions(struct sr_dev_inst *sdi, struct sr_channel *probe) :
+    Binding(),
 	_sdi(sdi),
 	_probe(probe)
 {

@@ -39,9 +39,8 @@ namespace pv {
 namespace prop {
 namespace binding {
 
-DecoderOptions::DecoderOptions(
-	pv::data::DecoderStack* decoder_stack,
-	data::decode::Decoder *decoder) :
+DecoderOptions::DecoderOptions(pv::data::DecoderStack* decoder_stack, data::decode::Decoder *decoder) :
+	Binding(),
 	_decoder_stack(decoder_stack),
 	_decoder(decoder)
 {

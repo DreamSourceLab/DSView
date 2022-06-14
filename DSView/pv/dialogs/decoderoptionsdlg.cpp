@@ -57,6 +57,7 @@ DecoderOptionsDlg::DecoderOptionsDlg(QWidget *parent)
 {
     _cursor1 = 0;
     _cursor2 = 0;
+    _contentHeight = 0;
 }
 
 DecoderOptionsDlg::~DecoderOptionsDlg()
@@ -73,7 +74,6 @@ void DecoderOptionsDlg::load_options(view::DecodeTrace *trace, bool isNew)
 
     _trace = trace;
     DSDialog *dlg = this;   
-    QWidget *line = NULL; 
 
     QFormLayout *form = new QFormLayout();
     form->setContentsMargins(0, 0, 0, 0);
@@ -94,25 +94,19 @@ void DecoderOptionsDlg::load_options(view::DecodeTrace *trace, bool isNew)
     form->addRow(scroll_pannel);
 
     // decoder options 
-    QWidget *decoder_container = new QWidget();      
+    QWidget *container_panel = new QWidget();      
     QVBoxLayout *decoder_lay = new QVBoxLayout();
     decoder_lay->setContentsMargins(0, 0, 0, 0);
     decoder_lay->setDirection(QBoxLayout::TopToBottom);
-    decoder_container->setLayout(decoder_lay);
-   // form->addRow(decoder_container); 
-    scroll_lay->addWidget(decoder_container);
+    container_panel->setLayout(decoder_lay);
+   // form->addRow(container_panel); 
+    scroll_lay->addWidget(container_panel);
   
-    load_decoder_forms(decoder_container);
+    load_decoder_forms(container_panel);
  
     if (_trace->decoder()->stack().size() > 0){
        // form->addRow(new QLabel(tr("<i>* Required channels</i>"), dlg));
-    }
-
-    //line
-    line = new QWidget();
-    line->setMinimumHeight(3);
-    line->setMaximumHeight(3);
-    form->addRow(line); 
+    } 
  
     //Add region combobox
     _start_comboBox = new DsComboBox(dlg);
@@ -153,21 +147,20 @@ void DecoderOptionsDlg::load_options(view::DecodeTrace *trace, bool isNew)
     _end_comboBox->setCurrentIndex(dex2);
  
     update_decode_range(); // set default sample range
-
+  
     form->addRow(_start_comboBox, new QLabel(
                      tr("The cursor for decode start time")));
     form->addRow(_end_comboBox, new QLabel(
                      tr("The cursor for decode end time")));
 
+    //space 
+    QWidget *space = new QWidget();
+    space->setFixedHeight(5);
+    form->addRow(space);
+ 
     // Add ButtonBox (OK/Cancel)
     QDialogButtonBox *button_box = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
                                 Qt::Horizontal, dlg);
-
-
-    //line
-    line = new QWidget();
-    line->setMinimumHeight(20);
-    form->addRow(line); 
 
     QHBoxLayout *confirm_button_box = new QHBoxLayout;
     confirm_button_box->addWidget(button_box, 0, Qt::AlignRight);
@@ -175,24 +168,36 @@ void DecoderOptionsDlg::load_options(view::DecodeTrace *trace, bool isNew)
 
      // scroll     
     QSize tsize = dlg->sizeHint();
-    int w = tsize.width();
-    int h = tsize.height();
+    int w = tsize.width(); 
+    int other_height = 190; 
+    _contentHeight += 10;
 
+#ifdef Q_OS_DARWIN
+        other_height += 40;
+#endif
+
+    int dlgHeight = _contentHeight + other_height; 
+     
     float sk = QGuiApplication::primaryScreen()->logicalDotsPerInch() / 96;
-    int srcHeight = QGuiApplication::primaryScreen()->availableSize().height();
-    if (srcHeight > 600)
-        srcHeight = 600;
+    int srcHeight = 600;
+    container_panel->setFixedHeight(_contentHeight);
 
-    if (h * sk > srcHeight)
-    {
-        int other_height = 235; 
+    if (dlgHeight * sk > srcHeight)
+    { 
         QScrollArea *scroll = new QScrollArea(scroll_pannel);
-        scroll->setWidget(decoder_container);
+        scroll->setWidget(container_panel);
         scroll->setStyleSheet("QScrollArea{border:none;}");
         scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         dlg->setFixedSize(w + 20, srcHeight);
         scroll_pannel->setFixedSize(w, srcHeight - other_height);
-        scroll->setFixedSize(w - 18, srcHeight - other_height);
+        int sclw = w - 18;
+#ifdef Q_OS_DARWIN
+        sclw -= 20;
+#endif
+        scroll->setFixedSize(sclw, srcHeight - other_height);
+    }
+    else{
+        dlg->setFixedSize(w + 20,dlgHeight);
     }
  
     connect(_start_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_region_set(int)));
@@ -211,21 +216,15 @@ void DecoderOptionsDlg::load_decoder_forms(QWidget *container)
     for(auto dec : _trace->decoder()->stack()) 
     { 
         ++dex;
-
-        //spacing
-        if (dex > 1){
-            QWidget *l = new QWidget();
-            l->setMinimumHeight(1);
-            l->setMaximumHeight(1); 
-        } 
-
         QWidget *panel = new QWidget(container);
         QFormLayout *form = new QFormLayout();
         form->setContentsMargins(0,0,0,0);
         panel->setLayout(form);
         container->layout()->addWidget(panel);
        
-        create_decoder_form(dec, panel, form);     
+        create_decoder_form(dec, panel, form); 
+
+        _contentHeight += panel->sizeHint().height();
 	} 
 }
  

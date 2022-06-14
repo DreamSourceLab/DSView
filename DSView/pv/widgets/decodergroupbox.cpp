@@ -48,6 +48,8 @@ DecoderGroupBox::DecoderGroupBox(data::DecoderStack *decoder_stack,
                                  QWidget *parent) :
     QWidget(parent)
 {
+    _row_num = 0;
+
     _dec = dec;
     _decoder_stack = decoder_stack;
     _widget = new QWidget(this);
@@ -88,6 +90,8 @@ DecoderGroupBox::DecoderGroupBox(data::DecoderStack *decoder_stack,
 
     _layout->addWidget(_show_button, 0, 2);
 
+    _row_num++;
+
 
     // add row show/hide
     int index = 0;
@@ -107,6 +111,8 @@ DecoderGroupBox::DecoderGroupBox(data::DecoderStack *decoder_stack,
             _layout->addWidget(show_button, _row_show_button.size(), 2);
         }
         index++;
+
+        _row_num++;
     }
 
     _layout->addLayout(dec_layout, _row_show_button.size()+1, 0, 1, 3);
