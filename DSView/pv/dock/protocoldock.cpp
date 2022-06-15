@@ -68,51 +68,37 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     _session = session;
     _cur_search_index = -1;
     _search_edited = false; 
+    _pro_add_button = NULL;
 
-    _top_panel = new QWidget();
-    _bot_panel = new QWidget();
-
-    _top_panel->setMinimumHeight(70);
-
-    _add_button = new QPushButton(_top_panel);
-    _add_button->setFlat(true);
-    _del_all_button = new QPushButton(_top_panel);
-    _del_all_button->setFlat(true);
-    _del_all_button->setCheckable(true);
-
-    _keyword_edit = new KeywordLineEdit(_top_panel, this);
-    _keyword_edit->setReadOnly(true); 
-
+    //-----------------------------get protocol list
     GSList *l = const_cast<GSList*>(srd_decoder_list());
-
     std::map<std::string, int> pro_key_table;
     QString repeatNammes;
 
     for(; l; l = l->next)
     {
         const srd_decoder *const d = (srd_decoder*)l->data;
-        assert(d); 
- 
-        if (true) {
-            DecoderInfoItem *info = new DecoderInfoItem(); 
-            srd_decoder *dec = (srd_decoder *)(l->data);
-            info->_data_handle = dec;
-            _decoderInfoList.push_back(info);  
+        assert(d);
 
-            std::string prokey(dec->id);
-            if (pro_key_table.find(prokey) != pro_key_table.end()){
-                if (repeatNammes != "")
-                        repeatNammes += ",";
-                repeatNammes += QString(dec->id);
-            }
-            else{
-                pro_key_table[prokey] = 1;
-            }
+        DecoderInfoItem *info = new DecoderInfoItem();
+        srd_decoder *dec = (srd_decoder *)(l->data);
+        info->_data_handle = dec;
+        _decoderInfoList.push_back(info);
+
+        std::string prokey(dec->id);
+        if (pro_key_table.find(prokey) != pro_key_table.end())
+        {
+            if (repeatNammes != "")
+                repeatNammes += ",";
+            repeatNammes += QString(dec->id);
+        }
+        else
+        {
+            pro_key_table[prokey] = 1;
         }
     }
     g_slist_free(l);
- 
-    //sort protocol list
+  
     sort(_decoderInfoList.begin(), _decoderInfoList.end(), ProtocolDock::protocol_sort_callback);
   
     if (repeatNammes != ""){
@@ -120,102 +106,111 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
         err += repeatNammes;
         MsgBox::Show(tr("error"), err.toUtf8().data());
     }
- 
-    _arrow = new QToolButton(_top_panel);  
 
-    QHBoxLayout *hori_layout = new QHBoxLayout();
-    hori_layout->addWidget(_add_button);
-    hori_layout->addWidget(_del_all_button);
-    hori_layout->addWidget(_keyword_edit); 
-    hori_layout->addWidget(_arrow);
-    hori_layout->addStretch(1);
+    //-----------------------------top panel
+    QWidget *top_panel = new QWidget();
+    top_panel->setMinimumHeight(70);
+    _top_panel = top_panel;
+    QWidget* bot_panel = new QWidget();
+
+    _pro_add_button = new QPushButton(top_panel);
+    _pro_add_button->setFlat(true);
+    _del_all_button = new QPushButton(top_panel);
+    _del_all_button->setFlat(true);
+    _del_all_button->setCheckable(true);
+    _pro_keyword_edit = new KeywordLineEdit(top_panel, this);
+    _pro_keyword_edit->setReadOnly(true); 
+ 
+    _pro_search_button = new QToolButton(top_panel);
+    QHBoxLayout *pro_search_lay = new QHBoxLayout();
+    pro_search_lay->setSpacing(2);
+    pro_search_lay->addWidget(_pro_add_button);
+    pro_search_lay->addWidget(_del_all_button);
+    pro_search_lay->addWidget(_pro_keyword_edit, 1); 
+    pro_search_lay->addWidget(_pro_search_button);
   
-    _up_layout = new QVBoxLayout();
-    _up_layout->addLayout(hori_layout);
-    _up_layout->addStretch(1);
-    _top_panel->setLayout(_up_layout); 
+    _top_layout = new QVBoxLayout();
+    _top_layout->addLayout(pro_search_lay);
+    _top_layout->addStretch(1);
+    top_panel->setLayout(_top_layout); 
  
-    //----------------bottom
-    _dn_set_button = new QPushButton(_bot_panel);
-    _dn_set_button->setFlat(true);
+    //-----------------------------bottom panel
+    _bot_set_button = new QPushButton(bot_panel);
+    _bot_set_button->setFlat(true);
+    _bot_save_button = new QPushButton(bot_panel);
+    _bot_save_button->setFlat(true);
+    _dn_nav_button = new QPushButton(bot_panel);
+    _dn_nav_button->setFlat(true);
+    _bot_title_label = new QLabel(bot_panel);
 
-    _dn_save_button = new QPushButton(_bot_panel);
-    _dn_save_button->setFlat(true);   
+    QHBoxLayout *bot_title_layout = new QHBoxLayout();
+    bot_title_layout->setSpacing(2);
+    bot_title_layout->addWidget(_bot_set_button);
+    bot_title_layout->addWidget(_bot_save_button);
+    bot_title_layout->addWidget(_bot_title_label, 1);
+    bot_title_layout->addWidget(_dn_nav_button);
+    
+    _pre_button = new QPushButton(bot_panel);
+    _ann_search_button = new QPushButton(bot_panel); //search icon
+    _nxt_button = new QPushButton(bot_panel);
+    _ann_search_edit = new QLineEdit(bot_panel);
+    
+    _ann_search_button->setFixedWidth(_ann_search_button->height());
+    _ann_search_button->setDisabled(true);
+    QHBoxLayout *ann_edit_layout = new QHBoxLayout();
+    ann_edit_layout->addWidget(_ann_search_button);
+    ann_edit_layout->addStretch(1);
+    ann_edit_layout->setContentsMargins(0, 0, 0, 0);
+    _ann_search_edit->setLayout(ann_edit_layout);
+    _ann_search_edit->setTextMargins(_ann_search_button->width() + 1, 0, 0, 0);
 
-    _dn_nav_button = new QPushButton(_bot_panel);
-    _dn_nav_button->setFlat(true);  
+    QHBoxLayout *ann_search_layout = new QHBoxLayout();
+    ann_search_layout->setSpacing(2);
+    ann_search_layout->addWidget(_pre_button);
+    ann_search_layout->addWidget(_ann_search_edit, 1);
+    ann_search_layout->addWidget(_nxt_button);
 
-    QHBoxLayout *dn_title_layout = new QHBoxLayout();
-    _dn_title_label = new QLabel(_bot_panel);
-#ifndef _WIN32
-    _dn_title_label->setWordWrap(true);
-#endif
-    dn_title_layout->addWidget(_dn_set_button, 0, Qt::AlignLeft);
-    dn_title_layout->addWidget(_dn_save_button, 0, Qt::AlignLeft);
-    dn_title_layout->addWidget(_dn_title_label, 1, Qt::AlignLeft);
-    dn_title_layout->addWidget(_dn_nav_button, 0, Qt::AlignRight);
-
-    _table_view = new QTableView(_bot_panel);
+    _table_view = new QTableView(bot_panel);
     _table_view->setModel(_session->get_decoder_model());
     _table_view->setAlternatingRowColors(true);
     _table_view->setShowGrid(false);
     _table_view->horizontalHeader()->setStretchLastSection(true);
     _table_view->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
-    _table_view->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+    _table_view->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel); 
 
-    _pre_button = new QPushButton(_bot_panel);
-    _nxt_button = new QPushButton(_bot_panel);
+    _matchs_title_label = new QLabel();
+    _matchs_label = new QLabel();  
+    QHBoxLayout *match_layout = new QHBoxLayout();
+    match_layout->addWidget(_matchs_title_label, 0, Qt::AlignLeft);
+    match_layout->addWidget(_matchs_label, 0, Qt::AlignLeft);
+    match_layout->addStretch(1);
 
-    _search_button = new QPushButton(this);
-    _search_button->setFixedWidth(_search_button->height());
-    _search_button->setDisabled(true);
-    _search_edit = new QLineEdit(_bot_panel);
-    _search_edit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    QHBoxLayout *search_layout = new QHBoxLayout();
-    search_layout->addWidget(_search_button);
-    search_layout->addStretch(1);
-    search_layout->setContentsMargins(0, 0, 0, 0);
-    _search_edit->setLayout(search_layout);
-    _search_edit->setTextMargins(_search_button->width(), 0, 0, 0);
+    QVBoxLayout *bot_layout = new QVBoxLayout();
+    bot_layout->addLayout(bot_title_layout);
+    bot_layout->addLayout(ann_search_layout);
+    bot_layout->addLayout(match_layout);
+    bot_layout->addWidget(_table_view);
+    bot_panel->setLayout(bot_layout); 
 
-    _dn_search_layout = new QHBoxLayout();
-    _dn_search_layout->addWidget(_pre_button, 0, Qt::AlignLeft);
-    _dn_search_layout->addWidget(_search_edit, 1, Qt::AlignLeft);
-    _dn_search_layout->addWidget(_nxt_button, 0, Qt::AlignRight);
-
-    _matchs_label = new QLabel(_bot_panel);
-    _matchs_title_label = new QLabel(_bot_panel);
-    QHBoxLayout *dn_match_layout = new QHBoxLayout();
-    dn_match_layout->addWidget(_matchs_title_label, 0, Qt::AlignLeft);
-    dn_match_layout->addWidget(_matchs_label, 0, Qt::AlignLeft);
-    dn_match_layout->addStretch(1);
-
-    _dn_layout = new QVBoxLayout();
-    _dn_layout->addLayout(dn_title_layout);
-    _dn_layout->addLayout(_dn_search_layout);
-    _dn_layout->addLayout(dn_match_layout);
-    _dn_layout->addWidget(_table_view);
-    _bot_panel->setLayout(_dn_layout); 
-
-    _split_widget = new QSplitter(this);
-    _split_widget->insertWidget(0, _top_panel);
-    _split_widget->insertWidget(1, _bot_panel);
-    _split_widget->setOrientation(Qt::Vertical);
-    _split_widget->setCollapsible(0, false);
-    _split_widget->setCollapsible(1, false);
+    QSplitter *split_widget = new QSplitter(this);
+    split_widget->insertWidget(0, top_panel);
+    split_widget->insertWidget(1, bot_panel);
+    split_widget->setOrientation(Qt::Vertical);
+    split_widget->setCollapsible(0, false);
+    split_widget->setCollapsible(1, false);
 
     this->setWidgetResizable(true);
-    this->setWidget(_split_widget);
-    _split_widget->setObjectName("protocolWidget");
+    this->setWidget(split_widget);
+    split_widget->setObjectName("protocolWidget");
 
-    retranslateUi(); 
+    retranslateUi();
 
     connect(_dn_nav_button, SIGNAL(clicked()),this, SLOT(nav_table_view()));
-    connect(_dn_save_button, SIGNAL(clicked()),this, SLOT(export_table_view()));
-    connect(_dn_set_button, SIGNAL(clicked()),this, SLOT(set_model()));
+    connect(_bot_save_button, SIGNAL(clicked()),this, SLOT(export_table_view()));
+    connect(_bot_set_button, SIGNAL(clicked()),this, SLOT(set_model()));
     connect(_pre_button, SIGNAL(clicked()),this, SLOT(search_pre()));
     connect(_nxt_button, SIGNAL(clicked()),this, SLOT(search_nxt()));
-    connect(_add_button, SIGNAL(clicked()),this, SLOT(on_add_protocol()));
+    connect(_pro_add_button, SIGNAL(clicked()),this, SLOT(on_add_protocol()));
     connect(_del_all_button, SIGNAL(clicked()),this, SLOT(on_del_all_protocol())); 
 
     connect(this, SIGNAL(protocol_updated()), this, SLOT(update_model()));
@@ -224,9 +219,9 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     connect(_table_view->horizontalHeader(), SIGNAL(sectionResized(int,int,int)), 
                     this, SLOT(column_resize(int, int, int)));
 
-    connect(_search_edit, SIGNAL(editingFinished()), this, SLOT(search_changed()));
+    connect(_ann_search_edit, SIGNAL(editingFinished()), this, SLOT(search_changed()));
 
-    connect(_arrow, SIGNAL(clicked()), this, SLOT(show_protocol_select()));
+    connect(_pro_search_button, SIGNAL(clicked()), this, SLOT(show_protocol_select()));
 }
 
 ProtocolDock::~ProtocolDock()
@@ -243,30 +238,34 @@ ProtocolDock::~ProtocolDock()
 
 void ProtocolDock::retranslateUi()
 {
-    _search_edit->setPlaceholderText(tr("search"));
+    _ann_search_edit->setPlaceholderText(tr("search"));
     _matchs_title_label->setText(tr("Matching Items:"));
-    _dn_title_label->setText(tr("Protocol List Viewer"));
-
-     _keyword_edit->ResetText();
+    _bot_title_label->setText(tr("Protocol List Viewer"));
+    _pro_keyword_edit->ResetText();
 }
 
 void ProtocolDock::reStyle()
 {
     QString iconPath = GetIconPath();
 
-    _add_button->setIcon(QIcon(iconPath+"/add.svg"));
+    if (_pro_add_button == NULL)
+    {
+        return;
+    }
+
+    _pro_add_button->setIcon(QIcon(iconPath+"/add.svg"));
     _del_all_button->setIcon(QIcon(iconPath+"/del.svg"));
-    _dn_set_button->setIcon(QIcon(iconPath+"/gear.svg"));
-    _dn_save_button->setIcon(QIcon(iconPath+"/save.svg"));
+    _bot_set_button->setIcon(QIcon(iconPath+"/gear.svg"));
+    _bot_save_button->setIcon(QIcon(iconPath+"/save.svg"));
     _dn_nav_button->setIcon(QIcon(iconPath+"/nav.svg"));
     _pre_button->setIcon(QIcon(iconPath+"/pre.svg"));
     _nxt_button->setIcon(QIcon(iconPath+"/next.svg"));
-    _search_button->setIcon(QIcon(iconPath+"/search.svg"));
-    _arrow->setIcon(QIcon(iconPath + "/search.svg"));
+    _ann_search_button->setIcon(QIcon(iconPath+"/search.svg"));
+    _pro_search_button->setIcon(QIcon(iconPath + "/search.svg"));
 
-    for (auto it = _protocol_lay_items.begin(); it != _protocol_lay_items.end(); it++){
-       (*it)->ResetStyle();
-    }  
+    for (auto item : _protocol_lay_items){
+        item->ResetStyle();
+    }
 }
 
 void ProtocolDock::changeEvent(QEvent *event)
@@ -276,28 +275,6 @@ void ProtocolDock::changeEvent(QEvent *event)
     else if (event->type() == QEvent::StyleChange)
         reStyle();
     QScrollArea::changeEvent(event);
-}
-
-//void ProtocolDock::paintEvent(QPaintEvent *){} 
-
-void ProtocolDock::resizeEvent(QResizeEvent *event)
-{
-    int width = this->visibleRegion().boundingRect().width();
-
-    int mg1 = 10;
-    int mg2 = 10;
-
-    width = width - mg1 * 2 -
-            mg2 * 2 -
-            _dn_search_layout->spacing() * 2 -
-            _pre_button->width()-_nxt_button->width();
-    width = std::max(width, 0);
-    
-    _search_edit->setMinimumWidth(width);
-    width = std::max(width-20, 0);
-    _keyword_edit->setMinimumWidth(width);
-    
-    QScrollArea::resizeEvent(event);
 }
 
 int ProtocolDock::decoder_name_cmp(const void *a, const void *b)
@@ -423,7 +400,7 @@ bool ProtocolDock::add_protocol_by_id(QString id, bool silent, std::list<pv::dat
     // create item layer
     ProtocolItemLayer *layer = new ProtocolItemLayer(_top_panel, protocolName, this);
     _protocol_lay_items.push_back(layer);
-    _up_layout->insertLayout(_protocol_lay_items.size(), layer);
+    _top_layout->insertLayout(_protocol_lay_items.size(), layer);
     layer->m_decoderStatus = dstatus; 
     layer->m_protocolId = protocolId;
 
@@ -811,7 +788,7 @@ void ProtocolDock::search_nxt()
 
 void ProtocolDock::search_done()
 {
-    QString str = _search_edit->text().trimmed();
+    QString str = _ann_search_edit->text().trimmed();
     QRegularExpression rx("(-)");
     _str_list = str.split(rx);
     _model_proxy.setFilterFixedString(_str_list.first());
@@ -1019,7 +996,7 @@ bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const Decod
           panel->AddDataItem(QString(dec->id), QString(dec->name), info);
       }
       panel->SetItemClickHandle(this);
-      panel->ShowDlg(_keyword_edit);
+      panel->ShowDlg(_pro_keyword_edit);
   }
 
  void ProtocolDock::OnItemClick(void *sender, void *data_handle)
@@ -1027,7 +1004,7 @@ bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const Decod
      if (data_handle != NULL){
          DecoderInfoItem *info = (DecoderInfoItem*)data_handle;
          srd_decoder *dec = (srd_decoder *)(info->_data_handle); 
-         this->_keyword_edit->SetInputText(QString(dec->name)); 
+         this->_pro_keyword_edit->SetInputText(QString(dec->name)); 
          _selected_protocol_id = QString(dec->id);
          this->on_add_protocol();       
      }

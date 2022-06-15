@@ -89,10 +89,7 @@ private:
     void retranslateUi();
     void reStyle();
 
-protected:
-   //void paintEvent(QPaintEvent *);
-    void resizeEvent(QResizeEvent *);
-    
+protected:    
     int get_protocol_index_by_id(QString id);
     static QString parse_protocol_id(const char *id);
     int get_output_protocol_by_id(QString id);
@@ -143,32 +140,28 @@ private:
     int _cur_search_index;
     QStringList _str_list;
 
-    QSplitter *_split_widget;
-    QWidget *_top_panel;
-    QWidget *_bot_panel;
-    QTableView *_table_view;
+    QWidget     *_top_panel; 
+    QTableView  *_table_view;
     QPushButton *_pre_button;
     QPushButton *_nxt_button;
-    QLineEdit *_search_edit;
-    QHBoxLayout *_dn_search_layout;
-    QVBoxLayout *_dn_layout;
+    QLineEdit *_ann_search_edit; 
     QLabel *_matchs_label;
     QLabel *_matchs_title_label;
-    QLabel *_dn_title_label;
+    QLabel *_bot_title_label;
 
-    QPushButton *_add_button;
+    QPushButton *_pro_add_button;
     QPushButton *_del_all_button; 
-    QVBoxLayout *_up_layout;
+    QVBoxLayout *_top_layout;
     std::vector <ProtocolItemLayer*> _protocol_lay_items; //protocol item layers
 
-    QPushButton *_dn_set_button;
-    QPushButton *_dn_save_button;
+    QPushButton *_bot_set_button;
+    QPushButton *_bot_save_button;
     QPushButton *_dn_nav_button;
-    QPushButton *_search_button;
+    QPushButton *_ann_search_button;
     std::vector<DecoderInfoItem*> _decoderInfoList;
-    KeywordLineEdit *_keyword_edit;
+    KeywordLineEdit *_pro_keyword_edit;
     QString     _selected_protocol_id;
-    QToolButton *_arrow; 
+    QToolButton *_pro_search_button; 
 
     mutable std::mutex _search_mutex;
     bool _search_edited; 
