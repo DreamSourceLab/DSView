@@ -70,10 +70,17 @@ SR_PRIV int ezusb_install_firmware(libusb_device_handle *hdl,
 
     result = SR_OK;
 	offset = 0;
+
 	while (1) {
 		chunksize = fread(buf, 1, 4096, fw);
+		if (chunksize == EOF){
+			sr_err("ezusb_install_firmware(), f-read returns EOF.");
+			result = SR_ERR;
+			break;			
+		}
 		if (chunksize == 0)
 			break;
+
 		ret = libusb_control_transfer(hdl, LIBUSB_REQUEST_TYPE_VENDOR |
 					      LIBUSB_ENDPOINT_OUT, 0xa0, offset,
                           0x0000, buf, chunksize, 3000);

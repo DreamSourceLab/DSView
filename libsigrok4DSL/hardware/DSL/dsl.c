@@ -1302,13 +1302,16 @@ SR_PRIV int dsl_fpga_config(struct libusb_device_handle *hdl, const char *filena
         return SR_ERR;
     }
 	
-    if (stat(filename, &f_stat) == -1)
+    if (stat(filename, &f_stat) == -1){
+        fclose(fw);
         return SR_ERR;
+    }
 
     filesize = (uint64_t)f_stat.st_size;
-	
-    if (!(buf = g_try_malloc(filesize))) {
+
+    if ((buf = g_try_malloc(filesize)) == NULL) {
         sr_err("FPGA configure buf malloc failed.");
+        fclose(fw);
         return SR_ERR;
     }
 
@@ -1316,31 +1319,47 @@ SR_PRIV int dsl_fpga_config(struct libusb_device_handle *hdl, const char *filena
     wr_cmd.header.dest = DSL_CTL_PROG_B;
     wr_cmd.header.size = 1;
     wr_cmd.data[0] = ~bmWR_PROG_B;
-    if ((ret = command_ctl_wr(hdl, wr_cmd)) != SR_OK)
+
+    if ((ret = command_ctl_wr(hdl, wr_cmd)) != SR_OK){
+        fclose(fw);
+        g_free(buf);
 		return SR_ERR;
+    }
 
 	// step1: turn off GREEN/RED led
     wr_cmd.header.dest = DSL_CTL_LED;
     wr_cmd.header.size = 1;
     wr_cmd.data[0] = ~bmLED_GREEN & ~bmLED_RED;
-    if ((ret = command_ctl_wr(hdl, wr_cmd)) != SR_OK)
+
+    if ((ret = command_ctl_wr(hdl, wr_cmd)) != SR_OK){
+        fclose(fw);
+        g_free(buf);
 		return SR_ERR;
+    }
 
 	// step2: assert PORG_B high
     wr_cmd.header.dest = DSL_CTL_PROG_B;
     wr_cmd.header.size = 1;
     wr_cmd.data[0] = bmWR_PROG_B;
-    if ((ret = command_ctl_wr(hdl, wr_cmd)) != SR_OK)
+
+    if ((ret = command_ctl_wr(hdl, wr_cmd)) != SR_OK){
+        fclose(fw);
+        g_free(buf);
 		return SR_ERR;
+    }
 
 	// step3: wait INIT_B go high
     rd_cmd.header.dest = DSL_CTL_HW_STATUS;
     rd_cmd.header.size = 1;
 	rd_cmd_data = 0;
     rd_cmd.data = &rd_cmd_data;
+
     while(1) {
-        if ((ret = command_ctl_rd(hdl, rd_cmd)) != SR_OK)
+        if ((ret = command_ctl_rd(hdl, rd_cmd)) != SR_OK){
+            fclose(fw);
+            g_free(buf);
 			return SR_ERR;
+        }
         if (rd_cmd_data & bmFPGA_INIT_B)
             break;
     }
@@ -1349,29 +1368,49 @@ SR_PRIV int dsl_fpga_config(struct libusb_device_handle *hdl, const char *filena
     wr_cmd.header.dest = DSL_CTL_INTRDY;
     wr_cmd.header.size = 1;
     wr_cmd.data[0] = (uint8_t)~bmWR_INTRDY;
-    if ((ret = command_ctl_wr(hdl, wr_cmd)) != SR_OK)
+
+    if ((ret = command_ctl_wr(hdl, wr_cmd)) != SR_OK){
+        fclose(fw);
+        g_free(buf);
         return SR_ERR;
+    }
 
     wr_cmd.header.dest = DSL_CTL_BULK_WR;
     wr_cmd.header.size = 3;
     wr_cmd.data[0] = (uint8_t)filesize;
     wr_cmd.data[1] = (uint8_t)(filesize >> 8);
     wr_cmd.data[2] = (uint8_t)(filesize >> 16);
+
     if ((ret = command_ctl_wr(hdl, wr_cmd)) != SR_OK) {
         sr_err("Configure FPGA error: send command fpga_config failed.");
+        fclose(fw);
+        g_free(buf);
 		return SR_ERR;
     }
 
 	// step5: send config data
     chunksize = fread(buf, 1, filesize, fw);
-    if (chunksize == 0)
+
+    if (chunksize == EOF){
+        sr_err("dsl_fpga_config(), f-read returns EOF.");
+        fclose(fw);
+        g_free(buf);
+		return SR_ERR;	
+    }
+
+    if (chunksize == 0){
+        fclose(fw);
+        g_free(buf);
 		return SR_ERR;
+    }
 
     ret = libusb_bulk_transfer(hdl, 2 | LIBUSB_ENDPOINT_OUT,
                                buf, chunksize,
                                &transferred, 1000);
     fclose(fw);
     g_free(buf);
+    fw = NULL;
+    buf = NULL;
 
     if (ret < 0) {
         sr_err("Unable to configure FPGA of dsl device: %s.",
