@@ -33,7 +33,7 @@ set(DS_DESCRIPTION "A GUI for instruments of DreamSourceLab")
 set(DS_VERSION_MAJOR 1)
 set(DS_VERSION_MINOR 2)
 set(DS_VERSION_MICRO 0)
-set(DS_VERSION_STRING  ${DS_VERSION_MAJOR}.${DS_VERSION_MINOR}.${DS_VERSION_MICRO}-RC8 )
+set(DS_VERSION_STRING  ${DS_VERSION_MAJOR}.${DS_VERSION_MINOR}.${DS_VERSION_MICRO}-RC10 )
 
 configure_file (
 	${PROJECT_SOURCE_DIR}/DSView/config.h.in
@@ -611,9 +611,17 @@ install(FILES DSView/icons/logo.svg DESTINATION share/DSView RENAME logo.svg)
 install(FILES DSView/icons/logo.svg DESTINATION share/icons/hicolor/scalable/apps RENAME dsview.svg)
 install(FILES DSView/icons/logo.svg DESTINATION share/pixmaps RENAME dsview.svg)
 
-if(CMAKE_SYSTEM_NAME MATCHES "Linux")
-	install(FILES DSView/DreamSourceLab.rules DESTINATION /lib/udev/rules.d RENAME 60-dreamsourcelab.rules)
+if(CMAKE_SYSTEM_NAME MATCHES "Linux")	
 	install(FILES DSView/DSView.desktop DESTINATION /usr/share/applications RENAME dsview.desktop)
+	
+	if(IS_DIRECTORY /usr/lib/udev/rules.d)
+		install(FILES DSView/DreamSourceLab.rules DESTINATION /usr/lib/udev/rules.d RENAME 60-dreamsourcelab.rules)
+	elseif(IS_DIRECTORY /lib/udev/rules.d)
+		install(FILES DSView/DreamSourceLab.rules DESTINATION /lib/udev/rules.d RENAME 60-dreamsourcelab.rules)
+	elseif(IS_DIRECTORY /etc/udev/rules.d)
+		install(FILES DSView/DreamSourceLab.rules DESTINATION /etc/udev/rules.d RENAME 60-dreamsourcelab.rules)
+	endif()
+
 endif()
 
 install(FILES NEWS25 DESTINATION share/DSView RENAME NEWS25)
