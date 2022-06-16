@@ -35,6 +35,7 @@ DevInst::DevInst() :
     _usable(true)
 {
     _id = malloc(1);
+	_is_file = false;
 }
 
 DevInst::~DevInst()

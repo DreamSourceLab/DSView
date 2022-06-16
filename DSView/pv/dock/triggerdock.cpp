@@ -200,7 +200,8 @@ void TriggerDock::adv_trigger()
         } else {
             widget_enable(0);
         }
-    } else {
+    }
+    else if (_session->get_device()->is_file() == false){
         dialogs::DSMessageBox msg(this);
         msg.mBox()->setText(tr("Trigger"));
         msg.mBox()->setInformativeText(tr("Advanced Trigger need DSLogic Hardware Support!"));

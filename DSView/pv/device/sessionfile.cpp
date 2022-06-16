@@ -29,6 +29,7 @@ SessionFile::SessionFile(QString path) :
 	File(path)
 {
 	_sdi = NULL;
+	_is_file = true;
 }
 
 sr_dev_inst* SessionFile::dev_inst()

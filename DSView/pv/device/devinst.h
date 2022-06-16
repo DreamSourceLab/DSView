@@ -105,12 +105,14 @@ public:
      *
      * @return device name
      */
-    QString name();
- 
+    QString name(); 
 
     bool is_usable();
-
     void destroy();
+
+    inline bool is_file(){
+        return _is_file;
+    }
 
 public:
 	virtual void start();
@@ -139,6 +141,7 @@ protected:
 	SigSession *_owner;
     void *_id;
     bool _usable;
+    bool  _is_file;
 };
 
 } // device

@@ -35,6 +35,7 @@ InputFile::InputFile(QString path) :
 	File(path),
 	_input(NULL)
 {
+	_is_file = true;
 }
 
 sr_dev_inst* InputFile::dev_inst()
