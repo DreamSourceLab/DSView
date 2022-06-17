@@ -413,6 +413,7 @@ SRD_API int srd_session_end(struct srd_session *sess, char **error)
 	struct srd_decoder_inst *di;
 	PyGILState_STATE gstate;
 	PyObject *py_res;
+	int ret;
 
 	if (!sess || !sess->di_list){
 		return SRD_ERR;
@@ -443,7 +444,11 @@ SRD_API int srd_session_end(struct srd_session *sess, char **error)
 		}
 
 		if (di->next_di != NULL){
-			srd_call_sub_decoder_end(di, error);
+			ret = srd_call_sub_decoder_end(di, error);
+			if (ret != SRD_OK){
+				PyGILState_Release(gstate);
+				return ret;
+			}
 		}
 	}
 
@@ -458,7 +463,6 @@ SRD_API int srd_call_sub_decoder_end(struct srd_decoder_inst *di, char **error)
 
 	GSList *l;
 	struct srd_decoder_inst *sub_dec;
-	PyGILState_STATE gstate;
 	PyObject *py_res; 
 
 	for (l = di->next_di; l; l = l->next){
@@ -472,7 +476,6 @@ SRD_API int srd_call_sub_decoder_end(struct srd_decoder_inst *di, char **error)
 			{ 
 				srd_exception_catch(error, "Protocol decoder instance %s",
 									sub_dec->inst_id);
-				PyGILState_Release(gstate);
 				return SRD_ERR_PYTHON;
 			}
 		}
