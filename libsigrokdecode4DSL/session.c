@@ -441,9 +441,48 @@ SRD_API int srd_session_end(struct srd_session *sess, char **error)
 				return SRD_ERR_PYTHON;
 			}
 		}
+
+		if (di->next_di != NULL){
+			srd_call_sub_decoder_end(di, error);
+		}
 	}
 
 	PyGILState_Release(gstate);
+	return SRD_OK;
+}
+
+
+SRD_API int srd_call_sub_decoder_end(struct srd_decoder_inst *di, char **error)
+{
+	assert(di && di->next_di);
+
+	GSList *l;
+	struct srd_decoder_inst *sub_dec;
+	PyGILState_STATE gstate;
+	PyObject *py_res; 
+
+	for (l = di->next_di; l; l = l->next){
+		sub_dec = l->data;
+
+		if (PyObject_HasAttrString(sub_dec->py_inst, "end"))
+		{
+			py_res = PyObject_CallMethod(sub_dec->py_inst, "end", NULL);
+
+			if (!py_res)
+			{ 
+				srd_exception_catch(error, "Protocol decoder instance %s",
+									sub_dec->inst_id);
+				PyGILState_Release(gstate);
+				return SRD_ERR_PYTHON;
+			}
+		}
+
+		//next level decoder
+		if (sub_dec->next_di != NULL){
+			if (srd_call_sub_decoder_end(sub_dec, error) != SRD_OK)
+				return SRD_ERR_PYTHON;
+		}
+	}
 
 	return SRD_OK;
 }
