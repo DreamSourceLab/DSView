@@ -90,6 +90,7 @@ class Decoder(srd.Decoder):
         self.out_ann = None
         self.ss_block = None
         self.es_block = None
+        self.done_break = False
 
     def start(self):
         self.out_ann = self.register(srd.OUTPUT_ANN)
@@ -124,7 +125,7 @@ class Decoder(srd.Decoder):
 
         self.fsm.reset()
         self.fsm.transit(LinFsm.State.Sync)
-
+        self.done_break = True
         self.putx([1, ['Break condition', 'Break', 'Brk', 'B']])
 
     def handle_sync(self, value):
@@ -210,6 +211,10 @@ class Decoder(srd.Decoder):
         p1 = not (id_[1] ^ id_[3] ^ id_[4] ^ id_[5])
 
         return (p0 << 0) | (p1 << 1)
+
+    def end(self):
+        if self.done_break and len(self.lin_rsp):
+            self.handle_checksum();
 
     def decode(self, ss, es, data):
         ptype, rxtx, pdata = data
