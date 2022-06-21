@@ -2,7 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2014 Joel Holdsworth <joel@airwebreathe.org.uk>
+ * Copyright (C) 2022 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,40 +19,23 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#ifndef DSVIEW_PV_DEVICE_FILE_H
-#define DSVIEW_PV_DEVICE_FILE_H
+#include "path.h"
 
-#include <QJsonArray>
-#include <QJsonDocument>
-#include <QFile>
-#include <string.h>
+#ifdef _WIN32
+#include <QTextCodec>
+#endif
 
-#include "devinst.h"
-
-namespace pv {
-namespace device {
-
-class File : public DevInst
+namespace pv::path
 {
-
-protected:
-    File(QString path);
-
-public:
-    ~File();
-
-    static File* create(QString name);
-    QJsonArray get_decoders();
-    QJsonDocument get_session();
-
-public:
-    QString format_device_title();
-
-protected:
-    const QString _path;
-};
-
-} // device
-} // pv
-
-#endif // DSVIEW_PV_DEVICE_FILE_H
+    std::string ConvertPath(QString fileName)
+    {
+#ifdef _WIN32
+        QTextCodec *code = QTextCodec::codecForName("GB2312");
+        if (code != NULL)
+        {
+            return code->fromUnicode(fileName).data();
+        }
+#endif
+        return fileName.toUtf8().toStdString();
+    }
+}

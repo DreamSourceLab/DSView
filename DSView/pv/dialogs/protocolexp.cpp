@@ -38,6 +38,7 @@
 #include "../data/decodermodel.h"
 #include "../config/appconfig.h"
 #include "../dsvdef.h"
+#include "../utility/encoding.h"
 
 using namespace boost;
 using namespace std;
@@ -149,7 +150,7 @@ void ProtocolExp::accept()
             QFile file(file_name);
             file.open(QIODevice::WriteOnly | QIODevice::Text);
             QTextStream out(&file);
-            app::set_utf8(out);
+            encoding::set_utf8(out);
             //out.setGenerateByteOrderMark(true); // UTF-8 without BOM
 
             QFuture<void> future;

@@ -21,6 +21,7 @@
 
 #include "sessionfile.h"
 #include <assert.h>
+#include "../utility/path.h"
 
 namespace pv {
 namespace device {
@@ -43,10 +44,9 @@ void SessionFile::use(SigSession *owner)
         release_source();
 	}
 
-	char f_name[256];
- 	File::ConvertFileName(_path, f_name, sizeof(f_name));
+	auto f_name = path::ConvertPath(_path);
 
-    if (sr_session_load(f_name) != SR_OK)
+    if (sr_session_load(f_name.c_str()) != SR_OK)
 		throw tr("Failed to open file.\n");
 
 	GSList *devlist = NULL;

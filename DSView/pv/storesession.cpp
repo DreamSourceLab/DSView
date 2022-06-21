@@ -59,6 +59,8 @@
 #include "libsigrokdecode.h"
 #include "config/appconfig.h"
 #include "dsvdef.h"
+#include "utility/encoding.h"
+#include "utility/path.h"
 
  
 namespace pv { 
@@ -181,13 +183,15 @@ bool StoreSession::save_start()
         return false;
     }
    
-    std::string _filename = getFileName();
+    auto _filename = path::ConvertPath(_file_name);
+    
     if (m_zipDoc.CreateNew(_filename.c_str(), false))
     {    
         if ( !m_zipDoc.AddFromBuffer("header", meta_data.c_str(), meta_data.size())
             || !m_zipDoc.AddFromBuffer("decoders", decoder_data.c_str(), decoder_data.size())
             || !m_zipDoc.AddFromBuffer("session", session_data.c_str(), session_data.size())
-        ){
+        )
+        {
             _has_error = true;
             _error = m_zipDoc.GetError();
         }
@@ -673,7 +677,7 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
     QFile file(_file_name);
     file.open(QIODevice::WriteOnly | QIODevice::Text);
     QTextStream out(&file); 
-    app::set_utf8(out);
+    encoding::set_utf8(out);
     //out.setGenerateByteOrderMark(true);  // UTF-8 without BOM
 
     // Meta
@@ -1322,17 +1326,6 @@ void StoreSession::MakeChunkName(char *chunk_name, int chunk_num, int index, int
     {
         snprintf(chunk_name, 15, "data");
     }
-}
-
-std::string StoreSession::getFileName()
-{
-#ifdef _WIN32
-    QTextCodec *code = QTextCodec::codecForName("GB2312");
-    if (code != NULL){
-        return code->fromUnicode(_file_name).data();  
-    }
-#endif
-    return _file_name.toUtf8().toStdString();
 }
 
 } // pv

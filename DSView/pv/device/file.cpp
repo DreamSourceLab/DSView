@@ -22,15 +22,11 @@
 #include "file.h"
 #include "inputfile.h"
 #include "sessionfile.h"
-#include <string.h>
 
 #include <QFileInfo>
 #include <zip.h>
 #include <assert.h>
-
-#ifdef _WIN32
-#include <QTextCodec>
-#endif
+#include "../utility/path.h"
 
 namespace pv {
 namespace device {
@@ -51,11 +47,10 @@ QString File::format_device_title()
 }
 
 File* File::create(QString name)
-{
-    char f_name[256];
-    File::ConvertFileName(name, f_name, sizeof(f_name));
+{ 
+    auto f_name = path::ConvertPath(name);
 
-    if (sr_session_load(f_name) == SR_OK) {
+    if (sr_session_load(f_name.c_str()) == SR_OK) {
 		GSList *devlist = NULL;
 		sr_session_dev_list(&devlist);
 		sr_session_destroy();
@@ -84,10 +79,9 @@ QJsonArray File::get_decoders()
     QJsonArray dec_array;
     QJsonParseError error;
 
-    char f_name[256];
-    File::ConvertFileName(_path, f_name, sizeof(f_name));
+    auto f_name = path::ConvertPath(_path);
 
-    archive = zip_open(f_name, 0, &ret);
+    archive = zip_open(f_name.c_str(), 0, &ret);
     if (archive) {
         /* read "decoders" */
         if (zip_stat(archive, "decoders", 0, &zs) != -1) {
@@ -119,10 +113,9 @@ QJsonDocument File::get_session()
     QJsonDocument sessionDoc;
     QJsonParseError error;
 
-    char f_name[256];
-    File::ConvertFileName(_path, f_name, sizeof(f_name));
+    auto f_name = path::ConvertPath(_path);
 
-    archive = zip_open(f_name, 0, &ret);
+    archive = zip_open(f_name.c_str(), 0, &ret);
     if (archive) {
         /* read "decoders" */
         if (zip_stat(archive, "session", 0, &zs) != -1) {
@@ -141,30 +134,6 @@ QJsonDocument File::get_session()
     }
 
     return sessionDoc;
-}
-
-void File::ConvertFileName(QString fileName, char *out_name, int size)
-{
-    assert(out_name);
-    assert(size > 0);
-    memset(out_name, 0, size);
-
-    char *src = NULL;
-#ifdef _WIN32
-    QTextCodec *code = QTextCodec::codecForName("GB2312");
-    if (code != NULL){
-       src = code->fromUnicode(fileName).data();
-    }
-#endif 
-    if (src == NULL){
-        src = fileName.toUtf8().data();
-    }
-
-    int len = strlen(src);
-    if (len >= size){
-        assert(false);
-    }
-    strcpy(out_name, src);
 }
 
 } // device

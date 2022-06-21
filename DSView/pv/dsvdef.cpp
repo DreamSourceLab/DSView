@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include "dsvdef.h"
+#include "dsvdef.h" 
 #include <string.h>
 
 #ifdef DS_DEBUG_TRACE
@@ -28,14 +28,6 @@
         printf(s);
     }     
 #endif
-
-#include <QTextStream>
-
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-#include <QStringConverter>
-#else
-#include <QTextCodec>
-#endif 
 
 namespace DecoderDataFormat
 {
@@ -56,18 +48,5 @@ namespace DecoderDataFormat
             return (int)ascii;
         }
         return (int)hex;
-    }
-}
-
-
-namespace app
-{
-    void set_utf8(QTextStream &stream){
-        #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-        stream.setEncoding(QStringConverter::Utf8);      
-        #else
-        QTextCodec *code=QTextCodec::codecForName("UTF-8");
-        stream.setCodec(code);
-        #endif
     }
 }

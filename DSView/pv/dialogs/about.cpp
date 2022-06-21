@@ -33,6 +33,7 @@
   
 #include "../config/appconfig.h"
 #include "../dsvdef.h"
+#include "../utility/encoding.h"
 
 namespace pv {
 namespace dialogs {
@@ -86,7 +87,7 @@ About::About(QWidget *parent) :
     if (news.open(QIODevice::ReadOnly)) {
    
         QTextStream stream(&news);
-        app::set_utf8(stream);
+        encoding::set_utf8(stream);
 
         QString line;
         while (!stream.atEnd()){

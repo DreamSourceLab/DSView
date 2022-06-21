@@ -2,7 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2014 Joel Holdsworth <joel@airwebreathe.org.uk>
+ * Copyright (C) 2022 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,41 +18,25 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
+#include "encoding.h"
 
-#ifndef DSVIEW_PV_DEVICE_FILE_H
-#define DSVIEW_PV_DEVICE_FILE_H
+#include <QTextStream>
 
-#include <QJsonArray>
-#include <QJsonDocument>
-#include <QFile>
-#include <string.h>
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#include <QStringConverter>
+#else
+#include <QTextCodec>
+#endif 
 
-#include "devinst.h"
-
-namespace pv {
-namespace device {
-
-class File : public DevInst
+namespace pv::encoding
 {
-
-protected:
-    File(QString path);
-
-public:
-    ~File();
-
-    static File* create(QString name);
-    QJsonArray get_decoders();
-    QJsonDocument get_session();
-
-public:
-    QString format_device_title();
-
-protected:
-    const QString _path;
-};
-
-} // device
-} // pv
-
-#endif // DSVIEW_PV_DEVICE_FILE_H
+    void set_utf8(QTextStream &stream)
+    {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        stream.setEncoding(QStringConverter::Utf8);
+#else
+        QTextCodec *code = QTextCodec::codecForName("UTF-8");
+        stream.setCodec(code);
+#endif
+    }
+}

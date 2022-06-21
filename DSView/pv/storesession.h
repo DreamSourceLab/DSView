@@ -94,7 +94,6 @@ private:
     QList<QString> getSuportedExportFormats();
     double get_integer(GVariant * var);
     void MakeChunkName(char *chunk_name, int chunk_num, int index, int type, int version);
-    std:: string getFileName();
 
 signals:
 	void progress_updated();

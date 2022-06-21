@@ -22,7 +22,6 @@
 #pragma once
 
 #include "../config.h"
-#include <QString>
 
 #define countof(x) (sizeof(x)/sizeof(x[0]))
 
@@ -43,9 +42,7 @@ enum View_type {
 #else
     #define ds_debug(x)
 #endif
-
-class QWidget;
-class QTextStream;
+  
 
 #define DESTROY_OBJECT(p) if((p)){delete (p); p = NULL;} 
 #define DESTROY_QT_OBJECT(p) if((p)){((p))->deleteLater(); p = NULL;}
@@ -68,9 +65,3 @@ namespace DecoderDataFormat
 
     int Parse(const char *name);       
 }
-
-namespace app
-{
-    void set_utf8(QTextStream &stream);
-}
-

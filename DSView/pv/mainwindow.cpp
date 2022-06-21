@@ -93,6 +93,7 @@
 #include "appcontrol.h"
 #include "dsvdef.h"
 #include "appcontrol.h"
+#include  "utility/encoding.h"
 
 #define BASE_SESSION_VERSION 2
   
@@ -1260,7 +1261,7 @@ bool MainWindow::on_store_session(QString name)
     }
 
     QTextStream outStream(&sessionFile);
-    app::set_utf8(outStream);
+    encoding::set_utf8(outStream);
     
     QJsonObject sessionVar;
     if (!gen_session_json(sessionVar))

@@ -297,6 +297,8 @@ set(DSView_SOURCES
     DSView/pv/dock/keywordlineedit.cpp
     DSView/pv/dock/searchcombobox.cpp
     DSView/pv/dialogs/decoderoptionsdlg.cpp
+    DSView/pv/utility/encoding.cpp
+    DSView/pv/utility/path.cpp
 )
 
 set(DSView_HEADERS
@@ -385,6 +387,8 @@ set(DSView_HEADERS
     DSView/pv/dock/keywordlineedit.h
     DSView/pv/dock/searchcombobox.h
     DSView/pv/dialogs/decoderoptionsdlg.h
+    DSView/pv/utility/encoding.h
+    DSView/pv/utility/path.h
 )
  
 #===============================================================================
