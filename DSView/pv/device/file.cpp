@@ -22,19 +22,21 @@
 #include "file.h"
 #include "inputfile.h"
 #include "sessionfile.h"
+#include <string.h>
 
 #include <QFileInfo>
-
 #include <zip.h>
+#include <assert.h>
 
-
-using std::string;
+#ifdef _WIN32
+#include <QTextCodec>
+#endif
 
 namespace pv {
 namespace device {
 
-File::File(QString path) :
-	_path(path)
+File::File(QString path)
+:_path(path)
 {
 }
 
@@ -50,7 +52,10 @@ QString File::format_device_title()
 
 File* File::create(QString name)
 {
-    if (sr_session_load(name.toUtf8().data()) == SR_OK) {
+    char f_name[256];
+    File::ConvertFileName(name, f_name, sizeof(f_name));
+
+    if (sr_session_load(f_name) == SR_OK) {
 		GSList *devlist = NULL;
 		sr_session_dev_list(&devlist);
 		sr_session_destroy();
@@ -79,7 +84,10 @@ QJsonArray File::get_decoders()
     QJsonArray dec_array;
     QJsonParseError error;
 
-    archive = zip_open(_path.toUtf8().data(), 0, &ret);
+    char f_name[256];
+    File::ConvertFileName(_path, f_name, sizeof(f_name));
+
+    archive = zip_open(f_name, 0, &ret);
     if (archive) {
         /* read "decoders" */
         if (zip_stat(archive, "decoders", 0, &zs) != -1) {
@@ -111,7 +119,10 @@ QJsonDocument File::get_session()
     QJsonDocument sessionDoc;
     QJsonParseError error;
 
-    archive = zip_open(_path.toUtf8().data(), 0, &ret);
+    char f_name[256];
+    File::ConvertFileName(_path, f_name, sizeof(f_name));
+
+    archive = zip_open(f_name, 0, &ret);
     if (archive) {
         /* read "decoders" */
         if (zip_stat(archive, "session", 0, &zs) != -1) {
@@ -130,6 +141,30 @@ QJsonDocument File::get_session()
     }
 
     return sessionDoc;
+}
+
+void File::ConvertFileName(QString fileName, char *out_name, int size)
+{
+    assert(out_name);
+    assert(size > 0);
+    memset(out_name, 0, size);
+
+    char *src = NULL;
+#ifdef _WIN32
+    QTextCodec *code = QTextCodec::codecForName("GB2312");
+    if (code != NULL){
+       src = code->fromUnicode(fileName).data();
+    }
+#endif 
+    if (src == NULL){
+        src = fileName.toUtf8().data();
+    }
+
+    int len = strlen(src);
+    if (len >= size){
+        assert(false);
+    }
+    strcpy(out_name, src);
 }
 
 } // device

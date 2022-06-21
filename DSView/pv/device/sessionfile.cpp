@@ -43,7 +43,10 @@ void SessionFile::use(SigSession *owner)
         release_source();
 	}
 
-    if (sr_session_load(_path.toUtf8().data()) != SR_OK)
+	char f_name[256];
+ 	File::ConvertFileName(_path, f_name, sizeof(f_name));
+
+    if (sr_session_load(f_name) != SR_OK)
 		throw tr("Failed to open file.\n");
 
 	GSList *devlist = NULL;

@@ -22,8 +22,6 @@
 #ifndef DSVIEW_PV_DEVICE_FILE_H
 #define DSVIEW_PV_DEVICE_FILE_H
 
-#include <string>
-
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QFile>
@@ -43,13 +41,13 @@ public:
     ~File();
 
     static File* create(QString name);
-
     QJsonArray get_decoders();
-
     QJsonDocument get_session();
 
 public:
     QString format_device_title();
+
+    static void ConvertFileName(QString fileName, char *out_name, int size);
 
 protected:
     const QString _path;

@@ -8,26 +8,20 @@ Requirements
  - gcc (>= 4.0)
  - g++
  - make
- - libtool
- - autoconf >= 2.63
- - automake >= 1.11
  - cmake >= 2.6
  - Qt >= 5.0
- - libtool
  - libglib >= 2.32.0
  - libzip >= 0.10
+ - zlib
  - libusb-1.0 >= 1.0.16
 	On FreeBSD, this is an integral part of the FreeBSD libc, not an extra package/library.
 	This is part of the standard OpenBSD install (not an extra package), apparently.
- - libboost >= 1.42 (including the following libs):
-    - libboost-system
- - pkg-config >= 0.22
-	This is part of the standard OpenBSD install (not an extra package), apparently.
- - check >= 0.9.4 (optional, only needed to run unit tests)
+ - libboost >= 1.42
  - libfftw3 >= 3.3
- - zlib (on ubuntu, zlib package name is zlib1g-dev)
- 
- 
+ - libpython > 3.2
+ - libtool
+ - pkg-config >= 0.22
+
 
 Building and installing
 -----------------------
@@ -36,18 +30,30 @@ Step1: Installing the requirements:
 
 please check your respective distro's package manager tool if you use other distros
 Debian/Ubuntu:
- $ sudo apt-get install git-core build-essential cmake autoconf automake libtool pkg-config \
-   libglib2.0-dev libzip-dev libudev-dev libusb-1.0-0-dev \
-   python3-dev qt5-default qtbase5-dev libboost-dev libboost-test-dev check libfftw3-dev
+ $ sudo apt install git gcc g++ make cmake qt5-default libglib2.0-dev libzip-dev zlib1g-dev \
+ 	libusb-1.0-0-dev libboost-dev libfftw3-dev python3-dev libudev-dev
+ 	 	
+   How to install qt on ubuntu?
+   	qt5: qt5-default,qtbase5-dev
+   	qt6: qt6-base-dev,libQt6Svg*
 
 Fedora (18, 19):
- $ sudo yum install git gcc g++ make cmake autoconf automake libtool pkgconfig glib2-devel \
+ $ sudo yum install git gcc g++ make cmake libtool pkgconfig glib2-devel \
    libzip-devel libudev-devel libusb1-devel \
-   python3-devel qt-devel boost-devel check libfftw3-devel
+   python3-devel qt-devel boost-devel libfftw3-devel
 
 Arch:
- $ pacman -S base-devel git cmake glib2 libzip libusb check
+ $ pacman -S base-devel git cmake glib2 libzip libusb
    python boost qt5 fftw
+   
+Mac:
+  install Xcode
+  install hombrew
+  brew install git
+  brew install gcc
+  brew install g++
+  brew install make
+  brew install cmake
 
 
 Step2: Get the DSView source code
@@ -59,6 +65,8 @@ Step3: Building
  $ sudo make install
 
 See the following wiki page for more (OS-specific) instructions:
-
  http://sigrok.org/wiki/Building
+ 
+The latest source code:
+ https://github.com/DreamSourceLab/DSView
  

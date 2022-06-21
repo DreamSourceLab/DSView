@@ -181,7 +181,7 @@ bool StoreSession::save_start()
         return false;
     }
    
-    std::string _filename = getFileName(_file_name);
+    std::string _filename = getFileName();
     if (m_zipDoc.CreateNew(_filename.c_str(), false))
     {    
         if ( !m_zipDoc.AddFromBuffer("header", meta_data.c_str(), meta_data.size())
@@ -948,7 +948,8 @@ bool StoreSession::json_decoders(QJsonArray &array)
         auto rows = stack->get_rows_gshow();
         for (auto i = rows.begin(); i != rows.end(); i++) {
             pv::data::decode::Row _row = (*i).first;
-            show_obj[_row.title()] = QJsonValue::fromVariant((*i).second);
+            QString kn = _row.title();
+            show_obj[kn] = QJsonValue::fromVariant((*i).second);
         }
         dec_obj["show"] = show_obj;
 
@@ -1323,14 +1324,15 @@ void StoreSession::MakeChunkName(char *chunk_name, int chunk_num, int index, int
     }
 }
 
-std::string StoreSession::getFileName(QString fileName)
+std::string StoreSession::getFileName()
 {
-#if defined(_WIN32)
+#ifdef _WIN32
     QTextCodec *code = QTextCodec::codecForName("GB2312");
-    return code->fromUnicode(fileName).data();
-#else
-    return _file_name.toUtf8().toStdString();
+    if (code != NULL){
+        return code->fromUnicode(_file_name).data();  
+    }
 #endif
+    return _file_name.toUtf8().toStdString();
 }
 
 } // pv
