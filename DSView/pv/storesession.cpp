@@ -1189,7 +1189,7 @@ QString StoreSession::MakeSaveFile(bool bDlg)
             return ""; //no select file
         }
 
-        QString _dir_path = GetDirectoryName(default_name);
+        QString _dir_path = path::GetDirectoryName(default_name);
 
         if (_dir_path != app._userHistory.saveDir)
         {
@@ -1261,7 +1261,7 @@ QString StoreSession::MakeExportFile(bool bDlg)
         }
 
         bool bChange = false;
-        QString _dir_path = GetDirectoryName(default_name);
+        QString _dir_path = path::GetDirectoryName(default_name);
         if (_dir_path != app._userHistory.exportDir)
         {
             app._userHistory.exportDir = _dir_path;

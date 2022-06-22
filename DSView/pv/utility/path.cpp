@@ -38,4 +38,14 @@ namespace pv::path
 #endif
         return fileName.toUtf8().toStdString();
     }
+
+    QString GetDirectoryName(QString path)
+    {
+        int lstdex = path.lastIndexOf('/');
+        if (lstdex != -1)
+        {
+            return path.left(lstdex);
+        }
+        return path;
+    }
 }

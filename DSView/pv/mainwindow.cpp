@@ -94,6 +94,7 @@
 #include "dsvdef.h"
 #include "appcontrol.h"
 #include  "utility/encoding.h"
+#include "utility/path.h"
 
 #define BASE_SESSION_VERSION 2
   
@@ -920,7 +921,7 @@ void MainWindow::on_screenShot()
 
         pixmap.save(fileName, suffix.toLatin1());
  
-        fileName = GetDirectoryName(fileName);
+        fileName = path::GetDirectoryName(fileName);
 
         if (app._userHistory.screenShotPath != fileName){
             app._userHistory.screenShotPath = fileName;

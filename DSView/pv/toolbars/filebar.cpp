@@ -29,6 +29,7 @@
 #include "../device/devinst.h" 
 #include "../ui/msgbox.h"
 #include "../config/appconfig.h"
+#include "../utility/path.h"
 
 namespace pv {
 namespace toolbars {
@@ -143,7 +144,7 @@ void FileBar::on_actionOpen_triggered()
         tr("DSView Data (*.dsl)"));
 
     if (!file_name.isEmpty()) { 
-        QString fname = GetDirectoryName(file_name);
+        QString fname = path::GetDirectoryName(file_name);
         if (fname != app._userHistory.openDir){
             app._userHistory.openDir = fname;
             app.SaveHistory();
@@ -180,7 +181,7 @@ void FileBar::on_actionLoad_triggered()
         tr("DSView Session (*.dsc)"));
 
     if (!file_name.isEmpty()) {
-        QString fname = GetDirectoryName(file_name);
+        QString fname = path::GetDirectoryName(file_name);
         if (fname != app._userHistory.sessionDir){
             app._userHistory.sessionDir = fname;
             app.SaveHistory();
@@ -229,7 +230,7 @@ void FileBar::on_actionStore_triggered()
         if(f.suffix().compare("dsc"))
             file_name.append(tr(".dsc"));
 
-        QString fname = GetDirectoryName(file_name);
+        QString fname = path::GetDirectoryName(file_name);
         if (fname != app._userHistory.sessionDir){
             app._userHistory.sessionDir = fname;
             app.SaveHistory();
