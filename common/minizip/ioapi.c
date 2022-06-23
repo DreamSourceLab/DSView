@@ -28,6 +28,10 @@
 
 #include "ioapi.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 voidpf call_zopen64 (const zlib_filefunc64_32_def* pfilefunc,const void*filename,int mode)
 {
     if (pfilefunc->zfile_func64.zopen64_file != NULL)
@@ -112,6 +116,34 @@ static voidpf ZCALLBACK fopen_file_func (voidpf opaque, const char* filename, in
 
 static voidpf ZCALLBACK fopen64_file_func (voidpf opaque, const void* filename, int mode)
 {
+#ifdef _WIN32
+    FILE* file = NULL;
+    const wchar_t* mode_fopen = NULL;
+    if ((mode & ZLIB_FILEFUNC_MODE_READWRITEFILTER)==ZLIB_FILEFUNC_MODE_READ)
+        mode_fopen = L"rb";
+    else
+    if (mode & ZLIB_FILEFUNC_MODE_EXISTING)
+        mode_fopen = L"r+b";
+    else
+    if (mode & ZLIB_FILEFUNC_MODE_CREATE)
+        mode_fopen = L"wb"; 
+
+    int wcSize = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, filename, -1, NULL, 0);
+    if (wcSize == 0) { 
+        return NULL;
+    }
+    wchar_t *wcName = (wchar_t *)malloc(sizeof(wchar_t) * wcSize + 8);
+    if (wcName == NULL) {
+       return NULL;
+    }
+    MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, filename, -1, wcName, wcSize);
+ 
+    if ((filename!=NULL) && (mode_fopen != NULL))
+        file = _wfopen((const wchar_t*)wcName, mode_fopen);
+    free(wcName);
+
+    return file;
+#else
     FILE* file = NULL;
     const char* mode_fopen = NULL;
     if ((mode & ZLIB_FILEFUNC_MODE_READWRITEFILTER)==ZLIB_FILEFUNC_MODE_READ)
@@ -126,6 +158,7 @@ static voidpf ZCALLBACK fopen64_file_func (voidpf opaque, const void* filename, 
     if ((filename!=NULL) && (mode_fopen != NULL))
         file = FOPEN_FUNC((const char*)filename, mode_fopen);
     return file;
+#endif
 }
 
 
