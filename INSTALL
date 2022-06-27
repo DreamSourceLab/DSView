@@ -61,6 +61,7 @@ Mac:
   brew install python3
   brew install libzip
   brew install zlib
+  brew install qt
   brew install pkg-config
 
 
