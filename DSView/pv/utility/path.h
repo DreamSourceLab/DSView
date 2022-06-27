@@ -28,6 +28,8 @@
 namespace pv::path
 {
     std::string ConvertPath(QString fileName);
+
+    QString GetDirectoryName(QString path);
 }
  
 #endif

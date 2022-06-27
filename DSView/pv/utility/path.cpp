@@ -21,21 +21,20 @@
 
 #include "path.h"
 
-#ifdef _WIN32
-#include <QTextCodec>
-#endif
-
 namespace pv::path
 {
     std::string ConvertPath(QString fileName)
     {
-#ifdef _WIN32
-        QTextCodec *code = QTextCodec::codecForName("GB2312");
-        if (code != NULL)
-        {
-            return code->fromUnicode(fileName).data();
-        }
-#endif
         return fileName.toUtf8().toStdString();
+    }
+
+    QString GetDirectoryName(QString path)
+    {
+        int lstdex = path.lastIndexOf('/');
+        if (lstdex != -1)
+        {
+            return path.left(lstdex);
+        }
+        return path;
     }
 }

@@ -299,16 +299,6 @@ std::string AppConfig::GetProtocolFormat(const std::string &protocolName)
 }
 
 //-------------api
-QString GetDirectoryName(QString path)
-{
-    int lstdex = path.lastIndexOf('/');
-    if (lstdex != -1)
-    {
-        return path.left(lstdex);
-    }
-    return path;
-}
-
 QString GetIconPath()
 {   
     QString style = AppConfig::Instance()._frameOptions.style;

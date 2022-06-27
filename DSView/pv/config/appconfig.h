@@ -35,8 +35,6 @@
 #define APP_NAME  "DSView"
   
 //--------------------api---
-
-QString GetDirectoryName(QString path);
 QString GetIconPath();
 QString GetAppDataDir();
 QString GetResourceDir();

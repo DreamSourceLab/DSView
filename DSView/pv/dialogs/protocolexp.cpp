@@ -39,6 +39,7 @@
 #include "../config/appconfig.h"
 #include "../dsvdef.h"
 #include "../utility/encoding.h"
+#include "../utility/path.h"
 
 using namespace boost;
 using namespace std;
@@ -140,7 +141,7 @@ void ProtocolExp::accept()
             if(f.suffix().compare(ext))
                 file_name+=tr(".")+ext;
 
-            QString fname = GetDirectoryName(file_name);
+            QString fname = path::GetDirectoryName(file_name);
             if (fname != app._userHistory.openDir)
             {
                 app._userHistory.protocolExportPath = fname;

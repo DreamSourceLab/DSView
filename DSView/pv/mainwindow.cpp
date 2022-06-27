@@ -94,6 +94,7 @@
 #include "dsvdef.h"
 #include "appcontrol.h"
 #include  "utility/encoding.h"
+#include "utility/path.h"
 
 #define BASE_SESSION_VERSION 2
   
@@ -439,20 +440,19 @@ void MainWindow::update_device_list()
         //load specified file name from application startup param
        if (_bFirstLoad){
            _bFirstLoad = false;
- 
-           if (AppControl::Instance()->_open_file_name != ""){
-                QString opf(QString::fromUtf8(AppControl::Instance()->_open_file_name.c_str()));
-                QFile fpath;   
+           
+            QString ldFileName(AppControl::Instance()->_open_file_name.c_str());
 
-                if (fpath.exists(opf)){             
-                    qDebug()<<"auto load file:"<<opf;
-                    on_load_file(opf);
+            if (ldFileName != ""){
+                if (QFile::exists(ldFileName)){             
+                    qDebug()<<"auto load file:"<<ldFileName;
+                    on_load_file(ldFileName);
                 }
                 else{
-                    qDebug()<<"file is not exists:"<<opf;
-                    MsgBox::Show(tr("Open file error!"), opf.toStdString().c_str());      
+                    qDebug()<<"file is not exists:"<<ldFileName;
+                    MsgBox::Show(tr("Open file error!"), ldFileName, NULL);      
                 }              
-           } 
+            } 
        }
 }
 
@@ -920,7 +920,7 @@ void MainWindow::on_screenShot()
 
         pixmap.save(fileName, suffix.toLatin1());
  
-        fileName = GetDirectoryName(fileName);
+        fileName = path::GetDirectoryName(fileName);
 
         if (app._userHistory.screenShotPath != fileName){
             app._userHistory.screenShotPath = fileName;
