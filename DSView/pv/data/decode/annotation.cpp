@@ -30,6 +30,7 @@
 #include <cstring>
 #include <assert.h>
 #include <string.h>
+#include <malloc.h>
 #include <QDebug>
 
 #include "../../config/appconfig.h"
@@ -128,8 +129,9 @@ const std::vector<QString>& Annotation::annotations() const
 		 resItem.cvt_lines.clear();
 
 		 if (resItem.src_lines.size() > 0)
-		 {
-			 char sz_format_tmp_buf[200] = {0};
+		 { 
+			 int 	text_format_buf_len = 0;
+			 char  *text_format_buf = NULL;
 
 			 //have custom string
 			 for (QString &rd_src : resItem.src_lines)
@@ -138,15 +140,26 @@ const std::vector<QString>& Annotation::annotations() const
 
 				 const char *num_str = _status->m_resTable.format_numberic(resItem.str_number_hex, resItem.cur_display_format);
 				 const char *src_str = src.toUtf8().data();
+				
+				 int textlen = strlen(src_str) + strlen(num_str);
+				 assert(textlen > 0);
 
-				 if (strlen(src_str) + strlen(num_str) > sizeof(sz_format_tmp_buf)){
-					 qDebug()<<"Annotation string length is too long!";
-					 return resItem.src_lines;					 
+				 if (textlen >= text_format_buf_len)
+				 {
+					if (text_format_buf)
+						free(text_format_buf);
+					text_format_buf = (char*)malloc(textlen + 8);
+					text_format_buf_len = textlen + 8;
+
+					assert(text_format_buf);
 				 }
 				 
-				 sprintf(sz_format_tmp_buf, src_str, num_str);
-				 resItem.cvt_lines.push_back(QString(sz_format_tmp_buf));
+				 sprintf(text_format_buf, src_str, num_str);
+				 resItem.cvt_lines.push_back(QString(text_format_buf));
 			 }
+
+			 if (text_format_buf)
+				free(text_format_buf);
 		 }
 		 else{
 			 //have only numberic value
