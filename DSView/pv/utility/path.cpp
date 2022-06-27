@@ -21,8 +21,9 @@
 
 #include "path.h"
 
-namespace pv::path
-{
+namespace pv{
+namespace path{
+
     std::string ConvertPath(QString fileName)
     {
         return fileName.toUtf8().toStdString();
@@ -37,4 +38,5 @@ namespace pv::path
         }
         return path;
     }
+}
 }

@@ -28,8 +28,9 @@
 #include <QTextCodec>
 #endif 
 
-namespace pv::encoding
-{
+namespace pv{
+namespace encoding{
+
     void set_utf8(QTextStream &stream)
     {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
@@ -39,4 +40,5 @@ namespace pv::encoding
         stream.setCodec(code);
 #endif
     }
+}
 }

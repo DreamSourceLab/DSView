@@ -25,11 +25,12 @@
 #include <string>
 #include <QString>
 
-namespace pv::path
-{
+namespace pv{
+namespace path{
     std::string ConvertPath(QString fileName);
 
     QString GetDirectoryName(QString path);
+}
 }
  
 #endif
