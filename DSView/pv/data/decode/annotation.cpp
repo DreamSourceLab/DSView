@@ -30,7 +30,7 @@
 #include <cstring>
 #include <assert.h>
 #include <string.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <QDebug>
 
 #include "../../config/appconfig.h"
