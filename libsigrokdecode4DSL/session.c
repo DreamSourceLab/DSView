@@ -24,6 +24,9 @@
 #include <inttypes.h>
 #include <glib.h>
 
+
+SRD_PRIV int srd_call_sub_decoder_end(struct srd_decoder_inst *di, char **error);
+
 /**
  * @file
  *
@@ -457,7 +460,7 @@ SRD_API int srd_session_end(struct srd_session *sess, char **error)
 }
 
 
-SRD_API int srd_call_sub_decoder_end(struct srd_decoder_inst *di, char **error)
+SRD_PRIV int srd_call_sub_decoder_end(struct srd_decoder_inst *di, char **error)
 {
 	assert(di && di->next_di);
 
