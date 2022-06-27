@@ -814,7 +814,7 @@ class Modbus_ADU_CS(Modbus_ADU):
 class Decoder(srd.Decoder):
     api_version = 3
     id = 'modbus'
-    name = 'Modbus'
+    name = 'Modbus RTU'
     longname = 'Modbus RTU over RS232/RS485'
     desc = 'Modbus RTU protocol for industrial applications.'
     license = 'gplv3+'
