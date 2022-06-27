@@ -67,6 +67,25 @@ DATA_TYPES = {
     15: 'VDM'
 }
 
+# Extended message type
+EXTENDED_TYPES = {
+    1: 'Source_Cap_Extended',
+    2: 'Status',
+    3: 'Get_Battery_Cap',
+    4: 'Get_Battery_Status',
+    5: 'Battery_Cap',
+    6: 'Get_Manufacturer_Info',
+    7: 'Manufacturer_Info',
+    8: 'Security_Request',
+    9: 'Security_Response',
+    10: 'Firmware_Update_Request',
+    11: 'Firmware_Update_Response',
+    12: 'PPS_Status',
+    13: 'Country_Info',
+    14: 'Country_Codes'
+}
+
+
 # 4b5b encoding of the symbols
 DEC4B5B = [
     0x10,   # Error      00000
@@ -252,7 +271,7 @@ class Decoder(srd.Decoder):
         mark = self.cap_mark[pos]
         if mark == 3:
             op_v = ((rdo >> 9) & 0x7ff) * 0.02
-            op_a = (rdo & 0x3f) * 0.05
+            op_a = (rdo & 0xff) * 0.05
             t_settings = '%gV %gA' % (op_v, op_a)
         elif mark == 2:
             op_w = ((rdo >> 10) & 0x3ff) * 0.25
@@ -320,19 +339,19 @@ class Decoder(srd.Decoder):
             minv = ((pdo >> 10) & 0x3ff) * 0.05
             maxv = ((pdo >> 20) & 0x3ff) * 0.05
             ma   = ((pdo >>  0) & 0x3ff) * 0.01
-            p = '%g/%gV %gA' % (minv, maxv, ma)
+            p = '%g/%gV %gA (%gW)' % (minv, maxv, ma, maxv*ma)
             self.stored_pdos[idx] = '%s %g/%gV' % (t_name, minv, maxv)
         elif t1 == 3:
             t2 = (pdo >> 28) & 3
             if t2 == 0:
-                t_name = 'Programmable|PPS'
+                t_name = 'PPS'
                 flags = {
                     (1 << 29): 'power_limited',
                 }
                 minv = ((pdo >> 8) & 0xff) * 0.1
                 maxv = ((pdo >> 17) & 0xff) * 0.1
                 ma = ((pdo >> 0) & 0xff) * 0.05
-                p = '%g/%gV %gA' % (minv, maxv, ma)
+                p = '%g/%gV %gA (%gW)' % (minv, maxv, ma, maxv*ma)
                 if (pdo >> 27) & 0x1:
                     p += ' [limited]'
                 self.stored_pdos[idx] = '%s %g/%gV' % (t_name, minv, maxv)
@@ -376,10 +395,26 @@ class Decoder(srd.Decoder):
         # TODO: Check all 0 bits are 0 / emit warnings.
         return 'mode %s' % (mode_name) if idx == 0 else 'invalid BRO'
 
+    def get_hex(self, idx, data):
+        if idx == 0:
+        	txt = 'Ext H:%04x' % ( data & 0xFFFF )
+        	txt += '  DATA: %02x' % ((data >> 24)&0xFF)
+        	txt += ' %02x' % ((data >> 16)&0xFF)
+        else:
+        	txt = '%02x' % ((data >> 8)&0xFF)
+        	txt += ' %02x' % ((data >> 0)&0xFF)
+        	txt += ' %02x' % ((data >> 24)&0xFF)
+        	txt += ' %02x' % ((data >> 16)&0xFF)
+        return txt
+
+
     def putpayload(self, s0, s1, idx):
-        t = self.head_type()
+        t = self.head_type() if self.head_ext() == 0 else  255
+			
         txt = '['+str(idx+1)+'] '
-        if t == 2:
+        if t == 255:
+        	txt += self.get_hex(idx, self.data[idx])
+        elif t == 2:
             txt += self.get_request(self.data[idx])
         elif t == 1 or t == 4:
             txt += self.get_source_sink_cap(self.data[idx], idx+1, t==1)
@@ -396,7 +431,10 @@ class Decoder(srd.Decoder):
         if self.head_data_role() != self.head_power_role():
             role += '/DFP' if self.head_data_role() else '/UFP'
         t = self.head_type()
-        if self.head_count() == 0:
+        
+        if self.head_ext() == 1:
+            shortm = EXTENDED_TYPES[t] if t in EXTENDED_TYPES else 'EXTENDED???'
+        elif self.head_count() == 0:
             shortm = CTRL_TYPES[t]
         else:
             shortm = DATA_TYPES[t] if t in DATA_TYPES else 'DAT???'
@@ -405,6 +443,9 @@ class Decoder(srd.Decoder):
         self.putx(0, -1, [ann_type, [longm, shortm]])
         self.text += longm
 
+    def head_ext(self):
+        return (self.head >> 15) & 1
+        
     def head_id(self):
         return (self.head >> 9) & 7
 
@@ -418,7 +459,7 @@ class Decoder(srd.Decoder):
         return ((self.head >> 6) & 3) + 1
 
     def head_type(self):
-        return self.head & 0xF
+        return self.head & 0x1F
 
     def head_count(self):
         return (self.head >> 12) & 7
@@ -559,15 +600,14 @@ class Decoder(srd.Decoder):
         self.head = self.get_short()
         self.putx(self.idx-20, self.idx, [3, ['H:%04x' % (self.head), 'HD']])
         self.puthead()
-
-        # Decode data payload
+		
+        # Decode data payload 
         for i in range(self.head_count()):
             self.data.append(self.get_word())
-            self.putx(self.idx-40, self.idx,
-                      [4, ['[%d]%08x' % (i, self.data[i]), 'D%d' % (i)]])
+            self.putx(self.idx-40, self.idx,[4, ['[%d]%08x' % (i, self.data[i]), 'D%d' % (i)]])
             self.putpayload(self.idx-40, self.idx, i)
-
-        # CRC check
+			
+        # CRC check 
         self.crc = self.get_word()
         ccrc = self.compute_crc32()
         if self.crc != ccrc:
