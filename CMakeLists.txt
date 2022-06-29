@@ -50,6 +50,10 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake")
 
 find_package(PkgConfig)
 
+if(NOT PKG_CONFIG_FOUND)
+	message(FATAL_ERROR  "Please install pkg-config!")
+endif()
+
 #===============================================================================
 #= User Options
 #-------------------------------------------------------------------------------
@@ -78,56 +82,86 @@ endif()
 #===============================================================================
 #= glib-2.0
 #-------------------------------------------------------------------------------
-pkg_search_module(GLIB REQUIRED glib-2.0)
-message("-- glib-2.0:")
-MESSAGE(STATUS "	- includes:" ${GLIB_INCLUDE_DIRS})
-MESSAGE(STATUS "	- libraries:" ${GLIB_LIBDIR}/libglib-2.0.*)
+pkg_search_module(GLIB glib-2.0)
+
+if(NOT GLIB_FOUND)
+	message(FATAL_ERROR  "Please install glib!")
+endif()
+
+message("----- glib-2.0:")
+message(STATUS "	 includes:" ${GLIB_INCLUDE_DIRS})
+message(STATUS "	 libraries:" ${GLIB_LIBDIR}/libglib-2.0.*)
 include_directories(${GLIB_INCLUDE_DIRS})
 link_directories(${GLIB_LIBDIR})
 
 #===============================================================================
 #= python3
 #-------------------------------------------------------------------------------
-find_package(PythonLibs 3 REQUIRED)
-message("-- python3:")
-MESSAGE(STATUS "	- includes:" ${PYTHON_INCLUDE_DIR})
-MESSAGE(STATUS "	- libraries:" ${PYTHON_LIBRARIES})
-include_directories(${PYTHON_INCLUDE_DIR})
+find_package(Python3 COMPONENTS Development)
+
+if(NOT Python3_FOUND)
+	message(FATAL_ERROR  "Please install lib python3!")
+endif()
+
+message("----- python3:")
+message(STATUS "	 includes:" ${Python3_INCLUDE_DIRS})
+message(STATUS "	 libraries:" ${Python3_LIBRARIES})
+include_directories(${Python3_INCLUDE_DIRS})
 
 #===============================================================================
 #= FFTW
 #-------------------------------------------------------------------------------
-find_package(FFTW REQUIRED)
-message("-- FFTW:")
-MESSAGE(STATUS "	- includes:" ${FFTW_INCLUDE_DIRS})
-MESSAGE(STATUS "	- libraries:" ${FFTW_LIBRARIES})
+find_package(FFTW)
+
+if(NOT FFTW_FOUND)
+	message(FATAL_ERROR  "Please install lib fftw!")
+endif()
+
+message("----- FFTW:")
+message(STATUS "	 includes:" ${FFTW_INCLUDE_DIRS})
+message(STATUS "	 libraries:" ${FFTW_LIBRARIES})
 include_directories(${FFTW_INCLUDE_DIRS})
 
 #===============================================================================
 #= libusb-1.0
 #-------------------------------------------------------------------------------
-find_package(libusb-1.0 REQUIRED)
-message("-- libusb-1.0:")
-MESSAGE(STATUS "	- includes:" ${LIBUSB_1_INCLUDE_DIRS})
-MESSAGE(STATUS "	- libraries:" ${LIBUSB_1_LIBRARIES})
+find_package(libusb-1.0)
+
+if(NOT LIBUSB_1_FOUND)
+	message(FATAL_ERROR  "Please install libusb!")
+endif()
+
+message("----- libusb-1.0:")
+message(STATUS "	 includes:" ${LIBUSB_1_INCLUDE_DIRS})
+message(STATUS "	 libraries:" ${LIBUSB_1_LIBRARIES})
 include_directories(${LIBUSB_1_INCLUDE_DIRS})
 
 #===============================================================================
 #= zlib
 #-------------------------------------------------------------------------------
-find_package(ZLIB REQUIRED)
-message("-- zlib:")
-MESSAGE(STATUS "	- includes:" ${ZLIB_INCLUDE_DIRS})
-MESSAGE(STATUS "	- libraries:" ${ZLIB_LIBRARIES})
+find_package(ZLIB)
+
+if(NOT ZLIB_FOUND)
+	message(FATAL_ERROR  "Please install zlib!")
+endif()
+
+message("----- zlib:")
+message(STATUS "	 includes:" ${ZLIB_INCLUDE_DIRS})
+message(STATUS "	 libraries:" ${ZLIB_LIBRARIES})
 include_directories(${ZLIB_INCLUDE_DIRS})
 
 #===============================================================================
 #= libzip
 #-------------------------------------------------------------------------------
-pkg_search_module(LIBZIP REQUIRED libzip)
-message("-- libzip:")
-MESSAGE(STATUS "	- includes:" ${LIBZIP_INCLUDE_DIRS})
-MESSAGE(STATUS "	- libraries:" ${LIBZIP_LIBDIR}/lib${LIBZIP_LIBRARIES}.*)
+pkg_search_module(LIBZIP libzip)
+
+if(NOT LIBZIP_FOUND)
+	message(FATAL_ERROR  "Please install libzip!")
+endif()
+
+message("----- libzip:")
+message(STATUS "	 includes:" ${LIBZIP_INCLUDE_DIRS})
+message(STATUS "	 libraries:" ${LIBZIP_LIBDIR}/lib${LIBZIP_LIBRARIES}.*)
 include_directories(${LIBZIP_INCLUDE_DIRS})
 link_directories(${LIBZIP_LIBDIR})
 
@@ -138,8 +172,8 @@ link_directories(${LIBZIP_LIBDIR})
 find_package(Qt5Core QUIET)
 
 if(Qt5Core_FOUND)
-	message("-- use Qt5:")
-	MESSAGE(STATUS "	- includes:" ${Qt5Core_INCLUDE_DIRS})
+	message("----- use Qt5:")
+	message(STATUS "	 includes:" ${Qt5Core_INCLUDE_DIRS})
 	find_package(Qt5Widgets REQUIRED)
 	find_package(Qt5Gui REQUIRED)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
@@ -151,8 +185,8 @@ else()
 endif()
 
 if(Qt6Core_FOUND)
-    message("-- use Qt6:")
-	MESSAGE(STATUS "	- includes:" ${Qt6Core_INCLUDE_DIRS})
+    	message("----- use Qt6:")
+	message(STATUS "	 includes:" ${Qt6Core_INCLUDE_DIRS})
 	find_package(Qt6Widgets REQUIRED)
 	find_package(Qt6Gui REQUIRED)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt6Widgets_EXECUTABLE_COMPILE_FLAGS}")
@@ -166,14 +200,23 @@ if(NOT Qt5Core_FOUND AND NOT Qt6Core_FOUND)
 endif()
 
 #===============================================================================
+#= boost
+#-------------------------------------------------------------------------------
+find_package(Boost 1.42)
+
+if(NOT Boost_FOUND)
+	message(FATAL_ERROR  "Please install boost!")
+endif()
+
+message("----- boost:")
+message(STATUS "	 includes:" ${Boost_INCLUDE_DIRS})
+include_directories(${Boost_INCLUDE_DIRS})
+
+#===============================================================================
 #= Dependencies
 #-------------------------------------------------------------------------------
 
-
 find_package(Threads)
-find_package(Boost 1.42 REQUIRED)
-
-link_directories(${Boost_LIBRARY_DIRS})
 
 #===============================================================================
 #= DSView sources
@@ -559,11 +602,10 @@ set(DSVIEW_LINK_LIBS
 	-lz
 	-lglib-2.0
 	${CMAKE_THREAD_LIBS_INIT}
-	${Boost_LIBRARIES}
 	${QT_LIBRARIES}
 	${LIBUSB_1_LIBRARIES}
 	${FFTW_LIBRARIES}
-	${PYTHON_LIBRARIES}
+	${Python3_LIBRARIES}
 	${LIBZIP_LIBRARIES}
 )
 
