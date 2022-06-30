@@ -47,20 +47,21 @@ Arch:
    python boost qt5 fftw
    
 Mac:
+  install git
   install Xcode
   install hombrew
-  brew install git
   brew install gcc
   brew install g++
   brew install make
   brew install cmake
+  brew install gettext
   brew install glib
   brew install libusb
+  brew install libzip
+  brew install zlib
   brew install boost
   brew install fftw
   brew install python3
-  brew install libzip
-  brew install zlib
   brew install qt
   brew install pkg-config
 

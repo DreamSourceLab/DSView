@@ -967,15 +967,13 @@ bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_arra
 {
     if (_session->get_device()->dev_inst()->mode != LOGIC || dec_array.empty())
     {
-         return false;
+        return false;
     }
-       
-
-    for (const QJsonValue &dec_value : dec_array) {
-
+    
+    for (const QJsonValue &dec_value : dec_array)
+    {
         QJsonObject dec_obj = dec_value.toObject(); 
         std::vector<view::DecodeTrace*> &pre_dsigs = _session->get_decode_signals();
-
         std::list<pv::data::decode::Decoder*> sub_decoders;
 
         //get sub decoders
@@ -1017,13 +1015,13 @@ bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_arra
             auto new_dsig = aft_dsigs.back();
             auto stack = new_dsig->decoder();
  
-            auto &decoder = stack->stack();
+            auto &decoder_list = stack->stack();
 
-            for(auto &dec : decoder) {
+            for(auto dec : decoder_list) {
                 const srd_decoder *const d = dec->decoder();
                 QJsonObject options_obj;
 
-                if (dec == decoder.front()) {
+                if (dec == decoder_list.front()) {
                     std::map<const srd_channel*, int> probe_map;
                     // Load the mandatory channels
                     for(l = d->channels; l; l = l->next) {
@@ -1052,7 +1050,8 @@ bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_arra
                     }
                     dec->set_probes(probe_map);
                     options_obj = dec_obj["options"].toObject();
-                } else {
+                }
+                else {
                     for(const QJsonValue &value : dec_obj["stacked decoders"].toArray()) {
                         QJsonObject stacked_obj = value.toObject();
                         if (QString::fromUtf8(d->id) == stacked_obj["id"].toString()) {
@@ -1063,34 +1062,67 @@ bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_arra
                 }
 
                 for (l = d->options; l; l = l->next) {
-                    const srd_decoder_option *const opt =
-                        (srd_decoder_option*)l->data;
-                    if (options_obj.contains(opt->id)) {
+                    const srd_decoder_option *const opt = (srd_decoder_option*)l->data;
+
+                    if (options_obj.contains(opt->id)) 
+                    {
                         GVariant *new_value = NULL;
-                        if (g_variant_is_of_type(opt->def, G_VARIANT_TYPE("d"))) {
-                            new_value = g_variant_new_double(options_obj[opt->id].toDouble());
-                        } else if (g_variant_is_of_type(opt->def, G_VARIANT_TYPE("x"))) {
+                        // When the numberic value is a string, it got zero always,
+                        // so must convert from string.
+                        QString vs = options_obj[opt->id].toString();
+
+                        if (g_variant_is_of_type(opt->def, G_VARIANT_TYPE("d"))) 
+                        {
+                            double vi = options_obj[opt->id].toDouble();
+                            if (vs != "") vi = vs.toDouble();
+                            new_value = g_variant_new_double(vi);
+                        }
+                        else if (g_variant_is_of_type(opt->def, G_VARIANT_TYPE("x"))) {
                             const GVariantType *const type = g_variant_get_type(opt->def);
-                            if (g_variant_type_equal(type, G_VARIANT_TYPE_BYTE))
-                                new_value = g_variant_new_byte(options_obj[opt->id].toInt());
-                            else if (g_variant_type_equal(type, G_VARIANT_TYPE_INT16))
-                                new_value = g_variant_new_int16(options_obj[opt->id].toInt());
-                            else if (g_variant_type_equal(type, G_VARIANT_TYPE_UINT16))
-                                new_value = g_variant_new_uint16(options_obj[opt->id].toInt());
-                            else if (g_variant_type_equal(type, G_VARIANT_TYPE_INT32))
-                                new_value = g_variant_new_int32(options_obj[opt->id].toInt());
-                            else if (g_variant_type_equal(type, G_VARIANT_TYPE_UINT32))
-                                new_value = g_variant_new_uint32(options_obj[opt->id].toInt());
-                            else if (g_variant_type_equal(type, G_VARIANT_TYPE_INT64))
-                                new_value = g_variant_new_int64(options_obj[opt->id].toInt());
-                            else if (g_variant_type_equal(type, G_VARIANT_TYPE_UINT64))
-                                new_value = g_variant_new_uint64(options_obj[opt->id].toInt());
-                        } else if (g_variant_is_of_type(opt->def, G_VARIANT_TYPE("s"))) {
-                            new_value = g_variant_new_string(options_obj[opt->id].toString().toUtf8().data());
+
+                            if (g_variant_type_equal(type, G_VARIANT_TYPE_BYTE)){
+                                int vi = options_obj[opt->id].toInt();                               
+                                if (vs != "") vi = vs.toInt();
+                                new_value = g_variant_new_byte(vi);
+                            }
+                            else if (g_variant_type_equal(type, G_VARIANT_TYPE_INT16)){
+                                int vi = options_obj[opt->id].toInt();                               
+                                if (vs != "") vi = vs.toInt();
+                                new_value = g_variant_new_int16(vi);
+                            }
+                            else if (g_variant_type_equal(type, G_VARIANT_TYPE_UINT16)){
+                                int vi = options_obj[opt->id].toInt();                               
+                                if (vs != "") vi = vs.toInt();
+                                new_value = g_variant_new_uint16(vi);
+                            }
+                            else if (g_variant_type_equal(type, G_VARIANT_TYPE_INT32)){
+                                int vi = options_obj[opt->id].toInt();                               
+                                if (vs != "") vi = vs.toInt();
+                                new_value = g_variant_new_int32(vi);
+                            }
+                            else if (g_variant_type_equal(type, G_VARIANT_TYPE_UINT32)){
+                                int vi = options_obj[opt->id].toInt();                               
+                                if (vs != "") vi = vs.toInt();
+                                new_value = g_variant_new_uint32(vi);
+                            }
+                            else if (g_variant_type_equal(type, G_VARIANT_TYPE_INT64)){
+                                int vi = options_obj[opt->id].toInt();                               
+                                if (vs != "") vi = vs.toInt();
+                                new_value = g_variant_new_int64(vi);
+                            }
+                            else if (g_variant_type_equal(type, G_VARIANT_TYPE_UINT64)){
+                                int vi = options_obj[opt->id].toInt();                               
+                                if (vs != "") vi = vs.toInt();
+                                new_value = g_variant_new_uint64(vi);
+                            }
+                        }
+                        else if (g_variant_is_of_type(opt->def, G_VARIANT_TYPE("s"))) {
+                            new_value = g_variant_new_string(vs.toUtf8().data());
                         }
 
-                        if (new_value != NULL)
+                        if (new_value != NULL){
                             dec->set_option(opt->id, new_value);
+                        }
                     }
                 }
                 dec->commit();
