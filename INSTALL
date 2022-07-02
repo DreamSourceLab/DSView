@@ -48,7 +48,6 @@ Arch:
    
 Mac:
   install git
-  install Xcode
   install hombrew
   brew install gcc
   brew install g++
