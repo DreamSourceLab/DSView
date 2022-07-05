@@ -1,4 +1,47 @@
-1.12 -- (2020-05-11)
+1.2.0 -- (2022-07-05)
+-----------------
+  --common
+  *fix issue of large file saving failure in some cases
+  *optimize file saving speed
+  *fix issue of recognization of USB2.0 devices under MacOS
+  *fix abnormal window display caused by system scaling
+  *fix issue of hidden toolbar buttons
+  *fix assert errors caused by multithreading problem 
+  *modify processing window of file saving
+  *fix accidental operation issues during file loading
+  *fix screenshot issue
+  *build a new compilation method based on cmake
+  *fix window cannot be recoved issue after moving out of screen
+  *fix other display issues
+
+  --for logic analyzer
+  *add protocol search function
+  *add auto stacking function when adding multi-layer protocols
+  *optimize decoder memory usage
+  *add specific decoder support for format conversion of data
+  *add enable/disable options for mouse quick scroll
+  *add csv export format selection (original / compressed)
+  *fix issue of wave back search
+  *optimize parallel decode, and increase to 32 data channels
+  *optimize the clock edge setting of MDIO decoder
+  *fix issue of Flexray decoder
+  *fix issue of ps/2 decoder
+  *optimize sdcard decoder
+  *extend interval to 0.1s under repeat mode
+  *increase number of decoders up to 138
+
+  --for oscilloscope
+  *fix the data accuracy issue when exporting csv file
+  *fix math waveform generation of half screen data when stop
+  *remove invalid edge count measurment display
+  *fix crash caused by trigger dock movement
+  *fix display error of time ruler in some cases
+
+  --for data acquisiton
+  *fix data inverval error under ultra-low sample rate
+
+
+1.1.2 -- (2020-05-11)
 -----------------
   --common
   *fix issue of saving/loading file with special characters
@@ -12,7 +55,7 @@
   *fix out-of-order issue of multiple annotation rows in one decoder
   *fix issue #306, VCD file export uses the wrong identifier codes
 
-1.11 -- (2020-04-09)
+1.1.1 -- (2020-04-09)
 -----------------
   --common
   *improve the icons with svg format for better high DPI display
@@ -27,7 +70,7 @@
   *fix issue of first trigger be ignored 
 
 
-1.10 -- (2020-02-22)
+1.1.0 -- (2020-02-22)
 -----------------
   --common
   *add support for DSCope U3P100 device (100M bandwidth/1G samplerate/USB3.0 oscilloscope)
@@ -65,12 +108,12 @@
   *fix mipmap issue of long time data at some case
   *add cursor and mouse measurements
 
-1.01 -- (2019-09-15)
+1.0.1 -- (2019-09-15)
 -----------------
   --common
   *fix issue #227 (firmware compitable issue with certain hardware) 
 
-1.00 -- (2019-09-09)
+1.0.0 -- (2019-09-09)
 -----------------
   --common
   *add multi-language support and dynamic switch
@@ -109,7 +152,7 @@
   --for data acquisiton
   *add default settings of Y-axis
 
-0.99 (2018-05-30)
+0.9.9 (2018-05-30)
 -----------------
   --common
   *add boundary for the main window
@@ -132,7 +175,7 @@
   --for data acquisiton
   *add DAQ mode for DSCope serial devices
 
-0.98 (2017-07-29)
+0.9.8 (2017-07-29)
 -----------------
   --common
   *fix hardware initialization issue(always red led indicator) when power on
@@ -152,7 +195,7 @@
   *fix auto calibraiton issue
   *improve noise processing method
 
-0.97 (2017-06-02)
+0.9.7 (2017-06-02)
 -----------------
   --common
   *fix file save fail issue
@@ -191,7 +234,7 @@
   *fix vertical position moving issue under stop state
   *fix window background rendering issue
 
-0.96 (2016-08-12)
+0.9.6 (2016-08-12)
 -----------------
   --common
   *change color matching of UI
@@ -231,7 +274,7 @@
   *add display of trigger status
   *fix measure setting reset issue
 
-0.95 (2015-12-14)
+0.9.5 (2015-12-14)
 -----------------
  --for logic analyzer
  *add RLE compress mode
@@ -254,7 +297,7 @@
  *imporve add/del of measure ruler
  *fix other issues
 
-0.94 (2015-06-29)
+0.9.4 (2015-06-29)
 -----------------
  * add session load/store function
  * add drag-and-drop effect in viewport window
@@ -276,7 +319,7 @@
  * fix trigger position issue when only one channel enabled
  * fix trigger level can't be changed issue when only one channel enabled
 
-0.93 (2015-05-08)
+0.9.3 (2015-05-08)
 -----------------
  * Upgrade to qt5 library
  * Support stdc++11
@@ -295,7 +338,7 @@
  * Fix stack decoder add issue @ LA mode
  * Fix other bugs
 
-0.92 (2015-04-15)
+0.9.2 (2015-04-15)
 -----------------
  * Add DSLogic Pro and DSCope support
  * Add Stream mode to DSLogic & DSLogic Pro
@@ -305,7 +348,7 @@
  * Enhance stbility
  * Fix other bugs
 
-0.4 (2014-09-24)
+0.4.0 (2014-09-24)
 -----------------
  * Add protocol decoders (38) support
  * Improve the hardware configuration under various platforms
@@ -336,7 +379,7 @@
  * Add shortcut keys for major operations
  * Fix other bugs
 
-0.3 (2014-06-29)
+0.3.0 (2014-06-29)
 -----------------
  * Add DSLogic Oscilloscope module support.
  * Fix data display issue when not all channels be enabled.
@@ -362,7 +405,3 @@
 0.1.0 (2013-12-15)
 ------------------
  * Initial release.
-
-
- 
- 
