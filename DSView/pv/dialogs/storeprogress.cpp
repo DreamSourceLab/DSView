@@ -111,6 +111,12 @@ StoreProgress::~StoreProgress()
 
     if (file != ""){
         _fileLab->setText(file); 
+
+        if (_ckOrigin != NULL){
+            bool bFlag = file.endsWith(".csv");
+            _ckOrigin->setVisible(bFlag);
+            _ckCompress->setVisible(bFlag);
+        }
     }          
  }
 
@@ -225,6 +231,13 @@ void StoreProgress::export_run()
     setTitle(tr("Exporting..."));
     QString file = _store_session.MakeExportFile(false);
     _fileLab->setText(file); 
+
+     if (_ckOrigin != NULL){
+            bool bFlag = file.endsWith(".csv");
+            _ckOrigin->setVisible(bFlag);
+            _ckCompress->setVisible(bFlag);
+     }
+
     show();
 }
 
