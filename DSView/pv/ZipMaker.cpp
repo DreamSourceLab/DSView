@@ -25,6 +25,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <QDebug>
   
 ZipMaker::ZipMaker() :
     m_zDoc(NULL)
@@ -160,4 +161,84 @@ const char *ZipMaker::GetError()
     if (m_error[0])
         return m_error;
     return NULL;
+}
+
+//-----------------ZipReader
+
+ZipInnerFileData::ZipInnerFileData(char *data, int size)
+{
+    _data = data;
+    _size = size;
+}
+
+ZipInnerFileData::~ZipInnerFileData()
+{
+    if (_data != NULL){
+        free(_data);
+        _data = NULL;
+    }
+}
+
+ZipReader::ZipReader(const char *filePath)
+{
+    m_archive = NULL;
+    m_archive = unzOpen64(filePath);
+}
+
+ZipReader::~ZipReader()
+{
+    Close();
+}
+
+void ZipReader::Close()
+{
+    if (m_archive != NULL){
+        unzClose(m_archive);
+        m_archive = NULL;
+    }
+}
+
+ZipInnerFileData* ZipReader::GetInnterFileData(const char *innerFile)
+{
+    char *metafile = NULL;
+    char szFilePath[15];
+    unz_file_info64 fileInfo;
+   
+    if (m_archive == NULL){
+        return NULL;
+    }
+  
+    // inner file not exists
+    if (unzLocateFile(m_archive, innerFile, 0) != UNZ_OK){
+        return NULL;
+    }
+
+    if (unzGetCurrentFileInfo64(m_archive, &fileInfo, szFilePath,
+                                sizeof(szFilePath), NULL, 0, NULL, 0) != UNZ_OK)
+    {  
+        return NULL;
+    }
+
+    if (unzOpenCurrentFile(m_archive) != UNZ_OK)
+    { 
+        return NULL;
+    }
+
+    if (fileInfo.uncompressed_size > 0 && (metafile = (char *)malloc(fileInfo.uncompressed_size)))
+    {
+        unzReadCurrentFile(m_archive, metafile, fileInfo.uncompressed_size);
+        unzCloseCurrentFile(m_archive);
+
+         ZipInnerFileData *data = new ZipInnerFileData(metafile, fileInfo.uncompressed_size);
+         return data;
+    } 
+ 
+    return NULL;
+}
+
+void ZipReader::ReleaseInnerFileData(ZipInnerFileData *data)
+{
+    if (data){
+        delete data;
+    }
 }

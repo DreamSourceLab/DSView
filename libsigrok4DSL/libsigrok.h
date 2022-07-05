@@ -26,8 +26,7 @@
 #include <sys/time.h>
 #include <stdint.h>
 #include <inttypes.h>
-#include <glib.h>
-#include <zip.h>
+#include <glib.h> 
 
 #ifdef __cplusplus
 extern "C" {

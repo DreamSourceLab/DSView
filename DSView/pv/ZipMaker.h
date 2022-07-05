@@ -23,17 +23,10 @@
 
 #pragma once 
 
-#include "../../common/minizip/zip.h" 
-
-typedef struct
-{
-    char  inFileName[256];
-    int   inFileNameLen;
-    void *pData;
-    long long dataLen;
-} UnZipFileInfo;
-
+#include <minizip/zip.h>
+#include <minizip/unzip.h>
  
+
 class ZipMaker
 {
 public:
@@ -66,5 +59,44 @@ private:
     zipFile         m_zDoc; //zip file handle
     zip_fileinfo    *m_zi; //life must as m_zDoc; 
     char     m_error[500];
+};
+
+
+//------------------ZipReader
+class ZipInnerFileData
+{
+public:
+    ZipInnerFileData(char *data, int size);
+    ~ZipInnerFileData();
+
+    inline char *data(){
+        return _data;
+    }
+    inline int size(){
+        return _size;
+    }
+
+private:
+    char *_data;
+    int  _size;
+};
+
+class ZipReader{
+public:
+    ZipReader(const char *filePath);
+    ~ZipReader();
+    void Close();
+
+    inline bool HaveArchive(){
+        return m_archive != NULL;
+    }
+
+    ZipInnerFileData* GetInnterFileData(const char *innerFile);
+
+    void ReleaseInnerFileData(ZipInnerFileData *data);
+
+
+private:
+    unzFile  m_archive;
 };
  

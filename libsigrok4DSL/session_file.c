@@ -27,7 +27,7 @@
 #include <errno.h>
 #include <glib.h>
 #include <glib/gstdio.h>
-#include "../common/minizip/unzip.h"
+#include <minizip/unzip.h>
 #include "config.h" /* Needed for PACKAGE_VERSION and others. */
 
 /* Message logging helpers with subsystem-specific prefix string. */

@@ -33,7 +33,7 @@ set(DS_DESCRIPTION "A GUI for instruments of DreamSourceLab")
 set(DS_VERSION_MAJOR 1)
 set(DS_VERSION_MINOR 2)
 set(DS_VERSION_MICRO 0)
-set(DS_VERSION_STRING  ${DS_VERSION_MAJOR}.${DS_VERSION_MINOR}.${DS_VERSION_MICRO}-RC10 )
+set(DS_VERSION_STRING  ${DS_VERSION_MAJOR}.${DS_VERSION_MINOR}.${DS_VERSION_MICRO}-RC15 )
 
 configure_file (
 	${PROJECT_SOURCE_DIR}/DSView/config.h.in
@@ -149,21 +149,6 @@ message("----- zlib:")
 message(STATUS "	 includes:" ${ZLIB_INCLUDE_DIRS})
 message(STATUS "	 libraries:" ${ZLIB_LIBRARIES})
 include_directories(${ZLIB_INCLUDE_DIRS})
-
-#===============================================================================
-#= libzip
-#-------------------------------------------------------------------------------
-pkg_search_module(LIBZIP libzip)
-
-if(NOT LIBZIP_FOUND)
-	message(FATAL_ERROR  "Please install libzip!")
-endif()
-
-message("----- libzip:")
-message(STATUS "	 includes:" ${LIBZIP_INCLUDE_DIRS})
-message(STATUS "	 libraries:" ${LIBZIP_LIBDIR}/lib${LIBZIP_LIBRARIES}.*)
-include_directories(${LIBZIP_INCLUDE_DIRS})
-link_directories(${LIBZIP_LIBDIR})
 
 #===============================================================================
 #= Qt5 or Qt6
@@ -568,6 +553,7 @@ include_directories(
    ./DSView
    ./libsigrok4DSL
    ./libsigrokdecode4DSL
+   ./common
 )
 
 include_directories(
@@ -606,7 +592,6 @@ set(DSVIEW_LINK_LIBS
 	${LIBUSB_1_LIBRARIES}
 	${FFTW_LIBRARIES}
 	${Python3_LIBRARIES}
-	${LIBZIP_LIBRARIES}
 )
 
 if(STATIC_PKGDEPS_LIBS)
