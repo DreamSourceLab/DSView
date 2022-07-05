@@ -215,7 +215,7 @@ int64_t DecoderStack::samples_decoded()
 }
 
 void DecoderStack::get_annotation_subset(
-	std::vector<pv::data::decode::Annotation> &dest,
+	std::vector<pv::data::decode::Annotation*> &dest,
 	const Row &row, uint64_t start_sample,
 	uint64_t end_sample)
 {  

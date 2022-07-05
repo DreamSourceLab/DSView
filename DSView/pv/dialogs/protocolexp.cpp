@@ -41,8 +41,7 @@
 #include "../utility/encoding.h"
 #include "../utility/path.h"
 
-using namespace boost;
-using namespace std;
+using namespace pv::data::decode;
 
 namespace pv {
 namespace dialogs {
@@ -103,127 +102,149 @@ ProtocolExp::ProtocolExp(QWidget *parent, SigSession *session) :
 }
 
 void ProtocolExp::accept()
-{
-    using namespace Qt;
-    using namespace pv::data::decode;
-
+{ 
     QDialog::accept();
 
-    if (!_row_sel_list.empty()) {
-        QList<QString> supportedFormats;
-        for (int i = _format_combobox->count() - 1; i >= 0; i--) {
-            supportedFormats.push_back(_format_combobox->itemText(i));
-        }
-        QString filter;
-        for(int i = 0; i < supportedFormats.count();i++){
-            filter.append(supportedFormats[i]);
-            if(i < supportedFormats.count() - 1)
-                filter.append(";;");
-        }
+    if (_row_sel_list.empty()){
+        return;
+    }
 
-        AppConfig &app = AppConfig::Instance();         
-        
-        QString default_filter = _format_combobox->currentText();
+    QList<QString> supportedFormats;
+    for (int i = _format_combobox->count() - 1; i >= 0; i--)
+    {
+        supportedFormats.push_back(_format_combobox->itemText(i));
+    }
 
-        QString default_name = app._userHistory.protocolExportPath + "/" + "decoder-";
-        default_name += _session->get_session_time().toString("-yyMMdd-hhmmss");
+    QString filter;
+    for (int i = 0; i < supportedFormats.count(); i++)
+    {
+        filter.append(supportedFormats[i]);
+        if (i < supportedFormats.count() - 1)
+            filter.append(";;");
+    }
 
-        QString file_name = QFileDialog::getSaveFileName(
-                    this, 
-                    tr("Export Data"), 
-                    default_name,filter,
-                    &default_filter);
+    AppConfig &app = AppConfig::Instance();
+    QString default_filter = _format_combobox->currentText();
+    QString default_name = app._userHistory.protocolExportPath + "/" + "decoder-";
+    default_name += _session->get_session_time().toString("-yyMMdd-hhmmss");
 
-        if (!file_name.isEmpty()) {
-            QFileInfo f(file_name);
-            QStringList list = default_filter.split('.').last().split(')');
-            QString ext = list.first();
-            if(f.suffix().compare(ext))
-                file_name+=tr(".")+ext;
+    QString file_name = QFileDialog::getSaveFileName(
+        this,
+        tr("Export Data"),
+        default_name, filter,
+        &default_filter);
 
-            QString fname = path::GetDirectoryName(file_name);
-            if (fname != app._userHistory.openDir)
-            {
-                app._userHistory.protocolExportPath = fname;
-                app.SaveHistory();
-            }
+    if (file_name == ""){
+        return;
+    }
 
-            QFile file(file_name);
-            file.open(QIODevice::WriteOnly | QIODevice::Text);
-            QTextStream out(&file);
-            encoding::set_utf8(out);
-            //out.setGenerateByteOrderMark(true); // UTF-8 without BOM
+    QFileInfo f(file_name);
+    QStringList list = default_filter.split('.').last().split(')');
+    QString ext = list.first();
+    if (f.suffix().compare(ext))
+        file_name += tr(".") + ext;
 
-            QFuture<void> future;
-            future = QtConcurrent::run([&]{
-                _export_cancel = false;
-                QString title;
-                int index = 0;
-                for (std::list<QRadioButton *>::const_iterator i = _row_sel_list.begin();
-                    i != _row_sel_list.end(); i++) {
-                    if ((*i)->isChecked()) {
-                        title = (*i)->property("title").toString();
-                        index = (*i)->property("index").toULongLong();
-                        break;
-                    }
-                }
-                out << QString("%1,%2,%3\n")
-                       .arg("Id")
-                       .arg("Time[ns]")
-                       .arg(title);
+    QString fname = path::GetDirectoryName(file_name);
+    if (fname != app._userHistory.openDir)
+    {
+        app._userHistory.protocolExportPath = fname;
+        app.SaveHistory();
+    }
+    _fileName = file_name;
+ 
+    QFuture<void> future;
+    future = QtConcurrent::run([&]{
+                    save_proc();
+               });
 
-                pv::data::DecoderModel* decoder_model = _session->get_decoder_model();
-                const auto decoder_stack = decoder_model->getDecoderStack();
-                int row_index = 0;
-                Row row;
-                const std::map<const Row, bool> rows_lshow = decoder_stack->get_rows_lshow();
-                for (std::map<const Row, bool>::const_iterator i = rows_lshow.begin();
-                    i != rows_lshow.end(); i++) {
-                    if ((*i).second) {
-                        if (index == row_index) {
-                            row = (*i).first;
-                            break;
-                        }
-                        row_index++;
-                    }
-                }
+    Qt::WindowFlags flags = Qt::CustomizeWindowHint;
+    QProgressDialog dlg(tr("Export Protocol List Result... It can take a while."),
+                        tr("Cancel"), 0, 100, this, flags);
+    dlg.setWindowModality(Qt::WindowModal);
+    dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
+                       Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
 
-                uint64_t exported = 0;
-                double ns_per_sample = SR_SEC(1) * 1.0 / decoder_stack->samplerate();
-                std::vector<Annotation> annotations;
-                decoder_stack->get_annotation_subset(annotations, row,
-                    0, decoder_stack->sample_count()-1);
-                if (!annotations.empty()) {
-                    for(auto &a : annotations) {
-                        out << QString("%1,%2,%3\n")
-                               .arg(QString::number(exported))
-                               .arg(QString::number(a.start_sample()*ns_per_sample, 'f', 20))
-                               .arg(a.annotations().at(0));
-                        exported++;
-                        emit  export_progress(exported*100/annotations.size());
-                        if (_export_cancel)
-                            break;
-                    }
-                }
-            });
-            Qt::WindowFlags flags = Qt::CustomizeWindowHint;
-            QProgressDialog dlg(tr("Export Protocol List Result... It can take a while."),
-                                tr("Cancel"),0,100,this,flags);
-            dlg.setWindowModality(Qt::WindowModal);
-            dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
-                               Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
+    QFutureWatcher<void> watcher;
 
-            QFutureWatcher<void> watcher;
-            connect(&watcher,SIGNAL(finished()),&dlg,SLOT(cancel()));
-            connect(this,SIGNAL(export_progress(int)),&dlg,SLOT(setValue(int)));
-            connect(&dlg,SIGNAL(canceled()),this,SLOT(cancel_export()));
-            watcher.setFuture(future);
-            dlg.exec();
+    connect(&watcher, SIGNAL(finished()), &dlg, SLOT(cancel()));
+    connect(this, SIGNAL(export_progress(int)), &dlg, SLOT(setValue(int)));
+    connect(&dlg, SIGNAL(canceled()), this, SLOT(cancel_export()));
 
-            future.waitForFinished();
-            file.close();
+    watcher.setFuture(future);
+    dlg.exec();
+
+    future.waitForFinished();   
+}
+
+void ProtocolExp::save_proc()
+{
+    _export_cancel = false;
+
+    QFile file(_fileName);
+    file.open(QIODevice::WriteOnly | QIODevice::Text);
+    QTextStream out(&file);
+    encoding::set_utf8(out);
+    // out.setGenerateByteOrderMark(true); // UTF-8 without BOM
+
+    QString title;
+    int index = 0;
+    for (std::list<QRadioButton *>::const_iterator i = _row_sel_list.begin();
+         i != _row_sel_list.end(); i++)
+    {
+        if ((*i)->isChecked())
+        {
+            title = (*i)->property("title").toString();
+            index = (*i)->property("index").toULongLong();
+            break;
         }
     }
+
+    out << QString("%1,%2,%3\n")
+               .arg("Id")
+               .arg("Time[ns]")
+               .arg(title);
+
+    pv::data::DecoderModel *decoder_model = _session->get_decoder_model();
+    const auto decoder_stack = decoder_model->getDecoderStack();
+    int row_index = 0;
+    Row row;
+
+    const std::map<const Row, bool> rows_lshow = decoder_stack->get_rows_lshow();
+    for (std::map<const Row, bool>::const_iterator i = rows_lshow.begin();
+         i != rows_lshow.end(); i++)
+    {
+        if ((*i).second)
+        {
+            if (index == row_index)
+            {
+                row = (*i).first;
+                break;
+            }
+            row_index++;
+        }
+    }
+
+    uint64_t exported = 0;
+    double ns_per_sample = SR_SEC(1) * 1.0 / decoder_stack->samplerate();
+    std::vector<Annotation*> annotations;
+    decoder_stack->get_annotation_subset(annotations, row,
+                                         0, decoder_stack->sample_count() - 1);
+    if (annotations.size() > 0 )
+    { 
+        for (Annotation *a : annotations)
+        {
+            out << QString("%1,%2,%3\n")
+                       .arg(QString::number(exported))
+                       .arg(QString::number(a->start_sample() * ns_per_sample, 'f', 20))
+                       .arg(a->annotations().at(0));
+            exported++;
+            emit export_progress(exported * 100 / annotations.size());
+            if (_export_cancel)
+                break;
+        }
+    }
+
+    file.close();
 }
 
 void ProtocolExp::reject()

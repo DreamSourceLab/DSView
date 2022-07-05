@@ -54,7 +54,7 @@ Annotation::Annotation(const srd_proto_data *const pdata, DecoderStatus *status)
 	_end_sample	  =	pdata->end_sample;
 	_format 	= pda->ann_class;
     _type 		= pda->ann_type;
-	_resIndex 	= 0;
+	_resIndex 	= -1;
 	_status 	= status;
  
 	//make resource find key
@@ -100,8 +100,13 @@ Annotation::Annotation()
 {
     _start_sample = 0;
     _end_sample = 0;
+	_resIndex = -1;
 }
 
+Annotation::Annotation(Annotation &o)
+{
+}
+ 
 Annotation::~Annotation()
 {
      

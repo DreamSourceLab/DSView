@@ -298,13 +298,13 @@ void DecodeTrace::paint_mid(QPainter &p, int left, int right, QColor fore, QColo
                         if ((max_annWidth > 100) ||
                             (max_annWidth > 10 && min_annWidth > 1) ||
                             (max_annWidth == 0 && samples_per_pixel < 10)) {
-                            std::vector<Annotation> annotations;
+                            std::vector<Annotation*> annotations;
                             _decoder_stack->get_annotation_subset(annotations, row,
                                 start_sample, end_sample);
 
                             if (!annotations.empty()) {
-                                for(Annotation &a : annotations)
-                                    draw_annotation(a, p, get_text_colour(),
+                                for(Annotation *a : annotations)
+                                    draw_annotation(*a, p, get_text_colour(),
                                         annotation_height, left, right,
                                         samples_per_pixel, pixels_offset, y,
                                         0, min_annWidth, fore, back);

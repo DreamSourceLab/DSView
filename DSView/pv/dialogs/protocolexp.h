@@ -27,7 +27,8 @@
 #include <QFormLayout>
 #include <QVBoxLayout>
 #include <QLabel>
-#include <QRadioButton>
+#include <QRadioButton> 
+#include <QString>
  
 #include "../device/devinst.h"
 #include "../prop/binding/deviceoptions.h"
@@ -57,6 +58,7 @@ public:
 protected:
     void accept();
     void reject();
+    void save_proc();
 
 signals:
     void export_progress(int percent);
@@ -76,6 +78,7 @@ private:
     QDialogButtonBox _button_box;
 
     bool _export_cancel;
+    QString     _fileName; 
 };
 
 } // namespace dialogs

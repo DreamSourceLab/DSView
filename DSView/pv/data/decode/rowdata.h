@@ -57,7 +57,7 @@ public:
      /**
 	 * Extracts sorted annotations between two period into a vector.
 	 */
-	void get_annotation_subset(std::vector<pv::data::decode::Annotation> &dest,
+	void get_annotation_subset(std::vector<pv::data::decode::Annotation*> &dest,
 		                        uint64_t start_sample, uint64_t end_sample);
 
     void clear();

@@ -81,16 +81,16 @@ uint64_t RowData::get_min_annotation()
         return _min_annotation;
 }
 
-void RowData::get_annotation_subset(std::vector<pv::data::decode::Annotation> &dest,
+void RowData::get_annotation_subset(std::vector<pv::data::decode::Annotation*> &dest,
 		                        uint64_t start_sample, uint64_t end_sample)
 {  
     std::lock_guard<std::mutex> lock(_global_visitor_mutex);
 
-    for (Annotation *p : _annotations){
-        if (p->end_sample() > start_sample &&
-            p->start_sample() <= end_sample){
-            Annotation a = *p;
-            dest.push_back(a);
+    for (Annotation *p : _annotations)
+    {
+        if (p->end_sample() > start_sample && p->start_sample() <= end_sample)
+        {
+            dest.push_back(p);
         }			               
     }
 }

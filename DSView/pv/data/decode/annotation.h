@@ -43,10 +43,13 @@ class Annotation
 public:
 	Annotation(const srd_proto_data *const pdata, DecoderStatus *status);
     Annotation();
+	~Annotation();
+
+private:
+	/* disable copy construct */
+	Annotation(Annotation &o);
+
 public:
-
-    ~Annotation();
-
 	inline uint64_t start_sample() const{
 		return _start_sample;
 	}
@@ -65,7 +68,6 @@ public:
 
 	bool is_numberic();
 
-public:
 	const std::vector<QString>& annotations() const;
 
 private:
@@ -73,7 +75,7 @@ private:
 	uint64_t 		_end_sample;
 	short 			_format;
 	short 			_type;
-	short 			_resIndex;
+	int 			_resIndex;
 	DecoderStatus 	*_status; /*a global variable*/
 };
 

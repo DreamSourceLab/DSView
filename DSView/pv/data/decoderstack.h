@@ -108,7 +108,7 @@ public:
 	 * Extracts sorted annotations between two period into a vector.
 	 */
 	void get_annotation_subset(
-		std::vector<pv::data::decode::Annotation> &dest,
+		std::vector<pv::data::decode::Annotation*> &dest,
 		const decode::Row &row, uint64_t start_sample,
 		uint64_t end_sample);
 
