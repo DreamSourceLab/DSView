@@ -1092,7 +1092,7 @@ void Viewport::wheelEvent(QWheelEvent *event)
             static int64_t last_time;
             if (event->source() == Qt::MouseEventSynthesizedBySystem)
             {
-                if (active && (event->modifiers() & Qt::ShiftModifier))
+                if (active)
                 {
                     last_time = QDateTime::currentMSecsSinceEpoch();
                     const double scale = delta > 1.5 ? 1 : (delta < -1.5 ? -1 : 0);
