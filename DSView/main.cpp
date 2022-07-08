@@ -36,6 +36,7 @@
 #include "pv/config/appconfig.h"
 #include "config.h"
 #include "pv/appcontrol.h"
+#include "pv/log.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -51,6 +52,7 @@ void usage()
 		"Help Options:\n"
 		"  -l, --loglevel                  Set libsigrok/libsigrokdecode loglevel\n"
 		"  -V, --version                   Show release version\n"
+		"  -lf, --savelog                  save log to locale file\n"
 		"  -h, -?, --help                  Show help option\n"
 		"\n", DS_BIN_NAME, DS_DESCRIPTION);
 } 
@@ -123,8 +125,13 @@ bool bHighScale = true;
     QApplication::setOrganizationName("DreamSourceLab");
     QApplication::setOrganizationDomain("www.DreamSourceLab.com");
 
-	qDebug()<<"\n----------------- version:"<<DS_VERSION_STRING<<"-----------------\n";
-	qDebug()<<"Qt:"<<QT_VERSION_STR;
+	dsv_log_init();
+
+	xlog_print(dsv_log, 3, NULL, "----------------- version:%s-----------------", DS_VERSION_STRING);
+	xlog_print(dsv_log, 3, NULL, "Qt:%s", QT_VERSION_STR);
+
+	//qDebug()<<"\n----------------- version:"<<DS_VERSION_STRING<<"-----------------\n";
+	//qDebug()<<"Qt:"<<QT_VERSION_STR;
 
 #ifdef Q_OS_LINUX
 	// Use low version qt plugins, for able to debug
@@ -223,6 +230,7 @@ bool bHighScale = true;
 	//uninit
 	control->UnInit();  
 	control->Destroy();
+	dsv_log_uninit();
 
 	return ret;
 }
