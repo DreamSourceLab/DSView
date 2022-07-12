@@ -19,18 +19,19 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include "../dsvdef.h"
 #include "dsosignal.h"
-#include "../data/dso.h"
-#include "../data/dsosnapshot.h"
-#include "view.h"
-#include "../sigsession.h"
-#include "../device/devinst.h" 
-#include <QDebug>
 #include <QTimer>
 #include <functional>
 #include <QApplication>
 #include <math.h>
+
+#include "view.h"
+#include "../dsvdef.h"
+#include "../data/dso.h"
+#include "../data/dsosnapshot.h"
+#include "../sigsession.h"
+#include "../device/devinst.h" 
+#include "../log.h"
  
 using namespace std;
 
@@ -157,8 +158,9 @@ void DsoSignal::set_enable(bool enable)
     if (gvar != NULL) {
         cur_enable = g_variant_get_boolean(gvar);
         g_variant_unref(gvar);
-    } else {
-        qDebug() << "ERROR: config_get SR_CONF_PROBE_EN failed.";
+    } 
+    else { 
+        dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_EN failed.");
         _en_lock = false;
         return;
     }
@@ -264,25 +266,16 @@ bool DsoSignal::load_settings()
 {
     GVariant* gvar;
 
-    // -- enable
-//    bool enable;
-//    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_EN);
-//    if (gvar != NULL) {
-//        enable = g_variant_get_boolean(gvar);
-//        g_variant_unref(gvar);
-//    } else {
-//        qDebug() << "ERROR: config_get SR_CONF_PROBE_EN failed.";
-//        return false;
-//    }
-
     // dso channel bits
     gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_UNIT_BITS);
     if (gvar != NULL) {
         _bits = g_variant_get_byte(gvar);
         g_variant_unref(gvar);
-    } else {
-        _bits = DefaultBits;
-        qDebug("Warning: config_get SR_CONF_UNIT_BITS failed, set to %d(default).", DefaultBits);
+    } 
+    else {
+        _bits = DefaultBits; 
+        dsv_warn("%s%d", "Warning: config_get SR_CONF_UNIT_BITS failed, set to %d(default).", DefaultBits);
+
         if (strncmp(_dev_inst->name().toUtf8().data(), "virtual", 7))
             return false;
     }
@@ -308,44 +301,43 @@ bool DsoSignal::load_settings()
     if (gvar != NULL) {
         vdiv = g_variant_get_uint64(gvar);
         g_variant_unref(gvar);
-    } else {
-        qDebug() << "ERROR: config_get SR_CONF_PROBE_VDIV failed.";
+    } 
+    else { 
+        dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_VDIV failed.");
         return false;
     }
     gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_FACTOR);
     if (gvar != NULL) {
         vfactor = g_variant_get_uint64(gvar);
         g_variant_unref(gvar);
-    } else {
-        qDebug() << "ERROR: config_get SR_CONF_PROBE_FACTOR failed.";
+    } 
+    else { 
+        dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_FACTOR failed.");
         return false;
     }
 
     _vDial->set_value(vdiv);
     _vDial->set_factor(vfactor);
-//    _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_VDIV,
-//                          g_variant_new_uint64(_vDial->get_value()));
 
     // -- coupling
     gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_COUPLING);
     if (gvar != NULL) {
         _acCoupling = g_variant_get_byte(gvar);
         g_variant_unref(gvar);
-    } else {
-        qDebug() << "ERROR: config_get SR_CONF_PROBE_COUPLING failed.";
+    }
+    else { 
+        dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_COUPLING failed.");
         return false;
     }
-
-//    _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_COUPLING,
-//                          g_variant_new_byte(_acCoupling));
-
+ 
     // -- vpos
     gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_OFFSET);
     if (gvar != NULL) {
         _zero_offset = g_variant_get_uint16(gvar);
         g_variant_unref(gvar);
-    } else {
-        qDebug() << "ERROR: config_get SR_CONF_PROBE_OFFSET failed.";
+    } 
+    else { 
+        dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_OFFSET failed.");
         return false;
     }
 
@@ -355,8 +347,9 @@ bool DsoSignal::load_settings()
         _trig_value = g_variant_get_byte(gvar);
         _trig_delta = get_trig_vrate() - get_zero_ratio();
         g_variant_unref(gvar);
-    } else {
-        qDebug() << "ERROR: config_get SR_CONF_TRIGGER_VALUE failed.";
+    }
+    else {
+        dsv_err("%s", "ERROR: config_get SR_CONF_TRIGGER_VALUE failed.");
         if (strncmp(_dev_inst->name().toUtf8().data(), "virtual", 7))
             return false;
     }
@@ -526,8 +519,9 @@ void DsoSignal::set_factor(uint64_t factor)
         if (gvar != NULL) {
             prefactor = g_variant_get_uint64(gvar);
             g_variant_unref(gvar);
-        } else {
-            qDebug() << "ERROR: config_get SR_CONF_PROBE_FACTOR failed.";
+        } 
+        else { 
+            dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_FACTOR failed.");
             return;
         }
         if (prefactor != factor) {
@@ -549,8 +543,9 @@ uint64_t DsoSignal::get_factor()
         factor = g_variant_get_uint64(gvar);
         g_variant_unref(gvar);
         return factor;
-    } else {
-        qDebug() << "ERROR: config_get SR_CONF_PROBE_FACTOR failed.";
+    } 
+    else { 
+        dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_FACTOR failed.");
         return 1;
     }
 }
@@ -1178,8 +1173,9 @@ void DsoSignal::paint_type_options(QPainter &p, int right, const QPoint pt, QCol
     if (gvar != NULL) {
         factor = g_variant_get_uint64(gvar);
         g_variant_unref(gvar);
-    } else {
-        qDebug() << "ERROR: config_get SR_CONF_PROBE_FACTOR failed.";
+    }
+    else { 
+        dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_FACTOR failed.");
         return;
     }
 

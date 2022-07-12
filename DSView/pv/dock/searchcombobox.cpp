@@ -25,7 +25,6 @@
 #include <QPoint>
 #include <QLineEdit>
 #include <QScrollBar>
-#include <QDebug>
 
 //----------------------ComboButtonItem
 

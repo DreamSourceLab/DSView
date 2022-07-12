@@ -38,8 +38,6 @@
 #include <QFuture>
 #include <QProgressDialog>
 #include <QtConcurrent/QtConcurrent>
-#include <QDebug>
-
 #include <stdint.h> 
 #include "../config/appconfig.h"
 

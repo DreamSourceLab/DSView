@@ -41,7 +41,6 @@
 #include <QMessageBox> 
 #include <QScreen>
 #include <QApplication>
-#include <QDebug>
 #include <QFile> 
 #include <QGuiApplication>
 

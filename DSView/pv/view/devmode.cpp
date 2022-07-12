@@ -31,7 +31,6 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QRect>
-#include <QDebug>
 #include <QHBoxLayout>
 
 #include "../config/appconfig.h"

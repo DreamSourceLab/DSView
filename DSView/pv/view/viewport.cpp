@@ -40,7 +40,6 @@
 #include <QPainterPath> 
 #include <math.h>
 #include <QWheelEvent>
-#include <QDebug>
  
 #include "../config/appconfig.h"
 #include "../dsvdef.h"

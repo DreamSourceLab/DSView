@@ -20,16 +20,12 @@
  */
 
 #include "samplingbar.h"
-#include "../dsvdef.h"
-
 #include <assert.h> 
 #include <QAction>
-#include <QDebug>
 #include <QLabel>
 #include <QAbstractItemView>
 #include <math.h>
 #include <libusb-1.0/libusb.h>
-
 #include "../devicemanager.h"
 #include "../device/devinst.h"
 #include "../dialogs/deviceoptions.h"
@@ -38,7 +34,8 @@
 #include "../view/dsosignal.h"
 #include "../dialogs/interval.h"
 #include "../config/appconfig.h"
-
+#include "../dsvdef.h"
+#include "../log.h"
 
 using std::map;
 using std::max;
@@ -671,8 +668,9 @@ void SamplingBar::update_sample_count_selector_value()
         if (gvar != NULL) {
             duration = g_variant_get_uint64(gvar);
             g_variant_unref(gvar);
-        } else {
-            qDebug() << "ERROR: config_get SR_CONF_TIMEBASE failed.";
+        }
+        else { 
+            dsv_err("%s", "ERROR: config_get SR_CONF_TIMEBASE failed.");
             return;
         }
     } else {
@@ -680,8 +678,9 @@ void SamplingBar::update_sample_count_selector_value()
         if (gvar != NULL) {
             duration = g_variant_get_uint64(gvar);
             g_variant_unref(gvar);
-        } else {
-            qDebug() << "ERROR: config_get SR_CONF_TIMEBASE failed.";
+        }
+        else { 
+            dsv_err("%s", "ERROR: config_get SR_CONF_TIMEBASE failed.");
             return;
         }
         const uint64_t samplerate = dev_inst->get_sample_rate();
@@ -752,11 +751,13 @@ double SamplingBar::commit_hori_res()
     GVariant* gvar;
     uint64_t max_sample_rate;
     gvar = dev_inst->get_config(NULL, NULL, SR_CONF_MAX_DSO_SAMPLERATE);
+
     if (gvar != NULL) {
         max_sample_rate = g_variant_get_uint64(gvar);
         g_variant_unref(gvar);
-    } else {
-        qDebug() << "ERROR: config_get SR_CONF_MAX_DSO_SAMPLERATE failed.";
+    }
+    else {
+        dsv_err("%s", "ERROR: config_get SR_CONF_MAX_DSO_SAMPLERATE failed.");
         return -1;
     }
 

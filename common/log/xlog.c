@@ -25,6 +25,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdarg.h>
+#include <pthread.h>
 
 #define RECEIVER_MAX_COUNT  10
 #define LOG_MAX_LENGTH      1000
@@ -37,7 +38,7 @@ enum xlog_receiver_type{
 
 struct xlog_receiver_info;
 
-typedef void (*xlog_print_func)(struct xlog_receiver_info *info, const char *domain, const char *prefix, const char *format, va_list args);
+typedef void (*xlog_print_func)(struct xlog_receiver_info *info, const char *domain, const char *format, va_list args);
 
 struct xlog_receiver_info
 {
@@ -53,6 +54,7 @@ struct xlog_context
     int     _log_level;    
     char    _error[50];
     int     _count;
+    pthread_mutex_t _mutext;
 };
 
 struct xlog_writer{
@@ -63,16 +65,12 @@ struct xlog_writer{
 /**
  * the default mode process
  */
-static void print_to_console(struct xlog_receiver_info *info, const char *domain, const char *prefix, const char *format, va_list args)
+static void print_to_console(struct xlog_receiver_info *info, const char *domain, const char *format, va_list args)
 {
     (void)info;
 
     if (domain && *domain){
         fprintf(stderr, "%s", domain);
-        fprintf(stderr, ": ");
-    }
-    if (prefix){
-        fprintf(stderr, "%s", prefix);
         fprintf(stderr, ": ");
     }
     
@@ -83,7 +81,7 @@ static void print_to_console(struct xlog_receiver_info *info, const char *domain
 /**
  * the file mode process
  */
-static void print_to_file(struct xlog_receiver_info *info, const char *domain, const char *prefix, const char *format, va_list args)
+static void print_to_file(struct xlog_receiver_info *info, const char *domain, const char *format, va_list args)
 {
     char buf[LOG_MAX_LENGTH + 1];
     int fmtl;
@@ -101,13 +99,6 @@ static void print_to_file(struct xlog_receiver_info *info, const char *domain, c
         strcpy(buf + wr, ": ");
         wr += 2;
     }
-    if (prefix && *prefix){
-        strl = strlen(prefix);
-        strcpy(buf + wr, prefix);
-        wr += strl;
-        strcpy(buf + wr, ": ");
-        wr += 2;
-    } 
 
     fmtl = vsnprintf(buf + wr, LOG_MAX_LENGTH - wr - 1, format, args);
     wr += fmtl;
@@ -121,7 +112,7 @@ static void print_to_file(struct xlog_receiver_info *info, const char *domain, c
 /**
  * the callback mode process
  */
-static void print_to_user_callback(struct xlog_receiver_info *info, const char *domain, const char *prefix, const char *format, va_list args)
+static void print_to_user_callback(struct xlog_receiver_info *info, const char *domain, const char *format, va_list args)
 {
     char buf[LOG_MAX_LENGTH + 1];
     int fmtl;
@@ -139,19 +130,12 @@ static void print_to_user_callback(struct xlog_receiver_info *info, const char *
         strcpy(buf + wr, ": ");
         wr += 2;
     }
-    if (prefix && *prefix){
-        strl = strlen(prefix);
-        strcpy(buf + wr, prefix);
-        wr += strl;
-        strcpy(buf + wr, ": ");
-        wr += 2;
-    }
 
     fmtl = vsnprintf(buf + wr, LOG_MAX_LENGTH - wr - 1, format, args);
     wr += fmtl;
     *(buf + wr) = '\n';
     wr += 1;
-
+ 
 	info->_rev(buf, wr);
 }
 
@@ -162,6 +146,7 @@ XLOG_API xlog_context* xlog_new()
 {
     int i=0;
     xlog_context *ctx = (xlog_context*)malloc(sizeof(xlog_context));
+
     if (ctx != NULL){       
         for(i=0; i< RECEIVER_MAX_COUNT; i++){
             ctx->_receivers[i]._fn = NULL;
@@ -169,9 +154,12 @@ XLOG_API xlog_context* xlog_new()
         }
         ctx->_receivers[0]._fn = print_to_console;
         ctx->_receivers[0]._type = RECEIVER_TYPE_CONSOLE;
-        ctx->_log_level = XLOG_INFO;
+        ctx->_log_level = XLOG_LEVEL_INFO;
         ctx->_count = 1;
+
+        pthread_mutex_init(&ctx->_mutext, NULL);
     }
+    
     return ctx;
 }
 
@@ -193,6 +181,8 @@ XLOG_API void xlog_free(xlog_context* ctx)
             }
         }
 
+        pthread_mutex_destroy(&ctx->_mutext);
+
         free(ctx); 
     } 
 }
@@ -212,6 +202,8 @@ XLOG_API int xlog_add_receiver(xlog_context* ctx, xlog_receiver rev, int *out_in
         return -1;
     }
 
+    pthread_mutex_lock(&ctx->_mutext);
+
     for (i = 0; i < RECEIVER_MAX_COUNT; i++){
         if (ctx->_receivers[i]._fn == NULL)
             break;
@@ -219,6 +211,7 @@ XLOG_API int xlog_add_receiver(xlog_context* ctx, xlog_receiver rev, int *out_in
 
     if (i == RECEIVER_MAX_COUNT){
         strcpy(ctx->_error, "receiver count is full");
+        pthread_mutex_unlock(&ctx->_mutext);
         return -1;
     }
 
@@ -229,6 +222,8 @@ XLOG_API int xlog_add_receiver(xlog_context* ctx, xlog_receiver rev, int *out_in
 
     if (out_index)
         *out_index = i;
+    
+    pthread_mutex_unlock(&ctx->_mutext);
     
     return 0;
 }
@@ -250,6 +245,8 @@ XLOG_API int xlog_add_receiver_from_file(xlog_context* ctx, const char *file_pat
         return -1;
     }
 
+    pthread_mutex_lock(&ctx->_mutext);
+
     for (i = 0; i < RECEIVER_MAX_COUNT; i++){
         if (ctx->_receivers[i]._fn == NULL)
             break;
@@ -257,12 +254,14 @@ XLOG_API int xlog_add_receiver_from_file(xlog_context* ctx, const char *file_pat
 
     if (i == RECEIVER_MAX_COUNT){
         strcpy(ctx->_error, "receiver list is full");
+        pthread_mutex_unlock(&ctx->_mutext);
         return -1;
     }
 
     fh = fopen(file_path, "a+");
     if (fh == NULL){
         strcpy(ctx->_error, "open file error");
+        pthread_mutex_unlock(&ctx->_mutext);
         return -1;
     }
 
@@ -273,6 +272,8 @@ XLOG_API int xlog_add_receiver_from_file(xlog_context* ctx, const char *file_pat
 
     if (out_index)
         *out_index = i;
+
+    pthread_mutex_unlock(&ctx->_mutext);
     
     return 0;
 }
@@ -285,8 +286,12 @@ XLOG_API int xlog_remove_receiver_by_index(xlog_context* ctx, int index)
     if (ctx == NULL){
         return -1;
     }
+
+    pthread_mutex_lock(&ctx->_mutext);
+
     if (index < 0 || index >= ctx->_count){
         strcpy(ctx->_error, "index out of range");
+        pthread_mutex_unlock(&ctx->_mutext);
         return -1;
     } 
 
@@ -299,8 +304,11 @@ XLOG_API int xlog_remove_receiver_by_index(xlog_context* ctx, int index)
         ctx->_receivers[index-1]._type = ctx->_receivers[index]._type;
         ctx->_receivers[index-1]._rev = ctx->_receivers[index]._rev;
         ctx->_receivers[index-1]._file = ctx->_receivers[index]._file;
+        index++;
     }
     ctx->_count--;
+
+    pthread_mutex_unlock(&ctx->_mutext);
     
     return 0;    
 }
@@ -315,10 +323,14 @@ XLOG_API int xlog_clear_all_receiver(xlog_context* ctx)
         return -1;
     }
 
+    pthread_mutex_lock(&ctx->_mutext);
+
     for (i = 0; i < RECEIVER_MAX_COUNT; i++){
         ctx->_receivers[i]._fn = NULL;
     }
     ctx->_count = 0;
+
+    pthread_mutex_unlock(&ctx->_mutext);
 
     return 0;    
 }
@@ -343,16 +355,15 @@ XLOG_API int xlog_set_level(xlog_context* ctx, int level)
     if (ctx == NULL){
         return -1;
     }
-    if (level < XLOG_NONE || level > XLOG_SPEW){
-        strcpy(ctx->_error, "@level value must between 0 and 5");
-        return -1;
-    }
+    if (level < XLOG_LEVEL_NONE)
+        level = XLOG_LEVEL_NONE;
+    if (level > XLOG_LEVEL_DETAIL)
+        level = XLOG_LEVEL_DETAIL;
+
     ctx->_log_level = level;
 
     return 0;    
-}
-
-//-------------------------------------------------print api
+} 
 
 /**
  * create a new writer
@@ -396,38 +407,184 @@ XLOG_API int xlog_set_domain(xlog_writer* wr, const char *domain)
     return 0;
 }
 
+//-------------------------------------------------print api
+
 /**
- * print a log data, return 0 if success.
+ * print a error message, return 0 if success.
  */
-XLOG_API int xlog_print(xlog_writer *wr, int level, const char *prefix, const char *format, ...)
+XLOG_API int xlog_err(xlog_writer *wr, const char *format, ...)
 {   
     int i;
     struct xlog_receiver_info *inf;
     va_list args;
+    xlog_context *ctx;
 
     if (wr == NULL){
         return -1;
     }
-    xlog_context *ctx = wr->_ctx;
 
-    if (ctx == NULL || ctx->_log_level < level){
-        return -1;
-    }
-    if (ctx->_count == 0){
+    ctx = wr->_ctx;
+    if (ctx == NULL || ctx->_log_level < XLOG_LEVEL_ERR || ctx->_count < 1){
         return -1;
     }
 
-    for (i = 0; i < RECEIVER_MAX_COUNT; i++){
+    pthread_mutex_lock(&ctx->_mutext);
+
+    for (i = 0; i < ctx->_count; i++){
         inf = &ctx->_receivers[i];
+
         if (inf->_fn != NULL){
             va_start(args, format);
-            inf->_fn(inf, wr->_domain, prefix, format, args);
+            inf->_fn(inf, wr->_domain, format, args);
             va_end(args);
-        }
-        else{
-            break;
-        }
-    } 
+        }        
+    }
+
+    pthread_mutex_unlock(&ctx->_mutext);
 
     return 0;
+}
+
+/**
+ * print a warning message, return 0 if success.
+ */
+XLOG_API int xlog_warn(xlog_writer *wr, const char *format, ...)
+{
+    int i;
+    struct xlog_receiver_info *inf;
+    va_list args;
+    xlog_context *ctx;
+
+    if (wr == NULL){
+        return -1;
+    }
+
+    ctx = wr->_ctx;
+    if (ctx == NULL || ctx->_log_level < XLOG_LEVEL_WARN || ctx->_count < 1){
+        return -1;
+    }
+
+    pthread_mutex_lock(&ctx->_mutext);
+
+    for (i = 0; i < ctx->_count; i++){
+        inf = &ctx->_receivers[i];
+
+        if (inf->_fn != NULL){
+            va_start(args, format);
+            inf->_fn(inf, wr->_domain, format, args);
+            va_end(args);
+        }        
+    }
+
+     pthread_mutex_unlock(&ctx->_mutext);
+
+    return 0;    
+}
+
+/**
+ * print a informational message, return 0 if success.
+ */
+XLOG_API int xlog_info(xlog_writer *wr, const char *format, ...)
+{
+    int i;
+    struct xlog_receiver_info *inf;
+    va_list args;
+    xlog_context *ctx;
+
+    if (wr == NULL){
+        return -1;
+    }
+
+    ctx = wr->_ctx;
+    if (ctx == NULL || ctx->_log_level < XLOG_LEVEL_INFO || ctx->_count < 1){
+        return -1;
+    }
+
+    pthread_mutex_lock(&ctx->_mutext);
+
+    for (i = 0; i < ctx->_count; i++){
+        inf = &ctx->_receivers[i];
+
+        if (inf->_fn != NULL){
+            va_start(args, format);
+            inf->_fn(inf, wr->_domain, format, args);
+            va_end(args);
+        }        
+    }
+
+    pthread_mutex_unlock(&ctx->_mutext);
+
+    return 0;    
+}
+
+/**
+ * print a debug message, return 0 if success.
+ */
+XLOG_API int xlog_dbg(xlog_writer *wr, const char *format, ...)
+{
+    int i;
+    struct xlog_receiver_info *inf;
+    va_list args;
+    xlog_context *ctx;
+
+    if (wr == NULL){
+        return -1;
+    }
+
+    ctx = wr->_ctx;
+    if (ctx == NULL || ctx->_log_level < XLOG_LEVEL_DBG || ctx->_count < 1){
+        return -1;
+    }
+
+    pthread_mutex_lock(&ctx->_mutext);
+
+    for (i = 0; i < ctx->_count; i++){
+        inf = &ctx->_receivers[i];
+
+        if (inf->_fn != NULL){
+            va_start(args, format);
+            inf->_fn(inf, wr->_domain, format, args);
+            va_end(args);
+        }        
+    }
+
+    pthread_mutex_unlock(&ctx->_mutext);
+
+    return 0;      
+}
+
+/**
+ * print a detailed message, return 0 if success.
+ */
+XLOG_API int xlog_detail(xlog_writer *wr, const char *format, ...)
+{
+    int i;
+    struct xlog_receiver_info *inf;
+    va_list args;
+    xlog_context *ctx;
+
+    if (wr == NULL){
+        return -1;
+    }
+
+    ctx = wr->_ctx;
+    if (ctx == NULL || ctx->_log_level < XLOG_LEVEL_DETAIL || ctx->_count < 1){
+        return -1;
+    }
+
+    pthread_mutex_lock(&ctx->_mutext);
+
+    for (i = 0; i < ctx->_count; i++){
+        inf = &ctx->_receivers[i];
+
+        if (inf->_fn != NULL){
+            va_start(args, format);
+            inf->_fn(inf, wr->_domain, format, args);
+            va_end(args);
+        }        
+    }
+
+    pthread_mutex_unlock(&ctx->_mutext);
+
+    return 0;   
 }

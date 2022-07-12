@@ -19,8 +19,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
-  
-#include <QDebug>
+ 
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
@@ -28,6 +27,7 @@
  
 #include "logicsnapshot.h"
 #include "../dsvdef.h"
+#include "../log.h"
 
 using namespace std;
 
@@ -103,9 +103,7 @@ void LogicSnapshot::clear()
 
 void LogicSnapshot::capture_ended()
 {
-    Snapshot::capture_ended();
-
-   // qDebug()<<"total:"<<_total_sample_count<<","<<_times;
+    Snapshot::capture_ended(); 
 
     uint64_t block_index = _ring_sample_count / LeafBlockSamples;
     uint64_t block_offset = (_ring_sample_count % LeafBlockSamples) / Scale;

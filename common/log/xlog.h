@@ -23,9 +23,8 @@
 *	example:
 *  	xlog_context *ctx = xlog_new();
 *	xlog_writer *wr = xlog_create_writer(ctx, "module name");
-*	xlog_print(wr, 2, "prefix", "count:%d", 100);  //print: "module name: prefix: count:100\n"
+*	xlog_err(wr, "count:%d", 100);
 *	xlog_free(ctx); //free the context, all writer will can't to use
-*
 */
 
 #ifndef	_X_LOG_H_
@@ -42,15 +41,19 @@ extern "C" {
 #endif
 
 /** loglevels. */
-enum xlog_level_code{
-	XLOG_NONE = 0, /**< Output no messages at all. */
-	XLOG_ERR  = 1, /**< Output error messages. */
-	XLOG_WARN = 2, /**< Output warnings. */
-	XLOG_INFO = 3, /**< Output informational messages. */
-	XLOG_DBG  = 4, /**< Output debug messages. */
-	XLOG_SPEW = 5, /**< Output very noisy debug messages. */
+enum xlog_level_code
+{
+	XLOG_LEVEL_NONE = 0, /**< Output no messages at all. */
+	XLOG_LEVEL_ERR  = 1, /**< Output error messages. */
+	XLOG_LEVEL_WARN = 2, /**< Output warnings. */
+	XLOG_LEVEL_INFO = 3, /**< Output informational messages. */
+	XLOG_LEVEL_DBG  = 4, /**< Output debug messages. */
+	XLOG_LEVEL_DETAIL = 5, /**< Output detailed messages. */
 };
 
+/*
+	a log module instance.
+*/
 struct xlog_context;
 typedef struct xlog_context xlog_context;
 
@@ -104,8 +107,6 @@ XLOG_API const char* xlog_get_error(xlog_context* ctx);
  */
 XLOG_API int xlog_set_level(xlog_context* ctx, int level);
 
-//-------------------------------------------------print api
-
 /**
  * create a new writer
  * use free to delete the returns object.
@@ -122,11 +123,33 @@ XLOG_API void xlog_free_writer(xlog_writer *wr);
  */
 XLOG_API int xlog_set_domain(xlog_writer* wr, const char *domain);
 
+
+//-------------------------------------------------print api
+
 /**
- * print a log data, return 0 if success.
- * @level see enum xlog_level_code
+ * print a error message, return 0 if success.
  */
-XLOG_API int xlog_print(xlog_writer *wr, int level, const char *prefix, const char *format, ...);
+XLOG_API int xlog_err(xlog_writer *wr, const char *format, ...);
+
+/**
+ * print a warning message, return 0 if success.
+ */
+XLOG_API int xlog_warn(xlog_writer *wr, const char *format, ...);
+
+/**
+ * print a informational message, return 0 if success.
+ */
+XLOG_API int xlog_info(xlog_writer *wr, const char *format, ...);
+
+/**
+ * print a debug message, return 0 if success.
+ */
+XLOG_API int xlog_dbg(xlog_writer *wr, const char *format, ...);
+
+/**
+ * print a detailed message, return 0 if success.
+ */
+XLOG_API int xlog_detail(xlog_writer *wr, const char *format, ...);
 
 #ifdef __cplusplus
 }

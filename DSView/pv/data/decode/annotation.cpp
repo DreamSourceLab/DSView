@@ -31,7 +31,6 @@
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
-#include <QDebug>
 
 #include "../../config/appconfig.h"
 #include "decoderstatus.h"

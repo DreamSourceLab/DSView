@@ -19,13 +19,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <cassert>
-
-#include <QDebug>
-
+#include <cassert> 
 #include "devinst.h"
-
 #include "../sigsession.h"
+#include "../log.h"
 
 namespace pv {
 namespace device {
@@ -201,13 +198,13 @@ void DevInst::start()
 }
 
 void DevInst::run()
-{
-	qDebug()<<"session run loop start";
+{ 
+	dsv_dbg("%s", "session run loop start");
 	int ret = sr_session_run();
 	if (ret != SR_OK){
-        qDebug()<<"start session error!";
-	}
-    qDebug()<<"session run loop end";
+		dsv_err("%s", "start session error!");
+	} 
+	dsv_dbg("%s", "session run loop end");
 }
 
 void DevInst::stop()

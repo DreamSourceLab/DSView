@@ -21,9 +21,8 @@
 
 #include "annotationrestable.h"
 #include <assert.h>
-#include <stdlib.h>
-#include <QDebug>
-
+#include <stdlib.h> 
+#include "../../log.h"
 #include "../../dsvdef.h"
  
 const char g_bin_cvt_table[] = "0000000100100011010001010110011110001001101010111100110111101111";
@@ -168,8 +167,8 @@ const char* AnnotationResTable::format_to_string(const char *hex_str, int fmt)
 		 else if (c >= 'a' && c <= 'f'){
 			 dex = (int)(c - 'a') + 10;
 		 }
-		 else{
-			 qDebug()<<"is not a hex string!";
+		 else{ 
+			 dsv_err("%s", "is not a hex string");
 			 assert(false);
 		 }
 

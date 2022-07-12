@@ -23,16 +23,14 @@
 #include "deviceoptions.h"
 
 #include <boost/bind.hpp>
-#include <QDebug>
 #include <QObject>
 #include <stdint.h>
-
 #include "../bool.h"
 #include "../double.h"
 #include "../enum.h"
 #include "../int.h"
 #include "../../config/appconfig.h"
-
+#include "../../log.h"
  
 using namespace std;
 
@@ -149,8 +147,8 @@ GVariant* DeviceOptions::config_getter(
 	const struct sr_dev_inst *sdi, int key)
 {
 	GVariant *data = NULL;
-    if (sr_config_get(sdi->driver, sdi, NULL, NULL, key, &data) != SR_OK) {
-        qDebug() << "WARNING: Failed to get value of config id" << key;
+    if (sr_config_get(sdi->driver, sdi, NULL, NULL, key, &data) != SR_OK) { 
+		dsv_warn("%s%d", "WARNING: Failed to get value of config id:", key);
 		return NULL;
 	}
 	return data;
@@ -159,8 +157,9 @@ GVariant* DeviceOptions::config_getter(
 void DeviceOptions::config_setter(
     struct sr_dev_inst *sdi, int key, GVariant* value)
 {
-    if (sr_config_set(sdi, NULL, NULL, key, value) != SR_OK)
-        qDebug() << "WARNING: Failed to set value of config id" << key;
+    if (sr_config_set(sdi, NULL, NULL, key, value) != SR_OK){ 
+		dsv_warn("%s%d", "WARNING: Failed to set value of config id:", key);
+	}
 }
 
 void DeviceOptions::bind_bool(const QString &name, const QString label, int key)

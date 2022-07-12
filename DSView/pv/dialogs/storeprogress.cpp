@@ -28,8 +28,6 @@
 #include <QTextEdit>
 #include <QPushButton>
 #include <QRadioButton>
-#include <QDebug>
-
 #include "../ui/msgbox.h"
 #include "../config/appconfig.h"
 

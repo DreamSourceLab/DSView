@@ -21,6 +21,7 @@
 
  
 #include <math.h>
+#include <QTimer>
 
 #include "view.h"
 #include "../dsvdef.h"
@@ -29,12 +30,6 @@
 #include "../data/dsosnapshot.h"
 #include "../sigsession.h"
 #include "../device/devinst.h"
-
- 
-
-#include <QDebug>
-#include <QTimer>
-
  
 using namespace std;
 

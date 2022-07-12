@@ -20,20 +20,16 @@
  */
 
 #include "probeoptions.h"
-
 #include <boost/bind.hpp>
-
-#include <QDebug>
 #include <QObject>
 #include <stdint.h>
 #include "../bool.h"
 #include "../double.h"
 #include "../enum.h"
 #include "../int.h"
-
 #include "../../config/appconfig.h"
+#include "../../log.h"
 
- 
 using namespace std;
 
 namespace pv {
@@ -121,8 +117,7 @@ GVariant* ProbeOptions::config_getter(
 {
 	GVariant *data = NULL;
     if (sr_config_get(sdi->driver, sdi, probe, NULL, key, &data) != SR_OK) {
-		qDebug() <<
-			"WARNING: Failed to get value of config id" << key;
+        dsv_warn(NULL, "%s%d", "WARNING: Failed to get value of config id:", key);
 		return NULL;
 	}
 	return data;
@@ -132,8 +127,9 @@ void ProbeOptions::config_setter(
     struct sr_dev_inst *sdi,
     struct sr_channel *probe, int key, GVariant* value)
 {
-    if (sr_config_set(sdi, probe, NULL, key, value) != SR_OK)
-		qDebug() << "WARNING: Failed to set value of sample rate";
+    if (sr_config_set(sdi, probe, NULL, key, value) != SR_OK){ 
+        dsv_warn("%s", "WARNING: Failed to set value of sample rate");
+    }
 }
 
 void ProbeOptions::bind_bool(const QString &name, const QString label, int key)

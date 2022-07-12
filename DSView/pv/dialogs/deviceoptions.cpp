@@ -28,7 +28,6 @@
 #include <QGuiApplication>
 #include <QScreen>
 #include <QScrollArea>
-#include <QDebug>
 #include <QLayoutItem>
 #include <assert.h>
 

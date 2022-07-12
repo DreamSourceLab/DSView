@@ -31,7 +31,6 @@
 #include <string>
  
 #include <QObject>
-#include <QDebug>
 #include <QDir>
 #include "config/appconfig.h"
 

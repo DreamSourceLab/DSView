@@ -20,9 +20,13 @@
  */
 
 #include "log.h"
+#include <QString>
+#include <QDir>
+#include  "config/appconfig.h"
 
 xlog_writer *dsv_log = nullptr;
 xlog_context *log_ctx = nullptr;
+bool b_logfile = false;
 
 void dsv_log_init()
 {
@@ -38,4 +42,34 @@ void dsv_log_uninit()
     xlog_free_writer(dsv_log);
     log_ctx = nullptr;
     dsv_log = nullptr;
+}
+
+xlog_context* dsv_log_context()
+{
+    return log_ctx;
+}
+
+void dsv_log_level(int l)
+{
+    xlog_set_level(log_ctx, l);
+    dsv_dbg("%s%d", "set log level: ", l);
+}
+
+void dsv_log_enalbe_logfile()
+{
+    if (!b_logfile && log_ctx){
+        b_logfile = true;
+        
+        QString lf;
+
+        #ifdef Q_OS_LINUX
+            lf = QDir::homePath() + "/DSView.log";
+        #else
+            lf = GetAppDataDir() + "/DSView.log";
+        #endif
+
+        xlog_add_receiver_from_file(log_ctx, lf.toUtf8().data(), 0);
+        
+        dsv_dbg("%s\"%s\"", "store log to file: ", lf.toUtf8().data());
+    }
 }

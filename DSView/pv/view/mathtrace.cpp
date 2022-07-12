@@ -21,7 +21,7 @@
 
 
 #include <math.h>
-
+#include <QTimer>
 #include "mathtrace.h"
 #include "../data/dso.h"
 #include "../data/dsosnapshot.h"
@@ -32,9 +32,6 @@
 #include "../view/dsosignal.h"
 #include "../dsvdef.h"
   
-#include <QDebug>
-#include <QTimer>
-
 using namespace std;
 
 namespace pv {

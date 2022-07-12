@@ -25,13 +25,13 @@
 #include "libsigrokdecode.h"
 #include <QDir>
 #include <QCoreApplication>
-#include <QDebug>
 #include <QWidget>
 
 #include "devicemanager.h"
 #include "sigsession.h"
 #include "dsvdef.h"
 #include "config/appconfig.h"
+#include "log.h"
 
 AppControl::AppControl()
 {
@@ -97,7 +97,7 @@ bool AppControl::Init()
     QString dir = GetDecodeScriptDir();   
     strcpy(path, dir.toUtf8().data());
 
-    qDebug()<<"decode script path is:"<<dir;
+    dsv_dbg("decode script path: \"%s\"", dir.toUtf8().data());
 
     // Initialise libsigrokdecode
     if (srd_init(path) != SRD_OK)

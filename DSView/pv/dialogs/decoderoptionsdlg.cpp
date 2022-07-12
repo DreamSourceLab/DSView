@@ -46,8 +46,6 @@
 #include "../view/decodetrace.h"
 #include "../ui/msgbox.h"
 
-#include <QDebug>
-
 namespace pv {
 namespace dialogs {
 

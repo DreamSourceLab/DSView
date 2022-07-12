@@ -20,17 +20,14 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
- 
-#include <QDebug>
 #include <math.h>
-
 #include "../view/analogsignal.h"
 #include "../data/analog.h"
 #include "../data/analogsnapshot.h"
 #include "../view/view.h"
 #include "../device/devinst.h"
 #include "../dsvdef.h"
-
+#include "../log.h"
 
 using namespace std;
 
@@ -67,10 +64,12 @@ AnalogSignal::AnalogSignal(DevInst *dev_inst,data::Analog *data,
     if (gvar != NULL) {
         _bits = g_variant_get_byte(gvar);
         g_variant_unref(gvar);
-    } else {
-        _bits = DefaultBits;
-        qDebug("Warning: config_get SR_CONF_UNIT_BITS failed, set to %d(default).", DefaultBits);
     }
+    else {
+        _bits = DefaultBits;
+        dsv_warn("%s%d", "Warning: config_get SR_CONF_UNIT_BITS failed, set to %d(default).", DefaultBits);
+    }
+
     gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_REF_MIN);
     if (gvar != NULL) {
         _ref_min = g_variant_get_uint32(gvar);
@@ -91,8 +90,9 @@ AnalogSignal::AnalogSignal(DevInst *dev_inst,data::Analog *data,
     if (gvar != NULL) {
         _zero_offset = g_variant_get_uint16(gvar);
         g_variant_unref(gvar);
-    } else {
-        qDebug() << "ERROR: config_get SR_CONF_PROBE_OFFSET failed.";
+    }
+    else { 
+        dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_OFFSET failed.");
     }
 }
 
@@ -357,8 +357,9 @@ uint64_t AnalogSignal::get_factor()
         factor = g_variant_get_uint64(gvar);
         g_variant_unref(gvar);
         return factor;
-    } else {
-        qDebug() << "ERROR: config_get SR_CONF_PROBE_FACTOR failed.";
+    } 
+    else { 
+        dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_FACTOR failed.");
         return 1;
     }
 }

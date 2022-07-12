@@ -54,12 +54,12 @@
 
 #include <assert.h>
 #include <stdexcept>
-#include <sys/stat.h> 
-#include <QDebug>
+#include <sys/stat.h>
 #include <map>
  
 #include "data/decode/decoderstatus.h"
 #include "dsvdef.h"
+#include "log.h"
 
  
 namespace pv {
@@ -142,7 +142,7 @@ void SigSession::set_device(DevInst *dev_inst)
         clear_all_decoder(false);
     }
     else{
-        qDebug()<<"Keep current decoders";
+        dsv_dbg("%s", "Keep current decoders");
     }
 
     RELEASE_ARRAY(_group_traces);
@@ -167,8 +167,11 @@ void SigSession::set_device(DevInst *dev_inst)
         else  if (is_device_re_attach() == false){
             clear_all_decoder(false);
         }
-
-        qDebug()<<"Switch to device:"<<dev_name;
+        
+        if (_dev_inst->is_file())
+            dsv_dbg("%s\"%s\"", "Switch to file: ", dev_name.toUtf8().data());
+        else
+            dsv_dbg("%s\"%s\"", "Switch to device: ", dev_name.toUtf8().data());
 
         try {
             _dev_inst->use(this);
@@ -437,7 +440,7 @@ void SigSession::start_capture(bool instant)
 {  
     // Check that a device instance has been selected.
     if (!_dev_inst) {
-        qDebug() << "No device selected";
+        dsv_dbg("%s", "No device selected");
         capture_state_changed(SigSession::Stopped);
         return;
     }
@@ -707,7 +710,7 @@ void SigSession::init_signals()
         clear_all_decoder();
     }
     else{
-        qDebug()<<"Device loose contact";
+        dsv_dbg("%s", "Device loose contact");
     }
 
     // Detect what data types we will receive
@@ -975,7 +978,7 @@ void SigSession::feed_in_trigger(const ds_trigger_pos &trigger_pos)
 void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
 { 
     if (!_logic_data || _logic_data->snapshot()->memory_failed()) {
-        qDebug() << "Unexpected logic packet";
+        dsv_err("%s", "Unexpected logic packet");
         return;
     }
 
@@ -1013,8 +1016,8 @@ void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
 void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
 {  
     if(!_dso_data || _dso_data->snapshot()->memory_failed())
-    {
-        qDebug() << "Unexpected dso packet";
+    { 
+        dsv_err("%s", "Unexpected dso packet");
         return;	// This dso packet was not expected.
     }
 
@@ -1085,8 +1088,8 @@ void SigSession::feed_in_analog(const sr_datafeed_analog &analog)
 { 
 
     if(!_analog_data || _analog_data->snapshot()->memory_failed())
-    {
-        qDebug() << "Unexpected analog packet";
+    { 
+        dsv_err("%s", "Unexpected analog packet");
         return;	// This analog packet was not expected.
     }
 
@@ -1239,7 +1242,7 @@ void SigSession::on_hotplug_event(void *ctx, void *dev, int event, void *user_da
     (void)user_data;
 
     if (USB_EV_HOTPLUG_ATTACH != event && USB_EV_HOTPLUG_DETTACH != event){
-        qDebug("Unhandled event %d\n", event);
+        dsv_err("%s%d", "Unhandled event", event);
         return;
     }
  
@@ -1251,8 +1254,9 @@ void SigSession::on_hotplug_event(void *ctx, void *dev, int event, void *user_da
     }
     else if (USB_EV_HOTPLUG_DETTACH == event) 
     {
+        dsv_dbg("%s", "Device detached, will wait it reattach.");
         _wait_reattch_times = 0;
-        _is_wait_reattch = true;
+        _is_wait_reattch = true; //wait the device reattach.
         _is_device_reattach = false;
     }
 }
@@ -1261,21 +1265,21 @@ void SigSession::hotplug_proc()
 {  
     if (!_dev_inst)
         return; 
-
-    qDebug("Hotplug thread start!");
+ 
+    dsv_dbg("%s", "Hotplug thread start!");
 
     try {
         while(_session && !_bHotplugStop) { 
 
             sr_hotplug_wait_timout(_sr_ctx);
 
-            if (_hot_attach) {
-                qDebug("process event: DreamSourceLab hardware attached!");
+            if (_hot_attach) { 
+                dsv_dbg("%s", "process event: DreamSourceLab hardware attached!");
                 _callback->device_attach();
                 _hot_attach = false;
             }
-            if (_hot_detach) {
-                qDebug("process event: DreamSourceLab hardware detached!");
+            if (_hot_detach) { 
+                dsv_dbg("%s", "process event: DreamSourceLab hardware detached!");
                 _callback->device_detach();
                 _hot_detach = false;
             }
@@ -1287,21 +1291,23 @@ void SigSession::hotplug_proc()
                 // 500ms
                 if (_wait_reattch_times == 5)
                 {
+                    dsv_dbg("%s", "Wait the device reattach time out for 500ms");
                     _hot_detach = true;
                     _is_wait_reattch = false;
                 }              
             }
         }
-    } catch(...) {
-        qDebug("Interrupt exception for hotplug thread was thrown.");
+    } catch(...) { 
+        dsv_err("%s", "Interrupt exception for hotplug thread was thrown.");
     }
-    qDebug("Hotplug thread exit!");
+
+    dsv_dbg("%s", "Hotplug thread exit!");
 }
 
 void SigSession::register_hotplug_callback()
 {
     if (sr_listen_hotplug(_sr_ctx, hotplug_callback, NULL) != 0){
-        qDebug() << "Error creating a hotplug callback,code:";
+        dsv_err("%s", "Error creating a hotplug callback!");
     }
 }
 
@@ -1312,8 +1318,7 @@ void SigSession::deregister_hotplug_callback()
 
 void SigSession::start_hotplug_work()
 { 
-    // Begin the session
-   // qDebug() << "Starting a hotplug thread...\n";
+    // Begin the session 
     _hot_attach = false;
     _hot_detach = false;
 
@@ -1858,9 +1863,7 @@ void SigSession::set_stop_scale(float scale)
 
 //append a decode task, and try create a thread
  void SigSession::add_decode_task(view::DecodeTrace *trace)
- { 
-     //qDebug()<<"add a decode task";
-
+ {
      std::lock_guard<std::mutex> lock(_decode_task_mutex);
      _decode_tasks.push_back(trace);
 
@@ -1880,15 +1883,14 @@ void SigSession::set_stop_scale(float scale)
 
      for (auto it = _decode_tasks.begin(); it != _decode_tasks.end(); it++){
          if ((*it) == trace){
-              (*it)->decoder()->stop_decode_work();
+             (*it)->decoder()->stop_decode_work();
              _decode_tasks.erase(it);
-             qDebug()<<"remove a wait decode task";
+             dsv_dbg("%s", "remove a waiting decode task");
              return;  
          }
      }
 
      //the task maybe is running 
-  //   qDebug()<<"remove a running decode task";
      trace->decoder()->stop_decode_work();
  }
 
@@ -1915,8 +1917,7 @@ void SigSession::set_stop_scale(float scale)
     //wait thread end
      if (_decode_thread.joinable())
      {
-       //  qDebug() << "wait the decode thread end";
-         _decode_thread.join();
+        _decode_thread.join();
      }
 
      if (!is_closed() && bUpdateView){
@@ -1971,21 +1972,19 @@ void SigSession::set_stop_scale(float scale)
   }
 
   //the decode task thread proc
-  void SigSession::decode_task_proc(){ 
-
-      qDebug()<<"------->decode thread start";
+  void SigSession::decode_task_proc()
+  {  
+      dsv_dbg("%s", "------->decode thread start");
       auto task = get_top_decode_task();
       
       while (task != NULL)
       {
-         // qDebug()<<"one decode task be actived";
- 
           if (!task->_delete_flag){
               task->decoder()->begin_decode_work();
           }
 
-          if (task->_delete_flag){
-             qDebug()<<"destroy a decoder in task thread";
+          if (task->_delete_flag){ 
+             dsv_dbg("%s", "destroy a decoder in task thread");
 
              DESTROY_QT_LATER(task);
              std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -1996,8 +1995,8 @@ void SigSession::set_stop_scale(float scale)
 
           task = get_top_decode_task();
       }  
-
-      qDebug()<<"------->decode thread end";
+ 
+      dsv_dbg("%s", "------->decode thread end");
       _bDecodeRunning = false;
   }
 

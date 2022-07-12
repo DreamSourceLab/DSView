@@ -22,14 +22,11 @@
  
 #include <stdint.h>
 #include <getopt.h>
-
 #include <QApplication>
-#include <QDebug> 
 #include <QDir>
 #include <QStyle> 
 #include <QGuiApplication>
 #include <QScreen>
-
 #include "dsapplication.h"
 #include "mystyle.h" 
 #include "pv/mainframe.h"
@@ -50,9 +47,9 @@ void usage()
 		"  %s [OPTION…] [FILE] — %s\n"
 		"\n"
 		"Help Options:\n"
-		"  -l, --loglevel                  Set libsigrok/libsigrokdecode loglevel\n"
-		"  -V, --version                   Show release version\n"
-		"  -lf, --savelog                  save log to locale file\n"
+		"  -l, --loglevel                  Set log level, value between 0 to 5\n"
+		"  -v, -V, --version               Show release version\n"
+		"  -s, --storelog                  save log to locale file\n"
 		"  -h, -?, --help                  Show help option\n"
 		"\n", DS_BIN_NAME, DS_DESCRIPTION);
 } 
@@ -62,9 +59,106 @@ int main(int argc, char *argv[])
 {   
 	int ret = 0; 
 	const char *open_file = NULL;
+	int logLevel = -1;
+	bool bStoreLog = false;
+
+	//----------------------rebuild command param
+#ifdef _WIN32
+        // Under Windows, we need to manually retrieve the command-line arguments and convert them from UTF-16 to UTF-8.
+        // This prevents data loss if there are any characters that wouldn't fit in the local ANSI code page.
+        int argcUTF16 = 0;		
+        LPWSTR* argvUTF16 = CommandLineToArgvW(GetCommandLineW(), &argcUTF16);
+
+		std::vector<QByteArray> argvUTF8Q;
+        std::for_each(argvUTF16, argvUTF16 + argcUTF16, [&argvUTF8Q](const LPWSTR& arg) {
+            argvUTF8Q.emplace_back(QString::fromUtf16(reinterpret_cast<const char16_t*>(arg), -1).toUtf8());
+        });
+
+        LocalFree(argvUTF16);
+
+        // Ms::runApplication() wants an argv-style array of raw pointers to the arguments, so let's create a vector of them.
+        std::vector<char*> argvUTF8;
+        for (auto& arg : argvUTF8Q){
+            argvUTF8.push_back(arg.data());
+		}
+
+        // Don't use the arguments passed to main(), because they're in the local ANSI code page.
+        (void*)(argc);
+        (void*)(argv);
+
+        int argcFinal = argcUTF16;
+        char** argvFinal = argvUTF8.data();
+    #else
+        int argcFinal = argc;
+        char** argvFinal = argv;
+    #endif 
  
+	//----------------------command param parse
+	while (1) {
+		static const struct option long_options[] = {
+			{"loglevel", required_argument, 0, 'l'},
+			{"version", no_argument, 0, 'v'},
+			{"storelog", no_argument, 0, 's'},
+			{"help", no_argument, 0, 'h'},
+			{0, 0, 0, 0}
+		};
+
+        const char *shortopts = "l:Vvhs?";
+        const int c = getopt_long(argcFinal, argvFinal, shortopts, long_options, NULL);
+		if (c == -1)
+			break;
+
+		switch (c)
+		{
+		case 'l': // log level
+			logLevel = atoi(optarg);
+			break;
+
+		case 's': // the store log flag
+			bStoreLog = true;
+			break;
+
+		case 'V': // version
+		case 'v':
+			printf("%s %s\n", DS_TITLE, DS_VERSION_STRING);
+			return 0;
+ 
+		case 'h': // get help
+		case '?':
+			usage();
+			return 0;
+		}
+	}
+
+	if (argcFinal - optind > 1) {
+		printf("Only one file can be openened.\n");
+		return 1;
+    } 
+	else if (argcFinal - optind == 1){
+        open_file = argvFinal[argcFinal - 1];		
+	} 
+ 
+	//----------------------init log
+	dsv_log_init(); 
+
+	if (logLevel != -1){
+		dsv_log_level(logLevel);
+	}
+
+	#ifdef DEBUG_INFO
+		if (XLOG_LEVEL_DBG > logLevel){
+			dsv_log_level(XLOG_LEVEL_DBG); // on develop mode, set the default log ldevel
+		}
+	#endif
+
+	if (bStoreLog){
+		dsv_log_enalbe_logfile();
+	} 
+
+	//----------------------HightDpiScaling
 #if QT_VERSION >= QT_VERSION_CHECK(5,6,0)
 bool bHighScale = true;
+
 #ifdef _WIN32
 	int argc1 = 0;
  	QApplication *a1 = new QApplication(argc1, NULL);
@@ -83,39 +177,9 @@ bool bHighScale = true;
 		QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
       	QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
 	}
-#endif
+#endif 
 
-#ifdef _WIN32
-        // Under Windows, we need to manually retrieve the command-line arguments and convert them from UTF-16 to UTF-8.
-        // This prevents data loss if there are any characters that wouldn't fit in the local ANSI code page.
-        int argcUTF16 = 0;
-        LPWSTR* argvUTF16 = CommandLineToArgvW(GetCommandLineW(), &argcUTF16);
-
-        std::vector<QByteArray> argvUTF8Q;
-
-        std::for_each(argvUTF16, argvUTF16 + argcUTF16, [&argvUTF8Q](const LPWSTR& arg) {
-            argvUTF8Q.emplace_back(QString::fromUtf16(reinterpret_cast<const char16_t*>(arg), -1).toUtf8());
-        });
-
-        LocalFree(argvUTF16);
-
-        // Ms::runApplication() wants an argv-style array of raw pointers to the arguments, so let's create a vector of them.
-        std::vector<char*> argvUTF8;
-
-        for (auto& arg : argvUTF8Q)
-              argvUTF8.push_back(arg.data());
-
-        // Don't use the arguments passed to main(), because they're in the local ANSI code page.
-        Q_UNUSED(argc);
-        Q_UNUSED(argv);
-
-        int argcFinal = argcUTF16;
-        char** argvFinal = argvUTF8.data();
-    #else
-        int argcFinal = argc;
-        char** argvFinal = argv;
-    #endif
-
+	//----------------------init app
     QApplication a(argcFinal, argvFinal);
     a.setStyle(new MyStyle);
 
@@ -125,111 +189,44 @@ bool bHighScale = true;
     QApplication::setOrganizationName("DreamSourceLab");
     QApplication::setOrganizationDomain("www.DreamSourceLab.com");
 
-	dsv_log_init();
+	//----------------------run
+	dsv_info("----------------- version: %s-----------------", DS_VERSION_STRING);
+	dsv_info("Qt:%s", QT_VERSION_STR);
 
-	xlog_print(dsv_log, 3, NULL, "----------------- version:%s-----------------", DS_VERSION_STRING);
-	xlog_print(dsv_log, 3, NULL, "Qt:%s", QT_VERSION_STR);
-
-	//qDebug()<<"\n----------------- version:"<<DS_VERSION_STRING<<"-----------------\n";
-	//qDebug()<<"Qt:"<<QT_VERSION_STR;
-
-#ifdef Q_OS_LINUX
-	// Use low version qt plugins, for able to debug
-	QDir qtdir;
-	qtdir.setPath(GetAppDataDir() + "/qt5.0/plugins");
-
-	if (qtdir.exists()){
-		printf("qt plugins root:%s\n", qtdir.absolutePath().toLatin1().data());
-		QCoreApplication::addLibraryPath(qtdir.absolutePath());
-	}	
-#endif
-
-	AppControl *control = AppControl::Instance();
-
-	// Parse arguments
-	while (1) {
-		static const struct option long_options[] = {
-			{"loglevel", required_argument, 0, 'l'},
-			{"version", no_argument, 0, 'V'},
-			{"help", no_argument, 0, 'h'},
-			{0, 0, 0, 0}
-		};
-
-        const int c = getopt_long(argcFinal, argvFinal,
-			"l:Vh?", long_options, NULL);
-		if (c == -1)
-			break;
-
-		switch (c) {
-		case 'l':
-		{
-			const int loglevel = atoi(optarg);
-			control->SetLogLevel(loglevel);
-			break;
-		}
-
-		case 'V':
-			// Print version info
-			printf("%s %s\n", DS_TITLE, DS_VERSION_STRING);
-			return 0;
-
-		case 'h':
-		case '?':
-			usage();
-			return 0;
-		}
-	}
-
-    if (argcFinal - optind > 1) {
-		printf("Only one file can be openened.\n");
-		return 1;
-    } else if (argcFinal - optind == 1){
-        open_file = argvFinal[argcFinal - 1];
-		control->_open_file_name = open_file;
-	}
-
-	
-//#ifdef Q_OS_DARWIN 
-//#endif
-
-	//load app config
-	AppConfig::Instance().LoadAll();
+	AppControl *control = AppControl::Instance();	
+	AppConfig::Instance().LoadAll(); //load app config
 
 	//init core
-	if (!control->Init()){
-        printf("init error!");
-        qDebug() << control->GetLastError();
+	if (!control->Init()){ 
+		dsv_err("%s", "init error!");
+		dsv_err("%s", control->GetLastError());
 		return 1;
 	}
+	
+	if (open_file != NULL){
+		control->_open_file_name = open_file;
+	}	
 
 	try
 	{   
 		control->Start();
-		
-		// Initialise the main frame
-        pv::MainFrame w;
+        pv::MainFrame w; //Initialise the main frame
 		w.show(); 
- 
 		w.readSettings();
-		 
-		//to show the dailog for open help document
-		w.show_doc();
-
-		//Run the application
-		ret = a.exec();
-
+		w.show_doc();  //to show the dailog for open help document
+		ret = a.exec(); //Run the application
 		control->Stop();
 	}
 	catch (const std::exception &e)
 	{
-        printf("main() catch a except!");
+        dsv_err("%s", "main() catch a except!");
 		const char *exstr = e.what();
-		qDebug() << exstr;
+		dsv_err("%s", exstr);
 	}
 
-	//uninit
-	control->UnInit();  
+	control->UnInit();  //uninit
 	control->Destroy();
+
 	dsv_log_uninit();
 
 	return ret;

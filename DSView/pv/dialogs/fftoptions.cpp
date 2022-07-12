@@ -20,18 +20,15 @@
  */
 
 #include "fftoptions.h"
-
-  
 #include <QFormLayout>
 #include <QListWidget>
-#include <QDebug>
-
 #include "../sigsession.h"
 #include "../data/spectrumstack.h"
 #include "../view/trace.h"
 #include "../view/dsosignal.h"
 #include "../view/spectrumtrace.h"
 #include "../dsvdef.h"
+#include "../log.h"
 
 
 using namespace boost;
@@ -79,12 +76,15 @@ FftOptions::FftOptions(QWidget *parent, SigSession *session) :
     // setup _window_combobox _len_combobox
     _sample_limit = 0;
     GVariant* gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_MAX_DSO_SAMPLELIMITS);
+    
     if (gvar != NULL) {
         _sample_limit = g_variant_get_uint64(gvar) * 0.5;
         g_variant_unref(gvar);
-    } else {
-        qDebug() << "ERROR: config_get SR_CONF_MAX_DSO_SAMPLELIMITS failed.";
     }
+    else {
+        dsv_err("%s", "ERROR: config_get SR_CONF_MAX_DSO_SAMPLELIMITS failed.");
+    }
+
     std::vector<QString> windows;
     std::vector<uint64_t> length;
     std::vector<QString> view_modes;

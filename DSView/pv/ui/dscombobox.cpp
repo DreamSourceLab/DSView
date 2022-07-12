@@ -23,7 +23,6 @@
 #include "dscombobox.h"
 #include <QFontMetrics>
 #include <QString>
-#include <QDebug>
 
 #ifdef Q_OS_DARWIN
 #include <QGuiApplication>

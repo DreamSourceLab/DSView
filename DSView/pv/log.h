@@ -27,7 +27,17 @@
 extern xlog_writer *dsv_log;
 
 void dsv_log_init();
-
 void dsv_log_uninit();
+
+xlog_context* dsv_log_context();
+void dsv_log_level(int l);
+
+void dsv_log_enalbe_logfile();
+
+#define dsv_err(fmt, args...) xlog_err(dsv_log, fmt, ## args)
+#define dsv_warn(fmt, args...) xlog_warn(dsv_log, fmt, ## args)
+#define dsv_info(fmt, args...) xlog_info(dsv_log, fmt, ## args)
+#define dsv_dbg(fmt, args...) xlog_dbg(dsv_log, fmt, ## args)
+#define dsv_detail(fmt, args...) xlog_detail(dsv_log, fmt, ## args)
 
 #endif

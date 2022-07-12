@@ -46,18 +46,16 @@
 #include <map>
 #include <string>
 #include <QToolButton>
- 
 #include <algorithm>
 #include "../ui/msgbox.h"
 #include "../dsvdef.h"
 #include "../config/appconfig.h"
 #include "../data/decode/decoderstatus.h"
 #include "../data/decode/decoder.h"
-
+#include "../log.h"
 
 using namespace std;
 
- 
 namespace pv {
 namespace dock {
    
@@ -364,18 +362,18 @@ void ProtocolDock::on_add_protocol()
 bool ProtocolDock::add_protocol_by_id(QString id, bool silent, std::list<pv::data::decode::Decoder*> &sub_decoders)
 {    
     if (_session->is_device_re_attach() == true){
-        qDebug()<<"Keep current decoders, cancel add new.";
+        dsv_dbg("%s", "Keep current decoders, cancel add new.");
         return true;
     }
 
-    if (_session->get_device()->dev_inst()->mode != LOGIC) {         
-        qDebug()<<"Protocol Analyzer\nProtocol Analyzer is only valid in Digital Mode!";
+    if (_session->get_device()->dev_inst()->mode != LOGIC) {
+        dsv_dbg("%s", "Protocol Analyzer\nProtocol Analyzer is only valid in Digital Mode!");
         return false;
     }
 
     int dex = this->get_protocol_index_by_id(id);
     if (dex == -1){
-        qDebug()<<"Protocol not exists! id:"<< id;
+        dsv_err("%s%s", "Protocol not exists! id:", id.toUtf8().data());
         return false;
     }
 
@@ -555,8 +553,6 @@ void ProtocolDock::item_clicked(const QModelIndex &index)
 
             decoder_stack->set_mark_index((ann.start_sample()+ann.end_sample())/2);
             _session->show_region(ann.start_sample(), ann.end_sample(), false);
-
-           // qDebug()<<ann.annotations().at(0)<<"type:"<<ann.type();
         }
     }
     _table_view->resizeRowToContents(index.row());
@@ -734,8 +730,8 @@ void ProtocolDock::search_nxt()
     pv::data::DecoderModel *decoder_model = _session->get_decoder_model();
     auto decoder_stack = decoder_model->getDecoderStack();
 
-    if (decoder_stack == NULL){
-        qDebug()<<"decoder_stack is null";
+    if (decoder_stack == NULL){ 
+        dsv_err("%s", "decoder_stack is null");
         return;
     }  
 
@@ -748,8 +744,6 @@ void ProtocolDock::search_nxt()
         
         if (!matchingIndex.isValid())
             break;
-
-      //  qDebug()<<"row:"<<matchingIndex.row();
 
         i = 1;
         uint64_t row = matchingIndex.row() + 1;

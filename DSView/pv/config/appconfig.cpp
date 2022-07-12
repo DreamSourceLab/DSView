@@ -23,10 +23,10 @@
 #include <QApplication>
 #include <QSettings>
 #include <QLocale>
-#include <QDir>
-#include <QDebug>
+#include <QDir> 
 #include <assert.h>
 #include <QStandardPaths>
+#include "../log.h"
   
 #define MAX_PROTOCOL_FORMAT_LIST 15
 
@@ -321,7 +321,8 @@ QString GetAppDataDir()
     if (dir1.exists()){
         return dir1.absolutePath();
     }
-    qDebug() << "Data directory is not exists:" <<"../share/DSView";
+
+    dsv_err("%s", "Data directory is not exists: ../share/DSView");
     assert(false);   
 #else
     // The bin location
@@ -342,8 +343,8 @@ QString GetResourceDir(){
     {
          return dir.absolutePath();
     }
-
-    qDebug() << "Resource directory is not exists:" << dir1.absolutePath();
+ 
+    dsv_err("%s%s", "Resource directory is not exists:", dir1.absolutePath().toUtf8().data());
     assert(false);
 }
 

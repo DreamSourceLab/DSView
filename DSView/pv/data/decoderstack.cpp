@@ -23,11 +23,9 @@
 
 #include <stdexcept>
 #include <algorithm>
-
-#include <QDebug>
+#include <assert.h>
 
 #include "decoderstack.h"
-
 #include "logic.h"
 #include "logicsnapshot.h"
 #include "decode/decoder.h"
@@ -36,7 +34,7 @@
 #include "../sigsession.h"
 #include "../view/logicsignal.h"
 #include "../dsvdef.h"
-#include <assert.h>
+#include "../log.h"
 
 using namespace pv::data::decode;
 using namespace std;
@@ -482,9 +480,7 @@ uint64_t DecoderStack::get_max_sample_count()
 
 void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decode_end, srd_session *const session)
 {
-    decode_task_status *status = _stask_stauts;    
-
-   // qDebug()<<"decode start:"<<decode_start<<",  decode end:"<<decode_end;
+    decode_task_status *status = _stask_stauts;
 
     //uint8_t *chunk = NULL;
     uint64_t last_cnt = 0;
@@ -512,7 +508,7 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
     //struct srd_push_param push_param;
 
     if( i >= decode_end){
-        qDebug()<<"decode data index have been end:"<<i;
+        dsv_dbg("%s", "decode data index have been end");
     }
   
     while(i < decode_end && !_no_memory && !status->_bStop)
@@ -583,8 +579,8 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
         if (error)
             _error_message = QString::fromLocal8Bit(error);
     }
-
-    qDebug()<<"send to decoder times:"<<entry_cnt;
+ 
+    dsv_dbg("%s%llu", "send to decoder times:", entry_cnt);
 
     if (error)
         g_free(error);
@@ -612,7 +608,7 @@ void DecoderStack::execute_decode_stack()
     // Get the intial sample count
     _sample_count = _snapshot->get_sample_count();
 
-    qDebug()<<"decoder sample count:"<<_sample_count;
+    dsv_dbg("%s%llu", "decoder sample count:", _sample_count);
  
     // Create the decoders
     for(auto &dec : _stack)
@@ -683,12 +679,11 @@ void DecoderStack::annotation_callback(srd_proto_data *pdata, void *self)
 	DecoderStack *const d = st->_decoder;
 	assert(d);
 
-    if (st->_bStop){
-      //  qDebug()<<"decode task was stoped.";
+    if (st->_bStop){ 
         return;
     }
-    if (d->_decoder_status == NULL){
-        qDebug()<<"decode task was deleted.";
+    if (d->_decoder_status == NULL){ 
+        dsv_err("%s", "decode task was deleted.");
         assert(false);
     }
   
@@ -723,8 +718,7 @@ void DecoderStack::annotation_callback(srd_proto_data *pdata, void *self)
 
     assert(row_iter != d->_rows.end());
     if (row_iter == d->_rows.end()) {
-        qDebug() << "Unexpected annotation: decoder = " << decc <<
-            ", format = " << a->format();
+        dsv_err("Unexpected annotation: decoder = 0x%x, format = %d", (void*)decc, a->format());
         assert(0);
         return;
     }

@@ -210,6 +210,7 @@ find_package(Threads)
 set(DSView_SOURCES
     DSView/main.cpp
     DSView/dsapplication.cpp
+    DSView/pv/log.cpp
     DSView/pv/sigsession.cpp
     DSView/pv/mainwindow.cpp
     DSView/pv/devicemanager.cpp
@@ -331,6 +332,7 @@ set(DSView_SOURCES
 
 set(DSView_HEADERS
     DSView/mystyle.h
+    DSView/pv/log.h
     DSView/pv/sigsession.h
     DSView/pv/mainwindow.h
     DSView/pv/dialogs/deviceoptions.h
@@ -494,13 +496,15 @@ set(libsigrokdecode4DSL_HEADERS
 set(common_SOURCES
     common/minizip/zip.c
     common/minizip/unzip.c
-    common/minizip/ioapi.c  
+    common/minizip/ioapi.c
+    common/log/xlog.c
 )
 
 set(common_HEADERS
     common/minizip/zip.h
     common/minizip/unzip.h
     common/minizip/ioapi.h
+    common/log/xlog.h
 )
 
 #===============================================================================

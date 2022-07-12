@@ -31,7 +31,6 @@
 #include <QStatusBar>
 #include <QVBoxLayout>
 #include <QWidget> 
-#include <QDebug> 
 #include <QDesktopServices>
 #include <QKeyEvent>
 #include <QEvent>
@@ -42,6 +41,7 @@
 #include <QTimer>
 #include <libusb-1.0/libusb.h>
 #include <QGuiApplication>
+#include <QTextStream>
 
 #ifdef _WIN32
 #include <QDesktopWidget>
@@ -95,6 +95,7 @@
 #include "appcontrol.h"
 #include  "utility/encoding.h"
 #include "utility/path.h"
+#include "log.h"
 
 #define BASE_SESSION_VERSION 2
   
@@ -175,8 +176,7 @@ void MainWindow::setup_ui()
     _protocol_dock->setAllowedAreas(Qt::RightDockWidgetArea);
     _protocol_dock->setVisible(false); 
     _protocol_widget = new dock::ProtocolDock(_protocol_dock, *_view, _session);
-    _protocol_dock->setWidget(_protocol_widget);
-    //qDebug() << "Protocol decoder enabled!\n";
+    _protocol_dock->setWidget(_protocol_widget); 
  
 
     // measure dock
@@ -444,12 +444,12 @@ void MainWindow::update_device_list()
             QString ldFileName(AppControl::Instance()->_open_file_name.c_str());
 
             if (ldFileName != ""){
-                if (QFile::exists(ldFileName)){             
-                    qDebug()<<"auto load file:"<<ldFileName;
+                if (QFile::exists(ldFileName)){              
+                    dsv_dbg("auto load file:%s", ldFileName.toUtf8().data());
                     on_load_file(ldFileName);
                 }
                 else{
-                    qDebug()<<"file is not exists:"<<ldFileName;
+                    dsv_err("file is not exists:%s", ldFileName.toUtf8().data());
                     MsgBox::Show(tr("Open file error!"), ldFileName, NULL);      
                 }              
             } 
@@ -954,8 +954,8 @@ void MainWindow::on_export()
 bool MainWindow::on_load_session(QString name)
 {
     QFile sessionFile(name);
-    if (!sessionFile.open(QIODevice::ReadOnly)) {
-        qDebug("Warning: Couldn't open session file!");
+    if (!sessionFile.open(QIODevice::ReadOnly)) { 
+        dsv_warn("%s", "Warning: Couldn't open session file!");        
         return false;
     }
 
@@ -970,13 +970,13 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev, bool bDeco
     QJsonObject sessionObj = json.object();
 
     // check session file version
-    if (!sessionObj.contains("Version")){
-        qDebug()<<"session file version is not exists!";
+    if (!sessionObj.contains("Version")){ 
+        dsv_dbg("%s", "session file version is not exists!");
         return false;
     }
 
     if (sessionObj["Version"].toInt() < BASE_SESSION_VERSION){
-        qDebug()<<"session file version is error!"<<sessionObj["Version"].toInt();
+        dsv_dbg("%s", "session file version is error!");
         return false;
     }
 
@@ -1256,7 +1256,7 @@ bool MainWindow::on_store_session(QString name)
 {
     QFile sessionFile(name);
     if (!sessionFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        qDebug("Warning: Couldn't open session file to write!");
+        dsv_warn("%s", "Warning: Couldn't open session file to write!");
         return false;
     }
 
@@ -1459,7 +1459,7 @@ void MainWindow::switchLanguage(int language)
         retranslateUi();
     }
     else{
-        qDebug()<<"Unknown language code:"<<language;
+        dsv_dbg("%s%d", "Unknown language code:", language);
     }
 }
 

@@ -49,7 +49,6 @@
 #include <QStandardPaths>
 #include <math.h>
 #include <QTextStream>
-#include <QDebug>
 #include <list>
 
 #ifdef _WIN32

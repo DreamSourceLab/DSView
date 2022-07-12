@@ -21,8 +21,6 @@
  */
 
 #include "libsigrokdecode.h"
- 
-#include <QDebug>
 #include <math.h>
 #include "logicsignal.h"
 #include "view.h"

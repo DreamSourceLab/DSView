@@ -25,7 +25,6 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <time.h>
-#include <QDebug>
   
 ZipMaker::ZipMaker() :
     m_zDoc(NULL)

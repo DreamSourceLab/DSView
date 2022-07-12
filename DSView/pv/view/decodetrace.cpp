@@ -55,7 +55,6 @@
 #include "../ui/msgbox.h"
 #include "../appcontrol.h"
 #include "../dialogs/decoderoptionsdlg.h"
-#include <QDebug>
 
 using namespace boost;
 using namespace std;
