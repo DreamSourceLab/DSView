@@ -445,7 +445,7 @@ void MainWindow::update_device_list()
 
             if (ldFileName != ""){
                 if (QFile::exists(ldFileName)){              
-                    dsv_dbg("auto load file:%s", ldFileName.toUtf8().data());
+                    dsv_info("auto load file:%s", ldFileName.toUtf8().data());
                     on_load_file(ldFileName);
                 }
                 else{
@@ -976,7 +976,7 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev, bool bDeco
     }
 
     if (sessionObj["Version"].toInt() < BASE_SESSION_VERSION){
-        dsv_dbg("%s", "session file version is error!");
+        dsv_err("%s", "session file version is error!");
         return false;
     }
 
@@ -1459,7 +1459,7 @@ void MainWindow::switchLanguage(int language)
         retranslateUi();
     }
     else{
-        dsv_dbg("%s%d", "Unknown language code:", language);
+        dsv_err("%s%d", "Unknown language code:", language);
     }
 }
 

@@ -133,16 +133,6 @@ enum {
 #define MAX_TIMEBASE SR_SEC(10)
 #define MIN_TIMEBASE SR_NS(10)
 
-/** libsigrok loglevels. */
-enum {
-	SR_LOG_NONE = 0, /**< Output no messages at all. */
-	SR_LOG_ERR  = 1, /**< Output error messages. */
-	SR_LOG_WARN = 2, /**< Output warnings. */
-	SR_LOG_INFO = 3, /**< Output informational messages. */
-	SR_LOG_DBG  = 4, /**< Output debug messages. */
-	SR_LOG_SPEW = 5, /**< Output very noisy debug messages. */
-};
-
 /*
  * Use SR_API to mark public API symbols, and SR_PRIV for private symbols.
  *

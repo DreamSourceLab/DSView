@@ -69,6 +69,7 @@ void AppControl::Destroy(){
 bool AppControl::Init()
 {
     sr_log_set_context(dsv_log_context());
+    srd_log_set_context(dsv_log_context());
     
     // Initialise libsigrok
     if (sr_init(&sr_ctx) != SR_OK)
@@ -80,8 +81,6 @@ bool AppControl::Init()
 
     QString resdir = GetResourceDir();
 	sr_set_firmware_resource_dir(resdir.toUtf8().data());
-
-     
 
 #ifdef _WIN32
     //able run debug with qtcreator
@@ -99,7 +98,7 @@ bool AppControl::Init()
     QString dir = GetDecodeScriptDir();   
     strcpy(path, dir.toUtf8().data());
 
-    dsv_dbg("decode script path: \"%s\"", dir.toUtf8().data());
+    dsv_info("decode script path: \"%s\"", dir.toUtf8().data());
 
     // Initialise libsigrokdecode
     if (srd_init(path) != SRD_OK)

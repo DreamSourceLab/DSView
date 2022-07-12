@@ -508,7 +508,7 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
     //struct srd_push_param push_param;
 
     if( i >= decode_end){
-        dsv_dbg("%s", "decode data index have been end");
+        dsv_info("%s", "decode data index have been end");
     }
   
     while(i < decode_end && !_no_memory && !status->_bStop)
@@ -580,7 +580,7 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
             _error_message = QString::fromLocal8Bit(error);
     }
  
-    dsv_dbg("%s%llu", "send to decoder times:", entry_cnt);
+    dsv_info("%s%llu", "send to decoder times: ", entry_cnt);
 
     if (error)
         g_free(error);
@@ -608,7 +608,7 @@ void DecoderStack::execute_decode_stack()
     // Get the intial sample count
     _sample_count = _snapshot->get_sample_count();
 
-    dsv_dbg("%s%llu", "decoder sample count:", _sample_count);
+    dsv_info("%s%llu", "decoder sample count: ", _sample_count);
  
     // Create the decoders
     for(auto &dec : _stack)

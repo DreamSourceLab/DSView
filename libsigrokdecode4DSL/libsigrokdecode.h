@@ -24,6 +24,7 @@
 
 #include <stdint.h>
 #include <glib.h>
+#include <common/log/xlog.h>
 
 #define DECODE_NUM_HEX_MAX_LEN		35
 
@@ -91,16 +92,6 @@ enum srd_error_code {
 	 * Note: When adding entries here, don't forget to also update the
 	 * srd_strerror() and srd_strerror_name() functions in error.c.
 	 */
-};
-
-/* libsigrokdecode loglevels. */
-enum srd_loglevel {
-	SRD_LOG_NONE = 0, /**< Output no messages at all. */
-	SRD_LOG_ERR  = 1, /**< Output error messages. */
-	SRD_LOG_WARN = 2, /**< Output warnings. */
-	SRD_LOG_INFO = 3, /**< Output informational messages. */
-	SRD_LOG_DBG  = 4, /**< Output debug messages. */
-	SRD_LOG_SPEW = 5, /**< Output very noisy debug messages. */
 };
 
 /*
@@ -418,13 +409,15 @@ SRD_API int srd_inst_initial_pins_set_all(struct srd_decoder_inst *di,
 		GArray *initial_pins);
 
 /* log.c */
-typedef int (*srd_log_callback)(void *cb_data, int loglevel,
-				  const char *format, va_list args);
-SRD_API int srd_log_loglevel_set(int loglevel);
-SRD_API int srd_log_loglevel_get(void);
-SRD_API int srd_log_callback_get(srd_log_callback *cb, void **cb_data);
-SRD_API int srd_log_callback_set(srd_log_callback cb, void *cb_data);
-SRD_API int srd_log_callback_set_default(void);
+/**
+ * Use a shared context, and drop the private log context
+ */
+SRD_API void srd_log_set_context(xlog_context *ctx);
+
+/**
+ * Set the private log context level
+ */
+SRD_API void srd_log_level(int level);
 
 /* error.c */
 SRD_API const char *srd_strerror(int error_code);

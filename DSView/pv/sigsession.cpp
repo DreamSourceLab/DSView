@@ -168,9 +168,9 @@ void SigSession::set_device(DevInst *dev_inst)
         }
         
         if (_dev_inst->is_file())
-            dsv_dbg("%s\"%s\"", "Switch to file: ", dev_name.toUtf8().data());
+            dsv_info("%s\"%s\"", "Switch to file: ", dev_name.toUtf8().data());
         else
-            dsv_dbg("%s\"%s\"", "Switch to device: ", dev_name.toUtf8().data());
+            dsv_info("%s\"%s\"", "Switch to device: ", dev_name.toUtf8().data());
 
         try {
             _dev_inst->use(this);
@@ -439,7 +439,7 @@ void SigSession::start_capture(bool instant)
 {  
     // Check that a device instance has been selected.
     if (!_dev_inst) {
-        dsv_dbg("%s", "No device selected");
+        dsv_err("%s", "No device selected");
         capture_state_changed(SigSession::Stopped);
         return;
     }
@@ -709,7 +709,7 @@ void SigSession::init_signals()
         clear_all_decoder();
     }
     else{
-        dsv_dbg("%s", "Device loose contact");
+        dsv_err("%s", "Device loose contact");
     }
 
     // Detect what data types we will receive
@@ -1265,7 +1265,7 @@ void SigSession::hotplug_proc()
     if (!_dev_inst)
         return; 
  
-    dsv_dbg("%s", "Hotplug thread start!");
+    dsv_info("%s", "Hotplug thread start!");
 
     try {
         while(_session && !_bHotplugStop) { 
@@ -1273,12 +1273,12 @@ void SigSession::hotplug_proc()
             sr_hotplug_wait_timout(_sr_ctx);
 
             if (_hot_attach) { 
-                dsv_dbg("%s", "process event: DreamSourceLab hardware attached!");
+                dsv_info("%s", "process event: DreamSourceLab hardware attached!");
                 _callback->device_attach();
                 _hot_attach = false;
             }
             if (_hot_detach) { 
-                dsv_dbg("%s", "process event: DreamSourceLab hardware detached!");
+                dsv_info("%s", "process event: DreamSourceLab hardware detached!");
                 _callback->device_detach();
                 _hot_detach = false;
             }
@@ -1300,7 +1300,7 @@ void SigSession::hotplug_proc()
         dsv_err("%s", "Interrupt exception for hotplug thread was thrown.");
     }
 
-    dsv_dbg("%s", "Hotplug thread exit!");
+    dsv_info("%s", "Hotplug thread exit!");
 }
 
 void SigSession::register_hotplug_callback()
@@ -1884,7 +1884,7 @@ void SigSession::set_stop_scale(float scale)
          if ((*it) == trace){
              (*it)->decoder()->stop_decode_work();
              _decode_tasks.erase(it);
-             dsv_dbg("%s", "remove a waiting decode task");
+             dsv_info("%s", "remove a waiting decode task");
              return;  
          }
      }
@@ -1973,7 +1973,7 @@ void SigSession::set_stop_scale(float scale)
   //the decode task thread proc
   void SigSession::decode_task_proc()
   {  
-      dsv_dbg("%s", "------->decode thread start");
+      dsv_info("%s", "------->decode thread start");
       auto task = get_top_decode_task();
       
       while (task != NULL)
@@ -1983,7 +1983,7 @@ void SigSession::set_stop_scale(float scale)
           }
 
           if (task->_delete_flag){ 
-             dsv_dbg("%s", "destroy a decoder in task thread");
+             dsv_info("%s", "destroy a decoder in task thread");
 
              DESTROY_QT_LATER(task);
              std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -1995,7 +1995,7 @@ void SigSession::set_stop_scale(float scale)
           task = get_top_decode_task();
       }  
  
-      dsv_dbg("%s", "------->decode thread end");
+      dsv_info("%s", "------->decode thread end");
       _bDecodeRunning = false;
   }
 

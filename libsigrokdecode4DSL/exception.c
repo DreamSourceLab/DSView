@@ -22,6 +22,7 @@
 #include "libsigrokdecode.h"
 #include <stdarg.h>
 #include <glib.h>
+#include "log.h"
 
 static char *py_stringify(PyObject *py_obj)
 {
@@ -48,7 +49,7 @@ cleanup:
 	Py_XDECREF(py_str);
 	if (!str) {
 		PyErr_Clear();
-		srd_dbg("Failed to stringify object.");
+		srd_err("Failed to stringify object.");
 	}
 
 	return str;
@@ -79,7 +80,7 @@ cleanup:
 	Py_XDECREF(py_str);
 	if (!str) {
 		PyErr_Clear();
-		srd_dbg("Failed to get object attribute %s.", attr);
+		srd_err("Failed to get object attribute %s.", attr);
 	}
 
 	return str;

@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <assert.h>
+#include "log.h"
 
 /** @cond PRIVATE */
 
@@ -1130,8 +1131,7 @@ static gpointer di_thread(gpointer data)
 		srd_dbg("%s: decode() terminated (req %d).", di->inst_id, wanted_term);
 
 	PyErr_Clear();	
-	PyGILState_Release(gstate);
-	//srd_dbg("%s: Thread done (with res).", di->inst_id);
+	PyGILState_Release(gstate); 
 
 	return NULL;
 }

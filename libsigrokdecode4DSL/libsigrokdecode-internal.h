@@ -82,19 +82,11 @@ SRD_PRIV void srd_inst_free_all(struct srd_session *sess);
  * On MinGW, we need to specify the gnu_printf format flavor or GCC
  * will assume non-standard Microsoft printf syntax.
  */
-SRD_PRIV int srd_log(int loglevel, const char *format, ...)
-		__attribute__((__format__ (__gnu_printf__, 2, 3)));
+//SRD_PRIV int srd_log(int loglevel, const char *format, ...)
+//		__attribute__((__format__ (__gnu_printf__, 2, 3)));
 #else
-SRD_PRIV int srd_log(int loglevel, const char *format, ...) G_GNUC_PRINTF(2, 3);
-#endif
-
-#define srd_spew(...)	srd_log(SRD_LOG_SPEW, __VA_ARGS__)
-#define srd_dbg(...)	srd_log(SRD_LOG_DBG,  __VA_ARGS__)
-#define srd_info(...)	srd_log(SRD_LOG_INFO, __VA_ARGS__)
-#define srd_warn(...)	srd_log(SRD_LOG_WARN, __VA_ARGS__)
-#define srd_err(...)	srd_log(SRD_LOG_ERR,  __VA_ARGS__)
-
-SRD_PRIV void debug_log(const char *str);
+//SRD_PRIV int srd_log(int loglevel, const char *format, ...) G_GNUC_PRINTF(2, 3);
+#endif 
 
 /* decoder.c */
 SRD_PRIV long srd_decoder_apiver(const struct srd_decoder *d);

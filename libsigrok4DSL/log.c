@@ -25,8 +25,8 @@
 
 xlog_writer *sr_log = 0;
 static xlog_context *log_ctx = 0; //private log context
-int     is_private_log = 0;
-int     log_level_value = -1;
+static int  is_private_log = 0;
+static int  log_level_value = -1;
 
 /**
  * Init a private log context

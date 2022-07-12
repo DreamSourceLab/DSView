@@ -22,6 +22,7 @@
 #include "libsigrokdecode-internal.h" /* First, so we avoid a _POSIX_C_SOURCE warning. */
 #include "libsigrokdecode.h"
 #include <glib.h>
+#include "log.h"
 
 /** @cond PRIVATE */
 
@@ -190,6 +191,8 @@ SRD_API int srd_init(const char *path)
 	size_t i;
 	int ret;
 	const char *env_path;
+
+	srd_log_init(); //init log
  	
 	if (max_session_id != -1) {
 		srd_err("libsigrokdecode is already initialized.");
@@ -309,6 +312,8 @@ SRD_API int srd_exit(void)
 	/* Note: No need to release the GIL since Python is shut down now. */
 
 	max_session_id = -1;
+
+	srd_log_uninit(); //uninit log
 
 	return SRD_OK;
 }

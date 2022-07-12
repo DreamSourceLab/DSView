@@ -352,7 +352,7 @@ static GSList *scan(GSList *options)
 
         if (dsl_check_conf_profile(devlist[i])) {
 			/* Already has the firmware, so fix the new address. */
-            sr_dbg("Found an DSLogic device.");
+            sr_info("Found an DSLogic device.");
             sdi->status = SR_ST_INACTIVE;
             sdi->inst_type = SR_INST_USB;
             sdi->conn = sr_usb_dev_inst_new(libusb_get_bus_number(devlist[i]),

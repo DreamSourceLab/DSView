@@ -150,8 +150,8 @@ int main(int argc, char *argv[])
 	}
 
 	#ifdef DEBUG_INFO
-		if (XLOG_LEVEL_DBG > logLevel){
-			dsv_log_level(XLOG_LEVEL_DBG); // on develop mode, set the default log ldevel
+		if (XLOG_LEVEL_INFO > logLevel){
+			dsv_log_level(XLOG_LEVEL_INFO); // on develop mode, set the default log ldevel
 		}
 	#endif
 
@@ -195,7 +195,7 @@ bool bHighScale = true;
 
 	//----------------------run
 	dsv_info("----------------- version: %s-----------------", DS_VERSION_STRING);
-	dsv_dbg("Qt:%s", QT_VERSION_STR);
+	dsv_info("Qt:%s", QT_VERSION_STR);
 
 	AppControl *control = AppControl::Instance();	
 	AppConfig::Instance().LoadAll(); //load app config

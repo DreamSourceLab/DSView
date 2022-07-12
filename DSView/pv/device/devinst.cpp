@@ -199,12 +199,12 @@ void DevInst::start()
 
 void DevInst::run()
 { 
-	dsv_dbg("%s", "session run loop start");
+	dsv_info("%s", "session run loop start");
 	int ret = sr_session_run();
 	if (ret != SR_OK){
 		dsv_err("%s", "start session error!");
 	} 
-	dsv_dbg("%s", "session run loop end");
+	dsv_info("%s", "session run loop end");
 }
 
 void DevInst::stop()

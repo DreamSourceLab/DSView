@@ -362,7 +362,7 @@ SR_API int sr_session_start(void)
 		return SR_ERR_BUG;
 	}
 
-	sr_dbg("Starting...");
+	sr_info("Starting...");
 
 	ret = SR_OK;
 	for (l = session->devs; l; l = l->next) {
@@ -461,7 +461,7 @@ SR_PRIV int sr_session_stop_sync(void)
 		return SR_ERR_BUG;
 	}
 
-	sr_dbg("Stopping.");
+	sr_info("Stopping.");
 
 	for (l = session->devs; l; l = l->next) {
 		sdi = l->data;

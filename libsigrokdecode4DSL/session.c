@@ -23,7 +23,7 @@
 #include "libsigrokdecode.h"
 #include <inttypes.h>
 #include <glib.h>
-
+#include "log.h"
 
 SRD_PRIV int srd_call_sub_decoder_end(struct srd_decoder_inst *di, char **error);
 
@@ -73,7 +73,7 @@ SRD_API int srd_session_new(struct srd_session **sess)
 	/* Keep a list of all sessions, so we can clean up as needed. */
 	sessions = g_slist_append(sessions, *sess);
 
-	srd_dbg("Creating session %d.", (*sess)->session_id);
+	srd_info("Creating session %d.", (*sess)->session_id);
 
 	return SRD_OK;
 }
@@ -99,7 +99,7 @@ SRD_API int srd_session_start(struct srd_session *sess, char **error)
 	if (!sess)
 		return SRD_ERR_ARG;
 
-	srd_dbg("Calling start() of all instances in session %d.", sess->session_id);
+	srd_info("Calling start() of all instances in session %d.", sess->session_id);
 
 	/* Run the start() method of all decoders receiving frontend data. */
 	ret = SRD_OK;
@@ -347,7 +347,7 @@ SRD_API int srd_session_destroy(struct srd_session *sess)
 	sessions = g_slist_remove(sessions, sess);
 	g_free(sess);
 
-	srd_dbg("Destroyed session %d.", session_id);
+	srd_info("Destroyed session %d.", session_id);
 
 	return SRD_OK;
 }

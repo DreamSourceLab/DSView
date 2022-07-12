@@ -124,7 +124,7 @@ SR_API int sr_session_load(const char *filename)
 
 	kf = g_key_file_new();
 	if (!g_key_file_load_from_data(kf, metafile, fileInfo.uncompressed_size, 0, NULL)) {
-		sr_dbg("Failed to parse metadata.");
+		sr_err("Failed to parse metadata.");
 		return SR_ERR;
 	}
 

@@ -23,6 +23,7 @@
 #include "libsigrokdecode.h"
 #include <inttypes.h>
 #include <string.h>
+#include "log.h"
 
 /** @cond PRIVATE */
 extern SRD_PRIV GSList *sessions;
@@ -494,7 +495,7 @@ static PyObject *Decoder_put(PyObject *self, PyObject *args)
 
 	/* Upon SRD_OUTPUT_PYTHON for stacked PDs, we have a nicer log message later. */
 	if (pdo->output_type != SRD_OUTPUT_PYTHON && di->next_di != NULL) {
-        srd_spew("Instance %s put %"PRIu64 "-%" PRIu64 " %s on "
+        srd_detail("Instance %s put %"PRIu64 "-%" PRIu64 " %s on "
 			 "oid %d (%s).", di->inst_id, start_sample, end_sample,
 			 output_type_name(pdo->output_type), output_id,
 			 pdo->proto_id);
@@ -526,7 +527,7 @@ static PyObject *Decoder_put(PyObject *self, PyObject *args)
         for (l = di->next_di; l; l = l->next) {
             next_di = l->data;
 
-            srd_spew("Instance %s put %" PRIu64 "-%" PRIu64 " %s "
+            srd_detail("Instance %s put %" PRIu64 "-%" PRIu64 " %s "
                  "on oid %d (%s) to instance %s.", di->inst_id,
                  start_sample,
                  end_sample, output_type_name(pdo->output_type),
@@ -1224,7 +1225,7 @@ static PyObject *Decoder_printlog(PyObject *self, PyObject *args)
 	}	
 
 	str = PyBytes_AsString(py_bytes);
-	debug_log(str);
+    srd_err("%s", str); //print string from python to console
 	Py_DECREF(py_bytes);
 
     PyGILState_Release(gstate);
