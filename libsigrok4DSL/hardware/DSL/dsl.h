@@ -41,14 +41,9 @@
 #undef max
 #define max(a,b) ((a)>(b)?(a):(b))
 
-/* Message logging helpers with subsystem-specific prefix string. */
+#undef LOG_PREFIX
 #define LOG_PREFIX "DSL Hardware: "
-#define sr_log(l, s, args...) sr_log(l, LOG_PREFIX s, ## args)
-#define sr_spew(s, args...) sr_spew(LOG_PREFIX s, ## args)
-#define sr_dbg(s, args...) sr_dbg(LOG_PREFIX s, ## args)
-#define sr_info(s, args...) sr_info(LOG_PREFIX s, ## args)
-#define sr_warn(s, args...) sr_warn(LOG_PREFIX s, ## args)
-#define sr_err(s, args...) sr_err(LOG_PREFIX s, ## args)
+
 
 #define USB_INTERFACE		0
 #define USB_CONFIGURATION	1

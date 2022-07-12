@@ -23,6 +23,7 @@
 #include "command.h"
 #include "dsl.h"
 #include <assert.h>
+#include "../../log.h"
 
 SR_PRIV int command_ctl_wr(libusb_device_handle *devhdl, struct ctl_wr_cmd cmd)
 {

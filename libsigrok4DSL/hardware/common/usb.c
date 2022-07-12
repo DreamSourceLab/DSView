@@ -21,6 +21,10 @@
 #include "../../libsigrok-internal.h"
 #include <stdlib.h>
 #include <glib.h>
+#include "../../log.h"
+
+#undef LOG_PREFIX
+#define LOG_PREFIX "usb: "
 
 /* SR_CONF_CONN takes one of these: */
 #define CONN_USB_VIDPID  "^([0-9a-z]{4})\\.([0-9a-z]{4})$"
@@ -29,15 +33,6 @@
 /* Some USBTMC-specific enums, as defined in the USBTMC standard. */
 #define SUBCLASS_USBTMC 0x03
 #define USBTMC_USB488   0x01
-
-/* Message logging helpers with subsystem-specific prefix string. */
-#define LOG_PREFIX "usb: "
-#define sr_log(l, s, args...) sr_log(l, LOG_PREFIX s, ## args)
-#define sr_spew(s, args...) sr_spew(LOG_PREFIX s, ## args)
-#define sr_dbg(s, args...) sr_dbg(LOG_PREFIX s, ## args)
-#define sr_info(s, args...) sr_info(LOG_PREFIX s, ## args)
-#define sr_warn(s, args...) sr_warn(LOG_PREFIX s, ## args)
-#define sr_err(s, args...) sr_err(LOG_PREFIX s, ## args)
 
 /**
  * Find USB devices according to a connection string.

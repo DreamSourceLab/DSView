@@ -28,8 +28,7 @@
 #include <minizip/zip.h>
 #include <time.h>
 #include <assert.h>
-
-#define LOG_PREFIX "output/srzip"
+#include "../log.h"
 
 struct out_context { 
 	uint64_t 	samplerate;

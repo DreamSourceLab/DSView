@@ -117,7 +117,7 @@ GVariant* ProbeOptions::config_getter(
 {
 	GVariant *data = NULL;
     if (sr_config_get(sdi->driver, sdi, probe, NULL, key, &data) != SR_OK) {
-        dsv_warn(NULL, "%s%d", "WARNING: Failed to get value of config id:", key);
+        dsv_warn("%s%d", "WARNING: Failed to get value of config id:", key);
 		return NULL;
 	}
 	return data;

@@ -60,7 +60,6 @@
 #include "data/decode/decoderstatus.h"
 #include "dsvdef.h"
 #include "log.h"
-
  
 namespace pv {
 

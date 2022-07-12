@@ -64,15 +64,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include "../log.h"
 
 /* Message logging helpers with subsystem-specific prefix string. */
+
+#undef LOG_PREFIX
 #define LOG_PREFIX "input/vcd: "
-#define sr_log(l, s, args...) sr_log(l, LOG_PREFIX s, ## args)
-#define sr_spew(s, args...) sr_spew(LOG_PREFIX s, ## args)
-#define sr_dbg(s, args...) sr_dbg(LOG_PREFIX s, ## args)
-#define sr_info(s, args...) sr_info(LOG_PREFIX s, ## args)
-#define sr_warn(s, args...) sr_warn(LOG_PREFIX s, ## args)
-#define sr_err(s, args...) sr_err(LOG_PREFIX s, ## args)
 
 #define DEFAULT_NUM_PROBES 8
 
@@ -238,11 +235,11 @@ static gboolean parse_header(FILE *file, struct context *ctx)
 				if (q % p != 0)
 				{
 					/* Does not happen unless time value is non-standard */
-					sr_warn("Inexact rounding of samplerate, %" PRIu64 " / %" PRIu64 " to %" PRIu64 " Hz.",
+					sr_warn("Inexact rounding of samplerate, %llu / %llu to %llu Hz.",
 						q, p, ctx->samplerate);
 				}
 				
-				sr_dbg("Samplerate: %" PRIu64, ctx->samplerate);
+				sr_dbg("Samplerate: %llu", ctx->samplerate);
 			}
 			else
 			{
@@ -471,7 +468,7 @@ static void parse_contents(FILE *file, const struct sr_dev_inst *sdi, struct con
 					prev_timestamp = timestamp - ctx->compress;
 				}
 			
-				sr_dbg("New timestamp: %" PRIu64, timestamp);
+				sr_dbg("New timestamp: %llu", timestamp);
 			
 				/* Generate samples from prev_timestamp up to timestamp - 1. */
 				send_samples(sdi, prev_values, timestamp - prev_timestamp);

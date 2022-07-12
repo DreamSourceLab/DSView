@@ -68,6 +68,8 @@ void AppControl::Destroy(){
 
 bool AppControl::Init()
 {
+    sr_log_set_context(dsv_log_context());
+    
     // Initialise libsigrok
     if (sr_init(&sr_ctx) != SR_OK)
     {
@@ -145,12 +147,6 @@ const char *AppControl::GetLastError()
 {
     return m_error.c_str();
 }
-
- void AppControl::SetLogLevel(int level)
- {
-    sr_log_loglevel_set(level);
-	srd_log_loglevel_set(level);
- }
 
  bool AppControl::TopWindowIsMaximized()
  {

@@ -25,7 +25,7 @@
 #include  "config/appconfig.h"
 
 xlog_writer *dsv_log = nullptr;
-xlog_context *log_ctx = nullptr;
+static xlog_context *log_ctx = nullptr;
 bool b_logfile = false;
 
 void dsv_log_init()

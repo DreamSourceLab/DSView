@@ -21,6 +21,12 @@
  */
 
 #include "demo.h"
+#include "../../log.h"
+
+/* Message logging helpers with subsystem-specific prefix string. */
+
+#undef LOG_PREFIX 
+#define LOG_PREFIX "demo: "
 
 /* The size of chunks to send through the session bus. */
 /* TODO: Should be configurable. */
@@ -428,7 +434,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 		devc->cur_samplerate = g_variant_get_uint64(data);
         devc->samples_counter = 0;
         devc->pre_index = 0;
-		sr_dbg("%s: setting samplerate to %" PRIu64, __func__,
+		sr_dbg("%s: setting samplerate to %llu", __func__,
 		       devc->cur_samplerate);
 		ret = SR_OK;
 	} else if (id == SR_CONF_LIMIT_SAMPLES) {
@@ -439,14 +445,14 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         if (sdi->mode == DSO && en_ch_num(sdi) == 1) {
             devc->limit_samples /= 2;
         }
-		sr_dbg("%s: setting limit_samples to %" PRIu64, __func__,
+		sr_dbg("%s: setting limit_samples to %llu", __func__,
 		       devc->limit_samples);
 		ret = SR_OK;
 	} else if (id == SR_CONF_LIMIT_MSEC) {
 		devc->limit_msec = g_variant_get_uint64(data);
 		devc->limit_samples = 0;
         devc->limit_samples_show = devc->limit_samples;
-		sr_dbg("%s: setting limit_msec to %" PRIu64, __func__,
+		sr_dbg("%s: setting limit_msec to %llu", __func__,
 		       devc->limit_msec);
         ret = SR_OK;
     } else if (id == SR_CONF_DEVICE_MODE) {
@@ -519,12 +525,12 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     } else if (id == SR_CONF_PROBE_VDIV) {
         tmp_u64 = g_variant_get_uint64(data);
         ch->vdiv = tmp_u64;
-        sr_dbg("%s: setting VDIV of channel %d to %" PRIu64, __func__,
+        sr_dbg("%s: setting VDIV of channel %d to %llu", __func__,
                ch->index, ch->vdiv);
         ret = SR_OK;
     } else if (id == SR_CONF_PROBE_FACTOR) {
         ch->vfactor = g_variant_get_uint64(data);
-        sr_dbg("%s: setting FACTOR of channel %d to %" PRIu64, __func__,
+        sr_dbg("%s: setting FACTOR of channel %d to %llu", __func__,
                ch->index, ch->vfactor);
         ret = SR_OK;
     } else if (id == SR_CONF_PROBE_OFFSET) {
@@ -534,7 +540,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         ret = SR_OK;
     } else if (id == SR_CONF_TIMEBASE) {
         devc->timebase = g_variant_get_uint64(data);
-        sr_dbg("%s: setting TIMEBASE to %" PRIu64, __func__,
+        sr_dbg("%s: setting TIMEBASE to %llu", __func__,
                devc->timebase);
         ret = SR_OK;
     } else if (id == SR_CONF_PROBE_COUPLING) {
@@ -979,7 +985,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
 
     if ((sdi->mode == LOGIC || devc->instant) && devc->limit_samples &&
         devc->samples_counter >= devc->limit_samples) {
-        sr_info("Requested number of samples reached.");
+        sr_dbg("Requested number of samples reached.");
         hw_dev_acquisition_stop(sdi, NULL);
         return TRUE;
     }

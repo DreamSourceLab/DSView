@@ -26,15 +26,10 @@
 #include <string.h>
 #include <glib.h>
 #include "config.h" /* Needed for HAVE_LIBUSB_1_0 and others. */
+#include "log.h"
 
-/* Message logging helpers with subsystem-specific prefix string. */
+#undef LOG_PREFIX
 #define LOG_PREFIX "hwdriver: "
-#define sr_log(l, s, args...) sr_log(l, LOG_PREFIX s, ## args)
-#define sr_spew(s, args...) sr_spew(LOG_PREFIX s, ## args)
-#define sr_dbg(s, args...) sr_dbg(LOG_PREFIX s, ## args)
-#define sr_info(s, args...) sr_info(LOG_PREFIX s, ## args)
-#define sr_warn(s, args...) sr_warn(LOG_PREFIX s, ## args)
-#define sr_err(s, args...) sr_err(LOG_PREFIX s, ## args)
 
 /**
  * @file
@@ -190,7 +185,7 @@ SR_API int sr_driver_init(struct sr_context *ctx, struct sr_dev_driver *driver)
 		return SR_ERR_ARG;
 	}
 
-	sr_spew("Initializing driver '%s'.", driver->name);
+	sr_detail("Initializing driver '%s'.", driver->name);
 	if ((ret = driver->init(ctx)) < 0)
 		sr_err("Failed to initialize the driver: %d.", ret);
 
@@ -236,7 +231,7 @@ SR_API GSList *sr_driver_scan(struct sr_dev_driver *driver, GSList *options)
 
 	l = driver->scan(options);
 
-	sr_spew("Scan of '%s' found %d devices.", driver->name,
+	sr_detail("Scan of '%s' found %d devices.", driver->name,
 		g_slist_length(l));
 
 	return l;

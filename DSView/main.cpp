@@ -139,7 +139,11 @@ int main(int argc, char *argv[])
 	} 
  
 	//----------------------init log
-	dsv_log_init(); 
+	dsv_log_init();
+
+	if (bStoreLog && logLevel < XLOG_LEVEL_DBG){
+		logLevel = XLOG_LEVEL_DBG;
+	}
 
 	if (logLevel != -1){
 		dsv_log_level(logLevel);
@@ -191,7 +195,7 @@ bool bHighScale = true;
 
 	//----------------------run
 	dsv_info("----------------- version: %s-----------------", DS_VERSION_STRING);
-	dsv_info("Qt:%s", QT_VERSION_STR);
+	dsv_dbg("Qt:%s", QT_VERSION_STR);
 
 	AppControl *control = AppControl::Instance();	
 	AppConfig::Instance().LoadAll(); //load app config

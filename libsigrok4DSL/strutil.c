@@ -24,15 +24,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include "log.h"
 
-/* Message logging helpers with subsystem-specific prefix string. */
+#undef LOG_PREFIX
 #define LOG_PREFIX "strutil: "
-#define sr_log(l, s, args...) sr_log(l, LOG_PREFIX s, ## args)
-#define sr_spew(s, args...) sr_spew(LOG_PREFIX s, ## args)
-#define sr_dbg(s, args...) sr_dbg(LOG_PREFIX s, ## args)
-#define sr_info(s, args...) sr_info(LOG_PREFIX s, ## args)
-#define sr_warn(s, args...) sr_warn(LOG_PREFIX s, ## args)
-#define sr_err(s, args...) sr_err(LOG_PREFIX s, ## args)
 
 /**
  * @file
@@ -69,24 +64,24 @@ SR_API char *sr_si_string_u64(uint64_t x, const char *unit)
 		unit = "";
 
     if ((x >= SR_GHZ(1)) && (x % SR_GHZ(1) == 0)) {
-        return g_strdup_printf("%" PRIu64 " G%s", x / SR_GHZ(1), unit);
+        return g_strdup_printf("%llu G%s", x / SR_GHZ(1), unit);
     } else if ((x >= SR_GHZ(1)) && (x % SR_GHZ(1) != 0)) {
-        return g_strdup_printf("%" PRIu64 ".%" PRIu64 " G%s",
+        return g_strdup_printf("%llu.%llu G%s",
                        x / SR_GHZ(1), x % SR_GHZ(1), unit);
     } else if ((x >= SR_MHZ(1)) && (x % SR_MHZ(1) == 0)) {
-        return g_strdup_printf("%" PRIu64 " M%s",
+        return g_strdup_printf("%llu M%s",
                        x / SR_MHZ(1), unit);
     } else if ((x >= SR_MHZ(1)) && (x % SR_MHZ(1) != 0)) {
-        return g_strdup_printf("%" PRIu64 ".%" PRIu64 " M%s",
+        return g_strdup_printf("%llu.%llu M%s",
                     x / SR_MHZ(1), x % SR_MHZ(1), unit);
     } else if ((x >= SR_KHZ(1)) && (x % SR_KHZ(1) == 0)) {
-        return g_strdup_printf("%" PRIu64 " k%s",
+        return g_strdup_printf("%llu k%s",
                     x / SR_KHZ(1), unit);
     } else if ((x >= SR_KHZ(1)) && (x % SR_KHZ(1) != 0)) {
-        return g_strdup_printf("%" PRIu64 ".%" PRIu64 " K%s",
+        return g_strdup_printf("%llu.%llu K%s",
                     x / SR_KHZ(1), x % SR_KHZ(1), unit);
     } else {
-        return g_strdup_printf("%" PRIu64 " %s", x, unit);
+        return g_strdup_printf("%llu %s", x, unit);
     }
 
 	sr_err("%s: Error creating SI units string.", __func__);
@@ -114,24 +109,24 @@ SR_API char *sr_iec_string_u64(uint64_t x, const char *unit)
         unit = "";
 
     if ((x >= SR_GB(1)) && (x % SR_GB(1) == 0)) {
-        return g_strdup_printf("%" PRIu64 " G%s", x / SR_GB(1), unit);
+        return g_strdup_printf("%llu G%s", x / SR_GB(1), unit);
     } else if ((x >= SR_GB(1)) && (x % SR_GB(1) != 0)) {
-        return g_strdup_printf("%" PRIu64 ".%" PRIu64 " G%s",
+        return g_strdup_printf("%llu.%llu G%s",
                        x / SR_GB(1), x % SR_GB(1), unit);
     } else if ((x >= SR_MB(1)) && (x % SR_MB(1) == 0)) {
-        return g_strdup_printf("%" PRIu64 " M%s",
+        return g_strdup_printf("%llu M%s",
                        x / SR_MB(1), unit);
     } else if ((x >= SR_MB(1)) && (x % SR_MB(1) != 0)) {
-        return g_strdup_printf("%" PRIu64 ".%" PRIu64 " M%s",
+        return g_strdup_printf("%llu.%llu M%s",
                     x / SR_MB(1), x % SR_MB(1), unit);
     } else if ((x >= SR_KB(1)) && (x % SR_KB(1) == 0)) {
-        return g_strdup_printf("%" PRIu64 " k%s",
+        return g_strdup_printf("%llu k%s",
                     x / SR_KB(1), unit);
     } else if ((x >= SR_KB(1)) && (x % SR_KB(1) != 0)) {
-        return g_strdup_printf("%" PRIu64 ".%" PRIu64 " K%s",
+        return g_strdup_printf("%llu.%llu K%s",
                     x / SR_KB(1), x % SR_KB(1), unit);
     } else {
-        return g_strdup_printf("%" PRIu64 " %s", x, unit);
+        return g_strdup_printf("%llu %s", x, unit);
     }
 
     sr_err("%s: Error creating SI units string.", __func__);
@@ -195,13 +190,13 @@ SR_API char *sr_period_string(uint64_t frequency)
 	}
 
 	if (frequency >= SR_GHZ(1))
-		r = snprintf(o, 30, "%" PRIu64 " ns", frequency / 1000000000);
+		r = snprintf(o, 30, "%llu ns", frequency / 1000000000);
 	else if (frequency >= SR_MHZ(1))
-		r = snprintf(o, 30, "%" PRIu64 " us", frequency / 1000000);
+		r = snprintf(o, 30, "%llu us", frequency / 1000000);
 	else if (frequency >= SR_KHZ(1))
-		r = snprintf(o, 30, "%" PRIu64 " ms", frequency / 1000);
+		r = snprintf(o, 30, "%llu ms", frequency / 1000);
 	else
-		r = snprintf(o, 30, "%" PRIu64 " s", frequency);
+		r = snprintf(o, 30, "%llu s", frequency);
 
 	if (r < 0) {
 		/* Something went wrong... */
@@ -248,7 +243,7 @@ SR_API char *sr_time_string(uint64_t time)
     else if (time >= SR_US(1))
         r = snprintf(o, 30, "%0.2lf us", time * 1.0  / SR_US(1));
     else
-        r = snprintf(o, 30, "%" PRIu64 " ns", time);
+        r = snprintf(o, 30, "%llu ns", time);
 
     if (r < 0) {
         /* Something went wrong... */
@@ -284,9 +279,9 @@ SR_API char *sr_voltage_string(uint64_t v_p, uint64_t v_q)
 	}
 
 	if (v_q == 1000)
-		r = snprintf(o, 30, "%" PRIu64 "mV", v_p);
+		r = snprintf(o, 30, "%llumV", v_p);
 	else if (v_q == 1)
-		r = snprintf(o, 30, "%" PRIu64 "V", v_p);
+		r = snprintf(o, 30, "%lluV", v_p);
 	else
 		r = snprintf(o, 30, "%gV", (float)v_p / (float)v_q);
 

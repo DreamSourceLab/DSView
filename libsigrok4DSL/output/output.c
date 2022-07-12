@@ -20,10 +20,8 @@
 #include "../libsigrok.h"
 #include "../libsigrok-internal.h"
 #include <string.h>
-
-/** @cond PRIVATE */
-#define LOG_PREFIX "output"
-/** @endcond */
+#include "../log.h"
+ 
 
 /**
  * @file

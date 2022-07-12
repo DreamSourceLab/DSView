@@ -24,15 +24,13 @@
 #include <unistd.h>
 #include <string.h>
 #include <glib.h>
+#include "log.h"
 
 /* Message logging helpers with subsystem-specific prefix string. */
+
+#undef LOG_PREFIX
 #define LOG_PREFIX "session: "
-#define sr_log(l, s, args...) sr_log(l, LOG_PREFIX s, ## args)
-#define sr_spew(s, args...) sr_spew(LOG_PREFIX s, ## args)
-#define sr_dbg(s, args...) sr_dbg(LOG_PREFIX s, ## args)
-#define sr_info(s, args...) sr_info(LOG_PREFIX s, ## args)
-#define sr_warn(s, args...) sr_warn(LOG_PREFIX s, ## args)
-#define sr_err(s, args...) sr_err(LOG_PREFIX s, ## args)
+
 
 char DS_RES_PATH[500] = {0}; 
 
@@ -103,7 +101,7 @@ SR_API struct sr_session *sr_session_new(void)
 SR_API int sr_session_destroy(void)
 {
 	if (!session) {
-		sr_err("%s: session was NULL", __func__);
+		sr_dbg("%s: session was NULL", __func__);
 		return SR_ERR_BUG;
 	}
 
@@ -364,7 +362,7 @@ SR_API int sr_session_start(void)
 		return SR_ERR_BUG;
 	}
 
-	sr_info("Starting...");
+	sr_dbg("Starting...");
 
 	ret = SR_OK;
 	for (l = session->devs; l; l = l->next) {
@@ -414,7 +412,7 @@ SR_API int sr_session_run(void)
 
     session->running = TRUE;
 
-	sr_info("Running...");
+	sr_dbg("Running...");
 
 	/* Do we have real sources? */
 	if (session->num_sources == 1 && session->pollfds[0].fd == -1) {
@@ -463,7 +461,7 @@ SR_PRIV int sr_session_stop_sync(void)
 		return SR_ERR_BUG;
 	}
 
-	sr_info("Stopping.");
+	sr_dbg("Stopping.");
 
 	for (l = session->devs; l; l = l->next) {
 		sdi = l->data;
@@ -527,7 +525,7 @@ static void datafeed_dump(const struct sr_datafeed_packet *packet)
 		break;
 	case SR_DF_LOGIC:
 		logic = packet->payload;
-		sr_dbg("bus: Received SR_DF_LOGIC packet (%" PRIu64 " bytes).",
+		sr_dbg("bus: Received SR_DF_LOGIC packet (%llu bytes).",
 		       logic->length);
 		break;
     case SR_DF_DSO:
@@ -587,8 +585,8 @@ SR_PRIV int sr_session_send(const struct sr_dev_inst *sdi,
 	}
 
 	for (l = session->datafeed_callbacks; l; l = l->next) {
-		if (sr_log_loglevel_get() >= SR_LOG_DBG)
-			datafeed_dump(packet);
+        //if (sr_log_loglevel_get() >= SR_LOG_DBG)
+        //	datafeed_dump(packet);
 		cb_struct = l->data;
 		cb_struct->cb(sdi, packet, cb_struct->cb_data);
 	}

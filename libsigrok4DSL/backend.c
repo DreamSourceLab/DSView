@@ -22,6 +22,7 @@
 #include "libsigrok-internal.h"
 #include <glib.h>
 #include "config.h" /* Needed for HAVE_LIBUSB_1_0 and others. */
+#include "log.h"
 
 /**
  * @mainpage libsigrok API
@@ -125,7 +126,7 @@ static int sanity_check_all_drivers(void)
 	struct sr_dev_driver **drivers;
 	const char *d;
 
-	sr_spew("Sanity-checking all drivers.");
+	sr_detail("Sanity-checking all drivers.");
 
 	drivers = sr_driver_list();
 	for (i = 0; drivers[i]; i++) {
@@ -215,7 +216,7 @@ static int sanity_check_all_input_modules(void)
 	struct sr_input_format **inputs;
 	const char *d;
 
-	sr_spew("Sanity-checking all input modules.");
+	sr_detail("Sanity-checking all input modules.");
 
 	inputs = sr_input_list();
 	for (i = 0; inputs[i]; i++) {
@@ -264,7 +265,7 @@ static int sanity_check_all_output_modules(void)
     const struct sr_output_module **outputs;
 	const char *d;
 
-	sr_spew("Sanity-checking all output modules.");
+	sr_detail("Sanity-checking all output modules.");
 
 	outputs = sr_output_list();
 	for (i = 0; outputs[i]; i++) {
@@ -326,6 +327,8 @@ SR_API int sr_init(struct sr_context **ctx)
 {
 	int ret = SR_ERR;
 	struct sr_context *context;
+
+	sr_log_init(); //try init log
 
 	if (!ctx) {
 		sr_err("%s(): libsigrok context was NULL.", __func__);
@@ -391,7 +394,7 @@ done:
  * @since 0.1.0 (but the API changed in 0.2.0)
  */
 SR_API int sr_exit(struct sr_context *ctx)
-{
+{ 
 	if (!ctx) {
 		sr_err("%s(): libsigrok context was NULL.", __func__);
 		return SR_ERR;
@@ -404,6 +407,8 @@ SR_API int sr_exit(struct sr_context *ctx)
 #endif
 
 	g_free(ctx);
+
+	sr_log_uninit(); //try uninit log
 
 	return SR_OK;
 }

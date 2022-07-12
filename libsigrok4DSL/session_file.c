@@ -29,15 +29,10 @@
 #include <glib/gstdio.h>
 #include <minizip/unzip.h>
 #include "config.h" /* Needed for PACKAGE_VERSION and others. */
+#include "log.h"
 
-/* Message logging helpers with subsystem-specific prefix string. */
+#undef LOG_PREFIX
 #define LOG_PREFIX "session-file: "
-#define sr_log(l, s, args...) sr_log(l, LOG_PREFIX s, ## args)
-#define sr_spew(s, args...) sr_spew(LOG_PREFIX s, ## args)
-#define sr_dbg(s, args...) sr_dbg(LOG_PREFIX s, ## args)
-#define sr_info(s, args...) sr_info(LOG_PREFIX s, ## args)
-#define sr_warn(s, args...) sr_warn(LOG_PREFIX s, ## args)
-#define sr_err(s, args...) sr_err(LOG_PREFIX s, ## args)
 
 /**
  * @file

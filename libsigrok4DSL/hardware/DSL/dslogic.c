@@ -23,7 +23,10 @@
 
 #include "dsl.h"
 #include "command.h"
+#include "../../log.h"
 
+#undef LOG_PREFIX 
+#define LOG_PREFIX "dslogic: "
 
 enum {
     /** Buffer mode */

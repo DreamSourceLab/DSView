@@ -462,7 +462,7 @@ set(libsigrok4DSL_HEADERS
     libsigrok4DSL/libsigrok.h
     libsigrok4DSL/config.h
     libsigrok4DSL/hardware/DSL/command.h
-    libsigrok4DSL/hardware/DSL/dsl.h 
+    libsigrok4DSL/hardware/DSL/dsl.h
 )
  
 #===============================================================================

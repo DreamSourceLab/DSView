@@ -79,14 +79,6 @@ struct drv_context {
 	GSList *instances;
 };
 
-/*--- log.c -----------------------------------------------------------------*/
-
-SR_PRIV int sr_log(int loglevel, const char *format, ...);
-SR_PRIV int sr_spew(const char *format, ...);
-SR_PRIV int sr_dbg(const char *format, ...);
-SR_PRIV int sr_info(const char *format, ...);
-SR_PRIV int sr_warn(const char *format, ...);
-SR_PRIV int sr_err(const char *format, ...);
 
 /*--- device.c --------------------------------------------------------------*/
 

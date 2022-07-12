@@ -51,9 +51,7 @@ public:
 
     void UnInit();
 
-    const char* GetLastError();
-
-    void SetLogLevel(int level);
+    const char* GetLastError(); 
 
     inline pv::SigSession*  GetSession(){
         return _session;

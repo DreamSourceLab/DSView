@@ -27,15 +27,12 @@
 #include <assert.h>
 #include <string.h>
 #include <minizip/unzip.h>
+#include "log.h"
 
 /* Message logging helpers with subsystem-specific prefix string. */
+
+#undef LOG_PREFIX 
 #define LOG_PREFIX "virtual-session: "
-#define sr_log(l, s, args...) sr_log(l, LOG_PREFIX s, ## args)
-#define sr_spew(s, args...) sr_spew(LOG_PREFIX s, ## args)
-#define sr_dbg(s, args...) sr_dbg(LOG_PREFIX s, ## args)
-#define sr_info(s, args...) sr_info(LOG_PREFIX s, ## args)
-#define sr_warn(s, args...) sr_warn(LOG_PREFIX s, ## args)
-#define sr_err(s, args...) sr_err(LOG_PREFIX s, ## args)
 
 /* size of payloads sent across the session bus */
 /** @cond PRIVATE */
@@ -206,7 +203,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
 	(void)fd;
     //(void)revents;
 
-	sr_dbg("Feed chunk.");
+	sr_detail("Feed chunk.");
 
     ret = 0;
     packet.status = SR_PKT_OK;
@@ -649,60 +646,60 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 	case SR_CONF_SAMPLERATE:
 		vdev->samplerate = g_variant_get_uint64(data);
         samplerates[0] = vdev->samplerate;
-		sr_info("Setting samplerate to %" PRIu64 ".", vdev->samplerate);
+		sr_dbg("Setting samplerate to %llu.", vdev->samplerate);
 		break;
     case SR_CONF_TIMEBASE:
         vdev->timebase = g_variant_get_uint64(data);
-        sr_info("Setting timebase to %" PRIu64 ".", vdev->timebase);
+        sr_dbg("Setting timebase to %llu.", vdev->timebase);
         break;
     case SR_CONF_MAX_TIMEBASE:
         vdev->max_timebase = g_variant_get_uint64(data);
-        sr_info("Setting max timebase to %" PRIu64 ".", vdev->max_timebase);
+        sr_dbg("Setting max timebase to %llu.", vdev->max_timebase);
         break;
     case SR_CONF_MIN_TIMEBASE:
         vdev->min_timebase = g_variant_get_uint64(data);
-        sr_info("Setting min timebase to %" PRIu64 ".", vdev->min_timebase);
+        sr_dbg("Setting min timebase to %llu.", vdev->min_timebase);
         break;
     case SR_CONF_UNIT_BITS:
         vdev->unit_bits = g_variant_get_byte(data);
-        sr_info("Setting unit bits to %d.", vdev->unit_bits);
+        sr_dbg("Setting unit bits to %d.", vdev->unit_bits);
         break;
     case SR_CONF_REF_MIN:
         vdev->ref_min = g_variant_get_uint32(data);
-        sr_info("Setting ref min to %d.", vdev->ref_min);
+        sr_dbg("Setting ref min to %d.", vdev->ref_min);
         break;
     case SR_CONF_REF_MAX:
         vdev->ref_max = g_variant_get_uint32(data);
-        sr_info("Setting ref max to %d.", vdev->ref_max);
+        sr_dbg("Setting ref max to %d.", vdev->ref_max);
         break;
     case SR_CONF_SESSIONFILE:
         vdev->sessionfile = g_strdup(g_variant_get_bytestring(data));
-		sr_info("Setting sessionfile to '%s'.", vdev->sessionfile);
+		sr_dbg("Setting sessionfile to '%s'.", vdev->sessionfile);
 		break;
 	case SR_CONF_CAPTUREFILE:
         vdev->capturefile = g_strdup(g_variant_get_bytestring(data));
-		sr_info("Setting capturefile to '%s'.", vdev->capturefile);
+		sr_dbg("Setting capturefile to '%s'.", vdev->capturefile);
 		break;
     case SR_CONF_FILE_VERSION:
         vdev->version = g_variant_get_int16(data);
-        sr_info("Setting file version to '%d'.", vdev->version);
+        sr_dbg("Setting file version to '%d'.", vdev->version);
         break;
     case SR_CONF_LIMIT_SAMPLES:
         vdev->total_samples = g_variant_get_uint64(data);
         samplecounts[0] = vdev->total_samples;
-        sr_info("Setting limit samples to %" PRIu64 ".", vdev->total_samples);
+        sr_dbg("Setting limit samples to %llu.", vdev->total_samples);
         break;
     case SR_CONF_TRIGGER_TIME:
         vdev->trig_time = g_variant_get_int64(data);
-        sr_info("Setting trigger time to %" PRId64 ".", vdev->trig_time);
+        sr_dbg("Setting trigger time to %llu.", vdev->trig_time);
         break;
     case SR_CONF_TRIGGER_POS:
         vdev->trig_pos = g_variant_get_uint64(data);
-        sr_info("Setting trigger position to %" PRIu64 ".", vdev->trig_pos);
+        sr_dbg("Setting trigger position to %llu.", vdev->trig_pos);
         break;
     case SR_CONF_NUM_BLOCKS:
         vdev->num_blocks = g_variant_get_uint64(data);
-        sr_info("Setting block number to %" PRIu64 ".", vdev->num_blocks);
+        sr_dbg("Setting block number to %llu.", vdev->num_blocks);
         break;
     case SR_CONF_CAPTURE_NUM_PROBES:
 		vdev->num_probes = g_variant_get_uint64(data);
@@ -955,7 +952,7 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi,
          
     }
 
-	sr_info("Opening archive %s file %s", vdev->sessionfile,
+	sr_dbg("Opening archive %s file %s", vdev->sessionfile,
 		vdev->capturefile);
 
     vdev->archive = unzOpen64(vdev->sessionfile);

@@ -34,10 +34,11 @@ void dsv_log_level(int l);
 
 void dsv_log_enalbe_logfile();
 
-#define dsv_err(fmt, args...) xlog_err(dsv_log, fmt, ## args)
-#define dsv_warn(fmt, args...) xlog_warn(dsv_log, fmt, ## args)
-#define dsv_info(fmt, args...) xlog_info(dsv_log, fmt, ## args)
-#define dsv_dbg(fmt, args...) xlog_dbg(dsv_log, fmt, ## args)
-#define dsv_detail(fmt, args...) xlog_detail(dsv_log, fmt, ## args)
+#define LOG_PREFIX "" 
+#define dsv_err(fmt, args...) xlog_err(dsv_log, LOG_PREFIX fmt, ## args)
+#define dsv_warn(fmt, args...) xlog_warn(dsv_log, LOG_PREFIX fmt, ## args)
+#define dsv_info(fmt, args...) xlog_info(dsv_log, LOG_PREFIX fmt, ## args)
+#define dsv_dbg(fmt, args...) xlog_dbg(dsv_log, LOG_PREFIX fmt, ## args)
+#define dsv_detail(fmt, args...) xlog_detail(dsv_log, LOG_PREFIX fmt, ## args)
 
 #endif

@@ -25,9 +25,8 @@
 #include <string.h>
 #include <glib.h>
 #include "../config.h" /* Needed for PACKAGE and others. */
-
-#define LOG_PREFIX "output/vcd"
-
+#include "../log.h"
+ 
 struct context {
 	int num_enabled_channels;
 	GArray *channelindices;

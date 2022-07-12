@@ -26,8 +26,7 @@
 #include <inttypes.h>
 #include <glib.h>
 #include "../config.h" /* Needed for PACKAGE_STRING and others. */
-
-#define LOG_PREFIX "output/gnuplot"
+#include "../log.h"
 
 struct context {
 	unsigned int num_enabled_channels;
@@ -193,7 +192,7 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
 		memcpy(ctx->prevsample, sample, logic->unitsize);
 
 		/* The first column is a counter (needed for gnuplot). */
-        g_string_append_printf(*out, "%"PRIu64"\t", ctx->samplecount-1);
+        g_string_append_printf(*out, "%llu\t", ctx->samplecount-1);
 
 		/* The next columns are the values of all channels. */
 		for (p = 0; p < ctx->num_enabled_channels; p++) {

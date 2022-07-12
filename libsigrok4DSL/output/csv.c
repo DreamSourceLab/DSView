@@ -24,10 +24,7 @@
 #include <string.h>
 #include <glib.h>
 #include "../config.h" /* Needed for PACKAGE_STRING and others. */
-
-#define LOG_PREFIX "output/csv"
- 
-
+  
 struct context {
 	unsigned int num_enabled_channels;
 	uint64_t samplerate;
