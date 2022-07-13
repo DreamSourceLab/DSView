@@ -64,12 +64,15 @@ void dsv_log_enalbe_logfile()
 
         #ifdef Q_OS_LINUX
             lf = QDir::homePath() + "/DSView.log";
-        #else
-            lf = GetAppDataDir() + "/DSView.log";
+        #else 
+            lf = tmp + GetAppDataDir() + "/DSView.log";
         #endif
 
-        xlog_add_receiver_from_file(log_ctx, lf.toUtf8().data(), 0);
-        
         dsv_info("%s\"%s\"", "store log to file: ", lf.toUtf8().data());
+
+        int ret = xlog_add_receiver_from_file(log_ctx, lf.toUtf8().data(), 0);
+        if (ret != 0){
+            dsv_err("%s", "create log file error!");
+        } 
     }
 }

@@ -136,28 +136,7 @@ int main(int argc, char *argv[])
     } 
 	else if (argcFinal - optind == 1){
         open_file = argvFinal[argcFinal - 1];		
-	} 
- 
-	//----------------------init log
-	dsv_log_init();
-
-	if (bStoreLog && logLevel < XLOG_LEVEL_DBG){
-		logLevel = XLOG_LEVEL_DBG;
 	}
-
-	if (logLevel != -1){
-		dsv_log_level(logLevel);
-	}
-
-	#ifdef DEBUG_INFO
-		if (XLOG_LEVEL_INFO > logLevel){
-			dsv_log_level(XLOG_LEVEL_INFO); // on develop mode, set the default log ldevel
-		}
-	#endif
-
-	if (bStoreLog){
-		dsv_log_enalbe_logfile();
-	} 
 
 	//----------------------HightDpiScaling
 #if QT_VERSION >= QT_VERSION_CHECK(5,6,0)
@@ -192,6 +171,26 @@ bool bHighScale = true;
     QApplication::setApplicationName("DSView");
     QApplication::setOrganizationName("DreamSourceLab");
     QApplication::setOrganizationDomain("www.DreamSourceLab.com");
+
+	//----------------------init log
+	dsv_log_init(); // Don't call before QApplication be inited
+
+	if (bStoreLog && logLevel < XLOG_LEVEL_DBG){
+		logLevel = XLOG_LEVEL_DBG;
+	}
+	if (logLevel != -1){
+		dsv_log_level(logLevel);
+	}
+
+	#ifdef DEBUG_INFO
+		if (XLOG_LEVEL_INFO > logLevel){
+			dsv_log_level(XLOG_LEVEL_INFO); // on develop mode, set the default log ldevel
+		}
+	#endif
+
+	if (bStoreLog){
+		dsv_log_enalbe_logfile();
+	} 
 
 	//----------------------run
 	dsv_info("----------------- version: %s-----------------", DS_VERSION_STRING);
