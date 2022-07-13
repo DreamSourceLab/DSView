@@ -65,7 +65,7 @@ void dsv_log_enalbe_logfile()
         #ifdef Q_OS_LINUX
             lf = QDir::homePath() + "/DSView.log";
         #else 
-            lf = tmp + GetAppDataDir() + "/DSView.log";
+            lf = GetAppDataDir() + "/DSView.log";
         #endif
 
         dsv_info("%s\"%s\"", "store log to file: ", lf.toUtf8().data());
