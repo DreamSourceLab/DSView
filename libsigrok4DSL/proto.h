@@ -20,7 +20,7 @@
 #ifndef LIBSIGROK_SIGROK_PROTO_H
 #define LIBSIGROK_SIGROK_PROTO_H
 
-#include <common/log/xlog.h>
+#include <log/xlog.h>
 
 /**
  * @file

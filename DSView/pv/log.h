@@ -22,7 +22,7 @@
 #ifndef _DSV_LOG_H_
 #define _DSV_LOG_H_
 
-#include <common/log/xlog.h>
+#include <log/xlog.h>
 
 extern xlog_writer *dsv_log;
 

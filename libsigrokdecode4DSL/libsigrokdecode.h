@@ -24,7 +24,7 @@
 
 #include <stdint.h>
 #include <glib.h>
-#include <common/log/xlog.h>
+#include <log/xlog.h>
 
 #define DECODE_NUM_HEX_MAX_LEN		35
 

@@ -22,7 +22,7 @@
 #ifndef _SR_LOG_H_
 #define _SR_LOG_H_
 
-#include <common/log/xlog.h>
+#include <log/xlog.h>
 #include "libsigrok.h"
 
 extern xlog_writer *sr_log;
