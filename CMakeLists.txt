@@ -80,6 +80,16 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 #===============================================================================
+#= first search path
+#-------------------------------------------------------------------------------
+include_directories(
+   ./DSView
+   ./libsigrok4DSL
+   ./libsigrokdecode4DSL
+   ./common
+)
+
+#===============================================================================
 #= glib-2.0
 #-------------------------------------------------------------------------------
 pkg_search_module(GLIB glib-2.0)
@@ -552,13 +562,6 @@ endif()
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
 
-
-include_directories(
-   ./DSView
-   ./libsigrok4DSL
-   ./libsigrokdecode4DSL
-   ./common
-)
 
 include_directories(
 	${CMAKE_CURRENT_BINARY_DIR}
