@@ -44,7 +44,7 @@ void usage()
 {
 	printf(
 		"Usage:\n"
-		"  %s [OPTION…] [FILE] — %s\n"
+		"  %s [OPTION...] [FILE] - %s\n"
 		"\n"
 		"Help Options:\n"
 		"  -l, --loglevel                  Set log level, value between 0 to 5\n"
