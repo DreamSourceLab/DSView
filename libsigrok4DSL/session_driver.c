@@ -16,8 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include "libsigrok.h"
+ 
 #include "libsigrok-internal.h"
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -50,6 +49,7 @@ static const char *maxHeights[] = {
     "4X",
     "5X",
 };
+ 
 static const uint64_t vdivs[] = {
     SR_mV(10),
     SR_mV(20),

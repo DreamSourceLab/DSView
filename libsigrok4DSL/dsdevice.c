@@ -17,7 +17,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "libsigrok.h"
 #include "libsigrok-internal.h"
 #include <stdio.h>
 #include <glib.h>
@@ -239,8 +238,6 @@ SR_PRIV void sr_dev_inst_free(struct sr_dev_inst *sdi)
 	g_free(sdi);
 }
 
-#ifdef HAVE_LIBUSB_1_0
-
 /** @private */
 SR_PRIV struct sr_usb_dev_inst *sr_usb_dev_inst_new(uint8_t bus,
 			uint8_t address, struct libusb_device_handle *hdl)
@@ -266,8 +263,6 @@ SR_PRIV void sr_usb_dev_inst_free(struct sr_usb_dev_inst *usb)
 
 	/* Nothing to do for this device instance type. */
 }
-
-#endif
 
 /**
  * @private

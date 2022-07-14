@@ -23,12 +23,10 @@
 #define DSVIEW_PV_DEVICE_DEVINST_H
 
 #include <QObject>
-
 #include <string>
 #include <glib.h>
 #include <stdint.h>
-
-#include "libsigrok.h"
+#include <libsigrok.h> 
 
 struct sr_dev_inst;
 struct sr_channel;

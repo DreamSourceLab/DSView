@@ -212,8 +212,7 @@ const char* AnnotationResTable::format_to_string(const char *hex_str, int fmt)
 				 sprintf(g_number_tmp_64, "%c", (char)lv);
 				 return g_number_tmp_64;
 			 }
-		 }
-		 char * const wr_buf = g_number_tmp_64;
+         }
          g_number_tmp_64[0] = '[';
          strcpy(g_number_tmp_64 + 1, data);
          g_number_tmp_64[len+1] = ']';

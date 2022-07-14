@@ -23,12 +23,8 @@
 //#include <stdarg.h>
 #include <glib.h>
 #include "config.h" /* Needed for HAVE_LIBUSB_1_0 and others. */
-#ifdef HAVE_LIBUSB_1_0
 #include <libusb-1.0/libusb.h>
-#endif
-
-// firmware binary file directory, endswith letter '/'
-extern char DS_RES_PATH[500];
+#include "libsigrok.h"
 
 /**
  * @file
@@ -46,23 +42,28 @@ extern char DS_RES_PATH[500];
 #define ARRAY_AND_SIZE(a) (a), ARRAY_SIZE(a)
 #endif
 
+#undef min
+#define min(a,b) ((a)<(b)?(a):(b))
+#undef max
+#define max(a,b) ((a)>(b)?(a):(b))
+
+
+// firmware binary file directory, endswith letter '/'
+extern char DS_RES_PATH[500];
+
 struct sr_context {
-#ifdef HAVE_LIBUSB_1_0
 	libusb_context *libusb_ctx;
 	libusb_hotplug_callback_handle hotplug_handle;
 	hotplug_event_callback  hotplug_callback;
 	void *hotplug_user_data;
 	struct timeval hotplug_tv; 
-#endif
 };
 
-#ifdef HAVE_LIBUSB_1_0
 struct sr_usb_dev_inst {
 	uint8_t bus;
 	uint8_t address;
 	struct libusb_device_handle *devhdl;
 };
-#endif
 
 #define SERIAL_PARITY_NONE 0
 #define SERIAL_PARITY_EVEN 1
@@ -80,6 +81,28 @@ struct drv_context {
 };
 
 
+/*
+ * Oscilloscope
+ */
+#define MAX_TIMEBASE SR_SEC(10)
+#define MIN_TIMEBASE SR_NS(10)
+
+
+struct ds_trigger {
+    uint16_t trigger_en;
+    uint16_t trigger_mode;
+    uint16_t trigger_pos;
+    uint16_t trigger_stages;
+    unsigned char trigger_logic[TriggerStages+1];
+    unsigned char trigger0_inv[TriggerStages+1];
+    unsigned char trigger1_inv[TriggerStages+1];
+    char trigger0[TriggerStages+1][MaxTriggerProbes];
+    char trigger1[TriggerStages+1][MaxTriggerProbes];
+    uint32_t trigger0_count[TriggerStages+1];
+    uint32_t trigger1_count[TriggerStages+1];
+};
+
+
 /*--- device.c --------------------------------------------------------------*/
 
 SR_PRIV struct sr_channel *sr_channel_new(uint16_t index, int type,
@@ -91,13 +114,11 @@ SR_PRIV struct sr_dev_inst *sr_dev_inst_new(int mode, int index, int status,
                                             const char *vendor, const char *model, const char *version);
 SR_PRIV void sr_dev_inst_free(struct sr_dev_inst *sdi);
 
-#ifdef HAVE_LIBUSB_1_0
 /* USB-specific instances */
 SR_PRIV struct sr_usb_dev_inst *sr_usb_dev_inst_new(uint8_t bus,
 		uint8_t address, struct libusb_device_handle *hdl);
 SR_PRIV GSList *sr_usb_find_usbtmc(libusb_context *usb_ctx);
 SR_PRIV void sr_usb_dev_inst_free(struct sr_usb_dev_inst *usb);
-#endif
 
 /* Serial-specific instances */
 SR_PRIV struct sr_serial_dev_inst *sr_serial_dev_inst_new(const char *port,
@@ -174,21 +195,17 @@ SR_PRIV int serial_stream_detect(struct sr_serial_dev_inst *serial,
 
 /*--- hardware/common/ezusb.c -----------------------------------------------*/
 
-#ifdef HAVE_LIBUSB_1_0
+
 SR_PRIV int ezusb_reset(struct libusb_device_handle *hdl, int set_clear);
 SR_PRIV int ezusb_install_firmware(libusb_device_handle *hdl,
 				   const char *filename);
 SR_PRIV int ezusb_upload_firmware(libusb_device *dev, int configuration,
 				  const char *filename);
-#endif
 
 /*--- hardware/common/usb.c -------------------------------------------------*/
 
-#ifdef HAVE_LIBUSB_1_0
 SR_PRIV GSList *sr_usb_find(libusb_context *usb_ctx, const char *conn);
 SR_PRIV int sr_usb_open(libusb_context *usb_ctx, struct sr_usb_dev_inst *usb);
-#endif
-
 
 
 #endif

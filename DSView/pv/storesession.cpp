@@ -55,7 +55,7 @@
 #include <QTextCodec>
 #endif
  
-#include "libsigrokdecode.h"
+#include <libsigrokdecode.h>
 #include "config/appconfig.h"
 #include "dsvdef.h"
 #include "utility/encoding.h"

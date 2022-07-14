@@ -36,7 +36,7 @@
 #include "data/mathstack.h"
 #include "interface/icallbacks.h"
 #include "dstimer.h"
-#include "libsigrok.h"
+#include <libsigrok.h> 
  
 
 struct srd_decoder;

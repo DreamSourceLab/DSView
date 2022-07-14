@@ -21,8 +21,7 @@
 #ifndef LIBDSL_HARDWARE_DSL_H
 #define LIBDSL_HARDWARE_DSL_H
 
-#include <glib.h>
-#include "../../libsigrok.h"
+#include <glib.h> 
 #include "../../libsigrok-internal.h"
 #include "command.h"
 
@@ -36,15 +35,7 @@
 #include <sys/stat.h>
 #include <inttypes.h>
 
-#undef min
-#define min(a,b) ((a)<(b)?(a):(b))
-#undef max
-#define max(a,b) ((a)>(b)?(a):(b))
-
-#undef LOG_PREFIX
-#define LOG_PREFIX "DSL Hardware: "
-
-
+ 
 #define USB_INTERFACE		0
 #define USB_CONFIGURATION	1
 #define NUM_TRIGGER_STAGES	16
@@ -1052,16 +1043,7 @@ static const struct DSL_profile supported_DSCope[] = {
     { 0, 0, LIBUSB_SPEED_UNKNOWN, 0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 };
 
-static const gboolean default_ms_en[] = {
-    FALSE, /* DSO_MS_BEGIN */
-    TRUE,  /* DSO_MS_FREQ */
-    FALSE, /* DSO_MS_PERD */
-    TRUE,  /* DSO_MS_VMAX */
-    TRUE,  /* DSO_MS_VMIN */
-    FALSE, /* DSO_MS_VRMS */
-    FALSE, /* DSO_MS_VMEA */
-    FALSE, /* DSO_MS_VP2P */
-};
+
 
 enum {
     DSL_ERROR = -1,

@@ -19,6 +19,7 @@
  */
 
 #include "libsigrok.h"
+#include "version.h"
 
 /**
  * @file

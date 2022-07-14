@@ -17,8 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include "libsigrok.h"
+ 
 #include "libsigrok-internal.h"
 #include <glib.h>
 #include "config.h" /* Needed for HAVE_LIBUSB_1_0 and others. */
@@ -85,35 +84,7 @@
  *
  * Example for a minimal program using libsigrok:
  *
- * @code{.c}
- *   #include <stdio.h>
- *   #include <libsigrok/libsigrok.h>
- *
- *   int main(int argc, char **argv)
- *   {
- *   	int ret;
- *   	struct sr_context *sr_ctx;
- *
- *   	if ((ret = sr_init(&sr_ctx)) != SR_OK) {
- *   		printf("Error initializing libsigrok (%s): %s.",
- *   		       sr_strerror_name(ret), sr_strerror(ret));
- *   		return 1;
- *   	}
- *
- *   	// Use libsigrok functions here...
- *
- *   	if ((ret = sr_exit(sr_ctx)) != SR_OK) {
- *   		printf("Error shutting down libsigrok (%s): %s.",
- *   		       sr_strerror_name(ret), sr_strerror(ret));
- *   		return 1;
- *   	}
- *
- *   	return 0;
- *   }
- * @endcode
- *
- * @{
- */
+ 
 
 /**
  * Sanity-check all libsigrok drivers.
@@ -365,14 +336,12 @@ SR_API int sr_init(struct sr_context **ctx)
 	context->hotplug_tv.tv_sec = 0;
 	context->hotplug_tv.tv_usec = 0;
 
-#ifdef HAVE_LIBUSB_1_0
 	ret = libusb_init(&context->libusb_ctx);
 	if (LIBUSB_SUCCESS != ret) {
 		sr_err("libusb_init() returned %s.\n", libusb_error_name(ret));
 		ret = SR_ERR;
 		goto done;
 	}
-#endif
 
 	*ctx = context;
 	context = NULL;
@@ -402,10 +371,8 @@ SR_API int sr_exit(struct sr_context *ctx)
 
 	sr_hw_cleanup_all();
 
-#ifdef HAVE_LIBUSB_1_0
 	libusb_exit(ctx->libusb_ctx);
-#endif
-
+	
 	g_free(ctx);
 
 	sr_log_uninit(); //try uninit log

@@ -22,47 +22,8 @@
 #define LIBDSL_HARDWARE_DEMO_H
 
 #include <glib.h>
-#include "../../libsigrok.h"
 #include "../../libsigrok-internal.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <errno.h>
-#include <assert.h>
-
-#include <sys/stat.h>
-#include <inttypes.h>
-
-#include <unistd.h>
-#ifdef _WIN32
-#include <io.h>
-#include <fcntl.h>
-#define pipe(fds) _pipe(fds, 4096, _O_BINARY)
-#endif
-
-#undef min
-#define min(a,b) ((a)<(b)?(a):(b))
-#undef max
-#define max(a,b) ((a)>(b)?(a):(b))
-
-/* hardware Capabilities */
-#define CAPS_MODE_LOGIC (1 << 0)
-#define CAPS_MODE_ANALOG (1 << 1)
-#define CAPS_MODE_DSO (1 << 2)
-
-#define CAPS_FEATURE_NONE 0
-// zero calibration ability
-#define CAPS_FEATURE_ZERO (1 << 4)
-/* end */
-
-static struct sr_dev_mode mode_list[] = {
-    {LOGIC, "Logic Analyzer", "逻辑分析仪", "la", "la.svg"},
-    {ANALOG, "Data Acquisition", "数据记录仪", "daq", "daq.svg"},
-    {DSO, "Oscilloscope", "示波器", "osc", "osc.svg"},
-};
-
+ 
 /* Supported patterns which we can generate */
 enum DEMO_PATTERN {
     PATTERN_SINE = 0,
@@ -133,43 +94,6 @@ struct DEMO_channels {
     uint64_t max_samplerate;
 
     const char *descr;
-};
-
-static const struct DEMO_channels channel_modes[] = {
-    // LA Stream
-    {DEMO_LOGIC100x16,  LOGIC,  SR_CHANNEL_LOGIC,  16, 1, SR_MHZ(1), SR_Mn(1),
-     SR_KHZ(10), SR_MHZ(100), "Use 16 Channels (Max 20MHz)"},
-
-    // DAQ
-    {DEMO_ANALOG10x2,   ANALOG, SR_CHANNEL_ANALOG,  2,  8, SR_MHZ(1), SR_Mn(1),
-     SR_HZ(10),  SR_MHZ(10), "Use Channels 0~1 (Max 10MHz)"},
-
-    // OSC
-    {DEMO_DSO200x2,     DSO,    SR_CHANNEL_DSO,     2,  8, SR_MHZ(100), SR_Kn(10),
-     SR_HZ(100), SR_MHZ(200), "Use Channels 0~1 (Max 200MHz)"}
-};
-
-static const struct DEMO_profile supported_Demo[] = {
-    /*
-     * Demo
-     */
-    {"DreamSourceLab", "Demo Device", NULL,
-     {CAPS_MODE_LOGIC | CAPS_MODE_ANALOG | CAPS_MODE_DSO,
-      CAPS_FEATURE_NONE,
-      (1 << DEMO_LOGIC100x16) |
-      (1 << DEMO_ANALOG10x2) |
-      (1 << DEMO_DSO200x2),
-      SR_Mn(100),
-      SR_Kn(20),
-      0,
-      vdivs10to2000,
-      0,
-      DEMO_LOGIC100x16,
-      PATTERN_SINE,
-      SR_NS(500)}
-    },
-
-    { 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 };
 
 struct demo_context {
@@ -246,43 +170,7 @@ static const uint64_t samplerates[] = {
     SR_GHZ(10),
 };
 
-static const char *probeMapUnits[] = {
-    "V",
-    "A",
-    "°C",
-    "°F",
-    "g",
-    "m",
-    "m/s",
-};
 
-/* We name the probes 0-7 on our demo driver. */
-static const char *probe_names[] = {
-    "0", "1", "2", "3",
-    "4", "5", "6", "7",
-    "8", "9", "10", "11",
-    "12", "13", "14", "15",
-    NULL,
-};
-
-static const gboolean default_ms_en[] = {
-    FALSE, /* DSO_MS_BEGIN */
-    TRUE,  /* DSO_MS_FREQ */
-    FALSE, /* DSO_MS_PERD */
-    TRUE,  /* DSO_MS_VMAX */
-    TRUE,  /* DSO_MS_VMIN */
-    FALSE, /* DSO_MS_VRMS */
-    FALSE, /* DSO_MS_VMEA */
-    FALSE, /* DSO_MS_VP2P */
-};
-
-static const char *maxHeights[] = {
-    "1X",
-    "2X",
-    "3X",
-    "4X",
-    "5X",
-};
 
 static const int const_dc = 1.95 / 10 * 255;
 static const int sinx[] = {

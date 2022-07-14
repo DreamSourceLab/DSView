@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../libsigrok.h"
+ 
 #include "../libsigrok-internal.h"
 #include <string.h>
 #include "../log.h"

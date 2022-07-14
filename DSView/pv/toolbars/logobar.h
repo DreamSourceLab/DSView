@@ -27,7 +27,7 @@
 #include <QToolButton>
 #include <QAction>
 #include <QMenu>
-#include "libsigrok.h"
+#include <libsigrok.h> 
 
 #include "../sigsession.h"
 #include "../interface/uicallback.h"

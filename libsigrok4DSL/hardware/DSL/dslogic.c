@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../libsigrok.h"
+
 #include "../../libsigrok-internal.h"
 
 #include "dsl.h"
@@ -27,6 +27,14 @@
 
 #undef LOG_PREFIX 
 #define LOG_PREFIX "dslogic: "
+
+static const char *maxHeights[] = {
+    "1X",
+    "2X",
+    "3X",
+    "4X",
+    "5X",
+};
 
 enum {
     /** Buffer mode */
@@ -85,14 +93,6 @@ static const char *thresholds[] = {
 static const char *filters[] = {
     "None",
     "1 Sample Clock",
-};
-
-static const char *maxHeights[] = {
-    "1X",
-    "2X",
-    "3X",
-    "4X",
-    "5X",
 };
 
 static const int32_t hwoptions[] = {

@@ -21,7 +21,7 @@
  */
 
 
-#include "libsigrokdecode.h"
+#include <libsigrokdecode.h>
 
 #include "sigsession.h"
 #include "mainwindow.h"

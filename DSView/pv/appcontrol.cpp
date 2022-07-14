@@ -21,8 +21,8 @@
 
 #include "appcontrol.h"
 
-#include "libsigrok.h"
-#include "libsigrokdecode.h"
+#include <libsigrok.h>
+#include <libsigrokdecode.h>
 #include <QDir>
 #include <QCoreApplication>
 #include <QWidget>

@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../libsigrok.h"
+ 
 #include "../../libsigrok-internal.h"
 #include "command.h"
 #include "dsl.h"
@@ -26,6 +26,9 @@
 #include <math.h>
 #include <assert.h>
 #include <sys/stat.h>
+
+#undef LOG_PREFIX
+#define LOG_PREFIX "DSL Hardware: "
 
 extern struct ds_trigger *trigger;
 
@@ -75,6 +78,18 @@ static struct sr_dev_mode mode_list[] = {
     {ANALOG, "Data Acquisition", "数据记录仪", "daq", "daq.svg"},
     {DSO, "Oscilloscope", "示波器", "osc", "osc.svg"},
 };
+
+static const gboolean default_ms_en[] = {
+    FALSE, /* DSO_MS_BEGIN */
+    TRUE,  /* DSO_MS_FREQ */
+    FALSE, /* DSO_MS_PERD */
+    TRUE,  /* DSO_MS_VMAX */
+    TRUE,  /* DSO_MS_VMIN */
+    FALSE, /* DSO_MS_VRMS */
+    FALSE, /* DSO_MS_VMEA */
+    FALSE, /* DSO_MS_VP2P */
+};
+
 
 SR_PRIV void dsl_probe_init(struct sr_dev_inst *sdi)
 {

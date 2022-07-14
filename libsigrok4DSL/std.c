@@ -18,7 +18,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include "libsigrok.h"
 #include "libsigrok-internal.h"
 #include <glib.h>
 #include "log.h"
@@ -207,11 +206,7 @@ SR_PRIV int std_dev_clear(const struct sr_dev_driver *driver,
 
 		if (sdi->conn) {
 			if (sdi->inst_type == SR_INST_USB)
-#if HAVE_LIBUSB_1_0
 				sr_usb_dev_inst_free(sdi->conn);
-#else
-				;
-#endif
 			else if (sdi->inst_type == SR_INST_SERIAL)
 				sr_serial_dev_inst_free(sdi->conn);
 		}

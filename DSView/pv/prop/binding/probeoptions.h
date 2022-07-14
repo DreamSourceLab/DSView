@@ -27,8 +27,7 @@
 #include <boost/optional.hpp>
 
 #include <QString>
-
-#include "libsigrok.h"
+#include <libsigrok.h> 
 #include "binding.h"
 
 namespace pv {

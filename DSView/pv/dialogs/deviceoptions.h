@@ -24,6 +24,7 @@
 #ifndef DSVIEW_PV_DEVICEOPTIONS_H
 #define DSVIEW_PV_DEVICEOPTIONS_H
 
+#include <libsigrok.h> 
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QGroupBox>
@@ -36,9 +37,7 @@
 #include <QRadioButton>
 #include <QTimer> 
 #include <QWidget>
-#include <vector>
-
-#include "libsigrok.h"
+#include <vector> 
 #include "../device/devinst.h"
 #include "../prop/binding/deviceoptions.h"
 #include "../prop/binding/probeoptions.h"

@@ -34,7 +34,7 @@
 #include <stdint.h>
 #include <list>
 
-#include "libsigrok.h"
+#include <libsigrok.h> 
 #include "trace.h"
 
 namespace pv {

@@ -34,8 +34,7 @@
 #include <QInputMethodEvent>
 #include <QApplication>
 #include <math.h>
-
-#include "libsigrok.h"
+#include <libsigrok.h> 
 
 namespace pv {
 namespace dock {

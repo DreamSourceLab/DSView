@@ -21,12 +21,12 @@
 #define LIBSIGROK_SIGROK_H
 
 #include <sys/time.h>
-
 #include <stdio.h>
 #include <sys/time.h>
 #include <stdint.h>
 #include <inttypes.h>
 #include <glib.h> 
+//#include "version.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -81,6 +81,23 @@ enum {
 	 */
 };
 
+#define SR_MAX_PROBENAME_LEN 32
+#define DS_MAX_ANALOG_PROBES_NUM 4
+#define DS_MAX_DSO_PROBES_NUM 2
+
+#define TriggerStages 16
+#define TriggerProbes 16
+#define MaxTriggerProbes 32
+#define TriggerCountBits 16
+#define STriggerDataStage 3
+#define DS_MAX_TRIG_PERCENT 90
+
+#define DS_CONF_DSO_HDIVS 10
+#define DS_CONF_DSO_VDIVS 10
+
+#define SAMPLES_ALIGN 1023ULL
+
+
 /* Handy little macros */
 #define SR_HZ(n)  (n)
 #define SR_KHZ(n) ((n) * (uint64_t)(1000ULL))
@@ -111,28 +128,7 @@ enum {
 #define SR_V(n)  ((n) * (uint64_t)(1000ULL))
 #define SR_KV(n) ((n) * (uint64_t)(1000000ULL))
 #define SR_MV(n) ((n) * (uint64_t)(1000000000ULL))
-
-#define SR_MAX_PROBENAME_LEN 32
-#define DS_MAX_ANALOG_PROBES_NUM 4
-#define DS_MAX_DSO_PROBES_NUM 2
-#define TriggerStages 16
-#define TriggerProbes 16
-#define MaxTriggerProbes 32
-#define TriggerCountBits 16
-#define STriggerDataStage 3
-
-#define DS_CONF_DSO_HDIVS 10
-#define DS_CONF_DSO_VDIVS 10
-
-#define DS_MAX_TRIG_PERCENT 90
-
-#define SAMPLES_ALIGN 1023ULL
-/*
- * Oscilloscope
- */
-#define MAX_TIMEBASE SR_SEC(10)
-#define MIN_TIMEBASE SR_NS(10)
-
+ 
 /*
  * Use SR_API to mark public API symbols, and SR_PRIV for private symbols.
  *
@@ -1258,20 +1254,6 @@ enum {
     DSO_TRIGGER_FALLING,
 };
 
-struct ds_trigger {
-    uint16_t trigger_en;
-    uint16_t trigger_mode;
-    uint16_t trigger_pos;
-    uint16_t trigger_stages;
-    unsigned char trigger_logic[TriggerStages+1];
-    unsigned char trigger0_inv[TriggerStages+1];
-    unsigned char trigger1_inv[TriggerStages+1];
-    char trigger0[TriggerStages+1][MaxTriggerProbes];
-    char trigger1[TriggerStages+1][MaxTriggerProbes];
-    uint32_t trigger0_count[TriggerStages+1];
-    uint32_t trigger1_count[TriggerStages+1];
-};
-
 struct ds_trigger_pos {
     uint32_t check_id;
     uint32_t real_pos;
@@ -1283,9 +1265,181 @@ struct ds_trigger_pos {
 
 typedef int (*sr_receive_data_callback_t)(int fd, int revents, const struct sr_dev_inst *sdi);
 
-#include "proto.h"
-#include "version.h"
 
+#include <log/xlog.h>
+
+/**
+ * @file
+ *
+ * Header file containing API function prototypes.
+ */
+
+/*--- backend.c -------------------------------------------------------------*/
+
+//@event, 1:attach, 2:left
+typedef void (*hotplug_event_callback)(void *context,void *device, int event, void *userdata);
+
+SR_API int sr_init(struct sr_context **ctx);
+SR_API int sr_exit(struct sr_context *ctx);
+SR_API int sr_listen_hotplug(struct sr_context *ctx, hotplug_event_callback callback, void *userdata);
+SR_API int sr_close_hotplug(struct sr_context *ctx);
+SR_API void sr_hotplug_wait_timout(struct sr_context *ctx);
+
+/*--- log.c -----------------------------------------------------------------*/
+
+/**
+ * Use a shared context, and drop the private log context
+ */
+SR_API void sr_log_set_context(xlog_context *ctx); 
+
+/**
+ * Set the private log context level
+ */
+SR_API void sr_log_level(int level);
+
+/*--- device.c --------------------------------------------------------------*/
+
+SR_API int sr_dev_probe_name_set(const struct sr_dev_inst *sdi,
+		int probenum, const char *name);
+SR_API int sr_dev_probe_enable(const struct sr_dev_inst *sdi, int probenum,
+		gboolean state);
+SR_API int sr_dev_trigger_set(const struct sr_dev_inst *sdi, uint16_t probenum,
+		const char *trigger);
+SR_API GSList *sr_dev_list(const struct sr_dev_driver *driver);
+SR_API const GSList *sr_dev_mode_list(const struct sr_dev_inst *sdi);
+SR_API int sr_dev_clear(const struct sr_dev_driver *driver);
+SR_API int sr_dev_open(struct sr_dev_inst *sdi);
+SR_API int sr_dev_close(struct sr_dev_inst *sdi);
+
+/*--- hwdriver.c ------------------------------------------------------------*/
+
+SR_API struct sr_dev_driver **sr_driver_list(void);
+SR_API int sr_driver_init(struct sr_context *ctx,
+		struct sr_dev_driver *driver);
+SR_API GSList *sr_driver_scan(struct sr_dev_driver *driver, GSList *options);
+SR_API int sr_config_get(const struct sr_dev_driver *driver,
+                         const struct sr_dev_inst *sdi,
+                         const struct sr_channel *ch,
+                         const struct sr_channel_group *cg,
+                         int key, GVariant **data);
+SR_API int sr_config_set(struct sr_dev_inst *sdi,
+                         struct sr_channel *ch,
+                         struct sr_channel_group *cg,
+                         int key, GVariant *data);
+SR_API int sr_config_list(const struct sr_dev_driver *driver,
+                          const struct sr_dev_inst *sdi,
+                          const struct sr_channel_group *cg,
+                          int key, GVariant **data);
+SR_API const struct sr_config_info *sr_config_info_get(int key);
+SR_API const struct sr_config_info *sr_config_info_name_get(const char *optname);
+SR_API int sr_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, gboolean prg);
+SR_API struct sr_config *sr_config_new(int key, GVariant *data);
+SR_API void sr_config_free(struct sr_config *src);
+
+//SR_API void sr_test_usb_api();
+
+/*--------------------session.c----------------*/
+typedef void (*sr_datafeed_callback_t)(const struct sr_dev_inst *sdi,
+		const struct sr_datafeed_packet *packet, void *cb_data);
+                
+ 
+SR_API void sr_set_firmware_resource_dir(const char *dir);
+
+
+/* Session setup */
+SR_API int sr_session_load(const char *filename);
+SR_API struct sr_session *sr_session_new(void);
+SR_API int sr_session_destroy(void);
+SR_API int sr_session_dev_remove_all(void);
+SR_API int sr_session_dev_add(struct sr_dev_inst *sdi);
+SR_API int sr_session_dev_list(GSList **devlist);
+
+/* Datafeed setup */
+SR_API int sr_session_datafeed_callback_remove_all(void);
+SR_API int sr_session_datafeed_callback_add(sr_datafeed_callback_t cb,
+		void *cb_data);
+
+/* Session control */
+SR_API int sr_session_start(void);
+SR_API int sr_session_run(void);
+SR_API int sr_session_stop(void); 
+
+SR_API int sr_session_source_add(int fd, int events, int timeout,
+		sr_receive_data_callback_t cb, const struct sr_dev_inst *sdi);
+SR_API int sr_session_source_add_pollfd(GPollFD *pollfd, int timeout,
+		sr_receive_data_callback_t cb, const struct sr_dev_inst *sdi);
+SR_API int sr_session_source_add_channel(GIOChannel *channel, int events,
+		int timeout, sr_receive_data_callback_t cb, const struct sr_dev_inst *sdi);
+SR_API int sr_session_source_remove(int fd);
+SR_API int sr_session_source_remove_pollfd(GPollFD *pollfd);
+SR_API int sr_session_source_remove_channel(GIOChannel *channel);
+
+//0:ok, 1:error
+SR_API int sr_check_session_start_before();
+
+/*--- input/input.c ---------------------------------------------------------*/
+
+SR_API struct sr_input_format **sr_input_list(void);
+
+/*--- output/output.c -------------------------------------------------------*/
+
+SR_API const struct sr_output_module **sr_output_list(void);
+
+/*--- strutil.c -------------------------------------------------------------*/
+
+SR_API char *sr_si_string_u64(uint64_t x, const char *unit);
+SR_API char *sr_iec_string_u64(uint64_t x, const char *unit);
+SR_API char *sr_samplerate_string(uint64_t samplerate);
+SR_API char *sr_samplecount_string(uint64_t samplecount);
+SR_API char *sr_period_string(uint64_t frequency);
+SR_API char *sr_time_string(uint64_t time);
+SR_API char *sr_voltage_string(uint64_t v_p, uint64_t v_q);
+SR_API int sr_parse_sizestring(const char *sizestring, uint64_t *size);
+SR_API uint64_t sr_parse_timestring(const char *timestring);
+SR_API gboolean sr_parse_boolstring(const char *boolstring);
+SR_API int sr_parse_period(const char *periodstr, uint64_t *p, uint64_t *q);
+SR_API int sr_parse_voltage(const char *voltstr, uint64_t *p, uint64_t *q);
+
+/*--- version.c -------------------------------------------------------------*/
+
+SR_API int sr_package_version_major_get(void);
+SR_API int sr_package_version_minor_get(void);
+SR_API int sr_package_version_micro_get(void);
+SR_API const char *sr_package_version_string_get(void);
+
+SR_API int sr_lib_version_current_get(void);
+SR_API int sr_lib_version_revision_get(void);
+SR_API int sr_lib_version_age_get(void);
+SR_API const char *sr_lib_version_string_get(void);
+
+/*--- error.c ---------------------------------------------------------------*/
+
+SR_API const char *sr_strerror(int error_code);
+SR_API const char *sr_strerror_name(int error_code);
+
+/*--- trigger.c ------------------------------------------------------------*/
+SR_API int ds_trigger_init(void);
+SR_API int ds_trigger_destroy(void);
+SR_API struct ds_trigger *ds_trigger_get(void);
+SR_API int ds_trigger_stage_set_value(uint16_t stage, uint16_t probes, char *trigger0, char *trigger1);
+SR_API int ds_trigger_stage_set_logic(uint16_t stage, uint16_t probes, unsigned char trigger_logic);
+SR_API int ds_trigger_stage_set_inv(uint16_t stage, uint16_t probes, unsigned char trigger0_inv, unsigned char trigger1_inv);
+SR_API int ds_trigger_stage_set_count(uint16_t stage, uint16_t probes, uint32_t trigger0_count, uint32_t trigger1_count);
+SR_API int ds_trigger_probe_set(uint16_t probe, unsigned char trigger0, unsigned char trigger1);
+SR_API int ds_trigger_set_stage(uint16_t stages);
+SR_API int ds_trigger_set_pos(uint16_t position);
+SR_API uint16_t ds_trigger_get_pos();
+SR_API int ds_trigger_set_en(uint16_t enable);
+SR_API uint16_t ds_trigger_get_en();
+SR_API int ds_trigger_set_mode(uint16_t mode);
+
+SR_PRIV uint16_t ds_trigger_get_mask0(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
+SR_PRIV uint16_t ds_trigger_get_value0(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
+SR_PRIV uint16_t ds_trigger_get_edge0(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
+SR_PRIV uint16_t ds_trigger_get_mask1(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
+SR_PRIV uint16_t ds_trigger_get_value1(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
+SR_PRIV uint16_t ds_trigger_get_edge1(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
+ 
 #ifdef __cplusplus
 }
 #endif
