@@ -1342,7 +1342,9 @@ SR_API void sr_config_free(struct sr_config *src);
 typedef void (*sr_datafeed_callback_t)(const struct sr_dev_inst *sdi,
 		const struct sr_datafeed_packet *packet, void *cb_data);
                 
- 
+/**
+ * firmware binary file directory
+ */
 SR_API void sr_set_firmware_resource_dir(const char *dir);
 
 
@@ -1363,16 +1365,6 @@ SR_API int sr_session_datafeed_callback_add(sr_datafeed_callback_t cb,
 SR_API int sr_session_start(void);
 SR_API int sr_session_run(void);
 SR_API int sr_session_stop(void); 
-
-SR_API int sr_session_source_add(int fd, int events, int timeout,
-		sr_receive_data_callback_t cb, const struct sr_dev_inst *sdi);
-SR_API int sr_session_source_add_pollfd(GPollFD *pollfd, int timeout,
-		sr_receive_data_callback_t cb, const struct sr_dev_inst *sdi);
-SR_API int sr_session_source_add_channel(GIOChannel *channel, int events,
-		int timeout, sr_receive_data_callback_t cb, const struct sr_dev_inst *sdi);
-SR_API int sr_session_source_remove(int fd);
-SR_API int sr_session_source_remove_pollfd(GPollFD *pollfd);
-SR_API int sr_session_source_remove_channel(GIOChannel *channel);
 
 //0:ok, 1:error
 SR_API int sr_check_session_start_before();

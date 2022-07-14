@@ -660,7 +660,7 @@ static int _sr_session_source_add(GPollFD *pollfd, int timeout,
  * @return SR_OK upon success, SR_ERR_ARG upon invalid arguments, or
  *         SR_ERR_MALLOC upon memory allocation errors.
  */
-SR_API int sr_session_source_add(int fd, int events, int timeout,
+SR_PRIV int sr_session_source_add(int fd, int events, int timeout,
 		sr_receive_data_callback_t cb, const struct sr_dev_inst *sdi)
 {
 	GPollFD p;
@@ -682,7 +682,7 @@ SR_API int sr_session_source_add(int fd, int events, int timeout,
  * @return SR_OK upon success, SR_ERR_ARG upon invalid arguments, or
  *         SR_ERR_MALLOC upon memory allocation errors.
  */
-SR_API int sr_session_source_add_pollfd(GPollFD *pollfd, int timeout,
+SR_PRIV int sr_session_source_add_pollfd(GPollFD *pollfd, int timeout,
 		sr_receive_data_callback_t cb, const struct sr_dev_inst *sdi)
 {
     return _sr_session_source_add(pollfd, timeout, cb,
@@ -701,7 +701,7 @@ SR_API int sr_session_source_add_pollfd(GPollFD *pollfd, int timeout,
  * @return SR_OK upon success, SR_ERR_ARG upon invalid arguments, or
  *         SR_ERR_MALLOC upon memory allocation errors.
  */
-SR_API int sr_session_source_add_channel(GIOChannel *channel, int events,
+SR_PRIV int sr_session_source_add_channel(GIOChannel *channel, int events,
 		int timeout, sr_receive_data_callback_t cb, const struct sr_dev_inst *sdi)
 {
 	GPollFD p;
@@ -791,7 +791,7 @@ static int _sr_session_source_remove(gintptr poll_object)
  *         SR_ERR_MALLOC upon memory allocation errors, SR_ERR_BUG upon
  *         internal errors.
  */
-SR_API int sr_session_source_remove(int fd)
+SR_PRIV int sr_session_source_remove(int fd)
 {
 	return _sr_session_source_remove((gintptr)fd);
 }
@@ -805,7 +805,7 @@ SR_API int sr_session_source_remove(int fd)
  *         SR_ERR_MALLOC upon memory allocation errors, SR_ERR_BUG upon
  *         internal errors.
  */
-SR_API int sr_session_source_remove_pollfd(GPollFD *pollfd)
+SR_PRIV int sr_session_source_remove_pollfd(GPollFD *pollfd)
 {
 	return _sr_session_source_remove((gintptr)pollfd);
 }
@@ -819,7 +819,7 @@ SR_API int sr_session_source_remove_pollfd(GPollFD *pollfd)
  *         SR_ERR_MALLOC upon memory allocation errors, SR_ERR_BUG upon
  *         internal errors.
  */
-SR_API int sr_session_source_remove_channel(GIOChannel *channel)
+SR_PRIV int sr_session_source_remove_channel(GIOChannel *channel)
 {
 	return _sr_session_source_remove((gintptr)channel);
 }

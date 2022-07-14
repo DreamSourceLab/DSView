@@ -1,0 +1,61 @@
+
+/*
+    How to use libsigrok4DSL
+*/
+
+1.Complie
+    cd libsigrok4DSL
+    cmake .
+    make
+    make install
+
+2.Example
+    
+    #include <libsigrok.h>
+    #include <stdio.h>
+
+    void event_cb(int ev)
+    {
+
+    }
+
+    void data_cb(pack p){
+
+    }
+
+    void main()
+    {   
+        sr_init();
+        
+        const char *res_path = "c:\DSView\res"
+        sr_set_firmware_resource_dir(res_path);
+
+        sr_disable_data_cache(flag); // don't manager data
+        sr_set_datafeed_callback(data_cb);  //only transfers data
+        sr_set_event_callback(event_cb);
+ 
+        while(true){
+            if (getche() == 'x'){
+                //exit app
+                break;
+            }
+        }
+
+        sr_exit();
+    }
+
+
+/*  api
+
+    sr_init();
+
+    sr_exit();
+
+    sr_set_firmware_resource_dir();
+
+    sr_set_datafeed_callback(data_cb);
+
+    sr_set_event_callback(event_cb);
+
+
+*/

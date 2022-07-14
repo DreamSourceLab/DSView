@@ -49,7 +49,7 @@ void usage()
 		"Help Options:\n"
 		"  -l, --loglevel                  Set log level, value between 0 to 5\n"
 		"  -v, -V, --version               Show release version\n"
-		"  -s, --storelog                  save log to locale file\n"
+		"  -s, --storelog                  Save log to locale file\n"
 		"  -h, -?, --help                  Show help option\n"
 		"\n", DS_BIN_NAME, DS_DESCRIPTION);
 } 
