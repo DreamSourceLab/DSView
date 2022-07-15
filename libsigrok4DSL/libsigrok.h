@@ -25,8 +25,8 @@
 #include <sys/time.h>
 #include <stdint.h>
 #include <inttypes.h>
-#include <glib.h> 
-//#include "version.h"
+#include <glib.h>  
+#include <log/xlog.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -80,6 +80,8 @@ enum {
 	 * sr_strerror() and sr_strerror_name() functions in error.c.
 	 */
 };
+
+typedef int bool_t;
 
 #define SR_MAX_PROBENAME_LEN 32
 #define DS_MAX_ANALOG_PROBES_NUM 4
@@ -1262,12 +1264,7 @@ struct ds_trigger_pos {
     uint32_t remain_cnt_h;
     uint32_t status;
 };
-
-typedef int (*sr_receive_data_callback_t)(int fd, int revents, const struct sr_dev_inst *sdi);
-
-
-#include <log/xlog.h>
-
+  
 /**
  * @file
  *
@@ -1278,24 +1275,9 @@ typedef int (*sr_receive_data_callback_t)(int fd, int revents, const struct sr_d
 
 //@event, 1:attach, 2:left
 typedef void (*hotplug_event_callback)(void *context,void *device, int event, void *userdata);
-
-SR_API int sr_init(struct sr_context **ctx);
-SR_API int sr_exit(struct sr_context *ctx);
 SR_API int sr_listen_hotplug(struct sr_context *ctx, hotplug_event_callback callback, void *userdata);
 SR_API int sr_close_hotplug(struct sr_context *ctx);
 SR_API void sr_hotplug_wait_timout(struct sr_context *ctx);
-
-/*--- log.c -----------------------------------------------------------------*/
-
-/**
- * Use a shared context, and drop the private log context
- */
-SR_API void sr_log_set_context(xlog_context *ctx); 
-
-/**
- * Set the private log context level
- */
-SR_API void sr_log_level(int level);
 
 /*--- device.c --------------------------------------------------------------*/
 
@@ -1341,12 +1323,7 @@ SR_API void sr_config_free(struct sr_config *src);
 /*--------------------session.c----------------*/
 typedef void (*sr_datafeed_callback_t)(const struct sr_dev_inst *sdi,
 		const struct sr_datafeed_packet *packet, void *cb_data);
-                
-/**
- * firmware binary file directory
- */
-SR_API void sr_set_firmware_resource_dir(const char *dir);
-
+          
 
 /* Session setup */
 SR_API int sr_session_load(const char *filename);
@@ -1424,14 +1401,64 @@ SR_API uint16_t ds_trigger_get_pos();
 SR_API int ds_trigger_set_en(uint16_t enable);
 SR_API uint16_t ds_trigger_get_en();
 SR_API int ds_trigger_set_mode(uint16_t mode);
-
-SR_PRIV uint16_t ds_trigger_get_mask0(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
-SR_PRIV uint16_t ds_trigger_get_value0(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
-SR_PRIV uint16_t ds_trigger_get_edge0(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
-SR_PRIV uint16_t ds_trigger_get_mask1(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
-SR_PRIV uint16_t ds_trigger_get_value1(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
-SR_PRIV uint16_t ds_trigger_get_edge1(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
  
+/*--- log.c -----------------------------------------------------------------*/
+
+/**
+ * Use a shared context, and drop the private log context
+ */
+SR_API void sr_log_set_context(xlog_context *ctx); 
+
+/**
+ * Set the private log context level
+ */
+SR_API void sr_log_level(int level);
+
+
+/*---event define ---------------------------------------------*/
+enum libsigrok_event_type
+{
+	EV_DEVICE_ATTACH = 0,
+
+};
+
+struct sr_device_handle;
+typedef struct sr_device_handle sr_device_handle; 
+
+struct sr_device_info
+{
+	sr_device_handle *_handle;
+	char 	_name[50];
+	char 	_full_name[300];
+	bool_t 	_is_active; //is the current device
+	bool_t 	_is_hardware;
+};
+  
+/*---lib_main.c -----------------------------------------------*/
+
+typedef void (*libsigrok_event_callback_t)(int event);
+
+SR_API int sr_lib_init();
+
+SR_API int sr_lib_exit();
+
+/**
+ * event type see enum libsigrok_event_type
+ */
+SR_API void sr_set_event_callback(libsigrok_event_callback_t *cb);
+
+/**
+ * Store current session data to file
+ */
+SR_API int sr_store_session_data(const char *file_path);
+
+
+
+/**
+ * firmware binary file directory
+ */
+SR_API void sr_set_firmware_resource_dir(const char *dir);
+
 #ifdef __cplusplus
 }
 #endif

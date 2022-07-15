@@ -29,10 +29,7 @@
 
 #undef LOG_PREFIX
 #define LOG_PREFIX "session: "
-
-
-char DS_RES_PATH[500] = {0}; 
-
+ 
 /**
  * @file
  *
@@ -823,18 +820,5 @@ SR_PRIV int sr_session_source_remove_channel(GIOChannel *channel)
 {
 	return _sr_session_source_remove((gintptr)channel);
 }
-
-void sr_set_firmware_resource_dir(const char *dir)
-{
-	if (dir){
-		strcpy(DS_RES_PATH, dir);
-
-		int len = strlen(DS_RES_PATH);
-		if (DS_RES_PATH[len-1] != '/'){
-			DS_RES_PATH[len] = '/'; 
-			DS_RES_PATH[len + 1] = 0;
-		}
-	}
-}
-
+ 
 /** @} */

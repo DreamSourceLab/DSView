@@ -47,15 +47,24 @@
 
 /*  api
 
-    sr_init();
+    sr_lib_init();
 
-    sr_exit();
+    sr_lib_exit();
 
     sr_set_firmware_resource_dir();
 
     sr_set_datafeed_callback(data_cb);
 
     sr_set_event_callback(event_cb);
+	
+    sr_update_device_list();
+    sr_get_device_list(); 
 
+    sr_get_device_channels(); 
+
+    //当断开设备时，如果属当前设备且存在数据，不能自动切换到其它设备，须提示用户保存数据，再自动切换当前设备
+    //当接入新设备时，如果当前设备有数据，须提示用户保存数据，再扫描设备列表
+    //加载文件时，由外部判断当前硬件是否存在数据，以便提示用户保存，再执行加载文件，并通知用户更新列表
+    //扫描设备列表会自动切换到最新设备，并通知用户更新列表
 
 */

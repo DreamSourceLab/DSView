@@ -26,6 +26,7 @@
 #include <libusb-1.0/libusb.h>
 #include "libsigrok.h"
 
+
 /**
  * @file
  *
@@ -46,10 +47,6 @@
 #define min(a,b) ((a)<(b)?(a):(b))
 #undef max
 #define max(a,b) ((a)>(b)?(a):(b))
-
-
-// firmware binary file directory, endswith letter '/'
-extern char DS_RES_PATH[500];
 
 struct sr_context {
 	libusb_context *libusb_ctx;
@@ -87,7 +84,6 @@ struct drv_context {
 #define MAX_TIMEBASE SR_SEC(10)
 #define MIN_TIMEBASE SR_NS(10)
 
-
 struct ds_trigger {
     uint16_t trigger_en;
     uint16_t trigger_mode;
@@ -102,6 +98,11 @@ struct ds_trigger {
     uint32_t trigger1_count[TriggerStages+1];
 };
 
+
+/*-------------------global variable----------------*/
+// firmware binary file directory, endswith letter '/'
+extern char DS_RES_PATH[500];
+extern struct sr_context *lib_sr_context;
 
 /*--- device.c --------------------------------------------------------------*/
 
@@ -127,6 +128,8 @@ SR_PRIV void sr_serial_dev_inst_free(struct sr_serial_dev_inst *serial);
 
 
 /*--- hwdriver.c ------------------------------------------------------------*/
+
+typedef int (*sr_receive_data_callback_t)(int fd, int revents, const struct sr_dev_inst *sdi);
 
 SR_PRIV void sr_hw_cleanup_all(void);
 SR_PRIV int sr_source_remove(int fd);
@@ -175,6 +178,13 @@ SR_PRIV uint64_t sr_trigger_get_value1(uint16_t stage);
 SR_PRIV uint64_t sr_trigger_get_edge0(uint16_t stage);
 SR_PRIV uint64_t sr_trigger_get_edge1(uint16_t stage);
 
+SR_PRIV uint16_t ds_trigger_get_mask0(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
+SR_PRIV uint16_t ds_trigger_get_value0(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
+SR_PRIV uint16_t ds_trigger_get_edge0(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
+SR_PRIV uint16_t ds_trigger_get_mask1(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
+SR_PRIV uint16_t ds_trigger_get_value1(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
+SR_PRIV uint16_t ds_trigger_get_edge1(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
+
 /*--- hardware/common/serial.c ----------------------------------------------*/
 
 enum {
@@ -217,5 +227,8 @@ SR_PRIV int ezusb_upload_firmware(libusb_device *dev, int configuration,
 SR_PRIV GSList *sr_usb_find(libusb_context *usb_ctx, const char *conn);
 SR_PRIV int sr_usb_open(libusb_context *usb_ctx, struct sr_usb_dev_inst *usb);
 
+/*--- backend.c -------------------------------------------------------------*/
+SR_PRIV int sr_init(struct sr_context **ctx);
+SR_PRIV int sr_exit(struct sr_context *ctx);
 
 #endif
