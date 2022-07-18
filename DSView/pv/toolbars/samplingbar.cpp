@@ -722,6 +722,9 @@ double SamplingBar::hori_knob(int dir)
 {
     double hori_res = -1;
 
+    disconnect(&_sample_count, SIGNAL(currentIndexChanged(int)),
+        this, SLOT(on_samplecount_sel(int)));
+
     if (0 == dir) {
         hori_res = commit_hori_res();
     } else if ((dir > 0) && (_sample_count.currentIndex() > 0)) {
@@ -731,9 +734,6 @@ double SamplingBar::hori_knob(int dir)
         _sample_count.setCurrentIndex(_sample_count.currentIndex() + 1);
         hori_res = commit_hori_res();
     }
-
-    disconnect(&_sample_count, SIGNAL(currentIndexChanged(int)),
-        this, SLOT(on_samplecount_sel(int)));
 
     connect(&_sample_count, SIGNAL(currentIndexChanged(int)),
         this, SLOT(on_samplecount_sel(int)));
