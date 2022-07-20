@@ -107,17 +107,29 @@ link_directories(${GLIB_LIBDIR})
 #===============================================================================
 #= python3
 #-------------------------------------------------------------------------------
-find_package(Python3 COMPONENTS Development)
 
-if(NOT Python3_FOUND)
-	message(FATAL_ERROR  "Please install lib python3!")
+find_package(Python3 COMPONENTS Development QUIET)
+
+if (Python3_FOUND)
+	message("----- python3:")
+	message(STATUS "	 includes:" ${Python3_INCLUDE_DIRS})
+	message(STATUS "	 libraries:" ${Python3_LIBRARIES})
+	include_directories(${Python3_INCLUDE_DIRS})
+	set(PY_LIB ${Python3_LIBRARIES})
+else()
+     find_package(PythonLibs 3 QUIET)
+
+     if(PYTHONLIBS_FOUND)
+     	message("----- python(${PYTHONLIBS_VERSION_STRING}):")
+	message(STATUS "	 includes:" ${PYTHON_INCLUDE_DIRS})
+	message(STATUS "	 libraries:" ${PYTHON_LIBRARIES})
+	include_directories(${PYTHON_INCLUDE_DIRS})
+	set(PY_LIB ${PYTHON_LIBRARIES})
+     else()
+     	message(FATAL_ERROR  "Please install lib python3!")
+     endif()
 endif()
-
-message("----- python3:")
-message(STATUS "	 includes:" ${Python3_INCLUDE_DIRS})
-message(STATUS "	 libraries:" ${Python3_LIBRARIES})
-include_directories(${Python3_INCLUDE_DIRS})
-
+  
 #===============================================================================
 #= FFTW
 #-------------------------------------------------------------------------------
@@ -149,7 +161,7 @@ include_directories(${LIBUSB_1_INCLUDE_DIRS})
 #===============================================================================
 #= zlib
 #-------------------------------------------------------------------------------
-find_package(ZLIB)
+find_package(ZLIB QUIET)
 
 if(NOT ZLIB_FOUND)
 	message(FATAL_ERROR  "Please install zlib!")
@@ -167,7 +179,7 @@ include_directories(${ZLIB_INCLUDE_DIRS})
 find_package(Qt5Core QUIET)
 
 if(Qt5Core_FOUND)
-	message("----- use Qt5:")
+	message("----- Qt5:")
 	message(STATUS "	 includes:" ${Qt5Core_INCLUDE_DIRS})
 	find_package(Qt5Widgets REQUIRED)
 	find_package(Qt5Gui REQUIRED)
@@ -180,7 +192,7 @@ else()
 endif()
 
 if(Qt6Core_FOUND)
-    	message("----- use Qt6:")
+    	message("----- Qt6:")
 	message(STATUS "	 includes:" ${Qt6Core_INCLUDE_DIRS})
 	find_package(Qt6Widgets REQUIRED)
 	find_package(Qt6Gui REQUIRED)
@@ -197,7 +209,7 @@ endif()
 #===============================================================================
 #= boost
 #-------------------------------------------------------------------------------
-find_package(Boost 1.42)
+find_package(Boost 1.42 QUIET)
 
 if(NOT Boost_FOUND)
 	message(FATAL_ERROR  "Please install boost!")
@@ -598,7 +610,7 @@ set(DSVIEW_LINK_LIBS
 	${QT_LIBRARIES}
 	${LIBUSB_1_LIBRARIES}
 	${FFTW_LIBRARIES}
-	${Python3_LIBRARIES}
+	${PY_LIB}
 )
 
 if(STATIC_PKGDEPS_LIBS)
