@@ -361,11 +361,12 @@ static GSList *scan(GSList *options)
             devices = g_slist_append(devices, sdi);
 		} else {
             char *firmware;
-            if (!(firmware = g_try_malloc(strlen(DS_RES_PATH)+strlen(prof->firmware)+1))) {
+            char *res_path = sr_get_firmware_res_path();
+            if (!(firmware = g_try_malloc(strlen(res_path)+strlen(prof->firmware)+1))) {
                 sr_err("Firmware path malloc error!");
                 return NULL;
             }
-            strcpy(firmware, DS_RES_PATH);
+            strcpy(firmware, res_path);
             strcat(firmware, prof->firmware);
             if (ezusb_upload_firmware(devlist[i], USB_CONFIGURATION,
                 firmware) == SR_OK)
@@ -988,11 +989,12 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                     ret = SR_ERR;
                 }
                 char *fpga_bit;
-                if (!(fpga_bit = g_try_malloc(strlen(DS_RES_PATH)+strlen(devc->profile->fpga_bit33)+1))) {
+                char *res_path = sr_get_firmware_res_path();
+                if (!(fpga_bit = g_try_malloc(strlen(res_path)+strlen(devc->profile->fpga_bit33)+1))) {
                     sr_err("fpag_bit path malloc error!");
                     return SR_ERR_MALLOC;
                 }
-                strcpy(fpga_bit, DS_RES_PATH);
+                strcpy(fpga_bit, res_path);
                 switch(devc->th_level) {
                 case SR_TH_3V3:
                     strcat(fpga_bit, devc->profile->fpga_bit33);

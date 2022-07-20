@@ -1902,11 +1902,12 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
     if (sdi->status == SR_ST_ACTIVE) {
         if (!(*fpga_done)) {
             char *fpga_bit;
-            if (!(fpga_bit = g_try_malloc(strlen(DS_RES_PATH)+strlen(devc->profile->fpga_bit33)+1))) {
+            char *res_path = sr_get_firmware_res_path();
+            if (!(fpga_bit = g_try_malloc(strlen(res_path)+strlen(devc->profile->fpga_bit33)+1))) {
                 sr_err("fpag_bit path malloc error!");
                 return SR_ERR_MALLOC;
             }
-            strcpy(fpga_bit, DS_RES_PATH);
+            strcpy(fpga_bit, res_path);
             switch(devc->th_level) {
             case SR_TH_3V3:
                 strcat(fpga_bit, devc->profile->fpga_bit33);

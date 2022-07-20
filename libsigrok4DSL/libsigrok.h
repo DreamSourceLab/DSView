@@ -22,7 +22,6 @@
 
 #include <sys/time.h>
 #include <stdio.h>
-#include <sys/time.h>
 #include <stdint.h>
 #include <inttypes.h>
 #include <glib.h>  
@@ -80,8 +79,6 @@ enum {
 	 * sr_strerror() and sr_strerror_name() functions in error.c.
 	 */
 };
-
-typedef int bool_t;
 
 #define SR_MAX_PROBENAME_LEN 32
 #define DS_MAX_ANALOG_PROBES_NUM 4
@@ -1279,6 +1276,9 @@ SR_API int sr_listen_hotplug(struct sr_context *ctx, hotplug_event_callback call
 SR_API int sr_close_hotplug(struct sr_context *ctx);
 SR_API void sr_hotplug_wait_timout(struct sr_context *ctx);
 
+SR_API int sr_init(struct sr_context **ctx);
+SR_API int sr_exit(struct sr_context *ctx);
+
 /*--- device.c --------------------------------------------------------------*/
 
 SR_API int sr_dev_probe_name_set(const struct sr_dev_inst *sdi,
@@ -1418,46 +1418,121 @@ SR_API void sr_log_level(int level);
 /*---event define ---------------------------------------------*/
 enum libsigrok_event_type
 {
-	EV_DEVICE_ATTACH = 0,
+	// A new device attachs, user need calls sr_device_scan_list to update new list,
+	// And call sr_device_get_list to get new list, the last one is new.
+	// User can call sr_device_select to swith a new device.
+	EV_DEVICE_ATTACH = 0, 
 
+	// A device detachs, user need calls sr_device_scan_list to update new list, 
+	// And call sr_device_get_list to get new list.
+	// User can call sr_device_select to swith a new device.
+	EV_DEVICE_DETACH = 1, 
+
+	// User can call sr_device_get_list to get new list.
+	EV_CURRENT_DEVICE_CHANGED = 2,
 };
 
-struct sr_device_handle;
-typedef struct sr_device_handle sr_device_handle; 
-
-struct sr_device_info
-{
-	sr_device_handle *_handle;
-	char 	_name[50];
-	char 	_full_name[300];
-	bool_t 	_is_active; //is the current device
-	bool_t 	_is_hardware;
-};
-  
-/*---lib_main.c -----------------------------------------------*/
-
-typedef void (*libsigrok_event_callback_t)(int event);
-
-SR_API int sr_lib_init();
-
-SR_API int sr_lib_exit();
+typedef unsigned long long sr_device_handle;
 
 /**
- * event type see enum libsigrok_event_type
+ * Device base info
+ */
+struct sr_device_info
+{
+	sr_device_handle _handle;
+	char 	_name[50];
+	char 	_full_name[260];
+	int 	_is_hardware;
+	int 	_is_current; //is actived
+};
+
+struct sr_task_progress
+{
+	int _progress;
+	int _is_end;
+};
+
+struct sr_store_extra_data
+{
+	char _name[50];
+	char *_data;
+	int  _data_length;
+};
+
+
+/*---lib_main.c -----------------------------------------------*/
+
+/**
+ * event see enum libsigrok_event_type
+ */
+typedef void (*libsigrok_event_callback_t)(int event);
+
+/**
+ * Must call first
+ */
+SR_API int sr_lib_init();
+
+/**
+ * Free all resource before program exits
+ */
+SR_API int sr_lib_exit(); 
+
+/**
+ * Set event callback, event type see enum libsigrok_event_type
  */
 SR_API void sr_set_event_callback(libsigrok_event_callback_t *cb);
 
 /**
- * Store current session data to file
- */
-SR_API int sr_store_session_data(const char *file_path);
-
-
-
-/**
- * firmware binary file directory
+ * Set the firmware binary file directory,
+ * User must call it to set the firmware resource directory
  */
 SR_API void sr_set_firmware_resource_dir(const char *dir);
+
+/**
+ * When device attached or detached, scan all devices to get the new list.
+ * The current list will be changed
+ */
+SR_API int sr_device_scan_list();
+
+/**
+ * Get the device list, the last item is null.
+ * Call free to release buffer. If the list is empty, it returns null.
+ */
+SR_API struct sr_device_info* sr_device_get_list(int *out_count);
+
+/**
+ * Active a device, if success, it will trigs the event of EV_CURRENT_DEVICE_CHANGED.
+ * If the old actived device is hardware, maybe user need store the data first.
+ */
+SR_API int sr_device_select(sr_device_handle handle);
+
+/**
+ * Create a device from session file, it auto load the data.
+ */
+SR_API int sr_device_from_file(const char *file_path);
+
+/**
+ * Get current sample count
+ */
+SR_API uint64_t sr_sample_count();
+
+/**
+ * Store current session data.
+ * @ext_data_array is the extra data.
+ */
+SR_API int sr_store_session_data(struct sr_task_progress *prog, const char *file_path, 
+				struct sr_store_extra_data *ext_data_array, int ext_data_count);
+
+/**
+ * Start collect data
+ */
+SR_API int sr_device_start_collect();
+
+/**
+ * Stop collect data
+ */
+SR_API int sr_device_start_collect();
+
 
 #ifdef __cplusplus
 }

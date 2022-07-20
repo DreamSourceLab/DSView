@@ -102,7 +102,8 @@ void DeviceManager::driver_scan(
     auto i = _devices.begin();
 	while (i != _devices.end()) {
         if ((*i)->dev_inst() && (*i)->dev_inst()->driver == driver) {
-            (*i)->release();
+            auto p = (*i);
+            p->release();
 			i = _devices.erase(i);
         } else {
 			i++;

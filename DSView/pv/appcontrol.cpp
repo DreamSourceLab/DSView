@@ -80,7 +80,7 @@ bool AppControl::Init()
     _session->set_sr_context(sr_ctx);
 
     QString resdir = GetResourceDir();
-	sr_set_firmware_resource_dir(resdir.toUtf8().data());
+    sr_set_firmware_resource_dir(resdir.toUtf8().data());
 
 #ifdef _WIN32
     //able run debug with qtcreator

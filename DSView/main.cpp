@@ -55,8 +55,11 @@ void usage()
 } 
 
 
+int main2();
+
 int main(int argc, char *argv[])
 {   
+	//return main2();
 	int ret = 0; 
 	const char *open_file = NULL;
 	int logLevel = -1;

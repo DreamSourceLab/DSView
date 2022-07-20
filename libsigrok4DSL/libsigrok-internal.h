@@ -99,11 +99,6 @@ struct ds_trigger {
 };
 
 
-/*-------------------global variable----------------*/
-// firmware binary file directory, endswith letter '/'
-extern char DS_RES_PATH[500];
-extern struct sr_context *lib_sr_context;
-
 /*--- device.c --------------------------------------------------------------*/
 
 SR_PRIV struct sr_channel *sr_channel_new(uint16_t index, int type,
@@ -230,5 +225,8 @@ SR_PRIV int sr_usb_open(libusb_context *usb_ctx, struct sr_usb_dev_inst *usb);
 /*--- backend.c -------------------------------------------------------------*/
 SR_PRIV int sr_init(struct sr_context **ctx);
 SR_PRIV int sr_exit(struct sr_context *ctx);
+
+/*--- lib_main.c -------------------------------------------------*/
+SR_PRIV char* sr_get_firmware_res_path();
 
 #endif
