@@ -76,13 +76,16 @@ const QColor View::Green = QColor(0, 153, 37, 255);
 const QColor View::Purple = QColor(109, 50, 156, 255);
 const QColor View::LightBlue = QColor(17, 133, 209, 200);
 const QColor View::LightRed = QColor(213, 15, 37, 200);
+const QColor View::Dark = QColor(42, 43, 47);
+const QColor View::Gray_100 = QColor(238, 238, 238);
+
 
 
 View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget *parent) :
     QScrollArea(parent),
 	_session(session),
     _sampling_bar(sampling_bar),
-    _scale(10),
+    _scale(1),
     _preScale(1e-6),
     _maxscale(1e9),
     _minscale(1e-15),
@@ -97,14 +100,14 @@ View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     _dso_auto(true),
     _show_lissajous(false),
     _back_ready(false)
-{ 
+{
     assert(session);
 
    _trig_cursor = NULL;
    _search_cursor = NULL;
 
-    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-  
+    // setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+
     // trace viewport map
     _trace_view_map[SR_CHANNEL_LOGIC] = TIME_VIEW;
     _trace_view_map[SR_CHANNEL_GROUP] = TIME_VIEW;
@@ -126,12 +129,12 @@ View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     _time_viewport = new Viewport(*this, TIME_VIEW);
     _time_viewport->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     _time_viewport->setMinimumHeight(100);
-  
+
     _fft_viewport = new Viewport(*this, FFT_VIEW);
     _fft_viewport->setVisible(false);
     _fft_viewport->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     _fft_viewport->setMinimumHeight(100);
- 
+
     _vsplitter = new QSplitter(this);
     _vsplitter->setOrientation(Qt::Vertical);
     _vsplitter->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
@@ -187,7 +190,7 @@ View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     connect(_fft_viewport, SIGNAL(measure_updated()), this, SLOT(on_measure_updated()));
 
     connect(_vsplitter, SIGNAL(splitterMoved(int,int)), this, SLOT(splitterMoved(int, int)));
-      
+
     connect(_devmode, SIGNAL(dev_changed(bool)),this, SLOT(dev_changed(bool)), Qt::DirectConnection);
     connect(_header, SIGNAL(traces_moved()),this, SLOT(on_traces_moved()));
     connect(_header, SIGNAL(header_updated()),this, SLOT(header_updated()));
@@ -372,9 +375,9 @@ std::vector<Trace*> View::get_traces(int type)
 
     auto &sigs = _session->get_signals();
     const auto &groups = _session->get_group_signals();
- 
+
     const auto &decode_sigs = _session->get_decode_signals();
- 
+
     const auto &spectrums = _session->get_spectrum_traces();
 
     std::vector<Trace*> traces;
@@ -382,12 +385,12 @@ std::vector<Trace*> View::get_traces(int type)
         if (type == ALL_VIEW || _trace_view_map[t->get_type()] == type)
             traces.push_back(t);
     }
- 
+
     for(auto &t : decode_sigs) {
         if (type == ALL_VIEW || _trace_view_map[t->get_type()] == type)
             traces.push_back(t);
     }
- 
+
     for(auto &t : groups) {
         if (type == ALL_VIEW || _trace_view_map[t->get_type()] == type)
             traces.push_back(t);
@@ -590,7 +593,7 @@ void View::normalize_layout()
 
     for(auto &t : traces){
         t->set_v_offset(t->get_v_offset() + delta);
-    }        
+    }
 
     verticalScrollBar()->setSliderPosition(delta);
 	v_scroll_value_changed(verticalScrollBar()->sliderPosition());
@@ -1338,7 +1341,7 @@ void View::set_receive_len(uint64_t len)
 {
     if (_time_viewport)
         _time_viewport->set_receive_len(len);
-        
+
     if (_fft_viewport)
         _fft_viewport->set_receive_len(len);
 }

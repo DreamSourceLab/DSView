@@ -37,14 +37,14 @@
 
 #include <QMouseEvent>
 #include <QStyleOption>
-#include <QPainterPath> 
+#include <QPainterPath>
 #include <math.h>
 #include <QWheelEvent>
- 
+
 #include "../config/appconfig.h"
 #include "../dsvdef.h"
 #include "../appcontrol.h"
- 
+
 using namespace std;
 
 namespace pv {
@@ -93,15 +93,15 @@ Viewport::Viewport(View &parent, View_type type) :
     // drag inertial
     _drag_strength = 0;
     _drag_timer.setSingleShot(true);
- 
+
     _cmenu = new QMenu(this);
     QAction *yAction = _cmenu->addAction(tr("Add Y-cursor"));
     QAction *xAction = _cmenu->addAction(tr("Add X-cursor"));
- 
+
     setContextMenuPolicy(Qt::CustomContextMenu);
 
     connect(&trigger_timer, SIGNAL(timeout()),this, SLOT(on_trigger_timer()));
-    connect(&_drag_timer, SIGNAL(timeout()),this, SLOT(on_drag_timer())); 
+    connect(&_drag_timer, SIGNAL(timeout()),this, SLOT(on_drag_timer()));
 
     connect(yAction, SIGNAL(triggered(bool)), this, SLOT(add_cursor_y()));
     connect(xAction, SIGNAL(triggered(bool)), this, SLOT(add_cursor_x()));
@@ -135,7 +135,7 @@ bool Viewport::event(QEvent *event)
 }
 
 void Viewport::paintEvent(QPaintEvent *event)
-{    
+{
     (void)event;
 
     using pv::view::Signal;
@@ -155,8 +155,8 @@ void Viewport::paintEvent(QPaintEvent *event)
 
     for(auto &t : traces)
     {
-        assert(t); 
-  
+        assert(t);
+
         t->paint_back(p, 0, _view.get_view_width(), fore, back);
         if (_view.back_ready())
             break;
@@ -210,7 +210,7 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
 
         for(auto &t : traces)
         {
-            assert(t); 
+            assert(t);
 
             if (t->enabled())
                 t->paint_mid(p, 0, t->get_view_rect().right(), fore, back);
@@ -236,13 +236,13 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
                 /*
                 auto ptr = t->get();
                 if (ptr->enabled()){
-                     ptr->paint_mid(dbp, 0, t->get_view_rect().right(), fore, back); 
+                     ptr->paint_mid(dbp, 0, t->get_view_rect().right(), fore, back);
                      continue;
                 }
                */
 
                 if (t->enabled())
-                    t->paint_mid(dbp, 0, t->get_view_rect().right(), fore, back);      
+                    t->paint_mid(dbp, 0, t->get_view_rect().right(), fore, back);
             }
             _need_update = false;
         }
@@ -499,7 +499,7 @@ void Viewport::paintProgress(QPainter &p, QColor fore, QColor back)
 void Viewport::mousePressEvent(QMouseEvent *event)
 {
 	assert(event);
-    
+
     _clickX = event->globalPos().x();
 	_mouse_down_point = event->pos();
 	_mouse_down_offset = _view.offset();
@@ -762,12 +762,12 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
 
     bool quickScroll = AppConfig::Instance()._appOptions.quickScroll;
     bool isMaxWindow = AppControl::Instance()->TopWindowIsMaximized();
-    
+
     if (_type != TIME_VIEW){
         update();
         return;
     }
-  
+
         if ((_action_type == NO_ACTION) &&
             (event->button() == Qt::LeftButton)) {
             if (_view.session().get_device()->dev_inst()->mode == LOGIC &&
@@ -775,12 +775,12 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                 //priority 1
                 //try to quick scroll view...
                 int curX = event->globalPos().x();
-                int moveLong = ABS_VAL(curX - _clickX);                
+                int moveLong = ABS_VAL(curX - _clickX);
                 int maxWidth = this->geometry().width();
                 float mvk = (float) moveLong / (float)maxWidth;
 
                 if (quickScroll){
-                    quickScroll = false; 
+                    quickScroll = false;
                     if (isMaxWindow && mvk > 0.4f){
                         quickScroll = true;
                     }
@@ -872,7 +872,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
 
                 for(auto &t : traces){
                      t->select(false);
-                }                   
+                }
             }
 
         } else if (_action_type == DSO_XM_STEP0) {
@@ -965,7 +965,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
             }
             _action_type = NO_ACTION;
         }
-    
+
     update();
 }
 
@@ -1052,7 +1052,7 @@ void Viewport::wheelEvent(QWheelEvent *event)
     bool isVertical = true;
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    x = (int)event->position().x(); 
+    x = (int)event->position().x();
     int anglex = event->angleDelta().x();
     int angley = event->angleDelta().y();
 
@@ -1073,7 +1073,7 @@ void Viewport::wheelEvent(QWheelEvent *event)
     if (_type == FFT_VIEW)
     {
         for (auto &t : _view.session().get_spectrum_traces())
-        { 
+        {
             if (t->enabled())
             {
                 t->zoom(delta / 80, x);
@@ -1121,7 +1121,7 @@ void Viewport::wheelEvent(QWheelEvent *event)
 
     const auto &sigs = _view.session().get_signals();
     for (auto &s : sigs)
-    { 
+    {
         view::DsoSignal *dsoSig = NULL;
         if ((dsoSig = dynamic_cast<view::DsoSignal *>(s)))
         {
@@ -1326,7 +1326,7 @@ void Viewport::measure()
 
 void Viewport::paintMeasure(QPainter &p, QColor fore, QColor back)
 {
-    QColor active_color = back.black() > 0x80 ? View::Orange : View::Purple;
+    QColor active_color = back.black() > 0x80 ? View::Gray_100 : View::Purple;
     _hover_hit = false;
     if (_action_type == NO_ACTION &&
         _measure_type == LOGIC_FREQ) {
@@ -1353,7 +1353,7 @@ void Viewport::paintMeasure(QPainter &p, QColor fore, QColor back)
                 Qt::AlignLeft | Qt::AlignTop, _mm_freq).width());
             typical_width = max(typical_width, p.boundingRect(0, 0, INT_MAX, INT_MAX,
                 Qt::AlignLeft | Qt::AlignTop, _mm_duty).width());
-            typical_width = typical_width + 100;
+            typical_width = typical_width + 120;
 
             const double width = _view.get_view_width();
             const double height = _view.viewport()->height();
@@ -1361,28 +1361,32 @@ void Viewport::paintMeasure(QPainter &p, QColor fore, QColor back)
             const double top = _view.hover_point().y();
             const double right = left + typical_width;
             const double bottom = top + 80;
+
+            const int padding = 10;
+            const int line_height = 25;
+
             QPointF org_pos = QPointF(right > width ? left - typical_width : left, bottom > height ? top - 80 : top);
-            QRectF measure_rect = QRectF(org_pos.x(), org_pos.y(), (double)typical_width, 80.0);
-            QRectF measure1_rect = QRectF(org_pos.x(), org_pos.y(), (double)typical_width, 20.0);
-            QRectF measure2_rect = QRectF(org_pos.x(), org_pos.y()+20, (double)typical_width, 20.0);
-            QRectF measure3_rect = QRectF(org_pos.x(), org_pos.y()+40, (double)typical_width, 20.0);
-            QRectF measure4_rect = QRectF(org_pos.x(), org_pos.y()+60, (double)typical_width, 20.0);
+            QRectF measure_rect = QRectF(org_pos.x(), org_pos.y(), (double)typical_width, 120.0);
+            QRectF measure1_rect = QRectF(org_pos.x() + padding, org_pos.y() + line_height * 0 + padding, (double)typical_width, 20.0);
+            QRectF measure2_rect = QRectF(org_pos.x() + padding, org_pos.y() + line_height * 1 + padding, (double)typical_width, 20.0);
+            QRectF measure3_rect = QRectF(org_pos.x() + padding, org_pos.y() + line_height * 2 + padding, (double)typical_width, 20.0);
+            QRectF measure4_rect = QRectF(org_pos.x() + padding, org_pos.y() + line_height * 3 + padding, (double)typical_width, 20.0);
 
             p.setPen(Qt::NoPen);
-            p.setBrush(View::LightBlue);
+            p.setBrush(View::Dark);
             p.drawRect(measure_rect);
 
             p.setPen(active_color);
-            p.drawText(measure1_rect, Qt::AlignRight | Qt::AlignVCenter,
+            p.drawText(measure1_rect, Qt::AlignLeft | Qt::AlignVCenter,
                        tr("Width: ") + _mm_width);
-            p.drawText(measure2_rect, Qt::AlignRight | Qt::AlignVCenter,
+            p.drawText(measure2_rect, Qt::AlignLeft | Qt::AlignVCenter,
                        tr("Period: ") + _mm_period);
-            p.drawText(measure3_rect, Qt::AlignRight | Qt::AlignVCenter,
+            p.drawText(measure3_rect, Qt::AlignLeft | Qt::AlignVCenter,
                        tr("Frequency: ") + _mm_freq);
-            p.drawText(measure4_rect, Qt::AlignRight | Qt::AlignVCenter,
+            p.drawText(measure4_rect, Qt::AlignLeft | Qt::AlignVCenter,
                        tr("Duty Cycle: ") + _mm_duty);
         }
-    } 
+    }
 
     const auto &sigs = _view.session().get_signals();
     if (_action_type == NO_ACTION &&
@@ -1688,7 +1692,7 @@ void Viewport::on_trigger_timer()
 }
 
 void Viewport::on_drag_timer()
-{   
+{
     const int64_t offset = _view.offset();
     const double scale = _view.scale();
     if (_view.session().get_capture_state() == SigSession::Stopped &&

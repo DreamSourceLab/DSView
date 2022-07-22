@@ -27,13 +27,13 @@
 #include <stdint.h>
 #include <set>
 #include <vector>
-   
+
 #include <QScrollArea>
 #include <QSizeF>
 #include <QDateTime>
 #include <QSplitter>
 
- 
+
 #include "../toolbars/samplingbar.h"
 #include "../data/signaldata.h"
 #include "../view/viewport.h"
@@ -101,6 +101,8 @@ public:
     static const QColor Purple;
     static const QColor LightBlue;
     static const QColor LightRed;
+    static const QColor Dark;
+    static const QColor Gray_100;
 
 public:
     explicit View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget *parent = 0);
@@ -263,9 +265,9 @@ signals:
 
     void auto_trig(int index);
 
-private: 
+private:
     void get_scroll_layout(int64_t &length, int64_t &offset);
-	
+
 	void update_scroll();
 
     void update_margins();
@@ -327,9 +329,9 @@ private slots:
 
     void on_traces_moved();
 
-   
+
     void set_trig_pos(int percent);
- 
+
     // calibration for oscilloscope
     void show_calibration();
     // lissajous figure
@@ -362,7 +364,7 @@ private:
 	Ruler                   *_ruler;
 	Header                  *_header;
     DevMode                 *_devmode;
-    
+
 
 	/// The view time scale in seconds per pixel.
 	double      _scale;
