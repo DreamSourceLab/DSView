@@ -35,6 +35,14 @@
 
 #include "../config/appconfig.h"
 #include "../ui/msgbox.h"
+
+
+static const struct dev_mode_name dev_mode_name_list[] =
+{
+    {LOGIC, "Logic Analyzer", "逻辑分析仪",  "la.svg"},
+    {ANALOG, "Data Acquisition", "数据记录仪", "daq.svg"},
+    {DSO, "Oscilloscope", "示波器",  "osc.svg"},
+};
   
 namespace pv {
 namespace view {
@@ -115,17 +123,20 @@ void DevMode::set_device()
 
     QString iconPath = GetIconPath() + "/";
 
-    for (const GSList *l = dev_inst->get_dev_mode_list(); l; l = l->next)
+    auto dev_mode_list  = dev_inst->get_dev_mode_list();
+
+    for (const GSList *l = dev_mode_list; l; l = l->next)
     {
         const sr_dev_mode *mode = (const sr_dev_mode *)l->data;
-        QString icon_name = QString::fromLocal8Bit(mode->icon);
+        auto *mode_name = get_mode_name(mode->mode);
+        QString icon_name = QString::fromLocal8Bit(mode_name->_logo);
 
         QAction *action = new QAction(this);
         action->setIcon(QIcon(iconPath + "square-" + icon_name));
         if (lan == LAN_CN)
-            action->setText(mode->name_cn);
+            action->setText(mode_name->_name_cn);
         else
-            action->setText(mode->name);
+            action->setText(mode_name->_name_en);
 
         connect(action, SIGNAL(triggered()), this, SLOT(on_mode_change()));
 
@@ -135,9 +146,9 @@ void DevMode::set_device()
             QString icon_fname = iconPath + icon_name;
             _mode_btn->setIcon(QIcon(icon_fname));
             if (lan == LAN_CN)
-                _mode_btn->setText(mode->name_cn);
+                _mode_btn->setText(mode_name->_name_cn);
             else
-                _mode_btn->setText(mode->name);
+                _mode_btn->setText(mode_name->_name_en);
         }
         _pop_menu->addAction(action);
     }
@@ -187,13 +198,14 @@ void DevMode::on_mode_change()
                                      SR_CONF_DEVICE_MODE,
                                      g_variant_new_int16((*i).second->mode));
 
-                QString icon_fname = iconPath + "/" + QString::fromLocal8Bit((*i).second->icon);
+                auto *mode_name = get_mode_name((*i).second->mode);
+                QString icon_fname = iconPath + "/" + QString::fromLocal8Bit(mode_name->_logo);
              
                 _mode_btn->setIcon(QIcon(icon_fname));
                 if (lan == LAN_CN)
-                    _mode_btn->setText((*i).second->name_cn);
+                    _mode_btn->setText(mode_name->_name_cn);
                 else
-                    _mode_btn->setText((*i).second->name);
+                    _mode_btn->setText(mode_name->_name_en);
                 dev_changed(false);
             }
 
@@ -236,6 +248,15 @@ void DevMode::leaveEvent(QEvent*)
 {
 	_mouse_point = QPoint(-1, -1);
 	update();
+}
+
+const struct dev_mode_name* DevMode::get_mode_name(int mode) 
+{
+    for(auto &o : dev_mode_name_list)
+        if (mode == o._mode){
+            return &o;
+    }
+    assert(false);
 }
 
 } // namespace view

@@ -46,11 +46,6 @@
 #define DSL_REQUIRED_VERSION_MINOR	0
 #define DSL_HDL_VERSION             0x0D
 
-/* hardware Capabilities */
-#define CAPS_MODE_LOGIC (1 << 0)
-#define CAPS_MODE_ANALOG (1 << 1)
-#define CAPS_MODE_DSO (1 << 2)
-
 #define CAPS_FEATURE_NONE 0
 // voltage threshold
 #define CAPS_FEATURE_VTH (1 << 0)
@@ -485,6 +480,11 @@ static const struct DSL_channels channel_modes[] = {
     {DSL_DSO1000x2,    DSO,    SR_CHANNEL_DSO,    FALSE, 2, 2,  8, SR_KHZ(10), SR_GHZ(1),
      SR_KHZ(10), SR_MHZ(500), 1, "Use Channels 0~1 (Max 1GHz)", "使用通道 0~1 (最大采样率 1GHz)"}
 };
+
+/* hardware Capabilities */
+#define CAPS_MODE_LOGIC     (1 << 0)
+#define CAPS_MODE_ANALOG    (1 << 1)
+#define CAPS_MODE_DSO       (1 << 2)
 
 static const struct DSL_profile supported_DSLogic[] = {
     /*

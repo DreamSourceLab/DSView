@@ -72,13 +72,7 @@ static const char *probe_names[] = {
     "24", "25", "26", "27", "28", "29", "30", "31",
     NULL,
 };
-
-static struct sr_dev_mode mode_list[] = {
-    {LOGIC, "Logic Analyzer", "逻辑分析仪", "la", "la.svg"},
-    {ANALOG, "Data Acquisition", "数据记录仪", "daq", "daq.svg"},
-    {DSO, "Oscilloscope", "示波器", "osc", "osc.svg"},
-};
-
+ 
 static const gboolean default_ms_en[] = {
     FALSE, /* DSO_MS_BEGIN */
     TRUE,  /* DSO_MS_FREQ */
@@ -89,7 +83,6 @@ static const gboolean default_ms_en[] = {
     FALSE, /* DSO_MS_VMEA */
     FALSE, /* DSO_MS_VP2P */
 };
-
 
 SR_PRIV void dsl_probe_init(struct sr_dev_inst *sdi)
 {
@@ -202,9 +195,9 @@ SR_PRIV const GSList *dsl_mode_list(const struct sr_dev_inst *sdi)
     unsigned int i;
 
     devc = sdi->priv;
-    for (i = 0; i < ARRAY_SIZE(mode_list); i++) {
+    for (i = 0; i < ARRAY_SIZE(sr_mode_list); i++) {
         if (devc->profile->dev_caps.mode_caps & (1 << i))
-            l = g_slist_append(l, &mode_list[i]);
+            l = g_slist_append(l, &sr_mode_list[i]);
     }
 
     return l;

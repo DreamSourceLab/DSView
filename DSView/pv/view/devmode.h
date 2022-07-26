@@ -35,6 +35,13 @@
 #include <QLabel>
 
 #include <libsigrok.h> 
+
+struct dev_mode_name{
+    int _mode;
+    const char *_name_en;
+    const char *_name_cn;
+    const char *_logo;
+};
  
 namespace pv {
 
@@ -65,8 +72,8 @@ private:
 	void mouseReleaseEvent(QMouseEvent *event);
 	void mouseMoveEvent(QMouseEvent *event);
 	void leaveEvent(QEvent *event);
-
     void changeEvent(QEvent *event);
+    const dev_mode_name* get_mode_name(int mode);
 
 public slots:
     void set_device();

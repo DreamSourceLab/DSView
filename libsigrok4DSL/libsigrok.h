@@ -735,7 +735,7 @@ struct sr_status {
     uint32_t ch1_acc_mean_p3;
 };
 
-enum {
+enum sr_config_option_id{
 	/*--- Device classes ------------------------------------------------*/
 
 	/** The device can act as logic analyzer. */
@@ -1163,10 +1163,15 @@ enum {
 
 struct sr_dev_mode {
     int mode;
-    char *name;
-    char *name_cn;
-    char *acronym;
-    char *icon;
+	const char *name;
+    const char *acronym;
+};
+
+static const struct sr_dev_mode sr_mode_list[] =
+{
+    {LOGIC,"Logic Analyzer","la"},
+    {ANALOG, "Data Acquisition", "daq"},
+    {DSO, "Oscilloscope", "osc"},
 };
 
 struct sr_dev_driver {
@@ -1276,8 +1281,8 @@ SR_API int sr_listen_hotplug(struct sr_context *ctx, hotplug_event_callback call
 SR_API int sr_close_hotplug(struct sr_context *ctx);
 SR_API void sr_hotplug_wait_timout(struct sr_context *ctx);
 
-SR_API int sr_init(struct sr_context **ctx);
-SR_API int sr_exit(struct sr_context *ctx);
+SR_PRIV int sr_init(struct sr_context **ctx);
+SR_PRIV int sr_exit(struct sr_context *ctx);
 
 /*--- device.c --------------------------------------------------------------*/
 
@@ -1531,7 +1536,7 @@ SR_API int sr_device_start_collect();
 /**
  * Stop collect data
  */
-SR_API int sr_device_start_collect();
+SR_API int sr_device_top_collect();
 
 
 #ifdef __cplusplus

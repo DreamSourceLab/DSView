@@ -49,132 +49,6 @@
 #define BUFSIZE                512*1024
 #define DSO_BUFSIZE            10*1024
 
-static const int hwoptions[] = {
-    SR_CONF_PATTERN_MODE,
-    SR_CONF_MAX_HEIGHT,
-};
-
-static const int32_t sessions[] = {
-    SR_CONF_SAMPLERATE,
-    SR_CONF_LIMIT_SAMPLES,
-    SR_CONF_PATTERN_MODE,
-    SR_CONF_MAX_HEIGHT,
-};
-
-static const int32_t probeOptions[] = {
-    SR_CONF_PROBE_COUPLING,
-    SR_CONF_PROBE_VDIV,
-    SR_CONF_PROBE_MAP_DEFAULT,
-    SR_CONF_PROBE_MAP_UNIT,
-    SR_CONF_PROBE_MAP_MIN,
-    SR_CONF_PROBE_MAP_MAX,
-};
-
-static const int32_t probeSessions[] = {
-    SR_CONF_PROBE_COUPLING,
-    SR_CONF_PROBE_VDIV,
-    SR_CONF_PROBE_MAP_DEFAULT,
-    SR_CONF_PROBE_MAP_UNIT,
-    SR_CONF_PROBE_MAP_MIN,
-    SR_CONF_PROBE_MAP_MAX,
-};
-
-static const uint8_t probeCoupling[] = {
-    SR_DC_COUPLING,
-    SR_AC_COUPLING,
-};
-
-static const char *maxHeights[] = {
-    "1X",
-    "2X",
-    "3X",
-    "4X",
-    "5X",
-};
-
-/* We name the probes 0-7 on our demo driver. */
-static const char *probe_names[] = {
-    "0", "1", "2", "3",
-    "4", "5", "6", "7",
-    "8", "9", "10", "11",
-    "12", "13", "14", "15",
-    NULL,
-};
-
-static const char *probeMapUnits[] = {
-    "V",
-    "A",
-    "°C",
-    "°F",
-    "g",
-    "m",
-    "m/s",
-};
-
-static const gboolean default_ms_en[] = {
-    FALSE, /* DSO_MS_BEGIN */
-    TRUE,  /* DSO_MS_FREQ */
-    FALSE, /* DSO_MS_PERD */
-    TRUE,  /* DSO_MS_VMAX */
-    TRUE,  /* DSO_MS_VMIN */
-    FALSE, /* DSO_MS_VRMS */
-    FALSE, /* DSO_MS_VMEA */
-    FALSE, /* DSO_MS_VP2P */
-};
-
-static struct sr_dev_mode mode_list[] = {
-    {LOGIC, "Logic Analyzer", "逻辑分析仪", "la", "la.svg"},
-    {ANALOG, "Data Acquisition", "数据记录仪", "daq", "daq.svg"},
-    {DSO, "Oscilloscope", "示波器", "osc", "osc.svg"},
-};
-
-/* hardware Capabilities */
-#define CAPS_MODE_LOGIC (1 << 0)
-#define CAPS_MODE_ANALOG (1 << 1)
-#define CAPS_MODE_DSO (1 << 2)
-
-#define CAPS_FEATURE_NONE 0
-// zero calibration ability
-#define CAPS_FEATURE_ZERO (1 << 4)
-/* end */
-
-static const struct DEMO_profile supported_Demo[] = {
-    /*
-     * Demo
-     */
-    {"DreamSourceLab", "Demo Device", NULL,
-     {CAPS_MODE_LOGIC | CAPS_MODE_ANALOG | CAPS_MODE_DSO,
-      CAPS_FEATURE_NONE,
-      (1 << DEMO_LOGIC100x16) |
-      (1 << DEMO_ANALOG10x2) |
-      (1 << DEMO_DSO200x2),
-      SR_Mn(100),
-      SR_Kn(20),
-      0,
-      vdivs10to2000,
-      0,
-      DEMO_LOGIC100x16,
-      PATTERN_SINE,
-      SR_NS(500)}
-    },
-
-    { 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
-};
-
-static const struct DEMO_channels channel_modes[] = {
-    // LA Stream
-    {DEMO_LOGIC100x16,  LOGIC,  SR_CHANNEL_LOGIC,  16, 1, SR_MHZ(1), SR_Mn(1),
-     SR_KHZ(10), SR_MHZ(100), "Use 16 Channels (Max 20MHz)"},
-
-    // DAQ
-    {DEMO_ANALOG10x2,   ANALOG, SR_CHANNEL_ANALOG,  2,  8, SR_MHZ(1), SR_Mn(1),
-     SR_HZ(10),  SR_MHZ(10), "Use Channels 0~1 (Max 10MHz)"},
-
-    // OSC
-    {DEMO_DSO200x2,     DSO,    SR_CHANNEL_DSO,     2,  8, SR_MHZ(100), SR_Kn(10),
-     SR_HZ(100), SR_MHZ(200), "Use Channels 0~1 (Max 200MHz)"}
-};
-
 
 /* Private, per-device-instance driver context. */
 /* TODO: struct context as with the other drivers. */
@@ -317,9 +191,9 @@ static const GSList *hw_dev_mode_list(const struct sr_dev_inst *sdi)
     unsigned int i;
 
     devc = sdi->priv;
-    for (i = 0; i < ARRAY_SIZE(mode_list); i++) {
+    for (i = 0; i < ARRAY_SIZE(sr_mode_list); i++) {
         if (devc->profile->dev_caps.mode_caps & (1 << i))
-            l = g_slist_append(l, &mode_list[i]);
+            l = g_slist_append(l, &sr_mode_list[i]);
     }
 
     return l;
@@ -544,7 +418,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 		sr_dbg("%s: setting samplerate to %llu", __func__,
 		       devc->cur_samplerate);
 		ret = SR_OK;
-	} else if (id == SR_CONF_LIMIT_SAMPLES) {
+	}
+    else if (id == SR_CONF_LIMIT_SAMPLES) {
         devc->limit_msec = 0;
         devc->limit_samples = g_variant_get_uint64(data);
         devc->limit_samples = (devc->limit_samples + 63) & ~63;
@@ -555,14 +430,16 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 		sr_dbg("%s: setting limit_samples to %llu", __func__,
 		       devc->limit_samples);
 		ret = SR_OK;
-	} else if (id == SR_CONF_LIMIT_MSEC) {
+	} 
+    else if (id == SR_CONF_LIMIT_MSEC) {
 		devc->limit_msec = g_variant_get_uint64(data);
 		devc->limit_samples = 0;
         devc->limit_samples_show = devc->limit_samples;
 		sr_dbg("%s: setting limit_msec to %llu", __func__,
 		       devc->limit_msec);
         ret = SR_OK;
-    } else if (id == SR_CONF_DEVICE_MODE) {
+    } 
+    else if (id == SR_CONF_DEVICE_MODE) {
         sdi->mode = g_variant_get_int16(data);
         ret = SR_OK;
         for (i = 0; i < ARRAY_SIZE(channel_modes); i++) {
@@ -581,7 +458,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         setup_probes(sdi, num_probes);
         adjust_samplerate(devc);
         sr_dbg("%s: setting mode to %d", __func__, sdi->mode);
-    }else if (id == SR_CONF_PATTERN_MODE) {
+    }
+    else if (id == SR_CONF_PATTERN_MODE) {
         stropt = g_variant_get_string(data, NULL);
         ret = SR_OK;
         if (!strcmp(stropt, pattern_strings[PATTERN_SINE])) {
@@ -599,7 +477,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 		}
         sr_dbg("%s: setting pattern to %d",
 			__func__, devc->sample_generator);
-    } else if (id == SR_CONF_MAX_HEIGHT) {
+    }
+    else if (id == SR_CONF_MAX_HEIGHT) {
         stropt = g_variant_get_string(data, NULL);
         ret = SR_OK;
         for (i = 0; i < ARRAY_SIZE(maxHeights); i++) {
@@ -610,18 +489,23 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         }
         sr_dbg("%s: setting Signal Max Height to %d",
             __func__, devc->max_height);
-    } else if (id == SR_CONF_INSTANT) {
+    }
+    else if (id == SR_CONF_INSTANT) {
         devc->instant = g_variant_get_boolean(data);
         sr_dbg("%s: setting INSTANT mode to %d", __func__,
                devc->instant);
         ret = SR_OK;
-    } else if (id == SR_CONF_HORIZ_TRIGGERPOS) {
+    }
+    else if (id == SR_CONF_HORIZ_TRIGGERPOS) {
         ret = SR_OK;
-    } else if (id == SR_CONF_TRIGGER_HOLDOFF) {
+    }
+    else if (id == SR_CONF_TRIGGER_HOLDOFF) {
         ret = SR_OK;
-    } else if (id == SR_CONF_TRIGGER_MARGIN) {
+    }
+    else if (id == SR_CONF_TRIGGER_MARGIN) {
         ret = SR_OK;
-    } else if (id == SR_CONF_PROBE_EN) {
+    }
+    else if (id == SR_CONF_PROBE_EN) {
         ch->enabled = g_variant_get_boolean(data);
         if (en_ch_num(sdi) != 0) {
             devc->limit_samples_show = devc->profile->dev_caps.dso_depth / en_ch_num(sdi);
@@ -629,48 +513,57 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         sr_dbg("%s: setting ENABLE of channel %d to %d", __func__,
                ch->index, ch->enabled);
         ret = SR_OK;
-    } else if (id == SR_CONF_PROBE_VDIV) {
+    }
+    else if (id == SR_CONF_PROBE_VDIV) {
         tmp_u64 = g_variant_get_uint64(data);
         ch->vdiv = tmp_u64;
         sr_dbg("%s: setting VDIV of channel %d to %llu", __func__,
                ch->index, ch->vdiv);
         ret = SR_OK;
-    } else if (id == SR_CONF_PROBE_FACTOR) {
+    }
+    else if (id == SR_CONF_PROBE_FACTOR) {
         ch->vfactor = g_variant_get_uint64(data);
         sr_dbg("%s: setting FACTOR of channel %d to %llu", __func__,
                ch->index, ch->vfactor);
         ret = SR_OK;
-    } else if (id == SR_CONF_PROBE_OFFSET) {
+    }
+    else if (id == SR_CONF_PROBE_OFFSET) {
         ch->offset = g_variant_get_uint16(data);
         sr_dbg("%s: setting OFFSET of channel %d to %d", __func__,
                ch->index, ch->offset);
         ret = SR_OK;
-    } else if (id == SR_CONF_TIMEBASE) {
+    }
+    else if (id == SR_CONF_TIMEBASE) {
         devc->timebase = g_variant_get_uint64(data);
         sr_dbg("%s: setting TIMEBASE to %llu", __func__,
                devc->timebase);
         ret = SR_OK;
-    } else if (id == SR_CONF_PROBE_COUPLING) {
+    }
+    else if (id == SR_CONF_PROBE_COUPLING) {
         ch->coupling = g_variant_get_byte(data);
         sr_dbg("%s: setting AC COUPLING of channel %d to %d", __func__,
                ch->index, ch->coupling);
         ret = SR_OK;
-    } else if (id == SR_CONF_TRIGGER_SOURCE) {
+    }
+    else if (id == SR_CONF_TRIGGER_SOURCE) {
         devc->trigger_source = g_variant_get_byte(data);
         sr_dbg("%s: setting Trigger Source to %d",
             __func__, devc->trigger_source);
         ret = SR_OK;
-    } else if (id == SR_CONF_TRIGGER_SLOPE) {
+    }
+    else if (id == SR_CONF_TRIGGER_SLOPE) {
         devc->trigger_slope = g_variant_get_byte(data);
         sr_dbg("%s: setting Trigger Slope to %d",
             __func__, devc->trigger_slope);
         ret = SR_OK;
-    } else if (id == SR_CONF_TRIGGER_VALUE) {
+    }
+    else if (id == SR_CONF_TRIGGER_VALUE) {
         ch->trig_value = g_variant_get_byte(data);
         sr_dbg("%s: setting channel %d Trigger Value to %d",
             __func__, ch->index, ch->trig_value);
         ret = SR_OK;
-    } else if (id == SR_CONF_PROBE_MAP_DEFAULT) {
+    }
+    else if (id == SR_CONF_PROBE_MAP_DEFAULT) {
         ch->map_default = g_variant_get_boolean(data);
         if (ch->map_default) {
             ch->map_unit = probeMapUnits[0];
@@ -678,28 +571,33 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             ch->map_max = ch->vdiv * ch->vfactor * DS_CONF_DSO_VDIVS / 2000.0;
         }
         ret = SR_OK;
-    } else if (id == SR_CONF_PROBE_MAP_UNIT) {
+    }
+    else if (id == SR_CONF_PROBE_MAP_UNIT) {
         if (ch->map_default)
             ch->map_unit = probeMapUnits[0];
         else
             ch->map_unit = g_variant_get_string(data, NULL);
         ret = SR_OK;
-    } else if (id == SR_CONF_PROBE_MAP_MIN) {
+    }
+    else if (id == SR_CONF_PROBE_MAP_MIN) {
         if (ch->map_default)
             ch->map_min = -(ch->vdiv * ch->vfactor * DS_CONF_DSO_VDIVS / 2000.0);
         else
             ch->map_min = g_variant_get_double(data);
         ret = SR_OK;
-    } else if (id == SR_CONF_PROBE_MAP_MAX) {
+    }
+    else if (id == SR_CONF_PROBE_MAP_MAX) {
         if (ch->map_default)
             ch->map_max = ch->vdiv * ch->vfactor * DS_CONF_DSO_VDIVS / 2000.0;
         else
             ch->map_max = g_variant_get_double(data);
         ret = SR_OK;
-    } else if (id == SR_CONF_LANGUAGE) {
+    }
+    else if (id == SR_CONF_LANGUAGE) {
         devc->language = g_variant_get_int16(data);
         ret = SR_OK;
-    } else {
+    }
+    else {
         ret = SR_ERR_NA;
 	}
 

@@ -117,12 +117,6 @@ static const char *probeMapUnits[] = {
     "m/s",
 };
 
-static struct sr_dev_mode mode_list[] = {
-    {LOGIC, "Logic Analyzer", "逻辑分析仪", "la", "la.svg"},
-    {ANALOG, "Data Acquisition", "数据记录仪", "daq", "daq.svg"},
-    {DSO, "Oscilloscope", "示波器", "osc", "osc.svg"},
-};
-
 static int trans_data(struct sr_dev_inst *sdi)
 {
     // translate for old format
@@ -369,9 +363,9 @@ static const GSList *dev_mode_list(const struct sr_dev_inst *sdi)
     GSList *l = NULL;
     unsigned int i;
 
-    for (i = 0; i < ARRAY_SIZE(mode_list); i++) {
-        if (sdi->mode == mode_list[i].mode)
-            l = g_slist_append(l, &mode_list[i]);
+    for (i = 0; i < ARRAY_SIZE(sr_mode_list); i++) {
+        if (sdi->mode == sr_mode_list[i].mode)
+            l = g_slist_append(l, &sr_mode_list[i]);
     }
 
     return l;
@@ -935,7 +929,7 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi,
  
 	struct session_vdev *vdev;
     struct sr_datafeed_packet packet;
-	int ret;
+    int ret;
     GSList *l;
     struct sr_channel *probe;
 
