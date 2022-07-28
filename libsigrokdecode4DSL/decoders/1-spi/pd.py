@@ -189,10 +189,14 @@ class Decoder(srd.Decoder):
 
         # Bit annotations.
         if self.have_miso:
-            for bit in self.misobits:
+            blen = len(self.misobits)
+            for i in range(0, blen):
+                bit = self.misobits[blen-i-1]
                 self.put(bit[1], bit[2], self.out_ann, [2, ['%d' % bit[0]]])
         if self.have_mosi:
-            for bit in self.mosibits:
+            blen = len(self.mosibits)
+            for i in range(0, blen):
+                bit = self.mosibits[blen-i-1]
                 self.put(bit[1], bit[2], self.out_ann, [3, ['%d' % bit[0]]])
 
         # Dataword annotations.  
