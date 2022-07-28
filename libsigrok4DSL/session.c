@@ -365,7 +365,7 @@ SR_API int sr_session_start(void)
 		sdi = l->data;
 		if ((ret = sdi->driver->dev_acquisition_start(sdi, sdi)) != SR_OK) {
 			sr_err("%s: could not start an acquisition "
-			       "(%d)", __func__, sr_strerror(ret));
+			       "(%d)", __func__, sr_error_str(ret));
 			break;
 		}
 	}

@@ -48,12 +48,45 @@
 #undef max
 #define max(a,b) ((a)>(b)?(a):(b))
 
+#define g_safe_free(p) 			if((p)) g_free((p)); ((p)) = NULL;
+#define g_safe_free_list(p) 	if((p)) g_slist_free((p)); ((p)) = NULL;
+
 struct sr_context {
-	libusb_context *libusb_ctx;
+	libusb_context*			libusb_ctx;
 	libusb_hotplug_callback_handle hotplug_handle;
 	hotplug_event_callback  hotplug_callback;
-	void *hotplug_user_data;
-	struct timeval hotplug_tv; 
+	void 					*hotplug_user_data;
+	struct 					timeval hotplug_tv;
+	libsigrok_event_callback_t event_callback;
+	GList 					*deiveList; // All device instance, sr_dev_inst* type
+};
+
+struct sr_session {
+	/** List of struct sr_dev pointers. */
+	GSList *devs;
+	/** List of struct datafeed_callback pointers. */
+	GSList *datafeed_callbacks;
+    gboolean running;
+
+	unsigned int num_sources;
+
+	/*
+	 * Both "sources" and "pollfds" are of the same size and contain pairs
+	 * of descriptor and callback function. We can not embed the GPollFD
+	 * into the source struct since we want to be able to pass the array
+	 * of all poll descriptors to g_poll().
+	 */
+	struct source *sources;
+	GPollFD *pollfds;
+	int source_timeout;
+
+	/*
+	 * These are our synchronization primitives for stopping the session in
+	 * an async fashion. We need to make sure the session is stopped from
+	 * within the session thread itself.
+	 */
+    GMutex stop_mutex;
+	gboolean abort_session;
 };
 
 struct sr_usb_dev_inst {

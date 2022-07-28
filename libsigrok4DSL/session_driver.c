@@ -418,17 +418,25 @@ static int dev_open(struct sr_dev_inst *sdi)
 
 static int dev_close(struct sr_dev_inst *sdi)
 {
-    const struct session_vdev *const vdev = sdi->priv;
-    g_free(vdev->sessionfile);
-    g_free(vdev->capturefile);
-    g_free(vdev->buf);
-    if (vdev->logic_buf)
-        g_free(vdev->logic_buf);
+    struct session_vdev *vdev;
 
-    g_free(sdi->priv);
-    sdi->priv = NULL;
+    if (sdi && sdi->priv){
+        vdev = sdi->priv;
+        g_safe_free(vdev->sessionfile); 
+        g_safe_free(vdev->capturefile);
+        g_safe_free(vdev->buf);
+        g_safe_free(vdev->logic_buf);
+        g_safe_free(sdi->priv); 
+    }
 
     return SR_OK;
+}
+
+static int dev_destroy(struct sr_dev_inst *sdi)
+{
+    assert(sdi);
+    dev_close(sdi);
+    sr_dev_inst_free(sdi);
 }
 
 static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
@@ -1023,6 +1031,7 @@ SR_PRIV struct sr_dev_driver session_driver = {
     .config_list = config_list,
     .dev_open = dev_open,
     .dev_close = dev_close,
+    .dev_destroy = dev_destroy,
     .dev_status_get = dev_status_get,
     .dev_acquisition_start = dev_acquisition_start,
     .dev_acquisition_stop = NULL,

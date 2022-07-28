@@ -28,6 +28,8 @@ SR_PRIV int command_ctl_wr(libusb_device_handle *devhdl, struct ctl_wr_cmd cmd)
 {
     int ret;
 
+    assert(devhdl);
+
     /* Send the control command. */
     ret = libusb_control_transfer(devhdl, LIBUSB_REQUEST_TYPE_VENDOR |
             LIBUSB_ENDPOINT_OUT, CMD_CTL_WR, 0x0000, 0x0000,
@@ -45,6 +47,8 @@ SR_PRIV int command_ctl_wr(libusb_device_handle *devhdl, struct ctl_wr_cmd cmd)
 SR_PRIV int command_ctl_rd(libusb_device_handle *devhdl, struct ctl_rd_cmd cmd)
 {
     int ret;
+
+    assert(devhdl);
 
     /* Send the control message. */
     ret = libusb_control_transfer(devhdl, LIBUSB_REQUEST_TYPE_VENDOR |

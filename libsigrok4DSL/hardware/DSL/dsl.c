@@ -28,7 +28,7 @@
 #include <sys/stat.h>
 
 #undef LOG_PREFIX
-#define LOG_PREFIX "DSL Hardware: "
+#define LOG_PREFIX "dsl: "
 
 extern struct ds_trigger *trigger;
 
@@ -290,6 +290,7 @@ SR_PRIV gboolean dsl_check_conf_profile(libusb_device *dev)
 static int hw_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi)
 {
     libusb_device **devlist;
+    libusb_device *dev_handel=NULL;
     struct sr_usb_dev_inst *usb;
     struct libusb_device_descriptor des;
     struct DSL_context *devc;
@@ -303,8 +304,13 @@ static int hw_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi)
     devc = sdi->priv;
     usb = sdi->conn;
 
+    sr_info("%s", "Try to open device instance.");
+
+    assert(usb->devhdl == NULL);
+
     if (sdi->status == SR_ST_ACTIVE) {
         /* Device is already in use. */
+        sr_info("%s", "Device is actived, can't to open.");
         return SR_ERR;
     }
 
@@ -316,42 +322,55 @@ static int hw_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi)
         return SR_ERR;
     }
 
-    for (i = 0; i < device_count; i++) {
-        if ((ret = libusb_get_device_descriptor(devlist[i], &des))) {
+    for (i = 0; i < device_count; i++) 
+    {
+        dev_handel = devlist[i];
+
+        if ((ret = libusb_get_device_descriptor(dev_handel, &des))) {
             sr_err("Failed to get device descriptor: %s.",
                    libusb_error_name(ret));
             continue;
         }
 
         if (des.idVendor != devc->profile->vid
-            || des.idProduct != devc->profile->pid)
+            || des.idProduct != devc->profile->pid){
             continue;
+        }
 
         if (sdi->status == SR_ST_INITIALIZING) {
+            sr_info("%s", "The device instance is still boosting.");
             if (skip != sdi->index) {
                 /* Skip devices of this type that aren't the one we want. */
+                sr_info("%s", "Skip devices of this type that aren't the one we want.");
                 skip += 1;
                 continue;
             }
-        } else if (sdi->status == SR_ST_INACTIVE) {
+        } 
+        else if (sdi->status == SR_ST_INACTIVE) {
             /*
              * This device is fully enumerated, so we need to find
              * this device by vendor, product, bus and address.
              */
-            if (libusb_get_bus_number(devlist[i]) != usb->bus
-                || libusb_get_device_address(devlist[i]) != usb->address)
+            sr_info("%s", "The device instance is live, but not use.");
+            if (libusb_get_bus_number(dev_handel) != usb->bus
+                || libusb_get_device_address(dev_handel) != usb->address){
                 /* This is not the one. */
-                continue;
+                    sr_info("%s", "Font a device, but is not the one.");
+                    continue;
+                }
         }
 
-        if (!(ret = libusb_open(devlist[i], &usb->devhdl))) {
+        sr_info("Open device instance, handle: %p", dev_handel);
+
+        if (!(ret = libusb_open(dev_handel, &usb->devhdl))) {
             if (usb->address == 0xff)
                 /*
                  * First time we touch this device after FW
                  * upload, so we don't know the address yet.
                  */
-                usb->address = libusb_get_device_address(devlist[i]);
-        } else {
+                usb->address = libusb_get_device_address(dev_handel);
+        }
+        else {
             sr_err("Failed to open device: %s.",
                    libusb_error_name(ret));
             break;
@@ -1831,15 +1850,17 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
 
     devc = sdi->priv;
     usb = sdi->conn;
-
+ 
     /*
      * If the firmware was recently uploaded, no dev_open operation should be called.
      * Just wait for renumerate -> detach -> attach
      */
     ret = SR_ERR;
     if (devc->fw_updated > 0) {
+        sr_info("%s: Firmware upload have done.");
         return SR_ERR;
-    } else {
+    }
+    else {
         sr_info("%s: Firmware upload was not needed.", __func__);
         ret = hw_dev_open(di, sdi);
     }
@@ -1848,6 +1869,8 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
         sr_err("%s: Unable to open device.", __func__);
         return SR_ERR;
     }
+
+    assert(usb->devhdl);
   
     ret = libusb_claim_interface(usb->devhdl, USB_INTERFACE);
     if (ret != 0) {
@@ -1886,6 +1909,7 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
     rd_cmd.header.size = 1;
     hw_info = 0;
     rd_cmd.data = &hw_info;
+
     if ((ret = command_ctl_rd(usb->devhdl, rd_cmd)) != SR_OK) {
         sr_err("Failed to get hardware infos.");
         return SR_ERR;
@@ -1938,11 +1962,14 @@ SR_PRIV int dsl_dev_close(struct sr_dev_inst *sdi)
     struct sr_usb_dev_inst *usb;
 
     usb = sdi->conn;
-    if (usb->devhdl == NULL)
+    if (usb->devhdl == NULL){
+        sr_info("%s", "dsl_dev_close(),Device handle is null.");
         return SR_ERR;
+    }
 
     sr_info("%s: Closing device %d on %d.%d interface %d.",
         sdi->driver->name, sdi->index, usb->bus, usb->address, USB_INTERFACE);
+    
     libusb_release_interface(usb->devhdl, USB_INTERFACE);
     libusb_close(usb->devhdl);
     usb->devhdl = NULL;
@@ -2479,4 +2506,26 @@ SR_PRIV int dsl_start_transfers(const struct sr_dev_inst *sdi)
     }
 
     return SR_OK;
+}
+
+
+SR_PRIV int dsl_destroy_device(const struct sr_dev_inst *sdi)
+{ 
+    assert(sdi);
+
+    struct sr_dev_driver *driver;
+    driver = sdi->driver;
+
+    if (driver->dev_close){
+		driver->dev_close(sdi);
+    }
+
+    if (sdi->conn) {
+        if (sdi->inst_type == SR_INST_USB)
+            sr_usb_dev_inst_free(sdi->conn);
+        else if (sdi->inst_type == SR_INST_SERIAL)
+            sr_serial_dev_inst_free(sdi->conn);
+    }
+
+    sr_dev_inst_free(sdi);
 }

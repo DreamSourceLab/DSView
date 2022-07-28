@@ -198,11 +198,17 @@ static GSList *scan(GSList *options)
 	GSList *l, *devices, *conn_devices;
 	struct libusb_device_descriptor des;
 	libusb_device **devlist;
+    libusb_device *device_handle = NULL;
     int devcnt, ret, i, j;
 	const char *conn;
     enum libusb_speed usb_speed;
 
 	drvc = di->priv;
+
+     if (options != NULL)
+        sr_info("%s", "Scan DSCope device with options.");
+    else 
+        sr_info("%s", "Scan DSCope device.");
 
 	conn = NULL;
 	for (l = options; l; l = l->next) {
@@ -213,21 +219,27 @@ static GSList *scan(GSList *options)
 			break;
 		}
 	}
-	if (conn)
+	if (conn){
+        sr_info("%s", "Find usb device with connect config.");
         conn_devices = sr_usb_find(drvc->sr_ctx->libusb_ctx, conn);
+    }
 	else
 		conn_devices = NULL;
 
     /* Find all DSCope compatible devices and upload firmware to them. */
 	devices = NULL;
     libusb_get_device_list(drvc->sr_ctx->libusb_ctx, &devlist);
-	for (i = 0; devlist[i]; i++) {
+    
+	for (i = 0; devlist[i]; i++) 
+    {
+        device_handle = devlist[i];
+        
 		if (conn) {
 			usb = NULL;
 			for (l = conn_devices; l; l = l->next) {
 				usb = l->data;
-				if (usb->bus == libusb_get_bus_number(devlist[i])
-					&& usb->address == libusb_get_device_address(devlist[i]))
+				if (usb->bus == libusb_get_bus_number(device_handle)
+					&& usb->address == libusb_get_device_address(device_handle))
 					break;
 			}
 			if (!l)
@@ -236,13 +248,13 @@ static GSList *scan(GSList *options)
 				continue;
 		}
 
-		if ((ret = libusb_get_device_descriptor( devlist[i], &des)) != 0) {
+		if ((ret = libusb_get_device_descriptor( device_handle, &des)) != 0) {
             sr_warn("Failed to get device descriptor: %s.",
 				libusb_error_name(ret));
 			continue;
 		}
 
-        usb_speed = libusb_get_device_speed( devlist[i]);
+        usb_speed = libusb_get_device_speed(device_handle);
         if ((usb_speed != LIBUSB_SPEED_HIGH) &&
             (usb_speed != LIBUSB_SPEED_SUPER))
             continue;
@@ -253,6 +265,7 @@ static GSList *scan(GSList *options)
                 des.idProduct == supported_DSCope[j].pid &&
                 usb_speed == supported_DSCope[j].usb_speed) {
                 prof = &supported_DSCope[j];
+                break;
 			}
 		}
 
@@ -260,10 +273,13 @@ static GSList *scan(GSList *options)
 		if (!prof)
 			continue;
 
+        sr_info("Got a device handle: %p", device_handle);
+
 		devcnt = g_slist_length(drvc->instances);
         devc = DSCope_dev_new(prof);
         if (!devc)
             return NULL;
+        
         sdi = sr_dev_inst_new(channel_modes[devc->ch_mode].mode, devcnt, SR_ST_INITIALIZING,
 			prof->vendor, prof->model, prof->model_version);
         if (!sdi) {
@@ -272,24 +288,25 @@ static GSList *scan(GSList *options)
         }
         sdi->priv = devc;
 		sdi->driver = di;
+        sdi->dev_type = DEV_TYPE_HARDWARE;
 
         drvc->instances = g_slist_append(drvc->instances, sdi);
-        //devices = g_slist_append(devices, sdi);
 
         /* Fill in probelist according to this device's profile. */
         if (dsl_setup_probes(sdi, channel_modes[devc->ch_mode].num) != SR_OK)
             return NULL;
 
-		if (dsl_check_conf_profile(devlist[i])) {
+		if (dsl_check_conf_profile(device_handle)) {
 			/* Already has the firmware, so fix the new address. */
-            sr_info("Found an DSCope device.");
+            sr_info("Found a DSCope device, name: \"%s\"", prof->model);
             sdi->status = SR_ST_INACTIVE;
             sdi->inst_type = SR_INST_USB;
-            sdi->conn = sr_usb_dev_inst_new(libusb_get_bus_number(devlist[i]),
-					libusb_get_device_address(devlist[i]), NULL);
+            sdi->conn = sr_usb_dev_inst_new(libusb_get_bus_number(device_handle),
+					libusb_get_device_address(device_handle), NULL);
             /* only report device after firmware is ready */
             devices = g_slist_append(devices, sdi);
-		} else {
+		}
+        else {
             char *firmware;
             char *res_path = sr_get_firmware_res_path();
             if (!(firmware = g_try_malloc(strlen(res_path)+strlen(prof->firmware)+1))) {
@@ -298,7 +315,7 @@ static GSList *scan(GSList *options)
             }
             strcpy(firmware, res_path);
             strcat(firmware, prof->firmware);
-            if (ezusb_upload_firmware(devlist[i], USB_CONFIGURATION,
+            if (ezusb_upload_firmware(device_handle, USB_CONFIGURATION,
                 firmware) == SR_OK)
 				/* Store when this device's FW was updated. */
 				devc->fw_updated = g_get_monotonic_time();
@@ -307,10 +324,11 @@ static GSList *scan(GSList *options)
 				       "device %d.", devcnt);
             g_free(firmware);
             sdi->inst_type = SR_INST_USB;
-            sdi->conn = sr_usb_dev_inst_new (libusb_get_bus_number(devlist[i]),
+            sdi->conn = sr_usb_dev_inst_new (libusb_get_bus_number(device_handle),
 					0xff, NULL);
 		}
 	}
+
 	libusb_free_device_list(devlist, 1);
     g_slist_free_full(conn_devices, (GDestroyNotify)sr_usb_dev_inst_free);
 
@@ -1813,6 +1831,12 @@ static int dev_close(struct sr_dev_inst *sdi)
     return ret;
 }
 
+static int dev_destroy(struct sr_dev_inst *sdi)
+{
+    dsl_destroy_device(sdi);
+}
+
+
 static int cleanup(void)
 {
 	int ret;
@@ -2077,6 +2101,7 @@ SR_PRIV struct sr_dev_driver DSCope_driver_info = {
 	.config_list = config_list,
 	.dev_open = dev_open,
 	.dev_close = dev_close,
+    .dev_destroy = dev_destroy,
     .dev_status_get = dev_status_get,
 	.dev_acquisition_start = dev_acquisition_start,
 	.dev_acquisition_stop = dev_acquisition_stop,

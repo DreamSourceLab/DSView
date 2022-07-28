@@ -144,6 +144,8 @@ static GSList *hw_scan(GSList *options)
 	drvc = di->priv;
 	devices = NULL;
 
+    sr_info("%s", "Scan demo device.");
+
     if (!(devc = g_try_malloc(sizeof(struct demo_context)))) {
         sr_err("Device context malloc failed.");
         return NULL;
@@ -170,6 +172,7 @@ static GSList *hw_scan(GSList *options)
 	}
     sdi->priv = devc;
 	sdi->driver = di;
+    sdi->dev_type = DEV_TYPE_DEMO;
 
 	devices = g_slist_append(devices, sdi);
 	drvc->instances = g_slist_append(drvc->instances, sdi);
@@ -234,6 +237,12 @@ static int hw_dev_close(struct sr_dev_inst *sdi)
     sdi->status = SR_ST_INACTIVE;
 
     return SR_OK;
+}
+
+static int dev_destroy(struct sr_dev_inst *sdi)
+{
+    hw_dev_close(sdi);
+    sr_dev_inst_free(sdi);
 }
 
 static int hw_cleanup(void)
@@ -1113,6 +1122,7 @@ SR_PRIV struct sr_dev_driver demo_driver_info = {
 	.config_list = config_list,
 	.dev_open = hw_dev_open,
 	.dev_close = hw_dev_close,
+    .dev_destroy = dev_destroy,
     .dev_status_get = hw_dev_status_get,
 	.dev_acquisition_start = hw_dev_acquisition_start,
 	.dev_acquisition_stop = hw_dev_acquisition_stop,

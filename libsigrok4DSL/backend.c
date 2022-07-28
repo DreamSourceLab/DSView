@@ -335,6 +335,8 @@ SR_API int sr_init(struct sr_context **ctx)
 	context->hotplug_user_data = NULL;
 	context->hotplug_tv.tv_sec = 0;
 	context->hotplug_tv.tv_usec = 0;
+	context->event_callback = NULL;
+	context->deiveList = NULL;
 
 	ret = libusb_init(&context->libusb_ctx);
 	if (LIBUSB_SUCCESS != ret) {

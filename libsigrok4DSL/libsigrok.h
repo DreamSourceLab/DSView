@@ -66,17 +66,19 @@ extern "C" {
 /** Status/error codes returned by libsigrok functions. */
 enum {
 	SR_OK             =  0, /**< No error. */
-	SR_ERR            = -1, /**< Generic/unspecified error. */
-	SR_ERR_MALLOC     = -2, /**< Malloc/calloc/realloc error. */
-	SR_ERR_ARG        = -3, /**< Function argument error. */
-	SR_ERR_BUG        = -4, /**< Errors hinting at internal bugs. */
-	SR_ERR_SAMPLERATE = -5, /**< Incorrect samplerate. */
-	SR_ERR_NA         = -6, /**< Not applicable. */
-	SR_ERR_DEV_CLOSED = -7, /**< Device is closed, but needs to be open. */
+	SR_ERR            =  1, /**< Generic/unspecified error. */
+	SR_ERR_MALLOC     =  2, /**< Malloc/calloc/realloc error. */
+	SR_ERR_ARG        =  3, /**< Function argument error. */
+	SR_ERR_BUG        =  4, /**< Errors hinting at internal bugs. */
+	SR_ERR_SAMPLERATE =  5, /**< Incorrect samplerate. */
+	SR_ERR_NA         =  6, /**< Not applicable. */
+	SR_ERR_DEV_CLOSED =  7, /**< Device is closed, but needs to be open. */
+	SR_ERR_CALL_STATUS = 8, /**< Function call status error. */
+	SR_ERR_HAVE_DONE  = 9, /**< The Function have called.*/
 
 	/*
 	 * Note: When adding entries here, don't forget to also update the
-	 * sr_strerror() and sr_strerror_name() functions in error.c.
+	 * sr_error_str() and sr_error_name() functions in error.c.
 	 */
 };
 
@@ -163,6 +165,14 @@ enum {
 #define USB_EV_HOTPLUG_ATTACH		1
 #define USB_EV_HOTPLUG_DETTACH		2
 
+typedef unsigned long long sr_device_handle;
+
+enum sr_device_type{
+	DEV_TYPE_UNKOWN = 0,
+	DEV_TYPE_DEMO = 1,
+	DEV_TYPE_FILELOG = 2,
+	DEV_TYPE_HARDWARE = 3,
+};
   
 /** Data types used by sr_config_info(). */
 enum {
@@ -1067,6 +1077,10 @@ enum sr_config_option_id{
 struct sr_dev_inst {
     /** Device driver. */
     struct sr_dev_driver *driver;
+	/**Identity. */
+	sr_device_handle handle; 
+	/** Device type:(demo,filelog,hardware). The type see enum sr_device_type. */
+	int dev_type;
     /** Index of device in driver. */
     int index;
     /** Device instance status. SR_ST_NOT_FOUND, etc. */
@@ -1201,6 +1215,7 @@ struct sr_dev_driver {
 	/* Device-specific */
 	int (*dev_open) (struct sr_dev_inst *sdi);
 	int (*dev_close) (struct sr_dev_inst *sdi);
+	int (*dev_destroy) (struct sr_dev_inst *sdi);
     int (*dev_status_get) (const struct sr_dev_inst *sdi,
                            struct sr_status *status, gboolean prg);
     int (*dev_acquisition_start) (struct sr_dev_inst *sdi,
@@ -1211,35 +1226,7 @@ struct sr_dev_driver {
 	/* Dynamic */
 	void *priv;
 };
-
-struct sr_session {
-	/** List of struct sr_dev pointers. */
-	GSList *devs;
-	/** List of struct datafeed_callback pointers. */
-	GSList *datafeed_callbacks;
-    gboolean running;
-
-	unsigned int num_sources;
-
-	/*
-	 * Both "sources" and "pollfds" are of the same size and contain pairs
-	 * of descriptor and callback function. We can not embed the GPollFD
-	 * into the source struct since we want to be able to pass the array
-	 * of all poll descriptors to g_poll().
-	 */
-	struct source *sources;
-	GPollFD *pollfds;
-	int source_timeout;
-
-	/*
-	 * These are our synchronization primitives for stopping the session in
-	 * an async fashion. We need to make sure the session is stopped from
-	 * within the session thread itself.
-	 */
-    GMutex stop_mutex;
-	gboolean abort_session;
-};
-
+ 
 enum {
     SIMPLE_TRIGGER = 0,
     ADV_TRIGGER,
@@ -1327,7 +1314,7 @@ SR_API void sr_config_free(struct sr_config *src);
 
 /*--------------------session.c----------------*/
 typedef void (*sr_datafeed_callback_t)(const struct sr_dev_inst *sdi,
-		const struct sr_datafeed_packet *packet, void *cb_data);
+					const struct sr_datafeed_packet *packet, void *cb_data);
           
 
 /* Session setup */
@@ -1376,20 +1363,12 @@ SR_API int sr_parse_voltage(const char *voltstr, uint64_t *p, uint64_t *q);
 
 /*--- version.c -------------------------------------------------------------*/
 
-SR_API int sr_package_version_major_get(void);
-SR_API int sr_package_version_minor_get(void);
-SR_API int sr_package_version_micro_get(void);
-SR_API const char *sr_package_version_string_get(void);
-
-SR_API int sr_lib_version_current_get(void);
-SR_API int sr_lib_version_revision_get(void);
-SR_API int sr_lib_version_age_get(void);
-SR_API const char *sr_lib_version_string_get(void);
+SR_API const char *sr_get_lib_version_string();
 
 /*--- error.c ---------------------------------------------------------------*/
 
-SR_API const char *sr_strerror(int error_code);
-SR_API const char *sr_strerror_name(int error_code);
+SR_API const char *sr_error_str(int error_code);
+SR_API const char *sr_error_name(int error_code);
 
 /*--- trigger.c ------------------------------------------------------------*/
 SR_API int ds_trigger_init(void);
@@ -1423,21 +1402,20 @@ SR_API void sr_log_level(int level);
 /*---event define ---------------------------------------------*/
 enum libsigrok_event_type
 {
-	// A new device attachs, user need calls sr_device_scan_list to update new list,
-	// And call sr_device_get_list to get new list, the last one is new.
-	// User can call sr_device_select to swith a new device.
+	// A new device attachs, user need calls sr_device_get_list to get the list,
+	// and  call sr_device_select to swith a new device.
 	EV_DEVICE_ATTACH = 0, 
 
-	// A device detachs, user need calls sr_device_scan_list to update new list, 
-	// And call sr_device_get_list to get new list.
-	// User can call sr_device_select to swith a new device.
+	// A device detachs, user need calls sr_device_get_list to get the list,
+	// and  call sr_device_select to swith a new device.
 	EV_DEVICE_DETACH = 1, 
 
-	// User can call sr_device_get_list to get new list.
+	// User can call sr_device_get_list to get new list, and update the data view.
 	EV_CURRENT_DEVICE_CHANGED = 2,
-};
 
-typedef unsigned long long sr_device_handle;
+	// User can call sr_device_get_list to get new list, and update the list view.
+	EV_DEVICE_LIST_CHANGED = 3,
+};
 
 /**
  * Device base info
@@ -1446,8 +1424,7 @@ struct sr_device_info
 {
 	sr_device_handle _handle;
 	char 	_name[50];
-	char 	_full_name[260];
-	int 	_is_hardware;
+	int 	_dev_type; // enum sr_device_type
 	int 	_is_current; //is actived
 };
 
@@ -1488,16 +1465,16 @@ SR_API int sr_lib_exit();
 SR_API void sr_set_event_callback(libsigrok_event_callback_t *cb);
 
 /**
+ * By default, the library can manage data by itself. If set the callback, 
+ * the library will no longer manage data, it just forwards data.
+ */
+SR_API int sr_set_datafeed_callback(sr_datafeed_callback_t cb, void *cb_data);
+
+/**
  * Set the firmware binary file directory,
  * User must call it to set the firmware resource directory
  */
 SR_API void sr_set_firmware_resource_dir(const char *dir);
-
-/**
- * When device attached or detached, scan all devices to get the new list.
- * The current list will be changed
- */
-SR_API int sr_device_scan_list();
 
 /**
  * Get the device list, the last item is null.

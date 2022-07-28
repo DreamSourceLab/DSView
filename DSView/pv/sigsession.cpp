@@ -709,7 +709,7 @@ void SigSession::init_signals()
         clear_all_decoder();
     }
     else{
-        dsv_err("%s", "Device loose contact");
+        dsv_info("%s", "Device loose contact, and it reconnect success.");
     }
 
     // Detect what data types we will receive
@@ -1288,7 +1288,7 @@ void SigSession::hotplug_proc()
                 _wait_reattch_times++;
 
                 // 500ms
-                if (_wait_reattch_times == 5)
+                if (_wait_reattch_times == 70)
                 {
                     dsv_dbg("%s", "Wait the device reattach time out for 500ms");
                     _hot_detach = true;

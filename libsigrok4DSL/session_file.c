@@ -154,6 +154,7 @@ SR_API int sr_session_load(const char *filename)
                 } else if (!strcmp(keys[j], "capturefile")) {
                     sdi = sr_dev_inst_new(mode, devcnt, SR_ST_ACTIVE, NULL, NULL, NULL);
 					sdi->driver = &session_driver;
+                    sdi->dev_type = DEV_TYPE_FILELOG;
 					if (devcnt == 0)
 						/* first device, init the driver */
 						sdi->driver->init(NULL);

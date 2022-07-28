@@ -198,6 +198,8 @@ SR_PRIV struct sr_dev_inst *sr_dev_inst_new(int mode, int index, int status,
 	sdi->channels = NULL;
 	sdi->conn = NULL;
 	sdi->priv = NULL;
+	sdi->handle = (sr_device_handle)sdi;
+	sdi->dev_type = DEV_TYPE_UNKOWN;
 
 	return sdi;
 }
