@@ -60,6 +60,7 @@
 #include "dsvdef.h"
 #include "utility/encoding.h"
 #include "utility/path.h"
+#include "log.h"
 
  
 namespace pv { 
@@ -951,7 +952,7 @@ bool StoreSession::json_decoders(QJsonArray &array)
         auto rows = stack->get_rows_gshow();
         for (auto i = rows.begin(); i != rows.end(); i++) {
             pv::data::decode::Row _row = (*i).first;
-            QString kn = _row.title();
+            QString kn(_row.title().toUtf8().data());
             show_obj[kn] = QJsonValue::fromVariant((*i).second);
         }
         dec_obj["show"] = show_obj;
@@ -964,8 +965,14 @@ bool StoreSession::json_decoders(QJsonArray &array)
 
 bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_array)
 {
-    if (_session->get_device()->dev_inst()->mode != LOGIC || dec_array.empty())
+    if (_session->get_device()->dev_inst()->mode != LOGIC)
     {
+        dsv_info("%s", "StoreSession::load_decoders(), is not LOGIC mode.");
+        return false;
+    }
+
+    if (dec_array.empty()){
+        dsv_info("%s", "StoreSession::load_decoders(), json object is array empty.");
         return false;
     }
     
@@ -1139,7 +1146,8 @@ bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_arra
                 std::map<const pv::data::decode::Row, bool> rows = stack->get_rows_gshow();
 
                 for (auto i = rows.begin();i != rows.end(); i++) {
-                        QString key = (*i).first.title();
+                    QString key = (*i).first.title();
+
                     if (show_obj.contains(key)) {
                         bool bShow = show_obj[key].toBool();
                         const pv::data::decode::Row r = (*i).first;

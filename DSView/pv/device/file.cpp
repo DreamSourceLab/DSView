@@ -28,6 +28,7 @@
 #include "../utility/path.h"
 #include <stdlib.h>
 #include "../ZipMaker.h"
+#include "../log.h"
 
 namespace pv {
 namespace device {
@@ -80,11 +81,18 @@ QJsonArray File::get_decoders()
     ZipReader rd(f_name.c_str());
     auto *data = rd.GetInnterFileData("decoders");
 
-    if (data != NULL){
-          QJsonDocument sessionDoc = QJsonDocument::fromJson(
-                                        QByteArray::fromRawData(data->data(), data->size()), &error);
-          dec_array = sessionDoc.array();
-          rd.ReleaseInnerFileData(data);
+    if (data != NULL){ 
+        QString jsonStr(data->data());
+        QByteArray qbs = jsonStr.toUtf8(); 
+        QJsonDocument sessionDoc = QJsonDocument::fromJson(qbs, &error);
+
+        if (error.error != QJsonParseError::NoError){
+            QString estr = error.errorString();
+            dsv_err("File::get_decoders(), parse json error:\"%s\"!", estr.toUtf8().data());
+        } 
+
+        dec_array = sessionDoc.array();
+        rd.ReleaseInnerFileData(data);
     }
  
     return dec_array;
@@ -100,8 +108,15 @@ QJsonDocument File::get_session()
     auto *data = rd.GetInnterFileData("session");
 
      if (data != NULL){
-          sessionDoc = QJsonDocument::fromJson(
-                                        QByteArray::fromRawData(data->data(), data->size()), &error);
+        QString jsonStr(data->data());
+        QByteArray qbs = jsonStr.toUtf8(); 
+        sessionDoc = QJsonDocument::fromJson(qbs, &error);
+
+        if (error.error != QJsonParseError::NoError){
+            QString estr = error.errorString();
+            dsv_err("File::get_session(), parse json error:\"%s\"!", estr.toUtf8().data());
+        } 
+
         rd.ReleaseInnerFileData(data);
     }
 
