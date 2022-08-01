@@ -1375,6 +1375,13 @@ uint16_t SigSession::get_ch_num(int type)
 bool SigSession::add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus, 
         std::list<pv::data::decode::Decoder*> &sub_decoders){
 
+       if (dec == NULL){
+          dsv_err("%s", "Decoder instance is null!");
+          assert(false);
+       }
+
+       dsv_info("Create new decoder,name:\"%s\",id:\"%s\"", dec->name, dec->id);
+
       try { 
 
         bool ret = false;
