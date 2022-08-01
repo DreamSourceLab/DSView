@@ -48,17 +48,23 @@
 #undef max
 #define max(a,b) ((a)>(b)?(a):(b))
 
+#define USB_EV_HOTPLUG_UNKNOW		0
+#define USB_EV_HOTPLUG_ATTACH		1
+#define USB_EV_HOTPLUG_DETTACH		2
+
 #define g_safe_free(p) 			if((p)) g_free((p)); ((p)) = NULL;
 #define g_safe_free_list(p) 	if((p)) g_slist_free((p)); ((p)) = NULL;
+
+/** global variable */
+extern char DS_RES_PATH[500];
+
+typedef void (*hotplug_event_callback)(struct libusb_context *ctx, struct libusb_device *dev, int event);
 
 struct sr_context {
 	libusb_context*			libusb_ctx;
 	libusb_hotplug_callback_handle hotplug_handle;
 	hotplug_event_callback  hotplug_callback;
-	void 					*hotplug_user_data;
 	struct 					timeval hotplug_tv;
-	libsigrok_event_callback_t event_callback;
-	GList 					*deiveList; // All device instance, sr_dev_inst* type
 };
 
 struct sr_session {
@@ -182,6 +188,7 @@ SR_PRIV int sr_session_source_add_channel(GIOChannel *channel, int events,
 SR_PRIV int sr_session_source_remove(int fd);
 SR_PRIV int sr_session_source_remove_pollfd(GPollFD *pollfd);
 SR_PRIV int sr_session_source_remove_channel(GIOChannel *channel);
+SR_PRIV int sr_session_datafeed_callback_add(sr_datafeed_callback_t cb,void *cb_data);
 
 /*--- std.c -----------------------------------------------------------------*/
 
@@ -259,7 +266,10 @@ SR_PRIV int sr_usb_open(libusb_context *usb_ctx, struct sr_usb_dev_inst *usb);
 SR_PRIV int sr_init(struct sr_context **ctx);
 SR_PRIV int sr_exit(struct sr_context *ctx);
 
-/*--- lib_main.c -------------------------------------------------*/
-SR_PRIV char* sr_get_firmware_res_path();
+SR_PRIV int sr_listen_hotplug(struct sr_context *ctx, hotplug_event_callback callback);
+SR_PRIV int sr_close_hotplug(struct sr_context *ctx);
+SR_PRIV void sr_hotplug_wait_timout(struct sr_context *ctx);
 
+/*--- lib_main.c -------------------------------------------------*/
+ 
 #endif

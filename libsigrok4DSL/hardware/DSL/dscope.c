@@ -308,7 +308,7 @@ static GSList *scan(GSList *options)
 		}
         else {
             char *firmware;
-            char *res_path = sr_get_firmware_res_path();
+            char *res_path = DS_RES_PATH;
             if (!(firmware = g_try_malloc(strlen(res_path)+strlen(prof->firmware)+1))) {
                 sr_err("Firmware path malloc error!");
                 return NULL;

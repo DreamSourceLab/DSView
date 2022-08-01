@@ -253,7 +253,7 @@ SR_API int sr_session_datafeed_callback_remove_all(void)
  *
  * @return SR_OK upon success, SR_ERR_BUG if no session exists.
  */
-SR_API int sr_session_datafeed_callback_add(sr_datafeed_callback_t cb, void *cb_data)
+SR_PRIV int sr_session_datafeed_callback_add(sr_datafeed_callback_t cb, void *cb_data)
 {
 	struct datafeed_callback *cb_struct;
 

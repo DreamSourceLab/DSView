@@ -1919,7 +1919,7 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
     if (sdi->status == SR_ST_ACTIVE) {
         if (!(*fpga_done)) {
             char *fpga_bit;
-            char *res_path = sr_get_firmware_res_path();
+            char *res_path = DS_RES_PATH;
             if (!(fpga_bit = g_try_malloc(strlen(res_path)+strlen(devc->profile->fpga_bit33)+1))) {
                 sr_err("fpag_bit path malloc error!");
                 return SR_ERR_MALLOC;

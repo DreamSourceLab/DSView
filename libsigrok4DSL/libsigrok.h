@@ -160,11 +160,6 @@ enum {
 #define SR_PRIV
 #endif
 
-
-#define USB_EV_HOTPLUG_UNKNOW		0
-#define USB_EV_HOTPLUG_ATTACH		1
-#define USB_EV_HOTPLUG_DETTACH		2
-
 typedef unsigned long long sr_device_handle;
 
 enum sr_device_type{
@@ -1263,11 +1258,6 @@ struct ds_trigger_pos {
 /*--- backend.c -------------------------------------------------------------*/
 
 //@event, 1:attach, 2:left
-typedef void (*hotplug_event_callback)(void *context,void *device, int event, void *userdata);
-SR_API int sr_listen_hotplug(struct sr_context *ctx, hotplug_event_callback callback, void *userdata);
-SR_API int sr_close_hotplug(struct sr_context *ctx);
-SR_API void sr_hotplug_wait_timout(struct sr_context *ctx);
-
 SR_PRIV int sr_init(struct sr_context **ctx);
 SR_PRIV int sr_exit(struct sr_context *ctx);
 
@@ -1327,8 +1317,7 @@ SR_API int sr_session_dev_list(GSList **devlist);
 
 /* Datafeed setup */
 SR_API int sr_session_datafeed_callback_remove_all(void);
-SR_API int sr_session_datafeed_callback_add(sr_datafeed_callback_t cb,
-		void *cb_data);
+
 
 /* Session control */
 SR_API int sr_session_start(void);
@@ -1478,7 +1467,7 @@ SR_API void sr_set_firmware_resource_dir(const char *dir);
 
 /**
  * Get the device list, the last item is null.
- * Call free to release buffer. If the list is empty, it returns null.
+ * User need call free() to release the buffer. If the list is empty, it returns null.
  */
 SR_API struct sr_device_info* sr_device_get_list(int *out_count);
 
@@ -1487,6 +1476,13 @@ SR_API struct sr_device_info* sr_device_get_list(int *out_count);
  * If the old actived device is hardware, maybe user need store the data first.
  */
 SR_API int sr_device_select(sr_device_handle handle);
+
+/**
+ * Active a device, if success, it will trigs the event of EV_CURRENT_DEVICE_CHANGED.
+ * If the old actived device is hardware, maybe user need store the data first.
+ * @index is -1, will select the last one.
+ */
+SR_API int sr_device_select_by_index(int index);
 
 /**
  * Create a device from session file, it auto load the data.
