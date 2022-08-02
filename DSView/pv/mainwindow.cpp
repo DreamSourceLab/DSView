@@ -1266,8 +1266,7 @@ bool MainWindow::on_store_session(QString name)
     QJsonObject sessionVar;
     if (!gen_session_json(sessionVar))
         return false;
-    QJsonDocument sessionDoc(sessionVar);
-    //sessionFile.write(QString::fromUtf8(sessionDoc.toJson()));
+    QJsonDocument sessionDoc(sessionVar); 
     outStream << QString::fromUtf8(sessionDoc.toJson());
     sessionFile.close(); 
     return true;
@@ -1280,7 +1279,7 @@ bool MainWindow::genSessionData(std::string &str)
         return false;
     QJsonDocument sessionDoc(sessionVar);
     QString data = QString::fromUtf8(sessionDoc.toJson());
-    str.append(data.toLatin1().data());
+    str.append(data.toLocal8Bit().data());
     return true;
 }
 

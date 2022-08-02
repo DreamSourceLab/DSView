@@ -81,8 +81,9 @@ QJsonArray File::get_decoders()
     ZipReader rd(f_name.c_str());
     auto *data = rd.GetInnterFileData("decoders");
 
-    if (data != NULL){ 
-        QString jsonStr(data->data());
+    if (data != NULL){
+        QByteArray raw_bytes = QByteArray::fromRawData(data->data(), data->size());
+        QString jsonStr(raw_bytes.data());
         QByteArray qbs = jsonStr.toUtf8(); 
         QJsonDocument sessionDoc = QJsonDocument::fromJson(qbs, &error);
 
@@ -108,8 +109,9 @@ QJsonDocument File::get_session()
     auto *data = rd.GetInnterFileData("session");
 
      if (data != NULL){
-        QString jsonStr(data->data());
-        QByteArray qbs = jsonStr.toUtf8(); 
+        QByteArray raw_bytes = QByteArray::fromRawData(data->data(), data->size());
+        QString jsonStr(raw_bytes.data());
+        QByteArray qbs = jsonStr.toUtf8();
         sessionDoc = QJsonDocument::fromJson(qbs, &error);
 
         if (error.error != QJsonParseError::NoError){

@@ -60,8 +60,8 @@
 #include "dsvdef.h"
 #include "utility/encoding.h"
 #include "utility/path.h"
-#include "log.h"
-
+#include "log.h" 
+#include <QDebug>
  
 namespace pv { 
 
@@ -875,8 +875,8 @@ bool StoreSession::decoders_gen(std::string &str)
     if (!json_decoders(dec_array))
         return false;
     QJsonDocument sessionDoc(dec_array);
-    QString data = QString::fromUtf8(sessionDoc.toJson());
-    str.append(data.toLatin1().data());
+    QString data = QString::fromUtf8(sessionDoc.toJson()); 
+    str = std::string(data.toLocal8Bit().data());
     return true;
 }
 
@@ -952,7 +952,7 @@ bool StoreSession::json_decoders(QJsonArray &array)
         auto rows = stack->get_rows_gshow();
         for (auto i = rows.begin(); i != rows.end(); i++) {
             pv::data::decode::Row _row = (*i).first;
-            QString kn(_row.title().toUtf8().data());
+            QString kn = _row.title();
             show_obj[kn] = QJsonValue::fromVariant((*i).second);
         }
         dec_obj["show"] = show_obj;
