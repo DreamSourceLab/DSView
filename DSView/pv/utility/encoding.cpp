@@ -36,8 +36,9 @@ namespace encoding{
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         stream.setEncoding(QStringConverter::Utf8);
 #else
-        QTextCodec *code = QTextCodec::codecForName("UTF-8");
-        stream.setCodec(code);
+        //QTextCodec *code = QTextCodec::codecForName("UTF-8");
+       // stream.setCodec(code);
+        stream.setCodec("UTF-8");
 #endif
     }
 }
