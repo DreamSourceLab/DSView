@@ -49,13 +49,13 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['IC', 'PC', 'Sensor']
     annotations = (
-        ('read', 'Register read commands'),
-        ('write', 'Register write commands'),
-        ('warning', 'Warnings'),
+        ('read', 'Register read'),
+        ('write', 'Register write'),
+        ('warning', 'Warning'),
     )
     annotation_rows = (
-        ('read', 'Read', (0,)),
-        ('write', 'Write', (1,)),
+        ('reads', 'Reads', (0,)),
+        ('writes', 'Writes', (1,)),
         ('warnings', 'Warnings', (2,)),
     )
 
@@ -108,10 +108,9 @@ class Decoder(srd.Decoder):
         reg_desc = regs.get(reg, 'Reserved %#x' % reg)
         if reg > 0x63:
             reg_desc = 'Unknown'
-        
         if write:
-            self.putx([1, ['%s: {$}' % reg_desc, '@%02X' % arg]])
+            self.putx([1, ['%s: %#x' % (reg_desc, arg)]])
         else:
-            self.putx([0, ['%s: {$}' % reg_desc, '@%02X' % arg]])
+            self.putx([0, ['%s: %d' % (reg_desc, arg)]])
 
         self.mosi_bytes = []
