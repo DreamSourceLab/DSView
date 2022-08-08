@@ -138,26 +138,26 @@ class Decoder(srd.Decoder):
     tags = ['Debug/trace']
     annotations = (
         ('trace', 'Trace info'),
-        ('branch', 'Branches'),
-        ('exception', 'Exceptions'),
+        ('branch', 'Branch'),
+        ('exception', 'Exception'),
         ('execution', 'Instruction execution'),
         ('data', 'Data access'),
         ('pc', 'Program counter'),
-        ('instr_e', 'Executed instructions'),
-        ('instr_n', 'Not executed instructions'),
+        ('instr_e', 'Executed instruction'),
+        ('instr_n', 'Not executed instruction'),
         ('source', 'Source code'),
         ('location', 'Current location'),
         ('function', 'Current function'),
     )
     annotation_rows = (
-        ('trace', 'Trace info', (0,)),
+        ('traces', 'Trace info', (0,)),
         ('flow', 'Code flow', (1, 2, 3,)),
-        ('data', 'Data access', (4,)),
-        ('pc', 'Program counter', (5,)),
-        ('instruction', 'Instructions', (6, 7,)),
-        ('source', 'Source code', (8,)),
-        ('location', 'Current location', (9,)),
-        ('function', 'Current function', (10,)),
+        ('data-vals', 'Data access', (4,)),
+        ('pc-vals', 'Program counters', (5,)),
+        ('instructions', 'Instructions', (6, 7,)),
+        ('sources', 'Source code', (8,)),
+        ('locations', 'Current locations', (9,)),
+        ('functions', 'Current functions', (10,)),
     )
     options = (
         {'id': 'objdump', 'desc': 'objdump path',
