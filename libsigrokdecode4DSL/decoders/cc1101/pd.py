@@ -19,16 +19,14 @@
 
 import sigrokdecode as srd
 from collections import namedtuple
+from common.srdhelper import SrdIntEnum
 from .lists import *
 
-ANN_STROBE, ANN_SINGLE_READ, ANN_SINGLE_WRITE, ANN_BURST_READ, \
-    ANN_BURST_WRITE, ANN_STATUS_READ, ANN_STATUS, ANN_WARN = range(8)
+Ann = SrdIntEnum.from_str('Ann', 'STROBE SINGLE_READ SINGLE_WRITE BURST_READ \
+    BURST_WRITE STATUS_READ STATUS WARN')
 
 Pos = namedtuple('Pos', ['ss', 'es'])
 Data = namedtuple('Data', ['mosi', 'miso'])
-
-class ChannelError(Exception):
-    pass
 
 class Decoder(srd.Decoder):
     api_version = 3
@@ -47,15 +45,14 @@ class Decoder(srd.Decoder):
         ('burst_read', 'Burst register read'),
         ('burst_write', 'Burst register write'),
         ('status_read', 'Status read'),
-        ('status', 'Status register'),
+        ('status_reg', 'Status register'),
         ('warning', 'Warning'),
     )
     annotation_rows = (
-        ('cmd', 'Commands', (ANN_STROBE,)),
-        ('data', 'Data', (ANN_SINGLE_READ, ANN_SINGLE_WRITE, ANN_BURST_READ,
-                            ANN_BURST_WRITE, ANN_STATUS_READ)),
-        ('status', 'Status register', (ANN_STATUS,)),
-        ('warnings', 'Warnings', (ANN_WARN,)),
+        ('cmds', 'Commands', (Ann.STROBE,)),
+        ('data', 'Data', (Ann.prefixes('SINGLE_ BURST_ STATUS_'))),
+        ('status', 'Status register', (Ann.STATUS,)),
+        ('warnings', 'Warnings', (Ann.WARN,)),
     )
 
     def __init__(self):
@@ -71,10 +68,15 @@ class Decoder(srd.Decoder):
 
     def warn(self, pos, msg):
         '''Put a warning message 'msg' at 'pos'.'''
-        self.put(pos.ss, pos.es, self.out_ann, [ANN_WARN, [msg]])
+        self.put(pos.ss, pos.es, self.out_ann, [Ann.WARN, [msg]])
 
-    def put_ann(self, pos, ann, data): 
-        self.put(pos.ss, pos.es, self.out_ann, [ann, data])
+    def putp(self, pos, ann, msg):
+        '''Put an annotation message 'msg' at 'pos'.'''
+        self.put(pos.ss, pos.es, self.out_ann, [ann, [msg]])
+
+    def putp2(self, pos, ann, msg1, msg2):
+        '''Put an annotation message 'msg' at 'pos'.'''
+        self.put(pos.ss, pos.es, self.out_ann, [ann, [msg1, msg2]])
 
     def next(self):
         '''Resets the decoder after a complete command was decoded.'''
@@ -112,7 +114,7 @@ class Decoder(srd.Decoder):
         self.cmd, self.dat, self.min, self.max = c
 
         if self.cmd == 'Strobe':
-            self.put_ann(pos, ANN_STROBE, [self.format_command()])
+            self.putp(pos, Ann.STROBE, self.format_command())
         else:
             # Don't output anything now, the command is merged with
             # the data bytes following it.
@@ -177,7 +179,7 @@ class Decoder(srd.Decoder):
         else:
             name = regid
 
-        if regid == 'STATUS' and ann == ANN_STATUS:
+        if regid == 'STATUS' and ann == Ann.STATUS:
             label = 'Status'
             self.decode_status_reg(pos, ann, data, label)
         else:
@@ -206,10 +208,9 @@ class Decoder(srd.Decoder):
         else:
             longtext_fifo = '{} bytes free in TX FIFO'.format(fifo_bytes)
 
-        text = '{} = '.format(label) + '{$}'
+        text = '{} = {:02X}'.format(label, status)
         longtext = ''.join([text, '; ', longtext_chiprdy, longtext_state, longtext_fifo])
-        #self.printlog(longtext + '   ,' + text + '\n')
-        self.put_ann(pos, ann, [longtext, text, '@%02X' % status])
+        self.putp2(pos, ann, longtext, text)
 
     def decode_mb_data(self, pos, ann, data, label):
         '''Decodes the data bytes 'data' of a multibyte command at position
@@ -219,24 +220,24 @@ class Decoder(srd.Decoder):
             return '{:02X}'.format(b)
 
         data = ' '.join([escape(b) for b in data])
-        text = '{} = '.format(label) + '{$}' 
-        self.put_ann(pos, ann, [text, '@' + data])
+        text = '{} = {}'.format(label, data)
+        self.putp(pos, ann, text)
 
     def finish_command(self, pos):
         '''Decodes the remaining data bytes at position 'pos'.'''
 
         if self.cmd == 'Write':
-            self.decode_reg(pos, ANN_SINGLE_WRITE, self.dat, self.mosi_bytes())
+            self.decode_reg(pos, Ann.SINGLE_WRITE, self.dat, self.mosi_bytes())
         elif self.cmd == 'Burst write':
-            self.decode_reg(pos, ANN_BURST_WRITE, self.dat, self.mosi_bytes())
+            self.decode_reg(pos, Ann.BURST_WRITE, self.dat, self.mosi_bytes())
         elif self.cmd == 'Read':
-            self.decode_reg(pos, ANN_SINGLE_READ, self.dat, self.miso_bytes())
+            self.decode_reg(pos, Ann.SINGLE_READ, self.dat, self.miso_bytes())
         elif self.cmd == 'Burst read':
-            self.decode_reg(pos, ANN_BURST_READ, self.dat, self.miso_bytes())
+            self.decode_reg(pos, Ann.BURST_READ, self.dat, self.miso_bytes())
         elif self.cmd == 'Strobe':
-            self.decode_reg(pos, ANN_STROBE, self.dat, self.mosi_bytes())
+            self.decode_reg(pos, Ann.STROBE, self.dat, self.mosi_bytes())
         elif self.cmd == 'Status read':
-            self.decode_reg(pos, ANN_STATUS_READ, self.dat, self.miso_bytes())
+            self.decode_reg(pos, Ann.STATUS_READ, self.dat, self.miso_bytes())
         else:
             self.warn(pos, 'unhandled command')
 
@@ -281,7 +282,7 @@ class Decoder(srd.Decoder):
                 # First MOSI byte is always the command.
                 self.decode_command(pos, mosi)
                 # First MISO byte is always the status register.
-                self.decode_reg(pos, ANN_STATUS, 'STATUS', [miso])
+                self.decode_reg(pos, Ann.STATUS, 'STATUS', [miso])
             else:
                 if not self.cmd or len(self.mb) >= self.max:
                     self.warn(pos, 'excess byte')
