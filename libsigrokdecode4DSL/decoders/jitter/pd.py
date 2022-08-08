@@ -51,13 +51,13 @@ class Decoder(srd.Decoder):
     )
     annotations = (
         ('jitter', 'Jitter value'),
-        ('clk_missed', 'Clock missed'),
-        ('sig_missed', 'Signal missed'),
+        ('clk_miss', 'Clock miss'),
+        ('sig_miss', 'Signal miss'),
     )
     annotation_rows = (
-        ('jitter', 'Jitter values', (0,)),
-        ('clk_missed', 'Clock missed', (1,)),
-        ('sig_missed', 'Signal missed', (2,)),
+        ('jitter_vals', 'Jitter values', (0,)),
+        ('clk_misses', 'Clock misses', (1,)),
+        ('sig_misses', 'Signal misses', (2,)),
     )
     binary = (
         ('ascii-float', 'Jitter values as newline-separated ASCII floats'),
@@ -181,7 +181,7 @@ class Decoder(srd.Decoder):
             raise SamplerateError('Cannot decode without samplerate.')
         while True:
             # Wait for a transition on CLK and/or SIG.
-            (clk, sig) = self.wait([{0: 'e'}, {1: 'e'}])
+            clk, sig = self.wait([{0: 'e'}, {1: 'e'}])
 
             # State machine:
             # For each sample we can move 2 steps forward in the state machine.
