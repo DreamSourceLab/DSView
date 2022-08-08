@@ -2,6 +2,7 @@
 ## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2019 Rene Staffen
+## Copyright (C) 2020-2021 Gerhard Sittig <gerhard.sittig@gmx.net>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -61,11 +62,23 @@ class IrmpLibrary:
         Lookup the C library's API routines. Declare their prototypes.
         '''
 
-        if not self._lib:
-            return False
-
         self._lib.irmp_get_sample_rate.restype = ctypes.c_uint32
         self._lib.irmp_get_sample_rate.argtypes = []
+
+        self._lib.irmp_instance_alloc.restype = ctypes.c_void_p
+        self._lib.irmp_instance_alloc.argtypes = []
+
+        self._lib.irmp_instance_free.restype = None
+        self._lib.irmp_instance_free.argtypes = [ ctypes.c_void_p, ]
+
+        self._lib.irmp_instance_id.restype = ctypes.c_size_t
+        self._lib.irmp_instance_id.argtypes = [ ctypes.c_void_p, ]
+
+        self._lib.irmp_instance_lock.restype = ctypes.c_int
+        self._lib.irmp_instance_lock.argtypes = [ ctypes.c_void_p, ctypes.c_int, ]
+
+        self._lib.irmp_instance_unlock.restype = None
+        self._lib.irmp_instance_unlock.argtypes = [ ctypes.c_void_p, ]
 
         self._lib.irmp_reset_state.restype = None
         self._lib.irmp_reset_state.argtypes = []
@@ -85,6 +98,7 @@ class IrmpLibrary:
 
         # Create a result buffer that's local to the library instance.
         self._data = self.ResultData()
+        self._inst = None
 
         return True
 
@@ -93,30 +107,47 @@ class IrmpLibrary:
         Create a library instance.
         '''
 
-        # Only create a working instance for the first invocation.
-        # Degrade all other instances, make them fail "late" during
-        # execution, so that users will see the errors.
-        self._lib = None
-        self._data = None
-        if IrmpLibrary.__usable_instance is None:
-            filename = self._library_filename()
-            self._lib = ctypes.cdll.LoadLibrary(filename)
-            self._library_setup_api()
-            IrmpLibrary.__usable_instance = self
+        filename = self._library_filename()
+        self._lib = ctypes.cdll.LoadLibrary(filename)
+        self._library_setup_api()
+
+    def __del__(self):
+        '''
+        Release a disposed library instance.
+        '''
+
+        if self._inst:
+            self._lib.irmp_instance_free(self._inst)
+        self._inst = None
+
+    def __enter__(self):
+        '''
+        Enter a context (lock management).
+        '''
+
+        if self._inst is None:
+            self._inst = self._lib.irmp_instance_alloc()
+        self._lib.irmp_instance_lock(self._inst, 1)
+        return self
+
+    def __exit__(self, extype, exvalue, trace):
+        '''
+        Leave a context (lock management).
+        '''
+
+        self._lib.irmp_instance_unlock(self._inst)
+        return False
+
+    def client_id(self):
+        return self._lib.irmp_instance_id(self._inst)
 
     def get_sample_rate(self):
-        if not self._lib:
-            return None
         return self._lib.irmp_get_sample_rate()
 
     def reset_state(self):
-        if not self._lib:
-            return None
         self._lib.irmp_reset_state()
 
     def add_one_sample(self, level):
-        if not self._lib:
-            raise Exception("IRMP library limited to a single instance.")
         if not self._lib.irmp_add_one_sample(int(level)):
             return False
         self._lib.irmp_get_result_data(ctypes.byref(self._data))
