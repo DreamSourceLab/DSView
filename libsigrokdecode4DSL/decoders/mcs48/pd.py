@@ -19,6 +19,10 @@
 ##
 
 import sigrokdecode as srd
+from common.srdhelper import SrdIntEnum
+
+Ann = SrdIntEnum.from_str('Ann', 'ROMDATA')
+Bin = SrdIntEnum.from_str('Bin', 'ROMDATA')
 
 class ChannelError(Exception):
     pass
@@ -59,6 +63,10 @@ class Decoder(srd.Decoder):
     binary = (
         ('romdata', 'AAAA:DD'),
     )
+    OFF_ALE, OFF_PSEN = 0, 1
+    OFF_DATA_BOT, OFF_DATA_TOP = 2, 10
+    OFF_ADDR_BOT, OFF_ADDR_TOP = 10, 14
+    OFF_BANK_BOT, OFF_BANK_TOP = 14, 15
 
     def __init__(self):
         self.reset()
@@ -92,28 +100,28 @@ class Decoder(srd.Decoder):
         self.data_s = self.samplenum
         if self.started:
             anntext = '{:04X}:{:02X}'.format(self.addr, self.data)
-            self.put(self.addr_s, self.data_s, self.out_ann, [0, [anntext]])
+            self.put(self.addr_s, self.data_s, self.out_ann, [Ann.ROMDATA, [anntext]])
             bindata = self.addr.to_bytes(2, byteorder='big')
             bindata += self.data.to_bytes(1, byteorder='big')
-            self.put(self.addr_s, self.data_s, self.out_bin, [0, bindata])
+            self.put(self.addr_s, self.data_s, self.out_bin, [Bin.ROMDATA, bindata])
 
     def decode(self):
         # Address bits above A11 are optional, and are considered to be A12+.
         # This logic needs more adjustment when more bank address pins are
         # to get supported. For now, having just A12 is considered sufficient.
-        has_bank = self.has_channel(14)
+        has_bank = self.has_channel(self.OFF_BANK_BOT)
         bank_pin_count = 1 if has_bank else 0
         # Sample address on the falling ALE edge.
         # Save data on falling edge of PSEN.
         while True:
-            (ale, psen, d0, d1, d2, d3, d4, d5, d6, d7, a8, a9, a10, a11, a12) = self.wait([{0: 'f'}, {1: 'r'}])
-            data = (d0, d1, d2, d3, d4, d5, d6, d7)
-            addr = (a8, a9, a10, a11)
-            bank = (a12, )
+            pins = self.wait([{self.OFF_ALE: 'f'}, {self.OFF_PSEN: 'r'}])
+            data = pins[self.OFF_DATA_BOT:self.OFF_DATA_TOP]
+            addr = pins[self.OFF_ADDR_BOT:self.OFF_ADDR_TOP]
+            bank = pins[self.OFF_BANK_BOT:self.OFF_BANK_TOP]
             if has_bank:
                 addr += bank[:bank_pin_count]
             # Handle those conditions (one or more) that matched this time.
-            if (self.matched & (0b1 << 0)):
+            if self.matched[0]:
                 self.newaddr(addr, data)
-            if (self.matched & (0b1 << 1)):
+            if self.matched[1]:
                 self.newdata(data)
