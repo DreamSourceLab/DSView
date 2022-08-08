@@ -24,6 +24,8 @@ real-time control.
 This decoder assumes that a single CAN_RX line is sampled (e.g. on
 the digital output side of a CAN transceiver IC such as the Microchip
 MCP-2515DM-BM).
+
+It also has support for CAN-FD.
 '''
 
 from .pd import Decoder
