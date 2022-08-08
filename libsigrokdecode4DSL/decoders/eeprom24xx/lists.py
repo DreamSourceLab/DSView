@@ -189,6 +189,16 @@ chips = {
         'addr_pins': 3, # Called E0, E1, E2 on this chip.
         'max_speed': 400,
     },
+    'st_m24c32': {
+        'vendor': 'ST',
+        'model': 'M24C32',
+        'size': 4 * 1024,
+        'page_size': 32,
+        'page_wraparound': True,
+        'addr_bytes': 2,
+        'addr_pins': 3, # Called E0, E1, E2 on this chip.
+        'max_speed': 1000,
+    },
 
     # Xicor
     'xicor_x24c02': {

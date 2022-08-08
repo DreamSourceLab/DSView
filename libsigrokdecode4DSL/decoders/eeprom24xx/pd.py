@@ -38,7 +38,7 @@ class Decoder(srd.Decoder):
     )
     annotations = (
         # Warnings
-        ('warnings', 'Warnings'),
+        ('warning', 'Warning'),
         # Bits/bytes
         ('control-code', 'Control code'),
         ('address-pin', 'Address pin (A0/A1/A2)'),
