@@ -40,7 +40,7 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Embedded/industrial', 'IC']
     annotations = (
-        ('text', 'Human-readable text'),
+        ('text', 'Text'),
     )
 
     def __init__(self):
