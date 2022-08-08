@@ -39,7 +39,7 @@ class Decoder(srd.Decoder):
     )
     annotations = (
         ('start-of-minute', 'Start of minute'),
-        ('special-bits', 'Special bits (civil warnings, weather forecast)'),
+        ('special-bit', 'Special bit (civil warnings, weather forecast)'),
         ('call-bit', 'Call bit'),
         ('summer-time', 'Summer time announcement'),
         ('cest', 'CEST bit'),
@@ -55,9 +55,9 @@ class Decoder(srd.Decoder):
         ('month', 'Month'),
         ('year', 'Year'),
         ('date-parity', 'Date parity bit'),
-        ('raw-bits', 'Raw bits'),
-        ('unknown-bits', 'Unknown bits'),
-        ('warnings', 'Human-readable warnings'),
+        ('raw-bit', 'Raw bit'),
+        ('unknown-bit', 'Unknown bit'),
+        ('warning', 'Warning'),
     )
     annotation_rows = (
         ('bits', 'Bits', (17, 18)),
