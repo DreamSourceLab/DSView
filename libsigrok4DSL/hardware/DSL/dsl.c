@@ -306,112 +306,82 @@ static int hw_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi)
 
     sr_info("%s", "Try to open device instance.");
 
-    assert(usb->devhdl == NULL);
+    if(usb->devhdl == NULL){
+        sr_err("%s", "hw_dev_open(), usb->devhdl is null.");
+        return SR_ERR;
+    }
+    if (usb->usb_dev == NULL){
+        sr_err("%s", "hw_dev_open(), usb->usb_dev is null.");
+        return SR_ERR;
+    }
+    if (usb->is_wait_re_connected){
+        sr_err("Device is waitting reconnect, handle:%p", usb->usb_dev);
+        return SR_ERR;
+    }
 
     if (sdi->status == SR_ST_ACTIVE) {
         /* Device is already in use. */
-        sr_info("%s", "Device is actived, can't to open.");
+        sr_info("Device is actived, can't to open, handle:%p", usb->usb_dev);
         return SR_ERR;
     }
 
-    skip = 0;
-    device_count = libusb_get_device_list(drvc->sr_ctx->libusb_ctx, &devlist);
-    if (device_count < 0) {
-        sr_err("Failed to get device list: %s.",
-               libusb_error_name(device_count));
+    if (sdi->status == SR_ST_INITIALIZING) {
+        sr_info("%s", "The device instance is still boosting.");        
+    }
+    dev_handel = usb->usb_dev;
+
+    sr_info("Open device instance, handle: %p", dev_handel);
+
+    if (libusb_open(dev_handel, &usb->devhdl) != 0){
+        sr_err("Failed to open device: %s, handle:%p",
+                libusb_error_name(ret), dev_handel);
         return SR_ERR;
     }
 
-    for (i = 0; i < device_count; i++) 
-    {
-        dev_handel = devlist[i];
-
-        if ((ret = libusb_get_device_descriptor(dev_handel, &des))) {
-            sr_err("Failed to get device descriptor: %s.",
-                   libusb_error_name(ret));
-            continue;
-        }
-
-        if (des.idVendor != devc->profile->vid
-            || des.idProduct != devc->profile->pid){
-            continue;
-        }
-
-        if (sdi->status == SR_ST_INITIALIZING) {
-            sr_info("%s", "The device instance is still boosting.");
-            if (skip != sdi->index) {
-                /* Skip devices of this type that aren't the one we want. */
-                sr_info("%s", "Skip devices of this type that aren't the one we want.");
-                skip += 1;
-                continue;
-            }
-        } 
-        else if (sdi->status == SR_ST_INACTIVE) {
-            /*
-             * This device is fully enumerated, so we need to find
-             * this device by vendor, product, bus and address.
-             */
-            sr_info("%s", "The device instance is live, but not use.");
-            if (libusb_get_bus_number(dev_handel) != usb->bus
-                || libusb_get_device_address(dev_handel) != usb->address){
-                /* This is not the one. */
-                    sr_info("%s", "Font a device, but is not the one.");
-                    continue;
-                }
-        }
-
-        sr_info("Open device instance, handle: %p", dev_handel);
-
-        if (!(ret = libusb_open(dev_handel, &usb->devhdl))) {
-            if (usb->address == 0xff)
-                /*
-                 * First time we touch this device after FW
-                 * upload, so we don't know the address yet.
-                 */
-                usb->address = libusb_get_device_address(dev_handel);
-        }
-        else {
-            sr_err("Failed to open device: %s.",
-                   libusb_error_name(ret));
-            break;
-        }
-
-        rd_cmd.header.dest = DSL_CTL_FW_VERSION;
-        rd_cmd.header.size = 2;
-        rd_cmd.data = rd_cmd_data;
-        if ((ret = command_ctl_rd(usb->devhdl, rd_cmd)) != SR_OK) {
-            sr_err("Failed to get firmware version.");
-            break;
-        }
-        vi.major = rd_cmd_data[0];
-        vi.minor = rd_cmd_data[1];
-
+    if (usb->address == 0xff){
         /*
-         * Different versions may have incompatible issue,
-         * Mark for up level process
-         */
-        if (vi.major != DSL_REQUIRED_VERSION_MAJOR) {
-            sr_err("Expected firmware version %d.%d, "
-                   "got %d.%d.", DSL_REQUIRED_VERSION_MAJOR, DSL_REQUIRED_VERSION_MINOR,
-                   vi.major, vi.minor);
-            sdi->status = SR_ST_INCOMPATIBLE;
-        } else {
-            sdi->status = SR_ST_ACTIVE;
-        }
+        * First time we touch this device after FW
+        * upload, so we don't know the address yet.
+        */
+        usb->address = libusb_get_device_address(dev_handel);
+    }
 
-        sr_info("Opened device %d on %d.%d, "
+    rd_cmd.header.dest = DSL_CTL_FW_VERSION;
+    rd_cmd.header.size = 2;
+    rd_cmd.data = rd_cmd_data;
+
+    if ((ret = command_ctl_rd(usb->devhdl, rd_cmd)) != SR_OK) {
+        sr_err("Failed to get firmware version.");
+        return ret;
+    }
+
+    vi.major = rd_cmd_data[0];
+    vi.minor = rd_cmd_data[1];
+
+    /*
+     * Different versions may have incompatible issue,
+     * Mark for up level process.
+    */
+    if (vi.major != DSL_REQUIRED_VERSION_MAJOR) {
+        sr_err("Expected firmware version %d.%d, "
+                "got %d.%d.", DSL_REQUIRED_VERSION_MAJOR, DSL_REQUIRED_VERSION_MINOR,
+                vi.major, vi.minor);
+        sdi->status = SR_ST_INCOMPATIBLE;
+    }
+    else {
+        sdi->status = SR_ST_ACTIVE;
+    }
+
+    sr_info("Opened device %p on %d.%d, "
             "interface %d, firmware %d.%d.",
-            sdi->index, usb->bus, usb->address,
+            usb->usb_dev, usb->bus, usb->address,
             USB_INTERFACE, vi.major, vi.minor);
 
-        break;
-    }
-    libusb_free_device_list(devlist, 1);
-
     if ((sdi->status != SR_ST_ACTIVE) &&
-        (sdi->status != SR_ST_INCOMPATIBLE))
+        (sdi->status != SR_ST_INCOMPATIBLE)){
         return SR_ERR;
-
+    }
+    
     return SR_OK;
 }
 
@@ -1963,7 +1933,7 @@ SR_PRIV int dsl_dev_close(struct sr_dev_inst *sdi)
 
     usb = sdi->conn;
     if (usb->devhdl == NULL){
-        sr_info("%s", "dsl_dev_close(),Device handle is null.");
+        sr_info("%s", "dsl_dev_close(),libusb_device_handle is null.");
         return SR_ERR;
     }
 
@@ -2521,9 +2491,9 @@ SR_PRIV int dsl_destroy_device(const struct sr_dev_inst *sdi)
     }
 
     if (sdi->conn) {
-        if (sdi->inst_type == SR_INST_USB)
+        if (sdi->dev_type == DEV_TYPE_USB)
             sr_usb_dev_inst_free(sdi->conn);
-        else if (sdi->inst_type == SR_INST_SERIAL)
+        else if (sdi->dev_type == DEV_TYPE_SERIAL)
             sr_serial_dev_inst_free(sdi->conn);
     }
 

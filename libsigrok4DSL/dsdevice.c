@@ -22,6 +22,7 @@
 #include <glib.h>
 #include "config.h" /* Needed for HAVE_LIBUSB_1_0 and others. */
 #include "log.h"
+#include <string.h>
 
 #undef LOG_PREFIX
 #define LOG_PREFIX "device: "
@@ -189,17 +190,19 @@ SR_PRIV struct sr_dev_inst *sr_dev_inst_new(int mode, int index, int status,
 
 	sdi->driver = NULL;
     sdi->mode = mode;
-	sdi->index = index;
+	sdi->name[0] = '\0';
 	sdi->status = status;
-	sdi->inst_type = -1;
 	sdi->vendor = vendor ? g_strdup(vendor) : NULL;
-	sdi->model = model ? g_strdup(model) : NULL;
 	sdi->version = version ? g_strdup(version) : NULL;
 	sdi->channels = NULL;
 	sdi->conn = NULL;
 	sdi->priv = NULL;
 	sdi->handle = (sr_device_handle)sdi;
 	sdi->dev_type = DEV_TYPE_UNKOWN;
+
+	if (model && *model){
+		strncpy(sdi->name, model, sizeof(sdi->name));
+	}
 
 	return sdi;
 }
@@ -235,7 +238,6 @@ SR_PRIV void sr_dev_inst_free(struct sr_dev_inst *sdi)
 
 	g_free(sdi->priv);
 	g_free(sdi->vendor);
-	g_free(sdi->model);
 	g_free(sdi->version);
 	g_free(sdi);
 }
@@ -254,6 +256,8 @@ SR_PRIV struct sr_usb_dev_inst *sr_usb_dev_inst_new(uint8_t bus,
 	udi->bus = bus;
 	udi->address = address;
 	udi->devhdl = hdl;
+	udi->usb_dev = NULL;
+	udi->is_wait_re_connected = 0;
 
 	return udi;
 }
@@ -331,10 +335,7 @@ SR_API const GSList *sr_dev_mode_list(const struct sr_dev_inst *sdi)
 
 SR_API int sr_dev_clear(const struct sr_dev_driver *driver)
 {
-	if (driver && driver->dev_clear)
-		return driver->dev_clear();
-	else
-		return SR_OK;
+     return SR_OK;
 }
 
 SR_API int sr_dev_open(struct sr_dev_inst *sdi)

@@ -63,6 +63,8 @@ extern "C" {
  * return codes, but never remove or redefine existing ones.
  */
 
+#define SR_LIB_NAME		"libsigrok"
+
 /** Status/error codes returned by libsigrok functions. */
 enum {
 	SR_OK             =  0, /**< No error. */
@@ -160,13 +162,12 @@ enum {
 #define SR_PRIV
 #endif
 
-typedef unsigned long long sr_device_handle;
-
 enum sr_device_type{
 	DEV_TYPE_UNKOWN = 0,
 	DEV_TYPE_DEMO = 1,
 	DEV_TYPE_FILELOG = 2,
-	DEV_TYPE_HARDWARE = 3,
+	DEV_TYPE_USB = 3,
+	DEV_TYPE_SERIAL = 4,
 };
   
 /** Data types used by sr_config_info(). */
@@ -334,6 +335,8 @@ enum {
 };
 
 struct sr_context; //hidden all field
+struct sr_dev_inst;
+struct sr_dev_driver;
 
 struct sr_datafeed_packet {
 	uint16_t type;
@@ -1069,45 +1072,6 @@ enum sr_config_option_id{
 	SR_CONF_DATALOG,
 };
 
-struct sr_dev_inst {
-    /** Device driver. */
-    struct sr_dev_driver *driver;
-	/**Identity. */
-	sr_device_handle handle; 
-	/** Device type:(demo,filelog,hardware). The type see enum sr_device_type. */
-	int dev_type;
-    /** Index of device in driver. */
-    int index;
-    /** Device instance status. SR_ST_NOT_FOUND, etc. */
-    int status;
-    /** Device instance type. SR_INST_USB, etc. */
-    int inst_type;
-    /** Device mode. LA/DAQ/OSC, etc. */
-    int mode;
-    /** Device vendor. */
-    char *vendor;
-    /** Device model. */
-    char *model;
-    /** Device version. */
-    char *version;
-    /** List of channels. */
-    GSList *channels;
-    /** List of sr_channel_group structs */
-    GSList *channel_groups;
-    /** Device instance connection data (used?) */
-    void *conn;
-    /** Device instance private data (used?) */
-    void *priv;
-};
-
-/** Types of device instances (sr_dev_inst). */
-enum {
-	/** Device instance type for USB devices. */
-	SR_INST_USB = 10000,
-	/** Device instance type for serial port devices. */
-	SR_INST_SERIAL,
-};
-
 /** Device instance status. */
 enum {
 	/** The device instance was not found. */
@@ -1174,52 +1138,6 @@ struct sr_dev_mode {
     int mode;
 	const char *name;
     const char *acronym;
-};
-
-static const struct sr_dev_mode sr_mode_list[] =
-{
-    {LOGIC,"Logic Analyzer","la"},
-    {ANALOG, "Data Acquisition", "daq"},
-    {DSO, "Oscilloscope", "osc"},
-};
-
-struct sr_dev_driver {
-	/* Driver-specific */
-	char *name;
-	char *longname;
-	int api_version;
-	int (*init) (struct sr_context *sr_ctx);
-	int (*cleanup) (void);
-	GSList *(*scan) (GSList *options);
-	GSList *(*dev_list) (void);
-    const GSList *(*dev_mode_list) (const struct sr_dev_inst *sdi);
-    int (*dev_clear) (void);
-
-    int (*config_get) (int id, GVariant **data,
-                       const struct sr_dev_inst *sdi,
-                       const struct sr_channel *ch,
-                       const struct sr_channel_group *cg);
-    int (*config_set) (int id, GVariant *data,
-                       struct sr_dev_inst *sdi,
-                       struct sr_channel *ch,
-                       struct sr_channel_group *cg);
-    int (*config_list) (int info_id, GVariant **data,
-                        const struct sr_dev_inst *sdi,
-                        const struct sr_channel_group *cg);
-
-	/* Device-specific */
-	int (*dev_open) (struct sr_dev_inst *sdi);
-	int (*dev_close) (struct sr_dev_inst *sdi);
-	int (*dev_destroy) (struct sr_dev_inst *sdi);
-    int (*dev_status_get) (const struct sr_dev_inst *sdi,
-                           struct sr_status *status, gboolean prg);
-    int (*dev_acquisition_start) (struct sr_dev_inst *sdi,
-			void *cb_data);
-    int (*dev_acquisition_stop) (const struct sr_dev_inst *sdi,
-			void *cb_data);
-
-	/* Dynamic */
-	void *priv;
 };
  
 enum {
@@ -1391,43 +1309,48 @@ SR_API void sr_log_level(int level);
 /*---event define ---------------------------------------------*/
 enum libsigrok_event_type
 {
-	// A new device attachs, user need calls sr_device_get_list to get the list,
-	// and  call sr_device_select to swith a new device.
-	EV_DEVICE_ATTACH = 0, 
+	// A new device attached, user need to call sr_device_get_list to get the list,
+	// the last one is new.
+	// User can call sr_device_select() to switch to the current device.
+	SR_EV_NEW_DEVICE_ATTACH = 0, 
 
-	// A device detachs, user need calls sr_device_get_list to get the list,
-	// and  call sr_device_select to swith a new device.
-	EV_DEVICE_DETACH = 1, 
+	// The current device detached, user need to call sr_device_get_list to get the list,
+	// and call sr_device_select() to switch to the current device.
+	SR_EV_CURRENT_DEVICE_DETACH = 1, 
 
-	// User can call sr_device_get_list to get new list, and update the data view.
-	EV_CURRENT_DEVICE_CHANGED = 2,
+	// A inactive device detached.
+	// User can call sr_device_get_list() to get the new list, and update the list view.
+	SR_EV_INACTIVE_DEVICE_DETACH = 2,
 
-	// User can call sr_device_get_list to get new list, and update the list view.
-	EV_DEVICE_LIST_CHANGED = 3,
+	// The current device switch success.
+	// User can call sr_device_get_list() to get new list, and update the data view.
+	SR_EV_CURRENT_DEVICE_CHANGED = 3,
 };
+
+typedef unsigned long long sr_device_handle;
 
 /**
  * Device base info
  */
 struct sr_device_info
 {
-	sr_device_handle _handle;
-	char 	_name[50];
-	int 	_dev_type; // enum sr_device_type
-	int 	_is_current; //is actived
+	sr_device_handle handle;
+	char 	name[50];
+	int 	dev_type; // enum sr_device_type
+	int 	is_current; //is actived
 };
 
 struct sr_task_progress
 {
-	int _progress;
-	int _is_end;
+	int progress;
+	int is_end;
 };
 
 struct sr_store_extra_data
 {
-	char _name[50];
-	char *_data;
-	int  _data_length;
+	char name[50];
+	char *data;
+	int  data_length;
 };
 
 
@@ -1451,7 +1374,7 @@ SR_API int sr_lib_exit();
 /**
  * Set event callback, event type see enum libsigrok_event_type
  */
-SR_API void sr_set_event_callback(libsigrok_event_callback_t *cb);
+SR_API void sr_set_event_callback(libsigrok_event_callback_t cb);
 
 /**
  * By default, the library can manage data by itself. If set the callback, 
@@ -1466,20 +1389,18 @@ SR_API int sr_set_datafeed_callback(sr_datafeed_callback_t cb, void *cb_data);
 SR_API void sr_set_firmware_resource_dir(const char *dir);
 
 /**
- * Get the device list, the last item is null.
- * User need call free() to release the buffer. If the list is empty, it returns null.
+ * Get the device list, if the field _handle is 0, the list visited to end.
+ * User need call free() to release the buffer. If the list is empty, the out_list is null.
  */
-SR_API struct sr_device_info* sr_device_get_list(int *out_count);
+SR_API int sr_device_get_list(struct sr_device_info** out_list, int *out_count);
 
 /**
- * Active a device, if success, it will trigs the event of EV_CURRENT_DEVICE_CHANGED.
- * If the old actived device is hardware, maybe user need store the data first.
+ * Active a device, if success, it will trigs the event of SR_EV_CURRENT_DEVICE_CHANGED.
  */
 SR_API int sr_device_select(sr_device_handle handle);
 
 /**
- * Active a device, if success, it will trigs the event of EV_CURRENT_DEVICE_CHANGED.
- * If the old actived device is hardware, maybe user need store the data first.
+ * Active a device, if success, it will trigs the event of SR_EV_CURRENT_DEVICE_CHANGED.
  * @index is -1, will select the last one.
  */
 SR_API int sr_device_select_by_index(int index);
@@ -1490,16 +1411,16 @@ SR_API int sr_device_select_by_index(int index);
 SR_API int sr_device_from_file(const char *file_path);
 
 /**
- * Get current sample count
+ * Remove one device from the list, and destory it.
+ * User need to call sr_device_get_list() to get the new list.
  */
-SR_API uint64_t sr_sample_count();
+SR_API int sr_remove_device(sr_device_handle handle);
 
 /**
- * Store current session data.
- * @ext_data_array is the extra data.
+ * Get the current device info.
+ * If the current device is not exists, the handle filed will be set null.
  */
-SR_API int sr_store_session_data(struct sr_task_progress *prog, const char *file_path, 
-				struct sr_store_extra_data *ext_data_array, int ext_data_count);
+SR_API int sr_get_current_device_info(struct sr_device_info *info);
 
 /**
  * Start collect data

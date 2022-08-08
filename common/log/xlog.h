@@ -63,12 +63,17 @@ typedef struct xlog_writer xlog_writer;
 /**
  * 	define log data receiver type
 */
-typedef void (*xlog_receiver)(const char *data, int length);
+typedef void (*xlog_receive_callback)(const char *data, int length);
 
 /*
 	create a log context, the console is default log receiver
 */
 XLOG_API xlog_context* xlog_new();
+
+/*
+	create a log context
+*/
+XLOG_API xlog_context* xlog_new2(int bConsole);
 
 /**
  * 	free a log context, return 0 if success.
@@ -79,7 +84,7 @@ XLOG_API void xlog_free(xlog_context* ctx);
 /**
  * 	append a log data receiver, return 0 if success.
  */
-XLOG_API int xlog_add_receiver(xlog_context* ctx, xlog_receiver rev, int *out_index);
+XLOG_API int xlog_add_receiver(xlog_context* ctx, xlog_receive_callback rev, int *out_index);
 
 /**
  * 	append a log data receiver, return 0 if success.

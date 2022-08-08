@@ -61,13 +61,6 @@ extern struct ds_trigger *trigger;
 
 static int hw_dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data);
 
-static int clear_instances(void)
-{
-	/* Nothing needed so far. */
-
-	return SR_OK;
-}
-
 static int hw_init(struct sr_context *sr_ctx)
 {
 	return std_hw_init(sr_ctx, di, LOG_PREFIX);
@@ -246,29 +239,9 @@ static int dev_destroy(struct sr_dev_inst *sdi)
 }
 
 static int hw_cleanup(void)
-{
-	GSList *l;
-	struct sr_dev_inst *sdi;
-	struct drv_context *drvc;
-	int ret = SR_OK;
+{ 
 
-	if (!(drvc = di->priv))
-		return SR_OK;
-
-	/* Properly close and free all devices. */
-	for (l = drvc->instances; l; l = l->next) {
-		if (!(sdi = l->data)) {
-			/* Log error, but continue cleaning up the rest. */
-			sr_err("%s: sdi was NULL, continuing", __func__);
-			ret = SR_ERR_BUG;
-			continue;
-		}
-		sr_dev_inst_free(sdi);
-	}
-	g_slist_free(drvc->instances);
-	drvc->instances = NULL;
-
-	return ret;
+	return 0;
 }
 
 static unsigned int en_ch_num(const struct sr_dev_inst *sdi)
@@ -1111,12 +1084,12 @@ SR_PRIV struct sr_dev_driver demo_driver_info = {
     .name = "virtual-demo",
 	.longname = "Demo driver and pattern generator",
 	.api_version = 1,
+    .driver_type = DRIVER_TYPE_DEMO,
 	.init = hw_init,
 	.cleanup = hw_cleanup,
 	.scan = hw_scan,
 	.dev_list = hw_dev_list,
     .dev_mode_list = hw_dev_mode_list,
-	.dev_clear = clear_instances,
 	.config_get = config_get,
 	.config_set = config_set,
 	.config_list = config_list,

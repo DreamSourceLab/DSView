@@ -136,10 +136,6 @@ static int sanity_check_all_drivers(void)
 			sr_err("No dev_list in driver %d ('%s').", i, d);
 			errors++;
 		}
-		if (!drivers[i]->dev_clear) {
-			sr_err("No dev_clear in driver %d ('%s').", i, d);
-			errors++;
-		}
 		/* Note: config_get() is optional. */
 		if (!drivers[i]->config_set) {
 			sr_err("No config_set in driver %d ('%s').", i, d);
@@ -302,8 +298,6 @@ SR_API int sr_init(struct sr_context **ctx)
 	int ret = SR_ERR;
 	struct sr_context *context;
 
-	sr_log_init(); //try init log
-
 	if (!ctx) {
 		sr_err("%s(): libsigrok context was NULL.", __func__);
 		return SR_ERR;
@@ -376,8 +370,6 @@ SR_API int sr_exit(struct sr_context *ctx)
 	libusb_exit(ctx->libusb_ctx);
 	
 	g_free(ctx);
-
-	sr_log_uninit(); //try uninit log
 
 	return SR_OK;
 }

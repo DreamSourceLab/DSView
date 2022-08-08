@@ -67,6 +67,89 @@ struct sr_context {
 	struct 					timeval hotplug_tv;
 };
 
+static const struct sr_dev_mode sr_mode_list[] =
+{
+    {LOGIC,"Logic Analyzer","la"},
+    {ANALOG, "Data Acquisition", "daq"},
+    {DSO, "Oscilloscope", "osc"},
+};
+
+enum sr_dev_driver_type
+{
+	DRIVER_TYPE_DEMO = 0,
+	DRIVER_TYPE_FILE = 1,
+	DRIVER_TYPE_HARDWARE = 2
+};
+
+struct sr_dev_driver {
+	/* Driver-specific */
+	char *name;
+	char *longname;
+	int api_version;
+	int driver_type; // enum sr_dev_driver_type
+	int (*init) (struct sr_context *sr_ctx);
+	int (*cleanup) (void);
+	GSList *(*scan) (GSList *options);
+	GSList *(*dev_list) (void);
+    const GSList *(*dev_mode_list) (const struct sr_dev_inst *sdi);
+
+    int (*config_get) (int id, GVariant **data,
+                       const struct sr_dev_inst *sdi,
+                       const struct sr_channel *ch,
+                       const struct sr_channel_group *cg);
+    int (*config_set) (int id, GVariant *data,
+                       struct sr_dev_inst *sdi,
+                       struct sr_channel *ch,
+                       struct sr_channel_group *cg);
+    int (*config_list) (int info_id, GVariant **data,
+                        const struct sr_dev_inst *sdi,
+                        const struct sr_channel_group *cg);
+
+	/* Device-specific */
+	int (*dev_open) (struct sr_dev_inst *sdi);
+	int (*dev_close) (struct sr_dev_inst *sdi);
+	int (*dev_destroy) (struct sr_dev_inst *sdi);
+    int (*dev_status_get) (const struct sr_dev_inst *sdi,
+                           struct sr_status *status, gboolean prg);
+    int (*dev_acquisition_start) (struct sr_dev_inst *sdi,
+			void *cb_data);
+    int (*dev_acquisition_stop) (const struct sr_dev_inst *sdi,
+			void *cb_data);
+
+	/* Dynamic */
+	void *priv;
+};
+
+struct sr_dev_inst {
+    /** Device driver. */
+    struct sr_dev_driver *driver;
+	/**Identity. */
+	sr_device_handle handle;
+	/** device name. */
+	char name[50];
+	/** Device type:(demo,filelog,hardware). The type see enum sr_device_type. */
+	int dev_type;
+    /** Index of device in driver. */
+    int index;
+    /** Device instance status. SR_ST_NOT_FOUND, etc. */
+    int status;
+    /** Device mode. LA/DAQ/OSC, etc. */
+    int mode;
+    /** Device vendor. */
+    char *vendor;
+ 
+    /** Device version. */
+    char *version;
+    /** List of channels. */
+    GSList *channels;
+    /** List of sr_channel_group structs */
+    GSList *channel_groups;
+    /** Device instance connection data (used?) */
+    void *conn;
+    /** Device instance private data (used?) */
+    void *priv;
+};
+
 struct sr_session {
 	/** List of struct sr_dev pointers. */
 	GSList *devs;
@@ -99,6 +182,8 @@ struct sr_usb_dev_inst {
 	uint8_t bus;
 	uint8_t address;
 	struct libusb_device_handle *devhdl;
+	struct libusb_device *usb_dev;
+	int    is_wait_re_connected;
 };
 
 #define SERIAL_PARITY_NONE 0
@@ -193,7 +278,6 @@ SR_PRIV int sr_session_datafeed_callback_add(sr_datafeed_callback_t cb,void *cb_
 /*--- std.c -----------------------------------------------------------------*/
 
 typedef int (*dev_close_t)(struct sr_dev_inst *sdi);
-typedef void (*std_dev_clear_t)(void *priv);
 
 SR_PRIV int std_hw_init(struct sr_context *sr_ctx, struct sr_dev_driver *di,
 		const char *prefix);
@@ -202,8 +286,6 @@ SR_PRIV int std_hw_dev_acquisition_stop_serial(struct sr_dev_inst *sdi,
 		struct sr_serial_dev_inst *serial, const char *prefix);
 SR_PRIV int std_session_send_df_header(const struct sr_dev_inst *sdi,
 		const char *prefix);
-SR_PRIV int std_dev_clear(const struct sr_dev_driver *driver,
-		std_dev_clear_t clear_private);
 
 /*--- trigger.c -------------------------------------------------*/
 SR_PRIV uint64_t sr_trigger_get_mask0(uint16_t stage);
@@ -271,5 +353,9 @@ SR_PRIV int sr_close_hotplug(struct sr_context *ctx);
 SR_PRIV void sr_hotplug_wait_timout(struct sr_context *ctx);
 
 /*--- lib_main.c -------------------------------------------------*/
+/**
+ * Check whether the USB device is in the device list.
+ */
+SR_PRIV int sr_usb_device_is_exists(libusb_device *usb_dev);
  
 #endif
