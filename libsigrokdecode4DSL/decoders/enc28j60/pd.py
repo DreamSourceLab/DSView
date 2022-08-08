@@ -67,9 +67,9 @@ class Decoder(srd.Decoder):
         ('warning', 'Warning'),
     )
     annotation_rows = (
+        ('fields', 'Fields', (ANN_DATA, ANN_REG_ADDR)),
         ('commands', 'Commands',
             (ANN_RCR, ANN_RBM, ANN_WCR, ANN_WBM, ANN_BFS, ANN_BFC, ANN_SRC)),
-        ('fields', 'Fields', (ANN_DATA, ANN_REG_ADDR)),
         ('warnings', 'Warnings', (ANN_WARNING,)),
     )
 
@@ -130,10 +130,14 @@ class Decoder(srd.Decoder):
 
         if reg_name is None:
             # We don't know the bank we're in yet.
-            self.putr([ANN_REG_ADDR, ['Reg Bank ? Addr {$}', '?:{$}', '@%02X' % reg_addr]])
-            self.putr([ANN_WARNING, ['Warning: Register bank not known yet.', 'Warning']])
+            self.putr([ANN_REG_ADDR, [
+                'Reg Bank ? Addr 0x{0:02X}'.format(reg_addr),
+                '?:{0:02X}'.format(reg_addr)]])
+            self.putr([ANN_WARNING, ['Warning: Register bank not known yet.',
+                                     'Warning']])
         else:
-            self.putr([ANN_REG_ADDR, ['Reg {0}'.format(reg_name), '{0}'.format(reg_name)]])
+            self.putr([ANN_REG_ADDR, ['Reg {0}'.format(reg_name),
+                                      '{0}'.format(reg_name)]])
 
             if (reg_name == '-') or (reg_name == 'Reserved'):
                 self.putr([ANN_WARNING, ['Warning: Invalid register accessed.',
@@ -147,9 +151,11 @@ class Decoder(srd.Decoder):
             self.range_es = self.ranges[byte_index + 1][0]
 
         if binary:
-            self.putr([ANN_DATA, ['Data 0b{0:08b}'.format(data), '{0:08b}'.format(data)]])
+            self.putr([ANN_DATA, ['Data 0b{0:08b}'.format(data),
+                                  '{0:08b}'.format(data)]])
         else:
-            self.putr([ANN_DATA, ['Data {$}','{S}', '@%02X' % data]])
+            self.putr([ANN_DATA, ['Data 0x{0:02X}'.format(data),
+                                  '{0:02X}'.format(data)]])
 
     def _put_command_warning(self, reason):
         self.putc([ANN_WARNING, ['Warning: {0}'.format(reason), 'Warning']])
