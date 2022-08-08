@@ -71,7 +71,7 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['IC', 'Memory']
     annotations = (
-        ('text', 'Human-readable text'),
+        ('text', 'Text'),
     )
     binary = (
         ('mem_read', 'Data read from memory'),
