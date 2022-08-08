@@ -42,7 +42,7 @@ class Decoder(srd.Decoder):
     )
     annotations = (
         ('bit', 'Bit'),
-        ('startbit', 'Startbit'),
+        ('startbit', 'Start bit'),
         ('sbit', 'Select bit'),
         ('ybit', 'Individual or group'),
         ('address', 'Address'),
@@ -52,7 +52,7 @@ class Decoder(srd.Decoder):
     )
     annotation_rows = (
         ('bits', 'Bits', (0,)),
-        ('raw', 'Raw data', (7,)),
+        ('raw-data', 'Raw data', (7,)),
         ('fields', 'Fields', (1, 2, 3, 4, 5, 6)),
     )
 
@@ -61,7 +61,6 @@ class Decoder(srd.Decoder):
 
     def reset(self):
         self.samplerate = None
-        self.samplenum = None
         self.edges, self.bits, self.ss_es_bits = [], [], []
         self.state = 'IDLE'
         self.dev_type = None
