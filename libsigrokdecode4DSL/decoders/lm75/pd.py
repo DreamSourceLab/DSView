@@ -55,11 +55,11 @@ class Decoder(srd.Decoder):
             'values': (9, 10, 11, 12)},
     )
     annotations = (
-        ('celsius', 'Temperature in degrees Celsius'),
-        ('kelvin', 'Temperature in Kelvin'),
-        ('text-verbose', 'Human-readable text (verbose)'),
-        ('text', 'Human-readable text'),
-        ('warnings', 'Human-readable warnings'),
+        ('celsius', 'Temperature / °C'),
+        ('kelvin', 'Temperature / Kelvin'),
+        ('text-verbose', 'Text (verbose)'),
+        ('text', 'Text'),
+        ('warning', 'Warning'),
     )
 
     def __init__(self):
