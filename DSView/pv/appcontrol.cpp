@@ -32,6 +32,8 @@
 #include "dsvdef.h"
 #include "config/appconfig.h"
 #include "log.h"
+#include <QTextCodec>
+#include <string.h>
 
 AppControl::AppControl()
 {
@@ -80,9 +82,17 @@ bool AppControl::Init()
     _session->set_sr_context(sr_ctx);
 
     QString resdir = GetResourceDir();
-	sr_set_firmware_resource_dir(resdir.toUtf8().data());
-
+    char res_path[256] = {0};
 #ifdef _WIN32
+    QTextCodec *codec = QTextCodec::codecForName("System");
+    QByteArray str_tmp = codec->fromUnicode(resdir);
+    strncpy(res_path, str_tmp.data(), sizeof(res_path) - 1);
+#else
+    strncpy(res_path, resdir.toUtf8().data(), sizeof(res_path) - 1);
+#endif
+	sr_set_firmware_resource_dir(res_path);
+
+#if defined(_WIN32) && defined(DEBUG_INFO)
     //able run debug with qtcreator
     QString pythonHome = "c:/python";
     QDir pydir;
