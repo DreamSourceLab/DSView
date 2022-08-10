@@ -201,6 +201,8 @@ static GSList *scan(GSList *options)
 	const char *conn;
     enum libusb_speed usb_speed;
     struct sr_usb_dev_inst *usb_dev_info;
+    uint8_t bus;
+    uint8_t address;
 
 	drvc = di->priv;
 
@@ -273,10 +275,13 @@ static GSList *scan(GSList *options)
 			continue;
 
         if (sr_usb_device_is_exists(device_handle)){
-            sr_info("Device is exists, handle: %p", device_handle);
-            continue;;
+            sr_detail("Device is exists, handle: %p", device_handle);
+            continue;
         }
-        sr_info("Got a new device handle: %p", device_handle);
+
+        bus = libusb_get_bus_number(device_handle);
+        address = libusb_get_device_address(device_handle);
+        sr_info("Found a new device,handle:%p,bus:%d,address:%d", device_handle, bus, address);
 
 		devcnt = g_slist_length(drvc->instances);
         devc = DSCope_dev_new(prof);
@@ -294,6 +299,7 @@ static GSList *scan(GSList *options)
         sdi->priv = devc;
 		sdi->driver = di;
         sdi->dev_type = DEV_TYPE_USB;
+        sdi->handle = (sr_device_handle)device_handle;
 
         /* Fill in probelist according to this device's profile. */
         if (dsl_setup_probes(sdi, channel_modes[devc->ch_mode].num) != SR_OK){
@@ -305,10 +311,9 @@ static GSList *scan(GSList *options)
 
 		if (dsl_check_conf_profile(device_handle)) {
 			/* Already has the firmware, so fix the new address. */
-            sr_info("Found a DSCope device, name: \"%s\"", prof->model);
-            
-            usb_dev_info = sr_usb_dev_inst_new(libusb_get_bus_number(device_handle),
-					                libusb_get_device_address(device_handle), NULL);
+            sr_info("Found a DSCope device,name:\"%s\",handle:%p", prof->model, device_handle);
+
+            usb_dev_info = sr_usb_dev_inst_new(bus, address, NULL);
             usb_dev_info->usb_dev = device_handle;
             sdi->conn = usb_dev_info;
             sdi->status = SR_ST_INACTIVE;          
@@ -322,6 +327,9 @@ static GSList *scan(GSList *options)
             }
             strcpy(firmware, res_path);
             strcat(firmware, prof->firmware);
+
+            sr_info("Install firmware bin file, device:\"%s\", file:\"%s\"", prof->model, firmware);
+
             if (ezusb_upload_firmware(device_handle, USB_CONFIGURATION,
                 firmware) == SR_OK)
 				/* Store when this device's FW was updated. */
@@ -331,7 +339,7 @@ static GSList *scan(GSList *options)
 				       "device %d.", devcnt);
             g_free(firmware);
             
-            usb_dev_info = sr_usb_dev_inst_new(libusb_get_bus_number(device_handle),0xff, NULL);
+            usb_dev_info = sr_usb_dev_inst_new(bus, 0xff, NULL);
             usb_dev_info->usb_dev = device_handle;
             sdi->conn = usb_dev_info;
 		}

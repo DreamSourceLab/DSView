@@ -1430,7 +1430,7 @@ SR_API int sr_device_start_collect();
 /**
  * Stop collect data
  */
-SR_API int sr_device_top_collect();
+SR_API int sr_device_stop_collect();
 
 
 #ifdef __cplusplus

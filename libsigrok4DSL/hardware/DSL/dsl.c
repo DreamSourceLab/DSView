@@ -258,6 +258,7 @@ SR_PRIV gboolean dsl_check_conf_profile(libusb_device *dev)
 
     hdl = NULL;
     ret = FALSE;
+
     while (!ret) {
         /* Assume the FW has not been loaded, unless proven wrong. */
         if (libusb_get_device_descriptor(dev, &des) != 0)
@@ -303,19 +304,9 @@ static int hw_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi)
     drvc = di->priv;
     devc = sdi->priv;
     usb = sdi->conn;
-
-    sr_info("%s", "Try to open device instance.");
-
-    if(usb->devhdl == NULL){
-        sr_err("%s", "hw_dev_open(), usb->devhdl is null.");
-        return SR_ERR;
-    }
+  
     if (usb->usb_dev == NULL){
         sr_err("%s", "hw_dev_open(), usb->usb_dev is null.");
-        return SR_ERR;
-    }
-    if (usb->is_wait_re_connected){
-        sr_err("Device is waitting reconnect, handle:%p", usb->usb_dev);
         return SR_ERR;
     }
 
@@ -1293,7 +1284,7 @@ SR_PRIV int dsl_fpga_config(struct libusb_device_handle *hdl, const char *filena
     uint8_t rd_cmd_data;
 	struct stat f_stat;
 
-    sr_info("Configure FPGA using %s", filename);
+    sr_info("Configure FPGA using \"%s\"", filename);
     if ((fw = fopen(filename, "rb")) == NULL) {
         sr_err("Unable to open FPGA bit file %s for reading: %s",
                filename, strerror(errno));
@@ -1933,7 +1924,7 @@ SR_PRIV int dsl_dev_close(struct sr_dev_inst *sdi)
 
     usb = sdi->conn;
     if (usb->devhdl == NULL){
-        sr_info("%s", "dsl_dev_close(),libusb_device_handle is null.");
+        sr_detail("%s", "dsl_dev_close(),libusb_device_handle is null.");
         return SR_ERR;
     }
 

@@ -183,7 +183,6 @@ struct sr_usb_dev_inst {
 	uint8_t address;
 	struct libusb_device_handle *devhdl;
 	struct libusb_device *usb_dev;
-	int    is_wait_re_connected;
 };
 
 #define SERIAL_PARITY_NONE 0
@@ -341,8 +340,7 @@ SR_PRIV int ezusb_upload_firmware(libusb_device *dev, int configuration,
 
 /*--- hardware/common/usb.c -------------------------------------------------*/
 
-SR_PRIV GSList *sr_usb_find(libusb_context *usb_ctx, const char *conn);
-SR_PRIV int sr_usb_open(libusb_context *usb_ctx, struct sr_usb_dev_inst *usb);
+SR_PRIV GSList *sr_usb_find(libusb_context *usb_ctx, const char *conn); 
 
 /*--- backend.c -------------------------------------------------------------*/
 SR_PRIV int sr_init(struct sr_context **ctx);

@@ -256,8 +256,7 @@ SR_PRIV struct sr_usb_dev_inst *sr_usb_dev_inst_new(uint8_t bus,
 	udi->bus = bus;
 	udi->address = address;
 	udi->devhdl = hdl;
-	udi->usb_dev = NULL;
-	udi->is_wait_re_connected = 0;
+	udi->usb_dev = NULL; 
 
 	return udi;
 }

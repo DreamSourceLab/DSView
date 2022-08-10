@@ -54,9 +54,6 @@ void usage()
 		"\n", DS_BIN_NAME, DS_DESCRIPTION);
 } 
 
-
-int main2();
-
 int main(int argc, char *argv[])
 {   
 	//return main2();
