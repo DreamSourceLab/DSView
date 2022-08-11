@@ -1036,6 +1036,12 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
     setting_ext32.align_bytes = 0xffff;
     setting_ext32.end_sync = 0xfa5afa5a;
 
+    if (trigger == NULL)
+    {
+        sr_err("%s", "Trigger have'nt inited.");
+        return SR_ERR_CALL_STATUS;
+    }
+
     // basic configuration
     setting.mode = (trigger->trigger_en << TRIG_EN_BIT) +
                    (devc->clock_type << CLK_TYPE_BIT) +
@@ -2089,7 +2095,7 @@ static void finish_acquisition(struct DSL_context *devc)
     /* Terminate session. */
     packet.type = SR_DF_END;
     packet.status = SR_PKT_OK;
-    sr_session_send(devc->cb_data, &packet);
+    ds_data_forward(devc->cb_data, &packet);
 
     if (devc->num_transfers != 0) {
         devc->num_transfers = 0;
@@ -2242,7 +2248,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
     if (devc->abort)
         devc->status = DSL_STOP;
 
-    sr_info("%llu: receive_transfer(): status %d; timeout %d; received %d bytes.",
+    sr_detail("%llu: receive_transfer(): status %d; timeout %d; received %d bytes.",
         g_get_monotonic_time(), transfer->status, transfer->timeout, transfer->actual_length);
 
     switch (transfer->status) {
@@ -2317,7 +2323,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
 
             /* send data to session bus */
             if (packet.status == SR_PKT_OK)
-                sr_session_send(sdi, &packet);
+                ds_data_forward(sdi, &packet);
         }
 
         devc->num_samples += cur_sample_count;
@@ -2381,7 +2387,7 @@ static void receive_header(struct libusb_transfer *transfer)
 
                 packet.type = SR_DF_TRIGGER;
                 packet.payload = trigger_pos;
-                sr_session_send(sdi, &packet);
+                ds_data_forward(sdi, &packet);
 
                 devc->status = DSL_DATA;
             }
@@ -2391,7 +2397,7 @@ static void receive_header(struct libusb_transfer *transfer)
         packet.type = SR_DF_TRIGGER;
         packet.payload = trigger_pos;
         packet.status = SR_PKT_DATA_ERROR;
-        sr_session_send(sdi, &packet);
+        ds_data_forward(sdi, &packet);
     }
 
     free_transfer(transfer);

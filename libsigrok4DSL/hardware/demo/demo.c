@@ -913,7 +913,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
                 demo_trigger_pos.real_pos = i;
                 packet.type = SR_DF_TRIGGER;
                 packet.payload = &demo_trigger_pos;
-                sr_session_send(sdi, &packet);
+                ds_data_forward(sdi, &packet);
             }
         }
 
@@ -960,7 +960,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
                 devc->pre_index += sending_now;
             }
 
-            sr_session_send(sdi, &packet);
+            ds_data_forward(sdi, &packet);
 
             devc->mstatus.trig_hit = (devc->trigger_stage == 0);
             devc->mstatus.captured_cnt0 = devc->samples_counter;
@@ -1062,7 +1062,7 @@ static int hw_dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data)
 	/* Send last packet. */
     packet.type = SR_DF_END;
     packet.status = SR_PKT_OK;
-    sr_session_send(sdi, &packet);
+    ds_data_forward(sdi, &packet);
 
 	return SR_OK;
 }

@@ -299,7 +299,7 @@ static GSList *scan(GSList *options)
         sdi->priv = devc;
 		sdi->driver = di;
         sdi->dev_type = DEV_TYPE_USB;
-        sdi->handle = (sr_device_handle)device_handle;
+        sdi->handle = (ds_device_handle)device_handle;
 
         /* Fill in probelist according to this device's profile. */
         if (dsl_setup_probes(sdi, channel_modes[devc->ch_mode].num) != SR_OK){

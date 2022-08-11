@@ -93,7 +93,7 @@ SR_PRIV int std_session_send_df_header(const struct sr_dev_inst *sdi,
 	header.feed_version = 1;
 	gettimeofday(&header.starttime, NULL);
 
-	if ((ret = sr_session_send(sdi, &packet)) < 0) {
+	if ((ret = ds_data_forward(sdi, &packet)) < 0) {
 		sr_err("%sFailed to send header packet: %d.", prefix, ret);
 		return ret;
 	}
@@ -154,7 +154,7 @@ SR_PRIV int std_hw_dev_acquisition_stop_serial(struct sr_dev_inst *sdi,
 	packet.type = SR_DF_END;
     packet.status = SR_PKT_OK;
 	packet.payload = NULL;
-	if ((ret = sr_session_send(cb_data, &packet)) < 0) {
+	if ((ret = ds_data_forward(cb_data, &packet)) < 0) {
 		sr_err("%sFailed to send SR_DF_END packet: %d.", prefix, ret);
 		return ret;
 	}

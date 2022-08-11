@@ -124,7 +124,7 @@ struct sr_dev_inst {
     /** Device driver. */
     struct sr_dev_driver *driver;
 	/**Identity. */
-	sr_device_handle handle;
+    ds_device_handle handle;
 	/** device name. */
 	char name[50];
 	/** Device type:(demo,filelog,hardware). The type see enum sr_device_type. */
@@ -150,11 +150,8 @@ struct sr_dev_inst {
     void *priv;
 };
 
-struct sr_session {
-	/** List of struct sr_dev pointers. */
-	GSList *devs;
-	/** List of struct datafeed_callback pointers. */
-	GSList *datafeed_callbacks;
+struct sr_session 
+{ 
     gboolean running;
 
 	unsigned int num_sources;
@@ -255,11 +252,7 @@ SR_PRIV int sr_source_add(int fd, int events, int timeout,
         sr_receive_data_callback_t cb, void *cb_data);
 
 /*--- session.c -------------------------------------------------------------*/
-
-SR_PRIV int sr_session_send(const struct sr_dev_inst *sdi,
-		const struct sr_datafeed_packet *packet);
-SR_PRIV int sr_session_stop_sync(void);
-
+ 
 SR_PRIV int usb_hotplug_callback(struct libusb_context *ctx, struct libusb_device *dev,
                                   libusb_hotplug_event event, void *user_data);
 
@@ -271,8 +264,7 @@ SR_PRIV int sr_session_source_add_channel(GIOChannel *channel, int events,
 		int timeout, sr_receive_data_callback_t cb, const struct sr_dev_inst *sdi);
 SR_PRIV int sr_session_source_remove(int fd);
 SR_PRIV int sr_session_source_remove_pollfd(GPollFD *pollfd);
-SR_PRIV int sr_session_source_remove_channel(GIOChannel *channel);
-SR_PRIV int sr_session_datafeed_callback_add(sr_datafeed_callback_t cb,void *cb_data);
+SR_PRIV int sr_session_source_remove_channel(GIOChannel *channel); 
 
 /*--- std.c -----------------------------------------------------------------*/
 
@@ -300,6 +292,9 @@ SR_PRIV uint16_t ds_trigger_get_edge0(uint16_t stage, uint16_t msc, uint16_t lsc
 SR_PRIV uint16_t ds_trigger_get_mask1(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
 SR_PRIV uint16_t ds_trigger_get_value1(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
 SR_PRIV uint16_t ds_trigger_get_edge1(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
+
+SR_PRIV int ds_trigger_init(void);
+SR_PRIV int ds_trigger_destroy(void);
 
 /*--- hardware/common/serial.c ----------------------------------------------*/
 
@@ -355,5 +350,13 @@ SR_PRIV void sr_hotplug_wait_timout(struct sr_context *ctx);
  * Check whether the USB device is in the device list.
  */
 SR_PRIV int sr_usb_device_is_exists(libusb_device *usb_dev);
+
+/**
+ * Forward the data.
+ */
+SR_PRIV int ds_data_forward(const struct sr_dev_inst *sdi,
+						const struct sr_datafeed_packet *packet);
+
+SR_PRIV int current_device_acquisition_stop();
  
 #endif

@@ -366,7 +366,7 @@ static GSList *scan(GSList *options)
         sdi->priv = devc;
 		sdi->driver = di;
         sdi->dev_type = DEV_TYPE_USB;
-        sdi->handle = (sr_device_handle)device_handle;
+        sdi->handle = (ds_device_handle)device_handle;
  
         /* Fill in probelist according to this device's profile. */
         if (dsl_setup_probes(sdi, channel_modes[devc->ch_mode].num) != SR_OK){
@@ -1247,7 +1247,7 @@ static void report_overflow(struct DSL_context *devc)
     packet.status = SR_PKT_OK;
     packet.type = SR_DF_OVERFLOW;
     packet.payload = NULL;
-    sr_session_send(sdi, &packet);
+    ds_data_forward(sdi, &packet);
 }
 
 static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)

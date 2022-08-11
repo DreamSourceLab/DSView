@@ -174,7 +174,7 @@ static void send_error_packet(const struct sr_dev_inst *cb_sdi, struct session_v
 {
     packet->type = SR_DF_END;
     packet->status = SR_PKT_SOURCE_ERROR;
-    sr_session_send(cb_sdi, packet);
+    ds_data_forward(cb_sdi, packet);
     sr_session_source_remove(-1);
     close_archive(vdev);
 }
@@ -311,7 +311,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
                 }
 
                 vdev->bytes_read += ret;
-                sr_session_send(cb_sdi, &packet);
+                ds_data_forward(cb_sdi, &packet);
             }
             else{
                 /* done with this capture file */
@@ -335,7 +335,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *cb_sdi)
 
     if (!vdev || vdev->cur_channel >= vdev->num_probes || revents == -1) {
 		packet.type = SR_DF_END;
-		sr_session_send(cb_sdi, &packet);
+		ds_data_forward(cb_sdi, &packet);
 		sr_session_source_remove(-1);
 
         if (NULL != vdev){
@@ -1006,7 +1006,7 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi,
             session_trigger.real_pos = vdev->trig_pos;
         packet.type = SR_DF_TRIGGER;
         packet.payload = &session_trigger;
-        sr_session_send(sdi, &packet);
+        ds_data_forward(sdi, &packet);
     }
 
 	/* freewheeling source */

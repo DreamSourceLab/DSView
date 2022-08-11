@@ -147,7 +147,7 @@ static int loadfile(struct sr_input *in, const char *filename)
 	src = sr_config_new(SR_CONF_SAMPLERATE,
 			g_variant_new_uint64(ctx->samplerate));
 	meta.config = g_slist_append(NULL, src);
-	sr_session_send(in->sdi, &packet);
+	ds_data_forward(in->sdi, &packet);
 	sr_config_free(src);
 
 	if ((fd = open(filename, O_RDONLY)) == -1)
@@ -186,12 +186,12 @@ static int loadfile(struct sr_input *in, const char *filename)
 		analog.mq = 0;
 		analog.unit = 0;
 		analog.data = fdata;
-		sr_session_send(in->sdi, &packet);
+		ds_data_forward(in->sdi, &packet);
 	}
 
 	close(fd);
 	packet.type = SR_DF_END;
-	sr_session_send(in->sdi, &packet);
+	ds_data_forward(in->sdi, &packet);
 
 	return SR_OK;
 }

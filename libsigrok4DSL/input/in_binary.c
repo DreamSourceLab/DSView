@@ -121,7 +121,7 @@ static int loadfile(struct sr_input *in, const char *filename)
 		src = sr_config_new(SR_CONF_SAMPLERATE,
 				g_variant_new_uint64(ctx->samplerate));
 		meta.config = g_slist_append(NULL, src);
-		sr_session_send(in->sdi, &packet);
+		ds_data_forward(in->sdi, &packet);
 		sr_config_free(src);
 	}
 
@@ -132,13 +132,13 @@ static int loadfile(struct sr_input *in, const char *filename)
 	logic.data = buffer;
 	while ((size = read(fd, buffer, CHUNKSIZE)) > 0) {
 		logic.length = size;
-		sr_session_send(in->sdi, &packet);
+		ds_data_forward(in->sdi, &packet);
 	}
 	close(fd);
 
 	/* Send end packet to the session bus. */
 	packet.type = SR_DF_END;
-	sr_session_send(in->sdi, &packet);
+	ds_data_forward(in->sdi, &packet);
 
 	g_free(ctx);
 	in->internal = NULL;

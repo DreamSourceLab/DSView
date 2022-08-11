@@ -51,8 +51,8 @@ int main()
 { 
     xlog_context *log_ctx = xlog_new2(0);
 
-    sr_log_level(XLOG_LEVEL_INFO);
-    sr_log_set_context(log_ctx);
+    ds_log_level(XLOG_LEVEL_INFO);
+    ds_log_set_context(log_ctx);
 
     xlog_add_receiver(log_ctx, print_log, 0);
 

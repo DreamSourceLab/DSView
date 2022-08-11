@@ -97,13 +97,9 @@ SR_API struct sr_session *sr_session_new(void)
 SR_API int sr_session_destroy(void)
 {
 	if (!session) {
-		sr_dbg("%s: session was NULL", __func__);
+		sr_detail("%s: session was NULL", __func__);
 		return SR_ERR_BUG;
-	}
-
-	sr_session_dev_remove_all();
-
-    sr_session_datafeed_callback_remove_all();
+	} 
 
     if (session->sources) {
         g_free(session->sources);
@@ -125,159 +121,6 @@ SR_API int sr_session_destroy(void)
 	return SR_OK;
 }
 
-/**
- * List all device instances attached to the current session.
- *
- * @param devlist A pointer where the device instance list will be
- *                stored on return. If no devices are in the session,
- *                this will be NULL. Each element in the list points
- *                to a struct sr_dev_inst *.
- *                The list must be freed by the caller, but not the
- *                elements pointed to.
- *
- * @retval SR_OK Success.
- * @retval SR_ERR Invalid argument.
- *
- * @since 0.3.0
- */
-SR_API int sr_session_dev_list(GSList **devlist)
-{
-
-    *devlist = NULL;
-
-    if (!session)
-        return SR_ERR;
-
-    *devlist = g_slist_copy(session->devs);
-
-    return SR_OK;
-}
-
-/**
- * Remove all the devices from the current session.
- *
- * The session itself (i.e., the struct sr_session) is not free'd and still
- * exists after this function returns.
- *
- * @return SR_OK upon success, SR_ERR_BUG if no session exists.
- */
-SR_API int sr_session_dev_remove_all(void)
-{
-	if (!session) {
-		sr_err("%s: session was NULL", __func__);
-		return SR_ERR_BUG;
-	}
-
-	g_slist_free(session->devs);
-	session->devs = NULL;
-
-	return SR_OK;
-}
-
-/**
- * Add a device instance to the current session.
- *
- * @param sdi The device instance to add to the current session. Must not
- *            be NULL. Also, sdi->driver and sdi->driver->dev_open must
- *            not be NULL.
- *
- * @return SR_OK upon success, SR_ERR_ARG upon invalid arguments.
- */
-SR_API int sr_session_dev_add(struct sr_dev_inst *sdi)
-{
-        int ret;
-
-	if (!sdi) {
-		sr_err("%s: sdi was NULL", __func__);
-		return SR_ERR_ARG;
-	}
-
-	if (!session) {
-		sr_err("%s: session was NULL", __func__);
-		return SR_ERR_BUG;
-	}
-
-	/* If sdi->driver is NULL, this is a virtual device. */
-	if (!sdi->driver) {
-		sr_dbg("%s: sdi->driver was NULL, this seems to be "
-		       "a virtual device; continuing", __func__);
-		/* Just add the device, don't run dev_open(). */
-		session->devs = g_slist_append(session->devs, (gpointer)sdi);
-		return SR_OK;
-	}
-
-	/* sdi->driver is non-NULL (i.e. we have a real device). */
-	if (!sdi->driver->dev_open) {
-		sr_err("%s: sdi->driver->dev_open was NULL", __func__);
-		return SR_ERR_BUG;
-	}
-
-	session->devs = g_slist_append(session->devs, (gpointer)sdi);
-
-        if (session->running) {
-		/* Adding a device to a running session. Start acquisition
-		 * on that device now. */
-		if ((ret = sdi->driver->dev_acquisition_start(sdi,
-						(void *)sdi)) != SR_OK)
-			sr_err("Failed to start acquisition of device in "
-					"running session: %d", ret);
-	}
-
-	return SR_OK;
-}
-
-/**
- * Remove all datafeed callbacks in the current session.
- *
- * @return SR_OK upon success, SR_ERR_BUG if no session exists.
- */
-SR_API int sr_session_datafeed_callback_remove_all(void)
-{
-	if (!session) {
-		sr_err("%s: session was NULL", __func__);
-		return SR_ERR_BUG;
-	}
-
-	g_slist_free_full(session->datafeed_callbacks, g_free);
-	session->datafeed_callbacks = NULL;
-
-	return SR_OK;
-}
-
-/**
- * Add a datafeed callback to the current session.
- *
- * @param cb Function to call when a chunk of data is received.
- *           Must not be NULL.
- * @param cb_data Opaque pointer passed in by the caller.
- *
- * @return SR_OK upon success, SR_ERR_BUG if no session exists.
- */
-SR_PRIV int sr_session_datafeed_callback_add(sr_datafeed_callback_t cb, void *cb_data)
-{
-	struct datafeed_callback *cb_struct;
-
-	if (!session) {
-		sr_err("%s: session was NULL", __func__);
-		return SR_ERR_BUG;
-	}
-
-	if (!cb) {
-		sr_err("%s: cb was NULL", __func__);
-		return SR_ERR_ARG;
-	}
-
-	if (!(cb_struct = g_try_malloc0(sizeof(struct datafeed_callback))))
-		return SR_ERR_MALLOC;
-
-	cb_struct->cb = cb;
-	cb_struct->cb_data = cb_data;
-
-	session->datafeed_callbacks =
-	    g_slist_append(session->datafeed_callbacks, cb_struct);
-
-	return SR_OK;
-}
 
 /**
  * Call every device in the session's callback.
@@ -323,7 +166,7 @@ static int sr_session_iteration(gboolean block)
 		 */
         g_mutex_lock(&session->stop_mutex);
 		if (session->abort_session) {
-			sr_session_stop_sync();
+			current_device_acquisition_stop();
 			/* But once is enough. */
 			session->abort_session = FALSE;
 		}
@@ -331,59 +174,6 @@ static int sr_session_iteration(gboolean block)
 	}
 
 	return SR_OK;
-}
-
-/**
- * Start a session.
- *
- * There can only be one session at a time.
- *
- * @return SR_OK upon success, SR_ERR upon errors.
- */
-SR_API int sr_session_start(void)
-{
-	struct sr_dev_inst *sdi;
-	GSList *l;
-	int ret;
-
-	if (!session) {
-		sr_err("%s: session was NULL; a session must be "
-		       "created before starting it.", __func__);
-		return SR_ERR_BUG;
-	}
-
-	if (!session->devs) {
-		sr_err("%s: session->devs was NULL; a session "
-		       "cannot be started without devices.", __func__);
-		return SR_ERR_BUG;
-	}
-
-	sr_info("Starting...");
-
-	ret = SR_OK;
-	for (l = session->devs; l; l = l->next) {
-		sdi = l->data;
-		if ((ret = sdi->driver->dev_acquisition_start(sdi, sdi)) != SR_OK) {
-			sr_err("%s: could not start an acquisition "
-			       "(%d)", __func__, sr_error_str(ret));
-			break;
-		}
-	}
-
-	/* TODO: What if there are multiple devices? Which return code? */
-
-	return ret;
-}
-
-/*
-* check session if be created
-*/
-int sr_check_session_start_before(){
-
-	if (!session || !session->devs) {
-		return 1;		 
-	}
-	return 0;
 }
 
 /**
@@ -398,14 +188,11 @@ SR_API int sr_session_run(void)
 		       "created first, before running it.", __func__);
 		return SR_ERR_BUG;
 	}
-
-	if (!session->devs) {
-		/* TODO: Actually the case? */
-		sr_err("%s: session->devs was NULL; a session "
-		       "cannot be run without devices.", __func__);
-		return SR_ERR_BUG;
+	if (session->running == TRUE){
+		sr_err("%s", "Session is running.");
+		return SR_ERR_CALL_STATUS;
 	}
-
+ 
     session->running = TRUE;
 
 	sr_dbg("Running...");
@@ -429,44 +216,10 @@ SR_API int sr_session_run(void)
 	}
 
     g_mutex_lock(&session->stop_mutex);
-    sr_session_stop_sync();
+    current_device_acquisition_stop();
     session->abort_session = FALSE;
     session->running = FALSE;
     g_mutex_unlock(&session->stop_mutex);
-	return SR_OK;
-}
-
-/**
- * Stop the current session.
- *
- * The current session is stopped immediately, with all acquisition sessions
- * being stopped and hardware drivers cleaned up.
- *
- * This must be called from within the session thread, to prevent freeing
- * resources that the session thread will try to use.
- *
- * @return SR_OK upon success, SR_ERR_BUG if no session exists.
- */
-SR_PRIV int sr_session_stop_sync(void)
-{
-	struct sr_dev_inst *sdi;
-	GSList *l;
-
-	if (!session) {
-		sr_err("%s: session was NULL", __func__);
-		return SR_ERR_BUG;
-	}
-
-	sr_info("Stopping.");
-
-	for (l = session->devs; l; l = l->next) {
-		sdi = l->data;
-		if (sdi->driver) {
-			if (sdi->driver->dev_acquisition_stop)
-                sdi->driver->dev_acquisition_stop(sdi, NULL);
-		}
-	}
-
 	return SR_OK;
 }
 
@@ -550,44 +303,6 @@ static void datafeed_dump(const struct sr_datafeed_packet *packet)
 		sr_dbg("bus: Received unknown packet type: %d.", packet->type);
 		break;
 	}
-}
-
-/**
- * Send a packet to whatever is listening on the datafeed bus.
- *
- * Hardware drivers use this to send a data packet to the frontend.
- *
- * @param sdi TODO.
- * @param packet The datafeed packet to send to the session bus.
- *
- * @return SR_OK upon success, SR_ERR_ARG upon invalid arguments.
- *
- * @private
- */
-SR_PRIV int sr_session_send(const struct sr_dev_inst *sdi,
-			    const struct sr_datafeed_packet *packet)
-{
-	GSList *l;
-	struct datafeed_callback *cb_struct;
-
-	if (!sdi) {
-		sr_err("%s: sdi was NULL", __func__);
-		return SR_ERR_ARG;
-	}
-
-	if (!packet) {
-		sr_err("%s: packet was NULL", __func__);
-		return SR_ERR_ARG;
-	}
-
-	for (l = session->datafeed_callbacks; l; l = l->next) {
-        //if (sr_log_loglevel_get() >= SR_LOG_DBG)
-        //	datafeed_dump(packet);
-		cb_struct = l->data;
-		cb_struct->cb(sdi, packet, cb_struct->cb_data);
-	}
-
-	return SR_OK;
 }
 
 /**
@@ -752,7 +467,8 @@ static int _sr_session_source_remove(gintptr poll_object)
         g_free(session->sources);
         session->pollfds = NULL;
         session->sources = NULL;
-    } else {
+    } 
+	else {
         if (old != session->num_sources) {
             memmove(&session->pollfds[old], &session->pollfds[old+1],
                 (session->num_sources - old) * sizeof(GPollFD));

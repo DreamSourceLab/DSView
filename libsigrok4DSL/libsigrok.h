@@ -183,7 +183,7 @@ enum {
 };
 
 /** Value for sr_datafeed_packet.type. */
-enum {
+enum sr_datafeed_packet_type {
 	SR_DF_HEADER = 10000,
 	SR_DF_END,
 	SR_DF_META,
@@ -339,7 +339,7 @@ struct sr_dev_inst;
 struct sr_dev_driver;
 
 struct sr_datafeed_packet {
-	uint16_t type;
+	uint16_t type; //see enum sr_datafeed_packet_type
     uint16_t status;
 	const void *payload;
 	int bExportOriginalData;
@@ -1228,22 +1228,12 @@ typedef void (*sr_datafeed_callback_t)(const struct sr_dev_inst *sdi,
 /* Session setup */
 SR_API int sr_session_load(const char *filename);
 SR_API struct sr_session *sr_session_new(void);
-SR_API int sr_session_destroy(void);
-SR_API int sr_session_dev_remove_all(void);
-SR_API int sr_session_dev_add(struct sr_dev_inst *sdi);
-SR_API int sr_session_dev_list(GSList **devlist);
+SR_API int sr_session_destroy(void); 
 
-/* Datafeed setup */
-SR_API int sr_session_datafeed_callback_remove_all(void);
-
-
-/* Session control */
-SR_API int sr_session_start(void);
+/* Session control */ 
 SR_API int sr_session_run(void);
 SR_API int sr_session_stop(void); 
-
-//0:ok, 1:error
-SR_API int sr_check_session_start_before();
+ 
 
 /*--- input/input.c ---------------------------------------------------------*/
 
@@ -1278,9 +1268,6 @@ SR_API const char *sr_error_str(int error_code);
 SR_API const char *sr_error_name(int error_code);
 
 /*--- trigger.c ------------------------------------------------------------*/
-SR_API int ds_trigger_init(void);
-SR_API int ds_trigger_destroy(void);
-SR_API struct ds_trigger *ds_trigger_get(void);
 SR_API int ds_trigger_stage_set_value(uint16_t stage, uint16_t probes, char *trigger0, char *trigger1);
 SR_API int ds_trigger_stage_set_logic(uint16_t stage, uint16_t probes, unsigned char trigger_logic);
 SR_API int ds_trigger_stage_set_inv(uint16_t stage, uint16_t probes, unsigned char trigger0_inv, unsigned char trigger1_inv);
@@ -1298,60 +1285,69 @@ SR_API int ds_trigger_set_mode(uint16_t mode);
 /**
  * Use a shared context, and drop the private log context
  */
-SR_API void sr_log_set_context(xlog_context *ctx); 
+SR_API void ds_log_set_context(xlog_context *ctx); 
 
 /**
  * Set the private log context level
  */
-SR_API void sr_log_level(int level);
+SR_API void ds_log_level(int level);
 
 
 /*---event define ---------------------------------------------*/
-enum libsigrok_event_type
+enum dslib_event_type
 {
-	// A new device attached, user need to call sr_device_get_list to get the list,
+	// A new device attached, user need to call ds_device_get_list to get the list,
 	// the last one is new.
-	// User can call sr_device_select() to switch to the current device.
-	SR_EV_NEW_DEVICE_ATTACH = 0, 
+	// User can call ds_device_select() to switch to the current device.
+	DS_EV_NEW_DEVICE_ATTACH = 0, 
 
-	// The current device detached, user need to call sr_device_get_list to get the list,
-	// and call sr_device_select() to switch to the current device.
-	SR_EV_CURRENT_DEVICE_DETACH = 1, 
+	// The current device detached, user need to call ds_device_get_list to get the list,
+	// and call ds_device_select() to switch to the current device.
+	DS_EV_CURRENT_DEVICE_DETACH = 1, 
 
 	// A inactive device detached.
-	// User can call sr_device_get_list() to get the new list, and update the list view.
-	SR_EV_INACTIVE_DEVICE_DETACH = 2,
+	// User can call ds_device_get_list() to get the new list, and update the list view.
+	DS_EV_INACTIVE_DEVICE_DETACH = 2,
 
 	// The current device switch success.
-	// User can call sr_device_get_list() to get new list, and update the data view.
-	SR_EV_CURRENT_DEVICE_CHANGED = 3,
+	// User can call ds_device_get_list() to get new list, and update the data view.
+	DS_EV_CURRENT_DEVICE_CHANGED = 3,
 };
 
-typedef unsigned long long sr_device_handle;
+typedef unsigned long long ds_device_handle;
 
 /**
  * Device base info
  */
-struct sr_device_info
+struct ds_device_info
 {
-	sr_device_handle handle;
+	ds_device_handle handle;
 	char 	name[50];
 	int 	dev_type; // enum sr_device_type
 	int 	is_current; //is actived
 };
 
-struct sr_task_progress
+struct ds_task_progress
 {
 	int progress;
 	int is_end;
 };
 
-struct sr_store_extra_data
+struct ds_store_extra_data
 {
 	char name[50];
 	char *data;
 	int  data_length;
 };
+
+/*-----------------trigger---------------*/
+int ds_trigger_is_enabled();
+
+/*-----------------channel---------------*/
+/**
+ *  heck that at least one probe is enabled
+ */
+int ds_channel_is_enabled();
 
 
 /*---lib_main.c -----------------------------------------------*/
@@ -1359,78 +1355,83 @@ struct sr_store_extra_data
 /**
  * event see enum libsigrok_event_type
  */
-typedef void (*libsigrok_event_callback_t)(int event);
+typedef void (*dslib_event_callback_t)(int event);
+
+/**
+ * Data forwarding callback collected by the device.
+ */
+typedef void (*ds_datafeed_callback_t)(const struct sr_dev_inst *sdi,
+						const struct sr_datafeed_packet *packet);
 
 /**
  * Must call first
  */
-SR_API int sr_lib_init();
+SR_API int ds_lib_init();
 
 /**
  * Free all resource before program exits
  */
-SR_API int sr_lib_exit(); 
+SR_API int ds_lib_exit(); 
 
 /**
  * Set event callback, event type see enum libsigrok_event_type
  */
-SR_API void sr_set_event_callback(libsigrok_event_callback_t cb);
+SR_API void ds_set_event_callback(dslib_event_callback_t cb);
 
 /**
- * By default, the library can manage data by itself. If set the callback, 
- * the library will no longer manage data, it just forwards data.
+ * Set the data receive callback.
  */
-SR_API int sr_set_datafeed_callback(sr_datafeed_callback_t cb, void *cb_data);
+SR_API int ds_set_datafeed_callback(ds_datafeed_callback_t cb);
 
 /**
  * Set the firmware binary file directory,
  * User must call it to set the firmware resource directory
  */
-SR_API void sr_set_firmware_resource_dir(const char *dir);
+SR_API void ds_set_firmware_resource_dir(const char *dir);
 
 /**
  * Get the device list, if the field _handle is 0, the list visited to end.
  * User need call free() to release the buffer. If the list is empty, the out_list is null.
  */
-SR_API int sr_device_get_list(struct sr_device_info** out_list, int *out_count);
+SR_API int ds_device_get_list(struct ds_device_info** out_list, int *out_count);
 
 /**
  * Active a device, if success, it will trigs the event of SR_EV_CURRENT_DEVICE_CHANGED.
  */
-SR_API int sr_device_select(sr_device_handle handle);
+SR_API int ds_device_select(ds_device_handle handle);
 
 /**
  * Active a device, if success, it will trigs the event of SR_EV_CURRENT_DEVICE_CHANGED.
  * @index is -1, will select the last one.
  */
-SR_API int sr_device_select_by_index(int index);
+SR_API int ds_device_select_by_index(int index);
 
 /**
  * Create a device from session file, it auto load the data.
  */
-SR_API int sr_device_from_file(const char *file_path);
+SR_API int ds_device_from_file(const char *file_path);
 
 /**
  * Remove one device from the list, and destory it.
- * User need to call sr_device_get_list() to get the new list.
+ * User need to call ds_device_get_list() to get the new list.
  */
-SR_API int sr_remove_device(sr_device_handle handle);
+SR_API int ds_remove_device(ds_device_handle handle);
 
 /**
  * Get the current device info.
  * If the current device is not exists, the handle filed will be set null.
  */
-SR_API int sr_get_current_device_info(struct sr_device_info *info);
+SR_API int ds_get_current_device_info(struct ds_device_info *info);
 
 /**
  * Start collect data
  */
-SR_API int sr_device_start_collect();
+SR_API int ds_device_start_collect();
 
 /**
  * Stop collect data
  */
-SR_API int sr_device_stop_collect();
+SR_API int ds_device_stop_collect();
 
 
 #ifdef __cplusplus
