@@ -1073,7 +1073,7 @@ enum sr_config_option_id{
 };
 
 /** Device instance status. */
-enum {
+enum sr_device_status {
 	/** The device instance was not found. */
 	SR_ST_NOT_FOUND = 10000,
 	/** The device instance was found, but is still booting. */

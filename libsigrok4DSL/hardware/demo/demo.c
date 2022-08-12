@@ -1000,20 +1000,6 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
     devc->stop = FALSE;
     devc->samples_not_sent = 0;
 
-    /*
-     * trigger setting
-     */
-//    if (!trigger->trigger_en || sdi->mode != LOGIC) {
-//        devc->trigger_stage = 0;
-//    } else {
-//        devc->trigger_mask = ds_trigger_get_mask0(TriggerStages);
-//        devc->trigger_value = ds_trigger_get_value0(TriggerStages);
-//        devc->trigger_edge = ds_trigger_get_edge0(TriggerStages);
-//        if (devc->trigger_edge != 0)
-//            devc->trigger_stage = 2;
-//        else
-//            devc->trigger_stage = 1;
-//    }
     devc->trigger_stage = 0;
 
 	/*

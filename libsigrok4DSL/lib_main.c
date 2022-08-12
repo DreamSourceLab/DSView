@@ -113,7 +113,7 @@ SR_API int ds_lib_init()
 	}
 	lib_ctx.lib_exit_flag = 0;	
 
-	//init trigger
+	// Init trigger.
 	ds_trigger_init(); 
 
 	// Initialise all libsigrok drivers
@@ -171,13 +171,15 @@ SR_API int ds_lib_exit()
 
 	pthread_mutex_destroy(&lib_ctx.mutext);  //uninit locker
 
-	//uninit trigger
-	ds_trigger_destroy(); 
+	// Uninit trigger.
+	ds_trigger_destroy();
 
 	if (sr_exit(lib_ctx.sr_ctx) != SR_OK){
 		sr_err("%s", "call sr_exit error");
 	}
     lib_ctx.sr_ctx = NULL;
+
+	
 
 	sr_log_uninit(); //try uninit log
 
@@ -461,12 +463,12 @@ SR_API int ds_device_start_collect()
 		sr_err("%s", "Is collecting.");
 		return SR_ERR_CALL_STATUS;
 	}
-	if (lib_ctx.current_device_instance == NULL){
+	if (di == NULL){
 		sr_err("%s", "Please set a current device first.");
 		return SR_ERR_CALL_STATUS;
 	}
-	if (lib_ctx.current_device_instance->status != SR_ST_ACTIVE){
-		sr_err("The device cannot be used, status:%d", SR_ST_ACTIVE);
+	if (di->status == SR_ST_INITIALIZING){
+		sr_err("Error!The device is initializing.");
 		return SR_ERR_CALL_STATUS;
 	}
 	if (ds_channel_is_enabled() == 0){
@@ -480,9 +482,10 @@ SR_API int ds_device_start_collect()
 
 	lib_ctx.collect_stop_flag = 0;
 
-	sr_session_new();  //create new session
+	// Create new session.
+	sr_session_new();
 
-	ret = open_device_instance(lib_ctx.current_device_instance); //open device
+	ret = open_device_instance(di); //open device
 	if (ret != SR_OK){
 		sr_err("%s", "Open device error!");
 		return ret;
@@ -531,17 +534,23 @@ END:
  */
 SR_API int ds_device_stop_collect()
 {
-	if (lib_ctx.collect_thread != NULL){
-		sr_session_destroy();
+	struct sr_dev_inst *di;
+	di = lib_ctx.current_device_instance;
 
+	if (lib_ctx.collect_thread != NULL){
+		
 		lib_ctx.collect_stop_flag = 1;
+
+		// Stop current session.
+		sr_session_stop();
 
 		g_thread_join(lib_ctx.collect_thread); //Wait the collect thread ends.
 		lib_ctx.collect_thread = NULL;
 
-		if (lib_ctx.current_device_instance != NULL){
-			close_device_instance(lib_ctx.current_device_instance);
-		}
+		close_device_instance(di);
+
+		// Destroy current session.
+		sr_session_destroy();
 	} 
 
 	return SR_OK;

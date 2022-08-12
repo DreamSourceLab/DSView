@@ -30,8 +30,6 @@
 #undef LOG_PREFIX
 #define LOG_PREFIX "dsl: "
 
-extern struct ds_trigger *trigger;
-
 static const int32_t probeOptions[] = {
     SR_CONF_PROBE_COUPLING,
     SR_CONF_PROBE_VDIV,

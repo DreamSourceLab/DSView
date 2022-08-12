@@ -29,6 +29,10 @@
 
 #undef LOG_PREFIX
 #define LOG_PREFIX "session: "
+
+/* There can only be one session at a time. */
+/* 'session' is not static, it's used elsewhere (via 'extern'). */
+static struct sr_session *session = NULL;
  
 /**
  * @file
@@ -60,10 +64,6 @@ struct datafeed_callback {
 	void *cb_data;
 };
 
-/* There can only be one session at a time. */
-/* 'session' is not static, it's used elsewhere (via 'extern'). */
-struct sr_session *session;
-
 /**
  * Create a new session.
  *
@@ -74,8 +74,14 @@ struct sr_session *session;
  */
 SR_API struct sr_session *sr_session_new(void)
 {
-	if (!(session = g_try_malloc0(sizeof(struct sr_session)))) {
-		sr_err("Session malloc failed.");
+	if (session != NULL){
+		sr_info("%s", "Destroy the old session.");
+		sr_session_destroy(); // Destory the old.
+	}
+
+	session = g_try_malloc0(sizeof(struct sr_session));
+	if (session == NULL) {
+		sr_err("%s", "Session malloc failed.");
 		return NULL;
 	}
 
@@ -96,7 +102,7 @@ SR_API struct sr_session *sr_session_new(void)
  */
 SR_API int sr_session_destroy(void)
 {
-	if (!session) {
+	if (session == NULL) {
 		sr_detail("%s: session was NULL", __func__);
 		return SR_ERR_BUG;
 	} 
@@ -143,6 +149,11 @@ static int sr_session_iteration(gboolean block)
 	unsigned int i;
 	int ret;
 
+	if (session == NULL){
+		sr_err("%s", "sr_session_iteration(), session is null.");
+		return SR_ERR_CALL_STATUS;
+	}
+
 	ret = g_poll(session->pollfds, session->num_sources,
 			block ? session->source_timeout : 0);
 	for (i = 0; i < session->num_sources; i++) {
@@ -183,7 +194,7 @@ static int sr_session_iteration(gboolean block)
  */
 SR_API int sr_session_run(void)
 {
-	if (!session) {
+	if (session == NULL) {
 		sr_err("%s: session was NULL; a session must be "
 		       "created first, before running it.", __func__);
 		return SR_ERR_BUG;
@@ -262,6 +273,11 @@ static void datafeed_dump(const struct sr_datafeed_packet *packet)
     const struct sr_datafeed_dso *dso;
     const struct sr_datafeed_analog *analog;
 
+	if (packet == NULL){
+		sr_err("%s", "datafeed_dump() Error! packet is null.");
+		return;
+	}
+
 	switch (packet->type) {
 	case SR_DF_HEADER:
 		sr_dbg("bus: Received SR_DF_HEADER packet.");
@@ -326,6 +342,10 @@ static int _sr_session_source_add(GPollFD *pollfd, int timeout,
 	if (!cb) {
 		sr_err("%s: cb was NULL", __func__);
 		return SR_ERR_ARG;
+	}
+	if (session == NULL){
+		sr_err("%s", "_sr_session_source_add(), session is null.");
+		return SR_ERR_CALL_STATUS;
 	}
 
 	/* Note: cb_data can be NULL, that's not a bug. */
@@ -444,6 +464,11 @@ static int _sr_session_source_remove(gintptr poll_object)
 	struct source *new_sources;
 	GPollFD *new_pollfds;
 	unsigned int old;
+
+	if (session == NULL){
+		sr_err("%s", "_sr_session_source_remove(), session is null.");
+		return SR_ERR_CALL_STATUS;
+	}
 
 	if (!session->sources || !session->num_sources) {
 		sr_err("%s: sources was NULL", __func__);

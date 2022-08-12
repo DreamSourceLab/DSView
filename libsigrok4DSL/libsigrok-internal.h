@@ -57,6 +57,7 @@
 
 /** global variable */
 extern char DS_RES_PATH[500];
+extern struct ds_trigger *trigger;
 
 typedef void (*hotplug_event_callback)(struct libusb_context *ctx, struct libusb_device *dev, int event);
 
