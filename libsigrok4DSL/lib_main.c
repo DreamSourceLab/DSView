@@ -1,7 +1,7 @@
 /*
  * This file is part of the DSView project.
  * DSView is based on PulseView.
- * 
+ *
  * Copyright (C) 2022 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -26,36 +26,36 @@
 #include <string.h>
 
 #ifdef _WIN32
-  #include <windows.h>
-  #define _sleep(m) Sleep((m))
+#include <windows.h>
+#define _sleep(m) Sleep((m))
 #else
-  #include <unistd.h>
-  #define _sleep(m) usleep((m) * 1000)
+#include <unistd.h>
+#define _sleep(m) usleep((m)*1000)
 #endif
 
-#undef LOG_PREFIX 
+#undef LOG_PREFIX
 #define LOG_PREFIX "lib_main: "
 
-char DS_RES_PATH[500] = {0}; 
+char DS_RES_PATH[500] = {0};
 
 struct sr_lib_context
-{	
+{
 	dslib_event_callback_t event_callback;
-	struct sr_context	*sr_ctx;
-	GList*				device_list; // All device instance, sr_dev_inst* type
-	pthread_mutex_t		mutext;
-	GThread				*hotplug_thread; 
-	int					lib_exit_flag;
-	int					attach_event_flag;
-	int					detach_event_flag;
-	int					is_waitting_reconnect;
-	int					check_reconnect_times;
+	struct sr_context *sr_ctx;
+	GList *device_list; // All device instance, sr_dev_inst* type
+	pthread_mutex_t mutext;
+	GThread *hotplug_thread;
+	int lib_exit_flag;
+	int attach_event_flag;
+	int detach_event_flag;
+	int is_waitting_reconnect;
+	int check_reconnect_times;
 	struct libusb_device *attach_device_handle;
 	struct libusb_device *detach_device_handle;
 	struct ds_device_info current_device_info;
-	struct sr_dev_inst   *current_device_instance;
-	int 			     collect_stop_flag;
-	GThread				*collect_thread; 
+	struct sr_dev_inst *current_device_instance;
+	int collect_stop_flag;
+	GThread *collect_thread;
 	ds_datafeed_callback_t data_forward_callback;
 };
 
@@ -70,7 +70,7 @@ static struct sr_lib_context lib_ctx = {
 	.event_callback = NULL,
 	.sr_ctx = NULL,
 	.device_list = NULL,
-	.hotplug_thread = NULL, 
+	.hotplug_thread = NULL,
 	.lib_exit_flag = 0,
 	.attach_event_flag = 0,
 	.detach_event_flag = 0,
@@ -79,7 +79,7 @@ static struct sr_lib_context lib_ctx = {
 	.attach_device_handle = NULL,
 	.detach_device_handle = NULL,
 	.current_device_info = {
-        .handle = 0,
+		.handle = 0,
 		.name[0] = '\0',
 		.is_current = 0,
 		.dev_type = DEV_TYPE_UNKOWN,
@@ -99,35 +99,39 @@ SR_API int ds_lib_init()
 	struct sr_dev_driver **drivers = NULL;
 	struct sr_dev_driver **dr = NULL;
 
-	if (lib_ctx.sr_ctx != NULL){
+	if (lib_ctx.sr_ctx != NULL)
+	{
 		return SR_ERR_HAVE_DONE;
 	}
 
-	sr_log_init(); //try init log
+	sr_log_init(); // try init log
 
 	sr_info("Init %s.", SR_LIB_NAME);
 
 	ret = sr_init(&lib_ctx.sr_ctx);
-    if (ret != SR_OK){
+	if (ret != SR_OK)
+	{
 		return ret;
 	}
-	lib_ctx.lib_exit_flag = 0;	
+	lib_ctx.lib_exit_flag = 0;
 
 	// Init trigger.
-	ds_trigger_init(); 
+	ds_trigger_init();
 
 	// Initialise all libsigrok drivers
 	drivers = sr_driver_list();
-	for (dr = drivers; *dr; dr++) {
-		if (sr_driver_init(lib_ctx.sr_ctx, *dr) != SR_OK) {
+	for (dr = drivers; *dr; dr++)
+	{
+		if (sr_driver_init(lib_ctx.sr_ctx, *dr) != SR_OK)
+		{
 			sr_err("Failed to initialize driver '%s'", (*dr)->name);
 			return SR_ERR;
 		}
 	}
-	pthread_mutex_init(&lib_ctx.mutext, NULL); //init locker
+	pthread_mutex_init(&lib_ctx.mutext, NULL); // init locker
 
 	lib_ctx.sr_ctx->hotplug_tv.tv_sec = 0;
-    lib_ctx.sr_ctx->hotplug_tv.tv_usec = 0;
+	lib_ctx.sr_ctx->hotplug_tv.tv_usec = 0;
 
 	sr_listen_hotplug(lib_ctx.sr_ctx, hotplug_event_listen_callback);
 
@@ -142,48 +146,51 @@ SR_API int ds_lib_init()
  */
 SR_API int ds_lib_exit()
 {
-	GSList *l; 
- 
-	if (lib_ctx.sr_ctx == NULL){
+	GSList *l;
+
+	if (lib_ctx.sr_ctx == NULL)
+	{
 		return SR_ERR_HAVE_DONE;
 	}
 
 	sr_info("Uninit %s.", SR_LIB_NAME);
 
-	if (lib_ctx.collect_thread != NULL){
-        ds_device_stop_collect(); //stop collect.
+	if (lib_ctx.collect_thread != NULL)
+	{
+		ds_device_stop_collect(); // stop collect.
 	}
 
 	sr_close_hotplug(lib_ctx.sr_ctx);
 
-	lib_ctx.lib_exit_flag = 1; //all thread to exit
+	lib_ctx.lib_exit_flag = 1; // all thread to exit
 
-	if (lib_ctx.hotplug_thread != NULL){
+	if (lib_ctx.hotplug_thread != NULL)
+	{
 		g_thread_join(lib_ctx.hotplug_thread);
 		lib_ctx.hotplug_thread = NULL;
 	}
 
 	// Release all device
-	for (l = lib_ctx.device_list; l; l = l->next){ 
-		destroy_device_instance((struct sr_dev_inst*)l->data);
+	for (l = lib_ctx.device_list; l; l = l->next)
+	{
+		destroy_device_instance((struct sr_dev_inst *)l->data);
 	}
-	g_safe_free_list(lib_ctx.device_list); 
+	g_safe_free_list(lib_ctx.device_list);
 
-	pthread_mutex_destroy(&lib_ctx.mutext);  //uninit locker
+	pthread_mutex_destroy(&lib_ctx.mutext); // uninit locker
 
 	// Uninit trigger.
 	ds_trigger_destroy();
 
-	if (sr_exit(lib_ctx.sr_ctx) != SR_OK){
+	if (sr_exit(lib_ctx.sr_ctx) != SR_OK)
+	{
 		sr_err("%s", "call sr_exit error");
 	}
-    lib_ctx.sr_ctx = NULL;
+	lib_ctx.sr_ctx = NULL;
 
-	
+	sr_log_uninit(); // try uninit log
 
-	sr_log_uninit(); //try uninit log
-
-    return SR_OK;
+	return SR_OK;
 }
 
 /**
@@ -191,12 +198,14 @@ SR_API int ds_lib_exit()
  */
 SR_API void ds_set_firmware_resource_dir(const char *dir)
 {
-	if (dir){
+	if (dir)
+	{
 		strcpy(DS_RES_PATH, dir);
 
 		int len = strlen(DS_RES_PATH);
-		if (DS_RES_PATH[len-1] != '/'){
-			DS_RES_PATH[len] = '/'; 
+		if (DS_RES_PATH[len - 1] != '/')
+		{
+			DS_RES_PATH[len] = '/';
 			DS_RES_PATH[len + 1] = 0;
 		}
 
@@ -224,7 +233,7 @@ SR_API int ds_set_datafeed_callback(ds_datafeed_callback_t cb)
  * Get the device list, if the field _handle is 0, the list visited to end.
  * User need call free() to release the buffer. If the list is empty, the out_list is null.
  */
-SR_API int ds_device_get_list(struct ds_device_info** out_list, int *out_count)
+SR_API int ds_device_get_list(struct ds_device_info **out_list, int *out_count)
 {
 	int num;
 	struct ds_device_info *array = NULL;
@@ -232,46 +241,51 @@ SR_API int ds_device_get_list(struct ds_device_info** out_list, int *out_count)
 	GList *l;
 	struct sr_dev_inst *dev;
 
-	if (out_list == NULL){
+	if (out_list == NULL)
+	{
 		return SR_ERR_ARG;
 	}
 	*out_list = NULL;
 
 	pthread_mutex_lock(&lib_ctx.mutext);
 
-	num  = g_slist_length(lib_ctx.device_list);
-	if (num == 0){
+	num = g_slist_length(lib_ctx.device_list);
+	if (num == 0)
+	{
 		pthread_mutex_unlock(&lib_ctx.mutext);
 		return SR_OK;
 	}
 
-	array = (struct ds_device_info*)malloc(sizeof(struct ds_device_info) * (num+1));
-	if (array == NULL){
+	array = (struct ds_device_info *)malloc(sizeof(struct ds_device_info) * (num + 1));
+	if (array == NULL)
+	{
 		pthread_mutex_unlock(&lib_ctx.mutext);
 		return SR_ERR_MALLOC;
 	}
 
 	p = array;
 
-	for (l=lib_ctx.device_list; l; l = l->next){
+	for (l = lib_ctx.device_list; l; l = l->next)
+	{
 		dev = l->data;
 		p->handle = dev->handle;
 		strncpy(p->name, dev->name, sizeof(dev->name) - 1);
 		p->dev_type = dev->dev_type;
 		p->is_current = (dev == lib_ctx.current_device_instance);
-		p++;	 
-	} 
+		p++;
+	}
 
-	p->handle = 0; //is the end
+	p->handle = 0; // is the end
 	p->name[0] = '\0';
 
-	if (out_count){
+	if (out_count)
+	{
 		*out_count = num;
 	}
 
 	pthread_mutex_unlock(&lib_ctx.mutext);
 
-	*out_list  = array;
+	*out_list = array;
 	return SR_OK;
 }
 
@@ -285,37 +299,43 @@ SR_API int ds_device_select(ds_device_handle handle)
 	int bFind = 0;
 	int ret;
 
-	if (handle == NULL){
+	if (handle == NULL)
+	{
 		return SR_ERR_ARG;
 	}
 	ret = SR_OK;
 
 	sr_info("%s", "Begin set current device.");
 
-	if (lib_ctx.collect_thread != NULL){
+	if (lib_ctx.collect_thread != NULL)
+	{
 		sr_err("%s", "One device is collecting, switch device error.");
 		return SR_ERR_CALL_STATUS;
 	}
 
 	pthread_mutex_lock(&lib_ctx.mutext);
-	
-	if (lib_ctx.current_device_instance != NULL)	{
 
-		sr_info("Close the previous device \"%s\"",  lib_ctx.current_device_instance->name);
+	if (lib_ctx.current_device_instance != NULL)
+	{
+
+		sr_info("Close the previous device \"%s\"", lib_ctx.current_device_instance->name);
 
 		close_device_instance(lib_ctx.current_device_instance);
-		lib_ctx.current_device_instance = NULL;		
+		lib_ctx.current_device_instance = NULL;
 		lib_ctx.current_device_info.handle = NULL;
 		lib_ctx.current_device_info.name[0] = '\0';
 	}
 
 	// To open the new.
-	for (l = lib_ctx.device_list; l; l = l->next){
+	for (l = lib_ctx.device_list; l; l = l->next)
+	{
 		dev = l->data;
-		if (dev->handle == handle){ 
+		if (dev->handle == handle)
+		{
 			bFind = 1;
 
-			if (dev->dev_type == DEV_TYPE_USB && DS_RES_PATH[0] == '\0'){
+			if (dev->dev_type == DEV_TYPE_USB && DS_RES_PATH[0] == '\0')
+			{
 				sr_err("%s", "Please call ds_set_firmware_resource_dir() to set the firmware resource path.");
 			}
 
@@ -327,10 +347,11 @@ SR_API int ds_device_select(ds_device_handle handle)
 				lib_ctx.current_device_info.dev_type = dev->dev_type;
 				lib_ctx.current_device_info.is_current = 1;
 				strncpy(lib_ctx.current_device_info.name, dev->name, sizeof(lib_ctx.current_device_info.name) - 1);
-				lib_ctx.current_device_instance = dev;		
+				lib_ctx.current_device_instance = dev;
 			}
-			else{
-                sr_err("%s", "Open device error!");
+			else
+			{
+				sr_err("%s", "Open device error!");
 				ret = SR_ERR_CALL_STATUS;
 			}
 			break;
@@ -341,7 +362,8 @@ SR_API int ds_device_select(ds_device_handle handle)
 
 	sr_info("%s", "End of setting current device.");
 
-	if (!bFind){
+	if (!bFind)
+	{
 		sr_err("ds_device_select() error, can't find the device.");
 		return SR_ERR_CALL_STATUS;
 	}
@@ -359,28 +381,32 @@ SR_API int ds_device_select_by_index(int index)
 	struct sr_dev_inst *dev;
 	ds_device_handle handle = NULL;
 	ds_device_handle lst_handle = NULL;
-	int i=0;
+	int i = 0;
 
 	pthread_mutex_lock(&lib_ctx.mutext);
 
 	// Get index
-	for (l = lib_ctx.device_list; l; l = l->next){
-		dev = l->data; 
+	for (l = lib_ctx.device_list; l; l = l->next)
+	{
+		dev = l->data;
 		lst_handle = dev->handle;
 
-		if (index == i){
-			handle = dev->handle;			
+		if (index == i)
+		{
+			handle = dev->handle;
 			break;
-		} 
+		}
 		++i;
 	}
 	pthread_mutex_unlock(&lib_ctx.mutext);
 
-	if (index == -1){
+	if (index == -1)
+	{
 		handle = lst_handle; // Get the last one.
 	}
 
-	if (handle == NULL){
+	if (handle == NULL)
+	{
 		sr_err("%s", "ds_device_select_by_index(), index is error!");
 		return SR_ERR_CALL_STATUS;
 	}
@@ -398,27 +424,39 @@ SR_API int ds_remove_device(ds_device_handle handle)
 	struct sr_dev_inst *dev;
 	int bFind = 0;
 
-	if (handle == NULL){
+	if (handle == NULL)
+	{
 		return SR_ERR_ARG;
 	}
 
 	pthread_mutex_lock(&lib_ctx.mutext);
 
-	for (l = lib_ctx.device_list; l; l = l->next){
+	for (l = lib_ctx.device_list; l; l = l->next)
+	{
 		dev = l->data;
-		if (dev->handle == handle){
+		if (dev->handle == handle)
+		{
 			lib_ctx.device_list = g_slist_remove(lib_ctx.device_list, l->data);
-			destroy_device_instance(dev);
-			bFind = 1;
-			if (dev == lib_ctx.current_device_instance){
+
+			if (dev == lib_ctx.current_device_instance)
+			{
 				lib_ctx.current_device_instance = NULL;
 			}
+			if (lib_ctx.current_device_info.handle == dev->handle)
+			{
+				lib_ctx.current_device_info.handle = 0;
+				lib_ctx.current_device_info.name[0] = '\0';
+			}
+
+			destroy_device_instance(dev);
+			bFind = 1;
 			break;
 		}
 	}
 	pthread_mutex_unlock(&lib_ctx.mutext);
 
-	if (bFind == 0){
+	if (bFind == 0)
+	{
 		return SR_ERR_CALL_STATUS;
 	}
 	return SR_OK;
@@ -430,7 +468,8 @@ SR_API int ds_remove_device(ds_device_handle handle)
  */
 SR_API int ds_get_current_device_info(struct ds_device_info *info)
 {
-	if (info == NULL){
+	if (info == NULL)
+	{
 		return SR_ERR_ARG;
 	}
 
@@ -439,7 +478,8 @@ SR_API int ds_get_current_device_info(struct ds_device_info *info)
 	info->is_current = 0;
 	info->dev_type = DEV_TYPE_UNKOWN;
 
-	if (lib_ctx.current_device_info.handle != NULL){
+	if (lib_ctx.current_device_info.handle != NULL)
+	{
 		info->handle = lib_ctx.current_device_info.handle;
 		strncpy(info->name, lib_ctx.current_device_info.name, sizeof(info->name));
 		info->is_current = 1;
@@ -458,24 +498,30 @@ SR_API int ds_device_start_collect()
 	struct sr_dev_inst *di;
 	di = lib_ctx.current_device_instance;
 
+	sr_info("%s", "Start collection.");
+
 	if (lib_ctx.collect_thread != NULL)
 	{
-		sr_err("%s", "Is collecting.");
+		sr_err("%s", "Error,it's collecting!");
 		return SR_ERR_CALL_STATUS;
 	}
-	if (di == NULL){
+	if (di == NULL)
+	{
 		sr_err("%s", "Please set a current device first.");
 		return SR_ERR_CALL_STATUS;
 	}
-	if (di->status == SR_ST_INITIALIZING){
+	if (di->status == SR_ST_INITIALIZING)
+	{
 		sr_err("Error!The device is initializing.");
 		return SR_ERR_CALL_STATUS;
 	}
-	if (ds_channel_is_enabled() == 0){
+	if (ds_channel_is_enabled() == 0)
+	{
 		sr_err("%s", "There have no useable channel, unable to collect.");
 		return SR_ERR_CALL_STATUS;
 	}
-	if (lib_ctx.data_forward_callback == NULL){
+	if (lib_ctx.data_forward_callback == NULL)
+	{
 		sr_err("%s", "Error! Data forwarding callback is not set, see \"ds_set_datafeed_callback()\".");
 		return SR_ERR_CALL_STATUS;
 	}
@@ -485,11 +531,12 @@ SR_API int ds_device_start_collect()
 	// Create new session.
 	sr_session_new();
 
-	ret = open_device_instance(di); //open device
-	if (ret != SR_OK){
+	ret = open_device_instance(di); // open device
+	if (ret != SR_OK)
+	{
 		sr_err("%s", "Open device error!");
 		return ret;
-	} 
+	}
 
 	lib_ctx.collect_thread = g_thread_new("collect_run_proc", collect_run_proc, NULL);
 
@@ -504,20 +551,24 @@ static void collect_run_proc()
 
 	sr_info("%s", "Collect thread start.");
 
-	if (di == NULL || di->driver == NULL || di->driver->dev_acquisition_start == NULL){
+	if (di == NULL || di->driver == NULL || di->driver->dev_acquisition_start == NULL)
+	{
 		sr_err("%s", "The device cannot be used.");
 		goto END;
 	}
-	
-	ret = di->driver->dev_acquisition_start(di, (void*)di);
-	if (ret != SR_OK){
+
+	ret = di->driver->dev_acquisition_start(di, (void *)di);
+	if (ret != SR_OK)
+	{
 		sr_err("Failed to start acquisition of device in "
-					"running session: %d", ret);
+			   "running session: %d",
+			   ret);
 		goto END;
-	}	
+	}
 
 	ret = sr_session_run();
-	if (ret != SR_OK){
+	if (ret != SR_OK)
+	{
 		sr_err("%s", "Run session error!");
 		lib_ctx.collect_thread = NULL;
 		goto END;
@@ -537,21 +588,26 @@ SR_API int ds_device_stop_collect()
 	struct sr_dev_inst *di;
 	di = lib_ctx.current_device_instance;
 
-	if (lib_ctx.collect_thread != NULL){
-		
-		lib_ctx.collect_stop_flag = 1;
+	sr_info("%s", "Stop collection.");
 
-		// Stop current session.
-		sr_session_stop();
+	if (lib_ctx.collect_thread == NULL)
+	{
+		sr_err("%s", "It's not collecting now.");
+		return SR_ERR_CALL_STATUS;
+	}
 
-		g_thread_join(lib_ctx.collect_thread); //Wait the collect thread ends.
-		lib_ctx.collect_thread = NULL;
+	lib_ctx.collect_stop_flag = 1;
 
-		close_device_instance(di);
+	// Stop current session.
+	sr_session_stop();
 
-		// Destroy current session.
-		sr_session_destroy();
-	} 
+	g_thread_join(lib_ctx.collect_thread); // Wait the collect thread ends.
+	lib_ctx.collect_thread = NULL;
+
+	close_device_instance(di);
+
+	// Destroy current session.
+	sr_session_destroy();
 
 	return SR_OK;
 }
@@ -604,22 +660,23 @@ SR_PRIV int sr_usb_device_is_exists(libusb_device *usb_dev)
 	struct sr_usb_dev_inst *usb_dev_info;
 	int bFind = 0;
 
-	if (usb_dev == NULL){
+	if (usb_dev == NULL)
+	{
 		sr_err("%s", "sr_usb_device_is_exists(), @usb_dev is null.");
 		return 0;
 	}
 
 	pthread_mutex_lock(&lib_ctx.mutext);
 
-	for (l = lib_ctx.device_list; l; l = l->next){
+	for (l = lib_ctx.device_list; l; l = l->next)
+	{
 		dev = l->data;
 		usb_dev_info = dev->conn;
-		if (dev->dev_type == DEV_TYPE_USB 
-				&& usb_dev_info != NULL 
-			 	&& usb_dev_info->usb_dev == usb_dev){
+		if (dev->dev_type == DEV_TYPE_USB && usb_dev_info != NULL && usb_dev_info->usb_dev == usb_dev)
+		{
 			bFind = 1;
 		}
-	} 
+	}
 
 	pthread_mutex_unlock(&lib_ctx.mutext);
 
@@ -630,19 +687,22 @@ SR_PRIV int sr_usb_device_is_exists(libusb_device *usb_dev)
  * Forward the data.
  */
 SR_PRIV int ds_data_forward(const struct sr_dev_inst *sdi,
-						const struct sr_datafeed_packet *packet)
+							const struct sr_datafeed_packet *packet)
 {
-	if (!sdi) {
+	if (!sdi)
+	{
 		sr_err("%s: sdi was NULL", __func__);
 		return SR_ERR_ARG;
 	}
 
-	if (!packet) {
+	if (!packet)
+	{
 		sr_err("%s: packet was NULL", __func__);
 		return SR_ERR_ARG;
 	}
 
-	if (lib_ctx.data_forward_callback != NULL && lib_ctx.collect_stop_flag == 0){
+	if (lib_ctx.data_forward_callback != NULL && lib_ctx.collect_stop_flag == 0)
+	{
 		lib_ctx.data_forward_callback(sdi, packet);
 		return SR_OK;
 	}
@@ -653,8 +713,9 @@ SR_PRIV int current_device_acquisition_stop()
 {
 	struct sr_dev_inst *di;
 	di = lib_ctx.current_device_instance;
-	if (di != NULL && di->driver && di->driver->dev_acquisition_stop){
-		return di->driver->dev_acquisition_stop(di, (void*)di);
+	if (di != NULL && di->driver && di->driver->dev_acquisition_stop)
+	{
+		return di->driver->dev_acquisition_stop(di, (void *)di);
 	}
 	return SR_ERR;
 }
@@ -666,25 +727,26 @@ SR_PRIV int current_device_acquisition_stop()
 static int update_device_handle(struct libusb_device *old_dev, struct libusb_device *new_dev)
 {
 	GList *l;
-	struct sr_dev_inst *dev; 
+	struct sr_dev_inst *dev;
 	struct sr_usb_dev_inst *usb_dev_info;
 	uint8_t bus;
-	uint8_t address; 
-	int bFind = 0; 
+	uint8_t address;
+	int bFind = 0;
 
 	pthread_mutex_lock(&lib_ctx.mutext);
 
-	for (l = lib_ctx.device_list; l; l = l->next){
+	for (l = lib_ctx.device_list; l; l = l->next)
+	{
 		dev = l->data;
 		usb_dev_info = dev->conn;
-		if (dev->dev_type == DEV_TYPE_USB 
-				&& usb_dev_info != NULL 
-			 	&& usb_dev_info->usb_dev == old_dev){
-			
+		if (dev->dev_type == DEV_TYPE_USB && usb_dev_info != NULL && usb_dev_info->usb_dev == old_dev)
+		{
+
 			// Release the old device and the resource.
-			if (dev == lib_ctx.current_device_instance){
+			if (dev == lib_ctx.current_device_instance)
+			{
 				sr_info("%s", "Release the old device's resource.");
-				close_device_instance(dev);				
+				close_device_instance(dev);
 			}
 
 			bus = libusb_get_bus_number(new_dev);
@@ -694,19 +756,21 @@ static int update_device_handle(struct libusb_device *old_dev, struct libusb_dev
 			usb_dev_info->address = address;
 			dev->handle = new_dev;
 			bFind = 1;
-			
+
 			// Reopen the device.
-			if (dev == lib_ctx.current_device_instance){
+			if (dev == lib_ctx.current_device_instance)
+			{
 				sr_info("%s", "Reopen the current device.");
-				open_device_instance(dev);				
+				open_device_instance(dev);
 			}
 			break;
 		}
-	} 
+	}
 
 	pthread_mutex_unlock(&lib_ctx.mutext);
 
-	if (bFind){
+	if (bFind)
+	{
 		return SR_OK;
 	}
 
@@ -717,50 +781,61 @@ static void hotplug_event_listen_callback(struct libusb_context *ctx, struct lib
 {
 	int bDone = 0;
 
-	if (dev == NULL){
+	if (dev == NULL)
+	{
 		sr_err("%s", "hotplug_event_listen_callback(), @dev is null.");
 		return;
 	}
 
-	if (event == USB_EV_HOTPLUG_ATTACH){
+	if (event == USB_EV_HOTPLUG_ATTACH)
+	{
 		sr_info("One device attached,handle:%p", dev);
 
-		if (lib_ctx.is_waitting_reconnect){
-			if (lib_ctx.attach_device_handle != NULL){
-				sr_err("One attached device haven't processed complete,handle:%p", 
-							lib_ctx.attach_device_handle);
+		if (lib_ctx.is_waitting_reconnect)
+		{
+			if (lib_ctx.attach_device_handle != NULL)
+			{
+				sr_err("One attached device haven't processed complete,handle:%p",
+					   lib_ctx.attach_device_handle);
 			}
 
-			if (lib_ctx.detach_device_handle == NULL){
+			if (lib_ctx.detach_device_handle == NULL)
+			{
 				sr_err("%s", "The detached device handle is null, but the status is waitting for reconnect.");
 			}
-			else{
-				if (update_device_handle(lib_ctx.detach_device_handle, dev) != SR_OK){
+			else
+			{
+				if (update_device_handle(lib_ctx.detach_device_handle, dev) != SR_OK)
+				{
 					bDone = 1;
 					sr_info("%s", "One device loose contact, but it reconnect success.");
 				}
-				else{
+				else
+				{
 					sr_err("Update device handle error! can't find the old.");
 				}
 				lib_ctx.detach_device_handle = NULL;
-			}			
+			}
 		}
-		if (bDone == 0){
-			lib_ctx.attach_event_flag = 1;  // Is a new device attched.
+		if (bDone == 0)
+		{
+			lib_ctx.attach_event_flag = 1; // Is a new device attched.
 			lib_ctx.attach_device_handle = dev;
 		}
 		lib_ctx.is_waitting_reconnect = 0;
 	}
-	else if (event == USB_EV_HOTPLUG_DETTACH){
+	else if (event == USB_EV_HOTPLUG_DETTACH)
+	{
 		sr_info("One device detached,handle:%p", dev);
 
-		if (lib_ctx.detach_device_handle != NULL){
-			sr_err("One detached device haven't processed complete,handle:%p", 
-						lib_ctx.detach_device_handle);
+		if (lib_ctx.detach_device_handle != NULL)
+		{
+			sr_err("One detached device haven't processed complete,handle:%p",
+				   lib_ctx.detach_device_handle);
 		}
 
-		if (lib_ctx.current_device_info.handle != NULL && lib_ctx.current_device_info.dev_type == DEV_TYPE_USB){
-
+		if (lib_ctx.current_device_info.handle != NULL && lib_ctx.current_device_info.dev_type == DEV_TYPE_USB)
+		{
 		}
 		/**
 		 * Begin to wait the device reconnect, if timeout, will process the detach event.
@@ -769,7 +844,8 @@ static void hotplug_event_listen_callback(struct libusb_context *ctx, struct lib
 		lib_ctx.check_reconnect_times = 0;
 		lib_ctx.detach_device_handle = dev;
 	}
-	else{
+	else
+	{
 		sr_err("%s", "Unknown usb device event");
 	}
 }
@@ -785,7 +861,8 @@ static void process_attach_event()
 
 	sr_info("%s", "Process device attach event.");
 
-	if (lib_ctx.attach_device_handle  == NULL){
+	if (lib_ctx.attach_device_handle == NULL)
+	{
 		sr_err("%s", "The attached device handle is null.");
 		return;
 	}
@@ -799,13 +876,15 @@ static void process_attach_event()
 		if (dr->driver_type == DRIVER_TYPE_HARDWARE)
 		{
 			dev_list = dr->scan(NULL);
-			if (dev_list != NULL){
+			if (dev_list != NULL)
+			{
 				sr_info("Get new device list by driver \"%s\"", dr->name);
 
 				pthread_mutex_lock(&lib_ctx.mutext);
 				cur_list = lib_ctx.device_list;
 
-				for (l= dev_list; l; l = l->next){
+				for (l = dev_list; l; l = l->next)
+				{
 					cur_list = g_slist_append(cur_list, l->data);
 					num++;
 				}
@@ -814,32 +893,34 @@ static void process_attach_event()
 				pthread_mutex_unlock(&lib_ctx.mutext);
 				g_slist_free(dev_list);
 			}
-		}  
+		}
 
 		drivers++;
 	}
 
-	if (lib_ctx.event_callback != NULL && num > 0){
+	if (lib_ctx.event_callback != NULL && num > 0)
+	{
 		// Tell user one new device attched, and the list is updated.
-        lib_ctx.event_callback(DS_EV_NEW_DEVICE_ATTACH);
+		lib_ctx.event_callback(DS_EV_NEW_DEVICE_ATTACH);
 	}
 
-	lib_ctx.attach_device_handle  = NULL;
+	lib_ctx.attach_device_handle = NULL;
 }
 
 static void process_detach_event()
 {
 	libusb_device *ev_dev;
-    int ev = DS_EV_INACTIVE_DEVICE_DETACH;
+	int ev = DS_EV_INACTIVE_DEVICE_DETACH;
 	GList *l;
 	struct sr_dev_inst *dev;
 	struct sr_usb_dev_inst *usb_dev_info;
 	struct sr_dev_driver *driver_ins;
-	
+
 	sr_info("%s", "Process device detach event.");
- 
+
 	ev_dev = lib_ctx.detach_device_handle;
-	if (ev_dev == NULL){
+	if (ev_dev == NULL)
+	{
 		sr_err("%s", "The detached device handle is null.");
 		return;
 	}
@@ -847,27 +928,32 @@ static void process_detach_event()
 
 	pthread_mutex_lock(&lib_ctx.mutext);
 
-	for (l = lib_ctx.device_list; l; l = l->next){
+	for (l = lib_ctx.device_list; l; l = l->next)
+	{
 		dev = l->data;
 		usb_dev_info = dev->conn;
 
-		if (dev->dev_type == DEV_TYPE_USB 
-				&& usb_dev_info != NULL 
-			 	&& usb_dev_info->usb_dev == ev_dev){ 		
-			//Found the device, and remove it.
+		if (dev->dev_type == DEV_TYPE_USB && usb_dev_info != NULL && usb_dev_info->usb_dev == ev_dev)
+		{
+			// Found the device, and remove it.
 			lib_ctx.device_list = g_slist_remove(lib_ctx.device_list, l->data);
 			destroy_device_instance(dev);
+			if (dev == lib_ctx.current_device_instance)
+			{
+				lib_ctx.current_device_instance = NULL;
+			}
 			break;
 		}
 	}
 	pthread_mutex_unlock(&lib_ctx.mutext);
 
 	if (ev_dev == lib_ctx.current_device_info.handle)
-        ev = DS_EV_CURRENT_DEVICE_DETACH;
+		ev = DS_EV_CURRENT_DEVICE_DETACH;
 
-	if (lib_ctx.event_callback != NULL){
-		//Tell user one new device detached, and the list is updated.
-		lib_ctx.event_callback(ev);		
+	if (lib_ctx.event_callback != NULL)
+	{
+		// Tell user one new device detached, and the list is updated.
+		lib_ctx.event_callback(ev);
 	}
 }
 
@@ -875,42 +961,47 @@ static void usb_hotplug_process_proc()
 {
 	sr_info("%s", "Hotplug thread start!");
 
-    while (!lib_ctx.lib_exit_flag)
+	while (!lib_ctx.lib_exit_flag)
 	{
 		sr_hotplug_wait_timout(lib_ctx.sr_ctx);
 
-		if (lib_ctx.attach_event_flag){
+		if (lib_ctx.attach_event_flag)
+		{
 			process_attach_event();
 			lib_ctx.attach_event_flag = 0;
 		}
-		if (lib_ctx.detach_event_flag){
+		if (lib_ctx.detach_event_flag)
+		{
 			process_detach_event();
 			lib_ctx.detach_event_flag = 0;
 		}
 
 		_sleep(100);
 
-		if (lib_ctx.is_waitting_reconnect){
+		if (lib_ctx.is_waitting_reconnect)
+		{
 			lib_ctx.check_reconnect_times++;
 
 			// 500ms
-			if (lib_ctx.check_reconnect_times == 5){
-				//Device loose contact,wait for it reconnection timeout.
+			if (lib_ctx.check_reconnect_times == 5)
+			{
+				// Device loose contact,wait for it reconnection timeout.
 				lib_ctx.detach_event_flag = 1; // use detach event
 				lib_ctx.is_waitting_reconnect = 0;
-			}              
+			}
 		}
 	}
-	
+
 	sr_info("%s", "Hotplug thread end!");
 }
 
 static void destroy_device_instance(struct sr_dev_inst *dev)
 {
-	if (dev == NULL || dev->driver == NULL){
+	if (dev == NULL || dev->driver == NULL)
+	{
 		sr_err("%s", "destroy_device_instance() argument error.");
 		return;
-	} 
+	}
 	struct sr_dev_driver *driver_ins;
 	driver_ins = dev->driver;
 
@@ -922,10 +1013,11 @@ static void destroy_device_instance(struct sr_dev_inst *dev)
 
 static void close_device_instance(struct sr_dev_inst *dev)
 {
-	if (dev == NULL || dev->driver == NULL){
+	if (dev == NULL || dev->driver == NULL)
+	{
 		sr_err("%s", "close_device_instance() argument error.");
 		return;
-	} 
+	}
 	struct sr_dev_driver *driver_ins;
 	driver_ins = dev->driver;
 
@@ -935,14 +1027,16 @@ static void close_device_instance(struct sr_dev_inst *dev)
 
 static int open_device_instance(struct sr_dev_inst *dev)
 {
-	if (dev == NULL || dev->driver == NULL){
+	if (dev == NULL || dev->driver == NULL)
+	{
 		sr_err("%s", "open_device_instance() argument error.");
 		return SR_ERR_ARG;
-	} 
+	}
 	struct sr_dev_driver *driver_ins;
 	driver_ins = dev->driver;
 
-	if (driver_ins->dev_open){
+	if (driver_ins->dev_open)
+	{
 		driver_ins->dev_open(dev);
 		return SR_OK;
 	}
