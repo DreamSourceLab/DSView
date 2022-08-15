@@ -315,50 +315,6 @@ SR_PRIV void sr_serial_dev_inst_free(struct sr_serial_dev_inst *serial)
 	g_free(serial->serialcomm);
 	g_free(serial);
 }
-
-SR_API GSList *sr_dev_list(const struct sr_dev_driver *driver)
-{
-	if (driver && driver->dev_list)
-		return driver->dev_list();
-	else
-		return NULL;
-}
-
-SR_API const GSList *sr_dev_mode_list(const struct sr_dev_inst *sdi)
-{
-    if (sdi && sdi->driver && sdi->driver->dev_mode_list)
-        return sdi->driver->dev_mode_list(sdi);
-    else
-        return NULL;
-}
-
-SR_API int sr_dev_clear(const struct sr_dev_driver *driver)
-{
-     return SR_OK;
-}
-
-SR_API int sr_dev_open(struct sr_dev_inst *sdi)
-{
-	int ret;
-
-	if (!sdi || !sdi->driver || !sdi->driver->dev_open)
-		return SR_ERR;
-
-	ret = sdi->driver->dev_open(sdi);
-
-	return ret;
-}
-
-SR_API int sr_dev_close(struct sr_dev_inst *sdi)
-{
-	int ret;
  
-	if (!sdi || !sdi->driver || !sdi->driver->dev_close)
-		return SR_ERR;
-
-	ret = sdi->driver->dev_close(sdi);
-
-	return ret;
-}
 
 /** @} */

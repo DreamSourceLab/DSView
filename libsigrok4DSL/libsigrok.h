@@ -621,10 +621,11 @@ enum CHANNEL_TYPE {
     SR_CHANNEL_MATH,
 };
 
-enum OPERATION_MODE {
+enum OPERATION_MODE {	
     LOGIC = 0,
     DSO = 1,
     ANALOG = 2,
+	UNKNOWN_DSL_MODE = 99,
 };
 
 struct sr_channel {
@@ -1171,13 +1172,7 @@ struct ds_trigger_pos {
  * @file
  *
  * Header file containing API function prototypes.
- */
-
-/*--- backend.c -------------------------------------------------------------*/
-
-//@event, 1:attach, 2:left
-SR_PRIV int sr_init(struct sr_context **ctx);
-SR_PRIV int sr_exit(struct sr_context *ctx);
+ */  
 
 /*--- device.c --------------------------------------------------------------*/
 
@@ -1187,18 +1182,11 @@ SR_API int sr_dev_probe_enable(const struct sr_dev_inst *sdi, int probenum,
 		gboolean state);
 SR_API int sr_dev_trigger_set(const struct sr_dev_inst *sdi, uint16_t probenum,
 		const char *trigger);
-SR_API GSList *sr_dev_list(const struct sr_dev_driver *driver);
-SR_API const GSList *sr_dev_mode_list(const struct sr_dev_inst *sdi);
-SR_API int sr_dev_clear(const struct sr_dev_driver *driver);
-SR_API int sr_dev_open(struct sr_dev_inst *sdi);
-SR_API int sr_dev_close(struct sr_dev_inst *sdi);
+ 
 
 /*--- hwdriver.c ------------------------------------------------------------*/
 
-SR_API struct sr_dev_driver **sr_driver_list(void);
-SR_API int sr_driver_init(struct sr_context *ctx,
-		struct sr_dev_driver *driver);
-SR_API GSList *sr_driver_scan(struct sr_dev_driver *driver, GSList *options);
+
 SR_API int sr_config_get(const struct sr_dev_driver *driver,
                          const struct sr_dev_inst *sdi,
                          const struct sr_channel *ch,
@@ -1218,22 +1206,6 @@ SR_API int sr_status_get(const struct sr_dev_inst *sdi, struct sr_status *status
 SR_API struct sr_config *sr_config_new(int key, GVariant *data);
 SR_API void sr_config_free(struct sr_config *src);
 
-//SR_API void sr_test_usb_api();
-
-/*--------------------session.c----------------*/
-typedef void (*sr_datafeed_callback_t)(const struct sr_dev_inst *sdi,
-					const struct sr_datafeed_packet *packet, void *cb_data);
-          
-
-/* Session setup */
-SR_API int sr_session_load(const char *filename);
-SR_API struct sr_session *sr_session_new(void);
-SR_API int sr_session_destroy(void); 
-
-/* Session control */ 
-SR_API int sr_session_run(void);
-SR_API int sr_session_stop(void); 
- 
 
 /*--- input/input.c ---------------------------------------------------------*/
 
@@ -1296,22 +1268,18 @@ SR_API void ds_log_level(int level);
 /*---event define ---------------------------------------------*/
 enum dslib_event_type
 {
-	// A new device attached, user need to call ds_device_get_list to get the list,
+	// A new device attached, user need to call ds_get_device_list to get the list,
 	// the last one is new.
-	// User can call ds_device_select() to switch to the current device.
+	// User can call ds_active_device() to switch to the current device.
 	DS_EV_NEW_DEVICE_ATTACH = 0, 
 
-	// The current device detached, user need to call ds_device_get_list to get the list,
-	// and call ds_device_select() to switch to the current device.
+	// The current device detached, user need to call ds_get_device_list to get the list,
+	// and call ds_active_device() to switch to the current device.
 	DS_EV_CURRENT_DEVICE_DETACH = 1, 
 
 	// A inactive device detached.
-	// User can call ds_device_get_list() to get the new list, and update the list view.
+	// User can call ds_get_device_list() to get the new list, and update the list view.
 	DS_EV_INACTIVE_DEVICE_DETACH = 2,
-
-	// The current device switch success.
-	// User can call ds_device_get_list() to get new list, and update the data view.
-	DS_EV_CURRENT_DEVICE_CHANGED = 3,
 };
 
 typedef unsigned long long ds_device_handle;
@@ -1324,7 +1292,6 @@ struct ds_device_info
 	ds_device_handle handle;
 	char 	name[50];
 	int 	dev_type; // enum sr_device_type
-	int 	is_current; //is actived
 };
 
 struct ds_task_progress
@@ -1381,7 +1348,7 @@ SR_API void ds_set_event_callback(dslib_event_callback_t cb);
 /**
  * Set the data receive callback.
  */
-SR_API int ds_set_datafeed_callback(ds_datafeed_callback_t cb);
+SR_API void ds_set_datafeed_callback(ds_datafeed_callback_t cb);
 
 /**
  * Set the firmware binary file directory,
@@ -1393,45 +1360,66 @@ SR_API void ds_set_firmware_resource_dir(const char *dir);
  * Get the device list, if the field _handle is 0, the list visited to end.
  * User need call free() to release the buffer. If the list is empty, the out_list is null.
  */
-SR_API int ds_device_get_list(struct ds_device_info** out_list, int *out_count);
+SR_API int ds_get_device_list(struct ds_device_info** out_list, int *out_count);
 
 /**
- * Active a device, if success, it will trigs the event of SR_EV_CURRENT_DEVICE_CHANGED.
+ * Active a device.
  */
-SR_API int ds_device_select(ds_device_handle handle);
+SR_API int ds_active_device(ds_device_handle handle);
 
 /**
- * Active a device, if success, it will trigs the event of SR_EV_CURRENT_DEVICE_CHANGED.
- * @index is -1, will select the last one.
+ * Active a device,
+ * if @index is -1, will select the last one.
  */
-SR_API int ds_device_select_by_index(int index);
+SR_API int ds_active_device_by_index(int index);
 
 /**
- * Create a device from session file, it auto load the data.
+ * Get the selected device index.
+ */
+SR_API int ds_get_actived_device_index();
+
+/**
+ * Create a device from session file, and will auto load the data.
  */
 SR_API int ds_device_from_file(const char *file_path);
 
 /**
+ * Get the decive supports work mode, mode list: LOGIC、ANALOG、DSO
+ * return type see struct sr_dev_mode.
+ */
+SR_API const GSList *ds_get_device_mode_list(ds_device_handle handle);
+
+/**
  * Remove one device from the list, and destory it.
- * User need to call ds_device_get_list() to get the new list.
+ * User need to call ds_get_device_list() to get the new list.
  */
 SR_API int ds_remove_device(ds_device_handle handle);
 
 /**
- * Get the current device info.
- * If the current device is not exists, the handle filed will be set null.
+ * Get the actived device info.
+ * If the actived device is not exists, the handle filed will be set null.
  */
-SR_API int ds_get_current_device_info(struct ds_device_info *info);
+SR_API int ds_get_actived_device_info(struct ds_device_info *fill_info);
+
+/**
+ * Get actived device work model. mode list:LOGIC、ANALOG、DSO
+ */
+SR_API int ds_get_actived_device_mode();
 
 /**
  * Start collect data
  */
-SR_API int ds_device_start_collect();
+SR_API int ds_start_collect();
 
 /**
  * Stop collect data
  */
-SR_API int ds_device_stop_collect();
+SR_API int ds_stop_collect();
+
+/**
+ * Check if the device is collecting.
+ */
+SR_API int ds_is_collecting();
 
 
 #ifdef __cplusplus

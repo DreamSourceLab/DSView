@@ -25,7 +25,6 @@
 
 #include "sigsession.h"
 #include "mainwindow.h"
-#include "devicemanager.h"
 #include "device/device.h"
 #include "device/file.h"
 
@@ -60,15 +59,15 @@
 #include "data/decode/decoderstatus.h"
 #include "dsvdef.h"
 #include "log.h"
+#include "config/appconfig.h"
  
 namespace pv {
 
 // TODO: This should not be necessary
 SigSession* SigSession::_session = NULL;
 
-SigSession::SigSession(DeviceManager *device_manager) 
-{
-    _device_manager = device_manager;
+SigSession::SigSession() 
+{ 
     // TODO: This should not be necessary
     _session = this;
     _hot_attach = false;
@@ -1217,122 +1216,10 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
 }
 
 void SigSession::data_feed_callback(const struct sr_dev_inst *sdi,
-    const struct sr_datafeed_packet *packet, void *cb_data)
-{
-    (void) cb_data;
+                    const struct sr_datafeed_packet *packet)
+{ 
     assert(_session);
     _session->data_feed_in(sdi, packet);
-}
-
-/*
- * hotplug function
- */
-void SigSession::hotplug_callback(void *ctx, void *dev, int event, void *user_data)
-{
-    if (_session != NULL){
-        _session->on_hotplug_event(ctx, dev, event, user_data);
-    }   
-}
-
-void SigSession::on_hotplug_event(void *ctx, void *dev, int event, void *user_data)
-{
-    (void)ctx;
-    (void)dev;
-    (void)user_data;
-
-    if (USB_EV_HOTPLUG_ATTACH != event && USB_EV_HOTPLUG_DETTACH != event){
-        dsv_err("%s%d", "Unhandled event", event);
-        return;
-    }
- 
-    if (USB_EV_HOTPLUG_ATTACH == event) 
-    {
-        _hot_attach = true;
-        _is_device_reattach = _is_wait_reattch;
-        _is_wait_reattch = false; //cancel detach event
-    }
-    else if (USB_EV_HOTPLUG_DETTACH == event) 
-    {
-        dsv_dbg("%s", "Device detached, will wait it reattach.");
-        _wait_reattch_times = 0;
-        _is_wait_reattch = true; //wait the device reattach.
-        _is_device_reattach = false;
-    }
-}
-
-void SigSession::hotplug_proc()
-{  
-    if (!_dev_inst)
-        return; 
- 
-    dsv_info("%s", "Hotplug thread start!");
-
-    try {
-        while(_session && !_bHotplugStop) { 
-
-            sr_hotplug_wait_timout(_sr_ctx);
-
-            if (_hot_attach) { 
-                dsv_info("%s", "process event: DreamSourceLab hardware attached!");
-                _callback->device_attach();
-                _hot_attach = false;
-            }
-            if (_hot_detach) { 
-                dsv_info("%s", "process event: DreamSourceLab hardware detached!");
-                _callback->device_detach();
-                _hot_detach = false;
-            }
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-            if (_is_wait_reattch){
-                _wait_reattch_times++;
-
-                // 500ms
-                if (_wait_reattch_times == 70)
-                {
-                    dsv_dbg("%s", "Wait the device reattach time out for 500ms");
-                    _hot_detach = true;
-                    _is_wait_reattch = false;
-                }              
-            }
-        }
-    } catch(...) { 
-        dsv_err("%s", "Interrupt exception for hotplug thread was thrown.");
-    }
-
-    dsv_info("%s", "Hotplug thread exit!");
-}
-
-void SigSession::register_hotplug_callback()
-{
-    if (sr_listen_hotplug(_sr_ctx, hotplug_callback, NULL) != 0){
-        dsv_err("%s", "Error creating a hotplug callback!");
-    }
-}
-
-void SigSession::deregister_hotplug_callback()
-{
-    sr_close_hotplug(_sr_ctx);
-}
-
-void SigSession::start_hotplug_work()
-{ 
-    // Begin the session 
-    _hot_attach = false;
-    _hot_detach = false;
-
-    if (_hotplug_thread.joinable()){
-        return;
-    } 
-    _hotplug_thread =  std::thread(&SigSession::hotplug_proc, this);
-}
-
-void SigSession::stop_hotplug_work()
-{  
-    _bHotplugStop = true;
-     if (_hotplug_thread.joinable()){
-        _hotplug_thread.join();
-    } 
 }
 
 uint16_t SigSession::get_ch_num(int type)
@@ -1445,7 +1332,7 @@ bool SigSession::add_decoder(srd_decoder *const dec, bool silent, DecoderStatus 
         return ret;
 
     } catch(...) {
-         ds_debug("Starting a hotplug thread...\n");
+         
     }
  
     return false;    
@@ -1838,7 +1725,7 @@ void SigSession::set_stop_scale(float scale)
 
  void SigSession::Open()
  {
-     register_hotplug_callback();
+      
  }
 
  void SigSession::Close()
@@ -1852,8 +1739,6 @@ void SigSession::set_stop_scale(float scale)
 
      clear_all_decoder(); //clear all decode task, and stop decode thread
 
-     ds_trigger_destroy();
-
      if (_dev_inst)
      {
          _dev_inst->release();
@@ -1861,10 +1746,6 @@ void SigSession::set_stop_scale(float scale)
 
      // TODO: This should not be necessary
      _session = NULL;
-
-     stop_hotplug_work();
-
-     deregister_hotplug_callback();
  }
 
 //append a decode task, and try create a thread
@@ -2006,5 +1887,66 @@ void SigSession::set_stop_scale(float scale)
       _bDecodeRunning = false;
   }
 
+  void SigSession::device_lib_event_callback(int event)
+  {
+       struct ds_device_info *array = NULL;
+       int count = 0;
+
+       if (_session == NULL){
+            dsv_err("%s", "device_lib_event_callback() error, _session is null.");
+            return;
+       }
+
+       if (ds_device_get_list(&array, &count) != SR_OK){
+         dsv_err("%s", "Failed to get device list!");
+         return;
+       }
+
+       _session->_callback->update_device_list(array, count);
+
+       if (array != NULL){
+         free(array);
+       }
+  }
+
+  bool SigSession::init()
+  {
+      ds_log_set_context(dsv_log_context());
+
+      ds_set_event_callback(device_lib_event_callback);
+
+      ds_set_datafeed_callback(data_feed_callback);
+
+      QString resdir = GetResourceDir();
+      char res_path[256] = {0};
+#ifdef _WIN32
+      QTextCodec *codec = QTextCodec::codecForName("System");
+      QByteArray str_tmp = codec->fromUnicode(resdir);
+      strncpy(res_path, str_tmp.data(), sizeof(res_path) - 1);
+#else
+      strncpy(res_path, resdir.toUtf8().data(), sizeof(res_path) - 1);
+#endif
+      ds_set_firmware_resource_dir(res_path);
+
+      if (ds_lib_init() != SR_OK)
+      { 
+        dsv_err("%s", "DSView run ERROR: collect lib init failed.");
+        return false;
+      }
+
+      return true;
+  }
+
+  void SigSession::uninit()
+  {
+      this->Close();
+
+      ds_lib_exit();
+  }
+
+  int SigSession::get_device_work_mode()
+  {
+      return ds_get_selected_device_index()
+  }
 
 } // namespace pv

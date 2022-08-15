@@ -68,6 +68,8 @@ SamplingBar::SamplingBar(SigSession *session, QWidget *parent) :
     _mode_button(this),
     _instant(false)
 {
+    _is_seting = false;
+    
     setMovable(false);
     setContentsMargins(0,0,0,0);
     layout()->setSpacing(0);
@@ -1033,6 +1035,20 @@ void SamplingBar::on_mode()
         _session->set_run_mode(pv::SigSession::Repetitive);
     }
 }
+
+  void SamplingBar::update_device_list(struct ds_device_info *array, int count, int select_index)
+  {
+    if (array == NULL || count == 0){
+        return;
+    }
+    _is_seting = true;
+
+    for (int i=0; i<count; i++){
+
+    }
+  
+    _is_seting = false;
+  }
 
 } // namespace toolbars
 } // namespace pv

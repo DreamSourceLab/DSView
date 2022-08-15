@@ -422,11 +422,6 @@ static GSList *scan(GSList *options)
 	return devices;
 }
 
-static GSList *dev_list(void)
-{
-	return ((struct drv_context *)(di->priv))->instances;
-}
-
 static const GSList *dev_mode_list(const struct sr_dev_inst *sdi)
 {
     return dsl_mode_list(sdi);
@@ -1446,8 +1441,7 @@ SR_PRIV struct sr_dev_driver DSLogic_driver_info = {
     .driver_type = DRIVER_TYPE_HARDWARE,
 	.init = init,
 	.cleanup = cleanup,
-	.scan = scan,
-	.dev_list = dev_list,
+	.scan = scan, 
     .dev_mode_list = dev_mode_list,
 	.config_get = config_get,
 	.config_set = config_set,

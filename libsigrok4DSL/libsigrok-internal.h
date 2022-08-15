@@ -91,7 +91,6 @@ struct sr_dev_driver {
 	int (*init) (struct sr_context *sr_ctx);
 	int (*cleanup) (void);
 	GSList *(*scan) (GSList *options);
-	GSList *(*dev_list) (void);
     const GSList *(*dev_mode_list) (const struct sr_dev_inst *sdi);
 
     int (*config_get) (int id, GVariant **data,
@@ -340,11 +339,24 @@ SR_PRIV GSList *sr_usb_find(libusb_context *usb_ctx, const char *conn);
 
 /*--- backend.c -------------------------------------------------------------*/
 SR_PRIV int sr_init(struct sr_context **ctx);
-SR_PRIV int sr_exit(struct sr_context *ctx);
+SR_PRIV int sr_exit(struct sr_context *ctx); 
 
 SR_PRIV int sr_listen_hotplug(struct sr_context *ctx, hotplug_event_callback callback);
 SR_PRIV int sr_close_hotplug(struct sr_context *ctx);
 SR_PRIV void sr_hotplug_wait_timout(struct sr_context *ctx);
+
+/**---------------driver ----*/
+SR_PRIV struct sr_dev_driver **sr_driver_list(void);
+SR_PRIV int sr_driver_init(struct sr_context *ctx,
+		struct sr_dev_driver *driver);
+
+/*----- Session ------*/ 
+SR_PRIV int sr_session_run(void);
+SR_PRIV int sr_session_stop(void); 
+SR_PRIV struct sr_session *sr_session_new(void);
+SR_PRIV int sr_session_destroy(void);
+/* Session setup */
+SR_PRIV int sr_session_load(const char *filename);
 
 /*--- lib_main.c -------------------------------------------------*/
 /**

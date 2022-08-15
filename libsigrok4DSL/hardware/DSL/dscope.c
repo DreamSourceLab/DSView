@@ -283,12 +283,11 @@ static GSList *scan(GSList *options)
         address = libusb_get_device_address(device_handle);
         sr_info("Found a new device,handle:%p,bus:%d,address:%d", device_handle, bus, address);
 
-		devcnt = g_slist_length(drvc->instances);
         devc = DSCope_dev_new(prof);
         if (!devc)
             return NULL;
         
-        sdi = sr_dev_inst_new(channel_modes[devc->ch_mode].mode, devcnt, SR_ST_INITIALIZING,
+        sdi = sr_dev_inst_new(channel_modes[devc->ch_mode].mode, 0, SR_ST_INITIALIZING,
 			prof->vendor, prof->model, prof->model_version);
 
         if (!sdi) {
@@ -352,11 +351,6 @@ static GSList *scan(GSList *options)
     }
 
 	return devices;
-}
-
-static GSList *dev_list(void)
-{
-	return ((struct drv_context *)(di->priv))->instances;
 }
 
 static const GSList *dev_mode_list(const struct sr_dev_inst *sdi)
@@ -2109,8 +2103,7 @@ SR_PRIV struct sr_dev_driver DSCope_driver_info = {
     .driver_type = DRIVER_TYPE_HARDWARE,
 	.init = init,
 	.cleanup = cleanup,
-	.scan = scan,
-	.dev_list = dev_list,
+	.scan = scan, 
     .dev_mode_list = dev_mode_list,
 	.config_get = config_get,
 	.config_set = config_set,

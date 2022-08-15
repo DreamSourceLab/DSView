@@ -36,6 +36,7 @@
 
 struct st_dev_inst;
 class QAction;
+struct ds_device_info;
 
 namespace pv
 { 
@@ -87,6 +88,8 @@ namespace pv
             double hori_knob(int dir);
             double commit_hori_res();
             double get_hori_res();
+
+            void update_device_list(struct ds_device_info *array, int count, int select_index);
 
         public slots:
             void set_sample_rate(uint64_t sample_rate);
@@ -155,6 +158,7 @@ namespace pv
             QAction             *_action_repeat;
             QAction             *_action_single;
             bool                _instant;
+            bool                _is_seting;
         };
 
     } // namespace toolbars

@@ -253,6 +253,7 @@ void MainWindow::setup_ui()
     connect(&_event, SIGNAL(data_updated()), this, SLOT(on_data_updated()));
     connect(&_event, SIGNAL(cur_snap_samplerate_changed()), this, SLOT(on_cur_snap_samplerate_changed()));
     connect(&_event, SIGNAL(receive_data_len(quint64)), this, SLOT(on_receive_data_len(quint64)));
+    connect(&_event, SIGNAL(update_device_list()), this, SLOT(on_device_list_changed()));
 
 
     //view
@@ -1517,6 +1518,9 @@ void MainWindow::on_cur_snap_samplerate_changed()
     _measure_widget->cursor_update();
 }
 
+
+ /*------------------on event end-------*/
+
 void MainWindow::device_setted(){
     _view->set_device();
 }
@@ -1596,6 +1600,10 @@ void MainWindow::receive_header(){
 
 void MainWindow::data_received(){
 
+}
+
+void MainWindow::update_device_list(struct ds_device_info *array, int count, int select_index)
+{   
 }
 
 } // namespace pv

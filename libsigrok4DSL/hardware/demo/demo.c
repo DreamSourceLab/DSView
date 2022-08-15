@@ -167,17 +167,10 @@ static GSList *hw_scan(GSList *options)
 	sdi->driver = di;
     sdi->dev_type = DEV_TYPE_DEMO;
 
-	devices = g_slist_append(devices, sdi);
-	drvc->instances = g_slist_append(drvc->instances, sdi);
-
+	devices = g_slist_append(devices, sdi); 
     setup_probes(sdi, channel_modes[devc->ch_mode].num);
 
 	return devices;
-}
-
-static GSList *hw_dev_list(void)
-{
-	return ((struct drv_context *)(di->priv))->instances;
 }
 
 static const GSList *hw_dev_mode_list(const struct sr_dev_inst *sdi)
@@ -1073,8 +1066,7 @@ SR_PRIV struct sr_dev_driver demo_driver_info = {
     .driver_type = DRIVER_TYPE_DEMO,
 	.init = hw_init,
 	.cleanup = hw_cleanup,
-	.scan = hw_scan,
-	.dev_list = hw_dev_list,
+	.scan = hw_scan, 
     .dev_mode_list = hw_dev_mode_list,
 	.config_get = config_get,
 	.config_set = config_set,

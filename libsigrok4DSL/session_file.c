@@ -58,7 +58,7 @@ extern SR_PRIV struct sr_dev_driver session_driver;
  *         SR_ERR_MALLOC upon memory allocation errors, or SR_ERR upon
  *         other errors.
  */
-SR_API int sr_session_load(const char *filename)
+SR_PRIV int sr_session_load(const char *filename)
 {
 	GKeyFile *kf;
 	GPtrArray *capturefiles;
@@ -158,7 +158,7 @@ SR_API int sr_session_load(const char *filename)
 					if (devcnt == 0)
 						/* first device, init the driver */
 						sdi->driver->init(NULL);
-					sr_dev_open(sdi);
+					//sr_dev_open(sdi);
 					//sr_session_dev_add(sdi);
                     g_assert(0);
 

@@ -25,9 +25,7 @@
 #include <libsigrokdecode.h>
 #include <QDir>
 #include <QCoreApplication>
-#include <QWidget>
-
-#include "devicemanager.h"
+#include <QWidget> 
 #include "sigsession.h"
 #include "dsvdef.h"
 #include "config/appconfig.h"
@@ -37,11 +35,8 @@
 
 AppControl::AppControl()
 {
-    sr_ctx = NULL;
-    _topWindow = NULL;
-    
-    _device_manager = new pv::DeviceManager();
-    _session = new pv::SigSession(_device_manager);
+    _topWindow = NULL; 
+    _session = new pv::SigSession();
 }
 
 AppControl::AppControl(AppControl &o)
@@ -50,8 +45,7 @@ AppControl::AppControl(AppControl &o)
 }
  
 AppControl::~AppControl()
-{
-    DESTROY_OBJECT(_device_manager);
+{ 
     DESTROY_OBJECT(_session);
 }
 
@@ -69,28 +63,10 @@ void AppControl::Destroy(){
 } 
 
 bool AppControl::Init()
-{
-    sr_log_set_context(dsv_log_context());
-    srd_log_set_context(dsv_log_context());
-    
-    // Initialise libsigrok
-    if (sr_init(&sr_ctx) != SR_OK)
-    {
-        m_error = "DSView run ERROR: libsigrok init failed.";
-        return false;
-    } 
-    _session->set_sr_context(sr_ctx);
+{    
+    _session->init();
 
-    QString resdir = GetResourceDir();
-    char res_path[256] = {0};
-#ifdef _WIN32
-    QTextCodec *codec = QTextCodec::codecForName("System");
-    QByteArray str_tmp = codec->fromUnicode(resdir);
-    strncpy(res_path, str_tmp.data(), sizeof(res_path) - 1);
-#else
-    strncpy(res_path, resdir.toUtf8().data(), sizeof(res_path) - 1);
-#endif
-	sr_set_firmware_resource_dir(res_path);
+    srd_log_set_context(dsv_log_context());     
 
 #if defined(_WIN32) && defined(DEBUG_INFO)
     //able run debug with qtcreator
@@ -129,15 +105,13 @@ bool AppControl::Init()
 
 bool AppControl::Start()
 {  
-    _session->Open();
-    _device_manager->initAll(sr_ctx);
+    _session->Open(); 
     return true;
 }
 
  void AppControl::Stop()
  {
-    _session->Close();
-    _device_manager->UnInitAll();    
+    _session->Close();  
  }
 
 void AppControl::UnInit()
@@ -145,11 +119,7 @@ void AppControl::UnInit()
     // Destroy libsigrokdecode
     srd_exit();
 
-    if (sr_ctx)
-    {
-        sr_exit(sr_ctx);
-        sr_ctx = NULL;
-    }
+    _session->uninit();
 }
 
 const char *AppControl::GetLastError()

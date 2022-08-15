@@ -58,11 +58,7 @@ struct source {
 	 */
 	gintptr poll_object;
 };
-
-struct datafeed_callback {
-	sr_datafeed_callback_t cb;
-	void *cb_data;
-};
+ 
 
 /**
  * Create a new session.
@@ -72,7 +68,7 @@ struct datafeed_callback {
  *
  * @return A pointer to the newly allocated session, or NULL upon errors.
  */
-SR_API struct sr_session *sr_session_new(void)
+SR_PRIV struct sr_session *sr_session_new(void)
 {
 	if (session != NULL){
 		sr_info("%s", "Destroy the old session.");
@@ -100,7 +96,7 @@ SR_API struct sr_session *sr_session_new(void)
  *
  * @return SR_OK upon success, SR_ERR_BUG if no session exists.
  */
-SR_API int sr_session_destroy(void)
+SR_PRIV int sr_session_destroy(void)
 {
 	if (session == NULL) {
 		sr_detail("%s: session was NULL", __func__);
@@ -192,7 +188,7 @@ static int sr_session_iteration(gboolean block)
  *
  * @return SR_OK upon success, SR_ERR_BUG upon errors.
  */
-SR_API int sr_session_run(void)
+SR_PRIV int sr_session_run(void)
 {
 	if (session == NULL) {
 		sr_err("%s: session was NULL; a session must be "
@@ -247,7 +243,7 @@ SR_API int sr_session_run(void)
  *
  * @return SR_OK upon success, SR_ERR_BUG if no session exists.
  */
-SR_API int sr_session_stop(void)
+SR_PRIV int sr_session_stop(void)
 {
 	if (!session) {
 		sr_err("%s: session was NULL", __func__);

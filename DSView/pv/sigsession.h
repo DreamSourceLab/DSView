@@ -122,7 +122,7 @@ private:
     SigSession(SigSession &o);
   
 public:
-    explicit SigSession(DeviceManager *device_manager);
+    explicit SigSession();
 
 	~SigSession(); 
 
@@ -179,8 +179,7 @@ public:
     void init_signals();
     void add_group();
     void del_group();
-    void start_hotplug_work();
-    void stop_hotplug_work();
+
     uint16_t get_ch_num(int type);
     
     bool get_instant();
@@ -259,11 +258,26 @@ public:
 
      inline void decode_done(){
          _callback->decode_done();
-     }
+    }
 
-     inline void set_sr_context(struct sr_context *ctx){
-         _sr_ctx = ctx;
-     }
+    bool init();
+
+    void uninit();
+
+    void reload();
+    void refresh(int holdtime);
+    void start_capture(bool instant);
+    void stop_capture();
+    void check_update();
+    void set_repeating(bool repeat);
+    void set_map_zoom(int index);
+    void auto_end();
+    
+    inline bool is_device_re_attach(){
+        return _is_device_reattach;
+    }
+
+    int get_device_work_mode();
 
 private:
     inline void data_updated(){
@@ -278,11 +292,9 @@ private:
         _callback->receive_data_len(len);
     } 
  
-private:
+ 
 	void set_capture_state(capture_state state);
-    void register_hotplug_callback();
-    void deregister_hotplug_callback(); 
-
+  
     void add_decode_task(view::DecodeTrace *trace);
     void remove_decode_task(view::DecodeTrace *trace);
     void clear_all_decode_task(int &runningDex);   
@@ -321,31 +333,12 @@ private:
 		        const struct sr_datafeed_packet *packet);
 
 	static void data_feed_callback(const struct sr_dev_inst *sdi,
-		const struct sr_datafeed_packet *packet, void *cb_data);
+		        const struct sr_datafeed_packet *packet);
 
-    // thread for hotplug
-    void hotplug_proc();
+    static void device_lib_event_callback(int event);
 
-    static void hotplug_callback(void *ctx, void *dev, int event, void *user_data);
-
-    void on_hotplug_event(void *ctx, void *dev, int event, void *user_data);
-
-public:
-    void reload();
-    void refresh(int holdtime);
-    void start_capture(bool instant);
-    void stop_capture();
-    void check_update();
-    void set_repeating(bool repeat);
-    void set_map_zoom(int index);
-    void auto_end();
-    
-    inline bool is_device_re_attach(){
-        return _is_device_reattach;
-    }
-
+  
 private:
-	DeviceManager   *_device_manager;
 
 	/**
 	 * The device instance that will be used in the next capture session.
@@ -354,8 +347,7 @@ private:
     mutable std::mutex      _sampling_mutex;
     mutable std::mutex      _data_mutex;
     mutable std::mutex      _decode_task_mutex;
- 
-    std::thread             _hotplug_thread;
+
     std::thread             _sampling_thread;   
     std::thread             _decode_thread;
 
