@@ -94,6 +94,8 @@ void _loadApp(AppOptions &o, QSettings &st){
     getFiled("quickScroll", st, o.quickScroll, true);
     getFiled("warnofMultiTrig", st, o.warnofMultiTrig, true);
     getFiled("originalData", st, o.originalData, false);
+    getFiled("ableSaveLog", st, o.ableSaveLog, false);
+    getFiled("logLevel", st, o.logLevel, 3);
 
     QString fmt;
     getFiled("protocalFormats", st, fmt, "");
@@ -109,6 +111,8 @@ void _saveApp(AppOptions &o, QSettings &st){
     setFiled("quickScroll", st, o.quickScroll);
     setFiled("warnofMultiTrig", st, o.warnofMultiTrig);
     setFiled("originalData", st, o.originalData);
+    setFiled("ableSaveLog", st, o.ableSaveLog);
+    setFiled("logLevel", st, o.logLevel);
 
     QString fmt =  FormatArrayToString(o.m_protocolFormats);
     setFiled("protocalFormats", st, fmt);
@@ -238,6 +242,8 @@ void AppConfig::LoadAll()
     _loadApp(_appOptions, st);
     _loadHistory(_userHistory, st);
     _loadFrame(_frameOptions, st);
+
+    //dsv_dbg("Config file path:\"%s\"", st.fileName().toUtf8().data());
 }
 
   void AppConfig::SaveApp()

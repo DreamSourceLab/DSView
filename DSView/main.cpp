@@ -185,19 +185,29 @@ bool bHighScale = true;
 	#ifdef DEBUG_INFO
 		if (XLOG_LEVEL_INFO > logLevel){
 			dsv_log_level(XLOG_LEVEL_INFO); // on develop mode, set the default log ldevel
+			logLevel = XLOG_LEVEL_INFO;
 		}
 	#endif
 
 	if (bStoreLog){
-		dsv_log_enalbe_logfile();
+		dsv_log_enalbe_logfile(true);
 	} 
+
+	AppControl *control = AppControl::Instance();	
+	AppConfig &app = AppConfig::Instance(); 
+	app.LoadAll(); //load app config
+
+	if (app._appOptions.ableSaveLog){
+		dsv_log_enalbe_logfile(false);
+
+		if (app._appOptions.logLevel >= logLevel){
+			dsv_log_level(app._appOptions.logLevel);
+		}
+	}
 
 	//----------------------run
 	dsv_info("----------------- version: %s-----------------", DS_VERSION_STRING);
 	dsv_info("Qt:%s", QT_VERSION_STR);
-
-	AppControl *control = AppControl::Instance();	
-	AppConfig::Instance().LoadAll(); //load app config
 
 	//init core
 	if (!control->Init()){ 

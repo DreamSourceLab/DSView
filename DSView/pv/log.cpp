@@ -26,7 +26,8 @@
 
 xlog_writer *dsv_log = nullptr;
 static xlog_context *log_ctx = nullptr;
-bool b_logfile = false;
+static bool b_logfile = false;
+static int log_file_index = -1;
 
 void dsv_log_init()
 {
@@ -52,10 +53,10 @@ xlog_context* dsv_log_context()
 void dsv_log_level(int l)
 {
     xlog_set_level(log_ctx, l);
-    dsv_info("%s%d", "set log level: ", l);
+    dsv_info("%s%d", "Set log level: ", l);
 }
 
-void dsv_log_enalbe_logfile()
+void dsv_log_enalbe_logfile(bool append)
 {
     if (!b_logfile && log_ctx){
         b_logfile = true;
@@ -68,11 +69,20 @@ void dsv_log_enalbe_logfile()
             lf = GetAppDataDir() + "/DSView.log";
         #endif
 
-        dsv_info("%s\"%s\"", "store log to file: ", lf.toUtf8().data());
+        dsv_info("%s\"%s\"", "Store log to file: ", lf.toUtf8().data());
 
-        int ret = xlog_add_receiver_from_file(log_ctx, lf.toUtf8().data(), 0);
+        int ret = xlog_add_receiver_from_file(log_ctx, lf.toUtf8().data(), &log_file_index, append);
         if (ret != 0){
-            dsv_err("%s", "create log file error!");
+            dsv_err("%s", "Create log file error!");
         } 
+    }
+}
+
+void dsv_remove_log_file()
+{
+    if (b_logfile && log_ctx)
+    {
+        b_logfile = false;
+        xlog_remove_receiver_by_index(log_ctx, log_file_index);
     }
 }

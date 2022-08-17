@@ -32,7 +32,8 @@ void dsv_log_uninit();
 xlog_context* dsv_log_context();
 void dsv_log_level(int l);
 
-void dsv_log_enalbe_logfile();
+void dsv_log_enalbe_logfile(bool append);
+void dsv_remove_log_file();
 
 #define LOG_PREFIX "" 
 #define dsv_err(fmt, args...) xlog_err(dsv_log, LOG_PREFIX fmt, ## args)

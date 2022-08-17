@@ -28,11 +28,18 @@
 #include <QUrl>
 #include <QApplication>
 #include <assert.h>
+#include <QComboBox>
+#include <QFormLayout>
+#include <QWidget>
+#include <QCheckBox>
 
 #include "logobar.h"
 #include "../dialogs/about.h"
 #include "../dialogs/dsmessagebox.h"
 #include "../config/appconfig.h"
+#include "../dialogs/dsdialog.h"
+#include "../appcontrol.h"
+#include "../log.h"
 
 namespace pv {
 namespace toolbars {
@@ -76,6 +83,7 @@ LogoBar::LogoBar(SigSession *session, QWidget *parent) :
     _logo_button.addAction(_issue);   
 
     _update = new QAction(this);
+    _log = new QAction(this);
 
     _menu = new QMenu(this);
     _menu->addMenu(_language);
@@ -83,6 +91,7 @@ LogoBar::LogoBar(SigSession *session, QWidget *parent) :
     _menu->addAction(_manual);
     _menu->addAction(_issue);
     _menu->addAction(_update);
+    _menu->addAction(_log);
     _logo_button.setMenu(_menu);
 
     _logo_button.setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
@@ -104,6 +113,7 @@ LogoBar::LogoBar(SigSession *session, QWidget *parent) :
     connect(_manual, SIGNAL(triggered()), this, SIGNAL(sig_open_doc()));
     connect(_issue, SIGNAL(triggered()), this, SLOT(on_actionIssue_triggered()));
     connect(_update, SIGNAL(triggered()), this, SLOT(on_action_update()));
+    connect(_log, SIGNAL(triggered()), this, SLOT(on_action_setting_log()));
 }
 
 void LogoBar::changeEvent(QEvent *event)
@@ -125,6 +135,7 @@ void LogoBar::retranslateUi()
     _manual->setText(tr("&Manual"));
     _issue->setText(tr("&Bug Report"));
     _update->setText(tr("&Update"));
+    _log->setText(tr("L&og Options"));
 
     AppConfig &app = AppConfig::Instance(); 
     if (app._frameOptions.language == LAN_CN)
@@ -141,6 +152,7 @@ void LogoBar::reStyle()
     _manual->setIcon(QIcon(iconPath+"/manual.svg"));
     _issue->setIcon(QIcon(iconPath+"/bug.svg"));
     _update->setIcon(QIcon(iconPath+"/update.svg"));
+    _log->setIcon(QIcon(iconPath+"/file.svg"));
 
     if (_connected)
         _logo_button.setIcon(QIcon(iconPath+"/logo_color.svg"));
@@ -224,6 +236,54 @@ void LogoBar::on_actionIssue_triggered()
 void LogoBar::enable_toggle(bool enable)
 {
     _logo_button.setDisabled(!enable);
+}
+
+void LogoBar::on_action_setting_log()
+{   
+    AppConfig &app = AppConfig::Instance(); 
+    auto *topWind = AppControl::Instance()->GetTopWindow();
+    dialogs::DSDialog dlg(topWind, false, true);
+    dlg.setTitle(tr("Log Options"));
+    dlg.setMinimumSize(260, 120);
+    QWidget *panel = new QWidget(&dlg);
+    dlg.layout()->addWidget(panel);
+    panel->setMinimumSize(250, 110);
+    QFormLayout *lay = new QFormLayout();
+    panel->setLayout(lay);
+    lay->setVerticalSpacing(15);
+ 
+    QComboBox *cbBox = new QComboBox();
+    cbBox->setMinimumWidth(40);
+    lay->addRow(tr("Log Level"), cbBox);
+
+    for (int i=0; i<=5; i++){
+        cbBox->addItem(QString::number(i));
+    }
+    cbBox->setCurrentIndex(app._appOptions.logLevel);
+
+    QCheckBox *ckBox = new QCheckBox();
+    ckBox->setChecked(app._appOptions.ableSaveLog);
+    lay->addRow(tr("Save To File"), ckBox);
+
+    dlg.exec();
+
+    if (dlg.IsClickYes()){
+        bool ableSave = ckBox->isChecked();
+        int level = cbBox->currentIndex();
+
+        if (ableSave != app._appOptions.ableSaveLog || level != app._appOptions.logLevel){
+            app._appOptions.ableSaveLog = ableSave;
+            app._appOptions.logLevel = level;
+            app.SaveApp();
+
+            dsv_log_level(level);
+            
+            if (ableSave)
+                dsv_log_enalbe_logfile(false);
+            else
+                dsv_remove_log_file();
+        }
+    }  
 }
 
 } // namespace toolbars

@@ -232,7 +232,7 @@ XLOG_API int xlog_add_receiver(xlog_context* ctx, xlog_receiver rev, int *out_in
  * 	append a log data receiver, return 0 if success.
  * 	the log data will be writed to file.
  */
-XLOG_API int xlog_add_receiver_from_file(xlog_context* ctx, const char *file_path, int *out_index)
+XLOG_API int xlog_add_receiver_from_file(xlog_context* ctx, const char *file_path, int *out_index, int bAppend)
 {
     int i;
     FILE *fh = NULL;
@@ -258,7 +258,11 @@ XLOG_API int xlog_add_receiver_from_file(xlog_context* ctx, const char *file_pat
         return -1;
     }
 
-    fh = fopen(file_path, "a+");
+    if (bAppend)
+        fh = fopen(file_path, "a+");
+    else
+        fh = fopen(file_path, "w+");
+
     if (fh == NULL){
         strcpy(ctx->_error, "open file error");
         pthread_mutex_unlock(&ctx->_mutext);
