@@ -30,6 +30,8 @@ namespace path{
     std::string ConvertPath(QString fileName);
 
     QString GetDirectoryName(QString path);
+
+    std::string ToUnicodePath(QString path);
 }
 }
  

@@ -23,6 +23,8 @@
 #include <QString>
 #include <QDir>
 #include  "config/appconfig.h"
+#include "utility/path.h"
+#include <string>
 
 xlog_writer *dsv_log = nullptr;
 static xlog_context *log_ctx = nullptr;
@@ -71,10 +73,12 @@ void dsv_log_enalbe_logfile(bool append)
 
         dsv_info("%s\"%s\"", "Store log to file: ", lf.toUtf8().data());
 
-        int ret = xlog_add_receiver_from_file(log_ctx, lf.toUtf8().data(), &log_file_index, append);
+        std::string log_file = pv::path::ToUnicodePath(lf);
+
+        int ret = xlog_add_receiver_from_file(log_ctx, log_file.c_str(), &log_file_index, append);
         if (ret != 0){
             dsv_err("%s", "Create log file error!");
-        } 
+        }
     }
 }
 

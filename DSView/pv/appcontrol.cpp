@@ -26,14 +26,14 @@
 #include <QDir>
 #include <QCoreApplication>
 #include <QWidget>
+#include <string>
 
 #include "devicemanager.h"
 #include "sigsession.h"
 #include "dsvdef.h"
 #include "config/appconfig.h"
 #include "log.h"
-#include <QTextCodec>
-#include <string.h>
+#include "utility/path.h"
 
 AppControl::AppControl()
 {
@@ -81,16 +81,10 @@ bool AppControl::Init()
     } 
     _session->set_sr_context(sr_ctx);
 
+    // firmware resource directory
     QString resdir = GetResourceDir();
-    char res_path[256] = {0};
-#ifdef _WIN32
-    QTextCodec *codec = QTextCodec::codecForName("System");
-    QByteArray str_tmp = codec->fromUnicode(resdir);
-    strncpy(res_path, str_tmp.data(), sizeof(res_path) - 1);
-#else
-    strncpy(res_path, resdir.toUtf8().data(), sizeof(res_path) - 1);
-#endif
-	sr_set_firmware_resource_dir(res_path);
+    std::string res_path = pv::path::ToUnicodePath(resdir);
+	sr_set_firmware_resource_dir(res_path.c_str());
 
 #if defined(_WIN32) && defined(DEBUG_INFO)
     //able run debug with qtcreator
