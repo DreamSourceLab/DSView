@@ -90,7 +90,7 @@ XLOG_API int xlog_add_receiver(xlog_context* ctx, xlog_receive_callback rev, int
  * 	append a log data receiver, return 0 if success.
  * 	the log data will be writed to file.
  */
-XLOG_API int xlog_add_receiver_from_file(xlog_context* ctx, const char *file_path, int *out_index);
+XLOG_API int xlog_add_receiver_from_file(xlog_context* ctx, const char *file_path, int *out_index, int bAppend);
 
 /**
  * 	remove a log data receiver,return 0 if success.

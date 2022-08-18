@@ -57,6 +57,8 @@ struct AppOptions
     bool  quickScroll;
     bool  warnofMultiTrig;
     bool  originalData;
+    bool  ableSaveLog;
+    int   logLevel;
 
     std::vector<StringPair> m_protocolFormats;
 };

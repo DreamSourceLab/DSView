@@ -310,6 +310,7 @@ private:
     void feed_timeout();
     void repeat_update(); 
 
+
 private:
     /**
      * Attempts to autodetect the format. Failing that
@@ -331,6 +332,8 @@ private:
 	void feed_in_analog(const sr_datafeed_analog &analog);    
 	void data_feed_in(const struct sr_dev_inst *sdi,
 		        const struct sr_datafeed_packet *packet);
+
+    void get_device_list(std::vector<struct ds_device_info> &devices);
 
 	static void data_feed_callback(const struct sr_dev_inst *sdi,
 		        const struct sr_datafeed_packet *packet);

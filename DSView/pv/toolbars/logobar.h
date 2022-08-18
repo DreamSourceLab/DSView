@@ -75,6 +75,7 @@ private slots:
     void on_actionManual_triggered();
     void on_actionIssue_triggered();
     void on_action_update();
+    void on_action_setting_log();
 
 private:
     bool _enable;
@@ -93,6 +94,7 @@ private:
     QAction *_manual;
     QAction *_issue;
     QAction *_update;
+    QAction *_log;
 
     IMainForm *_mainForm;
 };

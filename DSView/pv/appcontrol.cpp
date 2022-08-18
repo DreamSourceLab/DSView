@@ -25,13 +25,13 @@
 #include <libsigrokdecode.h>
 #include <QDir>
 #include <QCoreApplication>
-#include <QWidget> 
+#include <QWidget>
+#include <string>
 #include "sigsession.h"
 #include "dsvdef.h"
 #include "config/appconfig.h"
 #include "log.h"
-#include <QTextCodec>
-#include <string.h>
+#include "utility/path.h"
 
 AppControl::AppControl()
 {
@@ -66,7 +66,7 @@ bool AppControl::Init()
 {    
     _session->init();
 
-    srd_log_set_context(dsv_log_context());     
+    srd_log_set_context(dsv_log_context());
 
 #if defined(_WIN32) && defined(DEBUG_INFO)
     //able run debug with qtcreator

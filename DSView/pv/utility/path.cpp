@@ -20,6 +20,9 @@
  */
 
 #include "path.h"
+#ifdef _WIN32
+#include <QTextCodec>
+#endif
 
 namespace pv{
 namespace path{
@@ -37,6 +40,21 @@ namespace path{
             return path.left(lstdex);
         }
         return path;
+    }
+
+    std::string ToUnicodePath(QString path)
+    {
+        std::string str;
+
+#ifdef _WIN32
+        QTextCodec *codec = QTextCodec::codecForName("System");
+        QByteArray str_tmp = codec->fromUnicode(path);
+        str = str_tmp.data();
+#else
+        str = path.toUtf8().data();
+#endif
+
+        return str;
     }
 }
 }

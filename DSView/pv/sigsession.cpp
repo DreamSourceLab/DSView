@@ -60,6 +60,7 @@
 #include "dsvdef.h"
 #include "log.h"
 #include "config/appconfig.h"
+#include "utility/path.h"
  
 namespace pv {
 
@@ -110,8 +111,6 @@ SigSession::SigSession()
     _group_data = new data::Group();
     _group_cnt = 0;
 
-    _sr_ctx = NULL;
-
     _feed_timer.Stop(); 
     _feed_timer.SetCallback(std::bind(&SigSession::feed_timeout, this)); 
 }
@@ -145,8 +144,7 @@ void SigSession::set_device(DevInst *dev_inst)
 
     RELEASE_ARRAY(_group_traces);
  
-    if (_dev_inst) {
-        sr_session_datafeed_callback_remove_all();
+    if (_dev_inst) { 
         _dev_inst->release();
         _dev_inst = NULL;
     }
@@ -1887,6 +1885,17 @@ void SigSession::set_stop_scale(float scale)
       _bDecodeRunning = false;
   }
 
+  void SigSession::get_device_list(std::vector<struct ds_device_info> &devices)
+  {
+        struct ds_device_info *array = NULL;
+        int num = 0;
+
+        if (ds_get_device_list(&array, &num) != SR_OK){
+           dsv_err("%s", "Failed to get device list!");
+           return;
+        }
+  }
+
   void SigSession::device_lib_event_callback(int event)
   {
        struct ds_device_info *array = NULL;
@@ -1917,16 +1926,10 @@ void SigSession::set_stop_scale(float scale)
 
       ds_set_datafeed_callback(data_feed_callback);
 
+      // firmware resource directory
       QString resdir = GetResourceDir();
-      char res_path[256] = {0};
-#ifdef _WIN32
-      QTextCodec *codec = QTextCodec::codecForName("System");
-      QByteArray str_tmp = codec->fromUnicode(resdir);
-      strncpy(res_path, str_tmp.data(), sizeof(res_path) - 1);
-#else
-      strncpy(res_path, resdir.toUtf8().data(), sizeof(res_path) - 1);
-#endif
-      ds_set_firmware_resource_dir(res_path);
+      std::string res_path = pv::path::ToUnicodePath(resdir);
+      ds_set_firmware_resource_dir(res_path.c_str());
 
       if (ds_lib_init() != SR_OK)
       { 
@@ -1946,7 +1949,7 @@ void SigSession::set_stop_scale(float scale)
 
   int SigSession::get_device_work_mode()
   {
-      return ds_get_selected_device_index()
+      return ds_get_actived_device_mode();
   }
 
 } // namespace pv
