@@ -76,9 +76,8 @@ void ChannelLabel::on_checked()
 namespace pv {
 namespace dialogs {
 
-DeviceOptions::DeviceOptions(QWidget *parent, DevInst *dev_inst) :
+DeviceOptions::DeviceOptions(QWidget *parent) :
     DSDialog(parent),
-    _dev_inst(dev_inst), 
     _device_options_binding(_dev_inst->dev_inst())
 {
     _scroll_panel = NULL;

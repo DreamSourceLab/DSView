@@ -229,6 +229,7 @@ static int dev_destroy(struct sr_dev_inst *sdi)
 {
     hw_dev_close(sdi);
     sr_dev_inst_free(sdi);
+    return SR_OK;
 }
 
 static int hw_cleanup(void)

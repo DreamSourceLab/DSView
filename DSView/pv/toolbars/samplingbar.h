@@ -73,8 +73,7 @@ namespace pv
 
         public:
             SamplingBar(SigSession *session, QWidget *parent);
-            void set_device_list(const std::list<DevInst*> &devices, DevInst* selected);
-            DevInst *get_selected_device();
+            
             void update_sample_rate_selector();
 
             void set_sampling(bool sampling);
@@ -131,15 +130,12 @@ namespace pv
             void reload();
 
         private:
-            SigSession          *_session;
-            mutable std::mutex  _sampling_mutex;
+            SigSession          *_session; 
             bool                _enable;
             bool                _sampling;
 
             QToolButton         _device_type;
-            DsComboBox           _device_selector;
-            std::map<const void *, DevInst*> _device_selector_map;
-            bool                _updating_device_selector;
+            DsComboBox           _device_selector;  
 
             QToolButton         _configure_button;
             DsComboBox           _sample_count;
@@ -158,7 +154,7 @@ namespace pv
             QAction             *_action_repeat;
             QAction             *_action_single;
             bool                _instant;
-            bool                _is_seting;
+            bool                _is_seting_list;
         };
 
     } // namespace toolbars

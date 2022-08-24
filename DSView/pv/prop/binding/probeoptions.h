@@ -37,7 +37,7 @@ namespace binding {
 class ProbeOptions : public Binding
 {
 public:
-	ProbeOptions(struct sr_dev_inst *sdi, 
+	ProbeOptions(ds_device_handle dev_handel, 
 		     struct sr_channel *probe);
 
 private:
@@ -71,7 +71,7 @@ private:
     static QString print_coupling(GVariant *const gvar);
 
 protected:
-	struct sr_dev_inst *const _sdi;
+	ds_device_handle _dev_handel;
 	struct sr_channel *const _probe;
 };
 

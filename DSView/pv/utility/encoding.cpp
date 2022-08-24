@@ -28,17 +28,27 @@
 #include <QTextCodec>
 #endif 
 
+#ifdef _WIN32
+#include <QTextCodec>
+#endif
+
 namespace pv{
 namespace encoding{
+
+    void init()
+    {
+#ifdef _WIN32
+     QTextCodec::setCodecForLocale(QTextCodec::codecForName("UTF-8"));
+#endif
+    }
 
     void set_utf8(QTextStream &stream)
     {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         stream.setEncoding(QStringConverter::Utf8);
 #else
-        //QTextCodec *code = QTextCodec::codecForName("UTF-8");
-       // stream.setCodec(code);
-        stream.setCodec("UTF-8");
+        QTextCodec *code = QTextCodec::codecForName("UTF-8");
+        stream.setCodec(code);
 #endif
     }
 }

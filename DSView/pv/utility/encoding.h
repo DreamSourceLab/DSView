@@ -26,6 +26,8 @@ class QTextStream;
 
 namespace pv{
 namespace encoding{
+
+    void init();
     
     void set_utf8(QTextStream &stream);
 }

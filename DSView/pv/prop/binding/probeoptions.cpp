@@ -36,11 +36,11 @@ namespace pv {
 namespace prop {
 namespace binding {
 
-ProbeOptions::ProbeOptions(struct sr_dev_inst *sdi, struct sr_channel *probe) :
-    Binding(),
-	_sdi(sdi),
+ProbeOptions::ProbeOptions(ds_device_handle dev_handel, struct sr_channel *probe) :
+    Binding(), 
 	_probe(probe)
 {
+    _dev_handel = dev_handel;
 	GVariant *gvar_opts, *gvar_list;
 	gsize num_opts;
 

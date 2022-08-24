@@ -23,6 +23,7 @@
 
 #include <libsigrokdecode.h>
 
+
 #include "sigsession.h"
 #include "mainwindow.h"
 #include "device/device.h"
@@ -88,6 +89,7 @@ SigSession::SigSession()
     _noData_cnt = 0;
     _data_lock = false;
     _data_updated = false;
+    _active_last_device_flag = false;
 
     _decoder_model = new pv::data::DecoderModel(NULL);
 
@@ -115,7 +117,10 @@ SigSession::SigSession()
     _feed_timer.SetCallback(std::bind(&SigSession::feed_timeout, this)); 
 }
 
-SigSession::SigSession(SigSession &o){(void)o;}
+SigSession::SigSession(SigSession &o)
+{
+    (void)o;
+}
 
 SigSession::~SigSession()
 { 
@@ -1885,37 +1890,81 @@ void SigSession::set_stop_scale(float scale)
       _bDecodeRunning = false;
   }
 
-  void SigSession::get_device_list(std::vector<struct ds_device_info> &devices)
+  Snapshot* SigSession::get_signal_snapshot()
   {
-        struct ds_device_info *array = NULL;
-        int num = 0;
-
-        if (ds_get_device_list(&array, &num) != SR_OK){
-           dsv_err("%s", "Failed to get device list!");
-           return;
-        }
+    int mode = ds_get_actived_device_mode();
+    if (mode == ANALOG)
+        return _analog_data->snapshot();
+    else if (mode == DSO)
+        return _dso_data->snapshot();
+    else
+        return _logic_data->snapshot();
   }
 
   void SigSession::device_lib_event_callback(int event)
   {
+     if (_session == NULL){
+         dsv_err("%s", "device_lib_event_callback() error, _session is null.");
+         return;
+    }
+    _session->on_device_lib_event(event);
+  }
+ 
+  void SigSession::on_device_lib_event(int event)
+  {
        struct ds_device_info *array = NULL;
        int count = 0;
+       int index = -1;
+ 
+       if (event == DS_EV_NEW_DEVICE_ATTACH || event == DS_EV_CURRENT_DEVICE_DETACH){
+          Snapshot *data = get_signal_snapshot();
 
-       if (_session == NULL){
-            dsv_err("%s", "device_lib_event_callback() error, _session is null.");
-            return;
+          if (data->get_real_sample_count() > 0)
+          { 
+            if (ds_is_collecting()){
+              ds_stop_collect();              
+            }
+            update_collect_status_view();
+
+            // Try to save current device data, and auto select the lastest device later.
+             _active_last_device_flag = true;
+             store_session_data();
+             return;
+          }
        }
 
-       if (ds_device_get_list(&array, &count) != SR_OK){
-         dsv_err("%s", "Failed to get device list!");
+       if (ds_get_device_list(&array, &count) != SR_OK){
+         dsv_err("%s", "Get device list error!");
          return;
        }
-
-       _session->_callback->update_device_list(array, count);
-
-       if (array != NULL){
-         free(array);
+       if (count < 1 || array == NULL){
+        dsv_err("%s", "Device list is empty!");
+        return;
        }
+
+       if (event == DS_EV_NEW_DEVICE_ATTACH || event == DS_EV_CURRENT_DEVICE_DETACH){
+          index  = count -1;
+        
+          if (ds_is_collecting()){
+             ds_stop_collect();
+          }
+          update_collect_status_view();
+
+          if (ds_active_device_by_index(index) != SR_OK){
+              dsv_err("%s", "Active device error!");
+              free(array);
+              return;
+          }
+
+          init_device_view();
+       }
+       else{
+            index = ds_get_actived_device_index();
+       }
+
+       _callback->update_device_list(array, count, index);
+    
+      free(array);
   }
 
   bool SigSession::init()
@@ -1947,9 +1996,98 @@ void SigSession::set_stop_scale(float scale)
       ds_lib_exit();
   }
 
+  void SigSession::update_collect_status_view()
+  {
+
+  }
+
+  void SigSession::init_device_view()
+  {
+
+  }
+
+  void SigSession::store_session_data()
+  {
+
+  } 
+
+  //---------------device api-----------/
+
   int SigSession::get_device_work_mode()
   {
       return ds_get_actived_device_mode();
   }
 
+  bool SigSession::get_device_info(struct ds_device_info &info)
+  {
+     if (ds_get_actived_device_info(&info) == SR_OK){
+        return info.handle != NULL;
+     }
+     return false;
+  }
+
+  bool SigSession::get_device_config(const struct sr_channel *ch,
+                         const struct sr_channel_group *cg,
+                         int key, GVariant **data)
+  {
+    
+    if (ds_get_actived_device_config(ch, cg, key, data) == SR_OK){
+        return true;
+    }
+
+    return false;
+  }
+
+  bool SigSession::set_device_config(const struct sr_channel *ch,
+                         const struct sr_channel_group *cg,
+                         int key, GVariant *data)
+   {
+
+     if (ds_set_actived_device_config(ch, cg, key, data) == SR_OK){
+            return true;
+     }
+
+     return false;
+   }
+
+    bool SigSession::get_device_config_list(const struct sr_channel_group *cg,
+                          int key, GVariant **data)
+    {
+
+        if (ds_get_actived_device_config_list(cg, key, data) == SR_OK){
+            return true;
+        }
+        return false;
+    }
+
+    const struct sr_config_info* SigSession::get_device_config_info(int key)
+    {
+        return ds_get_actived_device_config_info(key);
+    }
+
+    const struct sr_config_info* SigSession::get_device_config_info_by_name(const char *optname)
+    {
+        return ds_get_actived_device_config_info_by_name(optname);
+    }
+
+    bool SigSession::get_device_status(struct sr_status &status, gboolean prg)
+    {
+        if (ds_get_actived_device_status(&status, prg) == SR_OK){
+            return true;
+        }
+        return false;
+    }
+
+    struct sr_config* new_config(int key, GVariant *data)
+    {
+        return ds_new_config(key, data);
+    }
+
+    void free_config(struct sr_config *src)
+    {
+        ds_free_config(src);
+    }
+
+  //---------------device api end-----------/
+  
 } // namespace pv

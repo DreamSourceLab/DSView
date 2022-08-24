@@ -355,7 +355,7 @@ done:
  *
  * @since 0.1.0 (but the API changed in 0.2.0)
  */
-SR_API int sr_exit(struct sr_context *ctx)
+SR_PRIV int sr_exit(struct sr_context *ctx)
 { 
 	if (!ctx) {
 		sr_err("%s(): libsigrok context was NULL.", __func__);

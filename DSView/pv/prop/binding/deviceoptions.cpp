@@ -31,6 +31,7 @@
 #include "../int.h"
 #include "../../config/appconfig.h"
 #include "../../log.h"
+#include "../../appcontrol.h"
  
 using namespace std;
 
@@ -38,14 +39,14 @@ namespace pv {
 namespace prop {
 namespace binding {
 
-DeviceOptions::DeviceOptions(struct sr_dev_inst *sdi) :
-	_sdi(sdi)
+DeviceOptions::DeviceOptions()
 {
 	GVariant *gvar_opts, *gvar_list;
 	gsize num_opts;
 
-    if ((sr_config_list(sdi->driver, sdi, NULL, SR_CONF_DEVICE_OPTIONS,
-        &gvar_opts) != SR_OK))
+	SigSession *session = AppControl::Instance()->GetSession();
+	 
+    if (session->get_device_config_list(NULL, SR_CONF_DEVICE_OPTIONS, &gvar_opts) == false)
 		/* Driver supports no device instance options. */
 		return;
 
@@ -143,8 +144,7 @@ DeviceOptions::DeviceOptions(struct sr_dev_inst *sdi) :
         g_variant_unref(gvar_opts);
 }
 
-GVariant* DeviceOptions::config_getter(
-	const struct sr_dev_inst *sdi, int key)
+GVariant* DeviceOptions::config_getter(int key)
 {
 	GVariant *data = NULL;
     if (sr_config_get(sdi->driver, sdi, NULL, NULL, key, &data) != SR_OK) { 
@@ -154,8 +154,7 @@ GVariant* DeviceOptions::config_getter(
 	return data;
 }
 
-void DeviceOptions::config_setter(
-    struct sr_dev_inst *sdi, int key, GVariant* value)
+void DeviceOptions::config_setter(int key, GVariant* value)
 {
     if (sr_config_set(sdi, NULL, NULL, key, value) != SR_OK){ 
 		dsv_warn("%s%d", "WARNING: Failed to set value of config id:", key);
@@ -267,8 +266,7 @@ QString DeviceOptions::print_samplerate(GVariant *const gvar)
 	return qstring;
 }
 
-GVariant* DeviceOptions::samplerate_double_getter(
-	const struct sr_dev_inst *sdi)
+GVariant* DeviceOptions::samplerate_double_getter()
 {
 	GVariant *const gvar = config_getter(sdi, SR_CONF_SAMPLERATE);
 
@@ -283,8 +281,7 @@ GVariant* DeviceOptions::samplerate_double_getter(
 	return gvar_double;
 }
 
-void DeviceOptions::samplerate_double_setter(
-	struct sr_dev_inst *sdi, GVariant *value)
+void DeviceOptions::samplerate_double_setter(GVariant *value)
 {
 	GVariant *const gvar = g_variant_new_uint64(
 		g_variant_get_double(value));

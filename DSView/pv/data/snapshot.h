@@ -77,6 +77,7 @@ public:
     virtual bool has_data(int index) = 0;
     virtual int get_block_num() = 0;
     virtual uint64_t get_block_size(int block_index) = 0;
+    virtual uint64_t get_real_sample_count() = 0;
 
 protected:
     virtual void free_data();

@@ -315,6 +315,29 @@ SR_PRIV void sr_serial_dev_inst_free(struct sr_serial_dev_inst *serial)
 	g_free(serial->serialcomm);
 	g_free(serial);
 }
+
+SR_PRIV int sr_enable_device_channel(struct sr_dev_inst *sdi, const struct sr_channel *probe, gboolean enable)
+{
+	GSList *l;
+	int ret;
+	struct sr_channel *ch;	
+
+	if (sdi == NULL || probe == NULL){
+		return SR_ERR_ARG;
+	}
+
+	ret = SR_ERR_CALL_STATUS;
+	for (l=sdi->channels; l; l = l->next){
+		if (l->data == probe){
+			ch = l->data;
+			ch->enabled = enable;
+			ret = SR_OK;
+			break;
+		}
+	}
+
+	return ret;
+}
  
 
 /** @} */

@@ -56,8 +56,7 @@ SamplingBar::SamplingBar(SigSession *session, QWidget *parent) :
     _enable(true),
     _sampling(false),
     _device_type(this),
-    _device_selector(this),
-    _updating_device_selector(false),
+    _device_selector(this), 
     _configure_button(this),
     _sample_count(this),
     _sample_rate(this),
@@ -68,7 +67,7 @@ SamplingBar::SamplingBar(SigSession *session, QWidget *parent) :
     _mode_button(this),
     _instant(false)
 {
-    _is_seting = false;
+    _is_seting_list = false;
     
     setMovable(false);
     setContentsMargins(0,0,0,0);
@@ -81,7 +80,6 @@ SamplingBar::SamplingBar(SigSession *session, QWidget *parent) :
     _sample_count.setSizeAdjustPolicy(DsComboBox::AdjustToContents);
     _device_selector.setMaximumWidth(ComboBoxMaxWidth);
  
-    //_run_stop_button.setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     _run_stop_button.setObjectName(tr("run_stop_button"));
  
     QWidget *leftMargin = new QWidget(this);
@@ -116,7 +114,6 @@ SamplingBar::SamplingBar(SigSession *session, QWidget *parent) :
     _instant_action = addWidget(&_instant_button);
 
     set_sampling(false);
-    //retranslateUi();
 
     connect(&_device_selector, SIGNAL(currentIndexChanged (int)), this, SLOT(on_device_selected()));
     connect(&_configure_button, SIGNAL(clicked()),this, SLOT(on_configure()));
@@ -139,15 +136,19 @@ void SamplingBar::changeEvent(QEvent *event)
 
 void SamplingBar::retranslateUi()
 {
-    DevInst *dev_inst = get_selected_device();
-    if (dev_inst && dev_inst->dev_inst()) {
-        if (dev_inst->name().contains("virtual-demo"))
+    struct ds_device_info inf; 
+    bool haveDev = _session->get_device_info(inf);
+
+    if (haveDev) {
+        if (inf.dev_type == DEV_TYPE_DEMO)
             _device_type.setText(tr("Demo"));
-        else if (dev_inst->name().contains("virtual"))
+        else if (inf.dev_type == DEV_TYPE_FILELOG)
             _device_type.setText(tr("File"));
         else {
             int usb_speed = LIBUSB_SPEED_HIGH;
-            GVariant *gvar = dev_inst->get_config(NULL, NULL, SR_CONF_USB_SPEED);
+            GVariant *gvar = NULL; 
+            _session->get_device_config(NULL, NULL, SR_CONF_USB_SPEED, &gvar);
+
             if (gvar != NULL) {
                 usb_speed = g_variant_get_int32(gvar);
                 g_variant_unref(gvar);
@@ -163,17 +164,17 @@ void SamplingBar::retranslateUi()
     _configure_button.setText(tr("Options"));
     _mode_button.setText(tr("Mode"));
 
-   sr_dev_inst *dev_c = _session->get_dev_inst_c();
+   int mode = _session->get_device_work_mode();
 
     if (_instant) {
-        if (dev_c && dev_c->mode == DSO)
+        if (haveDev && mode == DSO)
             _instant_button.setText(_sampling ? tr("Stop") : tr("Single"));
         else
             _instant_button.setText(_sampling ? tr("Stop") : tr("Instant"));
         _run_stop_button.setText(tr("Start"));
     } else {
         _run_stop_button.setText(_sampling ? tr("Stop") : tr("Start"));
-        if (dev_c && dev_c->mode == DSO)
+        if (haveDev && mode == DSO)
             _instant_button.setText(tr("Single"));
         else
             _instant_button.setText(tr("Instant"));
@@ -185,15 +186,19 @@ void SamplingBar::retranslateUi()
 
 void SamplingBar::reStyle()
 {
-    DevInst *dev_inst = get_selected_device();
-    if (dev_inst && dev_inst->dev_inst()) {
-        if (dev_inst->name().contains("virtual-demo"))
+    struct ds_device_info inf; 
+    bool haveDev = _session->get_device_info(inf);
+
+    if (haveDev){
+        if (inf.dev_type == DEV_TYPE_DEMO)
             _device_type.setIcon(QIcon(":/icons/demo.svg"));
-        else if (dev_inst->name().contains("virtual"))
+        else if (inf.dev_type == DEV_TYPE_FILELOG)
             _device_type.setIcon(QIcon(":/icons/data.svg"));
         else {
             int usb_speed = LIBUSB_SPEED_HIGH;
-            GVariant *gvar = dev_inst->get_config(NULL, NULL, SR_CONF_USB_SPEED);
+            GVariant *gvar = NULL; 
+            _session->get_device_config(NULL, NULL, SR_CONF_USB_SPEED, &gvar); 
+
             if (gvar != NULL) {
                 usb_speed = g_variant_get_int32(gvar);
                 g_variant_unref(gvar);
@@ -219,70 +224,17 @@ void SamplingBar::reStyle()
 	}   
 }
 
-void SamplingBar::set_device_list(const std::list<DevInst*> &devices, DevInst *selected)
-{
-    int selected_index = -1;
-
-    assert(selected);
-
-    _updating_device_selector = true;
-
-    _device_selector.clear();
-    _device_selector_map.clear();
-
-    for (DevInst *dev_inst : devices) {
-        assert(dev_inst);
-        const QString title = dev_inst->format_device_title();
-        const void *id = dev_inst->get_id();
-        assert(id);
-
-        if (selected == dev_inst)
-            selected_index = _device_selector.count();
-
-        _device_selector_map[id] = dev_inst;
-        _device_selector.addItem(title,
-            QVariant::fromValue((void*)id));
-    }
-    int width = _device_selector.sizeHint().width();
-    _device_selector.setFixedWidth(min(width+15, _device_selector.maximumWidth()));
-    _device_selector.view()->setMinimumWidth(width+30);
-
-    // The selected device should have been in the list
-    assert(selected_index != -1);
-    _device_selector.setCurrentIndex(selected_index);
-
-    update_sample_rate_selector();
-
-    _updating_device_selector = false;
-}
-
-DevInst* SamplingBar::get_selected_device()
-{
-    const int index = _device_selector.currentIndex();
-    if (index < 0)
-        return NULL;
-
-    const void *const id =
-        _device_selector.itemData(index).value<void*>();
-    assert(id);
-
-    auto it = _device_selector_map.find(id);
-    if (it == _device_selector_map.end())
-        return NULL;
-
-    return (*it).second;
-}
-
 void SamplingBar::on_configure()
 {
     sig_hide_calibration();
 
     int  ret;
-    DevInst *dev_inst = get_selected_device();
-    assert(dev_inst);
+    struct ds_device_info inf; 
+    bool haveDev = _session->get_device_info(inf);
 
     pv::dialogs::DeviceOptions dlg(this, dev_inst);
     ret = dlg.exec();
+
     if (ret == QDialog::Accepted) {
         sig_device_updated();
         update_sample_rate_selector();
@@ -375,8 +327,7 @@ bool SamplingBar::get_instant()
 }
 
 void SamplingBar::set_sampling(bool sampling)
-{
-    std::lock_guard<std::mutex> lock(_sampling_mutex);
+{ 
     _sampling = sampling;
 
     if (!sampling) {
@@ -922,9 +873,7 @@ void SamplingBar::on_instant_stop()
 }
 
 void SamplingBar::on_device_selected()
-{
-    if (_updating_device_selector)
-        return;
+{ 
 
     _session->stop_capture();
     _session->session_save();
@@ -1037,17 +986,29 @@ void SamplingBar::on_mode()
 }
 
   void SamplingBar::update_device_list(struct ds_device_info *array, int count, int select_index)
-  {
-    if (array == NULL || count == 0){
-        return;
-    }
-    _is_seting = true;
+  { 
+    assert(array);
+    assert(count > 0);
+
+    _is_seting_list = true;
+    struct ds_device_info *p = NULL;
+
+    _device_selector.clear();
 
     for (int i=0; i<count; i++){
-
+        p = (array + i);
+        _device_selector.addItem(QString(p->name), QVariant::fromValue(p->handle));
     }
+
+    _device_selector.setCurrentIndex(select_index);
+
+    update_sample_rate_selector();
+
+    int width = _device_selector.sizeHint().width();
+    _device_selector.setFixedWidth(min(width+15, _device_selector.maximumWidth()));
+    _device_selector.view()->setMinimumWidth(width+30);
   
-    _is_seting = false;
+    _is_seting_list = false;
   }
 
 } // namespace toolbars

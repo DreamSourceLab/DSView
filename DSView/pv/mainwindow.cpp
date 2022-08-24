@@ -1603,7 +1603,8 @@ void MainWindow::data_received(){
 }
 
 void MainWindow::update_device_list(struct ds_device_info *array, int count, int select_index)
-{   
+{ 
+    _sampling_bar->update_device_list(array, count, select_index);
 }
 
 } // namespace pv

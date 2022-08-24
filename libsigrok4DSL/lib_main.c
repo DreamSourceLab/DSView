@@ -420,21 +420,23 @@ SR_API int ds_active_device_by_index(int index)
 SR_API int ds_get_actived_device_index()
 {
 	int dex = -1;
-	GList *l; 
+	GList *l;
 	int i = 0;
 
-	if (lib_ctx.actived_device_instance == NULL){
+	if (lib_ctx.actived_device_instance == NULL)
+	{
 		return -1;
 	}
 
 	pthread_mutex_lock(&lib_ctx.mutext);
 
 	for (l = lib_ctx.device_list; l; l = l->next)
-	{ 
-		if ((struct sr_dev_inst *)l->data == lib_ctx.actived_device_instance){
+	{
+		if ((struct sr_dev_inst *)l->data == lib_ctx.actived_device_instance)
+		{
 			dex = i;
 			break;
-		} 
+		}
 		i++;
 	}
 
@@ -447,31 +449,22 @@ SR_API int ds_get_actived_device_index()
  * Get the decive supports work mode, mode list: LOGIC、ANALOG、DSO
  * return type see struct sr_dev_mode.
  */
-SR_API const GSList *ds_get_device_mode_list(ds_device_handle handle)
+SR_API const GSList *ds_get_actived_device_mode_list()
 {
 	GList *l;
-	struct sr_dev_inst *dev;
-	struct sr_dev_inst *fd_dev;
-	fd_dev = NULL;
+	struct sr_dev_inst *dev; 
 
-	pthread_mutex_lock(&lib_ctx.mutext);
+	dev = lib_ctx.actived_device_instance ;
 
-	for (l = lib_ctx.device_list; l; l = l->next){
-		dev = l->data;
-		if (dev->handle == handle){
-			fd_dev = dev;
-			break;
-		}
+	if (dev == NULL){
+		sr_err("%s", "Have no actived device.");
+	}
+	if (dev->driver == NULL || dev->driver->dev_mode_list){
+		sr_err("%s", "Module not implemented.");
+		return NULL;
 	}
 
-	pthread_mutex_unlock(&lib_ctx.mutext);
-
- 	if (dev && dev->driver && dev->driver->dev_mode_list)
-        return dev->driver->dev_mode_list(dev);
-
-	sr_err("%s", "ds_device_get_mode_list() error, can't find the device.");
-   
-	return NULL;
+	 return dev->driver->dev_mode_list(dev);
 }
 
 /**
@@ -484,7 +477,7 @@ SR_API int ds_remove_device(ds_device_handle handle)
 	struct sr_dev_inst *dev;
 	struct sr_dev_inst *di;
 	int bFind = 0;
-	
+
 	di = lib_ctx.actived_device_instance;
 
 	if (handle == NULL)
@@ -492,7 +485,8 @@ SR_API int ds_remove_device(ds_device_handle handle)
 		return SR_ERR_ARG;
 	}
 
-	if (di != NULL && di->handle == handle && ds_is_collecting()){
+	if (di != NULL && di->handle == handle && ds_is_collecting())
+	{
 		sr_err("%s", "Device is collecting, can't remove it.");
 		return SR_ERR_CALL_STATUS;
 	}
@@ -542,7 +536,7 @@ SR_API int ds_get_actived_device_info(struct ds_device_info *fill_info)
 	}
 
 	fill_info->handle = NULL;
-	fill_info->name[0] = '\0'; 
+	fill_info->name[0] = '\0';
 	fill_info->dev_type = DEV_TYPE_UNKOWN;
 
 	if (lib_ctx.actived_device_info.handle != NULL)
@@ -550,20 +544,22 @@ SR_API int ds_get_actived_device_info(struct ds_device_info *fill_info)
 		fill_info->handle = lib_ctx.actived_device_info.handle;
 		strncpy(fill_info->name, lib_ctx.actived_device_info.name, sizeof(fill_info->name));
 		fill_info->dev_type = lib_ctx.actived_device_info.dev_type;
+		return SR_OK;
 	}
 
-	return SR_OK;
+	return SR_ERR_CALL_STATUS;
 }
 
 /**
  * Get actived device work model. mode list:LOGIC、ANALOG、DSO
  */
 SR_API int ds_get_actived_device_mode()
-{	
+{
 	int mode = UNKNOWN_DSL_MODE;
 	pthread_mutex_lock(&lib_ctx.mutext);
 
-	if (lib_ctx.actived_device_instance != NULL){
+	if (lib_ctx.actived_device_instance != NULL)
+	{
 		mode = lib_ctx.actived_device_instance->mode;
 	}
 	pthread_mutex_unlock(&lib_ctx.mutext);
@@ -731,6 +727,108 @@ int ds_channel_is_enabled()
 	return 0;
 }
 
+/**-------------------public end ---------------*/
+
+/**-------------------config -------------------*/
+SR_API int ds_get_actived_device_config(const struct sr_channel *ch,
+                         const struct sr_channel_group *cg,
+                         int key, GVariant **data)
+{
+	if (lib_ctx.actived_device_instance == NULL){
+		sr_err("%s", "Have no actived device.");
+		return SR_ERR_CALL_STATUS;
+	}
+
+	return sr_config_get(lib_ctx.actived_device_instance->driver, 
+				lib_ctx.actived_device_instance, 
+				ch, 
+				cg, 
+				key, 
+				data);
+}
+
+SR_API int ds_set_actived_device_config(const struct sr_channel *ch,
+                         const struct sr_channel_group *cg,
+                         int key, GVariant *data)
+{
+	if (lib_ctx.actived_device_instance == NULL){
+		sr_err("%s", "Have no actived device.");
+		return SR_ERR_CALL_STATUS;
+	}
+	
+	return sr_config_set(
+				lib_ctx.actived_device_instance, 
+				ch, 
+				cg, 
+				key, 
+				data);
+}
+
+SR_API int ds_get_actived_device_config_list(const struct sr_channel_group *cg,
+                          int key, GVariant **data)
+{
+	if (lib_ctx.actived_device_instance == NULL){
+		sr_err("%s", "Have no actived device.");
+		return SR_ERR_CALL_STATUS;
+	}
+
+	return sr_config_list(lib_ctx.actived_device_instance->driver,
+				lib_ctx.actived_device_instance,
+				cg, 
+				key, 
+				data);
+}
+
+SR_API const struct sr_config_info* ds_get_actived_device_config_info(int key)
+{
+	if (lib_ctx.actived_device_instance == NULL){
+		sr_err("%s", "Have no actived device.");
+		return SR_ERR_CALL_STATUS;
+	}
+
+	return sr_config_info_get(key);
+}
+
+SR_API const struct sr_config_info* ds_get_actived_device_config_info_by_name(const char *optname)
+{
+	if (lib_ctx.actived_device_instance == NULL){
+		sr_err("%s", "Have no actived device.");
+		return SR_ERR_CALL_STATUS;
+	}
+	return sr_config_info_name_get(optname);
+}
+
+SR_API int ds_get_actived_device_status(struct sr_status *status, gboolean prg)
+{
+	if (lib_ctx.actived_device_instance == NULL){
+		sr_err("%s", "Have no actived device.");
+		return SR_ERR_CALL_STATUS;
+	}
+
+	return sr_status_get(lib_ctx.actived_device_instance, status, prg);
+}
+
+SR_API struct sr_config *ds_new_config(int key, GVariant *data)
+{
+	return sr_config_new(key, data);
+}
+
+SR_API void ds_free_config(struct sr_config *src)
+{
+	sr_config_free(src);
+}
+
+/**-----------channel -------------*/
+SR_API int ds_enable_device_channel(const struct sr_channel *ch, gboolean enable)
+{
+	if (lib_ctx.actived_device_instance == NULL){
+		return SR_ERR_CALL_STATUS;
+	}
+	return sr_enable_device_channel(lib_ctx.actived_device_instance, ch, enable);
+}
+
+/**-------------------config end-------------------*/
+
 /**-------------------internal function ---------------*/
 /**
  * Check whether the USB device is in the device list.
@@ -739,7 +837,6 @@ SR_PRIV int sr_usb_device_is_exists(libusb_device *usb_dev)
 {
 	GList *l;
 	struct sr_dev_inst *dev;
-	struct sr_usb_dev_inst *usb_dev_info;
 	int bFind = 0;
 
 	if (usb_dev == NULL)
@@ -753,8 +850,7 @@ SR_PRIV int sr_usb_device_is_exists(libusb_device *usb_dev)
 	for (l = lib_ctx.device_list; l; l = l->next)
 	{
 		dev = l->data;
-		usb_dev_info = dev->conn;
-		if (dev->dev_type == DEV_TYPE_USB && usb_dev_info != NULL && usb_dev_info->usb_dev == usb_dev)
+		if (dev->handle == (ds_device_handle)usb_dev)
 		{
 			bFind = 1;
 		}
@@ -807,13 +903,14 @@ SR_PRIV int current_device_acquisition_stop()
  */
 SR_API int ds_is_collecting()
 {
-	if (lib_ctx.collect_thread != NULL){
+	if (lib_ctx.collect_thread != NULL)
+	{
 		return 1;
 	}
 	return 0;
 }
 
-/**--------------------internal function end------------------*/
+/**--------------------internal function end-----------*/
 
 /**-------------------private function ---------------*/
 
@@ -832,9 +929,8 @@ static int update_device_handle(struct libusb_device *old_dev, struct libusb_dev
 	{
 		dev = l->data;
 		usb_dev_info = dev->conn;
-		if (dev->dev_type == DEV_TYPE_USB && usb_dev_info != NULL && usb_dev_info->usb_dev == old_dev)
+		if (usb_dev_info != NULL && dev->handle == (ds_device_handle)old_dev)
 		{
-
 			// Release the old device and the resource.
 			if (dev == lib_ctx.actived_device_instance)
 			{
@@ -990,7 +1086,8 @@ static void process_attach_event()
 
 	// Tell user one new device attched, and the list is updated.
 
-	if (num > 0){
+	if (num > 0)
+	{
 		post_event_async(DS_EV_NEW_DEVICE_ATTACH);
 	}
 
@@ -1003,7 +1100,6 @@ static void process_detach_event()
 	int ev = DS_EV_INACTIVE_DEVICE_DETACH;
 	GList *l;
 	struct sr_dev_inst *dev;
-	struct sr_usb_dev_inst *usb_dev_info;
 	struct sr_dev_driver *driver_ins;
 
 	sr_info("%s", "Process device detach event.");
@@ -1021,10 +1117,14 @@ static void process_detach_event()
 	for (l = lib_ctx.device_list; l; l = l->next)
 	{
 		dev = l->data;
-		usb_dev_info = dev->conn;
 
-		if (dev->dev_type == DEV_TYPE_USB && usb_dev_info != NULL && usb_dev_info->usb_dev == ev_dev)
+		if (dev->handle == (ds_device_handle)ev_dev)
 		{
+			if (lib_ctx.actived_device_instance != dev && ds_is_collecting()){
+				sr_info("%s", "The actived device is detached, will stop collect thread.");
+				ds_stop_collect();
+			}
+
 			// Found the device, and remove it.
 			lib_ctx.device_list = g_slist_remove(lib_ctx.device_list, l->data);
 			destroy_device_instance(dev);
@@ -1052,11 +1152,13 @@ static void usb_hotplug_process_proc()
 	{
 		sr_hotplug_wait_timout(lib_ctx.sr_ctx);
 
-		if (lib_ctx.attach_event_flag){
+		if (lib_ctx.attach_event_flag)
+		{
 			process_attach_event();
 			lib_ctx.attach_event_flag = 0;
 		}
-		if (lib_ctx.detach_event_flag){
+		if (lib_ctx.detach_event_flag)
+		{
 			process_detach_event();
 			lib_ctx.detach_event_flag = 0;
 		}
@@ -1067,7 +1169,8 @@ static void usb_hotplug_process_proc()
 		{
 			lib_ctx.check_reconnect_times++;
 			// 500ms
-			if (lib_ctx.check_reconnect_times == 5){
+			if (lib_ctx.check_reconnect_times == 5)
+			{
 				// Device loose contact,wait for it reconnection timeout.
 				lib_ctx.detach_event_flag = 1; // use detach event
 				lib_ctx.is_waitting_reconnect = 0;
@@ -1075,7 +1178,8 @@ static void usb_hotplug_process_proc()
 		}
 	}
 
-	if (lib_ctx.callback_thread_count > 0){
+	if (lib_ctx.callback_thread_count > 0)
+	{
 		sr_info("%d callback thread is actived, waiting all ends...", lib_ctx.callback_thread_count);
 	}
 
@@ -1083,7 +1187,7 @@ static void usb_hotplug_process_proc()
 	while (lib_ctx.callback_thread_count > 0)
 	{
 		_sleep(100);
-	}	
+	}
 
 	sr_info("%s", "Hotplug thread end!");
 }
@@ -1139,12 +1243,14 @@ static int open_device_instance(struct sr_dev_inst *dev)
 
 static void post_event_proc(int event)
 {
-	if (lib_ctx.event_callback != NULL){
+	if (lib_ctx.event_callback != NULL)
+	{
 		lib_ctx.event_callback(event);
 	}
 
 	pthread_mutex_lock(&lib_ctx.mutext);
-	lib_ctx.callback_thread_count--;;
+	lib_ctx.callback_thread_count--;
+	;
 	pthread_mutex_unlock(&lib_ctx.mutext);
 }
 

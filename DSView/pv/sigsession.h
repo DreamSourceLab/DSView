@@ -36,7 +36,8 @@
 #include "data/mathstack.h"
 #include "interface/icallbacks.h"
 #include "dstimer.h"
-#include <libsigrok.h> 
+#include <libsigrok.h>
+#include <deviceagent.h>
  
 
 struct srd_decoder;
@@ -83,6 +84,7 @@ class MathTrace;
 }
 
 using namespace pv::device;
+using namespace pv::data;
 
 //created by MainWindow
 class SigSession
@@ -126,7 +128,9 @@ public:
 
 	~SigSession(); 
 
-    DevInst* get_device();
+    inline DeviceAgent* get_device(){
+        return &_device_agent;
+    }
 
 	/**
 	 * Sets device instance that will be used in the next capture session.
@@ -277,7 +281,34 @@ public:
         return _is_device_reattach;
     }
 
-    int get_device_work_mode();
+    void store_session_data();
+
+//---------------device api-----------/
+public:
+  int get_device_work_mode();
+
+  bool get_device_info(struct ds_device_info &info);
+
+  bool get_device_config(const struct sr_channel *ch,
+                         const struct sr_channel_group *cg,
+                         int key, GVariant **data);
+
+  bool set_device_config(const struct sr_channel *ch,
+                         const struct sr_channel_group *cg,
+                         int key, GVariant *data);
+
+  bool get_device_config_list(const struct sr_channel_group *cg,
+                          int key, GVariant **data);
+
+  const struct sr_config_info* get_device_config_info(int key);
+
+  const struct sr_config_info* get_device_config_info_by_name(const char *optname);
+
+  bool get_device_status(struct sr_status &status, gboolean prg);
+
+  struct sr_config* new_config(int key, GVariant *data);
+
+  void free_config(struct sr_config *src);
 
 private:
     inline void data_updated(){
@@ -308,8 +339,7 @@ private:
     void data_unlock();
     void nodata_timeout();
     void feed_timeout();
-    void repeat_update(); 
-
+    void repeat_update();  
 
 private:
     /**
@@ -331,16 +361,19 @@ private:
     void feed_in_dso(const sr_datafeed_dso &dso);
 	void feed_in_analog(const sr_datafeed_analog &analog);    
 	void data_feed_in(const struct sr_dev_inst *sdi,
-		        const struct sr_datafeed_packet *packet);
-
-    void get_device_list(std::vector<struct ds_device_info> &devices);
+		        const struct sr_datafeed_packet *packet); 
 
 	static void data_feed_callback(const struct sr_dev_inst *sdi,
 		        const struct sr_datafeed_packet *packet);
 
     static void device_lib_event_callback(int event);
+    void on_device_lib_event(int event);
 
-  
+    Snapshot* get_signal_snapshot();
+ 
+    void update_collect_status_view();
+    void init_device_view();
+ 
 private:
 
 	/**
@@ -417,8 +450,11 @@ private:
     volatile int     _wait_reattch_times;
     bool            _is_device_reattach;
     QString         _last_device_name;
+    bool            _active_last_device_flag;
 
     ISessionCallback *_callback;
+
+    DeviceAgent _device_agent;
    
 private:
 	// TODO: This should not be necessary. Multiple concurrent

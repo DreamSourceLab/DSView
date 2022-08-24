@@ -1184,29 +1184,6 @@ SR_API int sr_dev_trigger_set(const struct sr_dev_inst *sdi, uint16_t probenum,
 		const char *trigger);
  
 
-/*--- hwdriver.c ------------------------------------------------------------*/
-
-
-SR_API int sr_config_get(const struct sr_dev_driver *driver,
-                         const struct sr_dev_inst *sdi,
-                         const struct sr_channel *ch,
-                         const struct sr_channel_group *cg,
-                         int key, GVariant **data);
-SR_API int sr_config_set(struct sr_dev_inst *sdi,
-                         struct sr_channel *ch,
-                         struct sr_channel_group *cg,
-                         int key, GVariant *data);
-SR_API int sr_config_list(const struct sr_dev_driver *driver,
-                          const struct sr_dev_inst *sdi,
-                          const struct sr_channel_group *cg,
-                          int key, GVariant **data);
-SR_API const struct sr_config_info *sr_config_info_get(int key);
-SR_API const struct sr_config_info *sr_config_info_name_get(const char *optname);
-SR_API int sr_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, gboolean prg);
-SR_API struct sr_config *sr_config_new(int key, GVariant *data);
-SR_API void sr_config_free(struct sr_config *src);
-
-
 /*--- input/input.c ---------------------------------------------------------*/
 
 SR_API struct sr_input_format **sr_input_list(void);
@@ -1282,7 +1259,7 @@ enum dslib_event_type
 	DS_EV_INACTIVE_DEVICE_DETACH = 2,
 };
 
-typedef unsigned long long ds_device_handle;
+typedef void* ds_device_handle;
 
 /**
  * Device base info
@@ -1384,16 +1361,16 @@ SR_API int ds_get_actived_device_index();
 SR_API int ds_device_from_file(const char *file_path);
 
 /**
- * Get the decive supports work mode, mode list: LOGIC、ANALOG、DSO
- * return type see struct sr_dev_mode.
- */
-SR_API const GSList *ds_get_device_mode_list(ds_device_handle handle);
-
-/**
  * Remove one device from the list, and destory it.
  * User need to call ds_get_device_list() to get the new list.
  */
 SR_API int ds_remove_device(ds_device_handle handle);
+
+/**
+ * Get the decive supports work mode, mode list: LOGIC、ANALOG、DSO
+ * return type see struct sr_dev_mode.
+ */
+SR_API const GSList *ds_get_actived_device_mode_list();
 
 /**
  * Get the actived device info.
@@ -1421,6 +1398,30 @@ SR_API int ds_stop_collect();
  */
 SR_API int ds_is_collecting();
 
+/*---config -----------------------------------------------*/
+SR_API int ds_get_actived_device_config(const struct sr_channel *ch,
+                         const struct sr_channel_group *cg,
+                         int key, GVariant **data);
+
+SR_API int ds_set_actived_device_config(const struct sr_channel *ch,
+                         const struct sr_channel_group *cg,
+                         int key, GVariant *data);
+
+SR_API int ds_get_actived_device_config_list(const struct sr_channel_group *cg,
+                          int key, GVariant **data);
+
+SR_API const struct sr_config_info* ds_get_actived_device_config_info(int key);
+
+SR_API const struct sr_config_info* ds_get_actived_device_config_info_by_name(const char *optname);
+
+SR_API int ds_get_actived_device_status(struct sr_status *status, gboolean prg);
+
+SR_API struct sr_config *ds_new_config(int key, GVariant *data);
+
+SR_API void ds_free_config(struct sr_config *src);
+
+/*----------channel----------*/
+SR_API int ds_enable_device_channel(const struct sr_channel *ch, gboolean enable);
 
 #ifdef __cplusplus
 }

@@ -81,7 +81,7 @@ class DeviceOptions : public DSDialog, public IChannelCheck
 	Q_OBJECT
 
 public:
-    DeviceOptions(QWidget *parent, DevInst *dev_inst);
+    DeviceOptions(QWidget *parent);
 
     ~DeviceOptions();
 
@@ -115,8 +115,7 @@ private slots:
     void on_calibration();
     void channel_enable();
 
-private:
-    DevInst     *_dev_inst; 
+private: 
     std::vector<QCheckBox *> _probes_checkBox_list;
     std::vector<QLayout *> _sub_lays;
 

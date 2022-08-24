@@ -225,6 +225,8 @@ SR_PRIV struct sr_channel *sr_channel_new(uint16_t index, int type,
                                           gboolean enabled, const char *name);
 SR_PRIV void sr_dev_probes_free(struct sr_dev_inst *sdi);
 
+SR_PRIV int sr_enable_device_channel(struct sr_dev_inst *sdi, const struct sr_channel *probe, gboolean enable);
+
 /* Generic device instances */
 SR_PRIV struct sr_dev_inst *sr_dev_inst_new(int mode, int index, int status,
                                             const char *vendor, const char *model, const char *version);
@@ -371,5 +373,27 @@ SR_PRIV int ds_data_forward(const struct sr_dev_inst *sdi,
 						const struct sr_datafeed_packet *packet);
 
 SR_PRIV int current_device_acquisition_stop();
+
+/*--- hwdriver.c ------------------------------------------------------------*/
+
+SR_PRIV int sr_config_get(const struct sr_dev_driver *driver,
+                         const struct sr_dev_inst *sdi,
+                         const struct sr_channel *ch,
+                         const struct sr_channel_group *cg,
+                         int key, GVariant **data);
+SR_PRIV int sr_config_set(struct sr_dev_inst *sdi,
+                         struct sr_channel *ch,
+                         struct sr_channel_group *cg,
+                         int key, GVariant *data);
+SR_PRIV int sr_config_list(const struct sr_dev_driver *driver,
+                          const struct sr_dev_inst *sdi,
+                          const struct sr_channel_group *cg,
+                          int key, GVariant **data);
+SR_PRIV const struct sr_config_info *sr_config_info_get(int key);
+SR_PRIV const struct sr_config_info *sr_config_info_name_get(const char *optname);
+SR_PRIV int sr_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, gboolean prg);
+SR_PRIV struct sr_config *sr_config_new(int key, GVariant *data);
+SR_PRIV void sr_config_free(struct sr_config *src);
+
  
 #endif

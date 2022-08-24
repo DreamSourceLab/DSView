@@ -32,6 +32,7 @@
 #include "config/appconfig.h"
 #include "log.h"
 #include "utility/path.h"
+#include "utility/encoding.h"
 
 AppControl::AppControl()
 {
@@ -65,6 +66,8 @@ void AppControl::Destroy(){
 bool AppControl::Init()
 {    
     _session->init();
+
+    pv::encoding::init();
 
     srd_log_set_context(dsv_log_context());
 
