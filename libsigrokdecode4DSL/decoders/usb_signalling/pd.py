@@ -163,12 +163,12 @@ class Decoder(srd.Decoder):
         if key == srd.SRD_CONF_SAMPLERATE:
             self.samplerate = value
             self.signalling = self.options['signalling']
-            if self.signalling != 'automatic':
-                self.update_bitrate()
+            self.update_bitrate()
 
-    def update_bitrate(self):
-        self.bitrate = bitrates[self.signalling]
-        self.bitwidth = float(self.samplerate) / float(self.bitrate)
+    def update_bitrate(self): 
+        if self.signalling != 'automatic':
+            self.bitrate = bitrates[self.signalling]
+            self.bitwidth = float(self.samplerate) / float(self.bitrate)
 
     def putpx(self, data):
         s = self.samplenum_edge

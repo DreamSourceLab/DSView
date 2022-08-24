@@ -184,9 +184,10 @@ class Decoder(srd.Decoder):
     def end(self): 
         cur_dex = self.last_samplenum
         #the last annotation
-        self.put_py(self.prv_dex, cur_dex, ['ITEM', self.saved_item])
-        self.put_ann(self.prv_dex, cur_dex, [0, [self.fmt_item.format(self.saved_item)]])
-        self.handel_word(None, cur_dex)
+        if self.saved_item != None:
+            self.put_py(self.prv_dex, cur_dex, ['ITEM', self.saved_item])
+            self.put_ann(self.prv_dex, cur_dex, [0, [self.fmt_item.format(self.saved_item)]])
+            self.handel_word(None, cur_dex)
 
     def decode(self):
         # Determine which (optional) channels have input data. Insist in
@@ -227,9 +228,9 @@ class Decoder(srd.Decoder):
         num_word_items = self.options['wordsize']
         num_word_bits = num_item_bits * num_word_items
         num_digits = (num_item_bits + 3) // 4
-        self.fmt_item = "{{:0{}X}}".format(num_digits)
+        self.fmt_item = "@{{:0{}X}}".format(num_digits)
         num_digits = (num_word_bits + 3) // 4
-        self.fmt_word = "{{:0{}X}}".format(num_digits)
+        self.fmt_word = "@{{:0{}X}}".format(num_digits)
         self.num_item_bits = num_item_bits
 
         # Keep processing the input stream. Assume "always zero" for
