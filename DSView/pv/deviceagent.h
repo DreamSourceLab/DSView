@@ -42,7 +42,7 @@ public:
     void update();
 
     inline bool have_instance(){
-        return _dev_handle != NULL;
+        return _dev_handle != NULL_HANDLE;
     }
 
     inline QString name(){
@@ -107,7 +107,7 @@ public:
      * @return The returned device mode list from the driver, or NULL if the
      * 	mode list could not be read.
      */
-    const GSList *get_dev_mode_list();
+    const GSList *get_device_mode_list();
 
     /**
      * Check whether the trigger exists
@@ -123,6 +123,41 @@ public:
      * Stop collect
      */
     bool stop();
+
+    bool have_enabled_channel();
+
+    bool get_status(struct sr_status &status, gboolean prg);
+
+    bool is_collecting();
+
+    GSList* get_channels();
+
+    //---------------device config-----------/
+public:
+  int get_work_mode();
+
+  bool get_device_info(struct ds_device_info &info);
+
+  bool get_device_config(const struct sr_channel *ch,
+                         const struct sr_channel_group *cg,
+                         int key, GVariant **data);
+
+  bool set_device_config(const struct sr_channel *ch,
+                         const struct sr_channel_group *cg,
+                         int key, GVariant *data);
+
+  bool get_device_config_list(const struct sr_channel_group *cg,
+                          int key, GVariant **data);
+
+  const struct sr_config_info* get_device_config_info(int key);
+
+  const struct sr_config_info* get_device_config_info_by_name(const char *optname);
+
+  bool get_device_status(struct sr_status &status, gboolean prg);
+
+  struct sr_config* new_config(int key, GVariant *data);
+
+  void free_config(struct sr_config *src);
 
 
 private:

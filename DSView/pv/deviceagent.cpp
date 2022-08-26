@@ -167,7 +167,7 @@ double DeviceAgent::get_sample_time()
     return sample_time;
 }
 
-const GSList* DeviceAgent::get_dev_mode_list()
+const GSList* DeviceAgent::get_device_mode_list()
 {
     assert(_dev_handle);
     return ds_get_actived_device_mode_list();
@@ -202,3 +202,108 @@ bool DeviceAgent::stop()
     return false;
 }
 
+bool DeviceAgent::have_enabled_channel()
+{
+    assert(_dev_handle);
+    return ds_channel_is_enabled() > 0;
+}
+
+bool DeviceAgent::get_status(struct sr_status &status, gboolean prg)
+{
+    assert(_dev_handle);
+
+    if (ds_get_actived_device_status(&status, prg) == SR_OK){
+        return true;
+    }
+    return false;
+}
+ 
+//---------------device config-----------/
+
+  int DeviceAgent::get_work_mode()
+  {
+      return ds_get_actived_device_mode();
+  }
+
+  bool DeviceAgent::get_device_info(struct ds_device_info &info)
+  {
+     if (ds_get_actived_device_info(&info) == SR_OK){
+        return info.handle != NULL;
+     }
+     return false;
+  }
+
+  bool DeviceAgent::get_device_config(const struct sr_channel *ch,
+                         const struct sr_channel_group *cg,
+                         int key, GVariant **data)
+  {
+    
+    if (ds_get_actived_device_config(ch, cg, key, data) == SR_OK){
+        return true;
+    }
+
+    return false;
+  }
+
+  bool DeviceAgent::set_device_config(const struct sr_channel *ch,
+                         const struct sr_channel_group *cg,
+                         int key, GVariant *data)
+   {
+
+     if (ds_set_actived_device_config(ch, cg, key, data) == SR_OK){
+            return true;
+     }
+
+     return false;
+   }
+
+    bool DeviceAgent::get_device_config_list(const struct sr_channel_group *cg,
+                          int key, GVariant **data)
+    {
+
+        if (ds_get_actived_device_config_list(cg, key, data) == SR_OK){
+            return true;
+        }
+        return false;
+    }
+
+    const struct sr_config_info* DeviceAgent::get_device_config_info(int key)
+    {
+        return ds_get_actived_device_config_info(key);
+    }
+
+    const struct sr_config_info* DeviceAgent::get_device_config_info_by_name(const char *optname)
+    {
+        return ds_get_actived_device_config_info_by_name(optname);
+    }
+
+    bool DeviceAgent::get_device_status(struct sr_status &status, gboolean prg)
+    {
+        if (ds_get_actived_device_status(&status, prg) == SR_OK){
+            return true;
+        }
+        return false;
+    }
+
+    struct sr_config* DeviceAgent::new_config(int key, GVariant *data)
+    {
+        return ds_new_config(key, data);
+    }
+
+    void DeviceAgent::free_config(struct sr_config *src)
+    {
+        ds_free_config(src);
+    }
+
+    bool DeviceAgent::is_collecting()
+    {
+        return ds_is_collecting() > 0;
+    }
+
+    GSList* DeviceAgent::get_channels()
+    {
+        assert(_dev_handle);
+        return ds_get_actived_device_channels();
+    }
+
+//---------------device config end -----------/

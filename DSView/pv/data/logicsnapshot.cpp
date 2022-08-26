@@ -99,6 +99,7 @@ void LogicSnapshot::clear()
     std::lock_guard<std::mutex> lock(_mutex);
     free_data();
     init_all();
+    _have_data = false;
 }
 
 void LogicSnapshot::capture_ended()
@@ -228,6 +229,8 @@ void LogicSnapshot::append_payload(const sr_datafeed_logic &logic)
         append_cross_payload(logic);
     else if (logic.format == LA_SPLIT_DATA)
         append_split_payload(logic);
+
+    _have_data = true;
 }
 
 void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)

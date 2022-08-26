@@ -54,7 +54,7 @@ public:
     
     virtual void receive_header()=0;
     virtual void data_received()=0;
-    virtual void update_device_list(struct ds_device_info *array, int count, int select_index)=0;
+    virtual void device_list_changed();
   
 };
 

@@ -1242,24 +1242,29 @@ SR_API void ds_log_set_context(xlog_context *ctx);
 SR_API void ds_log_level(int level);
 
 
-/*---event define ---------------------------------------------*/
-enum dslib_event_type
-{
-	// A new device attached, user need to call ds_get_device_list to get the list,
-	// the last one is new.
-	// User can call ds_active_device() to switch to the current device.
-	DS_EV_NEW_DEVICE_ATTACH = 0, 
+// A new device attached, user need to call ds_get_device_list to get the list,
+// the last one is new.
+// User can call ds_active_device() to switch to the current device.
+#define DS_EV_NEW_DEVICE_ATTACH			0
 
-	// The current device detached, user need to call ds_get_device_list to get the list,
-	// and call ds_active_device() to switch to the current device.
-	DS_EV_CURRENT_DEVICE_DETACH = 1, 
+// The current device detached, user need to call ds_get_device_list to get the list,
+// and call ds_active_device() to switch to the current device.
+#define DS_EV_CURRENT_DEVICE_DETACH 	1
 
-	// A inactive device detached.
-	// User can call ds_get_device_list() to get the new list, and update the list view.
-	DS_EV_INACTIVE_DEVICE_DETACH = 2,
-};
+// A inactive device detached.
+// User can call ds_get_device_list() to get the new list, and update the list view.
+#define DS_EV_INACTIVE_DEVICE_DETACH 	2
 
-typedef void* ds_device_handle;
+// The collect task is ends.
+#define DS_EV_COLLECT_TASK_START		100
+
+// The collect task is ends.
+#define DS_EV_COLLECT_TASK_END			101
+
+
+typedef unsigned long long ds_device_handle;
+
+#define NULL_HANDLE		0
 
 /**
  * Device base info
@@ -1283,16 +1288,6 @@ struct ds_store_extra_data
 	char *data;
 	int  data_length;
 };
-
-/*-----------------trigger---------------*/
-int ds_trigger_is_enabled();
-
-/*-----------------channel---------------*/
-/**
- *  heck that at least one probe is enabled
- */
-int ds_channel_is_enabled();
-
 
 /*---lib_main.c -----------------------------------------------*/
 
@@ -1354,6 +1349,11 @@ SR_API int ds_active_device_by_index(int index);
  * Get the selected device index.
  */
 SR_API int ds_get_actived_device_index();
+
+/**
+ * Detect whether the active device exists
+ */
+SR_API int ds_have_actived_device();
 
 /**
  * Create a device from session file, and will auto load the data.
@@ -1422,6 +1422,17 @@ SR_API void ds_free_config(struct sr_config *src);
 
 /*----------channel----------*/
 SR_API int ds_enable_device_channel(const struct sr_channel *ch, gboolean enable);
+
+/**
+ *  heck that at least one probe is enabled
+ */
+int ds_channel_is_enabled();
+
+GSList* ds_get_actived_device_channels();
+
+/*-----------------trigger---------------*/
+int ds_trigger_is_enabled();
+
 
 #ifdef __cplusplus
 }

@@ -92,6 +92,7 @@ void AnalogSnapshot::clear()
     free_data();
     free_envelop();
     init_all();
+    _have_data = false;
 }
 
 void AnalogSnapshot::first_payload(const sr_datafeed_analog &analog, uint64_t total_sample_count, GSList *channels)
@@ -173,6 +174,8 @@ void AnalogSnapshot::append_payload(
 	// Generate the first mip-map from the data
     if (analog.num_samples != 0) // guarantee new samples to compute
         append_payload_to_envelope_levels();
+
+    _have_data = true;
 }
 
 void AnalogSnapshot::append_data(void *data, uint64_t samples, uint16_t pitch)

@@ -67,6 +67,7 @@ static void close_device_instance(struct sr_dev_inst *dev);
 static int open_device_instance(struct sr_dev_inst *dev);
 static void collect_run_proc();
 static void post_event_async(int event);
+static void send_event(int event);
 
 static struct sr_lib_context lib_ctx = {
 	.event_callback = NULL,
@@ -300,7 +301,7 @@ SR_API int ds_active_device(ds_device_handle handle)
 	int bFind = 0;
 	int ret;
 
-	if (handle == NULL)
+	if (handle == NULL_HANDLE)
 	{
 		return SR_ERR_ARG;
 	}
@@ -318,12 +319,11 @@ SR_API int ds_active_device(ds_device_handle handle)
 
 	if (lib_ctx.actived_device_instance != NULL)
 	{
-
 		sr_info("Close the previous device \"%s\"", lib_ctx.actived_device_instance->name);
 
 		close_device_instance(lib_ctx.actived_device_instance);
 		lib_ctx.actived_device_instance = NULL;
-		lib_ctx.actived_device_info.handle = NULL;
+		lib_ctx.actived_device_info.handle = NULL_HANDLE;
 		lib_ctx.actived_device_info.name[0] = '\0';
 	}
 
@@ -439,10 +439,20 @@ SR_API int ds_get_actived_device_index()
 		}
 		i++;
 	}
-
 	pthread_mutex_unlock(&lib_ctx.mutext);
 
 	return dex;
+}
+
+/**
+ * Detect whether the active device exists
+ */
+SR_API int ds_have_actived_device()
+{
+	if (lib_ctx.actived_device_instance != NULL){
+		return 1;
+	}
+	return 0;
 }
 
 /**
@@ -480,7 +490,7 @@ SR_API int ds_remove_device(ds_device_handle handle)
 
 	di = lib_ctx.actived_device_instance;
 
-	if (handle == NULL)
+	if (handle == NULL_HANDLE)
 	{
 		return SR_ERR_ARG;
 	}
@@ -506,7 +516,7 @@ SR_API int ds_remove_device(ds_device_handle handle)
 			}
 			if (lib_ctx.actived_device_info.handle == dev->handle)
 			{
-				lib_ctx.actived_device_info.handle = 0;
+				lib_ctx.actived_device_info.handle = NULL_HANDLE;
 				lib_ctx.actived_device_info.name[0] = '\0';
 			}
 
@@ -535,11 +545,11 @@ SR_API int ds_get_actived_device_info(struct ds_device_info *fill_info)
 		return SR_ERR_ARG;
 	}
 
-	fill_info->handle = NULL;
+	fill_info->handle = NULL_HANDLE;
 	fill_info->name[0] = '\0';
 	fill_info->dev_type = DEV_TYPE_UNKOWN;
 
-	if (lib_ctx.actived_device_info.handle != NULL)
+	if (lib_ctx.actived_device_info.handle != NULL_HANDLE)
 	{
 		fill_info->handle = lib_ctx.actived_device_info.handle;
 		strncpy(fill_info->name, lib_ctx.actived_device_info.name, sizeof(fill_info->name));
@@ -627,6 +637,8 @@ static void collect_run_proc()
 	struct sr_dev_inst *di;
 	di = lib_ctx.actived_device_instance;
 
+	send_event(DS_EV_COLLECT_TASK_START);
+
 	sr_info("%s", "Collect thread start.");
 
 	if (di == NULL || di->driver == NULL || di->driver->dev_acquisition_start == NULL)
@@ -645,17 +657,16 @@ static void collect_run_proc()
 	}
 
 	ret = sr_session_run();
-	if (ret != SR_OK)
-	{
+	if (ret != SR_OK){
 		sr_err("%s", "Run session error!");
-		lib_ctx.collect_thread = NULL;
 		goto END;
-	}
+	} 
 
 END:
 	sr_info("%s", "Collect thread end.");
-
 	lib_ctx.collect_thread = NULL;
+
+	send_event(DS_EV_COLLECT_TASK_END);	
 }
 
 /**
@@ -694,37 +705,25 @@ int ds_trigger_is_enabled()
 {
 	GSList *l;
 	struct sr_channel *p;
+	int ret;
+
+	ret = 0;
+	pthread_mutex_lock(&lib_ctx.mutext);
 
 	if (lib_ctx.actived_device_instance != NULL)
 	{
 		for (l = lib_ctx.actived_device_instance->channels; l; l = l->next)
 		{
 			p = (struct sr_channel *)l->data;
-			if (p->trigger && p->trigger[0] != '\0')
-				return 1;
+			if (p->trigger && p->trigger[0] != '\0'){
+				ret = 1;
+				break;
+			}
 		}
 	}
-	return 0;
-}
+	pthread_mutex_unlock(&lib_ctx.mutext);
 
-/**
- *  heck that at least one probe is enabled
- */
-int ds_channel_is_enabled()
-{
-	GSList *l;
-	struct sr_channel *p;
-
-	if (lib_ctx.actived_device_instance != NULL)
-	{
-		for (l = lib_ctx.actived_device_instance->channels; l; l = l->next)
-		{
-			p = (struct sr_channel *)l->data;
-			if (p->enabled)
-				return 1;
-		}
-	}
-	return 0;
+	return ret;
 }
 
 /**-------------------public end ---------------*/
@@ -825,6 +824,41 @@ SR_API int ds_enable_device_channel(const struct sr_channel *ch, gboolean enable
 		return SR_ERR_CALL_STATUS;
 	}
 	return sr_enable_device_channel(lib_ctx.actived_device_instance, ch, enable);
+}
+
+/**
+ *  check that at least one probe is enabled
+ */
+int ds_channel_is_enabled()
+{
+	GSList *l;
+	struct sr_channel *p;
+	int ret;
+
+	ret = 0;
+	pthread_mutex_lock(&lib_ctx.mutext);
+
+	if (lib_ctx.actived_device_instance != NULL)
+	{
+		for (l = lib_ctx.actived_device_instance->channels; l; l = l->next)
+		{
+			p = (struct sr_channel *)l->data;
+			if (p->enabled){
+				ret = 1;
+				break;
+			}
+		}
+	}
+	pthread_mutex_unlock(&lib_ctx.mutext);
+	return ret;
+}
+
+GSList* ds_get_actived_device_channels()
+{
+	if (lib_ctx.actived_device_instance != NULL){
+		return lib_ctx.actived_device_instance->channels;
+	}
+	return NULL;
 }
 
 /**-------------------config end-------------------*/
@@ -1250,7 +1284,6 @@ static void post_event_proc(int event)
 
 	pthread_mutex_lock(&lib_ctx.mutext);
 	lib_ctx.callback_thread_count--;
-	;
 	pthread_mutex_unlock(&lib_ctx.mutext);
 }
 
@@ -1261,6 +1294,13 @@ static void post_event_async(int event)
 	pthread_mutex_unlock(&lib_ctx.mutext);
 
 	g_thread_new("callback_thread", post_event_proc, event);
+}
+
+static void send_event(int event)
+{
+	if (lib_ctx.event_callback != NULL){
+		lib_ctx.event_callback(event);
+	}
 }
 
 /**-------------------private function end---------------*/

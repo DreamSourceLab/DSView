@@ -173,7 +173,7 @@ private:
     void receive_data_len(quint64 len);
     void receive_header();    
     void data_received();
-    void update_device_list(struct ds_device_info *array, int count, int select_index);
+    void device_list_changed();
 
     //------private
     bool gen_session_json(QJsonObject &sessionVar);

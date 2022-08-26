@@ -131,17 +131,16 @@ public:
     inline DeviceAgent* get_device(){
         return &_device_agent;
     }
+ 
+    bool set_device(ds_device_handle dev_handle);   
+    bool set_file(QString name);
+    void close_file(ds_device_handle dev_handle);
 
-	/**
-	 * Sets device instance that will be used in the next capture session.
-	 */
-    void set_device(DevInst *dev_inst);
-   
-    void set_file(QString name);
-    void close_file(DevInst *dev_inst);
-    void set_default_device();
-
-    void release_device(DevInst *dev_inst);
+    /**
+     * Set the last one device.
+     */
+    bool set_default_device();
+ 
 	capture_state get_capture_state();
     uint64_t cur_samplerate();
     uint64_t cur_snap_samplerate();
@@ -184,8 +183,7 @@ public:
     void add_group();
     void del_group();
 
-    uint16_t get_ch_num(int type);
-    
+    uint16_t get_ch_num(int type);    
     bool get_instant();
     bool get_data_lock();
     void data_auto_lock(int lock);
@@ -230,7 +228,7 @@ public:
     float stop_scale();
 
     void exit_capture();
-    sr_dev_inst* get_dev_inst_c();
+  
     void Open();
     void Close();
     void clear_all_decoder(bool bUpdateView = true); 
@@ -282,33 +280,7 @@ public:
     }
 
     void store_session_data();
-
-//---------------device api-----------/
-public:
-  int get_device_work_mode();
-
-  bool get_device_info(struct ds_device_info &info);
-
-  bool get_device_config(const struct sr_channel *ch,
-                         const struct sr_channel_group *cg,
-                         int key, GVariant **data);
-
-  bool set_device_config(const struct sr_channel *ch,
-                         const struct sr_channel_group *cg,
-                         int key, GVariant *data);
-
-  bool get_device_config_list(const struct sr_channel_group *cg,
-                          int key, GVariant **data);
-
-  const struct sr_config_info* get_device_config_info(int key);
-
-  const struct sr_config_info* get_device_config_info_by_name(const char *optname);
-
-  bool get_device_status(struct sr_status &status, gboolean prg);
-
-  struct sr_config* new_config(int key, GVariant *data);
-
-  void free_config(struct sr_config *src);
+    bool have_hardware_data();
 
 private:
     inline void data_updated(){
@@ -350,7 +322,7 @@ private:
      * 	auto-detected.
      */
     static sr_input_format* determine_input_file_format(const std::string &filename);  
-    void sample_thread_proc(DevInst *dev_inst);
+ 
 
     // data feed
 	void feed_in_header(const sr_dev_inst *sdi);
@@ -373,6 +345,9 @@ private:
  
     void update_collect_status_view();
     void init_device_view();
+    void update_graph_view();
+
+    bool get_device_list(struct ds_device_info  **out_list, int &out_count, int &actived_index);
  
 private:
 
@@ -383,8 +358,7 @@ private:
     mutable std::mutex      _sampling_mutex;
     mutable std::mutex      _data_mutex;
     mutable std::mutex      _decode_task_mutex;
-
-    std::thread             _sampling_thread;   
+  
     std::thread             _decode_thread;
 
     volatile bool           _bHotplugStop;
