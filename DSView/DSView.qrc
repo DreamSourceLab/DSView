@@ -140,5 +140,7 @@
         <file>icons/logo.svg</file>
         <file>icons/light/update.svg</file>
         <file>icons/dark/update.svg</file>
+        <file>icons/light/log.svg</file>
+        <file>icons/dark/log.svg</file>
     </qresource>
 </RCC>
