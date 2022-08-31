@@ -38,8 +38,10 @@ struct st_dev_inst;
 class QAction;
 struct ds_device_info;
 
+class DeviceAgent;
+
 namespace pv
-{ 
+{  
     class SigSession;
 
     namespace device
@@ -88,7 +90,7 @@ namespace pv
             double commit_hori_res();
             double get_hori_res();
 
-            void update_device_list(struct ds_device_info *array, int count, int select_index);
+            void update_device_list();
 
         public slots:
             void set_sample_rate(uint64_t sample_rate);
@@ -154,7 +156,8 @@ namespace pv
             QAction             *_action_repeat;
             QAction             *_action_single;
             bool                _instant;
-            bool                _is_seting_list;
+            bool                _updating_device_list;
+            DeviceAgent         *_device_agent;
         };
 
     } // namespace toolbars

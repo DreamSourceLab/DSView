@@ -415,19 +415,6 @@ void Header::contextMenuEvent(QContextMenuEvent *event)
 
     if (!t || !t->selected() || action != Trace::LABEL)
         return;
-
-    /*
-     * disable group function for v0.97 temporarily
-     */
-//    QMenu menu(this);
-//    if (t->get_type() == SR_CHANNEL_LOGIC)
-//        menu.addAction(_action_add_group);
-//    else if (t->get_type() == SR_CHANNEL_GROUP)
-//        menu.addAction(_action_del_group);
-
-//    _context_trace = t;
-//    menu.exec(event->globalPos());
-//    _context_trace.r-eset();
 }
 
 void Header::on_action_set_name_triggered()
@@ -440,7 +427,9 @@ void Header::on_action_set_name_triggered()
         context_Trace->set_name(nameEdit->text());
         if (context_Trace->get_type() == SR_CHANNEL_LOGIC ||
                 context_Trace->get_type() == SR_CHANNEL_ANALOG)
-            sr_dev_probe_name_set(_view.session().get_device()->dev_inst(), context_Trace->get_index(), nameEdit->text().toUtf8().constData());
+        {
+            _view.session().get_device()->set_channel_name(context_Trace->get_index(), nameEdit->text().toUtf8());
+        }
     }
 
     nameEdit->hide();

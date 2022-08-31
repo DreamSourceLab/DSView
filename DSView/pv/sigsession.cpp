@@ -26,8 +26,6 @@
 
 #include "sigsession.h"
 #include "mainwindow.h"
-#include "device/device.h"
-#include "device/file.h"
 
 #include "data/analog.h"
 #include "data/analogsnapshot.h"
@@ -71,9 +69,7 @@ SigSession* SigSession::_session = NULL;
 SigSession::SigSession() 
 { 
     // TODO: This should not be necessary
-    _session = this;
-    _hot_attach = false;
-    _hot_detach = false;
+    _session = this; 
     _group_cnt = 0;
     _bHotplugStop = false;  
 
@@ -90,21 +86,18 @@ SigSession::SigSession()
     _data_lock = false;
     _data_updated = false;
     _active_last_device_flag = false;
+    _bSaving = false;
 
     _decoder_model = new pv::data::DecoderModel(NULL);
 
     _lissajous_trace = NULL;
     _math_trace = NULL;
-    _saving = false;
+
     _dso_feed = false;
     _stop_scale = 1; 
     _bDecodeRunning = false;
     _bClose = false;
-    _callback = NULL; 
-    _dev_inst = NULL;
-    _is_wait_reattch = false;
-    _wait_reattch_times = 0;
-    _is_device_reattach = false;
+    _callback = NULL;  
 
     // Create snapshots & data containers 
     _logic_data = new data::Logic(new data::LogicSnapshot()); 
@@ -164,7 +157,7 @@ double SigSession::cur_snap_sampletime()
 
 double SigSession::cur_view_time()
 {
-    return _dev_inst->get_time_base() * DS_CONF_DSO_HDIVS * 1.0 / SR_SEC(1);
+    return _device_agent.get_time_base() * DS_CONF_DSO_HDIVS * 1.0 / SR_SEC(1);
 }
 
 void SigSession::set_cur_snap_samplerate(uint64_t samplerate)
@@ -192,7 +185,7 @@ void SigSession::set_cur_snap_samplerate(uint64_t samplerate)
 
     // Math
     if (_math_trace && _math_trace->enabled())
-        _math_trace->get_math_stack()->set_samplerate(_dev_inst->get_sample_rate());
+        _math_trace->get_math_stack()->set_samplerate(_device_agent.get_sample_rate());
     // SpectrumStack
     for(auto & m : _spectrum_traces)
         m->get_spectrum_stack()->set_samplerate(_cur_snap_samplerate);
@@ -212,11 +205,11 @@ void SigSession::capture_init()
         set_repeating(get_run_mode() == Repetitive);
     
     // update instant setting
-    _dev_inst->set_config(NULL, NULL, SR_CONF_INSTANT, g_variant_new_boolean(_instant));
+    _device_agent.set_config(NULL, NULL, SR_CONF_INSTANT, g_variant_new_boolean(_instant));
     _callback->update_capture();
 
-    set_cur_snap_samplerate(_dev_inst->get_sample_rate());
-    set_cur_samplelimits(_dev_inst->get_sample_limit());
+    set_cur_snap_samplerate(_device_agent.get_sample_rate());
+    set_cur_samplelimits(_device_agent.get_sample_limit());
     set_stop_scale(1);
     _data_updated = false;
     _trigger_flag = false;
@@ -314,7 +307,7 @@ void SigSession::start_capture(bool instant)
     }
 
     // update setting
-    if (_device_agent.isFile() == false)
+    if (_device_agent.is_file() == false)
         _instant = instant;
     else
         _instant = true;
@@ -493,8 +486,11 @@ void SigSession::del_group()
 }
 
 void SigSession::init_signals()
-{
-    assert(_dev_inst);
+{ 
+    if (_device_agent.have_instance() == false){
+        assert(false);
+    }
+
     stop_capture();
 
     std::vector<view::Signal*> sigs;
@@ -541,7 +537,7 @@ void SigSession::init_signals()
 
     std::vector<view::GroupSignal *>().swap(_group_traces);
 
-    for (GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next)
+    for (GSList *l = _device_agent.get_channels(); l; l = l->next)
     {
         sr_channel *probe =
             (sr_channel *)l->data;
@@ -552,16 +548,16 @@ void SigSession::init_signals()
         {
         case SR_CHANNEL_LOGIC:
             if (probe->enabled)
-                signal = new view::LogicSignal(_dev_inst, _logic_data, probe);
+                signal = new view::LogicSignal(_logic_data, probe);
             break;
 
         case SR_CHANNEL_DSO:
-            signal = new view::DsoSignal(_dev_inst, _dso_data, probe);
+            signal = new view::DsoSignal(_dso_data, probe);
             break;
 
         case SR_CHANNEL_ANALOG:
             if (probe->enabled)
-                signal = new view::AnalogSignal(_dev_inst, _analog_data, probe);
+                signal = new view::AnalogSignal(_analog_data, probe);
             break;
         }
         if (signal != NULL)
@@ -579,7 +575,9 @@ void SigSession::init_signals()
 
 void SigSession::reload()
 {
-    assert(_dev_inst);
+    if (_device_agent.have_instance() == false){
+        assert(false);
+    }
 
     if (_capture_state == Running)
         stop_capture();
@@ -588,7 +586,7 @@ void SigSession::reload()
     view::Signal *signal = NULL;
 
     // Make the logic probe list
-    for (GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next)
+    for (GSList *l = _device_agent.get_channels(); l; l = l->next)
     {
         sr_channel *probe =
             (sr_channel *)l->data;
@@ -614,7 +612,7 @@ void SigSession::reload()
                 }
                 if (signal == NULL)
                 {
-                    signal = new view::LogicSignal(_dev_inst, _logic_data, probe);
+                    signal = new view::LogicSignal(_logic_data, probe);
                 }
             }
             break;
@@ -636,7 +634,7 @@ void SigSession::reload()
                 }
                 if (signal == NULL)
                 {
-                    signal = new view::AnalogSignal(_dev_inst, _analog_data, probe);
+                    signal = new view::AnalogSignal(_analog_data, probe);
                 }
             }
             break;
@@ -750,7 +748,7 @@ void SigSession::feed_in_meta(const sr_dev_inst *sdi,
 void SigSession::feed_in_trigger(const ds_trigger_pos &trigger_pos)
 {
     _hw_replied = true;
-    if (_dev_inst->dev_inst()->mode != DSO) {
+    if (_device_agent.get_work_mode() != DSO) {
         _trigger_flag = (trigger_pos.status & 0x01);
         if (_trigger_flag) {
             _trigger_pos = trigger_pos.real_pos;
@@ -759,8 +757,7 @@ void SigSession::feed_in_trigger(const ds_trigger_pos &trigger_pos)
     } else {
         int probe_count = 0;
         int probe_en_count = 0;
-        for (const GSList *l = _dev_inst->dev_inst()->channels;
-            l; l = l->next) {
+        for (const GSList *l = _device_agent.get_channels(); l; l = l->next) {
             const sr_channel *const probe = (const sr_channel *)l->data;
             if (probe->type == SR_CHANNEL_DSO) {
                 probe_count++;
@@ -787,7 +784,7 @@ void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
     }
 
     if (_logic_data->snapshot()->last_ended()) {
-        _logic_data->snapshot()->first_payload(logic, _dev_inst->get_sample_limit(), _dev_inst->dev_inst()->channels);
+        _logic_data->snapshot()->first_payload(logic, _device_agent.get_sample_limit(), _device_agent.get_channels());
         // @todo Putting this here means that only listeners querying
         // for logic will be notified. Currently the only user of
         // frame_began is DecoderStack, but in future we need to signal
@@ -834,7 +831,7 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
         }
 
         // first payload
-        _dso_data->snapshot()->first_payload(dso, _dev_inst->get_sample_limit(), sig_enable, _instant);
+        _dso_data->snapshot()->first_payload(dso, _device_agent.get_sample_limit(), sig_enable, _instant);
     } else {
         // Append to the existing data snapshot
         _dso_data->snapshot()->append_payload(dso);
@@ -848,7 +845,7 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
 
     if (dso.num_samples != 0) {
         // update current sample rate
-        set_cur_snap_samplerate(_dev_inst->get_sample_rate());
+        set_cur_snap_samplerate(_device_agent.get_sample_rate());
  
     }
 
@@ -868,7 +865,7 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
 
     // calculate related math results
     if (_math_trace && _math_trace->enabled()) {
-        _math_trace->get_math_stack()->realloc(_dev_inst->get_sample_limit());
+        _math_trace->get_math_stack()->realloc(_device_agent.get_sample_limit());
         _math_trace->get_math_stack()->calc_math();
     }
 
@@ -904,7 +901,7 @@ void SigSession::feed_in_analog(const sr_datafeed_analog &analog)
         }
 
         // first payload
-        _analog_data->snapshot()->first_payload(analog, _dev_inst->get_sample_limit(), _dev_inst->dev_inst()->channels);
+        _analog_data->snapshot()->first_payload(analog, _device_agent.get_sample_limit(), _device_agent.get_channels());
     } else {
         // Append to the existing data snapshot
         _analog_data->snapshot()->append_payload(analog);
@@ -1006,7 +1003,7 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
 
         _callback->frame_ended();
 
-        if (get_device()->dev_inst()->mode != LOGIC){
+        if (_device_agent.get_work_mode() != LOGIC){
              set_session_time(QDateTime::currentDateTime());
         }
            
@@ -1029,7 +1026,7 @@ uint16_t SigSession::get_ch_num(int type)
     uint16_t dso_ch_num = 0;
     uint16_t analog_ch_num = 0;
 
-    if (_dev_inst->dev_inst()) {
+    if (_device_agent.have_instance()) {
         for(auto &s : _signals)
         {
             assert(s);
@@ -1273,7 +1270,7 @@ void SigSession::math_rebuild(bool enable,view::DsoSignal *dsoSig1,
 
     if (_math_trace && _math_trace->enabled()) {
         _math_trace->get_math_stack()->set_samplerate(_dso_data->samplerate()); 
-        _math_trace->get_math_stack()->realloc(_dev_inst->get_sample_limit());
+        _math_trace->get_math_stack()->realloc(_device_agent.get_sample_limit());
         _math_trace->get_math_stack()->calc_math();
     }
     signals_changed();
@@ -1317,7 +1314,7 @@ uint8_t SigSession::trigd_ch()
 
 void SigSession::nodata_timeout()
 {
-    GVariant *gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_TRIGGER_SOURCE);
+    GVariant *gvar = _device_agent.get_config(NULL, NULL, SR_CONF_TRIGGER_SOURCE);
     if (gvar == NULL)
         return;
     if (g_variant_get_byte(gvar) != DSO_TRIGGER_AUTO) {
@@ -1407,7 +1404,7 @@ bool SigSession::repeat_check()
         return false;
     }
 
-    if (_dev_inst->dev_inst()->mode == LOGIC) {
+    if (_device_agent.get_work_mode() == LOGIC) {
         _repeat_hold_prg = 100;
         _callback->repeat_hold(_repeat_hold_prg); 
         _out_timer.TimeOut(_repeat_intvl * 1000 / RepeatHoldDiv, std::bind(&SigSession::repeat_update, this));
@@ -1478,22 +1475,12 @@ uint64_t SigSession::get_save_end()
     return _save_end;
 }
 
-bool SigSession::get_saving()
-{
-    return _saving;
-}
-
-void SigSession::set_saving(bool saving)
-{
-    _saving = saving;
-}
-
 void SigSession::exit_capture()
 {
     set_repeating(false);
     bool wait_upload = false;
     if (get_run_mode() != SigSession::Repetitive) {
-        GVariant *gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_WAIT_UPLOAD);
+        GVariant *gvar = _device_agent.get_config(NULL, NULL, SR_CONF_WAIT_UPLOAD);
         if (gvar != NULL) {
             wait_upload = g_variant_get_boolean(gvar);
             g_variant_unref(gvar);
@@ -1530,11 +1517,6 @@ void SigSession::set_stop_scale(float scale)
      stop_capture(); //stop capture
 
      clear_all_decoder(); //clear all decode task, and stop decode thread
-
-     if (_dev_inst)
-     {
-         _dev_inst->release();
-     }
 
      // TODO: This should not be necessary
      _session = NULL;
@@ -1681,7 +1663,7 @@ void SigSession::set_stop_scale(float scale)
 
   Snapshot* SigSession::get_signal_snapshot()
   {
-    int mode = ds_get_actived_device_mode();
+    int mode = _device_agent.get_work_mode();
     if (mode == ANALOG)
         return _analog_data->snapshot();
     else if (mode == DSO)
@@ -1731,7 +1713,8 @@ void SigSession::on_device_lib_event(int event)
         {
             // Try to save current device data, and auto select the lastest device later.
             _active_last_device_flag = true;
-            store_session_data();
+            if (!_bSaving)
+                store_session_data();
             return;
         }
     }
@@ -1743,7 +1726,10 @@ void SigSession::on_device_lib_event(int event)
 
     if (event == DS_EV_NEW_DEVICE_ATTACH || event == DS_EV_CURRENT_DEVICE_DETACH)
     {
-        set_default_device();
+        if (_bSaving)
+            _active_last_device_flag = true; //Auto switch device after save data.
+        else
+             set_default_device();
     }
     else if (_callback != NULL)
     {
@@ -1763,7 +1749,7 @@ bool SigSession::set_default_device()
     }
     if (count < 1 || array == NULL)
     {
-        dsv_err("%s", "Device list is empty!");
+        dsv_err("%s", "SigSession::set_default_device, Device list is empty!");
         return false;
     } 
 
@@ -1783,7 +1769,9 @@ bool SigSession::set_default_device()
 }
 
 bool SigSession::set_device(ds_device_handle dev_handle)
-{   
+{    
+    assert(!_bSaving);
+
     if (ds_active_device(dev_handle) != SR_OK){
         dsv_err("%s", "Switch device error!");
         return false;
@@ -1793,7 +1781,7 @@ bool SigSession::set_device(ds_device_handle dev_handle)
     RELEASE_ARRAY(_group_traces);    
     clear_all_decoder();   
 
-    if (_device_agent.isFile())
+    if (_device_agent.is_file())
         dsv_info("%s\"%s\"", "Switch to file: ", _device_agent.name().toUtf8().data());
     else
         dsv_info("%s\"%s\"", "Switch to device: ", _device_agent.name().toUtf8().data());
@@ -1808,7 +1796,6 @@ bool SigSession::set_device(ds_device_handle dev_handle)
 
     _callback->device_setted();
 }
-
 
 bool SigSession::set_file(QString name)
 { 
@@ -1880,7 +1867,7 @@ bool SigSession::init()
 
   bool SigSession::have_hardware_data()
   {
-     if (_device_agent.have_instance() && _device_agent.isHardware()){
+     if (_device_agent.have_instance() && _device_agent.is_hardware()){
         Snapshot *data = get_signal_snapshot();
         return data->have_data();
      }
@@ -1892,16 +1879,18 @@ bool SigSession::init()
 
   }
 
-  bool SigSession::get_device_list(struct ds_device_info  **out_list, int &out_count, int &actived_index)
+  struct ds_device_info* SigSession::get_device_list(int &out_count, int &actived_index)
   {
       out_count = 0;
       actived_index = -1;
+      struct ds_device_info *array = NULL;
 
-      if (ds_get_device_list(out_list, &out_count) == SR_OK){
+      if (ds_get_device_list(&array, &out_count) == SR_OK)
+      {
          actived_index = ds_get_actived_device_index();
-         return true;
+         return array;
       }
-      return false;
+      return NULL;
   }
 
   

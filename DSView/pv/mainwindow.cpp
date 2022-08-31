@@ -42,16 +42,14 @@
 #include <libusb-1.0/libusb.h>
 #include <QGuiApplication>
 #include <QTextStream>
+#include <QJsonValue>
+#include <QJsonArray>
 
 #ifdef _WIN32
 #include <QDesktopWidget>
 #endif
 
 #include "mainwindow.h"
-
-#include "devicemanager.h"
-#include "device/device.h"
-#include "device/file.h"
 
 #include "data/logicsnapshot.h"
 #include "data/dsosnapshot.h"
@@ -96,9 +94,11 @@
 #include  "utility/encoding.h"
 #include "utility/path.h"
 #include "log.h"
+#include "sigsession.h"
+#include "deviceagent.h"
 
 #define BASE_SESSION_VERSION 2
-  
+
 
 namespace pv {
 
@@ -106,9 +106,11 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     _hot_detach(false),
     _msg(NULL)
-{
-    _control = AppControl::Instance();
-    _control->GetSession()->set_callback(this);  
+{ 
+    _session = AppControl::Instance()->GetSession();
+    _session->set_callback(this); 
+    _device_agent = _session->get_device(); 
+
     _bFirstLoad = true;
 
 	setup_ui();
@@ -118,8 +120,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
 void MainWindow::setup_ui()
 { 
-    SigSession *_session = _control->GetSession();
-
 	setObjectName(QString::fromUtf8("MainWindow"));
     setContentsMargins(0,0,0,0);
     layout()->setSpacing(0);
@@ -234,8 +234,6 @@ void MainWindow::setup_ui()
   
     // UI initial
     _measure_widget->add_dist_measure();
- 
-    _session->start_hotplug_work();
 
     retranslateUi();
 
@@ -253,9 +251,6 @@ void MainWindow::setup_ui()
     connect(&_event, SIGNAL(data_updated()), this, SLOT(on_data_updated()));
     connect(&_event, SIGNAL(cur_snap_samplerate_changed()), this, SLOT(on_cur_snap_samplerate_changed()));
     connect(&_event, SIGNAL(receive_data_len(quint64)), this, SLOT(on_receive_data_len(quint64)));
-    connect(&_event, SIGNAL(update_device_list()), this, SLOT(on_device_list_changed()));
-
-
     //view
     connect(_view, SIGNAL(cursor_update()), _measure_widget, SLOT(cursor_update()));
     connect(_view, SIGNAL(cursor_moving()), _measure_widget, SLOT(cursor_moving()));
@@ -324,12 +319,13 @@ void MainWindow::update_device_list()
 {
     assert(_sampling_bar);
 
+    /*
+
     if (_msg)
         _msg->close();
 
     AppConfig &app = AppConfig::Instance(); 
-
-    SigSession *_session = _control->GetSession();
+ 
 
     switchLanguage(app._frameOptions.language);
     _session->stop_capture();
@@ -339,10 +335,8 @@ void MainWindow::update_device_list()
     _protocol_widget->del_all_protocol();
 
     _trig_bar->reload();
-
-    DeviceManager &_device_manager = _control->GetDeviceManager();
-
-    DevInst *selected_device = _session->get_device();
+ 
+    DevInst *selected_device = _device_agent;
     _device_manager.add_device(selected_device);
     _session->init_signals();
     _sampling_bar->set_device_list(_device_manager.devices(), selected_device);
@@ -455,12 +449,12 @@ void MainWindow::update_device_list()
                 }              
             } 
        }
+    */
 }
 
 
 void MainWindow::on_device_updated_reload()
-{
-    SigSession *_session = _control->GetSession();
+{ 
     _trigger_widget->device_updated();
     _session->reload();
     _measure_widget->reload();
@@ -468,10 +462,9 @@ void MainWindow::on_device_updated_reload()
 
 void MainWindow::on_load_file(QString file_name)
 {
-    SigSession *_session = _control->GetSession();
 
     try {
-        if (strncmp(_session->get_device()->name().toUtf8(), "virtual", 7))
+        if (strncmp(_device_agent->name().toUtf8(), "virtual", 7))
             session_save();
         _session->set_file(file_name);
     } catch(QString e) {
@@ -499,9 +492,9 @@ void MainWindow::device_attach()
 
 void MainWindow::on_device_attach()
 {
-    SigSession *_session = _control->GetSession();
+    /* 
 
-    _session->get_device()->device_updated();
+    _device_agent->device_updated();
  
     _session->set_repeating(false);
     _session->stop_capture();
@@ -510,9 +503,7 @@ void MainWindow::on_device_attach()
 
     struct sr_dev_driver **const drivers = sr_driver_list();
     struct sr_dev_driver **driver;
- 
-    DeviceManager &_device_manager = _control->GetDeviceManager();
-
+  
     for (driver = drivers; *driver; driver++)
     {
          if (*driver){
@@ -523,6 +514,7 @@ void MainWindow::on_device_attach()
 
     _session->set_default_device();
     update_device_list();
+    */
 }
 
 void MainWindow::device_detach(){
@@ -531,9 +523,9 @@ void MainWindow::device_detach(){
 
 void MainWindow::on_device_detach()
 {
-    SigSession *_session = _control->GetSession();
+    /* 
 
-    _session->get_device()->device_updated();
+    _device_agent->device_updated();
     //_session->stop_hot_plug_proc();
 
     _session->set_repeating(false);
@@ -544,8 +536,8 @@ void MainWindow::on_device_detach()
     session_save();
     _view->hide_calibration();
     
-    if (_session->get_device()->dev_inst()->mode != DSO &&
-        strncmp(_session->get_device()->name().toUtf8(), "virtual", 7)) {
+    if (_device_agent->get_work_mode() != DSO &&
+        strncmp(_device_agent->name().toUtf8(), "virtual", 7)) {
         const auto logic_snapshot = _session->get_snapshot(SR_CHANNEL_LOGIC);
         assert(logic_snapshot);
         const auto analog_snapshot = _session->get_snapshot(SR_CHANNEL_ANALOG);
@@ -566,18 +558,18 @@ void MainWindow::on_device_detach()
     }
 
     _hot_detach = true;
+
     if (!_session->get_saving())
         device_detach_post();
+    */
 }
 
 void MainWindow::device_detach_post()
-{
-    SigSession *_session = _control->GetSession();
-
+{ 
     if (!_hot_detach)
         return;
 
-   DeviceManager &_device_manager = _control->GetDeviceManager();
+    /* 
     _hot_detach = false;
     struct sr_dev_driver **const drivers = sr_driver_list();
     struct sr_dev_driver **driver;
@@ -590,12 +582,11 @@ void MainWindow::device_detach_post()
 
     _session->set_default_device();
     update_device_list();
+    */
 }
 
 void MainWindow::device_changed(bool close)
-{
-    SigSession *_session = _control->GetSession();
-
+{  
     if (close) {
         _sampling_bar->set_sampling(false);
         _session->set_default_device();
@@ -606,8 +597,6 @@ void MainWindow::device_changed(bool close)
 
 void MainWindow::on_run_stop()
 { 
-    SigSession *_session = _control->GetSession();
-
     switch(_session->get_capture_state()) {
     case SigSession::Init:
     case SigSession::Stopped:
@@ -623,9 +612,7 @@ void MainWindow::on_run_stop()
 }
 
 void MainWindow::on_instant_stop()
-{
-    SigSession *_session = _control->GetSession();
-
+{ 
     switch(_session->get_capture_state()) {
     case SigSession::Init:
     case SigSession::Stopped:
@@ -658,8 +645,6 @@ void MainWindow::on_session_error()
     QString details;
     QString ch_status = "";
     uint64_t error_pattern;
-
-    SigSession *_session = _control->GetSession();
 
     switch(_session->get_error()) {
     case SigSession::Hw_err:
@@ -710,7 +695,7 @@ void MainWindow::on_session_error()
     }
 
     dialogs::DSMessageBox msg(this);
-    connect(_session->get_device(), SIGNAL(device_updated()), &msg, SLOT(accept()));
+    connect(_device_agent, SIGNAL(device_updated()), &msg, SLOT(accept()));
     QFont font("Monaco");
     font.setStyleHint(QFont::Monospace);
     font.setFixedPitch(true);
@@ -731,15 +716,13 @@ void MainWindow::capture_state_changed(int state)
 }
 
 void MainWindow::on_capture_state_changed(int state)
-{
-    SigSession *_session = _control->GetSession();
-
+{ 
     if (!_session->repeat_check()) {
         _file_bar->enable_toggle(state != SigSession::Running);
         _sampling_bar->set_sampling(state == SigSession::Running);
         _view->on_state_changed(state != SigSession::Running);
 
-        if (_session->get_device()->dev_inst()->mode != DSO ||
+        if (_device_agent->get_work_mode() != DSO ||
             _session->get_instant()) {
             _sampling_bar->enable_toggle(state != SigSession::Running);
             _trig_bar->enable_toggle(state != SigSession::Running);
@@ -763,13 +746,17 @@ void MainWindow::session_save()
     QString path = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
     #endif
 
-     AppConfig &app = AppConfig::Instance();
-     SigSession *_session = _control->GetSession();
+    if (_device_agent->have_instance() == false){
+        dsv_info("%s", "There is no need to save the configuration");
+        return;
+    }
+
+    AppConfig &app = AppConfig::Instance(); 
 
     if(dir.mkpath(path)) {
         dir.cd(path);
-        QString driver_name = _session->get_device()->name();
-        QString mode_name = QString::number(_session->get_device()->dev_inst()->mode);
+        QString driver_name = _device_agent->name();
+        QString mode_name = QString::number(_device_agent->get_work_mode());
         QString lang_name = ".ses" + QString::number(app._frameOptions.language);
         QString file_name = dir.absolutePath() + "/" +
                             driver_name + mode_name +
@@ -799,10 +786,8 @@ void MainWindow::on_protocol(bool visible)
 }
 
 void MainWindow::on_trigger(bool visible)
-{
-    SigSession *_session = _control->GetSession();
-
-    if (_session->get_device()->dev_inst()->mode != DSO) {
+{ 
+    if (_device_agent->get_work_mode() != DSO) {
         _trigger_widget->init();
         _trigger_dock->setVisible(visible);
         _dso_trigger_dock->setVisible(false);
@@ -818,12 +803,9 @@ void MainWindow::commit_trigger(bool instant)
 {
     int i = 0;
     
-     AppConfig &app = AppConfig::Instance();  
-     SigSession *_session = _control->GetSession();
+     AppConfig &app = AppConfig::Instance();   
 
-    ds_trigger_init();
-
-    if (_session->get_device()->dev_inst()->mode != LOGIC ||
+    if (_device_agent->get_work_mode() != LOGIC ||
         instant)
         return;
 
@@ -935,7 +917,11 @@ void MainWindow::on_save()
 {
     using pv::dialogs::StoreProgress; 
 
-    SigSession *_session = _control->GetSession();
+    if (_device_agent->have_instance() == false){
+        dsv_info("%s", "Have no device, can't to save data.");
+        return;
+    }
+ 
     _session->set_saving(true);
 
     StoreProgress *dlg = new StoreProgress(_session, this);
@@ -945,8 +931,7 @@ void MainWindow::on_save()
 
 void MainWindow::on_export()
 {
-    using pv::dialogs::StoreProgress;
-    SigSession *_session = _control->GetSession();
+    using pv::dialogs::StoreProgress; 
 
     StoreProgress *dlg = new StoreProgress(_session, this);
     dlg->export_run();
@@ -970,6 +955,8 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev, bool bDeco
 {
     QJsonObject sessionObj = json.object();
 
+    /*
+
     // check session file version
     if (!sessionObj.contains("Version")){ 
         dsv_dbg("%s", "session file version is not exists!");
@@ -985,11 +972,10 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev, bool bDeco
     if (sessionObj["Version"].toInt() == BASE_SESSION_VERSION){ 
         switchLanguage(sessionObj["Language"].toInt());
     }
-
-    SigSession *_session = _control->GetSession();
+ 
 
     // check device and mode
-    const sr_dev_inst *const sdi = _session->get_device()->dev_inst();
+    const sr_dev_inst *const sdi = _device_agent->dev_inst();
     if ((!file_dev && strcmp(sdi->driver->name, sessionObj["Device"].toString().toUtf8()) != 0) ||
         sdi->mode != sessionObj["DeviceMode"].toDouble()) {
         MsgBox::Show(NULL, tr("Session File is not compatible with current device or mode!"), this);
@@ -1014,21 +1000,21 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev, bool bDeco
             if (!sessionObj.contains(info->name))
                 continue;
             if (info->datatype == SR_T_BOOL)
-                _session->get_device()->set_config(NULL, NULL, info->key, g_variant_new_boolean(sessionObj[info->name].toDouble()));
+                _device_agent->set_config(NULL, NULL, info->key, g_variant_new_boolean(sessionObj[info->name].toDouble()));
             else if (info->datatype == SR_T_UINT64)
-                _session->get_device()->set_config(NULL, NULL, info->key, g_variant_new_uint64(sessionObj[info->name].toString().toULongLong()));
+                _device_agent->set_config(NULL, NULL, info->key, g_variant_new_uint64(sessionObj[info->name].toString().toULongLong()));
             else if (info->datatype == SR_T_UINT8)
-                _session->get_device()->set_config(NULL, NULL, info->key, g_variant_new_byte(sessionObj[info->name].toString().toUInt()));
+                _device_agent->set_config(NULL, NULL, info->key, g_variant_new_byte(sessionObj[info->name].toString().toUInt()));
             else if (info->datatype == SR_T_FLOAT)
-                _session->get_device()->set_config(NULL, NULL, info->key, g_variant_new_double(sessionObj[info->name].toDouble()));
+                _device_agent->set_config(NULL, NULL, info->key, g_variant_new_double(sessionObj[info->name].toDouble()));
             else if (info->datatype == SR_T_CHAR)
-                _session->get_device()->set_config(NULL, NULL, info->key, g_variant_new_string(sessionObj[info->name].toString().toUtf8()));
+                _device_agent->set_config(NULL, NULL, info->key, g_variant_new_string(sessionObj[info->name].toString().toUtf8()));
         }
     }
 
     // load channel settings
     if (file_dev && (sdi->mode == DSO)) {
-        for (const GSList *l = _session->get_device()->dev_inst()->channels; l; l = l->next) {
+        for (const GSList *l = _device_agent->dev_inst()->channels; l; l = l->next) {
             sr_channel *const probe = (sr_channel*)l->data;
             assert(probe);
 
@@ -1048,7 +1034,7 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev, bool bDeco
             }
         }
     } else {
-        for (const GSList *l = _session->get_device()->dev_inst()->channels; l; l = l->next) {
+        for (const GSList *l = _device_agent->dev_inst()->channels; l; l = l->next) {
             sr_channel *const probe = (sr_channel*)l->data;
             assert(probe);
             bool isEnabled = false;
@@ -1155,34 +1141,38 @@ bool MainWindow::load_session_json(QJsonDocument json, bool file_dev, bool bDeco
     if (sessionObj.contains("measure")) {
         _view->get_viewstatus()->load_session(sessionObj["measure"].toArray());
     }
+    */
 
     return true;
 }
 
-bool MainWindow::gen_session_json(QJsonObject &sessionVar){
-    SigSession *_session = _control->GetSession();
+bool MainWindow::gen_session_json(QJsonObject &sessionVar)
+{
     AppConfig &app = AppConfig::Instance();
 
     GVariant *gvar_opts;
     GVariant *gvar;
-    gsize num_opts;
-    const sr_dev_inst *const sdi = _session->get_device()->dev_inst();
+    gsize num_opts; 
    
     QJsonArray channelVar;
     sessionVar["Version"]= QJsonValue::fromVariant(BASE_SESSION_VERSION);
-    sessionVar["Device"] = QJsonValue::fromVariant(sdi->driver->name);
-    sessionVar["DeviceMode"] = QJsonValue::fromVariant(sdi->mode);
+    sessionVar["Device"] = QJsonValue::fromVariant(_device_agent->driver_name());
+    sessionVar["DeviceMode"] = QJsonValue::fromVariant(_device_agent->get_work_mode());
     sessionVar["Language"] = QJsonValue::fromVariant(app._frameOptions.language);
 
-    if ((sr_config_list(sdi->driver, sdi, NULL, SR_CONF_DEVICE_SESSIONS, &gvar_opts) != SR_OK))
-        return false;   /* Driver supports no device instance sessions. */
+    gvar_opts = _device_agent->get_config_list(NULL, SR_CONF_DEVICE_SESSIONS);
+    if (gvar_opts == NULL){
+        dsv_warn("%s", "Device config list is empty. id:SR_CONF_DEVICE_SESSIONS");
+        /* Driver supports no device instance sessions. */
+        return false; 
+    } 
 
     const int *const options = (const int32_t *)g_variant_get_fixed_array(
         gvar_opts, &num_opts, sizeof(int32_t));
+
     for (unsigned int i = 0; i < num_opts; i++) {
-        const struct sr_config_info *const info =
-            sr_config_info_get(options[i]);
-        gvar = _session->get_device()->get_config(NULL, NULL, info->key);
+        const struct sr_config_info *const info = _device_agent->get_config_info(options[i]);
+        gvar = _device_agent->get_config(NULL, NULL, info->key);
         if (gvar != NULL) {
             if (info->datatype == SR_T_BOOL)
                 sessionVar[info->name] = QJsonValue::fromVariant(g_variant_get_boolean(gvar));
@@ -1237,7 +1227,7 @@ bool MainWindow::gen_session_json(QJsonObject &sessionVar){
     }
     sessionVar["channel"] = channelVar;
 
-    if (_session->get_device()->dev_inst()->mode == LOGIC) {
+    if (_device_agent->get_work_mode() == LOGIC) {
         sessionVar["trigger"] = _trigger_widget->get_session();
     }
  
@@ -1246,7 +1236,7 @@ bool MainWindow::gen_session_json(QJsonObject &sessionVar){
     ss.json_decoders(decodeJson);
     sessionVar["decoder"] = decodeJson;
 
-    if (_session->get_device()->dev_inst()->mode == DSO) {
+    if (_device_agent->get_work_mode() == DSO) {
         sessionVar["measure"] = _view->get_viewstatus()->get_session();
     } 
   
@@ -1298,18 +1288,16 @@ void MainWindow::restore_dock()
         { 
             MsgBox::Show(NULL, tr("restore window status error!"));
         } 
-    } 
+    }  
 
-    SigSession *_session = _control->GetSession();
-
-    if (_session->get_device()->dev_inst()->mode != DSO) {
+    if (_device_agent->get_work_mode() != DSO) {
         _dso_trigger_dock->setVisible(false);
         _trig_bar->update_trig_btn(_trigger_dock->isVisible());
     } else {
         _trigger_dock->setVisible(false);
         _trig_bar->update_trig_btn(_dso_trigger_dock->isVisible());
     }
-    if (_session->get_device()->dev_inst()->mode != LOGIC) {
+    if (_device_agent->get_work_mode() != LOGIC) {
 
         on_protocol(false);
 
@@ -1323,8 +1311,8 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
 {
     (void) object;
 
-    if ( event->type() == QEvent::KeyPress ) {
-        SigSession *_session = _control->GetSession();
+    if ( event->type() == QEvent::KeyPress ) 
+    { 
         const auto &sigs = _session->get_signals();
         QKeyEvent *ke = (QKeyEvent *) event;
         switch(ke->key()) {
@@ -1335,7 +1323,7 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
             on_instant_stop();
             break;
         case Qt::Key_T:
-            if (_session->get_device()->dev_inst()->mode == DSO)
+            if (_device_agent->get_work_mode() == DSO)
                 on_trigger(!_dso_trigger_dock->isVisible());
             else
                 on_trigger(!_trigger_dock->isVisible());
@@ -1433,9 +1421,8 @@ void MainWindow::switchLanguage(int language)
     if (language == 0)
         return;
 
-    SigSession *_session = _control->GetSession();
-    DevInst *dev = _session->get_device();
-    dev->set_config(NULL, NULL, SR_CONF_LANGUAGE, g_variant_new_int16(language));
+    if (_device_agent->have_instance())
+        _device_agent->set_config(NULL, NULL, SR_CONF_LANGUAGE, g_variant_new_int16(language));
     AppConfig &app = AppConfig::Instance();
 
     if (app._frameOptions.language != language && language > 0)
@@ -1604,7 +1591,7 @@ void MainWindow::data_received(){
 
 void MainWindow::device_list_changed()
 { 
-     
+    _sampling_bar->update_device_list();
 }
 
 } // namespace pv

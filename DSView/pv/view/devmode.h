@@ -43,6 +43,8 @@ struct dev_mode_name{
     const char *_logo;
 };
  
+class DeviceAgent;
+
 namespace pv {
 
 namespace device{
@@ -93,6 +95,8 @@ private:
     QPoint          _mouse_point;
     QToolButton     *_close_button;
     bool            _bFile;
+
+    DeviceAgent     *_device_agent;
 };
 
 } // namespace view

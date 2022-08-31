@@ -31,6 +31,7 @@
 #include "interface/icallbacks.h"
 #include "eventobject.h"
 #include "interface/uicallback.h"
+#include <QJsonDocument>
 
 class QAction;
 class QMenuBar;
@@ -43,8 +44,11 @@ class QDockWidget;
 
 class AppControl;
 
+class DeviceAgent;
+
 namespace pv {
  
+class SigSession;
 
 namespace toolbars {
 class SamplingBar;
@@ -178,8 +182,7 @@ private:
     //------private
     bool gen_session_json(QJsonObject &sessionVar);
 
-private:
-    AppControl              *_control; 
+private: 
     bool                    _hot_detach;
 
 	pv::view::View          *_view;
@@ -223,6 +226,8 @@ private:
     QTranslator     _myTrans;
     EventObject     _event;
     bool            _bFirstLoad;
+    SigSession      *_session;
+    DeviceAgent     *_device_agent;
 };
 
 } // namespace pv

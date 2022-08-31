@@ -1173,15 +1173,7 @@ struct ds_trigger_pos {
  *
  * Header file containing API function prototypes.
  */  
-
-/*--- device.c --------------------------------------------------------------*/
-
-SR_API int sr_dev_probe_name_set(const struct sr_dev_inst *sdi,
-		int probenum, const char *name);
-SR_API int sr_dev_probe_enable(const struct sr_dev_inst *sdi, int probenum,
-		gboolean state);
-SR_API int sr_dev_trigger_set(const struct sr_dev_inst *sdi, uint16_t probenum,
-		const char *trigger);
+ 
  
 
 /*--- input/input.c ---------------------------------------------------------*/
@@ -1273,7 +1265,9 @@ struct ds_device_info
 {
 	ds_device_handle handle;
 	char 	name[50];
+	char 	driver_name[20];
 	int 	dev_type; // enum sr_device_type
+	struct sr_dev_inst *di;
 };
 
 struct ds_task_progress
@@ -1422,6 +1416,10 @@ SR_API void ds_free_config(struct sr_config *src);
 
 /*----------channel----------*/
 SR_API int ds_enable_device_channel(const struct sr_channel *ch, gboolean enable);
+
+SR_API int ds_enable_device_channel_index(int ch_index, gboolean enable);
+
+SR_API int ds_set_device_channel_name(int ch_index, const char *name);
 
 /**
  *  heck that at least one probe is enabled

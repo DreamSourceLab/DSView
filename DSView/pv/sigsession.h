@@ -37,7 +37,7 @@
 #include "interface/icallbacks.h"
 #include "dstimer.h"
 #include <libsigrok.h>
-#include <deviceagent.h>
+#include "deviceagent.h"
  
 
 struct srd_decoder;
@@ -47,8 +47,6 @@ class DecoderStatus;
 typedef std::lock_guard<std::mutex> ds_lock_guard;
 
 namespace pv {
-
-class DeviceManager;
 
 namespace data {
 class SignalData;
@@ -135,10 +133,6 @@ public:
     bool set_device(ds_device_handle dev_handle);   
     bool set_file(QString name);
     void close_file(ds_device_handle dev_handle);
-
-    /**
-     * Set the last one device.
-     */
     bool set_default_device();
  
 	capture_state get_capture_state();
@@ -221,9 +215,7 @@ public:
     void set_save_end(uint64_t end);
     uint64_t get_save_start();
     uint64_t get_save_end();
-    bool get_saving();
-
-    void set_saving(bool saving);
+    
     void set_stop_scale(float scale);
     float stop_scale();
 
@@ -258,8 +250,16 @@ public:
         _callback->show_region(start, end, keep);
     }
 
-     inline void decode_done(){
+    inline void decode_done(){
          _callback->decode_done();
+    }
+
+    inline bool is_saving(){
+        return _bSaving;
+    }
+
+    inline void set_saving(bool flag){
+        _bSaving = flag;
     }
 
     bool init();
@@ -274,13 +274,10 @@ public:
     void set_repeating(bool repeat);
     void set_map_zoom(int index);
     void auto_end();
-    
-    inline bool is_device_re_attach(){
-        return _is_device_reattach;
-    }
 
     void store_session_data();
     bool have_hardware_data();
+    struct ds_device_info* get_device_list(int &out_count, int &actived_index);
 
 private:
     inline void data_updated(){
@@ -294,7 +291,6 @@ private:
     inline void receive_data(quint64 len){
         _callback->receive_data_len(len);
     } 
- 
  
 	void set_capture_state(capture_state state);
   
@@ -346,15 +342,12 @@ private:
     void update_collect_status_view();
     void init_device_view();
     void update_graph_view();
-
-    bool get_device_list(struct ds_device_info  **out_list, int &out_count, int &actived_index);
  
 private:
 
 	/**
 	 * The device instance that will be used in the next capture session.
-	 */
-    DevInst                 *_dev_inst;
+	 */ 
     mutable std::mutex      _sampling_mutex;
     mutable std::mutex      _data_mutex;
     mutable std::mutex      _decode_task_mutex;
@@ -385,10 +378,7 @@ private:
 	data::Analog             *_analog_data;
     data::Group              *_group_data; 
     int                      _group_cnt;
-  
-    bool        _hot_attach;
-    bool        _hot_detach;
-
+    
     DsTimer     _feed_timer;
     DsTimer     _out_timer;
     int         _noData_cnt;
@@ -406,29 +396,23 @@ private:
     uint64_t    _error_pattern;
 
     run_mode    _run_mode;
-    double         _repeat_intvl;
+    double      _repeat_intvl;
     bool        _repeating;
     int         _repeat_hold_prg;
-
     int         _map_zoom;
-
-    uint64_t    _save_start;
-    uint64_t    _save_end;
-    bool        _saving;
-
+  
     bool        _dso_feed;
     float       _stop_scale; 
-    bool        _bClose;
-    struct sr_context  *_sr_ctx;
-    volatile bool    _is_wait_reattch;
-    volatile int     _wait_reattch_times;
-    bool            _is_device_reattach;
-    QString         _last_device_name;
-    bool            _active_last_device_flag;
+    bool        _bClose; 
+    bool        _active_last_device_flag;
+
+    bool        _bSaving;
+    uint64_t    _save_start;
+    uint64_t    _save_end; 
 
     ISessionCallback *_callback;
 
-    DeviceAgent _device_agent;
+    DeviceAgent   _device_agent;
    
 private:
 	// TODO: This should not be necessary. Multiple concurrent

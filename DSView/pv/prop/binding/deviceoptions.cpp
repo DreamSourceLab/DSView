@@ -32,6 +32,8 @@
 #include "../../config/appconfig.h"
 #include "../../log.h"
 #include "../../appcontrol.h"
+#include "../../sigsession.h"
+#include "../../deviceagent.h"
  
 using namespace std;
 
@@ -45,35 +47,37 @@ DeviceOptions::DeviceOptions()
 	gsize num_opts;
 
 	SigSession *session = AppControl::Instance()->GetSession();
+	_device_agent = session->get_device();
+
+	gvar_opts = _device_agent->get_config_list(NULL, SR_CONF_DEVICE_OPTIONS);
 	 
-    if (session->get_device_config_list(NULL, SR_CONF_DEVICE_OPTIONS, &gvar_opts) == false)
+    if (gvar_opts == NULL)
 		/* Driver supports no device instance options. */
 		return;
 
 	const int *const options = (const int32_t *)g_variant_get_fixed_array(
 		gvar_opts, &num_opts, sizeof(int32_t));
+	
 	for (unsigned int i = 0; i < num_opts; i++) {
 		const struct sr_config_info *const info =
-			sr_config_info_get(options[i]);
+			_device_agent->get_config_info(options[i]);
 
 		if (!info)
 			continue;
 
 		const int key = info->key;
 
-        if(sr_config_list(_sdi->driver, _sdi, NULL, key, &gvar_list) != SR_OK)
-			gvar_list = NULL;
+		gvar_list = _device_agent->get_config_list(NULL, key);
 
         const QString name(info->name);
         char *label_char = info->label;
-        GVariant *gvar_tmp = NULL;
-        if (sr_config_get(_sdi->driver, _sdi, NULL, NULL, SR_CONF_LANGUAGE, &gvar_tmp) == SR_OK) {
-            if (gvar_tmp != NULL) {
-                int language = g_variant_get_int16(gvar_tmp);
+        GVariant *gvar_tmp = _device_agent->get_config(NULL, NULL, SR_CONF_LANGUAGE);
+		
+        if (gvar_tmp != NULL) { 
+            int language = g_variant_get_int16(gvar_tmp);
                 if (language == LAN_CN)
                     label_char = info->label_cn;
-                g_variant_unref(gvar_tmp);
-            }
+            g_variant_unref(gvar_tmp);
         }
         const QString label(label_char);
 
@@ -145,27 +149,24 @@ DeviceOptions::DeviceOptions()
 }
 
 GVariant* DeviceOptions::config_getter(int key)
-{
-	GVariant *data = NULL;
-    if (sr_config_get(sdi->driver, sdi, NULL, NULL, key, &data) != SR_OK) { 
-		dsv_warn("%s%d", "WARNING: Failed to get value of config id:", key);
-		return NULL;
-	}
-	return data;
+{ 
+	SigSession *session = AppControl::Instance()->GetSession();
+	DeviceAgent *_device_agent = session->get_device();	
+	return _device_agent->get_config(NULL, NULL, key);
 }
 
 void DeviceOptions::config_setter(int key, GVariant* value)
 {
-    if (sr_config_set(sdi, NULL, NULL, key, value) != SR_OK){ 
-		dsv_warn("%s%d", "WARNING: Failed to set value of config id:", key);
-	}
+	SigSession *session = AppControl::Instance()->GetSession();
+	DeviceAgent *_device_agent = session->get_device();
+    _device_agent->set_config(NULL, NULL, key, value);
 }
 
 void DeviceOptions::bind_bool(const QString &name, const QString label, int key)
 {
 	_properties.push_back(
-        new Bool(name, label, bind(config_getter, _sdi, key),
-			bind(config_setter, _sdi, key, _1)));
+        new Bool(name, label, bind(config_getter, key),
+			bind(config_setter, key, _1)));
 }
 
 void DeviceOptions::bind_enum(const QString &name, const QString label, int key,
@@ -183,8 +184,8 @@ void DeviceOptions::bind_enum(const QString &name, const QString label, int key,
 
 	_properties.push_back(
         new Enum(name, label, values,
-			bind(config_getter, _sdi, key),
-			bind(config_setter, _sdi, key, _1)));
+			bind(config_getter, key),
+			bind(config_setter, key, _1)));
 }
 
 void DeviceOptions::bind_int(const QString &name, const QString label, int key, QString suffix,
@@ -192,8 +193,8 @@ void DeviceOptions::bind_int(const QString &name, const QString label, int key, 
 {
 	_properties.push_back(
         new Int(name, label, suffix, range,
-			bind(config_getter, _sdi, key),
-			bind(config_setter, _sdi, key, _1)));
+			bind(config_getter, key),
+			bind(config_setter, key, _1)));
 }
 
 void DeviceOptions::bind_double(const QString &name, const QString label, int key, QString suffix,
@@ -202,16 +203,17 @@ void DeviceOptions::bind_double(const QString &name, const QString label, int ke
 {
     _properties.push_back(
         new Double(name, label, decimals, suffix, range, step,
-            bind(config_getter, _sdi, key),
-            bind(config_setter, _sdi, key, _1)));
+            bind(config_getter, key),
+            bind(config_setter, key, _1)));
 }
 
 QString DeviceOptions::print_gvariant(GVariant *const gvar)
 {
 	QString s;
 
-	if (g_variant_is_of_type(gvar, G_VARIANT_TYPE("s")))
+	if (g_variant_is_of_type(gvar, G_VARIANT_TYPE("s"))){
         s = QString::fromUtf8(g_variant_get_string(gvar, NULL));
+	}
 	else
 	{
 		gchar *const text = g_variant_print(gvar, FALSE);
@@ -243,8 +245,8 @@ void DeviceOptions::bind_samplerate(const QString &name, const QString label,
             new Double(name, label, 0, QObject::tr("Hz"),
 				make_pair((double)elements[0], (double)elements[1]),
 						(double)elements[2],
-				bind(samplerate_double_getter, _sdi),
-				bind(samplerate_double_setter, _sdi, _1)));
+				bind(samplerate_double_getter),
+				bind(samplerate_double_setter, _1)));
 
 		g_variant_unref(gvar_list_samplerates);
 	}
@@ -268,7 +270,7 @@ QString DeviceOptions::print_samplerate(GVariant *const gvar)
 
 GVariant* DeviceOptions::samplerate_double_getter()
 {
-	GVariant *const gvar = config_getter(sdi, SR_CONF_SAMPLERATE);
+    GVariant *const gvar = config_getter(SR_CONF_SAMPLERATE);
 
 	if(!gvar)
 		return NULL;
@@ -285,7 +287,7 @@ void DeviceOptions::samplerate_double_setter(GVariant *value)
 {
 	GVariant *const gvar = g_variant_new_uint64(
 		g_variant_get_double(value));
-	config_setter(sdi, SR_CONF_SAMPLERATE, gvar);
+	config_setter(SR_CONF_SAMPLERATE, gvar);
 }
 
 QString DeviceOptions::print_timebase(GVariant *const gvar)
@@ -312,12 +314,11 @@ void DeviceOptions::bind_bandwidths(const QString &name, const QString label, in
 
     assert(gvar_list);
 
-    GVariant *gvar_tmp = NULL;
-    if (sr_config_get(_sdi->driver, _sdi, NULL, NULL, SR_CONF_BANDWIDTH, &gvar_tmp) == SR_OK) {
-        if (gvar_tmp != NULL) {
-            bw_limit = g_variant_get_boolean(gvar_tmp);
-            g_variant_unref(gvar_tmp);
-        }
+    GVariant *gvar_tmp = _device_agent->get_config(NULL, NULL, SR_CONF_BANDWIDTH);
+
+    if (gvar_tmp != NULL) {
+         bw_limit = g_variant_get_boolean(gvar_tmp);
+         g_variant_unref(gvar_tmp);
     }
 
     if (!bw_limit)
@@ -329,8 +330,8 @@ void DeviceOptions::bind_bandwidths(const QString &name, const QString label, in
 
     _properties.push_back(
         new Enum(name, label, values,
-            bind(config_getter, _sdi, key),
-            bind(config_setter, _sdi, key, _1)));
+            bind(config_getter, key),
+            bind(config_setter, key, _1)));
 }
 
 } // binding

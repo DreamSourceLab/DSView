@@ -23,25 +23,26 @@
   
 #include <math.h> 
 #include "signal.h"
-#include "view.h"
-#include "../device/devinst.h"
+#include "view.h" 
 #include "../dsvdef.h"
+#include "../appcontrol.h"
+#include "../sigsession.h"
 
 namespace pv {
 namespace view {
 
-Signal::Signal(DevInst *dev_inst,sr_channel *probe) :
+Signal::Signal(sr_channel *probe) :
     Trace(probe->name, probe->index, probe->type),
-    _dev_inst(dev_inst),
     _probe(probe)
 {
+    session = AppControl::Instance()->GetSession();
 }
 
 Signal::Signal(const Signal &s, sr_channel *probe) :
-    Trace((const Trace &)s),
-    _dev_inst(s._dev_inst),
+    Trace((const Trace &)s), 
     _probe(probe)
 {
+    session = AppControl::Instance()->GetSession();
 }
 
 bool Signal::enabled()
@@ -55,11 +56,5 @@ void Signal::set_name(QString name)
     g_free(_probe->name);
     _probe->name = g_strdup(name.toUtf8().data());
 }
-
-DevInst* Signal::get_device()
-{
-    return _dev_inst;
-}
-
 } // namespace view
 } // namespace pv

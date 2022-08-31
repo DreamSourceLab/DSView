@@ -280,7 +280,9 @@ void TrigBar::reload()
 {
     close_all();
 
-    if (_session->get_device()->dev_inst()->mode == LOGIC) {
+    int mode = _session->get_device()->get_work_mode();
+
+    if (mode == LOGIC) {
         _trig_action->setVisible(true);
         _protocol_action->setVisible(true);
         _measure_action->setVisible(true);
@@ -289,7 +291,7 @@ void TrigBar::reload()
         _action_lissajous->setVisible(false);
         _action_dispalyOptions->setVisible(true);
 
-    } else if (_session->get_device()->dev_inst()->mode == ANALOG) {
+    } else if (mode == ANALOG) {
         _trig_action->setVisible(false);
         _protocol_action->setVisible(false);
         _measure_action->setVisible(true);
@@ -298,7 +300,7 @@ void TrigBar::reload()
         _action_lissajous->setVisible(false);
         _action_dispalyOptions->setVisible(false);
 
-    } else if (_session->get_device()->dev_inst()->mode == DSO) {
+    } else if (mode == DSO) {
         _trig_action->setVisible(true);
         _protocol_action->setVisible(false);
         _measure_action->setVisible(true);
@@ -355,7 +357,6 @@ void TrigBar::on_actionLissajous_triggered()
 void TrigBar::restore_status()
 { 
     DockOptions *opt = getDockOptions();
-    int mode = _session->get_device()->dev_inst()->mode;
 
     if (opt->decodeDoc){
          _protocol_button.setChecked(true);
@@ -381,7 +382,7 @@ void TrigBar::restore_status()
  DockOptions* TrigBar::getDockOptions()
  {
      AppConfig &app = AppConfig::Instance(); 
-     int mode = _session->get_device()->dev_inst()->mode;
+     int mode = _session->get_device()->get_work_mode();
 
      if (mode == LOGIC)
         return &app._frameOptions._logicDock;

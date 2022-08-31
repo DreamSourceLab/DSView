@@ -164,7 +164,7 @@ void Viewport::paintEvent(QPaintEvent *event)
 
     //auto st = _view.session().get_capture_state();
 
-    if (_view.session().get_device()->dev_inst()->mode == LOGIC ||
+    if (_view.session().get_device()->get_work_mode() == LOGIC ||
         _view.session().get_instant()) {
         switch(_view.session().get_capture_state()) {
         case SigSession::Init:
@@ -206,7 +206,7 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
 {
     const auto &traces = _view.get_traces(_type);
 
-    if (_view.session().get_device()->dev_inst()->mode == LOGIC) {
+    if (_view.session().get_device()->get_work_mode() == LOGIC) {
 
         for(auto &t : traces)
         {
@@ -328,7 +328,7 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
         paintMeasure(p, fore, back);
 
         //plot trigger information
-        if (_view.session().get_device()->dev_inst()->mode == DSO &&
+        if (_view.session().get_device()->get_work_mode() == DSO &&
             _view.session().get_capture_state() == SigSession::Running) {
             uint8_t type;
             bool roll = false;
@@ -509,9 +509,9 @@ void Viewport::mousePressEvent(QMouseEvent *event)
     if (_action_type == NO_ACTION &&
         event->button() == Qt::RightButton &&
         _view.session().get_capture_state() == SigSession::Stopped) {
-        if (_view.session().get_device()->dev_inst()->mode == LOGIC) {
+        if (_view.session().get_device()->get_work_mode() == LOGIC) {
             _action_type = LOGIC_ZOOM;
-        } else if (_view.session().get_device()->dev_inst()->mode == DSO) {
+        } else if (_view.session().get_device()->get_work_mode() == DSO) {
             if (_hover_hit) {
                 const int64_t index = _view.pixel2index(event->pos().x());
                 _view.add_cursor(view::Ruler::CursorColor[_view.get_cursorList().size() % 8], index);
@@ -521,7 +521,7 @@ void Viewport::mousePressEvent(QMouseEvent *event)
     }
     if (_action_type == NO_ACTION &&
         event->button() == Qt::LeftButton &&
-        _view.session().get_device()->dev_inst()->mode == DSO) {
+        _view.session().get_device()->get_work_mode() == DSO) {
 
        const auto &sigs = _view.session().get_signals();
 
@@ -677,14 +677,14 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
                         assert(s);
                         view::LogicSignal *logicSig = NULL;
                         view::DsoSignal *dsoSig = NULL;
-                        if ((_view.session().get_device()->dev_inst()->mode == LOGIC) &&
+                        if ((_view.session().get_device()->get_work_mode() == LOGIC) &&
                             (logicSig = dynamic_cast<view::LogicSignal*>(s))) {
                             if (logicSig->measure(event->pos(), index0, index1, index2)) {
                                 logic = true;
                                 break;
                             }
                         }
-                        if ((_view.session().get_device()->dev_inst()->mode == DSO) &&
+                        if ((_view.session().get_device()->get_work_mode() == DSO) &&
                             (dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
                             curX = min(dsoSig->get_view_rect().right(), curX);
                             break;
@@ -770,7 +770,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
   
         if ((_action_type == NO_ACTION) &&
             (event->button() == Qt::LeftButton)) {
-            if (_view.session().get_device()->dev_inst()->mode == LOGIC &&
+            if (_view.session().get_device()->get_work_mode() == LOGIC &&
                 _view.session().get_capture_state() == SigSession::Stopped) {
                 //priority 1
                 //try to quick scroll view...
@@ -843,7 +843,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                         }
                     }
                 }
-            } else if (_view.session().get_device()->dev_inst()->mode == DSO) {
+            } else if (_view.session().get_device()->get_work_mode() == DSO) {
                 // priority 0
                 if (_action_type == NO_ACTION && _hover_hit) {
                     _action_type = DSO_YM;
@@ -976,7 +976,7 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
     if (!_view.get_view_rect().contains(event->pos()))
         return;
 
-    if (_view.session().get_device()->dev_inst()->mode == LOGIC &&
+    if (_view.session().get_device()->get_work_mode() == LOGIC &&
         _view.session().get_capture_state() == SigSession::Stopped) {
         if (event->button() == Qt::RightButton) {
             if (_view.scale() == _view.get_maxscale())
@@ -987,7 +987,7 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
             bool logic = false;
             uint64_t index;
             uint64_t index0 = 0, index1 = 0, index2 = 0;
-            if (_view.session().get_device()->dev_inst()->mode == LOGIC) {
+            if (_view.session().get_device()->get_work_mode() == LOGIC) {
                 const auto &sigs = _view.session().get_signals();
                 for(auto &s : sigs) {
                     assert(s);
@@ -1015,7 +1015,7 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
             _view.show_cursors(true);
         }
         update();
-    } else if (_view.session().get_device()->dev_inst()->mode == DSO &&
+    } else if (_view.session().get_device()->get_work_mode() == DSO &&
                _view.session().get_capture_state() != SigSession::Init &&
                event->button() == Qt::LeftButton) {
         if (_dso_xm_valid) {
@@ -1032,7 +1032,7 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
                 break;
             }
         }
-    } else if (_view.session().get_device()->dev_inst()->mode == ANALOG) {
+    } else if (_view.session().get_device()->get_work_mode() == ANALOG) {
         if (event->button() == Qt::LeftButton) {
             uint64_t index;
             const double curX = event->pos().x();
@@ -1736,7 +1736,7 @@ bool Viewport::get_dso_trig_moved()
 void Viewport::show_contextmenu(const QPoint& pos)
 {
     if(_cmenu &&
-       _view.session().get_device()->dev_inst()->mode == DSO)
+       _view.session().get_device()->get_work_mode() == DSO)
     {
         _cur_preX = pos.x();
         _cur_preY = pos.y();

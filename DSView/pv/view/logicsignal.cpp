@@ -39,10 +39,9 @@ const float LogicSignal::Oversampling = 1.0f;
 const int LogicSignal::StateHeight = 12;
 const int LogicSignal::StateRound = 5;
 
-LogicSignal::LogicSignal(DevInst *dev_inst,
-                         data::Logic *data,
+LogicSignal::LogicSignal(data::Logic *data,
                          sr_channel *probe) :
-    Signal(dev_inst, probe),
+    Signal(probe),
     _data(data),
     _trig(NONTRIG)
 {

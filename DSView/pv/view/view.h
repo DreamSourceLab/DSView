@@ -43,6 +43,8 @@
 #include "viewstatus.h"
 #include "../dsvdef.h"
 
+class DeviceAgent;
+
 namespace pv {
 
 namespace toolbars {
@@ -399,6 +401,7 @@ private:
     bool        _show_lissajous;
     bool        _back_ready;
     bool        _trig_time_setted;
+    DeviceAgent *_device_agent;
 };
 
 } // namespace view

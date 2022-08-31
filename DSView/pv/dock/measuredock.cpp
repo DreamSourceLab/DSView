@@ -30,8 +30,7 @@
 #include "../view/ruler.h"
 #include "../view/logicsignal.h"
 #include "../data/signaldata.h"
-#include "../data/snapshot.h"
-#include "../devicemanager.h"
+#include "../data/snapshot.h" 
 #include "../device/device.h"
 #include "../device/file.h"
 #include "../dialogs/dsdialog.h"
@@ -211,7 +210,7 @@ void MeasureDock::refresh()
 
 void MeasureDock::reload()
 {
-    if (_session->get_device()->dev_inst()->mode == LOGIC)
+    if (_session->get_device()->get_work_mode() == LOGIC)
         _edge_groupBox->setVisible(true);
     else
         _edge_groupBox->setVisible(false);

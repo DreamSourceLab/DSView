@@ -31,6 +31,8 @@
 #include "../view/trace.h"
 #include "../dialogs/dsmessagebox.h"
 #include "../dsvdef.h"
+#include "../appcontrol.h"
+#include "../sigsession.h"
 
 
 using namespace std;
@@ -59,7 +61,8 @@ Calibration::Calibration(QWidget *parent) :
     this->setWindowOpacity(0.7);
     this->setModal(false);
 
-    _dev_inst = NULL;
+    _device_agent = AppControl::Instance()->GetSession()->get_device();
+
     _save_btn = new QPushButton(this);
     _abort_btn = new QPushButton(this);
     _reset_btn = new QPushButton(this);
@@ -120,10 +123,11 @@ void Calibration::retranslateUi()
     setTitle(tr("Manual Calibration"));
 }
 
-void Calibration::set_device(DevInst *dev_inst)
-{
-    assert(dev_inst);
-    _dev_inst = dev_inst;
+void Calibration::update_device_info()
+{ 
+    if (_device_agent->have_instance()){
+        assert(false);
+    }
 
     for(std::list<QSlider *>::const_iterator i = _slider_list.begin();
         i != _slider_list.end(); i++) {
@@ -131,6 +135,7 @@ void Calibration::set_device(DevInst *dev_inst)
         _flayout->removeWidget((*i));
         delete (*i);
     }
+
     _slider_list.clear();
     for(std::list<QLabel *>::const_iterator i = _label_list.begin();
         i != _label_list.end(); i++) {
@@ -140,23 +145,23 @@ void Calibration::set_device(DevInst *dev_inst)
     }
     _label_list.clear();
 
-    for (const GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next) {
+    for (const GSList *l = _device_agent->get_channels(); l; l = l->next) {
         sr_channel *const probe = (sr_channel*)l->data;
         assert(probe);
 
         uint64_t vgain = 0, vgain_default = 0;
         uint16_t vgain_range = 0;
-        GVariant* gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_VGAIN);
+        GVariant* gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_VGAIN);
         if (gvar != NULL) {
             vgain = g_variant_get_uint64(gvar);
             g_variant_unref(gvar);
         }
-        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_VGAIN_DEFAULT);
+        gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_VGAIN_DEFAULT);
         if (gvar != NULL) {
             vgain_default = g_variant_get_uint64(gvar);
             g_variant_unref(gvar);
         }
-        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_VGAIN_RANGE);
+        gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_VGAIN_RANGE);
         if (gvar != NULL) {
             vgain_range = g_variant_get_uint16(gvar);
             g_variant_unref(gvar);
@@ -174,12 +179,12 @@ void Calibration::set_device(DevInst *dev_inst)
 
         uint64_t voff = 0;
         uint16_t voff_range = 0;
-        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_PREOFF);
+        gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_PREOFF);
         if (gvar != NULL) {
             voff = g_variant_get_uint16(gvar);
             g_variant_unref(gvar);
         }
-        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_PREOFF_MARGIN);
+        gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_PREOFF_MARGIN);
         if (gvar != NULL) {
             voff_range = g_variant_get_uint16(gvar);
             g_variant_unref(gvar);
@@ -195,14 +200,14 @@ void Calibration::set_device(DevInst *dev_inst)
         _label_list.push_back(off_label);
 
         bool comb_comp_en = false;
-        gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_PROBE_COMB_COMP_EN);
+        gvar = _device_agent->get_config(NULL, NULL, SR_CONF_PROBE_COMB_COMP_EN);
         if (gvar != NULL) {
             comb_comp_en = g_variant_get_boolean(gvar);
             g_variant_unref(gvar);
         }
         if (comb_comp_en) {
             int16_t comb_comp = 0;
-            gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_COMB_COMP);
+            gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_COMB_COMP);
             if (gvar != NULL) {
                 comb_comp = g_variant_get_int16(gvar);
                 g_variant_unref(gvar);
@@ -229,14 +234,14 @@ void Calibration::set_device(DevInst *dev_inst)
 void Calibration::accept()
 {
     using namespace Qt;
-    _dev_inst->set_config(NULL, NULL, SR_CONF_CALI, g_variant_new_boolean(false));
+    _device_agent->set_config(NULL, NULL, SR_CONF_CALI, g_variant_new_boolean(false));
     QDialog::accept();
 }
 
 void Calibration::reject()
 {
     using namespace Qt;
-    _dev_inst->set_config(NULL, NULL, SR_CONF_CALI, g_variant_new_boolean(false));
+    _device_agent->set_config(NULL, NULL, SR_CONF_CALI, g_variant_new_boolean(false));
     QDialog::reject();
 }
 
@@ -244,25 +249,25 @@ void Calibration::set_value(int value)
 {
     QSlider* sc = dynamic_cast<QSlider *>(sender());
 
-    for (const GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next) {
+    for (const GSList *l = _device_agent->get_channels(); l; l = l->next) {
         sr_channel *const probe = (sr_channel*)l->data;
         assert(probe);
         if (sc->objectName() == VGAIN+probe->index) {
             uint64_t vgain_default;
-            GVariant* gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_VGAIN_DEFAULT);
+            GVariant* gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_VGAIN_DEFAULT);
             if (gvar != NULL) {
                 vgain_default = g_variant_get_uint64(gvar);
                 g_variant_unref(gvar);
-                _dev_inst->set_config(probe, NULL, SR_CONF_PROBE_VGAIN,
+                _device_agent->set_config(probe, NULL, SR_CONF_PROBE_VGAIN,
                                       g_variant_new_uint64(value+vgain_default));
             }
             break;
         } else if (sc->objectName() == VOFF+probe->index) {
-            _dev_inst->set_config(probe, NULL, SR_CONF_PROBE_PREOFF,
+            _device_agent->set_config(probe, NULL, SR_CONF_PROBE_PREOFF,
                                   g_variant_new_uint16(value));
             break;
         } else if (sc->objectName() == VCOMB+probe->index) {
-            _dev_inst->set_config(probe, NULL, SR_CONF_PROBE_COMB_COMP,
+            _device_agent->set_config(probe, NULL, SR_CONF_PROBE_COMB_COMP,
                                   g_variant_new_int16(value));
             break;
         }
@@ -275,7 +280,7 @@ void Calibration::on_save()
     QFuture<void> future;
     future = QtConcurrent::run([&]{
         //QTime dieTime = QTime::currentTime().addSecs(1);
-        _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO_SET,
+        _device_agent->set_config(NULL, NULL, SR_CONF_ZERO_SET,
                               g_variant_new_boolean(true));
         //while( QTime::currentTime() < dieTime );
     });
@@ -301,7 +306,7 @@ void Calibration::on_abort()
     QFuture<void> future;
     future = QtConcurrent::run([&]{
         //QTime dieTime = QTime::currentTime().addSecs(1);
-        _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO_LOAD,
+        _device_agent->set_config(NULL, NULL, SR_CONF_ZERO_LOAD,
                               g_variant_new_boolean(true));
         reload_value();
         //while( QTime::currentTime() < dieTime );
@@ -324,23 +329,23 @@ void Calibration::on_abort()
 
 void Calibration::reload_value()
 {
-    for (const GSList *l = _dev_inst->dev_inst()->channels; l; l = l->next) {
+    for (const GSList *l = _device_agent->get_channels(); l; l = l->next) {
         sr_channel *const probe = (sr_channel*)l->data;
         assert(probe);
 
         uint64_t vgain = 0, vgain_default = 0;
         uint16_t vgain_range = 0;
-        GVariant* gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_VGAIN);
+        GVariant* gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_VGAIN);
         if (gvar != NULL) {
             vgain = g_variant_get_uint64(gvar);
             g_variant_unref(gvar);
         }
-        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_VGAIN_DEFAULT);
+        gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_VGAIN_DEFAULT);
         if (gvar != NULL) {
             vgain_default = g_variant_get_uint64(gvar);
             g_variant_unref(gvar);
         }
-        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_VGAIN_RANGE);
+        gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_VGAIN_RANGE);
         if (gvar != NULL) {
             vgain_range = g_variant_get_uint16(gvar);
             g_variant_unref(gvar);
@@ -348,12 +353,12 @@ void Calibration::reload_value()
 
         uint64_t voff = 0;
         uint16_t voff_range = 0;
-        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_PREOFF);
+        gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_PREOFF);
         if (gvar != NULL) {
             voff = g_variant_get_uint16(gvar);
             g_variant_unref(gvar);
         }
-        gvar = _dev_inst->get_config(probe, NULL, SR_CONF_PROBE_PREOFF_MARGIN);
+        gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_PREOFF_MARGIN);
         if (gvar != NULL) {
             voff_range = g_variant_get_uint16(gvar);
             g_variant_unref(gvar);
@@ -382,7 +387,7 @@ void Calibration::on_reset()
     msg.mBox()->addButton(tr("Cancel"), QMessageBox::RejectRole);
     msg.mBox()->setIcon(QMessageBox::Warning);
     if (msg.exec()) {
-        _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO_DEFAULT,
+        _device_agent->set_config(NULL, NULL, SR_CONF_ZERO_DEFAULT,
                               g_variant_new_boolean(true));
         reload_value();
     }

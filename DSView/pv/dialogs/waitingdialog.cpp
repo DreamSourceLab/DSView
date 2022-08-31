@@ -49,7 +49,8 @@ WaitingDialog::WaitingDialog(QWidget *parent, SigSession *session, int key) :
     _button_box(QDialogButtonBox::Abort,
         Qt::Horizontal, this)
 {
-    _dev_inst = _session->get_device();
+    _device_agent = _session->get_device();
+
     this->setFixedSize((GIF_WIDTH+2*TIP_WIDTH)*1.2, (GIF_HEIGHT+2*TIP_HEIGHT)*4);
     this->setWindowOpacity(0.7);
 
@@ -78,7 +79,7 @@ WaitingDialog::WaitingDialog(QWidget *parent, SigSession *session, int key) :
     connect(timer, SIGNAL(timeout()), this, SLOT(changeText()));
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
     connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
-    connect(_dev_inst, SIGNAL(device_updated()), this, SLOT(stop()));
+    connect(_device_agent, SIGNAL(device_updated()), this, SLOT(stop()));
 
 
     QVBoxLayout *mlayout = new QVBoxLayout();
@@ -100,7 +101,7 @@ void WaitingDialog::accept()
 
     QFuture<void> future;
     future = QtConcurrent::run([&]{
-        _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO_SET,
+        _device_agent->set_config(NULL, NULL, SR_CONF_ZERO_SET,
                               g_variant_new_boolean(true));
     });
     Qt::WindowFlags flags = Qt::CustomizeWindowHint;
@@ -128,8 +129,8 @@ void WaitingDialog::reject()
 
     QFuture<void> future;
     future = QtConcurrent::run([&]{
-        _dev_inst->set_config(NULL, NULL, _key, g_variant_new_boolean(false));
-        _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO_LOAD,
+        _device_agent->set_config(NULL, NULL, _key, g_variant_new_boolean(false));
+        _device_agent->set_config(NULL, NULL, SR_CONF_ZERO_LOAD,
                               g_variant_new_boolean(true));
     });
     Qt::WindowFlags flags = Qt::CustomizeWindowHint;
@@ -174,12 +175,12 @@ void WaitingDialog::changeText()
         bool comb_comp_en = false;
         bool zero_fgain = false;
 
-        gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_PROBE_COMB_COMP_EN);
+        gvar = _device_agent->get_config(NULL, NULL, SR_CONF_PROBE_COMB_COMP_EN);
         if (gvar != NULL) {
             comb_comp_en = g_variant_get_boolean(gvar);
             g_variant_unref(gvar);
             if (comb_comp_en) {
-                gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_ZERO_COMB_FGAIN);
+                gvar = _device_agent->get_config(NULL, NULL, SR_CONF_ZERO_COMB_FGAIN);
                 if (gvar != NULL) {
                     zero_fgain = g_variant_get_boolean(gvar);
                     g_variant_unref(gvar);
@@ -192,13 +193,13 @@ void WaitingDialog::changeText()
                                 dsoSig->set_enable(dsoSig->get_index() == 0);
                         }
                         std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                        _dev_inst->set_config(NULL, NULL, SR_CONF_ZERO_COMB, g_variant_new_boolean(true));
+                        _device_agent->set_config(NULL, NULL, SR_CONF_ZERO_COMB, g_variant_new_boolean(true));
                     }
                 }
             }
         }
 
-        gvar = _dev_inst->get_config(NULL, NULL, _key);
+        gvar = _device_agent->get_config(NULL, NULL, _key);
         if (gvar != NULL) {
             bool zero = g_variant_get_boolean(gvar);
             g_variant_unref(gvar);

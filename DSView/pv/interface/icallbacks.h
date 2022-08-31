@@ -54,7 +54,7 @@ public:
     
     virtual void receive_header()=0;
     virtual void data_received()=0;
-    virtual void device_list_changed();
+    virtual void device_list_changed() = 0;
   
 };
 

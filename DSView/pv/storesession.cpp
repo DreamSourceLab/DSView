@@ -113,7 +113,7 @@ QList<QString> StoreSession::getSuportedExportFormats(){
     while(*supportedModules){
         if(*supportedModules == NULL)
             break;
-        if (_session->get_device()->dev_inst()->mode != LOGIC &&
+        if (_session->get_device()->get_work_mode() != LOGIC &&
             strcmp((*supportedModules)->id, "csv"))
             break;
         QString format((*supportedModules)->desc);
@@ -353,7 +353,8 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
     struct sr_status status;
     const sr_dev_inst *sdi = NULL;
     char meta[300] = {0};
- 
+    
+    /* 
     sdi = _session->get_device()->dev_inst();
   
     sprintf(meta, "%s", "[version]\n"); str += meta;
@@ -364,8 +365,7 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
         sprintf(meta, "driver = %s\n", sdi->driver->name); str += meta;
         sprintf(meta, "device mode = %d\n", sdi->mode); str += meta;
     }
-
-    /* metadata */
+ 
     sprintf(meta, "capturefile = data\n"); str += meta;
     sprintf(meta, "total samples = %" PRIu64 "\n", snapshot->get_sample_count()); str += meta;
 
@@ -572,6 +572,7 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
         }
         probecnt++;
     } 
+    */
 
     return true;
 }
@@ -669,7 +670,7 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
 
     struct sr_output output;
     output.module = (sr_output_module*) _outModule;
-    output.sdi = _session->get_device()->dev_inst();
+    output.sdi = _session->get_device()->inst();
     output.param = NULL;
     if(_outModule->init)
         _outModule->init(&output, params);
@@ -686,12 +687,14 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
     struct sr_datafeed_meta meta;
     struct sr_config *src;
 
-    src = sr_config_new(SR_CONF_SAMPLERATE,
-            g_variant_new_uint64(_session->cur_snap_samplerate()));
+    src = _session->get_device()->new_config(SR_CONF_SAMPLERATE,
+                g_variant_new_uint64(_session->cur_snap_samplerate()));
+
     meta.config = g_slist_append(NULL, src);
 
-    src = sr_config_new(SR_CONF_LIMIT_SAMPLES,
-            g_variant_new_uint64(snapshot->get_sample_count()));
+    src = _session->get_device()->new_config(SR_CONF_LIMIT_SAMPLES,
+                g_variant_new_uint64(snapshot->get_sample_count()));
+
     meta.config = g_slist_append(meta.config, src);
 
     GVariant *gvar;
@@ -702,19 +705,24 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
         g_variant_unref(gvar);
     }
     gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MIN);
+
     if (gvar != NULL) {
-        src = sr_config_new(SR_CONF_REF_MIN, gvar);
+        src = _session->get_device()->new_config(SR_CONF_REF_MIN, gvar);
         g_variant_unref(gvar);
-    } else {
-        src = sr_config_new(SR_CONF_REF_MIN, g_variant_new_uint32(1));
+    } 
+    else {
+        src = _session->get_device()->new_config(SR_CONF_REF_MIN, g_variant_new_uint32(1));
     }
+
     meta.config = g_slist_append(meta.config, src);
     gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MAX);
+
     if (gvar != NULL) {
-        src = sr_config_new(SR_CONF_REF_MAX, gvar);
+        src = _session->get_device()->new_config(SR_CONF_REF_MAX, gvar);
         g_variant_unref(gvar);
-    } else {
-        src = sr_config_new(SR_CONF_REF_MAX, g_variant_new_uint32((1 << bits) - 1));
+    }
+    else {
+        src = _session->get_device()->new_config(SR_CONF_REF_MAX, g_variant_new_uint32((1 << bits) - 1));
     }
     meta.config = g_slist_append(meta.config, src);
 
@@ -729,7 +737,7 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
     }
     for (GSList *l = meta.config; l; l = l->next) {
         src = (struct sr_config *)l->data;
-        sr_config_free(src);
+        _session->get_device()->free_config(src);
     }
     g_slist_free(meta.config);
 
@@ -965,7 +973,7 @@ bool StoreSession::json_decoders(QJsonArray &array)
 
 bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_array)
 {
-    if (_session->get_device()->dev_inst()->mode != LOGIC)
+    if (_session->get_device()->get_work_mode() != LOGIC)
     {
         dsv_info("%s", "StoreSession::load_decoders(), is not LOGIC mode.");
         return false;
@@ -1203,10 +1211,10 @@ QString StoreSession::MakeSaveFile(bool bDlg)
         default_name =  _root + "/" + _session->get_device()->name() + "-";
     } 
 
-    for (const GSList *l = _session->get_device()->get_dev_mode_list();
-         l; l = l->next) {
+    for (const GSList *l = _session->get_device()->get_device_mode_list(); l; l = l->next) 
+    {
         const sr_dev_mode *mode = (const sr_dev_mode *)l->data;
-        if (_session->get_device()->dev_inst()->mode == mode->mode) {
+        if (_session->get_device()->get_work_mode() == mode->mode) {
             default_name += mode->acronym;
             break;
         }
@@ -1261,10 +1269,9 @@ QString StoreSession::MakeExportFile(bool bDlg)
         default_name =  _root + "/" + _session->get_device()->name() + "-";
     }  
 
-    for (const GSList *l = _session->get_device()->get_dev_mode_list();
-         l; l = l->next) {
+    for (const GSList *l = _session->get_device()->get_device_mode_list(); l; l = l->next) {
         const sr_dev_mode *mode = (const sr_dev_mode *)l->data;
-        if (_session->get_device()->dev_inst()->mode == mode->mode) {
+        if (_session->get_device()->get_work_mode() == mode->mode) {
             default_name += mode->acronym;
             break;
         }

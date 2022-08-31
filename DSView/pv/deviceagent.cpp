@@ -23,15 +23,20 @@
 #include <assert.h>
 #include "log.h"
 
+
 DeviceAgent::DeviceAgent()
 {
     _dev_handle = NULL;
+    _di = NULL;
+    _dev_type = 0;
 }
 
 void DeviceAgent::update()
 {
     _dev_handle = NULL;
     _dev_name = "";
+    _di = NULL;
+    _dev_type = 0;
 
     ds_device_info info;
 
@@ -39,18 +44,26 @@ void DeviceAgent::update()
     {
         _dev_handle = info.handle;
         _dev_type = info.dev_type;
+        _di = info.di;
         _dev_name = QString::fromLocal8Bit(info.name);
+        _driver_name = QString::fromLocal8Bit(info.driver_name);
     }
 }
+
+ sr_dev_inst* DeviceAgent::inst()
+ {
+    assert(_dev_handle);
+    return _di;
+ }
 
 GVariant* DeviceAgent::get_config(const sr_channel *ch, const sr_channel_group *group, int key)
 {
     assert(_dev_handle);
 
     GVariant *data = NULL;
-    if (ds_set_actived_device_config(ch, group, key, data) != SR_OK)
+    if (ds_get_actived_device_config(ch, group, key, &data) != SR_OK)
     {
-        dsv_err("%s", "Get device config error!");
+        dsv_warn("%s%d", "WARNING: Failed to get value of config id:", key);
     }
     return data;
 }
@@ -61,7 +74,7 @@ bool DeviceAgent::set_config(sr_channel *ch, sr_channel_group *group, int key, G
 
     if (ds_set_actived_device_config(ch, group, key, data) != SR_OK)
     {   
-        dsv_err("%s", "Set device config error!");
+        dsv_warn("%s%d", "WARNING: Failed to set value of config id:", key);
         return false;
     }
 
@@ -69,26 +82,54 @@ bool DeviceAgent::set_config(sr_channel *ch, sr_channel_group *group, int key, G
     return true;
 }
 
-GVariant* DeviceAgent::list_config(const sr_channel_group *group, int key)
+GVariant* DeviceAgent::get_config_list(const sr_channel_group *group, int key)
 {
     assert(_dev_handle);
 
     GVariant *data = NULL;
 
     if (ds_get_actived_device_config_list(group, key, &data) != SR_OK){
-        dsv_err("%s", "Get device config list error!");    
+        dsv_warn("%s%d", "WARNING: Failed to get config list, key:", key); 
+        if (data != NULL){
+            dsv_warn("%s%d", "WARNING: Failed to get config list, but data is not null. key:", key); 
+        }
+        data = NULL;
     }
 
     return data;
 }
 
-void DeviceAgent::enable_probe(const sr_channel *probe, bool enable = true)
+bool DeviceAgent::enable_probe(const sr_channel *probe, bool enable)
 {
     assert(_dev_handle);
 
     if (ds_enable_device_channel(probe, enable) == SR_OK){
         config_changed();
+        return true;
     }
+    return false;
+}
+
+bool DeviceAgent::enable_probe(int probe_index, bool enable)
+{
+     assert(_dev_handle);
+
+     if (ds_enable_device_channel_index(probe_index, enable) == SR_OK){
+        config_changed();
+        return true;
+    }
+    return false;
+}
+
+bool DeviceAgent::set_channel_name(int ch_index, const char *name)
+{
+    assert(_dev_handle);
+    
+    if (ds_set_device_channel_name(ch_index, name) == SR_OK){
+        config_changed();
+        return true;
+    }
+    return false;
 }
 
 uint64_t DeviceAgent::get_sample_limit()
@@ -221,58 +262,16 @@ bool DeviceAgent::get_status(struct sr_status &status, gboolean prg)
 //---------------device config-----------/
 
   int DeviceAgent::get_work_mode()
-  {
-      return ds_get_actived_device_mode();
-  }
-
-  bool DeviceAgent::get_device_info(struct ds_device_info &info)
-  {
-     if (ds_get_actived_device_info(&info) == SR_OK){
-        return info.handle != NULL;
-     }
-     return false;
-  }
-
-  bool DeviceAgent::get_device_config(const struct sr_channel *ch,
-                         const struct sr_channel_group *cg,
-                         int key, GVariant **data)
-  {
-    
-    if (ds_get_actived_device_config(ch, cg, key, data) == SR_OK){
-        return true;
-    }
-
-    return false;
-  }
-
-  bool DeviceAgent::set_device_config(const struct sr_channel *ch,
-                         const struct sr_channel_group *cg,
-                         int key, GVariant *data)
    {
-
-     if (ds_set_actived_device_config(ch, cg, key, data) == SR_OK){
-            return true;
-     }
-
-     return false;
+       return ds_get_actived_device_mode();
    }
 
-    bool DeviceAgent::get_device_config_list(const struct sr_channel_group *cg,
-                          int key, GVariant **data)
-    {
-
-        if (ds_get_actived_device_config_list(cg, key, data) == SR_OK){
-            return true;
-        }
-        return false;
-    }
-
-    const struct sr_config_info* DeviceAgent::get_device_config_info(int key)
+   const struct sr_config_info* DeviceAgent::get_config_info(int key)
     {
         return ds_get_actived_device_config_info(key);
     }
 
-    const struct sr_config_info* DeviceAgent::get_device_config_info_by_name(const char *optname)
+    const struct sr_config_info* DeviceAgent::get_config_info_by_name(const char *optname)
     {
         return ds_get_actived_device_config_info_by_name(optname);
     }
@@ -307,3 +306,4 @@ bool DeviceAgent::get_status(struct sr_status &status, gboolean prg)
     }
 
 //---------------device config end -----------/
+

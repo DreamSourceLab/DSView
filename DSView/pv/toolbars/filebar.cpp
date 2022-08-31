@@ -200,7 +200,7 @@ void FileBar::on_actionDefault_triggered()
     }
 
     QString driver_name = _session->get_device()->name();
-    QString mode_name = QString::number(_session->get_device()->dev_inst()->mode);
+    QString mode_name = QString::number(_session->get_device()->get_work_mode());
     int language = LAN_EN;
     GVariant *gvar_tmp = _session->get_device()->get_config(NULL, NULL, SR_CONF_LANGUAGE);
     if (gvar_tmp != NULL) {

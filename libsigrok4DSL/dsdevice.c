@@ -78,7 +78,7 @@ SR_PRIV struct sr_channel *sr_channel_new(uint16_t index, int type,
  *
  * @since 0.1.0 (but the API changed in 0.2.0)
  */
-SR_API int sr_dev_probe_name_set(const struct sr_dev_inst *sdi,
+SR_PRIV int sr_dev_probe_name_set(const struct sr_dev_inst *sdi,
 		int probenum, const char *name)
 {
 	GSList *l;
@@ -115,7 +115,7 @@ SR_API int sr_dev_probe_name_set(const struct sr_dev_inst *sdi,
  *
  * @since 0.2.0
  */
-SR_API int sr_dev_probe_enable(const struct sr_dev_inst *sdi, int probenum,
+SR_PRIV int sr_dev_probe_enable(const struct sr_dev_inst *sdi, int probenum,
 		gboolean state)
 {
 	GSList *l;
@@ -152,7 +152,7 @@ SR_API int sr_dev_probe_enable(const struct sr_dev_inst *sdi, int probenum,
  *
  * @since 0.1.0 (but the API changed in 0.2.0)
  */
-SR_API int sr_dev_trigger_set(const struct sr_dev_inst *sdi, uint16_t probenum,
+SR_PRIV int sr_dev_trigger_set(const struct sr_dev_inst *sdi, uint16_t probenum,
 		const char *trigger)
 {
 	GSList *l;

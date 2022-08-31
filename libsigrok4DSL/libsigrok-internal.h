@@ -227,6 +227,15 @@ SR_PRIV void sr_dev_probes_free(struct sr_dev_inst *sdi);
 
 SR_PRIV int sr_enable_device_channel(struct sr_dev_inst *sdi, const struct sr_channel *probe, gboolean enable);
 
+SR_PRIV int sr_dev_probe_name_set(const struct sr_dev_inst *sdi,
+		int probenum, const char *name);
+
+SR_PRIV int sr_dev_probe_enable(const struct sr_dev_inst *sdi, int probenum,
+		gboolean state);
+		
+SR_PRIV int sr_dev_trigger_set(const struct sr_dev_inst *sdi, uint16_t probenum,
+		const char *trigger);
+
 /* Generic device instances */
 SR_PRIV struct sr_dev_inst *sr_dev_inst_new(int mode, int index, int status,
                                             const char *vendor, const char *model, const char *version);

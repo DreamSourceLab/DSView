@@ -46,7 +46,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession *session) :
     _session(session)
 {
     _cur_ch_num = 16;
-    if (_session->get_device()) {
+    if (_session->get_device()->have_instance()) {
         GVariant *gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_TOTAL_CH_NUM);
         if (gvar != NULL) {
             _cur_ch_num = g_variant_get_int16(gvar);
@@ -251,11 +251,13 @@ void TriggerDock::device_updated()
     uint8_t maxRange;
     uint64_t sample_limits;
     GVariant *gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_HW_DEPTH);
+    int mode = _session->get_device()->get_work_mode();
+
     if (gvar != NULL) {
         hw_depth = g_variant_get_uint64(gvar);
         g_variant_unref(gvar);
 
-        if (_session->get_device()->dev_inst()->mode == LOGIC) {
+        if (mode == LOGIC) {
 
             gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_STREAM);
             if (gvar != NULL) {

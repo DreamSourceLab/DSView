@@ -28,6 +28,7 @@
 #include <QString>
 #include <QObject>
 
+
 class DeviceAgent: public QObject
 {
     Q_OBJECT
@@ -49,25 +50,39 @@ public:
         return _dev_name;
     }
 
-    inline bool isFile(){
+    inline QString driver_name(){
+        return _driver_name;
+    }
+
+    inline ds_device_handle handle(){
+        return _dev_handle;
+    }
+
+    struct sr_dev_inst* inst();
+
+    inline bool is_file(){
         return _dev_type == DEV_TYPE_FILELOG;
     }
 
-    inline bool isDemo(){
+    inline bool is_demo(){
         return _dev_type == DEV_TYPE_DEMO;
     }
 
-    inline bool isHardware(){
+    inline bool is_hardware(){
         return _dev_type == DEV_TYPE_USB;
-    }
+    }  
 
     GVariant* get_config(const sr_channel *ch, const sr_channel_group *group, int key);
 
     bool set_config(sr_channel *ch, sr_channel_group *group, int key, GVariant *data);
 
-	GVariant* list_config(const sr_channel_group *group, int key);
+	GVariant* get_config_list(const sr_channel_group *group, int key);
 
-	void enable_probe(const sr_channel *probe, bool enable = true);
+	bool enable_probe(const sr_channel *probe, bool enable);
+
+    bool enable_probe(int probe_index, bool enable);
+
+    bool set_channel_name(int ch_index, const char *name);
 
     /**
 	 * @brief Gets the sample limit from the driver.
@@ -134,24 +149,11 @@ public:
 
     //---------------device config-----------/
 public:
-  int get_work_mode();
+  int get_work_mode(); 
 
-  bool get_device_info(struct ds_device_info &info);
+  const struct sr_config_info* get_config_info(int key);
 
-  bool get_device_config(const struct sr_channel *ch,
-                         const struct sr_channel_group *cg,
-                         int key, GVariant **data);
-
-  bool set_device_config(const struct sr_channel *ch,
-                         const struct sr_channel_group *cg,
-                         int key, GVariant *data);
-
-  bool get_device_config_list(const struct sr_channel_group *cg,
-                          int key, GVariant **data);
-
-  const struct sr_config_info* get_device_config_info(int key);
-
-  const struct sr_config_info* get_device_config_info_by_name(const char *optname);
+  const struct sr_config_info* get_config_info_by_name(const char *optname);
 
   bool get_device_status(struct sr_status &status, gboolean prg);
 
@@ -164,8 +166,9 @@ private:
     ds_device_handle _dev_handle;
     int         _dev_type;
     QString     _dev_name;
-
-
+    QString     _driver_name;
+    struct sr_dev_inst  *_di;
 };
+
 
 #endif

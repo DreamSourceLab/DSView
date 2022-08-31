@@ -35,7 +35,6 @@ class Logic;
 class Analog;
 }
 
-using namespace pv::device;
 
 namespace view {
 
@@ -64,7 +63,7 @@ public:
     };
 
 public:
-    LogicSignal(DevInst *dev_inst, data::Logic* data, sr_channel *probe);
+    LogicSignal(data::Logic* data, sr_channel *probe);
 
     LogicSignal(view::LogicSignal*s, pv::data::Logic *data, sr_channel *probe);
 

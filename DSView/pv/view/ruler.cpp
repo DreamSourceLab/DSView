@@ -38,6 +38,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QStyleOption>
+#include "../appcontrol.h"
  
  
 using namespace std;
@@ -194,8 +195,10 @@ void Ruler::paintEvent(QPaintEvent*)
     QPainter p(this);
     style()->drawPrimitive(QStyle::PE_Widget, &o, &p, this);
 
+    SigSession *session = AppControl::Instance()->GetSession();
+
     // Draw tick mark
-    if (_view.session().get_device()->dev_inst()->mode == DSO)
+    if (session->get_device()->get_work_mode() == DSO)
         draw_osc_tick_mark(p);
     else
         draw_logic_tick_mark(p);
@@ -347,6 +350,10 @@ void Ruler::mouseReleaseEvent(QMouseEvent *event)
 void Ruler::draw_logic_tick_mark(QPainter &p)
 {
     using namespace Qt;
+
+    if (_view.session().get_device()->have_instance() == false){
+        return;
+    }
 
     const double SpacingIncrement = 32.0;
     const double MinValueSpacing = 16.0;

@@ -73,7 +73,10 @@ private:
 
 using namespace pv::device;
 
+class DeviceAgent;
+
 namespace pv {
+
 namespace dialogs {
 
 class DeviceOptions : public DSDialog, public IChannelCheck
@@ -131,6 +134,7 @@ private:
     int     _groupHeight1;
     int     _groupHeight2;
     volatile    bool _isBuilding;
+    DeviceAgent *_device_agent;
 
 	pv::prop::binding::DeviceOptions _device_options_binding;
     QVector <pv::prop::binding::ProbeOptions *> _probe_options_binding_list;
