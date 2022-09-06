@@ -68,6 +68,7 @@ static int open_device_instance(struct sr_dev_inst *dev);
 static void collect_run_proc();
 static void post_event_async(int event);
 static void send_event(int event);
+static void make_demo_device_to_list();
 
 static struct sr_lib_context lib_ctx = {
 	.event_callback = NULL,
@@ -129,6 +130,8 @@ SR_API int ds_lib_init()
 	}
 	pthread_mutex_init(&lib_ctx.mutext, NULL); // init locker
 
+	make_demo_device_to_list();
+
 	lib_ctx.sr_ctx->hotplug_tv.tv_sec = 0;
 	lib_ctx.sr_ctx->hotplug_tv.tv_usec = 0;
 
@@ -154,10 +157,8 @@ SR_API int ds_lib_exit()
 
 	sr_info("Uninit %s.", SR_LIB_NAME);
 
-	if (lib_ctx.collect_thread != NULL)
-	{
+	if (ds_is_collecting())
 		ds_stop_collect(); // stop collect.
-	}
 
 	sr_close_hotplug(lib_ctx.sr_ctx);
 
@@ -247,7 +248,7 @@ SR_API int ds_get_device_list(struct ds_device_info **out_list, int *out_count)
 	int num;
 	struct ds_device_info *array = NULL;
 	struct ds_device_info *p = NULL;
-	GList *l;
+	GSList *l;
 	struct sr_dev_inst *dev;
 
 	if (out_list == NULL)
@@ -309,7 +310,7 @@ SR_API int ds_get_device_list(struct ds_device_info **out_list, int *out_count)
  */
 SR_API int ds_active_device(ds_device_handle handle)
 {
-	GList *l;
+	GSList *l;
 	struct sr_dev_inst *dev;
 	int bFind = 0;
 	int ret;
@@ -322,7 +323,7 @@ SR_API int ds_active_device(ds_device_handle handle)
 
 	sr_info("%s", "Begin set current device.");
 
-	if (lib_ctx.collect_thread != NULL)
+	if (ds_is_collecting())
 	{
 		sr_err("%s", "One device is collecting, switch device error.");
 		return SR_ERR_CALL_STATUS;
@@ -389,7 +390,7 @@ SR_API int ds_active_device(ds_device_handle handle)
  */
 SR_API int ds_active_device_by_index(int index)
 {
-	GList *l;
+	GSList *l;
 	struct sr_dev_inst *dev;
 	ds_device_handle handle = NULL;
 	ds_device_handle lst_handle = NULL;
@@ -432,7 +433,7 @@ SR_API int ds_active_device_by_index(int index)
 SR_API int ds_get_actived_device_index()
 {
 	int dex = -1;
-	GList *l;
+	GSList *l;
 	int i = 0;
 
 	if (lib_ctx.actived_device_instance == NULL)
@@ -481,7 +482,7 @@ SR_API int ds_device_from_file(const char *file_path)
  */
 SR_API const GSList *ds_get_actived_device_mode_list()
 {
-	GList *l;
+	GSList *l;
 	struct sr_dev_inst *dev; 
 
 	dev = lib_ctx.actived_device_instance ;
@@ -489,7 +490,7 @@ SR_API const GSList *ds_get_actived_device_mode_list()
 	if (dev == NULL){
 		sr_err("%s", "Have no actived device.");
 	}
-	if (dev->driver == NULL || dev->driver->dev_mode_list){
+	if (dev->driver == NULL || dev->driver->dev_mode_list == NULL){
 		sr_err("%s", "Module not implemented.");
 		return NULL;
 	}
@@ -503,7 +504,7 @@ SR_API const GSList *ds_get_actived_device_mode_list()
  */
 SR_API int ds_remove_device(ds_device_handle handle)
 {
-	GList *l;
+	GSList *l;
 	struct sr_dev_inst *dev;
 	int bFind = 0; 
 
@@ -626,7 +627,7 @@ SR_API int ds_start_collect()
 
 	sr_info("%s", "Start collect.");
 
-	if (lib_ctx.collect_thread != NULL)
+	if (ds_is_collecting())
 	{
 		sr_err("%s", "Error,it's collecting!");
 		return SR_ERR_CALL_STATUS;
@@ -717,7 +718,7 @@ SR_API int ds_stop_collect()
 
 	sr_info("%s", "Stop collect.");
 
-	if (lib_ctx.collect_thread == NULL)
+	if (!ds_is_collecting())
 	{
 		sr_err("%s", "It's not collecting now.");
 		return SR_ERR_CALL_STATUS;
@@ -728,7 +729,9 @@ SR_API int ds_stop_collect()
 	// Stop current session.
 	sr_session_stop();
 
-	g_thread_join(lib_ctx.collect_thread); // Wait the collect thread ends.
+	// Wait the collect thread ends.
+	if (lib_ctx.collect_thread != NULL)
+		g_thread_join(lib_ctx.collect_thread);
 	lib_ctx.collect_thread = NULL;
 
 	close_device_instance(di);
@@ -923,7 +926,7 @@ GSList* ds_get_actived_device_channels()
  */
 SR_PRIV int sr_usb_device_is_exists(libusb_device *usb_dev)
 {
-	GList *l;
+	GSList *l;
 	struct sr_dev_inst *dev;
 	int bFind = 0;
 
@@ -1004,7 +1007,7 @@ SR_API int ds_is_collecting()
 
 static int update_device_handle(struct libusb_device *old_dev, struct libusb_device *new_dev)
 {
-	GList *l;
+	GSList *l;
 	struct sr_dev_inst *dev;
 	struct sr_usb_dev_inst *usb_dev_info;
 	uint8_t bus;
@@ -1128,8 +1131,7 @@ static void process_attach_event()
 {
 	struct sr_dev_driver **drivers;
 	GList *dev_list;
-	GSList *l;
-	GList *cur_list;
+	GSList *l; 
 	struct sr_dev_driver *dr;
 	int num = 0;
 
@@ -1155,15 +1157,11 @@ static void process_attach_event()
 				sr_info("Get new device list by driver \"%s\"", dr->name);
 
 				pthread_mutex_lock(&lib_ctx.mutext);
-				cur_list = lib_ctx.device_list;
 
-				for (l = dev_list; l; l = l->next)
-				{
-					cur_list = g_slist_append(cur_list, l->data);
+				for (l = dev_list; l; l = l->next){
+					lib_ctx.device_list = g_slist_append(lib_ctx.device_list, l->data);
 					num++;
 				}
-
-				lib_ctx.device_list = cur_list;
 				pthread_mutex_unlock(&lib_ctx.mutext);
 				g_slist_free(dev_list);
 			}
@@ -1184,7 +1182,7 @@ static void process_attach_event()
 
 static void process_detach_event()
 {  
-	GList *l;
+	GSList *l;
 	struct sr_dev_inst *dev;
 	struct sr_dev_driver *driver_ins;
 	libusb_device *ev_dev;
@@ -1282,6 +1280,35 @@ static void usb_hotplug_process_proc()
 	}
 
 	sr_info("%s", "Hotplug thread end!");
+}
+
+static void make_demo_device_to_list()
+{
+	struct sr_dev_driver **drivers;
+	struct sr_dev_driver *dr;
+	GList *dev_list;
+	GSList *l;
+
+	drivers = sr_driver_list();
+
+	while (*drivers)
+	{
+		dr = *drivers;
+
+		if (dr->driver_type == DRIVER_TYPE_DEMO)
+		{
+			dev_list = dr->scan(NULL);
+
+			if (dev_list != NULL){ 
+
+				for (l = dev_list; l; l = l->next){
+					lib_ctx.device_list = g_slist_append(lib_ctx.device_list, l->data);
+				} 
+				g_slist_free(dev_list);
+			}
+		}
+		drivers++;
+	}
 }
 
 static void destroy_device_instance(struct sr_dev_inst *dev)

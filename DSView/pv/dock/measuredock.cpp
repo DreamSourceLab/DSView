@@ -53,9 +53,9 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
     _session(session),
     _view(view)
 {
-
-    _widget = new QWidget(this);
-    //_widget->setSizePolicy();
+    _session->add_msg_listener(this);
+    
+    _widget = new QWidget(this);   
 
     _mouse_groupBox = new QGroupBox(_widget);
     _fen_checkBox = new QCheckBox(_widget);
@@ -689,6 +689,13 @@ void MeasureDock::del_cursor()
 
     cursor_update();
     _view.update();
+}
+
+void MeasureDock::OnMessage(int msg)
+{
+    if (msg == DSV_MSG_DEVICE_OPTIONS_UPDATED){
+        this->reload();
+    }
 }
 
 } // namespace dock

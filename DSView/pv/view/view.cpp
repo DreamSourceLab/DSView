@@ -80,7 +80,6 @@ const QColor View::LightRed = QColor(213, 15, 37, 200);
 
 View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget *parent) :
     QScrollArea(parent),
-	_session(session),
     _sampling_bar(sampling_bar),
     _scale(10),
     _preScale(1e-6),
@@ -97,13 +96,13 @@ View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     _dso_auto(true),
     _show_lissajous(false),
     _back_ready(false)
-{ 
-    assert(session);
-
+{  
    _trig_cursor = NULL;
    _search_cursor = NULL;
 
+   _session = session;
    _device_agent = session->get_device();
+   session->add_msg_listener(this);
 
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
   
@@ -190,7 +189,6 @@ View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget
 
     connect(_vsplitter, SIGNAL(splitterMoved(int,int)), this, SLOT(splitterMoved(int, int)));
       
-    connect(_devmode, SIGNAL(dev_changed(bool)),this, SLOT(dev_changed(bool)), Qt::DirectConnection);
     connect(_header, SIGNAL(traces_moved()),this, SLOT(on_traces_moved()));
     connect(_header, SIGNAL(header_updated()),this, SLOT(header_updated()));
 }
@@ -676,15 +674,11 @@ void View::update_scale_offset()
     viewport_update();
 }
 
-void View::dev_changed(bool close)
+void View::mode_changed()
 {
-    if (!close) {
-        if (_device_agent->name().contains("virtual"))
-            _scale = WellSamplesPerPixel * 1.0 / _session->cur_snap_samplerate();
-        _scale = max(min(_scale, _maxscale), _minscale);
-    }
-
-    device_changed(close);
+    if (_device_agent->name().contains("virtual"))
+        _scale = WellSamplesPerPixel * 1.0 / _session->cur_snap_samplerate();
+    _scale = max(min(_scale, _maxscale), _minscale);
 }
 
 void View::signals_changed()
@@ -1361,6 +1355,39 @@ int View::get_cursor_index_by_key(uint64_t key)
         ++dex;
     }
     return -1;
+}
+
+void View::check_calibration()
+{
+     if (_device_agent->get_work_mode() == DSO){
+            GVariant* gvar = _device_agent->get_config(NULL, NULL, SR_CONF_CALI);
+            if (gvar != NULL) {
+                bool cali = g_variant_get_boolean(gvar);
+                g_variant_unref(gvar);
+                if (cali) {
+                    show_calibration();
+                }
+            }
+        }
+}
+
+void View::OnMessage(int msg)
+{ 
+    switch (msg)
+    {
+    case DSV_MSG_DEVICE_OPTIONS_UPDATED:
+        check_calibration();
+        break;
+    case DSV_MSG_COLLECT_START_PREV:
+        capture_init();
+        break;
+    case DSV_MSG_DEVICE_DURATION_UPDATED:
+        timebase_changed();
+        break; 
+    case DSV_MSG_DEVICE_MODE_CHANGED:
+        mode_changed();
+        break;
+    }
 }
 
 } // namespace view

@@ -33,6 +33,7 @@
 #include <QAction>
 #include <QMenu>
 #include "../ui/dscombobox.h"
+#include "../interface/icallbacks.h"
 
 struct st_dev_inst;
 class QAction;
@@ -58,7 +59,7 @@ namespace pv
     namespace toolbars
     {
 
-        class SamplingBar : public QToolBar
+        class SamplingBar : public QToolBar, public IMessageListener
         {
             Q_OBJECT
 
@@ -72,39 +73,27 @@ namespace pv
             static const QString RLEString;
             static const QString DIVString;
             static const uint64_t ZeroTimeBase = SR_US(2);
+ 
 
         public:
             SamplingBar(SigSession *session, QWidget *parent);
             
             void update_sample_rate_selector();
-
-            void set_sampling(bool sampling);
-            bool get_sampling();
-            bool get_instant();
+ 
 
             void enable_toggle(bool enable);
-            void enable_run_stop(bool enable);
+           
             void enable_instant(bool enable);
 
             double hori_knob(int dir);
             double commit_hori_res();
-            double get_hori_res();
+            double get_hori_res(); 
 
+            void set_sample_rate(uint64_t sample_rate);
             void update_device_list();
 
-        public slots:
-            void set_sample_rate(uint64_t sample_rate);
-
-        signals:
-            void sig_run_stop();
-            void sig_instant_stop();
-            void sig_device_selected();
-            void sig_device_updated();
-            void sig_duration_changed();
-            void sig_show_calibration();
-            void sig_hide_calibration();
-
         private:
+            void enable_run_stop(bool enable);
             void changeEvent(QEvent *event);
             void retranslateUi();
             void reStyle();
@@ -115,6 +104,11 @@ namespace pv
             void commit_settings();
             void setting_adj();
 
+             void set_sampling(bool sampling);
+
+            //IMessageListener
+            void OnMessage(int msg);
+
         private slots:
             void on_mode();
             void on_run_stop();
@@ -122,11 +116,6 @@ namespace pv
             void on_device_selected();
             void on_samplerate_sel(int index);
             void on_samplecount_sel(int index);
-
-            void show_session_error(
-                const QString text, const QString info_text);
-
-        public slots:
             void on_configure();
             void zero_adj();
             void reload();
@@ -155,9 +144,9 @@ namespace pv
             QMenu               *_mode_menu;
             QAction             *_action_repeat;
             QAction             *_action_single;
-            bool                _instant;
             bool                _updating_device_list;
             DeviceAgent         *_device_agent;
+            ds_device_handle    _last_device_handle;
         };
 
     } // namespace toolbars

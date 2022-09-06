@@ -84,8 +84,7 @@ public slots:
 
 private slots:
 
-signals:
-    void dev_changed(bool close);
+ 
 
 private:
     SigSession *_session;

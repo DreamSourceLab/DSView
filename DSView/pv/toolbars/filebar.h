@@ -29,13 +29,14 @@
 #include <QMenu>
 
 #include "../sigsession.h"
+#include "../interface/icallbacks.h"
 
 namespace pv {
 namespace toolbars {
 
 //toolbar button,referenced by MainWindow
 //TODO: load session file, sorte session, load log data file, sorte data, export data
-class FileBar : public QToolBar
+class FileBar : public QToolBar, public IMessageListener
 {
     Q_OBJECT
 
@@ -51,11 +52,6 @@ private:
     void retranslateUi();
     void reStyle();
 
-    void session_error(
-        const QString text, const QString info_text);
-    void show_session_error(
-        const QString text, const QString info_text);
-
 signals:
     void sig_load_file(QString); 
     void sig_save();
@@ -70,6 +66,9 @@ private slots:
     void on_actionDefault_triggered();
     void on_actionOpen_triggered();
     void on_actionCapture_triggered();
+
+    //IMessageListener
+    void OnMessage(int msg);
 
 private:
     bool _enable;

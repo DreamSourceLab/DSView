@@ -85,7 +85,7 @@ using namespace pv::device;
 using namespace pv::data;
 
 //created by MainWindow
-class SigSession
+class SigSession: public IMessageListener
 {
 private:
     static constexpr float Oversampling = 2.0f;
@@ -96,13 +96,7 @@ public:
     static const int FeedInterval = 50;
     static const int WaitShowTime = 500;
 
-public:
-	enum capture_state {
-        Init,
-		Stopped,
-		Running
-	};
-
+public: 
     enum run_mode {
         Single,
         Repetitive
@@ -135,7 +129,7 @@ public:
     void close_file(ds_device_handle dev_handle);
     bool set_default_device();
  
-	capture_state get_capture_state();
+	 
     uint64_t cur_samplerate();
     uint64_t cur_snap_samplerate();
     uint64_t cur_samplelimits();
@@ -177,8 +171,12 @@ public:
     void add_group();
     void del_group();
 
-    uint16_t get_ch_num(int type);    
-    bool get_instant();
+    uint16_t get_ch_num(int type); 
+
+    inline bool is_instant(){
+        return _bInstant;
+    }
+
     bool get_data_lock();
     void data_auto_lock(int lock);
     void data_auto_unlock();
@@ -260,7 +258,7 @@ public:
 
     inline void set_saving(bool flag){
         _bSaving = flag;
-    }
+    } 
 
     bool init();
 
@@ -270,6 +268,7 @@ public:
     void refresh(int holdtime);
     void start_capture(bool instant);
     void stop_capture();
+    bool is_running();
     void check_update();
     void set_repeating(bool repeat);
     void set_map_zoom(int index);
@@ -278,6 +277,9 @@ public:
     void store_session_data();
     bool have_hardware_data();
     struct ds_device_info* get_device_list(int &out_count, int &actived_index);
+
+    void add_msg_listener(IMessageListener *ln);
+    void broadcast_msg(int msg);
 
 private:
     inline void data_updated(){
@@ -308,6 +310,9 @@ private:
     void nodata_timeout();
     void feed_timeout();
     void repeat_update();  
+
+    //IMessageListener
+    void OnMessage(int msg);
 
 private:
     /**
@@ -358,7 +363,7 @@ private:
     volatile bool           _bDecodeRunning;
 
 	capture_state           _capture_state;
-    bool                    _instant;
+    bool                    _bInstant;
     uint64_t                _cur_snap_samplerate;
     uint64_t                _cur_samplelimits;
  
@@ -397,7 +402,6 @@ private:
 
     run_mode    _run_mode;
     double      _repeat_intvl;
-    bool        _repeating;
     int         _repeat_hold_prg;
     int         _map_zoom;
   
@@ -405,6 +409,8 @@ private:
     float       _stop_scale; 
     bool        _bClose; 
     bool        _active_last_device_flag;
+    bool        _bRepeatMode;
+    bool        _bRunning;
 
     bool        _bSaving;
     uint64_t    _save_start;
@@ -413,6 +419,7 @@ private:
     ISessionCallback *_callback;
 
     DeviceAgent   _device_agent;
+    std::vector<IMessageListener*> _msg_listeners;
    
 private:
 	// TODO: This should not be necessary. Multiple concurrent

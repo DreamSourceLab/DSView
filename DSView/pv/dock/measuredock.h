@@ -42,6 +42,7 @@
 #include <vector>
 
 #include "../ui/dscombobox.h"
+#include "../interface/icallbacks.h"
 
 namespace pv {
 
@@ -54,7 +55,7 @@ namespace view {
 
 namespace dock {
 
-class MeasureDock : public QScrollArea
+class MeasureDock : public QScrollArea, public IMessageListener
 {
     Q_OBJECT
 
@@ -77,7 +78,8 @@ private:
     DsComboBox* create_probe_selector(QWidget *parent);
     void update_probe_selector(DsComboBox *selector);
 
-signals:
+    //IMessageListener
+    void OnMessage(int msg);
 
 private slots:
     void goto_cursor();

@@ -170,25 +170,6 @@ void LogoBar::dsl_connected(bool conn)
         _logo_button.setIcon(QIcon(iconPath+"/logo_noColor.svg"));
 }
 
-void LogoBar::session_error(
-    const QString text, const QString info_text)
-{
-    QMetaObject::invokeMethod(this, "show_session_error",
-        Qt::QueuedConnection, Q_ARG(QString, text),
-        Q_ARG(QString, info_text));
-}
-
-void LogoBar::show_session_error(
-    const QString text, const QString info_text)
-{
-    dialogs::DSMessageBox msg(this);
-    msg.mBox()->setText(text);
-    msg.mBox()->setInformativeText(info_text);
-    msg.mBox()->setStandardButtons(QMessageBox::Ok);
-    msg.mBox()->setIcon(QMessageBox::Warning);
-    msg.exec();
-}
-
 void LogoBar::on_actionEn_triggered()
 {
     _language->setIcon(QIcon::fromTheme("file",

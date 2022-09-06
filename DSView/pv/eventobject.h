@@ -36,8 +36,6 @@ signals:
     void show_error(QString error);
     void capture_state_changed(int state);
     void data_updated();
-    void device_attach();
-    void device_detach();
 
     void session_error();
     void signals_changed();
@@ -48,6 +46,7 @@ signals:
     void decode_done();
     void receive_data_len(quint64 len);
     void cur_snap_samplerate_changed();
+    void trigger_message(int msg);
 };
 
 #endif

@@ -59,11 +59,6 @@ private:
     void retranslateUi();
     void reStyle();
 
-    void session_error(
-        const QString text, const QString info_text);
-    void show_session_error(
-        const QString text, const QString info_text);
-
 signals: 
     //post event message to open user help document, MainWindow class receive it
     void sig_open_doc(); 

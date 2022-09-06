@@ -43,6 +43,7 @@
 #include <vector>
 
 #include "../ui/dscombobox.h"
+#include "../interface/icallbacks.h"
 
 namespace pv {
 
@@ -50,7 +51,7 @@ class SigSession;
 
 namespace dock {
 
-class TriggerDock : public QScrollArea
+class TriggerDock : public QScrollArea, public IMessageListener
 {
     Q_OBJECT
 
@@ -68,12 +69,6 @@ public:
     QJsonObject get_session();
     void set_session(QJsonObject ses);
 
-    /*
-     * commit trigger setting
-     * return 0: simple trigger
-     *        1: advanced trigger
-     */
-    bool commit_trigger();
 private:
     void changeEvent(QEvent *event);
     void retranslateUi();
@@ -82,7 +77,17 @@ private:
     void setup_adv_tab();
     void lineEdit_highlight(QLineEdit *dst);
 
-signals:
+      /*
+     * commit trigger setting
+     * return 0: simple trigger
+     *        1: advanced trigger
+     */
+    bool commit_trigger();
+
+    void try_commit_trigger();
+
+    //IMessageListener
+    void OnMessage(int msg);
 
 public slots:
     void simple_trigger();
@@ -92,8 +97,6 @@ public slots:
     void value_changed();
 
     void device_updated();
-
-private:
 
 private:
     SigSession *_session;

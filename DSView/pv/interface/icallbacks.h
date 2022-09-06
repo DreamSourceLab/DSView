@@ -31,7 +31,6 @@ public:
     virtual void show_error(QString error)=0;
     virtual void session_error()=0;
     virtual void capture_state_changed(int state)=0;
-    virtual void device_attach()=0;
     virtual void device_detach()=0;
 
     virtual void session_save()=0;
@@ -54,7 +53,7 @@ public:
     
     virtual void receive_header()=0;
     virtual void data_received()=0;
-    virtual void device_list_changed() = 0;
+    virtual void trigger_message(int msg)=0;
   
 };
 
@@ -62,6 +61,24 @@ class ISessionDataGetter
 {
 public:
     virtual bool genSessionData(std::string &str) = 0;
+};
+
+
+#define DSV_MSG_DEVICE_LIST_UPDATE      4500
+#define DSV_MSG_COLLECT_START_PREV      5001
+#define DSV_MSG_COLLECT_START           5002
+#define DSV_MSG_COLLECT_END_PREV        5003
+#define DSV_MSG_COLLECT_END             5004
+#define DSV_MSG_BEGIN_DEVICE_OPTIONS    6001 //Begin show device options dialog.
+#define DSV_MSG_END_DEVICE_OPTIONS      6002
+#define DSV_MSG_DEVICE_OPTIONS_UPDATED  6003
+#define DSV_MSG_DEVICE_DURATION_UPDATED 6004
+#define DSV_MSG_DEVICE_MODE_CHANGED     6005
+
+class IMessageListener
+{
+public:
+    virtual void OnMessage(int msg)=0;
 };
 
 #endif

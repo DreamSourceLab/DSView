@@ -35,6 +35,9 @@
 #include <QApplication>
 #include <math.h>
 #include <libsigrok.h> 
+#include "../config/appconfig.h"
+#include "../deviceagent.h"
+#include "../view/logicsignal.h"
 
 namespace pv {
 namespace dock {
@@ -45,6 +48,8 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession *session) :
     QScrollArea(parent),
     _session(session)
 {
+    session->add_msg_listener(this);
+    
     _cur_ch_num = 16;
     if (_session->get_device()->have_instance()) {
         GVariant *gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_TOTAL_CH_NUM);
@@ -883,6 +888,79 @@ void TriggerDock::lineEdit_highlight(QLineEdit *dst) {
     }
     QInputMethodEvent event(QString(), attributes);
     QCoreApplication::sendEvent(dst, &event);
+}
+
+void TriggerDock::try_commit_trigger()
+{  
+    int i;
+    AppConfig &app = AppConfig::Instance();   
+
+    int mode = _session->get_device()->get_work_mode();
+    bool bInstant = _session->is_instant();
+
+    if (mode != LOGIC || bInstant){
+        return;
+    }
+
+    if (this->commit_trigger() == false) 
+    {
+        /* simple trigger check trigger_enable */
+        for(auto &s : _session->get_signals())
+        {
+            assert(s);
+            view::LogicSignal *logicSig = NULL;
+            if ((logicSig = dynamic_cast<view::LogicSignal*>(s))) {
+                if (logicSig->commit_trig())
+                    i++;
+            }
+        }
+
+        if (app._appOptions.warnofMultiTrig && i > 1) {
+            dialogs::DSMessageBox msg(this);
+            msg.mBox()->setText(tr("Trigger"));
+            msg.mBox()->setInformativeText(tr("Trigger setted on multiple channels! "
+                                              "Capture will Only triggered when all setted channels fullfill at one sample"));
+            msg.mBox()->setIcon(QMessageBox::Information);
+
+            QPushButton *noMoreButton = msg.mBox()->addButton(tr("Not Show Again"), QMessageBox::ActionRole);
+            QPushButton *cancelButton = msg.mBox()->addButton(tr("Clear Trig"), QMessageBox::ActionRole);
+            msg.mBox()->addButton(tr("Continue"), QMessageBox::ActionRole);
+
+            msg.exec();
+
+            if (msg.mBox()->clickedButton() == cancelButton) {
+                for(auto &s : _session->get_signals())
+                {
+                    assert(s);
+                    view::LogicSignal *logicSig = NULL;
+                    if ((logicSig = dynamic_cast<view::LogicSignal*>(s))) {
+                        logicSig->set_trig(view::LogicSignal::NONTRIG);
+                        logicSig->commit_trig();
+                    }
+                }
+            }
+
+            if (msg.mBox()->clickedButton() == noMoreButton)
+            {
+                app._appOptions.warnofMultiTrig  = false;
+                app.SaveApp();                
+            }
+        }
+    }
+}
+
+void TriggerDock::OnMessage(int msg)
+{
+    switch (msg)
+    {
+    case DSV_MSG_DEVICE_OPTIONS_UPDATED:
+    case DSV_MSG_DEVICE_DURATION_UPDATED:
+        device_updated();
+        break;
+    case DSV_MSG_COLLECT_START_PREV:
+        try_commit_trigger();
+        break;
+    } 
 }
 
 } // namespace dock

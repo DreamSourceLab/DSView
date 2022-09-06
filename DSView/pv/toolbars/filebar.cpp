@@ -154,21 +154,6 @@ void FileBar::on_actionOpen_triggered()
     }
 }
 
-void FileBar::session_error(
-    const QString text, const QString info_text)
-{
-    QMetaObject::invokeMethod(this, "show_session_error",
-        Qt::QueuedConnection, Q_ARG(QString, text),
-        Q_ARG(QString, info_text));
-}
-
-void FileBar::show_session_error(
-    const QString text, const QString info_text)
-{  
-    (void)text;
-    MsgBox::Show(NULL, info_text.toStdString().c_str(), this);
-}
-
 void FileBar::on_actionLoad_triggered()
 { 
     //load session file
@@ -255,6 +240,11 @@ void FileBar::enable_toggle(bool enable)
 void FileBar::set_settings_en(bool enable)
 {
     _menu_session->setDisabled(!enable);
+}
+
+void FileBar::OnMessage(int msg)
+{
+
 }
 
 } // namespace toolbars

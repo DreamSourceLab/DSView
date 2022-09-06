@@ -42,6 +42,7 @@
 #include "signal.h"
 #include "viewstatus.h"
 #include "../dsvdef.h"
+#include "../interface/icallbacks.h"
 
 class DeviceAgent;
 
@@ -68,7 +69,7 @@ class Viewport;
 class LissajousFigure;
 
 //created by MainWindow
-class View : public QScrollArea {
+class View : public QScrollArea, public IMessageListener {
 	Q_OBJECT
 
 private:
@@ -259,8 +260,6 @@ signals:
 
     void prgRate(int progress);
 
-    void device_changed(bool close);
-
     void resize();
 
     void auto_trig(int index);
@@ -279,12 +278,17 @@ private:
     void clear();
     void reconstruct();
 
+    //IMessageListener 
+    void OnMessage(int msg);
+
 private:
 	bool eventFilter(QObject *object, QEvent *event);
 
 	bool viewportEvent(QEvent *e);
 
 	void resizeEvent(QResizeEvent *e);
+
+    void check_calibration();
 
 public slots:
     void reload();
@@ -340,7 +344,7 @@ private slots:
 
     void splitterMoved(int pos, int index);
 
-    void dev_changed(bool close);
+    void mode_changed();
 
 public:
     void show_wait_trigger();

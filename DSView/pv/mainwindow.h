@@ -77,7 +77,8 @@ using namespace pv::device;
  
 //The mainwindow,referenced by MainFrame
 //TODO: create graph view,toolbar,and show device list
-class MainWindow : public QMainWindow, public ISessionCallback, public IMainForm, public ISessionDataGetter
+class MainWindow : public QMainWindow, public ISessionCallback, 
+    public IMainForm, public ISessionDataGetter, public IMessageListener
 {
 	Q_OBJECT
 
@@ -101,14 +102,11 @@ public slots:
 private slots:
 	void on_load_file(QString file_name);
     void on_open_doc(); 
-    void on_device_updated_reload();
+  
     void update_device_list();
- 
-	void on_run_stop();
-    void on_instant_stop(); 
+  
     void on_protocol(bool visible);
     void on_trigger(bool visible);
-    void commit_trigger(bool instant);
 
     void on_measure(bool visible);
     void on_search(bool visible);
@@ -117,15 +115,11 @@ private slots:
 
     void on_export();
     bool on_load_session(QString name);  
-    bool on_store_session(QString name);     
-    void device_detach_post();
-    void device_changed(bool close);
-    void on_device_selected();       
+    bool on_store_session(QString name); 
 
     void on_capture_state_changed(int state);
     void on_data_updated();
-    void on_device_attach();
-    void on_device_detach();
+
     void on_show_error(QString str);
     void on_session_error();
     void on_signals_changed();
@@ -135,6 +129,7 @@ private slots:
     void on_decode_done();
     void on_receive_data_len(quint64 len);
     void on_cur_snap_samplerate_changed();
+    void on_trigger_message(int msg);
   
 signals:
     void prgRate(int progress);
@@ -147,17 +142,14 @@ public:
 public:
     void session_save(); 
 
-    //ISessionDataGetter
+   
 private:
-    bool genSessionData(std::string &str);
-
-//ISessionCallback
+   
 private:
+    //ISessionCallback
     void show_error(QString error);
     void session_error();
     void capture_state_changed(int state);
-    void device_attach();
-    void device_detach();
 
     void data_updated();
     void repeat_resume();
@@ -177,14 +169,17 @@ private:
     void receive_data_len(quint64 len);
     void receive_header();    
     void data_received();
-    void device_list_changed();
+    void trigger_message(int msg);
 
-    //------private
+     //ISessionDataGetter
+     bool genSessionData(std::string &str);
+
     bool gen_session_json(QJsonObject &sessionVar);
 
-private: 
-    bool                    _hot_detach;
+    //IMessageListener
+    void OnMessage(int msg);
 
+private: 
 	pv::view::View          *_view;
     dialogs::DSMessageBox   *_msg;
 

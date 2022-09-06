@@ -214,7 +214,8 @@ void DevMode::on_mode_change()
                     _mode_btn->setText(mode_name->_name_cn);
                 else
                     _mode_btn->setText(mode_name->_name_en);
-                dev_changed(false);
+                
+                _session->broadcast_msg(DSV_MSG_DEVICE_MODE_CHANGED);
             }
 
             break;

@@ -294,7 +294,7 @@ bool DeviceAgent::get_status(struct sr_status &status, gboolean prg)
         ds_free_config(src);
     }
 
-    bool DeviceAgent::is_collecting()
+    bool DeviceAgent::is_running()
     {
         return ds_is_collecting() > 0;
     }

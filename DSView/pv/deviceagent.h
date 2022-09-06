@@ -28,10 +28,15 @@
 #include <QString>
 #include <QObject>
 
+namespace pv{
+   // class SigSession;
+}
 
 class DeviceAgent: public QObject
 {
     Q_OBJECT
+
+   // friend class SigSession;
 
 signals:
     void device_updated();
@@ -129,7 +134,15 @@ public:
      */
     bool is_trigger_enabled();
 
-    /**
+    bool have_enabled_channel();
+
+    bool get_status(struct sr_status &status, gboolean prg);
+
+    bool is_running();
+
+    GSList* get_channels();
+
+      /**
      * Start collect data.
      */
     bool start();
@@ -139,13 +152,7 @@ public:
      */
     bool stop();
 
-    bool have_enabled_channel();
-
-    bool get_status(struct sr_status &status, gboolean prg);
-
-    bool is_collecting();
-
-    GSList* get_channels();
+protected: 
 
     //---------------device config-----------/
 public:

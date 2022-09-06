@@ -65,11 +65,12 @@ SamplingBar::SamplingBar(SigSession *session, QWidget *parent) :
     _updating_sample_rate = false;
     _updating_sample_count = false;
     _sampling = false;
-    _enable = true;
-    _instant = false;
+    _enable = true; 
+    _last_device_handle = NULL_HANDLE;
 
     _session = session;
     _device_agent = _session->get_device();
+    _session->add_msg_listener(this);
     
     setMovable(false);
     setContentsMargins(0,0,0,0);
@@ -141,10 +142,12 @@ void SamplingBar::retranslateUi()
     bool bDev = _device_agent->have_instance();
 
     if (bDev) {
-        if (_device_agent->is_demo())
+        if (_device_agent->is_demo()){
             _device_type.setText(tr("Demo"));
-        else if (_device_agent->is_file())
+        }
+        else if (_device_agent->is_file()){
             _device_type.setText(tr("File"));
+        }
         else {
             int usb_speed = LIBUSB_SPEED_HIGH;
             GVariant *gvar = _device_agent->get_config(NULL, NULL, SR_CONF_USB_SPEED);
@@ -166,13 +169,14 @@ void SamplingBar::retranslateUi()
 
    int mode = _device_agent->get_work_mode();
 
-    if (_instant) {
+    if (_session->is_instant()) {
         if (bDev && mode == DSO)
             _instant_button.setText(_sampling ? tr("Stop") : tr("Single"));
         else
             _instant_button.setText(_sampling ? tr("Stop") : tr("Instant"));
         _run_stop_button.setText(tr("Start"));
-    } else {
+    }
+    else {
         _run_stop_button.setText(_sampling ? tr("Stop") : tr("Start"));
         if (bDev && mode == DSO)
             _instant_button.setText(tr("Single"));
@@ -224,20 +228,22 @@ void SamplingBar::reStyle()
 
 void SamplingBar::on_configure()
 {
+    int  ret; 
+
     if (_device_agent->have_instance() == false){
         dsv_info("%s", "Have no device, can't to set device config.");
         return;
     }
-    sig_hide_calibration();
 
-    int  ret; 
+    _session->broadcast_msg(DSV_MSG_BEGIN_DEVICE_OPTIONS);
 
     pv::dialogs::DeviceOptions dlg(this);
     ret = dlg.exec();
 
     if (ret == QDialog::Accepted) 
-    {
-        sig_device_updated();
+    { 
+        _session->broadcast_msg(DSV_MSG_DEVICE_OPTIONS_UPDATED);
+
         update_sample_rate_selector();
 
         int mode = _device_agent->get_work_mode();
@@ -252,17 +258,7 @@ void SamplingBar::on_configure()
                     zero_adj();
                     return;
                 }
-            }
-
-            gvar = _device_agent->get_config(NULL, NULL, SR_CONF_CALI);
-            if (gvar != NULL) {
-                bool cali = g_variant_get_boolean(gvar);
-                g_variant_unref(gvar);
-                if (cali) {
-                    sig_show_calibration();
-                    return;
-                }
-            }
+            } 
         }
         gvar = _device_agent->get_config(NULL, NULL, SR_CONF_TEST);
         if (gvar != NULL) {
@@ -279,6 +275,8 @@ void SamplingBar::on_configure()
             }
         }
     }
+
+    _session->broadcast_msg(DSV_MSG_END_DEVICE_OPTIONS);
 }
 
 void SamplingBar::zero_adj()
@@ -301,7 +299,8 @@ void SamplingBar::zero_adj()
     _sample_count.setCurrentIndex(i);
     commit_hori_res();
 
-    sig_run_stop();
+    if (_session->is_running() == false)
+        _session->start_capture(true);
 
     pv::dialogs::WaitingDialog wait(this, _session, SR_CONF_ZERO);
     if (wait.start() == QDialog::Rejected) {
@@ -312,8 +311,8 @@ void SamplingBar::zero_adj()
         }
     }
 
-    if (_session->get_capture_state() == pv::SigSession::Running)
-        on_run_stop();
+    if (_session->is_running())
+        _session->stop_capture();
 
     _sample_count.setCurrentIndex(index_back);
     commit_hori_res();
@@ -324,11 +323,6 @@ bool SamplingBar::get_sampling()
     return _sampling;
 }
 
-bool SamplingBar::get_instant()
-{
-    return _instant;
-}
-
 void SamplingBar::set_sampling(bool sampling)
 { 
     _sampling = sampling;
@@ -336,8 +330,9 @@ void SamplingBar::set_sampling(bool sampling)
     if (!sampling) {
         enable_run_stop(true);
         enable_instant(true);
-    } else {
-        if (_instant)
+    } 
+    else {
+        if (_session->is_instant())
             enable_instant(true);
         else
             enable_run_stop(true);
@@ -349,11 +344,12 @@ void SamplingBar::set_sampling(bool sampling)
 
     if (true) {
         QString iconPath = GetIconPath();
-        if (_instant) {
+
+        if (_session->is_instant()) 
             _instant_button.setIcon(sampling ? QIcon(iconPath+"/stop.svg") : QIcon(iconPath+"/single.svg"));
-        } else {
+        else
             _run_stop_button.setIcon(sampling ? QIcon(iconPath+"/stop.svg") : QIcon(iconPath+"/start.svg"));
-        }
+  
         _mode_button.setIcon(_session->get_run_mode() == pv::SigSession::Single ? QIcon(iconPath+"/modes.svg") :
                                                                              QIcon(iconPath+"/moder.svg"));
     }
@@ -387,6 +383,7 @@ void SamplingBar::update_sample_rate_selector()
         this, SLOT(on_samplerate_sel(int)));
 
     if (_device_agent->have_instance() == false){
+        dsv_info("%s", "SamplingBar::update_sample_rate_selector, have no device.");
         return;
     }
 
@@ -427,6 +424,7 @@ void SamplingBar::update_sample_rate_selector()
 	g_variant_unref(gvar_dict);
 
     update_sample_rate_selector_value();
+
     connect(&_sample_rate, SIGNAL(currentIndexChanged(int)),
         this, SLOT(on_samplerate_sel(int)));
 
@@ -677,7 +675,7 @@ void SamplingBar::on_samplecount_sel(int index)
  
     if (_device_agent->get_work_mode() == DSO)
         commit_hori_res();
-    sig_duration_changed();
+    _session->broadcast_msg(DSV_MSG_DEVICE_DURATION_UPDATED);
 }
 
 double SamplingBar::get_hori_res()
@@ -803,9 +801,7 @@ void SamplingBar::on_run_stop()
    
     enable_run_stop(false);
     enable_instant(false);
-    commit_settings();
-    _instant = false;
-
+    commit_settings(); 
 
     if (_device_agent->get_work_mode() == DSO) {
         GVariant* gvar = _device_agent->get_config(NULL, NULL, SR_CONF_ZERO);
@@ -835,8 +831,7 @@ void SamplingBar::on_run_stop()
             }
         }
     }
-
-    sig_run_stop();
+ 
 }
 
 void SamplingBar::on_instant_stop()
@@ -866,8 +861,7 @@ void SamplingBar::on_instant_stop()
 
         enable_run_stop(false);
         enable_instant(false);
-        commit_settings();
-        _instant = true;
+        commit_settings(); 
 
         if (_device_agent->have_instance() == false){
             return;
@@ -900,9 +894,7 @@ void SamplingBar::on_instant_stop()
                     return;
                 }
             }
-        }
-
-        sig_instant_stop();
+        } 
     }
 }
 
@@ -919,10 +911,7 @@ void SamplingBar::on_device_selected()
     _session->session_save();
 
     ds_device_handle devHandle = (ds_device_handle)_device_selector.currentData().toULongLong();
-
-    if (_session->set_device(devHandle)){
-       sig_device_selected();
-    }
+    _session->set_device(devHandle);
 }
 
 void SamplingBar::enable_toggle(bool enable)
@@ -963,17 +952,6 @@ void SamplingBar::enable_run_stop(bool enable)
 void SamplingBar::enable_instant(bool enable)
 {
     _instant_button.setDisabled(!enable);
-}
-
-void SamplingBar::show_session_error(
-    const QString text, const QString info_text)
-{
-    dialogs::DSMessageBox msg(this);
-    msg.mBox()->setText(text);
-    msg.mBox()->setInformativeText(info_text);
-    msg.mBox()->setStandardButtons(QMessageBox::Ok);
-    msg.mBox()->setIcon(QMessageBox::Warning);
-    msg.exec();
 }
 
 void SamplingBar::reload()
@@ -1029,8 +1007,7 @@ void SamplingBar::on_mode()
 }
 
   void SamplingBar::update_device_list()
-  {  
-
+  { 
     struct ds_device_info *array = NULL;
     int dev_count = 0;
     int select_index = 0;
@@ -1062,6 +1039,20 @@ void SamplingBar::on_mode()
     _device_selector.view()->setMinimumWidth(width+30);
   
     _updating_device_list = false;
+  }
+
+  void SamplingBar::OnMessage(int msg)
+  { 
+    switch (msg)
+    {
+    case DSV_MSG_DEVICE_LIST_UPDATE:
+        update_device_list();
+        break;
+    case DSV_MSG_COLLECT_START:
+        set_sampling(false);
+    case DSV_MSG_COLLECT_END:
+        set_sampling(true);    
+    }
   }
 
 } // namespace toolbars
