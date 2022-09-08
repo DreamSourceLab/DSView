@@ -1387,6 +1387,9 @@ void View::OnMessage(int msg)
     case DSV_MSG_DEVICE_MODE_CHANGED:
         mode_changed();
         break;
+    case DSV_MSG_CURRENT_DEVICE_CHANGED:
+        reload();
+        break;
     }
 }
 

@@ -70,23 +70,21 @@ SigSession::SigSession()
 { 
     // TODO: This should not be necessary
     _session = this; 
-    _group_cnt = 0;
-    _bHotplugStop = false;  
+    _group_cnt = 0; 
 
     _map_zoom = 0;
     _repeat_hold_prg = 0;
-    _repeating = false;
-    _repeat_intvl = 1;
-    _run_mode = Single;    
+    _repeat_intvl = 1;   
     _error = No_err;
-    _bInstant = false; 
+    _is_instant = false; 
+    _is_working = false;
+    _is_repeat_mode = false;
+    _is_saving = false; 
   
     _noData_cnt = 0;
     _data_lock = false;
     _data_updated = false;
-    _active_last_device_flag = false;
-    _bSaving = false;
-    _bRepeatMode = false;
+    _active_last_device_flag = false;     
 
     this->add_msg_listener(this);
 
@@ -94,10 +92,9 @@ SigSession::SigSession()
 
     _lissajous_trace = NULL;
     _math_trace = NULL;
-
     _dso_feed = false;
     _stop_scale = 1; 
-    _bDecodeRunning = false;
+    _is_decoding = false;
     _bClose = false;
     _callback = NULL;  
 
@@ -110,6 +107,7 @@ SigSession::SigSession()
 
     _feed_timer.Stop(); 
     _feed_timer.SetCallback(std::bind(&SigSession::feed_timeout, this)); 
+    _repeate_timer.SetCallback(std::bind(&SigSession::repeat_capture_wait_timout, this));
 }
 
 SigSession::SigSession(SigSession &o)
@@ -121,10 +119,158 @@ SigSession::~SigSession()
 { 
 }
 
-uint64_t SigSession::cur_samplelimits()
+bool SigSession::init()
 {
-    return _cur_samplelimits;
+    ds_log_set_context(dsv_log_context());
+
+    ds_set_event_callback(device_lib_event_callback);
+
+    ds_set_datafeed_callback(data_feed_callback);
+
+    // firmware resource directory
+    QString resdir = GetResourceDir();
+    std::string res_path = pv::path::ToUnicodePath(resdir);
+    ds_set_firmware_resource_dir(res_path.c_str());
+
+    if (ds_lib_init() != SR_OK)
+    {
+        dsv_err("%s", "DSView run ERROR: collect lib init failed.");
+        return false;
+    }
+
+    return true;
 }
+
+void SigSession::uninit()
+{
+    this->Close();
+
+    ds_lib_exit();
+}
+
+bool SigSession::set_default_device()
+{ 
+    assert(!_is_saving);
+    assert(!_is_working);
+
+    struct ds_device_info *array = NULL;
+    int count = 0;
+
+    if (ds_get_device_list(&array, &count) != SR_OK)
+    {
+        dsv_err("%s", "Get device list error!");
+        return false;
+    }
+    if (count < 1 || array == NULL)
+    {
+        dsv_err("%s", "SigSession::set_default_device, Device list is empty!");
+        return false;
+    }
+
+    struct ds_device_info *dev = (array + count - 1);
+    ds_device_handle dev_handle = dev->handle;
+
+    free(array); 
+
+    if (set_device(dev_handle)){
+        return true;
+    }
+    return false;
+}
+
+bool SigSession::set_device(ds_device_handle dev_handle)
+{    
+    assert(!_is_saving);
+    assert(!_is_working);
+
+    if (_callback != NULL){
+        _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_CHANGE_PREV);
+    }
+
+    if (ds_active_device(dev_handle) != SR_OK){
+        dsv_err("%s", "Switch device error!");
+        return false;
+    }
+    _device_agent.update();
+
+    init_signals();
+
+    RELEASE_ARRAY(_group_traces);    
+    clear_all_decoder();   
+
+    if (_device_agent.is_file())
+        dsv_info("%s\"%s\"", "Switch to file: ", _device_agent.name().toUtf8().data());
+    else
+        dsv_info("%s\"%s\"", "Switch to device: ", _device_agent.name().toUtf8().data());
+    
+    _cur_snap_samplerate = _device_agent.get_sample_rate();
+    _cur_samplelimits = _device_agent.get_sample_limit();
+
+    if (_device_agent.get_work_mode() == DSO)
+        _is_repeat_mode = true;
+    else
+        _is_repeat_mode = false;
+
+    // The current device changed.
+    _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_CHANGED);
+ 
+    return true;
+}
+
+
+bool SigSession::set_file(QString name)
+{ 
+    assert(!_is_saving);
+    assert(!_is_working);
+
+    dsv_info("Load file:\"%s\"", name.toUtf8().data());
+
+    std::string path = path::ToUnicodePath(name);
+
+    if (ds_device_from_file(path.c_str()) != SR_OK)
+    {
+        dsv_err("%s", "Load file error!");
+        return false;
+    }
+
+    return set_default_device();
+}
+
+void SigSession::close_file(ds_device_handle dev_handle)
+{ 
+    assert(!_is_saving);
+    assert(!_is_working);
+
+    if (ds_remove_device(dev_handle) != SR_OK){
+        dsv_err("%s", "Remove virtual deivice error!");
+    }
+    stop_capture();
+    set_default_device();
+}
+
+
+bool SigSession::have_hardware_data()
+  {
+     if (_device_agent.have_instance() && _device_agent.is_hardware()){
+        Snapshot *data = get_signal_snapshot();
+        return data->have_data();
+     }
+     return false;
+  }
+ 
+  struct ds_device_info* SigSession::get_device_list(int &out_count, int &actived_index)
+  {
+      out_count = 0;
+      actived_index = -1;
+      struct ds_device_info *array = NULL;
+
+      if (ds_get_device_list(&array, &out_count) == SR_OK)
+      {
+         actived_index = ds_get_actived_device_index();
+         return array;
+      }
+      return NULL;
+  }
 
 uint64_t SigSession::cur_samplerate()
 {
@@ -196,12 +342,9 @@ void SigSession::set_cur_samplelimits(uint64_t samplelimits)
 }
 
 void SigSession::capture_init()
-{
-    if (!_bInstant)
-        set_repeating(get_run_mode() == Repetitive);
-    
+{    
     // update instant setting
-    _device_agent.set_config(NULL, NULL, SR_CONF_INSTANT, g_variant_new_boolean(_bInstant));
+    _device_agent.set_config(NULL, NULL, SR_CONF_INSTANT, g_variant_new_boolean(_is_instant));
     _callback->update_capture();
 
     set_cur_snap_samplerate(_device_agent.get_sample_rate());
@@ -266,41 +409,43 @@ void SigSession::container_init()
     if (_math_trace)
         _math_trace->get_math_stack()->init();
 
-
-    // DecoderModel
-    //pv::data::DecoderModel *decoder_model = get_decoder_model();
-    //decoder_model->setDecoderStack(NULL);
     // DecoderStack
     for(auto &d : _decode_traces)
     { 
         d->decoder()->init();
     }
-
 }
 
-void SigSession::start_capture(bool instant)
-{  
-    // Check that a device instance has been selected.
+ void SigSession::start_capture(bool instant)
+ {
+    assert(!_is_working);
+    assert(_callback);
+
+     // Check that a device instance has been selected.
     if (_device_agent.have_instance() == false) {
-        dsv_err("%s", "No device selected");
-        capture_state_changed(SigSession::Stopped);
+        dsv_err("%s", "No device selected"); 
         return;
     }
 
     // update setting
     if (_device_agent.is_file())
-        _bInstant = true;
+        _is_instant = true;
     else
-        _bInstant = instant;
+        _is_instant = instant;
+ }
+
+void SigSession::exec_capture()
+{   
+    if (_device_agent.is_running()){
+        dsv_err("%s", "Device is running.");
+        assert(false);
+    }
 
     _callback->trigger_message(DSV_MSG_COLLECT_START_PREV);
 
     // stop all decode tasks
     int run_dex = 0;
     clear_all_decode_task(run_dex);
-
-    // stop previous capture
-    stop_capture();
 
     // reset measure of dso signal
     for(auto &s : _signals)
@@ -314,31 +459,50 @@ void SigSession::start_capture(bool instant)
 
     if (_device_agent.have_enabled_channel() == false){
         _callback->show_error("No probes enabled.");
-        data_updated();
-        set_repeating(false);
-        capture_state_changed(SigSession::Stopped);
+        data_updated(); 
+        _is_working = false;
+        return;
     }
  
     if (_device_agent.start() == false)
     {
         dsv_err("%s", "Start collect error!");
     }
+
+    _is_working = true;
 }
 
 void SigSession::stop_capture()
-{   
-    _callback->trigger_message(DSV_MSG_COLLECT_END_PREV);
-
+{
+    assert(_is_working);
+  
     data_unlock();
 
-    if (this->is_running()){
-        _device_agent.stop();
-    } 
+    bool wait_upload = false;
+    if (!_is_repeat_mode) {
+        GVariant *gvar = _device_agent.get_config(NULL, NULL, SR_CONF_WAIT_UPLOAD);
+        if (gvar != NULL) {
+            wait_upload = g_variant_get_boolean(gvar);
+            g_variant_unref(gvar);
+        }
+    }
+    if (!wait_upload) {
+        _is_working = false;        
+        _callback->trigger_message(DSV_MSG_COLLECT_END_PREV); 
+        exit_capture();
+    }
+    else{
+        dsv_info("%s", "Device is uploading.");
+    }
 }
 
-bool SigSession::is_running()
-{
-    return _device_agent.is_running();
+void SigSession::exit_capture()
+{  
+    _is_instant = false;
+
+    if (_device_agent.is_running()){       
+        _device_agent.stop();
+    }
 }
 
 bool SigSession::get_capture_status(bool &triggered, int &progress)
@@ -486,11 +650,11 @@ void SigSession::del_group()
 
 void SigSession::init_signals()
 { 
+    assert(!_is_working);
+
     if (_device_agent.have_instance() == false){
         assert(false);
-    }
-
-    stop_capture();
+    } 
 
     std::vector<view::Signal*> sigs;
     view::Signal *signal = NULL;
@@ -830,7 +994,7 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
         }
 
         // first payload
-        _dso_data->snapshot()->first_payload(dso, _device_agent.get_sample_limit(), sig_enable, _bInstant);
+        _dso_data->snapshot()->first_payload(dso, _device_agent.get_sample_limit(), sig_enable, _is_instant);
     } else {
         // Append to the existing data snapshot
         _dso_data->snapshot()->append_payload(dso);
@@ -872,7 +1036,7 @@ void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
     _trigger_ch = dso.trig_ch;
     receive_data(dso.num_samples);
 
-    if (!_bInstant)
+    if (!_is_instant)
         data_lock();
 
     _data_updated = true;
@@ -1363,16 +1527,6 @@ uint64_t SigSession::get_error_pattern()
     return _error_pattern;
 }
 
-SigSession::run_mode SigSession::get_run_mode()
-{
-    return _run_mode;
-}
-
-void SigSession::set_run_mode(run_mode mode)
-{
-    _run_mode = mode;
-}
-
 double SigSession::get_repeat_intvl()
 {
     return _repeat_intvl;
@@ -1381,18 +1535,6 @@ double SigSession::get_repeat_intvl()
 void SigSession::set_repeat_intvl(double interval)
 {
     _repeat_intvl = interval;
-}
-
-void SigSession::set_repeating(bool repeat)
-{
-    _repeating = repeat;
-    if (!_repeating)
-        _repeat_hold_prg = 0;
-}
-
-bool SigSession::isRepeating()
-{
-    return _repeating;
 }
 
 bool SigSession::repeat_check()
@@ -1474,23 +1616,6 @@ uint64_t SigSession::get_save_end()
     return _save_end;
 }
 
-void SigSession::exit_capture()
-{
-    set_repeating(false);
-    bool wait_upload = false;
-    if (get_run_mode() != SigSession::Repetitive) {
-        GVariant *gvar = _device_agent.get_config(NULL, NULL, SR_CONF_WAIT_UPLOAD);
-        if (gvar != NULL) {
-            wait_upload = g_variant_get_boolean(gvar);
-            g_variant_unref(gvar);
-        }
-    }
-    if (!wait_upload) {
-        stop_capture();
-        capture_state_changed(SigSession::Stopped);
-    }
-}
-
 float SigSession::stop_scale()
 {
     return _stop_scale;
@@ -1502,20 +1627,16 @@ void SigSession::set_stop_scale(float scale)
 }
 
  void SigSession::Open()
- {
-      
+ {      
  }
 
  void SigSession::Close()
  { 
      if (_bClose)
-        return; 
+        return;
 
-     _bClose = true;
- 
-     stop_capture(); //stop capture
-
-     clear_all_decoder(); //clear all decode task, and stop decode thread
+     _bClose = true; 
+     stop_capture();
 
      // TODO: This should not be necessary
      _session = NULL;
@@ -1527,13 +1648,13 @@ void SigSession::set_stop_scale(float scale)
      std::lock_guard<std::mutex> lock(_decode_task_mutex);
      _decode_tasks.push_back(trace);
 
-     if (!_bDecodeRunning)
+     if (!_is_decoding)
      {
          if (_decode_thread.joinable())
              _decode_thread.join();
 
          _decode_thread = std::thread(&SigSession::decode_task_proc, this);
-         _bDecodeRunning = true;
+         _is_decoding = true;
      }
  }
 
@@ -1657,7 +1778,7 @@ void SigSession::set_stop_scale(float scale)
       }  
  
       dsv_info("%s", "------->decode thread end");
-      _bDecodeRunning = false;
+      _is_decoding = false;
   }
 
   Snapshot* SigSession::get_signal_snapshot()
@@ -1674,7 +1795,7 @@ void SigSession::set_stop_scale(float scale)
   void SigSession::device_lib_event_callback(int event)
   {
      if (_session == NULL){
-         dsv_err("%s", "device_lib_event_callback() error, _session is null.");
+         dsv_err("%s", "Error!Global variable \"_session\" is null.");
          return;
     }
     _session->on_device_lib_event(event);
@@ -1683,220 +1804,64 @@ void SigSession::set_stop_scale(float scale)
 void SigSession::on_device_lib_event(int event)
 { 
     if (event == DS_EV_COLLECT_TASK_START){
-        set_capture_state(Running);
         _callback->trigger_message(DSV_MSG_COLLECT_START);
         return;
     }
+    
     if (event == DS_EV_COLLECT_TASK_END){
-        set_capture_state(Stopped);
         _callback->trigger_message(DSV_MSG_COLLECT_END);
 
-        if (_logic_data->snapshot()->last_ended() == false){
-            dsv_err("%s", "The collected data is error!");        
-        }
-         if (_dso_data->snapshot()->last_ended() == false){
-            dsv_err("%s", "The collected data is error!");        
-        }
-         if (_analog_data->snapshot()->last_ended() == false){
-            dsv_err("%s", "The collected data is error!");        
-        }
-        _bInstant = false;
+        if (_logic_data->snapshot()->last_ended() == false)
+            dsv_err("%s", "The collected data is error!"); 
+         if (_dso_data->snapshot()->last_ended() == false)
+            dsv_err("%s", "The collected data is error!");                
+         if (_analog_data->snapshot()->last_ended() == false)
+            dsv_err("%s", "The collected data is error!");  
+
+        bool bInstant = _is_instant;
+        _is_instant = false;
+
+        if (!bInstant && _is_repeat_mode){
+            if (_repeat_intvl > 0)
+                _repeate_timer.Start(_repeat_intvl * 1000);
+            else
+                this->exec_capture();
+        }        
+         
         return;
     }
 
     if (event == DS_EV_NEW_DEVICE_ATTACH || event == DS_EV_CURRENT_DEVICE_DETACH)
     {
-        if (this->is_running())
-            _device_agent.stop();
-
-        update_collect_status_view();
+        if (_is_working)
+            this->stop_capture();
+ 
 
         if (have_hardware_data())
         {
             // Try to save current device data, and auto select the lastest device later.
             _active_last_device_flag = true;
-            if (!_bSaving)
+            if (!_is_saving)
                 store_session_data();
             return;
         }
     }
 
-    if (this->is_running())
-        _device_agent.stop();
-        
-    update_collect_status_view();
+    if (_is_working)
+            this->stop_capture(); 
 
     if (event == DS_EV_NEW_DEVICE_ATTACH || event == DS_EV_CURRENT_DEVICE_DETACH)
     {
-        if (_bSaving)
+        if (_is_saving)
             _active_last_device_flag = true; //Auto switch device after save data.
         else
              set_default_device();
     }
-    else if (_callback != NULL)
+    else
     {
         _callback->trigger_message(DSV_MSG_DEVICE_LIST_UPDATE); // Update list only.
     }
 }
-
-bool SigSession::set_default_device()
-{ 
-    struct ds_device_info *array = NULL;
-    int count = 0;
-
-    if (ds_get_device_list(&array, &count) != SR_OK)
-    {
-        dsv_err("%s", "Get device list error!");
-        return false;
-    }
-    if (count < 1 || array == NULL)
-    {
-        dsv_err("%s", "SigSession::set_default_device, Device list is empty!");
-        return false;
-    }
-
-    struct ds_device_info *dev = (array + count - 1);
-    ds_device_handle dev_handle = dev->handle;
-
-    free(array); 
-
-    bool ret = set_device(dev_handle);
-
-    if (ret && _callback != NULL){
-        _callback->trigger_message(DSV_MSG_DEVICE_LIST_UPDATE);
-        init_device_view();
-    }
-
-    return ret;
-}
-
-bool SigSession::set_device(ds_device_handle dev_handle)
-{    
-    assert(!_bSaving);
-
-    if (ds_active_device(dev_handle) != SR_OK){
-        dsv_err("%s", "Switch device error!");
-        return false;
-    }
-    _device_agent.update();
-
-    init_signals();
-
-    RELEASE_ARRAY(_group_traces);    
-    clear_all_decoder();   
-
-    if (_device_agent.is_file())
-        dsv_info("%s\"%s\"", "Switch to file: ", _device_agent.name().toUtf8().data());
-    else
-        dsv_info("%s\"%s\"", "Switch to device: ", _device_agent.name().toUtf8().data());
-    
-    _cur_snap_samplerate = _device_agent.get_sample_rate();
-    _cur_samplelimits = _device_agent.get_sample_limit();
-
-    if (_device_agent.get_work_mode() == DSO)
-        set_run_mode(Repetitive);
-    else
-        set_run_mode(Single);
-
-    _callback->device_setted();
-    return true;
-}
-
-bool SigSession::set_file(QString name)
-{ 
-    dsv_info("Load file:\"%s\"", name.toUtf8().data());
-
-    std::string path = path::ToUnicodePath(name);
-
-    if (ds_device_from_file(path.c_str()) != SR_OK)
-    {
-        dsv_err("%s", "Load file error!");
-        return false;
-    }
-
-    return set_default_device();
-}
-
-void SigSession::close_file(ds_device_handle dev_handle)
-{ 
-    ds_remove_device(dev_handle);
-    set_repeating(false);
-    stop_capture();
-    capture_state_changed(SigSession::Stopped);
-    set_default_device();
-}
-
-bool SigSession::init()
-  {
-      ds_log_set_context(dsv_log_context());
-
-      ds_set_event_callback(device_lib_event_callback);
-
-      ds_set_datafeed_callback(data_feed_callback);
-
-      // firmware resource directory
-      QString resdir = GetResourceDir();
-      std::string res_path = pv::path::ToUnicodePath(resdir);
-      ds_set_firmware_resource_dir(res_path.c_str());
-
-      if (ds_lib_init() != SR_OK)
-      {
-        dsv_err("%s", "DSView run ERROR: collect lib init failed.");
-        return false;
-      }
-
-      return true;
-  }
-
-  void SigSession::uninit()
-  {
-      this->Close();
-
-      ds_lib_exit();
-  }
-
-  void SigSession::update_collect_status_view()
-  {
-
-  }
-
-  void SigSession::init_device_view()
-  {
-
-  }
-
-  void SigSession::store_session_data()
-  {
-
-  }
-
-  bool SigSession::have_hardware_data()
-  {
-     if (_device_agent.have_instance() && _device_agent.is_hardware()){
-        Snapshot *data = get_signal_snapshot();
-        return data->have_data();
-     }
-     return false;
-  }
-
-  void SigSession::update_graph_view()
-  {
-
-  }
-
-  struct ds_device_info* SigSession::get_device_list(int &out_count, int &actived_index)
-  {
-      out_count = 0;
-      actived_index = -1;
-      struct ds_device_info *array = NULL;
-
-      if (ds_get_device_list(&array, &out_count) == SR_OK)
-      {
-         actived_index = ds_get_actived_device_index();
-         return array;
-      }
-      return NULL;
-  }
 
   void SigSession::add_msg_listener(IMessageListener *ln)
   {
@@ -1909,6 +1874,19 @@ bool SigSession::init()
      { 
         cb->OnMessage(msg);            
      }
+  }
+
+  void SigSession::set_repeat_mode(bool repeat)
+  {
+     assert(!_is_working);
+     assert(_is_repeat_mode != repeat);
+     _is_repeat_mode = repeat;     
+     _repeat_hold_prg = 0;
+  }
+
+  void SigSession::repeat_capture_wait_timout()
+  {
+
   }
 
   void SigSession::OnMessage(int msg)

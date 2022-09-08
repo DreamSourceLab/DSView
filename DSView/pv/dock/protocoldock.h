@@ -44,7 +44,7 @@
 #include "../data/decodermodel.h"
 #include "protocolitemlayer.h"
 #include "keywordlineedit.h"
-#include "searchcombobox.h"
+#include "searchcombobox.h" 
 
 struct DecoderInfoItem{
     void  *_data_handle; //srd_decoder* type
@@ -70,7 +70,8 @@ namespace dock {
 class ProtocolDock : public QScrollArea, 
 public IProtocolItemLayerCallback, 
 public IKeywordActive,
-public ISearchItemClick
+public ISearchItemClick,
+public IMessageListener
 {
     Q_OBJECT
 
@@ -105,6 +106,7 @@ private:
 
     //ISearchItemClick
     void OnItemClick(void *sender, void *data_handle);
+ 
 
 signals:
     void protocol_updated();

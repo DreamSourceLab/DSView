@@ -33,7 +33,6 @@
 #include <QAction>
 #include <QMenu>
 #include "../ui/dscombobox.h"
-#include "../interface/icallbacks.h"
 
 struct st_dev_inst;
 class QAction;
@@ -59,7 +58,7 @@ namespace pv
     namespace toolbars
     {
 
-        class SamplingBar : public QToolBar, public IMessageListener
+        class SamplingBar : public QToolBar
         {
             Q_OBJECT
 
@@ -79,18 +78,16 @@ namespace pv
             SamplingBar(SigSession *session, QWidget *parent);
             
             void update_sample_rate_selector();
- 
-
-            void enable_toggle(bool enable);
-           
+            void enable_toggle(bool enable);           
             void enable_instant(bool enable);
 
             double hori_knob(int dir);
             double commit_hori_res();
             double get_hori_res(); 
-
             void set_sample_rate(uint64_t sample_rate);
             void update_device_list();
+            void set_sampling(bool sampling);
+            void reload();
 
         private:
             void enable_run_stop(bool enable);
@@ -104,8 +101,6 @@ namespace pv
             void commit_settings();
             void setting_adj();
 
-             void set_sampling(bool sampling);
-
             //IMessageListener
             void OnMessage(int msg);
 
@@ -118,7 +113,7 @@ namespace pv
             void on_samplecount_sel(int index);
             void on_configure();
             void zero_adj();
-            void reload();
+           
 
         private:
             SigSession          *_session; 

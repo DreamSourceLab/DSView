@@ -119,8 +119,7 @@ private slots:
 
     void on_capture_state_changed(int state);
     void on_data_updated();
-
-    void on_show_error(QString str);
+ 
     void on_session_error();
     void on_signals_changed();
     void on_receive_trigger(quint64 trigger_pos);
@@ -144,6 +143,7 @@ public:
 
    
 private:
+    void check_usb_device_speed();
    
 private:
     //ISessionCallback

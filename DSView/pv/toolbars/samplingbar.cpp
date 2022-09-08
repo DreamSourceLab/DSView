@@ -70,7 +70,6 @@ SamplingBar::SamplingBar(SigSession *session, QWidget *parent) :
 
     _session = session;
     _device_agent = _session->get_device();
-    _session->add_msg_listener(this);
     
     setMovable(false);
     setContentsMargins(0,0,0,0);
@@ -316,11 +315,6 @@ void SamplingBar::zero_adj()
 
     _sample_count.setCurrentIndex(index_back);
     commit_hori_res();
-}
-
-bool SamplingBar::get_sampling()
-{
-    return _sampling;
 }
 
 void SamplingBar::set_sampling(bool sampling)
@@ -963,8 +957,9 @@ void SamplingBar::reload()
             _mode_action->setVisible(false);
         } 
         else {
-            _mode_button.setIcon(_session->get_run_mode() == pv::SigSession::Single ? QIcon(iconPath+"/modes.svg") :
-                                                                                     QIcon(iconPath+"/moder.svg"));
+
+            QString icon = _session->is_repeat_mode() ? "/moder.svg" : "/modes.svg";
+            _mode_button.setIcon(QIcon(iconPath + icon));
             _mode_action->setVisible(true);
         }
         _run_stop_action->setVisible(true);
@@ -1046,6 +1041,7 @@ void SamplingBar::on_mode()
     switch (msg)
     {
     case DSV_MSG_DEVICE_LIST_UPDATE:
+    case DSV_MSG_CURRENT_DEVICE_CHANGED:
         update_device_list();
         break;
     case DSV_MSG_COLLECT_START:

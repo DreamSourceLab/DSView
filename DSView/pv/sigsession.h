@@ -96,12 +96,7 @@ public:
     static const int FeedInterval = 50;
     static const int WaitShowTime = 500;
 
-public: 
-    enum run_mode {
-        Single,
-        Repetitive
-    };
-
+public:  
     enum error_state {
         No_err,
         Hw_err,
@@ -123,16 +118,25 @@ public:
     inline DeviceAgent* get_device(){
         return &_device_agent;
     }
- 
+
+    bool init();
+    void uninit();
+    void Open();
+    void Close();
+    
+    bool set_default_device();
     bool set_device(ds_device_handle dev_handle);   
     bool set_file(QString name);
     void close_file(ds_device_handle dev_handle);
-    bool set_default_device();
- 
+    void start_capture(bool instant);
+    void stop_capture();    
 	 
     uint64_t cur_samplerate();
     uint64_t cur_snap_samplerate();
-    uint64_t cur_samplelimits();
+
+    inline uint64_t cur_samplelimits(){
+        return _cur_samplelimits;
+    }
 
     double cur_sampletime();
     double cur_snap_sampletime();
@@ -141,13 +145,10 @@ public:
     void set_cur_snap_samplerate(uint64_t samplerate);
     void set_cur_samplelimits(uint64_t samplelimits);
     void set_session_time(QDateTime time);
-
     QDateTime get_session_time();
-    uint64_t get_trigger_pos();
-  
+    uint64_t get_trigger_pos();  
     bool get_capture_status(bool &triggered, int &progress);
 
-    void container_init();    
     std::set<data::SignalData*> get_data();
 	std::vector<view::Signal*>& get_signals();
     std::vector<view::GroupSignal*>& get_group_signals();
@@ -167,16 +168,10 @@ public:
     view::LissajousTrace* get_lissajous_trace();
     view::MathTrace* get_math_trace();
 
-    void init_signals();
     void add_group();
     void del_group();
-
     uint16_t get_ch_num(int type); 
-
-    inline bool is_instant(){
-        return _bInstant;
-    }
-
+ 
     bool get_data_lock();
     void data_auto_lock(int lock);
     void data_auto_unlock();
@@ -198,13 +193,9 @@ public:
     void set_error(error_state state);
     void clear_error();
 
-    uint64_t get_error_pattern();
-    run_mode get_run_mode();
-    void set_run_mode(run_mode mode);
+    uint64_t get_error_pattern();   
     double get_repeat_intvl();
-    void set_repeat_intvl(double interval);
-
-    bool isRepeating();
+    void set_repeat_intvl(double interval); 
     bool repeat_check();
     int get_repeat_hold();
     int get_map_zoom();
@@ -212,36 +203,45 @@ public:
 
     void set_save_end(uint64_t end);
     uint64_t get_save_start();
-    uint64_t get_save_end();
-    
+    uint64_t get_save_end();    
     void set_stop_scale(float scale);
     float stop_scale();
-
-    void exit_capture();
   
-    void Open();
-    void Close();
+
     void clear_all_decoder(bool bUpdateView = true); 
 
     inline bool is_closed(){
         return _bClose;
     }
 
+    inline bool is_instant(){
+        return _is_instant;
+    }
+
     inline void set_callback(ISessionCallback *callback){
         _callback = callback;
     }
+
+    inline bool is_working(){
+        return _is_working;
+    }
+
+    void set_repeat_mode(bool repeat);
+
+    inline bool is_repeat_mode(){
+        return _is_repeat_mode;
+    } 
  
-public:
     inline void capture_state_changed(int state){
         _callback->capture_state_changed(state);
     }
 
     inline void session_save(){
-         _callback->session_save();
+        _callback->session_save();
     }
 
     inline void repeat_resume(){
-         _callback->repeat_resume();
+        _callback->repeat_resume();
     }
 
     inline void show_region(uint64_t start, uint64_t end, bool keep){
@@ -253,35 +253,28 @@ public:
     }
 
     inline bool is_saving(){
-        return _bSaving;
+        return _is_saving;
     }
 
     inline void set_saving(bool flag){
-        _bSaving = flag;
-    } 
-
-    bool init();
-
-    void uninit();
-
+        _is_saving = flag;
+    }
+   
     void reload();
-    void refresh(int holdtime);
-    void start_capture(bool instant);
-    void stop_capture();
-    bool is_running();
-    void check_update();
-    void set_repeating(bool repeat);
+    void refresh(int holdtime);  
+    void check_update(); 
     void set_map_zoom(int index);
     void auto_end();
-
     void store_session_data();
     bool have_hardware_data();
     struct ds_device_info* get_device_list(int &out_count, int &actived_index);
-
     void add_msg_listener(IMessageListener *ln);
     void broadcast_msg(int msg);
 
 private:
+    void exec_capture();
+    void exit_capture();
+
     inline void data_updated(){
         _callback->data_updated();
     }
@@ -292,9 +285,7 @@ private:
 
     inline void receive_data(quint64 len){
         _callback->receive_data_len(len);
-    } 
- 
-	void set_capture_state(capture_state state);
+    }
   
     void add_decode_task(view::DecodeTrace *trace);
     void remove_decode_task(view::DecodeTrace *trace);
@@ -309,7 +300,9 @@ private:
     void data_unlock();
     void nodata_timeout();
     void feed_timeout();
-    void repeat_update();  
+    void repeat_update(); 
+    void container_init();
+    void init_signals();
 
     //IMessageListener
     void OnMessage(int msg);
@@ -343,37 +336,23 @@ private:
     void on_device_lib_event(int event);
 
     Snapshot* get_signal_snapshot();
- 
-    void update_collect_status_view();
-    void init_device_view();
-    void update_graph_view();
+
+    void repeat_capture_wait_timout();
  
 private:
-
-	/**
-	 * The device instance that will be used in the next capture session.
-	 */ 
     mutable std::mutex      _sampling_mutex;
     mutable std::mutex      _data_mutex;
-    mutable std::mutex      _decode_task_mutex;
-  
+    mutable std::mutex      _decode_task_mutex;  
     std::thread             _decode_thread;
-
-    volatile bool           _bHotplugStop;
-    volatile bool           _bDecodeRunning;
-
-	capture_state           _capture_state;
-    bool                    _bInstant;
+    volatile bool           _is_decoding;   
     uint64_t                _cur_snap_samplerate;
     uint64_t                _cur_samplelimits;
  
 	std::vector<view::Signal*>      _signals;
     std::vector<view::GroupSignal*> _group_traces;
-
     std::vector<view::DecodeTrace*> _decode_traces;
     std::vector<view::DecodeTrace*> _decode_tasks;
     pv::data::DecoderModel          *_decoder_model;
-
     std::vector<view::SpectrumTrace*> _spectrum_traces;
     view::LissajousTrace            *_lissajous_trace;
     view::MathTrace                 *_math_trace;
@@ -386,6 +365,7 @@ private:
     
     DsTimer     _feed_timer;
     DsTimer     _out_timer;
+    DsTimer     _repeate_timer;
     int         _noData_cnt;
     bool        _data_lock;
     bool        _data_updated;
@@ -399,25 +379,22 @@ private:
 
     error_state _error;
     uint64_t    _error_pattern;
-
-    run_mode    _run_mode;
-    double      _repeat_intvl;
-    int         _repeat_hold_prg;
-    int         _map_zoom;
-  
+    int         _map_zoom;  
     bool        _dso_feed;
     float       _stop_scale; 
     bool        _bClose; 
     bool        _active_last_device_flag;
-    bool        _bRepeatMode;
-    bool        _bRunning;
-
-    bool        _bSaving;
+ 
     uint64_t    _save_start;
     uint64_t    _save_end; 
+    bool        _is_working;
+    bool        _is_repeat_mode;
+    double      _repeat_intvl; // The progress check timer interval.
+    int         _repeat_hold_prg; // The time sleep progress
+    bool        _is_saving;
+    bool        _is_instant;
 
     ISessionCallback *_callback;
-
     DeviceAgent   _device_agent;
     std::vector<IMessageListener*> _msg_listeners;
    

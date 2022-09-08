@@ -997,7 +997,6 @@ bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const Decod
          _selected_protocol_id = QString(dec->id);
          this->on_add_protocol();       
      }
- } 
-
+ }  
 } // namespace dock
 } // namespace pv

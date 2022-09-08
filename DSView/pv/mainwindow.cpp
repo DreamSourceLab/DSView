@@ -230,7 +230,6 @@ namespace pv
         // event
         connect(&_event, SIGNAL(capture_state_changed(int)), this, SLOT(on_capture_state_changed(int)));
         connect(&_event, SIGNAL(session_error()), this, SLOT(on_session_error()));
-        connect(&_event, SIGNAL(show_error(QString)), this, SLOT(on_show_error(QString)));
         connect(&_event, SIGNAL(signals_changed()), this, SLOT(on_signals_changed()));
         connect(&_event, SIGNAL(receive_trigger(quint64)), this, SLOT(on_receive_trigger(quint64)));
         connect(&_event, SIGNAL(frame_ended()), this, SLOT(on_frame_ended()));
@@ -291,57 +290,6 @@ namespace pv
         assert(_sampling_bar);
 
         /*
-
-        if (_msg)
-            _msg->close();
-
-        AppConfig &app = AppConfig::Instance();
-
-
-        switchLanguage(app._frameOptions.language);
-        _session->stop_capture();
-        _view->reload();
-        _trigger_widget->device_updated();
-
-        _protocol_widget->del_all_protocol();
-
-        _trig_bar->reload();
-
-        DevInst *selected_device = _device_agent;
-        _device_manager.add_device(selected_device);
-        _session->init_signals();
-        _sampling_bar->set_device_list(_device_manager.devices(), selected_device);
-
-        File *file_dev = NULL;
-        if((file_dev = dynamic_cast<File*>(selected_device))) {
-            // check version
-            if (selected_device->dev_inst()->mode == LOGIC) {
-                GVariant* gvar = selected_device->get_config(NULL, NULL, SR_CONF_FILE_VERSION);
-                if (gvar != NULL) {
-                    int16_t version = g_variant_get_int16(gvar);
-                    g_variant_unref(gvar);
-                    if (version == 1) {
-                        show_error(tr("Current loading file has an old format. "
-                                              "This will lead to a slow loading speed. "
-                                              "Please resave it after loaded."));
-                    }
-                }
-            }
-
-
-            // load decoders
-            StoreSession ss(_session);
-            bool bFlag = ss.load_decoders(_protocol_widget, file_dev->get_decoders());
-
-            // load session
-            load_session_json(file_dev->get_session(), true, !bFlag);
-
-            // load data
-            const QString errorMessage(
-                QString(tr("Failed to capture file data!")));
-            _session->start_capture(true);
-        }
-
         if (!selected_device->name().contains("virtual")) {
             _file_bar->set_settings_en(true);
             _logo_bar->dsl_connected(true);
@@ -374,32 +322,9 @@ namespace pv
                     on_load_session(ses_name);
             }
         }
-        _sampling_bar->reload();
-        _view->status_clear();
-        _trigger_widget->init();
-        _dso_trigger_widget->init();
-        _measure_widget->reload();
+       
 
-        // USB device speed check
-        if (!selected_device->name().contains("virtual")) {
-            int usb_speed = LIBUSB_SPEED_HIGH;
-            GVariant *gvar = selected_device->get_config(NULL, NULL, SR_CONF_USB_SPEED);
-            if (gvar != NULL) {
-                usb_speed = g_variant_get_int32(gvar);
-                g_variant_unref(gvar);
-            }
-
-            bool usb30_support = false;
-            gvar = selected_device->get_config(NULL, NULL, SR_CONF_USB30_SUPPORT);
-            if (gvar != NULL) {
-                usb30_support = g_variant_get_boolean(gvar);
-                g_variant_unref(gvar);
-
-                if (usb30_support && usb_speed == LIBUSB_SPEED_HIGH)
-                    show_error(tr("Plug it into a USB 2.0 port will seriously affect its performance."
-                                                               "Please replug it into a USB 3.0 port."));
-            }
-        }
+       
 
            _trig_bar->restore_status();
 
@@ -439,22 +364,16 @@ namespace pv
     }
 
     void MainWindow::show_error(QString error)
-    {
-        _event.show_error(error); // safe call
-    }
-
-    void MainWindow::on_show_error(QString error)
-    {
+    { 
         MsgBox::Show(NULL, error.toStdString().c_str(), this);
     }
-
-
+ 
+ 
    // void MainWindow::on_device_detach()
     //{
         /*
 
         _device_agent->device_updated();
-        //_session->stop_hot_plug_proc();
 
         _session->set_repeating(false);
         _session->stop_capture();
@@ -513,25 +432,22 @@ namespace pv
 
         switch (_session->get_error())
         {
-        case SigSession::Hw_err:
-            _session->set_repeating(false);
+        case SigSession::Hw_err: 
             _session->stop_capture();
             title = tr("Hardware Operation Failed");
             details = tr("Please replug device to refresh hardware configuration!");
             break;
-        case SigSession::Malloc_err:
-            _session->set_repeating(false);
+        case SigSession::Malloc_err: 
             _session->stop_capture();
             title = tr("Malloc Error");
             details = tr("Memory is not enough for this sample!\nPlease reduce the sample depth!");
             break;
-        case SigSession::Test_data_err:
-            _session->set_repeating(false);
+        case SigSession::Test_data_err: 
             _session->stop_capture();
-            _sampling_bar->set_sampling(false);
-            _session->capture_state_changed(SigSession::Stopped);
+            _sampling_bar->set_sampling(false); 
             title = tr("Data Error");
             error_pattern = _session->get_error_pattern();
+
             for (int i = 0; i < 16; i++)
             {
                 if (error_pattern & 0x01)
@@ -549,8 +465,7 @@ namespace pv
             details = tr("the content of received packet are not expected!");
             _session->refresh(0);
             break;
-        case SigSession::Data_overflow:
-            _session->set_repeating(false);
+        case SigSession::Data_overflow: 
             _session->stop_capture();
             title = tr("Data Overflow");
             details = tr("USB bandwidth can not support current sample rate! \nPlease reduce the sample rate!");
@@ -1450,6 +1365,30 @@ namespace pv
     {
     }
 
+    void MainWindow::check_usb_device_speed()
+    {
+         // USB device speed check
+        if (_device_agent->is_hardware()) {
+            int usb_speed = LIBUSB_SPEED_HIGH;
+            GVariant *gvar = _device_agent->get_config(NULL, NULL, SR_CONF_USB_SPEED);
+            if (gvar != NULL) {
+                usb_speed = g_variant_get_int32(gvar);
+                g_variant_unref(gvar);
+            }
+
+            bool usb30_support = false;
+            gvar = _device_agent->get_config(NULL, NULL, SR_CONF_USB30_SUPPORT);
+            if (gvar != NULL) {
+                usb30_support = g_variant_get_boolean(gvar);
+                g_variant_unref(gvar);
+
+                if (usb30_support && usb_speed == LIBUSB_SPEED_HIGH)
+                    show_error(tr("Plug it into a USB 2.0 port will seriously affect its performance."
+                                                               "Please replug it into a USB 3.0 port."));
+            }
+        }
+    }
+
     void MainWindow::trigger_message(int msg)
     {
         _event.trigger_message(msg);
@@ -1462,6 +1401,40 @@ namespace pv
 
     void MainWindow::OnMessage(int msg)
     {
-    }
+        switch (msg)
+        {
+        case DSV_MSG_DEVICE_LIST_UPDATE: 
+            _sampling_bar->update_device_list();            
+            break;
+
+        case DSV_MSG_COLLECT_START:
+            _sampling_bar->set_sampling(false);
+            break;
+
+        case DSV_MSG_COLLECT_END:
+            _sampling_bar->set_sampling(true);
+            break;
+        case DSV_MSG_NEW_USB_DEVICE:
+            check_usb_device_speed();
+            break;
+
+        case DSV_MSG_CURRENT_DEVICE_CHANGED:
+            if (_msg != NULL)
+                _msg->close();
+
+            _sampling_bar->update_device_list();
+            _trig_bar->reload();
+            _sampling_bar->reload();
+            _view->status_clear();
+            _trigger_widget->init();
+            _dso_trigger_widget->init();
+            _measure_widget->reload(); 
+            break;
+
+        case DSV_MSG_CURRENT_DEVICE_CHANGE_PREV:
+            _protocol_widget->del_all_protocol();
+            break;
+        }
+}
 
 } // namespace pv

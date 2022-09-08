@@ -26,22 +26,9 @@
 #include <stdint.h>
 #include <libsigrok.h>
 #include <QString>
-#include <QObject>
 
-namespace pv{
-   // class SigSession;
-}
-
-class DeviceAgent: public QObject
+class DeviceAgent
 {
-    Q_OBJECT
-
-   // friend class SigSession;
-
-signals:
-    void device_updated();
-	void config_changed();
-
 public:
     DeviceAgent();
 

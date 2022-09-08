@@ -955,6 +955,7 @@ void TriggerDock::OnMessage(int msg)
     {
     case DSV_MSG_DEVICE_OPTIONS_UPDATED:
     case DSV_MSG_DEVICE_DURATION_UPDATED:
+    case DSV_MSG_CURRENT_DEVICE_CHANGED:
         device_updated();
         break;
     case DSV_MSG_COLLECT_START_PREV:
