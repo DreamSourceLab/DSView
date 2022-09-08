@@ -152,7 +152,7 @@ void LogoBar::reStyle()
     _manual->setIcon(QIcon(iconPath+"/manual.svg"));
     _issue->setIcon(QIcon(iconPath+"/bug.svg"));
     _update->setIcon(QIcon(iconPath+"/update.svg"));
-    _log->setIcon(QIcon(iconPath+"/file.svg"));
+    _log->setIcon(QIcon(iconPath+"/log.svg"));
 
     if (_connected)
         _logo_button.setIcon(QIcon(iconPath+"/logo_color.svg"));

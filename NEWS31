@@ -1,3 +1,20 @@
+1.2.1 -- (2022-08-27)
+-----------------
+  --common
+  *add multilingual support for installation paths
+  *fix the problem that some cloud desktop systems cannot recognize devices
+  *Add logging and log level setting function
+
+  --for logic analyzer
+  *fix I2C decoder save issue when saving dsl files
+  *add multingual supoort for channel name when saving dsl files
+  *fix decoder errors when decoding invalid data
+  *add data format selection of parallel decoder
+  *fix channel mode issue of DSLogic U3Pro32 under USB2.0 connection
+
+  --for oscilloscope
+  *fix center position offset issue when scaling waveform
+
 1.2.0 -- (2022-07-05)
 -----------------
   --common
