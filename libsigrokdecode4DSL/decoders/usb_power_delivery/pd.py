@@ -53,6 +53,9 @@ CTRL_TYPES = {
     19: 'FR_Swap',
     20: 'Get_PPS_Status',
     21: 'Get_Country_Codes',
+    22: 'Get_Sink_Cap_Extended',
+    23: 'Get_Source_Info',
+    24: 'Get_Revision',
 }
 
 # Data message type
@@ -397,14 +400,14 @@ class Decoder(srd.Decoder):
 
     def get_hex(self, idx, data):
         if idx == 0:
-        	txt = 'Ext H:%04x' % ( data & 0xFFFF )
-        	txt += '  DATA: %02x' % ((data >> 24)&0xFF)
-        	txt += ' %02x' % ((data >> 16)&0xFF)
+            txt = 'Ext H:%04x' % ( data & 0xFFFF )
+            txt += '  DATA: %02x' % ((data >> 24)&0xFF)
+            txt += ' %02x' % ((data >> 16)&0xFF)
         else:
-        	txt = '%02x' % ((data >> 8)&0xFF)
-        	txt += ' %02x' % ((data >> 0)&0xFF)
-        	txt += ' %02x' % ((data >> 24)&0xFF)
-        	txt += ' %02x' % ((data >> 16)&0xFF)
+            txt = '%02x' % ((data >> 8)&0xFF)
+            txt += ' %02x' % ((data >> 0)&0xFF)
+            txt += ' %02x' % ((data >> 24)&0xFF)
+            txt += ' %02x' % ((data >> 16)&0xFF)
         return txt
 
 
@@ -413,7 +416,7 @@ class Decoder(srd.Decoder):
 			
         txt = '['+str(idx+1)+'] '
         if t == 255:
-        	txt += self.get_hex(idx, self.data[idx])
+            txt += self.get_hex(idx, self.data[idx])
         elif t == 2:
             txt += self.get_request(self.data[idx])
         elif t == 1 or t == 4:
@@ -435,7 +438,10 @@ class Decoder(srd.Decoder):
         if self.head_ext() == 1:
             shortm = EXTENDED_TYPES[t] if t in EXTENDED_TYPES else 'EXTENDED???'
         elif self.head_count() == 0:
-            shortm = CTRL_TYPES[t]
+            if t >= 25 and t <= 31:
+                shortm = "reserved"
+            else:
+                shortm = CTRL_TYPES[t]
         else:
             shortm = DATA_TYPES[t] if t in DATA_TYPES else 'DAT???'
 

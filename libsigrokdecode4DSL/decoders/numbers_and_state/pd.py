@@ -35,6 +35,8 @@
 #   severely limited in its number of input channels, and dramatically
 #   widening the parallel decoder may be undesirable.
 
+# update: 2022.9.8, the wait() function returns variables is error.
+
 from common.srdhelper import bitpack
 import json
 import sigrokdecode as srd
@@ -363,11 +365,20 @@ class Decoder(srd.Decoder):
         }.get(self.options['format'])
         self.format_string = None
 
-        pins = self.wait()
-        ss = self.samplenum
-        prev_pattern = self.grab_pattern(pins[Pin.BIT_0:])
+        bFirst = True
+        cur_cond = None
+         
         while True:
-            pins = self.wait(wait_cond)
+            (clk, d0, d1, d2, d3, d4, d5, d6, d7,d8, d9,d10 ,d11 ,d12 ,d13 ,d14 ,d15) = self.wait(cur_cond)
+            pins = (clk, d0, d1, d2, d3, d4, d5, d6, d7,d8, d9, d10, d11, d12,d13 ,d14 ,d15)
+
+            if bFirst:
+                bFirst = False
+                ss = self.samplenum
+                prev_pattern = self.grab_pattern(pins[Pin.BIT_0:])
+                cur_cond = wait_cond
+                continue
+
             es = self.samplenum
             pattern = self.grab_pattern(pins[Pin.BIT_0:])
             if pattern == prev_pattern:
