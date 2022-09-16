@@ -29,8 +29,7 @@
 #include <QTranslator> 
 #include "dialogs/dsmessagebox.h"
 #include "interface/icallbacks.h"
-#include "eventobject.h"
-#include "interface/uicallback.h"
+#include "eventobject.h" 
 #include <QJsonDocument>
 
 class QAction;
@@ -77,8 +76,12 @@ using namespace pv::device;
  
 //The mainwindow,referenced by MainFrame
 //TODO: create graph view,toolbar,and show device list
-class MainWindow : public QMainWindow, public ISessionCallback, 
-    public IMainForm, public ISessionDataGetter, public IMessageListener
+class MainWindow : 
+    public QMainWindow,
+    public ISessionCallback,
+    public IMainForm,
+    public ISessionDataGetter,
+    public IMessageListener
 {
 	Q_OBJECT
 
@@ -101,9 +104,7 @@ public slots:
 
 private slots:
 	void on_load_file(QString file_name);
-    void on_open_doc(); 
-  
-    void update_device_list();
+    void on_open_doc();  
   
     void on_protocol(bool visible);
     void on_trigger(bool visible);
@@ -116,8 +117,6 @@ private slots:
     void on_export();
     bool on_load_session(QString name);  
     bool on_store_session(QString name); 
-
-    void on_capture_state_changed(int state);
     void on_data_updated();
  
     void on_session_error();
@@ -149,14 +148,11 @@ private:
     //ISessionCallback
     void show_error(QString error);
     void session_error();
-    void capture_state_changed(int state);
-
     void data_updated();
     void repeat_resume();
     void update_capture();
     void cur_snap_samplerate_changed();
-    void device_setted();
-
+      
     void signals_changed();
     void receive_trigger(quint64 trigger_pos);
     void frame_ended();
@@ -171,8 +167,8 @@ private:
     void data_received();
     void trigger_message(int msg);
 
-     //ISessionDataGetter
-     bool genSessionData(std::string &str);
+    //ISessionDataGetter
+    bool genSessionData(std::string &str);
 
     bool gen_session_json(QJsonObject &sessionVar);
 

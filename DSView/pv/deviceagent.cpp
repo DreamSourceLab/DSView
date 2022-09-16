@@ -29,6 +29,7 @@ DeviceAgent::DeviceAgent()
     _dev_handle = NULL;
     _di = NULL;
     _dev_type = 0;
+    _callback = NULL;
 }
 
 void DeviceAgent::update()
@@ -258,52 +259,60 @@ bool DeviceAgent::get_status(struct sr_status &status, gboolean prg)
     }
     return false;
 }
+
+void DeviceAgent::config_changed()
+{
+    if (_callback != NULL){
+        _callback->DeviceConfigChanged();
+    }
+}
  
 //---------------device config-----------/
 
-  int DeviceAgent::get_work_mode()
-   {
-       return ds_get_actived_device_mode();
-   }
+int DeviceAgent::get_work_mode()
+{
+    return ds_get_actived_device_mode();
+}
 
-   const struct sr_config_info* DeviceAgent::get_config_info(int key)
-    {
-        return ds_get_actived_device_config_info(key);
-    }
+const struct sr_config_info *DeviceAgent::get_config_info(int key)
+{
+    return ds_get_actived_device_config_info(key);
+}
 
-    const struct sr_config_info* DeviceAgent::get_config_info_by_name(const char *optname)
-    {
-        return ds_get_actived_device_config_info_by_name(optname);
-    }
+const struct sr_config_info *DeviceAgent::get_config_info_by_name(const char *optname)
+{
+    return ds_get_actived_device_config_info_by_name(optname);
+}
 
-    bool DeviceAgent::get_device_status(struct sr_status &status, gboolean prg)
+bool DeviceAgent::get_device_status(struct sr_status &status, gboolean prg)
+{
+    if (ds_get_actived_device_status(&status, prg) == SR_OK)
     {
-        if (ds_get_actived_device_status(&status, prg) == SR_OK){
-            return true;
-        }
-        return false;
+        return true;
     }
+    return false;
+}
 
-    struct sr_config* DeviceAgent::new_config(int key, GVariant *data)
-    {
-        return ds_new_config(key, data);
-    }
+struct sr_config *DeviceAgent::new_config(int key, GVariant *data)
+{
+    return ds_new_config(key, data);
+}
 
-    void DeviceAgent::free_config(struct sr_config *src)
-    {
-        ds_free_config(src);
-    }
+void DeviceAgent::free_config(struct sr_config *src)
+{
+    ds_free_config(src);
+}
 
-    bool DeviceAgent::is_running()
-    {
-        return ds_is_collecting() > 0;
-    }
+bool DeviceAgent::is_collecting()
+{
+    return ds_is_collecting() > 0;
+}
 
-    GSList* DeviceAgent::get_channels()
-    {
-        assert(_dev_handle);
-        return ds_get_actived_device_channels();
-    }
+GSList *DeviceAgent::get_channels()
+{
+    assert(_dev_handle);
+    return ds_get_actived_device_channels();
+}
 
 //---------------device config end -----------/
 

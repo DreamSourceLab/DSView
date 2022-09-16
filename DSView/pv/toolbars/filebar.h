@@ -28,15 +28,14 @@
 #include <QAction>
 #include <QMenu>
 
-#include "../sigsession.h"
-#include "../interface/icallbacks.h"
+#include "../sigsession.h" 
 
 namespace pv {
 namespace toolbars {
 
 //toolbar button,referenced by MainWindow
 //TODO: load session file, sorte session, load log data file, sorte data, export data
-class FileBar : public QToolBar, public IMessageListener
+class FileBar : public QToolBar
 {
     Q_OBJECT
 
@@ -66,9 +65,6 @@ private slots:
     void on_actionDefault_triggered();
     void on_actionOpen_triggered();
     void on_actionCapture_triggered();
-
-    //IMessageListener
-    void OnMessage(int msg);
 
 private:
     bool _enable;

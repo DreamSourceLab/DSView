@@ -67,6 +67,7 @@ public:
     ~SearchDock();
 
     void paintEvent(QPaintEvent *);
+
 private:
     void changeEvent(QEvent *event);
     void retranslateUi();

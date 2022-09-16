@@ -48,7 +48,6 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession *session) :
     QScrollArea(parent),
     _session(session)
 {
-    session->add_msg_listener(this);
     
     _cur_ch_num = 16;
     if (_session->get_device()->have_instance()) {
@@ -309,8 +308,9 @@ bool TriggerDock::commit_trigger()
     // trigger mode update
     if (_simple_radioButton->isChecked()) {
         ds_trigger_set_mode(SIMPLE_TRIGGER);
-        return 0;
-    } else {
+        return false;
+    }
+    else {
         ds_trigger_set_en(true);
         if (_adv_tabWidget->currentIndex() == 0)
             ds_trigger_set_mode(ADV_TRIGGER);
@@ -402,7 +402,7 @@ bool TriggerDock::commit_trigger()
                                        _serial_bits_comboBox->currentText().toInt() - 1,
                                        0);
         }
-        return 1;
+        return true;
     }
 }
 
@@ -898,6 +898,8 @@ void TriggerDock::try_commit_trigger()
     int mode = _session->get_device()->get_work_mode();
     bool bInstant = _session->is_instant();
 
+    ds_trigger_reset();
+
     if (mode != LOGIC || bInstant){
         return;
     }
@@ -947,21 +949,6 @@ void TriggerDock::try_commit_trigger()
             }
         }
     }
-}
-
-void TriggerDock::OnMessage(int msg)
-{
-    switch (msg)
-    {
-    case DSV_MSG_DEVICE_OPTIONS_UPDATED:
-    case DSV_MSG_DEVICE_DURATION_UPDATED:
-    case DSV_MSG_CURRENT_DEVICE_CHANGED:
-        device_updated();
-        break;
-    case DSV_MSG_COLLECT_START_PREV:
-        try_commit_trigger();
-        break;
-    } 
 }
 
 } // namespace dock

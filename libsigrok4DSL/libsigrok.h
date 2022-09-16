@@ -1209,6 +1209,7 @@ SR_API const char *sr_error_str(int error_code);
 SR_API const char *sr_error_name(int error_code);
 
 /*--- trigger.c ------------------------------------------------------------*/
+SR_API int ds_trigger_reset();
 SR_API int ds_trigger_stage_set_value(uint16_t stage, uint16_t probes, char *trigger0, char *trigger1);
 SR_API int ds_trigger_stage_set_logic(uint16_t stage, uint16_t probes, unsigned char trigger_logic);
 SR_API int ds_trigger_stage_set_inv(uint16_t stage, uint16_t probes, unsigned char trigger0_inv, unsigned char trigger1_inv);
@@ -1237,21 +1238,38 @@ SR_API void ds_log_level(int level);
 // A new device attached, user need to call ds_get_device_list to get the list,
 // the last one is new.
 // User can call ds_active_device() to switch to the current device.
-#define DS_EV_NEW_DEVICE_ATTACH			0
+//#define DS_EV_NEW_DEVICE_ATTACH         1
 
 // The current device detached, user need to call ds_get_device_list to get the list,
 // and call ds_active_device() to switch to the current device.
-#define DS_EV_CURRENT_DEVICE_DETACH 	1
+//#define DS_EV_CURRENT_DEVICE_DETACH     2
 
 // A inactive device detached.
 // User can call ds_get_device_list() to get the new list, and update the list view.
-#define DS_EV_INACTIVE_DEVICE_DETACH 	2
+//#define DS_EV_INACTIVE_DEVICE_DETACH    3
 
 // The collect task is ends.
-#define DS_EV_COLLECT_TASK_START		100
+#define DS_EV_COLLECT_TASK_START		101
 
 // The collect task is ends.
-#define DS_EV_COLLECT_TASK_END			101
+#define DS_EV_COLLECT_TASK_END			102
+
+// The device is running
+#define DS_EV_DEVICE_RUNNING			103
+
+// The device is stopped
+#define DS_EV_DEVICE_STOPPED			104
+
+#define DS_EV_COLLECT_TASK_END_BY_DETACHED	105
+
+#define DS_EV_COLLECT_TASK_END_BY_ERROR		106
+
+enum bbbb
+{
+		DS_EV_NEW_DEVICE_ATTACH = 1,
+		DS_EV_CURRENT_DEVICE_DETACH = 2,
+		DS_EV_INACTIVE_DEVICE_DETACH = 3,
+};
 
 
 typedef unsigned long long ds_device_handle;

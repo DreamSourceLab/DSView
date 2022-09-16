@@ -79,8 +79,7 @@ WaitingDialog::WaitingDialog(QWidget *parent, SigSession *session, int key) :
     connect(timer, SIGNAL(timeout()), this, SLOT(changeText()));
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
     connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
-    connect(_device_agent, SIGNAL(device_updated()), this, SLOT(stop()));
-
+    connect(_session->device_event_object(), SIGNAL(device_updated()), this, SLOT(stop()));
 
     QVBoxLayout *mlayout = new QVBoxLayout();
     mlayout->addWidget(warning_tips, Qt::AlignHCenter);

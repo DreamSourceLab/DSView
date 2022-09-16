@@ -49,4 +49,17 @@ signals:
     void trigger_message(int msg);
 };
 
+
+class DeviceEventObject : public QObject
+{
+    Q_OBJECT
+
+public:
+    DeviceEventObject(); 
+
+
+signals: 
+    void device_updated();
+};
+
 #endif

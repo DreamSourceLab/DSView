@@ -51,12 +51,7 @@ SearchDock::SearchDock(QWidget *parent, View &view, SigSession *session) :
     QWidget(parent),
     _session(session),
     _view(view)
-{
-    connect(&_pre_button, SIGNAL(clicked()),
-        this, SLOT(on_previous()));
-    connect(&_nxt_button, SIGNAL(clicked()),
-        this, SLOT(on_next()));
-
+{ 
     _search_button = new QPushButton(this);
     _search_button->setFixedWidth(_search_button->height());
     _search_button->setDisabled(true);
@@ -85,6 +80,9 @@ SearchDock::SearchDock(QWidget *parent, View &view, SigSession *session) :
     setLayout(layout);
 
     retranslateUi();
+
+    connect(&_pre_button, SIGNAL(clicked()), this, SLOT(on_previous()));
+    connect(&_nxt_button, SIGNAL(clicked()),this, SLOT(on_next()));
 }
 
 SearchDock::~SearchDock()
@@ -248,6 +246,8 @@ void SearchDock::on_next()
 void SearchDock::on_set()
 {
     dialogs::Search dlg(this, _session, _pattern);
+    connect(_session->device_event_object(), SIGNAL(device_updated()), &dlg, SLOT(reject()));
+
     if (dlg.exec()) {
         std::map<uint16_t, QString> new_pattern = dlg.get_pattern();
 

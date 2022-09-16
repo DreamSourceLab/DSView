@@ -220,7 +220,7 @@ FftOptions::FftOptions(QWidget *parent, SigSession *session) :
     connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
     connect(_window_combobox, SIGNAL(currentIndexChanged(int)), this, SLOT(window_changed(int)));
     connect(_len_combobox, SIGNAL(currentIndexChanged(int)), this, SLOT(len_changed(int)));
-    connect(_session->get_device(), SIGNAL(device_updated()), this, SLOT(reject()));    
+    connect(_session->device_event_object(), SIGNAL(device_updated()), this, SLOT(reject()));
 }
 
 FftOptions::~FftOptions(){
@@ -243,12 +243,13 @@ void FftOptions::accept()
                 spectrumTraces->get_spectrum_stack()->set_sample_interval(_interval_combobox->currentData().toInt());
                 spectrumTraces->get_spectrum_stack()->set_windows_index(_window_combobox->currentData().toInt());
                 spectrumTraces->set_view_mode(_view_combobox->currentData().toUInt());
-                //spectrumTraces->init_zoom();
+                
                 spectrumTraces->set_dbv_range(_dbv_combobox->currentData().toInt());
                 spectrumTraces->set_enable(_en_checkbox->isChecked());
-                if (_session->get_capture_state() == SigSession::Stopped &&
-                    spectrumTraces->enabled())
+
+                if (_session->is_stopped_status() && spectrumTraces->enabled()){
                     spectrumTraces->get_spectrum_stack()->calc_fft();
+                }
             }
         }
     }

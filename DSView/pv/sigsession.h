@@ -38,6 +38,7 @@
 #include "dstimer.h"
 #include <libsigrok.h>
 #include "deviceagent.h"
+#include "eventobject.h"
  
 
 struct srd_decoder;
@@ -85,7 +86,9 @@ using namespace pv::device;
 using namespace pv::data;
 
 //created by MainWindow
-class SigSession: public IMessageListener
+class SigSession:
+    public IMessageListener,
+    public IDeviceAgentCallback
 {
 private:
     static constexpr float Oversampling = 2.0f;
@@ -105,6 +108,12 @@ public:
         Test_timeout_err,
         Pkt_data_err,
         Data_overflow
+    };
+
+    enum device_status_type{
+        ST_INIT = 0,
+        ST_RUNNING = 1,
+        ST_STOPPED = 2,
     };
 
 private:
@@ -128,7 +137,7 @@ public:
     bool set_device(ds_device_handle dev_handle);   
     bool set_file(QString name);
     void close_file(ds_device_handle dev_handle);
-    void start_capture(bool instant);
+    bool start_capture(bool instant);
     void stop_capture();    
 	 
     uint64_t cur_samplerate();
@@ -226,14 +235,27 @@ public:
         return _is_working;
     }
 
+    inline bool is_init_status(){
+        return _device_status == ST_INIT;
+    }
+
+    // The collect thread is running.
+    inline bool is_running_status(){
+        return _device_status == ST_RUNNING;
+    }
+
+    inline bool is_stopped_status(){
+        return _device_status == ST_STOPPED;
+    }
+
     void set_repeat_mode(bool repeat);
 
     inline bool is_repeat_mode(){
         return _is_repeat_mode;
-    } 
- 
-    inline void capture_state_changed(int state){
-        _callback->capture_state_changed(state);
+    }
+
+    inline bool is_repeating(){
+        return _is_repeat_mode && !_is_instant;
     }
 
     inline void session_save(){
@@ -259,6 +281,10 @@ public:
     inline void set_saving(bool flag){
         _is_saving = flag;
     }
+
+    inline DeviceEventObject* device_event_object(){
+        return &_device_event;
+    }
    
     void reload();
     void refresh(int holdtime);  
@@ -272,7 +298,7 @@ public:
     void broadcast_msg(int msg);
 
 private:
-    void exec_capture();
+    bool exec_capture();
     void exit_capture();
 
     inline void data_updated(){
@@ -307,6 +333,9 @@ private:
     //IMessageListener
     void OnMessage(int msg);
 
+    //IDeviceAgentCallback
+    void DeviceConfigChanged();
+
 private:
     /**
      * Attempts to autodetect the format. Failing that
@@ -315,8 +344,7 @@ private:
      * 	used, or NULL if no input format was selected or
      * 	auto-detected.
      */
-    static sr_input_format* determine_input_file_format(const std::string &filename);  
- 
+    static sr_input_format* determine_input_file_format(const std::string &filename); 
 
     // data feed
 	void feed_in_header(const sr_dev_inst *sdi);
@@ -383,7 +411,7 @@ private:
     bool        _dso_feed;
     float       _stop_scale; 
     bool        _bClose; 
-    bool        _active_last_device_flag;
+    bool        _is_auto_sel_device;
  
     uint64_t    _save_start;
     uint64_t    _save_end; 
@@ -393,10 +421,13 @@ private:
     int         _repeat_hold_prg; // The time sleep progress
     bool        _is_saving;
     bool        _is_instant;
+    bool        _is_trig_new_device_msg;
+    int         _device_status;
 
     ISessionCallback *_callback;
     DeviceAgent   _device_agent;
     std::vector<IMessageListener*> _msg_listeners;
+    DeviceEventObject   _device_event;
    
 private:
 	// TODO: This should not be necessary. Multiple concurrent

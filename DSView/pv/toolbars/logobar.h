@@ -30,7 +30,7 @@
 #include <libsigrok.h> 
 
 #include "../sigsession.h"
-#include "../interface/uicallback.h"
+#include "../interface/icallbacks.h"
 
 
 namespace pv {

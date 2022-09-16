@@ -174,11 +174,13 @@ void DsoSignal::set_enable(bool enable)
     }
 
     bool running =  false;
-    if (session->get_capture_state() == SigSession::Running) {
+
+    if (session->is_running_status()) {
         running = true;
         session->stop_capture();
     }
-    while(session->get_capture_state() == SigSession::Running)
+
+    while(session->is_running_status())
         QCoreApplication::processEvents();
 
     set_vDialActive(false);
@@ -211,14 +213,18 @@ bool DsoSignal::go_vDialPre(bool manul)
     if (_autoV && manul)
         autoV_end(); 
 
-    if (enabled() && !_vDial->isMin()) {
-        if (session->get_capture_state() == SigSession::Running)
+    if (enabled() && !_vDial->isMin()) 
+    {
+        if (session->is_running_status())
             session->refresh(RefreshShort);
+
         const double pre_vdiv = _vDial->get_value();
         _vDial->set_sel(_vDial->get_sel() - 1);
+
         session->get_device()->set_config(_probe, NULL, SR_CONF_PROBE_VDIV,
                               g_variant_new_uint64(_vDial->get_value()));
-        if (session->get_capture_state() == SigSession::Stopped) {
+
+        if (session->is_stopped_status()) {
             session->set_stop_scale(session->stop_scale() * (pre_vdiv/_vDial->get_value()));
             set_scale(get_view_rect().height());
         }
@@ -229,7 +235,8 @@ bool DsoSignal::go_vDialPre(bool manul)
         _view->set_update(_viewport, true);
         _view->update();
         return true;
-    } else {
+    }
+    else {
         if (_autoV && !_autoV_over)
             autoV_end();
         return false;
@@ -241,14 +248,18 @@ bool DsoSignal::go_vDialNext(bool manul)
     if (_autoV && manul)
         autoV_end(); 
 
-    if (enabled() && !_vDial->isMax()) {
-        if (session->get_capture_state() == SigSession::Running)
+    if (enabled() && !_vDial->isMax())
+    {
+        if (session->is_running_status())
             session->refresh(RefreshShort);
+
         const double pre_vdiv = _vDial->get_value();
         _vDial->set_sel(_vDial->get_sel() + 1);
+
         session->get_device()->set_config(_probe, NULL, SR_CONF_PROBE_VDIV,
                               g_variant_new_uint64(_vDial->get_value()));
-        if (session->get_capture_state() == SigSession::Stopped) {
+
+        if (session->is_stopped_status()) {
             session->set_stop_scale(session->stop_scale() * (pre_vdiv/_vDial->get_value()));
             set_scale(get_view_rect().height());
         }
@@ -259,7 +270,8 @@ bool DsoSignal::go_vDialNext(bool manul)
         _view->set_update(_viewport, true);
         _view->update();
         return true;
-    } else {
+    } 
+    else {
         if (_autoV && !_autoV_over)
             autoV_end();
         return false;
@@ -1011,7 +1023,7 @@ void DsoSignal::paint_fore(QPainter &p, int left, int right, QColor fore, QColor
         p.drawText(label_rect, Qt::AlignCenter | Qt::AlignVCenter, "T");
 
         // Paint measure
-        if (session->get_capture_state() == SigSession::Stopped)
+        if (session->is_stopped_status())
             paint_hover_measure(p, fore, back);
 
         // autoset
@@ -1370,12 +1382,13 @@ void DsoSignal::paint_hover_measure(QPainter &p, QColor fore, QColor back)
 
 void DsoSignal::auto_set()
 { 
-    if (session->get_capture_state() == SigSession::Stopped) {
+    if (session->is_stopped_status()) {
         if (_autoV)
             autoV_end();
         if (_autoH)
             autoH_end();
-    } else {
+    } 
+    else {
         if (_autoH && _autoV && get_zero_ratio() != 0.5) {
             set_zero_ratio(0.5);
         }
@@ -1462,7 +1475,7 @@ void DsoSignal::auto_start()
     if (_autoV || _autoH)
         return;
 
-    if (session->get_capture_state() == SigSession::Running) {
+    if (session->is_running_status()) {
         session->data_auto_lock(AutoLock);
         _autoV = true;
         _autoH = true;
@@ -1474,10 +1487,11 @@ void DsoSignal::auto_start()
 bool DsoSignal::measure(const QPointF &p)
 { 
     _hover_en = false;
+    
     if (!enabled() || !show())
         return false;
 
-    if (session->get_capture_state() != SigSession::Stopped)
+    if (session->is_stopped_status() == false)
         return false;
 
     const QRectF window = get_view_rect();

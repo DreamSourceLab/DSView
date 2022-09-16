@@ -168,8 +168,9 @@ void Header::mousePressEvent(QMouseEvent *event)
 
     const auto &traces = _view.get_traces(ALL_VIEW);
     int action;
-    const bool instant = _view.session().get_instant();
-    if (instant && _view.session().get_capture_state() == SigSession::Running) {
+
+    const bool instant = _view.session().is_instant();
+    if (instant && _view.session().is_running_status()) {
         return;
     }
 

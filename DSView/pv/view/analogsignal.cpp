@@ -195,7 +195,7 @@ bool AnalogSignal::measure(const QPointF &p)
     if (!enabled())
         return false;
 
-    if (_view->session().get_capture_state() != SigSession::Stopped)
+    if (_view->session().is_stopped_status() == false)
         return false;
 
     const QRectF window = get_view_rect();
@@ -404,7 +404,7 @@ int AnalogSignal::get_zero_vpos()
 
 void AnalogSignal::set_zero_ratio(double ratio)
 {
-    if (_view->session().get_capture_state() == SigSession::Running)
+    if (_view->session().is_running_status())
         return;
 
     _zero_offset = ratio2value(ratio);
@@ -557,7 +557,7 @@ void AnalogSignal::paint_fore(QPainter &p, int left, int right, QColor fore, QCo
     fore.setAlpha(View::ForeAlpha);
     if(enabled()) {
         // Paint measure
-        if (_view->session().get_capture_state() == SigSession::Stopped)
+        if (_view->session().is_stopped_status())
             paint_hover_measure(p, fore, back);
     }
 }

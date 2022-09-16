@@ -80,11 +80,13 @@ SigSession::SigSession()
     _is_working = false;
     _is_repeat_mode = false;
     _is_saving = false; 
+    _device_status = ST_INIT;
   
     _noData_cnt = 0;
     _data_lock = false;
     _data_updated = false;
-    _active_last_device_flag = false;     
+    _is_auto_sel_device = false;
+    _is_trig_new_device_msg = false;
 
     this->add_msg_listener(this);
 
@@ -97,6 +99,8 @@ SigSession::SigSession()
     _is_decoding = false;
     _bClose = false;
     _callback = NULL;  
+
+    _device_agent.set_callback(this);
 
     // Create snapshots & data containers 
     _logic_data = new data::Logic(new data::LogicSnapshot()); 
@@ -156,6 +160,8 @@ bool SigSession::set_default_device()
     struct ds_device_info *array = NULL;
     int count = 0;
 
+    dsv_info("%s", "Set default device.");
+
     if (ds_get_device_list(&array, &count) != SR_OK)
     {
         dsv_err("%s", "Get device list error!");
@@ -192,6 +198,7 @@ bool SigSession::set_device(ds_device_handle dev_handle)
         return false;
     }
     _device_agent.update();
+    _device_status = ST_INIT;
 
     init_signals();
 
@@ -237,15 +244,21 @@ bool SigSession::set_file(QString name)
 }
 
 void SigSession::close_file(ds_device_handle dev_handle)
-{ 
-    assert(!_is_saving);
-    assert(!_is_working);
+{  
+    assert(dev_handle);
+    
+    if (dev_handle == _device_agent.handle() && _is_working){
+        dsv_err("%s", "The virtual device is running, can't remove it.");
+        return;
+    }
+    bool isCurrent = dev_handle == _device_agent.handle();
 
     if (ds_remove_device(dev_handle) != SR_OK){
         dsv_err("%s", "Remove virtual deivice error!");
     }
-    stop_capture();
-    set_default_device();
+
+   if (isCurrent)
+     set_default_device();
 }
 
 
@@ -416,15 +429,25 @@ void SigSession::container_init()
     }
 }
 
- void SigSession::start_capture(bool instant)
- {
-    assert(!_is_working);
+ bool SigSession::start_capture(bool instant)
+ { 
     assert(_callback);
+
+    dsv_info("%s", "Start collect.");
+
+    if (_is_working){
+        dsv_err("%s", "Error! Is working now.");
+        return false;
+    }
 
      // Check that a device instance has been selected.
     if (_device_agent.have_instance() == false) {
-        dsv_err("%s", "No device selected"); 
-        return;
+        dsv_err("%s", "Error!No device selected"); 
+        assert(false);
+    }
+    if (_device_agent.is_collecting()){
+        dsv_err("%s", "Error!Device is running.");
+        return false;
     }
 
     // update setting
@@ -432,17 +455,19 @@ void SigSession::container_init()
         _is_instant = true;
     else
         _is_instant = instant;
+    
+    _callback->trigger_message(DSV_MSG_START_COLLECT_WORK_PREV);
+
+    return exec_capture();
  }
 
-void SigSession::exec_capture()
+bool SigSession::exec_capture()
 {   
-    if (_device_agent.is_running()){
-        dsv_err("%s", "Device is running.");
-        assert(false);
+    if (_device_agent.is_collecting()){
+        dsv_err("%s", "Error!Device is running.");
+        return false;
     }
-
-    _callback->trigger_message(DSV_MSG_COLLECT_START_PREV);
-
+ 
     // stop all decode tasks
     int run_dex = 0;
     clear_all_decode_task(run_dex);
@@ -453,30 +478,33 @@ void SigSession::exec_capture()
         view::DsoSignal *dsoSig = NULL;
         if ((dsoSig = dynamic_cast<view::DsoSignal*>(s)))
             dsoSig->set_mValid(false);
-    }     
-
-    capture_init();
+    }
 
     if (_device_agent.have_enabled_channel() == false){
         _callback->show_error("No probes enabled.");
-        data_updated(); 
-        _is_working = false;
-        return;
+        return false;
     }
+
+    capture_init(); 
  
     if (_device_agent.start() == false)
     {
         dsv_err("%s", "Start collect error!");
+        return false;
     }
-
+    
     _is_working = true;
+    _callback->trigger_message(DSV_MSG_START_COLLECT_WORK);
+    return true;
 }
 
 void SigSession::stop_capture()
 {
-    assert(_is_working);
-  
-    data_unlock();
+    dsv_info("%s", "Stop collect.");
+
+    if (!_is_working){
+        return;
+    }
 
     bool wait_upload = false;
     if (!_is_repeat_mode) {
@@ -488,7 +516,7 @@ void SigSession::stop_capture()
     }
     if (!wait_upload) {
         _is_working = false;        
-        _callback->trigger_message(DSV_MSG_COLLECT_END_PREV); 
+        _callback->trigger_message(DSV_MSG_END_COLLECT_WORK_PREV); 
         exit_capture();
     }
     else{
@@ -500,7 +528,7 @@ void SigSession::exit_capture()
 {  
     _is_instant = false;
 
-    if (_device_agent.is_running()){       
+    if (_device_agent.is_collecting()){
         _device_agent.stop();
     }
 }
@@ -550,20 +578,12 @@ std::set<data::SignalData*> SigSession::get_data()
 
     return data;
 }
-
-void SigSession::set_capture_state(capture_state state)
-{ 
-    std::lock_guard<std::mutex> lock(_sampling_mutex);
-    _capture_state = state;
-    data_updated();
-    capture_state_changed(state);
-}
  
 void SigSession::check_update()
 {
     ds_lock_guard lock(_data_mutex);
 
-    if (_device_agent.is_running() == false)
+    if (_device_agent.is_collecting() == false)
         return;
 
     if (_data_updated) {
@@ -742,8 +762,8 @@ void SigSession::reload()
         assert(false);
     }
 
-    if (_capture_state == Running)
-        stop_capture();
+    if (_is_working)
+        return;
 
     std::vector<view::Signal*> sigs;
     view::Signal *signal = NULL;
@@ -900,9 +920,6 @@ void SigSession::feed_in_meta(const sr_dev_inst *sdi,
         case SR_CONF_SAMPLERATE:
             /// @todo handle samplerate changes
             /// samplerate = (uint64_t *)src->value;
-            break;
-        default:
-            // Unknown metadata is not an error.
             break;
         }
     }
@@ -1065,7 +1082,8 @@ void SigSession::feed_in_analog(const sr_datafeed_analog &analog)
 
         // first payload
         _analog_data->snapshot()->first_payload(analog, _device_agent.get_sample_limit(), _device_agent.get_channels());
-    } else {
+    }
+    else {
         // Append to the existing data snapshot
         _analog_data->snapshot()->append_payload(analog);
     }
@@ -1358,17 +1376,16 @@ void SigSession::rst_decoder(int index)
     }
 }
 
- void SigSession::rst_decoder_by_key_handel(void *handel)
- { 
-     int dex = get_trace_index_by_key_handel(handel);
-     rst_decoder(dex);
- }
-  
+void SigSession::rst_decoder_by_key_handel(void *handel)
+{
+    int dex = get_trace_index_by_key_handel(handel);
+    rst_decoder(dex);
+}
+
 pv::data::DecoderModel* SigSession::get_decoder_model()
 {
     return _decoder_model;
 }
-
 
 void SigSession::spectrum_rebuild()
 {
@@ -1539,9 +1556,7 @@ void SigSession::set_repeat_intvl(double interval)
 
 bool SigSession::repeat_check()
 {
-    if (_device_agent.is_running() ||
-        get_run_mode() != Repetitive ||
-        !isRepeating()) {
+    if (!_is_working) {
         return false;
     }
 
@@ -1557,7 +1572,7 @@ bool SigSession::repeat_check()
 
 void SigSession::repeat_update()
 {
-    if (isRepeating()) {
+    if (!_is_instant && _is_working && _is_repeat_mode) {
         _repeat_hold_prg -= 100/RepeatHoldDiv;
         if (_repeat_hold_prg != 0){
             _out_timer.TimeOut(_repeat_intvl * 1000 / RepeatHoldDiv, std::bind(&SigSession::repeat_update, this));
@@ -1570,7 +1585,7 @@ void SigSession::repeat_update()
 
 int SigSession::get_repeat_hold()
 {
-    if (isRepeating())
+    if (!_is_instant && _is_working && _is_repeat_mode) 
         return _repeat_hold_prg;
     else
         return 0;
@@ -1626,21 +1641,21 @@ void SigSession::set_stop_scale(float scale)
     _stop_scale = scale;
 }
 
- void SigSession::Open()
- {      
- }
+void SigSession::Open()
+{
+}
 
- void SigSession::Close()
- { 
-     if (_bClose)
+void SigSession::Close()
+{
+    if (_bClose)
         return;
 
-     _bClose = true; 
-     stop_capture();
+    _bClose = true;
+    exit_capture();
 
-     // TODO: This should not be necessary
-     _session = NULL;
- }
+    // TODO: This should not be necessary
+    _session = NULL;
+}
 
 //append a decode task, and try create a thread
  void SigSession::add_decode_task(view::DecodeTrace *trace)
@@ -1781,85 +1796,109 @@ void SigSession::set_stop_scale(float scale)
       _is_decoding = false;
   }
 
-  Snapshot* SigSession::get_signal_snapshot()
+  Snapshot *SigSession::get_signal_snapshot()
   {
-    int mode = _device_agent.get_work_mode();
-    if (mode == ANALOG)
-        return _analog_data->snapshot();
-    else if (mode == DSO)
-        return _dso_data->snapshot();
-    else
-        return _logic_data->snapshot();
+      int mode = _device_agent.get_work_mode();
+      if (mode == ANALOG)
+          return _analog_data->snapshot();
+      else if (mode == DSO)
+          return _dso_data->snapshot();
+      else
+          return _logic_data->snapshot();
   }
 
   void SigSession::device_lib_event_callback(int event)
   {
-     if (_session == NULL){
-         dsv_err("%s", "Error!Global variable \"_session\" is null.");
-         return;
-    }
-    _session->on_device_lib_event(event);
+      if (_session == NULL)
+      {
+          dsv_err("%s", "Error!Global variable \"_session\" is null.");
+          return;
+      }
+      _session->on_device_lib_event(event);
   }
 
 void SigSession::on_device_lib_event(int event)
 { 
-    if (event == DS_EV_COLLECT_TASK_START){
+    switch (event)
+    {
+    case DS_EV_DEVICE_RUNNING:
+        _device_status = ST_RUNNING;
+        break;
+        
+    case DS_EV_DEVICE_STOPPED:
+        _device_status = ST_STOPPED;
+        break;
+
+    case DS_EV_COLLECT_TASK_START:        
         _callback->trigger_message(DSV_MSG_COLLECT_START);
-        return;
-    }
-    
-    if (event == DS_EV_COLLECT_TASK_END){
-        _callback->trigger_message(DSV_MSG_COLLECT_END);
+        break;
 
-        if (_logic_data->snapshot()->last_ended() == false)
-            dsv_err("%s", "The collected data is error!"); 
-         if (_dso_data->snapshot()->last_ended() == false)
-            dsv_err("%s", "The collected data is error!");                
-         if (_analog_data->snapshot()->last_ended() == false)
-            dsv_err("%s", "The collected data is error!");  
-
-        bool bInstant = _is_instant;
-        _is_instant = false;
-
-        if (!bInstant && _is_repeat_mode){
-            if (_repeat_intvl > 0)
-                _repeate_timer.Start(_repeat_intvl * 1000);
-            else
-                this->exec_capture();
-        }        
-         
-        return;
-    }
-
-    if (event == DS_EV_NEW_DEVICE_ATTACH || event == DS_EV_CURRENT_DEVICE_DETACH)
-    {
-        if (_is_working)
-            this->stop_capture();
- 
-
-        if (have_hardware_data())
+    case DS_EV_COLLECT_TASK_END:
+    case DS_EV_COLLECT_TASK_END_BY_ERROR:
+    case DS_EV_COLLECT_TASK_END_BY_DETACHED:
         {
-            // Try to save current device data, and auto select the lastest device later.
-            _active_last_device_flag = true;
-            if (!_is_saving)
-                store_session_data();
-            return;
+            _callback->trigger_message(DSV_MSG_COLLECT_END);
+
+            if (_logic_data->snapshot()->last_ended() == false)
+                dsv_err("%s", "The collected data is error!"); 
+            if (_dso_data->snapshot()->last_ended() == false)
+                dsv_err("%s", "The collected data is error!");                
+            if (_analog_data->snapshot()->last_ended() == false)
+                dsv_err("%s", "The collected data is error!");  
+
+            // trigger next collect
+            if (!_is_instant 
+                && _is_repeat_mode 
+                && _is_working 
+                && event == DS_EV_COLLECT_TASK_END)
+            {
+                _callback->trigger_message(DSV_MSG_TRIG_NEXT_COLLECT);
+            }
+            else{
+                _is_working = false;
+                _is_instant = false;
+                _callback->trigger_message(DSV_MSG_END_COLLECT_WORK);
+            }
         }
-    }
+        break;
 
-    if (_is_working)
-            this->stop_capture(); 
+    case DS_EV_NEW_DEVICE_ATTACH:
+    case DS_EV_CURRENT_DEVICE_DETACH:
+        {
+            if (_is_working)
+                stop_capture();
 
-    if (event == DS_EV_NEW_DEVICE_ATTACH || event == DS_EV_CURRENT_DEVICE_DETACH)
-    {
-        if (_is_saving)
-            _active_last_device_flag = true; //Auto switch device after save data.
-        else
-             set_default_device();
-    }
-    else
-    {
-        _callback->trigger_message(DSV_MSG_DEVICE_LIST_UPDATE); // Update list only.
+            if (DS_EV_CURRENT_DEVICE_DETACH == event){
+                _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_DETACHED);
+            }
+
+            int work_mode = _device_agent.get_work_mode();
+
+            if (have_hardware_data() && (work_mode == LOGIC || work_mode == ANALOG))
+            {
+                // Try to save current device data, and auto select the lastest device later.
+                _is_auto_sel_device = true;
+                if (!_is_saving)
+                    store_session_data();
+
+                _is_trig_new_device_msg = DS_EV_NEW_DEVICE_ATTACH == event;
+            }
+            else{
+                set_default_device();
+
+                if (DS_EV_NEW_DEVICE_ATTACH == event)
+                    _callback->trigger_message(DSV_MSG_NEW_USB_DEVICE);
+            }
+        }
+        break;
+
+    case DS_EV_INACTIVE_DEVICE_DETACH:
+        _callback->trigger_message(DSV_MSG_DEVICE_LIST_UPDATED); // Update list only.
+        break;
+
+    default:
+        dsv_err("%s", "Error!Unknown device event.");
+        break;
     }
 }
 
@@ -1879,21 +1918,53 @@ void SigSession::on_device_lib_event(int event)
   void SigSession::set_repeat_mode(bool repeat)
   {
      assert(!_is_working);
-     assert(_is_repeat_mode != repeat);
-     _is_repeat_mode = repeat;     
-     _repeat_hold_prg = 0;
+
+     if(_is_repeat_mode != repeat)
+     {
+        _is_repeat_mode = repeat;     
+        _repeat_hold_prg = 0;
+     }    
   }
 
   void SigSession::repeat_capture_wait_timout()
   {
-
+     exec_capture();
   }
 
   void SigSession::OnMessage(int msg)
   {
-    if (msg == DSV_MSG_DEVICE_OPTIONS_UPDATED){
-        this->reload();
+    switch (msg)
+    {
+    case DSV_MSG_DEVICE_OPTIONS_UPDATED:
+        reload();
+        break;
+
+    case DSV_MSG_TRIG_NEXT_COLLECT:
+        if (_repeat_intvl > 0)
+                _repeate_timer.Start(_repeat_intvl * 1000);
+            else
+                exec_capture();
+        break;
+    
+    case DSV_MSG_SAVE_COMPLETE:
+        bool ret = false;
+        if (_is_auto_sel_device)
+            ret = set_default_device();
+        if (ret && _is_trig_new_device_msg){
+            _callback->trigger_message(DSV_MSG_NEW_USB_DEVICE);
+        }
+        break;
     }
+  }
+
+  void SigSession::DeviceConfigChanged()
+  {
+
+  }
+
+  void SigSession::store_session_data()
+  {
+
   }
 
   

@@ -97,7 +97,7 @@ ProtocolExp::ProtocolExp(QWidget *parent, SigSession *session) :
 
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
     connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
-    connect(_session->get_device(), SIGNAL(device_updated()), this, SLOT(reject()));
+    connect(_session->device_event_object(), SIGNAL(device_updated()), this, SLOT(reject()));
 
 }
 

@@ -41,8 +41,7 @@
 #include "xcursor.h"
 #include "signal.h"
 #include "viewstatus.h"
-#include "../dsvdef.h"
-#include "../interface/icallbacks.h"
+#include "../dsvdef.h" 
 
 class DeviceAgent;
 
@@ -69,7 +68,7 @@ class Viewport;
 class LissajousFigure;
 
 //created by MainWindow
-class View : public QScrollArea, public IMessageListener {
+class View : public QScrollArea {
 	Q_OBJECT
 
 private:
@@ -247,22 +246,18 @@ public:
 
     int get_cursor_index_by_key(uint64_t key);
 
+    void check_calibration();
+
 signals:
 	void hover_point_changed();
-
     void cursor_update();
     void xcursor_update();
-
     void cursor_moving();
     void cursor_moved();
-
     void measure_updated();
-
     void prgRate(int progress);
-
     void resize();
-
-    void auto_trig(int index);
+    void auto_trig(int index);   
 
 private: 
     void get_scroll_layout(int64_t &length, int64_t &offset);
@@ -276,20 +271,11 @@ private:
         const pv::view::Trace *b);
 
     void clear();
-    void reconstruct();
-
-    //IMessageListener 
-    void OnMessage(int msg);
-
-private:
+    void reconstruct();  
 	bool eventFilter(QObject *object, QEvent *event);
-
 	bool viewportEvent(QEvent *e);
-
 	void resizeEvent(QResizeEvent *e);
-
-    void check_calibration();
-
+ 
 public slots:
     void reload();
     void set_measure_en(int enable);
@@ -324,6 +310,8 @@ public slots:
 
     void frame_began();
 
+    void mode_changed();
+
 private slots:
 
 	void h_scroll_value_changed(int value);
@@ -343,8 +331,6 @@ private slots:
     void on_measure_updated();
 
     void splitterMoved(int pos, int index);
-
-    void mode_changed();
 
 public:
     void show_wait_trigger();

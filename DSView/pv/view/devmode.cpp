@@ -105,7 +105,7 @@ void DevMode::changeEvent(QEvent *event)
 void DevMode::set_device()
 { 
      if (_device_agent->have_instance() == false){
-        dsv_info("%s", "DevMode::set_device, Have no device.");        
+        dsv_detail("%s", "DevMode::set_device, Have no device.");   
         return;
      }
 
@@ -197,10 +197,8 @@ void DevMode::on_mode_change()
     {
         if ((*i).first == action) {
             if (_device_agent->get_work_mode() != (*i).second->mode) {
-                _session->set_run_mode(SigSession::Single);
-                _session->set_repeating(false);
                 _session->stop_capture();
-                _session->capture_state_changed(SigSession::Stopped);
+                _session->set_repeat_mode(false); 
                 _session->session_save();
                 _device_agent->set_config(NULL, NULL,
                                      SR_CONF_DEVICE_MODE,

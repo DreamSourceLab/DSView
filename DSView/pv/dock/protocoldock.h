@@ -70,8 +70,7 @@ namespace dock {
 class ProtocolDock : public QScrollArea, 
 public IProtocolItemLayerCallback, 
 public IKeywordActive,
-public ISearchItemClick,
-public IMessageListener
+public ISearchItemClick
 {
     Q_OBJECT
 

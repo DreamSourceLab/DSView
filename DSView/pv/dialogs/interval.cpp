@@ -26,9 +26,8 @@
 namespace pv {
 namespace dialogs {
 
-Interval::Interval(SigSession *session, QWidget *parent) :
+Interval::Interval(QWidget *parent) :
     DSDialog(parent),
-    _session(session),
     _button_box(QDialogButtonBox::Ok,
         Qt::Horizontal, this)
 {
@@ -36,6 +35,7 @@ Interval::Interval(SigSession *session, QWidget *parent) :
     _interval_spinBox = NULL;
     _interval_slider = NULL;
     _bSetting = false;
+    _bDone = false;
 
     setMinimumWidth(300);
     _interval_label = new QLabel(tr("Interval(s): "), this);
@@ -45,9 +45,6 @@ Interval::Interval(SigSession *session, QWidget *parent) :
     _interval_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     _interval_slider = new QSlider(Qt::Horizontal, this);
     _interval_slider->setRange(0, 10);
-
-    _interval_slider->setValue((int)_session->get_repeat_intvl());
-    _interval_spinBox->setValue(_session->get_repeat_intvl());
 
     QGridLayout *glayout = new QGridLayout(this);
     glayout->addWidget(_interval_label, 0, 0);
@@ -66,7 +63,7 @@ Interval::Interval(SigSession *session, QWidget *parent) :
 void Interval::accept()
 {
     using namespace Qt;
-    _session->set_repeat_intvl(_interval_spinBox->value());
+    _bDone = true;
     QDialog::accept();
 }
 
@@ -77,14 +74,24 @@ void Interval::reject()
     QDialog::reject();
 }
 
+void Interval::set_interval(double value)
+{
+    _interval_slider->setValue((int)value);
+    _interval_spinBox->setValue(value);
+}
+
+double Interval::get_interval()
+{
+    return _interval_spinBox->value();
+}
+
 void Interval::on_slider_changed(int value)
 {
     if (!_bSetting){
         _bSetting = true;
         _interval_spinBox->setValue((double)value);
         _bSetting = false;
-    }
-    
+    }    
 }
 
 void Interval::on_inputbox_changed(double value)
@@ -93,8 +100,7 @@ void Interval::on_inputbox_changed(double value)
         _bSetting = true;
         _interval_slider->setValue((int)value);
         _bSetting = false;
-    }
-    
+    }    
 }
 
 } // namespace dialogs

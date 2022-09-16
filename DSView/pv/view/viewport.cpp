@@ -160,32 +160,26 @@ void Viewport::paintEvent(QPaintEvent *event)
         t->paint_back(p, 0, _view.get_view_width(), fore, back);
         if (_view.back_ready())
             break;
-    }
-
-    //auto st = _view.session().get_capture_state();
+    } 
 
     if (_view.session().get_device()->get_work_mode() == LOGIC ||
-        _view.session().get_instant()) {
-        switch(_view.session().get_capture_state()) {
-        case SigSession::Init:
-            break;
-
-        case SigSession::Stopped:
+        _view.session().is_instant()) 
+    {
+        if (_view.session().is_stopped_status()){
             paintSignals(p, fore, back);
-            break;
-
-        case SigSession::Running:
-            if (_view.session().isRepeating() &&
-                !transfer_started) {
+        }
+        else if (_view.session().is_running_status()){
+            if (_view.session().is_repeat_mode() && !transfer_started) {
                 _view.set_capture_status();
                 paintSignals(p, fore, back);
-            } else if (_type == TIME_VIEW) {
+            }
+            else if (_type == TIME_VIEW) {
                 _view.repeat_unshow();
                 paintProgress(p, fore, back);
             }
-            break;
-        }
-    } else {
+        }     
+    }
+    else {
         paintSignals(p, fore, back);
     }
 
@@ -259,9 +253,9 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
             const int64_t cursorX = _view.index2pixel((*i)->index());
             if (xrect.contains(_view.hover_point().x(), _view.hover_point().y()) &&
                     qAbs(cursorX - _view.hover_point().x()) <= HitCursorMargin)
-                (*i)->paint(p, xrect, 1, index, _view.session().get_capture_state() == SigSession::Stopped);
+                (*i)->paint(p, xrect, 1, index, _view.session().is_stopped_status());
             else
-                (*i)->paint(p, xrect, 0, index, _view.session().get_capture_state() == SigSession::Stopped);
+                (*i)->paint(p, xrect, 0, index, _view.session().is_stopped_status());
             i++;
             index++;
         }
@@ -328,8 +322,9 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
         paintMeasure(p, fore, back);
 
         //plot trigger information
-        if (_view.session().get_device()->get_work_mode() == DSO &&
-            _view.session().get_capture_state() == SigSession::Running) {
+        if (_view.session().get_device()->get_work_mode() == DSO
+            && _view.session().is_running_status()) 
+        {
             uint8_t type;
             bool roll = false;
             QString type_str="";
@@ -506,12 +501,14 @@ void Viewport::mousePressEvent(QMouseEvent *event)
     _drag_strength = 0;
     _elapsed_time.restart();
 
-    if (_action_type == NO_ACTION &&
-        event->button() == Qt::RightButton &&
-        _view.session().get_capture_state() == SigSession::Stopped) {
+    if (_action_type == NO_ACTION
+        && event->button() == Qt::RightButton
+        && _view.session().is_stopped_status())
+    {
         if (_view.session().get_device()->get_work_mode() == LOGIC) {
             _action_type = LOGIC_ZOOM;
-        } else if (_view.session().get_device()->get_work_mode() == DSO) {
+        }
+        else if (_view.session().get_device()->get_work_mode() == DSO) {
             if (_hover_hit) {
                 const int64_t index = _view.pixel2index(event->pos().x());
                 _view.add_cursor(view::Ruler::CursorColor[_view.get_cursorList().size() % 8], index);
@@ -768,10 +765,10 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
         return;
     }
   
-        if ((_action_type == NO_ACTION) &&
-            (event->button() == Qt::LeftButton)) {
-            if (_view.session().get_device()->get_work_mode() == LOGIC &&
-                _view.session().get_capture_state() == SigSession::Stopped) {
+        if ((_action_type == NO_ACTION) && (event->button() == Qt::LeftButton)) 
+        {
+            if (_view.session().get_device()->get_work_mode() == LOGIC
+                && _view.session().is_stopped_status()) {
                 //priority 1
                 //try to quick scroll view...
                 int curX = event->globalPos().x();
@@ -976,14 +973,16 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
     if (!_view.get_view_rect().contains(event->pos()))
         return;
 
-    if (_view.session().get_device()->get_work_mode() == LOGIC &&
-        _view.session().get_capture_state() == SigSession::Stopped) {
+    if (_view.session().get_device()->get_work_mode() == LOGIC
+        && _view.session().is_stopped_status()) 
+    {
         if (event->button() == Qt::RightButton) {
             if (_view.scale() == _view.get_maxscale())
                 _view.set_preScale_preOffset();
             else
                 _view.set_scale_offset(_view.get_maxscale(), _view.get_min_offset());
-        } else if (event->button() == Qt::LeftButton) {
+        }
+        else if (event->button() == Qt::LeftButton) {
             bool logic = false;
             uint64_t index;
             uint64_t index0 = 0, index1 = 0, index2 = 0;
@@ -1015,13 +1014,15 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
             _view.show_cursors(true);
         }
         update();
-    } else if (_view.session().get_device()->get_work_mode() == DSO &&
-               _view.session().get_capture_state() != SigSession::Init &&
-               event->button() == Qt::LeftButton) {
+    }
+    else if (_view.session().get_device()->get_work_mode() == DSO
+             && _view.session().is_init_status() == false
+             && event->button() == Qt::LeftButton) {
         if (_dso_xm_valid) {
             clear_dso_xm();
             measure_updated();
-        } else if (_action_type == NO_ACTION) {
+        }
+        else if (_action_type == NO_ACTION) {
             for(auto &s : _view.session().get_signals()) {
                 assert(s);
                 if (s->get_view_rect().contains(event->pos())) {
@@ -1691,20 +1692,24 @@ void Viewport::on_drag_timer()
 {   
     const int64_t offset = _view.offset();
     const double scale = _view.scale();
-    if (_view.session().get_capture_state() == SigSession::Stopped &&
-        _drag_strength != 0 &&
-        offset < _view.get_max_offset() &&
-        offset > _view.get_min_offset()) {
+
+    if (_view.session().is_stopped_status()
+        && _drag_strength != 0
+        && offset < _view.get_max_offset()
+        && offset > _view.get_min_offset()) 
+    {
         _view.set_scale_offset(scale, offset + _drag_strength);
         _drag_strength /= DragDamping;
         if (_drag_strength != 0)
             _drag_timer.start(DragTimerInterval);
-    } else if (offset == _view.get_max_offset() ||
-               offset == _view.get_min_offset()) {
+    }
+    else if (offset == _view.get_max_offset() ||
+             offset == _view.get_min_offset()) {
         _drag_strength = 0;
         _drag_timer.stop();
         _action_type = NO_ACTION;
-    }else if (_action_type == NO_ACTION){
+    }
+    else if (_action_type == NO_ACTION){
         _drag_strength = 0;
         _drag_timer.stop();
     }

@@ -52,9 +52,7 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
     QScrollArea(parent),
     _session(session),
     _view(view)
-{
-    _session->add_msg_listener(this);
-    
+{     
     _widget = new QWidget(this);   
 
     _mouse_groupBox = new QGroupBox(_widget);
@@ -689,13 +687,6 @@ void MeasureDock::del_cursor()
 
     cursor_update();
     _view.update();
-}
-
-void MeasureDock::OnMessage(int msg)
-{
-    if (msg == DSV_MSG_DEVICE_OPTIONS_UPDATED){
-        this->reload();
-    }
 }
 
 } // namespace dock

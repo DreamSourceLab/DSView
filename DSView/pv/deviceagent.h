@@ -27,6 +27,12 @@
 #include <libsigrok.h>
 #include <QString>
 
+class IDeviceAgentCallback
+{
+    public:
+        virtual void DeviceConfigChanged()=0;
+};
+
 class DeviceAgent
 {
 public:
@@ -62,7 +68,11 @@ public:
 
     inline bool is_hardware(){
         return _dev_type == DEV_TYPE_USB;
-    }  
+    }
+
+    inline void set_callback(IDeviceAgentCallback *callback){
+        _callback = callback;
+    }
 
     GVariant* get_config(const sr_channel *ch, const sr_channel_group *group, int key);
 
@@ -123,13 +133,11 @@ public:
 
     bool have_enabled_channel();
 
-    bool get_status(struct sr_status &status, gboolean prg);
-
-    bool is_running();
+    bool get_status(struct sr_status &status, gboolean prg); 
 
     GSList* get_channels();
 
-      /**
+    /**
      * Start collect data.
      */
     bool start();
@@ -139,7 +147,10 @@ public:
      */
     bool stop();
 
-protected: 
+    bool is_collecting();
+
+protected:
+    void config_changed();
 
     //---------------device config-----------/
 public:
@@ -162,6 +173,7 @@ private:
     QString     _dev_name;
     QString     _driver_name;
     struct sr_dev_inst  *_di;
+    IDeviceAgentCallback *_callback;
 };
 
 

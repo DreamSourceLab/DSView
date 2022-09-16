@@ -23,23 +23,18 @@
 #ifndef _I_CALLBACKS_
 #define _I_CALLBACKS_
 
-struct ds_device_info;
 
 class ISessionCallback
 {
 public:
     virtual void show_error(QString error)=0;
     virtual void session_error()=0;
-    virtual void capture_state_changed(int state)=0;
-    virtual void device_detach()=0;
-
     virtual void session_save()=0;
     virtual void data_updated()=0;
     virtual void repeat_resume()=0;
     virtual void update_capture()=0;
-    virtual void cur_snap_samplerate_changed()=0;
 
-    virtual void device_setted()=0;
+    virtual void cur_snap_samplerate_changed()=0;
     virtual void signals_changed()=0;
     virtual void receive_trigger(quint64 trigger_pos)=0;
     virtual void frame_ended()=0;
@@ -53,8 +48,7 @@ public:
     
     virtual void receive_header()=0;
     virtual void data_received()=0;
-    virtual void trigger_message(int msg)=0;
-  
+    virtual void trigger_message(int msg)=0;  
 };
 
 class ISessionDataGetter
@@ -64,12 +58,26 @@ public:
 };
 
 
-#define DSV_MSG_DEVICE_LIST_UPDATE      4500
-#define DSV_MSG_COLLECT_START_PREV      5001
-#define DSV_MSG_COLLECT_START           5002
-#define DSV_MSG_COLLECT_END_PREV        5003
-#define DSV_MSG_COLLECT_END             5004
+class IDlgCallback
+{
+public:
+    virtual void OnDlgResult(bool bYes)=0;
+};
 
+class IMainForm{
+public:
+    virtual void switchLanguage(int language)=0;
+};
+
+
+#define DSV_MSG_START_COLLECT_WORK_PREV 5001
+#define DSV_MSG_START_COLLECT_WORK      5002
+#define DSV_MSG_COLLECT_START           5003
+#define DSV_MSG_COLLECT_END             5004
+#define DSV_MSG_END_COLLECT_WORK_PREV   5005
+#define DSV_MSG_END_COLLECT_WORK        5006
+
+#define DSV_MSG_DEVICE_LIST_UPDATED     6000
 #define DSV_MSG_BEGIN_DEVICE_OPTIONS    6001 //Begin show device options dialog.
 #define DSV_MSG_END_DEVICE_OPTIONS      6002
 #define DSV_MSG_DEVICE_OPTIONS_UPDATED  6003
@@ -78,6 +86,11 @@ public:
 #define DSV_MSG_CURRENT_DEVICE_CHANGE_PREV  6006
 #define DSV_MSG_CURRENT_DEVICE_CHANGED  6007
 #define DSV_MSG_NEW_USB_DEVICE          6008
+#define DSV_MSG_CURRENT_DEVICE_DETACHED 6009
+#define DSV_MSG_DEVICE_CONFIG_UPDATED   6010
+
+#define DSV_MSG_TRIG_NEXT_COLLECT       7001
+#define DSV_MSG_SAVE_COMPLETE           7002
 
 class IMessageListener
 {

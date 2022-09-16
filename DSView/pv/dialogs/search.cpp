@@ -85,7 +85,6 @@ Search::Search(QWidget *parent, SigSession *session, std::map<uint16_t, QString>
 
     connect(&search_buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
     connect(&search_buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
-    connect(_session->get_device(), SIGNAL(device_updated()), this, SLOT(reject()));
 }
 
 Search::~Search()

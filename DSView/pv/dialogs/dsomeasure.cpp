@@ -77,7 +77,7 @@ DsoMeasure::DsoMeasure(SigSession *session, View &parent,
 
     connect(_button_box.button(QDialogButtonBox::Cancel), SIGNAL(clicked()), this, SLOT(reject()));
     connect(_button_box.button(QDialogButtonBox::Reset), SIGNAL(clicked()), this, SLOT(reset()));
-    connect(_session->get_device(), SIGNAL(device_updated()), this, SLOT(reject()));
+    connect(_session->device_event_object(), SIGNAL(device_updated()), this, SLOT(reject()));
 }
 
 DsoMeasure::~DsoMeasure(){

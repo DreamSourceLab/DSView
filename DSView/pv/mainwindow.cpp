@@ -100,9 +100,11 @@
 namespace pv
 {
 
-    MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent),
-                                              _msg(NULL)
-    {
+    MainWindow::MainWindow(QWidget *parent) 
+        : QMainWindow(parent)
+    {   
+        _msg = NULL;
+
         _session = AppControl::Instance()->GetSession();
         _session->set_callback(this);
         _device_agent = _session->get_device();
@@ -227,8 +229,7 @@ namespace pv
 
         retranslateUi();
 
-        // event
-        connect(&_event, SIGNAL(capture_state_changed(int)), this, SLOT(on_capture_state_changed(int)));
+        // event      
         connect(&_event, SIGNAL(session_error()), this, SLOT(on_session_error()));
         connect(&_event, SIGNAL(signals_changed()), this, SLOT(on_signals_changed()));
         connect(&_event, SIGNAL(receive_trigger(quint64)), this, SLOT(on_receive_trigger(quint64)));
@@ -285,11 +286,10 @@ namespace pv
         _search_dock->setWindowTitle(tr("Search..."));
     }
 
+/*
     void MainWindow::update_device_list()
     {
-        assert(_sampling_bar);
-
-        /*
+        assert(_sampling_bar); 
         if (!selected_device->name().contains("virtual")) {
             _file_bar->set_settings_en(true);
             _logo_bar->dsl_connected(true);
@@ -345,8 +345,9 @@ namespace pv
                     }
                 }
            }
-        */
+ 
     }
+    */
 
     void MainWindow::on_load_file(QString file_name)
     { 
@@ -368,54 +369,11 @@ namespace pv
         MsgBox::Show(NULL, error.toStdString().c_str(), this);
     }
  
- 
-   // void MainWindow::on_device_detach()
-    //{
-        /*
-
-        _device_agent->device_updated();
-
-        _session->set_repeating(false);
-        _session->stop_capture();
-        _sampling_bar->set_sampling(false);
-        _session->capture_state_changed(SigSession::Stopped);
-
-        session_save();
-        _view->hide_calibration();
-
-        if (_device_agent->get_work_mode() != DSO &&
-            strncmp(_device_agent->name().toUtf8(), "virtual", 7)) {
-            const auto logic_snapshot = _session->get_snapshot(SR_CHANNEL_LOGIC);
-            assert(logic_snapshot);
-            const auto analog_snapshot = _session->get_snapshot(SR_CHANNEL_ANALOG);
-            assert(analog_snapshot);
-
-            if (!logic_snapshot->empty() || !analog_snapshot->empty()) {
-                dialogs::DSMessageBox msg(this);
-                _msg = &msg;
-                msg.mBox()->setText(tr("Hardware Detached"));
-                msg.mBox()->setInformativeText(tr("Save captured data?"));
-                msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
-                msg.mBox()->addButton(tr("Cancel"), QMessageBox::RejectRole);
-                msg.mBox()->setIcon(QMessageBox::Warning);
-                if (msg.exec())
-                    on_save();
-                _msg = NULL;
-            }
-        }
-
-        _hot_detach = true;
-
-        if (!_session->get_saving())
-            device_detach_post();
-        */
-   // }
-
     void MainWindow::repeat_resume()
     {
-        while (_view->session().get_capture_state() == SigSession::Running)
-            QCoreApplication::processEvents();
-        _session->stop_capture();
+      //  while (_view->session().is_running_status())
+       //     QCoreApplication::processEvents();
+      //  _session->stop_capture();
     }
 
     void MainWindow::session_error()
@@ -478,7 +436,7 @@ namespace pv
 
         dialogs::DSMessageBox msg(this);
         
-        connect(_device_agent, SIGNAL(device_updated()), &msg, SLOT(accept()));
+        connect(_session->device_event_object(), SIGNAL(device_updated()), &msg, SLOT(accept()));
 
         QFont font("Monaco");
         font.setStyleHint(QFont::Monospace);
@@ -492,36 +450,6 @@ namespace pv
         msg.exec();
 
         _session->clear_error();
-    }
-
-    void MainWindow::capture_state_changed(int state)
-    {
-        _event.capture_state_changed(state); // safe call
-    }
-
-    void MainWindow::on_capture_state_changed(int state)
-    {
-        if (!_session->repeat_check())
-        {
-            _file_bar->enable_toggle(state != SigSession::Running);
-            _sampling_bar->set_sampling(state == SigSession::Running);
-            _view->on_state_changed(state != SigSession::Running);
-
-            if (_device_agent->get_work_mode() != DSO ||
-                _session->get_instant())
-            {
-                _sampling_bar->enable_toggle(state != SigSession::Running);
-                _trig_bar->enable_toggle(state != SigSession::Running);
-                //_measure_dock->widget()->setEnabled(state != SigSession::Running);
-                _measure_widget->refresh();
-            }
-        }
-
-        if (state == SigSession::Stopped)
-        {
-            prgRate(0);
-            _view->repeat_unshow();
-        }
     }
 
     void MainWindow::session_save()
@@ -1072,10 +1000,16 @@ namespace pv
             switch (ke->key())
             {
             case Qt::Key_S:
-                on_run_stop();
+                if (_session->is_working())
+                    _session->stop_capture();
+                else
+                    _session->start_capture(false);
                 break;
             case Qt::Key_I:
-                on_instant_stop();
+                if (_session->is_working())
+                    _session->stop_capture();
+                else
+                    _session->start_capture(true);
                 break;
             case Qt::Key_T:
                 if (_device_agent->get_work_mode() == DSO)
@@ -1095,7 +1029,7 @@ namespace pv
                 on_search(!_search_dock->isVisible());
                 break;
             case Qt::Key_O:
-                _sampling_bar->on_configure();
+                _sampling_bar->config_device();
                 break;
             case Qt::Key_PageUp:
                 _view->set_scale_offset(_view->scale(),
@@ -1275,11 +1209,7 @@ namespace pv
     }
 
     /*------------------on event end-------*/
-
-    void MainWindow::device_setted()
-    {
-        _view->set_device();
-    }
+ 
 
     void MainWindow::signals_changed()
     {
@@ -1403,36 +1333,70 @@ namespace pv
     {
         switch (msg)
         {
-        case DSV_MSG_DEVICE_LIST_UPDATE: 
+        case DSV_MSG_DEVICE_LIST_UPDATED: 
             _sampling_bar->update_device_list();            
             break;
 
-        case DSV_MSG_COLLECT_START:
+        case DSV_MSG_START_COLLECT_WORK_PREV:
+            _trigger_widget->try_commit_trigger();
+            _view->capture_init();
+            break;
+
+        case DSV_MSG_START_COLLECT_WORK:
             _sampling_bar->set_sampling(false);
             break;
 
-        case DSV_MSG_COLLECT_END:
-            _sampling_bar->set_sampling(true);
+        case DSV_MSG_END_COLLECT_WORK:
+            _session->device_event_object()->device_updated();
+            _sampling_bar->set_sampling(true);           
             break;
+
         case DSV_MSG_NEW_USB_DEVICE:
             check_usb_device_speed();
             break;
 
         case DSV_MSG_CURRENT_DEVICE_CHANGED:
-            if (_msg != NULL)
+            if (_msg != NULL){
                 _msg->close();
+                _msg = NULL;
+            }
 
             _sampling_bar->update_device_list();
+            _view->reload();
+            _view->set_device();
             _trig_bar->reload();
             _sampling_bar->reload();
             _view->status_clear();
             _trigger_widget->init();
             _dso_trigger_widget->init();
-            _measure_widget->reload(); 
+            _measure_widget->reload();
+            _trigger_widget->device_updated();
             break;
 
         case DSV_MSG_CURRENT_DEVICE_CHANGE_PREV:
             _protocol_widget->del_all_protocol();
+            _view->reload();
+            break;
+
+        case DSV_MSG_DEVICE_OPTIONS_UPDATED:
+            _trigger_widget->device_updated();
+            _measure_widget->reload();
+            _view->check_calibration();
+            break;
+
+        case DSV_MSG_DEVICE_DURATION_UPDATED:
+            _trigger_widget->device_updated();
+            _view->timebase_changed();
+            break;
+
+        case DSV_MSG_DEVICE_MODE_CHANGED:
+            _view->mode_changed();        
+            break;
+
+        case DSV_MSG_CURRENT_DEVICE_DETACHED:
+            _session->device_event_object()->device_updated();
+             session_save();
+            _view->hide_calibration();            
             break;
         }
 }

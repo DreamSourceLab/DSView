@@ -147,8 +147,7 @@ DeviceOptions::DeviceOptions(QWidget *parent) :
     try_resize_scroll();
   
     connect(&_mode_check, SIGNAL(timeout()), this, SLOT(mode_check()));
-    connect(button_box, SIGNAL(accepted()), this, SLOT(accept())); 
-    connect(_device_agent, SIGNAL(device_updated()), this, SLOT(reject()));
+    connect(button_box, SIGNAL(accepted()), this, SLOT(accept()));
 
     _mode_check.setInterval(100);
     _mode_check.start();  

@@ -460,7 +460,7 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
         auto i = _view.get_cursorList().begin();
         int index = 1;
         while (i != _view.get_cursorList().end()) {
-            (*i)->paint_label(p, rect(), prefix, index, _view.session().get_capture_state() == SigSession::Stopped);
+            (*i)->paint_label(p, rect(), prefix, index, _view.session().is_stopped_status());
             index++;
             i++;
         }
@@ -578,7 +578,7 @@ void Ruler::draw_osc_tick_mark(QPainter &p)
         auto i = _view.get_cursorList().begin();
         int index = 1;
         while (i != _view.get_cursorList().end()) {
-            (*i)->paint_label(p, rect(), prefix, index, _view.session().get_capture_state() == SigSession::Stopped);
+            (*i)->paint_label(p, rect(), prefix, index, _view.session().is_stopped_status());
             index++;
             i++;
         }

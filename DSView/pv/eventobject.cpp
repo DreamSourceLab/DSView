@@ -24,3 +24,7 @@
 EventObject::EventObject(){
     
 }
+
+DeviceEventObject::DeviceEventObject()
+{
+}

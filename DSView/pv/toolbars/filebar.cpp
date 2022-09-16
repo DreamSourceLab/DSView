@@ -242,10 +242,5 @@ void FileBar::set_settings_en(bool enable)
     _menu_session->setDisabled(!enable);
 }
 
-void FileBar::OnMessage(int msg)
-{
-
-}
-
 } // namespace toolbars
 } // namespace pv

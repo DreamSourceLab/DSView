@@ -33,6 +33,7 @@
 #include <QAction>
 #include <QMenu>
 #include "../ui/dscombobox.h"
+#include <QDialog>
 
 struct st_dev_inst;
 class QAction;
@@ -75,9 +76,8 @@ namespace pv
  
 
         public:
-            SamplingBar(SigSession *session, QWidget *parent);
-            
-            void update_sample_rate_selector();
+            SamplingBar(SigSession *session, QWidget *parent);            
+           
             void enable_toggle(bool enable);           
             void enable_instant(bool enable);
 
@@ -85,9 +85,11 @@ namespace pv
             double commit_hori_res();
             double get_hori_res(); 
             void set_sample_rate(uint64_t sample_rate);
-            void update_device_list();
-            void set_sampling(bool sampling);
+            void update_device_list();          
             void reload();
+            void set_sampling(bool sampling);
+
+            void config_device(); 
 
         private:
             void enable_run_stop(bool enable);
@@ -95,14 +97,12 @@ namespace pv
             void retranslateUi();
             void reStyle();
 
+            void update_sample_rate_selector();
             void update_sample_rate_selector_value();
             void update_sample_count_selector();
             void update_sample_count_selector_value();
             void commit_settings();
             void setting_adj();
-
-            //IMessageListener
-            void OnMessage(int msg);
 
         private slots:
             void on_mode();
@@ -116,18 +116,18 @@ namespace pv
            
 
         private:
-            SigSession          *_session; 
-            bool                _enable;
-            bool                _sampling;
+            SigSession          *_session;  
 
-            QToolButton         _device_type;
+            QToolButton          _device_type;
             DsComboBox           _device_selector;  
 
-            QToolButton         _configure_button;
+            QToolButton          _configure_button;
             DsComboBox           _sample_count;
             DsComboBox           _sample_rate;
+
             bool                _updating_sample_rate;
             bool                _updating_sample_count;
+            bool                _updating_device_list;
 
             QToolButton         _run_stop_button;
             QToolButton         _instant_button;
@@ -139,7 +139,7 @@ namespace pv
             QMenu               *_mode_menu;
             QAction             *_action_repeat;
             QAction             *_action_single;
-            bool                _updating_device_list;
+        
             DeviceAgent         *_device_agent;
             ds_device_handle    _last_device_handle;
         };

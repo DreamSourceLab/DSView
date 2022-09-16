@@ -64,8 +64,7 @@ SamplingBar::SamplingBar(SigSession *session, QWidget *parent) :
     _updating_device_list = false;
     _updating_sample_rate = false;
     _updating_sample_count = false;
-    _sampling = false;
-    _enable = true; 
+
     _last_device_handle = NULL_HANDLE;
 
     _session = session;
@@ -168,15 +167,17 @@ void SamplingBar::retranslateUi()
 
    int mode = _device_agent->get_work_mode();
 
+   bool is_working = _session->is_working();
+
     if (_session->is_instant()) {
         if (bDev && mode == DSO)
-            _instant_button.setText(_sampling ? tr("Stop") : tr("Single"));
+            _instant_button.setText(is_working ? tr("Stop") : tr("Single"));
         else
-            _instant_button.setText(_sampling ? tr("Stop") : tr("Instant"));
+            _instant_button.setText(is_working ? tr("Stop") : tr("Instant"));
         _run_stop_button.setText(tr("Start"));
     }
     else {
-        _run_stop_button.setText(_sampling ? tr("Stop") : tr("Start"));
+        _run_stop_button.setText(is_working ? tr("Stop") : tr("Start"));
         if (bDev && mode == DSO)
             _instant_button.setText(tr("Single"));
         else
@@ -215,10 +216,10 @@ void SamplingBar::reStyle()
     if (true) {
         QString iconPath = GetIconPath();
         _configure_button.setIcon(QIcon(iconPath+"/params.svg"));
-        _mode_button.setIcon(_session->get_run_mode() == pv::SigSession::Single ? QIcon(iconPath+"/modes.svg") :
-                                                                                 QIcon(iconPath+"/moder.svg"));
-        _run_stop_button.setIcon(_sampling ? QIcon(iconPath+"/stop.svg") :
-                                             QIcon(iconPath+"/start.svg"));
+        QString icon1 = _session->is_repeat_mode() ? "moder.svg" : "modes.svg";
+        _mode_button.setIcon(QIcon(iconPath+ "/" + icon1));
+        QString icon2 = _session->is_working() ? "stop.svg" : "start.svg";
+        _run_stop_button.setIcon(QIcon(iconPath + "/" + icon2));
         _instant_button.setIcon(QIcon(iconPath+"/single.svg"));
         _action_single->setIcon(QIcon(iconPath+"/oneloop.svg"));
         _action_repeat->setIcon(QIcon(iconPath+"/repeat.svg"));
@@ -237,6 +238,8 @@ void SamplingBar::on_configure()
     _session->broadcast_msg(DSV_MSG_BEGIN_DEVICE_OPTIONS);
 
     pv::dialogs::DeviceOptions dlg(this);
+    connect(_session->device_event_object(), SIGNAL(device_updated()), &dlg, SLOT(reject()));
+
     ret = dlg.exec();
 
     if (ret == QDialog::Accepted) 
@@ -298,7 +301,7 @@ void SamplingBar::zero_adj()
     _sample_count.setCurrentIndex(i);
     commit_hori_res();
 
-    if (_session->is_running() == false)
+    if (_session->is_working() == false)
         _session->start_capture(true);
 
     pv::dialogs::WaitingDialog wait(this, _session, SR_CONF_ZERO);
@@ -310,7 +313,7 @@ void SamplingBar::zero_adj()
         }
     }
 
-    if (_session->is_running())
+    if (_session->is_working())
         _session->stop_capture();
 
     _sample_count.setCurrentIndex(index_back);
@@ -318,9 +321,7 @@ void SamplingBar::zero_adj()
 }
 
 void SamplingBar::set_sampling(bool sampling)
-{ 
-    _sampling = sampling;
-
+{  
     if (!sampling) {
         enable_run_stop(true);
         enable_instant(true);
@@ -344,7 +345,7 @@ void SamplingBar::set_sampling(bool sampling)
         else
             _run_stop_button.setIcon(sampling ? QIcon(iconPath+"/stop.svg") : QIcon(iconPath+"/start.svg"));
   
-        _mode_button.setIcon(_session->get_run_mode() == pv::SigSession::Single ? QIcon(iconPath+"/modes.svg") :
+        _mode_button.setIcon(_session->is_repeat_mode() == false ? QIcon(iconPath+"/modes.svg") :
                                                                              QIcon(iconPath+"/moder.svg"));
     }
 
@@ -370,8 +371,12 @@ void SamplingBar::update_sample_rate_selector()
 	const uint64_t *elements = NULL;
 	gsize num_elements;
 
-    if (_updating_sample_rate)
+    dsv_info("%s", "Update rate list.");
+
+    if (_updating_sample_rate){
+        dsv_err("%s", "Error! The rate list is updating.");
         return;
+    }
 
     disconnect(&_sample_rate, SIGNAL(currentIndexChanged(int)),
         this, SLOT(on_samplerate_sel(int)));
@@ -384,7 +389,7 @@ void SamplingBar::update_sample_rate_selector()
     _updating_sample_rate = true;
 
     gvar_dict = _device_agent->get_config_list(NULL, SR_CONF_SAMPLERATE);
-    if (gvar_dict != NULL)
+    if (gvar_dict == NULL)
     {
         _sample_rate.clear();
         _sample_rate.show();
@@ -429,12 +434,9 @@ void SamplingBar::update_sample_rate_selector_value()
 {
     if (_updating_sample_rate)
         return;
-
-    const uint64_t samplerate = _device_agent->get_sample_rate();
-
-    assert(!_updating_sample_rate);
     _updating_sample_rate = true;
 
+    const uint64_t samplerate = _device_agent->get_sample_rate();  
     uint64_t cur_value = _sample_rate.itemData(_sample_rate.currentIndex()).value<uint64_t>();
 
     if (samplerate != cur_value) {
@@ -469,8 +471,12 @@ void SamplingBar::update_sample_count_selector()
     double duration;
     bool rle_support = false;
 
-    if (_updating_sample_count)
+    dsv_info("%s", "Update sample count list.");
+
+    if (_updating_sample_count){
+        dsv_err("%s", "Error! The sample count is updating.");
         return;
+    }
 
     disconnect(&_sample_count, SIGNAL(currentIndexChanged(int)),
         this, SLOT(on_samplecount_sel(int)));
@@ -782,8 +788,8 @@ void SamplingBar::commit_settings()
 //start or stop capture
 void SamplingBar::on_run_stop()
 {
-    if (get_sampling() || _session->isRepeating()) {
-        _session->exit_capture();
+    if (_session->is_working()) {
+        _session->stop_capture();
         return;
     }
 
@@ -792,9 +798,7 @@ void SamplingBar::on_run_stop()
         dsv_info("%s", "Have no device, can't to collect data.");
         return;
     }
-   
-    enable_run_stop(false);
-    enable_instant(false);
+    
     commit_settings(); 
 
     if (_device_agent->get_work_mode() == DSO) {
@@ -825,16 +829,20 @@ void SamplingBar::on_run_stop()
             }
         }
     }
- 
+
+    if (_session->start_capture(false)){
+         enable_run_stop(false);
+        enable_instant(false);
+    } 
 }
 
 void SamplingBar::on_instant_stop()
 {
-    if (get_sampling()) {
-        _session->set_repeating(false);
+    if (_session->is_working()) {
+        _session->set_repeat_mode(false);
         bool wait_upload = false;
 
-        if (_session->get_run_mode() != SigSession::Repetitive) {
+        if (_session->is_repeat_mode() == false) {
             GVariant *gvar = _device_agent->get_config(NULL, NULL, SR_CONF_WAIT_UPLOAD);
             if (gvar != NULL) {
                 wait_upload = g_variant_get_boolean(gvar);
@@ -843,23 +851,16 @@ void SamplingBar::on_instant_stop()
         }
         if (!wait_upload) {
             _session->stop_capture();
-            _session->capture_state_changed(SigSession::Stopped);
         }
     } 
     else {
 
         if (_device_agent->have_instance() == false){
-            dsv_info("%s", "Have no device, can't to collect data.");
+            dsv_info("%s", "Error! Have no device, can't to collect data.");
             return;
         }
-
-        enable_run_stop(false);
-        enable_instant(false);
+ 
         commit_settings(); 
-
-        if (_device_agent->have_instance() == false){
-            return;
-        }
 
         if (_device_agent->get_work_mode() == DSO) {
             GVariant* gvar = _device_agent->get_config(NULL, NULL, SR_CONF_ZERO);
@@ -888,7 +889,13 @@ void SamplingBar::on_instant_stop()
                     return;
                 }
             }
-        } 
+        }
+
+        if (_session->start_capture(true))
+        {
+            enable_run_stop(false);
+            enable_instant(false);
+        }
     }
 }
 
@@ -991,13 +998,19 @@ void SamplingBar::on_mode()
 
     if (act == _action_single) {
         _mode_button.setIcon(QIcon(iconPath+"/modes.svg"));
-        _session->set_run_mode(pv::SigSession::Single);
+        _session->set_repeat_mode(false);
     }
     else if (act == _action_repeat) {
         _mode_button.setIcon(QIcon(iconPath+"/moder.svg"));
-        pv::dialogs::Interval interval_dlg(_session, this);
+        pv::dialogs::Interval interval_dlg(this);
+
+        interval_dlg.set_interval(_session->get_repeat_intvl());
         interval_dlg.exec();
-        _session->set_run_mode(pv::SigSession::Repetitive);
+
+        if (interval_dlg.is_done()){
+           _session->set_repeat_intvl(interval_dlg.get_interval());
+           _session->set_repeat_mode(true);
+        }       
     }
 }
 
@@ -1006,6 +1019,8 @@ void SamplingBar::on_mode()
     struct ds_device_info *array = NULL;
     int dev_count = 0;
     int select_index = 0;
+
+    dsv_info("%s", "Update device list.");
 
     array = _session->get_device_list(dev_count, select_index);
 
@@ -1026,7 +1041,6 @@ void SamplingBar::on_mode()
     free(array);
 
     _device_selector.setCurrentIndex(select_index);
-
     update_sample_rate_selector();
 
     int width = _device_selector.sizeHint().width();
@@ -1036,19 +1050,9 @@ void SamplingBar::on_mode()
     _updating_device_list = false;
   }
 
-  void SamplingBar::OnMessage(int msg)
-  { 
-    switch (msg)
-    {
-    case DSV_MSG_DEVICE_LIST_UPDATE:
-    case DSV_MSG_CURRENT_DEVICE_CHANGED:
-        update_device_list();
-        break;
-    case DSV_MSG_COLLECT_START:
-        set_sampling(false);
-    case DSV_MSG_COLLECT_END:
-        set_sampling(true);    
-    }
+  void SamplingBar::config_device()
+  {
+        on_configure();
   }
 
 } // namespace toolbars

@@ -102,7 +102,6 @@ View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget
 
    _session = session;
    _device_agent = session->get_device();
-   session->add_msg_listener(this);
 
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
   
@@ -249,7 +248,7 @@ void View::capture_init()
 
     if (mode == DSO)
         show_trig_cursor(true);
-    else if (!_session->isRepeating())
+    else if (!_session->is_repeating())
         show_trig_cursor(false);
 
     _maxscale = _session->cur_sampletime() / (get_view_width() * MaxViewRate);
@@ -297,10 +296,11 @@ bool View::zoom(double steps, int offset)
     if (_device_agent->get_work_mode() != DSO) {
         _scale *= std::pow(3.0/2.0, -steps);
         _scale = max(min(_scale, _maxscale), _minscale);
-    } else {
-        if (_session->get_capture_state() == SigSession::Running &&
-            _session->get_instant())
+    } 
+    else {
+        if (_session->is_running_status() && _session->is_instant()){
             return ret;
+        }
 
         double hori_res = -1;
         if(steps > 0.5)
@@ -343,20 +343,18 @@ void View::timebase_changed()
 
 void View::set_scale_offset(double scale, int64_t offset)
 {
-    //if (_session->get_capture_state() == SigSession::Stopped) {
-        _preScale = _scale;
-        _preOffset = _offset;
+    _preScale = _scale;
+    _preOffset = _offset;
 
-        _scale = max(min(scale, _maxscale), _minscale);
-        _offset = floor(max(min(offset, get_max_offset()), get_min_offset()));
+    _scale = max(min(scale, _maxscale), _minscale);
+    _offset = floor(max(min(offset, get_max_offset()), get_min_offset()));
 
-        if (_scale != _preScale || _offset != _preOffset) {
-            update_scroll();
-            _header->update();
-            _ruler->update();
-            viewport_update();
-        }
-    //}
+    if (_scale != _preScale || _offset != _preOffset) {
+        update_scroll();
+        _header->update();
+        _ruler->update();
+        viewport_update();
+    }
 }
 
 void View::set_preScale_preOffset()
@@ -1369,28 +1367,6 @@ void View::check_calibration()
                 }
             }
         }
-}
-
-void View::OnMessage(int msg)
-{ 
-    switch (msg)
-    {
-    case DSV_MSG_DEVICE_OPTIONS_UPDATED:
-        check_calibration();
-        break;
-    case DSV_MSG_COLLECT_START_PREV:
-        capture_init();
-        break;
-    case DSV_MSG_DEVICE_DURATION_UPDATED:
-        timebase_changed();
-        break; 
-    case DSV_MSG_DEVICE_MODE_CHANGED:
-        mode_changed();
-        break;
-    case DSV_MSG_CURRENT_DEVICE_CHANGED:
-        reload();
-        break;
-    }
 }
 
 } // namespace view
