@@ -33,7 +33,7 @@
 #include "pv/config/appconfig.h"
 #include "config.h"
 #include "pv/appcontrol.h"
-#include "pv/log.h"
+#include "pv/log.h" 
 
 #ifdef _WIN32
 #include <windows.h>
@@ -208,7 +208,7 @@ bool bHighScale = true;
 	//----------------------run
 	dsv_info("----------------- version: %s-----------------", DS_VERSION_STRING);
 	dsv_info("Qt:%s", QT_VERSION_STR);
-
+ 
 	//init core
 	if (!control->Init()){ 
 		dsv_err("%s", "init error!");
@@ -222,8 +222,8 @@ bool bHighScale = true;
 
 	try
 	{   
+		pv::MainFrame w;
 		control->Start();
-        pv::MainFrame w; //Initialise the main frame
 		w.show(); 
 		w.readSettings();
 		w.show_doc();  //to show the dailog for open help document

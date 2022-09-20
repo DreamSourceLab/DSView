@@ -273,8 +273,22 @@ namespace pv
         connect(_dso_trigger_widget, SIGNAL(set_trig_pos(int)), _view, SLOT(set_trig_pos(int)));
 
         _logo_bar->set_mainform_callback(this);
-
-        _session->set_default_device();
+ 
+        // Try load from file.
+        QString ldFileName(AppControl::Instance()->_open_file_name.c_str());
+        if (ldFileName != ""){
+            if (QFile::exists(ldFileName)){
+                dsv_info("auto load file:%s", ldFileName.toUtf8().data());
+                on_load_file(ldFileName);
+            }
+            else{
+                dsv_err("file is not exists:%s", ldFileName.toUtf8().data());
+                MsgBox::Show(tr("Open file error!"), ldFileName, NULL);
+            }
+        }
+        else{
+            _session->set_default_device();
+        }
     }
 
     void MainWindow::retranslateUi()
@@ -322,10 +336,7 @@ namespace pv
                     on_load_session(ses_name);
             }
         }
-       
-
-       
-
+        
            _trig_bar->restore_status();
 
             //load specified file name from application startup param
@@ -402,7 +413,7 @@ namespace pv
             break;
         case SigSession::Test_data_err: 
             _session->stop_capture();
-            _sampling_bar->set_sampling(false); 
+            _sampling_bar->update_view_status(); 
             title = tr("Data Error");
             error_pattern = _session->get_error_pattern();
 
@@ -1329,6 +1340,20 @@ namespace pv
         _session->broadcast_msg(msg);
     }
 
+    void MainWindow::reset_all_view()
+    {  
+        _sampling_bar->reload();
+        _view->status_clear();
+        _view->reload();
+        _view->set_device();
+        _trigger_widget->init();           
+        _trigger_widget->device_updated();
+        _trig_bar->reload();
+        _trig_bar->restore_status();          
+        _dso_trigger_widget->init();
+        _measure_widget->reload();
+    }
+
     void MainWindow::OnMessage(int msg)
     {
         switch (msg)
@@ -1343,12 +1368,16 @@ namespace pv
             break;
 
         case DSV_MSG_START_COLLECT_WORK:
-            _sampling_bar->set_sampling(false);
+            _sampling_bar->update_view_status();
+            _file_bar->update_view_status();
+            _trig_bar->update_view_status();
             break;
 
         case DSV_MSG_END_COLLECT_WORK:
             _session->device_event_object()->device_updated();
-            _sampling_bar->set_sampling(true);           
+            _sampling_bar->update_view_status();
+            _file_bar->update_view_status(); 
+            _trig_bar->update_view_status();
             break;
 
         case DSV_MSG_NEW_USB_DEVICE:
@@ -1360,17 +1389,9 @@ namespace pv
                 _msg->close();
                 _msg = NULL;
             }
-
+         
             _sampling_bar->update_device_list();
-            _view->reload();
-            _view->set_device();
-            _trig_bar->reload();
-            _sampling_bar->reload();
-            _view->status_clear();
-            _trigger_widget->init();
-            _dso_trigger_widget->init();
-            _measure_widget->reload();
-            _trigger_widget->device_updated();
+            reset_all_view();            
             break;
 
         case DSV_MSG_CURRENT_DEVICE_CHANGE_PREV:
@@ -1390,7 +1411,8 @@ namespace pv
             break;
 
         case DSV_MSG_DEVICE_MODE_CHANGED:
-            _view->mode_changed();        
+            _view->mode_changed();
+            reset_all_view();
             break;
 
         case DSV_MSG_CURRENT_DEVICE_DETACHED:

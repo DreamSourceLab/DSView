@@ -368,7 +368,8 @@ void SigSession::capture_init()
     _trigger_ch = 0;
     _hw_replied = false;
     
-    if (_device_agent.get_work_mode() != LOGIC)
+    int work_mode = _device_agent.get_work_mode();
+    if (work_mode == DSO || work_mode == ANALOG)
         _feed_timer.Start(FeedInterval);
     else
         _feed_timer.Stop();
@@ -591,7 +592,8 @@ void SigSession::check_update()
         _data_updated = false;
         _noData_cnt = 0;
         data_auto_unlock();
-    } else {
+    }
+    else {
         if (++_noData_cnt >= (WaitShowTime/FeedInterval))
             nodata_timeout();
     }
@@ -1105,6 +1107,8 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
     assert(packet);
    
     ds_lock_guard lock(_data_mutex);
+
+   // dsv_info("%s", "Receive data.");
   
     if (_data_lock && packet->type != SR_DF_END)
         return;
@@ -1156,9 +1160,8 @@ void SigSession::data_feed_in(const struct sr_dev_inst *sdi,
         break;
     }
     case SR_DF_END:
-    { 
-        if (!_logic_data->snapshot()->empty())
-        {
+    {
+        if (!_logic_data->snapshot()->empty()){
             for (auto &g : _group_traces)
             {
                 assert(g);
@@ -1505,6 +1508,7 @@ void SigSession::nodata_timeout()
 void SigSession::feed_timeout()
 {  
     data_unlock();
+    
     if (!_data_updated) {
         if (++_noData_cnt >= (WaitShowTime/FeedInterval))
             nodata_timeout();
@@ -1555,7 +1559,7 @@ void SigSession::set_repeat_intvl(double interval)
 }
 
 bool SigSession::repeat_check()
-{
+{ 
     if (!_is_working) {
         return false;
     }
@@ -1819,14 +1823,28 @@ void SigSession::Close()
 
 void SigSession::on_device_lib_event(int event)
 { 
+    if (_callback == NULL){
+        dsv_info("%s", "The callback is null, so the device event was ignored.");
+        return;
+    }
+
     switch (event)
     {
     case DS_EV_DEVICE_RUNNING:
         _device_status = ST_RUNNING;
+        receive_data(0);        
         break;
         
     case DS_EV_DEVICE_STOPPED:
         _device_status = ST_STOPPED;
+        // Confirm that SR_DF_END was received
+        if (!_logic_data->snapshot()->last_ended() 
+        ||  !_dso_data->snapshot()->last_ended() 
+        ||  !_analog_data->snapshot()->last_ended())
+        {   
+            dsv_err("%s", "Error!The data is not completed.");
+            assert(false);
+        } 
         break;
 
     case DS_EV_COLLECT_TASK_START:        
@@ -1965,6 +1983,11 @@ void SigSession::on_device_lib_event(int event)
   void SigSession::store_session_data()
   {
 
+  }
+
+  void SigSession::on_work_mode_changed()
+  {
+        init_signals();
   }
 
   

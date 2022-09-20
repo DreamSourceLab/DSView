@@ -241,21 +241,6 @@ void TrigBar::search_clicked()
     AppConfig::Instance().SaveFrame();
 }
 
-void TrigBar::enable_toggle(bool enable)
-{
-    _trig_button.setDisabled(!enable);
-    _protocol_button.setDisabled(!enable);
-    _measure_button.setDisabled(!enable);
-    _search_button.setDisabled(!enable);
-    _function_button.setDisabled(!enable);
-    _setting_button.setDisabled(!enable);
-}
-
-void TrigBar::enable_protocol(bool enable)
-{
-    _protocol_button.setDisabled(!enable);
-}
-
 void TrigBar::close_all()
 {
     if (_trig_button.isChecked()) {
@@ -310,8 +295,8 @@ void TrigBar::reload()
         _action_dispalyOptions->setVisible(false);
     }
 
-    enable_toggle(true);
-    update();
+    update_view_status(); 
+    update();    
 }
 
 void TrigBar::on_actionFft_triggered()
@@ -384,12 +369,24 @@ void TrigBar::restore_status()
      AppConfig &app = AppConfig::Instance(); 
      int mode = _session->get_device()->get_work_mode();
 
-     if (mode == LOGIC)
+    if (mode == LOGIC)
         return &app._frameOptions._logicDock;
      else if (mode == DSO)
         return &app._frameOptions._dsoDock;
     else
         return &app._frameOptions._analogDock;
+ }
+
+ void TrigBar::update_view_status()
+ {
+    bool bEnable = _session->is_working() == false;
+
+    _trig_button.setEnabled(bEnable);
+    _protocol_button.setEnabled(bEnable);
+    _measure_button.setEnabled(bEnable);
+    _search_button.setEnabled(bEnable);
+    _function_button.setEnabled(bEnable);
+    _setting_button.setEnabled(bEnable);
  }
 
 } // namespace toolbars

@@ -891,9 +891,9 @@ void TriggerDock::lineEdit_highlight(QLineEdit *dst) {
 }
 
 void TriggerDock::try_commit_trigger()
-{  
-    int i;
-    AppConfig &app = AppConfig::Instance();   
+{   
+    AppConfig &app = AppConfig::Instance(); 
+    int num = 0;
 
     int mode = _session->get_device()->get_work_mode();
     bool bInstant = _session->is_instant();
@@ -904,7 +904,7 @@ void TriggerDock::try_commit_trigger()
         return;
     }
 
-    if (this->commit_trigger() == false) 
+    if (commit_trigger() == false) 
     {
         /* simple trigger check trigger_enable */
         for(auto &s : _session->get_signals())
@@ -913,11 +913,11 @@ void TriggerDock::try_commit_trigger()
             view::LogicSignal *logicSig = NULL;
             if ((logicSig = dynamic_cast<view::LogicSignal*>(s))) {
                 if (logicSig->commit_trig())
-                    i++;
+                    num++;
             }
         }
 
-        if (app._appOptions.warnofMultiTrig && i > 1) {
+        if (app._appOptions.warnofMultiTrig && num > 1) {
             dialogs::DSMessageBox msg(this);
             msg.mBox()->setText(tr("Trigger"));
             msg.mBox()->setInformativeText(tr("Trigger setted on multiple channels! "

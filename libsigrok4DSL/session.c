@@ -173,6 +173,7 @@ static int sr_session_iteration(gboolean block)
 		 */
         g_mutex_lock(&session->stop_mutex);
 		if (session->abort_session) {
+			sr_info("%s", "Collection task aborted.");
 			current_device_acquisition_stop();
 			/* But once is enough. */
 			session->abort_session = FALSE;

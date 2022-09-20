@@ -76,23 +76,18 @@ namespace pv
  
 
         public:
-            SamplingBar(SigSession *session, QWidget *parent);            
-           
-            void enable_toggle(bool enable);           
-            void enable_instant(bool enable);
+            SamplingBar(SigSession *session, QWidget *parent);         
 
             double hori_knob(int dir);
             double commit_hori_res();
             double get_hori_res(); 
             void set_sample_rate(uint64_t sample_rate);
             void update_device_list();          
-            void reload();
-            void set_sampling(bool sampling);
-
+            void reload(); 
+            void update_view_status();
             void config_device(); 
 
-        private:
-            void enable_run_stop(bool enable);
+        private: 
             void changeEvent(QEvent *event);
             void retranslateUi();
             void reStyle();
@@ -103,6 +98,7 @@ namespace pv
             void update_sample_count_selector_value();
             void commit_settings();
             void setting_adj();
+            void enable_toggle(bool enable);
 
         private slots:
             void on_mode();
@@ -116,32 +112,33 @@ namespace pv
            
 
         private:
-            SigSession          *_session;  
+            SigSession          *_session;
 
-            QToolButton          _device_type;
-            DsComboBox           _device_selector;  
-
-            QToolButton          _configure_button;
-            DsComboBox           _sample_count;
-            DsComboBox           _sample_rate;
-
+            DsComboBox          _device_selector;              
+            DsComboBox          _sample_count;
+            DsComboBox          _sample_rate;
             bool                _updating_sample_rate;
             bool                _updating_sample_count;
             bool                _updating_device_list;
 
+            QToolButton         _device_type;
+            QToolButton         _configure_button;
             QToolButton         _run_stop_button;
             QToolButton         _instant_button;
+            QToolButton         _mode_button;
+
             QAction             *_run_stop_action;
             QAction             *_instant_action;
             QAction             *_mode_action;
-            QToolButton         _mode_button;
-
+         
             QMenu               *_mode_menu;
             QAction             *_action_repeat;
             QAction             *_action_single;
         
             DeviceAgent         *_device_agent;
             ds_device_handle    _last_device_handle;
+
+            bool                _is_run_as_instant;
         };
 
     } // namespace toolbars

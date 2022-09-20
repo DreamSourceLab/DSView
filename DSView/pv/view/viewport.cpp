@@ -44,6 +44,7 @@
 #include "../config/appconfig.h"
 #include "../dsvdef.h"
 #include "../appcontrol.h"
+#include "../log.h"
  
 using namespace std;
 
@@ -89,6 +90,7 @@ Viewport::Viewport(View &parent, View_type type) :
     transfer_started = false;
     timer_cnt = 0;
     _clickX = 0;
+    _sample_received = 0;
 
     // drag inertial
     _drag_strength = 0;
@@ -1196,7 +1198,8 @@ void Viewport::set_receive_len(quint64 length)
     if (length == 0) {
         _sample_received = 0;
         start_trigger_timer(333);
-    } else {
+    }
+    else {
         stop_trigger_timer();
         if (_sample_received + length > _view.session().cur_samplelimits())
             _sample_received = _view.session().cur_samplelimits();

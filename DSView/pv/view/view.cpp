@@ -479,8 +479,6 @@ void View::repeat_unshow()
 
 void View::frame_began()
 {
-//    if (_device_agent->get_work_mode() == LOGIC)
-//        _viewbottom->set_trig_time(_session->get_session_time());
     _search_hit = false;
     _search_pos = 0;
     set_search_pos(_search_pos, _search_hit);
@@ -866,6 +864,7 @@ void View::resizeEvent(QResizeEvent*)
     update_margins();
     update_scroll();
     signals_changed();
+
     if (_device_agent->get_work_mode() == DSO)
         _scale = _session->cur_view_time() / get_view_width();
 

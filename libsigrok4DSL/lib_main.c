@@ -52,7 +52,6 @@ struct sr_lib_context
 	struct libusb_device *attach_device_handle;
 	struct libusb_device *detach_device_handle;
 	struct sr_dev_inst *actived_device_instance;
-	int collect_stop_flag;
 	GThread *hotplug_thread;
 	GThread *collect_thread;
 	ds_datafeed_callback_t data_forward_callback;
@@ -84,7 +83,6 @@ static struct sr_lib_context lib_ctx = {
 	.attach_device_handle = NULL,
 	.detach_device_handle = NULL,
 	.actived_device_instance = NULL,
-	.collect_stop_flag = 0,
 	.data_forward_callback = NULL,
 	.collect_thread = NULL,
 	.callback_thread_count = 0,
@@ -662,8 +660,6 @@ SR_API int ds_start_collect()
 		return SR_ERR_CALL_STATUS;
 	}
 
-	lib_ctx.collect_stop_flag = 0;
-
 	// Create new session.
 	sr_session_new();
 
@@ -751,8 +747,6 @@ SR_API int ds_stop_collect()
 		sr_err("%s", "It's not collecting now.");
 		return SR_ERR_CALL_STATUS;
 	}
-
-	lib_ctx.collect_stop_flag = 1;
 
 	// Stop current session.
 	sr_session_stop();
@@ -1015,8 +1009,7 @@ SR_PRIV int ds_data_forward(const struct sr_dev_inst *sdi,
 		return SR_ERR_ARG;
 	}
 
-	if (lib_ctx.data_forward_callback != NULL && lib_ctx.collect_stop_flag == 0)
-	{
+	if (lib_ctx.data_forward_callback != NULL){
 		lib_ctx.data_forward_callback(sdi, packet);
 		return SR_OK;
 	}

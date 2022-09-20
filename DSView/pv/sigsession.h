@@ -296,6 +296,7 @@ public:
     struct ds_device_info* get_device_list(int &out_count, int &actived_index);
     void add_msg_listener(IMessageListener *ln);
     void broadcast_msg(int msg);
+    void on_work_mode_changed();
 
 private:
     bool exec_capture();
@@ -329,7 +330,7 @@ private:
     void repeat_update(); 
     void container_init();
     void init_signals();
-
+  
     //IMessageListener
     void OnMessage(int msg);
 

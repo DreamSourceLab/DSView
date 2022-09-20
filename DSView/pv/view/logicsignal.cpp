@@ -42,9 +42,9 @@ const int LogicSignal::StateRound = 5;
 LogicSignal::LogicSignal(data::Logic *data,
                          sr_channel *probe) :
     Signal(probe),
-    _data(data),
-    _trig(NONTRIG)
+    _data(data)
 {
+    _trig = NONTRIG;
 }
 
 LogicSignal::LogicSignal(view::LogicSignal *s,
@@ -96,7 +96,8 @@ bool LogicSignal::commit_trig()
     if (_trig == NONTRIG) {
         ds_trigger_probe_set(_index_list.front(), 'X', 'X');
         return false;
-    } else {
+    } 
+    else {
         ds_trigger_set_en(true);
         if (_trig == POSTRIG)
             ds_trigger_probe_set(_index_list.front(), 'R', 'X');

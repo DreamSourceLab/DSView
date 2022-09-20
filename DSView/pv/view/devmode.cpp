@@ -197,12 +197,14 @@ void DevMode::on_mode_change()
     {
         if ((*i).first == action) {
             if (_device_agent->get_work_mode() != (*i).second->mode) {
-                _session->stop_capture();
                 _session->set_repeat_mode(false); 
+                _session->stop_capture();                
                 _session->session_save();
                 _device_agent->set_config(NULL, NULL,
                                      SR_CONF_DEVICE_MODE,
                                      g_variant_new_int16((*i).second->mode));
+                                     
+                _session->on_work_mode_changed();
 
                 auto *mode_name = get_mode_name((*i).second->mode);
                 QString icon_fname = iconPath + "/" + QString::fromLocal8Bit(mode_name->_logo);

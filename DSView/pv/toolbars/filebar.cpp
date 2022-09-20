@@ -36,7 +36,6 @@ namespace toolbars {
 
 FileBar::FileBar(SigSession *session, QWidget *parent) :
     QToolBar("File Bar", parent),
-    _enable(true),
     _session(session),
     _file_button(this)
 {
@@ -232,14 +231,11 @@ void FileBar::on_actionCapture_triggered()
     QTimer::singleShot(100, this, SIGNAL(sig_screenShot()));
 }
 
-void FileBar::enable_toggle(bool enable)
+void FileBar::update_view_status()
 {
-    _file_button.setDisabled(!enable);
-}
-
-void FileBar::set_settings_en(bool enable)
-{
-    _menu_session->setDisabled(!enable);
+    bool bEnable = _session->is_working() == false;
+    _file_button.setEnabled(bEnable);
+    _menu_session->setEnabled(bEnable);
 }
 
 } // namespace toolbars

@@ -143,6 +143,7 @@ public:
    
 private:
     void check_usb_device_speed();
+    void reset_all_view();
    
 private:
     //ISessionCallback
