@@ -144,6 +144,7 @@ public:
 private:
     void check_usb_device_speed();
     void reset_all_view();
+    bool confirm_to_store_data();
    
 private:
     //ISessionCallback
@@ -216,10 +217,10 @@ private:
 
     QTranslator     _qtTrans;
     QTranslator     _myTrans;
-    EventObject     _event;
-    bool            _bFirstLoad;
+    EventObject     _event; 
     SigSession      *_session;
     DeviceAgent     *_device_agent;
+    bool            _is_auto_switch_device;
 };
 
 } // namespace pv

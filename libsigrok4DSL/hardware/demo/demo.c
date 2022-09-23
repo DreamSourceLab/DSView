@@ -433,7 +433,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         sr_dev_probes_free(sdi);
         setup_probes(sdi, num_probes);
         adjust_samplerate(devc);
-        sr_dbg("%s: setting mode to %d", __func__, sdi->mode);
+        sr_info("%s: setting mode to %d", __func__, sdi->mode);
     }
     else if (id == SR_CONF_PATTERN_MODE) {
         stropt = g_variant_get_string(data, NULL);

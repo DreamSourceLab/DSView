@@ -26,6 +26,7 @@
 #include <stdint.h>
 #include <libsigrok.h>
 #include <QString>
+#include <vector>
 
 class IDeviceAgentCallback
 {
@@ -147,10 +148,20 @@ public:
      */
     bool stop();
 
+    /**
+     * Stop and close.
+    */
+    void release();
+
     bool is_collecting();
 
-protected:
+    inline bool is_new_device(){
+        return _is_new_device;
+    }
+
+private:
     void config_changed();
+    bool is_in_history(ds_device_handle dev_handle);
 
     //---------------device config-----------/
 public:
@@ -172,7 +183,9 @@ private:
     int         _dev_type;
     QString     _dev_name;
     QString     _driver_name;
+    bool        _is_new_device;
     struct sr_dev_inst  *_di;
+    std::vector<ds_device_handle> _history_handles;
     IDeviceAgentCallback *_callback;
 };
 

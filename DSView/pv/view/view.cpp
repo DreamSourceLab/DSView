@@ -366,7 +366,7 @@ void View::set_preScale_preOffset()
     set_scale_offset(_preScale, _preOffset);
 }
 
-std::vector<Trace*> View::get_traces(int type)
+void View::get_traces(int type, std::vector<Trace*> &traces)
 {
     assert(_session);
 
@@ -376,8 +376,7 @@ std::vector<Trace*> View::get_traces(int type)
     const auto &decode_sigs = _session->get_decode_signals();
  
     const auto &spectrums = _session->get_spectrum_traces();
-
-    std::vector<Trace*> traces;
+ 
     for(auto &t : sigs) {
         if (type == ALL_VIEW || _trace_view_map[t->get_type()] == type)
             traces.push_back(t);
@@ -409,7 +408,6 @@ std::vector<Trace*> View::get_traces(int type)
         traces.push_back(math);
 
     stable_sort(traces.begin(), traces.end(), compare_trace_v_offsets);
-    return traces;
 }
 
 bool View::compare_trace_v_offsets(const Trace *a,
@@ -576,8 +574,9 @@ const QPoint& View::hover_point()
 }
 
 void View::normalize_layout()
-{
-    auto traces = get_traces(ALL_VIEW);
+{   
+    std::vector<Trace*> traces;
+    get_traces(ALL_VIEW, traces);
 
 	int v_min = INT_MAX;
     for(auto &t : traces){
@@ -686,7 +685,10 @@ void View::signals_changed()
     std::vector<Trace*> time_traces;
     std::vector<Trace*> fft_traces;
 
-    for(auto &t : get_traces(ALL_VIEW)) {
+    std::vector<Trace*> traces;
+    get_traces(ALL_VIEW, traces);
+
+    for(auto &t : traces) {
         if (_trace_view_map[t->get_type()] == TIME_VIEW)
             time_traces.push_back(t);
         else if (_trace_view_map[t->get_type()] == FFT_VIEW)
@@ -845,7 +847,9 @@ int View::headerWidth()
 {
     int headerWidth = _header->get_nameEditWidth();
 
-    const auto &traces = get_traces(ALL_VIEW);
+    std::vector<Trace*> traces;
+    get_traces(ALL_VIEW, traces);
+
     if (!traces.empty()) {
         for(auto &t : traces)
             headerWidth = max(t->get_name_width() + t->get_leftWidth() + t->get_rightWidth(),

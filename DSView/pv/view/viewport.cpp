@@ -113,8 +113,9 @@ Viewport::Viewport(View &parent, View_type type) :
 int Viewport::get_total_height()
 {
 	int h = 0;
+    std::vector<Trace*> traces;
+    _view.get_traces(_type, traces);
 
-    const auto &traces = _view.get_traces(_type);
     for(auto &t : traces) {
         assert(t);
         h += (int)(t->get_totalHeight());
@@ -152,8 +153,8 @@ void Viewport::paintEvent(QPaintEvent *event)
     QColor back(QWidget::palette().color(QWidget::backgroundRole()));
     fore.setAlpha(View::ForeAlpha);
     _view.set_back(false);
-
-    const auto &traces = _view.get_traces(_type);
+    std::vector<Trace*> traces;
+    _view.get_traces(_type, traces);
 
     for(auto &t : traces)
     {
@@ -200,7 +201,8 @@ void Viewport::paintEvent(QPaintEvent *event)
 
 void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
 {
-    const auto &traces = _view.get_traces(_type);
+    std::vector<Trace*> traces;
+    _view.get_traces(_type, traces);
 
     if (_view.session().get_device()->get_work_mode() == LOGIC) {
 
@@ -867,7 +869,8 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                 _action_type = NO_ACTION;
                 _dso_trig_moved = false;
 
-                const auto &traces = _view.get_traces(ALL_VIEW);
+                std::vector<Trace*> traces;
+                _view.get_traces(ALL_VIEW, traces);
 
                 for(auto &t : traces){
                      t->select(false);

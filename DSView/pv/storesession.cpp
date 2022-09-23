@@ -353,23 +353,22 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
     struct sr_status status;
     const sr_dev_inst *sdi = NULL;
     char meta[300] = {0};
-    
-    /* 
-    sdi = _session->get_device()->dev_inst();
   
     sprintf(meta, "%s", "[version]\n"); str += meta;
     sprintf(meta, "version = %d\n", File_Version); str += meta;
     sprintf(meta, "%s", "[header]\n"); str += meta;
 
-    if (sdi->driver) {
-        sprintf(meta, "driver = %s\n", sdi->driver->name); str += meta;
-        sprintf(meta, "device mode = %d\n", sdi->mode); str += meta;
+    int mode = _session->get_device()->get_work_mode();
+
+    if (true) {
+        sprintf(meta, "driver = %s\n", _session->get_device()->driver_name().toLocal8Bit().data()); str += meta;
+        sprintf(meta, "device mode = %d\n", mode); str += meta;
     }
  
     sprintf(meta, "capturefile = data\n"); str += meta;
     sprintf(meta, "total samples = %" PRIu64 "\n", snapshot->get_sample_count()); str += meta;
 
-    if (sdi->mode != LOGIC) {
+    if (mode != LOGIC) {
         sprintf(meta, "total probes = %d\n", snapshot->get_channel_num()); str += meta;
         sprintf(meta, "total blocks = %d\n", snapshot->get_block_num()); str += meta;
     }
@@ -377,7 +376,7 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
     data::LogicSnapshot *logic_snapshot = NULL;
     if ((logic_snapshot = dynamic_cast<data::LogicSnapshot*>(snapshot))) {
         uint16_t to_save_probes = 0;
-        for (l = sdi->channels; l; l = l->next) {
+        for (l = _session->get_device()->get_channels(); l; l = l->next) {
             probe = (struct sr_channel *)l->data;
             if (probe->enabled && logic_snapshot->has_data(probe->index))
                 to_save_probes++;
@@ -390,7 +389,7 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
 
     sprintf(meta, "samplerate = %s\n", s); str += meta;
 
-    if (sdi->mode == DSO) {
+    if (mode == DSO) {
         gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_TIMEBASE);
         if (gvar != NULL) {
             uint64_t tmp_u64 = g_variant_get_uint64(gvar);
@@ -427,9 +426,11 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
             sprintf(meta, "ref max = %d\n", tmp_u32); str += meta;
             g_variant_unref(gvar);
         }
-    } else if (sdi->mode == LOGIC) {
+    }
+    else if (mode == LOGIC) {
         sprintf(meta, "trigger time = %lld\n", _session->get_session_time().toMSecsSinceEpoch()); str += meta;
-    } else if (sdi->mode == ANALOG) {
+    }
+    else if (mode == ANALOG) {
         data::AnalogSnapshot *analog_snapshot = NULL;
         if ((analog_snapshot = dynamic_cast<data::AnalogSnapshot*>(snapshot))) {
             uint8_t tmp_u8 = analog_snapshot->get_unit_bytes();
@@ -452,17 +453,17 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
 
     probecnt = 0; 
 
-    for (l = sdi->channels; l; l = l->next) {
+    for (l = _session->get_device()->get_channels(); l; l = l->next) {
         
         probe = (struct sr_channel *)l->data;
         if (!snapshot->has_data(probe->index))
             continue;
-        if (sdi->mode == LOGIC && !probe->enabled)
+        if (mode == LOGIC && !probe->enabled)
             continue;
 
         if (probe->name)
         {
-            int sigdex = (sdi->mode == LOGIC) ? probe->index : probecnt;
+            int sigdex = (mode == LOGIC) ? probe->index : probecnt;
             sprintf(meta, "probe%d = %s\n", sigdex, probe->name);
             str += meta;
         }
@@ -472,7 +473,7 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
             str += meta;
         }
 
-        if (sdi->mode == DSO)
+        if (mode == DSO)
         {
             sprintf(meta, " enable%d = %d\n", probecnt, probe->enabled);
             str += meta;
@@ -487,7 +488,7 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
             sprintf(meta, " vTrig%d = %d\n", probecnt, probe->trig_value);
             str += meta;
 
-            if (sr_status_get(sdi, &status, false) == SR_OK)
+            if (_session->get_device()->get_device_status(status, false))
             {
                 if (probe->index == 0)
                 {
@@ -553,7 +554,7 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
                 }
             }
         }
-        else if (sdi->mode == ANALOG)
+        else if (mode == ANALOG)
         {
             sprintf(meta, " enable%d = %d\n", probecnt, probe->enabled);
             str += meta;
@@ -572,7 +573,6 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
         }
         probecnt++;
     } 
-    */
 
     return true;
 }

@@ -751,22 +751,22 @@ enum sr_config_option_id{
 	SR_CONF_LOGIC_ANALYZER = 10000,
 
 	/** The device can act as an oscilloscope. */
-	SR_CONF_OSCILLOSCOPE,
+	SR_CONF_OSCILLOSCOPE = 10001,
 
 	/** The device can act as a multimeter. */
-	SR_CONF_MULTIMETER,
+	SR_CONF_MULTIMETER	= 10002,
 
 	/** The device is a demo device. */
-	SR_CONF_DEMO_DEV,
+	SR_CONF_DEMO_DEV = 10003,
 
 	/** The device can act as a sound level meter. */
-	SR_CONF_SOUNDLEVELMETER,
+	SR_CONF_SOUNDLEVELMETER = 10004,
 
 	/** The device can measure temperature. */
-	SR_CONF_THERMOMETER,
+	SR_CONF_THERMOMETER = 10005,
 
 	/** The device can measure humidity. */
-	SR_CONF_HYGROMETER,
+	SR_CONF_HYGROMETER = 10006,
 
 	/*--- Driver scan options -------------------------------------------*/
 
@@ -801,7 +801,7 @@ enum sr_config_option_id{
 	 * This is always an optional parameter, since a driver typically
 	 * knows the speed at which the device wants to communicate.
 	 */
-	SR_CONF_SERIALCOMM,
+	SR_CONF_SERIALCOMM = 20001,
 
 	/*--- Device configuration ------------------------------------------*/
 
@@ -809,222 +809,222 @@ enum sr_config_option_id{
 	SR_CONF_SAMPLERATE = 30000,
 
 	/** The device supports setting a pre/post-trigger capture ratio. */
-	SR_CONF_CAPTURE_RATIO,
+	SR_CONF_CAPTURE_RATIO = 30001,
 
     /** */
-    SR_CONF_USB_SPEED,
-    SR_CONF_USB30_SUPPORT,
-    SR_CONF_DEVICE_MODE,
-    SR_CONF_INSTANT,
-    SR_CONF_STATUS,
+    SR_CONF_USB_SPEED = 30002,
+    SR_CONF_USB30_SUPPORT = 30003,
+    SR_CONF_DEVICE_MODE = 30004,
+    SR_CONF_INSTANT = 30005,
+    SR_CONF_STATUS = 30006,
 
 	/** The device supports setting a pattern (pattern generator mode). */
-	SR_CONF_PATTERN_MODE,
+	SR_CONF_PATTERN_MODE = 30007,
 
 	/** The device supports Run Length Encoding. */
-	SR_CONF_RLE,
+	SR_CONF_RLE = 30008,
 
     /** Need wait to uplad captured data */
-    SR_CONF_WAIT_UPLOAD,
+    SR_CONF_WAIT_UPLOAD = 30009,
 
 	/** The device supports setting trigger slope. */
-	SR_CONF_TRIGGER_SLOPE,
+	SR_CONF_TRIGGER_SLOPE = 30010,
 
 	/** Trigger source. */
-	SR_CONF_TRIGGER_SOURCE,
+	SR_CONF_TRIGGER_SOURCE = 30011,
 
     /** Trigger channel */
-    SR_CONF_TRIGGER_CHANNEL,
+    SR_CONF_TRIGGER_CHANNEL = 30012,
 
     /** Trigger Value. */
-    SR_CONF_TRIGGER_VALUE,
+    SR_CONF_TRIGGER_VALUE = 30013,
 
 	/** Horizontal trigger position. */
-	SR_CONF_HORIZ_TRIGGERPOS,
+	SR_CONF_HORIZ_TRIGGERPOS = 30014,
 
     /** Trigger hold off time */
-    SR_CONF_TRIGGER_HOLDOFF,
+    SR_CONF_TRIGGER_HOLDOFF = 30015,
 
     /** Trigger Margin */
-    SR_CONF_TRIGGER_MARGIN,
+    SR_CONF_TRIGGER_MARGIN = 30016,
 
 	/** Buffer size. */
-	SR_CONF_BUFFERSIZE,
+	SR_CONF_BUFFERSIZE = 30017,
 
 	/** Time base. */
-    SR_CONF_MAX_TIMEBASE,
-    SR_CONF_MIN_TIMEBASE,
-	SR_CONF_TIMEBASE,
+    SR_CONF_MAX_TIMEBASE = 30018,
+    SR_CONF_MIN_TIMEBASE = 30019,
+	SR_CONF_TIMEBASE = 30020,
 
 	/** Filter. */
-	SR_CONF_FILTER,
+	SR_CONF_FILTER = 30021,
 
     /** DSO configure sync */
-    SR_CONF_DSO_SYNC,
+    SR_CONF_DSO_SYNC = 30022,
 
     /** How many bits for each sample */
-    SR_CONF_UNIT_BITS,
-    SR_CONF_REF_MIN,
-    SR_CONF_REF_MAX,
+    SR_CONF_UNIT_BITS = 30023,
+    SR_CONF_REF_MIN = 30024,
+    SR_CONF_REF_MAX = 30025,
 
     /** Valid channel number */
-    SR_CONF_TOTAL_CH_NUM,
+    SR_CONF_TOTAL_CH_NUM = 30026,
 
     /** Valid channel number */
-    SR_CONF_VLD_CH_NUM,
+    SR_CONF_VLD_CH_NUM = 30027,
 
     /** 32 channel support */
-    SR_CONF_LA_CH32,
+    SR_CONF_LA_CH32 = 30028,
 
     /** Zero */
-    SR_CONF_HAVE_ZERO,
-    SR_CONF_ZERO,
-    SR_CONF_ZERO_SET,
-    SR_CONF_ZERO_LOAD,
-    SR_CONF_ZERO_DEFAULT,
-    SR_CONF_ZERO_COMB_FGAIN,
-    SR_CONF_ZERO_COMB,
-    SR_CONF_VOCM,
-    SR_CONF_CALI,
+    SR_CONF_HAVE_ZERO = 30029,
+    SR_CONF_ZERO = 30030,
+    SR_CONF_ZERO_SET = 30031,
+    SR_CONF_ZERO_LOAD = 30032,
+    SR_CONF_ZERO_DEFAULT = 30033,
+    SR_CONF_ZERO_COMB_FGAIN = 30034,
+    SR_CONF_ZERO_COMB = 30035,
+    SR_CONF_VOCM = 30036,
+    SR_CONF_CALI = 30037,
 
     /** status for dso channel */
-    SR_CONF_STATUS_PERIOD,
-    SR_CONF_STATUS_PCNT,
-    SR_CONF_STATUS_MAX,
-    SR_CONF_STATUS_MIN,
-    SR_CONF_STATUS_PLEN,
-    SR_CONF_STATUS_LLEN,
-    SR_CONF_STATUS_LEVEL,
-    SR_CONF_STATUS_PLEVEL,
-    SR_CONF_STATUS_LOW,
-    SR_CONF_STATUS_HIGH,
-    SR_CONF_STATUS_RLEN,
-    SR_CONF_STATUS_FLEN,
-    SR_CONF_STATUS_RMS,
-    SR_CONF_STATUS_MEAN,
+    SR_CONF_STATUS_PERIOD = 30038,
+    SR_CONF_STATUS_PCNT = 30039,
+    SR_CONF_STATUS_MAX = 30040,
+    SR_CONF_STATUS_MIN = 30041,
+    SR_CONF_STATUS_PLEN = 30042,
+    SR_CONF_STATUS_LLEN = 30043,
+    SR_CONF_STATUS_LEVEL = 30044,
+    SR_CONF_STATUS_PLEVEL = 30045,
+    SR_CONF_STATUS_LOW = 30046,
+    SR_CONF_STATUS_HIGH = 30047,
+    SR_CONF_STATUS_RLEN = 30048,
+    SR_CONF_STATUS_FLEN = 30049,
+    SR_CONF_STATUS_RMS = 30050,
+    SR_CONF_STATUS_MEAN = 30051,
 
     /** Stream */
-    SR_CONF_STREAM,
+    SR_CONF_STREAM = 30052,
 
     /** DSO Roll */
-    SR_CONF_ROLL,
+    SR_CONF_ROLL = 30053,
 
     /** Test */
-    SR_CONF_TEST,
-    SR_CONF_EEPROM,
-    SR_CONF_TUNE,
-    SR_CONF_TUNE_SEL,
-    SR_CONF_EXTEND_ID,
-    SR_CONF_EXTEND_DATA,
+    SR_CONF_TEST = 30054,
+    SR_CONF_EEPROM = 30055,
+    SR_CONF_TUNE = 30056,
+    SR_CONF_TUNE_SEL = 30057,
+    SR_CONF_EXTEND_ID = 30058,
+    SR_CONF_EXTEND_DATA = 30059,
 
 	/** The device supports setting its sample interval, in ms. */
-	SR_CONF_SAMPLE_INTERVAL,
+	SR_CONF_SAMPLE_INTERVAL = 30060,
 
 	/** Number of timebases, as related to SR_CONF_TIMEBASE.  */
-	SR_CONF_NUM_TIMEBASE,
+	SR_CONF_NUM_TIMEBASE = 30061,
 
     /** Number of vertical divisions, as related to SR_CONF_PROBE_VDIV.  */
-	SR_CONF_NUM_VDIV,
+	SR_CONF_NUM_VDIV = 30062,
 
     /** clock type (internal/external) */
-    SR_CONF_CLOCK_TYPE,
+    SR_CONF_CLOCK_TYPE = 30063,
 
     /** clock edge (posedge/negedge) */
-    SR_CONF_CLOCK_EDGE,
+    SR_CONF_CLOCK_EDGE = 30064,
 
     /** Device operation mode */
-    SR_CONF_OPERATION_MODE,
+    SR_CONF_OPERATION_MODE = 30065,
 
     /** Device buffer options */
-    SR_CONF_BUFFER_OPTIONS,
+    SR_CONF_BUFFER_OPTIONS = 30066,
 
     /** Device channel mode */
-    SR_CONF_CHANNEL_MODE,
+    SR_CONF_CHANNEL_MODE = 30067,
 
     /** RLE compress support */
-    SR_CONF_RLE_SUPPORT,
+    SR_CONF_RLE_SUPPORT = 30068,
 
     /** Signal max height **/
-    SR_CONF_MAX_HEIGHT,
-    SR_CONF_MAX_HEIGHT_VALUE,
+    SR_CONF_MAX_HEIGHT = 30069,
+    SR_CONF_MAX_HEIGHT_VALUE = 30070,
 
     /** Device sample threshold */
-    SR_CONF_THRESHOLD,
-    SR_CONF_VTH,
+    SR_CONF_THRESHOLD = 30071,
+    SR_CONF_VTH = 30072,
 
     /** Hardware capacity **/
-    SR_CONF_MAX_DSO_SAMPLERATE,
-    SR_CONF_MAX_DSO_SAMPLELIMITS,
-    SR_CONF_HW_DEPTH,
+    SR_CONF_MAX_DSO_SAMPLERATE = 30073,
+    SR_CONF_MAX_DSO_SAMPLELIMITS = 30074,
+    SR_CONF_HW_DEPTH = 30075,
 
     /** bandwidth */
-    SR_CONF_BANDWIDTH,
-    SR_CONF_BANDWIDTH_LIMIT,
+    SR_CONF_BANDWIDTH = 30076,
+    SR_CONF_BANDWIDTH_LIMIT = 30077,
 
     /*--- Probe configuration -------------------------------------------*/
     /** Probe options */
-    SR_CONF_PROBE_CONFIGS,
+    SR_CONF_PROBE_CONFIGS = 30078,
 
     /** Probe options */
-    SR_CONF_PROBE_SESSIONS,
+    SR_CONF_PROBE_SESSIONS = 30079,
 
     /** Enable */
-    SR_CONF_PROBE_EN,
+    SR_CONF_PROBE_EN = 30080,
 
     /** Coupling */
-    SR_CONF_PROBE_COUPLING,
+    SR_CONF_PROBE_COUPLING = 30081,
 
     /** Volts/div */
-    SR_CONF_PROBE_VDIV,
+    SR_CONF_PROBE_VDIV = 30082,
 
     /** Factor */
-    SR_CONF_PROBE_FACTOR,
+    SR_CONF_PROBE_FACTOR = 30083,
 
     /** Mapping */
-    SR_CONF_PROBE_MAP_DEFAULT,
-    SR_CONF_PROBE_MAP_UNIT,
-    SR_CONF_PROBE_MAP_MIN,
-    SR_CONF_PROBE_MAP_MAX,
+    SR_CONF_PROBE_MAP_DEFAULT = 30084,
+    SR_CONF_PROBE_MAP_UNIT = 30085,
+    SR_CONF_PROBE_MAP_MIN = 30086,
+    SR_CONF_PROBE_MAP_MAX = 30087,
 
     /** Vertical offset */
-    SR_CONF_PROBE_OFFSET,
-    SR_CONF_PROBE_HW_OFFSET,
-    SR_CONF_PROBE_PREOFF,
-    SR_CONF_PROBE_PREOFF_DEFAULT,
-    SR_CONF_PROBE_PREOFF_MARGIN,
+    SR_CONF_PROBE_OFFSET = 30088,
+    SR_CONF_PROBE_HW_OFFSET = 30089,
+    SR_CONF_PROBE_PREOFF = 30090,
+    SR_CONF_PROBE_PREOFF_DEFAULT = 30091,
+    SR_CONF_PROBE_PREOFF_MARGIN = 30092,
 
     /** VGain */
-    SR_CONF_PROBE_VGAIN,
-    SR_CONF_PROBE_VGAIN_DEFAULT,
-    SR_CONF_PROBE_VGAIN_RANGE,
-    SR_CONF_PROBE_COMB_COMP_EN,
-    SR_CONF_PROBE_COMB_COMP,
+    SR_CONF_PROBE_VGAIN = 30093,
+    SR_CONF_PROBE_VGAIN_DEFAULT = 30094,
+    SR_CONF_PROBE_VGAIN_RANGE = 30095,
+    SR_CONF_PROBE_COMB_COMP_EN = 30096,
+    SR_CONF_PROBE_COMB_COMP = 30097,
 
 	/*--- Special stuff -------------------------------------------------*/
 
 	/** Device options for a particular device. */
-	SR_CONF_DEVICE_OPTIONS,
+	SR_CONF_DEVICE_OPTIONS = 30098,
 
     /** Sessions */
-    SR_CONF_DEVICE_SESSIONS,
+    SR_CONF_DEVICE_SESSIONS = 30099,
 
 	/** Session filename. */
-	SR_CONF_SESSIONFILE,
+	SR_CONF_SESSIONFILE = 30100,
 
 	/** The device supports specifying a capturefile to inject. */
-	SR_CONF_CAPTUREFILE,
+	SR_CONF_CAPTUREFILE = 30101,
 
     /** Session file version */
-    SR_CONF_FILE_VERSION,
+    SR_CONF_FILE_VERSION = 30102,
 
 	/** The device supports setting the number of probes. */
-	SR_CONF_CAPTURE_NUM_PROBES,
+	SR_CONF_CAPTURE_NUM_PROBES = 30103,
 
     /** The device supports setting the number of data blocks. */
-    SR_CONF_NUM_BLOCKS,
+    SR_CONF_NUM_BLOCKS = 30104,
 
     /** language (string code) **/
-    SR_CONF_LANGUAGE,
+    SR_CONF_LANGUAGE = 30105,
 
 	/*--- Acquisition modes ---------------------------------------------*/
 
@@ -1038,39 +1038,39 @@ enum sr_config_option_id{
 	 * The device supports setting a sample number limit (how many
 	 * samples should be acquired).
 	 */
-	SR_CONF_LIMIT_SAMPLES,
+	SR_CONF_LIMIT_SAMPLES = 50001,
 
     /**
      * Absolute time record for session driver
      */
-    SR_CONF_TRIGGER_TIME,
+    SR_CONF_TRIGGER_TIME = 50002,
 
     /**
      * Trigger position for session driver
      */
-    SR_CONF_TRIGGER_POS,
+    SR_CONF_TRIGGER_POS = 50003,
 
     /**
      * The actual sample count received
      */
-    SR_CONF_ACTUAL_SAMPLES,
+    SR_CONF_ACTUAL_SAMPLES = 50004,
 
 	/**
 	 * The device supports setting a frame limit (how many
 	 * frames should be acquired).
 	 */
-	SR_CONF_LIMIT_FRAMES,
+	SR_CONF_LIMIT_FRAMES = 50005,
 
 	/**
 	 * The device supports continuous sampling. Neither a time limit
 	 * nor a sample number limit has to be supplied, it will just acquire
 	 * samples continuously, until explicitly stopped by a certain command.
 	 */
-	SR_CONF_CONTINUOUS,
+	SR_CONF_CONTINUOUS = 50006,
 
 	/** The device has internal storage, into which data is logged. This
 	 * starts or stops the internal logging. */
-	SR_CONF_DATALOG,
+	SR_CONF_DATALOG = 50007,
 };
 
 /** Device instance status. */
@@ -1409,6 +1409,11 @@ SR_API int ds_stop_collect();
  * Check if the device is collecting.
  */
 SR_API int ds_is_collecting();
+
+/**
+ * Close the actived device.
+ */
+SR_API int ds_release_actived_device();
 
 /*---config -----------------------------------------------*/
 SR_API int ds_get_actived_device_config(const struct sr_channel *ch,

@@ -144,7 +144,7 @@ public:
     void set_scale_offset(double scale, int64_t offset);
     void set_preScale_preOffset();
 
-    std::vector<Trace*> get_traces(int type);
+    void get_traces(int type, std::vector<Trace*> &traces);
 
 	/**
 	 * Returns true if cursors are displayed. false otherwise.
@@ -336,6 +336,9 @@ public:
     void show_wait_trigger();
     void set_device();
     void set_receive_len(uint64_t len);
+
+private:
+   
 
 private:
 

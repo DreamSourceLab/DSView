@@ -101,7 +101,8 @@ int Header::get_nameEditWidth()
 pv::view::Trace* Header::get_mTrace(int &action, const QPoint &pt)
 {
     const int w = width();
-    const auto &traces = _view.get_traces(ALL_VIEW);
+    std::vector<Trace*> traces;
+    _view.get_traces(ALL_VIEW, traces);
 
     for(auto &t : traces)
     {
@@ -124,7 +125,8 @@ void Header::paintEvent(QPaintEvent*)
     style()->drawPrimitive(QStyle::PE_Widget, &o, &painter, this);
 
 	const int w = width();
-    const auto &traces = _view.get_traces(ALL_VIEW);
+    std::vector<Trace*> traces;
+    _view.get_traces(ALL_VIEW, traces);
 
     const bool dragging = !_drag_traces.empty();
     QColor fore(QWidget::palette().color(QWidget::foregroundRole()));
@@ -143,7 +145,9 @@ void Header::mouseDoubleClickEvent(QMouseEvent *event)
 {
     assert(event);
 
-    const auto  &traces = _view.get_traces(ALL_VIEW);
+    std::vector<Trace*> traces;
+
+    _view.get_traces(ALL_VIEW, traces);
 
     if (event->button() & Qt::LeftButton) {
         _mouse_down_point = event->pos();
@@ -166,7 +170,8 @@ void Header::mousePressEvent(QMouseEvent *event)
 {
 	assert(event);
 
-    const auto &traces = _view.get_traces(ALL_VIEW);
+    std::vector<Trace*> traces;
+    _view.get_traces(ALL_VIEW, traces);
     int action;
 
     const bool instant = _view.session().is_instant();
@@ -236,7 +241,8 @@ void Header::mouseReleaseEvent(QMouseEvent *event)
         _view.signals_changed();
         _view.set_all_update(true);
 
-        const auto &traces = _view.get_traces(ALL_VIEW);
+        std::vector<Trace*> traces;
+        _view.get_traces(ALL_VIEW, traces);
 
         for(auto &t : traces){
             t->select(false);
@@ -288,7 +294,8 @@ void Header::wheelEvent(QWheelEvent *event)
 
     if (isVertical)
     {
-        const auto &traces = _view.get_traces(ALL_VIEW);
+        std::vector<Trace*> traces;
+        _view.get_traces(ALL_VIEW, traces);
         // Vertical scrolling
         double shift = 0;
 

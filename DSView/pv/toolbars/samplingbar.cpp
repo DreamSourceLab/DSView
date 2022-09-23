@@ -36,6 +36,7 @@
 #include "../dsvdef.h"
 #include "../log.h"
 #include "../deviceagent.h"
+#include "../ui/msgbox.h"
 
 using std::map;
 using std::max;
@@ -68,6 +69,8 @@ namespace pv
             _is_run_as_instant = false;
 
             _last_device_handle = NULL_HANDLE;
+            _last_device_index = -1;
+            _next_switch_device = NULL_HANDLE;
 
             _session = session;
             _device_agent = _session->get_device();
@@ -959,7 +962,20 @@ namespace pv
             _session->session_save();
 
             ds_device_handle devHandle = (ds_device_handle)_device_selector.currentData().toULongLong();
+            if (_session->have_hardware_data()){
+                if (MsgBox::Confirm(tr("Save captured data?")))
+                {
+                    _updating_device_list = true;
+                    _device_selector.setCurrentIndex(_last_device_index);
+                    _updating_device_list = false;
+                    _next_switch_device = devHandle; // Save end, auto switch to this device.
+                    sig_store_session_data();
+                    return;
+                }
+            }
+
             _session->set_device(devHandle);
+            _last_device_index = _device_selector.currentIndex();        
         }
 
         void SamplingBar::enable_toggle(bool enable)
@@ -1098,8 +1114,8 @@ namespace pv
                 update_sample_rate_selector();
                 _last_device_handle = cur_dev_handle;                
             }
-          
 
+            _last_device_index = select_index;
             int width = _device_selector.sizeHint().width();
             _device_selector.setFixedWidth(min(width + 15, _device_selector.maximumWidth()));
             _device_selector.view()->setMinimumWidth(width + 30);
@@ -1151,6 +1167,13 @@ namespace pv
             if (bEnable){
                 _is_run_as_instant = false;
             }            
+         }
+
+         ds_device_handle SamplingBar::get_next_device_handle()
+         {
+             ds_device_handle h = _next_switch_device;
+             _next_switch_device = NULL_HANDLE;
+             return h;
          }
 
     } // namespace toolbars

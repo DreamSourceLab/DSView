@@ -134,11 +134,11 @@ public:
     void Close();
     
     bool set_default_device();
-    bool set_device(ds_device_handle dev_handle);   
+    bool set_device(ds_device_handle dev_handle);
     bool set_file(QString name);
     void close_file(ds_device_handle dev_handle);
     bool start_capture(bool instant);
-    void stop_capture();    
+    void stop_capture(); 
 	 
     uint64_t cur_samplerate();
     uint64_t cur_snap_samplerate();
@@ -291,12 +291,11 @@ public:
     void check_update(); 
     void set_map_zoom(int index);
     void auto_end();
-    void store_session_data();
     bool have_hardware_data();
     struct ds_device_info* get_device_list(int &out_count, int &actived_index);
     void add_msg_listener(IMessageListener *ln);
     void broadcast_msg(int msg);
-    void on_work_mode_changed();
+    bool switch_work_mode(int mode);
 
 private:
     bool exec_capture();
@@ -329,7 +328,7 @@ private:
     void feed_timeout();
     void repeat_update(); 
     void container_init();
-    void init_signals();
+    void init_signals(); 
   
     //IMessageListener
     void OnMessage(int msg);
@@ -411,8 +410,7 @@ private:
     int         _map_zoom;  
     bool        _dso_feed;
     float       _stop_scale; 
-    bool        _bClose; 
-    bool        _is_auto_sel_device;
+    bool        _bClose;  
  
     uint64_t    _save_start;
     uint64_t    _save_end; 
@@ -422,8 +420,8 @@ private:
     int         _repeat_hold_prg; // The time sleep progress
     bool        _is_saving;
     bool        _is_instant;
-    bool        _is_trig_new_device_msg;
     int         _device_status;
+ 
 
     ISessionCallback *_callback;
     DeviceAgent   _device_agent;

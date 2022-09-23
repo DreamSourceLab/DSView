@@ -195,31 +195,30 @@ void DevMode::on_mode_change()
 
     for(auto i = _mode_list.begin();i != _mode_list.end(); i++)
     {
-        if ((*i).first == action) {
-            if (_device_agent->get_work_mode() != (*i).second->mode) {
-                _session->set_repeat_mode(false); 
-                _session->stop_capture();                
-                _session->session_save();
-                _device_agent->set_config(NULL, NULL,
-                                     SR_CONF_DEVICE_MODE,
-                                     g_variant_new_int16((*i).second->mode));
-                                     
-                _session->on_work_mode_changed();
+        if ((*i).first == action){
 
-                auto *mode_name = get_mode_name((*i).second->mode);
-                QString icon_fname = iconPath + "/" + QString::fromLocal8Bit(mode_name->_logo);
-             
-                _mode_btn->setIcon(QIcon(icon_fname));
-                if (lan == LAN_CN)
-                    _mode_btn->setText(mode_name->_name_cn);
-                else
-                    _mode_btn->setText(mode_name->_name_en);
-                
-                _session->broadcast_msg(DSV_MSG_DEVICE_MODE_CHANGED);
+            int mode = (*i).second->mode;
+            if (_device_agent->get_work_mode() == mode){
+                dsv_info("%s", "Current mode is set.");
+                break;
             }
+            
+            _session->stop_capture();
+            _session->set_repeat_mode(false);
+            _session->session_save();                                    
+            _session->switch_work_mode(mode);
 
-            break;
-        }
+            auto *mode_name = get_mode_name(mode);
+            QString icon_fname = iconPath + "/" + QString::fromLocal8Bit(mode_name->_logo);
+            
+            _mode_btn->setIcon(QIcon(icon_fname));
+            if (lan == LAN_CN)
+                _mode_btn->setText(mode_name->_name_cn);
+            else
+                _mode_btn->setText(mode_name->_name_en);
+               
+            break;                
+        }      
     }
 }
 
@@ -229,7 +228,7 @@ void DevMode::on_close()
         assert(false);
     }
 
-    if (_bFile && MsgBox::Confirm(tr("are you sure to close the device?"))){
+    if (_bFile && MsgBox::Confirm(tr("Are you sure to close the device?"))){
         _session->close_file(_device_agent->handle());
     }
 }

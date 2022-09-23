@@ -109,8 +109,8 @@ namespace pv
         _session->set_callback(this);
         _device_agent = _session->get_device();
         _session->add_msg_listener(this);
-
-        _bFirstLoad = true;
+ 
+        _is_auto_switch_device = false;
 
         setup_ui();
 
@@ -269,7 +269,10 @@ namespace pv
 
         connect(_protocol_widget, SIGNAL(protocol_updated()), this, SLOT(on_signals_changed()));
 
-        // SamplingBar 
+        // SamplingBar
+        connect(_sampling_bar, SIGNAL(sig_store_session_data()), this, SLOT(on_save()));
+
+        //
         connect(_dso_trigger_widget, SIGNAL(set_trig_pos(int)), _view, SLOT(set_trig_pos(int)));
 
         _logo_bar->set_mainform_callback(this);
@@ -305,8 +308,8 @@ namespace pv
     {
         assert(_sampling_bar); 
         if (!selected_device->name().contains("virtual")) {
-            _file_bar->set_settings_en(true);
-            _logo_bar->dsl_connected(true);
+            
+            
             #if QT_VERSION >= 0x050400
             QDir dir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
             #else
@@ -322,8 +325,8 @@ namespace pv
                 on_load_session(ses_name);
             }
         } else {
-            _file_bar->set_settings_en(false);
-            _logo_bar->dsl_connected(false);
+            
+            
 
             QDir dir(GetResourceDir());
             if (dir.exists()) {
@@ -340,8 +343,7 @@ namespace pv
            _trig_bar->restore_status();
 
             //load specified file name from application startup param
-           if (_bFirstLoad){
-               _bFirstLoad = false;
+           if (_bFirstLoad){ 
 
                 QString ldFileName(AppControl::Instance()->_open_file_name.c_str());
 
@@ -1354,6 +1356,14 @@ namespace pv
         _measure_widget->reload();
     }
 
+    bool MainWindow::confirm_to_store_data()
+    {
+         if (_session->have_hardware_data()){
+               return MsgBox::Confirm(tr("Save captured data?"));
+            }
+        return false;
+    }
+
     void MainWindow::OnMessage(int msg)
     {
         switch (msg)
@@ -1380,24 +1390,25 @@ namespace pv
             _trig_bar->update_view_status();
             break;
 
-        case DSV_MSG_NEW_USB_DEVICE:
-            check_usb_device_speed();
+        case DSV_MSG_CURRENT_DEVICE_CHANGE_PREV:
+            _protocol_widget->del_all_protocol();
+            _view->reload();
             break;
 
         case DSV_MSG_CURRENT_DEVICE_CHANGED:
+          {
             if (_msg != NULL){
                 _msg->close();
                 _msg = NULL;
             }
          
             _sampling_bar->update_device_list();
-            reset_all_view();            
-            break;
-
-        case DSV_MSG_CURRENT_DEVICE_CHANGE_PREV:
-            _protocol_widget->del_all_protocol();
-            _view->reload();
-            break;
+            reset_all_view();    
+            bool is_hardware = _session->get_device()->is_hardware();
+            _logo_bar->dsl_connected(is_hardware);
+            _file_bar->update_view_status();
+           }
+            break;     
 
         case DSV_MSG_DEVICE_OPTIONS_UPDATED:
             _trigger_widget->device_updated();
@@ -1410,15 +1421,50 @@ namespace pv
             _view->timebase_changed();
             break;
 
-        case DSV_MSG_DEVICE_MODE_CHANGED:
+        case DSV_MSG_DEVICE_MODE_CHANGED: 
             _view->mode_changed();
             reset_all_view();
             break;
 
+        case DSV_MSG_NEW_USB_DEVICE:
+            if (confirm_to_store_data()){
+                _is_auto_switch_device = true;
+                on_save();
+            }
+            else{
+                _session->set_default_device();
+                check_usb_device_speed();                   
+            }        
+            break;
+
         case DSV_MSG_CURRENT_DEVICE_DETACHED:
+            // Save current config, and switch to the last device.
             _session->device_event_object()->device_updated();
              session_save();
-            _view->hide_calibration();            
+            _view->hide_calibration();
+            if (confirm_to_store_data()){
+                _is_auto_switch_device = true;
+                on_save();
+            }
+            else{
+                _session->set_default_device();
+            }         
+            break;
+
+        case DSV_MSG_SAVE_COMPLETE:
+            if (_is_auto_switch_device){
+                _is_auto_switch_device = false;
+                _session->set_default_device();
+                if (_session->get_device()->is_new_device())
+                    check_usb_device_speed();
+            }
+            else{
+                ds_device_handle devh = _sampling_bar->get_next_device_handle();
+                if (devh != NULL_HANDLE){
+                    dsv_info("%s", "Auto switch to the selected device.");
+                    _session->set_device(devh);
+                }
+            }         
             break;
         }
 }

@@ -157,11 +157,7 @@ SR_API int ds_lib_exit()
 
 	sr_info("Uninit %s.", SR_LIB_NAME);
 
-	if (ds_is_collecting())
-	{
-		ds_stop_collect(); // stop collect.
-	}
-
+	ds_release_actived_device();
 	sr_close_hotplug(lib_ctx.sr_ctx);
 
 	lib_ctx.lib_exit_flag = 1; // all thread to exit
@@ -327,7 +323,7 @@ SR_API int ds_active_device(ds_device_handle handle)
 
 	if (ds_is_collecting())
 	{
-		sr_err("%s", "One device is collecting, switch device error.");
+		sr_err("%s", "Error!The current device is collecting, can not switch it.");
 		return SR_ERR_CALL_STATUS;
 	}
 
@@ -736,10 +732,7 @@ END:
  * Stop collect data
  */
 SR_API int ds_stop_collect()
-{
-	struct sr_dev_inst *di;
-	di = lib_ctx.actived_device_instance;
-
+{ 
 	sr_info("%s", "Stop collect.");
 
 	if (!ds_is_collecting())
@@ -756,7 +749,33 @@ SR_API int ds_stop_collect()
 		g_thread_join(lib_ctx.collect_thread);
 	lib_ctx.collect_thread = NULL;
 
-	close_device_instance(di);
+	return SR_OK;
+}
+
+/**
+ * Check if the device is collecting.
+ */
+SR_API int ds_is_collecting()
+{
+	if (lib_ctx.collect_thread != NULL)
+	{
+		return 1;
+	}
+	return 0;
+}
+
+SR_API int ds_release_actived_device()
+{
+	if (lib_ctx.actived_device_instance == NULL){
+		return SR_ERR_CALL_STATUS;
+	}
+	if (ds_is_collecting()){
+		ds_stop_collect();
+	}
+
+	sr_info("%s", "Release current actived device.");
+
+	close_device_instance(lib_ctx.actived_device_instance);
 
 	// Destroy current session.
 	sr_session_destroy();
@@ -1027,18 +1046,6 @@ SR_PRIV int current_device_acquisition_stop()
 	return SR_ERR;
 }
 
-/**
- * Check if the device is collecting.
- */
-SR_API int ds_is_collecting()
-{
-	if (lib_ctx.collect_thread != NULL)
-	{
-		return 1;
-	}
-	return 0;
-}
-
 /**--------------------internal function end-----------*/
 
 /**-------------------private function ---------------*/
@@ -1152,11 +1159,13 @@ static void hotplug_event_listen_callback(struct libusb_context *ctx, struct lib
 				   lib_ctx.detach_device_handle);
 		}
 
-		if (lib_ctx.actived_device_instance != NULL && lib_ctx.actived_device_instance->handle == (ds_device_handle)dev && ds_is_collecting())
+		if (lib_ctx.actived_device_instance != NULL 
+			&& lib_ctx.actived_device_instance->handle == (ds_device_handle)dev 
+			&& ds_is_collecting())
 		{
 			sr_info("%s", "The actived device is detached, will stop collect thread.");
 			lib_ctx.is_stop_by_detached = 1;
-			ds_stop_collect();
+			ds_release_actived_device();
 		}
 
 		/**

@@ -135,6 +135,13 @@ void FileBar::on_actionOpen_triggered()
     //open data file
     AppConfig &app = AppConfig::Instance(); 
 
+    if (_session->have_hardware_data()){
+        if (MsgBox::Confirm(tr("Save captured data?"))){
+            sig_save();
+            return;
+        }
+    }
+
     // Show the dialog
     const QString file_name = QFileDialog::getOpenFileName(
         this, 
@@ -234,8 +241,9 @@ void FileBar::on_actionCapture_triggered()
 void FileBar::update_view_status()
 {
     bool bEnable = _session->is_working() == false;
+    bool is_hardware = _session->get_device()->is_hardware();
     _file_button.setEnabled(bEnable);
-    _menu_session->setEnabled(bEnable);
+    _menu_session->setEnabled(bEnable && is_hardware); 
 }
 
 } // namespace toolbars

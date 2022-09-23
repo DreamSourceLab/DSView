@@ -85,7 +85,11 @@ namespace pv
             void update_device_list();          
             void reload(); 
             void update_view_status();
-            void config_device(); 
+            void config_device();
+            ds_device_handle get_next_device_handle();
+
+        signals:
+            void sig_store_session_data();
 
         private: 
             void changeEvent(QEvent *event);
@@ -137,6 +141,8 @@ namespace pv
         
             DeviceAgent         *_device_agent;
             ds_device_handle    _last_device_handle;
+            ds_device_handle    _next_switch_device;
+            int                 _last_device_index;
 
             bool                _is_run_as_instant;
         };

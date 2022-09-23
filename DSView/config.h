@@ -30,6 +30,6 @@
 #define DS_VERSION_MAJOR 1
 #define DS_VERSION_MINOR 2
 #define DS_VERSION_MICRO 1
-#define DS_VERSION_STRING "1.2.1"
+#define DS_VERSION_STRING "1.3.0-dev"
 
 #endif

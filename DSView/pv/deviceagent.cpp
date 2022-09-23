@@ -30,6 +30,7 @@ DeviceAgent::DeviceAgent()
     _di = NULL;
     _dev_type = 0;
     _callback = NULL;
+    _is_new_device = false;
 }
 
 void DeviceAgent::update()
@@ -48,6 +49,13 @@ void DeviceAgent::update()
         _di = info.di;
         _dev_name = QString::fromLocal8Bit(info.name);
         _driver_name = QString::fromLocal8Bit(info.driver_name);
+
+        if (is_in_history(_dev_handle) == false){
+            _is_new_device = true;
+        }
+        else{
+            _is_new_device = false; 
+        }
     }
 }
 
@@ -59,12 +67,14 @@ void DeviceAgent::update()
 
 GVariant* DeviceAgent::get_config(const sr_channel *ch, const sr_channel_group *group, int key)
 {
-    assert(_dev_handle);
-
+    assert(_dev_handle); 
     GVariant *data = NULL;
     if (ds_get_actived_device_config(ch, group, key, &data) != SR_OK)
     {
-        dsv_warn("%s%d", "WARNING: Failed to get value of config id:", key);
+        if (is_hardware())
+            dsv_warn("%s%d", "WARNING: Failed to get value of config id:", key);
+        else
+            dsv_detail("%s%d", "WARNING: Failed to get value of config id:", key);
     }
     return data;
 }
@@ -75,7 +85,10 @@ bool DeviceAgent::set_config(sr_channel *ch, sr_channel_group *group, int key, G
 
     if (ds_set_actived_device_config(ch, group, key, data) != SR_OK)
     {   
-        dsv_warn("%s%d", "WARNING: Failed to set value of config id:", key);
+        if (is_hardware())
+            dsv_warn("%s%d", "WARNING: Failed to set value of config id:", key);
+        else
+            dsv_detail("%s%d", "WARNING: Failed to set value of config id:", key);
         return false;
     }
 
@@ -244,6 +257,11 @@ bool DeviceAgent::stop()
     return false;
 }
 
+void DeviceAgent::release()
+{
+    ds_release_actived_device();
+}
+
 bool DeviceAgent::have_enabled_channel()
 {
     assert(_dev_handle);
@@ -313,6 +331,17 @@ GSList *DeviceAgent::get_channels()
     assert(_dev_handle);
     return ds_get_actived_device_channels();
 }
+
+ bool DeviceAgent::is_in_history(ds_device_handle dev_handle)
+ {
+    for(ds_device_handle h : _history_handles){
+        if (h == dev_handle){
+            return true;
+        }        
+    }
+    _history_handles.push_back(dev_handle);
+    return false;
+ }
 
 //---------------device config end -----------/
 
