@@ -25,7 +25,6 @@
 #include "../data/analog.h"
 #include "../data/analogsnapshot.h"
 #include "../view/view.h"
-#include "../device/devinst.h"
 #include "../dsvdef.h"
 #include "../log.h"
 

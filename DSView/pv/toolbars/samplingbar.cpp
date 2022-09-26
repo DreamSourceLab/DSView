@@ -26,7 +26,6 @@
 #include <QAbstractItemView>
 #include <math.h>
 #include <libusb-1.0/libusb.h>
-#include "../device/devinst.h"
 #include "../dialogs/deviceoptions.h"
 #include "../dialogs/waitingdialog.h"
 #include "../dialogs/dsmessagebox.h"
@@ -42,8 +41,6 @@ using std::map;
 using std::max;
 using std::min;
 using std::string;
-
-using namespace pv::device;
 
 namespace pv
 {
@@ -361,7 +358,7 @@ namespace pv
         }
 
         void SamplingBar::update_sample_rate_selector()
-        {
+        { 
             GVariant *gvar_dict, *gvar_list;
             const uint64_t *elements = NULL;
             gsize num_elements;
@@ -1078,7 +1075,7 @@ namespace pv
 
         void SamplingBar::update_device_list()
         {
-            struct ds_device_info *array = NULL;
+            struct ds_device_base_info *array = NULL;
             int dev_count = 0;
             int select_index = 0;
 
@@ -1093,7 +1090,7 @@ namespace pv
             }
 
             _updating_device_list = true;
-            struct ds_device_info *p = NULL;
+            struct ds_device_base_info *p = NULL;
             ds_device_handle    cur_dev_handle = NULL_HANDLE;
 
             _device_selector.clear();
@@ -1140,8 +1137,14 @@ namespace pv
             _mode_button.setEnabled(bEnable);
             _configure_button.setEnabled(bEnable);
             _device_selector.setEnabled(bEnable);
-            _sample_rate.setEnabled(bEnable);
             _sample_count.setEnabled(bEnable);
+
+            if (_session->get_device()->get_work_mode() == DSO){
+                _sample_rate.setEnabled(false);
+            }
+            else{
+                _sample_rate.setEnabled(bEnable);
+            }
 
 
             if (_session->is_working()){

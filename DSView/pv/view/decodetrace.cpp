@@ -45,7 +45,6 @@
 #include "../view/view.h"
 #include "../widgets/decodergroupbox.h"
 #include "../widgets/decodermenu.h"
-#include "../device/devinst.h"
 #include "../view/cursor.h"
 #include "../toolbars/titlebar.h"
 #include "../dsvdef.h"

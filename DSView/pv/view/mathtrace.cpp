@@ -28,7 +28,6 @@
 #include "../data/mathstack.h"
 #include "view.h"
 #include "../sigsession.h"
-#include "../device/devinst.h"
 #include "../view/dsosignal.h"
 #include "../dsvdef.h"
   

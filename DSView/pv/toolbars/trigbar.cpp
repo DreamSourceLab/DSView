@@ -26,7 +26,6 @@
 #include <QEvent>
 
 #include "../sigsession.h"
-#include "../device/devinst.h"
 #include "../dialogs/fftoptions.h"
 #include "../dialogs/lissajousoptions.h"
 #include "../dialogs/mathoptions.h"

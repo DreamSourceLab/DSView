@@ -37,10 +37,11 @@ void DeviceAgent::update()
 {
     _dev_handle = NULL;
     _dev_name = "";
+    _path = "";
     _di = NULL;
     _dev_type = 0;
 
-    ds_device_info info;
+    struct ds_device_full_info info;
 
     if (ds_get_actived_device_info(&info) == SR_OK)
     {
@@ -49,6 +50,10 @@ void DeviceAgent::update()
         _di = info.di;
         _dev_name = QString::fromLocal8Bit(info.name);
         _driver_name = QString::fromLocal8Bit(info.driver_name);
+
+        if (info.path[0] != '\0'){
+            _path = QString::fromLocal8Bit(info.path);
+        }
 
         if (is_in_history(_dev_handle) == false){
             _is_new_device = true;

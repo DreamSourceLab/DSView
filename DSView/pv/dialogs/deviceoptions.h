@@ -38,7 +38,6 @@
 #include <QTimer> 
 #include <QWidget>
 #include <vector> 
-#include "../device/devinst.h"
 #include "../prop/binding/deviceoptions.h"
 #include "../prop/binding/probeoptions.h"
 #include "../toolbars/titlebar.h"
@@ -70,8 +69,6 @@ private:
     IChannelCheck *_checked;
     int     _index;
 };
-
-using namespace pv::device;
 
 class DeviceAgent;
 

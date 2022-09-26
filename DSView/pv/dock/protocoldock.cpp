@@ -22,7 +22,6 @@
 #include "protocoldock.h"
 #include "../sigsession.h"
 #include "../view/decodetrace.h"
-#include "../device/devinst.h"
 #include "../data/decodermodel.h"
 #include "../data/decoderstack.h"
 #include "../dialogs/protocollist.h"

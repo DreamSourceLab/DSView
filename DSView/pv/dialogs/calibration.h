@@ -30,12 +30,8 @@
 #include <QSlider>
 
 #include <list> 
-
-#include "../device/devinst.h"
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
-
-using namespace pv::device;
 
 class DeviceAgent;
 

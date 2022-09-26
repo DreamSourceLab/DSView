@@ -21,7 +21,6 @@
 
 #include "triggerdock.h"
 #include "../sigsession.h"
-#include "../device/devinst.h"
 #include "../dialogs/dsmessagebox.h"
 #include "../view/view.h"
 

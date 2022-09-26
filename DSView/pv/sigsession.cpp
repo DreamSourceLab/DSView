@@ -155,7 +155,7 @@ namespace pv
         assert(!_is_saving);
         assert(!_is_working);
 
-        struct ds_device_info *array = NULL;
+        struct ds_device_base_info *array = NULL;
         int count = 0;
 
         dsv_info("%s", "Set default device.");
@@ -171,7 +171,7 @@ namespace pv
             return false;
         }
 
-        struct ds_device_info *dev = (array + count - 1);
+        struct ds_device_base_info *dev = (array + count - 1);
         ds_device_handle dev_handle = dev->handle;
 
         free(array);
@@ -188,7 +188,7 @@ namespace pv
         assert(!_is_saving);
         assert(!_is_working);
 
-        // Release old device.
+        // Release the old device.
         _device_agent.release();
 
         if (_callback != NULL)
@@ -277,11 +277,11 @@ namespace pv
         return false;
     }
 
-    struct ds_device_info *SigSession::get_device_list(int &out_count, int &actived_index)
+    struct ds_device_base_info *SigSession::get_device_list(int &out_count, int &actived_index)
     {
         out_count = 0;
         actived_index = -1;
-        struct ds_device_info *array = NULL;
+        struct ds_device_base_info *array = NULL;
 
         if (ds_get_device_list(&array, &out_count) == SR_OK)
         {
@@ -612,7 +612,7 @@ namespace pv
             return;
 
         if (_data_updated)
-        {
+        { 
             data_updated();
             _data_updated = false;
             _noData_cnt = 0;

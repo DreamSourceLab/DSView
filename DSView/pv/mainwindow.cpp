@@ -94,6 +94,8 @@
 #include "log.h"
 #include "sigsession.h"
 #include "deviceagent.h"
+#include <stdlib.h>
+#include "ZipMaker.h"
 
 #define BASE_SESSION_VERSION 2
 
@@ -303,65 +305,6 @@ namespace pv
         _search_dock->setWindowTitle(tr("Search..."));
     }
 
-/*
-    void MainWindow::update_device_list()
-    {
-        assert(_sampling_bar); 
-        if (!selected_device->name().contains("virtual")) {
-            
-            
-            #if QT_VERSION >= 0x050400
-            QDir dir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
-            #else
-            QDir dir(QStandardPaths::writableLocation(QStandardPaths::DataLocation));
-            #endif
-            if (dir.exists()) {
-                QString str = dir.absolutePath() + "/";
-                QString lang_name = ".ses" + QString::number(app._frameOptions.language);
-                QString ses_name = str +
-                                   selected_device->name() +
-                                   QString::number(selected_device->dev_inst()->mode) +
-                                   lang_name + ".dsc";
-                on_load_session(ses_name);
-            }
-        } else {
-            
-            
-
-            QDir dir(GetResourceDir());
-            if (dir.exists()) {
-                QString str = dir.absolutePath() + "/";
-                QString ses_name = str +
-                                   selected_device->name() +
-                                   QString::number(selected_device->dev_inst()->mode) +
-                                   ".dsc";
-                if (QFileInfo(ses_name).exists())
-                    on_load_session(ses_name);
-            }
-        }
-        
-           _trig_bar->restore_status();
-
-            //load specified file name from application startup param
-           if (_bFirstLoad){ 
-
-                QString ldFileName(AppControl::Instance()->_open_file_name.c_str());
-
-                if (ldFileName != ""){
-                    if (QFile::exists(ldFileName)){
-                        dsv_info("auto load file:%s", ldFileName.toUtf8().data());
-                        on_load_file(ldFileName);
-                    }
-                    else{
-                        dsv_err("file is not exists:%s", ldFileName.toUtf8().data());
-                        MsgBox::Show(tr("Open file error!"), ldFileName, NULL);
-                    }
-                }
-           }
- 
-    }
-    */
-
     void MainWindow::on_load_file(QString file_name)
     { 
         try
@@ -511,7 +454,6 @@ namespace pv
 
     void MainWindow::on_protocol(bool visible)
     {
-
         _protocol_dock->setVisible(visible);
     }
 
@@ -570,7 +512,6 @@ namespace pv
 
         if (!fileName.isEmpty())
         {
-
             QStringList list = format.split('.').last().split(')');
             QString suffix = list.first();
 
@@ -636,7 +577,7 @@ namespace pv
     {
         QJsonObject sessionObj = json.object();
 
-        /*
+        int mode = _device_agent->get_work_mode();
 
         // check session file version
         if (!sessionObj.contains("Version")){
@@ -654,48 +595,55 @@ namespace pv
             switchLanguage(sessionObj["Language"].toInt());
         }
 
-
-        // check device and mode
-        const sr_dev_inst *const sdi = _device_agent->dev_inst();
-        if ((!file_dev && strcmp(sdi->driver->name, sessionObj["Device"].toString().toUtf8()) != 0) ||
-            sdi->mode != sessionObj["DeviceMode"].toDouble()) {
+        // check device and mode 
+        if ((!file_dev && strcmp(_device_agent->driver_name().toLocal8Bit().data(), sessionObj["Device"].toString().toUtf8()) != 0) ||
+            mode != sessionObj["DeviceMode"].toDouble()) {
             MsgBox::Show(NULL, tr("Session File is not compatible with current device or mode!"), this);
             return false;
         }
 
         // clear decoders
-        if (sdi->mode == LOGIC && !file_dev)
+        if (mode == LOGIC && !file_dev)
         {
             _protocol_widget->del_all_protocol();
         }
 
         // load device settings
-        GVariant *gvar_opts;
+        GVariant *gvar_opts = _device_agent->get_config_list(NULL, SR_CONF_DEVICE_SESSIONS);
         gsize num_opts;
-        if ((sr_config_list(sdi->driver, sdi, NULL, SR_CONF_DEVICE_SESSIONS, &gvar_opts) == SR_OK)) {
+
+        if (gvar_opts != NULL) {
             const int *const options = (const int32_t *)g_variant_get_fixed_array(
                 gvar_opts, &num_opts, sizeof(int32_t));
-            for (unsigned int i = 0; i < num_opts; i++) {
-                const struct sr_config_info *const info =
-                    sr_config_info_get(options[i]);
+
+            for (unsigned int i = 0; i < num_opts; i++) 
+            {
+                const struct sr_config_info *const info = _device_agent->get_config_info(options[i]);
+
                 if (!sessionObj.contains(info->name))
                     continue;
+
                 if (info->datatype == SR_T_BOOL)
-                    _device_agent->set_config(NULL, NULL, info->key, g_variant_new_boolean(sessionObj[info->name].toDouble()));
+                    _device_agent->set_config(NULL, NULL, info->key
+                                 ,g_variant_new_boolean(sessionObj[info->name].toDouble()));
                 else if (info->datatype == SR_T_UINT64)
-                    _device_agent->set_config(NULL, NULL, info->key, g_variant_new_uint64(sessionObj[info->name].toString().toULongLong()));
+                    _device_agent->set_config(NULL, NULL, info->key
+                                ,g_variant_new_uint64(sessionObj[info->name].toString().toULongLong()));
                 else if (info->datatype == SR_T_UINT8)
-                    _device_agent->set_config(NULL, NULL, info->key, g_variant_new_byte(sessionObj[info->name].toString().toUInt()));
+                    _device_agent->set_config(NULL, NULL, info->key
+                                ,g_variant_new_byte(sessionObj[info->name].toString().toUInt()));
                 else if (info->datatype == SR_T_FLOAT)
-                    _device_agent->set_config(NULL, NULL, info->key, g_variant_new_double(sessionObj[info->name].toDouble()));
+                    _device_agent->set_config(NULL, NULL, info->key
+                                ,g_variant_new_double(sessionObj[info->name].toDouble()));
                 else if (info->datatype == SR_T_CHAR)
-                    _device_agent->set_config(NULL, NULL, info->key, g_variant_new_string(sessionObj[info->name].toString().toUtf8()));
+                    _device_agent->set_config(NULL, NULL, info->key
+                                ,g_variant_new_string(sessionObj[info->name].toString().toUtf8()));
             }
         }
 
         // load channel settings
-        if (file_dev && (sdi->mode == DSO)) {
-            for (const GSList *l = _device_agent->dev_inst()->channels; l; l = l->next) {
+        if (file_dev && mode == DSO) {
+            for (const GSList *l = _device_agent->get_channels(); l; l = l->next) {
                 sr_channel *const probe = (sr_channel*)l->data;
                 assert(probe);
 
@@ -714,8 +662,9 @@ namespace pv
                     }
                 }
             }
-        } else {
-            for (const GSList *l = _device_agent->dev_inst()->channels; l; l = l->next) {
+        }
+        else {
+            for (const GSList *l = _device_agent->get_channels(); l; l = l->next) {
                 sr_channel *const probe = (sr_channel*)l->data;
                 assert(probe);
                 bool isEnabled = false;
@@ -746,7 +695,7 @@ namespace pv
         _session->reload();
 
         // load signal setting
-        if (file_dev && (sdi->mode == DSO)) {
+        if (file_dev && mode == DSO) {
 
              for(auto &s :  _session->get_signals()) {
                 for (const QJsonValue &value : sessionObj["channel"].toArray()) {
@@ -766,7 +715,8 @@ namespace pv
                     }
                 }
             }
-        } else {
+        } 
+        else {
              for(auto &s : _session->get_signals()) {
                 for (const QJsonValue &value : sessionObj["channel"].toArray()) {
                     QJsonObject obj = value.toObject();
@@ -822,7 +772,6 @@ namespace pv
         if (sessionObj.contains("measure")) {
             _view->get_viewstatus()->load_session(sessionObj["measure"].toArray());
         }
-        */
 
         return true;
     }
@@ -1364,6 +1313,124 @@ namespace pv
         return false;
     }
 
+    void MainWindow::check_session_file_version()
+    {
+        auto device_agent = _session->get_device();
+        if (device_agent->is_file() && device_agent->is_new_device()){
+            if (device_agent->get_work_mode() == LOGIC){
+                GVariant* gvar = device_agent->get_config(NULL, NULL, SR_CONF_FILE_VERSION);
+                if (gvar != NULL) {
+                    int16_t version = g_variant_get_int16(gvar);
+                    g_variant_unref(gvar);
+                    if (version == 1) {
+                        show_error(tr("Current loading file has an old format. "
+                                            "This will lead to a slow loading speed. "
+                                            "Please resave it after loaded."));
+                    }
+                }
+            }
+        }
+    }
+
+    void MainWindow::load_device_config()
+    {
+         int lang = AppConfig::Instance()._frameOptions.language;
+         QString name = _device_agent->name();
+         int mode = _device_agent->get_work_mode();
+
+         if (_device_agent->is_hardware())
+         {
+
+#if QT_VERSION >= 0x050400
+             QDir dir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
+#else
+             QDir dir(QStandardPaths::writableLocation(QStandardPaths::DataLocation));
+#endif
+             if (dir.exists())
+             {
+                 QString str = dir.absolutePath() + "/";
+                 QString lang_name = ".ses" + QString::number(lang);
+                 QString ses_name = str +
+                                    name +
+                                    QString::number(mode) +
+                                    lang_name + ".dsc";
+                 on_load_session(ses_name);
+             }
+         }
+         else
+         {
+             QDir dir(GetResourceDir());
+             if (dir.exists())
+             {
+                 QString str = dir.absolutePath() + "/";
+                 QString ses_name = str +
+                                    name +
+                                    QString::number(mode) +
+                                    ".dsc";
+                 if (QFileInfo(ses_name).exists())
+                     on_load_session(ses_name);
+             }
+         }
+    }
+
+    QJsonDocument MainWindow::get_session_json_from_file(QString file)
+    {
+        QJsonDocument sessionDoc;
+        QJsonParseError error;
+
+        auto f_name = path::ConvertPath(file);
+        ZipReader rd(f_name.c_str());
+        auto *data = rd.GetInnterFileData("session");
+
+        if (data != NULL)
+        {
+            QByteArray raw_bytes = QByteArray::fromRawData(data->data(), data->size());
+            QString jsonStr(raw_bytes.data());
+            QByteArray qbs = jsonStr.toUtf8();
+            sessionDoc = QJsonDocument::fromJson(qbs, &error);
+
+            if (error.error != QJsonParseError::NoError)
+            {
+                QString estr = error.errorString();
+                dsv_err("File::get_session(), parse json error:\"%s\"!", estr.toUtf8().data());
+            }
+
+            rd.ReleaseInnerFileData(data);
+        }
+
+        return sessionDoc;
+    }
+
+    QJsonArray MainWindow::get_decoder_json_from_file(QString file)
+    {
+        QJsonArray dec_array;
+        QJsonParseError error;
+
+        /* read "decoders" */
+        auto f_name = path::ConvertPath(file);
+        ZipReader rd(f_name.c_str());
+        auto *data = rd.GetInnterFileData("decoders");
+
+        if (data != NULL)
+        {
+            QByteArray raw_bytes = QByteArray::fromRawData(data->data(), data->size());
+            QString jsonStr(raw_bytes.data());
+            QByteArray qbs = jsonStr.toUtf8();
+            QJsonDocument sessionDoc = QJsonDocument::fromJson(qbs, &error);
+
+            if (error.error != QJsonParseError::NoError)
+            {
+                QString estr = error.errorString();
+                dsv_err("File::get_decoders(), parse json error:\"%s\"!", estr.toUtf8().data());
+            }
+
+            dec_array = sessionDoc.array();
+            rd.ReleaseInnerFileData(data);
+        }
+
+        return dec_array;
+    }
+
     void MainWindow::OnMessage(int msg)
     {
         switch (msg)
@@ -1401,12 +1468,24 @@ namespace pv
                 _msg->close();
                 _msg = NULL;
             }
-         
+
+            load_device_config();            
             _sampling_bar->update_device_list();
-            reset_all_view();    
-            bool is_hardware = _session->get_device()->is_hardware();
-            _logo_bar->dsl_connected(is_hardware);
+            reset_all_view();           
+            _logo_bar->dsl_connected(_session->get_device()->is_hardware());
             _file_bar->update_view_status();
+ 
+            if (_device_agent->is_file()){
+                check_session_file_version();
+                StoreSession ss(_session);
+                // load decoder
+                bool bFlag = ss.load_decoders(_protocol_widget
+                                        ,get_decoder_json_from_file(_device_agent->path()));
+
+                // load session
+                load_session_json(get_session_json_from_file(_device_agent->path()), true, !bFlag);
+                _session->start_capture(true);
+            } 
            }
             break;     
 
@@ -1421,7 +1500,9 @@ namespace pv
             _view->timebase_changed();
             break;
 
-        case DSV_MSG_DEVICE_MODE_CHANGED: 
+        case DSV_MSG_DEVICE_MODE_CHANGED:
+            _sampling_bar->update_sample_rate_selector();
+            _sampling_bar->update_view_status();
             _view->mode_changed();
             reset_all_view();
             break;

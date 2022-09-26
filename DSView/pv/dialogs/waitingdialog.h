@@ -29,11 +29,8 @@
 #include <QMovie>
   
 #include "../sigsession.h"
-#include "../device/devinst.h"
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
-
-using namespace pv::device;
 
 class DeviceAgent;
 

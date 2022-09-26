@@ -28,7 +28,6 @@
 #include "../dialogs/search.h"
 #include "../data/snapshot.h"
 #include "../data/logicsnapshot.h"
-#include "../device/devinst.h"
 #include "../dialogs/dsmessagebox.h"
 
 #include <QObject>

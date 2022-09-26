@@ -29,8 +29,6 @@
 #include <QLabel>
 #include <QCheckBox> 
  
-
-#include "../device/devinst.h"
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
 #include "../ui/dscombobox.h"

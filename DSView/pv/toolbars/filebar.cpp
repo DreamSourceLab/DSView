@@ -26,7 +26,6 @@
 #include <QApplication>
 
 #include "filebar.h"
-#include "../device/devinst.h" 
 #include "../ui/msgbox.h"
 #include "../config/appconfig.h"
 #include "../utility/path.h"

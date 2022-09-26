@@ -29,7 +29,6 @@
 #include "../data/dso.h"
 #include "../data/dsosnapshot.h"
 #include "../sigsession.h"
-#include "../device/devinst.h"
  
 using namespace std;
 

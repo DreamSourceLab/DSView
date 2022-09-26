@@ -22,9 +22,7 @@
 #include "devmode.h"
 #include "view.h"
 #include "trace.h"
-#include "../sigsession.h"
-#include "../device/devinst.h"
-#include "../device/file.h"
+#include "../sigsession.h" 
 
 #include <assert.h> 
 #include <QStyleOption>

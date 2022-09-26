@@ -41,7 +41,6 @@
 #include "lissajoustrace.h"
 #include "analogsignal.h"
 
-#include "../device/devinst.h"
 #include "../sigsession.h"
 #include "../data/logic.h"
 #include "../data/logicsnapshot.h"

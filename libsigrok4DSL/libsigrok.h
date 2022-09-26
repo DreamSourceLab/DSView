@@ -1279,10 +1279,17 @@ typedef unsigned long long ds_device_handle;
 /**
  * Device base info
  */
-struct ds_device_info
+struct ds_device_base_info
 {
 	ds_device_handle handle;
 	char 	name[50];
+};
+
+struct ds_device_full_info
+{
+	ds_device_handle handle;
+	char 	name[50];
+	char 	path[256]; //file path
 	char 	driver_name[20];
 	int 	dev_type; // enum sr_device_type
 	struct sr_dev_inst *di;
@@ -1344,7 +1351,7 @@ SR_API void ds_set_firmware_resource_dir(const char *dir);
  * Get the device list, if the field _handle is 0, the list visited to end.
  * User need call free() to release the buffer. If the list is empty, the out_list is null.
  */
-SR_API int ds_get_device_list(struct ds_device_info** out_list, int *out_count);
+SR_API int ds_get_device_list(struct ds_device_base_info** out_list, int *out_count);
 
 /**
  * Active a device.
@@ -1388,7 +1395,7 @@ SR_API const GSList *ds_get_actived_device_mode_list();
  * Get the actived device info.
  * If the actived device is not exists, the handle filed will be set null.
  */
-SR_API int ds_get_actived_device_info(struct ds_device_info *fill_info);
+SR_API int ds_get_actived_device_info(struct ds_device_full_info *fill_info);
 
 /**
  * Get actived device work model. mode list:LOGIC、ANALOG、DSO

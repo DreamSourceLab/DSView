@@ -49,6 +49,10 @@ public:
         return _dev_name;
     }
 
+    inline QString path(){
+        return _path;
+    }
+
     inline QString driver_name(){
         return _driver_name;
     }
@@ -183,6 +187,7 @@ private:
     int         _dev_type;
     QString     _dev_name;
     QString     _driver_name;
+    QString     _path;
     bool        _is_new_device;
     struct sr_dev_inst  *_di;
     std::vector<ds_device_handle> _history_handles;

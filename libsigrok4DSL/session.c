@@ -71,7 +71,7 @@ struct source {
 SR_PRIV struct sr_session *sr_session_new(void)
 {
 	if (session != NULL){
-		sr_info("%s", "Destroy the old session.");
+		sr_detail("%s", "Destroy the old session.");
 		sr_session_destroy(); // Destory the old.
 	}
 

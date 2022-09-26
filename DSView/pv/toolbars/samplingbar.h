@@ -78,15 +78,14 @@ namespace pv
         public:
             SamplingBar(SigSession *session, QWidget *parent);         
 
-            double hori_knob(int dir);
-            double commit_hori_res();
-            double get_hori_res(); 
-            void set_sample_rate(uint64_t sample_rate);
+            double hori_knob(int dir);           
+            double get_hori_res();          
             void update_device_list();          
             void reload(); 
             void update_view_status();
             void config_device();
             ds_device_handle get_next_device_handle();
+            void update_sample_rate_selector();
 
         signals:
             void sig_store_session_data();
@@ -95,8 +94,9 @@ namespace pv
             void changeEvent(QEvent *event);
             void retranslateUi();
             void reStyle();
-
-            void update_sample_rate_selector();
+            void set_sample_rate(uint64_t sample_rate);
+            double commit_hori_res();
+           
             void update_sample_rate_selector_value();
             void update_sample_count_selector();
             void update_sample_count_selector_value();

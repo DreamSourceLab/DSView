@@ -31,7 +31,6 @@
 
 #include "../view/trace.h"
 #include "../sigsession.h"
-#include "../device/devinst.h"
 #include "../view/view.h"
 #include "../view/trace.h"
 #include "../dialogs/dsomeasure.h"

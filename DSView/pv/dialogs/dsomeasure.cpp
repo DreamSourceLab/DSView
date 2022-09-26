@@ -20,7 +20,6 @@
  */
 
 #include "dsomeasure.h"
-#include "../device/devinst.h"
 #include "../sigsession.h"
 #include "../view/view.h"
 

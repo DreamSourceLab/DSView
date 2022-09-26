@@ -82,7 +82,6 @@ class LissajousTrace;
 class MathTrace;
 }
 
-using namespace pv::device;
 using namespace pv::data;
 
 //created by MainWindow
@@ -292,7 +291,7 @@ public:
     void set_map_zoom(int index);
     void auto_end();
     bool have_hardware_data();
-    struct ds_device_info* get_device_list(int &out_count, int &actived_index);
+    struct ds_device_base_info* get_device_list(int &out_count, int &actived_index);
     void add_msg_listener(IMessageListener *ln);
     void broadcast_msg(int msg);
     bool switch_work_mode(int mode);

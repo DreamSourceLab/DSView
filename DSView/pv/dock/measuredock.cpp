@@ -31,8 +31,6 @@
 #include "../view/logicsignal.h"
 #include "../data/signaldata.h"
 #include "../data/snapshot.h" 
-#include "../device/device.h"
-#include "../device/file.h"
 #include "../dialogs/dsdialog.h"
 #include "../dialogs/dsmessagebox.h"
 

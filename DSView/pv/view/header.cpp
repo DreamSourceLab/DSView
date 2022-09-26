@@ -40,7 +40,6 @@
 #include "groupsignal.h"
 #include "decodetrace.h"
 #include "../sigsession.h"
-#include "../device/devinst.h"
 #include "../dsvdef.h"
 
  

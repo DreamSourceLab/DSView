@@ -21,7 +21,6 @@
 
 #include "dsotriggerdock.h"
 #include "../sigsession.h"
-#include "../device/devinst.h"
 #include "../dialogs/dsmessagebox.h"
 #include "../view/dsosignal.h"
  

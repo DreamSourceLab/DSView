@@ -38,7 +38,6 @@
 #include "view/logicsignal.h"
 #include "view/dsosignal.h"
 #include "view/decodetrace.h"
-#include "device/devinst.h"
 #include "dock/protocoldock.h" 
  
 #include <QFileDialog>

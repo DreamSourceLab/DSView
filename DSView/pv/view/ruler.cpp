@@ -26,7 +26,6 @@
 #include "view.h"
 #include "viewport.h"
 #include "../sigsession.h"
-#include "../device/devinst.h"
 #include "dsosignal.h"
 #include "../dsvdef.h"
 

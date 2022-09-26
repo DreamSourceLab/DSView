@@ -240,11 +240,11 @@ SR_API void ds_set_datafeed_callback(ds_datafeed_callback_t cb)
  * Get the device list, if the field _handle is 0, the list visited to end.
  * User need call free() to release the buffer. If the list is empty, the out_list is null.
  */
-SR_API int ds_get_device_list(struct ds_device_info **out_list, int *out_count)
+SR_API int ds_get_device_list(struct ds_device_base_info **out_list, int *out_count)
 {
 	int num;
-	struct ds_device_info *array = NULL;
-	struct ds_device_info *p = NULL;
+	struct ds_device_base_info *array = NULL;
+	struct ds_device_base_info *p = NULL;
 	GSList *l;
 	struct sr_dev_inst *dev;
 
@@ -263,7 +263,7 @@ SR_API int ds_get_device_list(struct ds_device_info **out_list, int *out_count)
 		return SR_OK;
 	}
 
-	array = (struct ds_device_info *)malloc(sizeof(struct ds_device_info) * (num + 1));
+	array = (struct ds_device_info *)malloc(sizeof(struct ds_device_base_info) * (num + 1));
 	if (array == NULL)
 	{
 		pthread_mutex_unlock(&lib_ctx.mutext);
@@ -276,16 +276,7 @@ SR_API int ds_get_device_list(struct ds_device_info **out_list, int *out_count)
 	{
 		dev = l->data;
 		p->handle = dev->handle;
-		p->dev_type = dev->dev_type;
-		p->driver_name[0] = '\0';
-		p->di = dev;
 		strncpy(p->name, dev->name, sizeof(p->name) - 1);
-
-		if (dev->driver && dev->driver->name)
-		{
-			strncpy(p->driver_name, dev->driver->name, sizeof(p->driver_name) - 1);
-		}
-
 		p++;
 	}
 
@@ -561,10 +552,10 @@ SR_API int ds_remove_device(ds_device_handle handle)
  * Get the actived device info.
  * If the actived device is not exists, the handle filed will be set null.
  */
-SR_API int ds_get_actived_device_info(struct ds_device_info *fill_info)
+SR_API int ds_get_actived_device_info(struct ds_device_full_info *fill_info)
 {
 	struct sr_dev_inst *dev;
-	struct ds_device_info *p;
+	struct ds_device_full_info *p;
 	int ret;
 
 	if (fill_info == NULL)
@@ -576,6 +567,7 @@ SR_API int ds_get_actived_device_info(struct ds_device_info *fill_info)
 
 	p->handle = NULL_HANDLE;
 	p->name[0] = '\0';
+	p->path[0] = '\0';
 	p->driver_name[0] = '\0';
 	p->dev_type = DEV_TYPE_UNKOWN;
 	p->di = NULL;

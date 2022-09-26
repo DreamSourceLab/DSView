@@ -71,8 +71,6 @@ class View;
 namespace device{
     class DevInst;
 }
-
-using namespace pv::device;
  
 //The mainwindow,referenced by MainFrame
 //TODO: create graph view,toolbar,and show device list
@@ -171,8 +169,11 @@ private:
 
     //ISessionDataGetter
     bool genSessionData(std::string &str);
-
     bool gen_session_json(QJsonObject &sessionVar);
+    void check_session_file_version();
+    void load_device_config();
+    QJsonDocument get_session_json_from_file(QString file);
+    QJsonArray get_decoder_json_from_file(QString file);
 
     //IMessageListener
     void OnMessage(int msg);
