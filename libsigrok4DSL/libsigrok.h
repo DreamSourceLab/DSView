@@ -1008,12 +1008,6 @@ enum sr_config_option_id{
     /** Sessions */
     SR_CONF_DEVICE_SESSIONS = 30099,
 
-	/** Session filename. */
-	SR_CONF_SESSIONFILE = 30100,
-
-	/** The device supports specifying a capturefile to inject. */
-	SR_CONF_CAPTUREFILE = 30101,
-
     /** Session file version */
     SR_CONF_FILE_VERSION = 30102,
 
@@ -1375,7 +1369,7 @@ SR_API int ds_get_actived_device_index();
 SR_API int ds_have_actived_device();
 
 /**
- * Create a device from session file, and will auto load the data.
+ * Create a device from session file, and append to the list.
  */
 SR_API int ds_device_from_file(const char *file_path);
 
@@ -1418,7 +1412,7 @@ SR_API int ds_stop_collect();
 SR_API int ds_is_collecting();
 
 /**
- * Close the actived device.
+ * Close the actived device, and stop collect.
  */
 SR_API int ds_release_actived_device();
 

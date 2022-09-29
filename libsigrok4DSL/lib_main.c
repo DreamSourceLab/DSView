@@ -344,8 +344,7 @@ SR_API int ds_active_device(ds_device_handle handle)
 		{
 			bFind = 1;
 
-			if (dev->dev_type == DEV_TYPE_USB && DS_RES_PATH[0] == '\0')
-			{
+			if (dev->dev_type == DEV_TYPE_USB && DS_RES_PATH[0] == '\0'){
 				sr_err("%s", "Please call ds_set_firmware_resource_dir() to set the firmware resource path.");
 			}
 
@@ -463,10 +462,29 @@ SR_API int ds_have_actived_device()
 }
 
 /**
- * Create a device from session file, and will auto load the data.
+ * Create a device from session file, and append to the list.
  */
 SR_API int ds_device_from_file(const char *file_path)
-{
+{ 	
+	struct sr_dev_inst *dev;
+	int ret;
+
+	if (file_path == NULL || *file_path == '\0'){
+		sr_err("%s", "Error!File name is empty.");
+		return SR_ERR_ARG;
+	}
+
+	dev = NULL;
+	ret = sr_new_virtual_device(file_path, &dev);
+
+	if (ret != SR_OK){
+		return ret;
+	}
+
+	pthread_mutex_lock(&lib_ctx.mutext);
+	lib_ctx.device_list = g_slist_append(lib_ctx.device_list, dev);
+	pthread_mutex_unlock(&lib_ctx.mutext);
+
 	return SR_OK;
 }
 
@@ -556,7 +574,8 @@ SR_API int ds_get_actived_device_info(struct ds_device_full_info *fill_info)
 {
 	struct sr_dev_inst *dev;
 	struct ds_device_full_info *p;
-	int ret;
+	int ret; 
+ 
 
 	if (fill_info == NULL)
 		return SR_ERR_ARG;
@@ -585,6 +604,10 @@ SR_API int ds_get_actived_device_info(struct ds_device_full_info *fill_info)
 		if (dev->driver && dev->driver->name)
 		{
 			strncpy(p->driver_name, dev->driver->name, sizeof(p->driver_name) - 1);
+		}
+
+		if (dev->dev_type == DEV_TYPE_FILELOG && dev->path != NULL){
+			strncpy(p->path, dev->path, sizeof(p->path) - 1);
 		}
 		ret = SR_OK;
 	}
@@ -713,7 +736,7 @@ END:
 	if (bError)
 		send_event(DS_EV_COLLECT_TASK_END_BY_ERROR);
 	else if (lib_ctx.is_stop_by_detached)
-		send_event(DS_EV_COLLECT_TASK_END_BY_DETACHED);
+        post_event_async(DS_EV_COLLECT_TASK_END_BY_DETACHED);
 	else
 		send_event(DS_EV_COLLECT_TASK_END); // Normal end.
 
@@ -1094,6 +1117,9 @@ static int update_device_handle(struct libusb_device *old_dev, struct libusb_dev
 	return SR_ERR;
 }
 
+/**
+ * hotplug event
+ */
 static void hotplug_event_listen_callback(struct libusb_context *ctx, struct libusb_device *dev, int event)
 {
 	int bDone = 0;
@@ -1155,7 +1181,7 @@ static void hotplug_event_listen_callback(struct libusb_context *ctx, struct lib
 			&& lib_ctx.actived_device_instance->handle == (ds_device_handle)dev 
 			&& ds_is_collecting())
 		{
-			sr_info("%s", "The actived device is detached, will stop collect thread.");
+			sr_info("%s", "The collecting device is detached, will stop the collect thread.");
 			lib_ctx.is_stop_by_detached = 1;
 			ds_release_actived_device();
 		}

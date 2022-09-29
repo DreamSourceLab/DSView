@@ -80,7 +80,7 @@ static int init(struct sr_input *in, const char *filename)
 	}
 
 	/* Create a virtual device. */
-	in->sdi = sr_dev_inst_new(LOGIC, 0, SR_ST_ACTIVE, NULL, NULL, NULL);
+	in->sdi = sr_dev_inst_new(LOGIC, SR_ST_ACTIVE, NULL, NULL, NULL);
 	in->internal = ctx;
 
 	for (i = 0; i < num_probes; i++) {

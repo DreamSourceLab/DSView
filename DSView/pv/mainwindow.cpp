@@ -102,16 +102,16 @@
 namespace pv
 {
 
-    MainWindow::MainWindow(QWidget *parent) 
+    MainWindow::MainWindow(QWidget *parent)
         : QMainWindow(parent)
-    {   
+    {
         _msg = NULL;
 
         _session = AppControl::Instance()->GetSession();
         _session->set_callback(this);
         _device_agent = _session->get_device();
         _session->add_msg_listener(this);
- 
+
         _is_auto_switch_device = false;
 
         setup_ui();
@@ -231,7 +231,7 @@ namespace pv
 
         retranslateUi();
 
-        // event      
+        // event
         connect(&_event, SIGNAL(session_error()), this, SLOT(on_session_error()));
         connect(&_event, SIGNAL(signals_changed()), this, SLOT(on_signals_changed()));
         connect(&_event, SIGNAL(receive_trigger(quint64)), this, SLOT(on_receive_trigger(quint64)));
@@ -278,20 +278,24 @@ namespace pv
         connect(_dso_trigger_widget, SIGNAL(set_trig_pos(int)), _view, SLOT(set_trig_pos(int)));
 
         _logo_bar->set_mainform_callback(this);
- 
+
         // Try load from file.
         QString ldFileName(AppControl::Instance()->_open_file_name.c_str());
-        if (ldFileName != ""){
-            if (QFile::exists(ldFileName)){
+        if (ldFileName != "")
+        {
+            if (QFile::exists(ldFileName))
+            {
                 dsv_info("auto load file:%s", ldFileName.toUtf8().data());
                 on_load_file(ldFileName);
             }
-            else{
+            else
+            {
                 dsv_err("file is not exists:%s", ldFileName.toUtf8().data());
                 MsgBox::Show(tr("Open file error!"), ldFileName, NULL);
             }
         }
-        else{
+        else
+        {
             _session->set_default_device();
         }
     }
@@ -306,7 +310,7 @@ namespace pv
     }
 
     void MainWindow::on_load_file(QString file_name)
-    { 
+    {
         try
         {
             if (strncmp(_device_agent->name().toUtf8(), "virtual", 7))
@@ -321,15 +325,15 @@ namespace pv
     }
 
     void MainWindow::show_error(QString error)
-    { 
+    {
         MsgBox::Show(NULL, error.toStdString().c_str(), this);
     }
- 
+
     void MainWindow::repeat_resume()
     {
-      //  while (_view->session().is_running_status())
-       //     QCoreApplication::processEvents();
-      //  _session->stop_capture();
+        //  while (_view->session().is_running_status())
+        //     QCoreApplication::processEvents();
+        //  _session->stop_capture();
     }
 
     void MainWindow::session_error()
@@ -346,19 +350,20 @@ namespace pv
 
         switch (_session->get_error())
         {
-        case SigSession::Hw_err: 
+        case SigSession::Hw_err:
             _session->stop_capture();
             title = tr("Hardware Operation Failed");
             details = tr("Please replug device to refresh hardware configuration!");
             break;
-        case SigSession::Malloc_err: 
+        case SigSession::Malloc_err:
             _session->stop_capture();
             title = tr("Malloc Error");
             details = tr("Memory is not enough for this sample!\nPlease reduce the sample depth!");
             break;
-        case SigSession::Test_data_err: 
+        case SigSession::Test_data_err:
             _session->stop_capture();
-            _sampling_bar->update_view_status(); 
+            update_toolbar_view_status();
+
             title = tr("Data Error");
             error_pattern = _session->get_error_pattern();
 
@@ -379,7 +384,7 @@ namespace pv
             details = tr("the content of received packet are not expected!");
             _session->refresh(0);
             break;
-        case SigSession::Data_overflow: 
+        case SigSession::Data_overflow:
             _session->stop_capture();
             title = tr("Data Overflow");
             details = tr("USB bandwidth can not support current sample rate! \nPlease reduce the sample rate!");
@@ -391,7 +396,7 @@ namespace pv
         }
 
         dialogs::DSMessageBox msg(this);
-        
+
         connect(_session->device_event_object(), SIGNAL(device_updated()), &msg, SLOT(accept()));
 
         QFont font("Monaco");
@@ -561,6 +566,8 @@ namespace pv
     bool MainWindow::on_load_session(QString name)
     {
         QFile sessionFile(name);
+        bool bDone;
+
         if (!sessionFile.open(QIODevice::ReadOnly))
         {
             dsv_warn("%s", "Warning: Couldn't open session file!");
@@ -570,53 +577,60 @@ namespace pv
         QString sessionData = QString::fromUtf8(sessionFile.readAll());
         QJsonDocument sessionDoc = QJsonDocument::fromJson(sessionData.toUtf8());
 
-        return load_session_json(sessionDoc, false);
+        _protocol_widget->del_all_protocol();
+        return load_session_json(sessionDoc, bDone);
     }
 
-    bool MainWindow::load_session_json(QJsonDocument json, bool file_dev, bool bDecoder)
+    bool MainWindow::load_session_json(QJsonDocument json, bool &haveDecoder)
     {
+        haveDecoder = false;
+
         QJsonObject sessionObj = json.object();
 
         int mode = _device_agent->get_work_mode();
 
         // check session file version
-        if (!sessionObj.contains("Version")){
+        if (!sessionObj.contains("Version"))
+        {
             dsv_dbg("%s", "session file version is not exists!");
             return false;
         }
 
-        if (sessionObj["Version"].toInt() < BASE_SESSION_VERSION){
+        if (sessionObj["Version"].toInt() < BASE_SESSION_VERSION)
+        {
             dsv_err("%s", "session file version is error!");
             return false;
         }
 
         // old version(<= 1.1.2), restore the language
-        if (sessionObj["Version"].toInt() == BASE_SESSION_VERSION){
+        if (sessionObj["Version"].toInt() == BASE_SESSION_VERSION)
+        {
             switchLanguage(sessionObj["Language"].toInt());
         }
 
-        // check device and mode 
-        if ((!file_dev && strcmp(_device_agent->driver_name().toLocal8Bit().data(), sessionObj["Device"].toString().toUtf8()) != 0) ||
-            mode != sessionObj["DeviceMode"].toDouble()) {
-            MsgBox::Show(NULL, tr("Session File is not compatible with current device or mode!"), this);
-            return false;
-        }
-
-        // clear decoders
-        if (mode == LOGIC && !file_dev)
+        if (_device_agent->is_hardware())
         {
-            _protocol_widget->del_all_protocol();
+            QString driverName = _device_agent->driver_name();
+            QString sessionDevice = sessionObj["Device"].toString();
+            int sessionMode = sessionObj["DeviceMode"].toInt();
+            // check device and mode
+            if (driverName != sessionDevice || mode != sessionMode)
+            {
+                MsgBox::Show(NULL, tr("Session File is not compatible with current device or mode!"), this);
+                return false;
+            }
         }
 
         // load device settings
         GVariant *gvar_opts = _device_agent->get_config_list(NULL, SR_CONF_DEVICE_SESSIONS);
         gsize num_opts;
 
-        if (gvar_opts != NULL) {
+        if (gvar_opts != NULL)
+        {
             const int *const options = (const int32_t *)g_variant_get_fixed_array(
                 gvar_opts, &num_opts, sizeof(int32_t));
 
-            for (unsigned int i = 0; i < num_opts; i++) 
+            for (unsigned int i = 0; i < num_opts; i++)
             {
                 const struct sr_config_info *const info = _device_agent->get_config_info(options[i]);
 
@@ -624,33 +638,32 @@ namespace pv
                     continue;
 
                 if (info->datatype == SR_T_BOOL)
-                    _device_agent->set_config(NULL, NULL, info->key
-                                 ,g_variant_new_boolean(sessionObj[info->name].toDouble()));
+                    _device_agent->set_config(NULL, NULL, info->key, g_variant_new_boolean(sessionObj[info->name].toDouble()));
                 else if (info->datatype == SR_T_UINT64)
-                    _device_agent->set_config(NULL, NULL, info->key
-                                ,g_variant_new_uint64(sessionObj[info->name].toString().toULongLong()));
+                    _device_agent->set_config(NULL, NULL, info->key, g_variant_new_uint64(sessionObj[info->name].toString().toULongLong()));
                 else if (info->datatype == SR_T_UINT8)
-                    _device_agent->set_config(NULL, NULL, info->key
-                                ,g_variant_new_byte(sessionObj[info->name].toString().toUInt()));
+                    _device_agent->set_config(NULL, NULL, info->key, g_variant_new_byte(sessionObj[info->name].toString().toUInt()));
                 else if (info->datatype == SR_T_FLOAT)
-                    _device_agent->set_config(NULL, NULL, info->key
-                                ,g_variant_new_double(sessionObj[info->name].toDouble()));
+                    _device_agent->set_config(NULL, NULL, info->key, g_variant_new_double(sessionObj[info->name].toDouble()));
                 else if (info->datatype == SR_T_CHAR)
-                    _device_agent->set_config(NULL, NULL, info->key
-                                ,g_variant_new_string(sessionObj[info->name].toString().toUtf8()));
+                    _device_agent->set_config(NULL, NULL, info->key, g_variant_new_string(sessionObj[info->name].toString().toUtf8()));
             }
         }
 
         // load channel settings
-        if (file_dev && mode == DSO) {
-            for (const GSList *l = _device_agent->get_channels(); l; l = l->next) {
-                sr_channel *const probe = (sr_channel*)l->data;
+        if (mode == DSO)
+        {
+            for (const GSList *l = _device_agent->get_channels(); l; l = l->next)
+            {
+                sr_channel *const probe = (sr_channel *)l->data;
                 assert(probe);
 
-                for (const QJsonValue &value : sessionObj["channel"].toArray()) {
+                for (const QJsonValue &value : sessionObj["channel"].toArray())
+                {
                     QJsonObject obj = value.toObject();
                     if ((strcmp(probe->name, g_strdup(obj["name"].toString().toStdString().c_str())) == 0) &&
-                        (probe->type == obj["type"].toDouble())) {
+                        (probe->type == obj["type"].toDouble()))
+                    {
                         probe->vdiv = obj["vdiv"].toDouble();
                         probe->coupling = obj["coupling"].toDouble();
                         probe->vfactor = obj["vfactor"].toDouble();
@@ -663,16 +676,20 @@ namespace pv
                 }
             }
         }
-        else {
-            for (const GSList *l = _device_agent->get_channels(); l; l = l->next) {
-                sr_channel *const probe = (sr_channel*)l->data;
+        else
+        {
+            for (const GSList *l = _device_agent->get_channels(); l; l = l->next)
+            {
+                sr_channel *const probe = (sr_channel *)l->data;
                 assert(probe);
                 bool isEnabled = false;
 
-                for (const QJsonValue &value : sessionObj["channel"].toArray()) {
+                for (const QJsonValue &value : sessionObj["channel"].toArray())
+                {
                     QJsonObject obj = value.toObject();
                     if ((probe->index == obj["index"].toDouble()) &&
-                        (probe->type == obj["type"].toDouble())) {
+                        (probe->type == obj["type"].toDouble()))
+                    {
                         isEnabled = true;
                         probe->enabled = obj["enabled"].toBool();
                         probe->name = g_strdup(obj["name"].toString().toStdString().c_str());
@@ -695,17 +712,22 @@ namespace pv
         _session->reload();
 
         // load signal setting
-        if (file_dev && mode == DSO) {
+        if (mode == DSO)
+        {
 
-             for(auto &s :  _session->get_signals()) {
-                for (const QJsonValue &value : sessionObj["channel"].toArray()) {
+            for (auto &s : _session->get_signals())
+            {
+                for (const QJsonValue &value : sessionObj["channel"].toArray())
+                {
                     QJsonObject obj = value.toObject();
                     if ((strcmp(s->get_name().toStdString().c_str(), g_strdup(obj["name"].toString().toStdString().c_str())) == 0) &&
-                        (s->get_type() == obj["type"].toDouble())) {
+                        (s->get_type() == obj["type"].toDouble()))
+                    {
                         s->set_colour(QColor(obj["colour"].toString()));
 
                         view::DsoSignal *dsoSig = NULL;
-                        if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
+                        if ((dsoSig = dynamic_cast<view::DsoSignal *>(s)))
+                        {
                             dsoSig->load_settings();
                             dsoSig->set_zero_ratio(obj["zeroPos"].toDouble());
                             dsoSig->set_trig_ratio(obj["trigValue"].toDouble());
@@ -715,23 +737,29 @@ namespace pv
                     }
                 }
             }
-        } 
-        else {
-             for(auto &s : _session->get_signals()) {
-                for (const QJsonValue &value : sessionObj["channel"].toArray()) {
+        }
+        else
+        {
+            for (auto &s : _session->get_signals())
+            {
+                for (const QJsonValue &value : sessionObj["channel"].toArray())
+                {
                     QJsonObject obj = value.toObject();
                     if ((s->get_index() == obj["index"].toDouble()) &&
-                        (s->get_type() == obj["type"].toDouble())) {
+                        (s->get_type() == obj["type"].toDouble()))
+                    {
                         s->set_colour(QColor(obj["colour"].toString()));
                         s->set_name(g_strdup(obj["name"].toString().toUtf8().data()));
 
                         view::LogicSignal *logicSig = NULL;
-                        if ((logicSig = dynamic_cast<view::LogicSignal*>(s))) {
+                        if ((logicSig = dynamic_cast<view::LogicSignal *>(s)))
+                        {
                             logicSig->set_trig(obj["strigger"].toDouble());
                         }
 
                         view::DsoSignal *dsoSig = NULL;
-                        if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
+                        if ((dsoSig = dynamic_cast<view::DsoSignal *>(s)))
+                        {
                             dsoSig->load_settings();
                             dsoSig->set_zero_ratio(obj["zeroPos"].toDouble());
                             dsoSig->set_trig_ratio(obj["trigValue"].toDouble());
@@ -739,7 +767,8 @@ namespace pv
                         }
 
                         view::AnalogSignal *analogSig = NULL;
-                        if ((analogSig = dynamic_cast<view::AnalogSignal*>(s))) {
+                        if ((analogSig = dynamic_cast<view::AnalogSignal *>(s)))
+                        {
                             analogSig->set_zero_ratio(obj["zeroPos"].toDouble());
                             analogSig->commit_settings();
                         }
@@ -756,20 +785,27 @@ namespace pv
         _view->header_updated();
 
         // load trigger settings
-        if (sessionObj.contains("trigger")) {
+        if (sessionObj.contains("trigger"))
+        {
             _trigger_widget->set_session(sessionObj["trigger"].toObject());
         }
         on_trigger(false);
 
-
         // load decoders
-        if (bDecoder && sessionObj.contains("decoder")) {
-            StoreSession ss(_session);
-            ss.load_decoders(_protocol_widget, sessionObj["decoder"].toArray());
+        if (sessionObj.contains("decoder"))
+        {
+            QJsonArray deArray = sessionObj["decoder"].toArray();
+            if (deArray.empty() == false)
+            {
+                haveDecoder = true;
+                StoreSession ss(_session);
+                ss.load_decoders(_protocol_widget, deArray);
+            }
         }
 
         // load measure
-        if (sessionObj.contains("measure")) {
+        if (sessionObj.contains("measure"))
+        {
             _view->get_viewstatus()->load_session(sessionObj["measure"].toArray());
         }
 
@@ -1171,7 +1207,6 @@ namespace pv
     }
 
     /*------------------on event end-------*/
- 
 
     void MainWindow::signals_changed()
     {
@@ -1259,24 +1294,27 @@ namespace pv
 
     void MainWindow::check_usb_device_speed()
     {
-         // USB device speed check
-        if (_device_agent->is_hardware()) {
+        // USB device speed check
+        if (_device_agent->is_hardware())
+        {
             int usb_speed = LIBUSB_SPEED_HIGH;
             GVariant *gvar = _device_agent->get_config(NULL, NULL, SR_CONF_USB_SPEED);
-            if (gvar != NULL) {
+            if (gvar != NULL)
+            {
                 usb_speed = g_variant_get_int32(gvar);
                 g_variant_unref(gvar);
             }
 
             bool usb30_support = false;
             gvar = _device_agent->get_config(NULL, NULL, SR_CONF_USB30_SUPPORT);
-            if (gvar != NULL) {
+            if (gvar != NULL)
+            {
                 usb30_support = g_variant_get_boolean(gvar);
                 g_variant_unref(gvar);
 
                 if (usb30_support && usb_speed == LIBUSB_SPEED_HIGH)
                     show_error(tr("Plug it into a USB 2.0 port will seriously affect its performance."
-                                                               "Please replug it into a USB 3.0 port."));
+                                  "Please replug it into a USB 3.0 port."));
             }
         }
     }
@@ -1292,40 +1330,45 @@ namespace pv
     }
 
     void MainWindow::reset_all_view()
-    {  
+    {
         _sampling_bar->reload();
         _view->status_clear();
         _view->reload();
         _view->set_device();
-        _trigger_widget->init();           
+        _trigger_widget->init();
         _trigger_widget->device_updated();
         _trig_bar->reload();
-        _trig_bar->restore_status();          
+        _trig_bar->restore_status();
         _dso_trigger_widget->init();
         _measure_widget->reload();
     }
 
     bool MainWindow::confirm_to_store_data()
     {
-         if (_session->have_hardware_data()){
-               return MsgBox::Confirm(tr("Save captured data?"));
-            }
+        if (_session->have_hardware_data())
+        {
+            return MsgBox::Confirm(tr("Save captured data?"));
+        }
         return false;
     }
 
     void MainWindow::check_session_file_version()
     {
         auto device_agent = _session->get_device();
-        if (device_agent->is_file() && device_agent->is_new_device()){
-            if (device_agent->get_work_mode() == LOGIC){
-                GVariant* gvar = device_agent->get_config(NULL, NULL, SR_CONF_FILE_VERSION);
-                if (gvar != NULL) {
+        if (device_agent->is_file() && device_agent->is_new_device())
+        {
+            if (device_agent->get_work_mode() == LOGIC)
+            {
+                GVariant *gvar = device_agent->get_config(NULL, NULL, SR_CONF_FILE_VERSION);
+                if (gvar != NULL)
+                {
                     int16_t version = g_variant_get_int16(gvar);
                     g_variant_unref(gvar);
-                    if (version == 1) {
+                    if (version == 1)
+                    {
                         show_error(tr("Current loading file has an old format. "
-                                            "This will lead to a slow loading speed. "
-                                            "Please resave it after loaded."));
+                                      "This will lead to a slow loading speed. "
+                                      "Please resave it after loaded."));
                     }
                 }
             }
@@ -1334,49 +1377,54 @@ namespace pv
 
     void MainWindow::load_device_config()
     {
-         int lang = AppConfig::Instance()._frameOptions.language;
-         QString name = _device_agent->name();
-         int mode = _device_agent->get_work_mode();
+        int lang = AppConfig::Instance()._frameOptions.language;
+        QString name = _device_agent->name();
+        int mode = _device_agent->get_work_mode();
 
-         if (_device_agent->is_hardware())
-         {
+        if (_device_agent->is_hardware())
+        {
 
 #if QT_VERSION >= 0x050400
-             QDir dir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
+            QDir dir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
 #else
-             QDir dir(QStandardPaths::writableLocation(QStandardPaths::DataLocation));
+            QDir dir(QStandardPaths::writableLocation(QStandardPaths::DataLocation));
 #endif
-             if (dir.exists())
-             {
-                 QString str = dir.absolutePath() + "/";
-                 QString lang_name = ".ses" + QString::number(lang);
-                 QString ses_name = str +
-                                    name +
-                                    QString::number(mode) +
-                                    lang_name + ".dsc";
-                 on_load_session(ses_name);
-             }
-         }
-         else
-         {
-             QDir dir(GetResourceDir());
-             if (dir.exists())
-             {
-                 QString str = dir.absolutePath() + "/";
-                 QString ses_name = str +
-                                    name +
-                                    QString::number(mode) +
-                                    ".dsc";
-                 if (QFileInfo(ses_name).exists())
-                     on_load_session(ses_name);
-             }
-         }
+            if (dir.exists())
+            {
+                QString str = dir.absolutePath() + "/";
+                QString lang_name = ".ses" + QString::number(lang);
+                QString ses_name = str +
+                                   name +
+                                   QString::number(mode) +
+                                   lang_name + ".dsc";
+                on_load_session(ses_name);
+            }
+        }
+        else
+        {
+            QDir dir(GetResourceDir());
+            if (dir.exists())
+            {
+                QString str = dir.absolutePath() + "/";
+                QString ses_name = str +
+                                   name +
+                                   QString::number(mode) +
+                                   ".dsc";
+                if (QFileInfo(ses_name).exists())
+                    on_load_session(ses_name);
+            }
+        }
     }
 
     QJsonDocument MainWindow::get_session_json_from_file(QString file)
     {
         QJsonDocument sessionDoc;
         QJsonParseError error;
+
+        if (file == ""){
+            dsv_err("%s", "File name is empty.");
+            assert(false);
+        }
 
         auto f_name = path::ConvertPath(file);
         ZipReader rd(f_name.c_str());
@@ -1406,6 +1454,11 @@ namespace pv
         QJsonArray dec_array;
         QJsonParseError error;
 
+        if (file == ""){
+            dsv_err("%s", "File name is empty.");
+            assert(false);
+        }
+
         /* read "decoders" */
         auto f_name = path::ConvertPath(file);
         ZipReader rd(f_name.c_str());
@@ -1431,12 +1484,19 @@ namespace pv
         return dec_array;
     }
 
+    void MainWindow::update_toolbar_view_status()
+    {
+        _sampling_bar->update_view_status();
+        _file_bar->update_view_status();
+        _trig_bar->update_view_status();
+    }
+
     void MainWindow::OnMessage(int msg)
     {
         switch (msg)
         {
-        case DSV_MSG_DEVICE_LIST_UPDATED: 
-            _sampling_bar->update_device_list();            
+        case DSV_MSG_DEVICE_LIST_UPDATED:
+            _sampling_bar->update_device_list();
             break;
 
         case DSV_MSG_START_COLLECT_WORK_PREV:
@@ -1445,16 +1505,12 @@ namespace pv
             break;
 
         case DSV_MSG_START_COLLECT_WORK:
-            _sampling_bar->update_view_status();
-            _file_bar->update_view_status();
-            _trig_bar->update_view_status();
+            update_toolbar_view_status();
             break;
 
         case DSV_MSG_END_COLLECT_WORK:
             _session->device_event_object()->device_updated();
-            _sampling_bar->update_view_status();
-            _file_bar->update_view_status(); 
-            _trig_bar->update_view_status();
+            update_toolbar_view_status();
             break;
 
         case DSV_MSG_CURRENT_DEVICE_CHANGE_PREV:
@@ -1463,31 +1519,38 @@ namespace pv
             break;
 
         case DSV_MSG_CURRENT_DEVICE_CHANGED:
-          {
-            if (_msg != NULL){
+        {
+            if (_msg != NULL)
+            {
                 _msg->close();
                 _msg = NULL;
             }
 
-            load_device_config();            
+            _protocol_widget->del_all_protocol();
+            load_device_config();
             _sampling_bar->update_device_list();
-            reset_all_view();           
+            reset_all_view();
             _logo_bar->dsl_connected(_session->get_device()->is_hardware());
-            _file_bar->update_view_status();
- 
-            if (_device_agent->is_file()){
-                check_session_file_version();
-                StoreSession ss(_session);
-                // load decoder
-                bool bFlag = ss.load_decoders(_protocol_widget
-                                        ,get_decoder_json_from_file(_device_agent->path()));
+            update_toolbar_view_status();
 
+            if (_device_agent->is_file())
+            {
+                check_session_file_version();
+
+                bool bDoneDecoder = false;
                 // load session
-                load_session_json(get_session_json_from_file(_device_agent->path()), true, !bFlag);
+                load_session_json(get_session_json_from_file(_device_agent->path()), bDoneDecoder);
+
+                if (!bDoneDecoder)
+                {
+                    StoreSession ss(_session);
+                    QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
+                    ss.load_decoders(_protocol_widget, deArray);
+                }
                 _session->start_capture(true);
-            } 
-           }
-            break;     
+            }
+        }
+        break;
 
         case DSV_MSG_DEVICE_OPTIONS_UPDATED:
             _trigger_widget->device_updated();
@@ -1502,52 +1565,59 @@ namespace pv
 
         case DSV_MSG_DEVICE_MODE_CHANGED:
             _sampling_bar->update_sample_rate_selector();
-            _sampling_bar->update_view_status();
             _view->mode_changed();
             reset_all_view();
+            update_toolbar_view_status();
             break;
 
         case DSV_MSG_NEW_USB_DEVICE:
-            if (confirm_to_store_data()){
+            if (confirm_to_store_data())
+            {
                 _is_auto_switch_device = true;
                 on_save();
             }
-            else{
+            else
+            {
                 _session->set_default_device();
-                check_usb_device_speed();                   
-            }        
+                check_usb_device_speed();
+            }
             break;
 
         case DSV_MSG_CURRENT_DEVICE_DETACHED:
             // Save current config, and switch to the last device.
             _session->device_event_object()->device_updated();
-             session_save();
+            session_save();
             _view->hide_calibration();
-            if (confirm_to_store_data()){
+            if (confirm_to_store_data())
+            {
                 _is_auto_switch_device = true;
                 on_save();
             }
-            else{
+            else
+            {
                 _session->set_default_device();
-            }         
+            }
             break;
 
         case DSV_MSG_SAVE_COMPLETE:
-            if (_is_auto_switch_device){
+            if (_is_auto_switch_device)
+            {
                 _is_auto_switch_device = false;
                 _session->set_default_device();
                 if (_session->get_device()->is_new_device())
                     check_usb_device_speed();
             }
-            else{
+            else
+            {
                 ds_device_handle devh = _sampling_bar->get_next_device_handle();
-                if (devh != NULL_HANDLE){
+                if (devh != NULL_HANDLE)
+                {
                     dsv_info("%s", "Auto switch to the selected device.");
                     _session->set_device(devh);
                 }
-            }         
+            }
             break;
         }
-}
+    }
 
 } // namespace pv

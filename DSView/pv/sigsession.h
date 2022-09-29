@@ -314,7 +314,7 @@ private:
   
     void add_decode_task(view::DecodeTrace *trace);
     void remove_decode_task(view::DecodeTrace *trace);
-    void clear_all_decode_task(int &runningDex);   
+    void clear_all_decode_task(int &runningDex);
 
     view::DecodeTrace* get_decoder_trace(int index);
     void decode_task_proc();

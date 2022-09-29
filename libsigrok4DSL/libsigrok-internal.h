@@ -123,29 +123,39 @@ struct sr_dev_driver {
 struct sr_dev_inst {
     /** Device driver. */
     struct sr_dev_driver *driver;
+	
 	/**Identity. */
     ds_device_handle handle;
+
 	/** device name. */
 	char name[50];
+
+	char *path;
+
 	/** Device type:(demo,filelog,hardware). The type see enum sr_device_type. */
 	int dev_type;
+
     /** Index of device in driver. */
     int index;
+
     /** Device instance status. SR_ST_NOT_FOUND, etc. */
     int status;
+
     /** Device mode. LA/DAQ/OSC, etc. */
     int mode;
+
     /** Device vendor. */
     char *vendor;
  
     /** Device version. */
     char *version;
+
     /** List of channels. */
     GSList *channels;
-    /** List of sr_channel_group structs */
-    GSList *channel_groups;
+ 
     /** Device instance connection data (used?) */
     void *conn;
+
     /** Device instance private data (used?) */
     void *priv;
 };
@@ -221,8 +231,8 @@ struct ds_trigger {
 
 /*--- device.c --------------------------------------------------------------*/
 
-SR_PRIV struct sr_channel *sr_channel_new(uint16_t index, int type,
-                                          gboolean enabled, const char *name);
+SR_PRIV struct sr_channel *sr_channel_new(uint16_t index, int type, gboolean enabled, const char *name);
+
 SR_PRIV void sr_dev_probes_free(struct sr_dev_inst *sdi);
 
 SR_PRIV int sr_enable_device_channel(struct sr_dev_inst *sdi, const struct sr_channel *probe, gboolean enable);
@@ -237,7 +247,7 @@ SR_PRIV int sr_dev_trigger_set(const struct sr_dev_inst *sdi, uint16_t probenum,
 		const char *trigger);
 
 /* Generic device instances */
-SR_PRIV struct sr_dev_inst *sr_dev_inst_new(int mode, int index, int status,
+SR_PRIV struct sr_dev_inst *sr_dev_inst_new(int mode, int status,
                                             const char *vendor, const char *model, const char *version);
 SR_PRIV void sr_dev_inst_free(struct sr_dev_inst *sdi);
 
@@ -366,8 +376,12 @@ SR_PRIV int sr_session_run(void);
 SR_PRIV int sr_session_stop(void); 
 SR_PRIV struct sr_session *sr_session_new(void);
 SR_PRIV int sr_session_destroy(void);
-/* Session setup */
-SR_PRIV int sr_session_load(const char *filename);
+
+/**
+ * Create a virtual deivce from file.
+ */
+SR_PRIV int sr_new_virtual_device(const char *filename, struct sr_dev_inst **out_di);
+
 
 /*--- lib_main.c -------------------------------------------------*/
 /**

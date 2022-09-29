@@ -99,7 +99,7 @@ static int init(struct sr_input *in, const char *filename)
 		return SR_ERR_MALLOC;
 
 	/* Create a virtual device. */
-	in->sdi = sr_dev_inst_new(LOGIC, 0, SR_ST_ACTIVE, NULL, NULL, NULL);
+	in->sdi = sr_dev_inst_new(LOGIC, SR_ST_ACTIVE, NULL, NULL, NULL);
 	in->sdi->priv = ctx;
 
    	ctx->samplerate = GUINT32_FROM_LE(*(uint32_t *)(buf + 24));

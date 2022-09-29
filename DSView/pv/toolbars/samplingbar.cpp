@@ -176,7 +176,7 @@ namespace pv
 
             bool is_working = _session->is_working();
 
-            if (_session->is_instant())
+            if (_is_run_as_instant)
             {
                 if (bDev && mode == DSO)
                     _instant_button.setText(is_working ? tr("Stop") : tr("Single"));
@@ -1128,6 +1128,7 @@ namespace pv
          void SamplingBar::update_view_status()
          {
             int bEnable = _session->is_working() == false;
+            int mode = _session->get_device()->get_work_mode();
 
             _device_type.setEnabled(bEnable);
             _configure_button.setEnabled(bEnable);            
@@ -1137,15 +1138,19 @@ namespace pv
             _mode_button.setEnabled(bEnable);
             _configure_button.setEnabled(bEnable);
             _device_selector.setEnabled(bEnable);
-            _sample_count.setEnabled(bEnable);
 
-            if (_session->get_device()->get_work_mode() == DSO){
+            if (_session->get_device()->is_file()){
                 _sample_rate.setEnabled(false);
+                _sample_count.setEnabled(false);
+            }
+            else if (mode == DSO){               
+                _sample_rate.setEnabled(false);
+                _sample_count.setEnabled(bEnable);
             }
             else{
                 _sample_rate.setEnabled(bEnable);
+                _sample_count.setEnabled(bEnable);
             }
-
 
             if (_session->is_working()){
                 _run_stop_button.setEnabled(_is_run_as_instant ? false : true);

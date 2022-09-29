@@ -94,7 +94,7 @@ private:
 	void setup_ui();
     void retranslateUi(); 
     bool eventFilter(QObject *object, QEvent *event);
-    bool load_session_json(QJsonDocument json, bool file_dev,bool bDecoder=true);  
+    bool load_session_json(QJsonDocument json, bool &haveDecoder);  
 
 public slots: 
     void switchTheme(QString style);
@@ -143,6 +143,7 @@ private:
     void check_usb_device_speed();
     void reset_all_view();
     bool confirm_to_store_data();
+    void update_toolbar_view_status();
    
 private:
     //ISessionCallback

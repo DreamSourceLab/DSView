@@ -154,7 +154,7 @@ static GSList *hw_scan(GSList *options)
     devc->max_height = 0;
     adjust_samplerate(devc);
 
-    sdi = sr_dev_inst_new(channel_modes[devc->ch_mode].mode, 0, SR_ST_INITIALIZING,
+    sdi = sr_dev_inst_new(channel_modes[devc->ch_mode].mode, SR_ST_INITIALIZING,
                           devc->profile->vendor,
                           devc->profile->model,
                           devc->profile->model_version);
@@ -257,7 +257,12 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
 {
     (void) cg;
 
-    struct demo_context *const devc = sdi->priv;
+    struct demo_context *devc;
+
+    assert(sdi);
+    assert(sdi->priv);
+
+    devc = sdi->priv;
 
 	switch (id) {
 	case SR_CONF_SAMPLERATE:
@@ -375,14 +380,18 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                       struct sr_channel *ch,
                       struct sr_channel_group *cg)
 {
+    (void) cg;
+
     uint16_t i;
     int ret, num_probes;
 	const char *stropt;
     uint64_t tmp_u64;
+    struct demo_context *devc;
 
-    (void) cg;
-
-    struct demo_context *const devc = sdi->priv;
+    assert(sdi);
+    assert(sdi->priv);
+    
+    devc = sdi->priv;
 
 	if (sdi->status != SR_ST_ACTIVE)
 		return SR_ERR_DEV_CLOSED;

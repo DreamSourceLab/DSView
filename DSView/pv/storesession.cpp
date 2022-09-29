@@ -970,7 +970,7 @@ bool StoreSession::json_decoders(QJsonArray &array)
     return true;
 }
 
-bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_array)
+bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray &dec_array)
 {
     if (_session->get_device()->get_work_mode() != LOGIC)
     {
@@ -978,8 +978,8 @@ bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_arra
         return false;
     }
 
-    if (dec_array.empty()){
-        dsv_info("%s", "StoreSession::load_decoders(), json object is array empty.");
+    if (dec_array.isEmpty()){
+        dsv_info("%s", "StoreSession::load_decoders(), json object array is empty.");
         return false;
     }
     

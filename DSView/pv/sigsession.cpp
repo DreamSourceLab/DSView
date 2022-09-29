@@ -81,10 +81,10 @@ namespace pv
         _is_working = false;
         _is_repeat_mode = false;
         _is_saving = false;
-        _device_status = ST_INIT; 
+        _device_status = ST_INIT;
         _noData_cnt = 0;
         _data_lock = false;
-        _data_updated = false;  
+        _data_updated = false;
 
         this->add_msg_listener(this);
 
@@ -187,14 +187,12 @@ namespace pv
     {
         assert(!_is_saving);
         assert(!_is_working);
+        assert(_callback);
+
+        _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_CHANGE_PREV);
 
         // Release the old device.
         _device_agent.release();
-
-        if (_callback != NULL)
-        {
-            _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_CHANGE_PREV);
-        }
 
         if (ds_active_device(dev_handle) != SR_OK)
         {
@@ -203,17 +201,18 @@ namespace pv
         }
 
         _device_agent.update();
-        _device_status = ST_INIT;
-
-        init_signals();
-
-        RELEASE_ARRAY(_group_traces);
-        clear_all_decoder();
 
         if (_device_agent.is_file())
             dsv_info("%s\"%s\"", "Switch to file: ", _device_agent.name().toUtf8().data());
         else
             dsv_info("%s\"%s\"", "Switch to device: ", _device_agent.name().toUtf8().data());
+
+        _device_status = ST_INIT;
+
+        RELEASE_ARRAY(_group_traces);
+
+        clear_all_decoder();
+        init_signals();
 
         _cur_snap_samplerate = _device_agent.get_sample_rate();
         _cur_samplelimits = _device_agent.get_sample_limit();
@@ -480,7 +479,7 @@ namespace pv
             return false;
         }
 
-        // stop all decode tasks
+        // Clear the previous decoder tasks.
         int run_dex = 0;
         clear_all_decode_task(run_dex);
 
@@ -516,11 +515,14 @@ namespace pv
         dsv_info("%s", "Stop collect.");
 
         if (!_is_working)
+            return;
+
+        if (_bClose)
         {
+            _is_working = false;
+            exit_capture();
             return;
         }
-
-        //_feed_timer
 
         bool wait_upload = false;
         if (!_is_repeat_mode)
@@ -532,6 +534,7 @@ namespace pv
                 g_variant_unref(gvar);
             }
         }
+
         if (!wait_upload)
         {
             _is_working = false;
@@ -548,12 +551,11 @@ namespace pv
     {
         _is_instant = false;
 
-        _feed_timer.Stop();
+        //_feed_timer
+        _feed_timer.Stop();     
 
         if (_device_agent.is_collecting())
-        {
             _device_agent.stop();
-        }
     }
 
     bool SigSession::get_capture_status(bool &triggered, int &progress)
@@ -612,7 +614,7 @@ namespace pv
             return;
 
         if (_data_updated)
-        { 
+        {
             data_updated();
             _data_updated = false;
             _noData_cnt = 0;
@@ -722,13 +724,9 @@ namespace pv
         _analog_data->clear();
         _group_data->clear();
 
-        // Clear the decode traces
-        clear_all_decoder();
-
         // Detect what data types we will receive
         if (_device_agent.have_instance())
         {
-
             for (const GSList *l = _device_agent.get_channels(); l; l = l->next)
             {
                 const sr_channel *const probe = (const sr_channel *)l->data;
@@ -1172,8 +1170,6 @@ namespace pv
         assert(packet);
 
         ds_lock_guard lock(_data_mutex);
-
-        // dsv_info("%s", "Receive data.");
 
         if (_data_lock && packet->type != SR_DF_END)
             return;
@@ -1767,7 +1763,11 @@ namespace pv
             return;
 
         _bClose = true;
-        exit_capture();
+
+        // Stop decode thread.
+        clear_all_decoder(false);
+
+        stop_capture();
 
         // TODO: This should not be necessary
         _session = NULL;
@@ -1810,6 +1810,9 @@ namespace pv
 
     void SigSession::clear_all_decoder(bool bUpdateView)
     {
+        if (_decode_traces.empty())
+            return;
+
         // create the wait task deque
         int dex = -1;
         clear_all_decode_task(dex);
@@ -1830,28 +1833,23 @@ namespace pv
         }
         _decode_traces.clear();
 
-        // wait thread end
-        if (_decode_thread.joinable())
-        {
-            _decode_thread.join();
-        }
-
-        if (!is_closed() && bUpdateView)
-        {
+        if (!_bClose && bUpdateView)
             signals_changed();
-        }
     }
 
     void SigSession::clear_all_decode_task(int &runningDex)
     {
-        std::lock_guard<std::mutex> lock(_decode_task_mutex);
-
-        // remove wait task
-        for (auto trace : _decode_tasks)
+        if (true)
         {
-            trace->decoder()->stop_decode_work(); // set decode proc stop flag
+            std::lock_guard<std::mutex> lock(_decode_task_mutex);
+
+            // remove wait task
+            for (auto trace : _decode_tasks)
+            {
+                trace->decoder()->stop_decode_work(); // set decode proc stop flag
+            }
+            _decode_tasks.clear();
         }
-        _decode_tasks.clear();
 
         // make sure the running task can stop
         runningDex = -1;
@@ -1865,6 +1863,10 @@ namespace pv
             }
             dex++;
         }
+
+        // Wait the thread end.
+        if (_decode_thread.joinable())
+            _decode_thread.join();
     }
 
     view::DecodeTrace *SigSession::get_decoder_trace(int index)
@@ -1962,9 +1964,7 @@ namespace pv
         case DS_EV_DEVICE_STOPPED:
             _device_status = ST_STOPPED;
             // Confirm that SR_DF_END was received
-            if (!_logic_data->snapshot()->last_ended() 
-            || !_dso_data->snapshot()->last_ended() 
-            || !_analog_data->snapshot()->last_ended())
+            if (!_logic_data->snapshot()->last_ended() || !_dso_data->snapshot()->last_ended() || !_analog_data->snapshot()->last_ended())
             {
                 dsv_err("%s", "Error!The data is not completed.");
                 assert(false);
@@ -2011,7 +2011,7 @@ namespace pv
             if (DS_EV_NEW_DEVICE_ATTACH == event)
                 _callback->trigger_message(DSV_MSG_NEW_USB_DEVICE);
             else
-                _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_DETACHED); 
+                _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_DETACHED);
         }
         break;
 
@@ -2073,7 +2073,7 @@ namespace pv
 
     void SigSession::DeviceConfigChanged()
     {
-        //Nonthing.
+        // Nonthing.
     }
 
     bool SigSession::switch_work_mode(int mode)
@@ -2081,18 +2081,17 @@ namespace pv
         assert(!_is_working);
 
         if (_device_agent.get_work_mode() != mode)
-        {   
+        {
             GVariant *val = g_variant_new_int16(mode);
-            _device_agent.set_config(NULL
-                                    ,NULL
-                                    ,SR_CONF_DEVICE_MODE
-                                    ,val);
+            _device_agent.set_config(NULL, NULL, SR_CONF_DEVICE_MODE, val);
+
+            clear_all_decoder();
             init_signals();
             dsv_info("%s", "Work mode is changed.");
             broadcast_msg(DSV_MSG_DEVICE_MODE_CHANGED);
             return true;
-        } 
-        return false;      
+        }
+        return false;
     }
 
 } // namespace pv

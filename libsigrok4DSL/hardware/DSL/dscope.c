@@ -287,7 +287,7 @@ static GSList *scan(GSList *options)
         if (!devc)
             return NULL;
         
-        sdi = sr_dev_inst_new(channel_modes[devc->ch_mode].mode, 0, SR_ST_INITIALIZING,
+        sdi = sr_dev_inst_new(channel_modes[devc->ch_mode].mode, SR_ST_INITIALIZING,
 			prof->vendor, prof->model, prof->model_version);
 
         if (!sdi) {
@@ -1046,7 +1046,12 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
 {
     unsigned int i;
     int ret;
-    struct DSL_context *devc = sdi->priv;
+    struct DSL_context *devc;
+
+    assert(sdi);
+    assert(sdi->priv);
+    
+    devc = sdi->priv;
 
     ret = dsl_config_get(id, data, sdi, ch, cg);
     if (ret != SR_OK) {
@@ -1201,6 +1206,9 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     struct ctl_wr_cmd wr_cmd;
     unsigned int i;
     GSList *l;
+
+    assert(sdi);
+    assert(sdi->priv);
 
     (void)cg;
 

@@ -42,8 +42,7 @@
  */
 
 /** @private */
-SR_PRIV struct sr_channel *sr_channel_new(uint16_t index, int type,
-        gboolean enabled, const char *name)
+SR_PRIV struct sr_channel *sr_channel_new(uint16_t index, int type, gboolean enabled, const char *name)
 {
 	struct sr_channel *probe;
 
@@ -51,6 +50,11 @@ SR_PRIV struct sr_channel *sr_channel_new(uint16_t index, int type,
 		sr_err("Probe malloc failed.");
 		return NULL;
 	}
+
+	probe->trigger = NULL;
+	probe->name = NULL;
+	probe->map_unit = NULL;
+	probe->vga_ptr = NULL;
 
 	probe->index = index;
 	probe->type = type;
@@ -167,8 +171,8 @@ SR_PRIV int sr_dev_trigger_set(const struct sr_dev_inst *sdi, uint16_t probenum,
 		probe = l->data;
 		if (probe->index == probenum) {
 			/* If the probe already has a trigger, kill it first. */
-			g_free(probe->trigger);
-			probe->trigger = g_strdup(trigger);
+            g_safe_free(probe->trigger);
+            probe->trigger = g_strdup(trigger);
 			ret = SR_OK;
 			break;
 		}
@@ -178,7 +182,7 @@ SR_PRIV int sr_dev_trigger_set(const struct sr_dev_inst *sdi, uint16_t probenum,
 }
 
 /** @private */
-SR_PRIV struct sr_dev_inst *sr_dev_inst_new(int mode, int index, int status,
+SR_PRIV struct sr_dev_inst *sr_dev_inst_new(int mode, int status,
 		const char *vendor, const char *model, const char *version)
 {
 	struct sr_dev_inst *sdi;
@@ -189,16 +193,25 @@ SR_PRIV struct sr_dev_inst *sr_dev_inst_new(int mode, int index, int status,
 	}
 
 	sdi->driver = NULL;
-    sdi->mode = mode;
-	sdi->name[0] = '\0';
-	sdi->status = status;
-	sdi->vendor = vendor ? g_strdup(vendor) : NULL;
-	sdi->version = version ? g_strdup(version) : NULL;
 	sdi->channels = NULL;
 	sdi->conn = NULL;
 	sdi->priv = NULL;
+	sdi->vendor = NULL;
+	sdi->version = NULL;
+	sdi->path = NULL;
+
+    sdi->mode = mode;
+	sdi->name[0] = '\0';
+	sdi->status = status;
     sdi->handle = (ds_device_handle)sdi;
 	sdi->dev_type = DEV_TYPE_UNKOWN;
+
+	if (vendor != NULL){
+		sdi->vendor = g_strdup(vendor);
+	}
+	if (version != NULL){
+		sdi->version = g_strdup(version);
+	}
 
 	if (model && *model){
 		strncpy(sdi->name, model, sizeof(sdi->name));
@@ -215,30 +228,27 @@ SR_PRIV void sr_dev_probes_free(struct sr_dev_inst *sdi)
 
     for (l = sdi->channels; l; l = l->next) {
         probe = l->data;
-        g_free(probe->name);
-        g_free(probe->trigger);
-        if (probe->vga_ptr)
-            g_free(probe->vga_ptr);
+        g_safe_free(probe->name);
+        g_safe_free(probe->trigger);
+		g_safe_free(probe->vga_ptr);
         g_free(probe);
     }
-
-    sdi->channels = NULL;
+	g_safe_free_list(sdi->channels);
 }
 
 SR_PRIV void sr_dev_inst_free(struct sr_dev_inst *sdi)
 {
-	struct sr_channel *probe;
-	GSList *l;
+	if (sdi == NULL)
+		return;
 
-	for (l = sdi->channels; l; l = l->next) {
-		probe = l->data;
-		g_free(probe->name);
-		g_free(probe);
-	}
+	sr_dev_probes_free(sdi);
+	
+	g_safe_free(sdi->conn);
+	g_safe_free(sdi->priv);
+	g_safe_free(sdi->vendor);
+	g_safe_free(sdi->version);
+	g_safe_free(sdi->path);
 
-	g_free(sdi->priv);
-	g_free(sdi->vendor);
-	g_free(sdi->version);
 	g_free(sdi);
 }
 
