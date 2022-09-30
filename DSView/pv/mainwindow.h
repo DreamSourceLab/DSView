@@ -94,7 +94,8 @@ private:
 	void setup_ui();
     void retranslateUi(); 
     bool eventFilter(QObject *object, QEvent *event);
-    bool load_session_json(QJsonDocument json, bool &haveDecoder);  
+    bool load_session_json(QJsonDocument json, bool &haveDecoder);
+    QString genSessionFileName();
 
 public slots: 
     void switchTheme(QString style);

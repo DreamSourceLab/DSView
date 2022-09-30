@@ -435,28 +435,30 @@ static int dev_clear(void)
 static int dev_open(struct sr_dev_inst *sdi)
 {
     int ret;
+    struct session_vdev *vdev;
 
-    if (sdi->priv == NULL)
-    {
-        sdi->priv = g_try_malloc0(sizeof(struct session_vdev));
-        if (sdi->priv == NULL)
-        {
-            sr_err("%s: sdi->priv malloc failed", __func__);
-            return SR_ERR_MALLOC;
-        }
+    assert(sdi);
+
+    if (sdi->status == SR_ST_ACTIVE){
+        // Is opened.
+        return SR_OK;
     }
 
-    struct session_vdev *vdev;
+    assert(sdi->priv == NULL);
+
+    sdi->priv = g_try_malloc0(sizeof(struct session_vdev));
+    if (sdi->priv == NULL)
+    {
+        sr_err("%s: sdi->priv malloc failed", __func__);
+        return SR_ERR_MALLOC;
+    }
     vdev = sdi->priv;
 
+    vdev->buf = g_try_malloc(CHUNKSIZE + sizeof(uint64_t));
     if (vdev->buf == NULL)
     {
-        vdev->buf = g_try_malloc(CHUNKSIZE + sizeof(uint64_t));
-        if (vdev->buf == NULL)
-        {
-            sr_err("%s: vdev->buf malloc failed", __func__);
-            return SR_ERR_MALLOC;
-        }
+        sr_err("%s: vdev->buf malloc failed", __func__);
+        return SR_ERR_MALLOC;
     }
 
     vdev->trig_pos = 0;
@@ -473,6 +475,8 @@ static int dev_open(struct sr_dev_inst *sdi)
     vdev->mstatus.measure_valid = TRUE;
     vdev->archive = NULL;
     vdev->capfile = 0;
+    
+    sdi->status = SR_ST_ACTIVE;
 
     ret = sr_load_virtual_device_session(sdi);
     if (ret != SR_OK)
@@ -494,9 +498,12 @@ static int dev_close(struct sr_dev_inst *sdi)
         g_safe_free(vdev->buf);
         g_safe_free(vdev->logic_buf);
         g_safe_free(sdi->priv);
+
+        sdi->status = SR_ST_INACTIVE;
+        return SR_OK;
     }
 
-    return SR_OK;
+    return SR_ERR_CALL_STATUS;
 }
 
 static int dev_destroy(struct sr_dev_inst *sdi)
@@ -1233,7 +1240,7 @@ SR_PRIV int sr_new_virtual_device(const char *filename, struct sr_dev_inst **out
     g_key_file_free(kf);
     g_free(metafile);
 
-    sdi = sr_dev_inst_new(mode, SR_ST_ACTIVE, NULL, NULL, NULL);
+    sdi = sr_dev_inst_new(mode, SR_ST_INACTIVE, NULL, NULL, NULL);
     sdi->driver = &session_driver;
     sdi->dev_type = DEV_TYPE_FILELOG;
 
@@ -1456,9 +1463,6 @@ static int sr_load_virtual_device_session(struct sr_dev_inst *sdi)
                 }
                 else if (!strncmp(keys[j], "probe", 5))
                 {
-                    if (!sdi)
-                        continue;
-
                     enabled_probes++;
                     tmp_u64 = strtoul(keys[j] + 5, NULL, 10);
                     /* sr_session_save() */

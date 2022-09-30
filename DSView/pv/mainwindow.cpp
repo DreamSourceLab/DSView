@@ -313,8 +313,10 @@ namespace pv
     {
         try
         {
-            if (strncmp(_device_agent->name().toUtf8(), "virtual", 7))
+            if (_device_agent->is_hardware()){
                 session_save();
+            }
+
             _session->set_file(file_name);
         }
         catch (QString e)
@@ -414,8 +416,7 @@ namespace pv
     }
 
     void MainWindow::session_save()
-    {
-        QDir dir;
+    { 
 #if QT_VERSION >= 0x050400
         QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
 #else
@@ -428,26 +429,38 @@ namespace pv
             return;
         }
 
-        AppConfig &app = AppConfig::Instance();
+        AppConfig &app = AppConfig::Instance();        
 
-        if (dir.mkpath(path))
-        {
-            dir.cd(path);
-            QString driver_name = _device_agent->name();
-            QString mode_name = QString::number(_device_agent->get_work_mode());
-            QString lang_name = ".ses" + QString::number(app._frameOptions.language);
-            QString file_name = dir.absolutePath() + "/" +
-                                driver_name + mode_name +
-                                lang_name + ".dsc";
-            if (strncmp(driver_name.toUtf8(), "virtual", 7) &&
-                !file_name.isEmpty())
-            {
-                on_store_session(file_name);
-            }
+        if (_device_agent->is_hardware()){
+            QString sessionFile = genSessionFileName();
+            on_store_session(sessionFile);
         }
 
         app._frameOptions.windowState = saveState();
         app.SaveFrame();
+    }
+
+    QString MainWindow::genSessionFileName()
+    {
+#if QT_VERSION >= 0x050400
+        QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+#else
+        QString path = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+#endif
+
+        AppConfig &app = AppConfig::Instance();
+
+        QDir dir(path);
+        if (dir.exists() == false){
+            dir.mkpath(path);
+        } 
+
+        QString driver_name = _device_agent->driver_name();
+        QString mode_name = QString::number(_device_agent->get_work_mode());
+        QString lang_name = ".ses" + QString::number(app._frameOptions.language);
+        QString file_name = dir.absolutePath() + "/" + driver_name + mode_name + lang_name + ".dsc";
+
+        return file_name;
     }
 
     void MainWindow::closeEvent(QCloseEvent *event)
@@ -565,17 +578,29 @@ namespace pv
 
     bool MainWindow::on_load_session(QString name)
     {
-        QFile sessionFile(name);
+        if (name == ""){
+            dsv_err("%s", "Session file name is empty.");
+            assert(false);
+        }
+
+        dsv_info("Load session file: \"%s\"", name.toLocal8Bit().data());
+
+        QFile sf(name);
         bool bDone;
 
-        if (!sessionFile.open(QIODevice::ReadOnly))
-        {
-            dsv_warn("%s", "Warning: Couldn't open session file!");
+        if (!sf.exists()){
+            dsv_warn("Warning: session file is not exists: \"%s\"", name.toLocal8Bit().data());
             return false;
         }
 
-        QString sessionData = QString::fromUtf8(sessionFile.readAll());
-        QJsonDocument sessionDoc = QJsonDocument::fromJson(sessionData.toUtf8());
+        if (!sf.open(QIODevice::ReadOnly))
+        {
+            dsv_warn("%s", "Warning: Couldn't open session file to load!");
+            return false;
+        }
+
+        QString sdata = QString::fromUtf8(sf.readAll());
+        QJsonDocument sessionDoc = QJsonDocument::fromJson(sdata.toUtf8());
 
         _protocol_widget->del_all_protocol();
         return load_session_json(sessionDoc, bDone);
@@ -920,6 +945,13 @@ namespace pv
 
     bool MainWindow::on_store_session(QString name)
     {
+        if (name == ""){
+            dsv_err("%s", "Session file name is empty.");
+            assert(false);
+        }
+
+        dsv_info("Store session file: \"%s\"", name.toLocal8Bit().data());
+
         QFile sessionFile(name);
         if (!sessionFile.open(QIODevice::WriteOnly | QIODevice::Text))
         {
@@ -931,8 +963,10 @@ namespace pv
         encoding::set_utf8(outStream);
 
         QJsonObject sessionVar;
-        if (!gen_session_json(sessionVar))
+        if (!gen_session_json(sessionVar)){
             return false;
+        }
+
         QJsonDocument sessionDoc(sessionVar);
         outStream << QString::fromUtf8(sessionDoc.toJson());
         sessionFile.close();
@@ -943,7 +977,10 @@ namespace pv
     {
         QJsonObject sessionVar;
         if (!gen_session_json(sessionVar))
+        {
             return false;
+        }
+
         QJsonDocument sessionDoc(sessionVar);
         QString data = QString::fromUtf8(sessionDoc.toJson());
         str.append(data.toLocal8Bit().data());
@@ -1378,38 +1415,20 @@ namespace pv
     void MainWindow::load_device_config()
     {
         int lang = AppConfig::Instance()._frameOptions.language;
-        QString name = _device_agent->name();
         int mode = _device_agent->get_work_mode();
 
         if (_device_agent->is_hardware())
-        {
-
-#if QT_VERSION >= 0x050400
-            QDir dir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
-#else
-            QDir dir(QStandardPaths::writableLocation(QStandardPaths::DataLocation));
-#endif
-            if (dir.exists())
-            {
-                QString str = dir.absolutePath() + "/";
-                QString lang_name = ".ses" + QString::number(lang);
-                QString ses_name = str +
-                                   name +
-                                   QString::number(mode) +
-                                   lang_name + ".dsc";
-                on_load_session(ses_name);
-            }
+        { 
+            QString sessionFile = genSessionFileName();
+            on_load_session(sessionFile);
         }
-        else
+        else if (_device_agent->is_demo())
         {
             QDir dir(GetResourceDir());
             if (dir.exists())
             {
                 QString str = dir.absolutePath() + "/";
-                QString ses_name = str +
-                                   name +
-                                   QString::number(mode) +
-                                   ".dsc";
+                QString ses_name = str + _device_agent->driver_name() + QString::number(mode) + ".dsc";
                 if (QFileInfo(ses_name).exists())
                     on_load_session(ses_name);
             }

@@ -216,7 +216,7 @@ SR_API void ds_set_firmware_resource_dir(const char *dir)
 			DS_RES_PATH[len + 1] = 0;
 		}
 
-		sr_info("Firmware resource path:\"%s\"", DS_RES_PATH);
+		sr_info("Firmware resource directory:\"%s\"", DS_RES_PATH);
 	}
 }
 
@@ -310,7 +310,7 @@ SR_API int ds_active_device(ds_device_handle handle)
 	}
 	ret = SR_OK;
 
-	sr_info("%s", "Begin set current device.");
+	sr_info("%s", "Start activating device.");
 
 	if (ds_is_collecting())
 	{
@@ -348,7 +348,10 @@ SR_API int ds_active_device(ds_device_handle handle)
 				sr_err("%s", "Please call ds_set_firmware_resource_dir() to set the firmware resource path.");
 			}
 
-			sr_info("Switch \"%s\" to current device.", dev->name);
+			if (dev->dev_type == DEV_TYPE_FILELOG)
+				sr_info("virtual device name: \"%s\".", dev->name);
+			else
+				sr_info("device name: \"%s\".", dev->name);
 
 			if (open_device_instance(dev) == SR_OK)
 			{
@@ -365,7 +368,7 @@ SR_API int ds_active_device(ds_device_handle handle)
 
 	pthread_mutex_unlock(&lib_ctx.mutext);
 
-	sr_info("%s", "End of setting current device.");
+	sr_info("%s", "Activating device end.");
 
 	if (!bFind)
 	{

@@ -162,8 +162,7 @@ public:
     std::vector<view::GroupSignal*>& get_group_signals();
 
     bool add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus, 
-            std::list<pv::data::decode::Decoder*> &sub_decoders);
-
+                        std::list<pv::data::decode::Decoder*> &sub_decoders);
     int get_trace_index_by_key_handel(void *handel);
     void remove_decoder(int index);
     void remove_decoder_by_key_handel(void *handel); 

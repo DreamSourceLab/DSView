@@ -28,6 +28,7 @@
 #include "../data/logicsnapshot.h"
 #include "view.h"
 #include "../dsvdef.h"
+#include "../log.h"
 
 using namespace std;
 
@@ -137,7 +138,9 @@ void LogicSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColo
 		return;
   
     auto snapshot =  const_cast<data::LogicSnapshot*>(snapshots.front());
-    if (snapshot->empty() || !snapshot->has_data(_probe->index))
+    if (snapshot->empty())
+        return;
+    if (!snapshot->has_data(_probe->index))
         return;
 
     const int64_t last_sample =  snapshot->get_sample_count() - 1;
@@ -148,8 +151,10 @@ void LogicSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColo
     const double end = (offset + width + 1) * samples_per_pixel;
     const uint64_t end_index = min(max((int64_t)ceil(end), (int64_t)0), last_sample);
     const uint64_t start_index = max((uint64_t)floor(start), (uint64_t)0);
+    
     if (start_index > end_index)
         return;
+
     width = min(width, (uint16_t)ceil((end_index + 1)/samples_per_pixel - offset));
     const uint16_t max_togs = width / TogMaxScale;
 

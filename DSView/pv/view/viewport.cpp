@@ -199,20 +199,21 @@ void Viewport::paintEvent(QPaintEvent *event)
 }
 
 void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
-{
+{ 
     std::vector<Trace*> traces;
     _view.get_traces(_type, traces);
 
     if (_view.session().get_device()->get_work_mode() == LOGIC) {
 
-        for(auto &t : traces)
+        for(auto t : traces)
         {
             assert(t); 
 
             if (t->enabled())
                 t->paint_mid(p, 0, t->get_view_rect().right(), fore, back);
         }
-    } else {
+    } 
+    else {
         if (_view.scale() != _curScale ||
             _view.offset() != _curOffset ||
             _view.get_signalHeight() != _curSignalHeight ||
@@ -225,21 +226,13 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
             pixmap.fill(Qt::transparent);
 
             QPainter dbp(&pixmap);
-            //dbp.begin(this);
-            for(auto &t : traces)
+           
+            for(auto t : traces)
             {
                 assert(t);
 
-                /*
-                auto ptr = t->get();
-                if (ptr->enabled()){
-                     ptr->paint_mid(dbp, 0, t->get_view_rect().right(), fore, back); 
-                     continue;
-                }
-               */
-
                 if (t->enabled())
-                    t->paint_mid(dbp, 0, t->get_view_rect().right(), fore, back);      
+                    t->paint_mid(dbp, 0, t->get_view_rect().right(), fore, back); 
             }
             _need_update = false;
         }

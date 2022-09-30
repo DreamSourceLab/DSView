@@ -310,8 +310,8 @@ static int hw_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi)
 
     if (sdi->status == SR_ST_ACTIVE) {
         /* Device is already in use. */
-        sr_info("Device is actived, can't to open, handle:%p", usb->usb_dev);
-        return SR_ERR;
+        sr_detail("The usb device is opened, handle:%p", usb->usb_dev);
+        return SR_OK;
     }
 
     if (sdi->status == SR_ST_INITIALIZING) {
@@ -319,7 +319,7 @@ static int hw_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi)
     }
     dev_handel = usb->usb_dev;
 
-    sr_info("Open device instance, handle: %p", dev_handel);
+    sr_info("Open usb device instance, handle: %p", dev_handel);
 
     if (libusb_open(dev_handel, &usb->devhdl) != 0){
         sr_err("Failed to open device: %s, handle:%p",

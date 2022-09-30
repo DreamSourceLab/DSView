@@ -203,15 +203,15 @@ namespace pv
         _device_agent.update();
 
         if (_device_agent.is_file())
-            dsv_info("%s\"%s\"", "Switch to file: ", _device_agent.name().toUtf8().data());
+            dsv_info("Switch to file \"%s\" done.", _device_agent.name().toUtf8().data());
         else
-            dsv_info("%s\"%s\"", "Switch to device: ", _device_agent.name().toUtf8().data());
+            dsv_info("Switch to device \"%s\" done.", _device_agent.name().toUtf8().data());
 
         _device_status = ST_INIT;
 
-        RELEASE_ARRAY(_group_traces);
-
         clear_all_decoder();
+
+        RELEASE_ARRAY(_group_traces);        
         init_signals();
 
         _cur_snap_samplerate = _device_agent.get_sample_rate();

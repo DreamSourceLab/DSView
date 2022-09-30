@@ -46,7 +46,9 @@ SR_PRIV struct sr_channel *sr_channel_new(uint16_t index, int type, gboolean ena
 {
 	struct sr_channel *probe;
 
-	if (!(probe = g_try_malloc0(sizeof(struct sr_channel)))) {
+	probe = g_try_malloc0(sizeof(struct sr_channel));
+
+	if (probe == NULL) {
 		sr_err("Probe malloc failed.");
 		return NULL;
 	}

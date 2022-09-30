@@ -87,7 +87,7 @@ bool AppControl::Init()
     QString dir = GetDecodeScriptDir();   
     strcpy(path, dir.toUtf8().data());
 
-    dsv_info("decode script files directory: \"%s\"", dir.toUtf8().data());
+    dsv_info("Decode script files directory:\"%s\"", dir.toUtf8().data());
 
     // Initialise libsigrokdecode
     if (srd_init(path) != SRD_OK)

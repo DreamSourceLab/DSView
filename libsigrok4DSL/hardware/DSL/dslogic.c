@@ -1369,10 +1369,12 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
     /* Stop Previous GPIF acquisition */
     wr_cmd.header.dest = DSL_CTL_STOP;
     wr_cmd.header.size = 0;
+    
     if ((ret = command_ctl_wr(usb->devhdl, wr_cmd)) != SR_OK) {
         sr_err("%s: Stop DSLogic acquisition failed!", __func__);
         return ret;
-    } else {
+    } 
+    else {
         sr_info("%s: Stop Previous DSLogic acquisition!", __func__);
     }
 
