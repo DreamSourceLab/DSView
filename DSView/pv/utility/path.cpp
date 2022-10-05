@@ -47,7 +47,7 @@ namespace path{
         std::string str;
 
 #ifdef _WIN32
-        QTextCodec *codec = QTextCodec::codecForName("System");
+        QTextCodec *codec = QTextCodec::codecForLocale();
         QByteArray str_tmp = codec->fromUnicode(path);
         str = str_tmp.data();
 #else
