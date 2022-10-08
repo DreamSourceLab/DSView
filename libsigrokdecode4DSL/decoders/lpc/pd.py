@@ -185,6 +185,7 @@ class Decoder(srd.Decoder):
         self.timeoutcount = 0
         self.oldpins = None
         self.ss_block = self.es_block = None
+        self.oldlframe = -1
 
     def start(self):
         self.out_ann = self.register(srd.OUTPUT_ANN)
