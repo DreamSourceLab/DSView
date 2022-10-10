@@ -31,7 +31,6 @@ public:
     virtual void session_error()=0;
     virtual void session_save()=0;
     virtual void data_updated()=0;
-    virtual void repeat_resume()=0;
     virtual void update_capture()=0;
 
     virtual void cur_snap_samplerate_changed()=0;

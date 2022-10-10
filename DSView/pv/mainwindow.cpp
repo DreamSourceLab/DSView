@@ -331,13 +331,6 @@ namespace pv
         MsgBox::Show(NULL, error.toStdString().c_str(), this);
     }
 
-    void MainWindow::repeat_resume()
-    {
-        //  while (_view->session().is_running_status())
-        //     QCoreApplication::processEvents();
-        //  _session->stop_capture();
-    }
-
     void MainWindow::session_error()
     {
         _event.session_error();
@@ -630,7 +623,7 @@ namespace pv
         // old version(<= 1.1.2), restore the language
         if (sessionObj["Version"].toInt() == BASE_SESSION_VERSION)
         {
-            switchLanguage(sessionObj["Language"].toInt());
+           switchLanguage(sessionObj["Language"].toInt());
         }
 
         if (_device_agent->is_hardware())
@@ -1419,8 +1412,8 @@ namespace pv
 
         if (_device_agent->is_hardware())
         { 
-            QString sessionFile = genSessionFileName();
-            on_load_session(sessionFile);
+            QString ses_name = genSessionFileName();
+            on_load_session(ses_name);
         }
         else if (_device_agent->is_demo())
         {
@@ -1429,8 +1422,7 @@ namespace pv
             {
                 QString str = dir.absolutePath() + "/";
                 QString ses_name = str + _device_agent->driver_name() + QString::number(mode) + ".dsc";
-                if (QFileInfo(ses_name).exists())
-                    on_load_session(ses_name);
+                on_load_session(ses_name);
             }
         }
     }
@@ -1521,15 +1513,23 @@ namespace pv
         case DSV_MSG_START_COLLECT_WORK_PREV:
             _trigger_widget->try_commit_trigger();
             _view->capture_init();
+            _view->on_state_changed(false);
             break;
 
         case DSV_MSG_START_COLLECT_WORK:
             update_toolbar_view_status();
+            _view->on_state_changed(false);
+            break;
+        
+        case DSV_MSG_COLLECT_END:
+            prgRate(0);
+            _view->repeat_unshow();
+            _view->on_state_changed(true);
             break;
 
         case DSV_MSG_END_COLLECT_WORK:
             _session->device_event_object()->device_updated();
-            update_toolbar_view_status();
+            update_toolbar_view_status();           
             break;
 
         case DSV_MSG_CURRENT_DEVICE_CHANGE_PREV:
@@ -1586,6 +1586,7 @@ namespace pv
             _sampling_bar->update_sample_rate_selector();
             _view->mode_changed();
             reset_all_view();
+            load_device_config();
             update_toolbar_view_status();
             break;
 

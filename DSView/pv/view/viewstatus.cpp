@@ -76,7 +76,8 @@ void ViewStatus::paintEvent(QPaintEvent *)
 
         p.setPen(View::Blue);
         p.drawText(this->rect(), Qt::AlignCenter | Qt::AlignVCenter, _capture_status);
-    } else if (_session->get_device()->get_work_mode() == DSO) {
+    } 
+    else if (_session->get_device()->get_work_mode() == DSO) {
         fore.setAlpha(View::BackAlpha);
         for(size_t i = 0; i < _mrects.size(); i++) {
             int sig_index = std::get<1>(_mrects[i]);

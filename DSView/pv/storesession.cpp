@@ -60,7 +60,6 @@
 #include "utility/encoding.h"
 #include "utility/path.h"
 #include "log.h" 
-#include <QDebug>
  
 namespace pv { 
 

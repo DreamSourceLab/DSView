@@ -151,7 +151,6 @@ private:
     void show_error(QString error);
     void session_error();
     void data_updated();
-    void repeat_resume();
     void update_capture();
     void cur_snap_samplerate_changed();
       

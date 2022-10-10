@@ -97,6 +97,7 @@ namespace pv
         _is_decoding = false;
         _bClose = false;
         _callback = NULL;
+        _repeat_wait_prog_step = 10;
 
         _device_agent.set_callback(this);
 
@@ -109,7 +110,8 @@ namespace pv
 
         _feed_timer.Stop();
         _feed_timer.SetCallback(std::bind(&SigSession::feed_timeout, this));
-        _repeate_timer.SetCallback(std::bind(&SigSession::repeat_capture_wait_timout, this));
+        _repeat_timer.SetCallback(std::bind(&SigSession::repeat_capture_wait_timeout, this));
+        _repeat_wait_prog_timer.SetCallback(std::bind(&SigSession::repeat_wait_prog_timeout, this));
     }
 
     SigSession::SigSession(SigSession &o)
@@ -211,7 +213,7 @@ namespace pv
 
         clear_all_decoder();
 
-        RELEASE_ARRAY(_group_traces);        
+        RELEASE_ARRAY(_group_traces);
         init_signals();
 
         _cur_snap_samplerate = _device_agent.get_sample_rate();
@@ -379,7 +381,7 @@ namespace pv
             _feed_timer.Stop();
 
         _noData_cnt = 0;
-        data_unlock();
+        _data_lock = false;
 
         // container init
         container_init();
@@ -468,7 +470,14 @@ namespace pv
 
         _callback->trigger_message(DSV_MSG_START_COLLECT_WORK_PREV);
 
-        return exec_capture();
+        if (exec_capture())
+        {
+            _is_working = true;
+            _callback->trigger_message(DSV_MSG_START_COLLECT_WORK);
+            return true;
+        }
+
+        return false;
     }
 
     bool SigSession::exec_capture()
@@ -505,8 +514,6 @@ namespace pv
             return false;
         }
 
-        _is_working = true;
-        _callback->trigger_message(DSV_MSG_START_COLLECT_WORK);
         return true;
     }
 
@@ -520,6 +527,8 @@ namespace pv
         if (_bClose)
         {
             _is_working = false;
+            _repeat_timer.Stop();
+            _repeat_wait_prog_timer.Stop();
             exit_capture();
             return;
         }
@@ -538,8 +547,23 @@ namespace pv
         if (!wait_upload)
         {
             _is_working = false;
+            _repeat_timer.Stop();
+            _repeat_wait_prog_timer.Stop();
+
+            if (_repeat_hold_prg != 0 && _is_repeat_mode){
+                _repeat_hold_prg = 0;
+                _callback->repeat_hold(_repeat_hold_prg);
+            }                
+
             _callback->trigger_message(DSV_MSG_END_COLLECT_WORK_PREV);
+
             exit_capture();
+
+            if (_is_repeat_mode && _device_agent.is_collecting() == false)
+            {
+                // On repeat mode, the working status is changed, to post the event message.
+                _callback->trigger_message(DSV_MSG_END_COLLECT_WORK);
+            }
         }
         else
         {
@@ -552,7 +576,7 @@ namespace pv
         _is_instant = false;
 
         //_feed_timer
-        _feed_timer.Stop();     
+        _feed_timer.Stop();
 
         if (_device_agent.is_collecting())
             _device_agent.stop();
@@ -876,7 +900,7 @@ namespace pv
     {
         ds_lock_guard lock(_data_mutex);
 
-        data_lock();
+        _data_lock = true;
 
         if (_logic_data)
         {
@@ -909,21 +933,6 @@ namespace pv
 
         _out_timer.TimeOut(holdtime, std::bind(&SigSession::feed_timeout, this));
         _data_updated = true;
-    }
-
-    void SigSession::data_lock()
-    {
-        _data_lock = true;
-    }
-
-    void SigSession::data_unlock()
-    {
-        _data_lock = false;
-    }
-
-    bool SigSession::get_data_lock()
-    {
-        return _data_lock;
     }
 
     void SigSession::data_auto_lock(int lock)
@@ -1113,17 +1122,19 @@ namespace pv
 
         _trigger_flag = dso.trig_flag;
         _trigger_ch = dso.trig_ch;
+
         receive_data(dso.num_samples);
 
         if (!_is_instant)
-            data_lock();
+        {
+            _data_lock = true;
+        }
 
         _data_updated = true;
     }
 
     void SigSession::feed_in_analog(const sr_datafeed_analog &analog)
     {
-
         if (!_analog_data || _analog_data->snapshot()->memory_failed())
         {
             dsv_err("%s", "Unexpected analog packet");
@@ -1331,7 +1342,6 @@ namespace pv
 
         try
         {
-
             bool ret = false;
 
             // Create the decoder
@@ -1407,11 +1417,6 @@ namespace pv
         return false;
     }
 
-    std::vector<view::DecodeTrace *> &SigSession::get_decode_signals()
-    {
-        return _decode_traces;
-    }
-
     int SigSession::get_trace_index_by_key_handel(void *handel)
     {
         int dex = 0;
@@ -1478,14 +1483,10 @@ namespace pv
         rst_decoder(dex);
     }
 
-    pv::data::DecoderModel *SigSession::get_decoder_model()
-    {
-        return _decoder_model;
-    }
-
     void SigSession::spectrum_rebuild()
     {
         bool has_dso_signal = false;
+
         for (auto &s : _signals)
         {
             view::DsoSignal *dsoSig = NULL;
@@ -1494,9 +1495,12 @@ namespace pv
                 has_dso_signal = true;
                 // check already have
                 auto iter = _spectrum_traces.begin();
-                for (unsigned int i = 0; i < _spectrum_traces.size(); i++, iter++)
+
+                for (unsigned int i = 0; i < _spectrum_traces.size(); i++, iter++){
                     if ((*iter)->get_index() == dsoSig->get_index())
                         break;
+                }
+
                 // if not, rebuild
                 if (iter == _spectrum_traces.end())
                 {
@@ -1515,11 +1519,6 @@ namespace pv
         signals_changed();
     }
 
-    std::vector<view::SpectrumTrace *> &SigSession::get_spectrum_traces()
-    {
-        return _spectrum_traces;
-    }
-
     void SigSession::lissajous_rebuild(bool enable, int xindex, int yindex, double percent)
     {
         DESTROY_OBJECT(_lissajous_trace);
@@ -1531,11 +1530,6 @@ namespace pv
     {
         if (_lissajous_trace)
             _lissajous_trace->set_enable(false);
-    }
-
-    view::LissajousTrace *SigSession::get_lissajous_trace()
-    {
-        return _lissajous_trace;
     }
 
     void SigSession::math_rebuild(bool enable, view::DsoSignal *dsoSig1,
@@ -1563,36 +1557,6 @@ namespace pv
             _math_trace->set_enable(false);
     }
 
-    view::MathTrace *SigSession::get_math_trace()
-    {
-        return _math_trace;
-    }
-
-    void SigSession::set_session_time(QDateTime time)
-    {
-        _session_time = time;
-    }
-
-    QDateTime SigSession::get_session_time()
-    {
-        return _session_time;
-    }
-
-    uint64_t SigSession::get_trigger_pos()
-    {
-        return _trigger_pos;
-    }
-
-    bool SigSession::trigd()
-    {
-        return _trigger_flag;
-    }
-
-    uint8_t SigSession::trigd_ch()
-    {
-        return _trigger_ch;
-    }
-
     void SigSession::nodata_timeout()
     {
         GVariant *gvar = _device_agent.get_config(NULL, NULL, SR_CONF_TRIGGER_SOURCE);
@@ -1606,7 +1570,7 @@ namespace pv
 
     void SigSession::feed_timeout()
     {
-        data_unlock();
+        _data_lock = false;
 
         if (!_data_updated)
         {
@@ -1627,70 +1591,10 @@ namespace pv
             return NULL;
     }
 
-    SigSession::error_state SigSession::get_error()
-    {
-        return _error;
-    }
-
-    void SigSession::set_error(error_state state)
-    {
-        _error = state;
-    }
-
     void SigSession::clear_error()
     {
         _error_pattern = 0;
         _error = No_err;
-    }
-
-    uint64_t SigSession::get_error_pattern()
-    {
-        return _error_pattern;
-    }
-
-    double SigSession::get_repeat_intvl()
-    {
-        return _repeat_intvl;
-    }
-
-    void SigSession::set_repeat_intvl(double interval)
-    {
-        _repeat_intvl = interval;
-    }
-
-    bool SigSession::repeat_check()
-    {
-        if (!_is_working)
-        {
-            return false;
-        }
-
-        if (_device_agent.get_work_mode() == LOGIC)
-        {
-            _repeat_hold_prg = 100;
-            _callback->repeat_hold(_repeat_hold_prg);
-            _out_timer.TimeOut(_repeat_intvl * 1000 / RepeatHoldDiv, std::bind(&SigSession::repeat_update, this));
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    void SigSession::repeat_update()
-    {
-        if (!_is_instant && _is_working && _is_repeat_mode)
-        {
-            _repeat_hold_prg -= 100 / RepeatHoldDiv;
-            if (_repeat_hold_prg != 0)
-            {
-                _out_timer.TimeOut(_repeat_intvl * 1000 / RepeatHoldDiv, std::bind(&SigSession::repeat_update, this));
-            }
-            _callback->repeat_hold(_repeat_hold_prg);
-            if (_repeat_hold_prg == 0)
-                repeat_resume();
-        }
     }
 
     int SigSession::get_repeat_hold()
@@ -1699,16 +1603,6 @@ namespace pv
             return _repeat_hold_prg;
         else
             return 0;
-    }
-
-    void SigSession::set_map_zoom(int index)
-    {
-        _map_zoom = index;
-    }
-
-    int SigSession::get_map_zoom()
-    {
-        return _map_zoom;
     }
 
     void SigSession::auto_end()
@@ -1721,36 +1615,6 @@ namespace pv
                 dsoSig->auto_end();
             }
         }
-    }
-
-    void SigSession::set_save_start(uint64_t start)
-    {
-        _save_start = start;
-    }
-
-    void SigSession::set_save_end(uint64_t end)
-    {
-        _save_end = end;
-    }
-
-    uint64_t SigSession::get_save_start()
-    {
-        return _save_start;
-    }
-
-    uint64_t SigSession::get_save_end()
-    {
-        return _save_end;
-    }
-
-    float SigSession::stop_scale()
-    {
-        return _stop_scale;
-    }
-
-    void SigSession::set_stop_scale(float scale)
-    {
-        _stop_scale = scale;
     }
 
     void SigSession::Open()
@@ -2049,9 +1913,29 @@ namespace pv
         }
     }
 
-    void SigSession::repeat_capture_wait_timout()
+    void SigSession::repeat_capture_wait_timeout()
     {
-        exec_capture();
+        _repeat_timer.Stop();
+        _repeat_wait_prog_timer.Stop();
+
+        _repeat_hold_prg = 0;
+
+        if (_is_working)
+        {
+            _callback->repeat_hold(_repeat_hold_prg);
+            exec_capture();
+        }
+    }
+
+    void SigSession::repeat_wait_prog_timeout()
+    {
+        _repeat_hold_prg -= _repeat_wait_prog_step;
+
+        if (_repeat_hold_prg < 0)
+            _repeat_hold_prg = 0;
+
+        if (_is_working)
+            _callback->repeat_hold(_repeat_hold_prg);
     }
 
     void SigSession::OnMessage(int msg)
@@ -2063,11 +1947,37 @@ namespace pv
             break;
 
         case DSV_MSG_TRIG_NEXT_COLLECT:
-            if (_repeat_intvl > 0)
-                _repeate_timer.Start(_repeat_intvl * 1000);
-            else
-                exec_capture();
-            break;
+        {
+            if (_is_working)
+            {
+                if (_repeat_intvl > 0)
+                {
+                    _repeat_hold_prg = 100;
+                    _repeat_timer.Start(_repeat_intvl * 1000);
+                    int intvl = _repeat_intvl * 1000 / 20;
+
+                    if (intvl >= 100){
+                        _repeat_wait_prog_step = 5;
+                    }
+                    else if (_repeat_intvl >= 1){
+                        intvl = _repeat_intvl * 1000 / 10;
+                        _repeat_wait_prog_step = 10;
+                    }
+                    else{
+                        intvl = _repeat_intvl * 1000 / 5;
+                        _repeat_wait_prog_step = 20;
+                    }
+
+                    _repeat_wait_prog_timer.Start(intvl);
+                }
+                else
+                {
+                    _repeat_hold_prg = 0;
+                    exec_capture();
+                }
+            }
+        }
+        break;
         }
     }
 

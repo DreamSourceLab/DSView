@@ -188,8 +188,10 @@ void DsoSignal::set_enable(bool enable)
                           g_variant_new_boolean(enable));
 
     _view->update_hori_res();
+    
     if (running) {
-        session->repeat_resume();
+       session->stop_capture();
+       session->start_capture(false);
     }
 
     _view->set_update(_viewport, true);
@@ -1182,7 +1184,7 @@ void DsoSignal::paint_type_options(QPainter &p, int right, const QPoint pt, QCol
     p.drawText(acdc_rect, Qt::AlignCenter | Qt::AlignVCenter, (_acCoupling == SR_GND_COUPLING) ? tr(strings[2]):
                                                               (_acCoupling == SR_DC_COUPLING) ? tr(strings[3]) : tr(strings[4]));
 
-    if (!session->get_device()->name().contains("virtual")) {
+    if (session->get_device()->is_hardware()) {
         p.setPen(Qt::transparent);
         p.setBrush(enabled() ? (auto_rect.contains(pt) ? _colour.darker() : _colour) : foreBack);
         p.drawRect(auto_rect);

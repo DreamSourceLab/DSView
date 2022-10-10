@@ -152,9 +152,19 @@ public:
 
     void set_cur_snap_samplerate(uint64_t samplerate);
     void set_cur_samplelimits(uint64_t samplelimits);
-    void set_session_time(QDateTime time);
-    QDateTime get_session_time();
-    uint64_t get_trigger_pos();  
+
+    inline void set_session_time(QDateTime time){
+         _session_time = time;
+    }
+
+    inline QDateTime get_session_time(){
+        return _session_time;
+    }
+
+    inline uint64_t get_trigger_pos(){
+        return _trigger_pos;
+    }
+
     bool get_capture_status(bool &triggered, int &progress);
 
     std::set<data::SignalData*> get_data();
@@ -166,20 +176,38 @@ public:
     int get_trace_index_by_key_handel(void *handel);
     void remove_decoder(int index);
     void remove_decoder_by_key_handel(void *handel); 
-    std::vector<view::DecodeTrace*>& get_decode_signals(); 
+
+    inline std::vector<view::DecodeTrace*>& get_decode_signals(){
+        return _decode_traces;
+    }
+
     void rst_decoder(int index); 
     void rst_decoder_by_key_handel(void *handel);
 
-    pv::data::DecoderModel* get_decoder_model();
-    std::vector<view::SpectrumTrace*>& get_spectrum_traces();
-    view::LissajousTrace* get_lissajous_trace();
-    view::MathTrace* get_math_trace();
+    inline pv::data::DecoderModel* get_decoder_model(){
+         return _decoder_model;
+    }
+
+    inline std::vector<view::SpectrumTrace*>& get_spectrum_traces(){
+        return _spectrum_traces;
+    }
+
+    inline view::LissajousTrace* get_lissajous_trace(){
+        return _lissajous_trace;
+    }
+
+    inline view::MathTrace* get_math_trace(){
+        return _math_trace;
+    }
 
     void add_group();
     void del_group();
     uint16_t get_ch_num(int type); 
  
-    bool get_data_lock();
+    inline bool get_data_lock(){
+        return _data_lock;
+    }
+
     void data_auto_lock(int lock);
     void data_auto_unlock();
     bool get_data_auto_lock();
@@ -193,27 +221,64 @@ public:
                       data::MathStack::MathType type);
 
     void math_disable();
-    bool trigd();
-    uint8_t trigd_ch();
+
+    inline bool trigd(){
+        return _trigger_flag;
+    }
+
+    inline uint8_t trigd_ch(){
+        return _trigger_ch;
+    }
+
     data::Snapshot* get_snapshot(int type);
-    error_state get_error();
-    void set_error(error_state state);
+
+    inline error_state get_error(){
+        return _error;
+    }
+
+    inline void set_error(error_state state){
+        _error = state;
+    }
+
     void clear_error();
 
-    uint64_t get_error_pattern();   
-    double get_repeat_intvl();
-    void set_repeat_intvl(double interval); 
-    bool repeat_check();
-    int get_repeat_hold();
-    int get_map_zoom();
-    void set_save_start(uint64_t start);
+    inline uint64_t get_error_pattern(){
+        return _error_pattern;
+    }
 
-    void set_save_end(uint64_t end);
-    uint64_t get_save_start();
-    uint64_t get_save_end();    
-    void set_stop_scale(float scale);
-    float stop_scale();
-  
+    inline double get_repeat_intvl(){
+        return _repeat_intvl;    
+    }
+
+    inline void set_repeat_intvl(double interval){
+        _repeat_intvl = interval;
+    }
+   
+    int get_repeat_hold();
+
+    inline void set_save_start(uint64_t start){
+        _save_start = start;
+    }
+
+    inline uint64_t get_save_start(){
+        return _save_start;
+    }
+
+    inline void set_save_end(uint64_t end){
+        _save_end = end;
+    }
+
+    inline uint64_t get_save_end(){
+        return _save_end;
+    }
+
+    inline void set_stop_scale(float scale){
+        _stop_scale = scale;
+    }
+
+    inline float stop_scale(){
+        return _stop_scale;
+    }
 
     void clear_all_decoder(bool bUpdateView = true); 
 
@@ -260,10 +325,6 @@ public:
         _callback->session_save();
     }
 
-    inline void repeat_resume(){
-        _callback->repeat_resume();
-    }
-
     inline void show_region(uint64_t start, uint64_t end, bool keep){
         _callback->show_region(start, end, keep);
     }
@@ -287,7 +348,15 @@ public:
     void reload();
     void refresh(int holdtime);  
     void check_update(); 
-    void set_map_zoom(int index);
+
+    inline void set_map_zoom(int index){
+        _map_zoom = index;
+    }
+
+    inline int get_map_zoom(){
+        return _map_zoom;
+    }
+
     void auto_end();
     bool have_hardware_data();
     struct ds_device_base_info* get_device_list(int &out_count, int &actived_index);
@@ -320,11 +389,9 @@ private:
     view::DecodeTrace* get_top_decode_task();    
 
     void capture_init(); 
-    void data_lock();
-    void data_unlock();
     void nodata_timeout();
     void feed_timeout();
-    void repeat_update(); 
+   
     void container_init();
     void init_signals(); 
   
@@ -363,7 +430,8 @@ private:
 
     Snapshot* get_signal_snapshot();
 
-    void repeat_capture_wait_timout();
+    void repeat_capture_wait_timeout();
+    void repeat_wait_prog_timeout();
  
 private:
     mutable std::mutex      _sampling_mutex;
@@ -391,7 +459,8 @@ private:
     
     DsTimer     _feed_timer;
     DsTimer     _out_timer;
-    DsTimer     _repeate_timer;
+    DsTimer     _repeat_timer;
+    DsTimer     _repeat_wait_prog_timer;
     int         _noData_cnt;
     bool        _data_lock;
     bool        _data_updated;
@@ -414,8 +483,9 @@ private:
     uint64_t    _save_end; 
     bool        _is_working;
     bool        _is_repeat_mode;
-    double      _repeat_intvl; // The progress check timer interval.
+    double      _repeat_intvl; // The progress wait timer interval.
     int         _repeat_hold_prg; // The time sleep progress
+    int         _repeat_wait_prog_step;
     bool        _is_saving;
     bool        _is_instant;
     int         _device_status;
