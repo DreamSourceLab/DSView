@@ -20,49 +20,9 @@
 #ifndef LIBSIGROK_VERSION_H
 #define LIBSIGROK_VERSION_H
 
-/**
- * @file
- *
- * Version number definitions and macros.
- */
-
-/**
- * @ingroup grp_versions
- *
- * @{
- */
-
-/*
- * Package version macros (can be used for conditional compilation).
- */
-
-/** The libsigrok package 'major' version number. */
-#define SR_PACKAGE_VERSION_MAJOR 0
-
-/** The libsigrok package 'minor' version number. */
-#define SR_PACKAGE_VERSION_MINOR 2
-
-/** The libsigrok package 'micro' version number. */
-#define SR_PACKAGE_VERSION_MICRO 0
-
-/** The libsigrok package version ("major.minor.micro") as string. */
 #define SR_PACKAGE_VERSION_STRING "0.2.0"
 
-/*
- * Library/libtool version macros (can be used for conditional compilation).
- */
-
-/** The libsigrok libtool 'current' version number. */
-#define SR_LIB_VERSION_CURRENT 1
-
-/** The libsigrok libtool 'revision' version number. */
-#define SR_LIB_VERSION_REVISION 2
-
-/** The libsigrok libtool 'age' version number. */
-#define SR_LIB_VERSION_AGE 0
-
-/** The libsigrok libtool version ("current:revision:age") as string. */
-#define SR_LIB_VERSION_STRING "1:2:0"
+#define SR_LIB_VERSION_STRING "1.3.0"
 
 /** @} */
 

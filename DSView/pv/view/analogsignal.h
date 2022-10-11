@@ -52,7 +52,7 @@ private:
     static const uint8_t DefaultBits = 8;
 
 public:
-    AnalogSignal(DevInst* dev_inst, pv::data::Analog *data,
+    AnalogSignal(pv::data::Analog *data,
                  sr_channel *probe);
 
     AnalogSignal(view::AnalogSignal* s, pv::data::Analog *data,  sr_channel *probe);

@@ -90,7 +90,7 @@ ProtocolList::ProtocolList(QWidget *parent, SigSession *session) :
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
     connect(_protocol_combobox, SIGNAL(currentIndexChanged(int)), this, SLOT(set_protocol(int)));
     set_protocol(_protocol_combobox->currentIndex());
-    connect(_session->get_device(), SIGNAL(device_updated()), this, SLOT(reject()));
+    connect(_session->device_event_object(), SIGNAL(device_updated()), this, SLOT(reject()));
 
 }
 

@@ -27,10 +27,10 @@
 #include <QToolButton>
 #include <QAction>
 #include <QMenu>
-#include "libsigrok.h"
+#include <libsigrok.h> 
 
 #include "../sigsession.h"
-#include "../interface/uicallback.h"
+#include "../interface/icallbacks.h"
 
 
 namespace pv {
@@ -58,11 +58,6 @@ private:
     void changeEvent(QEvent *event);
     void retranslateUi();
     void reStyle();
-
-    void session_error(
-        const QString text, const QString info_text);
-    void show_session_error(
-        const QString text, const QString info_text);
 
 signals: 
     //post event message to open user help document, MainWindow class receive it

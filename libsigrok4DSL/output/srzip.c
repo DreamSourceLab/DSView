@@ -16,8 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include "libsigrok.h"
+ 
 #include "libsigrok-internal.h"
 #include <stdlib.h>
 #include <unistd.h>
@@ -29,6 +28,7 @@
 #include <time.h>
 #include <assert.h>
 #include "../log.h"
+#include "../version.h"
 
 struct out_context { 
 	uint64_t 	samplerate;
@@ -167,7 +167,7 @@ static int create_archive(const struct sr_output *o)
 	meta = g_key_file_new();
 
 	g_key_file_set_string(meta, "global", "sigrok version",
-			sr_package_version_string_get());
+            SR_PACKAGE_VERSION_STRING);
 
 	devgroup = "device 1";
 	logic_channels = 0;

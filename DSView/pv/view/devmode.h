@@ -34,8 +34,17 @@
 #include <QToolButton>
 #include <QLabel>
 
-#include "libsigrok.h"
+#include <libsigrok.h> 
+
+struct dev_mode_name{
+    int _mode;
+    const char *_name_en;
+    const char *_name_cn;
+    const char *_logo;
+};
  
+class DeviceAgent;
+
 namespace pv {
 
 namespace device{
@@ -65,8 +74,8 @@ private:
 	void mouseReleaseEvent(QMouseEvent *event);
 	void mouseMoveEvent(QMouseEvent *event);
 	void leaveEvent(QEvent *event);
-
     void changeEvent(QEvent *event);
+    const dev_mode_name* get_mode_name(int mode);
 
 public slots:
     void set_device();
@@ -75,8 +84,7 @@ public slots:
 
 private slots:
 
-signals:
-    void dev_changed(bool close);
+ 
 
 private:
     SigSession *_session;
@@ -86,6 +94,8 @@ private:
     QPoint          _mouse_point;
     QToolButton     *_close_button;
     bool            _bFile;
+
+    DeviceAgent     *_device_agent;
 };
 
 } // namespace view

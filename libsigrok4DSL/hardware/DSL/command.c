@@ -17,9 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../libsigrok.h"
-#include "../../libsigrok-internal.h"
 
+#include "../../libsigrok-internal.h"
 #include "command.h"
 #include "dsl.h"
 #include <assert.h>
@@ -28,6 +27,8 @@
 SR_PRIV int command_ctl_wr(libusb_device_handle *devhdl, struct ctl_wr_cmd cmd)
 {
     int ret;
+
+    assert(devhdl);
 
     /* Send the control command. */
     ret = libusb_control_transfer(devhdl, LIBUSB_REQUEST_TYPE_VENDOR |
@@ -46,6 +47,8 @@ SR_PRIV int command_ctl_wr(libusb_device_handle *devhdl, struct ctl_wr_cmd cmd)
 SR_PRIV int command_ctl_rd(libusb_device_handle *devhdl, struct ctl_rd_cmd cmd)
 {
     int ret;
+
+    assert(devhdl);
 
     /* Send the control message. */
     ret = libusb_control_transfer(devhdl, LIBUSB_REQUEST_TYPE_VENDOR |

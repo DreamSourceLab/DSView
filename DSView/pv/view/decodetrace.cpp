@@ -20,10 +20,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include "libsigrokdecode.h"
-
-#include "../dsvdef.h"
- 
+#include <libsigrokdecode.h>
+#include "../dsvdef.h" 
 #include <boost/functional/hash.hpp>
 #include <QAction> 
 #include <QFormLayout>
@@ -47,7 +45,6 @@
 #include "../view/view.h"
 #include "../widgets/decodergroupbox.h"
 #include "../widgets/decodermenu.h"
-#include "../device/devinst.h"
 #include "../view/cursor.h"
 #include "../toolbars/titlebar.h"
 #include "../dsvdef.h"
@@ -569,7 +566,7 @@ void DecodeTrace::on_new_decode_data()
     }
     decoded_progress(_progress);
 
-    if (_view && _view->session().get_capture_state() == SigSession::Stopped)
+    if (_view && _view->session().is_stopped_status())
         _view->data_updated();
     if (_totalHeight/_view->get_signalHeight() != rows_size())
         _view->signals_changed();

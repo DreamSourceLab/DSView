@@ -30,10 +30,7 @@
 #include "../view/ruler.h"
 #include "../view/logicsignal.h"
 #include "../data/signaldata.h"
-#include "../data/snapshot.h"
-#include "../devicemanager.h"
-#include "../device/device.h"
-#include "../device/file.h"
+#include "../data/snapshot.h" 
 #include "../dialogs/dsdialog.h"
 #include "../dialogs/dsmessagebox.h"
 
@@ -53,10 +50,8 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
     QScrollArea(parent),
     _session(session),
     _view(view)
-{
-
-    _widget = new QWidget(this);
-    //_widget->setSizePolicy();
+{     
+    _widget = new QWidget(this);   
 
     _mouse_groupBox = new QGroupBox(_widget);
     _fen_checkBox = new QCheckBox(_widget);
@@ -211,7 +206,7 @@ void MeasureDock::refresh()
 
 void MeasureDock::reload()
 {
-    if (_session->get_device()->dev_inst()->mode == LOGIC)
+    if (_session->get_device()->get_work_mode() == LOGIC)
         _edge_groupBox->setVisible(true);
     else
         _edge_groupBox->setVisible(false);

@@ -30,6 +30,8 @@
 #include <QRadioButton>
 #include "../ui/msgbox.h"
 #include "../config/appconfig.h"
+#include "../interface/icallbacks.h"
+#include "../log.h"
 
 namespace pv {
 namespace dialogs {
@@ -122,8 +124,10 @@ void StoreProgress::reject()
 {
     using namespace Qt;
     _store_session.cancel();
-    save_done();
+    _store_session.session()->set_saving(false);
+    save_done(); 
     DSDialog::reject();
+    _store_session.session()->broadcast_msg(DSV_MSG_SAVE_COMPLETE);
 }
 
 void StoreProgress::accept()
@@ -157,7 +161,8 @@ void StoreProgress::accept()
     //start done 
     if (_isExport){
         if (_store_session.export_start()){
-              QTimer::singleShot(100, this, SLOT(timeout()));        
+            _store_session.session()->set_saving(true);
+            QTimer::singleShot(100, this, SLOT(timeout()));        
         }
         else{
             save_done();
@@ -167,7 +172,8 @@ void StoreProgress::accept()
     }
     else{
          if (_store_session.save_start()){
-              QTimer::singleShot(100, this, SLOT(timeout()));        
+            _store_session.session()->set_saving(true);
+            QTimer::singleShot(100, this, SLOT(timeout()));        
         }
         else{
             save_done();
@@ -248,9 +254,11 @@ void StoreProgress::show_error()
 }
 
 void StoreProgress::closeEvent(QCloseEvent* e)
-{
+{ 
     _store_session.cancel();
+    _store_session.session()->set_saving(false);
     DSDialog::closeEvent(e);
+    _store_session.session()->broadcast_msg(DSV_MSG_SAVE_COMPLETE);
 }
 
 void StoreProgress::on_progress_updated()

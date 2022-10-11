@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <check.h>
-#include "../libsigrok.h"
+#include <libsigrok.h>
 
 /* Get a libsigrok driver by name. */
 struct sr_dev_driver *srtest_driver_get(const char *drivername)

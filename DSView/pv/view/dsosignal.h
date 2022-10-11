@@ -85,7 +85,7 @@ private:
     static const uint16_t MS_RectHeight = 25;
 
 public:
-    DsoSignal(DevInst* dev_inst, pv::data::Dso *data,
+    DsoSignal(pv::data::Dso *data,
               sr_channel *probe);
 
     virtual ~DsoSignal();

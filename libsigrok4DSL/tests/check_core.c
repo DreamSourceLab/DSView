@@ -20,7 +20,7 @@
 
 #include <stdlib.h>
 #include <check.h>
-#include "../libsigrok.h"
+#include <libsigrok.h>
 
 /*
  * Check various basic init related things.

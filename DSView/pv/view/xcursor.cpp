@@ -24,7 +24,6 @@
 
 #include "view.h"
 #include "ruler.h"
-#include "../device/device.h"
 #include "dsosignal.h"
 
 #include <QPainter>

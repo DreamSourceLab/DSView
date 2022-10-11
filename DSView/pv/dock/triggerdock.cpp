@@ -21,7 +21,6 @@
 
 #include "triggerdock.h"
 #include "../sigsession.h"
-#include "../device/devinst.h"
 #include "../dialogs/dsmessagebox.h"
 #include "../view/view.h"
 
@@ -34,8 +33,10 @@
 #include <QInputMethodEvent>
 #include <QApplication>
 #include <math.h>
-
-#include "libsigrok.h"
+#include <libsigrok.h> 
+#include "../config/appconfig.h"
+#include "../deviceagent.h"
+#include "../view/logicsignal.h"
 
 namespace pv {
 namespace dock {
@@ -46,8 +47,9 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession *session) :
     QScrollArea(parent),
     _session(session)
 {
+    
     _cur_ch_num = 16;
-    if (_session->get_device()) {
+    if (_session->get_device()->have_instance()) {
         GVariant *gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_TOTAL_CH_NUM);
         if (gvar != NULL) {
             _cur_ch_num = g_variant_get_int16(gvar);
@@ -252,11 +254,13 @@ void TriggerDock::device_updated()
     uint8_t maxRange;
     uint64_t sample_limits;
     GVariant *gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_HW_DEPTH);
+    int mode = _session->get_device()->get_work_mode();
+
     if (gvar != NULL) {
         hw_depth = g_variant_get_uint64(gvar);
         g_variant_unref(gvar);
 
-        if (_session->get_device()->dev_inst()->mode == LOGIC) {
+        if (mode == LOGIC) {
 
             gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_STREAM);
             if (gvar != NULL) {
@@ -303,8 +307,9 @@ bool TriggerDock::commit_trigger()
     // trigger mode update
     if (_simple_radioButton->isChecked()) {
         ds_trigger_set_mode(SIMPLE_TRIGGER);
-        return 0;
-    } else {
+        return false;
+    }
+    else {
         ds_trigger_set_en(true);
         if (_adv_tabWidget->currentIndex() == 0)
             ds_trigger_set_mode(ADV_TRIGGER);
@@ -396,7 +401,7 @@ bool TriggerDock::commit_trigger()
                                        _serial_bits_comboBox->currentText().toInt() - 1,
                                        0);
         }
-        return 1;
+        return true;
     }
 }
 
@@ -882,6 +887,67 @@ void TriggerDock::lineEdit_highlight(QLineEdit *dst) {
     }
     QInputMethodEvent event(QString(), attributes);
     QCoreApplication::sendEvent(dst, &event);
+}
+
+void TriggerDock::try_commit_trigger()
+{   
+    AppConfig &app = AppConfig::Instance(); 
+    int num = 0;
+
+    int mode = _session->get_device()->get_work_mode();
+    bool bInstant = _session->is_instant();
+
+    ds_trigger_reset();
+
+    if (mode != LOGIC || bInstant){
+        return;
+    }
+
+    if (commit_trigger() == false) 
+    {
+        /* simple trigger check trigger_enable */
+        for(auto &s : _session->get_signals())
+        {
+            assert(s);
+            view::LogicSignal *logicSig = NULL;
+            if ((logicSig = dynamic_cast<view::LogicSignal*>(s))) {
+                if (logicSig->commit_trig())
+                    num++;
+            }
+        }
+
+        if (app._appOptions.warnofMultiTrig && num > 1) {
+            dialogs::DSMessageBox msg(this);
+            msg.mBox()->setText(tr("Trigger"));
+            msg.mBox()->setInformativeText(tr("Trigger setted on multiple channels! "
+                                              "Capture will Only triggered when all setted channels fullfill at one sample"));
+            msg.mBox()->setIcon(QMessageBox::Information);
+
+            QPushButton *noMoreButton = msg.mBox()->addButton(tr("Not Show Again"), QMessageBox::ActionRole);
+            QPushButton *cancelButton = msg.mBox()->addButton(tr("Clear Trig"), QMessageBox::ActionRole);
+            msg.mBox()->addButton(tr("Continue"), QMessageBox::ActionRole);
+
+            msg.exec();
+
+            if (msg.mBox()->clickedButton() == cancelButton) {
+                for(auto &s : _session->get_signals())
+                {
+                    assert(s);
+                    view::LogicSignal *logicSig = NULL;
+                    if ((logicSig = dynamic_cast<view::LogicSignal*>(s))) {
+                        logicSig->set_trig(view::LogicSignal::NONTRIG);
+                        logicSig->commit_trig();
+                    }
+                }
+            }
+
+            if (msg.mBox()->clickedButton() == noMoreButton)
+            {
+                app._appOptions.warnofMultiTrig  = false;
+                app.SaveApp();                
+            }
+        }
+    }
 }
 
 } // namespace dock

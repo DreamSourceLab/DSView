@@ -31,9 +31,9 @@ set(DS_TITLE DSView)
 set(DS_DESCRIPTION "A GUI for instruments of DreamSourceLab")
 
 set(DS_VERSION_MAJOR 1)
-set(DS_VERSION_MINOR 2)
-set(DS_VERSION_MICRO 1)
-set(DS_VERSION_STRING  ${DS_VERSION_MAJOR}.${DS_VERSION_MINOR}.${DS_VERSION_MICRO} )
+set(DS_VERSION_MINOR 3)
+set(DS_VERSION_MICRO 0)
+set(DS_VERSION_STRING  ${DS_VERSION_MAJOR}.${DS_VERSION_MINOR}.${DS_VERSION_MICRO}-dev )
 
 configure_file (
 	${PROJECT_SOURCE_DIR}/DSView/config.h.in
@@ -235,7 +235,6 @@ set(DSView_SOURCES
     DSView/pv/log.cpp
     DSView/pv/sigsession.cpp
     DSView/pv/mainwindow.cpp
-    DSView/pv/devicemanager.cpp
     DSView/pv/data/snapshot.cpp
     DSView/pv/data/signaldata.cpp
     DSView/pv/data/logicsnapshot.cpp
@@ -290,14 +289,9 @@ set(DSView_SOURCES
     DSView/pv/widgets/decodermenu.cpp
     DSView/pv/widgets/decodergroupbox.cpp
     DSView/pv/prop/string.cpp
-    DSView/pv/device/sessionfile.cpp
-    DSView/pv/device/inputfile.cpp
-    DSView/pv/device/file.cpp
-    DSView/pv/device/devinst.cpp
     DSView/pv/dialogs/storeprogress.cpp
     DSView/pv/storesession.cpp
     DSView/pv/view/devmode.cpp
-    DSView/pv/device/device.cpp
     DSView/pv/dialogs/waitingdialog.cpp
     DSView/pv/dialogs/dsomeasure.cpp
     DSView/pv/dialogs/calibration.cpp
@@ -350,6 +344,7 @@ set(DSView_SOURCES
     DSView/pv/dialogs/decoderoptionsdlg.cpp
     DSView/pv/utility/encoding.cpp
     DSView/pv/utility/path.cpp
+    DSView/pv/deviceagent.cpp
 )
 
 set(DSView_HEADERS
@@ -388,7 +383,6 @@ set(DSView_HEADERS
     DSView/pv/widgets/decodermenu.h
     DSView/pv/widgets/decodergroupbox.h
     DSView/pv/prop/string.h
-    DSView/pv/device/devinst.h
     DSView/pv/dialogs/storeprogress.h
     DSView/pv/storesession.h
     DSView/pv/view/devmode.h
@@ -441,6 +435,7 @@ set(DSView_HEADERS
     DSView/pv/dialogs/decoderoptionsdlg.h
     DSView/pv/utility/encoding.h
     DSView/pv/utility/path.h
+    DSView/pv/deviceagent.h
 )
  
 #===============================================================================
@@ -450,7 +445,6 @@ set(libsigrok4DSL_SOURCES
     libsigrok4DSL/version.c
     libsigrok4DSL/strutil.c
     libsigrok4DSL/std.c
-    libsigrok4DSL/session_file.c
     libsigrok4DSL/session_driver.c
     libsigrok4DSL/session.c
     libsigrok4DSL/log.c
@@ -475,11 +469,11 @@ set(libsigrok4DSL_SOURCES
     libsigrok4DSL/hardware/DSL/dscope.c
     libsigrok4DSL/hardware/DSL/command.c
     libsigrok4DSL/hardware/DSL/dsl.c
+    libsigrok4DSL/lib_main.c
 )
 
 set(libsigrok4DSL_HEADERS
     libsigrok4DSL/version.h
-    libsigrok4DSL/proto.h
     libsigrok4DSL/libsigrok-internal.h
     libsigrok4DSL/libsigrok.h
     libsigrok4DSL/config.h

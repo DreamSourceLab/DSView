@@ -29,13 +29,13 @@
 #include <QMovie>
   
 #include "../sigsession.h"
-#include "../device/devinst.h"
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
 
-using namespace pv::device;
+class DeviceAgent;
 
 namespace pv {
+
 namespace dialogs {
 
 class WaitingDialog : public DSDialog
@@ -67,7 +67,6 @@ private slots:
 private:
     int _key;
     SigSession *_session;
-    DevInst*  _dev_inst;
     toolbars::TitleBar *_titlebar;
     QDialogButtonBox _button_box;
 
@@ -76,6 +75,7 @@ private:
     QMovie *movie;
     QTimer *timer;
     QLabel *tips;
+    DeviceAgent *_device_agent;
 };
 
 } // namespace dialogs

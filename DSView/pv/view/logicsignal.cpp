@@ -20,7 +20,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include "libsigrokdecode.h"
+#include <libsigrokdecode.h>
 #include <math.h>
 #include "logicsignal.h"
 #include "view.h"
@@ -28,6 +28,7 @@
 #include "../data/logicsnapshot.h"
 #include "view.h"
 #include "../dsvdef.h"
+#include "../log.h"
 
 using namespace std;
 
@@ -39,13 +40,12 @@ const float LogicSignal::Oversampling = 1.0f;
 const int LogicSignal::StateHeight = 12;
 const int LogicSignal::StateRound = 5;
 
-LogicSignal::LogicSignal(DevInst *dev_inst,
-                         data::Logic *data,
+LogicSignal::LogicSignal(data::Logic *data,
                          sr_channel *probe) :
-    Signal(dev_inst, probe),
-    _data(data),
-    _trig(NONTRIG)
+    Signal(probe),
+    _data(data)
 {
+    _trig = NONTRIG;
 }
 
 LogicSignal::LogicSignal(view::LogicSignal *s,
@@ -97,7 +97,8 @@ bool LogicSignal::commit_trig()
     if (_trig == NONTRIG) {
         ds_trigger_probe_set(_index_list.front(), 'X', 'X');
         return false;
-    } else {
+    } 
+    else {
         ds_trigger_set_en(true);
         if (_trig == POSTRIG)
             ds_trigger_probe_set(_index_list.front(), 'R', 'X');
@@ -137,7 +138,9 @@ void LogicSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColo
 		return;
   
     auto snapshot =  const_cast<data::LogicSnapshot*>(snapshots.front());
-    if (snapshot->empty() || !snapshot->has_data(_probe->index))
+    if (snapshot->empty())
+        return;
+    if (!snapshot->has_data(_probe->index))
         return;
 
     const int64_t last_sample =  snapshot->get_sample_count() - 1;
@@ -148,8 +151,10 @@ void LogicSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColo
     const double end = (offset + width + 1) * samples_per_pixel;
     const uint64_t end_index = min(max((int64_t)ceil(end), (int64_t)0), last_sample);
     const uint64_t start_index = max((uint64_t)floor(start), (uint64_t)0);
+    
     if (start_index > end_index)
         return;
+
     width = min(width, (uint16_t)ceil((end_index + 1)/samples_per_pixel - offset));
     const uint16_t max_togs = width / TogMaxScale;
 

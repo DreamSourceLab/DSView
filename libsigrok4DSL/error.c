@@ -46,17 +46,17 @@
  *         description of the error, such as "memory allocation error".
  *         The string must NOT be free'd by the caller!
  *
- * @see sr_strerror_name
+ * @see sr_error_name
  *
  * @since 0.2.0
  */
-SR_API const char *sr_strerror(int error_code)
+SR_API const char *sr_error_str(int error_code)
 {
 	const char *str;
 
 	/*
 	 * Note: All defined SR_* error macros from libsigrok.h must have
-	 * an entry in this function, as well as in sr_strerror_name().
+	 * an entry in this function, as well as in sr_error_name().
 	 */
 
 	switch (error_code) {
@@ -84,6 +84,12 @@ SR_API const char *sr_strerror(int error_code)
 	case SR_ERR_DEV_CLOSED:
 		str = "device closed but should be open";
 		break;
+	case SR_ERR_CALL_STATUS:
+		str = "Function call status error";
+		break;
+	case SR_ERR_HAVE_DONE:
+		str = "The Function have called";
+		break;
 	default:
 		str = "unknown error";
 		break;
@@ -106,17 +112,17 @@ SR_API const char *sr_strerror(int error_code)
  * @return A const string containing the "name" of the error code as string.
  *         The string must NOT be free'd by the caller!
  *
- * @see sr_strerror
+ * @see sr_error_str
  *
  * @since 0.2.0
  */
-SR_API const char *sr_strerror_name(int error_code)
+SR_API const char *sr_error_name(int error_code)
 {
 	const char *str;
 
 	/*
 	 * Note: All defined SR_* error macros from libsigrok.h must have
-	 * an entry in this function, as well as in sr_strerror().
+	 * an entry in this function, as well as in sr_error_str().
 	 */
 
 	switch (error_code) {
@@ -143,6 +149,12 @@ SR_API const char *sr_strerror_name(int error_code)
 		break;
 	case SR_ERR_DEV_CLOSED:
 		str = "SR_ERR_DEV_CLOSED";
+		break;
+	case SR_ERR_CALL_STATUS:
+		str = "SR_ERR_CALL_STATUS";
+		break;
+	case SR_ERR_HAVE_DONE:
+		str = "SR_ERR_HAVE_DONE";
 		break;
 	default:
 		str = "unknown error code";

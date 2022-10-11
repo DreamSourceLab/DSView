@@ -20,7 +20,6 @@
  */
 
 #include "mathoptions.h"
-#include "../device/devinst.h"
 #include "../sigsession.h"
 #include "../view/view.h"
 #include "../view/mathtrace.h"

@@ -22,7 +22,6 @@
 #include "protocoldock.h"
 #include "../sigsession.h"
 #include "../view/decodetrace.h"
-#include "../device/devinst.h"
 #include "../data/decodermodel.h"
 #include "../data/decoderstack.h"
 #include "../dialogs/protocollist.h"
@@ -360,13 +359,8 @@ void ProtocolDock::on_add_protocol()
 }
 
 bool ProtocolDock::add_protocol_by_id(QString id, bool silent, std::list<pv::data::decode::Decoder*> &sub_decoders)
-{    
-    if (_session->is_device_re_attach() == true){
-        dsv_info("%s", "Keep current decoders, cancel add new.");
-        return true;
-    }
-
-    if (_session->get_device()->dev_inst()->mode != LOGIC) {
+{
+    if (_session->get_device()->get_work_mode() != LOGIC) {
         dsv_info("%s", "Protocol Analyzer\nProtocol Analyzer is only valid in Digital Mode!");
         return false;
     }
@@ -431,7 +425,7 @@ bool ProtocolDock::add_protocol_by_id(QString id, bool silent, std::list<pv::dat
 
 void ProtocolDock::del_all_protocol()
 {  
-    if (_protocol_lay_items.size() > 0 && _session->is_device_re_attach() == false)
+    if (_protocol_lay_items.size() > 0)
     {
         _session->clear_all_decoder();
 
@@ -1002,7 +996,6 @@ bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const Decod
          _selected_protocol_id = QString(dec->id);
          this->on_add_protocol();       
      }
- } 
-
+ }  
 } // namespace dock
 } // namespace pv

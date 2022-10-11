@@ -26,7 +26,6 @@
 #include <QEvent>
 
 #include "../sigsession.h"
-#include "../device/devinst.h"
 #include "../dialogs/fftoptions.h"
 #include "../dialogs/lissajousoptions.h"
 #include "../dialogs/mathoptions.h"
@@ -241,21 +240,6 @@ void TrigBar::search_clicked()
     AppConfig::Instance().SaveFrame();
 }
 
-void TrigBar::enable_toggle(bool enable)
-{
-    _trig_button.setDisabled(!enable);
-    _protocol_button.setDisabled(!enable);
-    _measure_button.setDisabled(!enable);
-    _search_button.setDisabled(!enable);
-    _function_button.setDisabled(!enable);
-    _setting_button.setDisabled(!enable);
-}
-
-void TrigBar::enable_protocol(bool enable)
-{
-    _protocol_button.setDisabled(!enable);
-}
-
 void TrigBar::close_all()
 {
     if (_trig_button.isChecked()) {
@@ -280,7 +264,9 @@ void TrigBar::reload()
 {
     close_all();
 
-    if (_session->get_device()->dev_inst()->mode == LOGIC) {
+    int mode = _session->get_device()->get_work_mode();
+
+    if (mode == LOGIC) {
         _trig_action->setVisible(true);
         _protocol_action->setVisible(true);
         _measure_action->setVisible(true);
@@ -289,7 +275,7 @@ void TrigBar::reload()
         _action_lissajous->setVisible(false);
         _action_dispalyOptions->setVisible(true);
 
-    } else if (_session->get_device()->dev_inst()->mode == ANALOG) {
+    } else if (mode == ANALOG) {
         _trig_action->setVisible(false);
         _protocol_action->setVisible(false);
         _measure_action->setVisible(true);
@@ -298,7 +284,7 @@ void TrigBar::reload()
         _action_lissajous->setVisible(false);
         _action_dispalyOptions->setVisible(false);
 
-    } else if (_session->get_device()->dev_inst()->mode == DSO) {
+    } else if (mode == DSO) {
         _trig_action->setVisible(true);
         _protocol_action->setVisible(false);
         _measure_action->setVisible(true);
@@ -308,8 +294,8 @@ void TrigBar::reload()
         _action_dispalyOptions->setVisible(false);
     }
 
-    enable_toggle(true);
-    update();
+    update_view_status(); 
+    update();    
 }
 
 void TrigBar::on_actionFft_triggered()
@@ -355,7 +341,6 @@ void TrigBar::on_actionLissajous_triggered()
 void TrigBar::restore_status()
 { 
     DockOptions *opt = getDockOptions();
-    int mode = _session->get_device()->dev_inst()->mode;
 
     if (opt->decodeDoc){
          _protocol_button.setChecked(true);
@@ -381,14 +366,26 @@ void TrigBar::restore_status()
  DockOptions* TrigBar::getDockOptions()
  {
      AppConfig &app = AppConfig::Instance(); 
-     int mode = _session->get_device()->dev_inst()->mode;
+     int mode = _session->get_device()->get_work_mode();
 
-     if (mode == LOGIC)
+    if (mode == LOGIC)
         return &app._frameOptions._logicDock;
      else if (mode == DSO)
         return &app._frameOptions._dsoDock;
     else
         return &app._frameOptions._analogDock;
+ }
+
+ void TrigBar::update_view_status()
+ {
+    bool bEnable = _session->is_working() == false;
+
+    _trig_button.setEnabled(bEnable);
+    _protocol_button.setEnabled(bEnable);
+    _measure_button.setEnabled(bEnable);
+    _search_button.setEnabled(bEnable);
+    _function_button.setEnabled(bEnable);
+    _setting_button.setEnabled(bEnable);
  }
 
 } // namespace toolbars

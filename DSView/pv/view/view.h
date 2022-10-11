@@ -41,7 +41,9 @@
 #include "xcursor.h"
 #include "signal.h"
 #include "viewstatus.h"
-#include "../dsvdef.h"
+#include "../dsvdef.h" 
+
+class DeviceAgent;
 
 namespace pv {
 
@@ -142,7 +144,7 @@ public:
     void set_scale_offset(double scale, int64_t offset);
     void set_preScale_preOffset();
 
-    std::vector<Trace*> get_traces(int type);
+    void get_traces(int type, std::vector<Trace*> &traces);
 
 	/**
 	 * Returns true if cursors are displayed. false otherwise.
@@ -244,24 +246,18 @@ public:
 
     int get_cursor_index_by_key(uint64_t key);
 
+    void check_calibration();
+
 signals:
 	void hover_point_changed();
-
     void cursor_update();
     void xcursor_update();
-
     void cursor_moving();
     void cursor_moved();
-
     void measure_updated();
-
     void prgRate(int progress);
-
-    void device_changed(bool close);
-
     void resize();
-
-    void auto_trig(int index);
+    void auto_trig(int index);   
 
 private: 
     void get_scroll_layout(int64_t &length, int64_t &offset);
@@ -275,15 +271,11 @@ private:
         const pv::view::Trace *b);
 
     void clear();
-    void reconstruct();
-
-private:
+    void reconstruct();  
 	bool eventFilter(QObject *object, QEvent *event);
-
 	bool viewportEvent(QEvent *e);
-
 	void resizeEvent(QResizeEvent *e);
-
+ 
 public slots:
     void reload();
     void set_measure_en(int enable);
@@ -318,6 +310,8 @@ public slots:
 
     void frame_began();
 
+    void mode_changed();
+
 private slots:
 
 	void h_scroll_value_changed(int value);
@@ -338,12 +332,13 @@ private slots:
 
     void splitterMoved(int pos, int index);
 
-    void dev_changed(bool close);
-
 public:
     void show_wait_trigger();
     void set_device();
     void set_receive_len(uint64_t len);
+
+private:
+   
 
 private:
 
@@ -399,6 +394,7 @@ private:
     bool        _show_lissajous;
     bool        _back_ready;
     bool        _trig_time_setted;
+    DeviceAgent *_device_agent;
 };
 
 } // namespace view

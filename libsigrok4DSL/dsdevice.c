@@ -17,12 +17,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "libsigrok.h"
 #include "libsigrok-internal.h"
 #include <stdio.h>
 #include <glib.h>
 #include "config.h" /* Needed for HAVE_LIBUSB_1_0 and others. */
 #include "log.h"
+#include <string.h>
 
 #undef LOG_PREFIX
 #define LOG_PREFIX "device: "
@@ -42,15 +42,21 @@
  */
 
 /** @private */
-SR_PRIV struct sr_channel *sr_channel_new(uint16_t index, int type,
-        gboolean enabled, const char *name)
+SR_PRIV struct sr_channel *sr_channel_new(uint16_t index, int type, gboolean enabled, const char *name)
 {
 	struct sr_channel *probe;
 
-	if (!(probe = g_try_malloc0(sizeof(struct sr_channel)))) {
+	probe = g_try_malloc0(sizeof(struct sr_channel));
+
+	if (probe == NULL) {
 		sr_err("Probe malloc failed.");
 		return NULL;
 	}
+
+	probe->trigger = NULL;
+	probe->name = NULL;
+	probe->map_unit = NULL;
+	probe->vga_ptr = NULL;
 
 	probe->index = index;
 	probe->type = type;
@@ -78,7 +84,7 @@ SR_PRIV struct sr_channel *sr_channel_new(uint16_t index, int type,
  *
  * @since 0.1.0 (but the API changed in 0.2.0)
  */
-SR_API int sr_dev_probe_name_set(const struct sr_dev_inst *sdi,
+SR_PRIV int sr_dev_probe_name_set(const struct sr_dev_inst *sdi,
 		int probenum, const char *name)
 {
 	GSList *l;
@@ -115,7 +121,7 @@ SR_API int sr_dev_probe_name_set(const struct sr_dev_inst *sdi,
  *
  * @since 0.2.0
  */
-SR_API int sr_dev_probe_enable(const struct sr_dev_inst *sdi, int probenum,
+SR_PRIV int sr_dev_probe_enable(const struct sr_dev_inst *sdi, int probenum,
 		gboolean state)
 {
 	GSList *l;
@@ -152,7 +158,7 @@ SR_API int sr_dev_probe_enable(const struct sr_dev_inst *sdi, int probenum,
  *
  * @since 0.1.0 (but the API changed in 0.2.0)
  */
-SR_API int sr_dev_trigger_set(const struct sr_dev_inst *sdi, uint16_t probenum,
+SR_PRIV int sr_dev_trigger_set(const struct sr_dev_inst *sdi, uint16_t probenum,
 		const char *trigger)
 {
 	GSList *l;
@@ -167,8 +173,8 @@ SR_API int sr_dev_trigger_set(const struct sr_dev_inst *sdi, uint16_t probenum,
 		probe = l->data;
 		if (probe->index == probenum) {
 			/* If the probe already has a trigger, kill it first. */
-			g_free(probe->trigger);
-			probe->trigger = g_strdup(trigger);
+            g_safe_free(probe->trigger);
+            probe->trigger = g_strdup(trigger);
 			ret = SR_OK;
 			break;
 		}
@@ -178,7 +184,7 @@ SR_API int sr_dev_trigger_set(const struct sr_dev_inst *sdi, uint16_t probenum,
 }
 
 /** @private */
-SR_PRIV struct sr_dev_inst *sr_dev_inst_new(int mode, int index, int status,
+SR_PRIV struct sr_dev_inst *sr_dev_inst_new(int mode, int status,
 		const char *vendor, const char *model, const char *version)
 {
 	struct sr_dev_inst *sdi;
@@ -189,16 +195,29 @@ SR_PRIV struct sr_dev_inst *sr_dev_inst_new(int mode, int index, int status,
 	}
 
 	sdi->driver = NULL;
-    sdi->mode = mode;
-	sdi->index = index;
-	sdi->status = status;
-	sdi->inst_type = -1;
-	sdi->vendor = vendor ? g_strdup(vendor) : NULL;
-	sdi->model = model ? g_strdup(model) : NULL;
-	sdi->version = version ? g_strdup(version) : NULL;
 	sdi->channels = NULL;
 	sdi->conn = NULL;
 	sdi->priv = NULL;
+	sdi->vendor = NULL;
+	sdi->version = NULL;
+	sdi->path = NULL;
+
+    sdi->mode = mode;
+	sdi->name[0] = '\0';
+	sdi->status = status;
+    sdi->handle = (ds_device_handle)sdi;
+	sdi->dev_type = DEV_TYPE_UNKOWN;
+
+	if (vendor != NULL){
+		sdi->vendor = g_strdup(vendor);
+	}
+	if (version != NULL){
+		sdi->version = g_strdup(version);
+	}
+
+	if (model && *model){
+		strncpy(sdi->name, model, sizeof(sdi->name));
+	}
 
 	return sdi;
 }
@@ -211,35 +230,29 @@ SR_PRIV void sr_dev_probes_free(struct sr_dev_inst *sdi)
 
     for (l = sdi->channels; l; l = l->next) {
         probe = l->data;
-        g_free(probe->name);
-        g_free(probe->trigger);
-        if (probe->vga_ptr)
-            g_free(probe->vga_ptr);
+        g_safe_free(probe->name);
+        g_safe_free(probe->trigger);
+		g_safe_free(probe->vga_ptr);
         g_free(probe);
     }
-
-    sdi->channels = NULL;
+	g_safe_free_list(sdi->channels);
 }
 
 SR_PRIV void sr_dev_inst_free(struct sr_dev_inst *sdi)
 {
-	struct sr_channel *probe;
-	GSList *l;
+	if (sdi == NULL)
+		return;
 
-	for (l = sdi->channels; l; l = l->next) {
-		probe = l->data;
-		g_free(probe->name);
-		g_free(probe);
-	}
+	sr_dev_probes_free(sdi);
+	
+	g_safe_free(sdi->conn);
+	g_safe_free(sdi->priv);
+	g_safe_free(sdi->vendor);
+	g_safe_free(sdi->version);
+	g_safe_free(sdi->path);
 
-	g_free(sdi->priv);
-	g_free(sdi->vendor);
-	g_free(sdi->model);
-	g_free(sdi->version);
 	g_free(sdi);
 }
-
-#ifdef HAVE_LIBUSB_1_0
 
 /** @private */
 SR_PRIV struct sr_usb_dev_inst *sr_usb_dev_inst_new(uint8_t bus,
@@ -255,6 +268,7 @@ SR_PRIV struct sr_usb_dev_inst *sr_usb_dev_inst_new(uint8_t bus,
 	udi->bus = bus;
 	udi->address = address;
 	udi->devhdl = hdl;
+	udi->usb_dev = NULL; 
 
 	return udi;
 }
@@ -266,8 +280,6 @@ SR_PRIV void sr_usb_dev_inst_free(struct sr_usb_dev_inst *usb)
 
 	/* Nothing to do for this device instance type. */
 }
-
-#endif
 
 /**
  * @private
@@ -316,52 +328,28 @@ SR_PRIV void sr_serial_dev_inst_free(struct sr_serial_dev_inst *serial)
 	g_free(serial);
 }
 
-SR_API GSList *sr_dev_list(const struct sr_dev_driver *driver)
+SR_PRIV int sr_enable_device_channel(struct sr_dev_inst *sdi, const struct sr_channel *probe, gboolean enable)
 {
-	if (driver && driver->dev_list)
-		return driver->dev_list();
-	else
-		return NULL;
-}
-
-SR_API const GSList *sr_dev_mode_list(const struct sr_dev_inst *sdi)
-{
-    if (sdi && sdi->driver && sdi->driver->dev_mode_list)
-        return sdi->driver->dev_mode_list(sdi);
-    else
-        return NULL;
-}
-
-SR_API int sr_dev_clear(const struct sr_dev_driver *driver)
-{
-	if (driver && driver->dev_clear)
-		return driver->dev_clear();
-	else
-		return SR_OK;
-}
-
-SR_API int sr_dev_open(struct sr_dev_inst *sdi)
-{
+	GSList *l;
 	int ret;
+	struct sr_channel *ch;	
 
-	if (!sdi || !sdi->driver || !sdi->driver->dev_open)
-		return SR_ERR;
+	if (sdi == NULL || probe == NULL){
+		return SR_ERR_ARG;
+	}
 
-	ret = sdi->driver->dev_open(sdi);
+	ret = SR_ERR_CALL_STATUS;
+	for (l=sdi->channels; l; l = l->next){
+		if (l->data == probe){
+			ch = l->data;
+			ch->enabled = enable;
+			ret = SR_OK;
+			break;
+		}
+	}
 
 	return ret;
 }
-
-SR_API int sr_dev_close(struct sr_dev_inst *sdi)
-{
-	int ret;
  
-	if (!sdi || !sdi->driver || !sdi->driver->dev_close)
-		return SR_ERR;
-
-	ret = sdi->driver->dev_close(sdi);
-
-	return ret;
-}
 
 /** @} */

@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../libsigrok.h"
+ 
 #include "../../libsigrok-internal.h"
 #include "command.h"
 #include "dsl.h"
@@ -27,7 +27,8 @@
 #include <assert.h>
 #include <sys/stat.h>
 
-extern struct ds_trigger *trigger;
+#undef LOG_PREFIX
+#define LOG_PREFIX "dsl: "
 
 static const int32_t probeOptions[] = {
     SR_CONF_PROBE_COUPLING,
@@ -69,11 +70,16 @@ static const char *probe_names[] = {
     "24", "25", "26", "27", "28", "29", "30", "31",
     NULL,
 };
-
-static struct sr_dev_mode mode_list[] = {
-    {LOGIC, "Logic Analyzer", "逻辑分析仪", "la", "la.svg"},
-    {ANALOG, "Data Acquisition", "数据记录仪", "daq", "daq.svg"},
-    {DSO, "Oscilloscope", "示波器", "osc", "osc.svg"},
+ 
+static const gboolean default_ms_en[] = {
+    FALSE, /* DSO_MS_BEGIN */
+    TRUE,  /* DSO_MS_FREQ */
+    FALSE, /* DSO_MS_PERD */
+    TRUE,  /* DSO_MS_VMAX */
+    TRUE,  /* DSO_MS_VMIN */
+    FALSE, /* DSO_MS_VRMS */
+    FALSE, /* DSO_MS_VMEA */
+    FALSE, /* DSO_MS_VP2P */
 };
 
 SR_PRIV void dsl_probe_init(struct sr_dev_inst *sdi)
@@ -187,9 +193,9 @@ SR_PRIV const GSList *dsl_mode_list(const struct sr_dev_inst *sdi)
     unsigned int i;
 
     devc = sdi->priv;
-    for (i = 0; i < ARRAY_SIZE(mode_list); i++) {
+    for (i = 0; i < ARRAY_SIZE(sr_mode_list); i++) {
         if (devc->profile->dev_caps.mode_caps & (1 << i))
-            l = g_slist_append(l, &mode_list[i]);
+            l = g_slist_append(l, &sr_mode_list[i]);
     }
 
     return l;
@@ -250,6 +256,7 @@ SR_PRIV gboolean dsl_check_conf_profile(libusb_device *dev)
 
     hdl = NULL;
     ret = FALSE;
+
     while (!ret) {
         /* Assume the FW has not been loaded, unless proven wrong. */
         if (libusb_get_device_descriptor(dev, &des) != 0)
@@ -282,6 +289,7 @@ SR_PRIV gboolean dsl_check_conf_profile(libusb_device *dev)
 static int hw_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi)
 {
     libusb_device **devlist;
+    libusb_device *dev_handel=NULL;
     struct sr_usb_dev_inst *usb;
     struct libusb_device_descriptor des;
     struct DSL_context *devc;
@@ -294,97 +302,75 @@ static int hw_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi)
     drvc = di->priv;
     devc = sdi->priv;
     usb = sdi->conn;
+  
+    if (usb->usb_dev == NULL){
+        sr_err("%s", "hw_dev_open(), usb->usb_dev is null.");
+        return SR_ERR;
+    }
 
     if (sdi->status == SR_ST_ACTIVE) {
         /* Device is already in use. */
+        sr_detail("The usb device is opened, handle:%p", usb->usb_dev);
+        return SR_OK;
+    }
+
+    if (sdi->status == SR_ST_INITIALIZING) {
+        sr_info("%s", "The device instance is still boosting.");        
+    }
+    dev_handel = usb->usb_dev;
+
+    sr_info("Open usb device instance, handle: %p", dev_handel);
+
+    if (libusb_open(dev_handel, &usb->devhdl) != 0){
+        sr_err("Failed to open device: %s, handle:%p",
+                libusb_error_name(ret), dev_handel);
         return SR_ERR;
     }
 
-    skip = 0;
-    device_count = libusb_get_device_list(drvc->sr_ctx->libusb_ctx, &devlist);
-    if (device_count < 0) {
-        sr_err("Failed to get device list: %s.",
-               libusb_error_name(device_count));
-        return SR_ERR;
-    }
-
-    for (i = 0; i < device_count; i++) {
-        if ((ret = libusb_get_device_descriptor(devlist[i], &des))) {
-            sr_err("Failed to get device descriptor: %s.",
-                   libusb_error_name(ret));
-            continue;
-        }
-
-        if (des.idVendor != devc->profile->vid
-            || des.idProduct != devc->profile->pid)
-            continue;
-
-        if (sdi->status == SR_ST_INITIALIZING) {
-            if (skip != sdi->index) {
-                /* Skip devices of this type that aren't the one we want. */
-                skip += 1;
-                continue;
-            }
-        } else if (sdi->status == SR_ST_INACTIVE) {
-            /*
-             * This device is fully enumerated, so we need to find
-             * this device by vendor, product, bus and address.
-             */
-            if (libusb_get_bus_number(devlist[i]) != usb->bus
-                || libusb_get_device_address(devlist[i]) != usb->address)
-                /* This is not the one. */
-                continue;
-        }
-
-        if (!(ret = libusb_open(devlist[i], &usb->devhdl))) {
-            if (usb->address == 0xff)
-                /*
-                 * First time we touch this device after FW
-                 * upload, so we don't know the address yet.
-                 */
-                usb->address = libusb_get_device_address(devlist[i]);
-        } else {
-            sr_err("Failed to open device: %s.",
-                   libusb_error_name(ret));
-            break;
-        }
-
-        rd_cmd.header.dest = DSL_CTL_FW_VERSION;
-        rd_cmd.header.size = 2;
-        rd_cmd.data = rd_cmd_data;
-        if ((ret = command_ctl_rd(usb->devhdl, rd_cmd)) != SR_OK) {
-            sr_err("Failed to get firmware version.");
-            break;
-        }
-        vi.major = rd_cmd_data[0];
-        vi.minor = rd_cmd_data[1];
-
+    if (usb->address == 0xff){
         /*
-         * Different versions may have incompatible issue,
-         * Mark for up level process
-         */
-        if (vi.major != DSL_REQUIRED_VERSION_MAJOR) {
-            sr_err("Expected firmware version %d.%d, "
-                   "got %d.%d.", DSL_REQUIRED_VERSION_MAJOR, DSL_REQUIRED_VERSION_MINOR,
-                   vi.major, vi.minor);
-            sdi->status = SR_ST_INCOMPATIBLE;
-        } else {
-            sdi->status = SR_ST_ACTIVE;
-        }
+        * First time we touch this device after FW
+        * upload, so we don't know the address yet.
+        */
+        usb->address = libusb_get_device_address(dev_handel);
+    }
 
-        sr_info("Opened device %d on %d.%d, "
+    rd_cmd.header.dest = DSL_CTL_FW_VERSION;
+    rd_cmd.header.size = 2;
+    rd_cmd.data = rd_cmd_data;
+
+    if ((ret = command_ctl_rd(usb->devhdl, rd_cmd)) != SR_OK) {
+        sr_err("Failed to get firmware version.");
+        return ret;
+    }
+
+    vi.major = rd_cmd_data[0];
+    vi.minor = rd_cmd_data[1];
+
+    /*
+     * Different versions may have incompatible issue,
+     * Mark for up level process.
+    */
+    if (vi.major != DSL_REQUIRED_VERSION_MAJOR) {
+        sr_err("Expected firmware version %d.%d, "
+                "got %d.%d.", DSL_REQUIRED_VERSION_MAJOR, DSL_REQUIRED_VERSION_MINOR,
+                vi.major, vi.minor);
+        sdi->status = SR_ST_INCOMPATIBLE;
+    }
+    else {
+        sdi->status = SR_ST_ACTIVE;
+    }
+
+    sr_info("Opened device %p on %d.%d, "
             "interface %d, firmware %d.%d.",
-            sdi->index, usb->bus, usb->address,
+            usb->usb_dev, usb->bus, usb->address,
             USB_INTERFACE, vi.major, vi.minor);
 
-        break;
-    }
-    libusb_free_device_list(devlist, 1);
-
     if ((sdi->status != SR_ST_ACTIVE) &&
-        (sdi->status != SR_ST_INCOMPATIBLE))
+        (sdi->status != SR_ST_INCOMPATIBLE)){
         return SR_ERR;
-
+    }
+    
     return SR_OK;
 }
 
@@ -1048,6 +1034,12 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
     setting_ext32.align_bytes = 0xffff;
     setting_ext32.end_sync = 0xfa5afa5a;
 
+    if (trigger == NULL)
+    {
+        sr_err("%s", "Trigger have'nt inited.");
+        return SR_ERR_CALL_STATUS;
+    }
+
     // basic configuration
     setting.mode = (trigger->trigger_en << TRIG_EN_BIT) +
                    (devc->clock_type << CLK_TYPE_BIT) +
@@ -1296,7 +1288,7 @@ SR_PRIV int dsl_fpga_config(struct libusb_device_handle *hdl, const char *filena
     uint8_t rd_cmd_data;
 	struct stat f_stat;
 
-    sr_info("Configure FPGA using %s", filename);
+    sr_info("Configure FPGA using \"%s\"", filename);
     if ((fw = fopen(filename, "rb")) == NULL) {
         sr_err("Unable to open FPGA bit file %s for reading: %s",
                filename, strerror(errno));
@@ -1823,15 +1815,17 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
 
     devc = sdi->priv;
     usb = sdi->conn;
-
+ 
     /*
      * If the firmware was recently uploaded, no dev_open operation should be called.
      * Just wait for renumerate -> detach -> attach
      */
     ret = SR_ERR;
     if (devc->fw_updated > 0) {
+        sr_info("%s: Firmware upload have done.");
         return SR_ERR;
-    } else {
+    }
+    else {
         sr_info("%s: Firmware upload was not needed.", __func__);
         ret = hw_dev_open(di, sdi);
     }
@@ -1840,6 +1834,8 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
         sr_err("%s: Unable to open device.", __func__);
         return SR_ERR;
     }
+
+    assert(usb->devhdl);
   
     ret = libusb_claim_interface(usb->devhdl, USB_INTERFACE);
     if (ret != 0) {
@@ -1878,6 +1874,7 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
     rd_cmd.header.size = 1;
     hw_info = 0;
     rd_cmd.data = &hw_info;
+
     if ((ret = command_ctl_rd(usb->devhdl, rd_cmd)) != SR_OK) {
         sr_err("Failed to get hardware infos.");
         return SR_ERR;
@@ -1887,11 +1884,12 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
     if (sdi->status == SR_ST_ACTIVE) {
         if (!(*fpga_done)) {
             char *fpga_bit;
-            if (!(fpga_bit = g_try_malloc(strlen(DS_RES_PATH)+strlen(devc->profile->fpga_bit33)+1))) {
+            char *res_path = DS_RES_PATH;
+            if (!(fpga_bit = g_try_malloc(strlen(res_path)+strlen(devc->profile->fpga_bit33)+1))) {
                 sr_err("fpag_bit path malloc error!");
                 return SR_ERR_MALLOC;
             }
-            strcpy(fpga_bit, DS_RES_PATH);
+            strcpy(fpga_bit, res_path);
             switch(devc->th_level) {
             case SR_TH_3V3:
                 strcat(fpga_bit, devc->profile->fpga_bit33);
@@ -1929,11 +1927,14 @@ SR_PRIV int dsl_dev_close(struct sr_dev_inst *sdi)
     struct sr_usb_dev_inst *usb;
 
     usb = sdi->conn;
-    if (usb->devhdl == NULL)
+    if (usb->devhdl == NULL){
+        sr_detail("%s", "dsl_dev_close(),libusb_device_handle is null.");
         return SR_ERR;
+    }
 
     sr_info("%s: Closing device %d on %d.%d interface %d.",
         sdi->driver->name, sdi->index, usb->bus, usb->address, USB_INTERFACE);
+    
     libusb_release_interface(usb->devhdl, USB_INTERFACE);
     libusb_close(usb->devhdl);
     usb->devhdl = NULL;
@@ -2092,7 +2093,7 @@ static void finish_acquisition(struct DSL_context *devc)
     /* Terminate session. */
     packet.type = SR_DF_END;
     packet.status = SR_PKT_OK;
-    sr_session_send(devc->cb_data, &packet);
+    ds_data_forward(devc->cb_data, &packet);
 
     if (devc->num_transfers != 0) {
         devc->num_transfers = 0;
@@ -2245,7 +2246,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
     if (devc->abort)
         devc->status = DSL_STOP;
 
-    sr_info("%llu: receive_transfer(): status %d; timeout %d; received %d bytes.",
+    sr_detail("%llu: receive_transfer(): status %d; timeout %d; received %d bytes.",
         g_get_monotonic_time(), transfer->status, transfer->timeout, transfer->actual_length);
 
     switch (transfer->status) {
@@ -2320,7 +2321,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
 
             /* send data to session bus */
             if (packet.status == SR_PKT_OK)
-                sr_session_send(sdi, &packet);
+                ds_data_forward(sdi, &packet);
         }
 
         devc->num_samples += cur_sample_count;
@@ -2384,7 +2385,7 @@ static void receive_header(struct libusb_transfer *transfer)
 
                 packet.type = SR_DF_TRIGGER;
                 packet.payload = trigger_pos;
-                sr_session_send(sdi, &packet);
+                ds_data_forward(sdi, &packet);
 
                 devc->status = DSL_DATA;
             }
@@ -2394,7 +2395,7 @@ static void receive_header(struct libusb_transfer *transfer)
         packet.type = SR_DF_TRIGGER;
         packet.payload = trigger_pos;
         packet.status = SR_PKT_DATA_ERROR;
-        sr_session_send(sdi, &packet);
+        ds_data_forward(sdi, &packet);
     }
 
     free_transfer(transfer);
@@ -2470,4 +2471,26 @@ SR_PRIV int dsl_start_transfers(const struct sr_dev_inst *sdi)
     }
 
     return SR_OK;
+}
+
+
+SR_PRIV int dsl_destroy_device(const struct sr_dev_inst *sdi)
+{ 
+    assert(sdi);
+
+    struct sr_dev_driver *driver;
+    driver = sdi->driver;
+
+    if (driver->dev_close){
+		driver->dev_close(sdi);
+    }
+
+    if (sdi->conn) {
+        if (sdi->dev_type == DEV_TYPE_USB)
+            sr_usb_dev_inst_free(sdi->conn);
+        else if (sdi->dev_type == DEV_TYPE_SERIAL)
+            sr_serial_dev_inst_free(sdi->conn);
+    }
+
+    sr_dev_inst_free(sdi);
 }

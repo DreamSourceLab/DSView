@@ -23,7 +23,7 @@
 #ifndef DSVIEW_PV_PROTOCOLDOCK_H
 #define DSVIEW_PV_PROTOCOLDOCK_H
 
-#include "libsigrokdecode.h"
+#include <libsigrokdecode.h>
 
 #include <QDockWidget>
 #include <QPushButton>
@@ -44,7 +44,7 @@
 #include "../data/decodermodel.h"
 #include "protocolitemlayer.h"
 #include "keywordlineedit.h"
-#include "searchcombobox.h"
+#include "searchcombobox.h" 
 
 struct DecoderInfoItem{
     void  *_data_handle; //srd_decoder* type
@@ -88,13 +88,14 @@ private:
     void changeEvent(QEvent *event);
     void retranslateUi();
     void reStyle();
-
-protected:    
     int get_protocol_index_by_id(QString id);
     static QString parse_protocol_id(const char *id);
     int get_output_protocol_by_id(QString id);
 
-private:
+    static int decoder_name_cmp(const void *a, const void *b);
+    void resize_table_view(data::DecoderModel *decoder_model);
+    static bool protocol_sort_callback(const DecoderInfoItem *o1, const DecoderInfoItem *o2);
+
     //IProtocolItemLayerCallback
     void OnProtocolSetting(void *handle);
     void OnProtocolDelete(void *handle);
@@ -104,7 +105,7 @@ private:
     void BeginEditKeyword(); 
 
     //ISearchItemClick
-    void OnItemClick(void *sender, void *data_handle);
+    void OnItemClick(void *sender, void *data_handle); 
 
 signals:
     void protocol_updated();
@@ -127,11 +128,6 @@ private slots:
     void search_changed();
     void search_update();
     void show_protocol_select();
-  
-private: 
-    static int decoder_name_cmp(const void *a, const void *b);
-    void resize_table_view(data::DecoderModel *decoder_model);
-    static bool protocol_sort_callback(const DecoderInfoItem *o1, const DecoderInfoItem *o2);
 
 private:
     SigSession *_session;

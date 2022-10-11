@@ -41,7 +41,7 @@
 
 #include <vector>
 
-#include "../ui/dscombobox.h"
+#include "../ui/dscombobox.h" 
 
 namespace pv {
 
@@ -76,8 +76,6 @@ private:
 private:
     DsComboBox* create_probe_selector(QWidget *parent);
     void update_probe_selector(DsComboBox *selector);
-
-signals:
 
 private slots:
     void goto_cursor();

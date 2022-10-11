@@ -21,7 +21,7 @@
 #ifndef LIBSIGROK_TESTS_LIB_H
 #define LIBSIGROK_TESTS_LIB_H
 
-#include "../libsigrok.h"
+#include <libsigrok.h>
 
 struct sr_dev_driver *srtest_driver_get(const char *drivername);
 void srtest_driver_init(struct sr_context *sr_ctx, struct sr_dev_driver *driver);

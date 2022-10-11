@@ -24,7 +24,6 @@
 #include "../sigsession.h"
 #include "../view/cursor.h"
 #include "../view/view.h"
-#include "../device/devinst.h"
 
 using namespace boost;
 using namespace std;
@@ -73,7 +72,7 @@ RegionOptions::RegionOptions(view::View *view, SigSession *session, QWidget *par
     setTitle(tr("Region"));
 
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(set_region()));
-    connect(_session->get_device(), SIGNAL(device_updated()), this, SLOT(reject()));
+    connect(_session->device_event_object(), SIGNAL(device_updated()), this, SLOT(reject()));
 
 }
 

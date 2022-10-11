@@ -28,7 +28,6 @@
 #include "../data/mathstack.h"
 #include "view.h"
 #include "../sigsession.h"
-#include "../device/devinst.h"
 #include "../view/dsosignal.h"
 #include "../dsvdef.h"
   
@@ -104,12 +103,12 @@ void MathTrace::update_vDial()
 void MathTrace::go_vDialPre()
 {
     if (enabled() && !_vDial->isMin()) {
-        if (_view->session().get_capture_state() == SigSession::Running)
+        if (_view->session().is_running_status())
             _view->session().refresh(DsoSignal::RefreshShort);
         const double pre_vdiv = _vDial->get_value();
         _vDial->set_sel(_vDial->get_sel() - 1);
 
-        if (_view->session().get_capture_state() == SigSession::Stopped)
+        if (_view->session().is_stopped_status())
             _scale *= pre_vdiv/_vDial->get_value();
 
         _view->set_update(_viewport, true);
@@ -120,12 +119,12 @@ void MathTrace::go_vDialPre()
 void MathTrace::go_vDialNext()
 {
     if (enabled() && !_vDial->isMax()) {
-        if (_view->session().get_capture_state() == SigSession::Running)
+        if (_view->session().is_running_status())
             _view->session().refresh(DsoSignal::RefreshShort);
         const double pre_vdiv = _vDial->get_value();
         _vDial->set_sel(_vDial->get_sel() + 1);
 
-        if (_view->session().get_capture_state() == SigSession::Stopped)
+        if (_view->session().is_stopped_status())
             _scale *= pre_vdiv/_vDial->get_value();
 
         _view->set_update(_viewport, true);
@@ -255,7 +254,7 @@ void MathTrace::paint_fore(QPainter &p, int left, int right, QColor fore, QColor
 
     // Paint measure
     fore.setAlpha(View::ForeAlpha);
-    if (_view->session().get_capture_state() == SigSession::Stopped)
+    if (_view->session().is_stopped_status())
         paint_hover_measure(p, fore, back);
 }
 

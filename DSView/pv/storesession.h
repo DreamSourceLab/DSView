@@ -27,7 +27,7 @@
 #include <string>
 #include <thread>  
 #include <QObject>
-#include "libsigrok.h"
+#include <libsigrok.h> 
 
 #include "interface/icallbacks.h"
 
@@ -80,7 +80,7 @@ private:
 
 public:    
     bool json_decoders(QJsonArray &array);
-    bool load_decoders(dock::ProtocolDock *widget, QJsonArray dec_array);
+    bool load_decoders(dock::ProtocolDock *widget, QJsonArray &dec_array);
     QString MakeSaveFile(bool bDlg);
     QString MakeExportFile(bool bDlg);
 

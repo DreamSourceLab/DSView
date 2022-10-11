@@ -33,7 +33,7 @@
 #include "pv/config/appconfig.h"
 #include "config.h"
 #include "pv/appcontrol.h"
-#include "pv/log.h"
+#include "pv/log.h" 
 
 #ifdef _WIN32
 #include <windows.h>
@@ -49,14 +49,14 @@ void usage()
 		"Help Options:\n"
 		"  -l, --loglevel                  Set log level, value between 0 to 5\n"
 		"  -v, -V, --version               Show release version\n"
-		"  -s, --storelog                  save log to locale file\n"
+		"  -s, --storelog                  Save log to locale file\n"
 		"  -h, -?, --help                  Show help option\n"
 		"\n", DS_BIN_NAME, DS_DESCRIPTION);
 } 
- 
 
 int main(int argc, char *argv[])
 {   
+	//return main2();
 	int ret = 0; 
 	const char *open_file = NULL;
 	int logLevel = -1;
@@ -208,7 +208,7 @@ bool bHighScale = true;
 	//----------------------run
 	dsv_info("----------------- version: %s-----------------", DS_VERSION_STRING);
 	dsv_info("Qt:%s", QT_VERSION_STR);
-
+ 
 	//init core
 	if (!control->Init()){ 
 		dsv_err("%s", "init error!");
@@ -222,8 +222,8 @@ bool bHighScale = true;
 
 	try
 	{   
+		pv::MainFrame w;
 		control->Start();
-        pv::MainFrame w; //Initialise the main frame
 		w.show(); 
 		w.readSettings();
 		w.show_doc();  //to show the dailog for open help document

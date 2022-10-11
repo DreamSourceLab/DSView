@@ -28,30 +28,32 @@
 #include <boost/optional.hpp>
 
 #include <QString>
+#include <libsigrok.h> 
+#include "binding.h" 
 
-#include "libsigrok.h"
-#include "binding.h"
+class DeviceAgent;
 
 namespace pv {
+
 namespace prop {
 namespace binding {
 
 class DeviceOptions : public Binding
 {
 public:
-	DeviceOptions(struct sr_dev_inst *sdi);
+	DeviceOptions();
 
 private:
 
-	static GVariant* config_getter(
-		const struct sr_dev_inst *sdi, int key);
-	static void config_setter(
-        struct sr_dev_inst *sdi, int key, GVariant* value);
+	static GVariant* config_getter(int key);
+
+	static void config_setter(int key, GVariant* value);
 
     void bind_bool(const QString &name, const QString label, int key);
-    void bind_enum(const QString &name, const QString label, int key,
-		GVariant *const gvar_list,
+
+    void bind_enum(const QString &name, const QString label, int key, GVariant *const gvar_list,
 		boost::function<QString (GVariant*)> printer = print_gvariant);
+
     void bind_int(const QString &name, const QString label, int key, QString suffix,
 		boost::optional< std::pair<int64_t, int64_t> > range);
 
@@ -61,23 +63,24 @@ private:
 
 	static QString print_gvariant(GVariant *const gvar);
 
-    void bind_samplerate(const QString &name, const QString label,
-		GVariant *const gvar_list);
+    void bind_samplerate(const QString &name, const QString label,GVariant *const gvar_list);
+
 	static QString print_samplerate(GVariant *const gvar);
-	static GVariant* samplerate_double_getter(
-		const struct sr_dev_inst *sdi);
-	static void samplerate_double_setter(
-		struct sr_dev_inst *sdi, GVariant *value);
+
+	static GVariant* samplerate_double_getter();
+
+	static void samplerate_double_setter(GVariant *value);
 
 	static QString print_timebase(GVariant *const gvar);
+
 	static QString print_vdiv(GVariant *const gvar);
 
-    void bind_bandwidths(const QString &name, const QString label, int key,
-        GVariant *const gvar_list,
+    void bind_bandwidths(const QString &name, const QString label, int key,GVariant *const gvar_list,
         boost::function<QString (GVariant*)> printer = print_gvariant);
 
-protected:
-	struct sr_dev_inst *const _sdi;
+private:
+	DeviceAgent *_device_agent;
+ 
 };
 
 } // binding

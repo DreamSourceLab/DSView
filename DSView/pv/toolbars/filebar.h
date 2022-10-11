@@ -28,7 +28,7 @@
 #include <QAction>
 #include <QMenu>
 
-#include "../sigsession.h"
+#include "../sigsession.h" 
 
 namespace pv {
 namespace toolbars {
@@ -42,19 +42,12 @@ class FileBar : public QToolBar
 public:
     explicit FileBar(SigSession *session, QWidget *parent = 0);
 
-    void enable_toggle(bool enable);
-
-    void set_settings_en(bool enable);
+    void update_view_status();
 
 private:
     void changeEvent(QEvent *event);
     void retranslateUi();
-    void reStyle();
-
-    void session_error(
-        const QString text, const QString info_text);
-    void show_session_error(
-        const QString text, const QString info_text);
+    void reStyle(); 
 
 signals:
     void sig_load_file(QString); 
@@ -72,18 +65,14 @@ private slots:
     void on_actionCapture_triggered();
 
 private:
-    bool _enable;
     SigSession* _session;
 
     QToolButton _file_button;
-
-    QMenu *_menu;
-
-    QMenu *_menu_session; //when the hardware device is connected,it will be enable
+    QMenu   *_menu;
+    QMenu   *_menu_session; //when the hardware device is connected,it will be enable
     QAction *_action_load;
     QAction *_action_store;
     QAction *_action_default;
-
     QAction *_action_open;
     QAction *_action_save;
     QAction *_action_export;

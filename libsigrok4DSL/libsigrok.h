@@ -21,12 +21,11 @@
 #define LIBSIGROK_SIGROK_H
 
 #include <sys/time.h>
-
 #include <stdio.h>
-#include <sys/time.h>
 #include <stdint.h>
 #include <inttypes.h>
-#include <glib.h> 
+#include <glib.h>  
+#include <log/xlog.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -64,22 +63,43 @@ extern "C" {
  * return codes, but never remove or redefine existing ones.
  */
 
+#define SR_LIB_NAME		"libsigrok"
+
 /** Status/error codes returned by libsigrok functions. */
 enum {
 	SR_OK             =  0, /**< No error. */
-	SR_ERR            = -1, /**< Generic/unspecified error. */
-	SR_ERR_MALLOC     = -2, /**< Malloc/calloc/realloc error. */
-	SR_ERR_ARG        = -3, /**< Function argument error. */
-	SR_ERR_BUG        = -4, /**< Errors hinting at internal bugs. */
-	SR_ERR_SAMPLERATE = -5, /**< Incorrect samplerate. */
-	SR_ERR_NA         = -6, /**< Not applicable. */
-	SR_ERR_DEV_CLOSED = -7, /**< Device is closed, but needs to be open. */
+	SR_ERR            =  1, /**< Generic/unspecified error. */
+	SR_ERR_MALLOC     =  2, /**< Malloc/calloc/realloc error. */
+	SR_ERR_ARG        =  3, /**< Function argument error. */
+	SR_ERR_BUG        =  4, /**< Errors hinting at internal bugs. */
+	SR_ERR_SAMPLERATE =  5, /**< Incorrect samplerate. */
+	SR_ERR_NA         =  6, /**< Not applicable. */
+	SR_ERR_DEV_CLOSED =  7, /**< Device is closed, but needs to be open. */
+	SR_ERR_CALL_STATUS = 8, /**< Function call status error. */
+	SR_ERR_HAVE_DONE  = 9, /**< The Function have called.*/
 
 	/*
 	 * Note: When adding entries here, don't forget to also update the
-	 * sr_strerror() and sr_strerror_name() functions in error.c.
+	 * sr_error_str() and sr_error_name() functions in error.c.
 	 */
 };
+
+#define SR_MAX_PROBENAME_LEN 32
+#define DS_MAX_ANALOG_PROBES_NUM 4
+#define DS_MAX_DSO_PROBES_NUM 2
+
+#define TriggerStages 16
+#define TriggerProbes 16
+#define MaxTriggerProbes 32
+#define TriggerCountBits 16
+#define STriggerDataStage 3
+#define DS_MAX_TRIG_PERCENT 90
+
+#define DS_CONF_DSO_HDIVS 10
+#define DS_CONF_DSO_VDIVS 10
+
+#define SAMPLES_ALIGN 1023ULL
+
 
 /* Handy little macros */
 #define SR_HZ(n)  (n)
@@ -111,28 +131,7 @@ enum {
 #define SR_V(n)  ((n) * (uint64_t)(1000ULL))
 #define SR_KV(n) ((n) * (uint64_t)(1000000ULL))
 #define SR_MV(n) ((n) * (uint64_t)(1000000000ULL))
-
-#define SR_MAX_PROBENAME_LEN 32
-#define DS_MAX_ANALOG_PROBES_NUM 4
-#define DS_MAX_DSO_PROBES_NUM 2
-#define TriggerStages 16
-#define TriggerProbes 16
-#define MaxTriggerProbes 32
-#define TriggerCountBits 16
-#define STriggerDataStage 3
-
-#define DS_CONF_DSO_HDIVS 10
-#define DS_CONF_DSO_VDIVS 10
-
-#define DS_MAX_TRIG_PERCENT 90
-
-#define SAMPLES_ALIGN 1023ULL
-/*
- * Oscilloscope
- */
-#define MAX_TIMEBASE SR_SEC(10)
-#define MIN_TIMEBASE SR_NS(10)
-
+ 
 /*
  * Use SR_API to mark public API symbols, and SR_PRIV for private symbols.
  *
@@ -163,11 +162,13 @@ enum {
 #define SR_PRIV
 #endif
 
-
-#define USB_EV_HOTPLUG_UNKNOW		0
-#define USB_EV_HOTPLUG_ATTACH		1
-#define USB_EV_HOTPLUG_DETTACH		2
-
+enum sr_device_type{
+	DEV_TYPE_UNKOWN = 0,
+	DEV_TYPE_DEMO = 1,
+	DEV_TYPE_FILELOG = 2,
+	DEV_TYPE_USB = 3,
+	DEV_TYPE_SERIAL = 4,
+};
   
 /** Data types used by sr_config_info(). */
 enum {
@@ -182,7 +183,7 @@ enum {
 };
 
 /** Value for sr_datafeed_packet.type. */
-enum {
+enum sr_datafeed_packet_type {
 	SR_DF_HEADER = 10000,
 	SR_DF_END,
 	SR_DF_META,
@@ -334,9 +335,11 @@ enum {
 };
 
 struct sr_context; //hidden all field
+struct sr_dev_inst;
+struct sr_dev_driver;
 
 struct sr_datafeed_packet {
-	uint16_t type;
+	uint16_t type; //see enum sr_datafeed_packet_type
     uint16_t status;
 	const void *payload;
 	int bExportOriginalData;
@@ -618,10 +621,11 @@ enum CHANNEL_TYPE {
     SR_CHANNEL_MATH,
 };
 
-enum OPERATION_MODE {
+enum OPERATION_MODE {	
     LOGIC = 0,
     DSO = 1,
     ANALOG = 2,
+	UNKNOWN_DSL_MODE = 99,
 };
 
 struct sr_channel {
@@ -740,29 +744,29 @@ struct sr_status {
     uint32_t ch1_acc_mean_p3;
 };
 
-enum {
+enum sr_config_option_id{
 	/*--- Device classes ------------------------------------------------*/
 
 	/** The device can act as logic analyzer. */
 	SR_CONF_LOGIC_ANALYZER = 10000,
 
 	/** The device can act as an oscilloscope. */
-	SR_CONF_OSCILLOSCOPE,
+	SR_CONF_OSCILLOSCOPE = 10001,
 
 	/** The device can act as a multimeter. */
-	SR_CONF_MULTIMETER,
+	SR_CONF_MULTIMETER	= 10002,
 
 	/** The device is a demo device. */
-	SR_CONF_DEMO_DEV,
+	SR_CONF_DEMO_DEV = 10003,
 
 	/** The device can act as a sound level meter. */
-	SR_CONF_SOUNDLEVELMETER,
+	SR_CONF_SOUNDLEVELMETER = 10004,
 
 	/** The device can measure temperature. */
-	SR_CONF_THERMOMETER,
+	SR_CONF_THERMOMETER = 10005,
 
 	/** The device can measure humidity. */
-	SR_CONF_HYGROMETER,
+	SR_CONF_HYGROMETER = 10006,
 
 	/*--- Driver scan options -------------------------------------------*/
 
@@ -797,7 +801,7 @@ enum {
 	 * This is always an optional parameter, since a driver typically
 	 * knows the speed at which the device wants to communicate.
 	 */
-	SR_CONF_SERIALCOMM,
+	SR_CONF_SERIALCOMM = 20001,
 
 	/*--- Device configuration ------------------------------------------*/
 
@@ -805,222 +809,216 @@ enum {
 	SR_CONF_SAMPLERATE = 30000,
 
 	/** The device supports setting a pre/post-trigger capture ratio. */
-	SR_CONF_CAPTURE_RATIO,
+	SR_CONF_CAPTURE_RATIO = 30001,
 
     /** */
-    SR_CONF_USB_SPEED,
-    SR_CONF_USB30_SUPPORT,
-    SR_CONF_DEVICE_MODE,
-    SR_CONF_INSTANT,
-    SR_CONF_STATUS,
+    SR_CONF_USB_SPEED = 30002,
+    SR_CONF_USB30_SUPPORT = 30003,
+    SR_CONF_DEVICE_MODE = 30004,
+    SR_CONF_INSTANT = 30005,
+    SR_CONF_STATUS = 30006,
 
 	/** The device supports setting a pattern (pattern generator mode). */
-	SR_CONF_PATTERN_MODE,
+	SR_CONF_PATTERN_MODE = 30007,
 
 	/** The device supports Run Length Encoding. */
-	SR_CONF_RLE,
+	SR_CONF_RLE = 30008,
 
     /** Need wait to uplad captured data */
-    SR_CONF_WAIT_UPLOAD,
+    SR_CONF_WAIT_UPLOAD = 30009,
 
 	/** The device supports setting trigger slope. */
-	SR_CONF_TRIGGER_SLOPE,
+	SR_CONF_TRIGGER_SLOPE = 30010,
 
 	/** Trigger source. */
-	SR_CONF_TRIGGER_SOURCE,
+	SR_CONF_TRIGGER_SOURCE = 30011,
 
     /** Trigger channel */
-    SR_CONF_TRIGGER_CHANNEL,
+    SR_CONF_TRIGGER_CHANNEL = 30012,
 
     /** Trigger Value. */
-    SR_CONF_TRIGGER_VALUE,
+    SR_CONF_TRIGGER_VALUE = 30013,
 
 	/** Horizontal trigger position. */
-	SR_CONF_HORIZ_TRIGGERPOS,
+	SR_CONF_HORIZ_TRIGGERPOS = 30014,
 
     /** Trigger hold off time */
-    SR_CONF_TRIGGER_HOLDOFF,
+    SR_CONF_TRIGGER_HOLDOFF = 30015,
 
     /** Trigger Margin */
-    SR_CONF_TRIGGER_MARGIN,
+    SR_CONF_TRIGGER_MARGIN = 30016,
 
 	/** Buffer size. */
-	SR_CONF_BUFFERSIZE,
+	SR_CONF_BUFFERSIZE = 30017,
 
 	/** Time base. */
-    SR_CONF_MAX_TIMEBASE,
-    SR_CONF_MIN_TIMEBASE,
-	SR_CONF_TIMEBASE,
+    SR_CONF_MAX_TIMEBASE = 30018,
+    SR_CONF_MIN_TIMEBASE = 30019,
+	SR_CONF_TIMEBASE = 30020,
 
 	/** Filter. */
-	SR_CONF_FILTER,
+	SR_CONF_FILTER = 30021,
 
     /** DSO configure sync */
-    SR_CONF_DSO_SYNC,
+    SR_CONF_DSO_SYNC = 30022,
 
     /** How many bits for each sample */
-    SR_CONF_UNIT_BITS,
-    SR_CONF_REF_MIN,
-    SR_CONF_REF_MAX,
+    SR_CONF_UNIT_BITS = 30023,
+    SR_CONF_REF_MIN = 30024,
+    SR_CONF_REF_MAX = 30025,
 
     /** Valid channel number */
-    SR_CONF_TOTAL_CH_NUM,
+    SR_CONF_TOTAL_CH_NUM = 30026,
 
     /** Valid channel number */
-    SR_CONF_VLD_CH_NUM,
+    SR_CONF_VLD_CH_NUM = 30027,
 
     /** 32 channel support */
-    SR_CONF_LA_CH32,
+    SR_CONF_LA_CH32 = 30028,
 
     /** Zero */
-    SR_CONF_HAVE_ZERO,
-    SR_CONF_ZERO,
-    SR_CONF_ZERO_SET,
-    SR_CONF_ZERO_LOAD,
-    SR_CONF_ZERO_DEFAULT,
-    SR_CONF_ZERO_COMB_FGAIN,
-    SR_CONF_ZERO_COMB,
-    SR_CONF_VOCM,
-    SR_CONF_CALI,
+    SR_CONF_HAVE_ZERO = 30029,
+    SR_CONF_ZERO = 30030,
+    SR_CONF_ZERO_SET = 30031,
+    SR_CONF_ZERO_LOAD = 30032,
+    SR_CONF_ZERO_DEFAULT = 30033,
+    SR_CONF_ZERO_COMB_FGAIN = 30034,
+    SR_CONF_ZERO_COMB = 30035,
+    SR_CONF_VOCM = 30036,
+    SR_CONF_CALI = 30037,
 
     /** status for dso channel */
-    SR_CONF_STATUS_PERIOD,
-    SR_CONF_STATUS_PCNT,
-    SR_CONF_STATUS_MAX,
-    SR_CONF_STATUS_MIN,
-    SR_CONF_STATUS_PLEN,
-    SR_CONF_STATUS_LLEN,
-    SR_CONF_STATUS_LEVEL,
-    SR_CONF_STATUS_PLEVEL,
-    SR_CONF_STATUS_LOW,
-    SR_CONF_STATUS_HIGH,
-    SR_CONF_STATUS_RLEN,
-    SR_CONF_STATUS_FLEN,
-    SR_CONF_STATUS_RMS,
-    SR_CONF_STATUS_MEAN,
+    SR_CONF_STATUS_PERIOD = 30038,
+    SR_CONF_STATUS_PCNT = 30039,
+    SR_CONF_STATUS_MAX = 30040,
+    SR_CONF_STATUS_MIN = 30041,
+    SR_CONF_STATUS_PLEN = 30042,
+    SR_CONF_STATUS_LLEN = 30043,
+    SR_CONF_STATUS_LEVEL = 30044,
+    SR_CONF_STATUS_PLEVEL = 30045,
+    SR_CONF_STATUS_LOW = 30046,
+    SR_CONF_STATUS_HIGH = 30047,
+    SR_CONF_STATUS_RLEN = 30048,
+    SR_CONF_STATUS_FLEN = 30049,
+    SR_CONF_STATUS_RMS = 30050,
+    SR_CONF_STATUS_MEAN = 30051,
 
     /** Stream */
-    SR_CONF_STREAM,
+    SR_CONF_STREAM = 30052,
 
     /** DSO Roll */
-    SR_CONF_ROLL,
+    SR_CONF_ROLL = 30053,
 
     /** Test */
-    SR_CONF_TEST,
-    SR_CONF_EEPROM,
-    SR_CONF_TUNE,
-    SR_CONF_TUNE_SEL,
-    SR_CONF_EXTEND_ID,
-    SR_CONF_EXTEND_DATA,
+    SR_CONF_TEST = 30054,
+    SR_CONF_EEPROM = 30055,
+    SR_CONF_TUNE = 30056,
+    SR_CONF_TUNE_SEL = 30057,
+    SR_CONF_EXTEND_ID = 30058,
+    SR_CONF_EXTEND_DATA = 30059,
 
 	/** The device supports setting its sample interval, in ms. */
-	SR_CONF_SAMPLE_INTERVAL,
+	SR_CONF_SAMPLE_INTERVAL = 30060,
 
 	/** Number of timebases, as related to SR_CONF_TIMEBASE.  */
-	SR_CONF_NUM_TIMEBASE,
+	SR_CONF_NUM_TIMEBASE = 30061,
 
     /** Number of vertical divisions, as related to SR_CONF_PROBE_VDIV.  */
-	SR_CONF_NUM_VDIV,
+	SR_CONF_NUM_VDIV = 30062,
 
     /** clock type (internal/external) */
-    SR_CONF_CLOCK_TYPE,
+    SR_CONF_CLOCK_TYPE = 30063,
 
     /** clock edge (posedge/negedge) */
-    SR_CONF_CLOCK_EDGE,
+    SR_CONF_CLOCK_EDGE = 30064,
 
     /** Device operation mode */
-    SR_CONF_OPERATION_MODE,
+    SR_CONF_OPERATION_MODE = 30065,
 
     /** Device buffer options */
-    SR_CONF_BUFFER_OPTIONS,
+    SR_CONF_BUFFER_OPTIONS = 30066,
 
     /** Device channel mode */
-    SR_CONF_CHANNEL_MODE,
+    SR_CONF_CHANNEL_MODE = 30067,
 
     /** RLE compress support */
-    SR_CONF_RLE_SUPPORT,
+    SR_CONF_RLE_SUPPORT = 30068,
 
     /** Signal max height **/
-    SR_CONF_MAX_HEIGHT,
-    SR_CONF_MAX_HEIGHT_VALUE,
+    SR_CONF_MAX_HEIGHT = 30069,
+    SR_CONF_MAX_HEIGHT_VALUE = 30070,
 
     /** Device sample threshold */
-    SR_CONF_THRESHOLD,
-    SR_CONF_VTH,
+    SR_CONF_THRESHOLD = 30071,
+    SR_CONF_VTH = 30072,
 
     /** Hardware capacity **/
-    SR_CONF_MAX_DSO_SAMPLERATE,
-    SR_CONF_MAX_DSO_SAMPLELIMITS,
-    SR_CONF_HW_DEPTH,
+    SR_CONF_MAX_DSO_SAMPLERATE = 30073,
+    SR_CONF_MAX_DSO_SAMPLELIMITS = 30074,
+    SR_CONF_HW_DEPTH = 30075,
 
     /** bandwidth */
-    SR_CONF_BANDWIDTH,
-    SR_CONF_BANDWIDTH_LIMIT,
+    SR_CONF_BANDWIDTH = 30076,
+    SR_CONF_BANDWIDTH_LIMIT = 30077,
 
     /*--- Probe configuration -------------------------------------------*/
     /** Probe options */
-    SR_CONF_PROBE_CONFIGS,
+    SR_CONF_PROBE_CONFIGS = 30078,
 
     /** Probe options */
-    SR_CONF_PROBE_SESSIONS,
+    SR_CONF_PROBE_SESSIONS = 30079,
 
     /** Enable */
-    SR_CONF_PROBE_EN,
+    SR_CONF_PROBE_EN = 30080,
 
     /** Coupling */
-    SR_CONF_PROBE_COUPLING,
+    SR_CONF_PROBE_COUPLING = 30081,
 
     /** Volts/div */
-    SR_CONF_PROBE_VDIV,
+    SR_CONF_PROBE_VDIV = 30082,
 
     /** Factor */
-    SR_CONF_PROBE_FACTOR,
+    SR_CONF_PROBE_FACTOR = 30083,
 
     /** Mapping */
-    SR_CONF_PROBE_MAP_DEFAULT,
-    SR_CONF_PROBE_MAP_UNIT,
-    SR_CONF_PROBE_MAP_MIN,
-    SR_CONF_PROBE_MAP_MAX,
+    SR_CONF_PROBE_MAP_DEFAULT = 30084,
+    SR_CONF_PROBE_MAP_UNIT = 30085,
+    SR_CONF_PROBE_MAP_MIN = 30086,
+    SR_CONF_PROBE_MAP_MAX = 30087,
 
     /** Vertical offset */
-    SR_CONF_PROBE_OFFSET,
-    SR_CONF_PROBE_HW_OFFSET,
-    SR_CONF_PROBE_PREOFF,
-    SR_CONF_PROBE_PREOFF_DEFAULT,
-    SR_CONF_PROBE_PREOFF_MARGIN,
+    SR_CONF_PROBE_OFFSET = 30088,
+    SR_CONF_PROBE_HW_OFFSET = 30089,
+    SR_CONF_PROBE_PREOFF = 30090,
+    SR_CONF_PROBE_PREOFF_DEFAULT = 30091,
+    SR_CONF_PROBE_PREOFF_MARGIN = 30092,
 
     /** VGain */
-    SR_CONF_PROBE_VGAIN,
-    SR_CONF_PROBE_VGAIN_DEFAULT,
-    SR_CONF_PROBE_VGAIN_RANGE,
-    SR_CONF_PROBE_COMB_COMP_EN,
-    SR_CONF_PROBE_COMB_COMP,
+    SR_CONF_PROBE_VGAIN = 30093,
+    SR_CONF_PROBE_VGAIN_DEFAULT = 30094,
+    SR_CONF_PROBE_VGAIN_RANGE = 30095,
+    SR_CONF_PROBE_COMB_COMP_EN = 30096,
+    SR_CONF_PROBE_COMB_COMP = 30097,
 
 	/*--- Special stuff -------------------------------------------------*/
 
 	/** Device options for a particular device. */
-	SR_CONF_DEVICE_OPTIONS,
+	SR_CONF_DEVICE_OPTIONS = 30098,
 
     /** Sessions */
-    SR_CONF_DEVICE_SESSIONS,
-
-	/** Session filename. */
-	SR_CONF_SESSIONFILE,
-
-	/** The device supports specifying a capturefile to inject. */
-	SR_CONF_CAPTUREFILE,
+    SR_CONF_DEVICE_SESSIONS = 30099,
 
     /** Session file version */
-    SR_CONF_FILE_VERSION,
+    SR_CONF_FILE_VERSION = 30102,
 
 	/** The device supports setting the number of probes. */
-	SR_CONF_CAPTURE_NUM_PROBES,
+	SR_CONF_CAPTURE_NUM_PROBES = 30103,
 
     /** The device supports setting the number of data blocks. */
-    SR_CONF_NUM_BLOCKS,
+    SR_CONF_NUM_BLOCKS = 30104,
 
     /** language (string code) **/
-    SR_CONF_LANGUAGE,
+    SR_CONF_LANGUAGE = 30105,
 
 	/*--- Acquisition modes ---------------------------------------------*/
 
@@ -1034,78 +1032,43 @@ enum {
 	 * The device supports setting a sample number limit (how many
 	 * samples should be acquired).
 	 */
-	SR_CONF_LIMIT_SAMPLES,
+	SR_CONF_LIMIT_SAMPLES = 50001,
 
     /**
      * Absolute time record for session driver
      */
-    SR_CONF_TRIGGER_TIME,
+    SR_CONF_TRIGGER_TIME = 50002,
 
     /**
      * Trigger position for session driver
      */
-    SR_CONF_TRIGGER_POS,
+    SR_CONF_TRIGGER_POS = 50003,
 
     /**
      * The actual sample count received
      */
-    SR_CONF_ACTUAL_SAMPLES,
+    SR_CONF_ACTUAL_SAMPLES = 50004,
 
 	/**
 	 * The device supports setting a frame limit (how many
 	 * frames should be acquired).
 	 */
-	SR_CONF_LIMIT_FRAMES,
+	SR_CONF_LIMIT_FRAMES = 50005,
 
 	/**
 	 * The device supports continuous sampling. Neither a time limit
 	 * nor a sample number limit has to be supplied, it will just acquire
 	 * samples continuously, until explicitly stopped by a certain command.
 	 */
-	SR_CONF_CONTINUOUS,
+	SR_CONF_CONTINUOUS = 50006,
 
 	/** The device has internal storage, into which data is logged. This
 	 * starts or stops the internal logging. */
-	SR_CONF_DATALOG,
-};
-
-struct sr_dev_inst {
-    /** Device driver. */
-    struct sr_dev_driver *driver;
-    /** Index of device in driver. */
-    int index;
-    /** Device instance status. SR_ST_NOT_FOUND, etc. */
-    int status;
-    /** Device instance type. SR_INST_USB, etc. */
-    int inst_type;
-    /** Device mode. LA/DAQ/OSC, etc. */
-    int mode;
-    /** Device vendor. */
-    char *vendor;
-    /** Device model. */
-    char *model;
-    /** Device version. */
-    char *version;
-    /** List of channels. */
-    GSList *channels;
-    /** List of sr_channel_group structs */
-    GSList *channel_groups;
-    /** Device instance connection data (used?) */
-    void *conn;
-    /** Device instance private data (used?) */
-    void *priv;
-};
-
-/** Types of device instances (sr_dev_inst). */
-enum {
-	/** Device instance type for USB devices. */
-	SR_INST_USB = 10000,
-	/** Device instance type for serial port devices. */
-	SR_INST_SERIAL,
+	SR_CONF_DATALOG = 50007,
 };
 
 /** Device instance status. */
-enum {
+enum sr_device_status {
 	/** The device instance was not found. */
 	SR_ST_NOT_FOUND = 10000,
 	/** The device instance was found, but is still booting. */
@@ -1168,78 +1131,10 @@ enum {
 
 struct sr_dev_mode {
     int mode;
-    char *name;
-    char *name_cn;
-    char *acronym;
-    char *icon;
+	const char *name;
+    const char *acronym;
 };
-
-struct sr_dev_driver {
-	/* Driver-specific */
-	char *name;
-	char *longname;
-	int api_version;
-	int (*init) (struct sr_context *sr_ctx);
-	int (*cleanup) (void);
-	GSList *(*scan) (GSList *options);
-	GSList *(*dev_list) (void);
-    const GSList *(*dev_mode_list) (const struct sr_dev_inst *sdi);
-    int (*dev_clear) (void);
-
-    int (*config_get) (int id, GVariant **data,
-                       const struct sr_dev_inst *sdi,
-                       const struct sr_channel *ch,
-                       const struct sr_channel_group *cg);
-    int (*config_set) (int id, GVariant *data,
-                       struct sr_dev_inst *sdi,
-                       struct sr_channel *ch,
-                       struct sr_channel_group *cg);
-    int (*config_list) (int info_id, GVariant **data,
-                        const struct sr_dev_inst *sdi,
-                        const struct sr_channel_group *cg);
-
-	/* Device-specific */
-	int (*dev_open) (struct sr_dev_inst *sdi);
-	int (*dev_close) (struct sr_dev_inst *sdi);
-    int (*dev_status_get) (const struct sr_dev_inst *sdi,
-                           struct sr_status *status, gboolean prg);
-    int (*dev_acquisition_start) (struct sr_dev_inst *sdi,
-			void *cb_data);
-    int (*dev_acquisition_stop) (const struct sr_dev_inst *sdi,
-			void *cb_data);
-
-	/* Dynamic */
-	void *priv;
-};
-
-struct sr_session {
-	/** List of struct sr_dev pointers. */
-	GSList *devs;
-	/** List of struct datafeed_callback pointers. */
-	GSList *datafeed_callbacks;
-    gboolean running;
-
-	unsigned int num_sources;
-
-	/*
-	 * Both "sources" and "pollfds" are of the same size and contain pairs
-	 * of descriptor and callback function. We can not embed the GPollFD
-	 * into the source struct since we want to be able to pass the array
-	 * of all poll descriptors to g_poll().
-	 */
-	struct source *sources;
-	GPollFD *pollfds;
-	int source_timeout;
-
-	/*
-	 * These are our synchronization primitives for stopping the session in
-	 * an async fashion. We need to make sure the session is stopped from
-	 * within the session thread itself.
-	 */
-    GMutex stop_mutex;
-	gboolean abort_session;
-};
-
+ 
 enum {
     SIMPLE_TRIGGER = 0,
     ADV_TRIGGER,
@@ -1258,20 +1153,6 @@ enum {
     DSO_TRIGGER_FALLING,
 };
 
-struct ds_trigger {
-    uint16_t trigger_en;
-    uint16_t trigger_mode;
-    uint16_t trigger_pos;
-    uint16_t trigger_stages;
-    unsigned char trigger_logic[TriggerStages+1];
-    unsigned char trigger0_inv[TriggerStages+1];
-    unsigned char trigger1_inv[TriggerStages+1];
-    char trigger0[TriggerStages+1][MaxTriggerProbes];
-    char trigger1[TriggerStages+1][MaxTriggerProbes];
-    uint32_t trigger0_count[TriggerStages+1];
-    uint32_t trigger1_count[TriggerStages+1];
-};
-
 struct ds_trigger_pos {
     uint32_t check_id;
     uint32_t real_pos;
@@ -1280,11 +1161,300 @@ struct ds_trigger_pos {
     uint32_t remain_cnt_h;
     uint32_t status;
 };
+  
+/**
+ * @file
+ *
+ * Header file containing API function prototypes.
+ */  
+ 
+ 
 
-typedef int (*sr_receive_data_callback_t)(int fd, int revents, const struct sr_dev_inst *sdi);
+/*--- input/input.c ---------------------------------------------------------*/
 
-#include "proto.h"
-#include "version.h"
+SR_API struct sr_input_format **sr_input_list(void);
+
+/*--- output/output.c -------------------------------------------------------*/
+
+SR_API const struct sr_output_module **sr_output_list(void);
+
+/*--- strutil.c -------------------------------------------------------------*/
+
+SR_API char *sr_si_string_u64(uint64_t x, const char *unit);
+SR_API char *sr_iec_string_u64(uint64_t x, const char *unit);
+SR_API char *sr_samplerate_string(uint64_t samplerate);
+SR_API char *sr_samplecount_string(uint64_t samplecount);
+SR_API char *sr_period_string(uint64_t frequency);
+SR_API char *sr_time_string(uint64_t time);
+SR_API char *sr_voltage_string(uint64_t v_p, uint64_t v_q);
+SR_API int sr_parse_sizestring(const char *sizestring, uint64_t *size);
+SR_API uint64_t sr_parse_timestring(const char *timestring);
+SR_API gboolean sr_parse_boolstring(const char *boolstring);
+SR_API int sr_parse_period(const char *periodstr, uint64_t *p, uint64_t *q);
+SR_API int sr_parse_voltage(const char *voltstr, uint64_t *p, uint64_t *q);
+
+/*--- version.c -------------------------------------------------------------*/
+
+SR_API const char *sr_get_lib_version_string();
+
+/*--- error.c ---------------------------------------------------------------*/
+
+SR_API const char *sr_error_str(int error_code);
+SR_API const char *sr_error_name(int error_code);
+
+/*--- trigger.c ------------------------------------------------------------*/
+SR_API int ds_trigger_reset();
+SR_API int ds_trigger_stage_set_value(uint16_t stage, uint16_t probes, char *trigger0, char *trigger1);
+SR_API int ds_trigger_stage_set_logic(uint16_t stage, uint16_t probes, unsigned char trigger_logic);
+SR_API int ds_trigger_stage_set_inv(uint16_t stage, uint16_t probes, unsigned char trigger0_inv, unsigned char trigger1_inv);
+SR_API int ds_trigger_stage_set_count(uint16_t stage, uint16_t probes, uint32_t trigger0_count, uint32_t trigger1_count);
+SR_API int ds_trigger_probe_set(uint16_t probe, unsigned char trigger0, unsigned char trigger1);
+SR_API int ds_trigger_set_stage(uint16_t stages);
+SR_API int ds_trigger_set_pos(uint16_t position);
+SR_API uint16_t ds_trigger_get_pos();
+SR_API int ds_trigger_set_en(uint16_t enable);
+SR_API uint16_t ds_trigger_get_en();
+SR_API int ds_trigger_set_mode(uint16_t mode);
+ 
+/*--- log.c -----------------------------------------------------------------*/
+
+/**
+ * Use a shared context, and drop the private log context
+ */
+SR_API void ds_log_set_context(xlog_context *ctx); 
+
+/**
+ * Set the private log context level
+ */
+SR_API void ds_log_level(int level);
+
+
+// A new device attached, user need to call ds_get_device_list to get the list,
+// the last one is new.
+// User can call ds_active_device() to switch to the current device.
+//#define DS_EV_NEW_DEVICE_ATTACH         1
+
+// The current device detached, user need to call ds_get_device_list to get the list,
+// and call ds_active_device() to switch to the current device.
+//#define DS_EV_CURRENT_DEVICE_DETACH     2
+
+// A inactive device detached.
+// User can call ds_get_device_list() to get the new list, and update the list view.
+//#define DS_EV_INACTIVE_DEVICE_DETACH    3
+
+// The collect task is ends.
+#define DS_EV_COLLECT_TASK_START		101
+
+// The collect task is ends.
+#define DS_EV_COLLECT_TASK_END			102
+
+// The device is running
+#define DS_EV_DEVICE_RUNNING			103
+
+// The device is stopped
+#define DS_EV_DEVICE_STOPPED			104
+
+#define DS_EV_COLLECT_TASK_END_BY_DETACHED	105
+
+#define DS_EV_COLLECT_TASK_END_BY_ERROR		106
+
+enum bbbb
+{
+		DS_EV_NEW_DEVICE_ATTACH = 1,
+		DS_EV_CURRENT_DEVICE_DETACH = 2,
+		DS_EV_INACTIVE_DEVICE_DETACH = 3,
+};
+
+
+typedef unsigned long long ds_device_handle;
+
+#define NULL_HANDLE		0
+
+/**
+ * Device base info
+ */
+struct ds_device_base_info
+{
+	ds_device_handle handle;
+	char 	name[50];
+};
+
+struct ds_device_full_info
+{
+	ds_device_handle handle;
+	char 	name[50];
+	char 	path[256]; //file path
+	char 	driver_name[20];
+	int 	dev_type; // enum sr_device_type
+	struct sr_dev_inst *di;
+};
+
+struct ds_task_progress
+{
+	int progress;
+	int is_end;
+};
+
+struct ds_store_extra_data
+{
+	char name[50];
+	char *data;
+	int  data_length;
+};
+
+/*---lib_main.c -----------------------------------------------*/
+
+/**
+ * event see enum libsigrok_event_type
+ */
+typedef void (*dslib_event_callback_t)(int event);
+
+/**
+ * Data forwarding callback collected by the device.
+ */
+typedef void (*ds_datafeed_callback_t)(const struct sr_dev_inst *sdi,
+						const struct sr_datafeed_packet *packet);
+
+/**
+ * Must call first
+ */
+SR_API int ds_lib_init();
+
+/**
+ * Free all resource before program exits
+ */
+SR_API int ds_lib_exit(); 
+
+/**
+ * Set event callback, event type see enum libsigrok_event_type
+ */
+SR_API void ds_set_event_callback(dslib_event_callback_t cb);
+
+/**
+ * Set the data receive callback.
+ */
+SR_API void ds_set_datafeed_callback(ds_datafeed_callback_t cb);
+
+/**
+ * Set the firmware binary file directory,
+ * User must call it to set the firmware resource directory
+ */
+SR_API void ds_set_firmware_resource_dir(const char *dir);
+
+/**
+ * Get the device list, if the field _handle is 0, the list visited to end.
+ * User need call free() to release the buffer. If the list is empty, the out_list is null.
+ */
+SR_API int ds_get_device_list(struct ds_device_base_info** out_list, int *out_count);
+
+/**
+ * Active a device.
+ */
+SR_API int ds_active_device(ds_device_handle handle);
+
+/**
+ * Active a device,
+ * if @index is -1, will select the last one.
+ */
+SR_API int ds_active_device_by_index(int index);
+
+/**
+ * Get the selected device index.
+ */
+SR_API int ds_get_actived_device_index();
+
+/**
+ * Detect whether the active device exists
+ */
+SR_API int ds_have_actived_device();
+
+/**
+ * Create a device from session file, and append to the list.
+ */
+SR_API int ds_device_from_file(const char *file_path);
+
+/**
+ * Remove one device from the list, and destory it.
+ * User need to call ds_get_device_list() to get the new list.
+ */
+SR_API int ds_remove_device(ds_device_handle handle);
+
+/**
+ * Get the decive supports work mode, mode list: LOGIC、ANALOG、DSO
+ * return type see struct sr_dev_mode.
+ */
+SR_API const GSList *ds_get_actived_device_mode_list();
+
+/**
+ * Get the actived device info.
+ * If the actived device is not exists, the handle filed will be set null.
+ */
+SR_API int ds_get_actived_device_info(struct ds_device_full_info *fill_info);
+
+/**
+ * Get actived device work model. mode list:LOGIC、ANALOG、DSO
+ */
+SR_API int ds_get_actived_device_mode();
+
+/**
+ * Start collect data
+ */
+SR_API int ds_start_collect();
+
+/**
+ * Stop collect data
+ */
+SR_API int ds_stop_collect();
+
+/**
+ * Check if the device is collecting.
+ */
+SR_API int ds_is_collecting();
+
+/**
+ * Close the actived device, and stop collect.
+ */
+SR_API int ds_release_actived_device();
+
+/*---config -----------------------------------------------*/
+SR_API int ds_get_actived_device_config(const struct sr_channel *ch,
+                         const struct sr_channel_group *cg,
+                         int key, GVariant **data);
+
+SR_API int ds_set_actived_device_config(const struct sr_channel *ch,
+                         const struct sr_channel_group *cg,
+                         int key, GVariant *data);
+
+SR_API int ds_get_actived_device_config_list(const struct sr_channel_group *cg,
+                          int key, GVariant **data);
+
+SR_API const struct sr_config_info* ds_get_actived_device_config_info(int key);
+
+SR_API const struct sr_config_info* ds_get_actived_device_config_info_by_name(const char *optname);
+
+SR_API int ds_get_actived_device_status(struct sr_status *status, gboolean prg);
+
+SR_API struct sr_config *ds_new_config(int key, GVariant *data);
+
+SR_API void ds_free_config(struct sr_config *src);
+
+/*----------channel----------*/
+SR_API int ds_enable_device_channel(const struct sr_channel *ch, gboolean enable);
+
+SR_API int ds_enable_device_channel_index(int ch_index, gboolean enable);
+
+SR_API int ds_set_device_channel_name(int ch_index, const char *name);
+
+/**
+ *  heck that at least one probe is enabled
+ */
+int ds_channel_is_enabled();
+
+GSList* ds_get_actived_device_channels();
+
+/*-----------------trigger---------------*/
+int ds_trigger_is_enabled();
+
 
 #ifdef __cplusplus
 }

@@ -36,7 +36,9 @@
 #include "data/mathstack.h"
 #include "interface/icallbacks.h"
 #include "dstimer.h"
-#include "libsigrok.h"
+#include <libsigrok.h>
+#include "deviceagent.h"
+#include "eventobject.h"
  
 
 struct srd_decoder;
@@ -46,8 +48,6 @@ class DecoderStatus;
 typedef std::lock_guard<std::mutex> ds_lock_guard;
 
 namespace pv {
-
-class DeviceManager;
 
 namespace data {
 class SignalData;
@@ -82,10 +82,12 @@ class LissajousTrace;
 class MathTrace;
 }
 
-using namespace pv::device;
+using namespace pv::data;
 
 //created by MainWindow
-class SigSession
+class SigSession:
+    public IMessageListener,
+    public IDeviceAgentCallback
 {
 private:
     static constexpr float Oversampling = 2.0f;
@@ -96,18 +98,7 @@ public:
     static const int FeedInterval = 50;
     static const int WaitShowTime = 500;
 
-public:
-	enum capture_state {
-        Init,
-		Stopped,
-		Running
-	};
-
-    enum run_mode {
-        Single,
-        Repetitive
-    };
-
+public:  
     enum error_state {
         No_err,
         Hw_err,
@@ -118,30 +109,42 @@ public:
         Data_overflow
     };
 
+    enum device_status_type{
+        ST_INIT = 0,
+        ST_RUNNING = 1,
+        ST_STOPPED = 2,
+    };
+
 private:
     SigSession(SigSession &o);
   
 public:
-    explicit SigSession(DeviceManager *device_manager);
+    explicit SigSession();
 
 	~SigSession(); 
 
-    DevInst* get_device();
+    inline DeviceAgent* get_device(){
+        return &_device_agent;
+    }
 
-	/**
-	 * Sets device instance that will be used in the next capture session.
-	 */
-    void set_device(DevInst *dev_inst);
-   
-    void set_file(QString name);
-    void close_file(DevInst *dev_inst);
-    void set_default_device();
-
-    void release_device(DevInst *dev_inst);
-	capture_state get_capture_state();
+    bool init();
+    void uninit();
+    void Open();
+    void Close();
+    
+    bool set_default_device();
+    bool set_device(ds_device_handle dev_handle);
+    bool set_file(QString name);
+    void close_file(ds_device_handle dev_handle);
+    bool start_capture(bool instant);
+    void stop_capture(); 
+	 
     uint64_t cur_samplerate();
     uint64_t cur_snap_samplerate();
-    uint64_t cur_samplelimits();
+
+    inline uint64_t cur_samplelimits(){
+        return _cur_samplelimits;
+    }
 
     double cur_sampletime();
     double cur_snap_sampletime();
@@ -149,42 +152,62 @@ public:
 
     void set_cur_snap_samplerate(uint64_t samplerate);
     void set_cur_samplelimits(uint64_t samplelimits);
-    void set_session_time(QDateTime time);
 
-    QDateTime get_session_time();
-    uint64_t get_trigger_pos();
-  
+    inline void set_session_time(QDateTime time){
+         _session_time = time;
+    }
+
+    inline QDateTime get_session_time(){
+        return _session_time;
+    }
+
+    inline uint64_t get_trigger_pos(){
+        return _trigger_pos;
+    }
+
     bool get_capture_status(bool &triggered, int &progress);
 
-    void container_init();    
     std::set<data::SignalData*> get_data();
 	std::vector<view::Signal*>& get_signals();
     std::vector<view::GroupSignal*>& get_group_signals();
 
     bool add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus, 
-            std::list<pv::data::decode::Decoder*> &sub_decoders);
-
+                        std::list<pv::data::decode::Decoder*> &sub_decoders);
     int get_trace_index_by_key_handel(void *handel);
     void remove_decoder(int index);
     void remove_decoder_by_key_handel(void *handel); 
-    std::vector<view::DecodeTrace*>& get_decode_signals(); 
+
+    inline std::vector<view::DecodeTrace*>& get_decode_signals(){
+        return _decode_traces;
+    }
+
     void rst_decoder(int index); 
     void rst_decoder_by_key_handel(void *handel);
 
-    pv::data::DecoderModel* get_decoder_model();
-    std::vector<view::SpectrumTrace*>& get_spectrum_traces();
-    view::LissajousTrace* get_lissajous_trace();
-    view::MathTrace* get_math_trace();
+    inline pv::data::DecoderModel* get_decoder_model(){
+         return _decoder_model;
+    }
 
-    void init_signals();
+    inline std::vector<view::SpectrumTrace*>& get_spectrum_traces(){
+        return _spectrum_traces;
+    }
+
+    inline view::LissajousTrace* get_lissajous_trace(){
+        return _lissajous_trace;
+    }
+
+    inline view::MathTrace* get_math_trace(){
+        return _math_trace;
+    }
+
     void add_group();
     void del_group();
-    void start_hotplug_work();
-    void stop_hotplug_work();
-    uint16_t get_ch_num(int type);
-    
-    bool get_instant();
-    bool get_data_lock();
+    uint16_t get_ch_num(int type); 
+ 
+    inline bool get_data_lock(){
+        return _data_lock;
+    }
+
     void data_auto_lock(int lock);
     void data_auto_unlock();
     bool get_data_auto_lock();
@@ -198,74 +221,153 @@ public:
                       data::MathStack::MathType type);
 
     void math_disable();
-    bool trigd();
-    uint8_t trigd_ch();
+
+    inline bool trigd(){
+        return _trigger_flag;
+    }
+
+    inline uint8_t trigd_ch(){
+        return _trigger_ch;
+    }
+
     data::Snapshot* get_snapshot(int type);
-    error_state get_error();
-    void set_error(error_state state);
+
+    inline error_state get_error(){
+        return _error;
+    }
+
+    inline void set_error(error_state state){
+        _error = state;
+    }
+
     void clear_error();
 
-    uint64_t get_error_pattern();
-    run_mode get_run_mode();
-    void set_run_mode(run_mode mode);
-    double get_repeat_intvl();
-    void set_repeat_intvl(double interval);
+    inline uint64_t get_error_pattern(){
+        return _error_pattern;
+    }
 
-    bool isRepeating();
-    bool repeat_check();
+    inline double get_repeat_intvl(){
+        return _repeat_intvl;    
+    }
+
+    inline void set_repeat_intvl(double interval){
+        _repeat_intvl = interval;
+    }
+   
     int get_repeat_hold();
-    int get_map_zoom();
-    void set_save_start(uint64_t start);
 
-    void set_save_end(uint64_t end);
-    uint64_t get_save_start();
-    uint64_t get_save_end();
-    bool get_saving();
+    inline void set_save_start(uint64_t start){
+        _save_start = start;
+    }
 
-    void set_saving(bool saving);
-    void set_stop_scale(float scale);
-    float stop_scale();
+    inline uint64_t get_save_start(){
+        return _save_start;
+    }
 
-    void exit_capture();
-    sr_dev_inst* get_dev_inst_c();
-    void Open();
-    void Close();
+    inline void set_save_end(uint64_t end){
+        _save_end = end;
+    }
+
+    inline uint64_t get_save_end(){
+        return _save_end;
+    }
+
+    inline void set_stop_scale(float scale){
+        _stop_scale = scale;
+    }
+
+    inline float stop_scale(){
+        return _stop_scale;
+    }
+
     void clear_all_decoder(bool bUpdateView = true); 
 
     inline bool is_closed(){
         return _bClose;
     }
 
+    inline bool is_instant(){
+        return _is_instant;
+    }
+
     inline void set_callback(ISessionCallback *callback){
         _callback = callback;
     }
- 
-public:
-    inline void capture_state_changed(int state){
-        _callback->capture_state_changed(state);
+
+    inline bool is_working(){
+        return _is_working;
+    }
+
+    inline bool is_init_status(){
+        return _device_status == ST_INIT;
+    }
+
+    // The collect thread is running.
+    inline bool is_running_status(){
+        return _device_status == ST_RUNNING;
+    }
+
+    inline bool is_stopped_status(){
+        return _device_status == ST_STOPPED;
+    }
+
+    void set_repeat_mode(bool repeat);
+
+    inline bool is_repeat_mode(){
+        return _is_repeat_mode;
+    }
+
+    inline bool is_repeating(){
+        return _is_repeat_mode && !_is_instant;
     }
 
     inline void session_save(){
-         _callback->session_save();
-    }
-
-    inline void repeat_resume(){
-         _callback->repeat_resume();
+        _callback->session_save();
     }
 
     inline void show_region(uint64_t start, uint64_t end, bool keep){
         _callback->show_region(start, end, keep);
     }
 
-     inline void decode_done(){
+    inline void decode_done(){
          _callback->decode_done();
-     }
+    }
 
-     inline void set_sr_context(struct sr_context *ctx){
-         _sr_ctx = ctx;
-     }
+    inline bool is_saving(){
+        return _is_saving;
+    }
+
+    inline void set_saving(bool flag){
+        _is_saving = flag;
+    }
+
+    inline DeviceEventObject* device_event_object(){
+        return &_device_event;
+    }
+   
+    void reload();
+    void refresh(int holdtime);  
+    void check_update(); 
+
+    inline void set_map_zoom(int index){
+        _map_zoom = index;
+    }
+
+    inline int get_map_zoom(){
+        return _map_zoom;
+    }
+
+    void auto_end();
+    bool have_hardware_data();
+    struct ds_device_base_info* get_device_list(int &out_count, int &actived_index);
+    void add_msg_listener(IMessageListener *ln);
+    void broadcast_msg(int msg);
+    bool switch_work_mode(int mode);
 
 private:
+    bool exec_capture();
+    void exit_capture();
+
     inline void data_updated(){
         _callback->data_updated();
     }
@@ -276,27 +378,28 @@ private:
 
     inline void receive_data(quint64 len){
         _callback->receive_data_len(len);
-    } 
- 
-private:
-	void set_capture_state(capture_state state);
-    void register_hotplug_callback();
-    void deregister_hotplug_callback(); 
-
+    }
+  
     void add_decode_task(view::DecodeTrace *trace);
     void remove_decode_task(view::DecodeTrace *trace);
-    void clear_all_decode_task(int &runningDex);   
+    void clear_all_decode_task(int &runningDex);
 
     view::DecodeTrace* get_decoder_trace(int index);
     void decode_task_proc();
     view::DecodeTrace* get_top_decode_task();    
 
     void capture_init(); 
-    void data_lock();
-    void data_unlock();
     void nodata_timeout();
     void feed_timeout();
-    void repeat_update(); 
+   
+    void container_init();
+    void init_signals(); 
+  
+    //IMessageListener
+    void OnMessage(int msg);
+
+    //IDeviceAgentCallback
+    void DeviceConfigChanged();
 
 private:
     /**
@@ -306,8 +409,7 @@ private:
      * 	used, or NULL if no input format was selected or
      * 	auto-detected.
      */
-    static sr_input_format* determine_input_file_format(const std::string &filename);  
-    void sample_thread_proc(DevInst *dev_inst);
+    static sr_input_format* determine_input_file_format(const std::string &filename); 
 
     // data feed
 	void feed_in_header(const sr_dev_inst *sdi);
@@ -318,62 +420,33 @@ private:
     void feed_in_dso(const sr_datafeed_dso &dso);
 	void feed_in_analog(const sr_datafeed_analog &analog);    
 	void data_feed_in(const struct sr_dev_inst *sdi,
-		const struct sr_datafeed_packet *packet);
+		        const struct sr_datafeed_packet *packet); 
 
-	static void data_feed_in_proc(const struct sr_dev_inst *sdi,
-		const struct sr_datafeed_packet *packet, void *cb_data);
+	static void data_feed_callback(const struct sr_dev_inst *sdi,
+		        const struct sr_datafeed_packet *packet);
 
-    // thread for hotplug
-    void hotplug_proc();
+    static void device_lib_event_callback(int event);
+    void on_device_lib_event(int event);
 
-    static void hotplug_callback(void *ctx, void *dev, int event, void *user_data);
+    Snapshot* get_signal_snapshot();
 
-    void on_hotplug_event(void *ctx, void *dev, int event, void *user_data);
-
-public:
-    void reload();
-    void refresh(int holdtime);
-    void start_capture(bool instant);
-    void stop_capture();
-    void check_update();
-    void set_repeating(bool repeat);
-    void set_map_zoom(int index);
-    void auto_end();
-    
-    inline bool is_device_re_attach(){
-        return _is_device_reattach;
-    }
-
+    void repeat_capture_wait_timeout();
+    void repeat_wait_prog_timeout();
+ 
 private:
-	DeviceManager   *_device_manager;
-
-	/**
-	 * The device instance that will be used in the next capture session.
-	 */
-    DevInst                 *_dev_inst;
     mutable std::mutex      _sampling_mutex;
     mutable std::mutex      _data_mutex;
-    mutable std::mutex      _decode_task_mutex;
- 
-    std::thread             _hotplug_thread;
-    std::thread             _sampling_thread;   
+    mutable std::mutex      _decode_task_mutex;  
     std::thread             _decode_thread;
-
-    volatile bool           _bHotplugStop;
-    volatile bool           _bDecodeRunning;
-
-	capture_state           _capture_state;
-    bool                    _instant;
+    volatile bool           _is_decoding;   
     uint64_t                _cur_snap_samplerate;
     uint64_t                _cur_samplelimits;
  
 	std::vector<view::Signal*>      _signals;
     std::vector<view::GroupSignal*> _group_traces;
-
     std::vector<view::DecodeTrace*> _decode_traces;
     std::vector<view::DecodeTrace*> _decode_tasks;
     pv::data::DecoderModel          *_decoder_model;
-
     std::vector<view::SpectrumTrace*> _spectrum_traces;
     view::LissajousTrace            *_lissajous_trace;
     view::MathTrace                 *_math_trace;
@@ -383,12 +456,11 @@ private:
 	data::Analog             *_analog_data;
     data::Group              *_group_data; 
     int                      _group_cnt;
-  
-    bool        _hot_attach;
-    bool        _hot_detach;
-
+    
     DsTimer     _feed_timer;
     DsTimer     _out_timer;
+    DsTimer     _repeat_timer;
+    DsTimer     _repeat_wait_prog_timer;
     int         _noData_cnt;
     bool        _data_lock;
     bool        _data_updated;
@@ -402,28 +474,27 @@ private:
 
     error_state _error;
     uint64_t    _error_pattern;
-
-    run_mode    _run_mode;
-    double         _repeat_intvl;
-    bool        _repeating;
-    int         _repeat_hold_prg;
-
-    int         _map_zoom;
-
-    uint64_t    _save_start;
-    uint64_t    _save_end;
-    bool        _saving;
-
+    int         _map_zoom;  
     bool        _dso_feed;
     float       _stop_scale; 
-    bool        _bClose;
-    struct sr_context  *_sr_ctx;
-    volatile bool    _is_wait_reattch;
-    volatile int     _wait_reattch_times;
-    bool            _is_device_reattach;
-    QString         _last_device_name;
+    bool        _bClose;  
+ 
+    uint64_t    _save_start;
+    uint64_t    _save_end; 
+    bool        _is_working;
+    bool        _is_repeat_mode;
+    double      _repeat_intvl; // The progress wait timer interval.
+    int         _repeat_hold_prg; // The time sleep progress
+    int         _repeat_wait_prog_step;
+    bool        _is_saving;
+    bool        _is_instant;
+    int         _device_status;
+ 
 
     ISessionCallback *_callback;
+    DeviceAgent   _device_agent;
+    std::vector<IMessageListener*> _msg_listeners;
+    DeviceEventObject   _device_event;
    
 private:
 	// TODO: This should not be necessary. Multiple concurrent

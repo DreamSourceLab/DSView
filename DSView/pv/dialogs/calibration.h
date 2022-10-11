@@ -30,14 +30,13 @@
 #include <QSlider>
 
 #include <list> 
-
-#include "../device/devinst.h"
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
 
-using namespace pv::device;
+class DeviceAgent;
 
 namespace pv {
+
 namespace dialogs {
 
 class Calibration : public DSDialog
@@ -53,7 +52,8 @@ public:
     Calibration(QWidget *parent);
     ~Calibration();
 
-    void set_device(DevInst *dev_inst);
+    void update_device_info();
+    
 protected:
 	void accept();
     void reject();
@@ -69,9 +69,7 @@ private slots:
     void on_reset();
     void reload_value();
 
-private:
-    DevInst *_dev_inst;
- 
+private:  
     QPushButton *_save_btn;
     QPushButton *_abort_btn;
     QPushButton *_reset_btn;
@@ -79,6 +77,8 @@ private:
     QFormLayout *_flayout;
     std::list <QSlider *> _slider_list;
     std::list<QLabel *> _label_list;
+
+    DeviceAgent *_device_agent;
 };
 
 } // namespace dialogs

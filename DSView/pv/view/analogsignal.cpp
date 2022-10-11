@@ -25,7 +25,6 @@
 #include "../data/analog.h"
 #include "../data/analogsnapshot.h"
 #include "../view/view.h"
-#include "../device/devinst.h"
 #include "../dsvdef.h"
 #include "../log.h"
 
@@ -45,9 +44,8 @@ const QColor AnalogSignal::SignalColours[4] = {
 
 const float AnalogSignal::EnvelopeThreshold = 16.0f;
 
-AnalogSignal::AnalogSignal(DevInst *dev_inst,data::Analog *data,
-                           sr_channel *probe) :
-    Signal(dev_inst, probe),
+AnalogSignal::AnalogSignal(data::Analog *data, sr_channel *probe) :
+    Signal(probe),
     _data(data),
     _rects(NULL),
     _hover_en(false),
@@ -60,7 +58,7 @@ AnalogSignal::AnalogSignal(DevInst *dev_inst,data::Analog *data,
 
     GVariant *gvar;
     // channel bits
-    gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_UNIT_BITS);
+    gvar = session->get_device()->get_config(NULL, NULL, SR_CONF_UNIT_BITS);
     if (gvar != NULL) {
         _bits = g_variant_get_byte(gvar);
         g_variant_unref(gvar);
@@ -70,14 +68,14 @@ AnalogSignal::AnalogSignal(DevInst *dev_inst,data::Analog *data,
         dsv_warn("%s%d", "Warning: config_get SR_CONF_UNIT_BITS failed, set to %d(default).", DefaultBits);
     }
 
-    gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_REF_MIN);
+    gvar = session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MIN);
     if (gvar != NULL) {
         _ref_min = g_variant_get_uint32(gvar);
         g_variant_unref(gvar);
     } else {
         _ref_min = 1;
     }
-    gvar = _dev_inst->get_config(NULL, NULL, SR_CONF_REF_MAX);
+    gvar = session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MAX);
     if (gvar != NULL) {
         _ref_max = g_variant_get_uint32(gvar);
         g_variant_unref(gvar);
@@ -86,7 +84,7 @@ AnalogSignal::AnalogSignal(DevInst *dev_inst,data::Analog *data,
     }
 
     // -- vpos
-    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_OFFSET);
+    gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_OFFSET);
     if (gvar != NULL) {
         _zero_offset = g_variant_get_uint16(gvar);
         g_variant_unref(gvar);
@@ -155,7 +153,7 @@ double AnalogSignal::get_ref_max()
 int AnalogSignal::get_hw_offset()
 {
     int hw_offset = 0;
-    GVariant *gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_HW_OFFSET);
+    GVariant *gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_HW_OFFSET);
     if (gvar != NULL) {
         hw_offset = g_variant_get_uint16(gvar);
         g_variant_unref(gvar);
@@ -168,23 +166,23 @@ int AnalogSignal::commit_settings()
     int ret;
 
     // -- enable
-    ret = _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_EN,
+    ret = session->get_device()->set_config(_probe, NULL, SR_CONF_PROBE_EN,
                                 g_variant_new_boolean(enabled()));
 
     // -- vdiv
-    ret = _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_VDIV,
+    ret = session->get_device()->set_config(_probe, NULL, SR_CONF_PROBE_VDIV,
                                 g_variant_new_uint64(_probe->vdiv));
 
     // -- coupling
-    ret = _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_COUPLING,
+    ret = session->get_device()->set_config(_probe, NULL, SR_CONF_PROBE_COUPLING,
                                 g_variant_new_byte(_probe->coupling));
 
     // -- offset
-    ret = _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_OFFSET,
+    ret = session->get_device()->set_config(_probe, NULL, SR_CONF_PROBE_OFFSET,
                                 g_variant_new_uint16(_probe->offset));
 
     // -- trig_value
-    _dev_inst->set_config(_probe, NULL, SR_CONF_TRIGGER_VALUE,
+    session->get_device()->set_config(_probe, NULL, SR_CONF_TRIGGER_VALUE,
                           g_variant_new_byte(_probe->trig_value));
 
     return ret;
@@ -196,7 +194,7 @@ bool AnalogSignal::measure(const QPointF &p)
     if (!enabled())
         return false;
 
-    if (_view->session().get_capture_state() != SigSession::Stopped)
+    if (_view->session().is_stopped_status() == false)
         return false;
 
     const QRectF window = get_view_rect();
@@ -285,7 +283,7 @@ QPointF AnalogSignal::get_point(uint64_t index, float &value)
 uint64_t AnalogSignal::get_vdiv()
 {
     uint64_t vdiv = 0;
-    GVariant* gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_VDIV);
+    GVariant* gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_VDIV);
     if (gvar != NULL) {
         vdiv = g_variant_get_uint64(gvar);
         g_variant_unref(gvar);
@@ -296,7 +294,7 @@ uint64_t AnalogSignal::get_vdiv()
 uint8_t AnalogSignal::get_acCoupling()
 {
     uint64_t coupling = 0;
-    GVariant* gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_COUPLING);
+    GVariant* gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_COUPLING);
     if (gvar != NULL) {
         coupling = g_variant_get_byte(gvar);
         g_variant_unref(gvar);
@@ -307,7 +305,7 @@ uint8_t AnalogSignal::get_acCoupling()
 bool AnalogSignal::get_mapDefault()
 {
     bool isDefault = true;
-    GVariant* gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_MAP_DEFAULT);
+    GVariant* gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_MAP_DEFAULT);
     if (gvar != NULL) {
         isDefault = g_variant_get_boolean(gvar);
         g_variant_unref(gvar);
@@ -318,7 +316,7 @@ bool AnalogSignal::get_mapDefault()
 QString AnalogSignal::get_mapUnit()
 {
     QString unit;
-    GVariant* gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_MAP_UNIT);
+    GVariant* gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_MAP_UNIT);
     if (gvar != NULL) {
         unit = g_variant_get_string(gvar, NULL);
         g_variant_unref(gvar);
@@ -329,7 +327,7 @@ QString AnalogSignal::get_mapUnit()
 double AnalogSignal::get_mapMin()
 {
     double min = -1;
-    GVariant* gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_MAP_MIN);
+    GVariant* gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_MAP_MIN);
     if (gvar != NULL) {
         min = g_variant_get_double(gvar);
         g_variant_unref(gvar);
@@ -340,7 +338,7 @@ double AnalogSignal::get_mapMin()
 double AnalogSignal::get_mapMax()
 {
     double max = 1;
-    GVariant* gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_MAP_MAX);
+    GVariant* gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_MAP_MAX);
     if (gvar != NULL) {
         max = g_variant_get_double(gvar);
         g_variant_unref(gvar);
@@ -352,7 +350,7 @@ uint64_t AnalogSignal::get_factor()
 {
     GVariant* gvar;
     uint64_t factor;
-    gvar = _dev_inst->get_config(_probe, NULL, SR_CONF_PROBE_FACTOR);
+    gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_FACTOR);
     if (gvar != NULL) {
         factor = g_variant_get_uint64(gvar);
         g_variant_unref(gvar);
@@ -405,11 +403,11 @@ int AnalogSignal::get_zero_vpos()
 
 void AnalogSignal::set_zero_ratio(double ratio)
 {
-    if (_view->session().get_capture_state() == SigSession::Running)
+    if (_view->session().is_running_status())
         return;
 
     _zero_offset = ratio2value(ratio);
-    _dev_inst->set_config(_probe, NULL, SR_CONF_PROBE_OFFSET,
+    session->get_device()->set_config(_probe, NULL, SR_CONF_PROBE_OFFSET,
                           g_variant_new_uint16(_zero_offset));
 }
 
@@ -558,7 +556,7 @@ void AnalogSignal::paint_fore(QPainter &p, int left, int right, QColor fore, QCo
     fore.setAlpha(View::ForeAlpha);
     if(enabled()) {
         // Paint measure
-        if (_view->session().get_capture_state() == SigSession::Stopped)
+        if (_view->session().is_stopped_status())
             paint_hover_measure(p, fore, back);
     }
 }

@@ -31,7 +31,6 @@
 
 #include "../view/trace.h"
 #include "../sigsession.h"
-#include "../device/devinst.h"
 #include "../view/view.h"
 #include "../view/trace.h"
 #include "../dialogs/dsomeasure.h"
@@ -64,7 +63,7 @@ void ViewStatus::paintEvent(QPaintEvent *)
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 
     QColor fore(QWidget::palette().color(QWidget::foregroundRole()));
-    if (_session->get_device()->dev_inst()->mode == LOGIC) {
+    if (_session->get_device()->get_work_mode() == LOGIC) {
         fore.setAlpha(View::ForeAlpha);
         p.setPen(fore);
         p.drawText(this->rect(), Qt::AlignLeft | Qt::AlignVCenter, _rle_depth);
@@ -77,7 +76,8 @@ void ViewStatus::paintEvent(QPaintEvent *)
 
         p.setPen(View::Blue);
         p.drawText(this->rect(), Qt::AlignCenter | Qt::AlignVCenter, _capture_status);
-    } else if (_session->get_device()->dev_inst()->mode == DSO) {
+    } 
+    else if (_session->get_device()->get_work_mode() == DSO) {
         fore.setAlpha(View::BackAlpha);
         for(size_t i = 0; i < _mrects.size(); i++) {
             int sig_index = std::get<1>(_mrects[i]);
@@ -141,7 +141,7 @@ void ViewStatus::reload()
     const int COLUMN = 5;
     const int ROW = 2;
     const int MARGIN = 3;
-    if (_session->get_device()->dev_inst()->mode == DSO)
+    if (_session->get_device()->get_work_mode() == DSO)
     {
         const double width = _view.get_view_width() * 1.0 / COLUMN;
         const int height = (this->height() - 2*MARGIN) / ROW;
@@ -192,7 +192,7 @@ void ViewStatus::mousePressEvent(QMouseEvent *event)
 {
     assert(event);
 
-    if (_session->get_device()->dev_inst()->mode != DSO)
+    if (_session->get_device()->get_work_mode() != DSO)
         return;
 
     if (event->button() == Qt::LeftButton) { 
@@ -240,7 +240,7 @@ QJsonArray ViewStatus::get_session()
 
 void ViewStatus::load_session(QJsonArray measure_array)
 {
-    if (_session->get_device()->dev_inst()->mode != DSO ||
+    if (_session->get_device()->get_work_mode() != DSO ||
         measure_array.empty())
         return;
 

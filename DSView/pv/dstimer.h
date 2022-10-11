@@ -42,6 +42,8 @@ public:
 
     void TimeOut(int millsec, CALLBACL_FUNC f);
 
+    void TimeOut(int millsec);
+
     void SetCallback(CALLBACL_FUNC f);
 
     void Start(int millsec, CALLBACL_FUNC f);

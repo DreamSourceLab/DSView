@@ -61,7 +61,7 @@ SR_PRIV void sr_log_uninit()
 /**
  * Use a shared context, and drop the private log context
  */
-SR_API void sr_log_set_context(xlog_context *ctx)
+SR_API void ds_log_set_context(xlog_context *ctx)
 {   
     if (ctx){
          sr_log_uninit();
@@ -76,7 +76,7 @@ SR_API void sr_log_set_context(xlog_context *ctx)
 /**
  * Set the private log context level
  */
-SR_API void sr_log_level(int level)
+SR_API void ds_log_level(int level)
 {   
     log_level_value = level;
     if (log_ctx)

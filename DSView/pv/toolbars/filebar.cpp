@@ -26,7 +26,6 @@
 #include <QApplication>
 
 #include "filebar.h"
-#include "../device/devinst.h" 
 #include "../ui/msgbox.h"
 #include "../config/appconfig.h"
 #include "../utility/path.h"
@@ -36,7 +35,6 @@ namespace toolbars {
 
 FileBar::FileBar(SigSession *session, QWidget *parent) :
     QToolBar("File Bar", parent),
-    _enable(true),
     _session(session),
     _file_button(this)
 {
@@ -136,6 +134,13 @@ void FileBar::on_actionOpen_triggered()
     //open data file
     AppConfig &app = AppConfig::Instance(); 
 
+    if (_session->have_hardware_data()){
+        if (MsgBox::Confirm(tr("Save captured data?"))){
+            sig_save();
+            return;
+        }
+    }
+
     // Show the dialog
     const QString file_name = QFileDialog::getOpenFileName(
         this, 
@@ -152,21 +157,6 @@ void FileBar::on_actionOpen_triggered()
 
         sig_load_file(file_name);
     }
-}
-
-void FileBar::session_error(
-    const QString text, const QString info_text)
-{
-    QMetaObject::invokeMethod(this, "show_session_error",
-        Qt::QueuedConnection, Q_ARG(QString, text),
-        Q_ARG(QString, info_text));
-}
-
-void FileBar::show_session_error(
-    const QString text, const QString info_text)
-{  
-    (void)text;
-    MsgBox::Show(NULL, info_text.toStdString().c_str(), this);
 }
 
 void FileBar::on_actionLoad_triggered()
@@ -200,7 +190,7 @@ void FileBar::on_actionDefault_triggered()
     }
 
     QString driver_name = _session->get_device()->name();
-    QString mode_name = QString::number(_session->get_device()->dev_inst()->mode);
+    QString mode_name = QString::number(_session->get_device()->get_work_mode());
     int language = LAN_EN;
     GVariant *gvar_tmp = _session->get_device()->get_config(NULL, NULL, SR_CONF_LANGUAGE);
     if (gvar_tmp != NULL) {
@@ -247,14 +237,12 @@ void FileBar::on_actionCapture_triggered()
     QTimer::singleShot(100, this, SIGNAL(sig_screenShot()));
 }
 
-void FileBar::enable_toggle(bool enable)
+void FileBar::update_view_status()
 {
-    _file_button.setDisabled(!enable);
-}
-
-void FileBar::set_settings_en(bool enable)
-{
-    _menu_session->setDisabled(!enable);
+    bool bEnable = _session->is_working() == false;
+    bool is_hardware = _session->get_device()->is_hardware();
+    _file_button.setEnabled(bEnable);
+    _menu_session->setEnabled(bEnable && is_hardware); 
 }
 
 } // namespace toolbars

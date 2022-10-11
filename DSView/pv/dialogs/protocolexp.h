@@ -30,7 +30,6 @@
 #include <QRadioButton> 
 #include <QString>
  
-#include "../device/devinst.h"
 #include "../prop/binding/deviceoptions.h"
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"

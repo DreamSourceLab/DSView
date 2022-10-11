@@ -19,7 +19,7 @@
  */
 
 #include <check.h>
-#include "../libsigrok.h"
+#include <libsigrok.h>
 
 struct sr_context *sr_ctx;
 

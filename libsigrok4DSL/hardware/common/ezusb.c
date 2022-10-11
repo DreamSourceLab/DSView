@@ -20,7 +20,7 @@
 /*
  * Helper functions for the Cypress EZ-USB / FX2 series chips.
  */
-#include "../../libsigrok.h"
+
 #include "../../libsigrok-internal.h"
 #include <glib.h>
 #include <glib/gstdio.h>

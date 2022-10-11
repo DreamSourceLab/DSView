@@ -26,7 +26,6 @@
 #include "view.h"
 #include "viewport.h"
 #include "../sigsession.h"
-#include "../device/devinst.h"
 #include "dsosignal.h"
 #include "../dsvdef.h"
 
@@ -38,6 +37,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QStyleOption>
+#include "../appcontrol.h"
  
  
 using namespace std;
@@ -194,8 +194,10 @@ void Ruler::paintEvent(QPaintEvent*)
     QPainter p(this);
     style()->drawPrimitive(QStyle::PE_Widget, &o, &p, this);
 
+    SigSession *session = AppControl::Instance()->GetSession();
+
     // Draw tick mark
-    if (_view.session().get_device()->dev_inst()->mode == DSO)
+    if (session->get_device()->get_work_mode() == DSO)
         draw_osc_tick_mark(p);
     else
         draw_logic_tick_mark(p);
@@ -348,6 +350,10 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
 {
     using namespace Qt;
 
+    if (_view.session().get_device()->have_instance() == false){
+        return;
+    }
+
     const double SpacingIncrement = 32.0;
     const double MinValueSpacing = 16.0;
     const int ValueMargin = 5;
@@ -453,7 +459,7 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
         auto i = _view.get_cursorList().begin();
         int index = 1;
         while (i != _view.get_cursorList().end()) {
-            (*i)->paint_label(p, rect(), prefix, index, _view.session().get_capture_state() == SigSession::Stopped);
+            (*i)->paint_label(p, rect(), prefix, index, _view.session().is_stopped_status());
             index++;
             i++;
         }
@@ -571,7 +577,7 @@ void Ruler::draw_osc_tick_mark(QPainter &p)
         auto i = _view.get_cursorList().begin();
         int index = 1;
         while (i != _view.get_cursorList().end()) {
-            (*i)->paint_label(p, rect(), prefix, index, _view.session().get_capture_state() == SigSession::Stopped);
+            (*i)->paint_label(p, rect(), prefix, index, _view.session().is_stopped_status());
             index++;
             i++;
         }

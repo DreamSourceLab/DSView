@@ -40,7 +40,6 @@
 #include "groupsignal.h"
 #include "decodetrace.h"
 #include "../sigsession.h"
-#include "../device/devinst.h"
 #include "../dsvdef.h"
 
  
@@ -101,7 +100,8 @@ int Header::get_nameEditWidth()
 pv::view::Trace* Header::get_mTrace(int &action, const QPoint &pt)
 {
     const int w = width();
-    const auto &traces = _view.get_traces(ALL_VIEW);
+    std::vector<Trace*> traces;
+    _view.get_traces(ALL_VIEW, traces);
 
     for(auto &t : traces)
     {
@@ -124,7 +124,8 @@ void Header::paintEvent(QPaintEvent*)
     style()->drawPrimitive(QStyle::PE_Widget, &o, &painter, this);
 
 	const int w = width();
-    const auto &traces = _view.get_traces(ALL_VIEW);
+    std::vector<Trace*> traces;
+    _view.get_traces(ALL_VIEW, traces);
 
     const bool dragging = !_drag_traces.empty();
     QColor fore(QWidget::palette().color(QWidget::foregroundRole()));
@@ -143,7 +144,9 @@ void Header::mouseDoubleClickEvent(QMouseEvent *event)
 {
     assert(event);
 
-    const auto  &traces = _view.get_traces(ALL_VIEW);
+    std::vector<Trace*> traces;
+
+    _view.get_traces(ALL_VIEW, traces);
 
     if (event->button() & Qt::LeftButton) {
         _mouse_down_point = event->pos();
@@ -166,10 +169,12 @@ void Header::mousePressEvent(QMouseEvent *event)
 {
 	assert(event);
 
-    const auto &traces = _view.get_traces(ALL_VIEW);
+    std::vector<Trace*> traces;
+    _view.get_traces(ALL_VIEW, traces);
     int action;
-    const bool instant = _view.session().get_instant();
-    if (instant && _view.session().get_capture_state() == SigSession::Running) {
+
+    const bool instant = _view.session().is_instant();
+    if (instant && _view.session().is_running_status()) {
         return;
     }
 
@@ -235,7 +240,8 @@ void Header::mouseReleaseEvent(QMouseEvent *event)
         _view.signals_changed();
         _view.set_all_update(true);
 
-        const auto &traces = _view.get_traces(ALL_VIEW);
+        std::vector<Trace*> traces;
+        _view.get_traces(ALL_VIEW, traces);
 
         for(auto &t : traces){
             t->select(false);
@@ -287,7 +293,8 @@ void Header::wheelEvent(QWheelEvent *event)
 
     if (isVertical)
     {
-        const auto &traces = _view.get_traces(ALL_VIEW);
+        std::vector<Trace*> traces;
+        _view.get_traces(ALL_VIEW, traces);
         // Vertical scrolling
         double shift = 0;
 
@@ -415,19 +422,6 @@ void Header::contextMenuEvent(QContextMenuEvent *event)
 
     if (!t || !t->selected() || action != Trace::LABEL)
         return;
-
-    /*
-     * disable group function for v0.97 temporarily
-     */
-//    QMenu menu(this);
-//    if (t->get_type() == SR_CHANNEL_LOGIC)
-//        menu.addAction(_action_add_group);
-//    else if (t->get_type() == SR_CHANNEL_GROUP)
-//        menu.addAction(_action_del_group);
-
-//    _context_trace = t;
-//    menu.exec(event->globalPos());
-//    _context_trace.r-eset();
 }
 
 void Header::on_action_set_name_triggered()
@@ -440,7 +434,9 @@ void Header::on_action_set_name_triggered()
         context_Trace->set_name(nameEdit->text());
         if (context_Trace->get_type() == SR_CHANNEL_LOGIC ||
                 context_Trace->get_type() == SR_CHANNEL_ANALOG)
-            sr_dev_probe_name_set(_view.session().get_device()->dev_inst(), context_Trace->get_index(), nameEdit->text().toUtf8().constData());
+        {
+            _view.session().get_device()->set_channel_name(context_Trace->get_index(), nameEdit->text().toUtf8());
+        }
     }
 
     nameEdit->hide();
