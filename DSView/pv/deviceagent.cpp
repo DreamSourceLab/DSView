@@ -26,7 +26,7 @@
 
 DeviceAgent::DeviceAgent()
 {
-    _dev_handle = NULL;
+    _dev_handle = NULL_HANDLE;
     _di = NULL;
     _dev_type = 0;
     _callback = NULL;
@@ -35,7 +35,7 @@ DeviceAgent::DeviceAgent()
 
 void DeviceAgent::update()
 {
-    _dev_handle = NULL;
+    _dev_handle = NULL_HANDLE;
     _dev_name = "";
     _path = "";
     _di = NULL;

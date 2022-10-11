@@ -1052,7 +1052,6 @@ static gpointer di_thread(gpointer data)
 	struct srd_decoder_inst *di;
 	int wanted_term = 0;
 	PyGILState_STATE gstate;
-	char ** error_buffer = NULL;
 	int is_task_stop_signal = FALSE;
 
 	assert(data);
