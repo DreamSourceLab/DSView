@@ -34,6 +34,7 @@
 #include "config.h"
 #include "pv/appcontrol.h"
 #include "pv/log.h" 
+#include "pv/ui/langresource.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -196,6 +197,7 @@ bool bHighScale = true;
 	AppControl *control = AppControl::Instance();	
 	AppConfig &app = AppConfig::Instance(); 
 	app.LoadAll(); //load app config
+	LangResource::Instance()->Load(app._frameOptions.language);
 
 	if (app._appOptions.ableSaveLog){
 		dsv_log_enalbe_logfile(false);

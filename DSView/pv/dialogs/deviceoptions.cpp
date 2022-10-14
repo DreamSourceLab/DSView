@@ -146,11 +146,11 @@ DeviceOptions::DeviceOptions(QWidget *parent) :
 
     try_resize_scroll();
   
-    connect(&_mode_check, SIGNAL(timeout()), this, SLOT(mode_check()));
+    connect(&_mode_check_timer, SIGNAL(timeout()), this, SLOT(mode_check_timeout()));
     connect(button_box, SIGNAL(accepted()), this, SLOT(accept()));
 
-    _mode_check.setInterval(100);
-    _mode_check.start();  
+    _mode_check_timer.setInterval(100);
+    _mode_check_timer.start();  
 }
 
 DeviceOptions::~DeviceOptions(){   
@@ -441,7 +441,7 @@ void DeviceOptions::on_calibration()
     _device_agent->set_config(NULL, NULL, SR_CONF_CALI, g_variant_new_boolean(true));
 }
 
-void DeviceOptions::mode_check()
+void DeviceOptions::mode_check_timeout()
 {
     if (_isBuilding)
         return;

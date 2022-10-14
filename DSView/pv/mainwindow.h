@@ -131,14 +131,12 @@ private slots:
 signals:
     void prgRate(int progress);
 
-//IMainForm
 public:
-   void switchLanguage(int language);
+    //IMainForm
+    void switchLanguage(int language);
 
-//ISessionCallback
-public:
-    void session_save(); 
-
+    //ISessionCallback
+    void session_save();
    
 private:
     void check_usb_device_speed();

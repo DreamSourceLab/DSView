@@ -96,6 +96,7 @@
 #include "deviceagent.h"
 #include <stdlib.h>
 #include "ZipMaker.h"
+#include "ui/langresource.h"
 
 #define BASE_SESSION_VERSION 2
 
@@ -206,8 +207,7 @@ namespace pv
 
         // Set the title
         QString title = QApplication::applicationName() + " v" + QApplication::applicationVersion();
-        std::string std_title = title.toStdString();
-        setWindowTitle(QApplication::translate("MainWindow", std_title.c_str(), 0));
+        setWindowTitle(QApplication::translate("MainWindow", title.toLocal8Bit().data(), 0));
 
         // event filter
         _view->installEventFilter(this);
@@ -623,7 +623,6 @@ namespace pv
         // old version(<= 1.1.2), restore the language
         if (sessionObj["Version"].toInt() == BASE_SESSION_VERSION)
         {
-           switchLanguage(sessionObj["Language"].toInt());
         }
 
         if (_device_agent->is_hardware())
@@ -838,11 +837,14 @@ namespace pv
         GVariant *gvar;
         gsize num_opts;
 
+        QString title = QApplication::applicationName() + " v" + QApplication::applicationVersion();
+
         QJsonArray channelVar;
         sessionVar["Version"] = QJsonValue::fromVariant(BASE_SESSION_VERSION);
         sessionVar["Device"] = QJsonValue::fromVariant(_device_agent->driver_name());
         sessionVar["DeviceMode"] = QJsonValue::fromVariant(_device_agent->get_work_mode());
         sessionVar["Language"] = QJsonValue::fromVariant(app._frameOptions.language);
+        sessionVar["Title"] = QJsonValue::fromVariant(title);
 
         gvar_opts = _device_agent->get_config_list(NULL, SR_CONF_DEVICE_SESSIONS);
         if (gvar_opts == NULL)
@@ -1155,7 +1157,8 @@ namespace pv
         {
             app._frameOptions.language = language;
             app.SaveFrame();
-        }
+            LangResource::Instance()->Load(language);     
+        }        
 
         if (language == LAN_CN)
         {
@@ -1485,7 +1488,7 @@ namespace pv
             if (error.error != QJsonParseError::NoError)
             {
                 QString estr = error.errorString();
-                dsv_err("File::get_decoders(), parse json error:\"%s\"!", estr.toUtf8().data());
+                dsv_err("MainWindow::get_decoder_json_from_file(), parse json error:\"%s\"!", estr.toUtf8().data());
             }
 
             dec_array = sessionDoc.array();

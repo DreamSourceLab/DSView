@@ -109,7 +109,7 @@ private slots:
 	void enable_all_probes();
 	void disable_all_probes();
     void zero_adj();
-    void mode_check();
+    void mode_check_timeout();
     void channel_check();
     void analog_channel_check();
     void on_calibration();
@@ -119,7 +119,7 @@ private:
     std::vector<QCheckBox *> _probes_checkBox_list;
     std::vector<QLayout *> _sub_lays;
 
-    QTimer      _mode_check;
+    QTimer      _mode_check_timer;
     QString     _mode;  
     QWidget     *_scroll_panel;
     QScrollArea *_scroll;

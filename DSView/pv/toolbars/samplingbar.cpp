@@ -36,6 +36,7 @@
 #include "../log.h"
 #include "../deviceagent.h"
 #include "../ui/msgbox.h"
+#include "../ui/langresource.h"
 
 using std::map;
 using std::max;
@@ -170,31 +171,35 @@ namespace pv
                 }
             }
             _configure_button.setText(tr("Options"));
-            _mode_button.setText(tr("Mode"));
+           _mode_button.setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_MODE), "Mode"));
 
             int mode = _device_agent->get_work_mode();
-
             bool is_working = _session->is_working();
+
+            auto str_start = L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_START), "Start");
+            auto str_stop  = L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_STOP), "Stop");
+            auto str_single  = L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_SINGLE), "Single");
+            auto str_instant  = L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_INSTANT), "Instant");
 
             if (_is_run_as_instant)
             {
                 if (bDev && mode == DSO)
-                    _instant_button.setText(is_working ? tr("Stop") : tr("Single"));
+                    _instant_button.setText(is_working ? str_stop : str_single);
                 else
-                    _instant_button.setText(is_working ? tr("Stop") : tr("Instant"));
-                _run_stop_button.setText(tr("Start"));
+                    _instant_button.setText(is_working ? str_stop : str_instant);
+                _run_stop_button.setText(str_start);
             }
             else
             {
-                _run_stop_button.setText(is_working ? tr("Stop") : tr("Start"));
+                _run_stop_button.setText(is_working ? str_stop: str_start);
                 if (bDev && mode == DSO)
-                    _instant_button.setText(tr("Single"));
+                    _instant_button.setText(str_single);
                 else
-                    _instant_button.setText(tr("Instant"));
+                    _instant_button.setText(str_instant);
             }
 
-            _action_single->setText(tr("&Single"));
-            _action_repeat->setText(tr("&Repetitive"));
+            _action_single->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_SINGLE_ACTION), "&Single"));
+            _action_repeat->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_REPEAT_ACTION), "&Repetitive"));
         }
 
         void SamplingBar::reStyle()
