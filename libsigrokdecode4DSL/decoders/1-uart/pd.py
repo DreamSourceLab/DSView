@@ -2,7 +2,6 @@
 ## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2011-2014 Uwe Hermann <uwe@hermann-uwe.de>
-## Copyright (C) 2019 DreamSourceLab <support@dreamsourcelab.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -44,14 +43,23 @@ This is the list of <ptype>s and their respective <pdata> values:
  - 'FRAME': The data is always a tuple containing two items: The (integer)
    value of the UART data, and a boolean which reflects the validity of the
    UART frame.
+ - 'IDLE': The data is always 0.
 
+The <rxtx> field is 0 for RX packets, 1 for TX packets.
 '''
+
+# Used for differentiating between the two data directions.
+RX = 0
+TX = 1
 
 # Given a parity type to check (odd, even, zero, one), the value of the
 # parity bit, the value of the data, and the length of the data (5-9 bits,
 # usually 8 bits) return True if the parity is correct, False otherwise.
 # 'none' is _not_ allowed as value for 'parity_type'.
-def parity_ok(parity_type, parity_bit, data, num_data_bits):
+def parity_ok(parity_type, parity_bit, data, data_bits):
+
+    if parity_type == 'ignore':
+        return True
 
     # Handle easy cases first (parity bit is always 1 or 0).
     if parity_type == 'zero':
@@ -74,68 +82,104 @@ class SamplerateError(Exception):
 class ChannelError(Exception):
     pass
 
+class Ann:
+    RX_DATA, TX_DATA, RX_START, TX_START, RX_PARITY_OK, TX_PARITY_OK, \
+    RX_PARITY_ERR, TX_PARITY_ERR, RX_STOP, TX_STOP, RX_WARN, TX_WARN, \
+    RX_DATA_BIT, TX_DATA_BIT, RX_BREAK, TX_BREAK, RX_PACKET, TX_PACKET = \
+    range(18)
+
+class Bin:
+    RX, TX, RXTX = range(3)
+
 class Decoder(srd.Decoder):
     api_version = 3
-    id = '1:uart'
-    name = '1:UART'
+    id = 'uart'
+    name = 'UART'
     longname = 'Universal Asynchronous Receiver/Transmitter'
     desc = 'Asynchronous, serial bus.'
     license = 'gplv2+'
     inputs = ['logic']
     outputs = ['uart']
     tags = ['Embedded/industrial']
-    channels = (
-        {'id': 'rxtx', 'type': 209, 'name': 'RX/TX', 'desc': 'UART transceive line'},
+    optional_channels = (
+        # Allow specifying only one of the signals, e.g. if only one data
+        # direction exists (or is relevant).
+        {'id': 'rx', 'name': 'RX', 'desc': 'UART receive line'},
+        {'id': 'tx', 'name': 'TX', 'desc': 'UART transmit line'},
     )
     options = (
         {'id': 'baudrate', 'desc': 'Baud rate', 'default': 115200},
-        {'id': 'num_data_bits', 'desc': 'Data bits', 'default': 8,
-            'values': tuple(range(4,129,1))},
-        {'id': 'parity_type', 'desc': 'Parity type', 'default': 'none',
-            'values': ('none', 'odd', 'even', 'zero', 'one')},
-        {'id': 'parity_check', 'desc': 'Check parity?', 'default': 'yes',
-            'values': ('yes', 'no')},
-        {'id': 'num_stop_bits', 'desc': 'Stop bits', 'default': 1.0,
-            'values': (0.0, 0.5, 1.0, 1.5, 2.0, 2.5)},
+        {'id': 'data_bits', 'desc': 'Data bits', 'default': 8,
+            'values': (5, 6, 7, 8, 9)},
+        {'id': 'parity', 'desc': 'Parity', 'default': 'none',
+            'values': ('none', 'odd', 'even', 'zero', 'one', 'ignore')},
+        {'id': 'stop_bits', 'desc': 'Stop bits', 'default': 1.0,
+            'values': (0.0, 0.5, 1.0, 1.5)},
         {'id': 'bit_order', 'desc': 'Bit order', 'default': 'lsb-first',
             'values': ('lsb-first', 'msb-first')},
         {'id': 'format', 'desc': 'Data format', 'default': 'hex',
             'values': ('ascii', 'dec', 'hex', 'oct', 'bin')},
-        {'id': 'invert', 'desc': 'Invert Signal?', 'default': 'no',
+        {'id': 'invert_rx', 'desc': 'Invert RX', 'default': 'no',
             'values': ('yes', 'no')},
-	{'id': 'anno_startstop', 'desc': 'Display Start/Stop?', 'default': 'yes',
+        {'id': 'invert_tx', 'desc': 'Invert TX', 'default': 'no',
             'values': ('yes', 'no')},
+        {'id': 'sample_point', 'desc': 'Sample point (%)', 'default': 50},
+        {'id': 'rx_packet_delim', 'desc': 'RX packet delimiter (decimal)',
+            'default': -1},
+        {'id': 'tx_packet_delim', 'desc': 'TX packet delimiter (decimal)',
+            'default': -1},
+        {'id': 'rx_packet_len', 'desc': 'RX packet length', 'default': -1},
+        {'id': 'tx_packet_len', 'desc': 'TX packet length', 'default': -1},
     )
     annotations = (
-        ('108', 'data', 'data'),
-        ('7', 'start', 'start bits'),
-        ('6', 'parity-ok', 'parity OK bits'),
-        ('0', 'parity-err', 'parity error bits'),
-        ('1', 'stop', 'stop bits'),
-        ('1000', 'warnings', 'warnings'),
-        ('209', 'data-bits', 'data bits'),
-        ('10', 'break', 'break'),
+        ('rx-data', 'RX data'),
+        ('tx-data', 'TX data'),
+        ('rx-start', 'RX start bit'),
+        ('tx-start', 'TX start bit'),
+        ('rx-parity-ok', 'RX parity OK bit'),
+        ('tx-parity-ok', 'TX parity OK bit'),
+        ('rx-parity-err', 'RX parity error bit'),
+        ('tx-parity-err', 'TX parity error bit'),
+        ('rx-stop', 'RX stop bit'),
+        ('tx-stop', 'TX stop bit'),
+        ('rx-warning', 'RX warning'),
+        ('tx-warning', 'TX warning'),
+        ('rx-data-bit', 'RX data bit'),
+        ('tx-data-bit', 'TX data bit'),
+        ('rx-break', 'RX break'),
+        ('tx-break', 'TX break'),
+        ('rx-packet', 'RX packet'),
+        ('tx-packet', 'TX packet'),
     )
     annotation_rows = (
-        ('data', 'RX/TX', (0, 1, 2, 3, 4)),
-        ('data-bits', 'Bits', (6,)),
-        ('warnings', 'Warnings', (5,)),
-        ('break', 'break', (7,)),
+        ('rx-data-bits', 'RX bits', (Ann.RX_DATA_BIT,)),
+        ('rx-data-vals', 'RX data', (Ann.RX_DATA, Ann.RX_START, Ann.RX_PARITY_OK, Ann.RX_PARITY_ERR, Ann.RX_STOP)),
+        ('rx-warnings', 'RX warnings', (Ann.RX_WARN,)),
+        ('rx-breaks', 'RX breaks', (Ann.RX_BREAK,)),
+        ('rx-packets', 'RX packets', (Ann.RX_PACKET,)),
+        ('tx-data-bits', 'TX bits', (Ann.TX_DATA_BIT,)),
+        ('tx-data-vals', 'TX data', (Ann.TX_DATA, Ann.TX_START, Ann.TX_PARITY_OK, Ann.TX_PARITY_ERR, Ann.TX_STOP)),
+        ('tx-warnings', 'TX warnings', (Ann.TX_WARN,)),
+        ('tx-breaks', 'TX breaks', (Ann.TX_BREAK,)),
+        ('tx-packets', 'TX packets', (Ann.TX_PACKET,)),
     )
     binary = (
+        ('rx', 'RX dump'),
+        ('tx', 'TX dump'),
         ('rxtx', 'RX/TX dump'),
     )
-    idle_state = 'WAIT FOR START BIT'
+    idle_state = ['WAIT FOR START BIT', 'WAIT FOR START BIT']
 
-    def putx(self, data):
-        s, halfbit = self.startsample, self.bit_width / 2.0
-        if self.options['anno_startstop'] == 'yes' :
-            self.put(s - floor(halfbit), self.samplenum + ceil(halfbit), self.out_ann, data)
-        else :
-            self.put(self.frame_start, self.samplenum + ceil(halfbit * (1+self.options['num_stop_bits'])), self.out_ann, data)
+    def putx(self, rxtx, data):
+        s, halfbit = self.startsample[rxtx], self.bit_width / 2.0
+        self.put(s - floor(halfbit), self.samplenum + ceil(halfbit), self.out_ann, data)
 
-    def putpx(self, data):
-        s, halfbit = self.startsample, self.bit_width / 2.0
+    def putx_packet(self, rxtx, data):
+        s, halfbit = self.ss_packet[rxtx], self.bit_width / 2.0
+        self.put(s - floor(halfbit), self.samplenum + ceil(halfbit), self.out_ann, data)
+
+    def putpx(self, rxtx, data):
+        s, halfbit = self.startsample[rxtx], self.bit_width / 2.0
         self.put(s - floor(halfbit), self.samplenum + ceil(halfbit), self.out_python, data)
 
     def putg(self, data):
@@ -152,34 +196,35 @@ class Decoder(srd.Decoder):
     def putpse(self, ss, es, data):
         self.put(ss, es, self.out_python, data)
 
-    def putbin(self, data):
-        s, halfbit = self.startsample, self.bit_width / 2.0
+    def putbin(self, rxtx, data):
+        s, halfbit = self.startsample[rxtx], self.bit_width / 2.0
         self.put(s - floor(halfbit), self.samplenum + ceil(halfbit), self.out_binary, data)
-
 
     def __init__(self):
         self.reset()
 
     def reset(self):
         self.samplerate = None
-        self.samplenum = 0
-        self.frame_start = -1
-        self.frame_valid = None
-        self.startbit = -1
-        self.cur_data_bit = 0
-        self.datavalue = 0
-        self.paritybit = -1
-        self.stopbit1 = -1
-        self.startsample = -1
-        self.state = 'WAIT FOR START BIT'
-        self.databits = []
-        self.break_start = None
+        self.frame_start = [-1, -1]
+        self.frame_valid = [None, None]
+        self.startbit = [-1, -1]
+        self.cur_data_bit = [0, 0]
+        self.datavalue = [0, 0]
+        self.paritybit = [-1, -1]
+        self.stopbit1 = [-1, -1]
+        self.startsample = [-1, -1]
+        self.state = ['WAIT FOR START BIT', 'WAIT FOR START BIT']
+        self.databits = [[], []]
+        self.break_start = [None, None]
+        self.packet_cache = [[], []]
+        self.ss_packet, self.es_packet = [None, None], [None, None]
+        self.idle_start = [None, None]
 
     def start(self):
         self.out_python = self.register(srd.OUTPUT_PYTHON)
         self.out_binary = self.register(srd.OUTPUT_BINARY)
         self.out_ann = self.register(srd.OUTPUT_ANN)
-        self.bw = (self.options['num_data_bits'] + 7) // 8
+        self.bw = (self.options['data_bits'] + 7) // 8
 
     def metadata(self, key, value):
         if key == srd.SRD_CONF_SAMPLERATE:
@@ -187,211 +232,345 @@ class Decoder(srd.Decoder):
             # The width of one UART bit in number of samples.
             self.bit_width = float(self.samplerate) / float(self.options['baudrate'])
 
-    def get_sample_point(self, bitnum):
+    def get_sample_point(self, rxtx, bitnum):
         # Determine absolute sample number of a bit slot's sample point.
-        # bitpos is the samplenumber which is in the middle of the
-        # specified UART bit (0 = start bit, 1..x = data, x+1 = parity bit
-        # (if used) or the first stop bit, and so on).
-        # The samples within bit are 0, 1, ..., (bit_width - 1), therefore
-        # index of the middle sample within bit window is (bit_width - 1) / 2.
-        bitpos = self.frame_start + (self.bit_width - 1) / 2.0
+        # Counts for UART bits start from 0 (0 = start bit, 1..x = data,
+        # x+1 = parity bit (if used) or the first stop bit, and so on).
+        # Accept a position in the range of 1-99% of the full bit width.
+        # Assume 50% for invalid input specs for backwards compatibility.
+        perc = self.options['sample_point'] or 50
+        if not perc or perc not in range(1, 100):
+            perc = 50
+        perc /= 100.0
+        bitpos = (self.bit_width - 1) * perc
+        bitpos += self.frame_start[rxtx]
         bitpos += bitnum * self.bit_width
         return bitpos
 
-    def wait_for_start_bit(self, signal):
+    def wait_for_start_bit(self, rxtx, signal):
         # Save the sample number where the start bit begins.
-        self.frame_start = self.samplenum
-        self.frame_valid = True
+        self.frame_start[rxtx] = self.samplenum
+        self.frame_valid[rxtx] = True
 
-        self.state = 'GET START BIT'
+        self.state[rxtx] = 'GET START BIT'
 
-    def get_start_bit(self, signal):
-        self.startbit = signal
+    def get_start_bit(self, rxtx, signal):
+        self.startbit[rxtx] = signal
 
         # The startbit must be 0. If not, we report an error and wait
         # for the next start bit (assuming this one was spurious).
-        if self.startbit != 0:
-            self.putp(['INVALID STARTBIT', 0, self.startbit])
-            self.putg([5, ['Frame error', 'Frame err', 'FE']])
-            self.frame_valid = False
+        if self.startbit[rxtx] != 0:
+            self.putp(['INVALID STARTBIT', rxtx, self.startbit[rxtx]])
+            self.putg([Ann.RX_WARN + rxtx, ['Frame error', 'Frame err', 'FE']])
+            self.frame_valid[rxtx] = False
             es = self.samplenum + ceil(self.bit_width / 2.0)
-            self.putpse(self.frame_start, es, ['FRAME', 0,
-                (self.datavalue, self.frame_valid)])
-            self.state = 'WAIT FOR START BIT'
+            self.putpse(self.frame_start[rxtx], es, ['FRAME', rxtx,
+                (self.datavalue[rxtx], self.frame_valid[rxtx])])
+            self.state[rxtx] = 'WAIT FOR START BIT'
             return
 
-        self.cur_data_bit = 0
-        self.datavalue = 0
-        self.startsample = -1
+        self.cur_data_bit[rxtx] = 0
+        self.datavalue[rxtx] = 0
+        self.startsample[rxtx] = -1
 
-        self.putp(['STARTBIT', 0, self.startbit])
-        if self.options['anno_startstop'] == 'yes':
-            self.putg([1, ['Start bit', 'Start', 'S']])
+        self.putp(['STARTBIT', rxtx, self.startbit[rxtx]])
+        self.putg([Ann.RX_START + rxtx, ['Start bit', 'Start', 'S']])
 
-        self.state = 'GET DATA BITS'
+        self.state[rxtx] = 'GET DATA BITS'
 
-    def get_data_bits(self, signal):
+    def handle_packet(self, rxtx):
+        d = 'rx' if (rxtx == RX) else 'tx'
+        delim = self.options[d + '_packet_delim']
+        plen = self.options[d + '_packet_len']
+        if delim == -1 and plen == -1:
+            return
+
+        # Cache data values until we see the delimiter and/or the specified
+        # packet length has been reached (whichever happens first).
+        if len(self.packet_cache[rxtx]) == 0:
+            self.ss_packet[rxtx] = self.startsample[rxtx]
+        self.packet_cache[rxtx].append(self.datavalue[rxtx])
+        if self.datavalue[rxtx] == delim or len(self.packet_cache[rxtx]) == plen:
+            self.es_packet[rxtx] = self.samplenum
+            s = ''
+            for b in self.packet_cache[rxtx]:
+                s += self.format_value(b)
+                if self.options['format'] != 'ascii':
+                    s += ' '
+            if self.options['format'] != 'ascii' and s[-1] == ' ':
+                s = s[:-1] # Drop trailing space.
+            self.putx_packet(rxtx, [Ann.RX_PACKET + rxtx, [s]])
+            self.packet_cache[rxtx] = []
+
+    def get_data_bits(self, rxtx, signal):
         # Save the sample number of the middle of the first data bit.
-        if self.startsample == -1:
-            self.startsample = self.samplenum
+        if self.startsample[rxtx] == -1:
+            self.startsample[rxtx] = self.samplenum
 
-        self.putg([6, ['%d' % signal]])
+        self.putg([Ann.RX_DATA_BIT + rxtx, ['%d' % signal]])
 
         # Store individual data bits and their start/end samplenumbers.
         s, halfbit = self.samplenum, int(self.bit_width / 2)
-        self.databits.append([signal, s - halfbit, s + halfbit])
+        self.databits[rxtx].append([signal, s - halfbit, s + halfbit])
 
         # Return here, unless we already received all data bits.
-        self.cur_data_bit += 1
-        if self.cur_data_bit < self.options['num_data_bits']:
+        self.cur_data_bit[rxtx] += 1
+        if self.cur_data_bit[rxtx] < self.options['data_bits']:
             return
 
         # Convert accumulated data bits to a data value.
-        bits = [b[0] for b in self.databits]
+        bits = [b[0] for b in self.databits[rxtx]]
         if self.options['bit_order'] == 'msb-first':
             bits.reverse()
-        self.datavalue = bitpack(bits)
-        self.putpx(['DATA', 0, (self.datavalue, self.databits)])
+        self.datavalue[rxtx] = bitpack(bits)
+        self.putpx(rxtx, ['DATA', rxtx,
+            (self.datavalue[rxtx], self.databits[rxtx])])
 
-        self.putx([0, ['@%02X' % self.datavalue]])
+        b = self.datavalue[rxtx]
+        formatted = self.format_value(b)
+        if formatted is not None:
+            self.putx(rxtx, [rxtx, [formatted]])
 
-        b = self.datavalue
-        
         bdata = b.to_bytes(self.bw, byteorder='big')
-        self.putbin([0, bdata])
-        self.putbin([1, bdata])
+        self.putbin(rxtx, [Bin.RX + rxtx, bdata])
+        self.putbin(rxtx, [Bin.RXTX, bdata])
 
-        self.databits = []
+        self.handle_packet(rxtx)
+
+        self.databits[rxtx] = []
 
         # Advance to either reception of the parity bit, or reception of
         # the STOP bits if parity is not applicable.
-        self.state = 'GET PARITY BIT'
-        if self.options['parity_type'] == 'none':
-            self.state = 'GET STOP BITS'
- 
+        self.state[rxtx] = 'GET PARITY BIT'
+        if self.options['parity'] == 'none':
+            self.state[rxtx] = 'GET STOP BITS'
 
-    def get_parity_bit(self, signal):
-        self.paritybit = signal
+    def format_value(self, v):
+        # Format value 'v' according to configured options.
+        # Reflects the user selected kind of representation, as well as
+        # the number of data bits in the UART frames.
 
-        if parity_ok(self.options['parity_type'], self.paritybit,
-                     self.datavalue, self.options['num_data_bits']):
-            self.putp(['PARITYBIT', 0, self.paritybit])
-            self.putg([2, ['Parity bit', 'Parity', 'P']])
+        fmt, bits = self.options['format'], self.options['data_bits']
+
+        # Assume "is printable" for values from 32 to including 126,
+        # below 32 is "control" and thus not printable, above 127 is
+        # "not ASCII" in its strict sense, 127 (DEL) is not printable,
+        # fall back to hex representation for non-printables.
+        if fmt == 'ascii':
+            if v in range(32, 126 + 1):
+                return chr(v)
+            hexfmt = "[{:02X}]" if bits <= 8 else "[{:03X}]"
+            return hexfmt.format(v)
+
+        # Mere number to text conversion without prefix and padding
+        # for the "decimal" output format.
+        if fmt == 'dec':
+            return "{:d}".format(v)
+
+        # Padding with leading zeroes for hex/oct/bin formats, but
+        # without a prefix for density -- since the format is user
+        # specified, there is no ambiguity.
+        if fmt == 'hex':
+            digits = (bits + 4 - 1) // 4
+            fmtchar = "X"
+        elif fmt == 'oct':
+            digits = (bits + 3 - 1) // 3
+            fmtchar = "o"
+        elif fmt == 'bin':
+            digits = bits
+            fmtchar = "b"
+        else:
+            fmtchar = None
+        if fmtchar is not None:
+            fmt = "{{:0{:d}{:s}}}".format(digits, fmtchar)
+            return fmt.format(v)
+
+        return None
+
+    def get_parity_bit(self, rxtx, signal):
+        self.paritybit[rxtx] = signal
+
+        if parity_ok(self.options['parity'], self.paritybit[rxtx],
+                     self.datavalue[rxtx], self.options['data_bits']):
+            self.putp(['PARITYBIT', rxtx, self.paritybit[rxtx]])
+            self.putg([Ann.RX_PARITY_OK + rxtx, ['Parity bit', 'Parity', 'P']])
         else:
             # TODO: Return expected/actual parity values.
-            self.putp(['PARITY ERROR', 0, (0, 1)]) # FIXME: Dummy tuple...
-            self.putg([3, ['Parity error', 'Parity err', 'PE']])
-            self.frame_valid = False
+            self.putp(['PARITY ERROR', rxtx, (0, 1)]) # FIXME: Dummy tuple...
+            self.putg([Ann.RX_PARITY_ERR + rxtx, ['Parity error', 'Parity err', 'PE']])
+            self.frame_valid[rxtx] = False
 
-        self.state = 'GET STOP BITS'
+        self.state[rxtx] = 'GET STOP BITS'
 
     # TODO: Currently only supports 1 stop bit.
-    def get_stop_bits(self, signal):
-        self.stopbit1 = signal
+    def get_stop_bits(self, rxtx, signal):
+        self.stopbit1[rxtx] = signal
 
         # Stop bits must be 1. If not, we report an error.
-        if self.stopbit1 != 1:
-            self.putp(['INVALID STOPBIT', 0, self.stopbit1])
-            self.putg([5, ['Frame error', 'Frame err', 'FE']])
-            self.frame_valid = False
+        if self.stopbit1[rxtx] != 1:
+            self.putp(['INVALID STOPBIT', rxtx, self.stopbit1[rxtx]])
+            self.putg([Ann.RX_WARN + rxtx, ['Frame error', 'Frame err', 'FE']])
+            self.frame_valid[rxtx] = False
 
-        self.putp(['STOPBIT', 0, self.stopbit1])
-        if self.options['anno_startstop'] == 'yes':
-            self.putg([2, ['Stop bit', 'Stop', 'T']])
+        self.putp(['STOPBIT', rxtx, self.stopbit1[rxtx]])
+        self.putg([Ann.RX_STOP + rxtx, ['Stop bit', 'Stop', 'T']])
 
         # Pass the complete UART frame to upper layers.
         es = self.samplenum + ceil(self.bit_width / 2.0)
-        self.putpse(self.frame_start, es, ['FRAME', 0,
-            (self.datavalue, self.frame_valid)])
+        self.putpse(self.frame_start[rxtx], es, ['FRAME', rxtx,
+            (self.datavalue[rxtx], self.frame_valid[rxtx])])
 
-        self.state = 'WAIT FOR START BIT'
+        self.state[rxtx] = 'WAIT FOR START BIT'
+        self.idle_start[rxtx] = self.frame_start[rxtx] + self.frame_len_sample_count
 
-    def handle_break(self):
-        self.putpse(self.frame_start, self.samplenum,
-                ['BREAK', 0, 0])
-        self.putgse(self.frame_start, self.samplenum,
-                [7, ['Break condition', 'Break', 'Brk', 'B']])
-        self.state = 'WAIT FOR START BIT'
+    def handle_break(self, rxtx):
+        self.putpse(self.frame_start[rxtx], self.samplenum,
+                ['BREAK', rxtx, 0])
+        self.putgse(self.frame_start[rxtx], self.samplenum,
+                [Ann.RX_BREAK + rxtx, ['Break condition', 'Break', 'Brk', 'B']])
+        self.state[rxtx] = 'WAIT FOR START BIT'
 
-    def get_wait_cond(self, inv):
+    def get_wait_cond(self, rxtx, inv):
         # Return condititions that are suitable for Decoder.wait(). Those
         # conditions either match the falling edge of the START bit, or
         # the sample point of the next bit time.
-        state = self.state
+        state = self.state[rxtx]
         if state == 'WAIT FOR START BIT':
-            return {0: 'r' if inv else 'f'}
+            return {rxtx: 'r' if inv else 'f'}
         if state == 'GET START BIT':
             bitnum = 0
         elif state == 'GET DATA BITS':
-            bitnum = 1 + self.cur_data_bit
+            bitnum = 1 + self.cur_data_bit[rxtx]
         elif state == 'GET PARITY BIT':
-            bitnum = 1 + self.options['num_data_bits']
+            bitnum = 1 + self.options['data_bits']
         elif state == 'GET STOP BITS':
-            bitnum = 1 + self.options['num_data_bits']
-            bitnum += 0 if self.options['parity_type'] == 'none' else 1
-        want_num = ceil(self.get_sample_point(bitnum))
+            bitnum = 1 + self.options['data_bits']
+            bitnum += 0 if self.options['parity'] == 'none' else 1
+        want_num = ceil(self.get_sample_point(rxtx, bitnum))
         return {'skip': want_num - self.samplenum}
 
-    def inspect_sample(self, signal, inv):
+    def get_idle_cond(self, rxtx, inv):
+        # Return a condition that corresponds to the (expected) end of
+        # the next frame, assuming that it will be an "idle frame"
+        # (constant high input level for the frame's length).
+        if self.idle_start[rxtx] is None:
+            return None
+        end_of_frame = self.idle_start[rxtx] + self.frame_len_sample_count
+        if end_of_frame < self.samplenum:
+            return None
+        return {'skip': end_of_frame - self.samplenum}
+
+    def inspect_sample(self, rxtx, signal, inv):
         # Inspect a sample returned by .wait() for the specified UART line.
         if inv:
             signal = not signal
 
-        state = self.state
+        state = self.state[rxtx]
         if state == 'WAIT FOR START BIT':
-            self.wait_for_start_bit(signal)
+            self.wait_for_start_bit(rxtx, signal)
         elif state == 'GET START BIT':
-            self.get_start_bit(signal)
+            self.get_start_bit(rxtx, signal)
         elif state == 'GET DATA BITS':
-            self.get_data_bits(signal)
+            self.get_data_bits(rxtx, signal)
         elif state == 'GET PARITY BIT':
-            self.get_parity_bit(signal)
+            self.get_parity_bit(rxtx, signal)
         elif state == 'GET STOP BITS':
-            self.get_stop_bits(signal)
+            self.get_stop_bits(rxtx, signal)
 
-    def inspect_edge(self, signal, inv):
+    def inspect_edge(self, rxtx, signal, inv):
         # Inspect edges, independently from traffic, to detect break conditions.
         if inv:
             signal = not signal
         if not signal:
             # Signal went low. Start another interval.
-            self.break_start = self.samplenum
+            self.break_start[rxtx] = self.samplenum
             return
         # Signal went high. Was there an extended period with low signal?
-        if self.break_start is None:
+        if self.break_start[rxtx] is None:
             return
-        diff = self.samplenum - self.break_start
+        diff = self.samplenum - self.break_start[rxtx]
         if diff >= self.break_min_sample_count:
-            self.handle_break()
-        self.break_start = None
+            self.handle_break(rxtx)
+        self.break_start[rxtx] = None
+
+    def inspect_idle(self, rxtx, signal, inv):
+        # Check each edge and each period of stable input (either level).
+        # Can derive the "idle frame period has passed" condition.
+        if inv:
+            signal = not signal
+        if not signal:
+            # Low input, cease inspection.
+            self.idle_start[rxtx] = None
+            return
+        # High input, either just reached, or still stable.
+        if self.idle_start[rxtx] is None:
+            self.idle_start[rxtx] = self.samplenum
+        diff = self.samplenum - self.idle_start[rxtx]
+        if diff < self.frame_len_sample_count:
+            return
+        ss, es = self.idle_start[rxtx], self.samplenum
+        self.putpse(ss, es, ['IDLE', rxtx, 0])
+        self.idle_start[rxtx] = self.samplenum
 
     def decode(self):
         if not self.samplerate:
             raise SamplerateError('Cannot decode without samplerate.')
 
-        inv = self.options['invert'] == 'yes'
-        cond_data_idx = None
+        has_pin = [self.has_channel(ch) for ch in (RX, TX)]
+        if not True in has_pin:
+            raise ChannelError('Need at least one of TX or RX pins.')
+
+        opt = self.options
+        inv = [opt['invert_rx'] == 'yes', opt['invert_tx'] == 'yes']
+        cond_data_idx = [None] * len(has_pin)
 
         # Determine the number of samples for a complete frame's time span.
         # A period of low signal (at least) that long is a break condition.
         frame_samples = 1 # START
-        frame_samples += self.options['num_data_bits']
-        frame_samples += 0 if self.options['parity_type'] == 'none' else 1
-        frame_samples += self.options['num_stop_bits']
+        frame_samples += self.options['data_bits']
+        frame_samples += 0 if self.options['parity'] == 'none' else 1
+        frame_samples += self.options['stop_bits']
         frame_samples *= self.bit_width
-        self.break_min_sample_count = ceil(frame_samples)
-        cond_edge_idx = None
+        self.frame_len_sample_count = ceil(frame_samples)
+        self.break_min_sample_count = self.frame_len_sample_count
+        cond_edge_idx = [None] * len(has_pin)
+        cond_idle_idx = [None] * len(has_pin)
 
         while True:
             conds = []
+            if has_pin[RX]:
+                cond_data_idx[RX] = len(conds)
+                conds.append(self.get_wait_cond(RX, inv[RX]))
+                cond_edge_idx[RX] = len(conds)
+                conds.append({RX: 'e'})
+                cond_idle_idx[RX] = None
+                idle_cond = self.get_idle_cond(RX, inv[RX])
+                if idle_cond:
+                    cond_idle_idx[RX] = len(conds)
+                    conds.append(idle_cond)
+            if has_pin[TX]:
+                cond_data_idx[TX] = len(conds)
+                conds.append(self.get_wait_cond(TX, inv[TX]))
+                cond_edge_idx[TX] = len(conds)
+                conds.append({TX: 'e'})
+                cond_idle_idx[TX] = None
+                idle_cond = self.get_idle_cond(TX, inv[TX])
+                if idle_cond:
+                    cond_idle_idx[TX] = len(conds)
+                    conds.append(idle_cond)
+            (rx, tx) = self.wait(conds)
 
-            cond_data_idx = len(conds)
-            conds.append(self.get_wait_cond(inv))
-            cond_edge_idx = len(conds)
-            conds.append({0: 'e'})
-
-            (rxtx, ) = self.wait(conds)
-            if cond_data_idx is not None and (self.matched & (0b1 << cond_data_idx)):
-                self.inspect_sample(rxtx, inv)
-            if cond_edge_idx is not None and (self.matched & (0b1 << cond_edge_idx)):
-                self.inspect_edge(rxtx, inv)
+            if cond_data_idx[RX] is not None and (self.matched & (0b1 << cond_data_idx[RX])):
+                self.inspect_sample(RX, rx, inv[RX])
+            if cond_edge_idx[RX] is not None and (self.matched & (0b1 << cond_edge_idx[RX])):
+                self.inspect_edge(RX, rx, inv[RX])
+                self.inspect_idle(RX, rx, inv[RX])
+            if cond_idle_idx[RX] is not None and (self.matched & (0b1 << cond_idle_idx[RX])):
+                self.inspect_idle(RX, rx, inv[RX])
+            if cond_data_idx[TX] is not None and (self.matched & (0b1 << cond_data_idx[TX])):
+                self.inspect_sample(TX, tx, inv[TX])
+            if cond_edge_idx[TX] is not None and (self.matched & (0b1 << cond_edge_idx[TX])):
+                self.inspect_edge(TX, tx, inv[TX])
+                self.inspect_idle(TX, tx, inv[TX])
+            if cond_idle_idx[TX] is not None and (self.matched & (0b1 << cond_idle_idx[TX])):
+                self.inspect_idle(TX, tx, inv[TX])
