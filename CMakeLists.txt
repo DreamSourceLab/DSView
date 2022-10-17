@@ -345,6 +345,7 @@ set(DSView_SOURCES
     DSView/pv/utility/encoding.cpp
     DSView/pv/utility/path.cpp
     DSView/pv/deviceagent.cpp
+    DSView/pv/ui/langresource.cpp
 )
 
 set(DSView_HEADERS

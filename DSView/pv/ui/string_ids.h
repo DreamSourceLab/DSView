@@ -24,8 +24,8 @@
 
 #define     STR_PAGE_MAIN       1
 #define     STR_PAGE_MSG        2
-#define     STR_PAGE_DEVICE     3
-#define     STR_PAGE_TOOLBAR    4
+#define     STR_PAGE_TOOLBAR    3
+#define     STR_PAGE_DSL        100
 
 #define IDS_TOOLBAR_MODE
 #define IDS_TOOLBAR_START

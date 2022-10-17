@@ -663,7 +663,13 @@ namespace pv
                 else if (info->datatype == SR_T_FLOAT)
                     _device_agent->set_config(NULL, NULL, info->key, g_variant_new_double(sessionObj[info->name].toDouble()));
                 else if (info->datatype == SR_T_CHAR)
-                    _device_agent->set_config(NULL, NULL, info->key, g_variant_new_string(sessionObj[info->name].toString().toUtf8()));
+                {   
+                    QString v = sessionObj[info->name].toString();
+                    if (info->key == SR_CONF_OPERATION_MODE){
+                        
+                    }
+                    _device_agent->set_config(NULL, NULL, info->key, g_variant_new_string(v.toUtf8()));
+                }                   
             }
         }
 

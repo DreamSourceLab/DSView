@@ -930,7 +930,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         if (sdi->mode != LOGIC) {
             dso_init(sdi);
         }
-    } else if (id == SR_CONF_OPERATION_MODE) {
+    } 
+    else if (id == SR_CONF_OPERATION_MODE) {
         stropt = g_variant_get_string(data, NULL);
         if (sdi->mode == LOGIC) {
             if (!strcmp(stropt, get_opmodes(devc)[OP_BUFFER])) {

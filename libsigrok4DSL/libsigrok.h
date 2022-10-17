@@ -1162,12 +1162,7 @@ struct ds_trigger_pos {
     uint32_t status;
 };
   
-/**
- * @file
- *
- * Header file containing API function prototypes.
- */  
- 
+
  
 
 /*--- input/input.c ---------------------------------------------------------*/

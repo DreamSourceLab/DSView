@@ -61,7 +61,7 @@ static const struct lang_page_item lange_page_keys[] =
     {STR_PAGE_MAIN, "main.json"},
     {STR_PAGE_TOOLBAR, "toolbar.json"},
     {STR_PAGE_MSG, "msg.json"},
-    {STR_PAGE_DEVICE, "device.json"},
+    {STR_PAGE_DSL, "DSL.json"},
 };
 
 class LangResource

@@ -79,7 +79,7 @@ DeviceOptions::DeviceOptions()
                     label_char = info->label_cn;
             g_variant_unref(gvar_tmp);
         }
-        const QString label(label_char);
+        QString label(label_char);
 
 		switch(key)
 		{
