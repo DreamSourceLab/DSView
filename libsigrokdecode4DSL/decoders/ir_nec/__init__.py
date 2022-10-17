@@ -19,6 +19,7 @@
 
 '''
 NEC is a pulse-distance based infrared remote control protocol.
+See https://www.sbprojects.net/knowledge/ir/nec.php for a description.
 '''
 
 from .pd import Decoder

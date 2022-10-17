@@ -1,7 +1,7 @@
 ##
 ## This file is part of the libsigrokdecode project.
 ##
-## Copyright (C) 2016 Fabian J. Stumpf <sigrok@fabianstumpf.de>
+## Copyright (C) 2019 Gerhard Sittig <gerhard.sittig@gmx.net>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by

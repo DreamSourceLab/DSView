@@ -33,7 +33,7 @@ class Decoder(srd.Decoder):
     outputs = ['i2c']
     tags = ['Util']
     options = (
-        {'id': 'address', 'desc': 'Address to filter out of the I²C stream',
+        {'id': 'address', 'desc': 'Slave address to filter (decimal)',
             'default': 0},
         {'id': 'direction', 'desc': 'Direction to filter', 'default': 'both',
             'values': ('read', 'write', 'both')}

@@ -95,12 +95,12 @@ class Decoder(srd.Decoder):
         ('phase', 'Phase'),
         ('increment', 'Increment'),
         ('count', 'Count'),
-        ('turns', 'Turns'),
+        ('turn', 'Turn'),
         ('interval', 'Interval'),
         ('average', 'Average'),
         ('rpm', 'Rate'),
     )
-    annotation_rows = tuple((u, v, (i,)) for i, (u, v) in enumerate(annotations))
+    annotation_rows = tuple((u + 's', v + 's', (i,)) for i, (u, v) in enumerate(annotations))
 
     def __init__(self):
         self.reset()
@@ -148,8 +148,7 @@ class Decoder(srd.Decoder):
 
         self.ENCODER_STEPS = 1 << self.num_channels
 
-        (d0, d1, d2, d3, d4, d5, d6, d7) = self.wait()
-        startbits = (d0, d1, d2, d3, d4, d5, d6, d7)
+        startbits = self.wait()
         curtime = self.samplenum
 
         self.turns.set(self.samplenum, 0)
@@ -158,8 +157,7 @@ class Decoder(srd.Decoder):
 
         while True:
             prevtime = curtime
-            (d0, d1, d2, d3, d4, d5, d6, d7) = self.wait([{i: 'e'} for i in range(self.num_channels)])
-            bits = (d0, d1, d2, d3, d4, d5, d6, d7)
+            bits = self.wait([{i: 'e'} for i in range(self.num_channels)])
             curtime = self.samplenum
 
             oldcount = self.count.get()

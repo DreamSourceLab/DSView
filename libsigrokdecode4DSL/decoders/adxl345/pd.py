@@ -410,7 +410,8 @@ class Decoder(srd.Decoder):
                     self.address <<= 1
                 self.address >>= 1
                 self.put(start_sample, addr_bit[2], self.out_ann,
-                    [Ann.REG_ADDRESS, ['ADDRESS: {$}', 'ADDR: {$}', '{$}', '@%02X' % self.address]])
+                    [Ann.REG_ADDRESS, ['ADDRESS: 0x%02X' % self.address, 'ADDR: 0x%02X'
+                    % self.address, '0x%02X' % self.address]])
                 self.ss = -1
                 self.state = St.DATA
 

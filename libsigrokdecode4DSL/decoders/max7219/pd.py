@@ -51,9 +51,9 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Display']
     annotations = (
-        ('register', 'Registers written to the device'),
-        ('digit', 'Digits displayed on the device'),
-        ('warnings', 'Human-readable warnings'),
+        ('register', 'Register write'),
+        ('digit', 'Digit displayed'),
+        ('warning', 'Warning'),
     )
     annotation_rows = (
         ('commands', 'Commands', (ann_reg, ann_digit)),
@@ -75,13 +75,10 @@ class Decoder(srd.Decoder):
         self.put(ss, es, self.out_ann, [ann_reg, ['%s: %s' % (reg, value)]])
 
     def putdigit(self, ss, es, digit, value):
-        self.put(ss, es, self.out_ann, [ann_digit, ['Digit %d: {$}' % digit, '@%02X' % value]])
+        self.put(ss, es, self.out_ann, [ann_digit, ['Digit %d: %02X' % (digit, value)]])
 
     def putwarn(self, ss, es, message):
         self.put(ss, es, self.out_ann, [ann_warning, [message]])
-
-    def putwarn_ann(self, ss, es, message):
-        self.put(ss, es, self.out_ann, [ann_warning, message])
 
     def decode(self, ss, es, data):
         ptype, mosi, _ = data
@@ -100,7 +97,8 @@ class Decoder(srd.Decoder):
                     name, decoder = registers[self.addr]
                     self.putreg(self.addr_start, es, name, decoder(mosi))
                 else:
-                    self.putwarn_ann(self.addr_start, es,['Unknown register {$}', '@%02X' % self.addr])
+                    self.putwarn(self.addr_start, es,
+                        'Unknown register %02X' % (self.addr))
 
             self.pos += 1
         elif ptype == 'CS-CHANGE':

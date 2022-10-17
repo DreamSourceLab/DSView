@@ -38,8 +38,8 @@ class Decoder(srd.Decoder):
         ('data', 'Stream data'),
     )
     annotation_rows = (
-        ('stream', 'Current stream', (0,)),
-        ('data', 'Stream data', (1,)),
+        ('streams', 'Current streams', (0,)),
+        ('data-vals', 'Stream data', (1,)),
     )
 
     def __init__(self):

@@ -45,7 +45,7 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['IC', 'Sensor']
     annotations = (
-        ('text', 'Human-readable text'),
+        ('text', 'Text'),
     )
 
     def __init__(self):

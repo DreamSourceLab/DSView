@@ -1,7 +1,7 @@
 ##
 ## This file is part of the libsigrokdecode project.
 ##
-## Copyright (C) 2018 Stephan Thiele <stephan.thiele@mailbox.org>
+## Copyright (C) 2022 Gerhard Sittig <gerhard.sittig@gmx.net>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -18,11 +18,18 @@
 ##
 
 '''
-This decoder stacks on top of the 'uart' PD and decodes the LIN
-(Local Interconnect Network) protocol.
+SBUS by Futaba, a hobby remote control protocol on top of UART.
+Sometimes referred to as "Serial BUS" or S-BUS.
 
-LIN is layered on top of the UART (async serial) protocol, with 8n1 settings.
-Bytes are sent LSB-first.
+UART communication typically runs at 100kbps with 8e2 frame format and
+inverted signals (high voltage level is logic low).
+
+SBUS messages take 3ms to transfer, and typically repeat in intervals
+of 7ms or 14ms. An SBUS message consists of 25 UART bytes, and carries
+16 proportional channels with 11 bits each, and 2 digital channels
+(boolean, 1 bit), and flags which represent current communication state.
+Proportional channel values typically are in the 192..1792 range, but
+individual implementations may differ.
 '''
 
 from .pd import Decoder

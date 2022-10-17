@@ -407,7 +407,7 @@ class Decoder(srd.Decoder):
                 # Wait until we're in the correct bit/sampling position.
                 pos = self.get_sample_point(self.curbit)
                 (fr_rx,) = self.wait([{'skip': pos - self.samplenum}, {0: 'f'}])
-                if self.matched & 0b10:
+                if self.matched[1]:
                     self.dom_edge_seen()
-                if self.matched & 0b01:
+                if self.matched[0]:
                     self.handle_bit(fr_rx)

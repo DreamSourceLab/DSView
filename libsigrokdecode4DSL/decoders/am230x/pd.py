@@ -56,8 +56,8 @@ class Decoder(srd.Decoder):
         ('bit', 'Bit'),
         ('end', 'End'),
         ('byte', 'Byte'),
-        ('humidity', 'Relative humidity in percent'),
-        ('temperature', 'Temperature in degrees Celsius'),
+        ('humidity', 'Relative humidity'),
+        ('temperature', 'Temperature'),
         ('checksum', 'Checksum'),
     )
     annotation_rows = (

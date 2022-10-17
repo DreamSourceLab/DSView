@@ -1,7 +1,7 @@
 ##
 ## This file is part of the libsigrokdecode project.
 ##
-## Copyright (C) 2018 Stephan Thiele <stephan.thiele@mailbox.org>
+## Copyright (C) 2012 Uwe Hermann <uwe@hermann-uwe.de>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -18,11 +18,19 @@
 ##
 
 '''
-This decoder stacks on top of the 'uart' PD and decodes the LIN
-(Local Interconnect Network) protocol.
+JTAG (Joint Test Action Group), a.k.a. "IEEE 1149.1: Standard Test Access Port
+and Boundary-Scan Architecture", is a protocol used for testing, debugging,
+and flashing various digital ICs.
 
-LIN is layered on top of the UART (async serial) protocol, with 8n1 settings.
-Bytes are sent LSB-first.
+Details:
+https://en.wikipedia.org/wiki/Joint_Test_Action_Group
+http://focus.ti.com/lit/an/ssya002c/ssya002c.pdf
+
+This decoder handles a tiny part of IEEE 1149.7, the CJTAG OSCAN1 format.
+ZBS is currently not supported.
+
+Details:
+http://developers-club.com/posts/237885/
 '''
 
 from .pd import Decoder

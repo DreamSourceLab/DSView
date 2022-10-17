@@ -26,7 +26,10 @@
 #    - Extensions
 
 import sigrokdecode as srd
+from common.srdhelper import SrdIntEnum
 import os
+
+St = SrdIntEnum.from_str('St', 'OFFSET EXTENSIONS HEADER EDID')
 
 EDID_HEADER = [0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00]
 OFF_VENDOR = 8
@@ -83,12 +86,12 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Display', 'Memory', 'PC']
     annotations = (
-        ('fields', 'EDID structure fields'),
-        ('sections', 'EDID structure sections'),
+        ('field', 'Field'),
+        ('section', 'Section'),
     )
     annotation_rows = (
-        ('sections', 'Sections', (1,)),
         ('fields', 'Fields', (0,)),
+        ('sections', 'Sections', (1,)),
     )
 
     def __init__(self):
@@ -116,22 +119,22 @@ class Decoder(srd.Decoder):
         cmd, data = data
 
         if cmd == 'ADDRESS WRITE' and data == 0x50:
-            self.state = 'offset'
+            self.state = St.OFFSET
             self.ss = ss
             return
 
         if cmd == 'ADDRESS READ' and data == 0x50:
             if self.extension > 0:
-                self.state = 'extensions'
+                self.state = St.EXTENSIONS
                 s = str(self.extension)
                 t = ["Extension: " + s, "X: " + s, s]
             else:
-                self.state = 'header'
+                self.state = St.HEADER
                 t = ["EDID"]
             self.put(ss, es, self.out_ann, [ANN_SECTIONS, t])
             return
 
-        if cmd == 'DATA WRITE' and self.state == 'offset':
+        if cmd == 'DATA WRITE' and self.state == St.OFFSET:
             self.offset = data
             self.extension = self.offset // 128
             self.cnt = self.offset % 128
@@ -163,7 +166,7 @@ class Decoder(srd.Decoder):
             self.sn.append([ss, es])
             self.cache.append(data)
 
-        if self.state is None or self.state == 'header':
+        if self.state is None or self.state == St.HEADER:
             # Wait for the EDID header
             if self.cnt >= OFF_VENDOR:
                 if self.cache[-8:] == EDID_HEADER:
@@ -171,12 +174,12 @@ class Decoder(srd.Decoder):
                     self.sn = self.sn[-8:]
                     self.cache = self.cache[-8:]
                     self.cnt = 8
-                    self.state = 'edid'
+                    self.state = St.EDID
                     self.put(self.sn[0][0], es, self.out_ann,
                             [ANN_SECTIONS, ['Header']])
                     self.put(self.sn[0][0], es, self.out_ann,
                             [ANN_FIELDS, ['Header pattern']])
-        elif self.state == 'edid':
+        elif self.state == St.EDID:
             if self.cnt == OFF_VERSION:
                 self.decode_vid(-10)
                 self.decode_pid(-8)
@@ -224,9 +227,9 @@ class Decoder(srd.Decoder):
                     csstr = 'WRONG!'
                 self.put(ss, es, self.out_ann, [0, ['Checksum: %d (%s)' % (
                          self.cache[self.cnt-1], csstr)]])
-                self.state = 'extensions'
+                self.state = St.EXTENSIONS
 
-        elif self.state == 'extensions':
+        elif self.state == St.EXTENSIONS:
             cache = self.ext_cache[self.extension - 1]
             sn = self.ext_sn[self.extension - 1]
             v = cache[self.cnt - 1]

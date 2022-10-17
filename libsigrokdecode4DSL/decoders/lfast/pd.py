@@ -256,15 +256,11 @@ class Decoder(srd.Decoder):
                 self.put_payload()
 
     def decode(self):
-        bMoreMatch = False
-
         while True:
             if self.timeout == 0:
                 rising_edge, = self.wait({0: 'e'})
-                bMoreMatch = False
             else:
                 rising_edge, = self.wait([{0: 'e'}, {'skip': self.timeout}])
-                bMoreMatch = True
 
             # If this is the first edge, we only update ss
             if self.ss == 0:
@@ -276,7 +272,7 @@ class Decoder(srd.Decoder):
             self.es = self.samplenum
 
             # Check for the sleep bit if this is a timeout condition
-            if bMoreMatch and self.matched & 0b10 == 0b10:
+            if (len(self.matched) == 2) and self.matched[1]:
                 rising_edge = ~rising_edge
                 if self.state == state_sync:
                     self.reset()
@@ -335,5 +331,5 @@ class Decoder(srd.Decoder):
 
             # If we got here when a timeout occurred, we have processed all null
             # bits that we could and should reset now to find the next packet
-            if bMoreMatch and self.matched & 0b10 == 0b10:
+            if (len(self.matched) == 2) and self.matched[1]:
                 self.reset()

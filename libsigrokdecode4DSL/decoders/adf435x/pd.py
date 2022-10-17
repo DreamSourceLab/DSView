@@ -99,10 +99,10 @@ class Decoder(srd.Decoder):
     tags = ['Clock/timing', 'IC', 'Wireless/RF']
     annotations = (
         # Sent from the host to the chip.
-        ('register', 'Register written to the device'),
+        ('write', 'Register write'),
     )
     annotation_rows = (
-        ('registers', 'Register writes', (ANN_REG,)),
+        ('writes', 'Register writes', (ANN_REG,)),
     )
 
     def __init__(self):
