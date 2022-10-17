@@ -32,6 +32,7 @@
 #include "../view/trace.h"
 #include "../dialogs/applicationpardlg.h"
 #include "../config/appconfig.h"
+#include "../ui/langresource.h"
 
 namespace pv {
 namespace toolbars {
@@ -129,6 +130,7 @@ TrigBar::TrigBar(SigSession *session, QWidget *parent) :
     connect(_action_dispalyOptions, SIGNAL(triggered()), this, SLOT(on_application_param()));
 }
 
+//语言变化
 void TrigBar::changeEvent(QEvent *event)
 {
     if (event->type() == QEvent::LanguageChange)
@@ -140,23 +142,23 @@ void TrigBar::changeEvent(QEvent *event)
 
 void TrigBar::retranslateUi()
 {
-    _trig_button.setText(tr("Trigger"));
-    _protocol_button.setText(tr("Decode"));
-    _measure_button.setText(tr("Measure"));
-    _search_button.setText(tr("Search"));
-    _function_button.setText(tr("Function"));
-    _setting_button.setText(tr("Display"));
+    _trig_button.setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_TRIGGER), "Trigger"));
+    _protocol_button.setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_DECODE), "Decode"));
+    _measure_button.setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_MEASURE), "Measure"));
+    _search_button.setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_SEARCH), "Search"));
+    _function_button.setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_FUNCTION), "Function"));
+    _setting_button.setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_DISPLAY), "Display"));
  
-    _action_lissajous->setText(tr("&Lissajous"));
+    _action_lissajous->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_LISSAJOUS), "Lissajous"));
 
-    _themes->setTitle(tr("Themes"));
-    _dark_style->setText(tr("Dark"));
-    _light_style->setText(tr("Light"));
+    _themes->setTitle(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_THEMES), "Themes"));
+    _dark_style->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_DARK), "Dark"));
+    _light_style->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_LIGHT), "Light"));
 
-    _action_fft->setText(tr("FFT"));
-    _action_math->setText(tr("Math"));
+    _action_fft->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_FFT), "FFT"));
+    _action_math->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_MATH), "Math"));
 
-    _action_dispalyOptions->setText(tr("Options"));
+    _action_dispalyOptions->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_OPTIONS), "Options"));
 }
 
 void TrigBar::reStyle()

@@ -1,0 +1,30 @@
+[
+    {
+        "id": "IDS_MSG_A_CAL",
+        "text": "自动校准"
+    },
+    {
+        "id": "IDS_MSG_ADJUST_SAVE",
+        "text": "请调整零偏差并保存结果"
+    },
+    {
+        "id": "IDS_MSG_OK",
+        "text": "好"
+    },
+    {
+        "id": "IDS_MSG_SKIP",
+        "text": "跳过"
+    },
+    {
+        "id": "IDS_MSG_A_CAL_START",
+        "text": "自动校准程序将启动。不要连接任何探头。这可能需要一段时间！"
+    },
+    {
+        "id": "IDS_MSG_SAVE_CAPDATE",
+        "text": "是否保存捕获的数据？"
+    },
+    {
+        "id": "IDS_MSG_SAVE_CANFIND_SESSIONFILE",
+        "text": "找不到此设备的默认会话文件！"
+    }
+]

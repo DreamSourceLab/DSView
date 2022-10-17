@@ -25,8 +25,10 @@
 #define     STR_PAGE_MAIN       1
 #define     STR_PAGE_MSG        2
 #define     STR_PAGE_TOOLBAR    3
+#define     STR_PAGE_DLG        4
 #define     STR_PAGE_DSL        100
 
+// xx
 #define IDS_TOOLBAR_MODE
 #define IDS_TOOLBAR_START
 #define IDS_TOOLBAR_STOP
@@ -36,4 +38,6 @@
 #define IDS_TOOLBAR_REPEAT_ACTION
 #define IDS_TOOLBAR_OPTIONS
 
+
+#define IDS_MSG_LOG_LEVEL
 #endif

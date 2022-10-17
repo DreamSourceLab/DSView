@@ -1,10 +1,30 @@
 [
     {
-        "id": "vvv",
-        "text": "xxx"
+        "id": "IDS_MSG_A_CAL",
+        "text": "Auto Calibration"
     },
     {
-        "id": "vvv1",
-        "text": "xxx1"
+        "id": "IDS_MSG_ADJUST_SAVE",
+        "text": "Please adjust zero skew and save the result"
+    },
+    {
+        "id": "IDS_MSG_OK",
+        "text": "Ok"
+    },
+    {
+        "id": "IDS_MSG_SKIP",
+        "text": "Skip"
+    },
+    {
+        "id": "IDS_MSG_A_CAL_START",
+        "text": "Auto Calibration program will be started. Don't connect any probes. It can take a while!"
+    },
+    {
+        "id": "IDS_MSG_SAVE_CAPDATE",
+        "text": "Save captured data?"
+    },
+    {
+        "id": "IDS_MSG_SAVE_CANFIND_SESSIONFILE",
+        "text": "Cannot find default session file for this device!"
     }
 ]
