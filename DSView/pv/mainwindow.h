@@ -87,15 +87,6 @@ public:
     explicit MainWindow(QWidget *parent = 0);
 
     void openDoc();
-  
-private:
-    void closeEvent(QCloseEvent *event);
-
-	void setup_ui();
-    void retranslateUi(); 
-    bool eventFilter(QObject *object, QEvent *event);
-    bool load_session_json(QJsonDocument json, bool &haveDecoder);
-    QString genSessionFileName();
 
 public slots: 
     void switchTheme(QString style);
@@ -139,10 +130,22 @@ public:
     void session_save();
    
 private:
+    void closeEvent(QCloseEvent *event);
+	void setup_ui();
+    void retranslateUi(); 
+    bool eventFilter(QObject *object, QEvent *event);
+
     void check_usb_device_speed();
     void reset_all_view();
     bool confirm_to_store_data();
     void update_toolbar_view_status();
+    bool load_session_json(QJsonDocument json, bool &haveDecoder);
+    QString genSessionFileName();
+    bool gen_session_json(QJsonObject &sessionVar);
+    void check_session_file_version();
+    void load_device_config();
+    QJsonDocument get_session_json_from_file(QString file);
+    QJsonArray get_decoder_json_from_file(QString file);
    
 private:
     //ISessionCallback
@@ -168,11 +171,6 @@ private:
 
     //ISessionDataGetter
     bool genSessionData(std::string &str);
-    bool gen_session_json(QJsonObject &sessionVar);
-    void check_session_file_version();
-    void load_device_config();
-    QJsonDocument get_session_json_from_file(QString file);
-    QJsonArray get_decoder_json_from_file(QString file);
 
     //IMessageListener
     void OnMessage(int msg);

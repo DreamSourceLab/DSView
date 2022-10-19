@@ -599,6 +599,124 @@ namespace pv
         return load_session_json(sessionDoc, bDone);
     }
 
+     bool MainWindow::gen_session_json(QJsonObject &sessionVar)
+    {
+        AppConfig &app = AppConfig::Instance();
+
+        GVariant *gvar_opts;
+        GVariant *gvar;
+        gsize num_opts;
+
+        QString title = QApplication::applicationName() + " v" + QApplication::applicationVersion();
+
+        QJsonArray channelVar;
+        sessionVar["Version"] = QJsonValue::fromVariant(BASE_SESSION_VERSION);
+        sessionVar["Device"] = QJsonValue::fromVariant(_device_agent->driver_name());
+        sessionVar["DeviceMode"] = QJsonValue::fromVariant(_device_agent->get_work_mode());
+        sessionVar["Language"] = QJsonValue::fromVariant(app._frameOptions.language);
+        sessionVar["Title"] = QJsonValue::fromVariant(title);
+
+        gvar_opts = _device_agent->get_config_list(NULL, SR_CONF_DEVICE_SESSIONS);
+        if (gvar_opts == NULL)
+        {
+            dsv_warn("%s", "Device config list is empty. id:SR_CONF_DEVICE_SESSIONS");
+            /* Driver supports no device instance sessions. */
+            return false;
+        }
+
+        const int *const options = (const int32_t *)g_variant_get_fixed_array(
+                                        gvar_opts, &num_opts, sizeof(int32_t));
+
+        for (unsigned int i = 0; i < num_opts; i++)
+        {
+            const struct sr_config_info *const info = _device_agent->get_config_info(options[i]);
+            gvar = _device_agent->get_config(NULL, NULL, info->key);
+            if (gvar != NULL)
+            {
+                if (info->datatype == SR_T_BOOL)
+                    sessionVar[info->name] = QJsonValue::fromVariant(g_variant_get_boolean(gvar));
+                else if (info->datatype == SR_T_UINT64)
+                    sessionVar[info->name] = QJsonValue::fromVariant(QString::number(g_variant_get_uint64(gvar)));
+                else if (info->datatype == SR_T_UINT8)
+                    sessionVar[info->name] = QJsonValue::fromVariant(QString::number(g_variant_get_byte(gvar)));
+                else if (info->datatype == SR_T_FLOAT)
+                    sessionVar[info->name] = QJsonValue::fromVariant(g_variant_get_double(gvar));
+                else if (info->datatype == SR_T_CHAR)
+                    sessionVar[info->name] = QJsonValue::fromVariant(g_variant_get_string(gvar, NULL));
+                else if (info->datatype == SR_T_LIST)
+                    sessionVar[info->name] =  QJsonValue::fromVariant(QString::number(g_variant_get_uint16(gvar)));
+                else{
+                    dsv_err("Unkown config info type:%d", info->datatype);
+                    assert(false);
+                }
+                g_variant_unref(gvar);                
+            }
+        }
+
+        for (auto &s : _session->get_signals())
+        {
+            QJsonObject s_obj;
+            s_obj["index"] = s->get_index();
+            s_obj["type"] = s->get_type();
+            s_obj["enabled"] = s->enabled();
+            s_obj["name"] = s->get_name();
+            if (s->get_colour().isValid())
+                s_obj["colour"] = QJsonValue::fromVariant(s->get_colour());
+            else
+                s_obj["colour"] = QJsonValue::fromVariant("default");
+
+            view::LogicSignal *logicSig = NULL;
+            if ((logicSig = dynamic_cast<view::LogicSignal *>(s)))
+            {
+                s_obj["strigger"] = logicSig->get_trig();
+            }
+
+            view::DsoSignal *dsoSig = NULL;
+            if ((dsoSig = dynamic_cast<view::DsoSignal *>(s)))
+            {
+                s_obj["vdiv"] = QJsonValue::fromVariant(static_cast<qulonglong>(dsoSig->get_vDialValue()));
+                s_obj["vfactor"] = QJsonValue::fromVariant(static_cast<qulonglong>(dsoSig->get_factor()));
+                s_obj["coupling"] = dsoSig->get_acCoupling();
+                s_obj["trigValue"] = dsoSig->get_trig_vrate();
+                s_obj["zeroPos"] = dsoSig->get_zero_ratio();
+            }
+
+            view::AnalogSignal *analogSig = NULL;
+            if ((analogSig = dynamic_cast<view::AnalogSignal *>(s)))
+            {
+                s_obj["vdiv"] = QJsonValue::fromVariant(static_cast<qulonglong>(analogSig->get_vdiv()));
+                s_obj["vfactor"] = QJsonValue::fromVariant(static_cast<qulonglong>(analogSig->get_factor()));
+                s_obj["coupling"] = analogSig->get_acCoupling();
+                s_obj["zeroPos"] = analogSig->get_zero_ratio();
+                s_obj["mapUnit"] = analogSig->get_mapUnit();
+                s_obj["mapMin"] = analogSig->get_mapMin();
+                s_obj["mapMax"] = analogSig->get_mapMax();
+            }
+            channelVar.append(s_obj);
+        }
+        sessionVar["channel"] = channelVar;
+
+        if (_device_agent->get_work_mode() == LOGIC)
+        {
+            sessionVar["trigger"] = _trigger_widget->get_session();
+        }
+
+        StoreSession ss(_session);
+        QJsonArray decodeJson;
+        ss.json_decoders(decodeJson);
+        sessionVar["decoder"] = decodeJson;
+
+        if (_device_agent->get_work_mode() == DSO)
+        {
+            sessionVar["measure"] = _view->get_viewstatus()->get_session();
+        }
+
+        if (gvar_opts != NULL)
+            g_variant_unref(gvar_opts);
+
+        return true;
+    }
+
     bool MainWindow::load_session_json(QJsonDocument json, bool &haveDecoder)
     {
         haveDecoder = false;
@@ -606,6 +724,7 @@ namespace pv
         QJsonObject sessionObj = json.object();
 
         int mode = _device_agent->get_work_mode();
+        bool isNew = false;
 
         // check session file version
         if (!sessionObj.contains("Version"))
@@ -620,16 +739,15 @@ namespace pv
             return false;
         }
 
-        // old version(<= 1.1.2), restore the language
-        if (sessionObj["Version"].toInt() == BASE_SESSION_VERSION)
-        {
-        }
+        if (sessionObj.contains("Title"))
+            isNew = true;
+
+        int sessionMode = sessionObj["DeviceMode"].toInt();
 
         if (_device_agent->is_hardware())
         {
             QString driverName = _device_agent->driver_name();
-            QString sessionDevice = sessionObj["Device"].toString();
-            int sessionMode = sessionObj["DeviceMode"].toInt();
+            QString sessionDevice = sessionObj["Device"].toString();            
             // check device and mode
             if (driverName != sessionDevice || mode != sessionMode)
             {
@@ -663,13 +781,9 @@ namespace pv
                 else if (info->datatype == SR_T_FLOAT)
                     _device_agent->set_config(NULL, NULL, info->key, g_variant_new_double(sessionObj[info->name].toDouble()));
                 else if (info->datatype == SR_T_CHAR)
-                {   
-                    QString v = sessionObj[info->name].toString();
-                    if (info->key == SR_CONF_OPERATION_MODE){
-                        
-                    }
-                    _device_agent->set_config(NULL, NULL, info->key, g_variant_new_string(v.toUtf8()));
-                }                   
+                    _device_agent->set_config(NULL, NULL, info->key, g_variant_new_string(sessionObj[info->name].toString().toUtf8()));  
+                else if (info->datatype == SR_T_LIST)
+                    _device_agent->set_config(NULL, NULL, info->key, g_variant_new_uint16(sessionObj[info->name].toString().toInt()));
             }
         }
 
@@ -832,114 +946,8 @@ namespace pv
             _view->get_viewstatus()->load_session(sessionObj["measure"].toArray());
         }
 
-        return true;
-    }
-
-    bool MainWindow::gen_session_json(QJsonObject &sessionVar)
-    {
-        AppConfig &app = AppConfig::Instance();
-
-        GVariant *gvar_opts;
-        GVariant *gvar;
-        gsize num_opts;
-
-        QString title = QApplication::applicationName() + " v" + QApplication::applicationVersion();
-
-        QJsonArray channelVar;
-        sessionVar["Version"] = QJsonValue::fromVariant(BASE_SESSION_VERSION);
-        sessionVar["Device"] = QJsonValue::fromVariant(_device_agent->driver_name());
-        sessionVar["DeviceMode"] = QJsonValue::fromVariant(_device_agent->get_work_mode());
-        sessionVar["Language"] = QJsonValue::fromVariant(app._frameOptions.language);
-        sessionVar["Title"] = QJsonValue::fromVariant(title);
-
-        gvar_opts = _device_agent->get_config_list(NULL, SR_CONF_DEVICE_SESSIONS);
-        if (gvar_opts == NULL)
-        {
-            dsv_warn("%s", "Device config list is empty. id:SR_CONF_DEVICE_SESSIONS");
-            /* Driver supports no device instance sessions. */
-            return false;
-        }
-
-        const int *const options = (const int32_t *)g_variant_get_fixed_array(
-            gvar_opts, &num_opts, sizeof(int32_t));
-
-        for (unsigned int i = 0; i < num_opts; i++)
-        {
-            const struct sr_config_info *const info = _device_agent->get_config_info(options[i]);
-            gvar = _device_agent->get_config(NULL, NULL, info->key);
-            if (gvar != NULL)
-            {
-                if (info->datatype == SR_T_BOOL)
-                    sessionVar[info->name] = QJsonValue::fromVariant(g_variant_get_boolean(gvar));
-                else if (info->datatype == SR_T_UINT64)
-                    sessionVar[info->name] = QJsonValue::fromVariant(QString::number(g_variant_get_uint64(gvar)));
-                else if (info->datatype == SR_T_UINT8)
-                    sessionVar[info->name] = QJsonValue::fromVariant(QString::number(g_variant_get_byte(gvar)));
-                else if (info->datatype == SR_T_FLOAT)
-                    sessionVar[info->name] = QJsonValue::fromVariant(g_variant_get_double(gvar));
-                else if (info->datatype == SR_T_CHAR)
-                    sessionVar[info->name] = QJsonValue::fromVariant(g_variant_get_string(gvar, NULL));
-                g_variant_unref(gvar);
-            }
-        }
-
-        for (auto &s : _session->get_signals())
-        {
-            QJsonObject s_obj;
-            s_obj["index"] = s->get_index();
-            s_obj["type"] = s->get_type();
-            s_obj["enabled"] = s->enabled();
-            s_obj["name"] = s->get_name();
-            if (s->get_colour().isValid())
-                s_obj["colour"] = QJsonValue::fromVariant(s->get_colour());
-            else
-                s_obj["colour"] = QJsonValue::fromVariant("default");
-
-            view::LogicSignal *logicSig = NULL;
-            if ((logicSig = dynamic_cast<view::LogicSignal *>(s)))
-            {
-                s_obj["strigger"] = logicSig->get_trig();
-            }
-
-            view::DsoSignal *dsoSig = NULL;
-            if ((dsoSig = dynamic_cast<view::DsoSignal *>(s)))
-            {
-                s_obj["vdiv"] = QJsonValue::fromVariant(static_cast<qulonglong>(dsoSig->get_vDialValue()));
-                s_obj["vfactor"] = QJsonValue::fromVariant(static_cast<qulonglong>(dsoSig->get_factor()));
-                s_obj["coupling"] = dsoSig->get_acCoupling();
-                s_obj["trigValue"] = dsoSig->get_trig_vrate();
-                s_obj["zeroPos"] = dsoSig->get_zero_ratio();
-            }
-
-            view::AnalogSignal *analogSig = NULL;
-            if ((analogSig = dynamic_cast<view::AnalogSignal *>(s)))
-            {
-                s_obj["vdiv"] = QJsonValue::fromVariant(static_cast<qulonglong>(analogSig->get_vdiv()));
-                s_obj["vfactor"] = QJsonValue::fromVariant(static_cast<qulonglong>(analogSig->get_factor()));
-                s_obj["coupling"] = analogSig->get_acCoupling();
-                s_obj["zeroPos"] = analogSig->get_zero_ratio();
-                s_obj["mapUnit"] = analogSig->get_mapUnit();
-                s_obj["mapMin"] = analogSig->get_mapMin();
-                s_obj["mapMax"] = analogSig->get_mapMax();
-            }
-            channelVar.append(s_obj);
-        }
-        sessionVar["channel"] = channelVar;
-
-        if (_device_agent->get_work_mode() == LOGIC)
-        {
-            sessionVar["trigger"] = _trigger_widget->get_session();
-        }
-
-        StoreSession ss(_session);
-        QJsonArray decodeJson;
-        ss.json_decoders(decodeJson);
-        sessionVar["decoder"] = decodeJson;
-
-        if (_device_agent->get_work_mode() == DSO)
-        {
-            sessionVar["measure"] = _view->get_viewstatus()->get_session();
-        }
+        if (gvar_opts != NULL)
+            g_variant_unref(gvar_opts);
 
         return true;
     }
@@ -1154,9 +1162,7 @@ namespace pv
     {
         if (language == 0)
             return;
-
-        if (_device_agent->have_instance())
-            _device_agent->set_config(NULL, NULL, SR_CONF_LANGUAGE, g_variant_new_int16(language));
+        
         AppConfig &app = AppConfig::Instance();
 
         if (app._frameOptions.language != language && language > 0)

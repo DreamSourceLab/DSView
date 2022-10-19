@@ -100,6 +100,7 @@ enum {
 
 #define SAMPLES_ALIGN 1023ULL
 
+#define STR_ID(id) #id
 
 /* Handy little macros */
 #define SR_HZ(n)  (n)
@@ -180,6 +181,7 @@ enum {
 	SR_T_RATIONAL_PERIOD,
 	SR_T_RATIONAL_VOLT,
 	SR_T_KEYVALUE,
+	SR_T_LIST,
 };
 
 /** Value for sr_datafeed_packet.type. */
@@ -681,13 +683,9 @@ struct sr_config {
 };
 
 struct sr_config_info {
-	int key;
-	int datatype;
-	char *id;
+	int  key;
+	int  datatype;
 	char *name;
-    char *label;
-    char *label_cn;
-	char *description;
 };
 
 struct sr_status {
@@ -744,7 +742,8 @@ struct sr_status {
     uint32_t ch1_acc_mean_p3;
 };
 
-enum sr_config_option_id{
+enum sr_config_option_id
+{
 	/*--- Device classes ------------------------------------------------*/
 
 	/** The device can act as logic analyzer. */
@@ -1017,9 +1016,6 @@ enum sr_config_option_id{
     /** The device supports setting the number of data blocks. */
     SR_CONF_NUM_BLOCKS = 30104,
 
-    /** language (string code) **/
-    SR_CONF_LANGUAGE = 30105,
-
 	/*--- Acquisition modes ---------------------------------------------*/
 
 	/**
@@ -1095,16 +1091,8 @@ enum {
     SR_TEST_LOOPBACK,
 };
 
-/** Device buffer mode */
-enum {
-    /** Stop immediately */
-    SR_BUF_STOP = 0,
-    /** Upload captured data */
-    SR_BUF_UPLOAD = 1,
-};
-
 /** Device threshold level. */
-enum {
+enum DSL_THRESHOLD_LEVEL{
     /** 1.8/2.5/3.3 level */
     SR_TH_3V3 = 0,
     /** 5.0 level */
@@ -1162,8 +1150,86 @@ struct ds_trigger_pos {
     uint32_t status;
 };
   
+enum DSL_CHANNEL_ID {
+    DSL_STREAM20x16 = 0,
+    DSL_STREAM25x12,
+    DSL_STREAM50x6,
+    DSL_STREAM100x3,
 
- 
+    DSL_STREAM20x16_3DN2,
+    DSL_STREAM25x12_3DN2,
+    DSL_STREAM50x6_3DN2,
+    DSL_STREAM100x3_3DN2,
+
+    DSL_STREAM10x32_32_3DN2,
+    DSL_STREAM20x16_32_3DN2,
+    DSL_STREAM25x12_32_3DN2,
+    DSL_STREAM50x6_32_3DN2,
+    DSL_STREAM100x3_32_3DN2,
+
+    DSL_STREAM50x32,
+    DSL_STREAM100x30,
+    DSL_STREAM250x12,
+    DSL_STREAM125x16_16,
+    DSL_STREAM250x12_16,
+    DSL_STREAM500x6,
+    DSL_STREAM1000x3,
+
+    DSL_BUFFER100x16,
+    DSL_BUFFER200x8,
+    DSL_BUFFER400x4,
+
+    DSL_BUFFER250x32,
+    DSL_BUFFER500x16,
+    DSL_BUFFER1000x8,
+
+    DSL_ANALOG10x2,
+    DSL_ANALOG10x2_500,
+
+    DSL_DSO200x2,
+    DSL_DSO1000x2,
+};
+
+static char* DSL_CHANNEL_ID_NAMES[] = 
+{
+    "DSL_STREAM20x16",
+    "DSL_STREAM25x12",
+    "DSL_STREAM50x6",
+    "DSL_STREAM100x3",
+
+    "DSL_STREAM20x16_3DN2",
+    "DSL_STREAM25x12_3DN2",
+    "DSL_STREAM50x6_3DN2",
+    "DSL_STREAM100x3_3DN2",
+
+    "DSL_STREAM10x32_32_3DN2",
+    "DSL_STREAM20x16_32_3DN2",
+    "DSL_STREAM25x12_32_3DN2",
+    "DSL_STREAM50x6_32_3DN2",
+    "DSL_STREAM100x3_32_3DN2",
+
+    "DSL_STREAM50x32",
+    "DSL_STREAM100x30",
+    "DSL_STREAM250x12",
+    "DSL_STREAM125x16_16",
+    "DSL_STREAM250x12_16",
+    "DSL_STREAM500x6",
+    "DSL_STREAM1000x3",
+
+    "DSL_BUFFER100x16",
+    "DSL_BUFFER200x8",
+    "DSL_BUFFER400x4",
+
+    "DSL_BUFFER250x32",
+    "DSL_BUFFER500x16",
+    "DSL_BUFFER1000x8",
+
+    "DSL_ANALOG10x2",
+    "DSL_ANALOG10x2_500",
+
+    "DSL_DSO200x2",
+    "DSL_DSO1000x2",
+};
 
 /*--- input/input.c ---------------------------------------------------------*/
 

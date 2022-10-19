@@ -75,14 +75,14 @@ static const uint64_t vdivs10to2000[] = {
     0,
 };
 
-enum CHANNEL_ID {
+enum DEMO_CHANNEL_ID {
     DEMO_LOGIC100x16 = 0,
     DEMO_ANALOG10x2,
     DEMO_DSO200x2,
 };
 
 struct DEMO_channels {
-    enum CHANNEL_ID id;
+    enum DEMO_CHANNEL_ID id;
     enum OPERATION_MODE mode;
     enum CHANNEL_TYPE type;
 
@@ -111,7 +111,7 @@ struct demo_context {
     int64_t starttime;
     int stop;
     uint64_t timebase;
-    enum CHANNEL_ID ch_mode;
+    enum DEMO_CHANNEL_ID ch_mode;
     uint16_t samplerates_min_index;
     uint16_t samplerates_max_index;
     gboolean instant;
@@ -128,8 +128,6 @@ struct demo_context {
     uint16_t trigger_edge;
     uint8_t trigger_slope;
     uint8_t trigger_source;
-
-    int language;
 };
 
 static const uint64_t samplerates[] = {

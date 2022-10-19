@@ -898,16 +898,6 @@ SR_API const struct sr_config_info *ds_get_actived_device_config_info(int key)
 	return sr_config_info_get(key);
 }
 
-SR_API const struct sr_config_info *ds_get_actived_device_config_info_by_name(const char *optname)
-{
-	if (lib_ctx.actived_device_instance == NULL)
-	{
-		sr_err("%s", "Have no actived device.");
-		return SR_ERR_CALL_STATUS;
-	}
-	return sr_config_info_name_get(optname);
-}
-
 SR_API int ds_get_actived_device_status(struct sr_status *status, gboolean prg)
 {
 	if (lib_ctx.actived_device_instance == NULL)

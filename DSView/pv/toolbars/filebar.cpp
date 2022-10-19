@@ -191,16 +191,11 @@ void FileBar::on_actionDefault_triggered()
 
     QString driver_name = _session->get_device()->name();
     QString mode_name = QString::number(_session->get_device()->get_work_mode());
-    int language = LAN_EN;
-    GVariant *gvar_tmp = _session->get_device()->get_config(NULL, NULL, SR_CONF_LANGUAGE);
-    if (gvar_tmp != NULL) {
-        language = g_variant_get_int16(gvar_tmp);
-        g_variant_unref(gvar_tmp);
-    }
+
+    int language = AppConfig::Instance()._frameOptions.language;
     QString file_name = dir.absolutePath() + "/" + driver_name + mode_name +
-                        ".def"+QString::number(language)+".dsc";
-    if (!file_name.isEmpty())
-        sig_load_session(file_name);
+                                ".def" + QString::number(language) + ".dsc";
+    sig_load_session(file_name);
 }
 
 void FileBar::on_actionStore_triggered()

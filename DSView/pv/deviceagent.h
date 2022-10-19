@@ -173,8 +173,6 @@ public:
 
   const struct sr_config_info* get_config_info(int key);
 
-  const struct sr_config_info* get_config_info_by_name(const char *optname);
-
   bool get_device_status(struct sr_status &status, gboolean prg);
 
   struct sr_config* new_config(int key, GVariant *data);

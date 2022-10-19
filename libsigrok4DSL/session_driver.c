@@ -97,8 +97,7 @@ static void get_file_short_name(const char *file, char *buf, int buflen)
 }
 
 struct session_vdev
-{
-    int language;
+{ 
     int version;
     unzFile archive; // zip document
     int capfile;     // current inner file open status
@@ -526,12 +525,6 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
 
     switch (id)
     {
-    case SR_CONF_LANGUAGE:
-        if (!sdi)
-            return SR_ERR;
-        vdev = sdi->priv;
-        *data = g_variant_new_int16(vdev->language);
-        break;
     case SR_CONF_SAMPLERATE:
         if (sdi)
         {
@@ -756,9 +749,6 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 
     switch (id)
     {
-    case SR_CONF_LANGUAGE:
-        vdev->language = g_variant_get_int16(data);
-        break;
     case SR_CONF_SAMPLERATE:
         vdev->samplerate = g_variant_get_uint64(data);
         samplerates[0] = vdev->samplerate;

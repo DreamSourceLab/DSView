@@ -29,21 +29,12 @@
 
 static int dev_destroy(struct sr_dev_inst *sdi);
 
-enum {
+enum DSCOPE_OPERATION_MODE
+{
     /** Normal */
     OP_NORMAL = 0,
     /** Internal pattern test mode */
     OP_INTEST = 1,
-};
-
-static const char *opmodes_cn[] = {
-    "正常",
-    "内部测试",
-};
-
-static const char *opmodes[] = {
-    "Normal",
-    "Internal Test",
 };
 
 enum {
@@ -51,14 +42,23 @@ enum {
     BW_20M = 1,
 };
 
-static const char *bandwidths_cn[] = {
-    "全带宽",
-    "20MHz",
+static const char *opmodes[] = {
+    "Normal",
+    "Internal Test",
 };
 
 static const char *bandwidths[] = {
     "Full Bandwidth",
     "20MHz",
+};
+
+static struct lang_text_map_item opmodes_map[] = 
+{
+	{SR_CONF_OPERATION_MODE, OP_NORMAL, "Normal", "正常"},
+	{SR_CONF_OPERATION_MODE, OP_INTEST, "Internal Test", "内部测试"},
+
+    {SR_CONF_BANDWIDTH_LIMIT, BW_FULL, "Full Bandwidth", "全带宽"},
+	{SR_CONF_BANDWIDTH_LIMIT, BW_20M, "20MHz", NULL},
 };
 
 static const int32_t hwoptions[] = {
@@ -95,22 +95,6 @@ static const uint8_t zero_big_addr = 0x20;
 
 SR_PRIV struct sr_dev_driver DSCope_driver_info;
 static struct sr_dev_driver *di = &DSCope_driver_info;
-
-static const char ** get_opmodes(struct DSL_context *devc)
-{
-    if (devc->language == LANGUAGE_CN)
-        return opmodes_cn;
-    else
-        return opmodes;
-}
-
-static const char ** get_bandwidths(struct DSL_context *devc)
-{
-    if (devc->language == LANGUAGE_CN)
-        return bandwidths_cn;
-    else
-        return bandwidths;
-}
 
 static uint16_t get_default_preoff(const struct sr_dev_inst *sdi, const struct sr_channel* ch)
 {
@@ -1059,12 +1043,12 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         case SR_CONF_OPERATION_MODE:
             if (!sdi)
                 return SR_ERR;
-            *data = g_variant_new_string(get_opmodes(devc)[devc->op_mode]);
+            *data = g_variant_new_string(opmodes[devc->op_mode]);
             break;
         case SR_CONF_BANDWIDTH_LIMIT:
             if (!sdi)
                 return SR_ERR;
-            *data = g_variant_new_string(get_bandwidths(devc)[devc->bw_limit]);
+            *data = g_variant_new_string(bandwidths[devc->bw_limit]);
             break;
         case SR_CONF_CALI:
             if (!sdi)
@@ -1385,10 +1369,10 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         sr_dbg("%s: setting mode to %d", __func__, sdi->mode);
     } else if (id == SR_CONF_OPERATION_MODE) {
         stropt = g_variant_get_string(data, NULL);
-        if (!strcmp(stropt, get_opmodes(devc)[OP_NORMAL])) {
+        if (!strcmp(stropt, opmodes[OP_NORMAL])) {
             devc->op_mode = OP_NORMAL;
             devc->test_mode = SR_TEST_NONE;
-        } else if (!strcmp(stropt, get_opmodes(devc)[OP_INTEST])) {
+        } else if (!strcmp(stropt, opmodes[OP_INTEST])) {
             devc->op_mode = OP_INTEST;
             devc->test_mode = SR_TEST_INTERNAL;
         } else {
@@ -1398,10 +1382,10 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             __func__, devc->op_mode);
     } else if (id == SR_CONF_BANDWIDTH_LIMIT) {
         stropt = g_variant_get_string(data, NULL);
-        if (!strcmp(stropt, get_bandwidths(devc)[BW_FULL])) {
+        if (!strcmp(stropt, bandwidths[BW_FULL])) {
             devc->bw_limit = BW_FULL;
             dsl_wr_reg(sdi, CTR0_ADDR, bmBW20M_CLR);
-        } else if (!strcmp(stropt, get_bandwidths(devc)[BW_20M])) {
+        } else if (!strcmp(stropt, bandwidths[BW_20M])) {
             devc->bw_limit = BW_20M;
             dsl_wr_reg(sdi, CTR0_ADDR, bmBW20M_SET);
         } else {
@@ -1727,10 +1711,10 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
                     sessions_daq, ARRAY_SIZE(sessions_daq)*sizeof(int32_t), TRUE, NULL, NULL);
         break;
     case SR_CONF_OPERATION_MODE:
-        *data = g_variant_new_strv(get_opmodes(devc), ARRAY_SIZE(opmodes));
+        *data = g_variant_new_strv(opmodes, ARRAY_SIZE(opmodes));
         break;
     case SR_CONF_BANDWIDTH_LIMIT:
-        *data = g_variant_new_strv(get_bandwidths(devc), ARRAY_SIZE(bandwidths));
+        *data = g_variant_new_strv(bandwidths, ARRAY_SIZE(bandwidths));
         break;
     default:
         return SR_ERR_NA;

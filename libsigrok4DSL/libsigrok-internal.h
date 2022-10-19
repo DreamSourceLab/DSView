@@ -82,6 +82,13 @@ enum sr_dev_driver_type
 	DRIVER_TYPE_HARDWARE = 2
 };
 
+struct lang_text_map_item{
+	int  config_id;
+	int  id;
+	char *en_name;
+	char *cn_name;
+};
+
 struct sr_dev_driver {
 	/* Driver-specific */
 	char *name;
@@ -413,7 +420,6 @@ SR_PRIV int sr_config_list(const struct sr_dev_driver *driver,
                           const struct sr_channel_group *cg,
                           int key, GVariant **data);
 SR_PRIV const struct sr_config_info *sr_config_info_get(int key);
-SR_PRIV const struct sr_config_info *sr_config_info_name_get(const char *optname);
 SR_PRIV int sr_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, gboolean prg);
 SR_PRIV struct sr_config *sr_config_new(int key, GVariant *data);
 SR_PRIV void sr_config_free(struct sr_config *src);

@@ -280,9 +280,6 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_TEST:
         *data = g_variant_new_boolean(FALSE);
         break;
-    case SR_CONF_LANGUAGE:
-        *data = g_variant_new_int16(devc->language);
-        break;
     case SR_CONF_INSTANT:
         *data = g_variant_new_boolean(devc->instant);
         break;
@@ -576,10 +573,6 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             ch->map_max = ch->vdiv * ch->vfactor * DS_CONF_DSO_VDIVS / 2000.0;
         else
             ch->map_max = g_variant_get_double(data);
-        ret = SR_OK;
-    }
-    else if (id == SR_CONF_LANGUAGE) {
-        devc->language = g_variant_get_int16(data);
         ret = SR_OK;
     }
     else {

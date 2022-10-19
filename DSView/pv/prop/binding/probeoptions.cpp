@@ -42,14 +42,14 @@ ProbeOptions::ProbeOptions(struct sr_channel *probe) :
     Binding(), 
 	_probe(probe)
 { 
-	GVariant *gvar_opts, *gvar_list;
+	GVariant *gvar_opts;
 	gsize num_opts;
 
     SigSession *session = AppControl::Instance()->GetSession();
     _device_agent = session->get_device();
 
     gvar_opts = _device_agent->get_config_list(NULL, SR_CONF_PROBE_CONFIGS);
-    if (gvar_opts != NULL){
+    if (gvar_opts == NULL){
 		/* Driver supports no device instance options. */
 		return;
     }
@@ -57,7 +57,8 @@ ProbeOptions::ProbeOptions(struct sr_channel *probe) :
 	const int *const options = (const int32_t *)g_variant_get_fixed_array(
 		gvar_opts, &num_opts, sizeof(int32_t));
 
-	for (unsigned int i = 0; i < num_opts; i++) {
+	for (unsigned int i = 0; i < num_opts; i++) 
+    {
 		const struct sr_config_info *const info =
 			_device_agent->get_config_info(options[i]);
 
@@ -66,18 +67,10 @@ ProbeOptions::ProbeOptions(struct sr_channel *probe) :
 
 		const int key = info->key;
 
-        gvar_list = _device_agent->get_config_list(NULL, key);
+        GVariant *gvar_list = _device_agent->get_config_list(NULL, key);
 
         const QString name(info->name);
-        char *label_char = info->label;
-        GVariant *gvar_tmp = _device_agent->get_config(NULL, NULL, SR_CONF_LANGUAGE);
-
-        if (gvar_tmp != NULL) {
-                int language = g_variant_get_int16(gvar_tmp);
-                if (language == LAN_CN)
-                    label_char = info->label_cn;
-                g_variant_unref(gvar_tmp);
-        }
+        char *label_char = info->name;
         const QString label(label_char);
 
 		switch(key)
@@ -103,16 +96,12 @@ ProbeOptions::ProbeOptions(struct sr_channel *probe) :
         case SR_CONF_PROBE_MAP_DEFAULT:
             bind_bool(name, label, key);
             break;
-
-        default:
-            gvar_list = NULL;
 		}
 
 		if (gvar_list)
 			g_variant_unref(gvar_list);
 	}
-    if (gvar_opts)
-        g_variant_unref(gvar_opts);
+    g_variant_unref(gvar_opts);
 }
 
 GVariant* ProbeOptions::config_getter(const struct sr_channel *probe, int key)

@@ -141,11 +141,6 @@
  */
 #define CALI_VGAIN_RANGE 200
 
-enum LANGUAGE {
-    LANGUAGE_CN = 25,
-    LANGUAGE_EN = 31,
-};
-
 struct DSL_caps {
     uint64_t mode_caps;
     uint64_t feature_caps;
@@ -350,48 +345,8 @@ static const struct DSL_vga vga_defaults[] = {
     {0, 0, 0, 0, 0}
 };
 
-enum CHANNEL_ID {
-    DSL_STREAM20x16 = 0,
-    DSL_STREAM25x12,
-    DSL_STREAM50x6,
-    DSL_STREAM100x3,
-
-    DSL_STREAM20x16_3DN2,
-    DSL_STREAM25x12_3DN2,
-    DSL_STREAM50x6_3DN2,
-    DSL_STREAM100x3_3DN2,
-
-    DSL_STREAM10x32_32_3DN2,
-    DSL_STREAM20x16_32_3DN2,
-    DSL_STREAM25x12_32_3DN2,
-    DSL_STREAM50x6_32_3DN2,
-    DSL_STREAM100x3_32_3DN2,
-
-    DSL_STREAM50x32,
-    DSL_STREAM100x30,
-    DSL_STREAM250x12,
-    DSL_STREAM125x16_16,
-    DSL_STREAM250x12_16,
-    DSL_STREAM500x6,
-    DSL_STREAM1000x3,
-
-    DSL_BUFFER100x16,
-    DSL_BUFFER200x8,
-    DSL_BUFFER400x4,
-
-    DSL_BUFFER250x32,
-    DSL_BUFFER500x16,
-    DSL_BUFFER1000x8,
-
-    DSL_ANALOG10x2,
-    DSL_ANALOG10x2_500,
-
-    DSL_DSO200x2,
-    DSL_DSO1000x2,
-};
-
 struct DSL_channels {
-    enum CHANNEL_ID id;
+    enum DSL_CHANNEL_ID id;
     enum OPERATION_MODE mode;
     enum CHANNEL_TYPE type;
     gboolean stream;
@@ -404,81 +359,80 @@ struct DSL_channels {
     uint64_t hw_max_samplerate;
     uint8_t pre_div;
     const char *descr;
-    const char *descr_cn;
 };
 
 static const struct DSL_channels channel_modes[] = {
     // LA Stream
     {DSL_STREAM20x16,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE,  16, 16, 1, SR_KHZ(10), SR_MHZ(20),
-     SR_KHZ(10), SR_MHZ(100), 1, "Use 16 Channels (Max 20MHz)", "使用16个通道(最大采样率 20MHz)"},
+     SR_KHZ(10), SR_MHZ(100), 1, "Use 16 Channels (Max 20MHz)"},
     {DSL_STREAM25x12,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE,  16, 12, 1, SR_KHZ(10), SR_MHZ(25),
-     SR_KHZ(10), SR_MHZ(100), 1, "Use 12 Channels (Max 25MHz)", "使用12个通道(最大采样率 25MHz)"},
+     SR_KHZ(10), SR_MHZ(100), 1, "Use 12 Channels (Max 25MHz)"},
     {DSL_STREAM50x6,   LOGIC,  SR_CHANNEL_LOGIC,  TRUE,  16, 6,  1, SR_KHZ(10), SR_MHZ(50),
-     SR_KHZ(10), SR_MHZ(100), 1, "Use 6 Channels (Max 50MHz)", "使用6个通道(最大采样率 50MHz)"},
+     SR_KHZ(10), SR_MHZ(100), 1, "Use 6 Channels (Max 50MHz)"},
     {DSL_STREAM100x3,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE,  16, 3,  1, SR_KHZ(10), SR_MHZ(100),
-     SR_KHZ(10), SR_MHZ(100), 1, "Use 3 Channels (Max 100MHz)", "使用3个通道(最大采样率 100MHz)"},
+     SR_KHZ(10), SR_MHZ(100), 1, "Use 3 Channels (Max 100MHz)"},
 
     {DSL_STREAM20x16_3DN2,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 16, 16, 1, SR_KHZ(10), SR_MHZ(20),
-     SR_KHZ(10), SR_MHZ(500), 5, "Use 16 Channels (Max 20MHz)", "使用16个通道(最大采样率 20MHz)"},
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 16 Channels (Max 20MHz)"},
     {DSL_STREAM25x12_3DN2,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 16, 12, 1, SR_KHZ(10), SR_MHZ(25),
-     SR_KHZ(10), SR_MHZ(500), 5, "Use 12 Channels (Max 25MHz)", "使用12个通道(最大采样率 25MHz)"},
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 12 Channels (Max 25MHz)"},
     {DSL_STREAM50x6_3DN2,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 16, 6, 1, SR_KHZ(10), SR_MHZ(50),
-     SR_KHZ(10), SR_MHZ(500), 5, "Use 6 Channels (Max 50MHz)", "使用6个通道(最大采样率 50MHz)"},
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 6 Channels (Max 50MHz)"},
     {DSL_STREAM100x3_3DN2,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 16, 3, 1, SR_KHZ(10), SR_MHZ(100),
-     SR_KHZ(10), SR_MHZ(500), 5, "Use 3 Channels (Max 100MHz)", "使用3个通道(最大采样率 100MHz)"},
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 3 Channels (Max 100MHz)"},
 
     {DSL_STREAM10x32_32_3DN2,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 32, 32, 1, SR_KHZ(10), SR_MHZ(10),
-     SR_KHZ(10), SR_MHZ(500), 5, "Use 32 Channels (Max 10MHz)", "使用32个通道(最大采样率 10MHz)"},
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 32 Channels (Max 10MHz)"},
     {DSL_STREAM20x16_32_3DN2,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 32, 16, 1, SR_KHZ(10), SR_MHZ(20),
-     SR_KHZ(10), SR_MHZ(500), 5, "Use 16 Channels (Max 20MHz)", "使用16个通道(最大采样率 20MHz)"},
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 16 Channels (Max 20MHz)"},
     {DSL_STREAM25x12_32_3DN2,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 32, 12, 1, SR_KHZ(10), SR_MHZ(25),
-     SR_KHZ(10), SR_MHZ(500), 5, "Use 12 Channels (Max 25MHz)", "使用12个通道(最大采样率 25MHz)"},
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 12 Channels (Max 25MHz)"},
     {DSL_STREAM50x6_32_3DN2,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 32, 6, 1, SR_KHZ(10), SR_MHZ(50),
-     SR_KHZ(10), SR_MHZ(500), 5, "Use 6 Channels (Max 50MHz)", "使用6个通道(最大采样率 50MHz)"},
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 6 Channels (Max 50MHz)"},
     {DSL_STREAM100x3_32_3DN2,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 32, 3, 1, SR_KHZ(10), SR_MHZ(100),
-     SR_KHZ(10), SR_MHZ(500), 5, "Use 3 Channels (Max 100MHz)", "使用3个通道(最大采样率 100MHz)"},
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 3 Channels (Max 100MHz)"},
 
     {DSL_STREAM50x32,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 32, 32, 1, SR_KHZ(10), SR_MHZ(50),
-     SR_KHZ(10), SR_MHZ(500), 5, "Use 32 Channels (Max 50MHz)", "使用32个通道(最大采样率 50MHz)"},
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 32 Channels (Max 50MHz)"},
     {DSL_STREAM100x30,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 32, 30, 1, SR_KHZ(10), SR_MHZ(100),
-     SR_KHZ(10), SR_MHZ(500), 5, "Use 30 Channels (Max 100MHz)", "使用30个通道(最大采样率 100MHz)"},
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 30 Channels (Max 100MHz)"},
     {DSL_STREAM250x12,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 32, 12, 1, SR_KHZ(10), SR_MHZ(250),
-     SR_KHZ(10), SR_MHZ(500), 5, "Use 12 Channels (Max 250MHz)", "使用12个通道(最大采样率 250MHz)"},
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 12 Channels (Max 250MHz)"},
     {DSL_STREAM125x16_16,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 16, 16, 1, SR_KHZ(10), SR_MHZ(125),
-     SR_KHZ(10), SR_MHZ(500), 5, "Use 16 Channels (Max 125MHz)", "使用16个通道(最大采样率 125MHz)"},
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 16 Channels (Max 125MHz)"},
     {DSL_STREAM250x12_16,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 16, 12, 1, SR_KHZ(10), SR_MHZ(250),
-     SR_KHZ(10), SR_MHZ(500), 5, "Use 12 Channels (Max 250MHz)", "使用12个通道(最大采样率 250MHz)"},
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 12 Channels (Max 250MHz)"},
     {DSL_STREAM500x6,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE,  16, 6,  1, SR_KHZ(10), SR_MHZ(500),
-     SR_KHZ(10), SR_MHZ(500), 5, "Use 6 Channels (Max 500MHz)", "使用6个通道(最大采样率 500MHz)"},
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 6 Channels (Max 500MHz)"},
     {DSL_STREAM1000x3,  LOGIC,  SR_CHANNEL_LOGIC,  TRUE, 8, 3,  1, SR_KHZ(10), SR_GHZ(1),
-     SR_KHZ(10), SR_MHZ(500), 5, "Use 3 Channels (Max 1GHz)", "使用3个通道(最大采样率 1GHz)"},
+     SR_KHZ(10), SR_MHZ(500), 5, "Use 3 Channels (Max 1GHz)"},
 
     // LA Buffer
     {DSL_BUFFER100x16, LOGIC,  SR_CHANNEL_LOGIC,  FALSE, 16, 16, 1, SR_KHZ(10), SR_MHZ(100),
-     SR_KHZ(10), SR_MHZ(100), 1, "Use Channels 0~15 (Max 100MHz)", "使用通道 0~15 (最大采样率 100MHz)"},
+     SR_KHZ(10), SR_MHZ(100), 1, "Use Channels 0~15 (Max 100MHz)"},
     {DSL_BUFFER200x8,  LOGIC,  SR_CHANNEL_LOGIC,  FALSE, 8, 8,  1, SR_KHZ(10), SR_MHZ(200),
-     SR_KHZ(10), SR_MHZ(100), 1, "Use Channels 0~7 (Max 200MHz)", "使用通道 0~7 (最大采样率 200MHz)"},
+     SR_KHZ(10), SR_MHZ(100), 1, "Use Channels 0~7 (Max 200MHz)"},
     {DSL_BUFFER400x4,  LOGIC,  SR_CHANNEL_LOGIC,  FALSE, 4, 4,  1, SR_KHZ(10), SR_MHZ(400),
-     SR_KHZ(10), SR_MHZ(100), 1, "Use Channels 0~3 (Max 400MHz)", "使用通道 0~3 (最大采样率 400MHz)"},
+     SR_KHZ(10), SR_MHZ(100), 1, "Use Channels 0~3 (Max 400MHz)"},
 
     {DSL_BUFFER250x32,  LOGIC,  SR_CHANNEL_LOGIC,  FALSE, 32, 32,  1, SR_KHZ(10), SR_MHZ(250),
-     SR_KHZ(10), SR_MHZ(500), 5, "Use Channels 0~31 (Max 250MHz)", "使用通道 0~31 (最大采样率 250MHz)"},
+     SR_KHZ(10), SR_MHZ(500), 5, "Use Channels 0~31 (Max 250MHz)"},
     {DSL_BUFFER500x16,  LOGIC,  SR_CHANNEL_LOGIC,  FALSE, 16, 16,  1, SR_KHZ(10), SR_MHZ(500),
-     SR_KHZ(10), SR_MHZ(500), 5, "Use Channels 0~15 (Max 500MHz)", "使用通道 0~15 (最大采样率 500MHz)"},
+     SR_KHZ(10), SR_MHZ(500), 5, "Use Channels 0~15 (Max 500MHz)"},
     {DSL_BUFFER1000x8,  LOGIC,  SR_CHANNEL_LOGIC,  FALSE, 8, 8,  1, SR_KHZ(10), SR_GHZ(1),
-     SR_KHZ(10), SR_MHZ(500), 5, "Use Channels 0~7 (Max 1GHz)", "使用通道 0~7 (最大采样率 1GHz)"},
+     SR_KHZ(10), SR_MHZ(500), 5, "Use Channels 0~7 (Max 1GHz)"},
 
     // DAQ
     {DSL_ANALOG10x2,   ANALOG, SR_CHANNEL_ANALOG, TRUE,  2, 2,  8, SR_HZ(10),  SR_MHZ(10),
-     SR_KHZ(10), SR_MHZ(100), 1, "Use Channels 0~1 (Max 10MHz)", "使用通道 0~1 (最大采样率 10MHz)"},
+     SR_KHZ(10), SR_MHZ(100), 1, "Use Channels 0~1 (Max 10MHz)"},
     {DSL_ANALOG10x2_500,   ANALOG, SR_CHANNEL_ANALOG, TRUE,  2, 2,  8, SR_HZ(10),  SR_MHZ(10),
-     SR_KHZ(10), SR_MHZ(500), 1, "Use Channels 0~1 (Max 10MHz)", "使用通道 0~1 (最大采样率 10MHz)"},
+     SR_KHZ(10), SR_MHZ(500), 1, "Use Channels 0~1 (Max 10MHz)"},
 
     // OSC
     {DSL_DSO200x2,     DSO,    SR_CHANNEL_DSO,    FALSE, 2, 2,  8, SR_KHZ(10), SR_MHZ(200),
-     SR_KHZ(10), SR_MHZ(100), 1, "Use Channels 0~1 (Max 200MHz)", "使用通道 0~1 (最大采样率 200MHz)"},
+     SR_KHZ(10), SR_MHZ(100), 1, "Use Channels 0~1 (Max 200MHz)"},
     {DSL_DSO1000x2,    DSO,    SR_CHANNEL_DSO,    FALSE, 2, 2,  8, SR_KHZ(10), SR_GHZ(1),
-     SR_KHZ(10), SR_MHZ(500), 1, "Use Channels 0~1 (Max 1GHz)", "使用通道 0~1 (最大采样率 1GHz)"}
+     SR_KHZ(10), SR_MHZ(500), 1, "Use Channels 0~1 (Max 1GHz)"}
 };
 
 /* hardware Capabilities */
@@ -1083,7 +1037,7 @@ struct DSL_context {
     gboolean stream;
     uint8_t  test_mode;
     uint16_t buf_options;
-    enum CHANNEL_ID ch_mode;
+    enum DSL_CHANNEL_ID ch_mode;
     uint16_t samplerates_min_index;
     uint16_t samplerates_max_index;
     uint16_t th_level;
@@ -1140,8 +1094,6 @@ struct DSL_context {
     gboolean overflow;
     int bw_limit;
     int empty_poll_count;
-
-    int language;
 };
 
 /*

@@ -44,83 +44,46 @@
  * @{
  */
 static struct sr_config_info sr_config_info_data[] = {
-    {SR_CONF_CONN, SR_T_CHAR, "conn",
-        "Connection", "Connection", "连接", NULL},
-	{SR_CONF_SERIALCOMM, SR_T_CHAR, "serialcomm",
-        "Serial communication", "Serial communication", "串口通讯", NULL},
-	{SR_CONF_SAMPLERATE, SR_T_UINT64, "samplerate",
-        "Sample rate", "Sample rate", "采样率", NULL},
-    {SR_CONF_LIMIT_SAMPLES, SR_T_UINT64, "samplecount",
-        "Sample count", "Sample count", "采样深度", NULL},
-    {SR_CONF_ACTUAL_SAMPLES, SR_T_UINT64, "samplecount",
-        "Sample count", "Sample count", "实际采样数", NULL},
-    {SR_CONF_CLOCK_TYPE, SR_T_BOOL, "clocktype",
-        "Using External Clock", "Using External Clock", "使用外部输入时钟采样", NULL},
-    {SR_CONF_CLOCK_EDGE, SR_T_BOOL, "clockedge",
-        "Using Clock Negedge", "Using Clock Negedge", "使用时钟下降沿采样", NULL},
-    {SR_CONF_CAPTURE_RATIO, SR_T_UINT64, "captureratio",
-        "Pre-trigger capture ratio", "Pre-trigger capture ratio", "触发前采样比例", NULL},
-    {SR_CONF_PATTERN_MODE, SR_T_CHAR, "pattern",
-        "Pattern mode", "Pattern mode", "信号模式", NULL},
-	{SR_CONF_RLE, SR_T_BOOL, "rle",
-        "Run Length Encoding", "Run Length Encoding", "RLE编码", NULL},
-    {SR_CONF_WAIT_UPLOAD, SR_T_BOOL, "buf_upload",
-        "Wait Buffer Upload", "Wait Buffer Upload", "上传已采集数据", NULL},
-    {SR_CONF_TRIGGER_SLOPE, SR_T_UINT8, "triggerslope",
-        "Trigger slope", "Trigger slope", "触发沿", NULL},
-    {SR_CONF_TRIGGER_SOURCE, SR_T_UINT8, "triggersource",
-        "Trigger source", "Trigger source", "触发源", NULL},
-    {SR_CONF_TRIGGER_CHANNEL, SR_T_UINT8, "triggerchannel",
-        "Trigger channel", "Trigger channel", "触发通道", NULL},
-    {SR_CONF_HORIZ_TRIGGERPOS, SR_T_UINT8, "horiz_triggerpos",
-        "Horizontal trigger position", "Horizontal trigger position", "触发位置", NULL},
-    {SR_CONF_TRIGGER_HOLDOFF, SR_T_UINT64, "triggerholdoff",
-        "Trigger hold off", "Trigger hold off", "触发释抑时间", NULL},
-    {SR_CONF_TRIGGER_MARGIN, SR_T_UINT8, "triggermargin",
-    "Trigger margin", "Trigger margin", "触发灵敏度", NULL},
-    {SR_CONF_BUFFERSIZE, SR_T_UINT64, "buffersize",
-        "Buffer size", "Buffer size", "缓存大小", NULL},
-    {SR_CONF_TIMEBASE, SR_T_UINT64, "timebase",
-        "Time base", "Time base", "时基", NULL},
-    {SR_CONF_MAX_HEIGHT, SR_T_CHAR, "height",
-        "Max Height", "Max Height", "最大高度", NULL},
-    {SR_CONF_MAX_HEIGHT_VALUE, SR_T_UINT8, "height",
-        "Max Height", "Max Height", "最大高度值", NULL},
-	{SR_CONF_FILTER, SR_T_CHAR, "filter",
-        "Filter Targets", "Filter Targets", "滤波器设置", NULL},
-	{SR_CONF_DATALOG, SR_T_BOOL, "datalog",
-        "Datalog", "Datalog", "数据记录", NULL},
-    {SR_CONF_OPERATION_MODE, SR_T_CHAR, "operation",
-        "Operation Mode", "Operation Mode", "运行模式", NULL},
-    {SR_CONF_BUFFER_OPTIONS, SR_T_CHAR, "stopoptions",
-        "Stop Options", "Stop Options", "停止选项", NULL},
-    {SR_CONF_CHANNEL_MODE, SR_T_CHAR, "channel",
-        "Channel Mode", "Channel Mode", "通道模式", NULL},
-    {SR_CONF_THRESHOLD, SR_T_CHAR, "threshold",
-        "Threshold Level", "Threshold Level", "阈值电压", NULL},
-    {SR_CONF_VTH, SR_T_FLOAT, "threshold",
-        "Threshold Level", "Threshold Level", "阈值电压", NULL},
-    {SR_CONF_RLE_SUPPORT, SR_T_BOOL, "rle",
-        "Enable RLE Compress", "Enable RLE Compress", "RLE硬件压缩", NULL},
-    {SR_CONF_BANDWIDTH_LIMIT, SR_T_CHAR, "bandwidth",
-        "Bandwidth Limit", "Bandwidth Limit", "带宽限制", NULL},
-
-    {SR_CONF_PROBE_COUPLING, SR_T_CHAR, "coupling",
-        "Coupling", "Coupling", "耦合", NULL},
-    {SR_CONF_PROBE_VDIV, SR_T_RATIONAL_VOLT, "vdiv",
-        "Volts/div", "Volts/div", "电压/格", NULL},
-    {SR_CONF_PROBE_FACTOR, SR_T_UINT64, "factor",
-        "Probe Factor", "Probe Factor", "探头衰减", NULL},
-    {SR_CONF_PROBE_MAP_DEFAULT, SR_T_BOOL, "mdefault",
-        "Map Default", "Map Default", "默认电压", NULL},
-    {SR_CONF_PROBE_MAP_UNIT, SR_T_CHAR, "munit",
-        "Map Unit", "Map Unit", "对应单位", NULL},
-    {SR_CONF_PROBE_MAP_MIN, SR_T_FLOAT, "MMIN",
-        "Map Min", "Map Min", "对应最小值", NULL},
-    {SR_CONF_PROBE_MAP_MAX, SR_T_FLOAT, "MMAX",
-        "Map Max", "Map Max", "对应最大值", NULL},
-    {0, 0, NULL, NULL, NULL, NULL, NULL},
+    {SR_CONF_CONN, SR_T_CHAR, "Connection"},    
+	{SR_CONF_SERIALCOMM, SR_T_CHAR,"Serial communication"},
+	{SR_CONF_SAMPLERATE, SR_T_UINT64,"Sample rate"},
+    {SR_CONF_LIMIT_SAMPLES, SR_T_UINT64,"Sample depth"},
+    {SR_CONF_ACTUAL_SAMPLES, SR_T_UINT64,"Sample count"},
+    {SR_CONF_CLOCK_TYPE, SR_T_BOOL,"Using External Clock"},
+    {SR_CONF_CLOCK_EDGE, SR_T_BOOL, "Using Clock Negedge"},
+    {SR_CONF_CAPTURE_RATIO, SR_T_UINT64,"Pre-trigger capture ratio"},
+    {SR_CONF_PATTERN_MODE, SR_T_CHAR,"Pattern mode"},
+	{SR_CONF_RLE, SR_T_BOOL,"Run Length Encoding"},
+    {SR_CONF_WAIT_UPLOAD, SR_T_BOOL,"Wait Buffer Upload"},
+    {SR_CONF_TRIGGER_SLOPE, SR_T_UINT8,"Trigger slope"},
+    {SR_CONF_TRIGGER_SOURCE, SR_T_UINT8,"Trigger source"},
+    {SR_CONF_TRIGGER_CHANNEL, SR_T_UINT8,"Trigger channel"},
+    {SR_CONF_HORIZ_TRIGGERPOS, SR_T_UINT8,"Horizontal trigger position"},
+    {SR_CONF_TRIGGER_HOLDOFF, SR_T_UINT64,"Trigger hold off"},
+    {SR_CONF_TRIGGER_MARGIN, SR_T_UINT8,"Trigger margin"},
+    {SR_CONF_BUFFERSIZE, SR_T_UINT64,"Buffer size"},
+    {SR_CONF_TIMEBASE, SR_T_UINT64,"Time base"},
+    {SR_CONF_MAX_HEIGHT, SR_T_CHAR,"Max Height"},
+    {SR_CONF_MAX_HEIGHT_VALUE, SR_T_UINT8,"Max Height value"},
+	{SR_CONF_FILTER, SR_T_CHAR,"Filter Targets"},
+	{SR_CONF_DATALOG, SR_T_BOOL,"Datalog"},
+    {SR_CONF_OPERATION_MODE, SR_T_CHAR,"Operation Mode"},
+    {SR_CONF_BUFFER_OPTIONS, SR_T_CHAR,"Stop Options"},
+    {SR_CONF_CHANNEL_MODE, SR_T_CHAR,"Channel Mode"},
+    {SR_CONF_THRESHOLD, SR_T_CHAR,"Threshold Levels"},
+    {SR_CONF_VTH, SR_T_FLOAT,"Threshold Level"},
+    {SR_CONF_RLE_SUPPORT, SR_T_BOOL,"Enable RLE Compress"},
+    {SR_CONF_BANDWIDTH_LIMIT, SR_T_CHAR,"Bandwidth Limit"},
+    {SR_CONF_PROBE_COUPLING, SR_T_CHAR,"Coupling"},
+    {SR_CONF_PROBE_VDIV, SR_T_RATIONAL_VOLT,"Volts/div"},
+    {SR_CONF_PROBE_FACTOR, SR_T_UINT64,"Probe Factor"},
+    {SR_CONF_PROBE_MAP_DEFAULT, SR_T_BOOL,"Map Default"},
+    {SR_CONF_PROBE_MAP_UNIT, SR_T_CHAR,"Map Unit"},
+    {SR_CONF_PROBE_MAP_MIN, SR_T_FLOAT,"Map Min"},
+    {SR_CONF_PROBE_MAP_MAX, SR_T_FLOAT,"Map Max"},
+    {0, 0, NULL, NULL},
 };
+
 
 /** @cond PRIVATE */
 #ifdef HAVE_LA_DEMO
@@ -152,6 +115,12 @@ SR_PRIV struct sr_dev_driver **sr_driver_list(void)
 {
 
 	return drivers_list;
+}
+
+SR_API int ds_map_lang_text_id(int conf_id, int item_id, char *text)
+{
+
+	return -1;
 }
 
 /**
@@ -385,26 +354,6 @@ SR_PRIV int sr_status_get(const struct sr_dev_inst *sdi,
         ret = sdi->driver->dev_status_get(sdi, status, prg);
 
     return ret;
-}
-
-/**
- * Get status about an acquisition.
- *
- * @param optname The configuration key.
- *
- * @return A pointer to a struct sr_config_info, or NULL if the key
- *         was not found.
- */
-SR_PRIV const struct sr_config_info *sr_config_info_name_get(const char *optname)
-{
-    int i;
-
-    for (i = 0; sr_config_info_data[i].key; i++) {
-        if (!strcmp(sr_config_info_data[i].id, optname))
-            return &sr_config_info_data[i];
-    }
-
-    return NULL;
 }
 
 /* Unnecessary level of indirection follows. */

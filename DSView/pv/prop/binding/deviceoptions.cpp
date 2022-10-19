@@ -70,15 +70,7 @@ DeviceOptions::DeviceOptions()
 		gvar_list = _device_agent->get_config_list(NULL, key);
 
         const QString name(info->name);
-        char *label_char = info->label;
-        GVariant *gvar_tmp = _device_agent->get_config(NULL, NULL, SR_CONF_LANGUAGE);
-		
-        if (gvar_tmp != NULL) { 
-            int language = g_variant_get_int16(gvar_tmp);
-                if (language == LAN_CN)
-                    label_char = info->label_cn;
-            g_variant_unref(gvar_tmp);
-        }
+        char *label_char = info->name;
         QString label(label_char);
 
 		switch(key)

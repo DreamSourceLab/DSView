@@ -1479,11 +1479,6 @@ SR_PRIV int dsl_config_get(int id, GVariant **data, const struct sr_dev_inst *sd
     (void)cg;
 
     switch (id) {
-    case SR_CONF_LANGUAGE:
-        if (!sdi)
-            return SR_ERR;
-        *data = g_variant_new_int16(devc->language);
-        break;
     case SR_CONF_CONN:
         if (!sdi || !sdi->conn)
             return SR_ERR_ARG;
@@ -1715,9 +1710,7 @@ SR_PRIV int dsl_config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     struct DSL_context *devc = sdi->priv;
     int ret = SR_OK;
 
-    if (id == SR_CONF_LANGUAGE) {
-        devc->language = g_variant_get_int16(data);
-    } else if (id == SR_CONF_ZERO_COMB) {
+    if (id == SR_CONF_ZERO_COMB) {
         devc->zero_comb = g_variant_get_boolean(data);
     } else if (id == SR_CONF_PROBE_MAP_DEFAULT) {
         ch->map_default = g_variant_get_boolean(data);

@@ -302,11 +302,6 @@ const struct sr_config_info *DeviceAgent::get_config_info(int key)
     return ds_get_actived_device_config_info(key);
 }
 
-const struct sr_config_info *DeviceAgent::get_config_info_by_name(const char *optname)
-{
-    return ds_get_actived_device_config_info_by_name(optname);
-}
-
 bool DeviceAgent::get_device_status(struct sr_status &status, gboolean prg)
 {
     if (ds_get_actived_device_status(&status, prg) == SR_OK)
