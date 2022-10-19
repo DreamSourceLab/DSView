@@ -26,6 +26,8 @@
 #include <QString>
 #include "../config/appconfig.h"
 
+#include "../ui/langresource.h"
+
 namespace pv
 {
 namespace dialogs
@@ -43,7 +45,7 @@ ApplicationParamDlg::~ApplicationParamDlg()
 bool ApplicationParamDlg::ShowDlg(QWidget *parent)
 {
     DSDialog dlg(parent, true, true);
-    dlg.setTitle(tr("Display options"));
+    dlg.setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DISPLAY_OPTIONS), "Display options"));
     dlg.setMinimumSize(300, 200);
     QFormLayout &lay = *(new QFormLayout());
     lay.setContentsMargins(0,20,0,30);
@@ -53,7 +55,7 @@ bool ApplicationParamDlg::ShowDlg(QWidget *parent)
 
     QCheckBox *ck_quickScroll = new QCheckBox();
     ck_quickScroll->setChecked(app._appOptions.quickScroll);
-    lay.addRow(tr("Quick scroll"), ck_quickScroll);
+    lay.addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_QUICK_SCROLL), "Quick scroll"), ck_quickScroll);
     dlg.layout()->addLayout(&lay);  
      
     dlg.exec();

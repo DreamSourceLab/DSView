@@ -41,6 +41,8 @@
 #include "../utility/encoding.h"
 #include "../utility/path.h"
 
+#include "../ui/langresource.h"
+
 using namespace pv::data::decode;
 
 namespace pv {
@@ -54,15 +56,16 @@ ProtocolExp::ProtocolExp(QWidget *parent, SigSession *session) :
     _export_cancel(false)
 {
     _format_combobox = new DsComboBox(this);
-    _format_combobox->addItem(tr("Comma-Separated Values (*.csv)"));
-    _format_combobox->addItem(tr("Text files (*.txt)"));
+    //tr
+    _format_combobox->addItem("Comma-Separated Values (*.csv)");
+    _format_combobox->addItem("Text files (*.txt)");
 
     _flayout = new QFormLayout();
     _flayout->setVerticalSpacing(5);
     _flayout->setFormAlignment(Qt::AlignLeft);
     _flayout->setLabelAlignment(Qt::AlignLeft);
     _flayout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
-    _flayout->addRow(new QLabel(tr("Export Format: "), this), _format_combobox);
+    _flayout->addRow(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_EXPORT_FORMAT), "Export Format: "), this), _format_combobox);
 
     pv::data::DecoderModel* decoder_model = _session->get_decoder_model();
 
@@ -93,7 +96,7 @@ ProtocolExp::ProtocolExp(QWidget *parent, SigSession *session) :
     _layout->addWidget(&_button_box);
 
     layout()->addLayout(_layout);
-    setTitle(tr("Protocol Export"));
+    setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_PROTOCOL_EXPORT), "Protocol Export"));
 
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
     connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
@@ -130,7 +133,7 @@ void ProtocolExp::accept()
 
     QString file_name = QFileDialog::getSaveFileName(
         this,
-        tr("Export Data"),
+        L_S(STR_PAGE_DLG, S_ID(IDS_DLG_EXPORT_DATA), "Export Data"),
         default_name, filter,
         &default_filter);
 
@@ -142,7 +145,8 @@ void ProtocolExp::accept()
     QStringList list = default_filter.split('.').last().split(')');
     QString ext = list.first();
     if (f.suffix().compare(ext))
-        file_name += tr(".") + ext;
+        //tr
+        file_name += "." + ext;
 
     QString fname = path::GetDirectoryName(file_name);
     if (fname != app._userHistory.openDir)
@@ -158,8 +162,9 @@ void ProtocolExp::accept()
                });
 
     Qt::WindowFlags flags = Qt::CustomizeWindowHint;
-    QProgressDialog dlg(tr("Export Protocol List Result... It can take a while."),
-                        tr("Cancel"), 0, 100, this, flags);
+    QProgressDialog dlg(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_EXPORT_PROTOCOL_LIST_RESULT), 
+                        "Export Protocol List Result... It can take a while."),
+                        L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CANCEL), "Cancel"), 0, 100, this, flags);
     dlg.setWindowModality(Qt::WindowModal);
     dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
                        Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);

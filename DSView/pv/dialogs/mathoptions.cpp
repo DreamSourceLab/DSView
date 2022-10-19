@@ -30,6 +30,8 @@
 #include <QLabel>
 #include <QTabBar>
 #include <QBitmap>
+
+#include "../ui/langresource.h"
   
 
 using namespace boost;
@@ -54,16 +56,16 @@ MathOptions::MathOptions(SigSession *session, QWidget *parent) :
 
     _math_group = new QGroupBox(this);
     QHBoxLayout *type_layout = new QHBoxLayout();
-    QRadioButton *add_radio = new QRadioButton(tr("Add"), _math_group);
+    QRadioButton *add_radio = new QRadioButton(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ADD), "Add"), _math_group);
     add_radio->setProperty("type", data::MathStack::MATH_ADD);
     type_layout->addWidget(add_radio);
-    QRadioButton *sub_radio = new QRadioButton(tr("Substract"), _math_group);
+    QRadioButton *sub_radio = new QRadioButton(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SUBSTRACT), "Substract"), _math_group);
     sub_radio->setProperty("type", data::MathStack::MATH_SUB);
     type_layout->addWidget(sub_radio);
-    QRadioButton *mul_radio = new QRadioButton(tr("Multiply"), _math_group);
+    QRadioButton *mul_radio = new QRadioButton(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MULTIPLY), "Multiply"), _math_group);
     mul_radio->setProperty("type", data::MathStack::MATH_MUL);
     type_layout->addWidget(mul_radio);
-    QRadioButton *div_radio = new QRadioButton(tr("Divide"), _math_group);
+    QRadioButton *div_radio = new QRadioButton(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DIVIDE), "Divide"), _math_group);
     div_radio->setProperty("type", data::MathStack::MATH_DIV);
     type_layout->addWidget(div_radio);
     _math_radio.append(add_radio);
@@ -165,11 +167,11 @@ void MathOptions::changeEvent(QEvent *event)
 
 void MathOptions::retranslateUi()
 {
-    _enable->setText(tr("Enable"));
-    _math_group->setTitle(tr("Math Type"));
-    _src1_group->setTitle(tr("1st Source"));
-    _src2_group->setTitle(tr("2nd Source"));
-    setTitle(tr("Math Options"));
+    _enable->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ENABLE), "Enable"));
+    _math_group->setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MATH_TYPE), "Math Type"));
+    _src1_group->setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_1ST_SOURCE), "1st Source"));
+    _src2_group->setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_2ST_SOURCE), "2st Source"));
+    setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MATH_OPTIONS), "Math Options"));
 }
 
 void MathOptions::accept()

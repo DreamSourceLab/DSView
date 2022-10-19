@@ -48,8 +48,8 @@ namespace pv
     namespace toolbars
     {
 
-        const QString SamplingBar::RLEString = tr("(RLE)");
-        const QString SamplingBar::DIVString = tr(" / div");
+        const QString SamplingBar::RLEString = "(RLE)";
+        const QString SamplingBar::DIVString = " / div";
 
         SamplingBar::SamplingBar(SigSession *session, QWidget *parent) : QToolBar("Sampling Bar", parent),
                                                                          _device_type(this),
@@ -84,7 +84,8 @@ namespace pv
             _sample_count.setSizeAdjustPolicy(DsComboBox::AdjustToContents);
             _device_selector.setMaximumWidth(ComboBoxMaxWidth);
 
-            _run_stop_button.setObjectName(tr("run_stop_button"));
+            //tr
+            _run_stop_button.setObjectName("run_stop_button");
 
             QWidget *leftMargin = new QWidget(this);
             leftMargin->setFixedWidth(4);
@@ -97,7 +98,8 @@ namespace pv
             addWidget(&_configure_button);
 
             addWidget(&_sample_count);
-            addWidget(new QLabel(tr(" @ ")));
+            //tr
+            addWidget(new QLabel(" @ "));
             addWidget(&_sample_rate);
 
             _action_single = new QAction(this);
@@ -146,11 +148,11 @@ namespace pv
             {
                 if (_device_agent->is_demo())
                 {
-                    _device_type.setText(tr("Demo"));
+                    _device_type.setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_DEMO), "Demo"));
                 }
                 else if (_device_agent->is_file())
                 {
-                    _device_type.setText(tr("File"));
+                    _device_type.setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_FILE), "file"));
                 }
                 else
                 {
@@ -163,14 +165,14 @@ namespace pv
                         g_variant_unref(gvar);
                     }
                     if (usb_speed == LIBUSB_SPEED_HIGH)
-                        _device_type.setText(tr("USB 2.0"));
+                        _device_type.setText("USB 2.0");
                     else if (usb_speed == LIBUSB_SPEED_SUPER)
-                        _device_type.setText(tr("USB 3.0"));
+                        _device_type.setText("USB 3.0");
                     else
-                        _device_type.setText(tr("USB UNKNOWN"));
+                        _device_type.setText("USB UNKNOWN");
                 }
             }
-            _configure_button.setText(tr("Options"));
+            _configure_button.setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_OPTION), "Options1"));
            _mode_button.setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_MODE), "Mode"));
 
             int mode = _device_agent->get_work_mode();
@@ -856,11 +858,11 @@ namespace pv
                     if (zero)
                     {
                         dialogs::DSMessageBox msg(this);
-                        msg.mBox()->setText(tr("Auto Calibration"));
-                        msg.mBox()->setInformativeText(tr("Please adjust zero skew and save the result!"));
+                        msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_A_CAL), "Auto Calibration"));
+                        msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_ADJUST_SAVE), "Please adjust zero skew and save the result"));
                         // msg.setStandardButtons(QMessageBox::Ok);
-                        msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
-                        msg.mBox()->addButton(tr("Skip"), QMessageBox::RejectRole);
+                        msg.mBox()->addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_OK), "Ok"), QMessageBox::AcceptRole);
+                        msg.mBox()->addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SKIP), "Skip"), QMessageBox::RejectRole);
                         msg.mBox()->setIcon(QMessageBox::Warning);
 
                         if (msg.exec())
@@ -923,11 +925,11 @@ namespace pv
                         if (zero)
                         {
                             dialogs::DSMessageBox msg(this);
-                            msg.mBox()->setText(tr("Auto Calibration"));
-                            msg.mBox()->setInformativeText(tr("Auto Calibration program will be started. Don't connect any probes. It can take a while!"));
+                            msg.mBox()->setText(L_S(STR_PAGE_MSG,S_ID(IDS_MSG_A_CAL), "Auto Calibration"));
+                            msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG,S_ID(IDS_MSG_A_CAL_START), "Auto Calibration program will be started. Don't connect any probes. It can take a while!"));
 
-                            msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
-                            msg.mBox()->addButton(tr("Skip"), QMessageBox::RejectRole);
+                            msg.mBox()->addButton(L_S(STR_PAGE_MSG,S_ID(IDS_MSG_OK), "Ok"), QMessageBox::AcceptRole);
+                            msg.mBox()->addButton(L_S(STR_PAGE_MSG,S_ID(IDS_MSG_SKIP), "Skip"), QMessageBox::RejectRole);
                             msg.mBox()->setIcon(QMessageBox::Warning);
 
                             if (msg.exec())
@@ -965,7 +967,7 @@ namespace pv
 
             ds_device_handle devHandle = (ds_device_handle)_device_selector.currentData().toULongLong();
             if (_session->have_hardware_data()){
-                if (MsgBox::Confirm(tr("Save captured data?")))
+                if (MsgBox::Confirm(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SAVE_CAPDATE), "Save captured data?")))
                 {
                     _updating_device_list = true;
                     _device_selector.setCurrentIndex(_last_device_index);

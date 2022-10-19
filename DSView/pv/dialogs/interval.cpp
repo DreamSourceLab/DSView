@@ -23,6 +23,8 @@
 
 #include <QGridLayout>
 
+#include "../ui/langresource.h"
+
 namespace pv {
 namespace dialogs {
 
@@ -38,7 +40,7 @@ Interval::Interval(QWidget *parent) :
     _bDone = false;
 
     setMinimumWidth(300);
-    _interval_label = new QLabel(tr("Interval(s): "), this);
+    _interval_label = new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_INTERVAL_S), "Interval(s): "), this);
     _interval_spinBox = new QDoubleSpinBox(this);
     _interval_spinBox->setRange(0.1, 10);
     _interval_spinBox->setDecimals(1);
@@ -53,7 +55,7 @@ Interval::Interval(QWidget *parent) :
     glayout->addWidget(&_button_box, 2, 2);
 
     layout()->addLayout(glayout);
-    setTitle(tr("Repetitive Interval"));
+    setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_REPETITIVE_INTERVAL), "Repetitive Interval"));
 
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
     connect(_interval_slider, SIGNAL(valueChanged(int)), this, SLOT(on_slider_changed(int)));

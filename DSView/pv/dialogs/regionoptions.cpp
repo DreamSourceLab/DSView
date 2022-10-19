@@ -25,6 +25,8 @@
 #include "../view/cursor.h"
 #include "../view/view.h"
 
+#include "../ui/langresource.h"
+
 using namespace boost;
 using namespace std;
 
@@ -52,7 +54,7 @@ RegionOptions::RegionOptions(view::View *view, SigSession *session, QWidget *par
         int index = 1;
         for(std::list<view::Cursor*>::iterator i = _view->get_cursorList().begin();
             i != _view->get_cursorList().end(); i++) {
-            QString curCursor = tr("Cursor ")+QString::number(index);
+            QString curCursor = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CURSOR), "Cursor")+QString::number(index);
             _start_comboBox->addItem(curCursor);
             _end_comboBox->addItem(curCursor);
             index++;
@@ -69,7 +71,7 @@ RegionOptions::RegionOptions(view::View *view, SigSession *session, QWidget *par
     vlayout->addWidget(&_button_box);
 
     layout()->addLayout(vlayout);
-    setTitle(tr("Region"));
+    setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_REGION), "Region"));
 
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(set_region()));
     connect(_session->device_event_object(), SIGNAL(device_updated()), this, SLOT(reject()));

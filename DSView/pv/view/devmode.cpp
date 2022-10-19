@@ -35,6 +35,8 @@
 #include "../ui/msgbox.h"
 #include "../log.h"
 
+#include "../ui/langresource.h"
+
 
 static const struct dev_mode_name dev_mode_name_list[] =
 {
@@ -226,7 +228,7 @@ void DevMode::on_close()
         assert(false);
     }
 
-    if (_bFile && MsgBox::Confirm(tr("Are you sure to close the device?"))){
+    if (_bFile && MsgBox::Confirm(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CLOSE_DEVICE), "Are you sure to close the device?"))){
         _session->close_file(_device_agent->handle());
     }
 }

@@ -31,6 +31,8 @@
 #include "../view/decodetrace.h"
 #include "../data/decodermodel.h"
 
+#include "../ui/langresource.h"
+
 using namespace boost;
 using namespace std;
 
@@ -46,8 +48,8 @@ ProtocolList::ProtocolList(QWidget *parent, SigSession *session) :
     pv::data::DecoderModel* decoder_model = _session->get_decoder_model();
 
     _map_zoom_combobox = new DsComboBox(this);
-    _map_zoom_combobox->addItem(tr("Fit to Window"));
-    _map_zoom_combobox->addItem(tr("Fixed"));
+    _map_zoom_combobox->addItem(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_FIT_TO_WINDOW), "Fit to Window"));
+    _map_zoom_combobox->addItem(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_FIXED), "Fixed"));
     int cur_map_zoom = _session->get_map_zoom();
 
     if (cur_map_zoom >= _map_zoom_combobox->count())
@@ -76,8 +78,8 @@ ProtocolList::ProtocolList(QWidget *parent, SigSession *session) :
     _flayout->setFormAlignment(Qt::AlignLeft);
     _flayout->setLabelAlignment(Qt::AlignLeft);
     _flayout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
-    _flayout->addRow(new QLabel(tr("Map Zoom: "), this), _map_zoom_combobox);
-    _flayout->addRow(new QLabel(tr("Decoded Protocols: "), this), _protocol_combobox);
+    _flayout->addRow(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MAP_ZOOM), "Map Zoom: "), this), _map_zoom_combobox);
+    _flayout->addRow(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DECODED_PROTOCOLS), "Decoded Protocols: "), this), _protocol_combobox);
 
     _layout = new QVBoxLayout();
     _layout->addLayout(_flayout);
@@ -85,7 +87,7 @@ ProtocolList::ProtocolList(QWidget *parent, SigSession *session) :
 
     setMinimumWidth(300);
     layout()->addLayout(_layout);
-    setTitle(tr("Protocol List Viewer"));
+    setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_PROTOCOL_LIST_VIEWER), "Protocol List Viewer"));
 
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
     connect(_protocol_combobox, SIGNAL(currentIndexChanged(int)), this, SLOT(set_protocol(int)));

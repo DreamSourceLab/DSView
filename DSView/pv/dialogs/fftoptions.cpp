@@ -30,6 +30,8 @@
 #include "../dsvdef.h"
 #include "../log.h"
 
+#include "../ui/langresource.h"
+
 
 using namespace boost;
 using namespace std;
@@ -188,23 +190,24 @@ FftOptions::FftOptions(QWidget *parent, SigSession *session) :
     QPixmap pixmap(hint_pic);
     _hint_label->setPixmap(pixmap);
 
+    //*
     _glayout = new QGridLayout();  //QGridLayout
     _glayout->setVerticalSpacing(5);
-    _glayout->addWidget(new QLabel(tr("FFT Enable: "), this), 0, 0);
+    _glayout->addWidget(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_FFT_ENABLE), "FFT Enable: "), this), 0, 0);
     _glayout->addWidget(_en_checkbox, 0, 1);
-    _glayout->addWidget(new QLabel(tr("FFT Length: "), this), 1, 0);
+    _glayout->addWidget(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_FFT_LENGTH), "FFT Length: "), this), 1, 0);
     _glayout->addWidget(_len_combobox, 1, 1);
-    _glayout->addWidget(new QLabel(tr("Sample Interval: "), this), 2, 0);
+    _glayout->addWidget(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SAMPLE_INTERVAL), "Sample Interval: "), this), 2, 0);
     _glayout->addWidget(_interval_combobox, 2, 1);
-    _glayout->addWidget(new QLabel(tr("FFT Source: "), this), 3, 0);
+    _glayout->addWidget(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_FFT_SOURCE), "FFT Source: "), this), 3, 0);
     _glayout->addWidget(_ch_combobox, 3, 1);
-    _glayout->addWidget(new QLabel(tr("FFT Window: "), this), 4, 0);
+    _glayout->addWidget(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_FFT_WINDOW), "FFT Window: "), this), 4, 0);
     _glayout->addWidget(_window_combobox, 4, 1);
-    _glayout->addWidget(new QLabel(tr("DC Ignored: "), this), 5, 0);
+    _glayout->addWidget(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DC_IGNORED), "DC Ignored: "), this), 5, 0);
     _glayout->addWidget(_dc_checkbox, 5, 1);
-    _glayout->addWidget(new QLabel(tr("Y-axis Mode: "), this), 6, 0);
+    _glayout->addWidget(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_Y-AXIS_MODE), "Y-axis Mode: "), this), 6, 0);
     _glayout->addWidget(_view_combobox, 6, 1);
-    _glayout->addWidget(new QLabel(tr("DBV Range: "), this), 7, 0);
+    _glayout->addWidget(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DBV_RANGE), "DBV Range: "), this), 7, 0);
     _glayout->addWidget(_dbv_combobox, 7, 1);
     _glayout->addWidget(_hint_label, 0, 2, 8, 1);
 
@@ -214,7 +217,7 @@ FftOptions::FftOptions(QWidget *parent, SigSession *session) :
     _layout->addWidget(&_button_box);
 
     layout()->addLayout(_layout);
-    setTitle(tr("FFT Options"));
+    setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_FFT_OPTIONS), "FFT Options"));
 
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
     connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));

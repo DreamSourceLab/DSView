@@ -33,6 +33,8 @@
 #include "../view/dsosignal.h"
 #include "../config/appconfig.h"
 
+#include "../ui/langresource.h"
+
 using namespace boost;
 using namespace std;
 
@@ -59,7 +61,7 @@ WaitingDialog::WaitingDialog(QWidget *parent, SigSession *session, int key) :
     font.setBold(true);
 
     QLabel *warning_tips = new QLabel(this);
-    warning_tips->setText(tr("Don't connect any probes!"));
+    warning_tips->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DONT_CONNECT_PROBES), "Don't connect any probes!"));
     warning_tips->setFont(font);
     warning_tips->setAlignment(Qt::AlignCenter);
 
@@ -70,7 +72,7 @@ WaitingDialog::WaitingDialog(QWidget *parent, SigSession *session, int key) :
     label->setAlignment(Qt::AlignCenter);
 
     tips = new QLabel(this);
-    tips->setText(tr("Waiting"));
+    tips->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_WAITING), "Waiting"));
     tips->setFont(font);
     tips->setAlignment(Qt::AlignCenter);
 
@@ -88,7 +90,7 @@ WaitingDialog::WaitingDialog(QWidget *parent, SigSession *session, int key) :
     mlayout->addWidget(&_button_box);
 
     layout()->addLayout(mlayout);
-    setTitle(tr("Auto Calibration"));
+    setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_AUTO_CALIBRATION), "Auto Calibration"));
 }
 
 void WaitingDialog::accept()
@@ -104,8 +106,8 @@ void WaitingDialog::accept()
                               g_variant_new_boolean(true));
     });
     Qt::WindowFlags flags = Qt::CustomizeWindowHint;
-    QProgressDialog dlg(tr("Save calibration Result... It can take a while."),
-                        tr("Cancel"),0,0,this,flags);
+    QProgressDialog dlg(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SAVE_CALIBRATION_RESULTS), "Save calibration results... It can take a while."),
+                        L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CANCEL), "Cancel"),0,0,this,flags);
     dlg.setWindowModality(Qt::WindowModal);
     dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
                        Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
@@ -133,8 +135,8 @@ void WaitingDialog::reject()
                               g_variant_new_boolean(true));
     });
     Qt::WindowFlags flags = Qt::CustomizeWindowHint;
-    QProgressDialog dlg(tr("Load current setting... It can take a while."),
-                        tr("Cancel"),0,0,this,flags);
+    QProgressDialog dlg(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_LOAD_CURRENT_SETTING), "Load current setting... It can take a while."),
+                        L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CANCEL), "Cancel"),0,0,this,flags);
     dlg.setWindowModality(Qt::WindowModal);
     dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
                        Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
@@ -168,7 +170,7 @@ void WaitingDialog::changeText()
     index++;
     if(index == WPOINTS_NUM + 1)
     {
-        tips->setText(tr("Waiting"));
+        tips->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_WAITING), "Waiting"));
         index = 0;
         GVariant* gvar;
         bool comb_comp_en = false;
@@ -207,7 +209,7 @@ void WaitingDialog::changeText()
                 movie->jumpToFrame(0);
                 timer->stop();
                 tips->setAlignment(Qt::AlignHCenter);
-                tips->setText(tr("Finished!"));
+                tips->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_FINISHED), "Finished!"));
                 _button_box.addButton(QDialogButtonBox::Save);
             }
         }

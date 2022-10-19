@@ -1,232 +1,231 @@
 [
     {
         "id": "IDS_MSG_OK",
-        "text": "Ok"
+        "text": "确定"
     },
     {
         "id": "IDS_MSG_SKIP",
-        "text": "Skip"
+        "text": "跳过"
     },
     {
         "id": "IDS_MSG_CANCEL",
-        "text": "Cancel"
-    },
-    {
+        "text": "取消"
+    },{
         "id": "IDS_MSG_ATTENTION",
-        "text": "Attention"
+        "text": "注意"
     },   
     {
         "id": "IDS_MSG_ERROR",
-        "text": "error"
+        "text": "错误"
     },
     {
         "id": "IDS_MSG_INFORMATION",
-        "text": "Information"
+        "text": "消息"
     }, 
     {
         "id": "IDS_MSG_CONTINUE",
-        "text": "Continue"
-    },
+        "text": "继续"
+    }, 
     {
         "id": "IDS_MSG_A_CAL_START",
-        "text": "Auto Calibration program will be started. Don't connect any probes. It can take a while!"
+        "text": "自动校准程序将启动。不要连接任何探头。这可能需要一段时间！"
     },
     {
         "id": "IDS_MSG_A_CAL",
-        "text": "Auto Calibration"
+        "text": "自动校准"
     },
     {
         "id": "IDS_MSG_ADJUST_SAVE",
-        "text": "Please adjust zero skew and save the result"
+        "text": "请调整零偏差并保存结果"
     },
     {
         "id": "IDS_MSG_SAVE_CAPDATE",
-        "text": "Save captured data?"
+        "text": "保存捕获的数据?"
     },
     {
         "id": "IDS_MSG_SAVE_CANFIND_SESSIONFILE",
-        "text": "Cannot find default session file for this device!"
+        "text": "找不到此设备的默认会话文件!"
     },
     {
         "id": "IDS_MSG_OPEN_FILE_ERROR",
-        "text": "Open file error!"
+        "text": "打开文件错误!"
     },
     {
         "id": "IDS_MSG_NOT_COMPATIBLE",
-        "text": "Session File is not compatible with current device or mode!"
+        "text": "会话文件与当前设备或模式不兼容!"
     },
     {
         "id": "IDS_MSG_RE_WIN_ST_ER",
-        "text": "restore window status error!"
+        "text": " 还原窗口状态错误!"
     },
     {
         "id": "IDS_MSG_INVAILD_CURSOR",
-        "text": "Invalid cursor index for sample range!"
+        "text": " 样本范围的游标索引无效!"
     },
     {
         "id": "IDS_MSG_SEL_FILENAME",
-        "text": "You need to select a file name."
+        "text": "您需要选择文件名"
     },
     {
         "id": "IDS_MSG_PROTOCOL_REPEAT",
-        "text": "Any protocol have repeated id or name:"
+        "text": "存在重复id或名字的协议:"
     },
     {
         "id": "IDS_MSG_NO_PROTOCOL",
-        "text": "Protocol list is empty!"
+        "text": "协议列表为空!"
     },
     {
         "id": "IDS_MSG_NO_SEL_PROTOCOL",
-        "text": "Please select a protocol!"
+        "text": "请选择一个协议!"
     },
     {
         "id": "IDS_MSG_FIND_BASE_PROTOCOL_ERROR",
-        "text": "find the base protocol error!"
+        "text": "查找基本协议错误!"
     },
     {
         "id": "IDS_MSG_NO_PROTOCOL_DEL",
-        "text": "No Protocol Analyzer to delete!"
+        "text": "没有要删除的协议分析器!"
     },
     {
         "id": "IDS_MSG_PROTOCOL_COMFRIEM_DEL_ALL",
-        "text": "Are you sure to remove all protocol analyzer?"
+        "text": "是否确定要删除所有协议分析器?"
     },
     {
         "id": "IDS_MSG_PROTOCOL_COMFRIEM_DEL",
-        "text": "Are you sure to remove this protocol analyzer?"
-    },
+        "text": "是否确定要删除这个协议分析器?"
+    },   
     {
         "id": "IDS_MSG_CLOSE_DEVICE",
-        "text": "Are you sure to close the device?"
+        "text": "是否确定关闭这个设备?"
     },
     {
         "id": "IDS_MSG_SET_DEF_CAL_SETTING",
-        "text": "All calibration settings will become the defualt values!"
+        "text": "所有校准设置将成为默认值!"
     },
     {
         "id": "IDS_MSG_ALL_CHANNEL_DISABLE",
-        "text": "All channel disabled! Please enable at least one channel."
+        "text": " 所有频道已禁用请至少启用一个通道"
     },
     {
         "id": "IDS_MSG_MAX_CHANNEL",
-        "text": "Current mode only suppport max "
+        "text": "当前模式仅支持最大"
     },
     {
         "id": "IDS_MSG_CHANNEL",
-        "text": " channels!"
+        "text": " 频道数!"
     },
     {
         "id": "IDS_MSG_TRI_SET_ISSUE",
-        "text": "Trigger Setting Issue"
+        "text": "触发设置问题"
     },
     {
         "id": "IDS_MSG_CHANGE_HOR_TRI_POS_FAIL",
-        "text": "Change horiz trigger position failed!"
+        "text": "更改水平触发器位置失败!"
     },
     {
         "id": "IDS_MSG_CHANGE_TRI_HOLDOFF_TIME_FAIL",
-        "text": "Change trigger hold off time failed!"
+        "text": "更改触发器保持时间失败!"
     },
     {
         "id": "IDS_MSG_CHANGE_SENSITIVITY_FAIL",
-        "text": "Change trigger value sensitivity failed!"
+        "text": "更改触发值灵敏度失败!"
     },
     {
         "id": "IDS_MSG_CHANGE_SOURCE_FAIL",
-        "text": "Change trigger source failed!"
+        "text": " 更改触发源失败!"
     },
     {
         "id": "IDS_MSG_CHANGE_CHANNEL_FAIL",
-        "text": "Change trigger channel failed!"
+        "text": "更改触发器通道失败!"
     },
     {
         "id": "IDS_MSG_CHANGE_TYPE_FAIL",
-        "text": "Change trigger type failed!"
+        "text": "更改触发器类型失败!"
     },
     {
         "id": "IDS_MSG_PLEASE_INSERT_CURSOR",
-        "text": "Please insert cursor before using cursor measure."
+        "text": "请在使用光标测量之前插入光标."
     },
     {
         "id": "IDS_MSG_SEARCH",
-        "text": "Search"
+        "text": "查找"
     },
     {
         "id": "IDS_MSG_NO_SAMPLE_DATA",
-        "text": "No Sample data!"
+        "text": "无样本数据!"
     },
     {
         "id": "IDS_MSG_SEARCH_AT_START",
-        "text": "Search cursor at the start position!"
+        "text": "在起始位置搜索光标!"
     },
     {
         "id": "IDS_MSG_PATTERN_NOT_FOUND",
-        "text": "Pattern not found!"
+        "text": "找不到样式!"
     },
     {
         "id": "IDS_MSG_SEARCH_AT_END",
-        "text": "Search cursor at the end position!"
+        "text": "在结束位置搜索光标!"
     },
     {
         "id": "IDS_MSG_TRIGGER",
-        "text": "Trigger"
+        "text": "触发"
     },
     {
         "id": "IDS_MSG_STREAM_NO_AD_TRIGGER",
-        "text": "Stream Mode Don't Support Advanced Trigger!"
+        "text": "流模式不支持高级触发模式!"
     },
     {
         "id": "IDS_MSG_AD_TRIGGER_NEED_HARDWARE",
-        "text": "Advanced Trigger need DSLogic Hardware Support!"
+        "text": " 高级触发模式需要DSLogic硬件支持!"
     },
     {
         "id": "IDS_MSG_SET_TRI_MULTI_CHANNEL",
-        "text": "Trigger setted on multiple channels!\nCapture will Only triggered when all setted channels fullfill at one sample"
+        "text": "触发设置在多个通道上!\n仅当所有设置的通道在一个样本中满足触发条件时才会触发"
     },
     {
         "id": "IDS_MSG_NOT_SHOW_AGAIN",
-        "text": "Not Show Again"
+        "text": "不再显示"
     },
     {
         "id": "IDS_MSG_CLEAR_TRIG",
-        "text": "Clear Trig"
+        "text": "清除触发"
     },
     {
         "id": "IDS_MSG_IGNORE",
-        "text": "Ignore"
+        "text": "忽略"
     },
     {
         "id": "IDS_MSG_OPEN",
-        "text": "Open"
+        "text": "打开"
     },
     {
         "id": "IDS_MSG_FAIL_TO_LOAD",
-        "text": "Failed to load "
+        "text": "加载失败"
     },
 
     {
         "id": "IDS_MSG_HARDWARE_ERROR",
-        "text": "Hardware Operation Failed"
+        "text": "硬件操作失败"
     },
     {
         "id": "IDS_MSG_HARDWARE_ERROR_DET",
-        "text": "Please replug device to refresh hardware configuration!"
+        "text": "请重新插入设备以刷新硬件配置!"
     },
     {
         "id": "IDS_MSG_MALLOC_ERROR",
-        "text": "Malloc Error"
+        "text": "动态内存分配错误"
     },
     {
         "id": "IDS_MSG_MALLOC_ERROR_DET",
-        "text": "Memory is not enough for this sample!\nPlease reduce the sample depth!"
+        "text": " 内存不足，无法容纳此样本!\n请降低采样深度!"
     },
     {
         "id": "IDS_DATA_ERROR",
-        "text": "Data Error"
+        "text": "数据错误"
     },
     {
         "id": "IDS_DATA_ERROR_DET1",
-        "text": "the received data are not consist with pre-defined test data!"
+        "text": " 接收的数据与预定义的测试数据不一致!"
     },
     {
         "id": "IDS_DATA_ERROR_DET2",
@@ -234,118 +233,118 @@
     },
     {
         "id": "IDS_MSG_PACKET_ERROR",
-        "text": "Packet Error"
+        "text": "数据包错误"
     },
     {
         "id": "IDS_MSG_PACKET_ERROR_DET",
-        "text": "the content of received packet are not expected!"
+        "text": " 接收到的数据包的内容不是预期的 !"
     },
     {
         "id": "IDS_MSG_DATA_OVERFLOW",
-        "text": "Data Overflow"
+        "text": "数据溢出"
     },
     {
         "id": "IDS_MSG_DATA_OVERFLOW_DET",
-        "text": "USB bandwidth can not support current sample rate! \nPlease reduce the sample rate!"
+        "text": " USB带宽无法支持当前采样率 ! \n请降低采样深度!"
     },
     {
         "id": "IDS_MSG_UNDEFINED_ERROR",
-        "text": "Undefined Error"
+        "text": "未定义错误"
     },
     {
         "id": "IDS_MSG_UNDEFINED_ERROR_DET",
-        "text": "Not expected error!"
+        "text": "意外错误!"
     },
     {
         "id": "IDS_MSG_STORESESS_SAVESTART_ERROR1",
-        "text": "DSView does not currently support\nfile saving for multiple data types."
+        "text": " DSView当前不支持\n多数据类型的文件保存."
     },
     {
         "id": "IDS_MSG_STORESESS_SAVESTART_ERROR2",
-        "text": "No data to save."
+        "text": "没有要保存的数据."
     },
     {
         "id": "IDS_MSG_STORESESS_SAVESTART_ERROR3",
-        "text": "No file name."
+        "text": "没有文件名."
     },
     {
         "id": "IDS_MSG_STORESESS_SAVESTART_ERROR4",
-        "text": "Generate temp file data failed."
+        "text": " 生成临时文件数据失败."
     },
     {
         "id": "IDS_MSG_STORESESS_SAVESTART_ERROR5",
-        "text": "Generate decoder file data failed."
+        "text": "生成解码文件数据失败."
     },
     {
         "id": "IDS_MSG_STORESESS_SAVESTART_ERROR6",
-        "text": "Generate session file data failed."
+        "text": "生成会话文件数据失败."
     },
     {
         "id": "IDS_MSG_STORESESS_SAVESTART_ERROR7",
-        "text": "Generate zip file failed."
+        "text": "生成zip文件失败."
     },
     {
         "id": "IDS_MSG_STORESESS_SAVEPROC_ERROR1",
-        "text": "Failed to create zip file. Malloc error."
+        "text": "无法创建zip文件.内存分配错误."
     },
     {
         "id": "IDS_MSG_STORESESS_SAVEPROC_ERROR2",
-        "text": "Failed to create zip file. Please check write permission of this path."
+        "text": "无法创建zip文件.请检查此路径的写入权限."
     },
     {
         "id": "IDS_MSG_STORESESS_EXPORTSTART_ERROR1",
-        "text": "DSView does not currently support\nfile export for multiple data types."
+        "text": "DSView当前不支持\n多数据类型的文件导出."
     },
     {
         "id": "IDS_MSG_STORESESS_EXPORTSTART_ERROR2",
-        "text": "No data to save."
+        "text": "没有要保存的数据."
     },
     {
         "id": "IDS_MSG_STORESESS_EXPORTSTART_ERROR3",
-        "text": "No set file name."
+        "text": "没有设置文件名."
     },
     {
         "id": "IDS_MSG_STORESESS_EXPORTSTART_ERROR4",
-        "text": "Invalid export format."
+        "text": "导出格式无效."
     },
     {
         "id": "IDS_MSG_STORESESS_EXPORTPROC_ERROR1",
-        "text": "data type don't support."
+        "text": "不支持的数据类型."
     },
     {
         "id": "IDS_MSG_STORESESS_EXPORTPROC_ERROR2",
-        "text": "xbuffer malloc failed."
+        "text": "缓冲区内存分配失败."
     },
     {
         "id": "IDS_MSG_SAVE_FILE",
-        "text": "Save File"
+        "text": "保存文件"
     },
     {
         "id": "IDS_MSG_EXPORT_DATA",
-        "text": "Export Data"
+        "text": "导出数据"
     },
     {
         "id": "IDS_MSG_STORESESS_EXPORTPROC_ERROR2",
-        "text": "xbuffer malloc failed."
+        "text": "缓冲区内存分配失败."
     },
     {
         "id": "IDS_MSG_EXPORT_DATA",
-        "text": "Export Data"
+        "text": "导出文件"
     },
     {
         "id": "IDS_MSG_DECODERSTACK_DECODE_WORK_ERROR",
-        "text": "One or more required channels \nhave not been specified"
+        "text": "n尚未指定一个或多个 \n所需通道"
     },
     {
         "id": "IDS_MSG_DECODERSTACK_DECODE_DATA_ERROR",
-        "text": "At least one of selected channels are not enabled."
+        "text": "至少有一个选定通道未启用."
     },
     {
         "id": "IDS_MSG_DECODERSTACK_DECODE_STACK_ERROR",
-        "text": "Failed to create decoder instance"
+        "text": "未能创建解码实例"
     },
     {
         "id": "IDS_MSG_MESSAGE",
-        "text": "Message"
+        "text": "消息"
     }
 ]

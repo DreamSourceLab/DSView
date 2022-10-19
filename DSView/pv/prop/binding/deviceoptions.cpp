@@ -34,6 +34,7 @@
 #include "../../appcontrol.h"
 #include "../../sigsession.h"
 #include "../../deviceagent.h"
+#include "../../ui/langresource.h"
  
 using namespace std;
 
@@ -234,7 +235,8 @@ void DeviceOptions::bind_samplerate(const QString &name, const QString label,
 		assert(num_elements == 3);
 
 		_properties.push_back(
-            new Double(name, label, 0, QObject::tr("Hz"),
+			//tr
+            new Double(name, label, 0, L_S(STR_PAGE_DLG, S_ID(IDS_DLG_HZ), "Hz"),
 				make_pair((double)elements[0], (double)elements[1]),
 						(double)elements[2],
 				bind(samplerate_double_getter),

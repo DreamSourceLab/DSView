@@ -1,0 +1,646 @@
+[
+    {
+        "id": "IDS_DLG_LOG_OPTIONS",
+        "text": "日志选项"
+    },
+    {
+        "id": "IDS_DLG_LOG_LEVEL",
+        "text": "日志级别"
+    },
+    {
+        "id": "IDS_DLG_SAVE_FILE",
+        "text": "保存到文件"
+    },
+    {
+        "id": "IDS_DLG_OPEN_FILE",
+        "text": "打开文件"
+    },
+    {
+        "id": "IDS_DLG_OPEN_SEESION",
+        "text": "打开会话"
+    },
+    {
+        "id": "IDS_DLG_SAVE_SEESION",
+        "text": "保存会话"
+    },
+    {
+        "id": "IDS_DLG_DOCUMENT",
+        "text": "文件"
+    },
+    {
+        "id": "IDS_DLG_TRIGGER_DOCK_TITLE",
+        "text": "触发设置"
+    },
+    {
+        "id": "IDS_DLG_PROTOCOL_DOCK_TITLE",
+        "text": "协议"
+    },
+    {
+        "id": "IDS_DLG_MEASURE_DOCK_TITLE",
+        "text": "测量"
+    },
+    {
+        "id": "IDS_DLG_SEARCH_DOCK_TITLE",
+        "text": "查找"
+    },
+    {
+        "id": "IDS_DLG_SAVE_AS",
+        "text": "另存为"
+    },
+    {
+        "id": "IDS_DLG_CHECK_USB_SPEED_ERROR",
+        "text": " 将其插入USB 2.0端口将严重影响其性能.\n  请将其重新插入USB 3.0端口."
+    },
+    {
+        "id": "IDS_DLG_CHECK_SESSION_FILE_VERSION_ERROR",
+        "text": " 当前加载文件具有旧格式 . \n这将导致加载速度变慢. \n请在加载后重新保存."
+    },
+    {
+        "id": "IDS_DLG_ABOUT",
+        "text": "关于"
+    },
+    {
+        "id": "IDS_DLG_DISPLAY_OPTIONS",
+        "text": "显示选项"
+    },
+    {
+        "id": "IDS_DLG_QUICK_SCROLL",
+        "text": "快速滚动"
+    },
+    {
+        "id": "IDS_DLG_SAVE",
+        "text": "保存"
+    },
+    {
+        "id": "IDS_DLG_RESET",
+        "text": "重置"
+    },
+    {
+        "id": "IDS_DLG_EXIT",
+        "text": "推出"
+    },
+    {
+        "id": "IDS_DLG_MANUAL_CALIBRATION",
+        "text": "手动校准"
+    },
+    {
+        "id": "IDS_DLG_CHANNEL",
+        "text": "通道"
+    },
+    {
+        "id": "IDS_DLG_SAVE_CALIBRATION_RESULTS",
+        "text": " 保存校准结果...可能需要一段时间."
+    },
+    {
+        "id": "IDS_DLG_CANCEL",
+        "text": "取消"
+    },
+    {
+        "id": "IDS_DLG_RELOAD_CALIBRATION_RESULTS",
+        "text": " 重新加载上次校准...可能需要一段时间."
+    },
+    {
+        "id": "IDS_DLG_DECODER_OPTIONS",
+        "text": "解码选项"
+    },
+    {
+        "id": "IDS_DLG_CURSOR",
+        "text": "光标 "
+    },
+    {
+        "id": "IDS_DLG_CURSOR_FOR_DECODE_START",
+        "text": "位于解码起始时间的光标"
+    },
+    {
+        "id": "IDS_DLG_CURSOR_FOR_DECODE_END",
+        "text": "位于解码结束时间的光标"
+    },
+    {
+        "id": "IDS_DLG_DEVICE_OPTIONS",
+        "text": "设备选项"
+    },
+    {
+        "id": "IDS_DLG_MODE",
+        "text": "模式"
+    },
+    {
+        "id": "IDS_DLG_OPERATION_MODE",
+        "text": "工作模式"
+    },
+    {
+        "id": "IDS_DLG_ENABLE_ALL",
+        "text": "全部启用"
+    },
+    {
+        "id": "IDS_DLG_DISABLE_ALL",
+        "text": "全部禁用"
+    },
+    {
+        "id": "IDS_DLG_ENABLE",
+        "text": "启用: "
+    },
+    {
+        "id": "IDS_DLG_AUTO_CALIBRATION",
+        "text": "自动校准"
+    },
+    {
+        "id": "IDS_DLG_CALIBRATION",
+        "text": "校准"
+    },
+    {
+        "id": "IDS_DLG_MEASUREMENTS",
+        "text": "测量"
+    },
+    {
+        "id": "IDS_DLG_FFT_ENABLE",
+        "text": "FFT使能: "
+    },
+    {
+        "id": "IDS_DLG_FFT_LENGTH",
+        "text": "FFT长度: "
+    },
+    {
+        "id": "IDS_DLG_SAMPLE_INTERVAL",
+        "text": "抽样间隔: "
+    },
+    {
+        "id": "IDS_DLG_FFT_SOURCE",
+        "text": "FFT通道: "
+    },
+    {
+        "id": "IDS_DLG_FFT_WINDOW",
+        "text": "FFT加窗: "
+    },
+    {
+        "id": "IDS_DLG_DC_IGNORED",
+        "text": "忽视直流: "
+    },
+    {
+        "id": "IDS_DLG_Y-AXIS_MODE",
+        "text": "Y轴模式: "
+    },
+    {
+        "id": "IDS_DLG_DBV_RANGE",
+        "text": "DBV范围: "
+    },
+    {
+        "id": "IDS_DLG_FFT_OPTIONS",
+        "text": "FFT选项"
+    },
+    {
+        "id": "IDS_DLG_INTERVAL_S",
+        "text": "间隔(s): "
+    },
+    {
+        "id": "IDS_DLG_REPETITIVE_INTERVAL",
+        "text": "重复间隔"
+    },
+    {
+        "id": "IDS_DLG_X_AXIS",
+        "text": "X轴"
+    },
+    {
+        "id": "IDS_DLG_Y_AXIS",
+        "text": "Y轴"
+    },
+    {
+        "id": "IDS_DLG_LISSAJOUS_OPTIONS",
+        "text": "李萨如图选项"
+    },
+    {
+        "id": "IDS_DLG_ADD",
+        "text": "加"
+    },
+    {
+        "id": "IDS_DLG_SUBSTRACT",
+        "text": "减"
+    },
+    {
+        "id": "IDS_DLG_MULTIPLY",
+        "text": "乘"
+    },
+    {
+        "id": "IDS_DLG_DIVIDE",
+        "text": "除"
+    },
+    {
+        "id": "IDS_DLG_MATH_TYPE",
+        "text": "运算类型"
+    },
+    {
+        "id": "IDS_DLG_1ST_SOURCE",
+        "text": "第一操作数"
+    },
+    {
+        "id": "IDS_DLG_2ST_SOURCE",
+        "text": "第二操作数"
+    },
+    {
+        "id": "IDS_DLG_MATH_OPTIONS",
+        "text": "数学运算选项"
+    },
+    {
+        "id": "IDS_DLG_EXPORT_FORMAT",
+        "text": "导出格式: "
+    },
+    {
+        "id": "IDS_DLG_PROTOCOL_EXPORT",
+        "text": "协议导出"
+    },
+    {
+        "id": "IDS_DLG_EXPORT_DATA",
+        "text": "导出数据: "
+    },
+    {
+        "id": "IDS_DLG_EXPORT_PROTOCOL_LIST_RESULT",
+        "text": " 导出协议列表结果...可能需要一段时间 ."
+    },
+    {
+        "id": "IDS_DLG_FIT_TO_WINDOW",
+        "text": "适应窗口大小"
+    },
+    {
+        "id": "IDS_DLG_FIXED",
+        "text": "固定"
+    },
+    {
+        "id": "IDS_DLG_MAP_ZOOM",
+        "text": "地图缩放 : "
+    },
+    {
+        "id": "IDS_DLG_DECODED_PROTOCOLS",
+        "text": "解码协议: "
+    },
+    {
+        "id": "IDS_DLG_PROTOCOL_LIST_VIEWER",
+        "text": "协议列表查看"
+    },
+    {
+        "id": "IDS_DLG_REGION",
+        "text": "区域"
+    },
+    {
+        "id": "IDS_DLG_SEARCH_LABEL",
+        "text": "X: 不关心\n0: 低电平\n1: 高电平\nR: 上升沿\nF: 下降沿\nC: 上升/下降沿"
+    },
+    {
+        "id": "IDS_DLG_SEARCH_OPTIONS",
+        "text": "搜索选项"
+    },
+    {
+        "id": "IDS_DLG_CHANGE",
+        "text": "变化"
+    },
+    {
+        "id": "IDS_DLG_SAVING",
+        "text": "保存中..."
+    },
+    {
+        "id": "IDS_DLG_ORIGINAL_DATA",
+        "text": "原始数据"
+    },
+    {
+        "id": "IDS_DLG_COMPRESSED_DATA",
+        "text": "压缩数据"
+    },
+    {
+        "id": "IDS_DLG_EXPORTING",
+        "text": "导出中..."
+    },
+    {
+        "id": "IDS_DLG_DONT_CONNECT_PROBES",
+        "text": "不要连接任何探头!"
+    },
+    {
+        "id": "IDS_DLG_LOAD_CURRENT_SETTING",
+        "text": "加载当前设置... 可能需要一段时间."
+    },
+    {
+        "id": "IDS_DLG_WAITING",
+        "text": "等待"
+    },
+    {
+        "id": "IDS_DLG_FINISHED",
+        "text": "完成!"
+    },
+    {
+        "id": "IDS_DLG_US",
+        "text": "uS"
+    },
+    {
+        "id": "IDS_DLG_MS",
+        "text": "mS"
+    },
+    {
+        "id": "IDS_DLG_S",
+        "text": "S"
+    },
+    {
+        "id": "IDS_DLG_TRIGGER_POSITION",
+        "text": "触发位置: "
+    },
+    {
+        "id": "IDS_DLG_HOLD_OFF_TIME",
+        "text": "闭锁时间: "
+    },
+    {
+        "id": "IDS_DLG_NOISE_SENSITIVITY",
+        "text": "噪声灵敏度: "
+    },
+    {
+        "id": "IDS_DLG_TRIGGER_SOURCES",
+        "text": "触发源: "
+    },
+    {
+        "id": "IDS_DLG_TRIGGER_TYPES",
+        "text": "触发类型: "
+    },
+    {
+        "id": "IDS_DLG_RISING_EDGE",
+        "text": "上升沿"
+    },
+    {
+        "id": "IDS_DLG_FALLING_EDGE",
+        "text": "下降沿"
+    },
+    {
+        "id": "IDS_DLG_AUTO",
+        "text": "自动"
+    },
+    {
+        "id": "IDS_DLG_CHANNEL_0",
+        "text": "通道 0"
+    },
+    {
+        "id": "IDS_DLG_CHANNEL_1",
+        "text": "通道 1"
+    },
+    {
+        "id": "IDS_DLG_CHANNEL_0_AND_1",
+        "text": "通道 0 && 1"
+    },
+    {
+        "id": "IDS_DLG_CHANNEL_0_OR_1",
+        "text": "通道 0 | 1"
+    },
+    {
+        "id": "IDS_DLG_KEYWORD_LINEEID",
+        "text": "协议搜索"
+    },
+    {
+        "id": "IDS_DLG_TIME_SAMPLES",
+        "text": "时间/样本"
+    },
+    {
+        "id": "IDS_DLG_MOUSE_MEASUREMENT",
+        "text": "鼠标测量"
+    },
+    {
+        "id": "IDS_DLG_ENABLE_FLOATING_MEASUREMENT",
+        "text": "启用浮动测量"
+    },
+    {
+        "id": "IDS_DLG_CURSOR_DISTANCE",
+        "text": "光标距离"
+    },
+    {
+        "id": "IDS_DLG_EDGES",
+        "text": "边沿"
+    },
+    {
+        "id": "IDS_DLG_CURSORS",
+        "text": "光标"
+    },
+    {
+        "id": "IDS_DLG_RIS_OR_FAL_EDGE",
+        "text": "上升沿/下降沿/边沿"
+    },
+    {
+        "id": "IDS_DLG_W",
+        "text": "W: "
+    },
+    {
+        "id": "IDS_DLG_P",
+        "text": "P: "
+    },
+    {
+        "id": "IDS_DLG_F",
+        "text": "F: "
+    },
+    {
+        "id": "IDS_DLG_D",
+        "text": "D: "
+    },
+    {
+        "id": "IDS_DLG_SEARCH",
+        "text": "查找"
+    },
+    {
+        "id": "IDS_DLG_MATCHING_ITEMS",
+        "text": "匹配项:"
+    },
+    {
+        "id": "IDS_DLG_OUT_OF_MEMORY",
+        "text": "内存不足"
+    },
+    {
+        "id": "IDS_DLG_SEARCHING",
+        "text": "查找中"
+    },
+    {
+        "id": "IDS_DLG_SEARCH_PREVIOUS",
+        "text": "搜索上一个"
+    },
+    {
+        "id": "IDS_DLG_SEARCH_NEXT",
+        "text": "搜索下一个"
+    },
+    {
+        "id": "IDS_DLG_SIMPLE_TRIGGER",
+        "text": "简单触发模式"
+    },
+    {
+        "id": "IDS_DLG_ADVANCED_TRIGGER",
+        "text": "高级触发模式"
+    },
+    {
+        "id": "IDS_DLG_TRIGGER_POSITION",
+        "text": "触发位置: "
+    },
+    {
+        "id": "IDS_DLG_TOTAL_TRIGGER_STAGES",
+        "text": "总触发等级: "
+    },
+    {
+        "id": "IDS_DLG_START_FLAG",
+        "text": "开始标志: "
+    },
+    {
+        "id": "IDS_DLG_STOP_FLAG",
+        "text": "停止标志: "
+    },
+    {
+        "id": "IDS_DLG_CLOCK_FLAG",
+        "text": "时钟标志: "
+    },
+    {
+        "id": "IDS_DLG_DATA_CHANNEL",
+        "text": "数据通道: "
+    },
+    {
+        "id": "IDS_DLG_DATA_VALUE",
+        "text": "数据值: "
+    },
+    {
+        "id": "IDS_DLG_SERIAL_TRIGGER",
+        "text": "串行触发"
+    },   
+    {
+        "id": "IDS_DLG_STAGE_TRIGGER",
+        "text": "多级触发"
+    },
+    {
+        "id": "IDS_DLG_SERIAL_NOTE_LABEL",
+        "text": "X: 不关心\n0: 低电平\n1: 高电平\nR: 上升沿\nF: 下降沿\nC: 上升/下降沿"
+    },  
+    {
+        "id": "IDS_DLG_DATA_BITS",
+        "text": "数据位"
+    },
+    {
+        "id": "IDS_DLG_INV",
+        "text": "Inv"
+    },
+    {
+        "id": "IDS_DLG_COUNTER",
+        "text": "计数"
+    },
+    {
+        "id": "IDS_DLG_CONTIGUOUS",
+        "text": "连续"
+    },
+    {
+        "id": "IDS_DLG_STAGE",
+        "text": "等级"
+    },
+    {
+        "id": "IDS_DLG_OR",
+        "text": "Or"
+    },
+    {
+        "id": "IDS_DLG_AND",
+        "text": "And"
+    },
+    {
+        "id": "IDS_DLG_HZ",
+        "text": "Hz"
+    },
+    {
+        "id": "IDS_DLG_UNSHOWN",
+        "text": "未显示"
+    },
+    {
+        "id": "ZOOM_IN_FOR_DETAILS",
+        "text": "放大查看详细信息"
+    },
+    {
+        "id": "IDS_DLG_DECODETRACE_ERROR1",
+        "text": "错误: "
+    },
+    {
+        "id": "IDS_DLG_DECODETRACE_ERROR2",
+        "text": "错误: ..."
+    },
+    {
+        "id": "IDS_DLG_ADD_GROUP",
+        "text": "添加组"
+    },
+    {
+        "id": "IDS_DLG_DEL_GROUP",
+        "text": "删除组"
+    },
+    {
+        "id": "IDS_DLG_SET_CHANNEL_COLOUR",
+        "text": "设置通道颜色"
+    },
+    {
+        "id": "IDS_DLG_LISSAJOUS_FIGURE",
+        "text": "李萨如图"
+    },
+    {
+        "id": "IDS_DLG_DATA_SOURCE_ERROR",
+        "text": "数据源错误."
+    },
+    {
+        "id": "IDS_DLG_ADD_X_CURSOR",
+        "text": "添加X光标"
+    },
+    {
+        "id": "IDS_DLG_ADD_Y_CURSOR",
+        "text": "添加Y轴光标"
+    },
+    {
+        "id": "IDS_DLG_AUTO_ROLL",
+        "text": "自动(Roll)"
+    },
+    {
+        "id": "IDS_DLG_WAITING_TRIG",
+        "text": "等待触发"
+    },
+    {
+        "id": "IDS_DLG_TRIG_D",
+        "text": "Trig'd"
+    },
+    {
+        "id": "IDS_DLG_TRIGGERED",
+        "text": "触发! "
+    },
+    {
+        "id": "IDS_DLG_CAPTURED",
+        "text": "% 捕获"
+    },
+    {
+        "id": "IDS_DLG_WAITING_FOR_TRIGGER",
+        "text": "等待触发! "
+    },
+    {
+        "id": "IDS_DLG_RISING",
+        "text": "上升沿: "
+    },
+    {
+        "id": "IDS_DLG_FALLING",
+        "text": "下降沿: "
+    },   
+    {
+        "id": "IDS_DLG_Edges_1",
+        "text": "边沿: "
+    },
+    {
+        "id": "IDS_DLG_WIDTH",
+        "text": "宽度: "
+    },
+    {
+        "id": "IDS_DLG_PERIOD",
+        "text": "周期: "
+    },
+    {
+        "id": "IDS_DLG_FREQUENCY",
+        "text": "频率: "
+    },
+    {
+        "id": "IDS_DLG_DUTY_CYCLE",
+        "text": "占空比: "
+    },
+    {
+        "id": "IDS_DLG_MEASURE",
+        "text": "测量"
+    },
+    {
+        "id": "IDS_DLG_TRIGGER_TIME",
+        "text": "触发时间: "
+    },
+    {
+        "id": "IDS_DLG_SAMPLES_CAPTURED",
+        "text": "捕获样本!"
+    }
+]
