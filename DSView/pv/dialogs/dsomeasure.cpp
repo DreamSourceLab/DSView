@@ -31,6 +31,8 @@
  
 #include "../dsvdef.h"
 
+#include "../ui/langresource.h"
+
 using namespace std;
 using namespace pv::view;
 
@@ -72,7 +74,7 @@ DsoMeasure::DsoMeasure(SigSession *session, View &parent,
     _layout.addWidget(&_button_box, Qt::AlignHCenter | Qt::AlignBottom);
 
     layout()->addLayout(&_layout);
-    setTitle(tr("Measurements"));
+    setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MEASUREMENTS), "Measurements"));
 
     connect(_button_box.button(QDialogButtonBox::Cancel), SIGNAL(clicked()), this, SLOT(reject()));
     connect(_button_box.button(QDialogButtonBox::Reset), SIGNAL(clicked()), this, SLOT(reset()));
@@ -140,8 +142,9 @@ QString DsoMeasure::get_ms_text(int ms_type)
 {
     assert(ms_type >= DSO_MS_BEGIN);
     assert(ms_type < DSO_MS_END);
+    //tr
     const QString label_name[DSO_MS_END-DSO_MS_BEGIN] = {tr("NULL"),
-                                                         tr("Freq"), tr("Period"), tr("+Duty"), tr("-Duty"), tr("+Count"),
+                                                         tr("Freq"), tr("Period"), tr("Duty"), tr("-Duty"), tr("+Count"),
                                                          tr("Rise"), tr("Fall"), tr("+Width"), tr("-Width"), tr("BrstW"),
                                                          tr("Ampl"), tr("High"), tr("Low"), tr("RMS"), tr("Mean"),
                                                          tr("PK-PK"), tr("Max"), tr("Min"), tr("+Over"), tr("-Over")};

@@ -53,6 +53,8 @@
 #include "../data/decode/decoder.h"
 #include "../log.h"
 
+#include "../ui/langresource.h"
+
 using namespace std;
 
 namespace pv {
@@ -99,9 +101,9 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     sort(_decoderInfoList.begin(), _decoderInfoList.end(), ProtocolDock::protocol_sort_callback);
   
     if (repeatNammes != ""){
-        QString err = tr("Any protocol have repeated id or name: ");
+        QString err = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_PROTOCOL_REPEAT), "Any protocol have repeated id or name:");
         err += repeatNammes;
-        MsgBox::Show(tr("error"), err.toUtf8().data());
+        MsgBox::Show(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_ERROR), "error"), err.toUtf8().data());
     }
 
     //-----------------------------top panel
@@ -235,9 +237,9 @@ ProtocolDock::~ProtocolDock()
 
 void ProtocolDock::retranslateUi()
 {
-    _ann_search_edit->setPlaceholderText(tr("search"));
-    _matchs_title_label->setText(tr("Matching Items:"));
-    _bot_title_label->setText(tr("Protocol List Viewer"));
+    _ann_search_edit->setPlaceholderText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SEARCH), "search"));
+    _matchs_title_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MATCHING_ITEMS), "Matching Items:"));
+    _bot_title_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_PROTOCOL_LIST_VIEWER), "Protocol List Viewer"));
     _pro_keyword_edit->ResetText();
 }
 
@@ -297,11 +299,11 @@ int ProtocolDock::get_protocol_index_by_id(QString id)
 void ProtocolDock::on_add_protocol()
 { 
      if (_decoderInfoList.size() == 0){
-        MsgBox::Show(NULL, tr("Protocol list is empty!"));
+        MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NO_PROTOCOL), "Protocol list is empty!"));
         return;
     }
     if (_selected_protocol_id == ""){
-        MsgBox::Show(NULL, tr("Please select a protocol!"));
+        MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NO_SEL_PROTOCOL), "Please select a protocol!"));
         return;
     }
 
@@ -345,7 +347,8 @@ void ProtocolDock::on_add_protocol()
     }
 
     if (pro_id == ""){
-        MsgBox::Show(tr("error"), tr("find the base protocol error!"));
+        MsgBox::Show(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_ERROR), "error"), 
+                     L_S(STR_PAGE_MSG, S_ID(IDS_MSG_FIND_BASE_PROTOCOL_ERROR), "find the base protocol error!"));
 
         for(auto sub: sub_decoders){
             delete sub;
@@ -414,11 +417,11 @@ bool ProtocolDock::add_protocol_by_id(QString id, bool silent, std::list<pv::dat
  
  void ProtocolDock::on_del_all_protocol(){
      if (_protocol_lay_items.size() == 0){
-        MsgBox::Show(NULL, tr("No Protocol Analyzer to delete!"), this);
+        MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NO_PROTOCOL_DEL), "No Protocol Analyzer to delete!"), this);
         return;
      }
 
-    if (MsgBox::Confirm(tr("Are you sure to remove all protocol analyzer?"), this)){
+    if (MsgBox::Confirm(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_PROTOCOL_COMFRIEM_DEL_ALL), "Are you sure to remove all protocol analyzer?"),  this)){
          del_all_protocol();
     }
  } 
@@ -451,7 +454,7 @@ void ProtocolDock::decoded_progress(int progress)
     for(auto &d : decode_sigs) {
         pg = d->get_progress();
         if (d->decoder()->out_of_memory())
-            err = tr("(Out of Memory)");
+            err = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_OUT_OF_MEMORY), "Out of Memory");
 
         if (index < _protocol_lay_items.size())
         {
@@ -809,8 +812,8 @@ void ProtocolDock::search_update()
             search_done();
         });
         Qt::WindowFlags flags = Qt::CustomizeWindowHint;
-        QProgressDialog dlg(tr("Searching..."),
-                            tr("Cancel"),0,0,this,flags);
+        QProgressDialog dlg(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SEARCHING), "Searching..."),
+                            L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CANCEL), "Cancel"),0,0,this,flags);
         dlg.setWindowModality(Qt::WindowModal);
         dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
                            Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
@@ -841,7 +844,7 @@ void ProtocolDock::OnProtocolSetting(void *handle){
 }
 
 void ProtocolDock::OnProtocolDelete(void *handle){
-    if (!MsgBox::Confirm(tr("Are you sure to remove this protocol analyzer?"), this)){
+    if (!MsgBox::Confirm(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_PROTOCOL_COMFRIEM_DEL), "Are you sure to remove this protocol analyzer?"), this)){
          return;
     } 
 

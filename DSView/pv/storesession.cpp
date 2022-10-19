@@ -60,6 +60,8 @@
 #include "utility/encoding.h"
 #include "utility/path.h"
 #include "log.h" 
+
+#include "ui/langresource.h"
  
 namespace pv { 
 
@@ -135,17 +137,17 @@ bool StoreSession::save_start()
     }
 
     if (type_set.size() > 1) {
-        _error = tr("DSView does not currently support"
-                    "file saving for multiple data types.");
+        _error = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_STORESESS_SAVESTART_ERROR1),
+                "DSView does not currently support\nfile saving for multiple data types.");
         return false;
 
     } else if (type_set.size() == 0) {
-        _error = tr("No data to save.");
+        _error = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_STORESESS_SAVESTART_ERROR2), "No data to save.");
         return false;
     }
 
     if (_file_name == ""){
-        _error = tr("No file name.");
+        _error = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_STORESESS_SAVESTART_ERROR3), "No file name.");
         return false;
     }
 
@@ -153,7 +155,7 @@ bool StoreSession::save_start()
 	assert(snapshot);
     // Check we have data
     if (snapshot->empty()) {
-        _error = tr("No data to save.");
+        _error = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_STORESESS_SAVESTART_ERROR2), "No data to save.");
         return false;
     }
 
@@ -166,17 +168,17 @@ bool StoreSession::save_start()
     _sessionDataGetter->genSessionData(session_data);
 
     if (meta_data.empty()) {
-        _error = tr("Generate temp file data failed.");
+        _error = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_STORESESS_SAVESTART_ERROR4), "Generate temp file data failed.");
         QFile::remove(_file_name);
         return false;
     }
     if (decoder_data.empty()){
-        _error = tr("Generate decoder file data failed.");
+        _error = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_STORESESS_SAVESTART_ERROR5), "Generate decoder file data failed.");
         QFile::remove(_file_name);
         return false;
     }
     if (session_data.empty()){
-        _error = tr("Generate session file data failed.");
+        _error = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_STORESESS_SAVESTART_ERROR6), "Generate session file data failed.");
         QFile::remove(_file_name);
         return false;
     }
@@ -201,7 +203,7 @@ bool StoreSession::save_start()
         }
     }
     else{
-         _error = tr("Generate zip file failed.");
+         _error = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_STORESESS_SAVESTART_ERROR7), "Generate zip file failed.");
     }
 
     QFile::remove(_file_name);
@@ -244,7 +246,8 @@ void StoreSession::save_proc(data::Snapshot *snapshot)
                         buf = (uint8_t *)malloc(size);
                         if (buf == NULL) {
                             _has_error = true;
-                            _error = tr("Failed to create zip file. Malloc error.");
+                            _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_SAVEPROC_ERROR1), 
+                                     "Failed to create zip file. Malloc error.");
                         } else {
                             memset(buf, sample ? 0xff : 0x0, size);
                         }
@@ -256,7 +259,8 @@ void StoreSession::save_proc(data::Snapshot *snapshot)
                     if (ret != SR_OK) {
                         if (!_has_error) {
                             _has_error = true;
-                            _error = tr("Failed to create zip file. Please check write permission of this path.");
+                            _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_SAVEPROC_ERROR2), 
+                                     "Failed to create zip file. Please check write permission of this path.");
                         }
                         progress_updated();
                         if (_has_error)
@@ -292,7 +296,8 @@ void StoreSession::save_proc(data::Snapshot *snapshot)
                     uint8_t *tmp = (uint8_t *)malloc(size);
                     if (tmp == NULL) {
                         _has_error = true;
-                        _error = tr("Failed to create zip file. Malloc error.");
+                        _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_SAVEPROC_ERROR1), 
+                                 "Failed to create zip file. Malloc error.");
                     } else {
                         memcpy(tmp, buf, buf_end-buf);
                         memcpy(tmp+(buf_end-buf), buf_start, buf+size-buf_end);
@@ -314,7 +319,8 @@ void StoreSession::save_proc(data::Snapshot *snapshot)
                 if (ret != SR_OK) {
                     if (!_has_error) {
                         _has_error = true;
-                        _error = tr("Failed to create zip file. Please check write permission of this path.");
+                        _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_SAVEPROC_ERROR2), 
+                                "Failed to create zip file. Please check write permission of this path.");
                     }
                     progress_updated();
                     if (_has_error)
@@ -586,11 +592,11 @@ bool StoreSession::export_start()
     }
 
     if (type_set.size() > 1) {
-        _error = tr("DSView does not currently support"
-                    "file export for multiple data types.");
+        _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_EXPORTSTART_ERROR1), 
+                "DSView does not currently support\nfile export for multiple data types.");
         return false;
     } else if (type_set.size() == 0) {
-        _error = tr("No data to save.");
+        _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_EXPORTSTART_ERROR2), "No data to save.");
         return false;
     }
 
@@ -598,12 +604,12 @@ bool StoreSession::export_start()
     assert(snapshot);
     // Check we have data
     if (snapshot->empty()) {
-        _error = tr("No data to save.");
+        _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_EXPORTSTART_ERROR2), "No data to save.");
         return false;
     }
 
     if (_file_name == ""){
-        _error = tr("No set file name.");
+        _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_EXPORTSTART_ERROR3), "No set file name.");
         return false;
     }
 
@@ -622,7 +628,7 @@ bool StoreSession::export_start()
 
     if (_outModule == NULL)
     {
-        _error = tr("Invalid export format.");
+        _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_EXPORTSTART_ERROR4), "Invalid export format.");
     }
     else
     {
@@ -656,7 +662,7 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
         channel_type = SR_CHANNEL_ANALOG;
     } else {
         _has_error = true;
-        _error = tr("data type don't support.");
+        _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_EXPORTPROC_ERROR1), "data type don't support.");
         return;
     }
 
@@ -774,7 +780,7 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
                 uint8_t *xbuf = (uint8_t *)malloc(size * unitsize);
                 if (xbuf == NULL) {
                     _has_error = true;
-                    _error = tr("xbuffer malloc failed.");
+                    _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_EXPORTPROC_ERROR2), "xbuffer malloc failed.");
                     return;
                 }                
                 memset(xbuf, 0, size * unitsize);
@@ -1225,9 +1231,10 @@ QString StoreSession::MakeSaveFile(bool bDlg)
     {
         default_name = QFileDialog::getSaveFileName(
             NULL,
-            tr("Save File"),
+            L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SAVE_FILE),"Save File"),
             default_name,
-            tr("DSView Data (*.dsl)"));
+            //tr
+            "DSView Data (*.dsl)");
 
         if (default_name.isEmpty())
         {
@@ -1246,7 +1253,8 @@ QString StoreSession::MakeSaveFile(bool bDlg)
     QFileInfo f(default_name);
     if (f.suffix().compare("dsl"))
     {
-        default_name.append(tr(".dsl"));
+        //Tr
+        default_name.append(".dsl");
     }
     _file_name = default_name;
     return default_name;     
@@ -1294,7 +1302,7 @@ QString StoreSession::MakeExportFile(bool bDlg)
     {
         default_name = QFileDialog::getSaveFileName(
             NULL,
-            tr("Export Data"),
+            L_S(STR_PAGE_MSG, S_ID(IDS_MSG_EXPORT_DATA),"Export Data"),
             default_name,
             filter,
             &selfilter);
@@ -1331,7 +1339,8 @@ QString StoreSession::MakeExportFile(bool bDlg)
 
     QFileInfo f(default_name);
     if(f.suffix().compare(_suffix)){
-         default_name += tr(".") + _suffix;
+        //tr
+         default_name += "." + _suffix;
     }           
 
     _file_name = default_name;

@@ -37,6 +37,7 @@
 #include "../config/appconfig.h"
 #include "../appcontrol.h"
 #include "../sigsession.h"
+#include "../ui/langresource.h"
 
 using namespace boost;
 using namespace std;
@@ -94,7 +95,7 @@ DeviceOptions::DeviceOptions(QWidget *parent) :
     SigSession *session = AppControl::Instance()->GetSession();
     _device_agent = session->get_device();
 
-    this->setTitle(tr("Device Options"));
+    this->setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DEVICE_OPTIONS), "Device Options"));
     this->SetTitleSpace(0);
     this->layout()->setSpacing(0);
     this->layout()->setDirection(QBoxLayout::TopToBottom);
@@ -121,7 +122,7 @@ DeviceOptions::DeviceOptions(QWidget *parent) :
     //_container_panel->setStyleSheet("background-color:red");
     
     // mode group box
-    QGroupBox *props_box = new QGroupBox(tr("Mode"), this);
+    QGroupBox *props_box = new QGroupBox(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MODE), "Mode"), this);
     QLayout *props_lay = get_property_form(props_box);
     props_box->setLayout(props_lay);
     _container_lay->addWidget(props_box);
@@ -199,9 +200,9 @@ void DeviceOptions::accept()
         QDialog::accept();
     } else {
         dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(tr("Attention"));
-        msg.mBox()->setInformativeText(tr("All channel disabled! Please enable at least one channel."));
-        msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
+        msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_ATTENTION), "Attention"));
+        msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_ALL_CHANNEL_DISABLE), "All channel disabled! Please enable at least one channel."));
+        msg.mBox()->addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_OK), "Ok"), QMessageBox::AcceptRole);
         msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
     }
@@ -226,7 +227,7 @@ QLayout * DeviceOptions::get_property_form(QWidget * parent)
 		assert(p);
         const QString label = p->labeled_widget() ? QString() : p->label();
         layout->addWidget(new QLabel(label, parent), i, 0);
-        if (label == tr("Operation Mode"))
+        if (label == L_S(STR_PAGE_DLG, S_ID(IDS_DLG_OPERATION_MODE), "Operation Mode"))
             layout->addWidget(p->get_widget(parent, true), i, 1);
         else
             layout->addWidget(p->get_widget(parent), i, 1);
@@ -339,8 +340,8 @@ void DeviceOptions::logic_probes(QVBoxLayout &layout)
     _sub_lays.push_back(line_lay);
     line_lay->setSpacing(10);
 
-    QPushButton *enable_all_probes = new QPushButton(tr("Enable All"));
-    QPushButton *disable_all_probes = new QPushButton(tr("Disable All"));
+    QPushButton *enable_all_probes = new QPushButton(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ENABLE_ALL), "Enable All"));
+    QPushButton *disable_all_probes = new QPushButton(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DISABLE_ALL), "Disable All"));
     enable_all_probes->setMaximumHeight(30);
     disable_all_probes->setMaximumHeight(30);
 
@@ -421,10 +422,11 @@ void DeviceOptions::zero_adj()
     QDialog::accept();
 
     dialogs::DSMessageBox msg(this);
-    msg.mBox()->setText(tr("Information"));
-    msg.mBox()->setInformativeText(tr("Auto Calibration program will be started. Don't connect any probes. It can take a while!"));
-    msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
-    msg.mBox()->addButton(tr("Cancel"), QMessageBox::RejectRole);
+    msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_INFORMATION), "Information"));
+    msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_A_CAL_START), 
+                                   "Auto Calibration program will be started. Don't connect any probes. It can take a while!"));
+    msg.mBox()->addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_OK), "Ok"), QMessageBox::AcceptRole);
+    msg.mBox()->addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CANCEL), "Cancel") ,QMessageBox::RejectRole);
     msg.mBox()->setIcon(QMessageBox::Information);
 
     if (msg.exec()) {
@@ -536,9 +538,11 @@ void DeviceOptions::channel_enable()
         g_variant_unref(gvar);
         if (cur_ch_num > vld_ch_num) {
             dialogs::DSMessageBox msg(this);
-            msg.mBox()->setText(tr("Information"));
-            msg.mBox()->setInformativeText(tr("Current mode only suppport max ") + QString::number(vld_ch_num) + tr(" channels!"));
-            msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
+            msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_INFORMATION), "Information"));
+            msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_MAX_CHANNEL), "Current mode only suppport max ")
+                                          + QString::number(vld_ch_num) 
+                                          + L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CHANNEL), " channels!"));
+            msg.mBox()->addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_OK), "Ok"), QMessageBox::AcceptRole);
             msg.mBox()->setIcon(QMessageBox::Information);
             msg.exec();
 
@@ -588,7 +592,7 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
         probe_checkBox->setCheckState(probe->enabled ? Qt::Checked : Qt::Unchecked);
         _probes_checkBox_list.push_back(probe_checkBox);
 
-        QLabel *en_label = new QLabel(tr("Enable: "), this);
+        QLabel *en_label = new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ENABLE), "Enable: "), this);
         en_label->setProperty("Enable", true);
         probe_layout->addWidget(en_label, 0, 0, 1, 1);
         probe_layout->addWidget(probe_checkBox, 0, 1, 1, 3);
@@ -650,7 +654,8 @@ QString DeviceOptions::dynamic_widget(QLayout *lay)
         QVBoxLayout *grid = dynamic_cast<QVBoxLayout*>(lay);
         assert(grid);
         logic_probes(*grid);
-        return tr("Channels");
+        //tr
+        return L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CHANNEL), "Channel");
     } 
     else if (mode == DSO) {
         GVariant* gvar = _device_agent->get_config(NULL, NULL, SR_CONF_HAVE_ZERO);
@@ -662,18 +667,19 @@ QString DeviceOptions::dynamic_widget(QLayout *lay)
             assert(grid);
 
             if (have_zero) {
-                auto config_button = new QPushButton(tr("Auto Calibration"), this);
+                auto config_button = new QPushButton(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_AUTO_CALIBRATION), "Auto Calibration"), this);
                 grid->addWidget(config_button, 0, 0, 1, 1);
                 connect(config_button, SIGNAL(clicked()), this, SLOT(zero_adj()));
 
-                auto cali_button = new QPushButton(tr("Manual Calibration"), this);
+                auto cali_button = new QPushButton(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MANUAL_CALIBRATION), "Manual Calibration"), this);
                 grid->addWidget(cali_button, 1, 0, 1, 1);
                 connect(cali_button, SIGNAL(clicked()), this, SLOT(on_calibration()));
 
                 _groupHeight2 = 100;
                 _dynamic_panel->setFixedHeight(_groupHeight2); 
 
-                return tr("Calibration");
+                //tr
+                return L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CALIBRATION), "Calibration");
             }
         }
     } 
@@ -681,7 +687,8 @@ QString DeviceOptions::dynamic_widget(QLayout *lay)
         QGridLayout *grid = dynamic_cast<QGridLayout*>(lay);
         assert(grid);
         analog_probes(*grid);
-        return tr("Channels");
+        //tr
+        return L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CHANNEL), "Channel");
     }
     return NULL;
 }

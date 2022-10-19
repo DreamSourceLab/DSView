@@ -1,5 +1,36 @@
 [
     {
+        "id": "IDS_MSG_OK",
+        "text": "确定"
+    },
+    {
+        "id": "IDS_MSG_SKIP",
+        "text": "跳过"
+    },
+    {
+        "id": "IDS_MSG_CANCEL",
+        "text": "取消"
+    },{
+        "id": "IDS_MSG_ATTENTION",
+        "text": "注意"
+    },   
+    {
+        "id": "IDS_MSG_ERROR",
+        "text": "错误"
+    },
+    {
+        "id": "IDS_MSG_INFORMATION",
+        "text": "消息"
+    }, 
+    {
+        "id": "IDS_MSG_CONTINUE",
+        "text": "继续"
+    }, 
+    {
+        "id": "IDS_MSG_A_CAL_START",
+        "text": "自动校准程序将启动。不要连接任何探头。这可能需要一段时间！"
+    },
+    {
         "id": "IDS_MSG_A_CAL",
         "text": "自动校准"
     },
@@ -8,23 +39,312 @@
         "text": "请调整零偏差并保存结果"
     },
     {
-        "id": "IDS_MSG_OK",
-        "text": "好"
-    },
-    {
-        "id": "IDS_MSG_SKIP",
-        "text": "跳过"
-    },
-    {
-        "id": "IDS_MSG_A_CAL_START",
-        "text": "自动校准程序将启动。不要连接任何探头。这可能需要一段时间！"
-    },
-    {
         "id": "IDS_MSG_SAVE_CAPDATE",
-        "text": "是否保存捕获的数据？"
+        "text": "保存捕获的数据?"
     },
     {
         "id": "IDS_MSG_SAVE_CANFIND_SESSIONFILE",
-        "text": "找不到此设备的默认会话文件！"
+        "text": "找不到此设备的默认会话文件!"
+    },
+    {
+        "id": "IDS_MSG_OPEN_FILE_ERROR",
+        "text": "打开文件错误!"
+    },
+    {
+        "id": "IDS_MSG_NOT_COMPATIBLE",
+        "text": "会话文件与当前设备或模式不兼容!"
+    },
+    {
+        "id": "IDS_MSG_RE_WIN_ST_ER",
+        "text": " 还原窗口状态错误!"
+    },
+    {
+        "id": "IDS_MSG_INVAILD_CURSOR",
+        "text": " 样本范围的游标索引无效!"
+    },
+    {
+        "id": "IDS_MSG_SEL_FILENAME",
+        "text": "您需要选择文件名"
+    },
+    {
+        "id": "IDS_MSG_PROTOCOL_REPEAT",
+        "text": "存在重复id或名字的协议:"
+    },
+    {
+        "id": "IDS_MSG_NO_PROTOCOL",
+        "text": "协议列表为空!"
+    },
+    {
+        "id": "IDS_MSG_NO_SEL_PROTOCOL",
+        "text": "请选择一个协议!"
+    },
+    {
+        "id": "IDS_MSG_FIND_BASE_PROTOCOL_ERROR",
+        "text": "查找基本协议错误!"
+    },
+    {
+        "id": "IDS_MSG_NO_PROTOCOL_DEL",
+        "text": "没有要删除的协议分析器!"
+    },
+    {
+        "id": "IDS_MSG_PROTOCOL_COMFRIEM_DEL_ALL",
+        "text": "是否确定要删除所有协议分析器?"
+    },
+    {
+        "id": "IDS_MSG_PROTOCOL_COMFRIEM_DEL",
+        "text": "是否确定要删除这个协议分析器?"
+    },   
+    {
+        "id": "IDS_MSG_CLOSE_DEVICE",
+        "text": "是否确定关闭这个设备?"
+    },
+    {
+        "id": "IDS_MSG_SET_DEF_CAL_SETTING",
+        "text": "所有校准设置将成为默认值!"
+    },
+    {
+        "id": "IDS_MSG_ALL_CHANNEL_DISABLE",
+        "text": " 所有频道已禁用请至少启用一个通道"
+    },
+    {
+        "id": "IDS_MSG_MAX_CHANNEL",
+        "text": "当前模式仅支持最大"
+    },
+    {
+        "id": "IDS_MSG_CHANNEL",
+        "text": " 频道数!"
+    },
+    {
+        "id": "IDS_MSG_TRI_SET_ISSUE",
+        "text": "触发设置问题"
+    },
+    {
+        "id": "IDS_MSG_CHANGE_HOR_TRI_POS_FAIL",
+        "text": "更改水平触发器位置失败!"
+    },
+    {
+        "id": "IDS_MSG_CHANGE_TRI_HOLDOFF_TIME_FAIL",
+        "text": "更改触发器保持时间失败!"
+    },
+    {
+        "id": "IDS_MSG_CHANGE_SENSITIVITY_FAIL",
+        "text": "更改触发值灵敏度失败!"
+    },
+    {
+        "id": "IDS_MSG_CHANGE_SOURCE_FAIL",
+        "text": " 更改触发源失败!"
+    },
+    {
+        "id": "IDS_MSG_CHANGE_CHANNEL_FAIL",
+        "text": "更改触发器通道失败!"
+    },
+    {
+        "id": "IDS_MSG_CHANGE_TYPE_FAIL",
+        "text": "更改触发器类型失败!"
+    },
+    {
+        "id": "IDS_MSG_PLEASE_INSERT_CURSOR",
+        "text": "请在使用光标测量之前插入光标."
+    },
+    {
+        "id": "IDS_MSG_SEARCH",
+        "text": "查找"
+    },
+    {
+        "id": "IDS_MSG_NO_SAMPLE_DATA",
+        "text": "无样本数据!"
+    },
+    {
+        "id": "IDS_MSG_SEARCH_AT_START",
+        "text": "在起始位置搜索光标!"
+    },
+    {
+        "id": "IDS_MSG_PATTERN_NOT_FOUND",
+        "text": "找不到样式!"
+    },
+    {
+        "id": "IDS_MSG_SEARCH_AT_END",
+        "text": "在结束位置搜索光标!"
+    },
+    {
+        "id": "IDS_MSG_TRIGGER",
+        "text": "触发"
+    },
+    {
+        "id": "IDS_MSG_STREAM_NO_AD_TRIGGER",
+        "text": "流模式不支持高级触发模式!"
+    },
+    {
+        "id": "IDS_MSG_AD_TRIGGER_NEED_HARDWARE",
+        "text": " 高级触发模式需要DSLogic硬件支持!"
+    },
+    {
+        "id": "IDS_MSG_SET_TRI_MULTI_CHANNEL",
+        "text": "触发设置在多个通道上!\n仅当所有设置的通道在一个样本中满足触发条件时才会触发"
+    },
+    {
+        "id": "IDS_MSG_NOT_SHOW_AGAIN",
+        "text": "不再显示"
+    },
+    {
+        "id": "IDS_MSG_CLEAR_TRIG",
+        "text": "清除触发"
+    },
+    {
+        "id": "IDS_MSG_IGNORE",
+        "text": "忽略"
+    },
+    {
+        "id": "IDS_MSG_OPEN",
+        "text": "打开"
+    },
+    {
+        "id": "IDS_MSG_FAIL_TO_LOAD",
+        "text": "加载失败"
+    },
+
+    {
+        "id": "IDS_MSG_HARDWARE_ERROR",
+        "text": "硬件操作失败"
+    },
+    {
+        "id": "IDS_MSG_HARDWARE_ERROR_DET",
+        "text": "请重新插入设备以刷新硬件配置!"
+    },
+    {
+        "id": "IDS_MSG_MALLOC_ERROR",
+        "text": "动态内存分配错误"
+    },
+    {
+        "id": "IDS_MSG_MALLOC_ERROR_DET",
+        "text": " 内存不足，无法容纳此样本!\n请降低采样深度!"
+    },
+    {
+        "id": "IDS_DATA_ERROR",
+        "text": "数据错误"
+    },
+    {
+        "id": "IDS_DATA_ERROR_DET1",
+        "text": " 接收的数据与预定义的测试数据不一致!"
+    },
+    {
+        "id": "IDS_DATA_ERROR_DET2",
+        "text": "0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15"
+    },
+    {
+        "id": "IDS_MSG_PACKET_ERROR",
+        "text": "数据包错误"
+    },
+    {
+        "id": "IDS_MSG_PACKET_ERROR_DET",
+        "text": " 接收到的数据包的内容不是预期的 !"
+    },
+    {
+        "id": "IDS_MSG_DATA_OVERFLOW",
+        "text": "数据溢出"
+    },
+    {
+        "id": "IDS_MSG_DATA_OVERFLOW_DET",
+        "text": " USB带宽无法支持当前采样率 ! \n请降低采样深度!"
+    },
+    {
+        "id": "IDS_MSG_UNDEFINED_ERROR",
+        "text": "未定义错误"
+    },
+    {
+        "id": "IDS_MSG_UNDEFINED_ERROR_DET",
+        "text": "意外错误!"
+    },
+    {
+        "id": "IDS_MSG_STORESESS_SAVESTART_ERROR1",
+        "text": " DSView当前不支持\n多数据类型的文件保存."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_SAVESTART_ERROR2",
+        "text": "没有要保存的数据."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_SAVESTART_ERROR3",
+        "text": "没有文件名."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_SAVESTART_ERROR4",
+        "text": " 生成临时文件数据失败."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_SAVESTART_ERROR5",
+        "text": "生成解码文件数据失败."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_SAVESTART_ERROR6",
+        "text": "生成会话文件数据失败."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_SAVESTART_ERROR7",
+        "text": "生成zip文件失败."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_SAVEPROC_ERROR1",
+        "text": "无法创建zip文件.内存分配错误."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_SAVEPROC_ERROR2",
+        "text": "无法创建zip文件.请检查此路径的写入权限."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_EXPORTSTART_ERROR1",
+        "text": "DSView当前不支持\n多数据类型的文件导出."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_EXPORTSTART_ERROR2",
+        "text": "没有要保存的数据."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_EXPORTSTART_ERROR3",
+        "text": "没有设置文件名."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_EXPORTSTART_ERROR4",
+        "text": "导出格式无效."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_EXPORTPROC_ERROR1",
+        "text": "不支持的数据类型."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_EXPORTPROC_ERROR2",
+        "text": "缓冲区内存分配失败."
+    },
+    {
+        "id": "IDS_MSG_SAVE_FILE",
+        "text": "保存文件"
+    },
+    {
+        "id": "IDS_MSG_EXPORT_DATA",
+        "text": "导出数据"
+    },
+    {
+        "id": "IDS_MSG_STORESESS_EXPORTPROC_ERROR2",
+        "text": "缓冲区内存分配失败."
+    },
+    {
+        "id": "IDS_MSG_EXPORT_DATA",
+        "text": "导出文件"
+    },
+    {
+        "id": "IDS_MSG_DECODERSTACK_DECODE_WORK_ERROR",
+        "text": "n尚未指定一个或多个 \n所需通道"
+    },
+    {
+        "id": "IDS_MSG_DECODERSTACK_DECODE_DATA_ERROR",
+        "text": "至少有一个选定通道未启用."
+    },
+    {
+        "id": "IDS_MSG_DECODERSTACK_DECODE_STACK_ERROR",
+        "text": "未能创建解码实例"
+    },
+    {
+        "id": "IDS_MSG_MESSAGE",
+        "text": "消息"
     }
 ]

@@ -45,6 +45,8 @@
 #include "../appcontrol.h"
 #include "../log.h"
  
+#include "../ui/langresource.h"
+
 using namespace std;
 
 namespace pv {
@@ -96,8 +98,8 @@ Viewport::Viewport(View &parent, View_type type) :
     _drag_timer.setSingleShot(true);
  
     _cmenu = new QMenu(this);
-    QAction *yAction = _cmenu->addAction(tr("Add Y-cursor"));
-    QAction *xAction = _cmenu->addAction(tr("Add X-cursor"));
+    QAction *yAction = _cmenu->addAction(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ADD_Y_CURSOR), "Add Y-cursor"));
+    QAction *xAction = _cmenu->addAction(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ADD_X_CURSOR), "Add X-cursor"));
  
     setContextMenuPolicy(Qt::CustomContextMenu);
 
@@ -334,16 +336,16 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
                 type = g_variant_get_byte(gvar);
                 g_variant_unref(gvar);
                 if (type == DSO_TRIGGER_AUTO && roll) {
-                    type_str = tr("Auto(Roll)");
+                    type_str = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_AUTO_ROLL), "Auto(Roll)");
                 } else if (type == DSO_TRIGGER_AUTO && !_view.session().trigd()) {
-                    type_str = tr("Auto");
+                    type_str = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_AUTO), "Auto");
                 } else if (_waiting_trig > 0) {
-                    type_str = tr("Waiting Trig");
+                    type_str = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_WAITING_TRIG), "Waiting Trig");
                     for (int i = 1; i < _waiting_trig; i++)
                         if (i % (WaitLoopTime / SigSession::FeedInterval) == 0)
                             type_str += ".";
                 } else {
-                    type_str = tr("Trig'd");
+                    type_str = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIG_D), "Trig'd");
                 }
             }
             p.setPen(fore);
@@ -454,12 +456,14 @@ void Viewport::paintProgress(QPainter &p, QColor fore, QColor back)
             if (triggered) {
                 p.drawText(status_rect,
                            Qt::AlignCenter | Qt::AlignVCenter,
-                           tr("Triggered! ") + QString::number(captured_progress) + tr("% Captured"));
+                           L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIGGERED), "Triggered! ") + QString::number(captured_progress) 
+                           + L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CAPTURED), "% Captured"));
                 _view.set_trig_time();
             } else {
                 p.drawText(status_rect,
                            Qt::AlignCenter | Qt::AlignVCenter,
-                           tr("Waiting for Trigger! ") + QString::number(captured_progress) + tr("% Captured"));
+                           L_S(STR_PAGE_DLG, S_ID(IDS_DLG_WAITING_FOR_TRIGGER), "Waiting for Trigger! ") + QString::number(captured_progress) 
+                           + L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CAPTURED), "% Captured"));
             }
             prgRate(captured_progress);
         }
@@ -1266,9 +1270,9 @@ void Viewport::measure()
                         _cur_aftX = _view.hover_point().x();
                         _cur_midY = logicSig->get_y() - logicSig->get_totalHeight()/2 - 5;
 
-                        _em_rising = tr("Rising: ") + QString::number(_edge_rising);
-                        _em_falling = tr("Falling: ") + QString::number(_edge_falling);
-                        _em_edges = tr("Edges: ") + QString::number(_edge_rising + _edge_falling);
+                        _em_rising = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_RISING), "Rising: ") + QString::number(_edge_rising);
+                        _em_falling = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_FALLING), "Falling: ") + QString::number(_edge_falling);
+                        _em_edges = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_Edges_1), "Edges: ") + QString::number(_edge_rising + _edge_falling);
 
                         break;
                     }
@@ -1374,13 +1378,13 @@ void Viewport::paintMeasure(QPainter &p, QColor fore, QColor back)
 
             p.setPen(active_color);
             p.drawText(measure1_rect, Qt::AlignRight | Qt::AlignVCenter,
-                       tr("Width: ") + _mm_width);
+                       L_S(STR_PAGE_DLG, S_ID(IDS_DLG_WIDTH), "Width: ") + _mm_width);
             p.drawText(measure2_rect, Qt::AlignRight | Qt::AlignVCenter,
-                       tr("Period: ") + _mm_period);
+                       L_S(STR_PAGE_DLG, S_ID(IDS_DLG_PERIOD), "Period: ") + _mm_period);
             p.drawText(measure3_rect, Qt::AlignRight | Qt::AlignVCenter,
-                       tr("Frequency: ") + _mm_freq);
+                       L_S(STR_PAGE_DLG, S_ID(IDS_DLG_FREQUENCY), "Frequency: ") + _mm_freq);
             p.drawText(measure4_rect, Qt::AlignRight | Qt::AlignVCenter,
-                       tr("Duty Cycle: ") + _mm_duty);
+                      L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DUTY_CYCLE), "Duty Cycle: ") + _mm_duty);
         }
     } 
 

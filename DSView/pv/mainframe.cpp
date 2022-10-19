@@ -49,6 +49,8 @@
 #include "ui/msgbox.h"
 #include "appcontrol.h"
 
+#include "ui/langresource.h"
+
 #include <algorithm>
 
 namespace pv {
@@ -505,7 +507,7 @@ void MainFrame::show_doc()
       
     if (app._userHistory.showDocuments) {
         dialogs::DSDialog dlg(this, true);
-        dlg.setTitle(tr("Document"));
+        dlg.setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DOCUMENT), "Document"));
 
         QString path = GetAppDataDir() + "/showDoc" + QString::number(lan)+ ".png";
         if (!QFile::exists(path)){
@@ -519,9 +521,9 @@ void MainFrame::show_doc()
         msg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
         msg.setContentsMargins(0, 0, 0, 0);
        
-        QPushButton *noMoreButton = msg.addButton(tr("Not Show Again"), QMessageBox::ActionRole);
-        msg.addButton(tr("Ignore"), QMessageBox::ActionRole);
-        QPushButton *openButton = msg.addButton(tr("Open"), QMessageBox::ActionRole);
+        QPushButton *noMoreButton = msg.addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NOT_SHOW_AGAIN), "Not Show Again"), QMessageBox::ActionRole);
+        msg.addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_IGNORE), "Ignore"), QMessageBox::ActionRole);
+        QPushButton *openButton = msg.addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_OPEN), "Open"), QMessageBox::ActionRole);
 
         QVBoxLayout layout;
         layout.addWidget(&tipsLabel);

@@ -46,6 +46,8 @@
 #include "../view/decodetrace.h"
 #include "../ui/msgbox.h"
 
+#include "../ui/langresource.h"
+
 namespace pv {
 namespace dialogs {
 
@@ -81,7 +83,7 @@ void DecoderOptionsDlg::load_options(view::DecodeTrace *trace, bool isNew)
     form->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow); 
     dlg->layout()->addLayout(form);
 
-    dlg->setTitle(tr("Decoder Options"));   
+    dlg->setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DECODER_OPTIONS), "Decoder Options"));   
     
     //scroll pannel
     QWidget *scroll_pannel  = new QWidget();
@@ -103,7 +105,7 @@ void DecoderOptionsDlg::load_options(view::DecodeTrace *trace, bool isNew)
     load_decoder_forms(container_panel);
  
     if (_trace->decoder()->stack().size() > 0){
-       // form->addRow(new QLabel(tr("<i>* Required channels</i>"), dlg));
+
     } 
  
     //Add region combobox
@@ -123,7 +125,9 @@ void DecoderOptionsDlg::load_options(view::DecodeTrace *trace, bool isNew)
     {  
         int num = 1;
         for (auto c : view->get_cursorList()){
-            QString curCursor = tr("Cursor ") + QString::number(num);
+            //tr
+            QString curCursor = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CURSOR), "Cursor") + 
+                                QString::number(num);
             _start_comboBox->addItem(curCursor, QVariant((quint64)c->get_key()));
             _end_comboBox->addItem(curCursor, QVariant((quint64)c->get_key()));
 
@@ -146,10 +150,11 @@ void DecoderOptionsDlg::load_options(view::DecodeTrace *trace, bool isNew)
  
     update_decode_range(); // set default sample range
   
+  //tr
     form->addRow(_start_comboBox, new QLabel(
-                     tr("The cursor for decode start time")));
+                     L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CURSOR_FOR_DECODE_START), "The cursor for decode start time")));
     form->addRow(_end_comboBox, new QLabel(
-                     tr("The cursor for decode end time")));
+                     L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CURSOR_FOR_DECODE_END), "The cursor for decode end time")));
 
     //space 
     QWidget *space = new QWidget();
@@ -348,7 +353,8 @@ void DecoderOptionsDlg::create_decoder_form(
 			(struct srd_channel *)l->data;
 		DsComboBox *const combo = create_probe_selector(parent, dec, pdch);
 
-		decoder_form->addRow(tr("<b>%1</b> (%2) *")
+        //tr
+        decoder_form->addRow(QString("<b>%1</b> (%2) *")
 			.arg(QString::fromUtf8(pdch->name))
 			.arg(QString::fromUtf8(pdch->desc)), combo);
 
@@ -364,7 +370,8 @@ void DecoderOptionsDlg::create_decoder_form(
 			(struct srd_channel *)l->data;
 		DsComboBox *const combo = create_probe_selector(parent, dec, pdch);
 		
-		decoder_form->addRow(tr("<b>%1</b> (%2)")
+        //tr
+        decoder_form->addRow(QString("<b>%1</b> (%2)")
 			.arg(QString::fromUtf8(pdch->name))
 			.arg(QString::fromUtf8(pdch->desc)), combo);
 
@@ -430,7 +437,8 @@ void DecoderOptionsDlg::commit_decoder_probes(data::decode::Decoder *dec)
 void DecoderOptionsDlg::on_accept()
 { 
     if (_cursor1 > 0 && _cursor1 == _cursor2){
-        MsgBox::Show(tr("error"), tr("Invalid cursor index for sample range!"));
+        MsgBox::Show(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_ERROR), "error"), 
+        L_S(STR_PAGE_MSG, S_ID(IDS_MSG_INVAILD_CURSOR), "Invalid cursor index for sample range!"));
         return;
     }
 

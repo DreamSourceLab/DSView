@@ -34,6 +34,7 @@
 #include "../appcontrol.h"
 #include "../sigsession.h"
 
+#include "../ui/langresource.h"
 
 using namespace std;
 
@@ -115,12 +116,12 @@ void Calibration::changeEvent(QEvent *event)
 
 void Calibration::retranslateUi()
 {
-    _save_btn->setText(tr("Save"));
-    _abort_btn->setText(tr("Abort"));
-    _reset_btn->setText(tr("Reset"));
-    _exit_btn->setText(tr("Exit"));
+    _save_btn->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SAVE), "Save"));
+    _abort_btn->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ABOUT), "About"));
+    _reset_btn->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_RESET), "Reset"));
+    _exit_btn->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_EXIT), "Exit"));
 
-    setTitle(tr("Manual Calibration"));
+    setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MANUAL_CALIBRATION), "Manual Calibration"));
 }
 
 void Calibration::update_device_info()
@@ -171,7 +172,7 @@ void Calibration::update_device_info()
         gain_slider->setRange(-vgain_range/2, vgain_range/2);
         gain_slider->setValue(vgain - vgain_default);
         gain_slider->setObjectName(VGAIN+probe->index);
-        QString gain_string = tr("Channel") + QString::number(probe->index) + VGAIN;
+        QString gain_string = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CHANNEL), "Channel") + QString::number(probe->index) + VGAIN;
         QLabel *gain_label = new QLabel(gain_string, this);
         _flayout->addRow(gain_label, gain_slider);
         _slider_list.push_back(gain_slider);
@@ -193,7 +194,7 @@ void Calibration::update_device_info()
         off_slider->setRange(0, voff_range);
         off_slider->setValue(voff);
         off_slider->setObjectName(VOFF+probe->index);
-        QString off_string = tr("Channel") + QString::number(probe->index) + VOFF;
+        QString off_string = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CHANNEL), "Channel") + QString::number(probe->index) + VOFF;
         QLabel *off_label = new QLabel(off_string, this);
         _flayout->addRow(off_label, off_slider);
         _slider_list.push_back(off_slider);
@@ -216,7 +217,7 @@ void Calibration::update_device_info()
             comp_slider->setRange(-127, 127);
             comp_slider->setValue(comb_comp);
             comp_slider->setObjectName(VCOMB+probe->index);
-            QString comp_string = tr("Channel") + QString::number(probe->index) + VCOMB;
+            QString comp_string = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CHANNEL), "Channel") + QString::number(probe->index) + VCOMB;
             QLabel *comp_label = new QLabel(comp_string, this);
             _flayout->addRow(comp_label, comp_slider);
             _slider_list.push_back(comp_slider);
@@ -285,8 +286,10 @@ void Calibration::on_save()
         //while( QTime::currentTime() < dieTime );
     });
     Qt::WindowFlags flags = Qt::CustomizeWindowHint;
-    QProgressDialog dlg(tr("Save calibration results... It can take a while."),
-                        tr("Cancel"),0,0,this,flags);
+    QProgressDialog dlg(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SAVE_CALIBRATION_RESULTS), 
+                        "Save calibration results... It can take a while."),
+                        L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CANCEL), "Cancel"),
+                        0,0,this,flags);
     dlg.setWindowModality(Qt::WindowModal);
     dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
                        Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
@@ -312,8 +315,9 @@ void Calibration::on_abort()
         //while( QTime::currentTime() < dieTime );
     });
     Qt::WindowFlags flags = Qt::CustomizeWindowHint;
-    QProgressDialog dlg(tr("Reload last calibration results... It can take a while."),
-                        tr("Cancel"),0,0,this,flags);
+    QProgressDialog dlg(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_RELOAD_CALIBRATION_RESULTS), 
+                        "Reload last calibration results... It can take a while."),
+                        L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CANCEL), "Cancel"),0,0,this,flags);
     dlg.setWindowModality(Qt::WindowModal);
     dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
                        Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
@@ -381,10 +385,10 @@ void Calibration::on_reset()
 {
 
     dialogs::DSMessageBox msg(this);
-    msg.mBox()->setText(tr("Attention"));
-    msg.mBox()->setInformativeText(tr("All calibration settings will become the defualt values!"));
-    msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
-    msg.mBox()->addButton(tr("Cancel"), QMessageBox::RejectRole);
+    msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_ATTENTION), "Attention"));
+    msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SET_DEF_CAL_SETTING), "All calibration settings will become the defualt values!"));
+    msg.mBox()->addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_OK), "Ok"), QMessageBox::AcceptRole);
+    msg.mBox()->addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CANCEL), "Cancel"), QMessageBox::RejectRole);
     msg.mBox()->setIcon(QMessageBox::Warning);
     if (msg.exec()) {
         _device_agent->set_config(NULL, NULL, SR_CONF_ZERO_DEFAULT,

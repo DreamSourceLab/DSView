@@ -40,6 +40,8 @@
 #include <stdint.h> 
 #include "../config/appconfig.h"
 
+#include "../ui/langresource.h"
+
 namespace pv {
 namespace dock {
 
@@ -99,7 +101,7 @@ void SearchDock::changeEvent(QEvent *event)
 
 void SearchDock::retranslateUi()
 {
-    _search_value->setPlaceholderText(tr("search"));
+    _search_value->setPlaceholderText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SEARCH), "search"));
 }
 
 void SearchDock::reStyle()
@@ -130,8 +132,8 @@ void SearchDock::on_previous()
 
     if (!logic_snapshot || logic_snapshot->empty()) {
         dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(tr("Search"));
-        msg.mBox()->setInformativeText(tr("No Sample data!"));
+        msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SEARCH), "Search"));
+        msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NO_SAMPLE_DATA), "No Sample data!"));
         msg.mBox()->setStandardButtons(QMessageBox::Ok);
         msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
@@ -143,8 +145,8 @@ void SearchDock::on_previous()
     last_hit = _view.get_search_hit();
     if (last_pos == 0) {
         dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(tr("Search"));
-        msg.mBox()->setInformativeText(tr("Search cursor at the start position!"));
+        msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SEARCH), "Search"));
+        msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SEARCH_AT_START), "Search cursor at the start position!"));
         msg.mBox()->setStandardButtons(QMessageBox::Ok);
         msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
@@ -156,8 +158,8 @@ void SearchDock::on_previous()
             ret = logic_snapshot->pattern_search(0, end, last_pos, _pattern, false);
         });
         Qt::WindowFlags flags = Qt::CustomizeWindowHint;
-        QProgressDialog dlg(tr("Search Previous..."),
-                            tr("Cancel"),0,0,this,flags);
+        QProgressDialog dlg(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SEARCH_PREVIOUS), "Search Previous..."),
+                            L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CANCEL), "Cancel"),0,0,this,flags);
         dlg.setWindowModality(Qt::WindowModal);
         dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
                            Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
@@ -170,8 +172,8 @@ void SearchDock::on_previous()
 
         if (!ret) {
             dialogs::DSMessageBox msg(this);
-            msg.mBox()->setText(tr("Search"));
-            msg.mBox()->setInformativeText(tr("Pattern not found!"));
+            msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SEARCH), "Search"));
+            msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_PATTERN_NOT_FOUND), "Pattern not found!"));
             msg.mBox()->setStandardButtons(QMessageBox::Ok);
             msg.mBox()->setIcon(QMessageBox::Warning);
             msg.exec();
@@ -192,8 +194,8 @@ void SearchDock::on_next()
 
     if (!logic_snapshot || logic_snapshot->empty()) {
         dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(tr("Search"));
-        msg.mBox()->setInformativeText(tr("No Sample data!"));
+        msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SEARCH), "Search"));
+        msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NO_SAMPLE_DATA), "No Sample data!"));
         msg.mBox()->setStandardButtons(QMessageBox::Ok);
         msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
@@ -204,8 +206,8 @@ void SearchDock::on_next()
     last_pos = _view.get_search_pos() + _view.get_search_hit();
     if (last_pos >= end) {
         dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(tr("Search"));
-        msg.mBox()->setInformativeText(tr("Search cursor at the end position!"));
+        msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SEARCH), "Search"));
+        msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SEARCH_AT_END), "Search cursor at the end position!"));
         msg.mBox()->setStandardButtons(QMessageBox::Ok);
         msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
@@ -216,8 +218,8 @@ void SearchDock::on_next()
             ret = logic_snapshot->pattern_search(0, end, last_pos, _pattern, true);
         });
         Qt::WindowFlags flags = Qt::CustomizeWindowHint;
-        QProgressDialog dlg(tr("Search Next..."),
-                            tr("Cancel"),0,0,this,flags);
+        QProgressDialog dlg(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SEARCH_NEXT), "Search Next..."),
+                            L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CANCEL), "Cancel"),0,0,this,flags);
         dlg.setWindowModality(Qt::WindowModal);
         dlg.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint |
                            Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
@@ -230,8 +232,8 @@ void SearchDock::on_next()
 
         if (!ret) {
             dialogs::DSMessageBox msg(this);
-            msg.mBox()->setText(tr("Search"));
-            msg.mBox()->setInformativeText(tr("Pattern not found!"));
+            msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SEARCH), "Search"));
+            msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_PATTERN_NOT_FOUND), "Pattern not found!"));
             msg.mBox()->setStandardButtons(QMessageBox::Ok);
             msg.mBox()->setIcon(QMessageBox::Warning);
             msg.exec();

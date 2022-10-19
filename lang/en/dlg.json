@@ -22,5 +22,625 @@
     {
         "id": "IDS_DLG_SAVE_SEESION",
         "text": "Save Session"
+    },
+    {
+        "id": "IDS_DLG_DOCUMENT",
+        "text": "Document"
+    },
+    {
+        "id": "IDS_DLG_TRIGGER_DOCK_TITLE",
+        "text": "Trigger Setting..."
+    },
+    {
+        "id": "IDS_DLG_PROTOCOL_DOCK_TITLE",
+        "text": "Protocol"
+    },
+    {
+        "id": "IDS_DLG_MEASURE_DOCK_TITLE",
+        "text": "Measurement"
+    },
+    {
+        "id": "IDS_DLG_SEARCH_DOCK_TITLE",
+        "text": "Search..."
+    },
+    {
+        "id": "IDS_DLG_SAVE_AS",
+        "text": "Save As"
+    },
+    {
+        "id": "IDS_DLG_CHECK_USB_SPEED_ERROR",
+        "text": "Plug it into a USB 2.0 port will seriously affect its performance.\n Please replug it into a USB 3.0 port."
+    },
+    {
+        "id": "IDS_DLG_CHECK_SESSION_FILE_VERSION_ERROR",
+        "text": "Current loading file has an old format. \nThis will lead to a slow loading speed. \nPlease resave it after loaded."
+    },
+    {
+        "id": "IDS_DLG_ABOUT",
+        "text": "About"
+    },
+    {
+        "id": "IDS_DLG_DISPLAY_OPTIONS",
+        "text": "Display options"
+    },
+    {
+        "id": "IDS_DLG_QUICK_SCROLL",
+        "text": "Quick scroll"
+    },
+    {
+        "id": "IDS_DLG_SAVE",
+        "text": "Save"
+    },
+    {
+        "id": "IDS_DLG_RESET",
+        "text": "Reset"
+    },
+    {
+        "id": "IDS_DLG_EXIT",
+        "text": "Exit"
+    },
+    {
+        "id": "IDS_DLG_MANUAL_CALIBRATION",
+        "text": "Manual Calibration"
+    },
+    {
+        "id": "IDS_DLG_CHANNEL",
+        "text": "Channel"
+    },
+    {
+        "id": "IDS_DLG_SAVE_CALIBRATION_RESULTS",
+        "text": "Save calibration results... It can take a while."
+    },
+    {
+        "id": "IDS_DLG_CANCEL",
+        "text": "Cancel"
+    },
+    {
+        "id": "IDS_DLG_RELOAD_CALIBRATION_RESULTS",
+        "text": "Reload last calibration results... It can take a while."
+    },
+    {
+        "id": "IDS_DLG_DECODER_OPTIONS",
+        "text": "Decoder Options"
+    },
+    {
+        "id": "IDS_DLG_CURSOR",
+        "text": "Cursor "
+    },
+    {
+        "id": "IDS_DLG_CURSOR_FOR_DECODE_START",
+        "text": "The cursor for decode start time"
+    },
+    {
+        "id": "IDS_DLG_CURSOR_FOR_DECODE_END",
+        "text": "The cursor for decode end time"
+    },
+    {
+        "id": "IDS_DLG_DEVICE_OPTIONS",
+        "text": "Device Options"
+    },
+    {
+        "id": "IDS_DLG_MODE",
+        "text": "Mode"
+    },
+    {
+        "id": "IDS_DLG_OPERATION_MODE",
+        "text": "Operation Mode"
+    },
+    {
+        "id": "IDS_DLG_ENABLE_ALL",
+        "text": "Enable All"
+    },
+    {
+        "id": "IDS_DLG_DISABLE_ALL",
+        "text": "Disable All"
+    },
+    {
+        "id": "IDS_DLG_ENABLE",
+        "text": "Enable: "
+    },
+    {
+        "id": "IDS_DLG_AUTO_CALIBRATION",
+        "text": "Auto Calibration"
+    },
+    {
+        "id": "IDS_DLG_CALIBRATION",
+        "text": "Calibration"
+    },
+    {
+        "id": "IDS_DLG_MEASUREMENTS",
+        "text": "Measurements"
+    },
+    {
+        "id": "IDS_DLG_FFT_ENABLE",
+        "text": "FFT Enable: "
+    },
+    {
+        "id": "IDS_DLG_FFT_LENGTH",
+        "text": "FFT Length: "
+    },
+    {
+        "id": "IDS_DLG_SAMPLE_INTERVAL",
+        "text": "Sample Interval: "
+    },
+    {
+        "id": "IDS_DLG_FFT_SOURCE",
+        "text": "FFT Source: "
+    },
+    {
+        "id": "IDS_DLG_FFT_WINDOW",
+        "text": "FFT Window: "
+    },
+    {
+        "id": "IDS_DLG_DC_IGNORED",
+        "text": "DC Ignored: "
+    },
+    {
+        "id": "IDS_DLG_Y-AXIS_MODE",
+        "text": "Y-axis Mode: "
+    },
+    {
+        "id": "IDS_DLG_DBV_RANGE",
+        "text": "DBV Range: "
+    },
+    {
+        "id": "IDS_DLG_FFT_OPTIONS",
+        "text": "FFT Options"
+    },
+    {
+        "id": "IDS_DLG_INTERVAL_S",
+        "text": "Interval(s): "
+    },
+    {
+        "id": "IDS_DLG_REPETITIVE_INTERVAL",
+        "text": "Repetitive Interval"
+    },
+    {
+        "id": "IDS_DLG_X_AXIS",
+        "text": "X-axis"
+    },
+    {
+        "id": "IDS_DLG_Y_AXIS",
+        "text": "Y-axis"
+    },
+    {
+        "id": "IDS_DLG_LISSAJOUS_OPTIONS",
+        "text": "Lissajous Options"
+    },
+    {
+        "id": "IDS_DLG_ADD",
+        "text": "Add"
+    },
+    {
+        "id": "IDS_DLG_SUBSTRACT",
+        "text": "Substract"
+    },
+    {
+        "id": "IDS_DLG_MULTIPLY",
+        "text": "Multiply"
+    },
+    {
+        "id": "IDS_DLG_DIVIDE",
+        "text": "Divide"
+    },
+    {
+        "id": "IDS_DLG_MATH_TYPE",
+        "text": "Math Type"
+    },
+    {
+        "id": "IDS_DLG_1ST_SOURCE",
+        "text": "1st Source"
+    },
+    {
+        "id": "IDS_DLG_2ST_SOURCE",
+        "text": "2nd Source"
+    },
+    {
+        "id": "IDS_DLG_MATH_OPTIONS",
+        "text": "Math Options"
+    },
+    {
+        "id": "IDS_DLG_EXPORT_FORMAT",
+        "text": "Export Format: "
+    },
+    {
+        "id": "IDS_DLG_PROTOCOL_EXPORT",
+        "text": "Protocol Export"
+    },
+    {
+        "id": "IDS_DLG_EXPORT_DATA",
+        "text": "Export Data: "
+    },
+    {
+        "id": "IDS_DLG_EXPORT_PROTOCOL_LIST_RESULT",
+        "text": "Export Protocol List Result... It can take a while."
+    },
+    {
+        "id": "IDS_DLG_FIT_TO_WINDOW",
+        "text": "Fit to Window"
+    },
+    {
+        "id": "IDS_DLG_FIXED",
+        "text": "Fixed"
+    },
+    {
+        "id": "IDS_DLG_MAP_ZOOM",
+        "text": "Map Zoom: "
+    },
+    {
+        "id": "IDS_DLG_DECODED_PROTOCOLS",
+        "text": "Decoded Protocols: "
+    },
+    {
+        "id": "IDS_DLG_PROTOCOL_LIST_VIEWER",
+        "text": "Protocol List Viewer"
+    },
+    {
+        "id": "IDS_DLG_REGION",
+        "text": "Region"
+    },
+    {
+        "id": "IDS_DLG_SEARCH_LABEL",
+        "text": "X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge"
+    },
+    {
+        "id": "IDS_DLG_SEARCH_OPTIONS",
+        "text": "Search Options"
+    },
+    {
+        "id": "IDS_DLG_CHANGE",
+        "text": "change"
+    },
+    {
+        "id": "IDS_DLG_SAVING",
+        "text": "Saving..."
+    },
+    {
+        "id": "IDS_DLG_ORIGINAL_DATA",
+        "text": "Original data"
+    },
+    {
+        "id": "IDS_DLG_COMPRESSED_DATA",
+        "text": "Compressed data"
+    },
+    {
+        "id": "IDS_DLG_EXPORTING",
+        "text": "Exporting..."
+    },
+    {
+        "id": "IDS_DLG_DONT_CONNECT_PROBES",
+        "text": "Don't connect any probes!"
+    },
+    {
+        "id": "IDS_DLG_LOAD_CURRENT_SETTING",
+        "text": "Load current setting... It can take a while."
+    },
+    {
+        "id": "IDS_DLG_WAITING",
+        "text": "Waiting"
+    },
+    {
+        "id": "IDS_DLG_FINISHED",
+        "text": "Finished!"
+    },
+    {
+        "id": "IDS_DLG_US",
+        "text": "uS"
+    },
+    {
+        "id": "IDS_DLG_MS",
+        "text": "mS"
+    },
+    {
+        "id": "IDS_DLG_S",
+        "text": "S"
+    },
+    {
+        "id": "IDS_DLG_TRIGGER_POSITION",
+        "text": "Trigger Position: "
+    },
+    {
+        "id": "IDS_DLG_HOLD_OFF_TIME",
+        "text": "Hold Off Time: "
+    },
+    {
+        "id": "IDS_DLG_NOISE_SENSITIVITY",
+        "text": "Noise Sensitivity: "
+    },
+    {
+        "id": "IDS_DLG_TRIGGER_SOURCES",
+        "text": "Trigger Sources: "
+    },
+    {
+        "id": "IDS_DLG_TRIGGER_TYPES",
+        "text": "Trigger Types: "
+    },
+    {
+        "id": "IDS_DLG_RISING_EDGE",
+        "text": "Rising Edge"
+    },
+    {
+        "id": "IDS_DLG_FALLING_EDGE",
+        "text": "Falling Edge"
+    },
+    {
+        "id": "IDS_DLG_AUTO",
+        "text": "Auto"
+    },
+    {
+        "id": "IDS_DLG_CHANNEL_0",
+        "text": "Channel 0"
+    },
+    {
+        "id": "IDS_DLG_CHANNEL_1",
+        "text": "Channel 1"
+    },
+    {
+        "id": "IDS_DLG_CHANNEL_0_AND_1",
+        "text": "Channel 0 && 1"
+    },
+    {
+        "id": "IDS_DLG_CHANNEL_0_OR_1",
+        "text": "Channel 0 | 1"
+    },
+    {
+        "id": "IDS_DLG_KEYWORD_LINEEID",
+        "text": "Protocol search..."
+    },
+    {
+        "id": "IDS_DLG_TIME_SAMPLES",
+        "text": "Time/Samples"
+    },
+    {
+        "id": "IDS_DLG_MOUSE_MEASUREMENT",
+        "text": "Mouse measurement"
+    },
+    {
+        "id": "IDS_DLG_ENABLE_FLOATING_MEASUREMENT",
+        "text": "Enable floating measurement"
+    },
+    {
+        "id": "IDS_DLG_CURSOR_DISTANCE",
+        "text": "Cursor Distance"
+    },
+    {
+        "id": "IDS_DLG_EDGES",
+        "text": "Edges"
+    },
+    {
+        "id": "IDS_DLG_CURSORS",
+        "text": "Cursors"
+    },
+    {
+        "id": "IDS_DLG_RIS_OR_FAL_EDGE",
+        "text": "Rising/Falling/Edges"
+    },
+    {
+        "id": "IDS_DLG_W",
+        "text": "W: "
+    },
+    {
+        "id": "IDS_DLG_P",
+        "text": "P: "
+    },
+    {
+        "id": "IDS_DLG_F",
+        "text": "F: "
+    },
+    {
+        "id": "IDS_DLG_D",
+        "text": "D: "
+    },
+    {
+        "id": "IDS_DLG_SEARCH",
+        "text": "search"
+    },
+    {
+        "id": "IDS_DLG_MATCHING_ITEMS",
+        "text": "Matching Items:"
+    },
+    {
+        "id": "IDS_DLG_OUT_OF_MEMORY",
+        "text": "Out of Memory"
+    },
+    {
+        "id": "IDS_DLG_SEARCHING",
+        "text": "Searching..."
+    },
+    {
+        "id": "IDS_DLG_SEARCH_PREVIOUS",
+        "text": "Search Previous..."
+    },
+    {
+        "id": "IDS_DLG_SEARCH_NEXT",
+        "text": "Search Next..."
+    },
+    {
+        "id": "IDS_DLG_SIMPLE_TRIGGER",
+        "text": "Simple Trigger"
+    },
+    {
+        "id": "IDS_DLG_ADVANCED_TRIGGER",
+        "text": "Advanced Trigger"
+    },
+    {
+        "id": "IDS_DLG_TRIGGER_POSITION",
+        "text": "Trigger Position: "
+    },
+    {
+        "id": "IDS_DLG_TOTAL_TRIGGER_STAGES",
+        "text": "Total Trigger Stages: "
+    },
+    {
+        "id": "IDS_DLG_START_FLAG",
+        "text": "Start Flag: "
+    },
+    {
+        "id": "IDS_DLG_STOP_FLAG",
+        "text": "Stop Flag: "
+    },
+    {
+        "id": "IDS_DLG_CLOCK_FLAG",
+        "text": "Clock Flag: "
+    },
+    {
+        "id": "IDS_DLG_DATA_CHANNEL",
+        "text": "Data Channel: "
+    },
+    {
+        "id": "IDS_DLG_DATA_VALUE",
+        "text": "Data Value: "
+    },
+    {
+        "id": "IDS_DLG_SERIAL_TRIGGER",
+        "text": "Serial Trigger"
+    },   
+    {
+        "id": "IDS_DLG_STAGE_TRIGGER",
+        "text": "Stage Trigger"
+    },
+    {
+        "id": "IDS_DLG_SERIAL_NOTE_LABEL",
+        "text": "X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge"
+    },  
+    {
+        "id": "IDS_DLG_DATA_BITS",
+        "text": "Data Bits"
+    },
+    {
+        "id": "IDS_DLG_INV",
+        "text": "Inv"
+    },
+    {
+        "id": "IDS_DLG_COUNTER",
+        "text": "Counter"
+    },
+    {
+        "id": "IDS_DLG_CONTIGUOUS",
+        "text": "Contiguous"
+    },
+    {
+        "id": "IDS_DLG_STAGE",
+        "text": "Stage"
+    },
+    {
+        "id": "IDS_DLG_OR",
+        "text": "Or"
+    },
+    {
+        "id": "IDS_DLG_AND",
+        "text": "And"
+    },
+    {
+        "id": "IDS_DLG_HZ",
+        "text": "Hz"
+    },
+    {
+        "id": "IDS_DLG_UNSHOWN",
+        "text": "Unshown"
+    },
+    {
+        "id": "ZOOM_IN_FOR_DETAILS",
+        "text": "Zoom in for details"
+    },
+    {
+        "id": "IDS_DLG_DECODETRACE_ERROR1",
+        "text": "Error: "
+    },
+    {
+        "id": "IDS_DLG_DECODETRACE_ERROR2",
+        "text": "Error: ..."
+    },
+    {
+        "id": "IDS_DLG_ADD_GROUP",
+        "text": "Add Group"
+    },
+    {
+        "id": "IDS_DLG_DEL_GROUP",
+        "text": "Del Group"
+    },
+    {
+        "id": "IDS_DLG_SET_CHANNEL_COLOUR",
+        "text": "Set Channel Colour"
+    },
+    {
+        "id": "IDS_DLG_LISSAJOUS_FIGURE",
+        "text": "Lissajous Figure"
+    },
+    {
+        "id": "IDS_DLG_DATA_SOURCE_ERROR",
+        "text": "Data source error."
+    },
+    {
+        "id": "IDS_DLG_ADD_X_CURSOR",
+        "text": "Add X-cursor"
+    },
+    {
+        "id": "IDS_DLG_ADD_Y_CURSOR",
+        "text": "Add Y-cursor"
+    },
+    {
+        "id": "IDS_DLG_AUTO_ROLL",
+        "text": "Auto(Roll)"
+    },
+    {
+        "id": "IDS_DLG_WAITING_TRIG",
+        "text": "Waiting Trig"
+    },
+    {
+        "id": "IDS_DLG_TRIG_D",
+        "text": "Trig'd"
+    },
+    {
+        "id": "IDS_DLG_TRIGGERED",
+        "text": "Triggered! "
+    },
+    {
+        "id": "IDS_DLG_CAPTURED",
+        "text": "% Captured"
+    },
+    {
+        "id": "IDS_DLG_WAITING_FOR_TRIGGER",
+        "text": "Waiting for Trigger! "
+    },
+    {
+        "id": "IDS_DLG_RISING",
+        "text": "Rising: "
+    },
+    {
+        "id": "IDS_DLG_FALLING",
+        "text": "Falling: "
+    },   
+    {
+        "id": "IDS_DLG_Edges_1",
+        "text": "Edges: "
+    },
+    {
+        "id": "IDS_DLG_WIDTH",
+        "text": "Width: "
+    },
+    {
+        "id": "IDS_DLG_PERIOD",
+        "text": "Period: "
+    },
+    {
+        "id": "IDS_DLG_FREQUENCY",
+        "text": "Frequency: "
+    },
+    {
+        "id": "IDS_DLG_DUTY_CYCLE",
+        "text": "Duty Cycle: "
+    },
+    {
+        "id": "IDS_DLG_MEASURE",
+        "text": "Measure"
+    },
+    {
+        "id": "IDS_DLG_TRIGGER_TIME",
+        "text": "Trigger Time: "
+    },
+    {
+        "id": "IDS_DLG_SAMPLES_CAPTURED",
+        "text": "Samples Captured!"
     }
 ]

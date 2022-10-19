@@ -239,7 +239,8 @@ view::dslDial * MathStack::get_vDial()
 QString MathStack::get_unit(int level)
 {
     if (level >= vDialUnitCount)
-        return tr(" ");
+    //tr
+        return " ";
 
     QString unit;
     switch(_type) {
