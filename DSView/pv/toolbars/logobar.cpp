@@ -40,6 +40,8 @@
 #include "../dialogs/dsdialog.h"
 #include "../appcontrol.h"
 #include "../log.h"
+#include "../ui/langresource.h"
+
 
 namespace pv {
 namespace toolbars {
@@ -127,15 +129,16 @@ void LogoBar::changeEvent(QEvent *event)
 
 void LogoBar::retranslateUi()
 {
-    _logo_button.setText(tr("Help"));
-    _action_en->setText("English");
-    _action_cn->setText("中文");
-    _language->setTitle(tr("&Language"));
-    _about->setText(tr("&About..."));
-    _manual->setText(tr("&Manual"));
-    _issue->setText(tr("&Bug Report"));
-    _update->setText(tr("&Update"));
-    _log->setText(tr("L&og Options"));
+
+    _logo_button.setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_LOGOBAR_HELP), "Help"));
+    _action_en->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_LOGOBAR_ENGLISH), "English"));
+    _action_cn->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_LOGOBAR_CHINESE), "中文"));
+    _language->setTitle(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_LOGOBAR_LANGUAGE), "&Language"));
+    _about->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_LOGOBAR_ABOUT), "&About..."));
+    _manual->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_LOGOBAR_MANUAL), "&Manual..."));
+    _issue->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_LOGOBAR_BUG_REPORT), "&Bug Report"));
+    _update->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_LOGOBAR_UPDATE), "&Update"));
+    _log->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_LOGOBAR_LOG_OPTIONS), "L&og Options"));
 
     AppConfig &app = AppConfig::Instance(); 
     if (app._frameOptions.language == LAN_CN)
@@ -224,7 +227,7 @@ void LogoBar::on_action_setting_log()
     AppConfig &app = AppConfig::Instance(); 
     auto *topWind = AppControl::Instance()->GetTopWindow();
     dialogs::DSDialog dlg(topWind, false, true);
-    dlg.setTitle(tr("Log Options"));
+    dlg.setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_LOG_OPTIONS), "Log Options"));
     dlg.setMinimumSize(260, 120);
     QWidget *panel = new QWidget(&dlg);
     dlg.layout()->addWidget(panel);
@@ -235,7 +238,7 @@ void LogoBar::on_action_setting_log()
  
     QComboBox *cbBox = new QComboBox();
     cbBox->setMinimumWidth(40);
-    lay->addRow(tr("Log Level"), cbBox);
+    lay->addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_LOG_LEVEL), "Log Level"), cbBox);
 
     for (int i=0; i<=5; i++){
         cbBox->addItem(QString::number(i));
@@ -244,7 +247,7 @@ void LogoBar::on_action_setting_log()
 
     QCheckBox *ckBox = new QCheckBox();
     ckBox->setChecked(app._appOptions.ableSaveLog);
-    lay->addRow(tr("Save To File"), ckBox);
+    lay->addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SAVE_FILE), "Save To File"), ckBox);
 
     dlg.exec();
 

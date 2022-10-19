@@ -675,6 +675,7 @@ install(FILES ug25.pdf DESTINATION share/DSView RENAME ug25.pdf)
 install(FILES ug31.pdf DESTINATION share/DSView RENAME ug31.pdf)
 
 install(DIRECTORY libsigrokdecode4DSL/decoders DESTINATION share/libsigrokdecode4DSL)
+install(DIRECTORY lang DESTINATION share/DSView)
 
 #===============================================================================
 #= Packaging (handled by CPack)

@@ -24,6 +24,8 @@
 
 #include <assert.h>
 #include <QRegularExpressionValidator>
+
+#include "../ui/langresource.h"
  
 
 namespace pv {
@@ -76,12 +78,14 @@ Search::Search(QWidget *parent, SigSession *session, std::map<uint16_t, QString>
     }
 
     search_layout->addWidget(new QLabel(" "), index,0);
-    search_layout->addWidget(new QLabel(tr("X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge")), 0, 3, index, 1);
+    //tr
+    search_layout->addWidget(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SEARCH_LABEL), 
+                            "X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge")), 0, 3, index, 1);
     search_layout->addWidget(&search_buttonBox, index+1, 3);
     search_layout->setColumnStretch(3, 100);
 
     layout()->addLayout(search_layout);
-    setTitle(tr("Search Options"));
+    setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SEARCH_OPTIONS), "Search Options"));
 
     connect(&search_buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
     connect(&search_buttonBox, SIGNAL(rejected()), this, SLOT(reject()));

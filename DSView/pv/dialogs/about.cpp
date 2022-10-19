@@ -34,6 +34,7 @@
 #include "../config/appconfig.h"
 #include "../dsvdef.h"
 #include "../utility/encoding.h"
+#include "../ui/langresource.h"
 
 namespace pv {
 namespace dialogs {
@@ -112,7 +113,7 @@ About::About(QWidget *parent) :
     xlayout->addWidget(about);
 
     layout()->addLayout(xlayout);
-    setTitle(tr("About"));
+    setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ABOUT), "About"));
 }
 
 About::~About()

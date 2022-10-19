@@ -37,6 +37,7 @@
 #include "../config/appconfig.h"
 #include "../deviceagent.h"
 #include "../view/logicsignal.h"
+#include "../ui/langresource.h"
 
 namespace pv {
 namespace dock {
@@ -96,7 +97,8 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession *session) :
     gLayout->addWidget(_adv_radioButton, 1, 0);
     gLayout->addWidget(_position_label, 2, 0);
     gLayout->addWidget(_position_spinBox, 2, 1);
-    gLayout->addWidget(new QLabel(tr("%"), _widget), 2, 2);
+    //tr
+    gLayout->addWidget(new QLabel("%", _widget), 2, 2);
     gLayout->addWidget(_position_slider, 3, 0, 1, 3);
     gLayout->addWidget(_stages_label, 4, 0);
     gLayout->addWidget(stages_comboBox, 4, 1);
@@ -130,36 +132,38 @@ void TriggerDock::changeEvent(QEvent *event)
 
 void TriggerDock::retranslateUi()
 {
-    _simple_radioButton->setText(tr("Simple Trigger"));
-    _adv_radioButton->setText(tr("Advanced Trigger"));
-    _position_label->setText(tr("Trigger Position: "));
-    _stages_label->setText(tr("Total Trigger Stages: "));
-    _serial_start_label->setText(tr("Start Flag: "));
-    _serial_stop_label->setText(tr("Stop Flag: "));
-    _serial_edge_label->setText(tr("Clock Flag: "));
-    _serial_data_label->setText(tr("Data Channel: "));
-    _serial_value_label->setText(tr("Data Value: "));
-    _serial_groupBox->setTitle(tr("Serial Trigger"));
+    _simple_radioButton->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SIMPLE_TRIGGER), "Simple Trigger"));
+    _adv_radioButton->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ADVANCED_TRIGGER), "Advanced Trigger"));
+    _position_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIGGER_POSITION), "Trigger Position: "));
+    _stages_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TOTAL_TRIGGER_STAGES), "Total Trigger Stages: "));
+    _serial_start_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_START_FLAG), "Start Flag: "));
+    _serial_stop_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_STOP_FLAG), "Stop Flag: "));
+    _serial_edge_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CLOCK_FLAG), "Clock Flag: "));
+    _serial_data_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DATA_CHANNEL), "Data Channel: "));
+    _serial_value_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DATA_VALUE), "Data Value: "));
+    _serial_groupBox->setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SERIAL_TRIGGER), "Serial Trigger"));
 
-    _adv_tabWidget->setTabText(0, tr("Stage Trigger"));
-    _adv_tabWidget->setTabText(1, tr("Serial Trigger"));
-    _serial_note_label->setText(tr("X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge"));
-    _data_bits_label->setText(tr("Data Bits"));
+    _adv_tabWidget->setTabText(0, L_S(STR_PAGE_DLG, S_ID(IDS_DLG_STAGE_TRIGGER), "Stage Trigger"));
+    _adv_tabWidget->setTabText(1, L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SERIAL_TRIGGER), "Serial Trigger"));
+    _serial_note_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SERIAL_NOTE_LABEL), 
+                                "X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge"));
+    _data_bits_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DATA_BITS), "Data Bits"));
 
     for (int i = 0; i < _inv_exp_label_list.length(); i++)
-        _inv_exp_label_list.at(i)->setText(tr("Inv"));
+        _inv_exp_label_list.at(i)->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_INV), "Inv"));
 
     for (int i = 0; i < _count_exp_label_list.length(); i++)
-        _count_exp_label_list.at(i)->setText(tr("Counter"));
+        _count_exp_label_list.at(i)->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_COUNTER), "Counter"));
 
     for (int i = 0; i < _contiguous_label_list.length(); i++)
-        _contiguous_label_list.at(i)->setText(tr("Contiguous"));
+        _contiguous_label_list.at(i)->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CONTIGUOUS), "Contiguous"));
 
     for (int i = 0; i < _stage_groupBox_list.length(); i++)
-        _stage_groupBox_list.at(i)->setTitle(tr("Stage")+QString::number(i));
+        _stage_groupBox_list.at(i)->setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_STAGE), "Stage")+QString::number(i));
 
     for (int i = 0; i < _stage_note_label_list.length(); i++)
-        _stage_note_label_list.at(i)->setText(tr("X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge"));
+        _stage_note_label_list.at(i)->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SERIAL_NOTE_LABEL), 
+                                             "X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge"));
 }
 
 void TriggerDock::reStyle()
@@ -193,8 +197,9 @@ void TriggerDock::adv_trigger()
         }
         if (stream) {
             dialogs::DSMessageBox msg(this);
-            msg.mBox()->setText(tr("Trigger"));
-            msg.mBox()->setInformativeText(tr("Stream Mode Don't Support Advanced Trigger!"));
+            msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TRIGGER), "Trigger"));
+            msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_STREAM_NO_AD_TRIGGER),
+                                          "Stream Mode Don't Support Advanced Trigger!"));
             msg.mBox()->setStandardButtons(QMessageBox::Ok);
             msg.mBox()->setIcon(QMessageBox::Warning);
             msg.exec();
@@ -205,8 +210,9 @@ void TriggerDock::adv_trigger()
     }
     else if (_session->get_device()->is_file() == false){
         dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(tr("Trigger"));
-        msg.mBox()->setInformativeText(tr("Advanced Trigger need DSLogic Hardware Support!"));
+        msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TRIGGER), "Trigger"));
+        msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_AD_TRIGGER_NEED_HARDWARE),
+                                      "Advanced Trigger need DSLogic Hardware Support!"));
         msg.mBox()->setStandardButtons(QMessageBox::Ok);
         msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
@@ -576,8 +582,8 @@ void TriggerDock::setup_adv_tab()
     QValidator *value_validator = new QRegularExpressionValidator(value_rx, _stage_tabWidget);
     for (int i = 0; i < TriggerStages; i++) {
         DsComboBox *_logic_comboBox = new DsComboBox(_stage_tabWidget);
-        _logic_comboBox->addItem(tr("Or"));
-        _logic_comboBox->addItem(tr("And"));
+        _logic_comboBox->addItem(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_OR), "Or"));
+        _logic_comboBox->addItem(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_AND), "And"));
         _logic_comboBox->setCurrentIndex(1);
         _logic_comboBox_list.push_back(_logic_comboBox);
 
@@ -593,8 +599,9 @@ void TriggerDock::setup_adv_tab()
         _count_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
         _count_spinBox_list.push_back(_count_spinBox);
         DsComboBox *_inv0_comboBox = new DsComboBox(_stage_tabWidget);
-        _inv0_comboBox->addItem(tr("=="));
-        _inv0_comboBox->addItem(tr("!="));
+        //tr
+        _inv0_comboBox->addItem("==");
+        _inv0_comboBox->addItem("!=");
         _inv0_comboBox_list.push_back(_inv0_comboBox);
 
         QLineEdit *_value1_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", _stage_tabWidget);
@@ -605,8 +612,9 @@ void TriggerDock::setup_adv_tab()
         _value1_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
         _value1_lineEdit_list.push_back(_value1_lineEdit);
         DsComboBox *_inv1_comboBox = new DsComboBox(_stage_tabWidget);
-        _inv1_comboBox->addItem(tr("=="));
-        _inv1_comboBox->addItem(tr("!="));
+        //tr
+        _inv1_comboBox->addItem("==");
+        _inv1_comboBox->addItem("!=");
         _inv1_comboBox_list.push_back(_inv1_comboBox);
 
         connect(_value0_lineEdit, SIGNAL(editingFinished()), this, SLOT(value_changed()));
@@ -870,8 +878,8 @@ void TriggerDock::setup_adv_tab()
     connect(_serial_edge_lineEdit, SIGNAL(editingFinished()), this, SLOT(value_changed()));
     connect(_serial_value_lineEdit, SIGNAL(editingFinished()), this, SLOT(value_changed()));
 
-    _adv_tabWidget->addTab((QWidget *)_stage_tabWidget, tr("Stage Trigger"));
-    _adv_tabWidget->addTab((QWidget *)_serial_groupBox, tr("Serial Trigger"));
+    _adv_tabWidget->addTab((QWidget *)_stage_tabWidget, L_S(STR_PAGE_DLG, S_ID(IDS_DLG_STAGE_TRIGGER), "Stage Trigger"));
+    _adv_tabWidget->addTab((QWidget *)_serial_groupBox, L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SERIAL_TRIGGER), "Serial Trigger"));
 }
 
 void TriggerDock::lineEdit_highlight(QLineEdit *dst) {
@@ -918,14 +926,14 @@ void TriggerDock::try_commit_trigger()
 
         if (app._appOptions.warnofMultiTrig && num > 1) {
             dialogs::DSMessageBox msg(this);
-            msg.mBox()->setText(tr("Trigger"));
-            msg.mBox()->setInformativeText(tr("Trigger setted on multiple channels! "
-                                              "Capture will Only triggered when all setted channels fullfill at one sample"));
+            msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TRIGGER), "Trigger"));
+            msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SET_TRI_MULTI_CHANNEL), 
+                                          "Trigger setted on multiple channels!\nCapture will Only triggered when all setted channels fullfill at one sample"));
             msg.mBox()->setIcon(QMessageBox::Information);
 
-            QPushButton *noMoreButton = msg.mBox()->addButton(tr("Not Show Again"), QMessageBox::ActionRole);
-            QPushButton *cancelButton = msg.mBox()->addButton(tr("Clear Trig"), QMessageBox::ActionRole);
-            msg.mBox()->addButton(tr("Continue"), QMessageBox::ActionRole);
+            QPushButton *noMoreButton = msg.mBox()->addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NOT_SHOW_AGAIN), "Not Show Again"), QMessageBox::ActionRole);
+            QPushButton *cancelButton = msg.mBox()->addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CLEAR_TRIG), "Clear Trig"), QMessageBox::ActionRole);
+            msg.mBox()->addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CONTINUE), "Continue"), QMessageBox::ActionRole);
 
             msg.exec();
 

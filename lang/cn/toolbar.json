@@ -1,83 +1,83 @@
 [
     {
         "id": "IDS_TOOLBAR_DEMO",
-        "text": "Demo"
+        "text": "演示"
     },
     {
         "id": "IDS_TOOLBAR_FILE",
-        "text": "file"
+        "text": "文件"
     },
     {
         "id": "IDS_TOOLBAR_OPTION",
-        "text": "Options"
+        "text": "选项"
     },
     {
         "id": "IDS_TOOLBAR_MODE",
-        "text": "Mode"
+        "text": "模式"
     },
     {
         "id": "IDS_TOOLBAR_START",
-        "text": "Start"
+        "text": "开始"
     },
     {
         "id": "IDS_TOOLBAR_STOP",
-        "text": "Stop"
+        "text": "停止"
     },
     {
         "id": "IDS_TOOLBAR_SINGLE",
-        "text": "Single"
+        "text": "单次"
     },
     {
         "id": "IDS_TOOLBAR_INSTANT",
-        "text": "Instant"
+        "text": "立即"
     },
     {
         "id": "IDS_TOOLBAR_SINGLE_ACTION",
-        "text": "&Single"
+        "text": "单次(&S)"
     },
     {
         "id": "IDS_TOOLBAR_REPEAT_ACTION",
-        "text": "&Repetitive"
+        "text": "重复(&R)"
     },
     {
         "id": "IDS_TOOLBAR_TRIGGER",
-        "text": "Trigger"
+        "text": "触发"
     },
     {
         "id": "IDS_TOOLBAR_DECODE",
-        "text": "Decode"
+        "text": "解码"
     },
     {
         "id": "IDS_TOOLBAR_MEASURE",
-        "text": "Measure"
+        "text": "测量"
     },
     {
         "id": "IDS_TOOLBAR_SEARCH",
-        "text": "Search"
+        "text": "搜索"
     },
     {
         "id": "IDS_TOOLBAR_FUNCTION",
-        "text": "Function"
+        "text": "函数"
     },
     {
         "id": "IDS_TOOLBAR_DISPLAY",
-        "text": "Display"
+        "text": "显示"
     },
     {
         "id": "IDS_TOOLBAR_LISSAJOUS",
-        "text": "Lissajous"
+        "text": "李萨如图(&L)"
     },
     {
         "id": "IDS_TOOLBAR_THEMES",
-        "text": "Themes"
+        "text": "主题"
     },
     {
         "id": "IDS_TOOLBAR_DARK",
-        "text": "Dark"
+        "text": "暗黑"
     },
     {
         "id": "IDS_TOOLBAR_LIGHT",
-        "text": "Light"
+        "text": "清新"
     },
     {
         "id": "IDS_TOOLBAR_FFT",
@@ -85,55 +85,55 @@
     },
     {
         "id": "IDS_TOOLBAR_MATH",
-        "text": "Math"
+        "text": "数学运算"
     },
     {
         "id": "IDS_TOOLBAR_OPTIONS",
-        "text": "Options"
+        "text": "选项"
     },
 
 
     {
         "id": "IDS_FILEBAR_FILE",
-        "text": "File"
+        "text": "文件"
     },
     {
         "id": "IDS_FILEBAR_CONFIGURATION",
-        "text": "Con&fig..."
+        "text": "配置(&F)"
     },
     {
         "id": "IDS_FILEBAR_LOAD",
-        "text": "Load..."
+        "text": "打开(&l)"
     },
     {
         "id": "IDS_FILEBAR_STORE",
-        "text": "S&tore..."
+        "text": "保存(&S)"
     },
     {
         "id": "IDS_FILEBAR_DEFAULT",
-        "text": "Default..."
+        "text": "默认"
     },
     {
         "id": "IDS_FILEBAR_0PEN",
-        "text": "&Open..."
+        "text": "打开(&O)"
     },
     {
         "id": "IDS_FILEBAR_SAVE",
-        "text": "&Save..."
+        "text": "保存(&S)"
     },
     {
         "id": "IDS_FILEBAR_EXPORT",
-        "text": "&Export..."
+        "text": "导出(&E)"
     },
     {
         "id": "IDS_FILEBAR_CAPTURE",
-        "text": "&Capture..."
+        "text": "截屏(&C)"
     },
 
 
     {
         "id": "IDS_LOGOBAR_HELP",
-        "text": "Help"
+        "text": "帮助"
     },
     {
         "id": "IDS_LOGOBAR_ENGLISH",
@@ -145,31 +145,26 @@
     },
     {
         "id": "IDS_LOGOBAR_LANGUAGE",
-        "text": "&Language"
+        "text": "语言(&L)"
     },
     {
         "id": "IDS_LOGOBAR_ABOUT",
-        "text": "&About..."
+        "text": "关于(&A)"
     },
     {
         "id": "IDS_LOGOBAR_MANUAL",
-        "text": "&Manual..."
+        "text": "手册(&M)"
     },
     {
         "id": "IDS_LOGOBAR_BUG_REPORT",
-        "text": "&Bug Report"
+        "text": "报告问题(&B)"
     },
     {
         "id": "IDS_LOGOBAR_UPDATE",
-        "text": "&Update"
+        "text": "更新(&U)"
     },
     {
         "id": "IDS_LOGOBAR_LOG_OPTIONS",
-        "text": "L&og Options"
+        "text": "日志选项(&L)"
     }
-
-
-    
-
-    
 ]

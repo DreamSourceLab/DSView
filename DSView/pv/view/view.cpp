@@ -162,9 +162,10 @@ View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget
 	_header->installEventFilter(this);
     _devmode->installEventFilter(this);
 
-    _viewcenter->setObjectName(tr("ViewArea_center"));
-    _ruler->setObjectName(tr("ViewArea_ruler"));
-    _header->setObjectName(tr("ViewArea_header"));
+    //tr
+    _viewcenter->setObjectName("ViewArea_center");
+    _ruler->setObjectName("ViewArea_ruler");
+    _header->setObjectName("ViewArea_header");
 
     QColor fore(QWidget::palette().color(QWidget::foregroundRole()));
     fore.setAlpha(View::BackAlpha);

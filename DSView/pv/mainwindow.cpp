@@ -144,7 +144,7 @@ namespace pv
         _logo_bar->setObjectName("logo_bar");
 
         // trigger dock
-        _trigger_dock = new QDockWidget(tr("Trigger Setting..."), this);
+        _trigger_dock = new QDockWidget(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIGGER_DOCK_TITLE), "Trigger Setting..."), this);
         _trigger_dock->setObjectName("trigger_dock");
         _trigger_dock->setFeatures(QDockWidget::DockWidgetMovable);
         _trigger_dock->setAllowedAreas(Qt::RightDockWidgetArea);
@@ -152,7 +152,7 @@ namespace pv
         _trigger_widget = new dock::TriggerDock(_trigger_dock, _session);
         _trigger_dock->setWidget(_trigger_widget);
 
-        _dso_trigger_dock = new QDockWidget(tr("Trigger Setting..."), this);
+        _dso_trigger_dock = new QDockWidget(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIGGER_DOCK_TITLE), "Trigger Setting..."), this);
         _dso_trigger_dock->setObjectName("dso_trigger_dock");
         _dso_trigger_dock->setFeatures(QDockWidget::DockWidgetMovable);
         _dso_trigger_dock->setAllowedAreas(Qt::RightDockWidgetArea);
@@ -171,7 +171,7 @@ namespace pv
         addToolBar(_logo_bar);
 
         // Setup the dockWidget
-        _protocol_dock = new QDockWidget(tr("Protocol"), this);
+        _protocol_dock = new QDockWidget(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_PROTOCOL_DOCK_TITLE), "Protocol"), this);
         _protocol_dock->setObjectName("protocol_dock");
         _protocol_dock->setFeatures(QDockWidget::DockWidgetMovable);
         _protocol_dock->setAllowedAreas(Qt::RightDockWidgetArea);
@@ -180,7 +180,7 @@ namespace pv
         _protocol_dock->setWidget(_protocol_widget);
 
         // measure dock
-        _measure_dock = new QDockWidget(tr("Measurement"), this);
+        _measure_dock = new QDockWidget(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MEASURE_DOCK_TITLE), "Measurement"), this);
         _measure_dock->setObjectName("measure_dock");
         _measure_dock->setFeatures(QDockWidget::DockWidgetMovable);
         _measure_dock->setAllowedAreas(Qt::RightDockWidgetArea);
@@ -188,7 +188,7 @@ namespace pv
         _measure_widget = new dock::MeasureDock(_measure_dock, *_view, _session);
         _measure_dock->setWidget(_measure_widget);
         // search dock
-        _search_dock = new QDockWidget(tr("Search..."), this);
+        _search_dock = new QDockWidget(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SEARCH_DOCK_TITLE), "Search..."), this);
         _search_dock->setObjectName("search_dock");
         _search_dock->setFeatures(QDockWidget::NoDockWidgetFeatures);
         _search_dock->setTitleBarWidget(new QWidget(_search_dock));
@@ -291,7 +291,7 @@ namespace pv
             else
             {
                 dsv_err("file is not exists:%s", ldFileName.toUtf8().data());
-                MsgBox::Show(tr("Open file error!"), ldFileName, NULL);
+                MsgBox::Show(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_OPEN_FILE_ERROR), "Open file error!"), ldFileName, NULL);
             }
         }
         else
@@ -300,13 +300,14 @@ namespace pv
         }
     }
 
+    //*
     void MainWindow::retranslateUi()
     {
-        _trigger_dock->setWindowTitle(tr("Trigger Setting..."));
-        _dso_trigger_dock->setWindowTitle(tr("Trigger Setting..."));
-        _protocol_dock->setWindowTitle(tr("Protocol"));
-        _measure_dock->setWindowTitle(tr("Measurement"));
-        _search_dock->setWindowTitle(tr("Search..."));
+        _trigger_dock->setWindowTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIGGER_DOCK_TITLE), "Trigger Setting..."));
+        _dso_trigger_dock->setWindowTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIGGER_DOCK_TITLE), "Trigger Setting..."));
+        _protocol_dock->setWindowTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_PROTOCOL_DOCK_TITLE), "Protocol"));
+        _measure_dock->setWindowTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MEASURE_DOCK_TITLE), "Measurement"));
+        _search_dock->setWindowTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SEARCH_DOCK_TITLE), "Search..."));
     }
 
     void MainWindow::on_load_file(QString file_name)
@@ -321,7 +322,7 @@ namespace pv
         }
         catch (QString e)
         {
-            show_error(tr("Failed to load ") + file_name);
+            show_error(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_FAIL_TO_LOAD), "Failed to load ") + file_name);
             _session->set_default_device();
         }
     }
@@ -347,19 +348,21 @@ namespace pv
         {
         case SigSession::Hw_err:
             _session->stop_capture();
-            title = tr("Hardware Operation Failed");
-            details = tr("Please replug device to refresh hardware configuration!");
+            title = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_HARDWARE_ERROR), "Hardware Operation Failed");
+            details = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_HARDWARE_ERROR_DET), 
+                      "Please replug device to refresh hardware configuration!");
             break;
         case SigSession::Malloc_err:
             _session->stop_capture();
-            title = tr("Malloc Error");
-            details = tr("Memory is not enough for this sample!\nPlease reduce the sample depth!");
+            title = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_MALLOC_ERROR), "Malloc Error");
+            details = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_MALLOC_ERROR_DET), 
+                      "Memory is not enough for this sample!\nPlease reduce the sample depth!");
             break;
         case SigSession::Test_data_err:
             _session->stop_capture();
             update_toolbar_view_status();
 
-            title = tr("Data Error");
+            title = L_S(STR_PAGE_MSG, S_ID(IDS_DATA_ERROR), "Data Error");
             error_pattern = _session->get_error_pattern();
 
             for (int i = 0; i < 16; i++)
@@ -371,22 +374,26 @@ namespace pv
                 ch_status += (i > 9 ? " " : "");
                 error_pattern >>= 1;
             }
-            details = tr("the received data are not consist with pre-defined test data!") + "\n" +
-                      tr("0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15") + "\n" + ch_status;
+
+            details = QString(L_S(STR_PAGE_MSG, S_ID(IDS_DATA_ERROR_DET1),"the received data are not consist with pre-defined test data!")) + "\n" +
+                      QString("0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15") + "\n" +
+                      ch_status;
             break;
         case SigSession::Pkt_data_err:
-            title = tr("Packet Error");
-            details = tr("the content of received packet are not expected!");
+            title = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_PACKET_ERROR), "Packet Error");
+            details = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_PACKET_ERROR_DET), 
+            "the content of received packet are not expected!");
             _session->refresh(0);
             break;
         case SigSession::Data_overflow:
             _session->stop_capture();
-            title = tr("Data Overflow");
-            details = tr("USB bandwidth can not support current sample rate! \nPlease reduce the sample rate!");
+            title = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DATA_OVERFLOW), "Data Overflow");
+            details = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DATA_OVERFLOW_DET), 
+                      "USB bandwidth can not support current sample rate! \nPlease reduce the sample rate!");
             break;
         default:
-            title = tr("Undefined Error");
-            details = tr("Not expected error!");
+            title = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_UNDEFINED_ERROR), "Undefined Error");
+            details = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_UNDEFINED_ERROR_DET), "Not expected error!");
             break;
         }
 
@@ -515,9 +522,8 @@ namespace pv
         QString format = "png";
         QString fileName = QFileDialog::getSaveFileName(
             this,
-            tr("Save As"),
+            L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SAVE_AS), "Save As"),
             default_name,
-            // tr("%1 Files (*.%2);;All Files (*)")
             "png file(*.png);;jpeg file(*.jpeg)",
             &format);
 
@@ -529,7 +535,8 @@ namespace pv
             QFileInfo f(fileName);
             if (f.suffix().compare(suffix))
             {
-                fileName += tr(".") + suffix;
+                //tr
+                fileName += "." + suffix;
             }
 
             pixmap.save(fileName, suffix.toLatin1());
@@ -633,7 +640,7 @@ namespace pv
             // check device and mode
             if (driverName != sessionDevice || mode != sessionMode)
             {
-                MsgBox::Show(NULL, tr("Session File is not compatible with current device or mode!"), this);
+                MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NOT_COMPATIBLE), "Session File is not compatible with current device or mode!"), this);
                 return false;
             }
         }
@@ -1001,7 +1008,7 @@ namespace pv
             }
             catch (...)
             {
-                MsgBox::Show(NULL, tr("restore window status error!"));
+                MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_RE_WIN_ST_ER), "restore window status error!"));
             }
         }
 
@@ -1352,8 +1359,8 @@ namespace pv
                 g_variant_unref(gvar);
 
                 if (usb30_support && usb_speed == LIBUSB_SPEED_HIGH)
-                    show_error(tr("Plug it into a USB 2.0 port will seriously affect its performance."
-                                  "Please replug it into a USB 3.0 port."));
+                    show_error(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CHECK_USB_SPEED_ERROR),
+                    "Plug it into a USB 2.0 port will seriously affect its performance.\nPlease replug it into a USB 3.0 port."));
             }
         }
     }
@@ -1386,7 +1393,7 @@ namespace pv
     {
         if (_session->have_hardware_data())
         {
-            return MsgBox::Confirm(tr("Save captured data?"));
+            return MsgBox::Confirm(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SAVE_CAPDATE), "Save captured data?"));
         }
         return false;
     }
@@ -1405,9 +1412,8 @@ namespace pv
                     g_variant_unref(gvar);
                     if (version == 1)
                     {
-                        show_error(tr("Current loading file has an old format. "
-                                      "This will lead to a slow loading speed. "
-                                      "Please resave it after loaded."));
+                        show_error(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CHECK_SESSION_FILE_VERSION_ERROR), 
+                        "Current loading file has an old format. \nThis will lead to a slow loading speed. \nPlease resave it after loaded."));
                     }
                 }
             }

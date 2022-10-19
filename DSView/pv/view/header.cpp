@@ -41,6 +41,7 @@
 #include "decodetrace.h"
 #include "../sigsession.h"
 #include "../dsvdef.h"
+#include "../ui/langresource.h"
 
  
 using namespace std;
@@ -51,8 +52,8 @@ namespace view {
 Header::Header(View &parent) :
 	QWidget(&parent),
     _view(parent),
-    _action_add_group(new QAction(tr("Add Group"), this)),
-    _action_del_group(new QAction(tr("Del Group"), this))
+    _action_add_group(new QAction(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ADD_GROUP), "Add Group"), this)),
+    _action_del_group(new QAction(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DEL_GROUP), "Del Group"), this))
 {
     _moveFlag = false;
     _colorFlag = false;
@@ -348,7 +349,7 @@ void Header::changeName(QMouseEvent *event)
 void Header::changeColor(QMouseEvent *event)
 {
     if ((event->button() == Qt::LeftButton)) {
-        const QColor new_color = QColorDialog::getColor(_context_trace->get_colour(), this, tr("Set Channel Colour"));
+        const QColor new_color = QColorDialog::getColor(_context_trace->get_colour(), this, L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SET_CHANNEL_COLOUR), "Set Channel Colour"));
         if (new_color.isValid())
             _context_trace->set_colour(new_color);
     }
