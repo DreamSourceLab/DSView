@@ -1,0 +1,175 @@
+[
+    {
+        "id": "IDS_TOOLBAR_DEMO",
+        "text": "Demo"
+    },
+    {
+        "id": "IDS_TOOLBAR_FILE",
+        "text": "file"
+    },
+    {
+        "id": "IDS_TOOLBAR_OPTION",
+        "text": "Options"
+    },
+    {
+        "id": "IDS_TOOLBAR_MODE",
+        "text": "Mode"
+    },
+    {
+        "id": "IDS_TOOLBAR_START",
+        "text": "Start"
+    },
+    {
+        "id": "IDS_TOOLBAR_STOP",
+        "text": "Stop"
+    },
+    {
+        "id": "IDS_TOOLBAR_SINGLE",
+        "text": "Single"
+    },
+    {
+        "id": "IDS_TOOLBAR_INSTANT",
+        "text": "Instant"
+    },
+    {
+        "id": "IDS_TOOLBAR_SINGLE_ACTION",
+        "text": "&Single"
+    },
+    {
+        "id": "IDS_TOOLBAR_REPEAT_ACTION",
+        "text": "&Repetitive"
+    },
+    {
+        "id": "IDS_TOOLBAR_TRIGGER",
+        "text": "Trigger"
+    },
+    {
+        "id": "IDS_TOOLBAR_DECODE",
+        "text": "Decode"
+    },
+    {
+        "id": "IDS_TOOLBAR_MEASURE",
+        "text": "Measure"
+    },
+    {
+        "id": "IDS_TOOLBAR_SEARCH",
+        "text": "Search"
+    },
+    {
+        "id": "IDS_TOOLBAR_FUNCTION",
+        "text": "Function"
+    },
+    {
+        "id": "IDS_TOOLBAR_DISPLAY",
+        "text": "Display"
+    },
+    {
+        "id": "IDS_TOOLBAR_LISSAJOUS",
+        "text": "Lissajous"
+    },
+    {
+        "id": "IDS_TOOLBAR_THEMES",
+        "text": "Themes"
+    },
+    {
+        "id": "IDS_TOOLBAR_DARK",
+        "text": "Dark"
+    },
+    {
+        "id": "IDS_TOOLBAR_LIGHT",
+        "text": "Light"
+    },
+    {
+        "id": "IDS_TOOLBAR_FFT",
+        "text": "FFT"
+    },
+    {
+        "id": "IDS_TOOLBAR_MATH",
+        "text": "Math"
+    },
+    {
+        "id": "IDS_TOOLBAR_OPTIONS",
+        "text": "Options"
+    },
+
+
+    {
+        "id": "IDS_FILEBAR_FILE",
+        "text": "File"
+    },
+    {
+        "id": "IDS_FILEBAR_CONFIGURATION",
+        "text": "Con&fig..."
+    },
+    {
+        "id": "IDS_FILEBAR_LOAD",
+        "text": "Load..."
+    },
+    {
+        "id": "IDS_FILEBAR_STORE",
+        "text": "S&tore..."
+    },
+    {
+        "id": "IDS_FILEBAR_DEFAULT",
+        "text": "Default..."
+    },
+    {
+        "id": "IDS_FILEBAR_0PEN",
+        "text": "&Open..."
+    },
+    {
+        "id": "IDS_FILEBAR_SAVE",
+        "text": "&Save..."
+    },
+    {
+        "id": "IDS_FILEBAR_EXPORT",
+        "text": "&Export..."
+    },
+    {
+        "id": "IDS_FILEBAR_CAPTURE",
+        "text": "&Capture..."
+    },
+
+
+    {
+        "id": "IDS_LOGOBAR_HELP",
+        "text": "Help"
+    },
+    {
+        "id": "IDS_LOGOBAR_ENGLISH",
+        "text": "English"
+    },
+    {
+        "id": "IDS_LOGOBAR_CHINESE",
+        "text": "中文"
+    },
+    {
+        "id": "IDS_LOGOBAR_LANGUAGE",
+        "text": "&Language"
+    },
+    {
+        "id": "IDS_LOGOBAR_ABOUT",
+        "text": "&About..."
+    },
+    {
+        "id": "IDS_LOGOBAR_MANUAL",
+        "text": "&Manual..."
+    },
+    {
+        "id": "IDS_LOGOBAR_BUG_REPORT",
+        "text": "&Bug Report"
+    },
+    {
+        "id": "IDS_LOGOBAR_UPDATE",
+        "text": "&Update"
+    },
+    {
+        "id": "IDS_LOGOBAR_LOG_OPTIONS",
+        "text": "L&og Options"
+    }
+
+
+    
+
+    
+]

@@ -86,7 +86,8 @@ void dslDial::paint(QPainter &p, QRectF dialRect, QColor dialColor, const QPoint
         displayValue = displayValue / _step;
         displayIndex++;
     }
-    pText = QString::number(displayValue) + _unit[displayIndex] + tr("/div");
+    //tr
+    pText = QString::number(displayValue) + _unit[displayIndex] + "/div";
 //    QFontMetrics fm(p.font());
 //    const QRectF valueRect = QRectF(dialRect.left(), dialRect.top()-fm.height()-10, dialRect.width(), fm.height());
 //    p.drawText(valueRect, Qt::AlignCenter, pText);

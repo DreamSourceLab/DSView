@@ -73,10 +73,15 @@ public:
         return _channel_num;
     }
 
+    inline bool have_data(){
+        return _have_data;
+    }
+
     virtual void capture_ended();
     virtual bool has_data(int index) = 0;
     virtual int get_block_num() = 0;
     virtual uint64_t get_block_size(int block_index) = 0;
+     
 
 protected:
     virtual void free_data();
@@ -105,6 +110,7 @@ protected:
     uint16_t _unit_pitch;
     bool _memory_failed;
     bool _last_ended;
+    bool _have_data;
 };
 
 } // namespace data

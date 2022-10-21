@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../libsigrok.h"
+
 #include "../../libsigrok-internal.h"
 
 #include "dsl.h"
@@ -27,6 +27,16 @@
 
 #undef LOG_PREFIX 
 #define LOG_PREFIX "dslogic: "
+
+static int dev_destroy(struct sr_dev_inst *sdi);
+
+static const char *maxHeights[] = {
+    "1X",
+    "2X",
+    "3X",
+    "4X",
+    "5X",
+};
 
 enum {
     /** Buffer mode */
@@ -85,14 +95,6 @@ static const char *thresholds[] = {
 static const char *filters[] = {
     "None",
     "1 Sample Clock",
-};
-
-static const char *maxHeights[] = {
-    "1X",
-    "2X",
-    "3X",
-    "4X",
-    "5X",
 };
 
 static const int32_t hwoptions[] = {
@@ -247,11 +249,6 @@ static struct DSL_context *DSLogic_dev_new(const struct DSL_profile *prof)
 	return devc;
 }
 
-static int dev_clear(void)
-{
-	return std_dev_clear(di, NULL);
-}
-
 static int init(struct sr_context *sr_ctx)
 {
     return std_hw_init(sr_ctx, di, LOG_PREFIX);
@@ -268,11 +265,20 @@ static GSList *scan(GSList *options)
 	GSList *l, *devices, *conn_devices;
 	struct libusb_device_descriptor des;
 	libusb_device **devlist;
+    libusb_device *device_handle = NULL;
     int devcnt, ret, i, j;
 	const char *conn;
     enum libusb_speed usb_speed;
+    struct sr_usb_dev_inst *usb_dev_info;
+    uint8_t bus;
+    uint8_t address;
 
 	drvc = di->priv;
+ 
+    if (options != NULL)
+        sr_info("%s", "Scan DSLogic device with options.");
+    else 
+        sr_info("%s", "Scan DSLogic device.");
 
 	conn = NULL;
 	for (l = options; l; l = l->next) {
@@ -283,21 +289,27 @@ static GSList *scan(GSList *options)
 			break;
 		}
 	}
-	if (conn)
+	if (conn){
+        sr_info("%s", "Find usb device with connect config.");
         conn_devices = sr_usb_find(drvc->sr_ctx->libusb_ctx, conn);
+    }
 	else
 		conn_devices = NULL;
 
     /* Find all DSLogic compatible devices and upload firmware to them. */
 	devices = NULL;
     libusb_get_device_list(drvc->sr_ctx->libusb_ctx, &devlist);
-	for (i = 0; devlist[i]; i++) {
+    
+	for (i = 0; devlist[i]; i++) 
+    {
+        device_handle = devlist[i];
+
 		if (conn) {
 			usb = NULL;
 			for (l = conn_devices; l; l = l->next) {
 				usb = l->data;
-				if (usb->bus == libusb_get_bus_number(devlist[i])
-					&& usb->address == libusb_get_device_address(devlist[i]))
+				if (usb->bus == libusb_get_bus_number(device_handle)
+					&& usb->address == libusb_get_device_address(device_handle))
 					break;
 			}
 			if (!l)
@@ -306,68 +318,87 @@ static GSList *scan(GSList *options)
 				continue;
 		}
 
-		if ((ret = libusb_get_device_descriptor( devlist[i], &des)) != 0) {
+		if ((ret = libusb_get_device_descriptor(device_handle, &des)) != 0) {
             sr_warn("Failed to get device descriptor: %s.",
 				libusb_error_name(ret));
 			continue;
 		}
 
-        usb_speed = libusb_get_device_speed( devlist[i]);
-        if ((usb_speed != LIBUSB_SPEED_HIGH) &&
-            (usb_speed != LIBUSB_SPEED_SUPER))
+        usb_speed = libusb_get_device_speed(device_handle);
+        if ((usb_speed != LIBUSB_SPEED_HIGH) && (usb_speed != LIBUSB_SPEED_SUPER)){
             continue;
+        }
 
+        /* Check manufactory id and product id, and speed type. */
 		prof = NULL;
         for (j = 0; supported_DSLogic[j].vid; j++) {
             if (des.idVendor == supported_DSLogic[j].vid &&
                 des.idProduct == supported_DSLogic[j].pid &&
                 usb_speed == supported_DSLogic[j].usb_speed) {
                 prof = &supported_DSLogic[j];
+                break;
 			}
 		}
 
 		/* Skip if the device was not found. */
 		if (!prof)
 			continue;
+        
+        if (sr_usb_device_is_exists(device_handle)){
+            sr_detail("Device is exists, handle: %p", device_handle);
+            continue;
+        }
+        
+        bus = libusb_get_bus_number(device_handle);
+        address = libusb_get_device_address(device_handle);
+        sr_info("Found a new device,handle:%p,bus:%d,address:%d", device_handle, bus, address);
 
-		devcnt = g_slist_length(drvc->instances);
         devc = DSLogic_dev_new(prof);
         if (!devc)
             return NULL;
-        sdi = sr_dev_inst_new(channel_modes[devc->ch_mode].mode, devcnt, SR_ST_INITIALIZING,
-			prof->vendor, prof->model, prof->model_version);
+        
+        sdi = sr_dev_inst_new(channel_modes[devc->ch_mode].mode, SR_ST_INITIALIZING,
+			                prof->vendor, prof->model, prof->model_version);
         if (!sdi) {
             g_free(devc);
 			return NULL;
         }
         sdi->priv = devc;
 		sdi->driver = di;
-
-		drvc->instances = g_slist_append(drvc->instances, sdi);
-        //devices = g_slist_append(devices, sdi);
-
+        sdi->dev_type = DEV_TYPE_USB;
+        sdi->handle = (ds_device_handle)device_handle;
+ 
         /* Fill in probelist according to this device's profile. */
-        if (dsl_setup_probes(sdi, channel_modes[devc->ch_mode].num) != SR_OK)
+        if (dsl_setup_probes(sdi, channel_modes[devc->ch_mode].num) != SR_OK){
+            sr_err("%s", "dsl_setup_probes() error");
+            dev_destroy(sdi);
             return NULL;
+        }
+        devices = g_slist_append(devices, sdi);
 
-        if (dsl_check_conf_profile(devlist[i])) {
+        if (dsl_check_conf_profile(device_handle)) {
 			/* Already has the firmware, so fix the new address. */
-            sr_info("Found an DSLogic device.");
-            sdi->status = SR_ST_INACTIVE;
-            sdi->inst_type = SR_INST_USB;
-            sdi->conn = sr_usb_dev_inst_new(libusb_get_bus_number(devlist[i]),
-					libusb_get_device_address(devlist[i]), NULL);
-            /* only report device after firmware is ready */
-            devices = g_slist_append(devices, sdi);
-		} else {
+            sr_info("Found a DSLogic device,name:\"%s\",handle:%p", prof->model,device_handle);
+           
+            usb_dev_info = sr_usb_dev_inst_new(bus, address, NULL);
+
+            usb_dev_info->usb_dev = device_handle;
+            sdi->conn = usb_dev_info;
+            sdi->status = SR_ST_INACTIVE;          
+		}
+        else {
             char *firmware;
-            if (!(firmware = g_try_malloc(strlen(DS_RES_PATH)+strlen(prof->firmware)+1))) {
+            char *res_path = DS_RES_PATH;
+            if (!(firmware = g_try_malloc(strlen(res_path)+strlen(prof->firmware)+1))) {
                 sr_err("Firmware path malloc error!");
                 return NULL;
             }
-            strcpy(firmware, DS_RES_PATH);
+            strcpy(firmware, res_path);
             strcat(firmware, prof->firmware);
-            if (ezusb_upload_firmware(devlist[i], USB_CONFIGURATION,
+
+            sr_info("Install firmware bin file, device:\"%s\", file:\"%s\"", prof->model, firmware);
+
+            if (ezusb_upload_firmware(device_handle, USB_CONFIGURATION,
                 firmware) == SR_OK)
 				/* Store when this device's FW was updated. */
 				devc->fw_updated = g_get_monotonic_time();
@@ -375,20 +406,20 @@ static GSList *scan(GSList *options)
                 sr_err("Firmware upload failed for "
 				       "device %d.", devcnt);
             g_free(firmware);
-            sdi->inst_type = SR_INST_USB;
-            sdi->conn = sr_usb_dev_inst_new (libusb_get_bus_number(devlist[i]),
-					0xff, NULL);
+            
+            usb_dev_info = sr_usb_dev_inst_new(bus, 0xff, NULL);
+            usb_dev_info->usb_dev = device_handle;
+            sdi->conn = usb_dev_info;
 		}
 	}
+
 	libusb_free_device_list(devlist, 1);
-    g_slist_free_full(conn_devices, (GDestroyNotify)sr_usb_dev_inst_free);
+
+    if (conn_devices){
+        g_slist_free_full(conn_devices, (GDestroyNotify)sr_usb_dev_inst_free);
+    }
 
 	return devices;
-}
-
-static GSList *dev_list(void)
-{
-	return ((struct drv_context *)(di->priv))->instances;
 }
 
 static const GSList *dev_mode_list(const struct sr_dev_inst *sdi)
@@ -575,6 +606,9 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     struct DSL_context *devc = sdi->priv;
     int ret;
 
+    assert(sdi);
+    assert(sdi->priv);
+
     ret = dsl_config_get(id, data, sdi, ch, cg);
     if (ret != SR_OK) {
         switch (id) {
@@ -690,6 +724,9 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     int ret, num_probes = 0;
     struct sr_usb_dev_inst *usb;
     unsigned int i;
+
+    assert(sdi);
+    assert(sdi->priv);
 
     (void)cg;
 
@@ -893,7 +930,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         if (sdi->mode != LOGIC) {
             dso_init(sdi);
         }
-    } else if (id == SR_CONF_OPERATION_MODE) {
+    } 
+    else if (id == SR_CONF_OPERATION_MODE) {
         stropt = g_variant_get_string(data, NULL);
         if (sdi->mode == LOGIC) {
             if (!strcmp(stropt, get_opmodes(devc)[OP_BUFFER])) {
@@ -988,11 +1026,12 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                     ret = SR_ERR;
                 }
                 char *fpga_bit;
-                if (!(fpga_bit = g_try_malloc(strlen(DS_RES_PATH)+strlen(devc->profile->fpga_bit33)+1))) {
+                char *res_path = DS_RES_PATH;
+                if (!(fpga_bit = g_try_malloc(strlen(res_path)+strlen(devc->profile->fpga_bit33)+1))) {
                     sr_err("fpag_bit path malloc error!");
                     return SR_ERR_MALLOC;
                 }
-                strcpy(fpga_bit, DS_RES_PATH);
+                strcpy(fpga_bit, res_path);
                 switch(devc->th_level) {
                 case SR_TH_3V3:
                     strcat(fpga_bit, devc->profile->fpga_bit33);
@@ -1173,6 +1212,11 @@ static int dev_close(struct sr_dev_inst *sdi)
     return ret;
 }
 
+static int dev_destroy(struct sr_dev_inst *sdi)
+{
+    return dsl_destroy_device(sdi);
+}
+
 static int cleanup(void)
 {
 	int ret;
@@ -1181,12 +1225,10 @@ static int cleanup(void)
 	if (!(drvc = di->priv))
         return SR_OK;
 
-	ret = dev_clear();
-
 	g_free(drvc);
 	di->priv = NULL;
 
-	return ret;
+    return SR_OK;
 }
 
 static void remove_sources(struct DSL_context *devc)
@@ -1207,7 +1249,7 @@ static void report_overflow(struct DSL_context *devc)
     packet.status = SR_PKT_OK;
     packet.type = SR_DF_OVERFLOW;
     packet.payload = NULL;
-    sr_session_send(sdi, &packet);
+    ds_data_forward(sdi, &packet);
 }
 
 static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
@@ -1328,10 +1370,12 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
     /* Stop Previous GPIF acquisition */
     wr_cmd.header.dest = DSL_CTL_STOP;
     wr_cmd.header.size = 0;
+    
     if ((ret = command_ctl_wr(usb->devhdl, wr_cmd)) != SR_OK) {
         sr_err("%s: Stop DSLogic acquisition failed!", __func__);
         return ret;
-    } else {
+    } 
+    else {
         sr_info("%s: Stop Previous DSLogic acquisition!", __func__);
     }
 
@@ -1403,17 +1447,17 @@ SR_PRIV struct sr_dev_driver DSLogic_driver_info = {
     .name = "DSLogic",
     .longname = "DSLogic (generic driver for DSLogic LA)",
 	.api_version = 1,
+    .driver_type = DRIVER_TYPE_HARDWARE,
 	.init = init,
 	.cleanup = cleanup,
-	.scan = scan,
-	.dev_list = dev_list,
+	.scan = scan, 
     .dev_mode_list = dev_mode_list,
-	.dev_clear = dev_clear,
 	.config_get = config_get,
 	.config_set = config_set,
 	.config_list = config_list,
 	.dev_open = dev_open,
 	.dev_close = dev_close,
+    .dev_destroy = dev_destroy,
     .dev_status_get = dev_status_get,
 	.dev_acquisition_start = dev_acquisition_start,
 	.dev_acquisition_stop = dev_acquisition_stop,

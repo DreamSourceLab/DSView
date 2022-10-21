@@ -22,9 +22,7 @@
 #include "devmode.h"
 #include "view.h"
 #include "trace.h"
-#include "../sigsession.h"
-#include "../device/devinst.h"
-#include "../device/file.h"
+#include "../sigsession.h" 
 
 #include <assert.h> 
 #include <QStyleOption>
@@ -35,17 +33,30 @@
 
 #include "../config/appconfig.h"
 #include "../ui/msgbox.h"
+#include "../log.h"
+
+#include "../ui/langresource.h"
+
+
+static const struct dev_mode_name dev_mode_name_list[] =
+{
+    {LOGIC, "Logic Analyzer", "逻辑分析仪",  "la.svg"},
+    {ANALOG, "Data Acquisition", "数据记录仪", "daq.svg"},
+    {DSO, "Oscilloscope", "示波器",  "osc.svg"},
+};
   
 namespace pv {
 namespace view {
 
 DevMode::DevMode(QWidget *parent, SigSession *session) :
-    QWidget(parent),
-    _session(session)    
+    QWidget(parent) 
 {
     _bFile = false;
 
-   QHBoxLayout *layout = new QHBoxLayout(this);
+    _session = session;
+    _device_agent = session->get_device();
+
+    QHBoxLayout *layout = new QHBoxLayout(this);
     layout->setSpacing(0);
     layout->setContentsMargins(2, 0, 0, 0);
 
@@ -93,8 +104,10 @@ void DevMode::changeEvent(QEvent *event)
 
 void DevMode::set_device()
 { 
-    DevInst* dev_inst = _session->get_device();
-    assert(dev_inst);
+     if (_device_agent->have_instance() == false){
+        dsv_detail("%s", "DevMode::set_device, Have no device.");   
+        return;
+     }
 
     _bFile = false;
    
@@ -115,35 +128,37 @@ void DevMode::set_device()
 
     QString iconPath = GetIconPath() + "/";
 
-    for (const GSList *l = dev_inst->get_dev_mode_list(); l; l = l->next)
+    auto dev_mode_list  = _device_agent->get_device_mode_list();
+
+    for (const GSList *l = dev_mode_list; l; l = l->next)
     {
         const sr_dev_mode *mode = (const sr_dev_mode *)l->data;
-        QString icon_name = QString::fromLocal8Bit(mode->icon);
+        auto *mode_name = get_mode_name(mode->mode);
+        QString icon_name = QString::fromLocal8Bit(mode_name->_logo);
 
         QAction *action = new QAction(this);
         action->setIcon(QIcon(iconPath + "square-" + icon_name));
         if (lan == LAN_CN)
-            action->setText(mode->name_cn);
+            action->setText(mode_name->_name_cn);
         else
-            action->setText(mode->name);
+            action->setText(mode_name->_name_en);
 
         connect(action, SIGNAL(triggered()), this, SLOT(on_mode_change()));
 
         _mode_list[action] = mode;
-        if (dev_inst->dev_inst()->mode == _mode_list[action]->mode)
+        if (_device_agent->get_work_mode() == _mode_list[action]->mode)
         {
             QString icon_fname = iconPath + icon_name;
             _mode_btn->setIcon(QIcon(icon_fname));
             if (lan == LAN_CN)
-                _mode_btn->setText(mode->name_cn);
+                _mode_btn->setText(mode_name->_name_cn);
             else
-                _mode_btn->setText(mode->name);
+                _mode_btn->setText(mode_name->_name_en);
         }
         _pop_menu->addAction(action);
     }
 
-    if ((dynamic_cast<File *>(dev_inst)))
-    {
+    if (_device_agent->is_file()){
         _close_button->setDisabled(false);
         _close_button->setIcon(QIcon(iconPath + "/close.svg"));
         _bFile = true;
@@ -164,11 +179,15 @@ void DevMode::paintEvent(QPaintEvent*)
 
 void DevMode::on_mode_change()
 {
-    DevInst* dev_inst = _session->get_device();
-    assert(dev_inst);
+    if (_device_agent->have_instance() == false){
+        assert(false);
+    }
+    
     QAction *action = qobject_cast<QAction *>(sender());
-    if (dev_inst->dev_inst()->mode == _mode_list[action]->mode)
+
+    if (_device_agent->get_work_mode() == _mode_list[action]->mode){
         return;
+    }
 
     QString iconPath = GetIconPath();
     AppConfig &app = AppConfig::Instance(); 
@@ -176,40 +195,41 @@ void DevMode::on_mode_change()
 
     for(auto i = _mode_list.begin();i != _mode_list.end(); i++)
     {
-        if ((*i).first == action) {
-            if (dev_inst->dev_inst()->mode != (*i).second->mode) {
-                _session->set_run_mode(SigSession::Single);
-                _session->set_repeating(false);
-                _session->stop_capture();
-                _session->capture_state_changed(SigSession::Stopped);
-                _session->session_save();
-                dev_inst->set_config(NULL, NULL,
-                                     SR_CONF_DEVICE_MODE,
-                                     g_variant_new_int16((*i).second->mode));
+        if ((*i).first == action){
 
-                QString icon_fname = iconPath + "/" + QString::fromLocal8Bit((*i).second->icon);
-             
-                _mode_btn->setIcon(QIcon(icon_fname));
-                if (lan == LAN_CN)
-                    _mode_btn->setText((*i).second->name_cn);
-                else
-                    _mode_btn->setText((*i).second->name);
-                dev_changed(false);
+            int mode = (*i).second->mode;
+            if (_device_agent->get_work_mode() == mode){
+                dsv_info("%s", "Current mode is set.");
+                break;
             }
+            
+            _session->stop_capture();
+            _session->set_repeat_mode(false);
+            _session->session_save();                                    
+            _session->switch_work_mode(mode);
 
-            break;
-        }
+            auto *mode_name = get_mode_name(mode);
+            QString icon_fname = iconPath + "/" + QString::fromLocal8Bit(mode_name->_logo);
+            
+            _mode_btn->setIcon(QIcon(icon_fname));
+            if (lan == LAN_CN)
+                _mode_btn->setText(mode_name->_name_cn);
+            else
+                _mode_btn->setText(mode_name->_name_en);
+               
+            break;                
+        }      
     }
 }
 
 void DevMode::on_close()
 {
-    DevInst *dev_inst = _session->get_device();
-    assert(dev_inst);
+   if (_device_agent->have_instance() == false){
+        assert(false);
+    }
 
-    if (_bFile && MsgBox::Confirm(tr("are you sure to close the device?"))){
-        _session->close_file(dev_inst);
-        dev_changed(true);
+    if (_bFile && MsgBox::Confirm(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CLOSE_DEVICE), "Are you sure to close the device?"))){
+        _session->close_file(_device_agent->handle());
     }
 }
 
@@ -236,6 +256,15 @@ void DevMode::leaveEvent(QEvent*)
 {
 	_mouse_point = QPoint(-1, -1);
 	update();
+}
+
+const struct dev_mode_name* DevMode::get_mode_name(int mode) 
+{
+    for(auto &o : dev_mode_name_list)
+        if (mode == o._mode){
+            return &o;
+    }
+    assert(false);
 }
 
 } // namespace view

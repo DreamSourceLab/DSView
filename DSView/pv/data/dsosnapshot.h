@@ -27,7 +27,7 @@
 #include <vector>
 #include <map>
 
-#include "libsigrok.h"
+#include <libsigrok.h> 
 #include "snapshot.h"
 
 namespace DsoSnapshotTest {

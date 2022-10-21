@@ -21,7 +21,7 @@
 
 #include "row.h"
 
-#include "libsigrokdecode.h"
+#include <libsigrokdecode.h>
 #include <assert.h>
 
 namespace pv {

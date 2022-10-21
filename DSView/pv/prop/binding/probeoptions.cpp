@@ -29,6 +29,8 @@
 #include "../int.h"
 #include "../../config/appconfig.h"
 #include "../../log.h"
+#include "../../appcontrol.h"
+#include "../../sigsession.h"
 
 using namespace std;
 
@@ -36,43 +38,45 @@ namespace pv {
 namespace prop {
 namespace binding {
 
-ProbeOptions::ProbeOptions(struct sr_dev_inst *sdi, struct sr_channel *probe) :
-    Binding(),
-	_sdi(sdi),
+ProbeOptions::ProbeOptions(struct sr_channel *probe) :
+    Binding(), 
 	_probe(probe)
-{
+{ 
 	GVariant *gvar_opts, *gvar_list;
 	gsize num_opts;
 
-    if ((sr_config_list(sdi->driver, sdi, NULL, SR_CONF_PROBE_CONFIGS,
-        &gvar_opts) != SR_OK))
+    SigSession *session = AppControl::Instance()->GetSession();
+    _device_agent = session->get_device();
+
+    gvar_opts = _device_agent->get_config_list(NULL, SR_CONF_PROBE_CONFIGS);
+    if (gvar_opts != NULL){
 		/* Driver supports no device instance options. */
 		return;
+    }
 
 	const int *const options = (const int32_t *)g_variant_get_fixed_array(
 		gvar_opts, &num_opts, sizeof(int32_t));
+
 	for (unsigned int i = 0; i < num_opts; i++) {
 		const struct sr_config_info *const info =
-			sr_config_info_get(options[i]);
+			_device_agent->get_config_info(options[i]);
 
 		if (!info)
 			continue;
 
 		const int key = info->key;
 
-        if(sr_config_list(_sdi->driver, _sdi, NULL, key, &gvar_list) != SR_OK)
-			gvar_list = NULL;
+        gvar_list = _device_agent->get_config_list(NULL, key);
 
         const QString name(info->name);
         char *label_char = info->label;
-        GVariant *gvar_tmp = NULL;
-        if (sr_config_get(_sdi->driver, _sdi, NULL, NULL, SR_CONF_LANGUAGE, &gvar_tmp) == SR_OK) {
-            if (gvar_tmp != NULL) {
+        GVariant *gvar_tmp = _device_agent->get_config(NULL, NULL, SR_CONF_LANGUAGE);
+
+        if (gvar_tmp != NULL) {
                 int language = g_variant_get_int16(gvar_tmp);
                 if (language == LAN_CN)
                     label_char = info->label_cn;
                 g_variant_unref(gvar_tmp);
-            }
         }
         const QString label(label_char);
 
@@ -111,32 +115,25 @@ ProbeOptions::ProbeOptions(struct sr_dev_inst *sdi, struct sr_channel *probe) :
         g_variant_unref(gvar_opts);
 }
 
-GVariant* ProbeOptions::config_getter(
-    const struct sr_dev_inst *sdi,
-    const struct sr_channel *probe, int key)
-{
-	GVariant *data = NULL;
-    if (sr_config_get(sdi->driver, sdi, probe, NULL, key, &data) != SR_OK) {
-        dsv_warn("%s%d", "WARNING: Failed to get value of config id:", key);
-		return NULL;
-	}
-	return data;
+GVariant* ProbeOptions::config_getter(const struct sr_channel *probe, int key)
+{ 
+    SigSession *session = AppControl::Instance()->GetSession();
+    DeviceAgent *_device_agent = session->get_device();
+    return _device_agent->get_config(probe, NULL, key);
 }
 
-void ProbeOptions::config_setter(
-    struct sr_dev_inst *sdi,
-    struct sr_channel *probe, int key, GVariant* value)
+void ProbeOptions::config_setter(struct sr_channel *probe, int key, GVariant* value)
 {
-    if (sr_config_set(sdi, probe, NULL, key, value) != SR_OK){ 
-        dsv_warn("%s", "WARNING: Failed to set value of sample rate");
-    }
+    SigSession *session = AppControl::Instance()->GetSession();
+    DeviceAgent *_device_agent = session->get_device();
+    _device_agent->set_config(probe, NULL, key, value);
 }
 
 void ProbeOptions::bind_bool(const QString &name, const QString label, int key)
 {
 	_properties.push_back(
-        new Bool(name, label, bind(config_getter, _sdi, _probe, key),
-            bind(config_setter, _sdi, _probe, key, _1)));
+        new Bool(name, label, bind(config_getter, _probe, key),
+            bind(config_setter, _probe, key, _1)));
 }
 
 void ProbeOptions::bind_enum(const QString &name, const QString label, int key,
@@ -154,8 +151,8 @@ void ProbeOptions::bind_enum(const QString &name, const QString label, int key,
 
 	_properties.push_back(
         new Enum(name, label, values,
-            bind(config_getter, _sdi, _probe, key),
-            bind(config_setter, _sdi, _probe, key, _1)));
+            bind(config_getter, _probe, key),
+            bind(config_setter,  _probe, key, _1)));
 }
 
 void ProbeOptions::bind_int(const QString &name, const QString label, int key, QString suffix,
@@ -163,8 +160,8 @@ void ProbeOptions::bind_int(const QString &name, const QString label, int key, Q
 {
 	_properties.push_back(
         new Int(name, label, suffix, range,
-            bind(config_getter, _sdi, _probe, key),
-            bind(config_setter, _sdi, _probe, key, _1)));
+            bind(config_getter,  _probe, key),
+            bind(config_setter,  _probe, key, _1)));
 }
 
 void ProbeOptions::bind_double(const QString &name, const QString label, int key, QString suffix,
@@ -173,8 +170,8 @@ void ProbeOptions::bind_double(const QString &name, const QString label, int key
 {
     _properties.push_back(
         new Double(name, label, decimals, suffix, range, step,
-            bind(config_getter, _sdi, _probe, key),
-            bind(config_setter, _sdi, _probe, key, _1)));
+            bind(config_getter,  _probe, key),
+            bind(config_setter,  _probe, key, _1)));
 }
 
 void ProbeOptions::bind_vdiv(const QString &name, const QString label,

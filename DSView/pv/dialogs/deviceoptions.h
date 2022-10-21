@@ -24,6 +24,7 @@
 #ifndef DSVIEW_PV_DEVICEOPTIONS_H
 #define DSVIEW_PV_DEVICEOPTIONS_H
 
+#include <libsigrok.h> 
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QGroupBox>
@@ -36,10 +37,7 @@
 #include <QRadioButton>
 #include <QTimer> 
 #include <QWidget>
-#include <vector>
-
-#include "libsigrok.h"
-#include "../device/devinst.h"
+#include <vector> 
 #include "../prop/binding/deviceoptions.h"
 #include "../prop/binding/probeoptions.h"
 #include "../toolbars/titlebar.h"
@@ -72,9 +70,10 @@ private:
     int     _index;
 };
 
-using namespace pv::device;
+class DeviceAgent;
 
 namespace pv {
+
 namespace dialogs {
 
 class DeviceOptions : public DSDialog, public IChannelCheck
@@ -82,7 +81,7 @@ class DeviceOptions : public DSDialog, public IChannelCheck
 	Q_OBJECT
 
 public:
-    DeviceOptions(QWidget *parent, DevInst *dev_inst);
+    DeviceOptions(QWidget *parent);
 
     ~DeviceOptions();
 
@@ -110,18 +109,17 @@ private slots:
 	void enable_all_probes();
 	void disable_all_probes();
     void zero_adj();
-    void mode_check();
+    void mode_check_timeout();
     void channel_check();
     void analog_channel_check();
     void on_calibration();
     void channel_enable();
 
-private:
-    DevInst     *_dev_inst; 
+private: 
     std::vector<QCheckBox *> _probes_checkBox_list;
     std::vector<QLayout *> _sub_lays;
 
-    QTimer      _mode_check;
+    QTimer      _mode_check_timer;
     QString     _mode;  
     QWidget     *_scroll_panel;
     QScrollArea *_scroll;
@@ -133,6 +131,7 @@ private:
     int     _groupHeight1;
     int     _groupHeight2;
     volatile    bool _isBuilding;
+    DeviceAgent *_device_agent;
 
 	pv::prop::binding::DeviceOptions _device_options_binding;
     QVector <pv::prop::binding::ProbeOptions *> _probe_options_binding_list;

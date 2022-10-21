@@ -36,9 +36,17 @@ void DsTimer::TimeOut(int millsec, CALLBACL_FUNC f)
 {
     _call = f;
     QTimer::singleShot(millsec, this, SLOT(on_timeout()));
-} 
+}
 
- void DsTimer::Start(int millsec, CALLBACL_FUNC f)
+void DsTimer::TimeOut(int millsec)
+{
+    if (_call == NULL){
+        assert(false);
+    }
+    QTimer::singleShot(millsec, this, SLOT(on_timeout()));
+}
+
+void DsTimer::Start(int millsec, CALLBACL_FUNC f)
  {  
      if (_isActived)
         return;
@@ -53,7 +61,7 @@ void DsTimer::TimeOut(int millsec, CALLBACL_FUNC f)
      _timer.start(millsec);
      _isActived = true;
      _beginTime = high_resolution_clock::now();
- }
+}
 
 void DsTimer::SetCallback(CALLBACL_FUNC f)
  {

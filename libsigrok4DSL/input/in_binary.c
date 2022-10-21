@@ -17,7 +17,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../libsigrok.h"
 #include "../libsigrok-internal.h"
 #include <stdlib.h>
 #include <sys/types.h>
@@ -81,7 +80,7 @@ static int init(struct sr_input *in, const char *filename)
 	}
 
 	/* Create a virtual device. */
-	in->sdi = sr_dev_inst_new(LOGIC, 0, SR_ST_ACTIVE, NULL, NULL, NULL);
+	in->sdi = sr_dev_inst_new(LOGIC, SR_ST_ACTIVE, NULL, NULL, NULL);
 	in->internal = ctx;
 
 	for (i = 0; i < num_probes; i++) {
@@ -122,7 +121,7 @@ static int loadfile(struct sr_input *in, const char *filename)
 		src = sr_config_new(SR_CONF_SAMPLERATE,
 				g_variant_new_uint64(ctx->samplerate));
 		meta.config = g_slist_append(NULL, src);
-		sr_session_send(in->sdi, &packet);
+		ds_data_forward(in->sdi, &packet);
 		sr_config_free(src);
 	}
 
@@ -133,13 +132,13 @@ static int loadfile(struct sr_input *in, const char *filename)
 	logic.data = buffer;
 	while ((size = read(fd, buffer, CHUNKSIZE)) > 0) {
 		logic.length = size;
-		sr_session_send(in->sdi, &packet);
+		ds_data_forward(in->sdi, &packet);
 	}
 	close(fd);
 
 	/* Send end packet to the session bus. */
 	packet.type = SR_DF_END;
-	sr_session_send(in->sdi, &packet);
+	ds_data_forward(in->sdi, &packet);
 
 	g_free(ctx);
 	in->internal = NULL;

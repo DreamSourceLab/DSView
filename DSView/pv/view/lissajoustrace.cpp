@@ -29,7 +29,8 @@
 #include "../data/dso.h"
 #include "../data/dsosnapshot.h"
 #include "../sigsession.h"
-#include "../device/devinst.h"
+
+#include "../ui/langresource.h"
  
 using namespace std;
 
@@ -129,7 +130,7 @@ void LissajousTrace::paint_back(QPainter &p, int left, int right, QColor fore, Q
     fore.setAlpha(view::View::ForeAlpha);
     p.setPen(fore);
     p.drawText(_border.marginsRemoved(QMargins(10, 10, 10, 10)),
-               tr("Lissajous Figure"), Qt::AlignTop | Qt::AlignLeft);
+               L_S(STR_PAGE_DLG, S_ID(IDS_DLG_LISSAJOUS_FIGURE), "Lissajous Figure"), Qt::AlignTop | Qt::AlignLeft);
 
     _view->set_back(true);
 }
@@ -165,7 +166,7 @@ void LissajousTrace::paint_mid(QPainter &p, int left, int right, QColor fore, QC
         if (_xIndex >= channel_num || _yIndex >= channel_num) {
             p.setPen(view::View::Red);
             p.drawText(_border.marginsRemoved(QMargins(10, 30, 10, 30)),
-                       tr("Data source error."));
+                       L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DATA_SOURCE_ERROR), "Data source error."));
         } else {
             const uint8_t *const samples = snapshot->get_samples(0, sample_count-1, 0);
 

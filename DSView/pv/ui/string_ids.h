@@ -2,7 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2014 Joel Holdsworth <joel@airwebreathe.org.uk>
+ * Copyright (C) 2022 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,36 +19,25 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#ifndef DSVIEW_PV_DEVICE_DEVICE_H
-#define DSVIEW_PV_DEVICE_DEVICE_H
+#ifndef STRING_IDS_H
+#define STRING_IDS_H
 
-#include "devinst.h"
+#define     STR_PAGE_MAIN       1
+#define     STR_PAGE_MSG        2
+#define     STR_PAGE_TOOLBAR    3
+#define     STR_PAGE_DLG        4
+#define     STR_PAGE_DSL        100
 
-namespace pv {
-namespace device {
+// xx
+#define IDS_TOOLBAR_MODE
+#define IDS_TOOLBAR_START
+#define IDS_TOOLBAR_STOP
+#define IDS_TOOLBAR_SINGLE
+#define IDS_TOOLBAR_INSTANT
+#define IDS_TOOLBAR_SINGLE_ACTION
+#define IDS_TOOLBAR_REPEAT_ACTION
+#define IDS_TOOLBAR_OPTIONS
 
-class Device : public DevInst
-{ 
-public:
-	Device(sr_dev_inst *dev_inst);
 
-	~Device();
-
-	sr_dev_inst* dev_inst();
-
-    void use(SigSession *owner);
-
-	void release();
-
-    QString format_device_title();
-
-	bool is_trigger_enabled();
-
-private:
-	sr_dev_inst *const _sdi;
-};
-
-} // device
-} // pv
-
-#endif // DSVIEW_PV_DEVICE_DEVICE_H
+#define IDS_MSG_LOG_LEVEL
+#endif

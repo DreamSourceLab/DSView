@@ -26,17 +26,17 @@
 #include <QApplication>
 
 #include "filebar.h"
-#include "../device/devinst.h" 
 #include "../ui/msgbox.h"
 #include "../config/appconfig.h"
 #include "../utility/path.h"
+
+#include "../ui/langresource.h"
 
 namespace pv {
 namespace toolbars {
 
 FileBar::FileBar(SigSession *session, QWidget *parent) :
     QToolBar("File Bar", parent),
-    _enable(true),
     _session(session),
     _file_button(this)
 {
@@ -103,17 +103,19 @@ void FileBar::changeEvent(QEvent *event)
     QToolBar::changeEvent(event);
 }
 
+
+
 void FileBar::retranslateUi()
 {
-    _file_button.setText(tr("File"));
-    _menu_session->setTitle(tr("Con&fig...")); //load,save session file
-    _action_load->setText(tr("&Load..."));
-    _action_store->setText(tr("S&tore..."));
-    _action_default->setText(tr("&Default..."));
-    _action_open->setText(tr("&Open..."));
-    _action_save->setText(tr("&Save..."));
-    _action_export->setText(tr("&Export..."));
-    _action_capture->setText(tr("&Capture..."));
+    _file_button.setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_FILEBAR_FILE), "File"));
+    _menu_session->setTitle(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_FILEBAR_CONFIGURATION), "Con&fig...")); //load,save session file
+    _action_load->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_FILEBAR_LOAD), "&Load..."));
+    _action_store->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_FILEBAR_STORE), "S&tore..."));
+    _action_default->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_FILEBAR_DEFAULT), "&Default..."));
+    _action_open->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_FILEBAR_0PEN), "&Open..."));
+    _action_save->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_FILEBAR_SAVE), "&Save..."));
+    _action_export->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_FILEBAR_EXPORT), "&Export..."));
+    _action_capture->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_FILEBAR_CAPTURE), "&Capture..."));
 }
 
 void FileBar::reStyle()
@@ -136,12 +138,19 @@ void FileBar::on_actionOpen_triggered()
     //open data file
     AppConfig &app = AppConfig::Instance(); 
 
+    if (_session->have_hardware_data()){
+        if (MsgBox::Confirm(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SAVE_CAPDATE), "Save captured data?"))){
+            sig_save();
+            return;
+        }
+    }
+
     // Show the dialog
     const QString file_name = QFileDialog::getOpenFileName(
         this, 
-        tr("Open File"), 
+        L_S(STR_PAGE_DLG, S_ID(IDS_DLG_OPEN_FILE), "Open File"), 
         app._userHistory.openDir,
-        tr("DSView Data (*.dsl)"));
+        "DSView Data (*.dsl)");
 
     if (!file_name.isEmpty()) { 
         QString fname = path::GetDirectoryName(file_name);
@@ -154,31 +163,15 @@ void FileBar::on_actionOpen_triggered()
     }
 }
 
-void FileBar::session_error(
-    const QString text, const QString info_text)
-{
-    QMetaObject::invokeMethod(this, "show_session_error",
-        Qt::QueuedConnection, Q_ARG(QString, text),
-        Q_ARG(QString, info_text));
-}
-
-void FileBar::show_session_error(
-    const QString text, const QString info_text)
-{  
-    (void)text;
-    MsgBox::Show(NULL, info_text.toStdString().c_str(), this);
-}
-
 void FileBar::on_actionLoad_triggered()
 { 
     //load session file
     AppConfig &app = AppConfig::Instance();      
-
     const QString file_name = QFileDialog::getOpenFileName(
         this, 
-        tr("Open Session"), 
+        L_S(STR_PAGE_DLG, S_ID(IDS_DLG_OPEN_SEESION), "Open Session"), 
         app._userHistory.sessionDir, 
-        tr("DSView Session (*.dsc)"));
+        "DSView Session (*.dsc)");
 
     if (!file_name.isEmpty()) {
         QString fname = path::GetDirectoryName(file_name);
@@ -195,12 +188,12 @@ void FileBar::on_actionDefault_triggered()
 { 
     QDir dir(GetResourceDir());
     if (!dir.exists()) { 
-          MsgBox::Show(NULL, tr("Cannot find default session file for this device!"), this);
+          MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SAVE_CANFIND_SESSIONFILE), "Cannot find default session file for this device!"), this);
           return;
     }
 
     QString driver_name = _session->get_device()->name();
-    QString mode_name = QString::number(_session->get_device()->dev_inst()->mode);
+    QString mode_name = QString::number(_session->get_device()->get_work_mode());
     int language = LAN_EN;
     GVariant *gvar_tmp = _session->get_device()->get_config(NULL, NULL, SR_CONF_LANGUAGE);
     if (gvar_tmp != NULL) {
@@ -221,14 +214,14 @@ void FileBar::on_actionStore_triggered()
 
     QString file_name = QFileDialog::getSaveFileName(
                 this, 
-                tr("Save Session"),
+                L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SAVE_SEESION), "Save Session"),
                 app._userHistory.sessionDir,
-                tr("DSView Session (*.dsc)"));
+                "DSView Session (*.dsc)");
 
     if (!file_name.isEmpty()) {
         QFileInfo f(file_name);
         if(f.suffix().compare("dsc"))
-            file_name.append(tr(".dsc"));
+            file_name.append(".dsc");
 
         QString fname = path::GetDirectoryName(file_name);
         if (fname != app._userHistory.sessionDir){
@@ -247,14 +240,12 @@ void FileBar::on_actionCapture_triggered()
     QTimer::singleShot(100, this, SIGNAL(sig_screenShot()));
 }
 
-void FileBar::enable_toggle(bool enable)
+void FileBar::update_view_status()
 {
-    _file_button.setDisabled(!enable);
-}
-
-void FileBar::set_settings_en(bool enable)
-{
-    _menu_session->setDisabled(!enable);
+    bool bEnable = _session->is_working() == false;
+    bool is_hardware = _session->get_device()->is_hardware();
+    _file_button.setEnabled(bEnable);
+    _menu_session->setEnabled(bEnable && is_hardware); 
 }
 
 } // namespace toolbars

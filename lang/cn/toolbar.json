@@ -1,0 +1,170 @@
+[
+    {
+        "id": "IDS_TOOLBAR_DEMO",
+        "text": "演示"
+    },
+    {
+        "id": "IDS_TOOLBAR_FILE",
+        "text": "文件"
+    },
+    {
+        "id": "IDS_TOOLBAR_OPTION",
+        "text": "选项"
+    },
+    {
+        "id": "IDS_TOOLBAR_MODE",
+        "text": "模式"
+    },
+    {
+        "id": "IDS_TOOLBAR_START",
+        "text": "开始"
+    },
+    {
+        "id": "IDS_TOOLBAR_STOP",
+        "text": "停止"
+    },
+    {
+        "id": "IDS_TOOLBAR_SINGLE",
+        "text": "单次"
+    },
+    {
+        "id": "IDS_TOOLBAR_INSTANT",
+        "text": "立即"
+    },
+    {
+        "id": "IDS_TOOLBAR_SINGLE_ACTION",
+        "text": "单次(&S)"
+    },
+    {
+        "id": "IDS_TOOLBAR_REPEAT_ACTION",
+        "text": "重复(&R)"
+    },
+    {
+        "id": "IDS_TOOLBAR_TRIGGER",
+        "text": "触发"
+    },
+    {
+        "id": "IDS_TOOLBAR_DECODE",
+        "text": "解码"
+    },
+    {
+        "id": "IDS_TOOLBAR_MEASURE",
+        "text": "测量"
+    },
+    {
+        "id": "IDS_TOOLBAR_SEARCH",
+        "text": "搜索"
+    },
+    {
+        "id": "IDS_TOOLBAR_FUNCTION",
+        "text": "函数"
+    },
+    {
+        "id": "IDS_TOOLBAR_DISPLAY",
+        "text": "显示"
+    },
+    {
+        "id": "IDS_TOOLBAR_LISSAJOUS",
+        "text": "李萨如图(&L)"
+    },
+    {
+        "id": "IDS_TOOLBAR_THEMES",
+        "text": "主题"
+    },
+    {
+        "id": "IDS_TOOLBAR_DARK",
+        "text": "暗黑"
+    },
+    {
+        "id": "IDS_TOOLBAR_LIGHT",
+        "text": "清新"
+    },
+    {
+        "id": "IDS_TOOLBAR_FFT",
+        "text": "FFT"
+    },
+    {
+        "id": "IDS_TOOLBAR_MATH",
+        "text": "数学运算"
+    },
+    {
+        "id": "IDS_TOOLBAR_OPTIONS",
+        "text": "选项"
+    },
+
+
+    {
+        "id": "IDS_FILEBAR_FILE",
+        "text": "文件"
+    },
+    {
+        "id": "IDS_FILEBAR_CONFIGURATION",
+        "text": "配置(&F)"
+    },
+    {
+        "id": "IDS_FILEBAR_LOAD",
+        "text": "打开(&l)"
+    },
+    {
+        "id": "IDS_FILEBAR_STORE",
+        "text": "保存(&S)"
+    },
+    {
+        "id": "IDS_FILEBAR_DEFAULT",
+        "text": "默认"
+    },
+    {
+        "id": "IDS_FILEBAR_0PEN",
+        "text": "打开(&O)"
+    },
+    {
+        "id": "IDS_FILEBAR_SAVE",
+        "text": "保存(&S)"
+    },
+    {
+        "id": "IDS_FILEBAR_EXPORT",
+        "text": "导出(&E)"
+    },
+    {
+        "id": "IDS_FILEBAR_CAPTURE",
+        "text": "截屏(&C)"
+    },
+
+
+    {
+        "id": "IDS_LOGOBAR_HELP",
+        "text": "帮助"
+    },
+    {
+        "id": "IDS_LOGOBAR_ENGLISH",
+        "text": "English"
+    },
+    {
+        "id": "IDS_LOGOBAR_CHINESE",
+        "text": "中文"
+    },
+    {
+        "id": "IDS_LOGOBAR_LANGUAGE",
+        "text": "语言(&L)"
+    },
+    {
+        "id": "IDS_LOGOBAR_ABOUT",
+        "text": "关于(&A)"
+    },
+    {
+        "id": "IDS_LOGOBAR_MANUAL",
+        "text": "手册(&M)"
+    },
+    {
+        "id": "IDS_LOGOBAR_BUG_REPORT",
+        "text": "报告问题(&B)"
+    },
+    {
+        "id": "IDS_LOGOBAR_UPDATE",
+        "text": "更新(&U)"
+    },
+    {
+        "id": "IDS_LOGOBAR_LOG_OPTIONS",
+        "text": "日志选项(&L)"
+    }
+]

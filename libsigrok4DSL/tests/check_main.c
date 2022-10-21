@@ -20,7 +20,7 @@
 
 #include <stdlib.h>
 #include <check.h>
-#include "../libsigrok.h"
+#include <libsigrok.h>
 
 Suite *suite_core(void);
 Suite *suite_strutil(void);

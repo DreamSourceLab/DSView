@@ -38,7 +38,6 @@
 #include "view/logicsignal.h"
 #include "view/dsosignal.h"
 #include "view/decodetrace.h"
-#include "device/devinst.h"
 #include "dock/protocoldock.h" 
  
 #include <QFileDialog>
@@ -55,13 +54,14 @@
 #include <QTextCodec>
 #endif
  
-#include "libsigrokdecode.h"
+#include <libsigrokdecode.h>
 #include "config/appconfig.h"
 #include "dsvdef.h"
 #include "utility/encoding.h"
 #include "utility/path.h"
 #include "log.h" 
-#include <QDebug>
+
+#include "ui/langresource.h"
  
 namespace pv { 
 
@@ -113,7 +113,7 @@ QList<QString> StoreSession::getSuportedExportFormats(){
     while(*supportedModules){
         if(*supportedModules == NULL)
             break;
-        if (_session->get_device()->dev_inst()->mode != LOGIC &&
+        if (_session->get_device()->get_work_mode() != LOGIC &&
             strcmp((*supportedModules)->id, "csv"))
             break;
         QString format((*supportedModules)->desc);
@@ -137,17 +137,17 @@ bool StoreSession::save_start()
     }
 
     if (type_set.size() > 1) {
-        _error = tr("DSView does not currently support"
-                    "file saving for multiple data types.");
+        _error = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_STORESESS_SAVESTART_ERROR1),
+                "DSView does not currently support\nfile saving for multiple data types.");
         return false;
 
     } else if (type_set.size() == 0) {
-        _error = tr("No data to save.");
+        _error = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_STORESESS_SAVESTART_ERROR2), "No data to save.");
         return false;
     }
 
     if (_file_name == ""){
-        _error = tr("No file name.");
+        _error = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_STORESESS_SAVESTART_ERROR3), "No file name.");
         return false;
     }
 
@@ -155,7 +155,7 @@ bool StoreSession::save_start()
 	assert(snapshot);
     // Check we have data
     if (snapshot->empty()) {
-        _error = tr("No data to save.");
+        _error = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_STORESESS_SAVESTART_ERROR2), "No data to save.");
         return false;
     }
 
@@ -168,17 +168,17 @@ bool StoreSession::save_start()
     _sessionDataGetter->genSessionData(session_data);
 
     if (meta_data.empty()) {
-        _error = tr("Generate temp file data failed.");
+        _error = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_STORESESS_SAVESTART_ERROR4), "Generate temp file data failed.");
         QFile::remove(_file_name);
         return false;
     }
     if (decoder_data.empty()){
-        _error = tr("Generate decoder file data failed.");
+        _error = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_STORESESS_SAVESTART_ERROR5), "Generate decoder file data failed.");
         QFile::remove(_file_name);
         return false;
     }
     if (session_data.empty()){
-        _error = tr("Generate session file data failed.");
+        _error = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_STORESESS_SAVESTART_ERROR6), "Generate session file data failed.");
         QFile::remove(_file_name);
         return false;
     }
@@ -203,7 +203,7 @@ bool StoreSession::save_start()
         }
     }
     else{
-         _error = tr("Generate zip file failed.");
+         _error = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_STORESESS_SAVESTART_ERROR7), "Generate zip file failed.");
     }
 
     QFile::remove(_file_name);
@@ -246,7 +246,8 @@ void StoreSession::save_proc(data::Snapshot *snapshot)
                         buf = (uint8_t *)malloc(size);
                         if (buf == NULL) {
                             _has_error = true;
-                            _error = tr("Failed to create zip file. Malloc error.");
+                            _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_SAVEPROC_ERROR1), 
+                                     "Failed to create zip file. Malloc error.");
                         } else {
                             memset(buf, sample ? 0xff : 0x0, size);
                         }
@@ -258,7 +259,8 @@ void StoreSession::save_proc(data::Snapshot *snapshot)
                     if (ret != SR_OK) {
                         if (!_has_error) {
                             _has_error = true;
-                            _error = tr("Failed to create zip file. Please check write permission of this path.");
+                            _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_SAVEPROC_ERROR2), 
+                                     "Failed to create zip file. Please check write permission of this path.");
                         }
                         progress_updated();
                         if (_has_error)
@@ -294,7 +296,8 @@ void StoreSession::save_proc(data::Snapshot *snapshot)
                     uint8_t *tmp = (uint8_t *)malloc(size);
                     if (tmp == NULL) {
                         _has_error = true;
-                        _error = tr("Failed to create zip file. Malloc error.");
+                        _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_SAVEPROC_ERROR1), 
+                                 "Failed to create zip file. Malloc error.");
                     } else {
                         memcpy(tmp, buf, buf_end-buf);
                         memcpy(tmp+(buf_end-buf), buf_start, buf+size-buf_end);
@@ -316,7 +319,8 @@ void StoreSession::save_proc(data::Snapshot *snapshot)
                 if (ret != SR_OK) {
                     if (!_has_error) {
                         _has_error = true;
-                        _error = tr("Failed to create zip file. Please check write permission of this path.");
+                        _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_SAVEPROC_ERROR2), 
+                                "Failed to create zip file. Please check write permission of this path.");
                     }
                     progress_updated();
                     if (_has_error)
@@ -353,23 +357,22 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
     struct sr_status status;
     const sr_dev_inst *sdi = NULL;
     char meta[300] = {0};
- 
-    sdi = _session->get_device()->dev_inst();
   
     sprintf(meta, "%s", "[version]\n"); str += meta;
     sprintf(meta, "version = %d\n", File_Version); str += meta;
     sprintf(meta, "%s", "[header]\n"); str += meta;
 
-    if (sdi->driver) {
-        sprintf(meta, "driver = %s\n", sdi->driver->name); str += meta;
-        sprintf(meta, "device mode = %d\n", sdi->mode); str += meta;
-    }
+    int mode = _session->get_device()->get_work_mode();
 
-    /* metadata */
+    if (true) {
+        sprintf(meta, "driver = %s\n", _session->get_device()->driver_name().toLocal8Bit().data()); str += meta;
+        sprintf(meta, "device mode = %d\n", mode); str += meta;
+    }
+ 
     sprintf(meta, "capturefile = data\n"); str += meta;
     sprintf(meta, "total samples = %" PRIu64 "\n", snapshot->get_sample_count()); str += meta;
 
-    if (sdi->mode != LOGIC) {
+    if (mode != LOGIC) {
         sprintf(meta, "total probes = %d\n", snapshot->get_channel_num()); str += meta;
         sprintf(meta, "total blocks = %d\n", snapshot->get_block_num()); str += meta;
     }
@@ -377,7 +380,7 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
     data::LogicSnapshot *logic_snapshot = NULL;
     if ((logic_snapshot = dynamic_cast<data::LogicSnapshot*>(snapshot))) {
         uint16_t to_save_probes = 0;
-        for (l = sdi->channels; l; l = l->next) {
+        for (l = _session->get_device()->get_channels(); l; l = l->next) {
             probe = (struct sr_channel *)l->data;
             if (probe->enabled && logic_snapshot->has_data(probe->index))
                 to_save_probes++;
@@ -390,7 +393,7 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
 
     sprintf(meta, "samplerate = %s\n", s); str += meta;
 
-    if (sdi->mode == DSO) {
+    if (mode == DSO) {
         gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_TIMEBASE);
         if (gvar != NULL) {
             uint64_t tmp_u64 = g_variant_get_uint64(gvar);
@@ -427,9 +430,11 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
             sprintf(meta, "ref max = %d\n", tmp_u32); str += meta;
             g_variant_unref(gvar);
         }
-    } else if (sdi->mode == LOGIC) {
+    }
+    else if (mode == LOGIC) {
         sprintf(meta, "trigger time = %lld\n", _session->get_session_time().toMSecsSinceEpoch()); str += meta;
-    } else if (sdi->mode == ANALOG) {
+    }
+    else if (mode == ANALOG) {
         data::AnalogSnapshot *analog_snapshot = NULL;
         if ((analog_snapshot = dynamic_cast<data::AnalogSnapshot*>(snapshot))) {
             uint8_t tmp_u8 = analog_snapshot->get_unit_bytes();
@@ -452,17 +457,17 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
 
     probecnt = 0; 
 
-    for (l = sdi->channels; l; l = l->next) {
+    for (l = _session->get_device()->get_channels(); l; l = l->next) {
         
         probe = (struct sr_channel *)l->data;
         if (!snapshot->has_data(probe->index))
             continue;
-        if (sdi->mode == LOGIC && !probe->enabled)
+        if (mode == LOGIC && !probe->enabled)
             continue;
 
         if (probe->name)
         {
-            int sigdex = (sdi->mode == LOGIC) ? probe->index : probecnt;
+            int sigdex = (mode == LOGIC) ? probe->index : probecnt;
             sprintf(meta, "probe%d = %s\n", sigdex, probe->name);
             str += meta;
         }
@@ -472,7 +477,7 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
             str += meta;
         }
 
-        if (sdi->mode == DSO)
+        if (mode == DSO)
         {
             sprintf(meta, " enable%d = %d\n", probecnt, probe->enabled);
             str += meta;
@@ -487,7 +492,7 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
             sprintf(meta, " vTrig%d = %d\n", probecnt, probe->trig_value);
             str += meta;
 
-            if (sr_status_get(sdi, &status, false) == SR_OK)
+            if (_session->get_device()->get_device_status(status, false))
             {
                 if (probe->index == 0)
                 {
@@ -553,7 +558,7 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
                 }
             }
         }
-        else if (sdi->mode == ANALOG)
+        else if (mode == ANALOG)
         {
             sprintf(meta, " enable%d = %d\n", probecnt, probe->enabled);
             str += meta;
@@ -587,11 +592,11 @@ bool StoreSession::export_start()
     }
 
     if (type_set.size() > 1) {
-        _error = tr("DSView does not currently support"
-                    "file export for multiple data types.");
+        _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_EXPORTSTART_ERROR1), 
+                "DSView does not currently support\nfile export for multiple data types.");
         return false;
     } else if (type_set.size() == 0) {
-        _error = tr("No data to save.");
+        _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_EXPORTSTART_ERROR2), "No data to save.");
         return false;
     }
 
@@ -599,12 +604,12 @@ bool StoreSession::export_start()
     assert(snapshot);
     // Check we have data
     if (snapshot->empty()) {
-        _error = tr("No data to save.");
+        _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_EXPORTSTART_ERROR2), "No data to save.");
         return false;
     }
 
     if (_file_name == ""){
-        _error = tr("No set file name.");
+        _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_EXPORTSTART_ERROR3), "No set file name.");
         return false;
     }
 
@@ -623,7 +628,7 @@ bool StoreSession::export_start()
 
     if (_outModule == NULL)
     {
-        _error = tr("Invalid export format.");
+        _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_EXPORTSTART_ERROR4), "Invalid export format.");
     }
     else
     {
@@ -657,7 +662,7 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
         channel_type = SR_CHANNEL_ANALOG;
     } else {
         _has_error = true;
-        _error = tr("data type don't support.");
+        _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_EXPORTPROC_ERROR1), "data type don't support.");
         return;
     }
 
@@ -669,7 +674,7 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
 
     struct sr_output output;
     output.module = (sr_output_module*) _outModule;
-    output.sdi = _session->get_device()->dev_inst();
+    output.sdi = _session->get_device()->inst();
     output.param = NULL;
     if(_outModule->init)
         _outModule->init(&output, params);
@@ -686,12 +691,14 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
     struct sr_datafeed_meta meta;
     struct sr_config *src;
 
-    src = sr_config_new(SR_CONF_SAMPLERATE,
-            g_variant_new_uint64(_session->cur_snap_samplerate()));
+    src = _session->get_device()->new_config(SR_CONF_SAMPLERATE,
+                g_variant_new_uint64(_session->cur_snap_samplerate()));
+
     meta.config = g_slist_append(NULL, src);
 
-    src = sr_config_new(SR_CONF_LIMIT_SAMPLES,
-            g_variant_new_uint64(snapshot->get_sample_count()));
+    src = _session->get_device()->new_config(SR_CONF_LIMIT_SAMPLES,
+                g_variant_new_uint64(snapshot->get_sample_count()));
+
     meta.config = g_slist_append(meta.config, src);
 
     GVariant *gvar;
@@ -702,19 +709,24 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
         g_variant_unref(gvar);
     }
     gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MIN);
+
     if (gvar != NULL) {
-        src = sr_config_new(SR_CONF_REF_MIN, gvar);
+        src = _session->get_device()->new_config(SR_CONF_REF_MIN, gvar);
         g_variant_unref(gvar);
-    } else {
-        src = sr_config_new(SR_CONF_REF_MIN, g_variant_new_uint32(1));
+    } 
+    else {
+        src = _session->get_device()->new_config(SR_CONF_REF_MIN, g_variant_new_uint32(1));
     }
+
     meta.config = g_slist_append(meta.config, src);
     gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MAX);
+
     if (gvar != NULL) {
-        src = sr_config_new(SR_CONF_REF_MAX, gvar);
+        src = _session->get_device()->new_config(SR_CONF_REF_MAX, gvar);
         g_variant_unref(gvar);
-    } else {
-        src = sr_config_new(SR_CONF_REF_MAX, g_variant_new_uint32((1 << bits) - 1));
+    }
+    else {
+        src = _session->get_device()->new_config(SR_CONF_REF_MAX, g_variant_new_uint32((1 << bits) - 1));
     }
     meta.config = g_slist_append(meta.config, src);
 
@@ -729,7 +741,7 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
     }
     for (GSList *l = meta.config; l; l = l->next) {
         src = (struct sr_config *)l->data;
-        sr_config_free(src);
+        _session->get_device()->free_config(src);
     }
     g_slist_free(meta.config);
 
@@ -768,7 +780,7 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
                 uint8_t *xbuf = (uint8_t *)malloc(size * unitsize);
                 if (xbuf == NULL) {
                     _has_error = true;
-                    _error = tr("xbuffer malloc failed.");
+                    _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_EXPORTPROC_ERROR2), "xbuffer malloc failed.");
                     return;
                 }                
                 memset(xbuf, 0, size * unitsize);
@@ -963,16 +975,16 @@ bool StoreSession::json_decoders(QJsonArray &array)
     return true;
 }
 
-bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray dec_array)
+bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray &dec_array)
 {
-    if (_session->get_device()->dev_inst()->mode != LOGIC)
+    if (_session->get_device()->get_work_mode() != LOGIC)
     {
         dsv_info("%s", "StoreSession::load_decoders(), is not LOGIC mode.");
         return false;
     }
 
-    if (dec_array.empty()){
-        dsv_info("%s", "StoreSession::load_decoders(), json object is array empty.");
+    if (dec_array.isEmpty()){
+        dsv_info("%s", "StoreSession::load_decoders(), json object array is empty.");
         return false;
     }
     
@@ -1203,10 +1215,10 @@ QString StoreSession::MakeSaveFile(bool bDlg)
         default_name =  _root + "/" + _session->get_device()->name() + "-";
     } 
 
-    for (const GSList *l = _session->get_device()->get_dev_mode_list();
-         l; l = l->next) {
+    for (const GSList *l = _session->get_device()->get_device_mode_list(); l; l = l->next) 
+    {
         const sr_dev_mode *mode = (const sr_dev_mode *)l->data;
-        if (_session->get_device()->dev_inst()->mode == mode->mode) {
+        if (_session->get_device()->get_work_mode() == mode->mode) {
             default_name += mode->acronym;
             break;
         }
@@ -1219,9 +1231,10 @@ QString StoreSession::MakeSaveFile(bool bDlg)
     {
         default_name = QFileDialog::getSaveFileName(
             NULL,
-            tr("Save File"),
+            L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SAVE_FILE),"Save File"),
             default_name,
-            tr("DSView Data (*.dsl)"));
+            //tr
+            "DSView Data (*.dsl)");
 
         if (default_name.isEmpty())
         {
@@ -1240,7 +1253,8 @@ QString StoreSession::MakeSaveFile(bool bDlg)
     QFileInfo f(default_name);
     if (f.suffix().compare("dsl"))
     {
-        default_name.append(tr(".dsl"));
+        //Tr
+        default_name.append(".dsl");
     }
     _file_name = default_name;
     return default_name;     
@@ -1261,10 +1275,9 @@ QString StoreSession::MakeExportFile(bool bDlg)
         default_name =  _root + "/" + _session->get_device()->name() + "-";
     }  
 
-    for (const GSList *l = _session->get_device()->get_dev_mode_list();
-         l; l = l->next) {
+    for (const GSList *l = _session->get_device()->get_device_mode_list(); l; l = l->next) {
         const sr_dev_mode *mode = (const sr_dev_mode *)l->data;
-        if (_session->get_device()->dev_inst()->mode == mode->mode) {
+        if (_session->get_device()->get_work_mode() == mode->mode) {
             default_name += mode->acronym;
             break;
         }
@@ -1289,7 +1302,7 @@ QString StoreSession::MakeExportFile(bool bDlg)
     {
         default_name = QFileDialog::getSaveFileName(
             NULL,
-            tr("Export Data"),
+            L_S(STR_PAGE_MSG, S_ID(IDS_MSG_EXPORT_DATA),"Export Data"),
             default_name,
             filter,
             &selfilter);
@@ -1326,7 +1339,8 @@ QString StoreSession::MakeExportFile(bool bDlg)
 
     QFileInfo f(default_name);
     if(f.suffix().compare(_suffix)){
-         default_name += tr(".") + _suffix;
+        //tr
+         default_name += "." + _suffix;
     }           
 
     _file_name = default_name;

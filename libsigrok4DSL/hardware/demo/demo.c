@@ -21,6 +21,22 @@
  */
 
 #include "demo.h"
+#include <math.h>
+#include <errno.h>
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+
+#include <inttypes.h>
+#include <unistd.h>
+#ifdef _WIN32
+#include <io.h>
+#include <fcntl.h>
+#define pipe(fds) _pipe(fds, 4096, _O_BINARY)
+#endif
+
 #include "../../log.h"
 
 /* Message logging helpers with subsystem-specific prefix string. */
@@ -33,41 +49,6 @@
 #define BUFSIZE                512*1024
 #define DSO_BUFSIZE            10*1024
 
-static const int hwoptions[] = {
-    SR_CONF_PATTERN_MODE,
-    SR_CONF_MAX_HEIGHT,
-};
-
-static const int32_t sessions[] = {
-    SR_CONF_SAMPLERATE,
-    SR_CONF_LIMIT_SAMPLES,
-    SR_CONF_PATTERN_MODE,
-    SR_CONF_MAX_HEIGHT,
-};
-
-static const int32_t probeOptions[] = {
-    SR_CONF_PROBE_COUPLING,
-    SR_CONF_PROBE_VDIV,
-    SR_CONF_PROBE_MAP_DEFAULT,
-    SR_CONF_PROBE_MAP_UNIT,
-    SR_CONF_PROBE_MAP_MIN,
-    SR_CONF_PROBE_MAP_MAX,
-};
-
-static const int32_t probeSessions[] = {
-    SR_CONF_PROBE_COUPLING,
-    SR_CONF_PROBE_VDIV,
-    SR_CONF_PROBE_MAP_DEFAULT,
-    SR_CONF_PROBE_MAP_UNIT,
-    SR_CONF_PROBE_MAP_MIN,
-    SR_CONF_PROBE_MAP_MAX,
-};
-
-static const uint8_t probeCoupling[] = {
-    SR_DC_COUPLING,
-    SR_AC_COUPLING,
-};
-
 
 /* Private, per-device-instance driver context. */
 /* TODO: struct context as with the other drivers. */
@@ -79,13 +60,6 @@ static struct sr_dev_driver *di = &demo_driver_info;
 extern struct ds_trigger *trigger;
 
 static int hw_dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data);
-
-static int clear_instances(void)
-{
-	/* Nothing needed so far. */
-
-	return SR_OK;
-}
 
 static int hw_init(struct sr_context *sr_ctx)
 {
@@ -163,6 +137,8 @@ static GSList *hw_scan(GSList *options)
 	drvc = di->priv;
 	devices = NULL;
 
+    sr_info("%s", "Scan demo device.");
+
     if (!(devc = g_try_malloc(sizeof(struct demo_context)))) {
         sr_err("Device context malloc failed.");
         return NULL;
@@ -178,7 +154,7 @@ static GSList *hw_scan(GSList *options)
     devc->max_height = 0;
     adjust_samplerate(devc);
 
-    sdi = sr_dev_inst_new(channel_modes[devc->ch_mode].mode, 0, SR_ST_INITIALIZING,
+    sdi = sr_dev_inst_new(channel_modes[devc->ch_mode].mode, SR_ST_INITIALIZING,
                           devc->profile->vendor,
                           devc->profile->model,
                           devc->profile->model_version);
@@ -189,18 +165,12 @@ static GSList *hw_scan(GSList *options)
 	}
     sdi->priv = devc;
 	sdi->driver = di;
+    sdi->dev_type = DEV_TYPE_DEMO;
 
-	devices = g_slist_append(devices, sdi);
-	drvc->instances = g_slist_append(drvc->instances, sdi);
-
+	devices = g_slist_append(devices, sdi); 
     setup_probes(sdi, channel_modes[devc->ch_mode].num);
 
 	return devices;
-}
-
-static GSList *hw_dev_list(void)
-{
-	return ((struct drv_context *)(di->priv))->instances;
 }
 
 static const GSList *hw_dev_mode_list(const struct sr_dev_inst *sdi)
@@ -210,9 +180,9 @@ static const GSList *hw_dev_mode_list(const struct sr_dev_inst *sdi)
     unsigned int i;
 
     devc = sdi->priv;
-    for (i = 0; i < ARRAY_SIZE(mode_list); i++) {
+    for (i = 0; i < ARRAY_SIZE(sr_mode_list); i++) {
         if (devc->profile->dev_caps.mode_caps & (1 << i))
-            l = g_slist_append(l, &mode_list[i]);
+            l = g_slist_append(l, &sr_mode_list[i]);
     }
 
     return l;
@@ -255,30 +225,17 @@ static int hw_dev_close(struct sr_dev_inst *sdi)
     return SR_OK;
 }
 
-static int hw_cleanup(void)
+static int dev_destroy(struct sr_dev_inst *sdi)
 {
-	GSList *l;
-	struct sr_dev_inst *sdi;
-	struct drv_context *drvc;
-	int ret = SR_OK;
+    hw_dev_close(sdi);
+    sr_dev_inst_free(sdi);
+    return SR_OK;
+}
 
-	if (!(drvc = di->priv))
-		return SR_OK;
+static int hw_cleanup(void)
+{ 
 
-	/* Properly close and free all devices. */
-	for (l = drvc->instances; l; l = l->next) {
-		if (!(sdi = l->data)) {
-			/* Log error, but continue cleaning up the rest. */
-			sr_err("%s: sdi was NULL, continuing", __func__);
-			ret = SR_ERR_BUG;
-			continue;
-		}
-		sr_dev_inst_free(sdi);
-	}
-	g_slist_free(drvc->instances);
-	drvc->instances = NULL;
-
-	return ret;
+	return 0;
 }
 
 static unsigned int en_ch_num(const struct sr_dev_inst *sdi)
@@ -300,7 +257,12 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
 {
     (void) cg;
 
-    struct demo_context *const devc = sdi->priv;
+    struct demo_context *devc;
+
+    assert(sdi);
+    assert(sdi->priv);
+
+    devc = sdi->priv;
 
 	switch (id) {
 	case SR_CONF_SAMPLERATE:
@@ -418,14 +380,18 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                       struct sr_channel *ch,
                       struct sr_channel_group *cg)
 {
+    (void) cg;
+
     uint16_t i;
     int ret, num_probes;
 	const char *stropt;
     uint64_t tmp_u64;
+    struct demo_context *devc;
 
-    (void) cg;
-
-    struct demo_context *const devc = sdi->priv;
+    assert(sdi);
+    assert(sdi->priv);
+    
+    devc = sdi->priv;
 
 	if (sdi->status != SR_ST_ACTIVE)
 		return SR_ERR_DEV_CLOSED;
@@ -437,7 +403,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 		sr_dbg("%s: setting samplerate to %llu", __func__,
 		       devc->cur_samplerate);
 		ret = SR_OK;
-	} else if (id == SR_CONF_LIMIT_SAMPLES) {
+	}
+    else if (id == SR_CONF_LIMIT_SAMPLES) {
         devc->limit_msec = 0;
         devc->limit_samples = g_variant_get_uint64(data);
         devc->limit_samples = (devc->limit_samples + 63) & ~63;
@@ -448,14 +415,16 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 		sr_dbg("%s: setting limit_samples to %llu", __func__,
 		       devc->limit_samples);
 		ret = SR_OK;
-	} else if (id == SR_CONF_LIMIT_MSEC) {
+	} 
+    else if (id == SR_CONF_LIMIT_MSEC) {
 		devc->limit_msec = g_variant_get_uint64(data);
 		devc->limit_samples = 0;
         devc->limit_samples_show = devc->limit_samples;
 		sr_dbg("%s: setting limit_msec to %llu", __func__,
 		       devc->limit_msec);
         ret = SR_OK;
-    } else if (id == SR_CONF_DEVICE_MODE) {
+    } 
+    else if (id == SR_CONF_DEVICE_MODE) {
         sdi->mode = g_variant_get_int16(data);
         ret = SR_OK;
         for (i = 0; i < ARRAY_SIZE(channel_modes); i++) {
@@ -473,8 +442,9 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         sr_dev_probes_free(sdi);
         setup_probes(sdi, num_probes);
         adjust_samplerate(devc);
-        sr_dbg("%s: setting mode to %d", __func__, sdi->mode);
-    }else if (id == SR_CONF_PATTERN_MODE) {
+        sr_info("%s: setting mode to %d", __func__, sdi->mode);
+    }
+    else if (id == SR_CONF_PATTERN_MODE) {
         stropt = g_variant_get_string(data, NULL);
         ret = SR_OK;
         if (!strcmp(stropt, pattern_strings[PATTERN_SINE])) {
@@ -492,7 +462,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 		}
         sr_dbg("%s: setting pattern to %d",
 			__func__, devc->sample_generator);
-    } else if (id == SR_CONF_MAX_HEIGHT) {
+    }
+    else if (id == SR_CONF_MAX_HEIGHT) {
         stropt = g_variant_get_string(data, NULL);
         ret = SR_OK;
         for (i = 0; i < ARRAY_SIZE(maxHeights); i++) {
@@ -503,18 +474,23 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         }
         sr_dbg("%s: setting Signal Max Height to %d",
             __func__, devc->max_height);
-    } else if (id == SR_CONF_INSTANT) {
+    }
+    else if (id == SR_CONF_INSTANT) {
         devc->instant = g_variant_get_boolean(data);
         sr_dbg("%s: setting INSTANT mode to %d", __func__,
                devc->instant);
         ret = SR_OK;
-    } else if (id == SR_CONF_HORIZ_TRIGGERPOS) {
+    }
+    else if (id == SR_CONF_HORIZ_TRIGGERPOS) {
         ret = SR_OK;
-    } else if (id == SR_CONF_TRIGGER_HOLDOFF) {
+    }
+    else if (id == SR_CONF_TRIGGER_HOLDOFF) {
         ret = SR_OK;
-    } else if (id == SR_CONF_TRIGGER_MARGIN) {
+    }
+    else if (id == SR_CONF_TRIGGER_MARGIN) {
         ret = SR_OK;
-    } else if (id == SR_CONF_PROBE_EN) {
+    }
+    else if (id == SR_CONF_PROBE_EN) {
         ch->enabled = g_variant_get_boolean(data);
         if (en_ch_num(sdi) != 0) {
             devc->limit_samples_show = devc->profile->dev_caps.dso_depth / en_ch_num(sdi);
@@ -522,48 +498,57 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         sr_dbg("%s: setting ENABLE of channel %d to %d", __func__,
                ch->index, ch->enabled);
         ret = SR_OK;
-    } else if (id == SR_CONF_PROBE_VDIV) {
+    }
+    else if (id == SR_CONF_PROBE_VDIV) {
         tmp_u64 = g_variant_get_uint64(data);
         ch->vdiv = tmp_u64;
         sr_dbg("%s: setting VDIV of channel %d to %llu", __func__,
                ch->index, ch->vdiv);
         ret = SR_OK;
-    } else if (id == SR_CONF_PROBE_FACTOR) {
+    }
+    else if (id == SR_CONF_PROBE_FACTOR) {
         ch->vfactor = g_variant_get_uint64(data);
         sr_dbg("%s: setting FACTOR of channel %d to %llu", __func__,
                ch->index, ch->vfactor);
         ret = SR_OK;
-    } else if (id == SR_CONF_PROBE_OFFSET) {
+    }
+    else if (id == SR_CONF_PROBE_OFFSET) {
         ch->offset = g_variant_get_uint16(data);
         sr_dbg("%s: setting OFFSET of channel %d to %d", __func__,
                ch->index, ch->offset);
         ret = SR_OK;
-    } else if (id == SR_CONF_TIMEBASE) {
+    }
+    else if (id == SR_CONF_TIMEBASE) {
         devc->timebase = g_variant_get_uint64(data);
         sr_dbg("%s: setting TIMEBASE to %llu", __func__,
                devc->timebase);
         ret = SR_OK;
-    } else if (id == SR_CONF_PROBE_COUPLING) {
+    }
+    else if (id == SR_CONF_PROBE_COUPLING) {
         ch->coupling = g_variant_get_byte(data);
         sr_dbg("%s: setting AC COUPLING of channel %d to %d", __func__,
                ch->index, ch->coupling);
         ret = SR_OK;
-    } else if (id == SR_CONF_TRIGGER_SOURCE) {
+    }
+    else if (id == SR_CONF_TRIGGER_SOURCE) {
         devc->trigger_source = g_variant_get_byte(data);
         sr_dbg("%s: setting Trigger Source to %d",
             __func__, devc->trigger_source);
         ret = SR_OK;
-    } else if (id == SR_CONF_TRIGGER_SLOPE) {
+    }
+    else if (id == SR_CONF_TRIGGER_SLOPE) {
         devc->trigger_slope = g_variant_get_byte(data);
         sr_dbg("%s: setting Trigger Slope to %d",
             __func__, devc->trigger_slope);
         ret = SR_OK;
-    } else if (id == SR_CONF_TRIGGER_VALUE) {
+    }
+    else if (id == SR_CONF_TRIGGER_VALUE) {
         ch->trig_value = g_variant_get_byte(data);
         sr_dbg("%s: setting channel %d Trigger Value to %d",
             __func__, ch->index, ch->trig_value);
         ret = SR_OK;
-    } else if (id == SR_CONF_PROBE_MAP_DEFAULT) {
+    }
+    else if (id == SR_CONF_PROBE_MAP_DEFAULT) {
         ch->map_default = g_variant_get_boolean(data);
         if (ch->map_default) {
             ch->map_unit = probeMapUnits[0];
@@ -571,28 +556,33 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             ch->map_max = ch->vdiv * ch->vfactor * DS_CONF_DSO_VDIVS / 2000.0;
         }
         ret = SR_OK;
-    } else if (id == SR_CONF_PROBE_MAP_UNIT) {
+    }
+    else if (id == SR_CONF_PROBE_MAP_UNIT) {
         if (ch->map_default)
             ch->map_unit = probeMapUnits[0];
         else
             ch->map_unit = g_variant_get_string(data, NULL);
         ret = SR_OK;
-    } else if (id == SR_CONF_PROBE_MAP_MIN) {
+    }
+    else if (id == SR_CONF_PROBE_MAP_MIN) {
         if (ch->map_default)
             ch->map_min = -(ch->vdiv * ch->vfactor * DS_CONF_DSO_VDIVS / 2000.0);
         else
             ch->map_min = g_variant_get_double(data);
         ret = SR_OK;
-    } else if (id == SR_CONF_PROBE_MAP_MAX) {
+    }
+    else if (id == SR_CONF_PROBE_MAP_MAX) {
         if (ch->map_default)
             ch->map_max = ch->vdiv * ch->vfactor * DS_CONF_DSO_VDIVS / 2000.0;
         else
             ch->map_max = g_variant_get_double(data);
         ret = SR_OK;
-    } else if (id == SR_CONF_LANGUAGE) {
+    }
+    else if (id == SR_CONF_LANGUAGE) {
         devc->language = g_variant_get_int16(data);
         ret = SR_OK;
-    } else {
+    }
+    else {
         ret = SR_ERR_NA;
 	}
 
@@ -926,7 +916,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
                 demo_trigger_pos.real_pos = i;
                 packet.type = SR_DF_TRIGGER;
                 packet.payload = &demo_trigger_pos;
-                sr_session_send(sdi, &packet);
+                ds_data_forward(sdi, &packet);
             }
         }
 
@@ -973,7 +963,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
                 devc->pre_index += sending_now;
             }
 
-            sr_session_send(sdi, &packet);
+            ds_data_forward(sdi, &packet);
 
             devc->mstatus.trig_hit = (devc->trigger_stage == 0);
             devc->mstatus.captured_cnt0 = devc->samples_counter;
@@ -1013,20 +1003,6 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
     devc->stop = FALSE;
     devc->samples_not_sent = 0;
 
-    /*
-     * trigger setting
-     */
-//    if (!trigger->trigger_en || sdi->mode != LOGIC) {
-//        devc->trigger_stage = 0;
-//    } else {
-//        devc->trigger_mask = ds_trigger_get_mask0(TriggerStages);
-//        devc->trigger_value = ds_trigger_get_value0(TriggerStages);
-//        devc->trigger_edge = ds_trigger_get_edge0(TriggerStages);
-//        if (devc->trigger_edge != 0)
-//            devc->trigger_stage = 2;
-//        else
-//            devc->trigger_stage = 1;
-//    }
     devc->trigger_stage = 0;
 
 	/*
@@ -1075,7 +1051,7 @@ static int hw_dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data)
 	/* Send last packet. */
     packet.type = SR_DF_END;
     packet.status = SR_PKT_OK;
-    sr_session_send(sdi, &packet);
+    ds_data_forward(sdi, &packet);
 
 	return SR_OK;
 }
@@ -1097,17 +1073,17 @@ SR_PRIV struct sr_dev_driver demo_driver_info = {
     .name = "virtual-demo",
 	.longname = "Demo driver and pattern generator",
 	.api_version = 1,
+    .driver_type = DRIVER_TYPE_DEMO,
 	.init = hw_init,
 	.cleanup = hw_cleanup,
-	.scan = hw_scan,
-	.dev_list = hw_dev_list,
+	.scan = hw_scan, 
     .dev_mode_list = hw_dev_mode_list,
-	.dev_clear = clear_instances,
 	.config_get = config_get,
 	.config_set = config_set,
 	.config_list = config_list,
 	.dev_open = hw_dev_open,
 	.dev_close = hw_dev_close,
+    .dev_destroy = dev_destroy,
     .dev_status_get = hw_dev_status_get,
 	.dev_acquisition_start = hw_dev_acquisition_start,
 	.dev_acquisition_stop = hw_dev_acquisition_stop,

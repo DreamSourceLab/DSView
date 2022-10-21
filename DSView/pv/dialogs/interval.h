@@ -40,25 +40,31 @@ class Interval : public DSDialog
 	Q_OBJECT
 
 public:
-    Interval(SigSession *session, QWidget *parent);
+    Interval(QWidget *parent);
+
+    void set_interval(double value);
+    double get_interval();
+
+    inline bool is_done(){
+        return _bDone;
+    }
 
 protected:
 	void accept();
-    void reject();
-
+    void reject(); 
+    
 private Q_SLOTS:
         void on_slider_changed(int value);
         void on_inputbox_changed(double value);
 
 private:
-    SigSession *_session;
-
     QLabel *_interval_label;
     QDoubleSpinBox *_interval_spinBox;
     QSlider *_interval_slider;
 
     QDialogButtonBox _button_box;
     bool    _bSetting;
+    bool    _bDone;
 };
 
 } // namespace dialogs

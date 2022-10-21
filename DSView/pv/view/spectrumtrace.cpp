@@ -32,7 +32,6 @@
 #include "../data/dsosnapshot.h"
 #include "../view/dsosignal.h"
 #include "../view/viewport.h"
-#include "../device/devinst.h"
 #include "../data/spectrumstack.h"
 #include "../dsvdef.h"
 

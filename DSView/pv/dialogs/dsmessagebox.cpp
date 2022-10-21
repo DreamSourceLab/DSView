@@ -30,6 +30,8 @@
 #include <QAbstractButton>
 #include "../dsvdef.h"
 
+#include "../ui/langresource.h"
+
 namespace pv {
 namespace dialogs {
 
@@ -71,7 +73,7 @@ DSMessageBox::DSMessageBox(QWidget *parent,const QString title) :
         _titlebar->setTitle(title);
     }
     else{
-        _titlebar->setTitle(tr("Message"));
+        _titlebar->setTitle(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_MESSAGE), "Message"));
     }
     
     _main_layout->addWidget(_titlebar);

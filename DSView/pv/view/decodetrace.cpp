@@ -20,10 +20,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include "libsigrokdecode.h"
-
-#include "../dsvdef.h"
- 
+#include <libsigrokdecode.h>
+#include "../dsvdef.h" 
 #include <boost/functional/hash.hpp>
 #include <QAction> 
 #include <QFormLayout>
@@ -47,7 +45,6 @@
 #include "../view/view.h"
 #include "../widgets/decodergroupbox.h"
 #include "../widgets/decodermenu.h"
-#include "../device/devinst.h"
 #include "../view/cursor.h"
 #include "../toolbars/titlebar.h"
 #include "../dsvdef.h"
@@ -55,6 +52,8 @@
 #include "../ui/msgbox.h"
 #include "../appcontrol.h"
 #include "../dialogs/decoderoptionsdlg.h"
+
+#include "../ui/langresource.h"
 
 using namespace boost;
 using namespace std;
@@ -317,7 +316,7 @@ void DecodeTrace::paint_mid(QPainter &p, int left, int right, QColor fore, QColo
                 }
             }
         } else {
-            draw_unshown_row(p, y, annotation_height, left, right, tr("Unshown"), fore, back);
+            draw_unshown_row(p, y, annotation_height, left, right, L_S(STR_PAGE_DLG, S_ID(IDS_DLG_UNSHOWN), "Unshown"), fore, back);
             y += annotation_height;
             _cur_row_headings.push_back(dec->decoder()->name);
         }
@@ -407,7 +406,7 @@ void DecodeTrace::draw_nodetail(QPainter &p,
     (void)back;
 
     const QRectF nodetail_rect(left, y - h/2 + 0.5, right - left, h);
-    QString info = tr("Zoom in for details");
+    QString info = L_S(STR_PAGE_DLG, S_ID(ZOOM_IN_FOR_DETAILS), "Zoom in for details");
     int info_left = nodetail_rect.center().x() - p.boundingRect(QRectF(), 0, info).width();
     int info_right = nodetail_rect.center().x() + p.boundingRect(QRectF(), 0, info).width();
     int height = p.boundingRect(QRectF(), 0, info).height();
@@ -527,9 +526,9 @@ void DecodeTrace::draw_error(QPainter &p, const QString &message,
     font.setPointSize(DefaultFontSize);
     p.setFont(font);
     if (bounding_rect.width() < text_rect.width())
-        p.drawText(text_rect, Qt::AlignCenter, tr("Error: ")+message);
+        p.drawText(text_rect, Qt::AlignCenter, L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DECODETRACE_ERROR1), "Error:")+message);
     else
-        p.drawText(text_rect, Qt::AlignCenter, tr("Error: ..."));
+        p.drawText(text_rect, Qt::AlignCenter, L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DECODETRACE_ERROR2), "Error: ..."));
 }
 
 void DecodeTrace::draw_unshown_row(QPainter &p, int y, int h, int left,
@@ -569,7 +568,7 @@ void DecodeTrace::on_new_decode_data()
     }
     decoded_progress(_progress);
 
-    if (_view && _view->session().get_capture_state() == SigSession::Stopped)
+    if (_view && _view->session().is_stopped_status())
         _view->data_updated();
     if (_totalHeight/_view->get_signalHeight() != rows_size())
         _view->signals_changed();

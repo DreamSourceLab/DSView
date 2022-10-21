@@ -34,7 +34,7 @@
 #include <stdint.h>
 #include <list>
 
-#include "libsigrok.h"
+#include <libsigrok.h> 
 #include "trace.h"
 
 namespace pv {
@@ -43,11 +43,7 @@ namespace data {
 class SignalData;
 }
 
-namespace device {
-class DevInst;
-}
-
-using namespace pv::device;
+class SigSession;
 
 namespace view {
 
@@ -60,7 +56,7 @@ private:
 
 
 protected:
-    Signal(DevInst* dev_inst,sr_channel * const probe);
+    Signal(sr_channel * const probe);
 
     /**
      * Copy constructor
@@ -80,21 +76,11 @@ public:
      */
     void set_name(QString name);
 
-	/**
-	 * Paints the signal label into a QGLWidget.
-	 * @param p the QPainter to paint into.
-	 * @param right the x-coordinate of the right edge of the header
-	 * 	area.
-	 * @param hover true if the label is being hovered over by the mouse.
-     * @param action mouse position for hover
-	 */
-    //virtual void paint_label(QPainter &p, int right, bool hover, int action);
+	 
 
-    DevInst* get_device();
-
-protected:
-    DevInst* _dev_inst;
+protected: 
     sr_channel *const _probe;
+    SigSession *session;
 };
 
 } // namespace view

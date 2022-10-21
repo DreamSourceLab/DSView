@@ -30,10 +30,7 @@
 #include "../view/ruler.h"
 #include "../view/logicsignal.h"
 #include "../data/signaldata.h"
-#include "../data/snapshot.h"
-#include "../devicemanager.h"
-#include "../device/device.h"
-#include "../device/file.h"
+#include "../data/snapshot.h" 
 #include "../dialogs/dsdialog.h"
 #include "../dialogs/dsmessagebox.h"
 
@@ -41,6 +38,8 @@
 #include <QPainter> 
 #include <QMessageBox>
 #include "../config/appconfig.h"
+
+#include "../ui/langresource.h"
 
 using namespace boost;
 
@@ -53,10 +52,8 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
     QScrollArea(parent),
     _session(session),
     _view(view)
-{
-
-    _widget = new QWidget(this);
-    //_widget->setSizePolicy();
+{     
+    _widget = new QWidget(this);   
 
     _mouse_groupBox = new QGroupBox(_widget);
     _fen_checkBox = new QCheckBox(_widget);
@@ -97,7 +94,7 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
     _dist_layout->setVerticalSpacing(5);
     _dist_layout->addWidget(_dist_add_btn, 0, 0);
     _dist_layout->addWidget(new QLabel(_widget), 0, 1, 1, 3);
-    _dist_layout->addWidget(new QLabel(tr("Time/Samples"), _widget), 0, 4);
+    _dist_layout->addWidget(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TIME_SAMPLES), "Time/Samples"), _widget), 0, 4);
     _dist_layout->addWidget(new QLabel(_widget), 0, 5, 1, 2);
     _dist_layout->setColumnStretch(1, 50);
     _dist_layout->setColumnStretch(6, 100);
@@ -165,20 +162,20 @@ void MeasureDock::changeEvent(QEvent *event)
 
 void MeasureDock::retranslateUi()
 {
-    _mouse_groupBox->setTitle(tr("Mouse measurement"));
-    _fen_checkBox->setText(tr("Enable floating measurement"));
-    _dist_groupBox->setTitle(tr("Cursor Distance"));
-    _edge_groupBox->setTitle(tr("Edges"));
-    _cursor_groupBox->setTitle(tr("Cursors"));
+    _mouse_groupBox->setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MOUSE_MEASUREMENT), "Mouse measurement"));
+    _fen_checkBox->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ENABLE_FLOATING_MEASUREMENT), "Enable floating measurement"));
+    _dist_groupBox->setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CURSOR_DISTANCE), "Cursor Distance"));
+    _edge_groupBox->setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_EDGES), "Edges"));
+    _cursor_groupBox->setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CURSORS), "Cursors"));
 
-    _channel_label->setText(tr("Channel"));
-    _edge_label->setText(tr("Rising/Falling/Edges"));
-    _time_label->setText(tr("Time/Samples"));
+    _channel_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CHANNEL), "Channel"));
+    _edge_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_RIS_OR_FAL_EDGE), "Rising/Falling/Edges"));
+    _time_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TIME_SAMPLES), "Time/Samples"));
 
-    _w_label->setText(tr("W: "));
-    _p_label->setText(tr("P: "));
-    _f_label->setText(tr("F: "));
-    _d_label->setText(tr("D: "));
+    _w_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_W), "W: "));
+    _p_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_P), "P: "));
+    _f_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_F), "F: "));
+    _d_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_D), "D: "));
 }
 
 void MeasureDock::reStyle()
@@ -211,7 +208,7 @@ void MeasureDock::refresh()
 
 void MeasureDock::reload()
 {
-    if (_session->get_device()->dev_inst()->mode == LOGIC)
+    if (_session->get_device()->get_work_mode() == LOGIC)
         _edge_groupBox->setVisible(true);
     else
         _edge_groupBox->setVisible(false);
@@ -341,12 +338,15 @@ void MeasureDock::add_dist_measure()
     QToolButton *del_btn = new QToolButton(row_widget);
     del_btn->setIcon(QIcon(iconPath+"/del.svg"));
     del_btn->setCheckable(true);
-    QPushButton *s_btn = new QPushButton(tr(" "), row_widget);
+    //tr
+    QPushButton *s_btn = new QPushButton(" ", row_widget);
     s_btn->setObjectName("dist");
-    QPushButton *e_btn = new QPushButton(tr(" "), row_widget);
+    //tr
+    QPushButton *e_btn = new QPushButton(" ", row_widget);
     e_btn->setObjectName("dist");
     QLabel *r_label = new QLabel(row_widget);
-    QLabel *g_label = new QLabel(tr("-"), row_widget);
+    //tr
+    QLabel *g_label = new QLabel("-", row_widget);
     g_label->setContentsMargins(0,0,0,0);
     _dist_del_btn_vec.push_back(del_btn);
     _dist_s_btn_vec.push_back(s_btn);
@@ -407,14 +407,18 @@ void MeasureDock::add_edge_measure()
     QToolButton *del_btn = new QToolButton(row_widget);
     del_btn->setIcon(QIcon(iconPath+"/del.svg"));
     del_btn->setCheckable(true);
-    QPushButton *s_btn = new QPushButton(tr(" "), row_widget);
+    //tr
+    QPushButton *s_btn = new QPushButton(" ", row_widget);
     s_btn->setObjectName("edge");
-    QPushButton *e_btn = new QPushButton(tr(" "), row_widget);
+     //tr
+    QPushButton *e_btn = new QPushButton(" ", row_widget);
     e_btn->setObjectName("edge");
     QLabel *r_label = new QLabel(row_widget);
-    QLabel *g_label = new QLabel(tr("-"), row_widget);
+     //tr
+    QLabel *g_label = new QLabel("-", row_widget);
     g_label->setContentsMargins(0,0,0,0);
-    QLabel *a_label = new QLabel(tr("@"), row_widget);
+     //tr
+    QLabel *a_label = new QLabel("@", row_widget);
     a_label->setContentsMargins(0,0,0,0);
     DsComboBox *ch_cmb = create_probe_selector(row_widget);
     _edge_del_btn_vec.push_back(del_btn);
@@ -468,9 +472,10 @@ void MeasureDock::show_all_coursor()
 {
     if (_view.get_cursorList().empty()) {
         dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(tr("Information"));
-        msg.mBox()->setInformativeText(tr("Please insert cursor before using cursor measure."));
-        msg.mBox()->addButton(tr("Ok"), QMessageBox::AcceptRole);
+        msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_INFORMATION), "Information"));
+        msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_PLEASE_INSERT_CURSOR), 
+                                       "Please insert cursor before using cursor measure."));
+        msg.mBox()->addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_OK), "Ok"), QMessageBox::AcceptRole);
         msg.mBox()->setIcon(QMessageBox::Information);
         msg.exec();
 

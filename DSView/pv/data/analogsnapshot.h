@@ -24,8 +24,7 @@
 #ifndef DSVIEW_PV_DATA_ANALOGSNAPSHOT_H
 #define DSVIEW_PV_DATA_ANALOGSNAPSHOT_H
 
-#include "libsigrok.h"
-
+#include <libsigrok.h>
 #include "snapshot.h"
 
 #include <utility>

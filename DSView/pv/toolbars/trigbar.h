@@ -27,6 +27,7 @@
 #include <QToolButton>
 #include <QAction>
 #include <QMenu>
+ 
 
 class DockOptions;
 
@@ -45,16 +46,15 @@ class TrigBar : public QToolBar
 public:
     explicit TrigBar(SigSession *session, QWidget *parent = 0);
 
-    void enable_toggle(bool enable);
-    void enable_protocol(bool enable);
     void close_all();
     void reload();
+    void update_view_status();
 
 private:
     void changeEvent(QEvent *event);
     void retranslateUi();
     void reStyle();
-    DockOptions* getDockOptions();
+    DockOptions* getDockOptions(); 
 
 signals:
     void sig_setTheme(QString style);

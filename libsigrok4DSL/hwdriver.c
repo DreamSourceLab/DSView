@@ -16,8 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include "libsigrok.h"
+ 
 #include "libsigrok-internal.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -149,7 +148,7 @@ static struct sr_dev_driver *drivers_list[] = {
  *
  * @return Pointer to the NULL-terminated list of hardware driver pointers.
  */
-SR_API struct sr_dev_driver **sr_driver_list(void)
+SR_PRIV struct sr_dev_driver **sr_driver_list(void)
 {
 
 	return drivers_list;
@@ -160,7 +159,6 @@ SR_API struct sr_dev_driver **sr_driver_list(void)
  *
  * This usually involves memory allocations and variable initializations
  * within the driver, but _not_ scanning for attached devices.
- * The API call sr_driver_scan() is used for that.
  *
  * @param ctx A libsigrok context object allocated by a previous call to
  *            sr_init(). Must not be NULL.
@@ -171,7 +169,7 @@ SR_API struct sr_dev_driver **sr_driver_list(void)
  *         SR_ERR_BUG upon internal errors, or another negative error code
  *         upon other errors.
  */
-SR_API int sr_driver_init(struct sr_context *ctx, struct sr_dev_driver *driver)
+SR_PRIV int sr_driver_init(struct sr_context *ctx, struct sr_dev_driver *driver)
 {
 	int ret;
 
@@ -192,51 +190,6 @@ SR_API int sr_driver_init(struct sr_context *ctx, struct sr_dev_driver *driver)
 	return ret;
 }
 
-/**
- * Tell a hardware driver to scan for devices.
- *
- * In addition to the detection, the devices that are found are also
- * initialized automatically. On some devices, this involves a firmware upload,
- * or other such measures.
- *
- * The order in which the system is scanned for devices is not specified. The
- * caller should not assume or rely on any specific order.
- *
- * Before calling sr_driver_scan(), the user must have previously initialized
- * the driver by calling sr_driver_init().
- *
- * @param driver The driver that should scan. This must be a pointer to one of
- *               the entries returned by sr_driver_list(). Must not be NULL.
- * @param options A list of 'struct sr_hwopt' options to pass to the driver's
- *                scanner. Can be NULL/empty.
- *
- * @return A GSList * of 'struct sr_dev_inst', or NULL if no devices were
- *         found (or errors were encountered). This list must be freed by the
- *         caller using g_slist_free(), but without freeing the data pointed
- *         to in the list.
- */
-SR_API GSList *sr_driver_scan(struct sr_dev_driver *driver, GSList *options)
-{
-	GSList *l;
-
-	if (!driver) {
-		sr_err("Invalid driver, can't scan for devices.");
-		return NULL;
-	}
-
-	if (!driver->priv) {
-		sr_err("Driver not initialized, can't scan for devices.");
-		return NULL;
-	}
-
-	l = driver->scan(options);
-
-	sr_detail("Scan of '%s' found %d devices.", driver->name,
-		g_slist_length(l));
-
-	return l;
-}
-
 /** @private */
 SR_PRIV void sr_hw_cleanup_all(void)
 {
@@ -251,7 +204,7 @@ SR_PRIV void sr_hw_cleanup_all(void)
 }
 
 /** A floating reference can be passed in for data. */
-SR_API struct sr_config *sr_config_new(int key, GVariant *data)
+SR_PRIV struct sr_config *sr_config_new(int key, GVariant *data)
 {
 	struct sr_config *src;
 
@@ -263,7 +216,7 @@ SR_API struct sr_config *sr_config_new(int key, GVariant *data)
 	return src;
 }
 
-SR_API void sr_config_free(struct sr_config *src)
+SR_PRIV void sr_config_free(struct sr_config *src)
 {
 
 	if (!src || !src->data) {
@@ -295,7 +248,7 @@ SR_API void sr_config_free(struct sr_config *src)
  *         but this is not to be flagged as an error by the caller; merely
  *         as an indication that it's not applicable.
  */
-SR_API int sr_config_get(const struct sr_dev_driver *driver,
+SR_PRIV int sr_config_get(const struct sr_dev_driver *driver,
                          const struct sr_dev_inst *sdi,
                          const struct sr_channel *ch,
                          const struct sr_channel_group *cg,
@@ -332,7 +285,7 @@ SR_API int sr_config_get(const struct sr_dev_driver *driver,
  *         but this is not to be flagged as an error by the caller; merely
  *         as an indication that it's not applicable.
  */
-SR_API int sr_config_set(struct sr_dev_inst *sdi,
+SR_PRIV int sr_config_set(struct sr_dev_inst *sdi,
                          struct sr_channel *ch,
                          struct sr_channel_group *cg,
                          int key, GVariant *data)
@@ -371,7 +324,7 @@ SR_API int sr_config_set(struct sr_dev_inst *sdi,
  *         but this is not to be flagged as an error by the caller; merely
  *         as an indication that it's not applicable.
  */
-SR_API int sr_config_list(const struct sr_dev_driver *driver,
+SR_PRIV int sr_config_list(const struct sr_dev_driver *driver,
                           const struct sr_dev_inst *sdi,
                           const struct sr_channel_group *cg,
                           int key, GVariant **data)
@@ -396,7 +349,7 @@ SR_API int sr_config_list(const struct sr_dev_driver *driver,
  * @return A pointer to a struct sr_config_info, or NULL if the key
  *         was not found.
  */
-SR_API const struct sr_config_info *sr_config_info_get(int key)
+SR_PRIV const struct sr_config_info *sr_config_info_get(int key)
 {
 	int i;
 
@@ -419,7 +372,7 @@ SR_API const struct sr_config_info *sr_config_info_get(int key)
  *         but this is not to be flagged as an error by the caller; merely
  *         as an indication that it's not applicable.
  */
-SR_API int sr_status_get(const struct sr_dev_inst *sdi,
+SR_PRIV int sr_status_get(const struct sr_dev_inst *sdi,
                          struct sr_status *status, gboolean prg)
 {
     int ret;
@@ -442,7 +395,7 @@ SR_API int sr_status_get(const struct sr_dev_inst *sdi,
  * @return A pointer to a struct sr_config_info, or NULL if the key
  *         was not found.
  */
-SR_API const struct sr_config_info *sr_config_info_name_get(const char *optname)
+SR_PRIV const struct sr_config_info *sr_config_info_name_get(const char *optname)
 {
     int i;
 

@@ -40,12 +40,12 @@ SR_PRIV void sr_log_uninit();
 /**
  * Use a shared context, and drop the private log context
  */
-SR_API void sr_log_set_context(xlog_context *ctx);
+SR_API void ds_log_set_context(xlog_context *ctx);
 
 /**
  * Set the private log context level
  */
-SR_API void sr_log_level(int level);
+SR_API void ds_log_level(int level);
 
 #define LOG_PREFIX "" 
 #define sr_err(fmt, args...) xlog_err(sr_log, LOG_PREFIX fmt, ## args)

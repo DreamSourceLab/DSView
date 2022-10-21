@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../libsigrok.h"
+ 
 #include "../libsigrok-internal.h"
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -99,7 +99,7 @@ static int init(struct sr_input *in, const char *filename)
 		return SR_ERR_MALLOC;
 
 	/* Create a virtual device. */
-	in->sdi = sr_dev_inst_new(LOGIC, 0, SR_ST_ACTIVE, NULL, NULL, NULL);
+	in->sdi = sr_dev_inst_new(LOGIC, SR_ST_ACTIVE, NULL, NULL, NULL);
 	in->sdi->priv = ctx;
 
    	ctx->samplerate = GUINT32_FROM_LE(*(uint32_t *)(buf + 24));
@@ -147,7 +147,7 @@ static int loadfile(struct sr_input *in, const char *filename)
 	src = sr_config_new(SR_CONF_SAMPLERATE,
 			g_variant_new_uint64(ctx->samplerate));
 	meta.config = g_slist_append(NULL, src);
-	sr_session_send(in->sdi, &packet);
+	ds_data_forward(in->sdi, &packet);
 	sr_config_free(src);
 
 	if ((fd = open(filename, O_RDONLY)) == -1)
@@ -186,12 +186,12 @@ static int loadfile(struct sr_input *in, const char *filename)
 		analog.mq = 0;
 		analog.unit = 0;
 		analog.data = fdata;
-		sr_session_send(in->sdi, &packet);
+		ds_data_forward(in->sdi, &packet);
 	}
 
 	close(fd);
 	packet.type = SR_DF_END;
-	sr_session_send(in->sdi, &packet);
+	ds_data_forward(in->sdi, &packet);
 
 	return SR_OK;
 }

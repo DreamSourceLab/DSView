@@ -57,7 +57,7 @@
 
 /*  */
 
-#include "../libsigrok.h"
+ 
 #include "../libsigrok-internal.h"
 #include <stdlib.h>
 #include <glib.h>
@@ -369,7 +369,7 @@ static int init(struct sr_input *in, const char *filename)
 	ctx->maxprobes = num_probes;
 
 	/* Create a virtual device. */
-	in->sdi = sr_dev_inst_new(LOGIC, 0, SR_ST_ACTIVE, NULL, NULL, NULL);
+	in->sdi = sr_dev_inst_new(LOGIC, SR_ST_ACTIVE, NULL, NULL, NULL);
 	in->internal = ctx;
 
 	for (i = 0; i < num_probes; i++) {
@@ -418,7 +418,7 @@ static void send_samples(const struct sr_dev_inst *sdi, uint64_t sample, uint64_
 	
 		logic.length = sizeof(uint64_t) * chunksize;
 	
-		sr_session_send(sdi, &packet);
+		ds_data_forward(sdi, &packet);
 		count -= chunksize;
 	}
 }
@@ -582,7 +582,7 @@ static int loadfile(struct sr_input *in, const char *filename)
 	samplerate = ctx->samplerate / ctx->downsample;
 	src = sr_config_new(SR_CONF_SAMPLERATE, g_variant_new_uint64(samplerate));
 	meta.config = g_slist_append(NULL, src);
-	sr_session_send(in->sdi, &packet);
+	ds_data_forward(in->sdi, &packet);
 	sr_config_free(src);
 
 	/* Parse the contents of the VCD file */
@@ -590,7 +590,7 @@ static int loadfile(struct sr_input *in, const char *filename)
 	
 	/* Send end packet to the session bus. */
 	packet.type = SR_DF_END;
-	sr_session_send(in->sdi, &packet);
+	ds_data_forward(in->sdi, &packet);
 
 	fclose(file);
 	release_context(ctx);

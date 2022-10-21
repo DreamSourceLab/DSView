@@ -29,7 +29,7 @@
 #include <QDialogButtonBox>
 
 #include "../toolbars/titlebar.h"
-#include "../interface/uicallback.h"
+#include "../interface/icallbacks.h"
 
 class QDialogButtonBox;
  

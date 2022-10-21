@@ -29,7 +29,6 @@
 
 #include "trace.h"
 #include "view.h"
-#include "../device/devinst.h"
 #include "../sigsession.h"
 #include "../dsvdef.h"
 

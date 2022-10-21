@@ -36,6 +36,8 @@
 #include "../dsvdef.h"
 #include "../log.h"
 
+#include "../ui/langresource.h"
+
 using namespace pv::data::decode;
 using namespace std;
 using namespace boost;
@@ -426,8 +428,8 @@ void DecoderStack::do_decode_work()
 	// Check that all decoders have the required channels
     for(auto &dec : _stack)
 		if (!dec->have_required_probes()) {
-			_error_message = tr("One or more required channels "
-				"have not been specified");
+			_error_message = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DECODERSTACK_DECODE_WORK_ERROR),
+                             "One or more required channels \nhave not been specified");
 			return;
 		}
 
@@ -528,7 +530,8 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
                     chunk.push_back(_snapshot->get_samples(i, chunk_end, sig_index));
                     chunk_const.push_back(_snapshot->get_sample(i, sig_index));
                 } else {
-                    _error_message = tr("At least one of selected channels are not enabled.");
+                    _error_message = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DECODERSTACK_DECODE_DATA_ERROR),
+                                     "At least one of selected channels are not enabled.");
                     return;
                 }
             }
@@ -617,7 +620,8 @@ void DecoderStack::execute_decode_stack()
 
 		if (!di)
 		{
-			_error_message = tr("Failed to create decoder instance");
+			_error_message =L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DECODERSTACK_DECODE_STACK_ERROR), 
+                            "Failed to create decoder instance");
 			srd_session_destroy(session);
 			return;
 		}

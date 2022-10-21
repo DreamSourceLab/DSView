@@ -20,7 +20,6 @@
  */
 
 #include "lissajousoptions.h"
-#include "../device/devinst.h"
 #include "../sigsession.h"
 #include "../view/view.h"
 #include "../view/lissajoustrace.h"
@@ -31,6 +30,8 @@
 #include <QTabBar>
 #include <QBitmap>
 #include <math.h>
+
+#include "../ui/langresource.h"
 
   
 using namespace boost;
@@ -151,10 +152,10 @@ void LissajousOptions::changeEvent(QEvent *event)
 
 void LissajousOptions::retranslateUi()
 {
-    _enable->setText(tr("Enable"));
-    _x_group->setTitle(tr("X-axis"));
-    _y_group->setTitle(tr("Y-axis"));
-    setTitle(tr("Lissajous Options"));
+    _enable->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ENABLE), "Enable"));
+    _x_group->setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_X_AXIS), "X-axis"));
+    _y_group->setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_Y_AXIS), "Y-axis"));
+    setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_LISSAJOUS_OPTIONS), "Lissajous Options"));
 }
 
 void LissajousOptions::accept()

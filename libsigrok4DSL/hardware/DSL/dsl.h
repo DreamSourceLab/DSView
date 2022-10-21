@@ -21,8 +21,7 @@
 #ifndef LIBDSL_HARDWARE_DSL_H
 #define LIBDSL_HARDWARE_DSL_H
 
-#include <glib.h>
-#include "../../libsigrok.h"
+#include <glib.h> 
 #include "../../libsigrok-internal.h"
 #include "command.h"
 
@@ -36,15 +35,7 @@
 #include <sys/stat.h>
 #include <inttypes.h>
 
-#undef min
-#define min(a,b) ((a)<(b)?(a):(b))
-#undef max
-#define max(a,b) ((a)>(b)?(a):(b))
-
-#undef LOG_PREFIX
-#define LOG_PREFIX "DSL Hardware: "
-
-
+ 
 #define USB_INTERFACE		0
 #define USB_CONFIGURATION	1
 #define NUM_TRIGGER_STAGES	16
@@ -54,11 +45,6 @@
 #define DSL_REQUIRED_VERSION_MAJOR	2
 #define DSL_REQUIRED_VERSION_MINOR	0
 #define DSL_HDL_VERSION             0x0D
-
-/* hardware Capabilities */
-#define CAPS_MODE_LOGIC (1 << 0)
-#define CAPS_MODE_ANALOG (1 << 1)
-#define CAPS_MODE_DSO (1 << 2)
 
 #define CAPS_FEATURE_NONE 0
 // voltage threshold
@@ -189,7 +175,7 @@ struct DSL_profile {
     enum libusb_speed usb_speed;
 
     const char *vendor;
-    const char *model;
+    const char *model; //product name
     const char *model_version;
 
     const char *firmware;
@@ -494,6 +480,11 @@ static const struct DSL_channels channel_modes[] = {
     {DSL_DSO1000x2,    DSO,    SR_CHANNEL_DSO,    FALSE, 2, 2,  8, SR_KHZ(10), SR_GHZ(1),
      SR_KHZ(10), SR_MHZ(500), 1, "Use Channels 0~1 (Max 1GHz)", "使用通道 0~1 (最大采样率 1GHz)"}
 };
+
+/* hardware Capabilities */
+#define CAPS_MODE_LOGIC     (1 << 0)
+#define CAPS_MODE_ANALOG    (1 << 1)
+#define CAPS_MODE_DSO       (1 << 2)
 
 static const struct DSL_profile supported_DSLogic[] = {
     /*
@@ -1052,16 +1043,7 @@ static const struct DSL_profile supported_DSCope[] = {
     { 0, 0, LIBUSB_SPEED_UNKNOWN, 0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 };
 
-static const gboolean default_ms_en[] = {
-    FALSE, /* DSO_MS_BEGIN */
-    TRUE,  /* DSO_MS_FREQ */
-    FALSE, /* DSO_MS_PERD */
-    TRUE,  /* DSO_MS_VMAX */
-    TRUE,  /* DSO_MS_VMIN */
-    FALSE, /* DSO_MS_VRMS */
-    FALSE, /* DSO_MS_VMEA */
-    FALSE, /* DSO_MS_VP2P */
-};
+
 
 enum {
     DSL_ERROR = -1,
@@ -1363,5 +1345,7 @@ SR_PRIV int dsl_dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *
 SR_PRIV unsigned int dsl_get_timeout(const struct sr_dev_inst *sdi);
 SR_PRIV int dsl_start_transfers(const struct sr_dev_inst *sdi);
 SR_PRIV int dsl_header_size(const struct DSL_context *devc);
+
+SR_PRIV int dsl_destroy_device(const struct sr_dev_inst *sdi);
 
 #endif

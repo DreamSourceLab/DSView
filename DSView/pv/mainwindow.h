@@ -29,8 +29,8 @@
 #include <QTranslator> 
 #include "dialogs/dsmessagebox.h"
 #include "interface/icallbacks.h"
-#include "eventobject.h"
-#include "interface/uicallback.h"
+#include "eventobject.h" 
+#include <QJsonDocument>
 
 class QAction;
 class QMenuBar;
@@ -43,8 +43,11 @@ class QDockWidget;
 
 class AppControl;
 
+class DeviceAgent;
+
 namespace pv {
  
+class SigSession;
 
 namespace toolbars {
 class SamplingBar;
@@ -68,12 +71,15 @@ class View;
 namespace device{
     class DevInst;
 }
-
-using namespace pv::device;
  
 //The mainwindow,referenced by MainFrame
 //TODO: create graph view,toolbar,and show device list
-class MainWindow : public QMainWindow, public ISessionCallback, public IMainForm, public ISessionDataGetter
+class MainWindow : 
+    public QMainWindow,
+    public ISessionCallback,
+    public IMainForm,
+    public ISessionDataGetter,
+    public IMessageListener
 {
 	Q_OBJECT
 
@@ -88,7 +94,8 @@ private:
 	void setup_ui();
     void retranslateUi(); 
     bool eventFilter(QObject *object, QEvent *event);
-    bool load_session_json(QJsonDocument json, bool file_dev,bool bDecoder=true);  
+    bool load_session_json(QJsonDocument json, bool &haveDecoder);
+    QString genSessionFileName();
 
 public slots: 
     void switchTheme(QString style);
@@ -96,15 +103,10 @@ public slots:
 
 private slots:
 	void on_load_file(QString file_name);
-    void on_open_doc(); 
-    void on_device_updated_reload();
-    void update_device_list();
- 
-	void on_run_stop();
-    void on_instant_stop(); 
+    void on_open_doc();  
+  
     void on_protocol(bool visible);
     void on_trigger(bool visible);
-    void commit_trigger(bool instant);
 
     void on_measure(bool visible);
     void on_search(bool visible);
@@ -113,16 +115,9 @@ private slots:
 
     void on_export();
     bool on_load_session(QString name);  
-    bool on_store_session(QString name);     
-    void device_detach_post();
-    void device_changed(bool close);
-    void on_device_selected();       
-
-    void on_capture_state_changed(int state);
+    bool on_store_session(QString name); 
     void on_data_updated();
-    void on_device_attach();
-    void on_device_detach();
-    void on_show_error(QString str);
+ 
     void on_session_error();
     void on_signals_changed();
     void on_receive_trigger(quint64 trigger_pos);
@@ -131,36 +126,32 @@ private slots:
     void on_decode_done();
     void on_receive_data_len(quint64 len);
     void on_cur_snap_samplerate_changed();
+    void on_trigger_message(int msg);
   
 signals:
     void prgRate(int progress);
 
-//IMainForm
 public:
-   void switchLanguage(int language);
+    //IMainForm
+    void switchLanguage(int language);
 
-//ISessionCallback
-public:
-    void session_save(); 
-
-    //ISessionDataGetter
+    //ISessionCallback
+    void session_save();
+   
 private:
-    bool genSessionData(std::string &str);
-
-//ISessionCallback
+    void check_usb_device_speed();
+    void reset_all_view();
+    bool confirm_to_store_data();
+    void update_toolbar_view_status();
+   
 private:
+    //ISessionCallback
     void show_error(QString error);
     void session_error();
-    void capture_state_changed(int state);
-    void device_attach();
-    void device_detach();
-
     void data_updated();
-    void repeat_resume();
     void update_capture();
     void cur_snap_samplerate_changed();
-    void device_setted();
-
+      
     void signals_changed();
     void receive_trigger(quint64 trigger_pos);
     void frame_ended();
@@ -173,14 +164,20 @@ private:
     void receive_data_len(quint64 len);
     void receive_header();    
     void data_received();
+    void trigger_message(int msg);
 
-    //------private
+    //ISessionDataGetter
+    bool genSessionData(std::string &str);
     bool gen_session_json(QJsonObject &sessionVar);
+    void check_session_file_version();
+    void load_device_config();
+    QJsonDocument get_session_json_from_file(QString file);
+    QJsonArray get_decoder_json_from_file(QString file);
 
-private:
-    AppControl              *_control; 
-    bool                    _hot_detach;
+    //IMessageListener
+    void OnMessage(int msg);
 
+private: 
 	pv::view::View          *_view;
     dialogs::DSMessageBox   *_msg;
 
@@ -220,8 +217,10 @@ private:
 
     QTranslator     _qtTrans;
     QTranslator     _myTrans;
-    EventObject     _event;
-    bool            _bFirstLoad;
+    EventObject     _event; 
+    SigSession      *_session;
+    DeviceAgent     *_device_agent;
+    bool            _is_auto_switch_device;
 };
 
 } // namespace pv

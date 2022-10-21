@@ -1,0 +1,351 @@
+[
+    {
+        "id": "IDS_MSG_OK",
+        "text": "Ok"
+    },
+    {
+        "id": "IDS_MSG_SKIP",
+        "text": "Skip"
+    },
+    {
+        "id": "IDS_MSG_CANCEL",
+        "text": "Cancel"
+    },
+    {
+        "id": "IDS_MSG_ATTENTION",
+        "text": "Attention"
+    },   
+    {
+        "id": "IDS_MSG_ERROR",
+        "text": "error"
+    },
+    {
+        "id": "IDS_MSG_INFORMATION",
+        "text": "Information"
+    }, 
+    {
+        "id": "IDS_MSG_CONTINUE",
+        "text": "Continue"
+    },
+    {
+        "id": "IDS_MSG_A_CAL_START",
+        "text": "Auto Calibration program will be started. Don't connect any probes. It can take a while!"
+    },
+    {
+        "id": "IDS_MSG_A_CAL",
+        "text": "Auto Calibration"
+    },
+    {
+        "id": "IDS_MSG_ADJUST_SAVE",
+        "text": "Please adjust zero skew and save the result"
+    },
+    {
+        "id": "IDS_MSG_SAVE_CAPDATE",
+        "text": "Save captured data?"
+    },
+    {
+        "id": "IDS_MSG_SAVE_CANFIND_SESSIONFILE",
+        "text": "Cannot find default session file for this device!"
+    },
+    {
+        "id": "IDS_MSG_OPEN_FILE_ERROR",
+        "text": "Open file error!"
+    },
+    {
+        "id": "IDS_MSG_NOT_COMPATIBLE",
+        "text": "Session File is not compatible with current device or mode!"
+    },
+    {
+        "id": "IDS_MSG_RE_WIN_ST_ER",
+        "text": "restore window status error!"
+    },
+    {
+        "id": "IDS_MSG_INVAILD_CURSOR",
+        "text": "Invalid cursor index for sample range!"
+    },
+    {
+        "id": "IDS_MSG_SEL_FILENAME",
+        "text": "You need to select a file name."
+    },
+    {
+        "id": "IDS_MSG_PROTOCOL_REPEAT",
+        "text": "Any protocol have repeated id or name:"
+    },
+    {
+        "id": "IDS_MSG_NO_PROTOCOL",
+        "text": "Protocol list is empty!"
+    },
+    {
+        "id": "IDS_MSG_NO_SEL_PROTOCOL",
+        "text": "Please select a protocol!"
+    },
+    {
+        "id": "IDS_MSG_FIND_BASE_PROTOCOL_ERROR",
+        "text": "find the base protocol error!"
+    },
+    {
+        "id": "IDS_MSG_NO_PROTOCOL_DEL",
+        "text": "No Protocol Analyzer to delete!"
+    },
+    {
+        "id": "IDS_MSG_PROTOCOL_COMFRIEM_DEL_ALL",
+        "text": "Are you sure to remove all protocol analyzer?"
+    },
+    {
+        "id": "IDS_MSG_PROTOCOL_COMFRIEM_DEL",
+        "text": "Are you sure to remove this protocol analyzer?"
+    },
+    {
+        "id": "IDS_MSG_CLOSE_DEVICE",
+        "text": "Are you sure to close the device?"
+    },
+    {
+        "id": "IDS_MSG_SET_DEF_CAL_SETTING",
+        "text": "All calibration settings will become the defualt values!"
+    },
+    {
+        "id": "IDS_MSG_ALL_CHANNEL_DISABLE",
+        "text": "All channel disabled! Please enable at least one channel."
+    },
+    {
+        "id": "IDS_MSG_MAX_CHANNEL",
+        "text": "Current mode only suppport max "
+    },
+    {
+        "id": "IDS_MSG_CHANNEL",
+        "text": " channels!"
+    },
+    {
+        "id": "IDS_MSG_TRI_SET_ISSUE",
+        "text": "Trigger Setting Issue"
+    },
+    {
+        "id": "IDS_MSG_CHANGE_HOR_TRI_POS_FAIL",
+        "text": "Change horiz trigger position failed!"
+    },
+    {
+        "id": "IDS_MSG_CHANGE_TRI_HOLDOFF_TIME_FAIL",
+        "text": "Change trigger hold off time failed!"
+    },
+    {
+        "id": "IDS_MSG_CHANGE_SENSITIVITY_FAIL",
+        "text": "Change trigger value sensitivity failed!"
+    },
+    {
+        "id": "IDS_MSG_CHANGE_SOURCE_FAIL",
+        "text": "Change trigger source failed!"
+    },
+    {
+        "id": "IDS_MSG_CHANGE_CHANNEL_FAIL",
+        "text": "Change trigger channel failed!"
+    },
+    {
+        "id": "IDS_MSG_CHANGE_TYPE_FAIL",
+        "text": "Change trigger type failed!"
+    },
+    {
+        "id": "IDS_MSG_PLEASE_INSERT_CURSOR",
+        "text": "Please insert cursor before using cursor measure."
+    },
+    {
+        "id": "IDS_MSG_SEARCH",
+        "text": "Search"
+    },
+    {
+        "id": "IDS_MSG_NO_SAMPLE_DATA",
+        "text": "No Sample data!"
+    },
+    {
+        "id": "IDS_MSG_SEARCH_AT_START",
+        "text": "Search cursor at the start position!"
+    },
+    {
+        "id": "IDS_MSG_PATTERN_NOT_FOUND",
+        "text": "Pattern not found!"
+    },
+    {
+        "id": "IDS_MSG_SEARCH_AT_END",
+        "text": "Search cursor at the end position!"
+    },
+    {
+        "id": "IDS_MSG_TRIGGER",
+        "text": "Trigger"
+    },
+    {
+        "id": "IDS_MSG_STREAM_NO_AD_TRIGGER",
+        "text": "Stream Mode Don't Support Advanced Trigger!"
+    },
+    {
+        "id": "IDS_MSG_AD_TRIGGER_NEED_HARDWARE",
+        "text": "Advanced Trigger need DSLogic Hardware Support!"
+    },
+    {
+        "id": "IDS_MSG_SET_TRI_MULTI_CHANNEL",
+        "text": "Trigger setted on multiple channels!\nCapture will Only triggered when all setted channels fullfill at one sample"
+    },
+    {
+        "id": "IDS_MSG_NOT_SHOW_AGAIN",
+        "text": "Not Show Again"
+    },
+    {
+        "id": "IDS_MSG_CLEAR_TRIG",
+        "text": "Clear Trig"
+    },
+    {
+        "id": "IDS_MSG_IGNORE",
+        "text": "Ignore"
+    },
+    {
+        "id": "IDS_MSG_OPEN",
+        "text": "Open"
+    },
+    {
+        "id": "IDS_MSG_FAIL_TO_LOAD",
+        "text": "Failed to load "
+    },
+
+    {
+        "id": "IDS_MSG_HARDWARE_ERROR",
+        "text": "Hardware Operation Failed"
+    },
+    {
+        "id": "IDS_MSG_HARDWARE_ERROR_DET",
+        "text": "Please replug device to refresh hardware configuration!"
+    },
+    {
+        "id": "IDS_MSG_MALLOC_ERROR",
+        "text": "Malloc Error"
+    },
+    {
+        "id": "IDS_MSG_MALLOC_ERROR_DET",
+        "text": "Memory is not enough for this sample!\nPlease reduce the sample depth!"
+    },
+    {
+        "id": "IDS_DATA_ERROR",
+        "text": "Data Error"
+    },
+    {
+        "id": "IDS_DATA_ERROR_DET1",
+        "text": "the received data are not consist with pre-defined test data!"
+    },
+    {
+        "id": "IDS_DATA_ERROR_DET2",
+        "text": "0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15"
+    },
+    {
+        "id": "IDS_MSG_PACKET_ERROR",
+        "text": "Packet Error"
+    },
+    {
+        "id": "IDS_MSG_PACKET_ERROR_DET",
+        "text": "the content of received packet are not expected!"
+    },
+    {
+        "id": "IDS_MSG_DATA_OVERFLOW",
+        "text": "Data Overflow"
+    },
+    {
+        "id": "IDS_MSG_DATA_OVERFLOW_DET",
+        "text": "USB bandwidth can not support current sample rate! \nPlease reduce the sample rate!"
+    },
+    {
+        "id": "IDS_MSG_UNDEFINED_ERROR",
+        "text": "Undefined Error"
+    },
+    {
+        "id": "IDS_MSG_UNDEFINED_ERROR_DET",
+        "text": "Not expected error!"
+    },
+    {
+        "id": "IDS_MSG_STORESESS_SAVESTART_ERROR1",
+        "text": "DSView does not currently support\nfile saving for multiple data types."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_SAVESTART_ERROR2",
+        "text": "No data to save."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_SAVESTART_ERROR3",
+        "text": "No file name."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_SAVESTART_ERROR4",
+        "text": "Generate temp file data failed."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_SAVESTART_ERROR5",
+        "text": "Generate decoder file data failed."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_SAVESTART_ERROR6",
+        "text": "Generate session file data failed."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_SAVESTART_ERROR7",
+        "text": "Generate zip file failed."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_SAVEPROC_ERROR1",
+        "text": "Failed to create zip file. Malloc error."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_SAVEPROC_ERROR2",
+        "text": "Failed to create zip file. Please check write permission of this path."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_EXPORTSTART_ERROR1",
+        "text": "DSView does not currently support\nfile export for multiple data types."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_EXPORTSTART_ERROR2",
+        "text": "No data to save."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_EXPORTSTART_ERROR3",
+        "text": "No set file name."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_EXPORTSTART_ERROR4",
+        "text": "Invalid export format."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_EXPORTPROC_ERROR1",
+        "text": "data type don't support."
+    },
+    {
+        "id": "IDS_MSG_STORESESS_EXPORTPROC_ERROR2",
+        "text": "xbuffer malloc failed."
+    },
+    {
+        "id": "IDS_MSG_SAVE_FILE",
+        "text": "Save File"
+    },
+    {
+        "id": "IDS_MSG_EXPORT_DATA",
+        "text": "Export Data"
+    },
+    {
+        "id": "IDS_MSG_STORESESS_EXPORTPROC_ERROR2",
+        "text": "xbuffer malloc failed."
+    },
+    {
+        "id": "IDS_MSG_EXPORT_DATA",
+        "text": "Export Data"
+    },
+    {
+        "id": "IDS_MSG_DECODERSTACK_DECODE_WORK_ERROR",
+        "text": "One or more required channels \nhave not been specified"
+    },
+    {
+        "id": "IDS_MSG_DECODERSTACK_DECODE_DATA_ERROR",
+        "text": "At least one of selected channels are not enabled."
+    },
+    {
+        "id": "IDS_MSG_DECODERSTACK_DECODE_STACK_ERROR",
+        "text": "Failed to create decoder instance"
+    },
+    {
+        "id": "IDS_MSG_MESSAGE",
+        "text": "Message"
+    }
+]

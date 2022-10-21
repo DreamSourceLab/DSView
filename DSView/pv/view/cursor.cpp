@@ -24,7 +24,6 @@
 
 #include "ruler.h"
 #include "view.h"
-#include "../device/device.h"
 
 #include <QBrush>
 #include <QPainter>

@@ -30,6 +30,10 @@
 #include <QRadioButton>
 #include "../ui/msgbox.h"
 #include "../config/appconfig.h"
+#include "../interface/icallbacks.h"
+#include "../log.h"
+
+#include "../ui/langresource.h"
 
 namespace pv {
 namespace dialogs {
@@ -66,7 +70,7 @@ StoreProgress::StoreProgress(SigSession *session, QWidget *parent) :
     _fileLab->setMaximumHeight(50); 
 
     _openButton = new QPushButton(this);
-    _openButton->setText(tr("change"));
+    _openButton->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CHANGE), "change"));
 
     _space = new QWidget(this);
     _space->setMinimumHeight(80);
@@ -122,14 +126,16 @@ void StoreProgress::reject()
 {
     using namespace Qt;
     _store_session.cancel();
-    save_done();
+    _store_session.session()->set_saving(false);
+    save_done(); 
     DSDialog::reject();
+    _store_session.session()->broadcast_msg(DSV_MSG_SAVE_COMPLETE);
 }
 
 void StoreProgress::accept()
 {
     if (_store_session.GetFileName() == ""){
-        MsgBox::Show(NULL, tr("You need to select a file name."));
+        MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SEL_FILENAME), "You need to select a file name."));
         return;
     }
 
@@ -157,7 +163,8 @@ void StoreProgress::accept()
     //start done 
     if (_isExport){
         if (_store_session.export_start()){
-              QTimer::singleShot(100, this, SLOT(timeout()));        
+            _store_session.session()->set_saving(true);
+            QTimer::singleShot(100, this, SLOT(timeout()));        
         }
         else{
             save_done();
@@ -167,7 +174,8 @@ void StoreProgress::accept()
     }
     else{
          if (_store_session.save_start()){
-              QTimer::singleShot(100, this, SLOT(timeout()));        
+            _store_session.session()->set_saving(true);
+            QTimer::singleShot(100, this, SLOT(timeout()));        
         }
         else{
             save_done();
@@ -194,7 +202,7 @@ void StoreProgress::timeout()
 void StoreProgress::save_run(ISessionDataGetter *getter)
 {
     _isExport = false;
-    setTitle(tr("Saving..."));
+    setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SAVING), "Saving..."));
     QString file = _store_session.MakeSaveFile(false);
     _fileLab->setText(file); 
     _store_session._sessionDataGetter = getter;
@@ -210,11 +218,11 @@ void StoreProgress::export_run()
         bool isOrg = AppConfig::Instance()._appOptions.originalData;
 
         _ckOrigin  = new QRadioButton();
-        _ckOrigin->setText(tr("Original data"));   
+        _ckOrigin->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ORIGINAL_DATA), "Original data"));   
         _ckOrigin->setChecked(isOrg);       
 
         _ckCompress  = new QRadioButton();
-        _ckCompress->setText(tr("Compressed data"));
+        _ckCompress->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_COMPRESSED_DATA), "Compressed data"));
         _ckCompress->setChecked(!isOrg);
 
         lay->addWidget(_ckOrigin);
@@ -226,7 +234,7 @@ void StoreProgress::export_run()
     }
 
     _isExport = true;
-    setTitle(tr("Exporting..."));
+    setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_EXPORTING), "Exporting..."));
     QString file = _store_session.MakeExportFile(false);
     _fileLab->setText(file); 
 
@@ -248,9 +256,11 @@ void StoreProgress::show_error()
 }
 
 void StoreProgress::closeEvent(QCloseEvent* e)
-{
+{ 
     _store_session.cancel();
+    _store_session.session()->set_saving(false);
     DSDialog::closeEvent(e);
+    _store_session.session()->broadcast_msg(DSV_MSG_SAVE_COMPLETE);
 }
 
 void StoreProgress::on_progress_updated()

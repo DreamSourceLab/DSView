@@ -26,8 +26,7 @@
 struct sr_context;
 class QWidget;
 
-namespace pv{
-    class DeviceManager;
+namespace pv{ 
     class SigSession;
 }
 
@@ -55,11 +54,7 @@ public:
 
     inline pv::SigSession*  GetSession(){
         return _session;
-    }
-
-    inline pv::DeviceManager& GetDeviceManager(){ 
-        return *_device_manager;
-    }
+    } 
 
     inline void SetTopWindow(QWidget *w){
         _topWindow = w;
@@ -75,9 +70,7 @@ public:
     std::string        _open_file_name; 
 
 private:
-    std::string         m_error;
-    struct sr_context   *sr_ctx;
-    pv::DeviceManager   *_device_manager;
+    std::string         m_error; 
     pv::SigSession      *_session;
     QWidget             *_topWindow;
 };

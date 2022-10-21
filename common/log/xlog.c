@@ -45,7 +45,7 @@ struct xlog_receiver_info
     int _type; //see enum xlog_receiver_type  
     FILE    *_file;
     xlog_print_func _fn; // print function
-    xlog_receiver _rev; //user callback
+    xlog_receive_callback _rev; //user callback
 };
 
 struct xlog_context
@@ -139,10 +139,7 @@ static void print_to_user_callback(struct xlog_receiver_info *info, const char *
 	info->_rev(buf, wr);
 }
 
-/**
- * create a log context, the console is default log receiver
-*/
-XLOG_API xlog_context* xlog_new()
+static xlog_context* xlog_new_context(int bConsole)
 {
     int i=0;
     xlog_context *ctx = (xlog_context*)malloc(sizeof(xlog_context));
@@ -152,15 +149,35 @@ XLOG_API xlog_context* xlog_new()
             ctx->_receivers[i]._fn = NULL;
             ctx->_receivers[i]._file = NULL;
         }
-        ctx->_receivers[0]._fn = print_to_console;
-        ctx->_receivers[0]._type = RECEIVER_TYPE_CONSOLE;
+        ctx->_count = 0;
         ctx->_log_level = XLOG_LEVEL_INFO;
-        ctx->_count = 1;
+
+        if (bConsole){
+            ctx->_receivers[0]._fn = print_to_console;
+            ctx->_receivers[0]._type = RECEIVER_TYPE_CONSOLE;        
+            ctx->_count = 1;
+        }        
 
         pthread_mutex_init(&ctx->_mutext, NULL);
     }
     
     return ctx;
+}
+
+/**
+ * create a log context, the console is default log receiver
+*/
+XLOG_API xlog_context* xlog_new()
+{
+    return xlog_new_context(1);
+}
+
+/*
+	create a log context
+*/
+XLOG_API xlog_context* xlog_new2(int bConsole)
+{
+    return xlog_new_context(bConsole);    
 }
 
 /**
@@ -190,7 +207,7 @@ XLOG_API void xlog_free(xlog_context* ctx)
 /**
  * 	append a log data receiver, return 0 if success.
  */
-XLOG_API int xlog_add_receiver(xlog_context* ctx, xlog_receiver rev, int *out_index)
+XLOG_API int xlog_add_receiver(xlog_context* ctx, xlog_receive_callback rev, int *out_index)
 {
     int i;
 
@@ -480,7 +497,7 @@ XLOG_API int xlog_warn(xlog_writer *wr, const char *format, ...)
         }        
     }
 
-     pthread_mutex_unlock(&ctx->_mutext);
+    pthread_mutex_unlock(&ctx->_mutext);
 
     return 0;    
 }

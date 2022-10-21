@@ -18,7 +18,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include "libsigrok.h"
 #include "libsigrok-internal.h"
 #include <glib.h>
 #include "log.h"
@@ -54,7 +53,6 @@ SR_PRIV int std_hw_init(struct sr_context *sr_ctx, struct sr_dev_driver *di,
 	}
 
 	drvc->sr_ctx = sr_ctx;
-	drvc->instances = NULL;
 	di->priv = drvc;
 
 	return SR_OK;
@@ -95,7 +93,7 @@ SR_PRIV int std_session_send_df_header(const struct sr_dev_inst *sdi,
 	header.feed_version = 1;
 	gettimeofday(&header.starttime, NULL);
 
-	if ((ret = sr_session_send(sdi, &packet)) < 0) {
+	if ((ret = ds_data_forward(sdi, &packet)) < 0) {
 		sr_err("%sFailed to send header packet: %d.", prefix, ret);
 		return ret;
 	}
@@ -156,73 +154,10 @@ SR_PRIV int std_hw_dev_acquisition_stop_serial(struct sr_dev_inst *sdi,
 	packet.type = SR_DF_END;
     packet.status = SR_PKT_OK;
 	packet.payload = NULL;
-	if ((ret = sr_session_send(cb_data, &packet)) < 0) {
+	if ((ret = ds_data_forward(cb_data, &packet)) < 0) {
 		sr_err("%sFailed to send SR_DF_END packet: %d.", prefix, ret);
 		return ret;
 	}
 
 	return SR_OK;
-}
-
-/*
- * Standard driver dev_clear() helper.
- *
- * This function can be used to implement the dev_clear() driver API
- * callback. dev_close() is called before every sr_dev_inst is cleared.
- *
- * The only limitation is driver-specific device contexts (sdi->priv).
- * These are freed, but any dynamic allocation within structs stored
- * there cannot be freed.
- *
- * @param driver The driver which will have its instances released.
- *
- * @return SR_OK on success.
- */
-SR_PRIV int std_dev_clear(const struct sr_dev_driver *driver,
-		std_dev_clear_t clear_private)
-{
-	struct sr_dev_inst *sdi;
-	struct drv_context *drvc;
-	struct dev_context *devc;
-	GSList *l;
-	int ret;
-
-	if (!(drvc = driver->priv))
-		/* Driver was never initialized, nothing to do. */
-		return SR_OK;
-
-	ret = SR_OK;
-	for (l = drvc->instances; l; l = l->next) {
-		/* Log errors, but continue cleaning up the rest. */
-		if (!(sdi = l->data)) {
-			ret = SR_ERR_BUG;
-			continue;
-		}
-		if (!(devc = sdi->priv)) {
-			ret = SR_ERR_BUG;
-			continue;
-		}
-		if (driver->dev_close)
-			driver->dev_close(sdi);
-
-		if (sdi->conn) {
-			if (sdi->inst_type == SR_INST_USB)
-#if HAVE_LIBUSB_1_0
-				sr_usb_dev_inst_free(sdi->conn);
-#else
-				;
-#endif
-			else if (sdi->inst_type == SR_INST_SERIAL)
-				sr_serial_dev_inst_free(sdi->conn);
-		}
-		if (clear_private)
-			clear_private(sdi->priv);
-		sdi = l->data;
-		sr_dev_inst_free(sdi);
-	}
-
-	g_slist_free(drvc->instances);
-	drvc->instances = NULL;
-
-	return ret;
 }

@@ -32,7 +32,6 @@
 #include "../sigsession.h"
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
-#include "../device/devinst.h"
  
 namespace pv {
 namespace dialogs {

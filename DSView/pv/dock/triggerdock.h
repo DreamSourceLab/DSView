@@ -42,7 +42,7 @@
 
 #include <vector>
 
-#include "../ui/dscombobox.h"
+#include "../ui/dscombobox.h" 
 
 namespace pv {
 
@@ -68,12 +68,10 @@ public:
     QJsonObject get_session();
     void set_session(QJsonObject ses);
 
-    /*
-     * commit trigger setting
-     * return 0: simple trigger
-     *        1: advanced trigger
-     */
-    bool commit_trigger();
+    void device_updated();
+
+    void try_commit_trigger();
+
 private:
     void changeEvent(QEvent *event);
     void retranslateUi();
@@ -82,18 +80,20 @@ private:
     void setup_adv_tab();
     void lineEdit_highlight(QLineEdit *dst);
 
-signals:
+      /*
+     * commit trigger setting
+     * return 0: simple trigger
+     *        1: advanced trigger
+     */
+    bool commit_trigger();
+ 
 
 public slots:
     void simple_trigger();
     void adv_trigger();
     void widget_enable(int index);
 
-    void value_changed();
-
-    void device_updated();
-
-private:
+    void value_changed(); 
 
 private:
     SigSession *_session;

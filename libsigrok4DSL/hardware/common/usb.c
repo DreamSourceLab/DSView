@@ -17,7 +17,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../libsigrok.h"
 #include "../../libsigrok-internal.h"
 #include <stdlib.h>
 #include <glib.h>
@@ -127,6 +126,8 @@ SR_PRIV GSList *sr_usb_find(libusb_context *usb_ctx, const char *conn)
 
         usb = sr_usb_dev_inst_new(libusb_get_bus_number(devlist[i]),
                 libusb_get_device_address(devlist[i]), NULL);
+        usb->usb_dev = devlist[i];
+        
         devices = g_slist_append(devices, usb);
     }
     libusb_free_device_list(devlist, 1);
@@ -180,7 +181,9 @@ SR_PRIV GSList *sr_usb_find_usbtmc(libusb_context *usb_ctx)
                        libusb_get_device_address(devlist[i]));
 
                 usb = sr_usb_dev_inst_new(libusb_get_bus_number(devlist[i]),
-                        libusb_get_device_address(devlist[i]), NULL);
+                            libusb_get_device_address(devlist[i]), NULL);
+                usb->usb_dev = devlist[i];
+
                 devices = g_slist_append(devices, usb);
             }
             libusb_free_config_descriptor(confdes);
@@ -193,47 +196,3 @@ SR_PRIV GSList *sr_usb_find_usbtmc(libusb_context *usb_ctx)
     return devices;
 }
 
-SR_PRIV int sr_usb_open(libusb_context *usb_ctx, struct sr_usb_dev_inst *usb)
-{
-    struct libusb_device **devlist;
-    struct libusb_device_descriptor des;
-    int ret, r, cnt, i, a, b;
-
-    sr_dbg("Trying to open USB device %d.%d.", usb->bus, usb->address);
-
-    if ((cnt = libusb_get_device_list(usb_ctx, &devlist)) < 0) {
-        sr_err("Failed to retrieve device list: %s.",
-               libusb_error_name(cnt));
-        return SR_ERR;
-    }
-
-    ret = SR_ERR;
-    for (i = 0; i < cnt; i++) {
-        if ((r = libusb_get_device_descriptor(devlist[i], &des)) < 0) {
-            sr_err("Failed to get device descriptor: %s.",
-                   libusb_error_name(r));
-            continue;
-        }
-
-        b = libusb_get_bus_number(devlist[i]);
-        a = libusb_get_device_address(devlist[i]);
-        if (b != usb->bus || a != usb->address)
-            continue;
-
-        if ((r = libusb_open(devlist[i], &usb->devhdl)) < 0) {
-            sr_err("Failed to open device: %s.",
-                   libusb_error_name(r));
-            break;
-        }
-
-        sr_dbg("Opened USB device (VID:PID = %04x:%04x, bus.address = "
-               "%d.%d).", des.idVendor, des.idProduct, b, a);
-
-        ret = SR_OK;
-        break;
-    }
-
-    libusb_free_device_list(devlist, 1);
-
-    return ret;
-}

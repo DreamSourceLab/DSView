@@ -27,9 +27,10 @@
 #include <boost/optional.hpp>
 
 #include <QString>
-
-#include "libsigrok.h"
+#include <libsigrok.h> 
 #include "binding.h"
+
+class DeviceAgent;
 
 namespace pv {
 namespace prop {
@@ -38,16 +39,14 @@ namespace binding {
 class ProbeOptions : public Binding
 {
 public:
-	ProbeOptions(struct sr_dev_inst *sdi, 
-		     struct sr_channel *probe);
+	ProbeOptions(struct sr_channel *probe);
 
 private:
 
 	static GVariant* config_getter(
-		const struct sr_dev_inst *sdi,
 		const struct sr_channel *probe, int key);
+		
 	static void config_setter(
-		struct sr_dev_inst *sdi,
         	struct sr_channel *probe, int key, GVariant* value);
 
     void bind_bool(const QString &name, const QString label, int key);
@@ -72,8 +71,8 @@ private:
     static QString print_coupling(GVariant *const gvar);
 
 protected:
-	struct sr_dev_inst *const _sdi;
 	struct sr_channel *const _probe;
+	DeviceAgent *_device_agent;
 };
 
 } // binding

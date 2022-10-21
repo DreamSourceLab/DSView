@@ -22,6 +22,8 @@
 #include "keywordlineedit.h"
 #include "../config/appconfig.h"
 
+#include "../ui/langresource.h"
+
 KeywordLineEdit::KeywordLineEdit(QWidget *parent, IKeywordActive *active)
 :QLineEdit(parent)
 { 
@@ -44,7 +46,8 @@ KeywordLineEdit::KeywordLineEdit(QWidget *parent, IKeywordActive *active)
          return;         
      }
 
-    this->setText(tr("Protocol search..."));
+    //tr
+    this->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_KEYWORD_LINEEID), "Protocol search..."));
  }
 
  void KeywordLineEdit::SetInputText(QString text)

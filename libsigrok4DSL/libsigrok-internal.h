@@ -23,12 +23,9 @@
 //#include <stdarg.h>
 #include <glib.h>
 #include "config.h" /* Needed for HAVE_LIBUSB_1_0 and others. */
-#ifdef HAVE_LIBUSB_1_0
 #include <libusb-1.0/libusb.h>
-#endif
+#include "libsigrok.h"
 
-// firmware binary file directory, endswith letter '/'
-extern char DS_RES_PATH[500];
 
 /**
  * @file
@@ -46,23 +43,154 @@ extern char DS_RES_PATH[500];
 #define ARRAY_AND_SIZE(a) (a), ARRAY_SIZE(a)
 #endif
 
+#undef min
+#define min(a,b) ((a)<(b)?(a):(b))
+#undef max
+#define max(a,b) ((a)>(b)?(a):(b))
+
+#define USB_EV_HOTPLUG_UNKNOW		0
+#define USB_EV_HOTPLUG_ATTACH		1
+#define USB_EV_HOTPLUG_DETTACH		2
+
+#define g_safe_free(p) 			if((p)) g_free((p)); ((p)) = NULL;
+#define g_safe_free_list(p) 	if((p)) g_slist_free((p)); ((p)) = NULL;
+
+/** global variable */
+extern char DS_RES_PATH[500];
+extern struct ds_trigger *trigger;
+
+typedef void (*hotplug_event_callback)(struct libusb_context *ctx, struct libusb_device *dev, int event);
+
 struct sr_context {
-#ifdef HAVE_LIBUSB_1_0
-	libusb_context *libusb_ctx;
+	libusb_context*			libusb_ctx;
 	libusb_hotplug_callback_handle hotplug_handle;
 	hotplug_event_callback  hotplug_callback;
-	void *hotplug_user_data;
-	struct timeval hotplug_tv; 
-#endif
+	struct 					timeval hotplug_tv;
 };
 
-#ifdef HAVE_LIBUSB_1_0
+static const struct sr_dev_mode sr_mode_list[] =
+{
+    {LOGIC,"Logic Analyzer","la"},
+    {ANALOG, "Data Acquisition", "daq"},
+    {DSO, "Oscilloscope", "osc"},
+};
+
+enum sr_dev_driver_type
+{
+	DRIVER_TYPE_DEMO = 0,
+	DRIVER_TYPE_FILE = 1,
+	DRIVER_TYPE_HARDWARE = 2
+};
+
+struct sr_dev_driver {
+	/* Driver-specific */
+	char *name;
+	char *longname;
+	int api_version;
+	int driver_type; // enum sr_dev_driver_type
+	int (*init) (struct sr_context *sr_ctx);
+	int (*cleanup) (void);
+	GSList *(*scan) (GSList *options);
+    const GSList *(*dev_mode_list) (const struct sr_dev_inst *sdi);
+
+    int (*config_get) (int id, GVariant **data,
+                       const struct sr_dev_inst *sdi,
+                       const struct sr_channel *ch,
+                       const struct sr_channel_group *cg);
+    int (*config_set) (int id, GVariant *data,
+                       struct sr_dev_inst *sdi,
+                       struct sr_channel *ch,
+                       struct sr_channel_group *cg);
+    int (*config_list) (int info_id, GVariant **data,
+                        const struct sr_dev_inst *sdi,
+                        const struct sr_channel_group *cg);
+
+	/* Device-specific */
+	int (*dev_open) (struct sr_dev_inst *sdi);
+	int (*dev_close) (struct sr_dev_inst *sdi);
+	int (*dev_destroy) (struct sr_dev_inst *sdi);
+    int (*dev_status_get) (const struct sr_dev_inst *sdi,
+                           struct sr_status *status, gboolean prg);
+    int (*dev_acquisition_start) (struct sr_dev_inst *sdi,
+			void *cb_data);
+    int (*dev_acquisition_stop) (const struct sr_dev_inst *sdi,
+			void *cb_data);
+
+	/* Dynamic */
+	void *priv;
+};
+
+struct sr_dev_inst {
+    /** Device driver. */
+    struct sr_dev_driver *driver;
+	
+	/**Identity. */
+    ds_device_handle handle;
+
+	/** device name. */
+	char name[50];
+
+	char *path;
+
+	/** Device type:(demo,filelog,hardware). The type see enum sr_device_type. */
+	int dev_type;
+
+    /** Index of device in driver. */
+    int index;
+
+    /** Device instance status. SR_ST_NOT_FOUND, etc. */
+    int status;
+
+    /** Device mode. LA/DAQ/OSC, etc. */
+    int mode;
+
+    /** Device vendor. */
+    char *vendor;
+ 
+    /** Device version. */
+    char *version;
+
+    /** List of channels. */
+    GSList *channels;
+ 
+    /** Device instance connection data (used?) */
+    void *conn;
+
+    /** Device instance private data (used?) */
+    void *priv;
+};
+
+struct sr_session 
+{ 
+    gboolean running;
+
+	unsigned int num_sources;
+
+	/*
+	 * Both "sources" and "pollfds" are of the same size and contain pairs
+	 * of descriptor and callback function. We can not embed the GPollFD
+	 * into the source struct since we want to be able to pass the array
+	 * of all poll descriptors to g_poll().
+	 */
+	struct source *sources;
+	GPollFD *pollfds;
+	int source_timeout;
+
+	/*
+	 * These are our synchronization primitives for stopping the session in
+	 * an async fashion. We need to make sure the session is stopped from
+	 * within the session thread itself.
+	 */
+    GMutex stop_mutex;
+	gboolean abort_session;
+};
+
 struct sr_usb_dev_inst {
 	uint8_t bus;
 	uint8_t address;
 	struct libusb_device_handle *devhdl;
+	struct libusb_device *usb_dev;
 };
-#endif
 
 #define SERIAL_PARITY_NONE 0
 #define SERIAL_PARITY_EVEN 1
@@ -80,24 +208,54 @@ struct drv_context {
 };
 
 
+/*
+ * Oscilloscope
+ */
+#define MAX_TIMEBASE SR_SEC(10)
+#define MIN_TIMEBASE SR_NS(10)
+
+struct ds_trigger {
+    uint16_t trigger_en;
+    uint16_t trigger_mode;
+    uint16_t trigger_pos;
+    uint16_t trigger_stages;
+    unsigned char trigger_logic[TriggerStages+1];
+    unsigned char trigger0_inv[TriggerStages+1];
+    unsigned char trigger1_inv[TriggerStages+1];
+    char trigger0[TriggerStages+1][MaxTriggerProbes];
+    char trigger1[TriggerStages+1][MaxTriggerProbes];
+    uint32_t trigger0_count[TriggerStages+1];
+    uint32_t trigger1_count[TriggerStages+1];
+};
+
+
 /*--- device.c --------------------------------------------------------------*/
 
-SR_PRIV struct sr_channel *sr_channel_new(uint16_t index, int type,
-                                          gboolean enabled, const char *name);
+SR_PRIV struct sr_channel *sr_channel_new(uint16_t index, int type, gboolean enabled, const char *name);
+
 SR_PRIV void sr_dev_probes_free(struct sr_dev_inst *sdi);
 
+SR_PRIV int sr_enable_device_channel(struct sr_dev_inst *sdi, const struct sr_channel *probe, gboolean enable);
+
+SR_PRIV int sr_dev_probe_name_set(const struct sr_dev_inst *sdi,
+		int probenum, const char *name);
+
+SR_PRIV int sr_dev_probe_enable(const struct sr_dev_inst *sdi, int probenum,
+		gboolean state);
+		
+SR_PRIV int sr_dev_trigger_set(const struct sr_dev_inst *sdi, uint16_t probenum,
+		const char *trigger);
+
 /* Generic device instances */
-SR_PRIV struct sr_dev_inst *sr_dev_inst_new(int mode, int index, int status,
+SR_PRIV struct sr_dev_inst *sr_dev_inst_new(int mode, int status,
                                             const char *vendor, const char *model, const char *version);
 SR_PRIV void sr_dev_inst_free(struct sr_dev_inst *sdi);
 
-#ifdef HAVE_LIBUSB_1_0
 /* USB-specific instances */
 SR_PRIV struct sr_usb_dev_inst *sr_usb_dev_inst_new(uint8_t bus,
 		uint8_t address, struct libusb_device_handle *hdl);
 SR_PRIV GSList *sr_usb_find_usbtmc(libusb_context *usb_ctx);
 SR_PRIV void sr_usb_dev_inst_free(struct sr_usb_dev_inst *usb);
-#endif
 
 /* Serial-specific instances */
 SR_PRIV struct sr_serial_dev_inst *sr_serial_dev_inst_new(const char *port,
@@ -107,24 +265,31 @@ SR_PRIV void sr_serial_dev_inst_free(struct sr_serial_dev_inst *serial);
 
 /*--- hwdriver.c ------------------------------------------------------------*/
 
+typedef int (*sr_receive_data_callback_t)(int fd, int revents, const struct sr_dev_inst *sdi);
+
 SR_PRIV void sr_hw_cleanup_all(void);
 SR_PRIV int sr_source_remove(int fd);
 SR_PRIV int sr_source_add(int fd, int events, int timeout,
         sr_receive_data_callback_t cb, void *cb_data);
 
 /*--- session.c -------------------------------------------------------------*/
-
-SR_PRIV int sr_session_send(const struct sr_dev_inst *sdi,
-		const struct sr_datafeed_packet *packet);
-SR_PRIV int sr_session_stop_sync(void);
-
+ 
 SR_PRIV int usb_hotplug_callback(struct libusb_context *ctx, struct libusb_device *dev,
                                   libusb_hotplug_event event, void *user_data);
+
+SR_PRIV int sr_session_source_add(int fd, int events, int timeout,
+		sr_receive_data_callback_t cb, const struct sr_dev_inst *sdi);
+SR_PRIV int sr_session_source_add_pollfd(GPollFD *pollfd, int timeout,
+		sr_receive_data_callback_t cb, const struct sr_dev_inst *sdi);
+SR_PRIV int sr_session_source_add_channel(GIOChannel *channel, int events,
+		int timeout, sr_receive_data_callback_t cb, const struct sr_dev_inst *sdi);
+SR_PRIV int sr_session_source_remove(int fd);
+SR_PRIV int sr_session_source_remove_pollfd(GPollFD *pollfd);
+SR_PRIV int sr_session_source_remove_channel(GIOChannel *channel); 
 
 /*--- std.c -----------------------------------------------------------------*/
 
 typedef int (*dev_close_t)(struct sr_dev_inst *sdi);
-typedef void (*std_dev_clear_t)(void *priv);
 
 SR_PRIV int std_hw_init(struct sr_context *sr_ctx, struct sr_dev_driver *di,
 		const char *prefix);
@@ -133,8 +298,6 @@ SR_PRIV int std_hw_dev_acquisition_stop_serial(struct sr_dev_inst *sdi,
 		struct sr_serial_dev_inst *serial, const char *prefix);
 SR_PRIV int std_session_send_df_header(const struct sr_dev_inst *sdi,
 		const char *prefix);
-SR_PRIV int std_dev_clear(const struct sr_dev_driver *driver,
-		std_dev_clear_t clear_private);
 
 /*--- trigger.c -------------------------------------------------*/
 SR_PRIV uint64_t sr_trigger_get_mask0(uint16_t stage);
@@ -143,6 +306,16 @@ SR_PRIV uint64_t sr_trigger_get_value0(uint16_t stage);
 SR_PRIV uint64_t sr_trigger_get_value1(uint16_t stage);
 SR_PRIV uint64_t sr_trigger_get_edge0(uint16_t stage);
 SR_PRIV uint64_t sr_trigger_get_edge1(uint16_t stage);
+
+SR_PRIV uint16_t ds_trigger_get_mask0(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
+SR_PRIV uint16_t ds_trigger_get_value0(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
+SR_PRIV uint16_t ds_trigger_get_edge0(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
+SR_PRIV uint16_t ds_trigger_get_mask1(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
+SR_PRIV uint16_t ds_trigger_get_value1(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
+SR_PRIV uint16_t ds_trigger_get_edge1(uint16_t stage, uint16_t msc, uint16_t lsc, gboolean qutr_mode, gboolean half_mode);
+
+SR_PRIV int ds_trigger_init(void);
+SR_PRIV int ds_trigger_destroy(void);
 
 /*--- hardware/common/serial.c ----------------------------------------------*/
 
@@ -174,21 +347,76 @@ SR_PRIV int serial_stream_detect(struct sr_serial_dev_inst *serial,
 
 /*--- hardware/common/ezusb.c -----------------------------------------------*/
 
-#ifdef HAVE_LIBUSB_1_0
+
 SR_PRIV int ezusb_reset(struct libusb_device_handle *hdl, int set_clear);
 SR_PRIV int ezusb_install_firmware(libusb_device_handle *hdl,
 				   const char *filename);
 SR_PRIV int ezusb_upload_firmware(libusb_device *dev, int configuration,
 				  const char *filename);
-#endif
 
 /*--- hardware/common/usb.c -------------------------------------------------*/
 
-#ifdef HAVE_LIBUSB_1_0
-SR_PRIV GSList *sr_usb_find(libusb_context *usb_ctx, const char *conn);
-SR_PRIV int sr_usb_open(libusb_context *usb_ctx, struct sr_usb_dev_inst *usb);
-#endif
+SR_PRIV GSList *sr_usb_find(libusb_context *usb_ctx, const char *conn); 
+
+/*--- backend.c -------------------------------------------------------------*/
+SR_PRIV int sr_init(struct sr_context **ctx);
+SR_PRIV int sr_exit(struct sr_context *ctx); 
+
+SR_PRIV int sr_listen_hotplug(struct sr_context *ctx, hotplug_event_callback callback);
+SR_PRIV int sr_close_hotplug(struct sr_context *ctx);
+SR_PRIV void sr_hotplug_wait_timout(struct sr_context *ctx);
+
+/**---------------driver ----*/
+SR_PRIV struct sr_dev_driver **sr_driver_list(void);
+SR_PRIV int sr_driver_init(struct sr_context *ctx,
+		struct sr_dev_driver *driver);
+
+/*----- Session ------*/ 
+SR_PRIV int sr_session_run(void);
+SR_PRIV int sr_session_stop(void); 
+SR_PRIV struct sr_session *sr_session_new(void);
+SR_PRIV int sr_session_destroy(void);
+
+/**
+ * Create a virtual deivce from file.
+ */
+SR_PRIV int sr_new_virtual_device(const char *filename, struct sr_dev_inst **out_di);
 
 
+/*--- lib_main.c -------------------------------------------------*/
+/**
+ * Check whether the USB device is in the device list.
+ */
+SR_PRIV int sr_usb_device_is_exists(libusb_device *usb_dev);
 
+/**
+ * Forward the data.
+ */
+SR_PRIV int ds_data_forward(const struct sr_dev_inst *sdi,
+						const struct sr_datafeed_packet *packet);
+
+SR_PRIV int current_device_acquisition_stop();
+
+/*--- hwdriver.c ------------------------------------------------------------*/
+
+SR_PRIV int sr_config_get(const struct sr_dev_driver *driver,
+                         const struct sr_dev_inst *sdi,
+                         const struct sr_channel *ch,
+                         const struct sr_channel_group *cg,
+                         int key, GVariant **data);
+SR_PRIV int sr_config_set(struct sr_dev_inst *sdi,
+                         struct sr_channel *ch,
+                         struct sr_channel_group *cg,
+                         int key, GVariant *data);
+SR_PRIV int sr_config_list(const struct sr_dev_driver *driver,
+                          const struct sr_dev_inst *sdi,
+                          const struct sr_channel_group *cg,
+                          int key, GVariant **data);
+SR_PRIV const struct sr_config_info *sr_config_info_get(int key);
+SR_PRIV const struct sr_config_info *sr_config_info_name_get(const char *optname);
+SR_PRIV int sr_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, gboolean prg);
+SR_PRIV struct sr_config *sr_config_new(int key, GVariant *data);
+SR_PRIV void sr_config_free(struct sr_config *src);
+
+ 
 #endif

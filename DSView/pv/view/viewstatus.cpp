@@ -31,10 +31,11 @@
 
 #include "../view/trace.h"
 #include "../sigsession.h"
-#include "../device/devinst.h"
 #include "../view/view.h"
 #include "../view/trace.h"
 #include "../dialogs/dsomeasure.h"
+
+#include "../ui/langresource.h"
 
  
 using namespace std;
@@ -64,7 +65,7 @@ void ViewStatus::paintEvent(QPaintEvent *)
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 
     QColor fore(QWidget::palette().color(QWidget::foregroundRole()));
-    if (_session->get_device()->dev_inst()->mode == LOGIC) {
+    if (_session->get_device()->get_work_mode() == LOGIC) {
         fore.setAlpha(View::ForeAlpha);
         p.setPen(fore);
         p.drawText(this->rect(), Qt::AlignLeft | Qt::AlignVCenter, _rle_depth);
@@ -77,7 +78,8 @@ void ViewStatus::paintEvent(QPaintEvent *)
 
         p.setPen(View::Blue);
         p.drawText(this->rect(), Qt::AlignCenter | Qt::AlignVCenter, _capture_status);
-    } else if (_session->get_device()->dev_inst()->mode == DSO) {
+    } 
+    else if (_session->get_device()->get_work_mode() == DSO) {
         fore.setAlpha(View::BackAlpha);
         for(size_t i = 0; i < _mrects.size(); i++) {
             int sig_index = std::get<1>(_mrects[i]);
@@ -122,7 +124,7 @@ void ViewStatus::paintEvent(QPaintEvent *)
                 p.drawText(QRect(rect.left()+10+rect.height(), rect.top(), width, rect.height()),
                            Qt::AlignLeft | Qt::AlignVCenter, title);
             } else {
-                p.drawText(rect, Qt::AlignCenter | Qt::AlignVCenter, tr("Measure") + QString::number(i));
+                p.drawText(rect, Qt::AlignCenter | Qt::AlignVCenter, L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MEASURE), "Measure") + QString::number(i));
             }
         }
     }
@@ -141,7 +143,7 @@ void ViewStatus::reload()
     const int COLUMN = 5;
     const int ROW = 2;
     const int MARGIN = 3;
-    if (_session->get_device()->dev_inst()->mode == DSO)
+    if (_session->get_device()->get_work_mode() == DSO)
     {
         const double width = _view.get_view_width() * 1.0 / COLUMN;
         const int height = (this->height() - 2*MARGIN) / ROW;
@@ -171,20 +173,22 @@ void ViewStatus::repeat_unshow()
 
 void ViewStatus::set_trig_time(QDateTime time)
 {
-    _trig_time = tr("Trigger Time: ") + time.toString("yyyy-MM-dd hh:mm:ss");
+    _trig_time = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIGGER_TIME), "Trigger Time: ") + time.toString("yyyy-MM-dd hh:mm:ss");
 }
 
 void ViewStatus::set_rle_depth(uint64_t depth)
 {
-    _rle_depth = QString::number(depth) + tr(" Samples Captured!");
+    _rle_depth = QString::number(depth) + L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SAMPLES_CAPTURED), "Samples Captured!");
 }
 
 void ViewStatus::set_capture_status(bool triggered, int progess)
 {
     if (triggered) {
-        _capture_status = tr("Triggered! ") + QString::number(progess) + tr("% Captured");
+        _capture_status = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIGGERED), "Triggered! ") + QString::number(progess) 
+                        + L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CAPTURED), "% Captured");
     } else {
-        _capture_status = tr("Waiting for Trigger! ") + QString::number(progess) + tr("% Captured");
+        _capture_status = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_WAITING_FOR_TRIGGER), "Waiting for Trigger! ") + QString::number(progess) 
+                        + L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CAPTURED), "% Captured");
     }
 }
 
@@ -192,7 +196,7 @@ void ViewStatus::mousePressEvent(QMouseEvent *event)
 {
     assert(event);
 
-    if (_session->get_device()->dev_inst()->mode != DSO)
+    if (_session->get_device()->get_work_mode() != DSO)
         return;
 
     if (event->button() == Qt::LeftButton) { 
@@ -240,7 +244,7 @@ QJsonArray ViewStatus::get_session()
 
 void ViewStatus::load_session(QJsonArray measure_array)
 {
-    if (_session->get_device()->dev_inst()->mode != DSO ||
+    if (_session->get_device()->get_work_mode() != DSO ||
         measure_array.empty())
         return;
 
