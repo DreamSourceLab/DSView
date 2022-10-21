@@ -33,16 +33,14 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['IC', 'RFID']
     channels = (
-        {'id': 'data', 'name': 'Data', 'desc': 'Data line'},
+        {'id': 'data', 'name': 'Data', 'desc': 'Data line', 'idn':'dec_em4100_chan_data'},
     )
     options = (
         {'id': 'polarity', 'desc': 'Polarity', 'default': 'active-high',
-            'values': ('active-low', 'active-high')},
+            'values': ('active-low', 'active-high'), 'idn':'dec_em4100_opt_polarity'},
         {'id': 'datarate' , 'desc': 'Data rate', 'default': 64,
-            'values': (64, 32, 16)},
-#        {'id': 'coding', 'desc': 'Bit coding', 'default': 'biphase',
-#            'values': ('biphase', 'manchester', 'psk')},
-        {'id': 'coilfreq', 'desc': 'Coil frequency', 'default': 125000},
+            'values': (64, 32, 16), 'idn':'dec_em4100_opt_datarate'},
+        {'id': 'coilfreq', 'desc': 'Coil frequency', 'default': 125000, 'idn':'dec_em4100_opt_coilfreq'},
     )
     annotations = (
         ('bit', 'Bit'),

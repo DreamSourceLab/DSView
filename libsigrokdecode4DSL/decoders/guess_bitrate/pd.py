@@ -33,7 +33,7 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Clock/timing', 'Util']
     channels = (
-        {'id': 'data', 'name': 'Data', 'desc': 'Data line'},
+        {'id': 'data', 'name': 'Data', 'desc': 'Data line', 'idn':'dec_guess_bitrate_chan_data'},
     )
     annotations = (
         ('bitrate', 'Bitrate / baudrate'),

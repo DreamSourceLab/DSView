@@ -135,7 +135,7 @@ class Decoder(srd.Decoder):
     )
     options = (
         {'id': 'tpm_version', 'desc': 'TPM Version 1.2 or 2.0', 'default': '2.0',
-         'values': ('2.0', '1.2')},
+         'values': ('2.0', '1.2'), 'idn':'dec_spi_tpm_opt_tpm_version'},
     )
 
     def __init__(self):

@@ -40,7 +40,7 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Automotive']
     channels = (
-        {'id': 'data', 'name': 'Data', 'desc': 'Data line'},
+        {'id': 'data', 'name': 'Data', 'desc': 'Data line', 'idn':'dec_sae_j1850_vpw_chan_data'},
     )
     annotations = (
         ('raw', 'Raw'),

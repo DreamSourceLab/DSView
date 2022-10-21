@@ -113,10 +113,10 @@ class Decoder(srd.Decoder):
     inputs = ["logic"]
     outputs = []
     channels = (
-        {"id": "csx", "name": "CSX", "desc": "Chip selection signal"},
-        {"id": "dcx", "name": "DCX", "desc": "Clock signal"},
-        {"id": "sdo", "name": "SDO", "desc": "Serial output data"},
-        {"id": "wrx", "name": "WRX", "desc": "Command / data"},
+        {"id": "csx", "name": "CSX", "desc": "Chip selection signal", 'idn':'dec_st7789_chan_csx'},
+        {"id": "dcx", "name": "DCX", "desc": "Clock signal", 'idn':'dec_st7789_chan_dcx'},
+        {"id": "sdo", "name": "SDO", "desc": "Serial output data", 'idn':'dec_st7789_chan_sdo'},
+        {"id": "wrx", "name": "WRX", "desc": "Command / data", 'idn':'dec_st7789_chan_wrx'},
     )
     optional_channels = tuple()
     tags = ["Display", "SPI"]

@@ -33,10 +33,10 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Util']
     channels = (
-        {'id': 'data', 'name': 'Data', 'desc': 'Data line'},
+        {'id': 'data', 'name': 'Data', 'desc': 'Data line', 'idn':'dec_counter_chan_data'},
     )
     optional_channels = (
-        {'id': 'reset', 'name': 'Reset', 'desc': 'Reset line'},
+        {'id': 'reset', 'name': 'Reset', 'desc': 'Reset line', 'idn':'dec_counter_opt_chan_reset'},
     )
     annotations = (
         ('edge_count', 'Edge count'),
@@ -50,15 +50,15 @@ class Decoder(srd.Decoder):
     )
     options = (
         {'id': 'data_edge', 'desc': 'Edges to count (data)', 'default': 'any',
-            'values': ('any', 'rising', 'falling')},
-        {'id': 'divider', 'desc': 'Count divider (word width)', 'default': 0},
+            'values': ('any', 'rising', 'falling'), 'idn':'dec_counter_opt_data_edge'},
+        {'id': 'divider', 'desc': 'Count divider (word width)', 'default': 0, 'idn':'dec_counter_opt_divider'},
         {'id': 'reset_edge', 'desc': 'Edge which clears counters (reset)',
-            'default': 'falling', 'values': ('rising', 'falling')},
-        {'id': 'edge_off', 'desc': 'Edge counter value after start/reset', 'default': 0},
-        {'id': 'word_off', 'desc': 'Word counter value after start/reset', 'default': 0},
-        {'id': 'dead_cycles', 'desc': 'Ignore this many edges after reset', 'default': 0},
+            'default': 'falling', 'values': ('rising', 'falling'), 'idn':'dec_counter_opt_reset_edge'},
+        {'id': 'edge_off', 'desc': 'Edge counter value after start/reset', 'default': 0, 'idn':'dec_counter_opt_edge_off'},
+        {'id': 'word_off', 'desc': 'Word counter value after start/reset', 'default': 0, 'idn':'dec_counter_opt_word_off'},
+        {'id': 'dead_cycles', 'desc': 'Ignore this many edges after reset', 'default': 0, 'idn':'dec_counter_opt_dead_cycles'},
         {'id': 'start_with_reset', 'desc': 'Assume decode starts with reset',
-            'default': 'no', 'values': ('no', 'yes')},
+            'default': 'no', 'values': ('no', 'yes'), 'idn':'dec_counter_opt_start_with_reset'},
     )
 
     def __init__(self):

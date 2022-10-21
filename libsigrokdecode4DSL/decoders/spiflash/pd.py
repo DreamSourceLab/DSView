@@ -93,9 +93,9 @@ class Decoder(srd.Decoder):
     )
     options = (
         {'id': 'chip', 'desc': 'Chip', 'default': tuple(chips.keys())[0],
-            'values': tuple(chips.keys())},
+            'values': tuple(chips.keys()), 'idn':'dec_spiflash_opt_chip'},
         {'id': 'format', 'desc': 'Data format', 'default': 'hex',
-            'values': ('hex', 'ascii')},
+            'values': ('hex', 'ascii'), 'idn':'dec_spiflash_opt_format'},
     )
 
     def __init__(self):

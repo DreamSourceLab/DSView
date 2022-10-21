@@ -32,9 +32,9 @@ class Decoder(srd.Decoder):
     tags = ['IC', 'Memory']
     options = (
         {'id': 'chip', 'desc': 'Chip', 'default': 'generic',
-            'values': tuple(chips.keys())},
+            'values': tuple(chips.keys()), 'idn':'dec_eeprom24xx_opt_chip'},
         {'id': 'addr_counter', 'desc': 'Initial address counter value',
-            'default': 0},
+            'default': 0, 'idn':'dec_eeprom24xx_opt_addr_counter'},
     )
     annotations = (
         # Warnings

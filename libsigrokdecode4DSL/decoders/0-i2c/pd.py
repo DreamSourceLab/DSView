@@ -72,12 +72,12 @@ class Decoder(srd.Decoder):
     outputs = ['i2c']
     tags = ['Embedded/industrial']
     channels = (
-        {'id': 'scl', 'type': 8, 'name': 'SCL', 'desc': 'Serial clock line'},
-        {'id': 'sda', 'type': 108, 'name': 'SDA', 'desc': 'Serial data line'},
+        {'id': 'scl', 'type': 8, 'name': 'SCL', 'desc': 'Serial clock line', 'idn':'dec_0i2c_chan_scl'},
+        {'id': 'sda', 'type': 108, 'name': 'SDA', 'desc': 'Serial data line', 'idn':'dec_0i2c_chan_sda'},
     )
     options = (
         {'id': 'address_format', 'desc': 'Displayed slave address format',
-            'default': 'unshifted', 'values': ('shifted', 'unshifted')},
+            'default': 'unshifted', 'values': ('shifted', 'unshifted'), 'idn':'dec_0i2c_opt_addr'},
     )
     annotations = (
         ('7', 'start', 'Start condition'),

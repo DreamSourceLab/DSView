@@ -30,11 +30,11 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Embedded/industrial', 'Lighting']
     channels = (
-        {'id': 'dmx', 'name': 'DMX data', 'desc': 'Any DMX data line'},
+        {'id': 'dmx', 'name': 'DMX data', 'desc': 'Any DMX data line', 'idn':'dec_dmx512_chan_dmx'},
     )
     options = (
         {'id': 'invert', 'desc': 'Invert Signal?', 'default': 'no',
-            'values': ('yes', 'no')},
+            'values': ('yes', 'no'), 'idn':'dec_dmx512_opt_invert'},
     )
     annotations = (
         ('bit', 'Bit'),

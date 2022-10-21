@@ -70,8 +70,8 @@ class Decoder(srd.Decoder):
     outputs = ['mipi_dsi']
     tags = ['Embedded/industrial']
     channels = (
-        {'id': 'D0N', 'type': 8, 'name': 'D0N', 'desc': 'LP data 0 neg'},
-        {'id': 'D0P', 'type': 108, 'name': 'D0P', 'desc': 'LP data 0 pos'},
+        {'id': 'D0N', 'type': 8, 'name': 'D0N', 'desc': 'LP data 0 neg', 'idn':'dec_mipi_dsi_chan_D0N'},
+        {'id': 'D0P', 'type': 108, 'name': 'D0P', 'desc': 'LP data 0 pos', 'idn':'dec_mipi_dsi_chan_D0P'},
     )
     options = (
 

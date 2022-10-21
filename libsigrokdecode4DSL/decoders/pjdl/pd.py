@@ -122,12 +122,12 @@ class Decoder(srd.Decoder):
     outputs = ['pjon_link']
     tags = ['Embedded/industrial']
     channels = (
-        {'id': 'data' , 'name': 'DATA', 'desc': 'Single wire data'},
+        {'id': 'data' , 'name': 'DATA', 'desc': 'Single wire data', 'idn':'dec_pjdl_chan_data'},
     )
     options = (
         {'id': 'mode', 'desc': 'Communication mode',
-            'default': 1, 'values': (1, 2, 3, 4)},
-        {'id': 'idle_add_us', 'desc': 'Added idle time (us)', 'default': 4},
+            'default': 1, 'values': (1, 2, 3, 4), 'idn':'dec_pjdl_opt_mode'},
+        {'id': 'idle_add_us', 'desc': 'Added idle time (us)', 'default': 4, 'idn':'dec_pjdl_opt_idle_add_us'},
     )
     annotations = (
         ('cs_busy', 'Carrier busy'),

@@ -70,14 +70,14 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Memory']
     channels = (
-        {'id': 'cmd',  'name': 'CMD',  'desc': 'Command'},
-        {'id': 'clk',  'name': 'CLK',  'desc': 'Clock'},
+        {'id': 'cmd',  'name': 'CMD',  'desc': 'Command', 'idn':'dec_sdcard_sd_chan_cmd'},
+        {'id': 'clk',  'name': 'CLK',  'desc': 'Clock', 'idn':'dec_sdcard_sd_chan_clk'},
     )
     optional_channels = (
-        {'id': 'dat0', 'name': 'DAT0', 'desc': 'Data pin 0'},
-        {'id': 'dat1', 'name': 'DAT1', 'desc': 'Data pin 1'},
-        {'id': 'dat2', 'name': 'DAT2', 'desc': 'Data pin 2'},
-        {'id': 'dat3', 'name': 'DAT3', 'desc': 'Data pin 3'},
+        {'id': 'dat0', 'name': 'DAT0', 'desc': 'Data pin 0', 'idn':'dec_sdcard_sd_opt_chan_dat0'},
+        {'id': 'dat1', 'name': 'DAT1', 'desc': 'Data pin 1', 'idn':'dec_sdcard_sd_opt_chan_dat1'},
+        {'id': 'dat2', 'name': 'DAT2', 'desc': 'Data pin 2', 'idn':'dec_sdcard_sd_opt_chan_dat2'},
+        {'id': 'dat3', 'name': 'DAT3', 'desc': 'Data pin 3', 'idn':'dec_sdcard_sd_opt_chan_dat3'},
     )
     annotations = \
         tuple(('cmd%d' % i, 'CMD%d' % i) for i in range(64)) + \

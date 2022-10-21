@@ -35,10 +35,10 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Debug/trace']
     options = (
-        {'id': 'debug', 'desc': 'Debug', 'default': 'no', 'values': ('yes', 'no') },
+        {'id': 'debug', 'desc': 'Debug', 'default': 'no', 'values': ('yes', 'no') , 'idn':'dec_swim_opt_debug'},
     )
     channels = (
-        {'id': 'swim', 'name': 'SWIM', 'desc': 'SWIM data line'},
+        {'id': 'swim', 'name': 'SWIM', 'desc': 'SWIM data line', 'idn':'dec_swim_chan_swim'},
     )
     annotations = (
         ('bit', 'Bit'),

@@ -36,12 +36,12 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Debug/trace']
     channels = (
-        {'id': 'audck', 'name': 'AUDCK', 'desc': 'AUD clock'},
-        {'id': 'naudsync', 'name': 'nAUDSYNC', 'desc': 'AUD sync'},
-        {'id': 'audata3', 'name': 'AUDATA3', 'desc': 'AUD data line 3'},
-        {'id': 'audata2', 'name': 'AUDATA2', 'desc': 'AUD data line 2'},
-        {'id': 'audata1', 'name': 'AUDATA1', 'desc': 'AUD data line 1'},
-        {'id': 'audata0', 'name': 'AUDATA0', 'desc': 'AUD data line 0'},
+        {'id': 'audck', 'name': 'AUDCK', 'desc': 'AUD clock', 'idn':'dec_aud_chan_audck'},
+        {'id': 'naudsync', 'name': 'nAUDSYNC', 'desc': 'AUD sync', 'idn':'dec_aud_chan_naudsync'},
+        {'id': 'audata3', 'name': 'AUDATA3', 'desc': 'AUD data line 3', 'idn':'dec_aud_chan_audata3'},
+        {'id': 'audata2', 'name': 'AUDATA2', 'desc': 'AUD data line 2', 'idn':'dec_aud_chan_audata2'},
+        {'id': 'audata1', 'name': 'AUDATA1', 'desc': 'AUD data line 1', 'idn':'dec_aud_chan_audata1'},
+        {'id': 'audata0', 'name': 'AUDATA0', 'desc': 'AUD data line 0', 'idn':'dec_aud_chan_audata0'},
     )
     annotations = (
         ('dest', 'Destination address'),

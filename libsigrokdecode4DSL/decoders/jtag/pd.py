@@ -73,15 +73,15 @@ class Decoder(srd.Decoder):
     outputs = ['jtag']
     tags = ['Debug/trace']
     channels = (
-        {'id': 'tdi',  'name': 'TDI',  'desc': 'Test data input'},
-        {'id': 'tdo',  'name': 'TDO',  'desc': 'Test data output'},
-        {'id': 'tck',  'name': 'TCK',  'desc': 'Test clock'},
-        {'id': 'tms',  'name': 'TMS',  'desc': 'Test mode select'},
+        {'id': 'tdi',  'name': 'TDI',  'desc': 'Test data input', 'idn':'dec_jtag_chan_tdi'},
+        {'id': 'tdo',  'name': 'TDO',  'desc': 'Test data output', 'idn':'dec_jtag_chan_tdo'},
+        {'id': 'tck',  'name': 'TCK',  'desc': 'Test clock', 'idn':'dec_jtag_chan_tck'},
+        {'id': 'tms',  'name': 'TMS',  'desc': 'Test mode select', 'idn':'dec_jtag_chan_tms'},
     )
     optional_channels = (
-        {'id': 'trst', 'name': 'TRST#', 'desc': 'Test reset'},
-        {'id': 'srst', 'name': 'SRST#', 'desc': 'System reset'},
-        {'id': 'rtck', 'name': 'RTCK',  'desc': 'Return clock signal'},
+        {'id': 'trst', 'name': 'TRST#', 'desc': 'Test reset', 'idn':'dec_jtag_opt_chan_trst'},
+        {'id': 'srst', 'name': 'SRST#', 'desc': 'System reset', 'idn':'dec_jtag_opt_chan_srst'},
+        {'id': 'rtck', 'name': 'RTCK',  'desc': 'Return clock signal', 'idn':'dec_jtag_opt_chan_rtck'},
     )
     annotations = tuple([tuple([s.lower(), s]) for s in jtag_states]) + ( \
         ('bit-tdi', 'Bit (TDI)'),

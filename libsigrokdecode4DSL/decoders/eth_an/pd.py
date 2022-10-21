@@ -30,7 +30,7 @@ class Decoder(srd.Decoder):
     outputs = ['eth_an']
     tags = ['PC']
     channels = (
-        {'id': 'dp', 'name': 'TX+', 'desc': 'ETH TX+ signal'},
+        {'id': 'dp', 'name': 'TX+', 'desc': 'ETH TX+ signal', 'idn':'dec_eth_an_chan_dp'},
     )
     annotations = (
         ('data', 'FLP data'),

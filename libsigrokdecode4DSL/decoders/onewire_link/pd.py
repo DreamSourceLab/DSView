@@ -99,11 +99,11 @@ class Decoder(srd.Decoder):
     outputs = ['onewire_link']
     tags = ['Embedded/industrial']
     channels = (
-        {'id': 'owr', 'name': 'OWR', 'desc': '1-Wire signal line'},
+        {'id': 'owr', 'name': 'OWR', 'desc': '1-Wire signal line', 'idn':'dec_onewire_link_chan_owr'},
     )
     options = (
         {'id': 'overdrive', 'desc': 'Start in overdrive speed',
-            'default': 'no', 'values': ('yes', 'no')},
+            'default': 'no', 'values': ('yes', 'no'), 'idn':'dec_onewire_link_opt_overdrive'},
     )
     annotations = (
         ('bit', 'Bit'),

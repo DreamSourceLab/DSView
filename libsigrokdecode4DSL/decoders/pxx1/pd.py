@@ -32,7 +32,7 @@ class Decoder(srd.Decoder):
 	outputs = []
 	tags = ['PXX1']
 	channels = (
-		{'id': 'data', 'name': 'Data', 'desc': 'Data line'},
+		{'id': 'data', 'name': 'Data', 'desc': 'Data line', 'idn':'dec_pxx1_chan_data'},
 	)
 	options = ()
 

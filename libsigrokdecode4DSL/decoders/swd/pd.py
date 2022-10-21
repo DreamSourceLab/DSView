@@ -74,13 +74,13 @@ class Decoder(srd.Decoder):
     outputs = ['swd']
     tags = ['Debug/trace']
     channels = (
-        {'id': 'swclk', 'name': 'SWCLK', 'desc': 'Master clock'},
-        {'id': 'swdio', 'name': 'SWDIO', 'desc': 'Data input/output'},
+        {'id': 'swclk', 'name': 'SWCLK', 'desc': 'Master clock', 'idn':'dec_swd_chan_swclk'},
+        {'id': 'swdio', 'name': 'SWDIO', 'desc': 'Data input/output', 'idn':'dec_swd_chan_swdio'},
     )
     options = (
         {'id': 'strict_start',
          'desc': 'Wait for a line reset before starting to decode',
-         'default': 'no', 'values': ('yes', 'no')},
+         'default': 'no', 'values': ('yes', 'no'), 'idn':'dec_swd_opt_strict_start'},
     )
     annotations = (
         ('reset', 'RESET'),

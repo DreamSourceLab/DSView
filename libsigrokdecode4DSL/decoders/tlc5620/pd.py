@@ -38,18 +38,18 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['IC', 'Analog/digital']
     channels = (
-        {'id': 'clk', 'name': 'CLK', 'desc': 'Serial interface clock'},
-        {'id': 'data', 'name': 'DATA', 'desc': 'Serial interface data'},
+        {'id': 'clk', 'name': 'CLK', 'desc': 'Serial interface clock', 'idn':'dec_tlc5620_chan_clk'},
+        {'id': 'data', 'name': 'DATA', 'desc': 'Serial interface data', 'idn':'dec_tlc5620_chan_data'},
     )
     optional_channels = (
-        {'id': 'load', 'name': 'LOAD', 'desc': 'Serial interface load control'},
-        {'id': 'ldac', 'name': 'LDAC', 'desc': 'Load DAC'},
+        {'id': 'load', 'name': 'LOAD', 'desc': 'Serial interface load control', 'idn':'dec_tlc5620_opt_chan_load'},
+        {'id': 'ldac', 'name': 'LDAC', 'desc': 'Load DAC', 'idn':'dec_tlc5620_opt_chan_ldac'},
     )
     options = (
-        {'id': 'vref_a', 'desc': 'Reference voltage DACA (V)', 'default': 3.3},
-        {'id': 'vref_b', 'desc': 'Reference voltage DACB (V)', 'default': 3.3},
-        {'id': 'vref_c', 'desc': 'Reference voltage DACC (V)', 'default': 3.3},
-        {'id': 'vref_d', 'desc': 'Reference voltage DACD (V)', 'default': 3.3},
+        {'id': 'vref_a', 'desc': 'Reference voltage DACA (V)', 'default': 3.3, 'idn':'dec_tlc5620_opt_vref_a'},
+        {'id': 'vref_b', 'desc': 'Reference voltage DACB (V)', 'default': 3.3, 'idn':'dec_tlc5620_opt_vref_b'},
+        {'id': 'vref_c', 'desc': 'Reference voltage DACC (V)', 'default': 3.3, 'idn':'dec_tlc5620_opt_vref_c'},
+        {'id': 'vref_d', 'desc': 'Reference voltage DACD (V)', 'default': 3.3, 'idn':'dec_tlc5620_opt_vref_d'},
     )
     annotations = (
         ('dac-select', 'DAC select'),

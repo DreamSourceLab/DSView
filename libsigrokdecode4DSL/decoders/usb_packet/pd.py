@@ -184,7 +184,7 @@ class Decoder(srd.Decoder):
     tags = ['PC']
     options = (
         {'id': 'signalling', 'desc': 'Signalling',
-            'default': 'full-speed', 'values': ('full-speed', 'low-speed')},
+            'default': 'full-speed', 'values': ('full-speed', 'low-speed'), 'idn':'dec_usb_packet_opt_signalling'},
     )
     annotations = (
         ('sync-ok', 'SYNC'),

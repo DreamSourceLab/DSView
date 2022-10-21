@@ -33,17 +33,17 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['IC', 'RFID']
     channels = (
-        {'id': 'data', 'name': 'Data', 'desc': 'Data line'},
+        {'id': 'data', 'name': 'Data', 'desc': 'Data line', 'idn':'dec_em4305_chan_data'},
     )
     options = (
-        {'id': 'coilfreq', 'desc': 'Coil frequency', 'default': 125000},
-        {'id': 'first_field_stop', 'desc': 'First field stop min', 'default': 40},
-        {'id': 'w_gap', 'desc': 'Write gap min', 'default': 12},
-        {'id': 'w_one_max', 'desc': 'Write one max', 'default': 32},
-        {'id': 'w_zero_on_min', 'desc': 'Write zero on min', 'default': 15},
-        {'id': 'w_zero_off_max', 'desc': 'Write zero off max', 'default': 27},
+        {'id': 'coilfreq', 'desc': 'Coil frequency', 'default': 125000, 'idn':'dec_em4305_opt_coilfreq'},
+        {'id': 'first_field_stop', 'desc': 'First field stop min', 'default': 40, 'idn':'dec_em4305_opt_first_field_stop'},
+        {'id': 'w_gap', 'desc': 'Write gap min', 'default': 12, 'idn':'dec_em4305_opt_w_gap'},
+        {'id': 'w_one_max', 'desc': 'Write one max', 'default': 32, 'idn':'dec_em4305_opt_w_one_max'},
+        {'id': 'w_zero_on_min', 'desc': 'Write zero on min', 'default': 15, 'idn':'dec_em4305_opt_w_zero_on_min'},
+        {'id': 'w_zero_off_max', 'desc': 'Write zero off max', 'default': 27, 'idn':'dec_em4305_opt_w_zero_off_max'},
         {'id': 'em4100_decode', 'desc': 'EM4100 decode', 'default': 'on',
-            'values': ('on', 'off')},
+            'values': ('on', 'off'), 'idn':'dec_em4305_opt_em4100_decode'},
     )
     annotations = (
         ('bit_value', 'Bit value'),

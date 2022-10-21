@@ -135,21 +135,21 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['PC']
     channels = (
-        {'id': 'lframe', 'name': 'LFRAME#', 'desc': 'Frame'},
-        {'id': 'lclk',   'name': 'LCLK',    'desc': 'Clock'},
-        {'id': 'lad0',   'name': 'LAD[0]',  'desc': 'Addr/control/data 0'},
-        {'id': 'lad1',   'name': 'LAD[1]',  'desc': 'Addr/control/data 1'},
-        {'id': 'lad2',   'name': 'LAD[2]',  'desc': 'Addr/control/data 2'},
-        {'id': 'lad3',   'name': 'LAD[3]',  'desc': 'Addr/control/data 3'},
+        {'id': 'lframe', 'name': 'LFRAME#', 'desc': 'Frame', 'idn':'dec_lpc_chan_lframe'},
+        {'id': 'lclk',   'name': 'LCLK',    'desc': 'Clock', 'idn':'dec_lpc_chan_lclk'},
+        {'id': 'lad0',   'name': 'LAD[0]',  'desc': 'Addr/control/data 0', 'idn':'dec_lpc_chan_lad0'},
+        {'id': 'lad1',   'name': 'LAD[1]',  'desc': 'Addr/control/data 1', 'idn':'dec_lpc_chan_lad1'},
+        {'id': 'lad2',   'name': 'LAD[2]',  'desc': 'Addr/control/data 2', 'idn':'dec_lpc_chan_lad2'},
+        {'id': 'lad3',   'name': 'LAD[3]',  'desc': 'Addr/control/data 3', 'idn':'dec_lpc_chan_lad3'},
     )
     optional_channels = (
-        {'id': 'lreset', 'name': 'LRESET#', 'desc': 'Reset'},
-        {'id': 'ldrq',   'name': 'LDRQ#',   'desc': 'Encoded DMA / bus master request'},
-        {'id': 'serirq', 'name': 'SERIRQ',  'desc': 'Serialized IRQ'},
-        {'id': 'clkrun', 'name': 'CLKRUN#', 'desc': 'Clock run'},
-        {'id': 'lpme',   'name': 'LPME#',   'desc': 'LPC power management event'},
-        {'id': 'lpcpd',  'name': 'LPCPD#',  'desc': 'Power down'},
-        {'id': 'lsmi',   'name': 'LSMI#',   'desc': 'System Management Interrupt'},
+        {'id': 'lreset', 'name': 'LRESET#', 'desc': 'Reset', 'idn':'dec_lpc_opt_chan_lreset'},
+        {'id': 'ldrq',   'name': 'LDRQ#',   'desc': 'Encoded DMA / bus master request', 'idn':'dec_lpc_opt_chan_ldrq'},
+        {'id': 'serirq', 'name': 'SERIRQ',  'desc': 'Serialized IRQ', 'idn':'dec_lpc_opt_chan_serirq'},
+        {'id': 'clkrun', 'name': 'CLKRUN#', 'desc': 'Clock run', 'idn':'dec_lpc_opt_chan_clkrun'},
+        {'id': 'lpme',   'name': 'LPME#',   'desc': 'LPC power management event', 'idn':'dec_lpc_opt_chan_lpme'},
+        {'id': 'lpcpd',  'name': 'LPCPD#',  'desc': 'Power down', 'idn':'dec_lpc_opt_chan_lpcpd'},
+        {'id': 'lsmi',   'name': 'LSMI#',   'desc': 'System Management Interrupt', 'idn':'dec_lpc_opt_chan_lsmi'},
     )
     annotations = (
         ('warnings', 'Warnings'),

@@ -55,9 +55,9 @@ class Decoder(srd.Decoder):
     )
     options = (
         {'id': 'ms_chan', 'desc': 'Master -> slave channel',
-            'default': 'RX', 'values': ('RX', 'TX')},
+            'default': 'RX', 'values': ('RX', 'TX'), 'idn':'dec_amulet_ascii_opt_ms_chan'},
         {'id': 'sm_chan', 'desc': 'Slave -> master channel',
-            'default': 'TX', 'values': ('RX', 'TX')},
+            'default': 'TX', 'values': ('RX', 'TX'), 'idn':'dec_amulet_ascii_opt_sm_chan'},
     )
 
     def __init__(self):

@@ -34,9 +34,9 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['IC', 'Memory']
     channels = (
-        {'id': 'clk', 'name': 'CLK', 'desc': 'Clock'},
-        {'id': 'd', 'name': 'DATA', 'desc': 'Data'},
-        {'id': 'ce', 'name': 'CE#', 'desc': 'Chip-enable'},
+        {'id': 'clk', 'name': 'CLK', 'desc': 'Clock', 'idn':'dec_sda2506_chan_clk'},
+        {'id': 'd', 'name': 'DATA', 'desc': 'Data', 'idn':'dec_sda2506_chan_d'},
+        {'id': 'ce', 'name': 'CE#', 'desc': 'Chip-enable', 'idn':'dec_sda2506_chan_ce'},
     )
     annotations = (
         ('cmdbit', 'Command bit'),

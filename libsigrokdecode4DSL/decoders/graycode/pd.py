@@ -84,12 +84,12 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Encoding']
     optional_channels = tuple(
-        {'id': 'd{}'.format(i), 'name': 'D{}'.format(i), 'desc': 'Data line {}'.format(i)}
+        {'id': 'd{}'.format(i), 'name': 'D{}'.format(i), 'desc': 'Data line {}'.format(i), 'idn':'dec_graycode_opt_chan_d{}'.format(i)}
         for i in range(MAX_CHANNELS)
     )
     options = (
-        {'id': 'edges', 'desc': 'Edges per rotation', 'default': 0},
-        {'id': 'avg_period', 'desc': 'Averaging period', 'default': 10},
+        {'id': 'edges', 'desc': 'Edges per rotation', 'default': 0, 'idn':'dec_graycode_opt_edges'},
+        {'id': 'avg_period', 'desc': 'Averaging period', 'default': 10, 'idn':'dec_graycode_opt_avg_period'},
     )
     annotations = (
         ('phase', 'Phase'),

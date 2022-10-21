@@ -37,14 +37,14 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['PC']
     channels = (
-        {'id': 'clk', 'type': 0, 'name': 'Clock', 'desc': 'Clock line'},
-        {'id': 'data', 'type': 107, 'name': 'Data', 'desc': 'Data line'},
+        {'id': 'clk', 'type': 0, 'name': 'Clock', 'desc': 'Clock line', 'idn':'dec_ps2_chan_clk'},
+        {'id': 'data', 'type': 107, 'name': 'Data', 'desc': 'Data line', 'idn':'dec_ps2_chan_data'},
     )
     options = (
         {'id': 'HtoD_Clock', 'desc': 'HtoD_Clock',
-            'default': 'rise', 'values': ('rise', 'fall')},
+            'default': 'rise', 'values': ('rise', 'fall'), 'idn':'dec_ps2_opt_HtoD_Clock'},
         {'id': 'DtoH_Clock', 'desc': 'DtoH_Clock',
-            'default': 'fall', 'values': ('fall', 'rise')},
+            'default': 'fall', 'values': ('fall', 'rise'), 'idn':'dec_ps2_opt_DtoH_Clock'},
     )
     annotations = (
         ('207', 'bit', 'Bit'),

@@ -36,12 +36,12 @@ class Decoder(srd.Decoder):
     tags = ['Embedded/industrial']
 
     channels = (
-        {'id': 'clk', 'name': 'CLK', 'desc': 'Clock'},
-        {'id': 'sync', 'name': 'SYNC', 'desc': 'Sync'},
-        {'id': 'data', 'name': 'DATA', 'desc': 'X, Y or Z axis data'},
+        {'id': 'clk', 'name': 'CLK', 'desc': 'Clock', 'idn':'dec_xy2-100_chan_clk'},
+        {'id': 'sync', 'name': 'SYNC', 'desc': 'Sync', 'idn':'dec_xy2-100_chan_sync'},
+        {'id': 'data', 'name': 'DATA', 'desc': 'X, Y or Z axis data', 'idn':'dec_xy2-100_chan_data'},
     )
     optional_channels = (
-        {'id': 'status', 'name': 'STAT', 'desc': 'X, Y or Z axis status'},
+        {'id': 'status', 'name': 'STAT', 'desc': 'X, Y or Z axis status', 'idn':'dec_xy2-100_opt_chan_status'},
     )
 
     annotations = (

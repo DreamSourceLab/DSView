@@ -85,26 +85,29 @@ class Decoder(srd.Decoder):
     outputs = ['uart']
     tags = ['Embedded/industrial']
     channels = (
-        {'id': 'rxtx', 'type': 209, 'name': 'RX/TX', 'desc': 'UART transceive line'},
+     
+        {'id': 'rxtx', 'type': 209, 'name': 'RX/TX', 'desc': 'UART transceive line', 'idn':'dec_1uart_chan_rxtx'},
     )
     options = (
-        {'id': 'baudrate', 'desc': 'Baud rate', 'default': 115200},
+
+
+        {'id': 'baudrate', 'desc': 'Baud rate', 'default': 115200, 'idn':'dec_1uart_opt_baudrate'},
         {'id': 'num_data_bits', 'desc': 'Data bits', 'default': 8,
-            'values': tuple(range(4,129,1))},
+            'values': tuple(range(4,129,1)), 'idn':'dec_1uart_opt_num_data_bits'},
         {'id': 'parity_type', 'desc': 'Parity type', 'default': 'none',
-            'values': ('none', 'odd', 'even', 'zero', 'one')},
+            'values': ('none', 'odd', 'even', 'zero', 'one'), 'idn':'dec_1uart_opt_parity_type'},
         {'id': 'parity_check', 'desc': 'Check parity?', 'default': 'yes',
-            'values': ('yes', 'no')},
+            'values': ('yes', 'no'), 'idn':'dec_1uart_opt_parity_check'},
         {'id': 'num_stop_bits', 'desc': 'Stop bits', 'default': 1.0,
-            'values': (0.0, 0.5, 1.0, 1.5, 2.0, 2.5)},
+            'values': (0.0, 0.5, 1.0, 1.5, 2.0, 2.5), 'idn':'dec_1uart_opt_num_stop_bits'},
         {'id': 'bit_order', 'desc': 'Bit order', 'default': 'lsb-first',
-            'values': ('lsb-first', 'msb-first')},
+            'values': ('lsb-first', 'msb-first'), 'idn':'dec_1uart_opt_bit_order'},
         {'id': 'format', 'desc': 'Data format', 'default': 'hex',
-            'values': ('ascii', 'dec', 'hex', 'oct', 'bin')},
+            'values': ('ascii', 'dec', 'hex', 'oct', 'bin') ,'idn':'dec_1uart_opt_format'},
         {'id': 'invert', 'desc': 'Invert Signal?', 'default': 'no',
-            'values': ('yes', 'no')},
-	{'id': 'anno_startstop', 'desc': 'Display Start/Stop?', 'default': 'yes',
-            'values': ('yes', 'no')},
+            'values': ('yes', 'no'), 'idn':'dec_1uart_opt_invert'},
+	    {'id': 'anno_startstop', 'desc': 'Display Start/Stop?', 'default': 'no',
+            'values': ('yes', 'no'), 'idn':'dec_1uart_anno_startstop'},
     )
     annotations = (
         ('108', 'data', 'data'),

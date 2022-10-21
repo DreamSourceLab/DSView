@@ -123,10 +123,10 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Encoding']
     channels = (
-        {'id': 'data', 'name': 'Data', 'desc': 'Data line'},
+        {'id': 'data', 'name': 'Data', 'desc': 'Data line', 'idn':'dec_morse_chan_data'},
     )
     options = (
-        {'id': 'timeunit', 'desc': 'Time unit (guess)', 'default': 0.1},
+        {'id': 'timeunit', 'desc': 'Time unit (guess)', 'default': 0.1, 'idn':'dec_morse_opt_timeunit'},
     )
     annotations = (
         ('time', 'Time'),

@@ -84,12 +84,12 @@ class Decoder(srd.Decoder):
     outputs = ['mipi_rffe']
     tags = ['Embedded/industrial']
     channels = (
-        {'id': 'sclk', 'type': 8, 'name': 'SCLK', 'desc': 'Serial clock line'},
-        {'id': 'sdata', 'type': 108, 'name': 'SDATA', 'desc': 'Serial data line'},
+        {'id': 'sclk', 'type': 8, 'name': 'SCLK', 'desc': 'Serial clock line', 'idn':'dec_mipi_rffe_chan_sclk'},
+        {'id': 'sdata', 'type': 108, 'name': 'SDATA', 'desc': 'Serial data line', 'idn':'dec_mipi_rffe_chan_sdata'},
     )
     options = (
-        {'id': 'error_display', 'desc': 'Error display options',
-            'default': 'display', 'values': ('display', 'not_display')},
+        {'id': 'error_display', 'desc': 'Error display options', 
+            'default': 'display', 'values': ('display', 'not_display'), 'idn':'dec_mipi_rffe_opt_error_display'},
     )
     annotations = (
         ('7', 'ssc', 'Sequence Start Condition'),

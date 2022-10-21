@@ -227,14 +227,14 @@ class Decoder(srd.Decoder):
     outputs = ['usb_pd']
     tags = ['PC']
     channels = (
-        {'id': 'cc1', 'name': 'CC1', 'desc': 'Configuration Channel 1'},
+        {'id': 'cc1', 'name': 'CC1', 'desc': 'Configuration Channel 1', 'idn':'dec_usb_power_delivery_chan_cc1'},
     )
     optional_channels = (
-        {'id': 'cc2', 'name': 'CC2', 'desc': 'Configuration Channel 2'},
+        {'id': 'cc2', 'name': 'CC2', 'desc': 'Configuration Channel 2', 'idn':'dec_usb_power_delivery_opt_chan_cc2'},
     )
     options = (
         {'id': 'fulltext', 'desc': 'Full text decoding of packets',
-         'default': 'no', 'values': ('yes', 'no')},
+         'default': 'no', 'values': ('yes', 'no'), 'idn':'dec_usb_power_delivery_opt_fulltext'},
     )
     annotations = (
         ('type', 'Packet Type'),

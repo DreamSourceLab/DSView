@@ -38,12 +38,12 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['PC', 'Retro computing']
     channels = (
-        {'id': 'data', 'name': 'DATA', 'desc': 'Data I/O'},
-        {'id': 'clk', 'name': 'CLK', 'desc': 'Clock'},
-        {'id': 'atn', 'name': 'ATN', 'desc': 'Attention'},
+        {'id': 'data', 'name': 'DATA', 'desc': 'Data I/O', 'idn':'dec_iec_chan_data'},
+        {'id': 'clk', 'name': 'CLK', 'desc': 'Clock', 'idn':'dec_iec_chan_clk'},
+        {'id': 'atn', 'name': 'ATN', 'desc': 'Attention', 'idn':'dec_iec_chan_atn'},
     )
     optional_channels = (
-        {'id': 'srq', 'name': 'SRQ', 'desc': 'Service request'},
+        {'id': 'srq', 'name': 'SRQ', 'desc': 'Service request', 'idn':'dec_iec_opt_chan_srq'},
     )
     annotations = (
         ('items', 'Items'),

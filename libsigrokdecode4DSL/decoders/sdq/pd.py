@@ -40,10 +40,10 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Embedded/industrial']
     channels = (
-        {'id': 'sdq', 'name': 'SDQ', 'desc': 'Single wire SDQ data line.'},
+        {'id': 'sdq', 'name': 'SDQ', 'desc': 'Single wire SDQ data line.', 'idn':'dec_sdq_chan_sdq'},
     )
     options = (
-        {'id': 'bitrate', 'desc': 'Bit rate', 'default': 98425},
+        {'id': 'bitrate', 'desc': 'Bit rate', 'default': 98425, 'idn':'dec_sdq_opt_bitrate'},
     )
     annotations = (
         ('bit', 'Bit'),

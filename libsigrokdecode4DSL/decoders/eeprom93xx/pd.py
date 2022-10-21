@@ -30,8 +30,8 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['IC', 'Memory']
     options = (
-        {'id': 'addresssize', 'desc': 'Address size', 'default': 8},
-        {'id': 'wordsize', 'desc': 'Word size', 'default': 16},
+        {'id': 'addresssize', 'desc': 'Address size', 'default': 8, 'idn':'dec_eeprom93xx_opt_addresssize'},
+        {'id': 'wordsize', 'desc': 'Word size', 'default': 16, 'idn':'dec_eeprom93xx_opt_wordsize'},
     )
     annotations = (
         ('si-data', 'SI data'),

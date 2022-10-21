@@ -40,14 +40,14 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Clock/timing', 'Util']
     channels = (
-        {'id': 'clk', 'name': 'Clock', 'desc': 'Clock reference channel'},
-        {'id': 'sig', 'name': 'Resulting signal', 'desc': 'Resulting signal controlled by the clock'},
+        {'id': 'clk', 'name': 'Clock', 'desc': 'Clock reference channel', 'idn':'dec_jitter_chan_clk'},
+        {'id': 'sig', 'name': 'Resulting signal', 'desc': 'Resulting signal controlled by the clock', 'idn':'dec_jitter_chan_sig'},
     )
     options = (
         {'id': 'clk_polarity', 'desc': 'Clock edge polarity',
-            'default': 'rising', 'values': ('rising', 'falling', 'both')},
+            'default': 'rising', 'values': ('rising', 'falling', 'both'), 'idn':'dec_jitter_opt_clk_polarity'},
         {'id': 'sig_polarity', 'desc': 'Resulting signal edge polarity',
-            'default': 'rising', 'values': ('rising', 'falling', 'both')},
+            'default': 'rising', 'values': ('rising', 'falling', 'both'), 'idn':'dec_jitter_opt_sig_polarity'},
     )
     annotations = (
         ('jitter', 'Jitter value'),

@@ -37,16 +37,16 @@ class Decoder(srd.Decoder):
     inputs = ['logic']
     outputs = []
     channels = (
-        {'id': 'clk', 'name': 'CLK', 'desc': 'Serial clock line'},
-        {'id': 'data', 'name': 'DATA', 'desc': 'Serial data line'},
+        {'id': 'clk', 'name': 'CLK', 'desc': 'Serial clock line', 'idn':'dec_caliper_chan_clk'},
+        {'id': 'data', 'name': 'DATA', 'desc': 'Serial data line', 'idn':'dec_caliper_chan_data'},
     )
     options = (
         {'id': 'timeout_ms', 'desc': 'Packet timeout in ms, 0 to disable',
-            'default': 10},
+            'default': 10, 'idn':'dec_caliper_opt_timeout_ms'},
         {'id': 'unit', 'desc': 'Convert units', 'default': 'keep',
-            'values': ('keep', 'mm', 'inch')},
+            'values': ('keep', 'mm', 'inch'), 'idn':'dec_caliper_opt_unit'},
         {'id': 'changes', 'desc': 'Changes only', 'default': 'no',
-            'values': ('no', 'yes')},
+            'values': ('no', 'yes'), 'idn':'dec_caliper_opt_changes'},
     )
     tags = ['Analog/digital', 'Sensor']
     annotations = (

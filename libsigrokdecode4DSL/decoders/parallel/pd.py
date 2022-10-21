@@ -79,11 +79,11 @@ class Decoder(srd.Decoder):
     optional_channels = channel_list(NUM_CHANNELS)
     options = (
         {'id': 'clock_edge', 'desc': 'Clock edge to sample on',
-            'default': 'rising', 'values': ('rising', 'falling')},
+            'default': 'rising', 'values': ('rising', 'falling'), 'idn':'dec_parallel_opt_clock_edge'},
         {'id': 'wordsize', 'desc': 'Data wordsize (# bus cycles)',
-            'default': 0},
+            'default': 0, 'idn':'dec_parallel_opt_wordsize'},
         {'id': 'endianness', 'desc': 'Data endianness',
-            'default': 'little', 'values': ('little', 'big')},
+            'default': 'little', 'values': ('little', 'big'), 'idn':'dec_parallel_opt_endianness'},
     )
     annotations = (
         ('items', 'Items'),
