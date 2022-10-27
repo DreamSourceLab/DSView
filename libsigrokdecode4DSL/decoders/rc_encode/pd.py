@@ -82,7 +82,7 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['IC', 'IR']
     channels = (
-        {'id': 'data', 'name': 'Data', 'desc': 'Data line'},
+        {'id': 'data', 'name': 'Data', 'desc': 'Data line', 'idn':'dec_rc_encode_chan_data'},
     )
     annotations = (
         ('bit-0', 'Bit 0'),

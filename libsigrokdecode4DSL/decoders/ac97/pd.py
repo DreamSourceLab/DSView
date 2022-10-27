@@ -63,13 +63,13 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Audio', 'PC']
     channels = (
-        {'id': 'sync', 'name': 'SYNC', 'desc': 'Frame synchronization'},
-        {'id': 'clk', 'name': 'BIT_CLK', 'desc': 'Data bits clock'},
+        {'id': 'sync', 'name': 'SYNC', 'desc': 'Frame synchronization', 'idn':'dec_ac97_chan_sync'},
+        {'id': 'clk', 'name': 'BIT_CLK', 'desc': 'Data bits clock', 'idn':'dec_ac97_chan_clk'},
     )
     optional_channels = (
-        {'id': 'out', 'name': 'SDATA_OUT', 'desc': 'Data output'},
-        {'id': 'in', 'name': 'SDATA_IN', 'desc': 'Data input'},
-        {'id': 'rst', 'name': 'RESET#', 'desc': 'Reset line'},
+        {'id': 'out', 'name': 'SDATA_OUT', 'desc': 'Data output', 'idn':'dec_ac97_opt_chan_out'},
+        {'id': 'in', 'name': 'SDATA_IN', 'desc': 'Data input', 'idn':'dec_ac97_opt_chan_in'},
+        {'id': 'rst', 'name': 'RESET#', 'desc': 'Reset line', 'idn':'dec_ac97_opt_chan_rst'},
     )
     annotations = (
         ('bit-out', 'Output bits'),

@@ -40,14 +40,14 @@ class Decoder(srd.Decoder):
     outputs = ['mdio']
     tags = ['Networking']
     channels = (
-        {'id': 'mdc', 'name': 'MDC', 'desc': 'Clock'},
-        {'id': 'mdio', 'name': 'MDIO', 'desc': 'Data'},
+        {'id': 'mdc', 'name': 'MDC', 'desc': 'Clock', 'idn':'dec_mdio_chan_mdc'},
+        {'id': 'mdio', 'name': 'MDIO', 'desc': 'Data', 'idn':'dec_mdio_chan_mdio'},
     )
     options = (
         {'id': 'show_debug_bits', 'desc': 'Show debug bits',
-            'default': 'no', 'values': ('yes', 'no')},
+            'default': 'no', 'values': ('yes', 'no'), 'idn':'dec_mdio_opt_show_debug_bits'},
         {'id': 'read_edge', 'desc': 'read edge',
-            'default': 'falling', 'values': ('rising', 'falling')},
+            'default': 'falling', 'values': ('rising', 'falling'), 'idn':'dec_mdio_opt_read_edge'},
     )
     annotations = (
         ('bit-val', 'Bit value'),

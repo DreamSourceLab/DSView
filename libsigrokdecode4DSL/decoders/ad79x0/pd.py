@@ -54,7 +54,7 @@ class Decoder(srd.Decoder):
         ('data_validation', 'Data validation', (2,)),
     )
     options = (
-        {'id': 'vref', 'desc': 'Reference voltage (V)', 'default': 1.5},
+        {'id': 'vref', 'desc': 'Reference voltage (V)', 'default': 1.5, 'idn':'dec_ad79x0_opt_vref'},
     )
 
     def __init__(self,):

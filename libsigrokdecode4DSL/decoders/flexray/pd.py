@@ -53,13 +53,13 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Automotive']
     channels = (
-        {'id': 'channel', 'name': 'Channel', 'desc': 'FlexRay bus channel'},
+        {'id': 'channel', 'name': 'Channel', 'desc': 'FlexRay bus channel', 'idn':'dec_flexray_chan_channel'},
     )
     options = (
         {'id': 'channel_type', 'desc': 'Channel type', 'default': 'A',
-            'values': ('A', 'B')},
+            'values': ('A', 'B'), 'idn':'dec_flexray_opt_channel_type'},
         {'id': 'bitrate', 'desc': 'Bitrate (bit/s)', 'default': 10000000,
-            'values': (10000000, 5000000, 2500000)},
+            'values': (10000000, 5000000, 2500000), 'idn':'dec_flexray_opt_bitrate'},
     )
     annotations = (
         ('data', 'FlexRay payload data'),

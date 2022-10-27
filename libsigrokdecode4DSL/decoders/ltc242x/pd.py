@@ -40,7 +40,7 @@ class Decoder(srd.Decoder):
         ('ch1_voltages', 'CH1 voltages', (1,)),
     )
     options = (
-        {'id': 'vref', 'desc': 'Reference voltage (V)', 'default': 1.5},
+        {'id': 'vref', 'desc': 'Reference voltage (V)', 'default': 1.5, 'idn':'dec_ltc242x_opt_vref'},
     )
 
     def __init__(self):

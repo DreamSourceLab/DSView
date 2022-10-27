@@ -32,14 +32,14 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Audio']
     channels = (
-        { 'id': 'clock', 'name': 'Bitclk', 'desc': 'Data bit clock' },
-        { 'id': 'frame', 'name': 'Framesync', 'desc': 'Frame sync' },
-        { 'id': 'data', 'name': 'Data', 'desc': 'Serial data' },
+        { 'id': 'clock', 'name': 'Bitclk', 'desc': 'Data bit clock', 'idn':'dec_tdm_audio_chan_clock' },
+        { 'id': 'frame', 'name': 'Framesync', 'desc': 'Frame sync', 'idn':'dec_tdm_audio_chan_frame' },
+        { 'id': 'data', 'name': 'Data', 'desc': 'Serial data', 'idn':'dec_tdm_audio_chan_data' },
     )
     options = (
-        {'id': 'bps', 'desc': 'Bits per sample', 'default': 16 },
-        {'id': 'channels', 'desc': 'Channels per frame', 'default': MAX_CHANNELS },
-        {'id': 'edge', 'desc': 'Clock edge to sample on', 'default': 'rising', 'values': ('rising', 'falling') }
+        {'id': 'bps', 'desc': 'Bits per sample', 'default': 16, 'idn':'dec_tdm_audio_opt_bps' },
+        {'id': 'channels', 'desc': 'Channels per frame', 'default': MAX_CHANNELS, 'idn':'dec_tdm_audio_opt_channels' },
+        {'id': 'edge', 'desc': 'Clock edge to sample on', 'default': 'rising', 'values': ('rising', 'falling') , 'idn':'dec_tdm_audio_opt_edge'}
     )
     annotations = tuple(('ch%d' % i, 'Ch%d' % i) for i in range(MAX_CHANNELS))
     annotation_rows = tuple(('ch%d-vals' % i, 'Ch%d' % i, (i,)) for i in range(MAX_CHANNELS))

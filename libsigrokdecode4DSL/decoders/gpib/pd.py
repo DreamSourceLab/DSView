@@ -31,25 +31,25 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['PC']
     channels = (
-        {'id': 'dio1' , 'name': 'DIO1', 'desc': 'Data I/O bit 1'},
-        {'id': 'dio2' , 'name': 'DIO2', 'desc': 'Data I/O bit 2'},
-        {'id': 'dio3' , 'name': 'DIO3', 'desc': 'Data I/O bit 3'},
-        {'id': 'dio4' , 'name': 'DIO4', 'desc': 'Data I/O bit 4'},
-        {'id': 'dio5' , 'name': 'DIO5', 'desc': 'Data I/O bit 5'},
-        {'id': 'dio6' , 'name': 'DIO6', 'desc': 'Data I/O bit 6'},
-        {'id': 'dio7' , 'name': 'DIO7', 'desc': 'Data I/O bit 7'},
-        {'id': 'dio8' , 'name': 'DIO8', 'desc': 'Data I/O bit 8'},
-        {'id': 'eoi', 'name': 'EOI', 'desc': 'End or identify'},
-        {'id': 'dav', 'name': 'DAV', 'desc': 'Data valid'},
-        {'id': 'nrfd', 'name': 'NRFD', 'desc': 'Not ready for data'},
-        {'id': 'ndac', 'name': 'NDAC', 'desc': 'Not data accepted'},
-        {'id': 'ifc', 'name': 'IFC', 'desc': 'Interface clear'},
-        {'id': 'srq', 'name': 'SRQ', 'desc': 'Service request'},
-        {'id': 'atn', 'name': 'ATN', 'desc': 'Attention'},
-        {'id': 'ren', 'name': 'REN', 'desc': 'Remote enable'},
+        {'id': 'dio1' , 'name': 'DIO1', 'desc': 'Data I/O bit 1', 'idn':'dec_gpib_chan_dio1'},
+        {'id': 'dio2' , 'name': 'DIO2', 'desc': 'Data I/O bit 2', 'idn':'dec_gpib_chan_dio2'},
+        {'id': 'dio3' , 'name': 'DIO3', 'desc': 'Data I/O bit 3', 'idn':'dec_gpib_chan_dio3'},
+        {'id': 'dio4' , 'name': 'DIO4', 'desc': 'Data I/O bit 4', 'idn':'dec_gpib_chan_dio4'},
+        {'id': 'dio5' , 'name': 'DIO5', 'desc': 'Data I/O bit 5', 'idn':'dec_gpib_chan_dio5'},
+        {'id': 'dio6' , 'name': 'DIO6', 'desc': 'Data I/O bit 6', 'idn':'dec_gpib_chan_dio6'},
+        {'id': 'dio7' , 'name': 'DIO7', 'desc': 'Data I/O bit 7', 'idn':'dec_gpib_chan_dio7'},
+        {'id': 'dio8' , 'name': 'DIO8', 'desc': 'Data I/O bit 8', 'idn':'dec_gpib_chan_dio8'},
+        {'id': 'eoi', 'name': 'EOI', 'desc': 'End or identify', 'idn':'dec_gpib_chan_eoi'},
+        {'id': 'dav', 'name': 'DAV', 'desc': 'Data valid', 'idn':'dec_gpib_chan_dav'},
+        {'id': 'nrfd', 'name': 'NRFD', 'desc': 'Not ready for data', 'idn':'dec_gpib_chan_nrfd'},
+        {'id': 'ndac', 'name': 'NDAC', 'desc': 'Not data accepted', 'idn':'dec_gpib_chan_ndac'},
+        {'id': 'ifc', 'name': 'IFC', 'desc': 'Interface clear', 'idn':'dec_gpib_chan_ifc'},
+        {'id': 'srq', 'name': 'SRQ', 'desc': 'Service request', 'idn':'dec_gpib_chan_srq'},
+        {'id': 'atn', 'name': 'ATN', 'desc': 'Attention', 'idn':'dec_gpib_chan_atn'},
+        {'id': 'ren', 'name': 'REN', 'desc': 'Remote enable', 'idn':'dec_gpib_chan_ren'},
     )
     options = (
-        {'id': 'sample_total', 'desc': 'Total number of samples', 'default': 0},
+        {'id': 'sample_total', 'desc': 'Total number of samples', 'default': 0, 'idn':'dec_gpib_opt_sample_total'},
     )
     annotations = (
         ('items', 'Items'),

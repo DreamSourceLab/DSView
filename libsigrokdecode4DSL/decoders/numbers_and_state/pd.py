@@ -90,7 +90,8 @@ class Ann:
 
 def _channel_decl(count):
     return tuple([
-        {'id': 'bit{}'.format(i), 'name': 'Bit{}'.format(i), 'desc': 'Bit position {}'.format(i)}
+        {'id': 'bit{}'.format(i), 'name': 'Bit{}'.format(i), 'desc': 'Bit position {}'.format(i), 
+        'idn':'dec_numbers_and_state_Bit{}'.format(i)}
         for i in range(count)
     ])
 
@@ -117,19 +118,19 @@ class Decoder(srd.Decoder):
     outputs = ['numbers_and_state']
     tags = ['Encoding', 'Util']
     optional_channels = (
-        {'id': 'clk', 'name': 'Clock', 'desc': 'Clock'},
+        {'id': 'clk', 'name': 'Clock', 'desc': 'Clock', 'idn':'dec_numbers_and_state_chan_clk'},
     ) + _channel_decl(_max_channels)
     options = (
         {'id': 'clkedge', 'desc': 'Clock edge', 'default': 'rising',
-            'values': ('rising', 'falling', 'either')},
-        {'id': 'count', 'desc': 'Total bits count', 'default': 0},
+            'values': ('rising', 'falling', 'either'), 'idn':'dec_numbers_and_state_opt_clkedge'},
+        {'id': 'count', 'desc': 'Total bits count', 'default': 0, 'idn':'dec_numbers_and_state_opt_count'},
         {'id': 'interp', 'desc': 'Interpretation', 'default': 'unsigned',
-            'values': ('unsigned', 'signed', 'fixpoint', 'fixsigned', 'ieee754', 'enum')},
-        {'id': 'fracbits', 'desc': 'Fraction bits count', 'default': 0},
+            'values': ('unsigned', 'signed', 'fixpoint', 'fixsigned', 'ieee754', 'enum'), 'idn':'dec_numbers_and_state_opt_interp'},
+        {'id': 'fracbits', 'desc': 'Fraction bits count', 'default': 0, 'idn':'dec_numbers_and_state_opt_fracbits'},
         {'id': 'mapping', 'desc': 'Enum to text map file',
-            'default': 'enumtext.json'},
+            'default': 'enumtext.json', 'idn':'dec_numbers_and_state_opt_mapping'},
         {'id': 'format', 'desc': 'Number format', 'default': '-',
-            'values': ('-', 'bin', 'oct', 'dec', 'hex')},
+            'values': ('-', 'bin', 'oct', 'dec', 'hex'), 'idn':'dec_numbers_and_state_opt_format'},
     )
     annotations = (
         ('raw', 'Raw pattern'),

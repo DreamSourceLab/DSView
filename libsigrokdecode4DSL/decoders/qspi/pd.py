@@ -47,25 +47,25 @@ class Decoder(srd.Decoder):
     outputs = ['spi']
     tags = ['Embedded/industrial']
     channels = (
-        {'id': 'clk', 'type': 0, 'name': 'CLK', 'desc': 'Clock'},
-        {'id': 'io0', 'type': 107, 'name': 'IO0', 'desc': 'Data i/o 0'},
+        {'id': 'clk', 'type': 0, 'name': 'CLK', 'desc': 'Clock', 'idn':'dec_qspi_chan_clk'},
+        {'id': 'io0', 'type': 107, 'name': 'IO0', 'desc': 'Data i/o 0', 'idn':'dec_qspi_chan_io0'},
     )
     optional_channels = (
-        {'id': 'io1', 'type': 107, 'name': 'IO1', 'desc': 'Data i/o 1'},
-        {'id': 'io2', 'type': 107, 'name': 'IO2', 'desc': 'Data i/o 2'},
-        {'id': 'io3', 'type': 107, 'name': 'IO3', 'desc': 'Data i/o 3'},
-        {'id': 'cs', 'type': -1, 'name': 'CS#', 'desc': 'Chip-select'},
+        {'id': 'io1', 'type': 107, 'name': 'IO1', 'desc': 'Data i/o 1', 'idn':'dec_qspi_opt_chan_io1'},
+        {'id': 'io2', 'type': 107, 'name': 'IO2', 'desc': 'Data i/o 2', 'idn':'dec_qspi_opt_chan_io2'},
+        {'id': 'io3', 'type': 107, 'name': 'IO3', 'desc': 'Data i/o 3', 'idn':'dec_qspi_opt_chan_io3'},
+        {'id': 'cs', 'type': -1, 'name': 'CS#', 'desc': 'Chip-select', 'idn':'dec_qspi_opt_chan_cs'},
     )
     options = (
         {'id': 'cs_polarity', 'desc': 'CS# polarity', 'default': 'active-low',
-            'values': ('active-low', 'active-high')},
+            'values': ('active-low', 'active-high'), 'idn':'dec_qspi_opt_cs_polarity'},
         {'id': 'cpol', 'desc': 'Clock polarity (CPOL)', 'default': 0,
-            'values': (0, 1)},
+            'values': (0, 1), 'idn':'dec_qspi_opt_cpol'},
         {'id': 'cpha', 'desc': 'Clock phase (CPHA)', 'default': 0,
-            'values': (0, 1)},
+            'values': (0, 1), 'idn':'dec_qspi_opt_cpha'},
         {'id': 'bitorder', 'desc': 'Bit order',
-            'default': 'msb-first', 'values': ('msb-first', 'lsb-first')},
-        {'id': 'wordsize', 'desc': 'Word size', 'default': 8},
+            'default': 'msb-first', 'values': ('msb-first', 'lsb-first'), 'idn':'dec_qspi_opt_bitorder'},
+        {'id': 'wordsize', 'desc': 'Word size', 'default': 8, 'idn':'dec_qspi_opt_wordsize'},
     )
     annotations = (
         ('106', 'data', 'data'),

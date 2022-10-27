@@ -51,20 +51,20 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Debug/trace', 'Util', 'Encoding']
     channels = (
-        {'id': 'start', 'name': 'START', 'desc': 'START channel'},
-        {'id': 'stop', 'name': 'STOP', 'desc': 'STOP channel'},
-        {'id': 'clk', 'name': 'CLOCK', 'desc': 'CLOCK channel'},
-        {'id': 'data', 'name': 'DATA', 'desc': 'DATA channel'},
+        {'id': 'start', 'name': 'START', 'desc': 'START channel', 'idn':'dec_signature_chan_start'},
+        {'id': 'stop', 'name': 'STOP', 'desc': 'STOP channel', 'idn':'dec_signature_chan_stop'},
+        {'id': 'clk', 'name': 'CLOCK', 'desc': 'CLOCK channel', 'idn':'dec_signature_chan_clk'},
+        {'id': 'data', 'name': 'DATA', 'desc': 'DATA channel', 'idn':'dec_signature_chan_data'},
     )
     options = (
         {'id': 'start_edge', 'desc': 'START edge polarity',
-            'default': 'rising', 'values': ('rising', 'falling')},
+            'default': 'rising', 'values': ('rising', 'falling'), 'idn':'dec_signature_opt_start_edge'},
         {'id': 'stop_edge', 'desc': 'STOP edge polarity',
-            'default': 'rising', 'values': ('rising', 'falling')},
+            'default': 'rising', 'values': ('rising', 'falling'), 'idn':'dec_signature_opt_stop_edge'},
         {'id': 'clk_edge', 'desc': 'CLOCK edge polarity',
-            'default': 'falling', 'values': ('rising', 'falling')},
+            'default': 'falling', 'values': ('rising', 'falling'), 'idn':'dec_signature_opt_clk_edge'},
         {'id': 'annbits', 'desc': 'Enable bit level annotations',
-            'default': 'no', 'values': ('yes', 'no')},
+            'default': 'no', 'values': ('yes', 'no'), 'idn':'dec_signature_opt_annbits'},
     )
     annotations = (
         ('bit0', 'Bit0'),

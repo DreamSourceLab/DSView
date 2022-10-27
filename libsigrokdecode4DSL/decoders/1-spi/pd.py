@@ -85,26 +85,26 @@ class Decoder(srd.Decoder):
     outputs = ['spi']
     tags = ['Embedded/industrial']
     channels = (
-        {'id': 'clk', 'type': 0, 'name': 'CLK', 'desc': 'Clock'},
+        {'id': 'clk', 'type': 0, 'name': 'CLK', 'desc': 'Clock' ,'idn':'dec_1spi_chan_clk'},
     )
     optional_channels = (
-        {'id': 'miso', 'type': 107, 'name': 'MISO', 'desc': 'Master in, slave out'},
-        {'id': 'mosi', 'type': 109, 'name': 'MOSI', 'desc': 'Master out, slave in'},
-        {'id': 'cs', 'type': -1, 'name': 'CS#', 'desc': 'Chip-select'},
+        {'id': 'miso', 'type': 107, 'name': 'MISO', 'desc': 'Master in, slave out', 'idn':'dec_1spi_opt_chan_miso'},
+        {'id': 'mosi', 'type': 109, 'name': 'MOSI', 'desc': 'Master out, slave in', 'idn':'dec_1spi_opt_chan_mosi'},
+        {'id': 'cs', 'type': -1, 'name': 'CS#', 'desc': 'Chip-select', 'idn':'dec_1spi_opt_chan_cs'},
     )
     options = (
         {'id': 'cs_polarity', 'desc': 'CS# polarity', 'default': 'active-low',
-            'values': ('active-low', 'active-high')},
+            'values': ('active-low', 'active-high'), 'idn':'dec_1spi_opt_cs_pol'},
         {'id': 'cpol', 'desc': 'Clock polarity (CPOL)', 'default': 0,
-            'values': (0, 1)},
+            'values': (0, 1) , 'idn':'dec_1spi_opt_cpol'},
         {'id': 'cpha', 'desc': 'Clock phase (CPHA)', 'default': 0,
-            'values': (0, 1)},
+            'values': (0, 1), 'idn':'dec_1spi_opt_cpha'},
         {'id': 'bitorder', 'desc': 'Bit order',
-            'default': 'msb-first', 'values': ('msb-first', 'lsb-first')},
+            'default': 'msb-first', 'values': ('msb-first', 'lsb-first'), 'idn':'dec_1spi_opt_bitorder'},
         {'id': 'wordsize', 'desc': 'Word size', 'default': 8,
-            'values': tuple(range(5,129,1))},
+            'values': tuple(range(5,129,1)), 'idn':'dec_1spi_opt_wordsize'},
         {'id': 'frame', 'desc': 'Frame Decoder', 'default': 'no',
-            'values': ('yes', 'no')},
+            'values': ('yes', 'no'), 'idn':'dec_1spi_opt_frame'},
     )
     annotations = (
         ('106', 'miso-data', 'MISO data'),

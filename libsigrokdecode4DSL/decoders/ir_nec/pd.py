@@ -35,12 +35,12 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['IR']
     channels = (
-        {'id': 'ir', 'name': 'IR', 'desc': 'Data line'},
+        {'id': 'ir', 'name': 'IR', 'desc': 'Data line', 'idn':'dec_ir_nec_chan_ir'},
     )
     options = (
         {'id': 'polarity', 'desc': 'Polarity', 'default': 'active-low',
-            'values': ('active-low', 'active-high')},
-        {'id': 'cd_freq', 'desc': 'Carrier Frequency', 'default': 0},
+            'values': ('active-low', 'active-high'), 'idn':'dec_ir_nec_opt_polarity'},
+        {'id': 'cd_freq', 'desc': 'Carrier Frequency', 'default': 0, 'idn':'dec_ir_nec_opt_cd_freq'},
     )
     annotations = (
         ('bit', 'Bit'),

@@ -56,7 +56,7 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Clock/timing', 'Util']
     channels = (
-        {'id': 'data', 'name': 'Data', 'desc': 'Data line'},
+        {'id': 'data', 'name': 'Data', 'desc': 'Data line', 'idn':'dec_timing_chan_data'},
     )
     annotations = (
         ('time', 'Time'),
@@ -69,9 +69,9 @@ class Decoder(srd.Decoder):
         ('delta', 'Delta', (2,)),
     )
     options = (
-        { 'id': 'avg_period', 'desc': 'Averaging period', 'default': 100 },
-        { 'id': 'edge', 'desc': 'Edges to check', 'default': 'any', 'values': ('any', 'rising', 'falling') },
-        { 'id': 'delta', 'desc': 'Show delta from last', 'default': 'no', 'values': ('yes', 'no') },
+        { 'id': 'avg_period', 'desc': 'Averaging period', 'default': 100 , 'idn':'dec_timing_opt_avg_period'},
+        { 'id': 'edge', 'desc': 'Edges to check', 'default': 'any', 'values': ('any', 'rising', 'falling') , 'idn':'dec_timing_opt_edge'},
+        { 'id': 'delta', 'desc': 'Show delta from last', 'default': 'no', 'values': ('yes', 'no') , 'idn':'dec_timing_opt_delta'},
     )
 
     def __init__(self):

@@ -33,18 +33,18 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['IC', 'RFID']
     channels = (
-        {'id': 'data', 'name': 'Data', 'desc': 'Data line'},
+        {'id': 'data', 'name': 'Data', 'desc': 'Data line', 'idn':'dec_t55xx_chan_data'},
     )
     options = (
-        {'id': 'coilfreq', 'desc': 'Coil frequency', 'default': 125000},
-        {'id': 'start_gap', 'desc': 'Start gap min', 'default': 20},
-        {'id': 'w_gap', 'desc': 'Write gap min', 'default': 20},
-        {'id': 'w_one_min', 'desc': 'Write one min', 'default': 48},
-        {'id': 'w_one_max', 'desc': 'Write one max', 'default': 63},
-        {'id': 'w_zero_min', 'desc': 'Write zero min', 'default': 16},
-        {'id': 'w_zero_max', 'desc': 'Write zero max', 'default': 31},
+        {'id': 'coilfreq', 'desc': 'Coil frequency', 'default': 125000, 'idn':'dec_t55xx_opt_coilfreq'},
+        {'id': 'start_gap', 'desc': 'Start gap min', 'default': 20, 'idn':'dec_t55xx_opt_start_gap'},
+        {'id': 'w_gap', 'desc': 'Write gap min', 'default': 20, 'idn':'dec_t55xx_opt_w_gap'},
+        {'id': 'w_one_min', 'desc': 'Write one min', 'default': 48, 'idn':'dec_t55xx_opt_w_one_min'},
+        {'id': 'w_one_max', 'desc': 'Write one max', 'default': 63, 'idn':'dec_t55xx_opt_w_one_max'},
+        {'id': 'w_zero_min', 'desc': 'Write zero min', 'default': 16, 'idn':'dec_t55xx_opt_w_zero_min'},
+        {'id': 'w_zero_max', 'desc': 'Write zero max', 'default': 31, 'idn':'dec_t55xx_opt_w_zero_max'},
         {'id': 'em4100_decode', 'desc': 'EM4100 decode', 'default': 'on',
-            'values': ('on', 'off')},
+            'values': ('on', 'off'), 'idn':'dec_t55xx_opt_em4100_decode'},
     )
     annotations = (
         ('bit_value', 'Bit value'),

@@ -73,7 +73,7 @@ class Decoder(srd.Decoder):
     tags = ['IC', 'Wireless/RF']
     options = (
         {'id': 'chip', 'desc': 'Chip type',
-            'default': 'nrf24l01', 'values': ('nrf24l01', 'xn297')},
+            'default': 'nrf24l01', 'values': ('nrf24l01', 'xn297'), 'idn':'dec_nrf24l01_opt_chip'},
     )
     annotations = (
         # Sent from the host to the chip.

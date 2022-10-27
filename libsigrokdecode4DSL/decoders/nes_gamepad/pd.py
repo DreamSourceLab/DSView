@@ -33,7 +33,7 @@ class Decoder(srd.Decoder):
         # Currently only the standard controller is supported. This might be
         # extended by special controllers like the Nintendo Zapper light gun.
         {'id': 'variant', 'desc': 'Gamepad variant',
-            'default': 'Standard gamepad', 'values': ('Standard gamepad',)},
+            'default': 'Standard gamepad', 'values': ('Standard gamepad',), 'idn':'dec_nes_gamepad_opt_variant'},
     )
     annotations = (
         ('button', 'Button state'),

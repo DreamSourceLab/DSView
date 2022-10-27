@@ -33,11 +33,11 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Embedded/industrial', 'Lighting']
     channels = (
-        {'id': 'dsi', 'name': 'DSI', 'desc': 'DSI data line'},
+        {'id': 'dsi', 'name': 'DSI', 'desc': 'DSI data line', 'idn':'dec_dsi_chan_dsi'},
     )
     options = (
         {'id': 'polarity', 'desc': 'Polarity', 'default': 'active-high',
-            'values': ('active-low', 'active-high')},
+            'values': ('active-low', 'active-high'), 'idn':'dec_dsi_opt_polarity'},
     )
     annotations = (
         ('bit', 'Bit'),

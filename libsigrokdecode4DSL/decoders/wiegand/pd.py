@@ -34,15 +34,14 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Embedded/industrial', 'RFID']
     channels = (
-        {'id': 'd0', 'name': 'D0', 'desc': 'Data 0 line'},
-        {'id': 'd1', 'name': 'D1', 'desc': 'Data 1 line'},
+        {'id': 'd0', 'name': 'D0', 'desc': 'Data 0 line', 'idn':'dec_wiegand_chan_d0'},
+        {'id': 'd1', 'name': 'D1', 'desc': 'Data 1 line', 'idn':'dec_wiegand_chan_d1'},
     )
     options = (
         {'id': 'active', 'desc': 'Data lines active level',
-         'default': 'low', 'values': ('low', 'high')},
+         'default': 'low', 'values': ('low', 'high'), 'idn':'dec_wiegand_opt_active'},
         {'id': 'bitwidth_ms', 'desc': 'Single bit width in milliseconds',
-         'default': 4, 'values': (1, 2, 4, 8, 16, 32)},
-       # {'id': 'bit-start', 'desc': 'Data bit start index', 'default': -1},
+         'default': 4, 'values': (1, 2, 4, 8, 16, 32), 'idn':'dec_wiegand_opt_bitwidth_ms'},
     )
     annotations = (
         ('bits', 'Bits'),

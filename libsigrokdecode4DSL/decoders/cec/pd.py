@@ -59,7 +59,7 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Display', 'PC']
     channels = (
-        {'id': 'cec', 'name': 'CEC', 'desc': 'CEC bus data'},
+        {'id': 'cec', 'name': 'CEC', 'desc': 'CEC bus data', 'idn':'dec_cec_chan_cec'},
     )
     annotations = (
         ('st', 'Start'),

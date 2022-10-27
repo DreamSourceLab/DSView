@@ -41,11 +41,11 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Encoding']
     channels = (
-        {'id': 'data', 'name': 'Data', 'desc': 'Data signal'},
+        {'id': 'data', 'name': 'Data', 'desc': 'Data signal', 'idn':'dec_miller_chan_data'},
     )
     options = (
-        {'id': 'baudrate', 'desc': 'Baud rate', 'default': 106000},
-        {'id': 'edge', 'desc': 'Edge', 'default': 'falling', 'values': ('rising', 'falling', 'either')},
+        {'id': 'baudrate', 'desc': 'Baud rate', 'default': 106000, 'idn':'dec_miller_opt_baudrate'},
+        {'id': 'edge', 'desc': 'Edge', 'default': 'falling', 'values': ('rising', 'falling', 'either'), 'idn':'dec_miller_opt_edge'},
     )
     annotations = (
         ('bit', 'Bit'),

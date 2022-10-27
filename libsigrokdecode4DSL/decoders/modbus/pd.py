@@ -845,7 +845,7 @@ class Decoder(srd.Decoder):
     )
     options = (
         {'id': 'channel', 'desc': 'Direction', 'default': 'TX',
-            'values': ('TX', 'RX')},
+            'values': ('TX', 'RX'), 'idn':'dec_modbus_opt_channel'},
     )
 
     def __init__(self):

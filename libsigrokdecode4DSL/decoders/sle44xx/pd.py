@@ -43,9 +43,9 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Memory']
     channels = (
-        {'id': 'rst', 'name': 'RST', 'desc': 'Reset line'},
-        {'id': 'clk', 'name': 'CLK', 'desc': 'Clock line'},
-        {'id': 'io', 'name': 'I/O', 'desc': 'I/O data line'},
+        {'id': 'rst', 'name': 'RST', 'desc': 'Reset line', 'idn':'dec_sle44xx_chan_rst'},
+        {'id': 'clk', 'name': 'CLK', 'desc': 'Clock line', 'idn':'dec_sle44xx_chan_clk'},
+        {'id': 'io', 'name': 'I/O', 'desc': 'I/O data line', 'idn':'dec_sle44xx_chan_io'},
     )
     annotations = (
         ('reset_sym', 'Reset Symbol'),

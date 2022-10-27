@@ -38,8 +38,8 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['PC']
     channels = (
-        {'id': 'data',  'name': 'DATA',  'desc': 'Frame'},
-        {'id': 'clock', 'name': 'CLOCK', 'desc': 'Clock'},
+        {'id': 'data',  'name': 'DATA',  'desc': 'Frame', 'idn':'dec_fsi_chan_data'},
+        {'id': 'clock', 'name': 'CLOCK', 'desc': 'Clock', 'idn':'dec_fsi_chan_clock'},
     )
     annotations = (
         ('warnings', 'Warnings'),

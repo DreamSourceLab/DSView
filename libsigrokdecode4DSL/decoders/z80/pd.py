@@ -79,17 +79,18 @@ class Decoder(srd.Decoder):
             'desc': 'Data bus line %d' % i
             } for i in range(8)
     ) + (
-        {'id': 'm1', 'name': '/M1', 'desc': 'Machine cycle 1'},
-        {'id': 'rd', 'name': '/RD', 'desc': 'Memory or I/O read'},
-        {'id': 'wr', 'name': '/WR', 'desc': 'Memory or I/O write'},
+        {'id': 'm1', 'name': '/M1', 'desc': 'Machine cycle 1', 'idn':'dec_z80_chan_m1'},
+        {'id': 'rd', 'name': '/RD', 'desc': 'Memory or I/O read', 'idn':'dec_z80_chan_rd'},
+        {'id': 'wr', 'name': '/WR', 'desc': 'Memory or I/O write', 'idn':'dec_z80_chan_wr'},
     )
     optional_channels = (
-        {'id': 'mreq', 'name': '/MREQ', 'desc': 'Memory request'},
-        {'id': 'iorq', 'name': '/IORQ', 'desc': 'I/O request'},
+        {'id': 'mreq', 'name': '/MREQ', 'desc': 'Memory request', 'idn':'dec_z80_opt_chan_mreq'},
+        {'id': 'iorq', 'name': '/IORQ', 'desc': 'I/O request', 'idn':'dec_z80_opt_chan_iorq'},
     ) + tuple({
         'id': 'a%d' % i,
         'name': 'A%d' % i,
-        'desc': 'Address bus line %d' % i
+        'desc': 'Address bus line %d' % i, 
+        'idn':'dec_z80_opt_chan_a%d' % i
         } for i in range(16)
     )
     annotations = (

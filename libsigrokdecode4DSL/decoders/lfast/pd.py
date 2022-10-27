@@ -106,7 +106,7 @@ class Decoder(srd.Decoder):
     outputs = ['lfast']
     tags = ['Embedded/industrial']
     channels = (
-        {'id': 'data', 'name': 'Data', 'desc': 'TXP or RXP'},
+        {'id': 'data', 'name': 'Data', 'desc': 'TXP or RXP', 'idn':'dec_lfast_chan_data'},
     )
     annotations = (
         ('bit', 'Bits'),

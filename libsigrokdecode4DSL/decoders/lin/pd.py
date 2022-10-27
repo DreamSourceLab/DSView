@@ -66,7 +66,7 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Automotive']
     options = (
-        {'id': 'version', 'desc': 'Protocol version', 'default': 2, 'values': (1, 2)},
+        {'id': 'version', 'desc': 'Protocol version', 'default': 2, 'values': (1, 2), 'idn':'dec_lin_opt_version'},
     )
     annotations = (
         ('data', 'LIN data'),

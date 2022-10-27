@@ -53,20 +53,20 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Display']
     channels = (
-        {'id': 'a', 'name': 'A', 'desc': 'Segment A'},
-        {'id': 'b', 'name': 'B', 'desc': 'Segment B'},
-        {'id': 'c', 'name': 'C', 'desc': 'Segment C'},
-        {'id': 'd', 'name': 'D', 'desc': 'Segment D'},
-        {'id': 'e', 'name': 'E', 'desc': 'Segment E'},
-        {'id': 'f', 'name': 'F', 'desc': 'Segment F'},
-        {'id': 'g', 'name': 'G', 'desc': 'Segment G'},
+        {'id': 'a', 'name': 'A', 'desc': 'Segment A', 'idn':'dec_seven_segment_chan_A'},
+        {'id': 'b', 'name': 'B', 'desc': 'Segment B', 'idn':'dec_seven_segment_chan_B'},
+        {'id': 'c', 'name': 'C', 'desc': 'Segment C', 'idn':'dec_seven_segment_chan_C'},
+        {'id': 'd', 'name': 'D', 'desc': 'Segment D', 'idn':'dec_seven_segment_chan_D'},
+        {'id': 'e', 'name': 'E', 'desc': 'Segment E', 'idn':'dec_seven_segment_chan_E'},
+        {'id': 'f', 'name': 'F', 'desc': 'Segment F', 'idn':'dec_seven_segment_chan_F'},
+        {'id': 'g', 'name': 'G', 'desc': 'Segment G', 'idn':'dec_seven_segment_chan_G'},
     )
     optional_channels = (
-        {'id': 'dp', 'name': 'DP', 'desc': 'Decimal point'},
+        {'id': 'dp', 'name': 'DP', 'desc': 'Decimal point', 'idn':'dec_seven_segment_opt_chan_dp'},
     )
     options = (
         {'id': 'polarity', 'desc': 'Expected polarity',
-            'default': 'common-cathode', 'values': ('common-cathode', 'common-anode')},
+            'default': 'common-cathode', 'values': ('common-cathode', 'common-anode'), 'idn':'dec_seven_segment_opt_polarity'},
     )
     annotations = (
         ('decoded-digit', 'Decoded digit'),

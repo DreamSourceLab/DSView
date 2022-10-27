@@ -48,11 +48,11 @@ class Decoder(srd.Decoder):
     tags = ['Debug/trace']
     options = (
         {'id': 'objdump', 'desc': 'objdump path',
-            'default': 'arm-none-eabi-objdump'},
+            'default': 'arm-none-eabi-objdump', 'idn':'dec_arm_itm_opt_objdump'},
         {'id': 'objdump_opts', 'desc': 'objdump options',
-            'default': '-lSC'},
+            'default': '-lSC', 'idn':'dec_arm_itm_opt_objdump_opts'},
         {'id': 'elffile', 'desc': '.elf path',
-            'default': ''},
+            'default': '', 'idn':'dec_arm_itm_opt_elffile'},
     )
     annotations = (
         ('trace', 'Trace information'),

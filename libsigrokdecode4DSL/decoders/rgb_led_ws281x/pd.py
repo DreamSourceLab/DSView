@@ -36,13 +36,14 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Display', 'IC']
     channels = (
-        {'id': 'din', 'name': 'DIN', 'desc': 'DIN data line'},
+        {'id': 'din', 'name': 'DIN', 'desc': 'DIN data line', 'idn':'dec_rgb_led_ws281x_chan_din'},
     )
     options = (
         {'id': 'colors', 'desc': 'Colors', 'default': 'GRB',
-            'values': ( 'GRB', 'RGB', 'BRG', 'RBG', 'BGR', 'GRBW', 'RGBW', 'WRGB', 'LBGR', 'LGRB', 'LRGB', 'LRBG', 'LGBR', 'LBRG')},
+            'values': ( 'GRB', 'RGB', 'BRG', 'RBG', 'BGR', 'GRBW', 'RGBW', 'WRGB', 'LBGR', 'LGRB', 'LRGB', 'LRBG', 'LGBR', 'LBRG')
+            , 'idn':'dec_rgb_led_ws281x_opt_colors'},
         {'id': 'polarity', 'desc': 'Polarity', 'default': 'normal',
-            'values': ('normal', 'inverted')},
+            'values': ('normal', 'inverted'), 'idn':'dec_rgb_led_ws281x_opt_polarity'},
     )
     annotations = (
         ('bit', 'Bit'),

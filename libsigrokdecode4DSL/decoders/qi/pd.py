@@ -55,7 +55,7 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Embedded/industrial', 'Wireless/RF']
     channels = (
-        {'id': 'qi', 'name': 'Qi', 'desc': 'Demodulated Qi data line'},
+        {'id': 'qi', 'name': 'Qi', 'desc': 'Demodulated Qi data line', 'idn':'dec_qi_chan_qi'},
     )
     annotations = (
         ('bits', 'Bits'),

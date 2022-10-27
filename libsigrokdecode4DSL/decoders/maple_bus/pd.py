@@ -40,8 +40,8 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Retro computing']
     channels = (
-        {'id': 'sdcka', 'name': 'SDCKA', 'desc': 'Data/clock line A'},
-        {'id': 'sdckb', 'name': 'SDCKB', 'desc': 'Data/clock line B'},
+        {'id': 'sdcka', 'name': 'SDCKA', 'desc': 'Data/clock line A', 'idn':'dec_maple_bus_chan_sdcka'},
+        {'id': 'sdckb', 'name': 'SDCKB', 'desc': 'Data/clock line B', 'idn':'dec_maple_bus_chan_sdckb'},
     )
     annotations = (
         ('start', 'Start pattern'),

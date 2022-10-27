@@ -45,23 +45,23 @@ class Decoder(srd.Decoder):
     outputs = ['i2s']
     tags = ['Audio', 'PC']
     channels = (
-        {'id': 'sck', 'name': 'SCK', 'desc': 'Bit clock line'},
-        {'id': 'ws', 'name': 'WS', 'desc': 'Word select line'},
-        {'id': 'sd', 'name': 'SD', 'desc': 'Serial data line'},
+        {'id': 'sck', 'name': 'SCK', 'desc': 'Bit clock line', 'idn':'dec_i2s_chan_sck'},
+        {'id': 'ws', 'name': 'WS', 'desc': 'Word select line', 'idn':'dec_i2s_chan_ws'},
+        {'id': 'sd', 'name': 'SD', 'desc': 'Serial data line', 'idn':'dec_i2s_chan_sd'},
     )
     options = (
         {'id': 'ws_polarity', 'desc': 'WS polarity', 'default': 'left-high',
-            'values': ('left-low', 'left-high')},
+            'values': ('left-low', 'left-high'), 'idn':'dec_i2s_opt_ws_polarity'},
         {'id': 'clk_edge', 'desc': 'SCK active edge', 'default': 'rising-edge',
-            'values': ('rising-edge', 'falling-edge')},
+            'values': ('rising-edge', 'falling-edge'), 'idn':'dec_i2s_opt_clk_edge'},
         {'id': 'bit_shift', 'desc': 'Bit shift', 'default': 'none',
-            'values': ('right-shifted by one', 'none')},
+            'values': ('right-shifted by one', 'none'), 'idn':'dec_i2s_opt_bit_shift'},
         {'id': 'bit_align', 'desc': 'Bit align', 'default': 'left-aligned',
-            'values': ('left-aligned', 'right-aligned')},
+            'values': ('left-aligned', 'right-aligned'), 'idn':'dec_i2s_opt_bit_align'},
         {'id': 'bitorder', 'desc': 'Bit order',
-            'default': 'msb-first', 'values': ('msb-first', 'lsb-first')},
+            'default': 'msb-first', 'values': ('msb-first', 'lsb-first'), 'idn':'dec_i2s_opt_bitorder'},
         {'id': 'wordsize', 'desc': 'Word size', 'default': 16,
-            'values': tuple(range(4,129,1))},
+            'values': tuple(range(4,129,1)), 'idn':'dec_i2s_opt_wordsize'},
     )
     annotations = (
         ('left', 'Left channel'),

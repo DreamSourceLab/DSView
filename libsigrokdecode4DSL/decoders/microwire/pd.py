@@ -53,10 +53,10 @@ class Decoder(srd.Decoder):
     outputs = ['microwire']
     tags = ['Embedded/industrial']
     channels = (
-        {'id': 'cs', 'name': 'CS', 'desc': 'Chip select'},
-        {'id': 'sk', 'name': 'SK', 'desc': 'Clock'},
-        {'id': 'si', 'name': 'SI', 'desc': 'Slave in'},
-        {'id': 'so', 'name': 'SO', 'desc': 'Slave out'},
+        {'id': 'cs', 'name': 'CS', 'desc': 'Chip select', 'idn':'dec_microwire_chan_cs'},
+        {'id': 'sk', 'name': 'SK', 'desc': 'Clock', 'idn':'dec_microwire_chan_sk'},
+        {'id': 'si', 'name': 'SI', 'desc': 'Slave in', 'idn':'dec_microwire_chan_si'},
+        {'id': 'so', 'name': 'SO', 'desc': 'Slave out', 'idn':'dec_microwire_chan_so'},
     )
     annotations = (
         ('start-bit', 'Start bit'),

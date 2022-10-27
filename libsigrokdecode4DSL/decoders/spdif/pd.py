@@ -33,7 +33,7 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Audio', 'PC']
     channels = (
-        {'id': 'data', 'name': 'Data', 'desc': 'Data line'},
+        {'id': 'data', 'name': 'Data', 'desc': 'Data line', 'idn':'dec_spdif_chan_data'},
     )
     annotations = (
         ('bitrate', 'Bitrate / baudrate'),

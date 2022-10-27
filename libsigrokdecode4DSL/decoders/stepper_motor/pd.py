@@ -30,13 +30,13 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Embedded/industrial']
     channels = (
-        {'id': 'step', 'name': 'Step', 'desc': 'Step pulse'},
-        {'id': 'dir', 'name': 'Direction', 'desc': 'Direction select'},
+        {'id': 'step', 'name': 'Step', 'desc': 'Step pulse', 'idn':'dec_stepper_motor_chan_step'},
+        {'id': 'dir', 'name': 'Direction', 'desc': 'Direction select', 'idn':'dec_stepper_motor_chan_dir'},
     )
     options = (
         {'id': 'unit', 'desc': 'Unit', 'default': 'steps',
-         'values': ('steps', 'mm')},
-        {'id': 'steps_per_mm', 'desc': 'Steps per mm', 'default': 100.0},
+         'values': ('steps', 'mm'), 'idn':'dec_stepper_motor_opt_unit'},
+        {'id': 'steps_per_mm', 'desc': 'Steps per mm', 'default': 100.0, 'idn':'dec_stepper_motor_opt_steps_per_mm'},
     )
     annotations = (
         ('speed', 'Speed'),

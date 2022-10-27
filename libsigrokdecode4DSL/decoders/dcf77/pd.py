@@ -35,7 +35,7 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Clock/timing']
     channels = (
-        {'id': 'data', 'name': 'DATA', 'desc': 'DATA line'},
+        {'id': 'data', 'name': 'DATA', 'desc': 'DATA line', 'idn':'dec_dcf77_chan_data'},
     )
     annotations = (
         ('start-of-minute', 'Start of minute'),

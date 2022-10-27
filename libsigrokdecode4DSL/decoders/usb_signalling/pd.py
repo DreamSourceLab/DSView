@@ -111,12 +111,12 @@ class Decoder(srd.Decoder):
     outputs = ['usb_signalling']
     tags = ['PC']
     channels = (
-        {'id': 'dp', 'name': 'D+', 'desc': 'USB D+ signal'},
-        {'id': 'dm', 'name': 'D-', 'desc': 'USB D- signal'},
+        {'id': 'dp', 'name': 'D+', 'desc': 'USB D+ signal', 'idn':'dec_usb_signalling_chan_dp'},
+        {'id': 'dm', 'name': 'D-', 'desc': 'USB D- signal', 'idn':'dec_usb_signalling_chan_dm'},
     )
     options = (
         {'id': 'signalling', 'desc': 'Signalling',
-            'default': 'automatic', 'values': ('automatic', 'full-speed', 'low-speed')},
+            'default': 'automatic', 'values': ('automatic', 'full-speed', 'low-speed'), 'idn':'dec_usb_signalling_opt_signalling'},
     )
     annotations = (
         ('sym-j', 'J symbol'),

@@ -123,8 +123,8 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Debug/trace']
     channels = (
-        {'id': 'reset', 'name': 'RESET', 'desc': 'RESET / PDI_CLK'},
-        {'id': 'data', 'name': 'DATA', 'desc': 'PDI_DATA'},
+        {'id': 'reset', 'name': 'RESET', 'desc': 'RESET / PDI_CLK', 'idn':'dec_avr_pdi_chan_reset'},
+        {'id': 'data', 'name': 'DATA', 'desc': 'PDI_DATA', 'idn':'dec_avr_pdi_chan_data'},
     )
     annotations = (
         ('uart-bit', 'UART bit'),

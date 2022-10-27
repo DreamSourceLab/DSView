@@ -56,7 +56,7 @@ class Decoder(srd.Decoder):
     outputs = ['ook']
     tags = ['Encoding']
     channels = (
-        {'id': 'data', 'name': 'Data', 'desc': 'Data line'},
+        {'id': 'data', 'name': 'Data', 'desc': 'Data line', 'idn':'dec_ook_chan_data'},
     )
     annotations = (
         ('frame', 'Frame'),

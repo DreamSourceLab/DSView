@@ -17,8 +17,8 @@ class Decoder(srd.Decoder):
     outputs = ['C2']
     tags = ['Embedded/mcu']
     channels = (
-        {'id': 'c2ck', 'type': 0, 'name': 'c2ck', 'desc': 'Clock'},
-        {'id': 'c2d', 'type': 0, 'name': 'c2d', 'desc': 'Data'},
+        {'id': 'c2ck', 'type': 0, 'name': 'c2ck', 'desc': 'Clock', 'idn':'dec_c2_chan_c2ck'},
+        {'id': 'c2d', 'type': 0, 'name': 'c2d', 'desc': 'Data', 'idn':'dec_c2_chan_c2d'},
     )
     optional_channels = ()
     annotations = (
@@ -66,7 +66,7 @@ class Decoder(srd.Decoder):
         tr=0
         while True:
             (c2ck,c2d)=self.wait({0:'e'})
-            if c2ck == 0:   #ÏÂ½µÑØ   
+            if c2ck == 0:   #ï¿½Â½ï¿½ï¿½ï¿½   
                 tf=self.samplenum
                 if self.state == 'dataRead':
                     if self.bitcount ==0:
@@ -106,7 +106,7 @@ class Decoder(srd.Decoder):
                         self.put(ss, tf, self.out_ann, [0, ['Wait','W']])
                         self.state = 'end'
                     
-            else: #ÉÏÉýÑØ
+            else: #ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
                 tr=self.samplenum
                 interval=(tr-tf)*1000*1000/self.samplerate #us
                 if interval>20:
