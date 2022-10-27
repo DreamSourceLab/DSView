@@ -31,6 +31,7 @@
 #include "../../log.h"
 #include "../../appcontrol.h"
 #include "../../sigsession.h"
+#include "../../ui/langresource.h"
 
 using namespace std;
 
@@ -70,7 +71,7 @@ ProbeOptions::ProbeOptions(struct sr_channel *probe) :
         GVariant *gvar_list = _device_agent->get_config_list(NULL, key);
 
         const QString name(info->name);
-        char *label_char = info->name;
+        const char *label_char =  LangResource::Instance()->get_lang_text(STR_PAGE_DSL, info->name, info->name);       
         const QString label(label_char);
 
 		switch(key)

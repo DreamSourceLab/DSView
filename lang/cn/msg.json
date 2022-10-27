@@ -346,5 +346,9 @@
     {
         "id": "IDS_MSG_MESSAGE",
         "text": "消息"
+    },
+    {
+        "id": "IDS_MSG_BOX_CONFIRM",
+        "text": "确认"
     }
 ]

@@ -49,6 +49,20 @@
 #define BUFSIZE                512*1024
 #define DSO_BUFSIZE            10*1024
 
+static const struct DEMO_channels channel_modes[] = {
+    // LA Stream
+    {DEMO_LOGIC100x16,  LOGIC,  SR_CHANNEL_LOGIC,  16, 1, SR_MHZ(1), SR_Mn(1),
+     SR_KHZ(10), SR_MHZ(100), "Use 16 Channels (Max 20MHz)"},
+
+    // DAQ
+    {DEMO_ANALOG10x2,   ANALOG, SR_CHANNEL_ANALOG,  2,  8, SR_MHZ(1), SR_Mn(1),
+     SR_HZ(10),  SR_MHZ(10), "Use Channels 0~1 (Max 10MHz)"},
+
+    // OSC
+    {DEMO_DSO200x2,     DSO,    SR_CHANNEL_DSO,     2,  8, SR_MHZ(100), SR_Kn(10),
+     SR_HZ(100), SR_MHZ(200), "Use Channels 0~1 (Max 200MHz)"}
+};
+
 
 /* Private, per-device-instance driver context. */
 /* TODO: struct context as with the other drivers. */

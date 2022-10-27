@@ -42,17 +42,19 @@ enum {
     BW_20M = 1,
 };
 
-static const char *opmodes[] = {
-    "Normal",
-    "Internal Test",
+static const struct sr_list_item opmode_list[] = {
+    {OP_NORMAL,"Normal"},
+    {OP_INTEST,"Internal Test"},
+    {-1, NULL},
 };
 
-static const char *bandwidths[] = {
-    "Full Bandwidth",
-    "20MHz",
+static const struct sr_list_item bandwidth_list[] = {
+    {BW_FULL,"Full Bandwidth"},
+    {BW_20M,"20MHz"},
+    {-1, NULL},
 };
 
-static struct lang_text_map_item opmodes_map[] = 
+static struct lang_text_map_item lang_text_map[] = 
 {
 	{SR_CONF_OPERATION_MODE, OP_NORMAL, "Normal", "正常"},
 	{SR_CONF_OPERATION_MODE, OP_INTEST, "Internal Test", "内部测试"},
@@ -123,8 +125,9 @@ static struct DSL_context *DSCope_dev_new(const struct DSL_profile *prof)
 		return NULL;
 	}
 
-    for (i = 0; i < ARRAY_SIZE(channel_modes); i++)
+    for (i = 0; i < ARRAY_SIZE(channel_modes); i++){
         assert(channel_modes[i].id == i);
+    }
 
     devc->channel = NULL;
     devc->profile = prof;
@@ -1031,6 +1034,7 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     unsigned int i;
     int ret;
     struct DSL_context *devc;
+    uint64_t vgain_default;
 
     assert(sdi);
     assert(sdi->priv);
@@ -1041,43 +1045,27 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     if (ret != SR_OK) {
         switch (id) {
         case SR_CONF_OPERATION_MODE:
-            if (!sdi)
-                return SR_ERR;
-            *data = g_variant_new_string(opmodes[devc->op_mode]);
+            *data = g_variant_new_int16(devc->op_mode);
             break;
         case SR_CONF_BANDWIDTH_LIMIT:
-            if (!sdi)
-                return SR_ERR;
-            *data = g_variant_new_string(bandwidths[devc->bw_limit]);
+            *data = g_variant_new_int16(devc->bw_limit);
             break;
         case SR_CONF_CALI:
-            if (!sdi)
-                return SR_ERR;
             *data = g_variant_new_boolean(devc->cali);
             break;
         case SR_CONF_TEST:
-            if (!sdi)
-                return SR_ERR;
             *data = g_variant_new_boolean(FALSE);
             break;
         case SR_CONF_STREAM:
-            if (!sdi)
-                return SR_ERR;
             *data = g_variant_new_boolean(devc->stream);
             break;
         case SR_CONF_MAX_DSO_SAMPLERATE:
-            if (!sdi)
-                return SR_ERR;
             *data = g_variant_new_uint64(channel_modes[devc->ch_mode].max_samplerate);
             break;
         case SR_CONF_MAX_DSO_SAMPLELIMITS:
-            if (!sdi)
-                return SR_ERR;
             *data = g_variant_new_uint64(devc->profile->dev_caps.dso_depth);
             break;
         case SR_CONF_HW_DEPTH:
-            if (!sdi)
-                return SR_ERR;
             *data = g_variant_new_uint64(devc->profile->dev_caps.hw_depth / channel_modes[devc->ch_mode].unit_bits);
             break;
         case SR_CONF_PROBE_VGAIN:
@@ -1086,8 +1074,6 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
             *data = g_variant_new_uint64(dso_vga(ch)>>8);
             break;
         case SR_CONF_PROBE_COMB_COMP_EN:
-            if (!sdi)
-                return SR_ERR;
             *data = g_variant_new_boolean((devc->profile->dev_caps.feature_caps & CAPS_FEATURE_HMCAD1511) != 0);
             break;
         case SR_CONF_PROBE_COMB_COMP:
@@ -1107,9 +1093,7 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
             }
             break;
         case SR_CONF_PROBE_VGAIN_RANGE:
-            if (!sdi)
-                return SR_ERR;
-            uint64_t vgain_default = 0;
+            vgain_default = 0;
             for (i = 0; vga_defaults[i].id; i++) {
                 if (vga_defaults[i].id == devc->profile->dev_caps.vga_id &&
                     vga_defaults[i].key == ch->vdiv) {
@@ -1141,8 +1125,6 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
             *data = g_variant_new_uint16(get_default_preoff(sdi, ch));
             break;
         case SR_CONF_PROBE_PREOFF_MARGIN:
-            if (!sdi)
-                return SR_ERR;
             *data = g_variant_new_uint16(devc->profile->dev_caps.default_pwmmargin);
             break;
         case SR_CONF_PROBE_MAP_DEFAULT:
@@ -1166,8 +1148,6 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
             *data = g_variant_new_double(ch->map_max);
             break;
         case SR_CONF_VLD_CH_NUM:
-            if (!sdi)
-                return SR_ERR;
             *data = g_variant_new_int16(channel_modes[devc->ch_mode].vld_num);
             break;
         default:
@@ -1190,6 +1170,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     struct ctl_wr_cmd wr_cmd;
     unsigned int i;
     GSList *l;
+    int nv;
 
     assert(sdi);
     assert(sdi->priv);
@@ -1367,33 +1348,40 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         dsl_adjust_probes(sdi, num_probes);
         dsl_adjust_samplerate(devc);
         sr_dbg("%s: setting mode to %d", __func__, sdi->mode);
-    } else if (id == SR_CONF_OPERATION_MODE) {
-        stropt = g_variant_get_string(data, NULL);
-        if (!strcmp(stropt, opmodes[OP_NORMAL])) {
+    } 
+    else if (id == SR_CONF_OPERATION_MODE) {
+        nv = g_variant_get_int16(data);
+        if (nv == OP_NORMAL) {
             devc->op_mode = OP_NORMAL;
             devc->test_mode = SR_TEST_NONE;
-        } else if (!strcmp(stropt, opmodes[OP_INTEST])) {
+        }
+        else if (nv == OP_INTEST) {
             devc->op_mode = OP_INTEST;
             devc->test_mode = SR_TEST_INTERNAL;
-        } else {
+        } 
+        else {
             ret = SR_ERR;
         }
         sr_dbg("%s: setting pattern to %d",
             __func__, devc->op_mode);
-    } else if (id == SR_CONF_BANDWIDTH_LIMIT) {
-        stropt = g_variant_get_string(data, NULL);
-        if (!strcmp(stropt, bandwidths[BW_FULL])) {
+    } 
+    else if (id == SR_CONF_BANDWIDTH_LIMIT) {
+        nv = g_variant_get_int16(data);
+        if (nv == BW_FULL) {
             devc->bw_limit = BW_FULL;
             dsl_wr_reg(sdi, CTR0_ADDR, bmBW20M_CLR);
-        } else if (!strcmp(stropt, bandwidths[BW_20M])) {
+        } 
+        else if (nv == BW_20M) {
             devc->bw_limit = BW_20M;
             dsl_wr_reg(sdi, CTR0_ADDR, bmBW20M_SET);
-        } else {
+        } 
+        else {
             ret = SR_ERR;
         }
         sr_dbg("%s: setting bandwidth limit to %d",
             __func__, devc->bw_limit);
-    } else if (id == SR_CONF_PROBE_EN) {
+    } 
+    else if (id == SR_CONF_PROBE_EN) {
         ch->enabled = g_variant_get_boolean(data);
 
         if (sdi->mode == DSO) {
@@ -1689,6 +1677,9 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
 {
     struct DSL_context *devc;
 
+    assert(sdi);
+    assert(sdi->priv);
+
     (void)cg;
     devc = sdi->priv;
 
@@ -1697,8 +1688,6 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
 
     switch (key) {
     case SR_CONF_DEVICE_OPTIONS:
-//		*data = g_variant_new_fixed_array(G_VARIANT_TYPE_INT32,
-//				hwcaps, ARRAY_SIZE(hwcaps), sizeof(int32_t));
         *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
                 hwoptions, ARRAY_SIZE(hwoptions)*sizeof(int32_t), TRUE, NULL, NULL);
         break;
@@ -1710,11 +1699,11 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
             *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
                     sessions_daq, ARRAY_SIZE(sessions_daq)*sizeof(int32_t), TRUE, NULL, NULL);
         break;
-    case SR_CONF_OPERATION_MODE:
-        *data = g_variant_new_strv(opmodes, ARRAY_SIZE(opmodes));
+    case SR_CONF_OPERATION_MODE: 
+        *data = g_variant_new_uint64((uint64_t)&opmode_list);
         break;
-    case SR_CONF_BANDWIDTH_LIMIT:
-        *data = g_variant_new_strv(bandwidths, ARRAY_SIZE(bandwidths));
+    case SR_CONF_BANDWIDTH_LIMIT: 
+        *data = g_variant_new_uint64((uint64_t)&bandwidth_list);
         break;
     default:
         return SR_ERR_NA;
@@ -2086,6 +2075,16 @@ static int dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *statu
 {
     int ret = dsl_dev_status_get(sdi, status, prg);
     return ret;
+}
+
+SR_PRIV int sr_dscope_option_value_to_code(const struct sr_dev_inst *sdi, int config_id, const char *value)
+{
+    int num;
+
+    assert(sdi);
+    
+    num = sizeof(lang_text_map) / sizeof(lang_text_map[0]);
+    return sr_option_value_to_code(config_id, value, &lang_text_map, num);
 }
 
 SR_PRIV struct sr_dev_driver DSCope_driver_info = {

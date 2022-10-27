@@ -1,0 +1,50 @@
+[
+    {
+        "id": "Buffer Mode",
+        "text": "Buffer模式"
+    },
+    {
+        "id": "Stream Mode",
+        "text": "Stream模式"
+    },
+    {
+        "id": "Internal Test",
+        "text": "内部测试"
+    },
+    {
+        "id": "External Test",
+        "text": "外部测试"
+    },
+    {
+        "id": "DRAM Loopback Test",
+        "text": "内存回环测试"
+    },
+    {
+        "id": "Stop immediately",
+        "text": "立即停止"
+    },
+    {
+        "id": "Upload captured data",
+        "text": "上传已采集的数据"
+    },
+    {
+        "id": "None",
+        "text": "无"
+    },
+    {
+        "id": "1 Sample Clock",
+        "text": "1个采样周期"
+    },
+    {
+        "id": "Normal",
+        "text": "正常"
+    },
+    {
+        "id": "Full Bandwidth",
+        "text": "全带宽"
+    },
+    {
+        "id": "20MHz",
+        "text": "20MHz"
+    }
+]

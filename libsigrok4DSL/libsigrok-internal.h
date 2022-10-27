@@ -424,5 +424,13 @@ SR_PRIV int sr_status_get(const struct sr_dev_inst *sdi, struct sr_status *statu
 SR_PRIV struct sr_config *sr_config_new(int key, GVariant *data);
 SR_PRIV void sr_config_free(struct sr_config *src);
 
+/*--- dsl.c ------------------------------------------------------------*/
+SR_PRIV int sr_option_value_to_code(int config_id, const char *value, const struct lang_text_map_item *array, int num);
+
+/*--- dslogic.c ------------------------------------------------------------*/
+SR_PRIV int sr_dslogic_option_value_to_code(const struct sr_dev_inst *sdi, int config_id, const char *value);
+
+/*--- dscope.c ------------------------------------------------------------*/
+SR_PRIV int sr_dscope_option_value_to_code(const struct sr_dev_inst *sdi, int config_id, const char *value);
  
 #endif

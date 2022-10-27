@@ -97,6 +97,8 @@ namespace pv
         _is_decoding = false;
         _bClose = false;
         _callback = NULL;
+        _capture_time_id = 0;
+        _confirm_store_time_id = 0;
         _repeat_wait_prog_step = 10;
 
         _device_agent.set_callback(this);
@@ -471,7 +473,8 @@ namespace pv
         _callback->trigger_message(DSV_MSG_START_COLLECT_WORK_PREV);
 
         if (exec_capture())
-        {
+        {   
+            _capture_time_id++;
             _is_working = true;
             _callback->trigger_message(DSV_MSG_START_COLLECT_WORK);
             return true;
@@ -518,11 +521,11 @@ namespace pv
     }
 
     void SigSession::stop_capture()
-    {
-        dsv_info("%s", "Stop collect.");
-
+    { 
         if (!_is_working)
             return;
+
+        dsv_info("%s", "Stop collect.");
 
         if (_bClose)
         {
@@ -1999,6 +2002,15 @@ namespace pv
             init_signals();
             dsv_info("%s", "Work mode is changed.");
             broadcast_msg(DSV_MSG_DEVICE_MODE_CHANGED);
+            return true;
+        }
+        return false;
+    }
+
+    bool SigSession::is_first_store_confirm()
+    {
+        if (_capture_time_id != _confirm_store_time_id){
+            _confirm_store_time_id = _capture_time_id;
             return true;
         }
         return false;

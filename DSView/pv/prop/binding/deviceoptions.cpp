@@ -86,15 +86,11 @@ DeviceOptions::DeviceOptions()
 
 		case SR_CONF_PATTERN_MODE:
 		case SR_CONF_BUFFERSIZE:
-		case SR_CONF_TRIGGER_SOURCE:
-		case SR_CONF_FILTER:
+		case SR_CONF_TRIGGER_SOURCE:		
         case SR_CONF_MAX_HEIGHT:
         case SR_CONF_MAX_HEIGHT_VALUE:
         case SR_CONF_PROBE_COUPLING:
         case SR_CONF_PROBE_EN:
-        case SR_CONF_OPERATION_MODE:
-        case SR_CONF_BUFFER_OPTIONS:
-        case SR_CONF_THRESHOLD:
         case SR_CONF_ZERO:
         case SR_CONF_STREAM:
         case SR_CONF_TEST:
@@ -103,14 +99,18 @@ DeviceOptions::DeviceOptions()
             bind_enum(name, label, key, gvar_list);
 			break;
 
+		case SR_CONF_OPERATION_MODE:
+        case SR_CONF_BUFFER_OPTIONS:
+        case SR_CONF_THRESHOLD:
+		case SR_CONF_FILTER: 
+			bind_list(name, label, key, gvar_list);
+			break;
+
         case SR_CONF_VTH:
             bind_double(name, label, key, "V", pair<double, double>(0.0, 5.0), 1, 0.1);
             break;
 
 		case SR_CONF_RLE:
-            bind_bool(name, label, key);
-			break;
-
         case SR_CONF_RLE_SUPPORT:
         case SR_CONF_CLOCK_TYPE:
         case SR_CONF_CLOCK_EDGE:
@@ -157,8 +157,9 @@ void DeviceOptions::config_setter(int key, GVariant* value)
 
 void DeviceOptions::bind_bool(const QString &name, const QString label, int key)
 {
+	QString text = LangResource::Instance()->get_lang_text(STR_PAGE_DSL, label.toLocal8Bit().data(), label.toLocal8Bit().data());
 	_properties.push_back(
-        new Bool(name, label, bind(config_getter, key),
+        new Bool(name, text, bind(config_getter, key),
 			bind(config_setter, key, _1)));
 }
 
@@ -172,8 +173,12 @@ void DeviceOptions::bind_enum(const QString &name, const QString label, int key,
 	assert(gvar_list);
 
 	g_variant_iter_init (&iter, gvar_list);
+
 	while ((gvar = g_variant_iter_next_value (&iter)))
-		values.push_back(make_pair(gvar, printer(gvar)));
+	{
+		QString v = printer(gvar);
+		values.push_back(make_pair(gvar, v));
+	}
 
 	_properties.push_back(
         new Enum(name, label, values,
@@ -301,31 +306,62 @@ QString DeviceOptions::print_vdiv(GVariant *const gvar)
 void DeviceOptions::bind_bandwidths(const QString &name, const QString label, int key,
     GVariant *const gvar_list, boost::function<QString (GVariant*)> printer)
 {
-    GVariant *gvar;
-    GVariantIter iter;
-    std::vector< pair<GVariant*, QString> > values;
-    bool bw_limit = FALSE;
+	bool bw_limit;
+	GVariant *gvar_tmp;
+	GVariant *gvar;
+	std::vector< pair<GVariant*, QString> > values;
+	struct sr_list_item *plist;
 
-    assert(gvar_list);
+	assert(gvar_list);
+	plist = (struct sr_list_item*)g_variant_get_uint64(gvar_list);
+	assert(plist);
 
-    GVariant *gvar_tmp = _device_agent->get_config(NULL, NULL, SR_CONF_BANDWIDTH);
+	bw_limit = FALSE;
+	gvar_tmp = _device_agent->get_config(NULL, NULL, SR_CONF_BANDWIDTH);
 
     if (gvar_tmp != NULL) {
          bw_limit = g_variant_get_boolean(gvar_tmp);
          g_variant_unref(gvar_tmp);
     }
-
     if (!bw_limit)
         return;
 
-    g_variant_iter_init (&iter, gvar_list);
-    while ((gvar = g_variant_iter_next_value (&iter)))
-        values.push_back(make_pair(gvar, printer(gvar)));
+	while (plist && plist->id >= 0)
+	{ 
+		QString v = LangResource::Instance()->get_lang_text(STR_PAGE_DSL, plist->name, plist->name);
+		gvar = g_variant_new_int16(plist->id);
+		values.push_back(make_pair(gvar, v));
+        plist++;
+	}
 
-    _properties.push_back(
+	_properties.push_back(
         new Enum(name, label, values,
-            bind(config_getter, key),
-            bind(config_setter, key, _1)));
+			bind(config_getter, key),
+			bind(config_setter, key, _1)));
+}
+
+void DeviceOptions::bind_list(const QString &name, const QString label, int key, GVariant *const gvar_list)
+{
+	GVariant *gvar;
+	std::vector< pair<GVariant*, QString> > values;
+	struct sr_list_item *plist;
+
+	assert(gvar_list);
+	plist = (struct sr_list_item*)g_variant_get_uint64(gvar_list);
+	assert(plist);
+
+	while (plist && plist->id >= 0)
+	{ 
+		QString v = LangResource::Instance()->get_lang_text(STR_PAGE_DSL, plist->name, plist->name);
+		gvar = g_variant_new_int16(plist->id);
+		values.push_back(make_pair(gvar, v));
+        plist++;
+	}
+
+	_properties.push_back(
+        new Enum(name, label, values,
+			bind(config_getter, key),
+			bind(config_setter, key, _1)));
 }
 
 } // binding

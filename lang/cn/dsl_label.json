@@ -1,0 +1,150 @@
+[
+    {
+        "id": "Connection",
+        "text": "连接"
+    },
+    {
+        "id": "Serial communication",
+        "text": "串口通讯"
+    },
+    {
+        "id": "Sample rate",
+        "text": "采样率"
+    },
+    {
+        "id": "Sample depth",
+        "text": "采样深度"
+    },
+    {
+        "id": "Sample count",
+        "text": "实际采样数"
+    },
+    {
+        "id": "Using External Clock",
+        "text": "使用外部输入时钟采样"
+    },
+    {
+        "id": "Using Clock Negedge",
+        "text": "使用时钟下降沿采样"
+    },
+    {
+        "id": "Pre-trigger capture ratio",
+        "text": "触发前采样比例"
+    },
+    {
+        "id": "Pattern mode",
+        "text": "信号模式"
+    },
+    {
+        "id": "Run Length Encoding",
+        "text": "RLE编码"
+    },
+    {
+        "id": "Wait Buffer Upload",
+        "text": "上传已采集数据"
+    },
+    {
+        "id": "Trigger slope",
+        "text": "触发沿"
+    },
+    {
+        "id": "Trigger source",
+        "text": "触发源"
+    },
+    {
+        "id": "Trigger channel",
+        "text": "触发通道"
+    },
+    {
+        "id": "Horizontal trigger position",
+        "text": "触发位置"
+    },
+    {
+        "id": "Trigger hold off",
+        "text": "触发释抑时间"
+    },
+    {
+        "id": "Trigger margin",
+        "text": "触发灵敏度"
+    },
+    {
+        "id": "Buffer size",
+        "text": "缓存大小"
+    },
+    {
+        "id": "Time base",
+        "text": "时基"
+    },
+    {
+        "id": "Max Height",
+        "text": "最大高度"
+    },
+    {
+        "id": "Max Height value",
+        "text": "最大高度值"
+    },
+    {
+        "id": "Filter Targets",
+        "text": "滤波器设置"
+    },
+    {
+        "id": "Datalog",
+        "text": "数据记录"
+    },
+    {
+        "id": "Operation Mode",
+        "text": "运行模式"
+    },
+    {
+        "id": "Stop Options",
+        "text": "停止选项"
+    },
+    {
+        "id": "Channel Mode",
+        "text": "通道模式"
+    },
+    {
+        "id": "Threshold Levels",
+        "text": "阈值电压"
+    },
+    {
+        "id": "Threshold Level",
+        "text": "阈值电压"
+    },
+    {
+        "id": "Enable RLE Compress",
+        "text": "RLE硬件压缩"
+    },
+    {
+        "id": "Bandwidth Limit",
+        "text": "带宽限制"
+    },
+    {
+        "id": "Coupling",
+        "text": "耦合"
+    },
+    {
+        "id": "Volts/div",
+        "text": "电压/格"
+    },
+    {
+        "id": "Probe Factor",
+        "text": "探头衰减"
+    },
+    {
+        "id": "Map Default",
+        "text": "默认电压"
+    },
+    {
+        "id": "Map Unit",
+        "text": "对应单位"
+    },
+    {
+        "id": "Map Min",
+        "text": "对应最小值"
+    },
+    {
+        "id": "Map Max",
+        "text": "对应最大值"
+    }
+]

@@ -50,7 +50,7 @@ DecoderOptions::DecoderOptions(pv::data::DecoderStack* decoder_stack, data::deco
 	assert(dec);
 
 	for (GSList *l = dec->options; l; l = l->next)
-	{
+	{ 
 		const srd_decoder_option *const opt =
 			(srd_decoder_option*)l->data;
 

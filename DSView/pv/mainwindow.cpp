@@ -98,7 +98,7 @@
 #include "ZipMaker.h"
 #include "ui/langresource.h"
 
-#define BASE_SESSION_VERSION 2
+#define BASE_SESSION_VERSION 3
 
 namespace pv
 {
@@ -417,12 +417,6 @@ namespace pv
 
     void MainWindow::session_save()
     { 
-#if QT_VERSION >= 0x050400
-        QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-#else
-        QString path = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
-#endif
-
         if (_device_agent->have_instance() == false)
         {
             dsv_info("%s", "There is no need to save the configuration");
@@ -432,7 +426,7 @@ namespace pv
         AppConfig &app = AppConfig::Instance();        
 
         if (_device_agent->is_hardware()){
-            QString sessionFile = genSessionFileName();
+            QString sessionFile = genSessionFileName(true);
             on_store_session(sessionFile);
         }
 
@@ -440,7 +434,7 @@ namespace pv
         app.SaveFrame();
     }
 
-    QString MainWindow::genSessionFileName()
+    QString MainWindow::genSessionFileName(bool isNewFormat)
     {
 #if QT_VERSION >= 0x050400
         QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
@@ -456,18 +450,27 @@ namespace pv
         } 
 
         QString driver_name = _device_agent->driver_name();
-        QString mode_name = QString::number(_device_agent->get_work_mode());
-        QString lang_name = ".ses" + QString::number(app._frameOptions.language);
-        QString file_name = dir.absolutePath() + "/" + driver_name + mode_name + lang_name + ".dsc";
+        QString mode_name = QString::number(_device_agent->get_work_mode()); 
+        QString lang_name;
+        QString base_path = dir.absolutePath() + "/" + driver_name + mode_name;
 
-        return file_name;
+        if (!isNewFormat){
+            lang_name = QString::number(app._frameOptions.language);           
+        }
+
+        return base_path + ".ses" + lang_name + ".dsc";
     }
 
-    void MainWindow::closeEvent(QCloseEvent *event)
+    bool MainWindow::able_to_close()
     {
         // not used, refer to closeEvent of mainFrame
         session_save();
-        event->accept();
+        
+        if (confirm_to_store_data()){
+            on_save();
+            return false; 
+        } 
+        return true;
     }
 
     void MainWindow::on_protocol(bool visible)
@@ -606,7 +609,7 @@ namespace pv
         return load_session_json(sessionDoc, bDone);
     }
 
-     bool MainWindow::gen_session_json(QJsonObject &sessionVar)
+    bool MainWindow::gen_session_json(QJsonObject &sessionVar)
     {
         AppConfig &app = AppConfig::Instance();
 
@@ -645,13 +648,15 @@ namespace pv
                 else if (info->datatype == SR_T_UINT64)
                     sessionVar[info->name] = QJsonValue::fromVariant(QString::number(g_variant_get_uint64(gvar)));
                 else if (info->datatype == SR_T_UINT8)
-                    sessionVar[info->name] = QJsonValue::fromVariant(QString::number(g_variant_get_byte(gvar)));
-                else if (info->datatype == SR_T_FLOAT)
-                    sessionVar[info->name] = QJsonValue::fromVariant(g_variant_get_double(gvar));
+                    sessionVar[info->name] = QJsonValue::fromVariant(g_variant_get_byte(gvar));
+                 else if (info->datatype == SR_T_INT16)
+                    sessionVar[info->name] = QJsonValue::fromVariant(g_variant_get_int16(gvar));
+                else if (info->datatype == SR_T_FLOAT) //save as string format
+                    sessionVar[info->name] = QJsonValue::fromVariant(QString::number(g_variant_get_double(gvar)));
                 else if (info->datatype == SR_T_CHAR)
                     sessionVar[info->name] = QJsonValue::fromVariant(g_variant_get_string(gvar, NULL));
                 else if (info->datatype == SR_T_LIST)
-                    sessionVar[info->name] =  QJsonValue::fromVariant(QString::number(g_variant_get_uint16(gvar)));
+                    sessionVar[info->name] =  QJsonValue::fromVariant(g_variant_get_int16(gvar));
                 else{
                     dsv_err("Unkown config info type:%d", info->datatype);
                     assert(false);
@@ -731,7 +736,6 @@ namespace pv
         QJsonObject sessionObj = json.object();
 
         int mode = _device_agent->get_work_mode();
-        bool isNew = false;
 
         // check session file version
         if (!sessionObj.contains("Version"))
@@ -740,23 +744,22 @@ namespace pv
             return false;
         }
 
-        if (sessionObj["Version"].toInt() < BASE_SESSION_VERSION)
+        int format_ver = sessionObj["Version"].toInt();
+
+        if (format_ver < 2)
         {
             dsv_err("%s", "session file version is error!");
             return false;
-        }
+        }            
 
-        if (sessionObj.contains("Title"))
-            isNew = true;
-
-        int sessionMode = sessionObj["DeviceMode"].toInt();
+        int conf_dev_mode = sessionObj["DeviceMode"].toInt();
 
         if (_device_agent->is_hardware())
         {
             QString driverName = _device_agent->driver_name();
             QString sessionDevice = sessionObj["Device"].toString();            
             // check device and mode
-            if (driverName != sessionDevice || mode != sessionMode)
+            if (driverName != sessionDevice || mode != conf_dev_mode)
             {
                 MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NOT_COMPATIBLE), "Session File is not compatible with current device or mode!"), this);
                 return false;
@@ -774,23 +777,71 @@ namespace pv
 
             for (unsigned int i = 0; i < num_opts; i++)
             {
-                const struct sr_config_info *const info = _device_agent->get_config_info(options[i]);
+                const struct sr_config_info *info = _device_agent->get_config_info(options[i]);
 
                 if (!sessionObj.contains(info->name))
                     continue;
 
-                if (info->datatype == SR_T_BOOL)
-                    _device_agent->set_config(NULL, NULL, info->key, g_variant_new_boolean(sessionObj[info->name].toDouble()));
-                else if (info->datatype == SR_T_UINT64)
-                    _device_agent->set_config(NULL, NULL, info->key, g_variant_new_uint64(sessionObj[info->name].toString().toULongLong()));
-                else if (info->datatype == SR_T_UINT8)
-                    _device_agent->set_config(NULL, NULL, info->key, g_variant_new_byte(sessionObj[info->name].toString().toUInt()));
-                else if (info->datatype == SR_T_FLOAT)
-                    _device_agent->set_config(NULL, NULL, info->key, g_variant_new_double(sessionObj[info->name].toDouble()));
-                else if (info->datatype == SR_T_CHAR)
-                    _device_agent->set_config(NULL, NULL, info->key, g_variant_new_string(sessionObj[info->name].toString().toUtf8()));  
+                GVariant *gvar = NULL;
+
+                //dsv_info("read key:'%s'", info->name);
+
+                if (info->datatype == SR_T_BOOL){
+                    gvar = g_variant_new_boolean(sessionObj[info->name].toInt());
+                }
+                else if (info->datatype == SR_T_UINT64){
+                    //from string text.
+                    gvar = g_variant_new_uint64(sessionObj[info->name].toString().toULongLong());
+                    //dsv_info("uint64:'%s',%llu", info->name, g_variant_get_uint64(gvar));              
+                }
+                else if (info->datatype == SR_T_UINT8){
+                    if (sessionObj[info->name].toString() != "")
+                        gvar = g_variant_new_byte(sessionObj[info->name].toString().toUInt());
+                    else
+                        gvar = g_variant_new_byte(sessionObj[info->name].toInt());
+                    //dsv_info("uint8:'%s',%d", info->name,g_variant_get_byte(gvar));                        
+                }
+                else if (info->datatype == SR_T_INT16){
+                    gvar = g_variant_new_int16(sessionObj[info->name].toInt());
+                }
+                else if (info->datatype == SR_T_FLOAT){
+                    if (sessionObj[info->name].toString() != "")
+                        gvar = g_variant_new_double(sessionObj[info->name].toString().toDouble());
+                    else
+                        gvar = g_variant_new_double(sessionObj[info->name].toDouble());
+                    //dsv_info("float:'%s',%f", info->name,g_variant_get_double(gvar));    
+                }
+                else if (info->datatype == SR_T_CHAR){
+                    gvar = g_variant_new_string(sessionObj[info->name].toString().toLocal8Bit().data());
+                }
                 else if (info->datatype == SR_T_LIST)
-                    _device_agent->set_config(NULL, NULL, info->key, g_variant_new_uint16(sessionObj[info->name].toString().toInt()));
+                {
+                    int id = 0;
+                    if (format_ver > 2){
+                        // Is new version format.
+                        id = sessionObj[info->name].toInt();
+                    }
+                    else{ 
+                        const char *fd_key = sessionObj[info->name].toString().toLocal8Bit().data();
+                        id = ds_dsl_option_value_to_code(conf_dev_mode, info->key, fd_key);
+                        if (id == -1){
+                            dsv_warn("The lang text parse fail! will use default value, the text:%s", fd_key);
+                            id = 0; //set default value.
+                        }
+                        else{
+                            dsv_info("key:'%s',text:'%s',convert to code:%d",info->name, fd_key, id);
+                        }
+                    }            
+                    gvar = g_variant_new_int16(id);
+                }
+
+                if (gvar == NULL)
+                {
+                    dsv_warn("Warning: session file, failed to parse key:'%s'", info->name);
+                    continue;
+                }
+
+                _device_agent->set_config(NULL, NULL, info->key, gvar);         
             }
         }
 
@@ -966,7 +1017,7 @@ namespace pv
             assert(false);
         }
 
-        dsv_info("Store session file: \"%s\"", name.toLocal8Bit().data());
+        dsv_info("Store session to file: \"%s\"", name.toLocal8Bit().data());
 
         QFile sessionFile(name);
         if (!sessionFile.open(QIODevice::WriteOnly | QIODevice::Text))
@@ -1397,8 +1448,9 @@ namespace pv
 
     bool MainWindow::confirm_to_store_data()
     {
-        if (_session->have_hardware_data())
-        {
+        if (_session->have_hardware_data() && _session->is_first_store_confirm())
+        {   
+            // Only popup one time.
             return MsgBox::Confirm(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SAVE_CAPDATE), "Save captured data?"));
         }
         return false;
@@ -1428,21 +1480,27 @@ namespace pv
 
     void MainWindow::load_device_config()
     {
-        int lang = AppConfig::Instance()._frameOptions.language;
         int mode = _device_agent->get_work_mode();
 
         if (_device_agent->is_hardware())
         { 
-            QString ses_name = genSessionFileName();
+            QString ses_name = genSessionFileName(true);
+
+            QFile sf(ses_name);
+            if (!sf.exists()){
+                dsv_info("Try to load the low version session file.");
+                ses_name =  genSessionFileName(false);
+            }
+
             on_load_session(ses_name);
         }
         else if (_device_agent->is_demo())
         {
             QDir dir(GetResourceDir());
             if (dir.exists())
-            {
-                QString str = dir.absolutePath() + "/";
-                QString ses_name = str + _device_agent->driver_name() + QString::number(mode) + ".dsc";
+            { 
+                QString ses_name = dir.absolutePath() + "/" 
+                            + _device_agent->driver_name() + QString::number(mode) + ".dsc";
                 on_load_session(ses_name);
             }
         }

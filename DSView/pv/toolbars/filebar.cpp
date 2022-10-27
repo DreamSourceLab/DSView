@@ -138,7 +138,7 @@ void FileBar::on_actionOpen_triggered()
     //open data file
     AppConfig &app = AppConfig::Instance(); 
 
-    if (_session->have_hardware_data()){
+    if (_session->have_hardware_data() && _session->is_first_store_confirm()){
         if (MsgBox::Confirm(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SAVE_CAPDATE), "Save captured data?"))){
             sig_save();
             return;

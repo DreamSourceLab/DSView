@@ -74,12 +74,12 @@ GVariant* DeviceAgent::get_config(const sr_channel *ch, const sr_channel_group *
 {
     assert(_dev_handle); 
     GVariant *data = NULL;
-    if (ds_get_actived_device_config(ch, group, key, &data) != SR_OK)
+    
+    int ret = ds_get_actived_device_config(ch, group, key, &data);
+    if (ret != SR_OK)
     {
-        if (is_hardware())
-            dsv_warn("%s%d", "WARNING: Failed to get value of config id:", key);
-        else
-            dsv_detail("%s%d", "WARNING: Failed to get value of config id:", key);
+        if (ret != SR_ERR_NA)
+            dsv_err("%s%d", "ERROR: Failed to get value of config id:", key);
     }
     return data;
 }
@@ -88,12 +88,11 @@ bool DeviceAgent::set_config(sr_channel *ch, sr_channel_group *group, int key, G
 {
     assert(_dev_handle);
 
-    if (ds_set_actived_device_config(ch, group, key, data) != SR_OK)
-    {   
-        if (is_hardware())
-            dsv_warn("%s%d", "WARNING: Failed to set value of config id:", key);
-        else
-            dsv_detail("%s%d", "WARNING: Failed to set value of config id:", key);
+    int ret = ds_set_actived_device_config(ch, group, key, data);
+    if (ret != SR_OK)
+    {
+        if (ret != SR_ERR_NA)
+            dsv_err("%s%d", "ERROR: Failed to set value of config id:", key);
         return false;
     }
 
@@ -107,8 +106,11 @@ GVariant* DeviceAgent::get_config_list(const sr_channel_group *group, int key)
 
     GVariant *data = NULL;
 
-    if (ds_get_actived_device_config_list(group, key, &data) != SR_OK){
-        dsv_warn("%s%d", "WARNING: Failed to get config list, key:", key); 
+    int ret = ds_get_actived_device_config_list(group, key, &data);
+    if (ret != SR_OK){
+        if (ret != SR_ERR_NA)
+            dsv_detail("%s%d", "WARNING: Failed to get config list, key:", key); 
+        
         if (data != NULL){
             dsv_warn("%s%d", "WARNING: Failed to get config list, but data is not null. key:", key); 
         }

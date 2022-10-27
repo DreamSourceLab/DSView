@@ -347,5 +347,9 @@
     {
         "id": "IDS_MSG_MESSAGE",
         "text": "Message"
+    },
+    {
+        "id": "IDS_MSG_BOX_CONFIRM",
+        "text": "Confirm"
     }
 ]

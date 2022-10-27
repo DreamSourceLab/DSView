@@ -54,6 +54,8 @@ private:
     void bind_enum(const QString &name, const QString label, int key, GVariant *const gvar_list,
 		boost::function<QString (GVariant*)> printer = print_gvariant);
 
+	void bind_list(const QString &name, const QString label, int key, GVariant *const gvar_list);
+
     void bind_int(const QString &name, const QString label, int key, QString suffix,
 		boost::optional< std::pair<int64_t, int64_t> > range);
 

@@ -195,6 +195,8 @@ SR_API int ds_lib_exit()
 	}
 	lib_ctx.sr_ctx = NULL;
 
+	sr_hw_cleanup_all();
+
 	sr_log_uninit(); // try uninit log
 
 	return SR_OK;
@@ -917,6 +919,14 @@ SR_API struct sr_config *ds_new_config(int key, GVariant *data)
 SR_API void ds_free_config(struct sr_config *src)
 {
 	sr_config_free(src);
+}
+
+SR_API int ds_dsl_option_value_to_code(int work_mode, int config_id, const char *value)
+{ 
+	if (work_mode == LOGIC)
+		return sr_dslogic_option_value_to_code(lib_ctx.actived_device_instance, config_id, value);
+	else
+		return sr_dscope_option_value_to_code(lib_ctx.actived_device_instance, config_id, value);
 }
 
 /**-----------channel -------------*/

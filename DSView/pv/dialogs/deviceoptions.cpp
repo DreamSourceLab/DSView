@@ -141,7 +141,7 @@ DeviceOptions::DeviceOptions(QWidget *parent) :
    
     GVariant* gvar = _device_agent->get_config(NULL, NULL, SR_CONF_OPERATION_MODE);
     if (gvar != NULL) {
-        _mode = QString::fromUtf8(g_variant_get_string(gvar, NULL));
+        _opt_mode = g_variant_get_int16(gvar);
         g_variant_unref(gvar);
     }
 
@@ -186,19 +186,20 @@ void DeviceOptions::accept()
     }
 
     if (hasEnabled) {
-        QVector<pv::prop::binding::ProbeOptions *>::iterator i = _probe_options_binding_list.begin();
-        while(i != _probe_options_binding_list.end()) {
-            const auto &probe_props = (*i)->properties();
+        auto it = _probe_options_binding_list.begin();
+        while(it != _probe_options_binding_list.end()) {
+            const auto &probe_props = (*it)->properties();
 
             for(auto &p :probe_props) {
                 assert(p);
                 p->commit();
             }
-            i++;
+            it++;
         }
 
         QDialog::accept();
-    } else {
+    }
+    else {
         dialogs::DSMessageBox msg(this);
         msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_ATTENTION), "Attention"));
         msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_ALL_CHANNEL_DISABLE), "All channel disabled! Please enable at least one channel."));
@@ -222,12 +223,19 @@ QLayout * DeviceOptions::get_property_form(QWidget * parent)
     const auto &properties =_device_options_binding.properties();
 
     int i = 0;
-    for(auto &p : properties)
-	{
-		assert(p);
-        const QString label = p->labeled_widget() ? QString() : p->label();
-        layout->addWidget(new QLabel(label, parent), i, 0);
-        if (label == L_S(STR_PAGE_DLG, S_ID(IDS_DLG_OPERATION_MODE), "Operation Mode"))
+    for(auto p : properties)
+	{ 
+        const QString label = p->labeled_widget() ? QString() : p->label();       
+        QString lable_text;
+
+        if (label != ""){
+            const char *label_str = label.toLocal8Bit().data();
+            lable_text = LangResource::Instance()->get_lang_text(STR_PAGE_DSL, label_str, label_str);
+        }
+   
+        layout->addWidget(new QLabel(lable_text, parent), i, 0);
+        
+        if (label ==  QString("Operation Mode"))
             layout->addWidget(p->get_widget(parent, true), i, 1);
         else
             layout->addWidget(p->get_widget(parent), i, 1);
@@ -235,7 +243,6 @@ QLayout * DeviceOptions::get_property_form(QWidget * parent)
         i++;
 	}
 
-    //_groupHeight1 = i * 22 + 180;
     _groupHeight1 = parent->sizeHint().height(); 
     parent->setFixedHeight(_groupHeight1); 
 
@@ -259,34 +266,40 @@ void DeviceOptions::logic_probes(QVBoxLayout &layout)
   
     //channel count checked
     if (_device_agent->get_work_mode()== LOGIC) {
-        GVariant *gvar_opts;
-        gsize num_opts;
+        GVariant * gvar_opts = _device_agent->get_config_list(NULL, SR_CONF_CHANNEL_MODE);
 
-        gvar_opts = _device_agent->get_config_list(NULL, SR_CONF_CHANNEL_MODE);
-
-        if (gvar_opts != NULL) 
+        if (gvar_opts != NULL)
         {
-            const char **const options = g_variant_get_strv(gvar_opts, &num_opts);
-            GVariant* gvar = _device_agent->get_config(NULL, NULL, SR_CONF_CHANNEL_MODE);
-            if (gvar != NULL) {
-                QString ch_mode = QString::fromUtf8(g_variant_get_string(gvar, NULL));
-                g_variant_unref(gvar);
+            struct sr_list_item *plist = (struct sr_list_item*)g_variant_get_uint64(gvar_opts);
+            g_variant_unref(gvar_opts);
 
-                for (unsigned int i=0; i<num_opts; i++){
-                    QRadioButton *ch_opts = new QRadioButton(options[i]);
-                    
-                    layout.addWidget(ch_opts); 
-                    contentHeight += ch_opts->sizeHint().height();  //radio button height
-                   
-                    connect(ch_opts, SIGNAL(pressed()), this, SLOT(channel_check()));
+            GVariant* mode_var = _device_agent->get_config(NULL, NULL, SR_CONF_CHANNEL_MODE);
+            assert(mode_var);
+            _channel_mode_indexs.clear();
 
-                    row1++;
-                    if (QString::fromUtf8(options[i]) == ch_mode)
-                        ch_opts->setChecked(true); 
-                }
+            int ch_mode = g_variant_get_int16(mode_var);
+            g_variant_unref(mode_var);
+
+            while (plist != NULL && plist->id >= 0)
+            {
+                row1++;
+                QString text = LangResource::Instance()->get_lang_text(STR_PAGE_DSL, plist->name, plist->name);
+                QRadioButton *mode_button = new QRadioButton(text);
+                ChannelModePair mode_index;
+                mode_index.key = mode_button;
+                mode_index.value = plist->id;
+                _channel_mode_indexs.push_back(mode_index);
+                
+                layout.addWidget(mode_button); 
+                contentHeight += mode_button->sizeHint().height();  //radio button height
+                
+                connect(mode_button, SIGNAL(pressed()), this, SLOT(channel_check()));
+ 
+                if (plist->id == ch_mode)
+                    mode_button->setChecked(true); 
+
+                plist++;
             }
-            if (gvar_opts)
-                g_variant_unref(gvar_opts);
         }
     }
 
@@ -449,14 +462,14 @@ void DeviceOptions::mode_check_timeout()
         return;
 
     bool test;
-    QString mode;
+    int mode;
     GVariant* gvar = _device_agent->get_config(NULL, NULL, SR_CONF_OPERATION_MODE);
     if (gvar != NULL) {
-        mode = QString::fromUtf8(g_variant_get_string(gvar, NULL));
+        mode = g_variant_get_int16(gvar);
         g_variant_unref(gvar);
 
-        if (mode != _mode) { 
-            _mode = mode; 
+        if (mode != _opt_mode) { 
+            _opt_mode = mode; 
             build_dynamic_panel();
             try_resize_scroll();
         }
@@ -478,14 +491,22 @@ void DeviceOptions::mode_check_timeout()
 
 void DeviceOptions::channel_check()
 {
-    QRadioButton* sc=dynamic_cast<QRadioButton*>(sender());
-    QString text = sc->text();
-    text.remove('&');
+    QRadioButton* bt = dynamic_cast<QRadioButton*>(sender());
+    assert(bt);
 
-    if(sc != NULL){
-        _device_agent->set_config(NULL, NULL, SR_CONF_CHANNEL_MODE, g_variant_new_string(text.toUtf8().data()));
+    int mode_index = -1;
+
+    for( auto p : _channel_mode_indexs){
+        if (p.key == bt){
+            mode_index = p.value;
+            break;
+        }
     }
-    
+    assert(mode_index >= 0);
+
+    GVariant* gvar = g_variant_new_int16(mode_index);
+    _device_agent->set_config(NULL, NULL, SR_CONF_CHANNEL_MODE, gvar);
+  
     build_dynamic_panel();
     try_resize_scroll();
 }

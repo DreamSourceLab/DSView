@@ -43,6 +43,7 @@ void Lang_resource_page::Clear()
 LangResource::LangResource()
 {
     _current_page = NULL;
+    _cur_lang = -1;
 }
 
 LangResource *LangResource::Instance()
@@ -60,7 +61,7 @@ LangResource *LangResource::Instance()
 const char *LangResource::get_lang_key(int lang)
 {
     int num = sizeof(lang_id_keys) / sizeof(lang_key_item);
-    char *lan_name = NULL;
+    const char *lan_name = NULL;
 
     for (int i = 0; i < num; i++)
     {
@@ -85,6 +86,8 @@ bool LangResource::Load(int lang)
         return false;
     }
 
+    _cur_lang = lang;
+
     Release();
 
     num = sizeof(lange_page_keys) / sizeof(lang_page_item);
@@ -94,13 +97,11 @@ bool LangResource::Load(int lang)
         Lang_resource_page *p = new Lang_resource_page();
         p->_id = lange_page_keys[i].id;
         p->_source = lange_page_keys[i].source;
+        p->_loaded = false;
         _pages.push_back(p);
-
-        QString file = GetAppDataDir() + "/lang/" + QString(lan_name) + "/" + p->_source;
-        load_page(*p, file);
     }
 
-    return false;
+    return true;
 }
 
 void LangResource::Release()
@@ -113,11 +114,33 @@ void LangResource::Release()
     _pages.clear();
 }
 
+void LangResource::load_page(Lang_resource_page &p)
+{
+    if (p._loaded)
+        return;
+    p._loaded = true;
+
+    const char *lan_name = get_lang_key(_cur_lang);
+    if (lan_name == NULL){
+        dsv_err("Can't find language key,lang:%d", _cur_lang);
+        return;
+    }
+
+    QString fileNmae(p._source);
+    QStringList files = fileNmae.split(",");
+        
+    for (int x=0; x<files.count(); x++){
+        QString file = GetAppDataDir() + "/lang/" + QString(lan_name) + "/" + files[x].trimmed();
+        load_page(p, file);
+    }
+}
+
 void LangResource::load_page(Lang_resource_page &p, QString file)
 { 
     QFile f(file);
     if (f.exists() == false){
-        dsv_warn("Warning:Language source file is not exists: %s", file.toLocal8Bit().data());
+        if (_cur_lang != LAN_EN)
+            dsv_warn("Warning:Language source file is not exists: %s", file.toLocal8Bit().data());
         return;
     }
     f.open(QFile::ReadOnly | QFile::Text);
@@ -156,6 +179,12 @@ void LangResource::load_page(Lang_resource_page &p, QString file)
 const char* LangResource::get_lang_text(int page_id, const char *str_id, const char *default_str)
 {
     assert(str_id);
+    assert(default_str);
+
+    if (*str_id == '\0' || *default_str == '\0'){
+        dsv_err("%s", "LangResource::get_lang_text(), param is empty.");
+        assert(false);
+    }
 
     if (_current_page == NULL || _current_page->_id != page_id){
         _current_page = NULL; 
@@ -168,15 +197,19 @@ const char* LangResource::get_lang_text(int page_id, const char *str_id, const c
     }
 
     if (_current_page == NULL){
-        dsv_warn("Warning:Cant find language source page:%d", page_id);
+        if (_cur_lang != LAN_EN)
+            dsv_warn("Warning:Cant find language source page:%d", page_id);
         return default_str;
     }
+
+    if (_current_page->_loaded == false)
+        load_page(*_current_page);
 
     auto it = _current_page->_res.find(std::string(str_id));
     if (it != _current_page->_res.end()){
         return (*it).second.c_str();
     }
-    else{
+    else if(_cur_lang != LAN_EN){
         dsv_warn("Warning:Cant't get language text:%s", str_id);
     }
 

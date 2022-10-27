@@ -2487,3 +2487,30 @@ SR_PRIV int dsl_destroy_device(const struct sr_dev_inst *sdi)
 
     sr_dev_inst_free(sdi);
 }
+
+SR_PRIV int sr_option_value_to_code(int config_id, const char *value, const struct lang_text_map_item *array, int num)
+{
+    int i;
+    struct lang_text_map_item *p;
+
+    assert(array);
+    assert(value);
+
+    p = array;
+
+    for (i = 0; i < num; i++){
+        if (p->config_id == config_id){
+            if (strcmp(value, p->en_name) == 0){
+                return p->id;
+            }
+            if (p->cn_name != NULL && strcmp(value, p->cn_name) == 0){
+                return p->id;
+            }
+        }
+        p++;
+    }
+
+    sr_err("Unkown lang text value:%s,config id:%d", value, config_id);
+
+    return -1;
+}

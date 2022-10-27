@@ -47,9 +47,15 @@ Enum::Enum(QString name, QString label,
 
 Enum::~Enum()
 {
-	for (unsigned int i = 0; i < _values.size(); i++)
+	for (unsigned int i = 0; i < _values.size(); i++){
         if (_values[i].first)
             g_variant_unref(_values[i].first);
+	}
+
+	if (_selector != NULL){
+		delete _selector;
+		_selector = NULL;
+	}
 }
 
 QWidget* Enum::get_widget(QWidget *parent, bool auto_commit)
@@ -63,9 +69,11 @@ QWidget* Enum::get_widget(QWidget *parent, bool auto_commit)
     }
 
 	_selector = new DsComboBox(parent);
+
 	for (unsigned int i = 0; i < _values.size(); i++) {
 		const pair<GVariant*, QString> &v = _values[i];
         _selector->addItem(v.second, QVariant::fromValue((void*)v.first));
+		
 		if (value && g_variant_compare(v.first, value) == 0)
 			_selector->setCurrentIndex(i);
 	}

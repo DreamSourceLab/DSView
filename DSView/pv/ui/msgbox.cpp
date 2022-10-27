@@ -25,6 +25,7 @@
 #include <QMessageBox>
 #include "../dsvdef.h"
 #include "../appcontrol.h"
+#include "langresource.h"
 
 //QMessageBox::information(NULL, "Title", "Content",QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
 //QMessageBox::information(NULL, "Title", "Content",QMessageBox::Yes|QMessageBox::No);
@@ -63,7 +64,8 @@ bool MsgBox::Confirm(const QString text, QWidget *parent)
         parent = AppControl::Instance()->GetTopWindow();
     }
 
-    pv::dialogs::DSMessageBox msg(parent, "Question");
+    const char *title = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_BOX_CONFIRM), "Confirm");
+    pv::dialogs::DSMessageBox msg(parent, title);
     msg.mBox()->setText(str);
     msg.mBox()->setStandardButtons(QMessageBox::Yes | QMessageBox::No);
     msg.mBox()->setIcon(QMessageBox::Question);

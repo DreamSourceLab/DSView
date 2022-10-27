@@ -48,7 +48,6 @@
 #include "config/appconfig.h"
 #include "ui/msgbox.h"
 #include "appcontrol.h"
-
 #include "ui/langresource.h"
 
 #include <algorithm>
@@ -163,10 +162,15 @@ void MainFrame::resizeEvent(QResizeEvent *event)
 }
 
 void MainFrame::closeEvent(QCloseEvent *event)
-{
+{ 
     writeSettings();
-    _mainWindow->session_save();
-    event->accept();
+
+    if (_mainWindow->able_to_close()){
+          event->accept();
+    }
+    else{
+          event->ignore();
+    }  
 }
 
 void MainFrame::unfreezing()

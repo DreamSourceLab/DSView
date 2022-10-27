@@ -165,6 +165,8 @@ public:
         return _trigger_pos;
     }
 
+    bool is_first_store_confirm();
+
     bool get_capture_status(bool &triggered, int &progress);
 
     std::set<data::SignalData*> get_data();
@@ -489,6 +491,8 @@ private:
     bool        _is_saving;
     bool        _is_instant;
     int         _device_status;
+    int         _capture_time_id;
+    int         _confirm_store_time_id;
  
 
     ISessionCallback *_callback;

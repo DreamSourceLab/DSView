@@ -30,7 +30,7 @@
 struct lang_key_item
 {
     int id;
-    char *name;
+    const char *name;
 };
 
 class Lang_resource_page
@@ -40,14 +40,15 @@ public:
 
 public:
     int     _id;
-    char    *_source;
+    const char   *_source;
+    bool    _loaded;
     std::map<std::string, std::string> _res;
 };
 
 struct lang_page_item
 {
     int id;
-    char *source;
+    const char *source;
 };
 
 static const struct lang_key_item lang_id_keys[] = 
@@ -58,11 +59,10 @@ static const struct lang_key_item lang_id_keys[] =
 
 static const struct lang_page_item lange_page_keys[] = 
 {
-    {STR_PAGE_MAIN, "main.json"},
     {STR_PAGE_TOOLBAR, "toolbar.json"},
     {STR_PAGE_MSG, "msg.json"},
     {STR_PAGE_DLG, "dlg.json"},
-    {STR_PAGE_DSL, "DSL.json"}
+    {STR_PAGE_DSL, "dsl_list.json, dsl_label.json, dsl_channel.json"}
 };
 
 class LangResource
@@ -79,11 +79,14 @@ public:
 private:
     const char *get_lang_key(int lang);
 
-    void load_page(Lang_resource_page &p, QString file);
+    void load_page(Lang_resource_page &p);
 
+    void load_page(Lang_resource_page &p, QString file);
+ 
 private:
     std::vector<Lang_resource_page*> _pages;
     Lang_resource_page    *_current_page;
+    int     _cur_lang;
 };
 
 #define S_ID(id) #id

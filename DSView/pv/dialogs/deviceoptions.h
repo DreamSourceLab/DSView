@@ -46,12 +46,14 @@
 
 class QScrollArea;
 
-class IChannelCheck{
+class IChannelCheck
+{
 public:
     virtual void ChannelChecked(int index)=0;
 };
 
-class ChannelLabel : public QWidget {
+class ChannelLabel : public QWidget 
+{
 Q_OBJECT
 
 public:
@@ -68,6 +70,12 @@ private:
     QCheckBox *_box;
     IChannelCheck *_checked;
     int     _index;
+};
+
+struct ChannelModePair
+{
+    void *key;
+    int  value;
 };
 
 class DeviceAgent;
@@ -120,7 +128,7 @@ private:
     std::vector<QLayout *> _sub_lays;
 
     QTimer      _mode_check_timer;
-    QString     _mode;  
+    int         _opt_mode;  
     QWidget     *_scroll_panel;
     QScrollArea *_scroll;
     QWidget     *_container_panel;
@@ -134,7 +142,8 @@ private:
     DeviceAgent *_device_agent;
 
 	pv::prop::binding::DeviceOptions _device_options_binding;
-    QVector <pv::prop::binding::ProbeOptions *> _probe_options_binding_list;
+    std::vector<pv::prop::binding::ProbeOptions *> _probe_options_binding_list;
+    std::vector<ChannelModePair> _channel_mode_indexs;
 };
 
 } // namespace dialogs

@@ -966,7 +966,7 @@ namespace pv
             _session->session_save();
 
             ds_device_handle devHandle = (ds_device_handle)_device_selector.currentData().toULongLong();
-            if (_session->have_hardware_data()){
+            if (_session->have_hardware_data() && _session->is_first_store_confirm()){
                 if (MsgBox::Confirm(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SAVE_CAPDATE), "Save captured data?")))
                 {
                     _updating_device_list = true;

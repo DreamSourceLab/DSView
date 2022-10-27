@@ -182,6 +182,7 @@ enum {
 	SR_T_RATIONAL_VOLT,
 	SR_T_KEYVALUE,
 	SR_T_LIST,
+	SR_T_INT16
 };
 
 /** Value for sr_datafeed_packet.type. */
@@ -742,6 +743,11 @@ struct sr_status {
     uint32_t ch1_acc_mean_p3;
 };
 
+struct sr_list_item{
+	int   id;
+	char *name;
+};
+
 enum sr_config_option_id
 {
 	/*--- Device classes ------------------------------------------------*/
@@ -1190,47 +1196,6 @@ enum DSL_CHANNEL_ID {
     DSL_DSO1000x2,
 };
 
-static char* DSL_CHANNEL_ID_NAMES[] = 
-{
-    "DSL_STREAM20x16",
-    "DSL_STREAM25x12",
-    "DSL_STREAM50x6",
-    "DSL_STREAM100x3",
-
-    "DSL_STREAM20x16_3DN2",
-    "DSL_STREAM25x12_3DN2",
-    "DSL_STREAM50x6_3DN2",
-    "DSL_STREAM100x3_3DN2",
-
-    "DSL_STREAM10x32_32_3DN2",
-    "DSL_STREAM20x16_32_3DN2",
-    "DSL_STREAM25x12_32_3DN2",
-    "DSL_STREAM50x6_32_3DN2",
-    "DSL_STREAM100x3_32_3DN2",
-
-    "DSL_STREAM50x32",
-    "DSL_STREAM100x30",
-    "DSL_STREAM250x12",
-    "DSL_STREAM125x16_16",
-    "DSL_STREAM250x12_16",
-    "DSL_STREAM500x6",
-    "DSL_STREAM1000x3",
-
-    "DSL_BUFFER100x16",
-    "DSL_BUFFER200x8",
-    "DSL_BUFFER400x4",
-
-    "DSL_BUFFER250x32",
-    "DSL_BUFFER500x16",
-    "DSL_BUFFER1000x8",
-
-    "DSL_ANALOG10x2",
-    "DSL_ANALOG10x2_500",
-
-    "DSL_DSO200x2",
-    "DSL_DSO1000x2",
-};
-
 /*--- input/input.c ---------------------------------------------------------*/
 
 SR_API struct sr_input_format **sr_input_list(void);
@@ -1498,6 +1463,11 @@ SR_API int ds_get_actived_device_status(struct sr_status *status, gboolean prg);
 SR_API struct sr_config *ds_new_config(int key, GVariant *data);
 
 SR_API void ds_free_config(struct sr_config *src);
+
+/**
+  The session file options value text,convert to code.
+*/
+SR_API int ds_dsl_option_value_to_code(int work_mode, int config_id, const char *value);
 
 /*----------channel----------*/
 SR_API int ds_enable_device_channel(const struct sr_channel *ch, gboolean enable);

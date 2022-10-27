@@ -125,12 +125,9 @@ signals:
 public:
     //IMainForm
     void switchLanguage(int language);
-
-    //ISessionCallback
-    void session_save();
+    bool able_to_close();
    
-private:
-    void closeEvent(QCloseEvent *event);
+private: 
 	void setup_ui();
     void retranslateUi(); 
     bool eventFilter(QObject *object, QEvent *event);
@@ -140,7 +137,7 @@ private:
     bool confirm_to_store_data();
     void update_toolbar_view_status();
     bool load_session_json(QJsonDocument json, bool &haveDecoder);
-    QString genSessionFileName();
+    QString genSessionFileName(bool isNewFormat);
     bool gen_session_json(QJsonObject &sessionVar);
     void check_session_file_version();
     void load_device_config();
@@ -168,6 +165,7 @@ private:
     void receive_header();    
     void data_received();
     void trigger_message(int msg);
+    void session_save();
 
     //ISessionDataGetter
     bool genSessionData(std::string &str);
