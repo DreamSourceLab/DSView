@@ -726,7 +726,7 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         *data = g_variant_new_int16(vdev->version);
         break;
     default:
-        return SR_ERR_ARG;
+        return SR_ERR_NA;
     }
 
     return SR_OK;
@@ -949,7 +949,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         break;
     default:
         sr_err("Unknown capability: %d.", id);
-        return SR_ERR;
+        return SR_ERR_NA;
     }
 
     return SR_OK;

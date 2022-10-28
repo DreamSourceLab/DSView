@@ -26,6 +26,7 @@
 #define     STR_PAGE_TOOLBAR    2
 #define     STR_PAGE_DLG        3
 #define     STR_PAGE_DSL        100
+#define     STR_PAGE_DECODER    101
 
 // xx
 #define IDS_TOOLBAR_MODE

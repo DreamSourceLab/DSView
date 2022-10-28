@@ -25,6 +25,7 @@
 #include <map>
 #include <vector>
 #include <QString>
+#include <string>
 #include "string_ids.h"
 
 struct lang_key_item
@@ -36,19 +37,24 @@ struct lang_key_item
 class Lang_resource_page
 {
 public:
+    Lang_resource_page();
     void Clear();
 
 public:
     int     _id;
     const char   *_source;
     bool    _loaded;
+    bool    _released;
+    bool    _is_dynamic;
     std::map<std::string, std::string> _res;
+    std::map<std::string, std::string> _res_history;
 };
 
 struct lang_page_item
 {
     int id;
     const char *source;
+    bool is_dynamic;
 };
 
 static const struct lang_key_item lang_id_keys[] = 
@@ -59,10 +65,11 @@ static const struct lang_key_item lang_id_keys[] =
 
 static const struct lang_page_item lange_page_keys[] = 
 {
-    {STR_PAGE_TOOLBAR, "toolbar.json"},
-    {STR_PAGE_MSG, "msg.json"},
-    {STR_PAGE_DLG, "dlg.json"},
-    {STR_PAGE_DSL, "dsl_list.json, dsl_label.json, dsl_channel.json"}
+    {STR_PAGE_TOOLBAR, "toolbar.json", false},
+    {STR_PAGE_MSG, "msg.json", false},
+    {STR_PAGE_DLG, "dlg.json", false},
+    {STR_PAGE_DSL, "dsl_list.json, dsl_label.json, dsl_channel.json", false},
+    {STR_PAGE_DECODER, "dec/0.json,dec/a.json,dec/f.json,dec/k.json,dec/p.json,dec/u.json", true},
 };
 
 class LangResource
@@ -74,8 +81,12 @@ public:
     static LangResource* Instance();
     bool Load(int lang);
     void Release();
+  
     const char* get_lang_text(int page_id, const char *str_id, const char *default_str);
-
+    bool is_new_decoder(const char *decoder_id);
+    void reload_dynamic();
+    void relase_dynamic();
+   
 private:
     const char *get_lang_key(int lang);
 
@@ -87,6 +98,7 @@ private:
     std::vector<Lang_resource_page*> _pages;
     Lang_resource_page    *_current_page;
     int     _cur_lang;
+    std::map<std::string, int> _query_decoders;
 };
 
 #define S_ID(id) #id

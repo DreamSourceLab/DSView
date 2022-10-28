@@ -32,10 +32,19 @@
 #include <assert.h>
 
 //---------------Lang_resource_page
+Lang_resource_page::Lang_resource_page()
+{
+    _id = -1;
+    _source = NULL;
+    _loaded = false;
+    _released = false;
+    _is_dynamic = false;
+}
 
 void Lang_resource_page::Clear()
 {
     _res.clear();
+    _res_history.clear();
 }
 
 //---------------LangResource
@@ -88,7 +97,9 @@ bool LangResource::Load(int lang)
 
     _cur_lang = lang;
 
-    Release();
+    _query_decoders.clear();
+
+    this->Release();
 
     num = sizeof(lange_page_keys) / sizeof(lang_page_item);
 
@@ -97,7 +108,7 @@ bool LangResource::Load(int lang)
         Lang_resource_page *p = new Lang_resource_page();
         p->_id = lange_page_keys[i].id;
         p->_source = lange_page_keys[i].source;
-        p->_loaded = false;
+        p->_is_dynamic = lange_page_keys[i].is_dynamic;
         _pages.push_back(p);
     }
 
@@ -139,7 +150,7 @@ void LangResource::load_page(Lang_resource_page &p, QString file)
 { 
     QFile f(file);
     if (f.exists() == false){
-        if (_cur_lang != LAN_EN)
+        if (_cur_lang != LAN_EN && p._is_dynamic == false)
             dsv_warn("Warning:Language source file is not exists: %s", file.toLocal8Bit().data());
         return;
     }
@@ -179,7 +190,7 @@ void LangResource::load_page(Lang_resource_page &p, QString file)
 const char* LangResource::get_lang_text(int page_id, const char *str_id, const char *default_str)
 {
     assert(str_id);
-    assert(default_str);
+    assert(default_str); 
 
     if (*str_id == '\0' || *default_str == '\0'){
         dsv_err("%s", "LangResource::get_lang_text(), param is empty.");
@@ -198,20 +209,68 @@ const char* LangResource::get_lang_text(int page_id, const char *str_id, const c
 
     if (_current_page == NULL){
         if (_cur_lang != LAN_EN)
-            dsv_warn("Warning:Cant find language source page:%d", page_id);
+            dsv_warn("Warning:Can't find language source page:%d", page_id);
         return default_str;
     }
 
     if (_current_page->_loaded == false)
         load_page(*_current_page);
 
-    auto it = _current_page->_res.find(std::string(str_id));
-    if (it != _current_page->_res.end()){
-        return (*it).second.c_str();
+    std::string key(str_id);
+
+    if (_current_page->_released){
+        auto it = _current_page->_res_history.find(key);
+        if (it != _current_page->_res_history.end()){
+            return (*it).second.c_str();
+        }
     }
-    else if(_cur_lang != LAN_EN){
-        dsv_warn("Warning:Cant't get language text:%s", str_id);
+    else{
+        auto it = _current_page->_res.find(key);
+        if (it != _current_page->_res.end()){
+            if (_current_page->_is_dynamic){
+                _current_page->_res_history[key] = (*it).second; //Save to history list.
+            }
+            return (*it).second.c_str();
+        }
+    }   
+   
+    if(_cur_lang != LAN_EN){
+        dsv_warn("Warning:Can't get language text:%s", str_id);
     }
 
     return default_str;
+}
+
+bool LangResource::is_new_decoder(const char *decoder_id)
+{
+    std::string key(decoder_id);
+    if (_query_decoders.find(key) == _query_decoders.end()){
+        _query_decoders[key] = 1;
+        return true;
+    }
+
+    return false;
+}
+
+void LangResource::reload_dynamic()
+{
+    for (Lang_resource_page *p : _pages)
+    {
+        if (p->_is_dynamic){
+            p->_released = false;
+            p->_loaded = false;
+            load_page(*p);
+        }
+    }
+}
+
+void LangResource::relase_dynamic()
+{
+    for (Lang_resource_page *p : _pages)
+    {
+        if (p->_is_dynamic){
+            p->_res.clear();
+            p->_released = true;
+        }
+    }
 }
