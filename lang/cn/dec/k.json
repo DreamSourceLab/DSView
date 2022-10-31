@@ -1,0 +1,242 @@
+[
+    {
+        "id": "dec_lfast_chan_data",
+        "text": "TXP或RXP"
+    },
+    {
+        "id": "dec_lin_opt_version",
+        "text": "协议版本"
+    },
+    {
+        "id": "dec_lm75_opt_sensor",
+        "text": "传感器类型"
+    },
+    {
+        "id": "dec_lm75_opt_resolution",
+        "text": "分辨率（位）"
+    },
+    {
+        "id": "dec_lpc_chan_lframe",
+        "text": "数据镇"
+    },
+    {
+        "id": "dec_lpc_chan_lclk",
+        "text": "时钟"
+    },
+    {
+        "id": "dec_lpc_chan_lad0",
+        "text": "地址/控制/数据线 0"
+    },
+    {
+        "id": "dec_lpc_chan_lad1",
+        "text": "地址/控制/数据线 1"
+    },
+    {
+        "id": "dec_lpc_chan_lad2",
+        "text": "地址/控制/数据线 2"
+    },
+    {
+        "id": "dec_lpc_chan_lad3",
+        "text": "地址/控制/数据线 3"
+    },
+    {
+        "id": "dec_lpc_opt_chan_lreset",
+        "text": "复位"
+    },
+    {
+        "id": "dec_lpc_opt_chan_ldrq",
+        "text": "编码的DMA/总线主请求"
+    },
+    {
+        "id": "dec_lpc_opt_chan_serirq",
+        "text": "中断请求"
+    },
+    {
+        "id": "dec_lpc_opt_chan_clkrun",
+        "text": "时钟运行"
+    },
+    {
+        "id": "dec_lpc_opt_chan_lpme",
+        "text": "LPC电源管理事件"
+    },
+    {
+        "id": "dec_lpc_opt_chan_lpcpd",
+        "text": "掉电"
+    },
+    {
+        "id": "dec_lpc_opt_chan_lsmi",
+        "text": "系统管理中断"
+    },
+    {
+        "id": "dec_ltc26x7_opt_chip",
+        "text": "片选"
+    },
+    {
+        "id": "dec_ltc26x7_opt_vref",
+        "text": "参考电压(V)"
+    },
+    {
+        "id": "dec_ltc242x_opt_vref",
+        "text": "参考电压(V)"
+    },
+    {
+        "id": "dec_maple_bus_chan_sdcka",
+        "text": "数据/时钟线 A"
+    },
+    {
+        "id": "dec_maple_bus_chan_sdckb",
+        "text": "数据/时钟线 B"
+    },
+    {
+        "id": "dec_mcs48_chan_ale",
+        "text": "地址锁存启用"
+    },
+    {
+        "id": "dec_mcs48_chan_psen",
+        "text": "程序存储启用"
+    },
+    {
+        "id": "dec_mdio_chan_mdc",
+        "text": "时钟"
+    },
+    {
+        "id": "dec_mdio_chan_mdio",
+        "text": "数据"
+    },
+    {
+        "id": "dec_mdio_opt_show_debug_bits",
+        "text": "显示调试位"
+    },
+    {
+        "id": "dec_mdio_opt_read_edge",
+        "text": "读取边沿"
+    },
+    {
+        "id": "dec_microwire_chan_cs",
+        "text": "片选"
+    },
+    {
+        "id": "dec_microwire_chan_sk",
+        "text": "时钟"
+    },
+    {
+        "id": "dec_microwire_chan_si",
+        "text": "从机输入"
+    },
+    {
+        "id": "dec_microwire_chan_so",
+        "text": "从机输出"
+    },
+    {
+        "id": "dec_miller_chan_data",
+        "text": "数据信号"
+    },
+    {
+        "id": "dec_miller_opt_baudrate",
+        "text": "波特率"
+    },
+    {
+        "id": "dec_miller_opt_edge",
+        "text": "边沿"
+    },
+    {
+        "id": "dec_mipi_dsi_chan_D0N",
+        "text": "LP数据0负"
+    },
+    {
+        "id": "dec_mipi_dsi_chan_D0P",
+        "text": "LP数据0正"
+    },
+    {
+        "id": "dec_mipi_rffe_chan_sclk",
+        "text": "串行时钟线"
+    },
+    {
+        "id": "dec_mipi_rffe_chan_sdata",
+        "text": "串行数据线"
+    },
+    {
+        "id": "dec_mipi_rffe_opt_error_display",
+        "text": "错误显示选项"
+    },
+    {
+        "id": "dec_modbus_opt_channel",
+        "text": "传输方向"
+    },
+    {
+        "id": "dec_morse_chan_data",
+        "text": "数据线"
+    },
+    {
+        "id": "dec_morse_opt_timeunit",
+        "text": "时间单位()"
+    },
+    {
+        "id": "dec_nes_gamepad_opt_variant",
+        "text": "Gamepad变体"
+    },
+    {
+        "id": "dec_nrf24l01_opt_chip",
+        "text": "芯片类型"
+    },
+    {
+        "id": "dec_numbers_and_state_chan_clk",
+        "text": "时钟"
+    },
+    {
+        "id": "dec_numbers_and_state_opt_clkedge",
+        "text": "时钟沿"
+    },
+    {
+        "id": "dec_numbers_and_state_opt_count",
+        "text": "总比特计数"
+    },
+    {
+        "id": "dec_numbers_and_state_opt_interp",
+        "text": "解释方法"
+    },
+    {
+        "id": "dec_numbers_and_state_opt_fracbits",
+        "text": "分数位计数"
+    },
+    {
+        "id": "dec_numbers_and_state_opt_mapping",
+        "text": "枚举到文本映射文件"
+    },
+    {
+        "id": "dec_numbers_and_state_opt_format",
+        "text": "数据格式"
+    },
+    {
+        "id": "dec_onewire_link_chan_owr",
+        "text": "1-Wire 信号线"
+    },
+    {
+        "id": "dec_onewire_link_opt_overdrive",
+        "text": "以高速模式开始"
+    },
+    {
+        "id": "dec_ook_chan_data",
+        "text": "数据线"
+    },
+    {
+        "id": "dec_ook_oregon_opt_unknown",
+        "text": "未知类型为"
+    },
+    {
+        "id": "dec_ook_vis_opt_displayas",
+        "text": "显示为"
+    },
+    {
+        "id": "dec_ook_vis_opt_synclen",
+        "text": "同步长度"
+    },
+    {
+        "id": "dec_ook_vis_opt_syncoffset",
+        "text": "同步偏移"
+    },
+    {
+        "id": "dec_ook_vis_opt_refsample",
+        "text": "比较"
+    }
+]
