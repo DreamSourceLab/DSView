@@ -681,7 +681,7 @@ bool DecodeTrace::create_popup(bool isnew)
     QWidget *top = AppControl::Instance()->GetTopWindow();
     dialogs::DecoderOptionsDlg dlg(top);
     dlg.set_cursor_range(_decode_cursor1, _decode_cursor2);
-    dlg.load_options(this, isnew);
+    dlg.load_options(this);
 
     if (QDialog::Accepted == dlg.exec())
     {

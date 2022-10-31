@@ -68,11 +68,23 @@ DecoderOptionsDlg::~DecoderOptionsDlg()
     _bindings.clear();
 }
 
-void DecoderOptionsDlg::load_options(view::DecodeTrace *trace, bool isNew)
-{  
+void DecoderOptionsDlg::load_options(view::DecodeTrace *trace)
+{
     assert(trace);
-
     _trace = trace;
+
+    const char *dec_id = trace->decoder()->get_root_decoder_id();
+
+    if (LangResource::Instance()->is_new_decoder(dec_id))
+        LangResource::Instance()->reload_dynamic();
+
+    load_options_view();
+
+    LangResource::Instance()->release_dynamic();
+}
+
+void DecoderOptionsDlg::load_options_view()
+{   
     DSDialog *dlg = this;   
 
     QFormLayout *form = new QFormLayout();
@@ -349,31 +361,45 @@ void DecoderOptionsDlg::create_decoder_form(
  
 	// Add the mandatory channels
 	for(l = decoder->channels; l; l = l->next) {
-		const struct srd_channel *const pdch =
-			(struct srd_channel *)l->data;
+		const struct srd_channel *const pdch = (struct srd_channel *)l->data;
 		DsComboBox *const combo = create_probe_selector(parent, dec, pdch);
+
+        const char *desc_str = NULL;
+        if (pdch->idn != NULL){
+            desc_str = LangResource::Instance()->get_lang_text(STR_PAGE_DECODER, pdch->idn, pdch->desc);
+        }
+        else{
+            desc_str = pdch->desc;
+        }
 
         //tr
         decoder_form->addRow(QString("<b>%1</b> (%2) *")
 			.arg(QString::fromUtf8(pdch->name))
-			.arg(QString::fromUtf8(pdch->desc)), combo);
+			.arg(QString::fromUtf8(desc_str)), combo);
 
         const ProbeSelector s = {combo, dec, pdch};
     	_probe_selectors.push_back(s);
 
-         connect(combo, SIGNAL(currentIndexChanged(int)), this, SLOT(on_probe_selected(int)));
+        connect(combo, SIGNAL(currentIndexChanged(int)), this, SLOT(on_probe_selected(int)));
 	} 
 
 	// Add the optional channels
 	for(l = decoder->opt_channels; l; l = l->next) {
-		const struct srd_channel *const pdch =
-			(struct srd_channel *)l->data;
+		const struct srd_channel *const pdch = (struct srd_channel *)l->data;
 		DsComboBox *const combo = create_probe_selector(parent, dec, pdch);
 		
+        const char *desc_str = NULL;
+        if (pdch->idn != NULL){
+            desc_str = LangResource::Instance()->get_lang_text(STR_PAGE_DECODER, pdch->idn, pdch->desc);
+        }
+        else{
+            desc_str = pdch->desc;
+        }
+
         //tr
         decoder_form->addRow(QString("<b>%1</b> (%2)")
 			.arg(QString::fromUtf8(pdch->name))
-			.arg(QString::fromUtf8(pdch->desc)), combo);
+			.arg(QString::fromUtf8(desc_str)), combo);
 
         const ProbeSelector s = {combo, dec, pdch};
         _probe_selectors.push_back(s);

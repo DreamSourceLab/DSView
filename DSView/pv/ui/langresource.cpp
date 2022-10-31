@@ -161,6 +161,8 @@ void LangResource::load_page(Lang_resource_page &p, QString file)
     if (raw_bytes.length() == 0)
         return;
 
+    dsv_info("Load lang resouce file: %s", file.toLocal8Bit().data());
+
     QJsonParseError error;
     QString jsonStr(raw_bytes.data());
     QByteArray qbs = jsonStr.toUtf8();
@@ -264,7 +266,7 @@ void LangResource::reload_dynamic()
     }
 }
 
-void LangResource::relase_dynamic()
+void LangResource::release_dynamic()
 {
     for (Lang_resource_page *p : _pages)
     {

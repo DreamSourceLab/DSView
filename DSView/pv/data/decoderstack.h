@@ -96,6 +96,8 @@ public:
         return _stack;
     }
 
+    const char* get_root_decoder_id();
+
 	void add_sub_decoder(decode::Decoder *decoder);
     void remove_sub_decoder(decode::Decoder *decoder);
     void remove_decoder_by_handel(const srd_decoder *dec);

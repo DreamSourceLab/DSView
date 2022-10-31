@@ -31,6 +31,7 @@
 #include "../enum.h"
 #include "../int.h"
 #include "../string.h"
+#include "../../ui/langresource.h"
 
 using namespace boost;
 using namespace std;
@@ -54,7 +55,15 @@ DecoderOptions::DecoderOptions(pv::data::DecoderStack* decoder_stack, data::deco
 		const srd_decoder_option *const opt =
 			(srd_decoder_option*)l->data;
 
-		const QString name = QString::fromUtf8(opt->desc);
+		const char *desc_str = NULL;
+        if (opt->idn != NULL){
+            desc_str = LangResource::Instance()->get_lang_text(STR_PAGE_DECODER, opt->idn, opt->desc);
+        }
+        else{
+            desc_str = opt->desc;
+        }
+
+		const QString name = QString::fromUtf8(desc_str);
 
 		const Property::Getter getter = bind(
 			&DecoderOptions::getter, this, opt->id);

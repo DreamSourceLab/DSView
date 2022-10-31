@@ -85,7 +85,7 @@ public:
     const char* get_lang_text(int page_id, const char *str_id, const char *default_str);
     bool is_new_decoder(const char *decoder_id);
     void reload_dynamic();
-    void relase_dynamic();
+    void release_dynamic();
    
 private:
     const char *get_lang_key(int lang);

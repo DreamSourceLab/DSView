@@ -1501,7 +1501,11 @@ namespace pv
             { 
                 QString ses_name = dir.absolutePath() + "/" 
                             + _device_agent->driver_name() + QString::number(mode) + ".dsc";
-                on_load_session(ses_name);
+
+                QFile sf(ses_name);
+                if (sf.exists()){
+                    on_load_session(ses_name);
+                }
             }
         }
     }

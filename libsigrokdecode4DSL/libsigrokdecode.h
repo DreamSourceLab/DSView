@@ -234,10 +234,13 @@ struct srd_channel {
 	int order;
     /** The type of the channel, such us: sclk/sdata/.../others */
     int type;
+	/** The language text soruce id. */
+	char *idn;
 };
 
 struct srd_decoder_option {
 	char *id;
+	char *idn;
 	char *desc;
 	GVariant *def;
 	GSList *values;

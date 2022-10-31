@@ -112,9 +112,10 @@ static void channel_free(void *data)
 	if (!ch)
 		return;
 
-	g_free(ch->desc);
-	g_free(ch->name);
-	g_free(ch->id);
+	g_safe_free(ch->desc);
+	g_safe_free(ch->name);
+	g_safe_free(ch->id);
+	g_safe_free(ch->idn);
 	g_free(ch);
 }
 
@@ -150,8 +151,9 @@ static void decoder_option_free(void *data)
 
 	g_slist_free_full(opt->values, &variant_free);
 	variant_free(opt->def);
-	g_free(opt->desc);
-	g_free(opt->id);
+	g_safe_free(opt->desc);
+	g_safe_free(opt->id);
+	g_safe_free(opt->idn);
 	g_free(opt);
 }
 
@@ -226,6 +228,11 @@ static int get_channels(const struct srd_decoder *d, const char *attr,
 			goto err_out;
 		}
 		pdch = g_malloc(sizeof(struct srd_channel));
+		pdch->id = NULL;
+		pdch->name = NULL;		
+		pdch->desc = NULL;
+		pdch->idn = NULL;
+
 		/* Add to list right away so it doesn't get lost. */
 		pdchl = g_slist_prepend(pdchl, pdch);
 
@@ -235,6 +242,8 @@ static int get_channels(const struct srd_decoder *d, const char *attr,
 			goto err_out;
 		if (py_dictitem_as_str(py_entry, "desc", &pdch->desc) != SRD_OK)
 			goto err_out;
+
+		py_dictitem_as_str(py_entry, "idn", &pdch->idn);
 
 		pdch->type = py_dictitem_to_int(py_entry, "type");
 		if (pdch->type < 0)
@@ -303,6 +312,12 @@ static int get_options(struct srd_decoder *d)
 		}
 
 		o = g_malloc0(sizeof(struct srd_decoder_option));
+		o->id = NULL;
+		o->idn = NULL;
+		o->desc = NULL;
+		o->def = NULL;
+		o->values = NULL;
+
 		/* Add to list right away so it doesn't get lost. */
 		options = g_slist_prepend(options, o);
 
@@ -319,6 +334,11 @@ static int get_options(struct srd_decoder *d)
 		if (py_str) {
 			if (py_str_as_str(py_str, &o->desc) != SRD_OK)
 				goto err_out;
+		}
+
+		py_str = PyDict_GetItemString(py_opt, "idn");
+		if (py_str){
+			py_str_as_str(py_str, &o->idn);
 		}
 
 		py_default = PyDict_GetItemString(py_opt, "default");

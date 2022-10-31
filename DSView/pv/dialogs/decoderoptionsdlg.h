@@ -84,9 +84,11 @@ public:
         cursor2 = _cursor2;
     }
 
-    void load_options(view::DecodeTrace *trace, bool isNew);
+    void load_options(view::DecodeTrace *trace);
 
 private:
+    void load_options_view();
+
     void load_decoder_forms(QWidget *container);  
 
     DsComboBox* create_probe_selector(QWidget *parent, const data::decode::Decoder *dec,

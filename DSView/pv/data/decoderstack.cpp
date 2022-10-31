@@ -773,5 +773,14 @@ int64_t DecoderStack::get_mark_index()
     return _mark_index;
 }
 
+const char* DecoderStack::get_root_decoder_id()
+{
+    if (_stack.size() > 0){
+        decode::Decoder *dec = _stack.front();
+        return dec->decoder()->id;
+    }
+    return NULL;
+}
+
 } // namespace data
 } // namespace pv
