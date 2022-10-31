@@ -84,7 +84,8 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Encoding']
     optional_channels = tuple(
-        {'id': 'd{}'.format(i), 'name': 'D{}'.format(i), 'desc': 'Data line {}'.format(i), 'idn':'dec_graycode_opt_chan_d{}'.format(i)}
+        {'id': 'd{}'.format(i), 'name': 'D{}'.format(i), 'desc': 'Data line {}'.format(i)
+        #, 'idn':'dec_graycode_opt_chan_d{}'.format(i)}
         for i in range(MAX_CHANNELS)
     )
     options = (

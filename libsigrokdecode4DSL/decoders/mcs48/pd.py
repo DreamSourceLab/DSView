@@ -39,21 +39,21 @@ class Decoder(srd.Decoder):
     ) + tuple({
         'id': 'd%d' % i,
         'name': 'D%d' % i,
-        'desc': 'CPU data line %d' % i, 
-        'idn':'dec_mcs48_chan_d%d' % i
+        'desc': 'CPU data line %d' % i
+        #, 'idn':'dec_mcs48_chan_d%d' % i
         } for i in range(0, 8)
     ) + tuple({
         'id': 'a%d' % i,
         'name': 'A%d' % i,
-        'desc': 'CPU address line %d' % i, 
-        'idn':'dec_mcs48_chan_a%d' % i
+        'desc': 'CPU address line %d' % i
+        #, 'idn':'dec_mcs48_chan_a%d' % i
         } for i in range(8, 12)
     )
     optional_channels = tuple({
         'id': 'a%d' % i,
         'name': 'A%d' % i,
-        'desc': 'CPU address line %d' % i, 
-        'idn':'dec_mcs48_opt_chan_a%d' % i
+        'desc': 'CPU address line %d' % i
+        #, 'idn':'dec_mcs48_opt_chan_a%d' % i
         } for i in range(12, 13)
     )
     annotations = (
