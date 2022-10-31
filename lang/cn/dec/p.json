@@ -1,0 +1,442 @@
+[   
+    {
+        "id": "dec_parallel_opt_clock_edge",
+        "text": "采样时钟边沿"
+    },
+    {
+        "id": "dec_parallel_opt_wordsize",
+        "text": "数据字大小（总线周期数）"
+    },
+    {
+        "id": "dec_parallel_opt_endianness",
+        "text": "数据结尾"
+    },
+    {
+        "id": "dec_pjdl_chan_data",
+        "text": "单线数据"
+    },
+    {
+        "id": "dec_pjdl_opt_mode",
+        "text": "通信模式"
+    },
+    {
+        "id": "dec_pjdl_opt_idle_add_us",
+        "text": "增加空闲时间（us）"
+    },
+    {
+        "id": "dec_ps2_chan_clk",
+        "text": "时钟线"
+    },
+    {
+        "id": "dec_ps2_chan_data",
+        "text": "数据线"
+    },
+    {
+        "id": "dec_ps2_opt_HtoD_Clock",
+        "text": "HtoD时钟"
+    },
+    {
+        "id": "dec_ps2_opt_DtoH_Clock",
+        "text": "DtoH时钟"
+    },
+    {
+        "id": "dec_pwm_chan_data",
+        "text": "数据线"
+    },
+    {
+        "id": "dec_pwm_opt_polarity",
+        "text": "极性"
+    },
+    {
+        "id": "dec_pxx1_chan_data",
+        "text": "数据线"
+    },
+    {
+        "id": "dec_qi_chan_qi",
+        "text": "解调Qi数据线"
+    },
+    {
+        "id": "dec_qspi_chan_clk",
+        "text": "时钟线"
+    },
+    {
+        "id": "dec_qspi_chan_io0",
+        "text": "数据I/O 0"
+    },
+    {
+        "id": "dec_qspi_opt_chan_io1",
+        "text": "数据I/O 1"
+    },
+    {
+        "id": "dec_qspi_opt_chan_io2",
+        "text": "数据I/O 2"
+    },
+    {
+        "id": "dec_qspi_opt_chan_io3",
+        "text": "数据I/O 3"
+    },
+    {
+        "id": "dec_qspi_opt_chan_cs",
+        "text": "片选"
+    },
+    {
+        "id": "dec_qspi_opt_cs_polarity",
+        "text": "片选极性"
+    },
+    {
+        "id": "dec_qspi_opt_cpol",
+        "text": "时钟极性(CPOL)"
+    },
+    {
+        "id": "dec_qspi_opt_cpha",
+        "text": "时钟相位(CPHA)"
+    },
+    {
+        "id": "dec_qspi_opt_bitorder",
+        "text": "比特序"
+    },
+    {
+        "id": "dec_qspi_opt_wordsize",
+        "text": "字长"
+    },
+    {
+        "id": "dec_rc_encode_chan_data",
+        "text": "数据线"
+    },
+    {
+        "id": "dec_rgb_led_ws281x_chan_din",
+        "text": "DIN数据线"
+    },
+    {
+        "id": "dec_rgb_led_ws281x_opt_colors",
+        "text": "颜色"
+    },
+    {
+        "id": "dec_rgb_led_ws281x_opt_polarity",
+        "text": "极性"
+    },
+    {
+        "id": "dec_sae_j1850_vpw_chan_data",
+        "text": "数据线"
+    },
+    {
+        "id": "dec_sda2506_chan_clk",
+        "text": "时钟"
+    },
+    {
+        "id": "dec_sda2506_chan_d",
+        "text": "数据"
+    },
+    {
+        "id": "dec_sda2506_chan_ce",
+        "text": "芯片使能"
+    },
+    {
+        "id": "dec_sdcard_sd_chan_cmd",
+        "text": "命令"
+    },
+    {
+        "id": "dec_sdcard_sd_chan_clk",
+        "text": "时钟"
+    },
+    {
+        "id": "dec_sdcard_sd_opt_chan_dat0",
+        "text": "数据引脚 0"
+    },
+    {
+        "id": "dec_sdcard_sd_opt_chan_dat1",
+        "text": "数据引脚 1"
+    },
+    {
+        "id": "dec_sdcard_sd_opt_chan_dat2",
+        "text": "数据引脚 2"
+    },
+    {
+        "id": "dec_sdcard_sd_opt_chan_dat3",
+        "text": "数据引脚 3"
+    },
+    {
+        "id": "dec_sdq_chan_sdq",
+        "text": "单线SDQ数据线"
+    },
+    {
+        "id": "dec_sdq_opt_bitrate",
+        "text": "比特率"
+    },
+    {
+        "id": "dec_seven_segment_chan_A",
+        "text": "A段"
+    },
+    {
+        "id": "dec_seven_segment_chan_B",
+        "text": "B段"
+    },
+    {
+        "id": "dec_seven_segment_chan_C",
+        "text": "C段"
+    },
+    {
+        "id": "dec_seven_segment_chan_D",
+        "text": "D段"
+    },
+    {
+        "id": "dec_seven_segment_chan_E",
+        "text": "E段"
+    },
+    {
+        "id": "dec_seven_segment_chan_F",
+        "text": "F段"
+    },
+    {
+        "id": "dec_seven_segment_chan_G",
+        "text": "G段"
+    },
+    {
+        "id": "dec_seven_segment_opt_chan_A",
+        "text": "小数点"
+    },
+    {
+        "id": "dec_seven_segment_opt_polarity",
+        "text": "预期极性"
+    },
+    {
+        "id": "dec_signature_chan_start",
+        "text": "起始通道"
+    },
+    {
+        "id": "dec_signature_chan_stop",
+        "text": "停止通道"
+    },
+    {
+        "id": "dec_signature_chan_clk",
+        "text": "时钟通道"
+    },
+    {
+        "id": "dec_signature_chan_data",
+        "text": "数据通道"
+    },
+    {
+        "id": "dec_signature_opt_start_edge",
+        "text": "起始边沿极性"
+    },
+    {
+        "id": "dec_signature_opt_stop_edge",
+        "text": "停止边沿极性"
+    },
+    {
+        "id": "dec_signature_opt_clk_edge",
+        "text": "时钟边沿极性"
+    },
+    {
+        "id": "dec_signature_opt_annbits",
+        "text": "启用位注释"
+    },
+    {
+        "id": "dec_sle44xx_chan_rst",
+        "text": "复位线"
+    },
+    {
+        "id": "dec_sle44xx_chan_clk",
+        "text": "时钟线"
+    },
+    {
+        "id": "dec_sle44xx_chan_io",
+        "text": "I/O数据线"
+    },
+    {
+        "id": "dec_spdif_chan_data",
+        "text": "数据线"
+    },
+    {
+        "id": "dec_spi_tpm_opt_tpm_version",
+        "text": "TPM版本为1.2或2.0"
+    },
+    {
+        "id": "dec_spiflash_opt_chip",
+        "text": "芯片"
+    },
+    {
+        "id": "dec_spiflash_opt_format",
+        "text": "数据格式"
+    },
+    {
+        "id": "dec_ssi32_opt_msgsize",
+        "text": "消息大小"
+    },
+    {
+        "id": "dec_st7735_chan_cs",
+        "text": "片选"
+    },
+    {
+        "id": "dec_st7735_chan_clk",
+        "text": "时钟"
+    },
+    {
+        "id": "dec_st7735_chan_mosi",
+        "text": "主出从入"
+    },
+    {
+        "id": "dec_st7735_chan_dc",
+        "text": "数据或命令"
+    },
+    {
+        "id": "dec_st7789_chan_csx",
+        "text": "片选信号"
+    },
+    {
+        "id": "dec_st7789_chan_dcx",
+        "text": "时钟信号"
+    },
+    {
+        "id": "dec_st7789_chan_sdo",
+        "text": "串行输出数据"
+    },
+    {
+        "id": "dec_st7789_chan_wrx",
+        "text": "命令/数据"
+    },
+    {
+        "id": "dec_stepper_motor_chan_step",
+        "text": "步进脉冲"
+    },
+    {
+        "id": "dec_stepper_motor_chan_dir",
+        "text": "方向选择"
+    },
+    {
+        "id": "dec_stepper_motor_opt_unit",
+        "text": "单位"
+    },
+    {
+        "id": "dec_stepper_motor_opt_steps_per_mm",
+        "text": "每毫秒步数"
+    },
+    {
+        "id": "dec_swd_chan_swclk",
+        "text": "主机时钟"
+    },
+    {
+        "id": "dec_swd_chan_swdio",
+        "text": "数据输入/输出"
+    },
+    {
+        "id": "dec_swd_opt_strict_start",
+        "text": "开始解码前等待线路重置"
+    },
+    {
+        "id": "dec_swim_opt_debug",
+        "text": "调试"
+    },
+    {
+        "id": "dec_swim_chan_swim",
+        "text": "SWIM数据线"
+    },
+    {
+        "id": "dec_t55xx_chan_data",
+        "text": "数据线"
+    },
+    {
+        "id": "dec_t55xx_opt_coilfreq",
+        "text": "线圈频率"
+    },
+    {
+        "id": "dec_t55xx_opt_start_gap",
+        "text": "起始间隙最小值"
+    },
+    {
+        "id": "dec_t55xx_opt_w_gap",
+        "text": "写入间隙最小值"
+    },
+    {
+        "id": "dec_t55xx_opt_w_one_min",
+        "text": "写入1最小值"
+    },
+    {
+        "id": "dec_t55xx_opt_w_one_max",
+        "text": "写入1最大值"
+    },
+    {
+        "id": "dec_t55xx_opt_w_zero_min",
+        "text": "写入0最小值"
+    },
+    {
+        "id": "dec_t55xx_opt_w_zero_max",
+        "text": "写入0最大值"
+    },
+    {
+        "id": "dec_t55xx_opt_em4100_decode",
+        "text": "EM4100 解码"
+    },
+    {
+        "id": "dec_tdm_audio_chan_clock",
+        "text": "数据位时钟"
+    },
+    {
+        "id": "dec_tdm_audio_chan_frame",
+        "text": "帧同步"
+    },
+    {
+        "id": "dec_tdm_audio_chan_data",
+        "text": "串行数据"
+    },
+    {
+        "id": "dec_tdm_audio_opt_bps",
+        "text": "每个样本中数据位数"
+    },
+    {
+        "id": "dec_tdm_audio_opt_channels",
+        "text": "声道数"
+    },
+    {
+        "id": "dec_tdm_audio_opt_edge",
+        "text": "采样的时钟边沿"
+    },
+    {
+        "id": "dec_timing_chan_data",
+        "text": "数据线"
+    },
+    {
+        "id": "dec_timing_opt_avg_period",
+        "text": "平均周期"
+    },
+    {
+        "id": "dec_timing_opt_edge",
+        "text": "检测边沿"
+    },
+    {
+        "id": "dec_timing_opt_delta",
+        "text": "显示上次的增量"
+    },
+    {
+        "id": "dec_tlc5620_chan_clk",
+        "text": "串行接口时钟"
+    },
+    {
+        "id": "dec_tlc5620_chan_data",
+        "text": "串行接口数据"
+    },
+    {
+        "id": "dec_tlc5620_opt_chan_load",
+        "text": "串行接口负载控制"
+    },
+    {
+        "id": "dec_tlc5620_opt_chan_ldac",
+        "text": "负载DAC"
+    },
+    {
+        "id": "dec_tlc5620_opt_vref_a",
+        "text": "参考电压 DACA(V)"
+    },
+    {
+        "id": "dec_tlc5620_opt_vref_b",
+        "text": "参考电压 DACB(V)"
+    },
+    {
+        "id": "dec_tlc5620_opt_vref_c",
+        "text": "参考电压 DACC(V)"
+    },
+    {
+        "id": "dec_tlc5620_opt_vref_d",
+        "text": "参考电压 DACD(V)"
+    }
+]

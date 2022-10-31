@@ -1,0 +1,82 @@
+[
+    {
+        "id": "dec_usb_packet_opt_signalling",
+        "text": "信号发送"
+    },
+    {
+        "id": "dec_usb_power_delivery_chan_cc1",
+        "text": "配置通道1"
+    },
+    {
+        "id": "dec_usb_power_delivery_opt_chan_cc2",
+        "text": "配置通道2"
+    },
+    {
+        "id": "dec_usb_power_delivery_opt_fulltext",
+        "text": "数据包的全文解码"
+    },
+    {
+        "id": "dec_usb_signalling_chan_dp",
+        "text": "USB D+信号"
+    },
+    {
+        "id": "dec_usb_signalling_chan_dm",
+        "text": "USB D-信号"
+    },
+    {
+        "id": "dec_usb_signalling_opt_signalling",
+        "text": "信号发送"
+    },
+    {
+        "id": "dec_wiegand_chan_d0",
+        "text": "数据0线"
+    },
+    {
+        "id": "dec_wiegand_chan_d1",
+        "text": "数据1线"
+    },
+    {
+        "id": "dec_wiegand_opt_active",
+        "text": "数据线有效电平"
+    },
+    {
+        "id": "dec_wiegand_opt_bitwidth_ms",
+        "text": "以毫秒为单位的单个位宽"
+    },
+    {
+        "id": "dec_xy2-100_chan_clk",
+        "text": "时钟"
+    },
+    {
+        "id": "dec_xy2-100_chan_sync",
+        "text": "同步"
+    },
+    {
+        "id": "dec_xy2-100_chan_data",
+        "text": "X、Y或Z轴数据"
+    },
+    {
+        "id": "dec_xy2-100_opt_chan_status",
+        "text": "X、Y或Z轴状态"
+    },    
+    {
+        "id": "dec_z80_chan_m1",
+        "text": "机器循环 1"
+    },
+    {
+        "id": "dec_z80_chan_rd",
+        "text": "内存或I/O读取"
+    },
+    {
+        "id": "dec_z80_chan_wr",
+        "text": "内存或I/O写入"
+    },
+    {
+        "id": "dec_z80_opt_chan_mreq",
+        "text": "内存请求"
+    },
+    {
+        "id": "dec_z80_opt_chan_iorq",
+        "text": "I/O请求"
+    }
+]

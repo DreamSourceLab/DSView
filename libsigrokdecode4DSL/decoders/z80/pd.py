@@ -77,6 +77,7 @@ class Decoder(srd.Decoder):
             'id': 'd%d' % i,
             'name': 'D%d' % i,
             'desc': 'Data bus line %d' % i
+            #,'idn':'dec_z80_chan_d%d' % i
             } for i in range(8)
     ) + (
         {'id': 'm1', 'name': '/M1', 'desc': 'Machine cycle 1', 'idn':'dec_z80_chan_m1'},
@@ -89,8 +90,8 @@ class Decoder(srd.Decoder):
     ) + tuple({
         'id': 'a%d' % i,
         'name': 'A%d' % i,
-        'desc': 'Address bus line %d' % i, 
-        'idn':'dec_z80_opt_chan_a%d' % i
+        'desc': 'Address bus line %d' % i
+        #, 'idn':'dec_z80_opt_chan_a%d' % i
         } for i in range(16)
     )
     annotations = (

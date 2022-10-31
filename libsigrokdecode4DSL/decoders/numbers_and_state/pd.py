@@ -90,8 +90,9 @@ class Ann:
 
 def _channel_decl(count):
     return tuple([
-        {'id': 'bit{}'.format(i), 'name': 'Bit{}'.format(i), 'desc': 'Bit position {}'.format(i), 
-        'idn':'dec_numbers_and_state_Bit{}'.format(i)}
+        {'id': 'bit{}'.format(i), 'name': 'Bit{}'.format(i), 'desc': 'Bit position {}'.format(i)
+        #, 'idn':'dec_numbers_and_state_Bit{}'.format(i)
+        }
         for i in range(count)
     ])
 
