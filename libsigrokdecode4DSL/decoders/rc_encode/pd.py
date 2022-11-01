@@ -101,7 +101,7 @@ class Decoder(srd.Decoder):
     )
     options = (
         {'id': 'remote', 'desc': 'Remote', 'default': 'none', 
-            'values': ('none', 'maplin_l95ar')},
+            'values': ('none', 'maplin_l95ar') ,'idn':'dec_rc_encode_opt_remote'},
     )
 
     def __init__(self):

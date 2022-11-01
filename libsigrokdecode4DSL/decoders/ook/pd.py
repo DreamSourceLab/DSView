@@ -79,15 +79,15 @@ class Decoder(srd.Decoder):
     )
     options = (
         {'id': 'invert', 'desc': 'Invert data', 'default': 'no',
-         'values': ('no', 'yes')},
+         'values': ('no', 'yes'), 'idn':'dec_ook_opt_invert'},
         {'id': 'decodeas', 'desc': 'Decode type', 'default': 'Manchester',
-         'values': ('NRZ', 'Manchester', 'Diff Manchester')},
+         'values': ('NRZ', 'Manchester', 'Diff Manchester'), 'idn':'dec_ook_opt_decodeas'},
         {'id': 'preamble', 'desc': 'Preamble', 'default': 'auto',
-         'values': ('auto', '1010', '1111')},
+         'values': ('auto', '1010', '1111'), 'idn':'dec_ook_opt_preamble'},
         {'id': 'preamlen', 'desc': 'Filter length', 'default': '7',
-         'values': ('0', '3', '4', '5', '6', '7', '8', '9', '10')},
+         'values': ('0', '3', '4', '5', '6', '7', '8', '9', '10'), 'idn':'dec_ook_opt_preamlen'},
         {'id': 'diffmanvar', 'desc': 'Transition at start', 'default': '1',
-         'values': ('1', '0')},
+         'values': ('1', '0'), 'idn':'dec_ook_opt_diffmanvar'},
     )
 
     def __init__(self):

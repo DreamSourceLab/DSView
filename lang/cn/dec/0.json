@@ -145,6 +145,10 @@
     },
     {
         "id": "dec_1uart_opt_baudrate",
+        "text": "波特率"
+    },
+    {
+        "id": "dec_1uart_opt_num_data_bits",
         "text": "数据位"
     },
     {

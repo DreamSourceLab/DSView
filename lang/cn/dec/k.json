@@ -220,6 +220,26 @@
         "text": "数据线"
     },
     {
+        "id": "dec_ook_opt_invert",
+        "text": "反转数据"
+    },
+    {
+        "id": "dec_ook_opt_decodeas",
+        "text": "解码类型"
+    },
+    {
+        "id": "dec_ook_opt_preamble",
+        "text": "前置码"
+    },
+    {
+        "id": "dec_ook_opt_preamlen",
+        "text": "过滤器长度 "
+    },
+    {
+        "id": "dec_ook_opt_diffmanvar",
+        "text": "开始时的转换"
+    },
+    {
         "id": "dec_ook_oregon_opt_unknown",
         "text": "未知类型为"
     },
@@ -238,5 +258,9 @@
     {
         "id": "dec_ook_vis_opt_refsample",
         "text": "比较"
+    },
+    {
+        "id": "dec_ook_oregon_opt_unknown",
+        "text": "未知类型为"
     }
 ]

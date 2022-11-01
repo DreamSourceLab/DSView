@@ -160,31 +160,31 @@
         "text": "数据I/O位1或串行数据"
     },
     {
-        "id": "dec_ieee488_chan_dio2",
+        "id": "dec_ieee488_opt_chan_dio2",
         "text": "数据I/O位2"
     },
     {
-        "id": "dec_ieee488_chan_dio3",
+        "id": "dec_ieee488_opt_chan_dio3",
         "text": "数据I/O位3"
     },
     {
-        "id": "dec_ieee488_chan_dio4",
+        "id": "dec_ieee488_opt_chan_dio4",
         "text": "数据I/O位4"
     },
     {
-        "id": "dec_ieee488_chan_dio5",
+        "id": "dec_ieee488_opt_chan_dio5",
         "text": "数据I/O位5"
     },
     {
-        "id": "dec_ieee488_chan_dio6",
+        "id": "dec_ieee488_opt_chan_dio6",
         "text": "数据I/O位6"
     },
     {
-        "id": "dec_ieee488_chan_dio7",
+        "id": "dec_ieee488_opt_chan_dio7",
         "text": "数据I/O位7"
     },
     {
-        "id": "dec_ieee488_chan_dio8",
+        "id": "dec_ieee488_opt_chan_dio8",
         "text": "数据I/O位8"
     },
     {

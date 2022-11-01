@@ -128,8 +128,20 @@
         "text": "数据包超时(毫秒),0表示禁用 "
     },
     {
+        "id": "dec_caliper_opt_unit",
+        "text": "反转单位"
+    },
+    {
+        "id": "dec_caliper_opt_changes",
+        "text": "仅限修改"
+    },
+    {
         "id": "dec_can_chan_can_rx",
         "text": "CAN总线"
+    },
+    {
+        "id": "dec_can_opt_bitrate",
+        "text": "比特率"
     },
     {
         "id": "dec_can_opt_sample_point",

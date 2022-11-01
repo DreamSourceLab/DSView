@@ -104,6 +104,10 @@
         "text": "数据线"
     },
     {
+        "id": "dec_rc_encode_opt_remote",
+        "text": "遥控"
+    },
+    {
         "id": "dec_rgb_led_ws281x_chan_din",
         "text": "DIN数据线"
     },
@@ -192,7 +196,7 @@
         "text": "G段"
     },
     {
-        "id": "dec_seven_segment_opt_chan_A",
+        "id": "dec_seven_segment_opt_chan_dp",
         "text": "小数点"
     },
     {
