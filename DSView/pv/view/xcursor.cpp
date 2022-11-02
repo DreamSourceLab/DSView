@@ -43,9 +43,8 @@ XCursor::XCursor(View &view, QColor &colour,
 	_colour(colour)
 {
     _dsoSig = NULL;
-    const auto &sigs = _view.session().get_signals();
     
-    for(auto &s : sigs) {
+    for(auto s : _view.session().get_signals()) {
         DsoSignal *dsoSig = NULL;
         if ((dsoSig = dynamic_cast<DsoSignal*>(s)))
             if (dsoSig->enabled()) {

@@ -68,7 +68,7 @@ FftOptions::FftOptions(QWidget *parent, SigSession *session) :
     _dbv_combobox = new DsComboBox(this);
  
     // setup _ch_combobox
-    for(auto &s : _session->get_signals()) {
+    for(auto s : _session->get_signals()) {
         view::DsoSignal *dsoSig = NULL;
         if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
             _ch_combobox->addItem(dsoSig->get_name(), QVariant::fromValue(dsoSig->get_index()));
@@ -92,7 +92,7 @@ FftOptions::FftOptions(QWidget *parent, SigSession *session) :
     std::vector<QString> view_modes;
     std::vector<int> dbv_ranges;
 
-    for(auto &t : _session->get_spectrum_traces()) {
+    for(auto t : _session->get_spectrum_traces()) {
         view::SpectrumTrace *spectrumTraces = NULL;
         if ((spectrumTraces = dynamic_cast<view::SpectrumTrace*>(t))) {
             windows = spectrumTraces->get_spectrum_stack()->get_windows_support();
@@ -142,7 +142,7 @@ FftOptions::FftOptions(QWidget *parent, SigSession *session) :
     }
 
     // load current settings
-    for(auto &t : _session->get_spectrum_traces()) {
+    for(auto t : _session->get_spectrum_traces()) {
          view::SpectrumTrace *spectrumTraces = NULL;
         if ((spectrumTraces = dynamic_cast<view::SpectrumTrace*>(t))) {
             if (spectrumTraces->enabled()) {
@@ -236,7 +236,7 @@ void FftOptions::accept()
 
     QDialog::accept();
 
-   for(auto &t : _session->get_spectrum_traces()) {
+   for(auto t : _session->get_spectrum_traces()) {
         view::SpectrumTrace *spectrumTraces = NULL;
         if ((spectrumTraces = dynamic_cast<view::SpectrumTrace*>(t))) {
             spectrumTraces->set_enable(false);

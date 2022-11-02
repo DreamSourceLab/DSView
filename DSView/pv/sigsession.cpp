@@ -79,12 +79,12 @@ namespace pv
         _error = No_err;
         _is_instant = false;
         _is_working = false;
-        _is_repeat_mode = false;
         _is_saving = false;
         _device_status = ST_INIT;
         _noData_cnt = 0;
         _data_lock = false;
         _data_updated = false;
+        _opt_mode = OPT_SINGLE;
 
         this->add_msg_listener(this);
 
@@ -110,7 +110,6 @@ namespace pv
         _group_data = new data::Group();
         _group_cnt = 0;
 
-        _feed_timer.Stop();
         _feed_timer.SetCallback(std::bind(&SigSession::feed_timeout, this));
         _repeat_timer.SetCallback(std::bind(&SigSession::repeat_capture_wait_timeout, this));
         _repeat_wait_prog_timer.SetCallback(std::bind(&SigSession::repeat_wait_prog_timeout, this));
@@ -222,9 +221,9 @@ namespace pv
         _cur_samplelimits = _device_agent.get_sample_limit();
 
         if (_device_agent.get_work_mode() == DSO)
-            _is_repeat_mode = true;
+            _opt_mode = OPT_REPEAT;
         else
-            _is_repeat_mode = false;
+            _opt_mode = OPT_SINGLE;
 
         // The current device changed.
         _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_CHANGED);
@@ -390,8 +389,7 @@ namespace pv
 
         // update current hw offset
         for (auto &s : _signals)
-        {
-            assert(s);
+        { 
             view::DsoSignal *dsoSig = NULL;
             if ((dsoSig = dynamic_cast<view::DsoSignal *>(s)))
             {
@@ -425,8 +423,7 @@ namespace pv
 
         // SpectrumStack
         for (auto &m : _spectrum_traces)
-        {
-            assert(m);
+        { 
             m->get_spectrum_stack()->init();
         }
 
@@ -537,7 +534,7 @@ namespace pv
         }
 
         bool wait_upload = false;
-        if (!_is_repeat_mode)
+        if (is_single_mode())
         {
             GVariant *gvar = _device_agent.get_config(NULL, NULL, SR_CONF_WAIT_UPLOAD);
             if (gvar != NULL)
@@ -553,7 +550,7 @@ namespace pv
             _repeat_timer.Stop();
             _repeat_wait_prog_timer.Stop();
 
-            if (_repeat_hold_prg != 0 && _is_repeat_mode){
+            if (_repeat_hold_prg != 0 && is_repeat_mode()){
                 _repeat_hold_prg = 0;
                 _callback->repeat_hold(_repeat_hold_prg);
             }                
@@ -562,8 +559,7 @@ namespace pv
 
             exit_capture();
 
-            if (_is_repeat_mode && _device_agent.is_collecting() == false)
-            {
+            if (is_repeat_mode() && _device_agent.is_collecting() == false){
                 // On repeat mode, the working status is changed, to post the event message.
                 _callback->trigger_message(DSV_MSG_END_COLLECT_WORK);
             }
@@ -578,7 +574,6 @@ namespace pv
     {
         _is_instant = false;
 
-        //_feed_timer
         _feed_timer.Stop();
 
         if (_device_agent.is_collecting())
@@ -624,10 +619,9 @@ namespace pv
     {
         std::set<data::SignalData *> data;
 
-        for (auto &sig : _signals)
-        {
-            assert(sig);
-            data.insert(sig->data());
+        for (auto &s : _signals)
+        { 
+            data.insert(s->data());
         }
 
         return data;
@@ -920,8 +914,7 @@ namespace pv
             _dso_data->init();
             // SpectrumStack
             for (auto &m : _spectrum_traces)
-            {
-                assert(m);
+            { 
                 m->get_spectrum_stack()->init();
             }
 
@@ -1070,7 +1063,6 @@ namespace pv
             // reset scale of dso signal
             for (auto &s : _signals)
             {
-                assert(s);
                 view::DsoSignal *dsoSig = NULL;
                 if ((dsoSig = dynamic_cast<view::DsoSignal *>(s)))
                 {
@@ -1111,7 +1103,6 @@ namespace pv
         // calculate related spectrum results
         for (auto &m : _spectrum_traces)
         {
-            assert(m);
             if (m->enabled())
                 m->get_spectrum_stack()->calc_fft();
         }
@@ -1126,6 +1117,7 @@ namespace pv
         _trigger_flag = dso.trig_flag;
         _trigger_ch = dso.trig_ch;
 
+        //Trigger update()
         receive_data(dso.num_samples);
 
         if (!_is_instant)
@@ -1149,7 +1141,6 @@ namespace pv
             // reset scale of analog signal
             for (auto &s : _signals)
             {
-                assert(s);
                 view::AnalogSignal *analogSig = NULL;
                 if ((analogSig = dynamic_cast<view::AnalogSignal *>(s)))
                 {
@@ -1243,8 +1234,6 @@ namespace pv
             {
                 for (auto &g : _group_traces)
                 {
-                    assert(g);
-
                     auto p = new data::GroupSnapshot(_logic_data->get_snapshots().front(), g->get_index_list());
                     _group_data->push_snapshot(p);
                 }
@@ -1295,8 +1284,7 @@ namespace pv
         if (_device_agent.have_instance())
         {
             for (auto &s : _signals)
-            {
-                assert(s);
+            { 
                 if (dynamic_cast<view::LogicSignal *>(s) && s->enabled())
                 {
                     logic_ch_num++;
@@ -1602,7 +1590,7 @@ namespace pv
 
     int SigSession::get_repeat_hold()
     {
-        if (!_is_instant && _is_working && _is_repeat_mode)
+        if (!_is_instant && _is_working && is_repeat_mode())
             return _repeat_hold_prg;
         else
             return 0;
@@ -1856,7 +1844,7 @@ namespace pv
                 dsv_err("%s", "The collected data is error!");
 
             // trigger next collect
-            if (!_is_instant && _is_repeat_mode && _is_working && event == DS_EV_COLLECT_TASK_END)
+            if (!_is_instant && is_repeat_mode() && _is_working && event == DS_EV_COLLECT_TASK_END)
             {
                 _callback->trigger_message(DSV_MSG_TRIG_NEXT_COLLECT);
             }
@@ -1905,13 +1893,13 @@ namespace pv
         }
     }
 
-    void SigSession::set_repeat_mode(bool repeat)
+    void SigSession::set_operation_mode(COLLECT_OPT_MODE repeat)
     {
         assert(!_is_working);
 
-        if (_is_repeat_mode != repeat)
+        if (_opt_mode != repeat)
         {
-            _is_repeat_mode = repeat;
+            _opt_mode = repeat;
             _repeat_hold_prg = 0;
         }
     }
@@ -1950,38 +1938,41 @@ namespace pv
             break;
 
         case DSV_MSG_TRIG_NEXT_COLLECT:
-        {
-            if (_is_working)
             {
-                if (_repeat_intvl > 0)
+                if (_is_working)
                 {
-                    _repeat_hold_prg = 100;
-                    _repeat_timer.Start(_repeat_intvl * 1000);
-                    int intvl = _repeat_intvl * 1000 / 20;
+                    if (_repeat_intvl > 0)
+                    {
+                        _repeat_hold_prg = 100;
+                        _repeat_timer.Start(_repeat_intvl * 1000);
+                        int intvl = _repeat_intvl * 1000 / 20;
 
-                    if (intvl >= 100){
-                        _repeat_wait_prog_step = 5;
-                    }
-                    else if (_repeat_intvl >= 1){
-                        intvl = _repeat_intvl * 1000 / 10;
-                        _repeat_wait_prog_step = 10;
-                    }
-                    else{
-                        intvl = _repeat_intvl * 1000 / 5;
-                        _repeat_wait_prog_step = 20;
-                    }
+                        if (intvl >= 100){
+                            _repeat_wait_prog_step = 5;
+                        }
+                        else if (_repeat_intvl >= 1){
+                            intvl = _repeat_intvl * 1000 / 10;
+                            _repeat_wait_prog_step = 10;
+                        }
+                        else{
+                            intvl = _repeat_intvl * 1000 / 5;
+                            _repeat_wait_prog_step = 20;
+                        }
 
-                    _repeat_wait_prog_timer.Start(intvl);
-                }
-                else
-                {
-                    _repeat_hold_prg = 0;
-                    exec_capture();
+                        _repeat_wait_prog_timer.Start(intvl);
+                    }
+                    else
+                    {
+                        _repeat_hold_prg = 0;
+                        exec_capture();
+                    }
                 }
             }
-        }
-        break;
-        }
+            break;
+
+        case DSV_MSG_COLLECT_END:   
+            break;
+        }     
     }
 
     void SigSession::DeviceConfigChanged()

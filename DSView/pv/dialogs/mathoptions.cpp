@@ -79,7 +79,7 @@ MathOptions::MathOptions(SigSession *session, QWidget *parent) :
     QHBoxLayout *src1_layout = new QHBoxLayout();
     QHBoxLayout *src2_layout = new QHBoxLayout();
 
-    for(auto &s : _session->get_signals()) {
+    for(auto s : _session->get_signals()) {
         view::DsoSignal *dsoSig = NULL;;
         if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
             QString index_str = QString::number(dsoSig->get_index());
@@ -207,7 +207,7 @@ void MathOptions::accept()
     view::DsoSignal *dsoSig1 = NULL;
     view::DsoSignal *dsoSig2 = NULL;
 
-    for(auto &s : _session->get_signals()) {
+    for(auto s : _session->get_signals()) {
         view::DsoSignal *dsoSig = NULL;;
         if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
             if (dsoSig->get_index() == src1)

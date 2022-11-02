@@ -56,7 +56,7 @@ DsoMeasure::DsoMeasure(SigSession *session, View &parent,
     _measure_tab->setTabPosition(QTabWidget::West);
     _measure_tab->setUsesScrollButtons(false);
 
-    for(auto &s : _session->get_signals()) {
+    for(auto s : _session->get_signals()) {
         view::DsoSignal *dsoSig;
         if ((dsoSig = dynamic_cast<view::DsoSignal*>(s)) && dsoSig->enabled()) {
             QWidget *measure_widget = new QWidget(this);
@@ -155,12 +155,12 @@ void DsoMeasure::accept()
 {
 	using namespace Qt;
 
-    QToolButton* sc=dynamic_cast<QToolButton*>(sender());
+    QToolButton* sc = dynamic_cast<QToolButton*>(sender());
     if(sc != NULL) {
         QVariant id = sc->property("id");
         enum DSO_MEASURE_TYPE ms_type = DSO_MEASURE_TYPE(id.toInt());
         
-        for(auto &s : _session->get_signals()) {
+        for(auto s : _session->get_signals()) {
             view::DsoSignal *dsoSig = NULL;
             if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
                 if (_measure_tab->currentWidget()->property("index").toInt() == dsoSig->get_index()) {

@@ -42,8 +42,7 @@ Binding::Binding(){
 
 void Binding::commit()
 {
-    for(auto &p : _properties) {
-        assert(p);
+    for(auto p : _properties) {
         p->commit();
     }
 }
@@ -53,10 +52,8 @@ void Binding::add_properties_to_form(QFormLayout *layout,
 {
     assert(layout);
 
-    for(auto &p : _properties)
+    for(auto p : _properties)
     {
-        assert(p);
-
         QWidget *const widget = p->get_widget(layout->parentWidget(), auto_commit);
 
         if (p->labeled_widget()){
@@ -93,9 +90,8 @@ std::map<Property*,GVariant*> Binding::get_property_value()
 {
     std::map <Property*,GVariant*> pvalue;
             
-    for(auto &p : _properties)
+    for(auto p : _properties)
     {
-        assert(p);
         pvalue[p] = p->get_value();
     }
 

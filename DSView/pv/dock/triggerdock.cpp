@@ -914,9 +914,8 @@ void TriggerDock::try_commit_trigger()
     if (commit_trigger() == false) 
     {
         /* simple trigger check trigger_enable */
-        for(auto &s : _session->get_signals())
+        for(auto s : _session->get_signals())
         {
-            assert(s);
             view::LogicSignal *logicSig = NULL;
             if ((logicSig = dynamic_cast<view::LogicSignal*>(s))) {
                 if (logicSig->commit_trig())
@@ -938,9 +937,7 @@ void TriggerDock::try_commit_trigger()
             msg.exec();
 
             if (msg.mBox()->clickedButton() == cancelButton) {
-                for(auto &s : _session->get_signals())
-                {
-                    assert(s);
+                for(auto s : _session->get_signals()){
                     view::LogicSignal *logicSig = NULL;
                     if ((logicSig = dynamic_cast<view::LogicSignal*>(s))) {
                         logicSig->set_trig(view::LogicSignal::NONTRIG);

@@ -288,7 +288,7 @@
         "text": "Search Options"
     },
     {
-        "id": "IDS_DLG_CHANGE",
+        "id": "IDS_DLG_CHANGE_FILE",
         "text": "change"
     },
     {
@@ -302,6 +302,10 @@
     {
         "id": "IDS_DLG_COMPRESSED_DATA",
         "text": "Compressed data"
+    },
+    {
+        "id": "IDS_DLG_EXPORT",
+        "text": "Export"
     },
     {
         "id": "IDS_DLG_EXPORTING",

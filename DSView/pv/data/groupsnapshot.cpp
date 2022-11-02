@@ -93,8 +93,9 @@ GroupSnapshot::GroupSnapshot(const LogicSnapshot *_logic_snapshot, std::list<int
 
 GroupSnapshot::~GroupSnapshot()
 { 
-	for(auto &e : _envelope_levels)
+	for(auto &e : _envelope_levels){
 		free(e.samples);
+	}
 }
 
 void GroupSnapshot::init()
@@ -155,7 +156,6 @@ void GroupSnapshot::get_envelope_section(EnvelopeSection &s,
 	assert(start <= end);
 	assert(min_length > 0);
  
-
 	const unsigned int min_level = max((int)floorf(logf(min_length) /
 		LogEnvelopeScaleFactor) - 1, 0);
 	const unsigned int scale_power = (min_level + 1) *

@@ -138,6 +138,7 @@ namespace pv
             QMenu               *_mode_menu;
             QAction             *_action_repeat;
             QAction             *_action_single;
+            QAction             *_action_realtime;
         
             DeviceAgent         *_device_agent;
             ds_device_handle    _last_device_handle;

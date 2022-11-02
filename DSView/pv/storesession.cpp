@@ -131,9 +131,8 @@ bool StoreSession::save_start()
     assert(_sessionDataGetter);
 
     std::set<int> type_set;
-    for(auto &sig : _session->get_signals()) {
-        assert(sig);
-        type_set.insert(sig->get_type());
+    for(auto s : _session->get_signals()) {
+        type_set.insert(s->get_type());
     }
 
     if (type_set.size() > 1) {
@@ -224,7 +223,7 @@ void StoreSession::save_proc(data::Snapshot *snapshot)
 
     if ((logic_snapshot = dynamic_cast<data::LogicSnapshot*>(snapshot))) {
         uint16_t to_save_probes = 0;
-        for(auto &s : _session->get_signals()) {
+        for(auto s : _session->get_signals()) {
             if (s->enabled() && logic_snapshot->has_data(s->get_index()))
                 to_save_probes++;
         }
@@ -232,7 +231,7 @@ void StoreSession::save_proc(data::Snapshot *snapshot)
         num = logic_snapshot->get_block_num();
         bool sample;
 
-        for(auto &s : _session->get_signals()) {
+        for(auto s : _session->get_signals()) {
             int ch_type = s->get_type();
             if (ch_type == SR_CHANNEL_LOGIC) {
                 int ch_index = s->get_index();
@@ -274,9 +273,10 @@ void StoreSession::save_proc(data::Snapshot *snapshot)
                 }
             }
         }
-    } else {
+    }
+    else {
         int ch_type = -1;
-        for(auto &s : _session->get_signals()) {
+        for(auto s : _session->get_signals()) {
             ch_type = s->get_type();
             break;
         }
@@ -585,9 +585,8 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
 bool StoreSession::export_start()
 {
     std::set<int> type_set;
-    for(auto &sig : _session->get_signals()) {
-        assert(sig);
-        int _tp = sig->get_type();
+    for(auto s : _session->get_signals()) {
+        int _tp = s->get_type();
         type_set.insert(_tp);
     }
 
@@ -757,7 +756,7 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
             buf_vec.clear();
             buf_sample.clear();
 
-            for(auto &s : _session->get_signals()) {
+            for(auto s : _session->get_signals()) {
                 int ch_type = s->get_type();
                 if (ch_type == SR_CHANNEL_LOGIC) {
                     int ch_index = s->get_index();
@@ -894,23 +893,22 @@ bool StoreSession::decoders_gen(std::string &str)
 
 bool StoreSession::json_decoders(QJsonArray &array)
 {  
-    for(auto &t : _session->get_decode_signals()) {
+    for(auto s : _session->get_decode_signals()) {
         QJsonObject dec_obj;
         QJsonArray stack_array;
         QJsonObject show_obj;
-        const auto &stack = t->decoder();
+        const auto &stack = s->decoder();
         const auto &decoder = stack->stack();
 
-        for(auto &dec : decoder) {
+        for(auto dec : decoder) {
             QJsonArray ch_array;
             const srd_decoder *const d = dec->decoder();;
             const bool have_probes = (d->channels || d->opt_channels) != 0;
 
             if (have_probes) {
-                for(auto i = dec->channels().begin();
-                    i != dec->channels().end(); i++) {
+                for(auto it = dec->channels().begin();it != dec->channels().end(); it++) {
                     QJsonObject ch_obj;
-                    ch_obj[(*i).first->id] = QJsonValue::fromVariant((*i).second);
+                    ch_obj[(*it).first->id] = QJsonValue::fromVariant((*it).second);
                     ch_array.push_back(ch_obj);
                 }
             }
@@ -1195,7 +1193,7 @@ double StoreSession::get_integer(GVariant *var)
     else if (g_variant_type_equal(type, G_VARIANT_TYPE_UINT64))
         val = g_variant_get_uint64(var);
     else
-        assert(0);
+        assert(false);
 
     return val;
 }
@@ -1350,8 +1348,7 @@ QString StoreSession::MakeExportFile(bool bDlg)
 bool StoreSession::IsLogicDataType()
 {
     std::set<int> type_set;
-    for(auto &sig : _session->get_signals()) {
-        assert(sig);
+    for(auto sig : _session->get_signals()) {
         type_set.insert(sig->get_type());
     }
 

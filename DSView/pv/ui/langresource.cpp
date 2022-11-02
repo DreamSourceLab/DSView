@@ -161,7 +161,7 @@ void LangResource::load_page(Lang_resource_page &p, QString file)
     if (raw_bytes.length() == 0)
         return;
 
-    dsv_info("Load lang resouce file: %s", file.toLocal8Bit().data());
+    //dsv_info("Load lang resouce file: %s", file.toLocal8Bit().data());
 
     QJsonParseError error;
     QString jsonStr(raw_bytes.data());

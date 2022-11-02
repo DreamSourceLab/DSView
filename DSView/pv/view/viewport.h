@@ -90,22 +90,15 @@ public:
     explicit Viewport(View &parent, View_type type);
 
     int get_total_height();
-
     QPoint get_mouse_point();
-
     QString get_measure(QString option);
-
     void set_measure_en(int enable);
-
     void start_trigger_timer(int msec);
     void stop_trigger_timer();
 
     void clear_measure();
-
     void clear_dso_xm();
-
     void set_need_update(bool update);
-
     bool get_dso_trig_moved();
 
 protected:
@@ -146,82 +139,75 @@ signals:
     void prgRate(int progress);
 
 private:
-	View &_view;
-    View_type _type;
-    bool _need_update;
+	View        &_view;
+    View_type   _type;
+    bool        _need_update;
+    QPixmap     _pixmap;
+    QMenu       *_cmenu;
 
-    QPixmap pixmap;
-    QMenu *_cmenu;
+    uint64_t    _sample_received;
+    QPoint      _mouse_point;
+    QPoint      _mouse_down_point;
+    int64_t     _mouse_down_offset;
+    double      _curScale;
+    int64_t     _curOffset;
+    int         _curSignalHeight;
 
-    uint64_t _sample_received;
-    QPoint _mouse_point;
-    QPoint _mouse_down_point;
-    int64_t _mouse_down_offset;
-    double _curScale;
-    int64_t _curOffset;
-    int _curSignalHeight;
-
-    //QPixmap pixmap;
-
-    bool _measure_en;
-    ActionType _action_type;
+    bool        _measure_en;
+    ActionType  _action_type;
     MeasureType _measure_type;
-    uint64_t _cur_sample;
-    uint64_t _nxt_sample;
-    uint64_t _thd_sample;
-    int64_t _cur_preX;
-    int64_t _cur_aftX;
-    int64_t _cur_thdX;
-    int _cur_midY;
-    int _cur_preY;
-    int _cur_preY_top;
-    int _cur_preY_bottom;
-    int _cur_aftY;
-    bool _edge_hit;
-    QString _mm_width;
-    QString _mm_period;
-    QString _mm_freq;
-    QString _mm_duty;
+    uint64_t    _cur_sample;
+    uint64_t    _nxt_sample;
+    uint64_t    _thd_sample;
+    int64_t     _cur_preX;
+    int64_t     _cur_aftX;
+    int64_t     _cur_thdX;
+    int         _cur_midY;
+    int         _cur_preY;
+    int         _cur_preY_top;
+    int         _cur_preY_bottom;
+    int         _cur_aftY;
+    bool        _edge_hit;
+    QString     _mm_width;
+    QString     _mm_period;
+    QString     _mm_freq;
+    QString     _mm_duty;
 
-    uint64_t _edge_rising;
-    uint64_t _edge_falling;
-    uint64_t _edge_start;
-    uint64_t _edge_end;
-    QString _em_rising;
-    QString _em_falling;
-    QString _em_edges;
+    uint64_t    _edge_rising;
+    uint64_t    _edge_falling;
+    uint64_t    _edge_start;
+    uint64_t    _edge_end;
+    QString     _em_rising;
+    QString     _em_falling;
+    QString     _em_edges;
 
-    QTimer trigger_timer;
-    bool transfer_started;
-    int timer_cnt;
+    QTimer      _trigger_timer;
+    bool        _transfer_started;
+    int         _timer_cnt;
+    Signal      *_drag_sig;
+    uint64_t    _hover_index;
+    bool        _hover_hit;
+    uint16_t    _hover_sig_index;
+    double      _hover_sig_value;
 
-    Signal *_drag_sig;
+    QElapsedTimer   _elapsed_time;
+    QTimer          _drag_timer;
+    int             _drag_strength;
+    bool            _dso_xm_valid;
+    int             _dso_xm_y;
+    uint64_t        _dso_xm_index[DsoMeasureStages];
 
-    uint64_t _hover_index;
-    bool _hover_hit;
-    uint16_t _hover_sig_index;
-    double _hover_sig_value;
-
-    QElapsedTimer _elapsed_time;
-    QTimer _drag_timer;
-    int _drag_strength;
-
-    bool _dso_xm_valid;
-    int _dso_xm_y;
-    uint64_t _dso_xm_index[DsoMeasureStages];
-
-    bool _dso_ym_valid;
-    uint16_t _dso_ym_sig_index;
-    double _dso_ym_sig_value;
-    uint64_t _dso_ym_index;
-    int _dso_ym_start;
-    int _dso_ym_end;
-
-    int     _waiting_trig;
-    bool    _dso_trig_moved;
-    bool    _curs_moved;
-    bool    _xcurs_moved;
-    int     _clickX;
+    bool            _dso_ym_valid;
+    uint16_t        _dso_ym_sig_index;
+    double          _dso_ym_sig_value;
+    uint64_t        _dso_ym_index;
+    int             _dso_ym_start;
+    int             _dso_ym_end;
+    int             _waiting_trig;
+    bool            _dso_trig_moved;
+    bool            _curs_moved;
+    bool            _xcurs_moved;
+    int             _clickX;
 };
 
 } // namespace view

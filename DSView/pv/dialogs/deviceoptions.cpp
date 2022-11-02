@@ -164,8 +164,8 @@ void DeviceOptions::accept()
 
 	// Commit the properties
     const auto &dev_props = _device_options_binding.properties();
-    for(auto &p : dev_props) {
-		assert(p);
+
+    for(auto p : dev_props) {
 		p->commit();
 	}
 
@@ -181,7 +181,8 @@ void DeviceOptions::accept()
             if (probe->enabled)
                 hasEnabled = true;
         }
-    } else {
+    }
+    else {
         hasEnabled = true;
     }
 
@@ -190,8 +191,7 @@ void DeviceOptions::accept()
         while(it != _probe_options_binding_list.end()) {
             const auto &probe_props = (*it)->properties();
 
-            for(auto &p :probe_props) {
-                assert(p);
+            for(auto p :probe_props) {
                 p->commit();
             }
             it++;
@@ -623,18 +623,19 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
         const auto &properties = probe_options_binding->properties();
         int i = 1;
         
-        for(auto &p : properties)
+        for(auto p : properties)
         {
-            assert(p);
             const QString label = p->labeled_widget() ? QString() : p->label();
             probe_layout->addWidget(new QLabel(label, probe_widget), i, 0, 1, 1);
 
             QWidget * pow = p->get_widget(probe_widget);
             pow->setEnabled(probe_checkBox->isChecked());
+
             if (p->name().contains("Map Default")) {
                 pow->setProperty("index", probe->index);
                 connect(pow, SIGNAL(clicked()), this, SLOT(analog_channel_check()));
-            } else {
+            }
+            else {
                 if (probe_checkBox->isChecked() && p->name().contains("Map")) {
                     bool map_default = true;
                     GVariant* gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_MAP_DEFAULT);

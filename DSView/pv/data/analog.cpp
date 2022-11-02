@@ -50,14 +50,16 @@ std::deque<AnalogSnapshot*>& Analog::get_snapshots()
 void Analog::clear()
 {
     //_snapshots.clear();
-    for(auto &s : _snapshots)
+    for(auto s : _snapshots){
         s->clear();
+    }
 }
 void Analog::init()
 {
     //_snapshots.clear();
-    for(auto &s : _snapshots)
+    for(auto s : _snapshots){
         s->init();
+    }
 }
 
 AnalogSnapshot* Analog::snapshot()

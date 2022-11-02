@@ -65,8 +65,7 @@ class MathStack;
 
 namespace decode {
     class Decoder;
-}
-
+  }
 }
 
 namespace device {
@@ -82,6 +81,17 @@ class LissajousTrace;
 class MathTrace;
 }
 
+enum DEVICE_STATUS_TYPE{
+    ST_INIT = 0,
+    ST_RUNNING = 1,
+    ST_STOPPED = 2,
+};
+enum COLLECT_OPT_MODE{
+    OPT_SINGLE = 0,
+    OPT_REPEAT = 1,
+    OPT_REALTIME = 2,
+};
+
 using namespace pv::data;
 
 //created by MainWindow
@@ -91,15 +101,14 @@ class SigSession:
 {
 private:
     static constexpr float Oversampling = 2.0f;
-    static const int RefreshTime = 500;
-    static const int RepeatHoldDiv = 20;
 
 public:
+    static const int RefreshTime = 500;
+    static const int RepeatHoldDiv = 20;
     static const int FeedInterval = 50;
     static const int WaitShowTime = 500;
 
-public:  
-    enum error_state {
+   enum SESSION_ERROR_STATUS {
         No_err,
         Hw_err,
         Malloc_err,
@@ -107,12 +116,6 @@ public:
         Test_timeout_err,
         Pkt_data_err,
         Data_overflow
-    };
-
-    enum device_status_type{
-        ST_INIT = 0,
-        ST_RUNNING = 1,
-        ST_STOPPED = 2,
     };
 
 private:
@@ -149,7 +152,6 @@ public:
     double cur_sampletime();
     double cur_snap_sampletime();
     double cur_view_time();
-
     void set_cur_snap_samplerate(uint64_t samplerate);
     void set_cur_samplelimits(uint64_t samplelimits);
 
@@ -166,9 +168,7 @@ public:
     }
 
     bool is_first_store_confirm();
-
     bool get_capture_status(bool &triggered, int &progress);
-
     std::set<data::SignalData*> get_data();
 	std::vector<view::Signal*>& get_signals();
     std::vector<view::GroupSignal*>& get_group_signals();
@@ -234,11 +234,11 @@ public:
 
     data::Snapshot* get_snapshot(int type);
 
-    inline error_state get_error(){
+    inline SESSION_ERROR_STATUS get_error(){
         return _error;
     }
 
-    inline void set_error(error_state state){
+    inline void set_error(SESSION_ERROR_STATUS state){
         _error = state;
     }
 
@@ -313,14 +313,22 @@ public:
         return _device_status == ST_STOPPED;
     }
 
-    void set_repeat_mode(bool repeat);
+    void set_operation_mode(COLLECT_OPT_MODE repeat);
 
     inline bool is_repeat_mode(){
-        return _is_repeat_mode;
+        return _opt_mode == OPT_REPEAT;
+    }
+
+    inline bool is_single_mode(){
+        return _opt_mode == OPT_SINGLE;
+    }
+
+    inline bool is_realtime_mode(){
+        return _opt_mode == OPT_REALTIME;
     }
 
     inline bool is_repeating(){
-        return _is_repeat_mode && !_is_instant;
+        return _opt_mode == OPT_REPEAT && !_is_instant;
     }
 
     inline void session_save(){
@@ -332,7 +340,7 @@ public:
     }
 
     inline void decode_done(){
-         _callback->decode_done();
+        _callback->decode_done();
     }
 
     inline bool is_saving(){
@@ -474,7 +482,7 @@ private:
     uint8_t     _trigger_ch;
     bool        _hw_replied;
 
-    error_state _error;
+    SESSION_ERROR_STATUS _error;
     uint64_t    _error_pattern;
     int         _map_zoom;  
     bool        _dso_feed;
@@ -484,7 +492,6 @@ private:
     uint64_t    _save_start;
     uint64_t    _save_end; 
     bool        _is_working;
-    bool        _is_repeat_mode;
     double      _repeat_intvl; // The progress wait timer interval.
     int         _repeat_hold_prg; // The time sleep progress
     int         _repeat_wait_prog_step;
@@ -493,6 +500,7 @@ private:
     int         _device_status;
     int         _capture_time_id;
     int         _confirm_store_time_id;
+    COLLECT_OPT_MODE    _opt_mode;
  
 
     ISessionCallback *_callback;

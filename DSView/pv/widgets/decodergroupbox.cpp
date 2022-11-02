@@ -57,26 +57,17 @@ DecoderGroupBox::DecoderGroupBox(data::DecoderStack *decoder_stack,
     _layout->setContentsMargins(0, 0, 0, 0);
     _layout->setVerticalSpacing(2);
 
-  //setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-  //setWidgetResizable(true);
-
     QString iconPath = GetIconPath();
     _layout->addWidget(new QLabel(QString("<h3 style='font-style:italic'>%1</h3>").arg(_dec->decoder()->name), _widget),
-   //_layout->addWidget(new QLabel(QString("<span style='text-decoration:underline'>%1</span>").arg(_dec->decoder()->name), _widget),
         0, 0);
 	_layout->setColumnStretch(0, 1);
 
     const srd_decoder *const d = _dec->decoder();
     assert(d);
     const bool have_probes = (d->channels || d->opt_channels) != 0;
-    if (!have_probes) {
-       // _del_button = new QPushButton(QIcon(iconPath+"/del.svg"), QString(), _widget);
-       // _layout->addWidget(_del_button, 0, 1);
-        //connect(_del_button, SIGNAL(clicked()), this, SLOT(on_del_stack()));
-    }
 
     _index = 0;
-    for(auto &dec : _decoder_stack->stack()) {
+    for(auto dec : _decoder_stack->stack()) {
         if (dec == _dec)
             break;
         _index++;
@@ -167,7 +158,7 @@ void DecoderGroupBox::tog_icon()
 void DecoderGroupBox::on_del_stack()
 {
     int i = _index;
-    for(auto &dec : _decoder_stack->stack()) {
+    for(auto dec : _decoder_stack->stack()) {
         if (i-- == 0) {
             del_stack(dec);
             break;

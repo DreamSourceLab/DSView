@@ -49,15 +49,17 @@ std::deque<LogicSnapshot*>& Logic::get_snapshots()
 void Logic::clear()
 {
     //_snapshots.clear();
-    for(auto &s : _snapshots)
+    for(auto s : _snapshots){
         s->clear();
+    }
 }
 
 void Logic::init()
 {
     //_snapshots.clear();
-    for(auto &s : _snapshots)
+    for(auto s : _snapshots){
         s->init();
+    }
 }
 
  LogicSnapshot* Logic::snapshot()

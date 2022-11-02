@@ -358,11 +358,7 @@ void View::set_scale_offset(double scale, int64_t offset)
 }
 
 void View::set_preScale_preOffset()
-{
-    //assert(_preScale <= _maxscale);
-    //assert(_preScale >= _minscale);
-    //assert(_preOffset >= 0);
-
+{ 
     set_scale_offset(_preScale, _preOffset);
 }
 
@@ -377,35 +373,37 @@ void View::get_traces(int type, std::vector<Trace*> &traces)
  
     const auto &spectrums = _session->get_spectrum_traces();
  
-    for(auto &t : sigs) {
+    for(auto t : sigs) {
         if (type == ALL_VIEW || _trace_view_map[t->get_type()] == type)
             traces.push_back(t);
     }
  
-    for(auto &t : decode_sigs) {
+    for(auto t : decode_sigs) {
         if (type == ALL_VIEW || _trace_view_map[t->get_type()] == type)
             traces.push_back(t);
     }
  
-    for(auto &t : groups) {
+    for(auto t : groups) {
         if (type == ALL_VIEW || _trace_view_map[t->get_type()] == type)
             traces.push_back(t);
     }
 
-    for(auto &t : spectrums) {
+    for(auto t : spectrums) {
         if (type == ALL_VIEW || _trace_view_map[t->get_type()] == type)
             traces.push_back(t);
     }
 
     auto lissajous = _session->get_lissajous_trace();
     if (lissajous && lissajous->enabled() &&
-        (type == ALL_VIEW || _trace_view_map[lissajous->get_type()] == type))
+        (type == ALL_VIEW || _trace_view_map[lissajous->get_type()] == type)){
         traces.push_back(lissajous);
+    }
 
     auto math = _session->get_math_trace();
     if (math && math->enabled() &&
-        (type == ALL_VIEW || _trace_view_map[math->get_type()] == type))
+        (type == ALL_VIEW || _trace_view_map[math->get_type()] == type)){
         traces.push_back(math);
+    }
 
     stable_sort(traces.begin(), traces.end(), compare_trace_v_offsets);
 }
@@ -540,8 +538,7 @@ void View::set_trig_pos(int percent)
 }
 
 void View::set_search_pos(uint64_t search_pos, bool hit)
-{
-    //assert(search_pos >= 0);
+{ 
     QColor fore(QWidget::palette().color(QWidget::foregroundRole()));
     fore.setAlpha(View::BackAlpha);
 
@@ -575,24 +572,23 @@ const QPoint& View::hover_point()
 
 void View::normalize_layout()
 {   
+    int v_min = INT_MAX;
     std::vector<Trace*> traces;
     get_traces(ALL_VIEW, traces);
-
-	int v_min = INT_MAX;
-    for(auto &t : traces){
+	
+    for(auto t : traces){
           v_min = min(t->get_v_offset(), v_min);
     }
 
 	const int delta = -min(v_min, 0);
 
-    for(auto &t : traces){
+    for(auto t : traces){
         t->set_v_offset(t->get_v_offset() + delta);
     }        
 
     verticalScrollBar()->setSliderPosition(delta);
 	v_scroll_value_changed(verticalScrollBar()->sliderPosition());
 }
-
 
 int View::get_spanY()
 {
@@ -684,11 +680,11 @@ void View::signals_changed()
     uint8_t max_height = MaxHeightUnit;
     std::vector<Trace*> time_traces;
     std::vector<Trace*> fft_traces;
-
     std::vector<Trace*> traces;
+
     get_traces(ALL_VIEW, traces);
 
-    for(auto &t : traces) {
+    for(auto t : traces) {
         if (_trace_view_map[t->get_type()] == TIME_VIEW)
             time_traces.push_back(t);
         else if (_trace_view_map[t->get_type()] == FFT_VIEW)
@@ -703,13 +699,14 @@ void View::signals_changed()
             _viewport_list.push_back(_fft_viewport);
             _vsplitter->refresh();
         }
-        for(auto &t : fft_traces) {
+        for(auto t : fft_traces) {
             t->set_view(this);
             t->set_viewport(_fft_viewport);
             t->set_totalHeight(_fft_viewport->height());
             t->set_v_offset(_fft_viewport->geometry().bottom());
         }
-    } else {
+    }
+    else {
         _fft_viewport->setVisible(false);
         _vsplitter->refresh();
 
@@ -724,8 +721,7 @@ void View::signals_changed()
     }
 
     if (!time_traces.empty() && _time_viewport) {
-        for(auto &t : time_traces) {
-            assert(t);
+        for(auto t : time_traces) {
             if (dynamic_cast<DsoSignal*>(t) ||
                 t->enabled())
                 total_rows += t->rows_size();
@@ -768,7 +764,7 @@ void View::signals_changed()
         _spanY = _signalHeight + 2 * actualMargin;
         int next_v_offset = actualMargin;
 
-        for(auto &t : time_traces) {
+        for(auto t : time_traces) {
             t->set_view(this);
             t->set_viewport(_time_viewport);
             if (t->rows_size() == 0)
@@ -851,9 +847,9 @@ int View::headerWidth()
     get_traces(ALL_VIEW, traces);
 
     if (!traces.empty()) {
-        for(auto &t : traces)
-            headerWidth = max(t->get_name_width() + t->get_leftWidth() + t->get_rightWidth(),
-                              headerWidth);
+        for(auto t : traces){
+            headerWidth = max(t->get_name_width() + t->get_leftWidth() + t->get_rightWidth(), headerWidth);
+        }
     }
 
     setViewportMargins(headerWidth, RulerHeight, 0, 0);
@@ -1102,8 +1098,8 @@ QRect View::get_view_rect()
 {
     if (_device_agent->get_work_mode() == DSO) {
         const auto &sigs = _session->get_signals();
-        for(auto &s : sigs) {
-            return s->get_view_rect();
+        if(sigs.size() > 0) {
+            return sigs[0]->get_view_rect();
         }
     }
 
@@ -1114,11 +1110,11 @@ int View::get_view_width()
 {
     int view_width = 0;
     if (_device_agent->get_work_mode() == DSO) {
-        const auto &sigs = _session->get_signals();
-        for(auto &s : sigs) {
+        for(auto s : _session->get_signals()) {
             view_width = max(view_width, s->get_view_rect().width());
         }
-    } else {
+    }
+    else {
         view_width = _viewcenter->width();
     }
 
@@ -1129,11 +1125,11 @@ int View::get_view_height()
 {
     int view_height = 0;
     if (_device_agent->get_work_mode() == DSO) {
-        const auto &sigs = _session->get_signals();
-        for(auto &s : sigs) {
+        for(auto s : _session->get_signals()) {
             view_height = max(view_height, s->get_view_rect().height());
         }
-    } else {
+    }
+    else {
         view_height = _viewcenter->height();
     }
 

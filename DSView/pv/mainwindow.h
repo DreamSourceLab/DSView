@@ -95,10 +95,8 @@ public slots:
 private slots:
 	void on_load_file(QString file_name);
     void on_open_doc();  
-  
     void on_protocol(bool visible);
     void on_trigger(bool visible);
-
     void on_measure(bool visible);
     void on_search(bool visible);
     void on_screenShot();

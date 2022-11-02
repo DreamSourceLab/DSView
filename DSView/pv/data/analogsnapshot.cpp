@@ -106,9 +106,6 @@ void AnalogSnapshot::first_payload(const sr_datafeed_analog &analog, uint64_t to
         sr_channel *const probe = (sr_channel*)l->data;
         assert(probe);
         // TODO: data of disabled channels should not be captured.
-//        if (probe->type == SR_CHANNEL_ANALOG && probe->enabled) {
-//            _channel_num ++;
-//        }
         if (probe->type == SR_CHANNEL_ANALOG) {
             _channel_num ++;
         }
@@ -124,8 +121,6 @@ void AnalogSnapshot::first_payload(const sr_datafeed_analog &analog, uint64_t to
             for (unsigned int i = 0; i < _channel_num; i++) {
                 uint64_t envelop_count = _total_sample_count / EnvelopeScaleFactor;
                 for (unsigned int level = 0; level < ScaleStepCount; level++) {
-//                    envelop_count = ((envelop_count + EnvelopeDataUnit - 1) /
-//                            EnvelopeDataUnit) * EnvelopeDataUnit;
                     _envelope_levels[i][level].count = envelop_count;
                     if (envelop_count == 0)
                         break;
@@ -149,7 +144,6 @@ void AnalogSnapshot::first_payload(const sr_datafeed_analog &analog, uint64_t to
             sr_channel *const probe = (sr_channel*)l->data;
             assert(probe);
             // TODO: data of disabled channels should not be captured.
-            //if (probe->type == SR_CHANNEL_ANALOG && probe->enabled) {
             if (probe->type == SR_CHANNEL_ANALOG) {
                 _ch_index.push_back(probe->index);
             }
@@ -220,10 +214,6 @@ const uint8_t* AnalogSnapshot::get_samples(int64_t start_sample)
 	assert(start_sample >= 0);
     assert(start_sample < (int64_t)get_sample_count());
 
-//    uint16_t *const data = new uint16_t[end_sample - start_sample];
-//    memcpy(data, (uint16_t*)_data + start_sample, sizeof(uint16_t) *
-//		(end_sample - start_sample));
-//	return data;
     return (uint8_t*)_data + start_sample * _unit_bytes * _channel_num;
 }
 
@@ -242,9 +232,6 @@ void AnalogSnapshot::get_envelope_section(EnvelopeSection &s,
     s.scale = (1 << scale_power);
     s.length = (count >> scale_power);
     s.samples_num = _envelope_levels[probe_index][min_level].length;
-//	s.samples = new EnvelopeSample[s.length];
-//	memcpy(s.samples, _envelope_levels[min_level].samples + start,
-//		s.length * sizeof(EnvelopeSample));
     s.samples = _envelope_levels[probe_index][min_level].samples;
 }
 
@@ -255,8 +242,6 @@ void AnalogSnapshot::reallocate_envelope(Envelope &e)
     if (new_data_length > e.data_length)
 	{
 		e.data_length = new_data_length;
-//		e.samples = (EnvelopeSample*)realloc(e.samples,
-//			new_data_length * sizeof(EnvelopeSample));
 	}
 }
 
@@ -273,9 +258,6 @@ void AnalogSnapshot::append_payload_to_envelope_levels()
         prev_length = e0.ring_length;
         e0.ring_length = _ring_sample_count / EnvelopeScaleFactor;
 
-//        // Break off if there are no new samples to compute
-//    	if (e0.ring_length == prev_length)
-//            continue;
         if (e0.length == 0)
             continue;
 

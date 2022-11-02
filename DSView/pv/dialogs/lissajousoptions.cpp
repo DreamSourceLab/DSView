@@ -75,7 +75,7 @@ LissajousOptions::LissajousOptions(SigSession *session, QWidget *parent) :
     QHBoxLayout *xlayout = new QHBoxLayout();
     QHBoxLayout *ylayout = new QHBoxLayout();
 
-    for(auto &s : _session->get_signals()) {
+    for(auto s : _session->get_signals()) {
         view::DsoSignal *dsoSig = NULL;
         if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
             QString index_str = QString::number(dsoSig->get_index());
@@ -182,7 +182,7 @@ void LissajousOptions::accept()
     bool enable = (xindex != -1 && yindex != -1 && _enable->isChecked());
     _session->lissajous_rebuild(enable, xindex, yindex, _percent->value());
 
-    for(auto &s : _session->get_signals()) {
+    for(auto s : _session->get_signals()) {
         view::DsoSignal *dsoSig = NULL;
         if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
             dsoSig->set_show(!enable);

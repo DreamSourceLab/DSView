@@ -84,10 +84,8 @@ void ViewStatus::paintEvent(QPaintEvent *)
         for(size_t i = 0; i < _mrects.size(); i++) {
             int sig_index = std::get<1>(_mrects[i]);
             view::DsoSignal *dsoSig = NULL;
-            const auto &sigs = _session->get_signals();
 
-            for(auto &s : sigs) {
-                assert(s);
+            for(auto s : _session->get_signals()) {
                 if (!s->enabled())
                     continue;
                 if ((dsoSig = dynamic_cast<DsoSignal*>(s))) {

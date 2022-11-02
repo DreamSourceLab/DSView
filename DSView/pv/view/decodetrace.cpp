@@ -258,7 +258,7 @@ void DecodeTrace::paint_mid(QPainter &p, int left, int right, QColor fore, QColo
     uint64_t end_sample = (uint64_t)max((right + pixels_offset) *
         samples_per_pixel, 0.0);
 
-    for(auto &dec : _decoder_stack->stack()) {
+    for(auto dec : _decoder_stack->stack()) {
         start_sample = max(dec->decode_start(), start_sample);
         end_sample = min(dec->decode_end(), end_sample);
         break;
@@ -275,7 +275,7 @@ void DecodeTrace::paint_mid(QPainter &p, int left, int right, QColor fore, QColo
 
     assert(_decoder_stack);
 
-    for(auto &dec :_decoder_stack->stack()) {
+    for(auto dec :_decoder_stack->stack()) {
         if (dec->shown()) {
             const std::map<const pv::data::decode::Row, bool> rows = _decoder_stack->get_rows_gshow();
             for (std::map<const pv::data::decode::Row, bool>::const_iterator i = rows.begin();
@@ -369,15 +369,17 @@ void DecodeTrace::draw_annotation(const pv::data::decode::Annotation &a,
         p.drawPoints(triangle, 9);
     }
 
-	if (a.start_sample() == a.end_sample())
+	if (a.start_sample() == a.end_sample()){
 		draw_instant(a, p, fill, outline, text_color, h,
             start, y, min_annWidth);
+    }
     else {
 		draw_range(a, p, fill, outline, text_color, h,
             start, end, y, fore, back);
+    
         if ((a.type()/100 == 2) && (end - start > 20)) {
-            for(auto &dec : _decoder_stack->stack()) {
-                for (auto& iter: dec->channels()) {
+            for(auto dec : _decoder_stack->stack()) {
+                for (auto& iter : dec->channels()) {
                     int type = dec->get_channel_type(iter.first);
                     if ((type == SRD_CHANNEL_COMMON) ||
                         ((type%100 != a.type()%100) && (type%100 != 0)))
@@ -385,9 +387,9 @@ void DecodeTrace::draw_annotation(const pv::data::decode::Annotation &a,
                    
                     LogicSignal *logic_sig = NULL;
 
-                    for(auto &sig : _session->get_signals()) {
-                        if((sig->get_index() == iter.second) &&
-                           (logic_sig = dynamic_cast<view::LogicSignal*>(sig))) {
+                    for(auto s : _session->get_signals()) {
+                        if((s->get_index() == iter.second) &&
+                           (logic_sig = dynamic_cast<view::LogicSignal*>(s))) {
                             logic_sig->paint_mark(p, start, end, type/100);
                             break;
                         }
@@ -495,7 +497,7 @@ void DecodeTrace::draw_range(const pv::data::decode::Annotation &a, QPainter &p,
 	QString best_annotation;
 	int best_width = 0;
 
-	for(auto &&a : annotations) {
+	for(auto &a : annotations) {
 		const int w = p.boundingRect(QRectF(), 0, a).width();
 		if (w <= rect.width() && w > best_width)
 			best_annotation = a, best_width = w;
@@ -588,11 +590,10 @@ void DecodeTrace::on_decode_done()
 int DecodeTrace::rows_size()
 {
     using pv::data::decode::Decoder;
-
     int size = 0;
-    for(auto &dec : _decoder_stack->stack()) {
-        if (dec->shown()) {
 
+    for(auto dec : _decoder_stack->stack()) {
+        if (dec->shown()) {
             auto rows = _decoder_stack->get_rows_gshow();
 
             for (auto i = rows.begin(); i != rows.end(); i++) {
@@ -602,7 +603,8 @@ int DecodeTrace::rows_size()
                     (*i).second)
                     size++;
             }
-        } else {
+        } 
+        else {
             size++;
         }
     }
@@ -663,7 +665,7 @@ void DecodeTrace::frame_ended()
         _decode_cursor2 = 0;
     }
 
-    for(auto &dec : _decoder_stack->stack()) {
+    for(auto dec : _decoder_stack->stack()) {
         dec->set_decode_region(_decode_start, _decode_end);
         dec->commit();
     }
@@ -685,7 +687,7 @@ bool DecodeTrace::create_popup(bool isnew)
 
     if (QDialog::Accepted == dlg.exec())
     {
-        for(auto &dec : _decoder_stack->stack())
+        for(auto dec : _decoder_stack->stack())
         {
             if (dec->commit() || _decoder_stack->options_changed()) {
                 _decoder_stack->set_options_changed(true);

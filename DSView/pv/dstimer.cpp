@@ -23,12 +23,14 @@
 #include <assert.h>
 
  
-DsTimer::DsTimer(){
+DsTimer::DsTimer()
+{
     _binded = false;
     _isActived = false;
 }
 
-void DsTimer::on_timeout(){
+void DsTimer::on_timeout()
+{
      _call(); //call back
 }
 

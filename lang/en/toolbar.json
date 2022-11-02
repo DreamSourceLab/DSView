@@ -40,6 +40,10 @@
         "text": "&Repetitive"
     },
     {
+        "id": "IDS_TOOLBAR_REALTIME_ACTION",
+        "text": "Real&time"
+    },
+    {
         "id": "IDS_TOOLBAR_TRIGGER",
         "text": "Trigger"
     },

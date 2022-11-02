@@ -63,7 +63,7 @@ ProtocolList::ProtocolList(QWidget *parent, SigSession *session) :
     auto &decode_sigs = _session->get_decode_signals();
     int index = 0;
 
-    for(auto &d : decode_sigs) {
+    for(auto d : decode_sigs) {
         _protocol_combobox->addItem(d->get_name());
         if (decoder_model->getDecoderStack() == d->decoder())
             _protocol_combobox->setCurrentIndex(index);
@@ -133,7 +133,7 @@ void ProtocolList::set_protocol(int index)
     const auto &decode_sigs = _session->get_decode_signals();
     int cur_index = 0;
 
-    for(auto &d : decode_sigs) {
+    for(auto d : decode_sigs) {
         if (index == cur_index) {
             decoder_stack = d->decoder();
             break;
@@ -175,7 +175,7 @@ void ProtocolList::on_row_check(bool show)
     const auto &decode_sigs = _session->get_decode_signals();
     int cur_index = 0;
 
-    for(auto &d : decode_sigs) {
+    for(auto d : decode_sigs) {
         if (cur_index == _protocol_combobox->currentIndex()) {
             decoder_stack = d->decoder();
             break;

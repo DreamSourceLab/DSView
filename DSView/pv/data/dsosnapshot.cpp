@@ -387,7 +387,6 @@ double DsoSnapshot::cal_vrms(double zero_off, int index)
 double DsoSnapshot::cal_vmean(int index)
 {
     assert(index >= 0);
-    //assert(index < _channel_num);
 
     // mean value
     double vmean_pre = 0;

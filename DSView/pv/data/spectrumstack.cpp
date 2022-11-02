@@ -173,7 +173,7 @@ void SpectrumStack::calc_fft()
     pv::data::Dso *data = NULL;
     pv::view::DsoSignal *dsoSig = NULL;
 
-    for(auto &s : _session->get_signals()) {
+    for(auto s : _session->get_signals()) {
         if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
             if (dsoSig->get_index() == _index && dsoSig->enabled()) {
                 data = dsoSig->dso_data();

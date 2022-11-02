@@ -40,6 +40,10 @@
         "text": "重复(&R)"
     },
     {
+        "id": "IDS_TOOLBAR_REALTIME_ACTION",
+        "text": "实时(&T)"
+    },
+    {
         "id": "IDS_TOOLBAR_TRIGGER",
         "text": "触发"
     },

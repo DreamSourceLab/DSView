@@ -606,10 +606,8 @@ void MeasureDock::update_edge()
 
             const auto &sigs = _session->get_signals();
 
-            for(size_t i = 0; i < sigs.size(); i++) {
-                view::Signal *s = sigs[i];
+            for(auto s : _session->get_signals()) {
                 view::LogicSignal *logicSig = NULL;
-                assert(s);
 
                 if ((logicSig = dynamic_cast<view::LogicSignal*>(s)) &&
                     (logicSig->enabled()) &&
@@ -657,15 +655,10 @@ DsComboBox* MeasureDock::create_probe_selector(QWidget *parent)
 
 void MeasureDock::update_probe_selector(DsComboBox *selector)
 {
-    selector->clear();
-    const auto &sigs = _session->get_signals();
+    selector->clear(); 
 
-    for(size_t i = 0; i < sigs.size(); i++) {
-        const auto s = sigs[i];
-        assert(s);
-
-        if (dynamic_cast<LogicSignal*>(s) && s->enabled())
-        {
+    for(auto s : _session->get_signals()) {
+        if (dynamic_cast<LogicSignal*>(s) && s->enabled()){
             selector->addItem(QString::number(s->get_index()));
         }
     }

@@ -42,10 +42,10 @@ Decoder::Decoder(const srd_decoder *const dec):
 
 Decoder::~Decoder()
 {
-    for (auto i = _options_back.begin();
-        i != _options_back.end(); i++)
+    for (auto i = _options_back.begin(); i != _options_back.end(); i++){
         if ((*i).second)
             g_variant_unref((*i).second);
+	}
 }
   
 void Decoder::set_probes(std::map<const srd_channel*, int> probes)
@@ -107,8 +107,7 @@ srd_decoder_inst* Decoder::create_decoder_inst(srd_session *session)
 	GHashTable *const opt_hash = g_hash_table_new_full(g_str_hash,
 		g_str_equal, g_free, (GDestroyNotify)g_variant_unref);
 
-	for (auto i = _options.begin();
-		i != _options.end(); i++)
+	for (auto i = _options.begin(); i != _options.end(); i++)
 	{
 		GVariant *const value = (*i).second;
 		g_variant_ref(value);
@@ -127,11 +126,11 @@ srd_decoder_inst* Decoder::create_decoder_inst(srd_session *session)
 	GHashTable *const probes = g_hash_table_new_full(g_str_hash,
 		g_str_equal, g_free, (GDestroyNotify)g_variant_unref);
 
-    for(auto i = _probes.begin(); i != _probes.end(); i++)
+    for(auto it = _probes.begin(); it != _probes.end(); it++)
 	{
-        GVariant *const gvar = g_variant_new_int32((*i).second);
+        GVariant *const gvar = g_variant_new_int32((*it).second);
 		g_variant_ref_sink(gvar);
-		g_hash_table_insert(probes, (*i).first->id, gvar);
+		g_hash_table_insert(probes, (*it).first->id, gvar);
 	}
 
     srd_inst_channel_set_all(decoder_inst, probes);

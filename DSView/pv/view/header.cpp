@@ -104,10 +104,8 @@ pv::view::Trace* Header::get_mTrace(int &action, const QPoint &pt)
     std::vector<Trace*> traces;
     _view.get_traces(ALL_VIEW, traces);
 
-    for(auto &t : traces)
+    for(auto t : traces)
     {
-        assert(t);
-
         if ((action = t->pt_in_rect(t->get_y(), w, pt)))
             return t;
     }
@@ -132,9 +130,8 @@ void Header::paintEvent(QPaintEvent*)
     QColor fore(QWidget::palette().color(QWidget::foregroundRole()));
     fore.setAlpha(View::ForeAlpha);
 
-    for(auto &t : traces)
+    for(auto t : traces)
 	{
-        assert(t);
         t->paint_label(painter, w, dragging ? QPoint(-1, -1) : _mouse_point, fore);
 	}
 
@@ -153,15 +150,17 @@ void Header::mouseDoubleClickEvent(QMouseEvent *event)
         _mouse_down_point = event->pos();
 
         // Save the offsets of any Traces which will be dragged
-        for(auto &t : traces)
+        for(auto t : traces){
             if (t->selected())
                 _drag_traces.push_back(
                     make_pair(t, t->get_v_offset()));
+        }
 
         // Select the Trace if it has been clicked
-        for(auto &t : traces)
+        for(auto t : traces){
             if (t->mouse_double_click(width(), event->pos()))
                 break;
+        }
     }
 
 }
@@ -183,10 +182,11 @@ void Header::mousePressEvent(QMouseEvent *event)
 		_mouse_down_point = event->pos();
 
         // Save the offsets of any Traces which will be dragged
-        for(auto &t : traces)
+        for(auto t : traces){
             if (t->selected())
                 _drag_traces.push_back(
                     make_pair(t, t->get_v_offset()));
+        }
 
         // Select the Trace if it has been clicked
         const auto mTrace = get_mTrace(action, event->pos());
@@ -203,16 +203,18 @@ void Header::mousePressEvent(QMouseEvent *event)
             mTrace->set_old_v_offset(mTrace->get_v_offset());
         }
 
-        for(auto &t : traces)
+        for(auto t : traces){
             if (t->mouse_press(width(), event->pos()))
                 break;
+        }
 
         if (~QApplication::keyboardModifiers() & Qt::ControlModifier) {
             // Unselect all other Traces because the Ctrl is not
             // pressed
-            for(auto &t : traces)
+            for(auto t : traces){
                 if (t != mTrace)
                     t->select(false);
+            }
         }
         update();
     }
@@ -244,7 +246,7 @@ void Header::mouseReleaseEvent(QMouseEvent *event)
         std::vector<Trace*> traces;
         _view.get_traces(ALL_VIEW, traces);
 
-        for(auto &t : traces){
+        for(auto t : traces){
             t->select(false);
         }            
     }

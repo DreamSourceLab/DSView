@@ -45,14 +45,16 @@ std::deque<GroupSnapshot*>& Group::get_snapshots()
 
 void Group::clear()
 {
-    for(auto &s : _snapshots)
+    for(auto s : _snapshots){
         s->clear();
+    }
 }
 
 void Group::init()
 {
-    for(auto &s : _snapshots)
+    for(auto s : _snapshots){
         s->init();
+    }
 }
 
 } // namespace data

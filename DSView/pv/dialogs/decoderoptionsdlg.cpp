@@ -259,20 +259,20 @@ DsComboBox* DecoderOptionsDlg::create_probe_selector(
 
 	if (probe_iter == _dec->channels().end())
 		selector->setCurrentIndex(0);
+    
+    int dex = 0;
 
-	for(size_t i = 0; i < sigs.size(); i++) {
-        const auto s = sigs[i];
-		assert(s);
-
+	for(auto s : sigs) {
         if (dynamic_cast<view::LogicSignal*>(s) && s->enabled())
 		{
-			selector->addItem(s->get_name(),
-                QVariant::fromValue(s->get_index()));
+			selector->addItem(s->get_name(),QVariant::fromValue(s->get_index()));
+            
             if (probe_iter != _dec->channels().end()) {
                 if ((*probe_iter).second == s->get_index())
-                    selector->setCurrentIndex(i + 1);
+                    selector->setCurrentIndex(dex + 1);
             }
 		}
+        ++dex;
 	}
 
 	return selector;
@@ -336,7 +336,7 @@ void DecoderOptionsDlg::update_decode_range()
         decode_end = tmp;
     }
   
-    for(auto &dec : _trace->decoder()->stack()) {
+    for(auto dec : _trace->decoder()->stack()) {
         dec->set_decode_region(decode_start, decode_end);
     }
 }
@@ -421,7 +421,7 @@ void DecoderOptionsDlg::create_decoder_form(
 
 void DecoderOptionsDlg::commit_probes()
 { 
-    for(auto &dec : _trace->decoder()->stack()){
+    for(auto dec : _trace->decoder()->stack()){
 		commit_decoder_probes(dec);
     }
 }
@@ -441,20 +441,20 @@ void DecoderOptionsDlg::commit_decoder_probes(data::decode::Decoder *dec)
     auto index_list = _trace->get_sig_index_list();
     index_list->clear();
 
-	for(auto &s : _probe_selectors)
+	for(auto &p : _probe_selectors)
 	{
-		if(s._decoder != dec)
+		if(p._decoder != dec)
 			break;
 
-        const int selection = s._combo->itemData(
-                s._combo->currentIndex()).value<int>();
+        const int selection = p._combo->itemData(p._combo->currentIndex()).value<int>();
 
-        for(auto &sig : sigs)
-            if(sig->get_index() == selection) {
-                probe_map[s._pdch] = selection;
+        for(auto s : sigs){
+            if(s->get_index() == selection) {
+                probe_map[p._pdch] = selection;
                 index_list->push_back(selection);
 				break;
 			}
+        }
 	}
 
 	dec->set_probes(probe_map);

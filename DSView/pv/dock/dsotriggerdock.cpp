@@ -400,7 +400,7 @@ void DsoTriggerDock::init()
     disconnect(_channel_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(channel_changed(int)));
     _channel_comboBox->clear();
     
-    for(auto &s : _session->get_signals()) {
+    for(auto s : _session->get_signals()) {
         view::DsoSignal *dsoSig = NULL;
         if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
             _channel_comboBox->addItem(dsoSig->get_name(), QVariant::fromValue(dsoSig->get_index()));

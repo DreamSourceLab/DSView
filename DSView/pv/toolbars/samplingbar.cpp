@@ -103,12 +103,13 @@ namespace pv
             addWidget(&_sample_rate);
 
             _action_single = new QAction(this);
-
             _action_repeat = new QAction(this);
+            _action_realtime = new QAction(this);
 
             _mode_menu = new QMenu(this);
             _mode_menu->addAction(_action_single);
             _mode_menu->addAction(_action_repeat);
+            _mode_menu->addAction(_action_realtime);
             _mode_button.setMenu(_mode_menu);
 
             _mode_button.setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
@@ -128,6 +129,7 @@ namespace pv
             connect(&_sample_count, SIGNAL(currentIndexChanged(int)), this, SLOT(on_samplecount_sel(int)));
             connect(_action_single, SIGNAL(triggered()), this, SLOT(on_mode()));
             connect(_action_repeat, SIGNAL(triggered()), this, SLOT(on_mode()));
+            connect(_action_realtime, SIGNAL(triggered()), this, SLOT(on_mode()));
             connect(&_sample_rate, SIGNAL(currentIndexChanged(int)), this, SLOT(on_samplerate_sel(int)));
         }
 
@@ -202,6 +204,7 @@ namespace pv
 
             _action_single->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_SINGLE_ACTION), "&Single"));
             _action_repeat->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_REPEAT_ACTION), "&Repetitive"));
+            _action_realtime->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_REALTIME_ACTION), "Real&time"));
         }
 
         void SamplingBar::reStyle()
@@ -242,6 +245,7 @@ namespace pv
                 _instant_button.setIcon(QIcon(iconPath + "/single.svg"));
                 _action_single->setIcon(QIcon(iconPath + "/oneloop.svg"));
                 _action_repeat->setIcon(QIcon(iconPath + "/repeat.svg"));
+                _action_realtime->setIcon(QIcon(iconPath + "/update.svg"));
             }
         }
 
@@ -444,9 +448,7 @@ namespace pv
             {
                 for (int i = _sample_rate.count() - 1; i >= 0; i--)
                 {
-                    if (samplerate >= _sample_rate.itemData(
-                                                      i)
-                                          .value<uint64_t>())
+                    if (samplerate >= _sample_rate.itemData(i).value<uint64_t>())
                     {
                         _sample_rate.setCurrentIndex(i);
                         break;
@@ -687,9 +689,7 @@ namespace pv
             {
                 for (int i = 0; i < _sample_count.count(); i++)
                 {
-                    if (duration >= _sample_count.itemData(
-                                                     i)
-                                        .value<double>())
+                    if (duration >= _sample_count.itemData(i).value<double>())
                     {
                         _sample_count.setCurrentIndex(i);
                         break;
@@ -1062,7 +1062,7 @@ namespace pv
             if (act == _action_single)
             {
                 _mode_button.setIcon(QIcon(iconPath + "/modes.svg"));
-                _session->set_repeat_mode(false);
+                _session->set_operation_mode(OPT_SINGLE);
             }
             else if (act == _action_repeat)
             {
@@ -1075,8 +1075,13 @@ namespace pv
                 if (interval_dlg.is_done())
                 {
                     _session->set_repeat_intvl(interval_dlg.get_interval());
-                    _session->set_repeat_mode(true);
+                    _session->set_operation_mode(OPT_REPEAT);
                 }
+            }
+            else if (act == _action_realtime)
+            {
+                _mode_button.setIcon(QIcon(iconPath + "/update.svg"));
+                _session->set_operation_mode(OPT_REALTIME);
             }
         }
 

@@ -308,12 +308,13 @@ uint64_t DecoderStack::list_annotation_size()
 {
     std::lock_guard<std::mutex> lock(_output_mutex);
     uint64_t max_annotation_size = 0;
-    for (auto i = _rows.begin();
-        i != _rows.end(); i++) {
-        auto iter = _rows_lshow.find((*i).first);
-        if (iter != _rows_lshow.end() && (*iter).second)
+
+    for (auto it = _rows.begin(); it != _rows.end(); it++) {
+        auto iter = _rows_lshow.find((*it).first);
+        if (iter != _rows_lshow.end() && (*iter).second){
             max_annotation_size = max(max_annotation_size,
-                (*i).second->get_annotation_size());
+                (*it).second->get_annotation_size());
+        }
     }
 
     return max_annotation_size;
@@ -321,8 +322,7 @@ uint64_t DecoderStack::list_annotation_size()
 
 uint64_t DecoderStack::list_annotation_size(uint16_t row_index)
 { 
-    for (auto i = _rows.begin();
-        i != _rows.end(); i++) {
+    for (auto i = _rows.begin(); i != _rows.end(); i++) {
         auto iter = _rows_lshow.find((*i).first);
         if (iter != _rows_lshow.end() && (*iter).second)
             if (row_index-- == 0) {
@@ -335,8 +335,7 @@ uint64_t DecoderStack::list_annotation_size(uint16_t row_index)
 bool DecoderStack::list_annotation(pv::data::decode::Annotation &ann,
                                   uint16_t row_index, uint64_t col_index)
 { 
-    for (auto i = _rows.begin();
-        i != _rows.end(); i++) {
+    for (auto i = _rows.begin(); i != _rows.end(); i++) {
         auto iter = _rows_lshow.find((*i).first);
         if (iter != _rows_lshow.end() && (*iter).second) {
             if (row_index-- == 0) {
@@ -351,8 +350,7 @@ bool DecoderStack::list_annotation(pv::data::decode::Annotation &ann,
 
 bool DecoderStack::list_row_title(int row, QString &title)
 { 
-    for (auto i = _rows.begin();
-        i != _rows.end(); i++) {
+    for (auto i = _rows.begin();i != _rows.end(); i++) {
         auto iter = _rows_lshow.find((*i).first);
         if (iter != _rows_lshow.end() && (*iter).second) {
             if (row-- == 0) {
@@ -376,8 +374,7 @@ void DecoderStack::init()
     _error_message = QString();
     _no_memory = false;
 
-    for (auto i = _rows.begin();
-        i != _rows.end(); i++) { 
+    for (auto i = _rows.begin();i != _rows.end(); i++) { 
         (*i).second->clear();
     }
 
@@ -426,21 +423,22 @@ void DecoderStack::do_decode_work()
     init();
 
 	// Check that all decoders have the required channels
-    for(auto &dec : _stack)
+    for(auto dec : _stack){
 		if (!dec->have_required_probes()) {
 			_error_message = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DECODERSTACK_DECODE_WORK_ERROR),
                              "One or more required channels \nhave not been specified");
 			return;
 		}
+    }
 
 	// We get the logic data of the first channel in the list.
 	// This works because we are currently assuming all
 	// LogicSignals have the same data/snapshot
-    for (auto &dec : _stack) {
-        if (dec && !dec->channels().empty()) {
-            for(auto &sig :  _session->get_signals()) {
-                if((sig->get_index() == (*dec->channels().begin()).second) &&
-                   (logic_signal = dynamic_cast<view::LogicSignal*>(sig)) &&
+    for (auto dec : _stack) {
+        if (!dec->channels().empty()) {
+            for(auto s :  _session->get_signals()) {
+                if((s->get_index() == (*dec->channels().begin()).second) &&
+                   (logic_signal = dynamic_cast<view::LogicSignal*>(s)) &&
                    (data = logic_signal->logic_data()))
                     break;
             }
@@ -614,7 +612,7 @@ void DecoderStack::execute_decode_stack()
     dsv_info("%s%llu", "decoder sample count: ", _sample_count);
  
     // Create the decoders
-    for(auto &dec : _stack)
+    for(auto dec : _stack)
 	{
         srd_decoder_inst *const di = dec->create_decoder_inst(session);
 

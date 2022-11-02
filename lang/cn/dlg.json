@@ -288,8 +288,8 @@
         "text": "搜索选项"
     },
     {
-        "id": "IDS_DLG_CHANGE",
-        "text": "变化"
+        "id": "IDS_DLG_CHANGE_FILE",
+        "text": "变更"
     },
     {
         "id": "IDS_DLG_SAVING",
@@ -304,9 +304,13 @@
         "text": "压缩数据"
     },
     {
+        "id": "IDS_DLG_EXPORT",
+        "text": "导出"
+    },
+    {
         "id": "IDS_DLG_EXPORTING",
         "text": "导出中..."
-    },
+    },  
     {
         "id": "IDS_DLG_DONT_CONNECT_PROBES",
         "text": "不要连接任何探头!"

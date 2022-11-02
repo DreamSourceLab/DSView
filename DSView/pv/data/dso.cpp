@@ -49,15 +49,17 @@ std::deque<DsoSnapshot*>& Dso::get_snapshots()
 void Dso::clear()
 {
     //_snapshots.clear();
-    for(auto &s : _snapshots)
+    for(auto s : _snapshots){
         s->clear();
+    }
 }
 
 void Dso::init()
 {
     //_snapshots.clear();
-    for(auto &s : _snapshots)
+    for(auto s : _snapshots){
         s->init();
+    }
 }
 
  DsoSnapshot* Dso::snapshot()

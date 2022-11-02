@@ -188,8 +188,7 @@ void WaitingDialog::changeText()
                     if (zero_fgain) {
                         view::DsoSignal *dsoSig = NULL;
                         
-                        for(auto &s : _session->get_signals())
-                        {
+                        for(auto s : _session->get_signals()){
                             if ((dsoSig = dynamic_cast<view::DsoSignal*>(s)))
                                 dsoSig->set_enable(dsoSig->get_index() == 0);
                         }

@@ -451,7 +451,7 @@ void ProtocolDock::decoded_progress(int progress)
     const auto &decode_sigs = _session->get_decode_signals();
     int index = 0;
 
-    for(auto &d : decode_sigs) {
+    for(auto d : decode_sigs) {
         pg = d->get_progress();
         if (d->decoder()->out_of_memory())
             err = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_OUT_OF_MEMORY), "Out of Memory");
@@ -486,7 +486,7 @@ void ProtocolDock::set_model()
     // clear mark_index of all DecoderStacks
     const auto &decode_sigs = _session->get_decode_signals();
         
-    for(auto &d : decode_sigs) {
+    for(auto d : decode_sigs) {
         d->decoder()->set_mark_index(-1);
     }
 }
@@ -502,7 +502,7 @@ void ProtocolDock::update_model()
         decoder_model->setDecoderStack(decode_sigs.at(0)->decoder());
     else {
         unsigned int index = 0;
-        for(auto &d : decode_sigs) {
+        for(auto d : decode_sigs) {
             if (d->decoder() == decoder_model->getDecoderStack()) {
                 decoder_model->setDecoderStack(d->decoder());
                 break;
@@ -544,7 +544,7 @@ void ProtocolDock::item_clicked(const QModelIndex &index)
         if (decoder_stack->list_annotation(ann, index.column(), index.row())) {
             const auto &decode_sigs = _session->get_decode_signals();
 
-            for(auto &d : decode_sigs) {
+            for(auto d : decode_sigs) {
                 d->decoder()->set_mark_index(-1);
             }
 
@@ -639,7 +639,7 @@ void ProtocolDock::nav_table_view()
             decoder_stack->list_annotation(ann, index.column(), index.row());
             const auto &decode_sigs = _session->get_decode_signals();
 
-            for(auto &d : decode_sigs) {
+            for(auto d : decode_sigs) {
                 d->decoder()->set_mark_index(-1);
             }
             decoder_stack->set_mark_index((ann.start_sample()+ann.end_sample())/2);
@@ -848,21 +848,19 @@ void ProtocolDock::OnProtocolDelete(void *handle){
          return;
     } 
 
-     for (auto it = _protocol_lay_items.begin(); it != _protocol_lay_items.end(); it++)
-     {
-         if ((*it) == handle)
-         {
-             auto lay = (*it); 
-             void *key_handel = lay->get_protocol_key_handel();
-            _protocol_lay_items.erase(it);
-             DESTROY_QT_LATER(lay);
-             _session->remove_decoder_by_key_handel(key_handel);     
-             protocol_updated();
-             break;
-         } 
-     } 
-
-  
+    for (auto it = _protocol_lay_items.begin(); it != _protocol_lay_items.end(); it++)
+    {
+        if ((*it) == handle)
+        {
+            auto lay = (*it); 
+            void *key_handel = lay->get_protocol_key_handel();
+        _protocol_lay_items.erase(it);
+            DESTROY_QT_LATER(lay);
+            _session->remove_decoder_by_key_handel(key_handel);     
+            protocol_updated();
+            break;
+        } 
+    }  
 }
 
 void ProtocolDock::OnProtocolFormatChanged(QString format, void *handle){

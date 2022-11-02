@@ -80,10 +80,8 @@ SpectrumTrace::SpectrumTrace(pv::SigSession *session,
     _offset(0)
 {
     _typeWidth = 0;
-    const auto &sigs = _session->get_signals();
-    for(size_t i = 0; i < sigs.size(); i++) {
-        const auto s = sigs[i];
-        assert(s);
+
+    for(auto s : _session->get_signals()) {
         if (dynamic_cast<DsoSignal*>(s) && index == s->get_index())
             _colour = s->get_colour();
     }
@@ -305,7 +303,7 @@ void SpectrumTrace::paint_mid(QPainter &p, int left, int right, QColor fore, QCo
         double vdiv = 0;
         double vfactor = 0;
         
-        for(auto &s : _session->get_signals()) {
+        for(auto s : _session->get_signals()) {
             DsoSignal *dsoSig = NULL;
             if ((dsoSig = dynamic_cast<DsoSignal*>(s))) {
                 if(dsoSig->get_index() == _spectrum_stack->get_index()) {
