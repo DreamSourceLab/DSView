@@ -46,6 +46,7 @@ LogicSignal::LogicSignal(data::Logic *data,
     _data(data)
 {
     _trig = NONTRIG;
+    _signal_type = LOGIC_SIGNAL;
 }
 
 LogicSignal::LogicSignal(view::LogicSignal *s,

@@ -150,9 +150,8 @@ void DecoderStack::build_row()
     _rows.clear();
 
     // Add classes
-    for (auto &dec : _stack)
-    {
-        assert(dec);
+    for (auto dec : _stack)
+    { 
         const srd_decoder *const decc = dec->decoder();
         assert(dec->decoder());
 
@@ -411,7 +410,6 @@ void DecoderStack::do_decode_work()
      _stask_stauts->_decoder = this;
      _decoder_status->clear(); //clear old items
   
-    pv::view::LogicSignal *logic_signal = NULL;
     pv::data::Logic *data = NULL;
 
     if (!_options_changed)
@@ -437,17 +435,20 @@ void DecoderStack::do_decode_work()
     for (auto dec : _stack) {
         if (!dec->channels().empty()) {
             for(auto s :  _session->get_signals()) {
-                if((s->get_index() == (*dec->channels().begin()).second) &&
-                   (logic_signal = dynamic_cast<view::LogicSignal*>(s)) &&
-                   (data = logic_signal->logic_data()))
-                    break;
+                if(s->get_index() == (*dec->channels().begin()).second && s->signal_type() == LOGIC_SIGNAL)
+                {
+                    pv::view::LogicSignal *logicSig = (pv::view::LogicSignal*)s;
+                    data = logicSig->logic_data();
+                    if (data != NULL)
+                        break;
+                }
             }
-            if (data)
+            if (data != NULL)
                 break;
         }
     }
 
-	if (!data)
+	if (!data == NULL)
 		return;
 
 	// Check we have a snapshot of data

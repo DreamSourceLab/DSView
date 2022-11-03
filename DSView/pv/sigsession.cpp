@@ -340,7 +340,7 @@ namespace pv
             _group_data->set_samplerate(_cur_snap_samplerate);
 
         // DecoderStack
-        for (auto &d : _decode_traces)
+        for (auto d : _decode_traces)
         {
             d->decoder()->set_samplerate(_cur_snap_samplerate);
         }
@@ -349,7 +349,7 @@ namespace pv
         if (_math_trace && _math_trace->enabled())
             _math_trace->get_math_stack()->set_samplerate(_device_agent.get_sample_rate());
         // SpectrumStack
-        for (auto &m : _spectrum_traces)
+        for (auto m : _spectrum_traces)
             m->get_spectrum_stack()->set_samplerate(_cur_snap_samplerate);
 
         _callback->cur_snap_samplerate_changed();
@@ -388,16 +388,14 @@ namespace pv
         container_init();
 
         // update current hw offset
-        for (auto &s : _signals)
-        { 
-            view::DsoSignal *dsoSig = NULL;
-            if ((dsoSig = dynamic_cast<view::DsoSignal *>(s)))
-            {
+        for (auto s : _signals)
+        {  
+            if (s->signal_type() == DSO_SIGNAL){   
+                view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                 dsoSig->set_zero_ratio(dsoSig->get_zero_ratio());
-            }
-            view::AnalogSignal *analogSig = NULL;
-            if ((analogSig = dynamic_cast<view::AnalogSignal *>(s)))
-            {
+            }            
+            else if (s->signal_type() == ANALOG_SIGNAL){  
+                view::AnalogSignal *analogSig = (view::AnalogSignal*)s;
                 analogSig->set_zero_ratio(analogSig->get_zero_ratio());
             }
         }
@@ -422,7 +420,7 @@ namespace pv
             _dso_data->init();
 
         // SpectrumStack
-        for (auto &m : _spectrum_traces)
+        for (auto m : _spectrum_traces)
         { 
             m->get_spectrum_stack()->init();
         }
@@ -431,7 +429,7 @@ namespace pv
             _math_trace->get_math_stack()->init();
 
         // DecoderStack
-        for (auto &d : _decode_traces)
+        for (auto d : _decode_traces)
         {
             d->decoder()->init();
         }
@@ -493,11 +491,12 @@ namespace pv
         clear_all_decode_task(run_dex);
 
         // reset measure of dso signal
-        for (auto &s : _signals)
-        {
-            view::DsoSignal *dsoSig = NULL;
-            if ((dsoSig = dynamic_cast<view::DsoSignal *>(s)))
+        for (auto s : _signals)
+        { 
+            if (s->signal_type() == DSO_SIGNAL){
+                view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                 dsoSig->set_mValid(false);
+            }
         }
 
         if (_device_agent.have_enabled_channel() == false)
@@ -619,7 +618,7 @@ namespace pv
     {
         std::set<data::SignalData *> data;
 
-        for (auto &s : _signals)
+        for (auto s : _signals)
         { 
             data.insert(s->data());
         }
@@ -842,10 +841,12 @@ namespace pv
                     while (i != _signals.end())
                     {
                         if ((*i)->get_index() == probe->index)
-                        {
-                            view::LogicSignal *logicSig = NULL;
-                            if ((logicSig = dynamic_cast<view::LogicSignal *>(*i)))
+                        {                            
+                            if ((*i)->signal_type() == LOGIC_SIGNAL){
+                                view::LogicSignal *logicSig = (view::LogicSignal*)(*i);
                                 signal = new view::LogicSignal(logicSig, _logic_data, probe);
+                            }
+                               
                             break;
                         }
                         i++;
@@ -865,9 +866,10 @@ namespace pv
                     {
                         if ((*i)->get_index() == probe->index)
                         {
-                            view::AnalogSignal *analogSig = NULL;
-                            if ((analogSig = dynamic_cast<view::AnalogSignal *>(*i)))
+                            if ((*i)->signal_type() == ANALOG_SIGNAL){
+                                view::AnalogSignal *analogSig = (view::AnalogSignal*)(*i);
                                 signal = new view::AnalogSignal(analogSig, _analog_data, probe);
+                            }                               
                             break;
                         }
                         i++;
@@ -903,7 +905,7 @@ namespace pv
         {
             _logic_data->init();
 
-            for (auto &d : _decode_traces)
+            for (auto d : _decode_traces)
             {
                 d->decoder()->init();
             }
@@ -913,7 +915,7 @@ namespace pv
         {
             _dso_data->init();
             // SpectrumStack
-            for (auto &m : _spectrum_traces)
+            for (auto m : _spectrum_traces)
             { 
                 m->get_spectrum_stack()->init();
             }
@@ -1061,11 +1063,10 @@ namespace pv
         {
             std::map<int, bool> sig_enable;
             // reset scale of dso signal
-            for (auto &s : _signals)
-            {
-                view::DsoSignal *dsoSig = NULL;
-                if ((dsoSig = dynamic_cast<view::DsoSignal *>(s)))
-                {
+            for (auto s : _signals)
+            { 
+                if (s->signal_type() == DSO_SIGNAL){   
+                    view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                     dsoSig->set_scale(dsoSig->get_view_rect().height());
                     sig_enable[dsoSig->get_index()] = dsoSig->enabled();
                 }
@@ -1080,11 +1081,12 @@ namespace pv
             _dso_data->snapshot()->append_payload(dso);
         }
 
-        for (auto &s : _signals)
-        {
-            view::DsoSignal *dsoSig = NULL;
-            if ((dsoSig = dynamic_cast<view::DsoSignal *>(s)) && (dsoSig->enabled()))
+        for (auto s : _signals)
+        { 
+            if (s->signal_type() == DSO_SIGNAL && (s->enabled())){
+                view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                 dsoSig->paint_prepare();
+            }                
         }
 
         if (dso.num_samples != 0)
@@ -1101,7 +1103,7 @@ namespace pv
         }
 
         // calculate related spectrum results
-        for (auto &m : _spectrum_traces)
+        for (auto m : _spectrum_traces)
         {
             if (m->enabled())
                 m->get_spectrum_stack()->calc_fft();
@@ -1139,11 +1141,10 @@ namespace pv
         if (_analog_data->snapshot()->last_ended())
         {
             // reset scale of analog signal
-            for (auto &s : _signals)
-            {
-                view::AnalogSignal *analogSig = NULL;
-                if ((analogSig = dynamic_cast<view::AnalogSignal *>(s)))
-                {
+            for (auto s : _signals)
+            { 
+                if (s->signal_type() == ANALOG_SIGNAL){   
+                    view::AnalogSignal *analogSig = (view::AnalogSignal*)s;
                     analogSig->set_scale(analogSig->get_totalHeight());
                 }
             }
@@ -1232,7 +1233,7 @@ namespace pv
         {
             if (!_logic_data->snapshot()->empty())
             {
-                for (auto &g : _group_traces)
+                for (auto g : _group_traces)
                 {
                     auto p = new data::GroupSnapshot(_logic_data->get_snapshots().front(), g->get_index_list());
                     _group_data->push_snapshot(p);
@@ -1283,20 +1284,17 @@ namespace pv
 
         if (_device_agent.have_instance())
         {
-            for (auto &s : _signals)
+            for (auto s : _signals)
             { 
-                if (dynamic_cast<view::LogicSignal *>(s) && s->enabled())
-                {
+                if (!s->enabled())
+                    continue;
+                
+                if (s->signal_type() == LOGIC_SIGNAL)
                     logic_ch_num++;
-                }
-                if (dynamic_cast<view::DsoSignal *>(s) && s->enabled())
-                {
+                else if (s->signal_type() == DSO_SIGNAL)
                     dso_ch_num++;
-                }
-                if (dynamic_cast<view::AnalogSignal *>(s) && s->enabled())
-                {
+                else if (s->signal_type() == ANALOG_SIGNAL)
                     analog_ch_num++;
-                }
             }
         }
 
@@ -1362,7 +1360,7 @@ namespace pv
             sub_decoders.clear();
 
             // set view early for decode start/end region setting
-            for (auto &s : _signals)
+            for (auto s : _signals)
             {
                 if (s->get_view())
                 {
@@ -1478,25 +1476,23 @@ namespace pv
     {
         bool has_dso_signal = false;
 
-        for (auto &s : _signals)
-        {
-            view::DsoSignal *dsoSig = NULL;
-            if ((dsoSig = dynamic_cast<view::DsoSignal *>(s)))
-            {
+        for (auto s : _signals)
+        { 
+            if (s->signal_type() == DSO_SIGNAL){
                 has_dso_signal = true;
                 // check already have
                 auto iter = _spectrum_traces.begin();
 
                 for (unsigned int i = 0; i < _spectrum_traces.size(); i++, iter++){
-                    if ((*iter)->get_index() == dsoSig->get_index())
+                    if ((*iter)->get_index() == s->get_index())
                         break;
                 }
 
                 // if not, rebuild
                 if (iter == _spectrum_traces.end())
                 {
-                    auto spectrum_stack = new data::SpectrumStack(this, dsoSig->get_index());
-                    auto spectrum_trace = new view::SpectrumTrace(this, spectrum_stack, dsoSig->get_index());
+                    auto spectrum_stack = new data::SpectrumStack(this, s->get_index());
+                    auto spectrum_trace = new view::SpectrumTrace(this, spectrum_stack, s->get_index());
                     _spectrum_traces.push_back(spectrum_trace);
                 }
             }
@@ -1598,11 +1594,11 @@ namespace pv
 
     void SigSession::auto_end()
     {
-        for (auto &s : _signals)
-        {
-            view::DsoSignal *dsoSig = NULL;
-            if ((dsoSig = dynamic_cast<view::DsoSignal *>(s)))
+        for (auto s : _signals)
+        { 
+            if (s->signal_type() == DSO_SIGNAL)
             {
+                view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                 dsoSig->auto_end();
             }
         }

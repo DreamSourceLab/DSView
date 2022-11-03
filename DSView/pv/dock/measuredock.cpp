@@ -607,11 +607,11 @@ void MeasureDock::update_edge()
             const auto &sigs = _session->get_signals();
 
             for(auto s : _session->get_signals()) {
-                view::LogicSignal *logicSig = NULL;
-
-                if ((logicSig = dynamic_cast<view::LogicSignal*>(s)) &&
-                    (logicSig->enabled()) &&
-                    (logicSig->get_index() == _edge_ch_cmb_vec[edge_index]->currentText().toInt())){
+                if (s->signal_type() == LOGIC_SIGNAL
+                        && s->enabled()
+                        && s->get_index() == _edge_ch_cmb_vec[edge_index]->currentText().toInt())
+                  {
+                    view::LogicSignal *logicSig = (view::LogicSignal*)s;
                     if (logicSig->edges(_view.get_cursor_samples(end), _view.get_cursor_samples(start), rising_edges, falling_edges)) {
                         QString delta_text = QString::number(rising_edges) + "/" +
                                              QString::number(falling_edges) + "/" +
@@ -658,7 +658,7 @@ void MeasureDock::update_probe_selector(DsComboBox *selector)
     selector->clear(); 
 
     for(auto s : _session->get_signals()) {
-        if (dynamic_cast<LogicSignal*>(s) && s->enabled()){
+        if (s->signal_type() == LOGIC_SIGNAL && s->enabled()){
             selector->addItem(QString::number(s->get_index()));
         }
     }

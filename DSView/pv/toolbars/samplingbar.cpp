@@ -313,13 +313,13 @@ namespace pv
         }
 
         void SamplingBar::zero_adj()
-        {
-            view::DsoSignal *dsoSig = NULL;
-
-            for (auto &s : _session->get_signals())
+        { 
+            for (auto s : _session->get_signals())
             {
-                if ((dsoSig = dynamic_cast<view::DsoSignal *>(s)))
+                if (s->signal_type() == DSO_SIGNAL){
+                    view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                     dsoSig->set_enable(true);
+                }
             }
 
             const int index_back = _sample_count.currentIndex();
@@ -338,10 +338,12 @@ namespace pv
             pv::dialogs::WaitingDialog wait(this, _session, SR_CONF_ZERO);
             if (wait.start() == QDialog::Rejected)
             {
-                for (auto &s : _session->get_signals())
+                for (auto s : _session->get_signals())
                 {
-                    if ((dsoSig = dynamic_cast<view::DsoSignal *>(s)))
+                    if (s->signal_type() == DSO_SIGNAL){
+                        view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                         dsoSig->commit_settings();
+                    }
                 }
             }
 

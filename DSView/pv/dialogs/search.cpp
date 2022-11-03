@@ -53,11 +53,11 @@ Search::Search(QWidget *parent, SigSession *session, std::map<uint16_t, QString>
     int index = 0;
 
     for(auto s :  _session->get_signals()) {
-        view::LogicSignal *logic_sig = NULL;
-        if ((logic_sig = dynamic_cast<view::LogicSignal*>(s))) {
+        if (s->signal_type() == LOGIC_SIGNAL) {
+            view::LogicSignal *logicSig = (view::LogicSignal*)s;
             QLineEdit *search_lineEdit = new QLineEdit(this);
-            if (pattern.find(logic_sig->get_index()) != pattern.end())
-                search_lineEdit->setText(pattern[logic_sig->get_index()]);
+            if (pattern.find(logicSig->get_index()) != pattern.end())
+                search_lineEdit->setText(pattern[logicSig->get_index()]);
             else
                 search_lineEdit->setText("X");
             search_lineEdit->setValidator(value_validator);
@@ -66,8 +66,8 @@ Search::Search(QWidget *parent, SigSession *session, std::map<uint16_t, QString>
             search_lineEdit->setFont(font);
             _search_lineEdit_vec.push_back(search_lineEdit);
 
-            search_layout->addWidget(new QLabel(logic_sig->get_name()+":"), index, 0, Qt::AlignRight);
-            search_layout->addWidget(new QLabel(QString::number(logic_sig->get_index())), index, 1, Qt::AlignRight);
+            search_layout->addWidget(new QLabel(logicSig->get_name()+":"), index, 0, Qt::AlignRight);
+            search_layout->addWidget(new QLabel(QString::number(logicSig->get_index())), index, 1, Qt::AlignRight);
             search_layout->addWidget(search_lineEdit, index, 2);
 
             connect(search_lineEdit, SIGNAL(editingFinished()), this, SLOT(format()));
@@ -113,9 +113,9 @@ std::map<uint16_t, QString> Search::get_pattern()
 
     int index = 0;
     for(auto s :_session->get_signals()) {
-        view::LogicSignal *logic_sig = NULL;
-        if ((logic_sig = dynamic_cast<view::LogicSignal*>(s))) {
-            pattern[logic_sig->get_index()] = _search_lineEdit_vec[index]->text();
+        if (s->signal_type() == LOGIC_SIGNAL) {
+            view::LogicSignal *logicSig = (view::LogicSignal*)s;
+            pattern[logicSig->get_index()] = _search_lineEdit_vec[index]->text();
             index++;
         }
     }

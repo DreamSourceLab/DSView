@@ -325,7 +325,7 @@ void Header::wheelEvent(QWheelEvent *event)
         shift = delta / 80.0;
 #endif
 
-        for (auto &t : traces)
+        for (auto t : traces)
         {
             if (t->mouse_wheel(width(), pos, shift))
                 break;
@@ -367,26 +367,26 @@ void Header::mouseMoveEvent(QMouseEvent *event)
 		const int delta = event->pos().y() - _mouse_down_point.y();
 
         for (auto i = _drag_traces.begin(); i != _drag_traces.end(); i++) {
-            const auto sig = (*i).first;
-			if (sig) {
+            const auto t = (*i).first;
+			if (t) {
                 int y = (*i).second + delta;
-                if (sig->get_type() == SR_CHANNEL_DSO) {
+                if (t->get_type() == SR_CHANNEL_DSO) {
                     DsoSignal *dsoSig = NULL;
-                    if ((dsoSig = dynamic_cast<DsoSignal*>(sig))) {
+                    if ((dsoSig = dynamic_cast<DsoSignal*>(t))) {
                         dsoSig->set_zero_vpos(y);
                         _moveFlag = true;
                         traces_moved();
                     }
-                } else if (sig->get_type() == SR_CHANNEL_MATH) {
+                } else if (t->get_type() == SR_CHANNEL_MATH) {
                     MathTrace *mathTrace = NULL;
-                    if ((mathTrace = dynamic_cast<MathTrace*>(sig))) {
+                    if ((mathTrace = dynamic_cast<MathTrace*>(t))) {
                        mathTrace->set_zero_vpos(y);
                        _moveFlag = true;
                        traces_moved();
                     }
-                 } else if (sig->get_type() == SR_CHANNEL_ANALOG) {
+                 } else if (t->get_type() == SR_CHANNEL_ANALOG) {
                     AnalogSignal *analogSig = NULL;
-                    if ((analogSig = dynamic_cast<AnalogSignal*>(sig))) {
+                    if ((analogSig = dynamic_cast<AnalogSignal*>(t))) {
                         analogSig->set_zero_vpos(y);
                         _moveFlag = true;
                         traces_moved();
@@ -397,9 +397,9 @@ void Header::mouseMoveEvent(QMouseEvent *event)
                             ((y + View::SignalSnapGridSize / 2) /
                                 View::SignalSnapGridSize) *
                                 View::SignalSnapGridSize;
-                        if (y_snap != sig->get_v_offset()) {
+                        if (y_snap != t->get_v_offset()) {
                             _moveFlag = true;
-                            sig->set_v_offset(y_snap);
+                            t->set_v_offset(y_snap);
                         }
                     }
                 }

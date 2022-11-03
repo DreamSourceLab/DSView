@@ -69,8 +69,8 @@ FftOptions::FftOptions(QWidget *parent, SigSession *session) :
  
     // setup _ch_combobox
     for(auto s : _session->get_signals()) {
-        view::DsoSignal *dsoSig = NULL;
-        if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
+        if (s->signal_type() == DSO_SIGNAL) {
+            view::DsoSignal *dsoSig = (view::DsoSignal*)s;
             _ch_combobox->addItem(dsoSig->get_name(), QVariant::fromValue(dsoSig->get_index()));
         }
     }

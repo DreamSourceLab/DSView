@@ -383,14 +383,12 @@ void DecodeTrace::draw_annotation(const pv::data::decode::Annotation &a,
                     int type = dec->get_channel_type(iter.first);
                     if ((type == SRD_CHANNEL_COMMON) ||
                         ((type%100 != a.type()%100) && (type%100 != 0)))
-                        continue;
-                   
-                    LogicSignal *logic_sig = NULL;
+                        continue; 
 
                     for(auto s : _session->get_signals()) {
-                        if((s->get_index() == iter.second) &&
-                           (logic_sig = dynamic_cast<view::LogicSignal*>(s))) {
-                            logic_sig->paint_mark(p, start, end, type/100);
+                        if((s->get_index() == iter.second) && s->signal_type() == LOGIC_SIGNAL) {
+                            view::LogicSignal *logicSig = (view::LogicSignal*)s;
+                            logicSig->paint_mark(p, start, end, type/100);
                             break;
                         }
                     }

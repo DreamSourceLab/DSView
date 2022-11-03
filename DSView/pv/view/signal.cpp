@@ -33,7 +33,8 @@ namespace view {
 
 Signal::Signal(sr_channel *probe) :
     Trace(probe->name, probe->index, probe->type),
-    _probe(probe)
+    _probe(probe),
+    _signal_type(UNKNOWN_SIGNAL)
 {
     session = AppControl::Instance()->GetSession();
 }

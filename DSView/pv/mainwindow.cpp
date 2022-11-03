@@ -665,7 +665,7 @@ namespace pv
             }
         }
 
-        for (auto &s : _session->get_signals())
+        for (auto s : _session->get_signals())
         {
             QJsonObject s_obj;
             s_obj["index"] = s->get_index();
@@ -683,19 +683,20 @@ namespace pv
                 s_obj["strigger"] = logicSig->get_trig();
             }
 
-            view::DsoSignal *dsoSig = NULL;
-            if ((dsoSig = dynamic_cast<view::DsoSignal *>(s)))
+            
+            if (s->signal_type() == DSO_SIGNAL)
             {
+                view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                 s_obj["vdiv"] = QJsonValue::fromVariant(static_cast<qulonglong>(dsoSig->get_vDialValue()));
                 s_obj["vfactor"] = QJsonValue::fromVariant(static_cast<qulonglong>(dsoSig->get_factor()));
                 s_obj["coupling"] = dsoSig->get_acCoupling();
                 s_obj["trigValue"] = dsoSig->get_trig_vrate();
                 s_obj["zeroPos"] = dsoSig->get_zero_ratio();
             }
-
-            view::AnalogSignal *analogSig = NULL;
-            if ((analogSig = dynamic_cast<view::AnalogSignal *>(s)))
+ 
+            if (s->signal_type() == ANALOG_SIGNAL)
             {
+                view::AnalogSignal *analogSig = (view::AnalogSignal*)s;
                 s_obj["vdiv"] = QJsonValue::fromVariant(static_cast<qulonglong>(analogSig->get_vdiv()));
                 s_obj["vfactor"] = QJsonValue::fromVariant(static_cast<qulonglong>(analogSig->get_factor()));
                 s_obj["coupling"] = analogSig->get_acCoupling();
@@ -910,7 +911,7 @@ namespace pv
         if (mode == DSO)
         {
 
-            for (auto &s : _session->get_signals())
+            for (auto s : _session->get_signals())
             {
                 for (const QJsonValue &value : sessionObj["channel"].toArray())
                 {
@@ -919,10 +920,10 @@ namespace pv
                         (s->get_type() == obj["type"].toDouble()))
                     {
                         s->set_colour(QColor(obj["colour"].toString()));
-
-                        view::DsoSignal *dsoSig = NULL;
-                        if ((dsoSig = dynamic_cast<view::DsoSignal *>(s)))
-                        {
+                       
+                        if (s->signal_type() == DSO_SIGNAL)
+                        {   
+                            view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                             dsoSig->load_settings();
                             dsoSig->set_zero_ratio(obj["zeroPos"].toDouble());
                             dsoSig->set_trig_ratio(obj["trigValue"].toDouble());
@@ -935,7 +936,7 @@ namespace pv
         }
         else
         {
-            for (auto &s : _session->get_signals())
+            for (auto s : _session->get_signals())
             {
                 for (const QJsonValue &value : sessionObj["channel"].toArray())
                 {
@@ -951,19 +952,19 @@ namespace pv
                         {
                             logicSig->set_trig(obj["strigger"].toDouble());
                         }
-
-                        view::DsoSignal *dsoSig = NULL;
-                        if ((dsoSig = dynamic_cast<view::DsoSignal *>(s)))
+ 
+                        if (s->signal_type() == DSO_SIGNAL)
                         {
+                            view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                             dsoSig->load_settings();
                             dsoSig->set_zero_ratio(obj["zeroPos"].toDouble());
                             dsoSig->set_trig_ratio(obj["trigValue"].toDouble());
                             dsoSig->commit_settings();
                         }
-
-                        view::AnalogSignal *analogSig = NULL;
-                        if ((analogSig = dynamic_cast<view::AnalogSignal *>(s)))
-                        {
+ 
+                        if (s->signal_type() == ANALOG_SIGNAL)
+                        {   
+                            view::AnalogSignal *analogSig = (view::AnalogSignal*)s;
                             analogSig->set_zero_ratio(obj["zeroPos"].toDouble());
                             analogSig->commit_settings();
                         }
@@ -1149,11 +1150,11 @@ namespace pv
                 _view->zoom(-1);
                 break;
             case Qt::Key_0:
-                for (auto &s : sigs)
-                {
-                    view::DsoSignal *dsoSig = NULL;
-                    if ((dsoSig = dynamic_cast<view::DsoSignal *>(s)))
-                    {
+                for (auto s : sigs)
+                { 
+                    if (s->signal_type() == DSO_SIGNAL)
+                    {   
+                        view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                         if (dsoSig->get_index() == 0)
                             dsoSig->set_vDialActive(!dsoSig->get_vDialActive());
                         else
@@ -1164,11 +1165,11 @@ namespace pv
                 update();
                 break;
             case Qt::Key_1:
-                for (auto &s : sigs)
+                for (auto s : sigs)
                 {
-                    view::DsoSignal *dsoSig = NULL;
-                    if ((dsoSig = dynamic_cast<view::DsoSignal *>(s)))
+                    if (s->signal_type() == DSO_SIGNAL)
                     {
+                        view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                         if (dsoSig->get_index() == 1)
                             dsoSig->set_vDialActive(!dsoSig->get_vDialActive());
                         else
@@ -1179,11 +1180,10 @@ namespace pv
                 update();
                 break;
             case Qt::Key_Up:
-                for (auto &s : sigs)
-                {
-                    view::DsoSignal *dsoSig = NULL;
-                    if ((dsoSig = dynamic_cast<view::DsoSignal *>(s)))
-                    {
+                for (auto s : sigs)
+                { 
+                    if (s->signal_type() == DSO_SIGNAL){   
+                        view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                         if (dsoSig->get_vDialActive())
                         {
                             dsoSig->go_vDialNext(true);
@@ -1194,11 +1194,10 @@ namespace pv
                 }
                 break;
             case Qt::Key_Down:
-                for (auto &s : sigs)
-                {
-                    view::DsoSignal *dsoSig = NULL;
-                    if ((dsoSig = dynamic_cast<view::DsoSignal *>(s)))
-                    {
+                for (auto s : sigs)
+                { 
+                    if (s->signal_type() == DSO_SIGNAL){
+                        view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                         if (dsoSig->get_vDialActive())
                         {
                             dsoSig->go_vDialPre(true);

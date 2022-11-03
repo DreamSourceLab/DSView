@@ -37,6 +37,14 @@
 #include <libsigrok.h> 
 #include "trace.h"
 
+enum SIGNAL_TYPE
+{   
+    UNKNOWN_SIGNAL = 0,
+    LOGIC_SIGNAL = 1,
+    DSO_SIGNAL = 2,
+    ANALOG_SIGNAL = 3,   
+};
+
 namespace pv {
 
 namespace data {
@@ -76,11 +84,14 @@ public:
      */
     void set_name(QString name);
 
-	 
+    inline SIGNAL_TYPE signal_type(){
+        return _signal_type;
+    }
 
 protected: 
     sr_channel *const _probe;
-    SigSession *session;
+    SigSession      *session;
+    SIGNAL_TYPE     _signal_type;
 };
 
 } // namespace view

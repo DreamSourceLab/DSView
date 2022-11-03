@@ -44,13 +44,14 @@ XCursor::XCursor(View &view, QColor &colour,
 {
     _dsoSig = NULL;
     
-    for(auto s : _view.session().get_signals()) {
-        DsoSignal *dsoSig = NULL;
-        if ((dsoSig = dynamic_cast<DsoSignal*>(s)))
+    for(auto s : _view.session().get_signals()) {        
+        if (s->signal_type() == DSO_SIGNAL){
+            DsoSignal *dsoSig = (DsoSignal*)s;
             if (dsoSig->enabled()) {
                 _dsoSig = dsoSig;
                 break;
             }
+        }
     }
 }
 

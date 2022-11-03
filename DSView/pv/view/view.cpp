@@ -722,8 +722,7 @@ void View::signals_changed()
 
     if (!time_traces.empty() && _time_viewport) {
         for(auto t : time_traces) {
-            if (dynamic_cast<DsoSignal*>(t) ||
-                t->enabled())
+            if (dynamic_cast<DsoSignal*>(t) || t->enabled())
                 total_rows += t->rows_size();
             if (t->rows_size() != 0)
                 label_size++;

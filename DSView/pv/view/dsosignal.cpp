@@ -79,6 +79,8 @@ DsoSignal::DsoSignal(data::Dso *data,
         vUnit.append(vDialUnit[i]);
     }
 
+    _signal_type = DSO_SIGNAL;
+
     GVariant *gvar_list, *gvar_list_vdivs;
 
     gvar_list = session->get_device()->get_config_list(NULL, SR_CONF_PROBE_VDIV);

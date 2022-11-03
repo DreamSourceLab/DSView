@@ -513,11 +513,9 @@ void Viewport::mousePressEvent(QMouseEvent *event)
         _view.session().get_device()->get_work_mode() == DSO) {
 
        for(auto s : _view.session().get_signals()) 
-       {
-            if (!s->enabled())
-                continue;
-            DsoSignal *dsoSig = NULL;
-            if ((dsoSig = dynamic_cast<DsoSignal*>(s))) {
+       { 
+            if (s->signal_type() == DSO_SIGNAL && s->enabled()) {
+                DsoSignal *dsoSig = (DsoSignal*)s;
                 if (dsoSig->get_trig_rect(0, _view.get_view_width()).contains(_mouse_point)) {
                    _drag_sig = s;
                    _action_type = DSO_TRIG_MOVE;
@@ -565,15 +563,16 @@ void Viewport::mousePressEvent(QMouseEvent *event)
                     if (_view.get_xcursorList().empty())
                         _view.show_xcursors(false);
                     break;
-                } else if ((*i)->get_map_rect(xrect).contains(_view.hover_point())) {
+                }
+                else if ((*i)->get_map_rect(xrect).contains(_view.hover_point())) {
                     auto &sigs = _view.session().get_signals();
                     auto s = sigs.begin();
                     bool sig_looped = ((*i)->channel() == NULL);
                     bool no_dsoSig = true;
-                    while (1) {
-                        view::DsoSignal *dsoSig = NULL;
-                        if ((dsoSig = dynamic_cast<view::DsoSignal*>(*s)) &&
-                            dsoSig->enabled()) {
+
+                    while (true) { 
+                        if ((*s)->signal_type() == DSO_SIGNAL && (*s)->enabled()) {
+                            view::DsoSignal *dsoSig = (view::DsoSignal*)(*s);
                             no_dsoSig = false;
                             if (sig_looped) {
                                 (*i)->set_channel(dsoSig);
@@ -620,6 +619,7 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
 {
 	assert(event);
     _hover_hit = false;
+    int mode = _view.session().get_device()->get_work_mode();
 
     if (event->buttons() & Qt::LeftButton) {
         if (_type == TIME_VIEW) {
@@ -644,12 +644,10 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
         if ((event->buttons() & Qt::LeftButton) ||
             !(event->buttons() | Qt::NoButton)) {
             if (_action_type == DSO_TRIG_MOVE) {
-                if (_drag_sig) {
-                    view::DsoSignal *dsoSig = NULL;
-                    if ((dsoSig = dynamic_cast<view::DsoSignal*>(_drag_sig))) {
-                        dsoSig->set_trig_vpos(event->pos().y());
-                        _dso_trig_moved = true;
-                    }
+                if (_drag_sig && _drag_sig->signal_type() == DSO_SIGNAL) {            
+                    view::DsoSignal *dsoSig = (view::DsoSignal*)_drag_sig;
+                    dsoSig->set_trig_vpos(event->pos().y());
+                    _dso_trig_moved = true;
                 }
             }
             
@@ -660,18 +658,16 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
                     uint64_t index0 = 0, index1 = 0, index2 = 0;
                     bool logic = false;
 
-                   for(auto s : _view.session().get_signals()) {
-                        view::LogicSignal *logicSig = NULL;
-                        view::DsoSignal *dsoSig = NULL;
-                        if ((_view.session().get_device()->get_work_mode() == LOGIC) &&
-                            (logicSig = dynamic_cast<view::LogicSignal*>(s))) {
+                   for(auto s : _view.session().get_signals()) {                     
+                        if (mode == LOGIC && s->signal_type() == LOGIC_SIGNAL) {
+                            view::LogicSignal *logicSig = (view::LogicSignal*)s;
                             if (logicSig->measure(event->pos(), index0, index1, index2)) {
                                 logic = true;
                                 break;
                             }
                         }
-                        if ((_view.session().get_device()->get_work_mode() == DSO) &&
-                            (dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
+                        if (mode == DSO && s->signal_type() == DSO_SIGNAL) {
+                            view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                             curX = min(dsoSig->get_view_rect().right(), curX);
                             break;
                         }
@@ -794,9 +790,9 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                     if (_mouse_down_point.x() == event->pos().x()) {
                         const auto &sigs = _view.session().get_signals();
 
-                        for(auto s : sigs) {
-                            view::LogicSignal *logicSig = NULL;
-                            if ((logicSig = dynamic_cast<view::LogicSignal*>(s))) {
+                        for(auto s : sigs) { 
+                            if (s->signal_type() == LOGIC_SIGNAL) {
+                                view::LogicSignal *logicSig = (view::LogicSignal*)s;
                                 if (logicSig->edge(event->pos(), _edge_start, 10)) {
                                     _action_type = LOGIC_JUMP;
                                     _cur_preX = _view.index2pixel(_edge_start);
@@ -960,8 +956,9 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
     if (!_view.get_view_rect().contains(event->pos()))
         return;
 
-    if (_view.session().get_device()->get_work_mode() == LOGIC
-        && _view.session().is_stopped_status()) 
+    int mode = _view.session().get_device()->get_work_mode();
+
+    if (mode == LOGIC && _view.session().is_stopped_status()) 
     {
         if (event->button() == Qt::RightButton) {
             if (_view.scale() == _view.get_maxscale())
@@ -973,10 +970,11 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
             bool logic = false;
             uint64_t index;
             uint64_t index0 = 0, index1 = 0, index2 = 0;
-            if (_view.session().get_device()->get_work_mode() == LOGIC) {
+
+            if (mode == LOGIC) {
                 for(auto s : _view.session().get_signals()) {
-                    view::LogicSignal *logicSig = NULL;
-                    if ((logicSig = dynamic_cast<view::LogicSignal*>(s))) {
+                    if (s->signal_type() == LOGIC_SIGNAL) {
+                        view::LogicSignal *logicSig  = (view::LogicSignal*)s;
                         if (logicSig->measure(event->pos(), index0, index1, index2)) {
                             logic = true;
                             break;
@@ -987,14 +985,17 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
             const double curX = event->pos().x();
             const double curP = _view.index2pixel(index0);
             const double curN = _view.index2pixel(index1);
+
             if (logic && (curX - curP < SnapMinSpace || curN - curX < SnapMinSpace)) {
                 if (curX - curP < curN - curX)
                     index = index0;
                 else
                     index = index1;
-            } else {
+            }
+            else {
                 index = _view.pixel2index(curX);
             }
+
             _view.add_cursor(view::Ruler::CursorColor[_view.get_cursorList().size() % 8], index);
             _view.show_cursors(true);
         }
@@ -1057,7 +1058,7 @@ void Viewport::wheelEvent(QWheelEvent *event)
 
     if (_type == FFT_VIEW)
     {
-        for (auto &t : _view.session().get_spectrum_traces())
+        for (auto t : _view.session().get_spectrum_traces())
         { 
             if (t->enabled())
             {
@@ -1105,11 +1106,10 @@ void Viewport::wheelEvent(QWheelEvent *event)
     }
 
     const auto &sigs = _view.session().get_signals();
-    for (auto &s : sigs)
-    { 
-        view::DsoSignal *dsoSig = NULL;
-        if ((dsoSig = dynamic_cast<view::DsoSignal *>(s)))
-        {
+    for (auto s : sigs)
+    {
+        if (s->signal_type() == DSO_SIGNAL){   
+            view::DsoSignal *dsoSig = (view::DsoSignal*)s;
             dsoSig->auto_end();
         }
     }
@@ -1217,11 +1217,8 @@ void Viewport::measure()
         const uint64_t sample_rate = _view.session().cur_snap_samplerate();
 
         for(auto s : _view.session().get_signals()) {
-            view::LogicSignal *logicSig = NULL;
-            view::DsoSignal *dsoSig = NULL;
-            view::AnalogSignal *analogSig = NULL;
-
-            if ((logicSig = dynamic_cast<view::LogicSignal*>(s))) {
+            if (s->signal_type() == LOGIC_SIGNAL) {
+                view::LogicSignal *logicSig  = (view::LogicSignal*)s;
                 if (_action_type == NO_ACTION) {
                     if (logicSig->measure(_mouse_point, _cur_sample, _nxt_sample, _thd_sample)) {
                         _measure_type = LOGIC_FREQ;
@@ -1271,16 +1268,21 @@ void Viewport::measure()
                         _edge_hit = false;
                     }
                 }
-            } else if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
-                if (dsoSig->enabled()) {
+            } 
+            else if (s->signal_type() == DSO_SIGNAL) {
+                 view::DsoSignal *dsoSig = ( view::DsoSignal*)s;
+                if (s->enabled()) {
                     if (_measure_en && dsoSig->measure(_view.hover_point())) {
                         _measure_type = DSO_VALUE;
-                    } else {
+                    }
+                    else {
                         _measure_type = NO_MEASURE;
                     }
                 }
-            } else if ((analogSig = dynamic_cast<view::AnalogSignal*>(s))) {
-                if (analogSig->enabled()) {
+            }
+            else if (s->signal_type() == ANALOG_SIGNAL) {
+                view::AnalogSignal *analogSig = (view::AnalogSignal*)s;
+                if (s->enabled()) {
                     if (_measure_en && analogSig->measure(_view.hover_point())) {
                         _measure_type = DSO_VALUE;
                     } else {
@@ -1373,12 +1375,10 @@ void Viewport::paintMeasure(QPainter &p, QColor fore, QColor back)
         _measure_type == DSO_VALUE) {
 
         for(auto s : _view.session().get_signals()) {
-            view::DsoSignal *dsoSig = NULL;
-            view::AnalogSignal* analogSig = NULL;
-
-            if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
+            if (s->signal_type() == DSO_SIGNAL) {
                 uint64_t index;
                 double value;
+                view::DsoSignal *dsoSig  = (view::DsoSignal*)s;
                 QPointF hpoint;
                 if (dsoSig->get_hover(index, hpoint, value)) {
                     p.setPen(QPen(fore, 1, Qt::DashLine));
@@ -1386,10 +1386,12 @@ void Viewport::paintMeasure(QPainter &p, QColor fore, QColor back)
                     p.drawLine(hpoint.x(), dsoSig->get_view_rect().top(),
                                hpoint.x(), dsoSig->get_view_rect().bottom());
                 }
-            } else if ((analogSig = dynamic_cast<view::AnalogSignal*>(s))) {
+            } 
+            else if (s->signal_type() == ANALOG_SIGNAL) {
                 uint64_t index;
                 double value;
                 QPointF hpoint;
+                view::AnalogSignal* analogSig = (view::AnalogSignal*)s;
                 if (analogSig->get_hover(index, hpoint, value)) {
                     p.setPen(QPen(fore, 1, Qt::DashLine));
                     p.setBrush(Qt::NoBrush);
@@ -1401,9 +1403,9 @@ void Viewport::paintMeasure(QPainter &p, QColor fore, QColor back)
     }
 
     if (_dso_ym_valid) {
-        for(auto s : _view.session().get_signals()) {
-            view::DsoSignal *dsoSig = NULL;
-            if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
+        for(auto s : _view.session().get_signals()) {          
+            if (s->signal_type() == DSO_SIGNAL) {
+                view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                 if (dsoSig->get_index() == _dso_ym_sig_index) {
                     p.setPen(QPen(dsoSig->get_colour(), 1, Qt::DotLine));
                     const int text_height = p.boundingRect(0, 0, INT_MAX, INT_MAX,

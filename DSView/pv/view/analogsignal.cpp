@@ -56,6 +56,8 @@ AnalogSignal::AnalogSignal(data::Analog *data, sr_channel *probe) :
     _typeWidth = 5;
     _colour = SignalColours[probe->index % countof(SignalColours)];
 
+    _signal_type = ANALOG_SIGNAL;
+
     GVariant *gvar;
     // channel bits
     gvar = session->get_device()->get_config(NULL, NULL, SR_CONF_UNIT_BITS);

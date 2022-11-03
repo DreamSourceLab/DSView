@@ -76,8 +76,8 @@ LissajousOptions::LissajousOptions(SigSession *session, QWidget *parent) :
     QHBoxLayout *ylayout = new QHBoxLayout();
 
     for(auto s : _session->get_signals()) {
-        view::DsoSignal *dsoSig = NULL;
-        if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
+        if (s->signal_type() == DSO_SIGNAL) {
+            view::DsoSignal *dsoSig = (view::DsoSignal*)s;
             QString index_str = QString::number(dsoSig->get_index());
             QRadioButton *xradio = new QRadioButton(index_str, _x_group);
             xradio->setProperty("index", dsoSig->get_index());
@@ -183,8 +183,8 @@ void LissajousOptions::accept()
     _session->lissajous_rebuild(enable, xindex, yindex, _percent->value());
 
     for(auto s : _session->get_signals()) {
-        view::DsoSignal *dsoSig = NULL;
-        if ((dsoSig = dynamic_cast<view::DsoSignal*>(s))) {
+        if (s->signal_type() == DSO_SIGNAL) {
+            view::DsoSignal *dsoSig = (view::DsoSignal*)s;
             dsoSig->set_show(!enable);
         }
     }

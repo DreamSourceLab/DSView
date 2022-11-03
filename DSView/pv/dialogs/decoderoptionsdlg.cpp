@@ -262,9 +262,9 @@ DsComboBox* DecoderOptionsDlg::create_probe_selector(
     
     int dex = 0;
 
-	for(auto s : sigs) {
-        if (dynamic_cast<view::LogicSignal*>(s) && s->enabled())
-		{
+	for(auto s : sigs) 
+    {
+        if (s->signal_type() == LOGIC_SIGNAL && s->enabled()){
 			selector->addItem(s->get_name(),QVariant::fromValue(s->get_index()));
             
             if (probe_iter != _dec->channels().end()) {
