@@ -183,7 +183,7 @@ void SpectrumStack::calc_fft()
         }
     }
 
-    if (!data)
+    if (data == NULL)
         return;
 
     // Check we have a snapshot of data

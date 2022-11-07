@@ -28,6 +28,7 @@
 #include "logicsnapshot.h"
 #include "../dsvdef.h"
 #include "../log.h"
+#include "../utility/array.h"
 
 using namespace std;
 
@@ -48,9 +49,11 @@ const uint64_t LogicSnapshot::LevelOffset[LogicSnapshot::ScaleLevel] = {
 };
 
 LogicSnapshot::LogicSnapshot() :
-    Snapshot(1, 0, 0),
-    _block_num(0)
+    Snapshot(1, 0, 0)
 {
+    _channel_num = 0;
+    _block_num = 0;
+    _total_sample_count = 0;
 }
 
 LogicSnapshot::~LogicSnapshot()
@@ -93,7 +96,6 @@ void LogicSnapshot::init_all()
     _data = NULL;
     _memory_failed = false;
     _last_ended = true;
-    _times = 0;
 }
 
 void LogicSnapshot::clear()
@@ -156,23 +158,23 @@ void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total
 {
     bool channel_changed = false;
     uint16_t channel_num = 0;
+
     for (const GSList *l = channels; l; l = l->next) {
         sr_channel *const probe = (sr_channel*)l->data;
         assert(probe);
-        if (probe->type == SR_CHANNEL_LOGIC) {
-            channel_num += probe->enabled;
-            if (!channel_changed && probe->enabled) {
+        if (probe->type == SR_CHANNEL_LOGIC && probe->enabled) {
+            channel_num++;
+            if (!channel_changed){
                 channel_changed = !has_data(probe->index);
             }
         }
     }
 
-    if (total_sample_count != _total_sample_count ||
-        channel_num != _channel_num ||
-        channel_changed) {
+    if (total_sample_count != _total_sample_count
+        || channel_num != _channel_num
+        || channel_changed) {
 
         free_data();
-
         _ch_index.clear();
 
         _total_sample_count = total_sample_count;
@@ -194,8 +196,8 @@ void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total
                 _ch_index.push_back(probe->index);
             }
         }
-
-    } else {
+    }
+    else {
         for(auto& iter : _ch_data) {
             for(auto& iter_rn : iter) {
                 iter_rn.tog = 0;
@@ -204,18 +206,15 @@ void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total
         }
     }
 
+    assert(_channel_num < LOGIC_TMP_BUF_MAX_SIZE);
+
     _sample_count = 0;
 
-    _last_sample.clear();
-    _sample_cnt.clear();
-    _block_cnt.clear();
-    _ring_sample_cnt.clear();
-
     for (unsigned int i = 0; i < _channel_num; i++) {
-        _last_sample.push_back(0);
-        _sample_cnt.push_back(0);
-        _block_cnt.push_back(0);
-        _ring_sample_cnt.push_back(0);
+        _last_sample[i] = 0;
+        _sample_cnt[i] = 0;
+        _block_cnt[i] = 0;
+        _ring_sample_cnt[i] = 0;
     }
 
     append_payload(logic);
@@ -224,7 +223,7 @@ void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total
 
 void LogicSnapshot::append_payload(const sr_datafeed_logic &logic)
 {
-   std::lock_guard<std::mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
 
     if (logic.format == LA_CROSS_DATA)
         append_cross_payload(logic);
@@ -295,14 +294,6 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
             const uint64_t index0 = _ring_sample_count / RootNodeSamples;
             const uint64_t index1 = (_ring_sample_count >> LeafBlockPower) % RootScale;
             const uint64_t offset = (_ring_sample_count % LeafBlockSamples) / Scale;
-
-//            _dest_ptr = (uint64_t *)_ch_data[i][index0].lbp[index1] + offset;
-//            uint64_t mipmap_index = offset / 8 / Scale;
-//            uint64_t mipmap_offset = (offset / 8) % Scale;
-//            uint64_t *l1_mipmap = (uint64_t *)_ch_data[i][index0].lbp[index1] +
-//                                  (LeafBlockSamples / Scale) + mipmap_index;
-//            *l1_mipmap += ((_last_sample[i] ^ *(uint64_t *)_dest_ptr) != 0 ? 1ULL : 0ULL) << mipmap_offset;
-//            _last_sample[i] = *(uint64_t *)_dest_ptr & (1ULL << (Scale - 1)) ? ~0ULL : 0ULL;
 
             _ch_fraction = (_ch_fraction + 1) % _channel_num;
             if (_ch_fraction == 0)
@@ -393,8 +384,6 @@ void LogicSnapshot::append_split_payload(const sr_datafeed_logic &logic)
 {
     assert(logic.format == LA_SPLIT_DATA);
 
-    _times++;
-
     uint64_t samples = logic.length * 8;
     uint16_t order = logic.order;
     assert(order < _ch_data.size());
@@ -460,8 +449,8 @@ void LogicSnapshot::append_split_payload(const sr_datafeed_logic &logic)
         }
     }
 
-    _sample_count = *min_element(_sample_cnt.begin(), _sample_cnt.end());
-    _ring_sample_count = *min_element(_ring_sample_cnt.begin(), _ring_sample_cnt.end());
+    _sample_count = array::find_min_uint64(_sample_cnt, _channel_num);
+    _ring_sample_count = array::find_min_uint64(_ring_sample_cnt, _channel_num);
 }
 
 void LogicSnapshot::calc_mipmap(unsigned int order, uint8_t index0, uint8_t index1, uint64_t samples)
@@ -1032,16 +1021,15 @@ uint8_t *LogicSnapshot::get_block_buf(int block_index, int sig_index, bool &samp
 int LogicSnapshot::get_ch_order(int sig_index)
 {
     uint16_t order = 0;
-    for (auto& iter:_ch_index) {
-        if (iter == sig_index)
-            break;
-        order++;
+
+    for (uint16_t i : _ch_index) {
+        if (i == sig_index)
+            return order;
+        else
+            order++;
     }
 
-    if (order >= _ch_index.size())
-        return -1;
-    else
-        return order;
+    return -1;
 }
 
 } // namespace data

@@ -46,7 +46,6 @@ public:
     virtual void receive_data_len(quint64 len)=0;
     
     virtual void receive_header()=0;
-    virtual void data_received()=0;
     virtual void trigger_message(int msg)=0;  
 };
 

@@ -347,6 +347,7 @@ set(DSView_SOURCES
     DSView/pv/dialogs/decoderoptionsdlg.cpp
     DSView/pv/utility/encoding.cpp
     DSView/pv/utility/path.cpp
+    DSView/pv/utility/array.cpp
     DSView/pv/deviceagent.cpp
     DSView/pv/ui/langresource.cpp
 )
@@ -439,6 +440,7 @@ set(DSView_HEADERS
     DSView/pv/dialogs/decoderoptionsdlg.h
     DSView/pv/utility/encoding.h
     DSView/pv/utility/path.h
+    DSView/pv/utility/array.h
     DSView/pv/deviceagent.h
 )
  

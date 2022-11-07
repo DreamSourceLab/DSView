@@ -130,6 +130,10 @@ public:
         return &_device_agent;
     }
 
+    inline void set_callback(ISessionCallback *callback){
+        _callback = callback;
+    }
+
     bool init();
     void uninit();
     void Open();
@@ -140,8 +144,7 @@ public:
     bool set_file(QString name);
     void close_file(ds_device_handle dev_handle);
     bool start_capture(bool instant);
-    void stop_capture(); 
-	 
+    void stop_capture();	 
     uint64_t cur_samplerate();
     uint64_t cur_snap_samplerate();
 
@@ -152,8 +155,6 @@ public:
     double cur_sampletime();
     double cur_snap_sampletime();
     double cur_view_time();
-    void set_cur_snap_samplerate(uint64_t samplerate);
-    void set_cur_samplelimits(uint64_t samplelimits);
 
     inline void set_session_time(QDateTime time){
          _session_time = time;
@@ -213,7 +214,6 @@ public:
     void data_auto_lock(int lock);
     void data_auto_unlock();
     bool get_data_auto_lock();
-
     void spectrum_rebuild();
     void lissajous_rebuild(bool enable, int xindex, int yindex, double percent);
     void lissajous_disable();
@@ -221,8 +221,6 @@ public:
     void math_rebuild(bool enable,pv::view::DsoSignal *dsoSig1,
                       pv::view::DsoSignal *dsoSig2,
                       data::MathStack::MathType type);
-
-    void math_disable();
 
     inline bool trigd(){
         return _trigger_flag;
@@ -290,10 +288,6 @@ public:
 
     inline bool is_instant(){
         return _is_instant;
-    }
-
-    inline void set_callback(ISessionCallback *callback){
-        _callback = callback;
     }
 
     inline bool is_working(){
@@ -373,6 +367,11 @@ public:
     void add_msg_listener(IMessageListener *ln);
     void broadcast_msg(int msg);
     bool switch_work_mode(int mode);
+
+private:
+    void set_cur_samplelimits(uint64_t samplelimits);
+    void set_cur_snap_samplerate(uint64_t samplerate);
+    void math_disable();
 
 private:
     bool exec_capture();

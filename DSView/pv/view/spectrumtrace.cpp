@@ -322,10 +322,6 @@ void SpectrumTrace::paint_mid(QPainter &p, int left, int right, QColor fore, QCo
             _vmin = _vmax - _dbv_range;
         }
 
-        //const double max_value = *std::max_element(dc_ignored ? ++samples.begin() : samples.begin(), samples.end());
-        //const double min_value = *std::min_element(dc_ignored ? ++samples.begin() : samples.begin(), samples.end());
-        //_vmax = (_view_mode == 0) ? max_value : 20*log10(max_value);
-        //_vmin = (_view_mode == 0) ? min_value : 20*log10(min_value);
         const double scale = height / (_vmax - _vmin);
 
         double x = (view_start-view_off)*pixels_per_sample;

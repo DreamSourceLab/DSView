@@ -105,6 +105,8 @@ AnalogSignal::AnalogSignal(view::AnalogSignal *s, pv::data::Analog *data, sr_cha
     _hover_point(QPointF(-1, -1)),
     _hover_value(0)
 {
+    _signal_type = ANALOG_SIGNAL;
+    
     _typeWidth = 5;
     _bits = s->get_bits();
     _ref_min = s->get_ref_min();

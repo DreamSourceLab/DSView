@@ -448,7 +448,7 @@ void DecoderStack::do_decode_work()
         }
     }
 
-	if (!data == NULL)
+	if (data == NULL)
 		return;
 
 	// Check we have a snapshot of data

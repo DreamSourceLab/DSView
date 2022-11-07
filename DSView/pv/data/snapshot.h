@@ -65,10 +65,6 @@ public:
         return _last_ended;
     }
 
-    inline void set_last_ended(bool ended){
-        _last_ended = ended;
-    }
-
     inline unsigned int get_channel_num(){
         return _channel_num;
     }

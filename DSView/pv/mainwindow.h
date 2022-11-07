@@ -161,7 +161,6 @@ private:
     void decode_done();
     void receive_data_len(quint64 len);
     void receive_header();    
-    void data_received();
     void trigger_message(int msg);
     void session_save();
 

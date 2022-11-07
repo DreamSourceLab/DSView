@@ -1390,10 +1390,6 @@ namespace pv
     {
     }
 
-    void MainWindow::data_received()
-    {
-    }
-
     void MainWindow::check_usb_device_speed()
     {
         // USB device speed check

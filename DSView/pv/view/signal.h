@@ -60,9 +60,6 @@ class Signal : public Trace
 {
     Q_OBJECT
 
-private:
-
-
 protected:
     Signal(sr_channel * const probe);
 

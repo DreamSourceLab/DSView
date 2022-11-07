@@ -1046,8 +1046,6 @@ namespace pv
 
         receive_data(logic.length * 8 / get_ch_num(SR_CHANNEL_LOGIC));
 
-        _callback->data_received();
-
         _data_updated = true;
     }
 

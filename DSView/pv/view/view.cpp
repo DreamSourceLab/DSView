@@ -489,11 +489,6 @@ void View::set_trig_time()
     _trig_time_setted = true;
 }
 
-bool View::trig_time_setted()
-{
-    return _trig_time_setted;
-}
-
 void View::receive_end()
 {
     if (_device_agent->get_work_mode() == LOGIC) {

@@ -37,10 +37,10 @@ Snapshot::Snapshot(int unit_size, uint64_t total_sample_count, unsigned int chan
     _total_sample_count(total_sample_count),
     _ring_sample_count(0),
     _unit_size(unit_size),
-    _memory_failed(false),
-    _last_ended(true)
+    _memory_failed(false)
 {
     assert(_unit_size > 0);
+    _last_ended = true;
     _unit_bytes = 1;
     _unit_pitch = 0;
     _have_data = false;
@@ -108,7 +108,7 @@ uint64_t Snapshot::ring_end()
 
 void Snapshot::capture_ended()
 {
-    set_last_ended(true);
+    _last_ended = true;
 }
 
 } // namespace data

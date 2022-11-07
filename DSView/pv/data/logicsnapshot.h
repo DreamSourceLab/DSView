@@ -32,6 +32,7 @@
 #include <map>
 
 #define CHANNEL_MAX_COUNT 128
+#define LOGIC_TMP_BUF_MAX_SIZE  512
 
 namespace LogicSnapshotTest {
 class Pow2;
@@ -186,18 +187,16 @@ private:
 
 private:
     std::vector<std::vector<struct RootNode>> _ch_data;
-    uint64_t _block_num;
-    uint8_t _byte_fraction;
-    uint16_t _ch_fraction;
-    void *_src_ptr;
-    void *_dest_ptr;
+    uint64_t    _block_num;
+    uint8_t     _byte_fraction;
+    uint16_t    _ch_fraction;
+    void        *_src_ptr;
+    void        *_dest_ptr;
 
-    std::vector<uint64_t> _sample_cnt;
-    std::vector<uint64_t> _block_cnt;
-    std::vector<uint64_t> _ring_sample_cnt;
-    std::vector<uint64_t> _last_sample;
-
-    int _times;
+    uint64_t    _sample_cnt[LOGIC_TMP_BUF_MAX_SIZE];
+    uint64_t    _block_cnt[LOGIC_TMP_BUF_MAX_SIZE];
+    uint64_t    _ring_sample_cnt[LOGIC_TMP_BUF_MAX_SIZE];
+    uint64_t    _last_sample[LOGIC_TMP_BUF_MAX_SIZE];
  
 	friend class LogicSnapshotTest::Pow2;
 	friend class LogicSnapshotTest::Basic;

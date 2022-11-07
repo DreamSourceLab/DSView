@@ -299,7 +299,10 @@ public slots:
 
     // --
     void set_trig_time();
-    bool trig_time_setted();
+
+    inline bool trig_time_setted(){
+        return _trig_time_setted;
+    }
 
     //
     void header_updated();
