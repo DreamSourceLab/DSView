@@ -201,6 +201,7 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
 	int idx;
 	uint64_t i, j;
     unsigned char *p, c;
+    double tmpv;
 
 	*out = NULL;
 	if (!o || !o->sdi)
@@ -239,10 +240,11 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
                 if (ctx->index > 1 && (*(uint64_t *)(logic->data + i) & ctx->mask) == ctx->pre_data)
                    continue;
             } 
+            
+            tmpv = (double)(ctx->index-1) / (double)ctx->samplerate;
+            g_string_append_printf(*out, "%0.18g", tmpv); 
 
-            g_string_append_printf(*out, "%0.10g", (ctx->index-1)*1.0/ctx->samplerate);
             for (j = 0; j < ctx->num_enabled_channels; j++) {
-                //idx = ctx->channel_index[j];
                 idx = j;
 				p = logic->data + i + idx / 8;
 				c = *p & (1 << (idx % 8));

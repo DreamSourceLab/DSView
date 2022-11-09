@@ -54,6 +54,7 @@ LogicSnapshot::LogicSnapshot() :
     _channel_num = 0;
     _block_num = 0;
     _total_sample_count = 0;
+    _rootnode_size = 0;
 }
 
 LogicSnapshot::~LogicSnapshot()
@@ -91,7 +92,6 @@ void LogicSnapshot::init_all()
     _block_num = 0;
     _byte_fraction = 0;
     _ch_fraction = 0;
-    _src_ptr = NULL;
     _dest_ptr = NULL;
     _data = NULL;
     _memory_failed = false;
@@ -179,13 +179,14 @@ void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total
 
         _total_sample_count = total_sample_count;
         _channel_num = channel_num;
-        uint64_t rootnode_size = (_total_sample_count + RootNodeSamples - 1) / RootNodeSamples;
+        _rootnode_size = (_total_sample_count + RootNodeSamples - 1) / RootNodeSamples;
 
         for (const GSList *l = channels; l; l = l->next) {
             sr_channel *const probe = (sr_channel*)l->data;
+
             if (probe->type == SR_CHANNEL_LOGIC && probe->enabled) {
                 std::vector<struct RootNode> root_vector;
-                for (uint64_t j = 0; j < rootnode_size; j++) {
+                for (uint64_t j = 0; j < _rootnode_size; j++) {
                     struct RootNode rn;
                     rn.tog = 0;
                     rn.value = 0;
@@ -193,7 +194,7 @@ void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total
                     root_vector.push_back(rn);
                 }
                 _ch_data.push_back(root_vector);
-                _ch_index.push_back(probe->index);
+                _ch_index.push_back(probe->index); //The channel data root node index.
             }
         }
     }
@@ -241,29 +242,28 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
     if (_sample_count >= _total_sample_count)
         return;
 
-    _src_ptr = logic.data;
-    uint64_t len = logic.length;
+    void *src_data_ptr = logic.data;
+    uint64_t data_len = logic.length;
     // samples not accurate, lead to a larger _sampole_count
     // _sample_count should be fixed in the last packet
     // so _total_sample_count must be align to LeafBlock
-    uint64_t samples = ceil(logic.length * 8.0 / _channel_num);
-    if (_sample_count + samples < _total_sample_count) {
-        _sample_count += samples;
-    } else {
-        //len = ceil((_total_sample_count - _sample_count) * _channel_num / 8.0);
+    uint64_t sample_num = ceil(data_len * 8.0 / _channel_num);
+    if (_sample_count + sample_num < _total_sample_count)
+        _sample_count += sample_num;
+    else
         _sample_count = _total_sample_count;
-    }
 
     while (_sample_count > _block_num * LeafBlockSamples) {
         uint8_t index0 = _block_num / RootScale;
         uint8_t index1 = _block_num % RootScale;
-        for(auto& iter : _ch_data) {
 
+        for(auto& iter : _ch_data) {
             if (iter[index0].lbp[index1] == NULL){
                 iter[index0].lbp[index1] = malloc(LeafBlockSpace);
 
                 if (iter[index0].lbp[index1] == NULL) {
                     _memory_failed = true;
+                    dsv_err("%s", "LogicSnapshot::append_cross_payload(), malloc failed.");
                     return;
                 }                
             }
@@ -276,19 +276,19 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
     }
 
     // bit align
-    while (((_ch_fraction != 0) || (_byte_fraction != 0)) && (len != 0)) {
+    while (((_ch_fraction != 0) || (_byte_fraction != 0)) && (data_len != 0)) {
         uint8_t *dp_tmp = (uint8_t *)_dest_ptr;
-        uint8_t *sp_tmp = (uint8_t *)_src_ptr;
+        uint8_t *sp_tmp = (uint8_t *)src_data_ptr;
 
         do {
-            //*(uint8_t *)_dest_ptr++ = *(uint8_t *)_src_ptr++;
             *dp_tmp++ = *sp_tmp++;
             _byte_fraction = (_byte_fraction + 1) % ScaleSize;
-            len--;
-        } while ((_byte_fraction != 0) && (len != 0));
+            data_len--;
+        }
+        while ((_byte_fraction != 0) && (data_len != 0));
 
         _dest_ptr = dp_tmp;
-        _src_ptr = sp_tmp;
+        src_data_ptr = sp_tmp;
 
         if (_byte_fraction == 0) {
             const uint64_t index0 = _ring_sample_count / RootNodeSamples;
@@ -307,24 +307,25 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
         assert(_ch_fraction == 0);
         assert(_byte_fraction == 0);
         assert(_ring_sample_count % Scale == 0);
+
         uint64_t pre_index0 = _ring_sample_count / RootNodeSamples;
         uint64_t pre_index1 = (_ring_sample_count >> LeafBlockPower) % RootScale;
         uint64_t pre_offset = (_ring_sample_count % LeafBlockSamples) / Scale;
         uint64_t *src_ptr = NULL;
         uint64_t *dest_ptr;
         int order = 0;
-        const uint64_t align_size = len / ScaleSize / _channel_num;
+        const uint64_t align_size = data_len / ScaleSize / _channel_num;
         _ring_sample_count += align_size * Scale;
 
  
         for(auto& iter : _ch_data) {
             uint64_t index0 = pre_index0;
             uint64_t index1 = pre_index1;
-            src_ptr = (uint64_t *)_src_ptr + order;
+            src_ptr = (uint64_t *)src_data_ptr + order;
             _dest_ptr = iter[index0].lbp[index1];
             dest_ptr = (uint64_t *)_dest_ptr + pre_offset;
 
-            while (src_ptr < (uint64_t *)_src_ptr + (align_size * _channel_num)) {
+            while (src_ptr < (uint64_t *)src_data_ptr + (align_size * _channel_num)) {
                 const uint64_t tmp_u64 = *src_ptr;
                 *dest_ptr++ = tmp_u64;
                 src_ptr += _channel_num;
@@ -355,8 +356,8 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
             }
             order++;
         }
-        len -= align_size * _channel_num * ScaleSize;
-        _src_ptr = src_ptr - _channel_num + 1;
+        data_len -= align_size * _channel_num * ScaleSize;
+        src_data_ptr = src_ptr - _channel_num + 1;
     }
 
     // fraction data append
@@ -367,8 +368,8 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
         _dest_ptr = (uint8_t *)_ch_data[_ch_fraction][index0].lbp[index1] + offset;
 
         uint8_t *dp_tmp = (uint8_t *)_dest_ptr;
-        uint8_t *sp_tmp = (uint8_t *)_src_ptr;
-        while(len-- != 0) {
+        uint8_t *sp_tmp = (uint8_t *)src_data_ptr;
+        while(data_len-- != 0) {
             *dp_tmp++ = *sp_tmp++;
             if (++_byte_fraction == ScaleSize) {
                 _ch_fraction = (_ch_fraction + 1) % _channel_num;
