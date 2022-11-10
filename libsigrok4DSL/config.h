@@ -189,4 +189,9 @@
    such a type exists and the standard includes do not define it. */
 /* #undef uint8_t */
 
+
+#ifdef _WIN32
+	//#define HAVE_EXTERN_INIT
+#endif
+
 #endif /* SR_CONFIG_H */

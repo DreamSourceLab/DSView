@@ -24,6 +24,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+#include "config.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -32,6 +33,8 @@
 #include <unistd.h>
 #define _sleep(m) usleep((m)*1000)
 #endif
+
+#define MAX_DEVCIE_LIST_LENGTH  20
 
 #undef LOG_PREFIX
 #define LOG_PREFIX "lib_main: "
@@ -69,6 +72,8 @@ static void collect_run_proc();
 static void post_event_async(int event);
 static void send_event(int event);
 static void make_demo_device_to_list();
+static struct libusb_device* get_new_attached_usb_device();
+static struct libusb_device* get_new_detached_usb_device();
 
 static struct sr_lib_context lib_ctx = {
 	.event_callback = NULL,
@@ -134,6 +139,19 @@ SR_API int ds_lib_init()
 
 	lib_ctx.sr_ctx->hotplug_tv.tv_sec = 0;
 	lib_ctx.sr_ctx->hotplug_tv.tv_usec = 0;
+	
+	/**
+	 * User can use custom hotplug function.
+	*/
+	lib_ctx.sr_ctx->listen_hotplug_ext = NULL;
+	lib_ctx.sr_ctx->close_hotplug_ext = NULL;
+	lib_ctx.sr_ctx->hotplug_wait_timout_ext = NULL;
+
+#ifdef _WIN32
+	#ifdef HAVE_EXTERN_INIT
+		lib_extern_init(lib_ctx.sr_ctx);
+	#endif
+#endif
 
 	sr_listen_hotplug(lib_ctx.sr_ctx, hotplug_event_listen_callback);
 
@@ -142,6 +160,12 @@ SR_API int ds_lib_init()
 
 	return SR_OK;
 }
+
+#ifndef _WIN32
+SR_PRIV int lib_extern_init(struct sr_context *ctx){
+	return SR_OK;
+}
+#endif
 
 /**
  * Free all resource before program exits
@@ -1020,6 +1044,7 @@ SR_PRIV int sr_usb_device_is_exists(libusb_device *usb_dev)
 		if (dev->handle == (ds_device_handle)usb_dev)
 		{
 			bFind = 1;
+			break;
 		}
 	}
 
@@ -1126,9 +1151,15 @@ static int update_device_handle(struct libusb_device *old_dev, struct libusb_dev
 static void hotplug_event_listen_callback(struct libusb_context *ctx, struct libusb_device *dev, int event)
 {
 	int bDone = 0;
+	
+	if (dev == NULL){
+		if (event == USB_EV_HOTPLUG_ATTACH)
+			dev = get_new_attached_usb_device();
+		else
+			dev = get_new_detached_usb_device();
+	}	
 
-	if (dev == NULL)
-	{
+	if (dev == NULL){
 		sr_err("%s", "hotplug_event_listen_callback(), @dev is null.");
 		return;
 	}
@@ -1462,6 +1493,99 @@ static void send_event(int event)
 	{
 		lib_ctx.event_callback(event);
 	}
+}
+
+static struct libusb_device* get_new_attached_usb_device()
+{
+	struct libusb_device* array[MAX_DEVCIE_LIST_LENGTH];
+	int num;
+	int i;
+	GList *l;
+	int bFind;
+	struct libusb_device* dev;
+	struct sr_dev_inst *dev_ins;
+
+	sr_info("To find new attached device.");
+
+	dev = NULL;
+	num = 0;
+	ds_scan_all_device_list(lib_ctx.sr_ctx->libusb_ctx, &array, MAX_DEVCIE_LIST_LENGTH, &num);
+
+	pthread_mutex_lock(&lib_ctx.mutext);
+
+	for (i = 0; i < num; i++){
+		bFind = 0;
+
+		for (l = lib_ctx.device_list; l; l = l->next){
+			dev_ins = l->data;
+			if (dev_ins->handle == (ds_device_handle)array[i]){
+				bFind = 1;
+				break;
+			}
+		}
+
+		if (bFind == 0){
+			dev = array[i];
+			break;
+		}
+	}
+
+	pthread_mutex_unlock(&lib_ctx.mutext);
+
+	if (dev != NULL){
+		sr_info("Found new attached usb device:%p", dev);
+	}
+
+	return dev;
+}
+
+static struct libusb_device* get_new_detached_usb_device()
+{
+    struct libusb_device* array[MAX_DEVCIE_LIST_LENGTH];
+	int num;
+	int i;
+	GList *l;
+	int bFind;
+	struct libusb_device* dev;
+	struct sr_dev_inst *dev_ins;
+
+	sr_info("To find new detached device.");
+
+	dev = NULL;
+	num = 0;
+	ds_scan_all_device_list(lib_ctx.sr_ctx->libusb_ctx, &array, MAX_DEVCIE_LIST_LENGTH, &num);
+
+	pthread_mutex_lock(&lib_ctx.mutext);
+
+	for (l = lib_ctx.device_list; l; l = l->next)
+	{	
+		bFind = 0;
+		dev_ins = l->data;
+
+		if (dev_ins->dev_type != DEV_TYPE_USB){
+			continue;
+		}
+
+		for (i = 0; i < num; i++){
+			if (dev_ins->handle == (ds_device_handle)array[i]){
+				bFind = 1;
+				break;
+			}			
+		}
+
+		if (bFind == 0){
+			dev = (libusb_device*)dev_ins->handle;
+			break;
+		}
+	}		
+
+	pthread_mutex_unlock(&lib_ctx.mutext);
+
+	if (dev != NULL){
+		sr_info("Found new detached usb device:%p", dev);
+	}
+
+	return dev;
 }
 
 /**-------------------private function end---------------*/

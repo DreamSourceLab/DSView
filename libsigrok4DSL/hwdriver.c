@@ -26,6 +26,7 @@
 #include <glib.h>
 #include "config.h" /* Needed for HAVE_LIBUSB_1_0 and others. */
 #include "log.h"
+#include <assert.h>
 
 #undef LOG_PREFIX
 #define LOG_PREFIX "hwdriver: "
@@ -369,6 +370,48 @@ SR_PRIV int sr_source_add(int fd, int events, int timeout,
 			  sr_receive_data_callback_t cb, void *cb_data)
 {
     return sr_session_source_add(fd, events, timeout, cb, cb_data);
+}
+
+SR_PRIV int ds_scan_all_device_list(libusb_context *usb_ctx,struct libusb_device **list_buf, int size, int *count)
+{	
+	libusb_device **devlist;
+	int i;
+	int wr;
+    int ret;
+	struct libusb_device_descriptor des;
+
+	assert(list_buf);
+	assert(count);
+	assert(usb_ctx);
+
+	devlist = NULL;
+	wr = 0;
+	libusb_get_device_list(usb_ctx, &devlist);
+
+	for (i = 0; devlist[i]; i++) 
+	{ 
+        ret = libusb_get_device_descriptor(devlist[i], &des);
+        if (ret != 0) {
+            sr_warn("Failed to get device descriptor: %s.",  libusb_error_name(ret));
+            continue;
+        }
+
+		if (des.idVendor == 0x2A0E){
+			if (wr >= size){
+				sr_err("%s", "ds_scan_all_device_list(), buffer length is too short.");
+				assert(0);
+			}
+
+			list_buf[wr] = devlist[i];
+			wr++;
+		}
+	}
+
+	*count = wr;
+
+	libusb_free_device_list(devlist, 1);
+
+	return SR_OK;
 }
 
 /** @} */

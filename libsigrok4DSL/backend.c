@@ -409,6 +409,11 @@ SR_PRIV int sr_listen_hotplug(struct sr_context *ctx, hotplug_event_callback cal
 
 	ctx->hotplug_callback = callback;
 
+	// Call user custom function.
+	if (ctx->listen_hotplug_ext != NULL){
+		return ctx->listen_hotplug_ext(ctx);		
+	}
+
     ret = libusb_hotplug_register_callback(ctx->libusb_ctx,
                                            (libusb_hotplug_event)(LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED | LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT),
                                            (libusb_hotplug_flag)LIBUSB_HOTPLUG_ENUMERATE,
@@ -432,6 +437,12 @@ SR_PRIV int sr_close_hotplug(struct sr_context *ctx)
 		return SR_ERR;
 	}
 	sr_info("%s", "Unregister hotplug callback.");
+
+	// Call user custom function.
+	if (ctx->close_hotplug_ext != NULL){
+		return ctx->close_hotplug_ext(ctx);
+	}
+
 	libusb_hotplug_deregister_callback(ctx->libusb_ctx, ctx->hotplug_handle);
 
 	return 0;
@@ -442,7 +453,14 @@ SR_PRIV void sr_hotplug_wait_timout(struct sr_context *ctx)
 	if (!ctx) {
 		sr_err("%s(): libsigrok context was NULL.", __func__);
 		return;
-	} 
+	}
+
+	// Call user custom function.
+	if (ctx->hotplug_wait_timout_ext != NULL){
+		ctx->hotplug_wait_timout_ext(ctx);
+		return;
+	}
+
 	libusb_handle_events_timeout(ctx->libusb_ctx, &ctx->hotplug_tv);
 }
 

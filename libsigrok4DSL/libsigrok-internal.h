@@ -26,7 +26,6 @@
 #include <libusb-1.0/libusb.h>
 #include "libsigrok.h"
 
-
 /**
  * @file
  *
@@ -66,6 +65,9 @@ struct sr_context {
 	libusb_hotplug_callback_handle hotplug_handle;
 	hotplug_event_callback  hotplug_callback;
 	struct 					timeval hotplug_tv;
+	int (*listen_hotplug_ext)(struct sr_context *ctx);
+	int (*close_hotplug_ext)(struct sr_context *ctx);
+	int (*hotplug_wait_timout_ext)(struct sr_context *ctx);
 };
 
 static const struct sr_dev_mode sr_mode_list[] =
@@ -404,6 +406,8 @@ SR_PRIV int ds_data_forward(const struct sr_dev_inst *sdi,
 
 SR_PRIV int current_device_acquisition_stop();
 
+SR_PRIV int lib_extern_init(struct sr_context *ctx);
+
 /*--- hwdriver.c ------------------------------------------------------------*/
 
 SR_PRIV int sr_config_get(const struct sr_dev_driver *driver,
@@ -423,6 +427,7 @@ SR_PRIV const struct sr_config_info *sr_config_info_get(int key);
 SR_PRIV int sr_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, gboolean prg);
 SR_PRIV struct sr_config *sr_config_new(int key, GVariant *data);
 SR_PRIV void sr_config_free(struct sr_config *src);
+SR_PRIV int ds_scan_all_device_list(libusb_context *usb_ctx, struct libusb_device **list_buf, int size, int *count);
 
 /*--- dsl.c ------------------------------------------------------------*/
 SR_PRIV int sr_option_value_to_code(int config_id, const char *value, const struct lang_text_map_item *array, int num);

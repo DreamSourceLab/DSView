@@ -242,7 +242,7 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
             } 
             
             tmpv = (double)(ctx->index-1) / (double)ctx->samplerate;
-            g_string_append_printf(*out, "%0.18g", tmpv); 
+            g_string_append_printf(*out, "%0.15g", tmpv); 
 
             for (j = 0; j < ctx->num_enabled_channels; j++) {
                 idx = j;
