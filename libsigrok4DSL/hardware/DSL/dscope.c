@@ -190,10 +190,13 @@ static GSList *scan(GSList *options)
     struct sr_usb_dev_inst *usb_dev_info;
     uint8_t bus;
     uint8_t address;
+    int isProduct;
+    int num;
 
 	drvc = di->priv;
+    num = 0;
 
-     if (options != NULL)
+    if (options != NULL)
         sr_info("%s", "Scan DSCope device with options.");
     else 
         sr_info("%s", "Scan DSCope device.");
@@ -242,10 +245,15 @@ static GSList *scan(GSList *options)
 			continue;
 		}
 
-        usb_speed = libusb_get_device_speed(device_handle);
-        if ((usb_speed != LIBUSB_SPEED_HIGH) &&
-            (usb_speed != LIBUSB_SPEED_SUPER))
+        // The vendor id is not right.
+        if (des.idVendor != DS_VENDOR_ID)
             continue;
+
+        usb_speed = libusb_get_device_speed(device_handle);
+        if ((usb_speed != LIBUSB_SPEED_HIGH) && (usb_speed != LIBUSB_SPEED_SUPER)){   
+            sr_info("scan(): The idVendor is right, but the usb speed is too low, speed type:%d", usb_speed);
+            continue;             
+        }
 
 		prof = NULL;
         for (j = 0; supported_DSCope[j].vid; j++) {
@@ -258,8 +266,28 @@ static GSList *scan(GSList *options)
 		}
 
 		/* Skip if the device was not found. */
-		if (!prof)
-			continue;
+		if (prof == NULL){ 
+              isProduct = 0;
+
+               //Mybe is a dslogic device.
+              for (j = 0; supported_DSLogic[j].vid; j++) 
+                {
+                    if (des.idVendor == supported_DSLogic[j].vid &&
+                        des.idProduct == supported_DSLogic[j].pid &&
+                        usb_speed == supported_DSLogic[j].usb_speed) {
+                        isProduct = 1;
+                        break;
+                    }
+                }
+
+            if (isProduct == 0){
+                sr_info("scan(): The profile is not matched, idVendor:%02X, idProduct:%02X",
+                    des.idVendor,
+                    des.idProduct);
+            }
+
+            continue;
+        }
 
         if (sr_usb_device_is_exists(device_handle)){
             sr_detail("Device is exists, handle: %p", device_handle);
@@ -294,6 +322,7 @@ static GSList *scan(GSList *options)
             return NULL;
         }
         devices = g_slist_append(devices, sdi);
+        num++;
 
 		if (dsl_check_conf_profile(device_handle)) {
 			/* Already has the firmware, so fix the new address. */
@@ -336,6 +365,8 @@ static GSList *scan(GSList *options)
     if (conn_devices){
         g_slist_free_full(conn_devices, (GDestroyNotify)sr_usb_dev_inst_free);
     }
+
+    sr_info("Fond new DSCope device count: %d", num);
 
 	return devices;
 }

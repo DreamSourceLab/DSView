@@ -72,6 +72,7 @@ static void collect_run_proc();
 static void post_event_async(int event);
 static void send_event(int event);
 static void make_demo_device_to_list();
+static void process_attach_event(int isEvent);
 static struct libusb_device* get_new_attached_usb_device();
 static struct libusb_device* get_new_detached_usb_device();
 
@@ -152,6 +153,10 @@ SR_API int ds_lib_init()
 		lib_extern_init(lib_ctx.sr_ctx);
 	#endif
 #endif
+
+	// Scan the all hardware device.
+	sr_info("%s", "Scan all connected hardware device.");
+	process_attach_event(0);
 
 	sr_listen_hotplug(lib_ctx.sr_ctx, hotplug_event_listen_callback);
 
@@ -1151,7 +1156,7 @@ static int update_device_handle(struct libusb_device *old_dev, struct libusb_dev
 static void hotplug_event_listen_callback(struct libusb_context *ctx, struct libusb_device *dev, int event)
 {
 	int bDone = 0;
-	
+
 	if (dev == NULL){
 		if (event == USB_EV_HOTPLUG_ATTACH)
 			dev = get_new_attached_usb_device();
@@ -1160,7 +1165,7 @@ static void hotplug_event_listen_callback(struct libusb_context *ctx, struct lib
 	}	
 
 	if (dev == NULL){
-		sr_err("%s", "hotplug_event_listen_callback(), @dev is null.");
+		sr_err("%s", "hotplug_event_listen_callback(), no devices to process");
 		return;
 	}
 
@@ -1233,7 +1238,7 @@ static void hotplug_event_listen_callback(struct libusb_context *ctx, struct lib
 	}
 }
 
-static void process_attach_event()
+static void process_attach_event(int isEvent)
 {
 	struct sr_dev_driver **drivers;
 	GList *dev_list;
@@ -1241,12 +1246,8 @@ static void process_attach_event()
 	struct sr_dev_driver *dr;
 	int num = 0;
 
-	sr_info("%s", "Process device attach event.");
-
-	if (lib_ctx.attach_device_handle == NULL)
-	{
-		sr_err("%s", "The attached device handle is null.");
-		return;
+	if (isEvent){
+		sr_info("%s", "Process device attach event.");
 	}
 
 	drivers = sr_driver_list();
@@ -1278,9 +1279,7 @@ static void process_attach_event()
 	}
 
 	// Tell user one new device attched, and the list is updated.
-
-	if (num > 0)
-	{
+	if (num > 0 && isEvent){
 		post_event_async(DS_EV_NEW_DEVICE_ATTACH);
 	}
 
@@ -1346,13 +1345,12 @@ static void usb_hotplug_process_proc()
 	{
 		sr_hotplug_wait_timout(lib_ctx.sr_ctx);
 
-		if (lib_ctx.attach_event_flag)
-		{
-			process_attach_event();
+		if (lib_ctx.attach_event_flag){
+			process_attach_event(1);
 			lib_ctx.attach_event_flag = 0;
 		}
-		if (lib_ctx.detach_event_flag)
-		{
+
+		if (lib_ctx.detach_event_flag){
 			process_detach_event();
 			lib_ctx.detach_event_flag = 0;
 		}

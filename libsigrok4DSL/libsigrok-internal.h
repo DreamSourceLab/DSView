@@ -54,6 +54,8 @@
 #define g_safe_free(p) 			if((p)) g_free((p)); ((p)) = NULL;
 #define g_safe_free_list(p) 	if((p)) g_slist_free((p)); ((p)) = NULL;
 
+#define DS_VENDOR_ID	0x2A0E
+
 /** global variable */
 extern char DS_RES_PATH[500];
 extern struct ds_trigger *trigger;

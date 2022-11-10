@@ -292,8 +292,11 @@ static GSList *scan(GSList *options)
     struct sr_usb_dev_inst *usb_dev_info;
     uint8_t bus;
     uint8_t address;
+    int isProduct;
+    int num;
 
 	drvc = di->priv;
+    num = 0;
  
     if (options != NULL)
         sr_info("%s", "Scan DSLogic device with options.");
@@ -343,9 +346,14 @@ static GSList *scan(GSList *options)
 				libusb_error_name(ret));
 			continue;
 		}
+        
+        // The vendor id is not right.
+        if (des.idVendor != DS_VENDOR_ID)
+            continue;
 
         usb_speed = libusb_get_device_speed(device_handle);
         if ((usb_speed != LIBUSB_SPEED_HIGH) && (usb_speed != LIBUSB_SPEED_SUPER)){
+            sr_info("scan(): The idVendor is right, but the usb speed is too low, speed type:%d", usb_speed);
             continue;
         }
 
@@ -361,8 +369,28 @@ static GSList *scan(GSList *options)
 		}
 
 		/* Skip if the device was not found. */
-		if (!prof)
-			continue;
+		if (prof == NULL){ 
+              isProduct = 0;
+
+               //Mybe is a dscope device.
+              for (j = 0; supported_DSCope[j].vid; j++) 
+                {
+                    if (des.idVendor == supported_DSCope[j].vid &&
+                        des.idProduct == supported_DSCope[j].pid &&
+                        usb_speed == supported_DSCope[j].usb_speed) {
+                        isProduct = 1;
+                        break;
+                    }
+                }
+
+            if (isProduct == 0){
+                sr_info("scan(): The profile is not matched, idVendor:%02X, idProduct:%02X",
+                    des.idVendor,
+                    des.idProduct);
+            }
+
+            continue;
+        }
         
         if (sr_usb_device_is_exists(device_handle)){
             sr_detail("Device is exists, handle: %p", device_handle);
@@ -395,6 +423,7 @@ static GSList *scan(GSList *options)
             return NULL;
         }
         devices = g_slist_append(devices, sdi);
+        num++;
 
         if (dsl_check_conf_profile(device_handle)) {
 			/* Already has the firmware, so fix the new address. */
@@ -438,6 +467,8 @@ static GSList *scan(GSList *options)
     if (conn_devices){
         g_slist_free_full(conn_devices, (GDestroyNotify)sr_usb_dev_inst_free);
     }
+
+    sr_info("Fond new DSLogic device count: %d", num);
 
 	return devices;
 }

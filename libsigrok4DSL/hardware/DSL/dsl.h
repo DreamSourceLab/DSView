@@ -444,7 +444,7 @@ static const struct DSL_profile supported_DSLogic[] = {
     /*
      * DSLogic
      */
-    {0x2A0E, 0x0001, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic", NULL,
+    {DS_VENDOR_ID, 0x0001, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic", NULL,
      "DSLogic.fw",
      "DSLogic33.bin",
      "DSLogic50.bin",
@@ -473,7 +473,7 @@ static const struct DSL_profile supported_DSLogic[] = {
       SR_MHZ(400)}
     },
 
-    {0x2A0E, 0x0003, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic Pro", NULL,
+    {DS_VENDOR_ID, 0x0003, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic Pro", NULL,
      "DSLogicPro.fw",
      "DSLogicPro.bin",
      "DSLogicPro.bin",
@@ -500,7 +500,7 @@ static const struct DSL_profile supported_DSLogic[] = {
       SR_MHZ(400)}
     },
 
-    {0x2A0E, 0x0020, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic PLus", NULL,
+    {DS_VENDOR_ID, 0x0020, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic PLus", NULL,
      "DSLogicPlus.fw",
      "DSLogicPlus.bin",
      "DSLogicPlus.bin",
@@ -527,7 +527,7 @@ static const struct DSL_profile supported_DSLogic[] = {
       SR_MHZ(400)}
     },
 
-    {0x2A0E, 0x0021, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic Basic", NULL,
+    {DS_VENDOR_ID, 0x0021, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic Basic", NULL,
      "DSLogicBasic.fw",
      "DSLogicBasic.bin",
      "DSLogicBasic.bin",
@@ -554,7 +554,7 @@ static const struct DSL_profile supported_DSLogic[] = {
       SR_MHZ(400)}
     },
 
-    {0x2A0E, 0x0029, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic U2Basic", NULL,
+    {DS_VENDOR_ID, 0x0029, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic U2Basic", NULL,
      "DSLogicU2Basic.fw",
      "DSLogicU2Basic.bin",
      "DSLogicU2Basic.bin",
@@ -581,7 +581,7 @@ static const struct DSL_profile supported_DSLogic[] = {
       SR_MHZ(400)}
     },
 
-    {0x2A0E, 0x002A, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic U3Pro16", NULL,
+    {DS_VENDOR_ID, 0x002A, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic U3Pro16", NULL,
      "DSLogicU3Pro16.fw",
      "DSLogicU3Pro16.bin",
      "DSLogicU3Pro16.bin",
@@ -608,7 +608,7 @@ static const struct DSL_profile supported_DSLogic[] = {
       SR_GHZ(1)}
     },
 
-    {0x2A0E, 0x002A, LIBUSB_SPEED_SUPER, "DreamSourceLab", "DSLogic U3Pro16", NULL,
+    {DS_VENDOR_ID, 0x002A, LIBUSB_SPEED_SUPER, "DreamSourceLab", "DSLogic U3Pro16", NULL,
      "DSLogicU3Pro16.fw",
      "DSLogicU3Pro16.bin",
      "DSLogicU3Pro16.bin",
@@ -635,7 +635,7 @@ static const struct DSL_profile supported_DSLogic[] = {
       SR_GHZ(1)}
     },
 
-    {0x2A0E, 0x002C, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic U3Pro32", NULL,
+    {DS_VENDOR_ID, 0x002C, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic U3Pro32", NULL,
      "DSLogicU3Pro32.fw",
      "DSLogicU3Pro32.bin",
      "DSLogicU3Pro32.bin",
@@ -662,7 +662,7 @@ static const struct DSL_profile supported_DSLogic[] = {
       SR_GHZ(1)}
     },
 
-    {0x2A0E, 0x002C, LIBUSB_SPEED_SUPER, "DreamSourceLab", "DSLogic U3Pro32", NULL,
+    {DS_VENDOR_ID, 0x002C, LIBUSB_SPEED_SUPER, "DreamSourceLab", "DSLogic U3Pro32", NULL,
      "DSLogicU3Pro32.fw",
      "DSLogicU3Pro32.bin",
      "DSLogicU3Pro32.bin",
@@ -696,7 +696,7 @@ static const struct DSL_profile supported_DSCope[] = {
     /*
      * DSCope
      */
-    {0x2A0E, 0x0002, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope", NULL,
+    {DS_VENDOR_ID, 0x0002, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope", NULL,
      "DSCope.fw",
      "DSCope.bin",
      "DSCope.bin",
@@ -723,7 +723,7 @@ static const struct DSL_profile supported_DSCope[] = {
       SR_HZ(0)}
     },
 
-    {0x2A0E, 0x0004, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope20", NULL,
+    {DS_VENDOR_ID, 0x0004, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope20", NULL,
      "DSCope20.fw",
      "DSCope20.bin",
      "DSCope20.bin",
@@ -750,7 +750,7 @@ static const struct DSL_profile supported_DSCope[] = {
       SR_HZ(0)}
     },
 
-    {0x2A0E, 0x0022, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope B20", NULL,
+    {DS_VENDOR_ID, 0x0022, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope B20", NULL,
      "DSCopeB20.fw",
      "DSCope20.bin",
      "DSCope20.bin",
@@ -777,7 +777,7 @@ static const struct DSL_profile supported_DSCope[] = {
       SR_HZ(0)}
     },
 
-    {0x2A0E, 0x0023, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope C20", NULL,
+    {DS_VENDOR_ID, 0x0023, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope C20", NULL,
      "DSCopeC20.fw",
      "DSCopeC20P.bin",
      "DSCopeC20P.bin",
@@ -805,7 +805,7 @@ static const struct DSL_profile supported_DSCope[] = {
     },
 
 
-    {0x2A0E, 0x0024, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope C20P", NULL,
+    {DS_VENDOR_ID, 0x0024, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope C20P", NULL,
      "DSCopeC20P.fw",
      "DSCopeC20P.bin",
      "DSCopeC20P.bin",
@@ -832,7 +832,7 @@ static const struct DSL_profile supported_DSCope[] = {
       SR_HZ(0)}
     },
 
-    {0x2A0E, 0x0025, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope C20", NULL,
+    {DS_VENDOR_ID, 0x0025, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope C20", NULL,
      "DSCopeC20B.fw",
      "DSCopeC20B.bin",
      "DSCopeC20B.bin",
@@ -859,7 +859,7 @@ static const struct DSL_profile supported_DSCope[] = {
       SR_HZ(0)}
     },
 
-    {0x2A0E, 0x0026, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope U2B20", NULL,
+    {DS_VENDOR_ID, 0x0026, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope U2B20", NULL,
      "DSCopeU2B20.fw",
      "DSCopeU2B20.bin",
      "DSCopeU2B20.bin",
@@ -886,7 +886,7 @@ static const struct DSL_profile supported_DSCope[] = {
       SR_HZ(0)}
     },
 
-    {0x2A0E, 0x0027, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope U2P20", NULL,
+    {DS_VENDOR_ID, 0x0027, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope U2P20", NULL,
      "DSCopeU2P20.fw",
      "DSCopeU2P20.bin",
      "DSCopeU2P20.bin",
@@ -913,7 +913,7 @@ static const struct DSL_profile supported_DSCope[] = {
       SR_HZ(0)}
     },
 
-    {0x2A0E, 0x0028, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope U2B100", NULL,
+    {DS_VENDOR_ID, 0x0028, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope U2B100", NULL,
      "DSCopeU2B100.fw",
      "DSCopeU2B100.bin",
      "DSCopeU2B100.bin",
@@ -940,7 +940,7 @@ static const struct DSL_profile supported_DSCope[] = {
       SR_HZ(0)}
     },
 
-    {0x2A0E, 0x002B, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope U3P100", NULL,
+    {DS_VENDOR_ID, 0x002B, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSCope U3P100", NULL,
      "DSCopeU3P100.fw",
      "DSCopeU3P100.bin",
      "DSCopeU3P100.bin",
@@ -967,7 +967,7 @@ static const struct DSL_profile supported_DSCope[] = {
       SR_HZ(0)}
     },
 
-    {0x2A0E, 0x002B, LIBUSB_SPEED_SUPER, "DreamSourceLab", "DSCope U3P100", NULL,
+    {DS_VENDOR_ID, 0x002B, LIBUSB_SPEED_SUPER, "DreamSourceLab", "DSCope U3P100", NULL,
      "DSCopeU3P100.fw",
      "DSCopeU3P100.bin",
      "DSCopeU3P100.bin",

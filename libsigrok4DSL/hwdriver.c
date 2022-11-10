@@ -396,7 +396,7 @@ SR_PRIV int ds_scan_all_device_list(libusb_context *usb_ctx,struct libusb_device
             continue;
         }
 
-		if (des.idVendor == 0x2A0E){
+		if (des.idVendor == DS_VENDOR_ID){
 			if (wr >= size){
 				sr_err("%s", "ds_scan_all_device_list(), buffer length is too short.");
 				assert(0);

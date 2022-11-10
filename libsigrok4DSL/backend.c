@@ -417,7 +417,7 @@ SR_PRIV int sr_listen_hotplug(struct sr_context *ctx, hotplug_event_callback cal
     ret = libusb_hotplug_register_callback(ctx->libusb_ctx,
                                            (libusb_hotplug_event)(LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED | LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT),
                                            (libusb_hotplug_flag)LIBUSB_HOTPLUG_ENUMERATE,
-                                           0x2A0E,
+                                           DS_VENDOR_ID,
                                            LIBUSB_HOTPLUG_MATCH_ANY,
                                            LIBUSB_HOTPLUG_MATCH_ANY, 
                                            (libusb_hotplug_callback_fn)sr_hotplug_callback,
