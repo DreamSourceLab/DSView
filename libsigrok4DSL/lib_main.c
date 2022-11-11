@@ -36,6 +36,9 @@
 
 #define MAX_DEVCIE_LIST_LENGTH  20
 
+// Wait the device reconnect for 500ms.
+#define CHECK_DEV_RECONNECT_TIMES 5
+
 #undef LOG_PREFIX
 #define LOG_PREFIX "lib_main: "
 
@@ -61,6 +64,8 @@ struct sr_lib_context
 	int callback_thread_count;
 	int is_delay_destory_actived_device;
 	int is_stop_by_detached;
+	int transaction_id;
+	int transaction_command;
 };
 
 static void hotplug_event_listen_callback(struct libusb_context *ctx, struct libusb_device *dev, int event);
@@ -94,6 +99,8 @@ static struct sr_lib_context lib_ctx = {
 	.callback_thread_count = 0,
 	.is_delay_destory_actived_device = 0,
 	.is_stop_by_detached = 0,
+	.transaction_id = 0,
+	.transaction_command = DEV_TRANS_NONE,
 };
 
 /**
@@ -778,7 +785,7 @@ END:
 }
 
 /**
- * Stop collect data
+ * Stop collect data, but not close the device.
  */
 SR_API int ds_stop_collect()
 { 
@@ -1118,7 +1125,7 @@ static int update_device_handle(struct libusb_device *old_dev, struct libusb_dev
 			// Release the old device and the resource.
 			if (dev == lib_ctx.actived_device_instance)
 			{
-				sr_info("%s", "Release the old device's resource.");
+				sr_info("%s", "----------To release the old device's resource.");
 				close_device_instance(dev);
 			}
 
@@ -1130,11 +1137,10 @@ static int update_device_handle(struct libusb_device *old_dev, struct libusb_dev
 			dev->handle = new_dev;
 			bFind = 1;
 
-			// Reopen the device.
-			if (dev == lib_ctx.actived_device_instance)
-			{
-				sr_info("%s", "Reopen the current device.");
-				open_device_instance(dev);
+			// Reopen the device by transaction.
+			if (dev == lib_ctx.actived_device_instance){
+				lib_ctx.transaction_id++;
+				lib_ctx.transaction_command = DEV_TRANS_OPEN;
 			}
 			break;
 		}
@@ -1341,6 +1347,8 @@ static void usb_hotplug_process_proc()
 {
 	sr_info("%s", "Hotplug thread start!");
 
+	int cur_trans_id = DEV_TRANS_NONE;
+
 	while (!lib_ctx.lib_exit_flag)
 	{
 		sr_hotplug_wait_timout(lib_ctx.sr_ctx);
@@ -1361,11 +1369,23 @@ static void usb_hotplug_process_proc()
 		{
 			lib_ctx.check_reconnect_times++;
 			// 500ms
-			if (lib_ctx.check_reconnect_times == 5)
+			if (lib_ctx.check_reconnect_times == CHECK_DEV_RECONNECT_TIMES)
 			{
 				// Device loose contact,wait for it reconnection timeout.
 				lib_ctx.detach_event_flag = 1; // use detach event
 				lib_ctx.is_waitting_reconnect = 0;
+			}
+		}
+
+		if (lib_ctx.transaction_id != cur_trans_id)
+		{
+			cur_trans_id = lib_ctx.transaction_id;
+
+			if (lib_ctx.transaction_command == DEV_TRANS_OPEN){
+				if (lib_ctx.actived_device_instance != NULL){
+					sr_info("%s", "----------To reopen the current device.");
+					open_device_instance(lib_ctx.actived_device_instance);
+				}
 			}
 		}
 	}

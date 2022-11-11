@@ -125,7 +125,7 @@ SR_PRIV GSList *sr_usb_find(libusb_context *usb_ctx, const char *conn)
                "%d.%d).", des.idVendor, des.idProduct, b, a);
 
         usb = sr_usb_dev_inst_new(libusb_get_bus_number(devlist[i]),
-                libusb_get_device_address(devlist[i]), NULL);
+                    libusb_get_device_address(devlist[i]));
         usb->usb_dev = devlist[i];
         
         devices = g_slist_append(devices, usb);
@@ -181,7 +181,7 @@ SR_PRIV GSList *sr_usb_find_usbtmc(libusb_context *usb_ctx)
                        libusb_get_device_address(devlist[i]));
 
                 usb = sr_usb_dev_inst_new(libusb_get_bus_number(devlist[i]),
-                            libusb_get_device_address(devlist[i]), NULL);
+                            libusb_get_device_address(devlist[i]));
                 usb->usb_dev = devlist[i];
 
                 devices = g_slist_append(devices, usb);

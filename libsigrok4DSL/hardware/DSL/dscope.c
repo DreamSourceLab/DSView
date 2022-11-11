@@ -328,7 +328,7 @@ static GSList *scan(GSList *options)
 			/* Already has the firmware, so fix the new address. */
             sr_info("Found a DSCope device,name:\"%s\",handle:%p", prof->model, device_handle);
 
-            usb_dev_info = sr_usb_dev_inst_new(bus, address, NULL);
+            usb_dev_info = sr_usb_dev_inst_new(bus, address);
             usb_dev_info->usb_dev = device_handle;
             sdi->conn = usb_dev_info;
             sdi->status = SR_ST_INACTIVE;          
@@ -354,7 +354,7 @@ static GSList *scan(GSList *options)
 				       "device %d.", devcnt);
             g_free(firmware);
             
-            usb_dev_info = sr_usb_dev_inst_new(bus, 0xff, NULL);
+            usb_dev_info = sr_usb_dev_inst_new(bus, 0xff);
             usb_dev_info->usb_dev = device_handle;
             sdi->conn = usb_dev_info;
 		}

@@ -1428,7 +1428,7 @@ SR_API int ds_get_actived_device_mode();
 SR_API int ds_start_collect();
 
 /**
- * Stop collect data
+ * Stop collect data, but not close the device.
  */
 SR_API int ds_stop_collect();
 

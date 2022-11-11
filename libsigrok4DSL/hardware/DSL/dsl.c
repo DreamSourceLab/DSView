@@ -326,6 +326,7 @@ static int hw_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi)
                 libusb_error_name(ret), dev_handel);
         return SR_ERR;
     }
+    //sr_info("------------Open returns the libusb_device_handle: %p, struct:%p", usb->devhdl, usb);
 
     if (usb->address == 0xff){
         /*
@@ -1928,8 +1929,12 @@ SR_PRIV int dsl_dev_close(struct sr_dev_inst *sdi)
     sr_info("%s: Closing device %d on %d.%d interface %d.",
         sdi->driver->name, sdi->index, usb->bus, usb->address, USB_INTERFACE);
     
-    libusb_release_interface(usb->devhdl, USB_INTERFACE);
-    libusb_close(usb->devhdl);
+    if (usb->devhdl != NULL){
+        libusb_release_interface(usb->devhdl, USB_INTERFACE);
+        libusb_close(usb->devhdl);
+    }
+    //sr_info("------------Close the libusb_device_handle:%p, struct:%p", usb->devhdl, usb);
+
     usb->devhdl = NULL;
     sdi->status = SR_ST_INACTIVE;
 
@@ -1951,7 +1956,8 @@ SR_PRIV int dsl_dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_dat
     if (!devc->abort) {
         devc->abort = TRUE;
         dsl_wr_reg(sdi, CTR0_ADDR, bmFORCE_RDY);
-    } else if (devc->status == DSL_FINISH) {
+    }
+    else if (devc->status == DSL_FINISH) {
         /* Stop GPIF acquisition */
         wr_cmd.header.dest = DSL_CTL_STOP;
         wr_cmd.header.size = 0;

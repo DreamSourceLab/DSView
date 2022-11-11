@@ -137,7 +137,8 @@ SR_PRIV int ezusb_upload_firmware(libusb_device *dev, int configuration,
 	if ((ezusb_reset(hdl, 0)) < 0)
         return SR_ERR;
 
-	libusb_close(hdl);
+	if (hdl != NULL)
+		libusb_close(hdl);
 
     return SR_OK;
 }

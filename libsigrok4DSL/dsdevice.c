@@ -255,8 +255,7 @@ SR_PRIV void sr_dev_inst_free(struct sr_dev_inst *sdi)
 }
 
 /** @private */
-SR_PRIV struct sr_usb_dev_inst *sr_usb_dev_inst_new(uint8_t bus,
-			uint8_t address, struct libusb_device_handle *hdl)
+SR_PRIV struct sr_usb_dev_inst *sr_usb_dev_inst_new(uint8_t bus, uint8_t address)
 {
 	struct sr_usb_dev_inst *udi;
 
@@ -267,7 +266,7 @@ SR_PRIV struct sr_usb_dev_inst *sr_usb_dev_inst_new(uint8_t bus,
 
 	udi->bus = bus;
 	udi->address = address;
-	udi->devhdl = hdl;
+	udi->devhdl = NULL;
 	udi->usb_dev = NULL; 
 
 	return udi;
