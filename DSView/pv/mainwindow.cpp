@@ -118,6 +118,8 @@ namespace pv
         setup_ui();
 
         setContextMenuPolicy(Qt::NoContextMenu);
+
+        _key_vaild = false;
     }
 
     void MainWindow::setup_ui()
@@ -1100,6 +1102,15 @@ namespace pv
         {
             const auto &sigs = _session->get_signals();
             QKeyEvent *ke = (QKeyEvent *)event;
+            
+            int modifier = ke->modifiers();
+            if(modifier & Qt::ControlModifier || 
+               modifier & Qt::ShiftModifier || 
+               modifier & Qt::AltModifier)
+            {
+                return true;
+            }
+            
             switch (ke->key())
             {
             case Qt::Key_S:
@@ -1151,9 +1162,9 @@ namespace pv
                 break;
             case Qt::Key_0:
                 for (auto s : sigs)
-                { 
+                {
                     if (s->signal_type() == DSO_SIGNAL)
-                    {   
+                    {
                         view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                         if (dsoSig->get_index() == 0)
                             dsoSig->set_vDialActive(!dsoSig->get_vDialActive());
@@ -1181,8 +1192,8 @@ namespace pv
                 break;
             case Qt::Key_Up:
                 for (auto s : sigs)
-                { 
-                    if (s->signal_type() == DSO_SIGNAL){   
+                {
+                    if (s->signal_type() == DSO_SIGNAL){
                         view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                         if (dsoSig->get_vDialActive())
                         {
@@ -1195,7 +1206,7 @@ namespace pv
                 break;
             case Qt::Key_Down:
                 for (auto s : sigs)
-                { 
+                {
                     if (s->signal_type() == DSO_SIGNAL){
                         view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                         if (dsoSig->get_vDialActive())
