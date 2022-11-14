@@ -1102,6 +1102,7 @@ namespace pv
         {
             const auto &sigs = _session->get_signals();
             QKeyEvent *ke = (QKeyEvent *)event;
+            
             int modifier = ke->modifiers();
             if(modifier & Qt::ControlModifier || 
                modifier & Qt::ShiftModifier || 
