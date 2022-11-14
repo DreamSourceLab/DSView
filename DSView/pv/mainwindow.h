@@ -214,6 +214,9 @@ private:
     SigSession      *_session;
     DeviceAgent     *_device_agent;
     bool            _is_auto_switch_device;
+
+    int _key_value;
+    bool _key_vaild;
 };
 
 } // namespace pv
