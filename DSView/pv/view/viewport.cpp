@@ -166,7 +166,8 @@ void Viewport::paintEvent(QPaintEvent *event)
     if (_view.session().get_device()->get_work_mode() == LOGIC ||
         _view.session().is_instant()) 
     {
-        if (_view.session().is_stopped_status())// || _view.session().is_realtime_mode()){
+        if (_view.session().is_stopped_status() 
+            || _view.session().is_realtime_mode())
         {
             paintSignals(p, fore, back);
         }

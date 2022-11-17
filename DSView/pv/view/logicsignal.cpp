@@ -170,6 +170,7 @@ void LogicSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColo
     int preY = first_sample ? high_offset : low_offset;
     int x = preX;
     std::vector<QLine> wave_lines;
+    
     if (_cur_edges.size() < max_togs) {
         std::vector<std::pair<uint16_t, bool>>::const_iterator i;
         for (i = _cur_edges.begin() + 1; i != _cur_edges.end() - 1; i++) {
@@ -181,7 +182,8 @@ void LogicSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColo
         }
         x = (*i).first;
         wave_lines.push_back(QLine(preX, preY, x, preY));
-    } else {
+    }
+    else {
         std::vector<std::pair<bool, bool>>::const_iterator i = _cur_pulses.begin();
         while (i != _cur_pulses.end() - 1) {
             if ((*i).first) {
