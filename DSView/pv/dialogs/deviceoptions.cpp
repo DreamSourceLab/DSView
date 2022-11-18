@@ -38,6 +38,8 @@
 #include "../appcontrol.h"
 #include "../sigsession.h"
 #include "../ui/langresource.h"
+#include "../log.h"
+#include <QDebug>
 
 using namespace boost;
 using namespace std;
@@ -226,11 +228,12 @@ QLayout * DeviceOptions::get_property_form(QWidget * parent)
     for(auto p : properties)
 	{ 
         const QString label = p->labeled_widget() ? QString() : p->label();       
-        QString lable_text;
+        QString lable_text = "";
 
         if (label != ""){
-            const char *label_str = label.toLocal8Bit().data();
-            lable_text = LangResource::Instance()->get_lang_text(STR_PAGE_DSL, label_str, label_str);
+            QByteArray bytes = label.toLocal8Bit();
+            const char *lang_str = LangResource::Instance()->get_lang_text(STR_PAGE_DSL, bytes.data(), bytes.data());
+            lable_text = QString(lang_str);
         }
    
         layout->addWidget(new QLabel(lable_text, parent), i, 0);
