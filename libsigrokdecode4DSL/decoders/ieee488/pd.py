@@ -620,7 +620,10 @@ class Decoder(srd.Decoder):
             # re-use 'iec' decoder logic. Turn ATN to positive logic for
             # easier processing. The data bits get handled during byte
             # accumulation.
-            pins = self.wait(step_wait_conds[step])
+
+            # pins = self.wait(step_wait_conds[step])
+            (dio1,dio2,dio3,dio4,dio5,dio6,dio7,dio8,eoi,dav,nrfd,ndac,ifc,srq,atn,ren,clk)= self.wait(step_wait_conds[step])
+            pins = (dio1,dio2,dio3,dio4,dio5,dio6,dio7,dio8,eoi,dav,nrfd,ndac,ifc,srq,atn,ren,clk)
             data, clk = pins[PIN_DATA], pins[PIN_CLK]
             atn, = self.invert_pins([pins[PIN_ATN]])
 
@@ -704,7 +707,10 @@ class Decoder(srd.Decoder):
             idx_ifc = len(waitcond)
             waitcond.append({PIN_IFC: 'l'})
         while True:
-            pins = self.wait(waitcond)
+            # pins = self.wait(waitcond)
+            (dio1,dio2,dio3,dio4,dio5,dio6,dio7,dio8,eoi,dav,nrfd,ndac,ifc,srq,atn,ren,clk)= self.wait(step_wait_conds[step])
+            pins = (dio1,dio2,dio3,dio4,dio5,dio6,dio7,dio8,eoi,dav,nrfd,ndac,ifc,srq,atn,ren,clk)
+
             pins = self.invert_pins(pins)
 
             # BEWARE! Order of evaluation does matter. For low samplerate

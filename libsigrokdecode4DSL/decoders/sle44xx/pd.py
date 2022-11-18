@@ -492,8 +492,11 @@ class Decoder(srd.Decoder):
 
             is_outgoing = self.state == 'OUT'
             is_processing = self.state == 'PROC'
-            pins = self.wait(conditions)
-            io = pins[Pin.IO]
+
+            # pins = self.wait(conditions)
+            # io = pins[Pin.IO]
+
+            (rst,clk,io) = self.wait(conditions)
 
             # Handle RESET conditions, including an optional CLK pulse
             # while RST is asserted.

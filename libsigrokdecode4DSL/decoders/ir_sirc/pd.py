@@ -49,11 +49,11 @@ class Decoder(srd.Decoder):
     inputs = ['logic']
     outputs = []
     channels = (
-        {'id': 'ir', 'name': 'IR', 'desc': 'IR data line', 'idn':'dec_ir_sirc_chan_ir'},
+        {'id': 'ir', 'name': 'IR', 'desc': 'IR data line'},
     )
     options = (
         {'id': 'polarity', 'desc': 'Polarity', 'default': 'active-low',
-            'values': ('active-low', 'active-high'), 'idn':'dec_ir_sirc_opt_polarity'},
+            'values': ('active-low', 'active-high')},
     )
     annotations = (
         ('bit', 'Bit'),
