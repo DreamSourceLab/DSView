@@ -66,9 +66,9 @@ private:
     static const uint64_t LevelMask[ScaleLevel];
     static const uint64_t LevelOffset[ScaleLevel];
 
-    class RootNode
+private:
+    struct RootNode
     {
-public:
         uint64_t tog;
         uint64_t value;
         void *lbp[Scale];
@@ -186,17 +186,17 @@ private:
     }
 
 private:
-    std::vector<std::vector<class RootNode*>> _ch_data;
+    std::vector<std::vector<struct RootNode>> _ch_data;
     uint64_t    _block_num;
     uint8_t     _byte_fraction;
     uint16_t    _ch_fraction;
-    void        *_dest_wrt_ptr;
+    void        *_src_ptr;
+    void        *_dest_ptr;
 
     uint64_t    _sample_cnt[LOGIC_TMP_BUF_MAX_SIZE];
     uint64_t    _block_cnt[LOGIC_TMP_BUF_MAX_SIZE];
     uint64_t    _ring_sample_cnt[LOGIC_TMP_BUF_MAX_SIZE];
     uint64_t    _last_sample[LOGIC_TMP_BUF_MAX_SIZE];
-    uint64_t    _rootnode_size;
  
 	friend class LogicSnapshotTest::Pow2;
 	friend class LogicSnapshotTest::Basic;
