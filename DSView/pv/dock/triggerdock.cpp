@@ -38,6 +38,7 @@
 #include "../deviceagent.h"
 #include "../view/logicsignal.h"
 #include "../ui/langresource.h"
+#include "../log.h"
 
 namespace pv {
 namespace dock {
@@ -188,7 +189,7 @@ void TriggerDock::simple_trigger()
 
 void TriggerDock::adv_trigger()
 {
-    if (_session->get_device()->name() == "DSLogic") {
+    if (_session->get_device()->driver_name() == "DSLogic") {
         bool stream = false;
         GVariant *gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_STREAM);
         if (gvar != NULL) {
