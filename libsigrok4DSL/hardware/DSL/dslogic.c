@@ -1367,8 +1367,10 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
             else
                 devc->overflow = (hw_info & bmSYS_OVERFLOW) != 0;
 
-            if (devc->overflow)
-                report_overflow(devc);
+            if (devc->overflow){
+                sr_err("%s", "Error! Data overflow.");
+                report_overflow(devc);                
+            }
 
             devc->empty_poll_count = 0;
         }

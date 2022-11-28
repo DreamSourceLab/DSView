@@ -310,10 +310,10 @@ static void datafeed_dump(const struct sr_datafeed_packet *packet)
 		sr_dbg("bus: Received SR_DF_FRAME_END packet.");
 		break;
     case SR_DF_OVERFLOW:
-        sr_dbg("bus: Received SR_DF_OVERFLOW packet.");
+        sr_err("bus: Received SR_DF_OVERFLOW packet.");
         break;
     default:
-		sr_dbg("bus: Received unknown packet type: %d.", packet->type);
+		sr_err("bus: Received unknown packet type: %d.", packet->type);
 		break;
 	}
 }
