@@ -96,6 +96,8 @@ static void get_file_short_name(const char *file, char *buf, int buflen)
     *wr = '\0';
 }
 
+struct session_packet_buffer;
+
 struct session_vdev
 { 
     int version;
@@ -122,6 +124,22 @@ struct session_vdev
     uint32_t ref_max;
     uint8_t max_height;
     struct sr_status mstatus;
+    struct session_packet_buffer   *packet_buffer;
+};
+
+#define SESSION_MAX_CHANNEL_COUNT 512
+
+struct session_packet_buffer
+{
+    void       *post_buf;
+    uint64_t    post_buf_len;
+    uint64_t    post_len; 
+    
+    uint64_t    block_buf_len;
+    uint64_t    block_chan_read_pos;
+    uint64_t    block_data_len;
+    void       *block_bufs[SESSION_MAX_CHANNEL_COUNT];
+    uint64_t    block_poss[SESSION_MAX_CHANNEL_COUNT];
 };
 
 static const int hwoptions[] = {
@@ -234,7 +252,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
     assert(sdi->priv);
 
     (void)fd;
-    //(void)revents;
+    (void)revents;
 
     sr_detail("Feed chunk.");
 
@@ -242,150 +260,145 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
     packet.status = SR_PKT_OK;
 
     vdev = sdi->priv;
+    
+    assert(vdev->unit_bits > 0);
+    assert(vdev->cur_channel >= 0);
+    assert(vdev->archive);
 
-    if (vdev != NULL)
+    if (vdev->cur_channel < vdev->num_probes)
     {
-        assert(vdev->unit_bits > 0);
-        assert(vdev->cur_channel >= 0);
-        assert(vdev->archive);
-
-        if (vdev->cur_channel < vdev->num_probes)
+        if (vdev->version == 1)
         {
-            if (vdev->version == 1)
+            ret = unzReadCurrentFile(vdev->archive, vdev->buf, CHUNKSIZE);
+            if (-1 == ret)
+            {
+                sr_err("%s: Read inner file error!", __func__);
+                send_error_packet(sdi, vdev, &packet);
+                return FALSE;
+            }
+        }
+        else if (vdev->version == 2)
+        {
+            channel = vdev->cur_channel;
+            pl = sdi->channels;
+
+            while (channel--){
+                pl = pl->next;
+            }
+
+            probe = (struct sr_channel *)pl->data;
+
+            if (vdev->capfile == 0)
+            {
+                char *type_name = (probe->type == SR_CHANNEL_LOGIC) ? "L" : (probe->type == SR_CHANNEL_DSO)  ? "O"
+                                                                        : (probe->type == SR_CHANNEL_ANALOG) ? "A"
+                                                                                                                : "U";
+
+                snprintf(file_name, sizeof(file_name)-1, "%s-%d/%d", type_name,
+                            sdi->mode == LOGIC ? probe->index : 0, vdev->cur_block);
+
+                if (unzLocateFile(vdev->archive, file_name, 0) != UNZ_OK)
+                {
+                    sr_err("cant't locate zip inner file:%s", file_name);
+                    send_error_packet(sdi, vdev, &packet);
+                    return FALSE;
+                }
+                if (unzOpenCurrentFile(vdev->archive) != UNZ_OK)
+                {
+                    sr_err("cant't open zip inner file:%s", file_name);
+                    send_error_packet(sdi, vdev, &packet);
+                    return FALSE;
+                }
+                vdev->capfile = 1;
+            }
+
+            if (vdev->capfile)
             {
                 ret = unzReadCurrentFile(vdev->archive, vdev->buf, CHUNKSIZE);
+
                 if (-1 == ret)
                 {
-                    sr_err("%s: Read inner file error!", __func__);
+                    sr_err("read zip inner file error:%s", file_name);
                     send_error_packet(sdi, vdev, &packet);
                     return FALSE;
                 }
             }
-            else if (vdev->version == 2)
+        }
+
+        if (ret > 0)
+        {
+            if (sdi->mode == DSO)
             {
-                channel = vdev->cur_channel;
-                pl = sdi->channels;
-
-                while (channel--)
-                    pl = pl->next;
-
-                probe = (struct sr_channel *)pl->data;
-
-                if (vdev->capfile == 0)
-                {
-                    char *type_name = (probe->type == SR_CHANNEL_LOGIC) ? "L" : (probe->type == SR_CHANNEL_DSO)  ? "O"
-                                                                            : (probe->type == SR_CHANNEL_ANALOG) ? "A"
-                                                                                                                 : "U";
-
-                    snprintf(file_name, 31, "%s-%d/%d", type_name,
-                             sdi->mode == LOGIC ? probe->index : 0, vdev->cur_block);
-
-                    if (unzLocateFile(vdev->archive, file_name, 0) != UNZ_OK)
-                    {
-                        sr_err("cant't locate zip inner file:%s", file_name);
-                        send_error_packet(sdi, vdev, &packet);
-                        return FALSE;
-                    }
-                    if (unzOpenCurrentFile(vdev->archive) != UNZ_OK)
-                    {
-                        sr_err("cant't open zip inner file:%s", file_name);
-                        send_error_packet(sdi, vdev, &packet);
-                        return FALSE;
-                    }
-                    vdev->capfile = 1;
-                }
-
-                if (vdev->capfile)
-                {
-                    ret = unzReadCurrentFile(vdev->archive, vdev->buf, CHUNKSIZE);
-
-                    if (-1 == ret)
-                    {
-                        sr_err("read zip inner file error:%s", file_name);
-                        send_error_packet(sdi, vdev, &packet);
-                        return FALSE;
-                    }
-                }
+                packet.type = SR_DF_DSO;
+                packet.payload = &dso;
+                dso.num_samples = ret / vdev->num_probes;
+                dso.data = vdev->buf;
+                dso.probes = sdi->channels;
+                dso.mq = SR_MQ_VOLTAGE;
+                dso.unit = SR_UNIT_VOLT;
+                dso.mqflags = SR_MQFLAG_AC;
             }
-
-            if (ret > 0)
+            else if (sdi->mode == ANALOG)
             {
-                if (sdi->mode == DSO)
-                {
-                    packet.type = SR_DF_DSO;
-                    packet.payload = &dso;
-                    dso.num_samples = ret / vdev->num_probes;
-                    dso.data = vdev->buf;
-                    dso.probes = sdi->channels;
-                    dso.mq = SR_MQ_VOLTAGE;
-                    dso.unit = SR_UNIT_VOLT;
-                    dso.mqflags = SR_MQFLAG_AC;
-                }
-                else if (sdi->mode == ANALOG)
-                {
-                    packet.type = SR_DF_ANALOG;
-                    packet.payload = &analog;
-                    analog.probes = sdi->channels;
-                    analog.num_samples = ret / vdev->num_probes / ((vdev->unit_bits + 7) / 8);
-                    analog.unit_bits = vdev->unit_bits;
-                    analog.mq = SR_MQ_VOLTAGE;
-                    analog.unit = SR_UNIT_VOLT;
-                    analog.mqflags = SR_MQFLAG_AC;
-                    analog.data = vdev->buf;
-                }
-                else
-                {
-                    packet.type = SR_DF_LOGIC;
-                    packet.payload = &logic;
-                    logic.length = ret;
-                    logic.format = (vdev->version == 2) ? LA_SPLIT_DATA : LA_CROSS_DATA;
-                    if (probe)
-                        logic.index = probe->index;
-                    else
-                        logic.index = 0;
-                    logic.order = vdev->cur_channel;
-
-                    if (vdev->version == 1)
-                    {
-                        logic.length = ret / 16 * vdev->enabled_probes;
-                        logic.data = vdev->logic_buf;
-                        trans_data(sdi);
-                    }
-                    else if (vdev->version == 2)
-                    {
-                        logic.length = ret;
-                        logic.data = vdev->buf;
-                    }
-                }
-
-                vdev->bytes_read += ret;
-                ds_data_forward(sdi, &packet);
+                packet.type = SR_DF_ANALOG;
+                packet.payload = &analog;
+                analog.probes = sdi->channels;
+                analog.num_samples = ret / vdev->num_probes / ((vdev->unit_bits + 7) / 8);
+                analog.unit_bits = vdev->unit_bits;
+                analog.mq = SR_MQ_VOLTAGE;
+                analog.unit = SR_UNIT_VOLT;
+                analog.mqflags = SR_MQFLAG_AC;
+                analog.data = vdev->buf;
             }
             else
             {
-                /* done with this capture file */
-                unzCloseCurrentFile(vdev->archive);
-                vdev->capfile = 0;
-
-                if (vdev->version == 1)
-                {
-                    vdev->cur_channel++;
+                if (vdev->version == 2){
+                    assert(0);
                 }
-                else if (vdev->version == 2)
+
+                packet.type = SR_DF_LOGIC;
+                packet.payload = &logic;
+                logic.length = ret;
+                logic.format = LA_CROSS_DATA;
+                if (probe)
+                    logic.index = probe->index;
+                else
+                    logic.index = 0;
+                logic.order = vdev->cur_channel;
+
+                //version == 1
+                logic.length = ret / 16 * vdev->enabled_probes;
+                logic.data = vdev->logic_buf;
+                trans_data(sdi);
+            }
+
+            vdev->bytes_read += ret;
+            ds_data_forward(sdi, &packet);
+        }
+        else
+        {
+            /* done with this capture file */
+            unzCloseCurrentFile(vdev->archive);
+            vdev->capfile = 0;
+
+            if (vdev->version == 1)
+            {
+                vdev->cur_channel++;
+            }
+            else if (vdev->version == 2)
+            {
+                vdev->cur_block++;
+                // if read to the last block, move to next channel
+                if (vdev->cur_block == vdev->num_blocks)
                 {
-                    vdev->cur_block++;
-                    // if read to the last block, move to next channel
-                    if (vdev->cur_block == vdev->num_blocks)
-                    {
-                        vdev->cur_block = 0;
-                        vdev->cur_channel++;
-                    }
+                    vdev->cur_block = 0;
+                    vdev->cur_channel++;
                 }
             }
         }
-    }
+    }    
 
-    if (!vdev || vdev->cur_channel >= vdev->num_probes || revents == -1)
+    if (vdev->cur_channel >= vdev->num_probes || revents == -1)
     {
         packet.type = SR_DF_END;
         ds_data_forward(sdi, &packet);
@@ -397,6 +410,222 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
             close_archive(vdev);
             vdev->bytes_read = 0;
         }
+    }
+
+    return TRUE;
+}
+
+static int receive_data_logic2(int fd, int revents, const struct sr_dev_inst *sdi)
+{
+    struct session_vdev *vdev = NULL;
+    struct sr_datafeed_packet packet;
+    struct sr_datafeed_logic logic;
+    struct sr_datafeed_dso dso;
+    struct sr_datafeed_analog analog;
+    GSList *l;
+    int ret;
+    char file_name[32]; 
+    GSList *pl;
+    int channel;
+    int ch_index, ch_index2;
+    struct session_packet_buffer *pack_buffer;
+    unz_file_info64 fileInfo;
+    char szFilePath[15];
+    int bToEnd;
+    int chIndex; 
+    int chan_num;
+    void *p_wr;
+    void *p_rd;
+
+    assert(sdi);
+    assert(sdi->priv);
+
+    (void)fd;
+    (void)revents;
+
+    sr_detail("Feed chunk.");
+
+    ret = 0;
+    bToEnd = 0;
+    packet.status = SR_PKT_OK;
+
+    vdev = sdi->priv;
+    
+    assert(vdev->unit_bits > 0); 
+    assert(vdev->archive);
+
+    chan_num = vdev->num_probes;
+
+    if (chan_num < 1){
+        sr_err("%s: channel count < 1.", __func__);
+        return SR_ERR_ARG;
+    }  
+
+    if (vdev->packet_buffer == NULL){
+        vdev->cur_block = 0;
+
+        vdev->packet_buffer = g_try_malloc0(sizeof(struct session_packet_buffer));
+        if (vdev->packet_buffer == NULL){
+            sr_err("%s: vdev->packet_buffer malloc failed", __func__);
+            return SR_ERR_MALLOC;
+        }
+
+        for (ch_index = 0; ch_index < SESSION_MAX_CHANNEL_COUNT; ch_index++){
+            vdev->packet_buffer->block_bufs[ch_index] = NULL;
+            vdev->packet_buffer->block_poss[ch_index] = 0;
+        }
+
+        vdev->packet_buffer->post_buf_len = 8 * chan_num * 1000;
+        vdev->packet_buffer->post_buf = g_try_malloc0(vdev->packet_buffer->post_buf_len + 1);
+        if (vdev->packet_buffer->post_buf == NULL){
+            sr_err("%s: vdev->packet_buffer->post_buf malloc failed", __func__);
+            return SR_ERR_MALLOC;
+        }
+
+        pack_buffer = vdev->packet_buffer;
+        pack_buffer->post_len;
+        pack_buffer->block_buf_len = 0;
+        pack_buffer->block_data_len = 0;
+        pack_buffer->block_chan_read_pos = 0; 
+    }
+    pack_buffer = vdev->packet_buffer;
+
+    // Make packet. 
+    chIndex = 0; 
+
+    while (pack_buffer->post_len < pack_buffer->post_buf_len)
+    {
+        if (pack_buffer->block_chan_read_pos >= pack_buffer->block_data_len)
+        { 
+            if (vdev->cur_block >= vdev->num_blocks){
+                bToEnd = 1;
+                break;
+            }
+
+            for (ch_index = 0; ch_index < chan_num; ch_index++)
+            {
+                snprintf(file_name, sizeof(file_name)-1, "%s-%d/%d", "L",
+                        ch_index, vdev->cur_block);
+
+                if (unzLocateFile(vdev->archive, file_name, 0) != UNZ_OK)
+                {
+                    sr_err("cant't locate zip inner file:%s", file_name);
+                    send_error_packet(sdi, vdev, &packet);
+                    return FALSE;
+                }
+
+                if (unzGetCurrentFileInfo64(vdev->archive, &fileInfo, szFilePath,
+                                    sizeof(szFilePath), NULL, 0, NULL, 0) != UNZ_OK)
+                { 
+                    sr_err("%s: unzGetCurrentFileInfo64 error.", __func__);
+                    send_error_packet(sdi, vdev, &packet);
+                    return FALSE;
+                }
+
+                if (ch_index == 0){  
+                    pack_buffer->block_data_len = fileInfo.uncompressed_size;
+                    
+                    if (pack_buffer->block_data_len > pack_buffer->block_buf_len){
+                        for (ch_index2 = 0; ch_index2 < chan_num; ch_index2++)
+                        {   
+                            // Release the old buffer.
+                            if (pack_buffer->block_bufs[ch_index2] != NULL){
+                                g_free(pack_buffer->block_bufs[ch_index2]);
+                                pack_buffer->block_bufs[ch_index2] = NULL;
+                            }
+
+                            pack_buffer->block_bufs[ch_index2] = g_try_malloc0(pack_buffer->block_data_len + 1);
+                            if (pack_buffer->block_bufs[ch_index2] == NULL){
+                                sr_err("%s: block buffer malloc failed", __func__);
+                                send_error_packet(sdi, vdev, &packet);
+                                return FALSE;
+                            }
+                            pack_buffer->block_buf_len = pack_buffer->block_data_len;                            
+                        }
+                    }
+                }
+                else
+                {
+                    if (pack_buffer->block_data_len != fileInfo.uncompressed_size){
+                        sr_err("The block size is not coincident:%s", file_name);
+                        send_error_packet(sdi, vdev, &packet);
+                        return FALSE;
+                    }
+                }
+
+                // Read the data to buffer. 
+                if (unzOpenCurrentFile(vdev->archive) != UNZ_OK)
+                {
+                    sr_err("cant't open zip inner file:%s", file_name);
+                    send_error_packet(sdi, vdev, &packet);
+                    return FALSE;
+                }
+
+                ret = unzReadCurrentFile(vdev->archive, pack_buffer->block_bufs[ch_index], pack_buffer->block_data_len);
+                if (-1 == ret)
+                {
+                    sr_err("read zip inner file error:%s", file_name);
+                    send_error_packet(sdi, vdev, &packet);
+                    return FALSE;
+                }
+                unzCloseCurrentFile(vdev->archive);
+                pack_buffer->block_poss[ch_index] = 0; // Reset the read position.
+            }
+
+            vdev->cur_block++;
+            pack_buffer->block_chan_read_pos = 0;  
+        }
+
+        p_wr = (pack_buffer->post_buf + pack_buffer->post_len);
+        p_rd = (pack_buffer->block_bufs[chIndex] + pack_buffer->block_poss[chIndex]);
+       *(uint8_t*)p_wr = *(uint8_t*)p_rd;
+ 
+       pack_buffer->post_len++;
+       pack_buffer->block_poss[chIndex]++;
+
+       if (pack_buffer->block_poss[chIndex] % 8 == 0 
+            || pack_buffer->block_poss[chIndex] == pack_buffer->block_data_len)
+        {
+            chIndex++;
+
+            if (pack_buffer->block_poss[chIndex] == pack_buffer->block_data_len){
+                sr_info("Block read end.");
+                if (vdev->cur_block < vdev->num_blocks){
+                    sr_err("%s", "The block data is not align.");
+                    break;
+                }
+            }
+
+            if (chIndex == chan_num){
+                chIndex = 0;
+                pack_buffer->block_chan_read_pos += 8;
+            }
+       }
+    }
+ 
+    if (pack_buffer->post_len >= 8 * chan_num)
+    {  
+        packet.type = SR_DF_LOGIC;
+        packet.payload = &logic;
+        logic.format = LA_CROSS_DATA;
+        logic.index = 0;
+        logic.order = 0;
+
+        logic.length = pack_buffer->post_len;
+        logic.data = pack_buffer->post_buf;
+
+        vdev->bytes_read += ret;
+        ds_data_forward(sdi, &packet);
+        pack_buffer->post_len = 0;        
+    }  
+
+    if (bToEnd || revents == -1)
+    {
+        packet.type = SR_DF_END;
+        ds_data_forward(sdi, &packet);
+        sr_session_source_remove(-1);
+        close_archive(vdev);
+        vdev->bytes_read = 0;
     }
 
     return TRUE;
@@ -453,13 +682,7 @@ static int dev_open(struct sr_dev_inst *sdi)
     }
     vdev = sdi->priv;
 
-    vdev->buf = g_try_malloc(CHUNKSIZE + sizeof(uint64_t));
-    if (vdev->buf == NULL)
-    {
-        sr_err("%s: vdev->buf malloc failed", __func__);
-        return SR_ERR_MALLOC;
-    }
-
+    vdev->buf = NULL;
     vdev->trig_pos = 0;
     vdev->trig_time = 0;
     vdev->cur_block = 0;
@@ -474,8 +697,15 @@ static int dev_open(struct sr_dev_inst *sdi)
     vdev->mstatus.measure_valid = TRUE;
     vdev->archive = NULL;
     vdev->capfile = 0;
-    
+    vdev->packet_buffer = NULL;
+    vdev->logic_buf = NULL;
     sdi->status = SR_ST_ACTIVE;
+
+    vdev->buf = g_try_malloc(CHUNKSIZE + sizeof(uint64_t));
+    if (vdev->buf == NULL){
+        sr_err("%s: vdev->buf malloc failed", __func__);
+        return SR_ERR_MALLOC;
+    }
 
     ret = sr_load_virtual_device_session(sdi);
     if (ret != SR_OK)
@@ -490,10 +720,27 @@ static int dev_open(struct sr_dev_inst *sdi)
 static int dev_close(struct sr_dev_inst *sdi)
 {
     struct session_vdev *vdev;
+    int i;
+    struct session_packet_buffer *pack_buf;
 
     if (sdi && sdi->priv)
     {
         vdev = sdi->priv;
+ 
+        if (vdev->packet_buffer != NULL){
+            pack_buf = vdev->packet_buffer;
+
+            g_safe_free(pack_buf->post_buf);
+
+            for (i = 0; i < SESSION_MAX_CHANNEL_COUNT; i++){
+                if (pack_buf->block_bufs[i] != NULL){
+                    g_free(pack_buf->block_bufs[i]);
+                    pack_buf->block_bufs[i] = NULL;
+                }
+            }
+        }
+
+        g_safe_free(vdev->packet_buffer);
         g_safe_free(vdev->buf);
         g_safe_free(vdev->logic_buf);
         g_safe_free(sdi->priv);
@@ -1126,7 +1373,12 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
     }
 
     /* freewheeling source */
-    sr_session_source_add(-1, 0, 0, receive_data, sdi);
+    if (sdi->mode == LOGIC && vdev->version == 2){
+        sr_session_source_add(-1, 0, 0, receive_data_logic2, sdi);
+    }
+    else{
+        sr_session_source_add(-1, 0, 0, receive_data, sdi);
+    }    
 
     return SR_OK;
 }
