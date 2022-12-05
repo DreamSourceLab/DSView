@@ -31,8 +31,7 @@
 #include <vector>
 #include <map>
 
-#define CHANNEL_MAX_COUNT 128
-#define LOGIC_TMP_BUF_MAX_SIZE  512
+#define CHANNEL_MAX_COUNT 512 
 
 namespace LogicSnapshotTest {
 class Pow2;
@@ -126,7 +125,6 @@ private:
     void calc_mipmap(unsigned int order, uint8_t index0, uint8_t index1, uint64_t samples);
 
     void append_cross_payload(const sr_datafeed_logic &logic);
-    void append_split_payload(const sr_datafeed_logic &logic);
 
     bool block_nxt_edge(uint64_t *lbp, uint64_t &index, uint64_t block_end, bool last_sample,
                         unsigned int min_level);
@@ -190,13 +188,12 @@ private:
     uint64_t    _block_num;
     uint8_t     _byte_fraction;
     uint16_t    _ch_fraction;
-    void        *_src_ptr;
     void        *_dest_ptr;
 
-    uint64_t    _sample_cnt[LOGIC_TMP_BUF_MAX_SIZE];
-    uint64_t    _block_cnt[LOGIC_TMP_BUF_MAX_SIZE];
-    uint64_t    _ring_sample_cnt[LOGIC_TMP_BUF_MAX_SIZE];
-    uint64_t    _last_sample[LOGIC_TMP_BUF_MAX_SIZE];
+    uint64_t    _sample_cnt[CHANNEL_MAX_COUNT];
+    uint64_t    _block_cnt[CHANNEL_MAX_COUNT];
+    uint64_t    _ring_sample_cnt[CHANNEL_MAX_COUNT];
+    uint64_t    _last_sample[CHANNEL_MAX_COUNT];
  
 	friend class LogicSnapshotTest::Pow2;
 	friend class LogicSnapshotTest::Basic;

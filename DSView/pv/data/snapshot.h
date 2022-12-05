@@ -99,7 +99,6 @@ protected:
     uint64_t _capacity;
     unsigned int _channel_num;
 	uint64_t _sample_count;
-    uint64_t _real_sample_count;
     uint64_t _total_sample_count;
     uint64_t _ring_sample_count;
 	int _unit_size;

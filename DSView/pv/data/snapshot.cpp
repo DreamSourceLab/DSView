@@ -44,7 +44,6 @@ Snapshot::Snapshot(int unit_size, uint64_t total_sample_count, unsigned int chan
     _unit_bytes = 1;
     _unit_pitch = 0;
     _have_data = false;
-    _real_sample_count = 0;
 }
 
 Snapshot::~Snapshot()
@@ -59,7 +58,6 @@ void Snapshot::free_data()
         _data = NULL;
         _capacity = 0;
         _sample_count = 0;
-        _real_sample_count = 0;
     }
     _ch_index.clear();
 }
@@ -75,13 +73,7 @@ bool Snapshot::empty()
 uint64_t Snapshot::get_sample_count()
 {
     std::lock_guard<std::mutex> lock(_mutex);
-    //return _sample_count;
-   // /*
-    if  (_real_sample_count > 0)
-        return _real_sample_count;
-    else
-        return _sample_count;
-   // */
+    return _sample_count;
 }
  
 uint64_t Snapshot::get_ring_start()
