@@ -97,6 +97,7 @@
 #include <stdlib.h>
 #include "ZipMaker.h"
 #include "ui/langresource.h"
+#include "mainframe.h""
 
 #define BASE_SESSION_VERSION 3
 
@@ -520,6 +521,12 @@ namespace pv
         int h = parentWidget()->frameGeometry().height();
         QDesktopWidget *desktop = QApplication::desktop();
         QPixmap pixmap = QGuiApplication::primaryScreen()->grabWindow(desktop->winId(), x, y, w, h);
+#elif __APPLE__
+        int x = parentWidget()->pos().x() + MainFrame::Margin;
+        int y = parentWidget()->pos().y() + MainFrame::Margin;
+        int w = parentWidget()->geometry().width() - MainFrame::Margin * 2;
+        int h = parentWidget()->geometry().height() - MainFrame::Margin * 2;
+        QPixmap pixmap = QGuiApplication::primaryScreen()->grabWindow(winId(), x, y, w, h);
 #else
         QPixmap pixmap = QGuiApplication::primaryScreen()->grabWindow(winId());
 #endif
