@@ -126,7 +126,7 @@ void Calibration::retranslateUi()
 
 void Calibration::update_device_info()
 { 
-    if (_device_agent->have_instance()){
+    if (_device_agent->have_instance() == false){
         assert(false);
     }
 
