@@ -188,11 +188,8 @@ private:
     uint64_t    _block_num;
     uint8_t     _byte_fraction;
     uint16_t    _ch_fraction;
-    void        *_dest_ptr;
+    uint8_t    *_dest_ptr;
 
-    uint64_t    _sample_cnt[CHANNEL_MAX_COUNT];
-    uint64_t    _block_cnt[CHANNEL_MAX_COUNT];
-    uint64_t    _ring_sample_cnt[CHANNEL_MAX_COUNT];
     uint64_t    _last_sample[CHANNEL_MAX_COUNT];
  
 	friend class LogicSnapshotTest::Pow2;

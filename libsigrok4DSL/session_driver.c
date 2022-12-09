@@ -139,7 +139,7 @@ struct session_packet_buffer
     uint64_t    block_chan_read_pos;
     uint64_t    block_data_len;
     void       *block_bufs[SESSION_MAX_CHANNEL_COUNT];
-    uint64_t    block_poss[SESSION_MAX_CHANNEL_COUNT];
+    uint64_t    block_read_positions[SESSION_MAX_CHANNEL_COUNT];
 };
 
 static const int hwoptions[] = {
@@ -472,7 +472,7 @@ static int receive_data_logic2(int fd, int revents, const struct sr_dev_inst *sd
 
         for (ch_index = 0; ch_index < SESSION_MAX_CHANNEL_COUNT; ch_index++){
             vdev->packet_buffer->block_bufs[ch_index] = NULL;
-            vdev->packet_buffer->block_poss[ch_index] = 0;
+            vdev->packet_buffer->block_read_positions[ch_index] = 0;
         }
 
         vdev->packet_buffer->post_buf_len = 8 * chan_num * 1000;
@@ -494,7 +494,7 @@ static int receive_data_logic2(int fd, int revents, const struct sr_dev_inst *sd
     chIndex = 0; 
 
     while (pack_buffer->post_len < pack_buffer->post_buf_len)
-    {
+    { 
         if (pack_buffer->block_chan_read_pos >= pack_buffer->block_data_len)
         { 
             if (vdev->cur_block >= vdev->num_blocks){
@@ -569,7 +569,7 @@ static int receive_data_logic2(int fd, int revents, const struct sr_dev_inst *sd
                     return FALSE;
                 }
                 unzCloseCurrentFile(vdev->archive);
-                pack_buffer->block_poss[ch_index] = 0; // Reset the read position.
+                pack_buffer->block_read_positions[ch_index] = 0; // Reset the read position.
             }
 
             vdev->cur_block++;
@@ -577,18 +577,18 @@ static int receive_data_logic2(int fd, int revents, const struct sr_dev_inst *sd
         }
 
         p_wr = (pack_buffer->post_buf + pack_buffer->post_len);
-        p_rd = (pack_buffer->block_bufs[chIndex] + pack_buffer->block_poss[chIndex]);
+        p_rd = (pack_buffer->block_bufs[chIndex] + pack_buffer->block_read_positions[chIndex]);
        *(uint8_t*)p_wr = *(uint8_t*)p_rd;
  
        pack_buffer->post_len++;
-       pack_buffer->block_poss[chIndex]++;
+       pack_buffer->block_read_positions[chIndex]++;
 
-       if (pack_buffer->block_poss[chIndex] % 8 == 0 
-            || pack_buffer->block_poss[chIndex] == pack_buffer->block_data_len)
+       if (pack_buffer->block_read_positions[chIndex] % 8 == 0 
+            || pack_buffer->block_read_positions[chIndex] == pack_buffer->block_data_len)
         {
             chIndex++;
 
-            if (pack_buffer->block_poss[chIndex] == pack_buffer->block_data_len){
+            if (pack_buffer->block_read_positions[chIndex] == pack_buffer->block_data_len){
                 sr_info("Block read end.");
                 if (vdev->cur_block < vdev->num_blocks){
                     sr_err("%s", "The block data is not align.");

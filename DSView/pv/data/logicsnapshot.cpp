@@ -105,56 +105,6 @@ void LogicSnapshot::clear()
     _have_data = false;
 }
 
-void LogicSnapshot::capture_ended()
-{
-    Snapshot::capture_ended(); 
-
-    uint64_t block_index = _ring_sample_count / LeafBlockSamples;
-    uint64_t block_offset = (_ring_sample_count % LeafBlockSamples) / Scale;
-    if (block_offset != 0) {
-        uint64_t index0 = block_index / RootScale;
-        uint64_t index1 = block_index % RootScale;
-        int order = 0;
-
-        for(auto& iter : _ch_data) {
-            if (iter[index0].lbp[index1] == NULL){
-                iter[index0].lbp[index1] = malloc(LeafBlockSpace);
-                if (iter[index0].lbp[index1] == NULL)
-                {
-                    _memory_failed = true;
-                    return;
-                }
-                memset(iter[index0].lbp[index1], 0, LeafBlockSpace);
-            }
-
-            const uint64_t *end_ptr = (uint64_t *)iter[index0].lbp[index1] + (LeafBlockSamples / Scale);
-            uint64_t *ptr = (uint64_t *)iter[index0].lbp[index1] + block_offset;
-
-            while (ptr < end_ptr)
-                *ptr++ = 0;
-
-            // calc mipmap of current block
-            calc_mipmap(order, index0, index1, block_offset * Scale);
-
-            // calc root of current block
-            if (*((uint64_t *)iter[index0].lbp[index1]) != 0)
-                iter[index0].value += 1ULL << index1;
-
-            if (*((uint64_t *)iter[index0].lbp[index1] + LeafBlockSpace / sizeof(uint64_t) - 1) != 0) {
-                iter[index0].tog += 1ULL << index1;
-            }
-            else {
-               // trim leaf to free space
-               free(iter[index0].lbp[index1]);
-               iter[index0].lbp[index1] = NULL;
-            }
-
-            order++;
-        }
-    }
-    _sample_count = _ring_sample_count;
-}
-
 void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total_sample_count, GSList *channels)
 {
     bool channel_changed = false;
@@ -162,7 +112,6 @@ void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total
 
     for (const GSList *l = channels; l; l = l->next) {
         sr_channel *const probe = (sr_channel*)l->data;
-        assert(probe);
         if (probe->type == SR_CHANNEL_LOGIC && probe->enabled) {
             channel_num++;
             if (!channel_changed){
@@ -184,6 +133,7 @@ void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total
 
         for (const GSList *l = channels; l; l = l->next) {
             sr_channel *const probe = (sr_channel*)l->data;
+
             if (probe->type == SR_CHANNEL_LOGIC && probe->enabled) {
                 std::vector<struct RootNode> root_vector;
                 for (uint64_t j = 0; j < rootnode_size; j++) {
@@ -213,9 +163,6 @@ void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total
 
     for (unsigned int i = 0; i < _channel_num; i++) {
         _last_sample[i] = 0;
-        _sample_cnt[i] = 0;
-        _block_cnt[i] = 0;
-        _ring_sample_cnt[i] = 0;
     }
 
     append_payload(logic);
@@ -235,12 +182,17 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
 {
     assert(logic.format == LA_CROSS_DATA);
     assert(logic.length >= ScaleSize * _channel_num);
+    assert(logic.data);
 
     if (_sample_count >= _total_sample_count)
         return;
 
-    void *data_src_ptr = logic.data;
+    uint8_t *data_src_ptr = (uint8_t*)logic.data;
     uint64_t len = logic.length;
+    uint64_t index0 = 0;
+    uint64_t index1 = 0;
+    uint64_t offset = 0;
+
     // samples not accurate, lead to a larger _sampole_count
     // _sample_count should be fixed in the last packet
     // so _total_sample_count must be align to LeafBlock
@@ -252,6 +204,7 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
         _sample_count = _total_sample_count;
     }
 
+    // malloc block buffer
     while (_sample_count > _block_num * LeafBlockSamples) {
         uint8_t index0 = _block_num / RootScale;
         uint8_t index1 = _block_num % RootScale;
@@ -266,152 +219,221 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
                 }                
             }
            
-            uint64_t *mipmap_ptr = (uint64_t *)iter[index0].lbp[index1] + (LeafBlockSamples / Scale);
+            uint8_t *mipmap_ptr = (uint8_t*)iter[index0].lbp[index1] + (LeafBlockSamples / 8);
             memset(mipmap_ptr, 0, LeafBlockSpace - (LeafBlockSamples / 8));
         }
         _block_num++;
     }
 
     // bit align
-    while (((_ch_fraction != 0) || (_byte_fraction != 0)) && (len != 0)) {
-        uint8_t *dp_tmp = (uint8_t *)_dest_ptr;
-        uint8_t *sp_tmp = (uint8_t *)data_src_ptr;
-
-        if (_dest_ptr == NULL){
+    while ((_ch_fraction != 0 || _byte_fraction != 0) && len > 0) 
+    {
+        if (_dest_ptr == NULL)
             assert(false);
-        }
 
-        do {
-            *dp_tmp++ = *sp_tmp++;
-            _byte_fraction = (_byte_fraction + 1) % ScaleSize;
+        do{
+            *_dest_ptr++ = *data_src_ptr++;
+            _byte_fraction = (_byte_fraction + 1) % 8;
             len--;
         }
-        while ((_byte_fraction != 0) && (len != 0));
-
-        _dest_ptr = dp_tmp;
-        data_src_ptr = sp_tmp;
+        while (_byte_fraction != 0 && len > 0);
 
         if (_byte_fraction == 0) {
-            const uint64_t index0 = _ring_sample_count / RootNodeSamples;
-            const uint64_t index1 = (_ring_sample_count >> LeafBlockPower) % RootScale;
-            const uint64_t offset = (_ring_sample_count % LeafBlockSamples) / Scale;
+            index0 = _ring_sample_count / LeafBlockSamples / RootScale;
+            index1 = (_ring_sample_count / LeafBlockSamples) % RootScale;
+            offset = (_ring_sample_count % LeafBlockSamples) / 8;
 
             _ch_fraction = (_ch_fraction + 1) % _channel_num;
-            if (_ch_fraction == 0)
+            _dest_ptr = (uint8_t*)_ch_data[_ch_fraction][index0].lbp[index1] + offset;
+
+            // To the last channel.
+            if (_ch_fraction == 0){
                 _ring_sample_count += Scale;
-            _dest_ptr = (uint8_t *)_ch_data[_ch_fraction][index0].lbp[index1] + (offset * ScaleSize);
+
+                if (_ring_sample_count % LeafBlockSamples == 0)
+                    calc_mipmap(_channel_num - 1, index0, index1, LeafBlockSamples);
+                                
+                break;
+            }                
         }
     }
 
-    // align data append
-    {
-        assert(_ch_fraction == 0);
-        assert(_byte_fraction == 0);
-        assert(_ring_sample_count % Scale == 0);
-        
-        uint64_t pre_index0 = _ring_sample_count / RootNodeSamples;
-        uint64_t pre_index1 = (_ring_sample_count >> LeafBlockPower) % RootScale;
-        uint64_t pre_offset = (_ring_sample_count % LeafBlockSamples) / Scale;
-        uint64_t *src_ptr = NULL;
-        uint64_t *dest_ptr;
-        int order = 0;
-        const uint64_t align_size = len / _channel_num / ScaleSize;
-        _ring_sample_count += align_size * Scale;
+    // append data 
+    assert(_ch_fraction == 0);
+    assert(_byte_fraction == 0);
+    assert(_ring_sample_count % Scale == 0);
+
+    uint64_t align_sample_count = _ring_sample_count;
+    index0 =  align_sample_count / LeafBlockSamples / RootScale;
+    index1 = (align_sample_count / LeafBlockSamples) % RootScale;
+    offset = (align_sample_count % LeafBlockSamples) / 8;
+    uint64_t align_space = align_sample_count % LeafBlockSamples;
+    uint64_t old_align_space = align_space;
+
+    uint64_t *read_ptr = (uint64_t*)data_src_ptr;
+    uint64_t *write_ptr = (uint64_t*)((uint8_t*)_ch_data[_ch_fraction][index0].lbp[index1] + offset);
+    void *end_read_ptr = (uint8_t*)data_src_ptr + len;
+    uint64_t real_len = len;
  
-        for(auto& iter : _ch_data) 
-        {
-            uint64_t index0 = pre_index0;
-            uint64_t index1 = pre_index1;
-            src_ptr = (uint64_t *)data_src_ptr + order;
-            _dest_ptr = iter[index0].lbp[index1];
-            dest_ptr = (uint64_t *)_dest_ptr + pre_offset;
+    uint64_t* chans_read_addr[CHANNEL_MAX_COUNT];
 
-            while (src_ptr < (uint64_t *)data_src_ptr + (align_size * _channel_num)) {
-                const uint64_t tmp_u64 = *src_ptr;
-                *dest_ptr++ = tmp_u64;
-                src_ptr += _channel_num;
-                //mipmap
-                if (dest_ptr == (uint64_t *)_dest_ptr + (LeafBlockSamples / Scale)) {
-                    // calc mipmap of current block
-                    calc_mipmap(order, index0, index1, LeafBlockSamples);
+    for (unsigned int i=0; i<_channel_num; i++){
+        chans_read_addr[i] = (uint64_t*)data_src_ptr + i;
+    }   
+ 
+    while (len >= 8)
+    {
+        *write_ptr++ = *read_ptr;
+        read_ptr += _channel_num;
+        len -= 8;
+        align_space += Scale; 
 
-                    // calc root of current block
-                    if (*((uint64_t *)iter[index0].lbp[index1]) != 0)
-                        iter[index0].value +=  1ULL<< index1;
-                    if (*((uint64_t *)iter[index0].lbp[index1] + LeafBlockSpace / sizeof(uint64_t) - 1) != 0) {
-                        iter[index0].tog += 1ULL << index1;
-                    } else {
-                        // trim leaf to free space
-                        free(iter[index0].lbp[index1]);
-                        iter[index0].lbp[index1] = NULL;                       
-                    }
+        if (align_space == LeafBlockSamples)
+        { 
+            calc_mipmap(_ch_fraction, index0, index1, LeafBlockSamples);
 
-                    index1++;
-                    if (index1 == RootScale) {
-                        index0++;
-                        index1 = 0;
-                    }
-                    _dest_ptr = iter[index0].lbp[index1];
-                    dest_ptr = (uint64_t *)_dest_ptr;
-                }
-            }
-            order++;
+            chans_read_addr[_ch_fraction] = read_ptr;
+            _ch_fraction = (_ch_fraction + 1) % _channel_num;
+
+            if (_ch_fraction == 0)
+                align_sample_count += (align_space - old_align_space);
+
+            index0 =  align_sample_count / LeafBlockSamples / RootScale;
+            index1 = (align_sample_count / LeafBlockSamples) % RootScale;
+            offset = (align_sample_count % LeafBlockSamples) / 8;
+            align_space = align_sample_count % LeafBlockSamples;
+            old_align_space = align_space;
+
+            write_ptr = (uint64_t*)((uint8_t*)_ch_data[_ch_fraction][index0].lbp[index1] + offset);
+            read_ptr = chans_read_addr[_ch_fraction];             
+        } 
+        else if (read_ptr >= end_read_ptr)
+        { 
+            _ch_fraction = (_ch_fraction + 1) % _channel_num;
+
+             if (_ch_fraction == 0)
+                align_sample_count += (align_space - old_align_space);
+
+            index0 =  align_sample_count / LeafBlockSamples / RootScale;
+            index1 = (align_sample_count / LeafBlockSamples) % RootScale;
+            offset = (align_sample_count % LeafBlockSamples) / 8;
+            align_space = align_sample_count % LeafBlockSamples;
+            old_align_space = align_space;
+
+            write_ptr = (uint64_t*)((uint8_t*)_ch_data[_ch_fraction][index0].lbp[index1] + offset);            
+            read_ptr = chans_read_addr[_ch_fraction];
         }
-        
-        len -= align_size * _channel_num * ScaleSize;
-        data_src_ptr = src_ptr - _channel_num + 1;
     }
 
-    // fraction data append
-    {
-        uint64_t index0 = _ring_sample_count / RootNodeSamples;
-        uint64_t index1 = (_ring_sample_count >> LeafBlockPower) % RootScale;
-        uint64_t offset = (_ring_sample_count % LeafBlockSamples) / 8;
-        _dest_ptr = (uint8_t *)_ch_data[_ch_fraction][index0].lbp[index1] + offset;
+    _ring_sample_count += (real_len / _channel_num / 8) * Scale;
 
-        uint8_t *dp_tmp = (uint8_t *)_dest_ptr;
-        uint8_t *sp_tmp = (uint8_t *)data_src_ptr;
-        while(len-- != 0) {
-            *dp_tmp++ = *sp_tmp++;
-            if (++_byte_fraction == ScaleSize) {
-                _ch_fraction = (_ch_fraction + 1) % _channel_num;
-                _byte_fraction = 0;
-                dp_tmp = (uint8_t *)_ch_data[_ch_fraction][index0].lbp[index1] + offset;
-            }
+    _dest_ptr = (uint8_t*)write_ptr;
+
+    if (len > 0)
+    {
+        uint8_t *src_ptr = (uint8_t*)end_read_ptr - len;
+        _byte_fraction += len;
+
+        while (len > 0){
+            *_dest_ptr++ = *src_ptr++;
+            len--;   
         }
-        _dest_ptr = dp_tmp + _byte_fraction;
     }
 }
 
 void LogicSnapshot::calc_mipmap(unsigned int order, uint8_t index0, uint8_t index1, uint64_t samples)
-{
-    uint8_t offset;
-    uint64_t *src_ptr;
-    uint64_t *dest_ptr;
-    unsigned int i;
+{ 
+    const uint64_t mask =  1ULL << (Scale - 1);
+    void *lbp = _ch_data[order][index0].lbp[index1];
+    void *level1_ptr = (uint8_t*)lbp + LeafBlockSamples / 8;
+    void *level2_ptr = (uint8_t*)level1_ptr + LeafBlockSamples / Scale / 8;
+    void *level3_ptr = (uint8_t*)level2_ptr + LeafBlockSamples / Scale / Scale / 8;
 
     // level 1
-    src_ptr = (uint64_t *)_ch_data[order][index0].lbp[index1];
-    dest_ptr = src_ptr + (LeafBlockSamples / Scale) - 1;
-    const uint64_t mask =  1ULL << (Scale - 1);
-    for(i = 0; i < samples / Scale; i++) {
-        offset = i % Scale;
-        if (offset == 0)
-            dest_ptr++;
-        *dest_ptr += ((_last_sample[order] ^ *src_ptr) != 0 ? 1ULL : 0ULL) << offset;
+    uint64_t *src_ptr  = (uint64_t*)lbp;
+    uint64_t *dest_ptr = (uint64_t*)level1_ptr;
+    uint8_t offset = 0;
+
+    for(unsigned int i = 0; i < samples / Scale; i++) 
+    {
+        if (_last_sample[order] ^ *src_ptr)
+            *dest_ptr += (1ULL << offset);
+
         _last_sample[order] = *src_ptr & mask ? ~0ULL : 0ULL;
         src_ptr++;
+        offset++;
+
+        if (offset == Scale){
+            offset = 0;
+            dest_ptr++; 
+        }
     }
 
-    // level 2/3
-    src_ptr = (uint64_t *)_ch_data[order][index0].lbp[index1] + (LeafBlockSamples / Scale);
-    dest_ptr = src_ptr + (LeafBlockSamples / Scale / Scale) - 1;
-    for(i = LeafBlockSamples / Scale; i < LeafBlockSpace / sizeof(uint64_t) - 1; i++) {
-        offset = i % Scale;
-        if (offset == 0)
-            dest_ptr++;
-        *dest_ptr += (*src_ptr != 0 ? 1ULL : 0ULL) << offset;
+    // level 2
+    src_ptr  = (uint64_t*)level1_ptr;
+    dest_ptr = (uint64_t*)level2_ptr;  
+    offset = 0;
+
+    for(unsigned int i = 0; i < LeafBlockSamples / Scale / Scale; i++) 
+    {
+        if (*src_ptr)
+            *dest_ptr += (1ULL << offset);
+
         src_ptr++;
+        offset++;
+
+        if (offset == Scale){
+            offset = 0;
+            dest_ptr++; 
+        }
+    }
+
+    // level 3
+    src_ptr = (uint64_t*)level2_ptr;
+    dest_ptr = (uint64_t*)level3_ptr; 
+
+    for (unsigned int i=0; i < Scale; i++)
+    {
+        if (*src_ptr)
+            *dest_ptr += (1ULL << i);
+        src_ptr++;
+    }  
+
+    if (*((uint64_t*)lbp) != 0)
+        _ch_data[order][index0].value += 1ULL<< index1;
+            
+    if (*((uint64_t*)level3_ptr) != 0){
+        _ch_data[order][index0].tog += 1ULL << index1;
+    }
+    else{
+        free(_ch_data[order][index0].lbp[index1]);
+        _ch_data[order][index0].lbp[index1] = NULL;
+    }
+} 
+
+void LogicSnapshot::capture_ended()
+{
+    Snapshot::capture_ended();  
+
+    uint64_t index0 = _ring_sample_count / LeafBlockSamples / RootScale;
+    uint64_t index1 = (_ring_sample_count / LeafBlockSamples) % RootScale;
+    uint64_t offset = (_ring_sample_count % LeafBlockSamples) / 8;
+
+    _sample_count = _ring_sample_count;
+
+    if (offset == 0)
+        return;
+   
+    for (int i=0; i<_channel_num; i++)
+    { 
+        const uint64_t *end_ptr = (uint64_t*)_ch_data[i][index0].lbp[index1] + (LeafBlockSamples / Scale);
+        uint64_t *ptr = (uint64_t*)((uint8_t*)_ch_data[i][index0].lbp[index1] + offset);
+
+        while (ptr < end_ptr){
+            *ptr++ = 0;
+        }
+
+        calc_mipmap(i, index0, index1, offset * 8);
     }
 }
 
@@ -423,20 +445,20 @@ const uint8_t *LogicSnapshot::get_samples(uint64_t start_sample, uint64_t &end_s
     assert(start_sample <= end_sample);
 
     int order = get_ch_order(sig_index);
-    uint64_t root_index = start_sample >> (LeafBlockPower + RootScalePower);
-    uint8_t root_pos = (start_sample & RootMask) >> LeafBlockPower;
+    uint64_t index0 = start_sample >> (LeafBlockPower + RootScalePower);
+    uint64_t index1 = (start_sample & RootMask) >> LeafBlockPower;
+    uint64_t offset = (start_sample & LeafMask) / 8;
 
-    uint64_t block_offset = (start_sample & LeafMask) / 8;
-    end_sample = (root_index << (LeafBlockPower + RootScalePower)) +
-                 (root_pos << LeafBlockPower) +
+    end_sample = (index0 << (LeafBlockPower + RootScalePower)) +
+                 (index1 << LeafBlockPower) +
                  ~(~0ULL << LeafBlockPower);
-    end_sample = min(end_sample + 1, get_sample_count());
 
-    if (order == -1 ||
-        _ch_data[order][root_index].lbp[root_pos] == NULL)
+    end_sample = min(end_sample + 1, sample_count);
+
+    if (order == -1 || _ch_data[order][index0].lbp[index1] == NULL)
         return NULL;
     else
-        return (uint8_t *)_ch_data[order][root_index].lbp[root_pos] + block_offset;
+        return (uint8_t*)_ch_data[order][index0].lbp[index1] + offset;
 }
 
 bool LogicSnapshot::get_sample(uint64_t index, int sig_index)
@@ -447,23 +469,24 @@ bool LogicSnapshot::get_sample(uint64_t index, int sig_index)
 
     if (index < get_sample_count()) {
         uint64_t index_mask = 1ULL << (index & LevelMask[0]);
-        uint64_t root_index = index >> (LeafBlockPower + RootScalePower);
-        uint8_t root_pos = (index & RootMask) >> LeafBlockPower;
-        uint64_t root_pos_mask = 1ULL << root_pos;
+        uint64_t index0 = index >> (LeafBlockPower + RootScalePower);
+        uint64_t index1 = (index & RootMask) >> LeafBlockPower;
+        uint64_t root_pos_mask = 1ULL << index1;
  
         uint64_t index0_r = _ring_sample_count >> (LeafBlockPower + RootScalePower);
         uint64_t index1_r = (_ring_sample_count >> LeafBlockPower) % RootScale;
-        bool bAble = root_index < index0_r || (root_index == index0_r && root_pos <= index1_r);
+        bool bAble = index0 < index0_r || (index0 == index0_r && index1 <= index1_r);
 
-        if (bAble && (_ch_data[order][root_index].tog & root_pos_mask) == 0) {
-            return (_ch_data[order][root_index].value & root_pos_mask) != 0;
-        } else {
-            uint64_t *lbp = (uint64_t *)_ch_data[order][root_index].lbp[root_pos];
+        if (bAble && (_ch_data[order][index0].tog & root_pos_mask) == 0) {
+            return (_ch_data[order][index0].value & root_pos_mask) != 0;
+        }
+        else {
+            uint64_t *lbp = (uint64_t*)_ch_data[order][index0].lbp[index1];
             return *(lbp + ((index & LeafMask) >> ScalePower)) & index_mask;
         }
-    } else {
-        return false;
     }
+    
+    return false;
 }
 
 bool LogicSnapshot::get_display_edges(std::vector<std::pair<bool, bool> > &edges,
@@ -548,7 +571,7 @@ bool LogicSnapshot::get_nxt_edge(uint64_t &index, bool last_sample, uint64_t end
 
             if (cur_tog != 0) {
                 uint64_t first_edge_pos = bsf_folded(cur_tog);
-                uint64_t *lbp = (uint64_t *)_ch_data[order][i].lbp[first_edge_pos];
+                uint64_t *lbp = (uint64_t*)_ch_data[order][i].lbp[first_edge_pos];
                 uint64_t blk_start = (i << (LeafBlockPower + RootScalePower)) + (first_edge_pos << LeafBlockPower);
                 index = max(blk_start, index);
 
@@ -599,7 +622,7 @@ bool LogicSnapshot::get_pre_edge(uint64_t &index, bool last_sample,
             uint64_t cur_tog = _ch_data[order][i].tog & cur_mask;
             if (cur_tog != 0) {
                 uint64_t first_edge_pos = bsr64(cur_tog);
-                uint64_t *lbp = (uint64_t *)_ch_data[order][i].lbp[first_edge_pos];
+                uint64_t *lbp = (uint64_t*)_ch_data[order][i].lbp[first_edge_pos];
                 uint64_t blk_end = ((i << (LeafBlockPower + RootScalePower)) +
                                    (first_edge_pos << LeafBlockPower)) | LeafMask;
                 index = min(blk_end, index);
@@ -951,7 +974,7 @@ uint8_t *LogicSnapshot::get_block_buf(int block_index, int sig_index, bool &samp
     }
     uint64_t index = block_index / RootScale;
     uint8_t pos = block_index % RootScale;
-    uint8_t *lbp = (uint8_t *)_ch_data[order][index].lbp[pos];
+    uint8_t *lbp = (uint8_t*)_ch_data[order][index].lbp[pos];
 
     if (lbp == NULL)
         sample = (_ch_data[order][index].value & 1ULL << pos) != 0;
