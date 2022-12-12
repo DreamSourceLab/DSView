@@ -48,12 +48,22 @@
 #define bmWR_WORDWIDE      (1 << 0)
 
 #define VTH_ADDR 0x78
+#define SEC_DATA_ADDR 0x75
+#define SEC_CTRL_ADDR 0x73
 #define CTR1_ADDR 0x71
 #define CTR0_ADDR 0x70
 #define COMB_ADDR 0x68
 #define EI2C_ADDR 0x60
 #define ADCC_ADDR 0x48
 #define HDL_VERSION_ADDR 0x04
+
+#define bmSECU_READY	(1 << 3)
+#define bmSECU_PASS		(1 << 4)
+#define SECU_STEPS		8
+#define SECU_START		0x0513
+#define SECU_CHECK		0x0219
+#define SECU_EEP_ADDR	0x3C00
+#define SECU_TRY_CNT	8
 
 #define EI2C_CTR_OFF   0x2
 #define EI2C_RXR_OFF   0x3
