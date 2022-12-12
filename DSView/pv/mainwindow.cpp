@@ -96,6 +96,7 @@
 #include  "utility/encoding.h"
 #include "utility/path.h"
 #include "log.h"
+#include "mainframe.h"
 
 #define BASE_SESSION_VERSION 2
   
@@ -888,14 +889,20 @@ void MainWindow::on_screenShot()
     QString default_name = app._userHistory.screenShotPath + "/" + APP_NAME + QDateTime::currentDateTime().toString("-yyMMdd-hhmmss");
 
 #ifdef _WIN32
-    int x = parentWidget()->pos().x();
-    int y = parentWidget()->pos().y();
-    int w = parentWidget()->frameGeometry().width();
-    int h = parentWidget()->frameGeometry().height();
-    QDesktopWidget *desktop = QApplication::desktop();
-    QPixmap pixmap = QGuiApplication::primaryScreen()->grabWindow(desktop->winId(), x, y, w, h);
+        int x = parentWidget()->pos().x();
+        int y = parentWidget()->pos().y();
+        int w = parentWidget()->frameGeometry().width();
+        int h = parentWidget()->frameGeometry().height();
+        QDesktopWidget *desktop = QApplication::desktop();
+        QPixmap pixmap = QGuiApplication::primaryScreen()->grabWindow(desktop->winId(), x, y, w, h);
+#elif __APPLE__
+        int x = parentWidget()->pos().x() + MainFrame::Margin;
+        int y = parentWidget()->pos().y() + MainFrame::Margin;
+        int w = parentWidget()->geometry().width() - MainFrame::Margin * 2;
+        int h = parentWidget()->geometry().height() - MainFrame::Margin * 2;
+        QPixmap pixmap = QGuiApplication::primaryScreen()->grabWindow(winId(), x, y, w, h);
 #else
-    QPixmap pixmap = QGuiApplication::primaryScreen()->grabWindow(winId());
+        QPixmap pixmap = QGuiApplication::primaryScreen()->grabWindow(winId());
 #endif
  
     QString format = "png";
