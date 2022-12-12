@@ -1920,6 +1920,16 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
         }
     }
 
+    // check security
+    uint16_t encryption[SECU_STEPS];
+    ret = dsl_wr_reg(sdi, CTR0_ADDR, bmNONE); // dessert clear
+    if (dsl_rd_nvm(sdi, (unsigned char *)encryption, SECU_EEP_ADDR, SECU_STEPS*2) != SR_OK) {
+        sr_err("Read EEPROM content failed!");
+        return SR_ERR;
+    }
+    ret = dsl_secuCheck(sdi, encryption, SECU_STEPS);
+    if (ret != SR_OK)
+        sr_err("Security check failed!");
 
     return SR_OK;
 }
@@ -2467,6 +2477,106 @@ SR_PRIV int dsl_start_transfers(const struct sr_dev_inst *sdi)
         devc->transfers[i] = transfer;
         devc->submitted_transfers++;
         devc->num_transfers++;
+    }
+
+    return SR_OK;
+}
+
+/*
+ * security low level operations
+ */
+SR_PRIV int dsl_secuReset(const struct sr_dev_inst *sdi)
+{
+    if (dsl_wr_reg(sdi, SEC_CTRL_ADDR, 0) != SR_OK) goto Err;
+    if (dsl_wr_reg(sdi, SEC_CTRL_ADDR + 1, 0) != SR_OK) goto Err;
+    g_usleep(10*1000);
+    if (dsl_wr_reg(sdi, SEC_CTRL_ADDR, 1) != SR_OK) goto Err;
+    if (dsl_wr_reg(sdi, SEC_CTRL_ADDR + 1, 0) != SR_OK) goto Err;
+
+    return SR_OK;
+Err:
+    sr_err("Sent dsl_wr_reg(SEC_XXX_ADDR) command failed.");
+    return SR_ERR;
+}
+
+SR_PRIV int dsl_secuWrite(const struct sr_dev_inst *sdi, uint16_t cmd, uint16_t din)
+{
+    if (dsl_wr_reg(sdi, SEC_DATA_ADDR, din) != SR_OK) goto Err;
+    if (dsl_wr_reg(sdi, SEC_DATA_ADDR + 1, (din >> 8)) != SR_OK) goto Err;
+    if (dsl_wr_reg(sdi, SEC_CTRL_ADDR, cmd) != SR_OK) goto Err;
+    if (dsl_wr_reg(sdi, SEC_CTRL_ADDR + 1, (cmd >> 8)) != SR_OK) goto Err;
+
+    return SR_OK;
+Err:
+    sr_err("Sent dsl_wr_reg(SEC_XXX_ADDR) command failed.");
+    return SR_ERR;
+}
+
+SR_PRIV gboolean dsl_isSecuReady(const struct sr_dev_inst *sdi)
+{
+    uint8_t temp;
+    if (dsl_rd_reg(sdi, SEC_CTRL_ADDR, &temp) != SR_OK) goto Err;
+
+    if (temp & bmSECU_READY)
+        return TRUE;
+    else
+        return FALSE;
+Err:
+    sr_err("Sent dsl_rd_reg(SEC_XXX_ADDR) command failed.");
+    return FALSE;
+}
+
+SR_PRIV gboolean dsl_isSecuPass(const struct sr_dev_inst *sdi)
+{
+    uint8_t temp;
+    if (dsl_rd_reg(sdi, SEC_CTRL_ADDR, &temp) != SR_OK) goto Err;
+
+    if (temp & bmSECU_PASS)
+        return TRUE;
+    else
+        return FALSE;
+Err:
+    sr_err("Sent dsl_rd_reg(SEC_XXX_ADDR) command failed.");
+    return FALSE;
+}
+
+SR_PRIV uint16_t dsl_secuRead(const struct sr_dev_inst *sdi)
+{
+    uint16_t sec;
+    if (dsl_rd_reg(sdi, SEC_DATA_ADDR + 1, (uint8_t*)&sec) != SR_OK) goto Err;
+    sec <<= 8;
+    if (dsl_rd_reg(sdi, SEC_DATA_ADDR, (uint8_t*)&sec) != SR_OK) goto Err;
+
+    return sec;
+Err:
+    sr_err("Sent dsl_rd_reg(SEC_XXX_ADDR) command failed.");
+    return 0;
+}
+
+
+/*
+ * security API interface
+ */
+SR_PRIV int dsl_secuCheck(const struct sr_dev_inst *sdi, uint16_t* encryption, int steps)
+{
+    int tryCnt = SECU_TRY_CNT;
+
+    dsl_secuReset(sdi);
+    if (dsl_isSecuPass(sdi))
+        return SR_ERR;
+    dsl_secuWrite(sdi, SECU_START, 0);
+    while(steps--) {
+        if (dsl_isSecuPass(sdi))
+            return SR_ERR;
+        while(!dsl_isSecuReady(sdi)) {
+            if (tryCnt-- == 0) {
+                sr_err("Get security ready failed.");
+                return SR_ERR;
+            }
+        }
+        if (dsl_secuRead(sdi) != 0)
+            return SR_ERR;
+        dsl_secuWrite(sdi, SECU_CHECK, encryption[steps]);
     }
 
     return SR_OK;
