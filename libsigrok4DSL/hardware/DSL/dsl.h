@@ -87,6 +87,8 @@
 #define CAPS_FEATURE_LA_CH32 (1 << 11)
 // auto tunning vgain
 #define CAPS_FEATURE_AUTO_VGAIN (1 << 12)
+// max 2.5v fpga threshold
+#define CAPS_FEATURE_MAX25_VTH (1 << 13)
 /* end */
 
 
@@ -743,6 +745,61 @@ static const struct DSL_profile supported_DSLogic[] = {
       SR_MHZ(500),
       SR_GHZ(1)}
     },
+
+    {0x2A0E, 0x0030, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic PLus", NULL,
+     "DSLogicPlus.fw",
+     "DSLogicPlus-pgl12.bin",
+     "DSLogicPlus-pgl12.bin",
+     {CAPS_MODE_LOGIC,
+      CAPS_FEATURE_VTH | CAPS_FEATURE_BUF | CAPS_FEATURE_MAX25_VTH,
+      (1 << DSL_STREAM20x16) | (1 << DSL_STREAM25x12) | (1 << DSL_STREAM50x6) | (1 << DSL_STREAM100x3) |
+      (1 << DSL_BUFFER100x16) | (1 << DSL_BUFFER200x8) | (1 << DSL_BUFFER400x4),
+      16,
+      SR_MB(256),
+      0,
+      DSL_BUFFER100x16,
+      0,
+      samplerates400,
+      0,
+      DSL_STREAM20x16,
+      SR_MHZ(1),
+      SR_Mn(1),
+      0,
+      0,
+      0,
+      0,
+      0,
+      SR_MHZ(200),
+      SR_MHZ(400)}
+    },
+
+    {0x2A0E, 0x0031, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic U2Basic", NULL,
+     "DSLogicU2Basic.fw",
+     "DSLogicU2Basic-pgl12.bin",
+     "DSLogicU2Basic-pgl12.bin",
+     {CAPS_MODE_LOGIC,
+      CAPS_FEATURE_VTH | CAPS_FEATURE_BUF | CAPS_FEATURE_MAX25_VTH,
+      (1 << DSL_STREAM20x16) | (1 << DSL_STREAM25x12) | (1 << DSL_STREAM50x6) | (1 << DSL_STREAM100x3) |
+      (1 << DSL_BUFFER100x16),
+      16,
+      SR_MB(64),
+      0,
+      DSL_BUFFER100x16,
+      0,
+      samplerates100,
+      0,
+      DSL_STREAM20x16,
+      SR_MHZ(1),
+      SR_Mn(1),
+      0,
+      0,
+      0,
+      0,
+      0,
+      SR_MHZ(200),
+      SR_MHZ(400)}
+    },
+
 
     { 0, 0, LIBUSB_SPEED_UNKNOWN, 0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 };
