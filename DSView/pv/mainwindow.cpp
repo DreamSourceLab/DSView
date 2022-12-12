@@ -1326,6 +1326,13 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
         SigSession *_session = _control->GetSession();
         const auto &sigs = _session->get_signals();
         QKeyEvent *ke = (QKeyEvent *) event;
+        int modifier = ke->modifiers();
+        if(modifier & Qt::ControlModifier ||
+               modifier & Qt::ShiftModifier || 
+               modifier & Qt::AltModifier)
+        {
+                return true;
+        }
         switch(ke->key()) {
         case Qt::Key_S:
             on_run_stop();
