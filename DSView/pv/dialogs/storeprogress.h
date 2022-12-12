@@ -84,6 +84,7 @@ private:
     QPushButton         *_openButton;
     QGridLayout         *_grid;
     QWidget             *_space;
+    bool                 _isBusy;
 };
 
 } // dialogs

@@ -49,6 +49,7 @@ StoreProgress::StoreProgress(SigSession *session, QWidget *parent) :
 
     _isExport = false;
     _done = false;
+    _isBusy = false;
 
     QGridLayout *grid = new QGridLayout(); 
     _grid = grid;
@@ -133,6 +134,9 @@ void StoreProgress::accept()
         return;
     }
 
+     if (_isBusy)
+        return;
+
      _progress.setVisible(true);
      _fileLab->setVisible(false);     
      _fileLab->setVisible(false);
@@ -157,7 +161,8 @@ void StoreProgress::accept()
     //start done 
     if (_isExport){
         if (_store_session.export_start()){
-              QTimer::singleShot(100, this, SLOT(timeout()));        
+            _isBusy = true;
+            QTimer::singleShot(100, this, SLOT(timeout()));        
         }
         else{
             save_done();
@@ -167,7 +172,8 @@ void StoreProgress::accept()
     }
     else{
          if (_store_session.save_start()){
-              QTimer::singleShot(100, this, SLOT(timeout()));        
+            _isBusy = true;
+            QTimer::singleShot(100, this, SLOT(timeout()));        
         }
         else{
             save_done();
