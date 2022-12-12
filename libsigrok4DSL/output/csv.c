@@ -240,7 +240,7 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
                    continue;
             } 
 
-            g_string_append_printf(*out, "%0.10g", (ctx->index-1)*1.0/ctx->samplerate);
+            g_string_append_printf(*out, "%0.15g", (ctx->index-1)*1.0/ctx->samplerate);
             for (j = 0; j < ctx->num_enabled_channels; j++) {
                 //idx = ctx->channel_index[j];
                 idx = j;
