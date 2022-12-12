@@ -136,7 +136,7 @@ class Decoder(srd.Decoder):
                        'CS: %d' % self.packet[1], 'CS'])
         elif self.packet[0] == 0x06: # Power Control Hold-off
             self.putp(['Power Control Hold-off: %dms' % self.packet[1],
-                       'PCH: %d' % self.packet[1]], 'PCH')
+                       'PCH: %d' % self.packet[1], 'PCH'])
         elif self.packet[0] == 0x51: # Configuration
             powerclass = (self.packet[1] & 0xc0) >> 7
             maxpower = self.packet[1] & 0x3f
