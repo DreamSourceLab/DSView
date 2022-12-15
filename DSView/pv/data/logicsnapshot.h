@@ -31,7 +31,7 @@
 #include <vector>
 #include <map>
 
-#define CHANNEL_MAX_COUNT 512 
+#define CHANNEL_MAX_COUNT 512
 
 namespace LogicSnapshotTest {
 class Pow2;
@@ -69,7 +69,7 @@ private:
     struct RootNode
     {
         uint64_t tog;
-        uint64_t value;
+        uint64_t value; 
         void *lbp[Scale];
     };
 
@@ -122,7 +122,7 @@ public:
 
 private:
     int get_ch_order(int sig_index);
-    void calc_mipmap(unsigned int order, uint8_t index0, uint8_t index1, uint64_t samples);
+    void calc_mipmap(unsigned int order, uint8_t index0, uint8_t index1, uint64_t samples, bool isEnd);
 
     void append_cross_payload(const sr_datafeed_logic &logic);
 
@@ -191,6 +191,7 @@ private:
     uint8_t    *_dest_ptr;
 
     uint64_t    _last_sample[CHANNEL_MAX_COUNT];
+    uint64_t    _last_calc_count[CHANNEL_MAX_COUNT];
  
 	friend class LogicSnapshotTest::Pow2;
 	friend class LogicSnapshotTest::Basic;
