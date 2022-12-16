@@ -1332,7 +1332,7 @@ void View::set_receive_len(uint64_t len)
     if (_time_viewport)
         _time_viewport->set_receive_len(len);
         
-    if (_fft_viewport)
+    if (_fft_viewport && _session->get_device()->get_work_mode() == DSO)
         _fft_viewport->set_receive_len(len);
 }
 

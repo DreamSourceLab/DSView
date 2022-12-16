@@ -238,14 +238,15 @@ namespace pv
             {
                 QString iconPath = GetIconPath();
                 _configure_button.setIcon(QIcon(iconPath + "/params.svg"));
-                QString icon1 = _session->is_repeat_mode() ? "moder.svg" : "modes.svg";
-                _mode_button.setIcon(QIcon(iconPath + "/" + icon1));
+            
                 QString icon2 = _session->is_working() ? "stop.svg" : "start.svg";
                 _run_stop_button.setIcon(QIcon(iconPath + "/" + icon2));
                 _instant_button.setIcon(QIcon(iconPath + "/single.svg"));
                 _action_single->setIcon(QIcon(iconPath + "/oneloop.svg"));
                 _action_repeat->setIcon(QIcon(iconPath + "/repeat.svg"));
                 _action_realtime->setIcon(QIcon(iconPath + "/update.svg"));
+
+                update_mode_icon();
             }
         }
 
@@ -1031,8 +1032,7 @@ namespace pv
                 else
                 {
 
-                    QString icon = _session->is_repeat_mode() ? "/moder.svg" : "/modes.svg";
-                    _mode_button.setIcon(QIcon(iconPath + icon));
+                    update_mode_icon();
                     _mode_action->setVisible(true);
                 }
                 _run_stop_action->setVisible(true);
@@ -1062,13 +1062,11 @@ namespace pv
             QAction *act = qobject_cast<QAction *>(sender());
 
             if (act == _action_single)
-            {
-                _mode_button.setIcon(QIcon(iconPath + "/modes.svg"));
+            { 
                 _session->set_operation_mode(OPT_SINGLE);
             }
             else if (act == _action_repeat)
-            {
-                _mode_button.setIcon(QIcon(iconPath + "/moder.svg"));
+            { 
                 pv::dialogs::Interval interval_dlg(this);
 
                 interval_dlg.set_interval(_session->get_repeat_intvl());
@@ -1081,10 +1079,11 @@ namespace pv
                 }
             }
             else if (act == _action_realtime)
-            {
-                _mode_button.setIcon(QIcon(iconPath + "/update.svg"));
+            { 
                 _session->set_operation_mode(OPT_REALTIME);
             }
+
+            update_mode_icon();
         }
 
         void SamplingBar::update_device_list()
@@ -1181,14 +1180,14 @@ namespace pv
                 _instant_button.setIcon(!bEnable ? QIcon(iconPath + "/stop.svg") : QIcon(iconPath + "/single.svg"));
             else
                 _run_stop_button.setIcon(!bEnable ? QIcon(iconPath + "/stop.svg") : QIcon(iconPath + "/start.svg"));
-
-            _mode_button.setIcon(_session->is_repeat_mode() == false ? QIcon(iconPath + "/modes.svg") : QIcon(iconPath + "/moder.svg"));
-
+ 
             retranslateUi();
 
             if (bEnable){
                 _is_run_as_instant = false;
-            }            
+            }
+
+            update_mode_icon();       
          }
 
          ds_device_handle SamplingBar::get_next_device_handle()
@@ -1196,6 +1195,18 @@ namespace pv
              ds_device_handle h = _next_switch_device;
              _next_switch_device = NULL_HANDLE;
              return h;
+         }
+
+         void SamplingBar::update_mode_icon()
+         {  
+            QString iconPath = GetIconPath();
+
+            if (_session->is_repeat_mode())
+                _mode_button.setIcon(QIcon(iconPath + "/moder.svg"));
+            else if (_session->is_realtime_mode())
+                _mode_button.setIcon(QIcon(iconPath + "/update.svg"));
+            else
+                _mode_button.setIcon(QIcon(iconPath + "/modes.svg")); 
          }
 
     } // namespace toolbars

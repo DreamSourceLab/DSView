@@ -367,6 +367,7 @@ public:
     void add_msg_listener(IMessageListener *ln);
     void broadcast_msg(int msg);
     bool switch_work_mode(int mode);
+    bool have_new_realtime_refresh(bool keep);
 
 private:
     void set_cur_samplelimits(uint64_t samplelimits);
@@ -441,6 +442,7 @@ private:
 
     void repeat_capture_wait_timeout();
     void repeat_wait_prog_timeout();
+    void realtime_refresh_timeout();
  
 private:
     mutable std::mutex      _sampling_mutex;
@@ -470,6 +472,7 @@ private:
     DsTimer     _out_timer;
     DsTimer     _repeat_timer;
     DsTimer     _repeat_wait_prog_timer;
+    DsTimer     _refresh_rt_timer;
     int         _noData_cnt;
     bool        _data_lock;
     bool        _data_updated;
@@ -499,6 +502,8 @@ private:
     int         _device_status;
     int         _capture_time_id;
     int         _confirm_store_time_id;
+    uint64_t    _rt_refresh_time_id;
+    uint64_t    _rt_ck_refresh_time_id;
     COLLECT_OPT_MODE    _opt_mode;
  
 

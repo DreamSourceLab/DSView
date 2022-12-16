@@ -145,7 +145,7 @@ void LogicSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColo
     if (!snapshot->has_data(_probe->index))
         return;
 
-    const int64_t last_sample =  snapshot->get_sample_count() - 1;
+    const int64_t last_sample = snapshot->get_ring_sample_count() - 1;
 	const double samples_per_pixel = samplerate * scale;
 
     uint16_t width = right - left;

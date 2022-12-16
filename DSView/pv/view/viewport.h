@@ -100,12 +100,16 @@ public:
     void clear_dso_xm();
     void set_need_update(bool update);
     bool get_dso_trig_moved();
+    void set_receive_len(quint64 length);
+    void unshow_wait_trigger();
+    void show_wait_trigger();
 
 protected:
     bool event(QEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
 
 private:
+    void doPaint(bool bForce);
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
@@ -128,11 +132,6 @@ private slots:
     void show_contextmenu(const QPoint& pos);
     void add_cursor_x();
     void add_cursor_y();
-
-public slots:
-    void show_wait_trigger();
-    void unshow_wait_trigger();
-    void set_receive_len(quint64 length);
 
 signals:
     void measure_updated();

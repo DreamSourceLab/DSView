@@ -532,6 +532,9 @@ bool LogicSnapshot::get_display_edges(std::vector<std::pair<bool, bool> > &edges
     if (_ring_sample_count == 0)
         return false;
 
+    if (_sample_count > _ring_sample_count)
+        dsv_info("_sample_count > _ring_sample_count");
+
     assert(end < _ring_sample_count);
     assert(start <= end);
     assert(min_length > 0);

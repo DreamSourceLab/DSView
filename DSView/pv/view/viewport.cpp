@@ -138,11 +138,19 @@ bool Viewport::event(QEvent *event)
 }
 
 void Viewport::paintEvent(QPaintEvent *event)
-{    
-    (void)event;
+{
+    (void)event; 
 
+    doPaint(true);
+}
+
+void Viewport::doPaint(bool bForce)
+{     
     using pv::view::Signal;
 
+   // if (_view.session().is_stopped_status())
+    //    dsv_info("paint"); 
+   
     QStyleOption o;
     o.initFrom(this);
     QPainter p(this);
@@ -153,7 +161,7 @@ void Viewport::paintEvent(QPaintEvent *event)
     QColor back(QWidget::palette().color(QWidget::backgroundRole()));
     fore.setAlpha(View::ForeAlpha);
     _view.set_back(false);
-
+  
     std::vector<Trace*> traces;
     _view.get_traces(_type, traces);
 
@@ -166,10 +174,14 @@ void Viewport::paintEvent(QPaintEvent *event)
     if (_view.session().get_device()->get_work_mode() == LOGIC ||
         _view.session().is_instant()) 
     {
-        if (_view.session().is_stopped_status() 
-            || _view.session().is_realtime_mode())
+        if (_view.session().is_stopped_status())
         {
             paintSignals(p, fore, back);
+        }
+        else if (_view.session().is_realtime_mode())
+        {   
+            if (_view.session().have_new_realtime_refresh(false) || bForce)
+                paintSignals(p, fore, back);
         }
         else if (_view.session().is_running_status()){
             if (_view.session().is_repeat_mode() && !_transfer_started) {
@@ -735,20 +747,21 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
     _mouse_point = event->pos();
 
     measure();
+   
     update();
 }
 
 void Viewport::mouseReleaseEvent(QMouseEvent *event)
 {
-    assert(event);
+        assert(event);
 
-    bool quickScroll = AppConfig::Instance()._appOptions.quickScroll;
-    bool isMaxWindow = AppControl::Instance()->TopWindowIsMaximized();
+        bool quickScroll = AppConfig::Instance()._appOptions.quickScroll;
+        bool isMaxWindow = AppControl::Instance()->TopWindowIsMaximized();
     
-    if (_type != TIME_VIEW){
-        update();
-        return;
-    }
+        if (_type != TIME_VIEW){
+            update();
+            return;
+        }
   
         if ((_action_type == NO_ACTION) && (event->button() == Qt::LeftButton)) 
         {
@@ -1000,6 +1013,7 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
             _view.add_cursor(view::Ruler::CursorColor[_view.get_cursorList().size() % 8], index);
             _view.show_cursors(true);
         }
+
         update();
     }
     else if (_view.session().get_device()->get_work_mode() == DSO
@@ -1189,6 +1203,12 @@ void Viewport::set_receive_len(quint64 length)
         else
             _sample_received += length;
     }
+
+    if (_view.session().is_realtime_mode() && _view.session().have_new_realtime_refresh(true) == false){
+        return;
+    }
+
+    // Received new data, and refresh the view.
     update();
 }
 
@@ -1714,7 +1734,7 @@ void Viewport::show_wait_trigger()
 }
 
 void Viewport::unshow_wait_trigger()
-{
+{   
     _waiting_trig = 0;
     update();
 }

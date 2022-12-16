@@ -103,6 +103,7 @@ namespace pv
             void commit_settings();
             void setting_adj();
             void enable_toggle(bool enable);
+            void update_mode_icon();
 
         private slots:
             void on_mode();

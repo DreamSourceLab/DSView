@@ -85,6 +85,8 @@ namespace pv
         _data_lock = false;
         _data_updated = false;
         _opt_mode = OPT_SINGLE;
+        _rt_refresh_time_id = 0;
+        _rt_ck_refresh_time_id = 0;
 
         this->add_msg_listener(this);
 
@@ -113,6 +115,7 @@ namespace pv
         _feed_timer.SetCallback(std::bind(&SigSession::feed_timeout, this));
         _repeat_timer.SetCallback(std::bind(&SigSession::repeat_capture_wait_timeout, this));
         _repeat_wait_prog_timer.SetCallback(std::bind(&SigSession::repeat_wait_prog_timeout, this));
+        _refresh_rt_timer.SetCallback(std::bind(&SigSession::realtime_refresh_timeout, this));
     }
 
     SigSession::SigSession(SigSession &o)
@@ -374,6 +377,8 @@ namespace pv
         _trigger_flag = false;
         _trigger_ch = 0;
         _hw_replied = false;
+        _rt_refresh_time_id = 0;
+        _rt_ck_refresh_time_id = 0;
 
         int work_mode = _device_agent.get_work_mode();
         if (work_mode == DSO || work_mode == ANALOG)
@@ -472,6 +477,10 @@ namespace pv
             _capture_time_id++;
             _is_working = true;
             _callback->trigger_message(DSV_MSG_START_COLLECT_WORK);
+
+            if (is_realtime_mode()){
+                _refresh_rt_timer.Start(1000 / 30);
+            }
             return true;
         }
 
@@ -528,6 +537,7 @@ namespace pv
             _is_working = false;
             _repeat_timer.Stop();
             _repeat_wait_prog_timer.Stop();
+            _refresh_rt_timer.Stop();
             exit_capture();
             return;
         }
@@ -548,6 +558,7 @@ namespace pv
             _is_working = false;
             _repeat_timer.Stop();
             _repeat_wait_prog_timer.Stop();
+            _refresh_rt_timer.Stop();
 
             if (_repeat_hold_prg != 0 && is_repeat_mode()){
                 _repeat_hold_prg = 0;
@@ -635,7 +646,6 @@ namespace pv
 
         if (_data_updated)
         {
-            data_updated();
             _data_updated = false;
             _noData_cnt = 0;
             data_auto_unlock();
@@ -1999,6 +2009,22 @@ namespace pv
             return true;
         }
         return false;
+    }
+
+    void SigSession::realtime_refresh_timeout()
+    {
+        _rt_refresh_time_id++;
+    }
+
+    bool SigSession::have_new_realtime_refresh(bool keep)
+    {
+        if (_rt_ck_refresh_time_id != _rt_refresh_time_id){
+            if (!keep){
+                _rt_ck_refresh_time_id = _rt_refresh_time_id;
+            }
+            return true;
+        }
+        return false;    
     }
 
 } // namespace pv
