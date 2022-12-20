@@ -229,7 +229,7 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
         }
         _block_num++;
     }
-
+ 
     // bit align
     while ((_ch_fraction != 0 || _byte_fraction != 0) && len > 0) 
     {
@@ -239,7 +239,7 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
         do{
             *_dest_ptr++ = *data_src_ptr++;
             _byte_fraction = (_byte_fraction + 1) % 8;
-            len--;
+            len--; 
         }
         while (_byte_fraction != 0 && len > 0);
 
@@ -262,7 +262,7 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
                 break;
             }                
         }
-    }
+    } 
 
     // append data 
     assert(_ch_fraction == 0);
@@ -270,83 +270,90 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
     assert(_ring_sample_count % Scale == 0);
 
     uint64_t align_sample_count = _ring_sample_count;
+    uint64_t *read_ptr = (uint64_t*)data_src_ptr;
+    void *end_read_ptr = (uint8_t*)data_src_ptr + len;
+  
+    uint64_t filled_sample = align_sample_count % LeafBlockSamples;
+    uint64_t old_filled_sample = filled_sample;     
+    uint64_t* chans_read_addr[CHANNEL_MAX_COUNT];
+ 
+    for (unsigned int i=0; i<_channel_num; i++){
+      chans_read_addr[i] = (uint64_t*)data_src_ptr + i; 
+    } 
+    
+    uint16_t fill_chan = _ch_fraction;
+    uint16_t last_chan = _ch_fraction;
     index0 =  align_sample_count / LeafBlockSamples / RootScale;
     index1 = (align_sample_count / LeafBlockSamples) % RootScale;
-    offset = (align_sample_count % LeafBlockSamples) / 8;
-    uint64_t align_space = align_sample_count % LeafBlockSamples;
-    uint64_t old_align_space = align_space;
+    offset = align_sample_count % LeafBlockSamples;
+    uint64_t *write_ptr = (uint64_t*)_ch_data[fill_chan][index0].lbp[index1] + offset / Scale;  
 
-    uint64_t *read_ptr = (uint64_t*)data_src_ptr;
-    uint64_t *write_ptr = (uint64_t*)((uint8_t*)_ch_data[_ch_fraction][index0].lbp[index1] + offset);
-    void *end_read_ptr = (uint8_t*)data_src_ptr + len;
-    uint64_t real_len = len;
- 
-    uint64_t* chans_read_addr[CHANNEL_MAX_COUNT];
-
-    for (unsigned int i=0; i<_channel_num; i++){
-        chans_read_addr[i] = (uint64_t*)data_src_ptr + i;
-    }   
- 
     while (len >= 8)
     {
         *write_ptr++ = *read_ptr;
         read_ptr += _channel_num;
         len -= 8;
-        align_space += Scale; 
+        filled_sample += Scale;
 
-        if (align_space == LeafBlockSamples)
-        { 
-            calc_mipmap(_ch_fraction, index0, index1, LeafBlockSamples, true);
+        last_chan++;
+        if (last_chan == _channel_num){
+            last_chan = 0;
+        }
+  
+        if (filled_sample == LeafBlockSamples)
+        {
+            calc_mipmap(fill_chan, index0, index1, LeafBlockSamples, true);
 
-            chans_read_addr[_ch_fraction] = read_ptr;
-            _ch_fraction = (_ch_fraction + 1) % _channel_num;
+            chans_read_addr[fill_chan] = read_ptr;
+            fill_chan = (fill_chan + 1) % _channel_num;
 
-            if (_ch_fraction == 0)
-                align_sample_count += (align_space - old_align_space);
+            if (fill_chan == 0)
+                align_sample_count += (filled_sample - old_filled_sample);
 
             index0 =  align_sample_count / LeafBlockSamples / RootScale;
             index1 = (align_sample_count / LeafBlockSamples) % RootScale;
-            offset = (align_sample_count % LeafBlockSamples) / 8;
-            align_space = align_sample_count % LeafBlockSamples;
-            old_align_space = align_space;
+            offset =  align_sample_count % LeafBlockSamples;
+            filled_sample = align_sample_count % LeafBlockSamples;
+            old_filled_sample = filled_sample;
 
-            write_ptr = (uint64_t*)((uint8_t*)_ch_data[_ch_fraction][index0].lbp[index1] + offset);
-            read_ptr = chans_read_addr[_ch_fraction];             
+            write_ptr = (uint64_t*)_ch_data[fill_chan][index0].lbp[index1] + offset / Scale;
+            read_ptr = chans_read_addr[fill_chan];          
         } 
-        else if (read_ptr >= end_read_ptr)
-        { 
-            calc_mipmap(_ch_fraction, index0, index1, align_space, false);
+        else if (read_ptr >= end_read_ptr) 
+        {  
+            calc_mipmap(fill_chan, index0, index1, filled_sample, false); 
 
-            _ch_fraction = (_ch_fraction + 1) % _channel_num;
+            fill_chan = (fill_chan + 1) % _channel_num;    
 
-            if (_ch_fraction == 0)
-                align_sample_count += (align_space - old_align_space);
+            if (fill_chan == 0)
+                align_sample_count += (filled_sample - old_filled_sample);
 
             index0 =  align_sample_count / LeafBlockSamples / RootScale;
             index1 = (align_sample_count / LeafBlockSamples) % RootScale;
-            offset = (align_sample_count % LeafBlockSamples) / 8;
-            align_space = align_sample_count % LeafBlockSamples;
-            old_align_space = align_space;
+            offset =  align_sample_count % LeafBlockSamples;
+            filled_sample = align_sample_count % LeafBlockSamples;
+            old_filled_sample = filled_sample;
 
-            write_ptr = (uint64_t*)((uint8_t*)_ch_data[_ch_fraction][index0].lbp[index1] + offset);            
-            read_ptr = chans_read_addr[_ch_fraction];
+            write_ptr = (uint64_t*)_ch_data[fill_chan][index0].lbp[index1] + offset / Scale;            
+            read_ptr = chans_read_addr[fill_chan]; 
         }
     }
 
-    _ring_sample_count += (real_len / _channel_num / 8) * Scale;
+    _ring_sample_count = align_sample_count;
+    _ch_fraction = last_chan;
 
-    _dest_ptr = (uint8_t*)write_ptr;
-
+    _dest_ptr = (uint8_t*)_ch_data[_ch_fraction][index0].lbp[index1] + offset / 8;   
+ 
     if (len > 0)
     {
         uint8_t *src_ptr = (uint8_t*)end_read_ptr - len;
-        _byte_fraction += len;
+        _byte_fraction += len; 
 
         while (len > 0){
             *_dest_ptr++ = *src_ptr++;
-            len--;   
+            len--;
         }
-    }
+    } 
 }
 
 void LogicSnapshot::capture_ended()
@@ -527,13 +534,10 @@ bool LogicSnapshot::get_display_edges(std::vector<std::pair<bool, bool> > &edges
     if (!togs.empty())
         togs.clear();
 
-   std::lock_guard<std::mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
 
     if (_ring_sample_count == 0)
         return false;
-
-    if (_sample_count > _ring_sample_count)
-        dsv_info("_sample_count > _ring_sample_count");
 
     assert(end < _ring_sample_count);
     assert(start <= end);
@@ -608,11 +612,6 @@ bool LogicSnapshot::get_nxt_edge(uint64_t &index, bool last_sample, uint64_t end
             if (cur_tog != 0) {
                 uint64_t first_edge_pos = bsf_folded(cur_tog);                
                 uint64_t *lbp = (uint64_t*)_ch_data[order][i].lbp[first_edge_pos];
-
-                if (lbp == NULL){
-                    dsv_info("lbp is null."); 
-                    assert(false);
-                }
 
                 uint64_t blk_start = (i << (LeafBlockPower + RootScalePower)) + (first_edge_pos << LeafBlockPower);
                 index = max(blk_start, index);
