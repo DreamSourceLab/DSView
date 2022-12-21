@@ -48,7 +48,11 @@ namespace pv
     namespace device
     {
         class DevInst;
-    } 
+    }
+
+    namespace view{
+        class View;
+    }
 
     namespace dialogs
     {
@@ -86,6 +90,10 @@ namespace pv
             void config_device();
             ds_device_handle get_next_device_handle();
             void update_sample_rate_selector();
+
+            inline void set_view(view::View *view){
+                _view = view;
+            }
 
         signals:
             void sig_store_session_data();
@@ -145,8 +153,8 @@ namespace pv
             ds_device_handle    _last_device_handle;
             ds_device_handle    _next_switch_device;
             int                 _last_device_index;
-
             bool                _is_run_as_instant;
+            view::View          *_view;
         };
 
     } // namespace toolbars

@@ -47,6 +47,7 @@
 #include "../dialogs/calibration.h"
 #include "../dialogs/lissajousoptions.h"
 #include "../dsvdef.h"
+#include "../log.h"
 
 
 using namespace std;
@@ -205,41 +206,6 @@ void View::show_wait_trigger()
 void View::set_device()
 {
     _devmode->set_device();
-}
-
-SigSession& View::session()
-{
-	return *_session;
-}
-
-double View::scale()
-{
-	return _scale;
-}
-
-int64_t View::offset()
-{
-	return _offset;
-}
-
-double View::trig_hoff()
-{
-    return _trig_hoff;
-}
-
-void View::set_trig_hoff(double hoff)
-{
-    _trig_hoff = hoff;
-}
-
-double View::get_minscale()
-{
-    return _minscale;
-}
-
-double View::get_maxscale()
-{
-    return _maxscale;
 }
 
 void View::capture_init()
@@ -425,21 +391,6 @@ bool View::compare_trace_v_offsets(const Trace *a,
         return a1->get_v_offset() < b1->get_v_offset();
 }
 
-bool View::cursors_shown()
-{
-	return _show_cursors;
-}
-
-bool View::trig_cursor_shown()
-{
-    return _show_trig_cursor;
-}
-
-bool View::search_cursor_shown()
-{
-    return _show_search_cursor;
-}
-
 void View::show_cursors(bool show)
 {
 	_show_cursors = show;
@@ -550,21 +501,6 @@ void View::set_search_pos(uint64_t search_pos, bool hit)
     }
 }
 
-uint64_t View::get_search_pos()
-{
-    return _search_pos;
-}
-
-bool View::get_search_hit()
-{
-    return _search_hit;
-}
-
-const QPoint& View::hover_point()
-{
-	return _hover_point;
-}
-
 void View::normalize_layout()
 {   
     int v_min = INT_MAX;
@@ -583,16 +519,6 @@ void View::normalize_layout()
 
     verticalScrollBar()->setSliderPosition(delta);
 	v_scroll_value_changed(verticalScrollBar()->sliderPosition());
-}
-
-int View::get_spanY()
-{
-    return _spanY;
-}
-
-int View::get_signalHeight()
-{
-    return _signalHeight;
 }
 
 void View::get_scroll_layout(int64_t &length, int64_t &offset)
@@ -961,29 +887,6 @@ void View::on_traces_moved()
     viewport_update();
 }
 
-/*
- * cursorList
- */
-std::list<Cursor*>& View::get_cursorList()
-{
-    return _cursorList;
-}
-
-Cursor* View::get_trig_cursor()
-{
-    return _trig_cursor;
-}
-
-Cursor* View::get_search_cursor()
-{
-    return _search_cursor;
-}
-
-Ruler* View::get_ruler()
-{
-    return _ruler;
-}
-
 void View::add_cursor(QColor color, uint64_t index)
 {
     Cursor *newCursor = new Cursor(*this, color, index);
@@ -1258,24 +1161,6 @@ bool View::get_dso_trig_moved()
     return _time_viewport->get_dso_trig_moved();
 }
 
-/*
- * horizental cursors
- */
-bool View::xcursors_shown()
-{
-    return _show_xcursors;
-}
-
-void View::show_xcursors(bool show)
-{
-    _show_xcursors = show;
-}
-
-std::list<XCursor*>& View::get_xcursorList()
-{
-    return _xcursorList;
-}
-
 void View::add_xcursor(QColor color, double value0, double value1)
 {
     XCursor *newXCursor = new XCursor(*this, color, value0, value1);
@@ -1290,21 +1175,6 @@ void View::del_xcursor(XCursor* xcursor)
     _xcursorList.remove(xcursor);
     delete xcursor;
     xcursor_update();
-}
-
-ViewStatus* View::get_viewstatus()
-{
-    return _viewbottom;
-}
-
-bool View::back_ready()
-{
-    return _back_ready;
-}
-
-void View::set_back(bool ready)
-{
-    _back_ready = ready;
 }
 
 double View::index2pixel(uint64_t index, bool has_hoff)
@@ -1360,6 +1230,29 @@ void View::check_calibration()
                 }
             }
         }
+}
+
+void View::set_scale(double scale)
+{
+    if (scale < _minscale)
+        scale = _minscale;
+    if (scale > _maxscale)
+        scale = _maxscale;
+
+     if (_scale != scale)
+     {
+        _scale = scale;
+        _header->update();
+        _ruler->update();
+        viewport_update();
+        update_scroll();
+    }
+}
+
+void View::auto_set_max_scale()
+{
+    _maxscale = _session->cur_sampletime() / (get_view_width() * MaxViewRate);
+    set_scale(_maxscale);
 }
 
 } // namespace view

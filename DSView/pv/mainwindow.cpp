@@ -234,6 +234,8 @@ namespace pv
 
         retranslateUi();
 
+        _sampling_bar->set_view(_view);
+
         // event
         connect(&_event, SIGNAL(session_error()), this, SLOT(on_session_error()));
         connect(&_event, SIGNAL(signals_changed()), this, SLOT(on_signals_changed()));

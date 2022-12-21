@@ -109,24 +109,46 @@ public:
 
     ~View();
 
-	SigSession& session();
+	inline SigSession& session(){
+        return *_session;
+    }
 
 	/**
 	 * Returns the view time scale in seconds per pixel.
 	 */
-	double scale();
+	inline double scale(){
+        return _scale;
+    }
+
+    inline double get_minscale(){
+        return _minscale;
+    }
+
+    inline double get_maxscale(){
+        return _maxscale;
+    }
+
+    void set_scale(double scale);
+
+    void auto_set_max_scale();
 
 	/**
      * Returns the pixels offset of the left edge of the view
 	 */
-    int64_t offset();
-	int v_offset();
+    inline int64_t offset(){
+        return _offset;
+    }
 
     /**
      * trigger position fix
      */
-    double trig_hoff();
-    void set_trig_hoff(double hoff);
+    inline double trig_hoff(){
+        return _trig_hoff;
+    }
+
+    inline void set_trig_hoff(double hoff){
+        _trig_hoff = hoff;
+    }
 
     int64_t get_min_offset();
     int64_t get_max_offset();
@@ -149,24 +171,40 @@ public:
 	/**
 	 * Returns true if cursors are displayed. false otherwise.
 	 */
-	bool cursors_shown();
-    bool trig_cursor_shown();
-    bool search_cursor_shown();
+	inline bool cursors_shown(){
+        return _show_cursors;
+    }
 
-    int get_spanY();
+    inline bool trig_cursor_shown(){
+        return _show_trig_cursor;
+    }
 
-    int get_signalHeight();
+    inline bool search_cursor_shown(){
+        return _show_search_cursor;
+    }
+
+    inline int get_spanY(){
+        return _spanY;
+    }
+
+    inline int get_signalHeight(){
+        return _signalHeight;
+    }
 
     int headerWidth();
 
-    Ruler* get_ruler();
+    inline Ruler* get_ruler(){
+        return _ruler;
+    }
 
 	/**
 	 * Shows or hides the cursors.
 	 */
 	void show_cursors(bool show = true);
 
-    const QPoint& hover_point();
+    inline const QPoint& hover_point(){
+        return _hover_point;
+    }
 
 	void normalize_layout();
 
@@ -177,35 +215,51 @@ public:
     /*
      * cursorList
      */
-    std::list<Cursor*>& get_cursorList();
+    inline std::list<Cursor*>& get_cursorList(){
+        return _cursorList;
+    }
+
     void add_cursor(QColor color, uint64_t index);
     void del_cursor(Cursor* cursor);
     void clear_cursors();
     void set_cursor_middle(int index);
 
-    Cursor* get_trig_cursor();
-    Cursor* get_search_cursor();
-    bool get_search_hit();
+    inline Cursor* get_trig_cursor(){
+        return _trig_cursor;
+    }
+
+    inline Cursor* get_search_cursor(){
+        return _search_cursor;
+    }
+
+    inline bool get_search_hit(){
+        return _search_hit;
+    }
 
     void set_search_pos(uint64_t search_pos, bool hit);
 
-    uint64_t get_search_pos();
+    inline uint64_t get_search_pos(){
+        return _search_pos;
+    }
 
     /*
      * horizental cursors
      */
-    bool xcursors_shown();
-    void show_xcursors(bool show);
-    std::list<XCursor*>& get_xcursorList();
+    inline bool xcursors_shown(){
+        return _show_xcursors;
+    }
+
+    inline void show_xcursors(bool show){
+        _show_xcursors = show;
+    }
+
+    inline std::list<XCursor*>& get_xcursorList(){
+        return _xcursorList;
+    }
+
     void add_xcursor(QColor color, double value0, double value1);
     void del_xcursor(XCursor* xcursor);
-
-    /*
-     *
-     */
-    double get_minscale();
-    double get_maxscale();
-
+ 
     void set_update(Viewport *viewport, bool need_update);
     void set_all_update(bool need_update);
 
@@ -230,13 +284,20 @@ public:
 
     bool get_dso_trig_moved();
 
-    ViewStatus* get_viewstatus();
+    inline ViewStatus* get_viewstatus(){
+        return _viewbottom;
+    }
 
     /*
      * back paint status
      */
-    bool back_ready();
-    void set_back(bool ready);
+    inline bool back_ready(){
+        return _back_ready;
+    }
+
+    inline void set_back(bool ready){
+        _back_ready = ready;
+    }
 
     /*
      * untils

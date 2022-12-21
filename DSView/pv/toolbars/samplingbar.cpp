@@ -37,6 +37,7 @@
 #include "../deviceagent.h"
 #include "../ui/msgbox.h"
 #include "../ui/langresource.h"
+#include "../view/view.h"
 
 using std::map;
 using std::max;
@@ -69,6 +70,7 @@ namespace pv
             _last_device_handle = NULL_HANDLE;
             _last_device_index = -1;
             _next_switch_device = NULL_HANDLE;
+            _view = NULL;
 
             _session = session;
             _device_agent = _session->get_device();
@@ -882,6 +884,11 @@ namespace pv
                 }
             }
 
+            if (_device_agent->get_work_mode() == LOGIC && _session->is_realtime_mode()){
+                if (_view != NULL)
+                    _view->auto_set_max_scale();
+            }
+
             _is_run_as_instant = false;
             _session->start_capture(false);
         }
@@ -892,8 +899,7 @@ namespace pv
             {
                 bool wait_upload = false;
 
-                if (_session->is_repeat_mode() == false)
-                {
+                if (_session->is_repeat_mode() == false){
                     GVariant *gvar = _device_agent->get_config(NULL, NULL, SR_CONF_WAIT_UPLOAD);
                     if (gvar != NULL)
                     {
@@ -901,57 +907,62 @@ namespace pv
                         g_variant_unref(gvar);
                     }
                 }
-                if (!wait_upload)
-                {
+                if (!wait_upload){
                     _session->stop_capture();
                 }
+
+                return;
             }
-            else
+            
+            
+            if (_device_agent->have_instance() == false)
             {
-                if (_device_agent->have_instance() == false)
+                dsv_info("%s", "Error! Have no device, can't to collect data.");
+                return;
+            }
+
+            commit_settings();
+
+            if (_device_agent->get_work_mode() == DSO)
+            {
+                GVariant *gvar = _device_agent->get_config(NULL, NULL, SR_CONF_ZERO);
+
+                if (gvar != NULL)
                 {
-                    dsv_info("%s", "Error! Have no device, can't to collect data.");
-                    return;
-                }
+                    bool zero = g_variant_get_boolean(gvar);
+                    g_variant_unref(gvar);
 
-                commit_settings();
-
-                if (_device_agent->get_work_mode() == DSO)
-                {
-                    GVariant *gvar = _device_agent->get_config(NULL, NULL, SR_CONF_ZERO);
-
-                    if (gvar != NULL)
+                    if (zero)
                     {
-                        bool zero = g_variant_get_boolean(gvar);
-                        g_variant_unref(gvar);
+                        dialogs::DSMessageBox msg(this);
+                        msg.mBox()->setText(L_S(STR_PAGE_MSG,S_ID(IDS_MSG_A_CAL), "Auto Calibration"));
+                        msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG,S_ID(IDS_MSG_A_CAL_START), "Auto Calibration program will be started. Don't connect any probes. It can take a while!"));
 
-                        if (zero)
+                        msg.mBox()->addButton(L_S(STR_PAGE_MSG,S_ID(IDS_MSG_OK), "Ok"), QMessageBox::AcceptRole);
+                        msg.mBox()->addButton(L_S(STR_PAGE_MSG,S_ID(IDS_MSG_SKIP), "Skip"), QMessageBox::RejectRole);
+                        msg.mBox()->setIcon(QMessageBox::Warning);
+
+                        if (msg.exec())
                         {
-                            dialogs::DSMessageBox msg(this);
-                            msg.mBox()->setText(L_S(STR_PAGE_MSG,S_ID(IDS_MSG_A_CAL), "Auto Calibration"));
-                            msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG,S_ID(IDS_MSG_A_CAL_START), "Auto Calibration program will be started. Don't connect any probes. It can take a while!"));
-
-                            msg.mBox()->addButton(L_S(STR_PAGE_MSG,S_ID(IDS_MSG_OK), "Ok"), QMessageBox::AcceptRole);
-                            msg.mBox()->addButton(L_S(STR_PAGE_MSG,S_ID(IDS_MSG_SKIP), "Skip"), QMessageBox::RejectRole);
-                            msg.mBox()->setIcon(QMessageBox::Warning);
-
-                            if (msg.exec())
-                            {
-                                zero_adj();
-                            }
-                            else
-                            {
-                                _device_agent->set_config(NULL, NULL, SR_CONF_ZERO, g_variant_new_boolean(false));
-                                 update_view_status();
-                            }
-                            return;
+                            zero_adj();
                         }
+                        else
+                        {
+                            _device_agent->set_config(NULL, NULL, SR_CONF_ZERO, g_variant_new_boolean(false));
+                                update_view_status();
+                        }
+                        return;
                     }
                 }
-                
-                _is_run_as_instant = true;
-                _session->start_capture(true);
             }
+
+            if (_device_agent->get_work_mode() == LOGIC && _session->is_realtime_mode()){
+                if (_view != NULL)
+                    _view->auto_set_max_scale();
+            }
+            
+            _is_run_as_instant = true;
+            _session->start_capture(true);        
         }
 
         void SamplingBar::on_device_selected()
