@@ -478,6 +478,23 @@ namespace pv
             _is_working = true;
             _callback->trigger_message(DSV_MSG_START_COLLECT_WORK);
 
+            if (_device_agent.get_work_mode() == LOGIC)
+            {
+                for (auto de : _decode_traces)
+                {
+                    de->decoder()->set_capture_end_flag(false);
+
+                    // On real-time mode, create the decode task when capture started.
+                    if (is_realtime_mode())
+                    {
+                        de->decoder()->frame_ended();
+                        de->frame_ended();
+                        add_decode_task(de);
+                    }                
+                }
+            }
+
+            // Start a timer, for able to refresh the view per (1000 / 30)ms
             if (is_realtime_mode()){
                 _refresh_rt_timer.Start(1000 / 30);
             }
@@ -1251,12 +1268,11 @@ namespace pv
             _dso_data->snapshot()->capture_ended();
             _analog_data->snapshot()->capture_ended();
 
-            for (auto trace : _decode_traces)
-            {
-                trace->decoder()->frame_ended();
-                trace->frame_ended();
-                add_decode_task(trace);
-            }
+            int mode = _device_agent.get_work_mode();
+
+            // Post a message to start all decode tasks.
+            if (mode == LOGIC)
+               _callback->trigger_message(DSV_MSG_REV_END_PACKET);
 
             if (packet->status != SR_PKT_OK)
             {
@@ -1266,10 +1282,8 @@ namespace pv
 
             _callback->frame_ended();
 
-            if (_device_agent.get_work_mode() != LOGIC)
-            {
+            if (mode != LOGIC)
                 set_session_time(QDateTime::currentDateTime());
-            }
 
             break;
         }
@@ -1876,7 +1890,7 @@ namespace pv
 
         case DS_EV_INACTIVE_DEVICE_DETACH:
             _callback->trigger_message(DSV_MSG_DEVICE_LIST_UPDATED); // Update list only.
-            break;
+            break;    
 
         default:
             dsv_err("%s", "Error!Unknown device event.");
@@ -1943,7 +1957,7 @@ namespace pv
 
         case DSV_MSG_TRIG_NEXT_COLLECT:
             {
-                if (_is_working)
+                if (_is_working && is_repeat_mode())
                 {
                     if (_repeat_intvl > 0)
                     {
@@ -1973,6 +1987,25 @@ namespace pv
                 }
             }
             break;
+
+        case DSV_MSG_REV_END_PACKET:
+        {
+            if (_device_agent.get_work_mode() == LOGIC)
+            {
+                for (auto de : _decode_traces)
+                {
+                    de->decoder()->set_capture_end_flag(true);
+
+                    // If is not the real-time mode, try to create all decode tasks.
+                    if (is_realtime_mode() == false){ 
+                        de->decoder()->frame_ended();
+                        de->frame_ended();
+                        add_decode_task(de);
+                    }               
+                }
+            }            
+        }
+        break;
 
         case DSV_MSG_COLLECT_END:   
             break;

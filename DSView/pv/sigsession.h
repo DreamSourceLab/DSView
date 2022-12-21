@@ -374,7 +374,6 @@ private:
     void set_cur_snap_samplerate(uint64_t samplerate);
     void math_disable();
 
-private:
     bool exec_capture();
     void exit_capture();
 

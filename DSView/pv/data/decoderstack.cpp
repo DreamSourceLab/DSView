@@ -65,7 +65,8 @@ DecoderStack::DecoderStack(pv::SigSession *session,
     _no_memory = false;
     _mark_index = -1;
     _decoder_status = decoder_status;
-    _stask_stauts = NULL;  
+    _stask_stauts = NULL; 
+    _is_capture_end = true;
     
     _stack.push_back(new decode::Decoder(dec));
  
@@ -609,8 +610,6 @@ void DecoderStack::execute_decode_stack()
     
     // Get the intial sample count
     _sample_count = _snapshot->get_sample_count();
-
-    dsv_info("%s%llu", "decoder sample count: ", _sample_count);
  
     // Create the decoders
     for(auto dec : _stack)
@@ -630,8 +629,14 @@ void DecoderStack::execute_decode_stack()
 
 		prev_di = di;
         decode_start = dec->decode_start();
-        decode_end = min(dec->decode_end(), _sample_count-1);
+
+        if (_session->is_realtime_mode() == false)
+            decode_end = min(dec->decode_end(), _sample_count-1);
+        else
+            decode_end = max(dec->decode_end(), decode_end);
 	}
+
+    dsv_info("decoder start sample:%llu, end sample:%llu, count:%llu", decode_start, decode_end, decode_end - decode_start + 1);
 
 	// Start the session
 	srd_session_metadata_set(session, SRD_CONF_SAMPLERATE,

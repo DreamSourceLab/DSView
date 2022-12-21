@@ -164,6 +164,14 @@ public:
         return _decoder_status;
     }
 
+    inline bool is_capture_end(){
+        return _is_capture_end;
+    }
+
+    inline void set_capture_end_flag(bool isEnd){
+        _is_capture_end = isEnd;
+    }
+
 private:
     void decode_data(const uint64_t decode_start, const uint64_t decode_end, srd_session *const session);
 	void execute_decode_stack();
@@ -196,6 +204,7 @@ private:
  
     decode_task_status  *_stask_stauts;    
     mutable std::mutex _output_mutex; 
+    bool            _is_capture_end;
 
 	friend class DecoderStackTest::TwoDecoderStack;
 };
