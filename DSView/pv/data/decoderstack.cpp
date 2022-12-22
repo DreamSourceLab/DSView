@@ -452,14 +452,17 @@ void DecoderStack::do_decode_work()
 	if (data == NULL)
 		return;
 
-	// Check we have a snapshot of data
-    const auto &snapshots = data->get_snapshots();
-	if (snapshots.empty())
-		return;
+    if (_session->is_realtime_mode() == false)
+    {
+	    // Check we have a snapshot of data
+        const auto &snapshots = data->get_snapshots();
+        if (snapshots.empty())
+            return;
 
-	_snapshot = snapshots.front();
-    if (_snapshot->empty())
-        return;
+        _snapshot = snapshots.front();
+        if (_snapshot->empty())
+            return;
+    }
 
     // Get the samplerate
 	_samplerate = data->samplerate();
@@ -512,12 +515,23 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
     if( i >= decode_end){
         dsv_info("%s", "decode data index have been end");
     }
+
+    std::vector<const uint8_t *> chunk;
+    std::vector<uint8_t> chunk_const;
   
     while(i < decode_end && !_no_memory && !status->_bStop)
     {
-        std::vector<const uint8_t *> chunk;
-        std::vector<uint8_t> chunk_const;
+        chunk.clear();
+        chunk_const.clear();
+
         uint64_t chunk_end = decode_end;
+
+        // Wait the data is ready.
+        if (!_is_capture_end && i == _snapshot->get_ring_sample_count())
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            continue;
+        }
 
         for (int j =0 ; j < logic_di->dec_num_channels; j++) {
             int sig_index = logic_di->dec_channelmap[j];
@@ -609,7 +623,7 @@ void DecoderStack::execute_decode_stack()
 	assert(session);
     
     // Get the intial sample count
-    _sample_count = _snapshot->get_sample_count();
+    _sample_count = _snapshot->get_ring_sample_count();
  
     // Create the decoders
     for(auto dec : _stack)

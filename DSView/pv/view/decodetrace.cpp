@@ -663,6 +663,8 @@ void DecodeTrace::frame_ended()
         _decode_cursor2 = 0;
     }
 
+    decoder()->frame_ended();
+
     for(auto dec : _decoder_stack->stack()) {
         dec->set_decode_region(_decode_start, _decode_end);
         dec->commit();

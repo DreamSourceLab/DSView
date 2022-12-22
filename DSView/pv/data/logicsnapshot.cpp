@@ -477,11 +477,13 @@ void LogicSnapshot::calc_mipmap(unsigned int order, uint8_t index0, uint8_t inde
 } 
 
 const uint8_t *LogicSnapshot::get_samples(uint64_t start_sample, uint64_t &end_sample, int sig_index)
-{
-    uint64_t sample_count = _sample_count;
-    assert(start_sample < sample_count);
-    assert(end_sample <= sample_count);
+{ 
+    assert(start_sample < _ring_sample_count);
     assert(start_sample <= end_sample);
+
+    if (end_sample >= _ring_sample_count){
+        end_sample = _ring_sample_count - 1;
+    }
 
     int order = get_ch_order(sig_index);
     uint64_t index0 = start_sample >> (LeafBlockPower + RootScalePower);
@@ -492,7 +494,7 @@ const uint8_t *LogicSnapshot::get_samples(uint64_t start_sample, uint64_t &end_s
                  (index1 << LeafBlockPower) +
                  ~(~0ULL << LeafBlockPower);
 
-    end_sample = min(end_sample + 1, sample_count);
+    end_sample = min(end_sample + 1, _ring_sample_count);
 
     if (order == -1 || _ch_data[order][index0].lbp[index1] == NULL)
         return NULL;

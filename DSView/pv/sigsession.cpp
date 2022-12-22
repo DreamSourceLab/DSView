@@ -487,7 +487,6 @@ namespace pv
                     // On real-time mode, create the decode task when capture started.
                     if (is_realtime_mode())
                     {
-                        de->decoder()->frame_ended();
                         de->frame_ended();
                         add_decode_task(de);
                     }                
@@ -1998,7 +1997,6 @@ namespace pv
 
                     // If is not the real-time mode, try to create all decode tasks.
                     if (is_realtime_mode() == false){ 
-                        de->decoder()->frame_ended();
                         de->frame_ended();
                         add_decode_task(de);
                     }               
