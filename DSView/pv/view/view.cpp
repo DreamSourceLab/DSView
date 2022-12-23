@@ -216,10 +216,11 @@ void View::capture_init()
         show_trig_cursor(true);
     else if (!_session->is_repeating())
         show_trig_cursor(false);
-
+ 
     _maxscale = _session->cur_sampletime() / (get_view_width() * MaxViewRate);
     if (mode == ANALOG)
         set_scale_offset(_maxscale, 0);
+    
     status_clear();
     _trig_time_setted = false;
     _trig_hoff = 0;

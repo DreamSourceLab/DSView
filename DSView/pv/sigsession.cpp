@@ -470,6 +470,9 @@ namespace pv
         else
             _is_instant = instant;
 
+        set_cur_snap_samplerate(_device_agent.get_sample_rate());
+        set_cur_samplelimits(_device_agent.get_sample_limit());
+
         _callback->trigger_message(DSV_MSG_START_COLLECT_WORK_PREV);
 
         if (exec_capture())
@@ -662,6 +665,9 @@ namespace pv
 
         if (_data_updated)
         {
+            if (_device_agent.get_work_mode() != LOGIC)
+                data_updated();
+                
             _data_updated = false;
             _noData_cnt = 0;
             data_auto_unlock();

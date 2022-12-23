@@ -147,9 +147,6 @@ void Viewport::paintEvent(QPaintEvent *event)
 void Viewport::doPaint(bool bForce)
 {     
     using pv::view::Signal;
-
-   // if (_view.session().is_stopped_status())
-    //    dsv_info("paint"); 
    
     QStyleOption o;
     o.initFrom(this);
