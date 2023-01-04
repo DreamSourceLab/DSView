@@ -98,8 +98,7 @@
 #include "ZipMaker.h"
 #include "ui/langresource.h"
 #include "mainframe.h"
-
-#define BASE_SESSION_VERSION 3
+#include "dsvdef.h"
 
 namespace pv
 {
@@ -631,7 +630,7 @@ namespace pv
         QString title = QApplication::applicationName() + " v" + QApplication::applicationVersion();
 
         QJsonArray channelVar;
-        sessionVar["Version"] = QJsonValue::fromVariant(BASE_SESSION_VERSION);
+        sessionVar["Version"] = QJsonValue::fromVariant(SESSION_FORMAT_VERSION);
         sessionVar["Device"] = QJsonValue::fromVariant(_device_agent->driver_name());
         sessionVar["DeviceMode"] = QJsonValue::fromVariant(_device_agent->get_work_mode());
         sessionVar["Language"] = QJsonValue::fromVariant(app._frameOptions.language);

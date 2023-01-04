@@ -44,10 +44,6 @@ public:
     uint64_t get_ring_start();
     uint64_t get_ring_end();
 
-    inline const void* get_data(){
-        return _data;
-    }
-
     inline int unit_size(){
         return _unit_size;
     }
@@ -91,23 +87,20 @@ protected:
     uint64_t ring_end();
 
 protected:
-     mutable std::mutex  _mutex;
-
-  
-    void* _data;
+    mutable std::mutex  _mutex;  
     mutable std::vector<uint16_t> _ch_index;
 
-    uint64_t _capacity;
+    uint64_t    _capacity;
     unsigned int _channel_num;
-	uint64_t _sample_count;
-    uint64_t _total_sample_count;
-    uint64_t _ring_sample_count;
-	int _unit_size;
-    uint8_t _unit_bytes;
-    uint16_t _unit_pitch;
-    bool _memory_failed;
-    bool _last_ended;
-    bool _have_data;
+	uint64_t    _sample_count;
+    uint64_t    _total_sample_count;
+    uint64_t    _ring_sample_count;
+	int         _unit_size;
+    uint8_t     _unit_bytes;
+    uint16_t    _unit_pitch;
+    bool        _memory_failed;
+    bool        _last_ended;
+    bool        _have_data;
 };
 
 } // namespace data

@@ -45,6 +45,7 @@ AnalogSnapshot::AnalogSnapshot() :
 {
 	memset(_envelope_levels, 0, sizeof(_envelope_levels));
     _unit_pitch = 0;
+    _data  = NULL;
 }
 
 AnalogSnapshot::~AnalogSnapshot()
@@ -83,6 +84,16 @@ void AnalogSnapshot::init_all()
             //_envelope_levels[i][level].count = 0;
             _envelope_levels[i][level].data_length = 0;
         }
+    }
+}
+
+void AnalogSnapshot::free_data()
+{
+    Snapshot::free_data();
+
+    if (_data != NULL){
+        free(_data);
+        _data = NULL;
     }
 }
 
@@ -388,6 +399,10 @@ uint64_t AnalogSnapshot::get_block_size(int block_index)
         else
             return size % LeafBlockSamples;
     }
+}
+
+void* AnalogSnapshot::get_data(){
+    return _data;
 }
 
 } // namespace data

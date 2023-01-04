@@ -92,7 +92,6 @@ void LogicSnapshot::init_all()
     _byte_fraction = 0;
     _ch_fraction = 0;
     _dest_ptr = NULL;
-    _data = NULL;
     _memory_failed = false;
     _last_ended = true;
 }
@@ -220,6 +219,7 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
 
                 if (lbp == NULL) {
                     _memory_failed = true;
+                    dsv_err("LogicSnapshot::append_cross_payload, Malloc memory failed!");
                     return;
                 } 
                 iter[index0].lbp[index1] = lbp;             

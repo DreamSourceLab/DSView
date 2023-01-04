@@ -204,9 +204,10 @@ void SpectrumStack::calc_fft()
     // prepare _xn data
     const int offset = dsoSig->get_hw_offset();
     const double vscale = dsoSig->get_vDialValue() * dsoSig->get_factor() * DS_CONF_DSO_VDIVS / (1000*255.0);
-    const uint16_t step = _snapshot->get_channel_num() * _sample_interval;
+    const uint16_t step = _sample_interval;
     const uint8_t *const samples = _snapshot->get_samples(0, _sample_num*_sample_interval-1, _index);
     double wsum = 0;
+    
     for (unsigned int i = 0; i < _sample_num; i++) {
         double w = window(i, _windows_index);
         _xn[i] = (samples[i*step] - offset) * vscale * w;

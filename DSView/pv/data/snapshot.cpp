@@ -30,7 +30,6 @@ namespace pv {
 namespace data {
 
 Snapshot::Snapshot(int unit_size, uint64_t total_sample_count, unsigned int channel_num) :
-    _data(NULL),
     _capacity(0),
     _channel_num(channel_num),
     _sample_count(0),
@@ -53,12 +52,8 @@ Snapshot::~Snapshot()
 
 void Snapshot::free_data()
 {
-    if (_data) {
-        free(_data);
-        _data = NULL;
-        _capacity = 0;
-        _sample_count = 0;
-    }
+    _capacity = 0;
+    _sample_count = 0;
     _ch_index.clear();
 }
 

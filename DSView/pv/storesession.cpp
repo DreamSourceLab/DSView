@@ -209,118 +209,53 @@ bool StoreSession::save_start()
     return false;
 }
 
-void StoreSession::save_proc(data::Snapshot *snapshot)
+void StoreSession::save_logic(pv::data::LogicSnapshot *logic_snapshot)
 {
-	assert(snapshot);
-
     char chunk_name[20] = {0};
-
+    uint16_t to_save_probes = 0;
+    bool sample;
     int ret = SR_ERR;
-    int num = 0;
-    data::LogicSnapshot *logic_snapshot = NULL;
-    //data::AnalogSnapshot *analog_snapshot = NULL;
-    //data::DsoSnapshot *dso_snapshot = NULL;
+    int num;
 
-    if ((logic_snapshot = dynamic_cast<data::LogicSnapshot*>(snapshot))) {
-        uint16_t to_save_probes = 0;
-        for(auto s : _session->get_signals()) {
-            if (s->enabled() && logic_snapshot->has_data(s->get_index()))
-                to_save_probes++;
-        }
-        _unit_count = logic_snapshot->get_sample_count() / 8 * to_save_probes;
-        num = logic_snapshot->get_block_num();
-        bool sample;
-
-        for(auto s : _session->get_signals()) {
-            int ch_type = s->get_type();
-            if (ch_type == SR_CHANNEL_LOGIC) {
-                int ch_index = s->get_index();
-                if (!s->enabled() || !logic_snapshot->has_data(ch_index))
-                    continue;
-                for (int i = 0; !_canceled && i < num; i++) {
-                    uint8_t *buf = logic_snapshot->get_block_buf(i, ch_index, sample);
-                    uint64_t size = logic_snapshot->get_block_size(i);
-                    bool need_malloc = (buf == NULL);
-                    if (need_malloc) {
-                        buf = (uint8_t *)malloc(size);
-                        if (buf == NULL) {
-                            _has_error = true;
-                            _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_SAVEPROC_ERROR1), 
-                                     "Failed to create zip file. Malloc error.");
-                        } else {
-                            memset(buf, sample ? 0xff : 0x0, size);
-                        }
-                    }
-                    
-                    MakeChunkName(chunk_name, i, ch_index, ch_type, File_Version);
-                    ret = m_zipDoc.AddFromBuffer(chunk_name, (const char*)buf, size) ? SR_OK : -1;
-
-                    if (ret != SR_OK) {
-                        if (!_has_error) {
-                            _has_error = true;
-                            _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_SAVEPROC_ERROR2), 
-                                     "Failed to create zip file. Please check write permission of this path.");
-                        }
-                        progress_updated();
-                        if (_has_error)
-                            QFile::remove(_file_name);
-                        return;
-                    }
-                    _units_stored += size;
-                    if (need_malloc)
-                        free(buf);
-                    progress_updated();
-                }
-            }
-        }
+    for(auto s : _session->get_signals()) {
+        if (s->enabled() && logic_snapshot->has_data(s->get_index()))
+            to_save_probes++;
     }
-    else {
-        int ch_type = -1;
-        for(auto s : _session->get_signals()) {
-            ch_type = s->get_type();
-            break;
-        }
-        if (ch_type != -1) {
-            num = snapshot->get_block_num();
-            _unit_count = snapshot->get_sample_count() *
-                          snapshot->get_unit_bytes() *
-                          snapshot->get_channel_num();
-            uint8_t *buf = (uint8_t *)snapshot->get_data() +
-                           (snapshot->get_ring_start() * snapshot->get_unit_bytes() * snapshot->get_channel_num());
-            const uint8_t *buf_start = (uint8_t *)snapshot->get_data();
-            const uint8_t *buf_end = buf_start + _unit_count;
+
+    _unit_count = logic_snapshot->get_sample_count() / 8 * to_save_probes;
+    num = logic_snapshot->get_block_num();
+
+    for(auto s : _session->get_signals()) 
+    {
+        int ch_type = s->get_type();
+        if (ch_type == SR_CHANNEL_LOGIC) {
+            int ch_index = s->get_index();
+            if (!s->enabled() || !logic_snapshot->has_data(ch_index))
+                continue;
 
             for (int i = 0; !_canceled && i < num; i++) {
-                const uint64_t size = snapshot->get_block_size(i);
-                if ((buf + size) > buf_end) {
-                    uint8_t *tmp = (uint8_t *)malloc(size);
-                    if (tmp == NULL) {
+                uint8_t *buf = logic_snapshot->get_block_buf(i, ch_index, sample);
+                uint64_t size = logic_snapshot->get_block_size(i);
+                bool need_malloc = (buf == NULL);
+                if (need_malloc) {
+                    buf = (uint8_t *)malloc(size);
+                    if (buf == NULL) {
                         _has_error = true;
                         _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_SAVEPROC_ERROR1), 
-                                 "Failed to create zip file. Malloc error.");
+                                    "Failed to create zip file. Malloc error.");
                     } else {
-                        memcpy(tmp, buf, buf_end-buf);
-                        memcpy(tmp+(buf_end-buf), buf_start, buf+size-buf_end);
-                    } 
-
-                    MakeChunkName(chunk_name, i, 0, ch_type, File_Version);
-                    ret = m_zipDoc.AddFromBuffer(chunk_name, (const char*)tmp, size) ? SR_OK : -1;
-
-                    buf += (size - _unit_count);
-                    if (tmp)
-                        free(tmp);
-                } else { 
-
-                    MakeChunkName(chunk_name, i, 0, ch_type, File_Version);
-                    ret = m_zipDoc.AddFromBuffer(chunk_name, (const char*)buf, size) ? SR_OK : -1;
-
-                    buf += size;
+                        memset(buf, sample ? 0xff : 0x0, size);
+                    }
                 }
+                
+                MakeChunkName(chunk_name, i, ch_index, ch_type, HEADER_FORMAT_VERSION);
+                ret = m_zipDoc.AddFromBuffer(chunk_name, (const char*)buf, size) ? SR_OK : -1;
+
                 if (ret != SR_OK) {
                     if (!_has_error) {
                         _has_error = true;
                         _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_SAVEPROC_ERROR2), 
-                                "Failed to create zip file. Please check write permission of this path.");
+                                    "Failed to create zip file. Please check write permission of this path.");
                     }
                     progress_updated();
                     if (_has_error)
@@ -328,14 +263,18 @@ void StoreSession::save_proc(data::Snapshot *snapshot)
                     return;
                 }
                 _units_stored += size;
+                if (need_malloc)
+                    free(buf);
                 progress_updated();
             }
         }
     }
-	progress_updated();
 
-    if (_canceled || num == 0)
+    progress_updated();
+
+    if (_canceled || num == 0){
         QFile::remove(_file_name);
+    }
     else {
         bool bret = m_zipDoc.Close();
         m_zipDoc.Release();
@@ -345,6 +284,165 @@ void StoreSession::save_proc(data::Snapshot *snapshot)
             _error = m_zipDoc.GetError();
         }
     } 
+}
+
+void StoreSession::save_analog(pv::data::AnalogSnapshot *analog_snapshot)
+{
+    char chunk_name[20] = {0};
+    int num;
+    int ret = SR_ERR;
+
+    int ch_type = -1;
+    for(auto s : _session->get_signals()) {
+        ch_type = s->get_type();
+        break;
+    }
+
+    if (ch_type != -1) {
+        num = analog_snapshot->get_block_num();
+        _unit_count = analog_snapshot->get_sample_count() *
+                        analog_snapshot->get_unit_bytes() *
+                        analog_snapshot->get_channel_num();
+        uint8_t *buf = NULL;
+        uint8_t *buf_start = NULL;
+
+        buf = (uint8_t *)analog_snapshot->get_data() +
+                        (analog_snapshot->get_ring_start() * analog_snapshot->get_unit_bytes()
+                                         * analog_snapshot->get_channel_num());
+
+        buf_start = (uint8_t *)analog_snapshot->get_data();
+
+        const uint8_t *buf_end = buf_start + _unit_count;
+
+        for (int i = 0; !_canceled && i < num; i++) {
+            const uint64_t size = analog_snapshot->get_block_size(i);
+            if ((buf + size) > buf_end) {
+                uint8_t *tmp = (uint8_t *)malloc(size);
+                if (tmp == NULL) {
+                    _has_error = true;
+                    _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_SAVEPROC_ERROR1), 
+                                "Failed to create zip file. Malloc error.");
+                } else {
+                    memcpy(tmp, buf, buf_end-buf);
+                    memcpy(tmp+(buf_end-buf), buf_start, buf+size-buf_end);
+                } 
+
+                MakeChunkName(chunk_name, i, 0, ch_type, HEADER_FORMAT_VERSION);
+                ret = m_zipDoc.AddFromBuffer(chunk_name, (const char*)tmp, size) ? SR_OK : -1;
+
+                buf += (size - _unit_count);
+                if (tmp)
+                    free(tmp);
+            } 
+            else { 
+                MakeChunkName(chunk_name, i, 0, ch_type, HEADER_FORMAT_VERSION);
+                ret = m_zipDoc.AddFromBuffer(chunk_name, (const char*)buf, size) ? SR_OK : -1;
+
+                buf += size;
+            }
+
+            if (ret != SR_OK) {
+                if (!_has_error) {
+                    _has_error = true;
+                    _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_SAVEPROC_ERROR2), 
+                            "Failed to create zip file. Please check write permission of this path.");
+                }
+                progress_updated();
+                if (_has_error)
+                    QFile::remove(_file_name);
+                return;
+            }
+            _units_stored += size;
+            progress_updated();
+        }
+    }
+
+    progress_updated();
+
+    if (_canceled || num == 0){
+        QFile::remove(_file_name);
+    }
+    else {
+        bool bret = m_zipDoc.Close();
+        m_zipDoc.Release();
+
+        if (!bret){
+            _has_error = true;
+            _error = m_zipDoc.GetError();
+        }
+    } 
+}
+
+void StoreSession::save_dso(pv::data::DsoSnapshot *dso_snapshot)
+{
+    char chunk_name[20] = {0};
+    int ret = SR_ERR; 
+
+    int ch_type = -1;
+    for(auto s : _session->get_signals()) {
+        ch_type = s->get_type();
+        break;
+    }
+
+    uint64_t size = dso_snapshot->get_sample_count();
+    int ch_num = dso_snapshot->get_channel_num();
+    _unit_count = size * ch_num;
+
+    for (int i = 0; !_canceled && ch_type != -1 && i < ch_num; i++) {
+        
+        const uint8_t *data_buffer = dso_snapshot->get_samples(0, 0, i);
+        
+        snprintf(chunk_name, 19, "data/%d", i);
+        ret = m_zipDoc.AddFromBuffer(chunk_name, (const char*)data_buffer, size) ? SR_OK : -1;
+
+        if (ret != SR_OK) {
+            if (!_has_error) {
+                _has_error = true;
+                _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_SAVEPROC_ERROR2), 
+                        "Failed to create zip file. Please check write permission of this path.");
+            }
+            progress_updated();
+            if (_has_error)
+                QFile::remove(_file_name);
+            return;
+        }
+        _units_stored += size;
+        progress_updated();
+    }   
+
+    progress_updated();
+
+    if (_canceled || size == 0){
+        QFile::remove(_file_name);
+    }
+    else {
+        bool bret = m_zipDoc.Close();
+        m_zipDoc.Release();
+
+        if (!bret){
+            _has_error = true;
+            _error = m_zipDoc.GetError();
+        }
+    }
+}
+
+void StoreSession::save_proc(data::Snapshot *snapshot)
+{
+	assert(snapshot);
+
+    data::LogicSnapshot *logic_snapshot = NULL;
+    data::AnalogSnapshot *analog_snapshot = NULL;
+    data::DsoSnapshot *dso_snapshot = NULL;
+
+    if ((logic_snapshot = dynamic_cast<data::LogicSnapshot*>(snapshot))) {
+        save_logic(logic_snapshot);
+    }
+    else if ((analog_snapshot = dynamic_cast<data::AnalogSnapshot*>(snapshot))) {
+        save_analog(analog_snapshot);
+    }
+    else if ((dso_snapshot = dynamic_cast<data::DsoSnapshot*>(snapshot))) {
+        save_dso(dso_snapshot);
+    }
 }
 
 bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
@@ -359,7 +457,7 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
     char meta[300] = {0};
   
     sprintf(meta, "%s", "[version]\n"); str += meta;
-    sprintf(meta, "version = %d\n", File_Version); str += meta;
+    sprintf(meta, "version = %d\n", HEADER_FORMAT_VERSION); str += meta;
     sprintf(meta, "%s", "[header]\n"); str += meta;
 
     int mode = _session->get_device()->get_work_mode();
@@ -815,17 +913,39 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
         }
 
     } else if (channel_type == SR_CHANNEL_DSO) {
-        _unit_count = snapshot->get_sample_count();
-        unsigned char* datat = (unsigned char*)snapshot->get_data();
+        _unit_count = snapshot->get_sample_count(); 
         unsigned int usize = 8192;
         unsigned int size = usize;
         struct sr_datafeed_dso dp; 
+
+        uint8_t *ch_data_buffer = (uint8_t*)malloc(usize * dso_snapshot->get_channel_num() + 1);
+        if (ch_data_buffer == NULL){
+            dsv_err("%s", "StoreSession::export_proc, malloc failed.");
+            return;
+        }
+
+        int ch_num = dso_snapshot->get_channel_num();
 
         for(uint64_t i = 0; !_canceled && i < _unit_count; i+=usize){
             if(_unit_count - i < usize)
                 size = _unit_count - i;
 
-            dp.data = &datat[i*snapshot->get_channel_num()];
+            // Make the cross data buffer.
+            for (int ch=0; ch<ch_num; ch++)
+            {
+                uint8_t *wr = ch_data_buffer + ch;
+                const uint8_t *rd = dso_snapshot->get_samples(0,0, ch) + i;
+                const uint8_t *rd_end = rd + size;
+                
+                while (rd < rd_end)
+                {
+                    *wr = *rd;                     
+                    wr += ch_num;
+                    rd++;
+                }
+            }
+
+            dp.data = ch_data_buffer;
             dp.num_samples = size;
             p.type = SR_DF_DSO;
             p.status = SR_PKT_OK;
@@ -842,9 +962,14 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
             progress_updated();
         }
 
+        if (ch_data_buffer){
+            free(ch_data_buffer);
+            ch_data_buffer = NULL;
+        }
+
     } else if (channel_type == SR_CHANNEL_ANALOG) {
         _unit_count = snapshot->get_sample_count();
-        unsigned char* datat = (unsigned char*)snapshot->get_data();
+        unsigned char* datat = (unsigned char*)analog_snapshot->get_data();
         unsigned int usize = 8192;
         unsigned int size = usize;
         struct sr_datafeed_analog ap;
@@ -1364,7 +1489,7 @@ void StoreSession::MakeChunkName(char *chunk_name, int chunk_num, int index, int
 { 
     chunk_name[0] = 0;
 
-    if (version == 2)
+    if (version >= 2)
     {
         const char *type_name = NULL;
         type_name = (type == SR_CHANNEL_LOGIC) ? "L" : (type == SR_CHANNEL_DSO)  ? "O"

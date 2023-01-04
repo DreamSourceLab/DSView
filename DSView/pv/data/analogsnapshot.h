@@ -107,17 +107,19 @@ public:
     int get_block_num();
     uint64_t get_block_size(int block_index);
 
+    void* get_data();
+
 private:
     void append_data(void *data, uint64_t samples, uint16_t pitch);
     void free_envelop();
 	void reallocate_envelope(Envelope &l);
 	void append_payload_to_envelope_levels();
-
-
+    void free_data();
 
 private:
+    void *_data;
     struct Envelope _envelope_levels[DS_MAX_ANALOG_PROBES_NUM][ScaleStepCount];
-	friend class AnalogSnapshotTest::Basic;
+	friend class AnalogSnapshotTest::Basic;    
 };
 
 } // namespace data

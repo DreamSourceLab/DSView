@@ -90,35 +90,36 @@ public:
                        std::map<int, bool> ch_enable, bool instant);
 
     void append_payload(const sr_datafeed_dso &dso);
-
-    const uint8_t* get_samples(int64_t start_sample,
-        int64_t end_sample, uint16_t index);
+    const uint8_t* get_samples(int64_t start_sample, int64_t end_sample, uint16_t index);
 
 	void get_envelope_section(EnvelopeSection &s,
         uint64_t start, uint64_t end, float min_length, int probe_index);
 
     void enable_envelope(bool enable);
-
     double cal_vrms(double zero_off, int index);
     double cal_vmean(int index);
-
     bool has_data(int index);
     int get_block_num();
     uint64_t get_block_size(int block_index);
+
+    bool get_max_min_value(uint8_t &maxv, uint8_t &minv);
+    void* get_data();  
 
 private:
     void append_data(void *data, uint64_t samples, bool instant);
     void free_envelop();
 	void reallocate_envelope(Envelope &l);
     void append_payload_to_envelope_levels(bool header);
+    void free_data();
 
 private:
     struct Envelope _envelope_levels[2*DS_MAX_DSO_PROBES_NUM][ScaleStepCount];
-    bool _envelope_en;
-    bool _envelope_done;
-    bool _instant;
-    std::map<int, bool> _ch_enable;
-
+    bool    _envelope_en;
+    bool    _envelope_done;
+    bool    _instant;
+    std::map<int, bool>     _ch_enable;
+    std::vector<uint8_t*>   _ch_data;
+ 
     friend class DsoSnapshotTest::Basic;
 };
 

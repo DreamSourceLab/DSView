@@ -39,6 +39,9 @@ class SigSession;
 
 namespace data {
 class Snapshot;
+class LogicSnapshot;
+class AnalogSnapshot;
+class DsoSnapshot;
 }
 
 namespace dock {
@@ -48,10 +51,7 @@ class ProtocolDock;
 class StoreSession : public QObject
 {
 	Q_OBJECT
-
-private:
-    const static int File_Version = 2;
-
+  
 public:
     StoreSession(SigSession *session);
 
@@ -73,6 +73,9 @@ public:
 
 private:
     void save_proc(pv::data::Snapshot *snapshot);
+    void save_logic(pv::data::LogicSnapshot *logic_snapshot);
+    void save_analog(pv::data::AnalogSnapshot *analog_snapshot);
+    void save_dso(pv::data::DsoSnapshot *dso_snapshot);
     bool meta_gen(data::Snapshot *snapshot, std::string &str);
     void export_proc(pv::data::Snapshot *snapshot);   
     bool decoders_gen(std::string &str);

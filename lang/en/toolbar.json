@@ -133,8 +133,10 @@
         "id": "IDS_FILEBAR_CAPTURE",
         "text": "&Capture..."
     },
-
-
+    {
+        "id": "IDS_FILEBAR_CONVERT_LOGIC",
+        "text": "Lo&gic"
+    },
     {
         "id": "IDS_LOGOBAR_HELP",
         "text": "Help"

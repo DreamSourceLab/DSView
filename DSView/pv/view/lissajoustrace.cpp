@@ -171,11 +171,10 @@ void LissajousTrace::paint_mid(QPainter &p, int left, int right, QColor fore, QC
             const uint8_t *const samples = snapshot->get_samples(0, sample_count-1, 0);
 
             for (uint64_t i = 0; i < sample_count; i++) {
-                *point++ = QPointF(left + samples[i*channel_num + _xIndex] * scale,
-                                   bottom - samples[i*channel_num + _yIndex] * scale);
+                *point++ = QPointF(left + samples[i + _xIndex] * scale,
+                                   bottom - samples[i + _yIndex] * scale);
             }
             p.setPen(view::View::Blue);
-            //p.drawPoints(points, sample_count);
             p.drawPolyline(points, point - points);
             delete[] points;
         }

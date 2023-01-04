@@ -53,7 +53,7 @@ GroupSnapshot::GroupSnapshot(const LogicSnapshot *_logic_snapshot, std::list<int
 
    
 	memset(_envelope_levels, 0, sizeof(_envelope_levels));
-    _data = logic_snapshot->get_data();
+   // _data = logic_snapshot->get_data();
     _sample_count = logic_snapshot->get_sample_count();
     _unit_size = logic_snapshot->unit_size();
     _index_list = index_list;

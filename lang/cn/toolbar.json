@@ -133,8 +133,10 @@
         "id": "IDS_FILEBAR_CAPTURE",
         "text": "截屏(&C)"
     },
-
-
+    {
+        "id": "IDS_FILEBAR_CONVERT_LOGIC",
+        "text": "逻辑分析(&G)"
+    },
     {
         "id": "IDS_LOGOBAR_HELP",
         "text": "帮助"

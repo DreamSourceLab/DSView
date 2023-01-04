@@ -106,7 +106,6 @@ struct session_vdev
 
     void *buf;
     void *logic_buf;
-    int64_t bytes_read;
     int cur_channel;
     int cur_block;
     int num_blocks;
@@ -277,7 +276,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
                 return FALSE;
             }
         }
-        else if (vdev->version == 2)
+        else if (vdev->version > 1)
         {
             channel = vdev->cur_channel;
             pl = sdi->channels;
@@ -299,13 +298,13 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
 
                 if (unzLocateFile(vdev->archive, file_name, 0) != UNZ_OK)
                 {
-                    sr_err("cant't locate zip inner file:%s", file_name);
+                    sr_err("cant't locate zip inner file:\"%s\"", file_name);
                     send_error_packet(sdi, vdev, &packet);
                     return FALSE;
                 }
                 if (unzOpenCurrentFile(vdev->archive) != UNZ_OK)
                 {
-                    sr_err("cant't open zip inner file:%s", file_name);
+                    sr_err("cant't open zip inner file:\"%s\"", file_name);
                     send_error_packet(sdi, vdev, &packet);
                     return FALSE;
                 }
@@ -318,7 +317,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
 
                 if (-1 == ret)
                 {
-                    sr_err("read zip inner file error:%s", file_name);
+                    sr_err("read zip inner file error:\"%s\"", file_name);
                     send_error_packet(sdi, vdev, &packet);
                     return FALSE;
                 }
@@ -350,9 +349,10 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
                 analog.mqflags = SR_MQFLAG_AC;
                 analog.data = vdev->buf;
             }
-            else
-            {
-                if (vdev->version == 2){
+            else if (sdi->mode == LOGIC)
+            {   
+                // Only supports version 1 file.
+                if (vdev->version > 1){
                     assert(0);
                 }
 
@@ -366,13 +366,11 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
                     logic.index = 0;
                 logic.order = vdev->cur_channel;
 
-                //version == 1
                 logic.length = ret / 16 * vdev->enabled_probes;
                 logic.data = vdev->logic_buf;
                 trans_data(sdi);
             }
 
-            vdev->bytes_read += ret;
             ds_data_forward(sdi, &packet);
         }
         else
@@ -385,7 +383,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
             {
                 vdev->cur_channel++;
             }
-            else if (vdev->version == 2)
+            else if (vdev->version > 1)
             {
                 vdev->cur_block++;
                 // if read to the last block, move to next channel
@@ -408,20 +406,18 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
         {
             // abort
             close_archive(vdev);
-            vdev->bytes_read = 0;
         }
     }
 
     return TRUE;
 }
 
-static int receive_data_logic2(int fd, int revents, const struct sr_dev_inst *sdi)
+static int receive_data_logic_dso_v2(int fd, int revents, const struct sr_dev_inst *sdi)
 {
     struct session_vdev *vdev = NULL;
     struct sr_datafeed_packet packet;
     struct sr_datafeed_logic logic;
     struct sr_datafeed_dso dso;
-    struct sr_datafeed_analog analog;
     GSList *l;
     int ret;
     char file_name[32]; 
@@ -434,8 +430,9 @@ static int receive_data_logic2(int fd, int revents, const struct sr_dev_inst *sd
     int bToEnd;
     int chIndex; 
     int chan_num;
-    void *p_wr;
-    void *p_rd;
+    uint8_t *p_wr;
+    uint8_t *p_rd;
+    int byte_align;
 
     assert(sdi);
     assert(sdi->priv);
@@ -455,12 +452,18 @@ static int receive_data_logic2(int fd, int revents, const struct sr_dev_inst *sd
     assert(vdev->archive);
 
     chan_num = vdev->num_probes;
+    byte_align = sdi->mode == LOGIC ? 8 : 1;
 
     if (chan_num < 1){
         sr_err("%s: channel count < 1.", __func__);
         return SR_ERR_ARG;
-    }  
+    }
+    if (chan_num > SESSION_MAX_CHANNEL_COUNT){
+        sr_err("%s: channel count is to big.", __func__);
+        return SR_ERR_ARG;
+    }
 
+    // Make buffer
     if (vdev->packet_buffer == NULL){
         vdev->cur_block = 0;
 
@@ -470,12 +473,16 @@ static int receive_data_logic2(int fd, int revents, const struct sr_dev_inst *sd
             return SR_ERR_MALLOC;
         }
 
-        for (ch_index = 0; ch_index < SESSION_MAX_CHANNEL_COUNT; ch_index++){
+        for (ch_index = 0; ch_index <= chan_num; ch_index++){
             vdev->packet_buffer->block_bufs[ch_index] = NULL;
             vdev->packet_buffer->block_read_positions[ch_index] = 0;
         }
 
-        vdev->packet_buffer->post_buf_len = 8 * chan_num * 1000;
+        if (sdi->mode == LOGIC)
+            vdev->packet_buffer->post_buf_len = 8 * chan_num * 1000;
+        else
+            vdev->packet_buffer->post_buf_len = chan_num * 1000;
+
         vdev->packet_buffer->post_buf = g_try_malloc0(vdev->packet_buffer->post_buf_len + 1);
         if (vdev->packet_buffer->post_buf == NULL){
             sr_err("%s: vdev->packet_buffer->post_buf malloc failed", __func__);
@@ -504,12 +511,16 @@ static int receive_data_logic2(int fd, int revents, const struct sr_dev_inst *sd
 
             for (ch_index = 0; ch_index < chan_num; ch_index++)
             {
-                snprintf(file_name, sizeof(file_name)-1, "%s-%d/%d", "L",
-                        ch_index, vdev->cur_block);
+                if (sdi->mode == LOGIC){
+                    snprintf(file_name, sizeof(file_name)-1, "L-%d/%d", ch_index, vdev->cur_block);
+                }
+                else if (sdi->mode == DSO){
+                    snprintf(file_name, sizeof(file_name)-1, "data/%d", ch_index);
+                }
 
                 if (unzLocateFile(vdev->archive, file_name, 0) != UNZ_OK)
                 {
-                    sr_err("cant't locate zip inner file:%s", file_name);
+                    sr_err("cant't locate zip inner file:\"%s\"", file_name);
                     send_error_packet(sdi, vdev, &packet);
                     return FALSE;
                 }
@@ -525,9 +536,9 @@ static int receive_data_logic2(int fd, int revents, const struct sr_dev_inst *sd
                 if (ch_index == 0){  
                     pack_buffer->block_data_len = fileInfo.uncompressed_size;
                     
-                    if (pack_buffer->block_data_len > pack_buffer->block_buf_len){
-                        for (ch_index2 = 0; ch_index2 < chan_num; ch_index2++)
-                        {   
+                    if (pack_buffer->block_data_len > pack_buffer->block_buf_len)
+                    {
+                        for (ch_index2 = 0; ch_index2 < chan_num; ch_index2++){   
                             // Release the old buffer.
                             if (pack_buffer->block_bufs[ch_index2] != NULL){
                                 g_free(pack_buffer->block_bufs[ch_index2]);
@@ -556,7 +567,7 @@ static int receive_data_logic2(int fd, int revents, const struct sr_dev_inst *sd
                 // Read the data to buffer. 
                 if (unzOpenCurrentFile(vdev->archive) != UNZ_OK)
                 {
-                    sr_err("cant't open zip inner file:%s", file_name);
+                    sr_err("cant't open zip inner file:\"%s\"", file_name);
                     send_error_packet(sdi, vdev, &packet);
                     return FALSE;
                 }
@@ -564,7 +575,7 @@ static int receive_data_logic2(int fd, int revents, const struct sr_dev_inst *sd
                 ret = unzReadCurrentFile(vdev->archive, pack_buffer->block_bufs[ch_index], pack_buffer->block_data_len);
                 if (-1 == ret)
                 {
-                    sr_err("read zip inner file error:%s", file_name);
+                    sr_err("read zip inner file error:\"%s\"", file_name);
                     send_error_packet(sdi, vdev, &packet);
                     return FALSE;
                 }
@@ -576,16 +587,16 @@ static int receive_data_logic2(int fd, int revents, const struct sr_dev_inst *sd
             pack_buffer->block_chan_read_pos = 0;  
         }
 
-        p_wr = (pack_buffer->post_buf + pack_buffer->post_len);
-        p_rd = (pack_buffer->block_bufs[chIndex] + pack_buffer->block_read_positions[chIndex]);
-       *(uint8_t*)p_wr = *(uint8_t*)p_rd;
+        p_wr = (uint8_t*)pack_buffer->post_buf + pack_buffer->post_len;
+        p_rd = (uint8_t*)pack_buffer->block_bufs[chIndex] + pack_buffer->block_read_positions[chIndex];
+       *p_wr = *p_rd;
  
        pack_buffer->post_len++;
        pack_buffer->block_read_positions[chIndex]++;
 
-       if (pack_buffer->block_read_positions[chIndex] % 8 == 0 
+       if (pack_buffer->block_read_positions[chIndex] % byte_align == 0
             || pack_buffer->block_read_positions[chIndex] == pack_buffer->block_data_len)
-        {
+       {
             chIndex++;
 
             if (pack_buffer->block_read_positions[chIndex] == pack_buffer->block_data_len){
@@ -598,23 +609,34 @@ static int receive_data_logic2(int fd, int revents, const struct sr_dev_inst *sd
 
             if (chIndex == chan_num){
                 chIndex = 0;
-                pack_buffer->block_chan_read_pos += 8;
+                pack_buffer->block_chan_read_pos += byte_align;
             }
        }
     }
  
-    if (pack_buffer->post_len >= 8 * chan_num)
+    if (pack_buffer->post_len >= byte_align * chan_num)
     {  
-        packet.type = SR_DF_LOGIC;
-        packet.payload = &logic;
-        logic.format = LA_CROSS_DATA;
-        logic.index = 0;
-        logic.order = 0;
+        if (sdi->mode == LOGIC)
+        {
+            packet.type = SR_DF_LOGIC;
+            packet.payload = &logic;
+            logic.format = LA_CROSS_DATA;
+            logic.index = 0;
+            logic.order = 0;
+            logic.length = pack_buffer->post_len;
+            logic.data = pack_buffer->post_buf;
+        }
+        else{
+            packet.type = SR_DF_DSO;
+            packet.payload = &dso;            
+            dso.probes = sdi->channels;
+            dso.mq = SR_MQ_VOLTAGE;
+            dso.unit = SR_UNIT_VOLT;
+            dso.mqflags = SR_MQFLAG_AC; 
+            dso.num_samples = pack_buffer->post_len / chan_num;
+            dso.data = pack_buffer->post_buf;
+        }       
 
-        logic.length = pack_buffer->post_len;
-        logic.data = pack_buffer->post_buf;
-
-        vdev->bytes_read += ret;
         ds_data_forward(sdi, &packet);
         pack_buffer->post_len = 0;        
     }  
@@ -625,11 +647,11 @@ static int receive_data_logic2(int fd, int revents, const struct sr_dev_inst *sd
         ds_data_forward(sdi, &packet);
         sr_session_source_remove(-1);
         close_archive(vdev);
-        vdev->bytes_read = 0;
     }
 
     return TRUE;
 }
+
 
 /* driver callbacks */
 static int dev_clear(void);
@@ -736,6 +758,9 @@ static int dev_close(struct sr_dev_inst *sdi)
                 if (pack_buf->block_bufs[i] != NULL){
                     g_free(pack_buf->block_bufs[i]);
                     pack_buf->block_bufs[i] = NULL;
+                }
+                else{
+                    break;
                 }
             }
         }
@@ -1328,13 +1353,13 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
     {
         if (unzLocateFile(vdev->archive, "data", 0) != UNZ_OK)
         {
-            sr_err("cant't locate zip inner file:%s", "data");
+            sr_err("cant't locate zip inner file:\"%s\"", "data");
             close_archive(vdev);
             return SR_ERR;
         }
         if (unzOpenCurrentFile(vdev->archive) != UNZ_OK)
         {
-            sr_err("cant't open zip inner file:%s", "data");
+            sr_err("cant't open zip inner file:\"%s\"", "data");
             close_archive(vdev);
             return SR_ERR;
         }
@@ -1373,8 +1398,9 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
     }
 
     /* freewheeling source */
-    if (sdi->mode == LOGIC && vdev->version == 2){
-        sr_session_source_add(-1, 0, 0, receive_data_logic2, sdi);
+    if ((sdi->mode == LOGIC && vdev->version > 1) 
+            || (sdi->mode == DSO && vdev->version > 2)){
+        sr_session_source_add(-1, 0, 0, receive_data_logic_dso_v2, sdi);
     }
     else{
         sr_session_source_add(-1, 0, 0, receive_data, sdi);
@@ -1590,6 +1616,7 @@ static int sr_load_virtual_device_session(struct sr_dev_inst *sdi)
                 if (!strcmp(keys[j], "version"))
                 {
                     version = strtoull(val, NULL, 10);
+                    sr_info("The 'header' file format version:%d", version);
                 }
             }
         }
@@ -1713,7 +1740,7 @@ static int sr_load_virtual_device_session(struct sr_dev_inst *sdi)
                         sr_dev_probe_name_set(sdi, tmp_u64, val);
                         sr_dev_probe_enable(sdi, tmp_u64, TRUE);
                     }
-                    else if (version == 2)
+                    else if (version > 1)
                     {
                         channel_type = (mode == DSO) ? SR_CHANNEL_DSO : (mode == ANALOG) ? SR_CHANNEL_ANALOG
                                                                                          : SR_CHANNEL_LOGIC;

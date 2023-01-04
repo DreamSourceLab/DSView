@@ -729,9 +729,7 @@ void DsoSignal::paint_prepare()
         return;
 
     if (!snapshot->has_data(get_index()))
-        return;
-
-    const uint16_t enabled_channels = snapshot->get_channel_num(); 
+        return; 
 
     if (session->trigd()) {
         if (get_index() == session->trigd_ch()) {
@@ -747,8 +745,8 @@ void DsoSignal::paint_prepare()
                 return;
             const uint8_t *const trig_samples = snapshot->get_samples(0, 0, get_index());
             for (uint16_t i = 0; i < TrigHRng; i++) {
-                const int64_t i0 = (trig_index - i - 1)*enabled_channels;
-                const int64_t i1 = (trig_index - i)*enabled_channels;
+                const int64_t i0 = trig_index - i - 1;
+                const int64_t i1 = trig_index - i;
                 if (i1 < 0)
                     break;
                 const uint8_t t0 = trig_samples[i0];
@@ -761,8 +759,6 @@ void DsoSignal::paint_prepare()
                 }
             }
         }
-        //if (_view->trig_hoff() == 0 && trig_samples[3] != _trig_value)
-        //    _view->set_trig_hoff(0);
     } else {
         _view->set_trig_hoff(0);
     }
@@ -1053,9 +1049,8 @@ void DsoSignal::paint_trace(QPainter &p,
 
     if (sample_count > 0) {
         pv::data::DsoSnapshot *pshot = const_cast<pv::data::DsoSnapshot*>(snapshot);
-        auto pdata = pshot->get_samples(start, end, get_index());
-        const uint8_t *const samples = pdata;
-        assert(samples);
+        const uint8_t *const samples_buffer = pshot->get_samples(start, end, get_index());;
+        assert(samples_buffer);
 
         QColor trace_colour = _colour;
         trace_colour.setAlpha(View::ForeAlpha);
@@ -1066,19 +1061,21 @@ void DsoSignal::paint_trace(QPainter &p,
 
         float top = get_view_rect().top();
         float bottom = get_view_rect().bottom();
+        float right =  (float)get_view_rect().right();
         double  pixels_per_sample = 1.0/samples_per_pixel;
 
-        uint8_t value;
-        int64_t sample_end = sample_count*num_channels;
+        uint8_t value; 
         float x = (start / samples_per_pixel - pixels_offset) + left + _view->trig_hoff()*pixels_per_sample;
-        for (int64_t sample = 0; sample < sample_end; sample+=num_channels) {
-            value = samples[sample];
-            const float y = min(max(top, zeroY + (value - hw_offset) * _scale), bottom);
-            if (x > get_view_rect().right()) {
+        float y;
+       
+        for (int64_t sample = 0; sample < sample_count; sample++) {
+            value = samples_buffer[sample];
+            y = min(max(top, zeroY + (value - hw_offset) * _scale), bottom);
+            if (x > right) {
                 point--;
-                const float lastY = point->y() + (y - point->y()) / (x - point->x()) * (get_view_rect().right() - point->x());
+                const float lastY = point->y() + (y - point->y()) / (x - point->x()) * (right - point->x());
                 point++;
-                *point++ = QPointF(get_view_rect().right(), lastY);
+                *point++ = QPointF(right, lastY);
                 break;
             }
             *point++ = QPointF(x, y);
