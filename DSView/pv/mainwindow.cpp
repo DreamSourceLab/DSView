@@ -1652,15 +1652,17 @@ namespace pv
             {
                 check_session_file_version();
 
-                bool bDoneDecoder = false;
-                // load session
-                load_session_json(get_session_json_from_file(_device_agent->path()), bDoneDecoder);
+                if (_device_agent->get_work_mode() == LOGIC){
+                    bool bDoneDecoder = false;
+                    // load session
+                    load_session_json(get_session_json_from_file(_device_agent->path()), bDoneDecoder);
 
-                if (!bDoneDecoder)
-                {
-                    StoreSession ss(_session);
-                    QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
-                    ss.load_decoders(_protocol_widget, deArray);
+                    if (!bDoneDecoder)
+                    {
+                        StoreSession ss(_session);
+                        QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
+                        ss.load_decoders(_protocol_widget, deArray);
+                    }
                 }
                 _session->start_capture(true);
             }
