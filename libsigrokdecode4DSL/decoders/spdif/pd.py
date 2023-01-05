@@ -239,21 +239,21 @@ class Decoder(srd.Decoder):
         bitcount = 0
 
         while len(pulse_type)>0:
-            samnum = self.samplenum.pop(0)
+            samnum = self.temp_samplenum.pop(0)
             pul_type = pulse_type.pop(0)
-            pul_width = self.pulse_width.pop(0)
+            pul_width = self.temp_pulse_width.pop(0)
             if pul_type == 1 and first_one:
                first_one = False
                subframe.append([pul_type,samnum - \
                     pul_width -1,samnum])
             elif pul_type == 1 and not first_one:
                 subframe[-1][2] = samnum
-                self.putx(subframe[-1][1],amnum, [2, ['1']])
+                self.putx(subframe[-1][1],samnum, [2, ['1']])
                 bitcount += 1
                 first_one = True
             else:
                 subframe.append([pul_type,samnum - \
-                    pul_width -1,amnum])
+                    pul_width -1,samnum])
                 self.putx(samnum - pul_width - 1,
                     samnum,[2,['0']])
                 bitcount += 1
