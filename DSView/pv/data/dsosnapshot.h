@@ -102,8 +102,15 @@ public:
     int get_block_num();
     uint64_t get_block_size(int block_index);
 
-    bool get_max_min_value(uint8_t &maxv, uint8_t &minv);
-    void* get_data();  
+    bool get_max_min_value(uint8_t &maxv, uint8_t &minv, int chan_index);
+
+    inline void set_threshold(float threshold){
+        _threshold = threshold;
+    }
+
+    inline float get_threshold(){
+        return _threshold;
+    }
 
 private:
     void append_data(void *data, uint64_t samples, bool instant);
@@ -119,6 +126,7 @@ private:
     bool    _instant;
     std::map<int, bool>     _ch_enable;
     std::vector<uint8_t*>   _ch_data;
+    float   _threshold;
  
     friend class DsoSnapshotTest::Basic;
 };

@@ -68,8 +68,6 @@ private:
     SigSession* _session;
 
     QToolButton _file_button;
-    QToolButton _cvt_button;
-    QAction     *_cvt_action;
     QMenu   *_menu;
     QMenu   *_menu_session; //when the hardware device is connected,it will be enable
     QAction *_action_load;

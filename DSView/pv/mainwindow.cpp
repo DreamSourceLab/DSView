@@ -1682,8 +1682,7 @@ namespace pv
 
         case DSV_MSG_DEVICE_MODE_CHANGED:
             _sampling_bar->update_sample_rate_selector();
-            _view->mode_changed();
-            _protocol_widget->del_all_protocol();
+            _view->mode_changed(); 
             reset_all_view();
             load_device_config();
             update_toolbar_view_status();

@@ -56,7 +56,14 @@ public:
     void setTitle(QString title);
     void reload(); 
     int exec();
-    inline bool IsClickYes(){return _clickYes;}
+
+    inline bool IsClickYes(){
+        return _clickYes;
+    }
+
+    inline bool IsAccept(){
+        return _clickYes;
+    }
 
     void SetTitleSpace(int h);
 

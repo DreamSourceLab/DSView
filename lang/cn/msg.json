@@ -350,5 +350,9 @@
     {
         "id": "IDS_MSG_BOX_CONFIRM",
         "text": "确认"
+    },
+    {
+        "id": "IDS_MSG_NO_DATA",
+        "text": "没有数据!"
     }
 ]

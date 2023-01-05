@@ -24,7 +24,6 @@
 #define DSVIEW_SV_GROUPSIGNAL_H
 
 #include "signal.h"
-#include "../data/groupsnapshot.h"
 
 #include <list> 
 
@@ -33,8 +32,6 @@ namespace pv {
 namespace data {
 class Logic;
 class Analog;
-class Group;
-class GroupSnapshot;
 }
 
 namespace view {
@@ -54,7 +51,6 @@ private:
 
 public:
     GroupSignal(QString name,
-        pv::data::Group *data,
                 std::list<int> probe_index_list, int group_index);
 
     virtual ~GroupSignal();
@@ -82,18 +78,15 @@ protected:
     void paint_type_options(QPainter &p, int right, const QPoint pt, QColor fore);
 
 private:
-	void paint_trace(QPainter &p,
-        const pv::data::GroupSnapshot *snapshot,
+    void paint_trace(QPainter &p,
 		int y, int left, const int64_t start, const int64_t end,
 		const double pixels_offset, const double samples_per_pixel);
 
-	void paint_envelope(QPainter &p,
-        const pv::data::GroupSnapshot *snapshot,
+    void paint_envelope(QPainter &p,
 		int y, int left, const int64_t start, const int64_t end,
 		const double pixels_offset, const double samples_per_pixel);
 
-private:
-    pv::data::Group *_data;
+private: 
 	float _scale;
 };
 

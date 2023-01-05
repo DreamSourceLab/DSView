@@ -20,9 +20,7 @@
  */
 
 #include "../dsvdef.h"
-#include "groupsignal.h"
-#include "../data/group.h"
-#include "../data/groupsnapshot.h"
+#include "groupsignal.h" 
 #include "view.h"
 #include <cmath>
  
@@ -40,10 +38,9 @@ const QColor GroupSignal::SignalColours[4] = {
 
 const float GroupSignal::EnvelopeThreshold = 256.0f;
 
-GroupSignal::GroupSignal(QString name, data::Group *data,
+GroupSignal::GroupSignal(QString name,
                          std::list<int> probe_index_list, int group_index) :
-    Trace(name, probe_index_list, SR_CHANNEL_GROUP, group_index),
-    _data(data)
+    Trace(name, probe_index_list, SR_CHANNEL_GROUP, group_index)
 {
     _colour = SignalColours[probe_index_list.front() % countof(SignalColours)];
     _scale = _totalHeight * 1.0f / std::pow(2.0, static_cast<double>(probe_index_list.size()));
@@ -60,7 +57,7 @@ bool GroupSignal::enabled()
 
 pv::data::SignalData* GroupSignal::data()
 {
-    return _data;
+    return NULL;
 }
 
 void GroupSignal::set_scale(float scale)
@@ -70,162 +67,30 @@ void GroupSignal::set_scale(float scale)
 
 void GroupSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColor back)
 {
-    (void)fore;
-    (void)back;
-    assert(_data);
-    assert(_view);
-    assert(right >= left);
-
-    const int y = get_y() + _totalHeight * 0.5;
-    const double scale = _view->scale();
-    assert(scale > 0);
-    const int64_t offset = _view->offset();
-
-    _scale = _totalHeight * 1.0f / std::pow(2.0, static_cast<int>(_index_list.size()));
-
-    const auto &snapshots = _data->get_snapshots();
-    if (snapshots.empty())
-		return;
-
-    const auto snapshot = snapshots.at(_sec_index);
-
-    const double pixels_offset = offset;
-    const double samplerate = _data->samplerate();
-    const int64_t last_sample = snapshot->get_sample_count() - 1;
-	const double samples_per_pixel = samplerate * scale;
-    const double start = offset * samples_per_pixel;
-	const double end = start + samples_per_pixel * (right - left);
-
-	const int64_t start_sample = min(max((int64_t)floor(start),
-		(int64_t)0), last_sample);
-	const int64_t end_sample = min(max((int64_t)ceil(end) + 1,
-		(int64_t)0), last_sample);
-
-	if (samples_per_pixel < EnvelopeThreshold)
-        paint_trace(p, snapshot, y, left,
-			start_sample, end_sample,
-			pixels_offset, samples_per_pixel);
-	else
-        paint_envelope(p, snapshot, y, left,
-			start_sample, end_sample,
-			pixels_offset, samples_per_pixel);
+   
 }
 
 void GroupSignal::paint_trace(QPainter &p,
-    const pv::data::GroupSnapshot *snapshot,
 	int y, int left, const int64_t start, const int64_t end,
 	const double pixels_offset, const double samples_per_pixel)
 {
-	const int64_t sample_count = end - start;
-
-	pv::data::GroupSnapshot *pshot = const_cast<pv::data::GroupSnapshot*>(snapshot);
-
-    const uint16_t *samples = pshot->get_samples(start, end);
-	assert(samples);
-
-	p.setPen(_colour);
-
-	QPointF *points = new QPointF[sample_count];
-	QPointF *point = points;
-
-	for (int64_t sample = start; sample != end; sample++) {
-		const float x = (sample / samples_per_pixel -
-			pixels_offset) + left;
-		*point++ = QPointF(x,
-			y - samples[sample - start] * _scale);
-	}
-
-	p.drawPolyline(points, point - points);
-
-	delete[] samples;
-	delete[] points;
+	 
 }
 
 void GroupSignal::paint_envelope(QPainter &p,
-    const pv::data::GroupSnapshot *snapshot,
 	int y, int left, const int64_t start, const int64_t end,
 	const double pixels_offset, const double samples_per_pixel)
-{
-	using namespace Qt;
-    using pv::data::GroupSnapshot;
+{ 
 
-    GroupSnapshot::EnvelopeSection e;
-
-	pv::data::GroupSnapshot *pshot = const_cast<pv::data::GroupSnapshot*>(snapshot);
-	pshot->get_envelope_section(e, start, end, samples_per_pixel);
-
-	if (e.length < 2)
-		return;
-
-	p.setPen(QPen(NoPen));
-	p.setBrush(_colour);
-
-	QRectF *const rects = new QRectF[e.length];
-	QRectF *rect = rects;
-
-	for(uint64_t sample = 0; sample < e.length-1; sample++) {
-		const float x = ((e.scale * sample + e.start) /
-			samples_per_pixel - pixels_offset) + left;
-        const GroupSnapshot::EnvelopeSample *const s =
-			e.samples + sample;
-
-		// We overlap this sample with the next so that vertical
-		// gaps do not appear during steep rising or falling edges
-		const float b = y - max(s->max, (s+1)->min) * _scale;
-		const float t = y - min(s->min, (s+1)->max) * _scale;
-
-		float h = b - t;
-		if(h >= 0.0f && h <= 1.0f)
-			h = 1.0f;
-		if(h <= 0.0f && h >= -1.0f)
-			h = -1.0f;
-
-		*rect++ = QRectF(x, t, 1.0f, h);
-	}
-
-	p.drawRects(rects, e.length);
-
-	delete[] rects;
-	delete[] e.samples;
+ 
 }
 
 void GroupSignal::paint_type_options(QPainter &p, int right, const QPoint pt, QColor fore)
-{
-    (void)pt;
-
-    int y = get_y();
-    const QRectF group_index_rect = get_rect(CHNLREG, y, right);
-    QString index_string;
-    int last_index;
-    p.setPen(QPen(fore, 1, Qt::DashLine));
-    p.drawLine(group_index_rect.bottomLeft(), group_index_rect.bottomRight());
-    std::list<int>::iterator i = _index_list.begin();
-    last_index = (*i);
-    index_string = QString::number(last_index);
-    while (++i != _index_list.end()) {
-        if ((*i) == last_index + 1 && index_string.indexOf("-") < 3 && index_string.indexOf("-") > 0)
-            index_string.replace(QString::number(last_index), QString::number((*i)));
-        else if ((*i) == last_index + 1)
-            index_string = QString::number((*i)) + "-" + index_string;
-        else
-            index_string = QString::number((*i)) + "," + index_string;
-        last_index = (*i);
-    }
-    p.setPen(fore);
-    p.drawText(group_index_rect, Qt::AlignRight | Qt::AlignVCenter, index_string);
+{ 
 }
 
 QRectF GroupSignal::get_rect(GroupSetRegions type, int y, int right)
-{
-    const QSizeF name_size(right - get_leftWidth() - get_rightWidth(), SquareWidth);
-
-    if (type == CHNLREG)
-        return QRectF(
-            get_leftWidth() + name_size.width() + Margin,
-            y - SquareWidth / 2,
-            SquareWidth * SquareNum, SquareWidth);
-    else
-        return QRectF(0, 0, 0, 0);
+{ 
 }
 
 } // namespace view

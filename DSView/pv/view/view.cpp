@@ -334,7 +334,6 @@ void View::get_traces(int type, std::vector<Trace*> &traces)
     assert(_session);
 
     auto &sigs = _session->get_signals();
-    const auto &groups = _session->get_group_signals();
  
     const auto &decode_sigs = _session->get_decode_signals();
  
@@ -346,11 +345,6 @@ void View::get_traces(int type, std::vector<Trace*> &traces)
     }
  
     for(auto t : decode_sigs) {
-        if (type == ALL_VIEW || _trace_view_map[t->get_type()] == type)
-            traces.push_back(t);
-    }
- 
-    for(auto t : groups) {
         if (type == ALL_VIEW || _trace_view_map[t->get_type()] == type)
             traces.push_back(t);
     }

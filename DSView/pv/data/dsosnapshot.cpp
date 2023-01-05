@@ -48,6 +48,7 @@ DsoSnapshot::DsoSnapshot() :
     _envelope_en = false;
     _envelope_done = false;
     _instant = false;
+    _threshold = 0;
 
 	memset(_envelope_levels, 0, sizeof(_envelope_levels));
 }
@@ -478,17 +479,29 @@ uint64_t DsoSnapshot::get_block_size(int block_index)
     }
 }
 
-bool DsoSnapshot::get_max_min_value(uint8_t &maxv, uint8_t &minv)
+bool DsoSnapshot::get_max_min_value(uint8_t &maxv, uint8_t &minv, int chan_index)
 {
-    if (this->empty() == false){
+    if (_sample_count == 0){
         return false;
+    }
+
+    if (chan_index < 0 || chan_index >= _ch_data.size()){
+        assert(false);
+    }
+
+    uint8_t *p = _ch_data[chan_index];
+    maxv = *p;
+    minv = *p;
+
+    for (uint64_t i=1; i<_sample_count; i++){
+        p++;
+        if (*p > maxv)
+            maxv = *p;
+        if (*p < minv)
+            minv = *p;
     }
     
     return true;
-}
-
-void* DsoSnapshot::get_data(){
-    assert(0);
 }
 
 } // namespace data

@@ -171,8 +171,7 @@ public:
     bool is_first_store_confirm();
     bool get_capture_status(bool &triggered, int &progress);
     std::set<data::SignalData*> get_data();
-	std::vector<view::Signal*>& get_signals();
-    std::vector<view::GroupSignal*>& get_group_signals();
+	std::vector<view::Signal*>& get_signals(); 
 
     bool add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus, 
                         std::list<pv::data::decode::Decoder*> &sub_decoders);
@@ -202,9 +201,7 @@ public:
     inline view::MathTrace* get_math_trace(){
         return _math_trace;
     }
-
-    void add_group();
-    void del_group();
+ 
     uint16_t get_ch_num(int type); 
  
     inline bool get_data_lock(){
@@ -369,6 +366,10 @@ public:
     bool switch_work_mode(int mode);
     bool have_new_realtime_refresh(bool keep);
 
+    data::LogicSnapshot* get_logic_data();
+    data::AnalogSnapshot* get_analog_data();
+    data::DsoSnapshot* get_dso_data();
+
 private:
     void set_cur_samplelimits(uint64_t samplelimits);
     void set_cur_snap_samplerate(uint64_t samplerate);
@@ -435,10 +436,9 @@ private:
 		        const struct sr_datafeed_packet *packet);
 
     static void device_lib_event_callback(int event);
+    
     void on_device_lib_event(int event);
-
     Snapshot* get_signal_snapshot();
-
     void repeat_capture_wait_timeout();
     void repeat_wait_prog_timeout();
     void realtime_refresh_timeout();
@@ -452,8 +452,7 @@ private:
     uint64_t                _cur_snap_samplerate;
     uint64_t                _cur_samplelimits;
  
-	std::vector<view::Signal*>      _signals;
-    std::vector<view::GroupSignal*> _group_traces;
+	std::vector<view::Signal*>      _signals; 
     std::vector<view::DecodeTrace*> _decode_traces;
     std::vector<view::DecodeTrace*> _decode_tasks;
     pv::data::DecoderModel          *_decoder_model;
@@ -463,8 +462,7 @@ private:
   
 	data::Logic              *_logic_data; 
     data::Dso                *_dso_data; 
-	data::Analog             *_analog_data;
-    data::Group              *_group_data; 
+	data::Analog             *_analog_data; 
     int                      _group_cnt;
     
     DsTimer     _feed_timer;

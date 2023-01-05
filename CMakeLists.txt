@@ -269,9 +269,7 @@ set(DSView_SOURCES
     DSView/pv/dock/measuredock.cpp
     DSView/pv/dock/searchdock.cpp
     DSView/pv/toolbars/logobar.cpp
-    DSView/pv/data/groupsnapshot.cpp
     DSView/pv/view/groupsignal.cpp
-    DSView/pv/data/group.cpp
     DSView/pv/dialogs/about.cpp
     DSView/pv/dialogs/search.cpp
     DSView/pv/data/dsosnapshot.cpp

@@ -72,10 +72,6 @@ public:
 private slots:
 	void on_action_set_name_triggered();
 
-    void on_action_add_group_triggered();
-
-    void on_action_del_group_triggered();
-
 signals:
     void traces_moved();
     void header_updated();
@@ -98,9 +94,6 @@ private:
     std::list<std::pair<Trace*, int> > _drag_traces;
 
     Trace *_context_trace;
-
-    QAction *_action_add_group;
-    QAction *_action_del_group;
 };
 
 } // namespace view

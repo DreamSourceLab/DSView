@@ -646,5 +646,9 @@
     {
         "id": "IDS_DLG_SAMPLES_CAPTURED",
         "text": "Samples Captured!"
+    },
+    {
+        "id": "IDS_DLG_FILE_THRESHOLD",
+        "text": "Threshold: "
     }
 ]

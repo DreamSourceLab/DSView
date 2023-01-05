@@ -38,8 +38,7 @@ namespace toolbars {
 FileBar::FileBar(SigSession *session, QWidget *parent) :
     QToolBar("File Bar", parent),
     _session(session),
-    _file_button(this),
-    _cvt_button(this)
+    _file_button(this)
 {
     setMovable(false);
     setContentsMargins(0,0,0,0);
@@ -84,12 +83,6 @@ FileBar::FileBar(SigSession *session, QWidget *parent) :
     _file_button.setMenu(_menu);
     addWidget(&_file_button);
 
-
-    _cvt_button.setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-    _cvt_action = addWidget(&_cvt_button);
-    _cvt_button.setObjectName(QString::fromUtf8("menuSession"));
-    //_cvt_action->setVisible(false);
-
     retranslateUi();
 
     connect(_action_load, SIGNAL(triggered()), this, SLOT(on_actionLoad_triggered()));
@@ -123,7 +116,6 @@ void FileBar::retranslateUi()
     _action_save->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_FILEBAR_SAVE), "&Save..."));
     _action_export->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_FILEBAR_EXPORT), "&Export..."));
     _action_capture->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_FILEBAR_CAPTURE), "&Capture..."));
-    _cvt_button.setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_FILEBAR_CONVERT_LOGIC), "Lo&gic"));
 }
 
 void FileBar::reStyle()
@@ -139,7 +131,6 @@ void FileBar::reStyle()
     _action_export->setIcon(QIcon(iconPath+"/export.svg"));
     _action_capture->setIcon(QIcon(iconPath+"/capture.svg"));
     _file_button.setIcon(QIcon(iconPath+"/file.svg"));
-    _cvt_button.setIcon(QIcon(iconPath+"/la.svg"));
 }
 
 void FileBar::on_actionOpen_triggered()

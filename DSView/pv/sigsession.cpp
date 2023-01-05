@@ -31,8 +31,6 @@
 #include "data/dsosnapshot.h"
 #include "data/logic.h"
 #include "data/logicsnapshot.h"
-#include "data/group.h"
-#include "data/groupsnapshot.h"
 #include "data/decoderstack.h"
 #include "data/decode/decoder.h"
 #include "data/decodermodel.h"
@@ -70,8 +68,7 @@ namespace pv
     SigSession::SigSession()
     {
         // TODO: This should not be necessary
-        _session = this;
-        _group_cnt = 0;
+        _session = this; 
 
         _map_zoom = 0;
         _repeat_hold_prg = 0;
@@ -86,7 +83,7 @@ namespace pv
         _data_updated = false;
         _opt_mode = OPT_SINGLE;
         _rt_refresh_time_id = 0;
-        _rt_ck_refresh_time_id = 0;
+        _rt_ck_refresh_time_id = 0; 
 
         this->add_msg_listener(this);
 
@@ -109,8 +106,6 @@ namespace pv
         _logic_data = new data::Logic(new data::LogicSnapshot());
         _dso_data = new data::Dso(new data::DsoSnapshot());
         _analog_data = new data::Analog(new data::AnalogSnapshot());
-        _group_data = new data::Group();
-        _group_cnt = 0;
 
         _feed_timer.SetCallback(std::bind(&SigSession::feed_timeout, this));
         _repeat_timer.SetCallback(std::bind(&SigSession::repeat_capture_wait_timeout, this));
@@ -193,7 +188,7 @@ namespace pv
     {
         assert(!_is_saving);
         assert(!_is_working);
-        assert(_callback);
+        assert(_callback); 
 
         _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_CHANGE_PREV);
 
@@ -217,7 +212,6 @@ namespace pv
 
         clear_all_decoder();
 
-        RELEASE_ARRAY(_group_traces);
         init_signals();
 
         _cur_snap_samplerate = _device_agent.get_sample_rate();
@@ -338,10 +332,7 @@ namespace pv
             _analog_data->set_samplerate(_cur_snap_samplerate);
         if (_dso_data)
             _dso_data->set_samplerate(_cur_snap_samplerate);
-        // Group
-        if (_group_data)
-            _group_data->set_samplerate(_cur_snap_samplerate);
-
+  
         // DecoderStack
         for (auto d : _decode_traces)
         {
@@ -411,11 +402,7 @@ namespace pv
         // Logic
         if (_logic_data)
             _logic_data->init();
-
-        // Group
-        if (_group_data)
-            _group_data->init();
-
+ 
         // Dso
         if (_analog_data)
             _analog_data->init();
@@ -474,6 +461,8 @@ namespace pv
         set_cur_samplelimits(_device_agent.get_sample_limit());
 
         _callback->trigger_message(DSV_MSG_START_COLLECT_WORK_PREV);
+
+        get_dso_data()->set_threshold(0); // Reset threshold value
 
         if (exec_capture())
         {   
@@ -639,11 +628,6 @@ namespace pv
         return _signals;
     }
 
-    std::vector<view::GroupSignal *> &SigSession::get_group_signals()
-    {
-        return _group_traces;
-    }
-
     std::set<data::SignalData *> SigSession::get_data()
     {
         std::set<data::SignalData *> data;
@@ -679,82 +663,6 @@ namespace pv
         }
     }
 
-    void SigSession::add_group()
-    {
-        std::list<int> probe_index_list;
-
-        auto i = _signals.begin();
-        while (i != _signals.end())
-        {
-            if ((*i)->get_type() == SR_CHANNEL_LOGIC && (*i)->selected())
-                probe_index_list.push_back((*i)->get_index());
-            i++;
-        }
-
-        if (probe_index_list.size() > 1)
-        {
-            _group_data->init();
-            _group_data->set_samplerate(_cur_snap_samplerate);
-            auto signal = new view::GroupSignal("New Group", _group_data, probe_index_list, _group_cnt);
-            _group_traces.push_back(signal);
-            _group_cnt++;
-
-            const auto &snapshots = _logic_data->get_snapshots();
-            if (!snapshots.empty())
-            {
-                auto p = new data::GroupSnapshot(snapshots.front(), signal->get_index_list());
-                _group_data->push_snapshot(p);
-            }
-
-            signals_changed();
-            data_updated();
-        }
-    }
-
-    void SigSession::del_group()
-    {
-        auto i = _group_traces.begin();
-
-        while (i != _group_traces.end())
-        {
-
-            pv::view::GroupSignal *psig = *(i);
-
-            if (psig->selected())
-            {
-                auto j = _group_traces.begin();
-                while (j != _group_traces.end())
-                {
-                    if ((*j)->get_sec_index() > psig->get_sec_index())
-                        (*j)->set_sec_index((*j)->get_sec_index() - 1);
-                    j++;
-                }
-
-                auto &snapshots = _group_data->get_snapshots();
-                if (!snapshots.empty())
-                {
-                    int dex = psig->get_sec_index();
-                    pv::data::GroupSnapshot *pshot = _group_data->get_snapshots().at(dex);
-                    delete pshot;
-
-                    auto k = snapshots.begin();
-                    k += (*i)->get_sec_index();
-                    _group_data->get_snapshots().erase(k);
-                }
-
-                delete psig;
-
-                i = _group_traces.erase(i);
-
-                _group_cnt--;
-                continue;
-            }
-            i++;
-        }
-
-        signals_changed();
-        data_updated();
-    }
 
     void SigSession::init_signals()
     {
@@ -766,15 +674,9 @@ namespace pv
         }
 
         std::vector<view::Signal *> sigs;
-        view::Signal *signal = NULL;
         unsigned int logic_probe_count = 0;
         unsigned int dso_probe_count = 0;
-        unsigned int analog_probe_count = 0;
-
-        _logic_data->clear();
-        _dso_data->clear();
-        _analog_data->clear();
-        _group_data->clear();
+        unsigned int analog_probe_count = 0;    
 
         // Detect what data types we will receive
         if (_device_agent.have_instance())
@@ -802,36 +704,33 @@ namespace pv
             }
         }
 
-        // Make the logic probe list
-        RELEASE_ARRAY(_group_traces);
-
-        std::vector<view::GroupSignal *>().swap(_group_traces);
-
         for (GSList *l = _device_agent.get_channels(); l; l = l->next)
         {
-            sr_channel *probe =
-                (sr_channel *)l->data;
-            assert(probe);
-            signal = NULL;
+            sr_channel *probe = (sr_channel *)l->data;
+            assert(probe); 
 
             switch (probe->type)
             {
             case SR_CHANNEL_LOGIC:
-                if (probe->enabled)
-                    signal = new view::LogicSignal(_logic_data, probe);
+                if (probe->enabled){
+                    view::Signal *signal = new view::LogicSignal(_logic_data, probe);
+                    sigs.push_back(signal);
+                }
                 break;
 
-            case SR_CHANNEL_DSO:
-                signal = new view::DsoSignal(_dso_data, probe);
+            case SR_CHANNEL_DSO:{
+                    view::Signal *signal = new view::DsoSignal(_dso_data, probe);
+                    sigs.push_back(signal);
+                }
                 break;
 
             case SR_CHANNEL_ANALOG:
-                if (probe->enabled)
-                    signal = new view::AnalogSignal(_analog_data, probe);
+                if (probe->enabled){
+                    view::Signal *signal = new view::AnalogSignal(_analog_data, probe);
+                    sigs.push_back(signal);
+                }
                 break;
-            }
-            if (signal != NULL)
-                sigs.push_back(signal);
+            } 
         }
 
         RELEASE_ARRAY(_signals);
@@ -1261,14 +1160,6 @@ namespace pv
         }
         case SR_DF_END:
         {
-            if (!_logic_data->snapshot()->empty())
-            {
-                for (auto g : _group_traces)
-                {
-                    auto p = new data::GroupSnapshot(_logic_data->get_snapshots().front(), g->get_index_list());
-                    _group_data->push_snapshot(p);
-                }
-            }
             _logic_data->snapshot()->capture_ended();
             _dso_data->snapshot()->capture_ended();
             _analog_data->snapshot()->capture_ended();
@@ -2026,11 +1917,10 @@ namespace pv
         assert(!_is_working);
 
         if (_device_agent.get_work_mode() != mode)
-        {
+        {  
             GVariant *val = g_variant_new_int16(mode);
             _device_agent.set_config(NULL, NULL, SR_CONF_DEVICE_MODE, val);
 
-            clear_all_decoder();
             init_signals();
             dsv_info("%s", "Work mode is changed.");
             broadcast_msg(DSV_MSG_DEVICE_MODE_CHANGED);
@@ -2062,6 +1952,21 @@ namespace pv
             return true;
         }
         return false;    
+    }
+
+    data::LogicSnapshot* SigSession::get_logic_data()
+    {
+        return _logic_data->snapshot();
+    }
+
+    data::AnalogSnapshot* SigSession::get_analog_data()
+    {
+        return _analog_data->snapshot();
+    }
+
+    data::DsoSnapshot* SigSession::get_dso_data()
+    {
+        return _dso_data->snapshot();
     }
 
 } // namespace pv

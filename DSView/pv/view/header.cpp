@@ -51,9 +51,7 @@ namespace view {
 
 Header::Header(View &parent) :
 	QWidget(&parent),
-    _view(parent),
-    _action_add_group(new QAction(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ADD_GROUP), "Add Group"), this)),
-    _action_del_group(new QAction(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DEL_GROUP), "Del Group"), this))
+    _view(parent)
 {
     _moveFlag = false;
     _colorFlag = false;
@@ -65,11 +63,6 @@ Header::Header(View &parent) :
     nameEdit->hide();
 
 	setMouseTracking(true);
-
-    connect(_action_del_group, SIGNAL(triggered()),
-        this, SLOT(on_action_del_group_triggered()));
-    connect(_action_add_group, SIGNAL(triggered()),
-        this, SLOT(on_action_add_group_triggered()));
 
     connect(nameEdit, SIGNAL(editingFinished()),
             this, SLOT(on_action_set_name_triggered()));
@@ -114,7 +107,7 @@ pv::view::Trace* Header::get_mTrace(int &action, const QPoint &pt)
 }
 
 void Header::paintEvent(QPaintEvent*)
-{
+{ 
     using pv::view::Trace;
 
     QStyleOption o;
@@ -444,16 +437,6 @@ void Header::on_action_set_name_triggered()
 
     nameEdit->hide();
     header_updated();
-}
-
-void Header::on_action_add_group_triggered()
-{
-    _view.session().add_group();
-}
-
-void Header::on_action_del_group_triggered()
-{
-    _view.session().del_group();
 }
 
 void Header::header_resize()
