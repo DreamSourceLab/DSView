@@ -29,6 +29,8 @@
 
 extern struct ds_trigger *trigger;
 
+SR_PRIV int dsl_secuCheck(const struct sr_dev_inst *sdi, uint16_t* encryption, int steps);
+
 static const int32_t probeOptions[] = {
     SR_CONF_PROBE_COUPLING,
     SR_CONF_PROBE_VDIV,
