@@ -23,8 +23,7 @@
 #include <libsigrokdecode.h>
 #include <math.h>
 #include "logicsignal.h"
-#include "view.h"
-#include "../data/logic.h"
+#include "view.h" 
 #include "../data/logicsnapshot.h"
 #include "view.h"
 #include "../dsvdef.h"
@@ -40,7 +39,7 @@ const float LogicSignal::Oversampling = 1.0f;
 const int LogicSignal::StateHeight = 12;
 const int LogicSignal::StateRound = 5;
 
-LogicSignal::LogicSignal(data::Logic *data,
+LogicSignal::LogicSignal(data::LogicSnapshot *data,
                          sr_channel *probe) :
     Signal(probe),
     _data(data)
@@ -50,7 +49,7 @@ LogicSignal::LogicSignal(data::Logic *data,
 }
 
 LogicSignal::LogicSignal(view::LogicSignal *s,
-                         data::Logic *data,
+                         data::LogicSnapshot *data,
                          sr_channel *probe) :
     Signal(*s, probe),
     _data(data),
@@ -65,26 +64,6 @@ LogicSignal::~LogicSignal()
     _cur_pulses.clear();
 }
 
-const sr_channel* LogicSignal::probe()
-{
-    return _probe;
-}
-
-pv::data::SignalData* LogicSignal::data()
-{
-    return _data;
-}
-
-pv::data::Logic* LogicSignal::logic_data()
-{
-    return _data;
-}
-
-LogicSignal::LogicSetRegions LogicSignal::get_trig()
-{
-    return _trig;
-}
-
 void LogicSignal::set_trig(int trig)
 {
     if (trig > NONTRIG && trig <= EDGTRIG)
@@ -95,7 +74,6 @@ void LogicSignal::set_trig(int trig)
 
 bool LogicSignal::commit_trig()
 {
-
     if (_trig == NONTRIG) {
         ds_trigger_probe_set(_index_list.front(), 'X', 'X');
         return false;
@@ -134,18 +112,14 @@ void LogicSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColo
     const int high_offset = y - _totalHeight + 0.5f;
     const int low_offset = y + 0.5f;
 
-	const auto &snapshots =_data->get_snapshots();
     double samplerate = _data->samplerate();
-    if (snapshots.empty() || samplerate == 0)
+    if (_data->empty() || samplerate == 0)
 		return;
   
-    auto snapshot =  const_cast<data::LogicSnapshot*>(snapshots.front());
-    if (snapshot->empty())
-        return;
-    if (!snapshot->has_data(_probe->index))
+    if (!_data->has_data(_probe->index))
         return;
 
-    const int64_t last_sample = snapshot->get_ring_sample_count() - 1;
+    const int64_t last_sample = _data->get_ring_sample_count() - 1;
 	const double samples_per_pixel = samplerate * scale;
 
     uint16_t width = right - left;
@@ -160,7 +134,7 @@ void LogicSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColo
     width = min(width, (uint16_t)ceil((end_index + 1)/samples_per_pixel - offset));
     const uint16_t max_togs = width / TogMaxScale;
 
-    const bool first_sample = snapshot->get_display_edges(_cur_pulses, _cur_edges,
+    const bool first_sample = _data->get_display_edges(_cur_pulses, _cur_edges,
                                                           start_index, end_index, width, max_togs,
                                                           offset,
                                                           samples_per_pixel, _probe->index);
@@ -294,34 +268,32 @@ bool LogicSignal::measure(const QPointF &p, uint64_t &index0, uint64_t &index1, 
 {
     const float gap = abs(p.y() - get_y());
     if (gap < get_totalHeight() * 0.5) {
-        const auto &snapshots =_data->get_snapshots();
-        if (snapshots.empty())
+
+        if (_data->empty() || !_data->has_data(_probe->index))
             return false;
 
-        const auto snapshot = snapshots.front();
-        if (snapshot->empty() || !snapshot->has_data(_probe->index))
-            return false;
-
-        const uint64_t end = snapshot->get_sample_count() - 1;
+        const uint64_t end = _data->get_sample_count() - 1;
         uint64_t index = _data->samplerate() * _view->scale() * (_view->offset() + p.x());
         if (index > end)
             return false;
 
-        bool sample = snapshot->get_sample(index, get_index());
-        if (index == 0)
+        bool sample = _data->get_sample(index, get_index());
+        if (index == 0){
             index0 = index;
+        }
         else {
             index--;
-            if (snapshot->get_pre_edge(index, sample, 1, get_index()))
+            if (_data->get_pre_edge(index, sample, 1, get_index()))
                 index0 = index;
             else
                 index0 = 0;
         }
 
-        sample = snapshot->get_sample(index, get_index());
+        sample = _data->get_sample(index, get_index());
         index++;
-        if (snapshot->get_nxt_edge(index, sample, end, 1, get_index()))
+        if (_data->get_nxt_edge(index, sample, end, 1, get_index())){
             index1 = index;
+        }
         else {
             if (index0 == 0)
                 return false;
@@ -330,9 +302,9 @@ bool LogicSignal::measure(const QPointF &p, uint64_t &index0, uint64_t &index1, 
             return true;
         }
 
-        sample = snapshot->get_sample(index, get_index());
+        sample = _data->get_sample(index, get_index());
         index++;
-        if (snapshot->get_nxt_edge(index, sample, end, 1, get_index()))
+        if (_data->get_nxt_edge(index, sample, end, 1, get_index()))
             index2 = index;
         else
             index2 = end + 1;
@@ -346,36 +318,31 @@ bool LogicSignal::edge(const QPointF &p, uint64_t &index, int radius)
 {
     uint64_t pre_index, nxt_index;
     const float gap = abs(p.y() - get_y());
+
     if (gap < get_totalHeight() * 0.5) {
-        const auto &snapshots = _data->get_snapshots();
-        if (snapshots.empty())
+        if (_data->empty() || !_data->has_data(_probe->index))
             return false;
 
-        const auto snapshot = snapshots.front();
-        if (snapshot->empty() || !snapshot->has_data(_probe->index))
-            return false;
-
-        const uint64_t end = snapshot->get_sample_count() - 1;
-        const
-        double pos = _data->samplerate() * _view->scale() * (_view->offset() + p.x());
+        const uint64_t end = _data->get_sample_count() - 1;
+        const double pos = _data->samplerate() * _view->scale() * (_view->offset() + p.x());
         index = floor(pos + 0.5);
         if (index > end)
             return false;
 
-        bool sample = snapshot->get_sample(index, get_index());
+        bool sample = _data->get_sample(index, get_index());
         if (index == 0)
             pre_index = index;
         else {
             index--;
-            if (snapshot->get_pre_edge(index, sample, 1, get_index()))
+            if (_data->get_pre_edge(index, sample, 1, get_index()))
                 pre_index = index;
             else
                 pre_index = 0;
         }
 
-        sample = snapshot->get_sample(index, get_index());
+        sample = _data->get_sample(index, get_index());
         index++;
-        if (snapshot->get_nxt_edge(index, sample, end, 1, get_index()))
+        if (_data->get_nxt_edge(index, sample, end, 1, get_index()))
             nxt_index = index;
         else
             nxt_index = 0;
@@ -406,29 +373,24 @@ bool LogicSignal::edges(const QPointF &p, uint64_t start, uint64_t &rising, uint
 }
 
 bool LogicSignal::edges(uint64_t end, uint64_t start, uint64_t &rising, uint64_t &falling)
-{
-    const auto &snapshots = _data->get_snapshots();
-    if (snapshots.empty())
-        return false;
-
-    const auto snapshot = snapshots.front();
-    if (snapshot->empty() || !snapshot->has_data(_probe->index))
+{  
+    if (_data->empty() || !_data->has_data(_probe->index))
         return false;
 
     uint64_t index = min(start, end);
-    const uint64_t sample_count = snapshot->get_sample_count();
+    const uint64_t sample_count = _data->get_sample_count();
     end = max(start, end);
     start = index;
     if (end > (sample_count - 1))
         return false;
 
     const int ch_index = get_index();
-    bool sample = snapshot->get_sample(start, ch_index);
+    bool sample = _data->get_sample(start, ch_index);
 
     rising = 0;
     falling = 0;
     do {
-        if (snapshot->get_nxt_edge(index, sample, sample_count, 1, ch_index)) {
+        if (_data->get_nxt_edge(index, sample, sample_count, 1, ch_index)) {
             if (index > end)
                 break;
             rising += !sample;

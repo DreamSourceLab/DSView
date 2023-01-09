@@ -29,11 +29,6 @@
 
 namespace pv {
 
-namespace data {
-class Logic;
-class Analog;
-}
-
 namespace view {
 
 //created by SigSession

@@ -44,7 +44,6 @@ class dslDial;
 namespace data {
 
 class DsoSnapshot;
-class Dso;
 
 class MathStack : public QObject, public SignalData
 {

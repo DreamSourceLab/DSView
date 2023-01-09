@@ -27,7 +27,6 @@
 
 #include "view.h"
 #include "../dsvdef.h"
-#include "../data/dso.h"
 #include "../data/dsosnapshot.h"
 #include "../sigsession.h" 
 #include "../log.h"
@@ -53,7 +52,7 @@ const QColor DsoSignal::SignalColours[4] = {
 
 const float DsoSignal::EnvelopeThreshold = 256.0f;
 
-DsoSignal::DsoSignal(data::Dso *data,
+DsoSignal::DsoSignal(data::DsoSnapshot *data,
                      sr_channel *probe):
     Signal(probe),
     _data(data),
@@ -111,44 +110,9 @@ DsoSignal::~DsoSignal()
 {
 }
 
-pv::data::SignalData* DsoSignal::data()
-{
-    return _data;
-}
-
-pv::data::Dso* DsoSignal::dso_data()
-{
-    return _data;
-}
-
 void DsoSignal::set_scale(int height)
 {
     _scale = height / (_ref_max - _ref_min) * session->stop_scale();
-}
-
-float DsoSignal::get_scale()
-{
-    return _scale;
-}
-
-uint8_t DsoSignal::get_bits()
-{
-    return _bits;
-}
-
-double DsoSignal::get_ref_min()
-{
-    return _ref_min;
-}
-
-double DsoSignal::get_ref_max()
-{
-    return _ref_max;
-}
-
-int DsoSignal::get_name_width()
-{
-    return 0;
 }
 
 void DsoSignal::set_enable(bool enable)
@@ -199,11 +163,6 @@ void DsoSignal::set_enable(bool enable)
     _view->set_update(_viewport, true);
     _view->update();
     _en_lock = false;
-}
-
-bool DsoSignal::get_vDialActive()
-{
-    return _vDialActive;
 }
 
 void DsoSignal::set_vDialActive(bool active)
@@ -410,11 +369,6 @@ int DsoSignal::commit_settings()
     return ret;
 }
 
-dslDial * DsoSignal::get_vDial()
-{
-    return _vDial;
-}
-
 uint64_t DsoSignal::get_vDialValue()
 {
     return _vDial->get_value();
@@ -423,11 +377,6 @@ uint64_t DsoSignal::get_vDialValue()
 uint16_t DsoSignal::get_vDialSel()
 {
     return _vDial->get_sel();
-}
-
-uint8_t DsoSignal::get_acCoupling()
-{
-    return _acCoupling;
 }
 
 void DsoSignal::set_acCoupling(uint8_t coupling)
@@ -575,21 +524,6 @@ uint64_t DsoSignal::get_factor()
     }
 }
 
-void DsoSignal::set_show(bool show)
-{
-    _show = show;
-}
-
-bool DsoSignal::show()
-{
-    return _show;
-}
-
-void DsoSignal::set_mValid(bool valid)
-{
-    _mValid = valid;
-}
-
 QString DsoSignal::get_measure(enum DSO_MEASURE_TYPE type)
 {
     const QString mNone = "--";
@@ -720,15 +654,7 @@ void DsoSignal::paint_prepare()
 {
     assert(_view);
 
-    const auto &snapshots = _data->get_snapshots();
-    if (snapshots.empty())
-        return;
-
-    const auto snapshot = snapshots.front();
-    if (snapshot->empty())
-        return;
-
-    if (!snapshot->has_data(get_index()))
+    if (_data->empty() || !_data->has_data(get_index()))
         return; 
 
     if (session->trigd()) {
@@ -741,9 +667,10 @@ void DsoSignal::paint_prepare()
             }
 
             int64_t trig_index = _view->get_trig_cursor()->index();
-            if (trig_index >= (int64_t)snapshot->get_sample_count())
+            if (trig_index >= (int64_t)_data->get_sample_count())
                 return;
-            const uint8_t *const trig_samples = snapshot->get_samples(0, 0, get_index());
+
+            const uint8_t *const trig_samples = _data->get_samples(0, 0, get_index());
             for (uint16_t i = 0; i < TrigHRng; i++) {
                 const int64_t i0 = trig_index - i - 1;
                 const int64_t i1 = trig_index - i;
@@ -860,23 +787,15 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColor 
         assert(scale > 0);
         const int64_t offset = _view->offset();
 
-        const auto &snapshots = _data->get_snapshots();
-        if (snapshots.empty())
+        if (_data->empty() || !_data->has_data(index))
             return;
 
-        const auto snapshot = snapshots.front();
-        if (snapshot->empty())
-            return;
-
-        if (!snapshot->has_data(index))
-            return;
-
-        const uint16_t enabled_channels = snapshot->get_channel_num();
+        const uint16_t enabled_channels = _data->get_channel_num();
         const double pixels_offset = offset;
         const double samplerate = _data->samplerate();
         //const double samplerate = session->get_device()->get_sample_rate();
         //const double samplerate = session->cur_snap_samplerate();
-        const int64_t last_sample = max((int64_t)(snapshot->get_sample_count() - 1), (int64_t)0);
+        const int64_t last_sample = max((int64_t)(_data->get_sample_count() - 1), (int64_t)0);
         const double samples_per_pixel = samplerate * scale;
         const double start = offset * samples_per_pixel - _view->trig_hoff();
         const double end = start + samples_per_pixel * width;
@@ -888,13 +807,13 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColor 
         const int hw_offset = get_hw_offset();
 
         if (samples_per_pixel < EnvelopeThreshold) {
-            snapshot->enable_envelope(false);
-            paint_trace(p, snapshot, zeroY, left,
+            _data->enable_envelope(false);
+            paint_trace(p, _data, zeroY, left,
                 start_sample, end_sample, hw_offset,
                 pixels_offset, samples_per_pixel, enabled_channels);
         } else {
-            snapshot->enable_envelope(true);
-            paint_envelope(p, snapshot, zeroY, left,
+            _data->enable_envelope(true);
+            paint_envelope(p, _data, zeroY, left,
                 start_sample, end_sample, hw_offset,
                 pixels_offset, samples_per_pixel, enabled_channels);
         }
@@ -936,9 +855,9 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColor 
 
                 _pcount = count + (plevel & !startXORend);
                 _rms = (index == 0) ? status.ch0_acc_square : status.ch1_acc_square;
-                _rms = sqrt(_rms / snapshot->get_sample_count());
+                _rms = sqrt(_rms / _data->get_sample_count());
                 _mean = (index == 0) ? status.ch0_acc_mean : status.ch1_acc_mean;
-                _mean = hw_offset - _mean / snapshot->get_sample_count();
+                _mean = hw_offset - _mean / _data->get_sample_count();
             }
         }
     }
@@ -1499,16 +1418,11 @@ bool DsoSignal::measure(const QPointF &p)
     if (!window.contains(p))
         return false;
 
-    const auto &snapshots = _data->get_snapshots();
-    if (snapshots.empty())
-        return false;
-
-    auto snapshot = const_cast<data::DsoSnapshot*>(snapshots.front());
-    if (snapshot->empty())
+    if (_data->empty())
         return false;
 
     _hover_index = _view->pixel2index(p.x());
-    if (_hover_index >= snapshot->get_sample_count())
+    if (_hover_index >= _data->get_sample_count())
         return false;
 
     _hover_point = get_point(_hover_index, _hover_value);
@@ -1534,18 +1448,13 @@ QPointF DsoSignal::get_point(uint64_t index, float &value)
     if (!enabled())
         return pt;
 
-    const auto &snapshots = _data->get_snapshots();
-    if (snapshots.empty())
+    if (_data->empty())
         return pt;
 
-    const auto snapshot = snapshots.front();
-    if (snapshot->empty())
+    if (index >= _data->get_sample_count())
         return pt;
 
-    if (index >= snapshot->get_sample_count())
-        return pt;
-
-    value = *snapshot->get_samples(index, index, get_index());
+    value = *_data->get_samples(index, index, get_index());
     const float top = get_view_rect().top();
     const float bottom = get_view_rect().bottom();
     const int hw_offset = get_hw_offset();
@@ -1561,18 +1470,13 @@ double DsoSignal::get_voltage(uint64_t index)
     if (!enabled())
         return 1;
 
-    auto &snapshots = _data->get_snapshots();
-    if (snapshots.empty())
+    if (_data->empty())
         return 1;
 
-    auto snapshot = const_cast<data::DsoSnapshot*>(snapshots.front());
-    if (snapshot->empty())
+    if (index >= _data->get_sample_count())
         return 1;
 
-    if (index >= snapshot->get_sample_count())
-        return 1;
-
-    const double value = *snapshot->get_samples(index, index, get_index());
+    const double value = *_data->get_samples(index, index, get_index());
     const int hw_offset = get_hw_offset();
     return (hw_offset - value) * _scale *
             _vDial->get_value() * _vDial->get_factor() *

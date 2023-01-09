@@ -29,8 +29,6 @@
 namespace pv {
 
 namespace data {
-class Logic;
-class Analog;
 class AnalogSnapshot;
 }
 
@@ -52,26 +50,36 @@ private:
     static const uint8_t DefaultBits = 8;
 
 public:
-    AnalogSignal(pv::data::Analog *data,
+    AnalogSignal(pv::data::AnalogSnapshot *data,
                  sr_channel *probe);
 
-    AnalogSignal(view::AnalogSignal* s, pv::data::Analog *data,  sr_channel *probe);
+    AnalogSignal(view::AnalogSignal* s, pv::data::AnalogSnapshot *data,  sr_channel *probe);
 
 	virtual ~AnalogSignal();
 
-    pv::data::SignalData* data();
+    inline void set_scale(int height){
+        _scale = height / (_ref_max - _ref_min);
+    }
 
-    void set_scale(int height);
-    float get_scale();
-    int get_bits();
-    double get_ref_min();
-    double get_ref_max();
+    inline float get_scale(){
+        return _scale;
+    }
+
+    inline int get_bits(){
+        return _bits;
+    }
+
+    inline double get_ref_min(){
+        return _ref_min;
+    }
+
+    inline double get_ref_max(){
+        return _ref_max;
+    }
+
     int get_hw_offset();
     int commit_settings();
 
-    /**
-      *
-      */
     bool measure(const QPointF &p);
     bool get_hover(uint64_t &index, QPointF &p, double &value);
     QPointF get_point(uint64_t index, float &value);
@@ -87,19 +95,16 @@ public:
     double get_mapMin();
     double get_mapMax();
     uint64_t get_factor();
-
-    /**
-     *
-     **/
+    
     void set_zero_vpos(int pos);
     int get_zero_vpos();
     void set_zero_ratio(double ratio);
     double get_zero_ratio();
-    int get_zero_offset();
 
-    /**
-     *
-     */
+    inline int get_zero_offset(){
+        return _zero_offset;
+    }
+    
     int ratio2value(double ratio);
     int ratio2pos(double ratio);
     double value2ratio(int value);
@@ -152,7 +157,7 @@ private:
     void paint_hover_measure(QPainter &p, QColor fore, QColor back);
 
 private:
-	pv::data::Analog *_data;
+	pv::data::AnalogSnapshot *_data;
 
     QRectF *_rects;
 

@@ -28,7 +28,6 @@
 #include "logicsignal.h"
 #include "analogsignal.h"
 #include "spectrumtrace.h"
-#include "../data/logic.h"
 #include "../data/logicsnapshot.h"
 #include "../sigsession.h"
 #include "../dialogs/dsomeasure.h"

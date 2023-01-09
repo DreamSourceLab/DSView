@@ -20,8 +20,6 @@
  */
 
 #include "mathstack.h"
- 
-#include  "dso.h"
 #include  "dsosnapshot.h"
 #include  "../sigsession.h"
 #include  "../view/dsosignal.h"
@@ -320,15 +318,8 @@ void MathStack::calc_math()
     _math_state = Running;
 
     const auto data = _dsoSig1->dso_data();
-    const auto &snapshots = data->get_snapshots();
-    if (snapshots.empty())
-        return;
 
-    const auto snapshot = snapshots.front();
-    if (snapshot->empty())
-        return;
-
-    if (_math.size() < _total_sample_num)
+    if (data->empty() || _math.size() < _total_sample_num)
         return;
 
     if (!_dsoSig1->enabled() || !_dsoSig2->enabled())
@@ -345,9 +336,9 @@ void MathStack::calc_math()
     const int index1 = _dsoSig1->get_index();
     const int index2 = _dsoSig2->get_index();
 
-    const int num_channels = snapshot->get_channel_num();
-    const uint8_t* value = snapshot->get_samples(0, 0, 0);
-    _sample_num = snapshot->get_sample_count();
+    const int num_channels = data->get_channel_num();
+    const uint8_t* value = data->get_samples(0, 0, 0);
+    _sample_num = data->get_sample_count();
     assert(_sample_num <= _total_sample_num);
 
     double value1, value2;

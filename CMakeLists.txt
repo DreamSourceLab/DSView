@@ -241,9 +241,7 @@ set(DSView_SOURCES
     DSView/pv/data/snapshot.cpp
     DSView/pv/data/signaldata.cpp
     DSView/pv/data/logicsnapshot.cpp
-    DSView/pv/data/logic.cpp
     DSView/pv/data/analogsnapshot.cpp
-    DSView/pv/data/analog.cpp
     DSView/pv/dialogs/deviceoptions.cpp
     DSView/pv/prop/property.cpp
     DSView/pv/prop/int.cpp
@@ -273,7 +271,6 @@ set(DSView_SOURCES
     DSView/pv/dialogs/about.cpp
     DSView/pv/dialogs/search.cpp
     DSView/pv/data/dsosnapshot.cpp
-    DSView/pv/data/dso.cpp
     DSView/pv/view/dsosignal.cpp
     DSView/pv/view/dsldial.cpp
     DSView/pv/dock/dsotriggerdock.cpp

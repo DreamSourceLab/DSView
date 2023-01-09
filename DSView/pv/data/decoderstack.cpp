@@ -26,7 +26,6 @@
 #include <assert.h>
 
 #include "decoderstack.h"
-#include "logic.h"
 #include "logicsnapshot.h"
 #include "decode/decoder.h"
 #include "decode/annotation.h"
@@ -67,6 +66,7 @@ DecoderStack::DecoderStack(pv::SigSession *session,
     _decoder_status = decoder_status;
     _stask_stauts = NULL; 
     _is_capture_end = true;
+    _snapshot = NULL;
     
     _stack.push_back(new decode::Decoder(dec));
  
@@ -373,6 +373,7 @@ void DecoderStack::init()
     _samples_decoded = 0;
     _error_message = QString();
     _no_memory = false;
+    _snapshot = NULL;
 
     for (auto i = _rows.begin();i != _rows.end(); i++) { 
         (*i).second->clear();
@@ -410,8 +411,6 @@ void DecoderStack::do_decode_work()
      _stask_stauts->_bStop = false;
      _stask_stauts->_decoder = this;
      _decoder_status->clear(); //clear old items
-  
-    pv::data::Logic *data = NULL;
 
     if (!_options_changed)
     { 
@@ -420,6 +419,8 @@ void DecoderStack::do_decode_work()
     _options_changed = false;
 
     init();
+
+    _snapshot = NULL;
 
 	// Check that all decoders have the required channels
     for(auto dec : _stack){
@@ -437,35 +438,27 @@ void DecoderStack::do_decode_work()
         if (!dec->channels().empty()) {
             for(auto s :  _session->get_signals()) {
                 if(s->get_index() == (*dec->channels().begin()).second && s->signal_type() == LOGIC_SIGNAL)
-                {
-                    pv::view::LogicSignal *logicSig = (pv::view::LogicSignal*)s;
-                    data = logicSig->logic_data();
-                    if (data != NULL)
+                { 
+                    _snapshot = ((pv::view::LogicSignal*)s)->logic_data();
+                    if (_snapshot != NULL)
                         break;
                 }
             }
-            if (data != NULL)
+            if (_snapshot != NULL)
                 break;
         }
     }
 
-	if (data == NULL)
+	if (_snapshot == NULL)
 		return;
 
-    if (_session->is_realtime_mode() == false)
-    {
-	    // Check we have a snapshot of data
-        const auto &snapshots = data->get_snapshots();
-        if (snapshots.empty())
-            return;
-
-        _snapshot = snapshots.front();
-        if (_snapshot->empty())
-            return;
+    if (_session->is_realtime_mode() == false && _snapshot->empty())
+    { 
+        return;
     }
 
     // Get the samplerate
-	_samplerate = data->samplerate();
+	_samplerate = _snapshot->samplerate();
     if (_samplerate == 0.0)
         return;
      

@@ -22,7 +22,6 @@
 
 #include <math.h>
 #include "../view/analogsignal.h"
-#include "../data/analog.h"
 #include "../data/analogsnapshot.h"
 #include "../view/view.h"
 #include "../dsvdef.h"
@@ -44,7 +43,7 @@ const QColor AnalogSignal::SignalColours[4] = {
 
 const float AnalogSignal::EnvelopeThreshold = 16.0f;
 
-AnalogSignal::AnalogSignal(data::Analog *data, sr_channel *probe) :
+AnalogSignal::AnalogSignal(data::AnalogSnapshot *data, sr_channel *probe) :
     Signal(probe),
     _data(data),
     _rects(NULL),
@@ -96,7 +95,7 @@ AnalogSignal::AnalogSignal(data::Analog *data, sr_channel *probe) :
     }
 }
 
-AnalogSignal::AnalogSignal(view::AnalogSignal *s, pv::data::Analog *data, sr_channel *probe) :
+AnalogSignal::AnalogSignal(view::AnalogSignal *s, pv::data::AnalogSnapshot *data, sr_channel *probe) :
     Signal(*s, probe),
     _data(data),
     _rects(NULL),
@@ -122,36 +121,6 @@ AnalogSignal::~AnalogSignal()
         delete[] _rects;
         _rects = NULL;
     }
-}
-
-pv::data::SignalData* AnalogSignal::data()
-{
-    return _data;
-}
-
-void AnalogSignal::set_scale(int height)
-{
-    _scale = height / (_ref_max - _ref_min);
-}
-
-float AnalogSignal::get_scale()
-{
-    return _scale;
-}
-
-int AnalogSignal::get_bits()
-{
-    return _bits;
-}
-
-double AnalogSignal::get_ref_min()
-{
-    return _ref_min;
-}
-
-double AnalogSignal::get_ref_max()
-{
-    return _ref_max;
 }
 
 int AnalogSignal::get_hw_offset()
@@ -205,12 +174,7 @@ bool AnalogSignal::measure(const QPointF &p)
     if (!window.contains(p))
         return false;
 
-    const auto &snapshots = _data->get_snapshots();
-    if (snapshots.empty())
-        return false;
-
-    const auto snapshot = snapshots.front();
-    if (snapshot->empty())
+    if (_data->have_data() == false)
         return false;
 
     const double scale = _view->scale();
@@ -220,7 +184,7 @@ bool AnalogSignal::measure(const QPointF &p)
     const double samples_per_pixel = samplerate * scale;
 
     _hover_index = floor((p.x() + pixels_offset) * samples_per_pixel+0.5);
-    if (_hover_index >= snapshot->get_sample_count())
+    if (_hover_index >= _data->get_sample_count())
         return false;
 
     _hover_point = get_point(_hover_index, _hover_value);
@@ -246,15 +210,7 @@ QPointF AnalogSignal::get_point(uint64_t index, float &value)
     if (!enabled())
         return pt;
 
-    const auto &snapshots = _data->get_snapshots();
-    if (snapshots.empty())
-        return pt;
-
-    const auto snapshot = snapshots.front();
-    if (snapshot->empty())
-        return pt;
-
-    const int order = snapshot->get_ch_order(get_index());
+    const int order = _data->get_ch_order(get_index());
     if (order == -1)
         return pt;
 
@@ -264,11 +220,11 @@ QPointF AnalogSignal::get_point(uint64_t index, float &value)
     const double samplerate = _view->session().cur_snap_samplerate();
     const double samples_per_pixel = samplerate * scale;
 
-    if (index >= snapshot->get_sample_count())
+    if (index >= _data->get_sample_count())
         return pt;
 
-    const uint64_t ring_index = (uint64_t)(snapshot->get_ring_start() + floor(index)) % snapshot->get_sample_count();
-    value = *(snapshot->get_samples(ring_index) + order*snapshot->get_unit_bytes());
+    const uint64_t ring_index = (uint64_t)(_data->get_ring_start() + floor(index)) % _data->get_sample_count();
+    value = *(_data->get_samples(ring_index) + order * _data->get_unit_bytes());
 
     const int height = get_totalHeight();
     const float top = get_y() - height * 0.5;
@@ -390,9 +346,6 @@ double AnalogSignal::pos2ratio(int pos)
     return min(max(pos - top, 0), height) * 1.0 / height;
 }
 
-/**
- *
- **/
 void AnalogSignal::set_zero_vpos(int pos)
 {
     if (enabled()) {
@@ -418,11 +371,6 @@ void AnalogSignal::set_zero_ratio(double ratio)
 double AnalogSignal::get_zero_ratio()
 {
     return value2ratio(_zero_offset);
-}
-
-int AnalogSignal::get_zero_offset()
-{
-    return _zero_offset;
 }
 
 /**
@@ -507,23 +455,15 @@ void AnalogSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QCol
     assert(scale > 0);
     const int64_t offset = _view->offset();
 
-    const auto &snapshots = _data->get_snapshots();
-    if (snapshots.empty())
-        return;
-
-    const auto snapshot = snapshots.front();
-    if (snapshot->empty())
-        return;
-
-    const int order = snapshot->get_ch_order(get_index());
+    const int order = _data->get_ch_order(get_index());
     if (order == -1)
         return;
 
     const double pixels_offset = offset;
     const double samplerate = _data->samplerate();
-    const int64_t cur_sample_count = snapshot->get_sample_count();
+    const int64_t cur_sample_count = _data->get_sample_count();
     const double samples_per_pixel = samplerate * scale;
-    const uint64_t ring_start = snapshot->get_ring_start();
+    const uint64_t ring_start = _data->get_ring_start();
 
     int64_t start_pixel;
     uint64_t start_index;
@@ -535,16 +475,18 @@ void AnalogSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QCol
     if (show_length <= 0)
         return;
 
-    if (samples_per_pixel < EnvelopeThreshold)
-        paint_trace(p, snapshot, zeroY,
+    if (samples_per_pixel < EnvelopeThreshold){
+        paint_trace(p, _data, zeroY,
             start_pixel, start_index, show_length,
             samples_per_pixel, order,
             top, bottom, width);
-    else
-        paint_envelope(p, snapshot, zeroY,
+    }
+    else{
+        paint_envelope(p, _data, zeroY,
             start_pixel, start_index, show_length,
             samples_per_pixel, order,
             top, bottom, width);
+    }
 }
 
 void AnalogSignal::paint_fore(QPainter &p, int left, int right, QColor fore, QColor back)

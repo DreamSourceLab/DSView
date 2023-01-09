@@ -28,9 +28,6 @@
 namespace pv {
 
 namespace data {
-class Logic;
-class Dso;
-class Analog;
 class DsoSnapshot;
 class MathStack;
 }

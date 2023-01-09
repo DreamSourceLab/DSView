@@ -130,7 +130,7 @@ void SearchDock::on_previous()
     assert(snapshot);
     const auto logic_snapshot = dynamic_cast<data::LogicSnapshot*>(snapshot);
 
-    if (!logic_snapshot || logic_snapshot->empty()) {
+    if (logic_snapshot == NULL || logic_snapshot->empty()) {
         dialogs::DSMessageBox msg(this);
         msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SEARCH), "Search"));
         msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NO_SAMPLE_DATA), "No Sample data!"));
@@ -192,7 +192,7 @@ void SearchDock::on_next()
     assert(snapshot);
     const auto logic_snapshot = dynamic_cast<data::LogicSnapshot*>(snapshot);
 
-    if (!logic_snapshot || logic_snapshot->empty()) {
+    if (logic_snapshot == NULL || logic_snapshot->empty()) {
         dialogs::DSMessageBox msg(this);
         msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SEARCH), "Search"));
         msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NO_SAMPLE_DATA), "No Sample data!"));

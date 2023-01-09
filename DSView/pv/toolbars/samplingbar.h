@@ -45,11 +45,6 @@ namespace pv
 {  
     class SigSession;
 
-    namespace device
-    {
-        class DevInst;
-    }
-
     namespace view{
         class View;
     }

@@ -47,10 +47,6 @@ class DeviceAgent;
 
 namespace pv {
 
-namespace device{
-class DevInst;
-}
-
 class SigSession;
 
 namespace view {

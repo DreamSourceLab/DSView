@@ -28,9 +28,6 @@
   
 namespace pv {
 namespace data {
-class Logic;
-class Dso;
-class Analog;
 class DsoSnapshot;
 }
 
@@ -85,34 +82,58 @@ private:
     static const uint16_t MS_RectHeight = 25;
 
 public:
-    DsoSignal(pv::data::Dso *data,
+    DsoSignal(pv::data::DsoSnapshot *data,
               sr_channel *probe);
 
     virtual ~DsoSignal();
 
-    pv::data::SignalData* data();
-    pv::data::Dso* dso_data();
+    inline data::DsoSnapshot* dso_data(){
+        return _data;
+    }
 
     void set_scale(int height);
-    float get_scale();
-    uint8_t get_bits();
-    double get_ref_min();
-    double get_ref_max();
 
-    int get_name_width();
+    inline float get_scale(){
+        return _scale;
+    }
 
-    /**
-     *
-     */
+    inline uint8_t get_bits(){
+        return _bits;
+    }
+
+    inline double get_ref_min(){
+        return _ref_min;
+    }
+
+    inline double get_ref_max(){
+        return _ref_max;
+    }
+
+    inline int get_name_width(){
+        return 0;
+    }
+
     void set_enable(bool enable);
-    bool get_vDialActive();
+
+    inline bool get_vDialActive(){
+        return _vDialActive;
+    }
+
     void set_vDialActive(bool active);
     bool go_vDialPre(bool manul);
     bool go_vDialNext(bool manul); 
-    dslDial *get_vDial();
+
+    inline dslDial *get_vDial(){
+        return _vDial;
+    }
+
     uint64_t get_vDialValue();
     uint16_t get_vDialSel();
-    uint8_t get_acCoupling();
+
+    inline uint8_t get_acCoupling(){
+        return _acCoupling;
+    }
+
     void set_acCoupling(uint8_t coupling);
 
     void set_trig_vpos(int pos, bool delta_change = true);
@@ -121,9 +142,18 @@ public:
 
     void set_factor(uint64_t factor);
     uint64_t get_factor();
-    void set_show(bool show);
-    bool show();
-    void set_mValid(bool valid);
+
+    inline void set_show(bool show){
+        _show = show;
+    }
+
+    inline bool show(){
+        return _show;
+    }
+
+    inline void set_mValid(bool valid){
+        _mValid = valid;
+    }
 
     bool load_settings();
     int commit_settings();
@@ -230,7 +260,7 @@ private:
     void call_auto_end();
 
 private:
-    pv::data::Dso *_data;
+    pv::data::DsoSnapshot *_data;
 	float _scale;
     bool _en_lock;
     bool _show;

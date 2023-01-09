@@ -70,6 +70,12 @@ public:
         return _have_data;
     }
 
+    inline double samplerate(){
+        return _samplerate; 
+    }
+
+    void set_samplerate(double samplerate);
+
     virtual void capture_ended();
     virtual bool has_data(int index) = 0;
     virtual int get_block_num() = 0;
@@ -101,6 +107,7 @@ protected:
     bool        _memory_failed;
     bool        _last_ended;
     bool        _have_data;
+    double      _samplerate;
 };
 
 } // namespace data

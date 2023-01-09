@@ -28,9 +28,6 @@
 namespace pv {
 
 namespace data {
-class Logic;
-class Dso;
-class Analog;
 class DsoSnapshot;
 }
 
@@ -46,7 +43,7 @@ private:
     static const int DIV_NUM = 10; 
 
 public:
-    LissajousTrace(bool enable, pv::data::Dso *data,
+    LissajousTrace(bool enable, pv::data::DsoSnapshot *data,
                    int xIndex, int yIndex, int percent);
 
     virtual ~LissajousTrace();
@@ -57,8 +54,8 @@ public:
     int yIndex();
     int percent();
 
-    pv::data::Dso* get_data();
-    void set_data(pv::data::Dso* data);
+    pv::data::DsoSnapshot* get_data();
+    void set_data(pv::data::DsoSnapshot* data);
 
     int rows_size();
 
@@ -89,7 +86,7 @@ public:
     void paint_label(QPainter &p, int right, const QPoint pt, QColor fore);
 
 private:
-    pv::data::Dso *_data;
+    pv::data::DsoSnapshot *_data;
 
     bool _enable;
     int _xIndex;

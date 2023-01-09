@@ -57,7 +57,6 @@ class Decoder;
 class RowData;
 }
 
-class Logic;
 class DecoderStack;
 
 struct decode_task_status

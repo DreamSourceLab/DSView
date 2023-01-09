@@ -23,7 +23,6 @@
 #include <math.h>
 #include <QTimer>
 #include "mathtrace.h"
-#include "../data/dso.h"
 #include "../data/dsosnapshot.h"
 #include "../data/mathstack.h"
 #include "view.h"

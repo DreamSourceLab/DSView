@@ -39,8 +39,10 @@
 #include <libsigrok.h>
 #include "deviceagent.h"
 #include "eventobject.h"
+#include "data/logicsnapshot.h"
+#include "data/analogsnapshot.h"
+#include "data/dsosnapshot.h"
  
-
 struct srd_decoder;
 struct srd_channel;
 class DecoderStatus;
@@ -52,24 +54,15 @@ namespace pv {
 namespace data {
 class SignalData;
 class Snapshot;
-class Analog;
 class AnalogSnapshot;
-class Dso;
 class DsoSnapshot;
-class Logic;
 class LogicSnapshot;
-class Group;
-class GroupSnapshot;
 class DecoderModel;
 class MathStack;
 
 namespace decode {
     class Decoder;
   }
-}
-
-namespace device {
-class DevInst;
 }
 
 namespace view {
@@ -90,6 +83,33 @@ enum COLLECT_OPT_MODE{
     OPT_SINGLE = 0,
     OPT_REPEAT = 1,
     OPT_REALTIME = 2,
+}; 
+
+class SessionData
+{
+public:
+    SessionData(); 
+
+    inline data::LogicSnapshot* get_logic(){
+        return &logic;
+    }
+
+    inline data::AnalogSnapshot* get_analog(){
+        return &analog;
+    }
+
+    inline data::DsoSnapshot* get_dso(){
+        return &dso;
+    }
+
+public:
+    uint64_t       _cur_snap_samplerate;
+    uint64_t       _cur_samplelimits;
+
+private:
+    data::LogicSnapshot   logic;
+    data::AnalogSnapshot  analog;
+    data::DsoSnapshot     dso;
 };
 
 using namespace pv::data;
@@ -148,10 +168,7 @@ public:
     uint64_t cur_samplerate();
     uint64_t cur_snap_samplerate();
 
-    inline uint64_t cur_samplelimits(){
-        return _cur_samplelimits;
-    }
-
+    uint64_t cur_samplelimits();
     double cur_sampletime();
     double cur_snap_sampletime();
     double cur_view_time();
@@ -170,7 +187,7 @@ public:
 
     bool is_first_store_confirm();
     bool get_capture_status(bool &triggered, int &progress);
-    std::set<data::SignalData*> get_data();
+
 	std::vector<view::Signal*>& get_signals(); 
 
     bool add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus, 
@@ -366,10 +383,6 @@ public:
     bool switch_work_mode(int mode);
     bool have_new_realtime_refresh(bool keep);
 
-    data::LogicSnapshot* get_logic_data();
-    data::AnalogSnapshot* get_analog_data();
-    data::DsoSnapshot* get_dso_data();
-
 private:
     void set_cur_samplelimits(uint64_t samplelimits);
     void set_cur_snap_samplerate(uint64_t samplerate);
@@ -425,10 +438,10 @@ private:
 	void feed_in_header(const sr_dev_inst *sdi);
 	void feed_in_meta(const sr_dev_inst *sdi, const sr_datafeed_meta &meta);
     void feed_in_trigger(const ds_trigger_pos &trigger_pos);
-	void feed_in_logic(const sr_datafeed_logic &logic);
+	void feed_in_logic(const sr_datafeed_logic &o);
 
-    void feed_in_dso(const sr_datafeed_dso &dso);
-	void feed_in_analog(const sr_datafeed_analog &analog);    
+    void feed_in_dso(const sr_datafeed_dso &o);
+	void feed_in_analog(const sr_datafeed_analog &o);    
 	void data_feed_in(const struct sr_dev_inst *sdi,
 		        const struct sr_datafeed_packet *packet); 
 
@@ -448,9 +461,7 @@ private:
     mutable std::mutex      _data_mutex;
     mutable std::mutex      _decode_task_mutex;  
     std::thread             _decode_thread;
-    volatile bool           _is_decoding;   
-    uint64_t                _cur_snap_samplerate;
-    uint64_t                _cur_samplelimits;
+    volatile bool           _is_decoding;
  
 	std::vector<view::Signal*>      _signals; 
     std::vector<view::DecodeTrace*> _decode_traces;
@@ -460,11 +471,6 @@ private:
     view::LissajousTrace            *_lissajous_trace;
     view::MathTrace                 *_math_trace;
   
-	data::Logic              *_logic_data; 
-    data::Dso                *_dso_data; 
-	data::Analog             *_analog_data; 
-    int                      _group_cnt;
-    
     DsTimer     _feed_timer;
     DsTimer     _out_timer;
     DsTimer     _repeat_timer;
@@ -484,7 +490,6 @@ private:
     SESSION_ERROR_STATUS _error;
     uint64_t    _error_pattern;
     int         _map_zoom;  
-    bool        _dso_feed;
     float       _stop_scale; 
     bool        _bClose;  
  
@@ -508,6 +513,9 @@ private:
     DeviceAgent   _device_agent;
     std::vector<IMessageListener*> _msg_listeners;
     DeviceEventObject   _device_event;
+    SessionData       *_view_data;
+    SessionData       *_capture_data;
+    std::vector<SessionData*> _data_list;
    
 private:
 	// TODO: This should not be necessary. Multiple concurrent

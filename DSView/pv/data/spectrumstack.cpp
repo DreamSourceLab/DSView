@@ -21,7 +21,6 @@
 
 #include "spectrumstack.h"
  
-#include "dso.h"
 #include "dsosnapshot.h"
 #include "../sigsession.h"
 #include "../view/dsosignal.h"
@@ -170,7 +169,7 @@ void SpectrumStack::calc_fft()
 {
     _spectrum_state = Running;
     // Get the dso data
-    pv::data::Dso *data = NULL;
+    pv::data::DsoSnapshot *data = NULL;
     pv::view::DsoSignal *dsoSig = NULL;
 
     for(auto s : _session->get_signals()) {
@@ -183,17 +182,10 @@ void SpectrumStack::calc_fft()
         }
     }
 
-    if (data == NULL)
+    if (data == NULL || data->empty())
         return;
 
-    // Check we have a snapshot of data
-    const auto &snapshots = data->get_snapshots();
-    if (snapshots.empty())
-        return;
-        
-    _snapshot = snapshots.front();
-
-    if (_snapshot->get_sample_count() < _sample_num*_sample_interval)
+    if (data->get_sample_count() < _sample_num * _sample_interval)
         return;
 
     // Get the samplerate
@@ -205,7 +197,7 @@ void SpectrumStack::calc_fft()
     const int offset = dsoSig->get_hw_offset();
     const double vscale = dsoSig->get_vDialValue() * dsoSig->get_factor() * DS_CONF_DSO_VDIVS / (1000*255.0);
     const uint16_t step = _sample_interval;
-    const uint8_t *const samples = _snapshot->get_samples(0, _sample_num*_sample_interval-1, _index);
+    const uint8_t *const samples = data->get_samples(0, _sample_num*_sample_interval-1, _index);
     double wsum = 0;
     
     for (unsigned int i = 0; i < _sample_num; i++) {

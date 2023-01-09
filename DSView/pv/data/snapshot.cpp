@@ -112,5 +112,11 @@ void Snapshot::capture_ended()
     _last_ended = true;
 }
 
+void Snapshot::set_samplerate(double samplerate)
+{
+    assert(samplerate > 0);
+    _samplerate = samplerate;
+}
+
 } // namespace data
 } // namespace pv

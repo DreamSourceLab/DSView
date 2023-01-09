@@ -67,10 +67,6 @@ class SearchDock;
 namespace view {
 class View;
 }
-
-namespace device{
-    class DevInst;
-}
  
 //The mainwindow,referenced by MainFrame
 //TODO: create graph view,toolbar,and show device list

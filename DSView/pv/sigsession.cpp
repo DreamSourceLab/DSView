@@ -25,11 +25,8 @@
 #include "sigsession.h"
 #include "mainwindow.h"
 
-#include "data/analog.h"
 #include "data/analogsnapshot.h"
-#include "data/dso.h"
 #include "data/dsosnapshot.h"
-#include "data/logic.h"
 #include "data/logicsnapshot.h"
 #include "data/decoderstack.h"
 #include "data/decode/decoder.h"
@@ -61,6 +58,11 @@
 
 namespace pv
 {
+    SessionData::SessionData()
+    {
+        _cur_snap_samplerate = 0;
+        _cur_samplelimits = 0;
+    }
 
     // TODO: This should not be necessary
     SigSession *SigSession::_session = NULL;
@@ -83,7 +85,14 @@ namespace pv
         _data_updated = false;
         _opt_mode = OPT_SINGLE;
         _rt_refresh_time_id = 0;
-        _rt_ck_refresh_time_id = 0; 
+        _rt_ck_refresh_time_id = 0;
+        _view_data = NULL;
+        _capture_data = NULL;
+
+        _data_list.push_back(new SessionData());
+        _data_list.push_back(new SessionData());
+        _view_data = _data_list[0];
+        _capture_data = _data_list[0];
 
         this->add_msg_listener(this);
 
@@ -91,7 +100,6 @@ namespace pv
 
         _lissajous_trace = NULL;
         _math_trace = NULL;
-        _dso_feed = false;
         _stop_scale = 1;
         _is_decoding = false;
         _bClose = false;
@@ -101,11 +109,6 @@ namespace pv
         _repeat_wait_prog_step = 10;
 
         _device_agent.set_callback(this);
-
-        // Create snapshots & data containers
-        _logic_data = new data::Logic(new data::LogicSnapshot());
-        _dso_data = new data::Dso(new data::DsoSnapshot());
-        _analog_data = new data::Analog(new data::AnalogSnapshot());
 
         _feed_timer.SetCallback(std::bind(&SigSession::feed_timeout, this));
         _repeat_timer.SetCallback(std::bind(&SigSession::repeat_capture_wait_timeout, this));
@@ -120,6 +123,13 @@ namespace pv
 
     SigSession::~SigSession()
     {
+        for(auto p : _data_list){
+            p->get_logic()->clear();
+            p->get_dso()->clear();
+            p->get_analog()->clear();
+            delete p;
+        }
+        _data_list.clear();
     }
 
     bool SigSession::init()
@@ -214,8 +224,8 @@ namespace pv
 
         init_signals();
 
-        _cur_snap_samplerate = _device_agent.get_sample_rate();
-        _cur_samplelimits = _device_agent.get_sample_limit();
+        _capture_data->_cur_snap_samplerate = _device_agent.get_sample_rate();
+        _capture_data->_cur_samplelimits = _device_agent.get_sample_limit();
 
         if (_device_agent.get_work_mode() == DSO)
             _opt_mode = OPT_REPEAT;
@@ -302,7 +312,11 @@ namespace pv
     uint64_t SigSession::cur_snap_samplerate()
     {
         // samplerate for current snapshot
-        return _cur_snap_samplerate;
+        return _capture_data->_cur_snap_samplerate;
+    }
+
+    uint64_t SigSession::cur_samplelimits(){
+        return _capture_data->_cur_samplelimits;
     }
 
     double SigSession::cur_sampletime()
@@ -323,28 +337,25 @@ namespace pv
     void SigSession::set_cur_snap_samplerate(uint64_t samplerate)
     {
         assert(samplerate != 0);
-        _cur_snap_samplerate = samplerate;
-        // sample rate for all SignalData
-        // Logic/Analog/Dso
-        if (_logic_data)
-            _logic_data->set_samplerate(_cur_snap_samplerate);
-        if (_analog_data)
-            _analog_data->set_samplerate(_cur_snap_samplerate);
-        if (_dso_data)
-            _dso_data->set_samplerate(_cur_snap_samplerate);
+        
+        _capture_data->_cur_snap_samplerate = samplerate;
+        _capture_data->get_logic()->set_samplerate(samplerate);
+        _capture_data->get_analog()->set_samplerate(samplerate);
+        _capture_data->get_dso()->set_samplerate(samplerate);
   
         // DecoderStack
         for (auto d : _decode_traces)
         {
-            d->decoder()->set_samplerate(_cur_snap_samplerate);
+            d->decoder()->set_samplerate(samplerate);
         }
 
         // Math
         if (_math_trace && _math_trace->enabled())
             _math_trace->get_math_stack()->set_samplerate(_device_agent.get_sample_rate());
         // SpectrumStack
-        for (auto m : _spectrum_traces)
-            m->get_spectrum_stack()->set_samplerate(_cur_snap_samplerate);
+        for (auto m : _spectrum_traces){
+            m->get_spectrum_stack()->set_samplerate(samplerate);
+        }
 
         _callback->cur_snap_samplerate_changed();
     }
@@ -352,7 +363,7 @@ namespace pv
     void SigSession::set_cur_samplelimits(uint64_t samplelimits)
     {
         assert(samplelimits != 0);
-        _cur_samplelimits = samplelimits;
+        _capture_data->_cur_samplelimits = samplelimits;
     }
 
     void SigSession::capture_init()
@@ -399,17 +410,9 @@ namespace pv
 
     void SigSession::container_init()
     {
-        // Logic
-        if (_logic_data)
-            _logic_data->init();
- 
-        // Dso
-        if (_analog_data)
-            _analog_data->init();
-
-        // Analog
-        if (_dso_data)
-            _dso_data->init();
+        _capture_data->get_logic()->init();
+        _capture_data->get_analog()->init();
+        _capture_data->get_dso()->init();
 
         // SpectrumStack
         for (auto m : _spectrum_traces)
@@ -462,7 +465,7 @@ namespace pv
 
         _callback->trigger_message(DSV_MSG_START_COLLECT_WORK_PREV);
 
-        get_dso_data()->set_threshold(0); // Reset threshold value
+        _view_data->get_dso()->set_threshold(0); // Reset threshold value
 
         if (exec_capture())
         {   
@@ -626,19 +629,7 @@ namespace pv
     std::vector<view::Signal *> &SigSession::get_signals()
     {
         return _signals;
-    }
-
-    std::set<data::SignalData *> SigSession::get_data()
-    {
-        std::set<data::SignalData *> data;
-
-        for (auto s : _signals)
-        { 
-            data.insert(s->data());
-        }
-
-        return data;
-    }
+    } 
 
     void SigSession::check_update()
     {
@@ -713,20 +704,20 @@ namespace pv
             {
             case SR_CHANNEL_LOGIC:
                 if (probe->enabled){
-                    view::Signal *signal = new view::LogicSignal(_logic_data, probe);
+                    view::Signal *signal = new view::LogicSignal(_view_data->get_logic(), probe);
                     sigs.push_back(signal);
                 }
                 break;
 
             case SR_CHANNEL_DSO:{
-                    view::Signal *signal = new view::DsoSignal(_dso_data, probe);
+                    view::Signal *signal = new view::DsoSignal(_view_data->get_dso(), probe);
                     sigs.push_back(signal);
                 }
                 break;
 
             case SR_CHANNEL_ANALOG:
                 if (probe->enabled){
-                    view::Signal *signal = new view::AnalogSignal(_analog_data, probe);
+                    view::Signal *signal = new view::AnalogSignal(_view_data->get_analog(), probe);
                     sigs.push_back(signal);
                 }
                 break;
@@ -775,7 +766,7 @@ namespace pv
                         {                            
                             if ((*i)->signal_type() == LOGIC_SIGNAL){
                                 view::LogicSignal *logicSig = (view::LogicSignal*)(*i);
-                                signal = new view::LogicSignal(logicSig, _logic_data, probe);
+                                signal = new view::LogicSignal(logicSig, _view_data->get_logic(), probe);
                             }
                                
                             break;
@@ -784,7 +775,7 @@ namespace pv
                     }
                     if (signal == NULL)
                     {
-                        signal = new view::LogicSignal(_logic_data, probe);
+                        signal = new view::LogicSignal(_view_data->get_logic(), probe);
                     }
                 }
                 break;
@@ -799,7 +790,7 @@ namespace pv
                         {
                             if ((*i)->signal_type() == ANALOG_SIGNAL){
                                 view::AnalogSignal *analogSig = (view::AnalogSignal*)(*i);
-                                signal = new view::AnalogSignal(analogSig, _analog_data, probe);
+                                signal = new view::AnalogSignal(analogSig, _view_data->get_analog(), probe);
                             }                               
                             break;
                         }
@@ -807,7 +798,7 @@ namespace pv
                     }
                     if (signal == NULL)
                     {
-                        signal = new view::AnalogSignal(_analog_data, probe);
+                        signal = new view::AnalogSignal(_view_data->get_analog(), probe);
                     }
                 }
                 break;
@@ -832,33 +823,24 @@ namespace pv
 
         _data_lock = true;
 
-        if (_logic_data)
-        {
-            _logic_data->init();
+        _view_data->get_logic()->init();
 
-            for (auto d : _decode_traces)
-            {
-                d->decoder()->init();
-            }
+        for (auto d : _decode_traces)
+        {
+            d->decoder()->init();
         }
 
-        if (_dso_data)
-        {
-            _dso_data->init();
-            // SpectrumStack
-            for (auto m : _spectrum_traces)
-            { 
-                m->get_spectrum_stack()->init();
-            }
-
-            if (_math_trace)
-                _math_trace->get_math_stack()->init();
+        _view_data->get_dso()->init();
+        // SpectrumStack
+        for (auto m : _spectrum_traces)
+        { 
+            m->get_spectrum_stack()->init();
         }
 
-        if (_analog_data)
-        {
-            _analog_data->init();
-        }
+        if (_math_trace)
+            _math_trace->get_math_stack()->init();
+
+        _view_data->get_analog()->init();
 
         _out_timer.TimeOut(holdtime, std::bind(&SigSession::feed_timeout, this));
         _data_updated = true;
@@ -938,24 +920,24 @@ namespace pv
         }
     }
 
-    void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
+    void SigSession::feed_in_logic(const sr_datafeed_logic &o)
     {
-        if (!_logic_data || _logic_data->snapshot()->memory_failed())
-        {
-            dsv_err("%s", "Unexpected logic packet");
-            return;
-        }
-
-        if (logic.data_error == 1)
+        if (o.data_error == 1)
         {
             _error = Test_data_err;
-            _error_pattern = logic.error_pattern;
+            _error_pattern = o.error_pattern;
             _callback->session_error();
         }
 
-        if (_logic_data->snapshot()->last_ended())
+        if (_view_data->get_logic()->memory_failed())
         {
-            _logic_data->snapshot()->first_payload(logic, _device_agent.get_sample_limit(), _device_agent.get_channels());
+            dsv_err("%s", "Unexpected logic packet");
+            return;
+        }       
+
+        if (_view_data->get_logic()->last_ended())
+        {
+            _view_data->get_logic()->first_payload(o, _device_agent.get_sample_limit(), _device_agent.get_channels());
             // @todo Putting this here means that only listeners querying
             // for logic will be notified. Currently the only user of
             // frame_began is DecoderStack, but in future we need to signal
@@ -965,30 +947,30 @@ namespace pv
         else
         {
             // Append to the existing data snapshot
-            _logic_data->snapshot()->append_payload(logic);
+            _view_data->get_logic()->append_payload(o);
         }
 
-        if (_logic_data->snapshot()->memory_failed())
+        if (_view_data->get_logic()->memory_failed())
         {
             _error = Malloc_err;
             _callback->session_error();
             return;
         }
 
-        receive_data(logic.length * 8 / get_ch_num(SR_CHANNEL_LOGIC));
+        receive_data(o.length * 8 / get_ch_num(SR_CHANNEL_LOGIC));
 
         _data_updated = true;
     }
 
-    void SigSession::feed_in_dso(const sr_datafeed_dso &dso)
+    void SigSession::feed_in_dso(const sr_datafeed_dso &o)
     {
-        if (!_dso_data || _dso_data->snapshot()->memory_failed())
+        if (_view_data->get_dso()->memory_failed())
         {
             dsv_err("%s", "Unexpected dso packet");
             return; // This dso packet was not expected.
         }
 
-        if (_dso_data->snapshot()->last_ended())
+        if (_view_data->get_dso()->last_ended())
         {
             std::map<int, bool> sig_enable;
             // reset scale of dso signal
@@ -1002,12 +984,12 @@ namespace pv
             }
 
             // first payload
-            _dso_data->snapshot()->first_payload(dso, _device_agent.get_sample_limit(), sig_enable, _is_instant);
+            _view_data->get_dso()->first_payload(o, _device_agent.get_sample_limit(), sig_enable, _is_instant);
         }
         else
         {
             // Append to the existing data snapshot
-            _dso_data->snapshot()->append_payload(dso);
+            _view_data->get_dso()->append_payload(o);
         }
 
         for (auto s : _signals)
@@ -1018,13 +1000,13 @@ namespace pv
             }                
         }
 
-        if (dso.num_samples != 0)
+        if (o.num_samples != 0)
         {
             // update current sample rate
             set_cur_snap_samplerate(_device_agent.get_sample_rate());
         }
 
-        if (_dso_data->snapshot()->memory_failed())
+        if (_view_data->get_dso()->memory_failed())
         {
             _error = Malloc_err;
             _callback->session_error();
@@ -1045,11 +1027,11 @@ namespace pv
             _math_trace->get_math_stack()->calc_math();
         }
 
-        _trigger_flag = dso.trig_flag;
-        _trigger_ch = dso.trig_ch;
+        _trigger_flag = o.trig_flag;
+        _trigger_ch = o.trig_ch;
 
         //Trigger update()
-        receive_data(dso.num_samples);
+        receive_data(o.num_samples);
 
         if (!_is_instant)
         {
@@ -1059,15 +1041,15 @@ namespace pv
         _data_updated = true;
     }
 
-    void SigSession::feed_in_analog(const sr_datafeed_analog &analog)
+    void SigSession::feed_in_analog(const sr_datafeed_analog &o)
     {
-        if (!_analog_data || _analog_data->snapshot()->memory_failed())
+        if (_view_data->get_analog()->memory_failed())
         {
             dsv_err("%s", "Unexpected analog packet");
             return; // This analog packet was not expected.
         }
 
-        if (_analog_data->snapshot()->last_ended())
+        if (_view_data->get_analog()->last_ended())
         {
             // reset scale of analog signal
             for (auto s : _signals)
@@ -1079,22 +1061,22 @@ namespace pv
             }
 
             // first payload
-            _analog_data->snapshot()->first_payload(analog, _device_agent.get_sample_limit(), _device_agent.get_channels());
+            _view_data->get_analog()->first_payload(o, _device_agent.get_sample_limit(), _device_agent.get_channels());
         }
         else
         {
             // Append to the existing data snapshot
-            _analog_data->snapshot()->append_payload(analog);
+            _view_data->get_analog()->append_payload(o);
         }
 
-        if (_analog_data->snapshot()->memory_failed())
+        if (_view_data->get_analog()->memory_failed())
         {
             _error = Malloc_err;
             _callback->session_error();
             return;
         }
 
-        receive_data(analog.num_samples);
+        receive_data(o.num_samples);
         _data_updated = true;
     }
 
@@ -1160,9 +1142,9 @@ namespace pv
         }
         case SR_DF_END:
         {
-            _logic_data->snapshot()->capture_ended();
-            _dso_data->snapshot()->capture_ended();
-            _analog_data->snapshot()->capture_ended();
+            _view_data->get_logic()->capture_ended();
+            _view_data->get_dso()->capture_ended();
+            _view_data->get_analog()->capture_ended();
 
             int mode = _device_agent.get_work_mode();
 
@@ -1427,7 +1409,7 @@ namespace pv
     void SigSession::lissajous_rebuild(bool enable, int xindex, int yindex, double percent)
     {
         DESTROY_OBJECT(_lissajous_trace);
-        _lissajous_trace = new view::LissajousTrace(enable, _dso_data, xindex, yindex, percent);
+        _lissajous_trace = new view::LissajousTrace(enable, _view_data->get_dso(), xindex, yindex, percent);
         signals_changed();
     }
 
@@ -1449,7 +1431,7 @@ namespace pv
 
         if (_math_trace && _math_trace->enabled())
         {
-            _math_trace->get_math_stack()->set_samplerate(_dso_data->samplerate());
+            _math_trace->get_math_stack()->set_samplerate(_view_data->get_dso()->samplerate());
             _math_trace->get_math_stack()->realloc(_device_agent.get_sample_limit());
             _math_trace->get_math_stack()->calc_math();
         }
@@ -1487,11 +1469,11 @@ namespace pv
     data::Snapshot *SigSession::get_snapshot(int type)
     {
         if (type == SR_CHANNEL_LOGIC)
-            return _logic_data->snapshot();
+            return _view_data->get_logic();
         else if (type == SR_CHANNEL_ANALOG)
-            return _analog_data->snapshot();
+            return _view_data->get_analog();
         else if (type == SR_CHANNEL_DSO)
-            return _dso_data->snapshot();
+            return _view_data->get_dso();
         else
             return NULL;
     }
@@ -1698,11 +1680,11 @@ namespace pv
     {
         int mode = _device_agent.get_work_mode();
         if (mode == ANALOG)
-            return _analog_data->snapshot();
+            return _view_data->get_analog();
         else if (mode == DSO)
-            return _dso_data->snapshot();
+            return _view_data->get_dso();
         else
-            return _logic_data->snapshot();
+            return _view_data->get_logic();
     }
 
     void SigSession::device_lib_event_callback(int event)
@@ -1733,7 +1715,9 @@ namespace pv
         case DS_EV_DEVICE_STOPPED:
             _device_status = ST_STOPPED;
             // Confirm that SR_DF_END was received
-            if (!_logic_data->snapshot()->last_ended() || !_dso_data->snapshot()->last_ended() || !_analog_data->snapshot()->last_ended())
+            if (   !_view_data->get_logic()->last_ended() 
+                || !_view_data->get_dso()->last_ended()
+                || !_view_data->get_analog()->last_ended())
             {
                 dsv_err("%s", "Error!The data is not completed.");
                 assert(false);
@@ -1750,11 +1734,13 @@ namespace pv
         {
             _callback->trigger_message(DSV_MSG_COLLECT_END);
 
-            if (_logic_data->snapshot()->last_ended() == false)
+            if (_view_data->get_logic()->last_ended() == false)
                 dsv_err("%s", "The collected data is error!");
-            if (_dso_data->snapshot()->last_ended() == false)
+
+            if (_view_data->get_dso()->last_ended() == false)
                 dsv_err("%s", "The collected data is error!");
-            if (_analog_data->snapshot()->last_ended() == false)
+
+            if (_view_data->get_analog()->last_ended() == false)
                 dsv_err("%s", "The collected data is error!");
 
             // trigger next collect
@@ -1952,21 +1938,6 @@ namespace pv
             return true;
         }
         return false;    
-    }
-
-    data::LogicSnapshot* SigSession::get_logic_data()
-    {
-        return _logic_data->snapshot();
-    }
-
-    data::AnalogSnapshot* SigSession::get_analog_data()
-    {
-        return _analog_data->snapshot();
-    }
-
-    data::DsoSnapshot* SigSession::get_dso_data()
-    {
-        return _dso_data->snapshot();
     }
 
 } // namespace pv

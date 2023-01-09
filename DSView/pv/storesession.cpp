@@ -26,7 +26,6 @@
 #include "storesession.h"
 #include "sigsession.h"
 
-#include "data/logic.h"
 #include "data/logicsnapshot.h"
 #include "data/dsosnapshot.h"
 #include "data/analogsnapshot.h"

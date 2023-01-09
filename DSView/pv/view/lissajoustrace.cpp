@@ -26,7 +26,6 @@
 #include "view.h"
 #include "../dsvdef.h"
 #include "lissajoustrace.h"
-#include "../data/dso.h"
 #include "../data/dsosnapshot.h"
 #include "../sigsession.h"
 
@@ -38,7 +37,7 @@ namespace pv {
 namespace view {
 
 LissajousTrace::LissajousTrace(bool enable,
-                     data::Dso *data,
+                     data::DsoSnapshot *data,
                      int xIndex, int yIndex, int percent):
     Trace("Lissajous", xIndex, SR_CHANNEL_LISSAJOUS),
     _data(data),
@@ -79,12 +78,12 @@ int LissajousTrace::percent()
     return _percent;
 }
 
-pv::data::Dso* LissajousTrace::get_data()
+pv::data::DsoSnapshot* LissajousTrace::get_data()
 {
     return _data;
 }
 
-void LissajousTrace::set_data(data::Dso *data)
+void LissajousTrace::set_data(data::DsoSnapshot *data)
 {
     _data = data;
 }
@@ -147,28 +146,24 @@ void LissajousTrace::paint_mid(QPainter &p, int left, int right, QColor fore, QC
     assert(right >= left);
 
     if (enabled()) {
-        const auto &snapshots = _data->get_snapshots();
-        if (snapshots.empty())
-            return;
 
-        auto snapshot = snapshots.front();
-        if (snapshot->empty())
+        if (_data->empty())
             return;
 
         int left = _border.left();
         int bottom = _border.bottom();
         double scale = _border.width() / 255.0;
-        uint64_t sample_count = snapshot->get_sample_count() * min(_percent / 100.0, 1.0);
+        uint64_t sample_count = _data->get_sample_count() * min(_percent / 100.0, 1.0);
         QPointF *points = new QPointF[sample_count];
         QPointF *point = points;
 
-        int channel_num = snapshot->get_channel_num();
+        int channel_num = _data->get_channel_num();
         if (_xIndex >= channel_num || _yIndex >= channel_num) {
             p.setPen(view::View::Red);
             p.drawText(_border.marginsRemoved(QMargins(10, 30, 10, 30)),
                        L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DATA_SOURCE_ERROR), "Data source error."));
         } else {
-            const uint8_t *const samples = snapshot->get_samples(0, sample_count-1, 0);
+            const uint8_t *const samples = _data->get_samples(0, sample_count-1, 0);
 
             for (uint64_t i = 0; i < sample_count; i++) {
                 *point++ = QPointF(left + samples[i + _xIndex] * scale,

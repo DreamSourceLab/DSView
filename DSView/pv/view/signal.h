@@ -69,7 +69,7 @@ protected:
     Signal(const Signal &s, sr_channel * const probe);
 
 public:
-    virtual pv::data::SignalData* data() = 0;
+  //  virtual pv::data::SignalData* data() = 0;
 
     /**
      * Returns true if the trace is visible and enabled.

@@ -28,7 +28,6 @@
 
 #include "spectrumtrace.h"
 #include "../sigsession.h"
-#include "../data/dso.h"
 #include "../data/dsosnapshot.h"
 #include "../view/dsosignal.h"
 #include "../view/viewport.h"

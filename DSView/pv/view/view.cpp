@@ -42,7 +42,6 @@
 #include "analogsignal.h"
 
 #include "../sigsession.h"
-#include "../data/logic.h"
 #include "../data/logicsnapshot.h"
 #include "../dialogs/calibration.h"
 #include "../dialogs/lissajousoptions.h"
@@ -518,10 +517,6 @@ void View::normalize_layout()
 
 void View::get_scroll_layout(int64_t &length, int64_t &offset)
 {
-    const auto data_set = _session->get_data();
-    if (data_set.empty())
-		return;
-
     length = ceil(_session->cur_snap_sampletime() / _scale);
     offset = _offset;
 }

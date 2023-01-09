@@ -31,10 +31,8 @@
 namespace pv {
 
 namespace data {
-class Logic;
-class Analog;
-}
-
+    class LogicSnapshot;
+} 
 
 namespace view {
 
@@ -63,23 +61,26 @@ public:
     };
 
 public:
-    LogicSignal(data::Logic* data, sr_channel *probe);
+    LogicSignal(data::LogicSnapshot *data, sr_channel *probe);
 
-    LogicSignal(view::LogicSignal*s, pv::data::Logic *data, sr_channel *probe);
+    LogicSignal(view::LogicSignal*s, data::LogicSnapshot *data, sr_channel *probe);
 
 	virtual ~LogicSignal();
 
-    const sr_channel* probe();
+    inline const sr_channel* probe(){
+        return _probe;
+    }
 
-    pv::data::SignalData* data();
+    inline data::LogicSnapshot* logic_data(){
+        return _data;
+    }
+    
+    inline LogicSetRegions get_trig(){
+        return _trig;
+    }
 
-    pv::data::Logic* logic_data();
-
-    /**
-     *
-     */
-    LogicSetRegions get_trig();
     void set_trig(int trig);
+
     bool commit_trig();
 
 	/**
@@ -115,7 +116,7 @@ private:
 		float x_offset, float y_offset);
 
 private:
-	pv::data::Logic* _data;
+	pv::data::LogicSnapshot* _data;
     std::vector< std::pair<uint16_t, bool> > _cur_edges;
     std::vector<std::pair<bool, bool>> _cur_pulses;
     LogicSetRegions _trig;

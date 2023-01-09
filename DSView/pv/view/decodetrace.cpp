@@ -38,7 +38,6 @@
 #include "../sigsession.h"
 #include "../data/decoderstack.h"
 #include "../data/decode/decoder.h"
-#include "../data/logic.h"
 #include "../data/logicsnapshot.h"
 #include "../data/decode/annotation.h"
 #include "../view/logicsignal.h"

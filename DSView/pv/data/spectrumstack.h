@@ -44,7 +44,6 @@ class DsoSignal;
 namespace data {
 
 class DsoSnapshot;
-class Dso;
 
 class SpectrumStack : public QObject, public SignalData
 {
@@ -101,8 +100,6 @@ private:
     int _windows_index;
     bool _dc_ignore;
     int _sample_interval;
-
-    pv::data::DsoSnapshot *_snapshot;
     spectrum_state _spectrum_state;
 
     fftw_plan _fft_plan;
