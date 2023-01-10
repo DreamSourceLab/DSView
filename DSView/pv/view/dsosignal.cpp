@@ -890,7 +890,12 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColor 
                 const uint32_t count  = (index == 0) ? status.ch0_cyc_cnt : status.ch1_cyc_cnt;
                 const bool plevel = (index == 0) ? status.ch0_plevel : status.ch1_plevel;
                 const bool startXORend = (index == 0) ? (status.ch0_cyc_llen == 0) : (status.ch1_cyc_llen == 0);
-                const uint16_t total_channels = g_slist_length(_dev_inst->dev_inst()->channels);
+                uint16_t total_channels = g_slist_length(_dev_inst->dev_inst()->channels);
+                
+                if (total_channels == 1 && _dev_inst->is_file()){
+                    total_channels++;
+                }
+
                 const double tfactor = (total_channels / enabled_channels) * SR_GHZ(1) * 1.0 / samplerate;
 
                 double samples = (index == 0) ? status.ch0_cyc_tlen : status.ch1_cyc_tlen;
