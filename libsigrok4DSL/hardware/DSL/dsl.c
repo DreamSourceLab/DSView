@@ -35,7 +35,6 @@ SR_PRIV int dsl_secuWrite(const struct sr_dev_inst *sdi, uint16_t cmd, uint16_t 
 SR_PRIV gboolean dsl_isSecuReady(const struct sr_dev_inst *sdi);
 SR_PRIV gboolean dsl_isSecuPass(const struct sr_dev_inst *sdi);
 SR_PRIV uint16_t dsl_secuRead(const struct sr_dev_inst *sdi);
-SR_PRIV int dsl_secuCheck(const struct sr_dev_inst *sdi, uint16_t* encryption, int steps);
 
 static const int32_t probeOptions[] = {
     SR_CONF_PROBE_COUPLING,

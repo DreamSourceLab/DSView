@@ -922,13 +922,6 @@ namespace pv
 
     void SigSession::feed_in_logic(const sr_datafeed_logic &o)
     {
-        if (o.data_error == 1)
-        {
-            _error = Test_data_err;
-            _error_pattern = o.error_pattern;
-            _callback->session_error();
-        }
-
         if (_view_data->get_logic()->memory_failed())
         {
             dsv_err("%s", "Unexpected logic packet");

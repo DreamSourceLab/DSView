@@ -131,8 +131,7 @@ public:
    enum SESSION_ERROR_STATUS {
         No_err,
         Hw_err,
-        Malloc_err,
-        Test_data_err,
+        Malloc_err, 
         Test_timeout_err,
         Pkt_data_err,
         Data_overflow
