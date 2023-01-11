@@ -1014,7 +1014,10 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         }
     } else if (id == SR_CONF_VTH) {
         devc->vth = g_variant_get_double(data);
-        ret = dsl_wr_reg(sdi, VTH_ADDR, (uint8_t)(devc->vth/5.0*255));
+        if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_MAX25_VTH)
+            ret = dsl_wr_reg(sdi, VTH_ADDR, (uint8_t)(devc->vth/5.0*(2.5/3.3)*255));
+        else
+            ret = dsl_wr_reg(sdi, VTH_ADDR, (uint8_t)(devc->vth/5.0*255));
     } else if (id == SR_CONF_MAX_HEIGHT) {
         stropt = g_variant_get_string(data, NULL);
         for (i = 0; i < ARRAY_SIZE(maxHeights); i++) {
@@ -1157,7 +1160,10 @@ static int dev_open(struct sr_dev_inst *sdi)
 
     if ((ret = dsl_dev_open(di, sdi, &fpga_done)) == SR_OK) {
         // set threshold
-        ret = dsl_wr_reg(sdi, VTH_ADDR, (uint8_t)(devc->vth/5.0*255));
+        if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_MAX25_VTH)
+            ret = dsl_wr_reg(sdi, VTH_ADDR, (uint8_t)(devc->vth/5.0*(2.5/3.3)*255));
+        else
+            ret = dsl_wr_reg(sdi, VTH_ADDR, (uint8_t)(devc->vth/5.0*255));
         if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_ADF4360) {
             dsl_config_adc(sdi, adc_clk_init_500m);
         }

@@ -1,3 +1,23 @@
+v1.2.2 -- (2023-01-11)
+----------
+  --common
+  * Add shortcut key recognition of ctrl/shift/alt
+  * Fix multiple clicks crash during file saving
+  * Fix screenshot crash under macOS
+  * Improve accuracy of CSV file
+
+  --for logic analyzer
+  * Support new hardware and firmware versions
+  * Clean up 0: UART protocol outputs statement
+  * Add CAN decoder support for CANFD
+  * Fix wait error for some decoders
+  * Fix QI decoder bugs
+  * Fix SPDIF decoder error for incomplete frames
+  * Add message type support for USB PD decoder
+
+  --for oscilloscope
+  * Fix measure error of DSL files with different channel number
+  
 1.2.1 -- (2022-08-27)
 -----------------
   --common

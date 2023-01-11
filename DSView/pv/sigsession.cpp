@@ -981,12 +981,6 @@ void SigSession::feed_in_logic(const sr_datafeed_logic &logic)
         return;
     }
 
-    if (logic.data_error == 1) {
-        _error = Test_data_err;
-        _error_pattern = logic.error_pattern;
-        _callback->session_error();
-    }
-
     if (_logic_data->snapshot()->last_ended()) {
         _logic_data->snapshot()->first_payload(logic, _dev_inst->get_sample_limit(), _dev_inst->dev_inst()->channels);
         // @todo Putting this here means that only listeners querying

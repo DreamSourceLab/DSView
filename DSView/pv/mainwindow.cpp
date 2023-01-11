@@ -248,8 +248,8 @@ void MainWindow::setup_ui()
     connect(&_event, SIGNAL(show_error(QString)), this, SLOT(on_show_error(QString)));
     connect(&_event, SIGNAL(signals_changed()), this, SLOT(on_signals_changed()));
     connect(&_event, SIGNAL(receive_trigger(quint64)), this, SLOT(on_receive_trigger(quint64)));
-    connect(&_event, SIGNAL(frame_ended()), this, SLOT(on_frame_ended()));
-    connect(&_event, SIGNAL(frame_began()), this, SLOT(on_frame_began()));
+    connect(&_event, SIGNAL(frame_ended()), this, SLOT(on_frame_ended()), Qt::DirectConnection);
+    connect(&_event, SIGNAL(frame_began()), this, SLOT(on_frame_began()), Qt::DirectConnection);
     connect(&_event, SIGNAL(decode_done()), this, SLOT(on_decode_done()));
     connect(&_event, SIGNAL(data_updated()), this, SLOT(on_data_updated()));
     connect(&_event, SIGNAL(cur_snap_samplerate_changed()), this, SLOT(on_cur_snap_samplerate_changed()));
@@ -673,24 +673,6 @@ void MainWindow::on_session_error()
         _session->stop_capture();
         title = tr("Malloc Error");
         details = tr("Memory is not enough for this sample!\nPlease reduce the sample depth!");
-        break;
-    case SigSession::Test_data_err:
-        _session->set_repeating(false);
-        _session->stop_capture();
-        _sampling_bar->set_sampling(false);
-        _session->capture_state_changed(SigSession::Stopped);
-        title = tr("Data Error");
-        error_pattern = _session->get_error_pattern();
-        for(int i = 0; i < 16; i++) {
-            if (error_pattern & 0x01)
-                ch_status += "X ";
-            else
-                ch_status += "  ";
-            ch_status += (i > 9 ? " " : "");
-            error_pattern >>= 1;
-        }
-        details = tr("the received data are not consist with pre-defined test data!") + "\n" +
-                  tr("0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15")+ "\n" + ch_status;
         break;
     case SigSession::Pkt_data_err:
         title = tr("Packet Error");

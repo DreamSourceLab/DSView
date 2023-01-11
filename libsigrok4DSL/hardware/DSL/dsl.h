@@ -1421,4 +1421,6 @@ SR_PRIV unsigned int dsl_get_timeout(const struct sr_dev_inst *sdi);
 SR_PRIV int dsl_start_transfers(const struct sr_dev_inst *sdi);
 SR_PRIV int dsl_header_size(const struct DSL_context *devc);
 
+SR_PRIV int dsl_secuCheck(const struct sr_dev_inst *sdi, uint16_t* encryption, int steps);
+
 #endif
