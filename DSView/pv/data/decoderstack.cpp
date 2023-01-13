@@ -439,7 +439,7 @@ void DecoderStack::do_decode_work()
             for(auto s :  _session->get_signals()) {
                 if(s->get_index() == (*dec->channels().begin()).second && s->signal_type() == LOGIC_SIGNAL)
                 { 
-                    _snapshot = ((pv::view::LogicSignal*)s)->logic_data();
+                    _snapshot = ((pv::view::LogicSignal*)s)->data();
                     if (_snapshot != NULL)
                         break;
                 }

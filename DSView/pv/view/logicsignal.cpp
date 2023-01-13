@@ -495,5 +495,11 @@ void LogicSignal::paint_mark(QPainter &p, int xstart, int xend, int type)
     }
 }
 
+void LogicSignal::set_data(data::LogicSnapshot* data)
+{
+    assert(data);
+    _data = data;
+}
+
 } // namespace view
 } // namespace pv

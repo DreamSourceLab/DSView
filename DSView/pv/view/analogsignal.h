@@ -50,10 +50,10 @@ private:
     static const uint8_t DefaultBits = 8;
 
 public:
-    AnalogSignal(pv::data::AnalogSnapshot *data,
+    AnalogSignal(data::AnalogSnapshot *data,
                  sr_channel *probe);
 
-    AnalogSignal(view::AnalogSignal* s, pv::data::AnalogSnapshot *data,  sr_channel *probe);
+    AnalogSignal(view::AnalogSignal* s, data::AnalogSnapshot *data,  sr_channel *probe);
 
 	virtual ~AnalogSignal();
 
@@ -76,6 +76,12 @@ public:
     inline double get_ref_max(){
         return _ref_max;
     }
+
+    inline data::AnalogSnapshot* data(){
+        return _data;
+    }
+
+    void set_data(data::AnalogSnapshot *data);
 
     int get_hw_offset();
     int commit_settings();

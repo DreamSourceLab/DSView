@@ -1504,5 +1504,11 @@ void DsoSignal::call_auto_end(){
     session->auto_end();
 }
 
+void DsoSignal::set_data(data::DsoSnapshot *data)
+{
+    assert(data);
+    _data = data;
+}
+
 } // namespace view
 } // namespace pv

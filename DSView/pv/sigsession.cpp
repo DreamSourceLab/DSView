@@ -64,6 +64,13 @@ namespace pv
         _cur_samplelimits = 0;
     }
 
+    void SessionData::clear()
+    {
+        logic.clear();
+        analog.clear();
+        dso.clear();
+    }
+
     // TODO: This should not be necessary
     SigSession *SigSession::_session = NULL;
 
@@ -124,9 +131,7 @@ namespace pv
     SigSession::~SigSession()
     {
         for(auto p : _data_list){
-            p->get_logic()->clear();
-            p->get_dso()->clear();
-            p->get_analog()->clear();
+            p->clear();
             delete p;
         }
         _data_list.clear();
@@ -375,24 +380,30 @@ namespace pv
         set_cur_snap_samplerate(_device_agent.get_sample_rate());
         set_cur_samplelimits(_device_agent.get_sample_limit());
         set_stop_scale(1);
+
         _data_updated = false;
         _trigger_flag = false;
         _trigger_ch = 0;
         _hw_replied = false;
         _rt_refresh_time_id = 0;
-        _rt_ck_refresh_time_id = 0;
-
-        int work_mode = _device_agent.get_work_mode();
-        if (work_mode == DSO || work_mode == ANALOG)
-            _feed_timer.Start(FeedInterval);
-        else
-            _feed_timer.Stop();
-
+        _rt_ck_refresh_time_id = 0; 
         _noData_cnt = 0;
         _data_lock = false;
 
-        // container init
-        container_init();
+        // Init data container
+        _capture_data->clear();
+
+        int mode = _device_agent.get_work_mode();
+        if (mode == DSO)
+        { 
+            for (auto m : _spectrum_traces){ 
+                m->get_spectrum_stack()->init();
+            }
+
+            if (_math_trace){
+                _math_trace->get_math_stack()->init();
+            }
+        }   
 
         // update current hw offset
         for (auto s : _signals)
@@ -406,28 +417,12 @@ namespace pv
                 analogSig->set_zero_ratio(analogSig->get_zero_ratio());
             }
         }
-    }
 
-    void SigSession::container_init()
-    {
-        _capture_data->get_logic()->init();
-        _capture_data->get_analog()->init();
-        _capture_data->get_dso()->init();
-
-        // SpectrumStack
-        for (auto m : _spectrum_traces)
-        { 
-            m->get_spectrum_stack()->init();
-        }
-
-        if (_math_trace)
-            _math_trace->get_math_stack()->init();
-
-        // DecoderStack
-        for (auto d : _decode_traces)
-        {
-            d->decoder()->init();
-        }
+        // Start timer 
+        if (mode == DSO || mode == ANALOG)
+            _feed_timer.Start(FeedInterval);
+        else
+            _feed_timer.Stop();
     }
 
     bool SigSession::start_capture(bool instant)
@@ -453,6 +448,11 @@ namespace pv
             dsv_err("%s", "Error!Device is running.");
             return false;
         }
+        
+        if (_view_data != _capture_data){
+            _capture_data->clear();
+            _capture_data = _view_data;
+        }
 
         // update setting
         if (_device_agent.is_file())
@@ -465,30 +465,13 @@ namespace pv
 
         _callback->trigger_message(DSV_MSG_START_COLLECT_WORK_PREV);
 
-        _view_data->get_dso()->set_threshold(0); // Reset threshold value
-
-        if (exec_capture())
+        if (exec_capture(true))
         {   
             _capture_time_id++;
             _is_working = true;
-            _callback->trigger_message(DSV_MSG_START_COLLECT_WORK);
+            _callback->trigger_message(DSV_MSG_START_COLLECT_WORK);           
 
-            if (_device_agent.get_work_mode() == LOGIC)
-            {
-                for (auto de : _decode_traces)
-                {
-                    de->decoder()->set_capture_end_flag(false);
-
-                    // On real-time mode, create the decode task when capture started.
-                    if (is_realtime_mode())
-                    {
-                        de->frame_ended();
-                        add_decode_task(de);
-                    }                
-                }
-            }
-
-            // Start a timer, for able to refresh the view per (1000 / 30)ms
+            // Start a timer, for able to refresh the view per (1000 / 30)ms on real-time mode.
             if (is_realtime_mode()){
                 _refresh_rt_timer.Start(1000 / 30);
             }
@@ -498,26 +481,25 @@ namespace pv
         return false;
     }
 
-    bool SigSession::exec_capture()
+    bool SigSession::exec_capture(bool bFirst)
     {
         if (_device_agent.is_collecting())
         {
             dsv_err("%s", "Error!Device is running.");
             return false;
         }
-
-        // Clear the previous decoder tasks.
-        int run_dex = 0;
-        clear_all_decode_task(run_dex);
-
-        // reset measure of dso signal
-        for (auto s : _signals)
-        { 
-            if (s->signal_type() == DSO_SIGNAL){
-                view::DsoSignal *dsoSig = (view::DsoSignal*)s;
-                dsoSig->set_mValid(false);
+        
+        int mode = _device_agent.get_work_mode();
+        if (mode == DSO || mode == ANALOG)
+        {   
+            // reset measure of dso signal
+            for (auto s : _signals){ 
+                if (s->signal_type() == DSO_SIGNAL){
+                    view::DsoSignal *dsoSig = (view::DsoSignal*)s;
+                    dsoSig->set_mValid(false);
+                }
             }
-        }
+        }     
 
         if (_device_agent.have_enabled_channel() == false)
         {
@@ -531,6 +513,29 @@ namespace pv
         {
             dsv_err("%s", "Start collect error!");
             return false;
+        }
+
+        if (mode == LOGIC)
+        {   
+            // On repeate mode, the last data can use to decode, so can't remove the current decode task.
+            // And on this mode, the decode task will be created when capture end.
+            if (is_repeat_mode() == false || bFirst){
+                int run_dex = 0;
+                clear_all_decode_task(run_dex);
+                clear_decode_result();
+            }
+
+            for (auto de : _decode_traces)
+            {
+                de->decoder()->set_capture_end_flag(false);
+
+                // On real-time mode, create the decode task when capture started.
+                if (is_realtime_mode())
+                {
+                    de->frame_ended();
+                    add_decode_task(de);
+                }                
+            }
         }
 
         return true;
@@ -654,11 +659,8 @@ namespace pv
         }
     }
 
-
     void SigSession::init_signals()
-    {
-        assert(!_is_working);
-
+    { 
         if (_device_agent.have_instance() == false)
         {
             assert(false);
@@ -822,16 +824,12 @@ namespace pv
         ds_lock_guard lock(_data_mutex);
 
         _data_lock = true;
-
         _view_data->get_logic()->init();
 
-        for (auto d : _decode_traces)
-        {
-            d->decoder()->init();
-        }
+        clear_decode_result();
 
         _view_data->get_dso()->init();
-        // SpectrumStack
+       
         for (auto m : _spectrum_traces)
         { 
             m->get_spectrum_stack()->init();
@@ -922,15 +920,15 @@ namespace pv
 
     void SigSession::feed_in_logic(const sr_datafeed_logic &o)
     {
-        if (_view_data->get_logic()->memory_failed())
+        if (_capture_data->get_logic()->memory_failed())
         {
             dsv_err("%s", "Unexpected logic packet");
             return;
         }       
 
-        if (_view_data->get_logic()->last_ended())
+        if (_capture_data->get_logic()->last_ended())
         {
-            _view_data->get_logic()->first_payload(o, _device_agent.get_sample_limit(), _device_agent.get_channels());
+            _capture_data->get_logic()->first_payload(o, _device_agent.get_sample_limit(), _device_agent.get_channels());
             // @todo Putting this here means that only listeners querying
             // for logic will be notified. Currently the only user of
             // frame_began is DecoderStack, but in future we need to signal
@@ -940,10 +938,10 @@ namespace pv
         else
         {
             // Append to the existing data snapshot
-            _view_data->get_logic()->append_payload(o);
+            _capture_data->get_logic()->append_payload(o);
         }
 
-        if (_view_data->get_logic()->memory_failed())
+        if (_capture_data->get_logic()->memory_failed())
         {
             _error = Malloc_err;
             _callback->session_error();
@@ -957,13 +955,13 @@ namespace pv
 
     void SigSession::feed_in_dso(const sr_datafeed_dso &o)
     {
-        if (_view_data->get_dso()->memory_failed())
+        if (_capture_data->get_dso()->memory_failed())
         {
             dsv_err("%s", "Unexpected dso packet");
             return; // This dso packet was not expected.
         }
 
-        if (_view_data->get_dso()->last_ended())
+        if (_capture_data->get_dso()->last_ended())
         {
             std::map<int, bool> sig_enable;
             // reset scale of dso signal
@@ -977,12 +975,12 @@ namespace pv
             }
 
             // first payload
-            _view_data->get_dso()->first_payload(o, _device_agent.get_sample_limit(), sig_enable, _is_instant);
+            _capture_data->get_dso()->first_payload(o, _device_agent.get_sample_limit(), sig_enable, _is_instant);
         }
         else
         {
             // Append to the existing data snapshot
-            _view_data->get_dso()->append_payload(o);
+            _capture_data->get_dso()->append_payload(o);
         }
 
         for (auto s : _signals)
@@ -999,7 +997,7 @@ namespace pv
             set_cur_snap_samplerate(_device_agent.get_sample_rate());
         }
 
-        if (_view_data->get_dso()->memory_failed())
+        if (_capture_data->get_dso()->memory_failed())
         {
             _error = Malloc_err;
             _callback->session_error();
@@ -1036,13 +1034,13 @@ namespace pv
 
     void SigSession::feed_in_analog(const sr_datafeed_analog &o)
     {
-        if (_view_data->get_analog()->memory_failed())
+        if (_capture_data->get_analog()->memory_failed())
         {
             dsv_err("%s", "Unexpected analog packet");
             return; // This analog packet was not expected.
         }
 
-        if (_view_data->get_analog()->last_ended())
+        if (_capture_data->get_analog()->last_ended())
         {
             // reset scale of analog signal
             for (auto s : _signals)
@@ -1054,15 +1052,15 @@ namespace pv
             }
 
             // first payload
-            _view_data->get_analog()->first_payload(o, _device_agent.get_sample_limit(), _device_agent.get_channels());
+            _capture_data->get_analog()->first_payload(o, _device_agent.get_sample_limit(), _device_agent.get_channels());
         }
         else
         {
             // Append to the existing data snapshot
-            _view_data->get_analog()->append_payload(o);
+            _capture_data->get_analog()->append_payload(o);
         }
 
-        if (_view_data->get_analog()->memory_failed())
+        if (_capture_data->get_analog()->memory_failed())
         {
             _error = Malloc_err;
             _callback->session_error();
@@ -1135,26 +1133,28 @@ namespace pv
         }
         case SR_DF_END:
         {
-            _view_data->get_logic()->capture_ended();
-            _view_data->get_dso()->capture_ended();
-            _view_data->get_analog()->capture_ended();
-
-            int mode = _device_agent.get_work_mode();
-
-            // Post a message to start all decode tasks.
-            if (mode == LOGIC)
-               _callback->trigger_message(DSV_MSG_REV_END_PACKET);
+            _capture_data->get_logic()->capture_ended();
+            _capture_data->get_dso()->capture_ended();
+            _capture_data->get_analog()->capture_ended();
 
             if (packet->status != SR_PKT_OK)
             {
                 _error = Pkt_data_err;
                 _callback->session_error();
             }
+            else
+            {
+                int mode = _device_agent.get_work_mode();
 
-            _callback->frame_ended();
-
-            if (mode != LOGIC)
-                set_session_time(QDateTime::currentDateTime());
+                // Post a message to start all decode tasks.
+                if (mode == LOGIC){
+                    _callback->trigger_message(DSV_MSG_REV_END_PACKET);
+                }
+                else{
+                    set_session_time(QDateTime::currentDateTime());
+                    _callback->frame_ended();
+                }                     
+            }           
 
             break;
         }
@@ -1571,9 +1571,7 @@ namespace pv
         for (auto trace : _decode_traces)
         {
             if (trace != runningTrace)
-            {
                 delete trace;
-            }
         }
         _decode_traces.clear();
 
@@ -1708,9 +1706,9 @@ namespace pv
         case DS_EV_DEVICE_STOPPED:
             _device_status = ST_STOPPED;
             // Confirm that SR_DF_END was received
-            if (   !_view_data->get_logic()->last_ended() 
-                || !_view_data->get_dso()->last_ended()
-                || !_view_data->get_analog()->last_ended())
+            if (   !_capture_data->get_logic()->last_ended() 
+                || !_capture_data->get_dso()->last_ended()
+                || !_capture_data->get_analog()->last_ended())
             {
                 dsv_err("%s", "Error!The data is not completed.");
                 assert(false);
@@ -1727,13 +1725,13 @@ namespace pv
         {
             _callback->trigger_message(DSV_MSG_COLLECT_END);
 
-            if (_view_data->get_logic()->last_ended() == false)
+            if (_capture_data->get_logic()->last_ended() == false)
                 dsv_err("%s", "The collected data is error!");
 
-            if (_view_data->get_dso()->last_ended() == false)
+            if (_capture_data->get_dso()->last_ended() == false)
                 dsv_err("%s", "The collected data is error!");
 
-            if (_view_data->get_analog()->last_ended() == false)
+            if (_capture_data->get_analog()->last_ended() == false)
                 dsv_err("%s", "The collected data is error!");
 
             // trigger next collect
@@ -1807,7 +1805,7 @@ namespace pv
         if (_is_working)
         {
             _callback->repeat_hold(_repeat_hold_prg);
-            exec_capture();
+            exec_capture(false);
         }
     }
 
@@ -1857,7 +1855,7 @@ namespace pv
                     else
                     {
                         _repeat_hold_prg = 0;
-                        exec_capture();
+                        exec_capture(false);
                     }
                 }
             }
@@ -1867,17 +1865,46 @@ namespace pv
         {
             if (_device_agent.get_work_mode() == LOGIC)
             {
+                // On repeate mode, remove the current decode task when capture ended.
+                if (is_repeat_mode()){
+                    int run_dex = 0;
+                    clear_all_decode_task(run_dex);
+                    clear_decode_result();
+
+                    // Change the captrue data container.
+                    int buf_index = 0;
+                    for(int i=0; i<(int)_data_list.size(); i++){
+                        if (_data_list[i] == _capture_data){
+                            buf_index = i;
+                            break;
+                        }
+                    }
+                    _view_data = _capture_data;
+                    buf_index = (buf_index + 1) % 2;
+
+                    _capture_data = _data_list[buf_index];
+                    _capture_data->clear();
+
+                    set_cur_snap_samplerate(_device_agent.get_sample_rate());
+                    set_cur_samplelimits(_device_agent.get_sample_limit());
+
+                    attach_data_to_signal(_view_data);  
+                }
+
                 for (auto de : _decode_traces)
                 {
                     de->decoder()->set_capture_end_flag(true);
 
-                    // If is not the real-time mode, try to create all decode tasks.
+                    // On real-time mode, the decode task have be created when capture start, 
+                    // so not need to create new decode task here.
                     if (is_realtime_mode() == false){ 
                         de->frame_ended();
                         add_decode_task(de);
-                    }               
+                    }
                 }
-            }            
+
+                _callback->frame_ended();
+            }
         }
         break;
 
@@ -1894,11 +1921,17 @@ namespace pv
     bool SigSession::switch_work_mode(int mode)
     {
         assert(!_is_working);
+        int cur_mode = _device_agent.get_work_mode();
 
-        if (_device_agent.get_work_mode() != mode)
+        if (cur_mode != mode)
         {  
             GVariant *val = g_variant_new_int16(mode);
             _device_agent.set_config(NULL, NULL, SR_CONF_DEVICE_MODE, val);
+
+            if (cur_mode == LOGIC){
+                int run_dex = 0;
+                clear_all_decode_task(run_dex);
+            } 
 
             init_signals();
             dsv_info("%s", "Work mode is changed.");
@@ -1931,6 +1964,41 @@ namespace pv
             return true;
         }
         return false;    
+    }
+
+    void SigSession::clear_decode_result()
+    {
+        for (auto d : _decode_traces)
+        {
+            d->decoder()->init();
+        }
+    }
+
+    void SigSession::attach_data_to_signal(SessionData *data)
+    {
+        assert(data);
+
+        view::LogicSignal *s1;
+        view::AnalogSignal *s2;
+        view::DsoSignal *s3;
+
+        for (auto sig : _signals){
+            int type = sig->signal_type();
+            switch(type){
+                case LOGIC_SIGNAL:
+                    s1 = (view::LogicSignal*)sig;
+                    s1->set_data(data->get_logic());
+                    break;
+                case ANALOG_SIGNAL:
+                    s2 = (view::AnalogSignal*)sig;
+                    s2->set_data(data->get_analog());
+                    break;
+                case DSO_SIGNAL:
+                    s3 = (view::DsoSignal*)sig;
+                    s3->set_data(data->get_dso());
+                    break;
+            }
+        }
     }
 
 } // namespace pv

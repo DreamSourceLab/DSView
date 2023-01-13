@@ -102,6 +102,8 @@ public:
         return &dso;
     }
 
+    void clear();
+
 public:
     uint64_t       _cur_snap_samplerate;
     uint64_t       _cur_samplelimits;
@@ -163,10 +165,11 @@ public:
     bool set_file(QString name);
     void close_file(ds_device_handle dev_handle);
     bool start_capture(bool instant);
-    void stop_capture();	 
+    void stop_capture();
+    bool switch_work_mode(int mode);
+
     uint64_t cur_samplerate();
     uint64_t cur_snap_samplerate();
-
     uint64_t cur_samplelimits();
     double cur_sampletime();
     double cur_snap_sampletime();
@@ -378,8 +381,7 @@ public:
     bool have_hardware_data();
     struct ds_device_base_info* get_device_list(int &out_count, int &actived_index);
     void add_msg_listener(IMessageListener *ln);
-    void broadcast_msg(int msg);
-    bool switch_work_mode(int mode);
+    void broadcast_msg(int msg);    
     bool have_new_realtime_refresh(bool keep);
 
 private:
@@ -387,7 +389,7 @@ private:
     void set_cur_snap_samplerate(uint64_t samplerate);
     void math_disable();
 
-    bool exec_capture();
+    bool exec_capture(bool bFirst);
     void exit_capture();
 
     inline void data_updated(){
@@ -412,10 +414,10 @@ private:
 
     void capture_init(); 
     void nodata_timeout();
-    void feed_timeout();
-   
-    void container_init();
+    void feed_timeout();   
     void init_signals(); 
+    void clear_decode_result();
+    void attach_data_to_signal(SessionData *data);
   
     //IMessageListener
     void OnMessage(int msg);

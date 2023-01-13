@@ -893,7 +893,6 @@ namespace pv
             }
         }
 
-        //_session->init_signals();
         _session->reload();
 
         // load signal setting

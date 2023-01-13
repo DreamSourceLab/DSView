@@ -317,7 +317,7 @@ void MathStack::calc_math()
 
     _math_state = Running;
 
-    const auto data = _dsoSig1->dso_data();
+    const auto data = _dsoSig1->data();
 
     if (data->empty() || _math.size() < _total_sample_num)
         return;

@@ -87,9 +87,11 @@ public:
 
     virtual ~DsoSignal();
 
-    inline data::DsoSnapshot* dso_data(){
+    inline data::DsoSnapshot* data(){
         return _data;
     }
+
+    void set_data(data::DsoSnapshot *data);
 
     void set_scale(int height);
 

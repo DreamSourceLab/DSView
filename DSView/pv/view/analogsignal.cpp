@@ -702,5 +702,11 @@ QString AnalogSignal::get_voltage(double v, int p, bool scaled)
     return abs(v) >= 1000 ? QString::number(v/1000.0, 'f', p) + mapUnit : QString::number(v, 'f', p) + "m" + mapUnit;
 }
 
+void AnalogSignal::set_data(data::AnalogSnapshot *data)
+{
+    assert(data);
+    _data = data;
+}
+
 } // namespace view
 } // namespace pv

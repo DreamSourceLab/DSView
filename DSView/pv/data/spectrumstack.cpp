@@ -176,7 +176,7 @@ void SpectrumStack::calc_fft()
         if (s->signal_type() == DSO_SIGNAL) {
             dsoSig = (view::DsoSignal*)s;
             if (dsoSig->get_index() == _index && dsoSig->enabled()) {
-                data = dsoSig->dso_data();
+                data = dsoSig->data();
                 break;
             }
         }

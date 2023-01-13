@@ -210,10 +210,9 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
     std::vector<Trace*> traces;
     _view.get_traces(_type, traces);
 
-    if (_view.session().get_device()->get_work_mode() == LOGIC) {
-
-        for(auto t : traces)
-        {
+    if (_view.session().get_device()->get_work_mode() == LOGIC) 
+    {
+        for(auto t : traces){
             if (t->enabled())
                 t->paint_mid(p, 0, t->get_view_rect().right(), fore, back);
         }
@@ -358,6 +357,11 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
 void Viewport::paintProgress(QPainter &p, QColor fore, QColor back)
 {
     (void)back;
+
+    if (_view.session().get_device()->get_work_mode() == LOGIC
+        && _view.session().is_repeat_mode()){
+        return;
+    }
 
     using pv::view::Signal;
 
@@ -1200,9 +1204,17 @@ void Viewport::set_receive_len(quint64 length)
             _sample_received += length;
     }
 
-    if (_view.session().is_realtime_mode() && _view.session().have_new_realtime_refresh(true) == false){
-        return;
-    }
+    if (_view.session().get_device()->get_work_mode() == LOGIC)
+    {  
+        if (_view.session().is_realtime_mode() && _view.session().have_new_realtime_refresh(true) == false){
+            return;
+        }
+
+        //  On repeate mode, Not to refresh view when capturring.
+        if (_view.session().is_repeat_mode()){
+            return;
+        }
+    } 
 
     // Received new data, and refresh the view.
     update();

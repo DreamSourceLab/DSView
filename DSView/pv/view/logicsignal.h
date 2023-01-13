@@ -71,9 +71,11 @@ public:
         return _probe;
     }
 
-    inline data::LogicSnapshot* logic_data(){
+    inline data::LogicSnapshot* data(){
         return _data;
     }
+
+    void set_data(data::LogicSnapshot* data);
     
     inline LogicSetRegions get_trig(){
         return _trig;
