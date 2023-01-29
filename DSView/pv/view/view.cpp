@@ -1136,7 +1136,7 @@ void View::repeat_show()
     _viewbottom->update();
 }
 
-void View::set_capture_status()
+void View::update_capture_status()
 {
     bool triggered;
     int progress;

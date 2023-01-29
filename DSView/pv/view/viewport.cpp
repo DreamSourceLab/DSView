@@ -140,10 +140,10 @@ void Viewport::paintEvent(QPaintEvent *event)
 {
     (void)event; 
 
-    doPaint(true);
+    doPaint();
 }
 
-void Viewport::doPaint(bool bForce)
+void Viewport::doPaint()
 {     
     using pv::view::Signal;
    
@@ -175,13 +175,13 @@ void Viewport::doPaint(bool bForce)
             paintSignals(p, fore, back);
         }
         else if (_view.session().is_realtime_mode())
-        {   
-            if (_view.session().have_new_realtime_refresh(false) || bForce)
-                paintSignals(p, fore, back);
+        {  
+            _view.session().have_new_realtime_refresh(false); // Try to reset refresh timer.
+            paintSignals(p, fore, back);
         }
         else if (_view.session().is_running_status()){
-            if (_view.session().is_repeat_mode() && !_transfer_started) {
-                _view.set_capture_status();
+            if (_view.session().is_repeat_mode())// && !_transfer_started) 
+            {
                 paintSignals(p, fore, back);
             }
             else if (_type == TIME_VIEW) {
@@ -1202,7 +1202,7 @@ void Viewport::set_receive_len(quint64 length)
             _sample_received = _view.session().cur_samplelimits();
         else
             _sample_received += length;
-    }
+    } 
 
     if (_view.session().get_device()->get_work_mode() == LOGIC)
     {  
@@ -1210,11 +1210,16 @@ void Viewport::set_receive_len(quint64 length)
             return;
         }
 
-        //  On repeate mode, Not to refresh view when capturring.
-        if (_view.session().is_repeat_mode()){
-            return;
-        }
-    } 
+        if (_view.session().is_repeat_mode())
+        {
+            _view.update_capture_status();
+
+            //  On repeate mode, Not to refresh view when capturring.
+            if (_view.session().is_single_buffer() == false){
+                return;
+            } 
+        }               
+    }
 
     // Received new data, and refresh the view.
     update();

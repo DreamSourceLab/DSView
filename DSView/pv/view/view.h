@@ -280,7 +280,7 @@ public:
 
     void viewport_update();
 
-    void set_capture_status();
+    void update_capture_status();
 
     bool get_dso_trig_moved();
 

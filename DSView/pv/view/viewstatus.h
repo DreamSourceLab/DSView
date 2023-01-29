@@ -55,16 +55,14 @@ public:
 
     QJsonArray get_session();
     void load_session(QJsonArray meausre_array);
-
-signals:
+    void set_capture_status(bool triggered, int progess);
 
 public slots:
     void clear();
     void reload();
     void repeat_unshow();
     void set_trig_time(QDateTime time);
-    void set_rle_depth(uint64_t depth);
-    void set_capture_status(bool triggered, int progess);
+    void set_rle_depth(uint64_t depth);    
 
 private:
     SigSession *_session;

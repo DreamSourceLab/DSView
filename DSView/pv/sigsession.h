@@ -377,6 +377,10 @@ public:
         return _map_zoom;
     }
 
+    inline bool is_single_buffer(){
+        return _view_data == _capture_data;
+    }
+
     void auto_end();
     bool have_hardware_data();
     struct ds_device_base_info* get_device_list(int &out_count, int &actived_index);
@@ -400,7 +404,7 @@ private:
         _callback->signals_changed();
     }
 
-    inline void receive_data(quint64 len){
+    inline void set_receive_data_len(quint64 len){
         _callback->receive_data_len(len);
     }
   

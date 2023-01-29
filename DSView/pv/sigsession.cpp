@@ -620,8 +620,10 @@ namespace pv
                             ((uint64_t)status.captured_cnt2 << 16) +
                             ((uint64_t)status.captured_cnt3 << 24) +
                             (captured_cnt << 32));
+
             if (_device_agent.get_work_mode() == DSO)
                 captured_cnt = captured_cnt * _signals.size() / get_ch_num(SR_CHANNEL_DSO);
+                
             if (triggered)
                 progress = (sample_limits - captured_cnt) * 100.0 / sample_limits;
             else
@@ -948,7 +950,7 @@ namespace pv
             return;
         }
 
-        receive_data(o.length * 8 / get_ch_num(SR_CHANNEL_LOGIC));
+        set_receive_data_len(o.length * 8 / get_ch_num(SR_CHANNEL_LOGIC));
 
         _data_updated = true;
     }
@@ -1022,7 +1024,7 @@ namespace pv
         _trigger_ch = o.trig_ch;
 
         //Trigger update()
-        receive_data(o.num_samples);
+        set_receive_data_len(o.num_samples);
 
         if (!_is_instant)
         {
@@ -1067,7 +1069,7 @@ namespace pv
             return;
         }
 
-        receive_data(o.num_samples);
+        set_receive_data_len(o.num_samples);
         _data_updated = true;
     }
 
@@ -1700,7 +1702,7 @@ namespace pv
         {
         case DS_EV_DEVICE_RUNNING:
             _device_status = ST_RUNNING;
-            receive_data(0);
+            set_receive_data_len(0);
             break;
 
         case DS_EV_DEVICE_STOPPED:

@@ -92,8 +92,7 @@ public:
     int get_total_height();
     QPoint get_mouse_point();
     QString get_measure(QString option);
-    void set_measure_en(int enable);
-    void start_trigger_timer(int msec);
+    void set_measure_en(int enable);   
     void stop_trigger_timer();
 
     void clear_measure();
@@ -109,7 +108,7 @@ protected:
     void paintEvent(QPaintEvent *event) override;
 
 private:
-    void doPaint(bool bForce);
+    void doPaint();
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
@@ -124,6 +123,7 @@ private:
     void paintMeasure(QPainter &p, QColor fore, QColor back);
 
     void measure();
+    void start_trigger_timer(int msec);
 
 private slots:
     void on_trigger_timer();
