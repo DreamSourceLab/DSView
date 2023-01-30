@@ -219,6 +219,8 @@ static struct DSL_context *DSLogic_dev_new(const struct DSL_profile *prof)
     struct DSL_context *devc;
     unsigned int i;
 
+    assert(prof);
+
     if (!(devc = g_try_malloc(sizeof(struct DSL_context)))) {
         sr_err("Device context malloc failed.");
 		return NULL;
@@ -232,15 +234,15 @@ static struct DSL_context *DSLogic_dev_new(const struct DSL_profile *prof)
     devc->channel = NULL;
     devc->profile = prof;
 	devc->fw_updated = 0;
-    devc->cur_samplerate = devc->profile->dev_caps.default_samplerate;
-    devc->limit_samples = devc->profile->dev_caps.default_samplelimit;
+    devc->cur_samplerate = prof->dev_caps.default_samplerate;
+    devc->limit_samples = prof->dev_caps.default_samplelimit;
     devc->clock_type = FALSE;
     devc->clock_edge = FALSE;
     devc->rle_mode = FALSE;
     devc->instant = FALSE;
 	devc->op_mode = OP_STREAM;
     devc->test_mode = SR_TEST_NONE;
-	devc->ch_mode = devc->profile->dev_caps.default_channelmode;
+	devc->ch_mode = prof->dev_caps.default_channelmode;
     devc->stream = (devc->op_mode == OP_STREAM);
     devc->buf_options = SR_BUF_UPLOAD;
     devc->th_level = SR_TH_3V3;

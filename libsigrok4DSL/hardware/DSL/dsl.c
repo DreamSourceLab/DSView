@@ -196,12 +196,12 @@ SR_PRIV const GSList *dsl_mode_list(const struct sr_dev_inst *sdi)
 {
     struct DSL_context *devc;
     GSList *l = NULL;
-    unsigned int i;
+    unsigned int i; 
 
     devc = sdi->priv;
     for (i = 0; i < ARRAY_SIZE(sr_mode_list); i++) {
         if (devc->profile->dev_caps.mode_caps & (1 << i))
-            l = g_slist_append(l, &sr_mode_list[i]);
+            l = g_slist_append(l, &sr_mode_list[i]);    
     }
 
     return l;
