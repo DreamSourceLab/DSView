@@ -227,6 +227,9 @@ namespace pv
 
         clear_all_decoder();
 
+        _view_data->clear();
+        _capture_data->clear();
+
         init_signals();
 
         _capture_data->_cur_snap_samplerate = _device_agent.get_sample_rate();
@@ -286,6 +289,7 @@ namespace pv
         if (_device_agent.have_instance() && _device_agent.is_hardware())
         {
             Snapshot *data = get_signal_snapshot();
+            dsv_info("have data:%d", data->have_data());
             return data->have_data();
         }
         return false;
