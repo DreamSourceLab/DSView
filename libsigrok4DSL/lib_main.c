@@ -715,12 +715,16 @@ SR_API int ds_start_collect()
 	// Create new session.
 	sr_session_new();
 
-	ret = open_device_instance(di); // open device
-	if (ret != SR_OK)
+	if (di->status != SR_ST_ACTIVE)
 	{
-		sr_err("%s", "Open device error!");
-		return ret;
+		ret = open_device_instance(di); // open device
+		if (ret != SR_OK)
+		{
+			sr_err("%s", "Open device error!");
+			return ret;
+		}
 	}
+
 
 	lib_ctx.collect_thread = g_thread_new("collect_run_proc", collect_run_proc, NULL);
 
@@ -1347,7 +1351,7 @@ static void usb_hotplug_process_proc()
 {
 	sr_info("%s", "Hotplug thread start!");
 
-	int cur_trans_id = DEV_TRANS_NONE;
+	int cur_trans_id = 0;
 
 	while (!lib_ctx.lib_exit_flag)
 	{
@@ -1376,7 +1380,8 @@ static void usb_hotplug_process_proc()
 				lib_ctx.is_waitting_reconnect = 0;
 			}
 		}
-
+		
+		// The event command is changed.
 		if (lib_ctx.transaction_id != cur_trans_id)
 		{
 			cur_trans_id = lib_ctx.transaction_id;

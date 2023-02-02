@@ -289,7 +289,6 @@ namespace pv
         if (_device_agent.have_instance() && _device_agent.is_hardware())
         {
             Snapshot *data = get_signal_snapshot();
-            dsv_info("have data:%d", data->have_data());
             return data->have_data();
         }
         return false;
