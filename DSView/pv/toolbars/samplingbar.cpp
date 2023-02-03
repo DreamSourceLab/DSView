@@ -1163,9 +1163,13 @@ namespace pv
             _configure_button.setEnabled(bEnable);
             _device_selector.setEnabled(bEnable);
 
+            bool bNotFile = _session->get_device()->is_file() == false;
+            _action_repeat->setVisible(bNotFile);
+            _action_realtime->setVisible(bNotFile);
+
             if (_session->get_device()->is_file()){
                 _sample_rate.setEnabled(false);
-                _sample_count.setEnabled(false);
+                _sample_count.setEnabled(false);                
             }
             else if (mode == DSO){               
                 _sample_rate.setEnabled(false);
