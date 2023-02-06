@@ -451,7 +451,11 @@ namespace pv
             dsv_err("%s", "Error!Device is running.");
             return false;
         }
+
+        int run_dex = 0;
+        clear_all_decode_task(run_dex);
         
+        // If switch the data buffer
         if (_view_data != _capture_data){
             _capture_data->clear();
             _capture_data = _view_data;
@@ -468,7 +472,7 @@ namespace pv
 
         _callback->trigger_message(DSV_MSG_START_COLLECT_WORK_PREV);
 
-        if (exec_capture(true))
+        if (exec_capture())
         {   
             _capture_time_id++;
             _is_working = true;
@@ -484,7 +488,7 @@ namespace pv
         return false;
     }
 
-    bool SigSession::exec_capture(bool bFirst)
+    bool SigSession::exec_capture()
     {
         if (_device_agent.is_collecting())
         {
@@ -522,7 +526,7 @@ namespace pv
         {   
             // On repeate mode, the last data can use to decode, so can't remove the current decode task.
             // And on this mode, the decode task will be created when capture end.
-            if (is_repeat_mode() == false || bFirst){
+            if (is_repeat_mode() == false){
                 int run_dex = 0;
                 clear_all_decode_task(run_dex);
                 clear_decode_result();
@@ -1810,7 +1814,7 @@ namespace pv
         if (_is_working)
         {
             _callback->repeat_hold(_repeat_hold_prg);
-            exec_capture(false);
+            exec_capture();
         }
     }
 
@@ -1860,7 +1864,7 @@ namespace pv
                     else
                     {
                         _repeat_hold_prg = 0;
-                        exec_capture(false);
+                        exec_capture();
                     }
                 }
             }
@@ -1873,6 +1877,7 @@ namespace pv
                 // On repeate mode, remove the current decode task when capture ended.
                 if (is_repeat_mode()){
                     int run_dex = 0;
+                    //Stop all old task.
                     clear_all_decode_task(run_dex);
                     clear_decode_result();
 

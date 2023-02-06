@@ -393,7 +393,7 @@ private:
     void set_cur_snap_samplerate(uint64_t samplerate);
     void math_disable();
 
-    bool exec_capture(bool bFirst);
+    bool exec_capture();
     void exit_capture();
 
     inline void data_updated(){

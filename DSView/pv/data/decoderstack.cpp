@@ -511,20 +511,34 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
 
     std::vector<const uint8_t *> chunk;
     std::vector<uint8_t> chunk_const;
+
+    bool bCheckEnd = false;
+    uint64_t end_index = decode_end;
   
-    while(i < decode_end && !_no_memory && !status->_bStop)
+    while(i < end_index && !_no_memory && !status->_bStop)
     {
         chunk.clear();
         chunk_const.clear();
 
-        uint64_t chunk_end = decode_end;
-
-        // Wait the data is ready.
-        if (!_is_capture_end && i == _snapshot->get_ring_sample_count())
+        if (_is_capture_end)
         {
+            if (!bCheckEnd){
+                bCheckEnd = true;
+
+                if (end_index >= _snapshot->get_ring_sample_count()){
+                    end_index = _snapshot->get_ring_sample_count() - 1;
+                    dsv_info("Reset the decode end sample, new:%llu, old:%llu", end_index, decode_end);
+                }
+            }
+        }
+        else if (i >= _snapshot->get_ring_sample_count())
+        {   
+            // Wait the data is ready.
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             continue;
         }
+
+        uint64_t chunk_end = end_index;
 
         for (int j =0 ; j < logic_di->dec_num_channels; j++) {
             int sig_index = logic_di->dec_channelmap[j];
@@ -544,12 +558,12 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
             }
         }
 
-        if (chunk_end > decode_end)
-            chunk_end = decode_end;
+        if (chunk_end > end_index)
+            chunk_end = end_index;
         if (chunk_end - i > MaxChunkSize)
             chunk_end = i + MaxChunkSize;
 
-        bEndTime = chunk_end == decode_end;
+        bEndTime = chunk_end == end_index;
 
         if (srd_session_send(
                 session,
