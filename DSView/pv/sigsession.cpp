@@ -1433,9 +1433,12 @@ namespace pv
 
         if (_math_trace && _math_trace->enabled())
         {
-            _math_trace->get_math_stack()->set_samplerate(_view_data->get_dso()->samplerate());
-            _math_trace->get_math_stack()->realloc(_device_agent.get_sample_limit());
-            _math_trace->get_math_stack()->calc_math();
+            int rt = _view_data->get_dso()->samplerate();
+            if (rt > 0){
+                _math_trace->get_math_stack()->set_samplerate(rt);
+                _math_trace->get_math_stack()->realloc(_device_agent.get_sample_limit());
+                _math_trace->get_math_stack()->calc_math();
+            }           
         }
         signals_changed();
     }
