@@ -29,16 +29,17 @@
 namespace pv {
 namespace data {
 
-Snapshot::Snapshot(int unit_size, uint64_t total_sample_count, unsigned int channel_num) :
-    _capacity(0),
-    _channel_num(channel_num),
-    _sample_count(0),
-    _total_sample_count(total_sample_count),
-    _ring_sample_count(0),
-    _unit_size(unit_size),
-    _memory_failed(false)
+Snapshot::Snapshot(int unit_size, uint64_t total_sample_count, unsigned int channel_num)
 {
-    assert(_unit_size > 0);
+    assert(unit_size > 0);
+
+    _capacity = 0;
+    _channel_num = channel_num;
+    _sample_count = 0;
+    _total_sample_count = total_sample_count;
+    _ring_sample_count = 0;
+    _unit_size = unit_size;
+    _memory_failed = false;
     _last_ended = true;
     _unit_bytes = 1;
     _unit_pitch = 0;

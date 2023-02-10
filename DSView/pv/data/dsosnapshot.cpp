@@ -48,7 +48,7 @@ DsoSnapshot::DsoSnapshot() :
     _envelope_en = false;
     _envelope_done = false;
     _instant = false;
-    _threshold = 0;
+    _threshold = 0; 
 
 	memset(_envelope_levels, 0, sizeof(_envelope_levels));
 }
@@ -81,8 +81,7 @@ void DsoSnapshot::init_all()
     _ring_sample_count = 0;
     _memory_failed = false;
     _last_ended = true;
-    _envelope_done = false;
-    _ch_enable.clear();
+    _envelope_done = false;    
 
     for (unsigned int i = 0; i < _channel_num; i++) {
         for (unsigned int level = 0; level < ScaleStepCount; level++) {
@@ -112,41 +111,57 @@ void DsoSnapshot::free_data()
 }
 
 void DsoSnapshot::first_payload(const sr_datafeed_dso &dso, uint64_t total_sample_count,
-                                std::map<int, bool> ch_enable, bool instant)
+                                GSList *channels, bool instant)
 {
-    bool re_alloc = false;
-    unsigned int channel_num = 0;
+    assert(channels);
+    //dsv_info("first total_sample_count:%llu", total_sample_count);
 
-    for (auto& iter:ch_enable) {
-        if (iter.second)
-            channel_num++;
+    bool channel_changed = false;
+    uint16_t channel_num = 0;
+
+    for (const GSList *l = channels; l; l = l->next) {
+        sr_channel *const probe = (sr_channel*)l->data;
+
+        if (probe->type == SR_CHANNEL_DSO) {
+            if (probe->enabled){
+                channel_num++;
+                if (!channel_changed){
+                    channel_changed = !has_data(probe->index);
+                }
+            } 
+        }
     }
+
     assert(channel_num != 0);
 
-    if (total_sample_count != _total_sample_count || channel_num != _channel_num){
-        re_alloc = true;
-    }
-
-    _total_sample_count = total_sample_count;
-    _channel_num = channel_num;
     _instant = instant;
-    _ch_enable = ch_enable;
-
     bool isOk = true;
-    uint64_t size = _total_sample_count * _channel_num + sizeof(uint64_t);
 
-    if (re_alloc || size != _capacity) {
+    if (total_sample_count != _total_sample_count
+        || channel_num != _channel_num
+        || channel_changed){
+
         free_data();
 
-        for (int ch=0; ch<_channel_num; ch++){
-            uint8_t *buf = (uint8_t*)malloc(_total_sample_count + 1);
-            if (buf == NULL){
-                isOk = false;
-                dsv_err("DsoSnapshot::first_payload, Malloc memory failed!");
-                break;
+        _ch_index.clear();
+        _total_sample_count = total_sample_count;
+        _channel_num = channel_num; 
+
+         for (const GSList *l = channels; l; l = l->next) {
+            sr_channel *const probe = (sr_channel*)l->data;
+
+            if (probe->type == SR_CHANNEL_DSO && probe->enabled) {
+                
+                uint8_t *chan_buffer = (uint8_t*)malloc(total_sample_count + 1);
+                if (chan_buffer == NULL){
+                    isOk = false;
+                    dsv_err("DsoSnapshot::first_payload, Malloc memory failed!");
+                    break;
+                }
+                _ch_data.push_back(chan_buffer);
+                _ch_index.push_back(probe->index);
             }
-            _ch_data.push_back(buf);
-        }        
+        }    
         
         if (isOk) {
             free_envelop();
@@ -171,7 +186,6 @@ void DsoSnapshot::first_payload(const sr_datafeed_dso &dso, uint64_t total_sampl
     }
 
     if (isOk) {
-        _capacity = size;
         _memory_failed = false;
         append_payload(dso);
         _last_ended = false;
@@ -187,7 +201,9 @@ void DsoSnapshot::append_payload(const sr_datafeed_dso &dso)
 {
     std::lock_guard<std::mutex> lock(_mutex);
 
-    if (_channel_num > 0 && dso.num_samples > 0) {
+    //dsv_info("write sample_count:%llu", dso.num_samples);
+
+    if (_channel_num > 0 && dso.num_samples > 0) {       
         append_data(dso.data, dso.num_samples, _instant);
 
         // Generate the first mip-map from the data
@@ -211,10 +227,8 @@ void DsoSnapshot::append_data(void *data, uint64_t samples, bool instant)
         _sample_count = samples;
     }
 
-    assert(samples <= _total_sample_count);
-
-    uint8_t *end = (uint8_t*)data + samples * _channel_num;
-
+    assert(_sample_count <= _total_sample_count);
+     
     for (int ch = 0; ch < _channel_num; ch++)
     {
         uint8_t *src = (uint8_t*)data + ch;
@@ -224,11 +238,11 @@ void DsoSnapshot::append_data(void *data, uint64_t samples, bool instant)
             dest += old_sample_count;
         }
 
-        while (src < end)
+        for (int i = 0; i < samples; i++)
         {
             *dest++ = *src;
             src += _channel_num;
-        }        
+        }  
     }
 }
 
@@ -250,11 +264,14 @@ const uint8_t *DsoSnapshot::get_samples(int64_t start_sample, int64_t end_sample
     assert(end_sample < (int64_t)_sample_count);
 	assert(start_sample <= end_sample);
 
-    if (index < 0 || index >= _ch_data.size()){
-        assert(false);
-    }
+    int order = get_ch_order(index);
 
-    return (uint8_t*)_ch_data[index] + start_sample;
+    if (order == -1){
+        dsv_err("The channel index is not exist:%d", index);
+        assert(false);
+    } 
+
+    return (uint8_t*)_ch_data[order] + start_sample;
 }
 
 void DsoSnapshot::get_envelope_section(EnvelopeSection &s,
@@ -449,14 +466,6 @@ double DsoSnapshot::cal_vmean(int index)
     return vmean;
 }
 
-bool DsoSnapshot::has_data(int index)
-{
-    if (_ch_enable.find(index) != _ch_enable.end())
-        return _ch_enable[index];
-    else
-        return false;
-}
-
 int DsoSnapshot::get_block_num()
 {
     const uint64_t size = _sample_count * get_unit_bytes() * get_channel_num();
@@ -502,6 +511,25 @@ bool DsoSnapshot::get_max_min_value(uint8_t &maxv, uint8_t &minv, int chan_index
     }
     
     return true;
+}
+
+bool DsoSnapshot::has_data(int sig_index)
+{
+    return get_ch_order(sig_index) != -1;
+}
+
+int DsoSnapshot::get_ch_order(int sig_index)
+{
+    uint16_t order = 0;
+
+    for (uint16_t i : _ch_index) {
+        if (i == sig_index)
+            return order;
+        else
+            order++;
+    }
+
+    return -1;
 }
 
 } // namespace data

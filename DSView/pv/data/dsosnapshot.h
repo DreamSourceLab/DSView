@@ -25,11 +25,10 @@
 
 #include <utility>
 #include <vector>
-#include <map>
 
 #include <libsigrok.h> 
 #include "snapshot.h"
-
+ 
 namespace DsoSnapshotTest {
 class Basic;
 }
@@ -87,7 +86,7 @@ public:
     void init();
 
     void first_payload(const sr_datafeed_dso &dso, uint64_t total_sample_count,
-                       std::map<int, bool> ch_enable, bool instant);
+                       GSList *channels, bool instant);
 
     void append_payload(const sr_datafeed_dso &dso);
     const uint8_t* get_samples(int64_t start_sample, int64_t end_sample, uint16_t index);
@@ -98,7 +97,7 @@ public:
     void enable_envelope(bool enable);
     double cal_vrms(double zero_off, int index);
     double cal_vmean(int index);
-    bool has_data(int index);
+    bool has_data(int sig_index);
     int get_block_num();
     uint64_t get_block_size(int block_index);
 
@@ -117,14 +116,14 @@ private:
     void free_envelop();
 	void reallocate_envelope(Envelope &l);
     void append_payload_to_envelope_levels(bool header);
-    void free_data();
+    void free_data();   
+    int  get_ch_order(int sig_index);
 
 private:
     struct Envelope _envelope_levels[2*DS_MAX_DSO_PROBES_NUM][ScaleStepCount];
     bool    _envelope_en;
     bool    _envelope_done;
-    bool    _instant;
-    std::map<int, bool>     _ch_enable;
+    bool    _instant; 
     std::vector<uint8_t*>   _ch_data;
     float   _threshold;
  

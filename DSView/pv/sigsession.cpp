@@ -971,20 +971,21 @@ namespace pv
         }
 
         if (_capture_data->get_dso()->last_ended())
-        {
-            std::map<int, bool> sig_enable;
+        { 
             // reset scale of dso signal
             for (auto s : _signals)
             { 
                 if (s->signal_type() == DSO_SIGNAL){   
                     view::DsoSignal *dsoSig = (view::DsoSignal*)s;
-                    dsoSig->set_scale(dsoSig->get_view_rect().height());
-                    sig_enable[dsoSig->get_index()] = dsoSig->enabled();
+                    dsoSig->set_scale(dsoSig->get_view_rect().height()); 
                 }
             }
 
             // first payload
-            _capture_data->get_dso()->first_payload(o, _device_agent.get_sample_limit(), sig_enable, _is_instant);
+            _capture_data->get_dso()->first_payload(o, 
+                    _device_agent.get_sample_limit(), 
+                    _device_agent.get_channels(),
+                    _is_instant);
         }
         else
         {
