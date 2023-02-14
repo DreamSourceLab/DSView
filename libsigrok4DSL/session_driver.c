@@ -418,21 +418,23 @@ static int receive_data_logic_dso_v2(int fd, int revents, const struct sr_dev_in
     struct sr_datafeed_packet packet;
     struct sr_datafeed_logic logic;
     struct sr_datafeed_dso dso;
-    GSList *l;
+
     int ret;
     char file_name[32]; 
-    GSList *pl;
     int channel;
-    int ch_index, ch_index2;
+    int ch_index, malloc_chan_index;
     struct session_packet_buffer *pack_buffer;
     unz_file_info64 fileInfo;
     char szFilePath[15];
     int bToEnd;
-    int chIndex; 
+    int read_chan_index; 
     int chan_num;
     uint8_t *p_wr;
     uint8_t *p_rd;
     int byte_align;
+    int dir_index;
+    int bCheckFile;
+    const int file_max_channel_count = 128;
 
     assert(sdi);
     assert(sdi->priv);
@@ -498,7 +500,8 @@ static int receive_data_logic_dso_v2(int fd, int revents, const struct sr_dev_in
     pack_buffer = vdev->packet_buffer;
 
     // Make packet. 
-    chIndex = 0; 
+    read_chan_index = 0;
+    dir_index = 0;
 
     while (pack_buffer->post_len < pack_buffer->post_buf_len)
     { 
@@ -509,16 +512,27 @@ static int receive_data_logic_dso_v2(int fd, int revents, const struct sr_dev_in
                 break;
             }
 
-            for (ch_index = 0; ch_index < chan_num; ch_index++)
+           for (ch_index = 0; ch_index < chan_num; ch_index++)
             {
-                if (sdi->mode == LOGIC){
-                    snprintf(file_name, sizeof(file_name)-1, "L-%d/%d", ch_index, vdev->cur_block);
-                }
-                else if (sdi->mode == DSO){
-                    snprintf(file_name, sizeof(file_name)-1, "data/%d", ch_index);
+                bCheckFile = 0; 
+
+                while (1)
+                {
+                    if (sdi->mode == LOGIC)
+                        snprintf(file_name, sizeof(file_name)-1, "L-%d/%d", dir_index++, vdev->cur_block);
+                    else if (sdi->mode == DSO)
+                        snprintf(file_name, sizeof(file_name)-1, "O-%d/0", dir_index++);
+                    
+                    if (unzLocateFile(vdev->archive, file_name, 0) == UNZ_OK){
+                        bCheckFile = 1;
+                        break;
+                    }
+                    else if (dir_index > file_max_channel_count){
+                        break;
+                    }
                 }
 
-                if (unzLocateFile(vdev->archive, file_name, 0) != UNZ_OK)
+                if (!bCheckFile)
                 {
                     sr_err("cant't locate zip inner file:\"%s\"", file_name);
                     send_error_packet(sdi, vdev, &packet);
@@ -538,15 +552,15 @@ static int receive_data_logic_dso_v2(int fd, int revents, const struct sr_dev_in
                     
                     if (pack_buffer->block_data_len > pack_buffer->block_buf_len)
                     {
-                        for (ch_index2 = 0; ch_index2 < chan_num; ch_index2++){   
+                        for (malloc_chan_index = 0; malloc_chan_index < chan_num; malloc_chan_index++){   
                             // Release the old buffer.
-                            if (pack_buffer->block_bufs[ch_index2] != NULL){
-                                g_free(pack_buffer->block_bufs[ch_index2]);
-                                pack_buffer->block_bufs[ch_index2] = NULL;
+                            if (pack_buffer->block_bufs[malloc_chan_index] != NULL){
+                                g_free(pack_buffer->block_bufs[malloc_chan_index]);
+                                pack_buffer->block_bufs[malloc_chan_index] = NULL;
                             }
 
-                            pack_buffer->block_bufs[ch_index2] = g_try_malloc0(pack_buffer->block_data_len + 1);
-                            if (pack_buffer->block_bufs[ch_index2] == NULL){
+                            pack_buffer->block_bufs[malloc_chan_index] = g_try_malloc0(pack_buffer->block_data_len + 1);
+                            if (pack_buffer->block_bufs[malloc_chan_index] == NULL){
                                 sr_err("%s: block buffer malloc failed", __func__);
                                 send_error_packet(sdi, vdev, &packet);
                                 return FALSE;
@@ -588,18 +602,18 @@ static int receive_data_logic_dso_v2(int fd, int revents, const struct sr_dev_in
         }
 
         p_wr = (uint8_t*)pack_buffer->post_buf + pack_buffer->post_len;
-        p_rd = (uint8_t*)pack_buffer->block_bufs[chIndex] + pack_buffer->block_read_positions[chIndex];
+        p_rd = (uint8_t*)pack_buffer->block_bufs[read_chan_index] + pack_buffer->block_read_positions[read_chan_index];
        *p_wr = *p_rd;
  
        pack_buffer->post_len++;
-       pack_buffer->block_read_positions[chIndex]++;
+       pack_buffer->block_read_positions[read_chan_index]++;
 
-       if (pack_buffer->block_read_positions[chIndex] % byte_align == 0
-            || pack_buffer->block_read_positions[chIndex] == pack_buffer->block_data_len)
+       if (pack_buffer->block_read_positions[read_chan_index] % byte_align == 0
+            || pack_buffer->block_read_positions[read_chan_index] == pack_buffer->block_data_len)
        {
-            chIndex++;
+            read_chan_index++;
 
-            if (pack_buffer->block_read_positions[chIndex] == pack_buffer->block_data_len){
+            if (pack_buffer->block_read_positions[read_chan_index] == pack_buffer->block_data_len){
                 sr_info("Block read end.");
                 if (vdev->cur_block < vdev->num_blocks){
                     sr_err("%s", "The block data is not align.");
@@ -607,8 +621,9 @@ static int receive_data_logic_dso_v2(int fd, int revents, const struct sr_dev_in
                 }
             }
 
-            if (chIndex == chan_num){
-                chIndex = 0;
+            // Each channel's data is ready.
+            if (read_chan_index == chan_num){
+                read_chan_index = 0;
                 pack_buffer->block_chan_read_pos += byte_align;
             }
        }
@@ -637,6 +652,7 @@ static int receive_data_logic_dso_v2(int fd, int revents, const struct sr_dev_in
             dso.data = pack_buffer->post_buf;
         }       
 
+        // Send data back.
         ds_data_forward(sdi, &packet);
         pack_buffer->post_len = 0;        
     }  

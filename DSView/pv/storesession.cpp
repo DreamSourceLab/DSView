@@ -376,42 +376,47 @@ void StoreSession::save_dso(pv::data::DsoSnapshot *dso_snapshot)
 {
     char chunk_name[20] = {0};
     int ret = SR_ERR; 
-
-    int ch_type = -1;
-    for(auto s : _session->get_signals()) {
-        ch_type = s->get_type();
-        break;
-    }
-
+ 
     uint64_t size = dso_snapshot->get_sample_count();
     int ch_num = dso_snapshot->get_channel_num();
     _unit_count = size * ch_num;
 
-    for (int i = 0; !_canceled && ch_type != -1 && i < ch_num; i++) {
-        
-        const uint8_t *data_buffer = dso_snapshot->get_samples(0, 0, i);
-        
-        snprintf(chunk_name, 19, "data/%d", i);
-        ret = m_zipDoc.AddFromBuffer(chunk_name, (const char*)data_buffer, size) ? SR_OK : -1;
+    for(auto s : _session->get_signals()) 
+    {
+        if (s->get_type() == SR_CHANNEL_DSO) {
+            int ch_index = s->get_index();
+ 
+            if (!dso_snapshot->has_data(ch_index))
+                continue;
 
-        if (ret != SR_OK) {
-            if (!_has_error) {
-                _has_error = true;
-                _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_SAVEPROC_ERROR2), 
-                        "Failed to create zip file. Please check write permission of this path.");
+            if (_canceled)
+                break;
+
+            const uint8_t *data_buffer = dso_snapshot->get_samples(0, 0, ch_index);
+        
+            snprintf(chunk_name, 19, "O-%d/0", ch_index);
+            ret = m_zipDoc.AddFromBuffer(chunk_name, (const char*)data_buffer, size) ? SR_OK : -1;
+
+            if (ret != SR_OK) {
+                if (!_has_error) {
+                    _has_error = true;
+                    _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_SAVEPROC_ERROR2), 
+                            "Failed to create zip file. Please check write permission of this path.");
+                }
+                progress_updated();
+                if (_has_error)
+                    QFile::remove(_file_name);
+                return;
             }
+
+            _units_stored += size;
             progress_updated();
-            if (_has_error)
-                QFile::remove(_file_name);
-            return;
         }
-        _units_stored += size;
-        progress_updated();
-    }   
+    }
 
     progress_updated();
 
-    if (_canceled || size == 0){
+    if (_canceled || size == 0 || ch_num == 0){
         QFile::remove(_file_name);
     }
     else {
@@ -557,8 +562,10 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
     for (l = _session->get_device()->get_channels(); l; l = l->next) {
         
         probe = (struct sr_channel *)l->data;
+        
         if (!snapshot->has_data(probe->index))
             continue;
+
         if (mode == LOGIC && !probe->enabled)
             continue;
 
