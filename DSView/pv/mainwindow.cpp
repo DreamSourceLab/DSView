@@ -1664,16 +1664,27 @@ namespace pv
             break;
 
         case DSV_MSG_NEW_USB_DEVICE:
-            if (confirm_to_store_data())
             {
-                _is_auto_switch_device = true;
-                on_save();
-            }
-            else
-            {
-                _session->set_default_device();
-                check_usb_device_speed();
-            }
+                if (_session->get_device()->is_demo() == false)
+                {
+                    QString msgText = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TO_SWITCH_DEVICE), "To switch the new device?");
+                    if (MsgBox::Confirm(msgText) == false){
+                        _sampling_bar->update_device_list(); // Update the list only.
+                        return;
+                    }
+                }
+
+                if (confirm_to_store_data())
+                {
+                    _is_auto_switch_device = true;
+                    on_save();
+                }
+                else
+                {
+                    _session->set_default_device();
+                    check_usb_device_speed();
+                }
+            }           
             break;
 
         case DSV_MSG_CURRENT_DEVICE_DETACHED:

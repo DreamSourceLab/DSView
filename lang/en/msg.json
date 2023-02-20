@@ -355,5 +355,9 @@
     {
         "id": "IDS_MSG_NO_DATA",
         "text": "Have no data!"
+    },
+    {
+        "id": "IDS_MSG_TO_SWITCH_DEVICE",
+        "text": "To switch the new device?"
     }
 ]
