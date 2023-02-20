@@ -86,7 +86,7 @@ public:
     void init();
 
     void first_payload(const sr_datafeed_dso &dso, uint64_t total_sample_count,
-                       GSList *channels, bool instant);
+                       GSList *channels, bool instant, bool isFile);
 
     void append_payload(const sr_datafeed_dso &dso);
     const uint8_t* get_samples(int64_t start_sample, int64_t end_sample, uint16_t index);

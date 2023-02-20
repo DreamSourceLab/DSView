@@ -1777,11 +1777,9 @@ static int sr_load_virtual_device_session(struct sr_dev_inst *sdi)
                 }
                 else if (!strncmp(keys[j], "enable", 6))
                 {
-                    if (mode != LOGIC)
-                        continue;
-
                     probenum = strtoul(keys[j] + 6, NULL, 10);
                     tmp_u64 = strtoull(val, NULL, 10);
+                     
                     if (probenum < g_slist_length(sdi->channels))
                     {
                         probe = g_slist_nth(sdi->channels, probenum)->data;

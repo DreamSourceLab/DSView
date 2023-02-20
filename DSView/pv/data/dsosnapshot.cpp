@@ -111,10 +111,9 @@ void DsoSnapshot::free_data()
 }
 
 void DsoSnapshot::first_payload(const sr_datafeed_dso &dso, uint64_t total_sample_count,
-                                GSList *channels, bool instant)
+                                GSList *channels, bool instant, bool isFile)
 {
-    assert(channels);
-    //dsv_info("first total_sample_count:%llu", total_sample_count);
+    assert(channels); 
 
     bool channel_changed = false;
     uint16_t channel_num = 0;
@@ -123,7 +122,7 @@ void DsoSnapshot::first_payload(const sr_datafeed_dso &dso, uint64_t total_sampl
         sr_channel *const probe = (sr_channel*)l->data;
 
         if (probe->type == SR_CHANNEL_DSO) {
-            if (probe->enabled){
+            if (probe->enabled || isFile){
                 channel_num++;
                 if (!channel_changed){
                     channel_changed = !has_data(probe->index);
@@ -150,7 +149,7 @@ void DsoSnapshot::first_payload(const sr_datafeed_dso &dso, uint64_t total_sampl
          for (const GSList *l = channels; l; l = l->next) {
             sr_channel *const probe = (sr_channel*)l->data;
 
-            if (probe->type == SR_CHANNEL_DSO && probe->enabled) {
+            if (probe->type == SR_CHANNEL_DSO && (probe->enabled || isFile)) {
                 
                 uint8_t *chan_buffer = (uint8_t*)malloc(total_sample_count + 1);
                 if (chan_buffer == NULL){

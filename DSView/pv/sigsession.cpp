@@ -985,7 +985,8 @@ namespace pv
             _capture_data->get_dso()->first_payload(o, 
                     _device_agent.get_sample_limit(), 
                     _device_agent.get_channels(),
-                    _is_instant);
+                    _is_instant,
+                    _device_agent.is_file());
         }
         else
         {
