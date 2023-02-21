@@ -57,6 +57,8 @@ public:
 
     QString title() const;
 
+	QString title_id() const;
+
     bool operator<(const Row &other)const;
 
 private:

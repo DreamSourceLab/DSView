@@ -61,6 +61,8 @@
 #include "log.h" 
 
 #include "ui/langresource.h"
+
+#define DEOCDER_CONFIG_VERSION  2
  
 namespace pv { 
 
@@ -1087,13 +1089,13 @@ bool StoreSession::json_decoders(QJsonArray &array)
             }
             show_obj[d->id] = QJsonValue::fromVariant(dec->shown());
         }
+        dec_obj["version"] = DEOCDER_CONFIG_VERSION;
         dec_obj["stacked decoders"] = stack_array;
-
 
         auto rows = stack->get_rows_gshow();
         for (auto i = rows.begin(); i != rows.end(); i++) {
             pv::data::decode::Row _row = (*i).first;
-            QString kn = _row.title();
+            QString kn = _row.title_id();
             show_obj[kn] = QJsonValue::fromVariant((*i).second);
         }
         dec_obj["show"] = show_obj;
@@ -1282,12 +1284,23 @@ bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray &dec_arr
                 }
             }
 
+            int decoder_cfg_version = -1;
+
+            if (dec_obj.contains("version")){
+                decoder_cfg_version = dec_obj["version"].toInt();
+            }
+
             if (dec_obj.contains("show")) {
                 QJsonObject show_obj = dec_obj["show"].toObject();
                 std::map<const pv::data::decode::Row, bool> rows = stack->get_rows_gshow();
 
                 for (auto i = rows.begin();i != rows.end(); i++) {
-                    QString key = (*i).first.title();
+                    QString key;
+
+                    if (decoder_cfg_version == -1)
+                        key = (*i).first.title();
+                    else
+                        key = (*i).first.title_id();
 
                     if (show_obj.contains(key)) {
                         bool bShow = show_obj[key].toBool();

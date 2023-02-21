@@ -55,10 +55,29 @@ QString Row::title() const
 		return QString("%1: %2")
 			.arg(QString::fromUtf8(_decoder->name))
 			.arg(QString::fromUtf8(_row->desc));
+
 	if (_decoder && _decoder->name)
 		return QString::fromUtf8(_decoder->name);
+
 	if (_row && _row->desc)
 		return QString::fromUtf8(_row->desc);
+
+	return QString();
+}
+
+QString Row::title_id() const
+{
+	if (_decoder && _decoder->id && _row && _row->desc)
+		return QString("%1: %2")
+			.arg(QString::fromUtf8(_decoder->id))
+			.arg(QString::fromUtf8(_row->desc));
+
+	if (_decoder && _decoder->id)
+		return QString::fromUtf8(_decoder->id);
+
+	if (_row && _row->desc)
+		return QString::fromUtf8(_row->desc);
+
 	return QString();
 }
 
