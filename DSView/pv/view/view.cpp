@@ -756,9 +756,11 @@ int View::headerWidth()
     std::vector<Trace*> traces;
     get_traces(ALL_VIEW, traces);
 
-    if (!traces.empty()) {
+    if (!traces.empty()) 
+    {
         for(auto t : traces){
-            headerWidth = max(t->get_name_width() + t->get_leftWidth() + t->get_rightWidth(), headerWidth);
+            int w = t->get_name_width() + t->get_leftWidth() + t->get_rightWidth();
+            headerWidth = max(w, headerWidth);
         }
     }
 

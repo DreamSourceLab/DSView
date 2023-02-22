@@ -876,8 +876,13 @@ namespace pv
                         (probe->type == obj["type"].toDouble()))
                     {
                         isEnabled = true;
+                        QString chan_name = obj["name"].toString().trimmed();
+                        if (chan_name == ""){
+                            chan_name = QString::number(probe->index);
+                        }
+                        
                         probe->enabled = obj["enabled"].toBool();
-                        probe->name = g_strdup(obj["name"].toString().toStdString().c_str());
+                        probe->name = g_strdup(chan_name.toStdString().c_str());
                         probe->vdiv = obj["vdiv"].toDouble();
                         probe->coupling = obj["coupling"].toDouble();
                         probe->vfactor = obj["vfactor"].toDouble();
@@ -932,8 +937,13 @@ namespace pv
                     if ((s->get_index() == obj["index"].toDouble()) &&
                         (s->get_type() == obj["type"].toDouble()))
                     {
+                        QString chan_name = obj["name"].toString().trimmed();
+                        if (chan_name == ""){
+                            chan_name = QString::number(s->get_index());
+                        }
+
                         s->set_colour(QColor(obj["colour"].toString()));
-                        s->set_name(g_strdup(obj["name"].toString().toUtf8().data()));
+                        s->set_name(g_strdup(chan_name.toUtf8().data()));
 
                         view::LogicSignal *logicSig = NULL;
                         if ((logicSig = dynamic_cast<view::LogicSignal *>(s)))

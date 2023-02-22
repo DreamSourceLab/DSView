@@ -84,7 +84,7 @@ void Header::retranslateUi()
 
 
 int Header::get_nameEditWidth()
-{
+{ 
     if (nameEdit->hasFocus())
         return nameEdit->width();
     else
@@ -185,13 +185,16 @@ void Header::mousePressEvent(QMouseEvent *event)
         const auto mTrace = get_mTrace(action, event->pos());
         if (action == Trace::COLOR && mTrace) {
             _colorFlag = true;
-        } else if (action == Trace::NAME && mTrace) {
+        }
+        else if (action == Trace::NAME && mTrace) {
             _nameFlag = true;
-        } else if (action == Trace::LABEL && mTrace) {
+        }
+        else if (action == Trace::LABEL && mTrace) {
             mTrace->select(true);
-            if (~QApplication::keyboardModifiers() &
-                Qt::ControlModifier)
+
+            if (~QApplication::keyboardModifiers() & Qt::ControlModifier)
                 _drag_traces.clear();
+            
             _drag_traces.push_back(make_pair(mTrace, mTrace->get_zero_vpos()));
             mTrace->set_old_v_offset(mTrace->get_v_offset());
         }
@@ -220,12 +223,14 @@ void Header::mouseReleaseEvent(QMouseEvent *event)
     // judge for color / name / trigger / move
     int action;
     const auto mTrace = get_mTrace(action, event->pos());
+
     if (mTrace){
         if (action == Trace::COLOR && _colorFlag) {
             _context_trace = mTrace;
             changeColor(event);
             _view.set_all_update(true);
-        } else if (action == Trace::NAME && _nameFlag) {
+        }
+        else if (action == Trace::NAME && _nameFlag) {
             _context_trace = mTrace;
             changeName(event);
         }
@@ -330,8 +335,10 @@ void Header::wheelEvent(QWheelEvent *event)
 
 void Header::changeName(QMouseEvent *event)
 {
-    if ((event->button() == Qt::LeftButton) &&
-        (_context_trace->get_type() != SR_CHANNEL_DSO)) {
+    if (_context_trace != NULL
+        && _context_trace->get_type() != SR_CHANNEL_DSO
+        && event->button() == Qt::LeftButton) 
+    {
         header_resize();
         nameEdit->setText(_context_trace->get_name());
         nameEdit->selectAll();
@@ -427,11 +434,15 @@ void Header::on_action_set_name_triggered()
 		return;
 
     if (nameEdit->isModified()) {
-        context_Trace->set_name(nameEdit->text());
+        QString v = nameEdit->text().trimmed();
+        if (v == ""){
+            v = QString::number(context_Trace->get_index());
+        }
+        context_Trace->set_name(v);
         if (context_Trace->get_type() == SR_CHANNEL_LOGIC ||
                 context_Trace->get_type() == SR_CHANNEL_ANALOG)
         {
-            _view.session().get_device()->set_channel_name(context_Trace->get_index(), nameEdit->text().toUtf8());
+            _view.session().get_device()->set_channel_name(context_Trace->get_index(), v.toUtf8());
         }
     }
 
@@ -441,7 +452,6 @@ void Header::on_action_set_name_triggered()
 
 void Header::header_resize()
 {
-    //if (nameEdit->isVisible()) {
     if (_context_trace) {
         const int y = _context_trace->get_y();
         nameEdit->move(QPoint(_context_trace->get_leftWidth(), y - nameEdit->height() / 2));
