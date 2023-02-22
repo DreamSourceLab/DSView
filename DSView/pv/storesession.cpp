@@ -1031,9 +1031,10 @@ bool StoreSession::json_decoders(QJsonArray &array)
         QJsonArray stack_array;
         QJsonObject show_obj;
         const auto &stack = s->decoder();
-        const auto &decoder = stack->stack();
+        const auto &decoderList = stack->stack();
 
-        for(auto dec : decoder) {
+        for(auto dec : decoderList) 
+        {
             QJsonArray ch_array;
             const srd_decoder *const d = dec->decoder();;
             const bool have_probes = (d->channels || d->opt_channels) != 0;
@@ -1090,6 +1091,7 @@ bool StoreSession::json_decoders(QJsonArray &array)
             show_obj[d->id] = QJsonValue::fromVariant(dec->shown());
         }
         dec_obj["version"] = DEOCDER_CONFIG_VERSION;
+        dec_obj["label"] = QString(s->get_name().toUtf8().data());
         dec_obj["stacked decoders"] = stack_array;
 
         auto rows = stack->get_rows_gshow();
@@ -1118,6 +1120,8 @@ bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray &dec_arr
         dsv_info("%s", "StoreSession::load_decoders(), json object array is empty.");
         return false;
     }
+
+    int dec_index = -1;
     
     for (const QJsonValue &dec_value : dec_array)
     {
@@ -1154,7 +1158,13 @@ bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray &dec_arr
             sub_decoders.clear();
 
             continue; //protocol is not exists;
-        }        
+        }
+
+        dec_index++;
+
+        if (dec_obj.contains("label")){
+            _session->set_decoder_row_label(dec_index, dec_obj["label"].toString());    
+        }
 
         std::vector<view::DecodeTrace*> &aft_dsigs = _session->get_decode_signals();
 

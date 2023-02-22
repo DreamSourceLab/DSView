@@ -388,6 +388,8 @@ public:
     void broadcast_msg(int msg);    
     bool have_new_realtime_refresh(bool keep);
 
+    void set_decoder_row_label(int index, QString label);
+
 private:
     void set_cur_samplelimits(uint64_t samplelimits);
     void set_cur_snap_samplerate(uint64_t samplerate);

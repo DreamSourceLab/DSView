@@ -2016,4 +2016,12 @@ namespace pv
         }
     }
 
+    void SigSession::set_decoder_row_label(int index, QString label)
+    {
+        auto trace = get_decoder_trace(index);
+        if (trace != NULL){
+            trace->set_name(label);
+        }
+    }
+
 } // namespace pv
