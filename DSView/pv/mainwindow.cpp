@@ -1119,16 +1119,16 @@ namespace pv
                 break;
 
             case Qt::Key_D:
-                on_protocol(!_protocol_dock->isVisible());
+                if (_session->get_device()->get_work_mode() == LOGIC)
+                    on_protocol(!_protocol_dock->isVisible());
                 break;
 
             case Qt::Key_M:
                 on_measure(!_measure_dock->isVisible());
                 break;
             case Qt::Key_R:
-                if (_session->get_device()->get_work_mode() == LOGIC){
+                if (_session->get_device()->get_work_mode() == LOGIC)
                     on_search(!_search_dock->isVisible());
-                }
                 break;
             case Qt::Key_O:
                 _sampling_bar->config_device();
