@@ -103,10 +103,13 @@ void DsoSnapshot::clear()
 void DsoSnapshot::free_data()
 {
     Snapshot::free_data();
-    
-    for(auto ptr : _ch_data){
-        free(ptr);
+
+    for (int i=0; i<(int)_ch_data.size(); i++)
+    {
+        void *p = _ch_data[i];
+        free(p);
     }
+
     _ch_data.clear();
 }
 
@@ -139,6 +142,8 @@ void DsoSnapshot::first_payload(const sr_datafeed_dso &dso, uint64_t total_sampl
     if (total_sample_count != _total_sample_count
         || channel_num != _channel_num
         || channel_changed){
+        
+        std::lock_guard<std::mutex> lock(_mutex);
 
         free_data();
 
@@ -160,7 +165,7 @@ void DsoSnapshot::first_payload(const sr_datafeed_dso &dso, uint64_t total_sampl
                 _ch_data.push_back(chan_buffer);
                 _ch_index.push_back(probe->index);
             }
-        }    
+        }
         
         if (isOk) {
             free_envelop();
@@ -190,6 +195,7 @@ void DsoSnapshot::first_payload(const sr_datafeed_dso &dso, uint64_t total_sampl
         _last_ended = false;
     }
     else {
+        std::lock_guard<std::mutex> lock(_mutex);
         free_data();
         free_envelop();
         _memory_failed = true;
@@ -489,6 +495,8 @@ uint64_t DsoSnapshot::get_block_size(int block_index)
 
 bool DsoSnapshot::get_max_min_value(uint8_t &maxv, uint8_t &minv, int chan_index)
 {
+    std::lock_guard<std::mutex> lock(_mutex);
+
     if (_sample_count == 0){
         return false;
     }
