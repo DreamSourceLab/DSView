@@ -91,15 +91,15 @@ bool AppControl::Init()
 
     // Initialise libsigrokdecode
     if (srd_init(path) != SRD_OK)
-    {
-        m_error = "ERROR: libsigrokdecode init failed.";
+    { 
+        dsv_err("%s", "ERROR: libsigrokdecode init failed.");
         return false;
     }
 
     // Load the protocol decoders
     if (srd_decoder_load_all() != SRD_OK)
     {
-        m_error = "ERROR: load the protocol decoders failed.";
+        dsv_err("ERROR: load the protocol decoders failed.");
         return false;
     }
  
@@ -123,11 +123,6 @@ void AppControl::UnInit()
     srd_exit();
 
     _session->uninit();
-}
-
-const char *AppControl::GetLastError()
-{
-    return m_error.c_str();
 }
 
  bool AppControl::TopWindowIsMaximized()

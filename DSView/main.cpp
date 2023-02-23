@@ -38,8 +38,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
-#endif
- 
+#endif 
 
 void usage()
 {
@@ -53,7 +52,7 @@ void usage()
 		"  -s, --storelog                  Save log to locale file\n"
 		"  -h, -?, --help                  Show help option\n"
 		"\n", DS_BIN_NAME, DS_DESCRIPTION);
-} 
+}
 
 int main(int argc, char *argv[])
 {   
@@ -213,8 +212,7 @@ bool bHighScale = true;
  
 	//init core
 	if (!control->Init()){ 
-		dsv_err("%s", "init error!");
-		dsv_err("%s", control->GetLastError());
+		dsv_err("%s", "init error!"); 
 		return 1;
 	}
 	
@@ -231,6 +229,8 @@ bool bHighScale = true;
 		w.show_doc();  //to show the dailog for open help document
 		ret = a.exec(); //Run the application
 		control->Stop();
+
+		dsv_info("Main window closed.");
 	}
 	catch (const std::exception &e)
 	{
@@ -242,7 +242,9 @@ bool bHighScale = true;
 	control->UnInit();  //uninit
 	control->Destroy();
 
-	dsv_log_uninit();
+	dsv_info("Uninit log.");
 
+	dsv_log_uninit();
+ 
 	return ret;
 }

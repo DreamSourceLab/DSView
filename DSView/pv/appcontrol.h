@@ -48,9 +48,7 @@ public:
 
     void Stop();
 
-    void UnInit();
-
-    const char* GetLastError(); 
+    void UnInit(); 
 
     inline pv::SigSession*  GetSession(){
         return _session;
@@ -69,8 +67,7 @@ public:
 public:
     std::string        _open_file_name; 
 
-private:
-    std::string         m_error; 
+private: 
     pv::SigSession      *_session;
     QWidget             *_topWindow;
 };
