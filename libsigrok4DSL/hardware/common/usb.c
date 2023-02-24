@@ -105,7 +105,15 @@ SR_PRIV GSList *sr_usb_find(libusb_context *usb_ctx, const char *conn)
 
     /* Looks like a valid USB device specification, but is it connected? */
     devices = NULL;
+    devlist = NULL;
+
     libusb_get_device_list(usb_ctx, &devlist);
+
+    if (devlist == NULL){
+        sr_info("%s: Failed to call libusb_get_device_list(), it returns a null list.", __func__);
+        return NULL;
+    }
+
     for (i = 0; devlist[i]; i++) {
         if ((ret = libusb_get_device_descriptor(devlist[i], &des))) {
             sr_err("Failed to get device descriptor: %s.",
@@ -156,7 +164,15 @@ SR_PRIV GSList *sr_usb_find_usbtmc(libusb_context *usb_ctx)
     int confidx, intfidx, ret, i;
 
     devices = NULL;
+    devlist = NULL;
+
     libusb_get_device_list(usb_ctx, &devlist);
+
+    if (devlist == NULL){
+        sr_info("%s: Failed to call libusb_get_device_list(), it returns a null list.", __func__);
+        return NULL;
+    }
+    
     for (i = 0; devlist[i]; i++) {
         if ((ret = libusb_get_device_descriptor(devlist[i], &des))) {
             sr_err("Failed to get device descriptor: %s.",

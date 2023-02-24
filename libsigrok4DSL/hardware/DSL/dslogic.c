@@ -314,6 +314,7 @@ static GSList *scan(GSList *options)
 			break;
 		}
 	}
+
 	if (conn){
         sr_info("%s", "Find usb device with connect config.");
         conn_devices = sr_usb_find(drvc->sr_ctx->libusb_ctx, conn);
@@ -323,7 +324,14 @@ static GSList *scan(GSList *options)
 
     /* Find all DSLogic compatible devices and upload firmware to them. */
 	devices = NULL;
+    devlist = NULL;
+    
     libusb_get_device_list(drvc->sr_ctx->libusb_ctx, &devlist);
+    
+    if (devlist == NULL){
+        sr_info("%s: Failed to call libusb_get_device_list(), it returns a null list.", __func__);
+        return NULL;
+    }
     
 	for (i = 0; devlist[i]; i++) 
     {

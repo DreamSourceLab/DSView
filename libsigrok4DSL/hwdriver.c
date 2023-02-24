@@ -388,6 +388,11 @@ SR_PRIV int ds_scan_all_device_list(libusb_context *usb_ctx,struct libusb_device
 	wr = 0;
 	libusb_get_device_list(usb_ctx, &devlist);
 
+	if (devlist == NULL){
+        sr_info("%s: Failed to call libusb_get_device_list(), it returns a null list.", __func__);
+        return NULL;
+    }
+
 	for (i = 0; devlist[i]; i++) 
 	{ 
         ret = libusb_get_device_descriptor(devlist[i], &des);
