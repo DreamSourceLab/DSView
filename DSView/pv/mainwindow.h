@@ -31,6 +31,7 @@
 #include "interface/icallbacks.h"
 #include "eventobject.h" 
 #include <QJsonDocument>
+#include <chrono>
 
 class QAction;
 class QMenuBar;
@@ -40,10 +41,11 @@ class QStatusBar;
 class QToolBar;
 class QWidget;
 class QDockWidget;
-
 class AppControl;
-
 class DeviceAgent;
+
+using std::chrono::high_resolution_clock;
+using std::chrono::milliseconds;
 
 namespace pv {
  
@@ -210,6 +212,7 @@ private:
     SigSession      *_session;
     DeviceAgent     *_device_agent;
     bool            _is_auto_switch_device;
+    high_resolution_clock::time_point _last_key_press_time;
 
     int _key_value;
     bool _key_vaild;

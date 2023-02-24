@@ -120,6 +120,7 @@ namespace pv
         setContextMenuPolicy(Qt::NoContextMenu);
 
         _key_vaild = false;
+        _last_key_press_time = high_resolution_clock::now();
     }
 
     void MainWindow::setup_ui()
@@ -1106,6 +1107,14 @@ namespace pv
             {
                 return true;
             }
+
+            high_resolution_clock::time_point key_press_time = high_resolution_clock::now();
+            milliseconds timeInterval = std::chrono::duration_cast<milliseconds>(key_press_time - _last_key_press_time);
+            int64_t time_keep =  timeInterval.count();
+            if (time_keep < 500){
+                return true;
+            }
+            _last_key_press_time = key_press_time;           
             
             switch (ke->key())
             {
