@@ -1224,5 +1224,16 @@ namespace pv
                 _mode_button.setIcon(QIcon(iconPath + "/modes.svg")); 
          }
 
+
+        void SamplingBar::run_or_stop()
+        {
+            on_run_stop();
+        }
+
+        void SamplingBar::run_or_stop_instant()
+        {
+            on_instant_stop();
+        }
+
     } // namespace toolbars
 } // namespace pv

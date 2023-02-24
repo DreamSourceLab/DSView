@@ -1119,16 +1119,10 @@ namespace pv
             switch (ke->key())
             {
             case Qt::Key_S:
-                if (_session->is_working())
-                    _session->stop_capture();
-                else
-                    _session->start_capture(false);
+                _sampling_bar->run_or_stop();
                 break;
             case Qt::Key_I:
-                if (_session->is_working())
-                    _session->stop_capture();
-                else
-                    _session->start_capture(true);
+                _sampling_bar->run_or_stop_instant();
                 break;
             case Qt::Key_T:
                 if (_device_agent->get_work_mode() == DSO)

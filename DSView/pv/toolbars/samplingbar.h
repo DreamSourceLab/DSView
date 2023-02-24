@@ -90,6 +90,10 @@ namespace pv
                 _view = view;
             }
 
+            void run_or_stop();
+
+            void run_or_stop_instant();
+
         signals:
             void sig_store_session_data();
 
