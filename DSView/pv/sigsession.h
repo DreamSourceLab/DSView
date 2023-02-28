@@ -390,6 +390,8 @@ public:
 
     void set_decoder_row_label(int index, QString label);
 
+    view::DecodeTrace* get_decoder_trace(int index);
+
 private:
     void set_cur_samplelimits(uint64_t samplelimits);
     void set_cur_snap_samplerate(uint64_t samplerate);
@@ -413,8 +415,7 @@ private:
     void add_decode_task(view::DecodeTrace *trace);
     void remove_decode_task(view::DecodeTrace *trace);
     void clear_all_decode_task(int &runningDex);
-
-    view::DecodeTrace* get_decoder_trace(int index);
+   
     void decode_task_proc();
     view::DecodeTrace* get_top_decode_task();    
 

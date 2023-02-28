@@ -110,8 +110,8 @@ public:
      * Index process
      */
     int get_index();
-    std::list<int> &get_index_list();
-    void set_index_list(std::list<int> index_list);
+    std::list<int> get_index_list();
+    void set_index_list(const std::list<int> &index_list);
     int get_sec_index();
     void set_sec_index(int sec_index);
 

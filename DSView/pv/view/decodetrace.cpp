@@ -621,6 +621,7 @@ void DecodeTrace::paint_type_options(QPainter &p, int right, const QPoint pt, QC
     std::list<int>::iterator i = _index_list.begin();
     last_index = (*i);
     index_string = QString::number(last_index);
+
     while (++i != _index_list.end()) {
         if ((*i) == last_index + 1 && index_string.indexOf("-") < 3 && index_string.indexOf("-") > 0)
             index_string.replace(QString::number(last_index), QString::number((*i)));
@@ -630,6 +631,7 @@ void DecodeTrace::paint_type_options(QPainter &p, int right, const QPoint pt, QC
             index_string = QString::number((*i)) + "," + index_string;
         last_index = (*i);
     }
+    
     p.setPen(fore);
     p.drawText(group_index_rect, Qt::AlignRight | Qt::AlignVCenter, index_string);
 }

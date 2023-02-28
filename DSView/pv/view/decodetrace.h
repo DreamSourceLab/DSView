@@ -140,10 +140,6 @@ public:
 
 	void* get_key_handel();
 
-	inline std::list<int>* get_sig_index_list(){
-		return &_index_list;
-	}
-
 	bool create_popup(bool isnew);
 
 protected:
@@ -188,7 +184,6 @@ public:
 private:
 	pv::SigSession 			*_session;
 	pv::data::DecoderStack 	*_decoder_stack;
-	std::list<int> _index_list;
 
 	uint64_t 		_decode_start;
 	uint64_t	 	_decode_end;

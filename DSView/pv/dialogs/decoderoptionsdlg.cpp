@@ -438,8 +438,7 @@ void DecoderOptionsDlg::commit_decoder_probes(data::decode::Decoder *dec)
     std::map<const srd_channel*, int> probe_map;
     const auto &sigs = AppControl::Instance()->GetSession()->get_signals();
 
-    auto index_list = _trace->get_sig_index_list();
-    index_list->clear();
+    std::list<int> index_list;
 
 	for(auto &p : _probe_selectors)
 	{
@@ -451,13 +450,16 @@ void DecoderOptionsDlg::commit_decoder_probes(data::decode::Decoder *dec)
         for(auto s : sigs){
             if(s->get_index() == selection) {
                 probe_map[p._pdch] = selection;
-                index_list->push_back(selection);
+                index_list.push_back(selection);
 				break;
 			}
         }
 	}
 
 	dec->set_probes(probe_map);
+
+    if (index_list.size())
+        _trace->set_index_list(index_list);
 }
  
 void DecoderOptionsDlg::on_accept()

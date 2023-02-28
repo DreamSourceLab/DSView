@@ -1166,6 +1166,8 @@ bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray &dec_arr
             _session->set_decoder_row_label(dec_index, dec_obj["label"].toString());    
         }
 
+        std::list<int> bind_indexs;
+
         std::vector<view::DecodeTrace*> &aft_dsigs = _session->get_decode_signals();
 
         if (aft_dsigs.size() >= pre_dsigs.size()) {
@@ -1176,7 +1178,8 @@ bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray &dec_arr
  
             auto &decoder_list = stack->stack();
 
-            for(auto dec : decoder_list) {
+            for(auto dec : decoder_list) 
+            {
                 const srd_decoder *const d = dec->decoder();
                 QJsonObject options_obj;
 
@@ -1189,7 +1192,12 @@ bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray &dec_arr
                         for (const QJsonValue &value : dec_obj["channel"].toArray()) {
                             QJsonObject ch_obj = value.toObject();
                             if (ch_obj.contains(pdch->id)) {
-                                probe_map[pdch] = ch_obj[pdch->id].toInt();
+                                int bind_chan = ch_obj[pdch->id].toInt();
+                                probe_map[pdch] = bind_chan;
+
+                                auto fd_it = find(bind_indexs.begin(), bind_indexs.end(), bind_chan);
+                                if (fd_it == bind_indexs.end())
+                                    bind_indexs.push_back(bind_chan);
                                 break;
                             }
                         }
@@ -1202,7 +1210,12 @@ bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray &dec_arr
                         for (const QJsonValue &value : dec_obj["channel"].toArray()) {
                             QJsonObject ch_obj = value.toObject();
                             if (ch_obj.contains(pdch->id)) {
-                                probe_map[pdch] = ch_obj[pdch->id].toInt();
+                                int bind_chan = ch_obj[pdch->id].toInt();
+                                probe_map[pdch] = bind_chan;
+
+                                auto fd_it = find(bind_indexs.begin(), bind_indexs.end(), bind_chan);
+                                if (fd_it == bind_indexs.end())
+                                    bind_indexs.push_back(bind_chan);
                                 break;
                             }
                         }
@@ -1292,6 +1305,13 @@ bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray &dec_arr
                         dec->show(show_obj[d->id].toBool());
                     }
                 }
+            }
+
+            // Restore the binded channel index
+            if (bind_indexs.size() > 0){
+                auto dec_trace = _session->get_decoder_trace(dec_index);
+                if (dec_trace != NULL)
+                    dec_trace->set_index_list(bind_indexs);
             }
 
             int decoder_cfg_version = -1;

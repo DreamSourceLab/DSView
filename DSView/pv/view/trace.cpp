@@ -136,12 +136,12 @@ int Trace::get_index()
     return _index_list.front();
 }
 
-std::list<int> &Trace::get_index_list()
+std::list<int> Trace::get_index_list()
 {
     return _index_list;
 }
 
-void Trace::set_index_list(std::list<int> index_list)
+void Trace::set_index_list(const std::list<int> &index_list)
 {
     assert(index_list.size() != 0);
 
