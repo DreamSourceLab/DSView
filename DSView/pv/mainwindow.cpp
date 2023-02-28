@@ -1083,7 +1083,6 @@ namespace pv
         }
         if (_device_agent->get_work_mode() != LOGIC)
         {
-
             on_protocol(false);
         }
         _trig_bar->update_protocol_btn(_protocol_dock->isVisible());
@@ -1111,7 +1110,7 @@ namespace pv
             high_resolution_clock::time_point key_press_time = high_resolution_clock::now();
             milliseconds timeInterval = std::chrono::duration_cast<milliseconds>(key_press_time - _last_key_press_time);
             int64_t time_keep =  timeInterval.count();
-            if (time_keep < 500){
+            if (time_keep < 200){
                 return true;
             }
             _last_key_press_time = key_press_time;           
@@ -1127,12 +1126,12 @@ namespace pv
             case Qt::Key_T:
                 if (_device_agent->get_work_mode() == DSO)
                     on_trigger(!_dso_trigger_dock->isVisible());
-                else
+                else if (_device_agent->get_work_mode() == LOGIC)
                     on_trigger(!_trigger_dock->isVisible());
                 break;
 
             case Qt::Key_D:
-                if (_session->get_device()->get_work_mode() == LOGIC)
+                if (_device_agent->get_work_mode() == LOGIC)
                     on_protocol(!_protocol_dock->isVisible());
                 break;
 
@@ -1140,7 +1139,7 @@ namespace pv
                 on_measure(!_measure_dock->isVisible());
                 break;
             case Qt::Key_R:
-                if (_session->get_device()->get_work_mode() == LOGIC)
+                if (_device_agent->get_work_mode() == LOGIC)
                     on_search(!_search_dock->isVisible());
                 break;
             case Qt::Key_O:
@@ -1676,6 +1675,9 @@ namespace pv
             reset_all_view();
             load_device_config();
             update_toolbar_view_status();
+
+            if (_device_agent->get_work_mode() != LOGIC)
+                _protocol_dock->setVisible(false);
             break;
 
         case DSV_MSG_NEW_USB_DEVICE:
