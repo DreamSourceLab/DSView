@@ -192,7 +192,6 @@ private:
 	uint64_t		_decode_cursor2;
 	 
 	QFormLayout 	*_pub_input_layer;
-    int				 _progress;  
 
 	std::vector<QString> 	_cur_row_headings; 
  

@@ -524,12 +524,14 @@ namespace pv
 
         if (mode == LOGIC)
         {   
+            bool bClearDecodeData = false;
             // On repeate mode, the last data can use to decode, so can't remove the current decode task.
             // And on this mode, the decode task will be created when capture end.
             if (is_repeat_mode() == false){
                 int run_dex = 0;
                 clear_all_decode_task(run_dex);
                 clear_decode_result();
+                bClearDecodeData = true;
             }
 
             for (auto de : _decode_traces)
@@ -543,6 +545,9 @@ namespace pv
                     add_decode_task(de);
                 }                
             }
+
+            if (bClearDecodeData)
+                _callback->trigger_message(DSV_MSG_CLEAR_DECODE_DATA);
         }
 
         return true;

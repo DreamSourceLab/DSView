@@ -1738,6 +1738,10 @@ namespace pv
                 }
             }
             break;
+
+        case DSV_MSG_CLEAR_DECODE_DATA:
+            _protocol_widget->ResetView();
+            break;
         }
     }
 

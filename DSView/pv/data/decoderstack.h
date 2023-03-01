@@ -169,6 +169,11 @@ public:
 
     inline void set_capture_end_flag(bool isEnd){
         _is_capture_end = isEnd;
+        if (!isEnd){_progress = 0;}
+    }
+
+    inline int get_progress(){
+        return _progress;
     }
 
 private:
@@ -204,6 +209,7 @@ private:
     decode_task_status  *_stask_stauts;    
     mutable std::mutex _output_mutex; 
     bool            _is_capture_end;
+    int             _progress;
 
 	friend class DecoderStackTest::TwoDecoderStack;
 };

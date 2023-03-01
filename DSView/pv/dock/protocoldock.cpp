@@ -462,7 +462,7 @@ void ProtocolDock::decoded_progress(int progress)
             lay.SetProgress(pg, err);
             
             // have custom data format
-            if (progress == 100 && lay.m_decoderStatus != NULL){
+            if (pg == 100 && lay.m_decoderStatus != NULL){
                 lay.enable_format(lay.m_decoderStatus->m_bNumeric);
             }
         }
@@ -997,6 +997,12 @@ bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const Decod
          _selected_protocol_id = QString(dec->id);
          this->on_add_protocol();       
      }
- }  
+ }
+
+ void ProtocolDock::ResetView()
+ {
+    decoded_progress(0);
+ }
+
 } // namespace dock
 } // namespace pv

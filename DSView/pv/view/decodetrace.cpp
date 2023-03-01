@@ -124,7 +124,6 @@ DecodeTrace::DecodeTrace(pv::SigSession *session,
     _colour = DecodeColours[index % countof(DecodeColours)];
  
     _pub_input_layer = NULL;
-    _progress = 0;
     _decode_start = 0;
     _decode_end  = INT64_MAX; 
     _decoder_stack = decoder_stack;
@@ -555,17 +554,7 @@ void DecodeTrace::draw_unshown_row(QPainter &p, int y, int h, int left,
 
 void DecodeTrace::on_new_decode_data()
 {
-    uint64_t real_end = min(_decoder_stack->sample_count(), _decode_end+1);
-    const int64_t need_sample_count = real_end - _decode_start;
-    if (real_end == 0) {
-        _progress = 0;
-    } else if (need_sample_count <= 0) {
-        _progress = 100;
-    } else {
-        const uint64_t samples_decoded = _decoder_stack->samples_decoded();
-        _progress = floor(samples_decoded * 100.0 / need_sample_count);
-    }
-    decoded_progress(_progress);
+    decoded_progress(_decoder_stack->get_progress());
 
     if (_view && _view->session().is_stopped_status())
         _view->data_updated();
@@ -575,7 +564,7 @@ void DecodeTrace::on_new_decode_data()
 
 int DecodeTrace::get_progress()
 {
-    return _progress;
+    return _decoder_stack->get_progress();
 }
 
 void DecodeTrace::on_decode_done()

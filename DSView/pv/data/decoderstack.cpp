@@ -67,6 +67,7 @@ DecoderStack::DecoderStack(pv::SigSession *session,
     _stask_stauts = NULL; 
     _is_capture_end = true;
     _snapshot = NULL;
+    _progress = 0;
     
     _stack.push_back(new decode::Decoder(dec));
  
@@ -396,7 +397,7 @@ void DecoderStack::begin_decode_work()
      assert(_decode_state == Stopped);
 
      _error_message = "";
-     _decode_state = Running; 
+     _decode_state = Running;
       do_decode_work();
      _decode_state = Stopped;
 }
@@ -514,6 +515,9 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
 
     bool bCheckEnd = false;
     uint64_t end_index = decode_end;
+
+    _progress = 0;
+    uint64_t sended_len  = 0;
   
     while(i < end_index && !_no_memory && !status->_bStop)
     {
@@ -581,7 +585,10 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
             break;
         }
 
-        i = chunk_end;
+        sended_len += chunk_end - i; 
+        _progress = (int)(sended_len * 100 / end_index);
+
+        i = chunk_end;       
 
         //use mutex
         {
@@ -593,8 +600,12 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
             last_cnt = i;
             new_decode_data();
         }
+
         entry_cnt++;
-    } 
+    }
+
+    _progress = 100;
+    new_decode_data();
 
     // the task is normal ends,so all samples was processed;
     if (!bError && bEndTime){

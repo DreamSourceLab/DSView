@@ -91,6 +91,8 @@ public:
 #define DSV_MSG_TRIG_NEXT_COLLECT       7001
 #define DSV_MSG_SAVE_COMPLETE           7002
 
+#define DSV_MSG_CLEAR_DECODE_DATA       8001
+
 class IMessageListener
 {
 public:
