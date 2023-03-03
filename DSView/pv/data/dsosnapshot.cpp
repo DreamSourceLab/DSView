@@ -116,7 +116,7 @@ void DsoSnapshot::free_data()
 void DsoSnapshot::first_payload(const sr_datafeed_dso &dso, uint64_t total_sample_count,
                                 GSList *channels, bool instant, bool isFile)
 {
-    assert(channels); 
+    assert(channels);  
 
     bool channel_changed = false;
     uint16_t channel_num = 0;
@@ -174,13 +174,19 @@ void DsoSnapshot::first_payload(const sr_datafeed_dso &dso, uint64_t total_sampl
                 uint64_t envelop_count = _total_sample_count / EnvelopeScaleFactor;
 
                 for (unsigned int level = 0; level < ScaleStepCount; level++) {
-                    envelop_count = ((envelop_count + EnvelopeDataUnit - 1) / EnvelopeDataUnit) * EnvelopeDataUnit;
-                    _envelope_levels[i][level].samples = (EnvelopeSample*)malloc(envelop_count * sizeof(EnvelopeSample));
                     
-                    if (!_envelope_levels[i][level].samples) {
+                    envelop_count = ((envelop_count + EnvelopeDataUnit - 1) / EnvelopeDataUnit) 
+                                        * EnvelopeDataUnit;
+
+                    uint64_t buffer_len = envelop_count * sizeof(EnvelopeSample);
+                    _envelope_levels[i][level].samples = (EnvelopeSample*)malloc(buffer_len);
+                    
+                    if (_envelope_levels[i][level].samples == NULL) {
+                        dsv_err("DsoSnapshot::first_payload, malloc failed!");
                         isOk = false;
                         break;
                     }
+                    
                     envelop_count = envelop_count / EnvelopeScaleFactor;
                 }
                 if (!isOk)
@@ -339,16 +345,18 @@ void DsoSnapshot::append_payload_to_envelope_levels(bool header)
         // Expand the data buffer to fit the new samples
         reallocate_envelope(e0);
 
+        assert(e0.samples);
+
         dest_ptr = e0.samples + prev_length;
 
         // Iterate through the samples to populate the first level mipmap
-        const uint8_t *const stop_src_ptr = (uint8_t*)_ch_data[i] + _sample_count;
-        const uint8_t *src_ptr = (uint8_t*)_ch_data[i];
+        const uint8_t *const stop_src_ptr = (uint8_t*)_ch_data[i] + e0.length * EnvelopeScaleFactor;
+        const uint8_t *src_ptr = (uint8_t*)_ch_data[i] + prev_length * EnvelopeScaleFactor;
 
         for (; src_ptr < stop_src_ptr; src_ptr += EnvelopeScaleFactor)
         {
             const uint8_t *begin_src_ptr = src_ptr;
-            const uint8_t *const end_src_ptr = begin_src_ptr + EnvelopeScaleFactor;
+            const uint8_t *const end_src_ptr = src_ptr + EnvelopeScaleFactor;
 
             EnvelopeSample sub_sample;
             sub_sample.min = *begin_src_ptr;
@@ -356,10 +364,11 @@ void DsoSnapshot::append_payload_to_envelope_levels(bool header)
 
             while (begin_src_ptr < end_src_ptr)
             {
-                sub_sample.min = min(sub_sample.min, *begin_src_ptr);
-                sub_sample.max = max(sub_sample.max, *begin_src_ptr);
+                sub_sample.min = ds_min(sub_sample.min, *begin_src_ptr);
+                sub_sample.max = ds_max(sub_sample.max, *begin_src_ptr);
                 begin_src_ptr++;
             }
+            
             *dest_ptr++ = sub_sample;
         }
 

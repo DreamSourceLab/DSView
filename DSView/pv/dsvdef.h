@@ -52,6 +52,9 @@ enum View_type {
 
 #define ABS_VAL(x) ((x) > 0 ? (x) : -(x))
 
+#define ds_max(a,b) ((a) > (b) ? (a) : (b))
+#define ds_min(a,b) ((a) < (b) ? (a) : (b))
+
 #define SESSION_FORMAT_VERSION      3
 #define HEADER_FORMAT_VERSION       3
 
