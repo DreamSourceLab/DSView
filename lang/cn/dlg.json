@@ -650,5 +650,9 @@
     {
         "id": "IDS_DLG_FILE_THRESHOLD",
         "text": "阈值: "
+    },
+    {
+        "id": "IDS_DLG_VIEW_CAPTURE",
+        "text": "捕获中"
     }
 ]

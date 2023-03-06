@@ -341,17 +341,38 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
                 type = g_variant_get_byte(gvar);
                 g_variant_unref(gvar);
 
+                bool bDot = false;
+
                 if (type == DSO_TRIGGER_AUTO && roll) {
                     type_str = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_AUTO_ROLL), "Auto(Roll)");
+                    
+                    if (_view.session().is_instant()){
+                        type_str += ", ";
+                        type_str += L_S(STR_PAGE_DLG, S_ID(IDS_DLG_VIEW_CAPTURE), "Capturing");
+                        bDot = true;
+                    }
                 } 
                 else if (type == DSO_TRIGGER_AUTO && !_view.session().trigd()) {
                     type_str = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_AUTO), "Auto");
+
+                    if (_view.session().is_instant()){
+                        type_str += ", ";
+                        type_str += L_S(STR_PAGE_DLG, S_ID(IDS_DLG_VIEW_CAPTURE), "Capturing");
+                        bDot = true;
+                    }
                 } 
                 else if (_waiting_trig > 0) {
-                    type_str = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_WAITING_TRIG), "Waiting Trig");
- 
+                    type_str = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_WAITING_TRIG), "Waiting Trig"); 
+                    bDot = true;
+                } 
+                else {
+                    type_str = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIG_D), "Trig'd");
+                }
+
+                if (bDot)
+                {
                     for (int i = 0; i < _tigger_wait_times; i++){
-                            type_str += ".";
+                        type_str += ".";
                     }
 
                     high_resolution_clock::time_point cur_time = high_resolution_clock::now();
@@ -365,9 +386,6 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
 
                     if (_tigger_wait_times > 4)
                         _tigger_wait_times = 0;
-                } 
-                else {
-                    type_str = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIG_D), "Trig'd");
                 }
             }
             p.setPen(fore);

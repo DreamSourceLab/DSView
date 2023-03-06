@@ -650,5 +650,9 @@
     {
         "id": "IDS_DLG_FILE_THRESHOLD",
         "text": "Threshold: "
+    },
+    {
+        "id": "IDS_DLG_VIEW_CAPTURE",
+        "text": "Capturing"
     }
 ]
