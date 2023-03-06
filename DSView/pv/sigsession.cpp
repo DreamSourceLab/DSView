@@ -1438,6 +1438,9 @@ namespace pv
     {
         ds_lock_guard lock(_data_mutex);
 
+        assert(dsoSig1);
+        assert(dsoSig2);
+
         auto math_stack = new data::MathStack(this, dsoSig1, dsoSig2, type);
         DESTROY_OBJECT(_math_trace);
         _math_trace = new view::MathTrace(enable, math_stack, dsoSig1, dsoSig2);

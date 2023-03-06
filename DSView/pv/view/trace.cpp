@@ -133,6 +133,10 @@ int Trace::get_type()
 
 int Trace::get_index()
 {
+    if(_index_list.size() == 0){
+        assert(false);
+    }
+    
     return _index_list.front();
 }
 
@@ -143,7 +147,9 @@ std::list<int> Trace::get_index_list()
 
 void Trace::set_index_list(const std::list<int> &index_list)
 {
-    assert(index_list.size() != 0);
+    if (index_list.size() == 0){
+        assert(false);
+    }
 
     _index_list = index_list;
 }

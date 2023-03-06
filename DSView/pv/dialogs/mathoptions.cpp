@@ -216,7 +216,10 @@ void MathOptions::accept()
                 dsoSig2 = dsoSig;
         }
     }
-    _session->math_rebuild(enable, dsoSig1, dsoSig2, type);
+
+    if (dsoSig1 != NULL && dsoSig2 != NULL){
+        _session->math_rebuild(enable, dsoSig1, dsoSig2, type);
+    }    
 }
 
 void MathOptions::reject()
