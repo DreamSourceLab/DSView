@@ -455,11 +455,15 @@ namespace pv
         int run_dex = 0;
         clear_all_decode_task(run_dex);
         
-        // If switch the data buffer
+        _view_data->clear();
+
+        // If switch the data buffer    
         if (_view_data != _capture_data){
             _capture_data->clear();
             _capture_data = _view_data;
         }
+
+        init_signals();
 
         // update setting
         if (_device_agent.is_file())
