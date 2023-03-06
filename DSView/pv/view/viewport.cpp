@@ -92,6 +92,9 @@ Viewport::Viewport(View &parent, View_type type) :
     _clickX = 0;
     _sample_received = 0;
 
+    _lst_wait_tigger_time = high_resolution_clock::now();
+    _tigger_wait_times = 0;
+
     // drag inertial
     _drag_strength = 0;
     _drag_timer.setSingleShot(true);
@@ -326,25 +329,44 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
             uint8_t type;
             bool roll = false;
             QString type_str="";
+
             GVariant *gvar = _view.session().get_device()->get_config(NULL, NULL, SR_CONF_ROLL);
             if (gvar != NULL) {
                 roll = g_variant_get_boolean(gvar);
                 g_variant_unref(gvar);
             }
+
             gvar = _view.session().get_device()->get_config(NULL, NULL, SR_CONF_TRIGGER_SOURCE);
             if (gvar != NULL) {
                 type = g_variant_get_byte(gvar);
                 g_variant_unref(gvar);
+
                 if (type == DSO_TRIGGER_AUTO && roll) {
                     type_str = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_AUTO_ROLL), "Auto(Roll)");
-                } else if (type == DSO_TRIGGER_AUTO && !_view.session().trigd()) {
+                } 
+                else if (type == DSO_TRIGGER_AUTO && !_view.session().trigd()) {
                     type_str = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_AUTO), "Auto");
-                } else if (_waiting_trig > 0) {
+                } 
+                else if (_waiting_trig > 0) {
                     type_str = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_WAITING_TRIG), "Waiting Trig");
-                    for (int i = 1; i < _waiting_trig; i++)
-                        if (i % (WaitLoopTime / SigSession::FeedInterval) == 0)
+ 
+                    for (int i = 0; i < _tigger_wait_times; i++){
                             type_str += ".";
-                } else {
+                    }
+
+                    high_resolution_clock::time_point cur_time = high_resolution_clock::now();
+                    milliseconds timeInterval = std::chrono::duration_cast<milliseconds>(cur_time - _lst_wait_tigger_time);
+                    int64_t time_keep =  timeInterval.count();
+
+                    if (time_keep >= 500){
+                        _tigger_wait_times++;
+                        _lst_wait_tigger_time = cur_time;
+                    }
+
+                    if (_tigger_wait_times > 4)
+                        _tigger_wait_times = 0;
+                } 
+                else {
                     type_str = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIG_D), "Trig'd");
                 }
             }
@@ -1195,6 +1217,7 @@ void Viewport::set_receive_len(quint64 length)
     if (length == 0) {
         _sample_received = 0;
         start_trigger_timer(333);
+        _tigger_wait_times = 0;
     }
     else {
         stop_trigger_timer();

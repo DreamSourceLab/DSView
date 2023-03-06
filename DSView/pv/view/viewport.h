@@ -31,6 +31,7 @@
 #include <QWidget>
 #include <QNativeGestureEvent>
 #include <QElapsedTimer>
+#include <chrono>
 
 #include "../view/view.h"
 #include "../dsvdef.h"
@@ -38,6 +39,9 @@
 class QPainter;
 class QPaintEvent;
 class SigSession;
+
+using std::chrono::high_resolution_clock;
+using std::chrono::milliseconds;
 
 namespace pv {
 namespace view {
@@ -207,6 +211,9 @@ private:
     bool            _curs_moved;
     bool            _xcurs_moved;
     int             _clickX;
+
+    high_resolution_clock::time_point _lst_wait_tigger_time;
+    int             _tigger_wait_times;
 };
 
 } // namespace view
