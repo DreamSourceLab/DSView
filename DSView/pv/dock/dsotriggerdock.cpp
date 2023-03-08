@@ -341,10 +341,11 @@ void DsoTriggerDock::type_changed()
 
 void DsoTriggerDock::device_change()
 {
-    if (_session->get_device()->name() != "DSLogic") {
+    if (_session->get_device()->is_hardware_logic() == false) {
         _position_spinBox->setDisabled(true);
         _position_slider->setDisabled(true);
-    } else {
+    }
+    else {
         _position_spinBox->setDisabled(false);
         _position_slider->setDisabled(false);
     }
@@ -352,7 +353,7 @@ void DsoTriggerDock::device_change()
 
 void DsoTriggerDock::init()
 {
-    if (_session->get_device()->name().contains("virtual")) {
+    if (_session->get_device()->is_virtual()) {
         for(QAbstractButton * btn :  _source_group->buttons())
             btn->setDisabled(true);
 

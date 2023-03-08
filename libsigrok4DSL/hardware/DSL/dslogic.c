@@ -1527,30 +1527,39 @@ SR_PRIV int sr_dslogic_option_value_to_code(const struct sr_dev_inst *sdi, int c
     int i;
     int n;
     struct DSL_context *devc;
+    char *list_text;
+    char *cn_name;
 
     assert(sdi);
     assert(sdi->priv);
     
     devc = sdi->priv;
+    list_text = NULL;
+    cn_name = NULL;
 
     if (config_id == SR_CONF_CHANNEL_MODE)
     {
          for (i = 0; i < ARRAY_SIZE(channel_modes); i++) {
+
+                 list_text = channel_modes[i].descr;
+
                 if (devc->profile->dev_caps.channels & (1 << i)) 
-                {
-                    if (strcmp(channel_modes[i].descr, value) == 0)
+                { 
+                    if (strcmp(list_text, value) == 0)
                         return channel_modes[i].id;
 
                     if (i < ARRAY_SIZE(channel_mode_cn_map)){
                         if (channel_modes[i].id != channel_mode_cn_map[i].id)
-                            assert(0);    
-                        if (strcmp(channel_mode_cn_map[i].name, value) == 0)
+                            assert(0);
+                        
+                        cn_name = channel_mode_cn_map[i].name;
+                        if (strcmp(cn_name, value) == 0)
                             return channel_modes[i].id;
                     }
                 }
             }
 
-        sr_err("Unkown lang text value:%s,config id:%d", value, config_id);
+        sr_err("Unkown text value:%s, config id:%d", value, config_id);
         return -1;
     }
 

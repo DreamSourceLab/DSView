@@ -188,13 +188,14 @@ void TriggerDock::simple_trigger()
 
 void TriggerDock::adv_trigger()
 {
-    if (_session->get_device()->driver_name() == "DSLogic") {
+    if (_session->get_device()->is_hardware_logic()) {
         bool stream = false;
         GVariant *gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_STREAM);
         if (gvar != NULL) {
             stream = g_variant_get_boolean(gvar);
             g_variant_unref(gvar);
         }
+        
         if (stream) {
             dialogs::DSMessageBox msg(this);
             msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TRIGGER), "Trigger"));
@@ -204,7 +205,8 @@ void TriggerDock::adv_trigger()
             msg.mBox()->setIcon(QMessageBox::Warning);
             msg.exec();
             _simple_radioButton->setChecked(true);
-        } else {
+        }
+        else {
             widget_enable(0);
         }
     }
@@ -275,17 +277,18 @@ void TriggerDock::device_updated()
             }
 
             sample_limits = _session->get_device()->get_sample_limit();
+
             if (stream)
                 maxRange = 1;
             else if (hw_depth >= sample_limits)
                 maxRange = DS_MAX_TRIG_PERCENT;
             else
                 maxRange = ceil(hw_depth * DS_MAX_TRIG_PERCENT / sample_limits);
+            
             _position_spinBox->setRange(MinTrigPosition, maxRange);
             _position_slider->setRange(MinTrigPosition, maxRange);
 
-            if (_session->get_device()->name().contains("virtual") ||
-                stream) {
+            if (_session->get_device()->is_virtual() || stream) {
                 _simple_radioButton->setChecked(true);
                 simple_trigger();
             }

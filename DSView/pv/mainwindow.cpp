@@ -774,6 +774,7 @@ namespace pv
                     continue;
 
                 GVariant *gvar = NULL;
+                int id = 0;
 
                 //dsv_info("read key:'%s'", info->name);
 
@@ -806,21 +807,24 @@ namespace pv
                     gvar = g_variant_new_string(sessionObj[info->name].toString().toLocal8Bit().data());
                 }
                 else if (info->datatype == SR_T_LIST)
-                {
-                    int id = 0;
+                { 
+                    id = 0;
+
                     if (format_ver > 2){
                         // Is new version format.
                         id = sessionObj[info->name].toInt();
                     }
-                    else{ 
+                    else{
                         const char *fd_key = sessionObj[info->name].toString().toLocal8Bit().data();
                         id = ds_dsl_option_value_to_code(conf_dev_mode, info->key, fd_key);
                         if (id == -1){
-                            dsv_warn("The lang text parse fail! will use default value, the text:%s", fd_key);
+                            dsv_err("Convert failed, key:\"%s\", value:\"%s\""
+                                ,info->name, fd_key);
                             id = 0; //set default value.
                         }
                         else{
-                            dsv_info("key:'%s',text:'%s',convert to code:%d",info->name, fd_key, id);
+                            dsv_info("Convert success, key:\"%s\", value:\"%s\", get code:%d"
+                                ,info->name, fd_key, id);
                         }
                     }            
                     gvar = g_variant_new_int16(id);
@@ -832,7 +836,10 @@ namespace pv
                     continue;
                 }
 
-                _device_agent->set_config(NULL, NULL, info->key, gvar);         
+                bool bFlag = _device_agent->set_config(NULL, NULL, info->key, gvar);
+                if (!bFlag){
+                    dsv_err("Set device config option failed, id:%d, code:%d", info->key, id);
+                }   
             }
         }
 

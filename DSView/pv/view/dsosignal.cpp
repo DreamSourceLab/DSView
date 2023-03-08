@@ -117,7 +117,8 @@ void DsoSignal::set_scale(int height)
 
 void DsoSignal::set_enable(bool enable)
 {  
-    if (session->get_device()->name() == "DSLogic" && get_index() == 0){
+    if (session->get_device()->is_hardware_logic() 
+        && get_index() == 0){
         return;
     }
 
@@ -255,9 +256,10 @@ bool DsoSignal::load_settings()
         _bits = DefaultBits; 
         dsv_warn("%s%d", "Warning: config_get SR_CONF_UNIT_BITS failed, set to %d(default).", DefaultBits);
 
-        if (strncmp(session->get_device()->name().toUtf8().data(), "virtual", 7))
+        if (session->get_device()->is_hardware())
             return false;
     }
+
     gvar = session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MIN);
     if (gvar != NULL) {
         _ref_min = g_variant_get_uint32(gvar);
@@ -329,7 +331,8 @@ bool DsoSignal::load_settings()
     }
     else {
         dsv_err("%s", "ERROR: config_get SR_CONF_TRIGGER_VALUE failed.");
-        if (strncmp(session->get_device()->name().toUtf8().data(), "virtual", 7))
+
+        if (session->get_device()->is_hardware())
             return false;
     }
 
@@ -410,7 +413,7 @@ double DsoSignal::pos2ratio(int pos)
 
 double DsoSignal::get_trig_vrate()
 { 
-    if (session->get_device()->name() == "DSLogic")
+    if (session->get_device()->is_hardware_logic())
         return value2ratio(_trig_value - ratio2value(0.5)) + get_zero_ratio();
     else
         return value2ratio(_trig_value);
@@ -428,12 +431,13 @@ void DsoSignal::set_trig_ratio(double ratio, bool delta_change)
 {
     double delta = ratio; 
 
-    if (session->get_device()->name() == "DSLogic") {
+    if (session->get_device()->is_hardware_logic()) {
         delta = delta - get_zero_ratio();
         delta = min(delta, 0.5);
         delta = max(delta, -0.5);
         _trig_value = ratio2value(delta + 0.5);
-    } else {
+    }
+    else {
         _trig_value = ratio2value(delta);
     }
 
@@ -1151,35 +1155,41 @@ bool DsoSignal::mouse_press(int right, const QPoint pt)
     const QRectF x100_rect = get_rect(DSO_X100, y, right);
 
     if (chEn_rect.contains(pt)) {
-       if (session->get_device()->name() != "virtual-session" &&
-           !_en_lock) {
+       if (session->get_device()->is_file() == false && !_en_lock) {
            set_enable(!enabled());
        }
        return true;
-    } else if (enabled()) {
+    }
+    else if (enabled()) {
         if (vDial_rect.contains(pt) && pt.x() > vDial_rect.center().x()) {
             if (pt.y() > vDial_rect.center().y())
                 go_vDialNext(true);
             else
                 go_vDialPre(true);
-        } else if (session->get_device()->name() != "virtual-session" &&
-                   acdc_rect.contains(pt)) {
-           if (session->get_device()->name() == "DSLogic")
+        } 
+        else if (session->get_device()->is_file() == false && acdc_rect.contains(pt)) {
+           if (session->get_device()->is_hardware_logic())
                set_acCoupling((get_acCoupling()+1)%2);
            else
                set_acCoupling((get_acCoupling()+1)%2);
-        } else if (auto_rect.contains(pt)) {
-            if (!session->get_device()->name().contains("virtual"))
+        }
+        else if (auto_rect.contains(pt)) {
+            if (session->get_device()->is_hardware())
                 auto_start();
-        } else if (x1_rect.contains(pt)) {
+        }
+        else if (x1_rect.contains(pt)) {
            set_factor(1);
-        } else if (x10_rect.contains(pt)) {
+        }
+        else if (x10_rect.contains(pt)) {
            set_factor(10);
-        } else if (x100_rect.contains(pt)) {
+        }
+        else if (x100_rect.contains(pt)) {
            set_factor(100);
-        } else {
+        }
+        else {
             return false;
         }
+
         return true;
     }
     return false;

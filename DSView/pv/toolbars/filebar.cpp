@@ -31,6 +31,7 @@
 #include "../utility/path.h"
 
 #include "../ui/langresource.h"
+#include "../log.h"
 
 namespace pv {
 namespace toolbars {
@@ -188,16 +189,15 @@ void FileBar::on_actionDefault_triggered()
 { 
     QDir dir(GetResourceDir());
     if (!dir.exists()) { 
-          MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SAVE_CANFIND_SESSIONFILE), "Cannot find default session file for this device!"), this);
+          MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SAVE_CANFIND_SESSIONFILE),
+             "Cannot find default session file for this device!"), this);
           return;
     }
 
-    QString driver_name = _session->get_device()->name();
+    QString driver_name = _session->get_device()->driver_name();
     QString mode_name = QString::number(_session->get_device()->get_work_mode());
+    QString file_name = dir.absolutePath() + "/" + driver_name + mode_name +".def.dsc";
 
-    int language = AppConfig::Instance()._frameOptions.language;
-    QString file_name = dir.absolutePath() + "/" + driver_name + mode_name +
-                                ".def" + QString::number(language) + ".dsc";
     sig_load_session(file_name);
 }
 

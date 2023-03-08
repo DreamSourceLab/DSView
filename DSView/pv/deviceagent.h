@@ -75,6 +75,18 @@ public:
         return _dev_type == DEV_TYPE_USB;
     }
 
+    inline bool is_virtual(){
+        return (is_file() || is_demo());
+    }
+
+    inline bool is_hardware_logic(){
+        return is_hardware() && _driver_name == "DSLogic";
+    }
+
+    inline bool is_hardware_dso(){
+        return is_hardware() && _driver_name == "DSCope";
+    }
+
     inline void set_callback(IDeviceAgentCallback *callback){
         _callback = callback;
     }

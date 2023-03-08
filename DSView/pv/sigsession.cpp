@@ -765,21 +765,27 @@ namespace pv
 
         std::vector<view::Signal *> sigs;
         view::Signal *signal = NULL;
+        int logic_chan_num = 0;
+        int dso_chan_num = 0;
+        int all_chann_num = 0;
 
         // Make the logic probe list
         for (GSList *l = _device_agent.get_channels(); l; l = l->next)
         {
-            sr_channel *probe =
-                (sr_channel *)l->data;
-            assert(probe);
+            sr_channel *probe = (sr_channel *)l->data;
+  
             signal = NULL;
-
+            all_chann_num++;
+ 
             switch (probe->type)
             {
             case SR_CHANNEL_LOGIC:
                 if (probe->enabled)
-                {
+                {    
+                    logic_chan_num++;
+
                     auto i = _signals.begin();
+
                     while (i != _signals.end())
                     {
                         if ((*i)->get_index() == probe->index)
@@ -793,6 +799,7 @@ namespace pv
                         }
                         i++;
                     }
+
                     if (signal == NULL)
                     {
                         signal = new view::LogicSignal(_view_data->get_logic(), probe);
@@ -802,7 +809,9 @@ namespace pv
 
             case SR_CHANNEL_ANALOG:
                 if (probe->enabled)
-                {
+                { 
+                    dso_chan_num++;
+
                     auto i = _signals.begin();
                     while (i != _signals.end())
                     {
@@ -835,6 +844,9 @@ namespace pv
         }
 
         spectrum_rebuild();
+
+        dsv_info("Rebuild channnel list, logic channel count:%d, dso channel count:%d, all:%d", 
+                    logic_chan_num, dso_chan_num, all_chann_num);
     }
 
     void SigSession::refresh(int holdtime)

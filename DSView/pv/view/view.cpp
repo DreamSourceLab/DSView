@@ -578,7 +578,7 @@ void View::update_scale_offset()
 
 void View::mode_changed()
 {
-    if (_device_agent->name().contains("virtual"))
+    if (_device_agent->is_virtual())
         _scale = WellSamplesPerPixel * 1.0 / _session->cur_snap_samplerate();
     _scale = max(min(_scale, _maxscale), _minscale);
 }
