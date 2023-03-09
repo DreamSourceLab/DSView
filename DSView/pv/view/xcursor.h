@@ -124,9 +124,13 @@ public:
 signals:
     void value_changed();
 
+private slots:
+    void on_signal_deleted(void *o);
+
 protected:
     View        &_view;
     DsoSignal   *_dsoSig;
+    int         _sig_index;
 
     double _yvalue;
     double _value0;

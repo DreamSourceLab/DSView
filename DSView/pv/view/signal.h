@@ -60,6 +60,9 @@ class Signal : public Trace
 {
     Q_OBJECT
 
+signals:
+    void sig_released(void *o);
+
 protected:
     Signal(sr_channel * const probe);
 
@@ -68,9 +71,7 @@ protected:
      */
     Signal(const Signal &s, sr_channel * const probe);
 
-public:
-  //  virtual pv::data::SignalData* data() = 0;
-
+public: 
     /**
      * Returns true if the trace is visible and enabled.
      */

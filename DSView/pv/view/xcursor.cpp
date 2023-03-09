@@ -43,6 +43,7 @@ XCursor::XCursor(View &view, QColor &colour,
 	_colour(colour)
 {
     _dsoSig = NULL;
+    _sig_index = -1;
     
     for(auto s : _view.session().get_signals()) {        
         if (s->signal_type() == DSO_SIGNAL){
@@ -53,18 +54,29 @@ XCursor::XCursor(View &view, QColor &colour,
             }
         }
     }
+
+    if (_dsoSig != NULL){
+        connect(_dsoSig, SIGNAL(sig_released(void*)), this, SLOT(on_signal_deleted(void*)));
+        _sig_index = _dsoSig->get_index();
+    }
 }
 
 XCursor::XCursor(const XCursor &x) :
 	QObject(),
-    _view(x._view),
-    _dsoSig(x._dsoSig),
-    _yvalue(x._yvalue),
-    _value0(x._value0),
-    _value1(x._value1),
-    _grabbed(XCur_None),
-    _colour(x._colour)
+    _view(x._view)
 {
+    _dsoSig = x._dsoSig;
+    _yvalue = x._yvalue;
+    _value0 = x._value0;
+    _value1 = x._value1;
+    _grabbed = XCur_None;
+    _colour = x._colour;
+    _sig_index = -1;
+
+    if (_dsoSig != NULL){
+        connect(_dsoSig, SIGNAL(sig_released(void*)), this, SLOT(on_signal_deleted(void*)));
+        _sig_index = _dsoSig->get_index();
+    }
 }
 
 QColor XCursor::colour()
@@ -84,15 +96,29 @@ DsoSignal* XCursor::channel()
 {
     return _dsoSig;
 }
+
 void XCursor::set_channel(DsoSignal *sig)
 {
     _dsoSig = sig;
+
+    if (_dsoSig != NULL){
+        connect(_dsoSig, SIGNAL(sig_released(void*)), this, SLOT(on_signal_deleted(void*)));
+        _sig_index = _dsoSig->get_index();
+    }
+}
+
+void XCursor::on_signal_deleted(void *o)
+{
+    if (o == _dsoSig){
+        _dsoSig = NULL;
+    }   
 }
 
 enum XCursor::XCur_type XCursor::grabbed()
 {
     return _grabbed;
 }
+
 void XCursor::set_grabbed(XCur_type type, bool grabbed)
 {
     if (_grabbed == XCur_None && grabbed)
@@ -100,6 +126,7 @@ void XCursor::set_grabbed(XCur_type type, bool grabbed)
     else if (_grabbed == type && !grabbed)
         _grabbed = XCur_None;
 }
+
 void XCursor::rel_grabbed()
 {
     _grabbed = XCur_None;
@@ -129,7 +156,15 @@ void XCursor::set_value(XCur_type type, double value)
 }
 
 void XCursor::paint(QPainter &p, const QRect &rect, XCur_type highlight,  int order)
-{ 
+{   
+    // Attach the channel
+    if (_dsoSig == NULL && _sig_index != -1){
+        auto sig = _view.session().get_signal_by_index(_sig_index);
+        if (sig != NULL){
+            _dsoSig = dynamic_cast<DsoSignal*>(sig);
+        }
+    }
+
     const int arrow = 3;
     const int x = rect.left() + _yvalue * rect.width();
     const int y0 = rect.top() + _value0 * rect.height();
@@ -216,10 +251,14 @@ void XCursor::paint_label(QPainter &p, const QRect &rect)
 
     QRect close = get_close_rect(rect);
     p.setPen(Qt::NoPen);
+
     if (close.contains(QPoint(_view.hover_point().x(), _view.hover_point().y())))
         p.setBrush(View::Red);
-    else
+    else if (_dsoSig != NULL)
         p.setBrush(_dsoSig->get_colour());
+    else
+        p.setBrush(View::Blue);
+
     p.drawRect(close);
     p.setPen(Qt::black);
     p.drawLine(close.left() + 2, close.top() + 2, close.right() - 2, close.bottom() - 2);

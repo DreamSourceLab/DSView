@@ -79,6 +79,7 @@ DsoSignal::DsoSignal(data::DsoSnapshot *data,
     }
 
     _signal_type = DSO_SIGNAL;
+    _vDial = NULL;
 
     GVariant *gvar_list, *gvar_list_vdivs;
 
@@ -106,8 +107,19 @@ DsoSignal::DsoSignal(data::DsoSnapshot *data,
     load_settings();
 }
 
+DsoSignal::DsoSignal(const DsoSignal &o)
+:Signal(NULL)
+{
+}
+
+DsoSignal::DsoSignal(DsoSignal &o)
+:Signal(NULL)
+{
+}
+
 DsoSignal::~DsoSignal()
 {
+    DESTROY_OBJECT(_vDial);
 }
 
 void DsoSignal::set_scale(int height)
@@ -1495,6 +1507,15 @@ double DsoSignal::get_voltage(uint64_t index)
 
 QString DsoSignal::get_voltage(double v, int p, bool scaled)
 {
+   // if (_vDial == NULL)
+     //   return "";
+
+    this->_hover_en = this->_hover_en;
+
+    if (_vDial == NULL){
+        assert(false);
+    } 
+
     if (scaled)
         v = v * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
     else

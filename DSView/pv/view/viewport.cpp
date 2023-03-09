@@ -607,10 +607,12 @@ void Viewport::mousePressEvent(QMouseEvent *event)
         if (_action_type == NO_ACTION && _view.xcursors_shown()) {
             auto i = _view.get_xcursorList().begin();
             const QRect xrect = _view.get_view_rect();
+
             while (i != _view.get_xcursorList().end()) {
                 const double cursorX  = xrect.left() + (*i)->value(XCursor::XCur_Y)*xrect.width();
                 const double cursorY0 = xrect.top() + (*i)->value(XCursor::XCur_X0)*xrect.height();
                 const double cursorY1 = xrect.top() + (*i)->value(XCursor::XCur_X1)*xrect.height();
+                
                 if ((*i)->get_close_rect(xrect).contains(_view.hover_point())) {
                     _view.del_xcursor(*i);
                     if (_view.get_xcursorList().empty())

@@ -455,15 +455,14 @@ namespace pv
         int run_dex = 0;
         clear_all_decode_task(run_dex);
         
-        _view_data->clear();
-
         // If switch the data buffer    
         if (_view_data != _capture_data){
             _capture_data->clear();
             _capture_data = _view_data;
         }
+        _view_data->clear();
 
-        init_signals();
+        update_view();
 
         // update setting
         if (_device_agent.is_file())
@@ -743,8 +742,9 @@ namespace pv
                 break;
             } 
         }
+ 
+        clear_signals();
 
-        RELEASE_ARRAY(_signals);
         std::vector<view::Signal *>().swap(_signals);
         _signals = sigs;
 
@@ -837,8 +837,8 @@ namespace pv
         }
 
         if (!sigs.empty())
-        {
-            RELEASE_ARRAY(_signals);
+        { 
+            clear_signals();
             std::vector<view::Signal *>().swap(_signals);
             _signals = sigs;
         }
@@ -2046,6 +2046,29 @@ namespace pv
         if (trace != NULL){
             trace->set_name(label);
         }
+    }
+
+    void SigSession::clear_signals()
+    {
+        for (int i=0; i< (int)_signals.size(); i++)
+        {
+            auto *p = _signals[i];
+            p->sig_released(p);
+
+            DESTROY_QT_LATER(p);
+        }
+        _signals.clear();
+    }
+
+    view::Signal* SigSession::get_signal_by_index(int index)
+    {
+        for (int i=0; i< (int)_signals.size(); i++)
+        {
+            auto *p = _signals[i];
+            if (p->get_index() == index)
+                return p;
+        }
+        return NULL;
     }
 
 } // namespace pv

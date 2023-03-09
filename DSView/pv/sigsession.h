@@ -381,6 +381,10 @@ public:
         return _view_data == _capture_data;
     }
 
+    inline void update_view(){
+        _callback->data_updated();
+    }
+
     void auto_end();
     bool have_hardware_data();
     struct ds_device_base_info* get_device_list(int &out_count, int &actived_index);
@@ -391,6 +395,7 @@ public:
     void set_decoder_row_label(int index, QString label);
 
     view::DecodeTrace* get_decoder_trace(int index);
+    view::Signal* get_signal_by_index(int index);
 
 private:
     void set_cur_samplelimits(uint64_t samplelimits);
@@ -463,6 +468,8 @@ private:
     void repeat_capture_wait_timeout();
     void repeat_wait_prog_timeout();
     void realtime_refresh_timeout();
+
+    void clear_signals();
  
 private:
     mutable std::mutex      _sampling_mutex;
