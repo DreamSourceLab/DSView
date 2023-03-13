@@ -63,11 +63,13 @@ struct AppOptions
     std::vector<StringPair> m_protocolFormats;
 };
  
- struct DockOptions{
-  bool        decodeDoc;
-  bool        triggerDoc;
-  bool        measureDoc;
-  bool        searchDoc;
+ // The dock pannel open status.
+ struct DockOptions
+ {
+  bool        decodeDock;
+  bool        triggerDock;
+  bool        measureDock;
+  bool        searchDock;
 };
 
 struct FrameOptions

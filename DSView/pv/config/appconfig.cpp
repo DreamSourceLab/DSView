@@ -123,19 +123,19 @@ void _saveApp(AppOptions &o, QSettings &st){
 
 void _loadDockOptions(DockOptions &o, QSettings &st, const char *group){
     st.beginGroup(group);
-    getFiled("decodeDoc", st, o.decodeDoc, false);
-    getFiled("triggerDoc", st, o.triggerDoc, false);
-    getFiled("measureDoc", st, o.measureDoc, false);
-    getFiled("searchDoc", st, o.searchDoc, false);
+    getFiled("decodeDoc", st, o.decodeDock, false);
+    getFiled("triggerDoc", st, o.triggerDock, false);
+    getFiled("measureDoc", st, o.measureDock, false);
+    getFiled("searchDoc", st, o.searchDock, false);
     st.endGroup();
 }
 
 void _saveDockOptions(DockOptions &o, QSettings &st, const char *group){
     st.beginGroup(group);
-    setFiled("decodeDoc", st, o.decodeDoc);
-    setFiled("triggerDoc", st, o.triggerDoc);
-    setFiled("measureDoc", st, o.measureDoc);
-    setFiled("searchDoc", st, o.searchDoc);
+    setFiled("decodeDoc", st, o.decodeDock);
+    setFiled("triggerDoc", st, o.triggerDock);
+    setFiled("measureDoc", st, o.measureDock);
+    setFiled("searchDoc", st, o.searchDock);
     st.endGroup();
 }
 

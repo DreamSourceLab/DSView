@@ -27,7 +27,6 @@
 #include <QToolButton>
 #include <QAction>
 #include <QMenu>
- 
 
 class DockOptions;
 
@@ -45,8 +44,6 @@ class TrigBar : public QToolBar
 
 public:
     explicit TrigBar(SigSession *session, QWidget *parent = 0);
-
-    void close_all();
     void reload();
     void update_view_status();
 
@@ -54,7 +51,7 @@ private:
     void changeEvent(QEvent *event);
     void retranslateUi();
     void reStyle();
-    DockOptions* getDockOptions(); 
+    DockOptions* getDockOptions();    
 
 signals:
     void sig_setTheme(QString style);
@@ -68,24 +65,15 @@ private slots:
     void on_actionDark_triggered();
     void on_actionLight_triggered();
     void on_actionLissajous_triggered();
+    void on_actionFft_triggered();
+    void on_actionMath_triggered();
+    void on_application_param();
 
 public slots:
     void protocol_clicked();
     void trigger_clicked();
     void measure_clicked();
     void search_clicked();
-
-    void update_trig_btn(bool checked);
-    void update_protocol_btn(bool checked);
-    void update_measure_btn(bool checked);
-    void update_search_btn(bool checked);
-
-    void on_actionFft_triggered();
-    void on_actionMath_triggered();
-    void on_application_param();
-
-public:
-    void restore_status();
 
 private:
     SigSession  *_session;

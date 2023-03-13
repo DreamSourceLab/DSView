@@ -476,7 +476,6 @@ namespace pv
             _trigger_dock->setVisible(false);
             _dso_trigger_dock->setVisible(visible);
         }
-        _trig_bar->update_trig_btn(visible);
     }
 
     void MainWindow::on_measure(bool visible)
@@ -1078,23 +1077,9 @@ namespace pv
             }
         }
 
-        if (_device_agent->get_work_mode() != DSO)
-        {
-            _dso_trigger_dock->setVisible(false);
-            _trig_bar->update_trig_btn(_trigger_dock->isVisible());
+        if (_device_agent->have_instance()){
+            _trig_bar->reload();
         }
-        else
-        {
-            _trigger_dock->setVisible(false);
-            _trig_bar->update_trig_btn(_dso_trigger_dock->isVisible());
-        }
-        if (_device_agent->get_work_mode() != LOGIC)
-        {
-            on_protocol(false);
-        }
-        _trig_bar->update_protocol_btn(_protocol_dock->isVisible());
-        _trig_bar->update_measure_btn(_measure_dock->isVisible());
-        _trig_bar->update_search_btn(_search_dock->isVisible());
     }
 
     bool MainWindow::eventFilter(QObject *object, QEvent *event)
@@ -1127,31 +1112,31 @@ namespace pv
             case Qt::Key_S:
                 _sampling_bar->run_or_stop();
                 break;
+                
             case Qt::Key_I:
                 _sampling_bar->run_or_stop_instant();
                 break;
+
             case Qt::Key_T:
-                if (_device_agent->get_work_mode() == DSO)
-                    on_trigger(!_dso_trigger_dock->isVisible());
-                else if (_device_agent->get_work_mode() == LOGIC)
-                    on_trigger(!_trigger_dock->isVisible());
+                _trig_bar->trigger_clicked();
                 break;
 
             case Qt::Key_D:
-                if (_device_agent->get_work_mode() == LOGIC)
-                    on_protocol(!_protocol_dock->isVisible());
+                _trig_bar->protocol_clicked();
                 break;
 
             case Qt::Key_M:
-                on_measure(!_measure_dock->isVisible());
+                _trig_bar->measure_clicked();
                 break;
+
             case Qt::Key_R:
-                if (_device_agent->get_work_mode() == LOGIC)
-                    on_search(!_search_dock->isVisible());
+                _trig_bar->search_clicked();
                 break;
+
             case Qt::Key_O:
                 _sampling_bar->config_device();
                 break;
+
             case Qt::Key_PageUp:
                 _view->set_scale_offset(_view->scale(),
                                         _view->offset() - _view->get_view_width());
@@ -1161,12 +1146,15 @@ namespace pv
                                         _view->offset() + _view->get_view_width());
 
                 break;
+
             case Qt::Key_Left:
                 _view->zoom(1);
                 break;
+
             case Qt::Key_Right:
                 _view->zoom(-1);
                 break;
+
             case Qt::Key_0:
                 for (auto s : sigs)
                 {
@@ -1182,6 +1170,7 @@ namespace pv
                 _view->setFocus();
                 update();
                 break;
+
             case Qt::Key_1:
                 for (auto s : sigs)
                 {
@@ -1197,6 +1186,7 @@ namespace pv
                 _view->setFocus();
                 update();
                 break;
+
             case Qt::Key_Up:
                 for (auto s : sigs)
                 {
@@ -1211,6 +1201,7 @@ namespace pv
                     }
                 }
                 break;
+
             case Qt::Key_Down:
                 for (auto s : sigs)
                 {
@@ -1225,6 +1216,7 @@ namespace pv
                     }
                 }
                 break;
+
             default:
                 QWidget::keyPressEvent((QKeyEvent *)event);
             }
@@ -1453,8 +1445,7 @@ namespace pv
         _view->set_device();
         _trigger_widget->init();
         _trigger_widget->device_updated();
-        _trig_bar->reload();
-        _trig_bar->restore_status();
+        _trig_bar->reload(); 
         _dso_trigger_widget->init();
         _measure_widget->reload();
     }

@@ -31,8 +31,8 @@
 #include "../dialogs/mathoptions.h"
 #include "../view/trace.h"
 #include "../dialogs/applicationpardlg.h"
-#include "../config/appconfig.h"
 #include "../ui/langresource.h"
+#include "../config/appconfig.h"
 
 namespace pv {
 namespace toolbars {
@@ -53,10 +53,8 @@ TrigBar::TrigBar(SigSession *session, QWidget *parent) :
     setMovable(false);
     setContentsMargins(0,0,0,0);
  
-    _trig_button.setCheckable(true);
- 
-    _protocol_button.setCheckable(true);
- 
+    _trig_button.setCheckable(true); 
+    _protocol_button.setCheckable(true); 
     _measure_button.setCheckable(true);
     _search_button.setCheckable(true);
 
@@ -178,94 +176,63 @@ void TrigBar::reStyle()
     _dark_style->setIcon(QIcon(iconPath+"/dark.svg"));
     _light_style->setIcon(QIcon(iconPath+"/light.svg"));
 
-     _action_dispalyOptions->setIcon(QIcon(iconPath+"/gear.svg"));
+    _action_dispalyOptions->setIcon(QIcon(iconPath+"/gear.svg"));
 
-     AppConfig &app = AppConfig::Instance();    
-
+     AppConfig &app = AppConfig::Instance();
      QString icon_fname = iconPath +"/"+ app._frameOptions.style +".svg";  
     _themes->setIcon(QIcon(icon_fname));
 }
 
 void TrigBar::protocol_clicked()
 {  
-    sig_protocol(_protocol_button.isChecked());
- 
-    DockOptions *opt = getDockOptions();
-    opt->decodeDoc = _protocol_button.isChecked();
-    AppConfig::Instance().SaveFrame();
+    if (_protocol_button.isVisible())
+    {
+        DockOptions *opt = getDockOptions();
+        opt->decodeDock = !opt->decodeDock;
+        sig_protocol(opt->decodeDock);
+        _protocol_button.setChecked(opt->decodeDock);
+        AppConfig::Instance().SaveFrame();
+    }
 }
 
 void TrigBar::trigger_clicked()
 {
-    sig_trigger(_trig_button.isChecked());
- 
-    DockOptions *opt = getDockOptions();
-    opt->triggerDoc = _trig_button.isChecked();
-    AppConfig::Instance().SaveFrame();
-}
-
-void TrigBar::update_trig_btn(bool checked)
-{
-    _trig_button.setChecked(checked);
-}
-
-void TrigBar::update_protocol_btn(bool checked)
-{
-    _protocol_button.setChecked(checked);
-}
-
-void TrigBar::update_measure_btn(bool checked)
-{
-    _measure_button.setChecked(checked);
-}
-
-void TrigBar::update_search_btn(bool checked)
-{
-    _search_button.setChecked(checked);
+    if (_trig_button.isVisible())
+    {
+        DockOptions *opt = getDockOptions();
+        opt->triggerDock = !opt->triggerDock;
+        sig_trigger(opt->triggerDock);
+        _trig_button.setChecked(opt->triggerDock);
+        AppConfig::Instance().SaveFrame();
+    }
 }
 
 void TrigBar::measure_clicked()
-{
-    sig_measure(_measure_button.isChecked());
-    
-    DockOptions *opt = getDockOptions();
-    opt->measureDoc = _measure_button.isChecked();
-    AppConfig::Instance().SaveFrame();
+{   
+    if (_measure_button.isVisible())
+    {
+        DockOptions *opt = getDockOptions();
+        opt->measureDock = !opt->measureDock;
+        sig_measure(opt->measureDock);
+        _measure_button.setChecked(opt->measureDock);
+        AppConfig::Instance().SaveFrame();
+    }
 }
 
 void TrigBar::search_clicked()
 {
-    sig_search(_search_button.isChecked());
-    
-    DockOptions *opt = getDockOptions();
-    opt->searchDoc = _search_button.isChecked();
-    AppConfig::Instance().SaveFrame();
-}
-
-void TrigBar::close_all()
-{
-    if (_trig_button.isChecked()) {
-        _trig_button.setChecked(false);
-        sig_trigger(false);
-    }
-    if (_protocol_button.isChecked()) {
-        _protocol_button.setChecked(false);
-        sig_protocol(false);
-    }
-    if (_measure_button.isChecked()) {
-        _measure_button.setChecked(false);
-        sig_measure(false);
-    }
-    if(_search_button.isChecked()) {
-        _search_button.setChecked(false);
-        sig_search(false);
-    }
+    if (_search_button.isVisible())
+    {   
+        DockOptions *opt = getDockOptions();
+        opt->searchDock = !opt->searchDock;
+        sig_search(opt->searchDock);
+        _search_button.setChecked(opt->searchDock); 
+        AppConfig::Instance().SaveFrame();
+    }  
 }
 
 void TrigBar::reload()
 {
-    close_all();
-
     int mode = _session->get_device()->get_work_mode();
 
     if (mode == LOGIC) {
@@ -296,6 +263,18 @@ void TrigBar::reload()
         _action_dispalyOptions->setVisible(false);
     }
 
+    DockOptions *opt = getDockOptions();
+
+    sig_protocol(_protocol_action->isVisible() && opt->decodeDock);
+    sig_trigger(_trig_action->isVisible() && opt->triggerDock);
+    sig_measure(_measure_action->isVisible() && opt->measureDock);
+    sig_search(_search_action->isVisible() && opt->searchDock);
+
+    _protocol_action->setChecked(opt->decodeDock);
+    _trig_action->setChecked(opt->triggerDock);
+    _measure_action->setChecked(opt->measureDock);
+    _search_action->setChecked(opt->searchDock);
+   
     update_view_status(); 
     update();    
 }
@@ -332,43 +311,16 @@ void TrigBar::on_actionLissajous_triggered()
     lissajous_dlg.exec();
 }
 
- void TrigBar::on_application_param(){
-   //  pv::dialogs::MathOptions math_dlg(_session, this);  math_dlg.exec();   return;
-    
-     pv::dialogs::ApplicationParamDlg dlg;
-     dlg.ShowDlg(this);
+ void TrigBar::on_application_param()
+ {    
+    pv::dialogs::ApplicationParamDlg dlg;
+    dlg.ShowDlg(this);
  }
-
- 
-void TrigBar::restore_status()
-{ 
-    DockOptions *opt = getDockOptions();
-
-    if (opt->decodeDoc){
-         _protocol_button.setChecked(true);
-         sig_protocol(true);
-    }
-
-    if (opt->triggerDoc){
-         _trig_button.setChecked(true);
-         sig_trigger(true);
-    }
-
-    if (opt->measureDoc){
-        _measure_button.setChecked(true);
-        sig_measure(true);
-    }
-
-    if (opt->searchDoc){
-        _search_button.setChecked(true);
-        sig_search(true);
-    }
-}
 
  DockOptions* TrigBar::getDockOptions()
  {
-     AppConfig &app = AppConfig::Instance(); 
-     int mode = _session->get_device()->get_work_mode();
+    AppConfig &app = AppConfig::Instance(); 
+    int mode = _session->get_device()->get_work_mode();
 
     if (mode == LOGIC)
         return &app._frameOptions._logicDock;

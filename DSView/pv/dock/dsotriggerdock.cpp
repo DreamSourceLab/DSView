@@ -366,7 +366,8 @@ void DsoTriggerDock::init()
         _margin_slider->setDisabled(true);
         _channel_comboBox->setDisabled(true);
         return;
-    } else {
+    }
+    else {
         for(QAbstractButton * btn :  _source_group->buttons())
             btn->setDisabled(false);
 
