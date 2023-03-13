@@ -554,6 +554,11 @@ namespace pv
             return;
         }
 
+        if (_session->is_working()){
+            dsv_info("Save data: stop the current device.");
+            _session->stop_capture();
+        }
+
         _session->set_saving(true);
 
         StoreProgress *dlg = new StoreProgress(_session, this);
@@ -563,6 +568,11 @@ namespace pv
     void MainWindow::on_export()
     {
         using pv::dialogs::StoreProgress;
+
+        if (_session->is_working()){
+            dsv_info("Export data: stop the current device.");
+            _session->stop_capture();
+        }
 
         StoreProgress *dlg = new StoreProgress(_session, this);
         dlg->export_run();
@@ -1112,7 +1122,7 @@ namespace pv
             case Qt::Key_S:
                 _sampling_bar->run_or_stop();
                 break;
-                
+
             case Qt::Key_I:
                 _sampling_bar->run_or_stop_instant();
                 break;
@@ -1683,6 +1693,7 @@ namespace pv
                 if (_session->get_device()->is_demo() == false)
                 {
                     QString msgText = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TO_SWITCH_DEVICE), "To switch the new device?");
+                    
                     if (MsgBox::Confirm(msgText) == false){
                         _sampling_bar->update_device_list(); // Update the list only.
                         return;

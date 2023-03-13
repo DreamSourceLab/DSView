@@ -169,7 +169,11 @@ namespace pv
     bool SigSession::set_default_device()
     {
         assert(!_is_saving);
-        assert(!_is_working);
+        
+        if (_is_working){
+            dsv_info("The current device is working, now to stop it.");
+            stop_capture();
+        }
 
         struct ds_device_base_info *array = NULL;
         int count = 0;
@@ -1772,7 +1776,7 @@ namespace pv
             if (_capture_data->get_analog()->last_ended() == false)
                 dsv_err("%s", "The collected data is error!");
 
-            // trigger next collect
+            // trig next collect
             if (!_is_instant && is_repeat_mode() && _is_working && event == DS_EV_COLLECT_TASK_END)
             {
                 _callback->trigger_message(DSV_MSG_TRIG_NEXT_COLLECT);
@@ -1787,16 +1791,16 @@ namespace pv
         break;
 
         case DS_EV_NEW_DEVICE_ATTACH:
+            _callback->trigger_message(DSV_MSG_NEW_USB_DEVICE);
+        break;
+
         case DS_EV_CURRENT_DEVICE_DETACH:
         {
             if (_is_working)
                 stop_capture();
 
-            if (DS_EV_NEW_DEVICE_ATTACH == event)
-                _callback->trigger_message(DSV_MSG_NEW_USB_DEVICE);
-            else
-                _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_DETACHED);
-        }
+            _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_DETACHED);
+        }            
         break;
 
         case DS_EV_INACTIVE_DEVICE_DETACH:
