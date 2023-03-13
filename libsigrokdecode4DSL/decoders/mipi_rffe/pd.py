@@ -2,7 +2,7 @@
 ## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2010-2016 Uwe Hermann <uwe@hermann-uwe.de>
-## Copyright (C) 2020 DreamSourceLab <support@dreamsourcelab.com>
+## Copyright (C) 2023 DreamSourceLab <support@dreamsourcelab.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -84,12 +84,12 @@ class Decoder(srd.Decoder):
     outputs = ['mipi_rffe']
     tags = ['Embedded/industrial']
     channels = (
-        {'id': 'sclk', 'type': 8, 'name': 'SCLK', 'desc': 'Serial clock line', 'idn':'dec_mipi_rffe_chan_sclk'},
-        {'id': 'sdata', 'type': 108, 'name': 'SDATA', 'desc': 'Serial data line', 'idn':'dec_mipi_rffe_chan_sdata'},
+        {'id': 'sclk', 'type': 8, 'name': 'SCLK', 'desc': 'Serial clock line'},
+        {'id': 'sdata', 'type': 108, 'name': 'SDATA', 'desc': 'Serial data line'},
     )
     options = (
-        {'id': 'error_display', 'desc': 'Error display options', 
-            'default': 'display', 'values': ('display', 'not_display'), 'idn':'dec_mipi_rffe_opt_error_display'},
+        {'id': 'error_display', 'desc': 'Error display options',
+            'default': 'display', 'values': ('display', 'not_display')},
     )
     annotations = (
         ('7', 'ssc', 'Sequence Start Condition'),
@@ -139,6 +139,9 @@ class Decoder(srd.Decoder):
         self.sdata = -1
         self.Pdata = -1
         self.parity = False
+
+        self.isWrite = False
+        self.isLong = False
 
     def metadata(self, key, value):
         if key == srd.SRD_CONF_SAMPLERATE:
@@ -249,15 +252,17 @@ class Decoder(srd.Decoder):
             self.Pdata = d
             self.Pkey = key
         if cmd == 'BC':
-            self.BC = d
+            self.BC = d + 1
             if self.cmdkey == 'ERW' or self.cmdkey == 'ERR' :
-                if self.BC < 4 or self.BC > 16 :
+                if self.BC < 1 or self.BC > 16 :
                     self.putx([proto['BC_WARNINGS'][0], proto['BC_WARNINGS'][1:]])
+                    self.databyte = 0
                     self.init()
                     return 
             else :
                 if self.BC < 1 or self.BC > 8 :
                     self.putx([proto['BC_WARNINGS'][0], proto['BC_WARNINGS'][1:]])
+                    self.databyte = 0            
                     self.init()
                     return
         if cmd == 'P':
@@ -304,23 +309,39 @@ class Decoder(srd.Decoder):
                 else :               
                     self.cmdset('RW','FIND ADDRESS')
                     return
-            
-        if self.bitcount == 3:         
-            if not self.sdata :
-                if self.extended :               
-                    self.cmdset('ERR','FIND BTEY_COUNT')
-                    return
-                else :                
-                    self.cmdset('ERW','FIND BTEY_COUNT')
-                    return
-            elif self.extended :  
+
+            else:
+                if self.sdata :
+                    self.isWrite = False
+                else:
+                    self.isWrite = True
+        
+        if self.bitcount == 3: 
+            if self.extended:
+                if not self.sdata:  
+                    if not self.isWrite:
+                        self.cmdset('ERR','FIND BTEY_COUNT')
+                        return
+                    else:
+                        self.cmdset('ERW','FIND BTEY_COUNT')   
+                        return                     
+            else:  
                 self.ss = self.DATAss            
                 self.es = self.samplenum
                 self.putx([proto['CMD_WARNINGS'][0], proto['CMD_WARNINGS'][1:]])
                 self.init()
                 return
 
-        if self.bitcount == 4:          
+        if self.bitcount == 4:      
+            if self.sdata :              
+                self.cmdset('ERRL','FIND BTEY_COUNT')
+                return
+            else :                
+                self.cmdset('ERWL','FIND BTEY_COUNT')
+                return
+
+
+        if self.bitcount == 4:  
             if self.sdata :              
                 self.cmdset('ERRL','FIND BTEY_COUNT')
                 return
@@ -374,8 +395,6 @@ class Decoder(srd.Decoder):
         self.bitcount = 0
         self.Pes = 0
         self.state = 'FIND SSC'
-
-
         
 
     def decode(self):
