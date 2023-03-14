@@ -223,7 +223,7 @@ void TrigBar::search_clicked()
 }
 
 void TrigBar::reload()
-{
+{ 
     int mode = _session->get_device()->get_work_mode();
 
     if (mode == LOGIC) {

@@ -202,12 +202,11 @@ namespace pv
         _search_dock->setWidget(_search_widget);
 
         addDockWidget(Qt::RightDockWidgetArea, _protocol_dock);
-
         addDockWidget(Qt::RightDockWidgetArea, _trigger_dock);
         addDockWidget(Qt::RightDockWidgetArea, _dso_trigger_dock);
         addDockWidget(Qt::RightDockWidgetArea, _measure_dock);
         addDockWidget(Qt::BottomDockWidgetArea, _search_dock);
-
+        
         // Set the title
         QString title = QApplication::applicationName() + " v" + QApplication::applicationVersion();
         setWindowTitle(QApplication::translate("MainWindow", title.toLocal8Bit().data(), 0));
@@ -785,22 +784,18 @@ namespace pv
                 GVariant *gvar = NULL;
                 int id = 0;
 
-                //dsv_info("read key:'%s'", info->name);
-
                 if (info->datatype == SR_T_BOOL){
                     gvar = g_variant_new_boolean(sessionObj[info->name].toInt());
                 }
                 else if (info->datatype == SR_T_UINT64){
                     //from string text.
-                    gvar = g_variant_new_uint64(sessionObj[info->name].toString().toULongLong());
-                    //dsv_info("uint64:'%s',%llu", info->name, g_variant_get_uint64(gvar));              
+                    gvar = g_variant_new_uint64(sessionObj[info->name].toString().toULongLong());         
                 }
                 else if (info->datatype == SR_T_UINT8){
                     if (sessionObj[info->name].toString() != "")
                         gvar = g_variant_new_byte(sessionObj[info->name].toString().toUInt());
                     else
-                        gvar = g_variant_new_byte(sessionObj[info->name].toInt());
-                    //dsv_info("uint8:'%s',%d", info->name,g_variant_get_byte(gvar));                        
+                        gvar = g_variant_new_byte(sessionObj[info->name].toInt());                       
                 }
                 else if (info->datatype == SR_T_INT16){
                     gvar = g_variant_new_int16(sessionObj[info->name].toInt());
@@ -809,8 +804,7 @@ namespace pv
                     if (sessionObj[info->name].toString() != "")
                         gvar = g_variant_new_double(sessionObj[info->name].toString().toDouble());
                     else
-                        gvar = g_variant_new_double(sessionObj[info->name].toDouble());
-                    //dsv_info("float:'%s',%f", info->name,g_variant_get_double(gvar));    
+                        gvar = g_variant_new_double(sessionObj[info->name].toDouble()); 
                 }
                 else if (info->datatype == SR_T_CHAR){
                     gvar = g_variant_new_string(sessionObj[info->name].toString().toLocal8Bit().data());
@@ -1070,7 +1064,7 @@ namespace pv
     }
 
     void MainWindow::restore_dock()
-    {
+    { 
         // default dockwidget size
         AppConfig &app = AppConfig::Instance();
         QByteArray st = app._frameOptions.windowState;
@@ -1085,6 +1079,10 @@ namespace pv
                 MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_RE_WIN_ST_ER), "restore window status error!"));
             }
         }
+
+        // Resotre the dock pannel.
+        if (_device_agent->have_instance())
+            _trig_bar->reload();
     }
 
     bool MainWindow::eventFilter(QObject *object, QEvent *event)
