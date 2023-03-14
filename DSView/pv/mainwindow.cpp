@@ -459,6 +459,9 @@ namespace pv
     void MainWindow::on_protocol(bool visible)
     {
         _protocol_dock->setVisible(visible);
+
+        if (!visible)
+            _view->setFocus();
     }
 
     void MainWindow::on_trigger(bool visible)
@@ -475,17 +478,26 @@ namespace pv
             _trigger_dock->setVisible(false);
             _dso_trigger_dock->setVisible(visible);
         }
+
+        if (!visible)
+            _view->setFocus();
     }
 
     void MainWindow::on_measure(bool visible)
     {
         _measure_dock->setVisible(visible);
+
+        if (!visible)
+            _view->setFocus();
     }
 
     void MainWindow::on_search(bool visible)
     {
         _search_dock->setVisible(visible);
         _view->show_search_cursor(visible);
+
+        if (!visible)
+            _view->setFocus();
     }
 
     void MainWindow::on_screenShot()
@@ -1088,7 +1100,7 @@ namespace pv
     bool MainWindow::eventFilter(QObject *object, QEvent *event)
     {
         (void)object;
-
+    
         if (event->type() == QEvent::KeyPress)
         {
             const auto &sigs = _session->get_signals();
