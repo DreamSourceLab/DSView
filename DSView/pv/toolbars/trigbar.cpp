@@ -52,11 +52,6 @@ TrigBar::TrigBar(SigSession *session, QWidget *parent) :
 
     setMovable(false);
     setContentsMargins(0,0,0,0);
- 
-    _trig_button.setCheckable(true); 
-    _protocol_button.setCheckable(true); 
-    _measure_button.setCheckable(true);
-    _search_button.setCheckable(true);
 
     _action_fft = new QAction(this);
     _action_fft->setObjectName(QString::fromUtf8("actionFft"));
@@ -190,7 +185,6 @@ void TrigBar::protocol_clicked()
         DockOptions *opt = getDockOptions();
         opt->decodeDock = !opt->decodeDock;
         sig_protocol(opt->decodeDock);
-        _protocol_button.setChecked(opt->decodeDock);
         AppConfig::Instance().SaveFrame();
     }
 }
@@ -202,7 +196,6 @@ void TrigBar::trigger_clicked()
         DockOptions *opt = getDockOptions();
         opt->triggerDock = !opt->triggerDock;
         sig_trigger(opt->triggerDock);
-        _trig_button.setChecked(opt->triggerDock);
         AppConfig::Instance().SaveFrame();
     }
 }
@@ -214,7 +207,6 @@ void TrigBar::measure_clicked()
         DockOptions *opt = getDockOptions();
         opt->measureDock = !opt->measureDock;
         sig_measure(opt->measureDock);
-        _measure_button.setChecked(opt->measureDock);
         AppConfig::Instance().SaveFrame();
     }
 }
@@ -226,7 +218,6 @@ void TrigBar::search_clicked()
         DockOptions *opt = getDockOptions();
         opt->searchDock = !opt->searchDock;
         sig_search(opt->searchDock);
-        _search_button.setChecked(opt->searchDock); 
         AppConfig::Instance().SaveFrame();
     }  
 }
@@ -265,15 +256,15 @@ void TrigBar::reload()
 
     DockOptions *opt = getDockOptions();
 
-    sig_protocol(_protocol_action->isVisible() && opt->decodeDock);
-    sig_trigger(_trig_action->isVisible() && opt->triggerDock);
-    sig_measure(_measure_action->isVisible() && opt->measureDock);
-    sig_search(_search_action->isVisible() && opt->searchDock);
+    bool bDecoder = _protocol_action->isVisible() && opt->decodeDock;
+    bool bTrigger = _trig_action->isVisible() && opt->triggerDock;
+    bool bMeasure = _measure_action->isVisible() && opt->measureDock;
+    bool bSearch = _search_action->isVisible() && opt->searchDock;
 
-    _protocol_action->setChecked(opt->decodeDock);
-    _trig_action->setChecked(opt->triggerDock);
-    _measure_action->setChecked(opt->measureDock);
-    _search_action->setChecked(opt->searchDock);
+    sig_protocol(bDecoder);
+    sig_trigger(bTrigger);
+    sig_measure(bMeasure);
+    sig_search(bSearch);
    
     update_view_status(); 
     update();    

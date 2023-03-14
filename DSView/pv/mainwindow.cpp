@@ -1000,7 +1000,6 @@ namespace pv
         {
             _trigger_widget->set_session(sessionObj["trigger"].toObject());
         }
-        on_trigger(false);
 
         // load decoders
         if (sessionObj.contains("decoder"))
@@ -1085,10 +1084,6 @@ namespace pv
             {
                 MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_RE_WIN_ST_ER), "restore window status error!"));
             }
-        }
-
-        if (_device_agent->have_instance()){
-            _trig_bar->reload();
         }
     }
 
@@ -1683,9 +1678,6 @@ namespace pv
             reset_all_view();
             load_device_config();
             update_toolbar_view_status();
-
-            if (_device_agent->get_work_mode() != LOGIC)
-                _protocol_dock->setVisible(false);
             break;
 
         case DSV_MSG_NEW_USB_DEVICE:
