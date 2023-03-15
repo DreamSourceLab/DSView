@@ -63,7 +63,7 @@ public:
 
     void paintEvent(QPaintEvent *);
 
-    void init();
+    void update_view();
 
     QJsonObject get_session();
     void set_session(QJsonObject ses);

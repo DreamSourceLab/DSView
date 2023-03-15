@@ -468,13 +468,13 @@ namespace pv
     {
         if (_device_agent->get_work_mode() != DSO)
         {
-            _trigger_widget->init();
+            _trigger_widget->update_view();
             _trigger_dock->setVisible(visible);
             _dso_trigger_dock->setVisible(false);
         }
         else
         {
-            _dso_trigger_widget->init();
+            _dso_trigger_widget->update_view();
             _trigger_dock->setVisible(false);
             _dso_trigger_dock->setVisible(visible);
         }
@@ -616,7 +616,14 @@ namespace pv
         QJsonDocument sessionDoc = QJsonDocument::fromJson(sdata.toUtf8());
 
         _protocol_widget->del_all_protocol();
-        return load_session_json(sessionDoc, bDone);
+        int ret = load_session_json(sessionDoc, bDone);
+
+        if (ret && _device_agent->get_work_mode() == DSO)
+        {
+            _dso_trigger_widget->update_view();
+        }
+
+        return ret;
     }
 
     bool MainWindow::gen_session_json(QJsonObject &sessionVar)
@@ -1458,10 +1465,10 @@ namespace pv
         _view->status_clear();
         _view->reload();
         _view->set_device();
-        _trigger_widget->init();
+        _trigger_widget->update_view();
         _trigger_widget->device_updated();
         _trig_bar->reload(); 
-        _dso_trigger_widget->init();
+        _dso_trigger_widget->update_view();
         _measure_widget->reload();
     }
 

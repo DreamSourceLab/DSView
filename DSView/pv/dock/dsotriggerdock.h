@@ -47,14 +47,12 @@ class DsoTriggerDock : public QScrollArea
 public:
     DsoTriggerDock(QWidget *parent, SigSession *session);
     ~DsoTriggerDock();
-
-    void paintEvent(QPaintEvent *);
-
+ 
     void device_change();
-
-    void init();
+    void update_view();
 
 private:
+    void paintEvent(QPaintEvent *e);
     void changeEvent(QEvent *event);
     void retranslateUi();
     void reStyle();

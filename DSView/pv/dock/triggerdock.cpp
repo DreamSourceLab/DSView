@@ -414,7 +414,7 @@ bool TriggerDock::commit_trigger()
     }
 }
 
-void TriggerDock::init()
+void TriggerDock::update_view()
 {
     // TRIGGERPOS
     //uint16_t pos = ds_trigger_get_pos();

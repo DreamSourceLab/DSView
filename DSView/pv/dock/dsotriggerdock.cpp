@@ -73,6 +73,7 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession *session) :
     _holdoff_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     _holdoff_slider = new QSlider(Qt::Horizontal, _widget);
     _holdoff_slider->setRange(0, 999);
+
     connect(_holdoff_slider, SIGNAL(valueChanged(int)), _holdoff_spinBox, SLOT(setValue(int)));
     connect(_holdoff_spinBox, SIGNAL(valueChanged(int)), _holdoff_slider, SLOT(setValue(int)));
     connect(_holdoff_slider, SIGNAL(valueChanged(int)), this, SLOT(hold_changed(int)));
@@ -83,7 +84,6 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession *session) :
     _margin_slider->setRange(0, 15);
     connect(_margin_slider, SIGNAL(valueChanged(int)), this, SLOT(margin_changed(int)));
 
-
     _tSource_label = new QLabel(_widget);
     _auto_radioButton = new QRadioButton(_widget);
     _auto_radioButton->setChecked(true);
@@ -91,6 +91,7 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession *session) :
     _ch1_radioButton = new QRadioButton(_widget);
     _ch0a1_radioButton = new QRadioButton(_widget);
     _ch0o1_radioButton = new QRadioButton(_widget);
+
     connect(_auto_radioButton, SIGNAL(clicked()), this, SLOT(source_changed()));
     connect(_ch0_radioButton, SIGNAL(clicked()), this, SLOT(source_changed()));
     connect(_ch1_radioButton, SIGNAL(clicked()), this, SLOT(source_changed()));
@@ -101,6 +102,7 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession *session) :
     _rising_radioButton = new QRadioButton(_widget);
     _rising_radioButton->setChecked(true);
     _falling_radioButton = new QRadioButton(_widget);
+
     connect(_rising_radioButton, SIGNAL(clicked()), this, SLOT(type_changed()));
     connect(_falling_radioButton, SIGNAL(clicked()), this, SLOT(type_changed()));
 
@@ -184,7 +186,7 @@ void DsoTriggerDock::changeEvent(QEvent *event)
 }
 
 void DsoTriggerDock::retranslateUi()
-{
+{ 
     _position_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIGGER_POSITION), "Trigger Position: "));
     _holdoff_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_HOLD_OFF_TIME), "Hold Off Time: "));
     _margin_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_NOISE_SENSITIVITY), "Noise Sensitivity: "));
@@ -205,8 +207,9 @@ void DsoTriggerDock::reStyle()
      
 }
 
-void DsoTriggerDock::paintEvent(QPaintEvent *)
+void DsoTriggerDock::paintEvent(QPaintEvent *e)
 {
+    (void*)e;
 //    QStyleOption opt;
 //    opt.init(this);
 //    QPainter p(this);
@@ -240,15 +243,16 @@ void DsoTriggerDock::pos_changed(int pos)
 }
 
 void DsoTriggerDock::hold_changed(int hold)
-{
+{ 
     (void)hold;
     int ret;
     uint64_t holdoff;
-    if (_holdoff_comboBox->currentData().toDouble() == 1000000000) {
+
+    if (_holdoff_comboBox->currentData().toDouble() == 1000000000)
         _holdoff_slider->setRange(0, 10);
-    } else {
+    else
         _holdoff_slider->setRange(0, 999);
-    }
+
     holdoff = _holdoff_slider->value() * _holdoff_comboBox->currentData().toDouble() / 10;
     ret = _session->get_device()->set_config(NULL, NULL,
                                             SR_CONF_TRIGGER_HOLDOFF,
@@ -351,7 +355,7 @@ void DsoTriggerDock::device_change()
     }
 }
 
-void DsoTriggerDock::init()
+void DsoTriggerDock::update_view()
 {
     if (_session->get_device()->is_virtual()) {
         for(QAbstractButton * btn :  _source_group->buttons())
@@ -437,18 +441,20 @@ void DsoTriggerDock::init()
     if (gvar != NULL) {
         uint64_t holdoff = g_variant_get_uint64(gvar);
         g_variant_unref(gvar);
+
         for (int i = _holdoff_comboBox->count()-1; i >= 0; i--) {
             if (holdoff >= _holdoff_comboBox->itemData(i).toDouble()) {
                 _holdoff_comboBox->setCurrentIndex(i);
                 break;
             }
         }
-        if (_holdoff_comboBox->currentData().toDouble() == 1000000000) {
+
+        if (_holdoff_comboBox->currentData().toDouble() == 1000000000)
             _holdoff_slider->setRange(0, 10);
-        } else {
+        else 
             _holdoff_slider->setRange(0, 999);
-        }
-        _holdoff_spinBox->setValue(holdoff * 10.0/_holdoff_comboBox->currentData().toDouble());
+
+        _holdoff_spinBox->setValue(holdoff * 10.0 / _holdoff_comboBox->currentData().toDouble());
     }
     connect(_holdoff_slider, SIGNAL(valueChanged(int)), this, SLOT(hold_changed(int)));
     connect(_holdoff_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(hold_changed(int)));
