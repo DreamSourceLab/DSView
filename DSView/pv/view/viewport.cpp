@@ -172,8 +172,12 @@ void Viewport::doPaint()
 
     if (_view.session().get_device()->get_work_mode() == LOGIC ||
         _view.session().is_instant()) 
-    {
-        if (_view.session().is_stopped_status())
+    {   
+        if (_view.session().is_init_status())
+        {
+            paintCursors(p);
+        }
+        else if (_view.session().is_stopped_status())
         {
             paintSignals(p, fore, back);
         }
@@ -206,6 +210,28 @@ void Viewport::doPaint()
             _curSignalHeight = _view.get_signalHeight();
 
 	p.end();
+}
+
+void Viewport::paintCursors(QPainter &p)
+{ 
+    const QRect xrect = _view.get_view_rect();
+    auto &cursor_list = _view.get_cursorList();
+
+    if (_view.cursors_shown() && _type == TIME_VIEW) {
+        auto i = cursor_list.begin();
+        int index = 0;
+
+        while (i != cursor_list.end()) {            
+            const int64_t cursorX = _view.index2pixel((*i)->index());
+            if (xrect.contains(_view.hover_point().x(), _view.hover_point().y()) &&
+                    qAbs(cursorX - _view.hover_point().x()) <= HitCursorMargin)
+                (*i)->paint(p, xrect, 1, index, _view.session().is_stopped_status());
+            else
+                (*i)->paint(p, xrect, 0, index, _view.session().is_stopped_status());
+            i++;
+            index++;
+        }
+    }
 }
 
 void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
@@ -245,28 +271,17 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
     }
 
     // plot cursors
-    //const QRect xrect = QRect(rect().left(), rect().top(), _view.get_view_width(), rect().height());
+    paintCursors(p);
+
     const QRect xrect = _view.get_view_rect();
-    if (_view.cursors_shown() && _type == TIME_VIEW) {
-        auto i = _view.get_cursorList().begin();
-        int index = 0;
-        while (i != _view.get_cursorList().end()) {
-            const int64_t cursorX = _view.index2pixel((*i)->index());
-            if (xrect.contains(_view.hover_point().x(), _view.hover_point().y()) &&
-                    qAbs(cursorX - _view.hover_point().x()) <= HitCursorMargin)
-                (*i)->paint(p, xrect, 1, index, _view.session().is_stopped_status());
-            else
-                (*i)->paint(p, xrect, 0, index, _view.session().is_stopped_status());
-            i++;
-            index++;
-        }
-    }
 
     if (_view.xcursors_shown() && _type == TIME_VIEW) {
-        auto i = _view.get_xcursorList().begin();
+        auto &xcursor_list = _view.get_xcursorList();
+        auto i = xcursor_list.begin();
         int index = 0;
         bool hovered = false;
-        while (i != _view.get_xcursorList().end()) {
+
+        while (i != xcursor_list.end()) {
             const double cursorX  = xrect.left() + (*i)->value(XCursor::XCur_Y)*xrect.width();
             const double cursorY0 = xrect.top() + (*i)->value(XCursor::XCur_X0)*xrect.height();
             const double cursorY1 = xrect.top() + (*i)->value(XCursor::XCur_X1)*xrect.height();
@@ -275,22 +290,27 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
                              (*i)->get_map_rect(xrect).contains(_view.hover_point()))) {
                 (*i)->paint(p, xrect, XCursor::XCur_All, index);
                 hovered = true;
-            } else if(!hovered && xrect.contains(_view.hover_point())) {
+            }
+            else if(!hovered && xrect.contains(_view.hover_point())) {
                 if (qAbs(cursorX - _view.hover_point().x()) <= HitCursorMargin &&
                     _view.hover_point().y() > min(cursorY0, cursorY1) &&
                     _view.hover_point().y() < max(cursorY0, cursorY1)) {
                     (*i)->paint(p, xrect, XCursor::XCur_Y, index);
                     hovered = true;
-                } else if (qAbs(cursorY0 - _view.hover_point().y()) <= HitCursorMargin) {
+                }
+                else if (qAbs(cursorY0 - _view.hover_point().y()) <= HitCursorMargin) {
                     (*i)->paint(p, xrect, XCursor::XCur_X0, index);
                     hovered = true;
-                } else if (qAbs(cursorY1 - _view.hover_point().y()) <= HitCursorMargin) {
+                }
+                else if (qAbs(cursorY1 - _view.hover_point().y()) <= HitCursorMargin) {
                     (*i)->paint(p, xrect, XCursor::XCur_X1, index);
                     hovered = true;
-                } else {
+                }
+                else {
                     (*i)->paint(p, xrect, XCursor::XCur_None, index);
                 }
-            } else {
+            }
+            else {
                 (*i)->paint(p, xrect, XCursor::XCur_None, index);
             }
 
@@ -556,7 +576,8 @@ void Viewport::mousePressEvent(QMouseEvent *event)
         else if (_view.session().get_device()->get_work_mode() == DSO) {
             if (_hover_hit) {
                 const int64_t index = _view.pixel2index(event->pos().x());
-                _view.add_cursor(view::Ruler::CursorColor[_view.get_cursorList().size() % 8], index);
+                auto &cursor_list = _view.get_cursorList();
+                _view.add_cursor(view::Ruler::CursorColor[cursor_list.size() % 8], index);
                 _view.show_cursors(true);
             }
         }
@@ -590,13 +611,17 @@ void Viewport::mousePressEvent(QMouseEvent *event)
                 _action_type = CURS_MOVE;
             }
         }
+ 
         if (_action_type == NO_ACTION && _view.cursors_shown()) {
-            auto i = _view.get_cursorList().begin();
-            while (i != _view.get_cursorList().end()) {
+            auto &cursor_list = _view.get_cursorList();
+            auto i = cursor_list.begin();
+
+            while (i != cursor_list.end()) {
                 const int64_t cursorX = _view.index2pixel((*i)->index());
                 if ((*i)->grabbed()) {
                     _view.get_ruler()->rel_grabbed_cursor();
-                } else if (qAbs(cursorX - event->pos().x()) <= HitCursorMargin) {
+                }
+                else if (qAbs(cursorX - event->pos().x()) <= HitCursorMargin) {
                     _view.get_ruler()->set_grabbed_cursor(*i);
                     _action_type = CURS_MOVE;
                     break;
@@ -604,18 +629,20 @@ void Viewport::mousePressEvent(QMouseEvent *event)
                 i++;
             }
         }
+
         if (_action_type == NO_ACTION && _view.xcursors_shown()) {
-            auto i = _view.get_xcursorList().begin();
+            auto &xcursor_list = _view.get_xcursorList();
+            auto i = xcursor_list.begin();
             const QRect xrect = _view.get_view_rect();
 
-            while (i != _view.get_xcursorList().end()) {
+            while (i != xcursor_list.end()) {
                 const double cursorX  = xrect.left() + (*i)->value(XCursor::XCur_Y)*xrect.width();
                 const double cursorY0 = xrect.top() + (*i)->value(XCursor::XCur_X0)*xrect.height();
                 const double cursorY1 = xrect.top() + (*i)->value(XCursor::XCur_X1)*xrect.height();
                 
                 if ((*i)->get_close_rect(xrect).contains(_view.hover_point())) {
                     _view.del_xcursor(*i);
-                    if (_view.get_xcursorList().empty())
+                    if (xcursor_list.empty())
                         _view.show_xcursors(false);
                     break;
                 }
@@ -636,6 +663,7 @@ void Viewport::mousePressEvent(QMouseEvent *event)
                                 sig_looped = true;
                             }
                         }
+
                         s++;
                         if (s == sigs.end()) {
                             if (no_dsoSig) {
@@ -751,9 +779,11 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
                     _curs_moved = true;
                 } else {
                     if (_view.xcursors_shown()) {
-                        auto i = _view.get_xcursorList().begin();
+                        auto &xcursor_list = _view.get_xcursorList();
+                        auto i = xcursor_list.begin();
                         const QRect xrect = _view.get_view_rect();
-                        while (i != _view.get_xcursorList().end()) {
+
+                        while (i != xcursor_list.end()) {
                             if ((*i)->grabbed() != XCursor::XCur_None) {
                                 if ((*i)->grabbed() == XCursor::XCur_Y) {
                                     double rate = (_view.hover_point().x() - xrect.left()) * 1.0 / xrect.width();
@@ -878,7 +908,8 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                         }
                     }
                 }
-            } else if (_view.session().get_device()->get_work_mode() == DSO) {
+            }
+            else if (_view.session().get_device()->get_work_mode() == DSO) {
                 // priority 0
                 if (_action_type == NO_ACTION && _hover_hit) {
                     _action_type = DSO_YM;
@@ -889,7 +920,8 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                     _dso_ym_start = event->pos().y();
                 }
             }
-        } else if (_action_type == DSO_YM) {
+        }
+        else if (_action_type == DSO_YM) {
             if (event->button() == Qt::LeftButton) {
                 _dso_ym_end = event->pos().y();
                 _action_type = NO_ACTION;
@@ -897,7 +929,8 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                 _action_type = NO_ACTION;
                 _dso_ym_valid = false;
             }
-        } else if (_action_type == DSO_TRIG_MOVE) {
+        }
+        else if (_action_type == DSO_TRIG_MOVE) {
             if (_dso_trig_moved && event->button() == Qt::LeftButton) {
                 _drag_sig = NULL;
                 _action_type = NO_ACTION;
@@ -910,13 +943,14 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                      t->select(false);
                 }                   
             }
-
-        } else if (_action_type == DSO_XM_STEP0) {
+        } 
+        else if (_action_type == DSO_XM_STEP0) {
             if (event->button() == Qt::LeftButton) {
                 _action_type = DSO_XM_STEP1;
                 _dso_xm_valid = true;
             }
-        } else if (_action_type == DSO_XM_STEP1) {
+        }
+        else if (_action_type == DSO_XM_STEP1) {
             if (event->button() == Qt::LeftButton) {
                 _dso_xm_index[1] = _view.pixel2index(event->pos().x());
                 const uint64_t max_index = max(_dso_xm_index[0], _dso_xm_index[1]);
@@ -924,11 +958,13 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                 _dso_xm_index[1] = max_index;
 
                 _action_type = DSO_XM_STEP2;
-            } else if (event->button() == Qt::RightButton) {
+            }
+            else if (event->button() == Qt::RightButton) {
                 clear_dso_xm();
                 measure_updated();
             }
-        } else if (_action_type == DSO_XM_STEP2) {
+        }
+        else if (_action_type == DSO_XM_STEP2) {
             if (event->button() == Qt::LeftButton) {
                 _dso_xm_index[2] = _view.pixel2index(event->pos().x());
                 uint64_t max_index = max(_dso_xm_index[1], _dso_xm_index[2]);
@@ -940,11 +976,13 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                 _dso_xm_index[1] = max_index;
 
                 _action_type = NO_ACTION;
-            } else if (event->button() == Qt::RightButton) {
+            }
+            else if (event->button() == Qt::RightButton) {
                 clear_dso_xm();
                 measure_updated();
             }
-        } else if (_action_type == CURS_MOVE) {
+        }
+        else if (_action_type == CURS_MOVE) {
             if (_curs_moved && event->button() == Qt::LeftButton) {
                 _action_type = NO_ACTION;
                 _view.get_ruler()->rel_grabbed_cursor();
@@ -953,44 +991,54 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
             }
             if (_xcurs_moved && event->button() == Qt::LeftButton) {
                 _action_type = NO_ACTION;
-                auto i = _view.get_xcursorList().begin();
-                while (i != _view.get_xcursorList().end()) {
+                auto &xcursor_list = _view.get_xcursorList();
+                auto i = xcursor_list.begin();
+                
+                while (i != xcursor_list.end()) {
                     (*i)->rel_grabbed();
                     i++;
                 }
+
                 _xcurs_moved = false;
             }
-        } else if (_action_type == LOGIC_EDGE) {
+        }
+        else if (_action_type == LOGIC_EDGE) {
             _action_type = NO_ACTION;
             _edge_rising = 0;
             _edge_falling = 0;
-        } else if (_action_type == LOGIC_JUMP) {
+        }
+        else if (_action_type == LOGIC_JUMP) {
             _action_type = NO_ACTION;
             _edge_rising = 0;
             _edge_falling = 0;
             _edge_hit = false;
-        } else if (_action_type == LOGIC_MOVE) {
+        }
+        else if (_action_type == LOGIC_MOVE) {
             if (_mouse_down_point == event->pos()) {
                 _drag_strength = 0;
                 _drag_timer.stop();
                 _action_type = NO_ACTION;
-            } else {
+            }
+            else {
                 const double strength = _drag_strength*DragTimerInterval*1.0/_elapsed_time.elapsed();
                 if (_elapsed_time.elapsed() < 200 &&
                     abs(_drag_strength) < MinorDragOffsetUp &&
                     abs(strength) > MinorDragRateUp) {
                     _drag_timer.start(DragTimerInterval);
-                } else if (_elapsed_time.elapsed() < 200 &&
+                }
+                else if (_elapsed_time.elapsed() < 200 &&
                            abs(strength) > DragTimerInterval) {
                     _drag_strength = strength * 5;
                     _drag_timer.start(DragTimerInterval);
-                } else {
+                }
+                else {
                     _drag_strength = 0;
                     _drag_timer.stop();
                     _action_type = NO_ACTION;
                 }
             }
-        } else if (_action_type == LOGIC_ZOOM) {
+        }
+        else if (_action_type == LOGIC_ZOOM) {
             if (event->pos().x() != _mouse_down_point.x()) {
                 int64_t newOffset = _view.offset() + (min(event->pos().x(), _mouse_down_point.x()));
                 const double newScale = max(min(_view.scale() * abs(event->pos().x() - _mouse_down_point.x()) / _view.get_view_width(),
@@ -1014,7 +1062,7 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
 
     int mode = _view.session().get_device()->get_work_mode();
 
-    if (mode == LOGIC && _view.session().is_stopped_status()) 
+    if (mode == LOGIC)// && _view.session().is_stopped_status()) 
     {
         if (event->button() == Qt::RightButton) {
             if (_view.scale() == _view.get_maxscale())
@@ -1052,7 +1100,8 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
                 index = _view.pixel2index(curX);
             }
 
-            _view.add_cursor(view::Ruler::CursorColor[_view.get_cursorList().size() % 8], index);
+            auto &cursor_list = _view.get_cursorList();
+            _view.add_cursor(view::Ruler::CursorColor[cursor_list.size() % 8], index);
             _view.show_cursors(true);
         }
 
@@ -1080,7 +1129,8 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
             uint64_t index;
             const double curX = event->pos().x();
             index = _view.pixel2index(curX);
-            _view.add_cursor(view::Ruler::CursorColor[_view.get_cursorList().size() % 8], index);
+            auto &cursor_list = _view.get_cursorList();
+            _view.add_cursor(view::Ruler::CursorColor[cursor_list.size() % 8], index);
             _view.show_cursors(true);
         }
     }
@@ -1680,12 +1730,10 @@ void Viewport::paintMeasure(QPainter &p, QColor fore, QColor back)
             QString delta_text = _view.get_index_delta(_edge_start, _edge_end) +
                                  "/" + QString::number(delta);
             QFontMetrics fm = this->fontMetrics();
-          //  const int rectW = fm.width(delta_text) + 60;
+           
             const int rectW = fm.boundingRect(delta_text).width() + 60;
-
             const int rectH = fm.height() + 10;
-            //const int rectY = (_cur_aftY >= _cur_preY) ? _cur_preY_top : _cur_preY_bottom;
-            //const int rectX = (_cur_aftX >= _cur_preX) ? _cur_preX : _cur_preX - rectW;
+             
             const int rectY = (height() - _view.hover_point().y() < rectH + 20) ? _view.hover_point().y() - 10 - rectH : _view.hover_point().y() + 20;
             const int rectX = (width() - _view.hover_point().x() < rectW) ? _view.hover_point().x() - rectW : _view.hover_point().x();
             QRectF jump_rect = QRectF(rectX, rectY, rectW, rectH);
@@ -1816,14 +1864,16 @@ void Viewport::add_cursor_y()
     uint64_t index;
     //const double curX = _menu_pos.x();
     index = _view.pixel2index(_cur_preX);
-    _view.add_cursor(view::Ruler::CursorColor[_view.get_cursorList().size() % 8], index);
+    auto &cursor_list = _view.get_cursorList();
+    _view.add_cursor(view::Ruler::CursorColor[cursor_list.size() % 8], index);
     _view.show_cursors(true);
 }
 
 void Viewport::add_cursor_x()
 {
     double ypos = (_cur_preY - _view.get_view_rect().top()) * 1.0 / _view.get_view_height();
-    _view.add_xcursor(view::Ruler::CursorColor[_view.get_cursorList().size() % 8], ypos, ypos);
+    auto &cursor_list = _view.get_cursorList();
+    _view.add_xcursor(view::Ruler::CursorColor[cursor_list.size() % 8], ypos, ypos);
     _view.show_xcursors(true);
 }
 

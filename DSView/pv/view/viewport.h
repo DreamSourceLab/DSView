@@ -125,6 +125,7 @@ private:
     void paintSignals(QPainter& p, QColor fore, QColor back);
     void paintProgress(QPainter& p, QColor fore, QColor back);
     void paintMeasure(QPainter &p, QColor fore, QColor back);
+    void paintCursors(QPainter &p);
 
     void measure();
     void start_trigger_timer(int msec);

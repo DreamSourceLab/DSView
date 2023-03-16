@@ -239,20 +239,25 @@ void Ruler::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() & Qt::LeftButton) {
         bool visible;
-        if (!_cursor_sel_visible & !_view.get_cursorList().empty()) {
+        auto &cursor_list = _view.get_cursorList();
+
+        if (!_cursor_sel_visible && cursor_list.size()) {
             _view.show_cursors(true);
-            auto i = _view.get_cursorList().begin();
-            while (i != _view.get_cursorList().end()) {
+            auto i = cursor_list.begin();
+
+            while (i != cursor_list.end()) {
                 const QRect cursor_rect((*i)->get_label_rect(rect(), visible));
                 if ((*i)->get_close_rect(cursor_rect).contains(event->pos())) {
                     _view.del_cursor(*i);
-                    if (_view.get_cursorList().empty()) {
+
+                    if (cursor_list.empty()) {
                         _cursor_sel_visible = false;
                         _view.show_cursors(false);
                     }
                     _hitCursor = true;
                     break;
                 }
+
                 if (cursor_rect.contains(event->pos())) {
                     set_grabbed_cursor(*i);
                     _cursor_sel_visible = false;
@@ -269,31 +274,40 @@ void Ruler::mousePressEvent(QMouseEvent *event)
 void Ruler::mouseReleaseEvent(QMouseEvent *event)
 {
     bool updatedCursor = false;
+
     if (event->button() & Qt::LeftButton) {
         if (!_hitCursor && !_grabbed_marker) {
             if (!_cursor_go_visible) {
                 if (!_cursor_sel_visible) {
                     _cursor_sel_x = event->pos().x();
                     _cursor_sel_visible = true;
-                } else {
+                } 
+                else {
                     int overCursor;
+                    auto &cursor_list = _view.get_cursorList();
                     uint64_t index = _view.pixel2index(_cursor_sel_x);
                     overCursor = in_cursor_sel_rect(event->pos());
+
                     if (overCursor == 0) {
-                        _view.add_cursor(CursorColor[_view.get_cursorList().size() % 8], index);
+                        _view.add_cursor(CursorColor[cursor_list.size() % 8], index);
                         _view.show_cursors(true);
                         updatedCursor = true;
-                    } else if (overCursor > 0) {
-                        auto i = _view.get_cursorList().begin();
-                        while (--overCursor != 0)
-                                i++;
+                    }
+                    else if (overCursor > 0) {
+                        auto i = cursor_list.begin();
+
+                        while (--overCursor != 0){
+                            i++;
+                        }
+
                         (*i)->set_index(index);
                         updatedCursor = true;
                         _view.cursor_moved();
                     }
                     _cursor_sel_visible = false;
                 }
-            } else {
+            } 
+            else {
                 int overCursor;
                 overCursor = in_cursor_sel_rect(event->pos());
                 if (overCursor > 0) {
@@ -325,13 +339,19 @@ void Ruler::mouseReleaseEvent(QMouseEvent *event)
         } else {
             int overCursor;
             overCursor = in_cursor_sel_rect(event->pos());
+            auto &cursor_list = _view.get_cursorList();
+
             if (overCursor > 0) {
-                auto i = _view.get_cursorList().begin();
-                while (--overCursor != 0)
+                auto i = cursor_list.begin();
+
+                while (--overCursor != 0){
                         i++;
+                }
+
                 _view.del_cursor(*i);
             }
-            if (_view.get_cursorList().empty()) {
+
+            if (cursor_list.empty()) {
                 _cursor_sel_visible = false;
                 _view.show_cursors(false);
             }
@@ -455,15 +475,19 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
     } while (x < rect().right());
 
     // Draw the cursors
-    if (!_view.get_cursorList().empty()) {
-        auto i = _view.get_cursorList().begin();
+    auto &cursor_list = _view.get_cursorList();
+
+    if (cursor_list.size()) {
+        auto i = cursor_list.begin();
         int index = 1;
-        while (i != _view.get_cursorList().end()) {
+
+        while (i != cursor_list.end()) {
             (*i)->paint_label(p, rect(), prefix, index, _view.session().is_stopped_status());
             index++;
             i++;
         }
     }
+
     if (_view.trig_cursor_shown()) {
         _view.get_trig_cursor()->paint_fix_label(p, rect(), prefix, 'T', _view.get_trig_cursor()->colour(), false);
     }
@@ -573,10 +597,13 @@ void Ruler::draw_osc_tick_mark(QPainter &p)
     } while (x < rect().right());
 
     // Draw the cursors
-    if (!_view.get_cursorList().empty()) {
-        auto i = _view.get_cursorList().begin();
+    auto &cursor_list = _view.get_cursorList();
+
+    if (!cursor_list.empty()) {
+        auto i = cursor_list.begin();
         int index = 1;
-        while (i != _view.get_cursorList().end()) {
+
+        while (i != cursor_list.end()) {
             (*i)->paint_label(p, rect(), prefix, index, _view.session().is_stopped_status());
             index++;
             i++;
@@ -637,19 +664,24 @@ void Ruler::draw_cursor_sel(QPainter &p)
     };
     p.drawPolygon((_cursor_go_visible ? del_points : points), countof(points));
 
-    if (!_view.get_cursorList().empty()) {
+    auto &cursor_list = _view.get_cursorList();
+
+    if (!cursor_list.empty()) {
         int index = 1;
-        auto i = _view.get_cursorList().begin();
-        while (i != _view.get_cursorList().end()) {
+        auto i = cursor_list.begin();
+
+        while (i != cursor_list.end()) {
             const QRectF cursorRect = get_cursor_sel_rect(index);
             p.setPen(QPen(Qt::black, 1, Qt::DotLine));
             p.drawLine(cursorRect.left(), cursorRect.top() + 3,
                        cursorRect.left(), cursorRect.bottom() - 3);
             p.setPen(QPen(Qt::NoPen));
+
             if (in_cursor_sel_rect(pos) == index)
                 p.setBrush(View::Orange);
             else
                 p.setBrush(CursorColor[(index - 1)%8]);
+
             p.drawRect(cursorRect);
             p.setPen(Qt::black);
             p.drawText(cursorRect, Qt::AlignCenter | Qt::AlignVCenter, QString::number(index));
@@ -664,7 +696,9 @@ int Ruler::in_cursor_sel_rect(QPointF pos)
     if (_cursor_sel_x == -1)
         return -1;
 
-    for (unsigned int i = 0; i < _view.get_cursorList().size() + 1; i++) {
+    auto &cursor_list = _view.get_cursorList();
+
+    for (unsigned int i = 0; i < cursor_list.size() + 1; i++) {
         const QRectF cursorRect = get_cursor_sel_rect(i);
         if (cursorRect.contains(pos))
             return i;

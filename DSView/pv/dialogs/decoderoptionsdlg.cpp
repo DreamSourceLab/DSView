@@ -136,7 +136,9 @@ void DecoderOptionsDlg::load_options_view()
     if (view)
     {  
         int num = 1;
-        for (auto c : view->get_cursorList()){
+        auto &cursor_list = view->get_cursorList();
+        
+        for (auto c : cursor_list){
             //tr
             QString curCursor = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CURSOR), "Cursor") + 
                                 QString::number(num);

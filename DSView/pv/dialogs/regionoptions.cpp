@@ -50,16 +50,19 @@ RegionOptions::RegionOptions(view::View *view, SigSession *session, QWidget *par
     _end_comboBox = new DsComboBox(this);
     _start_comboBox->addItem(RegionStart);
     _end_comboBox->addItem(RegionEnd);
+
     if (_view) {
         int index = 1;
-        for(std::list<view::Cursor*>::iterator i = _view->get_cursorList().begin();
-            i != _view->get_cursorList().end(); i++) {
+        auto &cursor_list = _view->get_cursorList();
+
+        for(auto i = cursor_list.begin(); i != cursor_list.end(); i++) {
             QString curCursor = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CURSOR), "Cursor")+QString::number(index);
             _start_comboBox->addItem(curCursor);
             _end_comboBox->addItem(curCursor);
             index++;
         }
     }
+
     hlayout->addWidget(new QLabel("Start: ", this));
     hlayout->addWidget(_start_comboBox);
     hlayout->addWidget(new QLabel("    ", this));

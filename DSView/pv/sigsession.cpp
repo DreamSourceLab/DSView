@@ -214,6 +214,8 @@ namespace pv
         // Release the old device.
         _device_agent.release();
 
+        _device_status = ST_INIT;
+
         if (ds_active_device(dev_handle) != SR_OK)
         {
             dsv_err("%s", "Switch device error!");
@@ -226,8 +228,6 @@ namespace pv
             dsv_info("Switch to file \"%s\" done.", _device_agent.name().toUtf8().data());
         else
             dsv_info("Switch to device \"%s\" done.", _device_agent.name().toUtf8().data());
-
-        _device_status = ST_INIT;
 
         clear_all_decoder();
 

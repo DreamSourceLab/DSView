@@ -1292,8 +1292,10 @@ void DsoSignal::paint_hover_measure(QPainter &p, QColor fore, QColor back)
         p.drawText(hover_rect, Qt::AlignCenter | Qt::AlignTop | Qt::TextDontClip, hover_str);
     }
 
-    auto i = _view->get_cursorList().begin();
-    while (i != _view->get_cursorList().end()) {
+    auto &cursor_list = _view->get_cursorList();
+    auto i = cursor_list.begin();
+
+    while (i != cursor_list.end()) {
         float pt_value;
         const QPointF pt = get_point((*i)->index(), pt_value);
         if (pt == QPointF(-1, -1)) {

@@ -61,6 +61,7 @@ bool TimeMarker::grabbed()
 {
     return _grabbed;
 }
+
 void TimeMarker::set_grabbed(bool grabbed)
 {
     _grabbed = grabbed;
@@ -83,7 +84,6 @@ void TimeMarker::paint(QPainter &p, const QRect &rect, const bool highlight, int
     if (x <= rect.right()) {
         QColor color = (order == -1) ? _colour : Ruler::CursorColor[order%8];
         p.setPen((_grabbed | highlight) ? QPen(color.lighter(), 2, Qt::DashLine) : QPen(color, 1, Qt::DashLine));
-        //p.drawLine(QPoint(x, rect.top()), QPoint(x, rect.bottom()));
         p.drawLine(QPoint(x, 0), QPoint(x, rect.bottom()));
     }
 }

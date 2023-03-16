@@ -245,8 +245,9 @@ void MeasureDock::cursor_update()
 
     int index = 1;
     QString iconPath = GetIconPath();
-    for(std::list<Cursor*>::iterator i = _view.get_cursorList().begin();
-        i != _view.get_cursorList().end(); i++) {
+    auto &cursor_list = _view.get_cursorList();
+
+    for(auto i = cursor_list.begin();i != cursor_list.end(); i++) {
         QString curCursor = QString::number(index);
 
         QToolButton *del_btn = new QToolButton(_widget);
@@ -286,8 +287,9 @@ void MeasureDock::cursor_moving()
     //TimeMarker* grabbed_marker = _view.get_ruler()->get_grabbed_cursor();
     if (_view.cursors_shown()) {
         int index = 0;
-        for(std::list<Cursor*>::iterator i = _view.get_cursorList().begin();
-            i != _view.get_cursorList().end(); i++) {
+        auto &cursor_list = _view.get_cursorList();
+
+        for(auto i = cursor_list.begin(); i != cursor_list.end(); i++) {
             QString _cur_text = _view.get_cm_time(index) + "/" + QString::number(_view.get_cursor_samples(index));
             _curpos_label_list.at(index)->setText(_cur_text);
             //_curvalue_label_list.at(index)->setText(_view.get_cm_value(index));
@@ -470,7 +472,9 @@ void MeasureDock::del_edge_measure()
 
 void MeasureDock::show_all_coursor()
 {
-    if (_view.get_cursorList().empty()) {
+    auto &cursor_list = _view.get_cursorList();
+
+    if (cursor_list.empty()) {
         dialogs::DSMessageBox msg(this);
         msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_INFORMATION), "Information"));
         msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_PLEASE_INSERT_CURSOR), 
@@ -490,8 +494,8 @@ void MeasureDock::show_all_coursor()
 
     int index = 0;
     QGridLayout *glayout = new QGridLayout(&cursor_dlg);
-    for(std::list<Cursor*>::iterator i = _view.get_cursorList().begin();
-        i != _view.get_cursorList().end(); i++) {
+
+    for(auto i = cursor_list.begin(); i != cursor_list.end(); i++) {
         QPushButton *cursor_btn = new QPushButton(QString::number(index+1), &cursor_dlg);
         set_cursor_btn_color(cursor_btn);
         glayout->addWidget(cursor_btn, index/4, index%4, 1, 1);
@@ -525,8 +529,9 @@ void MeasureDock::set_se_cursor()
 const view::Cursor* MeasureDock::find_cousor(int index)
 {
     int cur_index = 1;
-    for(std::list<Cursor*>::iterator i = _view.get_cursorList().begin();
-        i != _view.get_cursorList().end(); i++) {
+    auto &cursor_list = _view.get_cursorList();
+
+    for(auto i = cursor_list.begin(); i != cursor_list.end(); i++) {
         if (cur_index == index) {
             return (*i);
         }
@@ -538,6 +543,9 @@ const view::Cursor* MeasureDock::find_cousor(int index)
 void MeasureDock::update_dist()
 {
     int dist_index = 0;
+
+    auto &cursor_list = _view.get_cursorList();
+
     for (QVector<QPushButton *>::Iterator i = _dist_s_btn_vec.begin();
          i != _dist_s_btn_vec.end(); i++) {
         bool start_ret, end_ret;
@@ -545,14 +553,14 @@ void MeasureDock::update_dist()
         const unsigned int end = _dist_e_btn_vec[dist_index]->text().toInt(&end_ret) - 1;
 
         if (start_ret) {
-            if (start + 1 > _view.get_cursorList().size()) {
+            if (start + 1 > cursor_list.size()) {
                 (*i)->setText(" ");
                 set_cursor_btn_color((*i));
                 start_ret = false;
             }
         }
         if (end_ret) {
-            if (end + 1 > _view.get_cursorList().size()) {
+            if (end + 1 > cursor_list.size()) {
                 _dist_e_btn_vec[dist_index]->setText(" ");
                 set_cursor_btn_color(_dist_e_btn_vec[dist_index]);
                 end_ret = false;
@@ -578,6 +586,8 @@ void MeasureDock::update_dist()
 void MeasureDock::update_edge()
 {
     int edge_index = 0;
+    auto &cursor_list = _view.get_cursorList();
+
     for (QVector<QPushButton *>::Iterator i = _edge_s_btn_vec.begin();
          i != _edge_s_btn_vec.end(); i++) {
         bool start_ret, end_ret;
@@ -585,14 +595,14 @@ void MeasureDock::update_edge()
         const unsigned int end = _edge_e_btn_vec[edge_index]->text().toInt(&end_ret) - 1;
 
         if (start_ret) {
-            if (start + 1 > _view.get_cursorList().size()) {
+            if (start + 1 > cursor_list.size()) {
                 (*i)->setText(" ");
                 set_cursor_btn_color((*i));
                 start_ret = false;
             }
         }
         if (end_ret) {
-            if (end + 1 > _view.get_cursorList().size()) {
+            if (end + 1 > cursor_list.size()) {
                 _edge_e_btn_vec[edge_index]->setText(" ");
                 set_cursor_btn_color(_edge_e_btn_vec[edge_index]);
                 end_ret = false;
@@ -668,13 +678,19 @@ void MeasureDock::del_cursor()
 {
     int del_index = 0;
     Cursor* cursor = NULL;
-    for (QVector <QToolButton *>::const_iterator i = _cursor_del_btn_vec.begin();
-         i != _cursor_del_btn_vec.end(); i++) {
+    auto &cursor_list = _view.get_cursorList();
+
+    for (auto i = _cursor_del_btn_vec.begin();
+         i != _cursor_del_btn_vec.end(); i++) 
+    {
+
         if ((*i)->isChecked()) {
             int cur_index = 0;
-            std::list<Cursor*>::iterator ite = _view.get_cursorList().begin();
+            auto ite = cursor_list.begin();
+
             while (cur_index++ != del_index)
                 ite++;
+            
             cursor = *ite;
             break;
         }
@@ -683,7 +699,7 @@ void MeasureDock::del_cursor()
 
     if (cursor)
         _view.del_cursor(cursor);
-    if (_view.get_cursorList().empty())
+    if (cursor_list.empty())
         _view.show_cursors(false);
 
     cursor_update();
