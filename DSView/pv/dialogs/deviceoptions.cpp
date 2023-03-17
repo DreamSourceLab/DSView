@@ -44,6 +44,8 @@
 using namespace boost;
 using namespace std;
 
+//--------------------------ChannelLabel
+
 ChannelLabel::ChannelLabel(IChannelCheck *check, QWidget *parent, int chanIndex)
 : QWidget(parent)
 {
@@ -73,10 +75,10 @@ ChannelLabel::ChannelLabel(IChannelCheck *check, QWidget *parent, int chanIndex)
 void ChannelLabel::on_checked()
 {
     assert(_checked);
-    _checked->ChannelChecked(_index);
+    _checked->ChannelChecked(_index, _box);
 }
 
-//--------------------------
+//--------------------------DeviceOptions
  
 namespace pv {
 namespace dialogs {
@@ -156,8 +158,15 @@ DeviceOptions::DeviceOptions(QWidget *parent) :
     _mode_check_timer.start();  
 }
 
-DeviceOptions::~DeviceOptions(){   
-} 
+DeviceOptions::~DeviceOptions()
+{   
+}
+
+void DeviceOptions::ChannelChecked(int index, QObject *object)
+{
+  QCheckBox* sc = dynamic_cast<QCheckBox*>(object);
+  channel_checkbox_clicked(sc);
+}
 
 void DeviceOptions::accept()
 {
@@ -531,10 +540,15 @@ void DeviceOptions::analog_channel_check()
     try_resize_scroll();
 }
 
-void DeviceOptions::channel_enable()
+void DeviceOptions::on_analog_channel_enable()
+{
+    QCheckBox* sc = dynamic_cast<QCheckBox*>(sender());
+    channel_checkbox_clicked(sc);
+}
+
+void DeviceOptions::channel_checkbox_clicked(QCheckBox *sc)
 {
     if (_device_agent->get_work_mode() == LOGIC) {
-        QCheckBox* sc=dynamic_cast<QCheckBox*>(sender());
         if (sc == NULL || !sc->isChecked())
             return;
 
@@ -574,7 +588,6 @@ void DeviceOptions::channel_enable()
         }
     }
     else if (_device_agent->get_work_mode() == ANALOG) {
-        QCheckBox* sc=dynamic_cast<QCheckBox*>(sender());
         if (sc != NULL) {
             QGridLayout *const layout = (QGridLayout *)sc->property("Layout").value<void *>();
             int i = layout->count();
@@ -655,7 +668,7 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
         }
         _probe_options_binding_list.push_back(probe_options_binding);
 
-        connect(probe_checkBox, SIGNAL(released()), this, SLOT(channel_enable()));
+        connect(probe_checkBox, SIGNAL(released()), this, SLOT(on_analog_channel_enable()));
 
         tabWidget->addTab(probe_widget, QString::fromUtf8(probe->name));
     }
@@ -664,11 +677,6 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
 
     _groupHeight2 = tabWidget->sizeHint().height() + 10;
     _dynamic_panel->setFixedHeight(_groupHeight2); 
-}
-
-void DeviceOptions::ChannelChecked(int index)
-{
-   channel_enable();
 }
 
 QString DeviceOptions::dynamic_widget(QLayout *lay)

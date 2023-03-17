@@ -49,7 +49,7 @@ class QScrollArea;
 class IChannelCheck
 {
 public:
-    virtual void ChannelChecked(int index)=0;
+    virtual void ChannelChecked(int index, QObject *object)=0;
 };
 
 class ChannelLabel : public QWidget 
@@ -109,9 +109,11 @@ private:
     void build_dynamic_panel();
     void try_resize_scroll();
 
+    void channel_checkbox_clicked(QCheckBox *sc);
+
 private:
     //IChannelCheck
-    void ChannelChecked(int index);
+    void ChannelChecked(int index, QObject *object);
 
 private slots:
 	void enable_all_probes();
@@ -121,7 +123,7 @@ private slots:
     void channel_check();
     void analog_channel_check();
     void on_calibration();
-    void channel_enable();
+    void on_analog_channel_enable();
 
 private: 
     std::vector<QCheckBox *> _probes_checkBox_list;
