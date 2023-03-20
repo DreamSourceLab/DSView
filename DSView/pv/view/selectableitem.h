@@ -24,7 +24,7 @@
 #define DSVIEW_PV_SELECTABLEITEM_H
 
 #include <list>
-
+#include <QObject>
 #include <QPen>
 
 class QAction;

@@ -24,6 +24,7 @@
 
 #include <QRect>
 #include <QPainter>
+#include <QObject>
 
 namespace pv {
 namespace view {
