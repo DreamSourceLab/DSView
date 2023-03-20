@@ -689,6 +689,7 @@ namespace pv
             s_obj["type"] = s->get_type();
             s_obj["enabled"] = s->enabled();
             s_obj["name"] = s->get_name();
+            
             if (s->get_colour().isValid())
                 s_obj["colour"] = QJsonValue::fromVariant(s->get_colour());
             else

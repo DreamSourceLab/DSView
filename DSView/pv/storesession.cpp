@@ -1070,7 +1070,8 @@ bool StoreSession::json_decoders(QJsonArray &array)
                 } else if (g_variant_is_of_type(opt->def, G_VARIANT_TYPE("s"))) {
                     GVariant *const var = dec_binding->getter(opt->id);
                     if (var != NULL) {
-                        options_obj[opt->id] = QJsonValue::fromVariant(g_variant_get_string(var, NULL));
+                        const char *sz = g_variant_get_string(var, NULL);
+                        options_obj[opt->id] = QJsonValue::fromVariant(QString(sz));
                         g_variant_unref(var);
                     }
                 }else {
@@ -1079,12 +1080,12 @@ bool StoreSession::json_decoders(QJsonArray &array)
             }
 
             if (have_probes) {
-                dec_obj["id"] = QJsonValue::fromVariant(d->id);
+                dec_obj["id"] = QJsonValue::fromVariant(QString(d->id));
                 dec_obj["channel"] = ch_array;
                 dec_obj["options"] = options_obj;
             } else {
                 QJsonObject stack_obj;
-                stack_obj["id"] = QJsonValue::fromVariant(d->id);
+                stack_obj["id"] = QJsonValue::fromVariant(QString(d->id));
                 stack_obj["options"] = options_obj;
                 stack_array.push_back(stack_obj);
             }
