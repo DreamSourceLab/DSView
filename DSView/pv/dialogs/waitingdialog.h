@@ -54,6 +54,8 @@ private:
 
 public:
     WaitingDialog(QWidget *parent, SigSession *session, int key);
+    ~WaitingDialog();
+    
     int start();
 
 protected:

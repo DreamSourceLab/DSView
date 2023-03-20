@@ -689,7 +689,7 @@ namespace pv
             s_obj["type"] = s->get_type();
             s_obj["enabled"] = s->enabled();
             s_obj["name"] = s->get_name();
-            
+
             if (s->get_colour().isValid())
                 s_obj["colour"] = QJsonValue::fromVariant(s->get_colour());
             else
@@ -1638,7 +1638,6 @@ namespace pv
             break;
 
         case DSV_MSG_END_COLLECT_WORK:
-            _session->device_event_object()->device_updated();
             update_toolbar_view_status();           
             break;
 
@@ -1660,6 +1659,7 @@ namespace pv
             reset_all_view();
             _logo_bar->dsl_connected(_session->get_device()->is_hardware());
             update_toolbar_view_status();
+            _session->device_event_object()->device_updated();
 
             if (_device_agent->is_file())
             {

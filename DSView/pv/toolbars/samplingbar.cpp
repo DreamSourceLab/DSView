@@ -336,7 +336,7 @@ namespace pv
             commit_hori_res();
 
             if (_session->is_working() == false)
-                _session->start_capture(true);
+                _session->start_capture(false);
 
             pv::dialogs::WaitingDialog wait(this, _session, SR_CONF_ZERO);
             if (wait.start() == QDialog::Rejected)

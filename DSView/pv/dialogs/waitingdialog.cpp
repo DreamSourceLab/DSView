@@ -93,6 +93,11 @@ WaitingDialog::WaitingDialog(QWidget *parent, SigSession *session, int key) :
     setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_AUTO_CALIBRATION), "Auto Calibration"));
 }
 
+WaitingDialog::~WaitingDialog()
+{
+
+}
+
 void WaitingDialog::accept()
 {
 	using namespace Qt;
