@@ -1005,7 +1005,7 @@ namespace pv
         }
 
         // update UI settings
-        _sampling_bar->update_sample_rate_selector();
+        _sampling_bar->update_sample_rate_list();
         _trigger_widget->device_updated();
         _view->header_updated();
 
@@ -1691,7 +1691,7 @@ namespace pv
             break;
 
         case DSV_MSG_DEVICE_MODE_CHANGED:
-            _sampling_bar->update_sample_rate_selector();
+            _sampling_bar->update_sample_rate_list();
             _view->mode_changed(); 
             reset_all_view();
             load_device_config();
@@ -1759,7 +1759,13 @@ namespace pv
             break;
 
         case DSV_MSG_CLEAR_DECODE_DATA:
-            _protocol_widget->ResetView();
+            _protocol_widget->reset_view();
+            break;
+        
+        case DSV_MSG_STORE_CONF_PREV:
+            if (_device_agent->is_hardware() && _session->have_hardware_data() == false){
+                _sampling_bar->commit_settings();
+            }
             break;
         }
     }

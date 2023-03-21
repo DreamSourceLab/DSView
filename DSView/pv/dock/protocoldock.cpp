@@ -999,7 +999,7 @@ bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const Decod
      }
  }
 
- void ProtocolDock::ResetView()
+ void ProtocolDock::reset_view()
  {
     decoded_progress(0);
  }

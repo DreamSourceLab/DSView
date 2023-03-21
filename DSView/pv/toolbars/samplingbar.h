@@ -84,7 +84,6 @@ namespace pv
             void update_view_status();
             void config_device();
             ds_device_handle get_next_device_handle();
-            void update_sample_rate_selector();
 
             inline void set_view(view::View *view){
                 _view = view;
@@ -93,6 +92,13 @@ namespace pv
             void run_or_stop();
 
             void run_or_stop_instant();
+
+            inline void update_sample_rate_list()
+            {
+                update_sample_rate_selector();
+            }
+
+            void commit_settings();
 
         signals:
             void sig_store_session_data();
@@ -103,11 +109,12 @@ namespace pv
             void reStyle();
             void set_sample_rate(uint64_t sample_rate);
             double commit_hori_res();
+
+            void update_sample_rate_selector();
            
             void update_sample_rate_selector_value();
             void update_sample_count_selector();
-            void update_sample_count_selector_value();
-            void commit_settings();
+            void update_sample_count_selector_value();         
             void setting_adj();
             void enable_toggle(bool enable);
             void update_mode_icon();

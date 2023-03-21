@@ -273,7 +273,7 @@ namespace pv
             {
                 _session->broadcast_msg(DSV_MSG_DEVICE_OPTIONS_UPDATED);
 
-                update_sample_rate_selector();
+                update_sample_rate_list();
 
                 int mode = _device_agent->get_work_mode();
                 GVariant *gvar;
@@ -634,7 +634,8 @@ namespace pv
             {
                 for (int i = 0; i < _sample_count.count(); i++)
                 {
-                    if (pre_duration >= _sample_count.itemData(i).value<double>())
+                    double sel_val = _sample_count.itemData(i).value<double>();
+                    if (pre_duration >= sel_val)
                     {
                         _sample_count.setCurrentIndex(i);
                         break;
@@ -690,11 +691,13 @@ namespace pv
             assert(!_updating_sample_count);
             _updating_sample_count = true;
 
-            if (duration != _sample_count.itemData(_sample_count.currentIndex()).value<double>())
+            double cur_duration = _sample_count.itemData(_sample_count.currentIndex()).value<double>();
+            if (duration != cur_duration)
             {
                 for (int i = 0; i < _sample_count.count(); i++)
                 {
-                    if (duration >= _sample_count.itemData(i).value<double>())
+                    double sel_val = _sample_count.itemData(i).value<double>();
+                    if (duration >= sel_val)
                     {
                         _sample_count.setCurrentIndex(i);
                         break;
@@ -1132,7 +1135,7 @@ namespace pv
             _device_selector.setCurrentIndex(select_index);
 
             if (cur_dev_handle != _last_device_handle){                
-                update_sample_rate_selector();
+                update_sample_rate_list();
                 _last_device_handle = cur_dev_handle;                
             }
 

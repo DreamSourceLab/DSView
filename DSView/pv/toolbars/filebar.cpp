@@ -32,6 +32,7 @@
 
 #include "../ui/langresource.h"
 #include "../log.h"
+#include "../interface/icallbacks.h"
 
 namespace pv {
 namespace toolbars {
@@ -103,8 +104,6 @@ void FileBar::changeEvent(QEvent *event)
         reStyle();
     QToolBar::changeEvent(event);
 }
-
-
 
 void FileBar::retranslateUi()
 {
@@ -223,6 +222,8 @@ void FileBar::on_actionStore_triggered()
             app._userHistory.sessionDir = fname;
             app.SaveHistory();
         }
+
+        _session->broadcast_msg(DSV_MSG_STORE_CONF_PREV);
          
         sig_store_session(file_name);
     }
