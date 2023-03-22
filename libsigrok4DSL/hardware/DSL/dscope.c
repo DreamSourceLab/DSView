@@ -32,9 +32,9 @@ static int dev_destroy(struct sr_dev_inst *sdi);
 enum DSCOPE_OPERATION_MODE
 {
     /** Normal */
-    OP_NORMAL = 0,
+    DS_OP_NORMAL = 0,
     /** Internal pattern test mode */
-    OP_INTEST = 1,
+    DS_OP_INTEST = 1,
 };
 
 enum {
@@ -43,8 +43,8 @@ enum {
 };
 
 static const struct sr_list_item opmode_list[] = {
-    {OP_NORMAL,"Normal"},
-    {OP_INTEST,"Internal Test"},
+    {DS_OP_NORMAL,"Normal"},
+    {DS_OP_INTEST,"Internal Test"},
     {-1, NULL},
 };
 
@@ -56,8 +56,8 @@ static const struct sr_list_item bandwidth_list[] = {
 
 static struct lang_text_map_item lang_text_map[] = 
 {
-	{SR_CONF_OPERATION_MODE, OP_NORMAL, "Normal", "正常"},
-	{SR_CONF_OPERATION_MODE, OP_INTEST, "Internal Test", "内部测试"},
+	{SR_CONF_OPERATION_MODE, DS_OP_NORMAL, "Normal", "正常"},
+	{SR_CONF_OPERATION_MODE, DS_OP_INTEST, "Internal Test", "内部测试"},
 
     {SR_CONF_BANDWIDTH_LIMIT, BW_FULL, "Full Bandwidth", "全带宽"},
 	{SR_CONF_BANDWIDTH_LIMIT, BW_20M, "20MHz", NULL},
@@ -139,7 +139,7 @@ static struct DSL_context *DSCope_dev_new(const struct DSL_profile *prof)
     devc->clock_type = FALSE;
     devc->clock_edge = FALSE;
     devc->instant = FALSE;
-    devc->op_mode = OP_NORMAL;
+    devc->op_mode = DS_OP_NORMAL;
     devc->test_mode = SR_TEST_NONE;
     devc->stream = FALSE;
     devc->ch_mode = prof->dev_caps.default_channelmode;
@@ -1349,7 +1349,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 sr_dbg("%s: Initial setting for DSO mode", __func__);
             else
                 sr_dbg("%s: Initial setting for DSO mode failed", __func__);
-            devc->op_mode = OP_NORMAL;
+            devc->op_mode = DS_OP_NORMAL;
             devc->test_mode = SR_TEST_NONE;
             devc->instant = FALSE;
             for (i = 0; i < ARRAY_SIZE(channel_modes); i++) {
@@ -1369,7 +1369,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 sr_dbg("%s: Initial setting for DSO mode", __func__);
             else
                 sr_dbg("%s: Initial setting for DSO mode failed", __func__);
-            devc->op_mode = OP_NORMAL;
+            devc->op_mode = DS_OP_NORMAL;
             devc->test_mode = SR_TEST_NONE;
             devc->instant = TRUE;
             for (i = 0; i < ARRAY_SIZE(channel_modes); i++) {
@@ -1391,12 +1391,12 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     } 
     else if (id == SR_CONF_OPERATION_MODE) {
         nv = g_variant_get_int16(data);
-        if (nv == OP_NORMAL) {
-            devc->op_mode = OP_NORMAL;
+        if (nv == DS_OP_NORMAL) {
+            devc->op_mode = DS_OP_NORMAL;
             devc->test_mode = SR_TEST_NONE;
         }
-        else if (nv == OP_INTEST) {
-            devc->op_mode = OP_INTEST;
+        else if (nv == DS_OP_INTEST) {
+            devc->op_mode = DS_OP_INTEST;
             devc->test_mode = SR_TEST_INTERNAL;
         } 
         else {

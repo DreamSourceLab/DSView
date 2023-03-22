@@ -38,20 +38,6 @@ static const char *maxHeights[] = {
     "5X",
 };
 
-enum DSLOGIC_OPERATION_MODE
-{
-    /** Buffer mode */
-    OP_BUFFER = 0,
-    /** Stream mode */
-    OP_STREAM = 1,
-    /** Internal pattern test mode */
-    OP_INTEST = 2,
-    /** External pattern test mode */
-    OP_EXTEST = 3,
-    /** SDRAM loopback test mode */
-    OP_LPTEST = 4,
-};
-
 /** Device buffer mode */
 enum DSLOGIC_BUFFER_OPT_MODE
 {
@@ -62,9 +48,9 @@ enum DSLOGIC_BUFFER_OPT_MODE
 };
 
 static const struct sr_list_item opmode_list[] = {
-    {OP_BUFFER,"Buffer Mode"},
-    {OP_STREAM,"Stream Mode"},
-    {OP_INTEST,"Internal Test"},
+    {LO_OP_BUFFER,"Buffer Mode"},
+    {LO_OP_STREAM,"Stream Mode"},
+    {LO_OP_INTEST,"Internal Test"},
     //{OP_EXTEST,"External Test"},  // Removed
     //{OP_LPTEST,"DRAM Loopback Test"},
     {-1, NULL},
@@ -93,11 +79,11 @@ static struct sr_list_item channel_mode_list[CHANNEL_MODE_LIST_LEN];
 
 static struct lang_text_map_item lang_text_map[] = 
 {
-	{SR_CONF_OPERATION_MODE, OP_BUFFER, "Buffer Mode", "Buffer模式"},
-	{SR_CONF_OPERATION_MODE, OP_STREAM, "Stream Mode", "Stream模式"},
-	{SR_CONF_OPERATION_MODE, OP_INTEST, "Internal Test", "内部测试"},
-	{SR_CONF_OPERATION_MODE, OP_EXTEST, "External Test", "外部测试"},
-	{SR_CONF_OPERATION_MODE, OP_LPTEST, "DRAM Loopback Test", "内存回环测试"},
+	{SR_CONF_OPERATION_MODE, LO_OP_BUFFER, "Buffer Mode", "Buffer模式"},
+	{SR_CONF_OPERATION_MODE, LO_OP_STREAM, "Stream Mode", "Stream模式"},
+	{SR_CONF_OPERATION_MODE, LO_OP_INTEST, "Internal Test", "内部测试"},
+    {SR_CONF_OPERATION_MODE, LO_OP_EXTEST, "External Test", "外部测试"},
+    {SR_CONF_OPERATION_MODE, LO_OP_LPTEST, "DRAM Loopback Test", "内存回环测试"},
 
     {SR_CONF_BUFFER_OPTIONS, SR_BUF_STOP, "Stop immediately", "立即停止"},
     {SR_CONF_BUFFER_OPTIONS, SR_BUF_UPLOAD, "Upload captured data", "上传已采集的数据"},
@@ -240,10 +226,10 @@ static struct DSL_context *DSLogic_dev_new(const struct DSL_profile *prof)
     devc->clock_edge = FALSE;
     devc->rle_mode = FALSE;
     devc->instant = FALSE;
-	devc->op_mode = OP_STREAM;
+	devc->op_mode = LO_OP_STREAM;
     devc->test_mode = SR_TEST_NONE;
 	devc->ch_mode = prof->dev_caps.default_channelmode;
-    devc->stream = (devc->op_mode == OP_STREAM);
+    devc->stream = (devc->op_mode == LO_OP_STREAM);
     devc->buf_options = SR_BUF_UPLOAD;
     devc->th_level = SR_TH_3V3;
     devc->vth = 1.0;
@@ -953,7 +939,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, NULL, SR_CONF_DSO_SYNC));
             if (ret != SR_OK)
                 sr_dbg("%s: DAQ configuration sync failed", __func__);
-            devc->op_mode = OP_STREAM;
+            devc->op_mode = LO_OP_STREAM;
             devc->test_mode = SR_TEST_NONE;
             for (i = 0; i < ARRAY_SIZE(channel_modes); i++) {
                 if (channel_modes[i].mode == ANALOG &&
@@ -984,8 +970,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 
         if (sdi->mode == LOGIC && devc->op_mode != nv) 
         {
-            if (nv == OP_BUFFER) {
-                devc->op_mode = OP_BUFFER;
+            if (nv == LO_OP_BUFFER) {
+                devc->op_mode = LO_OP_BUFFER;
                 devc->test_mode = SR_TEST_NONE;
                 devc->stream = FALSE;
                 
@@ -998,8 +984,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                     }
                 }
             } 
-            else if (nv == OP_STREAM) {
-                devc->op_mode = OP_STREAM;
+            else if (nv == LO_OP_STREAM) {
+                devc->op_mode = LO_OP_STREAM;
                 devc->test_mode = SR_TEST_NONE;
                 devc->stream = TRUE;
                 
@@ -1012,8 +998,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                     }
                 }
             } 
-            else if (nv == OP_INTEST) {
-                devc->op_mode = OP_INTEST;
+            else if (nv == LO_OP_INTEST) {
+                devc->op_mode = LO_OP_INTEST;
                 devc->test_mode = SR_TEST_INTERNAL;
                 devc->ch_mode = devc->profile->dev_caps.intest_channel;
                 devc->stream = !(devc->profile->dev_caps.feature_caps & CAPS_FEATURE_BUF);
@@ -1025,7 +1011,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             dsl_adjust_probes(sdi, channel_modes[devc->ch_mode].num);
             dsl_adjust_samplerate(devc);
 
-            if (devc->op_mode == OP_INTEST) {
+            if (devc->op_mode == LO_OP_INTEST) {
                 devc->cur_samplerate = devc->stream ? channel_modes[devc->ch_mode].max_samplerate / 10 :
                                                       SR_MHZ(100);
                 devc->limit_samples = devc->stream ? devc->cur_samplerate * 3 :

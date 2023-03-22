@@ -345,5 +345,18 @@ GSList *DeviceAgent::get_channels()
     return false;
  }
 
+ bool DeviceAgent::get_config_value_int16(int key, int &value)
+ {  
+    GVariant* gvar = this->get_config(NULL, NULL, key);
+    
+    if (gvar != NULL) {
+        value = g_variant_get_int16(gvar);
+        g_variant_unref(gvar);
+        return true;
+    }
+
+    return false;
+ }
+
 //---------------device config end -----------/
 

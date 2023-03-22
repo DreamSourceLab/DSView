@@ -310,6 +310,8 @@ namespace pv
                             _sample_rate.setDisabled(false);
                     }
                 }
+
+                this->reload();
             }
 
             _session->broadcast_msg(DSV_MSG_END_DEVICE_OPTIONS);
@@ -901,7 +903,7 @@ namespace pv
             if (_instant_action->isVisible() == false){
                 return;
             }
-            
+
             if (_session->is_working())
             {
                 bool wait_upload = false;
@@ -956,7 +958,7 @@ namespace pv
                         else
                         {
                             _device_agent->set_config(NULL, NULL, SR_CONF_ZERO, g_variant_new_boolean(false));
-                                update_view_status();
+                            update_view_status();
                         }
                         return;
                     }
@@ -1041,28 +1043,37 @@ namespace pv
         {
             QString iconPath = GetIconPath();
 
-            if (_device_agent->get_work_mode() == LOGIC)
+            int mode = _device_agent->get_work_mode();
+
+            if (mode == LOGIC)
             {
-                if (_device_agent->name() == "virtual-session")
-                {
+                if (_device_agent->is_file()){
                     _mode_action->setVisible(false);
                 }
                 else
                 {
-
                     update_mode_icon();
                     _mode_action->setVisible(true);
+                    _action_repeat->setVisible(true);
+
+                    if (_device_agent->is_hardware())
+                    {
+                        int mode_val = 0;
+                        if (_device_agent->get_config_value_int16(SR_CONF_OPERATION_MODE, mode_val)){                  
+                            _action_realtime->setVisible(mode_val == LO_OP_STREAM);
+                        }
+                    }                  
                 }
                 _run_stop_action->setVisible(true);
-                _instant_action->setVisible(true);
+                _instant_action->setVisible(true);              
             }
-            else if (_device_agent->get_work_mode() == ANALOG)
+            else if (mode == ANALOG)
             {
                 _mode_action->setVisible(false);
                 _run_stop_action->setVisible(true);
                 _instant_action->setVisible(false);
             }
-            else if (_device_agent->get_work_mode() == DSO)
+            else if (mode == DSO)
             {
                 _mode_action->setVisible(false);
                 _run_stop_action->setVisible(true);
@@ -1156,8 +1167,8 @@ namespace pv
             on_configure();
         }
 
-         void SamplingBar::update_view_status()
-         {
+        void SamplingBar::update_view_status()
+        {
             int bEnable = _session->is_working() == false;
             int mode = _session->get_device()->get_work_mode();
 
@@ -1169,10 +1180,6 @@ namespace pv
             _mode_button.setEnabled(bEnable);
             _configure_button.setEnabled(bEnable);
             _device_selector.setEnabled(bEnable);
-
-            bool bNotFile = _session->get_device()->is_file() == false;
-            _action_repeat->setVisible(bNotFile);
-            _action_realtime->setVisible(bNotFile);
 
             if (_session->get_device()->is_file()){
                 _sample_rate.setEnabled(false);

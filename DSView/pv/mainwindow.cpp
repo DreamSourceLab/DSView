@@ -1767,6 +1767,10 @@ namespace pv
                 _sampling_bar->commit_settings();
             }
             break;
+
+        case DSV_MSG_END_DEVICE_OPTIONS:            
+            break;
+
         }
     }
 

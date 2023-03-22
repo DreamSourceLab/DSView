@@ -306,6 +306,20 @@ enum {
 	SR_MQFLAG_SPL_PCT_OVER_ALARM = 0x10000,
 };
 
+enum DSLOGIC_OPERATION_MODE
+{
+    /** Buffer mode */
+    LO_OP_BUFFER = 0,
+    /** Stream mode */
+    LO_OP_STREAM = 1,
+    /** Internal pattern test mode */
+    LO_OP_INTEST = 2,
+    /** External pattern test mode */
+    LO_OP_EXTEST = 3,
+    /** SDRAM loopback test mode */
+    LO_OP_LPTEST = 4,
+};
+
 enum DSO_MEASURE_TYPE {
     DSO_MS_BEGIN = 0,
     DSO_MS_FREQ,

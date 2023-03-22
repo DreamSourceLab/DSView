@@ -103,6 +103,8 @@ public:
 
     bool set_channel_name(int ch_index, const char *name);
 
+    bool get_config_value_int16(int key, int &value);
+
     /**
 	 * @brief Gets the sample limit from the driver.
 	 *
