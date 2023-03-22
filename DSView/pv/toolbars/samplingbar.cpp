@@ -898,6 +898,10 @@ namespace pv
 
         void SamplingBar::on_instant_stop()
         {
+            if (_instant_action->isVisible() == false){
+                return;
+            }
+            
             if (_session->is_working())
             {
                 bool wait_upload = false;
