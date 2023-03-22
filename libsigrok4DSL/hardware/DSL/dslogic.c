@@ -65,8 +65,8 @@ static const struct sr_list_item opmode_list[] = {
     {OP_BUFFER,"Buffer Mode"},
     {OP_STREAM,"Stream Mode"},
     {OP_INTEST,"Internal Test"},
-    {OP_EXTEST,"External Test"},
-    {OP_LPTEST,"DRAM Loopback Test"},
+    //{OP_EXTEST,"External Test"},  // Removed
+    //{OP_LPTEST,"DRAM Loopback Test"},
     {-1, NULL},
 };
 
