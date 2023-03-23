@@ -458,14 +458,25 @@ namespace pv
 
         int run_dex = 0;
         clear_all_decode_task(run_dex);
+
+        _capture_data->clear();
+        _view_data->clear();
         
-        // If switch the data buffer    
-        if (_view_data != _capture_data){
-            _capture_data->clear();
+        if (_device_agent.get_work_mode() == LOGIC && is_repeat_mode())
+        {
+            if (_view_data == _capture_data){
+                for (auto dt : _data_list){
+                    if (dt != _view_data){
+                        _capture_data = dt;
+                        break;
+                    }
+                }
+            }
+        }
+        else{
             _capture_data = _view_data;
         }
-        _view_data->clear();
-
+       
         update_view();
 
         // update setting
@@ -631,7 +642,7 @@ namespace pv
         sr_status status;
 
         if (_device_agent.get_status(status, true))
-        {
+        { 
             triggered = status.trig_hit & 0x01;
             uint64_t captured_cnt = status.trig_hit >> 2;
             captured_cnt = ((uint64_t)status.captured_cnt0 +
@@ -647,6 +658,7 @@ namespace pv
                 progress = (sample_limits - captured_cnt) * 100.0 / sample_limits;
             else
                 progress = captured_cnt * 100.0 / sample_limits;
+
             return true;
         }
         return false;

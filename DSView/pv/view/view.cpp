@@ -1138,14 +1138,10 @@ void View::repeat_show()
     _viewbottom->update();
 }
 
-void View::update_capture_status()
+void View::show_captured_progress(bool triggered, int progress)
 {
-    bool triggered;
-    int progress;
-    if (_session->get_capture_status(triggered, progress)) {
-        _viewbottom->set_capture_status(triggered, progress);
-        _viewbottom->update();
-    }
+    _viewbottom->set_capture_status(triggered, progress);
+    _viewbottom->update();
 }
 
 bool View::get_dso_trig_moved()

@@ -280,7 +280,7 @@ public:
 
     void viewport_update();
 
-    void update_capture_status();
+    void show_captured_progress(bool triggered, int progress);
 
     bool get_dso_trig_moved();
 

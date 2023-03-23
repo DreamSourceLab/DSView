@@ -187,9 +187,18 @@ void Viewport::doPaint()
             paintSignals(p, fore, back);
         }
         else if (_view.session().is_running_status()){
-            if (_view.session().is_repeat_mode())// && !_transfer_started) 
+            if (_view.session().is_repeat_mode())
             {
                 paintSignals(p, fore, back);
+
+                if (!_transfer_started){
+                    bool triggered;
+                    int captured_progress;
+         
+                    if (_view.session().get_capture_status(triggered, captured_progress)){
+                        _view.show_captured_progress(_transfer_started, captured_progress);
+                    }
+                }
             }
             else if (_type == TIME_VIEW) {
                 _view.repeat_unshow();
@@ -414,6 +423,13 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
     }
 }
 
+void Viewport::get_captured_progress(double &progress, int &progress100)
+{ 
+    const uint64_t sample_limits = _view.session().cur_samplelimits();
+    progress = -(_sample_received * 1.0 / sample_limits * 360 * 16);
+    progress100 = ceil(progress / -3.6 / 16);
+}
+
 void Viewport::paintProgress(QPainter &p, QColor fore, QColor back)
 {
     (void)back;
@@ -427,9 +443,12 @@ void Viewport::paintProgress(QPainter &p, QColor fore, QColor back)
 
     const uint64_t sample_limits = _view.session().cur_samplelimits();
 
-    double progress = -(_sample_received * 1.0 / sample_limits * 360 * 16);
+    double progress = 0;
+    int progress100 = 0;
     int captured_progress = 0;
 
+    get_captured_progress(progress, progress100);
+ 
     p.setRenderHint(QPainter::Antialiasing, true);
     p.setPen(Qt::gray);
     p.setBrush(Qt::NoBrush);
@@ -440,6 +459,7 @@ void Viewport::paintProgress(QPainter &p, QColor fore, QColor back)
     p.drawArc(cenPos.x() - radius, cenPos.y() - radius, 2* radius, 2 * radius, 180 * 16, progress);
 
     p.setPen(Qt::gray);
+
     const QPoint logoPoints[] = {
         QPoint(cenPos.x() - 0.75 * radius, cenPos.y()),
         QPoint(cenPos.x() - 0.75 * radius, cenPos.y() + 0.15 * radius),
@@ -462,6 +482,7 @@ void Viewport::paintProgress(QPainter &p, QColor fore, QColor back)
         QPoint(cenPos.x() + 0.75 * radius, cenPos.y()),
         QPoint(cenPos.x() + 0.75 * radius, cenPos.y() - 0.15 * radius)
     };
+
     const int logoRadius = 10;
     p.drawLine(logoPoints[0], logoPoints[1]);
     p.drawLine(logoPoints[2], logoPoints[3]);
@@ -511,6 +532,7 @@ void Viewport::paintProgress(QPainter &p, QColor fore, QColor back)
         p.drawEllipse(cenRightPos, trigger_radius, trigger_radius);
 
         bool triggered;
+         
         if (_view.session().get_capture_status(triggered, captured_progress)){
             p.setPen(View::Blue);
             QFont font=p.font();
@@ -518,26 +540,29 @@ void Viewport::paintProgress(QPainter &p, QColor fore, QColor back)
             font.setBold(true);
             p.setFont(font);
             QRect status_rect = QRect(cenPos.x() - radius, cenPos.y() + radius * 0.4, radius * 2, radius * 0.5);
+            
             if (triggered) {
                 p.drawText(status_rect,
                            Qt::AlignCenter | Qt::AlignVCenter,
                            L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIGGERED), "Triggered! ") + QString::number(captured_progress) 
                            + L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CAPTURED), "% Captured"));
                 _view.set_trig_time();
-            } else {
+            }
+            else {
                 p.drawText(status_rect,
                            Qt::AlignCenter | Qt::AlignVCenter,
                            L_S(STR_PAGE_DLG, S_ID(IDS_DLG_WAITING_FOR_TRIGGER), "Waiting for Trigger! ") + QString::number(captured_progress) 
                            + L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CAPTURED), "% Captured"));
             }
+
             prgRate(captured_progress);
         }
 
-    } else {
+    }
+    else {
         if (!_view.trig_time_setted())
-            _view.set_trig_time();
-
-        const int progress100 = ceil(progress / -3.6 / 16);
+            _view.set_trig_time(); 
+         
         p.setPen(View::Green);
         QFont font=p.font();
         font.setPointSize(50);
@@ -1253,7 +1278,6 @@ bool Viewport::gestureEvent(QNativeGestureEvent *event)
 void Viewport::leaveEvent(QEvent *)
 {
     _mouse_point = QPoint(-1, -1);
-    //_view.show_cursors(false);
 
     if (_action_type == LOGIC_EDGE) {
         _edge_rising = 0;
@@ -1291,6 +1315,7 @@ void Viewport::set_receive_len(quint64 length)
     }
     else {
         stop_trigger_timer();
+
         if (_sample_received + length > _view.session().cur_samplelimits())
             _sample_received = _view.session().cur_samplelimits();
         else
@@ -1298,20 +1323,23 @@ void Viewport::set_receive_len(quint64 length)
     } 
 
     if (_view.session().get_device()->get_work_mode() == LOGIC)
-    {  
-        if (_view.session().is_realtime_mode() && _view.session().have_new_realtime_refresh(true) == false){
-            return;
-        }
-
+    {   
         if (_view.session().is_repeat_mode())
         {
-            _view.update_capture_status();
+            double progress = 0;
+            int progress100 = 0;
+            get_captured_progress(progress, progress100);
+            _view.show_captured_progress(_transfer_started, progress100);
 
-            //  On repeate mode, Not to refresh view when capturring.
-            if (_view.session().is_single_buffer() == false){
+            // Do not to refresh the view until data collection is complete.
+            return;
+        }
+        else if (_view.session().is_realtime_mode())
+        {
+            if (_view.session().have_new_realtime_refresh(true) == false){
                 return;
-            } 
-        }               
+            }
+        }      
     }
 
     // Received new data, and refresh the view.

@@ -130,6 +130,8 @@ private:
     void measure();
     void start_trigger_timer(int msec);
 
+    void get_captured_progress(double &progress, int &progress100);
+
 private slots:
     void on_trigger_timer();
     void on_drag_timer();
