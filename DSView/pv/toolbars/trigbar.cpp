@@ -331,6 +331,15 @@ void TrigBar::on_actionLissajous_triggered()
     _search_button.setEnabled(bEnable);
     _function_button.setEnabled(bEnable);
     _setting_button.setEnabled(bEnable);
+
+    if (_session->is_working() && _session->get_device()->get_work_mode() == DSO){
+        if (_session->is_instant() == false){
+            _trig_button.setEnabled(true);
+            _measure_button.setEnabled(true);
+            _function_button.setEnabled(true);
+            _setting_button.setEnabled(true);
+        }
+    }
  }
 
 } // namespace toolbars

@@ -175,6 +175,12 @@ public:
     double cur_snap_sampletime();
     double cur_view_time();
 
+    inline bool re_start(){
+        if (_is_working)
+            stop_capture();
+        start_capture(_is_instant);
+    } 
+
     inline void set_session_time(QDateTime time){
          _session_time = time;
     }

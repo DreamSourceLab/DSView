@@ -1173,10 +1173,6 @@ namespace pv
             int mode = _session->get_device()->get_work_mode();
 
             _device_type.setEnabled(bEnable);
-            _configure_button.setEnabled(bEnable);            
-            _mode_button.setEnabled(bEnable);
-            _device_type.setEnabled(bEnable);
-
             _mode_button.setEnabled(bEnable);
             _configure_button.setEnabled(bEnable);
             _device_selector.setEnabled(bEnable);
@@ -1188,6 +1184,11 @@ namespace pv
             else if (mode == DSO){               
                 _sample_rate.setEnabled(false);
                 _sample_count.setEnabled(bEnable);
+
+                if (_session->is_working() && _session->is_instant() == false)
+                {
+                    _sample_count.setEnabled(true);
+                }
             }
             else{
                 _sample_rate.setEnabled(bEnable);

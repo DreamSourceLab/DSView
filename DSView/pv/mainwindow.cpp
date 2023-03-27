@@ -1696,7 +1696,7 @@ namespace pv
         case DSV_MSG_DEVICE_OPTIONS_UPDATED:
             _trigger_widget->device_updated();
             _measure_widget->reload();
-            _view->check_calibration();
+            _view->check_calibration();                      
             break;
 
         case DSV_MSG_DEVICE_DURATION_UPDATED:

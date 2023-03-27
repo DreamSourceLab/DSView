@@ -1156,7 +1156,7 @@ void DsoSignal::paint_type_options(QPainter &p, int right, const QPoint pt, QCol
 }
 
 bool DsoSignal::mouse_press(int right, const QPoint pt)
-{ 
+{
     int y = get_y();
     const QRectF vDial_rect = get_rect(DSO_VDIAL, y, right);
     const QRectF chEn_rect = get_rect(DSO_CHEN, y, right);
