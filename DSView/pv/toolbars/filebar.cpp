@@ -192,12 +192,21 @@ void FileBar::on_actionDefault_triggered()
              "Cannot find default session file for this device!"), this);
           return;
     }
+   
+    QString file_name = genDefaultSessionFile();
+    
+    sig_load_session(file_name);
+}
+
+QString FileBar::genDefaultSessionFile()
+{   
+    QDir dir(GetResourceDir());
 
     QString driver_name = _session->get_device()->driver_name();
     QString mode_name = QString::number(_session->get_device()->get_work_mode());
     QString file_name = dir.absolutePath() + "/" + driver_name + mode_name +".def.dsc";
 
-    sig_load_session(file_name);
+    return file_name;
 }
 
 void FileBar::on_actionStore_triggered()

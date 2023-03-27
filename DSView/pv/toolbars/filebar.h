@@ -44,6 +44,8 @@ public:
 
     void update_view_status();
 
+    QString genDefaultSessionFile();
+
 private:
     void changeEvent(QEvent *event);
     void retranslateUi();

@@ -1513,11 +1513,25 @@ namespace pv
         { 
             QString ses_name = genSessionFileName(true);
 
+            bool bExist = false;
+
             QFile sf(ses_name);
             if (!sf.exists()){
                 dsv_info("Try to load the low version session file.");
                 ses_name =  genSessionFileName(false);
             }
+            else{
+                bExist = true;
+            }
+
+            if (!bExist)
+            {
+                QFile sf2(ses_name);
+                if (!sf2.exists()){
+                    dsv_info("Try to load the default session file.");
+                    ses_name = _file_bar->genDefaultSessionFile();
+                }
+            }            
 
             on_load_session(ses_name);
         }
