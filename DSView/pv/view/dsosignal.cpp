@@ -109,7 +109,7 @@ DsoSignal::DsoSignal(data::DsoSnapshot *data,
 
 DsoSignal::DsoSignal(const DsoSignal &o)
 :Signal(NULL)
-{
+{    
 }
 
 DsoSignal::DsoSignal(DsoSignal &o)
@@ -119,7 +119,7 @@ DsoSignal::DsoSignal(DsoSignal &o)
 
 DsoSignal::~DsoSignal()
 {
-    DESTROY_OBJECT(_vDial);
+    DESTROY_OBJECT(_vDial);  
 }
 
 void DsoSignal::set_scale(int height)
@@ -1502,6 +1502,7 @@ double DsoSignal::get_voltage(uint64_t index)
 
     const double value = *_data->get_samples(index, index, get_index());
     const int hw_offset = get_hw_offset();
+
     return (hw_offset - value) * _scale *
             _vDial->get_value() * _vDial->get_factor() *
             DS_CONF_DSO_VDIVS / get_view_rect().height();
@@ -1509,19 +1510,15 @@ double DsoSignal::get_voltage(uint64_t index)
 
 QString DsoSignal::get_voltage(double v, int p, bool scaled)
 {
-   // if (_vDial == NULL)
-     //   return "";
-
-    this->_hover_en = this->_hover_en;
-
     if (_vDial == NULL){
         assert(false);
-    } 
+    }
 
     if (scaled)
         v = v * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
     else
         v = v * _scale * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
+    
     return abs(v) >= 1000 ? QString::number(v/1000.0, 'f', p) + "V" : QString::number(v, 'f', p) + "mV";
 }
 

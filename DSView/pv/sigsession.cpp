@@ -758,7 +758,8 @@ namespace pv
                 break;
             } 
         }
- 
+
+        dsv_info("SigSession::init_signals(), clear signals");
         clear_signals();
 
         std::vector<view::Signal *>().swap(_signals);
@@ -854,6 +855,7 @@ namespace pv
 
         if (!sigs.empty())
         { 
+            dsv_info("SigSession::reload(), clear signals");
             clear_signals();
             std::vector<view::Signal *>().swap(_signals);
             _signals = sigs;
@@ -1989,7 +1991,7 @@ namespace pv
             } 
 
             init_signals();
-            dsv_info("%s", "Work mode is changed.");
+            dsv_info("Switch work mode to:%d", mode);
             broadcast_msg(DSV_MSG_DEVICE_MODE_CHANGED);
             return true;
         }
@@ -2070,7 +2072,7 @@ namespace pv
         {
             auto *p = _signals[i];
             p->sig_released(p);
-
+            
             DESTROY_QT_LATER(p);
         }
         _signals.clear();

@@ -25,6 +25,7 @@
 #include "view.h"
 #include "ruler.h"
 #include "dsosignal.h"
+#include "../log.h"
 
 #include <QPainter>
   
@@ -162,6 +163,10 @@ void XCursor::paint(QPainter &p, const QRect &rect, XCur_type highlight,  int or
         auto sig = _view.session().get_signal_by_index(_sig_index);
         if (sig != NULL){
             _dsoSig = dynamic_cast<DsoSignal*>(sig);
+
+            if (_dsoSig != NULL){
+                connect(_dsoSig, SIGNAL(sig_released(void*)), this, SLOT(on_signal_deleted(void*)));
+            }
         }
     }
 
