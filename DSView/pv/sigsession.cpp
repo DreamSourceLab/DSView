@@ -172,6 +172,7 @@ namespace pv
         
         if (_is_working){
             dsv_info("The current device is working, now to stop it.");
+            dsv_info("SigSession::set_default_device(), stop capture");
             stop_capture();
         }
 
@@ -577,7 +578,7 @@ namespace pv
         if (!_is_working)
             return;
 
-        dsv_info("%s", "Stop collect.");
+        dsv_info("Stop collect.");
 
         if (_bClose)
         {
@@ -1568,6 +1569,7 @@ namespace pv
         // Stop decode thread.
         clear_all_decoder(false);
 
+        dsv_info("SigSession::Close(), stop capture");
         stop_capture();
 
         // TODO: This should not be necessary
@@ -1811,8 +1813,10 @@ namespace pv
 
         case DS_EV_CURRENT_DEVICE_DETACH:
         {
-            if (_is_working)
+            if (_is_working){
+                dsv_info("SigSession::on_device_lib_event,DS_EV_CURRENT_DEVICE_DETACH, stop capture");
                 stop_capture();
+            }
 
             _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_DETACHED);
         }            

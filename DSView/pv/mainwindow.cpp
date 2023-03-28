@@ -351,12 +351,14 @@ namespace pv
         switch (_session->get_error())
         {
         case SigSession::Hw_err:
+            dsv_info("MainWindow::on_session_error(),Hw_err, stop capture");
             _session->stop_capture();
             title = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_HARDWARE_ERROR), "Hardware Operation Failed");
             details = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_HARDWARE_ERROR_DET), 
                       "Please replug device to refresh hardware configuration!");
             break;
         case SigSession::Malloc_err:
+            dsv_info("MainWindow::on_session_error(),Malloc_err, stop capture");
             _session->stop_capture();
             title = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_MALLOC_ERROR), "Malloc Error");
             details = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_MALLOC_ERROR_DET), 
@@ -369,6 +371,7 @@ namespace pv
             _session->refresh(0);
             break;
         case SigSession::Data_overflow:
+            dsv_info("MainWindow::on_session_error(),Data_overflow, stop capture");
             _session->stop_capture();
             title = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DATA_OVERFLOW), "Data Overflow");
             details = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DATA_OVERFLOW_DET), 
@@ -566,7 +569,7 @@ namespace pv
         }
 
         if (_session->is_working()){
-            dsv_info("Save data: stop the current device.");
+            dsv_info("Save data: stop the current device."); 
             _session->stop_capture();
         }
 
@@ -581,7 +584,7 @@ namespace pv
         using pv::dialogs::StoreProgress;
 
         if (_session->is_working()){
-            dsv_info("Export data: stop the current device.");
+            dsv_info("Export data: stop the current device."); 
             _session->stop_capture();
         }
 
