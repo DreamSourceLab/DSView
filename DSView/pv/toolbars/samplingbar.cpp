@@ -1163,8 +1163,10 @@ namespace pv
         }
 
         void SamplingBar::config_device()
-        {
-            on_configure();
+        {   
+            if (_configure_button.isVisible() && _configure_button.isEnabled()){
+                on_configure();
+            }            
         }
 
         void SamplingBar::update_view_status()

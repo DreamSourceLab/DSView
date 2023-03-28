@@ -180,7 +180,7 @@ void TrigBar::reStyle()
 
 void TrigBar::protocol_clicked()
 {  
-    if (_protocol_button.isVisible())
+    if (_protocol_button.isVisible() && _protocol_button.isEnabled())
     {
         DockOptions *opt = getDockOptions();
         opt->decodeDock = !opt->decodeDock;
@@ -191,7 +191,7 @@ void TrigBar::protocol_clicked()
 
 void TrigBar::trigger_clicked()
 {
-    if (_trig_button.isVisible())
+    if (_trig_button.isVisible() && _trig_button.isEnabled())
     {
         DockOptions *opt = getDockOptions();
         opt->triggerDock = !opt->triggerDock;
@@ -202,7 +202,7 @@ void TrigBar::trigger_clicked()
 
 void TrigBar::measure_clicked()
 {   
-    if (_measure_button.isVisible())
+    if (_measure_button.isVisible() && _measure_button.isEnabled())
     {
         DockOptions *opt = getDockOptions();
         opt->measureDock = !opt->measureDock;
@@ -213,7 +213,7 @@ void TrigBar::measure_clicked()
 
 void TrigBar::search_clicked()
 {
-    if (_search_button.isVisible())
+    if (_search_button.isVisible() && _search_button.isEnabled())
     {   
         DockOptions *opt = getDockOptions();
         opt->searchDock = !opt->searchDock;
