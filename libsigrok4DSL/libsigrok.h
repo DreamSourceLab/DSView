@@ -984,9 +984,6 @@ enum sr_config_option_id
     /** Probe options */
     SR_CONF_PROBE_CONFIGS = 30078,
 
-    /** Probe options */
-    SR_CONF_PROBE_SESSIONS = 30079,
-
     /** Enable */
     SR_CONF_PROBE_EN = 30080,
 

@@ -227,15 +227,6 @@ static const int32_t probeOptions[] = {
     SR_CONF_PROBE_MAP_MAX,
 };
 
-static const int32_t probeSessions[] = {
-    SR_CONF_PROBE_COUPLING,
-    SR_CONF_PROBE_VDIV,
-    SR_CONF_PROBE_MAP_DEFAULT,
-    SR_CONF_PROBE_MAP_UNIT,
-    SR_CONF_PROBE_MAP_MIN,
-    SR_CONF_PROBE_MAP_MAX,
-};
-
 static const uint8_t probeCoupling[] = {
     SR_DC_COUPLING,
     SR_AC_COUPLING,

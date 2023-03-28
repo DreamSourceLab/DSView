@@ -700,7 +700,6 @@ namespace pv
             {
                 s_obj["strigger"] = logicSig->get_trig();
             }
-
             
             if (s->signal_type() == DSO_SIGNAL)
             {
@@ -722,6 +721,7 @@ namespace pv
                 s_obj["mapUnit"] = analogSig->get_mapUnit();
                 s_obj["mapMin"] = analogSig->get_mapMin();
                 s_obj["mapMax"] = analogSig->get_mapMax();
+                s_obj["mapDefault"] = analogSig->get_mapDefault();
             }
             channelVar.append(s_obj);
         }
@@ -903,6 +903,7 @@ namespace pv
                 for (const QJsonValue &value : sessionObj["channel"].toArray())
                 {
                     QJsonObject obj = value.toObject();
+
                     if ((probe->index == obj["index"].toDouble()) &&
                         (probe->type == obj["type"].toDouble()))
                     {
@@ -921,6 +922,12 @@ namespace pv
                         probe->map_unit = g_strdup(obj["mapUnit"].toString().toStdString().c_str());
                         probe->map_min = obj["mapMin"].toDouble();
                         probe->map_max = obj["mapMax"].toDouble();
+
+                        if (obj.contains("mapDefault"))
+                        {
+                            probe->map_default = obj["mapDefault"].toBool();
+                        }
+
                         break;
                     }
                 }
@@ -934,7 +941,6 @@ namespace pv
         // load signal setting
         if (mode == DSO)
         {
-
             for (auto s : _session->get_signals())
             {
                 for (const QJsonValue &value : sessionObj["channel"].toArray())

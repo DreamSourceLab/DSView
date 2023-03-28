@@ -637,10 +637,7 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
         *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
                 probeOptions, ARRAY_SIZE(probeOptions)*sizeof(int32_t), TRUE, NULL, NULL);
         break;
-    case SR_CONF_PROBE_SESSIONS:
-        *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
-                probeSessions, ARRAY_SIZE(probeSessions)*sizeof(int32_t), TRUE, NULL, NULL);
-        break;
+
     case SR_CONF_PROBE_VDIV:
         g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));
         for (i = 0; devc->profile->dev_caps.vdivs[i]; i++);

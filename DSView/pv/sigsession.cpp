@@ -458,6 +458,7 @@ namespace pv
 
         int run_dex = 0;
         clear_all_decode_task(run_dex);
+        clear_decode_result();
 
         _capture_data->clear();
         _view_data->clear();

@@ -45,15 +45,6 @@ static const int32_t probeOptions[] = {
     SR_CONF_PROBE_MAP_MAX,
 };
 
-static const int32_t probeSessions[] = {
-    SR_CONF_PROBE_COUPLING,
-    SR_CONF_PROBE_VDIV,
-    SR_CONF_PROBE_MAP_DEFAULT,
-    SR_CONF_PROBE_MAP_UNIT,
-    SR_CONF_PROBE_MAP_MIN,
-    SR_CONF_PROBE_MAP_MAX,
-};
-
 static const uint8_t probeCoupling[] = {
     SR_DC_COUPLING,
     SR_AC_COUPLING,
@@ -1775,10 +1766,7 @@ SR_PRIV int dsl_config_list(int key, GVariant **data, const struct sr_dev_inst *
         *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
                 probeOptions, ARRAY_SIZE(probeOptions)*sizeof(int32_t), TRUE, NULL, NULL);
         break;
-    case SR_CONF_PROBE_SESSIONS:
-        *data = g_variant_new_from_data(G_VARIANT_TYPE("ai"),
-                probeSessions, ARRAY_SIZE(probeSessions)*sizeof(int32_t), TRUE, NULL, NULL);
-        break;
+ 
     case SR_CONF_PROBE_VDIV:
         g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));
         for (i = 0; devc->profile->dev_caps.vdivs[i]; i++);
