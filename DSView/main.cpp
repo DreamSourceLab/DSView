@@ -184,7 +184,7 @@ bool bHighScale = true;
 
 	#ifdef DEBUG_INFO
 		if (XLOG_LEVEL_INFO > logLevel){
-			dsv_log_level(XLOG_LEVEL_INFO); // on develop mode, set the default log ldevel
+			dsv_log_level(XLOG_LEVEL_INFO); // on develop mode, set the default log level
 			logLevel = XLOG_LEVEL_INFO;
 		}
 	#endif

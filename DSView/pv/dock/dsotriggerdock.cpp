@@ -64,9 +64,10 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession *session) :
     _holdoff_label = new QLabel(_widget);
     _holdoff_comboBox = new DsComboBox(_widget);
     //tr
-    _holdoff_comboBox->addItem(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_US), "uS"), QVariant::fromValue(1000));
-    _holdoff_comboBox->addItem(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MS), "mS"), QVariant::fromValue(1000000));
     _holdoff_comboBox->addItem(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_S), "S"), QVariant::fromValue(1000000000));
+    _holdoff_comboBox->addItem(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MS), "mS"), QVariant::fromValue(1000000));
+    _holdoff_comboBox->addItem(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_US), "uS"), QVariant::fromValue(1000));
+   
     _holdoff_comboBox->setCurrentIndex(0);
     _holdoff_spinBox = new QSpinBox(_widget);
     _holdoff_spinBox->setRange(0, 999);
@@ -441,9 +442,12 @@ void DsoTriggerDock::update_view()
     if (gvar != NULL) {
         uint64_t holdoff = g_variant_get_uint64(gvar);
         g_variant_unref(gvar);
+        
+        auto v = holdoff * 10.0;
 
-        for (int i = _holdoff_comboBox->count()-1; i >= 0; i--) {
-            if (holdoff >= _holdoff_comboBox->itemData(i).toDouble()) {
+        for (int i=0; i<_holdoff_comboBox->count(); i++)
+        {
+            if (v >= _holdoff_comboBox->itemData(i).toDouble()) {
                 _holdoff_comboBox->setCurrentIndex(i);
                 break;
             }
@@ -453,9 +457,11 @@ void DsoTriggerDock::update_view()
             _holdoff_slider->setRange(0, 10);
         else 
             _holdoff_slider->setRange(0, 999);
-
-        _holdoff_spinBox->setValue(holdoff * 10.0 / _holdoff_comboBox->currentData().toDouble());
+        
+        auto v1 = holdoff * 10.0 / _holdoff_comboBox->currentData().toDouble();
+        _holdoff_spinBox->setValue(v1);
     }
+
     connect(_holdoff_slider, SIGNAL(valueChanged(int)), this, SLOT(hold_changed(int)));
     connect(_holdoff_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(hold_changed(int)));
 
