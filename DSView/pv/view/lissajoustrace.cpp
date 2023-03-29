@@ -53,46 +53,6 @@ LissajousTrace::~LissajousTrace()
 {
 }
 
-bool LissajousTrace::enabled()
-{
-    return _enable;
-}
-
-void LissajousTrace::set_enable(bool enable)
-{
-    _enable = enable;
-}
-
-int LissajousTrace::xIndex()
-{
-    return _xIndex;
-}
-
-int LissajousTrace::yIndex()
-{
-    return _yIndex;
-}
-
-int LissajousTrace::percent()
-{
-    return _percent;
-}
-
-pv::data::DsoSnapshot* LissajousTrace::get_data()
-{
-    return _data;
-}
-
-void LissajousTrace::set_data(data::DsoSnapshot *data)
-{
-    _data = data;
-}
-
-int LissajousTrace::rows_size()
-{
-    return 0;
-}
-
 void LissajousTrace::paint_back(QPainter &p, int left, int right, QColor fore, QColor back)
 {
     assert(_view);
@@ -116,11 +76,14 @@ void LissajousTrace::paint_back(QPainter &p, int left, int right, QColor fore, Q
     p.setPen(dashPen);
 
     const double spanY =square / DIV_NUM;
+
     for (int i = 1; i < DIV_NUM; i++) {
         const double posY = _border.top() + spanY * i;
         p.drawLine(_border.left(), posY, _border.right(), posY);
     }
+
     const double spanX = square / DIV_NUM;
+
     for (int i = 1; i < DIV_NUM; i++) {
         const double posX = _border.left() + spanX * i;
         p.drawLine(posX, _border.top(), posX, _border.bottom());
@@ -150,6 +113,14 @@ void LissajousTrace::paint_mid(QPainter &p, int left, int right, QColor fore, QC
         if (_data->empty())
             return;
 
+        int channel_num = _data->get_channel_num();
+        if (channel_num < 2){
+            p.setPen(view::View::Red);
+            p.drawText(_border.marginsRemoved(QMargins(10, 30, 10, 30)),
+                       L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CHAN_NUM_ERR2), "Requires the data of two channels."));
+            return;
+        }
+
         int left = _border.left();
         int bottom = _border.bottom();
         double scale = _border.width() / 255.0;
@@ -157,18 +128,24 @@ void LissajousTrace::paint_mid(QPainter &p, int left, int right, QColor fore, QC
         QPointF *points = new QPointF[sample_count];
         QPointF *point = points;
 
-        int channel_num = _data->get_channel_num();
         if (_xIndex >= channel_num || _yIndex >= channel_num) {
             p.setPen(view::View::Red);
             p.drawText(_border.marginsRemoved(QMargins(10, 30, 10, 30)),
                        L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DATA_SOURCE_ERROR), "Data source error."));
-        } else {
-            const uint8_t *const samples = _data->get_samples(0, sample_count-1, 0);
+        }
+        else {
+            const uint8_t* chan_data_array[2];
+            chan_data_array[_xIndex] = _data->get_samples(0, sample_count-1, _xIndex);
+            chan_data_array[_yIndex] = _data->get_samples(0, sample_count-1, _yIndex);
 
             for (uint64_t i = 0; i < sample_count; i++) {
-                *point++ = QPointF(left + samples[i + _xIndex] * scale,
-                                   bottom - samples[i + _yIndex] * scale);
+                const uint8_t* dx = chan_data_array[_xIndex];
+                const uint8_t* dy = chan_data_array[_yIndex];
+
+                *point++ = QPointF(left + dx[i] * scale,
+                                    bottom - dy[i] * scale);
             }
+
             p.setPen(view::View::Blue);
             p.drawPolyline(points, point - points);
             delete[] points;

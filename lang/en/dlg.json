@@ -654,5 +654,9 @@
     {
         "id": "IDS_DLG_VIEW_CAPTURE",
         "text": "Capturing"
+    },
+    {
+        "id": "IDS_DLG_CHAN_NUM_ERR2",
+        "text": "Requires the data of two channels."
     }
 ]

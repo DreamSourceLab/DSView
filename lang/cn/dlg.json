@@ -654,5 +654,9 @@
     {
         "id": "IDS_DLG_VIEW_CAPTURE",
         "text": "捕获中"
+    },
+    {
+        "id": "IDS_DLG_CHAN_NUM_ERR2",
+        "text": "需要两个通道的数据."
     }
 ]

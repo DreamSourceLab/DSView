@@ -48,16 +48,37 @@ public:
 
     virtual ~LissajousTrace();
 
-    bool enabled();
-    void set_enable(bool enable);
-    int xIndex();
-    int yIndex();
-    int percent();
+    inline bool enabled(){
+        return _enable;
+    }
 
-    pv::data::DsoSnapshot* get_data();
-    void set_data(pv::data::DsoSnapshot* data);
+    inline void set_enable(bool enable){
+        _enable = enable;
+    }
 
-    int rows_size();
+    inline int xIndex(){
+        return _xIndex;
+    }
+
+    inline int yIndex(){
+        return _yIndex;
+    }
+
+    inline int percent(){
+        return _percent;
+    }
+
+    inline pv::data::DsoSnapshot* get_data(){
+        return _data;
+    }
+
+    inline void set_data(pv::data::DsoSnapshot* data){
+        _data = data;
+    }
+
+    inline int rows_size(){
+        return 0;
+    }
 
     /**
      * Paints the background layer of the trace with a QPainter
