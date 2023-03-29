@@ -146,6 +146,7 @@ private:
 	pv::prop::binding::DeviceOptions _device_options_binding;
     std::vector<pv::prop::binding::ProbeOptions *> _probe_options_binding_list;
     std::vector<ChannelModePair> _channel_mode_indexs;
+    std::vector<struct sr_channel*>     _dso_channel_list;
 };
 
 } // namespace dialogs

@@ -591,11 +591,48 @@ void DeviceOptions::channel_checkbox_clicked(QCheckBox *sc)
         if (sc != NULL) {
             QGridLayout *const layout = (QGridLayout *)sc->property("Layout").value<void *>();
             int i = layout->count();
+            bool bMap = false;
+
+            int ck_index = -1;
+            int i_dex = 0;
+            bool map_default = false;
+            
+            for(auto ck : _probes_checkBox_list){
+                if (ck == sc){
+                    ck_index = i_dex;
+                    break;
+                }
+                i_dex++;
+            }
+
+            if (ck_index != -1)
+            {
+                GVariant* gvar = _device_agent->get_config(_dso_channel_list[ck_index], 
+                            NULL, SR_CONF_PROBE_MAP_DEFAULT);
+
+                if (gvar != NULL) {
+                    map_default = g_variant_get_boolean(gvar);
+                    g_variant_unref(gvar);
+                }
+            }
+
             while(i--)
             {
                 QWidget* w = layout->itemAt(i)->widget();
-                if (w->property("Enable").isNull()) {
-                    w->setEnabled(sc->isChecked());
+
+                if (w->objectName() == "map-enable"){
+                    QCheckBox *map_ckbox = dynamic_cast<QCheckBox*>(w);
+                    bMap = map_ckbox->isChecked();
+                }
+
+                if (w->property("Enable").isNull()) {                    
+
+                    if (map_default && w->objectName() == "map-row"){
+                        w->setEnabled(false);
+                    }
+                    else{
+                        w->setEnabled(sc->isChecked());
+                    }
                 }
             }
         }
@@ -608,15 +645,17 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
  
     _probes_checkBox_list.clear();
     _probe_options_binding_list.clear();
+    _dso_channel_list.clear();
 
     QTabWidget *tabWidget = new QTabWidget();
     tabWidget->setTabPosition(QTabWidget::North);
     tabWidget->setUsesScrollButtons(false);
-    //layout.setContentsMargins(0,20, 0, 10);
-
+    
     for (const GSList *l = _device_agent->get_channels(); l; l = l->next) {
         sr_channel *const probe = (sr_channel*)l->data;
         assert(probe);
+
+        _dso_channel_list.push_back(probe);
 
         QWidget *probe_widget = new QWidget(tabWidget);
         QGridLayout *probe_layout = new QGridLayout(probe_widget);
@@ -633,7 +672,7 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
         en_label->setProperty("Enable", true);
         probe_layout->addWidget(en_label, 0, 0, 1, 1);
         probe_layout->addWidget(probe_checkBox, 0, 1, 1, 3);
-
+        
         pv::prop::binding::ProbeOptions *probe_options_binding =
                 new pv::prop::binding::ProbeOptions(probe);
         const auto &properties = probe_options_binding->properties();
@@ -654,13 +693,17 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
             else {
                 if (probe_checkBox->isChecked() && p->name().contains("Map")) {
                     bool map_default = true;
+
                     GVariant* gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_MAP_DEFAULT);
                     if (gvar != NULL) {
-                        map_default =g_variant_get_boolean(gvar);
+                        map_default = g_variant_get_boolean(gvar);
                         g_variant_unref(gvar);
                     }
+
                     if (map_default)
                         pow->setEnabled(false);
+
+                    pow->setObjectName("map-row");
                 }
             }
             probe_layout->addWidget(pow, i, 1, 1, 3);
