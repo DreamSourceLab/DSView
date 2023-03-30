@@ -61,11 +61,16 @@ About::About(QWidget *parent) :
                       .arg(QApplication::applicationVersion())
                       .arg(arch);
 
+    QString site_url = QApplication::organizationDomain();
+    if (site_url.startsWith("http") == false){
+        site_url = "https://" + site_url;
+    }
+
     QString url = tr("Website: <a href=\"%1\" style=\"color:#C0C0C0\">%1</a><br />"
                      "Github: <a href=\"%2\" style=\"color:#C0C0C0\">%2</a><br />"
-                     "Copyright:<a href=\"%3\" style=\"color:#C0C0C0\">%3</a><br />"
+                     "Copyright: <label href=\"#\" style=\"color:#C0C0C0\">%3</label><br />"
                      "<br /><br />")
-                  .arg(QApplication::organizationDomain())
+                  .arg(site_url)
                   .arg("https://github.com/DreamSourceLab/DSView")
                   .arg(tr("© DreamSourceLab. All rights reserved."));
 
