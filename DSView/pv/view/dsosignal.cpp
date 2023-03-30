@@ -1449,6 +1449,12 @@ bool DsoSignal::measure(const QPointF &p)
     if (_hover_index >= _data->get_sample_count())
         return false;
 
+    int chan_index = get_index();
+    if (_data->has_data(chan_index) == false){
+        dsv_err("channel %d have no data.", chan_index);
+        return false;
+    }
+
     _hover_point = get_point(_hover_index, _hover_value);
     _hover_en = true;
     return true;
