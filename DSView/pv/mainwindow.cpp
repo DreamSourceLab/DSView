@@ -880,8 +880,8 @@ namespace pv
                 for (const QJsonValue &value : sessionObj["channel"].toArray())
                 {
                     QJsonObject obj = value.toObject();
-                    if ((strcmp(probe->name, g_strdup(obj["name"].toString().toStdString().c_str())) == 0) &&
-                        (probe->type == obj["type"].toDouble()))
+                    if (QString(probe->name) == obj["name"].toString() &&
+                        probe->type == obj["type"].toDouble())
                     {
                         probe->vdiv = obj["vdiv"].toDouble();
                         probe->coupling = obj["coupling"].toDouble();
@@ -949,8 +949,9 @@ namespace pv
                 for (const QJsonValue &value : sessionObj["channel"].toArray())
                 {
                     QJsonObject obj = value.toObject();
-                    if ((strcmp(s->get_name().toStdString().c_str(), g_strdup(obj["name"].toString().toStdString().c_str())) == 0) &&
-                        (s->get_type() == obj["type"].toDouble()))
+
+                    if (s->get_name() ==  obj["name"].toString() &&
+                        s->get_type() ==  obj["type"].toDouble())
                     {
                         s->set_colour(QColor(obj["colour"].toString()));
                        
@@ -961,6 +962,7 @@ namespace pv
                             dsoSig->set_zero_ratio(obj["zeroPos"].toDouble());
                             dsoSig->set_trig_ratio(obj["trigValue"].toDouble());
                             dsoSig->commit_settings();
+                            //dsoSig->set_enable()
                         }
                         break;
                     }
@@ -983,7 +985,7 @@ namespace pv
                         }
 
                         s->set_colour(QColor(obj["colour"].toString()));
-                        s->set_name(g_strdup(chan_name.toUtf8().data()));
+                        s->set_name(chan_name);
 
                         view::LogicSignal *logicSig = NULL;
                         if ((logicSig = dynamic_cast<view::LogicSignal *>(s)))
