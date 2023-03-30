@@ -890,6 +890,7 @@ namespace pv
                         probe->map_unit = g_strdup(obj["mapUnit"].toString().toStdString().c_str());
                         probe->map_min = obj["mapMin"].toDouble();
                         probe->map_max = obj["mapMax"].toDouble();
+                        probe->enabled = obj["enabled"].toBool();
                         break;
                     }
                 }
@@ -962,7 +963,6 @@ namespace pv
                             dsoSig->set_zero_ratio(obj["zeroPos"].toDouble());
                             dsoSig->set_trig_ratio(obj["trigValue"].toDouble());
                             dsoSig->commit_settings();
-                            //dsoSig->set_enable()
                         }
                         break;
                     }
