@@ -144,7 +144,7 @@ QString DsoMeasure::get_ms_text(int ms_type)
     assert(ms_type < DSO_MS_END);
     //tr
     const QString label_name[DSO_MS_END-DSO_MS_BEGIN] = {tr("NULL"),
-                                                         tr("Freq"), tr("Period"), tr("Duty"), tr("-Duty"), tr("+Count"),
+                                                         tr("Freq"), tr("Period"), tr("+Duty"), tr("-Duty"), tr("+Count"),
                                                          tr("Rise"), tr("Fall"), tr("+Width"), tr("-Width"), tr("BrstW"),
                                                          tr("Ampl"), tr("High"), tr("Low"), tr("RMS"), tr("Mean"),
                                                          tr("PK-PK"), tr("Max"), tr("Min"), tr("+Over"), tr("-Over")};
