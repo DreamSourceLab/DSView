@@ -55,21 +55,8 @@ const float DsoSignal::EnvelopeThreshold = 256.0f;
 DsoSignal::DsoSignal(data::DsoSnapshot *data,
                      sr_channel *probe):
     Signal(probe),
-    _data(data),
-    _scale(0),
-    _en_lock(false),
-    _show(true),
-    _vDialActive(false),
-    _mValid(false),
-    _level_valid(false),
-    _autoV(false),
-    _autoH(false),
-    _autoV_over(false),
-    _auto_cnt(0),
-    _hover_en(false),
-    _hover_index(0),
-    _hover_point(QPointF(-1, -1)),
-    _hover_value(0)
+    _data(data), 
+    _hover_point(QPointF(-1, -1))
 {
     QVector<uint64_t> vValue;
     QVector<QString> vUnit;
@@ -79,7 +66,23 @@ DsoSignal::DsoSignal(data::DsoSnapshot *data,
     }
 
     _signal_type = DSO_SIGNAL;
+    
     _vDial = NULL;
+    _period = 0;
+    _pcount = 0;
+    _scale = 0;
+    _en_lock = false;
+    _show = true;
+    _vDialActive = false;
+    _mValid = false;
+    _level_valid = false;
+    _autoV = false;
+    _autoH = false;
+    _autoV_over = false;
+    _auto_cnt = 0;
+    _hover_en = false;
+    _hover_index = 0;
+    _hover_value = 0;
 
     GVariant *gvar_list, *gvar_list_vdivs;
 
@@ -544,8 +547,10 @@ QString DsoSignal::get_measure(enum DSO_MEASURE_TYPE type)
 {
     const QString mNone = "--";
     QString mString;
+
     if (_mValid) {
         const int hw_offset = get_hw_offset();
+
         switch(type) {
         case DSO_MS_AMPT:
             if (_level_valid)
@@ -577,9 +582,15 @@ QString DsoSignal::get_measure(enum DSO_MEASURE_TYPE type)
         case DSO_MS_PERD:
             mString = get_time(_period);
             break;
-        case DSO_MS_FREQ:
-            mString = (abs(_period) > 1000000 ? QString::number(1000000000/_period, 'f', 2) + "Hz" :
-                       abs(_period) > 1000 ? QString::number(1000000/_period, 'f', 2) + "kHz" : QString::number(1000/_period, 'f', 2) + "MHz");
+        case DSO_MS_FREQ: 
+            if (_period == 0)
+                mString = mNone;
+            else if (abs(_period) > 1000000)
+                mString = QString::number(1000000000/_period, 'f', 2) + "Hz";
+            else if (abs(_period) > 1000)
+                mString = QString::number(1000000/_period, 'f', 2) + "kHz";
+            else
+                mString = QString::number(1000/_period, 'f', 2) + "MHz";
             break;
         case DSO_MS_VRMS:
             mString = get_voltage(_rms, 2);
@@ -588,26 +599,26 @@ QString DsoSignal::get_measure(enum DSO_MEASURE_TYPE type)
             mString = get_voltage(_mean, 2);
             break;
         case DSO_MS_NOVR:
-            if (_level_valid)
+            if (_level_valid && (_high - _low != 0) )
                 mString = QString::number((_max - _high) * 100.0 / (_high - _low), 'f', 2) + "%";
             else
                 mString = mNone;
             break;
         case DSO_MS_POVR:
-            if (_level_valid)
+            if (_level_valid && (_high - _low != 0) )
                 mString = QString::number((_low - _min) * 100.0 / (_high - _low), 'f', 2) + "%";
             else
                 mString = mNone;
             break;
         case DSO_MS_PDUT:
-            if (_level_valid)
-                mString = QString::number(_high_time/_period*100, 'f', 2)+"%";
+            if (_level_valid && _period != 0)
+                mString = QString::number(_high_time / _period * 100, 'f', 2)+"%";
             else
                 mString = mNone;
             break;
         case DSO_MS_NDUT:
-            if (_level_valid)
-                mString = QString::number(100 - _high_time/_period*100, 'f', 2)+"%";
+            if (_level_valid && _period != 0)
+                mString = QString::number(100 - _high_time / _period * 100, 'f', 2)+"%";
             else
                 mString = mNone;
             break;
@@ -809,8 +820,9 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColor 
         const uint16_t enabled_channels = _data->get_channel_num();
         const double pixels_offset = offset;
         const double samplerate = _data->samplerate();
-        //const double samplerate = session->get_device()->get_sample_rate();
-        //const double samplerate = session->cur_snap_samplerate();
+
+        assert(samplerate > 0);
+       
         const int64_t last_sample = max((int64_t)(_data->get_sample_count() - 1), (int64_t)0);
         const double samples_per_pixel = samplerate * scale;
         const double start = offset * samples_per_pixel - _view->trig_hoff();
@@ -851,7 +863,7 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColor 
                 const bool startXORend = (index == 0) ? (status.ch0_cyc_llen == 0) : (status.ch1_cyc_llen == 0);
                 const uint16_t total_channels = g_slist_length(session->get_device()->get_channels());
                 const double tfactor = (total_channels / enabled_channels) * SR_GHZ(1) * 1.0 / samplerate;
-
+  
                 double samples = (index == 0) ? status.ch0_cyc_tlen : status.ch1_cyc_tlen;
                 _period = ((count == 0) ? 0 : samples / count) * tfactor;
 
@@ -1517,6 +1529,10 @@ double DsoSignal::get_voltage(uint64_t index)
 QString DsoSignal::get_voltage(double v, int p, bool scaled)
 {
     if (_vDial == NULL){
+        assert(false);
+    }
+
+    if (get_view_rect().height() == 0){
         assert(false);
     }
 
