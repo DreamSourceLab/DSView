@@ -1041,7 +1041,8 @@ namespace pv
         // load measure
         if (sessionObj.contains("measure"))
         {
-            _view->get_viewstatus()->load_session(sessionObj["measure"].toArray());
+            auto *bottom_bar = _view->get_viewstatus();
+            bottom_bar->load_session(sessionObj["measure"].toArray());
         }
 
         if (gvar_opts != NULL)
@@ -1678,10 +1679,11 @@ namespace pv
                 _msg->close();
                 _msg = NULL;
             }
-
-            load_device_config();
+ 
             _sampling_bar->update_device_list();
             reset_all_view();
+            load_device_config();
+            
             _logo_bar->dsl_connected(_session->get_device()->is_hardware());
             update_toolbar_view_status();
             _session->device_event_object()->device_updated();

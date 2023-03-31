@@ -36,6 +36,7 @@
 #include "../dialogs/dsomeasure.h"
 
 #include "../ui/langresource.h"
+#include "../log.h"
 
  
 using namespace std;
@@ -63,9 +64,11 @@ void ViewStatus::paintEvent(QPaintEvent *)
 
     QPainter p(this);
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
-
     QColor fore(QWidget::palette().color(QWidget::foregroundRole()));
-    if (_session->get_device()->get_work_mode() == LOGIC) {
+
+    int mode = _session->get_device()->get_work_mode();
+
+    if (mode == LOGIC) {
         fore.setAlpha(View::ForeAlpha);
         p.setPen(fore);
         p.drawText(this->rect(), Qt::AlignLeft | Qt::AlignVCenter, _rle_depth);
@@ -79,8 +82,9 @@ void ViewStatus::paintEvent(QPaintEvent *)
         p.setPen(View::Blue);
         p.drawText(this->rect(), Qt::AlignCenter | Qt::AlignVCenter, _capture_status);
     } 
-    else if (_session->get_device()->get_work_mode() == DSO) {
+    else if (mode == DSO) {
         fore.setAlpha(View::BackAlpha);
+
         for(size_t i = 0; i < _mrects.size(); i++) {
             int sig_index = std::get<1>(_mrects[i]);
             view::DsoSignal *dsoSig = NULL;
@@ -114,13 +118,15 @@ void ViewStatus::paintEvent(QPaintEvent *)
             p.drawRect(rect);
 
             enum DSO_MEASURE_TYPE mtype = std::get<2>(_mrects[i]);
+
             if (active && (mtype != DSO_MS_BEGIN)) {
                 QString title = pv::dialogs::DsoMeasure::get_ms_text(std::get<2>(_mrects[i])) + ":";
                 title += dsoSig->get_measure(mtype);
                 int width = p.boundingRect(rect, title).width();
                 p.drawText(QRect(rect.left()+10+rect.height(), rect.top(), width, rect.height()),
                            Qt::AlignLeft | Qt::AlignVCenter, title);
-            } else {
+            }
+            else {
                 p.drawText(rect, Qt::AlignCenter | Qt::AlignVCenter, L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MEASURE), "Measure") + QString::number(i));
             }
         }
@@ -140,21 +146,25 @@ void ViewStatus::reload()
     const int COLUMN = 5;
     const int ROW = 2;
     const int MARGIN = 3;
+
     if (_session->get_device()->get_work_mode() == DSO)
     {
         const double width = _view.get_view_width() * 1.0 / COLUMN;
         const int height = (this->height() - 2*MARGIN) / ROW;
+
         for (size_t i  = 0; i < COLUMN*ROW; i++) {
             QRect rect(this->rect().left() + (i%COLUMN)*width,
                        this->rect().top() + (i/COLUMN+1)*MARGIN + (i/COLUMN)*height,
                        width-MARGIN, height);
+
             if (_mrects.size() <= i) {
                 std::tuple<QRect, int, enum DSO_MEASURE_TYPE> rect_tuple;
                 std::get<0>(rect_tuple) = rect;
                 std::get<1>(rect_tuple) = -1;
                 std::get<2>(rect_tuple) = DSO_MS_BEGIN;
                 _mrects.push_back(rect_tuple);
-            } else {
+            }
+            else {
                 std::get<0>(_mrects[i]) = rect;
             }
         }
@@ -242,8 +252,9 @@ QJsonArray ViewStatus::get_session()
 void ViewStatus::load_session(QJsonArray measure_array)
 {
     if (_session->get_device()->get_work_mode() != DSO ||
-        measure_array.empty())
+        measure_array.empty()){
         return;
+    }
 
     for (const QJsonValue &measure_value : measure_array) {
         QJsonObject m_obj = measure_value.toObject();
