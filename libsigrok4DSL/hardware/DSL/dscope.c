@@ -70,6 +70,7 @@ static const int32_t hwoptions[] = {
 
 static const int32_t sessions_dso[] = {
     SR_CONF_OPERATION_MODE,
+    SR_CONF_BANDWIDTH_LIMIT,
     SR_CONF_TIMEBASE,
     SR_CONF_TRIGGER_SLOPE,
     SR_CONF_TRIGGER_SOURCE,
