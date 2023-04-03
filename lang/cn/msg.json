@@ -358,5 +358,9 @@
     {
         "id": "IDS_MSG_TO_SWITCH_DEVICE",
         "text": "要切换到新设备?"
+    },
+    {
+        "id": "IDS_MSG_DISABLED_CHANNEL_TRIG",
+        "text": "禁用通道不能用于触发!"
     }
 ]

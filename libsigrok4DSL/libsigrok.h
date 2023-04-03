@@ -1142,20 +1142,20 @@ struct sr_dev_mode {
  
 enum {
     SIMPLE_TRIGGER = 0,
-    ADV_TRIGGER,
-    SERIAL_TRIGGER,
+    ADV_TRIGGER = 1,
+    SERIAL_TRIGGER = 2,
 };
 
 enum {
     DSO_TRIGGER_AUTO = 0,
-    DSO_TRIGGER_CH0,
-    DSO_TRIGGER_CH1,
-    DSO_TRIGGER_CH0A1,
-    DSO_TRIGGER_CH0O1,
+    DSO_TRIGGER_CH0 = 1,
+    DSO_TRIGGER_CH1 = 2,
+    DSO_TRIGGER_CH0A1 = 3,
+    DSO_TRIGGER_CH0O1 = 4,
 };
 enum {
     DSO_TRIGGER_RISING = 0,
-    DSO_TRIGGER_FALLING,
+    DSO_TRIGGER_FALLING = 1,
 };
 
 struct ds_trigger_pos {

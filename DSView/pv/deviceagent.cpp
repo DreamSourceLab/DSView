@@ -291,6 +291,18 @@ void DeviceAgent::config_changed()
         _callback->DeviceConfigChanged();
     }
 }
+
+bool DeviceAgent::channel_is_enable(int index)
+{  
+    for (const GSList *l = get_channels(); l; l = l->next)
+    {
+        const sr_channel *const probe = (const sr_channel *)l->data;
+        if (probe->index == index)
+            return probe->enabled;          
+    }
+
+    return false;
+}
  
 //---------------device config-----------/
 

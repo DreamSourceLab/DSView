@@ -359,5 +359,9 @@
     {
         "id": "IDS_MSG_TO_SWITCH_DEVICE",
         "text": "To switch the new device?"
+    },
+    {
+        "id": "IDS_MSG_DISABLED_CHANNEL_TRIG",
+        "text": "Disabled channels cannot be used for triggering!"
     }
 ]

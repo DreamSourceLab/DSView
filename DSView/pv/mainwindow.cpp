@@ -1647,7 +1647,11 @@ namespace pv
             break;
 
         case DSV_MSG_START_COLLECT_WORK_PREV:
-            _trigger_widget->try_commit_trigger();
+            if (_device_agent->get_work_mode() == LOGIC)
+                _trigger_widget->try_commit_trigger();
+            else if (_device_agent->get_work_mode() == DSO)
+                _dso_trigger_widget->check_setting();
+
             _view->capture_init();
             _view->on_state_changed(false);
             break;

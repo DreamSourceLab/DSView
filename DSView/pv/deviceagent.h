@@ -177,6 +177,8 @@ public:
         return _is_new_device;
     }
 
+    bool channel_is_enable(int index);
+
 private:
     void config_changed();
     bool is_in_history(ds_device_handle dev_handle);

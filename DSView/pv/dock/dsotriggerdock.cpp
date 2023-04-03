@@ -37,6 +37,8 @@
 #include <QEvent>
 
 #include "../ui/langresource.h"
+#include "../log.h"
+#include "../ui/msgbox.h"
 
 using namespace boost;
 using namespace std;
@@ -289,8 +291,20 @@ void DsoTriggerDock::margin_changed(int margin)
 
 void DsoTriggerDock::source_changed()
 {
+    if (check_trig_channel() == false){
+        _auto_radioButton->setChecked(true);
+        _ch1_radioButton->setChecked(false);
+        _ch0a1_radioButton->setChecked(false);
+        _ch0o1_radioButton->setChecked(false); 
+
+        QString msg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DISABLED_CHANNEL_TRIG), "Disabled channels cannot be used for triggering!"));
+        MsgBox::Show("", msg);        
+    }
+
     int id = _source_group->checkedId();
     int ret;
+
+    dsv_info("Set DSO trig type:%d", id);
 
     ret = _session->get_device()->set_config(NULL, NULL,
                                             SR_CONF_TRIGGER_SOURCE,
@@ -304,6 +318,42 @@ void DsoTriggerDock::source_changed()
         msg.mBox()->setIcon(QMessageBox::Warning);
         msg.exec();
     }
+}
+
+void DsoTriggerDock::check_setting()
+{
+    if (check_trig_channel() == false){
+        _auto_radioButton->setChecked(true);
+        _ch1_radioButton->setChecked(false);
+        _ch0a1_radioButton->setChecked(false);
+        _ch0o1_radioButton->setChecked(false);
+
+        _session->get_device()->set_config(NULL, NULL,
+                                            SR_CONF_TRIGGER_SOURCE,
+                                            g_variant_new_byte(DSO_TRIGGER_AUTO));
+    }
+}
+
+bool DsoTriggerDock::check_trig_channel()
+{
+    int id = _source_group->checkedId();
+    bool b0 = _session->get_device()->channel_is_enable(0);
+    bool b1 = _session->get_device()->channel_is_enable(1);
+
+    if (DSO_TRIGGER_CH0 == id && !b0){
+        dsv_err("ERROR: The trigger channel is disabled");
+        return false;
+    }
+    else if (DSO_TRIGGER_CH1 == id && !b1){
+        dsv_err("ERROR: The trigger channel is disabled");
+        return false;
+    }
+    else if (DSO_TRIGGER_CH0A1 == id && (!b0 || !b1)){
+        dsv_err("ERROR: The trigger channel is disabled");
+        return false;
+    }
+
+    return true;
 }
 
 void DsoTriggerDock::channel_changed(int ch)

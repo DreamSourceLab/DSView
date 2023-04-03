@@ -50,12 +50,14 @@ public:
  
     void device_change();
     void update_view();
+    void check_setting();
 
 private:
     void paintEvent(QPaintEvent *e);
     void changeEvent(QEvent *event);
     void retranslateUi();
     void reStyle();
+    bool check_trig_channel();
 
 signals:
     void set_trig_pos(int percent);
@@ -70,8 +72,6 @@ private slots:
     void source_changed();
     void type_changed();
     void channel_changed(int ch);
-
-private:
 
 private:
     SigSession *_session;
