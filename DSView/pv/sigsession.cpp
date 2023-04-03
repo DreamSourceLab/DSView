@@ -647,19 +647,26 @@ namespace pv
         { 
             triggered = status.trig_hit & 0x01;
             uint64_t captured_cnt = status.trig_hit >> 2;
+
             captured_cnt = ((uint64_t)status.captured_cnt0 +
                             ((uint64_t)status.captured_cnt1 << 8) +
                             ((uint64_t)status.captured_cnt2 << 16) +
                             ((uint64_t)status.captured_cnt3 << 24) +
                             (captured_cnt << 32));
 
-            if (_device_agent.get_work_mode() == DSO)
+            int mode = _device_agent.get_work_mode();
+
+            if (mode == DSO)
                 captured_cnt = captured_cnt * _signals.size() / get_ch_num(SR_CHANNEL_DSO);
                 
             if (triggered)
                 progress = (sample_limits - captured_cnt) * 100.0 / sample_limits;
             else
                 progress = captured_cnt * 100.0 / sample_limits;
+
+            if (progress == 100 && mode == LOGIC && _capture_data->get_logic()->have_data() == false){
+                progress = 0;
+            }
 
             return true;
         }
