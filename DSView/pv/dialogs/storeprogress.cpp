@@ -71,7 +71,7 @@ StoreProgress::StoreProgress(SigSession *session, QWidget *parent) :
     _fileLab->setMaximumHeight(50); 
 
     _openButton = new QPushButton(this);
-    _openButton->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CHANGE_FILE), "change"));
+    _openButton->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_PATH_NAME), "path"));
 
     _space = new QWidget(this);
     _space->setMinimumHeight(80);

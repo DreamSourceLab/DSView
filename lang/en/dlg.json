@@ -658,5 +658,9 @@
     {
         "id": "IDS_DLG_CHAN_NUM_ERR2",
         "text": "Requires the data of two channels."
+    },
+    {
+        "id": "IDS_DLG_PATH_NAME",
+        "text": "path"
     }
 ]
