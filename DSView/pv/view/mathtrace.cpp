@@ -76,11 +76,13 @@ void MathTrace::set_enable(bool enable)
 
 int MathTrace::src1()
 {
+    assert(_dsoSig1);
     return _dsoSig1->get_index();
 }
 
 int MathTrace::src2()
-{
+{   
+    assert(_dsoSig2);
     return _dsoSig2->get_index();
 }
 

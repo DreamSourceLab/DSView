@@ -1480,8 +1480,9 @@ namespace pv
         assert(dsoSig1);
         assert(dsoSig2);
 
-        auto math_stack = new data::MathStack(this, dsoSig1, dsoSig2, type);
         DESTROY_OBJECT(_math_trace);
+
+        auto math_stack = new data::MathStack(this, dsoSig1, dsoSig2, type);        
         _math_trace = new view::MathTrace(enable, math_stack, dsoSig1, dsoSig2);
 
         if (_math_trace && _math_trace->enabled())
@@ -2079,7 +2080,9 @@ namespace pv
     }
 
     void SigSession::clear_signals()
-    {
+    {   
+        DESTROY_OBJECT(_math_trace);
+        
         for (int i=0; i< (int)_signals.size(); i++)
         {
             auto *p = _signals[i];
