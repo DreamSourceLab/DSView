@@ -346,44 +346,34 @@ void DsoTriggerDock::type_changed()
 
 void DsoTriggerDock::device_change()
 {
-    if (_session->get_device()->is_hardware_logic() == false) {
-        _position_spinBox->setDisabled(true);
-        _position_slider->setDisabled(true);
-    }
-    else {
-        _position_spinBox->setDisabled(false);
-        _position_slider->setDisabled(false);
-    }
+    bool bDisable = _session->get_device()->is_file();
+    _position_spinBox->setDisabled(bDisable);
+    _position_slider->setDisabled(bDisable);
 }
 
 void DsoTriggerDock::update_view()
 {
-    if (_session->get_device()->is_virtual()) {
-        for(QAbstractButton * btn :  _source_group->buttons())
-            btn->setDisabled(true);
+    bool bDisable = _session->get_device()->is_file();
 
-        for(QAbstractButton * btn : _type_group->buttons())
-            btn->setDisabled(true);
-
-        _holdoff_slider->setDisabled(true);
-        _holdoff_spinBox->setDisabled(true);
-        _holdoff_comboBox->setDisabled(true);
-        _margin_slider->setDisabled(true);
-        _channel_comboBox->setDisabled(true);
-        return;
+    for(QAbstractButton * btn :  _source_group->buttons()){
+        btn->setDisabled(bDisable);
     }
-    else {
-        for(QAbstractButton * btn :  _source_group->buttons())
-            btn->setDisabled(false);
 
-        for(QAbstractButton * btn : _type_group->buttons())
-            btn->setDisabled(false);
-            
-        _holdoff_slider->setDisabled(false);
-        _holdoff_spinBox->setDisabled(false);
-        _holdoff_comboBox->setDisabled(false);
-        _margin_slider->setDisabled(false);
-        _channel_comboBox->setDisabled(false);
+    for(QAbstractButton * btn : _type_group->buttons()){
+        btn->setDisabled(bDisable);
+    }
+
+    _holdoff_slider->setDisabled(bDisable);
+    _holdoff_spinBox->setDisabled(bDisable);
+    _holdoff_comboBox->setDisabled(bDisable);
+    _margin_slider->setDisabled(bDisable);
+    _channel_comboBox->setDisabled(bDisable);
+
+    _position_spinBox->setDisabled(bDisable);
+    _position_slider->setDisabled(bDisable);
+
+    if (_session->get_device()->is_file()){
+        return;
     }
 
     // TRIGGERPOS
