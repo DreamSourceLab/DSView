@@ -50,7 +50,7 @@ ChannelLabel::ChannelLabel(IChannelCheck *check, QWidget *parent, int chanIndex)
 : QWidget(parent)
 {
     _checked = check;
-    _index = chanIndex;  
+    _index = chanIndex;
 
     this->setFixedSize(30, 40);
    
@@ -95,6 +95,7 @@ DeviceOptions::DeviceOptions(QWidget *parent) :
     _dynamic_panel = NULL;
     _container_lay = NULL;
     _isBuilding = false;
+    _cur_analog_tag_index = 0;
 
     SigSession *session = AppControl::Instance()->GetSession();
     _device_agent = session->get_device();
@@ -526,13 +527,15 @@ void DeviceOptions::channel_check()
 void DeviceOptions::analog_channel_check()
 {
     QCheckBox* sc=dynamic_cast<QCheckBox*>(sender());
-    if(sc != NULL) {
+    if(sc != NULL) 
+    {
         for (const GSList *l = _device_agent->get_channels(); l; l = l->next) {
             sr_channel *const probe = (sr_channel*)l->data;
-            assert(probe);
-            if (sc->property("index").toInt() == probe->index)
+            
+            if (sc->property("index").toInt() == probe->index){
                _device_agent->set_config(probe, NULL, SR_CONF_PROBE_MAP_DEFAULT,
                                      g_variant_new_boolean(sc->isChecked()));
+            }
         }
     }
 
@@ -673,8 +676,7 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
         probe_layout->addWidget(en_label, 0, 0, 1, 1);
         probe_layout->addWidget(probe_checkBox, 0, 1, 1, 3);
         
-        pv::prop::binding::ProbeOptions *probe_options_binding =
-                new pv::prop::binding::ProbeOptions(probe);
+        auto *probe_options_binding = new pv::prop::binding::ProbeOptions(probe);
         const auto &properties = probe_options_binding->properties();
         int i = 1;
         
@@ -713,13 +715,24 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
 
         connect(probe_checkBox, SIGNAL(released()), this, SLOT(on_analog_channel_enable()));
 
-        tabWidget->addTab(probe_widget, QString::fromUtf8(probe->name));
+        QString tabName = QString::fromUtf8(probe->name);
+        tabName += " ";
+
+        tabWidget->addTab(probe_widget, tabName);
     }
 
     layout.addWidget(tabWidget, 0, 0, 1, 1);
 
     _groupHeight2 = tabWidget->sizeHint().height() + 10;
     _dynamic_panel->setFixedHeight(_groupHeight2); 
+
+    connect(tabWidget, SIGNAL(currentChanged(int)), this, SLOT(on_anlog_tab_changed(int)));
+    tabWidget->setCurrentIndex(_cur_analog_tag_index);
+}
+
+void DeviceOptions::on_anlog_tab_changed(int index)
+{
+    _cur_analog_tag_index = index;
 }
 
 QString DeviceOptions::dynamic_widget(QLayout *lay)
