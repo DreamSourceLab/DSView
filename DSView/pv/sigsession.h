@@ -403,6 +403,10 @@ public:
     view::DecodeTrace* get_decoder_trace(int index);
     view::Signal* get_signal_by_index(int index);
 
+    inline bool have_view_data(){
+        return get_signal_snapshot()->have_data();
+    }
+
 private:
     void set_cur_samplelimits(uint64_t samplelimits);
     void set_cur_snap_samplerate(uint64_t samplerate);

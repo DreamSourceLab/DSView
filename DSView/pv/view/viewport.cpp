@@ -1686,7 +1686,7 @@ void Viewport::paintMeasure(QPainter &p, QColor fore, QColor back)
         measure_updated();
     }
 
-    if (_action_type == LOGIC_EDGE) {
+    if (_action_type == LOGIC_EDGE && _view.session().have_view_data()) {
         p.setPen(active_color);
         p.drawLine(QLineF(_cur_preX, _cur_midY-5, _cur_preX, _cur_midY+5));
         p.drawLine(QLineF(_cur_aftX, _cur_midY-5, _cur_aftX, _cur_midY+5));
