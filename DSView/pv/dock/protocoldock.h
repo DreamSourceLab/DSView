@@ -85,6 +85,7 @@ public:
     bool add_protocol_by_id(QString id, bool silent, std::list<pv::data::decode::Decoder*> &sub_decoders);
 
     void reset_view();
+    void update_view_status();
 
 private:
     void changeEvent(QEvent *event);

@@ -1659,12 +1659,14 @@ namespace pv
         case DSV_MSG_START_COLLECT_WORK:
             update_toolbar_view_status();
             _view->on_state_changed(false);
+            _protocol_widget->update_view_status();
             break;
         
         case DSV_MSG_COLLECT_END:
             prgRate(0);
             _view->repeat_unshow();
             _view->on_state_changed(true);
+            _protocol_widget->update_view_status();
             break;
 
         case DSV_MSG_END_COLLECT_WORK:

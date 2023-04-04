@@ -1004,5 +1004,13 @@ bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const Decod
     decoded_progress(0);
  }
 
+ void ProtocolDock::update_view_status()
+ {
+    bool bEnable = _session->is_working() == false;
+    _pro_keyword_edit->setEnabled(bEnable);
+    _pro_add_button->setEnabled(bEnable);
+    _pro_search_button->setEnabled(bEnable);
+ }
+
 } // namespace dock
 } // namespace pv
