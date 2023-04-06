@@ -130,15 +130,15 @@ void LogoBar::changeEvent(QEvent *event)
 void LogoBar::retranslateUi()
 {
 
-    _logo_button.setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_LOGOBAR_HELP), "Help"));
-    _action_en->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_LOGOBAR_ENGLISH), "English"));
-    _action_cn->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_LOGOBAR_CHINESE), "中文"));
-    _language->setTitle(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_LOGOBAR_LANGUAGE), "&Language"));
-    _about->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_LOGOBAR_ABOUT), "&About..."));
-    _manual->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_LOGOBAR_MANUAL), "&Manual..."));
-    _issue->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_LOGOBAR_BUG_REPORT), "&Bug Report"));
-    _update->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_LOGOBAR_UPDATE), "&Update"));
-    _log->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_LOGOBAR_LOG_OPTIONS), "L&og Options"));
+    _logo_button.setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_HELP), "Help"));
+     _language->setTitle(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_HELP_LANG), "&Language"));
+    _action_en->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_HELP_LANG_EN), "English"));
+    _action_cn->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_HELP_LANG_CN), "中文"));   
+    _about->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_HELP_ABOUT), "&About..."));
+    _manual->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_HELP_MANUAL), "&Manual..."));
+    _issue->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_HELP_BUG), "&Bug Report"));
+    _update->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_HELP_UPDATE), "&Update"));
+    _log->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_HELP_LOG), "L&og Options"));
 
     AppConfig &app = AppConfig::Instance(); 
     if (app._frameOptions.language == LAN_CN)

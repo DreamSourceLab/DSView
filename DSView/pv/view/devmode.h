@@ -38,8 +38,6 @@
 
 struct dev_mode_name{
     int _mode;
-    const char *_name_en;
-    const char *_name_cn;
     const char *_logo;
 };
  

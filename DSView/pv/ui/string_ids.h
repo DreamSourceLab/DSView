@@ -28,16 +28,5 @@
 #define     STR_PAGE_DSL        100
 #define     STR_PAGE_DECODER    101
 
-// xx
-#define IDS_TOOLBAR_MODE
-#define IDS_TOOLBAR_START
-#define IDS_TOOLBAR_STOP
-#define IDS_TOOLBAR_SINGLE
-#define IDS_TOOLBAR_INSTANT
-#define IDS_TOOLBAR_SINGLE_ACTION
-#define IDS_TOOLBAR_REPEAT_ACTION
-#define IDS_TOOLBAR_OPTIONS
-
-
 #define IDS_MSG_LOG_LEVEL
 #endif

@@ -40,9 +40,9 @@
 
 static const struct dev_mode_name dev_mode_name_list[] =
 {
-    {LOGIC, "Logic Analyzer", "逻辑分析仪",  "la.svg"},
-    {ANALOG, "Data Acquisition", "数据记录仪", "daq.svg"},
-    {DSO, "Oscilloscope", "示波器",  "osc.svg"},
+    {LOGIC, "la.svg"},
+    {ANALOG, "daq.svg"},
+    {DSO, "osc.svg"},
 };
   
 namespace pv {
@@ -138,22 +138,32 @@ void DevMode::set_device()
 
         QAction *action = new QAction(this);
         action->setIcon(QIcon(iconPath + "square-" + icon_name));
-        if (lan == LAN_CN)
-            action->setText(mode_name->_name_cn);
-        else
-            action->setText(mode_name->_name_en);
+
+        int md = mode->mode;
+
+        if (md == LOGIC)
+            action->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_DEVICE_MODE_LOGIC), "Logic Analyzer"));
+        else if (md == ANALOG)
+            action->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_DEVICE_MODE_ANALOG), "Data Acquisition"));
+        else if (md == DSO)
+            action->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_DEVICE_MODE_DSO), "Oscilloscope"));
 
         connect(action, SIGNAL(triggered()), this, SLOT(on_mode_change()));
 
         _mode_list[action] = mode;
-        if (_device_agent->get_work_mode() == _mode_list[action]->mode)
+        int cur_mode = _device_agent->get_work_mode();
+          
+        if (cur_mode == _mode_list[action]->mode)
         {
             QString icon_fname = iconPath + icon_name;
             _mode_btn->setIcon(QIcon(icon_fname));
-            if (lan == LAN_CN)
-                _mode_btn->setText(mode_name->_name_cn);
-            else
-                _mode_btn->setText(mode_name->_name_en);
+            
+            if (cur_mode == LOGIC)
+                _mode_btn->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_DEVICE_MODE_LOGIC), "Logic Analyzer"));
+            else if (cur_mode == ANALOG)
+                _mode_btn->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_DEVICE_MODE_ANALOG), "Data Acquisition"));
+            else if (cur_mode == DSO)
+                _mode_btn->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_DEVICE_MODE_DSO), "Oscilloscope"));
         }
         _pop_menu->addAction(action);
     }
@@ -212,10 +222,14 @@ void DevMode::on_mode_change()
             QString icon_fname = iconPath + "/" + QString::fromLocal8Bit(mode_name->_logo);
             
             _mode_btn->setIcon(QIcon(icon_fname));
-            if (lan == LAN_CN)
-                _mode_btn->setText(mode_name->_name_cn);
-            else
-                _mode_btn->setText(mode_name->_name_en);
+            int cur_mode = mode_name->_mode;
+
+            if (cur_mode == LOGIC)
+                _mode_btn->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_DEVICE_MODE_LOGIC), "Logic Analyzer"));
+            else if (cur_mode == ANALOG)
+                _mode_btn->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_DEVICE_MODE_ANALOG), "Data Acquisition"));
+            else if (cur_mode == DSO)
+                _mode_btn->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_DEVICE_MODE_DSO), "Oscilloscope"));
                
             break;                
         }      

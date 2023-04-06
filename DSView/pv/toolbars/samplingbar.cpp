@@ -152,11 +152,11 @@ namespace pv
             {
                 if (_device_agent->is_demo())
                 {
-                    _device_type.setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_DEMO), "Demo"));
+                    _device_type.setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_DEVICE_TYPE_DEMO), "Demo"));
                 }
                 else if (_device_agent->is_file())
                 {
-                    _device_type.setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_FILE), "file"));
+                    _device_type.setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_DEVICE_TYPE_FILE), "File"));
                 }
                 else
                 {
@@ -176,37 +176,40 @@ namespace pv
                         _device_type.setText("USB UNKNOWN");
                 }
             }
-            _configure_button.setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_OPTION), "Options1"));
-           _mode_button.setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_MODE), "Mode"));
+            _configure_button.setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_DEVICE_OPTION), "Options"));
+           _mode_button.setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_CAPTURE_MODE), "Mode"));
 
             int mode = _device_agent->get_work_mode();
             bool is_working = _session->is_working();
 
-            auto str_start = L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_START), "Start");
-            auto str_stop  = L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_STOP), "Stop");
-            auto str_single  = L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_SINGLE), "Single");
-            auto str_instant  = L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_INSTANT), "Instant");
+            auto str_start = L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_RUN_START), "Start");
+            auto str_stop  = L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_RUN_STOP), "Stop");
+            auto str_single  = L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_ONE_SINGLE), "Single");
+            auto str_instant  = L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_ONE_INSTANT), "Instant");
+            auto str_one_stop  = L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_ONE_STOP), "Stop");
 
             if (_is_run_as_instant)
             {
                 if (bDev && mode == DSO)
-                    _instant_button.setText(is_working ? str_stop : str_single);
+                    _instant_button.setText(is_working ? str_one_stop : str_single);
                 else
-                    _instant_button.setText(is_working ? str_stop : str_instant);
+                    _instant_button.setText(is_working ? str_one_stop : str_instant);
+
                 _run_stop_button.setText(str_start);
             }
             else
             {
                 _run_stop_button.setText(is_working ? str_stop: str_start);
+
                 if (bDev && mode == DSO)
                     _instant_button.setText(str_single);
                 else
                     _instant_button.setText(str_instant);
             }
 
-            _action_single->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_SINGLE_ACTION), "&Single"));
-            _action_repeat->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_REPEAT_ACTION), "&Repetitive"));
-            _action_realtime->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_REALTIME_ACTION), "Real&time"));
+            _action_single->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_CAPTURE_MODE_SINGLE), "&Single"));
+            _action_repeat->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_CAPTURE_MODE_REPEAT), "&Repetitive"));
+            _action_realtime->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_CAPTURE_MODE_REALTIME), "Real&time"));
         }
 
         void SamplingBar::reStyle()

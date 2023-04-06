@@ -107,15 +107,15 @@ void FileBar::changeEvent(QEvent *event)
 
 void FileBar::retranslateUi()
 {
-    _file_button.setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_FILEBAR_FILE), "File"));
-    _menu_session->setTitle(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_FILEBAR_CONFIGURATION), "Con&fig...")); //load,save session file
-    _action_load->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_FILEBAR_LOAD), "&Load..."));
-    _action_store->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_FILEBAR_STORE), "S&tore..."));
-    _action_default->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_FILEBAR_DEFAULT), "&Default..."));
-    _action_open->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_FILEBAR_0PEN), "&Open..."));
-    _action_save->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_FILEBAR_SAVE), "&Save..."));
-    _action_export->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_FILEBAR_EXPORT), "&Export..."));
-    _action_capture->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_FILEBAR_CAPTURE), "&Capture..."));
+    _file_button.setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_FILE), "File"));
+    _menu_session->setTitle(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_FILE_CONFIG), "Con&fig...")); //load,save session file
+    _action_load->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_FILE_CONFIG_LOAD), "&Load..."));
+    _action_store->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_FILE_CONFIG_STORE), "S&tore..."));
+    _action_default->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_FILE_CONFIG_DEFAULT), "&Default..."));
+    _action_open->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_FILE_OPEN), "&Open..."));
+    _action_save->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_FILE_SAVE), "&Save..."));
+    _action_export->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_FILE_EXPORT), "&Export..."));
+    _action_capture->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_FILE_CAPTURE), "&Capture..."));
 }
 
 void FileBar::reStyle()
