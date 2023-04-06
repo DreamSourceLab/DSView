@@ -371,7 +371,7 @@ static GSList *scan(GSList *options)
 		}
 	}
 
-	libusb_free_device_list(devlist, 1);
+	libusb_free_device_list(devlist, 0);
 
     if (conn_devices){
         g_slist_free_full(conn_devices, (GDestroyNotify)sr_usb_dev_inst_free);
