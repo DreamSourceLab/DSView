@@ -400,9 +400,8 @@ public:
     void show_wait_trigger();
     void set_device();
     void set_receive_len(uint64_t len);
-
-private:
-   
+    int  get_body_width();
+    int  get_body_height();
 
 private:
 

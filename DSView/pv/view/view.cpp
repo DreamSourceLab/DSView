@@ -1243,5 +1243,19 @@ void View::auto_set_max_scale()
     set_scale(_maxscale);
 }
 
+int  View::get_body_width()
+{
+    if (_time_viewport != NULL)
+        return _time_viewport->width();
+    return 0;
+}
+
+int  View::get_body_height()
+{
+     if (_time_viewport != NULL)
+        return _time_viewport->height();
+    return 0;
+}
+
 } // namespace view
 } // namespace pv

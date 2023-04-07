@@ -811,10 +811,16 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
                         while (i != xcursor_list.end()) {
                             if ((*i)->grabbed() != XCursor::XCur_None) {
                                 if ((*i)->grabbed() == XCursor::XCur_Y) {
-                                    double rate = (_view.hover_point().x() - xrect.left()) * 1.0 / xrect.width();
+                                    double rate = (_view.hover_point().x() - xrect.left()) * 1.0 / xrect.width();                                    
                                     (*i)->set_value((*i)->grabbed(), min(rate, 1.0));
-                                } else {
-                                    double rate = (_view.hover_point().y() - xrect.top()) * 1.0 / xrect.height();
+                                }
+                                else {
+                                    int msy = _view.hover_point().y();
+                                    int body_y = _view.get_body_height();
+                                    if (msy > body_y)
+                                        msy = body_y;
+                                     
+                                    double rate = (msy - xrect.top()) * 1.0 / xrect.height();
                                     (*i)->set_value((*i)->grabbed(), max(rate, 0.0));
                                 }
                                 _xcurs_moved = true;
@@ -1087,7 +1093,7 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
 
     int mode = _view.session().get_device()->get_work_mode();
 
-    if (mode == LOGIC)// && _view.session().is_stopped_status()) 
+    if (mode == LOGIC)
     {
         if (event->button() == Qt::RightButton) {
             if (_view.scale() == _view.get_maxscale())

@@ -219,7 +219,15 @@ void Ruler::mouseMoveEvent(QMouseEvent *e)
     (void)e;
 
     if (_grabbed_marker) {
-        _grabbed_marker->set_index(_view.pixel2index(_view.hover_point().x()));
+        int msx = _view.hover_point().x();
+        if (msx < 0)
+            msx = 0;   
+        int body_width = _view.get_body_width();
+        if (msx > body_width)
+            msx = body_width;
+
+        uint64_t index = _view.pixel2index(msx);
+        _grabbed_marker->set_index(index);
         _view.cursor_moving();
         _curs_moved = true;
     }
@@ -280,10 +288,18 @@ void Ruler::mouseReleaseEvent(QMouseEvent *event)
             if (!_cursor_go_visible) {
                 if (!_cursor_sel_visible) {
                     _cursor_sel_x = event->pos().x();
-                    _cursor_sel_visible = true;
+                    _cursor_sel_visible = true;                                    
                 } 
                 else {
                     int overCursor;
+                    int msx = _cursor_sel_x;
+                    if (msx < 0)
+                        msx = 0;
+                    
+                    int body_width = _view.get_body_width();
+                    if (msx > body_width)
+                        msx = body_width;
+
                     auto &cursor_list = _view.get_cursorList();
                     uint64_t index = _view.pixel2index(_cursor_sel_x);
                     overCursor = in_cursor_sel_rect(event->pos());
