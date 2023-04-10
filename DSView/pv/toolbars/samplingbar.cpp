@@ -39,6 +39,10 @@
 #include "../ui/langresource.h"
 #include "../view/view.h"
 
+#define SINGLE_ACTION_ICON  "/oneloop.svg"
+#define REPEAT_ACTION_ICON  "/repeat.svg"
+#define REALTIME_ACTION_ICON  "/update.svg"
+
 using std::map;
 using std::max;
 using std::min;
@@ -247,9 +251,10 @@ namespace pv
                 QString icon2 = _session->is_working() ? "stop.svg" : "start.svg";
                 _run_stop_button.setIcon(QIcon(iconPath + "/" + icon2));
                 _instant_button.setIcon(QIcon(iconPath + "/single.svg"));
-                _action_single->setIcon(QIcon(iconPath + "/oneloop.svg"));
-                _action_repeat->setIcon(QIcon(iconPath + "/repeat.svg"));
-                _action_realtime->setIcon(QIcon(iconPath + "/update.svg"));
+
+                _action_single->setIcon(QIcon(iconPath + SINGLE_ACTION_ICON));
+                _action_repeat->setIcon(QIcon(iconPath + REPEAT_ACTION_ICON));
+                _action_realtime->setIcon(QIcon(iconPath + REALTIME_ACTION_ICON));
 
                 update_mode_icon();
             }
@@ -1223,26 +1228,26 @@ namespace pv
             }
 
             update_mode_icon();       
-         }
+        }
 
-         ds_device_handle SamplingBar::get_next_device_handle()
-         {
-             ds_device_handle h = _next_switch_device;
-             _next_switch_device = NULL_HANDLE;
-             return h;
-         }
+        ds_device_handle SamplingBar::get_next_device_handle()
+        {
+            ds_device_handle h = _next_switch_device;
+            _next_switch_device = NULL_HANDLE;
+            return h;
+        }
 
-         void SamplingBar::update_mode_icon()
-         {  
+        void SamplingBar::update_mode_icon()
+        {  
             QString iconPath = GetIconPath();
 
             if (_session->is_repeat_mode())
-                _mode_button.setIcon(QIcon(iconPath + "/moder.svg"));
+                _mode_button.setIcon(QIcon(iconPath + REPEAT_ACTION_ICON));
             else if (_session->is_realtime_mode())
-                _mode_button.setIcon(QIcon(iconPath + "/update.svg"));
+                _mode_button.setIcon(QIcon(iconPath + REALTIME_ACTION_ICON));
             else
-                _mode_button.setIcon(QIcon(iconPath + "/modes.svg")); 
-         }
+                _mode_button.setIcon(QIcon(iconPath + SINGLE_ACTION_ICON));
+        }
 
 
         void SamplingBar::run_or_stop()
