@@ -279,6 +279,9 @@ namespace pv
 
             if (ret == QDialog::Accepted)
             {
+                if (_session->have_view_data() == false)
+                    this->commit_settings();
+
                 _session->broadcast_msg(DSV_MSG_DEVICE_OPTIONS_UPDATED);
 
                 update_sample_rate_list();
@@ -338,9 +341,10 @@ namespace pv
             const int index_back = _sample_count.currentIndex();
             int i = 0;
 
-            for (i = 0; i < _sample_count.count(); i++)
+            for (i = 0; i < _sample_count.count(); i++){
                 if (_sample_count.itemData(i).value<uint64_t>() == ZeroTimeBase)
                     break;
+            }
 
             _sample_count.setCurrentIndex(i);
             commit_hori_res();
@@ -796,6 +800,8 @@ namespace pv
         void SamplingBar::commit_settings()
         {
             bool test = false;
+
+            dsv_info("Commit device settings.");
 
             if (_device_agent->have_instance())
             {

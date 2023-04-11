@@ -1084,9 +1084,7 @@ namespace pv
         set_receive_data_len(o.num_samples);
 
         if (!_is_instant)
-        {
             _data_lock = true;
-        }
 
         _data_updated = true;
     }
@@ -1802,7 +1800,7 @@ namespace pv
                 dsv_err("%s", "The collected data is error!");
 
             // trig next collect
-            if (!_is_instant && is_repeat_mode() && _is_working && event == DS_EV_COLLECT_TASK_END)
+            if (is_repeat_mode() && _is_working && event == DS_EV_COLLECT_TASK_END)
             {
                 _callback->trigger_message(DSV_MSG_TRIG_NEXT_COLLECT);
             }
