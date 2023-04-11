@@ -181,7 +181,7 @@ void Viewport::doPaint()
         {
             paintSignals(p, fore, back);
         }
-        else if (_view.session().is_realtime_mode())
+        else if (_view.session().is_realtime_refresh())
         {  
             _view.session().have_new_realtime_refresh(false); // Try to reset refresh timer.
             paintSignals(p, fore, back);
@@ -1340,7 +1340,7 @@ void Viewport::set_receive_len(quint64 length)
             // Do not to refresh the view until data collection is complete.
             return;
         }
-        else if (_view.session().is_realtime_mode())
+        else if (_view.session().is_realtime_refresh())
         {
             if (_view.session().have_new_realtime_refresh(true) == false){
                 return;

@@ -903,7 +903,7 @@ namespace pv
                 }
             }
 
-            if (_device_agent->get_work_mode() == LOGIC && _session->is_realtime_mode()){
+            if (_device_agent->get_work_mode() == LOGIC && _session->is_realtime_refresh()){
                 if (_view != NULL)
                     _view->auto_set_max_scale();
             }
@@ -979,7 +979,7 @@ namespace pv
                 }
             }
 
-            if (_device_agent->get_work_mode() == LOGIC && _session->is_realtime_mode()){
+            if (_device_agent->get_work_mode() == LOGIC && _session->is_realtime_refresh()){
                 if (_view != NULL)
                     _view->auto_set_max_scale();
             }
@@ -1057,8 +1057,9 @@ namespace pv
         {
             QString iconPath = GetIconPath();
 
-            int mode = _device_agent->get_work_mode();
+            _action_realtime->setVisible(false);
 
+            int mode = _device_agent->get_work_mode();
             if (mode == LOGIC)
             {
                 if (_device_agent->is_file()){
@@ -1074,7 +1075,7 @@ namespace pv
                     {
                         int mode_val = 0;
                         if (_device_agent->get_config_value_int16(SR_CONF_OPERATION_MODE, mode_val)){                  
-                            _action_realtime->setVisible(mode_val == LO_OP_STREAM);
+                            //_action_realtime->setVisible(mode_val == LO_OP_STREAM);
                         }
                     }                  
                 }

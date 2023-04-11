@@ -95,6 +95,7 @@ namespace pv
         _rt_ck_refresh_time_id = 0;
         _view_data = NULL;
         _capture_data = NULL;
+        _is_stream_mode = false;
 
         _data_list.push_back(new SessionData());
         _data_list.push_back(new SessionData());
@@ -463,8 +464,9 @@ namespace pv
 
         _capture_data->clear();
         _view_data->clear();
-        
-        if (_device_agent.get_work_mode() == LOGIC && is_repeat_mode())
+
+        int mode = _device_agent.get_work_mode();        
+        if (mode == LOGIC && is_repeat_mode())
         {
             if (_view_data == _capture_data){
                 for (auto dt : _data_list){
@@ -473,11 +475,20 @@ namespace pv
                         break;
                     }
                 }
-            }
+            }            
         }
         else{
             _capture_data = _view_data;
         }
+
+        _is_stream_mode = false;        
+        if (mode == LOGIC && _device_agent.is_hardware())
+        {
+            int mode_val = 0;
+            if (_device_agent.get_config_value_int16(SR_CONF_OPERATION_MODE, mode_val)){                  
+                _is_stream_mode = mode_val == LO_OP_STREAM;
+            }
+        } 
        
         update_view();
 
@@ -499,7 +510,7 @@ namespace pv
             _callback->trigger_message(DSV_MSG_START_COLLECT_WORK);           
 
             // Start a timer, for able to refresh the view per (1000 / 30)ms on real-time mode.
-            if (is_realtime_mode()){
+            if (is_realtime_refresh()){
                 _refresh_rt_timer.Start(1000 / 30);
             }
             return true;
@@ -1851,13 +1862,13 @@ namespace pv
         }
     }
 
-    void SigSession::set_operation_mode(COLLECT_OPT_MODE repeat)
+    void SigSession::set_operation_mode(COLLECT_OPT_MODE m)
     {
         assert(!_is_working);
 
-        if (_opt_mode != repeat)
+        if (_opt_mode != m)
         {
-            _opt_mode = repeat;
+            _opt_mode = m;
             _repeat_hold_prg = 0;
         }
     }

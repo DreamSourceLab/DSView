@@ -83,6 +83,7 @@ enum COLLECT_OPT_MODE{
     OPT_SINGLE = 0,
     OPT_REPEAT = 1,
     OPT_REALTIME = 2,
+    OPT_LOOP = 3,
 }; 
 
 class SessionData
@@ -329,7 +330,7 @@ public:
         return _device_status == ST_STOPPED;
     }
 
-    void set_operation_mode(COLLECT_OPT_MODE repeat);
+    void set_operation_mode(COLLECT_OPT_MODE m);
 
     inline bool is_repeat_mode(){
         return _opt_mode == OPT_REPEAT;
@@ -341,6 +342,10 @@ public:
 
     inline bool is_realtime_mode(){
         return _opt_mode == OPT_REALTIME;
+    }
+
+    inline bool is_realtime_refresh(){
+        return (is_realtime_mode() || (_is_stream_mode && is_single_mode()));
     }
 
     inline bool is_repeating(){
@@ -532,6 +537,7 @@ private:
     uint64_t    _rt_refresh_time_id;
     uint64_t    _rt_ck_refresh_time_id;
     COLLECT_OPT_MODE    _opt_mode;
+    bool        _is_stream_mode;
  
 
     ISessionCallback *_callback;
