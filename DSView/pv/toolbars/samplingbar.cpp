@@ -1210,6 +1210,17 @@ namespace pv
             else{
                 _sample_rate.setEnabled(bEnable);
                 _sample_count.setEnabled(bEnable);
+
+                if (mode == LOGIC && _session->get_device()->is_hardware())
+                {
+                    int mode_val = 0;
+                    if (_session->get_device()->get_config_value_int16(SR_CONF_OPERATION_MODE, mode_val)){                  
+                        if (mode_val == LO_OP_INTEST){
+                            _sample_rate.setEnabled(false);
+                            _sample_count.setEnabled(false);
+                        }
+                    }
+                }
             }
 
             if (_session->is_working()){
@@ -1218,7 +1229,7 @@ namespace pv
             }
             else{
                 _run_stop_button.setEnabled(true);
-                _instant_button.setEnabled(true);
+                _instant_button.setEnabled(true);                
             }
  
             QString iconPath = GetIconPath();
