@@ -331,6 +331,20 @@ QString GetAppDataDir()
     dsv_err("%s", "Data directory is not exists: ../share/DSView");
     assert(false);   
 #else
+
+#ifdef Q_OS_DARWIN
+    QDir dir1(QCoreApplication::applicationDirPath());
+    //"./res" is not exists
+    if (dir1.cd("res") == false){
+        QDir dir(QCoreApplication::applicationDirPath());
+        // ../share/DSView
+        if (dir.cd("..") && dir.cd("share") && dir.cd("DSView"))
+        {
+            return dir.absolutePath();
+        }
+    }
+#endif
+
     // The bin location
     return QCoreApplication::applicationDirPath();
 #endif
