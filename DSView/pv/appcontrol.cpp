@@ -64,11 +64,29 @@ void AppControl::Destroy(){
 } 
 
 bool AppControl::Init()
-{    
+{   
+    QString qs;
+    std::string cs;
+
+    qs = GetAppDataDir();
+    cs = qs.toStdString();
+    dsv_info("GetAppDataDir:\"%s\"", cs.c_str());
+
+    qs = GetResourceDir();
+    cs = qs.toStdString();
+    dsv_info("GetResourceDir:\"%s\"", cs.c_str());
+
+    qs = GetUserDataDir();
+    cs = qs.toStdString();
+    dsv_info("GetUserDataDir:\"%s\"", cs.c_str());
+
+    qs = GetDecodeScriptDir();
+    cs = qs.toStdString();
+    dsv_info("GetDecodeScriptDir:\"%s\"", cs.c_str());
+    //---------------end print directorys.
+
     _session->init();
-
     pv::encoding::init();
-
     srd_log_set_context(dsv_log_context());
 
 #if defined(_WIN32) && defined(DEBUG_INFO)
@@ -86,8 +104,6 @@ bool AppControl::Init()
     char path[256] = {0};
     QString dir = GetDecodeScriptDir();   
     strcpy(path, dir.toUtf8().data());
-
-    dsv_info("Decode script files directory:\"%s\"", dir.toUtf8().data());
 
     // Initialise libsigrokdecode
     if (srd_init(path) != SRD_OK)
