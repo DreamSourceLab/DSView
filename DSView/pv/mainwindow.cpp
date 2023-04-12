@@ -114,6 +114,7 @@ namespace pv
         _session->add_msg_listener(this);
 
         _is_auto_switch_device = false;
+        _is_save_confirm_msg = false;
 
         setup_ui();
 
@@ -1486,13 +1487,26 @@ namespace pv
     }
 
     bool MainWindow::confirm_to_store_data()
-    {
+    {   
+        bool ret = false;
+        _is_save_confirm_msg = true;       
+
         if (_session->have_hardware_data() && _session->is_first_store_confirm())
         {   
             // Only popup one time.
-            return MsgBox::Confirm(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SAVE_CAPDATE), "Save captured data?"));
+            ret =  MsgBox::Confirm(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SAVE_CAPDATE), "Save captured data?"));
+
+            if (!ret && _is_auto_switch_device)
+            {
+                dsv_info("The data save confirm end, auto switch to the new device.");
+                _is_auto_switch_device = false;
+                _session->set_default_device();
+                check_usb_device_speed();
+            }
         }
-        return false;
+
+        _is_save_confirm_msg = false;
+        return ret;
     }
 
     void MainWindow::check_session_file_version()
@@ -1741,6 +1755,13 @@ namespace pv
                         _sampling_bar->update_device_list(); // Update the list only.
                         return;
                     }
+                }
+
+                // The store confirm is not processed.
+                if (_is_save_confirm_msg){
+                    _is_auto_switch_device = true;
+                    _sampling_bar->update_device_list();
+                    return;
                 }
 
                 if (confirm_to_store_data())

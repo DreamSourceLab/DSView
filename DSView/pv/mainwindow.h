@@ -213,6 +213,7 @@ private:
     DeviceAgent     *_device_agent;
     bool            _is_auto_switch_device;
     high_resolution_clock::time_point _last_key_press_time;
+    bool            _is_save_confirm_msg;
 
     int _key_value;
     bool _key_vaild;
