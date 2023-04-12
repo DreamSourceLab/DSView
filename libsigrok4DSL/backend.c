@@ -290,7 +290,7 @@ static int sanity_check_all_output_modules(void)
  *
  * @since 0.1.0 (but the API changed in 0.2.0)
  */
-SR_API int sr_init(struct sr_context **ctx)
+SR_PRIV int sr_init(struct sr_context **ctx)
 {
 	int ret = SR_ERR;
 	struct sr_context *context;
