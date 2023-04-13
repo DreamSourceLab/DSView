@@ -196,7 +196,7 @@ void Viewport::doPaint()
                     int captured_progress;
          
                     if (_view.session().get_capture_status(triggered, captured_progress)){
-                        _view.show_captured_progress(_transfer_started, captured_progress);
+                        _view.show_captured_progress(triggered, captured_progress);
                     }
                 }
             }
@@ -1829,7 +1829,7 @@ void Viewport::stop_trigger_timer()
 void Viewport::on_trigger_timer()
 {
     _timer_cnt++;
-    update();
+    update();  // To refresh the trigger status information.
 }
 
 void Viewport::on_drag_timer()
