@@ -801,8 +801,6 @@ namespace pv
         {
             bool test = false;
 
-            dsv_info("Commit device settings.");
-
             if (_device_agent->have_instance())
             {
                 GVariant *gvar = _device_agent->get_config(NULL, NULL, SR_CONF_TEST);

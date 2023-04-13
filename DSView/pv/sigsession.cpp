@@ -209,7 +209,9 @@ namespace pv
     {
         assert(!_is_saving);
         assert(!_is_working);
-        assert(_callback); 
+        assert(_callback);
+
+        set_operation_mode(OPT_SINGLE);
 
         _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_CHANGE_PREV);
 
@@ -241,10 +243,12 @@ namespace pv
         _capture_data->_cur_snap_samplerate = _device_agent.get_sample_rate();
         _capture_data->_cur_samplelimits = _device_agent.get_sample_limit();
 
+        /*
         if (_device_agent.get_work_mode() == DSO)
             _opt_mode = OPT_REPEAT;
         else
             _opt_mode = OPT_SINGLE;
+        */
 
         // The current device changed.
         _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_CHANGED);
@@ -488,7 +492,10 @@ namespace pv
             if (_device_agent.get_config_value_int16(SR_CONF_OPERATION_MODE, mode_val)){                  
                 _is_stream_mode = mode_val == LO_OP_STREAM;
             }
-        } 
+        }
+        else if (instant && mode == LOGIC && _device_agent.is_demo()){
+            _is_stream_mode = true;
+        }
        
         update_view();
 
@@ -1554,7 +1561,7 @@ namespace pv
 
     int SigSession::get_repeat_hold()
     {
-        if (!_is_instant && _is_working && is_repeat_mode())
+        if (_is_working && is_repeat_mode())
             return _repeat_hold_prg;
         else
             return 0;

@@ -170,9 +170,10 @@ void Viewport::doPaint()
             break;
     } 
 
-    if (_view.session().get_device()->get_work_mode() == LOGIC ||
-        _view.session().is_instant()) 
-    {   
+    int mode = _view.session().get_device()->get_work_mode();
+
+    if (mode == LOGIC || _view.session().is_instant()) 
+    {
         if (_view.session().is_init_status())
         {
             paintCursors(p);
@@ -1349,7 +1350,7 @@ void Viewport::set_receive_len(quint64 length)
     }
 
     // Received new data, and refresh the view.
-    update();
+    repaint();
 }
 
 void Viewport::clear_measure()
