@@ -96,6 +96,7 @@ void _loadApp(AppOptions &o, QSettings &st){
     getFiled("originalData", st, o.originalData, false);
     getFiled("ableSaveLog", st, o.ableSaveLog, false);
     getFiled("logLevel", st, o.logLevel, 3);
+    getFiled("transDecoderDlg", st, o.transDecoderDlg, true);
 
     QString fmt;
     getFiled("protocalFormats", st, fmt, "");
@@ -103,7 +104,7 @@ void _loadApp(AppOptions &o, QSettings &st){
          StringToFormatArray(fmt, o.m_protocolFormats);
     }
    
-    st.endGroup();  
+    st.endGroup();
 }
 
 void _saveApp(AppOptions &o, QSettings &st){
@@ -113,6 +114,7 @@ void _saveApp(AppOptions &o, QSettings &st){
     setFiled("originalData", st, o.originalData);
     setFiled("ableSaveLog", st, o.ableSaveLog);
     setFiled("logLevel", st, o.logLevel);
+    setFiled("transDecoderDlg", st, o.transDecoderDlg);
 
     QString fmt =  FormatArrayToString(o.m_protocolFormats);
     setFiled("protocalFormats", st, fmt);

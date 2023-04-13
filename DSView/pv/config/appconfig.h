@@ -59,6 +59,7 @@ struct AppOptions
     bool  originalData;
     bool  ableSaveLog;
     int   logLevel;
+    bool  transDecoderDlg;
 
     std::vector<StringPair> m_protocolFormats;
 };
