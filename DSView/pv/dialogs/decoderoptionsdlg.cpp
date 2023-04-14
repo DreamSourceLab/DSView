@@ -32,6 +32,7 @@
 #include <QVariant>
 #include <QGuiApplication>
 #include <QScreen>
+#include <QCheckBox>
 
 #include "../data/decoderstack.h"
 #include "../prop/binding/decoderoptions.h"
@@ -47,6 +48,7 @@
 #include "../ui/msgbox.h"
 
 #include "../ui/langresource.h"
+#include "../config/appconfig.h"
 
 namespace pv {
 namespace dialogs {
@@ -58,6 +60,7 @@ DecoderOptionsDlg::DecoderOptionsDlg(QWidget *parent)
     _cursor1 = 0;
     _cursor2 = 0;
     _contentHeight = 0;
+    _is_reload_form = false;
 }
 
 DecoderOptionsDlg::~DecoderOptionsDlg()
@@ -163,7 +166,20 @@ void DecoderOptionsDlg::load_options_view()
     _end_comboBox->setCurrentIndex(dex2);
  
     update_decode_range(); // set default sample range
-  
+
+    int h_ex2 = 0;
+    bool bLang = AppConfig::Instance()._appOptions.transDecoderDlg;
+
+    if (LangResource::Instance()->is_lang_en() == false){
+        QString trans_lable(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DECODER_IF_TRANS), "Translate param names"));
+        QCheckBox *ck_trans = new QCheckBox();
+        ck_trans->setChecked(bLang);
+        connect(ck_trans, SIGNAL(released()), this, SLOT(on_trans_pramas()));
+        ck_trans->setStyleSheet("margin-left:60px");    
+        form->addRow(ck_trans, new QLabel(trans_lable));
+        h_ex2 = 30;   
+    }  
+
   //tr
     form->addRow(_start_comboBox, new QLabel(
                      L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CURSOR_FOR_DECODE_START), "The cursor for decode start time")));
@@ -186,7 +202,7 @@ void DecoderOptionsDlg::load_options_view()
      // scroll     
     QSize tsize = dlg->sizeHint();
     int w = tsize.width(); 
-    int other_height = 190; 
+    int other_height = 190 + h_ex2; 
     _contentHeight += 10;
 
 #ifdef Q_OS_DARWIN
@@ -360,6 +376,11 @@ void DecoderOptionsDlg::create_decoder_form(
     decoder_form->setFormAlignment(Qt::AlignLeft);
     decoder_form->setLabelAlignment(Qt::AlignLeft);
     decoder_form->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
+
+    bool bLang = AppConfig::Instance()._appOptions.transDecoderDlg;
+    if (LangResource::Instance()->is_lang_en()){
+        bLang = false;
+    }
  
 	// Add the mandatory channels
 	for(l = decoder->channels; l; l = l->next) {
@@ -367,8 +388,14 @@ void DecoderOptionsDlg::create_decoder_form(
 		DsComboBox *const combo = create_probe_selector(parent, dec, pdch);
 
         const char *desc_str = NULL;
-        if (pdch->idn != NULL){
-            desc_str = LangResource::Instance()->get_lang_text(STR_PAGE_DECODER, pdch->idn, pdch->desc);
+        const char *lang_str = NULL;
+
+        if (pdch->idn != NULL && LangResource::Instance()->is_lang_en() == false){
+            lang_str = LangResource::Instance()->get_lang_text(STR_PAGE_DECODER, pdch->idn, pdch->desc);
+        }
+
+        if (lang_str != NULL && bLang){
+            desc_str = lang_str;
         }
         else{
             desc_str = pdch->desc;
@@ -391,8 +418,14 @@ void DecoderOptionsDlg::create_decoder_form(
 		DsComboBox *const combo = create_probe_selector(parent, dec, pdch);
 		
         const char *desc_str = NULL;
-        if (pdch->idn != NULL){
-            desc_str = LangResource::Instance()->get_lang_text(STR_PAGE_DECODER, pdch->idn, pdch->desc);
+        const char *lang_str = NULL;
+        
+        if (pdch->idn != NULL && LangResource::Instance()->is_lang_en() == false){
+            lang_str = LangResource::Instance()->get_lang_text(STR_PAGE_DECODER, pdch->idn, pdch->desc);
+        }
+
+        if (lang_str != NULL && bLang){
+            desc_str = lang_str;
         }
         else{
             desc_str = pdch->desc;
@@ -417,7 +450,8 @@ void DecoderOptionsDlg::create_decoder_form(
     auto group = new pv::widgets::DecoderGroupBox(_trace->decoder(), 
                             dec, 
                             decoder_form, 
-                            parent); 
+                            parent);
+
 	form->addRow(group); 
 }
 
@@ -473,7 +507,18 @@ void DecoderOptionsDlg::on_accept()
     }
 
     this->accept();
-} 
+}
+
+void DecoderOptionsDlg::on_trans_pramas()
+{
+    QCheckBox *ck_box = dynamic_cast<QCheckBox*>(sender());
+    assert(ck_box);
+
+    AppConfig::Instance()._appOptions.transDecoderDlg = ck_box->isChecked();
+    AppConfig::Instance().SaveApp();
+    _is_reload_form = true;
+    this->close();
+}
 
 }//dialogs
 }//pv

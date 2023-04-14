@@ -662,5 +662,9 @@
     {
         "id": "IDS_DLG_PATH_NAME",
         "text": "path"
+    },
+    {
+        "id": "IDS_DLG_DECODER_IF_TRANS",
+        "text": "Translate param names"
     }
 ]

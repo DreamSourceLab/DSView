@@ -670,24 +670,34 @@ void* DecodeTrace::get_key_handel()
 bool DecodeTrace::create_popup(bool isnew)
 { 
     int ret = false;  //setting have changed flag 
-    QWidget *top = AppControl::Instance()->GetTopWindow();
-    dialogs::DecoderOptionsDlg dlg(top);
-    dlg.set_cursor_range(_decode_cursor1, _decode_cursor2);
-    dlg.load_options(this);
 
-    if (QDialog::Accepted == dlg.exec())
+    while (true)
     {
-        for(auto dec : _decoder_stack->stack())
+        QWidget *top = AppControl::Instance()->GetTopWindow();
+        dialogs::DecoderOptionsDlg dlg(top);
+        dlg.set_cursor_range(_decode_cursor1, _decode_cursor2);
+        dlg.load_options(this);
+
+        int dlg_ret = dlg.exec();
+
+        if (QDialog::Accepted == dlg_ret)
         {
-            if (dec->commit() || _decoder_stack->options_changed()) {
-                _decoder_stack->set_options_changed(true);
-                _decode_start = dec->decode_start();
-                _decode_end = dec->decode_end();
-                ret = true;
+            for(auto dec : _decoder_stack->stack())
+            {
+                if (dec->commit() || _decoder_stack->options_changed()) {
+                    _decoder_stack->set_options_changed(true);
+                    _decode_start = dec->decode_start();
+                    _decode_end = dec->decode_end();
+                    ret = true;
+                }
             }
+
+            dlg.get_cursor_range(_decode_cursor1, _decode_cursor2);
         } 
 
-        dlg.get_cursor_range(_decode_cursor1, _decode_cursor2);
+        if (QDialog::Accepted == dlg_ret || dlg.is_reload_form() == false){
+            break;
+        }
     }
  
     return ret;

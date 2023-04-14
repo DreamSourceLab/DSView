@@ -86,6 +86,10 @@ public:
     bool is_new_decoder(const char *decoder_id);
     void reload_dynamic();
     void release_dynamic();
+
+    inline bool is_lang_en(){
+        return _cur_lang == 31;
+    }
    
 private:
     const char *get_lang_key(int lang);

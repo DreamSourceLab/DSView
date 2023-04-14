@@ -86,6 +86,10 @@ public:
 
     void load_options(view::DecodeTrace *trace);
 
+    inline bool is_reload_form(){
+        return _is_reload_form;
+    }
+
 private:
     void load_options_view();
 
@@ -105,6 +109,7 @@ private slots:
     void on_probe_selected(int);
     void on_region_set(int index);
     void on_accept();
+    void on_trans_pramas();
 
 private: 
     std::vector<prop::binding::DecoderOptions*> _bindings;
@@ -116,6 +121,7 @@ private:
     int          _contentHeight;
     
     std::vector<ProbeSelector> _probe_selectors;
+    bool        _is_reload_form;
 };
 
 }//dialogs

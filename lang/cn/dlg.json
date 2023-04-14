@@ -662,5 +662,9 @@
     {
         "id": "IDS_DLG_PATH_NAME",
         "text": "路径"
+    },
+    {
+        "id": "IDS_DLG_DECODER_IF_TRANS",
+        "text": "翻译参数名称"
     }
 ]

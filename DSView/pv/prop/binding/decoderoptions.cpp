@@ -32,6 +32,7 @@
 #include "../int.h"
 #include "../string.h"
 #include "../../ui/langresource.h"
+#include "../../config/appconfig.h"
 
 using namespace boost;
 using namespace std;
@@ -50,14 +51,26 @@ DecoderOptions::DecoderOptions(pv::data::DecoderStack* decoder_stack, data::deco
 	const srd_decoder *const dec = _decoder->decoder();
 	assert(dec);
 
+	bool bLang = AppConfig::Instance()._appOptions.transDecoderDlg;
+
+	if (LangResource::Instance()->is_lang_en()){
+        bLang = false;
+    }
+
 	for (GSList *l = dec->options; l; l = l->next)
 	{ 
 		const srd_decoder_option *const opt =
 			(srd_decoder_option*)l->data;
 
 		const char *desc_str = NULL;
-        if (opt->idn != NULL){
-            desc_str = LangResource::Instance()->get_lang_text(STR_PAGE_DECODER, opt->idn, opt->desc);
+		const char *lang_str = NULL;
+
+        if (opt->idn != NULL && LangResource::Instance()->is_lang_en() == false){
+            lang_str = LangResource::Instance()->get_lang_text(STR_PAGE_DECODER, opt->idn, opt->desc);
+        }
+
+		if (lang_str != NULL && bLang){
+            desc_str = lang_str;
         }
         else{
             desc_str = opt->desc;
