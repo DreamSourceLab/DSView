@@ -278,6 +278,10 @@ void TriggerDock::device_updated()
 
             sample_limits = _session->get_device()->get_sample_limit();
 
+            _adv_radioButton->setEnabled(!stream);
+            _position_spinBox->setEnabled(!stream);
+            _position_slider->setEnabled(!stream);
+
             if (stream)
                 maxRange = 1;
             else if (hw_depth >= sample_limits)

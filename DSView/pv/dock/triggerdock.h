@@ -88,7 +88,7 @@ private:
     bool commit_trigger();
  
 
-public slots:
+private slots:
     void simple_trigger();
     void adv_trigger();
     void widget_enable(int index);
