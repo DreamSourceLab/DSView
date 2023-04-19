@@ -1813,7 +1813,8 @@ namespace pv
             break;
 
         case DSV_MSG_CLEAR_DECODE_DATA:
-            _protocol_widget->reset_view();
+            if (_device_agent->get_work_mode() == LOGIC)
+                _protocol_widget->reset_view();
             break;
         
         case DSV_MSG_STORE_CONF_PREV:

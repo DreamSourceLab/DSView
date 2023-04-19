@@ -81,9 +81,8 @@ enum DEVICE_STATUS_TYPE{
 };
 enum COLLECT_OPT_MODE{
     OPT_SINGLE = 0,
-    OPT_REPEAT = 1,
-    OPT_REALTIME = 2,
-    OPT_LOOP = 3,
+    OPT_REPEAT = 1, 
+    OPT_LOOP = 2,
 }; 
 
 class SessionData
@@ -166,7 +165,7 @@ public:
     bool set_file(QString name);
     void close_file(ds_device_handle dev_handle);
     bool start_capture(bool instant);
-    void stop_capture();
+    bool stop_capture();
     bool switch_work_mode(int mode);
 
     uint64_t cur_samplerate();
@@ -340,12 +339,16 @@ public:
         return _opt_mode == OPT_SINGLE;
     }
 
-    inline bool is_realtime_mode(){
-        return _opt_mode == OPT_REALTIME;
+    inline bool is_loop_mode(){
+        return _opt_mode == OPT_LOOP;
     }
 
     inline bool is_realtime_refresh(){
-        return (is_realtime_mode() || (_is_stream_mode && is_single_mode()));
+        if (is_loop_mode() || (_is_stream_mode && is_single_mode() ))
+            return true;
+        if (_is_stream_mode && is_repeat_mode() && is_single_buffer())
+            return true;
+        return false;     
     }
 
     inline bool is_repeating(){
@@ -435,6 +438,12 @@ private:
     void add_decode_task(view::DecodeTrace *trace);
     void remove_decode_task(view::DecodeTrace *trace);
     void clear_all_decode_task(int &runningDex);
+
+    inline void clear_all_decode_task2(){
+        int run_dex = 0;
+        clear_all_decode_task(run_dex);
+        _callback->trigger_message(DSV_MSG_CLEAR_DECODE_DATA);
+    }
    
     void decode_task_proc();
     view::DecodeTrace* get_top_decode_task();    
@@ -532,7 +541,9 @@ private:
     bool        _is_saving;
     bool        _is_instant;
     int         _device_status;
-    int         _capture_time_id;
+    int         _work_time_id;
+    int         _capture_times;
+    int         _lst_capture_times;
     int         _confirm_store_time_id;
     uint64_t    _rt_refresh_time_id;
     uint64_t    _rt_ck_refresh_time_id;

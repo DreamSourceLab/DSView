@@ -179,6 +179,10 @@ public:
 
     bool channel_is_enable(int index);
 
+    int get_operation_mode();
+
+    bool is_stream_mode();
+
 private:
     void config_changed();
     bool is_in_history(ds_device_handle dev_handle);

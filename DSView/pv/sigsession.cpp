@@ -112,9 +112,11 @@ namespace pv
         _is_decoding = false;
         _bClose = false;
         _callback = NULL;
-        _capture_time_id = 0;
+        _work_time_id = 0;
+        _capture_times = 0;
         _confirm_store_time_id = 0;
         _repeat_wait_prog_step = 10;
+        _lst_capture_times = 0;
 
         _device_agent.set_callback(this);
 
@@ -462,39 +464,37 @@ namespace pv
             return false;
         }
 
-        int run_dex = 0;
-        clear_all_decode_task(run_dex);
+        clear_all_decode_task2();
         clear_decode_result();
-
+        
         _capture_data->clear();
         _view_data->clear();
+        _capture_data = _view_data;
+        _is_stream_mode = false;
+        _capture_times = 0;
 
-        int mode = _device_agent.get_work_mode();        
-        if (mode == LOGIC && is_repeat_mode())
-        {
-            if (_view_data == _capture_data){
-                for (auto dt : _data_list){
-                    if (dt != _view_data){
-                        _capture_data = dt;
-                        break;
-                    }
-                }
-            }            
-        }
-        else{
-            _capture_data = _view_data;
-        }
+        set_cur_snap_samplerate(_device_agent.get_sample_rate());
+        set_cur_samplelimits(_device_agent.get_sample_limit());
 
-        _is_stream_mode = false;        
-        if (mode == LOGIC && _device_agent.is_hardware())
+        int mode = _device_agent.get_work_mode();
+        if (mode == LOGIC)
         {
-            int mode_val = 0;
-            if (_device_agent.get_config_value_int16(SR_CONF_OPERATION_MODE, mode_val)){                  
-                _is_stream_mode = mode_val == LO_OP_STREAM;
+            if (is_repeat_mode()
+                    && _device_agent.is_hardware() 
+                    && _device_agent.is_stream_mode()){
+                set_repeat_intvl(0.1);
             }
-        }
-        else if (instant && mode == LOGIC && _device_agent.is_demo()){
-            _is_stream_mode = true;
+
+            if (_device_agent.is_hardware()){
+                _is_stream_mode = _device_agent.is_stream_mode();
+            }
+            else if (_device_agent.is_demo()){
+                _is_stream_mode = true;
+            }
+
+            if (is_loop_mode() && !_is_stream_mode){
+                set_operation_mode(OPT_SINGLE); // Reset the capture mode.
+            }
         }
        
         update_view();
@@ -505,18 +505,15 @@ namespace pv
         else
             _is_instant = instant;
 
-        set_cur_snap_samplerate(_device_agent.get_sample_rate());
-        set_cur_samplelimits(_device_agent.get_sample_limit());
-
         _callback->trigger_message(DSV_MSG_START_COLLECT_WORK_PREV);
 
         if (exec_capture())
         {   
-            _capture_time_id++;
+            _work_time_id++;
             _is_working = true;
             _callback->trigger_message(DSV_MSG_START_COLLECT_WORK);           
 
-            // Start a timer, for able to refresh the view per (1000 / 30)ms on real-time mode.
+            // Start a timer, for able to refresh the view per (1000 / 30)ms.
             if (is_realtime_refresh()){
                 _refresh_rt_timer.Start(1000 / 30);
             }
@@ -533,68 +530,103 @@ namespace pv
             dsv_err("%s", "Error!Device is running.");
             return false;
         }
-        
-        int mode = _device_agent.get_work_mode();
-        if (mode == DSO || mode == ANALOG)
-        {   
-            // reset measure of dso signal
-            for (auto s : _signals){ 
-                if (s->signal_type() == DSO_SIGNAL){
-                    view::DsoSignal *dsoSig = (view::DsoSignal*)s;
-                    dsoSig->set_mValid(false);
-                }
-            }
-        }     
 
         if (_device_agent.have_enabled_channel() == false)
         {
             _callback->show_error("No probes enabled.");
             return false;
         }
+        
+        _capture_times++;
+
+        int mode = _device_agent.get_work_mode();
+        bool bAddDecoder = false;
+        bool bSwapBuffer = false;
+   
+        if (mode == DSO || mode == ANALOG)
+        {
+            // reset measure of dso signal
+            for (auto s : _signals){ 
+                if (s->signal_type() == DSO_SIGNAL){
+                    view::DsoSignal *dsoSig = (view::DsoSignal*)s;
+                    dsoSig->set_mValid(false);
+                }
+            }   
+        }
+        else
+        {    
+            if (is_single_mode())
+            {
+                if (_is_stream_mode)
+                    bAddDecoder = true;
+            }
+            else if (is_repeat_mode())
+            { 
+                if (_is_stream_mode)
+                {
+                    if (_capture_times == 1)
+                        bAddDecoder = true;
+                    else
+                        bSwapBuffer = true;
+                }
+                else{
+                    bSwapBuffer = true;
+                }             
+            }
+            else if (is_loop_mode())
+            {
+                bAddDecoder = true;
+            }
+        }
+
+        if (bAddDecoder){
+            clear_all_decode_task2();
+            clear_decode_result();
+        }
+
+        if (bSwapBuffer){
+            int buf_index = 0;
+            for(int i=0; i<(int)_data_list.size(); i++){
+                if (_data_list[i] == _view_data){
+                    buf_index = i;
+                    break;
+                }
+            }
+
+            buf_index = (buf_index + 1) % 2;
+            _capture_data = _data_list[buf_index];
+            _capture_data->clear();
+
+            set_cur_snap_samplerate(_device_agent.get_sample_rate());
+            set_cur_samplelimits(_device_agent.get_sample_limit());
+        }
 
         capture_init();
 
-        if (_device_agent.start() == false)
-        {
+        if (_device_agent.start() == false){
             dsv_err("%s", "Start collect error!");
             return false;
         }
 
         if (mode == LOGIC)
-        {   
-            bool bClearDecodeData = false;
-            // On repeate mode, the last data can use to decode, so can't remove the current decode task.
-            // And on this mode, the decode task will be created when capture end.
-            if (is_repeat_mode() == false){
-                int run_dex = 0;
-                clear_all_decode_task(run_dex);
-                clear_decode_result();
-                bClearDecodeData = true;
-            }
-
-            for (auto de : _decode_traces)
-            {
+        {
+            for (auto de : _decode_traces){
                 de->decoder()->set_capture_end_flag(false);
 
-                // On real-time mode, create the decode task when capture started.
-                if (is_realtime_mode())
-                {
+                if (bAddDecoder){
                     de->frame_ended();
                     add_decode_task(de);
-                }                
-            }
-
-            if (bClearDecodeData)
-                _callback->trigger_message(DSV_MSG_CLEAR_DECODE_DATA);
+                }
+            } 
         }
 
         return true;
     }
 
-    void SigSession::stop_capture()
+    bool SigSession::stop_capture()
     { 
         if (!_is_working)
-            return;
+            return false;
 
         dsv_info("Stop collect.");
 
@@ -605,11 +637,11 @@ namespace pv
             _repeat_wait_prog_timer.Stop();
             _refresh_rt_timer.Stop();
             exit_capture();
-            return;
+            return true;
         }
 
         bool wait_upload = false;
-        if (is_single_mode())
+        if (is_single_mode() && _device_agent.get_work_mode() == LOGIC)
         {
             GVariant *gvar = _device_agent.get_config(NULL, NULL, SR_CONF_WAIT_UPLOAD);
             if (gvar != NULL)
@@ -639,11 +671,13 @@ namespace pv
                 // On repeat mode, the working status is changed, to post the event message.
                 _callback->trigger_message(DSV_MSG_END_COLLECT_WORK);
             }
+            return true;
         }
         else
         {
-            dsv_info("%s", "Device is uploading.");
+            dsv_info("%s", "Data is uploading, waiting capture auto end.");
         }
+        return false;
     }
 
     void SigSession::exit_capture()
@@ -994,7 +1028,17 @@ namespace pv
     }
 
     void SigSession::feed_in_logic(const sr_datafeed_logic &o)
-    {
+    {   
+        //Switch the data buffer.
+        if (o.length > 0 && is_repeat_mode() && _is_stream_mode)
+        {  
+            if (_capture_times != _lst_capture_times && _capture_times > 1)
+            {
+                _lst_capture_times = _capture_times;
+                _callback->trigger_message(DSV_MSG_SWAP_CAPTURE_BUFFER);
+            }
+        }
+
         if (_capture_data->get_logic()->memory_failed())
         {
             dsv_err("%s", "Unexpected logic packet");
@@ -1947,52 +1991,76 @@ namespace pv
             break;
 
         case DSV_MSG_REV_END_PACKET:
-        {
-            if (_device_agent.get_work_mode() == LOGIC)
             {
-                // On repeate mode, remove the current decode task when capture ended.
-                if (is_repeat_mode()){
-                    int run_dex = 0;
-                    //Stop all old task.
-                    clear_all_decode_task(run_dex);
-                    clear_decode_result();
+                if (_device_agent.get_work_mode() == LOGIC)
+                {  
+                    bool bAddDecoder = false;
+                    bool bSwapBuffer = false;
 
-                    // Change the captrue data container.
-                    int buf_index = 0;
-                    for(int i=0; i<(int)_data_list.size(); i++){
-                        if (_data_list[i] == _capture_data){
-                            buf_index = i;
-                            break;
+                    if (is_single_mode())
+                    {
+                        if (!_is_stream_mode)
+                            bAddDecoder = true;
+                    }
+                    else if(is_repeat_mode())
+                    {
+                        if (!_is_stream_mode){
+                            bAddDecoder = true;
+                            bSwapBuffer = true;
                         }
                     }
-                    _view_data = _capture_data;
-                    buf_index = (buf_index + 1) % 2;
+                    else if (is_loop_mode())
+                    {
+                    }
 
-                    _capture_data = _data_list[buf_index];
-                    _capture_data->clear();
+                    if (bAddDecoder){
+                        clear_all_decode_task2();
+                        clear_decode_result();
+                    }
 
-                    set_cur_snap_samplerate(_device_agent.get_sample_rate());
-                    set_cur_samplelimits(_device_agent.get_sample_limit());
+                    //Swap caputrued data buffer
+                    if (bSwapBuffer)
+                    {
+                        if (_view_data != _capture_data)
+                            _view_data->clear();
+                        
+                        _view_data = _capture_data; 
+                        attach_data_to_signal(_view_data); 
+                    }
 
-                    attach_data_to_signal(_view_data);  
+                    for (auto de : _decode_traces)
+                    {
+                        de->decoder()->set_capture_end_flag(true);
+
+                        if (bAddDecoder){ 
+                            de->frame_ended();
+                            add_decode_task(de);
+                        }
+                    }
+
+                    _callback->frame_ended();
                 }
+            }
+            break;
+        
+        case DSV_MSG_SWAP_CAPTURE_BUFFER:
+            { 
+                clear_all_decode_task2();
+                clear_decode_result();
 
-                for (auto de : _decode_traces)
+                _view_data = _capture_data;
+                attach_data_to_signal(_view_data);
+
+                if (_is_stream_mode && is_repeat_mode())
                 {
-                    de->decoder()->set_capture_end_flag(true);
-
-                    // On real-time mode, the decode task have be created when capture start, 
-                    // so not need to create new decode task here.
-                    if (is_realtime_mode() == false){ 
+                    for (auto de : _decode_traces){
+                        de->decoder()->set_capture_end_flag(false);
                         de->frame_ended();
                         add_decode_task(de);
-                    }
-                }
-
-                _callback->frame_ended();
+                    }                
+                }         
             }
-        }
-        break;
+            break;
 
         case DSV_MSG_COLLECT_END:   
             break;
@@ -2015,8 +2083,7 @@ namespace pv
             _device_agent.set_config(NULL, NULL, SR_CONF_DEVICE_MODE, val);
 
             if (cur_mode == LOGIC){
-                int run_dex = 0;
-                clear_all_decode_task(run_dex);
+                clear_all_decode_task2();
             } 
 
             init_signals();
@@ -2029,8 +2096,8 @@ namespace pv
 
     bool SigSession::is_first_store_confirm()
     {
-        if (_capture_time_id != _confirm_store_time_id){
-            _confirm_store_time_id = _capture_time_id;
+        if (_work_time_id != _confirm_store_time_id){
+            _confirm_store_time_id = _work_time_id;
             return true;
         }
         return false;

@@ -36,8 +36,8 @@
         "text": "&Repetitive"
     },
     {
-        "id": "IDS_TOOLBAR_CAPTURE_MODE_REALTIME",
-        "text": "Real&time"
+        "id": "IDS_TOOLBAR_CAPTURE_MODE_LOOP",
+        "text": "&Loop"
     },
     {
         "id": "IDS_TOOLBAR_RUN_START",

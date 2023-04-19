@@ -36,8 +36,8 @@
         "text": "重复(&R)"
     },
     {
-        "id": "IDS_TOOLBAR_CAPTURE_MODE_REALTIME",
-        "text": "实时(&T)"
+        "id": "IDS_TOOLBAR_CAPTURE_MODE_LOOP",
+        "text": "回滚(&L)"
     },
     {
         "id": "IDS_TOOLBAR_RUN_START",

@@ -75,6 +75,7 @@ public:
 #define DSV_MSG_END_COLLECT_WORK_PREV   5005
 #define DSV_MSG_END_COLLECT_WORK        5006
 #define DSV_MSG_REV_END_PACKET          5007
+#define DSV_MSG_SWAP_CAPTURE_BUFFER     5008
 
 #define DSV_MSG_DEVICE_LIST_UPDATED     6000
 #define DSV_MSG_BEGIN_DEVICE_OPTIONS    6001 //Begin show device options dialog.

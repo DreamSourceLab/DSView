@@ -453,7 +453,7 @@ void DecoderStack::do_decode_work()
 	if (_snapshot == NULL)
 		return;
 
-    if (_session->is_realtime_mode() == false && _snapshot->empty())
+    if (_session->is_realtime_refresh() == false && _snapshot->empty())
     { 
         return;
     }
@@ -662,7 +662,7 @@ void DecoderStack::execute_decode_stack()
 		prev_di = di;
         decode_start = dec->decode_start();
 
-        if (_session->is_realtime_mode() == false)
+        if (_session->is_realtime_refresh() == false)
             decode_end = min(dec->decode_end(), _sample_count-1);
         else
             decode_end = max(dec->decode_end(), decode_end);

@@ -41,7 +41,7 @@
 
 #define SINGLE_ACTION_ICON  "/oneloop.svg"
 #define REPEAT_ACTION_ICON  "/repeat.svg"
-#define REALTIME_ACTION_ICON  "/update.svg"
+#define LOOP_ACTION_ICON  "/update.svg"
 
 using std::map;
 using std::max;
@@ -110,12 +110,12 @@ namespace pv
 
             _action_single = new QAction(this);
             _action_repeat = new QAction(this);
-            _action_realtime = new QAction(this);
+            _action_loop = new QAction(this);
 
             _mode_menu = new QMenu(this);
             _mode_menu->addAction(_action_single);
             _mode_menu->addAction(_action_repeat);
-            _mode_menu->addAction(_action_realtime);
+            _mode_menu->addAction(_action_loop);
             _mode_button.setMenu(_mode_menu);
 
             _mode_button.setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
@@ -135,7 +135,7 @@ namespace pv
             connect(&_sample_count, SIGNAL(currentIndexChanged(int)), this, SLOT(on_samplecount_sel(int)));
             connect(_action_single, SIGNAL(triggered()), this, SLOT(on_mode()));
             connect(_action_repeat, SIGNAL(triggered()), this, SLOT(on_mode()));
-            connect(_action_realtime, SIGNAL(triggered()), this, SLOT(on_mode()));
+            connect(_action_loop, SIGNAL(triggered()), this, SLOT(on_mode()));
             connect(&_sample_rate, SIGNAL(currentIndexChanged(int)), this, SLOT(on_samplerate_sel(int)));
         }
 
@@ -213,7 +213,7 @@ namespace pv
 
             _action_single->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_CAPTURE_MODE_SINGLE), "&Single"));
             _action_repeat->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_CAPTURE_MODE_REPEAT), "&Repetitive"));
-            _action_realtime->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_CAPTURE_MODE_REALTIME), "Real&time"));
+            _action_loop->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_CAPTURE_MODE_LOOP), "&Loop"));
         }
 
         void SamplingBar::reStyle()
@@ -254,7 +254,7 @@ namespace pv
 
                 _action_single->setIcon(QIcon(iconPath + SINGLE_ACTION_ICON));
                 _action_repeat->setIcon(QIcon(iconPath + REPEAT_ACTION_ICON));
-                _action_realtime->setIcon(QIcon(iconPath + REALTIME_ACTION_ICON));
+                _action_loop->setIcon(QIcon(iconPath + LOOP_ACTION_ICON));
 
                 update_mode_icon();
             }
@@ -856,8 +856,11 @@ namespace pv
         void SamplingBar::on_run_stop()
         {
             if (_session->is_working())
-            {
-                _session->stop_capture();
+            {   
+                _run_stop_action->setEnabled(false);
+                if (_session->stop_capture() == false){
+                    _run_stop_action->setEnabled(true);
+                }
                 return;
             }
 
@@ -918,20 +921,10 @@ namespace pv
 
             if (_session->is_working())
             {
-                bool wait_upload = false;
-
-                if (_session->is_repeat_mode() == false){
-                    GVariant *gvar = _device_agent->get_config(NULL, NULL, SR_CONF_WAIT_UPLOAD);
-                    if (gvar != NULL)
-                    {
-                        wait_upload = g_variant_get_boolean(gvar);
-                        g_variant_unref(gvar);
-                    }
+                _instant_action->setEnabled(false);
+                if (_session->stop_capture() == false){
+                    _instant_action->setEnabled(true);
                 }
-                if (!wait_upload){
-                    _session->stop_capture();
-                }
-
                 return;
             }
             
@@ -1055,7 +1048,7 @@ namespace pv
         {
             QString iconPath = GetIconPath();
 
-            _action_realtime->setVisible(false);
+            _action_loop->setVisible(false);
 
             int mode = _device_agent->get_work_mode();
             if (mode == LOGIC)
@@ -1067,15 +1060,7 @@ namespace pv
                 {
                     update_mode_icon();
                     _mode_action->setVisible(true);
-                    _action_repeat->setVisible(true);
-
-                    if (_device_agent->is_hardware())
-                    {
-                        int mode_val = 0;
-                        if (_device_agent->get_config_value_int16(SR_CONF_OPERATION_MODE, mode_val)){                  
-                            //_action_realtime->setVisible(mode_val == LO_OP_STREAM);
-                        }
-                    }                  
+                    _action_repeat->setVisible(true);                 
                 }
                 _run_stop_action->setVisible(true);
                 _instant_action->setVisible(true);              
@@ -1109,20 +1094,27 @@ namespace pv
             }
             else if (act == _action_repeat)
             { 
-                pv::dialogs::Interval interval_dlg(this);
-
-                interval_dlg.set_interval(_session->get_repeat_intvl());
-                interval_dlg.exec();
-
-                if (interval_dlg.is_done())
+                if (_device_agent->is_hardware() && _device_agent->is_stream_mode())
                 {
-                    _session->set_repeat_intvl(interval_dlg.get_interval());
+                    _session->set_repeat_intvl(0.1);
                     _session->set_operation_mode(OPT_REPEAT);
                 }
+                else{
+                    pv::dialogs::Interval interval_dlg(this);
+
+                    interval_dlg.set_interval(_session->get_repeat_intvl());
+                    interval_dlg.exec();
+
+                    if (interval_dlg.is_done())
+                    {
+                        _session->set_repeat_intvl(interval_dlg.get_interval());
+                        _session->set_operation_mode(OPT_REPEAT);
+                    }
+                }             
             }
-            else if (act == _action_realtime)
+            else if (act == _action_loop)
             { 
-                _session->set_operation_mode(OPT_REALTIME);
+                _session->set_operation_mode(OPT_LOOP);
             }
 
             update_mode_icon();
@@ -1259,8 +1251,8 @@ namespace pv
 
             if (_session->is_repeat_mode())
                 _mode_button.setIcon(QIcon(iconPath + REPEAT_ACTION_ICON));
-            else if (_session->is_realtime_mode())
-                _mode_button.setIcon(QIcon(iconPath + REALTIME_ACTION_ICON));
+            else if (_session->is_loop_mode())
+                _mode_button.setIcon(QIcon(iconPath + LOOP_ACTION_ICON));
             else
                 _mode_button.setIcon(QIcon(iconPath + SINGLE_ACTION_ICON));
         }

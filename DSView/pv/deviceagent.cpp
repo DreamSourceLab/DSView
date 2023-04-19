@@ -370,5 +370,19 @@ GSList *DeviceAgent::get_channels()
     return false;
  }
 
+ int DeviceAgent::get_operation_mode()
+ {
+    int mode_val = 0;
+    if (get_config_value_int16(SR_CONF_OPERATION_MODE, mode_val)){                  
+        return mode_val;
+    }
+    return -1;
+ }
+
+ bool DeviceAgent::is_stream_mode()
+ {
+    return get_operation_mode() == LO_OP_STREAM;
+ }
+
 //---------------device config end -----------/
 

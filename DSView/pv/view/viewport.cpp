@@ -1338,8 +1338,14 @@ void Viewport::set_receive_len(quint64 length)
             get_captured_progress(progress, progress100);
             _view.show_captured_progress(_transfer_started, progress100);
 
-            // Do not to refresh the view until data collection is complete.
-            return;
+            if (_view.session().is_single_buffer()){
+                if (_view.session().have_new_realtime_refresh(true) == false){
+                    return;
+                }
+            }
+            else{
+                return;
+            }
         }
         else if (_view.session().is_realtime_refresh())
         {
