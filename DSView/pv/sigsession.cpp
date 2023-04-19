@@ -675,7 +675,7 @@ namespace pv
         }
         else
         {
-            dsv_info("%s", "Data is uploading, waiting capture auto end.");
+            dsv_info("Data is uploading from device data buffer, waiting for stop.");
         }
         return false;
     }
