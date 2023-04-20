@@ -465,7 +465,7 @@ namespace pv
         }
 
         clear_all_decode_task2();
-        clear_decode_result();
+        clear_decode_result(); 
         
         _capture_data->clear();
         _view_data->clear();
@@ -581,7 +581,7 @@ namespace pv
 
         if (bAddDecoder){
             clear_all_decode_task2();
-            clear_decode_result();
+            clear_decode_result(); 
         }
 
         if (bSwapBuffer){
@@ -611,9 +611,8 @@ namespace pv
         if (mode == LOGIC)
         {
             for (auto de : _decode_traces){
-                de->decoder()->set_capture_end_flag(false);
-
                 if (bAddDecoder){
+                    de->decoder()->set_capture_end_flag(false);                 
                     de->frame_ended();
                     add_decode_task(de);
                 }
@@ -935,6 +934,7 @@ namespace pv
         _data_lock = true;
         _view_data->get_logic()->init();
 
+        clear_all_decode_task2();
         clear_decode_result();
 
         _view_data->get_dso()->init();
@@ -2121,10 +2121,11 @@ namespace pv
 
     void SigSession::clear_decode_result()
     {
-        for (auto d : _decode_traces)
-        {
-            d->decoder()->init();
+        for (auto de : _decode_traces){
+            de->decoder()->init();
+            de->decoder()->set_capture_end_flag(false);
         }
+        _callback->trigger_message(DSV_MSG_CLEAR_DECODE_DATA);
     }
 
     void SigSession::attach_data_to_signal(SessionData *data)

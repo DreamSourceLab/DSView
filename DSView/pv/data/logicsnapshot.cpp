@@ -94,6 +94,7 @@ void LogicSnapshot::init_all()
     _dest_ptr = NULL;
     _memory_failed = false;
     _last_ended = true;
+    _mipmap_sample_count = 0;
 }
 
 void LogicSnapshot::clear()
@@ -165,6 +166,7 @@ void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total
 
     _sample_count = 0;
     _ring_sample_count = 0;
+    _mipmap_sample_count = 0;
 
     for (unsigned int i = 0; i < _channel_num; i++) {
         _last_sample[i] = 0;
@@ -257,6 +259,7 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
 
                 if (_ring_sample_count % LeafBlockSamples == 0){
                     calc_mipmap(_channel_num - 1, index0, index1, LeafBlockSamples, true);
+                    _mipmap_sample_count = _ring_sample_count;
                 }
                                 
                 break;
@@ -278,7 +281,7 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
     uint64_t* chans_read_addr[CHANNEL_MAX_COUNT];
  
     for (unsigned int i=0; i<_channel_num; i++){
-      chans_read_addr[i] = (uint64_t*)data_src_ptr + i; 
+        chans_read_addr[i] = (uint64_t*)data_src_ptr + i; 
     } 
     
     uint16_t fill_chan = _ch_fraction;
@@ -286,7 +289,12 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
     index0 =  align_sample_count / LeafBlockSamples / RootScale;
     index1 = (align_sample_count / LeafBlockSamples) % RootScale;
     offset = align_sample_count % LeafBlockSamples;
-    uint64_t *write_ptr = (uint64_t*)_ch_data[fill_chan][index0].lbp[index1] + offset / Scale;  
+    uint64_t *write_ptr = (uint64_t*)_ch_data[fill_chan][index0].lbp[index1] + offset / Scale;
+
+    if (_ch_data[fill_chan][index0].lbp[index1] == NULL){
+        dsv_err("Write buffer is null.");
+        assert(false);
+    }
 
     while (len >= 8)
     {
@@ -304,6 +312,9 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
         {
             calc_mipmap(fill_chan, index0, index1, LeafBlockSamples, true);
 
+            if (fill_chan + 1 == _channel_num)
+                _mipmap_sample_count = _ring_sample_count;
+
             chans_read_addr[fill_chan] = read_ptr;
             fill_chan = (fill_chan + 1) % _channel_num;
 
@@ -317,11 +328,16 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
             old_filled_sample = filled_sample;
 
             write_ptr = (uint64_t*)_ch_data[fill_chan][index0].lbp[index1] + offset / Scale;
-            read_ptr = chans_read_addr[fill_chan];          
+            read_ptr = chans_read_addr[fill_chan];
+
+            if (_ch_data[fill_chan][index0].lbp[index1] == NULL){
+                dsv_err("Write buffer is null.");
+                assert(false);
+            }       
         } 
         else if (read_ptr >= end_read_ptr) 
         {  
-            calc_mipmap(fill_chan, index0, index1, filled_sample, false); 
+            calc_mipmap(fill_chan, index0, index1, filled_sample, false);
 
             fill_chan = (fill_chan + 1) % _channel_num;    
 
@@ -336,13 +352,23 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
 
             write_ptr = (uint64_t*)_ch_data[fill_chan][index0].lbp[index1] + offset / Scale;            
             read_ptr = chans_read_addr[fill_chan]; 
+
+            if (_ch_data[fill_chan][index0].lbp[index1] == NULL){
+                dsv_err("Write buffer is null.");
+                assert(false);
+            }
         }
     }
 
     _ring_sample_count = align_sample_count;
     _ch_fraction = last_chan;
 
-    _dest_ptr = (uint8_t*)_ch_data[_ch_fraction][index0].lbp[index1] + offset / 8;   
+    _dest_ptr = (uint8_t*)_ch_data[_ch_fraction][index0].lbp[index1] + offset / 8;  
+
+    if (_ch_data[_ch_fraction][index0].lbp[index1] == NULL){
+        dsv_err("Write buffer is null.");
+        assert(false);
+    }
  
     if (len > 0)
     {
@@ -382,6 +408,8 @@ void LogicSnapshot::capture_ended()
 
         calc_mipmap(chan, index0, index1, offset * 8, true);
     }
+
+    _mipmap_sample_count = _ring_sample_count;
 }
 
 void LogicSnapshot::calc_mipmap(unsigned int order, uint8_t index0, uint8_t index1, uint64_t samples, bool isEnd)
@@ -495,6 +523,34 @@ const uint8_t *LogicSnapshot::get_samples(uint64_t start_sample, uint64_t &end_s
                  ~(~0ULL << LeafBlockPower);
 
     end_sample = min(end_sample + 1, _ring_sample_count);
+
+    if (order == -1 || _ch_data[order][index0].lbp[index1] == NULL)
+        return NULL;
+    else
+        return (uint8_t*)_ch_data[order][index0].lbp[index1] + offset;
+}
+
+const uint8_t *LogicSnapshot::get_decode_samples(uint64_t start_sample, uint64_t &end_sample, int sig_index)
+{ 
+    std::lock_guard<std::mutex> lock(_mutex);
+
+    assert(start_sample < _mipmap_sample_count);
+    assert(start_sample <= end_sample);
+
+    if (end_sample >= _mipmap_sample_count){
+        end_sample = _mipmap_sample_count - 1;
+    }
+
+    int order = get_ch_order(sig_index);
+    uint64_t index0 = start_sample >> (LeafBlockPower + RootScalePower);
+    uint64_t index1 = (start_sample & RootMask) >> LeafBlockPower;
+    uint64_t offset = (start_sample & LeafMask) / 8;
+
+    end_sample = (index0 << (LeafBlockPower + RootScalePower)) +
+                 (index1 << LeafBlockPower) +
+                 ~(~0ULL << LeafBlockPower);
+
+    end_sample = min(end_sample + 1, _mipmap_sample_count);
 
     if (order == -1 || _ch_data[order][index0].lbp[index1] == NULL)
         return NULL;
@@ -1037,6 +1093,12 @@ int LogicSnapshot::get_ch_order(int sig_index)
     }
 
     return -1;
+}
+
+uint64_t LogicSnapshot::get_mipmap_sample_count()
+{   
+    std::lock_guard<std::mutex> lock(_mutex);
+    return _mipmap_sample_count;
 }
 
 } // namespace data

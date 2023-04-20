@@ -444,15 +444,13 @@ void ProtocolDock::del_all_protocol()
 
 void ProtocolDock::decoded_progress(int progress)
 {
-    (void) progress;
-
-    int pg = 0;
-    QString err="";
     const auto &decode_sigs = _session->get_decode_signals();
     int index = 0;
 
     for(auto d : decode_sigs) {
-        pg = d->get_progress();
+        int pg = d->get_progress();
+        QString err;
+
         if (d->decoder()->out_of_memory())
             err = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_OUT_OF_MEMORY), "Out of Memory");
 
@@ -470,8 +468,8 @@ void ProtocolDock::decoded_progress(int progress)
         index++;
     }
 
-    if (pg == 0 || pg % 10 == 1){
-         update_model();
+    if (progress == 0 || progress % 10 == 1){
+        update_model();
     }  
 }
 
@@ -1002,6 +1000,7 @@ bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const Decod
  void ProtocolDock::reset_view()
  {
     decoded_progress(0);
+    update();
  }
 
  void ProtocolDock::update_view_status()

@@ -529,20 +529,20 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
             if (!bCheckEnd){
                 bCheckEnd = true;
 
-                if (end_index >= _snapshot->get_ring_sample_count()){
-                    end_index = _snapshot->get_ring_sample_count() - 1;
+                if (end_index >= _snapshot->get_mipmap_sample_count()){
+                    end_index = _snapshot->get_mipmap_sample_count() - 1;
                     dsv_info("Reset the decode end sample, new:%llu, old:%llu", end_index, decode_end);
                 }
             }
         }
-        else if (i >= _snapshot->get_ring_sample_count())
+        else if (i >= _snapshot->get_mipmap_sample_count())
         {   
             // Wait the data is ready.
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             continue;
         }
 
-        uint64_t chunk_end = end_index;
+        uint64_t chunk_end = end_index; 
 
         for (int j =0 ; j < logic_di->dec_num_channels; j++) {
             int sig_index = logic_di->dec_channelmap[j];
@@ -552,7 +552,8 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
                 chunk_const.push_back(0);
             } else {
                 if (_snapshot->has_data(sig_index)) {
-                    chunk.push_back(_snapshot->get_samples(i, chunk_end, sig_index));
+                    auto data_ptr = _snapshot->get_decode_samples(i, chunk_end, sig_index);
+                    chunk.push_back(data_ptr);
                     chunk_const.push_back(_snapshot->get_sample(i, sig_index));
                 } else {
                     _error_message = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DECODERSTACK_DECODE_DATA_ERROR),
@@ -641,7 +642,7 @@ void DecoderStack::execute_decode_stack()
 	assert(session);
     
     // Get the intial sample count
-    _sample_count = _snapshot->get_ring_sample_count();
+    _sample_count = _snapshot->get_mipmap_sample_count();
  
     // Create the decoders
     for(auto dec : _stack)

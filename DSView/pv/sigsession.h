@@ -442,7 +442,6 @@ private:
     inline void clear_all_decode_task2(){
         int run_dex = 0;
         clear_all_decode_task(run_dex);
-        _callback->trigger_message(DSV_MSG_CLEAR_DECODE_DATA);
     }
    
     void decode_task_proc();

@@ -96,6 +96,8 @@ public:
 
     const uint8_t * get_samples(uint64_t start_sample, uint64_t& end_sample, int sig_index);
 
+    const uint8_t * get_decode_samples(uint64_t start_sample, uint64_t& end_sample, int sig_index);
+
     bool get_sample(uint64_t index, int sig_index);
 
     void capture_ended();
@@ -119,6 +121,8 @@ public:
  
     bool pattern_search(int64_t start, int64_t end, int64_t& index,
                         std::map<uint16_t, QString> pattern, bool isNext);
+
+    uint64_t get_mipmap_sample_count();
 
 private:
     int get_ch_order(int sig_index);
@@ -192,6 +196,7 @@ private:
 
     uint64_t    _last_sample[CHANNEL_MAX_COUNT];
     uint64_t    _last_calc_count[CHANNEL_MAX_COUNT];
+    uint64_t    _mipmap_sample_count;
  
 	friend class LogicSnapshotTest::Pow2;
 	friend class LogicSnapshotTest::Basic;
