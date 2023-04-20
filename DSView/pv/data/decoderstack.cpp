@@ -68,6 +68,7 @@ DecoderStack::DecoderStack(pv::SigSession *session,
     _is_capture_end = true;
     _snapshot = NULL;
     _progress = 0;
+    _is_decoding = false;
     
     _stack.push_back(new decode::Decoder(dec));
  
@@ -518,6 +519,7 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
 
     _progress = 0;
     uint64_t sended_len  = 0;
+    _is_decoding = true;
   
     while(i < end_index && !_no_memory && !status->_bStop)
     {
@@ -606,6 +608,8 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
     }
 
     _progress = 100;
+    _is_decoding = false;
+    
     new_decode_data();
 
     // the task is normal ends,so all samples was processed;

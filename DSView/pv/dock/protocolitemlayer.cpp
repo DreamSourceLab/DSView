@@ -103,7 +103,11 @@ void ProtocolItemLayer::on_format_select_changed(int index){
             _progress_label->setStyleSheet("color:green;");
         else
             _progress_label->setStyleSheet("color:red;");
-        _progress_label->setText(str);
+
+        if (progress >= 0)
+            _progress_label->setText(str);
+        else
+            _progress_label->setText("");
  }
 
 void ProtocolItemLayer::ResetStyle(){

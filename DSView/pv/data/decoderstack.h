@@ -169,10 +169,15 @@ public:
 
     inline void set_capture_end_flag(bool isEnd){
         _is_capture_end = isEnd;
-        if (!isEnd){_progress = 0;}
+        if (!isEnd){
+            _progress = 0;
+            _is_decoding = false;
+        }
     }
 
     inline int get_progress(){
+        //if (!_is_decoding && _progress == 0)
+          //  return -1;
         return _progress;
     }
 
@@ -210,6 +215,7 @@ private:
     mutable std::mutex _output_mutex; 
     bool            _is_capture_end;
     int             _progress;
+    bool            _is_decoding;
 
 	friend class DecoderStackTest::TwoDecoderStack;
 };

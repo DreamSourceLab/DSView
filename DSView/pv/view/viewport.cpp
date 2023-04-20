@@ -1356,7 +1356,7 @@ void Viewport::set_receive_len(quint64 length)
     }
 
     // Received new data, and refresh the view.
-    repaint();
+    update();
 }
 
 void Viewport::clear_measure()

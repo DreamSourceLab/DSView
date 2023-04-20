@@ -1267,6 +1267,7 @@ namespace pv
 
                 // Post a message to start all decode tasks.
                 if (mode == LOGIC){
+                    dsv_info("Receive SR_DF_END.");
                     _callback->trigger_message(DSV_MSG_REV_END_PACKET);
                 }
                 else{
