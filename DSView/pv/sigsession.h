@@ -343,13 +343,7 @@ public:
         return _opt_mode == OPT_LOOP;
     }
 
-    inline bool is_realtime_refresh(){
-        if (is_loop_mode() || (_is_stream_mode && is_single_mode() ))
-            return true;
-        if (_is_stream_mode && is_repeat_mode() && is_single_buffer())
-            return true;
-        return false;     
-    }
+    bool is_realtime_refresh();
 
     inline bool is_repeating(){
         return _opt_mode == OPT_REPEAT && !_is_instant;

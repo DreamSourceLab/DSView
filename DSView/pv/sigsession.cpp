@@ -468,11 +468,11 @@ namespace pv
         clear_decode_result(); 
         
         _capture_data->clear();
-        _view_data->clear();
-        _capture_data = _view_data;
+        _view_data->clear();       
         _is_stream_mode = false;
         _capture_times = 0;
 
+        _capture_data = _view_data;
         set_cur_snap_samplerate(_device_agent.get_sample_rate());
         set_cur_samplelimits(_device_agent.get_sample_limit());
 
@@ -2085,7 +2085,24 @@ namespace pv
 
             if (cur_mode == LOGIC){
                 clear_all_decode_task2();
-            } 
+            }
+
+            _is_stream_mode = false;
+            if (mode == LOGIC){
+                if (_device_agent.is_hardware()){
+                    _is_stream_mode = _device_agent.is_stream_mode();
+                }
+                else if (_device_agent.is_demo()){
+                    _is_stream_mode = true;
+                }
+            }
+
+            if (_view_data != _capture_data){
+                _capture_data->clear();
+                _capture_data = _view_data;             
+            }
+            set_cur_snap_samplerate(_device_agent.get_sample_rate());
+            set_cur_samplelimits(_device_agent.get_sample_limit());
 
             init_signals();
             dsv_info("Switch work mode to:%d", mode);
@@ -2187,6 +2204,17 @@ namespace pv
                 return p;
         }
         return NULL;
+    }
+
+    bool SigSession::is_realtime_refresh()
+    {
+        if (is_loop_mode())
+            return true;
+        if (_is_stream_mode && is_single_mode())
+            return true;
+        if (_is_stream_mode && is_repeat_mode() && is_single_buffer())
+            return true;
+        return false;     
     }
 
 } // namespace pv

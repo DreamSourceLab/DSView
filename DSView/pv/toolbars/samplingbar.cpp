@@ -904,8 +904,8 @@ namespace pv
                 }
             }
 
-            if (_device_agent->get_work_mode() == LOGIC && _session->is_realtime_refresh()){
-                if (_view != NULL)
+            if (_device_agent->get_work_mode() == LOGIC && _view != NULL){
+                if (_session->is_realtime_refresh())
                     _view->auto_set_max_scale();
             }
 
