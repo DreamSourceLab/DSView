@@ -70,10 +70,9 @@ static const struct DEMO_channels channel_modes[] = {
 /* List of struct sr_dev_inst, maintained by dev_open()/dev_close(). */
 SR_PRIV struct sr_dev_driver demo_driver_info;
 static struct sr_dev_driver *di = &demo_driver_info;
-
 extern struct ds_trigger *trigger;
-
 static int hw_dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data);
+static void init_demo_device(struct sr_dev_inst *sdi);
 
 static int hw_init(struct sr_context *sr_ctx)
 {
@@ -157,18 +156,14 @@ static GSList *hw_scan(GSList *options)
         sr_err("Device context malloc failed.");
         return NULL;
     }
-    devc->profile = &supported_Demo[0];
-    devc->ch_mode = devc->profile->dev_caps.default_channelmode;
-    devc->cur_samplerate = channel_modes[devc->ch_mode].default_samplerate;
-    devc->limit_samples = channel_modes[devc->ch_mode].default_samplelimit;
-    devc->limit_samples_show = devc->limit_samples;
-    devc->limit_msec = 0;
-    devc->sample_generator = devc->profile->dev_caps.default_pattern;
-    devc->timebase = devc->profile->dev_caps.default_timebase;
-    devc->max_height = 0;
-    adjust_samplerate(devc);
 
-    sdi = sr_dev_inst_new(channel_modes[devc->ch_mode].mode, SR_ST_INITIALIZING,
+    devc->profile = &supported_Demo[0];
+    devc->sample_generator = devc->profile->dev_caps.default_pattern;
+    devc->max_height = 0;
+    devc->limit_msec = 0;
+     
+    sdi = sr_dev_inst_new(LOGIC, 
+                          SR_ST_INITIALIZING,
                           devc->profile->vendor,
                           devc->profile->model,
                           devc->profile->model_version);
@@ -177,14 +172,57 @@ static GSList *hw_scan(GSList *options)
         sr_err("Device instance creation failed.");
 		return NULL;
 	}
+
     sdi->priv = devc;
 	sdi->driver = di;
     sdi->dev_type = DEV_TYPE_DEMO;
 
-	devices = g_slist_append(devices, sdi); 
-    setup_probes(sdi, channel_modes[devc->ch_mode].num);
+    init_demo_device(sdi);
 
+	devices = g_slist_append(devices, sdi); 
 	return devices;
+}
+
+static void init_demo_device(struct sr_dev_inst *sdi)
+{
+    struct demo_context *devc;
+    int num_probes;
+    int i;
+
+    assert(sdi);
+    assert(sdi->priv);
+    assert(sdi->dev_type == DEV_TYPE_DEMO);
+
+    devc = sdi->priv;
+
+    for (i = 0; i < ARRAY_SIZE(channel_modes); i++) {
+        if ((int)channel_modes[i].mode == sdi->mode &&
+            devc->profile->dev_caps.channels & (1 << i)) {
+            devc->ch_mode = channel_modes[i].id;
+            break;
+        }
+    }
+
+    num_probes = channel_modes[devc->ch_mode].num;
+    devc->cur_samplerate = channel_modes[devc->ch_mode].default_samplerate;
+    devc->limit_samples = channel_modes[devc->ch_mode].default_samplelimit;
+    devc->limit_samples_show = devc->limit_samples;
+    devc->timebase = devc->profile->dev_caps.default_timebase; 
+    adjust_samplerate(devc);
+    
+    sr_dev_probes_free(sdi);
+    setup_probes(sdi, num_probes);    
+}
+
+static void reset_demo_device(struct sr_dev_inst *sdi)
+{
+    assert(sdi);
+    assert(sdi->priv);
+    assert(sdi->dev_type == DEV_TYPE_DEMO);
+    
+    sdi->mode = LOGIC;
+
+    init_demo_device(sdi);     
 }
 
 static const GSList *hw_dev_mode_list(const struct sr_dev_inst *sdi)
@@ -206,6 +244,11 @@ static int hw_dev_open(struct sr_dev_inst *sdi)
 {
     //(void)sdi;
     struct demo_context *const devc = sdi->priv;
+
+    if (sdi->status == SR_ST_ACTIVE)
+        return;
+
+    reset_demo_device(sdi);
 
     sdi->status = SR_ST_ACTIVE;
 
@@ -438,21 +481,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     else if (id == SR_CONF_DEVICE_MODE) {
         sdi->mode = g_variant_get_int16(data);
         ret = SR_OK;
-        for (i = 0; i < ARRAY_SIZE(channel_modes); i++) {
-            if ((int)channel_modes[i].mode == sdi->mode &&
-                devc->profile->dev_caps.channels & (1 << i)) {
-                devc->ch_mode = channel_modes[i].id;
-                break;
-            }
-        }
-        num_probes = channel_modes[devc->ch_mode].num;
-        devc->cur_samplerate = channel_modes[devc->ch_mode].default_samplerate;
-        devc->limit_samples = channel_modes[devc->ch_mode].default_samplelimit;
-        devc->limit_samples_show = devc->limit_samples;
-        devc->timebase = devc->profile->dev_caps.default_timebase;
-        sr_dev_probes_free(sdi);
-        setup_probes(sdi, num_probes);
-        adjust_samplerate(devc);
+        init_demo_device(sdi);       
         sr_info("%s: setting mode to %d", __func__, sdi->mode);
     }
     else if (id == SR_CONF_PATTERN_MODE) {

@@ -239,18 +239,12 @@ namespace pv
 
         _view_data->clear();
         _capture_data->clear();
+        _capture_data = _view_data;
 
         init_signals();
 
-        _capture_data->_cur_snap_samplerate = _device_agent.get_sample_rate();
-        _capture_data->_cur_samplelimits = _device_agent.get_sample_limit();
-
-        /*
-        if (_device_agent.get_work_mode() == DSO)
-            _opt_mode = OPT_REPEAT;
-        else
-            _opt_mode = OPT_SINGLE;
-        */
+        set_cur_snap_samplerate(_device_agent.get_sample_rate());
+        set_cur_samplelimits(_device_agent.get_sample_limit());
 
         // The current device changed.
         _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_CHANGED);
