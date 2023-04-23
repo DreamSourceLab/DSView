@@ -246,7 +246,7 @@ static int hw_dev_open(struct sr_dev_inst *sdi)
     struct demo_context *const devc = sdi->priv;
 
     if (sdi->status == SR_ST_ACTIVE)
-        return;
+        return SR_OK;
 
     reset_demo_device(sdi);
 

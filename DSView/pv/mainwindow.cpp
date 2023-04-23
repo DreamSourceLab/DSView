@@ -1699,14 +1699,20 @@ namespace pv
                 _msg->close();
                 _msg = NULL;
             }
- 
-            _sampling_bar->update_device_list();
+  
             reset_all_view();
             load_device_config();
+            _sampling_bar->update_device_list();
             
             _logo_bar->dsl_connected(_session->get_device()->is_hardware());
             update_toolbar_view_status();
             _session->device_event_object()->device_updated();
+
+            if (_device_agent->is_hardware())
+                _session->on_load_config_end();
+            
+            if (_device_agent->get_work_mode() == LOGIC && _device_agent->is_file() == false)
+                _view->auto_set_max_scale();
 
             if (_device_agent->is_file())
             {
@@ -1722,7 +1728,7 @@ namespace pv
                 }
                 
                 _session->start_capture(true);
-            }
+            } 
         }
         break;
 
@@ -1737,12 +1743,18 @@ namespace pv
             _view->timebase_changed();
             break;
 
-        case DSV_MSG_DEVICE_MODE_CHANGED:
-            _sampling_bar->update_sample_rate_list();
+        case DSV_MSG_DEVICE_MODE_CHANGED:           
             _view->mode_changed(); 
             reset_all_view();
-            load_device_config();
+            load_device_config(); 
             update_toolbar_view_status();
+            _sampling_bar->update_sample_rate_list();
+
+            if (_device_agent->is_hardware())
+                _session->on_load_config_end();
+            
+            if (_device_agent->get_work_mode() == LOGIC)
+                _view->auto_set_max_scale();
             break;
 
         case DSV_MSG_NEW_USB_DEVICE:

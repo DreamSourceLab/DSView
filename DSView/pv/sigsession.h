@@ -409,6 +409,8 @@ public:
         return get_signal_snapshot()->have_data();
     }
 
+    void on_load_config_end();
+
 private:
     void set_cur_samplelimits(uint64_t samplelimits);
     void set_cur_snap_samplerate(uint64_t samplerate);

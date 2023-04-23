@@ -240,7 +240,7 @@ namespace pv
         _view_data->clear();
         _capture_data->clear();
         _capture_data = _view_data;
-
+ 
         init_signals();
 
         set_cur_snap_samplerate(_device_agent.get_sample_rate());
@@ -812,8 +812,7 @@ namespace pv
                 break;
             } 
         }
-
-        dsv_info("SigSession::init_signals(), clear signals");
+ 
         clear_signals();
 
         std::vector<view::Signal *>().swap(_signals);
@@ -2079,6 +2078,7 @@ namespace pv
 
             if (cur_mode == LOGIC){
                 clear_all_decode_task2();
+                clear_decode_result();
             }
 
             _is_stream_mode = false;
@@ -2091,14 +2091,15 @@ namespace pv
                 }
             }
 
-            if (_view_data != _capture_data){
-                _capture_data->clear();
-                _capture_data = _view_data;             
-            }
-            set_cur_snap_samplerate(_device_agent.get_sample_rate());
-            set_cur_samplelimits(_device_agent.get_sample_limit());
-
+            _capture_data->clear();
+            _view_data->clear();
+            _capture_data = _view_data;              
+            
             init_signals();
+
+            set_cur_snap_samplerate(_device_agent.get_sample_rate());
+            set_cur_samplelimits(_device_agent.get_sample_limit()); 
+
             dsv_info("Switch work mode to:%d", mode);
             broadcast_msg(DSV_MSG_DEVICE_MODE_CHANGED);
             return true;
@@ -2209,6 +2210,12 @@ namespace pv
         if (_is_stream_mode && is_repeat_mode() && is_single_buffer())
             return true;
         return false;     
+    }
+
+    void SigSession::on_load_config_end()
+    {
+        set_cur_snap_samplerate(_device_agent.get_sample_rate());
+        set_cur_samplelimits(_device_agent.get_sample_limit());
     }
 
 } // namespace pv
