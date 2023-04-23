@@ -1309,11 +1309,19 @@ void DsoSignal::paint_hover_measure(QPainter &p, QColor fore, QColor back)
 
     while (i != cursor_list.end()) {
         float pt_value;
-        const QPointF pt = get_point((*i)->index(), pt_value);
+
+        int chan_index = (*i)->index();
+        if (_data->has_data(chan_index) == false){
+            i++;
+            continue;
+        }
+
+        const QPointF pt = get_point(chan_index, pt_value);
         if (pt == QPointF(-1, -1)) {
             i++;
             continue;
         }
+        
         QString pt_str = get_voltage(hw_offset - pt_value, 2);
         const int pt_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
             Qt::AlignLeft | Qt::AlignTop, pt_str).width() + 10;
