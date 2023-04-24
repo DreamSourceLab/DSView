@@ -531,8 +531,10 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
             if (!bCheckEnd){
                 bCheckEnd = true;
 
-                if (end_index >= _snapshot->get_mipmap_sample_count()){
-                    end_index = _snapshot->get_mipmap_sample_count() - 1;
+                uint64_t mipmap_sample_count = _snapshot->get_mipmap_sample_count();
+
+                if (end_index >= mipmap_sample_count){
+                    end_index = mipmap_sample_count - 1;
                     dsv_info("Reset the decode end sample, new:%llu, old:%llu", end_index, decode_end);
                 }
             }

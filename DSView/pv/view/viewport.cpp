@@ -251,9 +251,19 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
 
     if (_view.session().get_device()->get_work_mode() == LOGIC) 
     {
+        bool bFirst = true;
+        uint64_t end_align_sample;
+
         for(auto t : traces){
-            if (t->enabled())
-                t->paint_mid(p, 0, t->get_view_rect().right(), fore, back);
+            if (t->enabled()){
+                LogicSignal *logic_signal = (LogicSignal*)t;
+                
+                if (bFirst)
+                    end_align_sample = logic_signal->data()->get_ring_sample_count();
+        
+                logic_signal->paint_mid_align_sample(p, 0, t->get_view_rect().right(), fore, back, end_align_sample);
+                bFirst = false;
+            }                
         }
     } 
     else {
@@ -273,7 +283,7 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
             for(auto t : traces)
             {
                 if (t->enabled())
-                    t->paint_mid(dbp, 0, t->get_view_rect().right(), fore, back); 
+                    t->paint_mid(dbp, 0, t->get_view_rect().right(), fore, back);
             }
             _need_update = false;
         }

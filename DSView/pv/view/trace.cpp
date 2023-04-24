@@ -58,6 +58,7 @@ Trace::Trace(QString name, uint16_t index, int type) :
     _typeWidth(SquareNum)
 {
     _index_list.push_back(index);
+    _signal_type = UNKNOWN_SIGNAL;
 }
 
 Trace::Trace(QString name, std::list<int> index_list, int type, int sec_index) :
@@ -70,6 +71,7 @@ Trace::Trace(QString name, std::list<int> index_list, int type, int sec_index) :
     _totalHeight(30),
     _typeWidth(SquareNum)
 {
+    _signal_type = UNKNOWN_SIGNAL;
 }
 
 Trace::Trace(const Trace &t) :
@@ -85,6 +87,7 @@ Trace::Trace(const Trace &t) :
     _typeWidth(t._typeWidth),
     _text_size(t._text_size)
 {
+    _signal_type = UNKNOWN_SIGNAL;
 }
 
 QString Trace::get_name()

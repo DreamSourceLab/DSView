@@ -107,21 +107,25 @@ public:
 
     void paint_mark(QPainter &p, int xstart, int xend, int type);
 
+    void paint_mid_align_sample(QPainter &p, int left, int right, QColor fore, QColor back, uint64_t end_align_sample);
+
 protected:
     void paint_type_options(QPainter &p, int right, const QPoint pt, QColor fore);
 
 private:
-
 	void paint_caps(QPainter &p, QLineF *const lines,
         std::vector< std::pair<uint64_t, bool> > &edges,
 		bool level, double samples_per_pixel, double pixels_offset,
 		float x_offset, float y_offset);
+
+    void paint_mid_align(QPainter &p, int left, int right, QColor fore, QColor back, uint64_t end_align_sample);
 
 private:
 	pv::data::LogicSnapshot* _data;
     std::vector< std::pair<uint16_t, bool> > _cur_edges;
     std::vector<std::pair<bool, bool>> _cur_pulses;
     LogicSetRegions _trig;
+    uint64_t    _paint_align_sample_count;
 };
 
 } // namespace view

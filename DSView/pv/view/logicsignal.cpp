@@ -46,6 +46,7 @@ LogicSignal::LogicSignal(data::LogicSnapshot *data,
 {
     _trig = NONTRIG;
     _signal_type = LOGIC_SIGNAL;
+    _paint_align_sample_count = 0;
 }
 
 LogicSignal::LogicSignal(view::LogicSignal *s,
@@ -56,6 +57,7 @@ LogicSignal::LogicSignal(view::LogicSignal *s,
     _trig(s->get_trig())
 {
     _signal_type = LOGIC_SIGNAL;
+    _paint_align_sample_count = 0;
 }
 
 LogicSignal::~LogicSignal()
@@ -96,6 +98,17 @@ bool LogicSignal::commit_trig()
 
 void LogicSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColor back)
 {
+    uint64_t end_align_sample = _data->get_ring_sample_count() - 1;
+    paint_mid_align(p, left, right, fore, back, end_align_sample);
+}
+
+void LogicSignal::paint_mid_align_sample(QPainter &p, int left, int right, QColor fore, QColor back, uint64_t end_align_sample)
+{
+    paint_mid_align(p, left, right, fore, back, end_align_sample);
+}
+
+void LogicSignal::paint_mid_align(QPainter &p, int left, int right, QColor fore, QColor back, uint64_t end_align_sample)
+{
 	using pv::view::View;
 
     (void)back;
@@ -119,7 +132,10 @@ void LogicSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColo
     if (!_data->has_data(_probe->index))
         return;
 
-    const int64_t last_sample = _data->get_ring_sample_count() - 1;
+    if (end_align_sample >= _data->get_ring_sample_count())
+        end_align_sample = _data->get_ring_sample_count() - 1;
+
+    const int64_t last_sample = end_align_sample;
 	const double samples_per_pixel = samplerate * scale;
 
     uint16_t width = right - left;

@@ -36,6 +36,14 @@
 
 class QFormLayout;
 
+enum SIGNAL_TYPE
+{   
+    UNKNOWN_SIGNAL = 0,
+    LOGIC_SIGNAL = 1,
+    DSO_SIGNAL = 2,
+    ANALOG_SIGNAL = 3,   
+};
+
 namespace pv {
 namespace view {
 
@@ -235,6 +243,10 @@ public:
 
     virtual bool mouse_wheel(int right, const QPoint pt, const int shift);
 
+    inline SIGNAL_TYPE signal_type(){
+        return _signal_type;
+    }
+
 protected:
 
 	/**
@@ -286,6 +298,7 @@ protected:
     int _typeWidth;
 
     QSizeF _text_size;
+    SIGNAL_TYPE     _signal_type;   
 };
 
 } // namespace view

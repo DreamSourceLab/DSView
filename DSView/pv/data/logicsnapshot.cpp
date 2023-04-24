@@ -506,12 +506,17 @@ void LogicSnapshot::calc_mipmap(unsigned int order, uint8_t index0, uint8_t inde
 
 const uint8_t *LogicSnapshot::get_samples(uint64_t start_sample, uint64_t &end_sample, int sig_index)
 { 
-    assert(start_sample < _ring_sample_count);
-    assert(start_sample <= end_sample);
+    std::lock_guard<std::mutex> lock(_mutex);
 
-    if (end_sample >= _ring_sample_count){
-        end_sample = _ring_sample_count - 1;
-    }
+    uint64_t sample_count = _ring_sample_count;
+
+    assert(start_sample < sample_count);
+
+    if (end_sample >= sample_count)
+        end_sample = sample_count - 1;
+
+    assert(end_sample <= sample_count);
+    assert(start_sample <= end_sample);
 
     int order = get_ch_order(sig_index);
     uint64_t index0 = start_sample >> (LeafBlockPower + RootScalePower);
@@ -522,7 +527,7 @@ const uint8_t *LogicSnapshot::get_samples(uint64_t start_sample, uint64_t &end_s
                  (index1 << LeafBlockPower) +
                  ~(~0ULL << LeafBlockPower);
 
-    end_sample = min(end_sample + 1, _ring_sample_count);
+    end_sample = min(end_sample + 1, sample_count);
 
     if (order == -1 || _ch_data[order][index0].lbp[index1] == NULL)
         return NULL;
@@ -534,12 +539,15 @@ const uint8_t *LogicSnapshot::get_decode_samples(uint64_t start_sample, uint64_t
 { 
     std::lock_guard<std::mutex> lock(_mutex);
 
-    assert(start_sample < _mipmap_sample_count);
-    assert(start_sample <= end_sample);
+    uint64_t sample_count = _mipmap_sample_count;
 
-    if (end_sample >= _mipmap_sample_count){
-        end_sample = _mipmap_sample_count - 1;
-    }
+    assert(start_sample < sample_count);
+
+    if (end_sample >= sample_count)
+        end_sample = sample_count - 1;
+
+    assert(end_sample <= sample_count);
+    assert(start_sample <= end_sample);
 
     int order = get_ch_order(sig_index);
     uint64_t index0 = start_sample >> (LeafBlockPower + RootScalePower);
@@ -550,7 +558,7 @@ const uint8_t *LogicSnapshot::get_decode_samples(uint64_t start_sample, uint64_t
                  (index1 << LeafBlockPower) +
                  ~(~0ULL << LeafBlockPower);
 
-    end_sample = min(end_sample + 1, _mipmap_sample_count);
+    end_sample = min(end_sample + 1, sample_count);
 
     if (order == -1 || _ch_data[order][index0].lbp[index1] == NULL)
         return NULL;
@@ -1097,7 +1105,7 @@ int LogicSnapshot::get_ch_order(int sig_index)
 
 uint64_t LogicSnapshot::get_mipmap_sample_count()
 {   
-    std::lock_guard<std::mutex> lock(_mutex);
+   // std::lock_guard<std::mutex> lock(_mutex);
     return _mipmap_sample_count;
 }
 

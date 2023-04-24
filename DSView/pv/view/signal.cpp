@@ -34,8 +34,7 @@ namespace view {
 Signal::Signal(sr_channel *probe) :
     Trace(probe->name, probe->index, probe->type),
     _probe(probe)
-{   
-    _signal_type = UNKNOWN_SIGNAL;
+{
     session = AppControl::Instance()->GetSession();
 }
 
@@ -43,7 +42,6 @@ Signal::Signal(const Signal &s, sr_channel *probe) :
     Trace((const Trace &)s), 
     _probe(probe)
 {   
-    _signal_type = UNKNOWN_SIGNAL;
     session = AppControl::Instance()->GetSession();
 }
 
