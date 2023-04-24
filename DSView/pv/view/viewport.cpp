@@ -256,13 +256,20 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
 
         for(auto t : traces){
             if (t->enabled()){
-                LogicSignal *logic_signal = (LogicSignal*)t;
+
+                if (t->signal_type() == LOGIC_SIGNAL)
+                {
+                    LogicSignal *logic_signal = (LogicSignal*)t;
                 
-                if (bFirst)
-                    end_align_sample = logic_signal->data()->get_ring_sample_count();
-        
-                logic_signal->paint_mid_align_sample(p, 0, t->get_view_rect().right(), fore, back, end_align_sample);
-                bFirst = false;
+                    if (bFirst)
+                        end_align_sample = logic_signal->data()->get_ring_sample_count();
+            
+                    logic_signal->paint_mid_align_sample(p, 0, t->get_view_rect().right(), fore, back, end_align_sample);
+                    bFirst = false;
+                }
+                else{
+                    t->paint_mid(p, 0, t->get_view_rect().right(), fore, back);
+                }               
             }                
         }
     } 
