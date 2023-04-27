@@ -1129,7 +1129,7 @@ static int update_device_handle(struct libusb_device *old_dev, struct libusb_dev
 			// Release the old device and the resource.
 			if (dev == lib_ctx.actived_device_instance)
 			{
-				sr_info("%s", "----------To release the old device's resource.");
+				sr_info("%s", "To release the old device's resource.");
 				close_device_instance(dev);
 			}
 
@@ -1181,7 +1181,7 @@ static void hotplug_event_listen_callback(struct libusb_context *ctx, struct lib
 
 	if (event == USB_EV_HOTPLUG_ATTACH)
 	{
-		sr_info("One device attached,handle:%p", dev);
+		sr_info("----------One device attached,handle:%p", dev);
 
 		if (lib_ctx.is_waitting_reconnect)
 		{
@@ -1197,14 +1197,14 @@ static void hotplug_event_listen_callback(struct libusb_context *ctx, struct lib
 			}
 			else
 			{
-				if (update_device_handle(lib_ctx.detach_device_handle, dev) != SR_OK)
+				if (update_device_handle(lib_ctx.detach_device_handle, dev) == SR_OK)
 				{
 					bDone = 1;
-					sr_info("%s", "One device loose contact, but it reconnect success.");
+					sr_info("%s", "----------One device loose contact, but it reconnect success.");
 				}
 				else
 				{
-					sr_err("Update device handle error! can't find the old.");
+					sr_err("Update reconnected device handle error! can't find the old.");
 				}
 				lib_ctx.detach_device_handle = NULL;
 			}
@@ -1218,7 +1218,7 @@ static void hotplug_event_listen_callback(struct libusb_context *ctx, struct lib
 	}
 	else if (event == USB_EV_HOTPLUG_DETTACH)
 	{
-		sr_info("One device detached,handle:%p", dev);
+		sr_info("----------One device detached,handle:%p", dev);
 
 		if (lib_ctx.detach_device_handle != NULL)
 		{
@@ -1388,7 +1388,7 @@ static void usb_hotplug_process_proc()
 
 			if (lib_ctx.transaction_command == DEV_TRANS_OPEN){
 				if (lib_ctx.actived_device_instance != NULL){
-					sr_info("%s", "----------To reopen the current device.");
+					sr_info("%s", "To reopen the current device.");
 					open_device_instance(lib_ctx.actived_device_instance);
 				}
 			}
