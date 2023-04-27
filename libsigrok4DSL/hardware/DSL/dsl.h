@@ -1150,6 +1150,8 @@ struct DSL_context {
     gboolean overflow;
     int bw_limit;
     int empty_poll_count;
+
+    int is_loop;
 };
 
 /*

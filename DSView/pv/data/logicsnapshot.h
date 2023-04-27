@@ -120,11 +120,29 @@ public:
     uint8_t *get_block_buf(int block_index, int sig_index, bool &sample);
  
     bool pattern_search(int64_t start, int64_t end, int64_t& index,
-                        std::map<uint16_t, QString> pattern, bool isNext);
+                        std::map<uint16_t, QString> &pattern, bool isNext);
 
     uint64_t get_mipmap_sample_count();
 
+    inline void set_loop(bool bLoop){
+        _is_loop = bLoop;
+    }
+
+    inline bool is_loop(){
+        return _is_loop;
+    }
+
 private:
+    bool get_sample_self(uint64_t index, int sig_index);
+    bool get_nxt_edge_self(uint64_t &index, bool last_sample, uint64_t end,
+                      double min_length, int sig_index);
+
+    bool get_pre_edge_self(uint64_t &index, bool last_sample,
+                      double min_length, int sig_index);
+
+    bool pattern_search_self(int64_t start, int64_t end, int64_t& index,
+                        std::map<uint16_t, QString> &pattern, bool isNext);
+
     int get_ch_order(int sig_index);
     void calc_mipmap(unsigned int order, uint8_t index0, uint8_t index1, uint64_t samples, bool isEnd);
 
@@ -187,9 +205,10 @@ private:
         return hb ? 32 + bsr32((uint32_t)hb) : bsr32((uint32_t)bb);
     }
 
+    void move_first_node_to_last();
+
 private:
     std::vector<std::vector<struct RootNode>> _ch_data;
-    uint64_t    _block_num;
     uint8_t     _byte_fraction;
     uint16_t    _ch_fraction;
     uint8_t    *_dest_ptr;
@@ -197,6 +216,8 @@ private:
     uint64_t    _last_sample[CHANNEL_MAX_COUNT];
     uint64_t    _last_calc_count[CHANNEL_MAX_COUNT];
     uint64_t    _mipmap_sample_count;
+    bool        _is_loop;
+    uint64_t    _loop_offset;
  
 	friend class LogicSnapshotTest::Pow2;
 	friend class LogicSnapshotTest::Basic;

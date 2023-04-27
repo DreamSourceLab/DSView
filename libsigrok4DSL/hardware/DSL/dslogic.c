@@ -245,6 +245,7 @@ static struct DSL_context *DSLogic_dev_new(const struct DSL_profile *prof)
     devc->zero_comb_fgain = FALSE;
     devc->zero_comb = FALSE;
     devc->status = DSL_FINISH;
+    devc->is_loop = 0;
 
     devc->mstatus_valid = FALSE;
     devc->data_lock = FALSE;
@@ -1154,7 +1155,11 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     } 
     else if (id == SR_CONF_STREAM) {
         devc->stream = g_variant_get_boolean(data);
-    } 
+    }
+    else if (id == SR_CONF_LOOP_MODE){
+        devc->is_loop = g_variant_get_boolean(data);
+        sr_info("Set device loop mode:%d", devc->is_loop);
+    }
     else {
         ret = SR_ERR_NA;
 	}

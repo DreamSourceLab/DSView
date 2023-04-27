@@ -489,6 +489,11 @@ namespace pv
             if (is_loop_mode() && !_is_stream_mode){
                 set_operation_mode(OPT_SINGLE); // Reset the capture mode.
             }
+
+            if (_device_agent.is_hardware()){
+                GVariant *val = g_variant_new_boolean(is_loop_mode() && _is_stream_mode);
+                _device_agent.set_config(NULL, NULL, SR_CONF_LOOP_MODE, val);
+            }
         }
        
         update_view();
@@ -569,7 +574,7 @@ namespace pv
             }
             else if (is_loop_mode())
             {
-                bAddDecoder = true;
+                 
             }
         }
 
@@ -660,10 +665,7 @@ namespace pv
 
             exit_capture();
 
-            if (is_repeat_mode() && _device_agent.is_collecting() == false){
-                // On repeat mode, the working status is changed, to post the event message.
-                _callback->trigger_message(DSV_MSG_END_COLLECT_WORK);
-            }
+            _callback->trigger_message(DSV_MSG_END_COLLECT_WORK);
             return true;
         }
         else
@@ -1039,7 +1041,8 @@ namespace pv
         }       
 
         if (_capture_data->get_logic()->last_ended())
-        {
+        {   
+            _capture_data->get_logic()->set_loop(is_loop_mode());
             _capture_data->get_logic()->first_payload(o, _device_agent.get_sample_limit(), _device_agent.get_channels());
             // @todo Putting this here means that only listeners querying
             // for logic will be notified. Currently the only user of
@@ -2005,6 +2008,7 @@ namespace pv
                     }
                     else if (is_loop_mode())
                     {
+                        bAddDecoder = true;
                     }
 
                     if (bAddDecoder){

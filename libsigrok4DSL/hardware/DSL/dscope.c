@@ -165,6 +165,7 @@ static struct DSL_context *DSCope_dev_new(const struct DSL_profile *prof)
     devc->rle_mode = FALSE;
     devc->status = DSL_FINISH;
     devc->bw_limit = BW_FULL;
+    devc->is_loop = 0;
 
     dsl_adjust_samplerate(devc);
 	return devc;

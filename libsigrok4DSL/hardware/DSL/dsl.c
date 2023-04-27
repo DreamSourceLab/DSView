@@ -1046,7 +1046,7 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
                    ((sdi->mode == DSO) << DSO_MODE_BIT) +
                    ((devc->cur_samplerate == devc->profile->dev_caps.half_samplerate) << HALF_MODE_BIT) +
                    ((devc->cur_samplerate == devc->profile->dev_caps.quarter_samplerate) << QUAR_MODE_BIT) +
-                   ((sdi->mode == ANALOG) << ANALOG_MODE_BIT) +
+                   (((sdi->mode == ANALOG) || devc->is_loop) << ANALOG_MODE_BIT) +
                    ((devc->filter == SR_FILTER_1T) << FILTER_BIT) +
                    (devc->instant << INSTANT_BIT) +
                    ((trigger->trigger_mode == SERIAL_TRIGGER) << STRIG_MODE_BIT) +
@@ -1961,6 +1961,7 @@ SR_PRIV int dsl_dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_dat
     if (!devc->abort) {
         devc->abort = TRUE;
         dsl_wr_reg(sdi, CTR0_ADDR, bmFORCE_RDY);
+        sr_info("Send command:\"bmFORCE_RDY\"");
     }
     else if (devc->status == DSL_FINISH) {
         /* Stop GPIF acquisition */
@@ -2125,7 +2126,9 @@ static void free_transfer(struct libusb_transfer *transfer)
         }
     }
 
-    devc->submitted_transfers--;
+    if (!devc->is_loop || devc->status != DSL_DATA)
+        devc->submitted_transfers--;
+
     if (devc->submitted_transfers == 0)
         finish_acquisition(devc);
 }

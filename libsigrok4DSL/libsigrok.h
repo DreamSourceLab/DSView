@@ -1078,6 +1078,8 @@ enum sr_config_option_id
 	/** The device has internal storage, into which data is logged. This
 	 * starts or stops the internal logging. */
 	SR_CONF_DATALOG = 50007,
+
+	SR_CONF_LOOP_MODE = 60001,
 };
 
 /** Device instance status. */

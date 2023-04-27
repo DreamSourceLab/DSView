@@ -1060,10 +1060,18 @@ namespace pv
                 {
                     update_mode_icon();
                     _mode_action->setVisible(true);
-                    _action_repeat->setVisible(true);                 
+                    _action_repeat->setVisible(true);    
+
+                    if (_session->is_loop_mode() && _device_agent->is_stream_mode() == false 
+                        && _device_agent->is_hardware()){
+                        _session->set_operation_mode(OPT_SINGLE);
+                    }
+
+                    if (_device_agent->is_stream_mode() || _device_agent->is_demo())
+                        _action_loop->setVisible(true);
                 }
                 _run_stop_action->setVisible(true);
-                _instant_action->setVisible(true);              
+                _instant_action->setVisible(true);      
             }
             else if (mode == ANALOG)
             {
@@ -1183,6 +1191,7 @@ namespace pv
             _mode_button.setEnabled(bEnable);
             _configure_button.setEnabled(bEnable);
             _device_selector.setEnabled(bEnable);
+            _action_loop->setVisible(false);
 
             if (_session->get_device()->is_file()){
                 _sample_rate.setEnabled(false);
@@ -1211,6 +1220,11 @@ namespace pv
                         }
                     }
                 }
+                
+                if (_device_agent->have_instance()){
+                    if (_device_agent->is_stream_mode() || _device_agent->is_demo())
+                        _action_loop->setVisible(true);
+                }                
             }
 
             if (_session->is_working()){

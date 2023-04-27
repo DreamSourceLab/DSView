@@ -450,6 +450,9 @@ namespace pv
 
     bool MainWindow::able_to_close()
     {
+        if (_device_agent->is_hardware() && _session->have_hardware_data() == false){
+            _sampling_bar->commit_settings();
+        }
         // not used, refer to closeEvent of mainFrame
         session_save();
         
