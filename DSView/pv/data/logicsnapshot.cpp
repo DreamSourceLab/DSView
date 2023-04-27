@@ -236,10 +236,7 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
             }
         }
     }
-
-   // if (_is_loop)
-    //    dsv_info("_loop_offset:%llu", _loop_offset);
-
+ 
     _ring_sample_count += _loop_offset;
  
     // bit align
@@ -327,10 +324,9 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
     
 
     if (_sample_count >= _total_sample_count){
-        ///dsv_info("data length is full.");
-        *read_ptr = 1;
+       // *read_ptr = 1;
 
-       // dsv_info("----------to max");
+        dsv_info("_loop_offset:%llu", _loop_offset);
     }
 
     while (len >= 8)
@@ -467,7 +463,6 @@ void LogicSnapshot::capture_ended()
     }
 
     _mipmap_sample_count = _ring_sample_count;
-    _loop_offset = 0;
 }
 
 void LogicSnapshot::calc_mipmap(unsigned int order, uint8_t index0, uint8_t index1, uint64_t samples, bool isEnd)
@@ -576,7 +571,8 @@ const uint8_t *LogicSnapshot::get_samples(uint64_t start_sample, uint64_t &end_s
     assert(end_sample <= sample_count);
     assert(start_sample <= end_sample);
 
-    start_sample += _loop_offset;    
+    start_sample += _loop_offset;
+    _ring_sample_count += _loop_offset;   
 
     int order = get_ch_order(sig_index);
     uint64_t index0 = start_sample >> (LeafBlockPower + RootScalePower);
@@ -590,6 +586,7 @@ const uint8_t *LogicSnapshot::get_samples(uint64_t start_sample, uint64_t &end_s
     end_sample = min(end_sample + 1, sample_count);
 
     end_sample -= _loop_offset;
+    _ring_sample_count -= _loop_offset;
 
     if (order == -1 || _ch_data[order][index0].lbp[index1] == NULL)
         return NULL;
@@ -612,6 +609,7 @@ const uint8_t *LogicSnapshot::get_decode_samples(uint64_t start_sample, uint64_t
     assert(start_sample <= end_sample);
 
     start_sample += _loop_offset;
+    _ring_sample_count += _loop_offset;
 
     int order = get_ch_order(sig_index);
     uint64_t index0 = start_sample >> (LeafBlockPower + RootScalePower);
@@ -625,6 +623,7 @@ const uint8_t *LogicSnapshot::get_decode_samples(uint64_t start_sample, uint64_t
     end_sample = min(end_sample + 1, sample_count);
 
     end_sample -= _loop_offset;
+    _ring_sample_count -= _loop_offset;
 
     if (order == -1 || _ch_data[order][index0].lbp[index1] == NULL)
         return NULL;
@@ -635,7 +634,12 @@ const uint8_t *LogicSnapshot::get_decode_samples(uint64_t start_sample, uint64_t
 bool LogicSnapshot::get_sample(uint64_t index, int sig_index)
 {
     index += _loop_offset;
-    return get_sample_self(index, sig_index);
+    _ring_sample_count += _loop_offset;
+
+    bool flag = get_sample_self(index, sig_index);
+
+    _ring_sample_count -= _loop_offset;
+    return flag;
 }
 
 bool LogicSnapshot::get_sample_self(uint64_t index, int sig_index)
@@ -683,6 +687,7 @@ bool LogicSnapshot::get_display_edges(std::vector<std::pair<bool, bool> > &edges
 
     start += _loop_offset;
     end += _loop_offset;
+    _ring_sample_count += _loop_offset;
 
     uint64_t index = start;
     bool last_sample;
@@ -724,6 +729,8 @@ bool LogicSnapshot::get_display_edges(std::vector<std::pair<bool, bool> > &edges
         togs.push_back(pair<uint16_t, bool>(edges.size() - 1, last_sample));
     }
 
+    _ring_sample_count -= _loop_offset;
+
     return start_sample;
 }
 
@@ -732,8 +739,13 @@ bool LogicSnapshot::get_nxt_edge(uint64_t &index, bool last_sample, uint64_t end
 {
     index += _loop_offset;
     end += _loop_offset;
+    _ring_sample_count += _loop_offset;
+
     bool flag = get_nxt_edge_self(index, last_sample, end, min_length, sig_index);
+
     index -= _loop_offset;
+    _ring_sample_count -= _loop_offset;
+
     return flag;
 }
 
@@ -796,8 +808,12 @@ bool LogicSnapshot::get_pre_edge(uint64_t &index, bool last_sample,
                       double min_length, int sig_index)
 {
     index += _loop_offset;
+    _ring_sample_count += _loop_offset;
+
     bool flag = get_pre_edge_self(index, last_sample, min_length, sig_index);
+
     index -= _loop_offset;
+    _ring_sample_count -= _loop_offset;
     return flag;
 }
 
@@ -1042,8 +1058,12 @@ bool LogicSnapshot::pattern_search(int64_t start, int64_t end, int64_t& index,
     start += _loop_offset;
     end += _loop_offset;
     index += _loop_offset;
+    _ring_sample_count += _loop_offset;
+
     bool flag = pattern_search_self(start, end, index, pattern, isNext);
+
     index -= _loop_offset;
+    _ring_sample_count -= _loop_offset;
     return flag;
 }
 

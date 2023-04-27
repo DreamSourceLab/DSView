@@ -2129,8 +2129,6 @@ static void free_transfer(struct libusb_transfer *transfer, int force)
     if (!devc->is_loop || devc->status != DSL_DATA || force)
         devc->submitted_transfers--;
 
-    sr_info("submitted_transfers:%d", devc->submitted_transfers);
-
     if (devc->submitted_transfers == 0){
         sr_info("Call finish_acquisition()");
         finish_acquisition(devc);
