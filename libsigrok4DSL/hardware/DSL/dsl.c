@@ -2108,7 +2108,7 @@ static void finish_acquisition(struct DSL_context *devc)
     devc->status = DSL_FINISH;
 }
 
-static void free_transfer(struct libusb_transfer *transfer)
+static void free_transfer(struct libusb_transfer *transfer, int force)
 {
     struct DSL_context *devc;
     unsigned int i;
@@ -2126,11 +2126,15 @@ static void free_transfer(struct libusb_transfer *transfer)
         }
     }
 
-    if (!devc->is_loop || devc->status != DSL_DATA)
+    if (!devc->is_loop || devc->status != DSL_DATA || force)
         devc->submitted_transfers--;
 
-    if (devc->submitted_transfers == 0)
+    sr_info("submitted_transfers:%d", devc->submitted_transfers);
+
+    if (devc->submitted_transfers == 0){
+        sr_info("Call finish_acquisition()");
         finish_acquisition(devc);
+    }
 }
 
 static void resubmit_transfer(struct libusb_transfer *transfer)
@@ -2140,7 +2144,7 @@ static void resubmit_transfer(struct libusb_transfer *transfer)
     if ((ret = libusb_submit_transfer(transfer)) == LIBUSB_SUCCESS)
         return;
 
-    free_transfer(transfer);
+    free_transfer(transfer, 0);
     /* TODO: Stop session? */
 
     sr_err("%s: %s", __func__, libusb_error_name(ret));
@@ -2266,6 +2270,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
     }
 
     packet.status = SR_PKT_OK;
+
     if (devc->status == DSL_DATA &&
         transfer->actual_length != 0) {
         /* Send the incoming transfer to the session bus. */
@@ -2278,11 +2283,13 @@ static void receive_transfer(struct libusb_transfer *transfer)
             logic.format = LA_CROSS_DATA;
             logic.data_error = 0;
             logic.data = cur_buf;
-        } else if (sdi->mode == DSO) {
+        }
+        else if (sdi->mode == DSO) {
             if (!devc->instant) {
                 const uint32_t offset = devc->actual_samples / (channel_modes[devc->ch_mode].num/dsl_en_ch_num(sdi));
                 get_measure(sdi, cur_buf, offset);
-            } else {
+            }
+            else {
                 devc->mstatus.vlen = get_buffer_size(sdi) / channel_modes[devc->ch_mode].num;
                 devc->mstatus.trig_offset = 0;
                 devc->mstatus.sample_divider_tog = FALSE;
@@ -2303,11 +2310,13 @@ static void receive_transfer(struct libusb_transfer *transfer)
                 dso.trig_flag = (devc->mstatus.trig_flag != 0);
                 dso.trig_ch = devc->mstatus.trig_ch;
                 dso.data = cur_buf + (devc->zero ? 0 : 2*devc->mstatus.trig_offset);
-            } else {
+            }
+            else {
                 packet.type = SR_DF_DSO;
                 packet.status = SR_PKT_DATA_ERROR;
             }
-        } else if (sdi->mode == ANALOG) {
+        }
+        else if (sdi->mode == ANALOG) {
             packet.type = SR_DF_ANALOG;
             packet.payload = &analog;
             analog.probes = sdi->channels;
@@ -2321,10 +2330,13 @@ static void receive_transfer(struct libusb_transfer *transfer)
             analog.data = cur_buf;
         }
 
-        if ((devc->limit_samples && devc->num_bytes < devc->actual_bytes) ||
-            sdi->mode != LOGIC ) {
-            const uint64_t remain_length= devc->actual_bytes - devc->num_bytes;
-            logic.length = min(logic.length, remain_length);
+        if ((devc->limit_samples && (devc->num_bytes < devc->actual_bytes || devc->is_loop) )
+           || sdi->mode != LOGIC)
+        {
+            if (!devc->is_loop){
+                const uint64_t remain_length= devc->actual_bytes - devc->num_bytes;
+                logic.length = min(logic.length, remain_length);
+            }
 
             /* send data to session bus */
             if (packet.status == SR_PKT_OK)
@@ -2335,6 +2347,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
         devc->num_bytes += logic.length;
         if (sdi->mode == LOGIC &&
             devc->limit_samples &&
+            !devc->is_loop &&
             devc->num_bytes >= devc->actual_bytes) {
             devc->status = DSL_STOP;
         } else if ((sdi->mode == DSO && devc->instant) &&
@@ -2354,7 +2367,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
     if (devc->status == DSL_DATA)
         resubmit_transfer(transfer);
     else
-        free_transfer(transfer);
+        free_transfer(transfer, 0);
 
     devc->trf_completed = 1;
 }
@@ -2405,7 +2418,7 @@ static void receive_header(struct libusb_transfer *transfer)
         ds_data_forward(sdi, &packet);
     }
 
-    free_transfer(transfer);
+    free_transfer(transfer, 1);
 }
 
 SR_PRIV int dsl_start_transfers(const struct sr_dev_inst *sdi)

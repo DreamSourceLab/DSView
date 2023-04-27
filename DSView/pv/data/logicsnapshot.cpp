@@ -237,6 +237,9 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
         }
     }
 
+   // if (_is_loop)
+    //    dsv_info("_loop_offset:%llu", _loop_offset);
+
     _ring_sample_count += _loop_offset;
  
     // bit align
@@ -327,7 +330,7 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
         ///dsv_info("data length is full.");
         *read_ptr = 1;
 
-        dsv_info("loop_offset:%llu", _loop_offset);
+       // dsv_info("----------to max");
     }
 
     while (len >= 8)

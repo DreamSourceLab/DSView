@@ -1190,7 +1190,7 @@ namespace pv
                                   const struct sr_datafeed_packet *packet)
     {
         assert(sdi);
-        assert(packet);
+        assert(packet); 
 
         ds_lock_guard lock(_data_mutex);
 
@@ -1263,7 +1263,6 @@ namespace pv
 
                 // Post a message to start all decode tasks.
                 if (mode == LOGIC){
-                    dsv_info("Receive SR_DF_END.");
                     _callback->trigger_message(DSV_MSG_REV_END_PACKET);
                 }
                 else{
