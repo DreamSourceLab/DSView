@@ -76,6 +76,7 @@ static void print_to_console(struct xlog_receiver_info *info, const char *domain
     
 	vfprintf(stderr, format, args);
 	fprintf(stderr, "\n");
+    fflush(stderr);
 }
  
 /**
