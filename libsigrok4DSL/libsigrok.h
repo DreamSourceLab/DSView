@@ -980,6 +980,9 @@ enum sr_config_option_id
     SR_CONF_BANDWIDTH = 30076,
     SR_CONF_BANDWIDTH_LIMIT = 30077,
 
+	/* demo */
+	SR_CONF_AUTO_OPEN = 30078,
+
     /*--- Probe configuration -------------------------------------------*/
     /** Probe options */
     SR_CONF_PROBE_CONFIGS = 30078,

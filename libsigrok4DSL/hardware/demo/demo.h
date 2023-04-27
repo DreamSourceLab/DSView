@@ -24,21 +24,30 @@
 #include <glib.h>
 #include "../../libsigrok-internal.h"
  
-/* Supported patterns which we can generate */
 enum DEMO_PATTERN {
-    PATTERN_SINE = 0,
-    PATTERN_SQUARE = 1,
-    PATTERN_TRIANGLE = 2,
-    PATTERN_SAWTOOTH = 3,
-    PATTERN_RANDOM = 4,
+    PATTERN_RANDOM = 0,
+    PATTERN_SINE = 1,
+    PATTERN_SQUARE = 2,
+    PATTERN_TRIANGLE = 3,
+    PATTERN_SAWTOOTH = 4,
+    PATTERN_UART = 1,
+    PATTERN_SPI = 2,
+    PATTERN_EEPROM = 3,
 };
 
-static const char *pattern_strings[] = {
-    "Sine",
-    "Square",
-    "Triangle",
-    "Sawtooth",
-    "Random",
+static const char *pattern_strings_logic[] = {
+    "RANDOM",
+    "UART",
+    "SPI",
+    "EEPROM",
+};
+
+static const char *pattern_strings_dso[] = {
+    "RANDOM",
+    "SINE",
+    "SQUARE",
+    "TRIANGLE",
+    "SWATOOTH",
 };
 
 struct DEMO_caps {
@@ -77,8 +86,8 @@ static const uint64_t vdivs10to2000[] = {
 
 enum DEMO_CHANNEL_ID {
     DEMO_LOGIC100x16 = 0,
-    DEMO_ANALOG10x2,
-    DEMO_DSO200x2,
+    DEMO_ANALOG10x2 = 1 ,
+    DEMO_DSO200x2 = 2,
 };
 
 struct DEMO_channels {
@@ -227,6 +236,15 @@ static const int32_t probeOptions[] = {
     SR_CONF_PROBE_MAP_MAX,
 };
 
+static const int32_t probeSessions[] = {
+    SR_CONF_PROBE_COUPLING,
+    SR_CONF_PROBE_VDIV,
+    SR_CONF_PROBE_MAP_DEFAULT,
+    SR_CONF_PROBE_MAP_UNIT,
+    SR_CONF_PROBE_MAP_MIN,
+    SR_CONF_PROBE_MAP_MAX,
+};
+
 static const uint8_t probeCoupling[] = {
     SR_DC_COUPLING,
     SR_AC_COUPLING,
@@ -258,13 +276,19 @@ static const struct DEMO_profile supported_Demo[] = {
       0,
       vdivs10to2000,
       0,
-      DEMO_LOGIC100x16,
+      DEMO_LOGIC100x16, 
       PATTERN_SINE,
       SR_NS(500)}
     },
 
     { 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 };
+
+uint8_t cur_sample_generator = PATTERN_UART;
+uint8_t pre_sample_generator = PATTERN_RANDOM;
+int cur_mode = LOGIC;
+int pre_mode = LOGIC;
+
 
 static const int const_dc = 1.95 / 10 * 255;
 static const int sinx[] = {
@@ -332,4 +356,36 @@ static const int ranx[] = {
 -41,  36,  -8,  46,  47, -34,  28, -39,   7, -32,  38, -27,  28,  -3,  -8,  43, -37, -24,   6,   3,
 };
 
+
+extern char DS_RES_PATH[500];
+
+
+static int hw_init(struct sr_context *sr_ctx);
+static void adjust_samplerate(struct demo_context *devc);
+static void probe_init(struct sr_dev_inst *sdi);
+static int setup_probes(struct sr_dev_inst *sdi, int num_probes);
+static int get_file_mode(const char *filename);
+static GSList *hw_scan(GSList *options);
+static const GSList *hw_dev_mode_list(const struct sr_dev_inst *sdi);
+static int hw_dev_open(struct sr_dev_inst *sdi);
+static int hw_dev_close(struct sr_dev_inst *sdi);
+static int dev_destroy(struct sr_dev_inst *sdi);
+static int hw_cleanup(void);
+static unsigned int en_ch_num(const struct sr_dev_inst *sdi);
+static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
+                      const struct sr_channel *ch,
+                      const struct sr_channel_group *cg);
+static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
+                      struct sr_channel *ch,
+                      struct sr_channel_group *cg);
+static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
+                       const struct sr_channel_group *cg);
+static void samples_generator(uint16_t *buf, uint64_t size,
+                              const struct sr_dev_inst *sdi,
+                              struct demo_context *devc);
+static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi);
+static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
+		void *cb_data);
+static int hw_dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data);
+static int hw_dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, gboolean prg);
 #endif

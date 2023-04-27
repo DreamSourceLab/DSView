@@ -647,7 +647,8 @@ SR_API int ds_get_actived_device_info(struct ds_device_full_info *fill_info)
 			strncpy(p->driver_name, dev->driver->name, sizeof(p->driver_name) - 1);
 		}
 
-		if (dev->dev_type == DEV_TYPE_FILELOG && dev->path != NULL){
+		//demo paht
+		if ((dev->dev_type == DEV_TYPE_FILELOG || dev->dev_type == DEV_TYPE_DEMO) && dev->path != NULL){
 			strncpy(p->path, dev->path, sizeof(p->path) - 1);
 		}
 		ret = SR_OK;

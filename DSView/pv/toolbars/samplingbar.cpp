@@ -326,6 +326,11 @@ namespace pv
             }
 
             _session->broadcast_msg(DSV_MSG_END_DEVICE_OPTIONS);
+            /*demo*/
+            if(_device_agent->is_demo())
+            {
+                _session->set_device(_device_agent->handle());
+            }
         }
 
         void SamplingBar::zero_adj()

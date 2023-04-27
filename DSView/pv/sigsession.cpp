@@ -217,6 +217,12 @@ namespace pv
 
         _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_CHANGE_PREV);
 
+        /* demo */
+        if(_device_agent.is_demo() && _device_agent.handle() != dev_handle)
+        {
+            _device_agent.set_config(NULL,NULL,SR_CONF_AUTO_OPEN,g_variant_new_boolean(FALSE));
+        }
+
         // Release the old device.
         _device_agent.release();
 
@@ -247,7 +253,16 @@ namespace pv
         set_cur_samplelimits(_device_agent.get_sample_limit());
 
         // The current device changed.
-        _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_CHANGED);
+        /*demo*/
+        if(_device_agent.is_demo() )
+        {
+            _callback->trigger_message(DSV_MSG_DEMO_UPDATA);
+        }
+        else
+        {
+            _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_CHANGED);
+        }
+
 
         return true;
     }
