@@ -307,7 +307,7 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
     uint16_t last_chan = _ch_fraction;
     index0 =  align_sample_count / LeafBlockSamples / RootScale;
     index1 = (align_sample_count / LeafBlockSamples) % RootScale;
-    offset = align_sample_count % LeafBlockSamples;
+    offset =  align_sample_count % LeafBlockSamples;
     
     lbp = _ch_data[fill_chan][index0].lbp[index1];
     if (lbp == NULL){
@@ -441,28 +441,35 @@ void LogicSnapshot::capture_ended()
 
     Snapshot::capture_ended();  
 
+    _sample_count = _ring_sample_count;
+    _mipmap_sample_count = _ring_sample_count;
+
+    _ring_sample_count += _loop_offset;
+
     uint64_t index0 = _ring_sample_count / LeafBlockSamples / RootScale;
     uint64_t index1 = (_ring_sample_count / LeafBlockSamples) % RootScale;
     uint64_t offset = (_ring_sample_count % LeafBlockSamples) / 8;
 
-    _sample_count = _ring_sample_count;
+    _ring_sample_count -= _loop_offset;
 
-    if (offset == 0)
-        return;
-   
-    for (int chan=0; chan<_channel_num; chan++)
-    { 
-        const uint64_t *end_ptr = (uint64_t*)_ch_data[chan][index0].lbp[index1] + (LeafBlockSamples / Scale);
-        uint64_t *ptr = (uint64_t*)((uint8_t*)_ch_data[chan][index0].lbp[index1] + offset);
+    if (offset > 0)
+    {
+        for (int chan=0; chan<_channel_num; chan++)
+        { 
+            if (_ch_data[chan][index0].lbp[index1] == NULL){
+                dsv_err("ERROR:LogicSnapshot::capture_ended(),buffer is null.");
+                assert(false);
+            }
+            const uint64_t *end_ptr = (uint64_t*)_ch_data[chan][index0].lbp[index1] + (LeafBlockSamples / Scale);
+            uint64_t *ptr = (uint64_t*)((uint8_t*)_ch_data[chan][index0].lbp[index1] + offset);
 
-        while (ptr < end_ptr){
-            *ptr++ = 0;
-        }
+            while (ptr < end_ptr){
+                *ptr++ = 0;
+            }
 
-        calc_mipmap(chan, index0, index1, offset * 8, true);
+            calc_mipmap(chan, index0, index1, offset * 8, true);
+        }  
     }
-
-    _mipmap_sample_count = _ring_sample_count;
 }
 
 void LogicSnapshot::calc_mipmap(unsigned int order, uint8_t index0, uint8_t index1, uint64_t samples, bool isEnd)
