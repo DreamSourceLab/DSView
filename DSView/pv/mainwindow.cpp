@@ -116,6 +116,9 @@ namespace pv
         _is_auto_switch_device = false;
         _is_save_confirm_msg = false;
 
+        _demo_load_decoder = TRUE;
+        _demo_auto_start = FALSE;
+
         setup_ui();
 
         setContextMenuPolicy(Qt::NoContextMenu);
@@ -1674,6 +1677,11 @@ namespace pv
             break;
 
         case DSV_MSG_START_COLLECT_WORK:
+            /*demo下逻辑分析仪采集一次后，设置自动采集*/
+            if (_device_agent->is_demo() && _device_agent->get_work_mode() == LOGIC)
+            {
+                _demo_auto_start = TRUE;
+            }
             update_toolbar_view_status();
             _view->on_state_changed(false);
             _protocol_widget->update_view_status();
@@ -1712,13 +1720,20 @@ namespace pv
             _session->device_event_object()->device_updated();
 
             if (_device_agent->is_hardware())
+            {
+                /*切换到硬件设备，取消demo的自动采集*/
+                _demo_auto_start = FALSE;
                 _session->on_load_config_end();
+            }
+                
             
             if (_device_agent->get_work_mode() == LOGIC && _device_agent->is_file() == false)
                 _view->auto_set_max_scale();
 
             if (_device_agent->is_file())
             {
+                /*切换到硬件设备，取消demo的自动采集（目前使用gboolean类型需要includeligsigork）*/
+                _demo_auto_start = FALSE;
                 check_session_file_version();
 
                 bool bDoneDecoder = false;
@@ -1731,7 +1746,27 @@ namespace pv
                 }
                 
                 _session->start_capture(true);
-            } 
+            }
+
+            if (_device_agent->is_demo())
+            {
+                /*demo下逻辑分析仪如果信号模式不为RANDOM，导入解码器*/
+                if(_device_agent->get_work_mode() == LOGIC)
+                {
+                    GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_LOAD_DECODER);
+                    if(gvar != NULL)
+                    {
+                        gboolean load_decoder = g_variant_get_boolean(gvar);
+                        if(load_decoder)
+                        {
+                            //加载解码器
+                            StoreSession ss(_session);
+                            QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
+                            ss.load_decoders(_protocol_widget, deArray);  
+                        }
+                    }
+                }
+            }
         }
         break;
 
@@ -1746,10 +1781,11 @@ namespace pv
             _view->timebase_changed();
             break;
 
-        case DSV_MSG_DEVICE_MODE_CHANGED:           
+        case DSV_MSG_DEVICE_MODE_CHANGED:
             _view->mode_changed(); 
             reset_all_view();
-            load_device_config(); 
+            load_device_config();
+
             update_toolbar_view_status();
             _sampling_bar->update_sample_rate_list();
 
@@ -1758,6 +1794,26 @@ namespace pv
             
             if (_device_agent->get_work_mode() == LOGIC)
                 _view->auto_set_max_scale();
+
+            if(_device_agent->is_demo())
+            {
+                /*demo下逻辑分析仪如果信号模式不为RANDOM，导入解码器*/
+                _protocol_widget->del_all_protocol();
+                if(_device_agent->get_work_mode() == LOGIC)
+                {
+                    GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_LOAD_DECODER);
+                    if(gvar != NULL)
+                    {
+                        gboolean load_decoder = g_variant_get_boolean(gvar);
+                        if(load_decoder)
+                        {
+                            StoreSession ss(_session);
+                            QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
+                            ss.load_decoders(_protocol_widget, deArray);
+                        }
+                    }
+                }
+            }
             break;
 
         case DSV_MSG_NEW_USB_DEVICE:
@@ -1838,9 +1894,49 @@ namespace pv
             }
             break;
 
-        case DSV_MSG_END_DEVICE_OPTIONS:            
-            break;
+        case DSV_MSG_END_DEVICE_OPTIONS:
+            if(_device_agent->is_demo())
+            {
+                /*信号模式发生修改，更新界面*/
+                GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_DEMO_CHANGE);
+                if(gvar != NULL)
+                {
+                    gboolean pattern_change = g_variant_get_boolean(gvar);
+                    if(pattern_change)
+                    {
+                        reset_all_view();
+                        load_device_config();
+                        update_toolbar_view_status();
+                        _device_agent->set_config(NULL,NULL,SR_CONF_DEMO_CHANGE,g_variant_new_boolean(FALSE));
+                    }
+                }
 
+                /*demo下逻辑分析仪如果信号模式不为RANDOM，导入解码器*/
+                _protocol_widget->del_all_protocol();
+                if(_device_agent->get_work_mode() == LOGIC)
+                {
+                    _view->auto_set_max_scale();
+
+                    GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_LOAD_DECODER);
+                    if(gvar != NULL)
+                    {
+                        gboolean load_decoder = g_variant_get_boolean(gvar);
+                        if(load_decoder)
+                        {
+                            StoreSession ss(_session);
+                            QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
+                            ss.load_decoders(_protocol_widget, deArray);  
+                        }
+                    }
+
+                     /*demo下逻辑分析仪执行一次采集后，切换信号模式自动采集*/
+                    if(_demo_auto_start)
+                    {
+                        _session->start_capture(true);
+                    }
+                }
+            }
+            break;
         }
     }
 
