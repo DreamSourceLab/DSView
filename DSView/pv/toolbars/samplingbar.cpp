@@ -284,11 +284,13 @@ namespace pv
 
                 _session->broadcast_msg(DSV_MSG_DEVICE_OPTIONS_UPDATED);
 
+                //更新采样率列表（前面做好配置）
                 update_sample_rate_list();
 
                 int mode = _device_agent->get_work_mode();
                 GVariant *gvar;
 
+                //主要是对采样栏的更新？
                 if (mode == DSO)
                 {
                     gvar = _device_agent->get_config(NULL, NULL, SR_CONF_ZERO);
@@ -303,6 +305,8 @@ namespace pv
                         }
                     }
                 }
+
+                //内部测试？
                 gvar = _device_agent->get_config(NULL, NULL, SR_CONF_TEST);
                 if (gvar != NULL)
                 {
@@ -322,15 +326,11 @@ namespace pv
                     }
                 }
 
+                //应该是采样栏的
                 this->reload();
             }
 
             _session->broadcast_msg(DSV_MSG_END_DEVICE_OPTIONS);
-            /*demo*/
-            if(_device_agent->is_demo())
-            {
-                _session->set_device(_device_agent->handle());
-            }
         }
 
         void SamplingBar::zero_adj()

@@ -217,12 +217,6 @@ namespace pv
 
         _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_CHANGE_PREV);
 
-        /* demo */
-        if(_device_agent.is_demo() && _device_agent.handle() != dev_handle)
-        {
-            _device_agent.set_config(NULL,NULL,SR_CONF_AUTO_OPEN,g_variant_new_boolean(FALSE));
-        }
-
         // Release the old device.
         _device_agent.release();
 
@@ -253,16 +247,7 @@ namespace pv
         set_cur_samplelimits(_device_agent.get_sample_limit());
 
         // The current device changed.
-        /*demo*/
-        if(_device_agent.is_demo() )
-        {
-            _callback->trigger_message(DSV_MSG_DEMO_UPDATA);
-        }
-        else
-        {
-            _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_CHANGED);
-        }
-
+        _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_CHANGED);
 
         return true;
     }
@@ -1965,6 +1950,31 @@ namespace pv
         switch (msg)
         {
         case DSV_MSG_DEVICE_OPTIONS_UPDATED:
+            if(_device_agent.is_demo())
+            {
+                GVariant *gvar = _device_agent.get_config(NULL,NULL,SR_CONF_DEMO_CHANGE);
+                if(gvar != NULL)
+                {
+                    gboolean pattern_change = g_variant_get_boolean(gvar);
+                    if(pattern_change)
+                    {
+                        /*底层重置工作参数*/
+                        _device_agent.set_config(NULL,NULL,SR_CONF_DEMO_INIT,g_variant_new_boolean(TRUE));
+                        
+                        _device_agent.update();
+
+                        clear_all_decoder();
+
+                        _capture_data->clear();
+                        _view_data->clear();
+                        _capture_data = _view_data;   
+
+                        init_signals();
+                        set_cur_snap_samplerate(_device_agent.get_sample_rate());
+                        set_cur_samplelimits(_device_agent.get_sample_limit());
+                    }
+                }
+            }
             reload();
             break;
 
@@ -2084,6 +2094,7 @@ namespace pv
         // Nonthing.
     }
 
+    //**
     bool SigSession::switch_work_mode(int mode)
     {
         assert(!_is_working);
@@ -2092,6 +2103,7 @@ namespace pv
         if (cur_mode != mode)
         {  
             GVariant *val = g_variant_new_int16(mode);
+            /*底层重置工作参数*/
             _device_agent.set_config(NULL, NULL, SR_CONF_DEVICE_MODE, val);
 
             if (cur_mode == LOGIC){
@@ -2119,7 +2131,9 @@ namespace pv
             set_cur_samplelimits(_device_agent.get_sample_limit()); 
 
             dsv_info("Switch work mode to:%d", mode);
+
             broadcast_msg(DSV_MSG_DEVICE_MODE_CHANGED);
+
             return true;
         }
         return false;

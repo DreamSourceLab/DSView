@@ -116,6 +116,9 @@ namespace pv
         _is_auto_switch_device = false;
         _is_save_confirm_msg = false;
 
+        _demo_load_decoder = TRUE;
+        _demo_auto_start = FALSE;
+
         setup_ui();
 
         setContextMenuPolicy(Qt::NoContextMenu);
@@ -864,23 +867,6 @@ namespace pv
                 {
                     dsv_warn("Warning: session file, failed to parse key:'%s'", info->name);
                     continue;
-                }
-
-
-                if(_device_agent->is_demo())
-                {
-                    GVariant *gvar1 = _device_agent->get_config(NULL,NULL,SR_CONF_PATTERN_MODE);
-                    const char* pattern = g_variant_get_string(gvar1,NULL);
-                    if(_device_agent->get_work_mode() != DSO)
-                    {
-                        if(strcmp(pattern,"UART") && (strcmp(pattern,"SPI")) && (strcmp(pattern,"EERPOM")))
-                        {
-                            if(info->key == SR_CONF_LIMIT_SAMPLES)
-                                gvar = g_variant_new_uint64(SR_MHZ(1));
-                            if(info->key == SR_CONF_SAMPLERATE)
-                                gvar = g_variant_new_uint64(SR_MHZ(1));
-                        }
-                    }
                 }
 
                 bool bFlag = _device_agent->set_config(NULL, NULL, info->key, gvar);
@@ -1691,6 +1677,11 @@ namespace pv
             break;
 
         case DSV_MSG_START_COLLECT_WORK:
+            /*demo下逻辑分析仪采集一次后，设置自动采集*/
+            if (_device_agent->is_demo() && _device_agent->get_work_mode() == LOGIC)
+            {
+                _demo_auto_start = TRUE;
+            }
             update_toolbar_view_status();
             _view->on_state_changed(false);
             _protocol_widget->update_view_status();
@@ -1729,13 +1720,20 @@ namespace pv
             _session->device_event_object()->device_updated();
 
             if (_device_agent->is_hardware())
+            {
+                /*切换到硬件设备，取消demo的自动采集*/
+                _demo_auto_start = FALSE;
                 _session->on_load_config_end();
+            }
+                
             
             if (_device_agent->get_work_mode() == LOGIC && _device_agent->is_file() == false)
                 _view->auto_set_max_scale();
 
             if (_device_agent->is_file())
             {
+                /*切换到硬件设备，取消demo的自动采集（目前使用gboolean类型需要includeligsigork）*/
+                _demo_auto_start = FALSE;
                 check_session_file_version();
 
                 bool bDoneDecoder = false;
@@ -1748,122 +1746,26 @@ namespace pv
                 }
                 
                 _session->start_capture(true);
-            } 
-        }
-        break;
-        /*demo*/
-        case DSV_MSG_DEMO_UPDATA:
-        {
-            if (_msg != NULL)
-            {
-                _msg->close();
-                _msg = NULL;
-            }
- 
-            _sampling_bar->update_device_list();
-            reset_all_view();
-            load_device_config();
-            
-            _logo_bar->dsl_connected(_session->get_device()->is_hardware());
-            update_toolbar_view_status();
-            _session->device_event_object()->device_updated();
-
-            bool bDoneDecoder = false;
-           QJsonDocument test;
-
-
-           GVariant *gvar = _device_agent->get_config(NULL, NULL, SR_CONF_TEST);
-           if (gvar != NULL)
-           {
-               gboolean change = g_variant_get_boolean(gvar);
-               if(change)
-               {
-                   GVariant *gvar1 = _device_agent->get_config(NULL, NULL, SR_CONF_PATTERN_MODE);
-                   const char* str1 = g_variant_get_string(gvar1,NULL);
-                   {
-                       if(!strcmp(str1,"RANDOM") && _device_agent->get_work_mode() == LOGIC)
-                       {
-                           char *str;
-                           str = "{\"Device\":\"virtual-demo\",\"DeviceMode\":0,\"Language\":25,\"Max Height\":\"1X\",\"Pattern mode\":\"Sine\",\"Sample count\":\"100000768\",\"Sample rate\":\"10000\",\"Title\":\"DSView v1.3.0-RC2\",\"Version\":3,\"channel\":[{\"colour\":\"default\",\"enabled\":true,\"index\":0,\"name\":\"0\",\"strigger\":0,\"type\":10000},{\"colour\":\"default\",\"enabled\":true,\"index\":1,\"name\":\"1\",\"strigger\":0,\"type\":10000},{\"colour\":\"default\",\"enabled\":true,\"index\":2,\"name\":\"2\",\"strigger\":0,\"type\":10000},{\"colour\":\"default\",\"enabled\":true,\"index\":3,\"name\":\"3\",\"strigger\":0,\"type\":10000},{\"colour\":\"default\",\"enabled\":true,\"index\":4,\"name\":\"4\",\"strigger\":0,\"type\":10000},{\"colour\":\"default\",\"enabled\":true,\"index\":5,\"name\":\"5\",\"strigger\":0,\"type\":10000},{\"colour\":\"default\",\"enabled\":true,\"index\":6,\"name\":\"6\",\"strigger\":0,\"type\":10000},{\"colour\":\"default\",\"enabled\":true,\"index\":7,\"name\":\"7\",\"strigger\":0,\"type\":10000},{\"colour\":\"default\",\"enabled\":true,\"index\":8,\"name\":\"8\",\"strigger\":0,\"type\":10000},{\"colour\":\"default\",\"enabled\":true,\"index\":9,\"name\":\"9\",\"strigger\":0,\"type\":10000},{\"colour\":\"default\",\"enabled\":true,\"index\":10,\"name\":\"10\",\"strigger\":0,\"type\":10000},{\"colour\":\"default\",\"enabled\":true,\"index\":11,\"name\":\"11\",\"strigger\":0,\"type\":10000},{\"colour\":\"default\",\"enabled\":true,\"index\":12,\"name\":\"12\",\"strigger\":0,\"type\":10000},{\"colour\":\"default\",\"enabled\":true,\"index\":13,\"name\":\"13\",\"strigger\":0,\"type\":10000},{\"colour\":\"default\",\"enabled\":true,\"index\":14,\"name\":\"14\",\"strigger\":0,\"type\":10000},{\"colour\":\"default\",\"enabled\":true,\"index\":15,\"name\":\"15\",\"strigger\":0,\"type\":10000}],\"decoder\":[],\"trigger\":{\"advTriggerMode\":false,\"serialTriggerBits\":0,\"serialTriggerChannel\":0,\"serialTriggerClock\":\"X X X X X X X X X X X X X X X X\",\"serialTriggerData\":\"X X X X X X X X X X X X X X X X\",\"serialTriggerStart\":\"X X X X X X X X X X X X X X X X\",\"serialTriggerStop\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerContiguous0\":false,\"stageTriggerContiguous1\":false,\"stageTriggerContiguous10\":false,\"stageTriggerContiguous11\":false,\"stageTriggerContiguous12\":false,\"stageTriggerContiguous13\":false,\"stageTriggerContiguous14\":false,\"stageTriggerContiguous15\":false,\"stageTriggerContiguous2\":false,\"stageTriggerContiguous3\":false,\"stageTriggerContiguous4\":false,\"stageTriggerContiguous5\":false,\"stageTriggerContiguous6\":false,\"stageTriggerContiguous7\":false,\"stageTriggerContiguous8\":false,\"stageTriggerContiguous9\":false,\"stageTriggerCount0\":1,\"stageTriggerCount1\":1,\"stageTriggerCount10\":1,\"stageTriggerCount11\":1,\"stageTriggerCount12\":1,\"stageTriggerCount13\":1,\"stageTriggerCount14\":1,\"stageTriggerCount15\":1,\"stageTriggerCount2\":1,\"stageTriggerCount3\":1,\"stageTriggerCount4\":1,\"stageTriggerCount5\":1,\"stageTriggerCount6\":1,\"stageTriggerCount7\":1,\"stageTriggerCount8\":1,\"stageTriggerCount9\":1,\"stageTriggerInv00\":0,\"stageTriggerInv01\":0,\"stageTriggerInv010\":0,\"stageTriggerInv011\":0,\"stageTriggerInv012\":0,\"stageTriggerInv013\":0,\"stageTriggerInv014\":0,\"stageTriggerInv015\":0,\"stageTriggerInv02\":0,\"stageTriggerInv03\":0,\"stageTriggerInv04\":0,\"stageTriggerInv05\":0,\"stageTriggerInv06\":0,\"stageTriggerInv07\":0,\"stageTriggerInv08\":0,\"stageTriggerInv09\":0,\"stageTriggerInv10\":0,\"stageTriggerInv11\":0,\"stageTriggerInv110\":0,\"stageTriggerInv111\":0,\"stageTriggerInv112\":0,\"stageTriggerInv113\":0,\"stageTriggerInv114\":0,\"stageTriggerInv115\":0,\"stageTriggerInv12\":0,\"stageTriggerInv13\":0,\"stageTriggerInv14\":0,\"stageTriggerInv15\":0,\"stageTriggerInv16\":0,\"stageTriggerInv17\":0,\"stageTriggerInv18\":0,\"stageTriggerInv19\":0,\"stageTriggerLogic0\":1,\"stageTriggerLogic1\":1,\"stageTriggerLogic10\":1,\"stageTriggerLogic11\":1,\"stageTriggerLogic12\":1,\"stageTriggerLogic13\":1,\"stageTriggerLogic14\":1,\"stageTriggerLogic15\":1,\"stageTriggerLogic2\":1,\"stageTriggerLogic3\":1,\"stageTriggerLogic4\":1,\"stageTriggerLogic5\":1,\"stageTriggerLogic6\":1,\"stageTriggerLogic7\":1,\"stageTriggerLogic8\":1,\"stageTriggerLogic9\":1,\"stageTriggerValue00\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue01\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue010\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue011\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue012\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue013\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue014\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue015\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue02\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue03\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue04\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue05\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue06\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue07\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue08\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue09\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue10\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue11\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue110\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue111\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue112\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue113\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue114\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue115\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue12\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue13\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue14\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue15\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue16\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue17\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue18\":\"X X X X X X X X X X X X X X X X\",\"stageTriggerValue19\":\"X X X X X X X X X X X X X X X X\",\"triggerPos\":1,\"triggerStages\":0,\"triggerTab\":0}}";
-                           QByteArray temp(str);
-                           test = test.fromJson(temp);
-                       }
-                       else if(_device_agent->get_work_mode() == ANALOG)
-                       {
-                           char *str;
-                           if(!strcmp(str1,"RANDOM"))
-                               str = "{\"Device\":\"virtual-demo\",\"DeviceMode\":2,\"Language\":25,\"Max Height\":\"1X\",\"Pattern mode\":\"Random\",\"Sample count\":\"2048\",\"Sample rate\":\"10\",\"Title\":\"DSView v1.3.0-RC2\",\"Version\":3,\"channel\":[{\"colour\":\"#eeb211\",\"coupling\":1,\"enabled\":true,\"index\":0,\"mapDefault\":true,\"mapMax\":5,\"mapMin\":-5,\"mapUnit\":\"V\",\"name\":\"0\",\"type\":10002,\"vdiv\":1000,\"vfactor\":1,\"zeroPos\":0.37401574803149606},{\"colour\":\"#009925\",\"coupling\":1,\"enabled\":true,\"index\":1,\"mapDefault\":true,\"mapMax\":5,\"mapMin\":-5,\"mapUnit\":\"V\",\"name\":\"1\",\"type\":10002,\"vdiv\":1000,\"vfactor\":1,\"zeroPos\":0.6259842519685039}],\"decoder\":[]}";
-                           else if(!strcmp(str1,"SINE"))
-                               str = "{\"Device\":\"virtual-demo\",\"DeviceMode\":2,\"Language\":25,\"Max Height\":\"1X\",\"Pattern mode\":\"Sine\",\"Sample count\":\"2048\",\"Sample rate\":\"10\",\"Title\":\"DSView v1.3.0-RC2\",\"Version\":3,\"channel\":[{\"colour\":\"#eeb211\",\"coupling\":1,\"enabled\":true,\"index\":0,\"mapDefault\":true,\"mapMax\":5,\"mapMin\":-5,\"mapUnit\":\"V\",\"name\":\"0\",\"type\":10002,\"vdiv\":1000,\"vfactor\":1,\"zeroPos\":0.37401574803149606},{\"colour\":\"#009925\",\"coupling\":1,\"enabled\":true,\"index\":1,\"mapDefault\":true,\"mapMax\":5,\"mapMin\":-5,\"mapUnit\":\"V\",\"name\":\"1\",\"type\":10002,\"vdiv\":1000,\"vfactor\":1,\"zeroPos\":0.6259842519685039}],\"decoder\":[]}";
-                           else if(!strcmp(str1,"SQUARE"))
-                               str = "{\"Device\":\"virtual-demo\",\"DeviceMode\":2,\"Language\":25,\"Max Height\":\"1X\",\"Pattern mode\":\"Square\",\"Sample count\":\"2048\",\"Sample rate\":\"10\",\"Title\":\"DSView v1.3.0-RC2\",\"Version\":3,\"channel\":[{\"colour\":\"#eeb211\",\"coupling\":1,\"enabled\":true,\"index\":0,\"mapDefault\":true,\"mapMax\":5,\"mapMin\":-5,\"mapUnit\":\"V\",\"name\":\"0\",\"type\":10002,\"vdiv\":1000,\"vfactor\":1,\"zeroPos\":0.37401574803149606},{\"colour\":\"#009925\",\"coupling\":1,\"enabled\":true,\"index\":1,\"mapDefault\":true,\"mapMax\":5,\"mapMin\":-5,\"mapUnit\":\"V\",\"name\":\"1\",\"type\":10002,\"vdiv\":1000,\"vfactor\":1,\"zeroPos\":0.6259842519685039}],\"decoder\":[]}";
-                           else if(!strcmp(str1,"TRIANGLE"))
-                               str = "{\"Device\":\"virtual-demo\",\"DeviceMode\":2,\"Language\":25,\"Max Height\":\"1X\",\"Pattern mode\":\"Triangle\",\"Sample count\":\"2048\",\"Sample rate\":\"10\",\"Title\":\"DSView v1.3.0-RC2\",\"Version\":3,\"channel\":[{\"colour\":\"#eeb211\",\"coupling\":1,\"enabled\":true,\"index\":0,\"mapDefault\":true,\"mapMax\":5,\"mapMin\":-5,\"mapUnit\":\"V\",\"name\":\"0\",\"type\":10002,\"vdiv\":1000,\"vfactor\":1,\"zeroPos\":0.37401574803149606},{\"colour\":\"#009925\",\"coupling\":1,\"enabled\":true,\"index\":1,\"mapDefault\":true,\"mapMax\":5,\"mapMin\":-5,\"mapUnit\":\"V\",\"name\":\"1\",\"type\":10002,\"vdiv\":1000,\"vfactor\":1,\"zeroPos\":0.6259842519685039}],\"decoder\":[]}";
-                           else if(!strcmp(str1,"SWATOOTH"))
-                               str = "{\"Device\":\"virtual-demo\",\"DeviceMode\":2,\"Language\":25,\"Max Height\":\"1X\",\"Pattern mode\":\"Sawtooth\",\"Sample count\":\"2048\",\"Sample rate\":\"10\",\"Title\":\"DSView v1.3.0-RC2\",\"Version\":3,\"channel\":[{\"colour\":\"#eeb211\",\"coupling\":1,\"enabled\":true,\"index\":0,\"mapDefault\":true,\"mapMax\":5,\"mapMin\":-5,\"mapUnit\":\"V\",\"name\":\"0\",\"type\":10002,\"vdiv\":1000,\"vfactor\":1,\"zeroPos\":0.37401574803149606},{\"colour\":\"#009925\",\"coupling\":1,\"enabled\":true,\"index\":1,\"mapDefault\":true,\"mapMax\":5,\"mapMin\":-5,\"mapUnit\":\"V\",\"name\":\"1\",\"type\":10002,\"vdiv\":1000,\"vfactor\":1,\"zeroPos\":0.6259842519685039}],\"decoder\":[]}";
-                           QByteArray temp(str);
-                           test = test.fromJson(temp);
-                       }
-                        else if(_device_agent->get_work_mode() == DSO)
-                       {
-                           char *str;
-                           if(!strcmp(str1,"RANDOM"))
-                               str = "{\"Device\":\"virtual-demo\",\"DeviceMode\":1,\"Language\":25,\"Max Height\":\"1X\",\"Pattern mode\":\"Random\",\"Sample count\":\"10000\",\"Sample rate\":\"100\",\"Title\":\"DSView v1.3.0-dev7\",\"Version\":3,\"channel\":[{\"colour\":\"#eeb211\",\"coupling\":1,\"enabled\":true,\"index\":0,\"name\":\"0\",\"trigValue\":0.5,\"type\":10001,\"vdiv\":1000,\"vfactor\":1,\"zeroPos\":0.37401574803149606},{\"colour\":\"#009925\",\"coupling\":1,\"enabled\":true,\"index\":1,\"name\":\"1\",\"trigValue\":0.5,\"type\":10001,\"vdiv\":1000,\"vfactor\":1,\"zeroPos\":0.6259842519685039}],\"decoder\":[],\"measure\":[{\"index\":0,\"site\":0,\"type\":1},{\"index\":0,\"site\":1,\"type\":17},{\"index\":0,\"site\":2,\"type\":18},{\"index\":1,\"site\":5,\"type\":1},{\"index\":1,\"site\":6,\"type\":17},{\"index\":1,\"site\":7,\"type\":18}]}";
-                           else if(!strcmp(str1,"SINE"))
-                               str = "{\"Device\":\"virtual-demo\",\"DeviceMode\":1,\"Language\":25,\"Max Height\":\"1X\",\"Pattern mode\":\"Sine\",\"Sample count\":\"10000\",\"Sample rate\":\"100000000\",\"Title\":\"DSView v1.3.0-dev7\",\"Version\":3,\"channel\":[{\"colour\":\"#eeb211\",\"coupling\":1,\"enabled\":true,\"index\":0,\"name\":\"0\",\"trigValue\":0.40551181102362205,\"type\":10001,\"vdiv\":1000,\"vfactor\":1,\"zeroPos\":0.2795275590551181},{\"colour\":\"#009925\",\"coupling\":1,\"enabled\":true,\"index\":1,\"name\":\"1\",\"trigValue\":0.610236220472441,\"type\":10001,\"vdiv\":1000,\"vfactor\":1,\"zeroPos\":0.7362204724409449}],\"decoder\":[],\"measure\":[{\"index\":0,\"site\":0,\"type\":1},{\"index\":0,\"site\":1,\"type\":17},{\"index\":0,\"site\":2,\"type\":18},{\"index\":1,\"site\":5,\"type\":1},{\"index\":1,\"site\":6,\"type\":17},{\"index\":1,\"site\":7,\"type\":18}]}";
-                           else if(!strcmp(str1,"SQUARE"))
-                               str = "{\"Device\":\"virtual-demo\",\"DeviceMode\":1,\"Language\":25,\"Max Height\":\"1X\",\"Pattern mode\":\"Square\",\"Sample count\":\"10000\",\"Sample rate\":\"100000000\",\"Title\":\"DSView v1.3.0-dev7\",\"Version\":3,\"channel\":[{\"colour\":\"#eeb211\",\"coupling\":1,\"enabled\":true,\"index\":0,\"name\":\"0\",\"trigValue\":0.5,\"type\":10001,\"vdiv\":1000,\"vfactor\":1,\"zeroPos\":0.37401574803149606},{\"colour\":\"#009925\",\"coupling\":1,\"enabled\":true,\"index\":1,\"name\":\"1\",\"trigValue\":0.5,\"type\":10001,\"vdiv\":1000,\"vfactor\":1,\"zeroPos\":0.6259842519685039}],\"decoder\":[],\"measure\":[{\"index\":0,\"site\":0,\"type\":1},{\"index\":0,\"site\":1,\"type\":17},{\"index\":0,\"site\":2,\"type\":18},{\"index\":1,\"site\":5,\"type\":1},{\"index\":1,\"site\":6,\"type\":17},{\"index\":1,\"site\":7,\"type\":18}]}";
-                           else if(!strcmp(str1,"TRIANGLE"))
-                               str = "{\"Device\":\"virtual-demo\",\"DeviceMode\":1,\"Language\":25,\"Max Height\":\"1X\",\"Pattern mode\":\"Triangle\",\"Sample count\":\"10000\",\"Sample rate\":\"100000000\",\"Title\":\"DSView v1.3.0-dev7\",\"Version\":3,\"channel\":[{\"colour\":\"#eeb211\",\"coupling\":1,\"enabled\":true,\"index\":0,\"name\":\"0\",\"trigValue\":0.5,\"type\":10001,\"vdiv\":1000,\"vfactor\":1,\"zeroPos\":0.37401574803149606},{\"colour\":\"#009925\",\"coupling\":1,\"enabled\":true,\"index\":1,\"name\":\"1\",\"trigValue\":0.5,\"type\":10001,\"vdiv\":1000,\"vfactor\":1,\"zeroPos\":0.6259842519685039}],\"decoder\":[],\"measure\":[{\"index\":0,\"site\":0,\"type\":1},{\"index\":0,\"site\":1,\"type\":17},{\"index\":0,\"site\":2,\"type\":18},{\"index\":1,\"site\":5,\"type\":1},{\"index\":1,\"site\":6,\"type\":17},{\"index\":1,\"site\":7,\"type\":18}]}";
-                           else if(!strcmp(str1,"SWATOOTH"))
-                               str = "{\"Device\":\"virtual-demo\",\"DeviceMode\":1,\"Language\":25,\"Max Height\":\"1X\",\"Pattern mode\":\"Sawtooth\",\"Sample count\":\"10000\",\"Sample rate\":\"100000000\",\"Title\":\"DSView v1.3.0-dev7\",\"Version\":3,\"channel\":[{\"colour\":\"#eeb211\",\"coupling\":1,\"enabled\":true,\"index\":0,\"name\":\"0\",\"trigValue\":0.5,\"type\":10001,\"vdiv\":1000,\"vfactor\":1,\"zeroPos\":0.37401574803149606},{\"colour\":\"#009925\",\"coupling\":1,\"enabled\":true,\"index\":1,\"name\":\"1\",\"trigValue\":0.5,\"type\":10001,\"vdiv\":1000,\"vfactor\":1,\"zeroPos\":0.6259842519685039}],\"decoder\":[],\"measure\":[{\"index\":0,\"site\":0,\"type\":1},{\"index\":0,\"site\":1,\"type\":17},{\"index\":0,\"site\":2,\"type\":18},{\"index\":1,\"site\":5,\"type\":1},{\"index\":1,\"site\":6,\"type\":17},{\"index\":1,\"site\":7,\"type\":18}]}";
-                           QByteArray temp(str);
-                           test = test.fromJson(temp);
-                       }
-                       else
-                       {
-                           if(_device_agent->get_work_mode() == DSO)
-                           {
-                               test = get_session_json_from_file(_device_agent->path());
-                               QByteArray tem = test.toJson(QJsonDocument::Compact);
-                               char* str1 = tem.data();
-                               dsv_info("%s",str1);
-
-                           }
-                            test = get_session_json_from_file(_device_agent->path());
-                       }
-                       load_session_json(test, bDoneDecoder);
-                       _device_agent->set_config(NULL, NULL, SR_CONF_TEST,g_variant_new_boolean(FALSE));
-                   }
-                   g_variant_unref(gvar1);
-               }
-               g_variant_unref(gvar);
-           }
-
-            //reload decoder
-            gvar = _device_agent->get_config(NULL, NULL, SR_CONF_PATTERN_MODE);
-            if (gvar != NULL)
-            {
-                const char* str = g_variant_get_string(gvar,NULL);
-                if(_device_agent->get_work_mode() == LOGIC && strcmp(str,"RANDOM") && !bDoneDecoder)
-                {
-                    StoreSession ss(_session);
-                    QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
-                    ss.load_decoders(_protocol_widget, deArray);  
-                }
-                g_variant_unref(gvar);
             }
 
-            //auto start
-            gvar = _device_agent->get_config(NULL, NULL,SR_CONF_AUTO_OPEN);
-            if(gvar != NULL)
+            if (_device_agent->is_demo())
             {
-                bool auto_start = g_variant_get_boolean(gvar);
-                if(_device_agent->get_work_mode() == LOGIC && auto_start)
+                /*demo下逻辑分析仪如果信号模式不为RANDOM，导入解码器*/
+                if(_device_agent->get_work_mode() == LOGIC)
                 {
-                    _session->start_capture(true);
+                    GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_LOAD_DECODER);
+                    if(gvar != NULL)
+                    {
+                        gboolean load_decoder = g_variant_get_boolean(gvar);
+                        if(load_decoder)
+                        {
+                            //加载解码器
+                            StoreSession ss(_session);
+                            QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
+                            ss.load_decoders(_protocol_widget, deArray);  
+                        }
+                    }
                 }
-                g_variant_unref(gvar);
             }
         }
         break;
@@ -1880,15 +1782,10 @@ namespace pv
             break;
 
         case DSV_MSG_DEVICE_MODE_CHANGED:
-            /* demo */
-            if(_device_agent->is_demo())
-            {
-                _session->set_device(_device_agent->handle());
-                return;
-            }  
             _view->mode_changed(); 
             reset_all_view();
-            load_device_config(); 
+            load_device_config();
+
             update_toolbar_view_status();
             _sampling_bar->update_sample_rate_list();
 
@@ -1897,6 +1794,26 @@ namespace pv
             
             if (_device_agent->get_work_mode() == LOGIC)
                 _view->auto_set_max_scale();
+
+            if(_device_agent->is_demo())
+            {
+                /*demo下逻辑分析仪如果信号模式不为RANDOM，导入解码器*/
+                _protocol_widget->del_all_protocol();
+                if(_device_agent->get_work_mode() == LOGIC)
+                {
+                    GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_LOAD_DECODER);
+                    if(gvar != NULL)
+                    {
+                        gboolean load_decoder = g_variant_get_boolean(gvar);
+                        if(load_decoder)
+                        {
+                            StoreSession ss(_session);
+                            QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
+                            ss.load_decoders(_protocol_widget, deArray);
+                        }
+                    }
+                }
+            }
             break;
 
         case DSV_MSG_NEW_USB_DEVICE:
@@ -1977,9 +1894,49 @@ namespace pv
             }
             break;
 
-        case DSV_MSG_END_DEVICE_OPTIONS:            
-            break;
+        case DSV_MSG_END_DEVICE_OPTIONS:
+            if(_device_agent->is_demo())
+            {
+                /*信号模式发生修改，更新界面*/
+                GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_DEMO_CHANGE);
+                if(gvar != NULL)
+                {
+                    gboolean pattern_change = g_variant_get_boolean(gvar);
+                    if(pattern_change)
+                    {
+                        reset_all_view();
+                        load_device_config();
+                        update_toolbar_view_status();
+                        _device_agent->set_config(NULL,NULL,SR_CONF_DEMO_CHANGE,g_variant_new_boolean(FALSE));
+                    }
+                }
 
+                /*demo下逻辑分析仪如果信号模式不为RANDOM，导入解码器*/
+                _protocol_widget->del_all_protocol();
+                if(_device_agent->get_work_mode() == LOGIC)
+                {
+                    _view->auto_set_max_scale();
+
+                    GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_LOAD_DECODER);
+                    if(gvar != NULL)
+                    {
+                        gboolean load_decoder = g_variant_get_boolean(gvar);
+                        if(load_decoder)
+                        {
+                            StoreSession ss(_session);
+                            QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
+                            ss.load_decoders(_protocol_widget, deArray);  
+                        }
+                    }
+
+                     /*demo下逻辑分析仪执行一次采集后，切换信号模式自动采集*/
+                    if(_demo_auto_start)
+                    {
+                        _session->start_capture(true);
+                    }
+                }
+            }
+            break;
         }
     }
 

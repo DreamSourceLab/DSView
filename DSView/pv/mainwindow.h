@@ -33,6 +33,9 @@
 #include <QJsonDocument>
 #include <chrono>
 
+//没有gboolean类型？
+#include "libsigrok.h"
+
 class QAction;
 class QMenuBar;
 class QMenu;
@@ -214,6 +217,8 @@ private:
     bool            _is_auto_switch_device;
     high_resolution_clock::time_point _last_key_press_time;
     bool            _is_save_confirm_msg;
+    gboolean        _demo_load_decoder;
+    gboolean        _demo_auto_start;
 
     int _key_value;
     bool _key_vaild;

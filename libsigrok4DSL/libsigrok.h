@@ -980,9 +980,6 @@ enum sr_config_option_id
     SR_CONF_BANDWIDTH = 30076,
     SR_CONF_BANDWIDTH_LIMIT = 30077,
 
-	/* demo */
-	SR_CONF_AUTO_OPEN = 30078,
-
     /*--- Probe configuration -------------------------------------------*/
     /** Probe options */
     SR_CONF_PROBE_CONFIGS = 30078,
@@ -1035,6 +1032,13 @@ enum sr_config_option_id
 
     /** The device supports setting the number of data blocks. */
     SR_CONF_NUM_BLOCKS = 30104,
+
+    /** demo **/
+    SR_CONF_LOAD_DECODER = 30105,
+
+    SR_CONF_DEMO_INIT = 30106,
+
+    SR_CONF_DEMO_CHANGE = 30107,
 
 	/*--- Acquisition modes ---------------------------------------------*/
 
