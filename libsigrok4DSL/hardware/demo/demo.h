@@ -48,6 +48,7 @@ static uint64_t samplerates_file[1];
 static uint64_t samplecounts_file[1];
 //定时器
 static GTimer *packet_interval = NULL;
+static GTimer *run_time = NULL;
 //首次开启
 static gboolean is_first = TRUE;
 static gboolean is_change = FALSE;

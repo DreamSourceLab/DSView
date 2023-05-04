@@ -562,6 +562,7 @@ static int hw_dev_open(struct sr_dev_inst *sdi)
     sdi->status = SR_ST_ACTIVE;
 
     packet_interval =  g_timer_new();
+    run_time =  g_timer_new();
 
     //这个可以再看下怎么改
     init_random_data(vdev);
@@ -607,6 +608,10 @@ static int hw_dev_close(struct sr_dev_inst *sdi)
         g_safe_free(vdev->logic_buf);
         g_safe_free(vdev->analog_buf);
         g_safe_free(sdi->path);
+
+        //不释放也可以?
+        // g_timer_destroy(packet_interval);
+        // g_timer_destroy(run_time);
 
         sdi->status = SR_ST_INACTIVE;
         return SR_OK;
@@ -920,6 +925,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         break;
     case SR_CONF_TIMEBASE:
         vdev->timebase = g_variant_get_uint64(data);
+        if(sdi->mode == DSO)
+            g_timer_start(run_time);
         sr_dbg("Setting timebase to %llu.", vdev->timebase);
         break;
     case SR_CONF_PROBE_COUPLING:
@@ -1174,6 +1181,7 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
         is_first = TRUE;
         vdiv_change = TRUE;
         packet_time = 1/(double)200;
+        g_timer_start(run_time);
         sr_session_source_add(-1, 0, 0, receive_data_dso, sdi);
     }
     else if(sdi->mode == ANALOG)
@@ -1197,9 +1205,11 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
             }
             packet_time = 1/(double)22;
         }
+        
 
         vdev->analog_buf_len = 0;
         vdev->analog_read_pos = 0;
+        g_timer_start(run_time);
 
         sr_session_source_add(-1, 0, 0, receive_data_analog, sdi);
     }
@@ -1918,32 +1928,46 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
         vdiv_change = FALSE;
     }
 
-    //数据循环
-   uint8_t top0;
-   uint8_t top1;
-   if(cur_sample_generator == PATTERN_RANDOM)
-   {
-       top0 = *((uint8_t*)pack_buffer->post_buf + pack_buffer->post_buf_len -2);
-       top1 = *((uint8_t*)pack_buffer->post_buf + pack_buffer->post_buf_len -1);
-   }
-   else
-   {
-       top0 = *((uint8_t*)pack_buffer->post_buf + 198);
-       top1 = *((uint8_t*)pack_buffer->post_buf + 199);
-   }
+    //计算时间
+    gdouble total_time = vdev->timebase /(gdouble)SR_SEC(1)*(gdouble)10;
+    gdouble total_time_elapsed = g_timer_elapsed(run_time, NULL);
+    if (total_time_elapsed < total_time && !instant)
+    {
+        gdouble percent = total_time_elapsed / total_time;
+        int buf_len = percent* 20000;
+        if(buf_len %2 != 0)
+            buf_len -=1;
+        pack_buffer->post_len = buf_len;
+    }
+    else
+    {
+        //数据循环
+        uint8_t top0;
+        uint8_t top1;
+        if(cur_sample_generator == PATTERN_RANDOM)
+        {
+            top0 = *((uint8_t*)pack_buffer->post_buf + pack_buffer->post_buf_len -2);
+            top1 = *((uint8_t*)pack_buffer->post_buf + pack_buffer->post_buf_len -1);
+        }
+        else
+        {
+            top0 = *((uint8_t*)pack_buffer->post_buf + 198);
+            top1 = *((uint8_t*)pack_buffer->post_buf + 199);
+        }
 
 
-   for(int i = pack_buffer->post_len -1;  i > 1; i -= 2){
-       *((uint8_t*)pack_buffer->post_buf + i) = *((uint8_t*)pack_buffer->post_buf + i - 2);
-   }
+        for(int i = pack_buffer->post_len -1;  i > 1; i -= 2){
+            *((uint8_t*)pack_buffer->post_buf + i) = *((uint8_t*)pack_buffer->post_buf + i - 2);
+        }
 
-   for(int i = pack_buffer->post_len -2;  i > 0; i -= 2){
-       *((uint8_t*)pack_buffer->post_buf + i) = *((uint8_t*)pack_buffer->post_buf + i - 2);
-   }
+        for(int i = pack_buffer->post_len -2;  i > 0; i -= 2){
+            *((uint8_t*)pack_buffer->post_buf + i) = *((uint8_t*)pack_buffer->post_buf + i - 2);
+        }
 
-   *(uint8_t*)pack_buffer->post_buf = top0;
-   *((uint8_t*)pack_buffer->post_buf + 1)= top1;
-
+        *(uint8_t*)pack_buffer->post_buf = top0;
+        *((uint8_t*)pack_buffer->post_buf + 1)= top1;
+        pack_buffer->post_len = 20000;
+    }
 
     if (pack_buffer->post_len >= byte_align * chan_num)
     {
