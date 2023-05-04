@@ -94,7 +94,7 @@ static int init_pattern_mode_list()
         {
             if(pattern_strings_dso[i] != NULL)
             {
-                g_free(pattern_strings_dso[i]);阿
+                g_free(pattern_strings_dso[i]);
                 pattern_strings_dso[i] =NULL;
             }
         }
@@ -1977,10 +1977,10 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
         packet.type = SR_DF_END;
         ds_data_forward(sdi, &packet);
         sr_session_source_remove(-1);
-        if(cur_sample_generator != PATTERN_RANDOM)
-        {
-            close_archive(vdev);;
-        }
+//        if(cur_sample_generator != PATTERN_RANDOM)
+//        {
+//            close_archive(vdev);
+//        }
     }
 
     return TRUE;
