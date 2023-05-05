@@ -758,7 +758,10 @@ namespace pv
         std::vector<view::Signal *> sigs;
         unsigned int logic_probe_count = 0;
         unsigned int dso_probe_count = 0;
-        unsigned int analog_probe_count = 0;    
+        unsigned int analog_probe_count = 0;
+
+        set_cur_snap_samplerate(_device_agent.get_sample_rate());
+        set_cur_samplelimits(_device_agent.get_sample_limit());    
 
         // Detect what data types we will receive
         if (_device_agent.have_instance())
@@ -840,6 +843,9 @@ namespace pv
         int logic_chan_num = 0;
         int dso_chan_num = 0;
         int all_chann_num = 0;
+
+        set_cur_snap_samplerate(_device_agent.get_sample_rate());
+        set_cur_samplelimits(_device_agent.get_sample_limit());
 
         // Make the logic probe list
         for (GSList *l = _device_agent.get_channels(); l; l = l->next)
@@ -2104,7 +2110,9 @@ namespace pv
             set_cur_samplelimits(_device_agent.get_sample_limit()); 
 
             dsv_info("Switch work mode to:%d", mode);
+
             broadcast_msg(DSV_MSG_DEVICE_MODE_CHANGED);
+
             return true;
         }
         return false;

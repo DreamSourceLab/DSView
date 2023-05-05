@@ -214,6 +214,7 @@ private:
     bool            _is_auto_switch_device;
     high_resolution_clock::time_point _last_key_press_time;
     bool            _is_save_confirm_msg;
+    std::string         _pattern_mode;
 
     int _key_value;
     bool _key_vaild;

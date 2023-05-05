@@ -23,22 +23,103 @@
 
 #include <glib.h>
 #include "../../libsigrok-internal.h"
- 
-/* Supported patterns which we can generate */
+#include <minizip/unzip.h>
+
 enum DEMO_PATTERN {
-    PATTERN_SINE = 0,
-    PATTERN_SQUARE = 1,
-    PATTERN_TRIANGLE = 2,
-    PATTERN_SAWTOOTH = 3,
-    PATTERN_RANDOM = 4,
+    PATTERN_INVALID = -1,    
+    PATTERN_RANDOM = 0,
+    PATTERN_DEFAULT = 1,
 };
 
-static const char *pattern_strings[] = {
-    "Sine",
-    "Square",
-    "Triangle",
-    "Sawtooth",
-    "Random",
+static char *pattern_strings_logic[100]  = {"RANDOM"};
+static char *pattern_strings_dso[100] = {"RANDOM"};
+static char *pattern_strings_analog[100] = {"RANDOM"};
+static int pattern_logic_count = 1;
+static int pattern_dso_count= 1;
+static int pattern_analog_count= 1;
+
+static uint64_t samplerates_file[1];
+static uint64_t samplecounts_file[1];
+static GTimer *packet_interval = NULL;
+static GTimer *run_time = NULL;
+static gboolean is_first = TRUE;
+static gboolean is_change = FALSE;
+static int enabled_probe_num;
+static uint64_t packet_len;
+static gdouble packet_time;
+static uint64_t post_data_len;
+extern char DS_RES_PATH[500];
+static gboolean vdiv_change;
+static gboolean instant = FALSE;
+static int max_probe_num = 0;
+extern char DS_RES_PATH[500];
+uint8_t cur_sample_generator;
+uint8_t pre_sample_generator;
+
+struct session_packet_buffer;
+
+static const uint64_t vdivs10to2000[] = {
+    SR_mV(10),
+    SR_mV(20),
+    SR_mV(50),
+    SR_mV(100),
+    SR_mV(200),
+    SR_mV(500),
+    SR_V(1),
+    SR_V(2),
+    0,
+};
+
+struct session_vdev
+{ 
+    int version;
+    unzFile archive; // zip document
+    int capfile;     // current inner file open status
+
+    uint16_t samplerates_min_index;
+    uint16_t samplerates_max_index;
+
+    void *logic_buf;
+    uint64_t logic_buf_len;
+
+    void *analog_buf;
+    uint64_t analog_buf_len;
+    uint64_t analog_read_pos;
+
+    int cur_channel;
+    int cur_block;
+    int num_blocks;
+    uint64_t samplerate;
+    uint64_t total_samples;
+    int64_t trig_time;
+    uint64_t trig_pos;
+    int cur_probes;
+    int num_probes;
+    int enabled_probes;
+    uint64_t timebase;
+    uint64_t max_timebase;
+    uint64_t min_timebase;
+    uint8_t unit_bits;
+    uint32_t ref_min;
+    uint32_t ref_max;
+    uint8_t max_height;
+    struct sr_status mstatus;
+    struct session_packet_buffer   *packet_buffer;
+};
+
+#define SESSION_MAX_CHANNEL_COUNT 512
+
+struct session_packet_buffer
+{
+    void       *post_buf;
+    uint64_t    post_buf_len;
+    uint64_t    post_len; 
+    
+    uint64_t    block_buf_len;
+    uint64_t    block_chan_read_pos;
+    uint64_t    block_data_len;
+    void       *block_bufs[SESSION_MAX_CHANNEL_COUNT];
+    uint64_t    block_read_positions[SESSION_MAX_CHANNEL_COUNT];
 };
 
 struct DEMO_caps {
@@ -63,22 +144,10 @@ struct DEMO_profile {
     struct DEMO_caps dev_caps;
 };
 
-static const uint64_t vdivs10to2000[] = {
-    SR_mV(10),
-    SR_mV(20),
-    SR_mV(50),
-    SR_mV(100),
-    SR_mV(200),
-    SR_mV(500),
-    SR_V(1),
-    SR_V(2),
-    0,
-};
-
 enum DEMO_CHANNEL_ID {
     DEMO_LOGIC100x16 = 0,
-    DEMO_ANALOG10x2,
-    DEMO_DSO200x2,
+    DEMO_ANALOG10x2 = 1 ,
+    DEMO_DSO200x2 = 2,
 };
 
 struct DEMO_channels {
@@ -227,6 +296,15 @@ static const int32_t probeOptions[] = {
     SR_CONF_PROBE_MAP_MAX,
 };
 
+static const int32_t probeSessions[] = {
+    SR_CONF_PROBE_COUPLING,
+    SR_CONF_PROBE_VDIV,
+    SR_CONF_PROBE_MAP_DEFAULT,
+    SR_CONF_PROBE_MAP_UNIT,
+    SR_CONF_PROBE_MAP_MIN,
+    SR_CONF_PROBE_MAP_MAX,
+};
+
 static const uint8_t probeCoupling[] = {
     SR_DC_COUPLING,
     SR_AC_COUPLING,
@@ -258,8 +336,8 @@ static const struct DEMO_profile supported_Demo[] = {
       0,
       vdivs10to2000,
       0,
-      DEMO_LOGIC100x16,
-      PATTERN_SINE,
+      DEMO_LOGIC100x16, 
+      PATTERN_RANDOM,
       SR_NS(500)}
     },
 
@@ -331,5 +409,63 @@ static const int ranx[] = {
   1,  30, -12,  44,  20,  49,  29, -43,  42,  30, -34,  24,  20, -40,  33, -12,  13, -45,  45, -24,
 -41,  36,  -8,  46,  47, -34,  28, -39,   7, -32,  38, -27,  28,  -3,  -8,  43, -37, -24,   6,   3,
 };
+
+static int init_pattern_mode_list();
+
+static int get_pattern_mode_index_by_string(uint8_t device_mode , const char* str);
+
+static int scan_dsl_file(struct sr_dev_inst *sdi);
+
+static char* get_dsl_path_by_pattern_mode(uint8_t device_mode ,uint8_t pattern_mode);
+
+static void adjust_samplerate(struct sr_dev_inst *sdi);
+
+static int init_random_data(struct session_vdev * vdev);
+
+static int hw_init(struct sr_context *sr_ctx);
+
+static GSList *hw_scan(GSList *options);
+
+static const GSList *hw_dev_mode_list(const struct sr_dev_inst *sdi);
+
+static int hw_dev_open(struct sr_dev_inst *sdi);
+
+static int hw_dev_close(struct sr_dev_inst *sdi);
+
+static int dev_destroy(struct sr_dev_inst *sdi);
+
+
+static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
+                      const struct sr_channel *ch,
+                      const struct sr_channel_group *cg);
+
+static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
+                      struct sr_channel *ch,
+                      struct sr_channel_group *cg);
+
+static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
+                       const struct sr_channel_group *cg);
+
+static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
+		void *cb_data);
+
+static int hw_dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data);
+
+static int hw_dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *status, gboolean prg);
+
+static int load_virtual_device_session(struct sr_dev_inst *sdi);
+
+static int receive_data_logic(int fd, int revents, const struct sr_dev_inst *sdi);
+
+static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_inst *sdi);
+
+static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi);
+
+static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sdi);
+
+static void send_error_packet(const struct sr_dev_inst *cb_sdi, struct session_vdev *vdev, struct sr_datafeed_packet *packet);
+
+static int close_archive(struct session_vdev *vdev);
+
 
 #endif

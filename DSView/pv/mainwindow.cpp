@@ -116,6 +116,8 @@ namespace pv
         _is_auto_switch_device = false;
         _is_save_confirm_msg = false;
 
+        _pattern_mode = "RANDOM";
+
         setup_ui();
 
         setContextMenuPolicy(Qt::NoContextMenu);
@@ -1712,7 +1714,10 @@ namespace pv
             _session->device_event_object()->device_updated();
 
             if (_device_agent->is_hardware())
+            {
                 _session->on_load_config_end();
+            }
+                
             
             if (_device_agent->get_work_mode() == LOGIC && _device_agent->is_file() == false)
                 _view->auto_set_max_scale();
@@ -1731,7 +1736,33 @@ namespace pv
                 }
                 
                 _session->start_capture(true);
-            } 
+            }
+
+            if (_device_agent->is_demo())
+            {
+                if(_device_agent->get_work_mode() == LOGIC)
+                {
+                    GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_PATTERN_MODE);
+                    if(gvar != NULL)
+                    {
+                        _pattern_mode = g_variant_get_string(gvar,NULL);
+                        g_variant_unref(gvar);
+                    }
+
+                    _protocol_widget->del_all_protocol();
+                    if(_device_agent->get_work_mode() == LOGIC)
+                    {
+                        _view->auto_set_max_scale();
+
+                        if(_pattern_mode != "RANDOM")
+                        {
+                            StoreSession ss(_session);
+                            QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
+                            ss.load_decoders(_protocol_widget, deArray);
+                        }
+                    }
+                }
+            }
         }
         break;
 
@@ -1746,10 +1777,11 @@ namespace pv
             _view->timebase_changed();
             break;
 
-        case DSV_MSG_DEVICE_MODE_CHANGED:           
+        case DSV_MSG_DEVICE_MODE_CHANGED:
             _view->mode_changed(); 
             reset_all_view();
-            load_device_config(); 
+            load_device_config();
+
             update_toolbar_view_status();
             _sampling_bar->update_sample_rate_list();
 
@@ -1758,6 +1790,27 @@ namespace pv
             
             if (_device_agent->get_work_mode() == LOGIC)
                 _view->auto_set_max_scale();
+
+            if(_device_agent->is_demo())
+            {
+                GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_PATTERN_MODE);
+                if(gvar != NULL)
+                {
+                    _pattern_mode = g_variant_get_string(gvar,NULL);
+                    g_variant_unref(gvar);
+                }
+                _protocol_widget->del_all_protocol();
+
+                if(_device_agent->get_work_mode() == LOGIC)
+                {
+                    if(_pattern_mode != "RANDOM")
+                    {
+                        StoreSession ss(_session);
+                        QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
+                        ss.load_decoders(_protocol_widget, deArray);
+                    }
+                }
+            }
             break;
 
         case DSV_MSG_NEW_USB_DEVICE:
@@ -1838,9 +1891,47 @@ namespace pv
             }
             break;
 
-        case DSV_MSG_END_DEVICE_OPTIONS:            
-            break;
+        case DSV_MSG_END_DEVICE_OPTIONS:
+            if(_device_agent->is_demo() &&_device_agent->get_work_mode() == LOGIC)
+            {
+                GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_PATTERN_MODE);
+                if(gvar != NULL)
+                {
+                    std::string pattern_mode = g_variant_get_string(gvar,NULL);
+                    g_variant_unref(gvar);
+                    if(pattern_mode != _pattern_mode)
+                    {
+                        _pattern_mode = pattern_mode;
+                        _device_agent->set_config(NULL,NULL,SR_CONF_DEMO_INIT,g_variant_new_boolean(TRUE));
+                        _device_agent->update();
 
+                        _session->init_signals();
+                        update_toolbar_view_status();
+                        _sampling_bar->update_sample_rate_list();
+
+                        _protocol_widget->del_all_protocol();
+                         
+                        if(_pattern_mode != "RANDOM")
+                        {
+                            StoreSession ss(_session);
+                            QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
+                            ss.load_decoders(_protocol_widget, deArray);
+                            _session->start_capture(false);
+                        }
+                    }
+                }
+            }
+            break;
+        case DSV_MSG_BEGIN_DEVICE_OPTIONS:
+            if(_device_agent->is_demo())
+            {
+                GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_PATTERN_MODE);
+                if(gvar != NULL)
+                {
+                    _pattern_mode = g_variant_get_string(gvar,NULL);
+                    g_variant_unref(gvar);
+                }
+            }
         }
     }
 
