@@ -41,7 +41,7 @@
 
 /* Message logging helpers with subsystem-specific prefix string. */
 
-#undef LOG_PREFIX 
+#undef LOG_PREFIX
 #define LOG_PREFIX "demo: "
 
 /* The size of chunks to send through the session bus. */
@@ -114,7 +114,7 @@ static int init_pattern_mode_list()
 
 static int get_pattern_mode_index_by_string(uint8_t device_mode , const char* str)
 {
-    int index = PATTERN_INVALID, 
+    int index = PATTERN_INVALID,
     i = PATTERN_RANDOM;
     if (device_mode == LOGIC)
     {
@@ -269,13 +269,13 @@ static int scan_dsl_file(struct sr_dev_inst *sdi)
                                 get_mode = TRUE;
                                 break;
                             }
-                        }      
+                        }
                     }
                     if (get_mode)
                     {
                         break;
                     }
-                    
+
                 }
 
                 if(mode == LOGIC)
@@ -319,7 +319,6 @@ static int scan_dsl_file(struct sr_dev_inst *sdi)
     }
     g_dir_close(dir);
 
-    //至少有一个协议文件，则设置第一个文件为默认
     if (logic_index > 1)
     {
         cur_sample_generator = pre_sample_generator = PATTERN_DEFAULT;
@@ -336,7 +335,6 @@ static int scan_dsl_file(struct sr_dev_inst *sdi)
     }
 }
 
-//通过信号模式索引获取文件名
 static char* get_dsl_path_by_pattern_mode(uint8_t device_mode , uint8_t pattern_mode)
 {
     unzFile archive = NULL;
@@ -372,10 +370,9 @@ static char* get_dsl_path_by_pattern_mode(uint8_t device_mode , uint8_t pattern_
         }
         strcat(str,".dsl");
     }
-    
+
     if(pattern_mode != PATTERN_RANDOM)
     {
-        //检查文件是否有效
         archive = unzOpen64(str);
         if (NULL != archive)
         {
@@ -431,7 +428,6 @@ static void adjust_samplerate(struct sr_dev_inst *sdi)
 
 }
 
-//初始化random数据
 static int init_random_data(struct session_vdev * vdev)
 {
     uint8_t random_val;
@@ -439,7 +435,7 @@ static int init_random_data(struct session_vdev * vdev)
     {
         g_free(vdev->logic_buf);
     }
-    if(!(vdev->logic_buf = g_try_malloc0(SR_MB(10)))) 
+    if(!(vdev->logic_buf = g_try_malloc0(SR_MB(10))))
     {
         return SR_ERR;
     }
@@ -467,13 +463,13 @@ static int hw_init(struct sr_context *sr_ctx)
 
 static GSList *hw_scan(GSList *options)
 {
-	struct sr_dev_inst *sdi;
+    struct sr_dev_inst *sdi;
     struct session_vdev *vdev;
-	GSList *devices;
+    GSList *devices;
     char str[500];
 
-	(void)options;
-	devices = NULL;
+    (void)options;
+    devices = NULL;
 
     sr_info("%s", "Scan demo device.");
 
@@ -484,22 +480,22 @@ static GSList *hw_scan(GSList *options)
         return SR_ERR_MALLOC;
     }
 
-    sdi = sr_dev_inst_new(LOGIC, SR_ST_INACTIVE, 
+    sdi = sr_dev_inst_new(LOGIC, SR_ST_INACTIVE,
                           supported_Demo[0].vendor,
-                          supported_Demo[0].model, 
+                          supported_Demo[0].model,
                           supported_Demo[0].model_version);
-	if (!sdi) {
+    if (!sdi) {
         g_free(vdev);
         sr_err("Device instance creation failed.");
-		return NULL;
-	}
+        return NULL;
+    }
     sdi->priv = vdev;
-	sdi->driver = di;
+    sdi->driver = di;
     sdi->dev_type = DEV_TYPE_DEMO;
 
     devices = g_slist_append(devices, sdi);
 
-	return devices;
+    return devices;
 }
 
 static const GSList *hw_dev_mode_list(const struct sr_dev_inst *sdi)
@@ -527,7 +523,6 @@ static int hw_dev_open(struct sr_dev_inst *sdi)
         return SR_OK;
     }
 
-    //扫描目录文件
     scan_dsl_file(sdi);
     struct session_vdev* vdev = sdi->priv;
 
@@ -546,7 +541,6 @@ static int hw_dev_open(struct sr_dev_inst *sdi)
         vdev->unit_bits = 8;
     }
 
-    //固定值
     vdev->ref_min = 1;
     vdev->ref_max = 255;
 
@@ -564,7 +558,6 @@ static int hw_dev_open(struct sr_dev_inst *sdi)
     packet_interval =  g_timer_new();
     run_time =  g_timer_new();
 
-    //这个可以再看下怎么改
     init_random_data(vdev);
 
     ret = load_virtual_device_session(sdi);
@@ -604,12 +597,10 @@ static int hw_dev_close(struct sr_dev_inst *sdi)
         }
 
         g_safe_free(vdev->packet_buffer);
-        //数据
         g_safe_free(vdev->logic_buf);
         g_safe_free(vdev->analog_buf);
         g_safe_free(sdi->path);
 
-        //不释放也可以?
         // g_timer_destroy(packet_interval);
         // g_timer_destroy(run_time);
 
@@ -624,7 +615,7 @@ static int dev_destroy(struct sr_dev_inst *sdi)
 {
     assert(sdi);
     hw_dev_close(sdi);
-    sdi->path = NULL; 
+    sdi->path = NULL;
     sr_dev_inst_free(sdi);
 }
 
@@ -810,17 +801,14 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         break;
     case SR_CONF_DEVICE_MODE:
         sdi->mode = g_variant_get_int16(data);
-        //恢复默认信号模式
         switch (sdi->mode)
         {
             case LOGIC:
-                //默认为第一个协议模式（后面添加枚举）
                 if("" != get_dsl_path_by_pattern_mode(sdi->mode,PATTERN_DEFAULT))
                 {
                     cur_sample_generator = pre_sample_generator = PATTERN_DEFAULT;
                     sdi->path = g_strdup(get_dsl_path_by_pattern_mode(sdi->mode,PATTERN_DEFAULT));
                 }
-                //没有第一个协议
                 else
                 {
                     cur_sample_generator = pre_sample_generator = PATTERN_RANDOM;
@@ -828,11 +816,9 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 }
                 break;
             case DSO:
-                //默认为RANDOM
                 cur_sample_generator = pre_sample_generator = PATTERN_RANDOM;
                 sdi->path = g_strdup("");
             case ANALOG:
-                //默认为RANDOM
                 cur_sample_generator = pre_sample_generator = PATTERN_RANDOM;
                 sdi->path = g_strdup("");
             default:
@@ -843,7 +829,6 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     case SR_CONF_PATTERN_MODE:
         stropt = g_variant_get_string(data, NULL);
         pre_sample_generator= cur_sample_generator;
-        //字符串有效
         if(get_pattern_mode_index_by_string(sdi->mode , stropt) != PATTERN_INVALID)
         {
             switch (sdi->mode)
@@ -860,29 +845,28 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 default:
                     break;
             }
-            //文件无效
             if ("" == (sdi->path = get_dsl_path_by_pattern_mode(sdi->mode,cur_sample_generator)) &&
                  cur_sample_generator != PATTERN_RANDOM)
             {
                 cur_sample_generator = pre_sample_generator;
             }
         }
-        //字符串无效，返回
         else
         {
             cur_sample_generator = pre_sample_generator;
         }
 
-        //模式发生切换,需要重新载入
         if(cur_sample_generator != pre_sample_generator)
         {
-            is_change = TRUE;
+            // is_change = TRUE;
+            pre_sample_generator = cur_sample_generator;
+            // load_virtual_device_session(sdi);
         }
-        
+
         sr_dbg("%s: setting pattern to %d",
             __func__, cur_sample_generator);
         break;
-   
+
     case SR_CONF_MAX_HEIGHT:
         stropt = g_variant_get_string(data, NULL);
         for (i = 0; i < ARRAY_SIZE(maxHeights); i++)
@@ -901,7 +885,6 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         break;
     case SR_CONF_PROBE_VDIV:
         ch->vdiv = g_variant_get_uint64(data);
-        //重新读取
         if(sdi->mode == DSO)
         {
             if(vdev->packet_buffer)
@@ -977,14 +960,13 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         break;
     case SR_CONF_CAPTURE_NUM_PROBES:
         vdev->num_probes = g_variant_get_uint64(data);
-        break;  
+        break;
     case SR_CONF_INSTANT:
         instant = g_variant_get_boolean(data);
         break;
     case SR_CONF_DEMO_CHANGE:
         is_change = g_variant_get_boolean(data);
         break;
-    //初始化DEMO
     case SR_CONF_DEMO_INIT:
         pre_sample_generator = cur_sample_generator;
         load_virtual_device_session(sdi);
@@ -1079,9 +1061,9 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
 }
 
 static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
-		void *cb_data)
+        void *cb_data)
 {
-    
+
      (void)cb_data;
 
     struct session_vdev *vdev;
@@ -1101,7 +1083,6 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
     vdev->cur_block = 0;
     vdev->cur_channel = 0;
 
-    //在启动前检查文件是否有效
     if(cur_sample_generator != PATTERN_RANDOM)
     {
         if (vdev->archive != NULL)
@@ -1205,7 +1186,7 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
             }
             packet_time = 1/(double)22;
         }
-        
+
 
         vdev->analog_buf_len = 0;
         vdev->analog_read_pos = 0;
@@ -1324,7 +1305,7 @@ static int receive_data_logic(int fd, int revents, const struct sr_dev_inst *sdi
     {
         bToEnd = 1;
     }
- 
+
     if(!bToEnd)
     {
         packet.type = SR_DF_LOGIC;
@@ -1333,7 +1314,7 @@ static int receive_data_logic(int fd, int revents, const struct sr_dev_inst *sdi
         logic.index = 0;
         logic.order = 0;
         logic.length = chan_num * packet_len;
-        //防止越界
+
         post_data_len += logic.length / enabled_probe_num;
         if(post_data_len >= vdev->total_samples/8)
         {
@@ -1341,7 +1322,6 @@ static int receive_data_logic(int fd, int revents, const struct sr_dev_inst *sdi
             last_packet_len = (vdev->total_samples/8) - last_packet_len;
             logic.length = last_packet_len * enabled_probe_num;
         }
-        //注意传输缓冲
         uint64_t random = vdev->logic_buf_len - logic.length;
         random = abs(rand()) %random;
         logic.data = vdev->logic_buf + random;
@@ -1449,10 +1429,28 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
         pack_buffer->block_buf_len = 0;
         pack_buffer->block_data_len = 0;
         pack_buffer->block_chan_read_pos = 0;
+
+        max_probe_num = chan_num;
     }
     pack_buffer = vdev->packet_buffer;
 
-    //传输块长度需要更新
+    if(chan_num != max_probe_num)
+    {
+        for(ch_index = 0 ;ch_index < chan_num; ch_index++)
+        {
+            if(pack_buffer->block_bufs[ch_index] != NULL)
+            {
+                g_free(pack_buffer->block_bufs[ch_index]);
+            }
+            pack_buffer->block_bufs[ch_index] = NULL;
+            pack_buffer->block_read_positions[ch_index] = 0;
+        }
+        pack_buffer->block_buf_len = 0;
+        pack_buffer->block_data_len = 0;
+        pack_buffer->block_chan_read_pos = 0;
+        max_probe_num = chan_num;
+    }
+
     if(pack_buffer->post_buf_len != chan_num * packet_len)
     {
         pack_buffer->post_buf_len = chan_num * packet_len;
@@ -1474,7 +1472,7 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
     // Make packet.
     read_chan_index = 0;
     dir_index = 0;
-    
+
     while (pack_buffer->post_len < pack_buffer->post_buf_len)
     {
         if (pack_buffer->block_chan_read_pos >= pack_buffer->block_data_len)
@@ -1568,7 +1566,7 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
             vdev->cur_block++;
             pack_buffer->block_chan_read_pos = 0;
         }
-         
+
         p_wr = (uint8_t*)pack_buffer->post_buf + pack_buffer->post_len;
         p_rd = (uint8_t*)pack_buffer->block_bufs[read_chan_index] + pack_buffer->block_read_positions[read_chan_index];
         *p_wr = *p_rd;
@@ -1613,7 +1611,7 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
             logic.length = last_packet_len * enabled_probe_num;
         }
         logic.data = pack_buffer->post_buf;
-        
+
         gdouble packet_elapsed = g_timer_elapsed(packet_interval, NULL);
         gdouble waittime = packet_time - packet_elapsed;
         if(waittime > 0){
@@ -1705,7 +1703,6 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
             return SR_ERR_MALLOC;
         }
 
-        //初始化读取块
         for (ch_index = 0; ch_index <= chan_num; ch_index++){
             vdev->packet_buffer->block_bufs[ch_index] = NULL;
             vdev->packet_buffer->block_read_positions[ch_index] = 0;
@@ -1713,7 +1710,6 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
 
         vdev->packet_buffer->post_buf_len = chan_num * 10000;
 
-        //不需要+1
         vdev->packet_buffer->post_buf = g_try_malloc0(vdev->packet_buffer->post_buf_len);
         if (vdev->packet_buffer->post_buf == NULL){
             sr_err("%s: vdev->packet_buffer->post_buf malloc failed", __func__);
@@ -1727,8 +1723,6 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
         pack_buffer->block_chan_read_pos = 0;
     }
     pack_buffer = vdev->packet_buffer;
-
-    //重新分配缓冲
     if(pack_buffer->post_buf_len != chan_num * 10000)
     {
         vdev->packet_buffer->post_buf_len = chan_num * 10000;
@@ -1746,29 +1740,44 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
         pack_buffer->post_len = 0;
     }
 
+    if(chan_num != max_probe_num)
+    {
+        for(ch_index = 0 ;ch_index < chan_num; ch_index++)
+        {
+            if(pack_buffer->block_bufs[ch_index] != NULL)
+            {
+                g_free(pack_buffer->block_bufs[ch_index]);
+            }
+            pack_buffer->block_bufs[ch_index] = NULL;
+            pack_buffer->block_read_positions[ch_index] = 0;
+        }
+        pack_buffer->block_buf_len = 0;
+        pack_buffer->block_data_len = 0;
+        pack_buffer->block_chan_read_pos = 0;
+        max_probe_num = chan_num;
+    }
+
     // Make packet.
     read_chan_index = 0;
     dir_index = 0;
 
     if(vdiv_change)
     {
-        //随机
         if(cur_sample_generator == PATTERN_RANDOM)
         {
-            //波形不太理想
             for(int i = 0 ; i < pack_buffer->post_buf_len ;i++)
             {
                 *(uint8_t*)(pack_buffer->post_buf + i) = rand()%40 +110;
             }
             pack_buffer->post_len = pack_buffer->post_buf_len;
         }
-        //文件
         else
         {
+            pack_buffer->post_len = 0;
             while (pack_buffer->post_len < pack_buffer->post_buf_len)
-            { 
+            {
                 if (pack_buffer->block_chan_read_pos >= pack_buffer->block_data_len)
-                { 
+                {
                     if (vdev->cur_block >= vdev->num_blocks){
                         bToEnd = 1;
                         break;
@@ -1776,15 +1785,15 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
 
                     for (ch_index = 0; ch_index < chan_num; ch_index++)
                     {
-                        bCheckFile = 0; 
+                        bCheckFile = 0;
 
                         while (1)
                         {
-                            if (sdi->mode == LOGIC)
+                            if (sdi->mode  == LOGIC)
                                 snprintf(file_name, sizeof(file_name)-1, "L-%d/%d", dir_index++, vdev->cur_block);
                             else if (sdi->mode == DSO)
                                 snprintf(file_name, sizeof(file_name)-1, "O-%d/0", dir_index++);
-                            
+
                             if (unzLocateFile(vdev->archive, file_name, 0) == UNZ_OK){
                                 bCheckFile = 1;
                                 break;
@@ -1803,18 +1812,18 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
 
                         if (unzGetCurrentFileInfo64(vdev->archive, &fileInfo, szFilePath,
                                             sizeof(szFilePath), NULL, 0, NULL, 0) != UNZ_OK)
-                        { 
+                        {
                             sr_err("%s: unzGetCurrentFileInfo64 error.", __func__);
                             send_error_packet(sdi, vdev, &packet);
                             return FALSE;
                         }
 
-                        if (ch_index == 0){  
+                        if (ch_index == 0){
                             pack_buffer->block_data_len = fileInfo.uncompressed_size;
-                            
+
                             if (pack_buffer->block_data_len > pack_buffer->block_buf_len)
                             {
-                                for (malloc_chan_index = 0; malloc_chan_index < chan_num; malloc_chan_index++){   
+                                for (malloc_chan_index = 0; malloc_chan_index < chan_num; malloc_chan_index++){
                                     // Release the old buffer.
                                     if (pack_buffer->block_bufs[malloc_chan_index] != NULL){
                                         g_free(pack_buffer->block_bufs[malloc_chan_index]);
@@ -1827,7 +1836,7 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
                                         send_error_packet(sdi, vdev, &packet);
                                         return FALSE;
                                     }
-                                    pack_buffer->block_buf_len = pack_buffer->block_data_len;                            
+                                    pack_buffer->block_buf_len = pack_buffer->block_data_len;
                                 }
                             }
                         }
@@ -1840,7 +1849,7 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
                             }
                         }
 
-                            // Read the data to buffer. 
+                            // Read the data to buffer.
                             if (unzOpenCurrentFile(vdev->archive) != UNZ_OK)
                             {
                                 sr_err("cant't open zip inner file:\"%s\"", file_name);
@@ -1859,13 +1868,13 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
                             pack_buffer->block_read_positions[ch_index] = 0; // Reset the read position.
                     }
                     vdev->cur_block++;
-                    pack_buffer->block_chan_read_pos = 0;  
+                    pack_buffer->block_chan_read_pos = 0;
                 }
 
                 p_wr = (uint8_t*)pack_buffer->post_buf + pack_buffer->post_len;
                 p_rd = (uint8_t*)pack_buffer->block_bufs[read_chan_index] + pack_buffer->block_read_positions[read_chan_index];
                 *p_wr = *p_rd;
-            
+
                 pack_buffer->post_len++;
                 pack_buffer->block_read_positions[read_chan_index]++;
 
@@ -1890,8 +1899,7 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
                 }
             }
         }
-        
-        //处理vdiv
+
         for(int i = 0 ; i < pack_buffer->post_buf_len; i++)
         {
             tem = 0;
@@ -1916,7 +1924,7 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
                 val = 128 - temp_val;
                 tem =  val * 1000 / vdiv;
                 tem = 128 - tem;
-                
+
                 if(tem == 0)
                     temp_val = 1;
                 else
@@ -1928,7 +1936,6 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
         vdiv_change = FALSE;
     }
 
-    //计算时间
     gdouble total_time = vdev->timebase /(gdouble)SR_SEC(1)*(gdouble)10;
     gdouble total_time_elapsed = g_timer_elapsed(run_time, NULL);
     if (total_time_elapsed < total_time && !instant)
@@ -1941,7 +1948,6 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
     }
     else
     {
-        //数据循环
         uint8_t top0;
         uint8_t top1;
         if(cur_sample_generator == PATTERN_RANDOM)
@@ -1979,7 +1985,7 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
         dso.mqflags = SR_MQFLAG_AC;
         dso.num_samples = pack_buffer->post_len / chan_num;
         dso.data = pack_buffer->post_buf;
-        
+
         gdouble packet_elapsed = g_timer_elapsed(packet_interval, NULL);
         gdouble waittime = packet_time - packet_elapsed;
         if(waittime > 0){
@@ -2001,17 +2007,12 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
         packet.type = SR_DF_END;
         ds_data_forward(sdi, &packet);
         sr_session_source_remove(-1);
-//        if(cur_sample_generator != PATTERN_RANDOM)
-//        {
-//            close_archive(vdev);
-//        }
     }
 
     return TRUE;
 }
 
 
-//修改称原有版本（读取文件）
 static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sdi)
 {
     struct session_vdev *vdev = sdi->priv;
@@ -2044,7 +2045,6 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
             sr_err("%s:cant' malloc",__func__);
             return SR_ERR_MALLOC;
         }
-        //随机数据
         if(cur_sample_generator == PATTERN_RANDOM)
         {
             for(int i = 0 ; i < 206 ;i++)
@@ -2052,7 +2052,6 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
                 *(uint8_t*)(analog_data + i) = rand()%40 +110;
             }
         }
-        //文件
         else
         {
             snprintf(file_name, sizeof(file_name)-1, "%s-%d/%d", "A",
@@ -2077,10 +2076,9 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
                 sr_err("read zip inner file error:\"%s\"", file_name);
                 send_error_packet(sdi, vdev, &packet);
                 return FALSE;
-            }   
+            }
         }
 
-        //计算放大后数据
         gdouble rate = 103 / (gdouble)2048 ;
         uint64_t total_buf_len = rate * vdev->total_samples;
 
@@ -2103,7 +2101,6 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
         vdev->analog_buf_len = total_buf_len;
         uint64_t per_block_after_expend = total_buf_len /206;
 
-        //根据vdiv对电压进行放大
         probe = g_slist_nth(sdi->channels, 0)->data;
         uint64_t p0_vdiv = probe->vdiv;
         probe = g_slist_nth(sdi->channels, 1)->data;
@@ -2142,7 +2139,6 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
                     temp_value = tem;
             }
 
-            //对数据进行拓展
             for(int j = 0 ; j <per_block_after_expend ;j++)
             {
                 if(i % 2 == 0)
@@ -2160,7 +2156,6 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
         is_first = FALSE;
     }
 
-    //注意区分发送数据额缓冲数据
     void* buf;
     if(vdev->analog_read_pos + packet_len >= vdev->analog_buf_len - 1 )
     {
@@ -2263,13 +2258,11 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
     int version = 1;
 
     assert(sdi);
-    //如果不是random要检查文件
     if (cur_sample_generator != PATTERN_RANDOM)
     {
         assert(sdi->path);
     }
 
-    //逻辑分析仪初始化（RANDOM）
     if (sdi->mode == LOGIC && cur_sample_generator == PATTERN_RANDOM)
     {
         sdi->driver->config_set(SR_CONF_SAMPLERATE,
@@ -2297,7 +2290,6 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
         }
         adjust_samplerate(sdi);
     }
-    //示波器初始化
     else if(sdi->mode == DSO)
     {
         sdi->driver->config_set(SR_CONF_SAMPLERATE,
@@ -2330,7 +2322,6 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
         }
         adjust_samplerate(sdi);
     }
-    //数据记录仪初始化
     else if(sdi->mode == ANALOG)
     {
         sdi->driver->config_set(SR_CONF_SAMPLERATE,
@@ -2353,7 +2344,6 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
                 return SR_ERR;
             }
 
-            //做一个用于通道初始化的函数
             probe->enabled = TRUE;
             probe->bits = 8;
             probe->vdiv = 1000;
@@ -2371,7 +2361,6 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
         }
         adjust_samplerate(sdi);
     }
-    //协议文件初始化
     else
     {
         archive = unzOpen64(sdi->path);
@@ -2515,21 +2504,21 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
 
 SR_PRIV struct sr_dev_driver demo_driver_info = {
     .name = "virtual-demo",
-	.longname = "Demo driver and pattern generator",
-	.api_version = 1,
+    .longname = "Demo driver and pattern generator",
+    .api_version = 1,
     .driver_type = DRIVER_TYPE_DEMO,
-	.init = hw_init,
+    .init = hw_init,
     .cleanup = NULL,
-	.scan = hw_scan, 
+    .scan = hw_scan,
     .dev_mode_list = hw_dev_mode_list,
-	.config_get = config_get,
-	.config_set = config_set,
-	.config_list = config_list,
-	.dev_open = hw_dev_open,
-	.dev_close = hw_dev_close,
+    .config_get = config_get,
+    .config_set = config_set,
+    .config_list = config_list,
+    .dev_open = hw_dev_open,
+    .dev_close = hw_dev_close,
     .dev_destroy = dev_destroy,
     .dev_status_get = hw_dev_status_get,
-	.dev_acquisition_start = hw_dev_acquisition_start,
-	.dev_acquisition_stop = hw_dev_acquisition_stop,
-	.priv = NULL,
+    .dev_acquisition_start = hw_dev_acquisition_start,
+    .dev_acquisition_stop = hw_dev_acquisition_stop,
+    .priv = NULL,
 };

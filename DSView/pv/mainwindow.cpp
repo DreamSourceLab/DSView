@@ -116,8 +116,7 @@ namespace pv
         _is_auto_switch_device = false;
         _is_save_confirm_msg = false;
 
-        _demo_load_decoder = TRUE;
-        _demo_auto_start = FALSE;
+        _pattern_mode = "RANDOM";
 
         setup_ui();
 
@@ -1677,11 +1676,6 @@ namespace pv
             break;
 
         case DSV_MSG_START_COLLECT_WORK:
-            /*demo下逻辑分析仪采集一次后，设置自动采集*/
-            if (_device_agent->is_demo() && _device_agent->get_work_mode() == LOGIC)
-            {
-                _demo_auto_start = TRUE;
-            }
             update_toolbar_view_status();
             _view->on_state_changed(false);
             _protocol_widget->update_view_status();
@@ -1721,8 +1715,6 @@ namespace pv
 
             if (_device_agent->is_hardware())
             {
-                /*切换到硬件设备，取消demo的自动采集*/
-                _demo_auto_start = FALSE;
                 _session->on_load_config_end();
             }
                 
@@ -1732,8 +1724,6 @@ namespace pv
 
             if (_device_agent->is_file())
             {
-                /*切换到硬件设备，取消demo的自动采集（目前使用gboolean类型需要includeligsigork）*/
-                _demo_auto_start = FALSE;
                 check_session_file_version();
 
                 bool bDoneDecoder = false;
@@ -1750,19 +1740,25 @@ namespace pv
 
             if (_device_agent->is_demo())
             {
-                /*demo下逻辑分析仪如果信号模式不为RANDOM，导入解码器*/
                 if(_device_agent->get_work_mode() == LOGIC)
                 {
-                    GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_LOAD_DECODER);
+                    GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_PATTERN_MODE);
                     if(gvar != NULL)
                     {
-                        gboolean load_decoder = g_variant_get_boolean(gvar);
-                        if(load_decoder)
+                        _pattern_mode = g_variant_get_string(gvar,NULL);
+                        g_variant_unref(gvar);
+                    }
+
+                    _protocol_widget->del_all_protocol();
+                    if(_device_agent->get_work_mode() == LOGIC)
+                    {
+                        _view->auto_set_max_scale();
+
+                        if(_pattern_mode != "RANDOM")
                         {
-                            //加载解码器
                             StoreSession ss(_session);
                             QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
-                            ss.load_decoders(_protocol_widget, deArray);  
+                            ss.load_decoders(_protocol_widget, deArray);
                         }
                     }
                 }
@@ -1797,20 +1793,21 @@ namespace pv
 
             if(_device_agent->is_demo())
             {
-                /*demo下逻辑分析仪如果信号模式不为RANDOM，导入解码器*/
+                GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_PATTERN_MODE);
+                if(gvar != NULL)
+                {
+                    _pattern_mode = g_variant_get_string(gvar,NULL);
+                    g_variant_unref(gvar);
+                }
                 _protocol_widget->del_all_protocol();
+
                 if(_device_agent->get_work_mode() == LOGIC)
                 {
-                    GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_LOAD_DECODER);
-                    if(gvar != NULL)
+                    if(_pattern_mode != "RANDOM")
                     {
-                        gboolean load_decoder = g_variant_get_boolean(gvar);
-                        if(load_decoder)
-                        {
-                            StoreSession ss(_session);
-                            QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
-                            ss.load_decoders(_protocol_widget, deArray);
-                        }
+                        StoreSession ss(_session);
+                        QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
+                        ss.load_decoders(_protocol_widget, deArray);
                     }
                 }
             }
@@ -1895,48 +1892,46 @@ namespace pv
             break;
 
         case DSV_MSG_END_DEVICE_OPTIONS:
-            if(_device_agent->is_demo())
+            if(_device_agent->is_demo() &&_device_agent->get_work_mode() == LOGIC)
             {
-                /*信号模式发生修改，更新界面*/
-                GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_DEMO_CHANGE);
+                GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_PATTERN_MODE);
                 if(gvar != NULL)
                 {
-                    gboolean pattern_change = g_variant_get_boolean(gvar);
-                    if(pattern_change)
+                    std::string pattern_mode = g_variant_get_string(gvar,NULL);
+                    g_variant_unref(gvar);
+                    if(pattern_mode != _pattern_mode)
                     {
-                        reset_all_view();
-                        load_device_config();
+                        _pattern_mode = pattern_mode;
+                        _device_agent->set_config(NULL,NULL,SR_CONF_DEMO_INIT,g_variant_new_boolean(TRUE));
+                        _device_agent->update();
+
+                        _session->init_signals();
                         update_toolbar_view_status();
-                        _device_agent->set_config(NULL,NULL,SR_CONF_DEMO_CHANGE,g_variant_new_boolean(FALSE));
-                    }
-                }
+                        _sampling_bar->update_sample_rate_list();
 
-                /*demo下逻辑分析仪如果信号模式不为RANDOM，导入解码器*/
-                _protocol_widget->del_all_protocol();
-                if(_device_agent->get_work_mode() == LOGIC)
-                {
-                    _view->auto_set_max_scale();
-
-                    GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_LOAD_DECODER);
-                    if(gvar != NULL)
-                    {
-                        gboolean load_decoder = g_variant_get_boolean(gvar);
-                        if(load_decoder)
+                        _protocol_widget->del_all_protocol();
+                         
+                        if(_pattern_mode != "RANDOM")
                         {
                             StoreSession ss(_session);
                             QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
-                            ss.load_decoders(_protocol_widget, deArray);  
+                            ss.load_decoders(_protocol_widget, deArray);
+                            _session->start_capture(false);
                         }
-                    }
-
-                     /*demo下逻辑分析仪执行一次采集后，切换信号模式自动采集*/
-                    if(_demo_auto_start)
-                    {
-                        _session->start_capture(true);
                     }
                 }
             }
             break;
+        case DSV_MSG_BEGIN_DEVICE_OPTIONS:
+            if(_device_agent->is_demo())
+            {
+                GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_PATTERN_MODE);
+                if(gvar != NULL)
+                {
+                    _pattern_mode = g_variant_get_string(gvar,NULL);
+                    g_variant_unref(gvar);
+                }
+            }
         }
     }
 

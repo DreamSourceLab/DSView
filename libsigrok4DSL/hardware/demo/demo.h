@@ -24,12 +24,7 @@
 #include <glib.h>
 #include "../../libsigrok-internal.h"
 #include <minizip/unzip.h>
-//原版导入方式**(channel_modes冲突)
-#include"../DSL/dsl.h"
- 
-/*修改*/
 
-//信号模式
 enum DEMO_PATTERN {
     PATTERN_INVALID = -1,    
     PATTERN_RANDOM = 0,
@@ -43,34 +38,37 @@ static int pattern_logic_count = 1;
 static int pattern_dso_count= 1;
 static int pattern_analog_count= 1;
 
-//协议采样率、总样本数列表
 static uint64_t samplerates_file[1];
 static uint64_t samplecounts_file[1];
-//定时器
 static GTimer *packet_interval = NULL;
 static GTimer *run_time = NULL;
-//首次开启
 static gboolean is_first = TRUE;
 static gboolean is_change = FALSE;
-//总共启用通道数（LOGIC会使用）
 static int enabled_probe_num;
-//包长度、包时间、总传输包长度
 static uint64_t packet_len;
 static gdouble packet_time;
 static uint64_t post_data_len;
-//文件路径
 extern char DS_RES_PATH[500];
-//示波器垂直分辨率变化
 static gboolean vdiv_change;
-//立即
 static gboolean instant = FALSE;
-//路径
+static int max_probe_num = 0;
 extern char DS_RES_PATH[500];
-//信号模式(起始一样)
 uint8_t cur_sample_generator;
 uint8_t pre_sample_generator;
 
 struct session_packet_buffer;
+
+static const uint64_t vdivs10to2000[] = {
+    SR_mV(10),
+    SR_mV(20),
+    SR_mV(50),
+    SR_mV(100),
+    SR_mV(200),
+    SR_mV(500),
+    SR_V(1),
+    SR_V(2),
+    0,
+};
 
 struct session_vdev
 { 
@@ -80,14 +78,13 @@ struct session_vdev
 
     uint16_t samplerates_min_index;
     uint16_t samplerates_max_index;
-    //逻辑分析仪随机数据
+
     void *logic_buf;
     uint64_t logic_buf_len;
-    //数据记录仪周期数据
+
     void *analog_buf;
     uint64_t analog_buf_len;
     uint64_t analog_read_pos;
-    //示波器周期数据
 
     int cur_channel;
     int cur_block;
@@ -110,8 +107,6 @@ struct session_vdev
     struct session_packet_buffer   *packet_buffer;
 };
 
-
-
 #define SESSION_MAX_CHANNEL_COUNT 512
 
 struct session_packet_buffer
@@ -126,9 +121,6 @@ struct session_packet_buffer
     void       *block_bufs[SESSION_MAX_CHANNEL_COUNT];
     uint64_t    block_read_positions[SESSION_MAX_CHANNEL_COUNT];
 };
-
-
-/*修改*/
 
 struct DEMO_caps {
     uint64_t mode_caps;

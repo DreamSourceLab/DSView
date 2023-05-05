@@ -410,6 +410,7 @@ public:
     }
 
     void on_load_config_end();
+    void init_signals(); 
 
 private:
     void set_cur_samplelimits(uint64_t samplelimits);
@@ -446,7 +447,7 @@ private:
     void capture_init(); 
     void nodata_timeout();
     void feed_timeout();   
-    void init_signals(); 
+    
     void clear_decode_result();
     void attach_data_to_signal(SessionData *data);
   

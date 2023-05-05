@@ -758,7 +758,10 @@ namespace pv
         std::vector<view::Signal *> sigs;
         unsigned int logic_probe_count = 0;
         unsigned int dso_probe_count = 0;
-        unsigned int analog_probe_count = 0;    
+        unsigned int analog_probe_count = 0;
+
+        set_cur_snap_samplerate(_device_agent.get_sample_rate());
+        set_cur_samplelimits(_device_agent.get_sample_limit());    
 
         // Detect what data types we will receive
         if (_device_agent.have_instance())
@@ -840,6 +843,9 @@ namespace pv
         int logic_chan_num = 0;
         int dso_chan_num = 0;
         int all_chann_num = 0;
+
+        set_cur_snap_samplerate(_device_agent.get_sample_rate());
+        set_cur_samplelimits(_device_agent.get_sample_limit());
 
         // Make the logic probe list
         for (GSList *l = _device_agent.get_channels(); l; l = l->next)
@@ -1950,31 +1956,6 @@ namespace pv
         switch (msg)
         {
         case DSV_MSG_DEVICE_OPTIONS_UPDATED:
-            if(_device_agent.is_demo())
-            {
-                GVariant *gvar = _device_agent.get_config(NULL,NULL,SR_CONF_DEMO_CHANGE);
-                if(gvar != NULL)
-                {
-                    gboolean pattern_change = g_variant_get_boolean(gvar);
-                    if(pattern_change)
-                    {
-                        /*底层重置工作参数*/
-                        _device_agent.set_config(NULL,NULL,SR_CONF_DEMO_INIT,g_variant_new_boolean(TRUE));
-                        
-                        _device_agent.update();
-
-                        clear_all_decoder();
-
-                        _capture_data->clear();
-                        _view_data->clear();
-                        _capture_data = _view_data;   
-
-                        init_signals();
-                        set_cur_snap_samplerate(_device_agent.get_sample_rate());
-                        set_cur_samplelimits(_device_agent.get_sample_limit());
-                    }
-                }
-            }
             reload();
             break;
 
@@ -2094,7 +2075,6 @@ namespace pv
         // Nonthing.
     }
 
-    //**
     bool SigSession::switch_work_mode(int mode)
     {
         assert(!_is_working);
@@ -2103,7 +2083,6 @@ namespace pv
         if (cur_mode != mode)
         {  
             GVariant *val = g_variant_new_int16(mode);
-            /*底层重置工作参数*/
             _device_agent.set_config(NULL, NULL, SR_CONF_DEVICE_MODE, val);
 
             if (cur_mode == LOGIC){
