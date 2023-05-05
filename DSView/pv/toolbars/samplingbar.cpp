@@ -1067,8 +1067,8 @@ namespace pv
                         _session->set_operation_mode(OPT_SINGLE);
                     }
 
-                    if (_device_agent->is_stream_mode() || _device_agent->is_demo())
-                        _action_loop->setVisible(true);
+                   // if (_device_agent->is_stream_mode() || _device_agent->is_demo())
+                       // _action_loop->setVisible(true);
                 }
                 _run_stop_action->setVisible(true);
                 _instant_action->setVisible(true);      
@@ -1102,7 +1102,7 @@ namespace pv
             }
             else if (act == _action_repeat)
             { 
-                if (_device_agent->is_hardware() && _device_agent->is_stream_mode())
+                if (_device_agent->is_stream_mode() || _device_agent->is_demo())
                 {
                     _session->set_repeat_intvl(0.1);
                     _session->set_operation_mode(OPT_REPEAT);
@@ -1222,8 +1222,8 @@ namespace pv
                 }
                 
                 if (_device_agent->have_instance()){
-                    if (_device_agent->is_stream_mode() || _device_agent->is_demo())
-                        _action_loop->setVisible(true);
+                   // if (_device_agent->is_stream_mode() || _device_agent->is_demo())
+                     //   _action_loop->setVisible(true);
                 }                
             }
 

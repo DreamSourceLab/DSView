@@ -174,10 +174,14 @@ void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total
     _ring_sample_count = 0;
     _mipmap_sample_count = 0;
 
+    assert(logic.data);
+    uint64_t *rd_data = (uint64_t*)logic.data;
+
     for (unsigned int i = 0; i < _channel_num; i++) {
-        _last_sample[i] = 0;
+        _last_sample[i] = *rd_data++;
         _last_calc_count[i] = 0;
     }
+    _wr_num = 0;
 
     append_payload(logic);
     _last_ended = false;
@@ -209,32 +213,19 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
     // _sample_count should be fixed in the last packet
     // so _total_sample_count must be align to LeafBlock
     uint64_t samples = ceil(logic.length * 8.0 / _channel_num);
-    uint64_t det_loop_offset = 0;
 
     if (_sample_count + samples < _total_sample_count){
         _sample_count += samples;
     }
     else{
-        if (!_is_loop){
-            if (_sample_count == _total_sample_count)
-                return;
-            _sample_count = _total_sample_count;
-        }
-        else{
-            if (_sample_count == _total_sample_count) 
-                det_loop_offset = samples;
-            else{
-                det_loop_offset = _sample_count + samples - _total_sample_count;
-                _sample_count = _total_sample_count;
-            }
-
-            if (det_loop_offset + _loop_offset >= LeafBlockSamples){
-               det_loop_offset = det_loop_offset + _loop_offset  - LeafBlockSamples;
-               _loop_offset = 0;
-               move_first_node_to_last();
-               dsv_info("------------move node to last.");
-            }
-        }
+        if (_sample_count == _total_sample_count && !_is_loop)
+            return;
+        _sample_count = _total_sample_count;
+    }
+ 
+    if (_loop_offset >= LeafBlockSamples){
+             dsv_info("---------buffer is full.");
+             return;
     }
  
     _ring_sample_count += _loop_offset;
@@ -242,6 +233,7 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
     // bit align
     while ((_ch_fraction != 0 || _byte_fraction != 0) && len > 0) 
     {
+        //assert(0);//!!!
         if (_dest_ptr == NULL)
             assert(false);
 
@@ -279,8 +271,7 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
                 if (_ring_sample_count % LeafBlockSamples == 0){
                     calc_mipmap(_channel_num - 1, index0, index1, LeafBlockSamples, true);
                     _mipmap_sample_count = _ring_sample_count - _loop_offset;
-                }
-                                
+                }                                
                 break;
             }                
         }
@@ -299,9 +290,9 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
     uint64_t old_filled_sample = filled_sample;     
     uint64_t* chans_read_addr[CHANNEL_MAX_COUNT];
  
-    for (unsigned int i=0; i<_channel_num; i++){
+    for (unsigned int i = 0; i < _channel_num; i++){
         chans_read_addr[i] = (uint64_t*)data_src_ptr + i; 
-    } 
+    }
     
     uint16_t fill_chan = _ch_fraction;
     uint16_t last_chan = _ch_fraction;
@@ -321,17 +312,24 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
     }
 
     uint64_t *write_ptr = (uint64_t*)lbp + offset / Scale;
-    
-
-    if (_sample_count >= _total_sample_count){
-       // *read_ptr = 1;
-
-        dsv_info("_loop_offset:%llu", _loop_offset);
-    }
 
     while (len >= 8)
-    { 
-        *write_ptr++ = *read_ptr;
+    {
+        if (_is_loop)
+        {
+            if (fill_chan == 0){
+                *write_ptr++ = 0xfef0f0f0f0f0f0f1;
+                _wr_num++;
+            }
+            else{
+                *write_ptr++ = 0;
+            }
+        }
+        else{
+            *write_ptr++ = *read_ptr;
+        }       
+
+        //*write_ptr++ = *read_ptr;
         read_ptr += _channel_num;
         len -= 8;
         filled_sample += Scale;
@@ -343,6 +341,7 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
   
         if (filled_sample == LeafBlockSamples)
         {
+           // assert(0);//!!!
             calc_mipmap(fill_chan, index0, index1, LeafBlockSamples, true);
 
             if (fill_chan + 1 == _channel_num)
@@ -406,6 +405,14 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
     }
 
     _ring_sample_count = align_sample_count;
+    _ring_sample_count -= _loop_offset;
+
+    if (align_sample_count > _total_sample_count){
+        _loop_offset = align_sample_count - _total_sample_count;
+        _ring_sample_count = _total_sample_count;
+        dsv_info("---------_loop_offset:%llu", _loop_offset);
+    }
+
     _ch_fraction = last_chan;
 
     lbp = _ch_data[_ch_fraction][index0].lbp[index1];
@@ -424,15 +431,13 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
     if (len > 0){
         uint8_t *src_ptr = (uint8_t*)end_read_ptr - len;
         _byte_fraction += len; 
+        //assert(0);//!!!
 
         while (len > 0){
             *_dest_ptr++ = *src_ptr++;
             len--;
         }
-    }
-
-    _ring_sample_count -= _loop_offset;
-    _loop_offset += det_loop_offset;
+    }   
 }
 
 void LogicSnapshot::capture_ended()
@@ -473,7 +478,7 @@ void LogicSnapshot::capture_ended()
 }
 
 void LogicSnapshot::calc_mipmap(unsigned int order, uint8_t index0, uint8_t index1, uint64_t samples, bool isEnd)
-{ 
+{  
     const uint64_t mask =  1ULL << (Scale - 1);
     void *lbp = _ch_data[order][index0].lbp[index1];
     void *level1_ptr = (uint8_t*)lbp + LeafBlockSamples / 8;
@@ -552,6 +557,11 @@ void LogicSnapshot::calc_mipmap(unsigned int order, uint8_t index0, uint8_t inde
             
     if (*((uint64_t*)level3_ptr) != 0){
         _ch_data[order][index0].tog |= 1ULL << index1;
+    /*
+        if (order == 0){
+            dsv_info("tog:%llu,index0:%d,index1:%d, offset:%llu",
+             _ch_data[order][index0].tog , index0, index1, _loop_offset);
+        }*/
     }
     else if (isEnd){
         free(_ch_data[order][index0].lbp[index1]);

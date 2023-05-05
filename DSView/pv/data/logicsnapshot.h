@@ -218,6 +218,7 @@ private:
     uint64_t    _mipmap_sample_count;
     bool        _is_loop;
     uint64_t    _loop_offset;
+    uint64_t    _wr_num;
  
 	friend class LogicSnapshotTest::Pow2;
 	friend class LogicSnapshotTest::Basic;

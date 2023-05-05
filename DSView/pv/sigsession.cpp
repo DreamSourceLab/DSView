@@ -760,6 +760,8 @@ namespace pv
         unsigned int dso_probe_count = 0;
         unsigned int analog_probe_count = 0;
 
+        _capture_data->clear();
+        _view_data->clear();
         set_cur_snap_samplerate(_device_agent.get_sample_rate());
         set_cur_samplelimits(_device_agent.get_sample_limit());    
 
