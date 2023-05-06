@@ -1067,8 +1067,8 @@ namespace pv
                         _session->set_operation_mode(OPT_SINGLE);
                     }
 
-                   // if (_device_agent->is_stream_mode() || _device_agent->is_demo())
-                       // _action_loop->setVisible(true);
+                    if (_device_agent->is_stream_mode() || _device_agent->is_demo())
+                        _action_loop->setVisible(true);
                 }
                 _run_stop_action->setVisible(true);
                 _instant_action->setVisible(true);      
@@ -1222,8 +1222,8 @@ namespace pv
                 }
                 
                 if (_device_agent->have_instance()){
-                   // if (_device_agent->is_stream_mode() || _device_agent->is_demo())
-                     //   _action_loop->setVisible(true);
+                    if (_device_agent->is_stream_mode() || _device_agent->is_demo())
+                        _action_loop->setVisible(true);
                 }                
             }
 
