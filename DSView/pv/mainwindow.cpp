@@ -1805,6 +1805,7 @@ namespace pv
                 {
                     if(_pattern_mode != "RANDOM")
                     {
+                        _device_agent->update();
                         StoreSession ss(_session);
                         QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
                         ss.load_decoders(_protocol_widget, deArray);

@@ -158,23 +158,23 @@ static int get_pattern_mode_index_by_string(uint8_t device_mode , const char* st
     return index;
 }
 
-static int scan_dsl_file(struct sr_dev_inst *sdi)
+static int get_pattern_mode_from_file(uint8_t device_mode)
 {
-    unzFile archive = NULL;
-    unz_file_info64 fileInfo;
-    char szFilePath[15];
-    char **sections, **keys, *metafile, *val;
-    GKeyFile *kf;
-    int ret, devcnt, i, j;
-    int mode = LOGIC;
-    gboolean get_mode = FALSE;
-    char dir_str[500];
     const gchar * filename = NULL;
-
-    init_pattern_mode_list();
+    char dir_str[500];
+    int index = 1;
 
     strcpy(dir_str,DS_RES_PATH);
-    strcat(dir_str,"demo/");
+    strcat(dir_str,"../");
+    strcat(dir_str,"demo-file/");
+
+    if(device_mode == LOGIC)
+        strcat(dir_str,"logic/");
+    else if(device_mode == DSO)
+        strcat(dir_str,"dso/");
+    else if(device_mode == ANALOG)
+        strcat(dir_str,"analog/");
+
     GDir *dir  = NULL;
     dir = g_dir_open(dir_str,0,NULL);
     if(dir == NULL)
@@ -182,150 +182,53 @@ static int scan_dsl_file(struct sr_dev_inst *sdi)
         return;
     }
 
-    int logic_index = 1;
-    int dso_index = 1;
-    int analog_index = 1;
-
     while ((filename = g_dir_read_name(dir)) != NULL)
     {
         if (FALSE == g_file_test(filename,G_FILE_TEST_IS_DIR))
         {
-            get_mode = FALSE;
-
             if(strstr(filename,".dsl") != NULL)
             {
-                char file_path_str[500] = "";
-                strcat(file_path_str,dir_str);
-                strcat(file_path_str,filename);
-
-                char *tmp_file_name = g_try_malloc0(20);
-                if(tmp_file_name == NULL)
-                {
-                    sr_err("%s: pattern mode string malloc error.", __func__);
-                    return SR_ERR_MALLOC;
-                }
-
-                archive = unzOpen64(file_path_str);
-                if (NULL == archive)
-                {
-                    sr_err("%s: Load zip file error.", __func__);
-                    return SR_ERR;
-                }
-                if (unzLocateFile(archive, "header", 0) != UNZ_OK)
-                {
-                    unzClose(archive);
-                    sr_err("%s: unzLocateFile error.", __func__);
-                    return SR_ERR;
-                }
-                if (unzGetCurrentFileInfo64(archive, &fileInfo, szFilePath,
-                                            sizeof(szFilePath), NULL, 0, NULL, 0) != UNZ_OK)
-                {
-                    unzClose(archive);
-                    sr_err("%s: unzGetCurrentFileInfo64 error.", __func__);
-                    return SR_ERR;
-                }
-                if (unzOpenCurrentFile(archive) != UNZ_OK)
-                {
-                    sr_err("%s: Cant't open zip inner file.", __func__);
-                    unzClose(archive);
-                    return SR_ERR;
-                }
-
-                if (!(metafile = g_try_malloc(fileInfo.uncompressed_size)))
-                {
-                    sr_err("%s: metafile malloc failed", __func__);
-                    return SR_ERR_MALLOC;
-                }
-
-                unzReadCurrentFile(archive, metafile, fileInfo.uncompressed_size);
-                unzCloseCurrentFile(archive);
-
-                if (unzClose(archive) != UNZ_OK)
-                {
-                    sr_err("%s: Close zip archive error.", __func__);
-                    return SR_ERR;
-                }
-                archive = NULL;
-
-                kf = g_key_file_new();
-                if (!g_key_file_load_from_data(kf, metafile, fileInfo.uncompressed_size, 0, NULL))
-                {
-                    sr_err("Failed to parse metadata.");
-                    return SR_ERR;
-                }
-
-                sections = g_key_file_get_groups(kf, NULL);
-                for (i = 0; sections[i]; i++)
-                {
-                    if (!strncmp(sections[i], "header", 6))
-                    {
-                        keys = g_key_file_get_keys(kf, sections[i], NULL, NULL);
-                         for (j = 0; keys[j]; j++)
-                        {
-                            val = g_key_file_get_string(kf, sections[i], keys[j], NULL);
-                            if (!strcmp(keys[j], "device mode"))
-                            {
-                                mode = strtoull(val, NULL, 10);
-                                get_mode = TRUE;
-                                break;
-                            }
-                        }
-                    }
-                    if (get_mode)
-                    {
-                        break;
-                    }
-
-                }
-
-                if(mode == LOGIC)
-                {
-                    if(logic_index == 99)
-                        continue;
-                    else
-                    {
-                        snprintf(tmp_file_name, strlen(filename)-strlen(".dsl")+1 , "%s", filename);
-                        pattern_strings_logic[logic_index] = tmp_file_name;
-                        logic_index++;
-                        pattern_logic_count++;
-                    }
-                }
-                else if(mode == DSO)
-                {
-                    if(dso_index == 99)
-                        continue;
-                    else
-                    {
-                        snprintf(tmp_file_name, strlen(filename)-strlen(".dsl")+1, "%s", filename);
-                        pattern_strings_dso[dso_index] =  tmp_file_name;
-                        dso_index++;
-                        pattern_dso_count++;
-                    }
-                }
-                else
-                {
-                    if(analog_index == 99)
-                        continue;
-                    else
-                    {
-                        snprintf(tmp_file_name, strlen(filename)-strlen(".dsl")+1, "%s", filename);
-                        pattern_strings_analog[analog_index] = tmp_file_name;
-                        analog_index++;
-                        pattern_analog_count++;
-                    }
-                }
+                char *tmp_file_name = g_try_malloc0(strlen(filename)-strlen(".dsl")+1);
+                snprintf(tmp_file_name, strlen(filename)-strlen(".dsl")+1 , "%s", filename);
+                if(device_mode == LOGIC)
+                    pattern_strings_logic[index] = tmp_file_name;
+                else if(device_mode == DSO)
+                    pattern_strings_dso[index] = tmp_file_name;
+                else if(device_mode == ANALOG)
+                    pattern_strings_analog[index] = tmp_file_name;
+                if(index < 99)
+                    index++;
             }
         }
     }
+
     g_dir_close(dir);
 
-    if (logic_index > 1)
+    if(device_mode == LOGIC)
+        pattern_logic_count = index;
+    else if(device_mode == DSO)
+        pattern_dso_count = index;
+    else if(device_mode == ANALOG)
+        pattern_analog_count = index;
+}
+
+static int scan_dsl_file(struct sr_dev_inst *sdi)
+{
+    init_pattern_mode_list();
+
+    get_pattern_mode_from_file(LOGIC);
+    get_pattern_mode_from_file(DSO);
+    get_pattern_mode_from_file(ANALOG);
+
+    if(PATTERN_INVALID !=get_pattern_mode_index_by_string(LOGIC, "demo"))
     {
+        int index = get_pattern_mode_index_by_string(LOGIC, "demo");
+        char * str =  pattern_strings_logic[index];
+        pattern_strings_logic[index] = pattern_strings_logic[PATTERN_DEFAULT];
+        pattern_strings_logic[PATTERN_DEFAULT] = str;
         cur_sample_generator = pre_sample_generator = PATTERN_DEFAULT;
-        strcat(dir_str,pattern_strings_logic[1]);
-        strcat(dir_str,".dsl");
         sdi->mode = LOGIC;
-        sdi->path  = g_strdup(dir_str);
+        sdi->path  = g_strdup(get_dsl_path_by_pattern_mode(LOGIC,PATTERN_DEFAULT));
     }
     else
     {
@@ -338,10 +241,11 @@ static int scan_dsl_file(struct sr_dev_inst *sdi)
 static char* get_dsl_path_by_pattern_mode(uint8_t device_mode , uint8_t pattern_mode)
 {
     unzFile archive = NULL;
-    int index = -1;
+
     char *str = g_try_malloc0(500);
     strcpy(str,DS_RES_PATH);
-    strcat(str,"demo/");
+    strcat(str,"../");
+    strcat(str,"demo-file/");
 
     if (pattern_mode != PATTERN_RANDOM)
     {
@@ -350,18 +254,21 @@ static char* get_dsl_path_by_pattern_mode(uint8_t device_mode , uint8_t pattern_
         case LOGIC:
             if(NULL != pattern_strings_logic[pattern_mode])
             {
+                strcat(str,"logic/");
                 strcat(str,pattern_strings_logic[pattern_mode]);
             }
             break;
         case DSO:
             if(NULL != pattern_strings_dso[pattern_mode])
             {
+                strcat(str,"dso/");
                 strcat(str,pattern_strings_dso[pattern_mode]);
             }
             break;
         case ANALOG:
             if(NULL != pattern_strings_analog[pattern_mode])
             {
+                strcat(str,"analog/");
                 strcat(str,pattern_strings_analog[pattern_mode]);
             }
             break;
@@ -801,6 +708,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         break;
     case SR_CONF_DEVICE_MODE:
         sdi->mode = g_variant_get_int16(data);
+        if(sdi->path)
         switch (sdi->mode)
         {
             case LOGIC:
@@ -909,7 +817,10 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     case SR_CONF_TIMEBASE:
         vdev->timebase = g_variant_get_uint64(data);
         if(sdi->mode == DSO)
+        {
             g_timer_start(run_time);
+            timebase_change = TRUE;
+        } 
         sr_dbg("Setting timebase to %llu.", vdev->timebase);
         break;
     case SR_CONF_PROBE_COUPLING:
@@ -982,7 +893,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
                        const struct sr_channel_group *cg)
 {
-        (void)cg;
+    (void)cg;
 
     GVariant *gvar;
     GVariantBuilder gvb;
@@ -1767,7 +1678,10 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
         {
             for(int i = 0 ; i < pack_buffer->post_buf_len ;i++)
             {
-                *(uint8_t*)(pack_buffer->post_buf + i) = rand()%40 +110;
+                if(i % 2 == 0)
+                    *(uint8_t*)(pack_buffer->post_buf + i) = rand()%40 +110;
+                else
+                    *(uint8_t*)(pack_buffer->post_buf + i) = *(uint8_t*)(pack_buffer->post_buf + i -1);
             }
             pack_buffer->post_len = pack_buffer->post_buf_len;
         }
@@ -1779,7 +1693,8 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
                 if (pack_buffer->block_chan_read_pos >= pack_buffer->block_data_len)
                 {
                     if (vdev->cur_block >= vdev->num_blocks){
-                        bToEnd = 1;
+                        vdev->cur_block = 0;
+                        // bToEnd = 1;
                         break;
                     }
 
@@ -1900,41 +1815,53 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
             }
         }
 
-        for(int i = 0 ; i < pack_buffer->post_buf_len; i++)
+        if(vdiv_change)
         {
-            tem = 0;
-            if(i % 2 == 0)
-                probe = g_slist_nth(sdi->channels, 0)->data;
-            else
-                probe = g_slist_nth(sdi->channels, 1)->data;
-            vdiv = probe->vdiv;
-            uint8_t temp_val = *((uint8_t*)pack_buffer->post_buf + i);
-            if(temp_val>128)
+            for(int i = 0 ; i < pack_buffer->post_buf_len; i++)
             {
-                val = temp_val - 128;
-                tem = val * 1000 / vdiv;
-                tem = 128 + tem;
-                if(tem >= 255)
-                    temp_val = 255;
+                tem = 0;
+                if(i % 2 == 0)
+                    probe = g_slist_nth(sdi->channels, 0)->data;
                 else
-                    temp_val = tem;
-            }
-            else if(temp_val < 128 && temp_val != 0)
-            {
-                val = 128 - temp_val;
-                tem =  val * 1000 / vdiv;
-                tem = 128 - tem;
+                    probe = g_slist_nth(sdi->channels, 1)->data;
+                if(!probe->enabled){
+                    if(i % 2 == 0)
+                        probe = g_slist_nth(sdi->channels, 1)->data;
+                    else
+                        probe = g_slist_nth(sdi->channels, 0)->data;
+                }
+                vdiv = probe->vdiv;
 
-                if(tem == 0)
-                    temp_val = 1;
-                else
-                    temp_val = tem;
+
+                uint8_t temp_val = *((uint8_t*)pack_buffer->post_buf + i);
+                if(temp_val>128)
+                {
+                    val = temp_val - 128;
+                    tem = val * 1000 / vdiv;
+                    tem = 128 + tem;
+                    if(tem >= 255)
+                        temp_val = 255;
+                    else
+                        temp_val = tem;
+                }
+                else if(temp_val < 128 && temp_val != 0)
+                {
+                    val = 128 - temp_val;
+                    tem =  val * 1000 / vdiv;
+                    tem = 128 - tem;
+
+                    if(tem == 0)
+                        temp_val = 1;
+                    else
+                        temp_val = tem;
+                }
+                *((uint8_t*)pack_buffer->post_buf + i) = temp_val;
             }
-            *((uint8_t*)pack_buffer->post_buf + i) = temp_val;
+            vdiv_change = FALSE;
         }
-
-        vdiv_change = FALSE;
     }
+
+
 
     gdouble total_time = vdev->timebase /(gdouble)SR_SEC(1)*(gdouble)10;
     gdouble total_time_elapsed = g_timer_elapsed(run_time, NULL);

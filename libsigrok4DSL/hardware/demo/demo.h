@@ -50,6 +50,7 @@ static gdouble packet_time;
 static uint64_t post_data_len;
 extern char DS_RES_PATH[500];
 static gboolean vdiv_change;
+static gboolean timebase_change;
 static gboolean instant = FALSE;
 static int max_probe_num = 0;
 extern char DS_RES_PATH[500];
@@ -409,6 +410,8 @@ static const int ranx[] = {
   1,  30, -12,  44,  20,  49,  29, -43,  42,  30, -34,  24,  20, -40,  33, -12,  13, -45,  45, -24,
 -41,  36,  -8,  46,  47, -34,  28, -39,   7, -32,  38, -27,  28,  -3,  -8,  43, -37, -24,   6,   3,
 };
+
+static int get_pattern_mode_from_file(uint8_t device_mode);
 
 static int init_pattern_mode_list();
 
