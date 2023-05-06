@@ -363,5 +363,9 @@
     {
         "id": "IDS_MSG_DISABLED_CHANNEL_TRIG",
         "text": "Disabled channels cannot be used for triggering!"
+    },
+    {
+        "id": "IDS_MSG_TO_RECONNECT_FOR_FIRMWARE",
+        "text": "The firmware version is incorrect, please reconnect the device!"
     }
 ]

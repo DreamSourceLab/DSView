@@ -362,5 +362,9 @@
     {
         "id": "IDS_MSG_DISABLED_CHANNEL_TRIG",
         "text": "禁用通道不能用于触发!"
+    },
+    {
+        "id": "IDS_MSG_TO_RECONNECT_FOR_FIRMWARE",
+        "text": "固件版本不对，请重新连接设备!"
     }
 ]

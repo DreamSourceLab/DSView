@@ -410,7 +410,8 @@ public:
     }
 
     void on_load_config_end();
-    void init_signals(); 
+    void init_signals();
+    void delay_prop_msg(QString strMsg);
 
 private:
     void set_cur_samplelimits(uint64_t samplelimits);
@@ -490,6 +491,7 @@ private:
     void realtime_refresh_timeout();
 
     void clear_signals();
+    void on_delay_prop_msg();
  
 private:
     mutable std::mutex      _sampling_mutex;
@@ -511,6 +513,7 @@ private:
     DsTimer     _repeat_timer;
     DsTimer     _repeat_wait_prog_timer;
     DsTimer     _refresh_rt_timer;
+    DsTimer     _delay_prop_msg_timer;
     int         _noData_cnt;
     bool        _data_lock;
     bool        _data_updated;
@@ -545,6 +548,7 @@ private:
     uint64_t    _rt_ck_refresh_time_id;
     COLLECT_OPT_MODE    _opt_mode;
     bool        _is_stream_mode;
+    QString     _strMsg;
  
 
     ISessionCallback *_callback;

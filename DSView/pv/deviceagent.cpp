@@ -275,16 +275,6 @@ bool DeviceAgent::have_enabled_channel()
     return ds_channel_is_enabled() > 0;
 }
 
-bool DeviceAgent::get_status(struct sr_status &status, gboolean prg)
-{
-    assert(_dev_handle);
-
-    if (ds_get_actived_device_status(&status, prg) == SR_OK){
-        return true;
-    }
-    return false;
-}
-
 void DeviceAgent::config_changed()
 {
     if (_callback != NULL){
@@ -317,7 +307,9 @@ const struct sr_config_info *DeviceAgent::get_config_info(int key)
 }
 
 bool DeviceAgent::get_device_status(struct sr_status &status, gboolean prg)
-{
+{   
+    assert(_dev_handle);
+
     if (ds_get_actived_device_status(&status, prg) == SR_OK)
     {
         return true;
@@ -382,6 +374,17 @@ GSList *DeviceAgent::get_channels()
  bool DeviceAgent::is_stream_mode()
  {
     return get_operation_mode() == LO_OP_STREAM;
+ }
+
+ bool DeviceAgent::check_firmware_version()
+ {
+    int st = -1;
+    if (ds_get_actived_device_init_status(&st) == SR_OK){
+        if (st == SR_ST_INCOMPATIBLE){
+            return false;
+        }
+    }
+    return true;
  }
 
 //---------------device config end -----------/

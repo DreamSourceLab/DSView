@@ -150,9 +150,7 @@ public:
      */
     bool is_trigger_enabled();
 
-    bool have_enabled_channel();
-
-    bool get_status(struct sr_status &status, gboolean prg); 
+    bool have_enabled_channel(); 
 
     GSList* get_channels();
 
@@ -182,6 +180,8 @@ public:
     int get_operation_mode();
 
     bool is_stream_mode();
+
+    bool check_firmware_version();
 
 private:
     void config_changed();

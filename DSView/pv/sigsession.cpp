@@ -55,6 +55,7 @@
 #include "config/appconfig.h"
 #include "utility/path.h"
 #include "ui/msgbox.h"
+#include "ui/langresource.h"
 
 namespace pv
 {
@@ -124,6 +125,7 @@ namespace pv
         _repeat_timer.SetCallback(std::bind(&SigSession::repeat_capture_wait_timeout, this));
         _repeat_wait_prog_timer.SetCallback(std::bind(&SigSession::repeat_wait_prog_timeout, this));
         _refresh_rt_timer.SetCallback(std::bind(&SigSession::realtime_refresh_timeout, this));
+        _delay_prop_msg_timer.SetCallback(std::bind(&SigSession::on_delay_prop_msg, this));
     }
 
     SigSession::SigSession(SigSession &o)
@@ -248,6 +250,12 @@ namespace pv
 
         // The current device changed.
         _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_CHANGED);
+
+        if (_device_agent.is_hardware() && _device_agent.check_firmware_version() == false)
+        {
+            QString strMsg = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TO_RECONNECT_FOR_FIRMWARE), "Please reconnect the device!");
+            delay_prop_msg(strMsg);
+        }
 
         return true;
     }
@@ -690,7 +698,7 @@ namespace pv
         uint64_t sample_limits = cur_samplelimits();
         sr_status status;
 
-        if (_device_agent.get_status(status, true))
+        if (_device_agent.get_device_status(status, true))
         { 
             triggered = status.trig_hit & 0x01;
             uint64_t captured_cnt = status.trig_hit >> 2;
@@ -2229,6 +2237,22 @@ namespace pv
     {
         set_cur_snap_samplerate(_device_agent.get_sample_rate());
         set_cur_samplelimits(_device_agent.get_sample_limit());
+    }
+
+    void SigSession::delay_prop_msg(QString strMsg)
+    {
+        _strMsg = strMsg;
+        if (_strMsg != ""){
+            _delay_prop_msg_timer.Start(1000);
+        }
+    }
+
+    void SigSession::on_delay_prop_msg()
+    {
+        _delay_prop_msg_timer.Stop();
+
+        if (_strMsg != "")
+            MsgBox::Show("", _strMsg);
     }
 
 } // namespace pv

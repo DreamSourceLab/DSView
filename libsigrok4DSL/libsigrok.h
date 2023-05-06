@@ -1484,6 +1484,8 @@ SR_API struct sr_config *ds_new_config(int key, GVariant *data);
 
 SR_API void ds_free_config(struct sr_config *src);
 
+SR_API int ds_get_actived_device_init_status(int *status);
+
 /**
   The session file options value text,convert to code.
 */

@@ -969,6 +969,17 @@ SR_API int ds_dsl_option_value_to_code(int work_mode, int config_id, const char 
 		return sr_dscope_option_value_to_code(lib_ctx.actived_device_instance, config_id, value);
 }
 
+SR_API int ds_get_actived_device_init_status(int *status)
+{
+	if (lib_ctx.actived_device_instance != NULL && status != NULL)
+	{
+		*status = lib_ctx.actived_device_instance->status;
+		return SR_OK;
+	}
+
+	return SR_ERR;
+}
+
 /**-----------channel -------------*/
 SR_API int ds_enable_device_channel(const struct sr_channel *ch, gboolean enable)
 {
