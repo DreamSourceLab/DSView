@@ -46,6 +46,7 @@ public:
     explicit TrigBar(SigSession *session, QWidget *parent = 0);
     void reload();
     void update_view_status();
+    void auto_resize();
 
 private:
     void changeEvent(QEvent *event);

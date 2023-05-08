@@ -153,6 +153,8 @@ void TrigBar::retranslateUi()
     _action_math->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_FUNCTION_MATH), "Math"));
 
     _action_dispalyOptions->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_DISPLAY_OPTIONS), "Options"));
+
+    auto_resize();
 }
 
 void TrigBar::reStyle()
@@ -342,6 +344,21 @@ void TrigBar::on_actionLissajous_triggered()
         }
     }
  }
+
+   void TrigBar::auto_resize()
+    {   
+        std::vector<QToolButton*> wids;
+        wids.push_back(&_trig_button);
+        wids.push_back(&_protocol_button);
+        wids.push_back(&_measure_button);
+        wids.push_back(&_search_button);
+        wids.push_back(&_setting_button);
+        
+        for(auto bt : wids){
+            int w = bt->fontMetrics().boundingRect(bt->text()).width();
+            bt->setMinimumWidth(w+5);
+        }           
+    }
 
 } // namespace toolbars
 } // namespace pv

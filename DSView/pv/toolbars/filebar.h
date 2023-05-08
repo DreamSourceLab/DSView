@@ -46,6 +46,8 @@ public:
 
     QString genDefaultSessionFile();
 
+    void auto_resize();
+
 private:
     void changeEvent(QEvent *event);
     void retranslateUi();

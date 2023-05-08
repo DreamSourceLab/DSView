@@ -100,6 +100,8 @@ namespace pv
 
             void commit_settings();
 
+            void auto_resize();
+
         signals:
             void sig_store_session_data();
 

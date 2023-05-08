@@ -116,6 +116,8 @@ void FileBar::retranslateUi()
     _action_save->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_FILE_SAVE), "&Save..."));
     _action_export->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_FILE_EXPORT), "&Export..."));
     _action_capture->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_FILE_CAPTURE), "&Capture..."));
+
+    auto_resize();
 }
 
 void FileBar::reStyle()
@@ -251,6 +253,17 @@ void FileBar::update_view_status()
     bool is_hardware = _session->get_device()->is_hardware();
     _file_button.setEnabled(bEnable);
     _menu_session->setEnabled(bEnable && is_hardware); 
+}
+
+void FileBar::auto_resize()
+{   
+    std::vector<QToolButton*> wids;
+    wids.push_back(&_file_button);
+    
+    for(auto bt : wids){
+        int w = bt->fontMetrics().boundingRect(bt->text()).width();
+        bt->setMinimumWidth(w+5);
+    }           
 }
 
 } // namespace toolbars

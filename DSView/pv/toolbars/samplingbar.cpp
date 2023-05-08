@@ -214,6 +214,8 @@ namespace pv
             _action_single->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_CAPTURE_MODE_SINGLE), "&Single"));
             _action_repeat->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_CAPTURE_MODE_REPEAT), "&Repetitive"));
             _action_loop->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_CAPTURE_MODE_LOOP), "&Loop"));
+
+            auto_resize();
         }
 
         void SamplingBar::reStyle()
@@ -1291,6 +1293,20 @@ namespace pv
         void SamplingBar::run_or_stop_instant()
         {
             on_instant_stop();
+        }
+
+        void SamplingBar::auto_resize()
+        {   
+            std::vector<QToolButton*> wids;
+            wids.push_back(&_configure_button);
+            wids.push_back(&_mode_button);
+            wids.push_back(&_run_stop_button);
+            wids.push_back(&_instant_button);
+            
+            for(auto bt : wids){
+                int w = bt->fontMetrics().boundingRect(bt->text()).width();
+                bt->setMinimumWidth(w+5);
+            }           
         }
 
     } // namespace toolbars
