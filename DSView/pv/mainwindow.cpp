@@ -621,8 +621,9 @@ namespace pv
             return false;
         }
 
-        QString sdata = QString::fromUtf8(sf.readAll());
+        QString sdata = QString::fromUtf8(sf.readAll());       
         QJsonDocument sessionDoc = QJsonDocument::fromJson(sdata.toUtf8());
+        sf.close();
 
         _protocol_widget->del_all_protocol();
         int ret = load_session_json(sessionDoc, bDone);
@@ -1066,14 +1067,14 @@ namespace pv
 
         dsv_info("Store session to file: \"%s\"", name.toLocal8Bit().data());
 
-        QFile sessionFile(name);
-        if (!sessionFile.open(QIODevice::WriteOnly | QIODevice::Text))
+        QFile sf(name);
+        if (!sf.open(QIODevice::WriteOnly | QIODevice::Text))
         {
             dsv_warn("%s", "Warning: Couldn't open session file to write!");
             return false;
         }
 
-        QTextStream outStream(&sessionFile);
+        QTextStream outStream(&sf);
         encoding::set_utf8(outStream);
 
         QJsonObject sessionVar;
@@ -1083,7 +1084,7 @@ namespace pv
 
         QJsonDocument sessionDoc(sessionVar);
         outStream << QString::fromUtf8(sessionDoc.toJson());
-        sessionFile.close();
+        sf.close();
         return true;
     }
 

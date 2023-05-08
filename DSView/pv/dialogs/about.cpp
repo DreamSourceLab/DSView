@@ -101,6 +101,7 @@ About::About(QWidget *parent) :
             changlogs += line + "<br />";
         }
     }
+    news.close();    
 
     QPixmap pix(":/icons/dsl_logo.svg");
     QImage logo = pix.toImage();
