@@ -234,6 +234,7 @@ static int scan_dsl_file(struct sr_dev_inst *sdi)
     {
         cur_sample_generator = pre_sample_generator = PATTERN_RANDOM;
         sdi->mode = LOGIC;
+        g_safe_free(sdi->path);
         sdi->path = g_strdup("");
     }
 }
@@ -400,6 +401,8 @@ static GSList *hw_scan(GSList *options)
     sdi->driver = di;
     sdi->dev_type = DEV_TYPE_DEMO;
 
+    vdev->is_loop = 0;
+
     devices = g_slist_append(devices, sdi);
 
     return devices;
@@ -522,7 +525,6 @@ static int dev_destroy(struct sr_dev_inst *sdi)
 {
     assert(sdi);
     hw_dev_close(sdi);
-    sdi->path = NULL;
     sr_dev_inst_free(sdi);
 }
 
@@ -715,19 +717,23 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 if("" != get_dsl_path_by_pattern_mode(sdi->mode,PATTERN_DEFAULT))
                 {
                     cur_sample_generator = pre_sample_generator = PATTERN_DEFAULT;
+                    g_safe_free(sdi->path);
                     sdi->path = g_strdup(get_dsl_path_by_pattern_mode(sdi->mode,PATTERN_DEFAULT));
                 }
                 else
                 {
                     cur_sample_generator = pre_sample_generator = PATTERN_RANDOM;
+                    g_safe_free(sdi->path);
                     sdi->path = g_strdup("");
                 }
                 break;
             case DSO:
                 cur_sample_generator = pre_sample_generator = PATTERN_RANDOM;
+                g_safe_free(sdi->path);
                 sdi->path = g_strdup("");
             case ANALOG:
                 cur_sample_generator = pre_sample_generator = PATTERN_RANDOM;
+                g_safe_free(sdi->path);
                 sdi->path = g_strdup("");
             default:
                 break;
@@ -753,7 +759,10 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 default:
                     break;
             }
-            if ("" == (sdi->path = get_dsl_path_by_pattern_mode(sdi->mode,cur_sample_generator)) &&
+            g_safe_free(sdi->path);
+            sdi->path = get_dsl_path_by_pattern_mode(sdi->mode,cur_sample_generator);
+
+            if (sdi->path[0] == 0  &&
                  cur_sample_generator != PATTERN_RANDOM)
             {
                 cur_sample_generator = pre_sample_generator;
@@ -881,6 +890,10 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     case SR_CONF_DEMO_INIT:
         pre_sample_generator = cur_sample_generator;
         load_virtual_device_session(sdi);
+    case SR_CONF_LOOP_MODE:
+        vdev->is_loop = g_variant_get_boolean(data);
+        sr_info("Set demo loop mode:%d", vdev->is_loop);
+        break;
     default:
         sr_err("Unknown capability: %d.", id);
         return SR_ERR_NA;

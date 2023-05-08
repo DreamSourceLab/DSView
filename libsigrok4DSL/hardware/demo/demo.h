@@ -106,6 +106,8 @@ struct session_vdev
     uint8_t max_height;
     struct sr_status mstatus;
     struct session_packet_buffer   *packet_buffer;
+
+    int is_loop;
 };
 
 #define SESSION_MAX_CHANNEL_COUNT 512

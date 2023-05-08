@@ -1249,7 +1249,18 @@ namespace pv
                 _is_run_as_instant = false;
             }
 
-            update_mode_icon();       
+            update_mode_icon(); 
+
+            if (_session->get_device()->is_demo() && bEnable)
+            {
+                GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_PATTERN_MODE);
+                if(gvar != NULL)
+                {
+                    QString rand_mode = g_variant_get_string(gvar,NULL);
+                    g_variant_unref(gvar);
+                    _action_loop->setVisible(rand_mode == "RANDOM");
+                }
+            }
         }
 
         ds_device_handle SamplingBar::get_next_device_handle()

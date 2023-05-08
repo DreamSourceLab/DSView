@@ -498,7 +498,21 @@ namespace pv
                 set_operation_mode(OPT_SINGLE); // Reset the capture mode.
             }
 
-            if (_device_agent.is_hardware()){
+            if (is_loop_mode() && _device_agent.is_demo())
+            {
+                GVariant *gvar = _device_agent.get_config(NULL,NULL,SR_CONF_PATTERN_MODE);
+                if(gvar != NULL)
+                {
+                    QString rand_mode = g_variant_get_string(gvar,NULL);
+                    g_variant_unref(gvar);
+
+                    if (rand_mode != "RANDOM"){
+                        set_operation_mode(OPT_SINGLE);
+                    }
+                }
+            }
+
+            if (_device_agent.is_hardware() || _device_agent.is_demo()){
                 GVariant *val = g_variant_new_boolean(is_loop_mode() && _is_stream_mode);
                 _device_agent.set_config(NULL, NULL, SR_CONF_LOOP_MODE, val);
             }
