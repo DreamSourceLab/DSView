@@ -1456,12 +1456,23 @@ namespace pv
                 g_variant_unref(gvar);
             }
 
-            bool usb30_support = false;
             gvar = _device_agent->get_config(NULL, NULL, SR_CONF_USB30_SUPPORT);
             if (gvar != NULL)
             {
-                usb30_support = g_variant_get_boolean(gvar);
+                bool usb30_support = g_variant_get_boolean(gvar);
                 g_variant_unref(gvar);
+
+                dsv_info("The device's USB module version: %d.0", usb30_support ? 3 : 2);
+
+                int cable_ver = 1;
+                if (usb_speed == LIBUSB_SPEED_HIGH)
+                    cable_ver = 2;
+                else if (usb_speed == LIBUSB_SPEED_SUPER)
+                    cable_ver = 3;
+                else if (usb_speed == LIBUSB_SPEED_SUPER_PLUS)
+                    cable_ver = 4;
+
+                dsv_info("The cable's USB port version: %d.0", cable_ver);
 
                 if (usb30_support && usb_speed == LIBUSB_SPEED_HIGH)
                     show_error(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CHECK_USB_SPEED_ERROR),
@@ -1508,7 +1519,6 @@ namespace pv
                 dsv_info("The data save confirm end, auto switch to the new device.");
                 _is_auto_switch_device = false;
                 _session->set_default_device();
-                check_usb_device_speed();
             }
         }
 
@@ -1767,6 +1777,10 @@ namespace pv
             }
         }
         calc_min_height();
+
+        if (_device_agent->is_hardware() && _device_agent->is_new_device()){
+            check_usb_device_speed();
+        }
         break;
 
         case DSV_MSG_DEVICE_OPTIONS_UPDATED:
@@ -1816,7 +1830,7 @@ namespace pv
                 }
             }
 
-            calc_min_height();
+            calc_min_height();           
             break;
 
         case DSV_MSG_NEW_USB_DEVICE:
@@ -1846,7 +1860,6 @@ namespace pv
                 else
                 {
                     _session->set_default_device();
-                    check_usb_device_speed();
                 }
             }           
             break;
@@ -1872,8 +1885,6 @@ namespace pv
             {
                 _is_auto_switch_device = false;
                 _session->set_default_device();
-                if (_session->get_device()->is_new_device())
-                    check_usb_device_speed();
             }
             else
             {
