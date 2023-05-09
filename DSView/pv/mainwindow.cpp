@@ -1518,6 +1518,10 @@ namespace pv
             {
                 dsv_info("The data save confirm end, auto switch to the new device.");
                 _is_auto_switch_device = false;
+
+                if (_session->is_working())
+                    _session->stop_capture();
+
                 _session->set_default_device();
             }
         }
@@ -1855,10 +1859,17 @@ namespace pv
                 if (confirm_to_store_data())
                 {
                     _is_auto_switch_device = true;
+
+                    if (_session->is_working())
+                        _session->stop_capture();
+
                     on_save();
                 }
                 else
-                {
+                {   
+                    if (_session->is_working())
+                        _session->stop_capture();
+                    
                     _session->set_default_device();
                 }
             }           

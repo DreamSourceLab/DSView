@@ -177,7 +177,7 @@ namespace pv
         assert(!_is_saving);
         
         if (_is_working){
-            dsv_info("The current device is working, now to stop it.");
+            dsv_info("SigSession::set_default_device()，The current device is working, now to stop it.");
             dsv_info("SigSession::set_default_device(), stop capture");
             stop_capture();
         }
