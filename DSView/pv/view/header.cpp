@@ -200,6 +200,10 @@ void Header::mousePressEvent(QMouseEvent *event)
         }
 
         for(auto t : traces){
+            if (t->signal_type() == LOGIC_SIGNAL && _view.session().is_working()){
+                // Disable to set trigger when capturing.
+                break;
+            }
             if (t->mouse_press(width(), event->pos()))
                 break;
         }
@@ -360,6 +364,12 @@ void Header::changeColor(QMouseEvent *event)
 void Header::mouseMoveEvent(QMouseEvent *event)
 {
 	assert(event);
+
+    if (_view.session().is_working() && _view.session().get_device()->get_work_mode() == LOGIC){
+        //Disable the hover status of trig button on left pannel.
+        return;
+    }
+
 	_mouse_point = event->pos();
 
     // Move the Traces if we are dragging
