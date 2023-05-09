@@ -189,6 +189,8 @@ void TrigBar::protocol_clicked()
         opt->decodeDock = !opt->decodeDock;
         sig_protocol(opt->decodeDock);
         AppConfig::Instance().SaveFrame();
+
+        update_checked_status();
     }
 }
 
@@ -200,6 +202,8 @@ void TrigBar::trigger_clicked()
         opt->triggerDock = !opt->triggerDock;
         sig_trigger(opt->triggerDock);
         AppConfig::Instance().SaveFrame();
+
+        update_checked_status();
     }
 }
 
@@ -211,6 +215,8 @@ void TrigBar::measure_clicked()
         opt->measureDock = !opt->measureDock;
         sig_measure(opt->measureDock);
         AppConfig::Instance().SaveFrame();
+
+        update_checked_status();
     }
 }
 
@@ -222,6 +228,8 @@ void TrigBar::search_clicked()
         opt->searchDock = !opt->searchDock;
         sig_search(opt->searchDock);
         AppConfig::Instance().SaveFrame();
+
+        update_checked_status();
     }  
 }
 
@@ -270,6 +278,7 @@ void TrigBar::reload()
     sig_search(bSearch);
    
     update_view_status(); 
+    update_checked_status();
     update();    
 }
 
@@ -358,6 +367,22 @@ void TrigBar::on_actionLissajous_triggered()
             int w = bt->fontMetrics().boundingRect(bt->text()).width();
             bt->setMinimumWidth(w+5);
         }           
+    }
+
+    void TrigBar::update_checked_status()
+    {
+        DockOptions *opt = getDockOptions();
+        assert(opt);
+
+        _trig_button.setCheckable(true); 
+        _protocol_button.setCheckable(true); 
+        _measure_button.setCheckable(true);
+        _search_button.setCheckable(true);
+
+        _trig_button.setChecked(opt->triggerDock);
+        _protocol_button.setChecked(opt->decodeDock);
+        _measure_button.setChecked(opt->measureDock);
+        _search_button.setChecked(opt->searchDock);
     }
 
 } // namespace toolbars

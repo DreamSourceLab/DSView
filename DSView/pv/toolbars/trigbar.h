@@ -52,7 +52,8 @@ private:
     void changeEvent(QEvent *event);
     void retranslateUi();
     void reStyle();
-    DockOptions* getDockOptions();    
+    DockOptions* getDockOptions();
+    void update_checked_status();
 
 signals:
     void sig_setTheme(QString style);
