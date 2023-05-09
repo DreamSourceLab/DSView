@@ -97,6 +97,7 @@ namespace pv
         _view_data = NULL;
         _capture_data = NULL;
         _is_stream_mode = false;
+        _is_action = false;
 
         _data_list.push_back(new SessionData());
         _data_list.push_back(new SessionData());
@@ -444,6 +445,14 @@ namespace pv
 
     bool SigSession::start_capture(bool instant)
     {
+        _is_action = true;
+        int ret = action_start_capture(instant);
+        _is_action = false;
+        return ret;
+    }
+
+    bool SigSession::action_start_capture(bool instant)
+    {
         assert(_callback);
 
         dsv_info("%s", "Start collect.");
@@ -644,6 +653,14 @@ namespace pv
     }
 
     bool SigSession::stop_capture()
+    {
+        _is_action = true;
+        int ret = action_stop_capture();
+        _is_action = false;
+        return ret;
+    }
+
+    bool SigSession::action_stop_capture()
     { 
         if (!_is_working)
             return false;

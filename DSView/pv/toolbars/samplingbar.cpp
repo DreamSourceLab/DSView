@@ -857,6 +857,11 @@ namespace pv
         // start or stop capture
         void SamplingBar::on_run_stop()
         {
+            if (_session->is_doing_action()){
+                dsv_info("Task is busy.");
+                return;
+            }
+
             if (_session->is_working())
             {   
                 _run_stop_action->setEnabled(false);
@@ -918,6 +923,11 @@ namespace pv
         void SamplingBar::on_instant_stop()
         {
             if (_instant_action->isVisible() == false){
+                return;
+            }
+
+            if (_session->is_doing_action()){
+                dsv_info("Task is busy.");
                 return;
             }
 

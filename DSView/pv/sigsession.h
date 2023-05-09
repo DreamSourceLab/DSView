@@ -413,6 +413,10 @@ public:
     void init_signals();
     void delay_prop_msg(QString strMsg);
 
+    inline bool is_doing_action(){
+        return _is_action;
+    }
+
 private:
     void set_cur_samplelimits(uint64_t samplelimits);
     void set_cur_snap_samplerate(uint64_t samplerate);
@@ -447,10 +451,12 @@ private:
 
     void capture_init(); 
     void nodata_timeout();
-    void feed_timeout();   
-    
+    void feed_timeout();    
     void clear_decode_result();
     void attach_data_to_signal(SessionData *data);
+
+    bool action_start_capture(bool instant);
+    bool action_stop_capture();
   
     //IMessageListener
     void OnMessage(int msg);
@@ -549,6 +555,7 @@ private:
     COLLECT_OPT_MODE    _opt_mode;
     bool        _is_stream_mode;
     QString     _strMsg;
+    bool        _is_action;
  
 
     ISessionCallback *_callback;
