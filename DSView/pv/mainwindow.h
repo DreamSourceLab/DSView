@@ -82,6 +82,12 @@ class MainWindow :
 	Q_OBJECT
 
 public:
+    static const int Min_Width  = 800;
+    static const int Min_Height = 520;
+    static const int Base_Height = 150;
+    static const int Per_Chan_Height = 35;
+     
+public:
     explicit MainWindow(QWidget *parent = 0);
 
     void openDoc();
@@ -139,6 +145,7 @@ private:
     void load_device_config();
     QJsonDocument get_session_json_from_file(QString file);
     QJsonArray get_decoder_json_from_file(QString file);
+    void calc_min_height();
    
 private:
     //ISessionCallback
@@ -215,6 +222,7 @@ private:
     high_resolution_clock::time_point _last_key_press_time;
     bool            _is_save_confirm_msg;
     std::string         _pattern_mode;
+    QWidget         *_frame;
 
     int _key_value;
     bool _key_vaild;

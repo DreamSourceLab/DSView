@@ -49,9 +49,6 @@ class DSDialog;
 class MainFrame : public QFrame
 {
     Q_OBJECT
-public:
-    static const int minWidth = 800;
-    static const int minHeight = 520;
 
 public:
     static const int Margin = 5;

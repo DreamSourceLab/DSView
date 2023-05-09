@@ -107,6 +107,7 @@ namespace pv
         : QMainWindow(parent)
     {
         _msg = NULL;
+        _frame = parent;
 
         _session = AppControl::Instance()->GetSession();
         _session->set_callback(this);
@@ -1765,6 +1766,7 @@ namespace pv
                 }
             }
         }
+        calc_min_height();
         break;
 
         case DSV_MSG_DEVICE_OPTIONS_UPDATED:
@@ -1813,6 +1815,8 @@ namespace pv
                     }
                 }
             }
+
+            calc_min_height();
             break;
 
         case DSV_MSG_NEW_USB_DEVICE:
@@ -1923,7 +1927,9 @@ namespace pv
                     }
                 }
             }
+            calc_min_height();            
             break;
+
         case DSV_MSG_BEGIN_DEVICE_OPTIONS:
             if(_device_agent->is_demo())
             {
@@ -1933,8 +1939,28 @@ namespace pv
                     _pattern_mode = g_variant_get_string(gvar,NULL);
                     g_variant_unref(gvar);
                 }
-            }
+            }                                
         }
+    }
+
+    void MainWindow::calc_min_height()
+    {
+        if (_frame != NULL)
+        {
+            if (_device_agent->get_work_mode() == LOGIC)
+            {
+                int ch_num = _session->get_ch_num(-1);
+                int win_height = Base_Height + Per_Chan_Height * ch_num;
+
+                if (win_height < Min_Height)
+                    _frame->setMinimumHeight(win_height);
+                else
+                    _frame->setMinimumHeight(Min_Height);
+            }
+            else{
+                _frame->setMinimumHeight(Min_Height);
+            }
+        }  
     }
 
 } // namespace pv

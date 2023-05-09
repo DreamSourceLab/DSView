@@ -74,8 +74,8 @@ MainFrame::MainFrame()
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
     #endif
 
-    setMinimumHeight(minHeight);
-    setMinimumWidth(minWidth);
+    setMinimumWidth(MainWindow::Min_Width);
+    setMinimumHeight(MainWindow::Min_Height);  
   
     // Set the window icon
     QIcon icon;
