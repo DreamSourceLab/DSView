@@ -1469,8 +1469,6 @@ namespace pv
                     cable_ver = 2;
                 else if (usb_speed == LIBUSB_SPEED_SUPER)
                     cable_ver = 3;
-                else if (usb_speed == LIBUSB_SPEED_SUPER_PLUS)
-                    cable_ver = 4;
 
                 dsv_info("The cable's USB port version: %d.0", cable_ver);
 
