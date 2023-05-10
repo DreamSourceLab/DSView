@@ -42,7 +42,7 @@ static uint64_t samplerates_file[1];
 static uint64_t samplecounts_file[1];
 static GTimer *packet_interval = NULL;
 static GTimer *run_time = NULL;
-static gboolean is_first = TRUE;
+static gboolean load_data = TRUE;
 static gboolean is_change = FALSE;
 static int enabled_probe_num;
 static uint64_t packet_len;
@@ -54,8 +54,8 @@ static gboolean timebase_change;
 static gboolean instant = FALSE;
 static int max_probe_num = 0;
 extern char DS_RES_PATH[500];
-uint8_t cur_sample_generator;
-uint8_t pre_sample_generator;
+uint8_t sample_generator;
+static int64_t analog_count = 0;
 
 struct session_packet_buffer;
 
@@ -250,6 +250,30 @@ static const uint64_t samplerates[] = {
 #define CAPS_FEATURE_ZERO (1 << 4)
 /* end */
 
+#define SEC 1
+
+#define POST_DATA_PER_SECOND(n) ((n)/(8))
+
+#define LOGIC_MAX_PROBE_NUM 16
+#define LOGIC_PACKET_NUM_PER_SEC (double)200
+#define LOGIC_PACKET_LEN floor(packet_len/8)*8
+#define LOGIC_HIGH_LEVEL 255
+#define LOGIC_LOW_LEVEL 0
+#define LOGIC_HW_DEPTH (SR_MHZ(100))
+
+#define DSO_PACKET_LEN 20000
+#define DSO_PACKET_NUM_PER_SEC (double)200
+
+#define ANALOG_CYCLE_RATIO ((gdouble)(103) / (gdouble)(2048))
+#define ANALOG_HW_DEPTH (SR_MHZ(12.5))
+#define ANALOG_DATA_LEN_PER_CYCLE 206
+#define ANALOG_RANDOM_DATA rand()%40 +110
+#define ANALOG_PROBE_NUM 2
+#define ANALOG_DEFAULT_VDIV 1000
+#define ANALOG_RETE(n) ((n/SR_HZ(10)))
+
+
+// #define LOGIC_UNIT_BITS 
 
 static const char *maxHeights[] = {
     "1X",
@@ -413,19 +437,21 @@ static const int ranx[] = {
 -41,  36,  -8,  46,  47, -34,  28, -39,   7, -32,  38, -27,  28,  -3,  -8,  43, -37, -24,   6,   3,
 };
 
+static int get_bit(uint64_t timebase);
+
+static int reset_dsl_path(struct sr_dev_inst *sdi,uint8_t device_mode ,uint8_t pattern_mode);
+
+static int get_pattern_mode_index_by_string(uint8_t device_mode , const char* str);
+
 static int get_pattern_mode_from_file(uint8_t device_mode);
 
 static int init_pattern_mode_list();
 
-static int get_pattern_mode_index_by_string(uint8_t device_mode , const char* str);
-
 static int scan_dsl_file(struct sr_dev_inst *sdi);
-
-static char* get_dsl_path_by_pattern_mode(uint8_t device_mode ,uint8_t pattern_mode);
 
 static void adjust_samplerate(struct sr_dev_inst *sdi);
 
-static int init_random_data(struct session_vdev * vdev);
+static int init_random_data(struct session_vdev * vdev,struct sr_dev_inst *sdi);
 
 static int hw_init(struct sr_context *sr_ctx);
 
