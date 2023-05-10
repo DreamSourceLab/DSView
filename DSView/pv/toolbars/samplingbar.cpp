@@ -1018,8 +1018,12 @@ namespace pv
                 }
             }
 
-            _session->set_device(devHandle);
-            _last_device_index = _device_selector.currentIndex();        
+            if (_session->set_device(devHandle)){
+                _last_device_index = _device_selector.currentIndex();   
+            }
+            else{
+                update_device_list(); // Reload the list.
+            }
         }
 
         void SamplingBar::enable_toggle(bool enable)
