@@ -155,6 +155,9 @@ static int get_pattern_mode_index_by_string(uint8_t device_mode , const char* st
                 i++;
         }
     }
+
+    if(index == PATTERN_INVALID)
+        index = PATTERN_RANDOM;
     return index;
 }
 
@@ -226,23 +229,24 @@ static int scan_dsl_file(struct sr_dev_inst *sdi)
         char * str =  pattern_strings_logic[index];
         pattern_strings_logic[index] = pattern_strings_logic[PATTERN_DEFAULT];
         pattern_strings_logic[PATTERN_DEFAULT] = str;
-        cur_sample_generator = pre_sample_generator = PATTERN_DEFAULT;
+        sample_generator = PATTERN_DEFAULT;
         sdi->mode = LOGIC;
-        sdi->path  = g_strdup(get_dsl_path_by_pattern_mode(LOGIC,PATTERN_DEFAULT));
+        reset_dsl_path(sdi,LOGIC,PATTERN_DEFAULT);
     }
     else
     {
-        cur_sample_generator = pre_sample_generator = PATTERN_RANDOM;
+        sample_generator = PATTERN_RANDOM;
         sdi->mode = LOGIC;
-        g_safe_free(sdi->path);
-        sdi->path = g_strdup("");
+        reset_dsl_path(sdi,LOGIC,PATTERN_RANDOM);
     }
 }
 
-static char* get_dsl_path_by_pattern_mode(uint8_t device_mode , uint8_t pattern_mode)
+static int reset_dsl_path(struct sr_dev_inst *sdi,uint8_t device_mode ,uint8_t pattern_mode)
 {
     unzFile archive = NULL;
-
+    if(sdi->path != NULL)
+        g_safe_free(sdi->path);
+    
     char *str = g_try_malloc0(500);
     strcpy(str,DS_RES_PATH);
     strcat(str,"../");
@@ -282,24 +286,27 @@ static char* get_dsl_path_by_pattern_mode(uint8_t device_mode , uint8_t pattern_
     if(pattern_mode != PATTERN_RANDOM)
     {
         archive = unzOpen64(str);
-        if (NULL != archive)
-        {
-            return str;
+        if (NULL != archive){
+            sdi->path = str;
+            return SR_OK;
         }
-        else
-        {
-            return "";
+        else{
+            g_safe_free(str);
+            sdi->path = g_strdup("");
+            return SR_ERR;
         }
+
     }
-    else
-    {
-        return NULL;
+    else{
+        g_safe_free(str);
+        sdi->path = g_strdup("");
+        return SR_OK;
     }
 }
 
 static void adjust_samplerate(struct sr_dev_inst *sdi)
 {
-    if(sdi->mode == LOGIC && cur_sample_generator > PATTERN_RANDOM)
+    if(sdi->mode == LOGIC && sample_generator > PATTERN_RANDOM)
     {
         return;
     }
@@ -336,28 +343,46 @@ static void adjust_samplerate(struct sr_dev_inst *sdi)
 
 }
 
-static int init_random_data(struct session_vdev * vdev)
+static int init_random_data(struct session_vdev * vdev,struct sr_dev_inst *sdi)
 {
     uint8_t random_val;
-    if(vdev->logic_buf != NULL)
+    struct sr_channel *probe;
+    GSList *l = NULL;
+    int enabled_probe = 0;
+    int cur_probe = 0;
+    int probe_count[LOGIC_MAX_PROBE_NUM] = {0};
+    uint8_t probe_status[LOGIC_MAX_PROBE_NUM] = {LOGIC_HIGH_LEVEL};
+
+    memset(probe_status,LOGIC_HIGH_LEVEL,16);
+    memset(vdev->logic_buf,0,SR_MB(1));
+
+    for(int i = 0 ;i < enabled_probe_num;i++)
     {
-        g_free(vdev->logic_buf);
+        probe_count[i] = rand()%SR_KB(10);
     }
-    if(!(vdev->logic_buf = g_try_malloc0(SR_MB(10))))
-    {
-        return SR_ERR;
-    }
-    vdev->logic_buf_len = SR_MB(10);
+
     for(int i = 0 ; i < vdev->logic_buf_len ;i++)
     {
-        random_val = abs(rand())%256;
-        if(random_val >= 128)
+        if(i % 8 == 0 && i != 0)
         {
-            *(uint8_t*)(vdev->logic_buf + i) = (uint8_t)255;
+            cur_probe++;
+            if(cur_probe >enabled_probe_num-1)
+                cur_probe = 0;
+        }
+        if(probe_count[cur_probe]> 0)
+        {
+            memset(vdev->logic_buf+i,probe_status[cur_probe],1);
+            probe_count[cur_probe] -= 1;
         }
         else
         {
-            *(uint8_t*)(vdev->logic_buf + i) = (uint8_t)0;
+            if(probe_status[cur_probe] == LOGIC_HIGH_LEVEL)
+                probe_status[cur_probe] = LOGIC_LOW_LEVEL;
+            else
+                probe_status[cur_probe] = LOGIC_HIGH_LEVEL;
+            probe_count[cur_probe] = rand()%SR_KB(10);
+            memset(vdev->logic_buf+i,probe_status[cur_probe],1);
+            probe_count[cur_probe] -= 1;
         }
     }
     return;
@@ -465,11 +490,20 @@ static int hw_dev_open(struct sr_dev_inst *sdi)
     vdev->logic_buf = NULL;
     sdi->status = SR_ST_ACTIVE;
 
+    if(vdev->logic_buf != NULL)
+    {
+        g_safe_free(vdev->logic_buf);
+    }
+    if(!(vdev->logic_buf = g_try_malloc0(SR_MB(1))))
+    {
+        return SR_ERR;  
+    }
+
+    vdev->logic_buf_len = SR_MB(1);
+
     packet_interval =  g_timer_new();
     run_time =  g_timer_new();
-
-    init_random_data(vdev);
-
+    
     ret = load_virtual_device_session(sdi);
     if (ret != SR_OK)
     {
@@ -510,9 +544,8 @@ static int hw_dev_close(struct sr_dev_inst *sdi)
         g_safe_free(vdev->logic_buf);
         g_safe_free(vdev->analog_buf);
         g_safe_free(sdi->path);
-
-        // g_timer_destroy(packet_interval);
-        // g_timer_destroy(run_time);
+        g_safe_free(packet_interval);
+        g_safe_free(run_time);
 
         sdi->status = SR_ST_INACTIVE;
         return SR_OK;
@@ -527,8 +560,6 @@ static int dev_destroy(struct sr_dev_inst *sdi)
     hw_dev_close(sdi);
     sr_dev_inst_free(sdi);
 }
-
-
 
 static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
                       const struct sr_channel *ch,
@@ -560,11 +591,11 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         break;
     case SR_CONF_PATTERN_MODE:
         if(sdi->mode == LOGIC)
-            *data = g_variant_new_string(pattern_strings_logic[cur_sample_generator]);
+            *data = g_variant_new_string(pattern_strings_logic[sample_generator]);
         else if(sdi->mode == DSO)
-            *data = g_variant_new_string(pattern_strings_dso[cur_sample_generator]);
+            *data = g_variant_new_string(pattern_strings_dso[sample_generator]);
         else
-            *data = g_variant_new_string(pattern_strings_analog[cur_sample_generator]);
+            *data = g_variant_new_string(pattern_strings_analog[sample_generator]);
         break;
     case SR_CONF_MAX_HEIGHT:
         *data = g_variant_new_string(maxHeights[vdev->max_height]);
@@ -616,17 +647,22 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         *data = g_variant_new_uint64(SR_Kn(20));
         break;
     case SR_CONF_HW_DEPTH:
-        if(sdi->mode == DSO || (sdi->mode == LOGIC && cur_sample_generator != PATTERN_RANDOM))
+        switch (sdi->mode)
         {
-            *data = g_variant_new_uint64(vdev->total_samples);
-        }
-        else if(sdi->mode == ANALOG)
-        {
-            *data = g_variant_new_uint64(SR_MHZ(12.5));
-        }
-        else
-        {
-            *data = g_variant_new_uint64(SR_MHZ(100));
+        case LOGIC:
+            if(sample_generator == PATTERN_RANDOM)
+                *data = g_variant_new_uint64(LOGIC_HW_DEPTH);
+            else
+                *data = g_variant_new_uint64(vdev->total_samples);
+            break;
+        case DSO:
+                *data = g_variant_new_uint64(vdev->total_samples);
+            break;
+        case ANALOG:
+                *data = g_variant_new_uint64(ANALOG_HW_DEPTH);
+            break;
+        default:
+            break;
         }
         break;
     case SR_CONF_UNIT_BITS:
@@ -658,7 +694,7 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_HAVE_ZERO:
         break;
     case SR_CONF_LOAD_DECODER:
-        *data = g_variant_new_boolean(cur_sample_generator != PATTERN_RANDOM);
+        *data = g_variant_new_boolean(sample_generator != PATTERN_RANDOM);
         break;
     case SR_CONF_REF_MIN:
         *data = g_variant_new_uint32(vdev->ref_min);
@@ -692,7 +728,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     {
     case SR_CONF_SAMPLERATE:
         vdev->samplerate = g_variant_get_uint64(data);
-        if(sdi->mode == LOGIC && cur_sample_generator >PATTERN_RANDOM)
+        if(sdi->mode == LOGIC && sample_generator >PATTERN_RANDOM)
         {
             samplerates_file[0] = vdev->samplerate;
         }
@@ -700,7 +736,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         break;
     case SR_CONF_LIMIT_SAMPLES:
         vdev->total_samples = g_variant_get_uint64(data);
-        if(sdi->mode == LOGIC && cur_sample_generator >PATTERN_RANDOM)
+        if(sdi->mode == LOGIC && sample_generator >PATTERN_RANDOM)
         {
             samplecounts_file[0] = vdev->total_samples;
         }
@@ -710,31 +746,22 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         break;
     case SR_CONF_DEVICE_MODE:
         sdi->mode = g_variant_get_int16(data);
-        if(sdi->path)
         switch (sdi->mode)
         {
             case LOGIC:
-                if("" != get_dsl_path_by_pattern_mode(sdi->mode,PATTERN_DEFAULT))
-                {
-                    cur_sample_generator = pre_sample_generator = PATTERN_DEFAULT;
-                    g_safe_free(sdi->path);
-                    sdi->path = g_strdup(get_dsl_path_by_pattern_mode(sdi->mode,PATTERN_DEFAULT));
-                }
+                if(SR_OK == reset_dsl_path(sdi,sdi->mode ,PATTERN_DEFAULT))
+                    sample_generator = PATTERN_DEFAULT;
                 else
-                {
-                    cur_sample_generator = pre_sample_generator = PATTERN_RANDOM;
-                    g_safe_free(sdi->path);
-                    sdi->path = g_strdup("");
-                }
+                    sample_generator = PATTERN_RANDOM;
                 break;
             case DSO:
-                cur_sample_generator = pre_sample_generator = PATTERN_RANDOM;
-                g_safe_free(sdi->path);
-                sdi->path = g_strdup("");
+                reset_dsl_path(sdi,sdi->mode ,PATTERN_RANDOM);
+                sample_generator = PATTERN_RANDOM;
+                break;
             case ANALOG:
-                cur_sample_generator = pre_sample_generator = PATTERN_RANDOM;
-                g_safe_free(sdi->path);
-                sdi->path = g_strdup("");
+                reset_dsl_path(sdi,sdi->mode ,PATTERN_RANDOM);
+                sample_generator = PATTERN_RANDOM;
+                break;
             default:
                 break;
         }
@@ -742,46 +769,14 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         break;
     case SR_CONF_PATTERN_MODE:
         stropt = g_variant_get_string(data, NULL);
-        pre_sample_generator= cur_sample_generator;
-        if(get_pattern_mode_index_by_string(sdi->mode , stropt) != PATTERN_INVALID)
+        sample_generator = get_pattern_mode_index_by_string(sdi->mode , stropt);
+        if(SR_OK != reset_dsl_path(sdi,sdi->mode,sample_generator))
         {
-            switch (sdi->mode)
-            {
-                case LOGIC:
-                    cur_sample_generator = get_pattern_mode_index_by_string(sdi->mode , stropt);
-                    break;
-                case DSO:
-                    cur_sample_generator = get_pattern_mode_index_by_string(sdi->mode , stropt);
-                    break;
-                case ANALOG:
-                    cur_sample_generator = get_pattern_mode_index_by_string(sdi->mode , stropt);
-                    break;
-                default:
-                    break;
-            }
-            g_safe_free(sdi->path);
-            sdi->path = get_dsl_path_by_pattern_mode(sdi->mode,cur_sample_generator);
-
-            if (sdi->path[0] == 0  &&
-                 cur_sample_generator != PATTERN_RANDOM)
-            {
-                cur_sample_generator = pre_sample_generator;
-            }
-        }
-        else
-        {
-            cur_sample_generator = pre_sample_generator;
-        }
-
-        if(cur_sample_generator != pre_sample_generator)
-        {
-            // is_change = TRUE;
-            pre_sample_generator = cur_sample_generator;
-            // load_virtual_device_session(sdi);
+            sample_generator = PATTERN_RANDOM;
         }
 
         sr_dbg("%s: setting pattern to %d",
-            __func__, cur_sample_generator);
+            __func__, sample_generator);
         break;
 
     case SR_CONF_MAX_HEIGHT:
@@ -888,8 +883,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         is_change = g_variant_get_boolean(data);
         break;
     case SR_CONF_DEMO_INIT:
-        pre_sample_generator = cur_sample_generator;
         load_virtual_device_session(sdi);
+        break;
     case SR_CONF_LOOP_MODE:
         vdev->is_loop = g_variant_get_boolean(data);
         sr_info("Set demo loop mode:%d", vdev->is_loop);
@@ -926,7 +921,7 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
         break;
     case SR_CONF_SAMPLERATE:
         g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));
-        if(sdi->mode == LOGIC && cur_sample_generator != PATTERN_RANDOM)
+        if(sdi->mode == LOGIC && sample_generator != PATTERN_RANDOM)
         {
              gvar = g_variant_new_from_data(G_VARIANT_TYPE("at"),
                                        samplerates_file, ARRAY_SIZE(samplerates_file) * sizeof(uint64_t), TRUE, NULL, NULL);
@@ -1007,7 +1002,7 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
     vdev->cur_block = 0;
     vdev->cur_channel = 0;
 
-    if(cur_sample_generator != PATTERN_RANDOM)
+    if(sample_generator != PATTERN_RANDOM)
     {
         if (vdev->archive != NULL)
         {
@@ -1055,6 +1050,7 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
         ds_data_forward(sdi, &packet);
     }
 
+
     if(sdi->mode == LOGIC)
     {
         enabled_probe_num = 0;
@@ -1066,14 +1062,14 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
                 enabled_probe_num++;
             }
         }
-        is_first = TRUE;
-        post_data_len = 0;
-        uint64_t post_date_per_second = vdev->samplerate / 8 ;
-        packet_len = post_date_per_second / 22;
-        packet_len = floor(packet_len/8)*8;
-        packet_time = 1/(double)22;
-        if(cur_sample_generator == PATTERN_RANDOM)
+
+         post_data_len = 0;
+         packet_len = POST_DATA_PER_SECOND(vdev->samplerate) / LOGIC_PACKET_NUM_PER_SEC;
+         packet_len = LOGIC_PACKET_LEN;
+         packet_time = SEC / LOGIC_PACKET_NUM_PER_SEC;
+        if(sample_generator == PATTERN_RANDOM)
         {
+            init_random_data(vdev,sdi);
             sr_session_source_add(-1, 0, 0, receive_data_logic, sdi);
         }
         else
@@ -1083,18 +1079,18 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
     }
     else if(sdi->mode == DSO)
     {
-        is_first = TRUE;
+        load_data = TRUE;
         vdiv_change = TRUE;
-        packet_time = 1/(double)200;
+        packet_time = SEC / DSO_PACKET_NUM_PER_SEC;
         g_timer_start(run_time);
         sr_session_source_add(-1, 0, 0, receive_data_dso, sdi);
     }
     else if(sdi->mode == ANALOG)
     {
-        is_first = TRUE;
-        gdouble total_time = vdev->total_samples/vdev->samplerate;
+        load_data = TRUE;
+        gdouble total_time = vdev->total_samples/(gdouble)vdev->samplerate;
         uint64_t post_date_per_second = vdev->total_samples / total_time *2;
-        packet_len = post_date_per_second / 22;
+        packet_len = post_date_per_second / 200;
 
         if(packet_len <= 1)
         {
@@ -1108,7 +1104,7 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
             {
                 packet_len += 1;
             }
-            packet_time = 1/(double)22;
+            packet_time = 1/(double)200;
         }
 
 
@@ -1220,14 +1216,14 @@ static int receive_data_logic(int fd, int revents, const struct sr_dev_inst *sdi
     }
     pack_buffer = vdev->packet_buffer;
 
-
     // Make packet.
     read_chan_index = 0;
     dir_index = 0;
 
-    if(post_data_len >= vdev->total_samples/8)
-    {
-        bToEnd = 1;
+    if(!vdev->is_loop){
+        if(post_data_len >= vdev->total_samples/8){
+            bToEnd = 1;
+        }
     }
 
     if(!bToEnd)
@@ -1239,15 +1235,19 @@ static int receive_data_logic(int fd, int revents, const struct sr_dev_inst *sdi
         logic.order = 0;
         logic.length = chan_num * packet_len;
 
-        post_data_len += logic.length / enabled_probe_num;
-        if(post_data_len >= vdev->total_samples/8)
-        {
-            int last_packet_len = post_data_len - (logic.length / enabled_probe_num);
-            last_packet_len = (vdev->total_samples/8) - last_packet_len;
-            logic.length = last_packet_len * enabled_probe_num;
+        if(!vdev->is_loop){
+            post_data_len += logic.length / enabled_probe_num;
+            if(post_data_len >= vdev->total_samples/8){
+                int last_packet_len = post_data_len - (logic.length / enabled_probe_num);
+                last_packet_len = (vdev->total_samples/8) - last_packet_len;
+                logic.length = last_packet_len * enabled_probe_num;
+            }
         }
+       
         uint64_t random = vdev->logic_buf_len - logic.length;
-        random = abs(rand()) %random;
+        random = rand() % random;
+        int index = enabled_probe_num * 8;
+        random = floor(random/index)*index;
         logic.data = vdev->logic_buf + random;
 
         gdouble packet_elapsed = g_timer_elapsed(packet_interval, NULL);
@@ -1557,9 +1557,21 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
     return TRUE;
 }
 
+int get_bit(uint64_t timebase)
+{
+    if(timebase < SR_MS(1) && timebase >= SR_US(20))
+        return SR_MS(1)/timebase*2;
+    else if(timebase < SR_MS(200) && timebase >= SR_MS(1))
+        return SR_MS(200)/timebase*2;
+    else if(timebase <= SR_SEC(10) && timebase > SR_MS(200))
+        return SR_SEC(40)/timebase*2;
+    else
+        return 200;
+}
+
 static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
 {
-    struct session_vdev *vdev = NULL;
+ struct session_vdev *vdev = NULL;
     struct sr_datafeed_packet packet;
     struct sr_datafeed_dso dso;
     struct sr_channel *probe;
@@ -1600,7 +1612,7 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
     vdev = sdi->priv;
 
     assert(vdev->unit_bits > 0);
-    if(cur_sample_generator != PATTERN_RANDOM)
+    if(sample_generator != PATTERN_RANDOM)
     {
         assert(vdev->archive);
     }
@@ -1685,9 +1697,9 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
     read_chan_index = 0;
     dir_index = 0;
 
-    if(vdiv_change)
+    if(vdiv_change || timebase_change)
     {
-        if(cur_sample_generator == PATTERN_RANDOM)
+        if(sample_generator == PATTERN_RANDOM)
         {
             for(int i = 0 ; i < pack_buffer->post_buf_len ;i++)
             {
@@ -1707,8 +1719,6 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
                 {
                     if (vdev->cur_block >= vdev->num_blocks){
                         vdev->cur_block = 0;
-                        // bToEnd = 1;
-                        break;
                     }
 
                     for (ch_index = 0; ch_index < chan_num; ch_index++)
@@ -1777,23 +1787,23 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
                             }
                         }
 
-                            // Read the data to buffer.
-                            if (unzOpenCurrentFile(vdev->archive) != UNZ_OK)
-                            {
-                                sr_err("cant't open zip inner file:\"%s\"", file_name);
-                                send_error_packet(sdi, vdev, &packet);
-                                return FALSE;
-                            }
+                        // Read the data to buffer.
+                        if (unzOpenCurrentFile(vdev->archive) != UNZ_OK)
+                        {
+                            sr_err("cant't open zip inner file:\"%s\"", file_name);
+                            send_error_packet(sdi, vdev, &packet);
+                            return FALSE;
+                        }
 
-                            ret = unzReadCurrentFile(vdev->archive, pack_buffer->block_bufs[ch_index], pack_buffer->block_data_len);
-                            if (-1 == ret)
-                            {
-                                sr_err("read zip inner file error:\"%s\"", file_name);
-                                send_error_packet(sdi, vdev, &packet);
-                                return FALSE;
-                            }
-                            unzCloseCurrentFile(vdev->archive);
-                            pack_buffer->block_read_positions[ch_index] = 0; // Reset the read position.
+                        ret = unzReadCurrentFile(vdev->archive, pack_buffer->block_bufs[ch_index], pack_buffer->block_data_len);
+                        if (-1 == ret)
+                        {
+                            sr_err("read zip inner file error:\"%s\"", file_name);
+                            send_error_packet(sdi, vdev, &packet);
+                            return FALSE;
+                        }
+                        unzCloseCurrentFile(vdev->archive);
+                        pack_buffer->block_read_positions[ch_index] = 0; // Reset the read position.
                     }
                     vdev->cur_block++;
                     pack_buffer->block_chan_read_pos = 0;
@@ -1828,8 +1838,41 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
             }
         }
 
-        if(vdiv_change)
+        if(timebase_change || vdiv_change)
         {
+            int index;
+            int bit = get_bit(vdev->timebase);          
+
+             sr_info("bit per circle(double channels):%d",bit);
+            void* tmp_buf = g_try_malloc0(bit);
+            for(int i = 0 ; i < bit ; i++)
+            {
+                if(i%2 == 0)
+                {
+                    if(bit == 10)
+                        index = i * 16;
+                    else
+                        index = i * 100 / (bit / 2);
+                }
+                else
+                {
+                    
+                    if(bit == 10)
+                        index = (i-1) * 16 + 1;
+                    else
+                        index = (i-1) * 100 / (bit / 2) + 1;
+                }
+                *((uint8_t*)tmp_buf+ i) = *((uint8_t*)pack_buffer->post_buf + index + 30);
+            }
+
+            for(int i = 0 ; i < DSO_PACKET_LEN/bit ; i++)
+            {
+                memcpy(pack_buffer->post_buf+i*bit,tmp_buf,bit);
+            }
+
+            g_free(tmp_buf);
+            
+
             for(int i = 0 ; i < pack_buffer->post_buf_len; i++)
             {
                 tem = 0;
@@ -1870,18 +1913,17 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
                 }
                 *((uint8_t*)pack_buffer->post_buf + i) = temp_val;
             }
+            timebase_change = FALSE;
             vdiv_change = FALSE;
         }
     }
-
-
 
     gdouble total_time = vdev->timebase /(gdouble)SR_SEC(1)*(gdouble)10;
     gdouble total_time_elapsed = g_timer_elapsed(run_time, NULL);
     if (total_time_elapsed < total_time && !instant)
     {
         gdouble percent = total_time_elapsed / total_time;
-        int buf_len = percent* 20000;
+        int buf_len = percent* DSO_PACKET_LEN;
         if(buf_len %2 != 0)
             buf_len -=1;
         pack_buffer->post_len = buf_len;
@@ -1890,15 +1932,15 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
     {
         uint8_t top0;
         uint8_t top1;
-        if(cur_sample_generator == PATTERN_RANDOM)
+        if(sample_generator == PATTERN_RANDOM)
         {
             top0 = *((uint8_t*)pack_buffer->post_buf + pack_buffer->post_buf_len -2);
             top1 = *((uint8_t*)pack_buffer->post_buf + pack_buffer->post_buf_len -1);
         }
         else
         {
-            top0 = *((uint8_t*)pack_buffer->post_buf + 198);
-            top1 = *((uint8_t*)pack_buffer->post_buf + 199);
+            top0 = *((uint8_t*)pack_buffer->post_buf + get_bit(vdev->timebase) -2);
+            top1 = *((uint8_t*)pack_buffer->post_buf + get_bit(vdev->timebase) -1);
         }
 
 
@@ -1912,7 +1954,7 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
 
         *(uint8_t*)pack_buffer->post_buf = top0;
         *((uint8_t*)pack_buffer->post_buf + 1)= top1;
-        pack_buffer->post_len = 20000;
+        pack_buffer->post_len = DSO_PACKET_LEN;
     }
 
     if (pack_buffer->post_len >= byte_align * chan_num)
@@ -1955,7 +1997,7 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
 
 static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sdi)
 {
-    struct session_vdev *vdev = sdi->priv;
+     struct session_vdev *vdev = sdi->priv;
     struct sr_datafeed_packet packet;
     struct sr_datafeed_analog analog;
     struct sr_channel *probe = NULL;
@@ -1977,19 +2019,19 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
 
     g_timer_start(packet_interval);
 
-    if(is_first)
+    if(load_data)
     {
-        void* analog_data = g_try_malloc0(206);
+        void* analog_data = g_try_malloc0(ANALOG_DATA_LEN_PER_CYCLE);
         if(analog_data == NULL)
         {
             sr_err("%s:cant' malloc",__func__);
             return SR_ERR_MALLOC;
         }
-        if(cur_sample_generator == PATTERN_RANDOM)
+        if(sample_generator == PATTERN_RANDOM)
         {
-            for(int i = 0 ; i < 206 ;i++)
+            for(int i = 0 ; i < ANALOG_DATA_LEN_PER_CYCLE ;i++)
             {
-                *(uint8_t*)(analog_data + i) = rand()%40 +110;
+                *(uint8_t*)(analog_data + i) = ANALOG_RANDOM_DATA;
             }
         }
         else
@@ -2010,7 +2052,7 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
                 return FALSE;
             }
 
-            ret = unzReadCurrentFile(vdev->archive, analog_data, 206);
+            ret = unzReadCurrentFile(vdev->archive, analog_data, ANALOG_DATA_LEN_PER_CYCLE);
             if (-1 == ret)
             {
                 sr_err("read zip inner file error:\"%s\"", file_name);
@@ -2019,14 +2061,11 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
             }
         }
 
-        gdouble rate = 103 / (gdouble)2048 ;
-        uint64_t total_buf_len = rate * vdev->total_samples;
-
-        if(total_buf_len % 103 != 0)
+        uint64_t total_buf_len = ANALOG_CYCLE_RATIO * vdev->total_samples * ANALOG_PROBE_NUM;
+        if(total_buf_len % ANALOG_DATA_LEN_PER_CYCLE != 0)
         {
-            total_buf_len = total_buf_len / 103 * 103;
+            total_buf_len = total_buf_len / ANALOG_DATA_LEN_PER_CYCLE * ANALOG_DATA_LEN_PER_CYCLE;
         }
-        total_buf_len = total_buf_len * 2;
 
         if(vdev->analog_buf != NULL)
         {
@@ -2039,7 +2078,7 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
             return SR_ERR_MALLOC;
         }
         vdev->analog_buf_len = total_buf_len;
-        uint64_t per_block_after_expend = total_buf_len /206;
+        uint64_t per_block_after_expend = total_buf_len / ANALOG_DATA_LEN_PER_CYCLE;
 
         probe = g_slist_nth(sdi->channels, 0)->data;
         uint64_t p0_vdiv = probe->vdiv;
@@ -2049,7 +2088,7 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
         uint8_t val = 0;
         uint16_t tem;
         uint64_t cur_l = 0;
-        for(int i = 0 ; i < 206;i++)
+        for(int i = 0 ; i < ANALOG_DATA_LEN_PER_CYCLE;i++)
         {
             if(i == 0 || i % 2 == 0)
                 vdiv = p0_vdiv;
@@ -2061,7 +2100,7 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
 
             if(temp_value > 128){
                 val = temp_value - 128;
-                tem = val * 1000 / vdiv;
+                tem = val * ANALOG_DEFAULT_VDIV / vdiv;
                 tem = 128 + tem;
                 if(tem >= 255)
                     temp_value = 255;
@@ -2071,7 +2110,7 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
             else if(temp_value < 128 && temp_value != 0)
             {
                 val = 128 - temp_value;
-                tem =  val * 1000 / vdiv;
+                tem =  val * ANALOG_DEFAULT_VDIV / vdiv;
                 tem = 128 - tem;
                 if(tem == 0)
                     temp_value = 1;
@@ -2088,12 +2127,12 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
                 else
                 {
                     cur_l = 1 + (i - 1) * per_block_after_expend + j * 2;
-
                 }
                 memset(vdev->analog_buf + cur_l,temp_value,1);
             }
         }
-        is_first = FALSE;
+        g_safe_free(analog_data);
+        load_data = FALSE;
     }
 
     void* buf;
@@ -2154,7 +2193,7 @@ static void send_error_packet(const struct sr_dev_inst *cb_sdi, struct session_v
 
 static int close_archive(struct session_vdev *vdev)
 {
-    if(cur_sample_generator != PATTERN_RANDOM)
+    if(sample_generator != PATTERN_RANDOM)
     {
         assert(vdev->archive);
 
@@ -2198,12 +2237,12 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
     int version = 1;
 
     assert(sdi);
-    if (cur_sample_generator != PATTERN_RANDOM)
+    if (sample_generator != PATTERN_RANDOM)
     {
         assert(sdi->path);
     }
 
-    if (sdi->mode == LOGIC && cur_sample_generator == PATTERN_RANDOM)
+    if (sdi->mode == LOGIC && sample_generator == PATTERN_RANDOM)
     {
         sdi->driver->config_set(SR_CONF_SAMPLERATE,
                                 g_variant_new_uint64(SR_MHZ(1)), sdi, NULL, NULL);
