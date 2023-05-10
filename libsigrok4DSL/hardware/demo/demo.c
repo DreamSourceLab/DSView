@@ -223,7 +223,7 @@ static int scan_dsl_file(struct sr_dev_inst *sdi)
     get_pattern_mode_from_file(DSO);
     get_pattern_mode_from_file(ANALOG);
 
-    if(PATTERN_INVALID !=get_pattern_mode_index_by_string(LOGIC, "demo"))
+    if(PATTERN_RANDOM  < get_pattern_mode_index_by_string(LOGIC, "demo"))
     {
         int index = get_pattern_mode_index_by_string(LOGIC, "demo");
         char * str =  pattern_strings_logic[index];
