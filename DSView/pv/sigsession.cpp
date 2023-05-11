@@ -225,6 +225,8 @@ namespace pv
 
         _device_status = ST_INIT;
 
+        ds_device_handle old_dev = _device_agent.handle();
+
         if (ds_active_device(dev_handle) != SR_OK)
         {
             dsv_err("%s", "Switch device error!");
@@ -256,6 +258,12 @@ namespace pv
         {
             QString strMsg = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TO_RECONNECT_FOR_FIRMWARE), "Please reconnect the device!");
             delay_prop_msg(strMsg);
+        }
+
+        if (_device_agent.handle() != dev_handle && old_dev != NULL_HANDLE)
+        {
+            QString strMsg = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DEVICE_BUSY_SWITCH_FAILED), "Device is busy!");
+            MsgBox::Show("",strMsg);
         }
 
         return true;

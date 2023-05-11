@@ -367,5 +367,9 @@
     {
         "id": "IDS_MSG_TO_RECONNECT_FOR_FIRMWARE",
         "text": "The firmware version is incorrect, please reconnect the device!"
+    },
+    {
+        "id": "IDS_MSG_DEVICE_BUSY_SWITCH_FAILED",
+        "text": "The device is busy,switch failed!"
     }
 ]

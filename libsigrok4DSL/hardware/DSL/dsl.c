@@ -1826,7 +1826,8 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
     assert(usb->devhdl);
   
     ret = libusb_claim_interface(usb->devhdl, USB_INTERFACE);
-    if (ret != 0) {
+
+    if (ret != LIBUSB_SUCCESS) {
         switch(ret) {
         case LIBUSB_ERROR_BUSY:
             sr_err("%s: Unable to claim USB interface. Another "
@@ -1848,12 +1849,13 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
             break;
         }
 
-        if (ret != 0 && fdError == 1){
+        if (ret != LIBUSB_SUCCESS && fdError == 1){
              sr_err("%s: Unable to claim interface, the second time: %s.",
                    __func__, libusb_error_name(ret));
         }
 
-        if (ret != 0){
+        if (ret != LIBUSB_SUCCESS){
+            dsl_dev_close(sdi);
             return SR_ERR;
         } 
     }
