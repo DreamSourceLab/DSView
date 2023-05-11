@@ -1394,7 +1394,7 @@ void Viewport::clear_dso_xm()
 
 void Viewport::measure()
 {
-    if (_view.session().get_data_lock())
+    if (_view.session().is_data_lock())
         return;
         
     _measure_type = NO_MEASURE;

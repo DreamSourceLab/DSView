@@ -229,7 +229,7 @@ public:
  
     uint16_t get_ch_num(int type); 
  
-    inline bool get_data_lock(){
+    inline bool is_data_lock(){
         return _data_lock;
     }
 
@@ -498,6 +498,14 @@ private:
 
     void clear_signals();
     void on_delay_prop_msg();
+
+    inline void data_lock(){
+        _data_lock = true;
+    }
+
+    inline void data_unlock(){
+        _data_lock = false;
+    }
  
 private:
     mutable std::mutex      _sampling_mutex;

@@ -414,7 +414,8 @@ namespace pv
         _rt_refresh_time_id = 0;
         _rt_ck_refresh_time_id = 0; 
         _noData_cnt = 0;
-        _data_lock = false;
+        
+        data_unlock();
 
         // Init data container
         _capture_data->clear();
@@ -712,6 +713,8 @@ namespace pv
 
             exit_capture();
 
+            data_unlock();
+
             _callback->trigger_message(DSV_MSG_END_COLLECT_WORK);
             return true;
         }
@@ -981,7 +984,7 @@ namespace pv
     {
         ds_lock_guard lock(_data_mutex);
 
-        _data_lock = true;
+        data_lock();
         _view_data->get_logic()->init();
 
         clear_all_decode_task2();
@@ -1197,7 +1200,7 @@ namespace pv
         set_receive_data_len(o.num_samples);
 
         if (!_is_instant)
-            _data_lock = true;
+            data_lock();
 
         _data_updated = true;
     }
@@ -1627,7 +1630,7 @@ namespace pv
 
     void SigSession::feed_timeout()
     {
-        _data_lock = false;
+        data_unlock();
 
         if (!_data_updated)
         {
