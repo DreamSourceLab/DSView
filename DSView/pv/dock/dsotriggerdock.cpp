@@ -240,7 +240,12 @@ void DsoTriggerDock::pos_changed(int pos)
                                        "Change horiz trigger position failed!"));
         msg.mBox()->setStandardButtons(QMessageBox::Ok);
         msg.mBox()->setIcon(QMessageBox::Warning);
-        msg.exec();
+        
+        if (_session->get_device()->is_hardware()){
+            msg.exec();
+        }
+        
+        return;
     }
     set_trig_pos(pos);
 }
