@@ -325,6 +325,9 @@ void MathStack::calc_math()
     if (!_dsoSig1->enabled() || !_dsoSig2->enabled())
         return;
 
+    if (data->get_channel_num() < 2)
+        return;
+
     const double scale1 = _dsoSig1->get_vDialValue() / 1000.0 * _dsoSig1->get_factor() * DS_CONF_DSO_VDIVS *
                           _dsoSig1->get_scale() / _dsoSig1->get_view_rect().height();
     const double delta1 = _dsoSig1->get_hw_offset() * scale1;
@@ -333,18 +336,19 @@ void MathStack::calc_math()
                           _dsoSig2->get_scale() / _dsoSig2->get_view_rect().height();
     const double delta2 = _dsoSig2->get_hw_offset() * scale2;
 
-    const int index1 = _dsoSig1->get_index();
-    const int index2 = _dsoSig2->get_index();
-
-    const int num_channels = data->get_channel_num();
-    const uint8_t* value = data->get_samples(0, 0, 0);
     _sample_num = data->get_sample_count();
     assert(_sample_num <= _total_sample_num);
 
+    const int index1 = _dsoSig1->get_index();
+    const int index2 = _dsoSig2->get_index();
+    const uint8_t* value_buffer1 = data->get_samples(0, 0, index1);
+    const uint8_t* value_buffer2 = data->get_samples(0, 0, index2);
     double value1, value2;
+
     for (uint64_t sample = 0; sample < _sample_num; sample++) {
-        value1 = value[sample * num_channels + index1];
-        value2 = value[sample * num_channels + index2];
+        value1 = *(value_buffer1 + sample);
+        value2 = *(value_buffer2 + sample);
+
         switch(_type) {
         case MATH_ADD:
             _math[sample] = (delta1 - scale1 * value1) + (delta2 - scale2 * value2);

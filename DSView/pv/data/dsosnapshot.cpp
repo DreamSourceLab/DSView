@@ -265,7 +265,7 @@ void DsoSnapshot::enable_envelope(bool enable)
     _envelope_en = enable;
 }
 
-const uint8_t *DsoSnapshot::get_samples(int64_t start_sample, int64_t end_sample, uint16_t index)
+const uint8_t *DsoSnapshot::get_samples(int64_t start_sample, int64_t end_sample, uint16_t ch_index)
 {
     std::lock_guard<std::mutex> lock(_mutex);
 
@@ -275,10 +275,10 @@ const uint8_t *DsoSnapshot::get_samples(int64_t start_sample, int64_t end_sample
     assert(end_sample < (int64_t)_sample_count);
 	assert(start_sample <= end_sample);
 
-    int order = get_ch_order(index);
+    int order = get_ch_order(ch_index);
 
     if (order == -1){
-        dsv_err("The channel index is not exist:%d", index);
+        dsv_err("The channel index is not exist:%d", ch_index);
         assert(false);
     } 
 

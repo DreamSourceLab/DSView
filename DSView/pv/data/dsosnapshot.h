@@ -89,7 +89,7 @@ public:
                        GSList *channels, bool instant, bool isFile);
 
     void append_payload(const sr_datafeed_dso &dso);
-    const uint8_t* get_samples(int64_t start_sample, int64_t end_sample, uint16_t index);
+    const uint8_t* get_samples(int64_t start_sample, int64_t end_sample, uint16_t ch_index);
 
 	void get_envelope_section(EnvelopeSection &s,
         uint64_t start, uint64_t end, float min_length, int probe_index);
