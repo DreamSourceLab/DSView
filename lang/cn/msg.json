@@ -366,5 +366,9 @@
     {
         "id": "IDS_MSG_TO_RECONNECT_FOR_FIRMWARE",
         "text": "固件版本不对，请重新连接设备!"
+    },
+    {
+        "id": "IDS_MSG_DEVICE_BUSY_SWITCH_FAILED",
+        "text": "设置在使用中，切换失败!"
     }
 ]

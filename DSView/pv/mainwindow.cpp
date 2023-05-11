@@ -1837,20 +1837,20 @@ namespace pv
 
         case DSV_MSG_NEW_USB_DEVICE:
             {
+                _sampling_bar->update_device_list();
+
                 if (_session->get_device()->is_demo() == false)
                 {
                     QString msgText = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TO_SWITCH_DEVICE), "To switch the new device?");
                     
-                    if (MsgBox::Confirm(msgText) == false){
-                        _sampling_bar->update_device_list(); // Update the list only.
+                    if (MsgBox::Confirm(msgText) == false){ 
                         return;
                     }
                 }
 
                 // The store confirm is not processed.
                 if (_is_save_confirm_msg){
-                    _is_auto_switch_device = true;
-                    _sampling_bar->update_device_list();
+                    _is_auto_switch_device = true; 
                     return;
                 }
 

@@ -341,12 +341,15 @@ SR_API int ds_active_device(ds_device_handle handle)
 	struct sr_dev_inst *dev;
 	int bFind = 0;
 	int ret;
+	struct sr_dev_inst *old_dev;
 
 	if (handle == NULL_HANDLE)
 	{
 		return SR_ERR_ARG;
 	}
+
 	ret = SR_OK;
+	old_dev = NULL;
 
 	sr_info("%s", "Start activating device.");
 
@@ -371,6 +374,7 @@ SR_API int ds_active_device(ds_device_handle handle)
 		{
 			sr_info("Close the previous device \"%s\"", lib_ctx.actived_device_instance->name);
 			close_device_instance(lib_ctx.actived_device_instance);
+			old_dev = lib_ctx.actived_device_instance;
 		}
 	}
 
@@ -391,14 +395,25 @@ SR_API int ds_active_device(ds_device_handle handle)
 			else
 				sr_info("device name: \"%s\".", dev->name);
 
-			if (open_device_instance(dev) == SR_OK)
+			ret = open_device_instance(dev);
+
+			if (ret == SR_OK)
 			{
 				lib_ctx.actived_device_instance = dev;
 			}
 			else
-			{
-				sr_err("%s", "Open device error!");
-				ret = SR_ERR_CALL_STATUS;
+			{  
+				if (old_dev != NULL && old_dev != dev){
+					sr_err("%s", "Open device error! the current device switch failed.");
+					lib_ctx.actived_device_instance = old_dev;
+					ret = open_device_instance(old_dev);
+				}
+				else if(lib_ctx.device_list != NULL){
+					old_dev = lib_ctx.device_list->data;
+					sr_err("%s", "Open device error! the current device switch to demo.");
+					lib_ctx.actived_device_instance = old_dev;
+					ret = open_device_instance(old_dev);
+				}				
 			}
 			break;
 		}
@@ -1493,8 +1508,7 @@ static int open_device_instance(struct sr_dev_inst *dev)
 
 	if (driver_ins->dev_open)
 	{
-		driver_ins->dev_open(dev);
-		return SR_OK;
+		return driver_ins->dev_open(dev);
 	}
 
 	return SR_ERR_CALL_STATUS;
