@@ -345,7 +345,7 @@
     },
     {
         "id": "IDS_DLG_HOLD_OFF_TIME",
-        "text": "闭锁时间: "
+        "text": "触发释抑时间: "
     },
     {
         "id": "IDS_DLG_NOISE_SENSITIVITY",
