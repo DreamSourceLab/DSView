@@ -428,7 +428,7 @@ void DecoderStack::do_decode_work()
     for(auto dec : _stack){
 		if (!dec->have_required_probes()) {
 			_error_message = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DECODERSTACK_DECODE_WORK_ERROR),
-                             "One or more required channels \nhave not been specified");
+                             "One or more required channels have not been specified");
 			return;
 		}
     }

@@ -334,7 +334,7 @@
     },
     {
         "id": "IDS_MSG_DECODERSTACK_DECODE_WORK_ERROR",
-        "text": "One or more required channels \nhave not been specified"
+        "text": "One or more required channels have not been specified!"
     },
     {
         "id": "IDS_MSG_DECODERSTACK_DECODE_DATA_ERROR",
