@@ -251,18 +251,33 @@ static const uint64_t samplerates[] = {
 /* end */
 
 #define SEC 1
+#define LOGIC_POST_DATA_PER_SECOND(n) ((n)/(8))
+#define LOGIC_PACKET_NUM_PER_SEC (gdouble)200
+#define LOGIC_PACKET_TIME(n) (gdouble)((SEC)/(n))
+#define LOGIC_PACKET_LEN(n) (ceil((LOGIC_POST_DATA_PER_SECOND(n))/(LOGIC_PACKET_NUM_PER_SEC)/(8))*(8))
+#define LOGIC_MIN_PACKET_LEN 8
+#define LOGIC_MIN_PACKET_NUM(n) (LOGIC_POST_DATA_PER_SECOND(n))/(LOGIC_MIN_PACKET_LEN)
+#define LOGIC_MIN_PACKET_TIME(n) ((SEC)/(gdouble)(LOGIC_MIN_PACKET_NUM(n)))
 
-#define POST_DATA_PER_SECOND(n) ((n)/(8))
+#define DSO_PACKET_NUM_PER_SEC (gdouble)200
+#define DSO_PACKET_TIME ((SEC)/(DSO_PACKET_NUM_PER_SEC))
+#define DSO_PACKET_LEN 20000
+
+#define ANALOG_PROBE_NUM 2
+#define ANALOG_PACKET_NUM_PER_SEC 200
+#define ANALOG_POST_DATA_PER_SECOND(n) ((n)*(ANALOG_PROBE_NUM))
+#define ANALOG_PACKET_LEN(n) ((ANALOG_POST_DATA_PER_SECOND(n))/(ANALOG_PACKET_NUM_PER_SEC))
+#define ANALOG_PACKET_TIME(n) (gdouble)((SEC)/(gdouble)(n))
+#define ANALOG_MIN_PACKET_LEN 2
+#define ANALOG_MIN_PACKET_NUM(n) ((ANALOG_POST_DATA_PER_SECOND(n))/(ANALOG_MIN_PACKET_LEN))
+#define ANALOG_PACKET_ALIGN 2
 
 #define LOGIC_MAX_PROBE_NUM 16
-#define LOGIC_PACKET_NUM_PER_SEC (double)200
-#define LOGIC_PACKET_LEN floor(packet_len/8)*8
+
 #define LOGIC_HIGH_LEVEL 255
 #define LOGIC_LOW_LEVEL 0
 #define LOGIC_HW_DEPTH (SR_MHZ(100))
 
-#define DSO_PACKET_LEN 20000
-#define DSO_PACKET_NUM_PER_SEC (double)200
 
 #define ANALOG_CYCLE_RATIO ((gdouble)(103) / (gdouble)(2048))
 #define ANALOG_HW_DEPTH (SR_MHZ(12.5))
@@ -436,6 +451,12 @@ static const int ranx[] = {
   1,  30, -12,  44,  20,  49,  29, -43,  42,  30, -34,  24,  20, -40,  33, -12,  13, -45,  45, -24,
 -41,  36,  -8,  46,  47, -34,  28, -39,   7, -32,  38, -27,  28,  -3,  -8,  43, -37, -24,   6,   3,
 };
+
+static int delay_time();
+
+static int get_last_packet_len(struct sr_datafeed_logic *logic,const struct session_vdev * vdev);
+
+static int reset_enabled_probe_num(struct sr_dev_inst *sdi);
 
 static int get_bit(uint64_t timebase);
 
