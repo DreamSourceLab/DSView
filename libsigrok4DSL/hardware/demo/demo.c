@@ -1139,8 +1139,6 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
 
         vdev->analog_buf_len = 0;
         vdev->analog_read_pos = 0;
-        g_timer_start(run_time);
-
         sr_session_source_add(-1, 0, 0, receive_data_analog, sdi);
     }
 
