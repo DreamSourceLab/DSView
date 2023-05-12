@@ -1274,7 +1274,14 @@ namespace pv
                 {
                     QString rand_mode = g_variant_get_string(gvar,NULL);
                     g_variant_unref(gvar);
-                    _action_loop->setVisible(rand_mode == "RANDOM");
+
+                    bool is_rand = rand_mode.toUpper() == "RANDOM";
+                    _action_loop->setVisible(is_rand);
+                    
+                    if (!is_rand){
+                        _sample_rate.setEnabled(false);
+                        _sample_count.setEnabled(false);  
+                    }                    
                 }
             }
         }
