@@ -290,15 +290,17 @@ namespace pv
         // Try load from file.
         QString ldFileName(AppControl::Instance()->_open_file_name.c_str());
         if (ldFileName != "")
-        {
+        {   
+            std::string file_name = pv::path::ToUnicodePath(ldFileName);
+
             if (QFile::exists(ldFileName))
-            {
-                dsv_info("auto load file:%s", ldFileName.toUtf8().data());
+            {              
+                dsv_info("Auto load file:%s", file_name.c_str());
                 on_load_file(ldFileName);
             }
             else
             {
-                dsv_err("file is not exists:%s", ldFileName.toUtf8().data());
+                dsv_err("file is not exists:%s", file_name.c_str());
                 MsgBox::Show(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_OPEN_FILE_ERROR), "Open file error!"), ldFileName, NULL);
             }
         }
@@ -606,13 +608,14 @@ namespace pv
             assert(false);
         }
 
-        dsv_info("Load session file: \"%s\"", name.toLocal8Bit().data());
+        std::string file_name = pv::path::ToUnicodePath(name);
+        dsv_info("Load session file: \"%s\"", file_name.c_str());
 
         QFile sf(name);
         bool bDone;
 
-        if (!sf.exists()){
-            dsv_warn("Warning: session file is not exists: \"%s\"", name.toLocal8Bit().data());
+        if (!sf.exists()){ 
+            dsv_warn("Warning: session file is not exists: \"%s\"", file_name.c_str());
             return false;
         }
 
@@ -1066,7 +1069,8 @@ namespace pv
             assert(false);
         }
 
-        dsv_info("Store session to file: \"%s\"", name.toLocal8Bit().data());
+        std::string file_name = pv::path::ToUnicodePath(name);
+        dsv_info("Store session to file: \"%s\"", file_name.c_str());
 
         QFile sf(name);
         if (!sf.open(QIODevice::WriteOnly | QIODevice::Text))
@@ -1696,10 +1700,12 @@ namespace pv
             break;
         
         case DSV_MSG_COLLECT_END:
+           dsv_info("Mainwindow:DSV_MSG_COLLECT_END");
             prgRate(0);
             _view->repeat_unshow();
             _view->on_state_changed(true);
             _protocol_widget->update_view_status();
+            dsv_info("Mainwindow-end:DSV_MSG_COLLECT_END");
             break;
 
         case DSV_MSG_END_COLLECT_WORK:

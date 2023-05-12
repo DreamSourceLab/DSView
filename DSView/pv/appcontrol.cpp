@@ -64,29 +64,31 @@ void AppControl::Destroy(){
 } 
 
 bool AppControl::Init()
-{   
+{  
+    pv::encoding::init();
+
     QString qs;
     std::string cs;
 
     qs = GetAppDataDir();
-    cs = qs.toStdString();
+    cs = pv::path::ToUnicodePath(qs);
     dsv_info("GetAppDataDir:\"%s\"", cs.c_str());
 
     qs = GetResourceDir();
-    cs = qs.toStdString();
+    cs = pv::path::ToUnicodePath(qs);
     dsv_info("GetResourceDir:\"%s\"", cs.c_str());
 
     qs = GetUserDataDir();
-    cs = qs.toStdString();
+    cs = pv::path::ToUnicodePath(qs);
     dsv_info("GetUserDataDir:\"%s\"", cs.c_str());
 
     qs = GetDecodeScriptDir();
-    cs = qs.toStdString();
+    cs = pv::path::ToUnicodePath(qs);
     dsv_info("GetDecodeScriptDir:\"%s\"", cs.c_str());
     //---------------end print directorys.
 
     _session->init();
-    pv::encoding::init();
+
     srd_log_set_context(dsv_log_context());
 
 #if defined(_WIN32) && defined(DEBUG_INFO)

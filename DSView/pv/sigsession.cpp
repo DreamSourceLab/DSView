@@ -235,8 +235,10 @@ namespace pv
 
         _device_agent.update();
 
-        if (_device_agent.is_file())
-            dsv_info("Switch to file \"%s\" done.", _device_agent.name().toUtf8().data());
+        if (_device_agent.is_file()){
+            std::string dev_name = pv::path::ToUnicodePath(_device_agent.name());
+            dsv_info("Switch to file \"%s\" done.", dev_name.c_str());
+        }
         else
             dsv_info("Switch to device \"%s\" done.", _device_agent.name().toUtf8().data());
 
@@ -274,11 +276,12 @@ namespace pv
         assert(!_is_saving);
         assert(!_is_working);
 
-        dsv_info("Load file:\"%s\"", name.toUtf8().data());
+        std::string file_name = pv::path::ToUnicodePath(name);
+        dsv_info("Load file: \"%s\"", file_name.c_str());
 
-        std::string path = path::ToUnicodePath(name);
+        std::string file_str = name.toUtf8().toStdString();
 
-        if (ds_device_from_file(path.c_str()) != SR_OK)
+        if (ds_device_from_file(file_str.c_str()) != SR_OK)
         {
             dsv_err("%s", "Load file error!");
             return false;
