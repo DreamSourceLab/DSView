@@ -491,6 +491,7 @@ namespace pv
         _view_data->clear();       
         _is_stream_mode = false;
         _capture_times = 0;
+        _dso_packet_count = 0;
 
         _capture_data = _view_data;
         set_cur_snap_samplerate(_device_agent.get_sample_rate());
@@ -1134,6 +1135,8 @@ namespace pv
             return; // This dso packet was not expected.
         }
 
+        _dso_packet_count++;
+
         if (_capture_data->get_dso()->last_ended())
         { 
             // reset scale of dso signal
@@ -1166,7 +1169,7 @@ namespace pv
             }                
         }
 
-        if (o.num_samples != 0)
+        if (o.num_samples != 0 && (!_is_instant || _dso_packet_count == 1))
         {
             // update current sample rate
             set_cur_snap_samplerate(_device_agent.get_sample_rate());

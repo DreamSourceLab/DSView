@@ -564,6 +564,7 @@ private:
     bool        _is_stream_mode;
     QString     _strMsg;
     bool        _is_action;
+    uint64_t    _dso_packet_count;
  
 
     ISessionCallback *_callback;
