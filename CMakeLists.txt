@@ -652,6 +652,7 @@ set(EXECUTABLE_OUTPUT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/build.dir")
 # Install the executable.
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)
 install(DIRECTORY DSView/res DESTINATION share/DSView)
+install(DIRECTORY DSView/demo DESTINATION share/DSView)
 install(FILES DSView/icons/logo.svg DESTINATION share/DSView RENAME logo.svg)
 install(FILES DSView/icons/logo.svg DESTINATION share/icons/hicolor/scalable/apps RENAME dsview.svg)
 install(FILES DSView/icons/logo.svg DESTINATION share/pixmaps RENAME dsview.svg)
@@ -675,7 +676,6 @@ install(FILES ug25.pdf DESTINATION share/DSView RENAME ug25.pdf)
 install(FILES ug31.pdf DESTINATION share/DSView RENAME ug31.pdf)
 
 install(DIRECTORY libsigrokdecode4DSL/decoders DESTINATION share/libsigrokdecode4DSL)
-install(DIRECTORY libsigrok4DSL/demo-file DESTINATION share/DSView)
 install(DIRECTORY lang DESTINATION share/DSView)
 
 #===============================================================================
