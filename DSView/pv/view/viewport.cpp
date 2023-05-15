@@ -185,7 +185,11 @@ void Viewport::doPaint()
         else if (_view.session().is_realtime_refresh())
         {  
             _view.session().have_new_realtime_refresh(false); // Try to reset refresh timer.
-            paintSignals(p, fore, back);
+
+            if (_view.session().have_view_data() || _view.session().is_instant())
+                paintSignals(p, fore, back);
+            else
+                paintProgress(p, fore, back);
         }
         else if (_view.session().is_running_status()){
             if (_view.session().is_repeat_mode())
