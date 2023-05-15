@@ -1275,7 +1275,7 @@ namespace pv
                     QString rand_mode = g_variant_get_string(gvar,NULL);
                     g_variant_unref(gvar);
 
-                    bool is_rand = rand_mode.toUpper() == "RANDOM";
+                    bool is_rand = rand_mode.toUpper() == "random";
                     _action_loop->setVisible(is_rand);
                     
                     if (!is_rand){

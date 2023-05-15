@@ -31,9 +31,9 @@ enum DEMO_PATTERN {
     PATTERN_DEFAULT = 1,
 };
 
-static char *pattern_strings_logic[100]  = {"RANDOM"};
-static char *pattern_strings_dso[100] = {"RANDOM"};
-static char *pattern_strings_analog[100] = {"RANDOM"};
+static char *pattern_strings_logic[100]  = {"random"};
+static char *pattern_strings_dso[100] = {"random"};
+static char *pattern_strings_analog[100] = {"random"};
 static int pattern_logic_count = 1;
 static int pattern_dso_count= 1;
 static int pattern_analog_count= 1;

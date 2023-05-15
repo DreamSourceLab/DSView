@@ -207,7 +207,8 @@ static int get_pattern_mode_from_file(uint8_t device_mode)
 
     strcpy(dir_str,DS_RES_PATH);
     strcat(dir_str,"../");
-    strcat(dir_str,"demo-file/");
+    strcat(dir_str,"demo/");
+    sr_info("%s",dir_str);
 
     if(device_mode == LOGIC)
         strcat(dir_str,"logic/");
@@ -227,10 +228,10 @@ static int get_pattern_mode_from_file(uint8_t device_mode)
     {
         if (FALSE == g_file_test(filename,G_FILE_TEST_IS_DIR))
         {
-            if(strstr(filename,".dsl") != NULL)
+            if(strstr(filename,".demo") != NULL)
             {
-                char *tmp_file_name = g_try_malloc0(strlen(filename)-strlen(".dsl")+1);
-                snprintf(tmp_file_name, strlen(filename)-strlen(".dsl")+1 , "%s", filename);
+                char *tmp_file_name = g_try_malloc0(strlen(filename)-strlen(".demo")+1);
+                snprintf(tmp_file_name, strlen(filename)-strlen(".demo")+1 , "%s", filename);
                 if(device_mode == LOGIC)
                     pattern_strings_logic[index] = tmp_file_name;
                 else if(device_mode == DSO)
@@ -276,6 +277,7 @@ static int scan_dsl_file(struct sr_dev_inst *sdi)
         sample_generator = PATTERN_RANDOM;
         sdi->mode = LOGIC;
         reset_dsl_path(sdi,LOGIC,PATTERN_RANDOM);
+        sr_info("path:%s",sdi->path);
     }
 }
 
@@ -288,7 +290,7 @@ static int reset_dsl_path(struct sr_dev_inst *sdi,uint8_t device_mode ,uint8_t p
     char *str = g_try_malloc0(500);
     strcpy(str,DS_RES_PATH);
     strcat(str,"../");
-    strcat(str,"demo-file/");
+    strcat(str,"demo/");
 
     if (pattern_mode != PATTERN_RANDOM)
     {
@@ -318,7 +320,7 @@ static int reset_dsl_path(struct sr_dev_inst *sdi,uint8_t device_mode ,uint8_t p
         default:
             break;
         }
-        strcat(str,".dsl");
+        strcat(str,".demo");
     }
 
     if(pattern_mode != PATTERN_RANDOM)
@@ -2305,6 +2307,7 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
     }
     else
     {
+        sr_info("%s",sdi->path);
         archive = unzOpen64(sdi->path);
         if (NULL == archive)
         {
