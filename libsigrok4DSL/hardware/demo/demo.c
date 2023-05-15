@@ -208,7 +208,6 @@ static int get_pattern_mode_from_file(uint8_t device_mode)
     strcpy(dir_str,DS_RES_PATH);
     strcat(dir_str,"../");
     strcat(dir_str,"demo/");
-    sr_info("%s",dir_str);
 
     if(device_mode == LOGIC)
         strcat(dir_str,"logic/");
@@ -277,7 +276,6 @@ static int scan_dsl_file(struct sr_dev_inst *sdi)
         sample_generator = PATTERN_RANDOM;
         sdi->mode = LOGIC;
         reset_dsl_path(sdi,LOGIC,PATTERN_RANDOM);
-        sr_info("path:%s",sdi->path);
     }
 }
 
@@ -1816,7 +1814,6 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
             int index;
             int bit = get_bit(vdev->timebase);          
 
-             sr_info("bit per circle(double channels):%d",bit);
             void* tmp_buf = g_try_malloc0(bit);
             for(int i = 0 ; i < bit ; i++)
             {
@@ -2307,7 +2304,6 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
     }
     else
     {
-        sr_info("%s",sdi->path);
         archive = unzOpen64(sdi->path);
         if (NULL == archive)
         {
@@ -2384,7 +2380,6 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
                 for (j = 0; keys[j]; j++)
                 {
                     val = g_key_file_get_string(kf, sections[i], keys[j], NULL);
-                    sr_info("keys:%s , val:%s", keys[j],val);
 
                     if (!strcmp(keys[j], "device mode"))
                     {
