@@ -461,7 +461,7 @@ void View::receive_trigger(quint64 trig_pos)
     const double time = trig_pos * 1.0 / _session->cur_snap_samplerate();
     _trig_cursor->set_index(trig_pos);
     if (ds_trigger_get_en() ||
-        _device_agent->name() == "virtual-session" ||
+        _device_agent->is_virtual() ||
         _device_agent->get_work_mode() == DSO) {
         _show_trig_cursor = true;
         set_scale_offset(_scale,  (time / _scale) - (get_view_width() / 2));

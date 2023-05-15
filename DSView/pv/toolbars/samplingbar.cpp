@@ -1053,11 +1053,6 @@ namespace pv
                 _sample_count.setDisabled(true);
                 _sample_rate.setDisabled(true);
             }
-
-            if (_device_agent->name() == "virtual-session")
-            {
-                 
-            }
         }
 
         void SamplingBar::reload()
