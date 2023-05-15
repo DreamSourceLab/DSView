@@ -26,7 +26,7 @@
 #include <glib.h>
 #include <log/xlog.h>
 
-#define DECODE_NUM_HEX_MAX_LEN		35
+#define DECODE_NUM_HEX_MAX_LEN		 256
 
 #ifdef __cplusplus
 extern "C" {

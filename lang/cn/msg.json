@@ -369,6 +369,6 @@
     },
     {
         "id": "IDS_MSG_DEVICE_BUSY_SWITCH_FAILED",
-        "text": "设置在使用中，切换失败!"
+        "text": "设备在使用中，切换失败!"
     }
 ]

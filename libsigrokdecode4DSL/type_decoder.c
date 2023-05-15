@@ -132,6 +132,7 @@ static int py_parse_ann_data(PyObject *list_obj, char ***out_strv, int list_size
 			nstr = strlen(str) - 1;
 			if (nstr > 0 && nstr < DECODE_NUM_HEX_MAX_LEN){
 				strcpy(hex_str_buf, str + 1);
+				
 				str[0] = '\n';  //set ignore flag
 				str[1] = 0;
 			}
@@ -241,7 +242,7 @@ static int convert_annotation(struct srd_decoder_inst *di, PyObject *obj,
 	 
 	pda->str_number_hex[0] = 0;
 	ann_text = NULL;
-	pda->numberic_value = 0;
+	pda->numberic_value = 0; 
 
     if (py_parse_ann_data(py_tmp, &ann_text, ann_size, pda->str_number_hex, &pda->numberic_value) != SRD_OK) {
         srd_err("Protocol decoder %s submitted annotation list, but "

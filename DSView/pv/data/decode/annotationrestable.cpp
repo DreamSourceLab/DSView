@@ -117,6 +117,7 @@ int AnnotationResTable::MakeIndex(const std::string &key, AnnotationSourceItem* 
 
     item->cur_display_format = -1;
     item->is_numeric = false;
+	item->str_number_hex = NULL;
     newItem = item;
    
     int dex = m_indexs.size();
@@ -331,6 +332,8 @@ void AnnotationResTable::reset()
 {
 	//release all resource
 	for (auto p : m_resourceTable){
+		if (p->str_number_hex)
+			free(p->str_number_hex);
 		delete p;
 	}
 	m_resourceTable.clear();

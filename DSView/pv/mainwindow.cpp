@@ -1704,13 +1704,11 @@ namespace pv
             _protocol_widget->update_view_status();
             break;
         
-        case DSV_MSG_COLLECT_END:
-           dsv_info("Mainwindow:DSV_MSG_COLLECT_END");
+        case DSV_MSG_COLLECT_END: 
             prgRate(0);
             _view->repeat_unshow();
             _view->on_state_changed(true);
-            _protocol_widget->update_view_status();
-            dsv_info("Mainwindow-end:DSV_MSG_COLLECT_END");
+            _protocol_widget->update_view_status(); 
             break;
 
         case DSV_MSG_END_COLLECT_WORK:
