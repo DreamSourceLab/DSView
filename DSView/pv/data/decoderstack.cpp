@@ -546,6 +546,10 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
             continue;
         }
 
+        if (_is_capture_end && i == _snapshot->get_mipmap_sample_count()){
+            break;
+        }
+
         uint64_t chunk_end = end_index; 
 
         for (int j =0 ; j < logic_di->dec_num_channels; j++) {
