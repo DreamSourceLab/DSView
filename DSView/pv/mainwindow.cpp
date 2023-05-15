@@ -117,7 +117,7 @@ namespace pv
         _is_auto_switch_device = false;
         _is_save_confirm_msg = false;
 
-        _pattern_mode = "RANDOM";
+        _pattern_mode = "random";
 
         setup_ui();
 
@@ -1779,7 +1779,7 @@ namespace pv
                     {
                         _view->auto_set_max_scale();
 
-                        if(_pattern_mode != "RANDOM")
+                        if(_pattern_mode != "random")
                         {
                             StoreSession ss(_session);
                             QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
@@ -1833,7 +1833,7 @@ namespace pv
 
                 if(_device_agent->get_work_mode() == LOGIC)
                 {
-                    if(_pattern_mode != "RANDOM")
+                    if(_pattern_mode != "random")
                     {
                         _device_agent->update();
                         StoreSession ss(_session);
@@ -1948,7 +1948,7 @@ namespace pv
 
                         _protocol_widget->del_all_protocol();
                          
-                        if(_pattern_mode != "RANDOM")
+                        if(_pattern_mode != "random")
                         {
                             StoreSession ss(_session);
                             QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
