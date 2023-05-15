@@ -162,6 +162,14 @@ class Decoder(srd.Decoder):
             # Ideal duty for T0H: 33%, T1H: 66%.
             self.bit_ = (tH_samples / period) > 0.5
 
+    def end(self):
+        if self.state == 'BIT FALLING':
+            self.check_bit_(self.last_samplenum)
+            self.put(self.ss, self.es, self.out_ann,
+                        [0, ['%d' % self.bit_]])
+            self.bits.append(self.bit_)
+            self.handle_bits(self.es)
+
 
     def decode(self):
         if not self.samplerate:
@@ -185,7 +193,9 @@ class Decoder(srd.Decoder):
                     self.ss = self.samplenum
                     self.ss_packet = self.samplenum
                     self.wait({0: 'e'})
+                    
                     self.state = 'BIT FALLING'
+
             elif self.state == 'RESET':
                 self.put(self.ss, self.es, self.out_ann, [1, ['RESET', 'RST', 'R']])
                 self.bits = []
@@ -193,13 +203,17 @@ class Decoder(srd.Decoder):
                 self.ss_packet = self.samplenum
                 self.wait({0: 'e'})
                 self.state = 'BIT FALLING'
+            
             elif self.state == 'BIT FALLING':
                 self.es = self.samplenum
                 self.wait({0: 'e'})
+
                 if ((self.samplenum - self.es) / self.samplerate > 50e-6):
                     self.check_bit_(self.samplenum)
+                    
                     self.put(self.ss, self.es, self.out_ann,
-                             [0, ['%d' % self.bit_]])
+                         [0, ['%d' % self.bit_]])
+                    
                     self.bits.append(self.bit_)
                     self.handle_bits(self.es)
 
@@ -208,6 +222,7 @@ class Decoder(srd.Decoder):
                     self.state = 'RESET'
                 else:
                     self.state = 'BIT RISING'
+
             elif self.state == 'BIT RISING':
                 self.check_bit_(self.samplenum)
                 self.put(self.ss, self.samplenum, self.out_ann,
