@@ -1891,66 +1891,45 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
         }
     }
 
-    //时间轴长度
     gdouble total_time = vdev->timebase /(gdouble)SR_SEC(1)*(gdouble)10;
-    //总共运行时间
     gdouble total_time_elapsed = g_timer_elapsed(run_time, NULL);
-    //
-    if(!instant)
+
+    if (total_time_elapsed < total_time&&!instant)
     {
-        if (total_time_elapsed < total_time)
-        {
-            gdouble percent = total_time_elapsed / total_time;
-            int buf_len = percent* DSO_PACKET_LEN;
-            if(buf_len %2 != 0)
-                buf_len +=1;
-            pack_buffer->post_len = buf_len;
-        }
-        else
-        {
-            uint8_t top0;
-            uint8_t top1;
-            if(sample_generator == PATTERN_RANDOM)
-            {
-                top0 = *((uint8_t*)pack_buffer->post_buf + pack_buffer->post_buf_len -2);
-                top1 = *((uint8_t*)pack_buffer->post_buf + pack_buffer->post_buf_len -1);
-            }
-            else
-            {
-                top0 = *((uint8_t*)pack_buffer->post_buf + get_bit(vdev->timebase) -2);
-                top1 = *((uint8_t*)pack_buffer->post_buf + get_bit(vdev->timebase) -1);
-            }
-
-
-            for(int i = pack_buffer->post_len -1;  i > 1; i -= 2){
-                *((uint8_t*)pack_buffer->post_buf + i) = *((uint8_t*)pack_buffer->post_buf + i - 2);
-            }
-
-            for(int i = pack_buffer->post_len -2;  i > 0; i -= 2){
-                *((uint8_t*)pack_buffer->post_buf + i) = *((uint8_t*)pack_buffer->post_buf + i - 2);
-            }
-
-            *(uint8_t*)pack_buffer->post_buf = top0;
-            *((uint8_t*)pack_buffer->post_buf + 1)= top1;
-            pack_buffer->post_len = DSO_PACKET_LEN;
-        }
+        gdouble percent = total_time_elapsed / total_time;
+        int buf_len = percent* DSO_PACKET_LEN;
+        if(buf_len %2 != 0)
+            buf_len +=1;
+        pack_buffer->post_len = buf_len;
     }
     else
     {
-        if(DSO_PACKET_LEN >total_num)
+        uint8_t top0;
+        uint8_t top1;
+        if(sample_generator == PATTERN_RANDOM)
         {
-            uint64_t total_packet_num =  total_time*DSO_PACKET_NUM_PER_SEC;
-            pack_buffer->post_len = DSO_PACKET_LEN/total_packet_num;
-            total_num += pack_buffer->post_len;
+            top0 = *((uint8_t*)pack_buffer->post_buf + pack_buffer->post_buf_len -2);
+            top1 = *((uint8_t*)pack_buffer->post_buf + pack_buffer->post_buf_len -1);
         }
         else
         {
-            pack_buffer->post_len = DSO_PACKET_LEN;
-            bToEnd = 1;
-            instant = FALSE;
+            top0 = *((uint8_t*)pack_buffer->post_buf + get_bit(vdev->timebase) -2);
+            top1 = *((uint8_t*)pack_buffer->post_buf + get_bit(vdev->timebase) -1);
         }
+
+
+        for(int i = pack_buffer->post_len -1;  i > 1; i -= 2){
+            *((uint8_t*)pack_buffer->post_buf + i) = *((uint8_t*)pack_buffer->post_buf + i - 2);
+        }
+
+        for(int i = pack_buffer->post_len -2;  i > 0; i -= 2){
+            *((uint8_t*)pack_buffer->post_buf + i) = *((uint8_t*)pack_buffer->post_buf + i - 2);
+        }
+
+        *(uint8_t*)pack_buffer->post_buf = top0;
+        *((uint8_t*)pack_buffer->post_buf + 1)= top1;
+        pack_buffer->post_len = DSO_PACKET_LEN;
     }
-   
 
     if (pack_buffer->post_len >= byte_align * chan_num)
     {
@@ -1969,11 +1948,11 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
         ds_data_forward(sdi, &packet);
     }
 
-    // if(instant)
-    // {
-    //     bToEnd = 1;
-    //     instant = FALSE;
-    // }
+    if(instant)
+    {
+        bToEnd = 1;
+        instant = FALSE;
+    }
 
     if (bToEnd || revents == -1)
     {
