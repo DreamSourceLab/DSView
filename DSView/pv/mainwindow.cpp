@@ -1504,6 +1504,11 @@ namespace pv
         _trig_bar->reload(); 
         _dso_trigger_widget->update_view();
         _measure_widget->reload();
+
+        if (_device_agent->get_work_mode() == ANALOG)
+            _view->get_viewstatus()->setVisible(false);
+        else
+            _view->get_viewstatus()->setVisible(true);
     }
 
     bool MainWindow::confirm_to_store_data()
