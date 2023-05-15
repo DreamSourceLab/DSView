@@ -56,6 +56,7 @@ static int max_probe_num = 0;
 extern char DS_RES_PATH[500];
 uint8_t sample_generator;
 static int64_t analog_count = 0;
+static uint64_t total_num = 0;
 
 struct session_packet_buffer;
 
@@ -250,6 +251,8 @@ static const uint64_t samplerates[] = {
 #define CAPS_FEATURE_ZERO (1 << 4)
 /* end */
 
+#define DEFAULT_LOGIC_FILE "protocol"
+
 #define SEC 1
 #define LOGIC_POST_DATA_PER_SECOND(n) ((n)/(8))
 #define LOGIC_PACKET_NUM_PER_SEC (gdouble)200
@@ -259,7 +262,7 @@ static const uint64_t samplerates[] = {
 #define LOGIC_MIN_PACKET_NUM(n) (LOGIC_POST_DATA_PER_SECOND(n))/(LOGIC_MIN_PACKET_LEN)
 #define LOGIC_MIN_PACKET_TIME(n) ((SEC)/(gdouble)(LOGIC_MIN_PACKET_NUM(n)))
 
-#define DSO_PACKET_NUM_PER_SEC (gdouble)200
+#define DSO_PACKET_NUM_PER_SEC (gdouble)100
 #define DSO_PACKET_TIME ((SEC)/(DSO_PACKET_NUM_PER_SEC))
 #define DSO_PACKET_LEN 20000
 
