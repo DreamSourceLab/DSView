@@ -39,7 +39,7 @@
 #include "../sigsession.h"
 #include "../ui/langresource.h"
 #include "../log.h"
-#include <QDebug>
+#include "../ui/msgbox.h"
 
 using namespace boost;
 using namespace std;
@@ -578,14 +578,9 @@ void DeviceOptions::channel_checkbox_clicked(QCheckBox *sc)
         int vld_ch_num = g_variant_get_int16(gvar);
         g_variant_unref(gvar);
         if (cur_ch_num > vld_ch_num) {
-            dialogs::DSMessageBox msg(this);
-            msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_INFORMATION), "Information"));
-            msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_MAX_CHANNEL), "Current mode only suppport max ")
-                                          + QString::number(vld_ch_num) 
-                                          + L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CHANNEL), " channels!"));
-            msg.mBox()->addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_OK), "Ok"), QMessageBox::AcceptRole);
-            msg.mBox()->setIcon(QMessageBox::Information);
-            msg.exec();
+            QString msg_str(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_MAX_CHANNEL_COUNT_WARNING), "max count of channels!"));
+            msg_str = msg_str.replace("{0}", QString::number(vld_ch_num) );
+            MsgBox::Show("", msg_str);
 
             sc->setChecked(false);
         }
