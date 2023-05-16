@@ -261,10 +261,17 @@ static const uint64_t samplerates[] = {
 #define LOGIC_MIN_PACKET_LEN 8
 #define LOGIC_MIN_PACKET_NUM(n) (LOGIC_POST_DATA_PER_SECOND(n))/(LOGIC_MIN_PACKET_LEN)
 #define LOGIC_MIN_PACKET_TIME(n) ((SEC)/(gdouble)(LOGIC_MIN_PACKET_NUM(n)))
+#define LOGIC_MAX_PACKET_LEN 62500
+#define LOGIC_MAX_PACKET_NUM(n) (LOGIC_POST_DATA_PER_SECOND(n))/(LOGIC_MAX_PACKET_LEN)
+#define LOGIC_MAX_PACKET_TIME(n) ((SEC)/(gdouble)(LOGIC_MAX_PACKET_NUM(n)))
+#define LOGIC_BUF_LEN SR_MB(1)
 
-#define DSO_PACKET_NUM_PER_SEC (gdouble)100
+
+#define DSO_PACKET_NUM_PER_SEC (gdouble)200
 #define DSO_PACKET_TIME ((SEC)/(DSO_PACKET_NUM_PER_SEC))
 #define DSO_PACKET_LEN 20000
+#define DSO_RANDOM_DATA rand()%120 +68
+#define DSO_BUF_LEN SR_MB(1)
 
 #define ANALOG_PROBE_NUM 2
 #define ANALOG_PACKET_NUM_PER_SEC 200
@@ -275,19 +282,31 @@ static const uint64_t samplerates[] = {
 #define ANALOG_MIN_PACKET_NUM(n) ((ANALOG_POST_DATA_PER_SECOND(n))/(ANALOG_MIN_PACKET_LEN))
 #define ANALOG_PACKET_ALIGN 2
 
-#define LOGIC_MAX_PROBE_NUM 16
-
-#define LOGIC_HIGH_LEVEL 255
-#define LOGIC_LOW_LEVEL 0
 #define LOGIC_HW_DEPTH (SR_MHZ(100))
 
 
-#define ANALOG_CYCLE_RATIO ((gdouble)(103) / (gdouble)(2048))
+#define LOGIC_MAX_PROBE_NUM 16
+#define LOGIC_HIGH_LEVEL 255
+#define LOGIC_LOW_LEVEL 0
+
+
+#define DSO_DEFAULT_VDIV 1000
+#define DSO_MID_VAL 128
+#define DSO_MAX_VAL 0
+#define DSO_MIN_VAL 255
+
+
 #define ANALOG_HW_DEPTH (SR_MHZ(12.5))
-#define ANALOG_DATA_LEN_PER_CYCLE 206
-#define ANALOG_RANDOM_DATA rand()%40 +110
-#define ANALOG_PROBE_NUM 2
 #define ANALOG_DEFAULT_VDIV 1000
+#define ANALOG_MID_VAL 128
+#define ANALOG_MAX_VAL 0
+#define ANALOG_MIN_VAL 255
+
+#define ANALOG_CYCLE_RATIO ((gdouble)(103) / (gdouble)(2048))
+#define ANALOG_DATA_LEN_PER_CYCLE 206
+#define ANALOG_RANDOM_DATA rand()%120 +68
+#define ANALOG_PROBE_NUM 2
+
 #define ANALOG_RETE(n) ((n/SR_HZ(10)))
 
 
@@ -455,27 +474,33 @@ static const int ranx[] = {
 -41,  36,  -8,  46,  47, -34,  28, -39,   7, -32,  38, -27,  28,  -3,  -8,  43, -37, -24,   6,   3,
 };
 
-static int delay_time();
+static void init_analog_random_data(struct session_vdev * vdev);
 
-static int get_last_packet_len(struct sr_datafeed_logic *logic,const struct session_vdev * vdev);
+static void delay_time();
 
-static int reset_enabled_probe_num(struct sr_dev_inst *sdi);
+static void get_last_packet_len(struct sr_datafeed_logic *logic,const struct session_vdev * vdev);
+
+static void reset_enabled_probe_num(struct sr_dev_inst *sdi);
+
+static void init_pattern_mode_list();
 
 static int get_bit(uint64_t timebase);
 
-static int reset_dsl_path(struct sr_dev_inst *sdi,uint8_t device_mode ,uint8_t pattern_mode);
-
 static int get_pattern_mode_index_by_string(uint8_t device_mode , const char* str);
 
-static int get_pattern_mode_from_file(uint8_t device_mode);
+static void get_pattern_mode_from_file(uint8_t device_mode);
 
-static int init_pattern_mode_list();
+static void scan_dsl_file(struct sr_dev_inst *sdi);
 
-static int scan_dsl_file(struct sr_dev_inst *sdi);
+static int reset_dsl_path(struct sr_dev_inst *sdi,uint8_t device_mode ,uint8_t pattern_mode);
 
 static void adjust_samplerate(struct sr_dev_inst *sdi);
 
-static int init_random_data(struct session_vdev * vdev,struct sr_dev_inst *sdi);
+
+
+
+
+static void init_random_data(struct session_vdev * vdev,struct sr_dev_inst *sdi);
 
 static int hw_init(struct sr_context *sr_ctx);
 
