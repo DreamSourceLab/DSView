@@ -43,9 +43,7 @@
 #include <QJsonValue>
 #include <QJsonArray>
 
-#ifdef _WIN32
 #include <QDesktopWidget>
-#endif
 
 #include "mainwindow.h"
 
@@ -517,21 +515,30 @@ namespace pv
         AppConfig &app = AppConfig::Instance();
         QString default_name = app._userHistory.screenShotPath + "/" + APP_NAME + QDateTime::currentDateTime().toString("-yyMMdd-hhmmss");
 
-#ifdef _WIN32
         int x = parentWidget()->pos().x();
         int y = parentWidget()->pos().y();
         int w = parentWidget()->frameGeometry().width();
         int h = parentWidget()->frameGeometry().height();
+
         QDesktopWidget *desktop = QApplication::desktop();
+        int curMonitor = desktop->screenNumber(this);
+
+#ifdef _WIN32 
+    #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         QPixmap pixmap = QGuiApplication::primaryScreen()->grabWindow(desktop->winId(), x, y, w, h);
-#elif __APPLE__
-        int x = parentWidget()->pos().x() + MainFrame::Margin;
-        int y = parentWidget()->pos().y() + MainFrame::Margin;
-        int w = parentWidget()->geometry().width() - MainFrame::Margin * 2;
-        int h = parentWidget()->geometry().height() - MainFrame::Margin * 2;
-        QPixmap pixmap = QGuiApplication::primaryScreen()->grabWindow(winId(), x, y, w, h);
-#else
-        QPixmap pixmap = QGuiApplication::primaryScreen()->grabWindow(winId());
+    #else
+        QPixmap pixmap = QPixmap::grabWidget(parentWidget());
+    #endif
+
+#elif __APPLE__ 
+        x += MainFrame::Margin;
+        y += MainFrame::Margin;
+        w -= MainFrame::Margin * 2;
+        h -= MainFrame::Margin * 2;
+        QPixmap pixmap = QGuiApplication::screens().at(curMonitor)->grabWindow(winId(), x, y, w, h);
+
+#else       
+        QPixmap pixmap = QGuiApplication::screens().at(curMonitor)->grabWindow(winId());
 #endif
 
         QString format = "png";
@@ -1777,7 +1784,7 @@ namespace pv
                     {
                         _view->auto_set_max_scale();
 
-                        if(_pattern_mode != "random")
+                        if(_pattern_mode != "random" && _device_agent->path() != "")
                         {
                             StoreSession ss(_session);
                             QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());

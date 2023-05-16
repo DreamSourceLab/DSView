@@ -29,10 +29,8 @@ namespace pv
  namespace dialogs
 {
 
-    class ApplicationParamDlg : public QObject
-    {
-        Q_OBJECT
-
+    class ApplicationParamDlg
+    { 
     public:
         ApplicationParamDlg();
         ~ApplicationParamDlg();
