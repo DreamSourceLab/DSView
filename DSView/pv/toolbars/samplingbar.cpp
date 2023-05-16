@@ -1273,9 +1273,9 @@ namespace pv
                     bool is_rand = rand_mode == "random";
                     _action_loop->setVisible(is_rand);
                     
-                    if (!is_rand){
+                    if (!is_rand && mode == LOGIC){
                         _sample_rate.setEnabled(false);
-                        _sample_count.setEnabled(false);  
+                        _sample_count.setEnabled(false);
                     }                    
                 }
             }
