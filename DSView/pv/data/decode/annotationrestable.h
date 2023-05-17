@@ -26,14 +26,14 @@
 #include <vector>
 #include <QString>
 
-#define DECODER_MAX_DATA_BLOCK_LEN 35
+#define DECODER_MAX_DATA_BLOCK_LEN 256
 #define CONVERT_STR_MAX_LEN 150
 
 struct AnnotationSourceItem
 {
     bool    is_numeric;
-    char    str_number_hex[DECODER_MAX_DATA_BLOCK_LEN]; //numerical value hex format string
-    long long numberic_value;
+    char    *str_number_hex; //numerical value hex format string
+
     std::vector<QString> src_lines; //the origin source string lines
     std::vector<QString> cvt_lines; //the converted to bin/hex/oct format string lines
     int     cur_display_format; //current format  as bin/ex/oct..., init with -1

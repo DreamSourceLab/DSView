@@ -1275,7 +1275,7 @@ namespace pv
                     
                     if (!is_rand && mode == LOGIC){
                         _sample_rate.setEnabled(false);
-                        _sample_count.setEnabled(false);  
+                        _sample_count.setEnabled(false);
                     }                    
                 }
             }

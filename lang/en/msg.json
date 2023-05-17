@@ -108,12 +108,8 @@
         "text": "All channel disabled! Please enable at least one channel."
     },
     {
-        "id": "IDS_MSG_MAX_CHANNEL",
-        "text": "Current mode only suppport max "
-    },
-    {
-        "id": "IDS_MSG_CHANNEL",
-        "text": " channels!"
+        "id": "IDS_MSG_MAX_CHANNEL_COUNT_WARNING",
+        "text": "Current mode only suppport max {0}\nchannels!"
     },
     {
         "id": "IDS_MSG_TRI_SET_ISSUE",
@@ -371,5 +367,9 @@
     {
         "id": "IDS_MSG_DEVICE_BUSY_SWITCH_FAILED",
         "text": "The device is busy,switch failed!"
+    },
+    {
+        "id": "IDS_MSG_NO_ENABLED_CHANNEL",
+        "text": "No channels enabled!"
     }
 ]

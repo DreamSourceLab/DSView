@@ -28,7 +28,7 @@
     }, 
     {
         "id": "IDS_MSG_A_CAL_START",
-        "text": "自动校准程序将启动。不要连接任何探头。这可能需要一段时间！"
+        "text": "自动校准程序将启动。不要连接任何探头。这可能需要一段时间!"
     },
     {
         "id": "IDS_MSG_A_CAL",
@@ -56,11 +56,11 @@
     },
     {
         "id": "IDS_MSG_RE_WIN_ST_ER",
-        "text": " 还原窗口状态错误!"
+        "text": "还原窗口状态错误!"
     },
     {
         "id": "IDS_MSG_INVAILD_CURSOR",
-        "text": " 样本范围的游标索引无效!"
+        "text": "样本范围的游标索引无效!"
     },
     {
         "id": "IDS_MSG_SEL_FILENAME",
@@ -104,15 +104,11 @@
     },
     {
         "id": "IDS_MSG_ALL_CHANNEL_DISABLE",
-        "text": " 所有频道已禁用请至少启用一个通道"
+        "text": "所有通道已禁用，请至少启用一个通道!"
     },
     {
-        "id": "IDS_MSG_MAX_CHANNEL",
-        "text": "当前模式仅支持最大"
-    },
-    {
-        "id": "IDS_MSG_CHANNEL",
-        "text": " 频道数!"
+        "id": "IDS_MSG_MAX_CHANNEL_COUNT_WARNING",
+        "text": "当前模式仅支持最大 {0}\n通道数!"
     },
     {
         "id": "IDS_MSG_TRI_SET_ISSUE",
@@ -132,7 +128,7 @@
     },
     {
         "id": "IDS_MSG_CHANGE_SOURCE_FAIL",
-        "text": " 更改触发源失败!"
+        "text": "更改触发源失败!"
     },
     {
         "id": "IDS_MSG_CHANGE_CHANNEL_FAIL",
@@ -176,7 +172,7 @@
     },
     {
         "id": "IDS_MSG_AD_TRIGGER_NEED_HARDWARE",
-        "text": " 高级触发模式需要DSLogic硬件支持!"
+        "text": "高级触发模式需要DSLogic硬件支持!"
     },
     {
         "id": "IDS_MSG_SET_TRI_MULTI_CHANNEL",
@@ -217,7 +213,7 @@
     },
     {
         "id": "IDS_MSG_MALLOC_ERROR_DET",
-        "text": " 内存不足，无法容纳此样本!\n请降低采样深度!"
+        "text": "内存不足，无法容纳此样本!\n请降低采样深度!"
     },
     {
         "id": "IDS_DATA_ERROR",
@@ -225,7 +221,7 @@
     },
     {
         "id": "IDS_DATA_ERROR_DET1",
-        "text": " 接收的数据与预定义的测试数据不一致!"
+        "text": "接收的数据与预定义的测试数据不一致!"
     },
     {
         "id": "IDS_DATA_ERROR_DET2",
@@ -237,7 +233,7 @@
     },
     {
         "id": "IDS_MSG_PACKET_ERROR_DET",
-        "text": " 接收到的数据包的内容不是预期的 !"
+        "text": "接收到的数据包的内容不是预期的 !"
     },
     {
         "id": "IDS_MSG_DATA_OVERFLOW",
@@ -245,7 +241,7 @@
     },
     {
         "id": "IDS_MSG_DATA_OVERFLOW_DET",
-        "text": " USB带宽无法支持当前采样率 ! \n请降低采样深度!"
+        "text": "USB带宽无法支持当前采样率 ! \n请降低采样深度!"
     },
     {
         "id": "IDS_MSG_UNDEFINED_ERROR",
@@ -257,7 +253,7 @@
     },
     {
         "id": "IDS_MSG_STORESESS_SAVESTART_ERROR1",
-        "text": " DSView当前不支持\n多数据类型的文件保存."
+        "text": "DSView当前不支持\n多数据类型的文件保存."
     },
     {
         "id": "IDS_MSG_STORESESS_SAVESTART_ERROR2",
@@ -269,7 +265,7 @@
     },
     {
         "id": "IDS_MSG_STORESESS_SAVESTART_ERROR4",
-        "text": " 生成临时文件数据失败."
+        "text": "生成临时文件数据失败."
     },
     {
         "id": "IDS_MSG_STORESESS_SAVESTART_ERROR5",
@@ -369,6 +365,10 @@
     },
     {
         "id": "IDS_MSG_DEVICE_BUSY_SWITCH_FAILED",
-        "text": "设置在使用中，切换失败!"
+        "text": "设备在使用中，切换失败!"
+    },
+    {
+        "id": "IDS_MSG_NO_ENABLED_CHANNEL",
+        "text": "未启用通道!"
     }
 ]

@@ -136,7 +136,7 @@ struct DEMO_caps {
     const uint64_t *vdivs;
     uint8_t vga_id;
     uint16_t default_channelmode;
-    enum DEMO_PATTERN default_pattern;
+    int default_pattern; /**enum DEMO_PATTERN type*/
     uint64_t default_timebase;
 };
 

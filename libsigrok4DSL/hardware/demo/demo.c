@@ -239,7 +239,7 @@ static void get_pattern_mode_from_file(uint8_t device_mode)
     dir = g_dir_open(dir_str,0,NULL);
     if(dir == NULL)
     {
-        return;
+        return 0;
     }
 
     while ((filename = g_dir_read_name(dir)) != NULL)
@@ -270,6 +270,8 @@ static void get_pattern_mode_from_file(uint8_t device_mode)
         pattern_dso_count = index;
     else if(device_mode == ANALOG)
         pattern_analog_count = index;
+
+    return 0;
 }
 
 static void scan_dsl_file(struct sr_dev_inst *sdi)
@@ -438,7 +440,7 @@ static void init_random_data(struct session_vdev * vdev,struct sr_dev_inst *sdi)
             probe_count[cur_probe] -= 1;
         }
     }
-    return;
+    return 0;
 }
 
 
@@ -463,7 +465,7 @@ static GSList *hw_scan(GSList *options)
     if (vdev == NULL)
     {
         sr_err("%s: sdi->priv malloc failed", __func__);
-        return SR_ERR_MALLOC;
+        return devices;
     }
 
     sdi = sr_dev_inst_new(LOGIC, SR_ST_INACTIVE,

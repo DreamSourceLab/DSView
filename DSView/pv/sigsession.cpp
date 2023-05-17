@@ -576,7 +576,8 @@ namespace pv
 
         if (_device_agent.have_enabled_channel() == false)
         {
-            _callback->show_error("No probes enabled.");
+            QString err_str(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NO_ENABLED_CHANNEL), "No channels enabled!"));
+            _callback->show_error(err_str);
             return false;
         }
         

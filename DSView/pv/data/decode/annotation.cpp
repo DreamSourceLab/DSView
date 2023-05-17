@@ -87,8 +87,16 @@ Annotation::Annotation(const srd_proto_data *const pdata, DecoderStatus *status)
  
 		//get numeric data
 		if (pda->str_number_hex[0]){
-			strcpy(resItem->str_number_hex, pda->str_number_hex);
-			resItem->is_numeric = true;
+			int str_len = strlen(pda->str_number_hex);
+
+			if (str_len <= DECODER_MAX_DATA_BLOCK_LEN){
+				resItem->str_number_hex = (char*)malloc(str_len + 1);
+			
+				if (resItem->str_number_hex != NULL){
+					strcpy(resItem->str_number_hex, pda->str_number_hex);
+					resItem->is_numeric = true;
+				}
+			}			
 		}
 
 		_status->m_bNumeric |= resItem->is_numeric;
