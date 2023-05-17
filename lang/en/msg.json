@@ -28,11 +28,11 @@
         "text": "Continue"
     },
     {
-        "id": "IDS_MSG_A_CAL_START",
+        "id": "IDS_MSG_AUTO_CALIB_START",
         "text": "Auto Calibration program will be started. Don't connect any probes. It can take a while!"
     },
     {
-        "id": "IDS_MSG_A_CAL",
+        "id": "IDS_MSG_AUTO_CALIB",
         "text": "Auto Calibration"
     },
     {
@@ -44,23 +44,23 @@
         "text": "Save captured data?"
     },
     {
-        "id": "IDS_MSG_SAVE_CANFIND_SESSIONFILE",
-        "text": "Cannot find default session file for this device!"
+        "id": "IDS_MSG_NOT_FOND_DEFAULT_PROFILE",
+        "text": "Cannot find default profile for this device!"
     },
     {
         "id": "IDS_MSG_OPEN_FILE_ERROR",
         "text": "Open file error!"
     },
     {
-        "id": "IDS_MSG_NOT_COMPATIBLE",
-        "text": "Session File is not compatible with current device or mode!"
+        "id": "IDS_MSG_PROFILE_NOT_COMPATIBLE",
+        "text": "Profile is not compatible with current device or mode!"
     },
     {
-        "id": "IDS_MSG_RE_WIN_ST_ER",
-        "text": "restore window status error!"
+        "id": "IDS_MSG_RESTORE_WINDOW_ERROR",
+        "text": "Restore window status error!"
     },
     {
-        "id": "IDS_MSG_INVAILD_CURSOR",
+        "id": "IDS_MSG_DECODE_INVAILD_CURSOR",
         "text": "Invalid cursor index for sample range!"
     },
     {
@@ -68,32 +68,32 @@
         "text": "You need to select a file name."
     },
     {
-        "id": "IDS_MSG_PROTOCOL_REPEAT",
-        "text": "Any protocol have repeated id or name:"
+        "id": "IDS_MSG_DECODER_REPEAT",
+        "text": "Any decoder have repeated id or name:"
     },
     {
-        "id": "IDS_MSG_NO_PROTOCOL",
-        "text": "Protocol list is empty!"
+        "id": "IDS_MSG_DECODER_LIST_EMPTY",
+        "text": "Decoder list is empty!"
     },
     {
-        "id": "IDS_MSG_NO_SEL_PROTOCOL",
-        "text": "Please select a protocol!"
+        "id": "IDS_MSG_NO_SEL_DECODER",
+        "text": "Please select a decoder!"
     },
     {
-        "id": "IDS_MSG_FIND_BASE_PROTOCOL_ERROR",
-        "text": "find the base protocol error!"
+        "id": "IDS_MSG_FIND_BASE_DECODER_ERROR",
+        "text": "find the base decoder error!"
     },
     {
-        "id": "IDS_MSG_NO_PROTOCOL_DEL",
-        "text": "No Protocol Analyzer to delete!"
+        "id": "IDS_MSG_NO_DECODER_DEL",
+        "text": "Have no decoder to remove!"
     },
     {
-        "id": "IDS_MSG_PROTOCOL_COMFRIEM_DEL_ALL",
-        "text": "Are you sure to remove all protocol analyzer?"
+        "id": "IDS_MSG_DECODER_CONFIRM_DEL_ALL",
+        "text": "Are you sure to remove all decoder?"
     },
     {
-        "id": "IDS_MSG_PROTOCOL_COMFRIEM_DEL",
-        "text": "Are you sure to remove this protocol analyzer?"
+        "id": "IDS_MSG_DECODER_CONFIRM_DEL",
+        "text": "Are you sure to remove this decoder?"
     },
     {
         "id": "IDS_MSG_CLOSE_DEVICE",
@@ -197,9 +197,8 @@
     },
     {
         "id": "IDS_MSG_FAIL_TO_LOAD",
-        "text": "Failed to load "
+        "text": "Failed to load"
     },
-
     {
         "id": "IDS_MSG_HARDWARE_ERROR",
         "text": "Hardware Operation Failed"
@@ -217,18 +216,6 @@
         "text": "Memory is not enough for this sample!\nPlease reduce the sample depth!"
     },
     {
-        "id": "IDS_DATA_ERROR",
-        "text": "Data Error"
-    },
-    {
-        "id": "IDS_DATA_ERROR_DET1",
-        "text": "the received data are not consist with pre-defined test data!"
-    },
-    {
-        "id": "IDS_DATA_ERROR_DET2",
-        "text": "0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15"
-    },
-    {
         "id": "IDS_MSG_PACKET_ERROR",
         "text": "Packet Error"
     },
@@ -242,7 +229,7 @@
     },
     {
         "id": "IDS_MSG_DATA_OVERFLOW_DET",
-        "text": "USB bandwidth can not support current sample rate! \nPlease reduce the sample rate!"
+        "text": "USB bandwidth can not support current sample rate!\nPlease reduce the sample rate!"
     },
     {
         "id": "IDS_MSG_UNDEFINED_ERROR",
@@ -282,11 +269,11 @@
     },
     {
         "id": "IDS_MSG_STORESESS_SAVEPROC_ERROR1",
-        "text": "Failed to create zip file. Malloc error."
+        "text": "Failed to create zip file,malloc error."
     },
     {
         "id": "IDS_MSG_STORESESS_SAVEPROC_ERROR2",
-        "text": "Failed to create zip file. Please check write permission of this path."
+        "text": "Failed to create zip file,please check write permission of this path."
     },
     {
         "id": "IDS_MSG_STORESESS_EXPORTSTART_ERROR1",

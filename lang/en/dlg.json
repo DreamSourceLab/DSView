@@ -33,7 +33,7 @@
     },
     {
         "id": "IDS_DLG_PROTOCOL_DOCK_TITLE",
-        "text": "Protocol"
+        "text": "Decode Protocol"
     },
     {
         "id": "IDS_DLG_MEASURE_DOCK_TITLE",
@@ -388,8 +388,8 @@
         "text": "Channel 0 | 1"
     },
     {
-        "id": "IDS_DLG_KEYWORD_LINEEID",
-        "text": "Protocol search..."
+        "id": "IDS_DLG_KEY_DECODER_SEARCH",
+        "text": "Decoder search..."
     },
     {
         "id": "IDS_DLG_TIME_SAMPLES",

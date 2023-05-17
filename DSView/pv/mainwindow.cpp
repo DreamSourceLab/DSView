@@ -176,7 +176,7 @@ namespace pv
         addToolBar(_logo_bar);
 
         // Setup the dockWidget
-        _protocol_dock = new QDockWidget(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_PROTOCOL_DOCK_TITLE), "Protocol"), this);
+        _protocol_dock = new QDockWidget(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_PROTOCOL_DOCK_TITLE), "Decode Protocol"), this);
         _protocol_dock->setObjectName("protocol_dock");
         _protocol_dock->setFeatures(QDockWidget::DockWidgetMovable);
         _protocol_dock->setAllowedAreas(Qt::RightDockWidgetArea);
@@ -313,7 +313,7 @@ namespace pv
     {
         _trigger_dock->setWindowTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIGGER_DOCK_TITLE), "Trigger Setting..."));
         _dso_trigger_dock->setWindowTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIGGER_DOCK_TITLE), "Trigger Setting..."));
-        _protocol_dock->setWindowTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_PROTOCOL_DOCK_TITLE), "Protocol"));
+        _protocol_dock->setWindowTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_PROTOCOL_DOCK_TITLE), "Decode Protocol"));
         _measure_dock->setWindowTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MEASURE_DOCK_TITLE), "Measurement"));
         _search_dock->setWindowTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SEARCH_DOCK_TITLE), "Search..."));
     }
@@ -801,7 +801,7 @@ namespace pv
             // check device and mode
             if (driverName != sessionDevice || mode != conf_dev_mode)
             {
-                MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NOT_COMPATIBLE), "Session File is not compatible with current device or mode!"), this);
+                MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_PROFILE_NOT_COMPATIBLE), "Profile is not compatible with current device or mode!"), this);
                 return false;
             }
         }
@@ -1127,7 +1127,7 @@ namespace pv
             }
             catch (...)
             {
-                MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_RE_WIN_ST_ER), "restore window status error!"));
+                MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_RESTORE_WINDOW_ERROR), "restore window status error!"));
             }
         }
 
@@ -1933,9 +1933,19 @@ namespace pv
             }
             break;
 
-        case DSV_MSG_END_DEVICE_OPTIONS:
-            if(_device_agent->is_demo() &&_device_agent->get_work_mode() == LOGIC)
-            {
+        case DSV_MSG_BEGIN_DEVICE_OPTIONS: 
+            if(_device_agent->is_demo()){
+                GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_PATTERN_MODE);
+                if(gvar != NULL)
+                {
+                    _pattern_mode = g_variant_get_string(gvar,NULL);
+                    g_variant_unref(gvar);
+                }
+            }
+            break;  
+
+        case DSV_MSG_END_DEVICE_OPTIONS: 
+            if(_device_agent->is_demo() &&_device_agent->get_work_mode() == LOGIC){
                 GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_PATTERN_MODE);
                 if(gvar != NULL)
                 {
@@ -1964,18 +1974,7 @@ namespace pv
                 }
             }
             calc_min_height();            
-            break;
-
-        case DSV_MSG_BEGIN_DEVICE_OPTIONS:
-            if(_device_agent->is_demo())
-            {
-                GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_PATTERN_MODE);
-                if(gvar != NULL)
-                {
-                    _pattern_mode = g_variant_get_string(gvar,NULL);
-                    g_variant_unref(gvar);
-                }
-            }                                
+            break;                                 
         }
     }
 

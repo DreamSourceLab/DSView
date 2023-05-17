@@ -101,7 +101,7 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     sort(_decoderInfoList.begin(), _decoderInfoList.end(), ProtocolDock::protocol_sort_callback);
   
     if (repeatNammes != ""){
-        QString err = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_PROTOCOL_REPEAT), "Any protocol have repeated id or name:");
+        QString err = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DECODER_REPEAT), "Any decoder have repeated id or name:");
         err += repeatNammes;
         MsgBox::Show(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_ERROR), "error"), err.toUtf8().data());
     }
@@ -299,11 +299,11 @@ int ProtocolDock::get_protocol_index_by_id(QString id)
 void ProtocolDock::on_add_protocol()
 { 
      if (_decoderInfoList.size() == 0){
-        MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NO_PROTOCOL), "Protocol list is empty!"));
+        MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DECODER_LIST_EMPTY), "Decoder list is empty!"));
         return;
     }
     if (_selected_protocol_id == ""){
-        MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NO_SEL_PROTOCOL), "Please select a protocol!"));
+        MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NO_SEL_DECODER), "Please select a decoder!"));
         return;
     }
 
@@ -348,7 +348,7 @@ void ProtocolDock::on_add_protocol()
 
     if (pro_id == ""){
         MsgBox::Show(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_ERROR), "error"), 
-                     L_S(STR_PAGE_MSG, S_ID(IDS_MSG_FIND_BASE_PROTOCOL_ERROR), "find the base protocol error!"));
+                     L_S(STR_PAGE_MSG, S_ID(IDS_MSG_FIND_BASE_DECODER_ERROR), "find the base decoder error!"));
 
         for(auto sub: sub_decoders){
             delete sub;
@@ -417,11 +417,11 @@ bool ProtocolDock::add_protocol_by_id(QString id, bool silent, std::list<pv::dat
  
  void ProtocolDock::on_del_all_protocol(){
      if (_protocol_lay_items.size() == 0){
-        MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NO_PROTOCOL_DEL), "No Protocol Analyzer to delete!"), this);
+        MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NO_DECODER_DEL), "Have no decoder to remove!"), this);
         return;
      }
 
-    if (MsgBox::Confirm(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_PROTOCOL_COMFRIEM_DEL_ALL), "Are you sure to remove all protocol analyzer?"),  this)){
+    if (MsgBox::Confirm(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DECODER_CONFIRM_DEL_ALL), "Are you sure to remove all decoder?"),  this)){
          del_all_protocol();
     }
  } 
@@ -842,7 +842,7 @@ void ProtocolDock::OnProtocolSetting(void *handle){
 }
 
 void ProtocolDock::OnProtocolDelete(void *handle){
-    if (!MsgBox::Confirm(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_PROTOCOL_COMFRIEM_DEL), "Are you sure to remove this protocol analyzer?"), this)){
+    if (!MsgBox::Confirm(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DECODER_CONFIRM_DEL), "Are you sure to remove this decoder?"), this)){
          return;
     } 
 

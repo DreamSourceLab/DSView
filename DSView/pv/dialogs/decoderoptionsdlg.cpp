@@ -502,7 +502,7 @@ void DecoderOptionsDlg::on_accept()
 { 
     if (_cursor1 > 0 && _cursor1 == _cursor2){
         MsgBox::Show(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_ERROR), "error"), 
-        L_S(STR_PAGE_MSG, S_ID(IDS_MSG_INVAILD_CURSOR), "Invalid cursor index for sample range!"));
+        L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DECODE_INVAILD_CURSOR), "Invalid cursor index for sample range!"));
         return;
     }
 

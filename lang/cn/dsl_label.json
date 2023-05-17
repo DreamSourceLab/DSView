@@ -32,10 +32,6 @@
         "text": "触发前采样比例"
     },
     {
-        "id": "Pattern mode",
-        "text": "信号模式"
-    },
-    {
         "id": "Run Length Encoding",
         "text": "RLE编码"
     },

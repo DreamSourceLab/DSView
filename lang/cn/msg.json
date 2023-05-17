@@ -27,11 +27,11 @@
         "text": "继续"
     }, 
     {
-        "id": "IDS_MSG_A_CAL_START",
-        "text": "自动校准程序将启动。不要连接任何探头。这可能需要一段时间!"
+        "id": "IDS_MSG_AUTO_CALIB_START",
+        "text": "自动校准程序将启动。不要连接任何探针。这可能需要一段时间!"
     },
     {
-        "id": "IDS_MSG_A_CAL",
+        "id": "IDS_MSG_AUTO_CALIB",
         "text": "自动校准"
     },
     {
@@ -40,59 +40,59 @@
     },
     {
         "id": "IDS_MSG_SAVE_CAPDATE",
-        "text": "保存捕获的数据?"
+        "text": "保存采集到的数据?"
     },
     {
-        "id": "IDS_MSG_SAVE_CANFIND_SESSIONFILE",
-        "text": "找不到此设备的默认会话文件!"
+        "id": "IDS_MSG_NOT_FOND_DEFAULT_PROFILE",
+        "text": "找不到此设备的默认配置文件!"
     },
     {
         "id": "IDS_MSG_OPEN_FILE_ERROR",
         "text": "打开文件错误!"
     },
     {
-        "id": "IDS_MSG_NOT_COMPATIBLE",
-        "text": "会话文件与当前设备或模式不兼容!"
+        "id": "IDS_MSG_PROFILE_NOT_COMPATIBLE",
+        "text": "配置文件与当前设备或模式不兼容!"
     },
     {
-        "id": "IDS_MSG_RE_WIN_ST_ER",
+        "id": "IDS_MSG_RESTORE_WINDOW_ERROR",
         "text": "还原窗口状态错误!"
     },
     {
-        "id": "IDS_MSG_INVAILD_CURSOR",
-        "text": "样本范围的游标索引无效!"
+        "id": "IDS_MSG_DECODE_INVAILD_CURSOR",
+        "text": "用于指定采样范围的光标无效!"
     },
     {
         "id": "IDS_MSG_SEL_FILENAME",
         "text": "您需要选择文件名"
     },
     {
-        "id": "IDS_MSG_PROTOCOL_REPEAT",
-        "text": "存在重复id或名字的协议:"
+        "id": "IDS_MSG_DECODER_REPEAT",
+        "text": "存在重复id或名字的解码器:"
     },
     {
-        "id": "IDS_MSG_NO_PROTOCOL",
-        "text": "协议列表为空!"
+        "id": "IDS_MSG_DECODER_LIST_EMPTY",
+        "text": "解码器列表为空!"
     },
     {
-        "id": "IDS_MSG_NO_SEL_PROTOCOL",
-        "text": "请选择一个协议!"
+        "id": "IDS_MSG_NO_SEL_DECODER",
+        "text": "请选择一个解码器!"
     },
     {
-        "id": "IDS_MSG_FIND_BASE_PROTOCOL_ERROR",
-        "text": "查找基本协议错误!"
+        "id": "IDS_MSG_FIND_BASE_DECODER_ERROR",
+        "text": "查找基础解码器错误!"
     },
     {
-        "id": "IDS_MSG_NO_PROTOCOL_DEL",
-        "text": "没有要删除的协议分析器!"
+        "id": "IDS_MSG_NO_DECODER_DEL",
+        "text": "没有可移除的解码器!"
     },
     {
-        "id": "IDS_MSG_PROTOCOL_COMFRIEM_DEL_ALL",
-        "text": "是否确定要删除所有协议分析器?"
+        "id": "IDS_MSG_DECODER_CONFIRM_DEL_ALL",
+        "text": "是否确定要移除所有解码器?"
     },
     {
-        "id": "IDS_MSG_PROTOCOL_COMFRIEM_DEL",
-        "text": "是否确定要删除这个协议分析器?"
+        "id": "IDS_MSG_DECODER_CONFIRM_DEL",
+        "text": "是否确定要移除这个解码器?"
     },   
     {
         "id": "IDS_MSG_CLOSE_DEVICE",
@@ -156,11 +156,11 @@
     },
     {
         "id": "IDS_MSG_PATTERN_NOT_FOUND",
-        "text": "找不到样式!"
+        "text": "找不到匹配模式!"
     },
     {
         "id": "IDS_MSG_SEARCH_AT_END",
-        "text": "在结束位置搜索光标!"
+        "text": "搜索光标处于结束位置!"
     },
     {
         "id": "IDS_MSG_TRIGGER",
@@ -198,7 +198,6 @@
         "id": "IDS_MSG_FAIL_TO_LOAD",
         "text": "加载失败"
     },
-
     {
         "id": "IDS_MSG_HARDWARE_ERROR",
         "text": "硬件操作失败"
@@ -216,24 +215,12 @@
         "text": "内存不足，无法容纳此样本!\n请降低采样深度!"
     },
     {
-        "id": "IDS_DATA_ERROR",
-        "text": "数据错误"
-    },
-    {
-        "id": "IDS_DATA_ERROR_DET1",
-        "text": "接收的数据与预定义的测试数据不一致!"
-    },
-    {
-        "id": "IDS_DATA_ERROR_DET2",
-        "text": "0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15"
-    },
-    {
         "id": "IDS_MSG_PACKET_ERROR",
         "text": "数据包错误"
     },
     {
         "id": "IDS_MSG_PACKET_ERROR_DET",
-        "text": "接收到的数据包的内容不是预期的 !"
+        "text": "接收到的数据包的内容不是预期的!"
     },
     {
         "id": "IDS_MSG_DATA_OVERFLOW",
@@ -241,7 +228,7 @@
     },
     {
         "id": "IDS_MSG_DATA_OVERFLOW_DET",
-        "text": "USB带宽无法支持当前采样率 ! \n请降低采样深度!"
+        "text": "USB带宽无法支持当前采样率!\n请降低采样深度!"
     },
     {
         "id": "IDS_MSG_UNDEFINED_ERROR",
@@ -281,11 +268,11 @@
     },
     {
         "id": "IDS_MSG_STORESESS_SAVEPROC_ERROR1",
-        "text": "无法创建zip文件.内存分配错误."
+        "text": "无法创建zip文件,内存分配错误."
     },
     {
         "id": "IDS_MSG_STORESESS_SAVEPROC_ERROR2",
-        "text": "无法创建zip文件.请检查此路径的写入权限."
+        "text": "无法创建zip文件,请检查此路径的写入权限."
     },
     {
         "id": "IDS_MSG_STORESESS_EXPORTSTART_ERROR1",

@@ -449,7 +449,7 @@ void DeviceOptions::zero_adj()
 
     dialogs::DSMessageBox msg(this);
     msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_INFORMATION), "Information"));
-    msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_A_CAL_START), 
+    msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_AUTO_CALIB_START), 
                                    "Auto Calibration program will be started. Don't connect any probes. It can take a while!"));
     msg.mBox()->addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_OK), "Ok"), QMessageBox::AcceptRole);
     msg.mBox()->addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CANCEL), "Cancel") ,QMessageBox::RejectRole);

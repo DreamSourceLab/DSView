@@ -190,8 +190,8 @@ void FileBar::on_actionDefault_triggered()
 { 
     QDir dir(GetResourceDir());
     if (!dir.exists()) { 
-          MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SAVE_CANFIND_SESSIONFILE),
-             "Cannot find default session file for this device!"), this);
+          MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NOT_FOND_DEFAULT_PROFILE),
+             "Cannot find default profile for this device!"), this);
           return;
     }
    

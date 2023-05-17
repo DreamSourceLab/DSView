@@ -33,7 +33,7 @@
     },
     {
         "id": "IDS_DLG_PROTOCOL_DOCK_TITLE",
-        "text": "协议"
+        "text": "解码协议"
     },
     {
         "id": "IDS_DLG_MEASURE_DOCK_TITLE",
@@ -388,8 +388,8 @@
         "text": "通道 0 | 1"
     },
     {
-        "id": "IDS_DLG_KEYWORD_LINEEID",
-        "text": "协议搜索"
+        "id": "IDS_DLG_KEY_DECODER_SEARCH",
+        "text": "解码器搜索"
     },
     {
         "id": "IDS_DLG_TIME_SAMPLES",

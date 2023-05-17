@@ -53,7 +53,7 @@ static struct sr_config_info sr_config_info_data[] = {
     {SR_CONF_CLOCK_TYPE, SR_T_BOOL,"Using External Clock"},
     {SR_CONF_CLOCK_EDGE, SR_T_BOOL, "Using Clock Negedge"},
     {SR_CONF_CAPTURE_RATIO, SR_T_UINT64,"Pre-trigger capture ratio"},
-    {SR_CONF_PATTERN_MODE, SR_T_CHAR,"Pattern mode"},
+    {SR_CONF_PATTERN_MODE, SR_T_CHAR,"Operation Mode"},
 	{SR_CONF_RLE, SR_T_BOOL,"Run Length Encoding"},
     {SR_CONF_WAIT_UPLOAD, SR_T_BOOL,"Wait Buffer Upload"},
     {SR_CONF_TRIGGER_SLOPE, SR_T_UINT8,"Trigger slope"},
@@ -177,12 +177,13 @@ SR_PRIV void sr_hw_cleanup_all(void)
 SR_PRIV struct sr_config *sr_config_new(int key, GVariant *data)
 {
 	struct sr_config *src;
+	assert(data);
 
 	if (!(src = g_try_malloc(sizeof(struct sr_config))))
 		return NULL;
+
 	src->key = key;
 	src->data = g_variant_ref_sink(data);
-
 	return src;
 }
 
@@ -235,6 +236,7 @@ SR_PRIV int sr_config_get(const struct sr_dev_driver *driver,
     if ((ret = driver->config_get(key, data, sdi, ch, cg)) == SR_OK) {
 		/* Got a floating reference from the driver. Sink it here,
 		 * caller will need to unref when done with it. */
+		assert(*data);
 		g_variant_ref_sink(*data);
 	}
 
@@ -262,14 +264,18 @@ SR_PRIV int sr_config_set(struct sr_dev_inst *sdi,
 {
 	int ret;
 
+	assert(data);
 	g_variant_ref_sink(data);
 
-	if (!sdi || !sdi->driver || !data)
+	if (!sdi || !sdi->driver || !data){
 		ret = SR_ERR;
-	else if (!sdi->driver->config_set)
+	}
+	else if (!sdi->driver->config_set){
 		ret = SR_ERR_ARG;
-	else
+	}
+	else {
         ret = sdi->driver->config_set(key, data, sdi, ch, cg);
+	}
 
 	g_variant_unref(data);
 
@@ -301,12 +307,16 @@ SR_PRIV int sr_config_list(const struct sr_dev_driver *driver,
 {
 	int ret;
 
-	if (!driver || !data)
+	if (!driver || !data){
 		ret = SR_ERR;
-	else if (!driver->config_list)
+	}
+	else if (!driver->config_list){
 		ret = SR_ERR_ARG;
-    else if ((ret = driver->config_list(key, data, sdi, cg)) == SR_OK)
+	}
+    else if ((ret = driver->config_list(key, data, sdi, cg)) == SR_OK){
+		assert(*data);
 		g_variant_ref_sink(*data);
+	}
 
 	return ret;
 }

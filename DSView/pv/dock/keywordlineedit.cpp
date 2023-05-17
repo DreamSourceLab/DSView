@@ -47,7 +47,7 @@ KeywordLineEdit::KeywordLineEdit(QWidget *parent, IKeywordActive *active)
      }
 
     //tr
-    this->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_KEYWORD_LINEEID), "Protocol search..."));
+    this->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_KEY_DECODER_SEARCH), "Decoder search..."));
  }
 
  void KeywordLineEdit::SetInputText(QString text)
