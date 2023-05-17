@@ -750,7 +750,7 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         *data = g_variant_new_int16(vdev->num_probes);
         break;
     case SR_CONF_HAVE_ZERO:
-        *data = g_variant_new_boolean(sample_generator != FALSE);
+        *data = g_variant_new_boolean(FALSE);
         break;
     case SR_CONF_LOAD_DECODER:
         *data = g_variant_new_boolean(sample_generator != PATTERN_RANDOM);
