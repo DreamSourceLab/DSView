@@ -555,7 +555,7 @@ static int hw_dev_open(struct sr_dev_inst *sdi)
         sr_err("%s: vdev->logic_buf malloc failed", __func__);
         return SR_ERR_MALLOC;  
     }
-    init_analog_random_data(vdev);
+    
 
     vdev->logic_buf_len = LOGIC_BUF_LEN;
 
@@ -750,6 +750,7 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         *data = g_variant_new_int16(vdev->num_probes);
         break;
     case SR_CONF_HAVE_ZERO:
+        *data = g_variant_new_boolean(sample_generator != FALSE);
         break;
     case SR_CONF_LOAD_DECODER:
         *data = g_variant_new_boolean(sample_generator != PATTERN_RANDOM);
@@ -1170,8 +1171,9 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
             }
             packet_time = ANALOG_PACKET_TIME(ANALOG_PACKET_NUM_PER_SEC);
         }
-        if(sample_generator != PATTERN_RANDOM)
-            vdev->analog_buf_len = 0;
+        if(sample_generator == PATTERN_RANDOM)
+            init_analog_random_data(vdev);
+            
         vdev->analog_read_pos = 0;       
 
         sr_session_source_add(-1, 0, 0, receive_data_analog, sdi);
@@ -2044,6 +2046,8 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
     {
         if(sample_generator != PATTERN_RANDOM)
         {
+            vdev->analog_buf_len = 0;
+
             void* analog_data = g_try_malloc0(ANALOG_DATA_LEN_PER_CYCLE);
             if(analog_data == NULL)
             {
@@ -2158,7 +2162,6 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
     }
     if(vdev->analog_read_pos + packet_len >= vdev->analog_buf_len - 1 )
     {
-        //用memcpy估计会更好
         uint64_t back_len = vdev->analog_buf_len - vdev->analog_read_pos;
         for (int i = 0; i < back_len; i++)
         {
