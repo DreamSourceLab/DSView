@@ -298,13 +298,13 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
 
                 if (unzLocateFile(vdev->archive, file_name, 0) != UNZ_OK)
                 {
-                    sr_err("cant't locate zip inner file:\"%s\"", file_name);
+                    sr_err("can't locate zip inner file:\"%s\"", file_name);
                     send_error_packet(sdi, vdev, &packet);
                     return FALSE;
                 }
                 if (unzOpenCurrentFile(vdev->archive) != UNZ_OK)
                 {
-                    sr_err("cant't open zip inner file:\"%s\"", file_name);
+                    sr_err("can't open zip inner file:\"%s\"", file_name);
                     send_error_packet(sdi, vdev, &packet);
                     return FALSE;
                 }
@@ -534,7 +534,7 @@ static int receive_data_logic_dso_v2(int fd, int revents, const struct sr_dev_in
 
                 if (!bCheckFile)
                 {
-                    sr_err("cant't locate zip inner file:\"%s\"", file_name);
+                    sr_err("can't locate zip inner file:\"%s\"", file_name);
                     send_error_packet(sdi, vdev, &packet);
                     return FALSE;
                 }
@@ -581,7 +581,7 @@ static int receive_data_logic_dso_v2(int fd, int revents, const struct sr_dev_in
                 // Read the data to buffer. 
                 if (unzOpenCurrentFile(vdev->archive) != UNZ_OK)
                 {
-                    sr_err("cant't open zip inner file:\"%s\"", file_name);
+                    sr_err("can't open zip inner file:\"%s\"", file_name);
                     send_error_packet(sdi, vdev, &packet);
                     return FALSE;
                 }
@@ -1369,13 +1369,13 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
     {
         if (unzLocateFile(vdev->archive, "data", 0) != UNZ_OK)
         {
-            sr_err("cant't locate zip inner file:\"%s\"", "data");
+            sr_err("can't locate zip inner file:\"%s\"", "data");
             close_archive(vdev);
             return SR_ERR;
         }
         if (unzOpenCurrentFile(vdev->archive) != UNZ_OK)
         {
-            sr_err("cant't open zip inner file:\"%s\"", "data");
+            sr_err("can't open zip inner file:\"%s\"", "data");
             close_archive(vdev);
             return SR_ERR;
         }
@@ -1473,7 +1473,7 @@ SR_PRIV int sr_new_virtual_device(const char *filename, struct sr_dev_inst **out
     }
     if (unzOpenCurrentFile(archive) != UNZ_OK)
     {
-        sr_err("cant't open zip inner file:'header',%s", filename);
+        sr_err("can't open zip inner file:'header',%s", filename);
         unzClose(archive);
         return SR_ERR;
     }
