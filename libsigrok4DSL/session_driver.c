@@ -165,6 +165,8 @@ static const char *probeMapUnits[] = {
     "m/s",
 };
 
+static void free_temp_buffer(struct session_vdev *vdev);
+
 static int trans_data(struct sr_dev_inst *sdi)
 {
     // translate for old format
@@ -483,7 +485,7 @@ static int receive_data_logic_dso_v2(int fd, int revents, const struct sr_dev_in
         if (sdi->mode == LOGIC)
             vdev->packet_buffer->post_buf_len = 8 * chan_num * 1000;
         else
-            vdev->packet_buffer->post_buf_len = chan_num * 1000;
+            vdev->packet_buffer->post_buf_len = chan_num * 10000;
 
         vdev->packet_buffer->post_buf = g_try_malloc0(vdev->packet_buffer->post_buf_len + 1);
         if (vdev->packet_buffer->post_buf == NULL){
@@ -495,7 +497,10 @@ static int receive_data_logic_dso_v2(int fd, int revents, const struct sr_dev_in
         pack_buffer->post_len;
         pack_buffer->block_buf_len = 0;
         pack_buffer->block_data_len = 0;
-        pack_buffer->block_chan_read_pos = 0; 
+        pack_buffer->block_chan_read_pos = 0;
+
+        if (sdi->mode == DSO)
+          vdev->num_blocks = 1; // Only one data file.
     }
     pack_buffer = vdev->packet_buffer;
 
@@ -650,7 +655,7 @@ static int receive_data_logic_dso_v2(int fd, int revents, const struct sr_dev_in
             dso.mqflags = SR_MQFLAG_AC; 
             dso.num_samples = pack_buffer->post_len / chan_num;
             dso.data = pack_buffer->post_buf;
-        }       
+        }
 
         // Send data back.
         ds_data_forward(sdi, &packet);
@@ -663,6 +668,7 @@ static int receive_data_logic_dso_v2(int fd, int revents, const struct sr_dev_in
         ds_data_forward(sdi, &packet);
         sr_session_source_remove(-1);
         close_archive(vdev);
+        free_temp_buffer(vdev);
     }
 
     return TRUE;
@@ -755,35 +761,44 @@ static int dev_open(struct sr_dev_inst *sdi)
     return SR_OK;
 }
 
+static void free_temp_buffer(struct session_vdev *vdev)
+{   
+    struct session_packet_buffer *pack_buf;
+    int i;
+
+    assert(vdev);
+
+    pack_buf = vdev->packet_buffer;
+
+    if (pack_buf != NULL)
+    {
+        g_safe_free(pack_buf->post_buf);
+
+        for (i = 0; i < SESSION_MAX_CHANNEL_COUNT; i++){
+            if (pack_buf->block_bufs[i] != NULL){
+                g_free(pack_buf->block_bufs[i]);
+                pack_buf->block_bufs[i] = NULL;
+            }
+            else{
+                break;
+            }
+        }
+    }   
+
+    g_safe_free(vdev->packet_buffer);    
+    g_safe_free(vdev->buf);
+    g_safe_free(vdev->logic_buf);
+}
+
 static int dev_close(struct sr_dev_inst *sdi)
 {
     struct session_vdev *vdev;
-    int i;
-    struct session_packet_buffer *pack_buf;
 
     if (sdi && sdi->priv)
     {
         vdev = sdi->priv;
- 
-        if (vdev->packet_buffer != NULL){
-            pack_buf = vdev->packet_buffer;
+        free_temp_buffer(vdev);
 
-            g_safe_free(pack_buf->post_buf);
-
-            for (i = 0; i < SESSION_MAX_CHANNEL_COUNT; i++){
-                if (pack_buf->block_bufs[i] != NULL){
-                    g_free(pack_buf->block_bufs[i]);
-                    pack_buf->block_bufs[i] = NULL;
-                }
-                else{
-                    break;
-                }
-            }
-        }
-
-        g_safe_free(vdev->packet_buffer);
-        g_safe_free(vdev->buf);
-        g_safe_free(vdev->logic_buf);
         g_safe_free(sdi->priv);
 
         sdi->status = SR_ST_INACTIVE;

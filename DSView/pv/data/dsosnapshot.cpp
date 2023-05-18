@@ -98,6 +98,7 @@ void DsoSnapshot::clear()
     free_envelop();
     init_all();
     _have_data  = false;
+    _envelope_en = false;
 }
 
 void DsoSnapshot::free_data()
@@ -141,7 +142,8 @@ void DsoSnapshot::first_payload(const sr_datafeed_dso &dso, uint64_t total_sampl
 
     if (total_sample_count != _total_sample_count
         || channel_num != _channel_num
-        || channel_changed){
+        || channel_changed
+        || isFile){
         
         std::lock_guard<std::mutex> lock(_mutex);
 
