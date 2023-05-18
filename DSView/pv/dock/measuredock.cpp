@@ -94,7 +94,8 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
     _dist_layout->setVerticalSpacing(5);
     _dist_layout->addWidget(_dist_add_btn, 0, 0);
     _dist_layout->addWidget(new QLabel(_widget), 0, 1, 1, 3);
-    _dist_layout->addWidget(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TIME_SAMPLES), "Time/Samples"), _widget), 0, 4);
+    _add_dec_label = new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TIME_SAMPLES), "Time/Samples"), _widget);
+    _dist_layout->addWidget(_add_dec_label, 0, 4);
     _dist_layout->addWidget(new QLabel(_widget), 0, 5, 1, 2);
     _dist_layout->setColumnStretch(1, 50);
     _dist_layout->setColumnStretch(6, 100);
@@ -171,6 +172,7 @@ void MeasureDock::retranslateUi()
     _channel_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CHANNEL), "Channel"));
     _edge_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_RIS_OR_FAL_EDGE), "Rising/Falling/Edges"));
     _time_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TIME_SAMPLES), "Time/Samples"));
+    _add_dec_label->setText(_time_label->text());
 
     _w_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_W), "W: "));
     _p_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_P), "P: "));

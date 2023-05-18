@@ -1474,7 +1474,7 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
 
                 if (!bCheckFile)
                 {
-                    sr_err("cant't locate zip inner file:\"%s\"", file_name);
+                    sr_err("can't locate zip inner file:\"%s\"", file_name);
                     send_error_packet(sdi, vdev, &packet);
                     return FALSE;
                 }
@@ -1521,7 +1521,7 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
                 // Read the data to buffer.
                 if (unzOpenCurrentFile(vdev->archive) != UNZ_OK)
                 {
-                    sr_err("cant't open zip inner file:\"%s\"", file_name);
+                    sr_err("can't open zip inner file:\"%s\"", file_name);
                     send_error_packet(sdi, vdev, &packet);
                     return FALSE;
                 }
@@ -1763,7 +1763,14 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
 
                         for (ch_index = 0; ch_index < chan_num; ch_index++)
                         {
+<<<<<<< HEAD
                             bCheckFile = 0;
+=======
+                            sr_err("can't locate zip inner file:\"%s\"", file_name);
+                            send_error_packet(sdi, vdev, &packet);
+                            return FALSE;
+                        }
+>>>>>>> source/dev-1.3
 
                             while (1)
                             {
@@ -1845,8 +1852,52 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
                             unzCloseCurrentFile(vdev->archive);
                             pack_buffer->block_read_positions[ch_index] = 0; // Reset the read position.
                         }
+<<<<<<< HEAD
                         vdev->cur_block++;
                         pack_buffer->block_chan_read_pos = 0;
+=======
+
+                        // Read the data to buffer.
+                        if (unzOpenCurrentFile(vdev->archive) != UNZ_OK)
+                        {
+                            sr_err("can't open zip inner file:\"%s\"", file_name);
+                            send_error_packet(sdi, vdev, &packet);
+                            return FALSE;
+                        }
+
+                        ret = unzReadCurrentFile(vdev->archive, pack_buffer->block_bufs[ch_index], pack_buffer->block_data_len);
+                        if (-1 == ret)
+                        {
+                            sr_err("read zip inner file error:\"%s\"", file_name);
+                            send_error_packet(sdi, vdev, &packet);
+                            return FALSE;
+                        }
+                        unzCloseCurrentFile(vdev->archive);
+                        pack_buffer->block_read_positions[ch_index] = 0; // Reset the read position.
+                    }
+                    vdev->cur_block++;
+                    pack_buffer->block_chan_read_pos = 0;
+                }
+
+                p_wr = (uint8_t*)pack_buffer->post_buf + pack_buffer->post_len;
+                p_rd = (uint8_t*)pack_buffer->block_bufs[read_chan_index] + pack_buffer->block_read_positions[read_chan_index];
+                *p_wr = *p_rd;
+
+                pack_buffer->post_len++;
+                pack_buffer->block_read_positions[read_chan_index]++;
+
+                if (pack_buffer->block_read_positions[read_chan_index] % byte_align == 0
+                        || pack_buffer->block_read_positions[read_chan_index] == pack_buffer->block_data_len)
+                {
+                    read_chan_index++;
+
+                    if (pack_buffer->block_read_positions[read_chan_index] == pack_buffer->block_data_len){
+                        sr_info("Block read end.");
+                        if (vdev->cur_block < vdev->num_blocks){
+                            sr_err("%s", "The block data is not align.");
+                            break;
+                        }
+>>>>>>> source/dev-1.3
                     }
 
                     p_wr = (uint8_t*)pack_buffer->post_buf + pack_buffer->post_len;
@@ -2129,13 +2180,13 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
 
             if (unzLocateFile(vdev->archive, file_name, 0) != UNZ_OK)
             {
-                sr_err("cant't locate zip inner file:\"%s\"", file_name);
+                sr_err("can't locate zip inner file:\"%s\"", file_name);
                 send_error_packet(sdi, vdev, &packet);
                 return FALSE;
             }
             if (unzOpenCurrentFile(vdev->archive) != UNZ_OK)
             {
-                sr_err("cant't open zip inner file:\"%s\"", file_name);
+                sr_err("can't open zip inner file:\"%s\"", file_name);
                 send_error_packet(sdi, vdev, &packet);
                 return FALSE;
             }

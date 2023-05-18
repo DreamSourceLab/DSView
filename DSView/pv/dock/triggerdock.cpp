@@ -38,6 +38,8 @@
 #include "../deviceagent.h"
 #include "../view/logicsignal.h"
 #include "../ui/langresource.h"
+#include <QRegExp>
+#include <QRegExpValidator>
 
 namespace pv {
 namespace dock {
@@ -587,6 +589,7 @@ void TriggerDock::setup_adv_tab()
     const QString mask = "N N N N N N N N N N N N N N N N";
     QRegularExpression value_rx("[10XRFCxrfc ]+");
     QValidator *value_validator = new QRegularExpressionValidator(value_rx, _stage_tabWidget);
+
     for (int i = 0; i < TriggerStages; i++) {
         DsComboBox *_logic_comboBox = new DsComboBox(_stage_tabWidget);
         _logic_comboBox->addItem(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_OR), "Or"));
@@ -756,21 +759,27 @@ void TriggerDock::setup_adv_tab()
 
     _serial_data_label = new QLabel(_serial_groupBox);
     _serial_data_comboBox = new DsComboBox(_serial_groupBox);
-    for(int i = 0; i < _cur_ch_num; i++)
+
+    for(int i = 0; i < _cur_ch_num; i++){
         _serial_data_comboBox->addItem(QString::number(i));
+    }
 
     _serial_value_label = new QLabel(_serial_groupBox);
     _serial_value_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", _serial_groupBox);
     _serial_value_lineEdit->setFont(font);
-    _serial_value_lineEdit->setValidator(value_validator);
     _serial_value_lineEdit->setMaxLength(TriggerProbes * 2 - 1);
     _serial_value_lineEdit->setInputMask(mask);
     _serial_value_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
-    _serial_bits_comboBox = new DsComboBox(_serial_groupBox);
-    for(int i = 1; i <= 16; i++)
-        _serial_bits_comboBox->addItem(QString::number(i));
+    QRegularExpression value_rx2("[10Xx ]+");
+    QValidator *value_validator2 = new QRegularExpressionValidator(value_rx2, _stage_tabWidget);
+    _serial_value_lineEdit->setValidator(value_validator2);
 
+    _serial_bits_comboBox = new DsComboBox(_serial_groupBox);
+
+    for(int i = 1; i <= 16; i++){
+        _serial_bits_comboBox->addItem(QString::number(i));
+    }
 
     QVBoxLayout *serial_layout = new QVBoxLayout();
     QGridLayout *serial_glayout = new QGridLayout();

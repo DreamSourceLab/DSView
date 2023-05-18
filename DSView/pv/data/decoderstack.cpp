@@ -415,7 +415,8 @@ void DecoderStack::do_decode_work()
      _decoder_status->clear(); //clear old items
 
     if (!_options_changed)
-    { 
+    {  
+        dsv_err("ERROR:Decoder options have not changed.");
         return;
     } 
     _options_changed = false;
@@ -452,17 +453,25 @@ void DecoderStack::do_decode_work()
     }
 
 	if (_snapshot == NULL)
-		return;
+    {   
+        _error_message = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DECODERSTACK_DECODE_WORK_ERROR),
+                             "One or more required channels have not been specified");
+        return;
+    }		
 
     if (_session->is_realtime_refresh() == false && _snapshot->empty())
     { 
+        dsv_err("ERROR:Decode data is empty.");
         return;
     }
 
     // Get the samplerate
 	_samplerate = _snapshot->samplerate();
     if (_samplerate == 0.0)
+    {
+        dsv_err("ERROR:Decode data got an invalid sample rate.");
         return;
+    }
      
     execute_decode_stack();   
 }
@@ -508,7 +517,7 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
     //struct srd_push_param push_param;
 
     if( i >= decode_end){
-        dsv_info("%s", "decode data index have been end");
+        dsv_info("%s", "decode data index have been to end");
     }
 
     std::vector<const uint8_t *> chunk;
@@ -558,12 +567,14 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
             if (sig_index == -1) {
                 chunk.push_back(NULL);
                 chunk_const.push_back(0);
-            } else {
+            }
+            else {
                 if (_snapshot->has_data(sig_index)) {
                     auto data_ptr = _snapshot->get_decode_samples(i, chunk_end, sig_index);
                     chunk.push_back(data_ptr);
                     chunk_const.push_back(_snapshot->get_sample(i, sig_index));
-                } else {
+                }
+                else {
                     _error_message = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DECODERSTACK_DECODE_DATA_ERROR),
                                      "At least one of selected channels are not enabled.");
                     return;
@@ -622,13 +633,13 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
     if (!bError && bEndTime){
        srd_session_end(session, &error);
 
-        if (error)
+        if (error != NULL)
             _error_message = QString::fromLocal8Bit(error);
     }
  
     dsv_info("%s%llu", "send to decoder times: ", entry_cnt);
 
-    if (error)
+    if (error != NULL)
         g_free(error);
   
     if (!_session->is_closed())
@@ -692,14 +703,16 @@ void DecoderStack::execute_decode_stack()
                     _stask_stauts);
 
     char *error = NULL;
-    if (srd_session_start(session, &error) == SRD_OK)
+    if (srd_session_start(session, &error) == SRD_OK){
        //need a lot time
         decode_data(decode_start, decode_end, session);
-    else
+    }
+    else if (error != NULL){
         _error_message = QString::fromLocal8Bit(error);
+    }
 
 	// Destroy the session
-    if (error) {
+    if (error != NULL) {
         g_free(error);
     }
 
