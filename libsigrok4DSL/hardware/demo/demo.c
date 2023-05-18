@@ -52,7 +52,7 @@
 static struct DEMO_channels channel_modes[] = {
     // LA Stream
     {DEMO_LOGIC100x16,  LOGIC,  SR_CHANNEL_LOGIC,  16, 1, SR_MHZ(1), SR_Mn(1),
-     SR_KHZ(10), SR_MHZ(100), "Use 16 Channels (Max 20MHz)"},
+     SR_KHZ(10), SR_GHZ(1), "Use 16 Channels (Max 20MHz)"},
     //updata
 
     // DAQ
@@ -73,6 +73,7 @@ SR_PRIV struct sr_dev_driver demo_driver_info;
 static struct sr_dev_driver *di = &demo_driver_info;
 
 extern struct ds_trigger *trigger;
+
 
 static void init_analog_random_data(struct session_vdev * vdev)
 {
@@ -555,6 +556,17 @@ static int hw_dev_open(struct sr_dev_inst *sdi)
         sr_err("%s: vdev->logic_buf malloc failed", __func__);
         return SR_ERR_MALLOC;  
     }
+
+    if(vdev->dso_buf != NULL)
+    {
+        g_safe_free(vdev->dso_buf);
+    }
+    vdev->dso_buf = g_try_malloc0(DSO_PACKET_LEN);
+    if(vdev->dso_buf == NULL)
+    {
+        sr_err("%s: vdev->dso_buf malloc failed", __func__);
+        return SR_ERR_MALLOC;  
+    }
     
 
     vdev->logic_buf_len = LOGIC_BUF_LEN;
@@ -873,6 +885,18 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         break;
     case SR_CONF_PROBE_OFFSET:
         ch->offset = g_variant_get_uint16(data);
+        if(sdi->mode == DSO && ch->vdiv <= SR_mV(200))
+        {
+            ch->hw_offset = ch->offset;
+            offset_change = TRUE;
+        }
+        else{
+            if(ch->coupling == 0)
+                ch->hw_offset = 178;
+            else
+                ch->hw_offset = 128;
+        }
+
         break;
     case SR_CONF_PROBE_HW_OFFSET:
         ch->hw_offset = g_variant_get_uint16(data);
@@ -887,20 +911,20 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         sr_dbg("Setting timebase to %llu.", vdev->timebase);
         break;
     case SR_CONF_PROBE_COUPLING:
-        ch->coupling = g_variant_get_byte(data);
-        if(sdi->mode == ANALOG)
+        if(sdi->mode != LOGIC)
         {
-            if(ch->coupling == 0)
-                ch->hw_offset = 178;
-            else
-                ch->hw_offset = 128;
-        }
-        else if(sdi->mode == DSO)
-        {
-            if(ch->coupling == 0)
-                ch->hw_offset = 178;
-            else
-                ch->hw_offset = 128;
+            if(sdi->mode == DSO && ch->vdiv <= SR_mV(200))
+            {
+                ch->coupling = g_variant_get_byte(data);
+                ch->hw_offset = ch->offset;
+            }
+            else{
+                ch->coupling = g_variant_get_byte(data);
+                if(ch->coupling == 0)
+                    ch->hw_offset = 178;
+                else
+                    ch->hw_offset = 128;
+            }
         }
         break;
     case SR_CONF_TRIGGER_SOURCE:
@@ -1121,7 +1145,6 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
             packet_len = LOGIC_MIN_PACKET_LEN;
             packet_time = LOGIC_MIN_PACKET_TIME(vdev->samplerate);
         }
-
         
         if(sample_generator == PATTERN_RANDOM)
         {
@@ -1149,6 +1172,8 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
             packet_time = DSO_PACKET_TIME;
         }
         
+        load_data = TRUE;
+
         g_timer_start(run_time);
         
         sr_session_source_add(-1, 0, 0, receive_data_dso, sdi);
@@ -1276,6 +1301,7 @@ static int receive_data_logic(int fd, int revents, const struct sr_dev_inst *sdi
         int index = enabled_probe_num * 8;
         random = floor(random/index)*index;
         logic.data = vdev->logic_buf + random;
+
         ds_data_forward(sdi, &packet);
         delay_time();
     }
@@ -1706,7 +1732,7 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
     read_chan_index = 0;
     dir_index = 0;
 
-    if(vdiv_change || timebase_change)
+    if(vdiv_change || timebase_change ||offset_change)
     {
         if(sample_generator == PATTERN_RANDOM)
         {
@@ -1721,133 +1747,143 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
         }
         else
         {
-            pack_buffer->post_len = 0;
-            while (pack_buffer->post_len < pack_buffer->post_buf_len)
+            if(load_data)
             {
-                if (pack_buffer->block_chan_read_pos >= pack_buffer->block_data_len)
+                pack_buffer->post_len = 0;
+                while (pack_buffer->post_len < pack_buffer->post_buf_len)
                 {
-                    if (vdev->cur_block >= vdev->num_blocks){
-                        vdev->cur_block = 0;
-                    }
-
-                    for (ch_index = 0; ch_index < chan_num; ch_index++)
+                    if (pack_buffer->block_chan_read_pos >= pack_buffer->block_data_len)
                     {
-                        bCheckFile = 0;
-
-                        while (1)
-                        {
-                            if (sdi->mode  == LOGIC)
-                                snprintf(file_name, sizeof(file_name)-1, "L-%d/%d", dir_index++, vdev->cur_block);
-                            else if (sdi->mode == DSO)
-                                snprintf(file_name, sizeof(file_name)-1, "O-%d/0", dir_index++);
-
-                            if (unzLocateFile(vdev->archive, file_name, 0) == UNZ_OK){
-                                bCheckFile = 1;
-                                break;
-                            }
-                            else if (dir_index > file_max_channel_count){
-                                break;
-                            }
+                        if (vdev->cur_block >= vdev->num_blocks){
+                            vdev->cur_block = 0;
                         }
+
+                        for (ch_index = 0; ch_index < chan_num; ch_index++)
+                        {
+                            bCheckFile = 0;
+
+                            while (1)
+                            {
+                                if (sdi->mode  == LOGIC)
+                                    snprintf(file_name, sizeof(file_name)-1, "L-%d/%d", dir_index++, vdev->cur_block);
+                                else if (sdi->mode == DSO)
+                                    snprintf(file_name, sizeof(file_name)-1, "O-%d/0", dir_index++);
+
+                                if (unzLocateFile(vdev->archive, file_name, 0) == UNZ_OK){
+                                    bCheckFile = 1;
+                                    break;
+                                }
+                                else if (dir_index > file_max_channel_count){
+                                    break;
+                                }
+                            }
 
                         if (!bCheckFile)
                         {
-                            sr_err("can't locate zip inner file:\"%s\"", file_name);
+                            sr_err("cant't locate zip inner file:\"%s\"", file_name);
                             send_error_packet(sdi, vdev, &packet);
                             return FALSE;
                         }
 
-                        if (unzGetCurrentFileInfo64(vdev->archive, &fileInfo, szFilePath,
-                                            sizeof(szFilePath), NULL, 0, NULL, 0) != UNZ_OK)
-                        {
-                            sr_err("%s: unzGetCurrentFileInfo64 error.", __func__);
-                            send_error_packet(sdi, vdev, &packet);
-                            return FALSE;
-                        }
-
-                        if (ch_index == 0){
-                            pack_buffer->block_data_len = fileInfo.uncompressed_size;
-
-                            if (pack_buffer->block_data_len > pack_buffer->block_buf_len)
+                            if (unzGetCurrentFileInfo64(vdev->archive, &fileInfo, szFilePath,
+                                                sizeof(szFilePath), NULL, 0, NULL, 0) != UNZ_OK)
                             {
-                                for (malloc_chan_index = 0; malloc_chan_index < chan_num; malloc_chan_index++){
-                                    // Release the old buffer.
-                                    if (pack_buffer->block_bufs[malloc_chan_index] != NULL){
-                                        g_safe_free(pack_buffer->block_bufs[malloc_chan_index]);
-                                        pack_buffer->block_bufs[malloc_chan_index] = NULL;
-                                    }
-
-                                    pack_buffer->block_bufs[malloc_chan_index] = g_try_malloc0(pack_buffer->block_data_len + 1);
-                                    if (pack_buffer->block_bufs[malloc_chan_index] == NULL){
-                                        sr_err("%s: block buffer malloc failed", __func__);
-                                        send_error_packet(sdi, vdev, &packet);
-                                        return FALSE;
-                                    }
-                                    pack_buffer->block_buf_len = pack_buffer->block_data_len;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (pack_buffer->block_data_len != fileInfo.uncompressed_size){
-                                sr_err("The block size is not coincident:%s", file_name);
+                                sr_err("%s: unzGetCurrentFileInfo64 error.", __func__);
                                 send_error_packet(sdi, vdev, &packet);
                                 return FALSE;
                             }
-                        }
 
-                        // Read the data to buffer.
-                        if (unzOpenCurrentFile(vdev->archive) != UNZ_OK)
-                        {
-                            sr_err("can't open zip inner file:\"%s\"", file_name);
-                            send_error_packet(sdi, vdev, &packet);
-                            return FALSE;
-                        }
+                            if (ch_index == 0){
+                                pack_buffer->block_data_len = fileInfo.uncompressed_size;
 
-                        ret = unzReadCurrentFile(vdev->archive, pack_buffer->block_bufs[ch_index], pack_buffer->block_data_len);
-                        if (-1 == ret)
-                        {
-                            sr_err("read zip inner file error:\"%s\"", file_name);
-                            send_error_packet(sdi, vdev, &packet);
-                            return FALSE;
+                                if (pack_buffer->block_data_len > pack_buffer->block_buf_len)
+                                {
+                                    for (malloc_chan_index = 0; malloc_chan_index < chan_num; malloc_chan_index++){
+                                        // Release the old buffer.
+                                        if (pack_buffer->block_bufs[malloc_chan_index] != NULL){
+                                            g_safe_free(pack_buffer->block_bufs[malloc_chan_index]);
+                                            pack_buffer->block_bufs[malloc_chan_index] = NULL;
+                                        }
+
+                                        pack_buffer->block_bufs[malloc_chan_index] = g_try_malloc0(pack_buffer->block_data_len + 1);
+                                        if (pack_buffer->block_bufs[malloc_chan_index] == NULL){
+                                            sr_err("%s: block buffer malloc failed", __func__);
+                                            send_error_packet(sdi, vdev, &packet);
+                                            return FALSE;
+                                        }
+                                        pack_buffer->block_buf_len = pack_buffer->block_data_len;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                if (pack_buffer->block_data_len != fileInfo.uncompressed_size){
+                                    sr_err("The block size is not coincident:%s", file_name);
+                                    send_error_packet(sdi, vdev, &packet);
+                                    return FALSE;
+                                }
+                            }
+
+                            // Read the data to buffer.
+                            if (unzOpenCurrentFile(vdev->archive) != UNZ_OK)
+                            {
+                                sr_err("cant't open zip inner file:\"%s\"", file_name);
+                                send_error_packet(sdi, vdev, &packet);
+                                return FALSE;
+                            }
+
+                            ret = unzReadCurrentFile(vdev->archive, pack_buffer->block_bufs[ch_index], pack_buffer->block_data_len);
+                            if (-1 == ret)
+                            {
+                                sr_err("read zip inner file error:\"%s\"", file_name);
+                                send_error_packet(sdi, vdev, &packet);
+                                return FALSE;
+                            }
+                            unzCloseCurrentFile(vdev->archive);
+                            pack_buffer->block_read_positions[ch_index] = 0; // Reset the read position.
                         }
-                        unzCloseCurrentFile(vdev->archive);
-                        pack_buffer->block_read_positions[ch_index] = 0; // Reset the read position.
+                        vdev->cur_block++;
+                        pack_buffer->block_chan_read_pos = 0;
                     }
-                    vdev->cur_block++;
-                    pack_buffer->block_chan_read_pos = 0;
+
+                    p_wr = (uint8_t*)pack_buffer->post_buf + pack_buffer->post_len;
+                    p_rd = (uint8_t*)pack_buffer->block_bufs[read_chan_index] + pack_buffer->block_read_positions[read_chan_index];
+                    *p_wr = *p_rd;
+
+                    pack_buffer->post_len++;
+                    pack_buffer->block_read_positions[read_chan_index]++;
+
+                    if (pack_buffer->block_read_positions[read_chan_index] % byte_align == 0
+                            || pack_buffer->block_read_positions[read_chan_index] == pack_buffer->block_data_len)
+                    {
+                        read_chan_index++;
+
+                        if (pack_buffer->block_read_positions[read_chan_index] == pack_buffer->block_data_len){
+                            sr_info("Block read end.");
+                            if (vdev->cur_block < vdev->num_blocks){
+                                sr_err("%s", "The block data is not align.");
+                                break;
+                            }
+                        }
+
+                        // Each channel's data is ready.
+                        if (read_chan_index == chan_num){
+                            read_chan_index = 0;
+                            pack_buffer->block_chan_read_pos += byte_align;
+                        }
+                    }
                 }
-
-                p_wr = (uint8_t*)pack_buffer->post_buf + pack_buffer->post_len;
-                p_rd = (uint8_t*)pack_buffer->block_bufs[read_chan_index] + pack_buffer->block_read_positions[read_chan_index];
-                *p_wr = *p_rd;
-
-                pack_buffer->post_len++;
-                pack_buffer->block_read_positions[read_chan_index]++;
-
-                if (pack_buffer->block_read_positions[read_chan_index] % byte_align == 0
-                        || pack_buffer->block_read_positions[read_chan_index] == pack_buffer->block_data_len)
-                {
-                    read_chan_index++;
-
-                    if (pack_buffer->block_read_positions[read_chan_index] == pack_buffer->block_data_len){
-                        sr_info("Block read end.");
-                        if (vdev->cur_block < vdev->num_blocks){
-                            sr_err("%s", "The block data is not align.");
-                            break;
-                        }
-                    }
-
-                    // Each channel's data is ready.
-                    if (read_chan_index == chan_num){
-                        read_chan_index = 0;
-                        pack_buffer->block_chan_read_pos += byte_align;
-                    }
-                }
+                memcpy(vdev->dso_buf,pack_buffer->post_buf,DSO_PACKET_LEN);
+                load_data = FALSE;
             }
+            else{
+                memcpy(pack_buffer->post_buf,vdev->dso_buf,DSO_PACKET_LEN);
+                pack_buffer->post_buf_len = DSO_PACKET_LEN;
+            }
+            
         }
 
-        if(timebase_change || vdiv_change)
+        if(timebase_change || vdiv_change || offset_change)
         {
             int index;
             int bit = get_bit(vdev->timebase); 
@@ -1888,9 +1924,10 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
                 g_safe_free(tmp_buf);
             }
 
+            uint16_t offset;
+            uint16_t high_gate,low_gate;
             for(int i = 0 ; i < pack_buffer->post_buf_len; i++)
             {
-                tem = 0;
                 if(i % 2 == 0)
                     probe = g_slist_nth(sdi->channels, 0)->data;
                 else
@@ -1902,30 +1939,58 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
                         probe = g_slist_nth(sdi->channels, 0)->data;
                 }
                 vdiv = probe->vdiv;
-
+                offset = probe->offset;
 
                 uint8_t temp_val = *((uint8_t*)pack_buffer->post_buf + i);
-                if(temp_val > DSO_MID_VAL)
-                {
-                    val = temp_val - DSO_MID_VAL;
-                    tem = val * DSO_DEFAULT_VDIV / vdiv;
-                    if(tem >= DSO_MID_VAL)
-                        temp_val = DSO_MIN_VAL;
-                    else
-                        temp_val = DSO_MID_VAL + tem;
-                }
-                else if(temp_val < DSO_MID_VAL)
-                {
-                    val = DSO_MID_VAL - temp_val;
-                    tem =  val * DSO_DEFAULT_VDIV / vdiv;
 
-                    if(tem >= DSO_MID_VAL)
-                        temp_val = DSO_MAX_VAL;
-                    else
+                if(vdiv > SR_mV(200))
+                {
+                    if(temp_val > DSO_MID_VAL)
+                    {
+                        val = temp_val - DSO_MID_VAL;
+                        tem = val * DSO_DEFAULT_VDIV / vdiv;
+                        temp_val = DSO_MID_VAL + tem;
+                    }
+                    else if(temp_val < DSO_MID_VAL)
+                    {
+                        val = DSO_MID_VAL - temp_val;
+                        tem =  val * DSO_DEFAULT_VDIV / vdiv;
                         temp_val = DSO_MID_VAL - tem;
+                    }
+                    *((uint8_t*)pack_buffer->post_buf + i) = temp_val;
                 }
-                *((uint8_t*)pack_buffer->post_buf + i) = temp_val;
+                else{
+                    if(temp_val > DSO_MID_VAL)
+                    {
+                        val = temp_val - DSO_MID_VAL;
+                        tem = (uint16_t)val * (uint16_t)DSO_DEFAULT_VDIV/(uint16_t)vdiv;
+                        tem = DSO_EXPAND_MID_VAL(SR_mV(200)/vdiv) + tem;
+                    }
+                    else if(temp_val < DSO_MID_VAL)
+                    {
+                        val = DSO_MID_VAL - temp_val;
+                        tem =  (uint16_t)val * (uint16_t)DSO_DEFAULT_VDIV/(uint16_t)vdiv;
+                        tem =  DSO_EXPAND_MID_VAL(SR_mV(200)/vdiv) - tem;
+                    }
+                    else{
+                        tem =  DSO_EXPAND_MID_VAL(SR_mV(200)/vdiv);
+                    }
+
+                    high_gate =  DSO_EXPAND_MID_VAL(SR_mV(200)/vdiv);
+                    high_gate -= probe->offset;
+                    low_gate = high_gate + DSO_LIMIT;
+                    if(tem <=high_gate)
+                        tem = DSO_MAX_VAL;
+                    else if(tem >=low_gate)
+                        tem = DSO_MIN_VAL;
+                    else
+                        tem-= high_gate;
+                    test[i] = tem;
+                    *((uint8_t*)pack_buffer->post_buf + i) = (uint8_t)tem;
+                }
             }
+
+            offset_change = FALSE;
             timebase_change = FALSE;
             vdiv_change = FALSE;
         }

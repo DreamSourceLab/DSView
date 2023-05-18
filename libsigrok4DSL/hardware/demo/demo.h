@@ -51,6 +51,7 @@ static uint64_t post_data_len;
 extern char DS_RES_PATH[500];
 static gboolean vdiv_change;
 static gboolean timebase_change;
+static gboolean offset_change;
 static gboolean instant = FALSE;
 static int max_probe_num = 0;
 extern char DS_RES_PATH[500];
@@ -83,6 +84,8 @@ struct session_vdev
 
     void *logic_buf;
     uint64_t logic_buf_len;
+
+    void *dso_buf;
 
     void *analog_buf;
     uint64_t analog_buf_len;
@@ -261,10 +264,11 @@ static const uint64_t samplerates[] = {
 #define LOGIC_MIN_PACKET_LEN 8
 #define LOGIC_MIN_PACKET_NUM(n) (LOGIC_POST_DATA_PER_SECOND(n))/(LOGIC_MIN_PACKET_LEN)
 #define LOGIC_MIN_PACKET_TIME(n) ((SEC)/(gdouble)(LOGIC_MIN_PACKET_NUM(n)))
-#define LOGIC_MAX_PACKET_LEN 62500
+#define LOGIC_MAX_PACKET_LEN 62504
 #define LOGIC_MAX_PACKET_NUM(n) (LOGIC_POST_DATA_PER_SECOND(n))/(LOGIC_MAX_PACKET_LEN)
 #define LOGIC_MAX_PACKET_TIME(n) ((SEC)/(gdouble)(LOGIC_MAX_PACKET_NUM(n)))
-#define LOGIC_BUF_LEN SR_MB(1)
+
+#define LOGIC_BUF_LEN SR_MB(10)
 
 
 #define DSO_PACKET_NUM_PER_SEC (gdouble)200
@@ -282,7 +286,7 @@ static const uint64_t samplerates[] = {
 #define ANALOG_MIN_PACKET_NUM(n) ((ANALOG_POST_DATA_PER_SECOND(n))/(ANALOG_MIN_PACKET_LEN))
 #define ANALOG_PACKET_ALIGN 2
 
-#define LOGIC_HW_DEPTH (SR_MHZ(100))
+#define LOGIC_HW_DEPTH (SR_GHZ(16))
 
 
 #define LOGIC_MAX_PROBE_NUM 16
@@ -294,6 +298,9 @@ static const uint64_t samplerates[] = {
 #define DSO_MID_VAL 128
 #define DSO_MAX_VAL 0
 #define DSO_MIN_VAL 255
+
+#define DSO_EXPAND_MID_VAL(i) ((i)*(uint16_t)(256))
+#define DSO_LIMIT 255
 
 
 #define ANALOG_HW_DEPTH (SR_MHZ(12.5))
@@ -310,7 +317,6 @@ static const uint64_t samplerates[] = {
 #define ANALOG_RETE(n) ((n/SR_HZ(10)))
 
 
-// #define LOGIC_UNIT_BITS 
 
 static const char *maxHeights[] = {
     "1X",
@@ -495,10 +501,6 @@ static void scan_dsl_file(struct sr_dev_inst *sdi);
 static int reset_dsl_path(struct sr_dev_inst *sdi,uint8_t device_mode ,uint8_t pattern_mode);
 
 static void adjust_samplerate(struct sr_dev_inst *sdi);
-
-
-
-
 
 static void init_random_data(struct session_vdev * vdev,struct sr_dev_inst *sdi);
 
