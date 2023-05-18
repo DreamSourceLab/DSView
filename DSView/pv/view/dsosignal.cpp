@@ -453,11 +453,14 @@ void DsoSignal::set_trig_ratio(double ratio, bool delta_change)
         _trig_value = ratio2value(delta + 0.5);
     }
     else {
+        if (delta < 0.06f)
+            delta = 0.06f;
+        if (delta > 0.945f)
+            delta = 0.945f;
+
         _trig_value = ratio2value(delta);
     }
-
-    int margin = TrigMargin;
-    _trig_value = std::min(std::max(_trig_value, margin), (ratio2value(1) - margin));
+ 
     if (delta_change)
         _trig_delta = get_trig_vrate() - get_zero_ratio();
     session->get_device()->set_config(_probe, NULL, SR_CONF_TRIGGER_VALUE,
