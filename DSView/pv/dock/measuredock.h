@@ -111,6 +111,7 @@ private:
     QLabel *_period_label;
     QLabel *_freq_label;
     QLabel *_duty_label;
+    QLabel *_add_dec_label;
 
     QGridLayout *_dist_layout;
     QGroupBox *_dist_groupBox;
