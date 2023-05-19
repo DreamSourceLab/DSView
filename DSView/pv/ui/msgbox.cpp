@@ -85,7 +85,7 @@ void MsgBox::Show(const QString title, const QString text, const QString infoTex
 
 bool MsgBox::Confirm(const QString text, QWidget *parent)
 {
-    MsgBox::Confirm(text, "", parent);
+    return MsgBox::Confirm(text, "", parent);
 }
 
 bool MsgBox::Confirm(const QString text, const QString infoText, QWidget *parent)
