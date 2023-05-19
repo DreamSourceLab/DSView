@@ -1985,7 +1985,6 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
                         tem = DSO_MIN_VAL;
                     else
                         tem-= high_gate;
-                    test[i] = tem;
                     *((uint8_t*)pack_buffer->post_buf + i) = (uint8_t)tem;
                 }
             }
