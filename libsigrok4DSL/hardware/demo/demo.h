@@ -31,6 +31,26 @@ enum DEMO_PATTERN {
     PATTERN_DEFAULT = 1,
 };
 
+enum DEMO_LOGIC_CHANNEL_ID {
+    DEMO_LOGIC125x16 = 16,
+    DEMO_LOGIC250x12 = 17,
+    DEMO_LOGIC500x6 = 18,
+    DEMO_LOGIC1000x3 = 19,
+};
+
+enum DEMO_CHANNEL_ID {
+    DEMO_LOGIC100x16 = 0,
+    DEMO_ANALOG10x2 = 1 ,
+    DEMO_DSO200x2 = 2,
+};
+
+enum DEMO_LOGIC_CHANNEL_INDEX {
+    LOGIC125x16 = 0,
+    LOGIC250x12 = 1,
+    LOGIC500x6 = 2,
+    LOGIC1000x3 = 3,
+};
+
 static char *pattern_strings_logic[100]  = {"random"};
 static char *pattern_strings_dso[100] = {"random"};
 static char *pattern_strings_analog[100] = {"random"};
@@ -58,6 +78,9 @@ extern char DS_RES_PATH[500];
 uint8_t sample_generator;
 static int64_t analog_count = 0;
 static uint64_t total_num = 0;
+
+static enum DEMO_LOGIC_CHANNEL_ID ch_mode = DEMO_LOGIC125x16;
+static enum DEMO_LOGIC_CHANNEL_INDEX logic_index = LOGIC125x16;
 
 struct session_packet_buffer;
 
@@ -151,11 +174,7 @@ struct DEMO_profile {
     struct DEMO_caps dev_caps;
 };
 
-enum DEMO_CHANNEL_ID {
-    DEMO_LOGIC100x16 = 0,
-    DEMO_ANALOG10x2 = 1 ,
-    DEMO_DSO200x2 = 2,
-};
+
 
 struct DEMO_channels {
     enum DEMO_CHANNEL_ID id;
@@ -233,8 +252,8 @@ static const uint64_t samplerates[] = {
     SR_MHZ(25),
     SR_MHZ(40),
     SR_MHZ(50),
-    SR_MHZ(100),
-    SR_MHZ(200),
+    SR_MHZ(125),
+    SR_MHZ(250),
     SR_MHZ(400),
     SR_MHZ(500),
     SR_MHZ(800),
@@ -286,7 +305,7 @@ static const uint64_t samplerates[] = {
 #define ANALOG_MIN_PACKET_NUM(n) ((ANALOG_POST_DATA_PER_SECOND(n))/(ANALOG_MIN_PACKET_LEN))
 #define ANALOG_PACKET_ALIGN 2
 
-#define LOGIC_HW_DEPTH (SR_GHZ(16))
+#define LOGIC_HW_DEPTH (SR_GHZ(1))
 
 
 #define LOGIC_MAX_PROBE_NUM 16
@@ -479,6 +498,12 @@ static const int ranx[] = {
   1,  30, -12,  44,  20,  49,  29, -43,  42,  30, -34,  24,  20, -40,  33, -12,  13, -45,  45, -24,
 -41,  36,  -8,  46,  47, -34,  28, -39,   7, -32,  38, -27,  28,  -3,  -8,  43, -37, -24,   6,   3,
 };
+
+static int get_logic_probe_type_index_by_probe_type(int probe_type);
+
+static int logic_adjust_probe(struct sr_dev_inst *sdi, int num_probes);
+
+static void logic_adjust_samplerate(struct session_vdev * vdev);
 
 static void init_analog_random_data(struct session_vdev * vdev);
 

@@ -49,11 +49,23 @@
 #define BUFSIZE                512*1024
 #define DSO_BUFSIZE            10*1024
 
+static struct DEMO_channels logic_channel_modes[] = {
+    {DEMO_LOGIC125x16,  LOGIC,  SR_CHANNEL_LOGIC,  16, 1, SR_MHZ(1), SR_Mn(1),
+     SR_KHZ(10), SR_MHZ(125), "Use 16 Channels (Max 125MHz)"},
+    {DEMO_LOGIC250x12,  LOGIC,  SR_CHANNEL_LOGIC,  12, 1, SR_MHZ(1), SR_Mn(1),
+     SR_KHZ(10), SR_MHZ(250), "Use 12 Channels (Max 250MHz)"},
+    {DEMO_LOGIC500x6,  LOGIC,  SR_CHANNEL_LOGIC,  6, 1, SR_MHZ(1), SR_Mn(1),
+     SR_KHZ(10), SR_MHZ(500), "Use 6 Channels (Max 500MHz)"},
+    {DEMO_LOGIC1000x3,  LOGIC,  SR_CHANNEL_LOGIC,  3, 1, SR_MHZ(1), SR_Mn(1),
+     SR_KHZ(10), SR_GHZ(1), "Use 3 Channels (Max 1GHz)"},
+};
+
+static struct sr_list_item logic_channel_mode_list[ARRAY_SIZE(logic_channel_modes)+1];
+
 static struct DEMO_channels channel_modes[] = {
     // LA Stream
     {DEMO_LOGIC100x16,  LOGIC,  SR_CHANNEL_LOGIC,  16, 1, SR_MHZ(1), SR_Mn(1),
      SR_KHZ(10), SR_GHZ(1), "Use 16 Channels (Max 20MHz)"},
-    //updata
 
     // DAQ
     {DEMO_ANALOG10x2,   ANALOG, SR_CHANNEL_ANALOG,  2,  8, SR_MHZ(1), SR_Mn(1),
@@ -73,6 +85,58 @@ SR_PRIV struct sr_dev_driver demo_driver_info;
 static struct sr_dev_driver *di = &demo_driver_info;
 
 extern struct ds_trigger *trigger;
+
+static int logic_adjust_probe(struct sr_dev_inst *sdi, int num_probes)
+{
+    uint16_t j;
+    struct sr_channel *probe;
+    struct DSL_context *devc = sdi->priv;
+    GSList *l;
+
+    assert(num_probes > 0);
+
+    j = g_slist_length(sdi->channels);
+    while(j < num_probes) {
+        if (!(probe = sr_channel_new(j, SR_CHANNEL_LOGIC,
+                                   TRUE, probe_names[j])))
+            return SR_ERR;
+        sdi->channels = g_slist_append(sdi->channels, probe);
+        j++;
+    }
+
+    while(j > num_probes) {
+        sdi->channels = g_slist_delete_link(sdi->channels, g_slist_last(sdi->channels));
+        j--;
+    }
+
+    for(l = sdi->channels; l; l = l->next) {
+        probe = (struct sr_channel *)l->data;
+        probe->enabled = TRUE;
+        probe->type = SR_CHANNEL_LOGIC;
+    }
+    return SR_OK;
+}
+
+static void logic_adjust_samplerate(struct session_vdev * vdev)
+{
+    vdev->samplerates_max_index = ARRAY_SIZE(samplerates) - 1;
+    while (samplerates[vdev->samplerates_max_index] >
+           logic_channel_modes[logic_index].max_samplerate)
+        vdev->samplerates_max_index--;
+
+    vdev->samplerates_min_index = 0;
+    while (samplerates[vdev->samplerates_min_index] <
+           logic_channel_modes[logic_index].min_samplerate)
+        vdev->samplerates_min_index++;
+
+    assert(vdev->samplerates_max_index >= vdev->samplerates_min_index);
+
+    if (vdev->samplerate > samplerates[vdev->samplerates_max_index])
+        vdev->samplerate = samplerates[vdev->samplerates_max_index];
+
+    if (vdev->samplerate < samplerates[vdev->samplerates_min_index])
+        vdev->samplerate = samplerates[vdev->samplerates_min_index];
+}
 
 
 static void init_analog_random_data(struct session_vdev * vdev)
@@ -773,6 +837,9 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_REF_MAX:
         *data = g_variant_new_uint32(vdev->ref_max);
         break;
+    case SR_CONF_CHANNEL_MODE:
+        *data = g_variant_new_int16(ch_mode);
+        break;
     default:
         return SR_ERR_NA;
     }
@@ -789,6 +856,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     struct session_vdev *vdev;
     const char *stropt;
     unsigned int i;
+    int nv;
 
     assert(sdi);
     assert(sdi->priv);
@@ -972,6 +1040,23 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         vdev->is_loop = g_variant_get_boolean(data);
         sr_info("Set demo loop mode:%d", vdev->is_loop);
         break;
+    case SR_CONF_CHANNEL_MODE:
+        nv = g_variant_get_int16(data);
+        if(sdi->mode == LOGIC && sample_generator == PATTERN_RANDOM)
+        {
+            for(i = 0 ; i < ARRAY_SIZE(logic_channel_modes);i++)
+            {
+                if(logic_channel_modes[i].id == nv)
+                {
+                    logic_index = i;
+                    ch_mode = nv;
+                    logic_adjust_probe(sdi,logic_channel_modes[i].num);
+                    logic_adjust_samplerate(vdev);
+                    break;
+                }
+            }
+        }
+        break;
     default:
         sr_err("Unknown capability: %d.", id);
         return SR_ERR_NA;
@@ -1054,6 +1139,24 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
         break;
     case SR_CONF_PROBE_MAP_UNIT:
         *data = g_variant_new_strv(probeMapUnits, ARRAY_SIZE(probeMapUnits));
+        break;
+    case SR_CONF_CHANNEL_MODE:
+        if(sdi->mode == LOGIC&& sample_generator == PATTERN_RANDOM)
+        {
+            for(int i = 0;i<ARRAY_SIZE(logic_channel_mode_list);i++)
+            {
+                logic_channel_mode_list[i].id = logic_channel_modes[i].id;
+                logic_channel_mode_list[i].name = logic_channel_modes[i].descr;
+                if(i == ARRAY_SIZE(logic_channel_mode_list)-1)
+                {
+                    logic_channel_mode_list[i].id = -1;
+                    logic_channel_mode_list[i].name = NULL;
+                }
+            }
+            *data = g_variant_new_uint64((uint64_t)&logic_channel_mode_list);
+        }
+        else
+            return SR_ERR_ARG;
         break;
     default:
         return SR_ERR_ARG;
@@ -2350,7 +2453,10 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
 
             sdi->channels = g_slist_append(sdi->channels, probe);
         }
-        adjust_samplerate(sdi);
+
+        ch_mode = DEMO_LOGIC125x16;
+        logic_index = LOGIC125x16;
+        logic_adjust_samplerate(sdi->priv);
     }
     else if(sdi->mode == DSO)
     {
