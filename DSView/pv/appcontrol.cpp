@@ -60,7 +60,7 @@ AppControl* AppControl::Instance()
 }
 
 void AppControl::Destroy(){
-    delete this;
+     
 } 
 
 bool AppControl::Init()
