@@ -212,12 +212,8 @@ void DeviceOptions::accept()
         QDialog::accept();
     }
     else {
-        dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_ATTENTION), "Attention"));
-        msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_ALL_CHANNEL_DISABLE), "All channel disabled! Please enable at least one channel."));
-        msg.mBox()->addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_OK), "Ok"), QMessageBox::AcceptRole);
-        msg.mBox()->setIcon(QMessageBox::Warning);
-        msg.exec();
+        QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_ALL_CHANNEL_DISABLE), "All channel disabled! Please enable at least one channel."));
+        MsgBox::Show(strMsg);
     }
 }
 
@@ -447,17 +443,14 @@ void DeviceOptions::zero_adj()
     using namespace Qt;
     QDialog::accept();
 
-    dialogs::DSMessageBox msg(this);
-    msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_INFORMATION), "Information"));
-    msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_AUTO_CALIB_START), 
-                                   "Auto Calibration program will be started. Don't connect any probes. It can take a while!"));
-    msg.mBox()->addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_OK), "Ok"), QMessageBox::AcceptRole);
-    msg.mBox()->addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CANCEL), "Cancel") ,QMessageBox::RejectRole);
-    msg.mBox()->setIcon(QMessageBox::Information);
+    QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_AUTO_CALIB_START), 
+                                   "Auto Calibration program will be started. Don't connect any probes. \nIt can take a while!"));
+    bool bRet = MsgBox::Confirm(strMsg);
 
-    if (msg.exec()) {
+    if (bRet) {
         _device_agent->set_config(NULL, NULL, SR_CONF_ZERO, g_variant_new_boolean(true));
-    } else {
+    } 
+    else {
         _device_agent->set_config(NULL, NULL, SR_CONF_ZERO, g_variant_new_boolean(false));
     }
 }
@@ -580,7 +573,7 @@ void DeviceOptions::channel_checkbox_clicked(QCheckBox *sc)
         if (cur_ch_num > vld_ch_num) {
             QString msg_str(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_MAX_CHANNEL_COUNT_WARNING), "max count of channels!"));
             msg_str = msg_str.replace("{0}", QString::number(vld_ch_num) );
-            MsgBox::Show("", msg_str);
+            MsgBox::Show(msg_str);
 
             sc->setChecked(false);
         }

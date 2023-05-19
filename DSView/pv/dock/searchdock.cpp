@@ -39,8 +39,8 @@
 #include <QtConcurrent/QtConcurrent>
 #include <stdint.h> 
 #include "../config/appconfig.h"
-
 #include "../ui/langresource.h"
+#include "../ui/msgbox.h"
 
 namespace pv {
 namespace dock {
@@ -131,12 +131,8 @@ void SearchDock::on_previous()
     const auto logic_snapshot = dynamic_cast<data::LogicSnapshot*>(snapshot);
 
     if (logic_snapshot == NULL || logic_snapshot->empty()) {
-        dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SEARCH), "Search"));
-        msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NO_SAMPLE_DATA), "No Sample data!"));
-        msg.mBox()->setStandardButtons(QMessageBox::Ok);
-        msg.mBox()->setIcon(QMessageBox::Warning);
-        msg.exec();
+        QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NO_SAMPLE_DATA), "No Sample data!"));
+        MsgBox::Show(strMsg);        
         return;
     }
 
@@ -144,14 +140,11 @@ void SearchDock::on_previous()
     last_pos = _view.get_search_pos();
     last_hit = _view.get_search_hit();
     if (last_pos == 0) {
-        dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SEARCH), "Search"));
-        msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SEARCH_AT_START), "Search cursor at the start position!"));
-        msg.mBox()->setStandardButtons(QMessageBox::Ok);
-        msg.mBox()->setIcon(QMessageBox::Warning);
-        msg.exec();
+        QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SEARCH_AT_START), "Search cursor at the start position!"));
+        MsgBox::Show(strMsg);
         return;
-    } else {
+    }
+    else {
         QFuture<void> future;
         future = QtConcurrent::run([&]{
             last_pos -= last_hit;
@@ -171,12 +164,8 @@ void SearchDock::on_previous()
         dlg.exec();
 
         if (!ret) {
-            dialogs::DSMessageBox msg(this);
-            msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SEARCH), "Search"));
-            msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_PATTERN_NOT_FOUND), "Pattern not found!"));
-            msg.mBox()->setStandardButtons(QMessageBox::Ok);
-            msg.mBox()->setIcon(QMessageBox::Warning);
-            msg.exec();
+            QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_PATTERN_NOT_FOUND), "Pattern not found!"));
+            MsgBox::Show(strMsg);
             return;
         } else {
             _view.set_search_pos(last_pos, true);
@@ -193,24 +182,16 @@ void SearchDock::on_next()
     const auto logic_snapshot = dynamic_cast<data::LogicSnapshot*>(snapshot);
 
     if (logic_snapshot == NULL || logic_snapshot->empty()) {
-        dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SEARCH), "Search"));
-        msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NO_SAMPLE_DATA), "No Sample data!"));
-        msg.mBox()->setStandardButtons(QMessageBox::Ok);
-        msg.mBox()->setIcon(QMessageBox::Warning);
-        msg.exec();
+        QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NO_SAMPLE_DATA), "No Sample data!"));
+        MsgBox::Show(strMsg);
         return;
     }
 
     const int64_t end = logic_snapshot->get_sample_count() - 1;
     last_pos = _view.get_search_pos() + _view.get_search_hit();
     if (last_pos >= end) {
-        dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SEARCH), "Search"));
-        msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SEARCH_AT_END), "Search cursor at the end position!"));
-        msg.mBox()->setStandardButtons(QMessageBox::Ok);
-        msg.mBox()->setIcon(QMessageBox::Warning);
-        msg.exec();
+        QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SEARCH_AT_END), "Search cursor at the end position!"));
+        MsgBox::Show(strMsg);
         return;
     } else {
         QFuture<void> future;
@@ -231,12 +212,8 @@ void SearchDock::on_next()
         dlg.exec();
 
         if (!ret) {
-            dialogs::DSMessageBox msg(this);
-            msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SEARCH), "Search"));
-            msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_PATTERN_NOT_FOUND), "Pattern not found!"));
-            msg.mBox()->setStandardButtons(QMessageBox::Ok);
-            msg.mBox()->setIcon(QMessageBox::Warning);
-            msg.exec();
+            QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_PATTERN_NOT_FOUND), "Pattern not found!"));
+            MsgBox::Show(strMsg);
             return;
         } else {
             _view.set_search_pos(last_pos, true);

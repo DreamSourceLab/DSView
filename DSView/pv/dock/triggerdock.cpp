@@ -34,12 +34,13 @@
 #include <QApplication>
 #include <math.h>
 #include <libsigrok.h> 
+#include <QRegExp>
+#include <QRegExpValidator>
 #include "../config/appconfig.h"
 #include "../deviceagent.h"
 #include "../view/logicsignal.h"
 #include "../ui/langresource.h"
-#include <QRegExp>
-#include <QRegExpValidator>
+#include "../ui/msgbox.h"
 
 namespace pv {
 namespace dock {
@@ -199,13 +200,9 @@ void TriggerDock::adv_trigger()
         }
         
         if (stream) {
-            dialogs::DSMessageBox msg(this);
-            msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TRIGGER), "Trigger"));
-            msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_STREAM_NO_AD_TRIGGER),
+            QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_STREAM_NO_AD_TRIGGER),
                                           "Stream Mode Don't Support Advanced Trigger!"));
-            msg.mBox()->setStandardButtons(QMessageBox::Ok);
-            msg.mBox()->setIcon(QMessageBox::Warning);
-            msg.exec();
+            MsgBox::Show(strMsg);
             _simple_radioButton->setChecked(true);
         }
         else {
@@ -213,13 +210,9 @@ void TriggerDock::adv_trigger()
         }
     }
     else if (_session->get_device()->is_file() == false){
-        dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TRIGGER), "Trigger"));
-        msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_AD_TRIGGER_NEED_HARDWARE),
+        QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_AD_TRIGGER_NEED_HARDWARE),
                                       "Advanced Trigger need DSLogic Hardware Support!"));
-        msg.mBox()->setStandardButtons(QMessageBox::Ok);
-        msg.mBox()->setIcon(QMessageBox::Warning);
-        msg.exec();
+        MsgBox::Show(strMsg);
         _simple_radioButton->setChecked(true);
     }
 }

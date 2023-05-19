@@ -29,7 +29,7 @@
     },
     {
         "id": "IDS_MSG_AUTO_CALIB_START",
-        "text": "Auto Calibration program will be started. Don't connect any probes. It can take a while!"
+        "text": "Auto Calibration program will be started. Don't connect any probes. \nIt can take a while!"
     },
     {
         "id": "IDS_MSG_AUTO_CALIB",
@@ -109,7 +109,7 @@
     },
     {
         "id": "IDS_MSG_MAX_CHANNEL_COUNT_WARNING",
-        "text": "Current mode only suppport max {0}\nchannels!"
+        "text": "Current mode only suppport max {0} channels!"
     },
     {
         "id": "IDS_MSG_TRI_SET_ISSUE",

@@ -25,10 +25,21 @@
 
 class QWidget;
 
+namespace pv{
+    namespace dialogs{
+        class DSMessageBox;
+    }
+}
+
 class MsgBox
 {
 public:
+    static void Show(const QString text);
     static void Show(const QString title, const QString text, QWidget *parent=0);
+    static void Show(const QString title, const QString text, const QString infoText); 
+    static void Show(const QString title, const QString text, QWidget *parent, pv::dialogs::DSMessageBox **box);
+    static void Show(const QString title, const QString text, const QString infoText, QWidget *parent, pv::dialogs::DSMessageBox **box, bool bExecute=true);
 
     static bool Confirm(const QString text, QWidget *parent=0);
+    static bool Confirm(const QString text, const QString infoText, QWidget *parent=0);
 };

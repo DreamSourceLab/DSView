@@ -33,8 +33,8 @@
 #include "../dsvdef.h"
 #include "../appcontrol.h"
 #include "../sigsession.h"
-
 #include "../ui/langresource.h"
+#include "../ui/msgbox.h"
 
 using namespace std;
 
@@ -383,14 +383,10 @@ void Calibration::reload_value()
 
 void Calibration::on_reset()
 {
+    QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SET_DEF_CAL_SETTING), 
+        "All calibration settings will become the defualt values!"));
 
-    dialogs::DSMessageBox msg(this);
-    msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_ATTENTION), "Attention"));
-    msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SET_DEF_CAL_SETTING), "All calibration settings will become the defualt values!"));
-    msg.mBox()->addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_OK), "Ok"), QMessageBox::AcceptRole);
-    msg.mBox()->addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CANCEL), "Cancel"), QMessageBox::RejectRole);
-    msg.mBox()->setIcon(QMessageBox::Warning);
-    if (msg.exec()) {
+    if (MsgBox::Confirm(strMsg)) {
         _device_agent->set_config(NULL, NULL, SR_CONF_ZERO_DEFAULT,
                               g_variant_new_boolean(true));
         reload_value();
