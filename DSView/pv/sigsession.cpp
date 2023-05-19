@@ -1103,9 +1103,16 @@ namespace pv
         }       
 
         if (_capture_data->get_logic()->last_ended())
-        {   
+        {
             _capture_data->get_logic()->set_loop(is_loop_mode());
-            _capture_data->get_logic()->first_payload(o, _device_agent.get_sample_limit(), _device_agent.get_channels());
+
+            bool bNotFree = _is_decoding && _view_data == _capture_data;
+
+            _capture_data->get_logic()->first_payload(o, 
+                            _device_agent.get_sample_limit(),
+                            _device_agent.get_channels(),
+                            !bNotFree);
+
             // @todo Putting this here means that only listeners querying
             // for logic will be notified. Currently the only user of
             // frame_began is DecoderStack, but in future we need to signal
@@ -1850,8 +1857,10 @@ namespace pv
             task = get_top_decode_task();
         }
 
+        _view_data->get_logic()->decode_end();
+
         dsv_info("%s", "------->decode thread end");
-        _is_decoding = false;
+        _is_decoding = false;        
     }
 
     Snapshot *SigSession::get_signal_snapshot()

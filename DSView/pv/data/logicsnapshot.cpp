@@ -55,6 +55,7 @@ LogicSnapshot::LogicSnapshot() :
     _total_sample_count = 0;
     _is_loop = false;
     _loop_offset = 0;
+    _able_free = true;
 }
 
 LogicSnapshot::~LogicSnapshot()
@@ -77,6 +78,11 @@ void LogicSnapshot::free_data()
     }
     _ch_data.clear();
     _sample_count = 0;
+
+    for(void *p : _free_block_list){
+        free(p);
+    }
+    _free_block_list.clear();
 }
 
 void LogicSnapshot::init()
@@ -94,8 +100,8 @@ void LogicSnapshot::init_all()
     _dest_ptr = NULL;
     _memory_failed = false;
     _last_ended = true;
-    _mipmap_sample_count = 0;
     _loop_offset = 0;
+    _able_free = true;
 }
 
 void LogicSnapshot::clear()
@@ -106,10 +112,16 @@ void LogicSnapshot::clear()
     _have_data = false;
 }
 
-void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total_sample_count, GSList *channels)
+void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total_sample_count, GSList *channels, bool able_free)
 {
     bool channel_changed = false;
     uint16_t channel_num = 0;
+    _able_free = able_free;
+
+    for(void *p : _free_block_list){
+        free(p);
+    }
+    _free_block_list.clear();
 
     for (const GSList *l = channels; l; l = l->next) {
         sr_channel *const probe = (sr_channel*)l->data;
@@ -172,7 +184,6 @@ void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total
 
     _sample_count = 0;
     _ring_sample_count = 0;
-    _mipmap_sample_count = 0;
 
     assert(logic.data);
     uint64_t *rd_data = (uint64_t*)logic.data;
@@ -268,7 +279,6 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
 
                 if (_ring_sample_count % LeafBlockSamples == 0){
                     calc_mipmap(_channel_num - 1, index0, index1, LeafBlockSamples, true);
-                    _mipmap_sample_count = _ring_sample_count - _loop_offset;
                 }                                
                 break;
             }                
@@ -326,9 +336,6 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
         if (filled_sample == LeafBlockSamples)
         {
             calc_mipmap(fill_chan, index0, index1, LeafBlockSamples, true);
-
-            if (fill_chan + 1 == _channel_num)
-                _mipmap_sample_count = _ring_sample_count - _loop_offset;
 
             chans_read_addr[fill_chan] = read_ptr;
             fill_chan = (fill_chan + 1) % _channel_num;
@@ -428,8 +435,6 @@ void LogicSnapshot::capture_ended()
     Snapshot::capture_ended();  
 
     _sample_count = _ring_sample_count;
-    _mipmap_sample_count = _ring_sample_count;
-
     _ring_sample_count += _loop_offset;
     
     uint64_t index0 = _ring_sample_count / LeafBlockSamples / RootScale;
@@ -540,7 +545,12 @@ void LogicSnapshot::calc_mipmap(unsigned int order, uint8_t index0, uint8_t inde
         _ch_data[order][index0].tog |= 1ULL << index1;
     }
     else if (isEnd){
-        free(_ch_data[order][index0].lbp[index1]);
+
+        if (_able_free)
+            free(_ch_data[order][index0].lbp[index1]);
+        else
+            _free_block_list.push_back(_ch_data[order][index0].lbp[index1]);
+
         _ch_data[order][index0].lbp[index1] = NULL;
     }
 
@@ -566,43 +576,6 @@ const uint8_t *LogicSnapshot::get_samples(uint64_t start_sample, uint64_t &end_s
 
     start_sample += _loop_offset;
     _ring_sample_count += _loop_offset;   
-
-    int order = get_ch_order(sig_index);
-    uint64_t index0 = start_sample >> (LeafBlockPower + RootScalePower);
-    uint64_t index1 = (start_sample & RootMask) >> LeafBlockPower;
-    uint64_t offset = (start_sample & LeafMask) / 8;
-
-    end_sample = (index0 << (LeafBlockPower + RootScalePower)) +
-                 (index1 << LeafBlockPower) +
-                 ~(~0ULL << LeafBlockPower);
-
-    end_sample = min(end_sample + 1, sample_count);
-
-    end_sample -= _loop_offset;
-    _ring_sample_count -= _loop_offset;
-
-    if (order == -1 || _ch_data[order][index0].lbp[index1] == NULL)
-        return NULL;
-    else
-        return (uint8_t*)_ch_data[order][index0].lbp[index1] + offset;
-}
-
-const uint8_t *LogicSnapshot::get_decode_samples(uint64_t start_sample, uint64_t &end_sample, int sig_index)
-{ 
-    std::lock_guard<std::mutex> lock(_mutex);
-
-    uint64_t sample_count = _mipmap_sample_count;
-
-    assert(start_sample < sample_count);
-
-    if (end_sample >= sample_count)
-        end_sample = sample_count - 1;
-
-    assert(end_sample <= sample_count);
-    assert(start_sample <= end_sample);
-
-    start_sample += _loop_offset;
-    _ring_sample_count += _loop_offset;
 
     int order = get_ch_order(sig_index);
     uint64_t index0 = start_sample >> (LeafBlockPower + RootScalePower);
@@ -1073,8 +1046,6 @@ bool LogicSnapshot::pattern_search_self(int64_t start, int64_t end, int64_t &ind
     int  count = 0;  
     bool bEdgeFlag = false;
 
-
-
     int64_t to = isNext ? end + 1 : start - 1;
     int64_t step = isNext ? 1 : -1;
 
@@ -1223,12 +1194,6 @@ int LogicSnapshot::get_ch_order(int sig_index)
     return -1;
 }
 
-uint64_t LogicSnapshot::get_mipmap_sample_count()
-{   
-    std::lock_guard<std::mutex> lock(_mutex);
-    return _mipmap_sample_count;
-}
-
 void LogicSnapshot::move_first_node_to_last()
 {
     for (unsigned int i=0; i<_channel_num; i++)
@@ -1249,6 +1214,16 @@ void LogicSnapshot::move_first_node_to_last()
 
         _ch_data[i].push_back(rn);                        
     }
+}
+
+void LogicSnapshot::decode_end()
+{
+   std::lock_guard<std::mutex> lock(_mutex);
+
+   for(void *p : _free_block_list){
+        free(p);
+    }
+    _free_block_list.clear();
 }
 
 } // namespace data
