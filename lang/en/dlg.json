@@ -49,7 +49,7 @@
     },
     {
         "id": "IDS_DLG_CHECK_USB_SPEED_ERROR",
-        "text": "Plug it into a USB 2.0 port will seriously affect its performance.\n Please replug it into a USB 3.0 port."
+        "text": "Plug the device into a USB 2.0 port will seriously affect its performance.\n Please replug it into a USB 3.0 port."
     },
     {
         "id": "IDS_DLG_CHECK_SESSION_FILE_VERSION_ERROR",

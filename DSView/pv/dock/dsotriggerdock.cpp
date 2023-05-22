@@ -233,16 +233,12 @@ void DsoTriggerDock::pos_changed(int pos)
     ret = _session->get_device()->set_config(NULL, NULL,
                                             SR_CONF_HORIZ_TRIGGERPOS,
                                             g_variant_new_byte((uint8_t)pos));
-    if (!ret) {
-        dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TRI_SET_ISSUE), "Trigger Setting Issue"));
-        msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CHANGE_HOR_TRI_POS_FAIL), 
-                                       "Change horiz trigger position failed!"));
-        msg.mBox()->setStandardButtons(QMessageBox::Ok);
-        msg.mBox()->setIcon(QMessageBox::Warning);
-        
+    if (!ret) {        
         if (_session->get_device()->is_hardware()){
-            msg.exec();
+            QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CHANGE_HOR_TRI_POS_FAIL), 
+                                       "Change horiz trigger position failed!"));
+                                
+            MsgBox::Show(strMsg);
         }
         
         return;
@@ -267,13 +263,9 @@ void DsoTriggerDock::hold_changed(int hold)
                                             g_variant_new_uint64(holdoff));
 
     if (!ret) {
-        dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TRI_SET_ISSUE), "Trigger Setting Issue"));
-        msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CHANGE_TRI_HOLDOFF_TIME_FAIL),
+        QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CHANGE_TRI_HOLDOFF_TIME_FAIL),
                                       "Change trigger hold off time failed!"));
-        msg.mBox()->setStandardButtons(QMessageBox::Ok);
-        msg.mBox()->setIcon(QMessageBox::Warning);
-        msg.exec();
+        MsgBox::Show(strMsg);
     }
 }
 
@@ -284,13 +276,9 @@ void DsoTriggerDock::margin_changed(int margin)
                                             SR_CONF_TRIGGER_MARGIN,
                                             g_variant_new_byte(margin));
     if (!ret) {
-        dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText((L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TRI_SET_ISSUE), "Trigger Setting Issue")));
-        msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CHANGE_SENSITIVITY_FAIL), 
+        QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CHANGE_SENSITIVITY_FAIL), 
                                       "Change trigger value sensitivity failed!"));
-        msg.mBox()->setStandardButtons(QMessageBox::Ok);
-        msg.mBox()->setIcon(QMessageBox::Warning);
-        msg.exec();
+        MsgBox::Show(strMsg);
     }
 }
 
@@ -303,7 +291,7 @@ void DsoTriggerDock::source_changed()
         _ch0o1_radioButton->setChecked(false); 
 
         QString msg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DISABLED_CHANNEL_TRIG), "Disabled channels cannot be used for triggering!"));
-        MsgBox::Show("", msg);        
+        MsgBox::Show(msg);        
     }
 
     int id = _source_group->checkedId();
@@ -315,13 +303,9 @@ void DsoTriggerDock::source_changed()
                                             SR_CONF_TRIGGER_SOURCE,
                                             g_variant_new_byte(id));
     if (!ret) {
-        dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TRI_SET_ISSUE), "Trigger Setting Issue"));
-        msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CHANGE_SOURCE_FAIL), 
+        QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CHANGE_SOURCE_FAIL), 
                                       "Change trigger source failed!"));
-        msg.mBox()->setStandardButtons(QMessageBox::Ok);
-        msg.mBox()->setIcon(QMessageBox::Warning);
-        msg.exec();
+        MsgBox::Show(strMsg);
     }
 }
 
@@ -370,13 +354,9 @@ void DsoTriggerDock::channel_changed(int ch)
                                             SR_CONF_TRIGGER_CHANNEL,
                                             g_variant_new_byte(_channel_comboBox->currentData().toInt()));
     if (!ret) {
-        dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TRI_SET_ISSUE), "Trigger Setting Issue"));
-        msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CHANGE_CHANNEL_FAIL), 
+        QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CHANGE_CHANNEL_FAIL), 
                                       "Change trigger channel failed!"));
-        msg.mBox()->setStandardButtons(QMessageBox::Ok);
-        msg.mBox()->setIcon(QMessageBox::Warning);
-        msg.exec();
+        MsgBox::Show(strMsg);
     }
 }
 
@@ -389,13 +369,9 @@ void DsoTriggerDock::type_changed()
                                             SR_CONF_TRIGGER_SLOPE,
                                             g_variant_new_byte(id));
     if (!ret) {
-        dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TRI_SET_ISSUE), "Trigger Setting Issue"));
-        msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CHANGE_TYPE_FAIL), 
+        QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CHANGE_TYPE_FAIL), 
                                       "Change trigger type failed!"));
-        msg.mBox()->setStandardButtons(QMessageBox::Ok);
-        msg.mBox()->setIcon(QMessageBox::Warning);
-        msg.exec();
+        MsgBox::Show(strMsg);
     }
 }
 

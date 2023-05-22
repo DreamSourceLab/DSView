@@ -33,13 +33,11 @@
 #include "../data/snapshot.h" 
 #include "../dialogs/dsdialog.h"
 #include "../dialogs/dsmessagebox.h"
-
+#include "../config/appconfig.h"
+#include "../ui/langresource.h"
+#include "../ui/msgbox.h"
 #include <QObject>
 #include <QPainter> 
-#include <QMessageBox>
-#include "../config/appconfig.h"
-
-#include "../ui/langresource.h"
 
 using namespace boost;
 
@@ -477,14 +475,9 @@ void MeasureDock::show_all_coursor()
     auto &cursor_list = _view.get_cursorList();
 
     if (cursor_list.empty()) {
-        dialogs::DSMessageBox msg(this);
-        msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_INFORMATION), "Information"));
-        msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_PLEASE_INSERT_CURSOR), 
+        QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_PLEASE_INSERT_CURSOR), 
                                        "Please insert cursor before using cursor measure."));
-        msg.mBox()->addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_OK), "Ok"), QMessageBox::AcceptRole);
-        msg.mBox()->setIcon(QMessageBox::Information);
-        msg.exec();
-
+        MsgBox::Show(strMsg);
         return;
     }
 

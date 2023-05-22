@@ -90,13 +90,11 @@ public:
 
     void init();   
 
-    void first_payload(const sr_datafeed_logic &logic, uint64_t total_sample_count, GSList *channels);
+    void first_payload(const sr_datafeed_logic &logic, uint64_t total_sample_count, GSList *channels, bool able_free);
 
 	void append_payload(const sr_datafeed_logic &logic);
 
     const uint8_t * get_samples(uint64_t start_sample, uint64_t& end_sample, int sig_index);
-
-    const uint8_t * get_decode_samples(uint64_t start_sample, uint64_t& end_sample, int sig_index);
 
     bool get_sample(uint64_t index, int sig_index);
 
@@ -122,8 +120,6 @@ public:
     bool pattern_search(int64_t start, int64_t end, int64_t& index,
                         std::map<uint16_t, QString> &pattern, bool isNext);
 
-    uint64_t get_mipmap_sample_count();
-
     inline void set_loop(bool bLoop){
         _is_loop = bLoop;
     }
@@ -131,6 +127,8 @@ public:
     inline bool is_loop(){
         return _is_loop;
     }
+
+    void decode_end();
 
 private:
     bool get_sample_self(uint64_t index, int sig_index);
@@ -144,6 +142,7 @@ private:
                         std::map<uint16_t, QString> &pattern, bool isNext);
 
     int get_ch_order(int sig_index);
+
     void calc_mipmap(unsigned int order, uint8_t index0, uint8_t index1, uint64_t samples, bool isEnd);
 
     void append_cross_payload(const sr_datafeed_logic &logic);
@@ -215,9 +214,10 @@ private:
 
     uint64_t    _last_sample[CHANNEL_MAX_COUNT];
     uint64_t    _last_calc_count[CHANNEL_MAX_COUNT];
-    uint64_t    _mipmap_sample_count;
     bool        _is_loop;
     uint64_t    _loop_offset;
+    bool        _able_free;
+    std::vector<void*> _free_block_list;
  
 	friend class LogicSnapshotTest::Pow2;
 	friend class LogicSnapshotTest::Basic;

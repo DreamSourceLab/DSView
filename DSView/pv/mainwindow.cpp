@@ -42,6 +42,7 @@
 #include <QTextStream>
 #include <QJsonValue>
 #include <QJsonArray>
+#include <functional>
 
 #include <QDesktopWidget>
 
@@ -97,6 +98,7 @@
 #include "ui/langresource.h"
 #include "mainframe.h"
 #include "dsvdef.h"
+#include <thread>
 
 namespace pv
 {
@@ -283,6 +285,8 @@ namespace pv
         //
         connect(_dso_trigger_widget, SIGNAL(set_trig_pos(int)), _view, SLOT(set_trig_pos(int)));
 
+        _delay_prop_msg_timer.SetCallback(std::bind(&MainWindow::on_delay_prop_msg, this));
+
         _logo_bar->set_mainform_callback(this);
 
         // Try load from file.
@@ -329,15 +333,12 @@ namespace pv
             _session->set_file(file_name);
         }
         catch (QString e)
-        {
-            show_error(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_FAIL_TO_LOAD), "Failed to load ") + file_name);
+        {   
+            QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_FAIL_TO_LOAD), "Failed to load "));
+            strMsg += file_name;
+            MsgBox::Show(strMsg);
             _session->set_default_device();
         }
-    }
-
-    void MainWindow::show_error(QString error)
-    {
-        MsgBox::Show(NULL, error.toStdString().c_str(), this);
     }
 
     void MainWindow::session_error()
@@ -387,21 +388,10 @@ namespace pv
             break;
         }
 
-        dialogs::DSMessageBox msg(this);
-
-        connect(_session->device_event_object(), SIGNAL(device_updated()), &msg, SLOT(accept()));
-
-        QFont font("Monaco");
-        font.setStyleHint(QFont::Monospace);
-        font.setFixedPitch(true);
-        msg.mBox()->setFont(font);
-
-        msg.mBox()->setText(title);
-        msg.mBox()->setInformativeText(details);
-        msg.mBox()->setStandardButtons(QMessageBox::Ok);
-        msg.mBox()->setIcon(QMessageBox::Warning);
-        msg.exec();
-
+        dialogs::DSMessageBox *box = NULL;
+        MsgBox::Show("", title, details, this, &box, false);
+        connect(_session->device_event_object(), SIGNAL(device_updated()), box, SLOT(accept()));
+        box->exec(); 
         _session->clear_error();
     }
 
@@ -1483,9 +1473,11 @@ namespace pv
 
                 dsv_info("The cable's USB port version: %d.0", cable_ver);
 
-                if (usb30_support && usb_speed == LIBUSB_SPEED_HIGH)
-                    show_error(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CHECK_USB_SPEED_ERROR),
-                    "Plug it into a USB 2.0 port will seriously affect its performance.\nPlease replug it into a USB 3.0 port."));
+                if (usb30_support && usb_speed == LIBUSB_SPEED_HIGH){
+                    QString str_err(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CHECK_USB_SPEED_ERROR),
+                        "Plug the device into a USB 2.0 port will seriously affect its performance.\nPlease replug it into a USB 3.0 port."));
+                    delay_prop_msg(str_err);
+                }
             }
         }
     }
@@ -1558,8 +1550,9 @@ namespace pv
                     g_variant_unref(gvar);
                     if (version == 1)
                     {
-                        show_error(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CHECK_SESSION_FILE_VERSION_ERROR), 
+                        QString strMsg(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CHECK_SESSION_FILE_VERSION_ERROR), 
                         "Current loading file has an old format. \nThis will lead to a slow loading speed. \nPlease resave it after loaded."));
+                        MsgBox::Show(strMsg);
                     }
                 }
             }
@@ -1723,18 +1716,17 @@ namespace pv
             break;
 
         case DSV_MSG_CURRENT_DEVICE_CHANGE_PREV:
+            if (_msg != NULL){
+                _msg->close();
+                _msg = NULL;
+            }
+
             _protocol_widget->del_all_protocol();
             _view->reload();
             break;
 
         case DSV_MSG_CURRENT_DEVICE_CHANGED:
         {
-            if (_msg != NULL)
-            {
-                _msg->close();
-                _msg = NULL;
-            }
-  
             reset_all_view();
             load_device_config();
             _sampling_bar->update_device_list();
@@ -1746,8 +1738,7 @@ namespace pv
             if (_device_agent->is_hardware())
             {
                 _session->on_load_config_end();
-            }
-                
+            }                
             
             if (_device_agent->get_work_mode() == LOGIC && _device_agent->is_file() == false)
                 _view->auto_set_max_scale();
@@ -1853,6 +1844,11 @@ namespace pv
 
         case DSV_MSG_NEW_USB_DEVICE:
             {
+                if (_msg != NULL){
+                    _msg->close();
+                    _msg = NULL;
+                }
+
                 _sampling_bar->update_device_list();
 
                 if (_session->get_device()->is_demo() == false)
@@ -1890,17 +1886,21 @@ namespace pv
             break;
 
         case DSV_MSG_CURRENT_DEVICE_DETACHED:
+            if (_msg != NULL){
+                _msg->close();
+                _msg = NULL;
+            }
+
             // Save current config, and switch to the last device.
             _session->device_event_object()->device_updated();
             session_save();
             _view->hide_calibration();
-            if (confirm_to_store_data())
-            {
+
+            if (confirm_to_store_data()){
                 _is_auto_switch_device = true;
                 on_save();
             }
-            else
-            {
+            else{
                 _session->set_default_device();
             }
             break;
@@ -1996,6 +1996,24 @@ namespace pv
                 _frame->setMinimumHeight(Min_Height);
             }
         }  
+    }
+
+    void MainWindow::delay_prop_msg(QString strMsg)
+    {
+        _strMsg = strMsg;
+        if (_strMsg != ""){
+            _delay_prop_msg_timer.Start(500);
+        }
+    }
+
+    void MainWindow::on_delay_prop_msg()
+    {
+        _delay_prop_msg_timer.Stop();
+
+        if (_strMsg != ""){
+            MsgBox::Show("", _strMsg, this, &_msg);
+            _msg = NULL;
+        }            
     }
 
 } // namespace pv

@@ -889,15 +889,11 @@ namespace pv
 
                     if (zero)
                     {
-                        dialogs::DSMessageBox msg(this);
-                        msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_AUTO_CALIB), "Auto Calibration"));
-                        msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_ADJUST_SAVE), "Please adjust zero skew and save the result"));
-                        // msg.setStandardButtons(QMessageBox::Ok);
-                        msg.mBox()->addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_OK), "Ok"), QMessageBox::AcceptRole);
-                        msg.mBox()->addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SKIP), "Skip"), QMessageBox::RejectRole);
-                        msg.mBox()->setIcon(QMessageBox::Warning);
+                        QString str1(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_AUTO_CALIB), "Auto Calibration"));
+                        QString str2(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_ADJUST_SAVE), "Please adjust zero skew and save the result"));
+                        bool bRet = MsgBox::Confirm(str1, str2);
 
-                        if (msg.exec())
+                        if (bRet)
                         {
                             zero_adj();
                         }
@@ -960,15 +956,9 @@ namespace pv
 
                     if (zero)
                     {
-                        dialogs::DSMessageBox msg(this);
-                        msg.mBox()->setText(L_S(STR_PAGE_MSG,S_ID(IDS_MSG_AUTO_CALIB), "Auto Calibration"));
-                        msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG,S_ID(IDS_MSG_AUTO_CALIB_START), "Auto Calibration program will be started. Don't connect any probes. It can take a while!"));
+                        QString strMsg(L_S(STR_PAGE_MSG,S_ID(IDS_MSG_AUTO_CALIB_START), "Auto Calibration program will be started. Don't connect any probes. \nIt can take a while!"));
 
-                        msg.mBox()->addButton(L_S(STR_PAGE_MSG,S_ID(IDS_MSG_OK), "Ok"), QMessageBox::AcceptRole);
-                        msg.mBox()->addButton(L_S(STR_PAGE_MSG,S_ID(IDS_MSG_SKIP), "Skip"), QMessageBox::RejectRole);
-                        msg.mBox()->setIcon(QMessageBox::Warning);
-
-                        if (msg.exec())
+                        if (MsgBox::Confirm(strMsg))
                         {
                             zero_adj();
                         }

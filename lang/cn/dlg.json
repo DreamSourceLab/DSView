@@ -49,11 +49,11 @@
     },
     {
         "id": "IDS_DLG_CHECK_USB_SPEED_ERROR",
-        "text": " 将其插入USB 2.0端口将严重影响其性能.\n  请将其重新插入USB 3.0端口."
+        "text": "将该设备插入USB 2.0端口会严重影响其性能.\n请重新插入USB 3.0端口."
     },
     {
         "id": "IDS_DLG_CHECK_SESSION_FILE_VERSION_ERROR",
-        "text": " 当前加载文件具有旧格式 . \n这将导致加载速度变慢. \n请在加载后重新保存."
+        "text": "当前加载文件具有旧格式 . \n这将导致加载速度变慢. \n请在加载后重新保存."
     },
     {
         "id": "IDS_DLG_ABOUT",
@@ -89,7 +89,7 @@
     },
     {
         "id": "IDS_DLG_SAVE_CALIBRATION_RESULTS",
-        "text": " 保存校准结果...可能需要一段时间."
+        "text": "保存校准结果...可能需要一段时间."
     },
     {
         "id": "IDS_DLG_CANCEL",
@@ -97,7 +97,7 @@
     },
     {
         "id": "IDS_DLG_RELOAD_CALIBRATION_RESULTS",
-        "text": " 重新加载上次校准...可能需要一段时间."
+        "text": "重新加载上次校准...可能需要一段时间."
     },
     {
         "id": "IDS_DLG_DECODER_OPTIONS",
@@ -253,7 +253,7 @@
     },
     {
         "id": "IDS_DLG_EXPORT_PROTOCOL_LIST_RESULT",
-        "text": " 导出协议列表结果...可能需要一段时间 ."
+        "text": "导出协议列表结果...可能需要一段时间 ."
     },
     {
         "id": "IDS_DLG_FIT_TO_WINDOW",

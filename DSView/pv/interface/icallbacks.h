@@ -26,8 +26,7 @@
 
 class ISessionCallback
 {
-public:
-    virtual void show_error(QString error)=0;
+public: 
     virtual void session_error()=0;
     virtual void session_save()=0;
     virtual void data_updated()=0;
@@ -47,6 +46,7 @@ public:
     
     virtual void receive_header()=0;
     virtual void trigger_message(int msg)=0;  
+    virtual void delay_prop_msg(QString strMsg)=0;
 };
 
 class ISessionDataGetter

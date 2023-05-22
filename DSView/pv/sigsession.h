@@ -410,8 +410,7 @@ public:
     }
 
     void on_load_config_end();
-    void init_signals();
-    void delay_prop_msg(QString strMsg);
+    void init_signals(); 
 
     inline bool is_doing_action(){
         return _is_action;
@@ -496,8 +495,7 @@ private:
     void repeat_wait_prog_timeout();
     void realtime_refresh_timeout();
 
-    void clear_signals();
-    void on_delay_prop_msg();
+    void clear_signals(); 
 
     inline void data_lock(){
         _data_lock = true;
@@ -527,7 +525,7 @@ private:
     DsTimer     _repeat_timer;
     DsTimer     _repeat_wait_prog_timer;
     DsTimer     _refresh_rt_timer;
-    DsTimer     _delay_prop_msg_timer;
+   
     int         _noData_cnt;
     bool        _data_lock;
     bool        _data_updated;
@@ -562,7 +560,7 @@ private:
     uint64_t    _rt_ck_refresh_time_id;
     COLLECT_OPT_MODE    _opt_mode;
     bool        _is_stream_mode;
-    QString     _strMsg;
+    
     bool        _is_action;
     uint64_t    _dso_packet_count;
  

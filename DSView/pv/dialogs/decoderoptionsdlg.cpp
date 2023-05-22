@@ -517,7 +517,7 @@ void DecoderOptionsDlg::on_trans_pramas()
     AppConfig::Instance()._appOptions.transDecoderDlg = ck_box->isChecked();
     AppConfig::Instance().SaveApp();
     _is_reload_form = true;
-    this->close();
+    this->accept();
 }
 
 }//dialogs

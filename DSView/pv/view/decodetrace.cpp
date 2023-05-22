@@ -697,7 +697,7 @@ bool DecodeTrace::create_popup(bool isnew)
             dlg.get_cursor_range(_decode_cursor1, _decode_cursor2);
         } 
 
-        if (QDialog::Accepted == dlg_ret || dlg.is_reload_form() == false){
+        if (QDialog::Rejected == dlg_ret || dlg.is_reload_form() == false){
             break;
         }
     }

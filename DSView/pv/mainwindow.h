@@ -32,6 +32,7 @@
 #include "eventobject.h" 
 #include <QJsonDocument>
 #include <chrono>
+#include "dstimer.h"
 
 class QAction;
 class QMenuBar;
@@ -120,6 +121,7 @@ private slots:
     void on_receive_data_len(quint64 len);
     void on_cur_snap_samplerate_changed();
     void on_trigger_message(int msg);
+    void on_delay_prop_msg();
   
 signals:
     void prgRate(int progress);
@@ -146,28 +148,26 @@ private:
     QJsonDocument get_session_json_from_file(QString file);
     QJsonArray get_decoder_json_from_file(QString file);
     void calc_min_height();
+    void session_save();   
    
 private:
-    //ISessionCallback
-    void show_error(QString error);
+    //ISessionCallback 
     void session_error();
     void data_updated();
     void update_capture();
-    void cur_snap_samplerate_changed();
-      
+    void cur_snap_samplerate_changed();      
     void signals_changed();
     void receive_trigger(quint64 trigger_pos);
     void frame_ended();
     void frame_began();
     void show_region(uint64_t start, uint64_t end, bool keep);
-
     void show_wait_trigger();
     void repeat_hold(int percent);
     void decode_done();
     void receive_data_len(quint64 len);
     void receive_header();    
-    void trigger_message(int msg);
-    void session_save();
+    void trigger_message(int msg);   
+    void delay_prop_msg(QString strMsg); 
 
     //ISessionDataGetter
     bool genSessionData(std::string &str);
@@ -223,6 +223,8 @@ private:
     bool            _is_save_confirm_msg;
     std::string         _pattern_mode;
     QWidget         *_frame;
+    DsTimer         _delay_prop_msg_timer;
+    QString         _strMsg;
 
     int _key_value;
     bool _key_vaild;

@@ -540,7 +540,7 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
             if (!bCheckEnd){
                 bCheckEnd = true;
 
-                uint64_t mipmap_sample_count = _snapshot->get_mipmap_sample_count();
+                uint64_t mipmap_sample_count = _snapshot->get_ring_sample_count();
 
                 if (end_index >= mipmap_sample_count){
                     end_index = mipmap_sample_count - 1;
@@ -548,14 +548,14 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
                 }
             }
         }
-        else if (i >= _snapshot->get_mipmap_sample_count())
+        else if (i >= _snapshot->get_ring_sample_count())
         {   
             // Wait the data is ready.
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             continue;
         }
 
-        if (_is_capture_end && i == _snapshot->get_mipmap_sample_count()){
+        if (_is_capture_end && i == _snapshot->get_ring_sample_count()){
             break;
         }
 
@@ -570,7 +570,7 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
             }
             else {
                 if (_snapshot->has_data(sig_index)) {
-                    auto data_ptr = _snapshot->get_decode_samples(i, chunk_end, sig_index);
+                    auto data_ptr = _snapshot->get_samples(i, chunk_end, sig_index);
                     chunk.push_back(data_ptr);
                     chunk_const.push_back(_snapshot->get_sample(i, sig_index));
                 }
@@ -663,7 +663,7 @@ void DecoderStack::execute_decode_stack()
 	assert(session);
     
     // Get the intial sample count
-    _sample_count = _snapshot->get_mipmap_sample_count();
+    _sample_count = _snapshot->get_ring_sample_count();
  
     // Create the decoders
     for(auto dec : _stack)

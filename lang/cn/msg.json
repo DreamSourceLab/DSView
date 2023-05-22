@@ -28,7 +28,7 @@
     }, 
     {
         "id": "IDS_MSG_AUTO_CALIB_START",
-        "text": "自动校准程序将启动。不要连接任何探针。这可能需要一段时间!"
+        "text": "自动校准程序将启动。不要连接任何探针。\n这可能需要一段时间!"
     },
     {
         "id": "IDS_MSG_AUTO_CALIB",
@@ -108,7 +108,7 @@
     },
     {
         "id": "IDS_MSG_MAX_CHANNEL_COUNT_WARNING",
-        "text": "当前模式仅支持最大 {0}\n通道数!"
+        "text": "当前模式仅支持最大 {0} 通道数!"
     },
     {
         "id": "IDS_MSG_TRI_SET_ISSUE",

@@ -32,7 +32,27 @@
 //QMessageBox::information(NULL, "Title", "Content");
 //QMessageBox::information(NULL, "Title", "Content",QMessageBox::Yes|QMessageBox::No|QMessageBox::Abort);
 
+void MsgBox::Show(const QString text)
+{
+    MsgBox::Show("", text, "", NULL, NULL, true);
+}
+
 void MsgBox::Show(const QString title, const QString text, QWidget *parent)
+{
+    MsgBox::Show(title, text, "", parent,NULL, true);
+}
+
+void Show(const QString title, const QString text, const QString infoText)
+{
+    MsgBox::Show(title, text, infoText, NULL, NULL, true);
+}
+
+void MsgBox::Show(const QString title, const QString text, QWidget *parent, pv::dialogs::DSMessageBox **box)
+{
+    MsgBox::Show(title, text, "", parent, box, true);
+}
+
+void MsgBox::Show(const QString title, const QString text, const QString infoText, QWidget *parent, pv::dialogs::DSMessageBox **box, bool bExecute)
 {
     assert(!text.isEmpty());
 
@@ -45,14 +65,30 @@ void MsgBox::Show(const QString title, const QString text, QWidget *parent)
     }
 
     pv::dialogs::DSMessageBox msg(parent, title);
-     msg.mBox()->setText(str);
-   // msg.mBox()->setInformativeText(QString(text));
+
+    if (box != NULL){
+        *box = &msg;
+    }
+
+    msg.mBox()->setText(str);
     msg.mBox()->setStandardButtons(QMessageBox::Ok);
     msg.mBox()->setIcon(QMessageBox::Warning);
-    msg.exec();
+
+    if (infoText != ""){
+        msg.mBox()->setInformativeText(infoText);
+    }
+
+    if (bExecute){
+        msg.exec();
+    }       
 }
 
 bool MsgBox::Confirm(const QString text, QWidget *parent)
+{
+    return MsgBox::Confirm(text, "", parent);
+}
+
+bool MsgBox::Confirm(const QString text, const QString infoText, QWidget *parent)
 {
     assert(!text.isEmpty());
 
@@ -69,6 +105,11 @@ bool MsgBox::Confirm(const QString text, QWidget *parent)
     msg.mBox()->setText(str);
     msg.mBox()->setStandardButtons(QMessageBox::Yes | QMessageBox::No);
     msg.mBox()->setIcon(QMessageBox::Question);
+
+    if (infoText != ""){
+        msg.mBox()->setInformativeText(infoText);
+    }
+
     msg.exec();
     return msg.IsYes();
 }
