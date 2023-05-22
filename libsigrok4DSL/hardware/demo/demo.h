@@ -31,6 +31,26 @@ enum DEMO_PATTERN {
     PATTERN_DEFAULT = 1,
 };
 
+enum DEMO_LOGIC_CHANNEL_ID {
+    DEMO_LOGIC125x16 = 16,
+    DEMO_LOGIC250x12 = 17,
+    DEMO_LOGIC500x6 = 18,
+    DEMO_LOGIC1000x3 = 19,
+};
+
+enum DEMO_CHANNEL_ID {
+    DEMO_LOGIC100x16 = 0,
+    DEMO_ANALOG10x2 = 1 ,
+    DEMO_DSO200x2 = 2,
+};
+
+enum DEMO_LOGIC_CHANNEL_INDEX {
+    LOGIC125x16 = 0,
+    LOGIC250x12 = 1,
+    LOGIC500x6 = 2,
+    LOGIC1000x3 = 3,
+};
+
 static char *pattern_strings_logic[100]  = {"random"};
 static char *pattern_strings_dso[100] = {"random"};
 static char *pattern_strings_analog[100] = {"random"};
@@ -58,6 +78,9 @@ extern char DS_RES_PATH[500];
 uint8_t sample_generator;
 static int64_t analog_count = 0;
 static uint64_t total_num = 0;
+
+static enum DEMO_LOGIC_CHANNEL_ID ch_mode = DEMO_LOGIC125x16;
+static enum DEMO_LOGIC_CHANNEL_INDEX logic_index = LOGIC125x16;
 
 struct session_packet_buffer;
 
@@ -151,11 +174,7 @@ struct DEMO_profile {
     struct DEMO_caps dev_caps;
 };
 
-enum DEMO_CHANNEL_ID {
-    DEMO_LOGIC100x16 = 0,
-    DEMO_ANALOG10x2 = 1 ,
-    DEMO_DSO200x2 = 2,
-};
+
 
 struct DEMO_channels {
     enum DEMO_CHANNEL_ID id;
@@ -234,7 +253,8 @@ static const uint64_t samplerates[] = {
     SR_MHZ(40),
     SR_MHZ(50),
     SR_MHZ(100),
-    SR_MHZ(200),
+    SR_MHZ(125),
+    SR_MHZ(250),
     SR_MHZ(400),
     SR_MHZ(500),
     SR_MHZ(800),
@@ -286,7 +306,7 @@ static const uint64_t samplerates[] = {
 #define ANALOG_MIN_PACKET_NUM(n) ((ANALOG_POST_DATA_PER_SECOND(n))/(ANALOG_MIN_PACKET_LEN))
 #define ANALOG_PACKET_ALIGN 2
 
-#define LOGIC_HW_DEPTH (SR_GHZ(16))
+#define LOGIC_HW_DEPTH (SR_GHZ(1))
 
 
 #define LOGIC_MAX_PROBE_NUM 16
@@ -315,6 +335,40 @@ static const uint64_t samplerates[] = {
 #define ANALOG_PROBE_NUM 2
 
 #define ANALOG_RETE(n) ((n/SR_HZ(10)))
+
+//defult value
+#define LOGIC_DEFAULT_SAMPLERATE SR_MHZ(1)
+#define LOGIC_DEFAULT_TOTAL_SAMPLES SR_MHZ(1)
+#define LOGIC_DEFAULT_NUM_PROBE 16
+
+#define DSO_DEFAULT_SAMPLERATE SR_MHZ(100)
+#define DSO_DEFAULT_TOTAL_SAMPLES SR_KHZ(10)
+#define DSO_DEFAULT_NUM_PROBE 2
+#define DSO_DEFAULT_NUM_BLOCK 1
+#define DSO_DEFAULT_ENABLE TRUE
+#define DSO_DEFAULT_COUPLING 1
+#define DSO_DEFAULT_VIDV SR_V(1)
+#define DSO_DEFAULT_VFACOTR SR_V(1)
+#define DSO_DEFAULT_HW_OFFSET 128
+#define DSO_DEFAULT_OFFSET 128
+#define DSO_DEFAULT_TRIG_VAL 0.5
+
+#define ANALOG_DEFAULT_SAMPLERATE SR_MHZ(1)
+#define ANALOG_DEFAULT_TOTAL_SAMPLES SR_MHZ(1)
+#define ANALOG_DEFAULT_NUM_PROBE 2
+#define ANALOG_DEFAULT_NUM_BLOCK 1
+#define ANALOG_DEFAULT_BIT 8
+#define ANALOG_DEFAULT_ENABLE TRUE
+#define ANALOG_DEFAULT_COUPLING 1
+#define ANALOG_DEFAULT_VIDV SR_V(1)
+#define ANALOG_DEFAULT_VFACOTR SR_mV(1)
+#define ANALOG_DEFAULT_HW_OFFSET 128
+#define ANALOG_DEFAULT_OFFSET 128
+#define ANALOG_DEFAULT_TRIG_VAL 128
+#define ANALOG_DEFAULT_MAP_DEFAULT TRUE
+#define ANALOG_DEFAULT_MAP_UNIT "V"
+#define ANALOG_DEFAULT_MAP_MIN (gdouble)-5
+#define ANALOG_DEFAULT_MAP_MAX (gdouble)+5
 
 
 
@@ -479,6 +533,12 @@ static const int ranx[] = {
   1,  30, -12,  44,  20,  49,  29, -43,  42,  30, -34,  24,  20, -40,  33, -12,  13, -45,  45, -24,
 -41,  36,  -8,  46,  47, -34,  28, -39,   7, -32,  38, -27,  28,  -3,  -8,  43, -37, -24,   6,   3,
 };
+
+static int get_logic_probe_type_index_by_probe_type(int probe_type);
+
+static int logic_adjust_probe(struct sr_dev_inst *sdi, int num_probes);
+
+static void logic_adjust_samplerate(struct session_vdev * vdev);
 
 static void init_analog_random_data(struct session_vdev * vdev);
 
