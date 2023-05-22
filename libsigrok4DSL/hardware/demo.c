@@ -1256,7 +1256,7 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
         
         if(sample_generator == PATTERN_RANDOM)
         {
-            logic_total_packet_num = (vdev->total_samples/8/packet_len);
+            logic_total_packet_num = (vdev->total_samples/8/packet_len) + 1;
             logci_cur_packet_num = 1;
             logic_data_status = LOGIC_FULL;
             init_random_data(vdev,sdi);
@@ -1417,7 +1417,7 @@ static int receive_data_logic(int fd, int revents, const struct sr_dev_inst *sdi
             }
         }
 
-        if(vdev->samplerate >=LOGIC_EMPTY_FREQ && logic_data_status!= LOGIC_FULL)
+        if(vdev->samplerate >=SR_MHZ(100) && logic_data_status!= LOGIC_FULL)
         {
             memset(logic_buf,0,chan_num * packet_len);
             if(logic_data_status == LOGIC_EMPTY_END)
@@ -1436,19 +1436,17 @@ static int receive_data_logic(int fd, int revents, const struct sr_dev_inst *sdi
             if(vdev->samplerate >=SR_MHZ(100))
                 logic_data_status++;
         }
-
+       
         gdouble ideal_time = vdev->total_samples/(gdouble)vdev->samplerate;
-        ideal_time = ideal_time/(gdouble)logic_total_packet_num*(gdouble)logci_cur_packet_num;
+        ideal_time = ideal_time/(gdouble)logic_total_packet_num*logci_cur_packet_num;
         gdouble packet_elapsed = g_timer_elapsed(run_time, NULL);
         gdouble waittime = ideal_time - packet_elapsed;
-        logci_cur_packet_num++;
         if(waittime > 0)
         {
             g_usleep(SR_MS(waittime));
         }
-        ds_data_forward(sdi, &packet);
 
-        
+        ds_data_forward(sdi, &packet);
         g_safe_free(logic_buf);
     }
 

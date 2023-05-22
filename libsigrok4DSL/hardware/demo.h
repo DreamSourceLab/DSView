@@ -293,7 +293,6 @@ static const uint64_t samplerates[] = {
 
 #define LOGIC_BUF_LEN SR_MB(2)
 
-#define LOGIC_EMPTY_FREQ SR_MHZ(100)
 #define LOGIC_EMPTY_END 9
 #define LOGIC_FULL 0
 
